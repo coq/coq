@@ -172,52 +172,55 @@ Definition negb (b:bool) := match b with
 
 Infix "||" := orb (at level 50, left associativity) : bool_scope.
 Infix "&&" := andb (at level 40, left associativity) : bool_scope.
-Notation "- b" := (negb b) : bool_scope.
 
-Open Local Scope bool_scope.
+Open Scope bool_scope.
+
+Delimit Scope bool_scope with bool.
+
+Bind Scope bool_scope with bool.
 
 (**************************)
 (** Lemmas about [negb]   *)
 (**************************)
 
-Lemma negb_intro : forall b:bool, b = - - b.
+Lemma negb_intro : forall b:bool, b = negb (negb b).
 Proof.
 destruct b; reflexivity.
 Qed.
 
-Lemma negb_elim : forall b:bool, - - b = b.
+Lemma negb_elim : forall b:bool, negb (negb b) = b.
 Proof.
 destruct b; reflexivity.
 Qed.
        
-Lemma negb_orb : forall b1 b2:bool, - (b1 || b2) = - b1 && - b2.
+Lemma negb_orb : forall b1 b2:bool, negb (b1 || b2) = negb b1 && negb b2.
 Proof.
   destruct b1; destruct b2; simpl in |- *; reflexivity.
 Qed.
 
-Lemma negb_andb : forall b1 b2:bool, - (b1 && b2) = - b1 || - b2.
+Lemma negb_andb : forall b1 b2:bool, negb (b1 && b2) = negb b1 || negb b2.
 Proof.
   destruct b1; destruct b2; simpl in |- *; reflexivity.
 Qed.
 
-Lemma negb_sym : forall b b':bool, b' = - b -> b = - b'.
+Lemma negb_sym : forall b b':bool, b' = negb b -> b = negb b'.
 Proof.
 destruct b; destruct b'; intros; simpl in |- *; trivial with bool.
 Qed.
 
-Lemma no_fixpoint_negb : forall b:bool, - b <> b.
+Lemma no_fixpoint_negb : forall b:bool, negb b <> b.
 Proof.
-destruct b; simpl in |- *; unfold not in |- *; intro; apply diff_true_false;
+destruct b; simpl in |- *; intro; apply diff_true_false;
  auto with bool.
 Qed.
 
-Lemma eqb_negb1 : forall b:bool, eqb (- b) b = false.
+Lemma eqb_negb1 : forall b:bool, eqb (negb b) b = false.
 destruct b.
 trivial with bool.
 trivial with bool.
 Qed.
  
-Lemma eqb_negb2 : forall b:bool, eqb b (- b) = false.
+Lemma eqb_negb2 : forall b:bool, eqb b (negb b) = false.
 destruct b.
 trivial with bool.
 trivial with bool.
@@ -226,7 +229,7 @@ Qed.
 
 Lemma if_negb :
  forall (A:Set) (b:bool) (x y:A),
-   (if - b then x else y) = (if b then y else x).
+   (if negb b then x else y) = (if b then y else x).
 Proof.
   destruct b; trivial.
 Qed.
@@ -297,7 +300,7 @@ Proof.
   auto with bool.
 Qed.
 
-Lemma orb_neg_b : forall b:bool, b || - b = true.
+Lemma orb_neg_b : forall b:bool, b || negb b = true.
 Proof.
   destruct b; reflexivity.
 Qed.
@@ -384,7 +387,7 @@ destruct b1; simpl in |- *; auto with bool.
 Defined.
 Hint Resolve andb_false_elim: bool v62.
 
-Lemma andb_neg_b : forall b:bool, b && - b = false.
+Lemma andb_neg_b : forall b:bool, b && negb b = false.
 destruct b; reflexivity.
 Qed.   
 Hint Resolve andb_neg_b: bool v62.
@@ -413,12 +416,12 @@ Proof.
   destruct b; trivial.
 Qed.
 
-Lemma xorb_true : forall b:bool, xorb b true = - b.
+Lemma xorb_true : forall b:bool, xorb b true = negb b.
 Proof.
   trivial.
 Qed.
 
-Lemma true_xorb : forall b:bool, xorb true b = - b.
+Lemma true_xorb : forall b:bool, xorb true b = negb b.
 Proof.
   destruct b; trivial.
 Qed.
@@ -517,22 +520,22 @@ Proof.
  intros b1 b2; case b1; case b2; intuition.
 Qed. 
 
-Lemma bool_3 : forall b:bool, - b <> true -> b = true.
+Lemma bool_3 : forall b:bool, negb b <> true -> b = true.
 Proof.
   destruct b; intuition.
 Qed.
 
-Lemma bool_4 : forall b:bool, b = true -> - b <> true.  
+Lemma bool_4 : forall b:bool, b = true -> negb b <> true.  
 Proof.
   destruct b; intuition.
 Qed.
 
-Lemma bool_5 : forall b:bool, - b = true -> b <> true.
+Lemma bool_5 : forall b:bool, negb b = true -> b <> true.
 Proof.
   destruct b; intuition.
 Qed.
 
-Lemma bool_6 : forall b:bool, b <> true -> - b = true.  
+Lemma bool_6 : forall b:bool, b <> true -> negb b = true.  
 Proof.
   destruct b; intuition.
 Qed.

@@ -175,9 +175,12 @@ Definition negb := [b:bool]Cases b of
 Infix "||" orb  (at level 4, left associativity) : bool_scope.
 Infix "&&" andb (at level 3, no associativity) : bool_scope
   V8only (at level 40, left associativity).
-V8Notation "- b" := (negb b) : bool_scope.
 
-Open Local Scope bool_scope.
+Open Scope bool_scope.
+
+Delimits Scope bool_scope with bool.
+
+Bind Scope bool_scope with bool.
 
 (**************************)
 (** Lemmas about [negb]   *)
@@ -212,7 +215,7 @@ Qed.
 
 Lemma no_fixpoint_negb : (b:bool)~(negb b)=b.
 Proof.
-NewDestruct b; Simpl; Unfold not; Intro; Apply diff_true_false; Auto with bool.
+NewDestruct b; Simpl; Intro; Apply diff_true_false; Auto with bool.
 Qed.
 
 Lemma eqb_negb1 : (b:bool)(eqb (negb b) b)=false.
