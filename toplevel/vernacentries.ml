@@ -402,6 +402,8 @@ let _ =
        | [] -> (fun () -> ())
        | _  -> bad_vernac_args "GOAL")
 
+let _ = add "Comments" (function _ -> (fun () -> ()))
+
 let _ =
   add "ABORT"
     (function 
