@@ -23,6 +23,9 @@ GEXTEND Gram
       | c = syntax; "." -> c
       | "["; l = vernac_list_tail -> <:ast< (VernacList ($LIST $l)) >> ] ]
   ;
+  vernac: FIRST
+    [ [ IDENT "Time"; v = vernac  -> <:ast< (Time $v)>> ] ]
+  ;
   vernac: LAST
     [ [ tac = tacarg; "." ->
         (match tac with

@@ -154,7 +154,6 @@ GEXTEND Gram
       | IDENT "Print"; IDENT "Coercion"; IDENT "Paths"; c = identarg; d = identarg ->
           <:ast< (PrintPATH $c $d) >>
 
-      | IDENT "Time"; v = vernac -> <:ast< (Time $v)>>
       | IDENT "SearchIsos"; com = constrarg ->
           <:ast< (Searchisos $com) >>
       | "Set"; IDENT "Undo"; n = numarg ->
