@@ -409,25 +409,12 @@ let add_constraints cst senv =
 (* Check that the engagement expected by a library matches the initial one *)
 let check_engagement env c =
   match Environ.engagement env, c with
-    | Some StronglyClassical, Some StronglyClassical -> ()
-    | Some StronglyConstructive, Some StronglyConstructive -> ()
+    | Some ImpredicativeSet, Some ImpredicativeSet -> ()
     | _, None -> ()
-    | _, Some StronglyClassical ->
-        error "Needs option -strongly-classical"
-    | _, Some StronglyConstructive ->
-        error "Needs option -strongly-classical"
-
-(* Check the initial engagement (possibly after a state input) *)
-let check_initial_engagement env c =
-  match Environ.engagement env, c with
-    | Some StronglyConstructive, StronglyClassical ->
-        error "Already engaged for a strongly constructive logic"
-    | Some StronglyClassical, StronglyConstructive ->
-        error "Already engaged for a strongly classical logic"
-    | _ -> ()
+    | _, Some ImpredicativeSet ->
+        error "Needs option -impredicative-set"
 
 let set_engagement c senv =
-  check_initial_engagement senv.env c;
   {senv with env = Environ.set_engagement c senv.env}
 
 

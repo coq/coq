@@ -35,10 +35,7 @@ let print_memory_stat () =
 let _ = at_exit print_memory_stat
 
 let engagement = ref None
-let set_engagement c =
-  if !engagement <> None then error
-    "Options strongly-constructive/strongly-classical occur more than once";
-  engagement := Some c
+let set_engagement c = engagement := Some c
 let engage () =
   match !engagement with Some c -> Global.set_engagement c | None -> ()
   
@@ -154,10 +151,8 @@ let parse_args is_ide =
   let rec parse = function
     | [] -> ()
 
-    | "-strongly-constructive" :: rem -> 
-        set_engagement Environ.StronglyConstructive; parse rem
-    | "-strongly-classical" :: rem -> 
-        set_engagement Environ.StronglyClassical; parse rem
+    | "-impredicative-set" :: rem -> 
+        set_engagement Environ.ImpredicativeSet; parse rem
 
     | ("-I"|"-include") :: d :: rem -> set_default_include d; parse rem
     | ("-I"|"-include") :: []       -> usage ()

@@ -23,7 +23,7 @@ type compilation_unit_name = dir_path * checksum
 
 type global = Constant | Inductive
 
-type engagement = StronglyConstructive | StronglyClassical
+type engagement = ImpredicativeSet
 
 type globals = {
   env_constants : constant_body KNmap.t;
