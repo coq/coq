@@ -167,7 +167,8 @@ let check_cast loc a k =
                          [< 'sTR"cast _"; print_ast_cast k; 'sTR"failed" >])
 
 let rec coerce_to_var v = function
-  | Nvar(_,id) -> id 
+  | Nvar(_,id) -> id
+  | Node(_,"QUALID",[Nvar(_,id)]) -> id
   | ast -> user_err_loc
         (loc ast,"Ast.coerce_to_var",
          [< 'sTR"the variable "; 'sTR v;
