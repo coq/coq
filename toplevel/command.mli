@@ -35,7 +35,5 @@ val build_recursive :
 
 val build_corecursive :  (identifier * Coqast.t * Coqast.t) list -> unit
 
-val mkProdCit : (identifier * Coqast.t) list -> Coqast.t -> Coqast.t 
-
-val build_scheme : (identifier * bool * Coqast.t * Coqast.t) list -> unit
+val build_scheme : (identifier * bool * identifier * Coqast.t) list -> unit
 

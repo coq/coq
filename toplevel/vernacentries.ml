@@ -119,7 +119,6 @@ let locate_id id =
     mSG [< 'sTR (string_of_path (Nametab.sp_of_id CCI id)); 'fNL >]
   with Not_found -> 
     error ((string_of_id id) ^ " not a defined object")
-
 let print_loadpath () =
   let l = search_paths () in
   mSGNL [< 'sTR"Load Path:"; 'fNL; 'sTR"  ";
@@ -1037,14 +1036,14 @@ let _ =
 		  | (VARG_VARGLIST 
 		       [VARG_IDENTIFIER fid;
 			VARG_STRING depstr;
-			VARG_COMMAND ind; 
+			VARG_IDENTIFIER indid;
 			VARG_COMMAND sort]) ->
 		      let dep = match depstr with 
 			| "DEP" -> true
                         | "NODEP" -> false
                         | _ -> anomaly "Unexpected string"
 		      in 
-		      (fid,dep,ind,sort)
+		      (fid,dep,indid,sort)
 		  | _ -> bad_vernac_args "INDUCTIONSCHEME") lmi
 	   in 
 	   fun () -> build_scheme lnamedepindsort

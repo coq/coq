@@ -111,9 +111,9 @@ GEXTEND Gram
       |  -> <:ast< (VERNACARGLIST) >> ] ]
   ;
   onescheme:
-    [ [ id = identarg; ":="; dep = dep; c = comarg; IDENT "Sort";
+    [ [ id = identarg; ":="; dep = dep; indid = identarg; IDENT "Sort";
         s = sortdef ->
-          <:ast< (VERNACARGLIST $id $dep $c (COMMAND $s)) >> ] ]
+          <:ast< (VERNACARGLIST $id $dep $indid (COMMAND $s)) >> ] ]
   ;
   specifscheme:
     [ [ rec_ = onescheme; "with"; recl = specifscheme -> rec_ :: recl
@@ -133,8 +133,8 @@ GEXTEND Gram
       |  -> <:ast< (BINDERLIST) >> ] ]
   ;
   sortdef:
-    [ [ "Set" -> <:ast< (PROP {Pos}) >>
-      | "Prop" -> <:ast< (PROP {Null}) >>
+    [ [ "Set"  -> <:ast< (SET) >>
+      | "Prop" -> <:ast< (PROP) >>
       | "Type" -> <:ast< (TYPE) >> ] ]
   ;
   thm_tok:
@@ -264,17 +264,9 @@ GEXTEND Gram
       | IDENT "Abstraction"; id = identarg; "["; l = ne_numarg_list; "]";
         ":="; c = comarg; "." ->
           <:ast< (ABSTRACTION $id $c ($LIST $l)) >>
-      | f = finite_tok; "Set"; id = identarg; indpar = indpar; ":=";
+      | f = finite_tok; s = sortdef; id = identarg; indpar = indpar; ":=";
         lidcom = lidcom; "." ->
-          <:ast< (ONEINDUCTIVE $f $id (COMMAND (PROP {Pos})) $indpar
-                   $lidcom) >>
-      | f = finite_tok; "Type"; id = identarg; indpar = indpar; ":=";
-        lidcom = lidcom; "." ->
-          <:ast< (ONEINDUCTIVE $f $id (COMMAND (TYPE)) $indpar $lidcom) >>
-      | f = finite_tok; "Prop"; id = identarg; indpar = indpar; ":=";
-        lidcom = lidcom; "." ->
-          <:ast< (ONEINDUCTIVE $f $id (COMMAND (PROP {Null})) $indpar
-                   $lidcom) >>
+          <:ast< (ONEINDUCTIVE $f $id (COMMAND $s) $indpar $lidcom) >>
       | f = finite_tok; indl = block; "." ->
           <:ast< (MUTUALINDUCTIVE $f (VERNACARGLIST ($LIST $indl))) >>
 
