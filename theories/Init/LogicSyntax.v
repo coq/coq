@@ -26,19 +26,6 @@ Grammar constr constr1 :=
 | eq_impl [ constr0($c) "=" constr0($c2) ] -> [ (eq ? $c $c2) ]
 | IF [ "IF" constr($c1) "then" constr($c2) "else" constr($c3)] ->
      [ (IF $c1 $c2 $c3) ]
-(*
-with constr2 :=
-  not [ "~" constr2($c) ] -> [ (not $c) ]
-
-with constr6 :=
-  and [ constr5($c1) "/\\" constr6($c2) ] -> [ (and $c1 $c2) ]
-
-with constr7 :=
-  or [ constr6($c1) "\\/" constr7($c2) ] -> [ (or $c1 $c2) ]
-
-with constr8 :=
-  iff [ constr7($c1) "<->" constr8($c2) ] -> [ (iff $c1 $c2) ]
-*)
 with constr10 :=
   allexplicit [ "ALL" ident($x) ":" constr($t) "|" constr($p) ]
                           -> [ (all $t [$x : $t]$p) ]
@@ -77,23 +64,6 @@ Syntax constr
                   "then " $c2:E [1 0]
                   "else " $c3:E ] ]
   ;
-(*
-  level 2:
-    not [ ~ $t1 ] -> [ [<hov 0> "~" $t1:E ] ]
-  ;
-
-  level 6:
-    and [ $t1 /\ $t2 ] -> [ [<hov 0> $t1:L [0 0] "/\\" $t2:E ] ]
-  ;
-
-  level 7:
-    or [ $t1 \/ $t2 ] -> [ [<hov 0> $t1:L [0 0]  "\\/" $t2:E ] ]
-  ;
-
-  level 8:
-    iff [ $t1 <-> $t2 ] -> [ [<hov 0> $t1:L [0 0] "<->" $t2:E ] ]
-  ;
-*)
   level 10:
     all_pred [ (all $_ $p) ] -> [ [<hov 4> "All " $p:L ] ]
   | all_imp [ (all $_ [$x : $T]$t) ]
