@@ -1241,7 +1241,8 @@ calls are done on variables coming from patterns and representing subterms.
 
 For instance in the case of natural numbers, a proof of the induction
 principle of type 
-\[\forall P:\nat\ra\Prop, (P~\nO)\ra((n:\nat)(P~n)\ra(P~(\nS~n)))\ra(n:\nat)(P~n)\]
+\[\forall P:\nat\ra\Prop, (P~\nO)\ra((n:\nat)(P~n)\ra(P~(\nS~n)))\ra
+\forall n:\nat, (P~n)\]
 can be represented by the term:
 \[\begin{array}{l}
 \lb P:\nat\ra\Prop\mto\lb f:(P~\nO)\mto \lb g:(\forall n:\nat,
