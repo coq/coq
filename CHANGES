@@ -104,6 +104,14 @@ Tactics
 - Unfold expects a correct evaluable argument
 - Clear expects existing hypotheses
 
+Extraction (See details in contrib/extraction/CHANGES and README):
+
+- An experimental Scheme extraction is provided.
+- Concerning Ocaml, extracted code is now ensured to always type-check, 
+  thanks to automatic inserting of Obj.magic.
+- "early" (read: "still bugged") version of an extraction compatible with
+  Coq's new modules.
+
 Miscellaneous
 
 - Printing Coercion now used through the standard keywords Set/Add, Test, Print
