@@ -417,7 +417,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 	  else
 	    let mis,_ = dest_ind_family indf in
 	    let ci = make_default_case_info mis in
-	    mkMutCase (ci, pj.uj_val, cj.uj_val,
+	    mkMutCase (ci, (nf_betaiota pj.uj_val), cj.uj_val,
                        Array.map (fun j-> j.uj_val) lfj)
 	in
 	{uj_val = v;

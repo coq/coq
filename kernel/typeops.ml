@@ -378,7 +378,7 @@ let judge_of_case env sigma ci pj cj lfj =
     type_case_branches env sigma indspec pj cj.uj_val in
   let kind = mysort_of_arity env sigma (body_of_type pj.uj_type) in
   let univ' = check_branches_message env sigma cj (bty,lft) in
-  ({ uj_val  = mkMutCase (ci, pj.uj_val, cj.uj_val, Array.map j_val lfj);
+  ({ uj_val  = mkMutCase (ci, (nf_betaiota pj.uj_val), cj.uj_val, Array.map j_val lfj);
      uj_type = rslty },
   Constraint.union univ univ')
 
