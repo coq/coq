@@ -1020,6 +1020,7 @@ let mk_permut vars7 vars8 =
         vars8 [])
 
 let contract_notation ntn =
+  if ntn = "{ _ }" then ntn else
   let rec aux ntn i =
     if i <= String.length ntn - 5 then
       let ntn' =
@@ -1048,8 +1049,11 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
     | Some mv8 ->
         let (_,vars8,intnot8,ntn8),p,d,_ = compute_syntax_data false mv8 in
         intnot8,ntn8,vars8,p,make_pp_rule d
-    | _ -> 
+    | None when not !Options.v7 -> 
+        intnot,notation,vars,prec,make_pp_rule ppdata
+    | None ->
 	(* means the rule already exists: recover it *)
+        (* occurs only with V8only flag alone *)
 	try 
           let ntn = contract_notation notation in
 	  let _, oldprec8 = Symbols.level_of_notation ntn in
@@ -1084,6 +1088,10 @@ let check_notation_existence notation =
     if a = None then raise Not_found
   with Not_found ->
     error "Parsing rule for this notation has to be previously declared"
+
+let exists_notation_syntax ntn =
+  try fst (Symbols.level_of_notation (contract_notation ntn)) <> None
+  with Not_found -> false
 
 let build_old_pp_rule notation scope symbs (r,vars) =
   let prec = 
@@ -1178,13 +1186,15 @@ let add_notation local c dfmod mv8 sc =
 	      else
 	        (* Declare only interpretation *)
 		let (vars,symbs) = analyse_notation_tokens toks in
-		check_notation_existence (make_notation_key symbs);
-		let onlyparse = modifiers = [SetOnlyParsing] in
-		let a = interp_aconstr [] vars c in
-		let a_for_old = interp_global_rawconstr_with_vars vars c in
-		let for_old = Some (a_for_old,vars) in
-		add_notation_interpretation_core local symbs for_old df a
-		  sc onlyparse false
+                if exists_notation_syntax (make_notation_key symbs) then
+		  let onlyparse = modifiers = [SetOnlyParsing] in
+		  let a = interp_aconstr [] vars c in
+		  let a_for_old = interp_global_rawconstr_with_vars vars c in
+		  let for_old = Some (a_for_old,vars) in
+		  add_notation_interpretation_core local symbs for_old df a
+		    sc onlyparse false
+                else
+                  add_notation_in_scope local df c modifiers mv8 sc toks
 	  | Some n ->
 	    (* Declare both syntax and interpretation *)
 	    let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
@@ -1221,6 +1231,18 @@ let add_distfix local assoc n df r sc =
   let assoc = match assoc with None -> Gramext.LeftA | Some a -> a in
   add_notation_in_scope local df a [SetAssoc assoc;SetLevel n] None sc
     (split_notation_string df)
+
+let make_infix_data n assoc modl mv8 =
+  (* Infix defaults to LEFTA in V7 (cf doc) *)
+  let mv = match n with None when !Options.v7 -> SetLevel 1 :: modl | _ -> modl in
+  let mv = match assoc with None when !Options.v7 -> SetAssoc Gramext.LeftA :: mv | _ -> mv in
+  let mv8 = match mv8 with
+      None -> None
+    | Some(s8,mv8) ->
+	if List.for_all (function SetLevel _ -> false | _ -> true) mv8 then
+	  error "Needs a level"
+	else Some (("x "^quote_notation_token s8^" y"),mv8) in
+  mv,mv8
 
 let add_infix local (inf,modl) pr mv8 sc =
   if inf="" (* Code for V8Infix only *) then
@@ -1261,23 +1283,18 @@ let add_infix local (inf,modl) pr mv8 sc =
     (* de ne déclarer que l'interprétation *)
     (* Declare only interpretation *)
     let (vars,symbs) = analyse_notation_tokens toks in
-    check_notation_existence (make_notation_key symbs);
-    let a' = interp_aconstr [] vars a in
-    let a_for_old = interp_global_rawconstr_with_vars vars a in
-    let for_old = Some (a_for_old,vars) in
-    add_notation_interpretation_core local symbs for_old df a' sc 
-      onlyparse false
+    if exists_notation_syntax (make_notation_key symbs) then
+      let a' = interp_aconstr [] vars a in
+      let a_for_old = interp_global_rawconstr_with_vars vars a in
+      let for_old = Some (a_for_old,vars) in
+      add_notation_interpretation_core local symbs for_old df a' sc 
+        onlyparse false
+    else
+      let mv,mv8 = make_infix_data n assoc modl mv8 in
+      add_notation_in_scope local df a mv mv8 sc toks
   else
-  (* Infix defaults to LEFTA in V7 (cf doc) *)
-  let mv = match n with None when !Options.v7 -> SetLevel 1 :: modl | _ -> modl in
-  let mv = match assoc with None when !Options.v7 -> SetAssoc Gramext.LeftA :: mv | _ -> mv in
-  let mv8 = match mv8 with
-      None -> None
-    | Some(s8,mv8) ->
-	if List.for_all (function SetLevel _ -> false | _ -> true) mv8 then
-	  error "Needs a level"
-	else Some (("x "^quote_notation_token s8^" y"),mv8) in
-  add_notation_in_scope local df a mv mv8 sc toks
+    let mv,mv8 = make_infix_data n assoc modl mv8 in
+    add_notation_in_scope local df a mv mv8 sc toks
   end
 
 let standardise_locatable_notation ntn =
