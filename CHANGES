@@ -1,5 +1,5 @@
 Changes from V6.3.1 and V7.0 to V7.1
-------------------------------------
+====================================
 
 Notes:
 
@@ -7,6 +7,21 @@ Notes:
 - items followed by (*) may exceptionally be sources of incompatibilities
 - items followed by (+) have been introduced in version 7.0
 
+
+Main novelties
+==============
+
+- new primitive let-in construct
+- long names
+- new high-level tactic language
+- improved search facilities
+- new extraction algorithm managing the Type level
+- export of theories to XML for publishing and rendering purposes
+- deep restructuration of the code (safer, simpler and more efficient)
+
+
+Details of changes
+==================
 
 Language: new "let-in" construction
 -----------------------------------
