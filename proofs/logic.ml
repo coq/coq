@@ -441,6 +441,8 @@ let prim_refiner r sigma goal =
 	       else anomaly "Intro_replacing: expects a product")
 	
     | Cut (b,id,t) ->
+    	if !check && mem_named_context id sign then
+	  error "New variable is already declared";
         if occur_meta t then error_use_instantiate();
         let sg1 = mk_goal sign (nf_betaiota t) in
         let sg2 = mk_goal (add_named_decl (id,None,t) sign) cl in
