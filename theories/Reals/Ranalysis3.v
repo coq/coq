@@ -12,7 +12,7 @@ Require Rbase.
 Require Rfunctions.
 Require Ranalysis1.
 Require Ranalysis2.
-Import R_scope.
+V7only [Import R_scope.].
 
 (* Division *)
 Theorem derivable_pt_lim_div : (f1,f2:R->R;x,l1,l2:R) (derivable_pt_lim f1 x l1) -> (derivable_pt_lim f2 x l2) -> ~``(f2 x)==0``-> (derivable_pt_lim (div_fct f1 f2) x ``(l1*(f2 x)-l2*(f1 x))/(Rsqr (f2 x))``).

@@ -15,7 +15,7 @@ Require Rtrigo.
 Require Ranalysis1.
 Require Ranalysis3.
 Require Exp_prop.
-Import R_scope.
+V7only [Import R_scope.].
 
 (**********)
 Lemma derivable_pt_inv : (f:R->R;x:R) ``(f x)<>0`` -> (derivable_pt f x) -> (derivable_pt (inv_fct f) x).

@@ -14,7 +14,7 @@ Require Ranalysis1.
 Require RList.
 Require Classical_Prop.
 Require Classical_Pred_Type.
-Import R_scope.
+V7only [Import R_scope.].
 
 Definition included [D1,D2:R->Prop] : Prop := (x:R)(D1 x)->(D2 x).
 Definition disc [x:R;delta:posreal] : R->Prop := [y:R]``(Rabsolu (y-x))<delta``.

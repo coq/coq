@@ -12,7 +12,7 @@ Require Rbase.
 Require Rfunctions.
 Require Ranalysis.
 Require Classical_Prop.
-Import R_scope.
+V7only [Import R_scope.].
 
 Implicit Arguments On.
 

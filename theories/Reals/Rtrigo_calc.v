@@ -13,7 +13,7 @@ Require Rfunctions.
 Require SeqSeries.
 Require Rtrigo.
 Require R_sqrt.
-Import R_scope.
+V7only [Import R_scope.].
 
 Lemma tan_PI : ``(tan PI)==0``.
 Unfold tan; Rewrite sin_PI; Rewrite cos_PI; Unfold Rdiv; Apply Rmult_Ol. 

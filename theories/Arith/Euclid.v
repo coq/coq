@@ -11,7 +11,9 @@
 Require Mult.
 Require Compare_dec.
 Require Wf_nat.
-Import nat_scope.
+
+V7only [Import nat_scope.].
+Open Local Scope nat_scope.
 
 Implicit Variables Type a,b,n,q,r:nat.
 

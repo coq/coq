@@ -13,7 +13,7 @@ Require Rbase.
 Require Rfunctions.
 Require SeqSeries.
 Require Ranalysis1.
-Import R_scope.
+V7only [Import R_scope.].
 
 Fixpoint Dichotomy_lb [x,y:R;P:R->bool;N:nat] : R :=
 Cases N of 

@@ -9,7 +9,8 @@
 (*i $Id$ i*)
 
 (** Equality is decidable on [nat] *)
-Import nat_scope.
+V7only [Import nat_scope.].
+Open Local Scope nat_scope.
 
 (*
 Lemma not_eq_sym : (A:Set)(p,q:A)(~p=q) -> ~(q=p).

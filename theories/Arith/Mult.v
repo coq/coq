@@ -11,7 +11,9 @@
 Require Export Plus.
 Require Export Minus.
 Require Export Lt.
-Import nat_scope.
+
+V7only [Import nat_scope.].
+Open Local Scope nat_scope.
 
 Implicit Variables Type m,n,p:nat.
 

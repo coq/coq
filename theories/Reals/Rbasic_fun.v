@@ -16,7 +16,7 @@
 Require Rbase.
 Require R_Ifp.
 Require Fourier.
-Import R_scope.
+V7only [Import R_scope.].
 
 Implicit Variable Type r:R.
 

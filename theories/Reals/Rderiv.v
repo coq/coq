@@ -20,7 +20,7 @@ Require Fourier.
 Require Classical_Prop.
 Require Classical_Pred_Type.
 Require Omega.
-Import R_scope.
+V7only [Import R_scope.].
 
 (*********)
 Definition D_x:(R->Prop)->R->R->Prop:=[D:R->Prop][y:R][x:R]

@@ -9,7 +9,9 @@
 (*i $Id$ i*)
 
 (** Euclidean division *)
-Import nat_scope.
+
+V7only [Import nat_scope.].
+Open Local Scope nat_scope.
 
 Require Le.
 Require Euclid_def.

@@ -13,7 +13,7 @@ Require Rfunctions.
 Require SeqSeries.
 Require Rtrigo.
 Require Ranalysis.
-Import R_scope.
+V7only [Import R_scope.].
 
 (*******************************************)
 (*            Newton's Integral            *)

@@ -12,7 +12,7 @@
     and we prove the decidability and the exclusion of those predicates.
     The main results about parity are proved in the module Div2. *)
 
-Import nat_scope.
+V7only [Import nat_scope.].
 
 Implicit Variables Type m,n:nat.
 

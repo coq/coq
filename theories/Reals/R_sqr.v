@@ -10,7 +10,7 @@
 
 Require Rbase.
 Require Rbasic_fun.
-Import R_scope.
+V7only [Import R_scope.].
 
 (****************************************************)
 (* Rsqr : some results                              *)

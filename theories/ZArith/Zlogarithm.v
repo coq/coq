@@ -23,7 +23,7 @@ Require ZArith_base.
 Require Omega.
 Require Zcomplements.
 Require Zpower.
-Import Z_scope.
+V7only [Import Z_scope.].
 
 Section Log_pos. (* Log of positive integers *)
 

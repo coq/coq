@@ -12,7 +12,7 @@ Require ZArith_base.
 Require ZArithRing.
 Require Omega.
 Require Wf_nat.
-Import Z_scope.
+V7only [Import Z_scope.].
 
 (** Multiplication by a number >0 preserves [Zcompare]. It also perserves
     [Zle], [Zlt], [Zge], [Zgt] *)

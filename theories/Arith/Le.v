@@ -9,8 +9,8 @@
 (*i $Id$ i*)
 
 (** Order on natural numbers *)
-Import nat_scope.
-Open Scope nat_scope.
+V7only [Import nat_scope.].
+Open Local Scope nat_scope.
 
 Implicit Variables Type m,n,p:nat.
 

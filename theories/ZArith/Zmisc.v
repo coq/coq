@@ -13,7 +13,7 @@ Require zarith_aux.
 Require auxiliary.
 Require Zsyntax.
 Require Bool.
-Import Z_scope.
+V7only [Import Z_scope.].
 
 (** Overview of the sections of this file:
     - logic: Logic complements.

@@ -23,7 +23,7 @@ Require Export ZArith_base.
 Require Omega.
 Require ZArithRing.
 Require Zcomplements.
-Import Z_scope.
+V7only [Import Z_scope.].
 
 (**
 

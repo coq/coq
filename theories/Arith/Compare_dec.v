@@ -12,7 +12,9 @@ Require Le.
 Require Lt.
 Require Gt.
 Require Decidable.
-Import nat_scope.
+
+V7only [Import nat_scope.].
+Open Local Scope nat_scope.
 
 Implicit Variables Type m,n,x,y:nat.
 

@@ -11,7 +11,7 @@
 Require Export ZArith_base.
 Require Export ZArithRing.
 Require Export Omega.
-Import Z_scope.
+V7only [Import Z_scope.].
 
 (** The following tactic replaces all instances of (POS (xI ...)) by
     `2*(POS ...)+1` , but only when ... is not made only with xO, XI, or xH. *)

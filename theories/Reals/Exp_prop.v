@@ -17,7 +17,7 @@ Require PSeries_reg.
 Require Div2.
 Require Even.
 Require Max.
-Import R_scope.
+V7only [Import R_scope.].
 
 Definition E1 [x:R] : nat->R := [N:nat](sum_f_R0 [k:nat]``/(INR (fact k))*(pow x k)`` N).
 
