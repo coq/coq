@@ -416,8 +416,9 @@ let nb_occur_match =
   let rec nb k = function 
     | MLrel i -> if i = k then 1 else 0
     | MLcase(a,v) -> 
-        Array.fold_left 
-	  (fun r (_,ids,a) -> max r (nb (k+(List.length ids)) a)) (nb k a) v
+        (nb k a) +
+	Array.fold_left 
+	  (fun r (_,ids,a) -> max r (nb (k+(List.length ids)) a)) 0 v
     | MLletin (_,a,b) -> (nb k a) + (nb (k+1) b) 
     | MLfix (_,ids,v) -> let k = k+(Array.length ids) in 
       Array.fold_left (fun r a -> r+(nb k a)) 0 v
