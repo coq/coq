@@ -155,7 +155,7 @@ let explicitize =
 	       else tail)
     (* Tail impl args are always printed even if implicit printing is off *)
     | [] -> List.rev lastimplargs
-  in exprec 0 []
+  in exprec 1 []
 
 let implicit_of_ref = function
   | RConstruct (cstrid,_) -> constructor_implicits_list cstrid
@@ -219,8 +219,9 @@ let rec ast_of_raw = function
   | RBinder (_,bk,na,t,c) ->
       let (n,a) = factorize_binder 1 bk na (ast_of_raw t) c in
       let tag = match bk with
-	  (* LAMBDA et LAMBDALIST se comportent pareil *)
-	| BLambda -> if n=1 then "LAMBDA" else "LAMBDALIST"
+	  (* LAMBDA et LAMBDALIST se comportent pareil ... Non ! *)
+	  (* Pour compatibilité des theories, il faut LAMBDALIST partout *)
+	| BLambda -> (* if n=1 then "LAMBDA" else *) "LAMBDALIST"
 	  (* PROD et PRODLIST doivent être distingués à cause du cas *)
 	  (* non dépendant, pour isoler l'implication; peut-être un *)
 	  (* constructeur ARROW serait-il plus justifié ? *) 
