@@ -817,10 +817,7 @@ Qed.
 Lemma FTC_P1 : (f:R->R;a,b:R) ``a<=b`` -> ((x:R)``a<=x<=b``->(continuity_pt f x)) -> ((x:R)``a<=x``->``x<=b``->(Riemann_integrable f a x)).
 Intros; Apply continuity_implies_RiemannInt; [Assumption | Intros; Apply H0; Elim H3; Intros; Split; Assumption Orelse Apply Rle_trans with x; Assumption].
 Qed.
-
-Lemma FTC_P2 : (x:R) ``x<=x``.
-Intro; Right; Reflexivity.
-Qed.
+V7only [Notation FTC_P2 := Rle_refl.].
 
 Definition primitive [f:R->R;a,b:R;h:``a<=b``;pr:((x:R)``a<=x``->``x<=b``->(Riemann_integrable f a x))] : R->R := [x:R] Cases (total_order_Rle a x) of
    | (leftT r) => Cases (total_order_Rle x b) of
