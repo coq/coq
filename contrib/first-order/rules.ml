@@ -153,9 +153,10 @@ let ll_arrow_tac a b c backtrack id continue seq=
             [exact_no_check (constr_of_reference id); 
 	     tclTHENLIST 
 	       [generalize [d];
-		introf;
 		clear_global id;
-		tclCOMPLETE (wrap 1 true continue seq)]]])
+		introf;
+		introf;
+		tclCOMPLETE (wrap 2 true continue seq)]]])
       backtrack
 
 (* quantifier rules (easy side) *)
