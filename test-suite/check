@@ -40,8 +40,28 @@ test_echec() {
     done
 }
 
+# La fonction suivante teste la sortie des fichiers qu'elle exécute 
+test_output() {
+    for f in $1/*.v; do 
+	nbtests=`expr $nbtests + 1`
+	printf "    "$f"..."
+        tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`
+	$command $f | tail +3 > $tmpoutput 2>&1
+        foutput=`dirname $f`/`basename $f .v`.out
+        diff $tmpoutput $foutput > /dev/null
+	if [ $? = 0 ]; then 
+	    echo "Ok"
+	    nbtestsok=`expr $nbtestsok + 1`
+        else 
+	    echo "Error! (unexpected output)"
+        fi 
+    done
+}
+
 # Programme principal
 
+echo "Output tests"
+test_output output
 echo "Success tests"
 test_succes success
 echo "Failure tests"
