@@ -133,6 +133,11 @@ let check_branches_message loc env isevars c (explft,lft) =
 	(nf_betaiota env !isevars explft.(i))
   done
 
+(* coerce to tycon if any *)
+let inh_conv_coerce_to_tycon loc env isevars j = function
+   | None -> j
+   | Some typ -> inh_conv_coerce_to loc env isevars j typ
+
 (*
 let evar_type_case isevars env ct pt lft p c =
   let (mind,bty,rslty) = type_case_branches env !isevars ct pt p c
@@ -196,18 +201,22 @@ let pretype_sort = function
 let rec pretype tycon env isevars lvar lmeta cstr =
 match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 
-| RRef (loc,ref) -> 
-    pretype_ref
-      (fun c -> (pretype empty_tycon env isevars lvar lmeta c).uj_val)
-      loc isevars env lvar ref
+| RRef (loc,ref) ->
+    inh_conv_coerce_to_tycon loc env isevars
+      (pretype_ref
+	 (fun c -> (pretype empty_tycon env isevars lvar lmeta c).uj_val)
+	 loc isevars env lvar ref)
+      tycon
 
 | RMeta (loc,n) ->
-    (try
-       List.assoc n lmeta
-     with
+    let j =
+      try
+	List.assoc n lmeta
+      with
         Not_found ->
 	  user_err_loc (loc,"pretype",
-			[< 'sTR "Metavariable "; 'iNT n; 'sTR" is unbound" >]))
+			[< 'sTR "Metavariable "; 'iNT n; 'sTR" is unbound" >])
+    in inh_conv_coerce_to_tycon loc env isevars j tycon
 
 | RHole loc ->
   if !compter then nbimpl:=!nbimpl+1;
@@ -235,30 +244,62 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
                      * the nbfix variables pushed to newenv *)
         pretype (mk_tycon (lift nbfix (larj.(i).utj_val))) newenv isevars lvar
           lmeta def) vdef in
-  (evar_type_fixpoint env isevars lfi lara vdefj;
-   match fixkind with
-     | RFix (vn,i as vni) ->
-	 let fix = (vni,(lara,List.rev lfi,Array.map j_val vdefj)) in
-	 check_fix env !isevars fix;
-	 make_judge (mkFix fix) lara.(i)
-     | RCoFix i -> 
-	 let cofix = (i,(lara,List.rev lfi,Array.map j_val vdefj)) in
-	 check_cofix env !isevars cofix;
-	 make_judge (mkCoFix cofix) lara.(i))
+  evar_type_fixpoint env isevars lfi lara vdefj;
+  let fixj =
+    match fixkind with
+      | RFix (vn,i as vni) ->
+	  let fix = (vni,(lara,List.rev lfi,Array.map j_val vdefj)) in
+	  check_fix env !isevars fix;
+	  make_judge (mkFix fix) lara.(i)
+      | RCoFix i -> 
+	  let cofix = (i,(lara,List.rev lfi,Array.map j_val vdefj)) in
+	  check_cofix env !isevars cofix;
+	  make_judge (mkCoFix cofix) lara.(i) in
+  inh_conv_coerce_to_tycon loc env isevars fixj tycon
 
-| RSort (loc,s) -> pretype_sort s
+| RSort (loc,s) ->
+    inh_conv_coerce_to_tycon loc env isevars (pretype_sort s) tycon
 
 | RApp (loc,f,args) -> 
-    let j = pretype empty_tycon env isevars lvar lmeta f in
-    let j = inh_app_fun env isevars j in
-    let apply_one_arg (tycon,jl) c =
-      let (dom,rng) = split_tycon loc env isevars tycon in
+    let fj = pretype empty_tycon env isevars lvar lmeta f in
+    let floc = loc_of_rawconstr f in
+    let rec apply_rec env n resj = function
+      | [] -> resj
+      | c::rest ->
+	  let argloc = loc_of_rawconstr c in
+	  let resj = inh_app_fun env isevars resj in
+      	  match kind_of_term (whd_betadeltaiota env !isevars resj.uj_type) with
+            | IsProd (na,c1,c2) ->
+		let hj = pretype (mk_tycon c1) env isevars lvar lmeta c in
+		let newresj =
+      		  { uj_val = applist (j_val resj, [j_val hj]);
+		    uj_type = subst1 hj.uj_val c2 } in
+		apply_rec env (n+1) newresj rest
+
+            | _ ->
+		let j_nf_ise env sigma {uj_val=v;uj_type=t} =
+		  { uj_val = nf_ise1 sigma v; 
+		    uj_type = nf_ise1 sigma t } in
+		let hj = pretype empty_tycon env isevars lvar lmeta c in
+		error_cant_apply_not_functional_loc 
+		  (Rawterm.join_loc floc argloc) env
+	      	  (j_nf_ise env !isevars resj)
+		  [j_nf_ise env !isevars hj]
+
+    in let resj = apply_rec env 1 fj args in
+(*
+    let apply_one_arg (floc,tycon,jl) c =
+      let (dom,rng) = split_tycon floc env isevars tycon in
       let cj = pretype dom env isevars lvar lmeta c in
       let rng_tycon = option_app (subst1 cj.uj_val) rng in
-      (rng_tycon,cj::jl)  in
-    let jl = List.rev (snd (List.fold_left apply_one_arg
-			      (mk_tycon j.uj_type,[]) args)) in
-    inh_apply_rel_list loc env isevars jl j tycon
+      let argloc = loc_of_rawconstr c in
+      (join_loc floc argloc,rng_tycon,(argloc,cj)::jl)  in
+    let _,_,jl =
+      List.fold_left apply_one_arg (floc,mk_tycon j.uj_type,[]) args in
+    let jl = List.rev jl in
+    let resj = inh_apply_rel_list loc env isevars jl (floc,j) tycon in
+*)
+    inh_conv_coerce_to_tycon loc env isevars resj tycon
 
 | RBinder(loc,BLambda,name,c1,c2)      ->
     let (dom,rng) = split_tycon loc env isevars tycon in
@@ -274,8 +315,10 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
     let assum = inh_coerce_to_sort env isevars j in
     let var = (name,assum.utj_val) in
     let j' = pretype empty_tycon (push_rel_assum var env) isevars lvar lmeta c2 in
-    (try fst (gen_rel env !isevars name assum j')
-     with TypeError _ as e -> Stdpp.raise_with_loc loc e)
+    let resj =
+      try fst (gen_rel env !isevars name assum j')
+      with TypeError _ as e -> Stdpp.raise_with_loc loc e in
+    inh_conv_coerce_to_tycon loc env isevars resj tycon
 
 | RBinder(loc,BLetIn,name,c1,c2)      ->
     let j = pretype empty_tycon env isevars lvar lmeta c1 in
@@ -359,9 +402,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 | RCast(loc,c,t) ->
   let tj = pretype_type (valcon_of_tycon tycon) env isevars lvar lmeta t in
   let cj = pretype (mk_tycon tj.utj_val) env isevars lvar lmeta c in
-  match tycon with
-    | None  -> cj
-    | Some t' -> inh_conv_coerce_to loc env isevars cj t'
+  inh_conv_coerce_to_tycon loc env isevars cj tycon
 
 (* [pretype_type valcon env isevars lvar lmeta c] coerces [c] into a type *)
 and pretype_type valcon env isevars lvar lmeta = function

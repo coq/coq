@@ -147,44 +147,48 @@ let inh_conv_coerce_to loc env isevars cj t =
       let at = nf_ise1 !isevars t in
       error_actual_type_loc loc env rcj.uj_val rcj.uj_type at
   in
-  { uj_val = cj'.uj_val;
-    uj_type = t }
+  { uj_val = cj'.uj_val; uj_type = t }
 
 (* [inh_apply_rel_list loc env isevars args f tycon] tries to type [(f
    args)] of type [tycon] (if any) by inserting coercions in front of
    each arg$_i$, if necessary *)
 
-let inh_apply_rel_list apploc env isevars argjl funj tycon =
-  let rec apply_rec env n acc typ = function
-    | [] -> 
-	let resj =
-      	  { uj_val = applist (j_val funj, List.rev acc);
-	    uj_type = typ } 
-      	in
-      	(match tycon with 
-	   | Some typ' ->
-               (try inh_conv_coerce_to_fail env isevars typ' resj
-          	with NoCoercion -> resj) (* try ... with _ -> ... is BAD *)
-	   | None -> resj)
-
-    | hj::restjl ->
-      	match kind_of_term (whd_betadeltaiota env !isevars typ) with
+let inh_apply_rel_list apploc env isevars argjl (funloc,funj) tycon =
+  let rec apply_rec env n resj = function
+    | [] -> resj
+    | (loc,hj)::restjl ->
+	let resj = inh_app_fun env isevars resj in
+      	match kind_of_term (whd_betadeltaiota env !isevars resj.uj_type) with
           | IsProd (na,c1,c2) ->
               let hj' =
-		(try 
-		   inh_conv_coerce_to_fail env isevars c1 hj 
-		 with NoCoercion ->
-                   error_cant_apply_bad_type_loc apploc env 
-		     (n,nf_ise1 !isevars c1,
-		      nf_ise1 !isevars hj.uj_type)
-		     (j_nf_ise env !isevars funj)
-		     (jl_nf_ise env !isevars argjl))
-	      in
-	      apply_rec (push_rel_assum (na,c1) env)
-		(n+1) ((j_val hj')::acc) (subst1 hj'.uj_val c2) restjl
+		try 
+		  inh_conv_coerce_to_fail env isevars c1 hj 
+		with NoCoercion ->
+(*
+                  error_cant_apply_bad_type_loc apploc env 
+		    (n,nf_ise1 !isevars c1,
+		     nf_ise1 !isevars hj.uj_type)
+		    (j_nf_ise env !isevars funj)
+		    (jl_nf_ise env !isevars argjl) in
+*)
+                  error_cant_apply_bad_type_loc apploc env 
+		    (1,nf_ise1 !isevars c1,
+		     nf_ise1 !isevars hj.uj_type)
+		    (j_nf_ise env !isevars resj)
+		    (jl_nf_ise env !isevars (List.map snd restjl)) in
+	      let newresj =
+      		{ uj_val = applist (j_val resj, [j_val hj']);
+		  uj_type = subst1 hj'.uj_val c2 } in
+	      apply_rec (push_rel_assum (na,c1) env) (n+1) newresj restjl
           | _ ->
+(*
               error_cant_apply_not_functional_loc apploc env
 	      	(j_nf_ise env !isevars funj) (jl_nf_ise env !isevars argjl)
+*)
+              error_cant_apply_not_functional_loc 
+		(Rawterm.join_loc funloc loc) env
+	      	(j_nf_ise env !isevars resj)
+		(jl_nf_ise env !isevars (List.map snd restjl))
   in 
-  apply_rec env 1 [] funj.uj_type argjl
+  apply_rec env 1 funj argjl
 
