@@ -5,6 +5,7 @@ open Util
 open Term
 open Instantiate
 open Sign
+open Environ
 open Safe_typing
 open Summary
 
@@ -53,6 +54,12 @@ let import cenv = global_env := import cenv !global_env
 (* Some instanciations of functions from [Environ]. *)
 
 let id_of_global id = Environ.id_of_global (env_of_safe_env !global_env) id
+
+(*s Function to get an environment from the constants part of the global
+    environment and a given context. *)
+
+let env_of_context hyps = 
+  change_hyps (fun _ -> hyps) (env_of_safe_env !global_env)
 
 (* Functions of [Inductive], composed with [lookup_mind_specif]. *)
 (* Rem:Cannot open Inductive to avoid clash with Inductive.lookup_mind_specif*)

@@ -46,6 +46,11 @@ val import : compiled_env -> unit
 
 val id_of_global : global_reference -> identifier
 
+(*s Function to get an environment from the constants part of the global
+    environment and a given context. *)
+
+val env_of_context : named_context -> env
+
 (*s Re-exported functions of [Inductive], composed with 
     [lookup_mind_specif]. *)
 

@@ -15,7 +15,7 @@ open Proof_type
 (* This module declares readable constraints, and a few utilities on
    constraints and proof trees *)
 
-val mk_goal : ctxtty -> env -> constr -> goal
+val mk_goal : ctxtty -> named_context -> constr -> goal
 
 val mt_ctxt    : local_constraints -> ctxtty
 val get_ctxt   : goal -> ctxtty
@@ -44,13 +44,14 @@ type global_constraints = enamed_declarations timestamped
 
 type evar_recordty = {
   focus : local_constraints;
-  env   : env;
+  hyps  : named_context;
   decls : enamed_declarations }
 
 and readable_constraints = evar_recordty timestamped
 
 val rc_of_gc  : global_constraints -> goal -> readable_constraints
 val rc_add    : readable_constraints -> int * goal -> readable_constraints
+val get_hyps  : readable_constraints -> named_context
 val get_env   : readable_constraints -> env
 val get_focus : readable_constraints -> local_constraints
 val get_decls : readable_constraints -> enamed_declarations

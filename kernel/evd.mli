@@ -5,13 +5,12 @@
 open Names
 open Term
 open Sign
-open Environ
 (*i*)
 
 (* The type of mappings for existential variables.
    The keys are integers and the associated information is a record
-   containing the type of the evar ([evar_concl]), the environment under which 
-   it was introduced ([evar_env]) and its definition ([evar_body]). 
+   containing the type of the evar ([evar_concl]), the context under which 
+   it was introduced ([evar_hyps]) and its definition ([evar_body]). 
    [evar_info] is used to add any other kind of information. *)
 
 type evar = int
@@ -24,7 +23,7 @@ type evar_body =
 
 type 'a evar_info = {
   evar_concl : constr;
-  evar_env : env;
+  evar_hyps : named_context;
   evar_body : evar_body;
   evar_info : 'a option }
 
@@ -48,7 +47,6 @@ val is_evar : 'a evar_map -> evar -> bool
 
 val is_defined : 'a evar_map -> evar -> bool
 
-val evar_hyps : 'a evar_info -> named_context
 val evar_body : 'a evar_info -> evar_body
 
 val id_of_existential : evar -> identifier

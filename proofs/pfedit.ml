@@ -23,7 +23,7 @@ open Astterm
 (*********************************************************************)
 
 type proof_topstate = {
-  top_hyps : env * env;
+  top_hyps : named_context * named_context;
   top_goal : goal;
   top_strength : strength }
 
@@ -210,10 +210,10 @@ let delete_all_proofs = init_proofs
 (*              Modifying the current prooftree                      *)
 (*********************************************************************)
 
-let start_proof na str env concl =
-  let top_goal = mk_goal (mt_ctxt Intset.empty) env concl in
+let start_proof na str sign concl =
+  let top_goal = mk_goal (mt_ctxt Intset.empty) sign concl in
   let ts = { 
-    top_hyps = (env,empty_env);
+    top_hyps = (sign,empty_named_context);
     top_goal = top_goal;
     top_strength = str }
   in

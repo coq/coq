@@ -4,8 +4,7 @@ kernel/declarations.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi \
     kernel/univ.cmi 
 kernel/environ.cmi: kernel/declarations.cmi kernel/names.cmi kernel/sign.cmi \
     kernel/term.cmi kernel/univ.cmi 
-kernel/evd.cmi: kernel/environ.cmi kernel/names.cmi kernel/sign.cmi \
-    kernel/term.cmi 
+kernel/evd.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi 
 kernel/indtypes.cmi: kernel/declarations.cmi kernel/environ.cmi \
     kernel/names.cmi kernel/sign.cmi kernel/term.cmi kernel/univ.cmi 
 kernel/inductive.cmi: kernel/declarations.cmi kernel/environ.cmi \
@@ -220,10 +219,10 @@ kernel/environ.cmo: kernel/declarations.cmi kernel/names.cmi lib/pp.cmi \
 kernel/environ.cmx: kernel/declarations.cmx kernel/names.cmx lib/pp.cmx \
     kernel/sign.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
     kernel/environ.cmi 
-kernel/evd.cmo: kernel/environ.cmi kernel/names.cmi kernel/sign.cmi \
-    kernel/term.cmi lib/util.cmi kernel/evd.cmi 
-kernel/evd.cmx: kernel/environ.cmx kernel/names.cmx kernel/sign.cmx \
-    kernel/term.cmx lib/util.cmx kernel/evd.cmi 
+kernel/evd.cmo: kernel/names.cmi kernel/sign.cmi kernel/term.cmi lib/util.cmi \
+    kernel/evd.cmi 
+kernel/evd.cmx: kernel/names.cmx kernel/sign.cmx kernel/term.cmx lib/util.cmx \
+    kernel/evd.cmi 
 kernel/indtypes.cmo: kernel/declarations.cmi kernel/environ.cmi \
     kernel/evd.cmi kernel/inductive.cmi kernel/instantiate.cmi \
     kernel/names.cmi kernel/reduction.cmi kernel/sign.cmi kernel/term.cmi \
@@ -564,13 +563,13 @@ pretyping/evarconv.cmx: pretyping/classops.cmx kernel/environ.cmx \
     pretyping/evarutil.cmx kernel/evd.cmx kernel/instantiate.cmx \
     kernel/names.cmx pretyping/recordops.cmx kernel/reduction.cmx \
     kernel/term.cmx pretyping/typing.cmx lib/util.cmx pretyping/evarconv.cmi 
-pretyping/evarutil.cmo: kernel/environ.cmi kernel/evd.cmi library/indrec.cmi \
-    kernel/instantiate.cmi kernel/names.cmi lib/pp.cmi \
+pretyping/evarutil.cmo: kernel/environ.cmi kernel/evd.cmi library/global.cmi \
+    library/indrec.cmi kernel/instantiate.cmi kernel/names.cmi lib/pp.cmi \
     pretyping/pretype_errors.cmi kernel/reduction.cmi kernel/sign.cmi \
     kernel/term.cmi kernel/type_errors.cmi kernel/univ.cmi lib/util.cmi \
     pretyping/evarutil.cmi 
-pretyping/evarutil.cmx: kernel/environ.cmx kernel/evd.cmx library/indrec.cmx \
-    kernel/instantiate.cmx kernel/names.cmx lib/pp.cmx \
+pretyping/evarutil.cmx: kernel/environ.cmx kernel/evd.cmx library/global.cmx \
+    library/indrec.cmx kernel/instantiate.cmx kernel/names.cmx lib/pp.cmx \
     pretyping/pretype_errors.cmx kernel/reduction.cmx kernel/sign.cmx \
     kernel/term.cmx kernel/type_errors.cmx kernel/univ.cmx lib/util.cmx \
     pretyping/evarutil.cmi 

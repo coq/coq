@@ -12,6 +12,8 @@ open Reduction
 
 (*s This modules provides useful functions for unification modulo evars *)
 
+val evar_env : 'a evar_info -> env
+
 val dummy_sort : constr
 type evar_constraint = conv_pb * constr * constr
 type 'a evar_defs = 'a evar_map ref

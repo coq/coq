@@ -61,7 +61,7 @@ let name_of_existential n = id_of_string ("?" ^ string_of_int n)
 
 let existential_type sigma (n,args) =
   let info = Evd.map sigma n in
-  let hyps = evar_hyps info in
+  let hyps = info.evar_hyps in
   (* TODO: check args [this comment was in Typeops] *)
   instantiate_constr hyps info.evar_concl (Array.to_list args)
 
@@ -69,7 +69,7 @@ exception NotInstantiatedEvar
 
 let existential_value sigma (n,args) =
   let info = Evd.map sigma n in
-  let hyps = evar_hyps info in
+  let hyps = info.evar_hyps in
   match evar_body info with
     | Evar_defined c ->
 	instantiate_constr hyps c (Array.to_list args)

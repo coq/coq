@@ -557,7 +557,7 @@ let _ =
 	      let (pfterm,_) = extract_open_pftreestate pts in
 	      let message = 
 		try 
-		  Typeops.control_only_guard pf.goal.evar_env 
+		  Typeops.control_only_guard (Evarutil.evar_env pf.goal)
 		    Evd.empty pfterm; 
 		  [< 'sTR "The condition holds up to here" >]
                 with UserError(_,s) -> 

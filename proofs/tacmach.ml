@@ -35,8 +35,8 @@ let apply_sig_tac = Refiner.apply_sig_tac
 let sig_it     = Refiner.sig_it
 let sig_sig    = Refiner.sig_sig
 let project    = compose ts_it sig_sig
-let pf_env gls = (sig_it gls).evar_env
-let pf_hyps gls = named_context (sig_it gls).evar_env
+let pf_env gls = Global.env_of_context (sig_it gls).evar_hyps
+let pf_hyps gls = (sig_it gls).evar_hyps
 
 let pf_concl gls = (sig_it gls).evar_concl
 (*
@@ -64,23 +64,23 @@ let pf_ctxt gls      = get_ctxt (sig_it gls)
 
 let pf_interp_constr gls c =
   let evc = project gls in 
-  Astterm.interp_constr evc (sig_it gls).evar_env c
+  Astterm.interp_constr evc (pf_env gls) c
 
 let pf_interp_openconstr gls c =
   let evc = project gls in 
-  Astterm.interp_openconstr evc (sig_it gls).evar_env c
+  Astterm.interp_openconstr evc (pf_env gls) c
 
 let pf_interp_type gls c =
   let evc = project gls in 
-  Astterm.interp_type evc (sig_it gls).evar_env c
+  Astterm.interp_type evc (pf_env gls) c
 
-let pf_global gls id = Declare.construct_reference (sig_it gls).evar_env CCI id
+let pf_global gls id = Declare.construct_reference (pf_env gls) CCI id
 
 let pf_parse_const gls = compose (pf_global gls) id_of_string
 
 let pf_execute gls =
   let evc = project gls in 
-  Typing.unsafe_machine (sig_it gls).evar_env evc
+  Typing.unsafe_machine (pf_env gls) evc
 
 let pf_reduction_of_redexp gls re c = 
   reduction_of_redexp re (pf_env gls) (project gls) c 
@@ -276,8 +276,8 @@ let mutual_cofix lf lar pf =
                   terms    = lar; params   = []}) pf
     
 let rename_bound_var_goal gls =
-  let { evar_env = env; evar_concl = cl } as gl = sig_it gls in 
-  let ids = ids_of_named_context (Environ.named_context env) in
+  let { evar_hyps = sign; evar_concl = cl } as gl = sig_it gls in 
+  let ids = ids_of_named_context sign in
   convert_concl (rename_bound_var ids cl) gls
     
 
@@ -509,8 +509,8 @@ open Printer
 
 let pr_com sigma goal com =
   prterm (rename_bound_var 
-            (ids_of_named_context (named_context goal.evar_env)) 
-            (Astterm.interp_constr sigma goal.evar_env com))
+            (ids_of_named_context goal.evar_hyps) 
+            (Astterm.interp_constr sigma (Evarutil.evar_env goal) com))
 
 let pr_one_binding sigma goal = function
   | (Dep id,com)  -> [< print_id id ; 'sTR":=" ; pr_com sigma goal com >]

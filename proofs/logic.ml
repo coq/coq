@@ -18,6 +18,7 @@ open Type_errors
 open Coqast
 open Declare
 open Retyping
+open Evarutil
 
 type refiner_error =
   | BadType of constr * constr * constr
@@ -55,13 +56,14 @@ let conv_leq_goal env sigma arg ty conclty =
     raise (RefinerError (BadType (arg,ty,conclty)))
 
 let rec mk_refgoals sigma goal goalacc conclty trm =
-  let env = goal.evar_env in
+  let env = evar_env goal in
+  let hyps = goal.evar_hyps in
   match kind_of_term trm with
     | IsMeta mv ->
 	if occur_meta conclty then
           error "Cannot refine to conclusions with meta-variables";
 	let ctxt = out_some goal.evar_info in 
-	(mk_goal ctxt env (nf_betaiota env sigma conclty))::goalacc, conclty
+	(mk_goal ctxt hyps (nf_betaiota env sigma conclty))::goalacc, conclty
 
     | IsCast (t,ty) ->
 	let _ = type_of env sigma ty in
@@ -95,12 +97,13 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
  * Metas should be casted. *)
 
 and mk_hdgoals sigma goal goalacc trm =
-  let env = goal.evar_env in
+  let env = evar_env goal in
+  let hyps = goal.evar_hyps in
   match kind_of_term trm with
     | IsCast (c,ty) when isMeta c ->
 	let _ = type_of env sigma ty in
 	let ctxt = out_some goal.evar_info in  
-	(mk_goal ctxt env (nf_betaiota env sigma ty))::goalacc,ty
+	(mk_goal ctxt hyps (nf_betaiota env sigma ty))::goalacc,ty
 
     | IsApp (f,l) ->
 	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
@@ -120,7 +123,7 @@ and mk_hdgoals sigma goal goalacc trm =
 and mk_arggoals sigma goal goalacc funty = function
   | [] -> goalacc,funty
   | harg::tlargs as allargs ->
-      let t = whd_betadeltaiota goal.evar_env sigma funty in
+      let t = whd_betadeltaiota (evar_env goal) sigma funty in
       match kind_of_term t with
 	| IsProd (_,c1,b) ->
 	    let (acc',hargty) = mk_refgoals sigma goal goalacc c1 harg in
@@ -130,7 +133,7 @@ and mk_arggoals sigma goal goalacc funty = function
 	| _ -> raise (RefinerError (CannotApply (t,harg)))
 
 and mk_casegoals sigma goal goalacc p c =
-  let env = goal.evar_env in
+  let env = evar_env goal in
   let (acc',ct) = mk_hdgoals sigma goal goalacc c in 
   let (acc'',pt) = mk_hdgoals sigma goal acc' p in
   let indspec =
@@ -219,24 +222,27 @@ let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
   else 
     List.rev_append left (moverec [] [declfrom] right)
 
-let apply_to_hyp env id f =
+let apply_to_hyp sign id f =
   let found = ref false in
-  let env' =
-    process_named_context_both_sides
-      (fun env (idc,c,ct as d) tail ->
-	 if idc = id then (found:=true; f env d tail) else push_named_decl d env)
-      env in
-  if (not !check) || !found then env'
-  else error "No such assumption"
+  let sign' =
+    fold_named_context_both_sides
+      (fun sign (idc,c,ct as d) tail ->
+	 if idc = id then begin
+	   found := true; f sign d tail
+	 end else 
+	   add_named_decl d sign)
+      sign empty_named_context
+  in
+  if (not !check) || !found then sign' else error "No such assumption"
 
 let global_vars_set_of_var = function
   | (_,None,t) -> global_vars_set (body_of_type t)
   | (_,Some c,t) ->
       Idset.union (global_vars_set (body_of_type t)) (global_vars_set c)
 
-let check_backward_dependencies env d =
+let check_backward_dependencies sign d =
   if not (Idset.for_all
-	    (fun id -> mem_named_context id (named_context env))
+	    (fun id -> mem_named_context id sign)
 	    (global_vars_set_of_var d))
   then
     error "Can't introduce at that location: free variable conflict"
@@ -249,26 +255,27 @@ let check_forward_dependencies id tail =
 		^ (string_of_id id')))
     tail
 
-let convert_hyp env sigma id ty =
-  apply_to_hyp env id
-    (fun env (idc,c,ct) _ ->
+let convert_hyp sign sigma id ty =
+  apply_to_hyp sign id
+    (fun sign (idc,c,ct) _ ->
+       let env = Global.env_of_context sign in
        if !check && not (is_conv env sigma ty (body_of_type ct)) then
 	 error "convert-hyp rule passed non-converting term";
-       push_named_decl (idc,c,ty) env)
+       add_named_decl (idc,c,ty) sign)
 
-let replace_hyp env id d =
-  apply_to_hyp env id
-    (fun env _ tail ->
+let replace_hyp sign id d =
+  apply_to_hyp sign id
+    (fun sign _ tail ->
        if !check then
-	 (check_backward_dependencies env d;
+	 (check_backward_dependencies sign d;
 	  check_forward_dependencies id tail);
-       push_named_decl d env)
+       add_named_decl d sign)
 
-let insert_after_hyp env id d =
-  apply_to_hyp env id
-    (fun env d' _ ->
-       if !check then check_backward_dependencies env d;
-       push_named_decl d (push_named_decl d' env))
+let insert_after_hyp sign id d =
+  apply_to_hyp sign id
+    (fun sign d' _ ->
+       if !check then check_backward_dependencies sign d;
+       add_named_decl d (add_named_decl d' sign))
 
 let remove_hyp env id =
   apply_to_hyp env id
@@ -279,8 +286,8 @@ let remove_hyp env id =
 (* Primitive tactics are handled here *)
 
 let prim_refiner r sigma goal =
-  let env = goal.evar_env in
-  let sign = named_context env in
+  let env = evar_env goal in
+  let sign = goal.evar_hyps in
   let cl = goal.evar_concl in
   let info = out_some goal.evar_info in
   match r with
@@ -290,13 +297,13 @@ let prim_refiner r sigma goal =
         (match kind_of_term (strip_outer_cast cl) with
 	   | IsProd (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let sg = mk_goal info (push_named_assum (id,c1) env)
+	       let sg = mk_goal info (add_named_assum (id,c1) sign)
 			  (subst1 (mkVar id) b) in
 	       [sg]
 	   | IsLetIn (_,c1,t1,b) ->
 	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
 	       let sg =
-		 mk_goal info (push_named_def (id,c1,t1) env)
+		 mk_goal info (add_named_def (id,c1,t1) sign)
 		   (subst1 (mkVar id) b) in
 	       [sg]
 	   | _ ->
@@ -309,13 +316,13 @@ let prim_refiner r sigma goal =
         (match kind_of_term (strip_outer_cast cl) with
 	   | IsProd (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let env' = insert_after_hyp env whereid (id,None,c1) in
-	       let sg = mk_goal info env' (subst1 (mkVar id) b) in 
+	       let sign' = insert_after_hyp sign whereid (id,None,c1) in
+	       let sg = mk_goal info sign' (subst1 (mkVar id) b) in 
 	       [sg]
 	   | IsLetIn (_,c1,t1,b) ->
 	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
-	       let env' = insert_after_hyp env whereid (id,Some c1,t1) in
-	       let sg = mk_goal info env' (subst1 (mkVar id) b) in 
+	       let sign' = insert_after_hyp sign whereid (id,Some c1,t1) in
+	       let sg = mk_goal info sign' (subst1 (mkVar id) b) in 
 	       [sg]
 	   | _ ->
 	       if !check then error "Introduction needs a product"
@@ -325,13 +332,13 @@ let prim_refiner r sigma goal =
 	(match kind_of_term (strip_outer_cast cl) with
            | IsProd (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let env' = replace_hyp env id (id,None,c1) in
-	       let sg = mk_goal info env' (subst1 (mkVar id) b) in
+	       let sign' = replace_hyp sign id (id,None,c1) in
+	       let sg = mk_goal info sign' (subst1 (mkVar id) b) in
 	       [sg]
            | IsLetIn (_,c1,t1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let env' = replace_hyp env id (id,Some c1,t1) in
-	       let sg = mk_goal info env' (subst1 (mkVar id) b) in
+	       let sign' = replace_hyp sign id (id,Some c1,t1) in
+	       let sg = mk_goal info sign' (subst1 (mkVar id) b) in
 	       [sg]
 	   | _ ->
 	       if !check then error "Introduction needs a product"
@@ -354,7 +361,7 @@ let prim_refiner r sigma goal =
      	check_ind n cl;
 	if !check && mem_named_context f sign then
 	  error ("The name "^(string_of_id f)^" is already used");
-        let sg = mk_goal info (push_named_assum (f,cl) env) cl in
+        let sg = mk_goal info (add_named_assum (f,cl) sign) cl in
         [sg]
     
     | { name = Fix; hypspecs = []; terms = lar; newids = lf; params = ln } ->
@@ -382,7 +389,7 @@ let prim_refiner r sigma goal =
 		error "name already used in the environment";
 	      mk_sign (add_named_assum (f,ar) sign) (lar',lf',ln')
 	  | ([],[],[]) -> 
-	      List.map (mk_goal info env) (cl::lar)
+	      List.map (mk_goal info sign) (cl::lar)
 	  | _ -> error "not the right number of arguments"
 	in 
 	mk_sign sign (cl::lar,lf,ln)
@@ -400,17 +407,17 @@ let prim_refiner r sigma goal =
 			  "in coinductive types")
 	in
      	List.iter check_is_coind (cl::lar);
-        let rec mk_env env = function 
+        let rec mk_sign sign = function 
           | (ar::lar'),(f::lf') ->
 	      (try
-                (let _ = lookup_named f env in
+                (let _ = lookup_id f sign in
                 error "name already used in the environment")
               with
-              |	Not_found -> mk_env (push_named_assum (f,ar) env) (lar',lf'))
-	  | ([],[]) -> List.map (mk_goal info env) (cl::lar)
+              |	Not_found -> mk_sign (add_named_assum (f,ar) sign) (lar',lf'))
+	  | ([],[]) -> List.map (mk_goal info sign) (cl::lar)
 	  | _ -> error "not the right number of arguments"
      	in 
-	mk_env env (cl::lar,lf)
+	mk_sign sign (cl::lar,lf)
 
     | { name = Refine; terms = [c] } ->
 	let c = new_meta_variables c in
@@ -421,21 +428,22 @@ let prim_refiner r sigma goal =
     | { name = Convert_concl; terms = [cl'] } ->
     	let cl'ty = type_of env sigma cl' in
 	if is_conv_leq env sigma cl' cl then
-          let sg = mk_goal info env cl' in
+          let sg = mk_goal info sign cl' in
           [sg]
 	else 
 	  error "convert-concl rule passed non-converting term"
 
     | { name = Convert_hyp; hypspecs = [id]; terms = [ty'] } ->
-	[mk_goal info (convert_hyp env sigma id ty') cl]
+	[mk_goal info (convert_hyp sign sigma id ty') cl]
 
     | { name = Thin; hypspecs = ids } ->
-	let clear_aux env id =
+	let clear_aux sign id =
           if !check && occur_var id cl then
             error ((string_of_id id) ^ " is used in the conclusion.");
-          remove_hyp env id in
-	let env' = List.fold_left clear_aux env ids in
-     	let sg = mk_goal info env' cl in
+          remove_hyp sign id 
+	in
+	let sign' = List.fold_left clear_aux sign ids in
+     	let sg = mk_goal info sign' cl in
      	[sg]
 
     | { name = Move withdep; hypspecs = ids } ->
@@ -444,8 +452,7 @@ let prim_refiner r sigma goal =
   	let (left,right,declfrom,toleft) = split_sign hfrom hto sign in
   	let hyps' = 
 	  move_after withdep toleft (left,declfrom,right) hto in
-	let env' = change_hyps (fun _ -> hyps') env in
-  	[mk_goal info env' cl]
+  	[mk_goal info hyps' cl]
 	
     | _ -> anomaly "prim_refiner: Unrecognized primitive rule"
 

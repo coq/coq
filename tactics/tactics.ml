@@ -1653,9 +1653,8 @@ let abstract_subproof name tac gls =
              (ids_of_named_context global_sign) in
   let concl = List.fold_left (fun t d -> mkNamedProd_or_LetIn d t)
                 (pf_concl gls) sign in
-  let env' = change_hyps (fun _ -> current_sign) env in
   let lemme =
-    start_proof na Declare.NeverDischarge env' concl;
+    start_proof na Declare.NeverDischarge current_sign concl;
     let _,(const,strength) =
       try
 	by (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)); 

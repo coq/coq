@@ -8,6 +8,7 @@ open Sign
 open Evd
 open Stamps
 open Environ
+open Evarutil
 open Proof_type
 open Typing
 
@@ -19,8 +20,8 @@ let lc_toList lc = Intset.elements lc
 
 (* Functions on goals *)
 
-let mk_goal ctxt env cl = 
-  { evar_env = env; evar_concl = cl; 
+let mk_goal ctxt hyps cl = 
+  { evar_hyps = hyps; evar_concl = cl; 
     evar_body = Evar_empty; evar_info = Some ctxt }
 
 (* Functions on the information associated with existential variables  *)
@@ -83,7 +84,7 @@ type global_constraints  = enamed_declarations timestamped
 
 type evar_recordty = {
   focus : local_constraints;
-  env   : env;
+  hyps  : named_context;
   decls : enamed_declarations }
 
 and readable_constraints = evar_recordty timestamped
@@ -91,21 +92,22 @@ and readable_constraints = evar_recordty timestamped
 (* Functions on readable constraints *)
 			     
 let mt_evcty lc gc = 
-  ts_mk { focus = lc; env = empty_env; decls = gc }
+  ts_mk { focus = lc; hyps = empty_named_context; decls = gc }
 
 let evc_of_evds evds gl = 
-  ts_mk { focus = (get_lc gl); env = gl.evar_env; decls = evds }
+  ts_mk { focus = (get_lc gl); hyps = gl.evar_hyps; decls = evds }
 
 let rc_of_gc gc gl = evc_of_evds (ts_it gc) gl
 		       
 let rc_add evc (k,v) = 
   ts_mod
     (fun evc -> { focus = (Intset.add k evc.focus);
-                  env   = evc.env;
+                  hyps  = evc.hyps;
                   decls = Evd.add evc.decls k v })
     evc
 
-let get_env   evc = (ts_it evc).env
+let get_hyps  evc = (ts_it evc).hyps
+let get_env   evc = Global.env_of_context (ts_it evc).hyps
 let get_focus evc = (ts_it evc).focus
 let get_decls evc = (ts_it evc).decls
 let get_gc    evc = (ts_mk (ts_it evc).decls)
@@ -113,7 +115,7 @@ let get_gc    evc = (ts_mk (ts_it evc).decls)
 let remap evc (k,v) = 
   ts_mod
     (fun evc -> { focus = evc.focus;
-                  env   = evc.env;
+                  hyps  = evc.hyps;
                   decls = Evd.add evc.decls k v })
     evc
 
@@ -174,15 +176,17 @@ let pf_lookup_index_as_renamed ccl n =
 let pr_idl idl = prlist_with_sep pr_spc print_id idl
 
 let pr_goal g =
-  let penv = pr_context_of g.evar_env in
-  let pc = prterm_env_at_top g.evar_env g.evar_concl in
+  let env = evar_env g in
+  let penv = pr_context_of env in
+  let pc = prterm_env_at_top env g.evar_concl in
   [< 'sTR"  "; hV 0 [< penv; 'fNL;
 		       'sTR (emacs_str (String.make 1 (Char.chr 253))) ;
                        'sTR "============================"; 'fNL ;
                        'sTR" " ; pc>]; 'fNL>]
 
 let pr_concl n g =
-  let pc = prterm_env_at_top g.evar_env g.evar_concl in
+  let env = evar_env g in
+  let pc = prterm_env_at_top env g.evar_concl in
   [< 'sTR (emacs_str (String.make 1 (Char.chr 253))) ;
      'sTR "subgoal ";'iNT n;'sTR " is:";'cUT;'sTR" " ; pc >]
 
@@ -226,7 +230,7 @@ let pr_ctxt ctxt =
   let pc = pr_pgm ctxt in [< 'sTR"[" ; pc; 'sTR"]" >]
 
 let pr_seq evd = 
-  let env = evd.evar_env
+  let env = evar_env evd
   and cl = evd.evar_concl
   and info = match evd.evar_info with 
     | Some i -> i 
@@ -244,13 +248,13 @@ let prgl gl =
 
 let pr_evgl gl =
   let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
-  let phyps = pr_idl (ids_of_named_context (named_context gl.evar_env)) in
+  let phyps = pr_idl (ids_of_named_context gl.evar_hyps) in
   let pc = prterm gl.evar_concl in
   hOV 0 [< 'sTR"[[" ; plc; 'sTR"] " ; phyps; 'sPC; 'sTR"|- " ; pc; 'sTR"]" >]
 
 let pr_evgl_sign gl = 
   let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
-  let ps = pr_named_context_of gl.evar_env in
+  let ps = pr_named_context_of (evar_env gl) in
   let pc = prterm gl.evar_concl in
   hOV 0 [< 'sTR"[[" ; plc ; 'sTR"] " ; ps; 'sPC; 'sTR"|- " ; pc; 'sTR"]" >]
 

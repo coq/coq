@@ -7,6 +7,7 @@ open Stamps
 open Term
 open Sign
 open Evd
+open Sign
 open Environ
 open Reduction
 open Instantiate
@@ -17,7 +18,7 @@ open Logic
 
 type transformation_tactic = proof_tree -> (goal list * validation)
 
-let hypotheses gl = gl.evar_env
+let hypotheses gl = gl.evar_hyps
 let conclusion gl = gl.evar_concl
 
 let sig_it x = x.it
@@ -43,7 +44,7 @@ let norm_goal sigma gl =
   let red_fun = nf_ise1 sigma in
   let ncl = red_fun gl.evar_concl in
   { evar_concl = ncl;
-    evar_env = map_context red_fun gl.evar_env;
+    evar_hyps = map_named_context red_fun gl.evar_hyps;
     evar_body = gl.evar_body;
     evar_info = gl.evar_info }
 
@@ -181,7 +182,7 @@ let refiner = function
   | (Context ctxt) as r ->
       (fun goal_sigma ->
          let gl = goal_sigma.it in
-         let sg = mk_goal ctxt gl.evar_env gl.evar_concl in
+         let sg = mk_goal ctxt gl.evar_hyps gl.evar_concl in
          ({it=[sg];sigma=goal_sigma.sigma},
           (fun pfl -> 
 	     let pf = List.hd pfl in
@@ -197,7 +198,7 @@ let refiner = function
       (fun goal_sigma ->
          let gl = goal_sigma.it  in
          let ctxt = out_some gl.evar_info in 
-         let sg = mk_goal ctxt gl.evar_env gl.evar_concl in
+         let sg = mk_goal ctxt gl.evar_hyps gl.evar_concl in
 	 ({it=[sg];sigma=goal_sigma.sigma},
           (fun pfl -> 
 	     let pf = List.hd pfl in
@@ -244,13 +245,13 @@ let extract_open_proof sigma pf =
             (fun id ->
                try let n = list_index id vl in (n,id)
 	       with Not_found -> failwith "caught")
-            (ids_of_named_context (evar_hyps goal)) in
+            (ids_of_named_context goal.evar_hyps) in
 	let sorted_rels =
 	  Sort.list (fun (n1,_) (n2,_) -> n1 > n2 ) visible_rels in
 	let abs_concl =
           List.fold_right
             (fun (_,id) concl ->
-	       let (c,ty) = lookup_id id (evar_hyps goal) in
+	       let (c,ty) = lookup_id id goal.evar_hyps in
 	       mkNamedProd_or_LetIn (id,c,ty) concl)
             sorted_rels goal.evar_concl
 	in
@@ -796,38 +797,36 @@ let pr_rule = function
 exception Different
 
 (* We remove from the var context of env what is already in osign *)
-let thin_sign osign env =
-  process_named_context
-    (fun env (id,c,ty as d) ->
+let thin_sign osign sign =
+  Sign.fold_named_context
+    (fun (id,c,ty as d) sign ->
        try 
-	 if lookup_id id osign = (c,ty) then env
+	 if lookup_id id osign = (c,ty) then sign
 	 else raise Different
-       with Not_found | Different -> push_named_decl d env)
-    env
+       with Not_found | Different -> add_named_decl d sign)
+    sign empty_named_context
 
 let rec print_proof sigma osign pf =
-  let {evar_env=env; evar_concl=cl; 
+  let {evar_hyps=hyps; evar_concl=cl; 
        evar_info=info; evar_body=body} = pf.goal in
-  let env' = thin_sign osign env in
+  let hyps' = thin_sign osign hyps in
   match pf.ref with
     | None -> 
-	hOV 0 [< pr_seq {evar_env=env'; evar_concl=cl;
+	hOV 0 [< pr_seq {evar_hyps=hyps'; evar_concl=cl;
 			 evar_info=info; evar_body=body} >]
     | Some(r,spfl) ->
-  	let sign = named_context env in
-    	hOV 0 [< hOV 0 (pr_seq {evar_env=env'; evar_concl=cl;
+    	hOV 0 [< hOV 0 (pr_seq {evar_hyps=hyps'; evar_concl=cl;
 				evar_info=info; evar_body=body});
 		 'sPC ; 'sTR" BY ";
 		 hOV 0 [< pr_rule r >]; 'fNL ;
 		 'sTR"  ";
-		 hOV 0 (prlist_with_sep pr_fnl (print_proof sigma sign) spfl)
+		 hOV 0 (prlist_with_sep pr_fnl (print_proof sigma hyps) spfl)
               >]
 	  
 let pr_change gl = [< 'sTR"Change " ; prterm gl.evar_concl ; 'sTR"." ; 'fNL>]
 		     
 let rec print_script nochange sigma osign pf =
-  let {evar_env=env; evar_concl=cl} = pf.goal in
-  let sign = named_context env in
+  let {evar_hyps=sign; evar_concl=cl} = pf.goal in
   match pf.ref with
     | None ->
         if nochange then 
@@ -841,8 +840,7 @@ let rec print_script nochange sigma osign pf =
              (print_script nochange sigma sign) spfl >]
 
 let rec print_treescript sigma osign pf =
-  let {evar_env=env; evar_concl=cl} = pf.goal in
-  let sign = named_context env in
+  let {evar_hyps=sign; evar_concl=cl} = pf.goal in
   match pf.ref with
     | None -> [< >]
     | Some(r,spfl) ->
@@ -857,8 +855,7 @@ let rec print_treescript sigma osign pf =
 	>]
 
 let rec print_info_script sigma osign pf =
-  let {evar_env=env; evar_concl=cl} = pf.goal in
-  let sign = named_context env in
+  let {evar_hyps=sign; evar_concl=cl} = pf.goal in
   match pf.ref with
     | None -> [< >]
     | Some(r,spfl) ->
@@ -887,7 +884,7 @@ let tclINFO (tac : tactic) gls =
   let (sgl,v) as res = tac gls in 
   begin try 
     let pf = v (List.map leaf (sig_it sgl)) in
-    let sign = named_context (sig_it gls).evar_env in
+    let sign = (sig_it gls).evar_hyps in
     mSGNL(hOV 0 [< 'sTR" == "; 
                    print_subscript 
                      ((compose ts_it sig_sig) gls) sign pf >])

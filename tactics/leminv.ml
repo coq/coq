@@ -188,15 +188,21 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let ind =
     try find_rectype env sigma i
     with Induc ->
-      errorlabstrm "inversion_scheme" (no_inductive_inconstr env i) in
+      errorlabstrm "inversion_scheme" (no_inductive_inconstr env i) 
+  in
   let (invEnv,invGoal) =
-    compute_first_inversion_scheme env sigma ind sort dep_option in
-  assert (list_subset (global_vars invGoal) (ids_of_named_context (named_context invEnv)));
-(*
+    compute_first_inversion_scheme env sigma ind sort dep_option 
+  in
+  assert 
+    (list_subset 
+       (global_vars invGoal) 
+       (ids_of_named_context (named_context invEnv)));
+  (*
     errorlabstrm "lemma_inversion"
-      [< 'sTR"Computed inversion goal was not closed in initial signature" >];
-*)
-  let pfs = mk_pftreestate (mk_goal (mt_ctxt Intset.empty) invEnv invGoal) in
+    [< 'sTR"Computed inversion goal was not closed in initial signature" >];
+  *)
+  let invSign = named_context invEnv in
+  let pfs = mk_pftreestate (mk_goal (mt_ctxt Intset.empty) invSign invGoal) in
   let pfs =
     solve_pftreestate (tclTHEN intro 
 			 (onLastHyp (compose inv_op out_some))) pfs in
@@ -207,16 +213,19 @@ let inversion_scheme env sigma t sort dep_option inv_op =
       (fun env (id,_,_ as d) sign ->
          if mem_named_context id global_named_context then sign
 	 else add_named_decl d sign)
-      invEnv empty_named_context in
+      invEnv empty_named_context 
+  in
   let (_,ownSign,mvb) =
     List.fold_left
       (fun (avoid,sign,mvb) (mv,mvty) ->
          let h = next_ident_away (id_of_string "H") avoid in
 	 (h::avoid, add_named_assum (h,mvty) sign, (mv,mkVar h)::mvb))
       (ids_of_context invEnv, ownSign, [])
-      meta_types in
+      meta_types 
+  in
   let invProof = 
-    it_mkNamedLambda_or_LetIn (local_strong (whd_meta mvb) pfterm) ownSign in
+    it_mkNamedLambda_or_LetIn (local_strong (whd_meta mvb) pfterm) ownSign 
+  in
   invProof
 
 let add_inversion_lemma name env sigma t sort dep inv_op =

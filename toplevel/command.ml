@@ -366,13 +366,14 @@ let build_scheme lnamedepindsort =
 
 let start_proof_com sopt stre com =
   let env = Global.env () in
+  let sign = Global.named_context () in
   let id = match sopt with
     | Some id -> id
     | None ->
 	next_ident_away (id_of_string "Unnamed_thm")
 	  (Pfedit.get_all_proof_names ())
   in
-  Pfedit.start_proof id stre env (interp_type Evd.empty env com)
+  Pfedit.start_proof id stre sign (interp_type Evd.empty env com)
 
 let save_named opacity =
   let id,(const,strength) = Pfedit.cook_proof () in

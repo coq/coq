@@ -52,14 +52,14 @@ let walking wt = walking_THEN (fun wc -> (wt wc,())) (fun () -> tclIDTAC)
 let extract_decl sp evc =
   let evdmap = (ts_it evc).decls in
   let evd = Evd.map evdmap sp in 
-  (ts_mk { env = evd.evar_env;
+  (ts_mk { hyps = evd.evar_hyps;
            focus = get_lc evd;
            decls = Evd.rmv evdmap sp })
 
 let restore_decl sp evd evc =
   let newctxt = { lc = (ts_it evc).focus;
                   pgm = (get_pgm evd) } in
-  let newgoal = { evar_env = evd.evar_env; 
+  let newgoal = { evar_hyps = evd.evar_hyps; 
 		  evar_concl = evd.evar_concl;
 		  evar_body = evd.evar_body;
                   evar_info = Some newctxt } in
@@ -78,7 +78,7 @@ let restore_decl sp evd evc =
 let w_Focusing_THEN sp (wt : 'a result_w_tactic) (wt' : 'a -> w_tactic)
                        (wc : walking_constraints) =
   let focus = (ts_it (ids_it wc)).focus
-  and env  = (ts_it (ids_it wc)).env
+  and hyps  = (ts_it (ids_it wc)).hyps
   and evd   = Evd.map (ts_it (ids_it wc)).decls sp in
   let (wc' : walking_constraints) = ids_mod (extract_decl sp) wc in
   let (wc'',rslt) = wt wc' in 
@@ -90,7 +90,7 @@ let w_Focusing_THEN sp (wt : 'a result_w_tactic) (wt' : 'a -> w_tactic)
     wt' rslt
       (ids_mod
          (ts_mod (fun evc ->
-                    { env = env;
+                    { hyps = hyps;
                       focus = focus;
                       decls = evc.decls }))
          wc''')
@@ -99,11 +99,12 @@ let w_add_sign (id,t) (wc : walking_constraints) =
   ids_mk (ts_mod
             (fun evr ->
                { focus = evr.focus;
-		 env = push_named_assum (id,t) evr.env;
+		 hyps = Sign.add_named_assum (id,t) evr.hyps;
 		 decls = evr.decls })
             (ids_it wc))
 
-let ctxt_type_of evc c = type_of (ts_it evc).env (ts_it evc).decls c
+let ctxt_type_of evc c = 
+  type_of (Global.env_of_context (ts_it evc).hyps) (ts_it evc).decls c
 
 let w_IDTAC wc = wc
 
@@ -123,8 +124,8 @@ let w_Declare sp (ty,s) (wc : walking_constraints) =
   let c = mkCast (ty,s) in
   let _ = w_type_of wc c in
   let access  = get_focus (ids_it wc)
-  and env = get_env (ids_it wc)in
-  let newdecl = mk_goal (mt_ctxt access) env c in 
+  and sign = get_hyps (ids_it wc) in
+  let newdecl = mk_goal (mt_ctxt access) sign c in 
   ((ids_mod (fun evc -> (rc_add evc (sp,newdecl))) wc): walking_constraints)
 
 let w_Declare_At sp sp' c = w_Focusing sp (w_Declare sp' c)
@@ -153,7 +154,7 @@ let w_Define sp c wc =
   match spdecl.evar_body with
     | Evar_empty ->
     	let access = evars_of (ids_it wc) c in
-    	let spdecl' = { evar_env = spdecl.evar_env;
+    	let spdecl' = { evar_hyps = spdecl.evar_hyps;
                        	evar_concl = spdecl.evar_concl;
                        	evar_info = Some (mt_ctxt access);
                        	evar_body = Evar_defined c }
@@ -189,7 +190,7 @@ let instantiate_pf_com n com pfts =
     with Failure _ -> 
       error "not so many uninstantiated existential variables"
   in 
-  let c = Astterm.interp_constr sigma evd.evar_env com in     
+  let c = Astterm.interp_constr sigma (Evarutil.evar_env evd) com in     
   let wc' = w_Define sp c wc in
   let newgc = ts_mk (w_Underlying wc') in
   change_constraints_pftreestate newgc pfts

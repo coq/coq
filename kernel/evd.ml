@@ -5,7 +5,6 @@ open Util
 open Names
 open Term
 open Sign
-open Environ
 
 (* The type of mappings for existential variables *)
 
@@ -21,7 +20,7 @@ type evar_body =
 
 type 'a evar_info = {
   evar_concl : constr;
-  evar_env : env;
+  evar_hyps : named_context;
   evar_body : evar_body;
   evar_info : 'a option }
 
@@ -42,7 +41,7 @@ let define evd ev body =
   let oldinfo = map evd ev in
   let newinfo =
     { evar_concl = oldinfo.evar_concl;
-      evar_env = oldinfo.evar_env;
+      evar_hyps = oldinfo.evar_hyps;
       evar_body = Evar_defined body;
       evar_info = oldinfo.evar_info } 
   in
@@ -65,7 +64,6 @@ let is_defined sigma ev =
   let info = map sigma ev in 
   not (info.evar_body = Evar_empty)
 
-let evar_hyps ev = named_context ev.evar_env
 let evar_body ev = ev.evar_body
 
 let id_of_existential ev =

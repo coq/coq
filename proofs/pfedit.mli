@@ -60,7 +60,7 @@ val reset_undo : unit -> unit
 
 (*s [start_proof s str env t] starts a proof of name [s] and conclusion [t] *)
 
-val start_proof : identifier -> strength -> env -> constr -> unit
+val start_proof : identifier -> strength -> named_context -> constr -> unit
 
 (* [restart_proof ()] restarts the current focused proof from the beginning
    or fails if no proof is focused *)

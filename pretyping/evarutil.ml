@@ -38,6 +38,8 @@ let filter_sign p sign x =
     (x,[],nil_sign)
 *)
 
+let evar_env evd = Global.env_of_context evd.evar_hyps
+
 (*------------------------------------*
  * functional operations on evar sets *
  *------------------------------------*)
@@ -48,7 +50,7 @@ let new_isevar_sign env sigma typ instance =
   if not (list_distinct (ids_of_named_context sign)) then 
     error "new_isevar_sign: two vars have the same name";
   let newev = Evd.new_evar() in
-  let info = { evar_concl = typ; evar_env = env; 
+  let info = { evar_concl = typ; evar_hyps = sign; 
 	       evar_body = Evar_empty; evar_info = None } in
   (Evd.add sigma newev info, mkEvar (newev,Array.of_list instance))
 
@@ -71,9 +73,9 @@ let new_type_var env sigma =
 let split_evar_to_arrow sigma c =
   let (ev,args) = destEvar c in
   let evd = Evd.map sigma ev in
-  let evenv = evd.evar_env in
+  let evenv = evar_env evd in
   let (sigma1,dom) = new_type_var evenv sigma in
-  let hyps = named_context evenv in
+  let hyps = evd.evar_hyps in
   let nvar = next_ident_away (id_of_string "x") (ids_of_named_context hyps) in
   let newenv = push_named_assum (nvar, dom) evenv in
   let (sigma2,rng) = new_type_var newenv sigma1 in
@@ -98,8 +100,8 @@ let do_restrict_hyps sigma c =
   let (ev,args) = destEvar c in
   let args = Array.to_list args in
   let evd = Evd.map sigma ev in
-  let env = evd.evar_env in
-  let hyps = named_context env in
+  let env = evar_env evd in
+  let hyps = evd.evar_hyps in
   let (_,(rsign,ncargs)) =
     List.fold_left 
       (fun (sign,(rs,na)) a ->
@@ -248,7 +250,7 @@ let evar_define isevars (ev,argsv) rhs =
   let args = List.map keep_rels_and_vars (Array.to_list argsv) in 
   let evd = ise_map isevars ev in
   (* the substitution to invert *)
-  let worklist = make_subst evd.evar_env args in
+  let worklist = make_subst (evar_env evd) args in
   let body = real_clean isevars ev worklist rhs in
   ise_define isevars ev body;
   [ev]
@@ -349,8 +351,8 @@ let get_changed_pb lev =
 let solve_refl conv_algo env isevars ev argsv1 argsv2 =
   if argsv1 = argsv2 then [] else
   let evd = Evd.map !isevars ev in
-  let env = evd.evar_env in
-  let hyps = named_context env in
+  let env = evar_env evd in
+  let hyps = evd.evar_hyps in
   let (_,rsign) = 
     array_fold_left2
       (fun (sgn,rsgn) a1 a2 ->
@@ -361,10 +363,9 @@ let solve_refl conv_algo env isevars ev argsv1 argsv2 =
       (hyps,[]) argsv1 argsv2 
   in
   let nsign = List.rev rsign in
-  let nenv = change_hyps (fun _ -> nsign) env in
   let nargs = (Array.of_list (List.map mkVar (ids_of_named_context nsign))) in
   let newev = Evd.new_evar () in
-  let info = { evar_concl = evd.evar_concl; evar_env = nenv;
+  let info = { evar_concl = evd.evar_concl; evar_hyps = nsign;
 	       evar_body = Evar_empty; evar_info = None } in
   isevars :=
     Evd.define (Evd.add !isevars newev info) ev (mkEvar (newev,nargs));
