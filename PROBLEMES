@@ -91,8 +91,8 @@ Nijmegen OK
 Paris/ZF OK
 
 Sophia-Antipolis/Cours-de-Coq
-File "./ps.v", line 206, characters 3-31
-Error: A is already used
+File "./Partial_order_facts.v", line 123, characters 3-96
+Error: Not an inductive product
 Sophia-Antipolis/HARDWARE ??
 Sophia-Antipolis/MATHS ??
 Sophia-Antipolis/condom ... vide 
