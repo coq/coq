@@ -1,5 +1,6 @@
 Différences V7.0beta / V7.0
-
+- Portage de Correctness
+- Réécriture de Extraction
 - Ajout de déclarations locales aux Record (record à la Randy).
 - Correction de bugs
    - Identity Coercion

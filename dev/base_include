@@ -36,6 +36,7 @@ Topdirs.dir_directory Coq_config.camlp4lib;;
 
 let parse_com   = Pcoq.parse_string Pcoq.Constr.constr;;
 let parse_tac = Pcoq.parse_string Pcoq.Tactic.tactic;;
+let parse_vernac = Pcoq.parse_string Pcoq.Vernac_.vernac;;
 
 (* For compatibility reasons *)
 let parse_ast = parse_com;;

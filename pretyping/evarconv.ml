@@ -51,7 +51,7 @@ let evar_apprec env isevars stack c =
 (* Precondition: one of the terms of the pb is an uninstanciated evar,
  * possibly applied to arguments. *)
 
-let rec evar_conv_x env isevars pbty term1 term2 =
+let rec evar_conv_x env isevars pbty term1 term2 = 
   let term1 = whd_ise1 (evars_of isevars) term1 in
   let term2 = whd_ise1 (evars_of isevars) term2 in
 (*
@@ -219,16 +219,19 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	      & (List.length l1 = List.length l2)
 	      & (List.for_all2 (evar_conv_x env isevars CONV) l1 l2)
 	    and f2 () =
-	      evar_eqappr_x env isevars pbty (subst1 b1 c'1,l1)
-		(subst1 b2 c'2,l2)
+              let appr1 = evar_apprec env isevars l1 (subst1 b1 c'1)
+              and appr2 = evar_apprec env isevars l2 (subst1 b2 c'2)
+	      in evar_eqappr_x env isevars pbty appr1 appr2
 	    in 
 	    ise_try isevars [f1; f2]
 
 	| IsLetIn (_,b1,_,c'1), _ ->(* On fait commuter les args avec le Let *)
-	    evar_eqappr_x env isevars pbty (subst1 b1 c'1,l1) appr2
+	     let appr1 = evar_apprec env isevars l1 (subst1 b1 c'1)
+             in evar_eqappr_x env isevars pbty appr1 appr2
 
 	| _, IsLetIn (_,b2,_,c'2) ->
-	    evar_eqappr_x env isevars pbty appr1 (subst1 b2 c'2,l2)
+	    let appr2 = evar_apprec env isevars l2 (subst1 b2 c'2)
+            in evar_eqappr_x env isevars pbty appr1 appr2
 
 	| IsProd (n,c1,c'1), IsProd (_,c2,c'2) when l1=[] & l2=[] -> 
             evar_conv_x env isevars CONV c1 c2

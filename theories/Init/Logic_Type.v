@@ -211,7 +211,10 @@ Definition prodT_curry : (A,B,C:Type)(A->B->C)->(prodT A B)->C :=
 
 Hints Immediate sym_idT sym_not_idT : core v62.
 
-
 Syntactic Definition AllT := allT | 1.
 Syntactic Definition ExT := exT | 1.
 Syntactic Definition ExT2 := exT2 | 1.
+
+Implicits fstT [1 2].
+Implicits sndT [1 2].
+Implicits pairT [1 2].
