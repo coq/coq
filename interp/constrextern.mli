@@ -61,3 +61,7 @@ val without_symbols : ('a -> 'b) -> 'a -> 'b
 
 (* This prints metas as anonymous holes *)
 val with_meta_as_hole : ('a -> 'b) -> 'a -> 'b
+
+(* For v8 translation *)
+val set_temporary_implicits_out :
+  (identifier * Impargs.implicits_list) list -> unit

@@ -32,6 +32,10 @@ let for_grammar f x =
   interning_grammar := false;
   a
 
+(* For the translator *)
+let temporary_implicits_in = ref []
+let set_temporary_implicits_in l = temporary_implicits_in := l
+
 (**********************************************************************)
 (* Internalisation errors                                             *)
 
@@ -183,7 +187,9 @@ let intern_reference env lvar = function
 	(* Extra allowance for grammars *)
 	if !interning_grammar then begin
 	  set_var_scope loc id env lvar;
-	  RVar (loc,id), [], []
+	  RVar (loc,id), 
+	  (try List.assoc id !temporary_implicits_in with Not_found -> []),
+	  []
 	end
 	else raise e
 

@@ -93,3 +93,7 @@ val interp_aconstr : identifier list -> constr_expr -> interpretation
 
 (* Globalization leak for Grammar *)
 val for_grammar : ('a -> 'b) -> 'a -> 'b
+
+(* For v8 translation *)
+val set_temporary_implicits_in :
+  (identifier * Impargs.implicits_list) list -> unit

@@ -515,15 +515,26 @@ let rec pr_vernac = function
 	    (Termops.push_rel_assum (Name id,p) env,
 	    (Name id,None,p)::params))
 	  (env0,[]) lparams in
-      List.iter
+      let impls = List.map
 	(fun (recname, _,arityc,_) ->
 	  let arity = Constrintern.interp_type sigma env_params arityc in
 	  let fullarity =
-            Termops.prod_it arity (List.map (fun (id,_,ty) -> (id,ty)) params) in
-	  if Impargs.is_implicit_args_out()
-	  then
-	    Impargs.set_var_implicits recname
-	      (Impargs.compute_implicits false env_params fullarity)) l;
+            Termops.prod_it arity (List.map (fun (id,_,ty) -> (id,ty)) params)
+	  in
+	  let impl_in =
+	    if Impargs.is_implicit_args()
+	    then Impargs.compute_implicits false env_params fullarity
+	    else [] in
+	  let impl_out =
+	    if Impargs.is_implicit_args_out()
+	    then Impargs.compute_implicits true env_params fullarity
+	    else [] in
+	  (recname,impl_in,impl_out)) l in
+      let impls_in = List.map (fun (id,a,_) -> (id,a)) impls in
+      let impls_out = List.map (fun (id,_,a) -> (id,a)) impls in
+      Constrintern.set_temporary_implicits_in impls_in;
+      Constrextern.set_temporary_implicits_out impls_out;
+
       (* Fin calcul implicites *)
 
       let pr_constructor (coe,(id,c)) =
@@ -547,13 +558,22 @@ let rec pr_vernac = function
       (* Copie simplifiée de command.ml pour recalculer les implicites *)
       let sigma = Evd.empty
       and env0 = Global.env() in
-      List.iter
+      let impls = List.map
         (fun (recname,_,arityc,_) -> 
           let arity = Constrintern.interp_type sigma env0 arityc in
-          let _ = Declare.declare_variable recname
-	    (Lib.cwd(),Declare.SectionLocalAssum arity,
-	     Decl_kinds.IsAssumption Decl_kinds.Definitional) in ())
-        recs;
+	  let impl_in =
+	    if Impargs.is_implicit_args()
+	    then Impargs.compute_implicits false env0 arity
+	    else [] in
+	  let impl_out =
+	    if Impargs.is_implicit_args_out()
+	    then Impargs.compute_implicits true env0 arity
+	    else [] in
+	  (recname,impl_in,impl_out)) recs in
+      let impls_in = List.map (fun (id,a,_) -> (id,a)) impls in
+      let impls_out = List.map (fun (id,_,a) -> (id,a)) impls in
+      Constrintern.set_temporary_implicits_in impls_in;
+      Constrextern.set_temporary_implicits_out impls_out;
 
       let pr_onerec = function
         | (id,n,type_0,def0) ->

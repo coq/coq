@@ -67,6 +67,13 @@ let with_universes f = Options.with_option print_universes f
 let without_symbols f = Options.with_option print_no_symbol f
 let with_meta_as_hole f = Options.with_option print_meta_as_hole f
 
+(* For the translator *)
+let temporary_implicits_out = ref []
+let set_temporary_implicits_out l = temporary_implicits_out := l
+let get_temporary_implicits_out id =
+  try List.assoc id !temporary_implicits_out
+  with Not_found -> []
+
 (**********************************************************************)
 (* Various externalisation functions *)
 
@@ -230,7 +237,7 @@ let rec extern inctx scopes vars r =
 	       args
 	 | RVar (loc,id) -> (* useful for translation of inductive *)
 	     let args = List.map (extern true scopes vars) args in
-	     extern_app loc (implicits_of_global_out (VarRef id))
+	     extern_app loc (get_temporary_implicits_out id)
 	       (Ident (loc,id))
 	       args
 	 | _       -> 
