@@ -13,42 +13,10 @@ open Pcoq
 open Names
 open Libnames
 open Topconstr
-
-ifdef Quotify then
-open Qast
-
 open Prim
 
 let _ = reset_all_grammars()
 
-(* camlp4o pa_extend.cmo pa_extend_m.cmo pr_o.cmo q_prim.ml *)
-
-ifdef Quotify then
-module Prelude = struct
-let local_id_of_string s = Apply ("Names","id_of_string", [s])
-let local_make_dirpath l = Qast.Apply ("Names","make_dirpath",[l])
-let local_make_posint s = s
-let local_make_negint s = Apply ("Pervasives","~-", [s])
-let local_make_qualid l id' = 
-  Qast.Apply ("Nametab","make_qualid", [local_make_dirpath l;id'])
-let local_make_short_qualid id =
-  Qast.Apply ("Nametab","make_short_qualid",[id])
-let local_make_path l id' =
-  Qast.Apply ("Libnames","encode_kn", [local_make_dirpath l;id'])
-let local_make_binding loc a b =
-  match a with
-    | Qast.Node ("Nvar", [_;id]) ->
-	Qast.Node ("Slam", [Qast.Loc; Qast.Option (Some id); b])
-    | Qast.Node ("Nmeta", [_;s]) ->
-	Qast.Node ("Smetalam", [Qast.Loc;s;b])
-    | _ -> 
-	Qast.Apply ("Pervasives", "failwith", [Qast.Str "Slam expects a var or a metavar"])
-let local_append l id = Qast.Apply ("List","append", [l; Qast.List [id]])
-end
-
-else
-
-module Prelude = struct
 open Nametab
 let local_id_of_string = id_of_string
 let local_make_dirpath = make_dirpath
@@ -63,12 +31,6 @@ let local_make_binding loc a b =
     | Nmeta (_,s) -> Smetalam(loc,s,b)
     | _ -> failwith "Slam expects a var or a metavar"
 let local_append l id = l@[id]
-end
-
-open Prelude
-
-ifdef Quotify then
-open Q
 
 GEXTEND Gram
   GLOBAL: ident natural integer bigint string preident ast
