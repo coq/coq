@@ -8,7 +8,7 @@
 \usepackage{fullpage}
 
 \author{B.~Barras}
-\title{A new syntax for Coq}
+\title{Syntax of Coq V8}
 
 %% Le _ est un caractère normal
 \catcode`\_=13
@@ -410,7 +410,7 @@ $$
   \TERM{(}~\NT{ident}~\KWD{:=}~\taclconstr~\TERM{)}
 \nlsep \TERM{generalize}~\PLUS{\tacconstr}
 \nlsep \TERM{generalize}~\TERM{dependent}~\tacconstr
-\nlsep \TERM{lettac}~
+\nlsep \TERM{set}~
   \TERM{(}~\NT{ident}~\KWD{:=}~\taclconstr~\TERM{)}~\NT{clause-pattern}
 \nlsep \TERM{instantiate}~
   \TERM{(}~\NT{int}~\TERM{:=}~\taclconstr~\TERM{)}
@@ -458,7 +458,7 @@ $$
 \nlsep \TERM{constructor}~\OPT{\NT{tactic}}
 %%
 \nlsep \TERM{reflexivity}
-\nlsep \TERM{symmetry}
+\nlsep \TERM{symmetry}~\OPTGR{\KWD{in}~\NT{ident}}
 \nlsep \TERM{transitivity}~\tacconstr
 %%
 \nlsep \NT{inversion-kwd}~\NT{quantified-hyp}~\NT{with-names}~\NT{clause}
@@ -479,8 +479,7 @@ $$
 \nlsep \TERM{pattern}~\NT{pattern-occ}~\STARGR{\KWD{,}~\NT{pattern-occ}}
 \SEPDEF
 \DEFNT{conversion}
-       \tacconstr~\KWD{at}~\PLUS{\NT{int}}~\KWD{with}~\tacconstr
-\nlsep \tacconstr~\KWD{with}~\tacconstr
+       \NT{pattern-occ}~\KWD{with}~\tacconstr
 \nlsep \tacconstr
 \SEPDEF
 \DEFNT{inversion-kwd}
@@ -533,12 +532,10 @@ Conflicts exists between integers and constrs.
        \KWD{(}~\NT{quantified-hyp}~\KWD{:=}~\taclconstr~\KWD{)}
 \SEPDEF
 \DEFNT{pattern-occ}
-       \KWD{(} ~\NT{constr} ~\OPTGR{\KWD{at}~\PLUS{\NT{int}}} ~\KWD{)}
-\nlsep \tacconstr
+       \tacconstr ~\OPTGR{\KWD{at}~\PLUS{\NT{int}}}
 \SEPDEF
 \DEFNT{unfold-occ}
-       \KWD{(} \NT{reference}~\OPTGR{\KWD{at}~\PLUS{\NT{int}}} ~\KWD{)}
-\nlsep \NT{reference}
+       \NT{reference}~\OPTGR{\KWD{at}~\PLUS{\NT{int}}}
 \SEPDEF
 \DEFNT{red-flag}
        \TERM{beta} ~\mid~ \TERM{iota} ~\mid~ \TERM{zeta}
@@ -607,7 +604,7 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \TERM{fresh} ~\OPT{\NT{string}}
 \nlsep \TERM{context} ~\NT{ident} ~\TERM{[} ~\taclconstr ~\TERM{]}
 \nlsep \TERM{eval} ~\NT{red-expr} ~\KWD{in} ~\tacconstr
-\nlsep \TERM{check} ~\tacconstr
+\nlsep \TERM{type} ~\tacconstr
 \nlsep \TERM{'} ~\tacconstr
 \nlsep \NT{reference}~\STAR{\NT{tactic-arg}}  &&\RNAME{call-tactic}
 \nlsep \NT{simple-tactic}
@@ -716,9 +713,9 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \TERM{prolog}~\TERM{[}~\STAR{\tacconstr}~\TERM{]}
          ~\NT{quantified-hyp}
 \nlsep \TERM{eauto}~\OPT{\NT{quantified-hyp}}~\OPT{\NT{quantified-hyp}}
-         ~\NT{hintbases}
+         ~\NT{hint-bases}
 \nlsep \TERM{eautod}~\OPT{\NT{quantified-hyp}}~\OPT{\NT{quantified-hyp}}
-         ~\NT{hintbases}
+         ~\NT{hint-bases}
 %% tauto
 \nlsep \TERM{tauto}
 \nlsep \TERM{simplif}
