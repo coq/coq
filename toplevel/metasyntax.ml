@@ -897,7 +897,6 @@ let add_distfix local assoc n df r sc =
   add_notation_in_scope local df a (Some assoc,n,[],false) None sc (split df)
 
 let add_infix local assoc n inf pr onlyparse mv8 sc =
-(*  let pr = Astterm.globalize_qualid pr in*)
   (* check the precedence *)
   if !Options.v7 & (n<1 or n>10) then
     errorlabstrm "Metasyntax.infix_grammar_entry"
