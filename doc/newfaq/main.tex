@@ -423,19 +423,44 @@ Qed.
 
 Just use the \reflexivity tactic.
 
+\begin{coq_example}
+Goal forall x, 0+x = x.
+intros.
+reflexivity.
+Qed.
+\end{coq_example}
+
+
 \Question[symmetry]{My goal is an equality, how can I swap the left and right hand terms ?}
 
 Just use the \symmetry tactic.
+%\begin{coq_example}
+%Goal forall x y : nat, x=y -> y=x.
+%intros.
+%symmetry.
+%assumption.
+%Qed.
+%\end{coq_example}
+
 
 \Question[transitivity]{My goal is an equality, how can I prove it by transitivity ?}
 
 Just use the \transitivity tactic.
-
+\begin{coq_example}
+Goal forall x y z : nat, x=y -> y=z -> x=z.
+intros.
+transitivity y.
+assumption.
+assumption.
+Qed.
+\end{coq_example}
 
 
 \Question[autowith]{My goal is solvable by  some lemma within a set of lemmas and I don't want to remember which one, how can I prove it ?}
 
 Use a base of Hints.
+
+
 
 \Question[assumption]{My goal is one of the hypothesis, how can I prove it ?}
 
