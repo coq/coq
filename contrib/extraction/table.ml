@@ -29,9 +29,13 @@ module Refmap =
 
 (*s Auxiliary functions *) 
 
-let check_constant r = match r with 
-  | ConstRef sp -> r 
-  | _ -> errorlabstrm "extract_constant"
+let is_constant r = match r with 
+  | ConstRef _ -> true
+  | _ -> false
+
+let check_constant r = 
+  if (is_constant r) then r 
+  else errorlabstrm "extract_constant"
 	[< Printer.pr_global r; 'sPC; 'sTR "is not a constant" >] 
 
 let string_of_varg = function
@@ -129,7 +133,8 @@ let sorted_ml_extractions () = let (_,_,l) = !extractions in l
 
 let add_ml_extraction r s = 
   let (map,set,list) = !extractions in
-  extractions := (Refmap.add r s map, Refset.add r set, (r,s)::list)
+  let list' = if (is_constant r) then (r,s)::list else list in 
+  extractions := (Refmap.add r s map, Refset.add r set, list')
 
 let is_ml_extraction r = 
   let (_,set,_) = !extractions in Refset.mem r set
@@ -186,8 +191,9 @@ let extract_inductive r (id2,l2) = match r with
       add_anonymous_leaf (in_ml_extraction (r,id2));
       list_iter_i
 	(fun j s -> 
-	   add_anonymous_leaf 
-	     (in_ml_extraction (ConstructRef (ip,succ j),s))) l2
+	   let r = ConstructRef (ip,succ j) in 
+	   add_anonymous_leaf (inline_extraction (true,[r]));
+	   add_anonymous_leaf (in_ml_extraction (r,s))) l2
   | _ -> 
       errorlabstrm "extract_inductive"
 	[< Printer.pr_global r; 'sPC; 'sTR "is not an inductive type" >]

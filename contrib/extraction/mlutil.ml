@@ -54,13 +54,16 @@ let rec occurs k = function
   | MLrel i -> i = k
   | MLapp(t,argl) -> (occurs k t) || (occurs_list k argl)
   | MLlam(_,t) -> occurs (k + 1) t
+  | MLletin(_,t,t')-> (occurs k t) || (occurs (k+1) t')
   | MLcons(_,argl) -> occurs_list k argl
   | MLcase(t,pv) -> 
       (occurs k t) ||
       (array_exists
 	 (fun (_,l,t') -> let k' = List.length l in occurs (k + k') t') pv)
   | MLfix(_,l,cl) -> let k' = Array.length l in occurs_vect (k + k') cl
-  | _ -> false
+  | MLcast(t,_) -> occurs k t			
+  | MLmagic t -> occurs k t
+  | MLglob _ | MLexn _ | MLprop | MLarity -> false
 
 and occurs_list k l = List.exists (occurs k) l
 
@@ -73,6 +76,7 @@ let rec occurs_itvl k k' = function
   | MLrel i -> (k <= i) && (i <= k')
   | MLapp(t,argl) -> (occurs_itvl k k' t) || (occurs_itvl_list k k' argl)
   | MLlam(_,t) -> occurs_itvl (k + 1) (k' + 1) t
+  | MLletin(_,t,t') -> (occurs_itvl k k' t) || (occurs_itvl (k+1) (k'+1) t')
   | MLcons(_,argl) -> occurs_itvl_list k k' argl
   | MLcase(t,pv) -> 
       (occurs_itvl k k' t) ||
@@ -81,7 +85,9 @@ let rec occurs_itvl k k' = function
 	    let n = List.length l in occurs_itvl (k + n) (k' + n) t') pv)
   | MLfix(_,l,cl) -> 
       let n = Array.length l in occurs_itvl_vect (k + n) (k' + n) cl
-  | _ -> false
+  | MLcast(t,_) -> occurs_itvl k k' t
+  | MLmagic t -> occurs_itvl k k' t
+  | MLglob _ | MLexn _ | MLprop | MLarity  -> false
 
 and occurs_itvl_list k k' l = List.exists (occurs_itvl k k') l
 
@@ -221,17 +227,17 @@ let check_identity_case br =
 
 
 let check_constant_case br = 
-  let (r,l,t) = br.(0) in
+  let (_,l,t) = br.(0) in
   let n = List.length l in 
   if occurs_itvl 1 n t then raise Impossible; 
   let cst = ml_lift (-n) t in 
   for i = 1 to Array.length br - 1 do 
-    let (r,l,t) = br.(i) in
+    let (_,l,t) = br.(i) in
     let n = List.length l in
     if (occurs_itvl 1 n t) || (cst <> (ml_lift (-n) t)) 
     then raise Impossible
   done; cst
-
+ 
 
 let all_constr br = 
   try 
@@ -291,7 +297,8 @@ let rec betaiota = function
 		    | (n, i, MLcons (r,a))-> 
 			let (_,ids,c) = br.(constructor_index r) in
 			let c = ml_lift (List.length i) c in 
-			let c' = List.fold_right (fun id t -> MLlam (id,t)) ids c in
+			let c' = List.fold_right 
+				   (fun id t -> MLlam (id,t)) ids c in
 			(n,i,betaiota (MLapp (c',a)))
 		    | _ -> assert false) br'
 	     in MLcase(e', new_br)
@@ -407,8 +414,9 @@ let rec non_stricts add cand = function
   | _ -> 
       cand
 
-(* The real test: we are looking for internal non-strict variables, so we start with 
-   no candidates, and the only positive answer is via the [Toplevel] exception. *)
+(* The real test: we are looking for internal non-strict variables, so we start
+   with no candidates, and the only positive answer is via the [Toplevel] 
+   exception. *)
 
 let is_not_strict t = 
   try 
