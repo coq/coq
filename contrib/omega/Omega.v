@@ -30,8 +30,10 @@ Hints Resolve Zle_n Zplus_sym Zplus_assoc Zmult_sym Zmult_assoc
 
 Require Export Zhints.
 
+(*
 (* The constant minus is required in coq_omega.ml *)
-Require Export Minus.
+Require Minus.
+*)
 
 Hint eq_nat_Omega : zarith := Extern 10 (eq nat ? ?) Abstract Omega.
 Hint le_Omega : zarith := Extern 10 (le ? ?) Abstract Omega.

@@ -174,3 +174,28 @@ Proof.
   Induction n; Auto.
   Induction m; Auto.
 Qed.
+
+(** Notations *)
+V7only[
+Syntax constr
+  level 0:
+    S [ (S $p) ] -> [$p:"nat_printer":9]
+  | O [ O ]      -> ["(0)"].
+].
+V7only [
+Module nat_scope.
+].
+
+(* For parsing/printing based on scopes *)
+Infix 4 "+" plus : nat_scope V8only (left associativity).
+Infix 4 "-" minus : nat_scope V8only (left associativity).
+Infix 3 "*" mult : nat_scope V8only (left associativity).
+Infix NONA 5 "<=" le : nat_scope.
+Infix NONA 5 "<" lt : nat_scope.
+Infix NONA 5 ">=" ge : nat_scope.
+Infix NONA 5 ">" gt : nat_scope.
+
+V7only [
+End nat_scope.
+].
+Delimits Scope nat_scope with N.

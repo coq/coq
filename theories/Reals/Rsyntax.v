@@ -197,12 +197,9 @@ Syntax constr
 .
 ].
 (* For parsing/printing based on scopes *)
+V7only [
 Module R_scope.
-
-Delimits Scope R_scope with R.
-
-(* Warning: this hides sum and prod and breaks sumor symbolic notation *)
-Open Scope R_scope.
+].
 
 Infix "<=" Rle (at level 5, no associativity) : R_scope.
 Infix "<"  Rlt (at level 5, no associativity) : R_scope.
@@ -237,4 +234,10 @@ Notation "x <> y" := ~(eqT R x y) (at level 5) : R_scope.
 Notation "/ x" := (Rinv x) (at level 0): R_scope
   V8only (at level 30, left associativity).
 
+V7only [
+Open Scope R_scope.
 End R_scope.
+].
+
+Delimits Scope R_scope with R.
+

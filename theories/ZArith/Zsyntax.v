@@ -221,18 +221,9 @@ Syntax constr
 ].
 
 (* For parsing/printing based on scopes *)
+V7only [
 Module Z_scope.
-
-(* Declare Scope positive_scope with Key P. *)
-
-Delimits Scope positive_scope with P.
-Delimits Scope Z_scope with Z.
-
-(* Warning: this hides sum and prod and breaks sumor symbolic notation *)
-Open Scope Z_scope.
-
-Arguments Scope POS [positive_scope].
-Arguments Scope NEG [positive_scope].
+].
 
 Infix LEFTA 4 "+" Zplus : Z_scope.
 Infix LEFTA 4 "-" Zminus : Z_scope.
@@ -272,4 +263,16 @@ Syntax constr level 0:
   Zeq [ (eq Z $n1 $n2) ] -> [[<hov 0> $n1 [1 0] "= " $n2 ]].
 ].
 
+V7only [
+Open Scope Z_scope.
 End Z_scope.
+].
+
+(* Declare Scope positive_scope with Key P. *)
+
+Delimits Scope positive_scope with P.
+Delimits Scope Z_scope with Z.
+
+Arguments Scope POS [positive_scope].
+Arguments Scope NEG [positive_scope].
+
