@@ -339,7 +339,8 @@ let coq_neq = lazy (constant ["auxiliary"] "neq")
 let coq_Zne = lazy (constant ["auxiliary"] "Zne")
 
 let constant dir s =
-  Declare.global_absolute_reference (make_path dir (id_of_string s) CCI)
+  Declare.global_absolute_reference
+    (make_path ("Coq"::dir) (id_of_string s) CCI)
 
 (* Peano *)
 let coq_le = lazy (constant ["Init";"Peano"] "le")
