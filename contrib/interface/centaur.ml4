@@ -330,13 +330,11 @@ let globcv x =
 	       (ConstructRef ((sp, tyi), i)))
   | _ -> failwith "globcv : unexpected value";;
 
-(* <\cpa> 
 let pbp_tac_pcoq =
     pbp_tac (function (x:raw_tactic_expr) -> 
       output_results
         (ctf_header "pbp_results" !global_request_id)
        (Some (P_t(xlate_tactic x))));;
-</cpa> *)
 
 let blast_tac_pcoq =
     blast_tac (function (x:raw_tactic_expr) -> 
@@ -885,11 +883,12 @@ let command_creations = [
 ];;
 *)
 
-(* <\cpa> 
 TACTIC EXTEND Pbp
 | [ "Pbp" ident_opt(idopt) natural_list(nl) ] -> 
     [ if_pcoq pbp_tac_pcoq idopt nl ]
 END
+
+(* <\cpa> 
 TACTIC EXTEND Blast
 | [ "Blast" ne_natural_list(nl) ] ->
     [ if_pcoq blast_tac_pcoq nl ]
