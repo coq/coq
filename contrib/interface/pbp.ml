@@ -185,7 +185,7 @@ let reference dir s =
 	     (Nametab.string_of_qualid (Nametab.make_qualid dir id)))
 
 let constant dir s =
-  Declare.constr_of_reference Evd.empty (Global.env()) (reference dir s);;
+  Declare.constr_of_reference (reference dir s);;
 
 
 let andconstr: unit -> constr = Coqlib.build_coq_and;;

@@ -590,12 +590,12 @@ let command_changes = [
    function
        (VARG_QUALID qid)::l ->
          (fun () -> 
-           ctv_SEARCH_LIST:=[];
-	    let global_ref = Vernacentries.global dummy_loc qid in
-           filtered_search
-             (filter_by_module_from_varg_list l)
-	     add_search (Nametab.locate qid);
-	   search_output_results())
+            ctv_SEARCH_LIST:=[];
+	    let global_ref = Nametab.global dummy_loc qid in
+            filtered_search
+              (filter_by_module_from_varg_list l)
+	      add_search (Nametab.locate qid);
+	    search_output_results())
      |	_ -> failwith "bad form of arguments");
 
   ("SearchRewrite",

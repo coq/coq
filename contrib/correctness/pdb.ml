@@ -19,7 +19,7 @@ open Penv
 
 let cci_global id =
   try
-    Declare.global_reference CCI id
+    Declare.global_reference id
   with
     _ -> raise Not_found
 
