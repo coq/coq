@@ -40,6 +40,7 @@ library/impargs.cmi: kernel/names.cmi
 library/lib.cmi: library/libobject.cmi kernel/names.cmi library/summary.cmi 
 library/libobject.cmi: kernel/names.cmi 
 library/nametab.cmi: kernel/names.cmi 
+library/redinfo.cmi: kernel/names.cmi kernel/term.cmi 
 library/summary.cmi: kernel/names.cmi 
 parsing/ast.cmi: parsing/coqast.cmi lib/dyn.cmi parsing/pcoq.cmi lib/pp.cmi 
 parsing/astterm.cmi: parsing/coqast.cmi kernel/environ.cmi kernel/names.cmi \
@@ -230,6 +231,12 @@ library/library.cmx: kernel/environ.cmx library/global.cmx library/lib.cmx \
     library/library.cmi 
 library/nametab.cmo: kernel/names.cmi library/summary.cmi library/nametab.cmi 
 library/nametab.cmx: kernel/names.cmx library/summary.cmx library/nametab.cmi 
+library/redinfo.cmo: kernel/constant.cmi kernel/evd.cmi kernel/generic.cmi \
+    library/global.cmi kernel/names.cmi kernel/reduction.cmi \
+    library/summary.cmi kernel/term.cmi lib/util.cmi library/redinfo.cmi 
+library/redinfo.cmx: kernel/constant.cmx kernel/evd.cmx kernel/generic.cmx \
+    library/global.cmx kernel/names.cmx kernel/reduction.cmx \
+    library/summary.cmx kernel/term.cmx lib/util.cmx library/redinfo.cmi 
 library/states.cmo: library/lib.cmi library/summary.cmi lib/system.cmi \
     library/states.cmi 
 library/states.cmx: library/lib.cmx library/summary.cmx lib/system.cmx \
@@ -246,12 +253,18 @@ parsing/coqast.cmo: lib/dyn.cmi lib/hashcons.cmi parsing/coqast.cmi
 parsing/coqast.cmx: lib/dyn.cmx lib/hashcons.cmx parsing/coqast.cmi 
 parsing/lexer.cmo: lib/util.cmi parsing/lexer.cmi 
 parsing/lexer.cmx: lib/util.cmx parsing/lexer.cmi 
+parsing/termast.cmo: parsing/ast.cmi parsing/coqast.cmi kernel/environ.cmi \
+    kernel/generic.cmi kernel/names.cmi library/nametab.cmi lib/options.cmi \
+    lib/pp.cmi kernel/term.cmi lib/util.cmi parsing/termast.cmi 
+parsing/termast.cmx: parsing/ast.cmx parsing/coqast.cmx kernel/environ.cmx \
+    kernel/generic.cmx kernel/names.cmx library/nametab.cmx lib/options.cmx \
+    lib/pp.cmx kernel/term.cmx lib/util.cmx parsing/termast.cmi 
 proofs/clenv.cmo: kernel/environ.cmi kernel/evd.cmi kernel/generic.cmi \
-    kernel/instantiate.cmi proofs/logic.cmi kernel/names.cmi \
+    kernel/instantiate.cmi proofs/logic.cmi kernel/names.cmi lib/pp.cmi \
     proofs/proof_trees.cmi kernel/reduction.cmi kernel/sign.cmi \
     proofs/tacmach.cmi kernel/term.cmi lib/util.cmi proofs/clenv.cmi 
 proofs/clenv.cmx: kernel/environ.cmx kernel/evd.cmx kernel/generic.cmx \
-    kernel/instantiate.cmx proofs/logic.cmx kernel/names.cmx \
+    kernel/instantiate.cmx proofs/logic.cmx kernel/names.cmx lib/pp.cmx \
     proofs/proof_trees.cmx kernel/reduction.cmx kernel/sign.cmx \
     proofs/tacmach.cmx kernel/term.cmx lib/util.cmx proofs/clenv.cmi 
 proofs/evar_refiner.cmo: kernel/environ.cmi kernel/evd.cmi kernel/generic.cmi \
@@ -298,8 +311,14 @@ proofs/tacmach.cmx: parsing/ast.cmx kernel/environ.cmx \
     proofs/proof_trees.cmx kernel/reduction.cmx proofs/refiner.cmx \
     kernel/sign.cmx lib/stamps.cmx proofs/tacred.cmx kernel/term.cmx \
     proofs/typing_ev.cmx lib/util.cmx proofs/tacmach.cmi 
-proofs/tacred.cmo: proofs/tacred.cmi 
-proofs/tacred.cmx: proofs/tacred.cmi 
+proofs/tacred.cmo: kernel/closure.cmi library/declare.cmi kernel/environ.cmi \
+    kernel/generic.cmi kernel/inductive.cmi kernel/instantiate.cmi \
+    kernel/names.cmi lib/pp.cmi library/redinfo.cmi kernel/reduction.cmi \
+    kernel/term.cmi lib/util.cmi proofs/tacred.cmi 
+proofs/tacred.cmx: kernel/closure.cmx library/declare.cmx kernel/environ.cmx \
+    kernel/generic.cmx kernel/inductive.cmx kernel/instantiate.cmx \
+    kernel/names.cmx lib/pp.cmx library/redinfo.cmx kernel/reduction.cmx \
+    kernel/term.cmx lib/util.cmx proofs/tacred.cmi 
 proofs/typing_ev.cmo: kernel/environ.cmi kernel/generic.cmi kernel/names.cmi \
     kernel/reduction.cmi kernel/term.cmi kernel/type_errors.cmi \
     kernel/typeops.cmi lib/util.cmi proofs/typing_ev.cmi 

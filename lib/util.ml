@@ -150,6 +150,9 @@ let rec list_uniquize = function
   | [] -> []
   | h::t -> if List.mem h t then list_uniquize t else h::(list_uniquize t)
 
+let rec list_distinct = function
+  | h::t -> (not (List.mem h t)) && list_distinct t
+  | _ -> true
 
 (* Arrays *)
 

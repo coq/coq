@@ -35,3 +35,5 @@ val declare_mind : mutual_inductive_entry -> unit
   environment of variables. *)
 
 val global_reference : identifier -> constr
+
+val mind_path : constr -> section_path

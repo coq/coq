@@ -508,10 +508,9 @@ type 'a miota_args = {
   mcargs  : 'a list;    (* the constructor's arguments *)
   mlf     : 'a array }  (* the branch code vector *)
 		       
-let reducible_mind_case c =
-  match c with 
-    | DOPN(MutConstruct _,_) | DOPN(CoFix _,_) -> true
-    | _  -> false
+let reducible_mind_case = function
+  | DOPN(MutConstruct _,_) | DOPN(CoFix _,_) -> true
+  | _  -> false
 
 let contract_cofix = function
   | DOPN(CoFix(bodynum),bodyvect) ->
@@ -536,10 +535,8 @@ let reduce_mind_case env mia =
     | _ -> assert false
 
 (* contracts fix==FIX[nl;i](A1...Ak;[F1...Fk]{B1....Bk}) to produce
+   Bi[Fj --> FIX[nl;j](A1...Ak;[F1...Fk]{B1...Bk})] *)
 
-   Bi[Fj --> FIX[nl;j](A1...Ak;[F1...Fk]{B1...Bk})]
-
- *)
 let contract_fix = function 
   | DOPN(Fix(recindices,bodynum),bodyvect) -> 
       let nbodies = Array.length recindices in
@@ -552,9 +549,12 @@ let fix_recarg fix stack =
     | DOPN(Fix(recindices,bodynum),_) ->
     	if 0 <= bodynum & bodynum < Array.length recindices then
 	  let recargnum = Array.get recindices bodynum in
-          (try Some(recargnum, List.nth stack recargnum)
-           with Failure "nth" | Invalid_argument "List.nth" -> None)
-    	else None
+          (try 
+	     Some (recargnum, List.nth stack recargnum)
+           with Failure "nth" | Invalid_argument "List.nth" -> 
+	     None)
+    	else 
+	  None
     | _ -> assert false
 
 let reduce_fix whfun fix stack =
@@ -1029,79 +1029,6 @@ let decomp_n_prod env sigma n =
   in 
   decrec n []
 
-(* Special iota reduction... *)
-
-let contract_cofix_use_function f cofix =
-  match cofix with 
-    | DOPN(CoFix(bodynum),bodyvect) ->
-  	let nbodies =  (Array.length bodyvect) -1 in
-  	let make_Fi j = DOPN(CoFix(j),bodyvect) in
-  	let lbodies = list_assign (list_tabulate make_Fi nbodies) bodynum f in
-  	sAPPViList bodynum (array_last bodyvect) lbodies
-    | _ -> assert false
-
-let reduce_mind_case_use_function env f mia =
-  match mia.mconstr with 
-    | DOPN(MutConstruct((indsp,tyindx),i),_) ->
-	let ind = DOPN(MutInd(indsp,tyindx),args_of_mconstr mia.mconstr) in
-	let nparams = mind_nparams env ind in
-	let real_cargs = snd(list_chop nparams mia.mcargs) in
-	applist (mia.mlf.(i-1),real_cargs)
-    | DOPN(CoFix _,_) as cofix ->
-	let cofix_def = contract_cofix_use_function f cofix in
-	mkMutCaseA mia.mci mia.mP (applist(cofix_def,mia.mcargs)) mia.mlf
-    | _ -> assert false
-	  
-let special_red_case env whfun p c ci lf  =
-  let rec redrec c l = 
-    let (constr,cargs) = whfun c l in 
-    match constr with 
-      | DOPN(Const _,_) as g -> 
-          if evaluable_constant env g then
-            let gvalue = constant_value env g in
-            if reducible_mind_case  gvalue then
-              reduce_mind_case_use_function env g
-                {mP=p; mconstr=gvalue; mcargs=cargs; mci=ci; mlf=lf}
-            else 
-	      redrec gvalue cargs
-          else 
-	    raise Redelimination
-      | _ ->
-          if reducible_mind_case constr then
-            reduce_mind_case env
-              {mP=p; mconstr=constr; mcargs=cargs; mci=ci; mlf=lf}
-          else 
-	    raise Redelimination
-  in 
-  redrec c []
-
-
-(* F is convertible to DOPN(Fix(recindices,bodynum),bodyvect) make 
-the reduction using this extra information *)
-
-let contract_fix_use_function f fix =
-  match fix with 
-    | DOPN(Fix(recindices,bodynum),bodyvect) ->
-  	let nbodies = Array.length recindices in
-  	let make_Fi j = DOPN(Fix(recindices,j),bodyvect) in
-  	let lbodies = list_assign (list_tabulate make_Fi nbodies) bodynum f in
-	  sAPPViList bodynum (array_last bodyvect) lbodies
-    | _ -> assert false
-
-
-let reduce_fix_use_function f whfun fix stack =
-  match fix with 
-    | DOPN (Fix(recindices,bodynum),bodyvect) ->
-	(match fix_recarg fix stack with
-           | None -> (false,(fix,stack))
-	   | Some (recargnum,recarg) ->
-               let (recarg'hd,_ as recarg')= whfun recarg [] in
-               let stack' = list_assign stack recargnum (applist recarg') in
-	       (match recarg'hd with
-                  | DOPN(MutConstruct _,_) ->
-		      (true,(contract_fix_use_function f fix,stack'))
-		  | _ -> (false,(fix,stack'))))
-    | _ -> assert false
 
 
 (* Check that c is an "elimination constant"

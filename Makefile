@@ -45,14 +45,16 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
 
 LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
 	library/global.cmo library/states.cmo library/library.cmo \
-	library/nametab.cmo library/impargs.cmo library/declare.cmo
+	library/nametab.cmo library/impargs.cmo library/redinfo.cmo \
+        library/declare.cmo
+
+PROOFS=proofs/typing_ev.cmo proofs/tacred.cmo \
+       proofs/proof_trees.cmo proofs/logic.cmo \
+       proofs/refiner.cmo proofs/evar_refiner.cmo proofs/clenv.cmo
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
 	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_multiple_case.cmo
-
-PROOFS=proofs/typing_ev.cmo proofs/proof_trees.cmo proofs/logic.cmo \
-       proofs/refiner.cmo proofs/evar_refiner.cmo proofs/clenv.cmo
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernac.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo

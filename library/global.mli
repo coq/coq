@@ -17,6 +17,7 @@ open Typing
    operating on that global environment. *)
 
 val env : unit -> environment
+val unsafe_env : unit -> unsafe_env
 
 val universes : unit -> universes
 val context : unit -> context

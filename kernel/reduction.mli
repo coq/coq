@@ -25,11 +25,14 @@ type 'a stack_reduction_function =
 val whd_stack : 'a stack_reduction_function
 
 (*s Reduction Function Operators *)
+
 val under_casts : 'a reduction_function -> 'a reduction_function
 val strong : 'a reduction_function -> 'a reduction_function
 val strong_prodspine : 'a reduction_function -> 'a reduction_function
 val stack_reduction_of_reduction : 
   'a reduction_function -> 'a stack_reduction_function
+val stacklam : (constr -> constr list -> 'a) -> constr list -> constr 
+  -> constr list -> 'a 
 
 (*s Generic Optimized Reduction Functions using Closures *)
 
@@ -57,6 +60,7 @@ val whd_betadeltaiota_stack : 'a stack_reduction_function
 
 
 (*s Head normal forms *)
+
 val whd_const_stack : section_path list -> 'a stack_reduction_function
 val whd_const : section_path list -> 'a reduction_function
 val whd_delta_stack : 'a stack_reduction_function
@@ -67,11 +71,12 @@ val whd_betadeltat_stack : 'a stack_reduction_function
 val whd_betadeltat : 'a reduction_function
 val whd_betadeltatiota_stack : 'a stack_reduction_function
 val whd_betadeltatiota : 'a reduction_function
+val whd_betadeltaeta_stack : 'a stack_reduction_function
+val whd_betadeltaeta : 'a reduction_function
 val whd_betadeltaiotaeta_stack : 'a stack_reduction_function
 val whd_betadeltaiotaeta : 'a reduction_function
 
 val beta_applist : (constr * constr list) -> constr
-
 
 val hnf_prod_app : 
   unsafe_env -> 'a evar_map -> string -> constr -> constr -> constr
@@ -90,6 +95,16 @@ val splay_prod :
 val decomp_prod : unsafe_env -> 'a evar_map -> constr -> int * constr
 val decomp_n_prod : 
   unsafe_env -> 'a evar_map -> int -> constr -> ((name * constr) list) * constr
+
+type 'a miota_args = {
+  mP      : constr;     (* the result type *)
+  mconstr : constr;     (* the constructor *)
+  mci     : case_info;  (* special info to re-build pattern *)
+  mcargs  : 'a list;    (* the constructor's arguments *)
+  mlf     : 'a array }  (* the branch code vector *)
+
+val reducible_mind_case : constr -> bool
+val reduce_mind_case : unsafe_env -> constr miota_args -> constr
 
 val is_arity : unsafe_env -> 'a evar_map -> constr -> bool
 val is_info_arity : unsafe_env -> 'a evar_map -> constr -> bool
@@ -111,6 +126,9 @@ val subst_term_occ : int list -> constr -> constr -> constr
 val pattern_occs : (int list * constr * constr) list -> 'a reduction_function
 val compute : 'a reduction_function
 
+val fix_recarg : constr -> 'a list -> (int * 'a) option
+val reduce_fix : (constr -> 'a list -> constr * constr list) -> constr ->
+  constr list -> bool * (constr * constr list)
 
 (*s Conversion Functions (uses closures, lazy strategy) *)
 
@@ -185,4 +203,5 @@ val minductype_spec : unsafe_env -> 'a evar_map -> constr -> constr
 val mrectype_spec : unsafe_env -> 'a evar_map -> constr -> constr
 
 (* Special function, which keep the key casts under Fix and MutCase. *)
+
 val strip_all_casts : constr -> constr

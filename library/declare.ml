@@ -172,3 +172,16 @@ let global_reference id =
   let ids =  ids_of_sign hyps in
   DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids))
 
+let mind_path = function
+  | DOPN(MutInd (sp,0),_) -> sp
+  | DOPN(MutInd (sp,tyi),_) -> 
+      let mib = Global.lookup_mind sp in
+      let mip = mind_nth_type_packet mib tyi in 
+      let (pa,_,k) = repr_path sp in 
+      Names.make_path pa (mip.mind_typename) k 
+  | DOPN(MutConstruct ((sp,tyi),ind),_) -> 
+      let mib = Global.lookup_mind sp in
+      let mip = mind_nth_type_packet mib tyi in 
+      let (pa,_,k) = repr_path sp in 
+      Names.make_path pa (mip.mind_consnames.(ind-1)) k 
+  | _ -> invalid_arg "mind_path"
