@@ -961,8 +961,11 @@ intros n m H; apply Zplus_lt_reg_l with (p := m); rewrite Zplus_minus;
  assumption.
 Qed.
 
-Lemma Zlt_O_minus_lt : forall n m:Z, 0 < n - m -> m < n.
+Lemma Zlt_0_minus_lt : forall n m:Z, 0 < n - m -> m < n.
 Proof.
 intros n m H; apply Zplus_lt_reg_l with (p := - m); rewrite Zplus_opp_l;
  rewrite Zplus_comm; exact H.
 Qed.
+
+(* For compatibility *)
+Notation Zlt_O_minus_lt := Zlt_0_minus_lt (only parsing).
