@@ -144,17 +144,21 @@ let _ =
       Summary.survive_module = false;
       Summary.survive_section = false }
 
-
 (* Check that c is an "elimination constant"
-   [xn:An]..[x1:A1](<P>MutCase (Rel i) of f1..fk end g1 ..gp)
-   or [xn:An]..[x1:A1](Fix(f|t) (Rel i1) ..(Rel ip)) 
-    with i1..ip distinct variables not occuring in t 
-   keep relevenant information ([i1,Ai1;..;ip,Aip],n,b)
-   with b = true in case of a fixpoint in order to compute 
-   an equivalent of Fix(f|t)[xi<-ai] as 
-   [yip:Bip]..[yi1:Bi1](F bn..b1) 
-   == [yip:Bip]..[yi1:Bi1](Fix(f|t)[xi<-ai] (Rel 1)..(Rel p))
-   with bj=aj if j<>ik and bj=(Rel c) and Bic=Aic[xn..xic-1 <- an..aic-1] *)
+
+   either [xn:An]..[x1:A1](<P>Case (Rel i) of f1..fk end g1 ..gp)
+
+   or     [xn:An]..[x1:A1](Fix(f|t) (Rel i1) ..(Rel ip))
+          with i1..ip distinct variables not occuring in t 
+
+   In the second case, keep relevenant information ([i1,Ai1;..;ip,Aip],n)
+   in order to compute an equivalent of Fix(f|t)[xi<-ai] as 
+
+      [yip:Bip]..[yi1:Bi1](F bn..b1) 
+   == [yip:Bip]..[yi1:Bi1](Fix(f|t)[xi<-ai] (Rel p)..(Rel 1))
+
+   with bj=aj if j<>ik and bj=(Rel c) and Bic=Aic[xn..xic-1 <- an..aic-1]
+*)
 
 let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
   let n = List.length labs in
@@ -281,54 +285,50 @@ let reference_eval sigma env = function
        end)
   | ref -> compute_consteval sigma env ref
 
-let rev_firstn_liftn fn ln = 
-  let rec rfprec p res l = 
-    if p = 0 then 
-      res 
-    else
-      match l with
-        | [] -> invalid_arg "Reduction.rev_firstn_liftn"
-        | a::rest -> rfprec (p-1) ((lift ln a)::res) rest
-  in 
-  rfprec fn []
+(* If f is bound to EliminationFix (n',infos), then n' is the minimal
+   number of args for starting the reduction and infos is
+   (nbfix,[(yi1,Ti1);...;(yip,Tip)],n) indicating that f converts
+   to some [y1:T1,...,yn:Tn](Fix(..) yip .. yi1) where we can remark that
+   yij = Rel(n+1-j)
 
-(*  EliminationFix ([(yi1,Ti1);...;(yip,Tip)],n) means f is some
-   [y1:T1,...,yn:Tn](Fix(..) yi1 ... yip);
-   f is applied to largs and we need for recursive calls to build
-   [x1:Ti1',...,xp:Tip'](f a1..a(n-p) yi1 ... yip) 
-   where a1...an are the n first arguments of largs and Tik' is Tik[yil=al]
-   To check ... *)
+   f is applied to largs and we need for recursive calls to build the function
+
+      g := [xp:Tip',...,x1:Ti1'](f a1 ... an)
+
+   s.t. (g u1 ... up) reduces to (Fix(..) u1 ... up)
+
+   This is made possible by setting 
+      a_k:=z_j    if k=i_j
+      a_k:=y_k    otherwise
+
+   The type Tij' is Tij[yn..yi(j-1)..y1 <- ai(j-1)..a1]
+*)
+
+let x = Name (id_of_string "x")
 
 let make_elim_fun (names,(nbfix,lv,n)) largs =
-  let labs = list_firstn n (list_of_stack largs) in
+  let lu = list_firstn n (list_of_stack largs) in
   let p = List.length lv in
-  let ylv = List.map fst lv in
-  let la' = list_map_i 
-	      (fun q aq ->
-		 try (mkRel (p+1-(list_index (n-q) ylv))) 
-		 with Not_found -> aq) 0
-              (List.map (lift p) labs) 
+  let lyi = List.map fst lv in
+  let la =
+    list_map_i (fun q aq -> 
+      (* k from the comment is q+1 *) 
+      try mkRel (p+1-(list_index (n-q) lyi))
+      with Not_found -> aq)
+      0 (List.map (lift p) lu) 
   in 
   fun i ->
     match names.(i) with
       | None -> None
-      | Some ref -> Some (
-(*    let fi =
-      if nbfix = 1 then
-	mkEvalRef ref
-      else
-	match ref with
-	  | EvalConst (sp,args) ->
-	      mkConst (make_path (dirpath sp) id (kind_of_path sp),args)
-	  | _ -> anomaly "elimination of local fixpoints not implemented"
-    in
-*)
-      list_fold_left_i 
-	(fun i c (k,a) -> 
-	   mkLambda (Name(id_of_string"x"),
-		     substl (rev_firstn_liftn (n-k) (-i) la') a,
-		     c))
-	0 (applistc (mkEvalRef ref) la') lv)
+      | Some ref ->
+          let body = applistc (mkEvalRef ref) la in
+          let g = 
+            list_fold_left_i (fun q (* j from comment is n+1-q *) c (ij,tij) ->
+              let subst = List.map (lift (-q)) (list_firstn (n-ij) la) in
+              let tij' = substl (List.rev subst) tij in
+	      mkLambda (x,tij',c)
+            ) 1 body (List.rev lv)
+          in Some g
 
 (* [f] is convertible to [Fix(recindices,bodynum),bodyvect)] make 
    the reduction using this extra information *)
