@@ -1214,24 +1214,26 @@ parsing/pptactic.cmx: lib/util.cmx interp/topconstr.cmx kernel/term.cmx \
     kernel/closure.cmx parsing/pptactic.cmi 
 parsing/prettyp.cmo: lib/util.cmi pretyping/termops.cmi kernel/term.cmi \
     interp/syntax_def.cmi kernel/sign.cmi kernel/safe_typing.cmi \
-    pretyping/reductionops.cmi kernel/reduction.cmi parsing/printmod.cmi \
-    parsing/printer.cmi lib/pp.cmi lib/options.cmi interp/notation.cmi \
-    library/nametab.cmi kernel/names.cmi library/nameops.cmi \
-    library/libobject.cmi library/libnames.cmi library/lib.cmi \
-    pretyping/inductiveops.cmi kernel/inductive.cmi library/impargs.cmi \
-    library/global.cmi pretyping/evd.cmi kernel/environ.cmi \
-    library/declare.cmi kernel/declarations.cmi kernel/conv_oracle.cmi \
-    interp/constrextern.cmi pretyping/classops.cmi parsing/prettyp.cmi 
+    pretyping/reductionops.cmi kernel/reduction.cmi pretyping/recordops.cmi \
+    parsing/printmod.cmi parsing/printer.cmi lib/pp.cmi lib/options.cmi \
+    interp/notation.cmi library/nametab.cmi kernel/names.cmi \
+    library/nameops.cmi library/libobject.cmi library/libnames.cmi \
+    library/lib.cmi pretyping/inductiveops.cmi kernel/inductive.cmi \
+    library/impargs.cmi library/global.cmi pretyping/evd.cmi \
+    kernel/environ.cmi library/declare.cmi kernel/declarations.cmi \
+    kernel/conv_oracle.cmi interp/constrextern.cmi pretyping/classops.cmi \
+    parsing/prettyp.cmi 
 parsing/prettyp.cmx: lib/util.cmx pretyping/termops.cmx kernel/term.cmx \
     interp/syntax_def.cmx kernel/sign.cmx kernel/safe_typing.cmx \
-    pretyping/reductionops.cmx kernel/reduction.cmx parsing/printmod.cmx \
-    parsing/printer.cmx lib/pp.cmx lib/options.cmx interp/notation.cmx \
-    library/nametab.cmx kernel/names.cmx library/nameops.cmx \
-    library/libobject.cmx library/libnames.cmx library/lib.cmx \
-    pretyping/inductiveops.cmx kernel/inductive.cmx library/impargs.cmx \
-    library/global.cmx pretyping/evd.cmx kernel/environ.cmx \
-    library/declare.cmx kernel/declarations.cmx kernel/conv_oracle.cmx \
-    interp/constrextern.cmx pretyping/classops.cmx parsing/prettyp.cmi 
+    pretyping/reductionops.cmx kernel/reduction.cmx pretyping/recordops.cmx \
+    parsing/printmod.cmx parsing/printer.cmx lib/pp.cmx lib/options.cmx \
+    interp/notation.cmx library/nametab.cmx kernel/names.cmx \
+    library/nameops.cmx library/libobject.cmx library/libnames.cmx \
+    library/lib.cmx pretyping/inductiveops.cmx kernel/inductive.cmx \
+    library/impargs.cmx library/global.cmx pretyping/evd.cmx \
+    kernel/environ.cmx library/declare.cmx kernel/declarations.cmx \
+    kernel/conv_oracle.cmx interp/constrextern.cmx pretyping/classops.cmx \
+    parsing/prettyp.cmi 
 parsing/printer.cmo: lib/util.cmi pretyping/termops.cmi parsing/termast.cmi \
     kernel/term.cmi kernel/sign.cmi proofs/refiner.cmi proofs/proof_type.cmi \
     interp/ppextend.cmi translate/ppconstrnew.cmi parsing/ppconstr.cmi \
