@@ -65,11 +65,8 @@ let dest_match_eq gls eqn =
 	    [< 'sTR "no primitive equality here" >]))
     
 (* Environment management *)
-let push_rel_type sigma (na,t) env =
-  push_rel_decl (na,make_typed t (get_sort_of env sigma t)) env
-
 let push_rels vars env =
-  List.fold_right (push_rel_type Evd.empty) vars env
+  List.fold_right push_rel vars env
 
 type inversion_status = Dep of constr option | NoDep
 
@@ -85,7 +82,6 @@ let make_inv_predicate env sigma ind id status concl =
       | NoDep ->
 	  (* We push the arity and leave concl unchanged *)
 	  let hyps_arity,_ = get_arity indf in
-	  let env' = push_rels hyps_arity env in
 	  (hyps_arity,concl)
       | Dep dflt_concl ->
 	  if not (dependent (mkVar id) concl) then
@@ -100,12 +96,10 @@ let make_inv_predicate env sigma ind id status concl =
               | None ->
 		let sort = get_sort_of env sigma concl in
 		let p = make_arity env true indf sort in
-		abstract_list_all env sigma p concl (realargs@[mkVar id])
-	  in
-	  let hyps,_ = decompose_lam_n (nrealargs+1) pred in
-	  let c3 = whd_beta (applist (pred,rel_list nrealargs (nrealargs +1))) 
-	  in
-	  (hyps,c3)
+		abstract_list_all env sigma p concl (realargs@[mkVar id]) in
+	  let hyps,bodypred = decompose_lam_n_assum (nrealargs+1) pred in
+	  (* We lift to make room for the equations *)
+	  (hyps,lift nrealargs bodypred)
   in
   let nhyps = List.length hyps in
   let env' = push_rels hyps env in
@@ -132,7 +126,7 @@ let make_inv_predicate env sigma ind id status concl =
 	build_concl ((Anonymous,lift n eqn)::eqns) (n+1) restlist
   in
   let (newconcl,neqns) = build_concl [] 0 pairs in
-  let predicate = it_lambda_name env newconcl hyps in
+  let predicate = it_mkLambda_or_LetIn_name env newconcl hyps in
   (* OK - this predicate should now be usable by res_elimination_then to
      do elimination on the conclusion. *)
   (predicate,neqns)
