@@ -17,8 +17,8 @@ open Names
 
 type 'a object_declaration = {
   cache_function : section_path * 'a -> unit;
-  load_function : 'a -> unit;
-  open_function : 'a -> unit;
+  load_function : section_path * 'a -> unit;
+  open_function : section_path * 'a -> unit;
   specification_function : 'a -> 'a }
 
 (*s Given an object name and a declaration, the function [declare_object]
@@ -32,7 +32,7 @@ val declare_object :
 
 val object_tag : obj -> string
 
-val cache_object : (section_path * obj) -> unit
-val load_object : obj -> unit
-val open_object : obj -> unit
+val cache_object : section_path * obj -> unit
+val load_object : section_path * obj -> unit
+val open_object : section_path * obj -> unit
 val extract_object_specification : obj -> obj

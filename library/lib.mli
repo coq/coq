@@ -27,7 +27,7 @@ type library_entry = section_path * node
 (*s Adding operations, and getting the current list of operations (most 
   recent ones coming first). *)
 
-val add_leaf : identifier -> obj -> section_path
+val add_leaf : identifier -> path_kind -> obj -> section_path
 val add_anonymous_leaf : obj -> unit
 
 val contents_after : section_path option -> library_segment

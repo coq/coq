@@ -28,6 +28,8 @@ kernel/typing.cmi: kernel/constant.cmi kernel/environ.cmi kernel/evd.cmi \
 kernel/univ.cmi: kernel/names.cmi lib/pp.cmi 
 lib/pp.cmi: lib/pp_control.cmi 
 lib/util.cmi: lib/pp.cmi 
+library/declare.cmi: kernel/constant.cmi kernel/inductive.cmi \
+    kernel/names.cmi kernel/term.cmi 
 library/global.cmi: kernel/constant.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/inductive.cmi kernel/names.cmi kernel/sign.cmi kernel/term.cmi \
     kernel/typing.cmi kernel/univ.cmi 
@@ -153,6 +155,8 @@ lib/system.cmo: lib/pp.cmi lib/util.cmi lib/system.cmi
 lib/system.cmx: lib/pp.cmx lib/util.cmx lib/system.cmi 
 lib/util.cmo: lib/pp.cmi lib/util.cmi 
 lib/util.cmx: lib/pp.cmx lib/util.cmi 
+library/declare.cmo: library/declare.cmi 
+library/declare.cmx: library/declare.cmi 
 library/global.cmo: library/summary.cmi kernel/typing.cmi library/global.cmi 
 library/global.cmx: library/summary.cmx kernel/typing.cmx library/global.cmi 
 library/impargs.cmo: kernel/constant.cmi kernel/generic.cmi \

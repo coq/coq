@@ -80,8 +80,8 @@ let add_anonymous_entry node =
   let sp = make_path (anonymous_id()) OBJ in
   add_entry sp node
 
-let add_leaf id obj =
-  let sp = make_path id OBJ in
+let add_leaf id kind obj =
+  let sp = make_path id kind in
   add_entry sp (Leaf obj);
   sp
 
