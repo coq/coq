@@ -111,9 +111,6 @@ let pr_inductive env ind = gentermpr (ast_of_inductive env ind)
 let pr_constructor env cstr =
   gentermpr (ast_of_constructor env cstr)
 
-let pr_global_reference env ref =
-  gentermpr (ast_of_ref (ast_of_constr false env) ref)
-
 open Pattern
 let pr_ref_label = function (* On triche sur le contexte *)
   | ConstNode sp -> pr_constant (Global.env()) (sp,[||])
