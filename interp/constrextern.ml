@@ -139,12 +139,15 @@ let rec translate_ident_string = function
       (str ("Warning: '"^
           s^"' is now a keyword; it has been translated to '"^s'^"'"));
       s'
+(* Le conflit est en fait surtout avec Eval dans Definition et c'est gere dans
+   Ppconstrnew
   | "eval" as s ->
       let s' = s^"_" in
       msgerrnl
       (str ("Warning: '"^
           s^"' is a conflicting ident; it has been translated to '"^s'^"'"));
       s'
+*)
 
   (* avoid _ *)
   | "_" -> 
