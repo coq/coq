@@ -23,6 +23,7 @@ val optim :  unit -> bool
 (*s Set and Map over global reference *) 
 
 module Refset : Set.S with type elt = global_reference
+module Refmap : Map.S with type key = global_reference
 
 (*s Target language. *)
 

@@ -36,7 +36,155 @@ let id_of_name = function
   | Name id when id = dummy_name -> anonymous
   | Name id -> id 
 
-(*S Operations upon ML types. *)
+(*S Operations upon ML types (with meta). *)
+
+let meta_count = ref 0 
+		     
+let reset_meta_count () = meta_count := 0
+			      
+let new_meta _ = 
+  incr meta_count; 
+  Tmeta {id = !meta_count; contents = None}
+
+(*s From a type schema to a type. All [Tvar] becomes fresh [Tmeta]. *)
+
+let instantiation (nb,t) =
+    let c = !meta_count in 
+    let a = Array.make nb {id=0; contents = None} 
+    in 
+    for i = 0 to nb-1 do 
+      a.(i) <- {id=i+c+1; contents=None}
+    done; 
+    let rec var2meta t = match t with 
+      | Tvar i -> Tmeta a.(i-1)
+      | Tmeta {contents=None} -> t 
+      | Tmeta {contents=Some u} -> var2meta u
+      | Tglob (r,l) -> Tglob(r, List.map var2meta l) 
+      | Tarr (t1,t2) -> Tarr (var2meta t1, var2meta t2)
+      | t -> t
+    in 
+    meta_count := !meta_count + nb; 
+    var2meta t
+
+(*s Occur-check of a uninstantiated meta in a type *)
+
+let rec type_occurs alpha t =
+  match t with
+  | Tmeta {id=beta; contents=None} -> alpha = beta
+  | Tmeta {contents=Some u} -> type_occurs alpha u
+  | Tarr (t1, t2) -> type_occurs alpha t1 || type_occurs alpha t2
+  | Tglob (r,l) -> List.exists (type_occurs alpha) l  
+  | _ -> false
+
+(*s Most General Unificator *)
+
+let rec mgu = function
+  | Tmeta m, Tmeta m' when m.id = m'.id -> ()
+  | Tmeta m, t when m.contents=None -> 
+      if type_occurs m.id t then raise Impossible
+      else m.contents <- Some t
+  | t, Tmeta m when m.contents=None -> 
+      if type_occurs m.id t then raise Impossible
+      else m.contents <- Some t
+  | Tmeta {contents=Some u}, t -> mgu (u, t)
+  | t, Tmeta {contents=Some u} -> mgu (t, u)
+  | Tarr(a, b), Tarr(a', b') ->
+      mgu (a, a'); mgu (b, b')
+  | Tglob (r,l), Tglob (r',l') when r = r' ->
+       List.iter mgu (List.combine l l')
+  | Tvar i, Tvar j when i = j -> ()
+  | Tvar' i, Tvar' j when i = j -> ()
+  | Tdummy, Tdummy -> ()
+  | Tunknown, Tunknown -> ()
+  | _ -> raise Impossible
+
+let needs_magic p = try mgu p; false with Impossible -> true
+
+let put_magic_if b a = if b then MLmagic a else a
+
+let put_magic p a = if needs_magic p then MLmagic a else a
+
+
+(*S ML type env. *)
+
+module Mlenv = struct 
+  
+  let meta_cmp m m' = compare m.id m'.id 
+  module Metaset = Set.Make(struct type t = ml_meta let compare = meta_cmp end)
+
+  (* Main MLenv type. [env] is the real environment, whereas [free] 
+     (tries to) keep trace of the free meta variables occurring in [env]. *)
+
+  type t = { env : ml_schema list; mutable free : Metaset.t}
+
+  (* Empty environment. *)
+
+  let empty = { env = []; free = Metaset.empty }
+
+  (* [get] returns a instantiated copy of the n-th most recently added 
+     type in the environment. *)
+
+  let get mle n = 
+    assert (List.length mle.env >= n); 
+    instantiation (List.nth mle.env (n-1))
+
+  (* [find_free] finds the free meta in a type. *) 
+
+  let rec find_free set = function 
+    | Tmeta m when m.contents = None -> Metaset.add m set
+    | Tmeta {contents = Some t} -> find_free set t
+    | Tarr (a,b) -> find_free (find_free set a) b
+    | Tglob (_,l) -> List.fold_left find_free set l
+    | _ -> set
+
+  (* The [free] set of an environment can be outdate after 
+     some unifications. [clean_free] takes care of that. *) 
+			
+  let clean_free mle = 
+    let rem = ref Metaset.empty 
+    and add = ref Metaset.empty in 
+    let clean m = match m.contents with 
+      | None -> () 
+      | Some u -> rem := Metaset.add m !rem; add := find_free !add u
+    in 
+    Metaset.iter clean mle.free; 
+    mle.free <- Metaset.union (Metaset.diff mle.free !rem) !add
+
+  (* From a type to a type schema. If a [Tmeta] is still uninstantiated
+     and does appears in the [mle], then it becomes a [Tvar]. *)
+
+  let generalization mle t = 
+    let c = ref 0 in 
+    let map = ref (Intmap.empty : int Intmap.t) in 
+    let add_new i = incr c; map := Intmap.add i !c !map; !c in 
+    let rec meta2var t = match t with 
+      | Tmeta {contents=Some u} -> meta2var u 
+      | Tmeta ({id=i} as m) -> 
+	  (try Tvar (Intmap.find i !map) 
+	   with Not_found ->  
+	     if Metaset.mem m mle.free then t 
+	     else Tvar (add_new i))
+      | Tarr (t1,t2) -> Tarr (meta2var t1, meta2var t2)
+      | Tglob (r,l) -> Tglob (r, List.map meta2var l) 
+      | t -> t 
+    in !c, meta2var t
+	
+  (* Adding a type in an environment, after generalizing. *)
+
+  let push_gen mle t = 
+    clean_free mle; 
+    { env = generalization mle t :: mle.env; free = mle.free }
+
+  let push_type {env=e;free=f} t = 
+    { env = (0,t) :: e; free = find_free f t} 
+    
+  let push_std_type {env=e;free=f} t = 
+    { env = (0,t) :: e; free = f}
+
+end
+
+
+(*S Operations upon ML types (without meta). *)
 
 (*s Does a section path occur in a ML type ? *)
 
@@ -47,9 +195,117 @@ let kn_of_r r = match r with
     | _ -> assert false
 
 let rec type_mem_kn kn = function 
+  | Tmeta _ -> assert false
   | Tglob (r,l) -> (kn_of_r r) = kn || List.exists (type_mem_kn kn) l
   | Tarr (a,b) -> (type_mem_kn kn a) || (type_mem_kn kn b)
   | _ -> false
+
+let type_maxvar t = 
+  let rec parse n = function 
+    | Tmeta _ -> assert false
+    | Tvar i -> max i n 
+    | Tarr (a,b) -> parse (parse n a) b
+    | Tglob (_,l) -> List.fold_left parse n l 
+    | _ -> n 
+  in parse 0 t
+
+let rec type_decomp = function 
+  | Tmeta _ -> assert false
+  | Tarr (a,b) -> let l,h = type_decomp b in a::l, h 
+  | a -> [],a
+
+let rec type_recomp (l,t) = match l with 
+  | [] -> t 
+  | a::l -> Tarr (a, type_recomp (l,t))
+
+let rec var2var' = function 
+  | Tmeta _ -> assert false
+  | Tvar i -> Tvar' i
+  | Tarr (a,b) -> Tarr (var2var' a, var2var' b)
+  | Tglob (r,l) -> Tglob (r, List.map var2var' l)
+  | a -> a
+
+(*s Sustitution of [Tvar i] by [t] in a ML type. *)
+
+let type_subst i t = 
+  let rec subst = function 
+  | Tvar j when i = j -> t
+  | Tarr (a,b) -> Tarr (subst a, subst b)
+  | Tglob (r, l) -> Tglob (r, List.map subst l)
+  | a -> a 
+  in subst
+
+(* Simultaneous substitution of [Tvar 1;...; Tvar n] by [l] in a ML type. *)
+
+let type_subst_all l t = 
+  let rec subst = function 
+    | Tvar j -> List.nth l (j-1)
+    | Tarr (a,b) -> Tarr (subst a, subst b)
+    | Tglob (r, l) -> Tglob (r, List.map subst l)
+    | a -> a
+  in subst t
+
+type abbrev_map = global_reference -> ml_type option
+
+(*s Delta-reduction of type constants everywhere in a ML type [t].
+   [env] is a function of type [ml_type_env]. *)
+
+let type_expand env t = 
+  let rec expand = function
+    | Tglob (r,l) as t ->    
+	(match env r with 
+	   | Some mlt -> expand (type_subst_all l mlt) 
+	   | None -> Tglob (r, List.map expand l))
+    | Tarr (a,b) -> Tarr (expand a, expand b)
+    | a -> a
+  in expand t
+
+(*s Idem, but only at the top level of implications. *)
+
+let is_arrow = function Tarr _ -> true | _ -> false
+
+let type_weak_expand env t = 
+  let rec expand = function
+    | Tglob (r,l) as t ->    
+	(match env r with 
+	   | Some mlt -> 
+	       let u = expand (type_subst_all l mlt) in 
+	       if is_arrow u then u else t
+	   | None -> t)
+    | Tarr (a,b) -> Tarr (a, expand b)
+    | a -> a
+  in expand t
+
+(*s Equality over ML types modulo delta-reduction *)
+
+let type_eq env t t' = (type_expand env t = type_expand env t')
+
+let type_neq env t t' = (type_expand env t <> type_expand env t')
+
+let type_to_sign env t = 
+  let rec f = function 
+    | Tarr (a,b) -> (Tdummy <> a) :: (f b)
+    | _ -> [] 
+  in f (type_expand env t)
+
+let type_expunge env t = 
+  let s = type_to_sign env t in 
+  if s = [] then t 
+  else if List.mem true s then 
+    let rec f t s = 
+      if List.mem false s then 
+	match t with 
+	  | Tarr (a,b) -> 
+	      let t = f b (List.tl s) in 
+	      if List.hd s then Tarr (a, t) else t  
+	  | Tglob (r,l) ->
+	      (match env r with 
+		 | Some mlt -> f (type_subst_all l mlt) s
+		 | None -> assert false)
+	  | _ -> assert false
+      else t 
+    in f t s 
+  else Tarr (Tdummy, snd (type_decomp (type_weak_expand env t))) 
 
 (*S Generic functions over ML ast terms. *)
 
@@ -68,7 +324,7 @@ let ast_iter_rel f =
     | MLcons (_,l) ->  List.iter (iter n) l
     | MLcast (a,_) -> iter n a
     | MLmagic a -> iter n a
-    | MLglob _ | MLexn _ | MLdummy | MLdummy' -> ()
+    | MLglob _ | MLexn _ | MLdummy -> ()
   in iter 0 
 
 (*s Map over asts. *)
@@ -84,7 +340,7 @@ let ast_map f = function
   | MLcons (c,l) -> MLcons (c, List.map f l)
   | MLcast (a,t) -> MLcast (f a, t)
   | MLmagic a -> MLmagic (f a)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLdummy' as a -> a
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> a
 
 (*s Map over asts, with binding depth as parameter. *)
 
@@ -100,7 +356,7 @@ let ast_map_lift f n = function
   | MLcons (c,l) -> MLcons (c, List.map (f n) l)
   | MLcast (a,t) -> MLcast (f n a, t)
   | MLmagic a -> MLmagic (f n a)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLdummy' as a -> a	
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> a	
 
 (*s Iter over asts. *) 
 
@@ -115,7 +371,7 @@ let ast_iter f = function
   | MLcons (c,l) -> List.iter f l
   | MLcast (a,t) -> f a
   | MLmagic a -> f a
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLdummy' as a -> ()
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> ()
 
 (*S Searching occurrences of a particular term (no lifting done). *)
 
@@ -124,17 +380,35 @@ let rec ast_search t a =
 
 let decl_search t l = 
   let one_decl = function 
-    | Dterm (_,a) -> ast_search t a
-    | Dfix (_,c) -> Array.iter (ast_search t) c
+    | Dterm (_,a,_) -> ast_search t a
+    | Dfix (_,c,_) -> Array.iter (ast_search t) c
+    | _ -> () 
+  in 
+  try List.iter one_decl l; false with Found -> true
+
+let rec type_search t = function  
+  | Tarr (a,b) -> type_search t a; type_search t b 
+  | Tglob (r,l) -> List.iter (type_search t) l
+  | u -> if t = u then raise Found
+
+let decl_type_search t l = 
+  let one_decl = function 
+    | Dind(l,_) -> 
+	List.iter (fun (_,_,l) -> 
+		    (List.iter (fun (_,l) -> 
+				  List.iter (type_search t) l) l)) l
+    | Dterm (_,_,u) -> type_search t u
+    | Dfix (_,_,v) -> Array.iter (type_search t) v
+    | Dtype (_,_,u) -> type_search t u
     | _ -> () 
   in 
   try List.iter one_decl l; false with Found -> true
 
 (*S Operations concerning De Bruijn indices. *)
 
-(*s [occurs k t] returns [true] if [(Rel k)] occurs in [t]. *)
+(*s [ast_occurs k t] returns [true] if [(Rel k)] occurs in [t]. *)
 
-let occurs k t = 
+let ast_occurs k t = 
   try 
     ast_iter_rel (fun i -> if i = k then raise Found) t; false 
   with Found -> true
@@ -157,16 +431,15 @@ let nb_occur_k k t =
 let nb_occur t = nb_occur_k 1 t
 
 (*s Lifting on terms.
-    [ml_lift k t] lifts the binding depth of [t] across [k] bindings. *)
+    [ast_lift k t] lifts the binding depth of [t] across [k] bindings. *)
 
-let ml_lift k t = 
+let ast_lift k t = 
   let rec liftrec n = function
     | MLrel i as a -> if i-n < 1 then a else MLrel (i+k)
     | a -> ast_map_lift liftrec n a
   in if k = 0 then t else liftrec 0 t
 
-let ml_pop t = ml_lift (-1) t
-
+let ast_pop t = ast_lift (-1) t
 
 (*s [permut_rels k k' c] translates [Rel 1 ... Rel k] to [Rel (k'+1) ... 
   Rel (k'+k)] and [Rel (k+1) ... Rel (k+k')] to [Rel 1 ... Rel k'] *)
@@ -184,11 +457,11 @@ let permut_rels k k' =
 (*s Substitution. [ml_subst e t] substitutes [e] for [Rel 1] in [t]. 
     Lifting (of one binder) is done at the same time. *)
 
-let rec ml_subst e =
+let ast_subst e =
   let rec subst n = function
     | MLrel i as a ->
 	let i' = i-n in 
-	if i'=1 then ml_lift n e
+	if i'=1 then ast_lift n e
 	else if i'<1 then a 
 	else MLrel (i-1)
     | a -> ast_map_lift subst n a
@@ -205,7 +478,7 @@ let gen_subst v d t =
 	let i'= i-n in 
 	if i' < 1 then a 
 	else if i' < Array.length v then 
-	  if v.(i') = 0 then MLdummy'
+	  if v.(i') = 0 then MLdummy
 	  else MLrel (v.(i')+n) 
 	else MLrel (i+d) 
     | a -> ast_map_lift subst n a
@@ -264,12 +537,26 @@ let rec dummy_lams a = function
   | 0 -> a 
   | n -> dummy_lams (MLlam (dummy_name,a)) (pred n)
 
+(*s mixed according to a signature. *)
+
+let rec anonym_or_dummy_lams a = function 
+  | [] -> a 
+  | true :: s -> MLlam(anonymous, anonym_or_dummy_lams a s)
+  | false :: s -> MLlam(dummy_name, anonym_or_dummy_lams a s)
+
 (*S Operations concerning eta. *)
 
 (*s The following function creates [MLrel n;...;MLrel 1] *)
 
 let rec eta_args n = 
   if n = 0 then [] else (MLrel n)::(eta_args (pred n))
+
+(*s Same, but filtered by a signature. *)
+
+let rec eta_args_sign n = function 
+  | [] -> [] 
+  | true :: s -> (MLrel n) :: (eta_args_sign (n-1) s) 
+  | false :: s -> eta_args_sign (n-1) s
 
 (*s This one tests [MLrel (n+k); ... ;MLrel (1+k)] *)
 
@@ -291,7 +578,7 @@ let eta_red e =
 	  let a1,a2 = list_chop m a in 
 	  let f = if m = 0 then f else MLapp (f,a1) in 
 	  if test_eta_args_lift 0 n a2 && not (occurs_itvl 1 n f)
-	  then ml_lift (-n) f
+	  then ast_lift (-n) f
 	  else e 
     | _ -> e
 
@@ -331,11 +618,11 @@ let check_constant_case br =
   let (r,l,t) = br.(0) in
   let n = List.length l in 
   if occurs_itvl 1 n t then raise Impossible; 
-  let cst = ml_lift (-n) t in 
+  let cst = ast_lift (-n) t in 
   for i = 1 to Array.length br - 1 do 
     let (r,l,t) = br.(i) in
     let n = List.length l in
-    if (occurs_itvl 1 n t) || (cst <> (ml_lift (-n) t)) 
+    if (occurs_itvl 1 n t) || (cst <> (ast_lift (-n) t)) 
     then raise Impossible
   done; cst
 
@@ -382,7 +669,7 @@ let iota_gen br =
     | MLcons (r,a) ->
 	let (_,ids,c) = br.(constructor_index r) in
 	let c = List.fold_right (fun id t -> MLlam (id,t)) ids c in
-	let c = ml_lift k c in 
+	let c = ast_lift k c in 
 	MLapp (c,a)
     | MLcase(e,br') -> 
 	let new_br = 
@@ -392,7 +679,7 @@ let iota_gen br =
   in iota 0 
 
 let is_atomic = function 
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLdummy' -> true
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy -> true
   | _ -> false
 
 (*S The main simplification function. *)
@@ -409,38 +696,38 @@ let rec simpl o = function
       simpl_case o br (simpl o e) 
   | MLletin(id,c,e) when 
       (id = dummy_name) || (is_atomic c) || (nb_occur e <= 1) -> 
-	simpl o (ml_subst c e)
+	simpl o (ast_subst c e)
   | MLfix(i,ids,c) as t when o -> 
       let n = Array.length ids in 
       if occurs_itvl 1 n c.(i) then 
 	MLfix (i, ids, Array.map (simpl o) c)
-      else simpl o (ml_lift (-n) c.(i)) (* Dummy fixpoint *)
+      else simpl o (ast_lift (-n) c.(i)) (* Dummy fixpoint *)
   | a -> ast_map (simpl o) a 
 
 and simpl_app o a = function  
   | MLapp (f',a') -> simpl_app o (a'@a) f'
   | MLlam (id,t) when id = dummy_name -> 
-      simpl o (MLapp (ml_pop t, List.tl a))
+      simpl o (MLapp (ast_pop t, List.tl a))
   | MLlam (id,t) -> (* Beta redex *)
       (match nb_occur t with
-	 | 0 -> simpl o (MLapp (ml_pop t, List.tl a))
+	 | 0 -> simpl o (MLapp (ast_pop t, List.tl a))
 	 | 1 when o -> 
-	     simpl o (MLapp (ml_subst (List.hd a) t, List.tl a))
+	     simpl o (MLapp (ast_subst (List.hd a) t, List.tl a))
 	 | _ -> 
-	     let a' = List.map (ml_lift 1) (List.tl a) in
+	     let a' = List.map (ast_lift 1) (List.tl a) in
 	     simpl o (MLletin (id, List.hd a, MLapp (t, a'))))
   | MLletin (id,e1,e2) -> 
       (* Application of a letin: we push arguments inside *)
-      MLletin (id, e1, simpl o (MLapp (e2, List.map (ml_lift 1) a)))
+      MLletin (id, e1, simpl o (MLapp (e2, List.map (ast_lift 1) a)))
   | MLcase (e,br) -> (* Application of a case: we push arguments inside *)
       let br' = 
 	Array.map 
       	  (fun (n,l,t) -> 
 	     let k = List.length l in
-	     let a' = List.map (ml_lift k) a in
+	     let a' = List.map (ast_lift k) a in
       	     (n, l, simpl o (MLapp (t,a')))) br 
       in simpl o (MLcase (e,br')) 
-  | (MLdummy | MLdummy' | MLexn _) as e -> e 
+  | (MLdummy | MLexn _) as e -> e 
 	(* We just discard arguments in those cases. *)
   | f -> MLapp (f,a)
 
@@ -461,11 +748,11 @@ and simpl_case o br e =
 	  let ids,br = permut_case_fun br [] in 
 	  let n = List.length ids in 
 	  if n = 0 then MLcase (e, br) 
-	  else named_lams ids (MLcase (ml_lift n e, br))
+	  else named_lams ids (MLcase (ast_lift n e, br))
 
 let rec post_simpl = function 
   | MLletin(_,c,e) when (is_atomic (eta_red c)) -> 
-      post_simpl (ml_subst (eta_red c) e)
+      post_simpl (ast_subst (eta_red c) e)
   | a -> ast_map post_simpl a 
 
 (*S Local prop elimination. *) 
@@ -491,7 +778,7 @@ let kill_some_lams bl (ids,c) =
   let n = List.length bl in
   let n' = List.fold_left (fun n b -> if b then (n+1) else n) 0 bl in 
   if n = n' then ids,c
-  else if n' = 0 then [],ml_lift (-n) c 
+  else if n' = 0 then [],ast_lift (-n) c 
   else begin 
     let v = Array.make (n+1) 0 in 
     let rec parse_ids i j = function 
@@ -523,15 +810,15 @@ let kill_dummy_args ids t0 t =
   let m = List.length ids in 
   let bl = List.rev_map ((<>) dummy_name) ids in
   let rec killrec n = function 
-    | MLapp(e, a) when e = ml_lift n t0 -> 
+    | MLapp(e, a) when e = ast_lift n t0 -> 
 	let k = max 0 (m - (List.length a)) in 
 	let a = List.map (killrec n) a in  
-	let a = List.map (ml_lift k) a in 
+	let a = List.map (ast_lift k) a in 
 	let a = select_via_bl bl (a @ (eta_args k)) in 
-	named_lams (list_firstn k ids) (MLapp (ml_lift k e, a)) 
-    | e when e = ml_lift n t0 -> 
+	named_lams (list_firstn k ids) (MLapp (ast_lift k e, a)) 
+    | e when e = ast_lift n t0 -> 
 	let a = select_via_bl bl (eta_args m) in 
-	named_lams ids (MLapp (ml_lift m e, a))
+	named_lams ids (MLapp (ast_lift m e, a))
     | e -> ast_map_lift killrec n e 
   in killrec 0 t 
 
@@ -541,14 +828,14 @@ let rec kill_dummy = function
   | MLfix(i,fi,c) -> 
       (try 
 	 let ids,c = kill_dummy_fix i fi c in 
-	 ml_subst (MLfix (i,fi,c)) (kill_dummy_args ids (MLrel 1) (MLrel 1))
+	 ast_subst (MLfix (i,fi,c)) (kill_dummy_args ids (MLrel 1) (MLrel 1))
        with Impossible -> MLfix (i,fi,Array.map kill_dummy c))
   | MLapp (MLfix (i,fi,c),a) -> 
       (try 
 	 let ids,c = kill_dummy_fix i fi c in 
-	 let a = List.map (fun t -> ml_lift 1 (kill_dummy t)) a in 
+	 let a = List.map (fun t -> ast_lift 1 (kill_dummy t)) a in 
 	 let e = kill_dummy_args ids (MLrel 1) (MLapp (MLrel 1,a)) in
-	 ml_subst (MLfix (i,fi,c)) e  
+	 ast_subst (MLfix (i,fi,c)) e  
        with Impossible -> 
 	 MLapp(MLfix(i,fi,Array.map kill_dummy c),List.map kill_dummy a))
   | MLletin(id, MLfix (i,fi,c),e) -> 
@@ -591,7 +878,7 @@ let general_optimize_fix f ids n args m c =
   in list_iter_i aux args; 
   let args_f = List.rev_map (fun i -> MLrel (i+m+1)) (Array.to_list v) in
   let new_f = anonym_lams (MLapp (MLrel (n+m+1),args_f)) m in  
-  let new_c = named_lams ids (normalize (MLapp ((ml_subst new_f c),args))) in
+  let new_c = named_lams ids (normalize (MLapp ((ast_subst new_f c),args))) in
   MLfix(0,[|f|],[|new_c|])
 
 let optimize_fix a = 
@@ -603,7 +890,7 @@ let optimize_fix a =
     else match a' with 
       | MLfix(_,[|f|],[|c|]) ->
 	  let new_f = MLapp (MLrel (n+1),eta_args n) in 
-	  let new_c = named_lams ids (normalize (ml_subst new_f c))
+	  let new_c = named_lams ids (normalize (ast_subst new_f c))
 	  in MLfix(0,[|f|],[|new_c|])
       | MLapp(a',args) ->
 	  let m = List.length args in 
@@ -783,7 +1070,7 @@ let subst_glob_ast r m =
   in substrec
 
 let subst_glob_decl r m = function
-  | Dterm(r',t') -> Dterm(r', subst_glob_ast r m t')
+  | Dterm(r',t',typ) -> Dterm(r', subst_glob_ast r m t', typ)
   | d -> d
 
 let inline_glob r t l = 
@@ -802,40 +1089,42 @@ let add_ml_decls prm decls =
   let l2 = List.map (fun (r,s)-> DcustomTerm (r,s)) l2 in
   l1 @ l2 @ decls
 
-let rec expunge_fix_decls prm v c b = function 
-  | [] -> b, [] 
-  | Dterm (r, t) :: l when array_exists ((=) r) v -> 
+let rec expunge_fix_decls prm v c map b = function 
+  | [] -> b, [], map  
+  | Dterm (r, t, typ) :: l when array_exists ((=) r) v -> 
       let t = normalize t in 
       let t' = optimize_fix t in 
       (match t' with 
 	 | MLfix(_,_,c') when c=c' -> 
 	     let b',l = inline_glob r t l in 
-	     expunge_fix_decls prm v c (b || b' || List.mem r prm.to_appear) l 
+	     let b = b || b' || List.mem r prm.to_appear in 
+	     let map = Refmap.add r typ map in 
+	     expunge_fix_decls prm v c map b l 
 	 | _ -> raise Impossible)
-  | d::l -> let b,l = expunge_fix_decls prm v c b l in b, d::l  
+  | d::l -> let b,l,map = expunge_fix_decls prm v c map b l in b, d::l, map  
 
 let rec optimize prm = function
   | [] -> 
       []
-  | (DdummyType r | Dterm(r,MLdummy')) as d :: l ->
+  | (Dtype (r,_,Tdummy) | Dterm(r,MLdummy,_)) as d :: l ->
       if List.mem r prm.to_appear then d :: (optimize prm l) 
       else optimize prm l
-  | Dterm (r,t) :: l ->
+  | Dterm (r,t,typ) :: l ->
       let t = normalize t in
       let b,l = inline_glob r t l in 
       let b = b || prm.modular || List.mem r prm.to_appear in 
       let t' = optimize_fix t in
-      (try optimize_Dfix prm r t' b l 
-      with Impossible -> 
-	if b then Dterm (r,t') :: (optimize prm l)
-	else optimize prm l)
+      (try optimize_Dfix prm (r,t',typ) b l 
+       with Impossible ->
+	 if b then Dterm (r,t',typ) :: (optimize prm l)
+	 else optimize prm l)
   | d :: l -> d :: (optimize prm l)
 
-and optimize_Dfix prm r t b l = 
+and optimize_Dfix prm (r,t,typ) b l = 
   match t with 
     | MLfix (_, f, c) -> 
 	if Array.length f = 1 then 
-	  if b then Dfix ([|r|], c) :: (optimize prm l)
+	  if b then Dfix ([|r|], c,[|typ|]) :: (optimize prm l)
 	  else optimize prm l
 	else 
 	  let v = try 
@@ -843,8 +1132,15 @@ and optimize_Dfix prm r t b l =
 	    Array.map (fun id -> locate (make_qualid d id)) f 
 	  with Not_found -> raise Impossible 
 	  in 
-	  let b,l = expunge_fix_decls prm v c b l in 
-	  if b then Dfix (v, c) :: (optimize prm l)
+	  let map = Refmap.add r typ (Refmap.empty) in 
+	  let b,l,map = expunge_fix_decls prm v c map b l in 
+	  if b then 
+	    let typs = 
+	      Array.map 
+		(fun r -> try Refmap.find r map
+		 with Not_found -> Tunknown) v 
+	    in 
+	    Dfix (v, c, typs) :: (optimize prm l)
 	  else optimize prm l 
     | _ -> raise Impossible
 

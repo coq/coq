@@ -31,16 +31,16 @@ let keywords =
     "as"; "qualified"; "hiding" ; "unit" ]
   Idset.empty
 
-let preamble prm used_modules print_dummy =
+let preamble prm used_modules (mldummy,tdummy,tunknown) =
   let m = String.capitalize (string_of_id prm.mod_name)   in 
   str "module " ++ str m ++ str " where" ++ fnl () ++ fnl() ++ 
   str "import qualified Prelude" ++ fnl() ++
   Idset.fold 
     (fun m s -> 
-       s ++ str "import qualified " ++ pr_id (uppercase_id m) ++ fnl())
+       str "import qualified " ++ pr_id (uppercase_id m) ++ fnl() ++ s)
     used_modules (mt ()) ++ fnl()
   ++
-  (if print_dummy then 
+  (if mldummy then 
      str "__ = Prelude.error \"Logical or arity value used\"" 
      ++ fnl () ++ fnl()
    else mt())
@@ -69,6 +69,7 @@ let empty_env () = [], P.globals()
 
 let rec pp_type par vl t =
   let rec pp_rec par = function
+    | Tmeta _ | Tvar' _ -> assert false 
     | Tvar i -> (try pr_id (List.nth vl (pred i)) with _ -> (str "a" ++ int i))
     | Tglob (r,[]) -> pp_type_global r	
     | Tglob (r,l) -> 
@@ -150,7 +151,7 @@ let rec pp_expr par env args =
 	(* An [MLexn] may be applied, but I don't really care. *)
 	(open_par par ++ str "Prelude.error" ++ spc () ++ 
 	 qs s ++ close_par par)
-    | MLdummy | MLdummy' ->
+    | MLdummy ->
 	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
     | MLcast (a,t) -> pp_expr par env args a
     | MLmagic a ->  pp_expr par env args a
@@ -232,8 +233,6 @@ let pp_decl = function
   | Dind ([], _) -> mt ()
   | Dind (i, _) -> 
       hov 0 (pp_inductive i)
-  | DdummyType r -> 
-      hov 0 (str "type " ++ pp_type_global r ++ str " = ()" ++ fnl ())
   | Dtype (r, l, t) ->
       let l = rename_tvars keywords l in
       let l' = List.rev l in 
@@ -241,13 +240,13 @@ let pp_decl = function
 	       prlist_with_sep (fun () -> (str " ")) pr_id l ++
 	       (if l <> [] then (str " ") else (mt ())) ++ str "=" ++ spc () ++
 	       pp_type false l' t ++ fnl ())
-  | Dfix (rv, defs) ->
+  | Dfix (rv, defs,_) ->
       let ids = List.map rename_global (Array.to_list rv) in 
       let env = List.rev ids, P.globals() in
       (prlist_with_sep (fun () -> fnl () ++ fnl ()) 
 	   (fun (fi,ti) -> pp_function env (pr_id fi) ti)
 	   (List.combine ids (Array.to_list defs)) ++ fnl ())
-  | Dterm (r, a) ->
+  | Dterm (r, a, _) ->
       hov 0 (pp_function (empty_env ()) (pp_global r) a ++ fnl ())
   | DcustomTerm (r,s) -> 
       hov 0  (pp_global r ++ str " =" ++ spc () ++ str s ++ fnl ())

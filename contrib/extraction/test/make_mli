@@ -1,0 +1,17 @@
+#!/usr/bin/awk -We $0
+
+{ match($0,"^open") 
+  if (RLENGTH>0) state=1
+  match($0,"^type") 
+  if (RLENGTH>0) state=1 
+  match($0,"^\(\*\* ")
+  if (RLENGTH>0) state=2
+  match($0,"^let")
+  if (RLENGTH>0) state=0
+  match($0,"^and")
+  if ((RLENGTH>0) && (state==2)) state=0
+  if ((RLENGTH>0) && (state==1)) state=1		     
+  gsub("\(\*\* ","")
+  gsub("\*\*\)","")
+  if (state>0) print
+}  

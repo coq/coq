@@ -14,16 +14,26 @@ open Pp
 open Names
 open Term
 open Libnames
+open Util
 
 (*s ML type expressions. *)
 
 type ml_type = 
   | Tarr  of ml_type * ml_type
-  | Tvar  of int
   | Tglob of global_reference * ml_type list 
+  | Tvar  of int
+  | Tvar' of int (* same as Tvar, used to avoid clash *)
+  | Tmeta of ml_meta (* used during ML type reconstruction *)
   | Tdummy
   | Tunknown
-      
+
+and ml_meta = { id : int; mutable contents : ml_type option}
+
+(* ML type schema. 
+   The integer is the number of variable in the schema. *)
+
+type ml_schema = int * ml_type 
+
 (*s ML inductive types. *)
 
 type ml_ind = 
@@ -42,7 +52,6 @@ type ml_ast =
   | MLfix   of int * identifier array * ml_ast array
   | MLexn   of string
   | MLdummy
-  | MLdummy' 
   | MLcast  of ml_ast * ml_type
   | MLmagic of ml_ast
 
@@ -51,11 +60,10 @@ type ml_ast =
 type ml_decl = 
   | Dind  of ml_ind list * bool (* cofix *)
   | Dtype of global_reference * identifier list * ml_type
-  | Dterm   of global_reference * ml_ast
-  | DdummyType of global_reference
+  | Dterm   of global_reference * ml_ast * ml_type
   | DcustomTerm of global_reference * string
   | DcustomType of global_reference * string
-  | Dfix    of global_reference array * ml_ast array
+  | Dfix    of global_reference array * ml_ast array * ml_type array
 
 (*s Pretty-printing of MiniML in a given concrete syntax is parameterized
     by a function [pp_global] that pretty-prints global references. 

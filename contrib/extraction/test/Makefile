@@ -24,21 +24,29 @@ VO:= $(filter-out $(AXIOMSVO),$(VO))
 
 ML:= $(shell test -x v2ml && ./v2ml $(VO))
 
+MLI:= $(patsubst %.ml,%.mli,$(ML))
+
 CMO:= $(patsubst %.ml,%.cmo,$(ML))
 
 #
 #	General rules 
 #
 
-all: v2ml ml $(CMO)
+all: v2ml ml $(MLI) $(CMO)
 
 ml: $(ML)
 
 depend: $(ML)
-	rm -f .depend; ocamldep $(INCL) theories/*/*.ml > .depend
+	rm -f .depend; ocamldep $(INCL) theories/*/*.ml theories/*/*.mli > .depend
 
 tree:
 	mkdir -p $(DIRS)
+
+%.mli:%.ml
+	./make_mli $< > $@
+
+%.cmi:%.mli
+	ocamlc $(INCL) -c -i $<
 
 %.cmo:%.ml
 	ocamlc $(INCL) -c -i $<
@@ -47,7 +55,7 @@ $(ML): ml2v
 	./extract $@
 
 clean: 
-	rm -f theories/*/*.ml theories/*/*.cm* theories/*/*.ml.orig
+	rm -f theories/*/*.ml* theories/*/*.cm*
 
 
 #
@@ -61,10 +69,10 @@ undo_open:
 	find theories -name "*".ml -exec mv \{\}.orig \{\} \;
 
 ml2v: ml2v.ml
-	ocamlc -o $@ $<
+	ocamlopt -o $@ $<
 
 v2ml: v2ml.ml
-	ocamlc -o $@ $< 
+	ocamlopt -o $@ $< 
 	$(MAKE)
 
 #

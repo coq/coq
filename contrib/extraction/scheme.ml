@@ -32,8 +32,8 @@ let keywords =
     Idset.empty
     
 
-let preamble _ _ print_dummy = 
-  (if print_dummy then 
+let preamble _ _ (mldummy,_,_) = 
+  (if mldummy then 
      str "(define __ (lambda (_) __))" 
      ++ fnl () ++ fnl()
    else mt ())
@@ -116,9 +116,7 @@ let rec pp_expr env args =
 	(* An [MLexn] may be applied, but I don't really care. *)
 	paren (str "absurd")
     | MLdummy ->
-	str "`_" (* An [MLdummy] may be applied, but I don't really care. *)
-    | MLdummy' -> 
-	str "__" (* idem *)
+	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
     | MLcast (a,t) ->
 	pp_expr env args a
     | MLmagic a ->
@@ -156,10 +154,9 @@ and pp_fix env j (ids,bl) args =
 
 let pp_decl = function
   | Dind _ -> mt ()
-  | DdummyType _ -> mt () 
   | Dtype _ -> mt () 
   | DcustomType _ -> mt ()
-  | Dfix (rv, defs) ->
+  | Dfix (rv, defs,_) ->
       let ids = Array.map rename_global rv in 
       let env = List.rev (Array.to_list ids), P.globals() in
       prvect_with_sep 
@@ -170,7 +167,7 @@ let pp_decl = function
 		     (pp_expr env [] ti)) 
 	      ++ fnl ()))
 	(array_map2 (fun id b -> (id,b)) ids defs)
-  | Dterm (r, a) ->
+  | Dterm (r, a, _) ->
       hov 2 (paren (str "define " ++ (pp_global' r) ++ spc () ++
 		    pp_expr (empty_env ()) [] a)) ++ fnl ()  
   | DcustomTerm (r,s) -> 

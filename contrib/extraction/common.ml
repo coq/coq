@@ -71,8 +71,9 @@ let decl_get_modules ld =
 		     List.iter (fun (_,l) -> 
 				  List.iter (mltype_get_modules m) l) l) l
     | Dtype (_,_,t) -> mltype_get_modules m t 
-    | Dterm (_,a) -> ast_get_modules m a
-    | Dfix(_,c) -> Array.iter (ast_get_modules m) c  
+    | Dterm (_,a,t) -> ast_get_modules m a; mltype_get_modules m t
+    | Dfix(_,c,t) -> Array.iter (ast_get_modules m) c; 
+	Array.iter (mltype_get_modules m) t
     | _ -> ()
   in 
   List.iter one_decl ld; 
@@ -218,11 +219,10 @@ let extract_to_file f prm decls =
     Idset.remove prm.mod_name (decl_get_modules decls)
   else Idset.empty
   in 
-  let print_dummy = match lang() with 
-    | Ocaml | Scheme -> decl_search MLdummy' decls
-    | Haskell -> (decl_search MLdummy decls) || (decl_search MLdummy' decls)
-    | _ -> assert false 
-  in 
+  let print_dummys = 
+    (decl_search MLdummy decls, 
+     decl_type_search Tdummy decls, 
+     decl_type_search Tunknown decls) in 
   cons_cofix := Refset.empty;
   current_module := prm.mod_name;
   Hashtbl.clear renamings;
@@ -236,7 +236,7 @@ let extract_to_file f prm decls =
   if not prm.modular then 
     List.iter (fun r -> pp_with ft (pp_singleton_ind r)) 
       (List.filter decl_is_singleton prm.to_appear); 
-  pp_with ft (preamble prm used_modules print_dummy);
+  pp_with ft (preamble prm used_modules print_dummys);
   begin 
     try
       List.iter (fun d -> msgnl_with ft (pp_decl d)) decls

@@ -52,14 +52,13 @@ let check_r m sm r =
   then clash_error sm m rlm
     
 let check_decl m sm = function 
-  | Dterm (r,_) -> check_r m sm r 
+  | Dterm (r,_,_) -> check_r m sm r 
   | Dtype (r,_,_) -> check_r m sm r
   | Dind ((_,r,_)::_, _) -> check_r m sm r 
   | Dind ([],_) -> ()
-  | DdummyType r -> check_r m sm r
   | DcustomTerm (r,_) ->  check_r m sm r
   | DcustomType (r,_) ->  check_r m sm r	
-  | Dfix(rv,_) -> Array.iter (check_r m sm) rv 
+  | Dfix(rv,_,_) -> Array.iter (check_r m sm) rv 
 
 (* [check_one_module] checks that no module names in [l] clashes with [m]. *)
 
@@ -144,6 +143,7 @@ and visit_type m eenv t =
     | Tglob (r,l) -> visit_reference m eenv r; List.iter visit l  
     | Tarr (t1,t2) -> visit t1; visit t2
     | Tvar _ | Tdummy | Tunknown -> ()
+    | Tmeta _ | Tvar' _ -> assert false 
   in
   visit t
     
@@ -160,7 +160,7 @@ and visit_ast m eenv a =
     | MLfix (_,_,l) -> Array.iter visit l
     | MLcast (a,t) -> visit a; visit_type m eenv t
     | MLmagic a -> visit a
-    | MLrel _ | MLdummy | MLdummy' | MLexn _ -> ()
+    | MLrel _ | MLdummy | MLexn _ -> ()
   in
   visit a
 
@@ -172,8 +172,10 @@ and visit_inductive m eenv inds =
 and visit_decl m eenv = function
   | Dind (inds,_) -> visit_inductive m eenv inds
   | Dtype (_,_,t) -> visit_type m eenv t
-  | Dterm (_,a) -> visit_ast m eenv a
-  | Dfix (_,c) -> Array.iter (visit_ast m eenv) c
+  | Dterm (_,a,t) -> visit_ast m eenv a; visit_type m eenv t
+  | Dfix (_,c,t) -> 
+      Array.iter (visit_ast m eenv) c;
+      Array.iter (visit_type m eenv) t
   | _ -> ()
 	
 (*s Recursive extracted environment for a list of reference: we just
@@ -204,14 +206,13 @@ let print_user_extract r =
 	   spc () ++ str (find_ml_extraction r) ++ fnl ())
 
 let decl_in_r r0 = function 
-  | Dterm (r,_) -> r = r0
+  | Dterm (r,_,_) -> r = r0
   | Dtype (r,_,_) -> r = r0
   | Dind ((_,r,_)::_, _) -> kn_of_r r = kn_of_r r0
   | Dind ([],_) -> false
-  | DdummyType r -> r = r0
   | DcustomTerm (r,_) ->  r = r0 
   | DcustomType (r,_) ->  r = r0 
-  | Dfix (rv,_) -> array_exists ((=) r0) rv
+  | Dfix (rv,_,_) -> array_exists ((=) r0) rv
 
 let extraction qid =
   let r = Nametab.global qid in 
@@ -275,14 +276,13 @@ let extraction_file f vl =
   \verb!Extraction Module! [M]. *) 
 
 let decl_in_m m = function 
-  | Dterm (r,_) -> m = long_module r
+  | Dterm (r,_,_) -> m = long_module r
   | Dtype (r,_,_) -> m = long_module r
   | Dind ((_,r,_)::_, _) -> m = long_module r 
   | Dind ([],_) -> false
-  | DdummyType r -> m = long_module r
   | DcustomTerm (r,_) ->  m = long_module r
   | DcustomType (r,_) ->  m = long_module r
-  | Dfix (rv,_) -> m = long_module rv.(0)
+  | Dfix (rv,_,_) -> m = long_module rv.(0)
 
 let module_file_name m = match lang () with 
   | Ocaml -> (String.uncapitalize (string_of_id m)) ^ ".ml"

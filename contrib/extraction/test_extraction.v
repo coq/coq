@@ -436,3 +436,12 @@ Extraction loop.
     f (S a)
   in f O
 *)
+
+Extraction "test" 
+  nat test1 c test2 test3 test4 test5 test6 test7 
+  d d2 d3 d4 d5 d6 test8 id' id'' test9 Finite test10 test11 
+  test12 tree tree_size test13 sumbool_rect predicate test14 
+  test15 eta_c test16 test17 test18 bidon tb fbidon fbidon2 
+  fbidon2 test_0 test_1 eq eq_rect test19 tp1 tp1bis test20 
+  horibilis PropSet natbool zerotrue zeroTrue zeroprop test21 test22 
+  test23 f f_prop f_arity f_normal Truc oups test24 loop.
