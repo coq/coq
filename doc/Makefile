@@ -288,29 +288,29 @@ Tutorial.v.pdf: ./title.tex Tutorial.v.tex
 Reference-Manual.ps: Reference-Manual.dvi
 
 Reference-Manual.dvi: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
-	rm -f Reference-Manual.sh
+	#rm -f Reference-Manual.sh
 	$(LATEX) Reference-Manual
-	rm Reference-Manual.sh
+	#rm Reference-Manual.sh
 	$(BIBTEX) Reference-Manual
 	$(LATEX) Reference-Manual
-	rm Reference-Manual.sh
+	#rm Reference-Manual.sh
 	$(BIBTEX) Reference-Manual
 	$(LATEX) Reference-Manual
-	rm Reference-Manual.sh
+	#rm Reference-Manual.sh
 	$(MAKEINDEX) Reference-Manual
 	$(MAKEINDEX) Reference-Manual.tacidx -o Reference-Manual.tacind
 	$(MAKEINDEX) Reference-Manual.comidx -o Reference-Manual.comind
 	$(MAKEINDEX) Reference-Manual.erridx -o Reference-Manual.errind
 	$(LATEX) Reference-Manual
-	rm Reference-Manual.sh
+	#rm Reference-Manual.sh
 	$(LATEX) Reference-Manual
 
 Reference-Manual.pdf: Reference-Manual.dvi
-	rm -f Reference-Manual.sh
+	#rm -f Reference-Manual.sh
 	$(PDFLATEX) Reference-Manual.tex
 
 quick: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
-	rm -f Reference-Manual.sh
+	#rm -f Reference-Manual.sh
 	$(LATEX) Reference-Manual
 
 

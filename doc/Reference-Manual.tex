@@ -67,19 +67,20 @@
 %%SUPPRIME \include{Natural.v}%
 \include{Omega.v}%
 %%SUPPRIME \include{Program.v}%
-\include{Correctness.v}% = preuve de pgms imperatifs
+%%SUPPRIME \include{Correctness.v}% = preuve de pgms imperatifs
 \include{Extraction.v}%
 \include{Polynom.v}%  = Ring
 \include{Setoid.v}% Tactique pour les setoides
-\addtocontents{sh}{ENDADDENDUM=\thepage}
+\RefManCutCommand{ENDADDENDUM=\thepage}
 
 \nocite{*}
 \bibliographystyle{plain}
 \bibliography{biblio}
-\addtocontents{sh}{psselect -q -p-$ENDREFMAN,$BEGINBIBLIO- Reference-Manual.ps Reference-Manual-base.ps}
-\addtocontents{sh}{psselect -q -p$BEGINADDENDUM-$ENDADDENDUM Reference-Manual.ps Reference-Manual-addendum.ps}
-\addtocontents{sh}{dviselect -i Reference-Manual.dvi -o Reference-Manual-base.dvi 1-$ENDREFMAN $BEGINBIBLIO-}
-\addtocontents{sh}{dviselect -i Reference-Manual.dvi -o Reference-Manual-addendum.dvi $BEGINADDENDUM-$ENDADDENDUM}
+\RefManCutCommand{psselect -q -p-$ENDREFMAN,$BEGINBIBLIO- Reference-Manual.ps Reference-Manual-base.ps}
+\RefManCutCommand{psselect -q -p$BEGINADDENDUM-$ENDADDENDUM Reference-Manual.ps Reference-Manual-addendum.ps}
+\RefManCutCommand{dviselect -i Reference-Manual.dvi -o Reference-Manual-base.dvi 1-$ENDREFMAN $BEGINBIBLIO-}
+\RefManCutCommand{dviselect -i Reference-Manual.dvi -o Reference-Manual-addendum.dvi $BEGINADDENDUM-$ENDADDENDUM}
+\RefManCutClose
 
 \printindex
 

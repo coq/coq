@@ -23,7 +23,7 @@
 \renewcommand{\contentsname}{%
 \protect\setheaders{Table of contents}Table of contents}
 \renewcommand{\bibname}{\protect\setheaders{Bibliography}%
-\protect\addtocontents{sh}{BEGINBIBLIO=\thepage}%
+\protect\RefManCutCommand{BEGINBIBLIO=\thepage}%
 \protect\addcontentsline{toc}{chapter}{Bibliography}Bibliography}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,7 +45,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Reference-Manual.sh is generated to cut the Postscript
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\@starttoc{sh}
+%\@starttoc{sh}
+\newwrite\RefManCut@out%
+\immediate\openout\RefManCut@out\jobname.sh
+\newcommand{\RefManCutCommand}[1]{%
+\immediate\write\RefManCut@out{#1}}
+\newcommand{\RefManCutClose}{%
+\immediate\closeout\RefManCut@out}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Commands for indexes
