@@ -36,17 +36,17 @@ directory \verb:INRIA/coq/V7.0:.
 
 In the following, all examples preceded by the prompting sequence
 \verb:Coq < : represent user input, terminated by a period. The
-following lines usually show \Coq's answer as it appears on the users's
+following lines usually show \Coq's answer as it appears on the users
 screen. The sequence of such examples is a valid \Coq~ session, unless
 otherwise specified. This version of the tutorial has been prepared 
-on a SPARC station running UNIX.
+on a PC workstation running Linux.
 The standard invocation of \Coq\ delivers a message such as:
 
 \begin{small}
 \begin{flushleft}
 \begin{verbatim}
 unix: coqtop
-Welcome to Coq 7.0 (November 2000)
+Welcome to Coq 7.0beta3-ocaml3.01 (March 2001)
 
 Coq <
 \end{verbatim}
@@ -55,7 +55,7 @@ Coq <
 
 The first line gives a banner stating the precise version of \Coq~
 used. You should always return this banner when you report an
-anomaly to our hotline \verb:coq@pauillac.inria.fr:. 
+anomaly to our hot-line \verb:coq@pauillac.inria.fr:. 
 %The next lines are warnings which may be safely ignored for the time being.
 
 \chapter{Basic Predicate Calculus}
@@ -91,7 +91,7 @@ of the system, called respectively \verb:Prop:, \verb:Set:, and
 
 Every valid expression $e$ in Gallina is associated with a specification,
 itself a valid expression, called its {\sl type} $\tau(E)$. We write
-$e:\tau(E)$ for the judgement that $e$ is of type $E$. 
+$e:\tau(E)$ for the judgment that $e$ is of type $E$. 
 %CP Le role de \tau n'est pas clair.
 You may request \Coq~ to return to you the type of a valid expression by using
 the command \verb:Check::
@@ -115,8 +115,17 @@ sorts of the Gallina language, whereas the notions $nat$ and $O$ are
 axiomatised notions which are defined in the arithmetic prelude,
 automatically loaded when running the \Coq\ system.
 
+We start by introducing a so-called section name. The role of sections
+is to structure the modelisation by limiting the scope of parameters,
+hypotheses and definitions. It will also give a convenient way to
+reset part of the development.
+
+\begin{coq_example}
+ Section Declaration.
+\end{coq_example}
 With what we already know, we may now enter in the system a declaration,
-corresponding to the informal mathematics {\sl let n be a natural number}:
+corresponding to the informal mathematics {\sl let n be a natural
+  number}. 
 
 \begin{coq_example}
 Variable n:nat.
@@ -196,7 +205,7 @@ The abstraction brackets are explained as follows. The expression
 \verb+[x:A]e+ is well formed of type \verb+A->B+ in a context
 whenever the expression \verb+e+ is well-formed of type \verb+B+ in 
 the given context to which we add the declaration that \verb+x+
-is of type \verb+A+. Here $x$ is a bound, or dummy variable in
+is of type \verb+A+. Here \verb+x+ is a bound, or dummy variable in
 the expression \verb+[x:A]e+. For instance we could as well have
 defined \verb:double: as \verb+[n:nat](plus n n)+.
 
@@ -221,6 +230,11 @@ variable. We check:
 \begin{coq_example}
 Check (m:nat)(gt m O).
 \end{coq_example}
+We may clean-up the development by removing the contents of the
+current section:
+\begin{coq_example}
+Reset Declaration.
+\end{coq_example}
 
 \section{Introduction to the proof engine: Minimal Logic}
 
@@ -229,6 +243,7 @@ from atomic propositions $A, B, C$. This may be done easily, by
 introducing these atoms as global variables declared of type \verb:Prop:.
 It is easy to declare several names with the same specification:
 \begin{coq_example}
+Section Minimal_Logic.
 Variables A,B,C:Prop.
 \end{coq_example}
 
@@ -250,15 +265,15 @@ Goal (A->(B->C))->(A->B)->(A->C).
 
 The system displays the current goal below a double line, local hypotheses
 (there are none initially) being displayed above the line. We call 
-the combination of local hypotheses with a goal a {\sl judgement}.
+the combination of local hypotheses with a goal a {\sl judgment}.
 The new prompt \verb:Unnamed_thm <: indicates that we are now in an inner 
 loop of the system, in proof mode. New commands are available in this
 mode, such as {\sl tactics}, which are proof combining primitives.
 A tactic operates on the current goal by attempting to construct a proof
-of the corresponding judgement, possibly from proofs of some
-hypothetical judgements, which are then added to the current
-list of conjectured judgements.
-For instance, the \verb:Intro: tactic is applicable to any judgement
+of the corresponding judgment, possibly from proofs of some
+hypothetical judgments, which are then added to the current
+list of conjectured judgments.
+For instance, the \verb:Intro: tactic is applicable to any judgment
 whose goal is an implication, by moving the proposition to the left
 of the application to the list of local hypotheses:
 \begin{coq_example}
@@ -281,12 +296,12 @@ The tactic \verb:Apply: implements this piece of reasoning:
 Apply H.
 \end{coq_example}
 
-We are now in the situation where we have two judgements as conjectures
+We are now in the situation where we have two judgments as conjectures
 that remain to be proved. Only the first is listed in full, for the
 others the system displays only the corresponding subgoal, without its
 local hypotheses list. Remark that \verb:Apply: has kept the local
-hypotheses of its father judgement, which are still available for
-the judgements it generated.
+hypotheses of its father judgment, which are still available for
+the judgments it generated.
 
 In order to solve the current goal, we just have to notice that it is
 exactly available as hypothesis $HA$:
@@ -398,7 +413,7 @@ their value (or proof-term) is omitted.
 
 \subsection{Conjunction}
 
-We have seen that how \verb:Intro: and \verb:Apply: tactics could be combined
+We have seen how \verb:Intro: and \verb:Apply: tactics could be combined
 in order to prove implicational statements. More generally, \Coq~ favors a style
 of reasoning, called {\sl Natural Deduction}, which decomposes reasoning into 
 so called {\sl introduction rules}, which tell how to prove a goal whose main 
@@ -418,7 +433,7 @@ which breaks it into its components:
 Elim H.
 \end{coq_example}
 
-We now use the conjuction introduction tactic \verb:Split:, which splits the 
+We now use the conjunction introduction tactic \verb:Split:, which splits the 
 conjunctive goal into the two subgoals:
 \begin{coq_example}
 Split.
@@ -479,7 +494,9 @@ proof constructors are called respectively \verb:or_introl: and
 Right.
 Trivial.
 \end{coq_example}
-%CP Documenter Trivial ou mettre Assumption.
+The tactic \verb:Trivial: works like \verb:Auto: with the hints
+database, but it only tries those tactics that can solve the goal in one
+step. 
 
 As before, all these tedious elementary steps may be performed automatically,
 as shown for the second symmetric case:
@@ -514,11 +531,11 @@ Print or_commutative.
 \end{coq_example}
 
 It is not easy to understand the notation for proof terms without a few
-explanations. The square brackets, such as \verb+[HH1:A\/B]+, correspond
-to \verb:Intro HH1:, whereas a subterm such as 
-\verb:(or_intror: \linebreak \verb:B A HH6):
-corresponds to the sequence \verb:Apply or_intror; Exact HH6:. The extra
-arguments \verb:B: and \verb:A: correspond to instanciations to the generic
+explanations. The square brackets, such as \verb+[H:A\/B]+, correspond
+to \verb:Intro H:, whereas a subterm such as 
+\verb:(or_intror: \verb:B A H0):
+corresponds to the sequence \verb:Apply or_intror; Exact H0:. The extra
+arguments \verb:B: and \verb:A: correspond to instantiations to the generic
 combinator \verb:or_intror:, which are effected automatically by the tactic
 \verb:Apply: when pattern-matching a goal. The specialist will of course
 recognize our proof term as a $\lambda$-term, used as notation for the
@@ -575,13 +592,13 @@ Save.
 \end{coq_example}
 
 Here is one more example of propositional reasoning, in the shape of
-a scottish puzzle. A private club has the following rules:
+a Scottish puzzle. A private club has the following rules:
 \begin{enumerate}
 \item Every non-scottish member wears red socks
 \item Every member wears a kilt or doesn't wear red socks
-\item The married members don't go out on sunday
-\item A member goes out on sunday if and only if he is scottish
-\item Every member who wears a kilt is scottish and married
+\item The married members don't go out on Sunday
+\item A member goes out on Sunday if and only if he is Scottish
+\item Every member who wears a kilt is Scottish and married
 \item Every scottish member wears a kilt
 \end{enumerate}
 Now, we show that these rules are so strict that no one can be accepted.
@@ -597,7 +614,16 @@ Hypothesis rule6 : Scottish -> WearKilt.
 Lemma NoMember : False.
 Tauto.
 Save.
+\end{coq_example}
+At that point \verb:NoMember: is a proof of the absurdity depending on
+hypotheses.
+We may end the section, in that case, the variables and hypotheses
+will be discharged, and the type of \verb:NoMember: will be
+generalised.
+
+\begin{coq_example}
 End club.
+Check NoMember.
 \end{coq_example}
 
 \section{Predicate Calculus}
@@ -622,11 +648,11 @@ global environment by such declarations. For instance, we have already
 polluted our \Coq~ session by declaring the variables
 \verb:n:, \verb:Pos_n:, \verb:A:, \verb:B:, and \verb:C:. If we want to revert to the clean state of
 our initial session, we may use the \Coq~ \verb:Reset: command, which returns
-to the state just prior the given global notion.
+to the state just prior the given global notion as we did before to
+remove a section, or we may return to the initial state using~:
 \begin{coq_example}
-Reset n.
+Reset Initial.
 \end{coq_example}
-%CP-Parler de Reset Initial.
 
 We shall now declare a new \verb:Section:, which will allow us to define
 notions local to a well-delimited scope. We start by assuming a domain of
@@ -683,7 +709,7 @@ Intros x x_Rlinked.
 \end{coq_example}
 
 Remark that \verb:Intro: treats universal quantification in the same way
-as the premisses of implications. Renaming of bound variables occurs
+as the premises of implications. Renaming of bound variables occurs
 when it is needed; for instance, had we started with \verb:Intro y:,
 we would have obtained the goal:
 \begin{coq_eval}
@@ -708,7 +734,7 @@ Intros y Rxy.
 
 Now we want to use \verb:R_transitive:. The \verb:Apply: tactic will know
 how to match \verb:x: with \verb:x:, and \verb:z: with \verb:x:, but needs
-help on how to instanciate \verb:y:, which appear in the hypotheses of
+help on how to instantiate \verb:y:, which appear in the hypotheses of
 \verb:R_transitive:, but not in its conclusion. We give the proper hint
 to \verb:Apply: in a \verb:with: clause, as follows:
 \begin{coq_example}
@@ -762,7 +788,7 @@ Intro UnivP.
 
 First of all, notice the pair of parentheses around \verb+(x:D)(P x)+ in
 the statement of lemma \verb:weird:.
-If we had ommitted them, \Coq's parser would have interpreted the
+If we had omitted them, \Coq's parser would have interpreted the
 statement as a truly trivial fact, since we would 
 postulate an \verb:x: verifying \verb:(P x):. Here the situation is indeed
 more problematic. If we have some element in \verb:Set: \verb:D:, we may
@@ -823,7 +849,7 @@ Absurd (P Tom); Trivial.
 \end{coq_example}
 
 We now proceed with the second case, in which actually any person will do;
-such a John Doe is given by the non-emptyness witness \verb:d::
+such a John Doe is given by the non-emptiness witness \verb:d::
 \begin{coq_example}
 Intro No_nondrinker; Exists d; Intro d_drinks.
 \end{coq_example}
@@ -846,7 +872,7 @@ Now, let us close the main section:
 End Predicate_calculus.
 \end{coq_example}
 
-Remark how the three theorems are completely generic is the most general 
+Remark how the three theorems are completely generic in the most general 
 fashion;
 the domain \verb:D: is discharged in all of them, \verb:R: is discharged in
 \verb:refl_if: only, \verb:P: is discharged only in \verb:weird: and
@@ -856,7 +882,7 @@ Finally, the excluded middle hypothesis is discharged only in
 
 Note that the name \verb:d: has vanished as well from
 the statements of \verb:weird: and \verb:drinker:, 
-since \Coq's prettyprinter replaces
+since \Coq's pretty-printer replaces
 systematically a quantification such as \verb+(d:D)E+, where \verb:d:
 does not occur in \verb:E:, by the functional notation \verb:D->E:. 
 Similarly the name \verb:EM: does not appear in \verb:drinker:. 
@@ -879,6 +905,7 @@ in order to get a more general induction hypothesis. The tactic
 \verb:Generalize: is what is needed here:
 
 \begin{coq_example}
+Section Predicate_Calculus.
 Variable P,Q:nat->Prop. Variable R: nat->nat->Prop.
 Lemma PQR : (x,y:nat)((R x x)->(P x)->(Q x))->(P x)->(R x y)->(Q x).
 Intros.
@@ -892,7 +919,6 @@ obligation as a new subgoal:
 \begin{coq_example}
 Cut (R x x); Trivial.
 \end{coq_example}
-%CP pourquoi ne pas montrer les deux sous-buts engendres par Cut.
 
 \subsection{Equality}
 
@@ -925,50 +951,6 @@ Rewrite E.
 \end{coq_example}
 This replaced both occurrences of \verb:k: by \verb:O:. 
 
-\medskip
-{\bf Warning} to users of \Coq~ old versions: In \Coq V5.8 only the second
-occurrence of \verb:k: would have been replaced, and we would have had
-to use \verb:Rewrite: twice in order to get the same effect.
-\medskip
-
-%Actually, it is possible to rewrite both occurrences of \verb:k: at the
-%same time, provided one abstracts \verb:k: in the goal with tactic
-%\verb:Pattern:. Let us go back two steps:
-%\begin{coq_example}
-%L1 < Undo 2.
-%1 subgoal
-%
-%  k : nat
-%  E : k=O
-%  ============================
-%   (f k)=k
-%
-%L1 < Pattern k.
-%1 subgoal
-%
-%  k : nat
-%  E : k=O
-%  ============================
-%   ([n:nat](f n)=n k)
-%\end{coq_example}
-%What just happened is that \verb:Pattern: replaced the goal 
-%\verb:(f k)=k: by the equivalent one:
-%\verb+([n:nat](f n)=n k)+, which has the form \verb+(P k)+, with
-%\verb+P+ the predicate which maps \verb+n+ to proposition
-%\verb+(f n)=n+. The two goals are equivalent in the sense that
-%\verb+([n:nat](f n)=n k)+ {\sl reduces} to \verb:(f k)=k:
-%by the following computation rule:
-%$$ ([x:A]M~N) \leftarrow M\{x/N\} \eqno \beta$$
-%We may now proceed with our rewriting:
-%\begin{coq_example}
-%L1 < Rewrite E.
-%1 subgoal
-%
-%  k : nat
-%  E : k=O
-%  ============================
-%   (f O)=O
-
 Now \verb:Apply foo: will finish the proof:
 
 \begin{coq_example}
@@ -981,17 +963,19 @@ use \verb:Rewrite <- E: rather than \verb:Rewrite E: or the equivalent
 \verb:Rewrite -> E:. 
 Let us now illustrate the tactic \verb:Replace:.
 \begin{coq_example}
-Lemma L2 : (f (f O))=O.
-Replace (f O) with O.
+Hypothesis f10 : (f (S O))=(f O).
+Lemma L2 : (f (f (S O)))=O.
+Replace (f (S O)) with O.
 \end{coq_example}
 What happened here is that the replacement left the first subgoal to be
 proved, but another proof obligation was generated by the \verb:Replace:
 tactic, as the second subgoal. The first subgoal is solved immediately
-by appying lemma \verb:foo:; the second one too, provided we apply first
-symmetry of equality, for instance with tactic \verb:Symmetry::
+by applying lemma \verb:foo:; the second one transitivity and then 
+symmetry of equality, for instance with tactics \verb:Transitivity: and 
+\verb:Symmetry::
 \begin{coq_example}
 Apply foo.
-Symmetry; Apply foo.
+Transitivity (f O); Symmetry; Trivial.
 Save.
 \end{coq_example}
 
@@ -999,7 +983,7 @@ Save.
 
 We just explained the basis of first-order reasoning in the universe
 of mathematical Sets. Similar reasoning is available at the level of
-abstract Types. In order to develop such abtract reasoning, one must
+abstract Types. In order to develop such abstract reasoning, one must
 load the library \verb:Logic_Type:.
 
 \begin{coq_example}
@@ -1024,7 +1008,7 @@ The development of mathematics does not simply proceed by logical
 argumentation from first principles: definitions are used in an essential way.
 A formal development proceeds by a dual process of abstraction, where one
 proves abstract statements in predicate calculus, and use of definitions, 
-which in the contrary one instanciates general statements with particular 
+which in the contrary one instantiates general statements with particular 
 notions in order to use the structure of mathematical values for the proof of
 more specialised properties.
 
@@ -1264,9 +1248,9 @@ Intro n; Elim n.
 What happened was that \verb:Elim n:, in order to construct a \verb:Prop:
 (the initial goal) from a \verb:nat: (i.e. \verb:n:), appealed to the
 corresponding induction principle \verb:nat_ind: which we saw was indeed
-excactly Peano's induction scheme. Pattern-matching instanciated the 
+exactly Peano's induction scheme. Pattern-matching instantiated the 
 corresponding predicate \verb:P: to \verb+[n:nat]n=(plus n O)+, and we get
-as subgoals the corresponding instanciations of the base case \verb:(P O): ,
+as subgoals the corresponding instantiations of the base case \verb:(P O): ,
 and of the inductive step \verb+(y:nat)(P y)->(P (S y))+.
 In each case we get an instance of function \verb:plus: in which its second
 argument starts with a constructor, and is thus amenable to simplification
@@ -1283,7 +1267,7 @@ Simpl; Auto.
 Save.
 \end{coq_example}
 
-Here \verb:Auto: succeded, because it used as a hint lemma \verb:eq_S:,
+Here \verb:Auto: succeeded, because it used as a hint lemma \verb:eq_S:,
 which say that successor preserves equality:
 \begin{coq_example}
 Check eq_S.
@@ -1323,22 +1307,14 @@ situation being symmetric. For instance:
 Induction m; Simpl; Auto.
 \end{coq_example}
 
-Here \verb:Auto: succeded on the base case, thanks to our hint \verb:plus_n_O:,
-but the induction step requires rewriting, which \verb:Auto: does not handle:
+Here \verb:Auto: succeeded on the base case, thanks to our hint
+\verb:plus_n_O:, but the induction step requires rewriting, which
+\verb:Auto: does not handle:
 
 \begin{coq_example}
 Intros m' E; Rewrite <- E; Auto.
 Save.
 \end{coq_example}
-
-%CP - non ce n'est pas un bon exemple de Immediate.
-%A symmetric lemma such \verb:plus_com: should not be declared as a hint,
-%because \verb:Auto: would lose time by applying it repeatedly without progress.
-%A variant of command \verb:Hint:, called \verb:Immediate:, allows a restricted
-%use of such lemmas:
-%\begin{coq_example}
-%Immediate plus_com.
-%\end{coq_example}
 
 \subsection{Discriminate}
 
@@ -1517,11 +1493,11 @@ of the libraries known by Coq, another module is also called
 \verb=Arith=. Notice that by default, when a library is registered,
 all its contents, and all the contents of its subdirectories recursively are
 visible and accessible by a short (relative) name as \verb=Arith=.
-Notice also that modules or definitions not explicitely registered in
+Notice also that modules or definitions not explicitly registered in
 a library are put in a default library called \verb=Scratch=.
 
 The loading of a compiled file is quick, because the corresponding
-development is not typechecked again. 
+development is not type-checked again. 
 
 {\bf Warning}: \Coq~ does not yet provides parametric modules.
 
@@ -1533,7 +1509,7 @@ context, with command \verb:Load my_module:. It may also be compiled,
 using the command \verb:Compile Module my_module: directly at the
 \Coq~ toplevel, or else in ``batch'' mode, using the UNIX command
 \verb:coqc:. Compiling the module \verb:my_module.v: creates a 
-file \verb:my_module.vo: that can be reloaded with command
+file \verb:my_module.vo:{} that can be reloaded with command
 \verb:Require my_module:. 
 
 If a required module depends on other modules then the latters are
@@ -1542,14 +1518,6 @@ automatically visible.  If you want a module \verb=M= required in a
 module \verb=N= to be automatically visible when \verb=N= is required,
 you should use \verb:Require Export M: in your module \verb:N:.
 
-%CP- Non compatible avec la version distribuee.
-%Compiling a module creates actually 2 files in the current version:
-%\verb:my_module.vi: and \verb:my_module.vo:. This last file is
-%bigger, because it stores the value of opaque constants, such as the
-%proofs of lemmas. If you want to be able to turn such constants as
-%transparent constants (whose definition may be unfolded), you must
-%use the command \verb:Require Implementation my_module:.
-
 \section{Managing the context}
 
 It is often difficult to remember the names of all lemmas and
@@ -1557,21 +1525,29 @@ definitions available in the current context, especially if large
 libraries have been loaded. A convenient \verb:Search: command
 is available to lookup all known facts 
 concerning a given predicate. For instance, if you want to know all the
-known lemmas about the less or equal relation, juste ask:
+known lemmas about the less or equal relation, just ask:
 \begin{coq_example}
 Search le.
 \end{coq_example}
 
-A new and more convenient search tool is \textsf{SearchIsos}. The
-argument to give is a type and it searches in the current context all
-constants having the same type modulo certain notion of
-\textit{isomorphism}. For example~:
+A new and more convenient search tool is \textsf{SearchPattern}
+developed by Yves Bertot. It allows to find the theorems with a
+conclusion matching a given pattern, where \verb:?: can be used in
+place of an arbitrary term.
 
 \begin{coq_example}
-Require Arith.
-SearchIsos nat -> nat -> Prop.
-SearchIsos (x,y,z:nat)(le x y) -> (le y z) -> (le x z).
-\end{coq_example} 
+SearchPattern (plus ? ?)=?.
+\end{coq_example}
+
+% The argument to give is a type and it searches in the current context all
+% constants having the same type modulo certain notion of
+% \textit{isomorphism}. For example~:
+
+% \begin{coq_example}
+% Require Arith.
+% SearchIsos nat -> nat -> Prop.
+% SearchIsos (x,y,z:nat)(le x y) -> (le y z) -> (le x z).
+% \end{coq_example} 
  
 \section{Now you are on your own}
 
