@@ -21,7 +21,7 @@ Section section1.
 
 Definition Zpower_nat := 
   [z:Z][n:nat] (iter_nat n Z ([x:Z]` z * x `) `1`).
- 
+
 (** [Zpower_nat_is_exp] says [Zpower_nat] is a morphism for
     [plus : nat->nat] and [Zmult : Z->Z] *)
 
@@ -72,6 +72,8 @@ Definition Zpower :=
   | ZERO => `1`
   | (NEG p) => `0`
   end.
+
+Infix "^" Zpower (at level 2, left associativity) : Z_scope V8only.
 
 Hints Immediate Zpower_nat_is_exp : zarith.
 Hints Immediate Zpower_pos_is_exp : zarith.
