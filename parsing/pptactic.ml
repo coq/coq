@@ -272,8 +272,9 @@ let rec pr_raw_generic prc prlc prtac prref x =
       pr_arg (pr_red_expr 
         (prc,prref)) (out_gen rawwit_red_expr x)
   | TacticArgType -> pr_arg prtac (out_gen rawwit_tactic x)
+  | OpenConstrArgType -> pr_arg prc (snd (out_gen rawwit_open_constr x))
   | CastedOpenConstrArgType ->
-      pr_arg prc (out_gen rawwit_casted_open_constr x)
+      pr_arg prc (snd (out_gen rawwit_casted_open_constr x))
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen rawwit_constr_with_bindings x)
   | BindingsArgType -> 
@@ -320,8 +321,9 @@ let rec pr_glob_generic prc prlc prtac x =
       pr_arg (pr_red_expr 
         (prc,pr_or_var (pr_and_short_name pr_evaluable_reference))) (out_gen globwit_red_expr x)
   | TacticArgType -> pr_arg prtac (out_gen globwit_tactic x)
+  | OpenConstrArgType -> pr_arg prc (snd (out_gen globwit_open_constr x))
   | CastedOpenConstrArgType ->
-      pr_arg prc (out_gen globwit_casted_open_constr x)
+      pr_arg prc (snd (out_gen globwit_casted_open_constr x))
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen globwit_constr_with_bindings x)
   | BindingsArgType -> 
@@ -367,6 +369,7 @@ let rec pr_generic prc prlc prtac x =
   | RedExprArgType ->
       pr_arg (pr_red_expr (prc,pr_evaluable_reference)) (out_gen wit_red_expr x)
   | TacticArgType -> pr_arg prtac (out_gen wit_tactic x)
+  | OpenConstrArgType -> pr_arg prc (snd (out_gen wit_open_constr x))
   | CastedOpenConstrArgType ->
       pr_arg prc (snd (out_gen wit_casted_open_constr x))
   | ConstrWithBindingsArgType -> 

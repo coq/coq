@@ -42,7 +42,7 @@ let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
 if !Options.v7 then
 GEXTEND Gram
   GLOBAL: simple_tactic constrarg bindings constr_with_bindings 
-  quantified_hypothesis red_expr int_or_var castedopenconstr
+  quantified_hypothesis red_expr int_or_var castedopenconstr open_constr
   simple_intropattern;
 
   int_or_var:
@@ -96,8 +96,11 @@ GEXTEND Gram
       | IDENT "Check"; c = constr -> ConstrTypeOf c
       | c = constr -> ConstrTerm c ] ]
   ;
+  open_constr:
+    [ [ c = constr -> ((),c) ] ]
+   ;
   castedopenconstr:
-    [ [ c = constr -> c ] ]
+    [ [ c = constr -> ((),c) ] ]
   ;
   induction_arg:
     [ [ n = natural -> ElimOnAnonHyp n
