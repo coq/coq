@@ -379,6 +379,7 @@ second-order pattern-matching problem into a first-order one.
 \end{Variants}
 
 \subsection{{\tt set ( {\ident} {\tt :=} {\term} \tt )}
+\label{tactic:set}
 \tacindex{set}
 \tacindex{pose}}
 
@@ -657,6 +658,34 @@ cases.  This tactic is a macro for the tactics sequence {\tt intros;
 
 This set of tactics implements different specialized usages of the
 tactic \texttt{change}.
+
+All conversion tactics (including \texttt{change}) can be
+parameterised by the parts of the goal where the conversion can
+occur. The specification of such parts are called \emph{clauses}. It
+can be either the conclusion, or an hypothesis. In the case of a
+defined hypothesis it is possible to specify if the conversion should
+occur on the type part, the body part or both (default).
+
+\index{Clauses}
+Clauses are written after a conversion tactic (tactic
+\texttt{set}~\ref{tactic:set} also uses clasues) and are introduced by
+the keyword \texttt{in}. If no clause is provided, the default is to
+perform the conversion only in the conclusion.
+
+The syntax and description of the various clauses follows:
+\begin{description}
+\item[\texttt{in H$_1$ $\ldots$ H$_n$ |- }] only in hypotheses $H_1
+  $\ldots$ H_n$
+\item[\texttt{in H$_1$ $\ldots$ H$_n$ |- *}] in hypotheses $H_1 \ldots
+  H_n$ and in the conclusion
+\item[\texttt{in * |-}] in every hypothesis
+\item[\texttt{in *}] (equivalent to \texttt{in * |- *}) everywhere
+\item[\texttt{in (type of H$_1$) (value of H$_2$) $\ldots$ |-}] in
+  type part of $H_1$ in the value part of $H_2$, etc. 
+\end{description}
+
+For backward compatibility, the notation \texttt{in}~$H_1\ldots H_n$
+performs the conversion in hypothesis $H_1\ldots H_n$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %voir reduction__conv_x : histoires d'univers.
