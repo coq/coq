@@ -642,8 +642,9 @@ and intern_tactic ist tac = (snd (intern_tactic_seq ist tac) : glob_tactic_expr)
 and intern_tactic_seq ist = function
   (* Traducteur v7->v8 *)
   | TacAtom (_,TacReduce (Unfold [_,Ident (_,id)],_))
-      when string_of_id id = "INZ" -> ist.ltacvars, TacId
-
+      when string_of_id id = "INZ" & !Options.translate_syntax
+        -> ist.ltacvars, TacId
+  (* Fin traducteur v7->v8 *)
 
   | TacAtom (loc,t) ->
       let lf = ref ist.ltacvars in

@@ -771,7 +771,7 @@ let rec pr_vernac = function
       (if i = 1 then mt() else int i ++ str ": ") ++
       (if !Options.p1 then mt () else str "By ") ++
       (if deftac then mt() else str "!! ") ++
-      pr_raw_tactic_goal i tac
+      Options.with_option Options.translate_syntax (pr_raw_tactic_goal i) tac
   | VernacSolveExistential (i,c) ->
       str"Existential " ++ int i ++ pr_lconstrarg c
 

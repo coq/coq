@@ -24,6 +24,8 @@ let term_quality = ref false
 
 let xml_export = ref false
 
+let dont_load_proofs = ref false
+
 let v7 = ref true
 let v7_only = ref false
 
@@ -33,6 +35,9 @@ let make_translate f = translate := f; v7 := f; ()
 let do_translate () = !translate
 let translate_file = ref false
 let p1 = ref true
+
+(* True only when interning from pp*new.ml *)
+let translate_syntax = ref false
 
 (* Silent / Verbose *)
 let silent = ref false
