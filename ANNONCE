@@ -6,9 +6,9 @@ on version 7.0.
 
   - a primitive let-in construct
   - qualified names
-  - library structuration
-  - a high-level tactic language
+  - a new high-level tactic language
   - improved search facilities
+  - a new extraction algorithm managing the Type level
   - export of theories to XML for publishing and rendering purposes
   - a deep restructuration of the code (safer, simpler and more efficient)
 
@@ -26,8 +26,9 @@ on version 7.0.
   - new tactics NewDestruct, NewInduction and Assert intended to
     improve the behaviour of previous Elim and Induction, Case and
     Destruct, and Cut tactics
-  - known-bugs fixes
+  - known-bugs fixed
   - excessive memory use mainly fixed
+
 
   The Realizer/Program tactics are not available in Coq V7.1.
   The Correctness command can be used instead.
@@ -52,5 +53,6 @@ list of changes including sources of incompatibilities.
 and to mail Coq-Club@pauillac.inria.fr for general questions or
 remarks (moderated).
 
-  The Coq development team (in LogiCal team)
+
+      The Coq development team
 
