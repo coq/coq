@@ -508,16 +508,13 @@ let coqdep () =
   in
   add_directory (".", []);
   parse (List.tl (Array.to_list Sys.argv));
-  let theories = Filename.concat !coqlib "theories" in
   List.iter
-    (fun s -> add_coqlib_directory (Filename.concat theories s))
-    Coq_config.theories_dirs;
-  let tactics = Filename.concat !coqlib "tactics" in
-  add_coqlib_directory tactics;
-  let contrib = Filename.concat !coqlib "contrib" in
+    (fun (s,_) -> add_coqlib_directory s)
+    (all_subdirs (Filename.concat !coqlib "theories") "Coq");
+  add_coqlib_directory (Filename.concat !coqlib "tactics");
   List.iter 
-    (fun s -> add_coqlib_directory (Filename.concat contrib s))
-    Coq_config.contrib_dirs;
+    (fun (s,_) -> add_coqlib_directory s)
+    (all_subdirs (Filename.concat !coqlib "contrib") "Coq");
   mliKnown := !mliKnown @ (List.map (fun (f,_,d) -> (f,d)) !mliAccu);
   mlKnown  := !mlKnown @ (List.map (fun (f,_,d) -> (f,d)) !mlAccu);
   warning_mult ".mli" !mliKnown;
