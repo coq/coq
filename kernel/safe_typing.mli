@@ -69,7 +69,7 @@ val import : compiled_env -> safe_environment -> safe_environment
 val env_of_safe_env : safe_environment -> env
 
 
-(*s Typing judgments without modifying the global safe env - used in minicoq *)
+(*s Typing judgments *)
 
 type judgment
 
@@ -77,4 +77,8 @@ val j_val : judgment -> constr
 val j_type : judgment -> constr
 
 val safe_infer : safe_environment -> constr -> judgment * constraints
+
+val typing : safe_environment -> constr -> judgment
+val typing_in_unsafe_env : env -> constr -> judgment
+
 

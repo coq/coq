@@ -166,12 +166,11 @@ let execute_type env constr =
   let (j,cst) = execute env constr in
   (type_judgment env Evd.empty j, cst)
 
+(* Renaming for the following. *)
 
-(* Exported machines. *)
+let safe_infer = execute
 
-let safe_infer env constr = execute env constr
-
-let safe_infer_type env constr = execute_type env constr
+let safe_infer_type = execute_type
 
 (* Typing of several terms. *)
 
@@ -471,3 +470,11 @@ let import = import
 
 let env_of_safe_env e = e
 
+(* Exported typing functions *)
+
+let typing env c = 
+  let (j,cst) = safe_infer env c in
+  let _ = add_constraints cst env in
+  j
+
+let typing_in_unsafe_env = typing

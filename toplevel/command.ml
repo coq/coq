@@ -431,7 +431,9 @@ let start_proof_com sopt stre com =
 	next_ident_away (id_of_string "Unnamed_thm")
 	  (Pfedit.get_all_proof_names ())
   in
-  Pfedit.start_proof id stre sign (interp_type Evd.empty env com)
+  let c = interp_type Evd.empty env com in
+  let _ = Safe_typing.typing_in_unsafe_env env c in
+  Pfedit.start_proof id stre sign c
 
 let apply_tac_not_declare id pft = function
   | None -> error "Type of Let missing"
