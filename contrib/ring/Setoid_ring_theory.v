@@ -37,10 +37,10 @@ Notation "0" := Azero.
 Notation "1" := Aone.
 Notation "- x" := (Aopp x).
 
-Variable
-  plus_morph : forall a a0 a1 a2:A, a == a0 -> a1 == a2 -> a + a1 == a0 + a2.
-Variable
-  mult_morph : forall a a0 a1 a2:A, a == a0 -> a1 == a2 -> a * a1 == a0 * a2.
+Variable plus_morph :
+ forall a a0:A, a == a0 -> forall a1 a2:A, a1 == a2 -> a + a1 == a0 + a2.
+Variable mult_morph :
+  forall a a0:A, a == a0 -> forall a1 a2:A, a1 == a2 -> a * a1 == a0 * a2.
 Variable opp_morph : forall a a0:A, a == a0 -> - a == - a0.
 
 Add Morphism Aplus : Aplus_ext.

@@ -37,14 +37,14 @@ Variable S : Setoid_Theory A Aequiv.
 
 Add Setoid A Aequiv S as Asetoid.
 
-Variable
-  plus_morph :
-    forall a a0 a1 a2:A,
-      Aequiv a a0 -> Aequiv a1 a2 -> Aequiv (Aplus a a1) (Aplus a0 a2).
-Variable
-  mult_morph :
-    forall a a0 a1 a2:A,
-      Aequiv a a0 -> Aequiv a1 a2 -> Aequiv (Amult a a1) (Amult a0 a2).
+Variable plus_morph :
+ forall a a0:A, Aequiv a a0 ->
+   forall a1 a2:A, Aequiv a1 a2 ->
+     Aequiv (Aplus a a1)  (Aplus a0 a2).
+Variable mult_morph :
+ forall a a0:A, Aequiv a a0 ->
+   forall a1 a2:A, Aequiv a1 a2 ->
+     Aequiv (Amult a a1) (Amult a0 a2).
 Variable opp_morph : forall a a0:A, Aequiv a a0 -> Aequiv (Aopp a) (Aopp a0).
 
 Add Morphism Aplus : Aplus_ext.
