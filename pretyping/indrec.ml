@@ -217,7 +217,7 @@ let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs =
 		    (cprest,rest))
            | Some(_,f_0) -> 
 	       let nF = lift (i+1+decF) f_0 in
-	       let arg = process_pos env nF (lift 1 (body_of_type t)) in 
+	       let arg = process_pos env nF (lift 1 t) in 
                lambda_name env
 		 (n,t,process_constr (push_rel d env) (i+1)
 		    (whd_beta (applist (lift 1 f, [(mkRel 1); arg])))

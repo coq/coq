@@ -169,12 +169,12 @@ let explain_cant_apply_not_functional ctx rator randl =
   let ctx = make_all_name_different ctx in
 (*  let pe = pr_ne_context_of (str"in environment") ctx in*)
   let pr = prterm_env ctx rator.uj_val in
-  let prt = prterm_env ctx (body_of_type rator.uj_type) in
+  let prt = prterm_env ctx rator.uj_type in
   let term_string = if List.length randl > 1 then "terms" else "term" in
   let appl = prlist_with_sep pr_fnl 
 	       (fun c ->
 		  let pc = prterm_env ctx c.uj_val in
-		  let pct = prterm_env ctx (body_of_type c.uj_type) in
+		  let pct = prterm_env ctx c.uj_type in
 		  hov 2 (pc ++ spc () ++ str": "  ++ pct)) randl
   in
   str"Illegal application (Non-functional construction): " ++ 
@@ -248,7 +248,7 @@ let explain_ill_formed_rec_body ctx err names i vdefs =
 
 let explain_ill_typed_rec_body ctx i names vdefj vargs =
   let pvd,pvdt = prjudge_env ctx (vdefj.(i)) in
-  let pv = prterm_env ctx (body_of_type vargs.(i)) in
+  let pv = prterm_env ctx vargs.(i) in
   str"The "  ++
   (if Array.length vdefj = 1 then mt () else int (i+1) ++ str "-th") ++
   str"recursive definition"  ++ spc () ++ pvd ++ spc () ++

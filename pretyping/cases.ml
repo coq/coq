@@ -84,10 +84,10 @@ let rec_branch_scheme env isevars (sp,j) recargs cstr =
 		    (crec (push_rel (Anonymous,None,t) env)
 		       (List.rev (lift_rel_context 1 (List.rev rea)),reca))
               | _ -> crec (push_rel d env) (rea,reca) in
-          mkProd (name, body_of_type c, d)
+          mkProd (name,  c, d)
 
       | (name,Some b,c as d)::rea, reca -> 
-	  mkLetIn (name,b,body_of_type c,crec (push_rel d env) (rea,reca))
+	  mkLetIn (name,b, c,crec (push_rel d env) (rea,reca))
       | [],[] -> mkExistential isevars env (dummy_loc, InternalHole)
       | _ -> anomaly "rec_branch_scheme"
   in 

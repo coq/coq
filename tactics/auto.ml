@@ -230,7 +230,7 @@ let make_resolves env sigma name eap (c,cty) =
 let make_resolve_hyp env sigma (hname,_,htyp) = 
   try
     [make_apply_entry env sigma (true, false) hname
-       (mkVar hname, body_of_type htyp)]
+       (mkVar hname,  htyp)]
   with 
     | Failure _ -> []
     | e when Logic.catchable_exception e -> anomaly "make_resolve_hyp"
@@ -722,7 +722,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 	   try 
 	     [make_apply_entry (pf_env g') (project g')
 		(true,false) 
-		hid (mkVar hid,body_of_type htyp)]
+		hid (mkVar hid, htyp)]
 	   with Failure _ -> [] 
 	 in
          search_gen decomp n db_list (Hint_db.add_list hintl local_db) [d] g') 
@@ -819,7 +819,7 @@ let compileAutoArg contac = function
 	 tclFIRST 
            (List.map 
               (fun (id,_,typ) -> 
-                let cl = snd (decompose_prod (body_of_type typ)) in
+                let cl = snd (decompose_prod typ) in
                  if Hipattern.is_conjunction cl
 		 then 
 		   tclTHENSEQ [simplest_elim (mkVar id); clear [id]; contac] 
@@ -845,7 +845,7 @@ let rec super_search n db_list local_db argl goal =
 	   let (hid,_,htyp) = pf_last_hyp g in
 	   let hintl =
 	     make_resolves (pf_env g) (project g)
-	       hid (true,false) (mkVar hid,body_of_type htyp) in
+	       hid (true,false) (mkVar hid, htyp) in
 	   super_search n db_list (Hint_db.add_list hintl local_db)
 	     argl g))
      ::

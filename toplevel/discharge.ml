@@ -209,7 +209,7 @@ let process_object oldenv olddir full_olddir newdir
 	    match c with
 	      | None ->
 		  SectionLocalAssum
-		    (expmod_constr oldenv work_alist (body_of_type t))
+		    (expmod_constr oldenv work_alist t)
 	      | Some body ->
 		  SectionLocalDef
 		    (expmod_constr oldenv work_alist body)

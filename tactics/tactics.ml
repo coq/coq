@@ -396,8 +396,8 @@ let rec intros_move = function
 
 let dependent_in_decl a (_,c,t) =
   match c with
-    | None -> dependent a (body_of_type t)
-    | Some body -> dependent a body || dependent a (body_of_type t)
+    | None -> dependent a t
+    | Some body -> dependent a body || dependent a t
 
 let move_to_rhyp rhyp gl =
   let rec get_lhyp lastfixed depdecls = function
@@ -757,7 +757,7 @@ let (assumption : tactic) = fun gl ->
   let rec arec = function
     | [] -> error "No such assumption"
     | (id,c,t)::rest -> 
-	if pf_conv_x_leq gl (body_of_type t) concl then refine (mkVar id) gl
+	if pf_conv_x_leq gl t concl then refine (mkVar id) gl
 	else arec rest
   in
   arec (pf_hyps gl)

@@ -106,7 +106,7 @@ let mkProd_or_LetIn (na,body,t) c =
 (* Constructs either [(x:t)c] or [c] where [x] is replaced by [b] *)
 let mkProd_wo_LetIn (na,body,t) c =
   match body with
-    | None -> mkProd (na, body_of_type t, c)
+    | None -> mkProd (na,  t, c)
     | Some b -> subst1 b c
 
 let it_mkProd_wo_LetIn ~init = 
@@ -309,9 +309,9 @@ let occur_var env s c =
 
 let occur_var_in_decl env hyp (_,c,typ) =
   match c with
-    | None -> occur_var env hyp (body_of_type typ)
+    | None -> occur_var env hyp typ
     | Some body ->
-        occur_var env hyp (body_of_type typ) ||
+        occur_var env hyp typ ||
         occur_var env hyp body
 
 (* Tests that t is a subterm of c *)
@@ -542,7 +542,7 @@ let hdchar env c =
 	 else
 	   try match Environ.lookup_rel (n-k) env with
 	     | (Name id,_,_)   -> lowercase_first_char id
-	     | (Anonymous,_,t) -> hdrec 0 (lift (n-k) (body_of_type t))
+	     | (Anonymous,_,t) -> hdrec 0 (lift (n-k) t)
 	   with Not_found -> "y")
     | Fix ((_,i),(lna,_,_)) -> 
 	let id = match lna.(i) with Name id -> id | _ -> assert false in
@@ -714,7 +714,7 @@ let assums_of_rel_context sign =
     (fun (na,c,t) l ->
       match c with
           Some _ -> l
-        | None -> (na,body_of_type t)::l)
+        | None -> (na, t)::l)
     sign ~init:[]
 
 let lift_rel_context n sign =
@@ -745,9 +745,9 @@ let make_all_name_different env =
 let global_vars env ids = Idset.elements (global_vars_set env ids)
 
 let global_vars_set_of_decl env = function
-  | (_,None,t) -> global_vars_set env (body_of_type t)
+  | (_,None,t) -> global_vars_set env t
   | (_,Some c,t) ->
-      Idset.union (global_vars_set env (body_of_type t))
+      Idset.union (global_vars_set env t)
         (global_vars_set env c)
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)

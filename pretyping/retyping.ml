@@ -53,7 +53,7 @@ let typeur sigma metamap =
            with Not_found -> anomaly "type_of: this is not a well-typed term")
     | Rel n ->
         let (_,_,ty) = lookup_rel n env in
-        lift n (body_of_type ty)
+        lift n ty
     | Var id ->
         (try
           let (_,_,ty) = lookup_named id env in

@@ -118,7 +118,7 @@ let pr_value env = function
      VContext _ | VFun _ | VRec _) -> str "<fun>"
 
 (* Transforms a named_context into a (string * constr) list *)
-let make_hyps = List.map (fun (id,_,typ) -> (id,body_of_type typ))
+let make_hyps = List.map (fun (id,_,typ) -> (id, typ))
 
 (* Transforms an id into a constr if possible *)
 let constr_of_id ist id =
@@ -546,7 +546,7 @@ let rec glob_atomic lf ist = function
   | TacExtend (opn,l) ->
       let _ = lookup_tactic opn in
       TacExtend (opn,List.map (glob_genarg ist) l)
-  | TacAlias (_,l,body) -> failwith "TODO"
+  | TacAlias (_,l,body) -> failwith "TacAlias globalisation: TODO"
 
 and glob_tactic ist tac = snd (glob_tactic_seq ist tac)
 
