@@ -83,8 +83,11 @@ let lcast = 9
 let lapp = 10
 let ltop = (8,E)
 
-let prec_less child (parent,assoc) =
-  (if assoc = E then (<=) else (<)) child parent
+let prec_less child (parent,assoc) = match assoc with
+  | E -> child <= parent
+  | L -> child < parent
+  | Prec n -> child <= n
+  | Any -> true
 
 let env_assoc_value v env =
   try List.nth env (v-1)
@@ -133,7 +136,7 @@ let pr_expl_args pr (a,expl) =
 
 let pr_opt_type pr = function
   | CHole _ -> mt ()
-  | t -> cut () ++ str ":" ++ pr ltop t
+  | t -> str ":" ++ pr ltop t
 
 let pr_tight_coma () = str "," ++ cut ()
 
@@ -158,7 +161,7 @@ let rec pr_lambda_tail pr = function
   | CLambdaN (_,bl,a) ->
       pr_semicolon () ++ pr_binders pr bl ++ pr_lambda_tail pr a
   | CLetIn (_,x,a,b) ->
-      pr_semicolon () ++ pr_let_binder pr (snd x) a ++ pr_lambda_tail pr a
+      pr_semicolon () ++ pr_let_binder pr (snd x) a ++ pr_lambda_tail pr b
   | a -> str "]" ++ brk(0,1) ++ pr ltop a
 
 let rec pr_prod_tail pr = function
@@ -255,11 +258,11 @@ let rec pr inherited a =
   | CCoFix (_,id,cofix) -> pr_cofix pr (snd id) cofix, latom
   | CArrow _ -> hv 0 (pr_arrow pr a), larrow
   | CProdN (_,bl,a) ->
-      hov 0 (str "(" ++ pr_binders pr bl ++ pr_prod_tail pr a), lprod
+      hv 1 (str "(" ++ pr_binders pr bl ++ pr_prod_tail pr a), lprod
   | CLambdaN (_,bl,a) ->
-      hov 0 (str "[" ++ pr_binders pr bl ++ pr_lambda_tail pr a), llambda
+      hv 1 (str "[" ++ pr_binders pr bl ++ pr_lambda_tail pr a), llambda
   | CLetIn (_,x,a,b) ->
-      hov 0 (str "[" ++ pr_let_binder pr (snd x) a ++ pr_lambda_tail pr b),
+      hv 1 (str "[" ++ pr_let_binder pr (snd x) a ++ pr_lambda_tail pr b),
       lletin
   | CAppExpl (_,f,l) ->
       hov 0 (
@@ -267,7 +270,7 @@ let rec pr inherited a =
 	prlist (fun a -> brk (1,1) ++ pr (lapp,L) a) l), lapp
   | CApp (_,a,l) ->
       hov 0 (
-	pr (latom,E) a ++ 
+	pr (lapp,L) a ++ 
 	prlist (fun a -> brk (1,1) ++ pr_expl_args pr a) l), lapp
   | CCases (_,po,tml,eqns) ->
       pr_cases pr po tml eqns, lcases
@@ -392,9 +395,9 @@ let gentermpr gt =
 
 (* [at_top] means ids of env must be avoided in bound variables *)
 
-let gentermpr_core at_top env t =
-  gentermpr (Termast.ast_of_constr at_top env t)
 (*
 let gentermpr_core at_top env t =
-  pr_constr (Constrextern.extern_constr at_top env t)
+  gentermpr (Termast.ast_of_constr at_top env t)
 *)
+let gentermpr_core at_top env t =
+  pr_constr (Constrextern.extern_constr at_top env t)
