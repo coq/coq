@@ -36,7 +36,7 @@ and library_segment = library_entry list
 
 let lib_stk = ref ([] : (section_path * node) list)
 
-let default_module = make_dirpath [id_of_string "Scratch"]
+let default_module = make_dirpath Nametab.default_root_prefix
 let module_name = ref None
 let path_prefix = ref (default_module : dir_path)
 
