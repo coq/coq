@@ -26,6 +26,7 @@
 #install_printer  (* section_path *)  prsp;;
 #install_printer  (* qualid *)  prqualid;;
 #install_printer  (* kernel_name *) prkn;;
+#install_printer  (* constant *) prcon;;
 #install_printer  (* constr *)  print_pure_constr;; 
 #install_printer  (* patch *) ppripos;;
 #install_printer  (* values *) ppvalues;;

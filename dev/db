@@ -8,6 +8,7 @@ install_printer Top_printers.prmbid
 install_printer Top_printers.prdir
 install_printer Top_printers.prmp
 install_printer Top_printers.prkn
+install_printer Top_printers.prcon
 install_printer Top_printers.prsp
 install_printer Top_printers.prqualid
 install_printer Top_printers.prast
