@@ -19,7 +19,7 @@ open Sign
    [coers]; it returns the absolute names of projections *)
 
 val declare_projections :
-  inductive -> bool list -> named_context -> constant option list
+  inductive -> bool list -> rel_context -> constant option list
 
 val definition_structure :
    bool * identifier * (identifier * Coqast.t) list *

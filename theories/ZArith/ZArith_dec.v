@@ -35,14 +35,10 @@ Qed.
 
 Section decidability.
 
-Local inf_decidable := [P:Prop] {P}+{~P}.
-
 Variables x,y : Z.
 
-
-Theorem Z_eq_dec : (inf_decidable (x=y)).
+Theorem Z_eq_dec : {x=y}+{~x=y}.
 Proof.
-Unfold inf_decidable.
 Apply Zcompare_rec with x:=x y:=y.
 Intro. Left. Elim (Zcompare_EGAL x y); Auto with arith.
 Intro H3. Right. Elim (Zcompare_EGAL x y). Intros H1 H2. Unfold not. Intro H4.
@@ -51,36 +47,36 @@ Intro H3. Right. Elim (Zcompare_EGAL x y). Intros H1 H2. Unfold not. Intro H4.
   Rewrite (H2 H4) in H3. Discriminate H3.
 Qed. 
 
-Theorem Z_lt_dec : (inf_decidable (Zlt x y)).
+Theorem Z_lt_dec : {(Zlt x y)}+{~(Zlt x y)}.
 Proof.
-Unfold inf_decidable Zlt.
+Unfold Zlt.
 Apply Zcompare_rec with x:=x y:=y; Intro H.
 Right. Rewrite H. Discriminate.
 Left; Assumption.
 Right. Rewrite H. Discriminate.
 Qed.
 
-Theorem Z_le_dec : (inf_decidable (Zle x y)).
+Theorem Z_le_dec : {(Zle x y)}+{~(Zle x y)}.
 Proof.
-Unfold inf_decidable Zle.
+Unfold Zle.
 Apply Zcompare_rec with x:=x y:=y; Intro H.
 Left. Rewrite H. Discriminate.
 Left. Rewrite H. Discriminate.
 Right. Tauto.
 Qed.
 
-Theorem Z_gt_dec : (inf_decidable (Zgt x y)).
+Theorem Z_gt_dec : {(Zgt x y)}+{~(Zgt x y)}.
 Proof.
-Unfold inf_decidable Zgt.
+Unfold Zgt.
 Apply Zcompare_rec with x:=x y:=y; Intro H.
 Right. Rewrite H. Discriminate.
 Right. Rewrite H. Discriminate.
 Left; Assumption.
 Qed.
 
-Theorem Z_ge_dec : (inf_decidable (Zge x y)).
+Theorem Z_ge_dec : {(Zge x y)}+{~(Zge x y)}.
 Proof.
-Unfold inf_decidable Zge.
+Unfold Zge.
 Apply Zcompare_rec with x:=x y:=y; Intro H.
 Left. Rewrite H. Discriminate.
 Right. Tauto.

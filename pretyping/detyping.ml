@@ -202,7 +202,11 @@ let rec detype tenv avoid env t =
 	 let s = "_UNBOUND_REL_"^(string_of_int n)
 	 in RVar (dummy_loc, id_of_string s))
     | Meta n -> RMeta (dummy_loc, n)
-    | Var id -> RVar (dummy_loc, id)
+    | Var id ->
+	(try
+	  let _ = Global.lookup_named id in RRef (dummy_loc, VarRef id)
+	 with _ ->
+	  RVar (dummy_loc, id))
     | Sort (Prop c) -> RSort (dummy_loc,RProp c)
     | Sort (Type u) -> RSort (dummy_loc,RType (Some u))
     | Cast (c1,c2) ->

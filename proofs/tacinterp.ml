@@ -42,10 +42,11 @@ let err_msg_tactic_not_found macro_loc macro =
 
 (* Values for interpretation *)
 type value =
-  | VTactic of tactic
-  | VFTactic of tactic_arg list * (tactic_arg list->tactic)
+  | VTacticClos of interp_sign * Coqast.t
+  | VFTactic of tactic_arg list * string
   | VRTactic of (goal list sigma * validation)
-  | VContext of (interp_sign -> goal sigma -> value)
+  | VTactic of tactic (* For mixed ML/Ltac tactics (e.g. Tauto) *)
+  | VContext of interp_sign * Coqast.t * Coqast.t list
   | VArg of tactic_arg
   | VFun of (identifier * value) list * identifier option list * Coqast.t
   | VVoid
@@ -62,14 +63,6 @@ and interp_sign =
 
 (* For tactic_of_value *)
 exception NotTactic
-
-(* Gives the tactic corresponding to the tactic value *)
-let tactic_of_value vle g =
-  match vle with
-  | VTactic tac -> (tac g)
-  | VFTactic (largs,f) -> (f largs g) 
-  | VRTactic res -> res
-  | _ -> raise NotTactic
 
 (* Gives the identifier corresponding to an Identifier tactic_arg *)
 let id_of_Identifier = function
@@ -395,18 +388,9 @@ let rec read_match_rule evc env lfun = function
 exception No_match
 exception Not_coherent_metas
 
-(* Evaluation with FailError catching *)
-let eval_with_fail interp ast goal =
-  try 
-    (match interp ast with
-    | VTactic tac -> VRTactic (tac goal)
-    | VFTactic (largs,f) -> VRTactic (f largs goal)
-    | a -> a)
-  with | FailError lvl ->
-    if lvl = 0 then
-      raise No_match
-    else
-      raise (FailError (lvl - 1))
+let is_match_catchable = function
+  | No_match | FailError _ -> true
+  | e -> Logic.catchable_exception e
 
 (* Verifies if the matched list is coherent with respect to lcm *)
 let rec verify_metas_coherence ist lcm = function
@@ -491,6 +475,7 @@ let rec val_interp ist ast =
 
   let value_interp ist =
   match ast with
+    (* Immediate evaluation *)
     | Node(_,"APP",l) ->
         let fv = val_interp ist (List.hd l)
         and largs = List.map (val_interp ist) (List.tl l) in
@@ -500,32 +485,14 @@ let rec val_interp ist ast =
     | Node(_,"LET",[Node(_,"LETDECL",l);u]) ->
         let addlfun=letin_interp ist ast l in
         val_interp { ist with lfun=addlfun@ist.lfun } u
-    | Node(_,"LETCUT",[Node(_,"LETDECL",l)]) ->
-        VTactic (letcut_interp ist ast l)
-    | Node(_,"MATCHCONTEXT",lmr) -> match_context_interp ist ast lmr
+    | Node(_,"MATCHCONTEXT",lmr) ->
+       (match ist.goalopt with
+          | None -> VContext (ist,ast,lmr)
+          | Some g -> match_context_interp ist ast lmr g)
     | Node(_,"MATCH",lmr) -> match_interp ist ast lmr
-    | Node(_,"IDTAC",[]) -> VTactic tclIDTAC
-    | Node(_,"FAIL",[]) -> VTactic (tclFAIL 0)
-    | Node(_,"FAIL",[n]) -> VTactic (tclFAIL (num_of_ast n))
-    | Node(_,"PROGRESS",[tac]) ->
-        VTactic (tclPROGRESS (tactic_interp ist tac))
-    | Node(_,"TACTICLIST",l) ->
-        VTactic (interp_semi_list tclIDTAC ist.lfun ist.lmatch ist.debug l)
-    | Node(_,"DO",[n;tac]) ->
-        VTactic (tclDO (num_of_ast n) (tactic_interp ist tac))
-    | Node(_,"TRY",[tac]) -> VTactic (tclTRY (tactic_interp ist tac))
-    | Node(_,"INFO",[tac]) -> VTactic (tclINFO (tactic_interp ist tac))
-    | Node(_,"REPEAT",[tac]) -> VTactic (tclREPEAT (tactic_interp ist tac))
-    | Node(_,"ORELSE",[tac1;tac2]) ->
-        VTactic (tclORELSE (tactic_interp ist tac1) (tactic_interp ist tac2))
-    | Node(_,"FIRST",l) -> VTactic (tclFIRST (List.map (tactic_interp ist) l))
-    | Node(_,"TCLSOLVE",l) ->
-        VTactic (tclSOLVE (List.map (tactic_interp ist) l))
-(*    | Node(loc0,"APPTACTIC",[Node(loc1,s,l)]) ->
-        val_interp ist
-          (Node(loc0,"APP",[Node(loc1,"PRIM-TACTIC",[Node(loc1,s,[])])]@l))*)
-    | Node(_,"PRIMTACTIC",[Node(loc,opn,[])]) ->
-        VFTactic ([],(interp_atomic opn))
+    (* Delayed evaluation *)
+    | Node(loc,("LETCUT"|"IDTAC"|"FAIL"|"PROGRESS"|"TACTICLIST"|"DO"|"TRY"|"INFO"|"REPEAT"|"ORELSE"|"FIRST"|"TCLSOLVE"),_) -> VTacticClos (ist,ast)
+    (* Arguments and primitive tactics *)
     | Node(_,"VOID",[]) -> VVoid
     | Nvar(_,s) ->
         (try (unrec (List.assoc s ist.lfun))
@@ -562,17 +529,16 @@ let rec val_interp ist ast =
     | Node(_,"LETPATTERNS",astl) ->
         VArg (Letpatterns (List.fold_left (cvt_letpattern ist) (None,[]) astl))
     | Node(loc,s,[]) ->
-        VFTactic ([],(interp_atomic s))
+        VFTactic ([],s)
     | Node(loc,s,l) ->
         (try
           ((look_for_interp s) ist ast)
         with
            Not_found ->
              if l = [] then
-               VFTactic ([],(interp_atomic s))
+               VFTactic ([],s)
              else
-               let fv = val_interp ist
-                          (Node(loc,"PRIMTACTIC",[Node(loc,s,[])]))
+               let fv = VFTactic ([],s)
                and largs = List.map (val_interp ist) l in
                app_interp ist fv largs ast)
     | Dynamic(_,t) ->
@@ -591,10 +557,35 @@ let rec val_interp ist ast =
           (str "Unrecognizable ast: " ++ print_ast ast)) in
   if ist.debug = DebugOn then
     match debug_prompt ist.goalopt ast with
-    | Exit -> VTactic tclIDTAC
+    | Exit -> VTacticClos (ist,Node(dummy_loc,"IDTAC",[]))
     | v -> value_interp {ist with debug=v}
   else
     value_interp ist
+
+and eval_tactic ist ast =
+  match ast with
+    | Node(_,"LETCUT",[Node(_,"LETDECL",l)]) -> letcut_interp ist ast l
+    | Node(_,"IDTAC",[]) -> tclIDTAC
+    | Node(_,"FAIL",[]) -> tclFAIL 0
+    | Node(_,"FAIL",[n]) -> tclFAIL (num_of_ast n)
+    | Node(_,"PROGRESS",[tac]) -> tclPROGRESS (tactic_interp ist tac)
+    | Node(_,"TACTICLIST",l) ->
+	interp_semi_list tclIDTAC ist.lfun ist.lmatch ist.debug l
+    | Node(_,"DO",[n;tac]) ->
+        tclDO (num_of_ast n) (tactic_interp ist tac)
+    | Node(_,"TRY",[tac]) -> tclTRY (tactic_interp ist tac)
+    | Node(_,"INFO",[tac]) -> tclINFO (tactic_interp ist tac)
+    | Node(_,"REPEAT",[tac]) -> tclREPEAT (tactic_interp ist tac)
+    | Node(_,"ORELSE",[tac1;tac2]) ->
+        tclORELSE (tactic_interp ist tac1) (tactic_interp ist tac2)
+    | Node(_,"FIRST",l) -> tclFIRST (List.map (tactic_interp ist) l)
+    | Node(_,"TCLSOLVE",l) -> tclSOLVE (List.map (tactic_interp ist) l)
+(*    | Node(loc0,"APPTACTIC",[Node(loc1,s,l)]) ->
+        val_interp ist
+          (Node(loc0,"APP",[Node(loc1,"PRIM-TACTIC",[Node(loc1,s,[])])]@l))*)
+    | _ ->
+        anomaly_loc (Ast.loc ast, "Tacinterp.val_interp",
+          (str "Unrecognizable ast: " ++ print_ast ast))
 
 (* Interprets an application node *)
 and app_interp ist fv largs ast =
@@ -613,6 +604,29 @@ and app_interp ist fv largs ast =
     | _ ->
       user_err_loc (Ast.loc ast, "Tacinterp.app_interp",
                     (str"Illegal tactic application: " ++ print_ast ast))
+
+(* Gives the tactic corresponding to the tactic value *)
+and tactic_of_value vle g =
+  match vle with
+  | VTacticClos (ist,tac) -> eval_tactic ist tac g
+  | VFTactic (largs,f) -> (interp_atomic f largs g) 
+  | VRTactic res -> res
+  | VTactic tac -> tac g
+  | _ -> raise NotTactic
+
+(* Evaluation with FailError catching *)
+and eval_with_fail interp ast goal =
+  try 
+    (match interp ast with
+    | VTacticClos (ist,tac) -> VRTactic (eval_tactic ist tac goal)
+    | VFTactic (largs,f) -> VRTactic (interp_atomic f largs goal)
+    | VTactic tac -> VRTactic (tac goal)
+    | a -> a)
+  with | FailError lvl ->
+    if lvl = 0 then
+      raise No_match
+    else
+      raise (FailError (lvl - 1))
 
 (* Interprets recursive expressions *)
 and rec_interp ist ast = function
@@ -747,7 +761,10 @@ and letcut_interp ist ast = function
       "LetCut not well formed: " ++ print_ast ast))
 
 (* Interprets the Match Context expressions *)
-and match_context_interp ist ast lmr =
+and match_context_interp ist ast lmr g =
+  let lr,lmr = match lmr with 
+    | Str(_,dir)::lmr ->  (dir="LR",lmr)
+    | _ -> anomaly "Ill-formed Match Context" in
 (*  let goal =
     (match goalopt with
     | None ->
@@ -782,8 +799,9 @@ and match_context_interp ist ast lmr =
        with No_match | _ ->
          apply_match_context ist goal tl)
     | (Pat (mhyps,mgoal,mt))::tl ->
-      let hyps = make_hyps (List.rev (pf_hyps goal))
-      and concl = pf_concl goal in
+      let hyps = make_hyps (pf_hyps goal) in
+      let hyps = if lr then List.rev hyps else hyps in
+      let concl = pf_concl goal in
       (match mgoal with
       |	Term mg ->
         (try
@@ -797,12 +815,11 @@ and match_context_interp ist ast lmr =
               apply_hyps_context { ist with goalopt=Some goal} mt lgoal mhyps
                 hyps
             end)
-         with | No_match | _ -> apply_match_context ist goal tl)
+         with e when is_match_catchable e -> apply_match_context ist goal tl)
       |	Subterm (id,mg) ->
         (try
           apply_goal_sub ist goal 0 (id,mg) concl mt mhyps hyps
-         with
-        | No_match | _ -> apply_match_context ist goal tl))
+         with e when is_match_catchable e -> apply_match_context ist goal tl))
     | _ ->
       errorlabstrm "Tacinterp.apply_match_context" (str
         "No matching clauses for Match Context") in
@@ -821,9 +838,12 @@ and match_context_interp ist ast lmr =
      apply_match_context ist goal
      (read_match_context_rule evc env (constr_list ist) lmr)) in*)
 
+(*
  (match ist.goalopt with
     | None -> VContext app_wo_goal
     | Some g -> app_wo_goal ist g)
+*)
+        app_wo_goal ist g
 
 (*  apply_match_context evc env lfun lmatch goal (read_match_context_rule evc
       env (constr_list ist) lmr)*)
@@ -854,7 +874,7 @@ and apply_hyps_context ist mt lgmatch mhyps hyps =
             (lfun@lid@lc) (lmatch@lm) tl nextlhyps nextlhyps None
          with
         | (FailError _) as e -> raise e
-        | _ ->
+	|  e when is_match_catchable e -> 
           (match noccopt with
           | None ->
             apply_hyps_context_rec ist mt lfun
@@ -870,10 +890,10 @@ and apply_hyps_context ist mt lgmatch mhyps hyps =
 
 (* Interprets a VContext value *)
 and vcontext_interp ist = function
-  | (VContext f) as v ->
+  | (VContext (ist', ast, lmr)) as v ->
     (match ist.goalopt with
     | None -> v
-    | Some g -> f ist g)
+    | Some g -> match_context_interp ist' ast lmr g)
   | v -> v
 
 (* Interprets the Match expressions *)
@@ -897,20 +917,21 @@ and match_interp ist ast lmr =
        with
        | NextOccurrence n -> raise No_match
        | (FailError _) as e -> raise e
-       | _ -> apply_sub_match ist (nocc + 1) (id,c) csr mt)
+       | e when is_match_catchable e ->
+	   apply_sub_match ist (nocc + 1) (id,c) csr mt)
   in
   let rec apply_match ist csr = function
     | (All t)::_ ->
       (match ist.goalopt with
         | None ->
           (try val_interp ist t
-           with | No_match | _ -> apply_match ist csr [])
+           with e when is_match_catchable e -> apply_match ist csr [])
         | Some g ->
           (try
             eval_with_fail (val_interp ist) t g
            with
            | (FailError _) as e -> raise e
-           | _ -> apply_match ist csr []))
+           | e when is_match_catchable e -> apply_match ist csr []))
     | (Pat ([],mp,mt))::tl ->
       (match mp with
       |	Term c ->
@@ -919,7 +940,7 @@ and match_interp ist ast lmr =
           (try
              val_interp
                { ist with lmatch=(apply_matching c csr)@ist.lmatch } mt
-           with | No_match | _ ->
+           with | e when is_match_catchable e ->
              apply_match ist csr tl)
         | Some g ->
           (try
@@ -927,7 +948,7 @@ and match_interp ist ast lmr =
               { ist with lmatch=(apply_matching c csr)@ist.lmatch }) mt g
            with
            | (FailError _) as e -> raise e
-           | _ -> apply_match ist csr tl))
+           | e when is_match_catchable e -> apply_match ist csr tl))
       |	Subterm (id,c) ->
         (try
            apply_sub_match ist 0 (id,c) csr mt
@@ -958,7 +979,7 @@ and tac_interp lfun lmatch debug ast g =
     "Interpretation gives a non-tactic value") *)
 
 (*    match (val_interp (evc,env,lfun,lmatch,(Some g),debug) ast) with
-      | VTactic tac -> (tac g)
+      | VTacticClos tac -> (tac g)
       | VFTactic (largs,f) -> (f largs g) 
       | VRTactic res -> res
       | _ ->

@@ -102,6 +102,9 @@ let ast_of_constructor_ref ((sp,tyi),n) =
 let ast_of_inductive_ref (sp,tyi) =
   ope("MUTIND", [path_section dummy_loc sp; num tyi])
 
+let ast_of_section_variable_ref s =
+  ope("SECVAR", [nvar s])
+
 let ast_of_qualid p =
   let dir, s = repr_qualid p in
   let args = List.map nvar ((List.rev(repr_dirpath dir))@[s]) in
@@ -111,7 +114,7 @@ let ast_of_ref = function
   | ConstRef sp -> ast_of_constant_ref sp
   | IndRef sp -> ast_of_inductive_ref sp
   | ConstructRef sp -> ast_of_constructor_ref sp
-  | VarRef id -> nvar id
+  | VarRef id -> ast_of_section_variable_ref id
 
 (**********************************************************************)
 (* conversion of patterns                                             *)

@@ -22,6 +22,7 @@ Then only after proves the main required property.
 Require Export ZArith.
 Require Omega.
 Require ZArithRing.
+Require Zcomplements.
 
 (**
 
@@ -284,3 +285,116 @@ Syntax constr
       [ << (ZEXPR <<(Zmod $n1 $n2)>>) >> ]
       	 -> [ (ZEXPR $n1):E "%" [0 0] (ZEXPR $n2):L ]
 .
+
+(** Other lemmas (now using the syntax for [Zdiv] and [Zmod]). *)
+
+Lemma Z_div_ge : (a,b,c:Z)`c > 0`->`a >= b`->`a/c >= b/c`.
+Proof.
+Intros a b c cPos aGeb.
+Generalize (Z_div_mod_eq a c cPos).
+Generalize (Z_mod_lt a c cPos).
+Generalize (Z_div_mod_eq b c cPos).
+Generalize (Z_mod_lt b c cPos).
+Intros.
+Elim (Z_ge_lt_dec `a/c` `b/c`); Trivial.
+Intro.
+Absurd `b-a >= 1`.
+Omega.
+Rewrite -> H0.
+Rewrite -> H2.
+Assert `c*(b/c)+b%c-(c*(a/c)+a%c) = c*(b/c - a/c) + b%c - a%c`.
+Ring.
+Rewrite H3.
+Assert `c*(b/c-a/c) >= c*1`.
+Apply Zge_Zmult_pos_left.
+Omega.
+Omega.
+Assert `c*1=c`.
+Ring.
+Omega.
+Save.
+
+Lemma Z_mod_plus : (a,b,c:Z)`c > 0`->`(a+b*c)%c = a%c`.
+Proof.
+Intros a b c cPos.
+Generalize (Z_div_mod_eq a c cPos).
+Generalize (Z_mod_lt a c cPos).
+Generalize (Z_div_mod_eq `a+b*c` c cPos).
+Generalize (Z_mod_lt `a+b*c` c cPos).
+Intros.
+
+Assert `(a+b*c)%c - a%c = c*(b+a/c - (a+b*c)/c)`.
+Replace `(a+b*c)%c` with `a+b*c - c*((a+b*c)/c)`.
+Replace `a%c` with `a - c*(a/c)`.
+Ring.
+Omega.
+Omega.
+LetTac q := `b+a/c-(a+b*c)/c`.
+Apply (Zcase_sign q); Intros.
+Assert `c*q=0`.
+Rewrite H4; Ring.
+Rewrite H5 in H3.
+Omega.
+
+Assert `c*q >= c`.
+Pattern 2 c; Replace c with `c*1`.
+Apply Zge_Zmult_pos_left; Omega.
+Ring.
+Omega.
+
+Assert `c*q <= -c`.
+Replace `-c` with `c*(-1)`.
+Apply Zle_Zmult_pos_left; Omega.
+Ring.
+Omega.
+Save.
+
+Lemma Z_div_plus : (a,b,c:Z)`c > 0`->`(a+b*c)/c = a/c+b`.
+Proof.
+Intros a b c cPos.
+Generalize (Z_div_mod_eq a c cPos).
+Generalize (Z_mod_lt a c cPos).
+Generalize (Z_div_mod_eq `a+b*c` c cPos).
+Generalize (Z_mod_lt `a+b*c` c cPos).
+Intros.
+Apply Zmult_reg_left with 1:=cPos.
+Replace `c*((a+b*c)/c)` with `a+b*c-(a+b*c)%c`.
+Rewrite (Z_mod_plus a b c cPos).
+Pattern 1 a; Rewrite H2.
+Ring.
+Pattern 1 `a+b*c`; Rewrite H0.
+Ring.
+Save.
+
+Lemma Z_mult_div_ge : (a,b:Z)`b>0`->`b*(a/b) <= a`.
+Proof.
+Intros a b bPos.
+Generalize (Z_div_mod_eq `a` ? bPos); Intros.
+Generalize (Z_mod_lt `a` ? bPos); Intros.
+Pattern 2 a; Rewrite H.
+Omega.
+Save.
+
+Lemma Z_mod_same : (a:Z)`a>0`->`a%a=0`.
+Proof.
+Intros a aPos.
+Generalize (Z_mod_plus `0` `1` a aPos).
+Replace `0+1*a` with `a`.
+Intros.
+Rewrite H.
+Compute.
+Trivial.
+Ring.
+Save.
+
+Lemma Z_div_same : (a:Z)`a>0`->`a/a=1`.
+Proof.
+Intros a aPos.
+Generalize (Z_div_plus `0` `1` a aPos).
+Replace `0+1*a` with `a`.
+Intros.
+Rewrite H.
+Compute.
+Trivial.
+Ring.
+Save.

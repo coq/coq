@@ -25,25 +25,25 @@ let is_empty ist =
   if (is_empty_type (List.assoc 1 ist.lmatch)) then
     <:tactic<ElimType ?1;Assumption>>
   else
-    failwith "is_empty"
+    <:tactic<Fail>>
 
 let is_unit ist =
   if (is_unit_type (List.assoc 1 ist.lmatch)) then
     <:tactic<Idtac>>
   else
-    failwith "is_unit"
+    <:tactic<Fail>>
 
 let is_conj ist =
   if (is_conjunction (List.assoc 1 ist.lmatch)) then
      <:tactic<Idtac>>
   else
-    failwith "is_conj"
+    <:tactic<Fail>>
 
 let is_disj ist =
   if (is_disjunction (List.assoc 1 ist.lmatch)) then
      <:tactic<Idtac>>
   else
-    failwith "is_disj"
+    <:tactic<Fail>>
 
 let not_dep_intros ist =
   <:tactic<
@@ -55,7 +55,7 @@ let axioms ist =
   let t_is_unit = tacticIn is_unit
   and t_is_empty = tacticIn is_empty in
   <:tactic<
-    Match Context With
+    Match Reverse Context With
     |[|- ?1] -> $t_is_unit;Constructor
     |[_:?1 |- ?] -> $t_is_empty
     |[_:?1 |- ?1] -> Assumption>>
@@ -68,7 +68,7 @@ let simplif t_reduce ist =
   <:tactic<
     $t_not_dep_intros;
     Repeat
-      ((Match Context With
+      ((Match Reverse Context With
         | [id: (?1 ? ?) |- ?] ->
             $t_is_conj;Elim id;Do 2 Intro;Clear id;$t_reduce
         | [id: (?1 ? ?) |- ?] -> $t_is_disj;Elim id;Intro;Clear id;$t_reduce
@@ -94,7 +94,7 @@ let rec tauto_intuit t_reduce t_solver ist =
    $t_reduce;
    ($t_simplif;$t_axioms
     Orelse
-      (Match Context With
+      (Match Reverse Context With
       | [id:(?1-> ?2)-> ?3|- ?] ->
         Cut ?2-> ?3;[Intro;Cut ?1-> ?2;[Intro;Cut ?3;[Intro;Clear id|
           Intros;Apply id;Assumption]|Clear id]|Intros;Apply id;Try Intro;
@@ -123,7 +123,7 @@ let intuition_gen tac =
   interp (tacticIn (tauto_intuit t_reduction_not_iff tac))
 
 let tauto g =
-  try intuition_gen <:tactic<Failtac>> g
+  try intuition_gen <:tactic<Fail>> g
   with UserError _ -> errorlabstrm "tauto" [< str "Tauto failed" >]
 
 let default_intuition_tac = <:tactic< Auto with * >>

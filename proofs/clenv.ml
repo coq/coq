@@ -560,7 +560,9 @@ let clenv_instance_type_of ce c =
    or in evars, possibly generating new unification problems; if [b]
    is true, unification of types of metas is required *)
 
-let clenv_merge with_types =
+let clenv_merge with_types metas evars clenv =
+  let ty_metas = ref [] in
+  let ty_evars = ref [] in
   let rec clenv_resrec metas evars clenv =
     match (evars,metas) with
       | ([], []) -> clenv
@@ -603,18 +605,25 @@ let clenv_merge with_types =
               unify_0 CONV clenv.hook (clenv_value clenv mv).rebus n in
             clenv_resrec (metas'@t) evars' clenv
     	  else
-	    let mc,ec =
-	      let mvty = clenv_instance_type clenv mv in
+            begin
 	      if with_types (* or occur_meta mvty *) then
-		(try 
-		let nty = clenv_type_of clenv 
-			    (clenv_instance clenv (mk_freelisted n)) in
-		unify_0 CUMUL clenv.hook nty mvty
-		with e when Logic.catchable_exception e -> ([],[]))
-	      else ([],[]) in
-	    clenv_resrec (mc@t) ec (clenv_assign mv n clenv)
-
-  in clenv_resrec
+	        (let mvty = clenv_instance_type clenv mv in
+		try 
+		  let nty = clenv_type_of clenv 
+			      (clenv_instance clenv (mk_freelisted n)) in
+		  let (mc,ec) = unify_0 CUMUL clenv.hook nty mvty in
+                  ty_metas := mc @ !ty_metas;
+                  ty_evars := ec @ !ty_evars
+		with e when Logic.catchable_exception e -> ());
+	      clenv_resrec t [] (clenv_assign mv n clenv)
+            end in
+  (* merge constraints *)
+  let clenv' = clenv_resrec metas evars clenv in
+  if with_types then
+    (* merge constraints about types: if they fail, don't worry *)
+    try clenv_resrec !ty_metas !ty_evars clenv'
+    with e when Logic.catchable_exception e -> clenv'
+  else clenv'
 
 (* [clenv_unify M N clenv]
    performs a unification of M and N, generating a bunch of

@@ -55,7 +55,7 @@ Fixpoint abstract_varlist_insert [l1:varlist; s2:abstract_sum]
 Fixpoint abstract_sum_scalar [l1:varlist; s2:abstract_sum] 
       : abstract_sum :=
   Cases s2 of
-  | (Cons_acs l2 t2) => (Cons_acs (varlist_merge l1 l2) 
+  | (Cons_acs l2 t2) => (abstract_varlist_insert (varlist_merge l1 l2) 
                                 (abstract_sum_scalar l1 t2))
   | Nil_acs => Nil_acs
   end.
@@ -195,6 +195,7 @@ Proof.
 
   Simpl; Intros.
   Rewrite iacs_aux_ok.
+  Rewrite abstract_varlist_insert_ok.
   Rewrite H.
   Rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
   Auto.
@@ -329,12 +330,20 @@ Fixpoint minus_varlist_insert [l1:varlist; s2:signed_sum]
   | Nil_varlist => (Minus_varlist l1 Nil_varlist)
   end.
 
+Fixpoint signed_sum_opp [s:signed_sum] : signed_sum :=
+  Cases s of
+  | (Plus_varlist l2 t2) => (Minus_varlist l2 (signed_sum_opp t2))
+  | (Minus_varlist l2 t2) => (Plus_varlist l2 (signed_sum_opp t2))
+  | Nil_varlist => Nil_varlist
+  end.
+
+
 Fixpoint plus_sum_scalar [l1:varlist; s2:signed_sum] 
       : signed_sum :=
   Cases s2 of
-  | (Plus_varlist l2 t2) => (Plus_varlist (varlist_merge l1 l2) 
+  | (Plus_varlist l2 t2) => (plus_varlist_insert (varlist_merge l1 l2) 
                                 (plus_sum_scalar l1 t2))
-  | (Minus_varlist l2 t2) => (Minus_varlist (varlist_merge l1 l2) 
+  | (Minus_varlist l2 t2) => (minus_varlist_insert (varlist_merge l1 l2) 
                                 (plus_sum_scalar l1 t2))
   | Nil_varlist => Nil_varlist
   end.
@@ -342,9 +351,9 @@ Fixpoint plus_sum_scalar [l1:varlist; s2:signed_sum]
 Fixpoint minus_sum_scalar [l1:varlist; s2:signed_sum] 
       : signed_sum :=
   Cases s2 of
-  | (Plus_varlist l2 t2) => (Minus_varlist (varlist_merge l1 l2) 
+  | (Plus_varlist l2 t2) => (minus_varlist_insert (varlist_merge l1 l2) 
                                 (minus_sum_scalar l1 t2))
-  | (Minus_varlist l2 t2) => (Plus_varlist (varlist_merge l1 l2) 
+  | (Minus_varlist l2 t2) => (plus_varlist_insert (varlist_merge l1 l2) 
                                 (minus_sum_scalar l1 t2))
   | Nil_varlist => Nil_varlist
   end.
@@ -370,7 +379,7 @@ Fixpoint apolynomial_normalize[p:apolynomial] : signed_sum :=
       	       	       	       	       	 (apolynomial_normalize r))
   | (APmult l r) => (signed_sum_prod (apolynomial_normalize l) 
       	       	       	       	        (apolynomial_normalize r))
-  | (APopp q) => (minus_sum_scalar Nil_var (apolynomial_normalize q))
+  | (APopp q) => (signed_sum_opp (apolynomial_normalize q))
   end.
 
 
@@ -564,6 +573,28 @@ Proof.
 
 Save.
 
+Lemma signed_sum_opp_ok : (s:signed_sum)
+	(interp_sacs (signed_sum_opp s)) 
+	== (Aopp (interp_sacs s)).
+Proof.
+
+  Induction s; Simpl; Intros.
+
+  Symmetry; Apply (Th_opp_zero T).
+
+  Repeat Rewrite isacs_aux_ok.
+  Rewrite H.
+  Rewrite (Th_plus_opp_opp T).
+  Reflexivity.
+
+  Repeat Rewrite isacs_aux_ok.
+  Rewrite H.
+  Rewrite <- (Th_plus_opp_opp T).
+  Rewrite (Th_opp_opp T).
+  Reflexivity.
+
+Save.
+
 Lemma plus_sum_scalar_ok : (l:varlist)(s:signed_sum)
 	(interp_sacs (plus_sum_scalar l s)) 
 	== (Amult (interp_vl  Amult Aone Azero vm l) (interp_sacs s)).
@@ -573,12 +604,14 @@ Proof.
   Trivial.
 
   Simpl; Intros.
+  Rewrite plus_varlist_insert_ok.
   Rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
   Repeat Rewrite isacs_aux_ok.
   Rewrite H.
   Auto.
 
   Simpl; Intros.
+  Rewrite minus_varlist_insert_ok.
   Repeat Rewrite isacs_aux_ok.
   Rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
   Rewrite H.
@@ -598,6 +631,7 @@ Proof.
   Rewrite (Th_mult_zero_right T); Symmetry; Apply (Th_opp_zero T).
 
   Simpl; Intros.
+  Rewrite minus_varlist_insert_ok.
   Rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
   Repeat Rewrite isacs_aux_ok.
   Rewrite H.
@@ -606,6 +640,7 @@ Proof.
   Reflexivity.
 
   Simpl; Intros.
+  Rewrite plus_varlist_insert_ok.
   Repeat Rewrite isacs_aux_ok.
   Rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
   Rewrite H.
@@ -655,9 +690,7 @@ Proof.
     Rewrite signed_sum_prod_ok.
     Rewrite H; Rewrite H0; Reflexivity.
   Intros.
-    Rewrite minus_sum_scalar_ok.
-    Simpl. 
-    Rewrite (Th_mult_one_left T).
+    Rewrite signed_sum_opp_ok.
     Rewrite H; Reflexivity.
 Save.  
 
