@@ -457,7 +457,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 *)
 
 
-let unsafe_fmachine vtcon nocheck isevars metamap env constr = 
+let unsafe_fmachine vtcon nocheck isevars metamap env constr =
   trad_metamap := metamap;
   trad_nocheck := nocheck;
   reset_problems ();
@@ -499,25 +499,23 @@ let ise_resolve fail_evar sigma metamap env c =
   let j = unsafe_fmachine empty_tycon false isevars metamap env c in
   j_apply (fun _ -> process_evars fail_evar) env !isevars j
 
-
 let ise_resolve_type fail_evar sigma metamap env c =
   let isevars = ref sigma in
   let j = unsafe_fmachine def_vty_con false isevars metamap env c in
   let tj = inh_ass_of_j env isevars j in
   typed_app (strong (fun _ -> process_evars fail_evar) env !isevars) tj
 
-
 let ise_resolve_nocheck sigma metamap env c =
   let isevars = ref sigma in
   let j = unsafe_fmachine empty_tycon true isevars metamap env c in
   j_apply (fun _ -> process_evars true) env !isevars j
-
 
 let ise_resolve1 is_ass sigma env c =
   if is_ass then 
     body_of_type (ise_resolve_type true sigma [] env c)
   else 
     (ise_resolve true sigma [] env c).uj_val
+
 
 (* Keeping universe constraints *)
 (*

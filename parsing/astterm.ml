@@ -379,8 +379,9 @@ let dbize_fw  sigma env com = dbize FW sigma env com
 (* constr_of_com takes an environment of typing assumptions,
  * and translates a command to a constr. *)
 
-let raw_constr_of_com sigma env com = dbize_cci sigma (unitize_env env) com
-let raw_fconstr_of_com sigma env com = dbize_fw sigma (unitize_env env) com
+let interp_rawconstr sigma env com = dbize_cci sigma (unitize_env (context env)) com
+
+let raw_fconstr_of_com sigma env com = dbize_fw sigma (unitize_env (context env)) com
 let raw_constr_of_compattern sigma env com = 
   dbize_cci sigma (unitize_env env) com
 
@@ -461,73 +462,51 @@ let _ =
 
 
 (*********************************************************************)
-(* Functions before in ex-trad                                       *)
+(* V6 compat: Functions before in ex-trad                            *)
 
-(* Endless list of alternative ways to call Trad *)
+(* Endless^H^H^H^H^H^H^HShort list of alternative ways to call pretyping *)
 
-(* With dB *)
-
-let constr_of_com_env1 is_ass sigma env com = 
-  let c = raw_constr_of_com sigma (context env) com in
+let interp_constr_gen is_ass sigma env com = 
+  let c = interp_rawconstr sigma env com in
   try 
     ise_resolve1 is_ass sigma env c
   with e -> 
     Stdpp.raise_with_loc (Ast.loc com) e
 
-let constr_of_com_env sigma env com =
-  constr_of_com_env1 false sigma env com
-    
-let fconstr_of_com_env1 is_ass sigma env com = 
-  let c = raw_fconstr_of_com sigma (context env) com in
+let interp_constr sigma env c = interp_constr_gen false sigma env c
+let interp_type sigma env   c = interp_constr_gen true sigma env c
+
+
+let judgment_of_com sigma env com = 
+  let c = interp_rawconstr sigma env com in
+  try
+    ise_resolve false sigma [] env c
+  with e -> 
+    Stdpp.raise_with_loc (Ast.loc com) e
+
+let typed_type_of_com sigma env com =
+  let c = interp_rawconstr sigma env com in
+  try 
+    ise_resolve_type true sigma [] env c
+  with e -> 
+    Stdpp.raise_with_loc (Ast.loc com) e
+
+(* Note: typ is retyped *)
+
+let interp_casted_constr sigma env com typ = 
+  ise_resolve_casted sigma env typ (interp_rawconstr sigma env com)
+
+
+let fconstr_of_com1 is_ass sigma env com = 
+  let c = raw_fconstr_of_com sigma env com in
   try 
     ise_resolve1 is_ass sigma env c
   with e -> 
     Stdpp.raise_with_loc (Ast.loc com) e
  
-let fconstr_of_com_env sigma hyps com =
-  fconstr_of_com_env1 false sigma hyps com 
-    
-let judgment_of_com1 is_ass sigma env com = 
-  let c = raw_constr_of_com sigma (context env) com in
-  try 
-    ise_resolve is_ass sigma [] env c
-  with e -> 
-    Stdpp.raise_with_loc (Ast.loc com) e
+let fconstr_of_com sigma hyps com =
+  fconstr_of_com1 false sigma hyps com 
 
-let judgment_of_com sigma env com =
-  judgment_of_com1 false sigma env com
-
-(* Without dB *)
-let type_of_com env com =
-  let sign = context env in
-  let c = raw_constr_of_com Evd.empty sign com in
-  try 
-    ise_resolve_type true Evd.empty [] env c
-  with e -> 
-    Stdpp.raise_with_loc (Ast.loc com) e
-
-let constr_of_com1 is_ass sigma env com = 
-  constr_of_com_env1 is_ass sigma env com
-    
-let constr_of_com sigma env com =
-  constr_of_com1 false sigma env com
-
-let constr_of_com_sort sigma sign com =
-  constr_of_com1 true sigma sign com
-
-let fconstr_of_com1 is_ass sigma env com = 
-  fconstr_of_com_env1 is_ass sigma env com
-
-let fconstr_of_com sigma sign com  =
-  fconstr_of_com1 false sigma sign com
-let fconstr_of_com_sort sigma sign com  =
-  fconstr_of_com1 true sigma sign com
-
-(* Note: typ is retyped *)
-
-let constr_of_com_casted sigma env com typ = 
-  let sign = context env in
-  ise_resolve_casted sigma env typ (raw_constr_of_com sigma sign com)
 
 (* Typing with Trad, and re-checking with Mach *)
 (* Should be done in two passes by library commands ...
@@ -600,7 +579,7 @@ let constr_of_rawconstr c =
   glob [] c
 
 let constr_of_com_pattern sigma env com = 
-  let c = raw_constr_of_com sigma (context env) com in
+  let c = interp_rawconstr sigma env com in
   try 
     constr_of_rawconstr c
   with e -> 
@@ -624,7 +603,7 @@ let glob_nvar com =
 let cvt_pattern sigma env = function
   | Node(_,"PATTERN", Node(_,"COMMAND",[com])::nums) ->
       let occs = List.map num_of_ast nums in
-      let c = constr_of_com sigma env com in
+      let c = interp_constr sigma env com in
       let j = Typing.unsafe_machine env sigma c in
       (occs, j.uj_val, j.uj_type)
   | arg -> invalid_arg_loc (Ast.loc arg,"cvt_pattern")
@@ -634,7 +613,7 @@ let cvt_unfold = function
   | arg -> invalid_arg_loc (Ast.loc arg,"cvt_unfold")
 
 let cvt_fold sigma sign = function
-  | Node(_,"COMMAND",[c]) -> constr_of_com sigma sign c
+  | Node(_,"COMMAND",[c]) -> interp_constr sigma sign c
   | arg -> invalid_arg_loc (Ast.loc arg,"cvt_fold")
 
 let flag_of_ast lf =
@@ -687,7 +666,7 @@ let flag_of_ast lf =
       | (false,_) -> (fun _ -> false)
       | (true,None) -> (fun _ -> true)
       | (true,Some p) -> p }
-  
+
 let redexp_of_ast sigma sign = function
   | ("Red", []) -> Red
   | ("Hnf", []) -> Hnf

@@ -33,11 +33,11 @@ let constant_entry_of_com (com,comtypopt) =
   let env = Global.env() in
   match comtypopt with
       None -> 
-	{ const_entry_body = Cooked (constr_of_com sigma env com);
+	{ const_entry_body = Cooked (interp_constr sigma env com);
 	  const_entry_type = None }
     | Some comtyp ->
-	let typ = constr_of_com_sort sigma env comtyp in
-	{ const_entry_body = Cooked (constr_of_com_casted sigma env com typ);
+	let typ = interp_type sigma env comtyp in
+	{ const_entry_body = Cooked (interp_casted_constr sigma env com typ);
 	  const_entry_type = Some typ }
 
 let red_constant_entry ce = function
@@ -61,21 +61,21 @@ let definition_body_red ident n com comtypeopt red_option =
 let definition_body ident n com typ = definition_body_red ident n com typ None
 
 let syntax_definition ident com =
-  let c = raw_constr_of_com Evd.empty (Global.context()) com in 
+  let c = interp_rawconstr Evd.empty (Global.env()) com in 
   Syntax_def.declare_syntactic_definition ident c;
   if is_verbose() then 
     message ((string_of_id ident) ^ " is now a syntax macro")
 
 (***TODO
 let abstraction_definition ident arity com =
-  let c = raw_constr_of_compattern Evd.empty (Global.env()) com in 
+  let c = raw_interp_constrpattern Evd.empty (Global.env()) com in 
   machine_abstraction ident arity c
 ***)
 
 (* 2| Variable definitions *)
 
 let parameter_def_var ident c =
-  let c = constr_of_com1 true Evd.empty (Global.env()) c in
+  let c = interp_type Evd.empty (Global.env()) c in
   declare_parameter (id_of_string ident) c;
   if is_verbose() then message (ident ^ " is assumed")
     
@@ -92,7 +92,7 @@ let hypothesis_def_var is_refining ident n c =
     | DischargeAt disch_sp ->
         if Lib.is_section_p disch_sp then begin
           declare_variable (id_of_string ident)
-             (constr_of_com1 true Evd.empty (Global.env()) c,n,false);
+             (interp_type Evd.empty (Global.env()) c,n,false);
 	  if is_verbose() then message (ident ^ " is assumed");
           if is_refining then 
             mSGERRNL [< 'sTR"Warning: Variable "; 'sTR ident; 
@@ -138,7 +138,8 @@ let build_mutual lparams lnamearconstrs finite =
       let (ind_env,arityl) =
       	List.fold_left 
 	  (fun (env,arl) (recname,arityc,_) -> 
-             let arity = type_of_com env (mkProdCit lparams arityc) in
+             let arity =
+	       typed_type_of_com Evd.empty env (mkProdCit lparams arityc) in
 	     let env' = Environ.push_var (recname,arity) env in
 (*	A quoi cela sert ?
 	declare_variable recname (arity.body,NeverDischarge,false);*)
@@ -149,7 +150,7 @@ let build_mutual lparams lnamearconstrs finite =
         (fun ar (name,_,lname_constr) -> 
            let consconstrl =
              List.map 
-               (fun (_,constr) -> constr_of_com sigma ind_env
+               (fun (_,constr) -> interp_constr sigma ind_env
                     (mkProdCit lparams constr))
                lname_constr 
 	   in
@@ -217,7 +218,7 @@ let build_recursive lnameargsardef =
     try 
       List.fold_left 
         (fun (env,arl) (recname,lparams,arityc,_) -> 
-           let arity = type_of_com env (mkProdCit lparams arityc) in
+           let arity = typed_type_of_com Evd.empty env (mkProdCit lparams arityc) in
            declare_variable recname (arity.body,NeverDischarge,false);
            (Environ.push_var (recname,arity) env, (arity::arl)))
         (env0,[]) lnameargsardef
@@ -227,7 +228,7 @@ let build_recursive lnameargsardef =
   let recdef = 
     try 
       List.map (fun (_,lparams,arityc,def) -> 
-                  constr_of_com sigma rec_sign 
+                  interp_constr sigma rec_sign 
                     (mkLambdaCit lparams (mkCastC(def,arityc))))
         lnameargsardef
     with e -> 
@@ -280,7 +281,7 @@ let build_corecursive lnameardef =
     try 
       List.fold_left 
         (fun (env,arl) (recname,arityc,_) -> 
-           let arity = type_of_com env0 arityc in
+           let arity = typed_type_of_com Evd.empty env0 arityc in
            declare_variable recname (arity.body,NeverDischarge,false);
            (Environ.push_var (recname,arity) env, (arity::arl)))
         (env0,[]) lnameardef
@@ -290,7 +291,7 @@ let build_corecursive lnameardef =
   let recdef =
     try 
       List.map (fun (_,arityc,def) -> 
-                  constr_of_com sigma rec_sign
+                  interp_constr sigma rec_sign
                     (mkCastC(def,arityc)))
         lnameardef
     with e -> 
@@ -354,7 +355,7 @@ let build_scheme lnamedepindsort =
   and env0 = Global.env() in
   let lrecspec =
     List.map (fun (_,dep,indid,sort) -> 
-                let s = destSort (constr_of_com sigma env0 sort) in
+                let s = destSort (interp_constr sigma env0 sort) in
                 (inductive_of_ident indid,dep,s)) lnamedepindsort
   in
   let n = NeverDischarge in 
