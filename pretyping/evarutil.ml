@@ -462,7 +462,6 @@ let get_changed_pb isevars lev =
 let solve_refl conv_algo env isevars ev argsv1 argsv2 =
   if argsv1 = argsv2 then [] else
   let evd = Evd.map isevars.evars ev in
-  let env = evar_env evd in
   let hyps = evd.evar_hyps in
   let (_,rsign) = 
     array_fold_left2
