@@ -258,15 +258,15 @@ let push_inductive_names ccitab sp mie =
 
 (*s Operations performed at section closing. *)
 
-let cache_end_section (_,(s,mc)) =
-  Nametab.push_module s mc;
-  Nametab.open_module_contents s
+let cache_end_section (_,(sp,mc)) =
+  Nametab.push_module sp mc;
+  Nametab.open_module_contents (qualid_of_sp sp)
 
-let load_end_section (_,(s,mc)) =
-  Nametab.push_module s mc
+let load_end_section (_,(sp,mc)) =
+  Nametab.push_module sp mc
 
-let open_end_section (_,(s,_)) =
-  Nametab.rec_open_module_contents s
+let open_end_section (_,(sp,_)) =
+  Nametab.rec_open_module_contents (qualid_of_sp sp)
 
 let (in_end_section, out_end_section) =
   declare_object
@@ -288,8 +288,9 @@ let rec process_object (ccitab, objtab, modtab as tabs) = function
         (* Variables are never visible *)
 	| "VARIABLE" -> tabs
 	| "END-SECTION" ->
-	    let (id,mc) = out_end_section obj in
-	    (ccitab, objtab, Stringmap.add id mc modtab)
+	    let (sp,mc) = out_end_section obj in
+	    let id = string_of_id (basename sp) in
+	    (ccitab, objtab, Stringmap.add id (sp,mc) modtab)
         (* All the rest is visible only at toplevel ??? *)
         (* Actually it is unsafe, it should be visible only in empty context *)
         (* ou quelque chose comme cela *)
@@ -321,7 +322,7 @@ let close_section _ s =
   Global.pop_named_decls ids;
   Summary.unfreeze_lost_summaries fs;
   let mc = segment_contents decls in
-  add_anonymous_leaf (in_end_section (s,mc));
+  add_anonymous_leaf (in_end_section (sec_sp,mc));
   List.iter process_operation (List.rev ops)
 
 let save_module_to s f =
