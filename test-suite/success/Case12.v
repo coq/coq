@@ -47,3 +47,14 @@ Type
         | (cons' n0 m l0) => (f0 n0 l0 (F m l0))
         end}.
 
+(* Check on-the-fly insertion of let-in patterns for compatibility *)
+
+Inductive list'' : nat -> Set :=
+| nil'' : (list'' O)
+| cons'' : (n:nat)[m:=(mult2 n)](list'' m)->[p:=(S (S m))](list'' p).
+
+Check Fix length { length [n; l:(list'' n)] : nat :=
+         Cases l of
+           nil'' => O
+         | (cons'' n l0) => (S (length (mult2 n) l0))
+         end }.
