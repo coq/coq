@@ -599,11 +599,11 @@ interp/ppextend.cmo: kernel/names.cmi lib/pp.cmi lib/util.cmi \
 interp/ppextend.cmx: kernel/names.cmx lib/pp.cmx lib/util.cmx \
     interp/ppextend.cmi 
 interp/reserve.cmo: library/lib.cmi library/libobject.cmi library/nameops.cmi \
-    kernel/names.cmi pretyping/rawterm.cmi library/summary.cmi lib/util.cmi \
-    interp/reserve.cmi 
+    kernel/names.cmi lib/options.cmi pretyping/rawterm.cmi \
+    library/summary.cmi lib/util.cmi interp/reserve.cmi 
 interp/reserve.cmx: library/lib.cmx library/libobject.cmx library/nameops.cmx \
-    kernel/names.cmx pretyping/rawterm.cmx library/summary.cmx lib/util.cmx \
-    interp/reserve.cmi 
+    kernel/names.cmx lib/options.cmx pretyping/rawterm.cmx \
+    library/summary.cmx lib/util.cmx interp/reserve.cmi 
 interp/symbols.cmo: lib/bignat.cmi pretyping/classops.cmi library/global.cmi \
     lib/gmap.cmi lib/gmapl.cmi library/lib.cmi library/libnames.cmi \
     library/libobject.cmi library/library.cmi kernel/names.cmi \
