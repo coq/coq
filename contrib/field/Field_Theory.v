@@ -189,7 +189,7 @@ Save.
 
 (**** ExprA --> A ****)
 
-Fixpoint interp_ExprA [lvar:(listT (Sprod AT nat));e:ExprA] : AT :=
+Fixpoint interp_ExprA [lvar:(listT (prodT AT nat));e:ExprA] : AT :=
   Cases e of
   | EAzero         => AzeroT
   | EAone          => AoneT
@@ -252,7 +252,7 @@ Fixpoint assoc [e:ExprA] : ExprA :=
   end.
 
 Lemma merge_mult_correct1:
-  (e1,e2,e3:ExprA)(lvar:(listT (Sprod AT nat)))
+  (e1,e2,e3:ExprA)(lvar:(listT (prodT AT nat)))
   (interp_ExprA lvar (merge_mult (EAmult e1 e2) e3))=
   (interp_ExprA lvar (EAmult e1 (merge_mult e2 e3))).
 Proof.
@@ -266,7 +266,7 @@ Unfold 1 merge_mult;Fold merge_mult;
 Save.
 
 Lemma merge_mult_correct:
-  (e1,e2:ExprA)(lvar:(listT (Sprod AT nat)))
+  (e1,e2:ExprA)(lvar:(listT (prodT AT nat)))
     (interp_ExprA lvar (merge_mult e1 e2))=
     (interp_ExprA lvar (EAmult e1 e2)).
 Proof.
@@ -282,7 +282,7 @@ Intro H3;Rewrite H3;Rewrite <-H2;
 Ring.
 Save.
 
-Lemma assoc_mult_correct1:(e1,e2:ExprA)(lvar:(listT (Sprod AT nat)))
+Lemma assoc_mult_correct1:(e1,e2:ExprA)(lvar:(listT (prodT AT nat)))
   (AmultT (interp_ExprA lvar (assoc_mult e1)) 
          (interp_ExprA lvar (assoc_mult e2)))=
   (interp_ExprA lvar (assoc_mult (EAmult e1 e2))).
@@ -293,7 +293,7 @@ Rewrite <-(H e0 lvar);Simpl;Rewrite merge_mult_correct;Simpl;
 Save.
 
 Lemma assoc_mult_correct:
-  (e:ExprA)(lvar:(listT (Sprod AT nat)))
+  (e:ExprA)(lvar:(listT (prodT AT nat)))
     (interp_ExprA lvar (assoc_mult e))=(interp_ExprA lvar e).
 Proof.
 Induction e;Auto;Intros.
@@ -315,7 +315,7 @@ Simpl;Rewrite (H0 lvar);Auto.
 Save.
 
 Lemma merge_plus_correct1:
-  (e1,e2,e3:ExprA)(lvar:(listT (Sprod AT nat)))
+  (e1,e2,e3:ExprA)(lvar:(listT (prodT AT nat)))
   (interp_ExprA lvar (merge_plus (EAplus e1 e2) e3))=
   (interp_ExprA lvar (EAplus e1 (merge_plus e2 e3))).
 Proof.
@@ -329,7 +329,7 @@ Unfold 1 merge_plus;Fold merge_plus;
 Save.
 
 Lemma merge_plus_correct:
-  (e1,e2:ExprA)(lvar:(listT (Sprod AT nat)))
+  (e1,e2:ExprA)(lvar:(listT (prodT AT nat)))
     (interp_ExprA lvar (merge_plus e1 e2))=
     (interp_ExprA lvar (EAplus e1 e2)).
 Proof.
@@ -344,7 +344,7 @@ Intro H3;Rewrite H3;Rewrite <-H2;Rewrite merge_plus_correct1;Simpl;Ring.
 Ring.
 Save.
 
-Lemma assoc_plus_correct:(e1,e2:ExprA)(lvar:(listT (Sprod AT nat)))
+Lemma assoc_plus_correct:(e1,e2:ExprA)(lvar:(listT (prodT AT nat)))
   (AplusT (interp_ExprA lvar (assoc e1)) (interp_ExprA lvar (assoc e2)))=
   (interp_ExprA lvar (assoc (EAplus e1 e2))).
 Proof.
@@ -354,7 +354,7 @@ Rewrite <-(H e0 lvar);Simpl;Rewrite merge_plus_correct;Simpl;
 Save.
 
 Lemma assoc_correct:
-  (e:ExprA)(lvar:(listT (Sprod AT nat)))
+  (e:ExprA)(lvar:(listT (prodT AT nat)))
     (interp_ExprA lvar (assoc e))=(interp_ExprA lvar e).
 Proof.
 Induction e;Auto;Intros.
@@ -406,14 +406,13 @@ Definition distrib_mult_right :=
   | _ => (EAmult e1 e2)
   end}.
 
-Definition distrib_mult_left :=
-  Fix distrib_mult_left {distrib_mult_left/1:ExprA->ExprA->ExprA:=
-  [e1,e2:ExprA]
+Fixpoint distrib_mult_left [e1:ExprA] : ExprA->ExprA :=
+  [e2:ExprA]
   Cases e1 of
   | (EAplus t1 t2) =>
     (EAplus (distrib_mult_left t1 e2) (distrib_mult_left t2 e2))
   | _ => (distrib_mult_right e2 e1)
-  end}.
+  end.
 
 Fixpoint distrib_main [e:ExprA] : ExprA :=
   Cases e of
@@ -426,7 +425,7 @@ Fixpoint distrib_main [e:ExprA] : ExprA :=
 Definition distrib [e:ExprA] : ExprA := (distrib_main (distrib_EAopp e)).
 
 Lemma distrib_mult_right_correct:
-  (e1,e2:ExprA)(lvar:(listT (Sprod AT nat)))
+  (e1,e2:ExprA)(lvar:(listT (prodT AT nat)))
      (interp_ExprA lvar (distrib_mult_right e1 e2))=
      (AmultT (interp_ExprA lvar e1) (interp_ExprA lvar e2)).
 Proof.
@@ -436,7 +435,7 @@ Rewrite AmultT_sym;Rewrite AmultT_AplusT_distr;
 Save.
 
 Lemma distrib_mult_left_correct:
-  (e1,e2:ExprA)(lvar:(listT (Sprod AT nat)))
+  (e1,e2:ExprA)(lvar:(listT (prodT AT nat)))
      (interp_ExprA lvar (distrib_mult_left e1 e2))=
      (AmultT (interp_ExprA lvar e1)  (interp_ExprA lvar e2)).
 Proof.
@@ -457,7 +456,7 @@ Rewrite distrib_mult_right_correct;Simpl;Apply AmultT_sym.
 Save.
 
 Lemma distrib_correct:
-  (e:ExprA)(lvar:(listT (Sprod AT nat)))
+  (e:ExprA)(lvar:(listT (prodT AT nat)))
     (interp_ExprA lvar (distrib e))=(interp_ExprA lvar e).
 Proof.
 Induction e;Intros;Auto.
@@ -472,7 +471,7 @@ Save.
 (**** Multiplication by the inverse product ****)
 
 Lemma mult_eq:
-  (e1,e2,a:ExprA)(lvar:(listT (Sprod AT nat)))
+  (e1,e2,a:ExprA)(lvar:(listT (prodT AT nat)))
     ~((interp_ExprA lvar a)=AzeroT)->
       (interp_ExprA lvar (EAmult a e1))=(interp_ExprA lvar (EAmult a e2))->
         (interp_ExprA lvar e1)=(interp_ExprA lvar e2).
@@ -496,7 +495,7 @@ Definition multiply [e:ExprA] : ExprA :=
   end.
 
 Lemma multiply_aux_correct:
-  (a,e:ExprA)(lvar:(listT (Sprod AT nat)))
+  (a,e:ExprA)(lvar:(listT (prodT AT nat)))
     (interp_ExprA lvar (multiply_aux a e))=
     (AmultT (interp_ExprA lvar a) (interp_ExprA lvar e)).
 Proof.
@@ -505,7 +504,7 @@ Induction e;Simpl;Intros;Try (Rewrite merge_mult_correct);Auto.
 Save.
 
 Lemma multiply_correct:
-  (e:ExprA)(lvar:(listT (Sprod AT nat)))
+  (e:ExprA)(lvar:(listT (prodT AT nat)))
     (interp_ExprA lvar (multiply e))=(interp_ExprA lvar e).
 Proof.
   Induction e;Simpl;Auto.
@@ -553,7 +552,7 @@ Fixpoint inverse_simplif [a,e:ExprA] : ExprA :=
   end.
 
 Lemma monom_remove_correct:(e,a:ExprA)
-  (lvar:(listT (Sprod AT nat)))~((interp_ExprA lvar a)=AzeroT)->
+  (lvar:(listT (prodT AT nat)))~((interp_ExprA lvar a)=AzeroT)->
   (interp_ExprA lvar (monom_remove a e))=
   (AmultT (interp_ExprA lvar a) (interp_ExprA lvar e)).
 Proof.
@@ -580,7 +579,7 @@ Unfold monom_remove;Case (eqExprA (EAvar n) (EAinv a));Intros;
 Save.
 
 Lemma monom_simplif_rem_correct:(a,e:ExprA)
-  (lvar:(listT (Sprod AT nat)))~((interp_ExprA lvar a)=AzeroT)->
+  (lvar:(listT (prodT AT nat)))~((interp_ExprA lvar a)=AzeroT)->
   (interp_ExprA lvar (monom_simplif_rem a e))=
   (AmultT (interp_ExprA lvar a) (interp_ExprA lvar e)).
 Proof.
@@ -592,7 +591,7 @@ Ring.
 Save.
 
 Lemma monom_simplif_correct:(e,a:ExprA)
-  (lvar:(listT (Sprod AT nat)))~((interp_ExprA lvar a)=AzeroT)->
+  (lvar:(listT (prodT AT nat)))~((interp_ExprA lvar a)=AzeroT)->
   (interp_ExprA lvar (monom_simplif a e))=(interp_ExprA lvar e).
 Proof.
 Induction e;Intros;Auto.
@@ -602,7 +601,7 @@ Simpl;Trivial.
 Save.
 
 Lemma inverse_correct:
-  (e,a:ExprA)(lvar:(listT (Sprod AT nat)))~((interp_ExprA lvar a)=AzeroT)->
+  (e,a:ExprA)(lvar:(listT (prodT AT nat)))~((interp_ExprA lvar a)=AzeroT)->
     (interp_ExprA lvar (inverse_simplif a e))=(interp_ExprA lvar e).
 Proof.
 Induction e;Intros;Auto.

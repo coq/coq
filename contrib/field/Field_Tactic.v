@@ -53,10 +53,10 @@ Tactic Definition SeekVar FT trm :=
 
 Recursive Tactic Definition NumberAux lvar cpt :=
   Match lvar With
-  | [(nilT ?1)] -> '(nilT (Sprod ?1 nat))
+  | [(nilT ?1)] -> '(nilT (prodT ?1 nat))
   | [(consT ?1 ?2 ?3)] ->
     Let l2 = (NumberAux ?3 '(S cpt)) In
-    '(consT (Sprod ?1 nat) (Spair ?1 nat ?2 cpt) l2).
+    '(consT (prodT ?1 nat) (pairT ?1 nat ?2 cpt) l2).
 
 Tactic Definition Number lvar := (NumberAux lvar O).
 
@@ -67,7 +67,7 @@ Tactic Definition BuildVarList FT trm :=
 Recursive Tactic Definition Assoc elt lst :=
   Match lst With
   | [(nilT ?)] -> Fail
-  | [(consT (Sprod ? nat) (Spair ? nat ?1 ?2) ?3)] ->
+  | [(consT (prodT ? nat) (pairT ? nat ?1 ?2) ?3)] ->
     Match elt= ?1 With
     | [?1= ?1] -> ?2
     | _ -> (Assoc elt ?3).
@@ -144,24 +144,18 @@ Tactic Definition GiveMult trm :=
 (**** Associativity ****)
 
 Tactic Definition ApplyAssoc FT lvar trm :=
-  Cut (interp_ExprA FT lvar (assoc trm))=(interp_ExprA FT lvar trm);
-  [Intro;
-   (Match Context With
-    | [id:(interp_ExprA ?1 ?2 (assoc ?3))= ?4 |- ?] ->
-      Let t=Eval Compute in (assoc ?3) In
-      Change (interp_ExprA ?1 ?2 t)= ?4 in id;Try (Rewrite <- id);Clear id)
-  |Apply assoc_correct].
+  Let t=Eval Compute in (assoc trm) In
+  Match t=trm With
+  | [ ?1=?1 ] -> Idtac
+  | _ -> Rewrite <- (assoc_correct FT trm); Change (assoc trm) with t.
 
 (**** Distribution *****)
 
 Tactic Definition ApplyDistrib FT lvar trm :=
-  Cut (interp_ExprA FT lvar (distrib trm))=(interp_ExprA FT lvar trm);
-  [Intro;
-   (Match Context With
-    | [id:(interp_ExprA ?1 ?2 (distrib ?3))= ?4 |- ?] ->
-      Let t=Eval Compute in (distrib ?3) In
-      Change (interp_ExprA ?1 ?2 t)= ?4 in id;Try (Rewrite <- id);Clear id)
-  |Apply distrib_correct].
+  Let t=Eval Compute in (distrib trm) In
+  Match t=trm With
+  | [ ?1=?1 ] -> Idtac
+  | _ -> Rewrite <- (distrib_correct FT trm); Change (distrib trm) with t.
 
 (**** Multiplication by the inverse product ****)
 
@@ -190,26 +184,19 @@ Tactic Definition Multiply mul :=
           | [|-[(AmultT ? AoneT)]] -> Rewrite (AmultT_1r ?1));Clear ?1 ?2].
 
 Tactic Definition ApplyMultiply FT lvar trm :=
-  Cut (interp_ExprA FT lvar (multiply trm))=(interp_ExprA FT lvar trm);
-  [Intro;
-   (Match Context With
-    | [id:(interp_ExprA ?1 ?2 (multiply ?3))= ?4 |- ?] ->
-      Let t=Eval Compute in (multiply ?3) In
-      Change (interp_ExprA ?1 ?2 t)= ?4 in id;Try (Rewrite <- id);Clear id)
-  |Apply multiply_correct].
+  Let t=Eval Compute in (multiply trm) In
+  Match t=trm With
+  | [ ?1=?1 ] -> Idtac
+  | _ -> Rewrite <- (multiply_correct FT trm); Change (multiply trm) with t.
 
 (**** Permutations and simplification ****)
 
 Tactic Definition ApplyInverse mul FT lvar trm :=
-  Cut (interp_ExprA FT lvar (inverse_simplif mul trm))=
-      (interp_ExprA FT lvar trm);
-  [Intro;
-   (Match Context With
-   | [id:(interp_ExprA ?1 ?2 (inverse_simplif ?3 ?4))= ?5 |- ?] ->
-     Let t=Eval Compute in (inverse_simplif ?3 ?4) In
-      Change (interp_ExprA ?1 ?2 t)= ?5 in id;Try (Rewrite <- id);Clear id)
-  |Apply inverse_correct;Assumption].
-
+  Let t=Eval Compute in (inverse_simplif mul trm) In
+  Match t=trm With
+  | [ ?1=?1 ] -> Idtac
+  | _ -> Rewrite <- (inverse_correct FT trm mul);
+         [Change (inverse_simplif mul trm) with t|Assumption].
 (**** Inverse test ****)
 
 Tactic Definition StrongFail tac := First [tac|Fail 2].
