@@ -789,6 +789,7 @@ COQDEP=bin/coqdep$(EXE)
 COQMAKEFILE=bin/coq_makefile$(EXE)
 GALLINA=bin/gallina$(EXE)
 COQTEX=bin/coq-tex$(EXE)
+COQWC=bin/coqwc$(EXE)
 COQVO2XML=bin/coq_vo2xml$(EXE)
 RUNCOQVO2XML=coq_vo2xml$(EXE)   # Uses the one in PATH and not the one in bin
 
@@ -814,6 +815,11 @@ $(COQMAKEFILE): tools/coq_makefile.cmo
 $(COQTEX): tools/coq-tex.cmo
 	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma tools/coq-tex.cmo
 
+beforedepend:: tools/coqwc.ml
+
+$(COQWC): tools/coqwc.cmo
+	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coqwc.cmo
+
 COQVO2XMLCMO=$(CONFIG) toplevel/usage.cmo tools/coq_vo2xml.cmo
 
 $(COQVO2XML): $(COQVO2XMLCMO)
@@ -821,9 +827,10 @@ $(COQVO2XML): $(COQVO2XMLCMO)
 
 clean::
 	rm -f tools/coqdep_lexer.ml tools/gallina_lexer.ml
+	rm -f tools/coqwc.ml
 
 archclean::
-	rm -f $(COQDEP) $(GALLINA) $(COQTEX) $(COQMAKEFILE) $(COQVO2XML)
+	rm -f $(COQDEP) $(GALLINA) $(COQTEX) $(COQWC) $(COQMAKEFILE) $(COQVO2XML)
 
 ###########################################################################
 # minicoq
