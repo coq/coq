@@ -8,10 +8,9 @@ This chapter presents  the \texttt{Setoid\_replace} tactic.
 \asection{Description of \texttt{Setoid\_replace}}
 
 Working on user-defined structures in \Coq\ is not very easy if
-Leibnitz equality does not denote the intended equality. For example
-using pairs of \verb|nat| to denote rationals always drive to prove
-some boring lemma like
-\verb| (P:nat -> Prop) (P ((3),(6)) ->(P ((1),(2))|.
+Leibniz equality does not denote the intended equality. For example
+using lists to denote finite sets drive to difficulties since two
+non convertible terms can denote the same set.
 
 We present here a \Coq\ module, {\tt Setoid\_replace}, which allow to
 structure and automate some parts of the work. In particular, if
@@ -24,12 +23,12 @@ Under the toplevel
 load the \texttt{Setoid\_replace} files with the command:
 
 \begin{coq_eval}
-  Require Setoid_replace.
+  Require Setoid.
 \end{coq_eval}
 
 \begin{quotation}
 \begin{verbatim}
-Require Setoid_replace.
+Require Setoid.
 \end{verbatim}
 \end{quotation}
 
@@ -39,7 +38,7 @@ The specification of a setoid can be found in the file
 
 \begin{quotation}
 \begin{verbatim}
-contrib/setoid/Setoid_replace.v
+theories/Setoids/Setoid.v
 \end{verbatim}
 \end{quotation}
 
@@ -62,20 +61,20 @@ Record Setoid_Theory : Prop :=
 \end{small}
 
 To define a setoid structure on \verb+A+, you must provide a relation
-on \verb+A+, prove that this relation is an equivalence
-relation, and pack them with the \verb|Build_Setoid_Theory| 
-constructor.
+\verb|Aeq| on \verb+A+ and prove that \verb|Aeq| is an equivalence
+relation. That is, you have to define an object of type
+\verb|(Setoid_Theory A Aeq)|.
 
-Finally to register a ring the syntax is:
+Finally to register a setoid the syntax is:
 
 \comindex{Add Setoid}
 \begin{quotation}
-  \texttt{Add Setoid} \textit{ A Aequiv ST}
+  \texttt{Add Setoid} \textit{ A Aeq ST}
 \end{quotation}
 
-\noindent where \textit{Aequiv} is a term of type \texttt{A->A->Prop},
+\noindent where \textit{Aeq} is a term of type \texttt{A->A->Prop} and
 \textit{ST} is a term of type 
-\texttt{(Setoid\_Theory }\textit{A Aequiv}\texttt{)}.
+\texttt{(Setoid\_Theory }\textit{A Aeq}\texttt{)}.
 
 \begin{ErrMsgs}
 \item \errindex{Not a valid setoid theory}.\\ 
@@ -85,14 +84,13 @@ Finally to register a ring the syntax is:
   same type.
 \end{ErrMsgs}
 
-Currently, the hypothesis is made than no more than one ring structure
+Currently, only one setoid structure
 may be declared for a given type.
 This allows automatic detection of the theory used to achieve the
-replacement. On popular demand, we can change that and allow several
-ring structures on the same type.
+replacement.
 
-The table of theories of \texttt{Setoid} is compatible with the \Coq\ 
-sectioning mechanism. If you declare a Ring inside a section, the
+The table of setoid theories is compatible with the \Coq\ 
+sectioning mechanism. If you declare a setoid inside a section, the
 declaration will be thrown away when closing the section.
 And when you load a compiled file, all the \texttt{Add Setoid}
 commands of this file that are not inside a section will be loaded.
@@ -105,35 +103,23 @@ commands of this file that are not inside a section will be loaded.
 
 A morphism is nothing else than a function compatible with the
 equivalence relation. 
-In order to be able to replace a term by an equivalent under an
-application, the term being compatible must be a morphism. For example
-you want to be able to replace \verb+((3),(6))+ with \verb+((1),(2))+
-in \verb+(plus ((3),(6)) ((1),(2)))+ but not in
-\verb+(fst ((3),(6)))+. To achieve this goal each morphism has to be
-declared to the system, which will ask you to prove the compatibility
-lemma.
+You can only replace a term by an equivalent in position of argument
+of a morphism. That's why each morphism has to be
+declared to the system, which will ask you to prove the accurate
+compatibility lemma.
 
 The syntax is the following :
 \comindex{Add Morphism}
 \begin{quotation}
-  \texttt{Add Morphism} \textit{ f}
+  \texttt{Add Morphism} \textit{ f }:\textit{ ident}
 \end{quotation}
 
 \noindent where f is the name of a term which type is a non dependent
-product.
-
-\begin{Variants}
-\item \texttt{Add Morphism} \textit{ s t} 
-\end{Variants}
-
-\noindent where \textit{s} is a new identifier which will denote the
-compatibility lemma and \textit{t} is a term which type is a non
-dependent product.
+product (the term you want to declare as a morphism) and
+\textit{ident} is a new identifier which will denote the
+compatibility lemma.
 
 \begin{ErrMsgs}
-\item \errindex{The term \term \ is not a known name}\\
-That happens when the term you give was not a name. In this case, try
-the variant.
 \item \errindex{The term \term \ is already declared as a morphism}
 \item \errindex{The term \term \ is not a product}
 \item \errindex{The term \term \ should not be a dependent product}
@@ -144,18 +130,30 @@ declared.
 
 \asection{The tactic itself}
 \tacindex{Setoid\_replace}
+\tacindex{Setoid\_rewrite}
 
-After having registered all the setoids and morphisms needed, you can
-use the tactic called \texttt{Setoid\_replace}. The synatx is
+After having registered all the setoids and morphisms you need, you can
+use the tactic called \texttt{Setoid\_replace}. The syntax is
 
 \begin{quotation}
 \texttt{Setoid\_replace} $ term_1$ with $term_2$
 \end{quotation}
 
-The effect is similar to the one of Replace except that some subgoals
-may appear asking to prove equivalence of subterm of the given terms.
-\texttt{Trivial} or \texttt{Auto} should be sufficient to solve the
-easiest ones. Otherwise you may have to use \verb+Seq_refl+,
-\verb+Seq_sym+ or \verb+Seq_trans+ with the right arguments (for
-example \verb+(Seq_refl Prop iff Prop_S)+ is of type
-\verb+(x:Prop)x<->x+).
+The effect is similar to the one of \texttt{Replace}.
+
+You also have a tactic called \texttt{Setoid\_rewrite} which is the
+equivalent of \texttt{Rewrite} for setoids. The syntax is 
+
+\begin{quotation}
+\texttt{Setoid\_rewrite} \term
+\end{quotation}
+
+\begin{Variants}
+ \item \texttt{Setoid\_rewrite ->} \term
+ \item \texttt{Setoid\_rewrite <-} \term
+\end{Variants}
+
+The arrow tells the systems in which direction the rewriting has to be
+done. Moreover, you can use \texttt{Rewrite} for setoid
+rewriting. In that case the system will check if the term you give is
+an equality or a setoid equivalence and do the appropriate work.
