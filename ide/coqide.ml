@@ -83,6 +83,12 @@ let get_tab_label i =
   in
   lbl#text
 
+let get_full_tab_label i = 
+  let nb = notebook () in
+  let _,_,lbl = decompose_tab (nb#get_tab_label(nb#get_nth_page i))#as_widget 
+  in
+  lbl
+
 let get_current_tab_label () = get_tab_label (notebook())#current_page
 
 let get_current_page () = 
@@ -90,7 +96,8 @@ let get_current_page () =
   (notebook())#get_nth_page i
 				      
 
-let reset_tab_label i = set_tab_label i (get_tab_label i)
+let reset_tab_label i = 
+  set_tab_label i (get_tab_label i)
 
 let to_do_on_page_switch = ref []
   
@@ -848,7 +855,7 @@ object(self)
 			    prerr_endline "Applied tag";
 			    ()
 			| _ -> ()
-			end;true
+			end;false
 		     )
 		  );
 		tag
