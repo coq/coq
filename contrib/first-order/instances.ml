@@ -14,6 +14,7 @@ open Unify
 open Rules
 open Util
 open Term
+open Rawterm
 open Tacmach
 open Tactics
 open Tacticals
@@ -22,18 +23,9 @@ open Reductionops
 open Declarations
 open Formula
 open Sequent
+open Names
 open Libnames
 
-let rev_rels n t= (* requires n = max (free_rels t) *) 
-  let l=list_tabulate (fun i->mkRel (n-i)) n in
-    substl l t
-
-(* ordre lexico:
-   nombre de metas dans terme;
-   profondeur de matching;
-   le reste
-*)
-      
 let compare_instance inst1 inst2=
 	match inst1,inst2 with
 	    Phantom(d1),Phantom(d2)->
@@ -105,6 +97,39 @@ let rec collect_quantified seq=
 	 | _->[],seq)
   with Heap.EmptyHeap -> [],seq
 
+(* open instances processor *)
+
+let dummy_constr=mkMeta (-1)
+
+let dummy_bvid=id_of_string "x"
+
+let mk_open_instance id gl m t=
+  let env=pf_env gl in
+  let evmap=Refiner.sig_sig gl in
+  let var_id=
+    if id==dummy_id then dummy_bvid else
+      let typ=pf_type_of gl (constr_of_reference id) in
+      let (nam,_,_)=destProd (whd_betadeltaiota env evmap typ) in
+	match nam with 
+	    Name id -> id
+	  | Anonymous ->  dummy_bvid in
+  let revt=substl (list_tabulate (fun i->mkRel (m-i)) m) t in
+  let rec aux n avoid=
+    if n=0 then [] else
+      let nid=(fresh_id avoid var_id gl) in
+	(Name nid,None,dummy_constr)::(aux (n-1) (nid::avoid)) in
+  let nt=it_mkLambda_or_LetIn revt (aux m []) in
+  let rawt=Detyping.detype env [] [] nt in
+  let rec raux n t=
+    if n=0 then t else 
+      match t with
+	  RLambda(loc,name,_,t0)->
+	    let t1=raux (n-1) t0 in
+	      RLambda(loc,name,RHole (dummy_loc,BinderType name),t1)
+	| _-> anomaly "can't happen" in
+  let ntt=Pretyping.understand evmap env (raux m rawt) in
+    Sign.decompose_lam_n_assum m ntt
+
 (* tactics   *)
 
 let left_instance_tac (inst,id) tacrec seq=
@@ -123,23 +148,27 @@ let left_instance_tac (inst,id) tacrec seq=
 		tclSOLVE [wrap 1 false tacrec 
 			    (deepen (record (id,None) seq))]];
 	    tclTRY assumption]
-    | Real((0,t) as c,_)->
-	if lookup (id,Some c) seq then 
-	  tclFAIL 0 "already done" 
-	else
-	  tclTHENLIST 
-	    [generalize [mkApp(constr_of_reference id,[|t|])];
-	     introf; 
-	     tclSOLVE 
-	       [wrap 1 false tacrec 
-		  (deepen (record (id,Some c) seq))]]
     | Real((m,t) as c,_)->
 	if lookup (id,Some c) seq then 
 	  tclFAIL 0 "already done" 
 	else 
-	  tclFAIL 0 "not implemented ... yet"
-
-
+	  let special_generalize=
+	    if m>0 then 
+	      fun gl-> 
+		let (rc,ot)= mk_open_instance id gl m t in
+		let gt= 
+		  it_mkLambda_or_LetIn 
+		    (mkApp(constr_of_reference id,[|ot|])) rc in
+		  generalize [gt] gl
+	    else
+	      generalize [mkApp(constr_of_reference id,[|t|])]
+	  in
+	    tclTHENLIST 
+	      [special_generalize;
+	       introf; 
+	       tclSOLVE 
+		 [wrap 1 false tacrec (deepen (record (id,Some c) seq))]]
+	      
 let right_instance_tac inst tacrec seq=
   match inst with
       Phantom dom ->
@@ -166,3 +195,5 @@ let instance_tac inst=
 let quantified_tac lf tacrec seq gl=
   let insts=give_instances lf seq in
     tclFIRST (List.map (fun inst->instance_tac inst tacrec seq) insts) gl
+
+ 

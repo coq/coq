@@ -173,9 +173,7 @@ let ll_forall_tac prod id tacrec seq=
 	tclSOLVE [wrap 1 false tacrec (deepen seq)]];
      tclSOLVE [wrap 0 true tacrec (deepen seq)]]
 
-(* complicated stuff for instantiation with unification *)
-
-(* moved to instances.ml *)
+(* rules for instantiation with unification moved to instances.ml *)
 
 (* special for compatibility with old Intuition *)
 
