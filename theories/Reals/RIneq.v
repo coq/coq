@@ -1382,7 +1382,7 @@ Qed.
 
 (**********)
 Lemma lt_IZR : forall n m:Z, IZR n < IZR m -> (n < m)%Z.
-intros z1 z2 H; apply Zlt_O_minus_lt. 
+intros z1 z2 H; apply Zlt_0_minus_lt. 
 apply lt_O_IZR.
 rewrite <- Z_R_minus.
 exact (Rgt_minus (IZR z2) (IZR z1) H).
