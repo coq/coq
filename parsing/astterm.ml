@@ -89,6 +89,8 @@ let check_number_of_pattern loc n l =
 (* Arguments normally implicit in the "Implicit Arguments mode" *)
 (* but explicitely given                                        *)
 
+(* Translation of references *)
+
 let ast_to_sp = function
   | Path(loc,sl,s) ->
       (try 
@@ -199,6 +201,37 @@ let interp_qualid p =
     | l -> 
 	let p, r = list_chop (List.length l -1) (List.map outnvar l) in
 	make_qualid p (List.hd r)
+
+(********************************************************************)
+(* This is generic code to deal with globalization                  *)
+
+type 'a globalization_action = {
+  parse_var : string -> 'a;
+  parse_ref : global_reference -> 'a;
+  parse_syn : section_path -> 'a;
+  fail : qualid -> 'a * int list;
+}
+
+let translate_qualid act qid =
+  (* Is it a bound variable? *)
+  try
+    match repr_qualid qid with
+      | [],s -> act.parse_var s, []
+      | _ -> raise Not_found
+  with Not_found ->
+  (* Is it a global reference? *)
+  try
+    let ref = Nametab.locate qid in
+    act.parse_ref ref, implicits_of_global ref
+  with Not_found ->
+  (* Is it a reference to a syntactic definition? *)
+  try
+    let sp = Syntax_def.locate_syntactic_definition qid in
+    act.parse_syn sp, []
+  with Not_found ->
+    act.fail qid
+
+(**********************************************************************)
 
 let rawconstr_of_var env vars loc s =
   try
@@ -492,50 +525,58 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 (* bound idents in grammar or pretty-printing rules)                      *)
 (**************************************************************************)
 
-let ast_of_qualid loc sp =
-  try
-    let ref = Nametab.locate sp in
-    let c = Declare.constr_of_reference Evd.empty (Global.env()) ref in
-    match kind_of_term (snd (decompose_lam c)) with
-      | IsConst (sp, _) -> Node (loc, "CONST", [path_section loc sp])
-      | IsEvar (ev, _) -> Node (loc, "EVAR", [Num (loc, ev)])
-      | IsMutConstruct (((sp, i), j), _) ->
-          Node (loc, "MUTCONSTRUCT", [path_section loc sp; num i; num j])
-      | IsMutInd ((sp, i), _) ->
-          Node (loc, "MUTIND", [path_section loc sp; num i])
-      | IsVar id -> failwith "TODO"
-      | _ -> anomaly "Not a reference"
-  with Not_found ->
-    let sp = Syntax_def.locate_syntactic_definition sp in
-    Node (loc, "SYNCONST", [path_section loc sp])
+let ast_of_ref loc ref = (* A brancher ultérieurement sur Termast.ast_of_ref *)
+  let c = Declare.constr_of_reference Evd.empty (Global.env()) ref in
+  let a = match kind_of_term c with
+    | IsConst (sp, _) -> Node (loc, "CONST", [path_section loc sp])
+    | IsEvar (ev, _) -> Node (loc, "EVAR", [Num (loc, ev)])
+    | IsMutConstruct (((sp, i), j), _) ->
+        Node (loc, "MUTCONSTRUCT", [path_section loc sp; num i; num j])
+    | IsMutInd ((sp, i), _) ->
+        Node (loc, "MUTIND", [path_section loc sp; num i])
+    | IsVar id -> failwith "TODO"
+    | _ -> anomaly "Not a reference" in
+(*  Node (loc, "$QUOTE", [a])*)
+  a
+
+let ast_of_syndef loc sp = Node (loc, "SYNCONST", [path_section loc sp])
+
+let ast_of_var env ast s =
+  if isMeta s or Idset.mem (id_of_string s) env then ast
+  else raise Not_found
+
+let ast_hole = Node (dummy_loc, "ISEVAR", [])
+
+let warning_globalize ast qid =
+  warning ("Could not globalize " ^ (string_of_qualid qid)); ast, []
 
 let ast_adjust_consts sigma =
   let rec dbrec env = function
+    | Node(loc, ("APPLIST" as key), (Node(locs,"QUALID",p) as ast)::args) ->
+	let f = adjust_qualid env loc ast (interp_qualid p) in
+	Node(loc, key, f :: List.map (dbrec env) args)
     | Nvar (loc, s) as ast ->
         let id = id_of_string s in
         if isMeta s then ast
         else if Idset.mem id env then ast
-        else 
-	  (try
-	     ast_of_qualid loc (make_qualid [] s)
-	   with Not_found ->
-	     warning ("Could not globalize " ^ s); ast)
+        else adjust_qualid env loc ast (make_qualid [] s)
     | Node (loc, "QUALID", p) as ast ->
-	(match p with
-	   | [Nvar (_,s) as v] when isMeta s -> v
-	   | _ ->
-	       let qid = interp_qualid p in
-	       try
-		 ast_of_qualid loc qid
-	       with Not_found -> 
-		 warning ("Could not globalize " ^ (string_of_qualid qid));
-		 ast)
+	adjust_qualid env loc ast (interp_qualid p)
     | Slam (loc, None, t) -> Slam (loc, None, dbrec env t)
     | Slam (loc, Some na, t) ->
         let env' = Idset.add (id_of_string na) env in
         Slam (loc, Some na, dbrec env' t)
     | Node (loc, opn, tl) -> Node (loc, opn, List.map (dbrec env) tl)
     | x -> x
+
+  and adjust_qualid env loc ast sp =
+    let act = {
+      parse_var = ast_of_var env ast;
+      parse_ref = ast_of_ref loc;
+      parse_syn = ast_of_syndef loc;
+      fail = warning_globalize ast } in
+    fst (translate_qualid act sp)
+
   in
   dbrec
 
