@@ -70,7 +70,7 @@ Hints Resolve imp_not_Req : real.
 
 (**********)
 Lemma Req_EM:(r1,r2:R)(r1==r2)\/``r1<>r2``.
-Intros ; Generalize (total_order_T r1 r2) ; Intuition EAuto with real.
+Intros ; Generalize (total_order_T r1 r2) imp_not_Req ; Intuition EAuto 3. 
 Save.
 Hints Resolve Req_EM : real.
 
@@ -91,7 +91,7 @@ Save.
 
 (**********)
 Lemma Rlt_le:(r1,r2:R)``r1<r2``-> ``r1<=r2``.
-Intuition Auto.
+Intros ; Red ; Tauto.
 Save.
 Hints Resolve Rlt_le : real.
 
@@ -107,14 +107,15 @@ Save.
 
 (**********)
 Lemma not_Rle:(r1,r2:R)~(``r1<=r2``)->``r1>r2``.
-Intros r1 r2 ; Generalize (total_order r1 r2) ; Tauto.
+Intros r1 r2 ; Generalize (total_order r1 r2) ; Unfold Rle; Tauto.
 Save.
 
 Hints Immediate Rle_ge Rge_le not_Rle : real.
 
 (**********)
 Lemma Rlt_le_not:(r1,r2:R)``r2<r1``->~(``r1<=r2``).
-Intros r1 r2 ; Generalize (Rlt_antisym r1 r2) (imp_not_Req r1 r2) ; Intuition.
+Generalize Rlt_antisym imp_not_Req ; Unfold Rle.
+Intuition EAuto 3.
 Save.
 
 Lemma Rle_not:(r1,r2:R)``r1>r2`` -> ~(``r1<=r2``).
@@ -123,12 +124,13 @@ Proof Rlt_le_not.
 Hints Immediate Rlt_le_not : real.
 
 Lemma Rle_not_lt: (r1, r2:R) ``r2 <= r1`` ->~ (``r1<r2``).
-Intros r1 r2. Generalize (Rlt_antisym r1 r2) (imp_not_Req r1 r2); Intuition.
+Intros r1 r2. Generalize (Rlt_antisym r1 r2) (imp_not_Req r1 r2).
+Unfold Rle; Intuition.
 Save.
 
 (**********)
 Lemma Rlt_ge_not:(r1,r2:R)``r1<r2``->~(``r1>=r2``).
-Generalize Rlt_le_not. Intuition EAuto 3.
+Generalize Rlt_le_not. Unfold Rle Rge. Intuition EAuto 3.
 Save.
 
 Hints Immediate Rlt_ge_not : real.
@@ -155,7 +157,7 @@ Save.
 Hints Immediate eq_Rge_sym : real.
 
 Lemma Rle_antisym : (r1,r2:R)``r1<=r2`` -> ``r2<=r1``-> r1==r2.
-Intros r1 r2; Generalize (Rlt_antisym r1 r2) ; Intuition.
+Intros r1 r2; Generalize (Rlt_antisym r1 r2) ; Unfold Rle ; Intuition.
 Save.
 Hints Resolve Rle_antisym : real.
 
@@ -171,17 +173,20 @@ Save.
 (**********)
 Lemma Rle_trans:(r1,r2,r3:R) ``r1<=r2``->``r2<=r3``->``r1<=r3``.
 Generalize trans_eqT Rlt_trans Rlt_rew.
+Unfold Rle.
 Intuition EAuto 2.
 Save.
 
 (**********)
 Lemma Rle_lt_trans:(r1,r2,r3:R)``r1<=r2``->``r2<r3``->``r1<r3``.
-Generalize Rlt_trans Rlt_rew. Intuition EAuto 2.
+Generalize Rlt_trans Rlt_rew. 
+Unfold Rle.
+Intuition EAuto 2.
 Save.
 
 (**********)
 Lemma Rlt_le_trans:(r1,r2,r3:R)``r1<r2``->``r2<=r3``->``r1<r3``.
-Generalize Rlt_trans Rlt_rew; Intuition EAuto 2.
+Generalize Rlt_trans Rlt_rew; Unfold Rle; Intuition EAuto 2.
 Save.
 
 
@@ -192,7 +197,9 @@ Save.
 
 (**********)
 Lemma total_order_Rle:(r1,r2:R)(sumboolT ``r1<=r2`` ~(``r1<=r2``)).
-Intros r1 r2; Generalize (total_order_T r1 r2);Intuition EAuto with real.
+Intros r1 r2.
+Generalize (total_order_T r1 r2) (imp_not_Req r1 r2).
+Intuition EAuto 4 with real.
 Save.
 
 (**********)
