@@ -112,22 +112,15 @@ Theorem one_two_irred :
  forall x y z:nat, x * y = 1 /\ x * z = 2 -> x = 1.
 \end{coq_example*}
 \begin{coq_eval}
-Lemma plus_m_n_eq_n_O : forall m n:nat, m + n = 0 -> n = 0.
-destruct m; trivial.
-intros; discriminate.
-Qed.
 Lemma mult_m_n_eq_m_1 : forall m n:nat, m * n = 1 -> m = 1.
 destruct m; trivial.
 intros; apply f_equal with (f := S).
-generalize H.
-case n; trivial.
-simpl.
-case n0; simpl.
-intro; rewrite <- mult_n_O; intro; discriminate.
-intros n1 n2 H0; injection H0.
-intro H1.
-set (H2 := (plus_m_n_eq_n_O n1 (S (n1 + n2 * S n1)) H1)).
-discriminate.
+destruct m; trivial.
+destruct n; simpl in H.
+ rewrite <- mult_n_O in H.
+   discriminate.
+ rewrite <- plus_n_Sm in H.
+   discriminate.
 Qed.
 
 intros x y z [H1 H2].
@@ -189,6 +182,38 @@ Reset Initial.
 of the chapter devoted to coercions.
 
 \Rem {\tt Structure} is a synonym of the keyword {\tt Record}.
+
+\Rem An experimental syntax for projections based on a dot notation is
+available. The command to activate it is
+
+\bigskip
+{\tt Set Printing Projections.}
+\bigskip
+
+The corresponding grammar is:
+\bigskip
+
+\begin{tabular}{|lcl|}
+\hline
+{\term} & ++= & {\term} {\tt .(} {\qualid} {\tt )}\\
+ & $|$ & {\term} {\tt .(} {\qualid} \nelist{\termarg}{} {\tt )}\\
+ & $|$ & {\term} {\tt .(} {@}{\qualid} \nelist{\term}{} {\tt )}\\
+\hline
+\end{tabular}
+\bigskip
+
+When {\qualid} denotes a projection, the syntax {\tt
+{\term}.({\qualid})} is equivalent to {\qualid~\term}, the syntax {\tt
+{\term}.({\qualid}~{\termarg}$_1$~ \ldots~ {\termarg}$_n$)} to
+{\qualid~{\termarg}$_1$ \ldots {\termarg}$_n$~\term}, and the syntax
+{\tt {\term}.(@{\qualid}~{\term}$_1$~\ldots~{\term}$_n$)} to
+{@\qualid~{\term}$_1$ \ldots {\term}$_n$~\term}. In each case, {\term}
+is the object projected and the other arguments are the parameters of
+the inductive type.
+
+To deactivate the printing of projections, use 
+{\tt Unset Printing Projections}.
+
 
 \section{Variants and extensions of {\tt match}}
 \label{Extensions-of-match}
@@ -456,32 +481,33 @@ Print fst.
 % ancestor of \texttt{match}. Again, it is still in the code for
 % compatibility with old versions but the user should not use it.
 
-\section{Forced type}
+% Explained in RefMan-gal.tex
+%% \section{Forced type}
 
-In some cases, one may wish to assign a particular type to a term. The
-syntax to force the type of a term is the following:
+%% In some cases, one may wish to assign a particular type to a term. The
+%% syntax to force the type of a term is the following:
 
-\medskip
-\begin{tabular}{lcl}
-{\term} & ++= & {\term} {\tt :} {\term}\\
-\end{tabular}
-\medskip
+%% \medskip
+%% \begin{tabular}{lcl}
+%% {\term} & ++= & {\term} {\tt :} {\term}\\
+%% \end{tabular}
+%% \medskip
 
-It forces the first term to be of type the second term. The
-type must be compatible with
-the term. More precisely it must be either a type convertible to
-the automatically inferred type (see chapter \ref{Cic}) or a type
-coercible to it, (see \ref{Coercions}). When the type of a
-whole expression is forced, it is usually not necessary to give the types of
-the variables involved in the term.
+%% It forces the first term to be of type the second term. The
+%% type must be compatible with
+%% the term. More precisely it must be either a type convertible to
+%% the automatically inferred type (see chapter \ref{Cic}) or a type
+%% coercible to it, (see \ref{Coercions}). When the type of a
+%% whole expression is forced, it is usually not necessary to give the types of
+%% the variables involved in the term.
 
-Example:
+%% Example:
 
-\begin{coq_example}
-Definition ID := forall X:Set, X -> X.
-Definition id := (fun X x => x):ID.
-Check id.
-\end{coq_example}
+%% \begin{coq_example}
+%% Definition ID := forall X:Set, X -> X.
+%% Definition id := (fun X x => x):ID.
+%% Check id.
+%% \end{coq_example}
 
 \section{Section mechanism}\index{Sections}\label{Section}
 The sectioning mechanism allows to organise a proof in structured
@@ -932,7 +958,7 @@ partial applications, the synthesis of implicit arguments may fail, so
 one may have to give explicitly certain implicit arguments of an
 application. The syntax for this is {\tt (\ident:=\term)} where {\ident}
 is the name of the implicit argument and {\term} is its corresponding
-explicit term. Alternatively, one can locally desactivate the hidding of
+explicit term. Alternatively, one can locally deactivate the hidding of
 implicit arguments of a function by using the notation
 {\tt @{\qualid}~{\term}$_1$..{\term}$_n$}.
 
