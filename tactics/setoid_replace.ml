@@ -168,10 +168,10 @@ let coq_equality_morphism_of_setoid_theory =
  lazy(constant ["Setoid"] "equality_morphism_of_setoid_theory")
 let coq_make_compatibility_goal =
  lazy(constant ["Setoid"] "make_compatibility_goal")
-let coq_make_compatibility_goal_ref =
- lazy(reference ["Setoid"] "make_compatibility_goal")
-let coq_make_compatibility_goal_aux_ref =
- lazy(reference ["Setoid"] "make_compatibility_goal_aux")
+let coq_make_compatibility_goal_eval_ref =
+ lazy(eval_reference ["Setoid"] "make_compatibility_goal")
+let coq_make_compatibility_goal_aux_eval_ref =
+ lazy(eval_reference ["Setoid"] "make_compatibility_goal_aux")
 
 let coq_App = lazy(constant ["Setoid"] "App")
 let coq_ToReplace = lazy(constant ["Setoid"] "ToReplace")
@@ -784,8 +784,7 @@ let new_morphism m signature id hook =
          let find_relation_class t real_t =
           try
            let rel = find_relation_class t in
-            rel,
-             unify_relation_class_carrier_with_type (Global.env ()) rel real_t
+            rel, unify_relation_class_carrier_with_type env rel real_t
           with Not_found ->
            errorlabstrm "Add Morphism"
             (str "Not a valid signature: " ++ prterm t ++
@@ -834,20 +833,22 @@ let new_morphism m signature id hook =
      begin
       new_edited id
        (m,args_ty_quantifiers_rev,args,argsconstr,output,outputconstr);
-      Pfedit.start_proof id (IsGlobal (Proof Lemma)) 
-       (Declare.clear_proofs (Global.named_context ()))
-       lem hook;
       (* "unfold make_compatibility_goal" *)
-      Pfedit.by
-       (Tactics.unfold_constr
-        (Lazy.force coq_make_compatibility_goal_ref)) ;
+      let lem =
+       Reductionops.clos_norm_flags
+        (Closure.unfold_red (Lazy.force coq_make_compatibility_goal_eval_ref))
+        env Evd.empty lem in
       (* "unfold make_compatibility_goal_aux" *)
-      Pfedit.by
-       (Tactics.unfold_constr
-        (Lazy.force coq_make_compatibility_goal_aux_ref)) ;
+      let lem =
+       Reductionops.clos_norm_flags
+        (Closure.unfold_red(Lazy.force coq_make_compatibility_goal_aux_eval_ref))
+        env Evd.empty lem in
       (* "simpl" *)
-      Pfedit.by Tactics.simpl_in_concl ;
-      Options.if_verbose msg (Printer.pr_open_subgoals ());
+      let lem = Tacred.nf env Evd.empty lem in
+       Pfedit.start_proof id (IsGlobal (Proof Lemma)) 
+        (Declare.clear_proofs (Global.named_context ()))
+        lem hook;
+       Options.if_verbose msg (Printer.pr_open_subgoals ());
      end
 
 let morphism_hook _ ref =
