@@ -103,6 +103,7 @@ let (in_variable, out_variable) =
 let declare_variable_common id obj =
   let oname = add_leaf id (in_variable (id,obj)) in
   declare_var_implicits id;
+  Symbols.declare_ref_arguments_scope (VarRef id);
   oname
 
 (* for initial declaration *)
@@ -183,19 +184,23 @@ let hcons_constant_declaration = function
          const_entry_opaque = ce.const_entry_opaque }
   | cd -> cd
 
+let declare_constant_common id discharged_hyps (cd,kind) =
+  let (sp,kn as oname) = add_leaf id (in_constant (cd,kind)) in
+  declare_constant_implicits kn;
+  Symbols.declare_ref_arguments_scope (ConstRef kn);
+  Dischargedhypsmap.set_discharged_hyps sp discharged_hyps;
+  oname
+
 let declare_constant id (cd,kind) =
   let cd = hcons_constant_declaration cd in
-  let (sp,kn as oname) = add_leaf id (in_constant (ConstantEntry cd,kind)) in
-  declare_constant_implicits kn;
-  Dischargedhypsmap.set_discharged_hyps sp [] ;
+  let oname = declare_constant_common id [] (ConstantEntry cd,kind) in
   !xml_declare_constant oname;
   oname
 
 (* when coming from discharge *)
 let redeclare_constant id discharged_hyps (cd,kind) =
-  let _,kn as oname = add_leaf id (in_constant (GlobalRecipe cd,kind)) in
-  declare_constant_implicits kn;
-  Dischargedhypsmap.set_discharged_hyps (fst oname) discharged_hyps
+  let _ = declare_constant_common id discharged_hyps (GlobalRecipe cd,kind) in
+  ()
 
 (* Inductives. *)
 
@@ -274,6 +279,13 @@ let (in_inductive, out_inductive) =
     subst_function = ident_subst_function;
     export_function = export_inductive } 
 
+let declare_inductive_argument_scopes kn mie =
+  list_iter_i (fun i {mind_entry_consnames=lc} ->
+    Symbols.declare_ref_arguments_scope (IndRef (kn,i));
+    for j=1 to List.length lc do
+      Symbols.declare_ref_arguments_scope (ConstructRef ((kn,i),j));
+    done) mie.mind_entry_inds
+
 let declare_inductive_common mie =
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
@@ -281,6 +293,7 @@ let declare_inductive_common mie =
   in
   let oname = add_leaf id (in_inductive mie) in
   declare_mib_implicits (snd oname);
+  declare_inductive_argument_scopes (snd oname) mie;
   oname
 
 (* for initial declaration *)
@@ -371,76 +384,10 @@ let last_section_hyps dir =
     (Environ.named_context (Global.env()))
     ~init:[]
 
-let construct_absolute_reference sp =
-  constr_of_reference (Nametab.absolute_reference sp)
-
-let construct_qualified_reference qid =
-  let ref = Nametab.locate qid in
-  constr_of_reference ref
-
-let construct_reference ctx_opt id =
-  match ctx_opt with
-    | None -> construct_qualified_reference (make_short_qualid id)
-    | Some ctx -> 
-	try
-	  mkVar (let _ = Sign.lookup_named id ctx in id)
-	with Not_found ->
-	  construct_qualified_reference (make_short_qualid id)
-
-let global_qualified_reference qid =
-  construct_qualified_reference qid
-
-let global_absolute_reference sp = 
-  construct_absolute_reference sp
-
-let global_reference_in_absolute_module dir id = 
-  constr_of_reference (Nametab.absolute_reference (Libnames.make_path dir id))
-
-let global_reference id = 
-  construct_qualified_reference (make_short_qualid id)
-
 let is_section_variable = function
   | VarRef _ -> true
   | _ -> false
 
-(* TODO temporary hack!!! *)
-let rec is_imported_modpath = function
-  | MPfile dp -> dp <> (Lib.library_dp ())
-(*  | MPdot (mp,_) -> is_imported_modpath mp *)
-  | _ -> false
-
-let is_imported_ref = function
-  | VarRef _ -> false
-  | ConstRef kn 
-  | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) 
-(*  | ModTypeRef ln  *) -> 
-      let (mp,_,_) = repr_kn kn in is_imported_modpath mp
-(*  | ModRef mp ->
-      is_imported_modpath mp
-*)
-let is_global id =
-  try 
-    let ref = Nametab.locate (make_short_qualid id) in
-      not (is_imported_ref ref)
-  with Not_found -> 
-    false
-
 let strength_of_global = function
   | VarRef _ -> Local
   | IndRef _ | ConstructRef _ | ConstRef _ -> Global
-
-let library_part ref =
-  let sp = Nametab.sp_of_global ref in
-  let dir,_ = repr_path sp in
-  match strength_of_global ref with
-  | Local -> 
-      anomaly "TODO";
-      extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ())
-  | Global ->
-      if is_dirpath_prefix_of dir (Lib.cwd ()) then
-        (* Not yet (fully) discharged *)
-        extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ())
-      else
-	(* Theorem/Lemma outside its outer section of definition *)
-	dir
