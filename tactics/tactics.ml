@@ -1333,7 +1333,9 @@ let compute_induction_names n names =
   names
 
 let is_indhyp p n t =
-  let c,_ = decompose_app t in 
+  let l, c = decompose_prod t in
+  let c,_ = decompose_app c in 
+  let p = p + List.length l in
   match kind_of_term c with
     | Rel k when p < k & k <= p + n -> true
     | _ -> false
