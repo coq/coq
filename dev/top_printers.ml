@@ -55,6 +55,8 @@ let prast c = pP(print_ast c)
 let prastpat c = pP(print_astpat c)
 let prastpatl c = pP(print_astlpat c)
 let ppterm0 = (fun x -> pP(term0 (gLOB nil_sign) x))
+let pprawterm = (fun x -> pP(prrawterm x));;
+let pppattern = (fun x -> pP(prpattern x));;
 let pptype = (fun x -> pP(prtype x))
 
 let prid id = pP [< 'sTR"#" ; 'sTR(string_of_id id) >]
