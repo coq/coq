@@ -29,6 +29,7 @@ COQPACKAGE=coq-${VERSION}
 COQRPMPACKAGE=coq-${VERSION}-${RELEASENUM}
 COQDEBPACKAGE=coq_${VERSION}-${RELEASENUM}_i386.deb
 COQDEBCHANGES=coq_${VERSION}-${RELEASENUM}_*.changes
+COQDEBORIG=coq_${VERSION}.orig
 
 ######################
 
@@ -304,13 +305,18 @@ patch-ftp-install: prep-ftp-install
 	cp patch-${VERSION}-$(PREVIOUSVERSION).gz ${FTPDIR}/V${VERSION}/
 	chmod g+w ${FTPDIR}/V${VERSION}/patch-${VERSION}-$(PREVIOUSVERSION).gz
 
-deb: ${COQPACKAGE}.tar.gz
+${COQDEBORIG}.tar.gz: ${COQPACKAGE}.tar.gz
+	tar xzf ${COQPACKAGE}.tar.gz
+	mv ${COQPACKAGE} ${COQDEBORIG}
+	tar czf ${COQDEBORIG}.tar.gz ${COQDEBORIG}	
+	rm -rf ${COQDEBORIG}
+
+deb: ${COQDEBORIG}.tar.gz ${COQPACKAGE}.tar.gz
 	rm -rf deb_build
 	mkdir -p deb_build
-	cd deb_build ; tar xzf ../${COQPACKAGE}.tar.gz
-	cd deb_build ; mv ${COQPACKAGE} ${COQPACKAGE}.orig
+	cd deb_build ; cp ../${COQDEBORIG}.tar.gz .
 	cd deb_build ; tar xzf ../${COQPACKAGE}.tar.gz
 	cp -a debian deb_build/${COQPACKAGE}
 	rm -rf deb_build/${COQPACKAGE}/debian/CVS
-	cd deb_build/${COQPACKAGE} ; dpkg-buildpackage -rfakeroot -uc -us
-	lintian deb_build/${COQDEBCHANGES}
+	cd deb_build/${COQPACKAGE} ; dpkg-buildpackage -rfakeroot -uc -us 2>&1 | tee ../../deb.log
+	lintian deb_build/${COQDEBCHANGES} || true

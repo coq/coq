@@ -3,7 +3,7 @@ Section: devel
 Priority: optional
 Maintainer: Judicaël Courant <Judicael.Courant@lri.fr>
 Standards-Version: 3.5.3
-Build-Depends: debhelper (>= 3), ocaml (>= 3.01), camlp4
+Build-Depends: debhelper (>= 3), ocaml (>= 3.01), ocaml (>=3.04) | camlp4
 
 Package: coq
 Architecture: any

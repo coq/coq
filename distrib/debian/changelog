@@ -1,3 +1,9 @@
+coq (7.2-3) unstable; urgency=low
+  * Workaround for problems with buildd/apt trying to install camlp4
+    (closes: Bug#130046).
+  
+ -- Judicaël Courant <Judicael.Courant@lri.fr>  Mon, 21 Jan 2002 09:46:16 +0100
+
 coq (7.2-2) unstable; urgency=low
 
   * Build-Depends now requires camlp4 instead of camlp4 (>=3.01) since
