@@ -529,7 +529,7 @@ let rec pp_structure_elem mp = function
 	 str " = " ++ fnl () ++ pp_module_type m)
 
 and pp_module_expr = function 
-  | MEident mp -> P.pp_long_module mp 
+  | MEident mp -> P.pp_long_module (long_mp mp)
   | MEfunctor (mbid, mt, me) -> 
       str "functor (" ++ 
       P.pp_short_module (id_of_mbid mbid) ++
@@ -547,7 +547,7 @@ and pp_module_expr = function
 
 and pp_module_type = function 
   | MTident kn -> 
-      let mp,_,l = repr_kn kn in P.pp_long_module (MPdot (mp,l)) 
+      let mp,_,l = repr_kn kn in P.pp_long_module (MPdot (ong_mp mp,l)) 
   | MTfunsig (mbid, mt, mt') -> 
       str "functor (" ++ 
       P.pp_short_module (id_of_mbid mbid) ++
