@@ -318,7 +318,7 @@ let coq_S = lazy (constant ["Init";"Datatypes"] "S")
 let coq_O = lazy (constant ["Init";"Datatypes"] "O")
 
 (* Minus *)
-let coq_minus = lazy (constant ["Arith";"Minus"] "minus")
+let coq_minus = lazy (constant ["Init";"Peano"] "minus")
 
 (* Compare_dec *)
 let coq_le_gt_dec = lazy (constant ["Arith";"Compare_dec"] "le_gt_dec")
