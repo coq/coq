@@ -66,12 +66,7 @@ let prwc wc = pP(pr_evc wc)
 
 let prclenv clenv = pP(pr_clenv clenv)
 
-let p_uni u = 
-    [< 'sTR(string_of_path u.u_sp) ;
-       'sTR "." ;
-      'iNT u.u_num >]
-
-let print_uni u = (pP (p_uni u))
+let print_uni u = (pP (pr_uni u))
 
 let pp_universes u = pP [< 'sTR"[" ; pr_universes u ; 'sTR"]" >]
 

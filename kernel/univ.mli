@@ -59,4 +59,5 @@ val merge_constraints : constraints -> universes -> universes
 
 (*s Pretty-printing of universes. *)
 
+val pr_uni : universe -> Pp.std_ppcmds
 val pr_universes : universes -> Pp.std_ppcmds
