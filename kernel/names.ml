@@ -256,7 +256,7 @@ let kind_of_string = function
 
 (*s Section paths *)
 
-type qualid = string list * string
+type qualid = string list * identifier
 
 let make_qualid p s = (p,s)
 let repr_qualid q = q

@@ -60,8 +60,8 @@ val string_of_dirpath : dir_path -> string
 (*s Qualified idents are names relative to the current visilibity of names *)
 type qualid
 
-val make_qualid : dir_path -> string -> qualid
-val repr_qualid : qualid -> dir_path * string
+val make_qualid : dir_path -> identifier -> qualid
+val repr_qualid : qualid -> dir_path * identifier
 
 val string_of_qualid : qualid -> string
 val pr_qualid : qualid -> std_ppcmds

@@ -114,10 +114,11 @@ open Proof_type
 
 let constant dir s =
   let dir = "Coq"::"ring"::dir in
+  let id = id_of_string s in
   try 
-    Declare.global_reference_in_absolute_module dir (id_of_string s)
+    Declare.global_reference_in_absolute_module dir id
   with Not_found ->
-    anomaly ("Quote: cannot find "^(string_of_qualid (make_qualid dir s)))
+    anomaly ("Quote: cannot find "^(string_of_qualid (make_qualid dir id)))
 
 let coq_Empty_vm = lazy (constant ["Quote"] "Empty_vm")
 let coq_Node_vm = lazy (constant ["Quote"] "Node_vm")

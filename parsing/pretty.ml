@@ -416,9 +416,8 @@ let print_name qid =
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in 
     if dir <> [] then raise Not_found;
-    let name = id_of_string str in
-    let (c,typ) = Global.lookup_named name in 
-    [< print_named_decl (name,c,typ) >]
+    let (c,typ) = Global.lookup_named str in 
+    [< print_named_decl (str,c,typ) >]
   with Not_found ->
   try
     let sp = Syntax_def.locate_syntactic_definition qid in

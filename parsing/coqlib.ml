@@ -20,10 +20,11 @@ let glob_My_special_variable_nat = ConstRef myvar_path
 
 let reference dir s =
   let dir = "Coq"::"Init"::[dir] in
+  let id = id_of_string s in
   try 
-    Nametab.locate_in_absolute_module dir (id_of_string s)
+    Nametab.locate_in_absolute_module dir id
   with Not_found ->
-    anomaly ("Coqlib: cannot find "^(string_of_qualid (make_qualid dir s)))
+    anomaly ("Coqlib: cannot find "^(string_of_qualid (make_qualid dir id)))
 
 let constant dir s =
   Declare.constr_of_reference Evd.empty (Global.env()) (reference dir s)

@@ -129,7 +129,11 @@ let interp_qualid p =
     | [] -> anomaly "interp_qualid: empty qualified identifier"
     | l -> 
 	let p, r = list_chop (List.length l -1) (List.map outnvar l) in
-	make_qualid p (List.hd r)
+	make_qualid p (id_of_string (List.hd r))
+
+let maybe_variable = function
+  | [Nvar (_,s)] -> Some s
+  | _ -> None
 
 let ids_of_ctxt ctxt =
   Array.to_list
@@ -153,16 +157,16 @@ let maybe_constructor env = function
 	  | IsMutConstruct ((spi,j),cl) -> 
 	      IsConstrPat (loc,((spi,j),ids_of_ctxt cl))
 	  | _ -> 
-	      (match repr_qualid qid with
-		 | [], s -> 
+	      (match maybe_variable l with
+		 | Some s -> 
 		     warning ("Defined reference "^(string_of_qualid qid)
 			      ^" is here considered as a matching variable");
 		     IsVarPat (loc,s)
 		 | _ -> error ("This reference does not denote a constructor: "
 			       ^(string_of_qualid qid)))
       with Not_found -> 
-	match repr_qualid qid with
-	  | [], s -> IsVarPat (loc,s)
+	match maybe_variable l with
+	  | Some s -> IsVarPat (loc,s)
 	  | _ -> error ("Unknown qualified constructor: "
 			^(string_of_qualid qid)))
 
@@ -230,7 +234,7 @@ let ast_to_var (env,impls) (vars1,vars2) loc s =
       let _ = lookup_id id vars2 in
       (* Car Fixpoint met les fns définies tmporairement comme vars de sect *)
       try
-	let ref = Nametab.locate (make_qualid [] s) in
+	let ref = Nametab.locate (make_qualid [] (id_of_string s)) in
 	implicits_of_global ref
       with _ -> []
   in RVar (loc, id), [], imps
@@ -249,7 +253,7 @@ let translate_qualid act qid =
   (* Is it a bound variable? *)
   try
     match repr_qualid qid with
-      | [],s -> act.parse_var s, []
+      | [],s -> act.parse_var (string_of_id s), []
       | _ -> raise Not_found
   with Not_found ->
   (* Is it a global reference? *)
@@ -276,7 +280,7 @@ let rawconstr_of_qualid env vars loc qid =
   (* Is it a bound variable? *)
   try
     match repr_qualid qid with
-      | [],s -> ast_to_var env vars loc s
+      | [],s -> ast_to_var env vars loc (string_of_id s)
       | _ -> raise Not_found
   with Not_found ->
   (* Is it a global reference? *)
@@ -589,7 +593,7 @@ let ast_adjust_consts sigma =
         let id = id_of_string s in
         if isMeta s then ast
         else if Idset.mem id env then ast
-        else adjust_qualid env loc ast (make_qualid [] s)
+        else adjust_qualid env loc ast (make_qualid [] (id_of_string s))
     | Node (loc, "QUALID", p) as ast ->
 	adjust_qualid env loc ast (interp_qualid p)
     | Slam (loc, None, t) -> Slam (loc, None, dbrec env t)

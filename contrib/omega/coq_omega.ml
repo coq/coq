@@ -213,10 +213,11 @@ let recognize_number t =
 
 let constant dir s =
   let dir = "Coq"::dir in
+  let id = id_of_string s in
   try 
-    Declare.global_reference_in_absolute_module dir (id_of_string s)
+    Declare.global_reference_in_absolute_module dir id
   with Not_found ->
-    anomaly ("Coq_omega: cannot find "^(string_of_qualid (make_qualid dir s)))
+    anomaly ("Coq_omega: cannot find "^(string_of_qualid (make_qualid dir id)))
 
 let zarith_constant dir = constant ("Zarith"::dir)
 
@@ -368,15 +369,16 @@ let build_coq_eq = build_coq_eq_data.eq
 open Closure
 let make_coq_path dir s =
   let dir = "Coq"::dir in
+  let id = id_of_string s in
   let ref = 
-    try Nametab.locate_in_absolute_module dir (id_of_string s) 
+    try Nametab.locate_in_absolute_module dir id 
     with Not_found ->
-      anomaly("Coq_omega: cannot find "^(string_of_qualid (make_qualid dir s)))
+      anomaly("Coq_omega: cannot find "^(string_of_qualid(make_qualid dir id)))
   in
   match ref with
     | ConstRef sp -> EvalConstRef sp
     | _ -> anomaly ("Coq_omega: "^
-		    (string_of_qualid (make_qualid dir s))^
+		    (string_of_qualid (make_qualid dir id))^
 		    " is not a constant")
 
 let sp_Zs = lazy (make_coq_path ["Zarith";"zarith_aux"] "Zs")

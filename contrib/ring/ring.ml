@@ -27,10 +27,11 @@ let constr_of com = Astterm.interp_constr mt_evd (Global.env()) com
 
 let constant dir s =
   let dir = "Coq"::"ring"::dir in
+  let id = id_of_string s in
   try 
-    Declare.global_reference_in_absolute_module dir (id_of_string s)
+    Declare.global_reference_in_absolute_module dir id
   with Not_found ->
-    anomaly ("Ring: cannot find "^(string_of_qualid (make_qualid dir s)))
+    anomaly ("Ring: cannot find "^(string_of_qualid (make_qualid dir id)))
 
 (* Ring_theory *)
 

@@ -699,8 +699,7 @@ let print sp fn =
  let module N = Names in
  let module T = Term in
  let module X = Xml in
-  let (_,str) = N.repr_qualid sp in
-  let id = Names.id_of_string str in
+  let (_,id) = N.repr_qualid sp in
   let glob_ref = Nametab.locate sp in
   let env = (Safe_typing.env_of_safe_env (G.safe_env ())) in
   reset_ids () ;

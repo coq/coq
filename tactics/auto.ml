@@ -421,7 +421,7 @@ let _ =
 		      let hyps = Declare.implicit_section_args ref in
 		      let section_args = List.map (fun sp -> mkVar (basename sp)) hyps in
 		      let _,i = repr_qualid qid in
-		      (id_of_string i, applist (c,section_args))
+		      (i, applist (c,section_args))
 		  | _-> bad_vernac_args "HintsResolve") lh in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
@@ -438,7 +438,7 @@ let _ =
 	     List.map (function
 			 | VARG_QUALID qid ->
 			     let _,n = repr_qualid qid in
-			     (id_of_string n, global qid)
+			     (n, global qid)
 		      	 | _ -> bad_vernac_args "HintsUnfold") lh in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function 
@@ -462,7 +462,7 @@ let _ =
 		      let c = Declare.constr_of_reference Evd.empty env ref in
 		      let hyps = Declare.implicit_section_args ref in
 		      let section_args = List.map (fun sp -> mkVar (basename sp)) hyps in
-		      (id_of_string n, applist (c, section_args))
+		      (n, applist (c, section_args))
 		  | _ -> bad_vernac_args "HintsImmediate") lh in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function 
@@ -956,7 +956,7 @@ let cvt_autoArgs =
 let interp_to_add gl = function
   | (Qualid qid) ->
       let _,id = repr_qualid qid in
-      (next_ident_away (id_of_string id) (pf_ids_of_hyps gl), 
+      (next_ident_away id (pf_ids_of_hyps gl), 
        Declare.constr_of_reference Evd.empty (Global.env()) (global qid))
   | _ -> errorlabstrm "cvt_autoArgs" [< 'sTR "Qualid expected" >]
 

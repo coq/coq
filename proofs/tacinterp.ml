@@ -186,12 +186,12 @@ let glob_const_nvar loc env qid =
   try
     (* We first look for a variable of the current proof *)
     match repr_qualid qid with
-      | [],s ->
-	  let id = id_of_string s in
+      | [],id ->
 	  (* lookup_value may raise Not_found *)
 	  (match Environ.lookup_named_value id env with
 	     | Some _ -> EvalVarRef id
-	     | None -> error (s^" does not denote an evaluable constant"))
+	     | None -> error ((string_of_id id)^
+			      " does not denote an evaluable constant"))
       | _ -> raise Not_found
   with Not_found ->
   try

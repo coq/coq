@@ -94,7 +94,7 @@ let ast_of_ref = function
 
 let ast_of_qualid p =
   let dir, s = repr_qualid p in
-  let args = List.map nvar (dir@[s]) in
+  let args = List.map nvar (dir@[string_of_id s]) in
   ope ("QUALID", args)
 
 (**********************************************************************)
@@ -179,7 +179,7 @@ let rec ast_of_raw = function
 	 | RVar (_,id) ->
 	     let imp =
 	       try 
-		 let ref = Nametab.locate (make_qualid [] (string_of_id id)) in
+		 let ref = Nametab.locate (make_qualid [] id) in
 		 implicits_of_global ref
 	       with Not_found -> [] in
 	     ast_of_app imp astf astargs

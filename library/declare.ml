@@ -420,7 +420,7 @@ let dirpath_of_global = function
 
 let is_global id =
   try 
-    let osp = Nametab.locate (make_qualid [] (string_of_id id)) in
+    let osp = Nametab.locate (make_qualid [] id) in
     list_prefix_of (dirpath_of_global osp) (Lib.cwd())
   with Not_found -> 
     false

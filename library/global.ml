@@ -63,9 +63,9 @@ let sp_of_global id = Environ.sp_of_global (env_of_safe_env !global_env) id
 
 let qualid_of_global ref =  
   let sp = sp_of_global ref in
-  let s = string_of_id (basename sp) in
+  let id = basename sp in
   let rec find_visible dir qdir =
-    let qid = make_qualid qdir s in
+    let qid = make_qualid qdir id in
     if (try Nametab.locate qid = ref with Not_found -> false) then qid
     else match dir with
       | [] -> qualid_of_sp sp

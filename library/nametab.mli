@@ -10,8 +10,8 @@ open Term
 (* This module contains the table for globalization, which associates global
    names (section paths) to identifiers. *)
 
-type cci_table = global_reference Stringmap.t
-type obj_table = (section_path * Libobject.obj) Stringmap.t
+type cci_table = global_reference Idmap.t
+type obj_table = (section_path * Libobject.obj) Idmap.t
 type mod_table = (section_path * module_contents) Stringmap.t
 and module_contents = Closed of cci_table * obj_table * mod_table
 

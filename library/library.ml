@@ -117,7 +117,7 @@ let rec open_module force s =
   if force or not m.module_opened then begin
     List.iter (fun (m,_,exp) -> if exp then open_module force m) m.module_deps;
     open_objects m.module_declarations;
-    Nametab.open_module_contents (make_qualid [] s); 
+    Nametab.open_module_contents (make_qualid [] (id_of_string s)); 
     m.module_opened <- true
   end
 

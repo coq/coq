@@ -181,7 +181,7 @@ let _ =
 	   (fun () -> add_path dir [Nametab.default_root])
        | [VARG_STRING dir ; VARG_QUALID alias] ->
            let aliasdir,aliasname = repr_qualid alias in
-	    (fun () -> add_path dir (aliasdir@[aliasname]))
+	    (fun () -> add_path dir (aliasdir@[string_of_id aliasname]))
        | _ -> bad_vernac_args "ADDPATH")
 
 (* For compatibility *)
@@ -199,7 +199,7 @@ let _ =
        | [VARG_STRING dir ; VARG_QUALID alias] ->
            let aliasdir,aliasname = repr_qualid alias in
 	    (fun () ->
-	       let alias = aliasdir@[aliasname] in
+	       let alias = aliasdir@[string_of_id aliasname] in
 	       add_rec_path dir alias;
 	       Nametab.push_library_root (List.hd alias))
        | _ -> bad_vernac_args "RECADDPATH")
@@ -1369,8 +1369,8 @@ let _ =
 
 let cl_of_qualid qid =
   match repr_qualid qid with
-    | [], "FUNCLASS" -> Classops.CL_FUN
-    | [], "SORTCLASS" -> Classops.CL_SORT
+    | [], id when string_of_id id = "FUNCLASS" -> Classops.CL_FUN
+    | [], id when string_of_id id = "SORTCLASS" -> Classops.CL_SORT
     | _ -> Class.class_of_ref (locate_qualid dummy_loc qid)	
 
 let _ =
@@ -1389,8 +1389,7 @@ let _ =
 	   let source = cl_of_qualid qids in
 	   fun () ->
 	     if isid then match repr_qualid qid with
-	       | [], s ->
-		   let id = id_of_string s in
+	       | [], id ->
 		   Class.try_add_new_identity_coercion id stre source target
 	       | _ -> bad_vernac_args "COERCION"
 	     else
@@ -1686,7 +1685,7 @@ let _ =
             if (string_of_id t) = "Tables" then 
 	      print_tables ()
 	    else 
-	      mSG(print_name (make_qualid [] (string_of_id t))))
+	      mSG(print_name (make_qualid [] t)))
      | _ -> bad_vernac_args "TableField")
 
 
