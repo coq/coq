@@ -197,6 +197,45 @@ let nb_occur a =
   in 
   count 1 a; !cpt
 
+(*s [collect_lams MLlam(id1,...MLlam(idn,t)...)] returns
+    the list [idn;...;id1] and the term [t]. *)
+
+let collect_lams = 
+  let rec collect acc = function
+    | MLlam(id,t) -> collect (id::acc) t
+    | x           -> acc,x
+  in 
+  collect []
+
+let collect_n_lams = 
+  let rec collect acc n t = 
+    if n = 0 then acc,t 
+    else match t with 
+      | MLlam(id,t) -> collect (id::acc) (n-1) t
+      | _ -> assert false
+  in 
+  collect [] 
+
+let rec remove_n_lams n t = 
+  if n = 0 then t  
+  else match t with 
+      | MLlam(id,t) -> remove_n_lams (n-1) t
+      | _ -> assert false
+
+let rec nb_lam = function 
+  | MLlam(id,t) -> succ (nb_lam t)
+  | _ -> 0 
+
+(* [named_abstract] does the converse of [collect_lambda] *)
+
+let rec named_lams a = function 
+  | [] -> a 
+  | id :: ids -> named_lams (MLlam(id,a)) ids
+
+let rec anonym_lams a = function 
+  | 0 -> a 
+  | n -> anonym_lams (MLlam(anonymous,a)) (pred n)
+
 (*s The two following functions test and create [MLrel n;...;MLrel 1] *)
 
 let rec test_eta_args n = function 
@@ -219,7 +258,7 @@ let check_and_generalize (r0,l,c) =
 	else if i>k' then MLrel (i-nargs+1) 
 	else raise Impossible
     | MLcons(r,args) when r=r0 -> 
-	if (test_eta_args nargs args) then MLrel k
+	if test_eta_args nargs args then MLrel k
 	else raise Impossible
     | MLlam(id,t) -> MLlam(id,genrec (k + 1) (k' + 1) t)
     | MLletin(id,t,t') -> MLletin(id,(genrec k k' t),(genrec (k+1) (k'+1) t'))
@@ -252,6 +291,42 @@ let check_constant_case br =
     if (occurs_itvl 1 n t) || (cst <> (ml_lift (-n) t)) 
     then raise Impossible
   done; cst
+
+(* [permut_rels n n' c] translates [Rel 1 ... Rel n] to [Rel (n'+1) ... Rel (n'+n)]
+   and [Rel (n+1) ... Rel (n+n')] to [Rel 1 ... Rel n'] *)
+
+let permut_rels n n' = 
+  let rec permut k = function
+    | MLrel i as c -> 
+	if i<k || i>=k+n+n' then c 
+	else if i<n+k then MLrel (i+n')
+	else MLrel (i-n)
+    | MLlam (id,t) -> MLlam (id, permut (k+1) t)
+    | MLletin (id,a,b) -> MLletin (id, permut k a, permut (k+1) b)
+    | MLcase (t,pv) -> 
+	MLcase (permut k t,
+      	       	Array.map (fun (id,idl,p) -> 
+			     let nl = List.length idl in
+			     (id, idl, permut (k+nl) p)) pv)
+    | MLfix (n0,idl,pv) -> 
+	MLfix (n0,idl,
+	       let nl = Array.length idl in Array.map (permut (k+nl)) pv)
+    | a -> ast_map (permut k) a
+  in 
+  permut 1
+
+let rec permut_case_fun br acc = 
+  let (_,_,t0) = br.(0) in 
+  let nb = ref (nb_lam t0) in 
+  Array.iter (fun (_,_,t) -> let n = nb_lam t in if n < !nb then nb:=n) br;
+  let ids,_ = collect_n_lams !nb t0
+  in 
+  for i = 0 to Array.length br - 1 do 
+    let (r,l,t) = br.(i) in 
+    let t = permut_rels !nb (List.length l) (remove_n_lams !nb t) 
+    in br.(i) <- (r,l,t)
+  done;
+  ids
 
 (*s Some Beta-iota reductions + simplifications*)
 
@@ -336,7 +411,18 @@ let normalize a =
 		   simplify (MLapp (MLlam (anonymous,f),[e']))
 		 with Impossible -> 
 	           try check_constant_case br' 
-                   with Impossible -> MLcase (e', br')
+                   with Impossible ->
+		     (match e' with 
+			| MLrel i -> 
+			    let ids = permut_case_fun br' [] in 
+			    let ids = List.map 
+					(fun id -> 
+					   if id = prop_name then anonymous 
+					   else id) ids in
+			    let n = List.length ids in 
+			    if n = 0 then MLcase (e', br') 
+			    else named_lams (MLcase (MLrel (i+n), br')) ids
+			| _ -> MLcase (e', br'))
 	       else MLcase (e', br'))
     | MLletin(_,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
 	(* expansion of a letin in special cases *)
@@ -353,26 +439,6 @@ let normalize a =
 let normalize_decl = function
  | Dglob (id, a) -> Dglob (id, normalize a)
  | d -> d
-
-(*s [collect_lams MLlam(id1,...MLlam(idn,t)...)] returns
-    the list [idn;...;id1] and the term [t]. *)
-
-let collect_lams = 
-  let rec collect acc = function
-    | MLlam(id,t) -> collect (id::acc) t
-    | x           -> acc,x
-  in 
-  collect []
-
-(* [named_abstract] does the converse of [collect_lambda] *)
-
-let rec named_lams a = function 
-  | [] -> a 
-  | id :: ids -> named_lams (MLlam(id,a)) ids
-
-let rec anonym_lams a = function 
-  | 0 -> a 
-  | n -> anonym_lams (MLlam(anonymous,a)) (pred n)
 
 (*s special treatment of non-mutual fixpoint for pretty-printing purpose *)
 
@@ -597,7 +663,7 @@ let rec optimize prm = function
 	end
       else l in 
       if (prm.mod_name <> None) || List.mem r prm.to_appear || not b then 
-	let t = optimize_fix t in 
+	let t = optimize_fix t in
 	Dglob (r,t) :: (optimize prm l)
       else
 	optimize prm l
