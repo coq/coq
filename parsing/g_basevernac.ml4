@@ -92,11 +92,15 @@ GEXTEND Gram
 	  <:ast< (Locate $id) >>
 
        (* For compatibility (now turned into a table) *)
+      | IDENT "AddPath"; dir = stringarg; IDENT "As"; alias = qualidarg; "." ->
+         <:ast< (ADDPATH $dir $alias) >>
       | IDENT "AddPath"; dir = stringarg; "." -> <:ast< (ADDPATH $dir) >>
       | IDENT "DelPath"; dir = stringarg; "." -> <:ast< (DELPATH $dir) >>
       | IDENT "Print"; IDENT "LoadPath"; "." -> <:ast< (PrintPath) >>
-      | IDENT "AddRecPath"; dir = stringarg; "." -> <:ast< (RECADDPATH $dir) >>
-	  
+      | IDENT "AddRecPath"; dir = stringarg;IDENT "As"; alias=qualidarg; "." ->
+         <:ast< (RECADDPATH $dir $alias) >>
+      | IDENT "AddRecPath"; dir = stringarg; "." ->
+         <:ast< (RECADDPATH $dir) >>
       | IDENT "Print"; IDENT "Modules"; "." -> <:ast< (PrintModules) >>
       | IDENT "Print"; "Proof"; id = identarg; "." ->
           <:ast< (PrintOpaqueId $id) >>

@@ -170,6 +170,9 @@ let _ =
 	   if alias = "" then
 	     error ("Cannot map "^dir^" to a root of Coq library");
 	   (fun () -> add_path dir [alias])
+       | [VARG_STRING dir ; VARG_QUALID alias] ->
+           let aliasdir,aliasname = repr_qualid alias in
+	    (fun () -> add_path dir (aliasdir@[aliasname]))
        | _ -> bad_vernac_args "ADDPATH")
 
 (* For compatibility *)
@@ -187,6 +190,9 @@ let _ =
 	   if alias = "" then
 	     error ("Cannot map "^dir^" to a root of Coq library");
 	   (fun () -> rec_add_path dir [alias])
+       | [VARG_STRING dir ; VARG_QUALID alias] ->
+           let aliasdir,aliasname = repr_qualid alias in
+	    (fun () -> rec_add_path dir (aliasdir@[aliasname]))
        | _ -> bad_vernac_args "RECADDPATH")
 
 (* For compatibility *)
@@ -294,7 +300,7 @@ let _ =
 	   let s = string_of_id id in
 	   let lpe,_ = 
 	     System.find_file_in_path (Library.get_load_path ()) (s^".v") in
-	   fun () -> Lib.start_module (lpe.relative_subdir @ [s])
+	   fun () -> Lib.start_module (lpe.coq_dirpath @ [s])
        | _ -> bad_vernac_args "BeginModule")
 
 let _ =
