@@ -77,9 +77,9 @@ Proof.
 Destruct x;Intros;Rewrite Zmult_sym;Auto with arith.
 Qed.
 
-Lemma Zabs_Zsgn: (x:Z)(Zabs x)=(Zmult (Zsgn x) x).
+Lemma Zabs_Zsgn: (x:Z)(Zmult (Zabs x) (Zsgn x))=x.
 Proof.
-Destruct x;Intros;Auto with arith.
+Destruct x;Intros; Rewrite Zmult_sym; Auto with arith.
 Qed.
 
 (** From [nat] to [Z] *)
