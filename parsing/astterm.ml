@@ -209,7 +209,10 @@ let error_fixname_unbound str is_cofix loc name =
        [< 'sTR "The name"; 'sPC ; 'sTR name ; 
 	  'sPC ; 'sTR "is not bound in the corresponding"; 'sPC ;
 	  'sTR ((if is_cofix then "co" else "")^"fixpoint definition") >])
-       
+
+let rec collapse_env n env = if n=0 then env else
+  add_rel (Anonymous,()) (collapse_env (n-1) (snd (uncons_rel_env env)))
+
 let dbize k sigma =
   let rec dbrec env = function
     | Nvar(loc,s) -> fst (dbize_ref k sigma env loc s)
@@ -259,9 +262,9 @@ let dbize k sigma =
 	RBinder(loc, kind, na, dbrec env c1, dbrec (add_rel (na,()) env) c2)
 
     | Node(_,"PRODLIST", [c1;(Slam _ as c2)]) -> 
-	iterated_binder BProd c1 env c2
+	iterated_binder BProd 0 c1 env c2
     | Node(_,"LAMBDALIST", [c1;(Slam _ as c2)]) -> 
-	iterated_binder BLambda c1 env c2
+	iterated_binder BLambda 0 c1 env c2
 
     | Node(loc,"APPLISTEXPL", f::args) ->
 	RApp (loc,dbrec env f,List.map (dbrec env) args)
@@ -318,15 +321,15 @@ let dbize k sigma =
 	(ids,pl,dbrec env' rhs)
     | _ -> anomaly "dbize: badly-formed ast for Cases equation"
 
-  and iterated_binder oper ty env = function
+  and iterated_binder oper n ty env = function
     | Slam(loc,ona,body) ->
-	let na =match ona with 
+	let na = match ona with 
 	  | Some s -> Name (id_of_string s) 
 	  | _ -> Anonymous
 	in 
 	RBinder(loc, oper, na, 
-		dbrec (add_rel (Anonymous,()) env) ty, (* To avoid capture *)
-		(iterated_binder oper ty (add_rel (na,()) env) body))
+		dbrec (collapse_env n env) ty, (* To avoid capture *)
+		(iterated_binder oper n ty (add_rel (na,()) env) body))
     | body -> dbrec env body
 	  
   and dbize_args env l args =
