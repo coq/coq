@@ -39,7 +39,7 @@ Goal nat -> nat.
 Refine(
   Fix f {f [n:nat] : nat := (S ?) with
          pred [n:nat] : nat := n}).
-Intro; Exact 0.
+Exact 0.
 Qed.
 
 (* Submitted by Roland Zumkeller (bug #889) *)
