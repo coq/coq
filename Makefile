@@ -83,7 +83,7 @@ LIBREP=\
   lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/bignat.cmo \
   lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
   lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
-  lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
+  lib/tlm.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
   lib/predicate.cmo lib/rtree.cmo lib/heap.cmo
 # Rem: Cygwin already uses variable LIB 
 
