@@ -152,3 +152,5 @@ val to_pat : entry_env -> Coqast.t -> (astpat * entry_env)
 
 val eval_act : Coqast.loc -> env -> act -> typed_ast
 val to_act_check_vars : entry_env -> ast_action_type -> grammar_action -> act
+
+val subst_act : Names.substitution -> act -> act

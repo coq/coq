@@ -112,15 +112,6 @@ type act =
   | ActCase of act * (pat * act) list
   | ActCaseList of act * (pat * act) list
 
-(*
-type act =
-  | Aast of typed_ast
-  | Aastlist of patlist
-  | Acase of act * (Coqast.t * act) list
-  | Atypedcase of act * (typed_ast * act) list
-  | Acaselist of act * (patlist * act) list
-*)
-
 (* values associated to variables *)
 type typed_ast =
   | AstListNode of Coqast.t list
@@ -748,3 +739,27 @@ and caselist vars etyp (pl,a) =
   (AstListPat apl,aa)
 
 let to_act_check_vars = act_of_ast
+
+let rec subst_pat subst = function
+  | Pquote a -> Pquote (subst_ast subst a)
+  | Pmeta _ as p -> p
+  | Pnode (s,pl) -> Pnode (s,subst_patlist subst pl)
+  | Pslam (ido,p) -> Pslam (ido,subst_pat subst p)
+  | Pmeta_slam (s,p) -> Pmeta_slam (s,subst_pat subst p)
+
+and subst_patlist subst = function
+  | Pcons (p,pl) -> Pcons (subst_pat subst p, subst_patlist subst pl)
+  | (Plmeta _ | Pnil) as pl -> pl
+
+let subst_pat subst = function
+  | AstListPat pl -> AstListPat (subst_patlist subst pl)
+  | PureAstPat p -> PureAstPat (subst_pat subst p)
+
+let rec subst_act subst = function
+  | Act p -> Act (subst_pat subst p)
+  | ActCase (a,l) ->
+      ActCase (subst_act subst a,
+        List.map (fun (p,a) -> subst_pat subst p, subst_act subst a) l)
+  | ActCaseList (a,l) ->
+      ActCaseList (subst_act subst a,
+        List.map (fun (p,a) -> subst_pat subst p, subst_act subst a) l)

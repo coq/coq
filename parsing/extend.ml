@@ -50,6 +50,16 @@ type raw_grammar_rule = string * grammar_production list * grammar_action
 type raw_grammar_entry = 
   string * ast_action_type * grammar_associativity * raw_grammar_rule list
 
+let subst_grammar_rule subst gr =
+  { gr with gr_action = subst_act subst gr.gr_action }
+
+let subst_grammar_entry subst ge =
+  { ge with gl_rules = List.map (subst_grammar_rule subst) ge.gl_rules }
+
+let subst_grammar_command subst gc =
+  { gc with gc_entries = List.map (subst_grammar_entry subst) gc.gc_entries }
+
+
 (*s Terminal symbols interpretation *)
 
 let is_ident_not_keyword s =

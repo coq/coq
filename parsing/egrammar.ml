@@ -24,6 +24,10 @@ type all_grammar_command =
       (string * (string * grammar_production list) * Tacexpr.raw_tactic_expr)
       list
 
+let subst_all_grammar_command subst = function
+  | AstGrammar gc -> AstGrammar (subst_grammar_command subst gc)
+  | TacticGrammar g -> TacticGrammar g (* TODO ... *)
+
 let (grammar_state : all_grammar_command list ref) = ref []
 
 (* Interpretation of the right hand side of grammar rules *)

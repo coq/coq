@@ -101,10 +101,13 @@ let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 (* Grammar rules *)
 let cache_grammar (_,a) = Egrammar.extend_grammar a
 
+let subst_grammar (_,subst,a) = Egrammar.subst_all_grammar_command subst a
+
 let (inGrammar, outGrammar) =
   declare_object {(default_object "GRAMMAR") with
        open_function = (fun i o -> if i=1 then cache_grammar o);
        cache_function = cache_grammar;
+       subst_function = subst_grammar;
        export_function = (fun x -> Some x)}
 
 let gram_define_entry (u,_ as univ) ((ntl,nt),et,assoc,rl) =
@@ -158,10 +161,14 @@ let cache_infix (_,(gr,se)) =
   Egrammar.extend_grammar gr;
   Esyntax.add_ppobject {sc_univ="constr";sc_entries=se}
 
+let subst_infix (_,subst,(gr,se)) =
+  (Egrammar.subst_all_grammar_command subst gr,se)
+
 let (inInfix, outInfix) =
   declare_object {(default_object "INFIX") with
        open_function = (fun i o -> if i=1 then cache_infix o);
        cache_function = cache_infix;
+       subst_function = subst_infix;
        export_function = (fun x -> Some x)}
 
 (* Build the syntax and grammar rules *)

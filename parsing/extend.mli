@@ -54,6 +54,9 @@ val terminal : string -> string * string
 
 val rename_command : string -> string
 
+val subst_grammar_command : 
+  Names.substitution -> grammar_command -> grammar_command
+
 (*s Pretty-print. *)
 
 (* Dealing with precedences *)
