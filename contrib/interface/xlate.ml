@@ -1358,8 +1358,8 @@ let xlate_thm x = CT_thm (match x with
 let xlate_defn x = CT_defn (match x with
  | (Local, Definition) -> "Local"
  | (Global, Definition) -> "Definition"
- | (Global, Coercion) -> "SubClass"
- | (Local, Coercion) -> "Local SubClass"
+ | (Global, SubClass) -> "SubClass"
+ | (Local, SubClass) -> "Local SubClass"
  | (Global,CanonicalStructure) -> "Canonical Structure"
  | (Local, CanonicalStructure) -> 
      xlate_error "Local CanonicalStructure not parsed"
