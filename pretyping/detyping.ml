@@ -278,7 +278,7 @@ let rec detype avoid env t =
 	 | Name id   -> RVar (dummy_loc, id)
 	 | Anonymous -> anomaly "detype: index to an anonymous variable"
        with Not_found ->
-	 let s = "[REL "^(string_of_int n)^"]"
+	 let s = "_UNBOUND_REL_"^(string_of_int n)
 	 in RVar (dummy_loc, id_of_string s))
     | IsMeta n -> RMeta (dummy_loc, n)
     | IsVar id -> RVar (dummy_loc, id)
