@@ -245,18 +245,18 @@ let border = function
   | NonTerm (ProdPrimitive (ETConstr(_,BorderProd (_,a))),_) :: _ -> a
   | _ -> None
 
-let clever_assoc ass = function
-  | [g] when g.gr_production <> [] ->
-      (match border g.gr_production, border (List.rev g.gr_production) with
-	| Some LeftA, Some RightA -> ass (* Untractable; we cheat *)
-	| Some LeftA, _ -> Some LeftA
-	| _, Some RightA -> Some RightA
-	| _ -> Some NonA)
-  | _ -> ass
+let clever_assoc ass g =
+  if g.gr_production <> [] then
+    (match border g.gr_production, border (List.rev g.gr_production) with
+      | Some LeftA, Some RightA -> ass (* Untractable; we cheat *)
+      | Some LeftA, _ -> Some LeftA
+      | _, Some RightA -> Some RightA
+      | _ -> Some NonA)
+  else ass
 
 let gram_entry univ (nt, ass, rl) =
   let l = List.map (gram_rule (univ,nt)) rl in
-  let ass = clever_assoc ass l in
+  let ass = List.fold_left clever_assoc ass l in
   { ge_name = nt;
     gl_assoc = ass;
     gl_rules = l }
