@@ -8,11 +8,6 @@
 
 (*i $Id$ i*)
 
-(*i*)
-open Names
-open Libnames
-(*i*)
-
 (* This module registers the declaration of global tables, which will be kept
    in synchronization during the various backtracks of the system. *)
 
