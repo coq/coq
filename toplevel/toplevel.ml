@@ -55,7 +55,7 @@ let prompt_char ic ibuf count =
     | ll::_ -> ibuf.len == ll
     | [] -> ibuf.len == 0
   in
-  if bol then msgerr (str (ibuf.prompt()));
+  if bol && not !print_emacs then msgerr (str (ibuf.prompt()));
   try
     let c = input_char ic in
     if c == '\n' then ibuf.bols <- (ibuf.len+1) :: ibuf.bols;
@@ -276,6 +276,7 @@ let process_error = function
      End_of_input: Ctrl-D was typed in, we will quit *)
 let do_vernac () =
   msgerrnl (mt ());
+  if !print_emacs then msgerr (str (top_buffer.prompt()));
   resynch_buffer top_buffer;
   begin 
     try 
