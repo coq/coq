@@ -22,15 +22,3 @@ open Clenv
 
 (* A somewhat cryptic module. *)
 
-val pf_get_new_id  : identifier      -> goal sigma -> identifier
-val pf_get_new_ids : identifier list -> goal sigma -> identifier list
-
-(*i**
-val add_prod_sign : 
-  'a evar_map -> constr * types signature -> constr * types signature
-
-val add_prods_sign : 
-  'a evar_map -> constr * types signature -> constr * types signature
-**i*)
-
-val applyUsing : constr -> tactic
