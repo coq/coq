@@ -217,7 +217,7 @@ let print_toplevel_error exc =
 	mSGERRNL [<>]; pp_flush(); exit 0
     | Vernacinterp.Drop ->  (* Last chance *)
         if Mltop.is_ocaml_top() then raise Vernacinterp.Drop;
-        [< 'sTR"There is no ML toplevel."; 'fNL >]
+        [< 'sTR"Error: There is no ML toplevel."; 'fNL >]
     | Vernacinterp.ProtectedLoop ->
 	raise Vernacinterp.ProtectedLoop
     | Vernacinterp.Quit -> 
@@ -296,7 +296,7 @@ let rec coq_switch b =
     | End_of_input -> mSGERRNL [<>]; pp_flush(); exit 0
     | Vernacinterp.Quit -> exit 0
     | e ->
-	mSGERRNL [< 'sTR"Anomaly in the toplevel loop. Please report." >];
+	mSGERRNL [< 'sTR"Anomaly: toplevel loop. Please report." >];
 	coq_switch b
 
 let loop () = coq_switch true

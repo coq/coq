@@ -752,15 +752,15 @@ let _ =
 		  ()
               with e ->
             	if is_unsafe "proof" then begin
-                  mSGNL [< 'sTR"Error: checking of theorem " ; pr_id s ;
-                           'sPC ; 'sTR"failed" ;
-                           'sTR"... converting to Axiom" >];
+                  mSGNL [< 'sTR "Warning: checking of theorem "; pr_id s;
+                           'sPC; 'sTR "failed";
+                           'sTR "... converting to Axiom" >];
                   delete_proof s;
                   parameter_def_var (string_of_id s) com
            	end else 
-		  errorlabstrm "vernacentries__TheoremProof"
-                    [< 'sTR"checking of theorem " ; pr_id s ; 'sPC ;
-                       'sTR"failed... aborting" >])
+		  errorlabstrm "Vernacentries.TheoremProof"
+                    [< 'sTR "checking of theorem "; pr_id s; 'sPC;
+                       'sTR "failed... aborting" >])
        | _ -> bad_vernac_args "TheoremProof")
 
 let _ =

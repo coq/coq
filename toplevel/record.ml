@@ -97,8 +97,7 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
   let coers,fs = List.split cfs in     
   let idps,typs = List.split ps in      
   let idfs,tyfs = List.split fs in
-  if not (free_in_asts idstruc tyfs) then 
-    message "Error: A record cannot be recursive";
+  if not (free_in_asts idstruc tyfs) then error "A record cannot be recursive";
   let newps,newfs = typecheck_params_and_field ps fs in
   let app_constructor = 
     ope("APPLISTEXPL",

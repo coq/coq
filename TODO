@@ -7,7 +7,6 @@ Distribution:
 Environnement:
 
 - Porter SearchIsos
-- Require synchronisé
 - Interdire de faire 2 fois la même définition avec le même nom absolu FAIT
 
 Tactiques:

@@ -206,7 +206,7 @@ let pr_context_unlimited env =
 
 let pr_ne_context_of header k env =
   if Environ.context env = empty_context then [< >]
-  else let penv = pr_context_unlimited env in [< header; penv >]
+  else let penv = pr_context_unlimited env in [< header; penv; 'fNL >]
 
 let pr_context_limit n env =
   let named_context = Environ.named_context env in

@@ -21,15 +21,15 @@ let guill s = "\""^s^"\""
 
 let explain_unbound_rel k ctx n =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_context_of [< 'sTR"in environment" >] k ctx in
-  [< 'sTR"Unbound reference: "; pe; 'fNL;
+  let pe = pr_ne_context_of [< 'sTR "In environment" >] k ctx in
+  [< 'sTR"Unbound reference: "; pe;
      'sTR"The reference "; 'iNT n; 'sTR" is free" >]
 
 let explain_not_type k ctx j =
   let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of [< 'sTR"In environment" >] k ctx in
   let pc,pt = prjudge_env ctx j in
-  [< pe; 'fNL; 'sTR "the term"; 'bRK(1,1); pc; 'sPC;
+  [< pe; 'sTR "the term"; 'bRK(1,1); pc; 'sPC;
      'sTR"has type"; 'sPC; pt; 'sPC; 
      'sTR"which should be Set, Prop or Type." >];;
 
@@ -92,21 +92,21 @@ let explain_ill_formed_branch k ctx c i actty expty =
 
 let explain_generalization k ctx (name,var) j =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_context_of [< 'sTR"in environment" >] k ctx in
+  let pe = pr_ne_context_of [< 'sTR "In environment" >] k ctx in
   let pv = prtype_env ctx var in
   let (pc,pt) = prjudge_env (push_rel_assum (name,var) ctx) j in
-  [< 'sTR"Illegal generalization: "; pe; 'fNL;
+  [< 'sTR"Illegal generalization: "; pe;
      'sTR"Cannot generalize"; 'bRK(1,1); pv; 'sPC;
      'sTR"over"; 'bRK(1,1); pc; 'sTR","; 'sPC; 'sTR"it has type"; 'sPC; pt; 
      'sPC; 'sTR"which should be Set, Prop or Type." >]
 
 let explain_actual_type k ctx c ct pt =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_context_of [< 'sTR"In environment" >] k ctx in
+  let pe = pr_ne_context_of [< 'sTR "In environment" >] k ctx in
   let pc = prterm_env ctx c in
   let pct = prterm_env ctx ct in
   let pt = prterm_env ctx pt in
-  [< pe; 'fNL;
+  [< pe;
      'sTR "The term"; 'bRK(1,1); pc ; 'sPC ;
      'sTR "has type" ; 'bRK(1,1); pct; 'bRK(1,1); 
      'sTR "while it is expected to have type"; 'bRK(1,1); pt >]
