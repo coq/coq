@@ -23,9 +23,10 @@ open Extend
  * according to the key of the pattern. *)
 
 type key =
-  | Cst of Names.section_path (* keys for global constants rules *)
-  | Ind of Names.section_path * int 
-  | Cstr of (Names.section_path * int) * int
+  | Cst of Names.constant (* keys for global constants rules *)
+  | SecVar of Names.variable
+  | Ind of Names.inductive
+  | Cstr of Names.constructor
   | Nod of string      (* keys for other constructed asts rules *)
   | Oth                (* key for other syntax rules *)
   | All     (* key for catch-all rules (i.e. with a pattern such as $x .. *)
@@ -35,6 +36,8 @@ let warning_verbose = ref true
 let ast_keys = function
   | Node(_,"APPLIST", Node(_,"CONST", [Path (_,sl)]) ::_) ->
       [Cst sl; Nod "APPLIST"; All]
+  | Node(_,"APPLIST", Node(_,"SECVAR", [Nvar (_,s)]) ::_) ->
+      [SecVar s; Nod "APPLIST"; All]
   | Node(_,"APPLIST", Node(_,"MUTIND", [Path (_,sl); Num (_,tyi)]) ::_) ->
       [Ind (sl,tyi); Nod "APPLIST"; All]
   | Node(_,"APPLIST", Node(_,"MUTCONSTRUCT",
@@ -49,6 +52,10 @@ let spat_key astp =
             Pcons(Pnode("CONST",
                         Pcons(Pquote(Path (_,sl)),_)), _))
       -> Cst sl
+    | Pnode("APPLIST",
+            Pcons(Pnode("SECVAR",
+                        Pcons(Pquote(Nvar (_,s)),_)), _))
+      -> SecVar s
     | Pnode("APPLIST",
             Pcons(Pnode("MUTIND",
                         Pcons(Pquote(Path (_,sl)),

@@ -237,7 +237,7 @@ let maybe_constructor allow_var env = function
 	| _ ->
             error ("Unknown absolute constructor name: "^(string_of_path sp)))
 
-  | Node(loc,("CONST"|"EVAR"|"MUTIND"|"SYNCONST" as key), l) ->
+  | Node(loc,("CONST"|"SECVAR"|"EVAR"|"MUTIND"|"SYNCONST" as key), l) ->
       user_err_loc (loc,"ast_to_pattern",
    (str "Found a pattern involving global references which are not constructors"
 ))
@@ -248,6 +248,10 @@ let ast_to_global loc c =
   match c with
     | ("CONST", [sp]) ->
 	let ref = ConstRef (ast_to_sp sp) in
+	let imps = implicits_of_global ref in
+	RRef (loc, ref), imps
+    | ("SECVAR", [Nvar (_,s)]) ->
+	let ref = VarRef s in
 	let imps = implicits_of_global ref in
 	RRef (loc, ref), imps
     | ("MUTIND", [sp;Num(_,tyi)]) -> 
@@ -469,8 +473,9 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	  match f with
 	    | Node(locs,"QUALID",p) ->
 		rawconstr_of_qualid env lvar locs (interp_qualid p)
+            (* For globalized references (e.g. in Infix) *) 
 	    | Node(loc,
-		   ("CONST"|"EVAR"|"MUTIND"|"MUTCONSTRUCT"|"SYNCONST" as key),
+		   ("CONST"|"SECVAR"|"EVAR"|"MUTIND"|"MUTCONSTRUCT"|"SYNCONST" as key),
 		   l) ->
 		ast_to_global loc (key,l)
 	    | _ -> (dbrec env f, [])
@@ -504,7 +509,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
     | Node(loc,"TYPE", _) -> RSort(loc,RType None)
 	  
     (* This case mainly parses things build in a quotation *)
-    | Node(loc,("CONST"|"EVAR"|"MUTIND"|"MUTCONSTRUCT"|"SYNCONST" as key),l) ->
+    | Node(loc,("CONST"|"SECVAR"|"EVAR"|"MUTIND"|"MUTCONSTRUCT"|"SYNCONST" as key),l) ->
 	fst (ast_to_global loc (key,l))
 
     | Node(loc,"CAST", [c1;c2]) ->	   

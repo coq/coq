@@ -34,6 +34,11 @@ let global_const_name sp =
   with Not_found -> (* May happen in debug *)
     (str ("CONST("^(string_of_path sp)^")"))
 
+let global_var_name id =
+  try pr_global (VarRef id)
+  with Not_found -> (* May happen in debug *)
+    (str ("SECVAR("^(string_of_id id)^")"))
+
 let global_ind_name (sp,tyi) =
   try pr_global (IndRef (sp,tyi))
   with Not_found -> (* May happen in debug *)
@@ -50,6 +55,8 @@ let globpr gt = match gt with
   | Node(_,"EVAR", [Num (_,ev)]) -> (str ("?" ^ (string_of_int ev)))
   | Node(_,"CONST",[Path(_,sl)]) ->
       global_const_name (section_path sl)
+  | Node(_,"SECVAR",[Nvar(_,s)]) ->
+      global_var_name s
   | Node(_,"MUTIND",[Path(_,sl); Num(_,tyi)]) ->
       global_ind_name (section_path sl, tyi)
   | Node(_,"MUTCONSTRUCT",[Path(_,sl); Num(_,tyi); Num(_,i)]) ->
