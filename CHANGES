@@ -1,20 +1,74 @@
-Changes from V7.4
-=================
+Changes from V8.0 old syntax to V8.0
+====================================
 
-A revision of the standard library and of concrete syntax of Coq, including
+New concrete syntax
 
-- A completely new syntax for terms coming with an automatic translator
-- Renaming of various standard notions from French to English (esp in ZArith)
-- Notions of the standard library are declared with (strict) implicit arguments
+- A completely new syntax for terms
+- A more uniform syntax for tactics and the tactic language 
+- A few syntactic changes for vernacular commands
+- A smart automatic translator translating V8.0 files in old syntax to
+  files valid for V8.0
+
+Syntax extensions
+
+- "Grammar" for terms disappears
+- "Grammar" for tactics becomes "Tactic Notation"
+- "Syntax" disappears
+- Introduction of a notion of interpretation scope allowing to use the
+  same notations in various contexts without using specific delimiters
+  (e.g the same expression "4<=3+x" is interpreted either in "nat",
+  "positive", "N" (previously "entier"), "Z", "R", depending on which
+  interpretation scope is currently open) [see documentation for details]
+- Notation now mandatorily requires a precedence and associativity
+  (default was to set precedence to 1 and associativity to none)
+
+Revision of the standard library
+
+- Many theorems and definitions names have been made more uniform mostly 
+  in Arith, NArith, ZArith and Reals (e.g : "times" -> "Pmult",
+  "times_sym" -> "Pmult_comm", "Zle_Zmult_pos_right" ->
+  "Zmult_le_compat_r", "SUPERIEUR" -> "Gt", "ZERO" -> "Z0")
+- Notions of Coq initial state are declared with (strict) implicit arguments
 - eq merged with eqT: old eq disappear, new eq (written =) is old eqT
   and new eqT is syntactic sugar for new eq (notation == is an alias
   for = and is written as it, exceptional source of incompatibilities)
-- Similarly, ex, ex2 and all are merged with exT, exT2 and allT.
-- A additional elimination Acc_iter for Acc, simplier than Acc_rect. 
-  This new elimination principle is used for definition well_founded_induction.
-- Arithmetical notations for nat, positive, Z, R, without needing
-  backquote or double-backquotes delimiters.
-- Symbolic notations for lists and argument of nil is implicit
+- Similarly, ex, ex2, all, identity are merged with exT, exT2, allT, identityT
+- Arithmetical notations for nat, positive, N, Z, R, without needing
+  any backquote or double-backquotes delimiters.
+- In Lists: new concrete notations; argument of nil is now implicit
+- All changes in the library are taken in charge by the translator
+
+Semantical changes during translation
+
+- Recursive keyword set by default (and no longer needed) in Tactic Definition
+- Set Implicit Arguments is strict by default in new syntax
+- reductions in hypotheses of the form "... in H" now apply to the type
+  also if H is a local definition
+- etc
+
+Gallina
+
+- New syntax of the form "Inductive bool : Set := true, false : bool." for
+  enumerated types
+- Experimental syntax of the form p.(fst) for record projections
+  (activable with option "Set Printing Projections" which is
+   recognized by the translator)
+
+Known problems of the automatic translation
+
+- Renaming in ZArith: incompatibilities in Coq user contribs due to
+  merging names INZ, from Reals, and inject_nat.
+- Restructuration of ZArith: replace requirement of specific modules
+  in ZArith by "Require Import ZArith_base" or "Require Import ZArith"
+- Some implicit arguments must be made explicit before translation: typically
+  for "length nil", the implicit argument of length must be made explicit
+- Grammar rules, Infix notations and V7.4 Notations must be updated wrt the
+  new scheme for syntactic extensions (see translator documentation)
+- Unsafe for annotation Cases when constructors coercions are used or when
+  annotations are eta-reduced predicates
+
+Changes from V7.4 to V8.0 old syntax
+====================================
 
 Logic
 
@@ -23,19 +77,11 @@ Logic
 - The standard library doesn't need impredicativity of Set and is
   compatible with the classical axioms which contradict Set impredicativity
 
-Syntax translator
-
-- Unsafe for annotation Cases when constructors coercions are used or when
-  annotations are eta-reduced predicates
-- Recursive keyword set by default (and no longer needed) in Tactic Definition
-- Notation for record projection 
-
 Syntax for arithmetic
 
 - Notation "=" and "<>" in Z and R are no longer implicitly in Z or R
   (with possible introduction of a coercion), use <Z>...=... or
   <Z>...<>... instead
-- "inject_nat" renamed into "INZ"; "INZ" from Reals do not longer exist
 - Locate applied to a simple string (e.g. "+") searches for all
   notations containing this string
 
@@ -45,17 +91,14 @@ Vernacular commands
    bunch of "Declare ML Module" statements when using several ML files.
 - "Set Printing Width n" added, allows to change the size of width printing
    (TODO : doc).
-- "Implicit Variables Type x,y:t" assigns default types for binding variables.
-- "Set Implicits Printing" disable printing of implicit arguments
+- "Implicit Variables Type x,y:t" (new syntax: "Implicit Types x y:t")
+  assigns default types for binding variables.
 - Declarations of Hints and Notation now accept a "Local" flag not to
   be exported outside the current file even if not in section
 - "Print Scopes" prints all notations
-- Notation now mandatorily requires a precedence and associativity
-  (default was to set precedence to 1 and associativity to none)
 - New command "About name" for light printing of type, implicit arguments, etc.
 - New command "Admitted" to declare incompletely proven statement as axioms
 - New keyword "Conjecture" to declare an axiom intended to be provable
-- New command "SearchNamed" for searching objects by components of their name
 - SearchAbout can now search for lemmas referring to more than one constant
   and on substrings of the name of the lemma
 - Locate now searches for all names having a given suffix
@@ -64,21 +107,13 @@ Commands
 
 - new coqtop/coqc option -dont-load-proofs not to load opaque proofs in memory
 
-Gallina
-
-- New syntax of the form "Inductive bool : Set := true, false : bool." for
-  enumerated types
-- Experimental syntax of the form p.(fst) for record projections
-  (activable with option "Set Printing Projections")
-
 Implicit arguments
 
 - Inductive in sections declared with implicits now "discharged" with
   implicits (like constants and variables)
-- Set Implicit Arguments is strict by default in new syntax
 - Implicit Arguments flags are now synchronous with reset
-- New switch "Unset/Set Printing Implicits" to globally control
-  printing of implicits
+- New switch "Unset/Set Printing Implicits" (new syntax: "Unset/Set Printing
+  Implicit") to globally control printing of implicits
 
 Grammar extensions
 
@@ -93,7 +128,10 @@ Grammar extensions
 Library
 
 - New file about the factorial function in Arith
+- An additional elimination Acc_iter for Acc, simplier than Acc_rect. 
+  This new elimination principle is used for definition well_founded_induction.
 - New library NArith on binary natural numbers
+- R is now of type Set
 - Restructuration in ZArith library
   - "true_sub" used in Zplus now a definition, not a local one (source
   of incompatibilities in proof referring to true_sub, may need extra Unfold)
@@ -107,13 +145,16 @@ Library
   use the second name (Zle_Zmult_right2, Zle_mult_simpl), (OMEGA2,
   Zle_0_plus), (Zplus_assoc_l, Zplus_assoc), (Zmult_one, Zmult_1_n),
   (Zmult_assoc_l, Zmult_assoc), (Zmult_minus_distr,
-  Zmult_Zminus_distr_l) (source of incompatibilities) - New lemmas
-  provided by users added
+  Zmult_Zminus_distr_l) (source of incompatibilities)
+- Few minor changes (order of arguments of Zsimpl_le_plus_r and
+  Zsimpl_le_plus_l changed; no more implicit arguments in
+  Zmult_Zminus_distr_l and Zmult_Zminus_distr_r)
+- New lemmas provided by users added
 
 Tactic language
 
 - Fail tactic now accepts a failure message
-- New primitive tactic "FreshId" to generate new names
+- New primitive tactic "FreshId" (new syntax: "Fresh") to generate new names
 - Debugger prints levels of calls
 
 Tactics
@@ -127,20 +168,20 @@ Tactics
   Intro names did) [source of rare incompatibilities: 2 changes in the set of
   user contribs]
 - NewDestruct/NewInduction accepts intro patterns as introduction names
+- NewDestruct/NewInduction now work for non-inductive type using option "using"
 - A NewInduction naming bug for inductive types with functional
   arguments (e.g. the accessibility predicate) has been fixed (source
   of incompatibilities)
 - Symmetry now applies to hypotheses too
-- Inversion now accept a "as [ ... ]" option to name the hypotheses
+- Inversion now accept option "as [ ... ]" to name the hypotheses
 - Contradiction now looks also for contradictory hypotheses stating ~A and A
   (source of incompatibility)
 - "Contradiction c" try to find an hypothesis in context which
   contradicts the type of c
 - Ring applies to new library NArith (require file NArithRing)
 - Field now works on types in Set
-- Auto with reals now try to replace ge/gt by le/lt (Rge_le is no
-  longer an immediate hint), resulting in shorter proofs and subgoals
-  proved more easily
+- Auto with reals now try to replace le by ge (Rge_le is no longer an
+  immediate hint), resulting in shorter proofs
 
 Extraction (See details in contrib/extraction/CHANGES)
 
@@ -152,7 +193,6 @@ Extraction (See details in contrib/extraction/CHANGES)
 
 Bugs
 
-- Rename bug fixed (#244)
 - see coq-bugs server for the complete list of fixed bugs
 
 Miscellaneous
@@ -163,28 +203,20 @@ Miscellaneous
 Incompatibilities
 
 - Persistence of true_sub (4 incompatibilities in Coq user contributions)
-- Restructuration in ZArith and Arith (no incompatibility in Coq user contribs)
 - Variable names of some constants changed for a better uniformity (2 changes
   in Coq user contributions)
 - Naming of quantified names in goal now avoid global names (2 occurrences)
 - NewInduction naming for inductive types with functional arguments
-   (no incompatibility)
-- Contradiction now solve more goals (source of 1 incompatibility)
+  (no incompatibility in Coq user contributions)
+- Contradiction now solve more goals (source of 2 incompatibilities)
 - Merge of eq and eqT may exceptionally result in subgoals now
   solved automatically
 - Redundant pairs of ZArith lemmas may have different names: it may
   cause "Apply/Rewrite with" to fail if using the first name of a pair
   of redundant lemmas (this is solved by renaming the variables bound by
   "with"; 3 incompatibilities in Coq user contribs)
-
-Incompatibilities due to the translation to new Coq
-
-- Renaming in ZArith: incompatibilities in Coq user contribs due to
-  merging names INZ, from Reals, and inject_nat.
-- Implicit arguments must be explicited before translation: typically
-  for "length nil"
-- Grammar rules, Infix notations and V7.4 Notations must be updated wrt the
-  new scheme for syntactic extensions
+- ML programs referring to constants from fast_integer.v must use 
+  "Coqlib.gen_constant_modules Coqlib.zarith_base_modules" instead
 
 Changes from V7.3.1 to V7.4
 ===========================
