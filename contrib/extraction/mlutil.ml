@@ -419,8 +419,6 @@ let rec simpl o = function
   | MLletin(id,c,e) when 
       (id = dummy_name) || (is_atomic c) || (nb_occur e <= 1) -> 
 	simpl o (ml_subst c e)
-  | MLletin(_,c,e) when (is_atomic (eta_red c)) -> 
-      simpl o (ml_subst (eta_red c) e)
   | MLfix(i,ids,c) as t when o -> 
       let n = Array.length ids in 
       if occurs_itvl 1 n c.(i) then 
@@ -473,6 +471,11 @@ and simpl_case o br e =
 	  let n = List.length ids in 
 	  if n = 0 then MLcase (e, br) 
 	  else named_lams ids (MLcase (ml_lift n e, br))
+
+let rec post_simpl = function 
+  | MLletin(_,c,e) when (is_atomic (eta_red c)) -> 
+      post_simpl (ml_subst (eta_red c) e)
+  | a -> ast_map post_simpl a 
 
 (*S Local prop elimination. *) 
 (* We try to eliminate as many [prop] as possible inside an [ml_ast]. *)
@@ -584,7 +587,7 @@ and kill_dummy_fix i fi c =
 (*s Putting things together. *)
 
 let normalize a = 
-  if (optim()) then kill_dummy (simpl true a) else simpl false a
+  if (optim()) then post_simpl (kill_dummy (simpl true a)) else simpl false a
 
 (*S Special treatment of fixpoint for pretty-printing purpose. *)
 
