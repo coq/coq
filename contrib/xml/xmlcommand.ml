@@ -225,7 +225,6 @@ let print_object uri obj sigma proof_tree_infos filename =
         proof_tree_to_flattened_proof_tree constr_to_ids
       in
        pp xmlprooftree (prooftree_filename_of_filename filename)
- ()
 ;;
 
 let string_list_of_named_context_list =
