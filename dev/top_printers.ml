@@ -252,7 +252,7 @@ let print_pure_constr csr =
       print_string (string_of_id  (basename sp))
 
   in
-     box_display csr; print_newline()
+     box_display csr; print_flush()
 (*
 let _ =
   Vernacentries.add "PrintConstr"
