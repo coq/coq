@@ -144,7 +144,7 @@ let bad_subproof () =
 
 let check_subproof_connection gl spfl =
   if not (list_for_all2eq (fun g pf -> g=pf.goal) gl spfl)
-  then bad_subproof ()
+  then (bad_subproof (); false) else true
 
 let refiner = function
   | Prim pr as r ->
@@ -153,7 +153,7 @@ let refiner = function
          let sgl = prim_fun (ts_it goal_sigma.sigma) goal_sigma.it in 
 	 ({it=sgl; sigma = goal_sigma.sigma},
           (fun spfl ->
-	     if !Options.debug then check_subproof_connection sgl spfl;
+	     assert (check_subproof_connection sgl spfl);
              { status = and_status (List.map pf_status spfl);
                goal = goal_sigma.it;
                subproof = None;
@@ -166,7 +166,7 @@ let refiner = function
          let hidden_proof = v (List.map leaf sgl_sigma.it) in
          (sgl_sigma,
           fun spfl ->
-	    if !Options.debug then check_subproof_connection sgl_sigma.it spfl;
+	    assert (check_subproof_connection sgl_sigma.it spfl);
             { status = and_status (List.map pf_status spfl);
               goal = goal_sigma.it;
               subproof = Some hidden_proof;
@@ -178,7 +178,7 @@ let refiner = function
          let sg = mk_goal ctxt gl.evar_hyps gl.evar_concl in
          ({it=[sg];sigma=goal_sigma.sigma},
           (fun spfl -> 
-	     if !Options.debug then check_subproof_connection [sg] spfl;
+	     assert (check_subproof_connection [sg] spfl);
              { status = (List.hd spfl).status;
                goal = gl;
                subproof = None;
@@ -195,7 +195,7 @@ let refiner = function
 	 let sgl = [norm_goal (ts_it goal_sigma.sigma) sg] in
 	 ({it=sgl;sigma=goal_sigma.sigma},
           (fun spfl -> 
-	    if !Options.debug then check_subproof_connection sgl spfl;
+	    assert (check_subproof_connection sgl spfl);
              { status = (List.hd spfl).status;
                goal = gl;
                subproof = None;
