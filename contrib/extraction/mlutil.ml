@@ -1038,7 +1038,7 @@ let manual_inline_list =
   let mp = MPfile (dirpath_of_string "Coq.Init.Wf") in 
   List.map (fun s -> (make_kn mp empty_dirpath (mk_label s)))
     [ "well_founded_induction_type"; "well_founded_induction"; 
-      "Acc_rect"; "Acc_rec" ]
+      "Acc_rect"; "Acc_rec" ; "Acc_iter" ]
 
 let manual_inline = function 
   | ConstRef c -> List.mem c manual_inline_list
