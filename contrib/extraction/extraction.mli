@@ -23,7 +23,7 @@ type arity = Arity | NotArity
 
 type type_var = info * arity
 
-type signature = (type_var * identifier) list
+type signature = type_var list
 
 type extraction_context = bool list
 

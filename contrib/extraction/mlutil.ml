@@ -22,6 +22,18 @@ open Miniml
 let anonymous = id_of_string "x"
 let prop_name = id_of_string "_"
 
+(* In an ML type, update the arguments to all inductive types [(sp,_)] *)		  
+
+let rec update_args sp vl = function  
+  | Tapp ( Tglob r :: l ) -> 
+      (match r with 
+	| IndRef (s,_) when s = sp -> Tapp ( Tglob r :: vl)
+	| _ -> Tapp (Tglob r :: (List.map (update_args sp vl) l)))
+  | Tapp l -> Tapp (List.map (update_args sp vl) l) 
+  | Tarr (a,b)-> 
+      Tarr (update_args sp vl a, update_args sp vl b)
+  | a -> a
+
 (*s [occurs k t] returns true if [(Rel k)] occurs in [t]. *)
 
 let rec occurs k = function

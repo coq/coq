@@ -18,6 +18,11 @@ open Miniml
 val anonymous : identifier
 val prop_name : identifier
 
+(* Utility functions over ML types. [update_args sp vl t] puts [vl]
+   as arguments behind every inductive types [(sp,_)]. *)
+
+val update_args : section_path -> ml_type list -> ml_type -> ml_type
+
 (*s Utility functions over ML terms. [occurs n t] checks whether [Rel
     n] occurs (freely) in [t]. [ml_lift] is de Bruijn
     lifting. [ml_subst e t] substitutes [e] for [Rel 1] in [t]. *)
