@@ -34,18 +34,27 @@ Syntax tactic level 0:
 
 
 Grammar tactic simple_tactic: ast :=
-  inversion    [ inversion_com($ic) ident_or_numarg($id) ] -> [(Inv $ic $id)]
+  inversion    [ inversion_com($ic) identarg($id) ] -> [(Inv $ic $id)]
+| inversion_num [ inversion_com($ic) pure_numarg($n) ] -> [(Inv $ic $n)]
 | inversion_in [ inversion_com($ic) identarg($id) "in" ne_identarg_list($l) ]
       -> [(InvIn $ic $id ($LIST $l))]
-| dep_inv   [ "Dependent" inversion_com($ic) ident_or_numarg($id) ]
-     -> [(DInv $ic $id)]
+| dep_inv   [ "Dependent" inversion_com($ic) identarg($id)] -> [(DInv $ic $id)]
+| dep_inv_num  [ "Dependent" inversion_com($ic) pure_numarg($n) ] -> [(DInv $ic $n)]
 | dep_inv_with
-   [ "Dependent" inversion_com($ic) ident_or_numarg($id) "with" constrarg($c) ]
+   [ "Dependent" inversion_com($ic) identarg($id) "with" constrarg($c) ]
      -> [(DInvWith $ic $id $c) ]
+| dep_inv_num_with
+   [ "Dependent" inversion_com($ic) pure_numarg($n) "with" constrarg($c) ]
+     -> [(DInvWith $ic $n $c) ]
 
-| inv_using [ inversion_com($ic) ident_or_numarg($id) "using" constrarg($c) ]
+| inv_using [ inversion_com($ic) identarg($id) "using" constrarg($c) ]
      -> case [$ic] of
           Inversion -> [(UseInversionLemma $id $c)]
+        esac
+
+| inv_num_using [ inversion_com($ic) pure_numarg($n) "using" constrarg($c) ]
+     -> case [$ic] of
+          Inversion -> [(UseInversionLemma $n $c)]
         esac
 
 | inv_using_in
