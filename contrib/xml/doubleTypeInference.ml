@@ -54,13 +54,26 @@ let double_type_of env sigma cstr expectedty =
         let jty = execute env sigma ty None in
         let jty = assumption_of_judgment env sigma jty in
         let evar_context = (Evd.map sigma n).Evd.evar_hyps in
-        let _ =
-         (* for side effects *)
-         List.map2
-          (fun t (_,_,ty) -> execute env sigma t (Some ty))
-           (Array.to_list l) evar_context
-        in
-         E.make_judge cstr jty
+         let rec iter actual_args evar_context =
+          match actual_args,evar_context with
+             [],[] -> ()
+           | he1::tl1,(n,_,ty)::tl2 ->
+              (* for side-effects *)
+              let _ = execute env sigma he1 (Some ty) in
+              let tl2' =
+               List.map
+                (function (m,bo,ty) ->
+                  (* Warning: the substitution should be performed also on bo *)
+                  (* This is not done since bo is not used later yet          *)
+                  (m,bo,T.unshare (T.subst1 he1 (T.subst_var n ty)))
+                ) tl2
+              in
+               iter tl1 tl2'
+           | _,_ -> assert false
+         in
+          (* for side effects only *)
+          iter (Array.to_list l) evar_context ;
+          E.make_judge cstr jty
 	
      | T.Rel n -> 
         Typeops.judge_of_relative env n
