@@ -109,6 +109,7 @@ let stack_reduction_of_reduction red_fun env sigma s =
   let t = red_fun env sigma (app_stack s) in
   whd_stack t
 
+(* BUGGE : NE PREND PAS EN COMPTE LES DEFS LOCALES *)
 let strong whdfun env sigma = 
   let rec strongrec t = map_constr strongrec (whdfun env sigma t) in
   strongrec
@@ -270,9 +271,19 @@ let reduce_fix whdfun fix stack =
 let whd_state_gen flags env sigma = 
   let rec whrec (x, stack as s) =
     match kind_of_term x with
+(*
+      | IsRel n when red_delta flags ->
+	  (match lookup_rel_value n env with
+	     | Some body -> whrec (lift n body, stack)
+	     | None -> s)
+      | IsVar id when red_delta flags ->
+	  (match lookup_var_value id env with
+	     | Some body -> whrec (body, stack)
+	     | None -> s)
+*)
       | IsEvar ev when red_evar flags ->
 	  (match existential_opt_value sigma ev with
-	     | Some  body -> whrec (body, stack)
+	     | Some body -> whrec (body, stack)
 	     | None -> s)
       | IsConst const when red_delta flags ->
 	  (match constant_opt_value env const with
@@ -1199,7 +1210,7 @@ let rec whd_ise1 sigma c =
     *)
     | _ -> c
 
-let nf_ise1 sigma = strong (fun _ -> whd_ise1) empty_env sigma
+let nf_ise1 sigma = local_strong (whd_ise1 sigma)
 
 (* A form of [whd_ise1] with type "reduction_function" *)
 let whd_evar env = whd_ise1

@@ -46,7 +46,7 @@ Lemma eq_dep_dep1 : (p,q:U)(x:(P p))(y:(P q))(eq_dep p x q y)->(eq_dep1 p x q y)
 Proof.
 Induction 1; Intros.
 Apply eq_dep1_intro with (refl_equal U p).
-Elim eq_rec_eq; Trivial.
+Simpl. Trivial.
 Qed.
 
 Lemma eq_dep1_eq : (p:U)(x,y:(P p))(eq_dep1 p x p y)->x=y.
@@ -60,7 +60,7 @@ Proof.
 Intros; Apply eq_dep1_eq; Apply eq_dep_dep1; Trivial.
 Qed.
 
-Lemma equiv_eqex_eqdep : (p,q:U)(x:(P p))(y:(P q)) 
+Lemma equiv_eqex_eq_dep : (p,q:U)(x:(P p))(y:(P q)) 
     (existS U P p x)=(existS U P q y) <-> (eq_dep p x q y).
 Proof.
 Split. 
@@ -79,13 +79,15 @@ Elim H.
 Auto.
 Qed.
 
+(* For compatibility *)
+Syntactic Definition equiv_eqex_eqdep := equiv_eqex_eq_dep.
 
 Lemma inj_pair2: (p:U)(x,y:(P p))
     (existS U P p x)=(existS U P p y)-> x=y.
 Proof.
 Intros.
 Apply eq_dep_eq.
-Generalize (equiv_eqex_eqdep p p x y) .
+Generalize (equiv_eqex_eq_dep p p x y) .
 Induction 1.
 Intros.
 Auto.

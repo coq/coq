@@ -30,7 +30,7 @@ Auto with arith.
 Intros n' H. Elim H; Auto with arith.
 Save.
 
-Lemma not_even_and_odd : (n:nat) (even n) -> (odd n) -> False.
+Lemma not_even_and_odd2 : (n:nat) (even n) -> (odd n) -> False.
 Proof.
 Induction n.
 Intros. Inversion H0.

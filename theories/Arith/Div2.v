@@ -27,7 +27,7 @@ Intros. Elim (H2 n). Auto with arith.
 
 Induction n0. Auto with arith.
 Intros. Elim H2; Auto with arith.
-Save.
+Qed.
 
 (* 0 <n  =>  n/2 < n *)
 
@@ -40,7 +40,7 @@ Intros. Simpl.
 Case (zerop n0).
 Intro. Rewrite e. Auto with arith.
 Auto with arith.
-Save.
+Qed.
 
 Hints Resolve lt_div2 : arith.
 
@@ -67,7 +67,7 @@ Intro H. Inversion H. Inversion H1.
 Change (S (div2 n0))=(S (div2 (S n0))). Auto with arith.
 Intro H. Inversion H. Inversion H1.
 Change (S (S (div2 n0)))=(S (div2 (S n0))). Auto with arith.
-Save.
+Qed.
 
 (* Specializations *)
 
@@ -94,7 +94,7 @@ Hints Unfold double : arith.
 Lemma double_S : (n:nat) (double (S n))=(S (S (double n))).
 Proof.
 Intro. Unfold double. Simpl. Auto with arith.
-Save.
+Qed.
 
 Hints Resolve double_S : arith.
 
@@ -113,12 +113,12 @@ Intros. Decompose [and] H. Unfold iff in H0 H1.
 Decompose [and] H0. Decompose [and] H1. Clear H H0 H1.
 Split; Split.
 Intro H. Inversion H. Inversion H1.
-Simpl. Rewrite (double_S (div2 n0)). Auto with arith.
-Simpl. Rewrite (double_S (div2 n0)). Intro H. Injection H. Auto with arith.
+Simpl. Rewrite <- plus_n_Sm. Auto with arith.
+Simpl. Rewrite <- plus_n_Sm. Intro H. Injection H. Auto with arith.
 Intro H. Inversion H. Inversion H1.
-Simpl. Rewrite (double_S (div2 n0)). Auto with arith.
-Simpl. Rewrite (double_S (div2 n0)). Intro H. Injection H. Auto with arith.
-Save.
+Simpl. Rewrite <- plus_n_Sm. Auto with arith.
+Simpl. Rewrite <- plus_n_Sm. Intro H. Injection H. Auto with arith.
+Qed.
 
 
 (* Specializations *)
@@ -147,10 +147,10 @@ Hints Resolve even_double double_even odd_double double_odd : arith.
 Lemma even_2n : (n:nat) (even n) -> { p:nat | n=(double p) }.
 Proof.
 Intros n H. Exists (div2 n). Auto with arith.
-Save.
+Qed.
 
 Lemma odd_S2n : (n:nat) (odd n) -> { p:nat | n=(S (double p)) }.
 Proof.
 Intros n H. Exists (div2 n). Auto with arith.
-Save.
+Qed.
 

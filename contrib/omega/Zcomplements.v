@@ -84,7 +84,7 @@ Simpl; Do 2 Rewrite Zmult_n_1; Auto 1.
 Unfold Zs.
 Intros x0 Hx0; Repeat Rewrite Zmult_plus_distr_r.
 Repeat Rewrite Zmult_n_1.
-Omega. (* Auto with zarith. *)
+Auto with zarith.
 Unfold Zpred; Omega.
 Save.
 
