@@ -728,7 +728,8 @@ let is_arith_dir dir id =
   let dirs = List.map string_of_id (repr_dirpath dir) in
   match List.rev dirs with
   | "Coq"::"Arith"::"Between"::_ -> false
-  | "Coq"::"ZArith"::("Wf_Z"|"Zpower"|"Zlogarithm"|"Zbinary"|"Zdiv")::_ -> false
+  | "Coq"::"ZArith"::
+    ("Wf_Z"|"Zpower"|"Zlogarithm"|"Zbinary"|"Zdiv"|"Znumtheory")::_ -> false
   | "Coq"::("Arith"|"NArith"|"ZArith")::_ -> true
   | "Coq"::"Init"::"Peano"::_ -> true
   | "Coq"::"Init"::"Logic"::_ when string_of_id id = "iff_trans" -> true

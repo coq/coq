@@ -141,6 +141,7 @@ newtheories/ZArith/Zwf.vo: newtheories/ZArith/Zwf.v newtheories/ZArith/ZArith_ba
 newtheories/ZArith/ZArith_base.vo: newtheories/ZArith/ZArith_base.v newtheories/ZArith/fast_integer.vo newtheories/ZArith/zarith_aux.vo newtheories/NArith/BinPos.vo newtheories/NArith/BinNat.vo newtheories/ZArith/BinInt.vo newtheories/ZArith/Zcompare.vo newtheories/ZArith/Zorder.vo newtheories/ZArith/Zeven.vo newtheories/ZArith/Zmin.vo newtheories/ZArith/Zabs.vo newtheories/ZArith/Znat.vo newtheories/ZArith/auxiliary.vo newtheories/ZArith/Zsyntax.vo newtheories/ZArith/ZArith_dec.vo newtheories/ZArith/Zbool.vo newtheories/ZArith/Zmisc.vo newtheories/ZArith/Wf_Z.vo newtheories/ZArith/Zhints.vo
 newtheories/ZArith/Zbool.vo: newtheories/ZArith/Zbool.v newtheories/ZArith/BinInt.vo newtheories/ZArith/Zeven.vo newtheories/ZArith/Zorder.vo newtheories/ZArith/Zcompare.vo newtheories/ZArith/ZArith_dec.vo newtheories/ZArith/Zsyntax.vo newtheories/Bool/Sumbool.vo
 newtheories/ZArith/Zbinary.vo: newtheories/ZArith/Zbinary.v newtheories/Bool/Bvector.vo newtheories/ZArith/ZArith.vo newtheories/ZArith/Zpower.vo newcontrib/omega/Omega.vo
+newtheories/ZArith/Znumtheory.vo: newtheories/ZArith/Znumtheory.v newtheories/ZArith/ZArith.vo newcontrib/ring/ZArithRing.vo newtheories/ZArith/Zcomplements.vo newtheories/ZArith/Zdiv.vo
 newtheories/Lists/MonoList.vo: newtheories/Lists/MonoList.v newtheories/Arith/Le.vo
 newtheories/Lists/PolyListSyntax.vo: newtheories/Lists/List.v
 newtheories/Lists/ListSet.vo: newtheories/Lists/ListSet.v newtheories/Lists/List.vo

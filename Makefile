@@ -598,7 +598,8 @@ ZARITHVO=\
  theories/ZArith/Zpower.vo 	theories/ZArith/Zcomplements.vo \
  theories/ZArith/Zdiv.vo	theories/ZArith/Zsqrt.vo \
  theories/ZArith/Zwf.vo		theories/ZArith/ZArith_base.vo \
- theories/ZArith/Zbool.vo	theories/ZArith/Zbinary.vo
+ theories/ZArith/Zbool.vo	theories/ZArith/Zbinary.vo \
+ theories/ZArith/Znumtheory.vo
 
 LISTSVO=\
  theories/Lists/MonoList.vo	theories/Lists/PolyListSyntax.vo \
