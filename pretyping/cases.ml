@@ -916,6 +916,26 @@ let infer_predicate loc env isevars typs cstrs ((mis,_) as indf) =
       (true,pred)
 *)
 
+let rec dependent_predicate c = function
+  | PrCcl ccl ->
+      dependent c ccl
+  | PrNotInd (Some t,pred) ->
+      dependent c t or dependent_predicate (lift 1 c) pred
+  | PrNotInd (None,pred) ->
+      dependent_predicate c pred
+  | PrProd (na,NotInd (None,t),pred) ->
+      dependent c t or dependent_predicate (lift 1 c) pred
+  | PrProd (na,NotInd (Some b,t),pred) ->
+      dependent b t or dependent c t or dependent_predicate (lift 1 c) pred
+  | PrProd (na,IsInd (t,_),pred) ->
+      dependent c t or dependent_predicate (lift 1 c) pred
+  | PrLetIn ((args,None),pred) -> 
+      List.exists (dependent c) args or
+      dependent_predicate (lift (List.length args) c) pred
+  | PrLetIn ((args,Some t),pred) ->
+      List.exists (dependent c) args or dependent c t or
+      dependent_predicate (lift (List.length args + 1) c) pred
+
 (* Propagation of user-provided predicate through compilation steps *)
 
 let liftn_predicate n k pred =
@@ -1006,12 +1026,9 @@ let weaken_predicate q pred =
       | PrProd (_,t,pred) ->
 	  (* copt can occur in pred even if the original problem *)
 	  (* is not dependent *)
-	  let dep = 
-            (* We are lazy, and do as if it were always dependent *)
-            true
-            (* dependent_predicate (mkRel 1) pred *)
-          in
+	  let dep = dependent_predicate (mkRel 1) pred in
 	  let copt, p = if dep then Some (mkRel (n+k)), 1 else None, 0 in
+	  let pred = if dep then pred else lift_predicate (-1) pred in
 	  match t with
 	    | IsInd (_,IndType(_,realargs)) ->
 		(* To make it more uniform, we apply realargs but *)
