@@ -557,7 +557,6 @@ let raw_polynom th op lc gl =
   let polynom_tac = 
     List.fold_right2
       (fun ci (c'i, c''i, c'i_eq_c''i) tac ->
-(***
         let c'''i = pf_nf gl c''i in
           if pf_conv_x gl c'''i ci then tac (* convertible terms *)
           else
@@ -575,16 +574,6 @@ let raw_polynom th op lc gl =
              )
            )
       ) lc ltriplets polynom_unfold_tac 
-***)
-       tclTHENS 
-         (elim_type (mkAppA [| Lazy.force coq_eqT; th.th_a; c'i; ci |]))
-         [ tclTHENS 
-             (elim_type 
-                (mkAppA [| Lazy.force coq_eqT; th.th_a; c''i; c'i |]))
-             [ tac;
-               h_exact c'i_eq_c''i ];
-           h_reflexivity])
-      lc ltriplets polynom_unfold_tac 
   in
   polynom_tac gl
 
