@@ -77,11 +77,11 @@ let coq_polynomial_simplify_ok =
   lazy (constant ["ring";"Ring_normalize"] "polynomial_simplify_ok")
 
 (* Setoid theory *)
-let coq_Setoid_Theory = lazy(constant ["setoid";"Setoid_replace"] "Setoid_Theory")
+let coq_Setoid_Theory = lazy(constant ["Setoid"] "Setoid_Theory")
 
-let coq_seq_refl = lazy(constant ["setoid";"Setoid_replace"] "Seq_refl")
-let coq_seq_sym = lazy(constant ["setoid";"Setoid_replace"] "Seq_sym")
-let coq_seq_trans = lazy(constant ["setoid";"Setoid_replace"] "Seq_trans")
+let coq_seq_refl = lazy(constant ["Setoid"] "Seq_refl")
+let coq_seq_sym = lazy(constant ["Setoid"] "Seq_sym")
+let coq_seq_trans = lazy(constant ["Setoid"] "Seq_trans")
 
 (* Setoid Ring normalize *)
 let coq_SetSPplus = lazy (constant ["ring";"Ring_normalize"] "SetSPplus")
