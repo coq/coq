@@ -132,7 +132,7 @@ and raw_compile_module verbosely only_spec mname file =
   if only_spec then
     failwith ".vi not yet implemented"
   else 
-    Library.save_module_to mname base
+    Discharge.save_module_to mname base
 
 and read_vernac_file verbosely s =
   let interpfun =
