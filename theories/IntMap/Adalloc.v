@@ -331,3 +331,9 @@ Section AdAlloc.
   Qed.
 
 End AdAlloc.
+
+V7only [
+(* Moved to NArith *)
+Notation positive_to_nat_2 := positive_to_nat_2.
+Notation positive_to_nat_4 := positive_to_nat_4.
+].
