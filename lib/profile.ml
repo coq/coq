@@ -12,7 +12,6 @@ open Gc
 
 let word_length = Sys.word_size / 8
 let int_size = Sys.word_size - 1
-let int_range = -2. *. float_of_int (1 lsl (int_size - 1))
 
 let float_of_time t = float_of_int t /. 100.
 let time_of_float f = int_of_float (f *. 100.)
@@ -21,32 +20,40 @@ let get_time () =
   let  {Unix.tms_utime = ut;Unix.tms_stime = st} = Unix.times () in
   time_of_float (ut +. st)
 
-let get_alloc () = Gc.allocated_bytes ()
+(* Since ocaml 3.01, gc statistics are in float *)
+let get_alloc () =
+  (* If you are unlucky, a minor collection can occur between the *)
+  (* measurements and produces allocation; we trigger a minor *)
+  (* collection in advance to be sure the measure is not corrupted *)
+  Gc.minor ();
+  Gc.allocated_bytes ()
+
+(* Rem: overhead was 16 bytes in ocaml 3.00 (long int) *)
+(* Rem: overhead is 100 bytes in ocaml 3.01 (double) *)
 
 let get_alloc_overhead =
-  let now = get_alloc () in
-  let after = get_alloc () in
-  after -. now           (* Rem: overhead is 16 bytes in ocaml 3.00 *)
+  let mark1 = get_alloc () in
+  let mark2 = get_alloc () in
+  let mark3 = get_alloc () in
+  (* If you are unlucky, a major collection can occur between the *)
+  (* measurements; with two measures the risk decreases *)
+  min (mark2 -. mark1) (mark3 -. mark2)
 
-let last_alloc = ref (get_alloc())
+let last_alloc = ref 0.0 (* set by init_profile () *)
 
-(* spent_alloc returns a integer in Z/31Z (or Z/63Z) *)
-(* remark: it cannot detect allocations steps more than 2^31 (or 2^63) *)
 let spent_alloc () =
   let now = get_alloc () in
   let before = !last_alloc in
   last_alloc := now;
-  now -. before
+  now -. before -. get_alloc_overhead
 
 (* Profile records *)
 
 type profile_key = {
   mutable owntime : int;
   mutable tottime : int;
-  mutable hiownalloc : float;
-  mutable loownalloc : float;
-  mutable hitotalloc : float;
-  mutable lototalloc : float;
+  mutable ownalloc : float;
+  mutable totalloc : float;
   mutable owncount : int;
   mutable intcount : int;
   mutable immcount : int;
@@ -55,36 +62,21 @@ type profile_key = {
 let create_record () = {
   owntime=0;
   tottime=0;
-  hiownalloc=0.0;
-  loownalloc=0.0;
-  hitotalloc=0.0;
-  lototalloc=0.0;
+  ownalloc=0.0;
+  totalloc=0.0;
   owncount=0;
   intcount=0;
   immcount=0
 }
 
-let ajoute_totalloc e dw =
-  let before = e.lototalloc in
-  let now = before +. dw in
-  (* We add a carry if 2^31 has been exceeded *)
-  if now < before then e.hitotalloc <- e.hitotalloc +. 1.0;
-  e.lototalloc <- now
-
-let ajoute_ownalloc e dw =
-  let before = e.loownalloc in
-  let now = before +. dw in
-  (* We add a carry if 2^31 has been exceeded *)
-  if now < before then e.hiownalloc <- e.hiownalloc +. 1.0;
-  e.loownalloc <- now
+let ajoute_totalloc e dw = e.totalloc <- e.totalloc +. dw
+let ajoute_ownalloc e dw = e.ownalloc <- e.ownalloc +. dw
 
 let reset_record (n,e) =
   e.owntime <- 0;
   e.tottime <- 0;
-  e.hiownalloc <- 0.0;
-  e.loownalloc <- 0.0;
-  e.hitotalloc <- 0.0;
-  e.lototalloc <- 0.0;
+  e.ownalloc <- 0.0;
+  e.totalloc <- 0.0;
   e.owncount <- 0;
   e.intcount <- 0;
   e.immcount <- 0
@@ -99,7 +91,6 @@ let init_alloc = ref 0.0
 let reset_profile () = List.iter reset_record !prof_table
 
 let init_profile () =
-  prof_table :=[];
   let outside = create_record () in
   stack := [outside];
   last_alloc := get_alloc ();
@@ -111,8 +102,8 @@ let init_profile () =
 let ajoute n o =
   o.owntime <- o.owntime + n.owntime;
   o.tottime <- o.tottime + n.tottime;
-  ajoute_ownalloc o n.loownalloc; o.hiownalloc <- o.hiownalloc +. n.hiownalloc;
-  ajoute_totalloc o n.lototalloc; o.hitotalloc <- o.hitotalloc +. n.hitotalloc;
+  ajoute_ownalloc o n.ownalloc;
+  ajoute_totalloc o n.totalloc;
   o.owncount <- o.owncount + n.owncount;
   o.intcount <- o.intcount + n.intcount;
   o.immcount <- o.immcount + n.immcount
@@ -159,11 +150,11 @@ let merge_profile filename (curr_table, curr_outside, curr_total as new_data) =
 
 (* Byte allocation is an exact number and for long runs, the total
    number of allocated bytes may exceed the maximum integer capacity
-   (2^31 on 32-bits architectures); therefore, allocation is measured
+   (2^31 on 32-bits architectures);  therefore, allocation is measured
    by small steps, total allocations are computed by adding elementary
    measures and carries are controled from step to step *)
 
-(* Unix measure of time is approximative and short delays are often
+(* Unix measure of time is approximative and shoitt delays are often
    unperceivable; therefore, total times are measured in one (big)
    step to avoid rounding errors and to get the best possible
    approximation *)
@@ -228,11 +219,12 @@ let dummy_f x = x
 let dummy_stack = ref [create_record ()]
 let dummy_ov = 0
 
+let loops = 10000
+
 let time_overhead_A_D () =
   let e = create_record () in
-  let n = 100000 in
   let before = get_time () in
-  for i=1 to n do
+  for i=1 to loops do
     (* This is a copy of profile1 for overhead estimation *)
     let dw = dummy_spent_alloc () in
     match !dummy_stack with [] -> assert false | p::_ ->
@@ -240,15 +232,14 @@ let time_overhead_A_D () =
       ajoute_totalloc p dw;
       e.owncount <- e.owncount + 1;
       if not (p==e) then stack := e::!stack;
-      let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+      let totalloc0 = e.totalloc in
       let intcount0 = e.intcount in
       let dt = get_time () - 1 in
       e.tottime <- dt + dummy_ov; e.owntime <- e.owntime + e.tottime;
       ajoute_ownalloc p dw;
       ajoute_totalloc p dw;
       p.owntime <- p.owntime - e.tottime;
-      ajoute_totalloc p (e.lototalloc-.lototalloc0);
-      p.hitotalloc <- p.hitotalloc +. (e.hitotalloc-.hitotalloc0);
+      ajoute_totalloc p (e.totalloc-.totalloc0);
       p.intcount <- p.intcount + e.intcount - intcount0 + 1;
       p.immcount <- p.immcount + 1;
       if not (p==e) then 
@@ -257,15 +248,15 @@ let time_overhead_A_D () =
   done;
   let after = get_time () in
   let beforeloop =  get_time () in
-  for i=1 to n do () done;
+  for i=1 to loops do () done;
   let afterloop = get_time () in
-  float_of_int ((after - before) - (afterloop - beforeloop)) /. float_of_int n
+  float_of_int ((after - before) - (afterloop - beforeloop))
+  /. float_of_int loops
 
 let time_overhead_B_C () =
   let dummy_x = 0 in
-  let n = 100000 in
   let before = get_time () in
-  for i=1 to n do
+  for i=1 to loops do
     try
       dummy_last_alloc := get_alloc ();
       let r = dummy_f dummy_x in
@@ -276,12 +267,12 @@ let time_overhead_B_C () =
   done;
   let after = get_time () in
   let beforeloop =  get_time () in
-  for i=1 to n do () done;
+  for i=1 to loops do () done;
   let afterloop = get_time () in
-  float_of_int ((after - before) - (afterloop - beforeloop)) /. float_of_int n
+  float_of_int ((after - before) - (afterloop - beforeloop))
+  /. float_of_int loops
 
-let compute_alloc hi lo =
-  (hi *. int_range +. lo) /. (float_of_int word_length)
+let compute_alloc lo = lo /. (float_of_int word_length)
 
 (************************************************)
 (* End a profiling session and print the result *)
@@ -297,22 +288,22 @@ let format_profile (table, outside, total) =
       "%-23s %9.2f %9.2f %10.0f %10.0f %6d %6d\n"
       name
       (float_of_time e.owntime) (float_of_time e.tottime)
-      (compute_alloc e.hiownalloc e.loownalloc)
-      (compute_alloc e.hitotalloc e.lototalloc)
+      (compute_alloc e.ownalloc)
+      (compute_alloc e.totalloc)
       e.owncount e.intcount)
     l;
   Printf.printf "%-23s %9.2f %9.2f %10.0f %10.0f        %6d\n"
     "others" 
     (float_of_time outside.owntime) (float_of_time outside.tottime)
-    (compute_alloc outside.hiownalloc outside.loownalloc)
-    (compute_alloc outside.hitotalloc outside.lototalloc)
+    (compute_alloc outside.ownalloc)
+    (compute_alloc outside.totalloc)
     outside.intcount;
   (* Here, own contains overhead time/alloc *)
   Printf.printf "%-23s %9.2f %9.2f %10.0f %10.0f\n"
     "Est. overhead/total"
     (float_of_time total.owntime) (float_of_time total.tottime)
-    (compute_alloc total.hiownalloc total.loownalloc)
-    (compute_alloc total.hitotalloc total.lototalloc);
+    (compute_alloc total.ownalloc)
+    (compute_alloc total.totalloc);
   Printf.printf
     "Time in seconds and allocation in words (1 word = %d bytes)\n" 
     word_length
@@ -343,18 +334,13 @@ let close_profile print =
 	  let adjust (n,e) = (n, adjust_time ov_bc ov_ad e) in
 	  let adjtable = List.map adjust !prof_table in
 	  let adjoutside = adjust_time ov_bc ov_ad outside in
-	  let lototalloc = !last_alloc -. !init_alloc in
-	  let hitotalloc = 0.0 in
+	  let totalloc = !last_alloc -. !init_alloc in
 	  let total = create_record () in
 	  total.tottime <- outside.tottime;
-	  total.lototalloc <- lototalloc;
-	  total.hitotalloc <- hitotalloc;
+	  total.totalloc <- totalloc;
 	  (* We compute estimations of overhead, put into "own" fields *)
 	  total.owntime <- outside.tottime - adjoutside.tottime;
-	  total.loownalloc <- lototalloc -. outside.lototalloc;
-	  if total.loownalloc > lototalloc
-	  then total.hiownalloc <- hitotalloc -. outside.hitotalloc -. 1.0
-	  else total.hiownalloc <- hitotalloc -. outside.hitotalloc;
+	  total.ownalloc <- totalloc -. outside.totalloc;
 	  let current_data = (adjtable, adjoutside, total) in
 	  let updated_data =
 	    match !recording_file with
@@ -389,7 +375,7 @@ let profile1 e f a =
   ajoute_totalloc p dw;
   e.owncount <- e.owncount + 1;
   if not (p==e) then stack := e::!stack;
-  let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+  let totalloc0 = e.totalloc in
   let intcount0 = e.intcount in
   let t = get_time () in
   try
@@ -401,8 +387,7 @@ let profile1 e f a =
     ajoute_ownalloc e dw;
     ajoute_totalloc e dw;
     p.owntime <- p.owntime - dt;
-    ajoute_totalloc p (e.lototalloc -. lototalloc0);
-    p.hitotalloc <- p.hitotalloc +. (e.hitotalloc -. hitotalloc0);
+    ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
     if not (p==e) then 
@@ -416,8 +401,7 @@ let profile1 e f a =
     ajoute_ownalloc e dw;
     ajoute_totalloc e dw;
     p.owntime <- p.owntime - dt;
-    ajoute_totalloc p (e.lototalloc -. lototalloc0);
-    p.hitotalloc <- p.hitotalloc +. (e.hitotalloc -. hitotalloc0);
+    ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
     if not (p==e) then 
@@ -433,7 +417,7 @@ let profile2 e f a b =
   ajoute_totalloc p dw;
   e.owncount <- e.owncount + 1;
   if not (p==e) then stack := e::!stack;
-  let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+  let totalloc0 = e.totalloc in
   let intcount0 = e.intcount in
   let t = get_time () in
   try
@@ -445,8 +429,7 @@ let profile2 e f a b =
     ajoute_ownalloc e dw;
     ajoute_totalloc e dw;
     p.owntime <- p.owntime - dt;
-    ajoute_totalloc p (e.lototalloc -. lototalloc0);
-    p.hitotalloc <- p.hitotalloc +. (e.hitotalloc -. hitotalloc0);
+    ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
     if not (p==e) then 
@@ -460,8 +443,7 @@ let profile2 e f a b =
     ajoute_ownalloc e dw;
     ajoute_totalloc e dw;
     p.owntime <- p.owntime - dt;
-    ajoute_totalloc p (e.lototalloc -. lototalloc0);
-    p.hitotalloc <- p.hitotalloc +. (e.hitotalloc -. hitotalloc0);
+    ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
     if not (p==e) then 
@@ -477,7 +459,7 @@ let profile3 e f a b c =
   ajoute_totalloc p dw;
   e.owncount <- e.owncount + 1;
   if not (p==e) then stack := e::!stack;
-  let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+  let totalloc0 = e.totalloc in
   let intcount0 = e.intcount in
   let t = get_time () in
   try
@@ -489,8 +471,7 @@ let profile3 e f a b c =
     ajoute_ownalloc e dw;
     ajoute_totalloc e dw;
     p.owntime <- p.owntime - dt;
-    ajoute_totalloc p (e.lototalloc -. lototalloc0);
-    p.hitotalloc <- p.hitotalloc +. (e.hitotalloc -. hitotalloc0);
+    ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
     if not (p==e) then 
@@ -504,8 +485,7 @@ let profile3 e f a b c =
     ajoute_ownalloc e dw;
     ajoute_totalloc e dw;
     p.owntime <- p.owntime - dt;
-    ajoute_totalloc p (e.lototalloc -. lototalloc0);
-    p.hitotalloc <- p.hitotalloc +. (e.hitotalloc -. hitotalloc0);
+    ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
     if not (p==e) then 
@@ -521,7 +501,7 @@ let profile4 e f a b c d =
   ajoute_totalloc p dw;
   e.owncount <- e.owncount + 1;
   if not (p==e) then stack := e::!stack;
-  let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+  let totalloc0 = e.totalloc in
   let intcount0 = e.intcount in
   let t = get_time () in
   try
@@ -533,8 +513,7 @@ let profile4 e f a b c d =
     ajoute_ownalloc e dw;
     ajoute_totalloc e dw;
     p.owntime <- p.owntime - dt;
-    ajoute_totalloc p (e.lototalloc -. lototalloc0);
-    p.hitotalloc <- p.hitotalloc +. (e.hitotalloc -. hitotalloc0);
+    ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
     if not (p==e) then 
@@ -548,8 +527,7 @@ let profile4 e f a b c d =
     ajoute_ownalloc e dw;
     ajoute_totalloc e dw;
     p.owntime <- p.owntime - dt;
-    ajoute_totalloc p (e.lototalloc -. lototalloc0);
-    p.hitotalloc <- p.hitotalloc +. (e.hitotalloc -. hitotalloc0);
+    ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
     if not (p==e) then 
@@ -565,7 +543,7 @@ let profile5 e f a b c d g =
   ajoute_totalloc p dw;
   e.owncount <- e.owncount + 1;
   if not (p==e) then stack := e::!stack;
-  let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+  let totalloc0 = e.totalloc in
   let intcount0 = e.intcount in
   let t = get_time () in
   try
@@ -577,8 +555,7 @@ let profile5 e f a b c d g =
     ajoute_ownalloc e dw;
     ajoute_totalloc e dw;
     p.owntime <- p.owntime - dt;
-    ajoute_totalloc p (e.lototalloc -. lototalloc0);
-    p.hitotalloc <- p.hitotalloc +. (e.hitotalloc -. hitotalloc0);
+    ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
     if not (p==e) then 
@@ -592,8 +569,7 @@ let profile5 e f a b c d g =
     ajoute_ownalloc e dw;
     ajoute_totalloc e dw;
     p.owntime <- p.owntime - dt;
-    ajoute_totalloc p (e.lototalloc -. lototalloc0);
-    p.hitotalloc <- p.hitotalloc +. (e.hitotalloc -. hitotalloc0);
+    ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
     if not (p==e) then 
@@ -609,7 +585,7 @@ let profile6 e f a b c d g h =
   ajoute_totalloc p dw;
   e.owncount <- e.owncount + 1;
   if not (p==e) then stack := e::!stack;
-  let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+  let totalloc0 = e.totalloc in
   let intcount0 = e.intcount in
   let t = get_time () in
   try
@@ -621,8 +597,7 @@ let profile6 e f a b c d g h =
     ajoute_ownalloc e dw;
     ajoute_totalloc e dw;
     p.owntime <- p.owntime - dt;
-    ajoute_totalloc p (e.lototalloc -. lototalloc0);
-    p.hitotalloc <- p.hitotalloc +. (e.hitotalloc -. hitotalloc0);
+    ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
     if not (p==e) then 
@@ -636,8 +611,7 @@ let profile6 e f a b c d g h =
     ajoute_ownalloc e dw;
     ajoute_totalloc e dw;
     p.owntime <- p.owntime - dt;
-    ajoute_totalloc p (e.lototalloc -. lototalloc0);
-    p.hitotalloc <- p.hitotalloc +. (e.hitotalloc -. hitotalloc0);
+    ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
     if not (p==e) then 
@@ -653,7 +627,7 @@ let profile7 e f a b c d g h i =
   ajoute_totalloc p dw;
   e.owncount <- e.owncount + 1;
   if not (p==e) then stack := e::!stack;
-  let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+  let totalloc0 = e.totalloc in
   let intcount0 = e.intcount in
   let t = get_time () in
   try
@@ -665,8 +639,7 @@ let profile7 e f a b c d g h i =
     ajoute_ownalloc e dw;
     ajoute_totalloc e dw;
     p.owntime <- p.owntime - dt;
-    ajoute_totalloc p (e.lototalloc -. lototalloc0);
-    p.hitotalloc <- p.hitotalloc +. (e.hitotalloc -. hitotalloc0);
+    ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
     if not (p==e) then 
@@ -680,8 +653,7 @@ let profile7 e f a b c d g h i =
     ajoute_ownalloc e dw;
     ajoute_totalloc e dw;
     p.owntime <- p.owntime - dt;
-    ajoute_totalloc p (e.lototalloc -. lototalloc0);
-    p.hitotalloc <- p.hitotalloc +. (e.hitotalloc -. hitotalloc0);
+    ajoute_totalloc p (e.totalloc -. totalloc0);
     p.intcount <- p.intcount + e.intcount - intcount0 + 1;
     p.immcount <- p.immcount + 1;
     if not (p==e) then 
