@@ -465,6 +465,10 @@ let print_name r =
     let kn = Nametab.locate_syntactic_definition qid in
     print_syntactic_def " = " kn
   with Not_found ->
+  try print_module true (Nametab.locate_module qid)
+  with Not_found -> 
+  try print_modtype (Nametab.locate_modtype qid)
+  with Not_found ->
     user_err_loc
       (loc,"print_name",pr_qualid qid ++ spc () ++ str "not a defined object")
 
