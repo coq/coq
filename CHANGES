@@ -20,12 +20,21 @@ Modifications depuis la V7.0
   être suivies d'une métavariable, idem pour { })
 - Développeur: les var des ast sont maintenant des identifiers
 - Les identificateurs ne sont plus mutables
+- Inversion, Injection, Discriminate, ... font des intros until
+- Decompose supprime les hypothèses temporaires
 - Nouvelle tactique Assert qui fait la coupure du calcul des séquents
   (et dans le sens attendu)
-- Inversion peut faire des Intros until avant
 - Amélioration de l'efficacité de l'ancien Cut
-- En cas de Require en milieu de section, les noms courts importes par le module disparaissent a la fermeture de la section,
+- En cas de Require en milieu de section, les noms courts importes par
+  le module disparaissent a la fermeture de la section,
   et les Require ultérieurs ne les réintroduisent pas.
+- NewInduction et NewDestruct sont maintenant achevés: elles unifient
+  Elim et Induction, et Case et Destruct en proposant un comportement plus
+  "naturel" (par rapport au Induction de la V6 qui s'applique sur les
+  hypothèses du contexte, la stratégie de nommage est
+  différente). Elim et Case restent nécessaires pour les cas où
+  l'hypothèse d'élimination est un produit sur un type inductif.
+
 
 Différences oubliées dans la V7.0beta :
 
