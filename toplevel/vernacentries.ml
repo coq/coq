@@ -542,13 +542,21 @@ let _ =
 	    | VARG_CONSTANT sp -> Global.set_transparent sp
 	    |   _  -> bad_vernac_args "TRANSPARENT")
 	 id_list)
-    
+
+let warning_opaque s =
+  warning (
+    "This command turns the constants which depend on the definition/proof
+of "^s^" un-re-checkable until the next \"Transparent "^s^"\" command.")
+
 let _ =
   add "OPAQUE"
     (fun id_list () ->
        List.iter
 	 (function 
-	    | VARG_CONSTANT sp -> Global.set_opaque sp
+	    | VARG_CONSTANT sp ->
+		warning_opaque
+		  (string_of_qualid (Global.qualid_of_global (ConstRef sp)));
+		Global.set_opaque sp
 	    |   _  -> bad_vernac_args "OPAQUE")
 	 id_list)
 
@@ -1114,7 +1122,7 @@ let _ =
        | [VARG_STRING coe;
           VARG_IDENTIFIER struc; 
           VARG_BINDERLIST binders; 
-          VARG_CONSTR s; 
+          VARG_CONSTR sort; 
           VARG_VARGLIST namec; 
           VARG_VARGLIST cfs] -> 
            let ps = join_binders binders in
@@ -1122,8 +1130,13 @@ let _ =
 	     List.map
                (function 
 		  | (VARG_VARGLIST 
-                       [VARG_STRING str; VARG_IDENTIFIER id; VARG_CONSTR c]) ->
-		      (str = "COERCION",(id,c))
+                      [VARG_STRING str; VARG_STRING b; 
+		       VARG_IDENTIFIER id; VARG_CONSTR c]) ->
+		      let assum = match b with
+			| "ASSUM" -> true
+			| "DEF" -> false
+			| _ -> bad_vernac_args "RECORD" in
+		      (str = "COERCION", (id, assum, c))
 		  | _ -> bad_vernac_args "RECORD")
                cfs in
            let const = match namec with 
@@ -1131,6 +1144,7 @@ let _ =
              | [VARG_IDENTIFIER id] -> id 
              | _ -> bad_vernac_args "RECORD" in
            let iscoe = (coe = "COERCION") in
+	   let s = interp_sort sort in
 	   fun () -> Record.definition_structure (iscoe,struc,ps,cfs,const,s)
        | _ -> bad_vernac_args "RECORD")
 

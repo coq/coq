@@ -230,10 +230,12 @@ GEXTEND Gram
   ;
   field:
     [ [ id = identarg; oc = of_type_with_opt_coercion; c = constrarg ->
-          <:ast< (VERNACARGLIST ($STR $oc) $id $c) >>
-      | id = identarg; ":="; b = constrarg; 
-	oc = of_type_with_opt_coercion; c = constrarg ->
-          <:ast< (VERNACARGLIST ($STR $oc) $id $c $b) >>
+          <:ast< (VERNACARGLIST ($STR $oc) "ASSUM" $id $c) >>
+      | id = identarg; oc = of_type_with_opt_coercion; t = Constr.constr;
+	":="; b = Constr.constr -> 
+          <:ast< (VERNACARGLIST "" "DEF" $id $b (COMMAND (CAST $b $t))) >>
+      | id = identarg; ":="; b = constrarg ->
+          <:ast< (VERNACARGLIST "" "DEF" $id $b) >>
 (*      | id = identarg; ":>"; c = constrarg ->
           <:ast< (VERNACARGLIST "COERCION" $id $c) >> *)] ]
   ;
