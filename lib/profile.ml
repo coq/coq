@@ -726,7 +726,7 @@ let obj_shared_size a =
   H.clear tbl;
   c := 0;
   let s = obj_shared_size 0 (Obj.repr a) in
-  (s, !c)
+  (!c, s)
 
 let print_logical_stats a =
   let (c, s, d) = obj_stats a in
