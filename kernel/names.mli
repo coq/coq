@@ -69,10 +69,10 @@ module ModIdmap : Map.S with type key = module_ident
 val make_dirpath : module_ident list -> dir_path
 val repr_dirpath : dir_path -> module_ident list
 
-(* Give the immediate prefix of a dir_path *)
+(* Give the immediate prefix of a [dir_path] *)
 val dirpath_prefix : dir_path -> dir_path 
 
-(* Give the immediate prefix and basename of a dir_path *)
+(* Give the immediate prefix and basename of a [dir_path] *)
 val split_dirpath : dir_path -> dir_path * identifier
 
 (* Printing of directory paths as ["coq_root.module.submodule"] *)
