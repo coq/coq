@@ -17,7 +17,6 @@ open Declarations
 open Entries
 open Indtypes
 open Safe_typing
-open Library
 open Nametab
 open Decl_kinds
 (*i*)

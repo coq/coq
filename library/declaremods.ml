@@ -21,34 +21,35 @@ open Nametab
 (* modules and components *)
 
 
-(* This type is a functional closure of a substitutive
-   library_segment.
+(* This type is a functional closure of substitutive lib_objects.
 
    The first part is a partial substitution (which will be later
-   applied to the library_segment when completed).
+   applied to lib_objects when completed).
 
    The second one is a list of bound identifiers which is nonempty
-   only if the segment is owned by a fuctor
+   only if the objects are owned by a fuctor
 
-   The third one is the "magic" ident of the current structure (which
-   should be substituted with the real name of the current module.
+   The third one is the "self" ident of the signature (or structure),
+   which should be substituted in lib_objects with the real name of
+   the module.
 
    The fourth one is the segment itself which can contain references
    to identifiers in the domain of the substitution or in other two
-   elements. These references are invalid in the current scope and
+   parts. These references are invalid in the current scope and
    therefore must be substitued with valid names before use.
 
 *)
-
 type substitutive_objects = 
     substitution * mod_bound_id list * mod_self_id * lib_objects
 
 
 (* For each module, we store the following things:
 
-   substitutive_objects 
-     when we will do Module M:=N, the objects of N will be loaded 
-     with M as well (after substitution)
+   In modtab_substobjs: substitutive_objects 
+     when we will do Module M:=N, the objects of N will be reloaded 
+     with M after substitution
+
+   In modtab_objects: "substituted objects" @ "keep objects"
 
    substituted objects - 
      roughly the objects above after the substitution - we need to 
@@ -62,22 +63,16 @@ type substitutive_objects =
    * If the module is a functor, the two latter lists are empty.
 
    * Module objects in substitutive_objects part have empty substituted 
-     objects and keep objects.
+     objects.
 
-   * Modules which where created with Module M:=mexpr (and not with 
-     End Module) have the keep list empty.
+   * Modules which where created with Module M:=mexpr or with 
+     Module M:SIG. ... End M. have the keep list empty.
 *)
-
-
-      (* substitutive_objects * substituted objects *)
-(*type module_objects = substitutive_objects * library_objects*)
-
 let modtab_substobjs = 
   ref (MPmap.empty : substitutive_objects MPmap.t)
 let modtab_objects = 
   ref (MPmap.empty : (object_prefix * lib_objects) MPmap.t)
-(*let modtab_keep = 
-  ref (MPmap.empty : (object_prefix * lib_objects) MPmap.t)*)
+
 
 (* currently started interactive module (if any) - its arguments (if it
    is a functor) and declared output type *)

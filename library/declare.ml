@@ -26,7 +26,6 @@ open Libobject
 open Lib
 open Impargs
 open Nametab
-open Library
 open Safe_typing
 open Decl_kinds
 
