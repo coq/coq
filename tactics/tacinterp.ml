@@ -571,10 +571,10 @@ let intern_hyp_location ist (id,occs,hl) =
 let intern_pattern evc env lfun = function
   | Subterm (ido,pc) ->
       let (metas,pat) = interp_constrpattern_gen evc env lfun pc  in
-      metas, Subterm (ido,pat)
+      ido, metas, Subterm (ido,pat)
   | Term pc ->
       let (metas,pat) = interp_constrpattern_gen evc env lfun pc  in
-      metas, Term pat
+      None, metas, Term pat
 
 let intern_constr_may_eval ist = function
   | ConstrEval (r,c) -> ConstrEval (intern_redexp ist r,intern_constr ist c)
@@ -586,9 +586,10 @@ let intern_constr_may_eval ist = function
 (* Reads the hypotheses of a Match Context rule *)
 let rec intern_match_context_hyps evc env lfun = function
   | (Hyp ((_,na) as locna,mp))::tl ->
-      let metas1, pat = intern_pattern evc env lfun mp in
+      let ido, metas1, pat = intern_pattern evc env lfun mp in
       let lfun, metas2, hyps = intern_match_context_hyps evc env lfun tl in
-      name_fold (fun a l -> a::l) na lfun, metas1@metas2, Hyp (locna,pat)::hyps
+      let lfun' = name_cons na (option_cons ido lfun) in
+      lfun', metas1@metas2, Hyp (locna,pat)::hyps
   | [] -> lfun, [], []
 
 (* Utilities *)
@@ -833,9 +834,9 @@ and intern_match_rule ist = function
   | (Pat (rl,mp,tc))::tl ->
       let {ltacvars=(lfun,l2); gsigma=sigma; genv=env} = ist in
       let lfun',metas1,hyps = intern_match_context_hyps sigma env lfun rl in
-      let metas2,pat = intern_pattern sigma env lfun mp in
+      let ido,metas2,pat = intern_pattern sigma env lfun mp in
       let metas = list_uniquize (metas1@metas2) in
-      let ist' = { ist with ltacvars = (metas@lfun',l2) } in
+      let ist' = { ist with ltacvars = (metas@(option_cons ido lfun'),l2) } in
       Pat (hyps,pat,intern_tactic ist' tc) :: (intern_match_rule ist tl)
   | [] -> []
 
@@ -1316,8 +1317,8 @@ let rec val_interp ist gl (tac:glob_tactic_expr) =
   | TacLetIn (l,u) ->
       let addlfun = interp_letin ist gl l in
       val_interp { ist with lfun=addlfun@ist.lfun } gl u
-  | TacMatchContext (lr,lmr) -> match_context_interp ist gl lr lmr 
-  | TacMatch (c,lmr) -> match_interp ist gl c lmr
+  | TacMatchContext (lr,lmr) -> interp_match_context ist gl lr lmr 
+  | TacMatch (c,lmr) -> interp_match ist gl c lmr
   | TacArg a -> interp_tacarg ist gl a
   (* Delayed evaluation *)
   | t -> VTactic (dummy_loc,eval_tactic ist t)
@@ -1472,7 +1473,7 @@ and interp_letin ist gl = function
     in (id,VConstr (mkCast (csr,typ)))::(interp_letin ist gl tl)
 
 (* Interprets the Match Context expressions *)
-and match_context_interp ist g lr lmr =
+and interp_match_context ist g lr lmr =
   let rec apply_goal_sub ist env goal nocc (id,c) csr mt mhyps hyps =
     try
       let (lgoal,ctxt) = sub_match nocc c csr in
@@ -1619,7 +1620,7 @@ and interp_genarg ist goal x =
   | ExtraArgType s -> lookup_interp_genarg s ist goal x
 
 (* Interprets the Match expressions *)
-and match_interp ist g constr lmr =
+and interp_match ist g constr lmr =
   let rec apply_sub_match ist nocc (id,c) csr mt =
     try 
       let (lm,ctxt) = sub_match nocc c csr in
