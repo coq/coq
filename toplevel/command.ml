@@ -483,6 +483,7 @@ let start_proof_com sopt kind (bl,t) hook =
   let _ = Typeops.infer_type env c in
   start_proof id kind c hook
 
+(*
 let apply_tac_not_declare id pft = function
   | None -> error "Type of Let missing"
   | Some typ ->
@@ -490,6 +491,7 @@ let apply_tac_not_declare id pft = function
     and exat = Hiddentac.h_exact pft in
     Pfedit.delete_current_proof ();
     Pfedit.by (Refiner.tclTHENSV cutt [|introduction id;exat|])
+*)
 
 let save id const kind hook =
   let {const_entry_body = pft;
