@@ -85,6 +85,8 @@ module Constr :
     val constr_eoi : Coqast.t Gram.Entry.e
     val lconstr : Coqast.t Gram.Entry.e
     val ident : Coqast.t Gram.Entry.e
+    val qualid : Coqast.t list Gram.Entry.e
+    val global : Coqast.t Gram.Entry.e
     val ne_ident_comma_list : Coqast.t list Gram.Entry.e
     val ne_constr_list : Coqast.t list Gram.Entry.e
     val sort : Coqast.t Gram.Entry.e
@@ -110,6 +112,8 @@ module Tactic :
     val constrarg_list : Coqast.t list Gram.Entry.e
     val fixdecl : Coqast.t list Gram.Entry.e
     val identarg : Coqast.t Gram.Entry.e
+    val qualidarg : Coqast.t Gram.Entry.e
+    val qualidconstarg : Coqast.t Gram.Entry.e
     val input_fun : Coqast.t Gram.Entry.e
     val intropattern : Coqast.t Gram.Entry.e
     val lconstrarg : Coqast.t Gram.Entry.e
@@ -122,6 +126,8 @@ module Tactic :
     val match_rule : Coqast.t Gram.Entry.e
     val match_list : Coqast.t list Gram.Entry.e
     val ne_identarg_list : Coqast.t list Gram.Entry.e
+    val ne_qualidarg_list : Coqast.t list Gram.Entry.e
+    val ne_qualidconstarg_list : Coqast.t list Gram.Entry.e
     val ne_intropattern : Coqast.t Gram.Entry.e
     val ne_num_list : Coqast.t list Gram.Entry.e
     val ne_pattern_list : Coqast.t list Gram.Entry.e
@@ -181,6 +187,7 @@ module Prim :
     val grammar_entry : Coqast.t Gram.Entry.e
     val grammar_entry_eoi : Coqast.t Gram.Entry.e
     val ident : Coqast.t Gram.Entry.e
+    val metaident : Coqast.t Gram.Entry.e
     val number : Coqast.t Gram.Entry.e
     val path : Coqast.t Gram.Entry.e
     val string : Coqast.t Gram.Entry.e
