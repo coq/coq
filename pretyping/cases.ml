@@ -1071,10 +1071,12 @@ let abstract_predicate env sigma indf = function
       let sign = make_arity_signature env true indf in
       (true, it_mkLambda_or_LetIn_name env pred sign)
 
-let known_dependent = function
+let rec known_dependent = function
   | None -> false
   | Some (PrLetIn ((_,copt),_)) -> copt <> None
-  | Some (PrProd _ | PrCcl _ | PrNotInd _) ->
+  | Some (PrNotInd (_,p)) -> known_dependent (Some p)
+  | Some (PrCcl _) -> false
+  | Some (PrProd _) ->
       anomaly "known_dependent: can only be used when patterns remain"
 
 (*****************************************************************************)
