@@ -73,7 +73,7 @@ LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
 	library/nametab.cmo library/impargs.cmo library/redinfo.cmo \
         library/indrec.cmo library/declare.cmo library/goptions.cmo
 
-PRETYPING=pretyping/rawterm.cmo \
+PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
 	  pretyping/tacred.cmo pretyping/pretype_errors.cmo \
           pretyping/retyping.cmo pretyping/typing.cmo \
 	  pretyping/classops.cmo pretyping/recordops.cmo \
@@ -82,8 +82,9 @@ PRETYPING=pretyping/rawterm.cmo \
 	  pretyping/syntax_def.cmo
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
-	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
-	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_cases.cmo\
+	parsing/g_prim.cmo parsing/g_corevernac.cmo parsing/g_basevernac.cmo \
+	parsing/g_vernac.cmo parsing/g_tactic.cmo \
+	parsing/g_constr.cmo parsing/g_cases.cmo \
         parsing/extend.cmo parsing/termast.cmo \
         parsing/esyntax.cmo parsing/printer.cmo parsing/pretty.cmo \
 	parsing/astterm.cmo parsing/egrammar.cmo
@@ -177,7 +178,7 @@ toplevel: $(TOPLEVEL)
 
 states: states/barestate.coq
 
-SYNTAXPP=syntax/PPCommand.v syntax/PPTactic.v syntax/PPCases.v
+SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v syntax/PPTactic.v
 
 states/barestate.coq: $(SYNTAXPP) coqtop.byte
 	./coqtop.byte -q -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq

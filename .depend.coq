@@ -12,6 +12,7 @@ theories/Init/Datatypes.vo: theories/Init/Datatypes.v
 test-suite/bench/lists_100.vo: test-suite/bench/lists_100.v
 test-suite/bench/lists-100.vo: test-suite/bench/lists-100.v
 syntax/PPTactic.vo: syntax/PPTactic.v
+syntax/PPConstr.vo: syntax/PPConstr.v
 syntax/PPCommand.vo: syntax/PPCommand.v
 syntax/PPCases.vo: syntax/PPCases.v
 syntax/MakeBare.vo: syntax/MakeBare.v

@@ -90,7 +90,22 @@ Changements dans les grammaires
 
  . attention : LIDENT -> IDENT  (les identificateurs n'ont pas de
                                  casse particulière dans Coq)
-		
+
+ . Le mot "command" est remplacé par "constr" dans les noms de
+ fichiers, noms de modules et non-terminaux relatifs au parsing des
+ termes; aussi les changements suivants "COMMAND"/"CONSTR" dans
+ g_vernac.ml4, VARG_COMMAND/VARG_CONSTR dans vernac*.ml*
+
+ 
+
+Changements dans le pretty-printing
+-----------------------------------
+
+ . Découplage de la traduction de constr -> rawconstr (dans detyping)
+    et de rawconstr -> ast (dans termast)
+ . Déplacement des options d'affichage de printer vers termast
+ . Déplacement des réaiguillage d'univers du pp de printer vers esyntax
+
 	
 Changements divers
 ------------------
