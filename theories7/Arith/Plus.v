@@ -73,7 +73,14 @@ Proof.
 Intros m p n; NewInduction n ; Simpl ; Auto with arith.
 Qed.
 V7only [
-Notation simpl_plus_l := [n,m,p:nat](plus_reg_l m p n).
+(* Compatibility order of arguments *)
+Notation "'simpl_plus_l' c" := [a,b:nat](plus_reg_l a b c)
+  (at level 10, c at next level).
+Notation "'simpl_plus_l' c a" := [b:nat](plus_reg_l a b c)
+  (at level 10, a, c at next level).
+Notation "'simpl_plus_l' c a b" := (plus_reg_l a b c)
+  (at level 10, a, b, c at next level).
+Notation simpl_plus_l := plus_reg_l.
 ].
 
 Lemma plus_le_reg_l : (n,m,p:nat) (p+n)<=(p+m) -> n<=m.
@@ -81,7 +88,14 @@ Proof.
 NewInduction p; Simpl; Auto with arith.
 Qed.
 V7only [
-Notation simpl_le_plus_l := [p,n,m:nat](plus_le_reg_l n m p).
+(* Compatibility order of arguments *)
+Notation "'simpl_le_plus_l' c" := [a,b:nat](plus_le_reg_l a b c)
+  (at level 10, c at next level).
+Notation "'simpl_le_plus_l' c a" := [b:nat](plus_le_reg_l a b c)
+  (at level 10, a, c at next level).
+Notation "'simpl_le_plus_l' c a b" := (plus_le_reg_l a b c)
+  (at level 10, a, b, c at next level).
+Notation simpl_le_plus_l := plus_reg_l.
 ].
 
 Lemma simpl_lt_plus_l : (n,m,p:nat) (p+n)<(p+m) -> n<m.
