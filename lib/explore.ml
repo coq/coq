@@ -37,6 +37,7 @@ module Make = functor(S : SearchProblem) -> struct
     if S.success s then s else depth_first_many (S.branching s)
   and depth_first_many = function
     | [] -> raise Not_found
+    | [s] -> depth_first s
     | s :: l -> try depth_first s with Not_found -> depth_first_many l
 
   let debug_depth_first s = 
@@ -44,8 +45,8 @@ module Make = functor(S : SearchProblem) -> struct
       pp_position p; S.pp s;
       if S.success s then s else explore_many 1 p (S.branching s)
     and explore_many i p = function
-      | [] -> 
-	  raise Not_found
+      | [] -> raise Not_found
+      | [s] -> explore (i::p) s
       | s :: l -> 
 	  try explore (i::p) s with Not_found -> explore_many (succ i) p l
     in
@@ -67,10 +68,8 @@ module Make = functor(S : SearchProblem) -> struct
 
   let breadth_first s = 
     let rec explore q =
-      try 
-	let (s, q') = pop q in enqueue q' (S.branching s)
-      with Empty ->
-	raise Not_found
+      let (s, q') = try pop q with Empty -> raise Not_found in
+      enqueue q' (S.branching s)
     and enqueue q = function
       | [] -> explore q
       | s :: l -> if S.success s then s else enqueue (push s q) l
@@ -79,11 +78,8 @@ module Make = functor(S : SearchProblem) -> struct
 
   let debug_breadth_first s = 
     let rec explore q =
-      try 
-	let ((p,s), q') = pop q in 
-	enqueue 1 p q' (S.branching s)
-      with Empty ->
-	raise Not_found
+      let ((p,s), q') = try pop q with Empty -> raise Not_found in 
+      enqueue 1 p q' (S.branching s)
     and enqueue i p q = function
       | [] -> 
 	  explore q
