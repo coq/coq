@@ -145,7 +145,7 @@ arch-image: $(TARGZ)
 	@echo "Warning: leading / is removed"
 	@-rm -fr $(ARCHINSTALL) $(ARCHBUILDROOT)
 	@mkdir -p $(ARCHBUILDROOT) $(ARCHINSTALL)
-	@echo Building binaries... (see arch-image.log)
+	@echo "Building binaries... (see arch-image.log)"
 	(cd $(ARCHBUILDROOT);\
 	 gunzip -c $(DISTRIBDIR)/$(TARGZ) | tar xf -;\
 	 cd $(COQPACKAGE);\
@@ -415,7 +415,7 @@ macosx-pkg:
 	sed -e "s/VERSION/$(VERSION)/g" MacOS-X/Welcome.rtf.template > MacOS-X/Resources/Welcome.rtf
 	cp MacOS-X/ReadMe.rtf.template MacOS-X/Resources/ReadMe.rtf
 	# Builds the pkg file
-	package MacOS-X/buildroot MacOS-X/coq-$(VERSION).info -r MacOS-X/Resources
+	package $(ARCHINSTALL) MacOS-X/coq-$(VERSION).info -r MacOS-X/Resources
 
 
 macosx-dmg:
