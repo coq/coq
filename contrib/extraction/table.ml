@@ -100,9 +100,9 @@ let init_records () = records := KNmap.empty
 let projs = ref (Refmap.empty : int Refmap.t)
 let init_projs () = projs := Refmap.empty
 
-let add_record kn n l = 
-  records := KNmap.add kn l !records; 
-  projs := List.fold_right (fun r -> Refmap.add r n) l !projs
+let add_record kn n (l1,l2) = 
+  records := KNmap.add kn l1 !records; 
+  projs := List.fold_right (fun r -> Refmap.add r n) l2 !projs
 
 let find_projections kn = KNmap.find kn !records
 let is_projection r = Refmap.mem r !projs

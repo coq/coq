@@ -56,7 +56,8 @@ val lookup_ind : kernel_name -> ml_ind
 val add_recursors : Environ.env -> kernel_name -> unit
 val is_recursor : global_reference -> bool 
 
-val add_record : kernel_name -> int -> global_reference list -> unit
+val add_record : 
+  kernel_name -> int -> global_reference list * global_reference list -> unit
 val find_projections : kernel_name -> global_reference list
 val is_projection : global_reference -> bool 
 val projection_arity : global_reference -> int

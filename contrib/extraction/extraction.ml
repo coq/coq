@@ -345,13 +345,21 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	  try (find_structure ip).s_PROJ 
 	  with Not_found -> raise (I Standard);
 	in 
-	let s = List.map (type_neq (mlt_env env) Tdummy) typ in
 	let n = nb_default_params env mip0.mind_nf_arity in
-	let check (_,o) = match o with 
-	  | None -> raise (I Standard)
-	  | Some kn -> ConstRef kn 
-	in  
-	add_record kn n (List.map check (List.filter fst (List.combine s projs))); 
+	let rec check = function 
+          | [] -> [],[]
+          | (typ, kno) :: l -> 
+              let l1,l2 = check l in 
+              if type_eq (mlt_env env) Tdummy typ then l1,l2 
+              else match kno with 
+                | None -> raise (I Standard) 
+                | Some kn -> 
+                    let r = ConstRef kn in 
+                    if List.mem false (type_to_sign (mlt_env env) typ) 
+                    then r :: l1, l2 
+                    else r :: l1, r :: l2
+	in 
+	add_record kn n (check (List.combine typ projs)); 
 	raise (I Record)
       with (I info) -> info
     in
