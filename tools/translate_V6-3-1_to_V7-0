@@ -8,8 +8,7 @@ echo "- Various renamings of commands as described in document Changes.ps"
 
 for i in $*
   do sed -e "s/\.\([A-Z]\)/\. \1/g" -e "s/AddPath/Add LoadPath/g" \
-    -e "s/~</~ </g" -e "s/|</| </g" -e "s/\([^ ]\)\?/\1 \?/g" \
-    -e "s/\?\([^ ]\)/\? \1/g" \
+    -e "s/~</~ </g" -e "s/|</| </g" \
     -e "s/AddPath/Add LoadPath/g" -e "s/DelPath/Remove LoadPath/g" \
     -e "s/AddRecPath/Add Rec LoadPath/g" \
     -e "s/Implicit  *Arguments  *On/Set Implicit Arguments/g" \
