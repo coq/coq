@@ -618,32 +618,6 @@ Record Setoid_Theory  (A: Type) (Aeq: relation A) : Prop :=
    Seq_sym : forall x y:A, Aeq x y -> Aeq y x;
    Seq_trans : forall x y z:A, Aeq x y -> Aeq y z -> Aeq x z}.
 
-Definition argument_class_of_setoid_theory:
- forall (A: Type) (Aeq: relation A),
-  Setoid_Theory Aeq -> Argument_Class.
- intros.
- apply (@SymmetricReflexive variance _ Aeq).
- exact (Seq_sym H).
- exact (Seq_refl H).
-Defined.
-
-Definition relation_class_of_setoid_theory :=
- fun A Aeq Setoid =>
-  relation_class_of_argument_class
-   (@argument_class_of_setoid_theory A Aeq Setoid).
-
-Definition equality_morphism_of_setoid_theory:
- forall (A: Type) (Aeq: relation A) (ST: Setoid_Theory Aeq),
-   let ASetoidClass := argument_class_of_setoid_theory ST in 
-    (Morphism_Theory (cons ASetoidClass (singl ASetoidClass))
-      Iff_Relation_Class).
- intros.
- exists Aeq.
- pose (sym   := Seq_sym ST);  clearbody sym.
- pose (trans := Seq_trans ST); clearbody trans.
- unfold make_compatibility_goal; simpl; split; eauto.
-Defined.
-
 (* END OF UTILITY/BACKWARD COMPATIBILITY PART *)
 
 (* A FEW EXAMPLES ON iff *)

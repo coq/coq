@@ -56,7 +56,8 @@ type relation =
      rel_refl: constr option;
      rel_sym: constr option;
      rel_trans : constr option;
-     rel_quantifiers_no: int  (* it helps unification *)
+     rel_quantifiers_no: int  (* it helps unification *);
+     rel_X_relation_class: constr
    }
 
 type 'a relation_class =
@@ -298,11 +299,13 @@ let subst_relation subst relation =
   let rel_refl' = option_app (subst_mps subst) relation.rel_refl in
   let rel_sym' = option_app (subst_mps subst) relation.rel_sym in
   let rel_trans' = option_app (subst_mps subst) relation.rel_trans in
+  let rel_X_relation_class' = subst_mps subst relation.rel_X_relation_class in
     if rel_a' == relation.rel_a
       && rel_aeq' == relation.rel_aeq
       && rel_refl' == relation.rel_refl
       && rel_sym' == relation.rel_sym
       && rel_trans' == relation.rel_trans
+      && rel_X_relation_class' == relation.rel_X_relation_class
     then
       relation
     else
@@ -311,7 +314,8 @@ let subst_relation subst relation =
         rel_refl = rel_refl' ;
         rel_sym = rel_sym';
         rel_trans = rel_trans';
-        rel_quantifiers_no = relation.rel_quantifiers_no
+        rel_quantifiers_no = relation.rel_quantifiers_no;
+        rel_X_relation_class = rel_X_relation_class'
       }
       
 let equiv_list () = List.map (fun x -> x.rel_aeq) (Gmap.rng !relation_table)
@@ -537,31 +541,29 @@ let check_is_dependent n args_ty output =
    let args_ty, output = aux ty in
    List.rev args_ty_quantifiers, args_ty, output
 
+let cic_relation_class_of_X_relation typ value =
+ function
+    {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=Some refl; rel_sym=None} ->
+     mkApp ((Lazy.force coq_AsymmetricReflexive),
+      [| typ ; value ; rel_a ; rel_aeq; refl |])
+  | {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=Some refl; rel_sym=Some sym} ->
+     mkApp ((Lazy.force coq_SymmetricReflexive),
+      [| typ ; rel_a ; rel_aeq; sym ; refl |])
+  | {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=None; rel_sym=None} ->
+     mkApp ((Lazy.force coq_AsymmetricAreflexive),
+      [| typ ; value ; rel_a ; rel_aeq |])
+  | {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=None; rel_sym=Some sym} ->
+     mkApp ((Lazy.force coq_SymmetricAreflexive),
+      [| typ ; rel_a ; rel_aeq; sym |])
+
 let cic_relation_class_of_X_relation_class typ value =
  function
-    Relation
-     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=Some refl; rel_sym=None}
-    ->
-     mkApp ((Lazy.force coq_AsymmetricReflexive),
-      [| Lazy.force typ ; Lazy.force value ; rel_a ; rel_aeq; refl |])
-  | Relation
-     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=Some refl; rel_sym=Some sym}
-    ->
-     mkApp ((Lazy.force coq_SymmetricReflexive),
-      [| Lazy.force typ ; rel_a ; rel_aeq; sym ; refl |])
-  | Relation
-     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=None; rel_sym=None}
-    ->
-     mkApp ((Lazy.force coq_AsymmetricAreflexive),
-      [| Lazy.force typ ; Lazy.force value ; rel_a ; rel_aeq |])
-  | Relation
-     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=None; rel_sym=Some sym}
-    ->
-     mkApp ((Lazy.force coq_SymmetricAreflexive),
-      [| Lazy.force typ ; rel_a ; rel_aeq; sym |])
+    Relation {rel_X_relation_class=x_relation_class} ->
+     mkApp (x_relation_class, [| typ ; value |])
   | Leibniz (Some t) ->
-     mkApp ((Lazy.force coq_Leibniz), [| Lazy.force typ ; t |])
+     mkApp ((Lazy.force coq_Leibniz), [| typ ; t |])
   | Leibniz None -> assert false
+
 
 let cic_precise_relation_class_of_relation_class =
  function
@@ -590,17 +592,19 @@ let cic_precise_relation_class_of_relation_class =
       mkApp ((Lazy.force coq_RLeibniz), [| t |]), true
   | Leibniz None -> assert false
 
-let cic_relation_class_of_relation_class =
- cic_relation_class_of_X_relation_class coq_unit coq_tt
+let cic_relation_class_of_relation_class rel =
+ cic_relation_class_of_X_relation_class
+  (Lazy.force coq_unit) (Lazy.force coq_tt) rel
 
 let cic_argument_class_of_argument_class (variance,arg) =
  let coq_variant_value =
   match variance with
-     None -> coq_Covariant (* dummy value, it won't be used *)
-   | Some true -> coq_Covariant
-   | Some false -> coq_Contravariant
+     None -> (Lazy.force coq_Covariant) (* dummy value, it won't be used *)
+   | Some true -> (Lazy.force coq_Covariant)
+   | Some false -> (Lazy.force coq_Contravariant)
  in
-  cic_relation_class_of_X_relation_class coq_variance coq_variant_value arg
+  cic_relation_class_of_X_relation_class (Lazy.force coq_variance)
+   coq_variant_value arg
 
 let cic_arguments_of_argument_class_list args =
  let rec aux =
@@ -641,7 +645,8 @@ let apply_to_relation subst rel =
      rel_refl = option_app (fun c -> mkApp (c,subst)) rel.rel_refl ; 
      rel_sym = option_app (fun c -> mkApp (c,subst)) rel.rel_sym;
      rel_trans = option_app (fun c -> mkApp (c,subst)) rel.rel_trans;
-     rel_quantifiers_no = new_quantifiers_no }
+     rel_quantifiers_no = new_quantifiers_no;
+     rel_X_relation_class = mkApp (rel.rel_X_relation_class, subst) }
 
 let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
  let env = Global.env() in
@@ -960,13 +965,33 @@ let int_add_relation id a aeq refl sym trans =
   option_iter (check_refl env a_quantifiers_rev a aeq) refl ;
   option_iter (check_sym env a_quantifiers_rev a aeq) sym ;
   option_iter (check_trans env a_quantifiers_rev a aeq) trans ;
+  let quantifiers_no = List.length a_quantifiers_rev in
   let aeq_rel =
    { rel_a = a;
      rel_aeq = aeq;
      rel_refl = refl;
      rel_sym = sym;
      rel_trans = trans;
-     rel_quantifiers_no = List.length a_quantifiers_rev } in
+     rel_quantifiers_no = quantifiers_no;
+     rel_X_relation_class = mkProp (* dummy value, overwritten below *) } in
+  let x_relation_class =
+   let subst =
+    Array.of_list
+     (Util.list_map_i (fun i _ -> mkRel (i + 2)) 1 a_quantifiers_rev) in
+   cic_relation_class_of_X_relation
+    (mkRel 2) (mkRel 1) (apply_to_relation subst aeq_rel) in
+  let _ =
+   Declare.declare_internal_constant id
+    (DefinitionEntry
+      {const_entry_body =
+        Sign.it_mkLambda_or_LetIn x_relation_class
+         ([ Name (id_of_string "v"),None,mkRel 1;
+            Name (id_of_string "X"),None,mkType (Termops.new_univ ())] @
+            a_quantifiers_rev);
+       const_entry_type = None;
+       const_entry_opaque = false},
+      IsDefinition) in
+  let aeq_rel = { aeq_rel with rel_X_relation_class = current_constant id } in
   Lib.add_anonymous_leaf (relation_to_obj (aeq, aeq_rel)) ;
   Options.if_verbose ppnl (prterm aeq ++ str " is registered as a relation");
   match trans with
@@ -1060,34 +1085,7 @@ let add_setoid id a aeq th =
     Sign.it_mkLambda_or_LetIn
      (mkApp ((Lazy.force coq_seq_trans),
        [| a_instance; aeq_instance; th_instance |])) a_quantifiers_rev in
-   let aeq_rel =
-    { rel_a = a ;
-      rel_aeq = aeq ;
-      rel_refl = Some refl ;
-      rel_sym = Some sym ;
-      rel_trans = Some trans;
-      rel_quantifiers_no = List.length a_quantifiers_rev } in
-   let aeq_rel_class_and_var = None, Relation aeq_rel in
-   Lib.add_anonymous_leaf (relation_to_obj (aeq, aeq_rel)) ;
-   Options.if_verbose ppnl (prterm aeq ++ str" is registered as a relation");
-   let mor_name = id_of_string (string_of_id id ^ "_morphism") in
-   let _ =
-    Declare.declare_internal_constant mor_name
-     (DefinitionEntry
-       {const_entry_body =
-         Sign.it_mkLambda_or_LetIn
-          (mkApp
-            ((Lazy.force coq_equality_morphism_of_setoid_theory),
-             [| a_instance ; aeq_instance ; th_instance |])) a_quantifiers_rev ;
-        const_entry_type = None;
-        const_entry_opaque = false},
-       IsDefinition) in
-   let a_quantifiers_rev =
-    List.map (fun (n,b,t) -> assert (b = None); n,t) a_quantifiers_rev
-   in
-    add_morphism None mor_name
-     (aeq,a_quantifiers_rev,[aeq_rel_class_and_var ; aeq_rel_class_and_var],
-       Lazy.force coq_iff_relation)
+   int_add_relation id a aeq (Some refl) (Some sym) (Some trans)
 
 
 (****************************** The tactic itself *******************************)

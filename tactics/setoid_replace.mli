@@ -19,7 +19,8 @@ type relation =
      rel_refl: constr option;
      rel_sym: constr option;
      rel_trans : constr option;
-     rel_quantifiers_no: int  (* it helps unification *)
+     rel_quantifiers_no: int  (* it helps unification *);
+     rel_X_relation_class: constr
    }
 
 type 'a relation_class =
