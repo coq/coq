@@ -127,6 +127,12 @@ Proof.
 Qed.
 
 Hints Resolve mult_lt : arith.
+V7only [
+Notation lt_mult_left := mult_lt.
+(* Theorem lt_mult_left :
+   (x,y,z:nat) (lt x y) -> (lt (mult (S z) x) (mult (S z) y)).
+*)
+].
 
 Lemma lt_mult_right :
   (m,n,p:nat) (lt m n) -> (lt (0) p) -> (lt (mult m p) (mult n p)).
@@ -135,17 +141,6 @@ NewInduction p.
 Elim (lt_n_n ? H0).
 Rewrite mult_sym.
 Replace (mult n (S p)) with (mult (S p) n); Auto with arith.
-Qed.
-
-Theorem lt_mult_left :
- (x,y,z:nat) (lt x y) -> (lt (mult (S z) x) (mult (S z) y)).
-Proof.
-Intros x y z H;Elim z; [
-  Simpl; Do 2 Rewrite <- plus_n_O; Assumption
-| Simpl; Intros n H1; Apply lt_trans with m:=(plus y (plus x (mult n x))); [
-    Rewrite (plus_sym x (plus x (mult n x)));
-    Rewrite (plus_sym y (plus x (mult n x))); Apply lt_reg_l; Assumption
-  | Apply lt_reg_l;Assumption ]].
 Qed.
 
 Lemma mult_le_conv_1 : (m,n,p:nat) (le (mult (S m) n) (mult (S m) p)) -> (le n p).
