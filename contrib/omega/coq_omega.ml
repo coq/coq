@@ -1664,7 +1664,11 @@ let destructure_hyps gl =
 		    (intros_using [i1;i2]))
 		 (loop (i1::i2::evbd) ((i1,None,t1)::(i2,None,t2)::lit)))
           | Kimp(t1,t2) ->
-              if isprop (pf_type_of gl t1) & closed0 t2 then begin
+              if
+                is_Prop (pf_type_of gl t1) &
+                is_Prop (pf_type_of gl t2) &
+                closed0 t2
+              then
 		(tclTHEN 
 		   (tclTHEN 
 		      (tclTHEN
@@ -1675,7 +1679,7 @@ let destructure_hyps gl =
 			 (clear [i])) 
 		      (intros_using [i])) 
 		   (loop evbd ((i,None,mk_or (mk_not t1) t2)::lit)))
-              end else
+              else
 		loop evbd lit
           | Kapp("not",[t]) -> 
               begin match destructurate t with 
