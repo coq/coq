@@ -155,15 +155,15 @@ let pr_var_decl env (id,c,typ) =
 
 let pr_rel_decl env (na,c,typ) =
   let pbody = match c with
-    | None ->  (mt ())
+    | None -> mt ()
     | Some c ->
 	(* Force evaluation *) 
 	let pb = prterm_env env c in
 	(str":=" ++ spc () ++ pb ++ spc ()) in
   let ptyp = prtype_env env typ in
   match na with
-    | Anonymous -> (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
-    | Name id -> (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+  | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+  | Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
 
 
 (* Prints out an "env" in a nice format.  We print out the
@@ -190,7 +190,7 @@ let pr_rel_context env rel_context =
 	else 
           (str "(" ++ pb ++ str")" ++ spc () ++ penvtl)
   in 
-  prec env (List.rev rel_context)
+  hov 0 (prec env (List.rev rel_context))
 
 (* Prints an env (variables and de Bruijn). Separator: newline *)
 let pr_context_unlimited env =

@@ -230,7 +230,7 @@ let print_one_inductive (sp,tyi) =
   let env = Global.env () in
   let envpar = push_rel_context params env in
   hov 0 (
-    pr_global (IndRef (sp,tyi)) ++ brk(1,2) ++ print_params env params ++
+    pr_global (IndRef (sp,tyi)) ++ brk(1,4) ++ print_params env params ++
     str ": " ++ prterm_env envpar arity ++ str " :=") ++
   brk(0,2) ++ print_constructors envpar cstrnames cstrtypes
 
