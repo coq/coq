@@ -7,14 +7,14 @@ together, as well as a mean of massive abstraction.
 \begin{tabular}{|rcl|}
 \hline
 {\modtype}  & ::= & {\ident} \\
- & $|$ & \modtype \texttt{ with Definition }{\ident} \verb.:=. {\term} \\
- & $|$ & \modtype \texttt{ with Module }{\ident} \verb.:=. {\qualid} \\
+ & $|$ & {\modtype} \texttt{ with Definition }{\ident} \verb.:=. {\term} \\
+ & $|$ & {\modtype} \texttt{ with Module }{\ident} \verb.:=. {\qualid} \\
  &&\\
 
-{\onemodbinding}  & ::= & \nelist{\ident}{\texttt{,}} \verb.:. {\modtype} \\
+{\onemodbinding}  & ::= & {\tt ( \nelist{\ident}{} \verb.:. {\modtype} )}\\
  &&\\
 
-{\modbindings} & ::= & \nelist{\onemodbinding}{\texttt{;}}\\
+{\modbindings} & ::= & \nelist{\onemodbinding}{}\\
  &&\\
 
 {\modexpr} & ::= & \nelist{\qualid}{} \\
@@ -27,16 +27,16 @@ together, as well as a mean of massive abstraction.
 This command is used to start an interactive module named {\ident}.
 
 \begin{Variants}
-\item{\tt Module \ident [\modbindings]}\\
+\item{\tt Module {\ident} {\modbindings}}\\
   Starts an interactive functor with parameters given by {\modbindings}.
-\item{\tt Module {\ident} \verb.:. \modtype}\\
+\item{\tt Module {\ident} \verb.:. {\modtype}}\\
   Starts an interactive module specifying its module type. 
-\item{\tt Module {\ident} [\modbindings] \verb.:. \modtype}\\
+\item{\tt Module {\ident} {\modbindings} \verb.:. {\modtype}}\\
   Starts an interactive functor with parameters given by
-  {\modbindings}, and output module type \modtype.
-\item{\tt Module {\ident} \verb.<:. \modtype}\\
+  {\modbindings}, and output module type {\modtype}.
+\item{\tt Module {\ident} \verb.<:. {\modtype}}\\
   Starts an interactive module satisfying {\modtype}. 
-\item{\tt Module {\ident} [\modbindings] \verb.<:. \modtype}\\
+\item{\tt Module {\ident} {\modbindings} \verb.<:. {\modtype}}\\
   Starts an interactive functor with parameters given by
   {\modbindings}. The output module type is verified against the
   module type {\modtype}.
@@ -46,7 +46,7 @@ This command is used to start an interactive module named {\ident}.
 This command closes the interactive module {\ident}. If the module type
 was given the content of the module is matched against it and an error
 is signaled if the matching fails. If the module is basic (is not a
-functor) its components (constants, inductives, submodules etc) are
+functor) its components (constants, inductive types, submodules etc) are
 now available through the dot notation.
 
 \begin{ErrMsgs}
@@ -57,28 +57,29 @@ now available through the dot notation.
 
 
 \subsection{\tt Module {\ident} := {\modexpr}}\comindex{Module}
-This command defines the module identifier {\ident} to be equal to \modexpr.
+This command defines the module identifier {\ident} to be equal to {\modexpr}.
 
 \begin{Variants}
-\item{\tt Module \ident [\modbindings] := {\modexpr}}\\
-  Defines a functor with parameters given by {\modbindings} and body \modexpr.
-\item{\tt Module {\ident} \verb.:. {\modtype} := {\modexpr}}\\
-  Defines a module with body {\modexpr} and interface {\modtype}.
-\item{\tt Module {\ident} \verb.<:. {\modtype} := {\modexpr}}\\
-  Defines a module with body {\modexpr}, satisfying {\modtype}.
-\item{\tt Module {\ident} [\modbindings] \verb.:. {\modtype} := {\modexpr}}\\
-  Defines a functor with parameters given by {\modbindings}, and
-  output module type {\modtype}, with body {\modexpr}. 
-\item{\tt Module {\ident} [\modbindings] \verb.<:. {\modtype} := {\modexpr}}\\
-  Defines a functor with parameters given by {\modbindings} with body
-  {\modexpr}. The body is checked against {\modtype}.
+\item{\tt Module {\ident} {\modbindings} := {\modexpr}}\\
+ Defines a functor with parameters given by {\modbindings} and body {\modexpr}.
+% Particular cases of the next 2 items
+%\item{\tt Module {\ident} \verb.:. {\modtype} := {\modexpr}}\\
+%  Defines a module with body {\modexpr} and interface {\modtype}.
+%\item{\tt Module {\ident} \verb.<:. {\modtype} := {\modexpr}}\\
+%  Defines a module with body {\modexpr}, satisfying {\modtype}.
+\item{\tt Module {\ident} {\modbindings} \verb.:. {\modtype} := {\modexpr}}\\
+  Defines a functor with parameters given by {\modbindings} (possibly none),
+  and output module type {\modtype}, with body {\modexpr}. 
+\item{\tt Module {\ident} {\modbindings} \verb.<:. {\modtype} := {\modexpr}}\\
+  Defines a functor with parameters given by {\modbindings} (possibly none) 
+  with body {\modexpr}. The body is checked against {\modtype}.
 \end{Variants}
 
 \subsection{\tt Module Type {\ident}}\comindex{Module Type}
 This command is used to start an interactive module type {\ident}.
 
 \begin{Variants}
-\item{\tt Module Type \ident [\modbindings]}\\
+\item{\tt Module Type {\ident} {\modbindings}}\\
   Starts an interactive functor type with parameters given by {\modbindings}.
 \end{Variants}
 
@@ -93,7 +94,7 @@ This command closes the interactive module type {\ident}.
 Define a module type {\ident} equal to {\modtype}.
 
 \begin{Variants}
-\item {\tt Module Type {\ident} [\modbindings] := {\modtype}} \\
+\item {\tt Module Type {\ident} {\modbindings} := {\modtype}} \\
   Define a functor type {\ident} specifying functors taking arguments
   {\modbindings} and returning {\modtype}.
 \end{Variants}
@@ -103,28 +104,29 @@ Starts an interactive module declaration. This command is available
 only in module types. 
 
 \begin{Variants}
-\item{\tt Declare Module \ident [\modbindings]}\\
+\item{\tt Declare Module {\ident} {\modbindings}}\\
   Starts an interactive declaration of a functor with parameters given
   by {\modbindings}.
-\item{\tt Declare Module {\ident} \verb.<:. \modtype}\\
-  Starts an interactive declaration of a module satisfying {\modtype}.
-\item{\tt Declare Module {\ident} [\modbindings] \verb.<:. \modtype}\\
+% Particular case of the next item
+%\item{\tt Declare Module {\ident} \verb.<:. {\modtype}}\\
+%  Starts an interactive declaration of a module satisfying {\modtype}.
+\item{\tt Declare Module {\ident} {\modbindings} \verb.<:. {\modtype}}\\
   Starts an interactive declaration of a functor with parameters given
-  by {\modbindings}. The declared output module type is verified
-  against the module type {\modtype}.
+  by {\modbindings} (possibly none). The declared output module type is
+  verified against the module type {\modtype}.
 \end{Variants}
 
 \subsection{\tt End {\ident}}
 This command closes the interactive declaration of module {\ident}.
 
-\subsection{\tt Declare Module {\ident} : \modtype}
+\subsection{\tt Declare Module {\ident} : {\modtype}}
 Declares a module of {\ident} of type {\modtype}. This command is available
 only in module types. 
 
 \begin{Variants}
-\item{\tt Declare Module {\ident} [\modbindings] \verb.:. \modtype}\\
+\item{\tt Declare Module {\ident} {\modbindings} \verb.:. {\modtype}}\\
   Declares a functor with parameters {\modbindings} and output module
-  type \modtype.
+  type {\modtype}.
 \item{\tt Declare Module {\ident} := {\qualid}}\\
   Declares a module equal to the module {\qualid}.
 \item{\tt Declare Module {\ident} \verb.<:. {\modtype} := {\qualid}}\\
@@ -139,7 +141,7 @@ Let us define a simple module.
 \begin{coq_example}
 Module M.
 Definition T := nat.
-Definition x := 0%N.
+Definition x := 0.
 Definition y : bool.
   exact true.
 Defined.
@@ -215,7 +217,7 @@ End Two.
 and apply it to our modules and do some computations
 \begin{coq_example}
 Module Q := Two M N.
-Eval compute in (fst Q.x + snd Q.x)%N.
+Eval compute in (fst Q.x + snd Q.x).
 \end{coq_example}
 In the end, let us define a module type with two sub-modules, sharing
 some of the fields and give one of its possible implementations:
@@ -232,7 +234,7 @@ End SIG2.
 Module Mod <: SIG2.
 Module M1.
 Definition T := nat.
-Definition x := 1%N.
+Definition x := 1.
 End M1.
 Module M2 := M.
 \end{coq_example*}
@@ -249,7 +251,7 @@ Reset Initial.
   the proof editing mode is still unavailable.
 \item One can have sections inside a module or a module type, but
   not a module or a module type inside a section.
-\item Commands like \texttt{Hint} or \texttt{Syntactic Definition} can
+\item Commands like \texttt{Hint} or \texttt{Notation} can
   also appear inside modules and module types. Note that in case of a
   module definition like:
 
