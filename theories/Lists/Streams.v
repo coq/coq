@@ -68,7 +68,7 @@ CoInductive EqSt  : Stream->Stream->Prop :=
 
 (** A coinduction principle *)
 
-Meta Definition CoInduction proof := 
+Tactic Definition CoInduction proof := 
   Cofix proof; Intros; Constructor;
     [Clear proof | Try (Apply proof;Clear proof)].
 
@@ -76,7 +76,7 @@ Meta Definition CoInduction proof :=
 (** Extensional equality is an equivalence relation *)
 
 Theorem  EqSt_reflex : (s:Stream)(EqSt s s).
-(CoInduction EqSt_reflex).
+CoInduction EqSt_reflex.
 Reflexivity.
 Qed.
 
