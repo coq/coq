@@ -1396,17 +1396,18 @@ proofs/tacexpr.cmx: proofs/tacexpr.ml
 
 # files compiled with camlp4 because of macros
 
-lib/compat.cmo: lib/compat.ml
+lib/compat.cmo: lib/compat.ml4
 	$(SHOW)'OCAMLC4  $<' 
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) -D$(CAMLVERSION) -impl" -c -impl $<
 
-lib/compat.cmx: lib/compat.ml 
+lib/compat.cmx: lib/compat.ml4
 	$(SHOW)'OCAMLC  $<' 
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) -D$(CAMLVERSION) -impl" -c -impl $<
 
 # files compiled with camlp4 because of streams syntax
 
 ML4FILES += lib/pp.ml4 			\
+         lib/compat.ml4 	       	\
 	 contrib/xml/xml.ml4		\
 	 contrib/xml/acic2Xml.ml4	\
 	 contrib/xml/proofTree2Xml.ml4	\
