@@ -17,9 +17,9 @@ val branch_scheme :
 
 (* Compilation of pattern-matching. *)
 
-val compile_multcase :
+val compile_cases :
   (trad_constraint -> env -> rawconstr -> unsafe_judgment)
-  * 'a evar_defs -> trad_constraint -> env -> loc ->
+  * 'a evar_defs -> trad_constraint -> env ->
     rawconstr option * rawconstr list *
     (identifier list * pattern list * rawconstr) list ->
     unsafe_judgment
