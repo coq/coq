@@ -60,7 +60,7 @@ tar-gz:
 	@cvs export -d $(COQPACKAGE) -r $(DASHEDVERSION) $(MAJORVERSION)
 	@echo done
 	@echo -n Removing the maintenance files and doc...
-	@rm -rf ${COQPACKAGE}/doc
+#	@rm -rf ${COQPACKAGE}/doc     # doc is implementation doc
 	@rm -rf ${COQPACKAGE}/distrib
 #	@rm -rf ${COQPACKAGE}/KNOWN-BUGS
 	@rm -rf ${COQPACKAGE}/{TODO,ANNONCE,PROBLEMES}
