@@ -118,7 +118,7 @@ let print_mutual sp mib =
 		      (body_of_type (mis_user_arity mis)) in
       (hOV 0
          [< (hOV 0
-	       [< pr_id (mis_typename mis) ; 'bRK(1,2); params;
+	       [< pr_global (IndRef (sp,tyi)) ; 'bRK(1,2); params;
 	          'sTR ": "; prterm_env env_ar arity; 'sTR " :=" >]);
             'bRK(1,2); print_constructors mis >]) 
   in 
@@ -129,7 +129,7 @@ let print_mutual sp mib =
     let (_,arity) = decomp_n_prod env evd nparams
 		      (body_of_type (mis_user_arity mis0)) in 
     let sfinite = if mis_finite mis0 then "Inductive " else "CoInductive " in
-    (hOV 0 [< 'sTR sfinite ; pr_id (mis_typename mis0);
+    (hOV 0 [< 'sTR sfinite ; pr_global (IndRef (sp,0));
               if nparams = 0 then 
 		[<>] 
               else 
