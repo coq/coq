@@ -297,5 +297,4 @@ let print_ml_path () =
 	  
 let print_ml_modules () =
   let l = get_loaded_modules () in
-  pP [< 'sTR"Loaded ML Modules : " ;
-        hOV 0 (prlist_with_sep pr_fnl pr_str l); 'fNL >]
+  pP [< 'sTR"Loaded ML Modules: " ; pr_vertical_list pr_str l >]

@@ -363,12 +363,12 @@ let _ =
 	   (fun () ->
               let opened = Library.opened_modules ()
 	      and loaded = Library.loaded_modules () in
-              mSG [< 'sTR"Loaded Modules: ";
-		     hOV 0 (prlist_with_sep pr_fnl pr_dirpath loaded);
-		     'fNL;
-		     'sTR"Imported (open) Modules: ";
-		     hOV 0 (prlist_with_sep pr_fnl pr_dirpath opened); 
-		     'fNL >])
+              let loaded_opened = list_intersect loaded opened
+              and only_loaded = list_subtract loaded opened in
+              mSG [< 'sTR"Loaded and imported modules: "; 
+                     pr_vertical_list pr_dirpath loaded_opened; 'fNL;
+		     'sTR"Loaded and not imported modules: ";
+		     pr_vertical_list pr_dirpath only_loaded >])
        | _ -> bad_vernac_args "PrintModules")
 
 (* Sections *)
