@@ -314,9 +314,7 @@ let projectAndApply thin id eqname names depids gls =
     match (kind_of_term t1, kind_of_term t2) with
       | Var id1, _ -> generalizeRewriteIntros (subst_hyp_LR id) depids id1 gls
       | _, Var id2 -> generalizeRewriteIntros (subst_hyp_RL id) depids id2 gls
-      | _ ->
-	  
-	  tac id gls
+      | _ -> tac id gls
   in
   let deq_trailer id neqns =
     tclTHENSEQ 
@@ -325,8 +323,8 @@ let projectAndApply thin id eqname names depids gls =
 	 tclTHEN
 	   (intro_move idopt None)
 	   (* try again to substitute and if still not a variable after *)
-	   (* decomposition, arbitraryly try to rewrite RL !? *)
-	   (onLastHyp (substHypIfVariable subst_hyp_RL)))
+	   (* decomposition, arbitrarily try to rewrite RL !? *)
+	   (tclTRY (onLastHyp (substHypIfVariable subst_hyp_RL))))
 	 names);
        (if names = [] then clear [id] else tclIDTAC)]
   in
