@@ -108,7 +108,7 @@ let pr_name = function
 
 let pr_located pr (loc,x) = pr x
 
-let las = 2
+let las = 12
 
 let rec pr_patt inh p =
   let (strm,prec) = match p with
