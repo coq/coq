@@ -19,7 +19,7 @@ open Mlimport
    object expects, and what these arguments will become in the ML
    object. *)
    
-(* the flag [type_var] gives us information about an identifier
+(* The flag [type_var] gives us information about an identifier
    coming from a Lambda or a Product:
    \begin{itemize}
    \item [Varity] denotes identifiers of type an arity of sort $Set$
@@ -28,6 +28,10 @@ open Mlimport
      or of type of type $Prop$ 
    \item [Vdefault] represents the other cases 
    \end{itemize} *)
+
+(* Beware: we use signatures as stacks where the top element
+   (i.e. the first one) corresponds to the last abstraction encountered 
+   (i.e De Bruijn index 1) *) 
 
 type type_var = Varity | Vprop | Vdefault
 
@@ -58,11 +62,14 @@ type extraction_result =
 
 (*s Utility functions. *)
 
+(* Translation between [Type_extraction_result] and [type_var]. *)
+
 let v_of_t = function
   | Tprop -> Vprop
   | Tarity -> Varity
   | Tmltype _ -> Vdefault
 
+(* FIXME: to be moved somewhere else *)
 let array_foldi f a =
   let n = Array.length a in
   let rec fold i v = if i = n then v else fold (succ i) (f i a.(i) v) in
@@ -74,15 +81,25 @@ let id_of_name = function
   | Anonymous -> id_of_string "_"
   | Name id   -> id
 
+(* This function [params_of_sign] extracts the type parameters ('a in Caml)
+   from a signature. *)
+
 let params_of_sign = 
   List.fold_left (fun l v -> match v with Varity,id -> id :: l | _ -> l) []
 
+(* [get_arity c] returns [Some s] if [c] is an arity of sort [s], 
+   and [None] otherwise. *)
+(* FIXME: to be moved ? *)
 let rec get_arity env c =
   match kind_of_term (whd_betadeltaiota env Evd.empty c) with
     | IsProd (x,t,c0) -> get_arity (push_rel_assum (x,t) env) c0
     | IsCast (t,_) -> get_arity env t
     | IsSort s -> Some s
     | _ -> None
+
+(* The next function transforms an arity into a signature. It is used 
+   for example with the types of inductive definitions, which are known
+   to be already in arity form. *)
 
 let signature_of_arity = 
   let rec sign_of acc env c = match kind_of_term c with
@@ -103,11 +120,17 @@ let signature_of_arity =
   sign_of []
 
 (* [list_of_ml_arrows] applied to the ML type [a->b->]\dots[z->t]
-   returns the list [[a;b;...;z]]. *)
+   returns the list [[a;b;...;z]]. It is used when making the ML types
+   of inductive definitions. *)
+
 let rec list_of_ml_arrows = function
   | Tarr (a, b) -> a :: list_of_ml_arrows b
   | t -> []
 
+(* [renum_db] gives the new De Bruijn indices for variables in an ML term.
+   This translation is made according to a signature: only variables tagged
+   [Vdefault] are keeped *)
+	
 let renum_db sign n = 
   let rec renum = function
     | (1, (Vdefault,_)::_) -> 1
@@ -148,6 +171,10 @@ let add_inductive_declaration sp d =
 i*)
 
 (*s Extraction of a type. *)
+
+(* When calling [extract_type] we supposet that the type of [c] is an arity.
+   This is normaly checked in [extract_constr]. The signature [sign] is 
+   passed as an argument because FIXME *)
 
 let rec extract_type env sign c =
   let genv = Global.env() in
