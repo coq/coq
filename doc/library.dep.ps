@@ -1,9 +1,9 @@
 %!PS-Adobe-2.0
-%%Creator: dot version uwin98 (01-26-98)
-%%For: Gros nain
+%%Creator: dot version gviz 1.7.3b (Mon Feb 26 14:10:22 EST 2001)
+%%For: (herbelin) Hugo Herbelin
 %%Title: G
 %%Pages: (atend)
-%%BoundingBox: 36 36 525 235
+%%BoundingBox: 36 36 543 235
 %%EndComments
 %%BeginProlog
 save
@@ -47,7 +47,7 @@ DotDict begin
 		gsave
 			coordfont setfont
 			0 0 moveto
-			(() show i str cvs show (,) show j str cvs show ()) show
+			(\() show i str cvs show (,) show j str cvs show (\)) show
 		grestore
 	} if
 } bind def
@@ -131,239 +131,293 @@ def
 
 /curlayer 0 def
 
-%%EndResource
 %%EndProlog
 %%BeginSetup
 14 default-font-family set_font
+1 setmiterlimit
 % /arrowlength 10 def
 % /arrowwidth 5 def
+
+% make sure pdfmark is harmless for PS-interpreters other than Distiller
+/pdfmark where {pop} {userdict /pdfmark /cleartomark load put} ifelse
+% make '<<' and '>>' safe on PS Level 1 devices
+/languagelevel where {pop languagelevel}{1} ifelse
+2 lt {
+    userdict (<<) cvn ([) cvn load put
+    userdict (>>) cvn ([) cvn load put
+} if
+
+%%EndResource
 %%EndSetup
 %%Page: 1 1
-%%PageBoundingBox: 36 36 525 235
+%%PageBoundingBox: 36 36 543 235
+%%PageOrientation: Portrait
 gsave
-35 35 490 200 boxprim clip newpath
+35 35 508 200 boxprim clip newpath
 36 36 translate
 0 0 1 beginpage
 0 0 translate 0 rotate
+[ /CropBox [36 36 543 235] /PAGES pdfmark
 0.000 0.000 0.000 graphcolor
 14.00 /Times-Roman set_font
 
 %	States
 gsave 10 dict begin
-32 180 27 18 ellipse_path
+40 126 27 18 ellipse_path
 stroke
 gsave 10 dict begin
-32 181 moveto (States) 33 14.00 -0.50 alignedtext
+40 127 moveto (States) 33 14.00 -0.50 alignedtext
 end grestore
 end grestore
 
 %	Library
 gsave 10 dict begin
-136 180 31 18 ellipse_path
+144 126 31 18 ellipse_path
 stroke
 gsave 10 dict begin
-136 181 moveto (Library) 41 14.00 -0.50 alignedtext
+144 127 moveto (Library) 41 14.00 -0.50 alignedtext
 end grestore
 end grestore
 
 %	States -> Library
-newpath 59 180 moveto
-70 180 83 180 95 180 curveto
+newpath 67 126 moveto
+78 126 91 126 103 126 curveto
 stroke
-newpath 95 178 moveto
-105 180 lineto
-95 183 lineto
+newpath 103 124 moveto
+113 126 lineto
+103 129 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 
 %	Global
 gsave 10 dict begin
-238 180 29 18 ellipse_path
+246 126 29 18 ellipse_path
 stroke
 gsave 10 dict begin
-238 181 moveto (Global) 38 14.00 -0.50 alignedtext
+246 127 moveto (Global) 38 14.00 -0.50 alignedtext
 end grestore
 end grestore
 
 %	Library -> Global
-newpath 167 180 moveto
-177 180 188 180 198 180 curveto
+newpath 175 126 moveto
+185 126 196 126 206 126 curveto
 stroke
-newpath 198 178 moveto
-208 180 lineto
-198 183 lineto
+newpath 206 124 moveto
+216 126 lineto
+206 129 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 
 %	Lib
 gsave 10 dict begin
-238 126 27 18 ellipse_path
+246 72 27 18 ellipse_path
 stroke
 gsave 10 dict begin
-238 127 moveto (Lib) 19 14.00 -0.50 alignedtext
+246 73 moveto (Lib) 19 14.00 -0.50 alignedtext
 end grestore
 end grestore
 
 %	Library -> Lib
-newpath 159 168 moveto
-173 160 193 150 209 141 curveto
+newpath 167 114 moveto
+181 106 201 96 217 87 curveto
 stroke
-newpath 207 139 moveto
-217 137 lineto
-209 144 lineto
+newpath 215 85 moveto
+225 83 lineto
+217 90 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Opaque
+gsave 10 dict begin
+144 180 32 18 ellipse_path
+stroke
+gsave 10 dict begin
+144 181 moveto (Opaque) 43 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Opaque -> Global
+newpath 167 168 moveto
+181 160 200 151 216 142 curveto
+stroke
+newpath 214 140 moveto
+224 138 lineto
+216 145 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 
 %	Nametab
 gsave 10 dict begin
-340 153 35 18 ellipse_path
+349 126 35 18 ellipse_path
 stroke
 gsave 10 dict begin
-340 154 moveto (Nametab) 50 14.00 -0.50 alignedtext
+349 127 moveto (Nametab) 50 14.00 -0.50 alignedtext
 end grestore
 end grestore
 
-%	Libobject
+%	Global -> Nametab
+newpath 276 126 moveto
+285 126 294 126 303 126 curveto
+stroke
+newpath 303 124 moveto
+313 126 lineto
+303 129 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Nameops
 gsave 10 dict begin
-450 180 37 18 ellipse_path
+460 153 36 18 ellipse_path
 stroke
 gsave 10 dict begin
-450 181 moveto (Libobject) 53 14.00 -0.50 alignedtext
+460 154 moveto (Nameops) 52 14.00 -0.50 alignedtext
 end grestore
 end grestore
 
-%	Nametab -> Libobject
-newpath 372 161 moveto
-383 163 396 166 408 169 curveto
+%	Nametab -> Nameops
+newpath 381 134 moveto
+392 137 405 140 417 143 curveto
 stroke
-newpath 408 166 moveto
-417 172 lineto
-407 171 lineto
+newpath 418 141 moveto
+427 145 lineto
+417 145 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 
 %	Summary
 gsave 10 dict begin
-450 126 37 18 ellipse_path
+460 99 37 18 ellipse_path
 stroke
 gsave 10 dict begin
-450 127 moveto (Summary) 54 14.00 -0.50 alignedtext
+460 100 moveto (Summary) 54 14.00 -0.50 alignedtext
 end grestore
 end grestore
 
 %	Nametab -> Summary
-newpath 372 145 moveto
-383 143 395 140 406 137 curveto
+newpath 381 118 moveto
+392 116 405 112 417 109 curveto
 stroke
-newpath 406 134 moveto
-416 134 lineto
-407 139 lineto
-closepath
-gsave 0 setgray stroke grestore fill
-
-%	Global -> Nametab
-newpath 265 173 moveto
-275 170 287 167 298 164 curveto
-stroke
-newpath 298 161 moveto
-308 161 lineto
-299 166 lineto
+newpath 416 107 moveto
+426 107 lineto
+417 112 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 
 %	Lib -> Nametab
-newpath 263 133 moveto
-274 136 287 139 299 142 curveto
+newpath 267 83 moveto
+281 91 300 100 316 109 curveto
 stroke
-newpath 299 139 moveto
-308 145 lineto
-298 144 lineto
+newpath 316 106 moveto
+324 113 lineto
+314 111 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Libobject
+gsave 10 dict begin
+349 72 37 18 ellipse_path
+stroke
+gsave 10 dict begin
+349 73 moveto (Libobject) 53 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Lib -> Libobject
+newpath 273 72 moveto
+282 72 292 72 302 72 curveto
+stroke
+newpath 302 70 moveto
+312 72 lineto
+302 75 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 
 %	Impargs
 gsave 10 dict begin
-136 126 33 18 ellipse_path
+144 72 33 18 ellipse_path
 stroke
 gsave 10 dict begin
-136 127 moveto (Impargs) 45 14.00 -0.50 alignedtext
+144 73 moveto (Impargs) 45 14.00 -0.50 alignedtext
 end grestore
 end grestore
 
 %	Impargs -> Global
-newpath 160 139 moveto
-174 147 192 156 207 164 curveto
+newpath 168 85 moveto
+182 93 200 102 215 110 curveto
 stroke
-newpath 207 161 moveto
-215 168 lineto
-205 166 lineto
+newpath 215 107 moveto
+223 114 lineto
+213 112 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 
 %	Impargs -> Lib
-newpath 169 126 moveto
-180 126 191 126 201 126 curveto
+newpath 177 72 moveto
+188 72 199 72 209 72 curveto
 stroke
-newpath 201 124 moveto
-211 126 lineto
-201 129 lineto
+newpath 209 70 moveto
+219 72 lineto
+209 75 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 
 %	Goptions
 gsave 10 dict begin
-136 72 36 18 ellipse_path
+144 18 36 18 ellipse_path
 stroke
 gsave 10 dict begin
-136 73 moveto (Goptions) 51 14.00 -0.50 alignedtext
+144 19 moveto (Goptions) 51 14.00 -0.50 alignedtext
 end grestore
 end grestore
 
-%	Goptions -> Lib
-newpath 161 85 moveto
-175 93 193 102 209 111 curveto
+%	Goptions -> Global
+newpath 166 32 moveto
+172 35 176 38 180 42 curveto
+196 60 202 84 216 102 curveto
+217 103 218 104 219 105 curveto
 stroke
-newpath 209 108 moveto
-217 115 lineto
-207 113 lineto
+newpath 221 104 moveto
+227 112 lineto
+218 107 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Goptions -> Lib
+newpath 169 31 moveto
+183 39 201 48 217 57 curveto
+stroke
+newpath 217 54 moveto
+225 61 lineto
+215 59 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 
 %	Declare
 gsave 10 dict begin
-32 72 32 18 ellipse_path
+40 72 32 18 ellipse_path
 stroke
 gsave 10 dict begin
-32 73 moveto (Declare) 43 14.00 -0.50 alignedtext
+40 73 moveto (Declare) 43 14.00 -0.50 alignedtext
 end grestore
 end grestore
 
-%	Declare -> Impargs
-newpath 56 84 moveto
-70 92 88 101 104 110 curveto
+%	Declare -> Library
+newpath 64 84 moveto
+78 92 97 101 113 110 curveto
 stroke
-newpath 104 107 moveto
-112 114 lineto
-102 112 lineto
+newpath 113 107 moveto
+121 114 lineto
+111 112 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 
-%	Indrec
-gsave 10 dict begin
-136 18 28 18 ellipse_path
+%	Declare -> Impargs
+newpath 72 72 moveto
+81 72 92 72 101 72 curveto
 stroke
-gsave 10 dict begin
-136 19 moveto (Indrec) 35 14.00 -0.50 alignedtext
-end grestore
-end grestore
-
-%	Declare -> Indrec
-newpath 56 60 moveto
-70 52 90 42 106 33 curveto
-stroke
-newpath 104 31 moveto
-114 29 lineto
-106 36 lineto
+newpath 101 70 moveto
+111 72 lineto
+101 75 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 endpage
