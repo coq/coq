@@ -211,7 +211,7 @@ theories7/ZArith/fast_integer.vo: theories7/ZArith/fast_integer.v theories7/NAri
 theories7/Reals/Rsyntax.vo: theories7/Reals/Rsyntax.v theories7/Reals/Rdefinitions.vo
 contrib7/omega/OmegaLemmas.vo: contrib7/omega/OmegaLemmas.v theories7/ZArith/ZArith_base.vo
 contrib7/omega/Omega.vo: contrib7/omega/Omega.v theories7/ZArith/ZArith_base.vo contrib7/omega/OmegaLemmas.vo theories7/ZArith/Zhints.vo
-contrib7/romega/ReflOmegaCore.vo: contrib7/romega/ReflOmegaCore.v theories7/Arith/Arith.vo theories7/Lists/PolyList.vo theories7/Bool/Bool.vo theories7/ZArith/ZArith.vo contrib7/omega/OmegaLemmas.vo theories7/Logic/Decidable.vo
+contrib7/romega/ReflOmegaCore.vo: contrib7/romega/ReflOmegaCore.v theories7/Arith/Arith.vo theories7/Lists/PolyList.vo theories7/Bool/Bool.vo theories7/ZArith/ZArith_base.vo contrib7/omega/OmegaLemmas.vo theories7/Logic/Decidable.vo
 contrib7/romega/ROmega.vo: contrib7/romega/ROmega.v contrib7/omega/Omega.vo contrib7/romega/ReflOmegaCore.vo
 contrib7/ring/ArithRing.vo: contrib7/ring/ArithRing.v contrib7/ring/Ring.vo theories7/Arith/Arith.vo theories7/Logic/Eqdep_dec.vo
 contrib7/ring/Ring_normalize.vo: contrib7/ring/Ring_normalize.v contrib7/ring/Ring_theory.vo contrib7/ring/Quote.vo
