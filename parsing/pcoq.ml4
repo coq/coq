@@ -371,8 +371,8 @@ module Tactic =
 
     (* Entries that can be refered via the string -> Gram.Entry.e table *)
     (* Typically for tactic user extensions *)
-    let openconstr = 
-      make_gen_entry utactic rawwit_open_constr "openconstr"
+    let open_constr = 
+      make_gen_entry utactic rawwit_open_constr "open_constr"
     let constr_with_bindings =
       make_gen_entry utactic rawwit_constr_with_bindings "constr_with_bindings"
     let bindings =
@@ -418,7 +418,7 @@ let reset_all_grammars () =
   f Constr.ident; f Constr.global; f Constr.sort; f Constr.pattern;
   f Module.module_expr; f Module.module_type;
   f Tactic.simple_tactic;
-  f Tactic.openconstr;
+  f Tactic.open_constr;
   f Tactic.constr_with_bindings;
   f Tactic.bindings;
   f Tactic.constrarg;
