@@ -24,7 +24,7 @@ open Mod_subst
 type node = 
   | Leaf of obj
   | CompilingLibrary of object_prefix
-  | OpenedModule of object_prefix * Summary.frozen
+  | OpenedModule of bool option * object_prefix * Summary.frozen
   | OpenedModtype of object_prefix * Summary.frozen
   | OpenedSection of object_prefix * Summary.frozen
   | ClosedSection of bool * dir_path * library_segment
@@ -101,7 +101,7 @@ val what_is_opened : unit -> object_name * node
 (*s Modules and module types *)
 
 val start_module : 
-  module_ident -> module_path -> Summary.frozen -> object_prefix
+  bool option -> module_ident -> module_path -> Summary.frozen -> object_prefix
 val end_module : module_ident 
   -> object_name * object_prefix * Summary.frozen * library_segment
 

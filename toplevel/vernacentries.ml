@@ -325,107 +325,86 @@ let vernac_scheme = build_scheme
 (**********************)
 (* Modules            *)
 
-let vernac_declare_module id binders_ast mty_ast_o mexpr_ast_o = 
-  (* We check the state of the system (in section, in module type)
-     and what module information is supplied *)
-  if Lib.sections_are_opened () then
-    error "Modules and Module Types are not allowed inside sections";
-
-  if not (Lib.is_modtype ()) then
-    error "Declare Module allowed in module types only";
-
-  let constrain_mty = match mty_ast_o with
-      Some (_,true) -> true
-    | _ -> false
+let vernac_import export refl =
+  let import_one ref = 
+    let qid = qualid_of_reference ref in
+      Library.import_library export qid
   in
+    List.iter import_one refl;
+    Lib.add_frozen_state ()
 
-  match mty_ast_o, constrain_mty, mexpr_ast_o with
-    | _, false, None ->  (* no ident, no/soft type *)
-	Declaremods.start_module Modintern.interp_modtype
-	  id binders_ast mty_ast_o;
-	if_verbose message 
-	  ("Interactive Declaration of Module "^ string_of_id id ^" started")
-	  
-    | Some _, true, None           (* no ident, hard type *)
-    | _, false, Some (CMEident _) ->  (* ident, no/soft type *)
-	Declaremods.declare_module 
-	  Modintern.interp_modtype Modintern.interp_modexpr
-	  id binders_ast mty_ast_o mexpr_ast_o;
-	if_verbose message 
-	  ("Module "^ string_of_id id ^" is declared")
+(*  else
+    let import (loc,qid) = 
+      try
+	let mp = Nametab.locate_module qid in
+	  Declaremods.import_module mp
+      with Not_found ->
+	user_err_loc
+        (loc,"vernac_import",
+	 str ((string_of_qualid qid)^" is not a module"))
+    in
+      List.iter import qidl;
+*)
 
-    | _, true, Some (CMEident _) -> (* ident, hard type *)
-	error "You cannot declare an equality and a type in module declaration"
-
-    | _, _, Some _ ->    (* not ident *)
-	error "Only simple modules allowed in module declarations"
-
-    | None,true,None -> assert false  (* 1st None ==> false *)
-
-let vernac_define_module id binders_ast mty_ast_o mexpr_ast_o = 
+let vernac_declare_module export id binders_ast mty_ast_o = 
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
   if Lib.sections_are_opened () then
     error "Modules and Module Types are not allowed inside sections";
- 
-  if Lib.is_modtype () then
-    error "Module definitions not allowed in module types. Use Declare Module instead";
+  let binders_ast = List.map
+   (fun (export,idl,ty) ->
+     if export <> None then
+      error ("Arguments of a functor declaration cannot be exported. " ^
+       "Remove the \"Export\" and \"Import\" keywords from every functor " ^
+       "argument.")
+     else (idl,ty)) binders_ast in
+  Declaremods.declare_module 
+    Modintern.interp_modtype Modintern.interp_modexpr
+     id binders_ast (Some mty_ast_o) None;
+  if_verbose message ("Module "^ string_of_id id ^" is declared");
+  option_iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
 
+let vernac_define_module export id binders_ast mty_ast_o mexpr_ast_o = 
+  (* We check the state of the system (in section, in module type)
+     and what module information is supplied *)
+  if Lib.sections_are_opened () then
+    error "Modules and Module Types are not allowed inside sections";
   match mexpr_ast_o with
     | None ->
-	Declaremods.start_module Modintern.interp_modtype
+       let binders_ast,argsexport =
+        List.fold_right
+         (fun (export,idl,ty) (args,argsexport) ->
+           (idl,ty)::args, List.map (fun (_,i) -> export,i) idl) binders_ast
+             ([],[]) in
+	Declaremods.start_module Modintern.interp_modtype export
 	  id binders_ast mty_ast_o;
 	if_verbose message 
-	  ("Interactive Module "^ string_of_id id ^" started")
-	  
+	  ("Interactive Module "^ string_of_id id ^" started") ;
+        List.iter
+         (fun (export,id) ->
+           option_iter
+            (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
+         ) argsexport
     | Some _ ->
+       let binders_ast = List.map
+        (fun (export,idl,ty) ->
+          if export <> None then
+           error ("Arguments of a functor definition can be imported only if" ^
+                  " the definition is interactive. Remove the \"Export\" and " ^
+                  "\"Import\" keywords from every functor argument.")
+          else (idl,ty)) binders_ast in
 	Declaremods.declare_module 
 	  Modintern.interp_modtype Modintern.interp_modexpr
 	  id binders_ast mty_ast_o mexpr_ast_o;
 	if_verbose message 
-	  ("Module "^ string_of_id id ^" is defined")
+	  ("Module "^ string_of_id id ^" is defined");
+        option_iter (fun export -> vernac_import export [Ident (dummy_loc,id)])
+         export
 
-(* let vernac_declare_module id binders_ast mty_ast_o mexpr_ast_o =  *)
-(*   (\* We check the state of the system (in section, in module type) *)
-(*      and what module information is supplied *\) *)
-(*   if Lib.sections_are_opened () then *)
-(*     error "Modules and Module Types are not allowed inside sections"; *)
- 
-(*   let constrain_mty = match mty_ast_o with *)
-(*       Some (_,true) -> true *)
-(*     | _ -> false *)
-(*   in *)
-
-(*   match Lib.is_modtype (), mty_ast_o, constrain_mty, mexpr_ast_o with *)
-(*     | _, None, _, None  *)
-(*     | true, Some _, false, None *)
-(*     | false, _, _, None -> *)
-(* 	Declaremods.start_module Modintern.interp_modtype *)
-(* 	  id binders_ast mty_ast_o; *)
-(* 	if_verbose message  *)
-(* 	  ("Interactive Module "^ string_of_id id ^" started") *)
-	  
-(*     | true, Some _, true, None *)
-(*     | true, _, false, Some (CMEident _) *)
-(*     | false, _, _, Some _ -> *)
-(* 	Declaremods.declare_module  *)
-(* 	  Modintern.interp_modtype Modintern.interp_modexpr *)
-(* 	  id binders_ast mty_ast_o mexpr_ast_o; *)
-(* 	if_verbose message  *)
-(* 	  ("Module "^ string_of_id id ^" is defined") *)
-
-(*     | true, _, _, _ -> *)
-(* 	error "Module definition not allowed in a Module Type" *)
-
-let vernac_end_module id =
+let vernac_end_module export id =
   Declaremods.end_module id;
-  if_verbose message 
-    (if Lib.is_modtype () then 
-       "Module "^ string_of_id id ^" is declared"
-     else
-       "Module "^ string_of_id id ^" is defined")
-
-  
+  if_verbose message ("Module "^ string_of_id id ^" is defined") ;
+  option_iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
 
 
 let vernac_declare_module_type id binders_ast mty_ast_o =
@@ -434,11 +413,28 @@ let vernac_declare_module_type id binders_ast mty_ast_o =
   
   match mty_ast_o with
     | None ->
+       let binders_ast,argsexport =
+        List.fold_right
+         (fun (export,idl,ty) (args,argsexport) ->
+           (idl,ty)::args, List.map (fun (_,i) -> export,i) idl) binders_ast
+             ([],[]) in
 	Declaremods.start_modtype Modintern.interp_modtype id binders_ast;
 	if_verbose message 
-	  ("Interactive Module Type "^ string_of_id id ^" started")
+	  ("Interactive Module Type "^ string_of_id id ^" started");
+        List.iter
+         (fun (export,id) ->
+           option_iter
+            (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
+         ) argsexport
 	  
     | Some base_mty ->
+       let binders_ast = List.map
+        (fun (export,idl,ty) ->
+          if export <> None then
+           error ("Arguments of a functor definition can be imported only if" ^
+                  " the definition is interactive. Remove the \"Export\" " ^
+                  "and \"Import\" keywords from every functor argument.")
+          else (idl,ty)) binders_ast in
 	Declaremods.declare_modtype Modintern.interp_modtype 
 	  id binders_ast base_mty;
 	if_verbose message 
@@ -480,7 +476,7 @@ let vernac_end_segment id =
   check_no_pending_proofs ();
   try
     match Lib.what_is_opened () with
-      | _,Lib.OpenedModule _ -> vernac_end_module id
+      | _,Lib.OpenedModule (export,_,_) -> vernac_end_module export id
       | _,Lib.OpenedModtype _ -> vernac_end_modtype id
       | _,Lib.OpenedSection _ -> vernac_end_section id
       | _ -> anomaly "No more opened things"
@@ -527,26 +523,6 @@ let vernac_require import _ qidl =
       (if not !Options.v7 then List.iter test_renamed_module qidl;
        raise e)
       
-let vernac_import export refl =
-  let import_one ref = 
-    let qid = qualid_of_reference ref in
-      Library.import_library export qid
-  in
-    List.iter import_one refl;
-    Lib.add_frozen_state ()
-
-(*  else
-    let import (loc,qid) = 
-      try
-	let mp = Nametab.locate_module qid in
-	  Declaremods.import_module mp
-      with Not_found ->
-	user_err_loc
-        (loc,"vernac_import",
-	 str ((string_of_qualid qid)^" is not a module"))
-    in
-      List.iter import qidl;
-*)
 
 let vernac_canonical locqid =
   Recordobj.objdef_declare (Nametab.global locqid)
@@ -1207,10 +1183,10 @@ let interp c = match c with
   | VernacScheme l -> vernac_scheme l
 
   (* Modules *)
-  | VernacDeclareModule ((_,id),bl,mtyo,mexpro) -> 
-      vernac_declare_module id bl mtyo mexpro
-  | VernacDefineModule ((_,id),bl,mtyo,mexpro) -> 
-      vernac_define_module id bl mtyo mexpro
+  | VernacDeclareModule (export,(_,id),bl,mtyo) -> 
+      vernac_declare_module export id bl mtyo
+  | VernacDefineModule (export,(_,id),bl,mtyo,mexpro) -> 
+      vernac_define_module export id bl mtyo mexpro
   | VernacDeclareModuleType ((_,id),bl,mtyo) -> 
       vernac_declare_module_type id bl mtyo
 

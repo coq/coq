@@ -29,6 +29,12 @@ Tactics
 Modules
 
 - Added "Locate Module qualid" to get the full path of a module.
+- Module/Declare Module syntax made more uniform (doc TODO)
+- Added syntactic sugar "Declare Module Export/Import" and
+  "Module Export/Import" (doc TODO)
+- Added syntactic sugar "Module M(Export/Import X Y: T)" and
+  "Module Type M(Export/Import X Y: T)"
+  (only for interactive definitions) (doc TODO)
 
 Notations
 

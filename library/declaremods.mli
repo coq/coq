@@ -43,9 +43,8 @@ val declare_module :
   'modexpr option -> unit
  
 val start_module : (env -> 'modtype -> module_type_entry) -> 
-  identifier -> 
-  (identifier located list * 'modtype) list -> ('modtype * bool) option -> 
-  unit
+  bool option -> identifier -> (identifier located list * 'modtype) list ->
+   ('modtype * bool) option -> unit
 
 val end_module : identifier -> unit
 

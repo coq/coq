@@ -329,8 +329,8 @@ type reset_info = NoReset | Reset of Names.identifier * bool ref
 let compute_reset_info = function 
   | VernacDefinition (_, (_,id), DefineBody _, _) 
   | VernacBeginSection (_,id) 
-  | VernacDefineModule ((_,id), _, _, _) 
-  | VernacDeclareModule ((_,id), _, _, _)
+  | VernacDefineModule (_,(_,id), _, _, _) 
+  | VernacDeclareModule (_,(_,id), _, _)
   | VernacDeclareModuleType ((_,id), _, _)
   | VernacAssumption (_, (_,((_,id)::_,_))::_)
   | VernacInductive (_, ((_,id),_,_,_,_) :: _) ->

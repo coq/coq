@@ -1517,7 +1517,7 @@ let rec xlate_module_type = function
 
 let xlate_module_binder_list (l:module_binder list) =
   CT_module_binder_list
-    (List.map (fun (idl, mty) ->
+    (List.map (fun (_, idl, mty) ->
 		 let idl1 = 
 		   List.map (fun (_, x) -> CT_ident (string_of_id x)) idl in
 		 let fst,idl2 = match idl1 with
@@ -1915,20 +1915,18 @@ let rec xlate_vernac =
 			    | Some mty1 ->
 				CT_coerce_MODULE_TYPE_to_MODULE_TYPE_OPT
 				  (xlate_module_type mty1))
-   | VernacDefineModule((_, id), bl, mty_o, mexpr_o) ->
+   | VernacDefineModule(_,(_, id), bl, mty_o, mexpr_o) ->
        CT_module(xlate_ident id, 
 		 xlate_module_binder_list bl,
 		 xlate_module_type_check_opt mty_o,
 		 match mexpr_o with
 		     None -> CT_coerce_ID_OPT_to_MODULE_EXPR ctv_ID_OPT_NONE
 		   | Some m -> xlate_module_expr m)
-  | VernacDeclareModule((_, id), bl, mty_o, mexpr_o) -> 
+  | VernacDeclareModule(_,(_, id), bl, mty_o) -> 
        CT_declare_module(xlate_ident id, 
 		 xlate_module_binder_list bl,
-		 xlate_module_type_check_opt mty_o,
-		 match mexpr_o with
-		     None -> CT_coerce_ID_OPT_to_MODULE_EXPR ctv_ID_OPT_NONE
-		   | Some m -> xlate_module_expr m)
+		 xlate_module_type_check_opt (Some mty_o),
+		 CT_coerce_ID_OPT_to_MODULE_EXPR ctv_ID_OPT_NONE)
    | VernacRequire (impexp, spec, id::idl) ->
       let ct_impexp, ct_spec = get_require_flags impexp spec in
       CT_require (ct_impexp, ct_spec, 

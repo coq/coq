@@ -518,8 +518,8 @@ let update_on_end_of_proof id =
 let update_on_end_of_segment id =
   let lookup_section = function 
     | { ast = _, ( VernacBeginSection id'
-		 | VernacDefineModule (id',_,_,None)
-		 | VernacDeclareModule (id',_,_,None)
+		 | VernacDefineModule (_,id',_,_,None)
+		 | VernacDeclareModule (_,id',_,_)
 		 | VernacDeclareModuleType (id',_,None)); 
 	reset_info = Reset (_, r) } 
        when id = id' -> raise Exit

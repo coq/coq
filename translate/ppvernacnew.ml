@@ -245,7 +245,12 @@ let pr_of_module_type prc (mty,b) =
   str (if b then ":" else "<:") ++
   pr_module_type prc mty
 
-let pr_module_vardecls pr_c (idl,mty) =
+let pr_require_token = function
+  | Some true -> str "Export "
+  | Some false -> str "Import "
+  | None -> mt()
+
+let pr_module_vardecls pr_c (export,idl,mty) =
   let m = pr_module_type pr_c mty in
   (* Update the Nametab for interpreting the body of module/modtype *)
   let lib_dir = Lib.library_dp() in
@@ -255,7 +260,8 @@ let pr_module_vardecls pr_c (idl,mty) =
        Modintern.interp_modtype (Global.env()) mty]) idl;
   (* Builds the stream *)
   spc() ++
-  hov 1 (str"(" ++ prlist_with_sep spc pr_lident idl ++ str":" ++ m ++ str")")
+  hov 1 (str"(" ++ pr_require_token export ++
+   prlist_with_sep spc pr_lident idl ++ str":" ++ m ++ str")")
 
 let pr_module_binders l pr_c = 
   (* Effet de bord complexe pour garantir la declaration des noms des
@@ -361,11 +367,6 @@ let pr_thm_token = function
   | Lemma -> str"Lemma"
   | Fact -> str"Fact"
   | Remark -> str"Remark"
-
-let pr_require_token = function
-  | Some true -> str " Export"
-  | Some false -> str " Import"
-  | None -> mt()
 
 let pr_syntax_modifier = function
   | SetItemLevel (l,NextLevel) ->
@@ -842,7 +843,7 @@ let rec pr_vernac = function
   | VernacBeginSection id -> hov 2 (str"Section" ++ spc () ++ pr_lident id)
   | VernacEndSegment id -> hov 2 (str"End" ++ spc() ++ pr_lident id)
   | VernacRequire (exp,spe,l) -> hov 2
-      (str "Require" ++ pr_require_token exp ++ spc() ++
+      (str "Require" ++ spc() ++ pr_require_token exp ++
       (match spe with
       |	None -> mt()
       |	Some flag ->
@@ -867,16 +868,17 @@ let rec pr_vernac = function
 	spc() ++ pr_class_rawexpr c2)
 
   (* Modules and Module Types *)
-  | VernacDefineModule (m,bl,ty,bd) ->
+  | VernacDefineModule (export,m,bl,ty,bd) ->
       let b = pr_module_binders_list bl pr_lconstr in 
-      hov 2 (str"Module " ++ pr_lident m ++ b ++
+      hov 2 (str"Module" ++ spc() ++ pr_require_token export ++
+             pr_lident m ++ b ++
              pr_opt (pr_of_module_type pr_lconstr) ty ++
              pr_opt (fun me -> str ":= " ++ pr_module_expr me) bd)
-  | VernacDeclareModule (id,bl,m1,m2) ->
+  | VernacDeclareModule (export,id,bl,m1) ->
       let b = pr_module_binders_list bl pr_lconstr in 
-      hov 2 (str"Declare Module " ++ pr_lident id ++ b ++
-             pr_opt (pr_of_module_type pr_lconstr) m1 ++
-             pr_opt (fun me -> str ":= " ++ pr_module_expr me) m2)
+      hov 2 (str"Declare Module" ++ spc() ++ pr_require_token export ++
+             pr_lident id ++ b ++
+             pr_of_module_type pr_lconstr m1)
   | VernacDeclareModuleType (id,bl,m) ->
       let b = pr_module_binders_list bl pr_lconstr in 
       hov 2 (str"Module Type " ++ pr_lident id ++ b ++
@@ -898,7 +900,7 @@ let rec pr_vernac = function
 
   (* Auxiliary file and library management *)
   | VernacRequireFrom (exp,spe,f) -> hov 2
-      (str"Require " ++ pr_require_token exp ++ spc() ++
+      (str"Require" ++ spc() ++ pr_require_token exp ++
       (match spe with
         | None -> mt()
         | Some false -> str"Implementation" ++ spc()
@@ -1111,7 +1113,7 @@ let pr_vernac = function
       (* Renamed modules *)
       List.mem (string_of_id r) ["zarith_aux";"fast_integer"] ->
       warning ("Replacing obsolete module "^(string_of_id r)^" with ZArith");
-	(str "Require" ++ pr_require_token exp ++ spc() ++
+	(str "Require" ++ spc() ++ pr_require_token exp ++
 	(match spe with
 	  | None -> mt()
 	  | Some flag ->

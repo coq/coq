@@ -450,7 +450,7 @@ let intern_args interp_modtype (env,oldargs) (idl,arg) =
     in
     env, List.map (fun mbid -> mbid,mty) mbids :: oldargs
       
-let start_module interp_modtype id args res_o =
+let start_module interp_modtype export id args res_o =
   let fs = Summary.freeze_summaries () in
   let env = Global.env () in
   let env,arg_entries_revlist = 
@@ -482,7 +482,7 @@ let start_module interp_modtype id args res_o =
 
   let mbids = List.map fst arg_entries in
   openmod_info:=(mbids,res_entry_o,sub_body_o);
-  let prefix = Lib.start_module id mp fs in
+  let prefix = Lib.start_module export id mp fs in
   Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModule prefix);
   Lib.add_frozen_state ()
 

@@ -21,7 +21,7 @@ open Summary
 type node = 
   | Leaf of obj
   | CompilingLibrary of object_prefix
-  | OpenedModule of object_prefix * Summary.frozen
+  | OpenedModule of bool option * object_prefix * Summary.frozen
   | OpenedModtype of object_prefix * Summary.frozen
   | OpenedSection of object_prefix * Summary.frozen
   (* bool is to tell if the section must be opened automatically *)
@@ -125,7 +125,7 @@ let sections_are_opened () =
 let recalc_path_prefix () =
   let rec recalc = function
     | (sp, OpenedSection (dir,_)) :: _ -> dir
-    | (sp, OpenedModule (dir,_)) :: _ -> dir
+    | (sp, OpenedModule (_,dir,_)) :: _ -> dir
     | (sp, OpenedModtype (dir,_)) :: _ -> dir
     | (sp, CompilingLibrary dir) :: _ -> dir
     | _::l -> recalc l
@@ -231,13 +231,13 @@ let export_segment seg =
     clean [] seg
 
 
-let start_module id mp nametab = 
+let start_module export id mp nametab = 
   let dir = extend_dirpath (fst !path_prefix) id in
   let prefix = dir,(mp,empty_dirpath) in
   let oname = make_path id, make_kn id in
   if Nametab.exists_module dir then
     errorlabstrm "open_module" (pr_id id ++ str " already exists") ;
-  add_entry oname (OpenedModule (prefix,nametab));
+  add_entry oname (OpenedModule (export,prefix,nametab));
   path_prefix := prefix;
   prefix
 (*  add_frozen_state () must be called in declaremods *)
@@ -245,7 +245,7 @@ let start_module id mp nametab =
 let end_module id = 
   let oname,nametab = 
     try match find_entry_p is_something_opened with
-      | oname,OpenedModule (_,nametab) -> 
+      | oname,OpenedModule (_,_,nametab) -> 
 	  let sp = fst oname in
 	  let id' = basename sp in
 	  if id<>id' then error "this is not the last opened module"; 

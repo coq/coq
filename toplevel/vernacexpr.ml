@@ -155,7 +155,7 @@ type local_decl_expr =
   | AssumExpr of lname * constr_expr
   | DefExpr of lname * constr_expr * constr_expr option
 
-type module_binder = lident list * module_type_ast
+type module_binder = bool option * lident list * module_type_ast
 
 type proof_end =
   | Admitted
@@ -217,9 +217,9 @@ type vernac_expr =
       class_rawexpr * class_rawexpr
 
   (* Modules and Module Types *)
-  | VernacDeclareModule of lident * 
-      module_binder list * (module_type_ast * bool) option * module_ast option
-  | VernacDefineModule of lident * 
+  | VernacDeclareModule of bool option * lident * 
+      module_binder list * (module_type_ast * bool)
+  | VernacDefineModule of bool option * lident * 
       module_binder list * (module_type_ast * bool) option * module_ast option
   | VernacDeclareModuleType of lident * 
       module_binder list * module_type_ast option

@@ -348,9 +348,14 @@ GEXTEND Gram
 	IDENT "Section"; id = identref -> VernacBeginSection id
       | IDENT "Chapter"; id = identref -> VernacBeginSection id ] ]
   ;
+  export_token:
+    [ [ IDENT "Import" -> Some false
+      | IDENT "Export" -> Some true
+      |  -> None ] ]
+  ;
   module_vardecls:
-    [ [ id = identref; idl = ident_comma_list_tail; ":";
-        mty = Module.module_type -> (id::idl,mty) ] ]
+    [ [ export = export_token; id = identref; idl = ident_comma_list_tail; ":";
+        mty = Module.module_type -> (export,id::idl,mty) ] ]
   ;
   module_binders:
     [ [ "["; bl = LIST1 module_vardecls SEP ";"; "]" -> bl ] ]
@@ -371,19 +376,18 @@ GEXTEND Gram
   gallina_ext:
     [ [ 
 	  (* Interactive module declaration *)
-	IDENT "Module"; id = identref; 
+	IDENT "Module"; export = export_token; id = identref; 
 	bl = module_binders_list; mty_o = OPT of_module_type; 
 	mexpr_o = OPT is_module_expr ->
-	  VernacDefineModule (id, bl, mty_o, mexpr_o)
+	  VernacDefineModule (export, id, bl, mty_o, mexpr_o)
 	  
       | IDENT "Module"; "Type"; id = identref; 
 	bl = module_binders_list; mty_o = OPT is_module_type ->
 	  VernacDeclareModuleType (id, bl, mty_o)
 	  
-      | IDENT "Declare"; IDENT "Module"; id = identref; 
-	bl = module_binders_list; mty_o = OPT of_module_type; 
-	mexpr_o = OPT is_module_expr ->
-	  VernacDeclareModule (id, bl, mty_o, mexpr_o)
+      | IDENT "Declare"; IDENT "Module"; export = export_token; id = identref; 
+	bl = module_binders_list; mty_o = of_module_type ->
+	  VernacDeclareModule (export, id, bl, mty_o)
 
 	  (* This end a Section a Module or a Module Type *)
 
