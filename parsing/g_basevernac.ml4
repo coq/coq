@@ -113,9 +113,6 @@ GEXTEND Gram
       | IDENT "Print"; IDENT "Path"; c = identarg; d = identarg; "." ->
           <:ast< (PrintPATH $c $d) >>
 
-(*      | IDENT "Time"; "." -> <:ast< (Time) >>
-      | IDENT "Untime"; "." -> <:ast< (Untime) >> *)
-
       | IDENT "Time"; v = vernac -> <:ast< (Time $v)>>
       | IDENT "SearchIsos"; com = constrarg; "." ->
           <:ast< (Searchisos $com) >>

@@ -12,3 +12,7 @@
 - Les cas des Cases ne se lisent plus de manière séquentielle, sauf en
   cas de clauses par défaut redondantes auquel cas la première est prise
   avec un avertissement.
+
+- Ajout de la syntaxe "[" phrase_1 ... phrase_n"]." pour grouper des
+phrases (utile pour Time et pour des grammaires abrégeant plusieurs
+commandes)

@@ -8,14 +8,20 @@ open Util
 open Vernac
 
 GEXTEND Gram
+  GLOBAL: vernac;
   vernac:
     [ [ g = gallina -> g 
       | g = gallina_ext -> g
       | c = command -> c 
-      | c = syntax -> c ] ]
+      | c = syntax -> c
+      | "["; l = vernac_list_tail -> <:ast< (VernacList ($LIST $l)) >> ] ]
   ;
   vernac: LAST
     [ [ tac = tacarg; "." -> <:ast< (SOLVE 1 (TACTIC $tac)) >> ] ]
+  ;
+  vernac_list_tail:
+    [ [ v = vernac; l = vernac_list_tail -> v :: l
+      | "]"; "." -> [] ] ]
   ;
 END
 
