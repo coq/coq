@@ -288,8 +288,10 @@ Syntax constr
       	 -> [ (ZEXPR $n1):E " %" [1 0] (ZEXPR $n2):L ]
 .
 ].
-Infix 3 "/" Zdiv : Z_scope.
-Infix 3 "mod" Zmod : Z_scope.
+
+
+Infix 3 "/" Zdiv (no associativity) : Z_scope V8only (left associativity).
+Infix 3 "mod" Zmod (no associativity) : Z_scope V8only (left associativity).
 
 (** Other lemmas (now using the syntax for [Zdiv] and [Zmod]). *)
 
