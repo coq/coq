@@ -868,11 +868,9 @@ let _ =
 let _ =
   Vernac.set_xml_start_library
    (function () ->
-     print_string "B";
      theory_channel :=
        Util.option_app (fun fn -> open_out (fn^".v"))
 	 (theory_filename xml_library_root);
-     print_string "C";
      theory_output_string "<?xml version=\"1.0\" encoding=\"latin1\"?>\n";
      theory_output_string "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:ht=\"http://www.cs.unibo.it/helm/namespaces/helm-theory\">\n";
      theory_output_string "<head>\n<style> A { text-decoration: none } </style>\n</head>\n")
@@ -909,7 +907,6 @@ let _ =
 let _ =
   Lib.set_xml_open_section
     (fun id ->
-      print_string "A";
       let s = Names.string_of_id id in
       theory_output_string ("<ht:SECTION name=\""^s^"\">"))
 ;;
