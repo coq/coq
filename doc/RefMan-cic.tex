@@ -394,8 +394,8 @@ convertibility into an order inductively defined by:
 \begin{enumerate}
 \item if $\WTEGCONV{t}{u}$ then $\WTEGLECONV{t}{u}$,
 \item if $i \leq j$ then $\WTEGLECONV{\Type(i)}{\Type(j)}$,
-\item for any $i$, $\Prop\WTEGLECONV\Type(i)$,
-\item for any $i$, $\Set\WTEGLECONV\Type(i)$,
+\item for any $i$, $\WTEGLECONV{\Prop}{\Type(i)}$,
+\item for any $i$, $\WTEGLECONV{\Set}{\Type(i)}$,
 \item if $\WTEGCONV{T}{U}$ and $\WTELECONV{\Gamma::(x:T)}{T'}{U'}$ then $\WTEGLECONV{(x:T)T'}{(x:U)U'}$.
 \end{enumerate}
 
