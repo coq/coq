@@ -788,7 +788,7 @@ let rec intros_clearing = function
 
 (* Adding new hypotheses  *)
 
-let new_hyp mopt c lbind g =
+let new_hyp mopt (c,lbind) g =
   let (wc,kONT) = startWalk g in
   let clause  = make_clenv_binding wc (c,w_type_of wc c) lbind in
   let (thd,tstack) = whd_stack (clenv_instance_template clause) in

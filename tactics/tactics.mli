@@ -138,7 +138,7 @@ val pattern_option  : (int list * constr) list -> hyp_location option -> tactic
 val clear         : identifier list -> tactic
 val clear_body    : identifier list -> tactic
 
-val new_hyp       : int option ->constr -> constr substitution -> tactic
+val new_hyp       : int option -> constr with_bindings -> tactic
 
 val move_hyp      : bool -> identifier -> identifier -> tactic
 val rename_hyp    : identifier -> identifier -> tactic

@@ -56,8 +56,7 @@ let h_new_induction c e idl =
   abstract_tactic (TacNewInduction (c,e,idl)) (new_induct c e idl)
 let h_new_destruct c e idl =
   abstract_tactic (TacNewDestruct (c,e,idl)) (new_destruct c e idl)
-let h_specialize n (c,bl as d) =
-  abstract_tactic (TacSpecialize (n,d)) (new_hyp n c bl)
+let h_specialize n d = abstract_tactic (TacSpecialize (n,d)) (new_hyp n d)
 let h_lapply c = abstract_tactic (TacLApply c) (cut_and_apply c)
 
 (* Context management *)
