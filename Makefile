@@ -1515,6 +1515,7 @@ clean:: archclean
 	rm -f ide/utils/*.cm[ioa]
 	rm -f translate/*.cm[ioa]
 	rm -f tools/*.cm[ioa]
+	rm -f tools/*/*.cm[ioa]
 	rm -f scripts/*.cm[ioa]
 	rm -f dev/*.cm[ioa]
 	rm -f */*.pp[iox] contrib/*/*.pp[iox]
