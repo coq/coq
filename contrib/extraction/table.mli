@@ -71,6 +71,10 @@ val reset_tables : unit -> unit
 
 val auto_inline : unit -> bool
 
+(*s TypeExpand parameter *) 
+
+val type_expand : unit -> bool
+
 (*s Optimize parameter *) 
 
 type opt_flag = 

@@ -221,6 +221,18 @@ let _ = declare_bool_option
 	   optread = auto_inline; 
 	   optwrite = (:=) auto_inline_ref}
 
+(*s Extraction TypeExpand *)
+
+let type_expand_ref = ref true
+
+let type_expand () = !type_expand_ref
+
+let _ = declare_bool_option 
+	  {optsync = true;
+	   optname = "Extraction TypeExpand";
+	   optkey = SecondaryTable ("Extraction", "TypeExpand");
+	   optread = type_expand; 
+	   optwrite = (:=) type_expand_ref}
 
 (*s Extraction Optimize *)
 
