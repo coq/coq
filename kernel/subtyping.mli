@@ -9,10 +9,11 @@
 (*i $Id$ i*)
 
 (*i*)
+open Univ
 open Declarations
 open Environ
 (*i*)
 
-val check_subtypes : env -> module_type_body -> module_type_body -> unit
+val check_subtypes : env -> module_type_body -> module_type_body -> constraints
 
 

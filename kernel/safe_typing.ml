@@ -262,7 +262,7 @@ let end_module l senv =
       | Some res_tb -> 
 	  let cnstrs = check_subtypes senv.env auto_tb res_tb in
 	  let mtb = functorize_type res_tb in
-	    mtb, Some (mtb, (cnstrs; Constraint.empty))
+	    mtb, Some (mtb, cnstrs)
   in
   let mexpr = 
     List.fold_right

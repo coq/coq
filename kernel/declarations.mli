@@ -86,7 +86,7 @@ val subst_mind : substitution -> mutual_inductive_body -> mutual_inductive_body
   module declarations *)
 
 type specification_body = 
-    SPBconst of constant_body
+  | SPBconst of constant_body
   | SPBmind of mutual_inductive_body
   | SPBmodule of module_specification_body
   | SPBmodtype of module_type_body
@@ -94,7 +94,7 @@ type specification_body =
 and module_signature_body = (label * specification_body) list
 
 and module_type_body = 
-    MTBident of kernel_name
+  | MTBident of kernel_name
   | MTBfunsig of mod_bound_id * module_type_body * module_type_body
   | MTBsig of mod_self_id * module_signature_body
 
@@ -108,7 +108,7 @@ and module_expr_body =
 and module_specification_body = module_type_body * module_path option
 
 and structure_elem_body = 
-    SEBconst of constant_body
+  | SEBconst of constant_body
   | SEBmind of mutual_inductive_body
   | SEBmodule of module_body
   | SEBmodtype of module_type_body

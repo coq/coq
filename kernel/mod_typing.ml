@@ -107,7 +107,7 @@ and translate_module env is_definition me =
 	    | None -> mtb1, None
 	    | Some mte -> 
 		let mtb2 = translate_modtype env mte in
-		  mtb2, Some (mtb2,(check_subtypes env mtb1 mtb2; Constraint.empty))
+		  mtb2, Some (mtb2, check_subtypes env mtb1 mtb2)
 	in
 	  { mod_type = mtb;
 	    mod_user_type = mod_user_type;
@@ -138,7 +138,7 @@ and translate_mexpr env mexpr = match mexpr with
 	  | Not_path -> error_application_to_not_path mexpr
 	      (* place for nondep_supertype *)
       in
-	MEBapply(feb,meb,(cst;Constraint.empty)),
+	MEBapply(feb,meb,cst),
 	subst_modtype (map_mbid farg_id mp) fbody_b
   | MEstruct (msid,structure) ->
       let structure,signature = translate_entry_list env msid true structure in
@@ -149,10 +149,58 @@ and translate_mexpr env mexpr = match mexpr with
 (* is_definition is true - me.mod_entry_expr may be any expression *)
 let translate_module env me = translate_module env true me
 
+let rec add_module_expr_constraints env = function
+  | MEBident _ -> env
 
-let add_module_constraints env _ = 
-  todo "Mod_typing.add_module_constraints"; env
-let add_modtype_constraints env _ = 
-  todo "Mod_typing.add_modtype_constraints"; env
+  | MEBfunctor (_,mtb,meb) -> 
+      add_module_expr_constraints (add_modtype_constraints env mtb) meb
+
+  | MEBstruct (_,mod_struct_body) ->
+      List.fold_left 
+        (fun env (l,item) -> add_struct_elem_constraints env item)
+        env
+        mod_struct_body
+
+  | MEBapply (meb1,meb2,cst) ->
+      Environ.add_constraints cst 
+        (add_module_expr_constraints 
+	  (add_module_expr_constraints env meb1) 
+	  meb2)
+
+and add_struct_elem_constraints env = function 
+  | SEBconst cb -> Environ.add_constraints cb.const_constraints env
+  | SEBmind mib -> Environ.add_constraints mib.mind_constraints env
+  | SEBmodule mb -> add_module_constraints env mb
+  | SEBmodtype mtb -> add_modtype_constraints env mtb
+
+and add_module_constraints env mb = 
+  let env = match mb.mod_expr with
+    | None -> env
+    | Some meb -> add_module_expr_constraints env meb
+  in
+  let env = match mb.mod_user_type with
+    | None -> env
+    | Some (mtb,cst) -> 
+	Environ.add_constraints cst (add_modtype_constraints env mtb)
+  in
+    env
+
+and add_modtype_constraints env = function
+  | MTBident _ -> env
+  | MTBfunsig (_,mtb1,mtb2) ->
+      add_modtype_constraints
+        (add_modtype_constraints env mtb1)
+        mtb2
+  | MTBsig (_,mod_sig_body) ->
+      List.fold_left 
+        (fun env (l,item) -> add_sig_elem_constraints env item)
+        env
+        mod_sig_body
+
+and add_sig_elem_constraints env = function 
+  | SPBconst cb -> Environ.add_constraints cb.const_constraints env
+  | SPBmind mib -> Environ.add_constraints mib.mind_constraints env
+  | SPBmodule (mtb,_) -> add_modtype_constraints env mtb
+  | SPBmodtype mtb -> add_modtype_constraints env mtb
 
 
