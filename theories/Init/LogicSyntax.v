@@ -24,9 +24,9 @@ Grammar constr constr1 :=
 | eq_expl [ "<" lconstr($l1) ">" constr0($c1) "=" constr0($c2) ] ->
           [ (eq $l1 $c1 $c2) ]
 | eq_impl [ constr0($c) "=" constr0($c2) ] -> [ (eq ? $c $c2) ]
-| IF [ "IF"   command($c1) "then" command($c2) "else" command($c3)] ->
+| IF [ "IF" constr($c1) "then" constr($c2) "else" constr($c3)] ->
      [ (IF $c1 $c2 $c3) ]
-
+(*
 with constr2 :=
   not [ "~" constr2($c) ] -> [ (not $c) ]
 
@@ -38,7 +38,7 @@ with constr7 :=
 
 with constr8 :=
   iff [ constr7($c1) "<->" constr8($c2) ] -> [ (iff $c1 $c2) ]
-
+*)
 with constr10 :=
   allexplicit [ "ALL" ident($x) ":" constr($t) "|" constr($p) ]
                           -> [ (all $t [$x : $t]$p) ]
@@ -53,12 +53,22 @@ with constr10 :=
 | ex2implicit [ "EX" ident($v) "|" constr($c1) "&" 
            constr($c2) ] -> [ (ex2 ? [$v]$c1 [$v]$c2) ].
 
+Distfix RIGHTA 2 "~ _" not.
+
+Infix RIGHTA 6 "/\\" and.
+
+Infix RIGHTA 7 "\\/" or.
+
+Infix RIGHTA 8 "<->" iff.
 
 (** Pretty-printing of things in Logic.v *)
 
 Syntax constr
   level 1:
-    equal [ (eq $_  $t1  $t2) ] -> [ [<hov 0> $t1:E [0 1]  "=" $t2:E ] ]
+    equal [ (eq $a  $t1  $t2) ] ->
+	 [ [<hov 0> (ANNOT $a) $t1:E [0 1]  "=" $t2:E ] ]
+  | annotskip [ << (ANNOT $_) >> ] -> [ ]
+  | annotmeta [ << (ANNOT (META ($NUM $n))) >> ] -> [ "<" "?" $n ">" ]
   | conj [ (conj $t1 $t2 $t3 $t4) ]
       -> [ [<hov 1> [<hov 1> "<" $t1:L "," [0 0] $t2:L ">" ] [0 0]
                     [<hov 1> "{" $t3:L "," [0 0] $t4:L "}"] ] ]
@@ -67,7 +77,7 @@ Syntax constr
                   "then " $c2:E [1 0]
                   "else " $c3:E ] ]
   ;
-
+(*
   level 2:
     not [ ~ $t1 ] -> [ [<hov 0> "~" $t1:E ] ]
   ;
@@ -83,7 +93,7 @@ Syntax constr
   level 8:
     iff [ $t1 <-> $t2 ] -> [ [<hov 0> $t1:L [0 0] "<->" $t2:E ] ]
   ;
-
+*)
   level 10:
     all_pred [ (all $_ $p) ] -> [ [<hov 4> "All " $p:L ] ]
   | all_imp [ (all $_ [$x : $T]$t) ]

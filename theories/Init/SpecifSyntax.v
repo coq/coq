@@ -13,7 +13,7 @@ Require Specif.
 
 (** Parsing of things in Specif.v *)
 
-Grammar constr constr1 :=
+Grammar constr constr3 :=
   sig [ "{" lconstr($lc) ":" lconstr($c1) "|" lconstr($c2) "}" ]
        -> [ (sig $c1 [$lc : $c1]$c2) ]
 
@@ -28,6 +28,7 @@ Grammar constr constr1 :=
              "&" lconstr($c2) "&" lconstr($c3) "}" ]
        -> [ (sigS2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3) ].
 
+(*
 Grammar constr constr1: ast :=
   squash [ "{" lconstr($lc) "}" ] -> [(SQUASH $lc)].
 
@@ -42,6 +43,31 @@ Grammar constr lassoc_constr4 :=
             esac
       | $_           -> [ (sum $c1 $c2) ]           (* c1+c2 *)
       esac.
+*)
+
+Grammar constr constr3 :=
+  sumbool [ "{" lconstr($lc) "}" "+" "{" lconstr($lc2) "}" ] -> 
+    [ (sumbool $lc $lc2) ].
+
+Grammar constr lassoc_constr4 :=
+  sumor [ lassoc_constr4($c1) "+" "{" lconstr($c2) "}" ] ->
+    [ (sumor $c1 $c2) ]
+
+| sumsig [ lassoc_constr4($c) "+" "{" lconstr($lc) ":" lconstr($c1) "|" lconstr($c2) "}" ] ->
+    [ (sum $c (sig $c1 [$lc : $c1]$c2)) ]
+
+| sumsig2 [ lassoc_constr4($c) "+" "{" lconstr($lc) ":" lconstr($c1)
+           "|" lconstr($c2) "&" lconstr($c3) "}" ]
+       -> [ (sum $c (sig2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3)) ]
+
+| sumsigS [ lassoc_constr4($c) "+" "{" lconstr($lc) ":" lconstr($c1) "&" lconstr($c2) "}" ]
+       -> [ (sum $c (sigS $c1 [$lc : $c1]$c2)) ]
+
+| sumsigS2 [ lassoc_constr4($c) "+" "{" lconstr($lc) ":" lconstr($c1)
+             "&" lconstr($c2) "&" lconstr($c3) "}" ]
+       -> [ (sum $c (sigS2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3)) ]
+.
+
 
 (** Pretty-printing of things in Specif.v *)
 
