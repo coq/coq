@@ -173,6 +173,7 @@ let w_add_sign      = w_add_sign
 let ctxt_type_of    = ctxt_type_of
 
 let w_defined_const wc k     = defined_constant (w_env wc) k
+let w_defined_evar wc k      = Evd.is_defined (w_Underlying wc) k
 let w_const_value wc         = constant_value (w_env wc)
 let w_conv_x wc m n          = is_conv (w_env wc) (w_Underlying wc) m n
 let w_whd_betadeltaiota wc c = whd_betadeltaiota (w_env wc) (w_Underlying wc) c

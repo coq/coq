@@ -29,7 +29,7 @@ noargument:
 
 LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
               -I proofs -I tactics -I pretyping -I parsing -I toplevel  \
-              -I contrib/omega
+              -I contrib/omega -I contrib/ring
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
 BYTEFLAGS=$(INCLUDES) $(CAMLDEBUG)
@@ -42,9 +42,10 @@ OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
 CAMLP4IFDEF=camlp4o pa_ifdef.cmo -D$(OSTYPE)
 
-COQINCLUDES=-I parsing -I contrib/omega \
+COQINCLUDES=-I parsing -I contrib/omega -I contrib/ring \
             -I theories/Init -I theories/Logic -I theories/Arith \
-            -I theories/Bool -I theories/Zarith
+            -I theories/Bool -I theories/Zarith -I theories/Lists \
+	    -I theories/Sets -I theories/Relations -I theories/Reals
 
 ###########################################################################
 # Objects files 
@@ -111,9 +112,11 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo \
          toplevel/usage.cmo toplevel/coqinit.cmo toplevel/coqtop.cmo
 
 HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
-            tactics/tauto.cmo tactics/inv.cmo tactics/leminv.cmo
+            tactics/tauto.cmo tactics/inv.cmo tactics/leminv.cmo \
+            tactics/eauto.cmo
 
-CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo
+CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
+        contrib/ring/quote.cmo contrib/ring/ring.cmo 
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -212,7 +215,7 @@ theories/Init/%.vo: theories/Init/%.v states/barestate.coq
 
 init: $(INITVO)
 
-TACTICSVO=tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo
+TACTICSVO=tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo tactics/EAuto.vo
 
 tactics/%.vo: $(COQC)
 tactics/%.vo: tactics/%.v states/barestate.coq
@@ -248,7 +251,37 @@ ZARITHVO=theories/Zarith/Wf_Z.vo        theories/Zarith/Zsyntax.vo \
 	 theories/Zarith/ZArith_dec.vo  theories/Zarith/fast_integer.vo \
 	 theories/Zarith/Zmisc.vo       theories/Zarith/zarith_aux.vo
 
-THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO)
+LISTSVO=theories/Lists/List.vo      theories/Lists/PolyListSyntax.vo \
+        theories/Lists/ListSet.vo   theories/Lists/Streams.vo        \
+        theories/Lists/PolyList.vo  theories/Lists/TheoryList.vo
+
+SETSVO=theories/Sets/Classical_sets.vo     theories/Sets/Permut.vo \
+ theories/Sets/Constructive_sets.vo theories/Sets/Powerset.vo \
+ theories/Sets/Cpo.vo               theories/Sets/Powerset_Classical_facts.vo \
+ theories/Sets/Ensembles.vo         theories/Sets/Powerset_facts.vo \
+ theories/Sets/Finite_sets.vo       theories/Sets/Relations_1.vo \
+ theories/Sets/Finite_sets_facts.vo theories/Sets/Relations_1_facts.vo \
+ theories/Sets/Image.vo             theories/Sets/Relations_2.vo \
+ theories/Sets/Infinite_sets.vo     theories/Sets/Relations_2_facts.vo \
+ theories/Sets/Integers.vo          theories/Sets/Relations_3.vo \
+ theories/Sets/Multiset.vo          theories/Sets/Relations_3_facts.vo \
+ theories/Sets/Partial_Order.vo     theories/Sets/Uniset.vo
+
+RELATIONSVO=theories/Relations/Newman.vo \
+            theories/Relations/Operators_Properties.vo \
+            theories/Relations/Relation_Definitions.vo \
+            theories/Relations/Relation_Operators.vo \
+            theories/Relations/Relations.vo \
+            theories/Relations/Rstar.vo
+
+REALSVO=theories/Reals/R_Ifp.vo       theories/Reals/Reals.vo \
+	theories/Reals/Raxioms.vo     theories/Reals/Rfunctions.vo \
+	theories/Reals/Rbase.vo       theories/Reals/Rlimit.vo \
+	theories/Reals/Rbasic_fun.vo  theories/Reals/TypeSyntax.vo \
+	theories/Reals/Rderiv.vo
+
+THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
+             $(SETSVO) $(RELATIONSVO) $(REALSVO)
 
 $(THEORIESVO): states/initial.coq
 
@@ -258,6 +291,10 @@ logic: $(LOGICVO)
 arith: $(ARITHVO)
 bool: $(BOOLVO)
 zarith: $(ZARITHVO)
+lists: $(LISTSVO)
+sets: $(SETSVO)
+relations: $(RELATIONSVO)
+reals: $(REALSVO)
 
 clean::
 	rm -f theories/*/*.vo theories/*/*~
@@ -268,13 +305,22 @@ clean::
 # contribs
 ###########################################################################
 
-CONTRIBVO = contrib/omega/Omega.vo       contrib/omega/Zlogarithm.vo \
-            contrib/omega/OmegaSyntax.vo contrib/omega/Zpower.vo \
-            contrib/omega/Zcomplements.vo
+OMEGAVO = contrib/omega/Omega.vo       contrib/omega/Zlogarithm.vo \
+          contrib/omega/OmegaSyntax.vo contrib/omega/Zpower.vo \
+          contrib/omega/Zcomplements.vo
+
+RINGVO = contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
+         contrib/ring/Ring_theory.vo    contrib/ring/Ring.vo \
+         contrib/ring/ZArithRing.vo     contrib/ring/Ring_abstract.vo \
+         contrib/ring/Quote.vo
+
+CONTRIBVO = $(OMEGAVO) $(RINGVO)
 
 $(CONTRIBVO): states/initial.coq
 
 contrib: $(CONTRIBVO)
+omega: $(OMEGAVO)
+ring: $(RINGVO)
 
 clean::
 	rm -f contrib/*/*~ contrib/*/*.cm[io] contrib/*/*.vo

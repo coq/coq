@@ -201,6 +201,7 @@ val w_hnf_constr        : walking_constraints -> constr -> constr
 val w_conv_x            : walking_constraints -> constr -> constr -> bool
 val w_const_value       : walking_constraints -> constr -> constr
 val w_defined_const     : walking_constraints -> constr -> bool
+val w_defined_evar      : walking_constraints -> int -> bool
 
 
 (*s Tactic Registration. *)

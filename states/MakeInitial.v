@@ -4,3 +4,5 @@ Require Export Logic_TypeSyntax.
 Require Export Equality.
 Require Export Tauto.
 Require Export Inv.
+Require Export EAuto.
+

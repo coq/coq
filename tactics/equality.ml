@@ -200,12 +200,12 @@ let eq_pattern () = get_pat eq_pattern_mark
 let not_pattern () = get_pat not_pattern_mark
 let imp_False_pattern () = get_pat imp_False_pattern_mark
 
-let eq= { eq  = put_squel mmk "eq";
-          ind = put_squel mmk "eq_ind" ;
-          rrec = Some (put_squel mmk "eq_rec");
-          rect = Some (put_squel mmk "eq_rect");
-          congr = put_squel mmk "f_equal"  ;
-          sym  = put_squel mmk "sym_eq" }
+let eq = { eq = put_squel mmk "eq";
+           ind = put_squel mmk "eq_ind" ;
+           rrec = Some (put_squel mmk "eq_rec");
+           rect = Some (put_squel mmk "eq_rect");
+           congr = put_squel mmk "f_equal"  ;
+           sym  = put_squel mmk "sym_eq" }
 
 let build_eq eq = get_squel eq.eq
 let build_ind eq = get_squel eq.ind
@@ -217,12 +217,12 @@ let build_rect eq =
 let eqT_pattern_mark = put_pat mmk "(eqT ?1 ?2 ?3)"
 let eqT_pattern () = get_pat eqT_pattern_mark
  
-let eqT= { eq  = put_squel mmk "eqT";
-           ind = put_squel mmk "eqT_ind" ;
-           rrec = None;
-           rect = None;
-           congr = put_squel mmk "congr_eqT"  ;
-           sym  = put_squel mmk "sym_eqT" }
+let eqT = { eq  = put_squel mmk "eqT";
+            ind = put_squel mmk "eqT_ind" ;
+            rrec = None;
+            rect = None;
+            congr = put_squel mmk "congr_eqT"  ;
+            sym  = put_squel mmk "sym_eqT" }
 
 let idT_pattern_mark = put_pat mmk "(identityT ?1 ?2 ?3)"
 let idT_pattern () = get_pat idT_pattern_mark

@@ -206,6 +206,11 @@ let list_firstn n l =
   in 
   aux [] (n,l)
 
+let rec list_last = function
+  | [] -> failwith "list_last"
+  | [x] -> x
+  | _ :: l -> list_last l
+
 let list_lastn n l =
   let len = List.length l in
   let rec aux m l =

@@ -252,7 +252,7 @@ and w_resrec metas evars wc =
     | (lhs,(DOP0(Meta k) as rhs))::t -> w_resrec ((k,lhs)::metas) t wc
 	  
     | (DOPN(Evar evn,_) as evar,rhs)::t ->
-	if w_defined_const wc evar then
+	if w_defined_evar wc evn then
           let (wc',metas') = w_Unify rhs evar metas wc in 
 	  w_resrec metas' t wc'
 	else

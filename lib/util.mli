@@ -67,6 +67,7 @@ val list_uniquize : 'a list -> 'a list
 val list_subset : 'a list -> 'a list -> bool
 val list_splitby : ('a -> bool) -> 'a list -> 'a list * 'a list
 val list_firstn : int -> 'a list -> 'a list
+val list_last : 'a list -> 'a
 val list_lastn : int -> 'a list -> 'a list
 val list_prefix_of : 'a list -> 'a list -> bool
 (* [map_append f [x1; ...; xn]] returns [(f x1)@(f x2)@...@(f xn)] *)

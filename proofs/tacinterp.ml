@@ -24,37 +24,37 @@ let err_msg_tactic_not_found macro_loc macro =
     (macro_loc,"macro_expand",
      [< 'sTR"Tactic macro ";'sTR macro; 'sPC; 'sTR"not found" >])
 
-(*Values for interpretation*)
+(* Values for interpretation *)
 type value=
-   VTactic of tactic
-  |VFTactic of tactic_arg list*(tactic_arg list->tactic)
-  |VRTactic of (goal list sigma * validation)
-  |VArg of tactic_arg
-  |VFun of (string*value) list*string option list*Coqast.t
-  |VVoid
-  |VRec of value ref
+  | VTactic of tactic
+  | VFTactic of tactic_arg list * (tactic_arg list -> tactic)
+  | VRTactic of (goal list sigma * validation)
+  | VArg of tactic_arg
+  | VFun of (string * value) list * string option list * Coqast.t
+  | VVoid
+  | VRec of value ref
 
-(*Gives the identifier corresponding to an Identifier tactic_arg*)
-let id_of_Identifier=function
-   Identifier id -> id
+(* Gives the identifier corresponding to an Identifier tactic_arg *)
+let id_of_Identifier = function
+  | Identifier id -> id
   |_ ->
     anomalylabstrm "id_of_IDENTIFIER" [<'sTR "Not an IDENTIFIER tactic_arg">]
 
-(*Gives the constr corresponding to a Constr tactic_arg*)
+(* Gives the constr corresponding to a Constr tactic_arg *)
 let constr_of_Constr=function
    Constr c -> c
   |_ -> anomalylabstrm "constr_of_Constr" [<'sTR "Not a CONSTR tactic_arg">]
 
-(*Signature for interpretation: val_interp and interpretation functions*)
+(* Signature for interpretation: val_interp and interpretation functions *)
 type interp_sign=
   evar_declarations*Environ.env*(string*value) list*(int*constr) list*
     goal sigma option
 
-(*Table of interpretation functions*)
+(* Table of interpretation functions *)
 let interp_tab=
   (Hashtbl.create 17:(string,interp_sign->Coqast.t->value) Hashtbl.t)
 
-(*Adds an interpretation function*)
+(* Adds an interpretation function *)
 let interp_add (ast_typ,interp_fun)=
   try
     Hashtbl.add interp_tab ast_typ interp_fun
@@ -64,24 +64,24 @@ let interp_add (ast_typ,interp_fun)=
          "Cannot add the interpretation function for "; 'sTR ast_typ; 'sTR
          " twice">]
 
-(*Adds a possible existing interpretation function*)
+(* Adds a possible existing interpretation function *)
 let overwriting_interp_add (ast_typ,interp_fun)=
   if Hashtbl.mem interp_tab ast_typ then
     (Hashtbl.remove interp_tab ast_typ;
     warning ("Overwriting definition of tactic interpreter command "^ast_typ));
   Hashtbl.add interp_tab ast_typ interp_fun
 
-(*Finds the interpretation function corresponding to a given ast type*)
+(* Finds the interpretation function corresponding to a given ast type *)
 let look_for_interp=Hashtbl.find interp_tab
 
-(*Globalizes the identifier*)
+(* Globalizes the identifier *)
 let glob_nvar id=
   try
     Nametab.sp_of_id CCI id
   with
      Not_found -> error ("unbound variable "^(string_of_id id))
 
-(*Summary and Object declaration*)
+(* Summary and Object declaration *)
 let mactab=ref Gmap.empty
 
 let lookup id=Gmap.find id !mactab
@@ -104,7 +104,7 @@ let (inMD,outMD)=
         open_function=(fun _ -> ());
         specification_function=(fun x -> x)})
 
-(*Adds a Tactic Definition in the table*)
+(* Adds a Tactic Definition in the table *)
 let add_tacdef na vbody =
   if Gmap.mem na !mactab then
     errorlabstrm "Tacdef.add_tacdef" 
@@ -112,22 +112,22 @@ let add_tacdef na vbody =
   let _ = Lib.add_leaf (id_of_string na) OBJ (inMD (na,vbody)) in
   if Options.is_verbose() then mSGNL [< 'sTR (na^" is defined") >]
 
-(*Unboxes the tactic_arg*)
+(* Unboxes the tactic_arg *)
 let unvarg=function
    VArg a -> a
   |_ -> errorlabstrm "unvarg" [<'sTR "Not a tactic argument">]
 
-(*Unboxes VRec*)
+(* Unboxes VRec *)
 let unrec=function
    VRec v -> !v
   |a -> a
 
-(*Unboxes REDEXP*)
+(* Unboxes REDEXP *)
 let unredexp=function
    Redexp c -> c
   |_ ->  errorlabstrm "unredexp" [<'sTR "Not a REDEXP tactic_arg">]
 
-(*Reads the head of Fun*)
+(* Reads the head of Fun *)
 let read_fun ast=
   let rec read_fun_rec=function
      Node(_,"VOID",[])::tl -> None::(read_fun_rec tl)
@@ -141,7 +141,7 @@ let read_fun ast=
       |_ ->
         anomalylabstrm "Tacinterp.read_fun" [<'sTR "Fun not well formed">]
 
-(*Reads the clauses of a Rec*)
+(* Reads the clauses of a Rec *)
 let rec read_rec_clauses=function
    [] -> []
   |Node(_,"RECCLAUSE",[Nvar(_,name);it;body])::tl ->
@@ -150,8 +150,8 @@ let rec read_rec_clauses=function
     anomalylabstrm "Tacinterp.read_rec_clauses" [<'sTR
       "Rec not well formed">]
 
-(*Associates variables with values and gives the remaining variables and
-  values*)
+(* Associates variables with values and gives the remaining variables and
+  values *)
 let head_with_value (lvar,lval)=
   let rec head_with_value_rec lacc=function
      ([],[]) -> (lacc,[],[])
@@ -164,24 +164,24 @@ let head_with_value (lvar,lval)=
   in
     head_with_value_rec [] (lvar,lval)
 
-(*Type of hypotheses for a Match Context rule*)
+(* Type of hypotheses for a Match Context rule *)
 type match_context_hyps=
    NoHypId of constr_pattern
   |Hyp of string*constr_pattern
 
-(*Type of a Match rule for Match Context and Match*)
+(* Type of a Match rule for Match Context and Match *)
 type match_rule=
    Pat of match_context_hyps list*constr_pattern*Coqast.t
   |All of Coqast.t
 
-(*Gives the ast of a COMMAND ast node*)
+(* Gives the ast of a COMMAND ast node *)
 let ast_of_command=function
    Node(_,"COMMAND",[c]) -> c
   |ast ->
     anomaly_loc (Ast.loc ast, "Tacinterp.ast_of_command",[<'sTR
       "Not a COMMAND ast node: ";print_ast ast>])
 
-(*Reads the hypotheses of a Match Context rule*)
+(* Reads the hypotheses of a Match Context rule *)
 let rec read_match_context_hyps evc env=function
    Node(_,"MATCHCONTEXTHYPS",[pc])::tl ->
      (NoHypId (snd (interp_constrpattern evc env (ast_of_command
@@ -194,7 +194,7 @@ let rec read_match_context_hyps evc env=function
       "Not a MATCHCONTEXTHYP ast node: ";print_ast ast>])
   |[] -> []
 
-(*Reads the rules of a Match Context*)
+(* Reads the rules of a Match Context *)
 let rec read_match_context_rule evc env=function
    Node(_,"MATCHCONTEXTRULE",[tc])::tl ->
      (All tc)::(read_match_context_rule evc env tl)
@@ -209,7 +209,7 @@ let rec read_match_context_rule evc env=function
       "Not a MATCHCONTEXTRULE ast node: ";print_ast ast>])
   |[] -> []
 
-(*Reads the rules of a Match*)
+(* Reads the rules of a Match *)
 let rec read_match_rule evc env=function
    Node(_,"MATCHRULE",[te])::tl ->
      (All te)::(read_match_rule evc env tl)
@@ -221,18 +221,18 @@ let rec read_match_rule evc env=function
       "Not a MATCHRULE ast node: ";print_ast ast>])
   |[] -> []
 
-(*Transforms a type_judgment signature into a (string*constr) list*)
+(* Transforms a type_judgment signature into a (string*constr) list *)
 let make_hyps hyps=
   let lid=List.map string_of_id (ids_of_sign hyps)
   and lhyp=List.map body_of_type (vals_of_sign hyps)
   in
     List.combine lid lhyp
 
-(*For Match Context and Match*)
+(* For Match Context and Match *)
 exception No_match
 exception Not_coherent_metas
 
-(*Verifies if the matched list is coherent with respect to lcm*)
+(* Verifies if the matched list is coherent with respect to lcm *)
 let rec verify_metas_coherence lcm=function
    (num,csr)::tl ->
      if (List.for_all
@@ -246,14 +246,14 @@ let rec verify_metas_coherence lcm=function
        raise Not_coherent_metas
   |[] -> []
 
-(*Tries to match a pattern and a constr*)
+(* Tries to match a pattern and a constr *)
 let apply_matching pat csr=
   try
     (Pattern.matches pat csr)
   with
      PatternMatchingFailure -> raise No_match
 
-(*Tries to match one hypothesis with a list of hypothesis patterns*)
+(* Tries to match one hypothesis with a list of hypothesis patterns *)
 let apply_one_hyp_context lmatch mhyps (idhyp,hyp)=
   let rec apply_one_hyp_context_rec (idhyp,hyp) mhyps_acc=function
      (Hyp (idpat,pat))::tl ->
@@ -277,7 +277,7 @@ let apply_one_hyp_context lmatch mhyps (idhyp,hyp)=
   in
     apply_one_hyp_context_rec (idhyp,hyp) [] mhyps
 
-(*Prepares the lfun list for constr substitutions*)
+(* Prepares the lfun list for constr substitutions *)
 let rec make_subs_list=function
    (id,VArg (Identifier i))::tl ->
      (id_of_string id,VAR i)::(make_subs_list tl)
@@ -286,11 +286,11 @@ let rec make_subs_list=function
   |e::tl -> make_subs_list tl
   |[] -> []
 
-(*Interprets any expression*)
+(* Interprets any expression *)
 let rec val_interp (evc,env,lfun,lmatch,goalopt) ast=
-(*  mSGNL [<print_ast ast>];*)
+(*  mSGNL [<print_ast ast>]; *)
 
-(*mSGNL [<print_ast (Termast.bdize false (Pretty.assumptions_for_print []) ((reduction_of_redexp redexp) env evc c))>];*)
+(* mSGNL [<print_ast (Termast.bdize false (Pretty.assumptions_for_print []) ((reduction_of_redexp redexp) env evc c))>]; *)
 
   match ast with
      Node(_,"APP",l) ->
@@ -358,12 +358,12 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt) ast=
       VArg (Clause (List.map (fun ast -> id_of_Identifier (unvarg (val_interp
         (evc,env,lfun,lmatch,goalopt) ast))) cl))
     |Node(_,"TACTIC",[ast]) -> VArg (Tac (tac_interp lfun lmatch ast))
-(*Remains to treat*)
+(* Remains to treat *)
     |Node(_,"FIXEXP", [Nvar(_,s); Num(_,n);Node(_,"COMMAND",[c])]) ->
       VArg ((Fixexp (id_of_string s,n,c)))
     |Node(_,"COFIXEXP", [Nvar(_,s); Node(_,"COMMAND",[c])]) ->
       VArg ((Cofixexp (id_of_string s,c)))
-(*End of Remains to treat*)
+(* End of Remains to treat *)
     |Node(_,"INTROPATTERN", [ast]) ->
       VArg ((Intropattern (cvt_intro_pattern (evc,env,lfun,lmatch,goalopt)
         ast)))
@@ -380,7 +380,7 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt) ast=
     |_ ->
       anomaly_loc (Ast.loc ast, "Tacinterp.val_interp",[<'sTR
         "Unrecognizable ast: ";print_ast ast>])
-(*Interprets an application node*)
+(* Interprets an application node *)
 and app_interp evc env lfun lmatch goalopt fv largs ast=
   match fv with
      VFTactic(l,f) -> VFTactic(l@(List.map unvarg largs),f)
@@ -398,7 +398,7 @@ and app_interp evc env lfun lmatch goalopt fv largs ast=
     |_ ->
       anomaly_loc (Ast.loc ast, "Tacinterp.app_interp",[<'sTR
         "Illegal application: "; print_ast ast>])
-(*Interprets recursive expressions*)
+(* Interprets recursive expressions *)
 and rec_interp evc env lfun lmatch goalopt ast=function
    [Node(_,"RECCLAUSE",_)] as l ->
      let (name,var,body)=List.hd (read_rec_clauses l)
@@ -427,7 +427,7 @@ and rec_interp evc env lfun lmatch goalopt ast=function
   |_ ->
     anomaly_loc (Ast.loc ast, "Tacinterp.rec_interp",[<'sTR
       "Rec not well formed: "; print_ast ast>])
-(*Interprets the clauses of a let*)
+(* Interprets the clauses of a let *)
 and let_interp evc env lfun lmatch goalopt ast=function
    [] -> []
   |Node(_,"LETCLAUSE",[Nvar(_,id);t])::tl ->
@@ -436,7 +436,7 @@ and let_interp evc env lfun lmatch goalopt ast=function
   |_ ->
     anomaly_loc (Ast.loc ast, "Tacinterp.let_interp",[<'sTR
       "Let not well formed: "; print_ast ast>])
-(*Interprets the Match Context expressions*)
+(* Interprets the Match Context expressions *)
 and match_context_interp evc env lfun lmatch goalopt ast lmr=
   let rec apply_match_context evc env lfun lmatch goalopt=function
      (All t)::tl -> val_interp (evc,env,lfun,lmatch,goalopt) t
@@ -466,7 +466,7 @@ and match_context_interp evc env lfun lmatch goalopt ast lmr=
   in
     apply_match_context evc env lfun lmatch goalopt (read_match_context_rule
       evc env lmr)
-(*Tries to match the hypotheses in a Match Context*)
+(* Tries to match the hypotheses in a Match Context *)
 and apply_hyps_context evc env lfun_glob lmatch_glob goal mt lgmatch mhyps
   hyps=
   let rec apply_hyps_context_rec evc env lfun_glob lmatch_glob goal mt lfun
@@ -494,7 +494,7 @@ and apply_hyps_context evc env lfun_glob lmatch_glob goal mt lgmatch mhyps
   in
     apply_hyps_context_rec evc env lfun_glob lmatch_glob goal mt [] lgmatch
       mhyps hyps []
-(*Interprets the Match expressions*)
+(* Interprets the Match expressions *)
 and match_interp evc env lfun lmatch goalopt ast lmr=
   let rec apply_match evc env lfun lmatch goalopt csr=function
      (All t)::tl -> val_interp (evc,env,lfun,lmatch,goalopt) t
@@ -516,7 +516,7 @@ and match_interp evc env lfun lmatch goalopt ast lmr=
     and ilr=read_match_rule evc env (List.tl lmr)
     in
       apply_match evc env lfun lmatch goalopt csr ilr
-(*Interprets tactic expressions*)
+(* Interprets tactic expressions *)
 and tac_interp lfun lmatch ast g=
   let evc=project g
   and env=pf_env g
@@ -528,9 +528,9 @@ and tac_interp lfun lmatch ast g=
       |_ ->
         errorlabstrm "Tacinterp.interp_rec" [<'sTR
           "Interpretation gives a non-tactic value">]
-(*Interprets a primitive tactic*)
+(* Interprets a primitive tactic *)
 and interp_atomic loc opn args=vernac_tactic(opn,args)
-(*Interprets sequences of tactics*)
+(* Interprets sequences of tactics *)
 and interp_semi_list acc lfun lmatch=function
    (Node(_,"TACLIST",seq))::l ->
      interp_semi_list (tclTHENS acc (List.map (tac_interp lfun lmatch) seq))
@@ -538,7 +538,7 @@ and interp_semi_list acc lfun lmatch=function
   |t::l ->
     interp_semi_list (tclTHEN acc (tac_interp lfun lmatch t)) lfun lmatch l
   |[] -> acc
-(*Interprets bindings for tactics*)
+(* Interprets bindings for tactics *)
 and bind_interp evc env lfun lmatch goalopt=function
    Node(_,"BINDING", [Num(_,n);Node(loc,"COMMAND",[c])]) ->
      (NoDep n,constr_of_Constr (unvarg (val_interp
@@ -553,7 +553,7 @@ and bind_interp evc env lfun lmatch goalopt=function
   |x ->
     errorlabstrm "bind_interp" [<'sTR "Not the expected form in binding";
       print_ast x>]
-(*Interprets a COMMAND expression*)
+(* Interprets a COMMAND expression *)
 and com_interp (evc,env,lfun,lmatch,goalopt)=function
    Node(_,"EVAL",[c;rtc]) ->
      let redexp=
@@ -562,7 +562,7 @@ and com_interp (evc,env,lfun,lmatch,goalopt)=function
        VArg (Constr ((reduction_of_redexp redexp) env evc (interp_constr1 evc
          env (make_subs_list lfun) lmatch c)))
   |c -> VArg (Constr (interp_constr1 evc env (make_subs_list lfun) lmatch c))
-(*Interprets a CASTEDCOMMAND expression*)
+(* Interprets a CASTEDCOMMAND expression *)
 and cast_com_interp (evc,env,lfun,lmatch,goalopt) com=
   match goalopt with
      Some gl ->
@@ -595,12 +595,12 @@ and cvt_unfold (evc,env,lfun,lmatch,goalopt)=function
      (List.map num_of_ast nums,glob_nvar (id_of_Identifier (unvarg (val_interp
        (evc,env,lfun,lmatch,goalopt) com))))
   |arg -> invalid_arg_loc (Ast.loc arg,"cvt_unfold")
-(*Interprets the arguments of Fold*)
+(* Interprets the arguments of Fold *)
 and cvt_fold (evc,env,lfun,lmatch,goalopt)=function
    Node(_,"COMMAND",[c]) as ast ->
      constr_of_Constr (unvarg (val_interp (evc,env,lfun,lmatch,goalopt) ast))
   |arg -> invalid_arg_loc (Ast.loc arg,"cvt_fold")
-(*Interprets the reduction flags*)
+(* Interprets the reduction flags *)
 and flag_of_ast (evc,env,lfun,lmatch,goalopt) lf=
   let beta = ref false in
   let delta = ref false in
@@ -651,7 +651,7 @@ and flag_of_ast (evc,env,lfun,lmatch,goalopt) lf=
           (false,_) -> (fun _ -> false)
         | (true,None) -> (fun _ -> true)
         | (true,Some p) -> p }
-(*Interprets a reduction expression*)
+(* Interprets a reduction expression *)
 and redexp_of_ast (evc,env,lfun,lmatch,goalopt)=function
   |("Red", []) -> Red
   |("Hnf", []) -> Hnf
@@ -664,7 +664,7 @@ and redexp_of_ast (evc,env,lfun,lmatch,goalopt)=function
   |("Pattern",lp) ->
     Pattern (List.map (cvt_pattern (evc,env,lfun,lmatch,goalopt)) lp)
   |(s,_) -> invalid_arg ("malformed reduction-expression: "^s)
-(*Interprets the patterns of Intro*)
+(* Interprets the patterns of Intro *)
 and cvt_intro_pattern (evc,env,lfun,lmatch,goalopt)=function
    Node(_,"IDENTIFIER", [Nvar(loc,s)]) ->
      IdPat (id_of_Identifier (unvarg (val_interp (evc,env,lfun,lmatch,goalopt)
@@ -679,7 +679,7 @@ and cvt_intro_pattern (evc,env,lfun,lmatch,goalopt)=function
     errorlabstrm "cvt_intro_pattern"
       [<'sTR "Not the expected form for an introduction pattern!";print_ast
       x>]
-(*Interprets a pattern of Let*)
+(* Interprets a pattern of Let *)
 and cvt_letpattern (evc,env,lfun,lmatch,goalopt) (o,l)=function
    Node(_,"HYPPATTERN", Nvar(loc,s)::nums) ->
      (o,(id_of_Identifier (unvarg (val_interp (evc,env,lfun,lmatch,goalopt)
@@ -691,10 +691,10 @@ and cvt_letpattern (evc,env,lfun,lmatch,goalopt) (o,l)=function
       (Some (List.map num_of_ast nums), l)
   |arg -> invalid_arg_loc (Ast.loc arg,"cvt_hyppattern")
 
-(*Interprets tactic arguments*)
+(* Interprets tactic arguments *)
 let interp_tacarg sign ast=unvarg (val_interp sign ast)
 
-(*Initial call for interpretation*)
+(* Initial call for interpretation *)
 let interp=tac_interp [] []
 
 let is_just_undef_macro ast =

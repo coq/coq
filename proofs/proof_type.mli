@@ -84,7 +84,7 @@ and tactic = goal sigma -> (goal list sigma * validation)
 and validation = (proof_tree list -> proof_tree)
 
 and tactic_arg =
-    Command       of Coqast.t
+  | Command       of Coqast.t
   | Constr        of constr
   | Identifier    of identifier
   | Integer       of int
