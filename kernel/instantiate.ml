@@ -24,7 +24,22 @@ let instantiate sign c args =
   else
     replace_vars inst c
 
-let instantiate_evar = instantiate
+(* Vérifier que les instances des let-in sont compatibles ?? *)
+let instantiate_sign_including_let sign args =
+  let rec instrec = function
+    | ((id,b,_) :: sign, c::args) -> (id,c) :: (instrec (sign,args))
+    | ([],[])                        -> []
+    | ([],_) | (_,[]) ->
+    anomaly "Signature and its instance do not match"
+  in 
+  instrec (sign,args)
+
+let instantiate_evar sign c args =
+  let inst = instantiate_sign_including_let sign args in
+  if is_id_inst inst then
+    c
+  else
+    replace_vars inst c
 
 let instantiate_constr sign c args =
   if Options.immediate_discharge then

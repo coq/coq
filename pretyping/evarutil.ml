@@ -61,7 +61,7 @@ let dummy_sort = mkType dummy_univ
 
 let make_evar_instance env =
   fold_named_context
-    (fun env (id, b, _) l -> if b=None then mkVar id :: l else l)
+    (fun env (id, b, _) l -> (*if b=None then*) mkVar id :: l (*else l*))
     env []
 
 (* Declaring any type to be in the sort Type shouldn't be harmful since
@@ -189,6 +189,7 @@ let real_clean isevars sp args rhs =
 	    else begin
 	      let (sigma,rc) = do_restrict_hyps !isevars ev args' in
 	      isevars := sigma;
+
 	      rc
 	    end
 	  else
@@ -204,18 +205,18 @@ let make_evar_instance_with_rel env =
   let n = rel_context_length (rel_context env) in
   let vars = 
     fold_named_context
-      (fun env (id,b,_) l -> if b=None then mkVar id :: l else l)
+      (fun env (id,b,_) l -> (* if b=None then *) mkVar id :: l (*else l*))
       env [] in
   snd (fold_rel_context
-    (fun env (_,b,_) (i,l) -> (i-1, if b=None then mkRel i :: l else l))
+    (fun env (_,b,_) (i,l) -> (i-1, (*if b=None then *) mkRel i :: l (*else l*)))
     env (n,vars))
 
 let make_subst env args =
   snd (fold_named_context
     (fun env (id,b,c) (args,l as g) ->
        match b, args with
-	 | None, a::rest -> (rest, (id,a)::l)
-	 | Some _, _ -> g
+	 | (* None *) _ , a::rest -> (rest, (id,a)::l)
+(*	 | Some _, _ -> g*)
 	 | _ -> anomaly "Instance does not match its signature")
     env (List.rev args,[]))
 
