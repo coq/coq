@@ -10,6 +10,11 @@
 
 open Util
 
+let with_option o f x =
+  let old = !o in o:=true;
+  try let r = f x in o := old; r
+  with e -> o := old; raise e
+
 let boot = ref false
 
 let batch_mode = ref false
@@ -25,6 +30,8 @@ let term_quality = ref false
 let xml_export = ref false
 
 let dont_load_proofs = ref false
+
+let raw_print = ref false
 
 let v7 =
   let transl = array_exists ((=) "-translate") Sys.argv in
@@ -65,11 +72,6 @@ let silently f x =
 
 let if_silent f x = if !silent then f x
 let if_verbose f x = if not !silent then f x
-
-let with_option o f x =
-  let old = !o in o:=true;
-  try let r = f x in o := old; r
-  with e -> o := old; raise e
 
 (* The number of printed hypothesis in a goal *)
 

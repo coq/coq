@@ -243,7 +243,9 @@ let detype_case computable detype detype_eqn tenv avoid indsp st p k c bl =
   let eqnl = Array.to_list eqnv in
   let tag =
     try 
-      if PrintingLet.active (indsp,consnargsl) then
+      if !Options.raw_print then
+        st
+      else if PrintingLet.active (indsp,consnargsl) then
 	LetStyle
       else if PrintingIf.active (indsp,consnargsl) then 
 	IfStyle

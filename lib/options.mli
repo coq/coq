@@ -25,6 +25,8 @@ val xml_export : bool ref
 
 val dont_load_proofs : bool ref
 
+val raw_print : bool ref
+
 val v7 : bool ref
 val v7_only : bool ref
 

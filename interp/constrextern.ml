@@ -1156,7 +1156,7 @@ let match_aconstr_cases_pattern c (metas_scl,pat) =
  (* Better to use extern_rawconstr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope scopes vars pat =
   try 
-    if !print_no_symbol then raise No_match;
+    if !Options.raw_print or !print_no_symbol then raise No_match;
     let (sc,n) = Symbols.uninterp_cases_numeral pat in
     match Symbols.availability_of_numeral sc (make_current_scopes scopes) with
     | None -> raise No_match
@@ -1165,7 +1165,7 @@ let rec extern_cases_pattern_in_scope scopes vars pat =
         insert_pat_delimiters (CPatNumeral (loc,n)) key
   with No_match ->
   try 
-    if !print_no_symbol then raise No_match;
+    if !Options.raw_print or !print_no_symbol then raise No_match;
     extern_symbol_pattern scopes vars pat
       (Symbols.uninterp_cases_pattern_notations pat)
   with No_match ->
@@ -1222,7 +1222,7 @@ let occur_name na aty =
     | Anonymous -> false
 
 let is_projection nargs = function
-  | Some r when !print_projections ->
+  | Some r when not !Options.raw_print & !print_projections ->
       (try 
 	let n = Recordops.find_projection_nparams r + 1 in
 	if n <= nargs then Some n else None
@@ -1260,6 +1260,7 @@ let explicitize loc inctx impl (cf,f) args =
     | a::args, imp::impl when is_status_implicit imp ->
         let tail = exprec (q+1) (args,impl) in
         let visible =
+          !Options.raw_print or
           (!print_implicits & !print_implicits_explicit_args) or 
 	  (is_significant_implicit a impl tail &
 	  (not (is_inferable_implicit inctx n imp) or
@@ -1285,7 +1286,7 @@ let explicitize loc inctx impl (cf,f) args =
 	if args = [] then f else CApp (loc, (None, f), args)
 
 let rec skip_coercion dest_ref (f,args as app) =
-  if !print_coercions or Options.do_translate () then app
+  if !Options.raw_print or !print_coercions or Options.do_translate () then app
   else
     try
       match dest_ref f with
@@ -1310,9 +1311,9 @@ let extern_app loc inctx impl (cf,f) args =
   if args = [] (* maybe caused by a hidden coercion *) then
     extern_global loc impl f
   else
-  if !print_implicits &
-    not !print_implicits_explicit_args &
-    List.exists is_status_implicit impl
+  if !Options.raw_print or 
+    (!print_implicits & not !print_implicits_explicit_args &
+     List.exists is_status_implicit impl)
   then 
     CAppExpl (loc, (is_projection (List.length args) cf, f), args)
   else
@@ -1332,13 +1333,13 @@ let rec extern_args extern scopes env args subscopes =
 
 let rec extern inctx scopes vars r =
   try 
-    if !print_no_symbol then raise No_match;
+    if !Options.raw_print or !print_no_symbol then raise No_match;
     extern_numeral (Rawterm.loc_of_rawconstr r)
       scopes (Symbols.uninterp_numeral r)
   with No_match ->
 
   try 
-    if !print_no_symbol then raise No_match;
+    if !Options.raw_print or !print_no_symbol then raise No_match;
     extern_symbol scopes vars r (Symbols.uninterp_notations r)
   with No_match -> match r with
   | RRef (loc,ref) ->

@@ -736,10 +736,18 @@ let _ =
 let _ =
   declare_bool_option 
     { optsync  = true;
-      optname  = "symbols printing";
+      optname  = "notations printing";
       optkey   = (SecondaryTable ("Printing",if !Options.v7 then "Symbols" else "Notations"));
       optread  = (fun () -> not !Constrextern.print_no_symbol);
       optwrite = (fun b ->  Constrextern.print_no_symbol := not b) }
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
+      optname  = "raw printing";
+      optkey   = (SecondaryTable ("Printing","All"));
+      optread  = (fun () -> !Options.raw_print);
+      optwrite = (fun b -> Options.raw_print := b) }
 
 let _ =
   declare_int_option
