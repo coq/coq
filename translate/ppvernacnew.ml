@@ -538,25 +538,22 @@ let rec pr_vernac = function
       let pr_oneind (id,indpar,s,lc) =
         pr_id id ++ spc() ++ pr_sbinders indpar ++ str":" ++ spc() ++
         pr_lconstr s ++ str" :=" ++ pr_constructor_list lc in
-      let p = prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_oneind l in
       hov 1
-        ((if f then str"Inductive" else str"CoInductive") ++ spc() ++ p)
+        ((if f then str"Inductive" else str"CoInductive") ++ spc() ++
+ 	 prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_oneind l)
 
   | VernacFixpoint recs ->
 
       (* Copie simplifiée de command.ml pour recalculer les implicites *)
       let sigma = Evd.empty
       and env0 = Global.env() in
-      let fs = States.freeze() in
-      (try 
-	List.iter
-          (fun (recname,_,arityc,_) -> 
-            let arity = Constrintern.interp_type sigma env0 arityc in
-            let _ = Declare.declare_variable recname
-	      (Lib.cwd(),Declare.SectionLocalAssum arity, Decl_kinds.IsAssumption Decl_kinds.Definitional) in ())
-          recs
-      with e ->
-	States.unfreeze fs; raise e);
+      List.iter
+        (fun (recname,_,arityc,_) -> 
+          let arity = Constrintern.interp_type sigma env0 arityc in
+          let _ = Declare.declare_variable recname
+	    (Lib.cwd(),Declare.SectionLocalAssum arity,
+	     Decl_kinds.IsAssumption Decl_kinds.Definitional) in ())
+        recs;
 
       let pr_onerec = function
         | (id,n,type_0,def0) ->
@@ -574,9 +571,8 @@ let rec pr_vernac = function
             pr_id id ++ str" " ++ pr_binders bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_lconstr c) type_
             ++ str" :=" ++ brk(1,1) ++ pr_lconstr def in
-      let p = prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onerec recs in
-      States.unfreeze fs;
-      hov 1 (str"Fixpoint" ++ spc() ++ p)
+      hov 1 (str"Fixpoint" ++ spc() ++
+        prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onerec recs)
 
   | VernacCoFixpoint corecs ->
       let pr_onecorec (id,c,def) =
