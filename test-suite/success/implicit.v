@@ -7,7 +7,7 @@ Set Implicit Arguments.
 Section Spec.
 Variable A:Set.
 Variable op : (A:Set)A->A->Set.
-Infix 6 "#" op.
+Infix 6 "#" op V8only (at level 70).
 Check (x:A)(x # x).
 
 (* Example submitted by Christine *)
