@@ -34,6 +34,14 @@ let print_memory_stat () =
 
 let _ = at_exit print_memory_stat
 
+let engagement = ref None
+let set_engagement c =
+  if !engagement <> None then error
+    "Options strongly-constructive/strongly-classical occur more than once";
+  engagement := Some c
+let engage () =
+  match !engagement with Some c -> Global.set_engagement c | None -> ()
+  
 let set_batch_mode () = batch_mode := true
 
 let remove_top_ml () = Mltop.remove ()
@@ -141,6 +149,11 @@ let ide_args = ref []
 let parse_args is_ide =
   let rec parse = function
     | [] -> ()
+
+    | "-strongly-constructive" :: rem -> 
+        set_engagement Environ.StronglyConstructive; parse rem
+    | "-strongly-classical" :: rem -> 
+        set_engagement Environ.StronglyClassical; parse rem
 
     | ("-I"|"-include") :: d :: rem -> set_default_include d; parse rem
     | ("-I"|"-include") :: []       -> usage ()
@@ -265,6 +278,7 @@ let init is_ide =
       if_verbose print_header ();
       init_load_path ();
       inputstate ();
+      engage ();
       init_library_roots ();
       load_vernac_obj ();
       require ();

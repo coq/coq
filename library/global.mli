@@ -49,6 +49,8 @@ val add_modtype     : identifier -> module_type_entry -> kernel_name
 
 val add_constraints : constraints -> unit
 
+val set_engagement : Environ.engagement -> unit
+
 (*s Interactive modules and module types *)
 (* Both [start_*] functions take the [dir_path] argument to create a 
    [mod_self_id]. This should be the name of the compilation unit. *)
