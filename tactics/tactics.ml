@@ -1063,29 +1063,21 @@ let induct_discharge old_style mind statuslists cname destopt avoid ra names gl
   in
   let rec peel_tac ra names gl = match ra with
     | true :: ra' ->
-		 (* For lstatus but _buggy_: if intro_gen renames
-		    hyprecname differently (because it already exists
-		    in goal, then hypothesis associated to None in
-		    lstatus will be moved at a wrong place *)
         let recvar,hyprec,names = match names with
           | [] ->
-              next_ident_away recvarname avoid,
-              next_ident_away hyprecname avoid,
-              []
-          | [id] ->
-              id, next_ident_away (add_prefix "IH" id) avoid, []
+              (fresh_id avoid recvarname gl, fresh_id avoid hyprecname gl, [])
+          | [id] -> (id, next_ident_away (add_prefix "IH" id) avoid, [])
           | id1::id2::names -> (id1,id2,names) in
 	if !tophyp=None then tophyp := Some hyprec;
         tclTHENLIST
-	  [ intro_gen (IntroMustBe (recvar)) destopt false;
-	    intro_gen (IntroMustBe (hyprec)) None false;
+	  [ intro_gen (IntroMustBe recvar) destopt false;
+	    intro_gen (IntroMustBe hyprec) None false;
 	    peel_tac ra' names ] gl
     | false :: ra' ->
         let introstyle,names = match names with
           | [] -> IntroAvoid avoid, []
           | id::names -> IntroMustBe id,names in
-	tclTHEN (intro_gen introstyle destopt false)
-	  (peel_tac ra' names) gl
+	tclTHEN (intro_gen introstyle destopt false) (peel_tac ra' names) gl
     | [] ->
         check_unused_names names;
         tclIDTAC gl
