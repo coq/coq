@@ -65,6 +65,8 @@ let stringmap_dom m = Stringmap.fold (fun s _ l -> s::l) m []
 
 (* Lists *)
 
+let list_add_set x l = if List.mem x l then l else x::l
+
 let list_intersect l1 l2 = 
   List.filter (fun x -> List.mem x l2) l1
 

@@ -1678,7 +1678,7 @@ let abstract_subproof name tac gls =
     with UserError _ as e -> 
       (abort_cur_goal(); raise e)
   end;
-  exact (applist ((Declare.global env' na), 
+  exact (applist ((Declare.construct_reference env' CCI na), 
                   (List.map (fun id -> VAR(id)) 
                      (List.rev (ids_of_sign sign)))))
     gls

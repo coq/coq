@@ -51,6 +51,10 @@ val fconstr_of_com1 : bool -> 'a evar_map -> env -> Coqast.t -> constr
 val fconstr_of_com : 'a evar_map -> env -> Coqast.t -> constr
 val fconstr_of_com_sort : 'a evar_map -> env -> Coqast.t -> constr
 
+val judgment_of_com1 : 
+  bool -> 'a evar_map -> env -> Coqast.t -> unsafe_judgment
+val judgment_of_com : 'a evar_map -> env -> Coqast.t -> unsafe_judgment
+
 (* Typing with Trad, and re-checking with Mach *)
 (*i
 val fconstruct :'c evar_map -> context -> Coqast.t -> unsafe_judgment

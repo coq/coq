@@ -1,12 +1,12 @@
 
 (* $Id$ *)
 
+(*i*)
 open Names
 open Term
+(*i*)
 
 val definition_structure :
-  string * identifier * (identifier * CoqAst.t) list *
-  (bool * (identifier * CoqAst.t)) list * identifier *
-  CoqAst.t -> unit;;
-
-(* $Id$ *)
+  string * identifier * (identifier * Coqast.t) list *
+  (bool * (identifier * Coqast.t)) list * identifier *
+  Coqast.t -> unit

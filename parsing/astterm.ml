@@ -148,7 +148,7 @@ let dbize_ref k sigma env loc s =
 	| FW  -> Declare.global_reference_imps FW id
 	| OBJ -> anomaly "search_ref_cci_fw" in
       RRef (loc,ref_from_constr c), il
-    with UserError _ ->
+    with Not_found ->
       try 
 	(Syntax_def.search_syntactic_definition id, [])
       with Not_found -> 
@@ -465,6 +465,16 @@ let fconstr_of_com_env1 is_ass sigma env com =
 let fconstr_of_com_env sigma hyps com =
   fconstr_of_com_env1 false sigma hyps com 
     
+let judgment_of_com1 is_ass sigma env com = 
+  let c = raw_constr_of_com sigma (context env) com in
+  try 
+    ise_resolve is_ass sigma [] env c
+  with e -> 
+    Stdpp.raise_with_loc (Ast.loc com) e
+
+let judgment_of_com sigma env com =
+  judgment_of_com1 false sigma env com
+
 (* Without dB *)
 let type_of_com env com =
   let sign = context env in

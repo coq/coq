@@ -63,5 +63,4 @@ val ise_resolve_nocheck : 'a evar_map -> (int * constr) list ->
  * Unused outside Trad, but useful for debugging
  *)
 val pretype : 
-  trad_constraint -> env -> 'a evar_defs -> rawconstr 
-    -> unsafe_judgment
+  trad_constraint -> env -> 'a evar_defs -> rawconstr -> unsafe_judgment

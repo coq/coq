@@ -78,7 +78,7 @@ let pf_constr_of_com_sort gls c =
   let evc = project gls in 
   Astterm.constr_of_com_sort evc (sig_it gls).evar_env c
 
-let pf_global gls id = Declare.global (sig_it gls).evar_env id
+let pf_global gls id = Declare.construct_reference (sig_it gls).evar_env CCI id
 let pf_parse_const gls = compose (pf_global gls) id_of_string
 
 let pf_execute gls =

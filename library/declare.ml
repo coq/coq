@@ -218,19 +218,26 @@ let mind_oper_of_id sp id mib =
 	   mip.mind_consnames)
     mib.mind_packets
 
-let global_operator sp id =
+let construct_operator env sp id =
   try
-    let cb = Global.lookup_constant sp in Const sp, cb.const_hyps
+    let cb = Environ.lookup_constant sp env in Const sp, cb.const_hyps
   with Not_found -> 
-    let mib = Global.lookup_mind sp in
+    let mib = Environ.lookup_mind sp env in
     mind_oper_of_id sp id mib, mib.mind_hyps
 
-let global_reference kind id =
+let global_operator sp id = construct_operator (Global.env()) sp id
+
+let construct_reference env kind id =
   let sp = Nametab.sp_of_id kind id in
-  let (oper,_) = global_operator sp id in
-  let hyps = Global.var_context () in
-  let ids = ids_of_sign hyps in
-  DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids))
+  try
+    let (oper,_) = construct_operator env sp id in
+    let hyps = Global.var_context () in
+    let ids = ids_of_sign hyps in
+    DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids))
+  with Not_found -> 
+    VAR (let _ = Environ.lookup_var id env in id)
+
+let global_reference kind id = construct_reference (Global.env()) kind id
 
 let global_reference_imps kind id =
   let c = global_reference kind id in
@@ -241,6 +248,8 @@ let global_reference_imps kind id =
 	c, list_of_implicits (inductive_implicits (sp,i))
     | DOPN (MutConstruct ((sp,i),j),_) ->
 	c, list_of_implicits (constructor_implicits ((sp,i),j))
+    | VAR id ->
+	c, implicits_of_var kind id
     | _ -> assert false
 
 let global env id =

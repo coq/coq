@@ -15,6 +15,7 @@ open Reduction
 open Pfedit
 open Tacmach
 open Proof_trees
+open Tacred
 open Library
 open Libobject
 open Environ
@@ -704,7 +705,6 @@ let _ =
                        'sTR"failed... aborting" >])
        | _ -> bad_vernac_args "TheoremProof")
 
-(***
 let _ =
   add "DEFINITION"
     (function 
@@ -739,8 +739,8 @@ let _ =
                message ((string_of_id id) ^ " is now a coercion")
 	     end;
 	     if idcoe then 
-	       Class.try_add_new_coercion_subclass stre id;
-             if objdef then Recordobj.objdef_declare id
+	       Class.try_add_new_coercion_subclass id stre;
+             (***TODO if objdef then Recordobj.objdef_declare id ***)
        | _ -> bad_vernac_args "DEFINITION")
 
 let _ =
@@ -772,7 +772,6 @@ let _ =
                     sl)
 	       slcl
        | _ -> bad_vernac_args "VARIABLE")
-  ***)
   
 let _ =
   add "PARAMETER"
@@ -791,15 +790,14 @@ let _ =
                slcl
        | _ -> bad_vernac_args "PARAMETER")
 
-(***
 let _ =
   add "Eval"
     (function
        | VARG_TACTIC_ARG (Redexp (rn,unf)) :: VARG_COMMAND c :: g ->
            let (evmap,sign) = get_evmap_sign (goal_of_args g) in
            let redexp = redexp_of_ast evmap sign (rn,unf) in 
-           let redfun = print_eval (reduction_of_redexp redexp evmap) sign in 
-	   fun () -> mSG (redfun (fconstruct_with_univ evmap sign c))
+           let redfun = print_eval (reduction_of_redexp redexp) sign in 
+	   fun () -> mSG (redfun (judgment_of_com evmap sign c))
        | _ -> bad_vernac_args "Eval")
 
 let _ =
@@ -812,9 +810,10 @@ let _ =
              | "PRINTTYPE" -> print_type
              | _ -> anomaly "Unexpected string" 
 	   in
-	   (fun () -> mSG (prfun sign (fconstruct_with_univ evmap sign c)))
+	   (fun () -> mSG (prfun sign (judgment_of_com evmap sign c)))
        | _ -> bad_vernac_args "Check")
 
+(***
 let _ =
   add "PrintExtractId"
     (function 

@@ -47,17 +47,24 @@ val out_variable : section_path -> identifier * typed_type * strength * bool
 val variable_strength : identifier -> strength
 
 
-(*s It also provides a function [global_reference] to construct a global
-  constr (a constant, an inductive or a constructor) from an identifier.
-  To do so, it first looks for the section path using [Nametab.sp_of_id] and
-  then constructs the corresponding term, associated to the current 
-  environment of variables. *)
+(*s [global_operator sp id] returns the operator (constant, inductive or
+    construtor) corresponding to [(sp,id)] in global environment, together
+    with its definition environment. *)
 
 val global_operator : section_path -> identifier -> sorts oper * var_context
+
+(*s [global_reference k id] returns the object corresponding to
+    the name [id] in the global environment. It may be a constant, 
+    an inductive, a construtor or a variable. It is instanciated
+    on the current environment of variables. [Nametab.sp_of_id] is used
+    to find the corresponding object. 
+    [construct_reference] is a version which looks for variables in a 
+    given environment instead of looking in the current global environment. *)
+
 val global_reference : path_kind -> identifier -> constr
 val global_reference_imps : path_kind -> identifier -> constr * int list
 
-val global : Environ.env -> identifier -> constr
+val construct_reference : Environ.env -> path_kind -> identifier -> constr
 
 val is_global : identifier -> bool
 

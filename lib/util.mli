@@ -41,6 +41,7 @@ val stringmap_dom : 'a Stringmap.t -> string list
 
 (*s Lists. *)
 
+val list_add_set : 'a -> 'a list -> 'a list
 val list_intersect : 'a list -> 'a list -> 'a list
 val list_union : 'a list -> 'a list -> 'a list
 val list_unionq : 'a list -> 'a list -> 'a list

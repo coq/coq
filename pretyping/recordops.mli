@@ -22,9 +22,9 @@ type struc_typ = {
   s_PARAM : int;
   s_PROJ : section_path option list }
 
-val add_new_struc : Names.section_path * Names.identifier * int *
-    Names.section_path option list -> unit
-val struc_info : Names.section_path -> struc_typ
+val add_new_struc : 
+  section_path * identifier * int * section_path option list -> unit
+val struc_info : section_path -> struc_typ
 
 type obj_typ = {
   o_DEF : constr;
@@ -32,17 +32,18 @@ type obj_typ = {
   o_TPARAMS : constr list; (* dans l'ordre *)
   o_TCOMPS : constr list } (* dans l'ordre *)
                
-val oBJDEFS : ((cte_typ*cte_typ) * obj_typ) list ref
+val oBJDEFS : ((cte_typ * cte_typ) * obj_typ) list ref
 val sTRUCS : (section_path * struc_typ) list ref
 
-val objdef_info : (cte_typ*cte_typ) -> obj_typ
-val add_new_objdef : (Classops.cte_typ * Classops.cte_typ) * Term.constr * Term.constr list *
-    Term.constr list * Term.constr list -> unit
+val objdef_info : (cte_typ * cte_typ) -> obj_typ
+val add_new_objdef : 
+  (Classops.cte_typ * Classops.cte_typ) * Term.constr * Term.constr list *
+  Term.constr list * Term.constr list -> unit
 
 
-val inStruc : section_path*struc_typ -> obj
-val outStruc : obj -> section_path*struc_typ
+val inStruc : section_path * struc_typ -> obj
+val outStruc : obj -> section_path * struc_typ
 val inObjDef1 : section_path -> obj
 val outObjDef1 : obj -> section_path
 
-val add_new_objdef1 : ((cte_typ*cte_typ) * obj_typ) -> unit
+val add_new_objdef1 : ((cte_typ * cte_typ) * obj_typ) -> unit
