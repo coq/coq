@@ -35,12 +35,19 @@ Syntax constr
   | type [(TYPE)] -> ["Type"]
   | type_sp [(TYPE ($PATH $sp) ($NUM $n))] -> ["Type"]
 (* Note: Atomic constants (Nvar, CONST, MUTIND, MUTCONSTRUCT) are printed in
-   typing/printer to deal with the duality CCI/FW *)
+   Printer to know if they must be qualified or not (and previously to
+   deal with the duality CCI/FW) *)
 
   | evar [<< ? >>] -> ["?"]
   | meta [(META ($NUM $n))] -> [ "?" $n ]
   | implicit [(IMPLICIT)] -> ["<Implicit>"]
   | indice [(REL ($NUM $n))] -> ["<Unbound ref: " $n ">"]
+  | instantiation [(INSTANCE $a ($LIST $l))] ->
+	 [ $a "{" (CONTEXT ($LIST $l)) "}"]
+  | instantiation_nil [(CONTEXT)] -> [ ]
+  | instantiation_one [(CONTEXT $a)] -> [ $a ]
+  | instantiation_many [(CONTEXT $a $b ($LIST $l))] ->
+	 [ (CONTEXT $b ($LIST $l)) ";" $a ]
   ;
 
 (* Things parsed in command1 *)

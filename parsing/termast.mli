@@ -34,6 +34,7 @@ val ast_of_inductive    : inductive -> Coqast.t
 val print_implicits : bool ref
 val print_casts : bool ref
 val print_arguments : bool ref
+val print_evar_arguments : bool ref
 val print_coercions : bool ref
 
 val with_casts : ('a -> 'b) -> 'a -> 'b

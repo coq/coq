@@ -17,13 +17,20 @@ open Extend
 
 type key =
   | Cst of string list (* keys for global constants rules *)
+  | Ind of string list * int 
+  | Cstr of (string list * int) * int
   | Nod of string      (* keys for other constructed asts rules *)
   | Oth                (* key for other syntax rules *)
   | All     (* key for catch-all rules (i.e. with a pattern such as $x .. *)
 
 let ast_keys = function
-  | Node(_,"APPLIST",(Node(_,"CONST",(Path (_,sl,_))::_))::_) ->
+  | Node(_,"APPLIST", Node(_,"CONST", [Path (_,sl,_)]) ::_) ->
       [Cst sl; Nod "APPLIST"; All]
+  | Node(_,"APPLIST", Node(_,"MUTIND", [Path (_,sl,_); Num (_,tyi)]) ::_) ->
+      [Ind (sl,tyi); Nod "APPLIST"; All]
+  | Node(_,"APPLIST", Node(_,"MUTCONSTRUCT",
+			   [Path (_,sl,_); Num (_,tyi); Num (_,i)]) ::_) ->
+      [Cstr ((sl,tyi),i); Nod "APPLIST"; All]
   | Node(_,s,_) -> [Nod s; All]
   | _ -> [Oth; All]
 
@@ -31,8 +38,19 @@ let spat_key astp =
   match astp with
     | Pnode("APPLIST",
             Pcons(Pnode("CONST",
-                        Pcons(Pquote(Path (_,sl,s)),_)),
-                  _)) -> Cst sl
+                        Pcons(Pquote(Path (_,sl,s)),_)), _))
+      -> Cst sl
+    | Pnode("APPLIST",
+            Pcons(Pnode("MUTIND",
+                        Pcons(Pquote(Path (_,sl,s)),
+			      Pcons(Pquote(Num (_,tyi)),_))), _))
+      -> Ind (sl,tyi)
+    | Pnode("APPLIST",
+            Pcons(Pnode("MUTCONSTRUCT",
+                        Pcons(Pquote(Path (_,sl,s)),
+			      Pcons(Pquote(Num (_,tyi)),
+				    Pcons(Pquote(Num (_,i)),_)))), _))
+      -> Cstr ((sl,tyi),i)
     | Pnode(na,_) -> Nod na
     | Pquote ast -> List.hd (ast_keys ast)
     | Pmeta _ -> All

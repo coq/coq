@@ -16,23 +16,37 @@ let emacs_str s = if !Options.print_emacs then s else ""
 
 let dfltpr ast = [< 'sTR"#GENTERM " ; Ast.print_ast ast >];;
 
-(*
 let section_path sl s =
   let sl = List.rev sl in
   make_path (List.tl sl) (id_of_string (List.hd sl)) (kind_of_string s)
 
+(*
 let pr_global k oper =
   let id = id_of_global oper in
   [< 'sTR (string_of_id id) >]
 *)
 
+let pr_qualified_path sp id =
+  if Nametab.sp_of_id (kind_of_path sp) id = sp then [<'sTR(string_of_id id)>]
+  else [<'sTR(string_of_path (make_path (dirpath sp) id (kind_of_path sp)))>]
+
 let globpr gt = match gt with
   | Nvar(_,s) -> [< 'sTR s >]
+  | Node(_,"EVAR", [Num (_,ev)]) -> [< 'sTR ("?" ^ (string_of_int ev)) >]
+  | Node(_,"CONST",[Path(_,sl,s)]) ->
+      let sp = section_path sl s in
+      pr_qualified_path sp (basename (section_path sl s))
+  | Node(_,"MUTIND",[Path(_,sl,s); Num(_,tyi)]) ->
+      let sp = section_path sl s in
+      pr_qualified_path sp (Global.id_of_global (MutInd (sp,tyi)))
+  | Node(_,"MUTCONSTRUCT",[Path(_,sl,s); Num(_,tyi); Num(_,i)]) ->
+      let sp = section_path sl s in
+      pr_qualified_path sp (Global.id_of_global (MutConstruct ((sp,tyi),i)))
 (*
   | Node(_,"EVAR", (Num (_,ev))::_) ->
       if !print_arguments then dfltpr gt
       else pr_existential (ev,[])
-  | Node(_,"CONST",(Path(_,sl,s))::_) ->
+  | Node(_,"CONST"),(Path(_,sl,s))::_) ->
       if !print_arguments then dfltpr gt
       else pr_constant (section_path sl s,[])
   | Node(_,"MUTIND",(Path(_,sl,s))::(Num(_,tyi))::_) ->

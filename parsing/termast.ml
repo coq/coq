@@ -24,6 +24,9 @@ open Pattern
 (* This governs printing of local context of references *)
 let print_arguments = ref false
 
+(* If true, prints local context of evars, whatever print_arguments *)
+let print_evar_arguments = ref false
+
 (* This forces printing of cast nodes *)
 let print_casts = ref false
 
@@ -83,44 +86,32 @@ let stringopt_of_name = function
   | Name id -> Some (string_of_id id)
   | Anonymous -> None
 
-let ast_of_qualified sp id =
-  if Nametab.sp_of_id (kind_of_path sp) id = sp then nvar (string_of_id id)
-  else nvar (string_of_path sp)
-
 let ast_of_constant_ref (sp,ids) =
-  if !print_arguments then
-    ope("CONST", (path_section dummy_loc sp)::(List.map ast_of_ident ids))
-  else
-    try ast_of_qualified sp (basename sp)
-    with Not_found -> nvar (string_of_path sp) (* May happen while debugging *)
+  let a = ope("CONST", [path_section dummy_loc sp]) in
+  if !print_arguments then ope("INSTANCE",a::(List.map ast_of_ident ids))
+  else a
 
 let ast_of_constant (ev,ids) = ast_of_constant_ref (ev,ids_of_ctxt ids)
 
 let ast_of_existential_ref (ev,ids) =
-  if !print_arguments then
-      ope("EVAR", (num ev)::(List.map ast_of_ident ids))
-  else nvar ("?" ^ string_of_int ev)
+  let a = ope("EVAR", [num ev]) in
+  if !print_arguments or !print_evar_arguments then
+    ope("INSTANCE",a::(List.map ast_of_ident ids))
+  else a
 
 let ast_of_existential (ev,ids) = ast_of_existential_ref (ev,ids_of_ctxt ids)
 
 let ast_of_constructor_ref (((sp,tyi),n) as cstr_sp,ids) =
-  if !print_arguments then
-    ope("MUTCONSTRUCT",
-	(path_section dummy_loc sp)::(num tyi)::(num n)
-	::(List.map ast_of_ident ids))
-  else 
-    try ast_of_qualified sp (Global.id_of_global (MutConstruct cstr_sp))
-    with Not_found -> nvar (string_of_path sp) (* May happen while debugging *)
+  let a = ope("MUTCONSTRUCT",[path_section dummy_loc sp; num tyi; num n]) in
+  if !print_arguments then ope("INSTANCE",a::(List.map ast_of_ident ids))
+  else a
 
 let ast_of_constructor (ev,ids) = ast_of_constructor_ref (ev,ids_of_ctxt ids)
 
 let ast_of_inductive_ref ((sp,tyi) as ind_sp,ids) =
-  if !print_arguments then
-    ope("MUTIND",
-	(path_section dummy_loc sp)::(num tyi)::(List.map ast_of_ident ids))
-  else
-    try ast_of_qualified sp (Global.id_of_global (MutInd ind_sp))
-    with Not_found -> nvar (string_of_path sp) (* May happen while debugging *)
+  let a = ope("MUTIND",	[path_section dummy_loc sp; num tyi]) in
+  if !print_arguments then ope("INSTANCE",a::(List.map ast_of_ident ids))
+  else a
 
 let ast_of_inductive (ev,ctxt) = ast_of_inductive_ref (ev,ids_of_ctxt ctxt)
 
