@@ -16,7 +16,8 @@
 DOCCOQTOP=$(COQBIN)/coqtop.byte
 DOCCOQC=$(COQBIN)/coqc
 COQTEX=$(COQBIN)/coq-tex -image $(DOCCOQTOP) -v -sl -small
-COQWEBSTY=$(HOME)/tex/inputs
+#COQWEBSTY=$(HOME)/lib/tex/
+COQWEBSTY=/usr/share/texmf/tex/latex/misc/
 
 LATEX=latex
 BIBTEX=bibtex
@@ -48,7 +49,7 @@ REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
 
 REFMAN=Reference-Manual
 
-#VERSION=V7.1
+#VERSION=V7.2
 VERSION=POSITIONNEZ-CETTE-VARIABLE
 FTPDOCDIR=/net/pauillac/infosystems/ftp/coq/coq/$(VERSION)/doc
 WWWDOCDIR=/net/pauillac/infosystems/www/coq/doc
@@ -328,7 +329,7 @@ doc-ftp-www-install: doc-ftp-install doc-www-install
 doc-ftp-install: 
 	- mkdir $(FTPDOCDIR)
 	cp $(FTPDOCS) $(FTPHTMLDOCS) $(FTPDOCDIR)
-	chmod g+w $(FTPDOCDIR)/*
+	- chmod g+w $(FTPDOCDIR)/*
 
 doc-www-install: 
 	(cd $(WWWDOCDIR); rm -f node*.html main*.html toc.html \
