@@ -280,7 +280,7 @@ let print_no_goal () =
     let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in 
     assert (gls = []);
     let sigma = Tacmach.project (Tacmach.top_goal_of_pftreestate pfts) in
-    msg (Proof_trees.pr_subgoals_existential sigma gls)
+    msg (Printer.pr_subgoals sigma gls)
 
 
 type word_class = Normal | Kwd | Reserved

@@ -18,6 +18,12 @@ open Pretype_errors
 open Inductive
 open Typeops
 
+let meta_type env mv =
+  let ty =
+    try Evd.meta_ftype env mv
+    with Not_found -> error ("unknown meta ?"^string_of_int mv) in
+  meta_instance env ty
+
 let vect_lift = Array.mapi lift
 let vect_lift_type = Array.mapi (fun i t -> type_app (lift i) t)
 
@@ -38,7 +44,7 @@ let check_type env evd j ty =
 let rec execute env evd cstr =
   match kind_of_term cstr with
     | Meta n ->
-        { uj_val = cstr; uj_type = Evarutil.meta_type evd n }
+        { uj_val = cstr; uj_type = meta_type evd n }
 
     | Evar ev ->
         let sigma = Evd.evars_of evd in

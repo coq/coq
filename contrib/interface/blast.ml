@@ -112,7 +112,7 @@ let rec print_info_script sigma osign pf =
   match pf.ref with
     | None -> (mt ())
     | Some(r,spfl) ->
-        pr_rule r ++
+        Tactic_printer.pr_rule r ++
            match spfl with
              | [] ->
 		   (str " " ++ fnl())

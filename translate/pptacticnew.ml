@@ -906,3 +906,25 @@ let (pr_tactic,_,_) =
      Pptactic.pr_extend,
      strip_prod_binders_constr)
 
+let _ = Tactic_debug.set_tactic_printer
+  (fun x -> 
+    if !Options.v7 then Pptactic.pr_glob_tactic x
+    else pr_glob_tactic (Global.env()) x)
+
+let _ = Tactic_debug.set_match_pattern_printer
+  (fun env hyp ->
+    if !Options.v7 then
+      Pptactic.pr_match_pattern
+        (Printer.pr_pattern_env env (Termops.names_of_rel_context env)) hyp
+    else
+      pr_match_pattern
+        (Printer.pr_pattern_env env (Termops.names_of_rel_context env)) hyp)
+
+let _ = Tactic_debug.set_match_rule_printer
+  (fun rl ->
+    if !Options.v7 then
+      Pptactic.pr_match_rule false
+        Printer.pr_pattern Pptactic.pr_glob_tactic rl
+    else
+      pr_match_rule false
+        (pr_glob_tactic (Global.env())) Printer.pr_pattern rl)

@@ -23,6 +23,7 @@ open Proof_trees
 open Constrintern
 open Prettyp
 open Printer
+open Tactic_printer
 open Tacinterp
 open Command
 open Goptions
@@ -79,20 +80,20 @@ let show_node () =
   let pf = proof_of_pftreestate pts
   and cursor = cursor_of_pftreestate pts in
   msgnl (prlist_with_sep pr_spc pr_int (List.rev cursor) ++ fnl () ++
-         prgl (goal_of_proof pf) ++ fnl () ++
+         pr_goal (goal_of_proof pf) ++ fnl () ++
          (match pf.Proof_type.ref with
             | None -> (str"BY <rule>")
             | Some(r,spfl) ->
-		(str"BY " ++ Refiner.pr_rule r ++ fnl () ++
+		(str"BY " ++ pr_rule r ++ fnl () ++
 		 str"  " ++
-		   hov 0 (prlist_with_sep pr_fnl prgl
+		   hov 0 (prlist_with_sep pr_fnl pr_goal
 			    (List.map goal_of_proof spfl)))))
     
 let show_script () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  msgnl (Refiner.print_treescript true evc (Global.named_context()) pf)
+  msgnl (print_treescript true evc (Global.named_context()) pf)
 
 let show_top_evars () =
   let pfts = get_pftreestate () in 
@@ -104,7 +105,7 @@ let show_prooftree () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  msg (Refiner.print_proof evc (Global.named_context()) pf)
+  msg (print_proof evc (Global.named_context()) pf)
 
 let print_subgoals () = if_verbose (fun () -> msg (pr_open_subgoals ())) ()
 
@@ -1006,10 +1007,10 @@ let apply_subproof f occ =
   f evc (Global.named_context()) pf
 
 let explain_proof occ =
-  msg (apply_subproof (Refiner.print_treescript true) occ)
+  msg (apply_subproof (print_treescript true) occ)
 
 let explain_tree occ =
-  msg (apply_subproof Refiner.print_proof occ)
+  msg (apply_subproof print_proof occ)
 
 let vernac_show = function
   | ShowGoal nopt ->

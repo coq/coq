@@ -134,13 +134,11 @@ PRETYPING=\
   pretyping/termops.cmo pretyping/evd.cmo \
   pretyping/reductionops.cmo pretyping/inductiveops.cmo \
   pretyping/retyping.cmo pretyping/cbv.cmo pretyping/tacred.cmo \
-  pretyping/pretype_errors.cmo \
-  pretyping/evarutil.cmo pretyping/typing.cmo \
-  pretyping/unification.cmo pretyping/recordops.cmo pretyping/evarconv.cmo \
-  pretyping/classops.cmo pretyping/indrec.cmo \
-  pretyping/coercion.cmo pretyping/clenv.cmo \
+  pretyping/pretype_errors.cmo pretyping/recordops.cmo pretyping/typing.cmo \
+  pretyping/evarutil.cmo pretyping/unification.cmo pretyping/evarconv.cmo \
+  pretyping/classops.cmo pretyping/coercion.cmo pretyping/clenv.cmo \
   pretyping/rawterm.cmo pretyping/pattern.cmo \
-  pretyping/detyping.cmo \
+  pretyping/detyping.cmo  pretyping/indrec.cmo\
   pretyping/cases.cmo pretyping/pretyping.cmo pretyping/matching.cmo
 
 INTERP=\
@@ -150,12 +148,19 @@ INTERP=\
   interp/modintern.cmo interp/constrextern.cmo interp/coqlib.cmo \
   library/declare.cmo
 
+PROOFS=\
+  proofs/tacexpr.cmo proofs/proof_type.cmo \
+  proofs/proof_trees.cmo proofs/logic.cmo \
+  proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
+  proofs/pfedit.cmo proofs/tactic_debug.cmo \
+  proofs/clenvtac.cmo
+
 PARSING=\
   parsing/coqast.cmo parsing/ast.cmo \
   parsing/termast.cmo parsing/extend.cmo parsing/esyntax.cmo \
   parsing/pcoq.cmo parsing/egrammar.cmo \
   parsing/ppconstr.cmo translate/ppconstrnew.cmo parsing/printer.cmo \
-  parsing/pptactic.cmo translate/pptacticnew.cmo \
+  parsing/pptactic.cmo translate/pptacticnew.cmo parsing/tactic_printer.cmo \
   parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo
 
 HIGHPARSING=\
@@ -171,13 +176,6 @@ HIGHPARSINGNEW=\
 
 ARITHSYNTAX=\
   parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
-
-PROOFS=\
-  proofs/tacexpr.cmo proofs/proof_type.cmo \
-  proofs/proof_trees.cmo proofs/logic.cmo \
-  proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
-  proofs/pfedit.cmo proofs/tactic_debug.cmo \
-  proofs/clenvtac.cmo
 
 TACTICS=\
   tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
@@ -287,16 +285,22 @@ CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
+# LINK ORDER:
 # Beware that highparsingnew.cma should appear before hightactics.cma
 # respecting this order is useful for developers that want to load or link
 # the libraries directly
-CMO=$(CONFIG) lib/lib.cma kernel/kernel.cma library/library.cma \
-    pretyping/pretyping.cma interp/interp.cma parsing/parsing.cma \
-    proofs/proofs.cma tactics/tactics.cma toplevel/toplevel.cma \
-    parsing/highparsing.cma parsing/highparsingnew.cma tactics/hightactics.cma \
-    contrib/contrib.cma
-CMOCMXA=$(CMO:.cma=.cmxa)
-CMX=$(CMOCMXA:.cmo=.cmx)
+LINKCMO=$(CONFIG) lib/lib.cma kernel/kernel.cma library/library.cma \
+        pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
+        parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
+        parsing/highparsing.cma parsing/highparsingnew.cma \
+        tactics/hightactics.cma contrib/contrib.cma
+LINKCMOCMXA=$(LINKCMO:.cma=.cmxa)
+LINKCMX=$(LINKCMOCMXA:.cmo=.cmx)
+
+# objects known by the toplevel of Coq
+OBJSCMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) $(INTERP) \
+        $(PROOFS) $(PARSING) $(TACTICS) $(TOPLEVEL) $(HIGHPARSING) \
+        $(HIGHPARSINGNEW) $(HIGHTACTICS) $(USERTACMO) $(CONTRIB)
 
 ###########################################################################
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
@@ -327,12 +331,12 @@ states7:: states7/initial.coq
 
 states:: states/initial.coq
 
-$(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
+$(COQTOPOPT): $(COQMKTOP) $(LINKCMX) $(USERTACCMX)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
-$(COQTOPBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO)
+$(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(USERTACCMO)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
 
@@ -348,21 +352,11 @@ $(COQMKTOP): $(COQMKTOPCMO)
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom str.cma unix.cma \
           $(COQMKTOPCMO) $(OSDEPLIBS)
 
+
 scripts/tolink.ml: Makefile
 	$(SHOW)"ECHO... >" $@
-	$(HIDE)echo "let lib = \""$(LIBREP)"\"" > $@
-	$(HIDE)echo "let kernel = \""$(KERNEL)"\"" >> $@
-	$(HIDE)echo "let library = \""$(LIBRARY)"\"" >> $@
-	$(HIDE)echo "let pretyping = \""$(PRETYPING)"\"" >> $@
-	$(HIDE)echo "let proofs = \""$(PROOFS)"\"" >> $@
-	$(HIDE)echo "let tactics = \""$(TACTICS)"\"" >> $@
-	$(HIDE)echo "let interp = \""$(INTERP)"\"" >> $@
-	$(HIDE)echo "let parsing = \""$(PARSING)"\"" >> $@
-	$(HIDE)echo "let toplevel = \""$(TOPLEVEL)"\"" >> $@
-	$(HIDE)echo "let highparsing = \""$(HIGHPARSING)"\"" >> $@
-	$(HIDE)echo "let highparsingnew = \""$(HIGHPARSINGNEW)"\"" >> $@
-	$(HIDE)echo "let hightactics = \""$(HIGHTACTICS)" "$(USERTACCMO)"\"" >> $@
-	$(HIDE)echo "let contrib = \""$(CONTRIB)"\"" >> $@
+	$(HIDE)echo "let core_libs = \""$(LINKCMO)"\"" > $@
+	$(HIDE)echo "let core_objs = \""$(OBJSCMO)"\"" >> $@
 	$(HIDE)echo "let ide = \""$(COQIDECMO)"\"" >> $@
 
 beforedepend:: scripts/tolink.ml
@@ -551,12 +545,12 @@ clean-ide:
 	rm -f ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
 	rm -f ide/utf8_convert.ml
 
-$(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) ide/ide.cmxa
+$(COQIDEOPT): $(COQMKTOP) $(LINKCMX) $(USERTACCMX) ide/ide.cmxa
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -ide -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
-$(COQIDEBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO) ide/ide.cma
+$(COQIDEBYTE): $(COQMKTOP) $(LINKCMO) $(USERTACCMO) ide/ide.cma
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -g -ide -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
 
@@ -649,8 +643,8 @@ INTERFACECMX=$(INTERFACE:.cmo=.cmx)
 
 ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
 
-PARSERREQUIRES=$(CMO) # Solution de facilité...
-PARSERREQUIRESCMX=$(CMX)
+PARSERREQUIRES=$(LINKCMO) # Solution de facilité...
+PARSERREQUIRESCMX=$(LINKCMX)
 
 ifeq ($(BEST),opt)
   COQINTERFACE=bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE) bin/parser$(EXE) bin/parser.opt$(EXE)
@@ -660,11 +654,11 @@ endif
 
 pcoq-binaries:: $(COQINTERFACE) 
 
-bin/coq-interface$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
+bin/coq-interface$(EXE): $(COQMKTOP) $(LINKCMO) $(USERTACCMO) $(INTERFACE)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
 
-bin/coq-interface.opt$(EXE): $(COQMKTOP) $(CMX) $(USERTACCMX) $(INTERFACECMX)
+bin/coq-interface.opt$(EXE): $(COQMKTOP) $(LINKCMX) $(USERTACCMX) $(INTERFACECMX)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(COQMKTOP) -opt $(OPTFLAGS) -o $@ $(INTERFACECMX)
 

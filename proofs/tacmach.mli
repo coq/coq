@@ -172,11 +172,6 @@ val tactic_list_tactic : tactic_list -> tactic
 val tclFIRSTLIST       : tactic_list list -> tactic_list
 val tclIDTAC_list      : tactic_list
 
-(*s Pretty-printing functions. *)
-
-(*i*)
-open Pp
-(*i*)
-
-val pr_gls    : goal sigma -> std_ppcmds
-val pr_glls   : goal list sigma -> std_ppcmds
+(*s Pretty-printing functions (debug only). *)
+val pr_gls    : goal sigma -> Pp.std_ppcmds
+val pr_glls   : goal list sigma -> Pp.std_ppcmds

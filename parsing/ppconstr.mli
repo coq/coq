@@ -26,7 +26,6 @@ val split_fix : int -> constr_expr -> constr_expr ->
 val pr_global : Idset.t -> global_reference -> std_ppcmds
 
 val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
-val pr_name : name -> std_ppcmds
 val pr_qualid : qualid -> std_ppcmds
 val pr_red_expr :
   ('a -> std_ppcmds) * ('b -> std_ppcmds) ->

@@ -46,12 +46,12 @@ let collect_meta_variables c =
 
 let check_no_metas clenv ccl =
   if occur_meta ccl then
-    let metas = List.map (fun n -> Evd.Metamap.find n clenv.namenv)
-		  (collect_meta_variables ccl) in
+    let metas = List.filter (fun na -> na<>Anonymous)
+      (List.map (Evd.meta_name clenv.env) (collect_meta_variables ccl)) in
     errorlabstrm "inversion" 
       (str ("Cannot find an instantiation for variable"^
 	       (if List.length metas = 1 then " " else "s ")) ++
-	 prlist_with_sep pr_coma pr_id metas
+	 prlist_with_sep pr_coma pr_name metas
 	 (* ajouter "in " ++ prterm ccl mais il faut le bon contexte *))
 
 let var_occurs_in_pf gl id =

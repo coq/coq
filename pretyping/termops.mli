@@ -27,8 +27,10 @@ val refresh_universes : types -> types
 val print_sort : sorts -> std_ppcmds
 val print_sort_family : sorts_family -> std_ppcmds
 (* debug printer: do not use to display terms to the casual user... *)
-val print_constr : constr -> std_ppcmds
-val set_print_constr : (constr -> std_ppcmds) -> unit
+val set_print_constr : (env -> constr -> std_ppcmds) -> unit
+val print_constr     : constr -> std_ppcmds
+val print_constr_env : env -> constr -> std_ppcmds
+val print_named_context : env -> std_ppcmds
 
 (* iterators on terms *)
 val prod_it : init:types -> (name * types) list -> types

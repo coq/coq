@@ -246,9 +246,9 @@ let rec pr_list f = function
   | a::l1 -> (f a) ++ pr_list f l1
 
 let pr_gls gls =
-  hov 0 (pr_decls (sig_sig gls) ++ fnl () ++ pr_seq (sig_it gls))
+  hov 0 (pr_evar_map (sig_sig gls) ++ fnl () ++ db_pr_goal (sig_it gls))
 
 let pr_glls glls =
-  hov 0 (pr_decls (sig_sig glls) ++ fnl () ++
-         prlist_with_sep pr_fnl pr_seq (sig_it glls))
+  hov 0 (pr_evar_map (sig_sig glls) ++ fnl () ++
+         prlist_with_sep pr_fnl db_pr_goal (sig_it glls))
   

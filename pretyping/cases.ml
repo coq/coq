@@ -1699,21 +1699,23 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
   | (Some pred,x) ->
       let loc = loc_of_rawconstr pred in
       let dep, n, predj =
-	let isevars_copy = Evd.evars_of !isevars in
+	let isevars_copy = !isevars in
         (* We first assume the predicate is non dependent *)
 	let ndep_arity = build_expected_arity env isevars false tomatchs in
         try
 	  false, nb_prod ndep_arity, typing_fun (mk_tycon ndep_arity) env pred
 	with PretypeError _ | TypeError _ |
 	    Stdpp.Exc_located (_,(PretypeError _ | TypeError _)) ->
-        isevars := Evd.evars_reset_evd isevars_copy !isevars;
+        (* Backtrack! *)
+        isevars := isevars_copy;
         (* We then assume the predicate is dependent *)
 	let dep_arity = build_expected_arity env isevars true tomatchs in
 	try
 	  true, nb_prod dep_arity, typing_fun (mk_tycon dep_arity) env pred
 	with PretypeError _ | TypeError _ |
 	  Stdpp.Exc_located (_,(PretypeError _ | TypeError _)) ->
-        isevars := Evd.evars_reset_evd isevars_copy !isevars;
+        (* Backtrack again! *)
+        isevars := isevars_copy;
         (* Otherwise we attempt to type it without constraints, possibly *)
         (* failing with an error message; it may also be well-typed *)
 	(* but fails to satisfy arity constraints in case_dependent *)

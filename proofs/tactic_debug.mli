@@ -20,6 +20,13 @@ open Term
    Currently, it is quite simple and we can hope to have, in the future, a more
    complete panel of commands dedicated to a proof assistant framework *)
 
+val set_tactic_printer : (glob_tactic_expr ->Pp.std_ppcmds) -> unit
+val set_match_pattern_printer :
+  (env -> constr_pattern match_pattern -> Pp.std_ppcmds) -> unit
+val set_match_rule_printer :
+  ((constr_pattern,glob_tactic_expr) match_rule -> Pp.std_ppcmds) ->
+    unit
+
 (* Debug information *)
 type debug_info =
   | DebugOn of int

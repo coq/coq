@@ -36,62 +36,107 @@ let pr_name = function
 
 let pr_sp sp = str(string_of_kn sp)
 
-let rec print_constr c = match kind_of_term c with
+let rec pr_constr c = match kind_of_term c with
   | Rel n -> str "#"++int n
   | Meta n -> str "Meta(" ++ int n ++ str ")"
   | Var id -> pr_id id
   | Sort s -> print_sort s
   | Cast (c,t) -> hov 1 
-      (str"(" ++ print_constr c ++ cut() ++
-       str":" ++ print_constr t ++ str")")
+      (str"(" ++ pr_constr c ++ cut() ++
+       str":" ++ pr_constr t ++ str")")
   | Prod (Name(id),t,c) -> hov 1
-      (str"forall " ++ pr_id id ++ str":" ++ print_constr t ++ str"," ++
-       spc() ++ print_constr c)
+      (str"forall " ++ pr_id id ++ str":" ++ pr_constr t ++ str"," ++
+       spc() ++ pr_constr c)
   | Prod (Anonymous,t,c) -> hov 0
-      (str"(" ++ print_constr t ++ str " ->" ++ spc() ++
-       print_constr c ++ str")")
+      (str"(" ++ pr_constr t ++ str " ->" ++ spc() ++
+       pr_constr c ++ str")")
   | Lambda (na,t,c) -> hov 1
       (str"fun " ++ pr_name na ++ str":" ++
-       print_constr t ++ str" =>" ++ spc() ++ print_constr c)
+       pr_constr t ++ str" =>" ++ spc() ++ pr_constr c)
   | LetIn (na,b,t,c) -> hov 0
-      (str"let " ++ pr_name na ++ str":=" ++ print_constr b ++
-       str":" ++ brk(1,2) ++ print_constr t ++ cut() ++
-       print_constr c)
+      (str"let " ++ pr_name na ++ str":=" ++ pr_constr b ++
+       str":" ++ brk(1,2) ++ pr_constr t ++ cut() ++
+       pr_constr c)
   | App (c,l) ->  hov 1
-      (str"(" ++ print_constr c ++ spc() ++
-       prlist_with_sep spc print_constr (Array.to_list l) ++ str")")
+      (str"(" ++ pr_constr c ++ spc() ++
+       prlist_with_sep spc pr_constr (Array.to_list l) ++ str")")
   | Evar (e,l) -> hov 1
       (str"Evar#" ++ int e ++ str"{" ++
-       prlist_with_sep spc print_constr (Array.to_list l) ++str"}")
+       prlist_with_sep spc pr_constr (Array.to_list l) ++str"}")
   | Const c -> str"Cst(" ++ pr_sp c ++ str")"
   | Ind (sp,i) -> str"Ind(" ++ pr_sp sp ++ str"," ++ int i ++ str")"
   | Construct ((sp,i),j) ->
       str"Constr(" ++ pr_sp sp ++ str"," ++ int i ++ str"," ++ int j ++ str")"
   | Case (ci,p,c,bl) -> v 0
-      (hv 0 (str"<"++print_constr p++str">"++ cut() ++ str"Case " ++
-             print_constr c ++ str"of") ++ cut() ++
-       prlist_with_sep (fun _ -> brk(1,2)) print_constr (Array.to_list bl) ++
+      (hv 0 (str"<"++pr_constr p++str">"++ cut() ++ str"Case " ++
+             pr_constr c ++ str"of") ++ cut() ++
+       prlist_with_sep (fun _ -> brk(1,2)) pr_constr (Array.to_list bl) ++
       cut() ++ str"end")
   | Fix ((t,i),(lna,tl,bl)) ->
       let fixl = Array.mapi (fun i na -> (na,t.(i),tl.(i),bl.(i))) lna in
       hov 1
         (str"fix " ++ int i ++ spc() ++  str"{" ++
          v 0 (prlist_with_sep spc (fun (na,i,ty,bd) ->
-           pr_name na ++ str"/" ++ int i ++ str":" ++ print_constr ty ++
-           cut() ++ str":=" ++ print_constr bd) (Array.to_list fixl)) ++
+           pr_name na ++ str"/" ++ int i ++ str":" ++ pr_constr ty ++
+           cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
          str"}")
   | CoFix(i,(lna,tl,bl)) ->
       let fixl = Array.mapi (fun i na -> (na,tl.(i),bl.(i))) lna in
       hov 1
         (str"cofix " ++ int i ++ spc() ++  str"{" ++
          v 0 (prlist_with_sep spc (fun (na,ty,bd) ->
-           pr_name na ++ str":" ++ print_constr ty ++
-           cut() ++ str":=" ++ print_constr bd) (Array.to_list fixl)) ++
+           pr_name na ++ str":" ++ pr_constr ty ++
+           cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
          str"}")
 
-let term_printer = ref print_constr
+let term_printer = ref (fun _ -> pr_constr)
+let print_constr_env t = !term_printer t
+let print_constr t = !term_printer (Global.env()) t
 let set_print_constr f = term_printer := f
 
+let pr_var_decl env (id,c,typ) =
+  let pbody = match c with
+    | None ->  (mt ())
+    | Some c ->
+	(* Force evaluation *) 
+	let pb = print_constr_env env c in
+	(str" := " ++ pb ++ cut () ) in
+  let pt = print_constr_env env typ in
+  let ptyp = (str" : " ++ pt) in
+  (pr_id id ++ hov 0 (pbody ++ ptyp))
+(*
+let pr_rel_decl env (na,c,typ) =
+  let pbody = match c with
+    | None -> mt ()
+    | Some c ->
+	(* Force evaluation *) 
+	let pb = prterm_env env c in
+	(str":=" ++ spc () ++ pb ++ spc ()) in
+  let ptyp = prtype_env env typ in
+  match na with
+  | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+  | Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+*)
+let print_named_context env =
+  hv 0 (fold_named_context
+	  (fun env d pps -> pps ++ ws 2 ++ pr_var_decl env d)
+          env ~init:(mt ()))
+(*
+let pr_env env =
+  let sign_env =
+    fold_named_context
+      (fun env d pps ->
+         let pidt =  pr_var_decl env d in (pps ++ fnl () ++ pidt))
+      env ~init:(mt ()) 
+  in
+  let db_env =
+    fold_rel_context
+      (fun env d pps ->
+         let pnat = pr_rel_decl env d in (pps ++ fnl () ++ pnat))
+      env ~init:(mt ())
+  in 
+  (sign_env ++ db_env)
+*)
 (*let current_module = ref empty_dirpath
 
 let set_module m = current_module := m*)

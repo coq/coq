@@ -362,7 +362,7 @@ let debug_tac2_pcoq tac =
 	try
 	  let result = report_error tac the_goal the_ast the_path [] g in
 	  (errorlabstrm "DEBUG TACTIC"
-	     (str "no error here " ++ fnl () ++ pr_goal (sig_it g) ++
+	     (str "no error here " ++ fnl () ++ Printer.pr_goal (sig_it g) ++
 	      fnl () ++ str "the tactic is" ++ fnl () ++
 	      Pptactic.pr_glob_tactic tac);
 	   result)
@@ -616,7 +616,7 @@ let pcoq_show_goal = function
   | Some n -> show_nth n
   | None ->
       if !pcoq_started = Some true (* = debug *) then
-	msg (Pfedit.pr_open_subgoals ())
+	msg (Printer.pr_open_subgoals ())
       else errorlabstrm "show_goal"
 	(str "Show must be followed by an integer in Centaur mode");;
 

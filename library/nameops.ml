@@ -16,6 +16,10 @@ open Names
 
 let pr_id id = str (string_of_id id)
 
+let pr_name = function
+  | Anonymous -> str "_"
+  | Name id -> pr_id id
+
 let wildcard = id_of_string "_"
 
 (* Utilities *)

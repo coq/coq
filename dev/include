@@ -23,7 +23,6 @@
 #install_printer  (* proof *)  pproof;;
 #install_printer  (* evar_map *)  prevm;;
 #install_printer  (* evar_defs *)  prevd;;
-#install_printer  (* walking_constraints *)  prwc;;
 #install_printer  (* clenv *) prclenv;;
 #install_printer  (* env *) ppenv;;
 

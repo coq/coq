@@ -66,11 +66,11 @@ val existential_value : evar_map -> existential -> constr
 val existential_type : evar_map -> existential -> types
 val existential_opt_value : evar_map -> existential -> constr option
 
-(*************************)
+(*********************************************************************)
 (* constr with holes *)
 type open_constr = evar_map * constr
 
-(*************************)
+(*********************************************************************)
 (* The type constructor ['a sigma] adds an evar map to an object of
   type ['a] *)
 type 'a sigma = {
@@ -80,18 +80,12 @@ type 'a sigma = {
 val sig_it  : 'a sigma -> 'a
 val sig_sig : 'a sigma -> evar_map
 
-(*************************)
+(*********************************************************************)
 (* Meta map *)
 
 module Metaset : Set.S with type elt = metavariable
 
 val meta_exists : (metavariable -> bool) -> Metaset.t -> bool
-
-module Metamap : Map.S with type key = metavariable
-
-val metamap_in_dom : metavariable -> 'a Metamap.t -> bool
-val metamap_to_list : 'a Metamap.t -> (metavariable * 'a) list
-val metamap_inv : 'a Metamap.t -> 'a -> metavariable list
 
 type 'a freelisted = {
   rebus : 'a;
@@ -101,16 +95,24 @@ val mk_freelisted : constr -> constr freelisted
 val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
 
 type clbinding =
-  | Cltyp of constr freelisted
-  | Clval of constr freelisted * constr freelisted
+  | Cltyp of name * constr freelisted
+  | Clval of name * constr freelisted * constr freelisted
 
 val map_clb : (constr -> constr) -> clbinding -> clbinding
 
-type meta_map = clbinding Metamap.t
-
-(*************************)
+(*********************************************************************)
 (* Unification state *)
+type evar_defs
 
+(* Substitution is not applied to the evar_map *)
+val subst_evar_defs : substitution -> evar_defs -> evar_defs
+
+(* create an evar_defs with empty meta map: *)
+val create_evar_defs : evar_map -> evar_defs
+val evars_of         : evar_defs -> evar_map
+val evars_reset_evd  : evar_map ->  evar_defs -> evar_defs
+
+(* Evars *)
 type hole_kind =
   | ImplicitArg of global_reference * (int * identifier option)
   | BinderType of name
@@ -118,40 +120,42 @@ type hole_kind =
   | CasesType
   | InternalHole
   | TomatchTypeParameter of inductive * int
-
-type conv_pb = 
-  | CONV 
-  | CUMUL
-
-type evar_defs
-val evars_of : evar_defs -> evar_map
-val metas_of : evar_defs -> meta_map
-
-val mk_evar_defs :  evar_map * meta_map -> evar_defs
-(* the same with empty meta map: *)
-val create_evar_defs :  evar_map -> evar_defs
-val evars_reset_evd :  evar_map ->  evar_defs -> evar_defs
-val reset_evd :  evar_map * meta_map ->  evar_defs -> evar_defs
-val evar_source : existential_key -> evar_defs -> loc * hole_kind
-
-type evar_constraint = conv_pb * constr * constr
-val add_conv_pb :  evar_constraint -> evar_defs -> evar_defs
-
+val is_defined_evar :  evar_defs -> existential -> bool
+val is_undefined_evar :  evar_defs -> constr -> bool
 val evar_declare :
   named_context -> evar -> types -> ?src:loc * hole_kind ->
   evar_defs -> evar_defs
 val evar_define : evar -> constr -> evar_defs -> evar_defs
+val evar_source : existential_key -> evar_defs -> loc * hole_kind
 
-val is_defined_evar :  evar_defs -> existential -> bool
-val is_undefined_evar :  evar_defs -> constr -> bool
-
+(* Unification constraints *)
+type conv_pb = 
+  | CONV 
+  | CUMUL
+type evar_constraint = conv_pb * constr * constr
+val add_conv_pb :  evar_constraint -> evar_defs -> evar_defs
 val get_conv_pbs : evar_defs -> (evar_constraint -> bool) -> 
   evar_defs * evar_constraint list
 
+(* Metas *)
+val meta_list : evar_defs -> (metavariable * clbinding) list
 val meta_defined : evar_defs -> metavariable -> bool
-val meta_fvalue   : evar_defs -> metavariable -> constr freelisted
-val meta_ftype    : evar_defs -> metavariable -> constr freelisted
-val meta_declare : metavariable -> types -> evar_defs -> evar_defs
-val meta_assign  : metavariable -> constr -> evar_defs -> evar_defs
+(* [meta_fvalue] raises Not_found if meta not in map or Anomaly if
+   meta has no value *)  
+val meta_fvalue    : evar_defs -> metavariable -> constr freelisted
+val meta_ftype     : evar_defs -> metavariable -> constr freelisted
+val meta_name      : evar_defs -> metavariable -> name
+val meta_with_name : evar_defs -> identifier -> metavariable
+val meta_declare   :
+  metavariable -> types -> ?name:name -> evar_defs -> evar_defs
+val meta_assign    : metavariable -> constr -> evar_defs -> evar_defs
 
+(* [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
 val meta_merge : evar_defs -> evar_defs -> evar_defs
+
+(*********************************************************************)
+(* debug pretty-printer: *)
+
+val pr_evar_info : evar_info -> Pp.std_ppcmds
+val pr_evar_map  : evar_map -> Pp.std_ppcmds
+val pr_evar_defs : evar_defs -> Pp.std_ppcmds

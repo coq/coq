@@ -19,6 +19,8 @@ open Rawterm
 open Pattern
 open Nametab
 open Termops
+open Evd
+open Proof_type
 (*i*)
 
 (* These are the entry points for printing terms, context, tac, ... *)
@@ -58,3 +60,13 @@ val pr_context_of   : env -> std_ppcmds
 
 val emacs_str       : string -> string
 
+(* Proofs *)
+val pr_goal : goal -> std_ppcmds
+val pr_subgoals : evar_map -> goal list -> std_ppcmds
+val pr_subgoal   : int -> goal list -> std_ppcmds
+
+val pr_open_subgoals    : unit -> std_ppcmds
+val pr_nth_open_subgoal : int -> std_ppcmds
+val pr_evars_int : int -> (evar * evar_info) list -> std_ppcmds
+
+val pr_prim_rule : prim_rule -> std_ppcmds

@@ -33,15 +33,16 @@ type clausenv = {
   templenv : env;
   env      : evar_defs;
   templval : constr freelisted;
-  templtyp : constr freelisted;
-  namenv   : identifier Metamap.t }
+  templtyp : constr freelisted }
 
-(* Substitution is not applied neither to the evar_map of evar_defs nor hook *)
+(* Substitution is not applied on templenv (because subst_clenv is
+   applied only on hints which typing env is overwritten by the
+   goal env) *)
 val subst_clenv : substitution -> clausenv -> clausenv
 
 (* subject of clenv (instantiated) *)
 val clenv_value     : clausenv -> constr
-(* type of clanv (instantiated) *)
+(* type of clenv (instantiated) *)
 val clenv_type      : clausenv -> types
 (* substitute resolved metas *)
 val clenv_nf_meta   : clausenv -> constr -> constr
@@ -88,7 +89,6 @@ type arg_bindings = (int * constr) list
 
 val clenv_independent : clausenv -> metavariable list
 val clenv_missing : clausenv -> metavariable list
-val clenv_lookup_name : clausenv -> identifier -> metavariable
 
 (* defines metas corresponding to the name of the bindings *)
 val clenv_match_args :

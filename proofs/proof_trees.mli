@@ -43,16 +43,4 @@ val pf_lookup_index_as_renamed : env -> constr -> int -> int option
 open Pp
 (*i*)
 
-val pr_goal      : goal -> std_ppcmds
-val pr_subgoals  : goal list -> std_ppcmds
-val pr_subgoal   : int -> goal list -> std_ppcmds
-
-val pr_decl      : goal -> std_ppcmds
-val pr_decls     : evar_map -> std_ppcmds
-val pr_evc       : named_context sigma -> std_ppcmds
-
-val prgl         : goal -> std_ppcmds
-val pr_seq       : goal -> std_ppcmds
-val pr_evars     : (existential_key * goal) list -> std_ppcmds
-val pr_evars_int : int -> (existential_key * goal) list -> std_ppcmds
-val pr_subgoals_existential : evar_map -> goal list -> std_ppcmds
+val db_pr_goal : goal -> std_ppcmds

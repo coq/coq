@@ -60,8 +60,3 @@ type refiner_error =
 exception RefinerError of refiner_error
 
 val catchable_exception : exn -> bool
-
-
-(*s Pretty-printer. *)
-
-val pr_prim_rule   : prim_rule -> Pp.std_ppcmds

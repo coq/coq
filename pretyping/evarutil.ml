@@ -19,7 +19,6 @@ open Sign
 open Environ
 open Evd
 open Reductionops
-open Indrec
 open Pretype_errors
 
 
@@ -120,16 +119,14 @@ let exist_to_meta sigma (emap, c) =
 (*************************************)
 (* Metas *)
 
-let meta_val_of evd mv = 
-  let env = metas_of evd in
+let meta_value evd mv = 
   let rec valrec mv =
     try
-      (match Metamap.find mv env with
-	 | Cltyp _ -> mkMeta mv
-	 | Clval(b,_) ->
-	     instance (List.map (fun mv' -> (mv',valrec mv')) 
-			       (Metaset.elements b.freemetas)) b.rebus)
-    with Not_found -> 
+      let b = meta_fvalue evd mv in
+      instance
+        (List.map (fun mv' -> (mv',valrec mv')) (Metaset.elements b.freemetas))
+        b.rebus
+    with Anomaly _ | Not_found -> 
       mkMeta mv
   in 
   valrec mv
@@ -137,7 +134,7 @@ let meta_val_of evd mv =
 let meta_instance env b =
   let c_sigma =
     List.map 
-      (fun mv -> (mv,meta_val_of env mv)) (Metaset.elements b.freemetas)
+      (fun mv -> (mv,meta_value env mv)) (Metaset.elements b.freemetas)
   in 
   instance c_sigma b.rebus
 
@@ -231,20 +228,13 @@ let e_new_evar evd env ?(src=(dummy_loc,InternalHole)) ty =
   evd := evd';
   ev
 
-(* We don't try to guess in which sort the type should be defined, since
-   any type has type Type. May cause some trouble, but not so far... *)
-
-let judge_of_new_Type () = Typeops.judge_of_type (new_univ ())
-(*
-let new_Type () = mkType dummy_univ
-
-let new_Type_sort () = Type dummy_univ
-
-let judge_of_new_Type () = 
-  { uj_val = mkSort (Type dummy_univ);
-    uj_type = mkSort (Type dummy_univ) }
-*)
-
+(* declare a new evar (tactic style) *)
+let w_Declare env sp ty evd =
+  let sigma = evars_of evd in
+  if Evd.in_dom sigma sp then
+    error "w_Declare: cannot redeclare evar";
+  let _ = Typing.type_of env sigma ty in (* Checks there is no meta *)
+  Evd.evar_declare (named_context env) sp ty evd
 
 
 (* Redefines an evar with a smaller context (i.e. it may depend on less
@@ -348,7 +338,7 @@ let real_clean env isevars ev args rhs =
  * ?1 would be instantiated by (le y y) but y is not in the scope of ?1
  *)
 
-let evar_define env isevars (ev,argsv) rhs =
+let evar_define env (ev,argsv) rhs isevars =
   if occur_evar ev rhs
   then error_occur_check env (evars_of isevars) ev rhs;
   let args = Array.to_list argsv in 
@@ -358,6 +348,35 @@ let evar_define env isevars (ev,argsv) rhs =
   let (isevars',body) = real_clean env isevars ev worklist rhs in
   let isevars'' = Evd.evar_define ev body isevars' in
   isevars'',[ev]
+
+(* [w_Define evd sp c] (tactic style)
+ *
+ * Defines evar [sp] with term [c] in evar context [evd].
+ * [c] is typed in the context of [sp] and evar context [evd] with
+ * [sp] removed to avoid circular definitions.
+ * No unification is performed in order to assert that [c] has the
+ * correct type.
+ *)
+let w_Define sp c evd =
+  let sigma = evars_of evd in
+  if not (Evd.in_dom sigma sp) then
+    error "w_Define: cannot define undeclared evar";
+  if Evd.is_defined sigma sp then
+    error "w_Define: cannot define evar twice";
+  let spdecl = Evd.map sigma sp in
+  let env = evar_env spdecl in
+  let _ =
+    (* Do not consider the metamap because evars may not depend on metas *)
+    try Typing.check env (Evd.rmv sigma sp) c spdecl.evar_concl
+    with
+	Not_found -> error "Instantiation contains unlegal variables"
+      | (Type_errors.TypeError (e, Type_errors.UnboundVar v))-> 
+      errorlabstrm "w_Define"
+      (str "Cannot use variable " ++ pr_id v ++ str " to define " ++ 
+       str (string_of_existential sp)) in
+  let spdecl' = { spdecl with evar_body = Evar_defined c } in
+  evars_reset_evd (Evd.add sigma sp spdecl') evd
+
 
 (*-------------------*)
 (* Auxiliary functions for the conversion algorithms modulo evars
@@ -468,11 +487,11 @@ let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
 	  solve_refl conv_algo env isevars n1 args1 args2
 	else
 	  if Array.length args1 < Array.length args2 then 
-	    evar_define env isevars ev2 (mkEvar ev1)
+	    evar_define env ev2 (mkEvar ev1) isevars
 	  else 
-	    evar_define env isevars ev1 t2
+	    evar_define env ev1 t2 isevars
     | _ ->
-	evar_define env isevars ev1 t2 in
+	evar_define env ev1 t2 isevars in
   let (isevars,pbs) = get_conv_pbs isevars (status_changed lsp) in
   List.fold_left
     (fun (isevars,b as p) (pbty,t1,t2) ->
@@ -536,6 +555,11 @@ let define_evar_as_sort isevars (ev,args) =
   let s = new_Type () in
   Evd.evar_define ev s isevars, destSort s
 
+
+(* We don't try to guess in which sort the type should be defined, since
+   any type has type Type. May cause some trouble, but not so far... *)
+
+let judge_of_new_Type () = Typeops.judge_of_type (new_univ ())
 
 (* Propagation of constraints through application and abstraction:
    Given a type constraint on a functional term, returns the type

@@ -154,7 +154,7 @@ let extract_open_proof sigma pf =
 (*CSC: debugging stuff to be removed *)
 if ProofTreeHash.mem proof_tree_to_constr node then
  Pp.ppnl (Pp.(++) (Pp.str "#DUPLICATE INSERTION: ")
- (Refiner.print_proof (Evd.evars_of !evd) [] node)) ;
+ (Tactic_printer.print_proof (Evd.evars_of !evd) [] node)) ;
      ProofTreeHash.add proof_tree_to_constr node unsharedconstr ;
      unshared_constrs := S.add unsharedconstr !unshared_constrs ;
      unsharedconstr

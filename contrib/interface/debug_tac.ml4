@@ -554,8 +554,8 @@ let descr_first_error tac =
 	    (msgnl (str "Execution of this tactic raised message " ++ fnl () ++
 		    fnl () ++ Cerrors.explain_exn e ++ fnl () ++
 		    fnl () ++ str "on goal"  ++ fnl () ++
-		    pr_goal (sig_it (strip_some !the_goal)) ++ fnl () ++
-		    str "faulty tactic is" ++ fnl () ++ fnl () ++
+		    Printer.pr_goal (sig_it (strip_some !the_goal)) ++
+                    fnl () ++ str "faulty tactic is" ++ fnl () ++ fnl () ++
 		    pr_glob_tactic ((*flatten_then*) !the_ast) ++ fnl ());
 	     tclIDTAC g))
 

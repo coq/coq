@@ -200,11 +200,5 @@ val change_constraints_pftreestate
 (*i*)
 open Pp
 (*i*)
-
-val print_proof : evar_map -> named_context -> proof_tree -> std_ppcmds
-val pr_rule     : rule -> std_ppcmds
-val pr_tactic   : tactic_expr -> std_ppcmds
-val print_script :
-  bool -> evar_map -> named_context -> proof_tree -> std_ppcmds
-val print_treescript :
-  bool -> evar_map -> named_context -> proof_tree -> std_ppcmds
+val set_info_printer :
+  (evar_map -> named_context -> proof_tree -> Pp.std_ppcmds) -> unit

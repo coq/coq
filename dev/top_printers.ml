@@ -19,14 +19,37 @@ open Univ
 open Proof_trees
 open Environ
 open Printer
+open Tactic_printer
 open Refiner
 open Tacmach
 open Term
 open Termops
 open Clenv
 open Cerrors
+open Evd
 
 let _ = Constrextern.print_evar_arguments := true
+
+(* name printers *)
+let prid id = pp (pr_id id)
+let prlab l = pp (pr_lab l)
+let prmsid msid = pp (str (debug_string_of_msid msid))
+let prmbid mbid = pp (str (debug_string_of_mbid mbid))
+let prdir dir = pp (pr_dirpath dir)
+let prmp mp = pp(str (string_of_mp mp))
+let prkn kn = pp(pr_kn kn)
+let prsp sp = pp(pr_sp sp)
+let prqualid qid = pp(pr_qualid qid)
+
+(* term printers *)
+let ppterm x = pp(Termops.print_constr x)
+let ppsterm x = ppterm (Declarations.force x)
+let ppterm_univ x = Constrextern.with_universes ppterm x
+let pprawterm = (fun x -> pp(pr_rawterm x))
+let pppattern = (fun x -> pp(pr_pattern x))
+let pptype = (fun x -> pp(prtype x))
+let ppfconstr c = ppterm (Closure.term_of_fconstr c)
+
 
 let pP s = pp (hov 0 s)
 
@@ -34,12 +57,6 @@ let prast c = pp(print_ast c)
 
 let prastpat c = pp(print_astpat c)
 let prastpatl c = pp(print_astlpat c)
-let ppterm x = pp(prterm x)
-let ppsterm x = ppterm (Declarations.force x)
-let ppterm_univ x = Constrextern.with_universes ppterm x
-let pprawterm = (fun x -> pp(pr_rawterm x))
-let pppattern = (fun x -> pp(pr_pattern x))
-let pptype = (fun x -> pp(prtype x))
 
 let safe_prglobal = function 
   | ConstRef kn -> pp (str "CONSTREF(" ++ pr_kn kn ++ str ")")
@@ -51,21 +68,6 @@ let safe_prglobal = function
 
 let prglobal x = try pp(pr_global x) with _ -> safe_prglobal x
 
-let prid id = pp (pr_id id)
-let prlab l = pp (pr_lab l)
-
-let prmsid msid = pp (str (debug_string_of_msid msid))
-let prmbid mbid = pp (str (debug_string_of_mbid mbid))
-
-let prdir dir = pp (pr_dirpath dir)
-
-let prmp mp = pp(str (string_of_mp mp))
-let prkn kn = pp(pr_kn kn)
-
-let prsp sp = pp(pr_sp sp)
-
-let prqualid qid = pp(pr_qualid qid)
-
 let prconst (sp,j) =
     pp (str"#" ++ pr_kn sp ++ str"=" ++ prterm j.uj_val)
 
@@ -76,23 +78,16 @@ let genprj f j = let (c,t) = f j in (c ++ str " : " ++ t)
 
 let prj j = pp (genprj prjudge j)
 
-let prgoal g = pp(prgl g)
-
-let prsigmagoal g = pp(prgl (sig_it g))
-
-let prgls gls = pp(pr_gls gls)
-
-let prglls glls = pp(pr_glls glls)
-
-let pproof p = pp(print_proof Evd.empty empty_named_context p)
-
-let prevm evd = pp(pr_decls evd)
-
-let prevd evd = prevm(Evd.evars_of evd)
-
-let prwc wc = pp(pr_evc wc)
-
+(* proof printers *)
+let prevm evd = pp(pr_evar_map evd)
+let prevd evd = pp(pr_evar_defs evd)
 let prclenv clenv = pp(pr_clenv clenv)
+let prgoal g = pp(db_pr_goal g)
+
+let prsigmagoal g = pp(pr_goal (sig_it g))
+let prgls gls = pp(pr_gls gls)
+let prglls glls = pp(pr_glls glls)
+let pproof p = pp(print_proof Evd.empty empty_named_context p)
 
 let print_uni u = (pp (pr_uni u))
 
@@ -300,4 +295,3 @@ let _ =
        | _ -> bad_vernac_args "PrintPureConstr")
 *)
 
-let ppfconstr c = ppterm (Closure.term_of_fconstr c)

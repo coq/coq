@@ -710,3 +710,27 @@ let is_info_type env sigma t =
   (s = Prop Pos) ||
   (s <> Prop Null && 
    try info_arity env sigma t.utj_val with IsType -> true)
+
+(*************************************)
+(* Metas *)
+
+let meta_value evd mv = 
+  let rec valrec mv =
+    try
+      let b = meta_fvalue evd mv in
+      instance
+        (List.map (fun mv' -> (mv',valrec mv')) (Metaset.elements b.freemetas))
+        b.rebus
+    with Anomaly _ | Not_found -> 
+      mkMeta mv
+  in 
+  valrec mv
+
+let meta_instance env b =
+  let c_sigma =
+    List.map 
+      (fun mv -> (mv,meta_value env mv)) (Metaset.elements b.freemetas)
+  in 
+  instance c_sigma b.rebus
+
+let nf_meta env c = meta_instance env (mk_freelisted c)

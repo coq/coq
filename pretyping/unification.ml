@@ -49,40 +49,6 @@ let abstract_list_all env sigma typ c l =
 
 (*******************************)
 
-let w_Declare env sp ty evd =
-  let sigma = evars_of evd in
-  let _ = Typing.type_of env sigma ty in (* Checks there is no meta *)
-  let newdecl =
-    { evar_hyps=named_context env; evar_concl=ty; evar_body=Evar_empty } in 
-  evars_reset_evd (Evd.add sigma sp newdecl) evd
-
-(* [w_Define evd sp c]
- *
- * Defines evar [sp] with term [c] in evar context [evd].
- * [c] is typed in the context of [sp] and evar context [evd] with
- * [sp] removed to avoid circular definitions.
- * No unification is performed in order to assert that [c] has the
- * correct type.
- *)
-let w_Define sp c evd =
-  let sigma = evars_of evd in
-  if Evd.is_defined sigma sp then
-    error "Unify.w_Define: cannot define evar twice";
-  let spdecl = Evd.map sigma sp in
-  let env = evar_env spdecl in
-  let _ =
-    (* Do not consider the metamap because evars may not depend on metas *)
-    try Typing.check env (Evd.rmv sigma sp) c spdecl.evar_concl
-    with
-	Not_found -> error "Instantiation contains unlegal variables"
-      | (Type_errors.TypeError (e, Type_errors.UnboundVar v))-> 
-      errorlabstrm "w_Define"
-      (str "Cannot use variable " ++ pr_id v ++ str " to define " ++ 
-       str (string_of_existential sp)) in
-  let spdecl' = { spdecl with evar_body = Evar_defined c } in
-  evars_reset_evd (Evd.add sigma sp spdecl') evd
-
-
 (* Unification à l'ordre 0 de m et n: [unify_0 env sigma cv_pb m n]
    renvoie deux listes:
 
@@ -275,7 +241,7 @@ let w_merge env with_types metas evars evd =
     	  else
             begin
 	      if with_types (* or occur_meta mvty *) then
-	        (let mvty = meta_type evd mv in
+	        (let mvty = Typing.meta_type evd mv in
 		try 
                   let sigma = evars_of evd in
                   (* why not typing with the metamap ? *)
@@ -426,7 +392,7 @@ let secondOrderAbstraction env allow_K typ (p, oplist) evd =
   let sigma = evars_of evd in
   let (evd',cllist) =
     w_unify_to_subterm_list env allow_K oplist typ evd in
-  let typp = meta_type evd' p in
+  let typp = Typing.meta_type evd' p in
   let pred = abstract_list_all env sigma typp typ cllist in
   w_unify_0 env CONV (mkMeta p) pred evd'
 

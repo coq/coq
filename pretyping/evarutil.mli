@@ -21,42 +21,14 @@ open Reductionops
 
 (*s This modules provides useful functions for unification modulo evars *)
 
-(* [whd_ise] raise [Uninstantiated_evar] if an evar remains uninstantiated; *)
-(* *[whd_evar]* and *[nf_evar]* leave uninstantiated evar as is *)
-
-val nf_evar :  evar_map -> constr -> constr
-val j_nf_evar :  evar_map -> unsafe_judgment -> unsafe_judgment
-val jl_nf_evar :
-   evar_map -> unsafe_judgment list -> unsafe_judgment list
-val jv_nf_evar :
-   evar_map -> unsafe_judgment array -> unsafe_judgment array
-val tj_nf_evar :
-   evar_map -> unsafe_type_judgment -> unsafe_type_judgment
-
-val nf_evar_info : evar_map -> evar_info -> evar_info
-
-(* Replacing all evars *)
-exception Uninstantiated_evar of existential_key
-val whd_ise :  evar_map -> constr -> constr
-val whd_castappevar :  evar_map -> constr -> constr
-
 (***********************************************************)
 (* Metas *)
 
 (* [new_meta] is a generator of unique meta variables *)
 val new_meta : unit -> metavariable
 val mk_new_meta : unit -> constr
-val nf_meta       : evar_defs -> constr -> constr
-val meta_type     : evar_defs -> metavariable -> types
-val meta_instance : evar_defs -> constr freelisted -> constr
-
-(* [exist_to_meta] generates new metavariables for each existential
-   and performs the replacement in the given constr *)
-val exist_to_meta : evar_map -> open_constr -> (Termops.metamap * constr)
-
 
 (***********************************************************)
-
 (* Creating a fresh evar given their type and context *)
 val new_evar :
   evar_defs -> env -> ?src:loc * hole_kind -> types -> evar_defs * constr
@@ -78,9 +50,29 @@ val new_evar_instance :
    same as the evar context *)
 val make_evar_instance : env -> constr list
 
+val w_Declare : env -> evar -> types -> evar_defs -> evar_defs
+
 (***********************************************************)
+(* Instanciate evars *)
+
+val w_Define : evar -> constr -> evar_defs -> evar_defs
+
+(* suspicious env ? *)
+val evar_define :
+  env -> existential -> constr -> evar_defs -> evar_defs * evar list
+
+
+(***********************************************************)
+(* Evars/Metas switching... *)
+
+(* [exist_to_meta] generates new metavariables for each existential
+   and performs the replacement in the given constr *)
+val exist_to_meta : evar_map -> open_constr -> (Termops.metamap * constr)
 
 val non_instantiated : evar_map -> (evar * evar_info) list
+
+(***********************************************************)
+(* Unification utils *)
 
 val has_undefined_evars :  evar_defs -> constr -> bool
 val is_eliminator : constr -> bool
@@ -114,3 +106,23 @@ val valcon_of_tycon : type_constraint -> val_constraint
 
 val lift_tycon : type_constraint -> type_constraint
 
+(***********************************************************)
+
+(* [whd_ise] raise [Uninstantiated_evar] if an evar remains uninstantiated; *)
+(* *[whd_evar]* and *[nf_evar]* leave uninstantiated evar as is *)
+
+val nf_evar :  evar_map -> constr -> constr
+val j_nf_evar :  evar_map -> unsafe_judgment -> unsafe_judgment
+val jl_nf_evar :
+   evar_map -> unsafe_judgment list -> unsafe_judgment list
+val jv_nf_evar :
+   evar_map -> unsafe_judgment array -> unsafe_judgment array
+val tj_nf_evar :
+   evar_map -> unsafe_type_judgment -> unsafe_type_judgment
+
+val nf_evar_info : evar_map -> evar_info -> evar_info
+
+(* Replacing all evars *)
+exception Uninstantiated_evar of existential_key
+val whd_ise :  evar_map -> constr -> constr
+val whd_castappevar :  evar_map -> constr -> constr

@@ -9,17 +9,10 @@
 (*i $Id$ i*)
 
 (*i*)
-open Util
-open Names
 open Term
-open Sign
 open Environ
 open Evd
-open Evarutil
 (*i*)
-
-val w_Declare : env -> evar -> types -> evar_defs -> evar_defs
-val w_Define : evar -> constr -> evar_defs -> evar_defs
 
 (* The "unique" unification fonction *)
 val w_unify :
@@ -35,6 +28,6 @@ val w_unify_to_subterm :
 
 (* [abstract_list_all env sigma t c l]                     *)
 (* abstracts the terms in l over c to get a term of type t *)
-(* (used in inv.ml) *)
+(* (exported for inv.ml) *)
 val abstract_list_all :
   env -> evar_map -> constr -> constr -> constr list -> constr

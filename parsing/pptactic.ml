@@ -28,7 +28,6 @@ let pr_global x =
     Ppconstrnew.pr_global Idset.empty x
   else
     Ppconstr.pr_global Idset.empty x
-let pr_name = Ppconstr.pr_name
 let pr_opt = Ppconstr.pr_opt
 let pr_occurrences = Ppconstr.pr_occurrences
 

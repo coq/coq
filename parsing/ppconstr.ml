@@ -108,10 +108,6 @@ let pr_opt_type pr = function
 
 let pr_tight_coma () = str "," ++ cut ()
 
-let pr_name = function
-  | Anonymous -> str "_"
-  | Name id -> pr_id id
-
 let pr_located pr (loc,x) = pr x
 
 let pr_let_binder pr x a =

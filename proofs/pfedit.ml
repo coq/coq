@@ -305,29 +305,3 @@ let focused_goal () = let n = !focus_n in if n=0 then 1 else n
 let reset_top_of_tree () = 
   let pts = get_pftreestate () in 
   if not (is_top_pftreestate pts) then mutate top_of_tree
-
-(** Printers *)
-
-let pr_subgoals_of_pfts pfts = 
-  let gls = fst (Refiner.frontier (proof_of_pftreestate pfts)) in 
-  let sigma = project (top_goal_of_pftreestate pfts) in
-  pr_subgoals_existential sigma gls
-
-let pr_open_subgoals () =
-  let pfts = get_pftreestate () in
-  match focus() with
-    | 0 -> 
-	pr_subgoals_of_pfts pfts
-    | n -> 
-	let pf = proof_of_pftreestate pfts in
-	let gls = fst (frontier pf) in 
-	assert (n > List.length gls);
-	if List.length gls < 2 then 
-	  pr_subgoal n gls
-	else 
-	  v 0 (int(List.length gls) ++ str" subgoals" ++ cut () ++
-	  pr_subgoal n gls)
-
-let pr_nth_open_subgoal n =
-  let pf = proof_of_pftreestate (get_pftreestate ()) in
-  pr_subgoal n (fst (frontier pf))

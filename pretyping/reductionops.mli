@@ -184,3 +184,7 @@ val instance : (metavariable * constr) list -> constr -> constr
 val hnf : env -> 'a evar_map -> constr -> constr * constr list
 i*)
 val apprec :  state_reduction_function
+
+(*s Meta-related reduction functions *)
+val meta_instance : evar_defs -> constr freelisted -> constr
+val nf_meta       : evar_defs -> constr -> constr

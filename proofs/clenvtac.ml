@@ -48,13 +48,10 @@ let clenv_cast_meta clenv =
     match kind_of_term (strip_outer_cast u) with
       | Meta mv ->
 	  (try 
-	     match Metamap.find mv (metas_of clenv.env) with
-               | Cltyp b ->
-		   let b' = clenv_nf_meta clenv b.rebus in 
-		   if occur_meta b' then u else mkCast (mkMeta mv, b')
-	       | Clval(_) -> u
-	   with Not_found -> 
-	     u)
+            let b = Typing.meta_type clenv.env mv in
+	    if occur_meta b then u
+            else mkCast (mkMeta mv, b)
+	  with Not_found -> u)
       | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
       | Case(ci,p,c,br) ->
 	  mkCase (ci, crec_hd p, crec_hd c, Array.map crec br)

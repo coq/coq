@@ -176,8 +176,3 @@ val traverse_prev_unproven : unit -> unit
    proof and goal management, as it is done, for instance in pcoq *)
 val traverse_to : int list -> unit
 val mutate : (pftreestate -> pftreestate) -> unit
-
-(** Printers *)
-
-val pr_open_subgoals    : unit -> std_ppcmds
-val pr_nth_open_subgoal : int -> std_ppcmds

@@ -641,7 +641,7 @@ let new_morphism m signature id hook =
          (Lazy.force coq_make_compatibility_goal_aux_ref)) ;
        (* "simpl" *)
        Pfedit.by Tactics.simpl_in_concl ;
-       Options.if_verbose msg (Pfedit.pr_open_subgoals ());
+       Options.if_verbose msg (Printer.pr_open_subgoals ());
      end
 
 let add_morphism lemma_infos mor_name (m,args,output) =

@@ -28,6 +28,7 @@ val check   : env -> evar_map -> constr -> types -> unit
 val mtype_of : env -> evar_defs -> constr -> types
 val msort_of : env -> evar_defs -> types -> sorts
 val mcheck   : env -> evar_defs -> constr -> types -> unit
+val meta_type : evar_defs -> metavariable -> types
  
 (* unused typing function... *)
 val mtype_of_type : env -> evar_defs -> types -> types
