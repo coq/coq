@@ -402,10 +402,10 @@ let construct_qualified_reference env qid =
 
 let construct_reference env kind id =
   try
+    mkVar (let _ = Environ.lookup_named id env in id)
+  with Not_found ->
     let ref = Nametab.sp_of_id kind id in
     constr_of_reference Evd.empty env ref
-  with Not_found ->
-    mkVar (let _ = Environ.lookup_named id env in id)
 
 let global_qualified_reference qid =
   construct_qualified_reference (Global.env()) qid
