@@ -40,7 +40,8 @@ let lfix = 200
 let larrow = 80
 let lnegint = 40
 let lcast = 100
-let lapp = 1
+let lapp = 10
+let lproj = 9
 let ltop = (200,E)
 let lsimple = (0,E)
 
@@ -365,7 +366,7 @@ let pr_simple_return_type pr na po =
   pr_case_type pr po
 
 let pr_proj pr pr_app a f l =
-  hov 0 (pr lsimple a ++ cut() ++ str ".(" ++ pr_app pr f l ++ str ")")
+  hov 0 (pr (lproj,E) a ++ cut() ++ str ".(" ++ pr_app pr f l ++ str ")")
 
 let pr_appexpl pr f l =
       hov 2 (
@@ -410,15 +411,21 @@ let rec pr inherited a =
   | CAppExpl (_,(Some i,f),l) ->
       let l1,l2 = list_chop i l in
       let c,l1 = list_sep_last l1 in
-      pr_proj pr pr_appexpl c f l1 ++
-      prlist (fun a -> spc () ++ pr (lapp,L) a) l2, lapp
+      let p = pr_proj pr pr_appexpl c f l1 in
+      if l2<>[] then
+	p ++ prlist (fun a -> spc () ++ pr (lapp,L) a) l2, lapp
+      else
+	p, lproj
   | CAppExpl (_,(None,f),l) -> pr_appexpl pr f l, lapp
   | CApp (_,(Some i,f),l) ->
       let l1,l2 = list_chop i l in
       let c,l1 = list_sep_last l1 in
       assert (snd c = None);
-      pr_proj pr pr_app (fst c) f l1 ++
-      prlist (fun a -> spc () ++ pr_expl_args pr a) l2, lapp
+      let p = pr_proj pr pr_app (fst c) f l1 in
+      if l2<>[] then 
+	p ++ prlist (fun a -> spc () ++ pr_expl_args pr a) l2, lapp
+      else
+	p, lproj
   | CApp (_,(None,a),l) -> pr_app pr a l, lapp
   | CCases (_,(po,rtntypopt),c,eqns) ->
       v 0
@@ -589,12 +596,12 @@ let rec pr_may_eval prc prlc pr2 = function
       hov 0
         (str "eval" ++ brk (1,1) ++
          pr_red_expr (prc,prlc,pr2) r ++
-	 str " in" ++ spc() ++ prlc c)
+	 str " in" ++ spc() ++ prc c)
   | ConstrContext ((_,id),c) ->
       hov 0
 	(str "inst " ++ pr_id id ++ spc () ++
 	 str "[" ++ prlc c ++ str "]")
-  | ConstrTypeOf c -> hov 1 (str "check" ++ spc() ++ prlc c)
+  | ConstrTypeOf c -> hov 1 (str "check" ++ spc() ++ prc c)
   | ConstrTerm c -> prlc c
 
 let pr_rawconstr_env_no_translate env c =

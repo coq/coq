@@ -1008,10 +1008,12 @@ pr_vbinders bl ++ spc())
       | Some r0 ->
           hov 2 (str"Eval" ++ spc() ++
           pr_red_expr (pr_constr,pr_lconstr,pr_reference) r0 ++
-          spc() ++ str"in" ++ spc () ++ pr_lconstr c)
-      | None -> hov 2 (str"Check" ++ spc() ++ pr_lconstr c) 
-      in pr_mayeval r c
-  | VernacGlobalCheck c -> hov 2 (str"Type" ++ pr_lconstrarg c)
+          spc() ++ str"in" ++ spc () ++ pr_constr c)
+      | None -> hov 2 (str"Check" ++ spc() ++ pr_constr c) 
+      in 
+      (if io = None then mt() else int (out_some io) ++ str ": ") ++ 
+      pr_mayeval r c
+  | VernacGlobalCheck c -> hov 2 (str"Type" ++ pr_constrarg c)
   | VernacPrint p -> 
       let pr_printable = function
 	| PrintFullContext -> str"Print All"

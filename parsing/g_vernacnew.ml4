@@ -505,7 +505,7 @@ GEXTEND Gram
 	  VernacRemoveLoadPath dir
 
       (* Type-Checking (pas dans le refman) *)
-      | "Type"; c = lconstr -> VernacGlobalCheck c
+      | "Type"; c = constr -> VernacGlobalCheck c
 
       (* Printing (careful factorization of entries) *)
       | IDENT "Print"; p = printable -> VernacPrint p
@@ -577,9 +577,9 @@ GEXTEND Gram
 	  VernacRemoveOption (PrimaryTable table, v) ] ]
   ;
   check_command: (* TODO: rapprocher Eval et Check *)
-    [ [ IDENT "Eval"; r = Tactic.red_expr; "in"; c = lconstr ->
+    [ [ IDENT "Eval"; r = Tactic.red_expr; "in"; c = constr ->
           fun g -> VernacCheckMayEval (Some r, g, c)
-      | IDENT "Check"; c = lconstr ->
+      | IDENT "Check"; c = constr ->
 	  fun g -> VernacCheckMayEval (None, g, c) ] ]
   ;
   printable:
@@ -701,10 +701,16 @@ GEXTEND Gram
 
      | IDENT "Grammar"; u = univ;
          tl = LIST1 grammar_entry SEP "with" -> 
+	   failwith "Grammar for constr not supported in v8; use Notation"
+(*
 	   VernacGrammar (rename_command_entry u,tl)
+*)
 
      | IDENT "Syntax"; u = univ; el = LIST1 syntax_entry SEP "," ->
+	   failwith "Syntax not supported in v8; use Notation"
+(*
          VernacSyntax (u,el)
+*)
 
      | IDENT "Uninterpreted"; IDENT "Notation"; local = locality; s = STRING; 
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]

@@ -222,14 +222,14 @@ and pr_atom1 env = function
       hov 1
       (str "intro" ++ pr_opt pr_id ido1 ++ spc () ++ str "after " ++ pr_id id2)
   | TacAssumption as t -> pr_atom0 env t
-  | TacExact c -> hov 1 (str "exact" ++ pr_lconstrarg env c)
+  | TacExact c -> hov 1 (str "exact" ++ pr_constrarg env c)
   | TacApply cb -> hov 1 (str "apply" ++ spc () ++ pr_with_bindings env cb)
   | TacElim (cb,cbo) ->
       hov 1 (str "elim" ++ pr_arg (pr_with_bindings env) cb ++ 
         pr_opt (pr_eliminator env) cbo)
-  | TacElimType c -> hov 1 (str "elimtype" ++ pr_lconstrarg env c)
+  | TacElimType c -> hov 1 (str "elimtype" ++ pr_constrarg env c)
   | TacCase cb -> hov 1 (str "case" ++ spc () ++ pr_with_bindings env cb)
-  | TacCaseType c -> hov 1 (str "CaseType" ++ pr_lconstrarg env c)
+  | TacCaseType c -> hov 1 (str "casetype" ++ pr_constrarg env c)
   | TacFix (ido,n) -> hov 1 (str "fix" ++ pr_opt pr_id ido ++ pr_intarg n)
   | TacMutualFix (id,n,l) ->
       hov 1 (str "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc () ++
@@ -248,24 +248,26 @@ and pr_atom1 env = function
 	      spc() ++ 
 	      hov 0 (pr_id id ++ str":" ++ pr_constrarg env c))
 	  l))
-  | TacCut c -> hov 1 (str "cut" ++ pr_lconstrarg env c)
+  | TacCut c -> hov 1 (str "cut" ++ pr_constrarg env c)
   | TacTrueCut (None,c) -> 
-      hov 1 (str "assert" ++ pr_lconstrarg env c)
+      hov 1 (str "assert" ++ pr_constrarg env c)
   | TacTrueCut (Some id,c) -> 
       hov 1 (str "assert" ++ spc () ++ pr_id id ++ str ":" ++
              pr_lconstrarg env c)
   | TacForward (false,na,c) ->
       hov 1 (str "assert" ++ pr_arg pr_name na ++ str " :=" ++
              pr_lconstrarg env c)
-  | TacForward (true,na,c) ->
-      hov 1 (str "pose" ++ pr_arg pr_name na ++ str " :=" ++
+  | TacForward (true,Anonymous,c) ->
+      hov 1 (str "pose" ++ pr_constrarg env c)
+  | TacForward (true,Name id,c) ->
+      hov 1 (str "pose" ++ pr_arg pr_id id ++ str " :=" ++
              pr_lconstrarg env c)
   | TacGeneralize l ->
       hov 1 (str "generalize" ++ spc () ++
              prlist_with_sep spc (pr_constr env) l)
   | TacGeneralizeDep c ->
       hov 1 (str "generalize" ++ spc () ++ str "dependent" ++
-             pr_lconstrarg env c)
+             pr_constrarg env c)
   | TacLetTac (id,c,cl) ->
       hov 1 (str "lettac" ++ spc () ++ pr_id id ++ str " :=" ++
         pr_constrarg env c ++ pr_clause_pattern pr_ident cl)
@@ -277,13 +279,13 @@ and pr_atom1 env = function
       hov 1 (str "oldinduction" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewInduction (h,e,ids) ->
       hov 1 (str "induction" ++ spc () ++
-             pr_induction_arg (pr_lconstr env) h ++
+             pr_induction_arg (pr_constr env) h ++
              pr_opt (pr_eliminator env) e ++ pr_with_names ids)
   | TacOldDestruct h ->
       hov 1 (str "olddestruct" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewDestruct (h,e,ids) ->
       hov 1 (str "destruct" ++ spc () ++
-             pr_induction_arg (pr_lconstr env) h ++
+             pr_induction_arg (pr_constr env) h ++
              pr_opt (pr_eliminator env) e ++ pr_with_names ids)
   | TacDoubleInduction (h1,h2) ->
       hov 1
@@ -291,18 +293,18 @@ and pr_atom1 env = function
          pr_arg pr_quantified_hypothesis h1 ++
  	 pr_arg pr_quantified_hypothesis h2)
   | TacDecomposeAnd c ->
-      hov 1 (str "decompose record" ++ pr_lconstrarg env c)
+      hov 1 (str "decompose record" ++ pr_constrarg env c)
   | TacDecomposeOr c ->
-      hov 1 (str "decompose sum" ++ pr_lconstrarg env c)
+      hov 1 (str "decompose sum" ++ pr_constrarg env c)
   | TacDecompose (l,c) ->
       let vars = Termops.vars_of_env env in
       hov 1 (str "decompose" ++ spc () ++
         hov 0 (str "[" ++ prlist_with_sep spc (pr_ind vars) l
-	  ++ str "]" ++ pr_lconstrarg env c))
+	  ++ str "]" ++ pr_constrarg env c))
   | TacSpecialize (n,c) ->
       hov 1 (str "specialize" ++ spc () ++ pr_opt int n ++ pr_with_bindings env c)
   | TacLApply c -> 
-      hov 1 (str "lapply" ++ pr_lconstrarg env c)
+      hov 1 (str "lapply" ++ pr_constrarg env c)
 
   (* Automation tactics *)
   | TacTrivial (Some []) as x -> pr_atom0 env x
@@ -368,7 +370,7 @@ and pr_atom1 env = function
   (* Equivalence relations *)
   | (TacReflexivity | TacSymmetry None) as x -> pr_atom0 env x
   | TacSymmetry (Some id) -> str "symmetry in " ++ pr_ident id
-  | TacTransitivity c -> str "transitivity" ++ pr_lconstrarg env c in
+  | TacTransitivity c -> str "transitivity" ++ pr_constrarg env c in
 
 let ltop = (5,E) in
 let lseq = 5 in

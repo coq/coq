@@ -111,17 +111,17 @@ GEXTEND Gram
   constrarg:
     [ [ IDENT "inst"; id = identref; "["; c = Constr.lconstr; "]" ->
         ConstrContext (id, c)
-      | IDENT "eval"; rtc = Tactic.red_expr; "in"; c = Constr.lconstr ->
+      | IDENT "eval"; rtc = Tactic.red_expr; "in"; c = Constr.constr ->
         ConstrEval (rtc,c) 
-      | IDENT "check"; c = Constr.lconstr -> ConstrTypeOf c
+      | IDENT "check"; c = Constr.constr -> ConstrTypeOf c
       | c = Constr.lconstr -> ConstrTerm c ] ]
   ;
   castedopenconstr:
-    [ [ c = lconstr -> c ] ]
+    [ [ c = constr -> c ] ]
   ;
   induction_arg:
     [ [ n = natural -> ElimOnAnonHyp n
-      | c = lconstr -> induction_arg_of_constr c
+      | c = constr -> induction_arg_of_constr c
     ] ]
   ;
   quantified_hypothesis:
@@ -251,14 +251,14 @@ GEXTEND Gram
       | IDENT "intro" -> TacIntroMove (None, None)
 
       | IDENT "assumption" -> TacAssumption
-      | IDENT "exact"; c = lconstr -> TacExact c
+      | IDENT "exact"; c = constr -> TacExact c
 
       | IDENT "apply"; cl = constr_with_bindings -> TacApply cl
       | IDENT "elim"; cl = constr_with_bindings; el = OPT eliminator ->
           TacElim (cl,el)
-      | IDENT "elimtype"; c = lconstr -> TacElimType c
+      | IDENT "elimtype"; c = constr -> TacElimType c
       | IDENT "case"; cl = constr_with_bindings -> TacCase cl
-      | IDENT "casetype"; c = lconstr -> TacCaseType c
+      | IDENT "casetype"; c = constr -> TacCaseType c
       | "fix"; n = natural -> TacFix (None,n)
       | "fix"; id = base_ident; n = natural -> TacFix (Some id,n)
       | "fix"; id = base_ident; n = natural; "with"; fd = LIST0 fixdecl ->
@@ -268,26 +268,25 @@ GEXTEND Gram
       | "cofix"; id = base_ident; "with"; fd = LIST0 cofixdecl ->
 	  TacMutualCofix (id,fd)
 
-      | IDENT "cut"; c = lconstr -> TacCut c
-      | IDENT "assert"; c = lconstr ->
-          (match c with
-              Topconstr.CCast(_,c,t) -> TacTrueCut (Some (coerce_to_id c),t)
-            | _ -> TacTrueCut (None,c))
-      | IDENT "assert"; c = lconstr; ":="; b = lconstr ->
+      | IDENT "cut"; c = constr -> TacCut c
+      | IDENT "assert"; c = constr -> TacTrueCut (None,c)
+      | IDENT "assert"; c = constr; ":"; t = lconstr ->
+          TacTrueCut (Some (coerce_to_id c),t)
+      | IDENT "assert"; c = constr; ":="; b = lconstr ->
           TacForward (false,Names.Name (coerce_to_id c),b)
-      | IDENT "pose"; c = lconstr; ":="; b = lconstr ->
+      | IDENT "pose"; c = constr; ":="; b = lconstr ->
 	  TacForward (true,Names.Name (coerce_to_id c),b)
-      | IDENT "pose"; b = lconstr -> TacForward (true,Names.Anonymous,b)
+      | IDENT "pose"; b = constr -> TacForward (true,Names.Anonymous,b)
       | IDENT "generalize"; lc = LIST1 constr -> TacGeneralize lc
-      | IDENT "generalize"; IDENT "dependent"; c = lconstr ->
+      | IDENT "generalize"; IDENT "dependent"; c = constr ->
           TacGeneralizeDep c
       | IDENT "lettac"; id = base_ident; ":="; c = lconstr; p = clause_pattern
         -> TacLetTac (id,c,p)
-      | IDENT "instantiate"; n = natural; c = lconstr -> TacInstantiate (n,c)
+      | IDENT "instantiate"; n = natural; c = constr -> TacInstantiate (n,c)
 
       | IDENT "specialize"; n = OPT natural; lcb = constr_with_bindings ->
 	  TacSpecialize (n,lcb)
-      | IDENT "lapply"; c = lconstr -> TacLApply c
+      | IDENT "lapply"; c = constr -> TacLApply c
 
       (* Derived basic tactics *)
       | IDENT "oldinduction"; h = quantified_hypothesis -> TacOldInduction h
@@ -298,9 +297,9 @@ GEXTEND Gram
       | IDENT "olddestruct"; h = quantified_hypothesis -> TacOldDestruct h
       | IDENT "destruct"; c = induction_arg; el = OPT eliminator; 
           ids = with_names -> TacNewDestruct (c,el,ids)
-      | IDENT "decompose"; IDENT "record" ; c = lconstr -> TacDecomposeAnd c
-      | IDENT "decompose"; IDENT "sum"; c = lconstr -> TacDecomposeOr c
-      | IDENT "decompose"; "["; l = LIST1 global; "]"; c = lconstr
+      | IDENT "decompose"; IDENT "record" ; c = constr -> TacDecomposeAnd c
+      | IDENT "decompose"; IDENT "sum"; c = constr -> TacDecomposeOr c
+      | IDENT "decompose"; "["; l = LIST1 global; "]"; c = constr
         -> TacDecompose (l,c)
 
       (* Automation tactic *)
@@ -337,7 +336,7 @@ GEXTEND Gram
       | IDENT "reflexivity" -> TacReflexivity
       | IDENT "symmetry"; ido = OPT [ "in"; id = id_or_meta -> id ] -> 
 	  TacSymmetry ido
-      | IDENT "transitivity"; c = lconstr -> TacTransitivity c
+      | IDENT "transitivity"; c = constr -> TacTransitivity c
 
       (* Conversion *)
       | r = red_tactic; cl = clause -> TacReduce (r, cl)

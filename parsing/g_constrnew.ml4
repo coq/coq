@@ -153,7 +153,7 @@ GEXTEND Gram
     [ [ c = operconstr -> c ] ]
   ;
   constr:
-    [ [ c = operconstr LEVEL "9" -> c ] ]
+    [ [ c = operconstr LEVEL "9L" -> c ] ]
   ;
   tuple_constr:
     [ 
@@ -174,14 +174,12 @@ GEXTEND Gram
       [ "-"; c = operconstr -> CNotation(loc,"- _",[c]) ]
     | "10L" LEFTA
       [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(None,f),args)
-      | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args)
-      |	c=operconstr; ".("; f=global; args1=LIST0 appl_arg; ")";
-          args2=LIST0 appl_arg -> 
-	    CApp(loc,(Some (List.length args1+1),CRef f),args1@(c,None)::args2)
-      | c=operconstr; ".("; "@"; f=global; args1=LIST0 NEXT; ")";
-          args2=LIST0 NEXT -> 
-	    CAppExpl(loc,(Some (List.length args1+1),f),args1@c::args2) ]
-    | "9" [ ]
+      | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args) ]
+    | "9L" LEFTA
+      [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
+	CApp(loc,(Some (List.length args+1),CRef f),args@[c,None])
+      | c=operconstr; ".("; "@"; f=global; args=LIST0 NEXT; ")" ->
+        CAppExpl(loc,(Some (List.length args+1),f),args@[c]) ]
     | "1L" LEFTA
       [ c=operconstr; "%"; key=IDENT -> CDelimiters (loc,key,c) ]
     | "0"
@@ -212,8 +210,8 @@ GEXTEND Gram
       | c=fix_constr -> c ] ]
   ;
   appl_arg:
-    [ [ "@"; n=INT; ":="; c=operconstr LEVEL "9" -> (c,Some(int_of_string n))
-      | c=operconstr LEVEL "9" -> (c,None) ] ]
+    [ [ "@"; n=INT; ":="; c=constr -> (c,Some(int_of_string n))
+      | c=constr -> (c,None) ] ]
   ;
   atomic_constr:
     [ [ g=global -> CRef g
