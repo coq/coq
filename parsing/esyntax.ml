@@ -30,6 +30,8 @@ type key =
   | Oth                (* key for other syntax rules *)
   | All     (* key for catch-all rules (i.e. with a pattern such as $x .. *)
 
+let warning_verbose = ref true
+
 let ast_keys = function
   | Node(_,"APPLIST", Node(_,"CONST", [Path (_,sl,_)]) ::_) ->
       [Cst sl; Nod "APPLIST"; All]
@@ -96,7 +98,8 @@ let remove_with_warning name =
   if Gmap.mem name !from_name_table then begin
     let se = Gmap.find name !from_name_table in
     let key = (fst name, se_key se) in
-    warning ("overriding syntax rule "^(fst name)^":"^(snd name)^".");
+      (if !warning_verbose then
+    	warning ("overriding syntax rule "^(fst name)^":"^(snd name)^"."));
     from_name_table := Gmap.remove name !from_name_table;
     from_key_table := Gmapl.remove key se !from_key_table
   end

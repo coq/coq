@@ -27,6 +27,7 @@ val find_syntax_entry :
   string -> Coqast.t -> (syntax_entry * Ast.env) option
 val add_rule : string -> syntax_entry -> unit
 val add_ppobject : syntax_command -> unit
+val warning_verbose : bool ref
 
 (* Pretty-printing *)
 
