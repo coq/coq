@@ -434,6 +434,10 @@ let iterate f =
 
 let repeat n f x =
   for i = 1 to n do f x done
+
+let iterate_for a b f x =
+  let rec iterate i v = if i > b then v else iterate (succ i) (f i v) in
+  iterate a x
  
 (* Misc *)
 

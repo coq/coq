@@ -187,8 +187,8 @@ type binders = (name * constr) list
 
 let rec lbinders_fold f acc env = function 
   | [] -> acc
-  | (n,t) :: l -> 
-      f n t (v_of_t env t) (lbinders_fold f acc (push_rel_assum (n,t) env) l)
+  | (n,t) as b :: l -> 
+      f n t (v_of_t env t) (lbinders_fold f acc (push_rel_assum b env) l)
 
 (* [sign_of_arity] transforms an arity into a signature. It is used 
    for example with the types of inductive definitions, which are known
@@ -196,7 +196,8 @@ let rec lbinders_fold f acc env = function
 
 let sign_of_lbinders = lbinders_fold (fun _ _ v a -> v::a) [] 
 
-let sign_of_arity env c = sign_of_lbinders env (List.rev (fst (decompose_prod c)))
+let sign_of_arity env c = 
+  sign_of_lbinders env (List.rev (fst (decompose_prod c)))
 
 (* [vl_of_arity] returns the list of the lambda variables tagged [info_arity]
    in an arity. Renaming is done. *)
@@ -327,12 +328,11 @@ let _ = declare_summary "Extraction tables"
    Convention: the last elements of this list correspond to external products.
    This is used when dealing with applications *)
 
-
 let rec extract_type env c =
   extract_type_rec env c [] [] 
 
 and extract_type_rec env c vl args = 
-  (* We accumulate the context, the arguments and the generated variable list *)
+  (* We accumulate the context, arguments and generated variables list *)
   let t = type_of env (applist (c, args)) in
   (* Since [ty] is an arity, there is two non-informative case: 
      [ty] is an arity of sort [Prop], or 
@@ -404,22 +404,22 @@ and extract_prod_lam env (n,t,d) vl flag =
   let env' = push_rel_assum (n,t) env in
   match tag,flag with
     | (Info, Arity), _ -> 
-	  (* We rename before the [push_rel], to be sure that the corresponding *)
-	  (* [lookup_rel] will be correct. *)
-	  let id' = next_ident_away (id_of_name n) vl in 
-	  let env' = push_rel_assum (Name id', t) env in
-	  (match extract_type_rec_info env' d (id'::vl) [] with 
-	     | Tmltype (mld, sign, vl') -> Tmltype (mld, tag::sign, vl')
-	     | et -> et)
+	(* We rename before the [push_rel], to be sure that the corresponding*)
+	(* [lookup_rel] will be correct. *)
+	let id' = next_ident_away (id_of_name n) vl in 
+	let env' = push_rel_assum (Name id', t) env in
+	(match extract_type_rec_info env' d (id'::vl) [] with 
+	   | Tmltype (mld, sign, vl') -> Tmltype (mld, tag::sign, vl')
+	   | et -> et)
     | (Logic, Arity), _ | _, Lam ->
 	(match extract_type_rec_info  env' d vl [] with 
 	   | Tmltype (mld, sign, vl') -> Tmltype (mld, tag::sign, vl')
 	   | et -> et)
     | (Logic, NotArity), Prod ->
-	  (match extract_type_rec_info env' d vl [] with 
-	     | Tmltype (mld, sign, vl') ->
-		 Tmltype (Tarr (Miniml.Tprop, mld), tag::sign, vl')
-	     | et -> et)
+	(match extract_type_rec_info env' d vl [] with 
+	   | Tmltype (mld, sign, vl') ->
+	       Tmltype (Tarr (Miniml.Tprop, mld), tag::sign, vl')
+	   | et -> et)
     | (Info, NotArity), Prod ->
 	(* It is important to treat [d] first and [t] in second. *)
 	(* This ensures that the end of [vl] correspond to external binders. *)
@@ -555,7 +555,7 @@ and abstract_constructor cp  =
   let rec abstract rels i = function
     | [] -> 
 	let rels = List.rev_map (fun x -> MLrel (i-x)) rels in
-	if (is_singleton_constructor cp) then 
+	if is_singleton_constructor cp then 
 	  match rels with 
 	    | [var]->var
 	    | _ -> assert false
@@ -598,7 +598,7 @@ and extract_case env ctx ni ip c br =
   (* [c] has an inductive type, not an arity type *)
   (match extract_term env ctx c with
      | Rmlterm a -> 
-	 if (is_singleton_inductive ip) then 
+	 if is_singleton_inductive ip then 
 	   begin
 	     (* Informative singleton case: *)
 	     (* [match c with C i -> t] becomes [let i = c' in t'] *)
@@ -625,9 +625,7 @@ and extract_case env ctx ni ip c br =
 and extract_fix env ctx i (fi,ti,ci as recd) = 
   let n = Array.length ti in
   let ti' = Array.mapi lift ti in 
-  (* QUESTION: ou (fun i -> type_app (lift i)) a la place de lift ?*)
   let lb = Array.to_list (array_map2 (fun a b -> (a,b)) fi ti') in
-  (* QUESTION: vaut-il mieux un combine ou un (tolist o map2) *)
   let env' = push_rels_assum (List.rev lb) env in
   let ctx' = 
     (List.rev_map (fun (_,a) -> a = NotArity) (sign_of_lbinders env lb)) @ ctx
@@ -714,7 +712,7 @@ and extract_constant sp =
       | None ->
           (match v_of_t env typ with
              | (Info,_) -> axiom_message sp (* We really need some code here *)
-             | (Logic,NotArity) -> Emlterm MLprop (* Axiom ? I don't mind! *)
+             | (Logic,NotArity) -> Emlterm MLprop (* Axiom? I don't mind! *)
              | (Logic,Arity) -> Emltype (Miniml.Tarity,[],[]))  (* Idem *)
       | Some body ->
           let e = extract_constr_with_type env [] body typ in
@@ -767,48 +765,43 @@ and extract_mib sp =
     let vl = vl_of_lbinders genv lb in
     (* First pass: we store inductive signatures together with 
        an initial type var list. *)
-    Array.iteri
-      (fun i ib -> 
-	 let ip = (sp,i) in 
-	 let mis = build_mis (ip,[||]) mib in 
-	 if (mis_sort mis) = (Prop Null) then 
-	   add_inductive_extraction ip Iprop
-	 else
-	   add_inductive_extraction ip 
-	     (Iml (sign_of_arity genv ib.mind_nf_arity, 
-		   vl_of_arity genv ib.mind_nf_arity)))
-      mib.mind_packets;
+    for i = 0 to mib.mind_ntypes - 1 do
+      let ip = (sp,i) in 
+      let mis = build_mis (ip,[||]) mib in 
+      if (mis_sort mis) = (Prop Null) then 
+	add_inductive_extraction ip Iprop
+      else
+	let arity = mis_nf_arity mis in
+	add_inductive_extraction ip 
+	  (Iml (sign_of_arity genv arity, vl_of_arity genv arity))
+    done;
     (* Second pass: we extract constructors arities and we accumulate
        type variables. Thanks to on-the-fly renaming in [extract_type],
        the [vl] list should be correct. *)
     let vl = 
-      array_fold_left_i 
-	(fun i vl packet -> 
+      iterate_for 0 (mib.mind_ntypes - 1)
+	(fun i vl -> 
 	   let ip = (sp,i) in
 	   let mis = build_mis (ip,[||]) mib in
-	   if mis_sort mis = Prop Null then 
-	     begin
-	       for j = 0 to mis_nconstr mis do
-		 add_constructor_extraction (ip,succ j) Cprop
-	       done;
-	       vl
-	     end 
-	   else 
-	     begin
-	       array_fold_left_i
-		 (fun j vl _ -> 
-		    let t = mis_constructor_type (succ j) mis in
-		    let t = snd (decompose_prod_n nb t) in
-		    match extract_type_rec_info env t vl [] with
-		      | Tarity | Tprop -> assert false
-		      | Tmltype (mlt, s, v) -> 
-			  let l = list_of_ml_arrows mlt in
-			  let cp = (ip,succ j) in
-			  add_constructor_extraction cp (Cml (l,s,nbtokeep));
-			  v)
-		 vl packet.mind_nf_lc
-	     end) 
-	vl mib.mind_packets
+	   if mis_sort mis = Prop Null then begin
+	     for j = 1 to mis_nconstr mis do
+	       add_constructor_extraction (ip,j) Cprop
+	     done;
+	     vl
+	   end else 
+	     iterate_for 1 (mis_nconstr mis)
+	       (fun j vl -> 
+		  let t = mis_constructor_type j mis in
+		  let t = snd (decompose_prod_n nb t) in
+		  match extract_type_rec_info env t vl [] with
+		    | Tarity | Tprop -> assert false
+		    | Tmltype (mlt, s, v) -> 
+			let l = list_of_ml_arrows mlt in
+			let cp = (ip,j) in
+			add_constructor_extraction cp (Cml (l,s,nbtokeep));
+			v)
+	       vl)
+	vl
     in
     (* Third pass: we update the type variables list in every tables *)
     for i = 0 to mib.mind_ntypes-1 do 
@@ -834,10 +827,10 @@ and extract_mib sp =
 and extract_inductive_declaration sp =
   extract_mib sp;
   let ip = (sp,0) in 
-  if (is_singleton_inductive ip) then
+  if is_singleton_inductive ip then
     let t = match lookup_constructor_extraction (ip,1) with 
-	  | Cml ([t],_,_)-> t
-	  | _ -> assert false
+      | Cml ([t],_,_)-> t
+      | _ -> assert false
     in
     let vl = match lookup_inductive_extraction ip with 
       | Iml (_,vl) -> vl
@@ -853,18 +846,19 @@ and extract_inductive_declaration sp =
 	| Cml (t,_,_) -> (ConstructRef cp, t)
     in
     let l = 
-      array_fold_left_i
-	(fun i acc packet -> 
+      iterate_for 0 (mib.mind_ntypes - 1)
+	(fun i acc -> 
 	   let ip = (sp,i) in
+	   let mis = build_mis (ip,[||]) mib in 
 	   match lookup_inductive_extraction ip with
 	     | Iprop -> acc
 	     | Iml (s,vl) -> 
 		 (List.rev vl, 
 		  IndRef ip, 
 		  Array.to_list 
-		    (Array.mapi (one_constructor ip) packet.mind_consnames))
-		 :: acc )
-	[] mib.mind_packets 
+		    (Array.mapi (one_constructor ip) (mis_consnames mis)))
+		 :: acc)
+	[] 
     in
     Dtype (List.rev l, not (mind_type_finite mib 0))
 

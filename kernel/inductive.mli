@@ -52,6 +52,7 @@ val mis_consnames : inductive_instance -> identifier array
 val mis_conspaths : inductive_instance -> section_path array
 val mis_inductive : inductive_instance -> inductive
 val mis_arity : inductive_instance -> types
+val mis_nf_arity : inductive_instance -> types
 val mis_params_ctxt : inductive_instance -> rel_context
 val mis_sort : inductive_instance -> sorts
 val mis_constructor_type : int -> inductive_instance -> types
