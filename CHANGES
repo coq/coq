@@ -48,6 +48,7 @@ Vernacular commands
 - New command "About name" for light printing of type, implicit arguments, etc.
 - New declaration "Conjecture" and command "Admitted" to declare incompletely
   proven statement as axioms
+- New command "SearchNamed" for searching objects by components of their name
 
 Commands
 
