@@ -19,8 +19,8 @@ Lemma RTheory : (Ring_Theory Rplus Rmult R1 R0 Ropp [x,y:R]false).
   Symmetry; Apply Rplus_assoc.
   Exact Rmult_sym.
   Symmetry; Apply Rmult_assoc.
-  Intro; Apply (let (H1,H2)=(Rplus_ne n) in H2).
-  Intro; Apply (let (H1,H2)=(Rmult_ne n) in H2).
+  Intro; Apply Rplus_Ol.
+  Intro; Apply Rmult_1l.
   Exact Rplus_Ropp_r.
   Intros.
   Rewrite Rmult_sym.
@@ -253,16 +253,15 @@ Save.
 (*s      Addition                                        *)
 (*********************************************************)
 
+Lemma Rplus_ne:(r:R)``r+0==r``/\``0+r==r``.
+Intro;Split;Ring.
+Save.
+Hints Resolve Rplus_ne : real v62.
+
 Lemma Rplus_Or:(r:R)``r+0==r``.
 Intro; Ring.
 Save.
 Hints Resolve Rplus_Or : real.
-
-(**********)
-Lemma Rplus_Ol:(r:R)``0+r==r``.
-Intro; Ring.
-Save.
-Hints Resolve Rplus_Ol : real.
 
 (**********)
 Lemma Rplus_Ropp_l:(r:R)``(-r)+r==0``.
@@ -335,16 +334,16 @@ Save.
 Hints Resolve Rmult_Ol : real v62.
 
 (**********)
+Lemma Rmult_ne:(r:R)``r*1==r``/\``1*r==r``.
+Intro;Split;Ring.
+Save.
+Hints Resolve Rmult_ne : real v62.
+
+(**********)
 Lemma Rmult_1r:(r:R)(``r*1==r``).
 Intro; Ring.
 Save.
 Hints Resolve Rmult_1r : real.
-
-(**********)
-Lemma Rmult_1l:(r:R)(``1*r==r``).
-Intro; Ring.
-Save.
-Hints Resolve Rmult_1l : real.
 
 (**********)
 Lemma Rmult_mult_r:(r,r1,r2:R)r1==r2->``r*r1==r*r2``.

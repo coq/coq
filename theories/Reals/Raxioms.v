@@ -29,8 +29,8 @@ Axiom Rplus_Ropp_r:(r:R)``r+(-r)==0``.
 Hints Resolve Rplus_Ropp_r : real v62.
 
 (**********)
-Axiom Rplus_ne:(r:R)``r+0==r``/\``0+r==r``.
-Hints Resolve Rplus_ne : real v62.
+Axiom Rplus_Ol:(r:R)``0+r==r``.
+Hints Resolve Rplus_Ol : real.
 
 (***********************************************************)       
 (*s       Multiplication                                   *)
@@ -48,10 +48,9 @@ Hints Resolve Rmult_assoc : real v62.
 Axiom Rinv_l:(r:R)``r<>0``->``(1/r)*r==1``.
 Hints Resolve Rinv_l : real.
 
-
 (**********)
-Axiom Rmult_ne:(r:R)``r*1==r``/\``1*r==r``.
-Hints Resolve Rmult_ne : real v62.
+Axiom Rmult_1l:(r:R)``1*r==r``.
+Hints Resolve Rmult_1l : real.
 
 (**********)
 Axiom R1_neq_R0:``1<>0``.
