@@ -266,7 +266,7 @@ let rec xlate_match_pattern =
 	CT_pattern_delimitors(CT_num_type key, xlate_match_pattern p)
     | CPatNumeral(_,n) ->
  	CT_coerce_NUM_to_MATCH_PATTERN
-	  (CT_int_encapsulator(Bignat.bigint_to_string n))
+	  (CT_int_encapsulator(Bigint.to_string n))
     | CPatNotation(_, s, l) -> 
 	CT_pattern_notation(CT_string s,
 			    CT_match_pattern_list(List.map xlate_match_pattern l))
@@ -402,7 +402,7 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CSort(_, s) -> CT_coerce_SORT_TYPE_to_FORMULA(xlate_sort s)
    | CNotation(_, s, l) -> notation_to_formula s (List.map xlate_formula l)
    | CNumeral(_, i) -> 
-       CT_coerce_NUM_to_FORMULA(CT_int_encapsulator(Bignat.bigint_to_string i))
+       CT_coerce_NUM_to_FORMULA(CT_int_encapsulator(Bigint.to_string i))
    | CHole _ -> CT_existvarc 
 (* I assume CDynamic has been inserted to make free form extension of
    the language possible, but this would go agains the logic of pcoq anyway. *)
