@@ -943,8 +943,7 @@ $(CONTRIBVO): states/initial.coq
 contrib: $(CONTRIBVO) $(CONTRIBCMO)
 omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
 ring: $(RINGVO) $(RINGCMO)
-# xml_ instead of xml to avoid conflict with "make xml"
-xml_: $(XMLVO) $(XMLCMO)
+xml: $(XMLVO) $(XMLCMO)
 extraction: $(EXTRACTIONCMO)
 field: $(FIELDVO) $(FIELDCMO)
 fourier: $(FOURIERVO) $(FOURIERCMO)
@@ -1050,10 +1049,8 @@ GALLINA=bin/gallina$(EXE)
 COQTEX=bin/coq-tex$(EXE)
 COQWC=bin/coqwc$(EXE)
 COQDOC=bin/coqdoc$(EXE)
-COQVO2XML=bin/coq_vo2xml$(EXE)
-RUNCOQVO2XML=coq_vo2xml$(EXE)   # Uses the one in PATH and not the one in bin
 
-TOOLS=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQVO2XML) \
+TOOLS=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) \
       $(COQWC) $(COQDOC)
 
 tools:: $(TOOLS) dev/top_printers.cmo
@@ -1098,12 +1095,6 @@ $(COQDOC): $(COQDOCCMO)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma unix.cma $(COQDOCCMO)
 
-COQVO2XMLCMO=$(CONFIG) toplevel/usage.cmo tools/coq_vo2xml.cmo
-
-$(COQVO2XML): $(COQVO2XMLCMO)
-	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ unix.cma $(COQVO2XMLCMO)
-
 clean::
 	rm -f tools/coqdep_lexer.ml tools/gallina_lexer.ml
 	rm -f tools/coqwc.ml
@@ -1128,18 +1119,6 @@ $(MINICOQ): $(MINICOQCMO)
 
 archclean::
 	rm -f $(MINICOQ)
-
-###########################################################################
-# XML
-###########################################################################
-
-# Warning: coq_vo2xml in PATH and not the one in bin is used
-
-.PHONY: xml
-xml: .xml_time_stamp
-.xml_time_stamp: $(INITVO) $(THEORIESVO) $(CONTRIBVO)
-	$(RUNCOQVO2XML) -boot -byte $(COQINCLUDES) $(?:%.o=%)
-	touch .xml_time_stamp
 
 ###########################################################################
 # Installation
@@ -1224,7 +1203,7 @@ install-coq-info: install-coq-manpages install-emacs install-latex
 MANPAGES=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1 \
 	man/coqwc.1 man/coqdoc.1 \
-	man/coq_makefile.1 man/coqmktop.1 man/coq_vo2xml.1
+	man/coq_makefile.1 man/coqmktop.1
 
 install-coq-manpages:
 	$(MKDIR) $(FULLMANDIR)/man1
