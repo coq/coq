@@ -519,12 +519,13 @@ REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Cauchy_prod.vo  theories/Reals/Cv_prop.vo \
 	theories/Reals/Cos_rel.vo      theories/Reals/Cos_plus.vo \
 	theories/Reals/Rtrigo.vo       theories/Reals/Ranalysis1.vo \
-	theories/Reals/PSeries_reg.vo  theories/Reals/Rtrigo_reg.vo \
-	theories/Reals/Rsqrt_def.vo    theories/Reals/R_sqrt.vo \
-	theories/Reals/Rtrigo_calc.vo  theories/Reals/Ranalysis2.vo \
-	theories/Reals/Ranalysis3.vo   theories/Reals/Sqrt_reg.vo \
-	theories/Reals/Ranalysis4.vo   theories/Reals/Ranalysis.vo \
-	theories/Reals/Rgeom.vo        theories/Reals/Reals.vo 
+	theories/Reals/PSeries_reg.vo  theories/Reals/Exp_prop.vo \
+	theories/Reals/Rtrigo_reg.vo   theories/Reals/Rsqrt_def.vo \
+	theories/Reals/R_sqrt.vo       theories/Reals/Rtrigo_calc.vo \
+	theories/Reals/Ranalysis2.vo   theories/Reals/Ranalysis3.vo \
+	theories/Reals/Sqrt_reg.vo     theories/Reals/Ranalysis4.vo \
+	theories/Reals/Ranalysis.vo    theories/Reals/Rgeom.vo \
+	theories/Reals/Reals.vo 
 
 SETOIDSVO=theories/Setoids/Setoid.vo
 
