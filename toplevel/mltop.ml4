@@ -51,7 +51,8 @@ let keep_copy_mlpath s =
 type toplevel = { 
   load_obj : string -> unit;
   use_file : string -> unit;
-  add_dir  : string -> unit }
+  add_dir  : string -> unit;
+  ml_loop  : unit -> unit }
 
 (* Determines the behaviour of Coq with respect to ML files (compiled 
    or not) *)
@@ -81,6 +82,16 @@ let enable_load () =
   match !load with
     | WithTop _ | WithoutTop -> true
     |_ -> false
+
+(* Runs the toplevel loop of Ocaml *)
+let ocaml_toploop () =
+  match !load with
+    | WithTop t -> Printexc.catch t.ml_loop ()
+    | _ -> ()
+(*
+        errorlabstrm "Mltop.ocaml_toploop"
+          [< 'sTR"Cannot access the ML toplevel" >]
+*)
 
 (* Dynamic loading of .cmo *)
 let dir_ml_load s = 

@@ -35,7 +35,7 @@ val branch_scheme :
   env -> 'a evar_defs -> bool -> inductive_family -> constr array
 
 val pred_case_ml_onebranch : loc -> env -> 'c evar_map -> bool ->
-  inductive_type -> int * constr * constr -> constr 
+  inductive_type -> int * unsafe_judgment -> constr 
 
 (* Compilation of pattern-matching. *)
 

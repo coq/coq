@@ -19,6 +19,24 @@ open Reduction
 
 (*s This modules provides useful functions for unification modulo evars *)
 
+(* [whd_ise] raise [Uninstantiated_evar] if an evar remains uninstantiated; *)
+(* *[whd_evar]* and *[nf_evar]* leave uninstantiated evar as is *)
+
+val nf_evar : 'a Evd.evar_map -> constr -> constr
+val j_nf_evar : 'a Evd.evar_map -> unsafe_judgment -> unsafe_judgment
+val jl_nf_evar :
+  'a Evd.evar_map -> unsafe_judgment list -> unsafe_judgment list
+val jv_nf_evar :
+  'a Evd.evar_map -> unsafe_judgment array -> unsafe_judgment array
+val tj_nf_evar :
+  'a Evd.evar_map -> unsafe_type_judgment -> unsafe_type_judgment
+
+(* Replacing all evars *)
+exception Uninstantiated_evar of int
+val whd_ise : 'a evar_map -> constr -> constr
+val whd_castappevar : 'a evar_map -> constr -> constr
+
+(* Creating new existential variables *)
 val new_evar : unit -> evar
 val new_evar_in_sign : env -> constr
 

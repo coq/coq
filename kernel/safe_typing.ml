@@ -90,7 +90,7 @@ let rec execute env cstr cu =
           (cast_rel env Evd.empty cj tj)
 
     | IsRel n -> 
-	(relative env Evd.empty n, cu)
+	(relative env n, cu)
 
     | IsVar id -> 
 	(make_judge cstr (lookup_named_type id env), cu)

@@ -95,7 +95,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	if occur_meta conclty then
           raise (RefinerError (OccurMetaGoal conclty));
 	let ctxt = out_some goal.evar_info in 
-	(mk_goal ctxt hyps (nf_betaiota env sigma conclty))::goalacc, conclty
+	(mk_goal ctxt hyps (nf_betaiota conclty))::goalacc, conclty
 
     | IsCast (t,ty) ->
 	let _ = type_of env sigma ty in
@@ -135,7 +135,7 @@ and mk_hdgoals sigma goal goalacc trm =
     | IsCast (c,ty) when isMeta c ->
 	let _ = type_of env sigma ty in
 	let ctxt = out_some goal.evar_info in  
-	(mk_goal ctxt hyps (nf_betaiota env sigma ty))::goalacc,ty
+	(mk_goal ctxt hyps (nf_betaiota ty))::goalacc,ty
 
     | IsApp (f,l) ->
 	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
@@ -168,10 +168,12 @@ and mk_casegoals sigma goal goalacc p c =
   let env = evar_env goal in
   let (acc',ct) = mk_hdgoals sigma goal goalacc c in 
   let (acc'',pt) = mk_hdgoals sigma goal acc' p in
+  let pj = {uj_val=p; uj_type=pt} in 
   let indspec =
     try find_rectype env sigma ct
     with Induc -> anomaly "mk_casegoals" in
-  let (lbrty,conclty,_) = type_case_branches env sigma indspec pt p c in
+  let (lbrty,conclty,_) =
+    type_case_branches env sigma indspec pj c in
   (acc'',lbrty,conclty)
 
 

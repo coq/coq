@@ -10,10 +10,11 @@
 
 (* If there is a toplevel under Coq, it is described by the following 
    record. *)
-type toplevel = {
+type toplevel = { 
   load_obj : string -> unit;
   use_file : string -> unit;
-  add_dir : string -> unit }
+  add_dir  : string -> unit;
+  ml_loop  : unit -> unit }
 
 (* Determines the behaviour of Coq with respect to ML files (compiled 
    or not) *) 
@@ -34,6 +35,9 @@ val is_ocaml_top : unit -> bool
 
 (*Tests if we can load ML files*)
 val enable_load : unit -> bool
+
+(*Starts the Ocaml toplevel loop *)
+val ocaml_toploop : unit -> unit
 
 (*Dynamic loading of .cmo*)
 val dir_ml_load : string -> unit

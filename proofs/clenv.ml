@@ -96,8 +96,8 @@ let unify_0 mc wc m n =
   let env = w_env wc
   and sigma = w_Underlying wc in
   let rec unirec_rec ((metasubst,evarsubst) as substn) m n =
-    let cM = whd_ise1 sigma m
-    and cN = whd_ise1 sigma n in 
+    let cM = Evarutil.whd_castappevar sigma m
+    and cN = Evarutil.whd_castappevar sigma n in 
     try 
       match (kind_of_term cM,kind_of_term cN) with
 	| IsCast (c,_), _ -> unirec_rec substn c cN

@@ -265,8 +265,7 @@ let print_term inner_types l env csr =
 
   let inner_type_display env term =
    let type_of_term =
-    Reduction.nf_betaiota env (Evd.empty)
-     (R.get_type_of env (Evd.empty) term)
+    Reduction.nf_betaiota (R.get_type_of env (Evd.empty) term)
    in
     match R.get_sort_of env (Evd.empty) type_of_term with
        T.Prop T.Null -> InnerProp type_of_term

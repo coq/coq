@@ -110,7 +110,7 @@ let modify_opers replfun absfun (constl,indl,cstrl) =
 let expmod_constr oldenv modlist c =
   let sigma = Evd.empty in
   let simpfun = 
-    if modlist = ([],[],[]) then fun x -> x else nf_betaiota oldenv sigma in
+    if modlist = ([],[],[]) then fun x -> x else nf_betaiota in
   let expfun cst = 
     try 
       constant_value oldenv cst

@@ -14,22 +14,16 @@ open Declarations
 open Pp
 open Util
 open Options
-open Stamps
 open System
 open Names
 open Term
-open Evd
-open Reduction
 open Pfedit
 open Tacmach
 open Proof_trees
 open Proof_type
 open Tacred
-open Library
-open Libobject
 open Environ
 open Vernacinterp
-open Declare
 open Coqast
 open Ast
 open Astterm
@@ -39,8 +33,7 @@ open Tacinterp
 open Tactic_debug
 open Command
 open Goptions
-open Mltop
-open Nametab
+open Declare
 
 (* Dans join_binders, s'il y a un "?", on perd l'info qu'il est partagé *)
 let join_binders binders = 
@@ -121,7 +114,7 @@ let locate_qualid loc qid =
     let _ = Syntax_def.locate_syntactic_definition qid in
     error
       ("Unexpected reference to a syntactic definition: "
-       ^(string_of_qualid qid))
+       ^(Nametab.string_of_qualid qid))
   with Not_found ->
     Nametab.error_global_not_found_loc loc qid
 
@@ -130,7 +123,8 @@ let global = locate_qualid
 
 let locate_file f =
   try
-    let _,file = System.where_in_path (get_load_path()) f in
+    let _,file =
+      System.where_in_path (Library.get_load_path()) f in
     mSG [< 'sTR file; 'fNL >]
   with Not_found -> 
     mSG (hOV 0 [< 'sTR"Can't find file"; 'sPC; 'sTR f; 'sPC;
@@ -147,13 +141,13 @@ let print_located_qualid qid =
       [< 'sTR (string_of_path (Syntax_def.locate_syntactic_definition qid));
 	 'fNL >]
   with Not_found ->
-    error ((string_of_qualid qid) ^ " not a defined object")
+    error ((Nametab.string_of_qualid qid) ^ " not a defined object")
 
 let print_path_entry s =
   [< 'sTR s.directory; 'tBRK (0,2); 'sTR (string_of_dirpath s.coq_dirpath) >]
 
 let print_loadpath () =
-  let l = get_load_path () in
+  let l = Library.get_load_path () in
   mSGNL (Pp.t [< 'sTR "Physical path:                                 ";
 		 'tAB; 'sTR "Logical Path:"; 'fNL; 
 		 prlist_with_sep pr_fnl print_path_entry l >])
@@ -193,29 +187,29 @@ let _ =
   add "ADDPATH"
     (function 
        | [VARG_STRING dir] ->
-	   (fun () -> add_path dir [Nametab.default_root])
+	   (fun () -> Mltop.add_path dir [Nametab.default_root])
        | [VARG_STRING dir ; VARG_QUALID alias] ->
            let aliasdir,aliasname = Nametab.repr_qualid alias in
-	    (fun () -> add_path dir (aliasdir@[string_of_id aliasname]))
+	    (fun () -> Mltop.add_path dir (aliasdir@[string_of_id aliasname]))
        | _ -> bad_vernac_args "ADDPATH")
 
 (* For compatibility *)
 let _ =
   add "DELPATH"
     (function 
-       | [VARG_STRING dir] -> (fun () -> remove_path dir)
+       | [VARG_STRING dir] -> (fun () -> Library.remove_path dir)
        | _ -> bad_vernac_args "DELPATH")
 
 let _ = 
   add "RECADDPATH"
     (function 
        | [VARG_STRING dir] ->
-	   (fun () -> add_rec_path dir [Nametab.default_root])
+	   (fun () -> Mltop.add_rec_path dir [Nametab.default_root])
        | [VARG_STRING dir ; VARG_QUALID alias] ->
            let aliasdir,aliasname = Nametab.repr_qualid alias in
 	    (fun () ->
 	       let alias = aliasdir@[string_of_id aliasname] in
-	       add_rec_path dir alias;
+	       Mltop.add_rec_path dir alias;
 	       Nametab.push_library_root (List.hd alias))
        | _ -> bad_vernac_args "RECADDPATH")
 
@@ -395,7 +389,7 @@ let _ =
        | [VARG_CONSTR com] ->
 	   (fun () ->
               if not (refining()) then begin
-              	start_proof_com None NeverDischarge com;
+              	start_proof_com None Declare.NeverDischarge com;
 		if_verbose show_open_subgoals ()
               end else 
 		error "repeated Goal not permitted in refining mode")
@@ -553,11 +547,11 @@ let _ =
 		   let coe = coercion_of_qualid dummy_loc qid in
 	           if Classops.is_coercion_visible coe then
 		     message
-		       ("Printing of coercion "^(string_of_qualid qid)^
+		       ("Printing of coercion "^(Nametab.string_of_qualid qid)^
 			" is set")
 		   else 
 		     message 
-		       ("Printing of coercion "^(string_of_qualid qid)^
+		       ("Printing of coercion "^(Nametab.string_of_qualid qid)^
 			" is unset"))
 		ql))
     
@@ -714,7 +708,7 @@ let _ =
 			 (fun (mv,ty) -> 
 			    [< 'iNT mv ; 'sTR" -> " ; prtype ty ; 'fNL >])
 			 meta_types;
-		       'sTR"Proof: " ; prterm (nf_ise1 evc pfterm) >])
+		       'sTR"Proof: " ; prterm (Evarutil.nf_evar evc pfterm) >])
        | _ -> bad_vernac_args "ShowProof")
 
 let _ =
@@ -1026,7 +1020,7 @@ let extract_qualid = function
   | VARG_QUALID qid ->
       (try wd_of_sp (fst (Nametab.locate_module qid))
        with Not_found -> 
-	 error ("Module/section "^(string_of_qualid qid)^" not found"))
+	 error ("Module/section "^(Nametab.string_of_qualid qid)^" not found"))
   | _ -> bad_vernac_args "extract_qualid"
 
 let inside_outside = function
@@ -1349,11 +1343,12 @@ let _ =
 	   fun () -> 
 	     let ref = locate_qualid dummy_loc qid in
 	     Class.try_add_new_class ref stre;
-             if_verbose message ((string_of_qualid qid) ^ " is now a class")
+             if_verbose message
+               ((Nametab.string_of_qualid qid) ^ " is now a class")
        | _ -> bad_vernac_args "CLASS")
 
 let cl_of_qualid qid =
-  match repr_qualid qid with
+  match Nametab.repr_qualid qid with
     | [], id when string_of_id id = "FUNCLASS" -> Classops.CL_FUN
     | [], id when string_of_id id = "SORTCLASS" -> Classops.CL_SORT
     | _ -> Class.class_of_ref (locate_qualid dummy_loc qid)	
@@ -1373,7 +1368,7 @@ let _ =
 	   let target = cl_of_qualid qidt in
 	   let source = cl_of_qualid qids in
 	   fun () ->
-	     if isid then match repr_qualid qid with
+	     if isid then match Nametab.repr_qualid qid with
 	       | [], id ->
 		   Class.try_add_new_identity_coercion id stre source target
 	       | _ -> bad_vernac_args "COERCION"
@@ -1381,7 +1376,8 @@ let _ =
 	       let ref = locate_qualid dummy_loc qid in
 	       Class.try_add_new_coercion_with_target ref stre source target;
 	       if_verbose
-		 message ((string_of_qualid qid) ^ " is now a coercion")
+		 message
+                 ((Nametab.string_of_qualid qid) ^ " is now a coercion")
        | _ -> bad_vernac_args "COERCION")
 
 let _ =
@@ -1672,7 +1668,7 @@ let _ =
             if (string_of_id t) = "Tables" then 
 	      print_tables ()
 	    else 
-	      mSG(print_name (make_qualid [] t)))
+	      mSG(print_name (Nametab.make_qualid [] t)))
      | _ -> bad_vernac_args "TableField")
 
 
@@ -1736,26 +1732,26 @@ let _ = vinterp_add "DeclareMLModule"
 		    | (VARG_STRING s) -> s 
 		    | _ -> anomaly "DeclareMLModule : not a string") l
 	     in
-    	     fun () -> declare_ml_modules sl)
+    	     fun () -> Mltop.declare_ml_modules sl)
 	  
 let _ = vinterp_add "AddMLPath"
 	  (function 
 	     | [VARG_STRING s] ->
-		 (fun () -> add_ml_dir (glob s))
+		 (fun () -> Mltop.add_ml_dir (glob s))
 	     | _ -> anomaly "AddMLPath : not a string")
 
 let _ = vinterp_add "RecAddMLPath"
 	  (function 
 	     | [VARG_STRING s] ->
-		 (fun () -> add_rec_ml_dir (glob s))
+		 (fun () -> Mltop.add_rec_ml_dir (glob s))
 	     | _ -> anomaly "RecAddMLPath : not a string")
 
 let _ = vinterp_add "PrintMLPath"
 	  (function 
-	     | [] -> (fun () -> print_ml_path ())
+	     | [] -> (fun () -> Mltop.print_ml_path ())
 	     | _ -> anomaly "PrintMLPath : does not expect any argument")
 
 let _ = vinterp_add "PrintMLModules"
 	  (function 
-	     | [] -> (fun () -> print_ml_modules ())
+	     | [] -> (fun () -> Mltop.print_ml_modules ())
 	     | _ -> anomaly "PrintMLModules : does not expect an argument")

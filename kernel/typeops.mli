@@ -39,7 +39,7 @@ val judge_of_prop_contents : contents -> unsafe_judgment
 val judge_of_type : universe -> unsafe_judgment * constraints
 
 (*s Type of atomic terms. *)
-val relative : env -> 'a evar_map -> int -> unsafe_judgment
+val relative : env -> int -> unsafe_judgment
 
 val type_of_constant : env -> 'a evar_map -> constant -> types
 
@@ -85,11 +85,11 @@ val judge_of_case : env -> 'a evar_map -> case_info
     -> unsafe_judgment array -> unsafe_judgment * constraints
 
 val find_case_dep_nparams :
-  env -> 'a evar_map -> constr * constr -> inductive_family -> constr
+  env -> 'a evar_map -> constr * unsafe_judgment -> inductive_family
     -> bool * constraints
 
 val type_case_branches :
-  env -> 'a evar_map -> Inductive.inductive_type -> constr -> types
+  env -> 'a evar_map -> Inductive.inductive_type -> unsafe_judgment
     -> constr -> types array * types * constraints
 
 (*s Type of fixpoints and guard condition. *)

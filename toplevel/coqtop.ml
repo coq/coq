@@ -213,6 +213,10 @@ let start () =
       exit 1
   end;
   if !batch_mode then (flush_all(); Profile.print_profile ();exit 0);
-  Toplevel.loop()
+  Toplevel.loop();
+(* Initialise and launch the Ocaml toplevel *)
+  Coqinit.init_ocaml_path();
+  Mltop.ocaml_toploop();
+  exit 1
 
 (* [Coqtop.start] will be called by the code produced by coqmktop *)

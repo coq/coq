@@ -103,17 +103,9 @@ let instantiate_tac = function
       (fun gl -> instantiate n c gl)
   | _ -> invalid_arg "Instantiate called with bad arguments"
 
-let whd_evar env sigma c = match kind_of_term c with
-  | IsEvar (n, cl) when Evd.in_dom sigma n & Evd.is_defined sigma n ->
-        Instantiate.existential_value sigma (n,cl)
-  | _ -> c
-
 let normEvars gl =
   let sigma = project gl in
-  let env = pf_env gl in
-  let nf_evar = strong whd_evar
-  and simplify = nf_betaiota in 
-  convert_concl (nf_evar env sigma (simplify env sigma (pf_concl gl))) gl
+  convert_concl (nf_betaiota (Evarutil.nf_evar sigma (pf_concl gl))) gl
 
 let vernac_prolog =
   let uncom = function

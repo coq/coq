@@ -47,6 +47,44 @@ let filter_sign p sign x =
     (x,[],nil_sign)
 *)
 
+(* Expanding existential variables (pretyping.ml) *)
+(* 1- whd_ise fails if an existential is undefined *)
+
+exception Uninstantiated_evar of int
+
+let rec whd_ise sigma c =
+  match kind_of_term c with
+    | IsEvar (ev,args) when Evd.in_dom sigma ev ->
+	if Evd.is_defined sigma ev then
+          whd_ise sigma (existential_value sigma (ev,args))
+	else raise (Uninstantiated_evar ev)
+  | _ -> c
+
+
+(* Expand evars, possibly in the head of an application *)
+let whd_castappevar_stack sigma c = 
+  let rec whrec (c, l as s) =
+    match kind_of_term c with
+      | IsEvar (ev,args) when Evd.in_dom sigma ev & Evd.is_defined sigma ev -> 
+	  whrec (existential_value sigma (ev,args), l)
+      | IsCast (c,_) -> whrec (c, l)
+      | IsApp (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
+      | _ -> s
+  in 
+  whrec (c, [])
+
+let whd_castappevar sigma c = applist (whd_castappevar_stack sigma c)
+
+let nf_evar = Pretype_errors.nf_evar
+let j_nf_evar = Pretype_errors.j_nf_evar
+let jl_nf_evar = Pretype_errors.jl_nf_evar
+let jv_nf_evar = Pretype_errors.jv_nf_evar
+let tj_nf_evar = Pretype_errors.tj_nf_evar
+
+(**********************)
+(* Creating new evars *)
+(**********************)
+
 let evar_env evd = Global.env_of_context evd.evar_hyps
 
 (* Generator of existential names *)
@@ -200,7 +238,7 @@ let need_restriction isevars args = not (array_for_all closed0 args)
  * false. The problem is that we won't get the right error message.
  *)
 
-let real_clean isevars sp args rhs =
+let real_clean isevars ev args rhs =
   let subst = List.map (fun (x,y) -> (y,mkVar x)) (filter_unique args) in
   let rec subs k t =
     match kind_of_term t with
@@ -224,7 +262,8 @@ let real_clean isevars sp args rhs =
       | _ -> map_constr_with_binders succ subs k t
   in
   let body = subs 0 rhs in
-  if not (closed0 body) then error_not_clean empty_env sp body;
+  if not (closed0 body)
+  then error_not_clean empty_env isevars.evars ev body;
   body
 
 let make_evar_instance_with_rel env =
@@ -280,7 +319,8 @@ let keep_rels_and_vars c = match kind_of_term c with
   | _ -> mkImplicit   (* Mettre mkMeta ?? *)
 
 let evar_define isevars (ev,argsv) rhs =
-  if occur_evar ev rhs then error_occur_check empty_env ev rhs;
+  if occur_evar ev rhs
+  then error_occur_check empty_env (evars_of isevars) ev rhs;
   let args = List.map keep_rels_and_vars (Array.to_list argsv) in 
   let evd = ise_map isevars ev in
   (* the substitution to invert *)
@@ -407,7 +447,7 @@ let solve_refl conv_algo env isevars ev argsv1 argsv2 =
 
 (* Rq: uncomplete algorithm if pbty = CONV_X_LEQ ! *)
 let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
-  let t2 = nf_ise1 isevars.evars t2 in
+  let t2 = nf_evar isevars.evars t2 in
   let lsp = match kind_of_term t2 with
     | IsEvar (n2,args2 as ev2)
         when not (Evd.is_defined isevars.evars n2) ->
@@ -462,16 +502,17 @@ let mk_valcon c = Some c
 let split_tycon loc env isevars = function
   | None -> None,None
   | Some c ->
-      let t = whd_betadeltaiota env isevars.evars c in
+      let sigma = evars_of isevars in
+      let t = whd_betadeltaiota env sigma c in
       match kind_of_term t with
         | IsProd (na,dom,rng) -> Some dom, Some rng
 	| _ ->
 	    if ise_undefined isevars t then
-	      let (sigma,dom,rng) = split_evar_to_arrow isevars.evars t in
-	      isevars.evars <- sigma;
+	      let (sigma',dom,rng) = split_evar_to_arrow sigma t in
+	      evars_reset_evd sigma' isevars;
 	      Some dom, Some rng
 	    else
-	      error_not_product_loc loc env c
+	      error_not_product_loc loc env sigma c
 
 let valcon_of_tycon x = x
 

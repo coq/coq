@@ -63,12 +63,12 @@ let msg_bad_elimination ctx k = function
   | None -> 
       [<>]
 
-let explain_elim_arity k ctx ind aritylst c p pt okinds = 
+let explain_elim_arity k ctx ind aritylst c pj okinds = 
   let pi = pr_inductive ctx ind in
   let ppar = prlist_with_sep pr_coma (prterm_env ctx) aritylst in
   let pc = prterm_env ctx c in
-  let pp = prterm_env ctx p in
-  let ppt = prterm_env ctx pt in
+  let pp = prterm_env ctx pj.uj_val in
+  let ppt = prterm_env ctx pj.uj_type in
   [< 'sTR "Incorrect elimination of"; 'bRK(1,1); pc; 'sPC;
      'sTR "in the inductive type"; 'bRK(1,1); pi; 'fNL;
      'sTR "The elimination predicate"; 'bRK(1,1); pp; 'sPC;
@@ -76,16 +76,16 @@ let explain_elim_arity k ctx ind aritylst c p pt okinds =
      'sTR "It should be one of :"; 'bRK(1,1) ; hOV 0 ppar; 'fNL;
      msg_bad_elimination ctx k okinds >]
 
-let explain_case_not_inductive k ctx c ct =
-  let pc = prterm_env ctx c in
-  let pct = prterm_env ctx ct in
+let explain_case_not_inductive k ctx cj =
+  let pc = prterm_env ctx cj.uj_val in
+  let pct = prterm_env ctx cj.uj_type in
   [< 'sTR "In Cases expression, the matched term"; 'bRK(1,1); pc; 'sPC; 
      'sTR "has type"; 'bRK(1,1); pct; 'sPC; 
      'sTR "which is not a (co-)inductive type" >]
   
-let explain_number_branches k ctx c ct expn =
-  let pc = prterm_env ctx c in
-  let pct = prterm_env ctx ct in
+let explain_number_branches k ctx cj expn =
+  let pc = prterm_env ctx cj.uj_val in
+  let pct = prterm_env ctx cj.uj_type in
   [< 'sTR "Cases on term"; 'bRK(1,1); pc; 'sPC ;
      'sTR "of type"; 'bRK(1,1); pct; 'sPC;
      'sTR "expects ";  'iNT expn; 'sTR " branches" >]
@@ -159,20 +159,21 @@ let explain_cant_apply_not_functional k ctx rator randl =
      'sTR"The expression"; 'bRK(1,1); pr; 'sPC;
      'sTR"of type"; 'bRK(1,1); prt; 'sPC ;
      'sTR("cannot be applied to the "^term_string); 'fNL; 
-     'sTR" "; v 0 appl; 'fNL >]
+     'sTR" "; v 0 appl >]
 
 let explain_unexpected_type k ctx actual_type expected_type =
   let ctx = make_all_name_different ctx in
   let pract = prterm_env ctx actual_type in
   let prexp = prterm_env ctx expected_type in
   [< 'sTR"This type is"; 'sPC; pract; 'sPC; 'sTR "but is expected to be";
-     'sPC; prexp; 'fNL >]
+     'sPC; prexp >]
 
 let explain_not_product k ctx c =
   let ctx = make_all_name_different ctx in
   let pr = prterm_env ctx c in
-  [< 'sTR"The type of this term is expected to be a product but it is";
-     'bRK(1,1); pr; 'fNL >]
+  [< 'sTR"The type of this term is a product,"; 'sPC;
+     'sTR"but it is casted with type";
+     'bRK(1,1); pr >]
 
 (* TODO: use the names *)
 (* (co)fixpoints *)
@@ -248,15 +249,6 @@ let explain_cant_find_case_type k ctx c =
   let pe = prterm_env ctx c in
   hOV 3 [<'sTR "Cannot infer type of whole Case expression on"; 'wS 1; pe >]
 
-(***
-let explain_cant_find_case_type_loc loc k ctx c =
-  let pe = prterm_env ctx c in
-  user_err_loc
-    (loc,"pretype",
-     hOV 3 [<'sTR "Cannot infer type of whole Case expression on"; 
-	     'wS 1; pe >])
-***)
-
 let explain_occur_check k ctx ev rhs =
   let id = "?" ^ string_of_int ev in
   let pt = prterm_env ctx rhs in
@@ -285,12 +277,12 @@ let explain_type_error k ctx = function
       explain_bad_assumption k ctx c
   | ReferenceVariables id -> 
       explain_reference_variables id
-  | ElimArity (ind, aritylst, c, p, pt, okinds) ->
-      explain_elim_arity k ctx ind aritylst c p pt okinds 
-  | CaseNotInductive (c, ct) -> 
-      explain_case_not_inductive k ctx c ct
-  | NumberBranches (c, ct, n) -> 
-      explain_number_branches k ctx c ct n
+  | ElimArity (ind, aritylst, c, pj, okinds) ->
+      explain_elim_arity k ctx ind aritylst c pj okinds 
+  | CaseNotInductive cj -> 
+      explain_case_not_inductive k ctx cj
+  | NumberBranches (cj, n) -> 
+      explain_number_branches k ctx cj n
   | IllFormedBranch (c, i, actty, expty) -> 
       explain_ill_formed_branch k ctx c i actty expty 
   | Generalization (nvar, c) ->
@@ -310,7 +302,7 @@ let explain_type_error k ctx = function
       explain_not_inductive k ctx c
 *)
 let explain_pretype_error ctx = function
-  | MlCase mes ->
+  | MlCase (mes,_,_) ->
       explain_ml_case CCI ctx mes
   | CantFindCaseType c ->
       explain_cant_find_case_type CCI ctx c

@@ -238,9 +238,11 @@ let declare_loading_string () =
     "Mltop.set Mltop.WithoutTop;;\n"
   else
     "let ppf = Format.std_formatter;;
-     Mltop.set (Mltop.WithTop {Mltop.load_obj=Topdirs.dir_load ppf;
-                               Mltop.use_file=Topdirs.dir_use ppf;
-                               Mltop.add_dir=Topdirs.dir_directory});;\n"
+     Mltop.set (Mltop.WithTop
+       {Mltop.load_obj=Topdirs.dir_load ppf;
+        Mltop.use_file=Topdirs.dir_use ppf;
+        Mltop.add_dir=Topdirs.dir_directory;
+        Mltop.ml_loop=(fun () -> Toploop.loop ppf) });;\n"
 
 (* create a temporary main file to link *)
 let create_tmp_main_file modules =
@@ -258,9 +260,6 @@ let create_tmp_main_file modules =
       output_string oc "Cmd_searchisos_line.start();;\n"
     else 
       output_string oc "Coqtop.start();;\n";
-    (* Start the Ocaml toplevel if it exists *)
-    if !top then
-      output_string oc "Printexc.catch Toploop.loop ppf; exit 1;;\n";
     close_out oc;
     main_name
   with e -> 

@@ -49,7 +49,7 @@ let rec and_status = function
    (i.e. when the sigma of the proof tree changes) *)
 
 let norm_goal sigma gl =
-  let red_fun = nf_ise1 sigma in
+  let red_fun = Evarutil.nf_evar sigma in
   let ncl = red_fun gl.evar_concl in
   { evar_concl = ncl;
     evar_hyps = map_named_context red_fun gl.evar_hyps;

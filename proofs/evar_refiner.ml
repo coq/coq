@@ -119,7 +119,7 @@ let w_Focusing sp wt =
 let w_Focus sp wc = ids_mod (extract_decl sp) wc
 
 let w_Underlying wc = (ts_it (ids_it wc)).decls
-let w_whd wc c      = whd_castappevar (w_Underlying wc) c
+let w_whd wc c      = Evarutil.whd_castappevar (w_Underlying wc) c
 let w_type_of wc c  = ctxt_type_of (ids_it wc) c
 let w_env     wc    = get_env (ids_it wc)
 let w_hyps    wc    = named_context (get_env (ids_it wc))

@@ -220,7 +220,7 @@ let correctness s p opttac =
   let env = Global.env () in
   let sign = Global.named_context () in
   let sigma = Evd.empty in
-  let cty = Reduction.nf_betaiota env sigma cty in
+  let cty = Reduction.nf_betaiota cty in
   let id = id_of_string s in 
   start_proof id Declare.NeverDischarge sign cty;
   Penv.new_edited id (v,p);

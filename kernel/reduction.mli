@@ -58,8 +58,8 @@ val stacklam : (state -> 'a) -> constr list -> constr -> constr stack -> 'a
 
 val clos_norm_flags : Closure.flags -> 'a reduction_function
 (* Same as [(strong whd_beta[delta][iota])], but much faster on big terms *) 
-val nf_beta : 'a reduction_function
-val nf_betaiota : 'a reduction_function
+val nf_beta : local_reduction_function
+val nf_betaiota : local_reduction_function
 val nf_betadeltaiota : 'a reduction_function
 
 (* Lazy strategy, weak head reduction *)
@@ -101,7 +101,6 @@ val whd_betadeltaeta : 'a reduction_function
 val whd_betadeltaiotaeta_stack : 'a stack_reduction_function
 val whd_betadeltaiotaeta_state : 'a state_reduction_function
 val whd_betadeltaiotaeta : 'a reduction_function
-val whd_evar : 'a reduction_function
 
 val beta_applist : constr * constr list -> constr
 
@@ -191,16 +190,6 @@ val is_fconv : conv_pb -> env -> 'a evar_map -> constr -> constr -> bool
 val whd_meta : (int * constr) list -> constr -> constr
 val plain_instance : (int * constr) list -> constr -> constr
 val instance : (int * constr) list -> constr -> constr
-
-(* [whd_ise] raise [Uninstantiated_evar] if an evar remains uninstantiated; *)
-(* *[whd_ise1]* is synonymous of *[whd_evar empty_env]* and *[nf_ise1]* of *)
-(* *[strong whd_evar empty_env]*: they leave uninstantiated evar as it *)
-
-val whd_ise1 : 'a evar_map -> constr -> constr
-val nf_ise1 : 'a evar_map -> constr -> constr
-exception Uninstantiated_evar of int
-val whd_ise : 'a evar_map -> constr -> constr
-val whd_castappevar : 'a evar_map -> constr -> constr
 
 (*s Obsolete Reduction Functions *)
 

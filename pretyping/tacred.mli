@@ -43,8 +43,8 @@ val pattern_occs : (int list * constr * constr) list -> 'a reduction_function
 
 (* Call by value strategy (uses Closures) *)
 val cbv_norm_flags : Closure.flags -> 'a reduction_function
-  val cbv_beta : 'a reduction_function
-  val cbv_betaiota : 'a reduction_function
+  val cbv_beta : local_reduction_function
+  val cbv_betaiota : local_reduction_function
   val cbv_betadeltaiota : 'a reduction_function
   val compute : 'a reduction_function  (* = [cbv_betadeltaiota] *)
 

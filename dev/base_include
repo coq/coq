@@ -1,30 +1,6 @@
 
 (* File to include to get some Coq facilities under the ocaml toplevel.
-   This file is loaded by include.ml *)
-
-(* We only assume that the variable COQTOP is set *)
-let src_dir =
-  let coqtop = try Sys.getenv "COQTOP" with Not_found -> "." in
-  let coqtop = 
-    if Sys.file_exists coqtop then 
-      coqtop
-    else begin
-      print_endline ("Cannot find the sources in "^coqtop);
-      print_string "Where are they ? ";
-      read_line ()
-    end 
-  in
-  let add_dir dl = 
-    Topdirs.dir_directory (List.fold_left Filename.concat coqtop dl) 
-  in
-  List.iter add_dir
-    [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ]; 
-      [ "pretyping" ]; [ "parsing" ]; [ "proofs" ]; [ "tactics" ];
-      [ "toplevel" ] ];
-  coqtop
-;;
-(* Now Coq_config.cmi is accessible *)
-Topdirs.dir_directory Coq_config.camlp4lib;;
+   This file is loaded by include *)
 
 #use "top_printers.ml";;
 

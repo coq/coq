@@ -81,9 +81,9 @@ let rec strong_prodspine redfun c =
 let clos_norm_flags flgs env sigma t =
   norm_val (create_clos_infos flgs env sigma) (inject t)
 
-let nf_beta env = clos_norm_flags beta env
-let nf_betaiota env = clos_norm_flags betaiota env
-let nf_betadeltaiota env =  clos_norm_flags betadeltaiota env
+let nf_beta = clos_norm_flags beta empty_env Evd.empty
+let nf_betaiota = clos_norm_flags betaiota empty_env Evd.empty
+let nf_betadeltaiota env sigma =  clos_norm_flags betadeltaiota env sigma
 
 (* lazy weak head reduction functions *)
 let whd_flags flgs env sigma t =
@@ -1088,43 +1088,3 @@ let is_info_type env sigma t =
   (s = Prop Pos) ||
   (s <> Prop Null && 
    try info_arity env sigma t.utj_val with IsType -> true)
-
-(* Expanding existential variables (pretyping.ml) *)
-(* 1- whd_ise fails if an existential is undefined *)
-
-exception Uninstantiated_evar of int
-
-let rec whd_ise sigma c =
-  match kind_of_term c with
-    | IsEvar (ev,args) when Evd.in_dom sigma ev ->
-	if Evd.is_defined sigma ev then
-          whd_ise sigma (existential_value sigma (ev,args))
-	else raise (Uninstantiated_evar ev)
-  | _ -> c
-
-
-(* 2- undefined existentials are left unchanged *)
-let rec whd_ise1 sigma c =
-  match kind_of_term c with
-    | IsEvar (ev,args) when Evd.in_dom sigma ev & Evd.is_defined sigma ev ->
-	whd_ise1 sigma (existential_value sigma (ev,args))
-    | _ -> collapse_appl c
-
-let nf_ise1 sigma = local_strong (whd_ise1 sigma)
-
-(* A form of [whd_ise1] with type "reduction_function" *)
-let whd_evar env = whd_ise1
-
-(* Expand evars, possibly in the head of an application *)
-let whd_castappevar_stack sigma c = 
-  let rec whrec (c, l as s) =
-    match kind_of_term c with
-      | IsEvar (ev,args) when Evd.in_dom sigma ev & Evd.is_defined sigma ev -> 
-	  whrec (existential_value sigma (ev,args), l)
-      | IsCast (c,_) -> whrec (c, l)
-      | IsApp (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
-      | _ -> s
-  in 
-  whrec (c, [])
-
-let whd_castappevar sigma c = applist (whd_castappevar_stack sigma c)

@@ -52,8 +52,9 @@ let evar_apprec env isevars stack c =
  * possibly applied to arguments. *)
 
 let rec evar_conv_x env isevars pbty term1 term2 = 
-  let term1 = whd_ise1 (evars_of isevars) term1 in
-  let term2 = whd_ise1 (evars_of isevars) term2 in
+  let sigma = evars_of isevars in
+  let term1 = whd_castappevar sigma term1 in
+  let term2 = whd_castappevar sigma term2 in
 (*
  if eq_constr term1 term2 then 
     true
@@ -63,7 +64,7 @@ let rec evar_conv_x env isevars pbty term1 term2 =
     is_fconv pbty env (evars_of isevars) term1 term2
   else
 *)
-  (is_fconv pbty env (evars_of isevars) term1 term2) or
+  (is_fconv pbty env sigma term1 term2) or
   if ise_undefined isevars term1 then
     solve_simple_eqn evar_conv_x env isevars (pbty,destEvar term1,term2)
   else if ise_undefined isevars term2 then
@@ -206,15 +207,15 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	| IsLambda (na,c1,c'1), IsLambda (_,c2,c'2) when l1=[] & l2=[] -> 
 	    evar_conv_x env isevars CONV c1 c2
 	    & 
-	    (let c = nf_ise1 (evars_of isevars) c1 in
+	    (let c = nf_evar (evars_of isevars) c1 in
              evar_conv_x (push_rel_assum (na,c) env) isevars CONV c'1 c'2)
 
 	| IsLetIn (na,b1,t1,c'1), IsLetIn (_,b2,_,c'2) ->
 	    let f1 () =
 	      evar_conv_x env isevars CONV b1 b2
 	      & 
-              (let b = nf_ise1 (evars_of isevars) b1 in
-	       let t = nf_ise1 (evars_of isevars) t1 in
+              (let b = nf_evar (evars_of isevars) b1 in
+	       let t = nf_evar (evars_of isevars) t1 in
                evar_conv_x (push_rel_def (na,b,t) env) isevars pbty c'1 c'2)
 	      & (List.length l1 = List.length l2)
 	      & (List.for_all2 (evar_conv_x env isevars CONV) l1 l2)
@@ -236,7 +237,7 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	| IsProd (n,c1,c'1), IsProd (_,c2,c'2) when l1=[] & l2=[] -> 
             evar_conv_x env isevars CONV c1 c2
             & 
-	    (let c = nf_ise1 (evars_of isevars) c1 in
+	    (let c = nf_evar (evars_of isevars) c1 in
 	     evar_conv_x (push_rel_assum (n,c) env) isevars pbty c'1 c'2)
 
 	| IsMutInd (sp1,cl1), IsMutInd (sp2,cl2) ->

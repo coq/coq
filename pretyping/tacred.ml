@@ -342,7 +342,7 @@ let rec red_elim_const env sigma ref largs =
 	let co = construct_const env sigma in
 	(match reduce_fix_use_function f co (destFix d) lrest with
 	   | NotReducible -> raise Redelimination
-	   | Reduced (c,rest) -> (nf_beta env sigma c, rest))
+	   | Reduced (c,rest) -> (nf_beta c, rest))
     | EliminationMutualFix (min,refgoal,refinfos)
 	when stack_args_size largs >= min ->
 	let rec descend ref args =
@@ -358,7 +358,7 @@ let rec red_elim_const env sigma ref largs =
 	let co = construct_const env sigma in
 	(match reduce_fix_use_function f co (destFix d) lrest with
 	   | NotReducible -> raise Redelimination
-	   | Reduced (c,rest) -> (nf_beta env sigma c, rest))
+	   | Reduced (c,rest) -> (nf_beta c, rest))
     | _ -> raise Redelimination
 
 and construct_const env sigma = 
@@ -413,7 +413,7 @@ let internal_red_product env sigma c =
 	     | None -> raise Redelimination
 	     | Some c -> c)
       | _ -> raise Redelimination
-  in nf_betaiota env sigma (redrec env c)
+  in nf_betaiota (redrec env c)
 
 let red_product env sigma c = 
   try internal_red_product env sigma c
@@ -609,7 +609,7 @@ let unfoldoccs env sigma (occl,name) c =
     | []  -> unfold env sigma name c
     | l -> 
         match substlin env name 1 (Sort.list (<) l) c with
-          | (_,[],uc) -> nf_betaiota env sigma uc
+          | (_,[],uc) -> nf_betaiota uc
           | (1,_,_) -> error ((string_of_evaluable_ref name)^" does not occur")
           | _ -> error ("bad occurrence numbers of "
 			^(string_of_evaluable_ref name))
@@ -633,9 +633,9 @@ let fold_commands cl env sigma c =
 let cbv_norm_flags flags env sigma t =
   cbv_norm (create_cbv_infos flags env sigma) t
 
-let cbv_beta env = cbv_norm_flags beta env
-let cbv_betaiota env = cbv_norm_flags betaiota env
-let cbv_betadeltaiota env =  cbv_norm_flags betadeltaiota env
+let cbv_beta = cbv_norm_flags beta empty_env Evd.empty
+let cbv_betaiota = cbv_norm_flags betaiota empty_env Evd.empty
+let cbv_betadeltaiota env sigma =  cbv_norm_flags betadeltaiota env sigma
 
 let compute = cbv_betadeltaiota
 
@@ -725,7 +725,7 @@ let reduce_to_mind env sigma t =
 	  elimrec (push_rel_assum (n,t) env) t' ((n,None,ty)::l)
       | _ -> 
           (try 
-	     let t' = nf_betaiota env sigma (one_step_reduce env sigma t) in 
+	     let t' = nf_betaiota (one_step_reduce env sigma t) in 
 	     elimrec env t' l
            with UserError _ -> errorlabstrm "tactics__reduce_to_mind"
                [< 'sTR"Not an inductive product." >])

@@ -23,3 +23,5 @@ val push_rec_include : string * Names.dir_path -> unit
 
 val init_load_path : unit -> unit
 val init_library_roots : unit -> unit
+
+val init_ocaml_path : unit -> unit

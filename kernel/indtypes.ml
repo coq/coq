@@ -165,7 +165,7 @@ let abstract_mind_lc env ntyps npars lc =
       list_tabulate
 	(function i -> lambda_implicit_lift npars (mkRel (i+1))) ntyps 
     in 
-    Array.map (compose (nf_beta env Evd.empty) (substl make_abs)) lc
+    Array.map (compose nf_beta (substl make_abs)) lc
 
 let listrec_mconstr env ntypes hyps nparams i indlc =
   let nhyps = List.length hyps in

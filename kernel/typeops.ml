@@ -84,13 +84,13 @@ let type_of_sort c =
 
 (* Type of a de Bruijn index. *)
 	  
-let relative env sigma n = 
+let relative env n = 
   try
     let (_,typ) = lookup_rel_type n env in
     { uj_val  = mkRel n;
       uj_type = type_app (lift n) typ }
   with Not_found -> 
-    error_unbound_rel CCI env sigma n
+    error_unbound_rel CCI env n
 
 (*
 let relativekey = Profile.declare_profile "relative";;
@@ -206,7 +206,7 @@ let apply_rel_list env sigma nocheck argjl funj =
 		   let cst' = Constraint.union cst c in
 		   apply_rec (n+1) (subst1 hj.uj_val c2) cst' restjl
 		 with NotConvertible -> 
-		   error_cant_apply_bad_type CCI env sigma
+		   error_cant_apply_bad_type CCI env
 		     (n,c1,body_of_type hj.uj_type)
 		     funj argjl)
 
@@ -289,7 +289,7 @@ let error_elim_expln env sigma kp ki =
 
 exception Arity of (constr * constr * string) option
 
-let is_correct_arity env sigma kelim (c,p) indf (pt,t) = 
+let is_correct_arity env sigma kelim (c,pj) indf t = 
   let rec srec (pt,t) u =
     let pt' = whd_betadeltaiota env sigma pt in
     let t' = whd_betadeltaiota env sigma t in
@@ -321,22 +321,22 @@ let is_correct_arity env sigma kelim (c,p) indf (pt,t) =
           else 
 	    raise (Arity (Some(pt',t',error_elim_expln env sigma pt' t')))
   in 
-  try srec (pt,t) Constraint.empty
+  try srec (pj.uj_type,t) Constraint.empty
   with Arity kinds ->
     let listarity =
       (List.map (make_arity env true indf) kelim)
       @(List.map (make_arity env false indf) kelim)
     in 
     let ind = mis_inductive (fst (dest_ind_family indf)) in
-    error_elim_arity CCI env ind listarity c p pt kinds
+    error_elim_arity CCI env ind listarity c pj kinds
 
 
-let find_case_dep_nparams env sigma (c,p) (IndFamily (mis,_) as indf) typP =
+let find_case_dep_nparams env sigma (c,pj) (IndFamily (mis,_) as indf) =
   let kelim = mis_kelim mis in
   let arsign,s = get_arity indf in
   let glob_t = it_mkProd_or_LetIn (mkSort s) arsign in
   let ((dep,_),univ) =
-    is_correct_arity env sigma kelim (c,p) indf (typP,glob_t) in
+    is_correct_arity env sigma kelim (c,pj) indf glob_t in
   (dep,univ)
 
 (* type_case_branches type un <p>Case c of ... end 
@@ -346,8 +346,9 @@ let find_case_dep_nparams env sigma (c,p) (IndFamily (mis,_) as indf) typP =
    attendus dans les branches du Case; lr est le type attendu du resultat
  *)
 
-let type_case_branches env sigma (IndType (indf,realargs)) pt p c =
-  let (dep,univ) = find_case_dep_nparams env sigma (c,p) indf pt in
+let type_case_branches env sigma (IndType (indf,realargs)) pj c =
+  let p = pj.uj_val in
+  let (dep,univ) = find_case_dep_nparams env sigma (c,pj) indf in
   let constructs = get_constructors indf in
   let lc = Array.map (build_branch_type env dep p) constructs in
   if dep then
@@ -355,17 +356,16 @@ let type_case_branches env sigma (IndType (indf,realargs)) pt p c =
   else 
     (lc, beta_applist (p,realargs), univ)
 
-let check_branches_message env sigma (c,ct) (explft,lft) = 
+let check_branches_message env sigma cj (explft,lft) = 
   let expn = Array.length explft and n = Array.length lft in
-  if n<>expn then error_number_branches CCI env c ct expn;
+  if n<>expn then error_number_branches CCI env cj expn;
   let univ = ref Constraint.empty in
   (for i = 0 to n-1 do
     try
       univ := Constraint.union !univ
         (conv_leq env sigma lft.(i) (explft.(i)))
     with NotConvertible ->
-      error_ill_formed_branch CCI env c i (nf_betaiota env sigma lft.(i))
-	(nf_betaiota env sigma explft.(i))
+      error_ill_formed_branch CCI env cj.uj_val i lft.(i) explft.(i)
   done;
   !univ)
 
@@ -373,14 +373,11 @@ let judge_of_case env sigma ci pj cj lfj =
   let lft = Array.map (fun j -> body_of_type j.uj_type) lfj in
   let indspec =
     try find_rectype env sigma (body_of_type cj.uj_type)
-    with Induc ->
-      error_case_not_inductive CCI env cj.uj_val (body_of_type cj.uj_type) in
+    with Induc -> error_case_not_inductive CCI env cj in
   let (bty,rslty,univ) =
-    type_case_branches env sigma indspec
-      (body_of_type pj.uj_type) pj.uj_val cj.uj_val in
+    type_case_branches env sigma indspec pj cj.uj_val in
   let kind = mysort_of_arity env sigma (body_of_type pj.uj_type) in
-  let univ' = check_branches_message env sigma
-    (cj.uj_val,body_of_type cj.uj_type) (bty,lft) in
+  let univ' = check_branches_message env sigma cj (bty,lft) in
   ({ uj_val  = mkMutCase (ci, pj.uj_val, cj.uj_val, Array.map j_val lfj);
      uj_type = rslty },
   Constraint.union univ univ')

@@ -91,3 +91,16 @@ let init_library_roots () =
   List.iter
     (fun (_,alias,_) -> Nametab.push_library_root (List.hd alias)) !includes;
   includes := []
+
+(* Initialises the Ocaml toplevel before launching it, so that it can
+   find the "include" file in the *source* directory *)
+let init_ocaml_path () =
+(* We only assume that the variable COQTOP is set *)
+  let coqtop = getenv_else "COQTOP" Coq_config.coqtop in
+  let add_subdir dl = 
+    Mltop.add_ml_dir (List.fold_left Filename.concat coqtop dl) 
+  in
+  List.iter add_subdir
+    [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ]; 
+      [ "pretyping" ]; [ "parsing" ]; [ "proofs" ]; [ "tactics" ];
+      [ "toplevel" ] ]

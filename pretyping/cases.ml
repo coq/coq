@@ -102,7 +102,7 @@ let branch_scheme env isevars isrec (IndFamily (mis,params) as indf) =
 (* B) Building ML like case expressions without types *)
 
 let concl_n env sigma = 
-  let rec decrec m c = if m = 0 then c else 
+  let rec decrec m c = if m = 0 then (nf_evar sigma c) else 
     match kind_of_term (whd_betadeltaiota env sigma c) with
       | IsProd (n,_,c_0) -> decrec (m-1) c_0
       | _                -> failwith "Typing.concl_n"
@@ -151,12 +151,15 @@ let pred_case_ml_fail env sigma isrec (IndType (indf,realargs)) (i,ft) =
 
 let pred_case_ml loc env sigma isrec indt lf (i,ft) = 
   try pred_case_ml_fail env sigma isrec indt (i,ft)
-  with NotInferable e -> error_ml_case_loc loc env e indt lf.(i-1) ft
+  with NotInferable e ->
+    let j = {uj_val=lf.(i-1); uj_type=ft} in
+    error_ml_case_loc loc env sigma e indt j
 
 (* similar to pred_case_ml but does not expect the list lf of braches *)
-let pred_case_ml_onebranch loc env sigma isrec indt (i,f,ft) = 
-  try pred_case_ml_fail env sigma isrec indt (i,ft)
-  with NotInferable e -> error_ml_case_loc loc env e indt f ft
+let pred_case_ml_onebranch loc env sigma isrec indt (i,fj) = 
+  try pred_case_ml_fail env sigma isrec indt (i,fj.uj_type)
+  with NotInferable e ->
+    error_ml_case_loc loc env sigma e indt fj
 
 (************************************************************************)
 (*            Pattern-matching compilation (Cases)                      *)
@@ -1316,7 +1319,7 @@ let coerce_row typing_fun isevars env cstropt tomatch =
 		 (constructor_of_rawconstructor c) mind
 	     with Induc ->
 	       error_case_not_inductive_loc
-		 (loc_of_rawconstr tomatch) CCI env j.uj_val typ)
+		 (loc_of_rawconstr tomatch) CCI env (evars_of isevars) j)
       | None -> 
 	  try IsInd (typ,find_rectype env (evars_of isevars) typ)
 	  with Induc -> NotInd typ

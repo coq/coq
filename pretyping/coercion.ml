@@ -22,13 +22,7 @@ open Retyping
 
 (* Typing operations dealing with coercions *)
 
-let class_of1 env sigma t = class_of env sigma (nf_ise1 sigma t)
-
-let j_nf_ise env sigma {uj_val=v;uj_type=t} =
-  { uj_val = nf_ise1 sigma v; 
-    uj_type = nf_ise1 sigma t }
-
-let jl_nf_ise env sigma = List.map (j_nf_ise env sigma)
+let class_of1 env sigma t = class_of env sigma (nf_evar sigma t)
 
 (* Here, funj is a coercion therefore already typed in global context *)
 let apply_coercion_args env argl funj =
@@ -150,10 +144,9 @@ let inh_conv_coerce_to loc env isevars cj t =
   let cj' = 
     try 
       inh_conv_coerce_to_fail env isevars t cj 
-    with NoCoercion -> 
-      let rcj = j_nf_ise env (evars_of isevars) cj in
-      let at = nf_ise1 (evars_of isevars) t in
-      error_actual_type_loc loc env rcj.uj_val rcj.uj_type at
+    with NoCoercion ->
+      let sigma = evars_of isevars in
+      error_actual_type_loc loc env sigma cj t
   in
   { uj_val = cj'.uj_val; uj_type = t }
 
@@ -165,40 +158,25 @@ let inh_apply_rel_list apploc env isevars argjl (funloc,funj) tycon =
   let rec apply_rec env n resj = function
     | [] -> resj
     | (loc,hj)::restjl ->
+        let sigma = evars_of isevars in
 	let resj = inh_app_fun env isevars resj in
-        let ntyp = whd_betadeltaiota env (evars_of isevars) resj.uj_type in
+        let ntyp = whd_betadeltaiota env sigma resj.uj_type in
       	match kind_of_term ntyp with
           | IsProd (na,c1,c2) ->
               let hj' =
 		try 
 		  inh_conv_coerce_to_fail env isevars c1 hj 
 		with NoCoercion ->
-(*
-                  error_cant_apply_bad_type_loc apploc env 
-		    (n,nf_ise1 (evars_of isevars) c1,
-		     nf_ise1 (evars_of isevars) hj.uj_type)
-		    (j_nf_ise env (evars_of isevars) funj)
-		    (jl_nf_ise env (evars_of isevars) argjl) in
-*)
-                  error_cant_apply_bad_type_loc apploc env 
-		    (1,nf_ise1 (evars_of isevars) c1,
-		     nf_ise1 (evars_of isevars) hj.uj_type)
-		    (j_nf_ise env (evars_of isevars) resj)
-		    (jl_nf_ise env (evars_of isevars) (List.map snd restjl)) in
+                  error_cant_apply_bad_type_loc apploc env sigma
+		    (1,c1,hj.uj_type) resj (List.map snd restjl) in
 	      let newresj =
       		{ uj_val = applist (j_val resj, [j_val hj']);
 		  uj_type = subst1 hj'.uj_val c2 } in
 	      apply_rec (push_rel_assum (na,c1) env) (n+1) newresj restjl
           | _ ->
-(*
-              error_cant_apply_not_functional_loc apploc env
-	      	(j_nf_ise env (evars_of isevars) funj)
-                (jl_nf_ise env (evars_of isevars) argjl)
-*)
               error_cant_apply_not_functional_loc 
-		(Rawterm.join_loc funloc loc) env
-	      	(j_nf_ise env (evars_of isevars) resj)
-		(jl_nf_ise env (evars_of isevars) (List.map snd restjl))
+		(Rawterm.join_loc funloc loc) env sigma resj
+                (List.map snd restjl)
   in 
   apply_rec env 1 funj argjl
 
