@@ -471,7 +471,7 @@ let cache_require (_,(modl,export)) =
 
   (* keeps the require marker for closed section replay but removes
      OS dependent fields from .vo files for cross-platform compatibility *)
-let export_require (l,e) = Some (List.map (fun d -> d) l,e)
+let export_require (l,e) = Some (l,e)
 
 let (in_require, out_require) =
   declare_object
@@ -582,6 +582,20 @@ let fmt_modules_state () =
      prlist_with_sep pr_spc pr_dirpath opened ++ fnl () ++
      str "Loaded Modules: " ++
      prlist_with_sep pr_spc pr_dirpath loaded ++ fnl ())
+
+(*s For tactics/commands requiring vernacular libraries *)
+
+let check_required_module d =
+  let d' = List.map id_of_string d in
+  let dir = make_dirpath (List.rev d') in
+  if not (module_is_loaded dir) then
+(* Loading silently ...
+    let m, prefix = list_sep_last d' in
+    read_module 
+     (dummy_loc,make_qualid (make_dirpath (List.rev prefix)) m)
+*)
+(* or failing ...*)
+    error ("Module "^(list_last d)^" has to be required first")
 
 (*s Display the memory use of a module. *)
 
