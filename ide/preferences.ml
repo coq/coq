@@ -71,7 +71,7 @@ type pref =
       mutable encoding_use_utf8 : bool;
       mutable encoding_manual : string;
 
-      mutable automatic_tactics : (string * string) list;
+      mutable automatic_tactics : string list;
       mutable cmd_print : string;
 
       mutable modifier_for_navigation : Gdk.Tags.modifier list;
@@ -117,13 +117,8 @@ let (current:pref ref) =
     encoding_use_utf8 = false;
     encoding_manual = "ISO_8859-1";
 
-    automatic_tactics = ["progress trivial.","trivial.";
-			 "tauto.","tauto.";
-			 "progress auto.","auto.";
-			 "omega.","omega.";
-			 "progress auto with *.","auto with *.";
-			 "progress intuition.","intuition.";
-			];
+    automatic_tactics = ["trivial"; "tauto"; "auto"; "omega";
+			 "auto with *"; "intuition" ];
     
     modifier_for_navigation = [`CONTROL; `MOD1];
     modifier_for_templates = [`MOD4];
@@ -185,7 +180,7 @@ let save_pref () =
     add "encoding_manual" [p.encoding_manual] ++
 
     add "automatic_tactics" 
-      (List.fold_left (fun l (v1,v2) -> v1::v2::l) [] p.automatic_tactics) ++
+      (List.fold_left (fun l v -> v::l) [] p.automatic_tactics) ++
     add "cmd_print" [p.cmd_print] ++
     add "modifier_for_navigation" 
       (List.map mod_to_str p.modifier_for_navigation) ++
@@ -237,14 +232,8 @@ let load_pref () =
     set_bool "encoding_use_locale" (fun v -> np.encoding_use_locale <- v);
     set_bool "encoding_use_utf8" (fun v -> np.encoding_use_utf8 <- v);
     set_hd "encoding_manual" (fun v -> np.encoding_manual <- v);
-
     set "automatic_tactics"
-      (fun v -> 
-	 let rec from_list = function
-	   | [] | [_] -> []
-	   | x :: y :: l -> (x,y) :: from_list l 
-	 in
-	 np.automatic_tactics <- from_list v);
+      (fun v -> np.automatic_tactics <- v);
     set_hd "cmd_print" (fun v -> np.cmd_print <- v);
     set "modifier_for_navigation" 
       (fun v -> np.modifier_for_navigation <- List.map str_to_mod v);
@@ -278,15 +267,24 @@ let load_pref () =
 let configure () = 
   let cmd_coqc = 
     string
-      ~f:(fun s -> !current.cmd_coqc <- s) "coqc"  !current.cmd_coqc in
-  let cmd_make = string ~f:(fun s -> !current.cmd_make <- s)
-		   "make" !current.cmd_make in
-  let cmd_coqmakefile = string ~f:(fun s -> !current.cmd_coqmakefile <- s)
-			  "coqmakefile" !current.cmd_coqmakefile in
-  let cmd_coqdoc = string ~f:(fun s -> !current.cmd_coqdoc <- s)
-		     "coqdoc" !current.cmd_coqdoc in
-  let cmd_print = string ~f:(fun s -> !current.cmd_print <- s) 
-		    "Print ps" !current.cmd_print in
+      ~f:(fun s -> !current.cmd_coqc <- s) 
+      "       coqc"  !current.cmd_coqc in
+  let cmd_make = 
+    string 
+      ~f:(fun s -> !current.cmd_make <- s)
+      "       make" !current.cmd_make in
+  let cmd_coqmakefile = 
+    string 
+      ~f:(fun s -> !current.cmd_coqmakefile <- s)
+      "coqmakefile" !current.cmd_coqmakefile in
+  let cmd_coqdoc = 
+    string 
+      ~f:(fun s -> !current.cmd_coqdoc <- s)
+      "     coqdoc" !current.cmd_coqdoc in
+  let cmd_print = 
+    string 
+      ~f:(fun s -> !current.cmd_print <- s) 
+      "   Print ps" !current.cmd_print in
 
   let config_font =
     let box = GPack.hbox () in
@@ -449,23 +447,21 @@ let configure () =
 		pre,post
 	    with Not_found -> s,""
 	    )
-      "Browse command (%s for url)" 
+      ~help:"(%s for url)" 
+      "    Browser"
       ((fst !current.cmd_browse)^"%s"^(snd !current.cmd_browse))
   in    
   let doc_url = 
-    string ~f:(fun s -> !current.doc_url <- s) "Documentation URL"  !current.doc_url in
+    string ~f:(fun s -> !current.doc_url <- s) " Manual URL"  !current.doc_url in
   let library_url = 
     string ~f:(fun s -> !current.library_url <- s) "Library URL"  !current.library_url in
 
   let automatic_tactics = 
-    let box = GPack.hbox () in
-    let (w,get_data) = Editable_cells.create !current.automatic_tactics in
-    box#add w#coerce;
-    custom
-      ~label:"Wizard tactics to try in order"
-      box
-      (fun () -> let d = get_data () in !current.automatic_tactics <- d)
-      true
+    strings
+      ~f:(fun l -> !current.automatic_tactics <- l) 
+      ~add:(fun () -> ["<edit me>"])
+      "Wizard tactics to try in order" 
+      !current.automatic_tactics
 
   in
 

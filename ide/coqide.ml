@@ -178,7 +178,10 @@ object('self)
     method go_to_insert : unit
     method indent_current_line : unit
     method insert_command : string -> string -> unit
+(*
     method insert_commands : (string * string) list -> unit
+*)
+    method tactic_wizard : string list -> unit
     method insert_message : string -> unit
     method insert_this_phrase_on_success :
       bool -> bool -> bool -> string -> string -> bool
@@ -1156,7 +1159,7 @@ object(self)
 	    with _ -> ()*)
 	  true
 	end
-    | None -> self#insert_message ("Unsuccesfully tried: "^coqphrase);
+    | None -> self#insert_message ("Unsuccessfully tried: "^coqphrase);
 	false
 
   method process_until_iter_or_error stop =
@@ -1407,13 +1410,23 @@ Please restart and report NOW.";
   method insert_command cp ip = 
     self#clear_message;
     ignore (self#insert_this_phrase_on_success true false false cp ip)
+(*
   method insert_commands l = 
     self#clear_message;
     ignore (List.exists 
 	      (fun (cp,ip) -> 
 		 self#insert_this_phrase_on_success true false false 
 		 (cp^"\n") (ip^"\n")) l)
+*)
 
+  method tactic_wizard l =
+    self#clear_message;
+    ignore 
+      (List.exists 
+	 (fun p -> 
+	    self#insert_this_phrase_on_success true false false 
+	      ("progress "^p^".\n") (p^".\n")) l)
+  
   method active_keypress_handler k = 
     let state = GdkEvent.Key.state k in
     begin
@@ -2325,14 +2338,14 @@ let main files =
 	    ~tooltip:"Proof Wizard"
 	    ~text:"Wizard"
 	    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_INFO)
-	    ~callback:(do_if_active (fun a -> a#insert_commands 
+	    ~callback:(do_if_active (fun a -> a#tactic_wizard
 				       !current.automatic_tactics
 				    ))
 	    ());
 
   ignore (tactics_factory#add_item "<Proof _Wizard>"
 	    ~key:GdkKeysyms._dollar
-	    ~callback:(do_if_active (fun a -> a#insert_commands 
+	    ~callback:(do_if_active (fun a -> a#tactic_wizard 
 				       !current.automatic_tactics
 				    ))
 	 );

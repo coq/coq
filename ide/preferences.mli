@@ -26,7 +26,7 @@ type pref =
       mutable encoding_use_utf8 : bool;
       mutable encoding_manual : string;
 
-      mutable automatic_tactics : (string * string) list;
+      mutable automatic_tactics : string list;
       mutable cmd_print : string;
 
       mutable modifier_for_navigation : Gdk.Tags.modifier list;
