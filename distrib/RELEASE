@@ -32,6 +32,8 @@ A1) VÉRIFICATIONS
   - Relecture des fichiers "INSTALL", "INSTALL.win" en particulier numéro
     de version de coq et numéros des versions de OCaml et Camlp4 demandées
   - Mise à jour/nettoyage du fichier CHANGES et du fichier ANNONCE
+  - Mise à jour des fichiers .dep.ps dans le répertoire doc (faire make
+    depend depuis ce répertoire)
 
   S'assurer aussi que make world, make doc et make check fonctionnent !
 
@@ -213,6 +215,11 @@ A9) DIFFUSION
 
   Préparer les contribs (B), la doc (C), le serveur web (D)
 
+  Positionner le lien current du répertoire FTP vers le répertoire de
+  la version ftp à distribuer avec
+
+    make final-ftp-install
+
   Ouf, c'est prêt... faire l'annonce sur coq-club
 
 
@@ -354,20 +361,25 @@ D1) PRÉPARATION
 
    - mettre à jour les fichiers (numéro de version, version
      nécessaires de ocaml et camlp4, date de mise à jour)
+
      distrib1-fra.html et distrib1-eng.html,
      contribs1-fra.html et contribs1-eng.html
-     assis1-eng.html et assis1-fra.html
-     tools1-eng.html et tools1-fra.html (pas de V devant le numéro)
+     coq1-eng.html et coq1-fra.html
+     doc1-eng.html et doc1-fra.html
 
    - commiter
 
-   - À partir de votre copie locale du répertoire www, faire
+   - créer un fichier Changes.html à partir du fichier CHANGES et le
+     déposer dans /net/pauillac/infosystems/ft/coq/V6.2.5/doc (ce
+     fichier est pointé par les pages coq1-fra.html et coq1-eng.html)
+
+   - à partir de sa copie locale du répertoire www, faire
   
      (cd contribs; make pages)
 
-   - Puis positionner la variables THEORIES sur le repertoire theories
+   - positionner la variable THEORIES sur le repertoire theories
      d'une copie fraîche de l'archive et faire (sur PAUILLAC et avec
-     gmake parce que fabrique un binaire devant tourner sur pauillac)
+     gmake parce qu'un binaire devant tourner sur pauillac est fabriqué)
 
      (cd library; gmake pages)
 

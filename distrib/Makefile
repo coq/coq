@@ -71,6 +71,7 @@ tar-gz:
 	@rm -rf ${COQPACKAGE}/KNOWN-BUGS
 	@rm -rf ${COQPACKAGE}/{TODO,ANNONCE,PROBLEMES}
 	@rm -rf ${COQPACKAGE}/theories/Num
+	@rm -rf ${COQPACKAGE}/doc/newsyntax.tex 
 	@find ${COQPACKAGE} -name ".cvsignore" -exec rm {} \;
 	@echo done
 	@echo -n Building the tar.gz source package
@@ -263,6 +264,7 @@ ftp-install: prep-ftp-install
 	cp ${COQPACKAGE}/CHANGES ${FTPDIR}/V${VERSION}/
 	cp ${COQPACKAGE}/README ${FTPDIR}/V${VERSION}/
 	cp ${COQPACKAGE}/README.win ${FTPDIR}/V${VERSION}/
+	cp ${COQPACKAGE}/README.macosx ${FTPDIR}/V${VERSION}/
 	cp ${COQPACKAGE}.tar.gz ${FTPDIR}/V${VERSION}/
 	chmod g+w ${FTPDIR}/V${VERSION}/${COQPACKAGE}.tar.gz
 	cp ${COQPACKAGE}-*.tar.gz ${FTPDIR}/V${VERSION}/
@@ -274,6 +276,8 @@ ftp-install: prep-ftp-install
 prep-ftp-install: 
 	- mkdir $(FTPDIR)/V${VERSION}
 	- chmod g+w ${FTPDIR}/V${VERSION}
+
+final-ftp_install:
 	(cd $(FTPDIR); rm -f current;ln -sf V${VERSION} current)
 
 tar-gz-ftp-install: prep-ftp-install
