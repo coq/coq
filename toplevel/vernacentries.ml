@@ -741,7 +741,7 @@ let _ =
 
 let _ =
   declare_bool_option 
-    { optsync  = true;
+    { optsync  = false; (* synchronisation is in Impargs *)
       optname  = "strict implicits";
       optkey   = (SecondaryTable ("Strict","Implicits"));
       optread  = Impargs.is_strict_implicit_args;

@@ -61,7 +61,7 @@ let with_implicits ((a,b,c),(d,e,g)) f x =
     strict_implicit_args := b;
     contextual_implicit_args := c;
     implicit_args_out := d;
-    strict_implicit_args := e;
+    strict_implicit_args_out := e;
     contextual_implicit_args_out := g;
     let rslt = f x in 
     implicit_args := oa;
@@ -207,21 +207,20 @@ let add_free_rels_until strict bound env m pos acc =
 (* calcule la liste des arguments implicites *)
 
 let compute_implicits output env t =
+  let strict =
+    if output then !strict_implicit_args_out else !strict_implicit_args in
   let rec aux env n t =
     let t = whd_betadeltaiota env t in
     match kind_of_term t with
       | Prod (x,a,b) ->
-	  add_free_rels_until !strict_implicit_args n env a (Hyp (n+1))
+	  add_free_rels_until strict n env a (Hyp (n+1))
             (aux (push_rel (x,None,a) env) (n+1) b)
       | _ -> 
 	  let v = Array.create n None in
 	  if (not output & !contextual_implicit_args) or
 	     (output & !contextual_implicit_args_out)
 	  then
-	    add_free_rels_until 
-	      (if output then !strict_implicit_args_out 
-	       else !strict_implicit_args)
-	      n env t Conclusion v
+	    add_free_rels_until strict n env t Conclusion v
 	  else v
   in 
   match kind_of_term (whd_betadeltaiota env t) with 
@@ -483,22 +482,31 @@ let is_implicit_var id =
 
 (*s Registration as global tables *)
 
+(* Remark: flags implicit_args, contextual_implicit_args
+   are synchronized by the general options mechanism - see Vernacentries *)
+
 let init () =
+  (* strict_implicit_args_out must be not !Options.v7 
+     but init is done before parsing *)
+  strict_implicit_args:=false;
+  implicit_args_out:=false;
+  (* strict_implicit_args_out needs to be not !Options.v7 or
+     Options.do_translate() but init is done before parsing *)
+  strict_implicit_args_out:=true;
+  contextual_implicit_args_out:=false;
   constants_table := KNmap.empty;
   inductives_table := Indmap.empty;
   constructors_table := Constrmap.empty;
   var_table := Idmap.empty
 
 let freeze () =
-  (!implicit_args,!strict_implicit_args,!contextual_implicit_args,
+  (!strict_implicit_args,
    !implicit_args_out,!strict_implicit_args_out,!contextual_implicit_args_out,
    !constants_table, !inductives_table, 
    !constructors_table, !var_table)
 
-let unfreeze (a,b,c,d,e,f,ct,it,const,vt) =
-  implicit_args := a;
+let unfreeze (b,d,e,f,ct,it,const,vt) =
   strict_implicit_args := b;
-  contextual_implicit_args := c;
   implicit_args_out := d;
   strict_implicit_args_out := e;
   contextual_implicit_args_out := f;
