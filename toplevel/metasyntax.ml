@@ -942,10 +942,10 @@ let add_infix local assoc n inf pr onlyparse mv8 sc =
       let a_for_old = interp_rawconstr_gen
 	false Evd.empty (Global.env()) [] false (vars,[]) a in
       add_notation_interpretation_core local symbs None df a' sc 
-	onlyparse false
+	onlyparse true
     else
-      let v8 = match v8 with None -> 1 | Some n -> n in
-      let a8 = match a8 with None -> Gramext.LeftA | Some a -> a in
+      let v8 = match v8 with None -> error "Needs a level" | Some n -> n in
+      let a8 = match a8 with None -> Gramext.NonA | Some a -> a in
       let mods =
 	SetAssoc a8::SetLevel v8::(if onlyparse then [SetOnlyParsing] else [])
       in
