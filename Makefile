@@ -626,7 +626,7 @@ bin/coq-interface.opt$(EXE): $(COQMKTOP) $(CMX) $(USERTACCMX) $(INTERFACECMX)
 
 bin/parser$(EXE): contrib/interface/parse.cmx contrib/interface/line_parser.cmx $(PARSERREQUIRESCMX) contrib/interface/xlate.cmx contrib/interface/vtp.cmx
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) -cclib -lunix $(OPTFLAGS) -o $@ $(CMXA) \
+	$(HIDE)$(OCAMLOPT) -linkall -cclib -lunix $(OPTFLAGS) -o $@ $(CMXA) \
 	$(PARSERREQUIRESCMX) line_parser.cmx vtp.cmx xlate.cmx parse.cmx
 
 clean::
