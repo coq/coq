@@ -694,14 +694,16 @@ library/declare.cmx: library/decl_kinds.cmx kernel/declarations.cmx \
     lib/util.cmx library/declare.cmi 
 library/declaremods.cmo: kernel/declarations.cmi kernel/entries.cmi \
     kernel/environ.cmi library/global.cmi library/lib.cmi \
-    library/libnames.cmi library/libobject.cmi kernel/modops.cmi \
-    kernel/names.cmi library/nametab.cmi lib/pp.cmi library/summary.cmi \
-    lib/util.cmi library/declaremods.cmi 
+    library/libnames.cmi library/libobject.cmi kernel/mod_typing.cmi \
+    kernel/modops.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
+    kernel/subtyping.cmi library/summary.cmi lib/util.cmi \
+    library/declaremods.cmi 
 library/declaremods.cmx: kernel/declarations.cmx kernel/entries.cmx \
     kernel/environ.cmx library/global.cmx library/lib.cmx \
-    library/libnames.cmx library/libobject.cmx kernel/modops.cmx \
-    kernel/names.cmx library/nametab.cmx lib/pp.cmx library/summary.cmx \
-    lib/util.cmx library/declaremods.cmi 
+    library/libnames.cmx library/libobject.cmx kernel/mod_typing.cmx \
+    kernel/modops.cmx kernel/names.cmx library/nametab.cmx lib/pp.cmx \
+    kernel/subtyping.cmx library/summary.cmx lib/util.cmx \
+    library/declaremods.cmi 
 library/dischargedhypsmap.cmo: kernel/declarations.cmi kernel/environ.cmi \
     kernel/inductive.cmi library/lib.cmi library/libnames.cmi \
     library/libobject.cmi kernel/names.cmi library/nametab.cmi \
