@@ -211,8 +211,7 @@ Proof.
 Qed.
 End length_order.
 
-Hints Resolve lel_refl lel_cons_cons lel_cons lel_nil lel_nil nil_cons 
-.
+Hints Resolve lel_refl lel_cons_cons lel_cons lel_nil lel_nil nil_cons.
 
 (*********************************)
 (** The [In] predicate           *)
@@ -548,6 +547,9 @@ End Reverse_Induction.
 
 End Lists.
 
+Implicits nil [1].
+V7only [Implicits nil [].].
+
 Hints Resolve nil_cons app_nil_end ass_app app_ass : datatypes v62.
 Hints Resolve app_comm_cons  app_cons_not_nil : datatypes v62.
 Hints Immediate app_eq_nil : datatypes v62.
@@ -568,7 +570,7 @@ Section Map.
 Variables A,B:Set.
 Variable  f:A->B.
 Fixpoint map [l:(list A)] : (list B) :=
-  Cases l of
+  Cases l of 
      nil       => (nil B)
   | (cons a t) => (cons (f a) (map t))
   end.
@@ -681,5 +683,3 @@ Reflexivity.
 Qed.
 
 End Functions_on_lists.
-
-Unset Implicit Arguments.
