@@ -175,7 +175,7 @@ let print_term ids_to_inner_sorts =
  and aux_subst subst =
   [< List.fold_left
       (fun i (uri,arg) ->
-        [< i ; Xml.xml_nempty "arg" ["uri", uri] (aux arg) >]
+        [< i ; Xml.xml_nempty "arg" ["relUri", uri] (aux arg) >]
       ) [<>] subst
   >]
  in
