@@ -423,9 +423,9 @@ let morphism_table_add (m,c) =
     ppnl
      (str "Warning: The morphism " ++ prmorphism m old_morph ++
       str " is redeclared. " ++
-      str "The new declaration whose compatibility is granted by " ++
+      str "The new declaration whose compatibility is proved by " ++
        prterm c.lem ++ str " replaces the old declaration whose" ++
-       str " compatibility was granted by " ++
+       str " compatibility was proved by " ++
        prterm old_morph.lem ++ str ".")
   with
    Not_found -> morphism_table := Gmap.add m (c::old) !morphism_table
@@ -491,21 +491,23 @@ let print_setoids () =
    (fun k relation ->
      assert (k=relation.rel_aeq) ;
      (*CSC: still "Setoid" in the error message *)
-(*CSCXX: aggiungere transitivity granted by e ridenominare granted in proved*)
      ppnl (str"Setoid " ++ prrelation relation ++ str";" ++
       (match relation.rel_refl with
           None -> str ""
-        | Some t -> str" reflexivity granted by " ++ prterm t) ++
+        | Some t -> str" reflexivity proved by " ++ prterm t) ++
       (match relation.rel_sym with
           None -> str ""
-        | Some t -> str " symmetry granted by " ++ prterm t)))
+        | Some t -> str " symmetry proved by " ++ prterm t) ++
+      (match relation.rel_trans with
+          None -> str ""
+        | Some t -> str " transitivity proved by " ++ prterm t)))
    !relation_table ;
   Gmap.iter
    (fun k l ->
      List.iter
       (fun ({lem=lem} as mor) ->
         ppnl (str "Morphism " ++ prmorphism k mor ++
-        str ". Compatibility granted by " ++
+        str ". Compatibility proved by " ++
         prterm lem ++ str "."))
       l) !morphism_table
 ;;
