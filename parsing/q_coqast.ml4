@@ -187,6 +187,8 @@ let mlexpr_of_red_flags {
 } >>
 
 let rec mlexpr_of_constr = function
+  | Topconstr.CRef (Libnames.Ident (loc,id)) when is_meta (string_of_id id) ->
+      anti loc (string_of_id id)
   | Topconstr.CRef r -> <:expr< Topconstr.CRef $mlexpr_of_reference r$ >>
   | Topconstr.CFix (loc,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Topconstr.CCoFix (loc,_,_) -> failwith "mlexpr_of_constr: TODO"
