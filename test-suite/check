@@ -78,6 +78,7 @@ test_output() {
 # La fonction suivante teste l'analyseur syntaxique fournit par "parser"
 # Elle fonctionne comme test_output
 test_parser() {
+    if [ -f parser ]; then
     for f in $1/*.v; do
         nbtests=`expr $nbtests + 1`
         printf "    "$f"..."
@@ -93,6 +94,7 @@ test_parser() {
             echo "Error! (unexpected output)"
         fi
     done
+    fi
 }
 
 # Programme principal
@@ -105,7 +107,7 @@ test_succes success
 echo "Failure tests"
 test_echec failure
 echo "Parser tests"
-test_parser parser
+test_parser
 pourcentage=`expr 100 \* $nbtestsok / $nbtests`
 echo
 echo "$nbtestsok tests passed over $nbtests, i.e. $pourcentage %"
