@@ -212,7 +212,7 @@ let pr_recursive fix pr_decl id = function
   | [] -> anomaly "(co)fixpoint with no definition"
   | d1::dl ->
       hov 0 (
-	str fix ++ spc () ++ pr_id id ++ brk (0,2) ++ str "{" ++
+	str fix ++ spc () ++ pr_id id ++ brk (1,2) ++ str "{" ++
 	(v 0 (
 	  (hov 0 (pr_decl d1)) ++
 	  (prlist (fun fix -> fnl () ++ hov 0 (str "with" ++ pr_decl fix))
@@ -335,7 +335,7 @@ let rec pr inherited a =
   
 let pr_constr = pr ltop
 
-let pr_pattern x = (* gentermpr*) failwith "pr_pattern: TODO"
+let pr_pattern = pr_constr
 
 let pr_qualid qid = str (string_of_qualid qid)
 
@@ -416,3 +416,4 @@ let gentermpr_core at_top env t =
 let gentermpr_core at_top env t =
   pr_constr (Constrextern.extern_constr at_top env t)
 *)
+  
