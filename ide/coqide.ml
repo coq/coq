@@ -33,6 +33,8 @@ let push_info = ref (function s -> failwith "not ready")
 let pop_info = ref (function s -> failwith "not ready")
 let flash_info = ref  (function s -> failwith "not ready")
 
+let set_location = ref  (function s -> failwith "not ready")
+
 let pulse = ref (function () -> failwith "not ready")
 
 let has_config_file = 
@@ -655,7 +657,7 @@ object(self)
 	      (fun ((_,_,_,(s,_)) as hyp) -> 
 		 proof_buffer#insert (s^"\n"))
 	      hyps;
-	    proof_buffer#insert ("---------------------------------------(1/"^
+	    proof_buffer#insert (String.make 38 '_' ^ "(1/"^
 				 (string_of_int goal_nb)^
 				 ")\n") 
 	    ;
@@ -670,7 +672,7 @@ object(self)
 	    List.iter 
 	      (function (_,(_,_,_,concl)) -> 
 		 incr i;
-		 proof_buffer#insert ("--------------------------------------("^
+		 proof_buffer#insert (String.make 38 '_' ^"("^
 				      (string_of_int !i)^
 				      "/"^
 				      (string_of_int goal_nb)^
@@ -755,7 +757,7 @@ object(self)
 		   let tag = coq_menu (hyp_menu hyp) in
 		   proof_buffer#insert ~tags:[tag] (s^"\n"))
 		hyps;
-	      proof_buffer#insert ("---------------------------------------(1/"^
+	      proof_buffer#insert (String.make 38 '_' ^"(1/"^
 				   (string_of_int goal_nb)^
 				   ")\n") 
 	      ;
@@ -771,7 +773,7 @@ object(self)
 	      List.iter 
 		(function (_,(_,_,_,concl)) -> 
 		   incr i;
-		   proof_buffer#insert ("--------------------------------------("^
+		   proof_buffer#insert (String.make 38 '_' ^"("^
 					(string_of_int !i)^
 					"/"^
 					(string_of_int goal_nb)^
@@ -1342,7 +1344,11 @@ Please restart and report NOW.";
     let paren_highlight_tag = input_buffer#create_tag ~name:"paren" [`BACKGROUND "purple"]  in
     self#electric_paren paren_highlight_tag;
     ignore (input_buffer#connect#after#mark_set 
-	      ~callback:(fun it (m:Gtk.textmark) -> 
+	      ~callback:(fun it (m:Gtk.textmark) ->
+			   !set_location 
+			   (Printf.sprintf 
+			      "Line: %4d Char: %3d" (self#get_insert#line + 1)
+			      (self#get_insert#line_offset + 1));
 			   match GtkText.Mark.get_name m  with
 			     | Some "insert" -> 		 
 				 input_buffer#remove_tag
@@ -2115,11 +2121,21 @@ let main files =
   let status_bar = GMisc.statusbar ~packing:(lower_hbox#pack ~expand:true) () 
   in
   let status_context = status_bar#new_context "Messages" in
+  let flash_context = status_bar#new_context "Flash" in
   ignore (status_context#push "Ready");
   status := Some status_bar;
   push_info := (fun s -> ignore (status_context#push s));
   pop_info := (fun () -> status_context#pop ());
-  flash_info := (fun s -> status_context#flash ~delay:5000 s);
+  flash_info := (fun s -> flash_context#flash ~delay:5000 s);
+
+  (* Location display *)
+  let l = GMisc.label 
+	     ~text:"Line: xxxx Column: xxx" 
+	     ~packing:lower_hbox#pack () in 
+  l#coerce#misc#set_name "location";
+  set_location := l#set_text;
+  load_pref current;
+  (* Progress Bar *)
   pulse := 
   (GRange.progress_bar ~text:"CoqIde started" ~pulse_step:0.1 ~packing:lower_hbox#pack ())#pulse;
   let tv2 = GText.view ~packing:(sw2#add) () in
@@ -2144,7 +2160,7 @@ let main files =
 		     in
 		     let x,y = Gdk.Window.get_pointer_location win in
 		     let b_x,b_y = tv2#window_to_buffer_coords 
-				  ~tag:`WIDGET 
+				     ~tag:`WIDGET 
 				     ~x 
 				     ~y 
 		     in
@@ -2244,7 +2260,8 @@ let main files =
 	      prerr_endline "....Done with Goal menu";
 	      !pop_info();
 	      false));
-  List.iter load files
+  List.iter load files;
+  if List.length files >=1 then activate_input 1
 
 
 let start () = 

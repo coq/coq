@@ -80,6 +80,7 @@ and comment = parse
 	    let stop = input_buffer#get_iter_at_char (offset + e) in
 	    input_buffer#remove_tag_by_name ~start ~stop "kwd";
 	    input_buffer#remove_tag_by_name ~start ~stop "decl";
+	    input_buffer#remove_tag_by_name ~start ~stop "comment";
 	    input_buffer#apply_tag_by_name ~start ~stop o 
 	  done
 	with End_of_file -> ()
@@ -109,6 +110,9 @@ and comment = parse
   with _ -> ()
 
   let rehighlight_all (input_buffer:GText.buffer) = 
+   input_buffer#remove_tag_by_name 
+      ~start:input_buffer#start_iter 
+      ~stop:input_buffer#end_iter "comment";
     input_buffer#remove_tag_by_name 
       ~start:input_buffer#start_iter 
       ~stop:input_buffer#end_iter "kwd";
