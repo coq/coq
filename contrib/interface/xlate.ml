@@ -1004,24 +1004,79 @@ and xlate_red_tactic =
 
 and xlate_tactic =
  function
+   | TacFun (largs, t) ->
+       let fst, rest =  xlate_largs_to_id_unit largs in
+       CT_tactic_fun (CT_id_unit_list(fst, rest), xlate_tactic t)
+   | TacFunRec _ -> xlate_error "Merged with Tactic Definition"
    | TacThen (t1,t2) -> 
        (match xlate_tactic t1 with
             CT_then(a,l) -> CT_then(a,l@[xlate_tactic t2])
 	  | t -> CT_then (t,[xlate_tactic t2]))
+   | TacThens(t1,[]) -> assert false
+   | TacThens(t1,t::l) ->
+       let ct = xlate_tactic t in
+       let cl = List.map xlate_tactic l in
+       (match xlate_tactic t1 with
+	    CT_then(ct1,cl1) -> CT_then(ct1, cl1@[CT_parallel(ct, cl)])
+	  | ct1 -> CT_then(ct1,[CT_parallel(ct, cl)]))
    | TacFirst([]) -> assert false
    | TacFirst(t1::l)-> CT_first(xlate_tactic t1, List.map xlate_tactic l)
    | TacSolve([]) -> assert false
    | TacSolve(t1::l)-> CT_tacsolve(xlate_tactic t1, List.map xlate_tactic l)
-   | TacTry t -> CT_try (xlate_tactic t)
-   | TacOrelse(t1,t2) -> CT_orelse(xlate_tactic t1, xlate_tactic t2)
    | TacDo(n, t) -> CT_do(CT_int n, xlate_tactic t)
+   | TacTry t -> CT_try (xlate_tactic t)
    | TacRepeat t -> CT_repeat(xlate_tactic t)
-   | TacProgress t -> CT_progress(xlate_tactic t)
    | TacAbstract(t,id_opt) -> 
        CT_abstract((match id_opt with
 		       	None -> ctv_ID_OPT_NONE
 		      | Some id -> ctf_ID_OPT_SOME (CT_ident (string_of_id id))),
 		   xlate_tactic t)
+   | TacProgress t -> CT_progress(xlate_tactic t)
+   | TacOrelse(t1,t2) -> CT_orelse(xlate_tactic t1, xlate_tactic t2)
+   | TacMatch (exp, rules) ->
+        CT_match_tac(CT_coerce_DEF_BODY_to_LET_VALUE(formula_to_def_body exp),
+                     match List.map 
+                       (function 
+                          | Pat ([],p,tac) ->
+                              CT_match_tac_rule(xlate_context_pattern p,
+                                                mk_let_value tac)
+                          | Pat (_,p,tac) -> xlate_error"No hyps in pure Match"
+                          | All tac ->
+                              CT_match_tac_rule
+                                (CT_coerce_FORMULA_to_CONTEXT_PATTERN
+                                   CT_existvarc, 
+                                   mk_let_value tac)) rules with
+                         | [] -> assert false
+                         | fst::others ->
+                             CT_match_tac_rules(fst, others))
+   | TacMatchContext (_,[]) -> failwith ""
+   | TacMatchContext (lr,rule1::rules) ->
+         (* TODO : traiter la direction "lr" *)
+         CT_match_context(xlate_context_rule rule1,
+                          List.map xlate_context_rule rules)
+   | TacLetIn (l, t) ->
+       let cvt_clause =
+         function
+             ((_,s),None,ConstrMayEval v) ->
+                 CT_let_clause(xlate_ident s,
+                               CT_coerce_DEF_BODY_to_LET_VALUE
+                               (formula_to_def_body v))
+           | ((_,s),None,Tacexp t) -> 
+                 CT_let_clause(xlate_ident s,
+                               CT_coerce_TACTIC_COM_to_LET_VALUE
+                               (xlate_tactic t))
+           | ((_,s),None,t) -> 
+                 CT_let_clause(xlate_ident s,
+                               CT_coerce_TACTIC_COM_to_LET_VALUE
+                               (xlate_call_or_tacarg t))
+           | ((_,s),Some c,v) -> xlate_error "TODO: Let id : c := t In t'" in
+         let cl_l = List.map cvt_clause l in
+         (match cl_l with
+            | [] -> assert false 
+            | fst::others ->
+                CT_lettac (CT_let_clauses(fst, others), mk_let_value t))
+   | TacLetCut _ -> xlate_error "Unclear future of syntax Let x := t"
+   | TacLetRecIn _ -> xlate_error "TODO: Rec x = t In"
    | TacAtom (_, t) -> xlate_tac t 
    | TacFail n -> CT_fail (CT_int n)
    | TacId -> CT_idtac
@@ -1217,10 +1272,14 @@ and xlate_tac =
        CT_clear (CT_id_ne_list (ident_or_meta_to_ct_ID id, idl'))
     | (*For translating tactics/Inv.v *)
       TacExtend ("SimpleInversion"|"Inversion"|"InversionClear" as s, [id]) ->
-	let id = xlate_ident (out_gen rawwit_ident id) in
-	CT_inversion (compute_INV_TYPE_from_string s, id, CT_id_list [])
+	let quant_hyp =  (out_gen rawwit_quant_hyp id) in
+	  (match quant_hyp with
+	       NamedHyp id1 -> 	let id = xlate_ident id1  in
+		 CT_inversion (compute_INV_TYPE_from_string s, id, CT_id_list [])
+	     | AnonHyp _ -> assert false)
     | TacExtend ("SimpleInversion"|"Inversion"|"InversionClear" as s,
         [id;copt_or_idl]) ->
+(* TODO: rawwit_ident should be rawwit_quant_hyp *)
 	let id = xlate_ident (out_gen rawwit_ident id) in
 	(match genarg_tag copt_or_idl with
 	  | List1ArgType IdentArgType -> (* InvIn *)
@@ -1685,7 +1744,9 @@ let xlate_vernac =
 	| PrintUniverses _ -> xlate_error "TODO: Dump Universes"
 	| PrintHintGoal -> xlate_error "TODO: Print Hint"
 	| PrintLocalContext -> xlate_error "TODO: Print"
-	| PrintTables -> xlate_error "TODO: Print Tables")
+	| PrintTables -> xlate_error "TODO: Print Tables"
+        | PrintModuleType _ -> xlate_error "TODO: Print Module Type"
+        | PrintModule _ -> xlate_error "TODO: Print Module")
   | VernacBeginSection id ->
       CT_coerce_SECTION_BEGIN_to_COMMAND (CT_section (xlate_ident id))
   | VernacEndSegment id -> CT_section_end (xlate_ident id)
