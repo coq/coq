@@ -74,7 +74,9 @@ and print_modtype locals mty = match mty with
 
 and print_sig locals msid sign = 
   let print_spec (l,spec) = (match spec with
-    | SPBconst _ -> str "Definition "
+    | SPBconst {const_body=Some _; const_opaque=false} -> str "Definition "
+    | SPBconst {const_body=None}
+    | SPBconst {const_opaque=true} -> str "Parameter "
     | SPBmind _ -> str "Inductive "
     | SPBmodule _ -> str "Module "
     | SPBmodtype _ -> str "Module Type ") ++ str (string_of_label l)
@@ -83,7 +85,9 @@ and print_sig locals msid sign =
 
 and print_struct locals msid struc = 
   let print_body (l,body) = (match body with
-    | SEBconst _ -> str "Definition "
+    | SEBconst {const_body=Some _; const_opaque=false} -> str "Definition "
+    | SEBconst {const_body=Some _; const_opaque=true} -> str "Theorem "
+    | SEBconst {const_body=None} -> str "Parameter "
     | SEBmind _ -> str "Inductive "
     | SEBmodule _ -> str "Module "
     | SEBmodtype _ -> str "Module Type ") ++ str (string_of_label l)
