@@ -459,6 +459,7 @@ let process_cl sec_sp cl =
 
 (* Pour le discharge *)
 let process_coercion sec_sp (((coe,coeinfo),s,t) as x) =
+  (* Buggé: faut mettre à jour le nombre de paramètres dans coeinfo *)
   let s1= process_cl sec_sp s in
   let t1 = process_cl sec_sp t in
   match coe with 
