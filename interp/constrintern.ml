@@ -549,13 +549,20 @@ let internalise sigma env allow_soapp lvar c =
 		    (loc,ind,l@nal)) indnalo))) tms,
 		List.map (intern_eqn (List.length tms) env) eqns)
     | COrderedCase (loc, tag, po, c, cl) ->
+	let env = reset_tmp_scope env in
 	ROrderedCase (loc, tag, option_app (intern_type env) po,
 	          intern env c,
 		  Array.of_list (List.map (intern env) cl),ref None)
     | CLetTuple (loc, nal, (na,po), b, c) ->
+	let env' = reset_tmp_scope env in
         RLetTuple (loc, nal,
+           (na, option_app (intern_type (push_name_env env' na)) po),
+           intern env' b, intern (List.fold_left push_name_env env nal) c)
+    | CIf (loc, c, (na,po), b1, b2) ->
+	let env = reset_tmp_scope env in
+        RIf (loc, intern env c,
            (na, option_app (intern_type (push_name_env env na)) po),
-           intern env b, intern (List.fold_left push_name_env env nal) c)
+           intern env b1, intern env b2)
     | CHole loc -> 
 	RHole (loc, QuestionMark)
     | CPatVar (loc, n) when allow_soapp ->
