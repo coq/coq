@@ -263,6 +263,8 @@ GEXTEND Gram
       | IDENT "Info"; tc = tactic_expr -> <:ast< (INFO $tc) >>
       |	IDENT "Solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
           <:ast<(TCLSOLVE ($LIST $l))>>
+      |	IDENT "Try"; ta0 = tactic_atom; "Orelse"; ta1 = tactic_atom ->
+        <:ast< (TRY (ORELSE $ta0 $ta1)) >>
       |	IDENT "Try"; ta = tactic_atom -> <:ast< (TRY $ta) >>
       | IDENT "Do"; n = numarg; ta = tactic_atom -> <:ast< (DO $n $ta) >>
       | IDENT "Repeat"; ta = tactic_atom -> <:ast< (REPEAT $ta) >>
@@ -416,4 +418,4 @@ GEXTEND Gram
   tactic:
     [ [ tac = tactic_expr -> tac ] ]
   ;
-END
+END;;

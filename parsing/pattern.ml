@@ -162,7 +162,8 @@ let matches_core convert pat c =
       | PSort RType, IsSort (Type _) -> sigma
 
       | PApp (c1,arg1), IsApp (c2,arg2) ->
-	  array_fold_left2 (sorec stk) (sorec stk sigma c1 c2) arg1 arg2
+        (try array_fold_left2 (sorec stk) (sorec stk sigma c1 c2) arg1 arg2
+         with Invalid_argument _ -> raise PatternMatchingFailure)
 
       | PBinder(BProd,na1,c1,d1), IsProd(na2,c2,d2) ->
 	  sorec ((na2,c2)::stk) (sorec stk sigma c1 c2) d1 d2
