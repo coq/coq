@@ -177,3 +177,7 @@ type unsafe_judgment = {
 type unsafe_type_judgment = { 
   utj_val : constr;
   utj_type : sorts }
+
+(*s Displays the memory use of an environment. *)
+
+val mem : env -> Pp.std_ppcmds

@@ -124,6 +124,8 @@ test-suite/success/mutual_ind.vo: test-suite/success/mutual_ind.v theories/Lists
 test-suite/success/induct.vo: test-suite/success/induct.v theories/Lists/PolyList.vo
 test-suite/success/inds_type_sec.vo: test-suite/success/inds_type_sec.v
 test-suite/success/fix.vo: test-suite/success/fix.v theories/Bool/Bool.vo theories/Zarith/ZArith.vo
+test-suite/success/eqdecide.vo: test-suite/success/eqdecide.v
+test-suite/success/Tauto.vo: test-suite/success/Tauto.v
 test-suite/success/Check.vo: test-suite/success/Check.v
 test-suite/success/Cases.vo: test-suite/success/Cases.v theories/Bool/Bool.vo theories/Arith/Peano_dec.vo theories/Init/Prelude.vo theories/Init/Logic_TypeSyntax.vo theories/Init/Logic_Type.vo
 test-suite/success/Apply.vo: test-suite/success/Apply.v
@@ -131,6 +133,7 @@ test-suite/failure/redef.vo: test-suite/failure/redef.v
 test-suite/failure/positivity.vo: test-suite/failure/positivity.v
 test-suite/failure/illtype1.vo: test-suite/failure/illtype1.v
 test-suite/failure/clash_cons.vo: test-suite/failure/clash_cons.v
+test-suite/failure/Tauto.vo: test-suite/failure/Tauto.v
 test-suite/bench/lists_100.vo: test-suite/bench/lists_100.v
 test-suite/bench/lists-100.vo: test-suite/bench/lists-100.v
 contrib/xml/Xml.vo: contrib/xml/Xml.v contrib/xml/xml.cmo contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
@@ -150,13 +153,14 @@ tactics/Tauto.vo: tactics/Tauto.v
 tactics/Refine.vo: tactics/Refine.v
 tactics/Inv.vo: tactics/Inv.v tactics/Equality.vo
 tactics/Equality.vo: tactics/Equality.v
+tactics/EqDecide.vo: tactics/EqDecide.v
 tactics/EAuto.vo: tactics/EAuto.v
 tactics/AutoRewrite.vo: tactics/AutoRewrite.v
 syntax/PPTactic.vo: syntax/PPTactic.v
 syntax/PPConstr.vo: syntax/PPConstr.v
 syntax/PPCases.vo: syntax/PPCases.v
 syntax/MakeBare.vo: syntax/MakeBare.v
-states/MakeInitial.vo: states/MakeInitial.v theories/Init/Prelude.vo theories/Init/Logic_Type.vo theories/Init/Logic_TypeSyntax.vo tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo tactics/EAuto.vo tactics/AutoRewrite.vo tactics/Refine.vo
+states/MakeInitial.vo: states/MakeInitial.v theories/Init/Prelude.vo theories/Init/Logic_Type.vo theories/Init/Logic_TypeSyntax.vo tactics/Equality.vo test-suite/success/Tauto.vo tactics/Inv.vo tactics/EAuto.vo tactics/AutoRewrite.vo tactics/Refine.vo tactics/EqDecide.vo
 contrib/xml/Xml.vo: contrib/xml/Xml.v contrib/xml/xml.cmo contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
 contrib/ring/ZArithRing.vo: contrib/ring/ZArithRing.v contrib/ring/ArithRing.vo theories/Zarith/ZArith.vo theories/Logic/Eqdep_dec.vo
 contrib/ring/Ring_theory.vo: contrib/ring/Ring_theory.v theories/Bool/Bool.vo

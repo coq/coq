@@ -634,32 +634,31 @@ cleanconfig::
 # Dependencies
 ###########################################################################
 
-alldepend: depend dependcoq dependcamlp4
-
-depend: beforedepend
-	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
+alldepend: depend dependcoq 
 
 dependcoq: beforedepend
 	$(COQDEP) $(COQINCLUDES) */*.v */*/*.v > .depend.coq
 
-# Dependency of camlp4 files: this is tricky.
+# Computing the dependencies in camlp4 files is tricky.
 # We proceed in several steps:
+
 ML4FILESML = $(ML4FILES:.ml4=.ml)
-dependcamlp4:
+
+depend: beforedepend
 # 1. We express dependencies of the .ml files w.r.t their grammars
-	rm -f .depend.camlp4.2
+	rm -f .depend.camlp4
 	for f in $(ML4FILES); do \
-	  printf "%s" `dirname $$f`/`basename $$f .ml4`".ml: " >> .depend.camlp4.2; \
-	  echo `$(CAMLP4DEPS) $$f` >> .depend.camlp4.2; \
+	  printf "%s" `dirname $$f`/`basename $$f .ml4`".ml: " >> .depend.camlp4; \
+	  echo `$(CAMLP4DEPS) $$f` >> .depend.camlp4; \
 	done
 # 2. Then we are able to produce the .ml files using Makefile.dep
 	$(MAKE) -f Makefile.dep $(ML4FILESML)
 # 3. We compute the dependencies inside the .ml files using ocamldep
-	ocamldep $(DEPFLAGS) $(ML4FILESML) > .depend.camlp4
+	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
 # 4. We express dependencies of .cmo files w.r.t their grammars
 	for f in $(ML4FILES); do \
-	  printf "%s" `dirname $$f`/`basename $$f .ml4`".cmo: " >> .depend.camlp4; \
-	  echo `$(CAMLP4DEPS) $$f` >> .depend.camlp4; \
+	  printf "%s" `dirname $$f`/`basename $$f .ml4`".cmo: " >> .depend; \
+	  echo `$(CAMLP4DEPS) $$f` >> .depend; \
 	done
 # 5. Finally, we erase the generated .ml files
 	rm -f $(ML4FILESML)
@@ -670,4 +669,3 @@ clean::
 
 include .depend
 include .depend.coq
-include .depend.camlp4

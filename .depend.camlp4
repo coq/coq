@@ -1,66 +1,14 @@
-tactics/tauto.cmo: parsing/ast.cmi parsing/coqast.cmi tactics/hipattern.cmi \
-    kernel/names.cmi lib/pp.cmi proofs/proof_type.cmi proofs/tacinterp.cmi \
-    proofs/tacmach.cmi tactics/tacticals.cmi tactics/tactics.cmi 
-tactics/tauto.cmx: parsing/ast.cmx parsing/coqast.cmx tactics/hipattern.cmx \
-    kernel/names.cmx lib/pp.cmx proofs/proof_type.cmx proofs/tacinterp.cmx \
-    proofs/tacmach.cmx tactics/tacticals.cmx tactics/tactics.cmx 
-parsing/lexer.cmo: parsing/lexer.cmi 
-parsing/lexer.cmx: parsing/lexer.cmi 
-parsing/q_coqast.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
-parsing/q_coqast.cmx: parsing/coqast.cmx parsing/pcoq.cmx 
-parsing/g_prim.cmo: parsing/coqast.cmi parsing/pcoq.cmi toplevel/vernac.cmi 
-parsing/g_prim.cmx: parsing/coqast.cmx parsing/pcoq.cmx toplevel/vernac.cmx 
-parsing/pcoq.cmo: parsing/coqast.cmi parsing/lexer.cmi lib/pp.cmi \
-    lib/util.cmi parsing/pcoq.cmi 
-parsing/pcoq.cmx: parsing/coqast.cmx parsing/lexer.cmx lib/pp.cmx \
-    lib/util.cmx parsing/pcoq.cmi 
-parsing/g_basevernac.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi \
-    toplevel/vernac.cmi 
-parsing/g_basevernac.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmx \
-    toplevel/vernac.cmx 
-parsing/g_minicoq.cmo: kernel/environ.cmi parsing/lexer.cmi kernel/names.cmi \
-    lib/pp.cmi kernel/term.cmi kernel/univ.cmi lib/util.cmi \
-    parsing/g_minicoq.cmi 
-parsing/g_minicoq.cmx: kernel/environ.cmx parsing/lexer.cmx kernel/names.cmx \
-    lib/pp.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
-    parsing/g_minicoq.cmi 
-parsing/g_vernac.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi \
-    lib/pp.cmi lib/util.cmi toplevel/vernac.cmi 
-parsing/g_vernac.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmx \
-    lib/pp.cmx lib/util.cmx toplevel/vernac.cmx 
-parsing/g_proofs.cmo: parsing/coqast.cmi parsing/pcoq.cmi lib/pp.cmi \
-    lib/util.cmi toplevel/vernac.cmi 
-parsing/g_proofs.cmx: parsing/coqast.cmx parsing/pcoq.cmx lib/pp.cmx \
-    lib/util.cmx toplevel/vernac.cmx 
-parsing/g_cases.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
-parsing/g_cases.cmx: parsing/coqast.cmx parsing/pcoq.cmx 
-parsing/g_constr.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi 
-parsing/g_constr.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmx 
-parsing/g_tactic.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi \
-    lib/pp.cmi lib/util.cmi toplevel/vernac.cmi 
-parsing/g_tactic.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmx \
-    lib/pp.cmx lib/util.cmx toplevel/vernac.cmx 
-parsing/extend.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/lexer.cmi \
-    parsing/pcoq.cmi lib/pp.cmi lib/util.cmi parsing/extend.cmi 
-parsing/extend.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/lexer.cmx \
-    parsing/pcoq.cmx lib/pp.cmx lib/util.cmx parsing/extend.cmi 
-toplevel/mltop.cmo: library/lib.cmi library/libobject.cmi library/library.cmi \
-    lib/pp.cmi library/summary.cmi lib/system.cmi lib/util.cmi \
-    toplevel/vernacinterp.cmi toplevel/mltop.cmi 
-toplevel/mltop.cmx: library/lib.cmx library/libobject.cmx library/library.cmx \
-    lib/pp.cmx library/summary.cmx lib/system.cmx lib/util.cmx \
-    toplevel/vernacinterp.cmx toplevel/mltop.cmi 
-tactics/tauto.cmo: parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_constr.cmo
-parsing/lexer.cmo: 
-parsing/q_coqast.cmo: 
-parsing/g_prim.cmo: 
-parsing/pcoq.cmo: 
-parsing/g_basevernac.cmo: parsing/grammar.cma
-parsing/g_minicoq.cmo: parsing/grammar.cma
-parsing/g_vernac.cmo: parsing/grammar.cma
-parsing/g_proofs.cmo: parsing/grammar.cma
-parsing/g_cases.cmo: parsing/grammar.cma
-parsing/g_constr.cmo: parsing/grammar.cma
-parsing/g_tactic.cmo: parsing/grammar.cma
-parsing/extend.cmo: parsing/grammar.cma
-toplevel/mltop.cmo: 
+tactics/tauto.ml: parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_constr.cmo
+parsing/lexer.ml: 
+parsing/q_coqast.ml: 
+parsing/g_prim.ml: 
+parsing/pcoq.ml: 
+parsing/g_basevernac.ml: parsing/grammar.cma
+parsing/g_minicoq.ml: parsing/grammar.cma
+parsing/g_vernac.ml: parsing/grammar.cma
+parsing/g_proofs.ml: parsing/grammar.cma
+parsing/g_cases.ml: parsing/grammar.cma
+parsing/g_constr.ml: parsing/grammar.cma
+parsing/g_tactic.ml: parsing/grammar.cma
+parsing/extend.ml: parsing/grammar.cma
+toplevel/mltop.ml: 

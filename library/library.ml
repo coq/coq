@@ -249,3 +249,13 @@ let fmt_modules_state () =
      prlist_with_sep pr_spc (fun s -> [< 'sTR s >]) opened ; 'fNL ;
      'sTR "Loaded Modules: " ;
      prlist_with_sep pr_spc (fun s -> [< 'sTR s >]) loaded ; 'fNL >]
+
+(*s Display the memory use of a module. *)
+
+open Printf
+
+let mem s =
+  let m = find_module s in
+  h 0 [< 'sTR (sprintf "%dk (cenv = %dk / seg = %dk / nmt = %dk)"
+		 (size_kb m) (size_kb m.module_compiled_env) 
+		 (size_kb m.module_declarations) (size_kb m.module_nametab)) >]

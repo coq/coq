@@ -551,8 +551,14 @@ module Size = struct
     traverse (repr o);
     !count
 
-  let size_b o = (size_w o) * Sys.word_size lsr 3
+  let size_b o = (size_w o) * (Sys.word_size / 8)
+
+  let size_kb o = (size_w o) / (8192 / Sys.word_size)
 
 end
 
+let size_w = Size.size_w
 let size_b = Size.size_b
+let size_kb = Size.size_kb
+
+

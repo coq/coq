@@ -410,3 +410,12 @@ type unsafe_type_judgment = {
   utj_val : constr;
   utj_type : sorts }
 
+(*s Memory use of an environment. *)
+
+open Printf
+
+let mem env =
+  let glb = env.env_globals in 
+  h 0 [< 'sTR (sprintf "%dk (cst = %dk / ind = %dk / unv = %dk)"
+		 (size_kb env) (size_kb glb.env_constants) 
+		 (size_kb glb.env_inductives) (size_kb env.env_universes)) >]

@@ -59,3 +59,7 @@ val iter_all_segments : bool -> (section_path -> obj -> unit) -> unit
 val get_load_path : unit -> System.load_path
 val add_load_path_entry : System.load_path_entry -> unit
 val remove_path : string -> unit
+
+(*s Displays the memory use of a module. *)
+
+val mem : string -> Pp.std_ppcmds
