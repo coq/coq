@@ -412,7 +412,7 @@ let pp_decl = function
   | Dterm (r, a, t) when is_proj r -> 
       let e = pp_global r in 
       (pp_val e t ++ 
-       hov 0 (str "let " ++ e ++ str " x = x." ++ e ++ fnl() ++ fnl ())) 
+       hov 0 (str "let " ++ e ++ str " x = x." ++ e ++ fnl())) 
   | Dterm (r, a, t) ->
       let e = pp_global r in 
       (pp_val e t ++ 
