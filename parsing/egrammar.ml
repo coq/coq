@@ -435,3 +435,13 @@ let init_grammar () =
 
 let init () =
   init_grammar ()
+
+open Summary
+
+let _ = 
+  declare_summary "GRAMMAR_LEXER"
+    { freeze_function = freeze;
+      unfreeze_function = unfreeze;
+      init_function = init;
+      survive_module = false;
+      survive_section = false }

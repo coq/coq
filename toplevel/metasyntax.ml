@@ -29,9 +29,8 @@ open Libnames
 let interp_global_rawconstr_with_vars vars c =
   interp_rawconstr_gen false Evd.empty (Global.env()) false (vars,[]) c
 
-(*************************
- **** PRETTY-PRINTING ****
- *************************)
+(**********************************************************************)
+(* Parsing via ast (used in Zsyntax) *)
 
 (* This updates default parsers for Grammar actions and Syntax *)
 (* patterns by inserting globalization *)
@@ -42,6 +41,11 @@ let constr_to_ast a =
 (* This installs default quotations parsers to escape the ast parser *)
 (* "constr" is used by default in quotations found in the ast parser *) 
 let constr_parser_with_glob = Pcoq.map_entry constr_to_ast Constr.constr
+
+let _ = define_ast_quotation true "constr" constr_parser_with_glob
+
+(**********************************************************************)
+(* Globalisation for constr_expr *)
 
 let globalize_ref vars ref =
   match Constrintern.interp_reference (vars,[]) ref with
@@ -79,8 +83,7 @@ let without_translation f x =
 let _ = set_constr_globalizer
   (fun vars e -> for_grammar (without_translation (globalize_constr_expr vars)) e)
 
-let _ = define_ast_quotation true "constr" constr_parser_with_glob
-
+(**********************************************************************)
 (** For old ast printer *)
 
 (* Pretty-printer state summary *)
@@ -116,18 +119,6 @@ let add_syntax_obj whatfor sel =
 (*  if not !Options.v7_only then*)
   Lib.add_anonymous_leaf (inPPSyntax (interp_syntax_entry whatfor sel))
 
-
-(**********************************************************************)
-(* Grammar                                                            *)
-
-let _ = 
-  declare_summary "GRAMMAR_LEXER"
-    { freeze_function = Egrammar.freeze;
-      unfreeze_function = Egrammar.unfreeze;
-      init_function = Egrammar.init;
-      survive_module = false;
-      survive_section = false }
-
 (* Tokens *)
 
 let cache_token (_,s) = Pcoq.lexer.Token.using ("", s)
@@ -142,6 +133,7 @@ let (inToken, outToken) =
 
 let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 
+(**********************************************************************)
 (* Grammars (especially Tactic Notation) *)
 
 let make_terminal_status = function
@@ -185,6 +177,9 @@ let (inGrammar, outGrammar) =
        classify_function = (fun (_,o) -> Substitute o);
        export_function = (fun x -> Some x)}
 
+(**********************************************************************)
+(* V7 Grammar                                                         *)
+
 open Genarg
 
 let check_entry_type (u,n) =
@@ -199,10 +194,16 @@ let add_grammar_obj univ entryl =
   let g = interp_grammar_command univ check_entry_type entryl in
   Lib.add_anonymous_leaf (inGrammar (Egrammar.Grammar g))
 
+(**********************************************************************)
+(* V8 Grammar *)
+
+(* Tactic notations *)
+
 let add_tactic_grammar g = 
   Lib.add_anonymous_leaf (inGrammar (Egrammar.TacticGrammar g))
 
-(* printing grammar entries *)
+(* Printing grammar entries *)
+
 let print_grammar univ entry =
   if !Options.v7 then
     let u = get_univ univ in
@@ -219,6 +220,7 @@ let print_grammar univ entry =
     Gram.Entry.print te
 
 (* Parse a format *)
+
 let parse_format (loc,str) =
   let str = " "^str in
   let l = String.length str in
@@ -689,7 +691,7 @@ let cache_syntax_extension (_,(_,(prec,prec8),ntn,gr,se)) =
       (* Inconsistent v8 notations but not while translating; forget... *)
       ();
     (* V8 notations are consistent (from both translator or v8) *)
-    if prec <> None then begin
+    if prec <> None & !Options.v7 then begin
       (* Update the V7 parsing rule *)
       if oldprec <> None & out_some oldprec <> out_some prec then
 	(* None of them is V8Notation and they are different: warn *)

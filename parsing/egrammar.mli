@@ -17,12 +17,6 @@ open Extend
 open Rawterm
 (*i*)
 
-type frozen_t
-
-val freeze : unit -> frozen_t
-val unfreeze : frozen_t -> unit
-val init : unit -> unit
-
 type all_grammar_command =
   | Notation of (int * Gramext.g_assoc option * notation * prod_item list)
   | Grammar of grammar_command
