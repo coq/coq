@@ -10,15 +10,20 @@ open Environ
 open Instantiate
 open Reduction
 
+(* In the following, each time an [evar_map] is required, then [Evd.empty]
+   is given, since inductive types are typed in an environment without 
+   existentials. *)
+
 let mind_check_arities env mie =
   let check_arity id c =
-    if not (is_arity env c) then raise (InductiveError (NotAnArity id))
+    if not (is_arity env Evd.empty c) then 
+      raise (InductiveError (NotAnArity id))
   in
   List.iter (fun (id,ar,_,_) -> check_arity id ar) mie.mind_entry_inds
 
 let sort_of_arity env c =
   let rec sort_of ar =
-    match whd_betadeltaiota env ar with
+    match whd_betadeltaiota env Evd.empty ar with
       | DOP0 (Sort s) -> s
       | DOP2 (Prod, _, DLAM (_, c)) -> sort_of c
       | _ -> error "not an arity"
@@ -47,7 +52,7 @@ let check_correct_par env nparams ntypes n l largs =
   if Array.length largs < nparams then raise (InductiveError (NotEnoughArgs l));
   let (lpar,largs') = array_chop nparams largs in
   for k = 0 to nparams - 1 do
-    if not ((Rel (n-k-1))= whd_betadeltaiotaeta env lpar.(k)) then
+    if not ((Rel (n-k-1))= whd_betadeltaiotaeta env Evd.empty lpar.(k)) then
       raise (InductiveError (NonPar (k+1,l)))
   done;
   if not (array_for_all (noccur_bet n ntypes) largs') then 
@@ -62,14 +67,14 @@ let abstract_mind_lc env ntyps npars lc =
       list_tabulate
 	(function i -> lambda_implicit_lift npars (Rel (i+1))) ntyps 
     in 
-    Array.map (compose (nf_beta env) (substl make_abs)) lC
+    Array.map (compose (nf_beta env Evd.empty) (substl make_abs)) lC
 
 let decomp_par n c = snd (decompose_prod_n n c)
       
 let listrec_mconstr env ntypes nparams i indlc =
   (* check the inductive types occur positively in C *)
   let rec check_pos n c = 
-    match whd_betadeltaiota env c with 
+    match whd_betadeltaiota env Evd.empty c with 
       | DOP2(Prod,b,DLAM(na,d)) -> 
           if not (noccur_bet n ntypes b) then raise (InductiveError (NonPos n));
 	  check_pos (n+1) d
@@ -117,7 +122,7 @@ let listrec_mconstr env ntypes nparams i indlc =
       (* when substituted *) 
       Array.map 
 	(function c -> 
-	   let c' = hnf_prod_appvect env "is_imbr_pos" c 
+	   let c' = hnf_prod_appvect env Evd.empty "is_imbr_pos" c 
 		      (Array.map (lift auxntyp) lpar) in 
 	   check_construct false newidx c') 
 	auxlcvect
@@ -139,7 +144,7 @@ let listrec_mconstr env ntypes nparams i indlc =
      not sure if they make sense in a form of constructor. This is why I
      chose to duplicated the code.  Eduardo 13/7/99. *)
   and check_param_pos n c = 
-    match whd_betadeltaiota env c with 
+    match whd_betadeltaiota env Evd.empty c with 
       (* The extra case *)
       | DOP2(Lambda,b,DLAM(na,d)) -> 
           if noccur_bet n ntypes b
@@ -179,7 +184,7 @@ let listrec_mconstr env ntypes nparams i indlc =
 
   and check_construct check = 
     let rec check_constr_rec lrec n c = 
-      match whd_betadeltaiota env c with
+      match whd_betadeltaiota env Evd.empty c with
         | DOP2(Prod,b,DLAM(na,d)) -> 
             let recarg = (check_pos n b) in 
 	    check_constr_rec (recarg::lrec) (n+1) d 

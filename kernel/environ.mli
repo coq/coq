@@ -23,8 +23,6 @@ val empty_env : unsafe_env
 
 val universes : unsafe_env -> universes
 val context : unsafe_env -> context
-val evar_map : unsafe_env -> evar_map
-val metamap : unsafe_env -> (int * constr) list
 
 val push_var : identifier * typed_type -> unsafe_env -> unsafe_env
 val push_rel : name * typed_type -> unsafe_env -> unsafe_env

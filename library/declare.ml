@@ -12,6 +12,10 @@ open Libobject
 open Lib
 open Impargs
 
+type strength = 
+  | DischargeAt of section_path 
+  | NeverDischarge
+
 (* Variables. *)
 
 let cache_variable (_,obj) = 

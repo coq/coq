@@ -19,7 +19,7 @@ let implicit_args = ref false
 let auto_implicits ty =
   if !implicit_args then
     let genv = unsafe_env_of_env (Global.env()) in
-    Impl_auto (poly_args genv ty)
+    Impl_auto (poly_args genv Evd.empty ty)
   else
     No_impl
 

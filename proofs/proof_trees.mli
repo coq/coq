@@ -82,9 +82,7 @@ type proof_tree = {
   ref : (rule * proof_tree list) option; 
   subproof : proof_tree option }
 
-and goal = {
-  goal_ev : evar_info;
-  goal_ctxtty : ctxtty }
+and goal = ctxtty evar_info
 
 and rule =
   | Prim of prim_rule
@@ -97,7 +95,7 @@ and ctxtty = {
   mimick : proof_tree option;
   lc     : local_constraints } 
 
-type evar_declarations = goal Intmap.t
+type evar_declarations = ctxtty evar_map
 
 
 val mk_goal : ctxtty -> typed_type signature -> constr -> goal

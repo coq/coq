@@ -15,6 +15,10 @@ open Inductive
    reset works properly --- and will fill some global tables as [Nametab] and
    [Impargs]. *)
 
+type strength = 
+  | DischargeAt of section_path 
+  | NeverDischarge
+
 val declare_variable : identifier -> constr -> unit
 
 val declare_parameter : identifier -> constr -> unit

@@ -58,13 +58,13 @@ let rec execute mf env cstr =
 	  error "Cannot typecheck an unevaluable abstraction"
 	      
     | IsConst _ ->
-        (make_judge cstr (type_of_constant env cstr), cst0)
+        (make_judge cstr (type_of_constant env Evd.empty cstr), cst0)
 	  
     | IsMutInd _ ->
-	(make_judge cstr (type_of_inductive env cstr), cst0)
+	(make_judge cstr (type_of_inductive env Evd.empty cstr), cst0)
 	  
     | IsMutConstruct _ -> 
-	let (typ,kind) = destCast (type_of_constructor env cstr) in
+	let (typ,kind) = destCast (type_of_constructor env Evd.empty cstr) in
         ({ uj_val = cstr; uj_type = typ; uj_kind = kind } , cst0)
 	  
     | IsMutCase (_,p,c,lf) ->
@@ -72,20 +72,20 @@ let rec execute mf env cstr =
         let (pj,cst2) = execute mf env p in
         let (lfj,cst3) = execute_array mf env lf in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
-        (type_of_case env pj cj lfj, cst)
+        (type_of_case env Evd.empty pj cj lfj, cst)
   
     | IsFix (vn,i,lar,lfi,vdef) ->
         if (not mf.fix) && array_exists (fun n -> n < 0) vn then
           error "General Fixpoints not allowed";
         let (larv,vdefv,cst) = execute_fix mf env lar lfi vdef in
         let fix = mkFix vn i larv lfi vdefv in
-        check_fix env Spset.empty fix;
+        check_fix env Evd.empty Spset.empty fix;
 	(make_judge fix larv.(i), cst)
 	  
     | IsCoFix (i,lar,lfi,vdef) ->
         let (larv,vdefv,cst) = execute_fix mf env lar lfi vdef in
         let cofix = mkCoFix i larv lfi vdefv in
-        check_cofix env Spset.empty cofix;
+        check_cofix env Evd.empty Spset.empty cofix;
 	(make_judge cofix larv.(i), cst)
 	  
     | IsSort (Prop c) -> 
@@ -101,25 +101,25 @@ let rec execute mf env cstr =
 	and tl = Array.to_list (Array.sub a 1 (la - 1)) in
 	let (j,cst1) = execute mf env hd in
         let (jl,cst2) = execute_list mf env tl in
-	let (j,cst3) = apply_rel_list env mf.nocheck jl j in
+	let (j,cst3) = apply_rel_list env Evd.empty mf.nocheck jl j in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
 	(j, cst)
 	    
     | IsLambda (name,c1,c2) -> 
         let (j,cst1) = execute mf env c1 in
-        let var = assumption_of_judgment env j in
+        let var = assumption_of_judgment env Evd.empty j in
 	let env1 = push_rel (name,var) env in
         let (j',cst2) = execute mf env1 c2 in 
-        let (j,cst3) = abs_rel env1 name var j' in
+        let (j,cst3) = abs_rel env1 Evd.empty name var j' in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
 	(j, cst)
 	  
     | IsProd (name,c1,c2) ->
         let (j,cst1) = execute mf env c1 in
-        let var = assumption_of_judgment env j in
+        let var = assumption_of_judgment env Evd.empty j in
 	let env1 = push_rel (name,var) env in
         let (j',cst2) = execute mf env1 c2 in
-	let (j,cst3) = gen_rel env1 name var j' in
+	let (j,cst3) = gen_rel env1 Evd.empty name var j' in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
 	(j, cst)
 	  
@@ -127,20 +127,20 @@ let rec execute mf env cstr =
         let (cj,cst1) = execute mf env c in
         let (tj,cst2) = execute mf env t in
 	let cst = Constraint.union cst1 cst2 in
-        (cast_rel env cj tj, cst)
+        (cast_rel env Evd.empty cj tj, cst)
 	  
       | _ -> error_cant_execute CCI env cstr
 	  
 and execute_fix mf env lar lfi vdef =
   let (larj,cst1) = execute_array mf env lar in
-  let lara = Array.map (assumption_of_judgment env) larj in
+  let lara = Array.map (assumption_of_judgment env Evd.empty) larj in
   let nlara = 
     List.combine (List.rev lfi) (Array.to_list (vect_lift_type lara)) in
   let env1 = 
     List.fold_left (fun env nvar -> push_rel nvar env) env nlara in
   let (vdefj,cst2) = execute_array mf env1 vdef in
   let vdefv = Array.map j_val_only vdefj in
-  let cst3 = type_fixpoint env1 lfi lara vdefj in
+  let cst3 = type_fixpoint env1 Evd.empty lfi lara vdefj in
   let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
   (lara,vdefv,cst)
 
@@ -161,7 +161,7 @@ and execute_list mf env = function
 
 let execute_type mf env constr = 
   let (j,_) = execute mf env constr in
-  assumption_of_judgment env j
+  assumption_of_judgment env Evd.empty j
 
 
 (* Exported machines.  First safe machines, with no general fixpoint
@@ -200,13 +200,13 @@ let unsafe_machine_type env constr =
 (* ``Type of'' machines. *)
 
 let type_of env c = 
-  let (j,_) = safe_machine env c in nf_betaiota env j.uj_type
+  let (j,_) = safe_machine env c in nf_betaiota env Evd.empty j.uj_type
 
 let type_of_type env c = 
   let tt = safe_machine_type env c in DOP0 (Sort tt.typ)
 
 let unsafe_type_of env c = 
-  let (j,_) = unsafe_machine env c in nf_betaiota env j.uj_type
+  let (j,_) = unsafe_machine env c in nf_betaiota env Evd.empty j.uj_type
 
 let unsafe_type_of_type env c = 
   let tt = unsafe_machine_type env c in DOP0 (Sort tt.typ)
@@ -250,7 +250,7 @@ let lookup_mind_specif = lookup_mind_specif
 let push_rel_or_var push (id,c) env =
   let (j,cst) = safe_machine env c in
   let env' = add_constraints cst env in
-  let var = assumption_of_judgment env' j in
+  let var = assumption_of_judgment env' Evd.empty j in
   push (id,var) env'
 
 let push_var nvar env = push_rel_or_var push_var nvar env
@@ -271,14 +271,15 @@ let add_constant sp ce env =
   let (env'',ty,cst') = 
     match ce.const_entry_type with
       | None -> 
-	  env', typed_type_of_judgment env' jb, Constraint.empty
+	  env', typed_type_of_judgment env' Evd.empty jb, Constraint.empty
       | Some ty -> 
 	  let (jt,cst') = safe_machine env ty in
 	  let env'' = add_constraints cst' env' in
 	  try
-	    let cst'' = conv env'' jb.uj_type jt.uj_val in
+	    let cst'' = conv env'' Evd.empty jb.uj_type jt.uj_val in
 	    let env'' = add_constraints cst'' env'' in
-	    env'', assumption_of_judgment env'' jt, Constraint.union cst' cst''
+	    (env'', assumption_of_judgment env'' Evd.empty jt, 
+	     Constraint.union cst' cst'')
 	  with NotConvertible -> 
 	    error_actual_type CCI env jb.uj_val jb.uj_type jt.uj_val
   in
@@ -298,7 +299,7 @@ let add_parameter sp t env =
   let cb = {
     const_kind = kind_of_path sp;
     const_body = None;
-    const_type = assumption_of_judgment env' jt;
+    const_type = assumption_of_judgment env' Evd.empty jt;
     const_hyps = get_globals (context env);
     const_constraints = cst;
     const_opaque = false } 
@@ -312,7 +313,7 @@ let add_parameter sp t env =
    function taking a value of type [typed_type] as argument. *)
 
 let rec for_all_prods p env c =
-  match whd_betadeltaiota env c with
+  match whd_betadeltaiota env Evd.empty c with
     | DOP2(Prod, DOP2(Cast,t,DOP0 (Sort s)), DLAM(name,c)) -> 
 	(p (make_typed t s)) &&
 	(let ty = { body = t; typ = s } in
@@ -320,7 +321,7 @@ let rec for_all_prods p env c =
 	 for_all_prods p env' c)
     | DOP2(Prod, b, DLAM(name,c)) -> 
 	let (jb,cst) = unsafe_machine env b in
-	let var = assumption_of_judgment env jb in
+	let var = assumption_of_judgment env Evd.empty jb in
 	(p var) &&
 	(let env' = Environ.push_rel (name,var) (add_constraints cst env) in
 	 for_all_prods p env' c)
@@ -329,7 +330,7 @@ let rec for_all_prods p env c =
 let is_small_type e c = for_all_prods (fun t -> is_small t.typ) e c
 
 let enforce_type_constructor env univ j cst =
-  match whd_betadeltaiota env j.uj_type with
+  match whd_betadeltaiota env Evd.empty j.uj_type with
     | DOP0 (Sort (Type uc)) -> 
 	Constraint.add (univ,Geq,uc) cst
     | _ -> error "Type of Constructor not well-formed"
@@ -347,11 +348,13 @@ let type_one_constructor env_ar nparams ar c =
   ((issmall,j), Constraint.union cst' cst'')
 
 let logic_constr env c =
-  for_all_prods (fun t -> not (is_info_type env t)) env c
+  for_all_prods (fun t -> not (is_info_type env Evd.empty t)) env c
 
 let logic_arity env c =
   for_all_prods 
-    (fun t -> (not (is_info_type env t)) or (is_small_type env t.body)) env c
+    (fun t -> 
+       (not (is_info_type env Evd.empty t)) or (is_small_type env t.body)) 
+    env c
 
 let is_unit env_par nparams ar spec =
   match decomp_all_DLAMV_name spec with

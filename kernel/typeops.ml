@@ -26,13 +26,13 @@ let j_val = j_val_only
 
 let j_val_cast j = mkCast j.uj_val j.uj_type
 
-let typed_type_of_judgment env j =
-  match whd_betadeltaiota env j.uj_kind with
+let typed_type_of_judgment env sigma j =
+  match whd_betadeltaiota env sigma j.uj_kind with
     | DOP0(Sort s) -> { body = j.uj_type; typ = s }
     | _ -> error_not_type CCI env j.uj_type
 
-let assumption_of_judgment env j =
-  match whd_betadeltaiota env j.uj_type with
+let assumption_of_judgment env sigma j =
+  match whd_betadeltaiota env sigma j.uj_type with
     | DOP0(Sort s) -> { body = j.uj_val; typ = s }
     | _ -> error_assumption CCI env j.uj_val
 
@@ -51,7 +51,7 @@ let relative env n =
 
 (* Checks if a context of variable is included in another one. *)
 
-let hyps_inclusion env (idl1,tyl1) (idl2,tyl2) =
+let hyps_inclusion env sigma (idl1,tyl1) (idl2,tyl2) =
   let rec aux = function
     | ([], [], _, _) -> true
     | (_, _, [], []) -> false
@@ -60,7 +60,7 @@ let hyps_inclusion env (idl1,tyl1) (idl2,tyl2) =
           | ([], []) -> false
           | ((id2::idl2), (ty2::tyl2)) ->
               if id1 = id2 then
-		(is_conv env (body_of_type ty1) (body_of_type ty2))
+		(is_conv env sigma (body_of_type ty1) (body_of_type ty2))
 		& aux (idl1,tyl1,idl2,tyl2)
               else 
 		search (idl2,tyl2)
@@ -74,25 +74,25 @@ let hyps_inclusion env (idl1,tyl1) (idl2,tyl2) =
 (* Checks if the given context of variables [hyps] is included in the
    current context of [env]. *)
 
-let construct_reference id env hyps =
+let construct_reference id env sigma hyps =
   let hyps' = get_globals (context env) in
-  if hyps_inclusion env hyps hyps' then
+  if hyps_inclusion env sigma hyps hyps' then
     Array.of_list (List.map (fun id -> VAR id) (ids_of_sign hyps))
   else 
     error_reference_variables CCI env id
 
-let check_hyps id env hyps =
+let check_hyps id env sigma hyps =
   let hyps' = get_globals (context env) in
-  if not (hyps_inclusion env hyps hyps') then
+  if not (hyps_inclusion env sigma hyps hyps') then
     error_reference_variables CCI env id
 
 (* Instantiation of terms on real arguments. *)
 
-let type_of_constant env c =
+let type_of_constant env sigma c =
   let (sp,args) = destConst c in
   let cb = lookup_constant sp env in
   let hyps = cb.const_hyps in
-  check_hyps (basename sp) env hyps;
+  check_hyps (basename sp) env sigma hyps;
   instantiate_type (ids_of_sign hyps) cb.const_type (Array.to_list args)
 
 (* Inductive types. *)
@@ -104,10 +104,10 @@ let instantiate_arity mis =
   { body = instantiate_constr ids arity.body args;
     typ = arity.typ }
 
-let type_of_inductive env i =
+let type_of_inductive env sigma i =
   let mis = lookup_mind_specif i env in
   let hyps = mis.mis_mib.mind_hyps in
-  check_hyps (basename mis.mis_sp) env hyps;
+  check_hyps (basename mis.mis_sp) env sigma hyps;
   instantiate_arity mis
 
 (* Constructors. *)
@@ -117,12 +117,12 @@ let instantiate_lc mis =
   let lc = mis.mis_mip.mind_lc in
   instantiate_constr (ids_of_sign hyps) lc (Array.to_list mis.mis_args)
 
-let type_of_constructor env c =
+let type_of_constructor env sigma c =
   let (sp,i,j,args) = destMutConstruct c in
   let mind = DOPN (MutInd (sp,i), args) in
-  let recmind = check_mrectype_spec env mind in
+  let recmind = check_mrectype_spec env sigma mind in
   let mis = lookup_mind_specif recmind env in
-  check_hyps (basename mis.mis_sp) env (mis.mis_mib.mind_hyps);
+  check_hyps (basename mis.mis_sp) env sigma (mis.mis_mib.mind_hyps);
   let specif = instantiate_lc mis in
   let make_ik k = DOPN (MutInd (mis.mis_sp,k), mis.mis_args) in
   if j > mis_nconstr mis then
@@ -145,21 +145,21 @@ let mis_type_mconstructs mis =
   (Array.init nconstr make_ck, 
    sAPPVList specif (list_tabulate make_ik ntypes))
 
-let type_mconstructs env mind =
-  let redmind  = check_mrectype_spec env mind in
+let type_mconstructs env sigma mind =
+  let redmind = check_mrectype_spec env sigma mind in
   let mis = lookup_mind_specif redmind env in 
   mis_type_mconstructs mis
 
 (* Case. *)
 
-let rec sort_of_arity env c =
-  match whd_betadeltaiota env c with
+let rec sort_of_arity env sigma c =
+  match whd_betadeltaiota env sigma c with
     | DOP0(Sort( _)) as c' -> c'
-    | DOP2(Prod,_,DLAM(_,c2)) -> sort_of_arity env c2
+    | DOP2(Prod,_,DLAM(_,c2)) -> sort_of_arity env sigma c2
     | _ -> invalid_arg "sort_of_arity"
 
-let make_arity_dep env k = 
-  let rec mrec c m = match whd_betadeltaiota env c with 
+let make_arity_dep env sigma k = 
+  let rec mrec c m = match whd_betadeltaiota env sigma c with 
     | DOP0(Sort _) -> mkArrow m k
     | DOP2(Prod,b,DLAM(n,c_0)) ->
         prod_name env (n,b,mrec c_0 (applist(lift 1 m,[Rel 1])))
@@ -167,16 +167,16 @@ let make_arity_dep env k =
   in 
   mrec
 
-let make_arity_nodep env k = 
-  let rec mrec c = match whd_betadeltaiota env c with 
+let make_arity_nodep env sigma k = 
+  let rec mrec c = match whd_betadeltaiota env sigma c with 
     | DOP0(Sort _) -> k
     | DOP2(Prod,b,DLAM(x,c_0)) -> DOP2(Prod,b,DLAM(x,mrec c_0))
     | _ -> invalid_arg "make_arity_nodep"
   in 
   mrec
 
-let error_elim_expln env kp ki =
-  if is_info_sort env kp && not (is_info_sort env ki) then
+let error_elim_expln env sigma kp ki =
+  if is_info_sort env sigma kp && not (is_info_sort env sigma ki) then
     "non-informative objects may not construct informative ones."
   else 
     match (kp,ki) with 
@@ -186,24 +186,24 @@ let error_elim_expln env kp ki =
 
 exception Arity of (constr * constr * string) option
 
-let is_correct_arity env kelim (c,p) = 
+let is_correct_arity env sigma kelim (c,p) = 
   let rec srec ind (pt,t) =
     try 
-      (match whd_betadeltaiota env pt, whd_betadeltaiota env t with
+      (match whd_betadeltaiota env sigma pt, whd_betadeltaiota env sigma t with
 	 | DOP2(Prod,a1,DLAM(_,a2)), DOP2(Prod,a1',DLAM(_,a2')) ->
-             if is_conv env a1 a1' then
+             if is_conv env sigma a1 a1' then
                srec (applist(lift 1 ind,[Rel 1])) (a2,a2') 
              else 
 	       raise (Arity None)
 	 | DOP2(Prod,a1,DLAM(_,a2)), ki -> 
-             let k = whd_betadeltaiota env a2 in 
+             let k = whd_betadeltaiota env sigma a2 in 
              let ksort = (match k with DOP0(Sort s) -> s 
 			    | _ -> raise (Arity None)) in
-             if is_conv env a1 ind then
+             if is_conv env sigma a1 ind then
                if List.exists (base_sort_cmp CONV ksort) kelim then
 		 (true,k)
                else 
-		 raise (Arity (Some(k,ki,error_elim_expln env k ki)))
+		 raise (Arity (Some(k,ki,error_elim_expln env sigma k ki)))
 	     else 
 	       raise (Arity None)
 	 | k, DOP2(Prod,_,_) ->
@@ -214,11 +214,13 @@ let is_correct_arity env kelim (c,p) =
              if List.exists (base_sort_cmp CONV ksort) kelim then 
 	       false,k
              else 
-	       raise (Arity (Some(k,ki,error_elim_expln env k ki))))
+	       raise (Arity (Some(k,ki,error_elim_expln env sigma k ki))))
     with Arity kinds ->
       let listarity =
-	(List.map (fun s -> make_arity_dep env (DOP0(Sort s)) t ind) kelim)
-	@(List.map (fun s -> make_arity_nodep env (DOP0(Sort s)) t) kelim)
+	(List.map 
+	   (fun s -> make_arity_dep env sigma (DOP0(Sort s)) t ind) kelim)
+	@(List.map 
+	    (fun s -> make_arity_nodep env sigma (DOP0(Sort s)) t) kelim)
       in error_elim_arity CCI env ind listarity c p pt kinds
   in srec 
 
@@ -226,20 +228,20 @@ let cast_instantiate_arity mis =
   let tty = instantiate_arity mis in
   DOP2 (Cast, tty.body, DOP0 (Sort tty.typ))
 
-let find_case_dep_nparams env (c,p) (mind,largs) typP =    
+let find_case_dep_nparams env sigma (c,p) (mind,largs) typP =    
   let mis = lookup_mind_specif mind env in 
   let nparams = mis_nparams mis
   and kelim = mis_kelim mis 
   and t = cast_instantiate_arity mis in 
   let (globargs,la) = list_chop nparams largs in
-  let glob_t = hnf_prod_applist env "find_elim_boolean" t globargs in
+  let glob_t = hnf_prod_applist env sigma "find_elim_boolean" t globargs in
   let arity = applist(mind,globargs) in
-  let (dep,_) = is_correct_arity env kelim (c,p) arity (typP,glob_t) in
+  let (dep,_) = is_correct_arity env sigma kelim (c,p) arity (typP,glob_t) in
   (dep, (nparams, globargs,la))
 
-let type_one_branch_dep (env,nparams,globargs,p) co t = 
+let type_one_branch_dep env sigma (nparams,globargs,p) co t = 
   let rec typrec n c =
-    match whd_betadeltaiota env c with
+    match whd_betadeltaiota env sigma c with
       | DOP2(Prod,a1,DLAM(x,a2)) -> prod_name env (x,a1,typrec (n+1) a2)
       | x -> let lAV = destAppL (ensure_appl x) in
              let (_,vargs) = array_chop (nparams+1) lAV in
@@ -247,17 +249,17 @@ let type_one_branch_dep (env,nparams,globargs,p) co t =
                (appvect ((lift n p),vargs),
 		[applist(co,((List.map (lift n) globargs)@(rel_list 0 n)))])
   in 
-  typrec 0 (hnf_prod_applist env "type_case" t globargs)
+  typrec 0 (hnf_prod_applist env sigma "type_case" t globargs)
 
-let type_one_branch_nodep (env,nparams,globargs,p) t = 
+let type_one_branch_nodep env sigma (nparams,globargs,p) t = 
   let rec typrec n c =
-    match whd_betadeltaiota env c with 
+    match whd_betadeltaiota env sigma c with 
       | DOP2(Prod,a1,DLAM(x,a2)) -> DOP2(Prod,a1,DLAM(x,typrec (n+1) a2))
       | x -> let lAV = destAppL(ensure_appl x) in
              let (_,vargs) = array_chop (nparams+1) lAV in
              appvect (lift n p,vargs)
   in 
-  typrec 0 (hnf_prod_applist env "type_case" t globargs)
+  typrec 0 (hnf_prod_applist env sigma "type_case" t globargs)
 
 (* type_case_branches type un <p>Case c of ... end 
    ct = type de c, si inductif il a la forme APP(mI,largs), sinon raise Induc
@@ -266,45 +268,45 @@ let type_one_branch_nodep (env,nparams,globargs,p) t =
    attendus dans les branches du Case; lr est le type attendu du resultat
  *)
 
-let type_case_branches env ct pt p c =
+let type_case_branches env sigma ct pt p c =
   try
-    let ((mI,largs) as indt) = find_mrectype env ct in
+    let ((mI,largs) as indt) = find_mrectype env sigma ct in
     let (dep,(nparams,globargs,la)) =
-      find_case_dep_nparams env (c,p) indt pt
+      find_case_dep_nparams env sigma (c,p) indt pt
     in
-    let (lconstruct,ltypconstr) = type_mconstructs env mI in
+    let (lconstruct,ltypconstr) = type_mconstructs env sigma mI in
     if dep then 
       (mI, 
-       array_map2 (type_one_branch_dep (env,nparams,globargs,p))
+       array_map2 (type_one_branch_dep env sigma (nparams,globargs,p))
          lconstruct ltypconstr,
          beta_applist (p,(la@[c])))
     else 
       (mI,
-       Array.map (type_one_branch_nodep (env,nparams,globargs,p)) 
+       Array.map (type_one_branch_nodep env sigma (nparams,globargs,p)) 
          ltypconstr,
          beta_applist (p,la))
   with Induc -> 
     error_case_not_inductive CCI env c ct
 
-let check_branches_message env (c,ct) (explft,lft) = 
+let check_branches_message env sigma (c,ct) (explft,lft) = 
   let n = Array.length explft 
   and expn = Array.length lft in
   let rec check_conv i = 
     if not (i = n) then
-      if not (is_conv_leq env lft.(i) (explft.(i))) then
-	error_ill_formed_branch CCI env c i (nf_betaiota env lft.(i))
-	  (nf_betaiota env explft.(i))
+      if not (is_conv_leq env sigma lft.(i) (explft.(i))) then
+	error_ill_formed_branch CCI env c i (nf_betaiota env sigma lft.(i))
+	  (nf_betaiota env sigma explft.(i))
       else 
 	check_conv (i+1) 
   in
   if n<>expn then error_number_branches CCI env c ct expn else check_conv 0
 
-let type_of_case env pj cj lfj =
+let type_of_case env sigma pj cj lfj =
   let lft = Array.map (fun j -> j.uj_type) lfj in
   let (mind,bty,rslty) =
-    type_case_branches env cj.uj_type pj.uj_type pj.uj_val cj.uj_val in
-  let kind = sort_of_arity env pj.uj_type in
-  check_branches_message env (cj.uj_val,cj.uj_type) (bty,lft);
+    type_case_branches env sigma cj.uj_type pj.uj_type pj.uj_val cj.uj_val in
+  let kind = sort_of_arity env sigma pj.uj_type in
+  check_branches_message env sigma (cj.uj_val,cj.uj_type) (bty,lft);
   { uj_val  = 
       mkMutCaseA (ci_of_mind mind) (j_val pj) (j_val cj) (Array.map j_val lfj);
     uj_type = rslty;
@@ -345,8 +347,8 @@ let sort_of_product domsort rangsort g =
            (* Product rule (Type_i,Type_i,Type_i) *) 
            | Type u1 -> let (u12,cst) = sup u1 u2 g in Type u12, cst)
 
-let abs_rel env name var j =
-  let rngtyp = whd_betadeltaiota env j.uj_kind in
+let abs_rel env sigma name var j =
+  let rngtyp = whd_betadeltaiota env sigma j.uj_kind in
   let cvar = incast_type var in
   let (s,cst) = sort_of_product var.typ (destSort rngtyp) (universes env) in
   { uj_val = mkLambda name cvar (j_val j);
@@ -356,9 +358,9 @@ let abs_rel env name var j =
 
 (* Type of a product. *)
 
-let gen_rel env name var j =
-  let jtyp = whd_betadeltaiota env j.uj_type in
-  let jkind = whd_betadeltaiota env j.uj_kind in
+let gen_rel env sigma name var j =
+  let jtyp = whd_betadeltaiota env sigma j.uj_type in
+  let jkind = whd_betadeltaiota env sigma j.uj_kind in
   let j = { uj_val = j.uj_val; uj_type = jtyp; uj_kind = jkind } in
   if isprop jkind then 
     error "Proof objects can only be abstracted" 
@@ -377,17 +379,17 @@ let gen_rel env name var j =
 
 (* Type of a cast. *)
 	    
-let cast_rel env cj tj =
-  if is_conv_leq env cj.uj_type tj.uj_val then
+let cast_rel env sigma cj tj =
+  if is_conv_leq env sigma cj.uj_type tj.uj_val then
     { uj_val = j_val_only cj;
       uj_type = tj.uj_val;
-      uj_kind = whd_betadeltaiota env tj.uj_type }
+      uj_kind = whd_betadeltaiota env sigma tj.uj_type }
   else 
     error_actual_type CCI env cj.uj_val cj.uj_type tj.uj_val
 
 (* Type of an application. *)
 
-let apply_rel_list env nocheck argjl funj =
+let apply_rel_list env sigma nocheck argjl funj =
   let rec apply_rec typ cst = function
     | [] -> 
 	{ uj_val  = applist (j_val_only funj, List.map j_val_only argjl);
@@ -395,13 +397,13 @@ let apply_rel_list env nocheck argjl funj =
           uj_kind = funj.uj_kind },
 	cst
     | hj::restjl ->
-        match whd_betadeltaiota env typ with
+        match whd_betadeltaiota env sigma typ with
           | DOP2(Prod,c1,DLAM(_,c2)) ->
               if nocheck then
                 apply_rec (subst1 hj.uj_val c2) cst restjl
 	      else 
 		(try 
-		   let c = conv_leq env hj.uj_type c1 in
+		   let c = conv_leq env sigma hj.uj_type c1 in
 		   let cst' = Constraint.union cst c in
 		   apply_rec (subst1 hj.uj_val c2) cst' restjl
 		 with NotConvertible -> 
@@ -421,7 +423,7 @@ let apply_rel_list env nocheck argjl funj =
  which may contain the CoFix variables. These occurrences of CoFix variables
  are not considered *)
 
-let noccur_with_meta sigma n m term = 
+let noccur_with_meta lc n m term = 
   let rec occur_rec n = function
     | Rel p -> if n<=p & p<n+m then raise Occur
     | VAR _ -> ()
@@ -429,7 +431,7 @@ let noccur_with_meta sigma n m term =
 	(match strip_outer_cast cl.(0) with
            | DOP0 (Meta _) -> ()
 	   | _ -> Array.iter (occur_rec n) cl)
-    | DOPN(Const sp, cl) when Spset.mem sp sigma -> ()
+    | DOPN(Const sp, cl) when Spset.mem sp lc -> ()
     | DOPN(op,cl) -> Array.iter (occur_rec n) cl
     | DOPL(_,cl) -> List.iter (occur_rec n) cl
     | DOP0(_) -> ()
@@ -489,14 +491,14 @@ let check_term env mind_recvec f =
   in 
   crec
 
-let is_inst_var env k c = 
-  match whd_betadeltaiota_stack env c [] with 
+let is_inst_var env sigma k c = 
+  match whd_betadeltaiota_stack env sigma c [] with 
     | (Rel n,_) -> n=k
     | _ -> false
 
-let is_subterm_specif env lcx mind_recvec = 
+let is_subterm_specif env sigma lcx mind_recvec = 
   let rec crec n lst c = 
-    match whd_betadeltaiota_stack env c [] with 
+    match whd_betadeltaiota_stack env sigma c [] with 
       | ((Rel k),_) -> find_sorted_assoc k lst
       |  (DOPN(MutCase _,_) as x,_) ->
            let ( _,_,c,br) = destCase x in
@@ -505,7 +507,7 @@ let is_subterm_specif env lcx mind_recvec =
            else
              let lcv = 
 	       (try 
-		  if is_inst_var env n c then lcx else (crec n lst c) 
+		  if is_inst_var env sigma n c then lcx else (crec n lst c) 
                 with Not_found -> (Array.create (Array.length br) []))
              in 
 	     assert (Array.length br = Array.length lcv);
@@ -552,16 +554,16 @@ let is_subterm_specif env lcx mind_recvec =
   in 
   crec
 
-let is_subterm env lcx mind_recvec n lst c = 
+let is_subterm env sigma lcx mind_recvec n lst c = 
   try 
-    let _ = is_subterm_specif env lcx mind_recvec n lst c in true 
+    let _ = is_subterm_specif env sigma lcx mind_recvec n lst c in true 
   with Not_found -> 
     false
 
 (* Auxiliary function: it checks a condition f depending on a deBrujin
    index for a certain number of abstractions *)
 
-let rec check_subterm_rec_meta env sigma vectn k def = 
+let rec check_subterm_rec_meta env sigma lc vectn k def = 
   (k < 0) or
   (let nfi = Array.length vectn in 
    (* check fi does not appear in the k+1 first abstractions, 
@@ -569,14 +571,14 @@ let rec check_subterm_rec_meta env sigma vectn k def =
    let rec check_occur n def = 
      (match strip_outer_cast def with
 	| DOP2(Lambda,a,DLAM(_,b)) -> 
-	    if noccur_with_meta sigma n nfi a then
+	    if noccur_with_meta lc n nfi a then
               if n = k+1 then (a,b) else check_occur (n+1) b
             else 
 	      error "Bad occurrence of recursive call"
         | _ -> error "Not enough abstractions in the definition") in
    let (c,d) = check_occur 1 def in 
    let (mI, largs) = 
-     (try find_minductype env c 
+     (try find_minductype env sigma c 
       with Induc -> error "Recursive definition on a non inductive type") in
    let (sp,tyi,_) = destMutInd mI in
    let mind_recvec = mis_recargs (lookup_mind_specif mI env) in 
@@ -587,9 +589,9 @@ let rec check_subterm_rec_meta env sigma vectn k def =
    *)
    let rec check_rec_call n lst t = 
      (* n gives the index of the recursive variable *)
-     (noccur_with_meta sigma (n+k+1) nfi t) or 
+     (noccur_with_meta lc (n+k+1) nfi t) or 
      (* no recursive call in the term *)
-     (match whd_betadeltaiota_stack env t [] with 
+     (match whd_betadeltaiota_stack env sigma t [] with 
 	| (Rel p,l) -> 
 	    if n+k+1 <= p & p < n+k+nfi+1 then
 	      (* recursive call *) 
@@ -598,7 +600,7 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 	      if List.length l > np then 
 		(match list_chop np l with
 		     (la,(z::lrest)) -> 
-	               if (is_subterm env lcx mind_recvec n lst z) 
+	               if (is_subterm env sigma lcx mind_recvec n lst z) 
                        then List.for_all (check_rec_call n lst) (la@lrest)
                        else error "Recursive call applied to an illegal term"
 		   | _ -> assert false)
@@ -608,10 +610,10 @@ let rec check_subterm_rec_meta env sigma vectn k def =
             let (ci,p,c_0,lrest) = destCase mc in
             let lc = 
 	      (try 
-		 if is_inst_var env n c_0 then 
+		 if is_inst_var env sigma n c_0 then 
 		   lcx 
 		 else 
-		   is_subterm_specif env lcx mind_recvec n lst c_0
+		   is_subterm_specif env sigma lcx mind_recvec n lst c_0
 	       with Not_found -> 
 		 Array.create (Array.length lrest) []) 
 	    in
@@ -646,8 +648,10 @@ let rec check_subterm_rec_meta env sigma vectn k def =
             else 
               let theDecrArg  = List.nth l decrArg in
               let recArgsDecrArg = 
-                try (is_subterm_specif env lcx mind_recvec n lst theDecrArg)
-	        with Not_found -> Array.create 0 [] 
+                try 
+		  is_subterm_specif env sigma lcx mind_recvec n lst theDecrArg
+	        with Not_found -> 
+		  Array.create 0 [] 
               in 
 	      if (Array.length recArgsDecrArg)=0 then
 		array_for_all (check_rec_call n lst) la
@@ -698,7 +702,7 @@ nvect is [|n1;..;nk|] which gives for each recursive definition
 the inductive-decreasing index 
 the function checks the convertibility of ti with Ai *)
 
-let check_fix env sigma = function
+let check_fix env sigma lc = function
   | DOPN(Fix(nvect,j),vargs) -> 
       let nbfix = let nv = Array.length vargs in 
       if nv < 2 then error "Ill-formed recursive definition" else nv-1 in
@@ -714,7 +718,7 @@ let check_fix env sigma = function
 	let check_type i = 
 	  try
 	    let _ = 
-	      check_subterm_rec_meta env sigma nvect nvect.(i) vdefs.(i) in 
+	      check_subterm_rec_meta env sigma lc nvect nvect.(i) vdefs.(i) in 
 	    ()
 	  with UserError (s,str) ->
 	    error_ill_formed_rec_body CCI env str lna i vdefs 
@@ -728,12 +732,12 @@ let check_fix env sigma = function
 let mind_nparams env i =
   let mis = lookup_mind_specif i env in mis.mis_mib.mind_nparams
 
-let check_guard_rec_meta env sigma nbfix def deftype = 
+let check_guard_rec_meta env sigma lc nbfix def deftype = 
   let rec codomain_is_coind c  =
-    match whd_betadeltaiota env (strip_outer_cast c) with
+    match whd_betadeltaiota env sigma (strip_outer_cast c) with
       | DOP2(Prod,a,DLAM(_,b)) -> codomain_is_coind b 
       | b  -> 
-	  (try find_mcoinductype env b
+	  (try find_mcoinductype env sigma b
            with 
 	     | Induc -> error "The codomain is not a coinductive type"
 	     | _ -> error "Type of Cofix function not as expected")
@@ -743,17 +747,17 @@ let check_guard_rec_meta env sigma nbfix def deftype =
   let lvlra = (mis_recargs (lookup_mind_specif mI env)) in
   let vlra = lvlra.(tyi) in  
   let rec check_rec_call alreadygrd n vlra  t = 
-    if noccur_with_meta sigma n nbfix t then
+    if noccur_with_meta lc n nbfix t then
       true 
     else 
-      match whd_betadeltaiota_stack env t [] with 
+      match whd_betadeltaiota_stack env sigma t [] with 
 	| (DOP0 (Meta _), l) -> true
 	      
 	|  (Rel p,l) -> 
              if n <= p && p < n+nbfix then
 	       (* recursive call *)
                if alreadygrd then
-		 if List.for_all (noccur_with_meta sigma n nbfix) l then
+		 if List.for_all (noccur_with_meta lc n nbfix) l then
 		   true
 		 else 
 		   error "Nested recursive occurrences"
@@ -792,14 +796,14 @@ let check_guard_rec_meta env sigma nbfix def deftype =
                                (process_args_of_constr lr lrar)
 				 
                        |  _::lrar  -> 
-                            if (noccur_with_meta sigma n nbfix t) 
+                            if (noccur_with_meta lc n nbfix t) 
                             then (process_args_of_constr lr lrar)
                             else error "Recursive call inside a non-recursive argument of constructor")
             in (process_args_of_constr realargs lra)
 		 
 		 
 	| (DOP2(Lambda,a,DLAM(_,b)),[]) -> 
-            if (noccur_with_meta sigma n nbfix a) then
+            if (noccur_with_meta lc n nbfix a) then
               check_rec_call alreadygrd (n+1)  vlra b
             else 
 	      error "Recursive call in the type of an abstraction"
@@ -817,7 +821,7 @@ let check_guard_rec_meta env sigma nbfix def deftype =
             let (lna,vdefs) = decomp_DLAMV_name la ldef in
             let vlna = Array.of_list lna 
             in 
-	    if (array_for_all (noccur_with_meta sigma n nbfix) varit) then
+	    if (array_for_all (noccur_with_meta lc n nbfix) varit) then
               (array_for_all (check_rec_call alreadygrd (n+1) vlra) vdefs)
               &&
               (List.for_all (check_rec_call alreadygrd (n+1) vlra) l) 
@@ -826,9 +830,9 @@ let check_guard_rec_meta env sigma nbfix def deftype =
 		
 	| (DOPN(MutCase _,_) as mc,l) -> 
             let (_,p,c,vrest) = destCase mc in
-            if (noccur_with_meta sigma n nbfix p) then
-              if (noccur_with_meta sigma n nbfix c) then
-		if (List.for_all (noccur_with_meta sigma n nbfix) l) then
+            if (noccur_with_meta lc n nbfix p) then
+              if (noccur_with_meta lc n nbfix c) then
+		if (List.for_all (noccur_with_meta lc n nbfix) l) then
 		  (array_for_all (check_rec_call alreadygrd n vlra) vrest)
 		else 
 		  error "Recursive call in the argument of a function defined by cases"        
@@ -845,7 +849,7 @@ let check_guard_rec_meta env sigma nbfix def deftype =
 (* The  function which checks that the whole block of definitions 
    satisfies the guarded condition *)
 
-let check_cofix env sigma f = 
+let check_cofix env sigma lc f = 
   match f with
     | DOPN(CoFix(j),vargs) -> 
 	let nbfix = let nv = Array.length vargs in 
@@ -862,7 +866,7 @@ let check_cofix env sigma f =
 	let check_type i = 
 	  try 
 	    let _ = 
-	      check_guard_rec_meta env sigma nbfix vdefs.(i) varit.(i) in 
+	      check_guard_rec_meta env sigma lc nbfix vdefs.(i) varit.(i) in 
 	    ()
 	  with UserError (s,str) -> 
 	    error_ill_formed_rec_body CCI env str lna i vdefs 
@@ -876,7 +880,7 @@ let check_cofix env sigma f =
 
 exception IllBranch of int
 
-let type_fixpoint env lna lar vdefj =
+let type_fixpoint env sigma lna lar vdefj =
   let lt = Array.length vdefj in
   assert (Array.length lar = lt);
   try
@@ -884,6 +888,7 @@ let type_fixpoint env lna lar vdefj =
       (fun i e def ar -> 
 	 try conv_leq e def (lift lt ar) 
 	 with NotConvertible -> raise (IllBranch i))
-      env (Array.map (fun j -> j.uj_type) vdefj) (Array.map body_of_type lar)
+      env sigma
+      (Array.map (fun j -> j.uj_type) vdefj) (Array.map body_of_type lar)
   with IllBranch i ->
     error_ill_typed_rec_body CCI env i lna vdefj lar

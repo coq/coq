@@ -18,14 +18,15 @@ type evar_body =
   | Evar_empty 
   | Evar_defined of constr
 
-type evar_info = {
+type 'a evar_info = {
   evar_concl : constr;
   evar_hyps : typed_type signature;
-  evar_body : evar_body }
+  evar_body : evar_body;
+  evar_info : 'a }
 
-type evar_map = evar_info Intmap.t
+type 'a evar_map = 'a evar_info Intmap.t
 
-let mt_evd = Intmap.empty
+let empty = Intmap.empty
 
 let to_list evc = Intmap.fold (fun ev x acc -> (ev,x)::acc) evc []
 let dom evc = Intmap.fold (fun ev _ acc -> ev::acc) evc []
@@ -41,7 +42,8 @@ let define evd ev body =
   let newinfo =
     { evar_concl = oldinfo.evar_concl;
       evar_hyps = oldinfo.evar_hyps;
-      evar_body = Evar_defined body } 
+      evar_body = Evar_defined body;
+      evar_info = oldinfo.evar_info } 
   in
   match oldinfo.evar_body with
     | Evar_empty -> Intmap.add ev newinfo evd
@@ -61,3 +63,6 @@ let is_evar sigma ev = in_dom sigma ev
 let is_defined sigma ev =
   let info = map sigma ev in 
   not (info.evar_body = Evar_empty)
+
+let metamap sigma = failwith "metamap : NOT YET IMPLEMENTED"
+

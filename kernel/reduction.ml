@@ -7,6 +7,7 @@ open Names
 open Generic
 open Term
 open Univ
+open Evd
 open Constant
 open Inductive
 open Environ
@@ -17,29 +18,30 @@ exception Redelimination
 exception Induc
 exception Elimconst
 
-type reduction_function = unsafe_env -> constr -> constr
-type stack_reduction_function = 
-    unsafe_env -> constr -> constr list -> constr * constr list
+type 'a reduction_function = unsafe_env -> 'a evar_map -> constr -> constr
+
+type 'a stack_reduction_function = 
+    unsafe_env -> 'a evar_map -> constr -> constr list -> constr * constr list
 
 (*************************************)
 (*** Reduction Functions Operators ***)
 (*************************************)
 
-let rec under_casts f env = function
-  | DOP2(Cast,c,t) -> DOP2(Cast,under_casts f env c, t)
-  | c              -> f env c
+let rec under_casts f env sigma = function
+  | DOP2(Cast,c,t) -> DOP2(Cast,under_casts f env sigma c, t)
+  | c              -> f env sigma c
 
-let rec whd_stack env x stack =
+let rec whd_stack env sigma x stack =
   match x with
-    | DOPN(AppL,cl)  -> whd_stack env cl.(0) (array_app_tl cl stack)
-    | DOP2(Cast,c,_) -> whd_stack env c stack
+    | DOPN(AppL,cl)  -> whd_stack env sigma cl.(0) (array_app_tl cl stack)
+    | DOP2(Cast,c,_) -> whd_stack env sigma c stack
     | _              -> (x,stack)
 	  
-let stack_reduction_of_reduction red_fun env x stack =
-  let t = red_fun env (applistc x stack) in
-  whd_stack env t []
+let stack_reduction_of_reduction red_fun env sigma x stack =
+  let t = red_fun env sigma (applistc x stack) in
+  whd_stack env sigma t []
 
-let strong whdfun env = 
+let strong whdfun env sigma = 
   let rec strongrec = function
     | DOP0 _ as t -> t
     (* Cas ad hoc *)
@@ -54,10 +56,10 @@ let strong whdfun env =
   in
   strongrec
 
-let rec strong_prodspine redfun env c = 
-  match redfun env c with
+let rec strong_prodspine redfun env sigma c = 
+  match redfun env sigma c with
     | DOP2(Prod,a,DLAM(na,b)) ->
-        DOP2(Prod,a,DLAM(na,strong_prodspine redfun env b))
+        DOP2(Prod,a,DLAM(na,strong_prodspine redfun env sigma b))
     | x -> x
 
 
@@ -67,8 +69,8 @@ let rec strong_prodspine redfun env c =
 
 
 (* call by value reduction functions *)
-let cbv_norm_flags flags env t =
-  cbv_norm (create_cbv_infos flags env) t
+let cbv_norm_flags flags env sigma t =
+  cbv_norm (create_cbv_infos flags env sigma) t
 
 let cbv_beta env = cbv_norm_flags beta env
 let cbv_betaiota env = cbv_norm_flags betaiota env
@@ -78,8 +80,8 @@ let compute = cbv_betadeltaiota
 
 
 (* lazy reduction functions. The infos must be created for each term *)
-let clos_norm_flags flgs env t =
-  norm_val (create_clos_infos flgs env) (inject t)
+let clos_norm_flags flgs env sigma t =
+  norm_val (create_clos_infos flgs env sigma) (inject t)
 
 let nf_beta env = clos_norm_flags beta env
 let nf_betaiota env = clos_norm_flags betaiota env
@@ -88,12 +90,12 @@ let nf_betadeltaiota env =  clos_norm_flags betadeltaiota env
 
 (* lazy weak head reduction functions *)
 (* Pb: whd_val parcourt tout le terme, meme si aucune reduction n'a lieu *)
-let whd_flags flgs env t =
-  whd_val (create_clos_infos flgs env) (inject t)
+let whd_flags flgs env sigma t =
+  whd_val (create_clos_infos flgs env sigma) (inject t)
 
 
 (* Red reduction tactic: reduction to a product *)
-let red_product env c = 
+let red_product env sigma c = 
   let rec redrec x =
     match x with
       | DOPN(AppL,cl) -> 
@@ -104,7 +106,7 @@ let red_product env c =
       | DOP2(Prod,a,DLAM(x,b)) -> DOP2(Prod, a, DLAM(x, redrec b))  
       | _ -> error "Term not reducible"
   in 
-  nf_betaiota env (redrec c)
+  nf_betaiota env sigma (redrec c)
 
 
 (* Substitute only a list of locations locs, the empty list is interpreted
@@ -266,39 +268,39 @@ let rec substlin env name n ol c =
 	
     | _ -> (n,ol,c)
 	  
-let unfold env name =
+let unfold env sigma name =
   let flag = 
     (UNIFORM,{ r_beta = true;
                r_delta = (fun op -> op=(Const name) or op=(Abst name));
                r_iota = true })
   in 
-  clos_norm_flags flag env
+  clos_norm_flags flag env sigma
 
 
 (* unfoldoccs : (readable_constraints -> (int list * section_path) -> constr -> constr)
  * Unfolds the constant name in a term c following a list of occurrences occl.
  * at the occurrences of occ_list. If occ_list is empty, unfold all occurences.
  * Performs a betaiota reduction after unfolding. *)
-let unfoldoccs env (occl,name) c =
+let unfoldoccs env sigma (occl,name) c =
   match occl with
-    | []  -> unfold env name c
+    | []  -> unfold env sigma name c
     | l -> 
         match substlin env name 1 (Sort.list (<) l) c with
-          | (_,[],uc) -> nf_betaiota env uc
+          | (_,[],uc) -> nf_betaiota env sigma uc
           | (1,_,_) -> error ((string_of_path name)^" does not occur")
           | _ -> error ("bad occurrence numbers of "^(string_of_path name))
 
 (* Unfold reduction tactic: *)
-let unfoldn loccname env c = 
-  List.fold_left (fun c occname -> unfoldoccs env occname c) c loccname
+let unfoldn loccname env sigma c = 
+  List.fold_left (fun c occname -> unfoldoccs env sigma occname c) c loccname
 
 (* Re-folding constants tactics: refold com in term c *)
-let fold_one_com com env c =
-  let rcom = red_product env com in
+let fold_one_com com env sigma c =
+  let rcom = red_product env sigma com in
   subst1 com (subst_term rcom c)
 
-let fold_commands cl env c =
-  List.fold_right (fun com -> fold_one_com com env) (List.rev cl) c
+let fold_commands cl env sigma c =
+  List.fold_right (fun com -> fold_one_com com env sigma) (List.rev cl) c
 
 
 (* Pattern *)
@@ -316,7 +318,7 @@ let abstract_scheme env (locc,a,ta) t =
     DOP2(Lambda, ta, DLAM(na,subst_term_occ locc a t))
 
 
-let pattern_occs loccs_trm_typ env c =
+let pattern_occs loccs_trm_typ env sigma c =
   let abstr_trm = List.fold_right (abstract_scheme env) loccs_trm_typ c in
   applist(abstr_trm, List.map (fun (_,t,_) -> t) loccs_trm_typ)
 
@@ -337,7 +339,7 @@ let rec stacklam recfun env t stack =
 let beta_applist (c,l) = stacklam (fun c l -> applist(c,l)) [] c l
 
 
-let whd_beta_stack env = 
+let whd_beta_stack env sigma = 
   let rec whrec x stack = match x with
     | DOP2(Lambda,c1,DLAM(name,c2)) ->
 	(match stack with
@@ -350,12 +352,12 @@ let whd_beta_stack env =
   in 
   whrec
 
-let whd_beta env x = applist (whd_beta_stack env x [])
+let whd_beta env sigma x = applist (whd_beta_stack env sigma x [])
 
 
 (* 2. Delta Reduction *)
 		   
-let whd_const_stack namelist env = 
+let whd_const_stack namelist env sigma = 
   let rec whrec x l =
     match x with
       | DOPN(Const sp,_) as c ->
@@ -382,9 +384,10 @@ let whd_const_stack namelist env =
   in 
   whrec
 
-let whd_const namelist env c = applist(whd_const_stack namelist env c [])
+let whd_const namelist env sigma c = 
+  applist(whd_const_stack namelist env sigma c [])
 
-let whd_delta_stack env = 
+let whd_delta_stack env sigma = 
   let rec whrec x l =
     match x with
       | DOPN(Const _,_) as c ->
@@ -403,10 +406,10 @@ let whd_delta_stack env =
   in 
   whrec
 
-let whd_delta env c = applist(whd_delta_stack env c [])
+let whd_delta env sigma c = applist(whd_delta_stack env sigma c [])
 
 
-let whd_betadelta_stack env = 
+let whd_betadelta_stack env sigma = 
   let rec whrec x l =
     match x with
       | DOPN(Const _,_) ->
@@ -429,10 +432,10 @@ let whd_betadelta_stack env =
   in 
   whrec
 
-let whd_betadelta env c = applist(whd_betadelta_stack env c [])
+let whd_betadelta env sigma c = applist(whd_betadelta_stack env sigma c [])
 
 
-let whd_betadeltat_stack env = 
+let whd_betadeltat_stack env sigma = 
   let rec whrec x l =
     match x with
       | DOPN(Const _,_) ->
@@ -455,9 +458,9 @@ let whd_betadeltat_stack env =
   in 
   whrec
        
-let whd_betadeltat env c = applist(whd_betadeltat_stack env c [])
+let whd_betadeltat env sigma c = applist(whd_betadeltat_stack env sigma c [])
 
-let whd_betadeltaeta_stack env = 
+let whd_betadeltaeta_stack env sigma = 
   let rec whrec x stack =
     match x with
       | DOPN(Const _,_) ->
@@ -493,7 +496,8 @@ let whd_betadeltaeta_stack env =
   in 
   whrec
 
-let whd_betadeltaeta env x = applist(whd_betadeltaeta_stack env x [])
+let whd_betadeltaeta env sigma x = 
+  applist(whd_betadeltaeta_stack env sigma x [])
 
 (* 3. Iota reduction *)
 
@@ -572,7 +576,7 @@ let reduce_fix whfun fix stack =
                                      --------------------
 qui coute cher dans whd_betadeltaiota *)
 
-let whd_betaiota_stack env = 
+let whd_betaiota_stack env sigma = 
   let rec whrec x stack =
     match x with
       | DOP2(Cast,c,_) -> whrec c stack
@@ -597,10 +601,10 @@ let whd_betaiota_stack env =
   in 
   whrec    
 
-let whd_betaiota env x = applist (whd_betaiota_stack env x [])
+let whd_betaiota env sigma x = applist (whd_betaiota_stack env sigma x [])
 
 
-let whd_betadeltatiota_stack env = 
+let whd_betadeltatiota_stack env sigma = 
   let rec whrec x stack =
     match x with
       | DOPN(Const _,_) ->
@@ -634,9 +638,10 @@ let whd_betadeltatiota_stack env =
  in 
   whrec   
 
-let whd_betadeltatiota env x = applist(whd_betadeltatiota_stack env x [])
+let whd_betadeltatiota env sigma x = 
+  applist(whd_betadeltatiota_stack env sigma x [])
 
-let whd_betadeltaiota_stack env =
+let whd_betadeltaiota_stack env sigma =
   let rec bdi_rec x stack =
     match x with
       | DOPN(Const _,_) ->
@@ -670,10 +675,11 @@ let whd_betadeltaiota_stack env =
   in
   bdi_rec
 
-let whd_betadeltaiota env x = applist(whd_betadeltaiota_stack env x [])
+let whd_betadeltaiota env sigma x = 
+  applist(whd_betadeltaiota_stack env sigma x [])
 				
 				
-let whd_betadeltaiotaeta_stack env = 
+let whd_betadeltaiotaeta_stack env sigma = 
   let rec whrec x stack =
     match x with
       | DOPN(Const _,_) ->
@@ -723,7 +729,8 @@ let whd_betadeltaiotaeta_stack env =
   in 
   whrec  
 
-let whd_betadeltaiotaeta env x = applist(whd_betadeltaiotaeta_stack env x [])
+let whd_betadeltaiotaeta env sigma x = 
+  applist(whd_betadeltaiotaeta_stack env sigma x [])
 
 (********************************************************************)
 (*                         Conversion                               *)
@@ -739,7 +746,8 @@ let pb_equal = function
   | CONV_LEQ -> CONV
   | CONV -> CONV
 
-type conversion_function = unsafe_env -> constr -> constr -> constraints
+type 'a conversion_function = 
+    unsafe_env -> 'a evar_map -> constr -> constr -> constraints
 
 (* Conversion utility functions *)
 
@@ -905,43 +913,43 @@ and eqappr cv_pb infos appr1 appr2 =
      | _ -> (fun _ -> raise NotConvertible)
 
 
-let fconv cv_pb env t1 t2 =
-  let t1 = strong (fun _ -> strip_outer_cast) env t1
-  and t2 = strong (fun _ -> strip_outer_cast) env t2 in
+let fconv cv_pb env sigma t1 t2 =
+  let t1 = strong (fun _ -> strip_outer_cast) env sigma t1
+  and t2 = strong (fun _ -> strip_outer_cast) env sigma t2 in
   if eq_constr t1 t2 then 
     Constraint.empty
   else
-    let infos = create_clos_infos hnf_flags env in
+    let infos = create_clos_infos hnf_flags env sigma in
     ccnv cv_pb infos ELID ELID (inject t1) (inject t2) Constraint.empty
 
 let conv env = fconv CONV env
 let conv_leq env = fconv CONV_LEQ env 
 
-let conv_forall2 f env v1 v2 =
+let conv_forall2 f env sigma v1 v2 =
   array_fold_left2 
-    (fun c x y -> let c' = f env x y in Constraint.union c c')
+    (fun c x y -> let c' = f env sigma x y in Constraint.union c c')
     Constraint.empty
     v1 v2
 
-let conv_forall2_i f env v1 v2 =
+let conv_forall2_i f env sigma v1 v2 =
   array_fold_left2_i 
-    (fun i c x y -> let c' = f i env x y in Constraint.union c c')
+    (fun i c x y -> let c' = f i env sigma x y in Constraint.union c c')
     Constraint.empty
     v1 v2
 
-let test_conversion f env x y =
-  try let _ = f env x y in true with NotConvertible -> false
+let test_conversion f env sigma x y =
+  try let _ = f env sigma x y in true with NotConvertible -> false
 
-let is_conv env = test_conversion conv env
-let is_conv_leq env = test_conversion conv_leq env
+let is_conv env sigma = test_conversion conv env sigma
+let is_conv_leq env sigma = test_conversion conv_leq env sigma
 
 
 (********************************************************************)
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)
 
-let whd_meta env = function
-  | DOP0(Meta p) as u -> (try List.assoc p (metamap env) with Not_found -> u)
+let whd_meta env sigma = function
+  | DOP0(Meta p) as u -> (try List.assoc p (metamap sigma) with Not_found -> u)
   | x -> x
 	
 (* Try to replace all metas. Does not replace metas in the metas' values
@@ -960,8 +968,8 @@ let plain_instance s c =
   if s = [] then c else irec c
     
 (* Pourquoi ne fait-on pas nf_betaiota si s=[] ? *)
-let instance s env c = 
-  if s = [] then c else nf_betaiota env (plain_instance s c)
+let instance s env sigma c = 
+  if s = [] then c else nf_betaiota env sigma (plain_instance s c)
 
 
 (* pseudo-reduction rule:
@@ -970,46 +978,52 @@ let instance s env c =
  * if this does not work, then we use the string S as part of our
  * error message. *)
 
-let hnf_prod_app env s t n =
-  match whd_betadeltaiota env t with
+let hnf_prod_app env sigma s t n =
+  match whd_betadeltaiota env sigma t with
     | DOP2(Prod,_,b) -> sAPP b n
     | _ ->
 	errorlabstrm s [< 'sTR"Needed a product, but didn't find one in " ;
 			  'sTR s ; 'fNL >]
 
-let hnf_prod_appvect env s t nL = Array.fold_left (hnf_prod_app env s) t nL
-let hnf_prod_applist env s t nL = List.fold_left (hnf_prod_app env s) t nL
+let hnf_prod_appvect env sigma s t nl = 
+  Array.fold_left (hnf_prod_app env sigma s) t nl
+
+let hnf_prod_applist env sigma s t nl = 
+  List.fold_left (hnf_prod_app env sigma s) t nl
 				    
-let hnf_lam_app env s t n =
-  match whd_betadeltaiota env t with
+let hnf_lam_app env sigma s t n =
+  match whd_betadeltaiota env sigma t with
     | DOP2(Lambda,_,b) -> sAPP b n
     | _ ->
 	errorlabstrm s [< 'sTR"Needed a product, but didn't find one in " ;
 			  'sTR s ; 'fNL >]
 
-let hnf_lam_appvect env s t nL = Array.fold_left (hnf_lam_app env s) t nL
-let hnf_lam_applist env s t nL = List.fold_left (hnf_lam_app env s) t nL
+let hnf_lam_appvect env sigma s t nl = 
+  Array.fold_left (hnf_lam_app env sigma s) t nl
 
-let splay_prod env = 
+let hnf_lam_applist env sigma s t nl = 
+  List.fold_left (hnf_lam_app env sigma s) t nl
+
+let splay_prod env sigma = 
   let rec decrec m c =
-    match whd_betadeltaiota env c with
-      | DOP2(Prod,a,DLAM(n,c_0))            -> decrec ((n,a)::m) c_0
+    match whd_betadeltaiota env sigma c with
+      | DOP2(Prod,a,DLAM(n,c_0)) -> decrec ((n,a)::m) c_0
       | t -> m,t
   in 
   decrec []
   
-let decomp_prod env = 
+let decomp_prod env sigma = 
   let rec decrec m c =
-    match whd_betadeltaiota env c with
+    match whd_betadeltaiota env sigma c with
       | DOP0(Sort _) as x -> m,x
-      | DOP2(Prod,a,DLAM(n,c_0))            -> decrec (m+1) c_0
-      | _                      -> error "decomp_prod: Not a product"
+      | DOP2(Prod,a,DLAM(n,c_0)) -> decrec (m+1) c_0
+      | _ -> error "decomp_prod: Not a product"
   in 
   decrec 0
     
-let decomp_n_prod env n = 
+let decomp_n_prod env sigma n = 
   let rec decrec m ln c = if m = 0 then (ln,c) else 
-    match whd_betadeltaiota env c with
+    match whd_betadeltaiota env sigma c with
       | DOP2(Prod,a,DLAM(n,c_0)) -> decrec (m-1) ((n,a)::ln) c_0
       | _                      -> error "decomp_n_prod: Not enough products"
   in 
@@ -1102,9 +1116,9 @@ an equivalent of Fix(f|t)[xi<-ai] as
 with bj=aj if j<>ik and bj=(Rel c) and Bic=Aic[xn..xic-1 <- an..aic-1]
    *)
 
-let compute_consteval env c = 
+let compute_consteval env sigma c = 
   let rec srec n labs c =
-    match whd_betadeltaeta_stack env c [] with 
+    match whd_betadeltaeta_stack env sigma c [] with 
       | (DOP2(Lambda,t,DLAM(_,g)),[])  -> srec (n+1) (t::labs) g
       | (DOPN(Fix((nv,i)),bodies),l)   -> 
           if List.length l > n then 
@@ -1134,25 +1148,25 @@ let compute_consteval env c =
 
 (* One step of approximation *)
 
-let rec apprec env c stack =
-  let (t,stack) = whd_betaiota_stack env c stack in
+let rec apprec env sigma c stack =
+  let (t,stack) = whd_betaiota_stack env sigma c stack in
   match t with
     | DOPN(MutCase _,_) ->
         let (ci,p,d,lf) = destCase t in
-        let (cr,crargs) = whd_betadeltaiota_stack env d [] in
+        let (cr,crargs) = whd_betadeltaiota_stack env sigma d [] in
         let rslt = mkMutCaseA ci p (applist(cr,crargs)) lf in
         if reducible_mind_case cr then 
-	  apprec env rslt stack
+	  apprec env sigma rslt stack
         else 
 	  (t,stack)
     | DOPN(Fix _,_) ->
         let (reduced,(fix,stack)) = 
-	  reduce_fix (whd_betadeltaiota_stack env) t stack 
+	  reduce_fix (whd_betadeltaiota_stack env sigma) t stack 
 	in
-        if reduced then apprec env fix stack else (fix,stack)
+        if reduced then apprec env sigma fix stack else (fix,stack)
     | _ -> (t,stack)
 
-let hnf env c = apprec env c []
+let hnf env sigma c = apprec env sigma c []
 
 (* A reduction function like whd_betaiota but which keeps casts
  * and does not reduce redexes containing meta-variables.
@@ -1160,7 +1174,7 @@ let hnf env c = apprec env c []
  * Used in Programs.
  * Added by JCF, 29/1/98. *)
 
-let whd_programs_stack env = 
+let whd_programs_stack env sigma = 
   let rec whrec x stack =
     match x with
       | DOPN(AppL,cl)    ->
@@ -1191,45 +1205,45 @@ let whd_programs_stack env =
   in 
   whrec    
 
-let whd_programs env x = applist (whd_programs_stack env x [])
+let whd_programs env sigma x = applist (whd_programs_stack env sigma x [])
 
-let find_mrectype env c =
-  let (t,l) = whd_betadeltaiota_stack env c [] in
+let find_mrectype env sigma c =
+  let (t,l) = whd_betadeltaiota_stack env sigma c [] in
   match t with
     | DOPN(MutInd (sp,i),_) ->  (t,l)
     | _ -> raise Induc
 
-let find_minductype env c =
-  let (t,l) = whd_betadeltaiota_stack env c [] in
+let find_minductype env sigma c =
+  let (t,l) = whd_betadeltaiota_stack env sigma c [] in
   match t with
     | DOPN(MutInd (sp,i),_)
         when mind_type_finite (lookup_mind sp env) i -> (t,l)
     | _ -> raise Induc
 
-let find_mcoinductype env c =
-  let (t,l) = whd_betadeltaiota_stack env c [] in
+let find_mcoinductype env sigma c =
+  let (t,l) = whd_betadeltaiota_stack env sigma c [] in
   match t with
     | DOPN(MutInd (sp,i),_)
         when not (mind_type_finite (lookup_mind sp env) i) -> (t,l)
     | _ -> raise Induc
 
-let minductype_spec env c = 
+let minductype_spec env sigma c = 
   try 
-    let (x,l) = find_minductype env c in
+    let (x,l) = find_minductype env sigma c in
     if l<>[] then anomaly "minductype_spec: Not a recursive type 1" else x
   with Induc -> 
     anomaly "minductype_spec: Not a recursive type 2"
       
-let mrectype_spec env c = 
+let mrectype_spec env sigma c = 
   try 
-    let (x,l) = find_mrectype env c in
+    let (x,l) = find_mrectype env sigma c in
     if l<>[] then anomaly "mrectype_spec: Not a recursive type 1" else x
   with Induc -> 
     anomaly "mrectype_spec: Not a recursive type 2"
 
-let check_mrectype_spec env c =
+let check_mrectype_spec env sigma c =
   try 
-    let (x,l) = find_mrectype env c in
+    let (x,l) = find_mrectype env sigma c in
     if l<>[] then error "check_mrectype: Not a recursive type 1" else x
   with Induc -> 
     error "check_mrectype: Not a recursive type 2"
@@ -1237,9 +1251,9 @@ let check_mrectype_spec env c =
 
 exception IsType
 
-let is_arity env = 
+let is_arity env sigma = 
   let rec srec c = 
-    match whd_betadeltaiota env c with 
+    match whd_betadeltaiota env sigma c with 
       | DOP0(Sort _) -> true
       | DOP2(Prod,_,DLAM(_,c')) -> srec c' 
       | DOP2(Lambda,_,DLAM(_,c')) -> srec c' 
@@ -1247,9 +1261,9 @@ let is_arity env =
   in 
   srec 
  
-let info_arity env = 
+let info_arity env sigma = 
   let rec srec c = 
-    match whd_betadeltaiota env c with 
+    match whd_betadeltaiota env sigma c with 
       | DOP0(Sort(Prop Null)) -> false 
       | DOP0(Sort(Prop Pos)) -> true 
       | DOP2(Prod,_,DLAM(_,c')) -> srec c' 
@@ -1258,15 +1272,15 @@ let info_arity env =
   in 
   srec 
     
-let is_logic_arity env c = 
-  try (not (info_arity env c)) with IsType -> false
+let is_logic_arity env sigma c = 
+  try (not (info_arity env sigma c)) with IsType -> false
 
-let is_info_arity env c = 
-  try (info_arity env c) with IsType -> true
+let is_info_arity env sigma c = 
+  try (info_arity env sigma c) with IsType -> true
    
-let is_type_arity env = 
+let is_type_arity env sigma = 
   let rec srec c = 
-    match whd_betadeltaiota env c with 
+    match whd_betadeltaiota env sigma c with 
       | DOP0(Sort(Type _)) -> true
       | DOP2(Prod,_,DLAM(_,c')) -> srec c' 
       | DOP2(Lambda,_,DLAM(_,c')) -> srec c' 
@@ -1274,21 +1288,21 @@ let is_type_arity env =
   in 
   srec 
 
-let is_info_type env t =
+let is_info_type env sigma t =
   let s = t.typ in
   (s = Prop Pos) ||
   (s <> Prop Null && 
-   try info_arity env t.body with IsType -> true)
+   try info_arity env sigma t.body with IsType -> true)
 
-let is_info_cast_type env c = 
+let is_info_cast_type env sigma c = 
   match c with  
     | DOP2(Cast,c,t) -> 
-	(try info_arity env t 
-         with IsType -> try info_arity env c with IsType -> true)
-    |  _ -> try info_arity env c with IsType -> true
+	(try info_arity env sigma t 
+         with IsType -> try info_arity env sigma c with IsType -> true)
+    |  _ -> try info_arity env sigma c with IsType -> true
 	   
-let contents_of_cast_type env c = 
-  if is_info_cast_type env c then Pos else Null
+let contents_of_cast_type env sigma c = 
+  if is_info_cast_type env sigma c then Pos else Null
 
 let is_info_sort = is_info_arity
 
@@ -1320,64 +1334,61 @@ let add_free_rels_until depth m acc =
 
 (* calcule la liste des arguments implicites *)
 
-let poly_args env t =
-  let rec aux n t = match (whd_betadeltaiota env t) with
+let poly_args env sigma t =
+  let rec aux n t = match (whd_betadeltaiota env sigma t) with
     | DOP2(Prod,a,DLAM(_,b)) -> add_free_rels_until n a (aux (n+1) b)
     | DOP2(Cast,t',_) -> aux n t'
     | _ -> []
   in 
-  match (strip_outer_cast (whd_betadeltaiota env t)) with 
+  match (strip_outer_cast (whd_betadeltaiota env sigma t)) with 
     | DOP2(Prod,a,DLAM(_,b)) -> aux 1 b
     | _ -> []
 
 
 (* Expanding existential variables (trad.ml, progmach.ml) *)
 (* 1- whd_ise fails if an existential is undefined *)
-let rec whd_ise env = function
+let rec whd_ise env sigma = function
   | DOPN(Evar sp,_) as k ->
-      let evm = evar_map env in
-      if Evd.in_dom evm sp then
-        if Evd.is_defined evm sp then
-          whd_ise env (constant_value env k)
+      if Evd.in_dom sigma sp then
+        if Evd.is_defined sigma sp then
+          whd_ise env sigma (existential_value sigma k)
         else
           errorlabstrm "whd_ise"
             [< 'sTR"There is an unknown subterm I cannot solve" >]
       else 
 	k
-  | DOP2(Cast,c,_) -> whd_ise env c
-  | DOP0(Sort(Type(_))) -> DOP0(Sort(Type(dummy_univ)))
+  | DOP2(Cast,c,_) -> whd_ise env sigma c
+  | DOP0(Sort(Type _)) -> DOP0(Sort(Type dummy_univ))
   | c -> c
 
 
 (* 2- undefined existentials are left unchanged *)
-let rec whd_ise1 env = function
+let rec whd_ise1 env sigma = function
   | (DOPN(Evar sp,_) as k) ->
-      let evm = evar_map env in
-      if Evd.in_dom evm sp & Evd.is_defined evm sp then
-        whd_ise1 env (existential_value env k)
+      if Evd.in_dom sigma sp & Evd.is_defined sigma sp then
+        whd_ise1 env sigma (existential_value sigma k)
       else 
 	k
-  | DOP2(Cast,c,_) -> whd_ise1 env c
+  | DOP2(Cast,c,_) -> whd_ise1 env sigma c
   | DOP0(Sort(Type _)) -> DOP0(Sort(Type dummy_univ))
   | c -> c
 
-let nf_ise1 env = strong (whd_ise1 env) env
+let nf_ise1 env sigma = strong (whd_ise1 env sigma) env sigma
 
 (* Same as whd_ise1, but replaces the remaining ISEVAR by Metavariables
  * Similarly we have is_fmachine1_metas and is_resolve1_metas *)
 
-let rec whd_ise1_metas env = function
+let rec whd_ise1_metas env sigma = function
   | (DOPN(Evar n,_) as k) ->
-      let evm = evar_map env in
-      if Evd.in_dom evm n then
-	if Evd.is_defined evm n then
-      	  whd_ise1_metas env (existential_value env k)
+      if Evd.in_dom sigma n then
+	if Evd.is_defined sigma n then
+      	  whd_ise1_metas env sigma (existential_value sigma k)
 	else 
       	  let m = DOP0(Meta (new_meta())) in
-	  DOP2(Cast,m,existential_type env k)
+	  DOP2(Cast,m,existential_type sigma k)
       else
 	k
-  | DOP2(Cast,c,_) -> whd_ise1_metas env c
+  | DOP2(Cast,c,_) -> whd_ise1_metas env sigma c
   | c -> c
 
 

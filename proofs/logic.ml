@@ -22,8 +22,8 @@ type refiner_error =
 
 exception RefinerError of refiner_error
 
-let conv_leq_goal env arg ty conclty =
-  if not (is_conv_leq env ty conclty) then 
+let conv_leq_goal env sigma arg ty conclty =
+  if not (is_conv_leq env sigma ty conclty) then 
     raise (RefinerError (BadType (arg,ty,conclty)))
 
 let type_of env hyps c =
@@ -32,84 +32,84 @@ let type_of env hyps c =
 let execute_type env ty =
   failwith "TODO: typage type avec VE"
 
-let rec mk_refgoals env goal goalacc conclty trm =
-  let hyps = goal.goal_ev.evar_hyps in
+let rec mk_refgoals env sigma goal goalacc conclty trm =
+  let hyps = goal.evar_hyps in
   match trm with
     | DOP0(Meta mv) ->
 	if occur_meta conclty then
           error "Cannot refine to conclusions with meta-variables";
-	let ctxt = goal.goal_ctxtty in 
-	(mk_goal ctxt hyps (nf_betaiota env conclty))::goalacc, conclty
+	let ctxt = goal.evar_info in 
+	(mk_goal ctxt hyps (nf_betaiota env sigma conclty))::goalacc, conclty
 
     | DOP2(Cast,t,ty) ->
 	let _ = type_of env hyps ty in
-	conv_leq_goal env trm ty conclty;
-	mk_refgoals env goal goalacc ty t
+	conv_leq_goal env sigma trm ty conclty;
+	mk_refgoals env sigma goal goalacc ty t
 
     | DOPN(AppL,cl) ->
-	let (acc',hdty) = mk_hdgoals env goal goalacc (array_hd cl) in
+	let (acc',hdty) = mk_hdgoals env sigma goal goalacc (array_hd cl) in
 	let (acc'',conclty') = 
-	  mk_arggoals env goal acc' hdty (array_list_of_tl cl) in
-	let _ = conv_leq_goal env trm conclty' conclty in
+	  mk_arggoals env sigma goal acc' hdty (array_list_of_tl cl) in
+	let _ = conv_leq_goal env sigma trm conclty' conclty in
         (acc'',conclty')
 
     | DOPN(MutCase _,_) as mc -> 
 	let (_,p,c,lf) = destCase mc in
-	let (acc',lbrty,conclty') = mk_casegoals env goal goalacc p c in
+	let (acc',lbrty,conclty') = mk_casegoals env sigma goal goalacc p c in
 	let acc'' = 
 	  array_fold_left2
-            (fun lacc ty fi -> fst (mk_refgoals env goal lacc ty fi))
+            (fun lacc ty fi -> fst (mk_refgoals env sigma goal lacc ty fi))
             acc' lbrty lf 
 	in
-	let _ = conv_leq_goal env trm conclty' conclty in 
+	let _ = conv_leq_goal env sigma trm conclty' conclty in 
 	(acc'',conclty')
 
     | t -> 
 	if occur_meta t then raise (RefinerError (OccurMeta t));
       	let t'ty = type_of env hyps t in
-	conv_leq_goal env t t'ty conclty;
+	conv_leq_goal env sigma t t'ty conclty;
         (goalacc,t'ty)
 
 (* Same as mkREFGOALS but without knowing te type of the term. Therefore,
  * Metas should be casted. *)
 
-and mk_hdgoals env goal goalacc trm =
-  let hyps = goal.goal_ev.evar_hyps in
+and mk_hdgoals env sigma goal goalacc trm =
+  let hyps = goal.evar_hyps in
   match trm with
     | DOP2(Cast,DOP0(Meta mv),ty) ->
 	let _ = type_of env hyps ty in
-	let ctxt = goal.goal_ctxtty in  
-	(mk_goal ctxt hyps (nf_betaiota env ty))::goalacc,ty
+	let ctxt = goal.evar_info in  
+	(mk_goal ctxt hyps (nf_betaiota env sigma ty))::goalacc,ty
 	  
     | DOPN(AppL,cl) ->
-	let (acc',hdty) = mk_hdgoals env goal goalacc (array_hd cl) in
-	mk_arggoals env goal acc' hdty (array_list_of_tl cl)
+	let (acc',hdty) = mk_hdgoals env sigma goal goalacc (array_hd cl) in
+	mk_arggoals env sigma goal acc' hdty (array_list_of_tl cl)
 	
     | DOPN(MutCase _,_) as mc -> 
 	let (_,p,c,lf) = destCase mc in
-	let (acc',lbrty,conclty') = mk_casegoals env goal goalacc p c in
+	let (acc',lbrty,conclty') = mk_casegoals env sigma goal goalacc p c in
 	let acc'' = 
 	  array_fold_left2
-            (fun lacc ty fi -> fst (mk_refgoals env goal lacc ty fi))
+            (fun lacc ty fi -> fst (mk_refgoals env sigma goal lacc ty fi))
             acc' lbrty lf 
 	in
 	(acc'',conclty')
 
     | t -> goalacc,type_of env hyps t
 
-and mk_arggoals env goal goalacc funty = function
+and mk_arggoals env sigma goal goalacc funty = function
   | [] -> goalacc,funty
   | harg::tlargs ->
-      (match whd_betadeltaiota env funty with
+      (match whd_betadeltaiota env sigma funty with
 	 | DOP2(Prod,c1,b) ->
-	     let (acc',hargty) = mk_refgoals env goal goalacc c1 harg in
-	     mk_arggoals env goal acc' (sAPP b harg) tlargs
+	     let (acc',hargty) = mk_refgoals env sigma goal goalacc c1 harg in
+	     mk_arggoals env sigma goal acc' (sAPP b harg) tlargs
 	 | t -> raise (RefinerError (CannotApply (t,harg))))
 
-and mk_casegoals env goal goalacc p c= 
-  let (acc',ct) = mk_hdgoals env goal goalacc c in 
-  let (acc'',pt) = mk_hdgoals env goal acc' p in
-  let (_,lbrty,conclty) = type_case_branches env ct pt p c in
+and mk_casegoals env sigma goal goalacc p c= 
+  let (acc',ct) = mk_hdgoals env sigma goal goalacc c in 
+  let (acc'',pt) = mk_hdgoals env sigma goal acc' p in
+  let (_,lbrty,conclty) = type_case_branches env sigma ct pt p c in
   (acc'',lbrty,conclty)
 
 
@@ -209,11 +209,10 @@ let move_after with_dep toleft (left,htfrom,right) hto =
     
 (* Primitive tactics are handled here *)
 
-let prim_refiner r env goal =
-  let ev = goal.goal_ev in
-  let sign = ev.evar_hyps in
-  let cl = ev.evar_concl in
-  let info = goal.goal_ctxtty in
+let prim_refiner r env sigma goal =
+  let sign = goal.evar_hyps in
+  let cl = goal.evar_concl in
+  let info = goal.evar_info in
   match r with
     | { name = Intro; newids = [id] } ->
     	if mem_sign sign id then error "New variable is already declared";
@@ -269,7 +268,7 @@ let prim_refiner r env goal =
             | DOP2(Prod,c1,DLAM(_,b)) -> 
             	if k = 1 then 
 		  (try 
-		     find_minductype env c1 
+		     find_minductype env sigma c1 
 		   with Induc -> 
 		     error "cannot do a fixpoint on a non inductive type")
             	else 
@@ -288,7 +287,7 @@ let prim_refiner r env goal =
             | DOP2(Prod,c1,DLAM(_,b)) -> 
             	if k = 1 then 
 		  (try 
-		     find_minductype env c1 
+		     find_minductype env sigma c1 
 		   with Induc -> 
 		     error "cannot do a fixpoint on a non inductive type")
             	else 
@@ -315,11 +314,11 @@ let prim_refiner r env goal =
 
     | { name = Cofix; hypspecs = []; terms = lar; newids = lf; params = [] } ->
      	let rec check_is_coind cl = 
-          match (whd_betadeltaiota env (whd_castapp cl)) with 
+          match (whd_betadeltaiota env sigma (whd_castapp cl)) with 
             | DOP2(Prod,c1,DLAM(_,b)) -> check_is_coind  b
             | b  -> 
 		(try 
-		   let _ = find_mcoinductype env b in true
+		   let _ = find_mcoinductype env sigma b in true
                  with Induc -> 
 		   error ("All methods must construct elements " ^
 			  "in coinductive types"))
@@ -338,13 +337,13 @@ let prim_refiner r env goal =
 	  
     | { name = Refine; terms = [c] } ->
 	let c = new_meta_variables c in
-	let (sgl,cl') = mk_refgoals env goal [] cl c in
+	let (sgl,cl') = mk_refgoals env sigma goal [] cl c in
 	let sgl = List.rev sgl in
 	sgl
 
     | { name = Convert_concl; terms = [cl'] } ->
     	let cl'ty = type_of env sign cl' in
-	if is_conv_leq env cl' cl then
+	if is_conv_leq env sigma cl' cl then
           let sg = mk_goal info sign (DOP2(Cast,cl',cl'ty)) in
           [sg]
 	else 
@@ -353,7 +352,7 @@ let prim_refiner r env goal =
     | { name = Convert_hyp; hypspecs = [id]; terms = [ty'] } ->
       (* Faut-il garder la sorte d'origine ou celle du converti ?? *)
     	let tj = execute_type env (sign_before id sign) ty' in
-	if is_conv env ty' (snd(lookup_sign id sign)).body then
+	if is_conv env sigma ty' (snd(lookup_sign id sign)).body then
           [mk_goal info (modify_sign id tj sign) cl]
 	else 
 	  error "convert-hyp rule passed non-converting term"
@@ -440,7 +439,6 @@ let extract_constr =
     | DOPN(Abst _,_) as val_0 -> crec vl (abst_value val_0)
     | DOPN(oper,cl) -> DOPN(oper,Array.map (crec vl) cl)
     | DOPL(oper,cl) -> DOPL(oper,List.map (crec vl) cl)
-    | DOP0(Meta _) as c -> c
     | DOP0 _ as c -> c
     | _ -> anomaly "extract_constr : term not matched"
   in 
@@ -448,7 +446,7 @@ let extract_constr =
 
 
 let prim_extractor subfun vl pft =
-  let cl = pft.goal.goal_ev.evar_concl in
+  let cl = pft.goal.evar_concl in
   match pft with
     | { ref = Some (Prim { name = Intro; newids = [id] }, [spf]) } ->
 	(match strip_outer_cast cl with

@@ -68,18 +68,18 @@ let mis_lc env mis =
 
 let name_of_existential n = id_of_string ("?" ^ string_of_int n)
 
-let existential_type env c =
+let existential_type sigma c =
   let (n,args) = destEvar c in
-  let info = Evd.map (evar_map env) n in
+  let info = Evd.map sigma n in
   let hyps = info.evar_hyps in
   instantiate_constr (ids_of_sign hyps) info.evar_concl (Array.to_list args)
 
-let existential_value env c =
+let existential_value sigma c =
   let (n,args) = destEvar c in
-  let info = Evd.map (evar_map env) n in
+  let info = Evd.map sigma n in
   let hyps = info.evar_hyps in
   match info.evar_body with
-    | Evar_defined c -> 
+    | Evar_defined c ->
 	instantiate_constr (ids_of_sign hyps) c (Array.to_list args)
     | Evar_empty ->
 	anomaly "a defined existential with no body"

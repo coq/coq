@@ -9,7 +9,6 @@ open Sign
 open Univ
 open Generic
 open Term
-open Evd
 open Constant
 open Inductive
 open Abstraction
@@ -30,7 +29,6 @@ type globals = {
 type unsafe_env = {
   env_context : context;
   env_globals : globals;
-  env_evar_map : evar_map;
   env_universes : universes }
 
 let empty_env = { 
@@ -41,12 +39,10 @@ let empty_env = {
     env_abstractions = Spmap.empty;
     env_locals = [];
     env_imports = [] };
-  env_evar_map = mt_evd;
   env_universes = initial_universes }
 
 let universes env = env.env_universes
 let context env = env.env_context
-let evar_map env = env.env_evar_map
 let metamap env = failwith "Environ.metamap: TODO: unifier metas et VE"
 
 (* Construction functions. *)
