@@ -423,14 +423,13 @@ let mk_inductive_obj sp packs variables hyps finite =
 ;;
 
 (* The current channel for .theory files *)
-let theory_channel = ref None;;
+let theory_buffer = Buffer.create 4000;;
 
-let theory_output_string s = 
+let theory_output_string ?(do_not_quote = false) s = 
   (* prepare for coqdoc post-processing *)
-  let s = "(** #"^s^"\n#*)\n" in
-  match !theory_channel with
-     Some ch -> output_string ch s;
-   | None -> print_string s; flush stdout
+  let s = if do_not_quote then s else "(** #"^s^"\n#*)\n" in
+  print_if_verbose s;
+   Buffer.add_string theory_buffer s
 ;;
 
 let kind_of_theorem = function
@@ -623,9 +622,7 @@ let _ =
 let _ =
   Vernac.set_xml_start_library
    (function () ->
-     theory_channel :=
-       Util.option_app (fun fn -> open_out (fn^".v"))
-	 (theory_filename xml_library_root);
+     Buffer.reset theory_buffer;
      theory_output_string "<?xml version=\"1.0\" encoding=\"latin1\"?>\n";
      theory_output_string "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:ht=\"http://www.cs.unibo.it/helm/namespaces/helm-theory\">\n";
      theory_output_string "<head>\n<style> A { text-decoration: none } </style>\n</head>\n")
@@ -635,8 +632,17 @@ let _ =
   Vernac.set_xml_end_library
    (function () ->
       theory_output_string "</html>\n";
-      Util.option_iter close_out !theory_channel;
-      Util.option_iter 
+      let ofn = theory_filename xml_library_root in
+       begin
+        match ofn with
+           None ->
+             Buffer.output_buffer stdout theory_buffer ;
+         | Some fn ->
+            let ch = open_out (fn ^ ".v") in
+             Buffer.output_buffer ch theory_buffer ;
+             close_out ch
+       end ;
+       Util.option_iter 
 	(fun fn ->
 	  let coqdoc = Coq_config.bindir^"/coqdoc" in
 	  let options = " --html -s --body-only --no-index --latin1 --raw-comments" in
@@ -650,14 +656,10 @@ let _ =
            command ("mv "^dir^"/"^dot^"*.html "^fn^".xml ");
            command ("rm "^fn^".v");
            print_string("\nWriting on file \"" ^ fn ^ ".xml\" was succesful\n"))
-       (theory_filename xml_library_root))
+       ofn)
 ;;
 
-let _ =
-  Lexer.set_xml_output_comment
-    (fun s ->
-      output_string (match !theory_channel with Some ch -> ch | _ -> stdout) s)
-;;
+let _ = Lexer.set_xml_output_comment (theory_output_string ~do_not_quote:true) ;;
 
 let uri_of_dirpath dir =
   "/" ^ String.concat "/" 
