@@ -291,6 +291,11 @@ let list_lastn n l =
   in
   if len < n then failwith "lastn" else aux len l
 
+let rec list_skipn n l = match n,l with 
+  | 0, _ -> l 
+  | _, [] -> failwith "list_fromn"
+  | n, _::l -> list_skipn (pred n) l
+
 let list_prefix_of prefl l = 
   let rec prefrec = function
     | (h1::t1, h2::t2) -> h1 = h2 && prefrec (t1,t2)

@@ -102,6 +102,7 @@ val list_split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
 val list_firstn : int -> 'a list -> 'a list
 val list_last : 'a list -> 'a
 val list_lastn : int -> 'a list -> 'a list
+val list_skipn : int -> 'a list -> 'a list 
 val list_prefix_of : 'a list -> 'a list -> bool
 (* [map_append f [x1; ...; xn]] returns [(f x1)@(f x2)@...@(f xn)] *)
 val list_map_append : ('a -> 'b list) -> 'a list -> 'b list
