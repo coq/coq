@@ -44,7 +44,7 @@ val tclTRY           : tactic -> tactic
 val tclINFO          : tactic -> tactic
 val tclCOMPLETE      : tactic -> tactic
 val tclAT_LEAST_ONCE : tactic -> tactic
-val tclFAIL          : int -> tactic
+val tclFAIL          : int -> string -> tactic
 val tclDO            : int -> tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic

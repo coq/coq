@@ -758,7 +758,8 @@ and xlate_tactic =
 		   (xlate_local_rec_tac f1, List.map xlate_local_rec_tac l) in
        CT_rec_tactic_in(tl, xlate_tactic t)
    | TacAtom (_, t) -> xlate_tac t 
-   | TacFail n -> CT_fail (CT_int n)
+   | TacFail (n,"") -> CT_fail (CT_int n)
+   | TacFail (n,s) -> xlate_error "TODO: Fail n message"
    | TacId -> CT_idtac
    | TacInfo t -> CT_info(xlate_tactic t)
    | TacArg a -> xlate_call_or_tacarg a
@@ -1656,6 +1657,7 @@ let xlate_vernac =
 	 match opt_positions with
 	     None -> CT_int_list[]
 	   | Some l -> CT_int_list(List.map (fun x -> CT_int x) l))
+  | VernacReserve _ -> xlate_error "TODO: Default Variable Type"
   | VernacLocate(LocateTerm id) -> CT_locate(reference_to_ct_ID id)
   | VernacLocate(LocateLibrary id) -> CT_locate_lib(reference_to_ct_ID id)
   | VernacLocate(LocateFile s) -> CT_locate_file(CT_string s)

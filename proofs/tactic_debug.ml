@@ -159,10 +159,12 @@ let db_matching_failure debug =
            str "Let us try the next one...")
 
 (* Prints an evaluation failure message for a rule *)
-let db_eval_failure debug =
+let db_eval_failure debug s =
   if debug = DebugOn then
-    msgnl (str "This rule has failed due to \"Fail\" tactic (level 0)!" ++
-           fnl() ++ str "Let us try the next one...")
+    let s = if s="" then "no message" else "message \""^s^"\"" in
+    msgnl 
+      (str "This rule has failed due to \"Fail\" tactic (" ++
+       str s ++ str ", level 0)!" ++ fnl() ++ str "Let us try the next one...")
 
 (* An exception handler *)
 let explain_logic_error = ref (fun e -> mt())

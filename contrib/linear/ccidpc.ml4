@@ -206,33 +206,33 @@ let rec alpha_term bl1 bl2 p_0 p_1 =
 
 
 let forAllI id gls=if is_forall_term (pf_concl gls) then
-  intro_using id gls else tclFAIL 0 gls
+  intro_using id gls else tclFAIL 0 "goal is not universally quantified" gls
 
 let forAllE id t gls =
   let rgl=pf_whd_betadeltaiota gls (pf_type_of gls (mkVar id)) in
     if is_forall_term rgl then
       tclTHEN (generalize [mkApp (mkVar id,[|t|])]) intro gls
-    else  tclFAIL 0 gls
+    else  tclFAIL 0 "hypothesis is not universally quantified" gls
 
 let existE id id2 gls =
   let (_,_,t)=lookup_named id (pf_hyps gls) in
     if is_exist_term t then
         ((tclTHEN (simplest_elim (mkVar id))
          (tclTHEN (intro_using id2) (dImp None)))) gls
-    else tclFAIL 0 gls
+    else tclFAIL 0 "hypothesis is not existentially quantified" gls
 
 let negE id gls = 
   let (_,_,t)=lookup_named id (pf_hyps gls) in
     if is_not_term t then
         (simplest_elim (mkVar id)) gls
-    else tclFAIL 0 gls
+    else tclFAIL 0 "hypothesis is not negated" gls
 
 (*t exist_intro_head = put_pat mmk "ex_intro"*)
 
 let existI t gls =
   if is_exist_term (pf_concl gls) then
     split (Rawterm.ImplicitBindings [t]) gls
-  else tclFAIL 0 gls 
+  else tclFAIL 0 "goal is not existentially quantified" gls 
     (*
  
     let (wc,kONT) = Evar_refiner.startWalk gls in

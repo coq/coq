@@ -189,8 +189,8 @@ GEXTEND Gram
       | IDENT "Solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
 	  TacSolve l
       | IDENT "Idtac" -> TacId
-      | IDENT "Fail" -> TacFail fail_default_value
-      | IDENT "Fail"; n = natural -> TacFail n
+      | IDENT "Fail"; n = [ n = natural -> n | -> fail_default_value ];
+	  s = [ s = STRING -> s | -> ""] -> TacFail (n,s)
       | st = simple_tactic -> TacAtom (loc,st)
       | "("; a = tactic_expr; ")" -> a
       | a = tactic_arg -> TacArg a

@@ -119,7 +119,7 @@ val tclTHENLASTn    : tactic -> tactic array -> tactic
 val tclTHENFIRSTn   : tactic -> tactic array -> tactic
 
 (* A special exception for levels for the Fail tactic *)
-exception FailError of int
+exception FailError of int * string
 
 val tclORELSE        : tactic -> tactic -> tactic
 val tclREPEAT        : tactic -> tactic
@@ -130,7 +130,7 @@ val tclTRY           : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic
 val tclCOMPLETE      : tactic -> tactic
 val tclAT_LEAST_ONCE : tactic -> tactic
-val tclFAIL          : int -> tactic
+val tclFAIL          : int -> string -> tactic
 val tclDO            : int -> tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic

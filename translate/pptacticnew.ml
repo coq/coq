@@ -281,15 +281,15 @@ and pr_atom1 env = function
 
   (* Derived basic tactics *)
   | TacOldInduction h ->
-      hov 1 (str "induction" ++ pr_arg pr_quantified_hypothesis h)
+      hov 1 (str "oldinduction" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewInduction (h,e,ids) ->
-      hov 1 (str "newinduction" ++ spc () ++
+      hov 1 (str "induction" ++ spc () ++
              pr_induction_arg (pr_lconstr env) h ++
              pr_opt (pr_eliminator env) e ++ pr_with_names ids)
   | TacOldDestruct h ->
-      hov 1 (str "destruct" ++ pr_arg pr_quantified_hypothesis h)
+      hov 1 (str "olddestruct" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewDestruct (h,e,ids) ->
-      hov 1 (str "newdestruct" ++ spc () ++
+      hov 1 (str "destruct" ++ spc () ++
              pr_induction_arg (pr_lconstr env) h ++
              pr_opt (pr_eliminator env) e ++ pr_with_names ids)
   | TacDoubleInduction (h1,h2) ->
@@ -462,8 +462,10 @@ let rec pr_tac env inherited tac =
       hov 1 (pr_tac env (lorelse,L) t1 ++ str " ||" ++ brk (1,1) ++
              pr_tac env (lorelse,E) t2),
       lorelse
-  | TacFail 0 -> str "fail", latom
-  | TacFail n -> str "fail " ++ int n, latom
+  | TacFail (0,"") -> str "fail", latom
+  | TacFail (n,s) -> 
+      str "fail" ++ (if n=0 then mt () else pr_arg int n) ++
+      (if s="" then mt() else str " \"" ++ str s ++ str "\""), latom
   | TacFirst tl ->
       str "first" ++ spc () ++ pr_seq_body (pr_tac env) tl, llet
   | TacSolve tl ->

@@ -144,7 +144,8 @@ let reduction_not_iff=interp
 	   Progress Unfold Coq.Init.Logic.not Coq.Init.Logic.iff in H)>>
 
 
-let t_reduction_not_iff = Tacexpr.TacArg (valueIn (VTactic reduction_not_iff))
+let t_reduction_not_iff =
+  Tacexpr.TacArg (valueIn (VTactic (dummy_loc,reduction_not_iff)))
 
 let intuition_gen tac =
   interp (tacticIn (tauto_intuit t_reduction_not_iff tac))
@@ -166,9 +167,9 @@ let q_elim tac=
       Generalize (H x);Clear H;$tac>>
 
 let rec lfo n gl=
-  if n=0 then (tclFAIL 0 gl) else
+  if n=0 then (tclFAIL 0 "LinearIntuition failed" gl) else
     let p=if n<0 then n else (n-1) in
-    let lfo_rec=q_elim (Tacexpr.TacArg (valueIn (VTactic (lfo p)))) in
+    let lfo_rec=q_elim (Tacexpr.TacArg (valueIn (VTactic(dummy_loc,lfo p)))) in
       intuition_gen lfo_rec gl
 
 let lfo_wrap n gl= 

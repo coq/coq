@@ -23,7 +23,7 @@ open Topconstr
 
 (* Values for interpretation *)
 type value =
-  | VTactic of tactic  (* For mixed ML/Ltac tactics (e.g. Tauto) *)
+  | VTactic of Util.loc * tactic  (* For mixed ML/Ltac tactics (e.g. Tauto) *)
   | VRTactic of (goal list sigma * validation)
   | VFun of (identifier * value) list * identifier option list *raw_tactic_expr
   | VVoid

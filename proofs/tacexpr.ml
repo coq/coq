@@ -184,7 +184,7 @@ and ('constr,'cst,'ind,'id) gen_tactic_expr =
   | TacProgress of ('constr,'cst,'ind,'id) gen_tactic_expr
   | TacAbstract of ('constr,'cst,'ind,'id) gen_tactic_expr * identifier option
   | TacId
-  | TacFail of int
+  | TacFail of int * string
   | TacInfo of ('constr,'cst,'ind,'id) gen_tactic_expr
 
   | TacLetRecIn of (identifier located * ('constr,'cst,'ind,'id) gen_tactic_fun_ast) list * ('constr,'cst,'ind,'id) gen_tactic_expr

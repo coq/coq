@@ -110,8 +110,8 @@ GEXTEND Gram
       | IDENT "solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
 	  TacSolve l
       | IDENT "idtac" -> TacId
-      | IDENT "fail" -> TacFail fail_default_value
-      | IDENT "fail"; n = natural -> TacFail n
+      | IDENT "fail"; n = [ n = natural -> n | -> fail_default_value ];
+	  s = [ s = STRING -> s | -> ""] -> TacFail (n,s)
       | st = simple_tactic -> TacAtom (loc,st)
       | IDENT "eval"; rtc = red_expr; "in"; c = Constr.lconstr ->
 	  TacArg(ConstrMayEval (ConstrEval (rtc,c)))

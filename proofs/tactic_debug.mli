@@ -54,7 +54,7 @@ val db_hyp_pattern_failure :
 val db_matching_failure : debug_info -> unit
 
 (* Prints an evaluation failure message for a rule *)
-val db_eval_failure : debug_info -> unit
+val db_eval_failure : debug_info -> string -> unit
 
 (* An exception handler *)
 val explain_logic_error: (exn -> Pp.std_ppcmds) ref

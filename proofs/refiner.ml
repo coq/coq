@@ -347,10 +347,10 @@ let tclIDTAC gls = (goal_goal_list gls, idtac_valid)
 let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" (str s)
 
 (* A special exception for levels for the Fail tactic *)
-exception FailError of int
+exception FailError of int * string
 
 (* The Fail tactic *)
-let tclFAIL lvl g = raise (FailError lvl)
+let tclFAIL lvl s g = raise (FailError (lvl,s))
 
 let start_tac gls =
   let (sigr,g) = unpackage gls in
@@ -508,10 +508,10 @@ let tclORELSE0 t1 t2 g =
     t1 g
   with
   | e when catchable_exception e -> t2 g
-  | FailError 0 | Stdpp.Exc_located(_, FailError 0) -> t2 g
-  | FailError lvl -> raise (FailError (lvl - 1))
-  | Stdpp.Exc_located (s,FailError lvl) ->
-      raise (Stdpp.Exc_located (s,FailError (lvl - 1)))
+  | FailError (0,_) | Stdpp.Exc_located(_, FailError (0,_)) -> t2 g
+  | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
+  | Stdpp.Exc_located (s,FailError (lvl,s')) ->
+      raise (Stdpp.Exc_located (s,FailError (lvl - 1, s')))
 
 (* ORELSE t1 t2 tries to apply t1 and if it fails or does not progress, 
    then applies t2 *)

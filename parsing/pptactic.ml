@@ -489,7 +489,7 @@ and pr0 = function
   | TacFirst tl -> str "First" ++ spc () ++ pr_tactic_seq_body tl
   | TacSolve tl -> str "Solve" ++ spc () ++ pr_tactic_seq_body tl
   | TacId -> str "Idtac"
-  | TacFail 0 -> str "Fail"
+  | TacFail (0,"") -> str "Fail"
   | TacAtom (_,t) -> pr_atom0 t
   | TacArg c -> pr_tacarg c
   | t -> str "(" ++ prtac t ++ str ")"
@@ -497,7 +497,9 @@ and pr0 = function
   (* Semi-closed atomic tactic expressions *)
 and pr1 = function
   | TacAtom (_,t) -> pr_atom1 t
-  | TacFail n -> str "Fail " ++ int n
+  | TacFail (0,s) -> str "Fail \"" ++ str s ++ str "\""
+  | TacFail (n,"") -> str "Fail " ++ int n
+  | TacFail (n,s) -> str "Fail " ++ int n ++ str "\"" ++ str s ++ str "\""
   | t -> pr0 t
 
   (* Orelse tactic expressions (printed as if parsed associating on the right

@@ -574,10 +574,10 @@ let res_tac c a hyp =
   let fin = match hyp with
     | None -> Auto.full_trivial
     | Some h -> 
-	tclORELSE (tclTHEN (tclTRY (apply h)) (tclFAIL 0)) 
-	(tclORELSE (tclTHEN (tclTRY (tclTHEN (apply (mkApp ((Lazy.force coq_seq_sym), [|sa.set_a; sa.set_aeq; sa.set_th|]))) (apply h))) (tclFAIL 0))
+	tclORELSE (tclTHEN (tclTRY (apply h)) (tclFAIL 0 "")) 
+	(tclORELSE (tclTHEN (tclTRY (tclTHEN (apply (mkApp ((Lazy.force coq_seq_sym), [|sa.set_a; sa.set_aeq; sa.set_th|]))) (apply h))) (tclFAIL 0 ""))
 	   Auto.full_trivial) in
-    tclORELSE (tclTHEN (tclTRY (apply (mkApp ((Lazy.force coq_seq_refl), [|sa.set_a; sa.set_aeq; sa.set_th;c|])))) (tclFAIL 0))
+    tclORELSE (tclTHEN (tclTRY (apply (mkApp ((Lazy.force coq_seq_refl), [|sa.set_a; sa.set_aeq; sa.set_th;c|])))) (tclFAIL 0 ""))
       (tclORELSE assumption
 	 (tclORELSE (tclTHEN (tclTRY (apply (mkApp ((Lazy.force coq_seq_sym), [|sa.set_a; sa.set_aeq; sa.set_th|])))) assumption)
 	    fin))

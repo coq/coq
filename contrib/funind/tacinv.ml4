@@ -528,7 +528,7 @@ let rec iterintro i =
         let hypname = (string_of_id (destVar hyp)) in
         let sub = 
          try String.sub hypname 0 4 with _ -> "" (* different than "_eq_" *) in
-        if sub="_eq_" then rewriteLR hyp else tclFAIL 0)
+        if sub="_eq_" then rewriteLR hyp else tclFAIL 0 "Cannot rewrite")
       )) gl)
 
 
