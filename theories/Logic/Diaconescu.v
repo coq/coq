@@ -97,23 +97,23 @@ Theorem pred_ext_and_rel_choice_imp_EM : forall P:Prop, P \/ ~ P.
 Proof.
 intro P.
 
-(* first we exhibit the choice functional relation R *)
+(** first we exhibit the choice functional relation R *)
 destruct AC as [R H].
 
 set (class_of_true := fun b => b = true \/ P).
 set (class_of_false := fun b => b = false \/ P).
 
-(* the actual "decision": is (R class_of_true) = true or false? *)
+(** the actual "decision": is (R class_of_true) = true or false? *)
 destruct (H class_of_true) as [b0 [H0 [H0' H0'']]].
 exists true; left; reflexivity.
 destruct H0.
 
-(* the actual "decision": is (R class_of_false) = true or false? *)
+(** the actual "decision": is (R class_of_false) = true or false? *)
 destruct (H class_of_false) as [b1 [H1 [H1' H1'']]].
 exists false; left; reflexivity.
 destruct H1.
 
-(* case where P is false: (R class_of_true)=true /\ (R class_of_false)=false *)
+(** case where P is false: (R class_of_true)=true /\ (R class_of_false)=false *)
 right.
 intro HP.
 assert (Hequiv : forall b:bool, class_of_true b <-> class_of_false b).
@@ -129,7 +129,7 @@ rewrite <- H0''. reflexivity.
 rewrite Heq.
 assumption.
 
-(* cases where P is true *)
+(** cases where P is true *)
 left; assumption.
 left; assumption.
 
