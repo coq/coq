@@ -18,6 +18,7 @@ type morphism_signature = (bool option * constr_expr) list * constr_expr
 val pr_morphism_signature : morphism_signature -> Pp.std_ppcmds
 
 val register_replace : (constr -> constr -> tactic) -> unit
+val register_general_rewrite : (bool -> constr -> tactic) -> unit
 
 val print_setoids : unit -> unit
 

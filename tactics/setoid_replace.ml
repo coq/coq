@@ -35,6 +35,9 @@ open Constrintern
 let replace = ref (fun _ _ -> assert false)
 let register_replace f = replace := f
 
+let general_rewrite = ref (fun _ _ -> assert false)
+let register_general_rewrite f = general_rewrite := f
+
 (* util function; it should be in util.mli *)
 let prlist_with_sepi sep elem =
  let rec aux n =
@@ -863,7 +866,9 @@ let beta_expand c args_rev =
   compose_lam (to_expand args_rev)
    (mkApp (c, Array.of_list (List.rev (aux 1 args_rev))))
 
-let relation_of_hypothesis_and_term_to_rewrite gl (_,h) t =
+exception Use_rewrite
+
+let relation_of_hypothesis_and_term_to_rewrite new_goals gl (_,h) t =
  let hypt = pf_type_of gl h in
  let (heq, hargs) = decompose_app hypt in
  let rec get_all_but_last_two =
@@ -874,7 +879,10 @@ let relation_of_hypothesis_and_term_to_rewrite gl (_,h) t =
    | he::tl -> he::(get_all_but_last_two tl) in
  let aeq = mkApp (heq,(Array.of_list (get_all_but_last_two hargs))) in
   try
-   relation_table_find aeq
+   let rel = find_relation_class aeq in
+   match rel,new_goals with
+      Leibniz _,[] -> raise Use_rewrite (* let's optimize the proof term size *)
+    | _,_ -> rel
   with Not_found ->
    (*CSC: still "setoid" in the error message *)
    errorlabstrm "Setoid_rewrite"
@@ -917,9 +925,12 @@ let marked_constr_equiv_or_more_complex to_marked_constr c1 c2 =
 
 let pr_new_goals i c =
  let glc = collect_new_goals c in
-  str " " ++ int i ++ str ") side conditions:" ++ pr_fnl () ++ str "   " ++
-   prlist_with_sep (fun () -> str "\n   ")
-    (fun c -> str " ... |- " ++ prterm c) glc
+  str " " ++ int i ++ str ") side conditions:" ++
+   (if glc = [] then str " no side conditions"
+    else
+     (pr_fnl () ++ str "   " ++
+       prlist_with_sep (fun () -> str "\n   ")
+        (fun c -> str " ... |- " ++ prterm c) glc))
 
 (* given a list of constr_with_marks, it returns the list where
    constr_with_marks than open more goals than simpler ones in the list
@@ -960,7 +971,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
  let rec aux output_relation output_direction in_c =
   if eq_constr t in_c then
    if input_direction = output_direction
-   && subrelation (Relation input_relation) output_relation then
+   && subrelation input_relation output_relation then
     [ToReplace]
    else []
   else
@@ -1258,9 +1269,7 @@ let syntactic_but_representation_of_marked_but hole_relation hole_direction =
 let apply_coq_setoid_rewrite hole_relation prop_relation c1 c2 (direction,h)
  prop_direction m
 =
- let {rel_aeq=hole_equality; rel_sym=hole_symmetry} = hole_relation in
- let hole_relation =
-  cic_relation_class_of_relation_class (Relation hole_relation) in
+ let hole_relation = cic_relation_class_of_relation_class hole_relation in
  let hyp,hole_direction = h,cic_direction_of_direction direction in
  let cic_prop_relation = cic_relation_class_of_relation_class prop_relation in
  let precise_prop_relation =
@@ -1289,41 +1298,46 @@ let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
    in
    let cl' = {cl with env = env' } in
    let c2 = Clenv.clenv_nf_meta cl' c2 in
-   (input_direction,Clenv.clenv_value cl'), c1, c2
+    (input_direction,Clenv.clenv_value cl'), c1, c2
  in
-  let input_relation = relation_of_hypothesis_and_term_to_rewrite gl hyp c1 in
-  let output_relation,output_direction,marked_but =
-   mark_occur gl ~new_goals c1 but input_relation input_direction in
-  let cic_output_direction = cic_direction_of_direction output_direction in
-  let if_output_relation_is_iff gl =
-   let th =
-    apply_coq_setoid_rewrite input_relation output_relation c1 c2 hyp
-     cic_output_direction marked_but
-   in
-    let new_but = Termops.replace_term c1 c2 but in
-    let hyp1,hyp2,proj =
-     match output_direction with
-        Right2Left -> new_but, but, Lazy.force coq_proj1
-      | Left2Right -> but, new_but, Lazy.force coq_proj2
+  try
+   let input_relation =
+    relation_of_hypothesis_and_term_to_rewrite new_goals gl hyp c1 in
+   let output_relation,output_direction,marked_but =
+    mark_occur gl ~new_goals c1 but input_relation input_direction in
+   let cic_output_direction = cic_direction_of_direction output_direction in
+   let if_output_relation_is_iff gl =
+    let th =
+     apply_coq_setoid_rewrite input_relation output_relation c1 c2 hyp
+      cic_output_direction marked_but
     in
-    let impl1 = mkProd (Anonymous, hyp2, lift 1 hyp1) in
-    let impl2 = mkProd (Anonymous, hyp1, lift 1 hyp2) in
-     let th' = mkApp (proj, [|impl2; impl1; th|]) in
+     let new_but = Termops.replace_term c1 c2 but in
+     let hyp1,hyp2,proj =
+      match output_direction with
+         Right2Left -> new_but, but, Lazy.force coq_proj1
+       | Left2Right -> but, new_but, Lazy.force coq_proj2
+     in
+     let impl1 = mkProd (Anonymous, hyp2, lift 1 hyp1) in
+     let impl2 = mkProd (Anonymous, hyp1, lift 1 hyp2) in
+      let th' = mkApp (proj, [|impl2; impl1; th|]) in
+       Tactics.refine
+        (mkApp (th', [| mkCast (Evarutil.mk_new_meta(), new_but) |])) gl in
+   let if_output_relation_is_if gl =
+    let th =
+     apply_coq_setoid_rewrite input_relation output_relation c1 c2 hyp
+      cic_output_direction marked_but
+    in
+     let new_but = Termops.replace_term c1 c2 but in
       Tactics.refine
-       (mkApp (th', [| mkCast (Evarutil.mk_new_meta(), new_but) |])) gl in
-  let if_output_relation_is_if gl =
-   let th =
-    apply_coq_setoid_rewrite input_relation output_relation c1 c2 hyp
-     cic_output_direction marked_but
+       (mkApp (th, [| mkCast (Evarutil.mk_new_meta(), new_but) |])) gl
    in
-    let new_but = Termops.replace_term c1 c2 but in
-     Tactics.refine
-      (mkApp (th, [| mkCast (Evarutil.mk_new_meta(), new_but) |])) gl
-  in
-   if output_relation = (Lazy.force coq_prop_relation) then
-    if_output_relation_is_iff gl
-   else
-    if_output_relation_is_if gl
+    if output_relation = (Lazy.force coq_prop_relation) then
+     if_output_relation_is_iff gl
+    else
+     if_output_relation_is_if gl
+  with
+   Use_rewrite ->
+    !general_rewrite (input_direction = Left2Right) (snd hyp) gl
 
 let general_s_rewrite lft2rgt c ~new_goals gl =
  let direction = if lft2rgt then Left2Right else Right2Left in
