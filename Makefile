@@ -84,7 +84,7 @@ DEPFLAGS=$(LOCALINCLUDES)
 
 OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
-CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo pa_macro.cmo q_MLast.cmo 
+CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo pa_ifdef.cmo q_MLast.cmo 
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths

@@ -99,7 +99,7 @@ let dir_ml_load s =
                 str s; str" to Coq code." >])
 (* TO DO: .cma loading without toplevel *)
     | WithoutTop ->
-      IFDEF Byte THEN
+      ifdef Byte then
         let _,gname = where_in_path !coq_mlpath_copy s in
         try
           Dynlink.loadfile gname;
@@ -109,7 +109,7 @@ let dir_ml_load s =
 	    [Filename.dirname gname]
 	with | Dynlink.Error a ->
           errorlabstrm "Mltop.load_object" [< str (Dynlink.error_message a) >]
-      ELSE () END
+      else () 
     | Native ->
 	errorlabstrm "Mltop.no_load_object"
           [< str"Loading of ML object file forbidden in a native Coq" >]
