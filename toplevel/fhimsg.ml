@@ -62,10 +62,6 @@ let explain_unbound_rel k ctx n =
   [< 'sTR"Unbound reference: "; pe; 'fNL;
      'sTR"The reference "; 'iNT n; 'sTR" is free" >]
 
-let explain_cant_execute k ctx c =
-  let tc = P.pr_term k ctx c in
-  [< 'sTR"Cannot execute term:"; 'bRK(1,1); tc >]
-
 let explain_not_type k ctx c =
   let pe = pr_ne_ctx [< 'sTR"In environment" >] k ctx in
   let pc = P.pr_term k ctx c in
@@ -245,8 +241,6 @@ let explain_cant_find_case_type loc k ctx c =
 let explain_type_error k ctx = function
   | UnboundRel n -> 
       explain_unbound_rel k ctx n
-  | CantExecute c -> 
-      explain_cant_execute k ctx c
   | NotAType c -> 
       explain_not_type k ctx c
   | BadAssumption c -> 

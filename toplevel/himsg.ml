@@ -26,16 +26,12 @@ let explain_unbound_rel k ctx n =
   [< 'sTR"Unbound reference: "; pe; 'fNL;
      'sTR"The reference "; 'iNT n; 'sTR" is free" >]
 
-let explain_cant_execute k ctx c =
-  let tc = prterm_env ctx c in
-  [< 'sTR"Cannot execute term:"; 'bRK(1,1); tc >]
-
-let explain_not_type k ctx c =
+let explain_not_type k ctx j =
   let ctx = make_all_name_different ctx in
   let pe = pr_ne_env [< 'sTR"In environment" >] k ctx in
-  let pc = prterm_env ctx c in
-  [< pe; 'cUT; 'sTR "the term"; 'bRK(1,1); pc; 'sPC;
-     'sTR"should be typed by Set, Prop or Type." >];;
+  let pc,pt = prjudge_env ctx j in
+  [< pe; 'cUT; 'sTR "the term"; 'bRK(1,1); pc; 'sPC; 'sTR"has type"; 'sPC; 
+     'sTR"which should be Set, Prop or Type." >];;
 
 let explain_bad_assumption k ctx c =
   let pc = prterm_env ctx c in
@@ -74,7 +70,7 @@ let explain_elim_arity k ctx ind aritylst c p pt okinds =
 let explain_case_not_inductive k ctx c ct =
   let pc = prterm_env ctx c in
   let pct = prterm_env ctx ct in
-  [< 'sTR "In Cases expression"; 'bRK(1,1); pc; 'sPC; 
+  [< 'sTR "In Cases expression, the matched term"; 'bRK(1,1); pc; 'sPC; 
      'sTR "has type"; 'bRK(1,1); pct; 'sPC; 
      'sTR "which is not an inductive definition" >]
   
@@ -94,15 +90,15 @@ let explain_ill_formed_branch k ctx c i actty expty =
      'sTR " has type"; 'bRK(1,1); pa ; 'sPC; 
      'sTR "which should be"; 'bRK(1,1); pe >]
 
-let explain_generalization k ctx (name,var) c =
+let explain_generalization k ctx (name,var) j =
   let ctx = make_all_name_different ctx in
   let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
   let pv = prtype_env ctx var in
-  let pc = prterm_env (add_rel (name,var) ctx) c in
+  let (pc,pt) = prjudge_env (add_rel (name,var) ctx) j in
   [< 'sTR"Illegal generalization: "; pe; 'fNL;
      'sTR"Cannot generalize"; 'bRK(1,1); pv; 'sPC;
-     'sTR"over"; 'bRK(1,1); pc; 'sPC;
-     'sTR"which should be typed by Set, Prop or Type." >]
+     'sTR"over"; 'bRK(1,1); pc; 'sTR","; 'sPC; 'sTR"it has type"; 'sPC; pt; 
+     'sPC; 'sTR"which should be Set, Prop or Type." >]
 
 let explain_actual_type k ctx c ct pt =
   let ctx = make_all_name_different ctx in
@@ -117,7 +113,7 @@ let explain_actual_type k ctx c ct pt =
 
 let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
+(*  let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in*)
   let pr,prt = prjudge_env ctx rator in
   let term_string = if List.length randl > 1 then "terms" else "term" in
   let many = match n mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
@@ -137,7 +133,7 @@ let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
 
 let explain_cant_apply_not_functional k ctx rator randl =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
+(*  let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in*)
   let pr = prterm_env ctx rator.uj_val in
   let prt = prterm_env ctx (body_of_type rator.uj_type) in
   let term_string = if List.length randl > 1 then "terms" else "term" in
@@ -152,6 +148,12 @@ let explain_cant_apply_not_functional k ctx rator randl =
      'sTR"of type"; 'bRK(1,1); prt; 'sPC ;
      'sTR("cannot be applied to the "^term_string); 'fNL; 
      'sTR" "; v 0 appl; 'fNL >]
+
+let explain_not_product k ctx c =
+  let ctx = make_all_name_different ctx in
+  let pr = prterm_env ctx c in
+  [< 'sTR"This type of this term is expected to be a product but it is";
+     'bRK(1,1); pr; 'fNL >]
 
 (* (co)fixpoints *)
 let explain_ill_formed_rec_body k ctx str lna i vdefs =
@@ -262,10 +264,8 @@ let explain_needs_inversion k ctx x t =
 let explain_type_error k ctx = function
   | UnboundRel n -> 
       explain_unbound_rel k ctx n
-  | CantExecute c -> 
-      explain_cant_execute k ctx c
-  | NotAType c -> 
-      explain_not_type k ctx c
+  | NotAType j -> 
+      explain_not_type k ctx j
   | BadAssumption c -> 
       explain_bad_assumption k ctx c
   | ReferenceVariables id -> 
@@ -302,6 +302,8 @@ let explain_type_error k ctx = function
       explain_not_clean k ctx n c
   | VarNotFound id ->
       explain_var_not_found k ctx id
+  | NotProduct c ->
+      explain_not_product k ctx c
   (* Pattern-matching errors *)
   | BadConstructor (c,ind) ->
       explain_bad_constructor k ctx c ind
