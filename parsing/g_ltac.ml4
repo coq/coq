@@ -149,7 +149,11 @@ GEXTEND Gram
   tactic_arg:
     [ [ "()" -> <:ast< (VOID) >>
       | n = pure_numarg -> n
-      |	id = identarg -> id
+      | l = Constr.qualid ->
+        (match l with
+	| [id] -> id
+        | _ -> <:ast< (QUALIDARG ($LIST l)) >>)
+      | id = METAIDENT -> <:ast< ($VAR $id) >>
       |	"?" -> <:ast< (COMMAND (ISEVAR)) >>
       | "?"; n = Prim.number -> <:ast< (COMMAND (META $n)) >>
       |	IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = Constr.constr ->

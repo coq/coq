@@ -21,6 +21,7 @@ open Sign
 open Tacred
 open Util
 open Names
+open Nametab
 open Pfedit
 open Proof_type
 open Tacmach
@@ -79,6 +80,11 @@ let constr_of_Constr_context = function
     anomalylabstrm "constr_of_Constr_context" [<'sTR
       "Not a Constr_context tactic_arg">]
 
+(* Gives the qualid corresponding to a Qualid tactic_arg *)
+let qualid_of_Qualid = function
+  | Qualid id -> id
+  | _ -> anomalylabstrm "qualid_of_Qualid" [<'sTR "Not a Qualid tactic_arg">]
+
 (* Gives identifiers and makes the possible injection constr -> ident *)
 let make_ids ast = function
   | Identifier id -> id
@@ -86,8 +92,19 @@ let make_ids ast = function
     (try destVar c with
     | Invalid_argument "destVar" ->
       anomalylabstrm "make_ids"
-      [<'sTR "This term cannot be reduced to an identifier"; 'fNL; print_ast ast>])
+      [<'sTR "This term cannot be reduced to an identifier"; 'fNL;
+        print_ast ast>])
   | _ -> anomalylabstrm "make_ids" [< 'sTR "Not an identifier" >]
+
+(* Gives Qualid's and makes the possible injection identifier -> qualid *)
+let make_qid = function
+  | VArg (Qualid _) as arg -> arg
+  | VArg (Identifier id) -> VArg (Qualid (make_qualid [] id))
+  | VArg (Constr c) ->
+    (match (kind_of_term c) with
+    | IsConst _ -> VArg (Qualid (qualid_of_sp (path_of_const c)))
+    | _ -> anomalylabstrm "make_qid" [< 'sTR "Not a Qualid" >])
+  | _ -> anomalylabstrm "make_qid" [< 'sTR "Not a Qualid" >]
 
 (* Transforms a named_context into a (string * constr) list *)
 let make_hyps = List.map (fun (id,_,typ) -> (string_of_id id,body_of_type typ))
@@ -111,39 +128,6 @@ let rec constr_list goalopt = function
   | (str,VArg(Identifier id))::tl ->
     (try (id_of_string str,(constr_of_id id goalopt))::(constr_list goalopt tl)
      with | Not_found -> (constr_list goalopt tl))
-
-(*    (match goalopt with
-    | None -> constr_list goalopt tl
-    | Some goal ->
-      let hyps = pf_hyps goal in
-      if mem_named_context id hyps then
-        (id_of_string str,mkVar id)::(constr_list goalopt tl)
-      else
-        (try
-           let csr = Declare.global_reference CCI id in
-           (match kind_of_term csr with
-           | IsVar _ -> constr_list goalopt tl
-  	   | _ -> (id_of_string str,csr)::(constr_list goalopt tl))
-         with
-	 | Not_found -> (constr_list goalopt tl)))*)
-
-(*      (try
-         let csr = Declare.global_reference CCI id in
-         (match kind_of_term csr with
-         | IsVar idc ->
-           if mem_named_context idc hyps then
-             (id_of_string str,csr)::(constr_list goalopt tl)
-           else
-             constr_list goalopt tl
-	 | _ ->
-           (id_of_string str,Declare.global_reference CCI id)::
-             (constr_list goalopt tl))
-       with
-      |	Not_found ->
-        if mem_named_context id (pf_hyps goal) then
-          (id_of_string str,mkVar id)::(constr_list goalopt tl)
-        else
-          constr_list goalopt tl))*)
   | _::tl -> constr_list goalopt tl
   | [] -> []
 
@@ -480,7 +464,7 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
       rec_interp (evc,env,lfun,lmatch,goalopt,debug) ast l
     | Node(_,"LET",[Node(_,"LETDECL",l);u]) ->
       let addlfun=letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast l in
-        val_interp (evc,env,(lfun@addlfun),lmatch,goalopt,debug) u
+        val_interp (evc,env,addlfun@lfun,lmatch,goalopt,debug) u
     | Node(_,"LETCUT",[Node(_,"LETDECL",l)]) ->
       VTactic (letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast l)
     | Node(_,"MATCHCONTEXT",lmr) ->
@@ -520,20 +504,12 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
        with | Not_found ->
          (try (vcontext_interp goalopt (lookup s))
           with | Not_found -> VArg (Identifier (id_of_string s))))
-    | Node(_,"QUALID",[Nvar(_,s)]) ->
-      (try (unrec (List.assoc s lfun))
+    | Node(_,"QUALIDARG",[Nvar(_,s)]) ->
+      (try (make_qid (unrec (List.assoc s lfun)))
        with | Not_found ->
-         (try (vcontext_interp goalopt (lookup s))
-          with | Not_found -> VArg (Identifier (id_of_string s))))
-(*    | Node(loc,"METAID",[Num(_,n)]) ->
-      (try VArg (Identifier (destVar (List.assoc n lmatch))) with
-       | Invalid_argument "destVar" ->
-         user_err_loc (loc, "Tacinterp.val_interp",[<'sTR
-          "Metavariable "; 'iNT n; 'sTR " must be an identifier" >]))*)
-    | Node(loc,"QUALIDARG",p) -> VArg (Qualid (interp_qualid p))
-    | Node(loc,"QUALIDMETA",[Num(_,n)]) ->
-	VArg
-	  (Qualid (Nametab.qualid_of_sp (path_of_const (List.assoc n lmatch))))
+         VArg (Qualid (qid_interp (evc,env,lfun,lmatch,goalopt,debug) ast)))
+    | Node(_,"QUALIDARG",_) | Node(_,"QUALIDMETA",_) ->
+      VArg (Qualid (qid_interp (evc,env,lfun,lmatch,goalopt,debug) ast))
     | Str(_,s) -> VArg (Quoted_string s)
     | Num(_,n) -> VArg (Integer n)
     | Node(_,"COMMAND",[c]) ->
@@ -1090,14 +1066,10 @@ and cvt_pattern (evc,env,lfun,lmatch,goalopt,debug) = function
 
 and cvt_unfold (evc,env,lfun,lmatch,goalopt,debug) = function
   | Node(_,"UNFOLD", com::nums) ->
-(*
-    (List.map num_of_ast nums,
-     glob_const_nvar loc (id_of_Identifier (unvarg (val_interp
-       (evc,env,lfun,lmatch,goalopt,debug) com))))
-*)
-      let qid = qid_interp (evc,env,lfun,lmatch,goalopt,debug) com in
-      (List.map num_of_ast nums,glob_const_nvar loc env qid)
-
+    let qid =
+      qualid_of_Qualid
+        (unvarg (val_interp (evc,env,lfun,lmatch,goalopt,debug) com)) in
+    (List.map num_of_ast nums,glob_const_nvar loc env qid)
   | arg -> invalid_arg_loc (Ast.loc arg,"cvt_unfold")
 
 (* Interprets the arguments of Fold *)
