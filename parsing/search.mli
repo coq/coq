@@ -22,6 +22,7 @@ val search_by_head : global_reference -> dir_path list * bool -> unit
 val search_rewrite : constr_pattern -> dir_path list * bool -> unit
 val search_pattern : constr_pattern -> dir_path list * bool -> unit
 val search_about   : global_reference -> dir_path list * bool -> unit
+val search_named   : string list -> dir_path list * bool -> unit
 
 (* The filtering function that is by standard search facilities.
    It can be passed as argument to the raw search functions.

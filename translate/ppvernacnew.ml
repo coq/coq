@@ -170,6 +170,7 @@ let pr_search a b pr_p = match a with
   | SearchPattern c -> str"SearchPattern" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | SearchRewrite c -> str"SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | SearchAbout qid -> str"SearchAbout" ++ spc() ++ pr_reference qid ++ pr_in_out_modules b
+  | SearchNamed sl -> str"SearchNamed" ++ spc() ++ prlist_with_sep spc qsnew sl ++ pr_in_out_modules b
 
 let pr_locality local = if local then str "Local " else str ""
 

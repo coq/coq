@@ -521,6 +521,8 @@ GEXTEND Gram
 	  VernacSearch (SearchRewrite c, l)
       | IDENT "SearchAbout"; qid = global; l = in_or_out_modules -> 
 	  VernacSearch (SearchAbout qid, l)
+      | IDENT "SearchNamed"; sl = LIST1 string; l = in_or_out_modules -> 
+	  VernacSearch (SearchNamed sl, l)
 
       | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = STRING ->
 	  VernacAddMLPath (false, dir)
