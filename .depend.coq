@@ -82,7 +82,7 @@ theories/Arith/Lt.vo: theories/Arith/Lt.v theories/Arith/Le.vo
 theories/Arith/Le.vo: theories/Arith/Le.v
 theories/Arith/Gt.vo: theories/Arith/Gt.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo
 theories/Arith/Even.vo: theories/Arith/Even.v
-theories/Arith/Euclid_proof.vo: theories/Arith/Euclid_proof.v theories/Arith/Minus.vo theories/Arith/Euclid_def.vo theories/Arith/Compare_dec.vo theories/Arith/Wf_nat.vo
+theories/Arith/Euclid_proof.vo: theories/Arith/Euclid_proof.v theories/Arith/Plus.vo theories/Arith/Minus.vo theories/Arith/Euclid_def.vo theories/Arith/Compare_dec.vo theories/Arith/Wf_nat.vo
 theories/Arith/Euclid_def.vo: theories/Arith/Euclid_def.v theories/Arith/Mult.vo
 theories/Arith/EqNat.vo: theories/Arith/EqNat.v
 theories/Arith/Div.vo: theories/Arith/Div.v theories/Arith/Le.vo theories/Arith/Euclid_def.vo theories/Arith/Compare_dec.vo
@@ -91,6 +91,7 @@ theories/Arith/Compare.vo: theories/Arith/Compare.v theories/Arith/Arith.vo theo
 theories/Arith/Compare_dec.vo: theories/Arith/Compare_dec.v theories/Arith/Le.vo theories/Arith/Lt.vo
 theories/Arith/Between.vo: theories/Arith/Between.v theories/Arith/Le.vo theories/Arith/Lt.vo
 theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Gt.vo theories/Arith/Minus.vo theories/Arith/Mult.vo theories/Arith/Between.vo parsing/g_natsyntax.cmo
+test-suite/tactics/TestRefine.vo: test-suite/tactics/TestRefine.v tactics/Refine.vo theories/Init/Wf.vo theories/Arith/Wf_nat.vo theories/Arith/Compare_dec.vo theories/Arith/Lt.vo
 test-suite/bench/lists-100.vo: test-suite/bench/lists-100.v
 test-suite/bench/lists_100.vo: test-suite/bench/lists_100.v
 contrib/ring/ZArithRing.vo: contrib/ring/ZArithRing.v contrib/ring/ArithRing.vo theories/Zarith/ZArith.vo theories/Logic/Eqdep_dec.vo
@@ -101,15 +102,17 @@ contrib/ring/Ring_abstract.vo: contrib/ring/Ring_abstract.v contrib/ring/Ring_th
 contrib/ring/Quote.vo: contrib/ring/Quote.v contrib/ring/quote.cmo
 contrib/ring/ArithRing.vo: contrib/ring/ArithRing.v contrib/ring/Ring.vo theories/Arith/Arith.vo theories/Logic/Eqdep_dec.vo
 contrib/omega/Zpower.vo: contrib/omega/Zpower.v theories/Zarith/ZArith.vo contrib/omega/Omega.vo contrib/omega/Zcomplements.vo
-contrib/omega/Zlogarithm.vo: contrib/omega/Zlogarithm.v contrib/omega/Omega.vo contrib/omega/Zcomplements.vo contrib/omega/Zpower.vo
+contrib/omega/Zlogarithm.vo: contrib/omega/Zlogarithm.v theories/Zarith/ZArith.vo contrib/omega/Omega.vo contrib/omega/Zcomplements.vo contrib/omega/Zpower.vo
 contrib/omega/Zcomplements.vo: contrib/omega/Zcomplements.v theories/Zarith/ZArith.vo contrib/omega/Omega.vo theories/Arith/Wf_nat.vo
 contrib/omega/Omega.vo: contrib/omega/Omega.v theories/Zarith/ZArith.vo theories/Arith/Minus.vo contrib/omega/omega.cmo contrib/omega/coq_omega.cmo contrib/omega/OmegaSyntax.vo
 contrib/omega/OmegaSyntax.vo: contrib/omega/OmegaSyntax.v
 tactics/Tauto.vo: tactics/Tauto.v
+tactics/Refine.vo: tactics/Refine.v
 tactics/Inv.vo: tactics/Inv.v tactics/Equality.vo
 tactics/Equality.vo: tactics/Equality.v
+tactics/EAuto.vo: tactics/EAuto.v
 syntax/PPTactic.vo: syntax/PPTactic.v
 syntax/PPConstr.vo: syntax/PPConstr.v
 syntax/PPCases.vo: syntax/PPCases.v
 syntax/MakeBare.vo: syntax/MakeBare.v
-states/MakeInitial.vo: states/MakeInitial.v theories/Init/Prelude.vo theories/Init/Logic_Type.vo theories/Init/Logic_TypeSyntax.vo tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo
+states/MakeInitial.vo: states/MakeInitial.v theories/Init/Prelude.vo theories/Init/Logic_Type.vo theories/Init/Logic_TypeSyntax.vo tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo tactics/EAuto.vo tactics/Refine.vo

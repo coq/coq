@@ -115,7 +115,7 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo \
 
 HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
             tactics/tauto.cmo tactics/inv.cmo tactics/leminv.cmo \
-            tactics/eauto.cmo
+            tactics/eauto.cmo tactics/refine.cmo
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
         contrib/ring/quote.cmo contrib/ring/ring.cmo 
@@ -217,7 +217,8 @@ theories/Init/%.vo: theories/Init/%.v states/barestate.coq
 
 init: $(INITVO)
 
-TACTICSVO=tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo tactics/EAuto.vo
+TACTICSVO=tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo \
+          tactics/EAuto.vo tactics/Refine.vo
 
 tactics/%.vo: $(COQC)
 tactics/%.vo: tactics/%.v states/barestate.coq

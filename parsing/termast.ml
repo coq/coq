@@ -32,7 +32,7 @@ let print_casts = ref false
 
 (* This governs printing of implicit arguments.  When
    [print_implicits] is on then [print_implicits_explicit_args] tells
-   how jimplicit args are printed. If on, implicit args are printed
+   how implicit args are printed. If on, implicit args are printed
    prefixed by "!" otherwise the function and not the arguments is
    prefixed by "!" *)
 let print_implicits = ref false

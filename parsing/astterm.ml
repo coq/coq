@@ -588,7 +588,7 @@ let interp_casted_constr1 sigma env lvar lmeta com typ =
     interp_rawconstr_gen sigma env false (List.map (fun x -> string_of_id (fst
       x)) lvar) com
   and rtype=fun lst -> retype_list sigma env lst in 
-  ise_resolve_casted_gen sigma env (rtype lvar) (rtype lmeta) typ c;;
+  ise_resolve_casted_gen true sigma env (rtype lvar) (rtype lmeta) typ c;;
 
 (*
 let dbize_fw  sigma env com = dbize FW sigma env com

@@ -7,13 +7,13 @@
 
 (* PolyList is loaded, but not exported *)
 (* This allow to "hide" the definitions, functions and theorems of PolyList
- and to see only the ones of ListSet *)
+   and to see only the ones of ListSet *)
+
 Require PolyList.
 
 Implicit Arguments On.
 
 Section first_definitions.
-
 
   Variable A : Set.
   Hypothesis Aeq_dec : (x,y:A){x=y}+{~x=y}.
@@ -87,10 +87,14 @@ Section first_definitions.
 
   Proof.
     Unfold set_In.
-    Realizer set_mem.
-    Program_all.
-    Rewrite e; Simpl; Auto with datatypes.
-    Simpl; Unfold not; Intros [Hc1 | Hc2 ]; Auto with datatypes.
+    (*** Realizer set_mem. Program_all. ***)
+    Induction x.
+    Auto.
+    Intros a0 x0 Ha0. Case (Aeq_dec a a0); Intro eq.
+    Rewrite eq; Simpl; Auto with datatypes.
+    Elim Ha0.
+    Auto with datatypes.
+    Right; Simpl; Unfold not; Intros [Hc1 | Hc2 ]; Auto with datatypes.
   Save.
 
   Lemma set_mem_ind : 

@@ -493,13 +493,13 @@ let j_apply f env sigma j =
        retourne aussi le nouveau sigma...
 *)
 
-let ise_resolve_casted_gen sigma env lvar lmeta typ c =
+let ise_resolve_casted_gen fail_evar sigma env lvar lmeta typ c =
   let isevars = ref sigma in
   let j = unsafe_fmachine (mk_tycon typ) false isevars [] env lvar lmeta c in
-  (j_apply (fun _ -> process_evars true) env !isevars j).uj_val
+  (j_apply (fun _ -> process_evars fail_evar) env !isevars j).uj_val
 
 let ise_resolve_casted sigma env typ c =
-  ise_resolve_casted_gen sigma env [] [] typ c
+  ise_resolve_casted_gen true sigma env [] [] typ c
 
 (* Raw calls to the inference machine of Trad: boolean says if we must fail
    on unresolved evars, or replace them by Metas; the unsafe_judgment list

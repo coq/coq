@@ -28,7 +28,7 @@ val ise_resolve2 : 'a evar_map -> env -> (identifier * unsafe_judgment) list ->
   (int * unsafe_judgment) list -> rawconstr -> constr
 
 val ise_resolve_casted_gen :
-  'a evar_map -> env -> (identifier * unsafe_judgment) list ->
+  bool -> 'a evar_map -> env -> (identifier * unsafe_judgment) list ->
     (int * unsafe_judgment) list -> constr -> rawconstr -> constr
 val ise_resolve_casted : 'a evar_map -> env -> constr -> rawconstr -> constr
 

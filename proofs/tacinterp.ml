@@ -546,30 +546,38 @@ and bind_interp evc env lfun lmatch goalopt = function
     errorlabstrm "bind_interp" [<'sTR "Not the expected form in binding";
       print_ast x>]
 
-(* Interprets a COMMAND expression *)
+(* Interprets a COMMAND expression (in case of failure, returns Command) *)
 and com_interp (evc,env,lfun,lmatch,goalopt) = function
   | Node(_,"EVAL",[c;rtc]) ->
      let redexp = unredexp (unvarg (val_interp (evc,env,lfun,lmatch,goalopt)
        rtc)) in
      VArg (Constr ((reduction_of_redexp redexp) env evc (interp_constr1 evc env
        (make_subs_list lfun) lmatch c)))
-  | c -> VArg (Constr (interp_constr1 evc env (make_subs_list lfun) lmatch c))
+  | c -> 
+      try
+	VArg (Constr (interp_constr1 evc env (make_subs_list lfun) lmatch c))
+      with e when Logic.catchable_exception e ->
+	VArg (Command c)
 
 (* Interprets a CASTEDCOMMAND expression *)
-and cast_com_interp (evc,env,lfun,lmatch,goalopt) com =
-  match goalopt with
-     Some gl ->
-       (match com with
-          | Node(_,"EVAL",[c;rtc]) ->
-            let redexp = unredexp (unvarg (val_interp
-              (evc,env,lfun,lmatch,goalopt) rtc)) in
-            VArg (Constr ((reduction_of_redexp redexp) env evc
-              (interp_casted_constr1 evc env (make_subs_list lfun) lmatch c
-              (pf_concl gl))))
-          | c ->
-            VArg (Constr (interp_casted_constr1 evc env (make_subs_list lfun)
-              lmatch c (pf_concl gl))))
-    | None ->
+and cast_com_interp (evc,env,lfun,lmatch,goalopt) com = match goalopt with
+  | Some gl ->
+      (match com with
+         | Node(_,"EVAL",[c;rtc]) ->
+             let redexp = 
+	       unredexp (unvarg (val_interp
+				   (evc,env,lfun,lmatch,goalopt) rtc)) 
+	     in
+             VArg (Constr ((reduction_of_redexp redexp) env evc
+			     (interp_casted_constr1 evc env 
+				(make_subs_list lfun) lmatch c (pf_concl gl))))
+         | c ->
+	     try
+               VArg (Constr (interp_casted_constr1 evc env 
+			       (make_subs_list lfun) lmatch c (pf_concl gl)))
+	     with e when Logic.catchable_exception e ->
+	       VArg (Command c))
+  | None ->
       errorlabstrm "val_interp" [<'sTR "Cannot cast a constr without goal">]
 
 and cvt_pattern (evc,env,lfun,lmatch,goalopt) = function
