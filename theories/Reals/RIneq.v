@@ -16,9 +16,9 @@ Require Export Raxioms.
 Require Export ZArithRing.
 Require Omega.
 Require Export Field.
-V7only [Import nat_scope.]. Open Local Scope nat_scope.
-V7only [Import Z_scope.]. Open Local Scope Z_scope.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+
+Open Local Scope Z_scope.
+Open Local Scope R_scope.
 
 Implicit Variable Type r:R.
 
@@ -184,7 +184,7 @@ Intuition.
 Qed.
 
 Lemma Rlt_rew : (x,x',y,y':R)``x==x'``->``x'<y'`` -> `` y' == y`` -> ``x < y``.
-Intros; Replace x with x'; Replace y with y'; Assumption.
+Intros x x' y y'; Intros; Replace x with x'; Replace y with y'; Assumption.
 Qed.
 
 (**********)
@@ -244,7 +244,7 @@ Qed.
 
 (**********)
 Lemma inser_trans_R:(n,m,p,q:R)``n<=m<p``-> (sumboolT ``n<=m<q`` ``q<=m<p``).
-Intros; Generalize (total_order_Rlt_Rle m q); Intuition.
+Intros n m p q; Intros; Generalize (total_order_Rlt_Rle m q); Intuition.
 Qed.
 
 (****************************************************************)
@@ -274,7 +274,7 @@ Hints Resolve Rplus_Ropp_l : real.
 
 (**********)
 Lemma Rplus_Ropp:(x,y:R)``x+y==0``->``y== -x``.
-  Intros; Replace y with ``(-x+x)+y``;
+  Intros x y H; Replace y with ``(-x+x)+y``;
   [ Rewrite -> Rplus_assoc; Rewrite -> H; Ring
   | Ring ].
 Qed.
@@ -546,9 +546,7 @@ Red; Intros;Elim H;Rewrite H0; Ring.
 Qed.
 Hints Resolve Rminus_not_eq_right : real. 
 
-Lemma not_sym : (r1,r2:R) ``r1<>r2`` -> ``r2<>r1``.
-Intros; Red; Intro H0; Rewrite H0 in H; Elim H; Reflexivity.
-Qed. 
+V7only [Notation not_sym := (sym_not_eq R).].
 
 (**********)
 Lemma Rminus_distr:  (x,y,z:R) ``x*(y-z)==(x*y) - (x*z)``.
@@ -603,7 +601,7 @@ Hints Resolve Rinv_r_simpl_l Rinv_r_simpl_r Rinv_r_simpl_m : real.
 
 (*********)
 Lemma Rinv_Rmult_simpl:(a,b,c:R)``a<>0``->``(a*(/b))*(c*(/a))==c*(/b)``.
-Intros.
+Intros a b c; Intros.
 Transitivity ``(a*/a)*(c*(/b))``; Auto with real.
 Ring.
 Qed.
@@ -750,6 +748,17 @@ Qed.
 Hints Resolve Rgt_RO_Ropp : real.
 
 (**********)
+Lemma Rgt_RoppO:(r:R)``r>0``->``(-r)<0``.
+Intros; Rewrite <- Ropp_O; Auto with real.
+Qed.
+
+(**********)
+Lemma Rlt_RoppO:(r:R)``r<0``->``-r>0``.
+Intros; Rewrite <- Ropp_O; Auto with real.
+Qed.
+Hints Resolve Rgt_RoppO Rlt_RoppO: real.
+
+(**********)
 Lemma Rle_RO_Ropp:(r:R) ``0 <= r`` -> ``0 >= -r``.
 Intros; Replace ``0`` with ``-0``; Auto with real.
 Qed.
@@ -763,14 +772,13 @@ Hints Resolve Rge_RO_Ropp : real.
 
 (** Order and multiplication *)
 
-Lemma  Rlt_monotony_r:(r,r1,r2:R)``0<r`` -> ``r1 < r2`` -> ``r1*r < r2*r``.
+Lemma Rlt_monotony_r:(r,r1,r2:R)``0<r`` -> ``r1 < r2`` -> ``r1*r < r2*r``.
 Intros; Rewrite (Rmult_sym r1 r); Rewrite (Rmult_sym r2 r); Auto with real.
 Qed.
 Hints Resolve Rlt_monotony_r.
 
-Lemma Rlt_monotony_contra:
-  (x, y, z:R) ``0<z`` ->``z*x<z*y`` ->``x<y``.
-Intros x y z H H0.
+Lemma Rlt_monotony_contra: (z, x, y:R) ``0<z`` ->``z*x<z*y`` ->``x<y``.
+Intros z x y H H0.
 Case (total_order x y); Intros Eq0; Auto; Elim Eq0; Clear Eq0; Intros Eq0.
  Rewrite Eq0 in H0;ElimType False;Apply (Rlt_antirefl ``z*y``);Auto.
 Generalize (Rlt_monotony z y x H Eq0);Intro;ElimType False;
@@ -779,7 +787,7 @@ Generalize (Rlt_monotony z y x H Eq0);Intro;ElimType False;
 Qed.
 
 V7only [
-Notation Rlt_monotony_rev := [r,r1,r2:R](Rlt_monotony_contra r1 r2 r).
+Notation Rlt_monotony_rev := Rlt_monotony_contra.
 ].
 
 Lemma Rlt_anti_monotony:(r,r1,r2:R)``r < 0`` -> ``r1 < r2`` -> ``r*r1 > r*r2``.
@@ -804,8 +812,8 @@ Qed.
 Hints Resolve Rle_monotony_r : real.
 
 Lemma Rle_monotony_contra:
-  (x, y, z:R) ``0<z`` ->``z*x<=z*y`` ->``x<=y``.
-Intros x y z H H0;Case H0; Auto with real.
+  (z, x, y:R) ``0<z`` ->``z*x<=z*y`` ->``x<=y``.
+Intros z x y H H0;Case H0; Auto with real.
 Intros H1; Apply Rlt_le.
 Apply Rlt_monotony_contra with z := z;Auto.
 Intros H1;Replace x with (Rmult (Rinv z) (Rmult z x)); Auto with real.
@@ -1034,17 +1042,6 @@ Apply Rle_trans with r2; Auto with real.
 Qed.
 
 (**********)
-Lemma Rgt_RoppO:(r:R)``r>0``->``(-r)<0``.
-Intros; Rewrite <- Ropp_O; Auto with real.
-Qed.
-
-(**********)
-Lemma Rlt_RoppO:(r:R)``r<0``->``-r>0``.
-Intros; Rewrite <- Ropp_O; Auto with real.
-Qed.
-Hints Resolve Rgt_RoppO Rlt_RoppO: real.
-
-(**********)
 Lemma Rlt_r_plus_R1:(r:R)``0<=r`` -> ``0<r+1``.
 Intros.
 Apply Rlt_le_trans with ``1``; Auto with real.
@@ -1090,7 +1087,7 @@ Qed.
 (***********)
 Lemma Rge_monotony:
  (x,y,z:R) ``z>=0`` -> ``x>=y`` -> ``x*z >= y*z``.
-Intros; Apply Rle_ge; Apply Rle_monotony_r; Apply Rge_le; Assumption.
+Intros x y z; Intros; Apply Rle_ge; Apply Rle_monotony_r; Apply Rge_le; Assumption.
 Qed.
 
 (***********)
@@ -1140,7 +1137,7 @@ Qed.
 
 Lemma Rplus_eq_R0
 	:(a,b:R)``0<=a`` -> ``0<=b`` -> ``a+b==0`` -> ``a==0``/\``b==0``.
-Split.
+Intros a b; Split.
 Apply Rplus_eq_R0_l with b; Auto with real.
 Apply Rplus_eq_R0_l with a; Auto with real.
 Rewrite Rplus_sym; Auto with real.
@@ -1149,11 +1146,11 @@ Qed.
 
 (***********)
 Lemma Rplus_Rsr_eq_R0_l:(a,b:R)``(Rsqr a)+(Rsqr b)==0``->``a==0``.
-Intros; Apply Rsqr_r_R0; Apply Rplus_eq_R0_l with (Rsqr b); Auto with real.
+Intros a b; Intros; Apply Rsqr_r_R0; Apply Rplus_eq_R0_l with (Rsqr b); Auto with real.
 Qed.
 
 Lemma Rplus_Rsr_eq_R0:(a,b:R)``(Rsqr a)+(Rsqr b)==0``->``a==0``/\``b==0``.
-Split.
+Intros a b; Split.
 Apply Rplus_Rsr_eq_R0_l with b; Auto with real.
 Apply Rplus_Rsr_eq_R0_l with a; Auto with real.
 Rewrite Rplus_sym; Auto with real.
@@ -1323,8 +1320,8 @@ Notation INZ:=Z_of_nat.
 ].
 
 (**********)
-Lemma IZN:(z:Z)(`0<=z`)->(Ex [n:nat] z=(INZ n)).
-Intros; Unfold INZ; Apply inject_nat_complete; Assumption.
+Lemma IZN:(z:Z)(`0<=z`)->(Ex [m:nat] z=(INZ m)).
+Intros z; Unfold INZ; Apply inject_nat_complete; Assumption.
 Qed.
 
 (**********)
@@ -1353,7 +1350,7 @@ Qed.
 
 (**********)
 Lemma plus_IZR:(z,t:Z)(IZR `z+t`)==``(IZR z)+(IZR t)``.
-NewDestruct z; NewDestruct t; Intros; Auto with real.
+Intro z; NewDestruct z; Intro t; NewDestruct t; Intros; Auto with real.
 Simpl; Intros; Rewrite convert_add; Auto with real.
 Apply plus_IZR_NEG_POS.
 Rewrite Zplus_sym; Rewrite Rplus_sym; Apply plus_IZR_NEG_POS.
@@ -1381,7 +1378,7 @@ Qed.
 
 (**********)
 Lemma Z_R_minus:(z1,z2:Z)``(IZR z1)-(IZR z2)``==(IZR `z1-z2`).
-Intros; Unfold Rminus; Unfold Zminus.
+Intros z1 z2; Unfold Rminus; Unfold Zminus.
 Rewrite <-(Ropp_Ropp_IZR z2); Symmetry; Apply plus_IZR.
 Qed. 
 
@@ -1396,7 +1393,7 @@ Qed.
 
 (**********)
 Lemma lt_IZR:(z1,z2:Z)``(IZR z1)<(IZR z2)``->`z1<z2`.
-Intros; Apply Zlt_O_minus_lt. 
+Intros z1 z2 H; Apply Zlt_O_minus_lt. 
 Apply lt_O_IZR.
 Rewrite <- Z_R_minus.
 Exact (Rgt_minus (IZR z2) (IZR z1) H).
@@ -1404,7 +1401,7 @@ Qed.
 
 (**********)
 Lemma eq_IZR_R0:(z:Z)``(IZR z)==0``->`z=0`.
-NewDestruct z; Simpl; Intros; Auto with zarith.
+Intro z; NewDestruct z; Simpl; Intros; Auto with zarith.
 Case (Rlt_not_eq ``0`` (INR (convert p))); Auto with real.
 Case (Rlt_not_eq ``-(INR (convert p))`` ``0`` ); Auto with real.
 Apply Rgt_RoppO. Unfold Rgt; Apply INR_pos.
@@ -1412,7 +1409,7 @@ Qed.
 
 (**********)
 Lemma eq_IZR:(z1,z2:Z)(IZR z1)==(IZR z2)->z1=z2.
-Intros;Generalize (eq_Rminus (IZR z1) (IZR z2) H);
+Intros z1 z2 H;Generalize (eq_Rminus (IZR z1) (IZR z2) H);
  Rewrite (Z_R_minus z1 z2);Intro;Generalize (eq_IZR_R0 `z1-z2` H0);
  Intro;Omega.
 Qed.
@@ -1446,17 +1443,17 @@ Qed.
 
 (**********)
 Lemma IZR_ge: (m,n:Z) `m>= n` -> ``(IZR m)>=(IZR n)``.
-Intros;Apply Rlt_not_ge;Red;Intro.
+Intros m n H; Apply Rlt_not_ge;Red;Intro.
 Generalize (lt_IZR m n H0); Intro; Omega.
 Qed.
 
 Lemma IZR_le: (m,n:Z) `m<= n` -> ``(IZR m)<=(IZR n)``.
-Intros;Apply Rgt_not_le;Red;Intro.
+Intros m n H;Apply Rgt_not_le;Red;Intro.
 Unfold Rgt in H0;Generalize (lt_IZR n m H0); Intro; Omega.
 Qed.
 
 Lemma IZR_lt: (m,n:Z) `m< n` -> ``(IZR m)<(IZR n)``.
-Intros;Cut `m<=n`.
+Intros m n H;Cut `m<=n`.
 Intro H0;Elim (IZR_le m n H0);Intro;Auto.
 Generalize (eq_IZR m n H1);Intro;ElimType False;Omega.
 Omega.
@@ -1526,12 +1523,12 @@ cond_nonzero : ~``nonzero==0`` }.
 
 (**********)
 Lemma prod_neq_R0 : (x,y:R) ~``x==0``->~``y==0``->~``x*y==0``.
-Intros; Red; Intro; Generalize (without_div_Od x y H1); Intro; Elim H2; Intro; [Rewrite H3 in H; Elim H | Rewrite H3 in H0; Elim H0]; Reflexivity.
+Intros x y; Intros; Red; Intro; Generalize (without_div_Od x y H1); Intro; Elim H2; Intro; [Rewrite H3 in H; Elim H | Rewrite H3 in H0; Elim H0]; Reflexivity.
 Qed.
 
 (*********)
 Lemma Rmult_le_pos : (x,y:R) ``0<=x`` -> ``0<=y`` -> ``0<=x*y``.
-Intros; Rewrite <- (Rmult_Ol x); Rewrite <- (Rmult_sym x); Apply (Rle_monotony x R0 y H H0).
+Intros x y H H0; Rewrite <- (Rmult_Ol x); Rewrite <- (Rmult_sym x); Apply (Rle_monotony x R0 y H H0).
 Qed.
 
 Lemma double : (x:R) ``2*x==x+x``.
@@ -1548,27 +1545,27 @@ Qed.
 (**********************************************************)
 
 Lemma gt0_plus_gt0_is_gt0 : (x,y:R) ``0<x`` -> ``0<y`` -> ``0<x+y``.
-Intros; Apply Rlt_trans with x; [Assumption | Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rlt_compatibility; Assumption].
+Intros x y; Intros; Apply Rlt_trans with x; [Assumption | Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rlt_compatibility; Assumption].
 Qed.
 
 Lemma ge0_plus_gt0_is_gt0 : (x,y:R) ``0<=x`` -> ``0<y`` -> ``0<x+y``.
-Intros; Apply Rle_lt_trans with x; [Assumption | Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rlt_compatibility; Assumption].
+Intros x y; Intros; Apply Rle_lt_trans with x; [Assumption | Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rlt_compatibility; Assumption].
 Qed.
 
-Lemma  gt0_plus_ge0_is_gt0 : (x,y:R) ``0<x`` -> ``0<=y`` -> ``0<x+y``.
-Intros; Rewrite <- Rplus_sym; Apply ge0_plus_gt0_is_gt0; Assumption.
+Lemma gt0_plus_ge0_is_gt0 : (x,y:R) ``0<x`` -> ``0<=y`` -> ``0<x+y``.
+Intros x y; Intros; Rewrite <- Rplus_sym; Apply ge0_plus_gt0_is_gt0; Assumption.
 Qed.
 
 Lemma ge0_plus_ge0_is_ge0 : (x,y:R) ``0<=x`` -> ``0<=y`` -> ``0<=x+y``.
-Intros; Apply Rle_trans with x; [Assumption | Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Assumption].
+Intros x y; Intros; Apply Rle_trans with x; [Assumption | Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Assumption].
 Qed.
 
 Lemma plus_le_is_le : (x,y,z:R) ``0<=y`` -> ``x+y<=z`` -> ``x<=z``.
-Intros; Apply Rle_trans with ``x+y``; [Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Assumption | Assumption].
+Intros x y z; Intros; Apply Rle_trans with ``x+y``; [Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Assumption | Assumption].
 Qed.
 
 Lemma plus_lt_is_lt : (x,y,z:R) ``0<=y`` -> ``x+y<z`` -> ``x<z``.
-Intros; Apply Rle_lt_trans with ``x+y``; [Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Assumption | Assumption].
+Intros x y z; Intros; Apply Rle_lt_trans with ``x+y``; [Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Assumption | Assumption].
 Qed.
 
 Lemma Rmult_lt2 : (r1,r2,r3,r4:R) ``0<=r1`` -> ``0<=r3`` -> ``r1<r2`` -> ``r3<r4`` -> ``r1*r3<r2*r4``.
@@ -1576,7 +1573,7 @@ Intros; Apply Rle_lt_trans with ``r2*r3``; [Apply Rle_monotony_r; [Assumption | 
 Qed.
 
 Lemma le_epsilon : (x,y:R) ((eps : R) ``0<eps``->``x<=y+eps``) -> ``x<=y``.
-Intros; Elim (total_order x y); Intro.
+Intros x y; Intros; Elim (total_order x y); Intro.
 Left; Assumption.
 Elim H0; Intro.
 Right; Assumption.
