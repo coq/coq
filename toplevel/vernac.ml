@@ -136,11 +136,12 @@ let post_printing loc (env,t,f,n) = function
   | VernacSolve (i,_,deftac) ->
       set_formatter_translator();
       let pp = Ppvernacnew.pr_vernac_solve (i,env,t,deftac) ++ sep_end () in
-      if !translate_file then begin
+      (if !translate_file then begin
 	msg (hov 0 (comment (fst loc) ++ pp ++ comment (snd loc - 1)));
       end
       else
-	msgnl (hov 4 (str"New Syntax:" ++ fnl() ++ pp))
+	msgnl (hov 4 (str"New Syntax:" ++ fnl() ++ pp)));
+      Format.set_formatter_out_channel stdout
   | _ -> ()
 
 let pr_new_syntax loc ocom =
