@@ -777,7 +777,7 @@ let clenv_unify allow_K cv_pb ty1 ty2 clenv =
   match kind_of_term hd1, l1<>[], kind_of_term hd2, l2<>[] with
     | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true) ->
 	(try 
-	   clenv_typed_unify cv_pb ty1 ty2 clenv
+	   clenv_unify_0 cv_pb ty1 ty2 clenv
 	 with ex when catchable_exception ex -> 
 	   try 
 	     clenv_unify2 allow_K cv_pb ty1 ty2 clenv
