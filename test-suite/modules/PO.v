@@ -15,7 +15,7 @@ Module Type PO.
 End PO.
 
 
-Module Pair[X:PO][Y:PO]<:PO.
+Module Pair[X:PO][Y:PO] <: PO.
   Definition T:=X.T*Y.T.
   Definition le:=[p1,p2]
     (X.le (fst p1) (fst p2)) /\ (Y.le (snd p1) (snd p2)).
@@ -23,66 +23,35 @@ Module Pair[X:PO][Y:PO]<:PO.
   Hints Unfold le.
 
   Lemma le_refl : (p:T)(le p p).
-  Info Auto.
-  Save.
+    Info Auto.
+  Qed.
 
   Lemma le_trans : (p1,p2,p3:T)(le p1 p2) -> (le p2 p3) -> (le p1 p3).
-    Unfold le.
-    Intuition; Info EAuto.
-  Save.    
+    Unfold le; Intuition; Info EAuto.
+  Qed.    
 
   Lemma le_antis : (p1,p2:T)(le p1 p2) -> (le p2 p1) -> (p1=p2).
     NewDestruct p1.  
     NewDestruct p2.
     Unfold le.
     Intuition.
-    Cut t=t1;Auto.
-    Cut t0=t2;Auto.
-    Intros.
-    Rewrite H0.
-    Rewrite H4.
+    CutRewrite t=t1.
+    CutRewrite t0=t2.
     Reflexivity.
-  Save.
 
-  Hints Resolve le_refl le_trans le_antis.
+    Info Auto.
+
+    Info Auto.
+  Qed.
 
 End Pair.
 
-Module Check_Pair [X:PO][Y:PO] : PO := (Pair X Y).
 
-
-Module Type Fmono.
-  Declare Module X:PO.
-  Declare Module Y:PO.
-
-  Parameter f : X.T -> Y.T.
-  
-  Axiom f_mono : (x1,x2:X.T)(X.le x1 x2) -> (Y.le (f x1) (f x2)).
-End Fmono.
 
 Read Module Nat.
 
+Module NN := Pair Nat Nat.
 
-Module PlusMono:Fmono.
-  Module Y:=Nat.
-  Module X:=Pair Nat Nat.
-  
-  Definition f:=[p] (plus (fst p) (snd p)).
-
-  Lemma f_mono : (p1,p2:nat*nat)(X.le p1 p2) -> (le (f p1) (f p2)).
-    NewDestruct p1;NewDestruct p2.
-    Unfold X.le Nat.le f.
-    Simpl.
-    NewDestruct 1.
-    Induction H.
-  
-    Induction n.
-    Auto.
-    Simpl.
-    Apply Nat.le_mono_S.
-    Auto.
-
-    Simpl.
-    Auto.
-  Save.
-End PlusMono.
+Lemma zz_min : (p:NN.T)(NN.le (O,O) p).
+  Info Auto with arith.
+Qed.
