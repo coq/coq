@@ -480,7 +480,7 @@ let prvecti elem v =
     else
       let r = pr (i-1) and e = elem i v.(i) in [< r; e >]
   in
-  pr (n-1)
+  if n=0 then [< >] else pr (n - 1)
 
 let prvect_with_sep sep elem v =
   let rec pr n =
