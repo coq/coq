@@ -16,7 +16,7 @@ open Tacmach
    focused at some time. The following functions work by side-effect
    on current set of open proofs. In this module, ``proofs'' means an
    open proof (something started by vernacular command [Goal], [Lemma]
-   or [Theorem], and ``goal'' means a subgoal of the current focused
+   or [Theorem]), and ``goal'' means a subgoal of the current focused
    proof *)
 
 (* [refining ()] tells if there is some proof in progress, even if a not
