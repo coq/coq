@@ -213,7 +213,7 @@ let recognize_number t =
 
 let constant dir s =
   Declare.global_absolute_reference
-    (make_path ("Zarith"::dir) (id_of_string s) CCI)
+    (make_path ("Coq"::"Zarith"::dir) (id_of_string s) CCI)
 
 (* fast_integer *)
 let coq_xH = lazy (constant ["fast_integer"] "xH")
