@@ -17,6 +17,8 @@ contrib/extraction/g_extraction.ml: parsing/grammar.cma
 contrib/xml/xmlentries.ml: parsing/grammar.cma
 contrib/jprover/jprover.ml: parsing/grammar.cma
 contrib/cc/cctac.ml: parsing/grammar.cma
+contrib/linear/ccidpc.ml: parsing/grammar.cma
+contrib/linear/dpc.ml: parsing/grammar.cma
 parsing/lexer.ml: 
 parsing/q_util.ml: 
 parsing/q_coqast.ml: 

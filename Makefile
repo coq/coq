@@ -44,7 +44,7 @@ LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
 	      -I contrib/ring -I contrib/xml \
 	      -I contrib/extraction -I contrib/correctness \
               -I contrib/interface -I contrib/fourier \
-	      -I contrib/jprover -I contrib/cc
+	      -I contrib/jprover -I contrib/cc -I contrib/linear
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
@@ -347,11 +347,24 @@ JPROVERCMO=\
 
 CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo  
 
-ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4
+LINEARCMO=\
+  contrib/linear/dpctypes.cmo \
+  contrib/linear/general.cmo \
+  contrib/linear/graph.cmo \
+  contrib/linear/subst.cmo \
+  contrib/linear/unif.cmo \
+  contrib/linear/lk_proofs.cmo \
+  contrib/linear/ccidpc.cmo \
+  contrib/linear/kwc.cmo \
+  contrib/linear/prove.cmo \
+  contrib/linear/dpc.cmo
+
+ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4 \
+  contrib/linear/ccidpc.ml4 contrib/linear/dpc.ml4
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
-	$(CORRECTNESSCMO) $(CCCMO) $(USERCMO)
+	$(CORRECTNESSCMO) $(CCCMO) $(LINEARCMO) $(USERCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
