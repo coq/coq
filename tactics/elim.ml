@@ -71,21 +71,23 @@ let rec general_decompose_clause recognizer =
 (* Faudrait ajouter un COMPLETE pour que l'hypothèse créée ne reste
    pas si aucune élimination n'est possible *)
 
-let rec general_decompose recognizer c gl = 
+(* Meilleures stratégies mais perte de compatibilité *)
+let up_to_delta = ref false (* true *)
+let tmphyp_name = id_of_string "TmpHyp" (* "H" *)
+
+let general_decompose recognizer c gl = 
   let typc = pf_type_of gl c in  
   (tclTHENS (cut typc) 
-     [(tclTHEN intro 
+     [(tclTHEN (intro_using tmphyp_name)
          (onLastHyp (general_decompose_clause recognizer)));
       (exact c)]) gl
-
-let up_to_delta = ref false
 
 let head_in gls indl t =
   try
     let ity,_ =
       if !up_to_delta
       then find_mrectype (pf_env gls) (project gls) t
-      else extract_mrectype (pf_env gls) (project gls) t
+      else extract_mrectype t
     in List.mem ity indl
   with Induc -> false
        
