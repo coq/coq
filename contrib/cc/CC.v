@@ -6,9 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $id:$ *)
+(* $Id$ *)
 
-(* Here were some now deprecated lemmata *)
+(* Here were some deprecated lemmata *)
 
 Tactic Definition CCsolve :=
  Repeat (Match Context With
