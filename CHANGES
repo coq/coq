@@ -149,10 +149,13 @@ Library
   use the second name (Zle_Zmult_right2, Zle_mult_simpl), (OMEGA2,
   Zle_0_plus), (Zplus_assoc_l, Zplus_assoc), (Zmult_one, Zmult_1_n),
   (Zmult_assoc_l, Zmult_assoc), (Zmult_minus_distr, Zmult_Zminus_distr_l)
-  (add_un_double_moins_un_xO, is_double_moins_un) (source of incompatibilities)
-- Few minor changes (order of arguments of Zsimpl_le_plus_r and
-  Zsimpl_le_plus_l changed, simpl_plus_l, simpl_le_plus_l; no more
-  implicit arguments in Zmult_Zminus_distr_l and Zmult_Zminus_distr_r)
+  (add_un_double_moins_un_xO, is_double_moins_un),
+  (Rlt_monotony_rev,Rlt_monotony_contra) (source of incompatibilities)
+- Few minor changes (order of arguments of Zsimpl_le_plus_r,
+  Zsimpl_le_plus_l changed, Rge_monotony, Rlt_monotony_contra and
+  Rle_monotony_contra; simpl_plus_l, simpl_le_plus_l; no more implicit
+  arguments in Zmult_Zminus_distr_l and Zmult_Zminus_distr_r, lemmas
+  moved from Zcomplements to other files) (source of incompatibilities)
 - New lemmas provided by users added
 
 Tactic language
