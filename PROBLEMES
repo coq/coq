@@ -19,7 +19,6 @@ Bordeaux/Additions :
   echecs sur Realizer
 
 Bordeaux/GROUPS : OK
-
 Bordeaux/EXCEPTIONS : OK
 
 Dyade/Otway-Rees : OK
@@ -27,20 +26,9 @@ Dyade/BDD :
 File "./bdd4.v", line 122, characters 10-28
 Error: Tactic generated a subgoal identical to the original goal.
 
-
 Lyon/AUTOMATA : OK
 Lyon/CIRCUITS : OK
 Lyon/COINDUCTIVES : 
-File "./Examples.v", line 276, characters 0-764
-Error: Incorrect elimination of H in the inductive type
- eq
-The elimination predicate
- [a1:A; _:((hd (Cons s0 H))=(hd (Cons s a0))); a2:A]
-  (EqSt2 A (Cons s0 H) (Cons a2 a0)) has type
- A->(hd (Cons s0 H))=(hd (Cons s a0))->A->Prop
-It should be one of :
- (a:A)(hd (Cons a0 s0))=a->Prop, (a:A)(hd (Cons a0 s0))=a->Set,
- A->Prop, A->Set
 File "./Specified_Streams.v", line 11, characters 0-132
 Error: Illegal application (Type Error): 
 The term SStream of type (A:Set)(nat->A->Prop)->Set
@@ -52,35 +40,12 @@ The 2nd term has type (SStream A P) which should be coercible to
 
 Lyon/IEEE754 : OK
 
-Rocq/DEMOS : OK
-Rocq/GRAPHS
-/home/cpaulin/TYPES/V7/bin/coqc  -q  -I . lsort
-Utilise NewInduction
-
-/home/cpaulin/TYPES/V7/bin/coqc  -q  -I . cgraph
-Warning: Found several default clauses, kept the first one
-
-File "./cgraph.v", line 1866, characters 2-7
-Error: frontier was handed back a ill-formed proof.
-(Apres un EApply)
-
 Rocq/MUTUAL-EXCLUSION : échec sur Realizer
 
 Rocq/COC
 Realizer dans Conv_Dec.v, Expr.v, Infer.v, Machine.v MyList.v Names.v
 File "./Int_typ.v", line 209, characters 30-44
-Error: In environment
-int_typ : term->intP->(s:skel)(Can s)
-T  : term
-ip  : intP
-s  : skel
-A  : term
-B  : term
-_  : skel
-_  : skel
-s1  := s : skel
-The term (default_can s1) has type (Can s1)
- while it is expected to have type (Can (PROD _ s1))
+Problème d'alias dépendant dans un Cases (idem SUBST)
 
 Rocq/ALGEBRA/RELATIONS/Relations.v
 --> Un problème de Coercion au discharge
@@ -89,27 +54,34 @@ Rocq/ARITH/Chinese
 File "./Zdiv.v", line 34, characters 0-944
 --> Un Refine mal typé et des Realizer
 
-Rocq/PARADOXES
-File "./Reynolds1.v", line 105, characters 0-429
-Error: checking of theorem per_F0 failed... aborting
+Rocq/GRAPHS
+File "./cgraph.v", line 2628, characters 14-46
+Anomaly: Search error. Please report.
 
+Rocq/PARADOXES OK
 Rocq/CHECKER OK
 Rocq/COMPILER OK
 Rocq/DEMOS OK
 Rocq/HIGMAN OK
 Rocq/LAMBDA OK
 Rocq/SHUFFLE OK
+Rocq/THREE_GAP OK
+Rocq/ZF OK
+
+Rocq/SUBST
+File "./inversionSL.v", line 215, characters 38-39
+Problème d'alias dépendant dans un Cases
 
 Rocq/SCHROEDER
 File "./Schroeder.v", line 351, characters 4-52
 Anomaly: type_of: variable h1 unbound. Please report.
-
 --> Pb de "Remark" local à un thm pas pris en compte dans
 l'environnement de la preuve de ce théorème
 
-Rocq/SUBST
-File "./TS.v", line 69, characters 0-6
-Error: Attempt to save an incomplete proof
+Rocq/RATIONAL
+--> Des fichiers ML à porter
+
+Rocq/MM
 
 Montevideo/CtlTctl OK
 Montevideo/RailroadCrossing OK (TemporalOperators.v ne doit pas etre compile)
@@ -122,4 +94,4 @@ coqc  -q  -I . abp_base
 File "./abp_base.v", line 42, characters 0-154
 Error: Cannot declare a variable or hypothesis over the term Y
 because this term is not a type.
-
+--> Pb de calcul de de Bruijn dans le vieux Match
