@@ -296,9 +296,9 @@ let print_constant with_values sep sp =
 let print_inductive sp = (print_mutual sp)
 
 let print_syntactic_def sep kn =
-  let l = label kn in
+  let qid = Nametab.shortest_qualid_of_syndef kn in
   let c = Syntax_def.search_syntactic_definition dummy_loc kn in 
-  (str" Syntactic Definition " ++ pr_lab l ++ str sep ++ 
+  (str" Syntactic Definition " ++ pr_qualid qid ++ str sep ++ 
   Constrextern.without_symbols pr_rawterm c ++ fnl ())
 
 (*let print_module with_values kn = 

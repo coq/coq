@@ -517,6 +517,8 @@ let end_module id =
 	Not_found -> anomaly "Module objects not found..."
   in
 
+  (* must be called after get_modtype_substobjs, because of possible
+     dependencies on functor arguments *)
   Summary.unfreeze_other_summaries fs;
 
   let substituted = subst_substobjs dir mp substobjs in
@@ -575,7 +577,7 @@ let register_library dir cenv objs digest =
 	    Hashtbl.add library_cache dir modobjs;
 	    modobjs
   in
-    do_module false "register_compilation" load_objects 1 dir mp substobjs objects
+    do_module false "register_library" load_objects 1 dir mp substobjs objects
 
 
 let start_library dir = 
