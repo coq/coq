@@ -256,18 +256,9 @@ let explain_not_inductive ctx c =
   str"The term" ++ brk(1,1) ++ pc ++ spc () ++
   str "is not an inductive definition"
 
-let explain_ml_case ctx mes =
-  let expln = match mes with
-    | MlCaseAbsurd ->
-	str "Unable to infer a predicate for an elimination an empty type"
-    | MlCaseDependent ->
-        str "Unable to infer a dependent elimination predicate"
-  in
-  hov 0 (str "Cannot infer ML Case predicate:" ++ fnl () ++ expln)
-
 let explain_cant_find_case_type ctx c =
   let pe = prterm_env ctx c in
-  hov 3 (str "Cannot infer type of whole Case expression on" ++ ws 1 ++ pe)
+  hov 3 (str "Cannot infer type of pattern-matching on" ++ ws 1 ++ pe)
 
 let explain_occur_check ctx ev rhs =
   let id = "?" ^ string_of_int ev in
@@ -338,8 +329,6 @@ let explain_type_error ctx = function
       explain_not_inductive ctx c
 *)
 let explain_pretype_error ctx = function
-  | MlCase (mes,_,_) ->
-      explain_ml_case ctx mes
   | CantFindCaseType c ->
       explain_cant_find_case_type ctx c
   | OccurCheck (n,c) ->

@@ -131,9 +131,13 @@ let build_notdep_pred env sigma indf pred =
   let nar = List.length arsign in
   it_mkLambda_or_LetIn_name env (lift nar pred) arsign
 
+type ml_case_error =
+  | MlCaseAbsurd
+  | MlCaseDependent
+
 exception NotInferable of ml_case_error
 
-let pred_case_ml_fail env sigma isrec (IndType (indf,realargs)) (i,ft) =
+let pred_case_ml env sigma isrec (IndType (indf,realargs)) (i,ft) =
   let pred =
     let (ind,params) = indf in
     let (mib,mip) = Inductive.lookup_mind_specif env ind in
@@ -153,18 +157,6 @@ let pred_case_ml_fail env sigma isrec (IndType (indf,realargs)) (i,ft) =
     pred
   else (* we try with [_:T1]..[_:Tn](lift n pred) *)
     build_notdep_pred env sigma indf pred  
-
-let pred_case_ml loc env sigma isrec indt lf (i,ft) = 
-  try pred_case_ml_fail env sigma isrec indt (i,ft)
-  with NotInferable e ->
-    let j = {uj_val=lf.(i-1); uj_type=ft} in
-    error_ml_case_loc loc env sigma e indt j
-
-(* similar to pred_case_ml but does not expect the list lf of braches *)
-let pred_case_ml_onebranch loc env sigma isrec indt (i,fj) = 
-  try pred_case_ml_fail env sigma isrec indt (i,fj.uj_type)
-  with NotInferable e ->
-    error_ml_case_loc loc env sigma e indt fj
 
 (************************************************************************)
 (*            Pattern-matching compilation (Cases)                      *)

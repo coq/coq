@@ -30,15 +30,21 @@ type pattern_matching_error =
 
 exception PatternMatchingError of env * pattern_matching_error
 
-(* Used for old cases in pretyping *)
+(*s Used for old cases in pretyping *)
 
 val branch_scheme : 
   env -> evar_defs -> bool -> inductive * constr list -> constr array
 
-val pred_case_ml_onebranch : loc -> env -> evar_map -> bool ->
-  inductive_type -> int * unsafe_judgment -> constr 
+type ml_case_error =
+  | MlCaseAbsurd
+  | MlCaseDependent
 
-(* Compilation of pattern-matching. *)
+exception NotInferable of ml_case_error
+
+val pred_case_ml : (* raises [NotInferable] if not inferable *)
+  env -> evar_map -> bool -> inductive_type -> int * types -> constr 
+
+(*s Compilation of pattern-matching. *)
 
 val compile_cases :
   loc -> (type_constraint -> env -> rawconstr -> unsafe_judgment)

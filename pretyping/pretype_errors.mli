@@ -20,13 +20,8 @@ open Inductiveops
 
 (*s The type of errors raised by the pretyper *)
 
-type ml_case_error =
-  | MlCaseAbsurd
-  | MlCaseDependent
-
 type pretype_error =
   (* Old Case *)
-  | MlCase of ml_case_error * inductive_type * unsafe_judgment
   | CantFindCaseType of constr
   (* Unification *)
   | OccurCheck of int * constr
@@ -61,9 +56,6 @@ val error_cant_apply_bad_type_loc :
   loc -> env ->  Evd.evar_map -> int * constr * constr -> 
       unsafe_judgment -> unsafe_judgment list -> 'b
 
-val error_cant_find_case_type_loc :
-  loc -> env ->  Evd.evar_map -> constr -> 'b
-
 val error_case_not_inductive_loc :
   loc -> env ->  Evd.evar_map -> unsafe_judgment -> 'b
 
@@ -87,9 +79,8 @@ val error_not_clean : env ->  Evd.evar_map -> int -> constr -> 'b
 
 (*s Ml Case errors *)
 
-val error_ml_case_loc :
-  loc -> env ->  Evd.evar_map ->
-      ml_case_error -> inductive_type -> unsafe_judgment -> 'b
+val error_cant_find_case_type_loc :
+  loc -> env ->  Evd.evar_map -> constr -> 'b
 
 (*s Pretyping errors *)
 

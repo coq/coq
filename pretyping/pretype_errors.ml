@@ -18,13 +18,8 @@ open Type_errors
 open Rawterm
 open Inductiveops
 
-type ml_case_error =
-  | MlCaseAbsurd
-  | MlCaseDependent
-
 type pretype_error =
   (* Old Case *)
-  | MlCase of ml_case_error * inductive_type * unsafe_judgment
   | CantFindCaseType of constr
   (* Unification *)
   | OccurCheck of int * constr
@@ -108,10 +103,6 @@ let error_cant_apply_bad_type_loc loc env sigma (n,c,t) rator randl =
        ((n,nf_evar sigma c, nf_evar sigma t),
         j_nf_evar sigma rator, ja))
 
-let error_cant_find_case_type_loc loc env sigma expr =
-  raise_pretype_error
-    (loc, env, sigma, CantFindCaseType (nf_evar sigma expr))
-
 let error_ill_formed_branch_loc loc env sigma c i actty expty =
   let simp t = Reduction.nf_betaiota (nf_evar sigma t) in
   raise_located_type_error
@@ -146,9 +137,9 @@ let error_not_clean env sigma ev c =
 
 (*s Ml Case errors *)
 
-let error_ml_case_loc loc env sigma mes indt j =
+let error_cant_find_case_type_loc loc env sigma expr =
   raise_pretype_error
-    (loc, env, sigma, MlCase (mes, indt, j_nf_evar sigma j))
+    (loc, env, sigma, CantFindCaseType (nf_evar sigma expr))
 
 (*s Pretyping errors *)
 
