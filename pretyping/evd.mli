@@ -46,7 +46,6 @@ val to_list : evar_map -> (evar * evar_info) list
 
 val define : evar_map -> evar -> constr -> evar_map
 
-val non_instantiated : evar_map -> (evar * evar_info) list
 val is_evar : evar_map -> evar -> bool
 
 val is_defined : evar_map -> evar -> bool

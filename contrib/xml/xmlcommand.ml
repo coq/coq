@@ -359,7 +359,7 @@ let mk_current_proof_obj is_a_variable id bo ty evar_map env =
        in
         (* We map the named context to a rel context and every Var to a Rel *)
         (n,context,Unshare.unshare (Term.subst_vars final_var_ids evar_concl))
-   ) (Evd.non_instantiated evar_map)
+   ) (Evarutil.non_instantiated evar_map)
  in
   let id' = Names.string_of_id id in
    if metasenv = [] then

@@ -153,7 +153,7 @@ let instantiate_pf_com n com pfts =
   let sigma = (w_Underlying wc) in 
   let (sp,evd) (* as evc *) = 
     try
-      List.nth (Evd.non_instantiated sigma) (n-1) 
+      List.nth (Evarutil.non_instantiated sigma) (n-1) 
     with Failure _ -> 
       error "not so many uninstantiated existential variables"
   in 

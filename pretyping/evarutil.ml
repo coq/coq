@@ -83,6 +83,15 @@ let jl_nf_evar = Pretype_errors.jl_nf_evar
 let jv_nf_evar = Pretype_errors.jv_nf_evar
 let tj_nf_evar = Pretype_errors.tj_nf_evar
 
+let nf_evar_info evc info =
+  { evar_concl = Reductionops.nf_evar evc info.evar_concl;
+    evar_hyps = List.map 
+		  (fun (id,body,typ) -> 
+		     (id,
+		      option_app (Reductionops.nf_evar evc) body,
+		      Reductionops.nf_evar evc typ)) info.evar_hyps; 
+    evar_body = info.evar_body}
+
 (**********************)
 (* Creating new evars *)
 (**********************)
@@ -236,8 +245,6 @@ let ise_try isevars l =
        or (isevars.evars <- u; test l)
   in test l
 
-
-
 (* say if the section path sp corresponds to an existential *)
 let ise_in_dom isevars sp = Evd.in_dom isevars.evars sp
 
@@ -258,6 +265,15 @@ let ise_undefined isevars c = match kind_of_term c with
 
 let need_restriction isevars args = not (array_for_all closed0 args)
     
+(* The list of non-instantiated existential declarations *)
+
+let non_instantiated sigma = 
+  let listev = to_list sigma in
+  List.fold_left 
+    (fun l (ev,evd) -> 
+       if evd.evar_body = Evar_empty then 
+	 ((ev,nf_evar_info sigma evd)::l) else l)
+    [] listev
 
 (* We try to instanciate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times.

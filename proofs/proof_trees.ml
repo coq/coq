@@ -229,7 +229,7 @@ let rec pr_evars_int i = function
 
 let pr_subgoals_existential sigma = function 
   | [] -> 
-      let exl = Evd.non_instantiated sigma in 
+      let exl = non_instantiated sigma in 
       if exl = [] then 
 	(str"Proof completed."  ++ fnl ())
       else

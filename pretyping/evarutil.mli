@@ -32,6 +32,8 @@ val jv_nf_evar :
 val tj_nf_evar :
    evar_map -> unsafe_type_judgment -> unsafe_type_judgment
 
+val nf_evar_info : evar_map -> evar_info -> evar_info
+
 (* Replacing all evars *)
 exception Uninstantiated_evar of existential_key
 val whd_ise :  evar_map -> constr -> constr
@@ -45,6 +47,9 @@ val evar_env :  evar_info -> env
 
 type evar_defs
 val evars_of :  evar_defs ->  evar_map
+
+val non_instantiated : evar_map -> (evar * evar_info) list
+
 val create_evar_defs :  evar_map ->  evar_defs
 val evars_reset_evd :  evar_map ->  evar_defs -> unit
 val evar_source : existential_key -> evar_defs -> loc * hole_kind

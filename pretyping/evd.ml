@@ -51,15 +51,6 @@ let define evd ev body =
   match oldinfo.evar_body with
     | Evar_empty -> Evarmap.add ev newinfo evd
     | _ -> anomaly "cannot define an isevar twice"
-
-(* The list of non-instantiated existential declarations *)
-
-let non_instantiated sigma = 
-  let listev = to_list sigma in
-  List.fold_left 
-    (fun l ((ev,evd) as d) -> 
-       if evd.evar_body = Evar_empty then (d::l) else l)
-    [] listev
     
 let is_evar sigma ev = in_dom sigma ev
 

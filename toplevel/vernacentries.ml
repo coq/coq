@@ -98,7 +98,7 @@ let show_top_evars () =
   let pfts = get_pftreestate () in 
   let gls = top_goal_of_pftreestate pfts in 
   let sigma = project gls in 
-  msg (pr_evars_int 1 (Evd.non_instantiated sigma))
+  msg (pr_evars_int 1 (Evarutil.non_instantiated sigma))
 
 let show_prooftree () =
   let pts = get_pftreestate () in
