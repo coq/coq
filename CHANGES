@@ -6,6 +6,8 @@ Commands
 - New option "Set Printing All" to deactivate all high-level forms of
   printing (implicit arguments, coercions, destructing let,
   if-then-else, notations, projections)
+- "Functional Scheme" and "Functional Induction" extended to polymorphic types
+  and dependent types
 
 Syntax
 
@@ -19,9 +21,18 @@ Interpretation scopes
 - Add scope %bool
 - Import no more needed to activate argument scopes from a module
 
+Tactics
+
+- New tactics stepl and stepr for chaining transitivity steps
+- Tactic "replace ... with ... in" added
+
+Tactic Language
+
+- Intro patterns now supported in Ltac (parsed with prefix "ipattern:")
+
 Tools
 
-- Coqdoc support for notation links
+- Coqdoc updated to new syntax and now part of Coq sources
 
 Bug fixes
 
@@ -39,6 +50,8 @@ Bug fixes
 - Fix nested coercion printing bug
 - Fix printing of notation when interleaved with coercions 
 - Fix "Tactic Notation" translation bugs and improve file location of errors
+- Fix an "omega" bug (may cause "auto with zarith" to succeed more often)
+- Fix ltac "context" bug on right-hand-side of match clauses
 
 Changes from V8.0beta old syntax to V8.0beta
 ============================================
