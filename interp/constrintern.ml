@@ -661,6 +661,7 @@ let internalise sigma env allow_soapp lvar c =
 	let tids = List.fold_right Idset.add tids Idset.empty in
 	let t = intern_type (tids,[],None,scopes) t in
 	begin match t with
+	  | RRef (loc,IndRef ind) -> ids,Some (loc,ind,[])
 	  | RApp (loc,RRef (_,IndRef ind),l) ->
 	      let nal = List.map (function
 		| RHole _ -> Anonymous
