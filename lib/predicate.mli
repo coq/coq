@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* Module [Pred]: sets over infinite ordered types with complement. *)
 

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (*s Compact representation of explicit relocations. \\
    [ELSHFT(l,n)] == lift of [n], then apply [lift l].
