@@ -544,7 +544,7 @@ naive user of \Coq~ may safely ignore these formal details.
 
 Let us exercise the \verb:Tauto: tactic on a more complex example:
 \begin{coq_example}
-Lemma distr_and : A->(B/\C) -> (A->B /\ A->C).
+Lemma distr_and : A->(B/\C) -> (A->B) /\ (A->C).
 Tauto.
 Save.
 \end{coq_example}
