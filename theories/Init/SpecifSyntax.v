@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require DatatypesSyntax.
+Require Datatypes.
 Require Specif.
 
 (** Extra factorization of parsing rules *)
