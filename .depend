@@ -375,8 +375,7 @@ contrib/extraction/ocaml.cmi: contrib/extraction/miniml.cmi kernel/names.cmi \
     kernel/term.cmi 
 contrib/extraction/scheme.cmi: contrib/extraction/miniml.cmi kernel/names.cmi \
     library/nametab.cmi lib/pp.cmi 
-contrib/extraction/table.cmi: library/libnames.cmi kernel/names.cmi \
-    lib/util.cmi toplevel/vernacinterp.cmi 
+contrib/extraction/table.cmi: library/libnames.cmi kernel/names.cmi 
 contrib/interface/blast.cmi: proofs/proof_type.cmi proofs/tacexpr.cmo \
     proofs/tacmach.cmi 
 contrib/interface/dad.cmi: proofs/proof_type.cmi proofs/tacexpr.cmo \
@@ -2330,19 +2329,19 @@ contrib/extraction/extraction.cmo: kernel/closure.cmi kernel/declarations.cmi \
     lib/gset.cmi kernel/inductive.cmi pretyping/inductiveops.cmi \
     pretyping/instantiate.cmi library/libnames.cmi \
     contrib/extraction/miniml.cmi contrib/extraction/mlutil.cmi \
-    library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/options.cmi \
-    lib/pp.cmi pretyping/reductionops.cmi pretyping/retyping.cmi \
-    library/summary.cmi contrib/extraction/table.cmi kernel/term.cmi \
-    pretyping/termops.cmi lib/util.cmi contrib/extraction/extraction.cmi 
+    library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
+    pretyping/reductionops.cmi pretyping/retyping.cmi library/summary.cmi \
+    contrib/extraction/table.cmi kernel/term.cmi pretyping/termops.cmi \
+    lib/util.cmi contrib/extraction/extraction.cmi 
 contrib/extraction/extraction.cmx: kernel/closure.cmx kernel/declarations.cmx \
     kernel/environ.cmx pretyping/evd.cmx library/global.cmx lib/gmap.cmx \
     lib/gset.cmx kernel/inductive.cmx pretyping/inductiveops.cmx \
     pretyping/instantiate.cmx library/libnames.cmx \
     contrib/extraction/miniml.cmi contrib/extraction/mlutil.cmx \
-    library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/options.cmx \
-    lib/pp.cmx pretyping/reductionops.cmx pretyping/retyping.cmx \
-    library/summary.cmx contrib/extraction/table.cmx kernel/term.cmx \
-    pretyping/termops.cmx lib/util.cmx contrib/extraction/extraction.cmi 
+    library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/pp.cmx \
+    pretyping/reductionops.cmx pretyping/retyping.cmx library/summary.cmx \
+    contrib/extraction/table.cmx kernel/term.cmx pretyping/termops.cmx \
+    lib/util.cmx contrib/extraction/extraction.cmi 
 contrib/extraction/g_extraction.cmo: toplevel/cerrors.cmi \
     parsing/egrammar.cmi parsing/extend.cmi \
     contrib/extraction/extract_env.cmi interp/genarg.cmi parsing/pcoq.cmi \
@@ -2390,17 +2389,17 @@ contrib/extraction/scheme.cmx: contrib/extraction/miniml.cmi \
     lib/pp.cmx contrib/extraction/table.cmx kernel/term.cmx lib/util.cmx \
     contrib/extraction/scheme.cmi 
 contrib/extraction/table.cmo: kernel/declarations.cmi kernel/environ.cmi \
-    parsing/extend.cmi library/global.cmi library/goptions.cmi \
-    library/lib.cmi library/libnames.cmi library/libobject.cmi \
-    kernel/names.cmi library/nametab.cmi lib/pp.cmi parsing/printer.cmi \
+    library/global.cmi library/goptions.cmi library/lib.cmi \
+    library/libnames.cmi library/libobject.cmi kernel/names.cmi \
+    library/nametab.cmi lib/options.cmi lib/pp.cmi parsing/printer.cmi \
     kernel/reduction.cmi library/summary.cmi kernel/term.cmi lib/util.cmi \
-    toplevel/vernacinterp.cmi contrib/extraction/table.cmi 
+    contrib/extraction/table.cmi 
 contrib/extraction/table.cmx: kernel/declarations.cmx kernel/environ.cmx \
-    parsing/extend.cmx library/global.cmx library/goptions.cmx \
-    library/lib.cmx library/libnames.cmx library/libobject.cmx \
-    kernel/names.cmx library/nametab.cmx lib/pp.cmx parsing/printer.cmx \
+    library/global.cmx library/goptions.cmx library/lib.cmx \
+    library/libnames.cmx library/libobject.cmx kernel/names.cmx \
+    library/nametab.cmx lib/options.cmx lib/pp.cmx parsing/printer.cmx \
     kernel/reduction.cmx library/summary.cmx kernel/term.cmx lib/util.cmx \
-    toplevel/vernacinterp.cmx contrib/extraction/table.cmi 
+    contrib/extraction/table.cmi 
 contrib/field/field.cmo: toplevel/cerrors.cmi interp/constrintern.cmi \
     library/declare.cmi parsing/egrammar.cmi pretyping/evd.cmi \
     parsing/extend.cmi interp/genarg.cmi library/global.cmi lib/gmap.cmi \
