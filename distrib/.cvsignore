@@ -13,3 +13,4 @@ coq-*
 contrib-*
 patch-*
 deb_build
+coq.spec
