@@ -752,27 +752,29 @@ let unify_relation_class_carrier_with_type env rel t =
 (* existent one for other tasks to? (e.g. pretty printing would expose *)
 (* much more information: is it ok or is it too much information?)     *)
 let unify_morphism_with_arguments gl (c,av)
-     {args=args; output=output; lem=lem; morphism_theory=morphism_theory}
+     {args=args; output=output; lem=lem; morphism_theory=morphism_theory} t
 =
  let al = Array.to_list av in
  let argsno = List.length args in
  let quantifiers,al' = Util.list_chop (List.length al - argsno) al in
  let quantifiersv = Array.of_list quantifiers in
  let c' = mkApp (c,quantifiersv) in
- (* these are pf_type_of we could avoid *)
- let al'_type = List.map (Tacmach.pf_type_of gl) al' in
- let args' =
-  List.map2
-   (fun (var,rel) ty ->
-     var,unify_relation_class_carrier_with_type (pf_env gl) rel ty)
-   args al'_type in
- (* this is another pf_type_of we could avoid *)
- let ty = Tacmach.pf_type_of gl (mkApp (c,av)) in
- let output' = unify_relation_class_carrier_with_type (pf_env gl) output ty in
- let lem' = mkApp (lem,quantifiersv) in
- let morphism_theory' = mkApp (morphism_theory,quantifiersv) in
-  {args=args'; output=output'; lem=lem'; morphism_theory=morphism_theory'},
-   c',Array.of_list al'
+ if dependent t c' then None else (
+  (* these are pf_type_of we could avoid *)
+  let al'_type = List.map (Tacmach.pf_type_of gl) al' in
+  let args' =
+   List.map2
+    (fun (var,rel) ty ->
+      var,unify_relation_class_carrier_with_type (pf_env gl) rel ty)
+    args al'_type in
+  (* this is another pf_type_of we could avoid *)
+  let ty = Tacmach.pf_type_of gl (mkApp (c,av)) in
+  let output' = unify_relation_class_carrier_with_type (pf_env gl) output ty in
+  let lem' = mkApp (lem,quantifiersv) in
+  let morphism_theory' = mkApp (morphism_theory,quantifiersv) in
+   Some
+    ({args=args'; output=output'; lem=lem'; morphism_theory=morphism_theory'},
+     c',Array.of_list al'))
 
 let new_morphism m signature id hook =
  if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
@@ -1325,17 +1327,17 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
            in
             aux [] (Array.to_list al) in
           let mors_and_cs_and_als =
-           List.filter (function (_,c,_) -> not (dependent t c))
-            mors_and_cs_and_als in
-          let mors_and_cs_and_als =
            List.map
             (function (m,c,al) ->
               relation_morphism_of_constr_morphism m, c, al)
              mors_and_cs_and_als in
           let mors_and_cs_and_als =
-           List.map
-            (function (m,c,al) -> unify_morphism_with_arguments gl (c,al) m)
-             mors_and_cs_and_als
+           List.fold_left
+            (fun l (m,c,al) ->
+              match unify_morphism_with_arguments gl (c,al) m t with
+                 Some res -> res::l
+               | None -> l
+            ) [] mors_and_cs_and_als
           in
            List.filter
             (fun (mor,_,_) -> subrelation gl mor.output output_relation)
