@@ -252,8 +252,9 @@ XMLCMO=\
   contrib/xml/unshare.cmo contrib/xml/xml.cmo contrib/xml/acic.cmo \
   contrib/xml/doubleTypeInference.cmo \
   contrib/xml/cic2acic.cmo contrib/xml/acic2Xml.cmo \
-  contrib/xml/proof2aproof.cmo contrib/xml/proofTree2Xml.cmo \
-  contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo 	
+  contrib/xml/proof2aproof.cmo \
+  contrib/xml/xmlcommand.cmo contrib/xml/proofTree2Xml.cmo \
+	contrib/xml/xmlentries.cmo 	
 
 FOURIERCMO=\
   contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo \
