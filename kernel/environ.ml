@@ -368,7 +368,7 @@ let import_constraints g sp cst =
     merge_constraints cst g
   with UniverseInconsistency ->
     errorlabstrm "import_constraints"
-      [< 'sTR "Universe Inconsistency during import of"; 'sPC; print_sp sp >]
+      [< 'sTR "Universe Inconsistency during import of"; 'sPC; pr_sp sp >]
 
 let import cenv env =
   check_imports env cenv.cenv_needed;

@@ -424,7 +424,7 @@ let rec substlin env name n ol c =
           with
 	      NotEvaluableConst _ ->
 		errorlabstrm "substlin"
-		  [< print_sp sp; 'sTR " is not a defined constant" >]
+		  [< pr_sp sp; 'sTR " is not a defined constant" >]
         else 
 	  ((n+1),ol,c)
 

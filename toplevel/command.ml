@@ -98,20 +98,20 @@ let hypothesis_def_var is_refining ident n c =
 
 let minductive_message = function 
   | []  -> anomaly "no inductive definition"
-  | [x] -> [< print_id x; 'sTR " is defined">]
-  | l   -> hOV 0  [< prlist_with_sep pr_coma print_id l;
+  | [x] -> [< pr_id x; 'sTR " is defined">]
+  | l   -> hOV 0  [< prlist_with_sep pr_coma pr_id l;
 		     'sPC; 'sTR "are defined">]
 
 let recursive_message = function 
   | []  -> anomaly "no recursive definition"
-  | [x] -> [< print_id x; 'sTR " is recursively defined">]
-  | l   -> hOV 0 [< prlist_with_sep pr_coma print_id l;
+  | [x] -> [< pr_id x; 'sTR " is recursively defined">]
+  | l   -> hOV 0 [< prlist_with_sep pr_coma pr_id l;
 		    'sPC; 'sTR "are recursively defined">]
 
 let corecursive_message = function 
   | []  -> anomaly "no corecursive definition"
-  | [x] -> [< print_id x; 'sTR " is corecursively defined">]
-  | l   -> hOV 0 [< prlist_with_sep pr_coma print_id l;
+  | [x] -> [< pr_id x; 'sTR " is corecursively defined">]
+  | l   -> hOV 0 [< prlist_with_sep pr_coma pr_id l;
                     'sPC; 'sTR "are corecursively defined">]
 
 let build_mutual lparams lnamearconstrs finite =

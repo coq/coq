@@ -47,19 +47,19 @@ let definition id ty c =
   let ce = { const_entry_body = Cooked c; const_entry_type = ty } in
   let sp = make_path [] id CCI in
   env := add_constant sp ce !env;
-  mSGNL (hOV 0 [< print_id id; 'sPC; 'sTR"is defined"; 'fNL >])
+  mSGNL (hOV 0 [< pr_id id; 'sPC; 'sTR"is defined"; 'fNL >])
 
 let parameter id t =
   let t = globalize [] t in
   let sp = make_path [] id CCI in
   env := add_parameter sp t !env;
-  mSGNL (hOV 0 [< 'sTR"parameter"; 'sPC; print_id id; 
+  mSGNL (hOV 0 [< 'sTR"parameter"; 'sPC; pr_id id; 
 		  'sPC; 'sTR"is declared"; 'fNL >])
 
 let variable id t =
   let t = globalize [] t in
   env := push_named_assum (id,t) !env;
-  mSGNL (hOV 0 [< 'sTR"variable"; 'sPC; print_id id; 
+  mSGNL (hOV 0 [< 'sTR"variable"; 'sPC; pr_id id; 
 		  'sPC; 'sTR"is declared"; 'fNL >])
 
 let put_DLAMSV lna lc = 
