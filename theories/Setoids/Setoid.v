@@ -25,6 +25,8 @@ Inductive X_Relation_Class (X: Type) : Type :=
    SymmetricReflexive :
      forall A Aeq, @is_symmetric A Aeq -> is_reflexive Aeq -> X_Relation_Class X
  | AsymmetricReflexive : X -> forall A Aeq, @is_reflexive A Aeq -> X_Relation_Class X
+ | Symmetric : forall A Aeq, @is_symmetric A Aeq -> X_Relation_Class X
+ | Asymmetric : X -> forall A (Aeq : A -> A -> Prop), X_Relation_Class X
  | Leibniz : Type -> X_Relation_Class X.
 
 Inductive variance : Set :=
@@ -40,11 +42,15 @@ Definition relation_class_of_argument_class : Argument_Class -> Relation_Class.
  destruct 1.
  exact (SymmetricReflexive _ i i0).
  exact (AsymmetricReflexive tt i).
+ exact (Symmetric _ i).
+ exact (Asymmetric tt Aeq).
  exact (Leibniz _ T).
 Defined.
 
 Definition carrier_of_relation_class : forall X, X_Relation_Class X -> Type.
  destruct 1.
+ exact A.
+ exact A.
  exact A.
  exact A.
  exact T.
@@ -53,6 +59,8 @@ Defined.
 Definition relation_of_relation_class :
  forall X R, @carrier_of_relation_class X R -> carrier_of_relation_class R -> Prop.
  destruct R.
+ exact Aeq.
+ exact Aeq.
  exact Aeq.
  exact Aeq.
  exact (@eq T).
@@ -90,8 +98,16 @@ Definition make_compatibility_goal_aux:
      destruct x.
         exact (forall x1 x2, Aeq x1 x2 -> relation_of_relation_class Out (f x1) (g x2)).
         exact (forall x1 x2, Aeq x2 x1 -> relation_of_relation_class Out (f x1) (g x2)).
+      exact (forall x1 x2, Aeq x1 x2 -> relation_of_relation_class Out (f x1) (g x2)).
+      destruct x.
+        exact (forall x1 x2, Aeq x1 x2 -> relation_of_relation_class Out (f x1) (g x2)).
+        exact (forall x1 x2, Aeq x2 x1 -> relation_of_relation_class Out (f x1) (g x2)).
       exact (forall x, relation_of_relation_class Out (f x) (g x)).
   induction a; simpl in f, g.
+    exact (forall x1 x2, Aeq x1 x2 -> IHIn (f x1) (g x2)).
+    destruct x.
+       exact (forall x1 x2, Aeq x1 x2 -> IHIn (f x1) (g x2)).
+       exact (forall x1 x2, Aeq x2 x1 -> IHIn (f x1) (g x2)).
     exact (forall x1 x2, Aeq x1 x2 -> IHIn (f x1) (g x2)).
     destruct x.
        exact (forall x1 x2, Aeq x1 x2 -> IHIn (f x1) (g x2)).
@@ -162,6 +178,8 @@ Definition variance_of_argument_class : Argument_Class -> option variance.
  exact None.
  exact (Some v).
  exact None.
+ exact (Some v).
+ exact None.
 Defined.
 
 Definition opposite_direction :=
@@ -185,15 +203,55 @@ Inductive check_if_variance_is_respected :
      forall dir,
       check_if_variance_is_respected (Some Contravariant) dir (opposite_direction dir).
 
+Inductive Reflexive_Relation_Class : Type :=
+   RSymmetricReflexive :
+     forall A Aeq, @is_symmetric A Aeq -> is_reflexive Aeq -> Reflexive_Relation_Class
+ | RAsymmetricReflexive :
+     forall A Aeq, @is_reflexive A Aeq -> Reflexive_Relation_Class
+ | RLeibniz : Type -> Reflexive_Relation_Class.
+
+Inductive Areflexive_Relation_Class  : Type :=
+ | ASymmetric : forall A Aeq, @is_symmetric A Aeq -> Areflexive_Relation_Class
+ | AAsymmetric : forall A (Aeq : A -> A -> Prop), Areflexive_Relation_Class.
+
+Definition relation_class_of_reflexive_relation_class:
+ Reflexive_Relation_Class -> Relation_Class.
+ induction 1.
+   exact (SymmetricReflexive _ i i0).
+   exact (AsymmetricReflexive tt i).
+   exact (Leibniz _ T).
+Defined.
+
+Definition relation_class_of_areflexive_relation_class:
+ Areflexive_Relation_Class -> Relation_Class.
+ induction 1.
+   exact (Symmetric _ i).
+   exact (Asymmetric tt Aeq).
+Defined.
+
+Definition carrier_of_reflexive_relation_class :=
+ fun R => carrier_of_relation_class (relation_class_of_reflexive_relation_class R).
+
+Definition carrier_of_areflexive_relation_class :=
+ fun R => carrier_of_relation_class (relation_class_of_areflexive_relation_class R).
+
+Definition relation_of_areflexive_relation_class :=
+ fun R => relation_of_relation_class (relation_class_of_areflexive_relation_class R).
+
 Inductive Morphism_Context Hole dir : Relation_Class -> rewrite_direction ->  Type :=
     App :
       forall In Out dir',
         Morphism_Theory In Out -> Morphism_Context_List Hole dir dir' In ->
            Morphism_Context Hole dir Out dir'
-  | Toreplace : Morphism_Context Hole dir Hole dir
-  | Tokeep :
+  | ToReplace : Morphism_Context Hole dir Hole dir
+  | ToKeep :
      forall S dir',
-      carrier_of_relation_class S -> Morphism_Context Hole dir S dir'
+      carrier_of_reflexive_relation_class S ->
+        Morphism_Context Hole dir (relation_class_of_reflexive_relation_class S) dir'
+ | ProperElementToKeep :
+     forall S dir' (x: carrier_of_areflexive_relation_class S),
+      relation_of_areflexive_relation_class S x x ->
+        Morphism_Context Hole dir (relation_class_of_areflexive_relation_class S) dir'
 with Morphism_Context_List Hole dir :
    rewrite_direction -> Arguments -> Type
 :=
@@ -287,13 +345,25 @@ Theorem apply_morphism_compatibility_Right2Left:
     destruct a; simpl in H; hnf in H0.
           apply H; exact H0.
           destruct v; simpl in H0; apply H; exact H0.
+          apply H; exact H0.
+          destruct v; simpl in H0; apply H; exact H0.
           rewrite H0; apply H; exact H0.
 
-    simpl in m1, m2, args1, args2, H0 |- *.
+   simpl in m1, m2, args1, args2, H0 |- *.
    destruct args1; destruct args2; simpl.
    destruct H0.
    simpl in H.
    destruct a; simpl in H.
+     apply IHIn.
+       apply H; exact H0.
+       exact H1.
+     destruct v.
+       apply IHIn.
+         apply H; exact H0.
+         exact H1.
+       apply IHIn.
+         apply H; exact H0.       
+          exact H1.
      apply IHIn.
        apply H; exact H0.
        exact H1.
@@ -322,6 +392,8 @@ Theorem apply_morphism_compatibility_Left2Right:
     destruct a; simpl in H; hnf in H0.
           apply H; exact H0.
           destruct v; simpl in H0; apply H; exact H0.
+          apply H; exact H0.
+          destruct v; simpl in H0; apply H; exact H0.
           rewrite H0; apply H; exact H0.
 
     simpl in m1, m2, args1, args2, H0 |- *.
@@ -339,6 +411,12 @@ Theorem apply_morphism_compatibility_Left2Right:
        apply IHIn.
          apply H; exact H0.       
           exact H1.
+       apply IHIn.
+         apply H; exact H0.
+         exact H1.
+       apply IHIn.
+         destruct v; simpl in H, H0; apply H; exact H0. 
+          exact H1.
     rewrite H0; apply IHIn.
       apply H.
       exact H1.
@@ -355,6 +433,7 @@ Definition interp :
    exact (apply_morphism _ _ (Function m) X).
    exact H.
    exact c.
+   exact x.
    simpl;
      rewrite <-
        (about_carrier_of_relation_class_and_relation_class_of_argument_class S);
@@ -380,6 +459,7 @@ Definition interp_relation_class_list :
    exact (apply_morphism _ _ (Function m) X).
    exact H.
    exact c.
+   exact x.
    simpl;
      rewrite <-
        (about_carrier_of_relation_class_and_relation_class_of_argument_class S);
@@ -427,17 +507,27 @@ Theorem setoid_rewrite:
      reflexivity.
      reflexivity.
 
+  destruct dir'0; exact r.
+
   destruct S; unfold directed_relation_of_argument_class; simpl in H0 |- *;
    unfold get_rewrite_direction; simpl.
      destruct dir'0; destruct dir'';
        (exact H0 ||
         unfold directed_relation_of_argument_class; simpl; apply i; exact H0).
-   (* the following mess with generalize/clear/intros is to help Coq resolving *)
-   (* second order unification problems.                                                                *)
-   generalize m c H0; clear H0 m c; inversion c;
-     generalize m c; clear m c; rewrite <- H1; rewrite <- H2; intros;
-       (exact H3 || rewrite (opposite_direction_idempotent dir'0); apply H3).
-   destruct dir'0; destruct dir''; (exact H0 || hnf; symmetry; exact H0).
+     (* the following mess with generalize/clear/intros is to help Coq resolving *)
+     (* second order unification problems.                                                                *)
+     generalize m c H0; clear H0 m c; inversion c;
+       generalize m c; clear m c; rewrite <- H1; rewrite <- H2; intros;
+         (exact H3 || rewrite (opposite_direction_idempotent dir'0); apply H3).
+     destruct dir'0; destruct dir'';
+       (exact H0 ||
+        unfold directed_relation_of_argument_class; simpl; apply i; exact H0).
+(* the following mess with generalize/clear/intros is to help Coq resolving *)
+     (* second order unification problems.                                                                *)
+     generalize m c H0; clear H0 m c; inversion c;
+       generalize m c; clear m c; rewrite <- H1; rewrite <- H2; intros;
+         (exact H3 || rewrite (opposite_direction_idempotent dir'0); apply H3).
+     destruct dir'0; destruct dir''; (exact H0 || hnf; symmetry; exact H0).
 
   change
     (directed_relation_of_argument_class (get_rewrite_direction dir'' S) S
@@ -453,7 +543,11 @@ Theorem setoid_rewrite:
         inversion c.
           rewrite <- H3; exact H0.
           rewrite (opposite_direction_idempotent dir'0); exact H0.
-          destruct dir''; destruct dir'0; (exact H0 || hnf; symmetry; exact H0).
+        destruct dir''; destruct dir'0; (exact H0 || hnf; apply i; exact H0).
+        inversion c.
+          rewrite <- H3; exact H0.
+          rewrite (opposite_direction_idempotent dir'0); exact H0.
+        destruct dir''; destruct dir'0; (exact H0 || hnf; symmetry; exact H0).
      exact H1.
 Qed.
 
