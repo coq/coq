@@ -19,20 +19,20 @@
 
 Definition RelationalChoice :=
   forall (A B:Type) (R:A -> B -> Prop),
-    (forall x:A,  exists y : B | R x y) ->
-     exists R' : A -> B -> Prop
-    | (forall x:A,
-          exists y : B | R x y /\ R' x y /\ (forall y':B, R' x y' -> y = y')).
+    (forall x:A,  exists y : B, R x y) ->
+     exists R' : A -> B -> Prop,
+      (forall x:A,
+          exists y : B, R x y /\ R' x y /\ (forall y':B, R' x y' -> y = y')).
 
 Definition FunctionalChoice :=
   forall (A B:Type) (R:A -> B -> Prop),
-    (forall x:A,  exists y : B | R x y) ->
-     exists f : A -> B | (forall x:A, R x (f x)).
+    (forall x:A,  exists y : B, R x y) ->
+     exists f : A -> B, (forall x:A, R x (f x)).
 
 Definition ParamDefiniteDescription :=
   forall (A B:Type) (R:A -> B -> Prop),
-    (forall x:A,  exists y : B | R x y /\ (forall y':B, R x y' -> y = y')) ->
-     exists f : A -> B | (forall x:A, R x (f x)).
+    (forall x:A,  exists y : B, R x y /\ (forall y':B, R x y' -> y = y')) ->
+     exists f : A -> B, (forall x:A, R x (f x)).
 
 Lemma description_rel_choice_imp_funct_choice :
  ParamDefiniteDescription -> RelationalChoice -> FunctionalChoice.
@@ -86,11 +86,11 @@ Qed.
 
 Definition GuardedRelationalChoice :=
   forall (A B:Type) (P:A -> Prop) (R:A -> B -> Prop),
-    (forall x:A, P x ->  exists y : B | R x y) ->
-     exists R' : A -> B -> Prop
-    | (forall x:A,
+    (forall x:A, P x ->  exists y : B, R x y) ->
+     exists R' : A -> B -> Prop,
+      (forall x:A,
          P x ->
-          exists y : B | R x y /\ R' x y /\ (forall y':B, R' x y' -> y = y')).
+          exists y : B, R x y /\ R' x y /\ (forall y':B, R' x y' -> y = y')).
 
 Definition ProofIrrelevance := forall (A:Prop) (a1 a2:A), a1 = a2.
 
@@ -103,7 +103,7 @@ destruct (rel_choice _ _ (fun (x:sigT P) (y:B) => R (projT1 x) y)) as [R' H0].
 intros [x HPx].
 destruct (H x HPx) as [y HRxy].
 exists y; exact HRxy.
-pose (R'' := fun (x:A) (y:B) =>  exists H : P x | R' (existT P x H) y).
+pose (R'' := fun (x:A) (y:B) =>  exists H : P x, R' (existT P x H) y).
 exists R''; intros x HPx.
 destruct (H0 (existT P x HPx)) as [y [HRxy [HR'xy Huniq]]].
 exists y. split.
@@ -120,7 +120,7 @@ Qed.
 
 Definition IndependenceOfPremises :=
   forall (A:Type) (P:A -> Prop) (Q:Prop),
-    (Q ->  exists x : _ | P x) ->  exists x : _ | Q -> P x.
+    (Q ->  exists x : _, P x) ->  exists x : _, Q -> P x.
 
 Lemma rel_choice_indep_of_premises_imp_guarded_rel_choice :
  RelationalChoice -> IndependenceOfPremises -> GuardedRelationalChoice.

@@ -67,7 +67,7 @@ Lemma approximants_grow :
    ~ Finite U A ->
    forall n:nat,
      cardinal U X n ->
-     Included U X A ->  exists Y : _ | cardinal U Y (S n) /\ Included U Y A.
+     Included U X A ->  exists Y : _, cardinal U Y (S n) /\ Included U Y A.
 Proof.
 intros A X H' n H'0; elim H'0; auto with sets.
 intro H'1.
@@ -108,12 +108,12 @@ Lemma approximants_grow' :
    forall n:nat,
      cardinal U X n ->
      Approximant U A X ->
-      exists Y : _ | cardinal U Y (S n) /\ Approximant U A Y.
+      exists Y : _, cardinal U Y (S n) /\ Approximant U A Y.
 Proof.
 intros A X H' n H'0 H'1; try assumption.
 elim H'1.
 intros H'2 H'3.
-elimtype ( exists Y : _ | cardinal U Y (S n) /\ Included U Y A).
+elimtype (exists Y : _, cardinal U Y (S n) /\ Included U Y A).
 intros x H'4; elim H'4; intros H'5 H'6; try exact H'5; clear H'4.
 exists x; auto with sets.
 split; [ auto with sets | idtac ].
@@ -125,7 +125,7 @@ Qed.
 Lemma approximant_can_be_any_size :
  forall A X:Ensemble U,
    ~ Finite U A ->
-   forall n:nat,  exists Y : _ | cardinal U Y n /\ Approximant U A Y.
+   forall n:nat,  exists Y : _, cardinal U Y n /\ Approximant U A Y.
 Proof.
 intros A H' H'0 n; elim n.
 exists (Empty_set U); auto with sets.
@@ -140,8 +140,8 @@ Theorem Image_set_continuous :
  forall (A:Ensemble U) (f:U -> V) (X:Ensemble V),
    Finite V X ->
    Included V X (Im U V A f) ->
-    exists n : _
-   | ( exists Y : _ | (cardinal U Y n /\ Included U Y A) /\ Im U V Y f = X).
+    exists n : _,
+     (exists Y : _, (cardinal U Y n /\ Included U Y A) /\ Im U V Y f = X).
 Proof.
 intros A f X H'; elim H'.
 intro H'0; exists 0.
@@ -183,12 +183,12 @@ Qed.
 Theorem Image_set_continuous' :
  forall (A:Ensemble U) (f:U -> V) (X:Ensemble V),
    Approximant V (Im U V A f) X ->
-    exists Y : _ | Approximant U A Y /\ Im U V Y f = X.
+    exists Y : _, Approximant U A Y /\ Im U V Y f = X.
 Proof.
 intros A f X H'; try assumption.
 cut
- ( exists n : _
-  | ( exists Y : _ | (cardinal U Y n /\ Included U Y A) /\ Im U V Y f = X)).
+ (exists n : _,
+    (exists Y : _, (cardinal U Y n /\ Included U Y A) /\ Im U V Y f = X)).
 intro H'0; elim H'0; intros n E; elim E; clear H'0.
 intros x H'0; try assumption.
 elim H'0; intros H'1 H'2; elim H'1; intros H'3 H'4; try exact H'3;

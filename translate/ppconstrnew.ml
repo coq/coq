@@ -277,7 +277,7 @@ let rec factorize_binders = function
 	d :: factorize_binders l')
   | d :: l -> d :: factorize_binders l
 
-(* Extrac lambdas when a type constraint occurs *)
+(* Extract lambdas when a type constraint occurs *)
 let rec extract_def_binders c ty =
   match c with
     | CLambdaN(loc,bvar::lams,b) ->
@@ -302,8 +302,10 @@ let rec split_fix n typ def =
     let (bl,typ,def) = split_fix (n-1) typ def in
     (LocalRawAssum ([na],t)::bl,typ,def)
 
-let pr_recursive_decl pr id b t c =
-  pr_id id ++ b ++ pr_opt_type_spc pr t ++ str " :=" ++
+let pr_recursive_decl pr id bl annot t c =
+  pr_id id ++ str" " ++
+  hov 0 (pr_undelimited_binders (pr ltop) bl ++ annot) ++
+  pr_opt_type_spc pr t ++ str " :=" ++
   brk(1,2) ++ pr ltop c
 
 let name_of_binder = function
@@ -311,19 +313,20 @@ let name_of_binder = function
   | LocalRawDef (_,_) -> []
 
 let pr_fixdecl pr (id,n,t0,c0) =
-  let (bl,t,c) = extract_def_binders t0 c0 in
+  let (bl,c,t) = extract_def_binders c0 t0 in
   let (bl,t,c) =
-    if List.length bl <= n then split_fix (n+1) t0 c0 else (bl,t,c) in
+    let ids = List.flatten (List.map name_of_binder bl) in
+    if List.length ids <= n then split_fix (n+1) t0 c0 else (bl,t,c) in
   let annot =
     let ids = List.flatten (List.map name_of_binder bl) in
     if List.length ids > 1 then 
-      spc() ++ str "{struct " ++ pr_name (snd (list_last ids)) ++ str"}"
+      spc() ++ str "{struct " ++ pr_name (snd (List.nth ids n)) ++ str"}"
     else mt() in
-  pr_recursive_decl pr id
-    (str" " ++ hov 0 (pr_undelimited_binders (pr ltop) bl) ++ annot) t c
+  pr_recursive_decl pr id bl annot t c
 
 let pr_cofixdecl pr (id,t,c) =
-  pr_recursive_decl pr id (mt ()) t c
+  let (bl,c,t) = extract_def_binders c t in
+  pr_recursive_decl pr id bl (mt()) t c
 
 let pr_recursive pr_decl id = function
   | [] -> anomaly "(co)fixpoint with no definition"

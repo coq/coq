@@ -31,7 +31,7 @@ unfold Un_growing, Un_cv in |- *; intros;
  unfold is_upper_bound in H2, H3.
 assert (H5 : forall n:nat, Un n <= x).
   intro n; apply (H2 (Un n) (Un_in_EUn Un n)).
-cut ( exists N : nat | x - eps < Un N).
+cut (exists N : nat, x - eps < Un N).
 intro H6; destruct H6 as [N H6]; exists N.
 intros n H7; unfold R_dist in |- *; apply (Rabs_def1 (Un n - x) eps).
 unfold Rgt in H1.
@@ -491,13 +491,13 @@ Qed.
 (**********)
 Lemma approx_maj :
  forall (Un:nat -> R) (pr:has_ub Un) (eps:R),
-   0 < eps ->  exists k : nat | Rabs (majorant Un pr - Un k) < eps.
+   0 < eps ->  exists k : nat, Rabs (majorant Un pr - Un k) < eps.
 intros.
 pose (P := fun k:nat => Rabs (majorant Un pr - Un k) < eps).
 unfold P in |- *.
 cut
- (( exists k : nat | P k) ->
-   exists k : nat | Rabs (majorant Un pr - Un k) < eps).
+ ((exists k : nat, P k) ->
+   exists k : nat, Rabs (majorant Un pr - Un k) < eps).
 intros.
 apply H0.
 apply not_all_not_ex.
@@ -559,13 +559,13 @@ Qed.
 (**********)
 Lemma approx_min :
  forall (Un:nat -> R) (pr:has_lb Un) (eps:R),
-   0 < eps ->  exists k : nat | Rabs (minorant Un pr - Un k) < eps.
+   0 < eps ->  exists k : nat, Rabs (minorant Un pr - Un k) < eps.
 intros.
 pose (P := fun k:nat => Rabs (minorant Un pr - Un k) < eps).
 unfold P in |- *.
 cut
- (( exists k : nat | P k) ->
-   exists k : nat | Rabs (minorant Un pr - Un k) < eps).
+ ((exists k : nat, P k) ->
+   exists k : nat, Rabs (minorant Un pr - Un k) < eps).
 intros.
 apply H0.
 apply not_all_not_ex.
@@ -710,7 +710,7 @@ Qed.
 Lemma maj_by_pos :
  forall Un:nat -> R,
    sigT (fun l:R => Un_cv Un l) ->
-    exists l : R | 0 < l /\ (forall n:nat, Rabs (Un n) <= l). 
+    exists l : R, 0 < l /\ (forall n:nat, Rabs (Un n) <= l). 
 intros; elim X; intros. 
 cut (sigT (fun l:R => Un_cv (fun k:nat => Rabs (Un k)) l)). 
 intro. 
@@ -946,10 +946,10 @@ Lemma tech13 :
  forall (An:nat -> R) (k:R),
    0 <= k < 1 ->
    Un_cv (fun n:nat => Rabs (An (S n) / An n)) k ->
-    exists k0 : R
-   | k < k0 < 1 /\
-     ( exists N : nat
-      | (forall n:nat, (N <= n)%nat -> Rabs (An (S n) / An n) < k0)).
+    exists k0 : R,
+     k < k0 < 1 /\
+     (exists N : nat,
+        (forall n:nat, (N <= n)%nat -> Rabs (An (S n) / An n) < k0)).
 intros; exists (k + (1 - k) / 2).
 split.
 split.
@@ -1053,7 +1053,7 @@ Qed.
 
 (* Un -> +oo *)
 Definition cv_infty (Un:nat -> R) : Prop :=
-  forall M:R,  exists N : nat | (forall n:nat, (N <= n)%nat -> M < Un n).
+  forall M:R,  exists N : nat, (forall n:nat, (N <= n)%nat -> M < Un n).
 
 (* Un -> +oo => /Un -> O *)
 Lemma cv_infty_cv_R0 :
@@ -1117,7 +1117,7 @@ pose (Un := fun n:nat => Rabs x ^ (M_nat + n) / INR (fact (M_nat + n))).
 cut (Un_cv Un 0); unfold Un_cv in |- *; unfold R_dist in |- *; intros.
 elim (H5 eps H0); intros N H6.
 exists (M_nat + N)%nat; intros;
- cut ( exists p : nat | (p >= N)%nat /\ n = (M_nat + p)%nat).
+ cut (exists p : nat, (p >= N)%nat /\ n = (M_nat + p)%nat).
 intro; elim H8; intros p H9.
 elim H9; intros; rewrite H11; unfold Un in H6; apply H6; assumption.
 exists (n - M_nat)%nat.

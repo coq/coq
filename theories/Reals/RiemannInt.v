@@ -427,7 +427,7 @@ Lemma maxN :
    a < b ->
    sigT (fun n:nat => a + INR n * del < b /\ b <= a + INR (S n) * del).
 intros; pose (I := fun n:nat => a + INR n * del < b);
- assert (H0 :  exists n : nat | I n).
+ assert (H0 :  exists n : nat, I n).
 exists 0%nat; unfold I in |- *; rewrite Rmult_0_l; rewrite Rplus_0_r;
  assumption.
 cut (Nbound I).
@@ -498,7 +498,7 @@ intro f; intros;
 unfold bound in |- *; exists (b - a); unfold is_upper_bound in |- *; intros;
  unfold E in H1; elim H1; clear H1; intros H1 _; elim H1; 
  intros; assumption.
-assert (H2 :  exists x : R | E x).
+assert (H2 :  exists x : R, E x).
 assert (H2 := Heine f (fun x:R => a <= x <= b) (compact_P3 a b) H0 eps);
  elim H2; intros; exists (Rmin x (b - a)); unfold E in |- *; 
  split;
@@ -512,7 +512,7 @@ assert (H3 := completeness E H1 H2); elim H3; intros; cut (0 < x <= b - a).
 intro; elim H4; clear H4; intros; apply existT with (mkposreal _ H4); split.
 apply H5.
 unfold is_lub in p; elim p; intros; unfold is_upper_bound in H6;
- pose (D := Rabs (x0 - y)); elim (classic ( exists y : R | D < y /\ E y));
+ pose (D := Rabs (x0 - y)); elim (classic (exists y : R, D < y /\ E y));
  intro.
 elim H11; intros; elim H12; clear H12; intros; unfold E in H13; elim H13;
  intros; apply H15; assumption.
@@ -701,8 +701,8 @@ intros; rewrite H2 in H7; rewrite H3 in H7; simpl in |- *;
   (forall t:R,
      a <= t <= b ->
      t = b \/
-     ( exists i : nat
-      | (i < pred (Rlength (SubEqui del H)))%nat /\
+     (exists i : nat,
+        (i < pred (Rlength (SubEqui del H)))%nat /\
         co_interval (pos_Rl (SubEqui del H) i) (pos_Rl (SubEqui del H) (S i))
           t)).
 intro; elim (H8 _ H7); intro.
@@ -744,7 +744,7 @@ apply Rge_minus; apply Rle_ge; assumption.
 intros; clear H0 H1 H4 phi H5 H6 t H7; case (Req_dec t0 b); intro.
 left; assumption.
 right; pose (I := fun j:nat => a + INR j * del <= t0);
- assert (H1 :  exists n : nat | I n).
+ assert (H1 :  exists n : nat, I n).
 exists 0%nat; unfold I in |- *; rewrite Rmult_0_l; rewrite Rplus_0_r; elim H8;
  intros; assumption.
 assert (H4 : Nbound I).
@@ -818,15 +818,15 @@ unfold RiemannInt in |- *; case (RiemannInt_exists pr1 RinvN RinvN_cv);
 unfold RiemannInt in |- *; case (RiemannInt_exists pr2 RinvN RinvN_cv);
  intros;
  cut
-  ( exists psi1 : nat -> StepFun a b
-   | (forall n:nat,
+  (exists psi1 : nat -> StepFun a b,
+     (forall n:nat,
         (forall t:R,
            Rmin a b <= t /\ t <= Rmax a b ->
            Rabs (f t - phi_sequence RinvN pr1 n t) <= psi1 n t) /\
         Rabs (RiemannInt_SF (psi1 n)) < RinvN n)).
 cut
- ( exists psi2 : nat -> StepFun b a
-  | (forall n:nat,
+ (exists psi2 : nat -> StepFun b a,
+    (forall n:nat,
        (forall t:R,
           Rmin a b <= t /\ t <= Rmax a b ->
           Rabs (f t - phi_sequence RinvN pr2 n t) <= psi2 n t) /\
@@ -1324,8 +1324,8 @@ replace eps with (3 * (eps / 5) + eps / 5 + eps / 5).
 repeat apply Rplus_lt_compat.
 assert
  (H7 :
-   exists psi1 : nat -> StepFun a b
-  | (forall n:nat,
+   exists psi1 : nat -> StepFun a b,
+    (forall n:nat,
        (forall t:R,
           Rmin a b <= t /\ t <= Rmax a b ->
           Rabs (f t - phi_sequence RinvN pr1 n t) <= psi1 n t) /\
@@ -1334,8 +1334,8 @@ split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr1 n)); intro;
  apply (projT2 (phi_sequence_prop RinvN pr1 n0)).
 assert
  (H8 :
-   exists psi2 : nat -> StepFun a b
-  | (forall n:nat,
+   exists psi2 : nat -> StepFun a b,
+    (forall n:nat,
        (forall t:R,
           Rmin a b <= t /\ t <= Rmax a b ->
           Rabs (g t - phi_sequence RinvN pr2 n t) <= psi2 n t) /\
@@ -1344,8 +1344,8 @@ split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr2 n)); intro;
  apply (projT2 (phi_sequence_prop RinvN pr2 n0)).
 assert
  (H9 :
-   exists psi3 : nat -> StepFun a b
-  | (forall n:nat,
+   exists psi3 : nat -> StepFun a b,
+    (forall n:nat,
        (forall t:R,
           Rmin a b <= t /\ t <= Rmax a b ->
           Rabs (f t + l * g t - phi_sequence RinvN pr3 n t) <= psi3 n t) /\
@@ -1513,8 +1513,8 @@ pose (phi1 := fun N:nat => phi_sequence RinvN pr N);
  pose (f := fct_cte c);
  assert
   (H1 :
-    exists psi1 : nat -> StepFun a b
-   | (forall n:nat,
+    exists psi1 : nat -> StepFun a b,
+     (forall n:nat,
         (forall t:R,
            Rmin a b <= t /\ t <= Rmax a b ->
            Rabs (f t - phi_sequence RinvN pr n t) <= psi1 n t) /\
@@ -1606,8 +1606,8 @@ apply Rcontinuity_abs.
 pose (phi3 := phi_sequence RinvN pr2);
  assert
   (H0 :
-    exists psi3 : nat -> StepFun a b
-   | (forall n:nat,
+    exists psi3 : nat -> StepFun a b,
+     (forall n:nat,
         (forall t:R,
            Rmin a b <= t /\ t <= Rmax a b ->
            Rabs (Rabs (f t) - phi3 n t) <= psi3 n t) /\
@@ -1616,16 +1616,16 @@ split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr2 n)); intro;
  apply (projT2 (phi_sequence_prop RinvN pr2 n)). 
 assert
  (H1 :
-   exists psi2 : nat -> StepFun a b
-  | (forall n:nat,
+   exists psi2 : nat -> StepFun a b,
+    (forall n:nat,
        (forall t:R,
           Rmin a b <= t /\ t <= Rmax a b ->
           Rabs (Rabs (f t) - phi2 n t) <= psi2 n t) /\
        Rabs (RiemannInt_SF (psi2 n)) < RinvN n)).
 assert
  (H1 :
-   exists psi2 : nat -> StepFun a b
-  | (forall n:nat,
+   exists psi2 : nat -> StepFun a b,
+    (forall n:nat,
        (forall t:R,
           Rmin a b <= t /\ t <= Rmax a b -> Rabs (f t - phi1 n t) <= psi2 n t) /\
        Rabs (RiemannInt_SF (psi2 n)) < RinvN n)).
@@ -1656,8 +1656,8 @@ pose (phi1 := fun N:nat => phi_sequence RinvN pr1 N);
  change (Un_cv (fun N:nat => RiemannInt_SF (phi1 N)) x) in |- *;
  assert
   (H1 :
-    exists psi1 : nat -> StepFun a b
-   | (forall n:nat,
+    exists psi1 : nat -> StepFun a b,
+     (forall n:nat,
         (forall t:R,
            Rmin a b <= t /\ t <= Rmax a b ->
            Rabs (f t - phi1 n t) <= psi1 n t) /\
@@ -1681,8 +1681,8 @@ cut (forall N:nat, IsStepFun (phi2_aux N) a b).
 intro; pose (phi2_m := fun N:nat => mkStepFun (X N)).
 assert
  (H2 :
-   exists psi2 : nat -> StepFun a b
-  | (forall n:nat,
+   exists psi2 : nat -> StepFun a b,
+    (forall n:nat,
        (forall t:R,
           Rmin a b <= t /\ t <= Rmax a b -> Rabs (g t - phi2 n t) <= psi2 n t) /\
        Rabs (RiemannInt_SF (psi2 n)) < RinvN n)).
@@ -2328,8 +2328,8 @@ apply Rmult_eq_reg_l with 3;
 clear x u x0 x1 eps H H0 N1 H1 N2 H2;
  assert
   (H1 :
-    exists psi1 : nat -> StepFun a b
-   | (forall n:nat,
+    exists psi1 : nat -> StepFun a b,
+     (forall n:nat,
         (forall t:R,
            Rmin a b <= t /\ t <= Rmax a b ->
            Rabs (f t - phi_sequence RinvN pr1 n t) <= psi1 n t) /\
@@ -2338,8 +2338,8 @@ split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr1 n)); intro;
  apply (projT2 (phi_sequence_prop RinvN pr1 n)). 
 assert
  (H2 :
-   exists psi2 : nat -> StepFun b c
-  | (forall n:nat,
+   exists psi2 : nat -> StepFun b c,
+    (forall n:nat,
        (forall t:R,
           Rmin b c <= t /\ t <= Rmax b c ->
           Rabs (f t - phi_sequence RinvN pr2 n t) <= psi2 n t) /\
@@ -2348,8 +2348,8 @@ split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr2 n)); intro;
  apply (projT2 (phi_sequence_prop RinvN pr2 n)). 
 assert
  (H3 :
-   exists psi3 : nat -> StepFun a c
-  | (forall n:nat,
+   exists psi3 : nat -> StepFun a c,
+    (forall n:nat,
        (forall t:R,
           Rmin a c <= t /\ t <= Rmax a c ->
           Rabs (f t - phi_sequence RinvN pr3 n t) <= psi3 n t) /\

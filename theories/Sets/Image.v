@@ -93,7 +93,7 @@ Hint Resolve finite_image.
 
 Lemma Im_inv :
  forall (X:Ensemble U) (f:U -> V) (y:V),
-   In _ (Im X f) y ->  exists x : U | In _ X x /\ f x = y.
+   In _ (Im X f) y ->  exists x : U, In _ X x /\ f x = y.
 Proof.
 intros X f y H'; elim H'.
 intros x H'0 y0 H'1; rewrite H'1.
@@ -104,14 +104,14 @@ Definition injective (f:U -> V) := forall x y:U, f x = f y -> x = y.
 
 Lemma not_injective_elim :
  forall f:U -> V,
-   ~ injective f ->  exists x : _ | ( exists y : _ | f x = f y /\ x <> y).
+   ~ injective f ->  exists x : _, (exists y : _, f x = f y /\ x <> y).
 Proof.
 unfold injective in |- *; intros f H.
-cut ( exists x : _ | ~ (forall y:U, f x = f y -> x = y)).
+cut (exists x : _, ~ (forall y:U, f x = f y -> x = y)).
 2: apply not_all_ex_not with (P := fun x:U => forall y:U, f x = f y -> x = y);
     trivial with sets.
 destruct 1 as [x C]; exists x.
-cut ( exists y : _ | ~ (f x = f y -> x = y)).
+cut (exists y : _, ~ (f x = f y -> x = y)).
 2: apply not_all_ex_not with (P := fun y:U => f x = f y -> x = y);
     trivial with sets.
 destruct 1 as [y D]; exists y.
@@ -120,7 +120,7 @@ Qed.
 
 Lemma cardinal_Im_intro :
  forall (A:Ensemble U) (f:U -> V) (n:nat),
-   cardinal _ A n ->  exists p : nat | cardinal _ (Im A f) p.
+   cardinal _ A n ->  exists p : nat, cardinal _ (Im A f) p.
 Proof.
 intros.
 apply finite_cardinal; apply finite_image.
@@ -196,7 +196,7 @@ Lemma Pigeonhole_principle :
    cardinal _ A n ->
    forall n':nat,
      cardinal _ (Im A f) n' ->
-     n' < n ->  exists x : _ | ( exists y : _ | f x = f y /\ x <> y).
+     n' < n ->  exists x : _, (exists y : _, f x = f y /\ x <> y).
 Proof.
 intros; apply not_injective_elim.
 apply Pigeonhole with A n n'; trivial with sets.

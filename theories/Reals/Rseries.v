@@ -35,27 +35,27 @@ Fixpoint Rmax_N (N:nat) : R :=
   end.
 
 (*********)
-Definition EUn r : Prop :=  exists i : nat | r = Un i.
+Definition EUn r : Prop :=  exists i : nat, r = Un i.
 
 (*********)
 Definition Un_cv (l:R) : Prop :=
   forall eps:R,
     eps > 0 ->
-     exists N : nat | (forall n:nat, (n >= N)%nat -> R_dist (Un n) l < eps).
+     exists N : nat, (forall n:nat, (n >= N)%nat -> R_dist (Un n) l < eps).
 
 (*********)
 Definition Cauchy_crit : Prop :=
   forall eps:R,
     eps > 0 ->
-     exists N : nat
-    | (forall n m:nat,
+     exists N : nat,
+      (forall n m:nat,
          (n >= N)%nat -> (m >= N)%nat -> R_dist (Un n) (Un m) < eps).
 
 (*********)
 Definition Un_growing : Prop := forall n:nat, Un n <= Un (S n).
 
 (*********)
-Lemma EUn_noempty :  exists r : R | EUn r.
+Lemma EUn_noempty :  exists r : R, EUn r.
 unfold EUn in |- *; split with (Un 0); split with 0%nat; trivial.
 Qed.
 
@@ -99,7 +99,7 @@ Qed.
 
 (* classical is needed: [not_all_not_ex] *)
 (*********)
-Lemma Un_cv_crit : Un_growing -> bound EUn ->  exists l : R | Un_cv l.
+Lemma Un_cv_crit : Un_growing -> bound EUn ->  exists l : R, Un_cv l.
 unfold Un_growing, Un_cv in |- *; intros;
  generalize (completeness_weak EUn H0 EUn_noempty); 
  intro; elim H1; clear H1; intros; split with x; intros; 
@@ -107,7 +107,7 @@ unfold Un_growing, Un_cv in |- *; intros;
  elim H0; clear H0; intros; elim H1; clear H1; intros; 
  generalize (H3 x0 H0); intro; cut (forall n:nat, Un n <= x); 
  intro.
-cut ( exists N : nat | x - eps < Un N).
+cut (exists N : nat, x - eps < Un N).
 intro; elim H6; clear H6; intros; split with x1.
 intros; unfold R_dist in |- *; apply (Rabs_def1 (Un n - x) eps).
 unfold Rgt in H2;
@@ -140,7 +140,7 @@ Qed.
 
 (*********)
 Lemma finite_greater :
- forall N:nat,  exists M : R | (forall n:nat, (n <= N)%nat -> Un n <= M).
+ forall N:nat,  exists M : R, (forall n:nat, (n <= N)%nat -> Un n <= M).
 intro; induction  N as [| N HrecN].
 split with (Un 0); intros; rewrite (le_n_O_eq n H);
  apply (Req_le (Un n) (Un n) (refl_equal (Un n))).

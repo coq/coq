@@ -63,11 +63,11 @@ Variable rel_choice : RelationalChoice.
 
 Lemma guarded_rel_choice :
  forall (A B:Type) (P:A -> Prop) (R:A -> B -> Prop),
-   (forall x:A, P x ->  exists y : B | R x y) ->
-    exists R' : A -> B -> Prop
-   | (forall x:A,
+   (forall x:A, P x ->  exists y : B, R x y) ->
+    exists R' : A -> B -> Prop,
+     (forall x:A,
         P x ->
-         exists y : B | R x y /\ R' x y /\ (forall y':B, R' x y' -> y = y')).
+         exists y : B, R x y /\ R' x y /\ (forall y':B, R' x y' -> y = y')).
 Proof.
   exact
    (rel_choice_and_proof_irrel_imp_guarded_rel_choice rel_choice proof_irrel).
@@ -79,13 +79,13 @@ Qed.
 Require Import Bool.
 
 Lemma AC :
-  exists R : (bool -> Prop) -> bool -> Prop
- | (forall P:bool -> Prop,
-      ( exists b : bool | P b) ->
-       exists b : bool | P b /\ R P b /\ (forall b':bool, R P b' -> b = b')).
+  exists R : (bool -> Prop) -> bool -> Prop,
+   (forall P:bool -> Prop,
+      (exists b : bool, P b) ->
+       exists b : bool, P b /\ R P b /\ (forall b':bool, R P b' -> b = b')).
 Proof.
   apply guarded_rel_choice with
-   (P := fun Q:bool -> Prop =>  exists y : _ | Q y)
+   (P := fun Q:bool -> Prop =>  exists y : _, Q y)
    (R := fun (Q:bool -> Prop) (y:bool) => Q y).
   exact (fun _ H => H).
 Qed.

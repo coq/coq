@@ -36,7 +36,7 @@ Qed.
 Lemma quotient :
  forall n,
    n > 0 ->
-   forall m:nat, {q : nat |  exists r : nat | m = q * n + r /\ n > r}.
+   forall m:nat, {q : nat |  exists r : nat, m = q * n + r /\ n > r}.
 intros b H a; pattern a in |- *; apply gt_wf_rec; intros n H0.
 elim (le_gt_dec b n).
 intro lebn.
@@ -53,7 +53,7 @@ Qed.
 Lemma modulo :
  forall n,
    n > 0 ->
-   forall m:nat, {r : nat |  exists q : nat | m = q * n + r /\ n > r}.
+   forall m:nat, {r : nat |  exists q : nat, m = q * n + r /\ n > r}.
 intros b H a; pattern a in |- *; apply gt_wf_rec; intros n H0.
 elim (le_gt_dec b n).
 intro lebn.

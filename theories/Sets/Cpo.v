@@ -67,7 +67,7 @@ Inductive Totally_ordered (B:Ensemble U) : Prop :=
 Definition Compatible : Relation U :=
   fun x y:U =>
     In U C x ->
-    In U C y ->  exists z : _ | In U C z /\ Upper_Bound (Couple U x y) z.
+    In U C y ->  exists z : _, In U C z /\ Upper_Bound (Couple U x y) z.
 	
 Inductive Directed (X:Ensemble U) : Prop :=
     Definition_of_Directed :
@@ -75,21 +75,21 @@ Inductive Directed (X:Ensemble U) : Prop :=
       Inhabited U X ->
       (forall x1 x2:U,
          Included U (Couple U x1 x2) X ->
-          exists x3 : _ | In U X x3 /\ Upper_Bound (Couple U x1 x2) x3) ->
+          exists x3 : _, In U X x3 /\ Upper_Bound (Couple U x1 x2) x3) ->
       Directed X.
 
 Inductive Complete : Prop :=
     Definition_of_Complete :
-      ( exists bot : _ | Bottom bot) ->
-      (forall X:Ensemble U, Directed X ->  exists bsup : _ | Lub X bsup) ->
+      (exists bot : _, Bottom bot) ->
+      (forall X:Ensemble U, Directed X ->  exists bsup : _, Lub X bsup) ->
       Complete.
 
 Inductive Conditionally_complete : Prop :=
     Definition_of_Conditionally_complete :
       (forall X:Ensemble U,
          Included U X C ->
-         ( exists maj : _ | Upper_Bound X maj) ->
-          exists bsup : _ | Lub X bsup) -> Conditionally_complete.
+         (exists maj : _, Upper_Bound X maj) ->
+          exists bsup : _, Lub X bsup) -> Conditionally_complete.
 End Bounds.
 Hint Resolve Totally_ordered_definition Upper_Bound_definition
   Lower_Bound_definition Lub_definition Glb_definition Bottom_definition

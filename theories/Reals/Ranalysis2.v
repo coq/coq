@@ -395,7 +395,7 @@ Lemma continuous_neq_0 :
  forall (f:R -> R) (x0:R),
    continuity_pt f x0 ->
    f x0 <> 0 ->
-    exists eps : posreal | (forall h:R, Rabs h < eps -> f (x0 + h) <> 0).
+    exists eps : posreal, (forall h:R, Rabs h < eps -> f (x0 + h) <> 0).
 intros; unfold continuity_pt in H; unfold continue_in in H;
  unfold limit1_in in H; unfold limit_in in H; elim (H (Rabs (f x0 / 2))).
 intros; elim H1; intros.

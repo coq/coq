@@ -122,7 +122,7 @@ induction 1; auto with arith.
 Qed.
 
 Lemma exists_in_int :
- forall k l, exists_between k l ->  exists2 m : nat | in_int k l m & Q m.
+ forall k l, exists_between k l ->  exists2 m : nat, in_int k l m & Q m.
 Proof.
 induction 1.
 case IHexists_between; intros p inp Qp; exists p; auto with arith.
@@ -174,7 +174,7 @@ induction 1; intros; auto with arith.
 apply le_trans with (S k); auto with arith.
 Qed.
 
-Definition eventually (n:nat) :=  exists2 k : nat | k <= n & Q k.
+Definition eventually (n:nat) :=  exists2 k : nat, k <= n & Q k.
 
 Lemma event_O : eventually 0 -> Q 0.
 Proof.

@@ -35,7 +35,7 @@ Section Inverse_Image.
 
   Variable F : A -> B -> Prop.
   Let RoF (x y:A) : Prop :=
-     exists2 b : B | F x b & (forall c:B, F y c -> R b c).
+     exists2 b : B, F x b & (forall c:B, F y c -> R b c).
 
 Lemma Acc_inverse_rel : forall b:B, Acc R b -> forall x:A, F x b -> Acc RoF x.
 induction 1 as [x _ IHAcc]; intros x0 H2.

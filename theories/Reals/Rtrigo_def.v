@@ -122,7 +122,7 @@ apply Rinv_neq_0_compat; apply INR_fact_neq_0.
 Qed.
 
 Lemma archimed_cor1 :
- forall eps:R, 0 < eps ->  exists N : nat | / INR N < eps /\ (0 < N)%nat.
+ forall eps:R, 0 < eps ->  exists N : nat, / INR N < eps /\ (0 < N)%nat.
 intros; cut (/ eps < IZR (up (/ eps))).
 intro; cut (0 <= up (/ eps))%Z.
 intro; assert (H2 := IZN _ H1); elim H2; intros; exists (max x 1).

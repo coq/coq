@@ -99,7 +99,7 @@ Hint Resolve le_total_order.
 
 Lemma Finite_subset_has_lub :
  forall X:Ensemble nat,
-   Finite nat X ->  exists m : nat | Upper_Bound nat nat_po X m.
+   Finite nat X ->  exists m : nat, Upper_Bound nat nat_po X m.
 Proof.
 intros X H'; elim H'.
 exists 0.
@@ -138,7 +138,7 @@ intros x1 H'1; elim H'1; auto with sets arith.
 Qed.
 
 Lemma Integers_has_no_ub :
- ~ ( exists m : nat | Upper_Bound nat nat_po Integers m).
+ ~ (exists m : nat, Upper_Bound nat nat_po Integers m).
 Proof.
 red in |- *; intro H'; elim H'.
 intros x H'0.

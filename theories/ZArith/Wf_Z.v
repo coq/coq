@@ -35,7 +35,7 @@ Open Local Scope Z_scope.
   Then the  diagram will be closed and the theorem proved. *)
 
 Lemma Z_of_nat_complete :
- forall x:Z, 0 <= x ->  exists n : nat | x = Z_of_nat n.
+ forall x:Z, 0 <= x ->  exists n : nat, x = Z_of_nat n.
 intro x; destruct x; intros;
  [ exists 0%nat; auto with arith
  | specialize (ZL4 p); intros Hp; elim Hp; intros; exists (S x); intros;

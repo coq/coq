@@ -54,7 +54,7 @@ Qed.
 
 Lemma right_prefix :
  forall x y z:List,
-   ltl x (y ++ z) -> ltl x y \/ ( exists y' : List | x = y ++ y' /\ ltl y' z).
+   ltl x (y ++ z) -> ltl x y \/ (exists y' : List, x = y ++ y' /\ ltl y' z).
 Proof.
  intros x y; generalize x.
  elim y; simpl in |- *.

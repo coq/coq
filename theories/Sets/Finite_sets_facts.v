@@ -40,7 +40,7 @@ Section Finite_sets_facts.
 Variable U : Type.
 
 Lemma finite_cardinal :
- forall X:Ensemble U, Finite U X ->  exists n : nat | cardinal U X n.
+ forall X:Ensemble U, Finite U X ->  exists n : nat, cardinal U X n.
 Proof.
 induction 1 as [| A _ [n H]].
 exists 0; auto with sets.

@@ -124,7 +124,7 @@ Qed.
 
 (** [nat_of_P] maps to the strictly positive subset of [nat] *)
 
-Lemma ZL4 : forall p:positive,  exists h : nat | nat_of_P p = S h.
+Lemma ZL4 : forall p:positive,  exists h : nat, nat_of_P p = S h.
 Proof.
 intro y; induction y as [p H| p H| ];
  [ destruct H as [x H1]; exists (S x + S x); unfold nat_of_P in |- *;

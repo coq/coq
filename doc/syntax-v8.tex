@@ -591,7 +591,7 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
          &5 &\RNAME{Then-seq}
 %%
 \nlsep \TERM{try} ~\NT{tactic}     &3R &\RNAME{Try}
-\nlsep \TERM{do} ~\NT{tactic}
+\nlsep \TERM{do} ~\NT{int-or-var} ~\NT{tactic}
 \nlsep \TERM{repeat} ~\NT{tactic}
 \nlsep \TERM{progress} ~\NT{tactic}
 \nlsep \TERM{info} ~\NT{tactic}
@@ -810,6 +810,7 @@ $$
 \nlsep \NT{record-tok}~\OPT{\TERM{$>$}}~\NT{ident}~\STAR{\NT{binder-let}}
        ~\KWD{:}~\NT{constr}~\KWD{:=}
        ~\OPT{\NT{ident}}~\KWD{\{}~\NT{field-list}~\KWD{\}}
+\nlsep \TERM{Ltac}~\NT{ltac-def}~\STARGR{~\TERM{with}~\NT{ltac-def}}
 \end{rules}
 
 \begin{rules}
@@ -840,6 +841,9 @@ $$
 \SEPDEF
 \DEFNT{reduce}
        \TERM{Eval}~\NT{red-expr}~\KWD{in}
+\SEPDEF
+\DEFNT{ltac-def}
+       \NT{ident}~\STAR{\NT{name}}~\KWD{:=}~\NT{tactic}
 \SEPDEF
 %% TODO: with not.
 \DEFNT{inductive-definition}
@@ -1061,8 +1065,7 @@ $$
 %% TODO: min/maj pas a jour
 \begin{rules}
 \EXTNT{command}
-       \TERM{Ltac}~\NT{ident}~\STAR{\NT{name}}~\KWD{:=}~\NT{tactic}
-\nlsep \TERM{Debug}~\TERM{On}
+       \TERM{Debug}~\TERM{On}
 \nlsep \TERM{Debug}~\TERM{Off}
 %% TODO: vernac
 \nlsep \TERM{Add}~\TERM{setoid}~\tacconstr~\tacconstr~\tacconstr

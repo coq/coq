@@ -177,7 +177,7 @@ Qed.
 Lemma Included_Add :
  forall (X A:Ensemble U) (x:U),
    Included U X (Add U A x) ->
-   Included U X A \/ ( exists A' : _ | X = Add U A' x /\ Included U A' A).
+   Included U X A \/ (exists A' : _, X = Add U A' x /\ Included U A' A).
 Proof.
 intros X A x H'0; try assumption.
 elim (classic (In U X x)).
@@ -267,7 +267,7 @@ Theorem covers_Add :
    Included U a A ->
    Included U a' A ->
    covers (Ensemble U) (Power_set_PO U A) a' a ->
-    exists x : _ | a' = Add U a x /\ In U A x /\ ~ In U a x.
+    exists x : _, a' = Add U a x /\ In U A x /\ ~ In U a x.
 Proof.
 intros A a a' H' H'0 H'1; try assumption.
 elim (setcover_inv A a a'); auto with sets.
@@ -299,7 +299,7 @@ Theorem covers_is_Add :
    Included U a A ->
    Included U a' A ->
    (covers (Ensemble U) (Power_set_PO U A) a' a <->
-    ( exists x : _ | a' = Add U a x /\ In U A x /\ ~ In U a x)).
+    (exists x : _, a' = Add U a x /\ In U A x /\ ~ In U a x)).
 Proof.
 intros A a a' H' H'0; split; intro K.
 apply covers_Add with (A := A); auto with sets.

@@ -120,7 +120,7 @@ Qed.
 
 Lemma AbsList_P2 :
  forall (l:Rlist) (x y:R),
-   In y (AbsList l x) ->  exists z : R | In z l /\ y = Rabs (z - x) / 2.
+   In y (AbsList l x) ->  exists z : R, In z l /\ y = Rabs (z - x) / 2.
 intros; induction  l as [| r l Hrecl].
 elim H.
 elim H; intro.
@@ -132,7 +132,7 @@ assert (H1 := Hrecl H0); elim H1; intros; elim H2; clear H2; intros;
 Qed.
 
 Lemma MaxRlist_P2 :
- forall l:Rlist, ( exists y : R | In y l) -> In (MaxRlist l) l.
+ forall l:Rlist, (exists y : R, In y l) -> In (MaxRlist l) l.
 intros; induction  l as [| r l Hrecl].
 simpl in H; elim H; trivial.
 induction  l as [| r0 l Hrecl0].
@@ -164,7 +164,7 @@ Qed.
 
 Lemma pos_Rl_P2 :
  forall (l:Rlist) (x:R),
-   In x l <-> ( exists i : nat | (i < Rlength l)%nat /\ x = pos_Rl l i).
+   In x l <-> (exists i : nat, (i < Rlength l)%nat /\ x = pos_Rl l i).
 intros; induction  l as [| r l Hrecl].
 split; intro;
  [ elim H | elim H; intros; elim H0; intros; elim (lt_n_O _ H1) ].
@@ -186,9 +186,9 @@ Qed.
 
 Lemma Rlist_P1 :
  forall (l:Rlist) (P:R -> R -> Prop),
-   (forall x:R, In x l ->  exists y : R | P x y) ->
-    exists l' : Rlist
-   | Rlength l = Rlength l' /\
+   (forall x:R, In x l ->  exists y : R, P x y) ->
+    exists l' : Rlist,
+     Rlength l = Rlength l' /\
      (forall i:nat, (i < Rlength l)%nat -> P (pos_Rl l i) (pos_Rl l' i)).
 intros; induction  l as [| r l Hrecl].
 exists nil; intros; split;
@@ -196,7 +196,7 @@ exists nil; intros; split;
 assert (H0 : In r (cons r l)).
 simpl in |- *; left; reflexivity.
 assert (H1 := H _ H0);
- assert (H2 : forall x:R, In x l ->  exists y : R | P x y).
+ assert (H2 : forall x:R, In x l ->  exists y : R, P x y).
 intros; apply H; simpl in |- *; right; assumption.
 assert (H3 := Hrecl H2); elim H1; intros; elim H3; intros; exists (cons x x0);
  intros; elim H5; clear H5; intros; split.
@@ -308,7 +308,7 @@ Qed.
 
 Lemma RList_P3 :
  forall (l:Rlist) (x:R),
-   In x l <-> ( exists i : nat | x = pos_Rl l i /\ (i < Rlength l)%nat).
+   In x l <-> (exists i : nat, x = pos_Rl l i /\ (i < Rlength l)%nat).
 intros; split; intro;
  [ induction  l as [| r l Hrecl] | induction  l as [| r l Hrecl] ].
 elim H.
@@ -605,7 +605,7 @@ Qed.
 
 Lemma RList_P19 :
  forall l:Rlist,
-   l <> nil ->  exists r : R | ( exists r0 : Rlist | l = cons r r0).
+   l <> nil ->  exists r : R, (exists r0 : Rlist, l = cons r r0).
 intros; induction  l as [| r l Hrecl];
  [ elim H; reflexivity | exists r; exists l; reflexivity ].
 Qed.
@@ -613,8 +613,8 @@ Qed.
 Lemma RList_P20 :
  forall l:Rlist,
    (2 <= Rlength l)%nat ->
-    exists r : R
-   | ( exists r1 : R | ( exists l' : Rlist | l = cons r (cons r1 l'))). 
+    exists r : R,
+     (exists r1 : R, (exists l' : Rlist, l = cons r (cons r1 l'))). 
 intros; induction  l as [| r l Hrecl];
  [ simpl in H; elim (le_Sn_O _ H)
  | induction  l as [| r0 l Hrecl0];

@@ -13,8 +13,8 @@
 Axiom
   relational_choice :
     forall (A B:Type) (R:A -> B -> Prop),
-      (forall x:A,  exists y : B | R x y) ->
-       exists R' : A -> B -> Prop
-      | (forall x:A,
-            exists y : B
-           | R x y /\ R' x y /\ (forall y':B, R' x y' -> y = y')).
+      (forall x:A,  exists y : B, R x y) ->
+       exists R' : A -> B -> Prop,
+        (forall x:A,
+            exists y : B,
+             R x y /\ R' x y /\ (forall y':B, R' x y' -> y = y')).

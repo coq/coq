@@ -1462,8 +1462,8 @@ and match_context_interp ist g lr lmr =
            apply_match_context ist env goal (nrs+1) (List.tl lex) tl))
     | _ ->
       errorlabstrm "Tacinterp.apply_match_context" (str
-        "No matching clauses for Match Context")
-        (v 0 (str "No matching clauses for Match Context" ++
+        "No matching clauses for match goal")
+        (v 0 (str "No matching clauses for match goal" ++
         (if ist.debug=DebugOff then
            fnl() ++ str "(use \"Debug On\" for more info)"
          else mt())))
@@ -1570,9 +1570,13 @@ and match_interp ist g constr lmr =
 	   apply_match ist csr tl)
     | _ ->
       errorlabstrm "Tacinterp.apply_match" (str
-        "No matching clauses for Match") in
+        "No matching clauses for match") in
   let env = pf_env g in
-  let csr = constr_of_value env (val_interp ist g constr) in
+  let csr =
+    try constr_of_value env (val_interp ist g constr)
+    with Not_found ->
+      errorlabstrm "Tacinterp.apply_match" 
+        (str "Argument of match does not evaluate to a term") in
   let ilr = read_match_rule (project g) env (fst (constr_list ist env)) lmr in
   apply_match ist csr ilr
 

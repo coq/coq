@@ -1368,7 +1368,7 @@ intros; case (Rtotal_order x y); intro H4;
 Qed.
 
 (**********)
-Lemma sin_eq_0_1 : forall x:R, ( exists k : Z | x = IZR k * PI) -> sin x = 0.
+Lemma sin_eq_0_1 : forall x:R, (exists k : Z, x = IZR k * PI) -> sin x = 0.
 intros.
 elim H; intros.
 apply (Zcase_sign x0).
@@ -1446,7 +1446,7 @@ rewrite Ropp_involutive.
 reflexivity.
 Qed.
 
-Lemma sin_eq_0_0 : forall x:R, sin x = 0 ->  exists k : Z | x = IZR k * PI.
+Lemma sin_eq_0_0 : forall x:R, sin x = 0 ->  exists k : Z, x = IZR k * PI.
 intros.
 assert (H0 := euclidian_division x PI PI_neq0).
 elim H0; intros q H1.
@@ -1491,7 +1491,7 @@ exists q; reflexivity.
 Qed.
 
 Lemma cos_eq_0_0 :
- forall x:R, cos x = 0 ->  exists k : Z | x = IZR k * PI + PI / 2. 
+ forall x:R, cos x = 0 ->  exists k : Z, x = IZR k * PI + PI / 2. 
 intros x H; rewrite cos_sin in H; generalize (sin_eq_0_0 (PI / INR 2 + x) H);
  intro H2; elim H2; intros x0 H3; exists (x0 - Z_of_nat 1)%Z;
  rewrite <- Z_R_minus; ring; rewrite Rmult_comm; rewrite <- H3;
@@ -1500,7 +1500,7 @@ rewrite (double_var (- PI)); unfold Rdiv in |- *; ring.
 Qed.
 
 Lemma cos_eq_0_1 :
- forall x:R, ( exists k : Z | x = IZR k * PI + PI / 2) -> cos x = 0.
+ forall x:R, (exists k : Z, x = IZR k * PI + PI / 2) -> cos x = 0.
 intros x H1; rewrite cos_sin; elim H1; intros x0 H2; rewrite H2;
  replace (PI / 2 + (IZR x0 * PI + PI / 2)) with (IZR x0 * PI + PI).
 rewrite neg_sin; rewrite <- Ropp_0.

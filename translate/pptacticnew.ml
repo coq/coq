@@ -184,11 +184,13 @@ let pr_esubst prc l =
 
 let pr_bindings_gen for_ex prlc prc = function
   | ImplicitBindings l ->
-      spc () ++ (if for_ex then mt() else str "with" ++ spc ()) ++
-      hv 0 (prlist_with_sep spc prc l)
+      spc () ++
+      hv 2 ((if for_ex then mt() else str "with" ++ spc ()) ++
+            prlist_with_sep spc prc l)
   | ExplicitBindings l ->
-      spc () ++ (if for_ex then mt() else str "with" ++ spc ()) ++
-      hv 0 (pr_esubst prlc l)
+      spc () ++
+      hv 2 ((if for_ex then mt() else str "with" ++ spc ()) ++
+            pr_esubst prlc l)
   | NoBindings -> mt ()
 
 let pr_bindings prlc prc = pr_bindings_gen false prlc prc
@@ -197,9 +199,9 @@ let pr_with_bindings prlc prc (c,bl) =
   if Options.do_translate () then
     (* translator calls pr_with_bindings on rawconstr: we cast it! *)
     let bl' = translate_with_bindings (fst (Obj.magic c) : rawconstr) bl in
-    prc c ++ pr_bindings prlc prc bl'
+    hov 1 (prc c ++ pr_bindings prlc prc bl')
   else
-    prc c ++ pr_bindings prlc prc bl
+    hov 1 (prc c ++ pr_bindings prlc prc bl)
 
 let pr_with_constr prc = function
   | None -> mt ()

@@ -41,7 +41,7 @@ Proof le_lt_or_eq.
 
 (* By special request of G. Kahn - Used in Group Theory *)
 Lemma discrete_nat :
- forall n m, n < m -> S n = m \/ ( exists r : nat | m = S (S (n + r))).
+ forall n m, n < m -> S n = m \/ (exists r : nat, m = S (S (n + r))).
 Proof.
 intros m n H.
 lapply (lt_le_S m n); auto with arith.

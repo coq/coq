@@ -254,7 +254,7 @@ Qed.
 Lemma setcover_intro :
  forall (U:Type) (A x y:Ensemble U),
    Strict_Included U x y ->
-   ~ ( exists z : _ | Strict_Included U x z /\ Strict_Included U z y) ->
+   ~ (exists z : _, Strict_Included U x z /\ Strict_Included U z y) ->
    covers (Ensemble U) (Power_set_PO U A) y x.
 Proof.
 intros; apply Definition_of_covers; auto with sets.

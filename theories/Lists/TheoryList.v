@@ -66,7 +66,7 @@ Qed.
 (********************************)
 
 Lemma Hd :
- forall l:list A, {a : A |  exists m : list A | a :: m = l} + {Isnil l}.
+ forall l:list A, {a : A |  exists m : list A, a :: m = l} + {Isnil l}.
 intro l; case l.
 auto.
 intros a m; intros; left; exists a; exists m; reflexivity.
@@ -80,7 +80,7 @@ Qed.
 
 Lemma Tl :
  forall l:list A,
-   {m : list A | ( exists a : A | a :: m = l) \/ Isnil l /\ Isnil m}.
+   {m : list A | (exists a : A, a :: m = l) \/ Isnil l /\ Isnil m}.
 intro l; case l.
 exists (nil (A:=A)); auto.
 intros a m; intros; exists m; left; exists a; reflexivity.
@@ -341,7 +341,7 @@ Fixpoint try_find (l:list A) : Exc B :=
   end.
 
 Lemma Try_find :
- forall l:list A, {c : B |  exists2 a : A | In a l & T a c} + {AllS P l}.
+ forall l:list A, {c : B |  exists2 a : A, In a l & T a c} + {AllS P l}.
 induction l as [| a m [[b H1]| H]].
 auto.
 left; exists b; destruct H1 as [a' H2 H3]; exists a'; auto.

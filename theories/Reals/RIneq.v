@@ -1306,7 +1306,7 @@ Hint Resolve not_1_INR: real.
 
 
 (**********)
-Lemma IZN : forall n:Z, (0 <= n)%Z ->  exists m : nat | n = Z_of_nat m.
+Lemma IZN : forall n:Z, (0 <= n)%Z ->  exists m : nat, n = Z_of_nat m.
 intros z; idtac; apply Z_of_nat_complete; assumption.
 Qed.
 
@@ -1483,7 +1483,7 @@ Lemma tech_single_z_r_R1 :
  forall r (n:Z),
    r < IZR n ->
    IZR n <= r + 1 ->
-   ( exists s : Z | s <> n /\ r < IZR s /\ IZR s <= r + 1) -> False.
+   (exists s : Z, s <> n /\ r < IZR s /\ IZR s <= r + 1) -> False.
 intros r z H1 H2 [s [H3 [H4 H5]]].
 apply H3; apply single_z_r_R1 with r; trivial.
 Qed.
@@ -1626,6 +1626,6 @@ Qed.
 (**********)
 Lemma completeness_weak :
  forall E:R -> Prop,
-   bound E -> ( exists x : R | E x) ->  exists m : R | is_lub E m.
+   bound E -> (exists x : R, E x) ->  exists m : R, is_lub E m.
 intros; elim (completeness E H H0); intros; split with x; assumption.
 Qed.

@@ -48,7 +48,7 @@ Definition Strict_Rel_of : Rel := fun x y:U => Rel_of p x y /\ x <> y.
 Inductive covers (y x:U) : Prop :=
     Definition_of_covers :
       Strict_Rel_of x y ->
-      ~ ( exists z : _ | Strict_Rel_of x z /\ Strict_Rel_of z y) ->
+      ~ (exists z : _, Strict_Rel_of x z /\ Strict_Rel_of z y) ->
       covers y x.
 
 End Partial_orders.

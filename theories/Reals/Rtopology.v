@@ -18,7 +18,7 @@ Require Import Classical_Pred_Type. Open Local Scope R_scope.
 Definition included (D1 D2:R -> Prop) : Prop := forall x:R, D1 x -> D2 x.
 Definition disc (x:R) (delta:posreal) (y:R) : Prop := Rabs (y - x) < delta.
 Definition neighbourhood (V:R -> Prop) (x:R) : Prop :=
-   exists delta : posreal | included (disc x delta) V.
+   exists delta : posreal, included (disc x delta) V.
 Definition open_set (D:R -> Prop) : Prop :=
   forall x:R, D x -> neighbourhood D x.
 Definition complementary (D:R -> Prop) (c:R) : Prop := ~ D c.
@@ -41,7 +41,7 @@ Qed.
 
 Definition point_adherent (D:R -> Prop) (x:R) : Prop :=
   forall V:R -> Prop,
-    neighbourhood V x ->  exists y : R | intersection_domain V D y.
+    neighbourhood V x ->  exists y : R, intersection_domain V D y.
 Definition adherence (D:R -> Prop) (x:R) : Prop := point_adherent D x.
 
 Lemma adherence_P1 : forall D:R -> Prop, included D (adherence D).
@@ -87,7 +87,7 @@ Qed.
 
 Lemma complementary_P1 :
  forall D:R -> Prop,
-   ~ ( exists y : R | intersection_domain D (complementary D) y).
+   ~ (exists y : R, intersection_domain D (complementary D) y).
 intro; red in |- *; intro; elim H; intros;
  unfold intersection_domain, complementary in H0; elim H0; 
  intros; elim H2; assumption.
@@ -111,14 +111,14 @@ intro; unfold closed_set, adherence in |- *;
  pose
   (P :=
    fun V:R -> Prop =>
-     neighbourhood V x ->  exists y : R | intersection_domain V D y);
+     neighbourhood V x ->  exists y : R, intersection_domain V D y);
  assert (H0 := not_all_ex_not _ P H); elim H0; intros V0 H1; 
  unfold P in H1; assert (H2 := imply_to_and _ _ H1);
  unfold neighbourhood in |- *; elim H2; intros; unfold neighbourhood in H3;
  elim H3; intros; exists x0; unfold included in |- *; 
  intros; red in |- *; intro.
 assert (H8 := H7 V0);
- cut ( exists delta : posreal | (forall x:R, disc x1 delta x -> V0 x)).
+ cut (exists delta : posreal, (forall x:R, disc x1 delta x -> V0 x)).
 intro; assert (H10 := H8 H9); elim H4; assumption.
 cut (0 < x0 - Rabs (x - x1)).
 intro; pose (del := mkposreal _ H9); exists del; intros;
@@ -248,8 +248,8 @@ Lemma continuity_P1 :
    continuity_pt f x <->
    (forall W:R -> Prop,
       neighbourhood W (f x) ->
-       exists V : R -> Prop
-      | neighbourhood V x /\ (forall y:R, V y -> W (f y))).
+       exists V : R -> Prop,
+        neighbourhood V x /\ (forall y:R, V y -> W (f y))).
 intros; split.
 intros; unfold neighbourhood in H0.
 elim H0; intros del1 H1.
@@ -329,10 +329,10 @@ Qed.
 Theorem Rsepare :
  forall x y:R,
    x <> y ->
-    exists V : R -> Prop
-   | ( exists W : R -> Prop
-      | neighbourhood V x /\
-        neighbourhood W y /\ ~ ( exists y : R | intersection_domain V W y)).
+    exists V : R -> Prop,
+     (exists W : R -> Prop,
+        neighbourhood V x /\
+        neighbourhood W y /\ ~ (exists y : R, intersection_domain V W y)).
 intros x y Hsep; pose (D := Rabs (x - y)).
 cut (0 < D / 2).
 intro; exists (disc x (mkposreal _ H)).
@@ -360,17 +360,17 @@ Qed.
 Record family : Type := mkfamily
   {ind : R -> Prop;
    f :> R -> R -> Prop;
-   cond_fam : forall x:R, ( exists y : R | f x y) -> ind x}.
+   cond_fam : forall x:R, (exists y : R, f x y) -> ind x}.
 
 Definition family_open_set (f:family) : Prop := forall x:R, open_set (f x).
 
 Definition domain_finite (D:R -> Prop) : Prop :=
-   exists l : Rlist | (forall x:R, D x <-> In x l).
+   exists l : Rlist, (forall x:R, D x <-> In x l).
 
 Definition family_finite (f:family) : Prop := domain_finite (ind f).
 
 Definition covering (D:R -> Prop) (f:family) : Prop :=
-  forall x:R, D x ->  exists y : R | f y x.
+  forall x:R, D x ->  exists y : R, f y x.
 
 Definition covering_open_set (D:R -> Prop) (f:family) : Prop :=
   covering D f /\ family_open_set f.
@@ -380,7 +380,7 @@ Definition covering_finite (D:R -> Prop) (f:family) : Prop :=
 
 Lemma restriction_family :
  forall (f:family) (D:R -> Prop) (x:R),
-   ( exists y : R | (fun z1 z2:R => f z1 z2 /\ D z1) x y) ->
+   (exists y : R, (fun z1 z2:R => f z1 z2 /\ D z1) x y) ->
    intersection_domain (ind f) D x.
 intros; elim H; intros; unfold intersection_domain in |- *; elim H0; intros;
  split.
@@ -395,7 +395,7 @@ Definition subfamily (f:family) (D:R -> Prop) : family :=
 Definition compact (X:R -> Prop) : Prop :=
   forall f:family,
     covering_open_set X f ->
-     exists D : R -> Prop | covering_finite X (subfamily f D).
+     exists D : R -> Prop, covering_finite X (subfamily f D).
 
 (**********)
 Lemma family_P1 :
@@ -418,7 +418,7 @@ unfold open_set in |- *; unfold neighbourhood in |- *; intros; elim H3;
 Qed.
 
 Definition bounded (D:R -> Prop) : Prop :=
-   exists m : R | ( exists M : R | (forall x:R, D x -> m <= x <= M)).
+   exists m : R, (exists M : R, (forall x:R, D x -> m <= x <= M)).
 
 Lemma open_set_P6 :
  forall D1 D2:R -> Prop, open_set D1 -> D1 =_D D2 -> open_set D2.
@@ -433,7 +433,7 @@ Qed.
 Lemma compact_P1 : forall X:R -> Prop, compact X -> bounded X.
 intros; unfold compact in H; pose (D := fun x:R => True);
  pose (g := fun x y:R => Rabs y < x);
- cut (forall x:R, ( exists y : _ | g x y) -> True);
+ cut (forall x:R, (exists y : _, g x y) -> True);
  [ intro | intro; trivial ].
 pose (f0 := mkfamily D g H0); assert (H1 := H f0);
  cut (covering_open_set X f0).
@@ -498,7 +498,7 @@ assumption.
 cut (forall y:R, X y -> 0 < Rabs (y - x) / 2).
 intro; pose (D := X);
  pose (g := fun y z:R => Rabs (y - z) < Rabs (y - x) / 2 /\ D y);
- cut (forall x:R, ( exists y : _ | g x y) -> D x).
+ cut (forall x:R, (exists y : _, g x y) -> D x).
 intro; pose (f0 := mkfamily D g H3); assert (H4 := H f0);
  cut (covering_open_set X f0).
 intro; assert (H6 := H4 H5); elim H6; clear H6; intros D' H6.
@@ -600,11 +600,11 @@ unfold compact in |- *; intros;
   (A :=
    fun x:R =>
      a <= x <= b /\
-     ( exists D : R -> Prop
-      | covering_finite (fun c:R => a <= c <= x) (subfamily f0 D)));
+     (exists D : R -> Prop,
+        covering_finite (fun c:R => a <= c <= x) (subfamily f0 D)));
  cut (A a).
 intro; cut (bound A).
-intro; cut ( exists a0 : R | A a0).
+intro; cut (exists a0 : R, A a0).
 intro; assert (H3 := completeness A H1 H2); elim H3; clear H3; intros m H3;
  unfold is_lub in H3; cut (a <= m <= b).
 intro; unfold covering_open_set in H; elim H; clear H; intros;
@@ -612,7 +612,7 @@ intro; unfold covering_open_set in H; elim H; clear H; intros;
  clear H6; intros y0 H6; unfold family_open_set in H5; 
  assert (H7 := H5 y0); unfold open_set in H7; assert (H8 := H7 m H6);
  unfold neighbourhood in H8; elim H8; clear H8; intros eps H8;
- cut ( exists x : R | A x /\ m - eps < x <= m).
+ cut (exists x : R, A x /\ m - eps < x <= m).
 intro; elim H9; clear H9; intros x H9; elim H9; clear H9; intros;
  case (Req_dec m b); intro.
 rewrite H11 in H10; rewrite H11 in H8; unfold A in H9; elim H9; clear H9;
@@ -751,7 +751,7 @@ unfold intersection_domain in H17.
 split.
 elim H17; intros; assumption.
 unfold Db in |- *; left; elim H17; intros; assumption.
-elim (classic ( exists x : R | A x /\ m - eps < x <= m)); intro.
+elim (classic (exists x : R, A x /\ m - eps < x <= m)); intro.
 assumption.
 elim H3; intros; cut (is_upper_bound A (m - eps)).
 intro; assert (H13 := H11 _ H12); cut (m - eps < m).
@@ -810,12 +810,12 @@ Qed.
 
 Lemma compact_P4 :
  forall X F:R -> Prop, compact X -> closed_set F -> included F X -> compact F.
-unfold compact in |- *; intros; elim (classic ( exists z : R | F z));
+unfold compact in |- *; intros; elim (classic (exists z : R, F z));
  intro Hyp_F_NE.
 pose (D := ind f0); pose (g := f f0); unfold closed_set in H0.
 pose (g' := fun x y:R => f0 x y \/ complementary F y /\ D x).
 pose (D' := D).
-cut (forall x:R, ( exists y : R | g' x y) -> D' x).
+cut (forall x:R, (exists y : R, g' x y) -> D' x).
 intro; pose (f' := mkfamily D' g' H3); cut (covering_open_set X f').
 intro; elim (H _ H4); intros DX H5; exists DX.
 unfold covering_finite in |- *; unfold covering_finite in H5; elim H5;
@@ -847,7 +847,7 @@ unfold covering in |- *; unfold covering in H2; intros.
 elim (classic (F x)); intro.
 elim (H2 _ H6); intros y0 H7; exists y0; simpl in |- *; unfold g' in |- *;
  left; assumption.
-cut ( exists z : R | D z).
+cut (exists z : R, D z).
 intro; elim H7; clear H7; intros x0 H7; exists x0; simpl in |- *;
  unfold g' in |- *; right.
 split.
@@ -908,7 +908,7 @@ intro; elim H; clear H; intros; apply (compact_P5 _ H H0).
 Qed.
 
 Definition image_dir (f:R -> R) (D:R -> Prop) (x:R) : Prop :=
-   exists y : R | x = f y /\ D y.
+   exists y : R, x = f y /\ D y.
 
 (**********)
 Lemma continuity_compact :
@@ -918,7 +918,7 @@ unfold compact in |- *; intros; unfold covering_open_set in H1.
 elim H1; clear H1; intros.
 pose (D := ind f1).
 pose (g := fun x y:R => image_rec f0 (f1 x) y).
-cut (forall x:R, ( exists y : R | g x y) -> D x).
+cut (forall x:R, (exists y : R, g x y) -> D x).
 intro; pose (f' := mkfamily D g H3).
 cut (covering_open_set X f').
 intro; elim (H0 f' H4); intros D' H5; exists D'.
@@ -958,8 +958,8 @@ Lemma prolongement_C0 :
  forall (f:R -> R) (a b:R),
    a <= b ->
    (forall c:R, a <= c <= b -> continuity_pt f c) ->
-    exists g : R -> R
-   | continuity g /\ (forall c:R, a <= c <= b -> g c = f c).
+    exists g : R -> R,
+     continuity g /\ (forall c:R, a <= c <= b -> g c = f c).
 intros; elim H; intro.
 pose
  (h :=
@@ -1153,11 +1153,11 @@ Lemma continuity_ab_maj :
  forall (f:R -> R) (a b:R),
    a <= b ->
    (forall c:R, a <= c <= b -> continuity_pt f c) ->
-    exists Mx : R | (forall c:R, a <= c <= b -> f c <= f Mx) /\ a <= Mx <= b.
+    exists Mx : R, (forall c:R, a <= c <= b -> f c <= f Mx) /\ a <= Mx <= b.
 intros;
  cut
-  ( exists g : R -> R
-   | continuity g /\ (forall c:R, a <= c <= b -> g c = f0 c)).
+  (exists g : R -> R,
+     continuity g /\ (forall c:R, a <= c <= b -> g c = f0 c)).
 intro HypProl.
 elim HypProl; intros g Hcont_eq.
 elim Hcont_eq; clear Hcont_eq; intros Hcont Heq.
@@ -1166,7 +1166,7 @@ assert (H2 := continuity_compact g (fun c:R => a <= c <= b) Hcont H1).
 assert (H3 := compact_P2 _ H2).
 assert (H4 := compact_P1 _ H2).
 cut (bound (image_dir g (fun c:R => a <= c <= b))).
-cut ( exists x : R | image_dir g (fun c:R => a <= c <= b) x).
+cut (exists x : R, image_dir g (fun c:R => a <= c <= b) x).
 intros; assert (H7 := completeness _ H6 H5).
 elim H7; clear H7; intros M H7; cut (image_dir g (fun c:R => a <= c <= b) M).
 intro; unfold image_dir in H8; elim H8; clear H8; intros Mxx H8; elim H8;
@@ -1179,8 +1179,8 @@ apply H9.
 elim (classic (image_dir g (fun c:R => a <= c <= b) M)); intro.
 assumption.
 cut
- ( exists eps : posreal
-  | (forall y:R,
+ (exists eps : posreal,
+    (forall y:R,
        ~
        intersection_domain (disc M eps)
          (image_dir g (fun c:R => a <= c <= b)) y)).
@@ -1207,8 +1207,8 @@ apply Rge_minus; apply Rle_ge; apply H12.
 apply H11.
 apply H7; apply H11.
 cut
- ( exists V : R -> Prop
-  | neighbourhood V M /\
+ (exists V : R -> Prop,
+    neighbourhood V M /\
     (forall y:R,
        ~ intersection_domain V (image_dir g (fun c:R => a <= c <= b)) y)).
 intro; elim H9; intros V H10; elim H10; clear H10; intros.
@@ -1225,8 +1225,8 @@ assert
   not_all_ex_not _
     (fun V:R -> Prop =>
        neighbourhood V M ->
-        exists y : R
-       | intersection_domain V (image_dir g (fun c:R => a <= c <= b)) y) H9).
+        exists y : R,
+         intersection_domain V (image_dir g (fun c:R => a <= c <= b)) y) H9).
 elim H10; intros V0 H11; exists V0; assert (H12 := imply_to_and _ _ H11);
  elim H12; clear H12; intros.
 split.
@@ -1253,7 +1253,7 @@ Lemma continuity_ab_min :
  forall (f:R -> R) (a b:R),
    a <= b ->
    (forall c:R, a <= c <= b -> continuity_pt f c) ->
-    exists mx : R | (forall c:R, a <= c <= b -> f mx <= f c) /\ a <= mx <= b.
+    exists mx : R, (forall c:R, a <= c <= b -> f mx <= f c) /\ a <= mx <= b.
 intros.
 cut (forall c:R, a <= c <= b -> continuity_pt (- f0) c).
 intro; assert (H2 := continuity_ab_maj (- f0)%F a b H H1); elim H2;
@@ -1274,18 +1274,18 @@ Qed.
 
 Definition ValAdh (un:nat -> R) (x:R) : Prop :=
   forall (V:R -> Prop) (N:nat),
-    neighbourhood V x ->  exists p : nat | (N <= p)%nat /\ V (un p).
+    neighbourhood V x ->  exists p : nat, (N <= p)%nat /\ V (un p).
 
 Definition intersection_family (f:family) (x:R) : Prop :=
   forall y:R, ind f y -> f y x.
 
 Lemma ValAdh_un_exists :
- forall (un:nat -> R) (D:=fun x:R =>  exists n : nat | x = INR n)
+ forall (un:nat -> R) (D:=fun x:R =>  exists n : nat, x = INR n)
    (f:=
     fun x:R =>
       adherence
-        (fun y:R => ( exists p : nat | y = un p /\ x <= INR p) /\ D x))
-   (x:R), ( exists y : R | f x y) -> D x.
+        (fun y:R => (exists p : nat, y = un p /\ x <= INR p) /\ D x))
+   (x:R), (exists y : R, f x y) -> D x.
 intros; elim H; intros; unfold f in H0; unfold adherence in H0;
  unfold point_adherent in H0;
  assert (H1 : neighbourhood (disc x0 (mkposreal _ Rlt_0_1)) x0).
@@ -1296,11 +1296,11 @@ elim (H0 _ H1); intros; unfold intersection_domain in H2; elim H2; intros;
 Qed.
 
 Definition ValAdh_un (un:nat -> R) : R -> Prop :=
-  let D := fun x:R =>  exists n : nat | x = INR n in
+  let D := fun x:R =>  exists n : nat, x = INR n in
   let f :=
     fun x:R =>
       adherence
-        (fun y:R => ( exists p : nat | y = un p /\ x <= INR p) /\ D x) in
+        (fun y:R => (exists p : nat, y = un p /\ x <= INR p) /\ D x) in
   intersection_family (mkfamily D f (ValAdh_un_exists un)).
 
 Lemma ValAdh_un_prop :
@@ -1322,8 +1322,8 @@ unfold ValAdh in |- *; intros; unfold ValAdh_un in H;
   (H1 :
    adherence
      (fun y0:R =>
-        ( exists p : nat | y0 = un p /\ INR N <= INR p) /\
-        ( exists n : nat | INR N = INR n)) x).
+        (exists p : nat, y0 = un p /\ INR N <= INR p) /\
+        (exists n : nat, INR N = INR n)) x).
 apply H; exists N; reflexivity.
 unfold adherence in H1; unfold point_adherent in H1; assert (H2 := H1 _ H0);
  elim H2; intros; unfold intersection_domain in H3; 
@@ -1348,7 +1348,7 @@ Definition family_closed_set (f:family) : Prop :=
 Definition intersection_vide_in (D:R -> Prop) (f:family) : Prop :=
   forall x:R,
     (ind f x -> included (f x) D) /\
-    ~ ( exists y : R | intersection_family f y).
+    ~ (exists y : R, intersection_family f y).
 
 Definition intersection_vide_finite_in (D:R -> Prop) 
   (f:family) : Prop := intersection_vide_in D f /\ family_finite f.
@@ -1357,15 +1357,15 @@ Definition intersection_vide_finite_in (D:R -> Prop)
 Lemma compact_P6 :
  forall X:R -> Prop,
    compact X ->
-   ( exists z : R | X z) ->
+   (exists z : R, X z) ->
    forall g:family,
      family_closed_set g ->
      intersection_vide_in X g ->
-      exists D : R -> Prop | intersection_vide_finite_in X (subfamily g D).
+      exists D : R -> Prop, intersection_vide_finite_in X (subfamily g D).
 intros X H Hyp g H0 H1.
 pose (D' := ind g).
 pose (f' := fun x y:R => complementary (g x) y /\ D' x).
-assert (H2 : forall x:R, ( exists y : R | f' x y) -> D' x).
+assert (H2 : forall x:R, (exists y : R, f' x y) -> D' x).
 intros; elim H2; intros; unfold f' in H3; elim H3; intros; assumption.
 pose (f0 := mkfamily D' f' H2).
 unfold compact in H; assert (H3 : covering_open_set X f0).
@@ -1397,7 +1397,7 @@ intros; unfold included in |- *; intros; unfold intersection_vide_in in H1;
  elim (H1 x); intros; elim H6; intros; apply H7.
 unfold intersection_domain in H5; elim H5; intros; assumption.
 assumption.
-elim (classic ( exists y : R | intersection_domain (ind g) SF y)); intro Hyp'.
+elim (classic (exists y : R, intersection_domain (ind g) SF y)); intro Hyp'.
 red in |- *; intro; elim H5; intros; unfold intersection_family in H6;
  simpl in H6.
 cut (X x0).
@@ -1418,7 +1418,7 @@ apply H11.
 apply H9.
 apply (cond_fam g); exists x0; assumption.
 unfold covering_finite in H4; elim H4; clear H4; intros H4 _;
- cut ( exists z : R | X z).
+ cut (exists z : R, X z).
 intro; elim H5; clear H5; intros; unfold covering in H4; elim (H4 x0 H5);
  intros; simpl in H6; elim Hyp'; exists x1; elim H6; 
  intros; unfold intersection_domain in |- *; split.
@@ -1435,18 +1435,18 @@ Qed.
 
 Theorem Bolzano_Weierstrass :
  forall (un:nat -> R) (X:R -> Prop),
-   compact X -> (forall n:nat, X (un n)) ->  exists l : R | ValAdh un l.
-intros; cut ( exists l : R | ValAdh_un un l).
+   compact X -> (forall n:nat, X (un n)) ->  exists l : R, ValAdh un l.
+intros; cut (exists l : R, ValAdh_un un l).
 intro; elim H1; intros; exists x; elim (ValAdh_un_prop un x); intros;
  apply (H4 H2).
-assert (H1 :  exists z : R | X z).
+assert (H1 :  exists z : R, X z).
 exists (un 0%nat); apply H0.
-pose (D := fun x:R =>  exists n : nat | x = INR n).
+pose (D := fun x:R =>  exists n : nat, x = INR n).
 pose
  (g :=
   fun x:R =>
-    adherence (fun y:R => ( exists p : nat | y = un p /\ x <= INR p) /\ D x)).
-assert (H2 : forall x:R, ( exists y : R | g x y) -> D x).
+    adherence (fun y:R => (exists p : nat, y = un p /\ x <= INR p) /\ D x)).
+assert (H2 : forall x:R, (exists y : R, g x y) -> D x).
 intros; elim H2; intros; unfold g in H3; unfold adherence in H3;
  unfold point_adherent in H3.
 assert (H4 : neighbourhood (disc x0 (mkposreal _ Rlt_0_1)) x0).
@@ -1456,7 +1456,7 @@ elim (H3 _ H4); intros; unfold intersection_domain in H5; decompose [and] H5;
  assumption.
 pose (f0 := mkfamily D g H2).
 assert (H3 := compact_P6 X H H1 f0).
-elim (classic ( exists l : R | ValAdh_un un l)); intro.
+elim (classic (exists l : R, ValAdh_un un l)); intro.
 assumption.
 cut (family_closed_set f0).
 intro; cut (intersection_vide_in X f0).
@@ -1480,10 +1480,10 @@ elim (H9 r); intros.
 simpl in H12; unfold intersection_domain in H12; cut (In r l).
 intro; elim (H12 H13); intros; assumption.
 unfold r in |- *; apply MaxRlist_P2;
- cut ( exists z : R | intersection_domain (ind f0) SF z).
+ cut (exists z : R, intersection_domain (ind f0) SF z).
 intro; elim H13; intros; elim (H9 x); intros; simpl in H15;
  assert (H17 := H15 H14); exists x; apply H17.
-elim (classic ( exists z : R | intersection_domain (ind f0) SF z)); intro.
+elim (classic (exists z : R, intersection_domain (ind f0) SF z)); intro.
 assumption.
 elim (H8 0); intros _ H14; elim H1; intros;
  assert
@@ -1517,8 +1517,8 @@ Qed.
 
 Definition uniform_continuity (f:R -> R) (X:R -> Prop) : Prop :=
   forall eps:posreal,
-     exists delta : posreal
-    | (forall x y:R,
+     exists delta : posreal,
+      (forall x y:R,
          X x -> X y -> Rabs (x - y) < delta -> Rabs (f x - f y) < eps).
 
 Lemma is_lub_u :
@@ -1529,11 +1529,11 @@ Qed.
 
 Lemma domain_P1 :
  forall X:R -> Prop,
-   ~ ( exists y : R | X y) \/
-   ( exists y : R | X y /\ (forall x:R, X x -> x = y)) \/
-   ( exists x : R | ( exists y : R | X x /\ X y /\ x <> y)).
-intro; elim (classic ( exists y : R | X y)); intro.
-right; elim H; intros; elim (classic ( exists y : R | X y /\ y <> x)); intro.
+   ~ (exists y : R, X y) \/
+   (exists y : R, X y /\ (forall x:R, X x -> x = y)) \/
+   (exists x : R, (exists y : R, X x /\ X y /\ x <> y)).
+intro; elim (classic (exists y : R, X y)); intro.
+right; elim H; intros; elim (classic (exists y : R, X y /\ y <> x)); intro.
 right; elim H1; intros; elim H2; intros; exists x; exists x0; intros.
 split;
  [ assumption
@@ -1564,7 +1564,7 @@ unfold uniform_continuity in |- *; intros; exists (mkposreal _ Rlt_0_1);
 (* X possède au moins deux éléments distincts *)
 assert
  (X_enc :
-   exists m : R | ( exists M : R | (forall x:R, X x -> m <= x <= M) /\ m < M)).
+   exists m : R, (exists M : R, (forall x:R, X x -> m <= x <= M) /\ m < M)).
 assert (H1 := compact_P1 X H0); unfold bounded in H1; elim H1; intros;
  elim H2; intros; exists x; exists x0; split.
 apply H3.
@@ -1587,14 +1587,14 @@ pose
  (g :=
   fun x y:R =>
     X x /\
-    ( exists del : posreal
-     | (forall z:R, Rabs (z - x) < del -> Rabs (f0 z - f0 x) < eps / 2) /\
+    (exists del : posreal,
+       (forall z:R, Rabs (z - x) < del -> Rabs (f0 z - f0 x) < eps / 2) /\
        is_lub
          (fun zeta:R =>
             0 < zeta <= M - m /\
             (forall z:R, Rabs (z - x) < zeta -> Rabs (f0 z - f0 x) < eps / 2))
          del /\ disc x (mkposreal (del / 2) (H1 del)) y)).
-assert (H2 : forall x:R, ( exists y : R | g x y) -> X x).
+assert (H2 : forall x:R, (exists y : R, g x y) -> X x).
 intros; elim H2; intros; unfold g in H3; elim H3; clear H3; intros H3 _;
  apply H3.
 pose (f' := mkfamily X g H2); unfold compact in H0;
@@ -1616,7 +1616,7 @@ assert (H4 := H _ H3); unfold continuity_pt in H4; unfold continue_in in H4;
 unfold bound in |- *; exists (M - m); unfold is_upper_bound in |- *;
  unfold E in |- *; intros; elim H6; clear H6; intros H6 _; 
  elim H6; clear H6; intros _ H6; apply H6.
-assert (H7 :  exists x : R | E x).
+assert (H7 :  exists x : R, E x).
 elim H5; clear H5; intros; exists (Rmin x0 (M - m)); unfold E in |- *; intros;
  split.
 split.
@@ -1633,11 +1633,11 @@ apply Rlt_le_trans with (Rmin x0 (M - m)); [ apply H8 | apply Rmin_l ].
 assert (H8 := completeness _ H6 H7); elim H8; clear H8; intros;
  cut (0 < x1 <= M - m).
 intro; elim H8; clear H8; intros; exists (mkposreal _ H8); split.
-intros; cut ( exists alp : R | Rabs (z - x) < alp <= x1 /\ E alp).
+intros; cut (exists alp : R, Rabs (z - x) < alp <= x1 /\ E alp).
 intros; elim H11; intros; elim H12; clear H12; intros; unfold E in H13;
  elim H13; intros; apply H15.
 elim H12; intros; assumption.
-elim (classic ( exists alp : R | Rabs (z - x) < alp <= x1 /\ E alp)); intro.
+elim (classic (exists alp : R, Rabs (z - x) < alp <= x1 /\ E alp)); intro.
 assumption.
 assert
  (H12 :=
@@ -1703,8 +1703,8 @@ elim (H0 _ H3); intros DF H4; unfold covering_finite in H4; elim H4; clear H4;
  cut
   (forall x:R,
      In x l ->
-      exists del : R
-     | 0 < del /\
+      exists del : R,
+       0 < del /\
        (forall z:R, Rabs (z - x) < del -> Rabs (f0 z - f0 x) < eps / 2) /\
        included (g x) (fun z:R => Rabs (z - x) < del / 2)).
 intros;
@@ -1769,7 +1769,7 @@ intros; elim (H5 x); intros; elim (H8 H6); intros;
 unfold bound in |- *; exists (M - m); unfold is_upper_bound in |- *;
  unfold E in |- *; intros; elim H11; clear H11; intros H11 _; 
  elim H11; clear H11; intros _ H11; apply H11.
-assert (H12 :  exists x : R | E x).
+assert (H12 :  exists x : R, E x).
 assert (H13 := H _ H9); unfold continuity_pt in H13;
  unfold continue_in in H13; unfold limit1_in in H13; 
  unfold limit_in in H13; simpl in H13; unfold R_dist in H13;
@@ -1791,10 +1791,10 @@ assert (H13 := completeness _ H11 H12); elim H13; clear H13; intros;
 intro; elim H13; clear H13; intros; exists x0; split.
 assumption.
 split.
-intros; cut ( exists alp : R | Rabs (z - x) < alp <= x0 /\ E alp).
+intros; cut (exists alp : R, Rabs (z - x) < alp <= x0 /\ E alp).
 intros; elim H16; intros; elim H17; clear H17; intros; unfold E in H18;
  elim H18; intros; apply H20; elim H17; intros; assumption.
-elim (classic ( exists alp : R | Rabs (z - x) < alp <= x0 /\ E alp)); intro.
+elim (classic (exists alp : R, Rabs (z - x) < alp <= x0 /\ E alp)); intro.
 assumption.
 assert
  (H17 :=

@@ -22,8 +22,8 @@ Definition CVU (fn:nat -> R -> R) (f:R -> R) (x:R)
   (r:posreal) : Prop :=
   forall eps:R,
     0 < eps ->
-     exists N : nat
-    | (forall (n:nat) (y:R),
+     exists N : nat,
+      (forall (n:nat) (y:R),
          (N <= n)%nat -> Boule x r y -> Rabs (f y - fn n y) < eps). 
 
 (* Normal convergence *)
@@ -104,7 +104,7 @@ cut (0 < eps / 3);
     [ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
 elim (H _ H3); intros N0 H4.
 assert (H5 := H0 N0 y H1).
-cut ( exists del : posreal | (forall h:R, Rabs h < del -> Boule x r (y + h))).
+cut (exists del : posreal, (forall h:R, Rabs h < del -> Boule x r (y + h))).
 intro.
 elim H6; intros del1 H7.
 unfold continuity_pt in H5; unfold continue_in in H5; unfold limit1_in in H5;

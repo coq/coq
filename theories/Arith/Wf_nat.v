@@ -179,10 +179,10 @@ Variable R : A -> A -> Prop.
 (* Relational form of inversion *)
 Variable F : A -> nat -> Prop.
 Definition inv_lt_rel x y :=
-   exists2 n : _ | F x n & (forall m, F y m -> n < m).
+   exists2 n : _, F x n & (forall m, F y m -> n < m).
 
 Hypothesis F_compat : forall x y:A, R x y -> inv_lt_rel x y.
-Remark acc_lt_rel : forall x:A, ( exists n : _ | F x n) -> Acc R x.
+Remark acc_lt_rel : forall x:A, (exists n : _, F x n) -> Acc R x.
 intros x [n fxn]; generalize x fxn; clear x fxn.
 pattern n in |- *; apply lt_wf_ind; intros.
 constructor; intros.

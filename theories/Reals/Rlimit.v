@@ -156,8 +156,8 @@ Definition limit_in (X X':Metric_Space) (f:Base X -> Base X')
   (D:Base X -> Prop) (x0:Base X) (l:Base X') :=
   forall eps:R,
     eps > 0 ->
-     exists alp : R
-    | alp > 0 /\
+     exists alp : R,
+      alp > 0 /\
       (forall x:Base X, D x /\ dist X x x0 < alp -> dist X' (f x) l < eps). 
 
 (*******************************)
@@ -323,7 +323,7 @@ Qed.
 
 (*********)
 Definition adhDa (D:R -> Prop) (a:R) : Prop :=
-  forall alp:R, alp > 0 ->  exists x : R | D x /\ R_dist x a < alp.
+  forall alp:R, alp > 0 ->  exists x : R, D x /\ R_dist x a < alp.
 
 (*********)
 Lemma single_limit :

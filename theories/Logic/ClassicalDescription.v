@@ -26,15 +26,15 @@ Axiom
   dependent_description :
     forall (A:Type) (B:A -> Type) (R:forall x:A, B x -> Prop),
       (forall x:A,
-          exists y : B x | R x y /\ (forall y':B x, R x y' -> y = y')) ->
-       exists f : forall x:A, B x | (forall x:A, R x (f x)).
+          exists y : B x, R x y /\ (forall y':B x, R x y' -> y = y')) ->
+       exists f : forall x:A, B x, (forall x:A, R x (f x)).
 
 (** Principle of definite description (aka axiom of unique choice) *)
 
 Theorem description :
  forall (A B:Type) (R:A -> B -> Prop),
-   (forall x:A,  exists y : B | R x y /\ (forall y':B, R x y' -> y = y')) ->
-    exists f : A -> B | (forall x:A, R x (f x)).
+   (forall x:A,  exists y : B, R x y /\ (forall y':B, R x y' -> y = y')) ->
+    exists f : A -> B, (forall x:A, R x (f x)).
 Proof.
 intros A B.
 apply (dependent_description A (fun _ => B)).
@@ -46,7 +46,7 @@ Theorem classic_set : ((forall P:Prop, {P} + {~ P}) -> False) -> False.
 Proof.
 intro HnotEM.
 pose (R := fun A b => A /\ true = b \/ ~ A /\ false = b).
-assert (H :  exists f : Prop -> bool | (forall A:Prop, R A (f A))).
+assert (H :  exists f : Prop -> bool, (forall A:Prop, R A (f A))).
 apply description.
 intro A.
 destruct (classic A) as [Ha| Hnota].

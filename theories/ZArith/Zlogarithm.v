@@ -236,7 +236,7 @@ Fixpoint Is_power (p:positive) : Prop :=
   end.
 
 Lemma Is_power_correct :
- forall p:positive, Is_power p <-> ( exists y : nat | p = shift_nat y 1).
+ forall p:positive, Is_power p <-> (exists y : nat, p = shift_nat y 1).
 
 split;
  [ elim p;

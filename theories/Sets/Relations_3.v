@@ -34,7 +34,7 @@ Section Relations_3.
    Variable R : Relation U.
    
    Definition coherent (x y:U) : Prop :=
-      exists z : _ | Rstar U R x z /\ Rstar U R y z.
+      exists z : _, Rstar U R x z /\ Rstar U R y z.
    
    Definition locally_confluent (x:U) : Prop :=
      forall y z:U, R x y -> R x z -> coherent y z.

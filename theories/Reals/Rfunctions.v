@@ -226,10 +226,10 @@ Lemma Pow_x_infinity :
  forall x:R,
    Rabs x > 1 ->
    forall b:R,
-      exists N : nat | (forall n:nat, (n >= N)%nat -> Rabs (x ^ n) >= b).
+      exists N : nat, (forall n:nat, (n >= N)%nat -> Rabs (x ^ n) >= b).
 Proof.
 intros; elim (archimed (b * / (Rabs x - 1))); intros; clear H1;
- cut ( exists N : nat | INR N >= b * / (Rabs x - 1)).
+ cut (exists N : nat, INR N >= b * / (Rabs x - 1)).
 intro; elim H1; clear H1; intros; exists x0; intros;
  apply (Rge_trans (Rabs (x ^ n)) (Rabs (x ^ x0)) b).
 apply Rle_ge; apply Power_monotonic; assumption.
@@ -289,7 +289,7 @@ Lemma pow_lt_1_zero :
    Rabs x < 1 ->
    forall y:R,
      0 < y ->
-      exists N : nat | (forall n:nat, (n >= N)%nat -> Rabs (x ^ n) < y).
+      exists N : nat, (forall n:nat, (n >= N)%nat -> Rabs (x ^ n) < y).
 Proof.
 intros; elim (Req_dec x 0); intro. 
 exists 1%nat; rewrite H1; intros n GE; rewrite pow_ne_zero.
@@ -789,5 +789,5 @@ Qed.
 Definition infinit_sum (s:nat -> R) (l:R) : Prop :=
   forall eps:R,
     eps > 0 ->
-     exists N : nat
-    | (forall n:nat, (n >= N)%nat -> R_dist (sum_f_R0 s n) l < eps).
+     exists N : nat,
+      (forall n:nat, (n >= N)%nat -> R_dist (sum_f_R0 s n) l < eps).

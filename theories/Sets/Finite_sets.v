@@ -59,8 +59,8 @@ Lemma cardinal_invert :
    match p with
    | O => X = Empty_set U
    | S n =>
-        exists A : _
-       | ( exists x : _ | X = Add U A x /\ ~ In U A x /\ cardinal U A n)
+        exists A : _,
+         (exists x : _, X = Add U A x /\ ~ In U A x /\ cardinal U A n)
    end.
 Proof.
 induction 1; simpl in |- *; auto.

@@ -26,7 +26,7 @@ Remark strip_commut :
  commut A R1 R2 ->
  forall x y:A,
    clos_trans A R1 y x ->
-   forall z:A, R2 z y ->  exists2 y' : A | R2 y' x & clos_trans A R1 z y'.
+   forall z:A, R2 z y ->  exists2 y' : A, R2 y' x & clos_trans A R1 z y'.
 Proof.
  induction 2 as [x y| x y z H0 IH1 H1 IH2]; intros.
  elim H with y x z; auto with sets; intros x0 H2 H3.

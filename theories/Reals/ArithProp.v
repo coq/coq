@@ -55,7 +55,7 @@ intros n m; pattern n, m in |- *; apply nat_double_ind;
 Qed.
 
 Lemma even_odd_cor :
- forall n:nat,  exists p : nat | n = (2 * p)%nat \/ n = S (2 * p).
+ forall n:nat,  exists p : nat, n = (2 * p)%nat \/ n = S (2 * p).
 intro.
 assert (H := even_or_odd n).
 exists (div2 n).
@@ -87,7 +87,7 @@ Qed.
 Lemma euclidian_division :
  forall x y:R,
    y <> 0 ->
-    exists k : Z | ( exists r : R | x = IZR k * y + r /\ 0 <= r < Rabs y).
+    exists k : Z, (exists r : R, x = IZR k * y + r /\ 0 <= r < Rabs y).
 intros.
 pose
  (k0 :=

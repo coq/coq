@@ -140,7 +140,7 @@ repeat rewrite <- INR_IZR_INZ; auto with real.
 Qed.
 
 (**********)
-Lemma fp_nat : forall r:R, frac_part r = 0 ->  exists c : Z | r = IZR c.
+Lemma fp_nat : forall r:R, frac_part r = 0 ->  exists c : Z, r = IZR c.
 unfold frac_part in |- *; intros; split with (Int_part r);
  apply Rminus_diag_uniq; auto with zarith real.
 Qed.

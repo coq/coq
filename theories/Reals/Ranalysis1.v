@@ -234,8 +234,8 @@ Qed.
 Definition derivable_pt_lim f (x l:R) : Prop :=
   forall eps:R,
     0 < eps ->
-     exists delta : posreal
-    | (forall h:R,
+     exists delta : posreal,
+      (forall h:R,
          h <> 0 -> Rabs h < delta -> Rabs ((f (x + h) - f x) / h - l) < eps).
 
 Definition derivable_pt_abs f (x l:R) : Prop := derivable_pt_lim f x l.
@@ -255,7 +255,7 @@ Arguments Scope derive [Rfun_scope _].
 
 Definition antiderivative f (g:R -> R) (a b:R) : Prop :=
   (forall x:R,
-     a <= x <= b ->  exists pr : derivable_pt g x | f x = derive_pt g x pr) /\
+     a <= x <= b ->  exists pr : derivable_pt g x, f x = derive_pt g x pr) /\
   a <= b.
 (************************************)
 (** Class of differential functions *)
@@ -446,7 +446,7 @@ Qed.
 (***********************************)
 (**********)
 Lemma derivable_derive :
- forall f (x:R) (pr:derivable_pt f x),  exists l : R | derive_pt f x pr = l.
+ forall f (x:R) (pr:derivable_pt f x),  exists l : R, derive_pt f x pr = l.
 intros; exists (projT1 pr).
 unfold derive_pt in |- *; reflexivity.
 Qed.

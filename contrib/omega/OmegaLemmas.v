@@ -12,7 +12,7 @@ Require Import ZArith_base.
 
 (** These are specific variants of theorems dedicated for the Omega tactic *)
 
-Lemma new_var : forall x:Z,  exists y : Z | x = y.
+Lemma new_var : forall x:Z,  exists y : Z, x = y.
 intros x; exists x; trivial with arith. 
 Qed.
 

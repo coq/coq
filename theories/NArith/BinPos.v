@@ -876,8 +876,8 @@ Qed.
 Lemma Pminus_mask_Gt :
  forall p q:positive,
    (p ?= q) Eq = Gt ->
-    exists h : positive
-   | Pminus_mask p q = IsPos h /\
+    exists h : positive,
+     Pminus_mask p q = IsPos h /\
      q + h = p /\ (h = xH \/ Pminus_mask_carry p q = IsPos (Ppred h)).
 Proof.
 intro x; induction x as [p| p| ]; intro y; destruct y as [q| q| ];

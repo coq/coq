@@ -93,7 +93,7 @@ Hint Local Resolve Pcompare_refl.
 (** Comparison first-order specification *)
 
 Lemma Zcompare_Gt_spec :
- forall n m:Z, (n ?= m) = Gt ->  exists h : positive | n + - m = Zpos h.
+ forall n m:Z, (n ?= m) = Gt ->  exists h : positive, n + - m = Zpos h.
 Proof.
 intros x y; case x; case y;
  [ simpl in |- *; intros H; discriminate H

@@ -159,7 +159,11 @@ let declare_tactic_v7 loc s cl =
       List.iter (Pptactic.declare_extra_tactic_pprule False $se$) $pp$;
     end
   >>
-
+(*
+let declare_atomic_extend s = 
+  Tacinterp.add_tacdef false
+    [(Names.id_of_string s,dummy_loc),Tacexpr.TacExtend(dummy_loc,s,[])]
+*)
 let declare_tactic loc s cl =
   let (s',cl') = new_tac_ext (s,cl) in
   let pp' = make_printing_rule cl' in

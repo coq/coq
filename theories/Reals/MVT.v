@@ -20,9 +20,9 @@ Theorem MVT :
    a < b ->
    (forall c:R, a <= c <= b -> continuity_pt f c) ->
    (forall c:R, a <= c <= b -> continuity_pt g c) ->
-    exists c : R
-   | ( exists P : a < c < b
-      | (g b - g a) * derive_pt f c (pr1 c P) =
+    exists c : R,
+     (exists P : a < c < b,
+        (g b - g a) * derive_pt f c (pr1 c P) =
         (f b - f a) * derive_pt g c (pr2 c P)).
 intros; assert (H2 := Rlt_le _ _ H).
 pose (h := fun y:R => (g b - g a) * f y - (f b - f a) * g y).
@@ -140,7 +140,7 @@ Qed.
 Lemma MVT_cor1 :
  forall (f:R -> R) (a b:R) (pr:derivable f),
    a < b ->
-    exists c : R | f b - f a = derive_pt f c (pr c) * (b - a) /\ a < c < b.
+    exists c : R, f b - f a = derive_pt f c (pr c) * (b - a) /\ a < c < b.
 intros f a b pr H; cut (forall c:R, a < c < b -> derivable_pt f c);
  [ intro | intros; apply pr ].
 cut (forall c:R, a < c < b -> derivable_pt id c);
@@ -164,7 +164,7 @@ Theorem MVT_cor2 :
  forall (f f':R -> R) (a b:R),
    a < b ->
    (forall c:R, a <= c <= b -> derivable_pt_lim f c (f' c)) ->
-    exists c : R | f b - f a = f' c * (b - a) /\ a < c < b.
+    exists c : R, f b - f a = f' c * (b - a) /\ a < c < b.
 intros f f' a b H H0; cut (forall c:R, a <= c <= b -> derivable_pt f c).
 intro; cut (forall c:R, a < c < b -> derivable_pt f c).
 intro; cut (forall c:R, a <= c <= b -> continuity_pt f c).
@@ -194,9 +194,9 @@ Lemma MVT_cor3 :
  forall (f f':R -> R) (a b:R),
    a < b ->
    (forall x:R, a <= x -> x <= b -> derivable_pt_lim f x (f' x)) ->
-    exists c : R | a <= c /\ c <= b /\ f b = f a + f' c * (b - a).
+    exists c : R, a <= c /\ c <= b /\ f b = f a + f' c * (b - a).
 intros f f' a b H H0;
- assert (H1 :  exists c : R | f b - f a = f' c * (b - a) /\ a < c < b);
+ assert (H1 :  exists c : R, f b - f a = f' c * (b - a) /\ a < c < b);
  [ apply MVT_cor2; [ apply H | intros; elim H1; intros; apply (H0 _ H2 H3) ]
  | elim H1; intros; exists x; elim H2; intros; elim H4; intros; split;
     [ left; assumption | split; [ left; assumption | rewrite <- H3; ring ] ] ].
@@ -207,7 +207,7 @@ Lemma Rolle :
    (forall x:R, a <= x <= b -> continuity_pt f x) ->
    a < b ->
    f a = f b ->
-    exists c : R | ( exists P : a < c < b | derive_pt f c (pr c P) = 0).
+    exists c : R, (exists P : a < c < b, derive_pt f c (pr c P) = 0).
 intros; assert (H2 : forall x:R, a < x < b -> derivable_pt id x).
 intros; apply derivable_pt_id.
 assert (H3 := MVT f id a b pr H2 H0 H);
@@ -669,7 +669,7 @@ Lemma antiderivative_Ucte :
  forall (f g1 g2:R -> R) (a b:R),
    antiderivative f g1 a b ->
    antiderivative f g2 a b ->
-    exists c : R | (forall x:R, a <= x <= b -> g1 x = g2 x + c).
+    exists c : R, (forall x:R, a <= x <= b -> g1 x = g2 x + c).
 unfold antiderivative in |- *; intros; elim H; clear H; intros; elim H0;
  clear H0; intros H0 _; exists (g1 a - g2 a); intros;
  assert (H3 : forall x:R, a <= x <= b -> derivable_pt g1 x).

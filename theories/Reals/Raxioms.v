@@ -144,7 +144,7 @@ Axiom archimed : forall r:R, IZR (up r) > r /\ IZR (up r) - r <= 1.
 Definition is_upper_bound (E:R -> Prop) (m:R) := forall x:R, E x -> x <= m.
 
 (**********)
-Definition bound (E:R -> Prop) :=  exists m : R | is_upper_bound E m.
+Definition bound (E:R -> Prop) :=  exists m : R, is_upper_bound E m.
 
 (**********)
 Definition is_lub (E:R -> Prop) (m:R) :=
@@ -154,4 +154,4 @@ Definition is_lub (E:R -> Prop) (m:R) :=
 Axiom
   completeness :
     forall E:R -> Prop,
-      bound E -> ( exists x : R | E x) -> sigT (fun m:R => is_lub E m).
+      bound E -> (exists x : R, E x) -> sigT (fun m:R => is_lub E m).

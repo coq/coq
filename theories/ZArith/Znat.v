@@ -97,7 +97,7 @@ intros x y H; rewrite H; trivial with arith.
 Qed.
 
 Theorem intro_Z :
- forall n:nat,  exists y : Z | Z_of_nat n = y /\ 0 <= y * 1 + 0.
+ forall n:nat,  exists y : Z, Z_of_nat n = y /\ 0 <= y * 1 + 0.
 Proof.
 intros x; exists (Z_of_nat x); split;
  [ trivial with arith

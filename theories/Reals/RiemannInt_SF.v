@@ -21,7 +21,7 @@ Set Implicit Arguments.
 (**************************************************)
 
 Definition Nbound (I:nat -> Prop) : Prop :=
-   exists n : nat | (forall i:nat, I i -> (i <= n)%nat).
+   exists n : nat, (forall i:nat, I i -> (i <= n)%nat).
 
 Lemma IZN_var : forall z:Z, (0 <= z)%Z -> {n : nat | z = Z_of_nat n}.
 intros; apply Z_of_nat_complete_inf; assumption.
@@ -29,15 +29,15 @@ Qed.
 
 Lemma Nzorn :
  forall I:nat -> Prop,
-   ( exists n : nat | I n) ->
+   (exists n : nat, I n) ->
    Nbound I -> sigT (fun n:nat => I n /\ (forall i:nat, I i -> (i <= n)%nat)).
-intros I H H0; pose (E := fun x:R =>  exists i : nat | I i /\ INR i = x);
+intros I H H0; pose (E := fun x:R =>  exists i : nat, I i /\ INR i = x);
  assert (H1 : bound E).
 unfold Nbound in H0; elim H0; intros N H1; unfold bound in |- *;
  exists (INR N); unfold is_upper_bound in |- *; intros; 
  unfold E in H2; elim H2; intros; elim H3; intros; 
  rewrite <- H5; apply le_INR; apply H1; assumption.
-assert (H2 :  exists x : R | E x).
+assert (H2 :  exists x : R, E x).
 elim H; intros; exists (INR x); unfold E in |- *; exists x; split;
  [ assumption | reflexivity ].
 assert (H3 := completeness E H1 H2); elim H3; intros; unfold is_lub in p;
@@ -311,8 +311,8 @@ Lemma StepFun_P10 :
  forall (f:R -> R) (l lf:Rlist) (a b:R),
    a <= b ->
    adapted_couple f a b l lf ->
-    exists l' : Rlist
-   | ( exists lf' : Rlist | adapted_couple_opt f a b l' lf').
+    exists l' : Rlist,
+     (exists lf' : Rlist, adapted_couple_opt f a b l' lf').
 simple induction l.
 intros; unfold adapted_couple in H0; decompose [and] H0; simpl in H4;
  discriminate.
@@ -886,8 +886,8 @@ Qed.
 Lemma StepFun_P16 :
  forall (f:R -> R) (l lf:Rlist) (a b:R),
    adapted_couple f a b l lf ->
-    exists l' : Rlist
-   | ( exists lf' : Rlist | adapted_couple_opt f a b l' lf'). 
+    exists l' : Rlist,
+     (exists lf' : Rlist, adapted_couple_opt f a b l' lf'). 
 intros; case (Rle_dec a b); intro;
  [ apply (StepFun_P10 r H)
  | assert (H1 : b <= a);
@@ -1086,14 +1086,14 @@ apply StepFun_P20; rewrite RList_P11; rewrite H2; rewrite H7; simpl in |- *;
  apply lt_O_Sn.
 intros; unfold constant_D_eq, open_interval in |- *; intros;
  cut
-  ( exists l : R
-   | constant_D_eq f
+  (exists l : R,
+     constant_D_eq f
        (open_interval (pos_Rl (cons_ORlist lf lg) i)
           (pos_Rl (cons_ORlist lf lg) (S i))) l).
 intros; elim H11; clear H11; intros; assert (H12 := H11);
  assert
   (Hyp_cons :
-    exists r : R | ( exists r0 : Rlist | cons_ORlist lf lg = cons r r0)).
+    exists r : R, (exists r0 : Rlist, cons_ORlist lf lg = cons r r0)).
 apply RList_P19; red in |- *; intro; rewrite H13 in H8; elim (lt_n_O _ H8).
 elim Hyp_cons; clear Hyp_cons; intros r [r0 Hyp_cons]; rewrite Hyp_cons;
  unfold FF in |- *; rewrite RList_P12.
@@ -1155,7 +1155,7 @@ pose
  assert (H12 : Nbound I).
 unfold Nbound in |- *; exists (Rlength lf); intros; unfold I in H12; elim H12;
  intros; apply lt_le_weak; assumption.
-assert (H13 :  exists n : nat | I n).
+assert (H13 :  exists n : nat, I n).
 exists 0%nat; unfold I in |- *; split.
 apply Rle_trans with (pos_Rl (cons_ORlist lf lg) 0).
 right; symmetry  in |- *.
@@ -1335,14 +1335,14 @@ apply StepFun_P20; rewrite RList_P11; rewrite H7; rewrite H2; simpl in |- *;
  apply lt_O_Sn.
 unfold constant_D_eq, open_interval in |- *; intros;
  cut
-  ( exists l : R
-   | constant_D_eq g
+  (exists l : R,
+     constant_D_eq g
        (open_interval (pos_Rl (cons_ORlist lf lg) i)
           (pos_Rl (cons_ORlist lf lg) (S i))) l).
 intros; elim H11; clear H11; intros; assert (H12 := H11);
  assert
   (Hyp_cons :
-    exists r : R | ( exists r0 : Rlist | cons_ORlist lf lg = cons r r0)).
+    exists r : R, (exists r0 : Rlist, cons_ORlist lf lg = cons r r0)).
 apply RList_P19; red in |- *; intro; rewrite H13 in H8; elim (lt_n_O _ H8).
 elim Hyp_cons; clear Hyp_cons; intros r [r0 Hyp_cons]; rewrite Hyp_cons;
  unfold FF in |- *; rewrite RList_P12.
@@ -1402,7 +1402,7 @@ pose
  assert (H12 : Nbound I).
 unfold Nbound in |- *; exists (Rlength lg); intros; unfold I in H12; elim H12;
  intros; apply lt_le_weak; assumption.
-assert (H13 :  exists n : nat | I n).
+assert (H13 :  exists n : nat, I n).
 exists 0%nat; unfold I in |- *; split.
 apply Rle_trans with (pos_Rl (cons_ORlist lf lg) 0).
 right; symmetry  in |- *; rewrite H1; rewrite <- H6; apply RList_P15;

@@ -67,7 +67,7 @@ Qed.
 
 Theorem Rstar_cases :
  forall (U:Type) (R:Relation U) (x y:U),
-   Rstar U R x y -> x = y \/ ( exists u : _ | R x u /\ Rstar U R u y).
+   Rstar U R x y -> x = y \/ (exists u : _, R x u /\ Rstar U R u y).
 Proof.
 intros U R x y H'; elim H'; auto with sets.
 intros x0 y0 z H'0 H'1 H'2; right; exists y0; auto with sets.
@@ -116,7 +116,7 @@ Qed.
 
 Theorem RstarRplus_RRstar :
  forall (U:Type) (R:Relation U) (x y z:U),
-   Rstar U R x y -> Rplus U R y z ->  exists u : _ | R x u /\ Rstar U R u z.
+   Rstar U R x y -> Rplus U R y z ->  exists u : _, R x u /\ Rstar U R u z.
 Proof.
 generalize Rstar_contains_Rplus; intro T; red in T.
 generalize Rstar_transitive; intro T1; red in T1.
@@ -134,7 +134,7 @@ Theorem Lemma1 :
    Strongly_confluent U R ->
    forall x b:U,
      Rstar U R x b ->
-     forall a:U, R x a ->  exists z : _ | Rstar U R a z /\ R b z.
+     forall a:U, R x a ->  exists z : _, Rstar U R a z /\ R b z.
 Proof.
 intros U R H' x b H'0; elim H'0.
 intros x0 a H'1; exists a; auto with sets.
