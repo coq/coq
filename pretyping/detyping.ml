@@ -36,16 +36,16 @@ let encode_inductive qid =
 
 (* Tables for Cases printing under a "if" form, a "let" form,  *)
 
-let isomorphic_to_bool lc =
-  Array.length lc = 2 & lc.(0) = 0 & lc.(1) = 0
+let has_two_constructors lc =
+  Array.length lc = 2 (* & lc.(0) = 0 & lc.(1) = 0 *)
 
 let isomorphic_to_tuple lc = (Array.length lc = 1)
 
 let encode_bool r =
   let (_,lc as x) = encode_inductive r in
-  if not (isomorphic_to_bool lc) then
+  if not (has_two_constructors lc) then
     user_err_loc (loc_of_reference r,"encode_if",
-      str "This type cannot be seen as a boolean type");
+      str "This type has not exactly two constructors");
   x
 
 let encode_tuple r =
@@ -193,6 +193,12 @@ let lookup_index_as_renamed env t n =
     | _ -> None
   in lookup n 1 t
 
+let rec dont_use_args nargs c =
+  nargs = 0 or
+  match c with
+    | RLambda (_,Anonymous,_,c) -> dont_use_args (nargs - 1) c
+    | _ -> false
+
 let detype_case computable detype detype_eqn tenv avoid indsp st p k c bl =
   let synth_type = synthetize_type () in
   let tomatch = detype c in
@@ -244,7 +250,7 @@ let detype_case computable detype detype_eqn tenv avoid indsp st p k c bl =
   let tag =
     try 
       if !Options.raw_print then
-        st
+        RegularStyle
       else if PrintingLet.active (indsp,consnargsl) then
 	LetStyle
       else if PrintingIf.active (indsp,consnargsl) then 
@@ -275,7 +281,8 @@ let detype_case computable detype detype_eqn tenv avoid indsp st p k c bl =
                     | _ -> (RApp (dummy_loc,p,[a]))) in
       let (nal,d) = decomp_lam_force consnargsl.(0) avoid [] bl.(0) in
       RLetTuple (dummy_loc,nal,(alias,newpred),tomatch,d)
-    else if not !Options.v7 && tag = IfStyle && aliastyp = None then
+    else if not !Options.v7 && tag = IfStyle && aliastyp = None
+      && array_for_all2 dont_use_args consnargsl bl then
       RIf (dummy_loc,tomatch,(alias,newpred),bl.(0),bl.(1))
     else
       let rec remove_type avoid args c =
