@@ -41,9 +41,9 @@ let larrow = 80
 let lnegint = 40
 let lcast = 100
 let lapp = 10
-let lproj = 9
 let ltop = (200,E)
-let lsimple = (9,E)
+let lproj = 1
+let lsimple = (1,E)
 
 let prec_less child (parent,assoc) =
   if parent < 0 && child = lprod then true
@@ -374,7 +374,7 @@ let pr_simple_return_type pr na po =
   pr_case_type pr po
 
 let pr_proj pr pr_app a f l =
-  hov 0 (pr (lproj,E) a ++ cut() ++ str ".(" ++ pr_app pr f l ++ str ")")
+  hov 0 (pr lsimple a ++ cut() ++ str ".(" ++ pr_app pr f l ++ str ")")
 
 let pr_appexpl pr f l =
       hov 2 (

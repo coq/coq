@@ -153,7 +153,7 @@ GEXTEND Gram
     [ [ c = operconstr -> c ] ]
   ;
   constr:
-    [ [ c = operconstr LEVEL "9L" -> c ] ]
+    [ [ c = operconstr LEVEL "9" -> c ] ]
   ;
   tuple_constr:
     [ 
@@ -175,13 +175,13 @@ GEXTEND Gram
     | "10L" LEFTA
       [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(None,f),args)
       | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args) ]
-    | "9L" LEFTA
+    | "9" [ ]
+    | "1L" LEFTA
       [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
 	CApp(loc,(Some (List.length args+1),CRef f),args@[c,None])
       | c=operconstr; ".("; "@"; f=global; args=LIST0 NEXT; ")" ->
-        CAppExpl(loc,(Some (List.length args+1),f),args@[c]) ]
-    | "1L" LEFTA
-      [ c=operconstr; "%"; key=IDENT -> CDelimiters (loc,key,c) ]
+        CAppExpl(loc,(Some (List.length args+1),f),args@[c]) 
+      | c=operconstr; "%"; key=IDENT -> CDelimiters (loc,key,c) ]
     | "0"
       [ c=atomic_constr -> c
       | c=match_constr -> c
