@@ -4,14 +4,28 @@
 \margl1440\margr1440\vieww9000\viewh9000\viewkind0
 \pard\tx1440\tx2880\tx4320\tx5760\tx7200\ql\qnatural
 
-\f0\fs24 \cf0 Developped in the INRIA LogiCal project, The Coq tool is a proof\
-assistant which:\
+\f0\fs24 \cf0 Developed in the LogiCal project, the Coq tool is a formal\
+proof management system: a proof done with Coq is mechanically\
+checked by the machine. In particular, Coq allows:\
 \
-- allows to handle calculus assertions,\
-- allows to check mechanically proofs of these assertions,\
-- helps to find formal proofs,\
-- extracts a certified program from the constructive proof of its formal specification,\
+- the definition of functions or predicates,\
+- to state mathematical theorems and software specifications,\
+- to develop interactively formal proofs of these theorems,\
+- to check these proofs by a small certification "kernel".\
 \
-Coq is written in the Objective Caml language and uses the Camlp4\
-Pre-processor-pretty-printer for Objective Caml.\
+Coq is based on a logical framework called "Calculus of Inductive\
+Constructions" extended by a modular development system for\
+theories.\
+\
+Coq also includes\
+\
+- a mechanism for automatic generation of certified programs\
+  from proofs of their specifications\
+- a graphical user interface based on gtk (CoqIde)\
+- a documentation tool (coqdoc)\
+- dependency and makefile generation tools for Coq (coq_makefile\
+  and coqdep)\
+- a preprocessor for TeX files that include Coq commands (coq-tex)\
+\
+Coq is written in the Objective Caml language.\
 }

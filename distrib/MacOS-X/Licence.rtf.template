@@ -4,12 +4,16 @@
 \margl1440\margr1440\vieww9600\viewh15620\viewkind0
 \pard\tx1440\tx2880\tx4320\tx5760\tx7200\ql\qnatural
 
-\f0\fs24 \cf0 Coq VVERSION is released under the terms of the GNU Less\
-General Public Licence, version 2.1 (included below).\
+\f0\fs24 \cf0 The source files of Coq VVERSION are released under the\
+terms of the GNU Less General Public Licence, version 2.1 (included\
+below), to the exception of some files located in the source\
+directories contrib/jprover and ide/utils that are released under the\
+terms of the GNU General Public Licence (see the corresponding files\
+for details).\
 \
 ----------------------------------------------------------------------\
-		  GNU LESSER GENERAL PUBLIC LICENSE\
-		       Version 2.1, February 1999\
+                GNU LESSER GENERAL PUBLIC LICENSE\
+                       Version 2.1, February 1999\
 \
  Copyright (C) 1991, 1999 Free Software Foundation, Inc.\
      59 Temple Place, Suite 330, Boston, MA  02111-1307  USA\
@@ -20,7 +24,7 @@ General Public Licence, version 2.1 (included below).\
  as the successor of the GNU Library Public License, version 2, hence\
  the version number 2.1.]\
 \
-			    Preamble\
+                            Preamble\
 \
   The licenses for most software are designed to take away your\
 freedom to share and change it.  By contrast, the GNU General Public\
@@ -35,7 +39,7 @@ this license or the ordinary General Public License is the better\
 strategy to use in any particular case, based on the explanations below.\
 \
   When we speak of free software, we are referring to freedom of use,\
-not price.  Our General Public Licenses are designed to make sure that\
+not price. Our General Public Licenses are designed to make sure that\
 you have the freedom to distribute copies of free software (and charge\
 for this service if you wish); that you receive source code or can get\
 it if you want it; that you can change the software and use pieces of\
@@ -91,15 +95,15 @@ the library.\
   We call this license the "Lesser" General Public License because it\
 does Less to protect the user's freedom than the ordinary General\
 Public License.  It also provides other free software developers Less\
-of an advantage over competing non-free programs.  These disadvantages\
+of an advantage over competing non-free programs. These disadvantages\
 are the reason we use the ordinary General Public License for many\
 libraries.  However, the Lesser license provides advantages in certain\
 special circumstances.\
 \
   For example, on rare occasions, there may be a special need to\
-encourage the widest possible use of a certain library, so that it becomes\
-a de-facto standard.  To achieve this, non-free programs must be\
-allowed to use the library.  A more frequent case is that a free\
+encourage the widest possible use of a certain library, so that it\
+becomes a de-facto standard. To achieve this, non-free programs must\
+be allowed to use the library.  A more frequent case is that a free\
 library does the same job as widely used non-free libraries.  In this\
 case, there is little to gain by limiting the free library to free\
 software only, so we use the Lesser General Public License.\
@@ -122,7 +126,7 @@ modification follow.  Pay close attention to the difference between a\
 former contains code derived from the library, whereas the latter must\
 be combined with the library in order to run.\
 \
-		  GNU LESSER GENERAL PUBLIC LICENSE\
+                  GNU LESSER GENERAL PUBLIC LICENSE\
    TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION\
 \
   0. This License Agreement applies to any software library or other\
@@ -442,7 +446,7 @@ decision will be guided by the two goals of preserving the free status\
 of all derivatives of our free software and of promoting the sharing\
 and reuse of software generally.\
 \
-			    NO WARRANTY\
+                            NO WARRANTY\
 \
   15. BECAUSE THE LIBRARY IS LICENSED FREE OF CHARGE, THERE IS NO\
 WARRANTY FOR THE LIBRARY, TO THE EXTENT PERMITTED BY APPLICABLE LAW.\
@@ -465,7 +469,7 @@ FAILURE OF THE LIBRARY TO OPERATE WITH ANY OTHER SOFTWARE), EVEN IF\
 SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH\
 DAMAGES.\
 \
-		     END OF TERMS AND CONDITIONS\
+                     END OF TERMS AND CONDITIONS\
 \
            How to Apply These Terms to Your New Libraries\
 \
