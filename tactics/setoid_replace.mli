@@ -30,6 +30,7 @@ type 'a morphism =
     { args : (bool option * 'a relation_class) list;
       output : 'a relation_class;
       lem : constr;
+      morphism_theory : constr
     }
 
 type morphism_signature = (bool option * constr_expr) list * constr_expr

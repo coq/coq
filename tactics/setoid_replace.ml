@@ -67,6 +67,7 @@ type 'a morphism =
     { args : (bool option * 'a relation_class) list;
       output : 'a relation_class;
       lem : constr;
+      morphism_theory : constr
     }
 
 type funct =
@@ -122,6 +123,7 @@ let coq_Argument_Class = lazy(constant ["Setoid"] "Argument_Class")
 let coq_Setoid_Theory = lazy(constant ["Setoid"] "Setoid_Theory")
 let coq_Morphism_Theory = lazy(constant ["Setoid"] "Morphism_Theory")
 let coq_Build_Morphism_Theory= lazy(constant ["Setoid"] "Build_Morphism_Theory")
+let coq_Compat = lazy(constant ["Setoid"] "Compat")
 
 let coq_AsymmetricReflexive = lazy(constant ["Setoid"] "AsymmetricReflexive")
 let coq_SymmetricReflexive = lazy(constant ["Setoid"] "SymmetricReflexive")
@@ -445,15 +447,18 @@ let subst_morph subst morph =
   let lem' = subst_mps subst morph.lem in
   let args' = list_smartmap (subst_mps_in_argument_class subst) morph.args in
   let output' = subst_mps_in_relation_class subst morph.output in
+  let morphism_theory' = subst_mps subst morph.morphism_theory in
     if lem' == morph.lem
       && args' == morph.args
       && output' == morph.output
+      && morphism_theory' == morph.morphism_theory
     then
       morph
     else
       { args = args' ;
         output = output' ;
-        lem = lem'
+        lem = lem' ;
+        morphism_theory = morphism_theory'
       }
 
 
@@ -616,35 +621,70 @@ let cic_argument_class_of_argument_class (variance,arg) =
  in
   cic_relation_class_of_X_relation_class coq_variance coq_variant_value arg
 
-let gen_compat_lemma_statement quantifiers_rev output args m =
- let rec mk_signature =
+let cic_arguments_of_argument_class_list args =
+ let rec aux =
   function
      [] -> assert false
    | [last] ->
       mkApp ((Lazy.force coq_singl), [| Lazy.force coq_Argument_Class; last |])
    | he::tl ->
       mkApp ((Lazy.force coq_cons),
-       [| Lazy.force coq_Argument_Class; he ; mk_signature tl |])
+       [| Lazy.force coq_Argument_Class; he ; aux tl |])
  in
-  let output = cic_relation_class_of_relation_class output in
-  let args= mk_signature (List.map cic_argument_class_of_argument_class args) in
-   args, output,
-    compose_prod quantifiers_rev
-     (mkApp ((Lazy.force coq_make_compatibility_goal), [| args ; output ; m |]))
+  aux (List.map cic_argument_class_of_argument_class args)
+
+let gen_compat_lemma_statement quantifiers_rev output args m =
+ let output = cic_relation_class_of_relation_class output in
+ let args = cic_arguments_of_argument_class_list args in
+  args, output,
+   compose_prod quantifiers_rev
+    (mkApp ((Lazy.force coq_make_compatibility_goal), [| args ; output ; m |]))
 
 let morphism_theory_id_of_morphism_proof_id id =
  id_of_string (string_of_id id ^ "_morphism_theory")
 
 (* apply_to_rels c [l1 ; ... ; ln] returns (c Rel1 ... reln) *)
 let apply_to_rels c l =
- let len = List.length l in
-  applistc c (Util.list_map_i (fun i _ -> mkRel (len - i)) 0 l)
+ if l = [] then c
+ else
+  let len = List.length l in
+   applistc c (Util.list_map_i (fun i _ -> mkRel (len - i)) 0 l)
+
+let apply_to_relation subst rel =
+ if subst = [||] then rel
+ else
+  let new_quantifiers_no = rel.rel_quantifiers_no - Array.length subst in
+   assert (new_quantifiers_no >= 0) ;
+   { rel_a = mkApp (rel.rel_a, subst) ;
+     rel_aeq = mkApp (rel.rel_aeq, subst) ;
+     rel_refl = option_app (fun c -> mkApp (c,subst)) rel.rel_refl ; 
+     rel_sym = option_app (fun c -> mkApp (c,subst)) rel.rel_sym;
+     rel_trans = option_app (fun c -> mkApp (c,subst)) rel.rel_trans;
+     rel_quantifiers_no = new_quantifiers_no }
 
 let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
  let env = Global.env() in
- begin
+ let lem =
   match lemma_infos with
-     None -> () (* the Morphism_Theory object has already been created *)
+     None ->
+      (* the Morphism_Theory object has already been created *)
+      let applied_args =
+       let len = List.length quantifiers_rev in
+       let subst =
+        Array.of_list
+         (Util.list_map_i (fun i _ -> mkRel (len - i)) 0 quantifiers_rev)
+       in
+        List.map
+         (fun (v,rel) ->
+           match rel with
+              Leibniz t -> v, Leibniz t
+            | Relation rel -> v, Relation (apply_to_relation subst rel)) args
+      in
+       compose_lam quantifiers_rev
+        (mkApp (Lazy.force coq_Compat,
+          [| cic_arguments_of_argument_class_list applied_args;
+             cic_relation_class_of_relation_class output;
+             apply_to_rels (current_constant mor_name) quantifiers_rev |]))
    | Some (lem_name,argsconstr,outputconstr) ->
       (* only the compatibility has been proved; we need to declare the
          Morphism_Theory object *)
@@ -659,8 +699,9 @@ let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
                   apply_to_rels mext quantifiers_rev |]));
           const_entry_type = None;
           const_entry_opaque = false},
-           IsDefinition))
-  end ;
+           IsDefinition)) ;
+     mext 
+ in
   let mmor = current_constant mor_name in
   let args_constr =
    List.map
@@ -671,18 +712,9 @@ let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
     (morphism_to_obj (m, 
       { args = args_constr;
         output = output_constr;
-        lem = mmor }));
+        lem = lem;
+        morphism_theory = mmor }));
    Options.if_verbose ppnl (prterm m ++ str " is registered as a morphism")   
-
-let apply_to_relation subst rel =
- let new_quantifiers_no = rel.rel_quantifiers_no - Array.length subst in
-  assert (new_quantifiers_no >= 0) ;
-  { rel_a = mkApp (rel.rel_a, subst) ;
-    rel_aeq = mkApp (rel.rel_aeq, subst) ;
-    rel_refl = option_app (fun c -> mkApp (c,subst)) rel.rel_refl ; 
-    rel_sym = option_app (fun c -> mkApp (c,subst)) rel.rel_sym;
-    rel_trans = option_app (fun c -> mkApp (c,subst)) rel.rel_trans;
-    rel_quantifiers_no = new_quantifiers_no }
 
 (* first order matching with a bit of conversion *)
 let unify_relation_carrier_with_type env rel t =
@@ -729,7 +761,9 @@ let unify_relation_class_carrier_with_type env rel t =
 (* the quantifiers. Would the new structure be more suited than the    *)
 (* existent one for other tasks to? (e.g. pretty printing would expose *)
 (* much more information: is it ok or is it too much information?)     *)
-let unify_morphism_with_arguments gl (c,av) {args=args;output=output;lem=lem} =
+let unify_morphism_with_arguments gl (c,av)
+     {args=args; output=output; lem=lem; morphism_theory=morphism_theory}
+=
  let al = Array.to_list av in
  let argsno = List.length args in
  let quantifiers,al' = Util.list_chop (List.length al - argsno) al in
@@ -746,7 +780,9 @@ let unify_morphism_with_arguments gl (c,av) {args=args;output=output;lem=lem} =
  let ty = Tacmach.pf_type_of gl (mkApp (c,av)) in
  let output' = unify_relation_class_carrier_with_type (pf_env gl) output ty in
  let lem' = mkApp (lem,quantifiersv) in
-  {args=args'; output=output'; lem=lem'},c',Array.of_list al'
+ let morphism_theory' = mkApp (morphism_theory,quantifiersv) in
+  {args=args'; output=output'; lem=lem'; morphism_theory=morphism_theory'},
+   c',Array.of_list al'
 
 let new_morphism m signature id hook =
  if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
@@ -1527,7 +1563,8 @@ let syntactic_but_representation_of_marked_but hole_relation hole_direction =
       let direction = cic_direction_of_direction direction in
       let morphism_theory, relations =
        match m with
-          ACMorphism { args = args ; lem = lem } -> lem,args
+          ACMorphism { args = args ; morphism_theory = morphism_theory } ->
+           morphism_theory,args
         | ACFunction { f_args = f_args ; f_output = f_output } ->
            let mt =
             if eq_constr out (cic_relation_class_of_relation_class
