@@ -106,10 +106,14 @@ Inductive sumbool (A B:Prop) : Set :=
   | right : B -> {A} + {B} 
  where "{ A } + { B }" := (sumbool A B) : type_scope.
 
+Add Printing If sumbool.
+
 Inductive sumor (A:Set) (B:Prop) : Set :=
   | inleft : A -> A + {B}
   | inright : B -> A + {B} 
  where "A + { B }" := (sumor A B) : type_scope.
+
+Add Printing If sumor.
 
 (** Choice *)
 
