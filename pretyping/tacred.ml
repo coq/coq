@@ -633,6 +633,7 @@ let one_step_reduce env sigma c =
              | None      -> error "Not reducible 1"
              | Some (a,rest) -> (subst1 a c, rest))
       | IsApp (f,cl) -> redrec (f, append_stack cl largs)
+      | IsLetIn (_,f,_,cl) -> (subst1 f cl,largs)
       | IsMutCase (ci,p,c,lf) ->
           (try
 	     (special_red_case env (whd_betadeltaiota_state env sigma)
@@ -681,3 +682,4 @@ let reduce_to_mind env sigma t =
 let reduce_to_ind env sigma t =
   let ((ind_sp,_),redt,c) = reduce_to_mind env sigma t in 
   (Declare.path_of_inductive_path ind_sp, redt, c)
+

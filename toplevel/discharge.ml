@@ -358,8 +358,8 @@ let close_section _ s =
   Global.pop_named_decls ids;
   Summary.unfreeze_lost_summaries fs;
   let mc = segment_contents decls in
-  add_anonymous_leaf (in_end_section (sec_sp,mc));
-  List.iter process_operation (List.rev ops)
+  add_anonymous_leaf (in_end_section (sec_sp,mc)); 
+  List.iter process_operation (List.rev ops) 
 
 let save_module_to s f =
   Library.save_module_to segment_contents s f

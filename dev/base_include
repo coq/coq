@@ -30,6 +30,7 @@ Topdirs.dir_directory Coq_config.camlp4lib;;
 
 #install_printer  (* identifier *) prid;;
 #install_printer  (* section_path *)  prsp;;
+#install_printer  (* constr *)  print_pure_constr;;
 
 (* parsing of terms *)
 
