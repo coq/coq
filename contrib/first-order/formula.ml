@@ -184,7 +184,7 @@ let build_atoms gl metagen side cciterm =
 	| Hint     -> 
 	    let rels,head=decompose_prod cciterm in
 	    let env=List.rev (List.map (fun _->mkMeta (metagen true)) rels) in
-	      build_rec env false head
+	      build_rec env false head;trivial:=false (* special for hints *)
     end;
     (!trivial,
      {positive= !positive;
