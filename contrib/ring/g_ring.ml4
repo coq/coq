@@ -94,7 +94,7 @@ VERNAC COMMAND EXTEND AddRing
 | [ "Add" "Setoid" "Ring"
       	  constr(a) constr(aequiv) constr(asetth) constr(aplus) constr(amult) 
 	  constr(aone) constr(azero) constr(aopp) constr(aeq) constr(pm)
-	  constr(mm) constr(om) constr(t) "[" ne_constr_list(l) "]" ] 
+	  constr(mm) constr(om) constr(t) "[" constr_list(l) "]" ] 
   -> [ add_theory true false true
 			 (constr_of a)
 			 (Some (constr_of aequiv))
