@@ -1,6 +1,12 @@
 Changes from V8.0beta to V8.0
 =============================
 
+Commands
+
+- New option "Set Printing All" to deactivate all high-level forms of
+  printing (implicit arguments, coercions, destructing let,
+  if-then-else, notations, projections)
+
 Syntax
 
 - Command "Print." discontinued.
@@ -17,6 +23,9 @@ Bug fixes
 - Translator printing bug of reals fixed
 - Fix bugs in induction/destruct in case the type of the eliminated object 
   has parameters
+- Fix a printing bug with lambda-variable names inherited from the names of 
+  a product cast
+- Fix a bug with Focus
 
 Changes from V8.0beta old syntax to V8.0beta
 ============================================
