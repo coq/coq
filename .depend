@@ -102,9 +102,10 @@ parsing/ppconstr.cmi: parsing/coqast.cmi kernel/environ.cmi \
 parsing/pptactic.cmi: parsing/egrammar.cmi parsing/genarg.cmi lib/pp.cmi \
     proofs/proof_type.cmi proofs/tacexpr.cmo 
 parsing/prettyp.cmi: pretyping/classops.cmi kernel/environ.cmi \
-    library/lib.cmi library/libnames.cmi kernel/names.cmi library/nametab.cmi \
-    lib/pp.cmi pretyping/reductionops.cmi kernel/safe_typing.cmi \
-    kernel/sign.cmi kernel/term.cmi pretyping/termops.cmi lib/util.cmi 
+    library/impargs.cmi library/lib.cmi library/libnames.cmi kernel/names.cmi \
+    library/nametab.cmi lib/pp.cmi pretyping/reductionops.cmi \
+    kernel/safe_typing.cmi kernel/sign.cmi kernel/term.cmi \
+    pretyping/termops.cmi lib/util.cmi 
 parsing/printer.cmi: kernel/environ.cmi library/libnames.cmi kernel/names.cmi \
     library/nametab.cmi pretyping/pattern.cmi lib/pp.cmi \
     pretyping/rawterm.cmi kernel/sign.cmi kernel/term.cmi \
