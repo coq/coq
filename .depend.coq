@@ -1,4 +1,5 @@
 contrib/cc/CC.vo: contrib/cc/CC.v theories/Logic/Eqdep_dec.vo
+contrib/interface/Centaur.vo: contrib/interface/Centaur.v
 contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/fourier/Fourier_util.vo contrib/field/Field.vo theories/Reals/DiscrR.vo
 contrib/fourier/Fourier_util.vo: contrib/fourier/Fourier_util.v theories/Reals/Rbase.vo
 contrib/correctness/Tuples.vo: contrib/correctness/Tuples.v
