@@ -28,7 +28,7 @@ let all_subdirs root =
     try
       while true do
 	let f = readdir dirh in
-	if f <> "." && f <> ".." then
+	if f <> "." && f <> ".." && (not Coq_config.local or (f <> "CVS")) then
 	  let file = Filename.concat dir f in
 	  if (stat file).st_kind = S_DIR then begin
 	    let newrel = Filename.concat rel f in
