@@ -2590,7 +2590,7 @@ $ident_n$} applying {\tt \tac} to the main subgoal after each rewriting step.
 
 \item{\tt autorewrite [ \ident$_1$ \dots \ident$_n$ ]}\\
 {\tt autorewrite  [ \ident$_1$ \dots \ident$_n$ ] using \tac}\\
-These are syntactic variants for
+These are deprecated syntactic variants for
 {\tt autorewrite with \ident$_1$ \dots \ident$_n$}
 and
 {\tt autorewrite  with \ident$_1$ \dots \ident$_n$ using \tac}.
@@ -2624,6 +2624,14 @@ orientation in the base {\tt \ident}.
 When the rewriting rules {\tt \term$_1$ \dots \term$_n$} in {\tt \ident} will
 be used, the tactic {\tt \tac} will be applied to the generated subgoals, the
 main subgoal excluded.
+
+\item 
+{\tt Hint Rewrite [ \term$_1$ \dots \term$_n$ ] in \ident}\\
+{\tt Hint Rewrite [ \term$_1$ \dots \term$_n$ ] in {\ident} using {\tac}}\\
+These are deprecated syntactic variants for
+{\tt Hint Rewrite \term$_1$ \dots \term$_n$ : \ident} and
+{\tt Hint Rewrite \term$_1$ \dots \term$_n$ using {\tac} : {\ident}}.
+
 \end{Variants}
 
 \SeeAlso \ref{autorewrite-example} for examples showing the use of
