@@ -54,7 +54,20 @@ let push_rel_or_named_def push (id,b,topt) env =
   let env'' = push (id,Some j.uj_val,typ) env' in
   (cst,env'')
 
-let push_named_def = push_rel_or_named_def push_named
+
+(* Same as push_named, but check that the variable is not already
+   there. Should *not* be done in Environ because tactics add temporary
+   hypothesis many many times, and the check performed here would
+   cost too much. *)
+let safe_push_named (id,_,_ as d) env =
+  let _ =
+    try
+      let _ = lookup_named id env in 
+      error ("identifier "^string_of_id id^" already defined")
+    with Not_found -> () in
+  push_named d env
+
+let push_named_def = push_rel_or_named_def safe_push_named
 let push_rel_def = push_rel_or_named_def push_rel
 
 let push_rel_or_named_assum push (id,t) env =
@@ -112,11 +125,21 @@ let add_global_declaration sp env (body,typ,cst,op) =
 (*s Global and local constant declaration. *)
 
 let add_constant sp ce env =
+  let _ =
+    try
+      let _ = lookup_constant sp env in
+      error ("constant "^string_of_path sp^" already declared")
+    with Not_found -> () in
   add_global_declaration sp env (safe_infer_declaration env ce)
 
 (* Insertion of inductive types. *)
 
 let add_mind sp mie env =
+  let _ =
+    try 
+      let _ = lookup_mind sp env in
+      error ("inductive "^string_of_path sp^" already declared")
+    with Not_found -> () in
   let mib = check_inductive env mie in
   let cst = mib.mind_constraints in
   Environ.add_mind sp mib (add_constraints cst env)

@@ -58,9 +58,6 @@ val fold_rel_context_reverse :
 
 (*s Term constructors *)
 
-val it_mkNamedLambda_or_LetIn : constr -> named_context -> constr
-val it_mkNamedProd_or_LetIn : types -> named_context -> types
-
 val it_mkLambda_or_LetIn : constr -> rel_context -> constr
 val it_mkProd_or_LetIn : types -> rel_context -> types
 

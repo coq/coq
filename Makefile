@@ -262,7 +262,7 @@ coqbinaries:: ${COQBINARIES}
 world: coqbinaries states theories contrib tools
 
 $(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
-	$(COQMKTOP) -opt $(MLINCLUDES) -o $@
+	$(COQMKTOP) -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
 $(COQTOPBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO)
@@ -321,7 +321,7 @@ toplevel: $(TOPLEVEL)
 # special binaries for debugging
 
 bin/coq-interface$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
-	$(COQMKTOP) -top $(MLINCLUDES) $(CAMLDEBUG) -o $@ $(INTERFACE)
+	$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
 
 bin/parser$(EXE): contrib/interface/ctast.cmo contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
 	$(OCAMLC) -cclib -lunix -custom $(MLINCLUDES) -o $@ $(CMA) \
@@ -622,7 +622,7 @@ MINICOQCMO=$(CONFIG) $(LIBREP) $(KERNEL) \
 MINICOQ=bin/minicoq$(EXE)
 
 $(MINICOQ): $(MINICOQCMO)
-	$(OCAMLC) $(CAMLDEBUG) $(MLINCLUDES) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
+	$(OCAMLC) $(BYTEFLAGS) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
 
 archclean::
 	rm -f $(MINICOQ)

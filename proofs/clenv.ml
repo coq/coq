@@ -124,93 +124,69 @@ let mimick_evar hdc nargs sp wc =
    Attention : pas d'unification entre les différences instances d'une
    même meta ou evar, il peut rester des doublons *)
 
+(* Unification order: *)
+(* Left to right: unifies first argument and then the other arguments *)
+let unify_l2r x = List.rev x
+(* Right to left: unifies last argument and then the other arguments *)
+let unify_r2l x = x
+
+let sort_eqns = unify_r2l
+
+
+
 let unify_0 cv_pb wc m n =
   let env = w_env wc
   and sigma = w_Underlying wc in
+  let trivial_unify pb substn m n =
+    if (not(occur_meta m)) & is_fconv pb env sigma m n then substn
+    else error_cannot_unify (m,n) in
   let rec unirec_rec pb ((metasubst,evarsubst) as substn) m n =
     let cM = Evarutil.whd_castappevar sigma m
     and cN = Evarutil.whd_castappevar sigma n in 
-    try 
-      match (kind_of_term cM,kind_of_term cN) with
-	| Cast (c,_), _ -> unirec_rec pb substn c cN
-	| _, Cast (c,_) -> unirec_rec pb substn cM c
-	| Meta k1, Meta k2 ->
-	    if k1 < k2 then (k1,cN)::metasubst,evarsubst
-	    else if k1 = k2 then substn
-	    else (k2,cM)::metasubst,evarsubst
-	| Meta k, _    -> (k,cN)::metasubst,evarsubst
-	| _, Meta k    -> (k,cM)::metasubst,evarsubst
-	| Lambda (_,t1,c1), Lambda (_,t2,c2) ->
-	    unirec_rec CONV (unirec_rec CONV substn t1 t2) c1 c2
-	| Prod (_,t1,c1), Prod (_,t2,c2) ->
-	    unirec_rec pb (unirec_rec CONV substn t1 t2) c1 c2
+    match (kind_of_term cM,kind_of_term cN) with
+      | Meta k1, Meta k2 ->
+	  if k1 < k2 then (k1,cN)::metasubst,evarsubst
+	  else if k1 = k2 then substn
+	  else (k2,cM)::metasubst,evarsubst
+      | Meta k, _    -> (k,cN)::metasubst,evarsubst
+      | _, Meta k    -> (k,cM)::metasubst,evarsubst
+      | Evar _, _ -> metasubst,((cM,cN)::evarsubst)
+      | _, Evar _ -> metasubst,((cN,cM)::evarsubst)
 
-	| App (f1,l1), App (f2,l2) ->
-	    let len1 = Array.length l1
-	    and len2 = Array.length l2 in
-	    if len1 = len2 then
-              array_fold_left2 (unirec_rec CONV)
-		(unirec_rec CONV substn f1 f2) l1 l2
+      | Lambda (_,t1,c1), Lambda (_,t2,c2) ->
+	  unirec_rec CONV (unirec_rec CONV substn t1 t2) c1 c2
+      | Prod (_,t1,c1), Prod (_,t2,c2) ->
+	  unirec_rec pb (unirec_rec CONV substn t1 t2) c1 c2
+      | LetIn (_,b,_,c), _ -> unirec_rec pb substn (subst1 b c) cN
+      | _, LetIn (_,b,_,c) -> unirec_rec pb substn cM (subst1 b c)
+
+      | App (f1,l1), App (f2,l2) ->
+	  let len1 = Array.length l1
+	  and len2 = Array.length l2 in
+          let (f1,l1,f2,l2) =
+	    if len1 = len2 then (f1,l1,f2,l2)
 	    else if len1 < len2 then
               let extras,restl2 = array_chop (len2-len1) l2 in 
-	      array_fold_left2 (unirec_rec CONV)
-		(unirec_rec CONV substn f1 (appvect (f2,extras)))
-                l1 restl2
+              (f1, l1, appvect (f2,extras), restl2)
 	    else 
 	      let extras,restl1 = array_chop (len1-len2) l1 in 
-	      array_fold_left2 (unirec_rec CONV)
-		(unirec_rec CONV substn (appvect (f1,extras)) f2)
-                restl1 l2
-		
-	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
+              (appvect (f1,extras), restl1, f2, l2) in
+          (try
             array_fold_left2 (unirec_rec CONV)
-	      (unirec_rec CONV (unirec_rec CONV substn p1 p2) c1 c2) cl1 cl2
-		
-	| Construct _, Construct _ ->
-	    if is_conv env sigma cM cN then
-	      substn
-	    else
-	      error_cannot_unify (m,n)
-	      
-	| Ind _, Ind _ ->
-	    if is_conv env sigma  cM cN then
-	      substn
-	    else
-	      error_cannot_unify (m,n)
-	      
-	| Evar _, _ ->
-	    metasubst,((cM,cN)::evarsubst)
-	| _, Evar _ ->
-	    metasubst,((cN,cM)::evarsubst)
+	      (unirec_rec CONV substn f1 f2) l1 l2
+	  with ex when catchable_exception ex ->
+            trivial_unify pb substn cM cN)
+      | Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
+          array_fold_left2 (unirec_rec CONV)
+	    (unirec_rec CONV (unirec_rec CONV substn p1 p2) c1 c2) cl1 cl2
 
-	| (Const _ | Var _ | Rel _), _ ->
-	    if is_conv env sigma cM cN then
-	      substn
-	    else 
-	      error_cannot_unify (m,n)
-		
-	| _, (Const _ | Var _| Rel _) ->
-	    if (not (occur_meta cM)) & is_conv env sigma cM cN then 
-	      substn
-	    else 
-	      error_cannot_unify (m,n)
+      | _ -> trivial_unify pb substn cM cN
 
-	| LetIn (_,b,_,c), _ -> unirec_rec pb substn (subst1 b c) cN
-	| _, LetIn (_,b,_,c) -> unirec_rec pb substn cM (subst1 b c)
-		
-	| _ -> error_cannot_unify (m,n)
-	      
-    with ex when catchable_exception ex ->
-      if (not(occur_meta cM)) & is_fconv pb env sigma cM cN then 
-	substn
-      else 
-	raise ex
-
-    in
-    if (not(occur_meta m)) & is_fconv cv_pb env sigma m n then 
-      ([],[])
-    else 
-      unirec_rec cv_pb ([],[]) m n
+  in
+  if (not(occur_meta m)) & is_fconv cv_pb env sigma m n then 
+    ([],[])
+  else 
+    unirec_rec cv_pb ([],[]) m n
 
 
 (* Unification
@@ -264,7 +240,7 @@ let unify_0 cv_pb wc m n =
 
 let rec w_Unify cv_pb m n wc =
   let (mc',ec') = unify_0 cv_pb wc m n in 
-  w_resrec (List.rev mc') (List.rev ec') wc
+  w_resrec mc' ec' wc
 
 and w_resrec metas evars wc =
   match evars with
@@ -609,7 +585,7 @@ let clenv_merge with_types =
 	  | Evar (evn,_) ->
     	      if w_defined_evar clenv.hook evn then
 		let (metas',evars') = unify_0 CONV clenv.hook rhs lhs in
-		clenv_resrec (List.rev metas'@metas) (List.rev evars'@t) clenv
+		clenv_resrec (metas'@metas) (evars'@t) clenv
     	      else begin
 		let rhs' = 
 		  if occur_meta rhs then subst_meta metas rhs else rhs 
@@ -634,7 +610,7 @@ let clenv_merge with_types =
     	  if clenv_defined clenv mv then
             let (metas',evars') =
               unify_0 CONV clenv.hook (clenv_value clenv mv).rebus n in
-            clenv_resrec (List.rev metas'@t) (List.rev evars') clenv
+            clenv_resrec (metas'@t) evars' clenv
     	  else
 	    let mc,ec =
 	      let mvty = clenv_instance_type clenv mv in
@@ -645,8 +621,7 @@ let clenv_merge with_types =
 		unify_0 CUMUL clenv.hook nty mvty
 		with e when Logic.catchable_exception e -> ([],[]))
 	      else ([],[]) in
-	    clenv_resrec (List.rev mc@t) (List.rev ec)
-              (clenv_assign mv n clenv)
+	    clenv_resrec (mc@t) ec (clenv_assign mv n clenv)
 
   in clenv_resrec
 
@@ -662,7 +637,7 @@ let clenv_merge with_types =
 
 let clenv_unify_core_0 with_types cv_pb m n clenv =
   let (mc,ec) = unify_0 cv_pb clenv.hook m n in 
-  clenv_merge with_types (List.rev mc) (List.rev ec) clenv
+  clenv_merge with_types mc ec clenv
 
 let clenv_unify_0 = clenv_unify_core_0 false
 let clenv_typed_unify = clenv_unify_core_0 true
@@ -827,7 +802,7 @@ let clenv_unify allow_K cv_pb ty1 ty2 clenv =
            with ex when catchable_exception ex -> 
              error "Cannot solve a second-order unification problem")
 
-     | _ -> clenv_unify_0 cv_pb ty1 ty2 clenv
+     | _ -> clenv_typed_unify cv_pb ty1 ty2 clenv
 
 
 (* [clenv_bchain mv clenv' clenv]

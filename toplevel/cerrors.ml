@@ -103,11 +103,11 @@ let rec explain_exn_default = function
       hov 0 (str "Syntax error: Bad token" ++ spc () ++ str s ++ str ".")
   | Assert_failure (s,b,e) ->
       hov 0 (str "Anomaly: assert failure" ++ spc () ++
-	       if s <> "" then 
+	       (if s <> "" then 
 		 (str ("(file \"" ^ s ^ "\", characters ") ++ 
 		    int b ++ str "-" ++ int e ++ str ")")
 	       else
-		 (mt ()) ++
+		 (mt ())) ++
 	       report ())
   | reraise ->
       hov 0 (str "Anomaly: Uncaught exception " ++ 

@@ -19,18 +19,12 @@ type named_context = named_declaration list
 
 let empty_named_context = []
 
+let add_named_decl d sign = d::sign
 
 let rec lookup_named id = function
   | (id',_,_ as decl) :: _ when id=id' -> decl
   | _ :: sign -> lookup_named id sign
   | [] -> raise Not_found
-
-  
-let add_named_decl (id,_,_ as d) sign =
-  try
-    let _ = lookup_named id sign in 
-    failwith ("identifier "^string_of_id id^" already defined")
-  with _ -> d::sign
 
 let named_context_length = List.length
 
@@ -99,10 +93,6 @@ let push_named_to_rel_context hyps ctxt =
 (*       Term constructors       *)
 (*********************************)
 
-let it_mkNamedProd_or_LetIn   =
-  List.fold_left (fun c d -> mkNamedProd_or_LetIn d c)
-let it_mkNamedLambda_or_LetIn =
-  List.fold_left (fun c d -> mkNamedLambda_or_LetIn d c)
 let it_mkProd_or_LetIn   = List.fold_left (fun c d -> mkProd_or_LetIn d c)
 let it_mkLambda_or_LetIn = List.fold_left (fun c d -> mkLambda_or_LetIn d c)
 
