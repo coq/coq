@@ -366,7 +366,7 @@ let pr_case_item pr (tm,(na,indnalopt)) =
 let pr_case_type pr po =
   match po with
     | None | Some (CHole _) -> mt()
-    | Some p -> spc() ++ str "return " ++ hov 0 (pr (lcast,E) p)
+    | Some p -> spc() ++ hov 2 (str "return" ++ spc () ++ pr (lcast,E) p)
 
 let pr_return_type pr po = pr_case_type pr po
 
@@ -448,11 +448,11 @@ let rec pr inherited a =
   | CApp (_,(None,a),l) -> pr_app pr a l, lapp
   | CCases (_,(po,rtntypopt),c,eqns) ->
       v 0
-        (hov 4 (str "match " ++ 
+        (hv 0 (str "match" ++ brk (1,2) ++
 	  hov 0 (
 	    prlist_with_sep sep_v (pr_case_item pr) c
             ++ pr_case_type pr rtntypopt) ++
-	str " with") ++
+	spc () ++ str "with") ++
         prlist (pr_eqn pr) eqns ++ spc() ++ str "end"),
       latom
   | CLetTuple (_,nal,(na,po),c,b) ->
@@ -666,6 +666,16 @@ let pr_rawconstr_env_no_translate env c =
 let pr_lrawconstr_env_no_translate env c =
   pr ltop (Constrextern.extern_rawconstr (Termops.vars_of_env env) c)
 
+(** constr printers *)
 
-let pr_pattern_env_no_translate env c =
+let pr_term_env env  c = pr lsimple (Constrextern.extern_constr false env c)
+let pr_lterm_env env c = pr ltop    (Constrextern.extern_constr false env c)
+let pr_term  c = pr_term_env  (Global.env()) c
+let pr_lterm c = pr_lterm_env (Global.env()) c
+
+let pr_constr_pattern_env env c =
   pr lsimple (Constrextern.extern_pattern env Termops.empty_names_context c)
+
+let pr_constr_pattern t =
+  pr lsimple
+    (Constrextern.extern_pattern (Global.env()) Termops.empty_names_context t)

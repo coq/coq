@@ -70,4 +70,13 @@ val pr_lrawconstr_env : env -> rawconstr -> std_ppcmds
 
 val pr_rawconstr_env_no_translate : env -> rawconstr -> std_ppcmds
 val pr_lrawconstr_env_no_translate : env -> rawconstr -> std_ppcmds
-val pr_pattern_env_no_translate : env -> Pattern.constr_pattern -> std_ppcmds
+
+(** constr printers *)
+
+val pr_term_env : env -> constr -> std_ppcmds
+val pr_lterm_env : env -> constr -> std_ppcmds
+val pr_term : constr -> std_ppcmds
+val pr_lterm : constr -> std_ppcmds
+
+val pr_constr_pattern_env : env -> Pattern.constr_pattern -> std_ppcmds
+val pr_constr_pattern : Pattern.constr_pattern -> std_ppcmds
