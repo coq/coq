@@ -736,7 +736,8 @@ let cache_syntax_extension (_,(_,(prec,prec8),ntn,gr,se)) =
 	Options.if_verbose
 	  warning ("Notation "^ntn^
 	  " was already assigned a different level or sublevels");
-      Egrammar.extend_grammar (Egrammar.Notation (out_some gr))
+      if oldprec = None or out_some oldprec <> out_some prec then
+        Egrammar.extend_grammar (Egrammar.Notation (out_some gr))
     end
   with Not_found ->
     (* Reserve the notation level *)
