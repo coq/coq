@@ -343,3 +343,15 @@ let rec make_uf=function
 		UF.union uf j1 j2 {lhs=i1;rhs=i2;rule=Axiom ax} in
 	    let _ = process_rec uf inj_combine in uf
       
+let add_one_diseq uf (t1,t2)=(UF.add uf t1,UF.add uf t2)
+
+let add_disaxioms uf disaxioms=
+  let f (id,cpl)=(id,add_one_diseq uf cpl) in
+    List.map f disaxioms
+
+let check_equal uf (i1,i2) = UF.find uf i2 = UF.find uf i2
+
+let find_contradiction uf diseq =
+  List.find (fun (id,cpl) -> check_equal uf cpl) diseq
+ 
+

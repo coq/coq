@@ -67,5 +67,18 @@ val cc : UF.t -> unit
   
 val make_uf :
   (Names.identifier * (term * term)) list -> UF.t
+
+val add_one_diseq : UF.t -> (term * term) -> int * int
+
+val add_disaxioms : 
+  UF.t -> (Names.identifier * (term * term)) list -> 
+  (Names.identifier * (int * int)) list
   
-  
+val check_equal : UF.t -> int * int -> bool
+
+val find_contradiction : UF.t -> 
+  (Names.identifier * (int * int)) list -> 
+  (Names.identifier * (int * int))
+
+
+

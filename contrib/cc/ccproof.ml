@@ -48,10 +48,6 @@ let pcongr=function
     Refl t1, Refl t2 ->Refl (Appli (t1,t2))
   | p1, p2 -> Congr (p1,p2)
 
-type ('a,'b) mission=
-    Prove of 'a
-  | Refute of 'b
-
 let build_proof uf=
   
   let rec equal_proof i j=
@@ -101,8 +97,8 @@ let build_proof uf=
       ptrans(psym p1,ptrans(p,p2))
   in
     function
-	Prove(i,j)-> equal_proof i j
-      | Refute(i,ci,j,cj)-> discr_proof i ci j cj
+	`Prove_goal (i,j) | `Refute_hyp (i,j) -> equal_proof i j
+      | `Discriminate (i,ci,j,cj)-> discr_proof i ci j cj
 
 let rec nth_arg t n=
   match t with 
@@ -129,27 +125,34 @@ let rec type_proof axioms p=
 	let (ti,tj)=type_proof axioms p in
 	  nth_arg ti (n-a),nth_arg tj (n-a)
 
-let cc_proof (axioms,m)=
+let by_contradiction uf diseq axioms disaxioms= 
+  try 
+    let id,cpl=
+      find_contradiction uf diseq in
+    let prf=build_proof uf (`Refute_hyp cpl) in
+      if List.assoc id disaxioms=type_proof axioms prf then
+	`Refute_hyp (id,prf)
+      else 
+	anomaly "wrong proof generated"
+  with Not_found ->
+    errorlabstrm  "Congruence" (Pp.str "I couldn't solve goal")  
+
+let cc_proof axioms disaxioms glo=
   try
     let uf=make_uf axioms in
-      match m with 
-	  Some (v,w) ->
-	    let i1=UF.add uf v in
-	    let i2=UF.add uf w in
-	      cc uf;
-	      if UF.find uf i1=UF.find uf i2 then 
-		let prf=build_proof uf (Prove(i1,i2)) in
-		  if (v,w)=type_proof axioms prf then
-		    Prove (prf,axioms)
+    let diseq=add_disaxioms uf disaxioms in
+      match glo with 
+	  Some cpl ->
+	    let goal=add_one_diseq uf cpl in cc uf;
+	      if check_equal uf goal then 
+		let prf=build_proof uf (`Prove_goal goal) in
+		  if cpl=type_proof axioms prf then
+		    `Prove_goal prf
 		  else anomaly "wrong proof generated"
-	      else
-		errorlabstrm  "Congruence" (Pp.str "I couldn't solve goal")
-	| None ->
-	    cc uf;
-	    errorlabstrm  "Congruence" (Pp.str "I couldn't solve goal")
+	      else by_contradiction uf diseq axioms disaxioms  
+	| None -> cc uf; by_contradiction uf diseq axioms disaxioms
     with UF.Discriminable (i,ci,j,cj,uf) ->
-      let prf=build_proof uf (Refute(i,ci,j,cj)) in 
-      let (t1,t2)=type_proof axioms prf in 
-	Refute (UF.get_constructor uf ci,t1,t2,prf,axioms) 
+      let prf=build_proof uf (`Discriminate (i,ci,j,cj)) in 
+	`Discriminate (UF.get_constructor uf ci,prf) 
 
 

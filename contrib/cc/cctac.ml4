@@ -57,23 +57,35 @@ let rec decompose_term env t=
 	
 (* decompose equality in members and type *)
 	
-let eq_type_of_term term=
+let rec eq_type_of_term term=
   match kind_of_term term with
       App (f,args)->
 	(try 
 	   let ref = reference_of_constr f in
 	     if ref=Coqlib.glob_eq && (Array.length args)=3 
-	     then (args.(0),args.(1),args.(2)) 
-	     else fail()
-	 with
-	     Not_found -> fail ())
-    | _ ->fail ()
-
+	     then (true,args.(0),args.(1),args.(2)) 
+	     else 
+	       if ref=(Lazy.force Coqlib.coq_not_ref) && 
+		 (Array.length args)=1 then
+		   let (pol,t,a,b)=eq_type_of_term args.(0) in
+		     if pol then (false,t,a,b) else fail ()
+	       else fail ()
+	 with Not_found -> fail ())
+    | Prod (_,eq,ff) ->
+	(try 
+	   let ref = reference_of_constr ff in
+	     if ref=(Lazy.force Coqlib.coq_False_ref) then
+	       let (pol,t,a,b)=eq_type_of_term eq in
+		 if pol then (false,t,a,b) else fail ()
+	     else fail ()
+	 with Not_found -> fail ())
+    | _ -> fail ()
+	
 (* read an equality *)
 	  
 let read_eq env term=
-  let (_,t1,t2)=eq_type_of_term term in 
-    (decompose_term env t1,decompose_term env t2)
+  let (pol,_,t1,t2)=eq_type_of_term term in 
+    (pol,(decompose_term env t1,decompose_term env t2))
 
 (* rebuild a term from applicative format *)
     
@@ -90,18 +102,24 @@ and make_app l=function
 (* store all equalities from the context *)
 	
 let rec read_hyps env=function
-    []->[]
-  | (id,_,e)::hyps->let q=(read_hyps env hyps) in
-      try (id,(read_eq env e))::q with Not_an_eq -> q
+    []->[],[]
+  | (id,_,e)::hyps->let eq,diseq=read_hyps env hyps in
+      try let pol,cpl=read_eq env e in
+	if pol then 
+	  ((id,cpl)::eq),diseq 
+	else 
+	  eq,((id,cpl)::diseq)
+      with Not_an_eq -> eq,diseq
 
 (* build a problem ( i.e. read the goal as an equality ) *)
 	
 let make_prb gl=
   let env=pf_env gl in
-  let hyps=read_hyps env gl.it.evar_hyps in
-    try (hyps,Some (read_eq env gl.it.evar_concl)) with 
-	Not_an_eq -> (hyps,None)
-
+  let eq,diseq=read_hyps env gl.it.evar_hyps in
+    try
+      let pol,cpl=read_eq env gl.it.evar_concl in
+	if pol then (eq,diseq,Some cpl) else assert false with 
+	    Not_an_eq -> (eq,diseq,None)
 
 (* indhyps builds the array of arrays of constructor hyps for (ind largs) *)
 
@@ -177,42 +195,54 @@ let rec proof_tac axioms=function
 	   mkApp (Lazy.force f_equal_theo,[|intype;outtype;proj;cti;ctj|]) in 
 	   tclTHEN (apply injt) (proof_tac axioms prf) gls)
 
+let refute_tac axioms disaxioms id p gls =      
+  let t1,t2=List.assoc id disaxioms in
+  let tt1=make_term t1 and tt2=make_term t2 in
+  let intype=pf_type_of gls tt1 in
+  let neweq=
+    mkApp(constr_of_reference Coqlib.glob_eq,
+	  [|intype;tt1;tt2|]) in
+  let hid=pf_get_new_id (id_of_string "Heq") gls in
+  let false_t=mkApp (mkVar id,[|mkVar hid|]) in
+    tclTHENS (true_cut (Name hid) neweq)
+      [proof_tac axioms p; simplest_elim false_t] gls
+
+let discriminate_tac axioms cstr p gls =
+  let t1,t2=type_proof axioms p in 
+  let tt1=make_term t1 and tt2=make_term t2 in
+  let intype=pf_type_of gls tt1 in
+  let concl=pf_concl gls in
+  let outsort=mkType (new_univ ()) in
+  let xid=pf_get_new_id (id_of_string "X") gls in
+  let tid=pf_get_new_id (id_of_string "t") gls in
+  let identity=mkLambda(Name xid,outsort,mkLambda(Name tid,mkRel 1,mkRel 1)) in
+  let trivial=pf_type_of gls identity in
+  let outtype=mkType (new_univ ()) in
+  let pred=mkLambda(Name xid,outtype,mkRel 1) in
+  let hid=pf_get_new_id (id_of_string "Heq") gls in     
+  let proj=build_projection intype outtype cstr trivial concl gls in
+  let injt=mkApp (Lazy.force f_equal_theo,
+		  [|intype;outtype;proj;tt1;tt2;mkVar hid|]) in   
+  let endt=mkApp (Lazy.force eq_rect_theo,
+		  [|outtype;trivial;pred;identity;concl;injt|]) in
+  let neweq=mkApp(constr_of_reference Coqlib.glob_eq,[|intype;tt1;tt2|]) in
+    tclTHENS (true_cut (Name hid) neweq) 
+      [proof_tac axioms p;exact_check endt] gls
+      
 (* wrap everything *)
 	
 let cc_tactic gls=
   Library.check_required_library ["Coq";"Init";"Logic"];
-  let prb=make_prb gls in
-    match (cc_proof prb) with
-        Prove (p,axioms)-> proof_tac axioms p gls
-      | Refute (cstr,t1,t2,p,axioms) ->
-	  let tt1=make_term t1 and tt2=make_term t2 in
-	  let intype=pf_type_of gls tt1 in
-	  let concl=pf_concl gls in
-	  let outsort=mkType (new_univ ()) in
-	  let xid=pf_get_new_id (id_of_string "X") gls in
-	  let tid=pf_get_new_id (id_of_string "t") gls in
-	  let identity=
-	    mkLambda(Name xid,outsort,mkLambda(Name tid,mkRel 1,mkRel 1)) in
-	  let trivial=pf_type_of gls identity in
-	  let outtype=mkType (new_univ ()) in
-	  let pred=mkLambda(Name xid,outtype,mkRel 1) in
-	  let hid=pf_get_new_id (id_of_string "Heq") gls in     
-	  let proj=build_projection intype outtype cstr trivial concl gls in
-	  let injt=
-	    mkApp (Lazy.force f_equal_theo,
-		   [|intype;outtype;proj;tt1;tt2;mkVar hid|]) in   
-	  let endt=
-	    mkApp (Lazy.force eq_rect_theo,
-		   [|outtype;trivial;pred;identity;concl;injt|]) in
-	  let neweq=
-	    mkApp(constr_of_reference Coqlib.glob_eq,[|intype;tt1;tt2|]) in
-	    tclTHENS (true_cut (Name hid) neweq)
-	      [proof_tac axioms p;exact_check endt] gls
+  let (axioms,disaxioms,glo)=make_prb gls in
+    match (cc_proof axioms disaxioms glo) with
+        `Prove_goal p -> proof_tac axioms p gls
+      | `Refute_hyp (id,p) -> refute_tac axioms disaxioms id p gls
+      | `Discriminate (cstr,p) -> discriminate_tac axioms cstr p gls
 
 (* Tactic registration *)
       
 TACTIC EXTEND CC
- [ "Congruence" ] -> [ cc_tactic ]
+ [ "Congruence" ] -> [ tclSOLVE [tclTHEN (tclREPEAT introf) cc_tactic] ]
 END
 
 

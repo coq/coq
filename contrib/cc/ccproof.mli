@@ -9,32 +9,37 @@
 (* $Id$ *)
 
 open Ccalgo
+open Names
 
 type proof =
-    Ax of Names.identifier
-  | SymAx of Names.identifier
+    Ax of identifier
+  | SymAx of identifier
   | Refl of term
   | Trans of proof * proof
   | Congr of proof * proof
-  | Inject of proof * Names.constructor * int * int
+  | Inject of proof * constructor * int * int
 
 val pcongr : proof * proof -> proof
 val ptrans : proof * proof -> proof
 val psym : proof -> proof
 val pcongr : proof * proof -> proof
 
-type ('a,'b) mission=
-    Prove of 'a
-  | Refute of 'b
-
-val build_proof : UF.t -> (int * int, int * int * int * int) mission -> proof
+val build_proof : 
+  UF.t -> 
+  [ `Discriminate of int * int * int * int
+  | `Prove_goal of int * int
+  | `Refute_hyp of int * int ]
+  -> proof
 
 val type_proof :
-  (Names.identifier * (term * term)) list -> proof -> term * term
+  (identifier * (term * term)) list -> proof -> term * term
 
 val cc_proof :
-  (Names.identifier * (term * term)) list * (term * term) option ->
-  (proof * (Names.identifier * (term * term)) list, 
-   Names.constructor * term * term * proof * 
-   (Names.identifier * (term * term)) list ) mission
+  (identifier * (term * term)) list ->
+  (identifier * (term * term)) list ->
+  (term * term) option ->
+  [ `Discriminate of constructor * proof
+  | `Prove_goal of proof
+  | `Refute_hyp of identifier * proof ]
+
 
