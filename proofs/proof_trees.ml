@@ -344,7 +344,10 @@ let ast_of_cvt_arg = function
   | Integer n       -> num n 
   | Command c       -> ope ("COMMAND",[c])
   | Constr  c       -> 
-      ope ("COMMAND",[ast_of_constr false (Global.env ()) c])
+    ope ("COMMAND",[ast_of_constr false (Global.env ()) c])
+  | Constr_context _ ->
+    anomalylabstrm "ast_of_cvt_arg" [<'sTR
+      "Constr_context argument could not be used">]
   | Clause idl      -> ope ("CLAUSE", List.map (compose nvar string_of_id) idl)
   | Bindings bl     -> ope ("BINDINGS", 
 			    List.map (ast_of_cvt_bind (fun x -> x)) bl)
@@ -355,7 +358,11 @@ let ast_of_cvt_arg = function
 		(ast_of_constr false (Global.env ()))) bl)
   | Tacexp ast      -> ope ("TACTIC",[ast])
   | Tac tac -> failwith "TODO: ast_of_cvt_arg: Tac"
-  | Redexp red -> failwith "TODO: ast_of_cvt_arg: Redexp"
+  | Redexp red ->
+    begin
+      wARNING [<'sTR "TODO: ast_of_cvt_arg: Redexp">];
+      nvar "REDEXP"
+    end
   | Fixexp (id,n,c) -> ope ("FIXEXP",[(nvar (string_of_id id)); 
                                       (num n); 
                                       ope ("COMMAND",[c])]) 

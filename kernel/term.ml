@@ -1316,6 +1316,7 @@ let rec subst_meta bl c =
     | DOP1(op,c') -> DOP1(op, subst_meta bl c')
     | DOP2(op,c'1, c'2) -> DOP2(op, subst_meta bl c'1, subst_meta bl c'2)
     | DOPN(op, c') -> DOPN(op, Array.map (subst_meta bl) c')
+    | DLAM(x,c') -> DLAM(x, subst_meta bl c')
     | _ -> c
 
 (* Substitute only a list of locations locs, the empty list is

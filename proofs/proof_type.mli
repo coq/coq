@@ -86,21 +86,22 @@ and tactic = goal sigma -> (goal list sigma * validation)
 and validation = (proof_tree list -> proof_tree)
 
 and tactic_arg =
-  | Command       of Coqast.t
-  | Constr        of constr
-  | Identifier    of identifier
-  | Integer       of int
-  | Clause        of identifier list
-  | Bindings      of Coqast.t substitution
-  | Cbindings     of constr   substitution 
-  | Quoted_string of string
-  | Tacexp        of Coqast.t
-  | Tac           of tactic
-  | Redexp        of Tacred.red_expr
-  | Fixexp        of identifier * int * Coqast.t
-  | Cofixexp      of identifier * Coqast.t
-  | Letpatterns   of (int list option * (identifier * int list) list)
-  | Intropattern  of intro_pattern
+  | Command        of Coqast.t
+  | Constr         of constr
+  | Constr_context of constr
+  | Identifier     of identifier
+  | Integer        of int
+  | Clause         of identifier list
+  | Bindings       of Coqast.t substitution
+  | Cbindings      of constr   substitution 
+  | Quoted_string  of string
+  | Tacexp         of Coqast.t
+  | Tac            of tactic
+  | Redexp         of Tacred.red_expr
+  | Fixexp         of identifier * int * Coqast.t
+  | Cofixexp       of identifier * Coqast.t
+  | Letpatterns    of (int list option * (identifier * int list) list)
+  | Intropattern   of intro_pattern
 
 and intro_pattern =
   | IdPat   of identifier
