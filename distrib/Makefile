@@ -160,20 +160,25 @@ ${COQRPMPACKAGE}.src.rpm: ${COQPACKAGE}.tar.gz
 	cp -f petit-coq.gif ${RPMTOPDIR}/SOURCES
 	cp -f ${COQPACKAGE}.tar.gz ${RPMTOPDIR}/SOURCES
 	- mkdir ${RPMTOPDIR}/RPMS/${ARCH}
+	- rm ${RPMTOPDIR}/RPMS/${LOCALARCH}
 	- ln -s ${RPMTOPDIR}/RPMS/${ARCH} ${RPMTOPDIR}/RPMS/${LOCALARCH}
 	${RPM} -ba coq.spec
 	mv ${RPMTOPDIR}/SRPMS/${COQRPMPACKAGE}.src.rpm .
 	(if [ -f ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${LOCALARCH}.rpm ];\
-	then mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${LOCALARCH}.rpm ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${ARCH}.rpm;
+	then mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${LOCALARCH}.rpm ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${ARCH}.rpm;\
+	else mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${ARCH}.rpm .;\
 	fi)
-	- mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${ARCH}.rpm .
 
 # Sera déjà fait si le src.rpm vient d'être fait
 ${COQRPMPACKAGE}.${ARCH}.rpm: rpm-config ${COQRPMPACKAGE}.src.rpm
 	- mkdir ${RPMTOPDIR}/RPMS/${ARCH}
+	- rm ${RPMTOPDIR}/RPMS/${LOCALARCH}
 	- ln -s ${RPMTOPDIR}/RPMS/${ARCH} ${RPMTOPDIR}/RPMS/${LOCALARCH}
 	${RPM} --rebuild ${COQRPMPACKAGE}.src.rpm
-	mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${ARCH}.rpm .
+	(if [ -f ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${LOCALARCH}.rpm ];\
+	then mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${LOCALARCH}.rpm ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${ARCH}.rpm;\
+	else mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${ARCH}.rpm .;\
+	fi)
 
 ##########
 contrib-tag:

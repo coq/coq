@@ -37,19 +37,18 @@ make -e COQINSTALLPREFIX=$RPM_BUILD_ROOT/ install
 # To install only locally the binaries compiled with absolute paths
 
 %post
-# This is because the Coq Team usually build Coq with Ocaml in /usr/local
+# This is a because the Coq Team usually build Coq with Ocaml in /usr/local
 # but ocaml is actually in /usr if coming from a rpm package
-where=`ocamlc -v | tail -1 | sed -e 's/.*: \(.*\)/\1/'`
-if [ ! "$where" = "/usr/local/lib/ocaml" ]; then
-	ln -s $where /usr/local/lib/ocaml
+# This works only if ocaml has been installed by rpm
+if [ ! -e /usr/local/lib/ocaml ]; then
+  ln -s /usr/lib/ocaml /usr/local/lib/ocaml || true
 fi
 
 %postun
 # This is because the Coq Team usually build Coq with Ocaml in /usr/local
 # but ocaml is actually in /usr if coming from a rpm package
-where=`ocamlc -v | tail -1 | sed -e 's/.*: \(.*\)/\1/'`
-if [ ! "$where" = "/usr/local/lib/ocaml" ]; then
-	rm $where /usr/local/lib/ocaml
+if [ -L /usr/local/lib/ocaml ]; then
+  rm /usr/local/lib/ocaml
 fi
 
 %files
