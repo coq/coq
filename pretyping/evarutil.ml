@@ -191,7 +191,7 @@ let real_clean isevars sp args rhs =
       | _ -> map_constr_with_binders succ subs k t
   in
   let body = subs 0 rhs in
-  (* if not (closed0 body) then error_not_clean CCI empty_env sp body; *)
+  if not (closed0 body) then error_not_clean CCI empty_env sp body;
   body
 
 let make_evar_instance_with_rel env =
