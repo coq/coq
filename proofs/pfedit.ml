@@ -260,7 +260,7 @@ let start_proof_with_type na str env concl =
 let start_proof na str concl_com =
   let sigma = Evd.empty in
   let env = Global.env() in
-  let concl = fconstruct_type sigma (Environ.context env) concl_com in
+  let concl = type_of_com env concl_com in
   start_proof_with_type na str env concl.body
 
 let start_proof_constr na str concl =

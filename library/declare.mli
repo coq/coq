@@ -21,22 +21,17 @@ type strength =
   | NeverDischarge
 
 type variable_declaration = constr * strength * bool
-
 val declare_variable : identifier -> variable_declaration -> unit
 
 
 type constant_declaration = constant_entry * strength * bool
-
 val declare_constant : identifier -> constant_declaration -> unit
 
 val declare_parameter : identifier -> constr -> unit
 
-
 val declare_mind : mutual_inductive_entry -> unit
 
-
 val declare_eliminations : section_path -> unit
-
 
 val declare_syntax_constant : identifier -> constr -> unit
 
