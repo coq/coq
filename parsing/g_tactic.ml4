@@ -302,18 +302,18 @@ GEXTEND Gram
       | IDENT "Rec"; rc = rec_clause -> <:ast< (REC $rc) >>
       |	IDENT "Rec"; rc = rec_clause; IDENT "In"; body = tactic_expr ->
           <:ast< (REC (RECDECL $rc) $body) >>
-      | IDENT "Rec"; rc = rec_clause; IDENT "And";
-          rcl = LIST1 rec_clause SEP IDENT "And"; IDENT "In";
+      | IDENT "Rec"; rc = rec_clause; "And";
+          rcl = LIST1 rec_clause SEP "And"; IDENT "In";
           body = tactic_expr ->
             <:ast< (REC (RECDECL $rc ($LIST $rcl)) $body) >>
-      | IDENT "Let"; llc = LIST1 let_clause SEP IDENT "And"; IDENT "In";
+      | IDENT "Let"; llc = LIST1 let_clause SEP "And"; IDENT "In";
           u = tactic_expr -> <:ast< (LET (LETDECL ($LIST $llc)) $u) >>
-      |	IDENT "Let"; llc = LIST1 let_clause SEP IDENT "And" ->
+      |	IDENT "Let"; llc = LIST1 let_clause SEP "And" ->
         (match llc with
 	| [Coqast.Node(_,"LETTOPCLAUSE",[id;c])] ->
           <:ast< (StartProof "LETTOP" $id $c) >>
         | _ -> <:ast< (LETCUT (LETDECL ($LIST $llc))) >>)
-      |	IDENT "Let"; llc = LIST1 let_clause SEP IDENT "And";
+      |	IDENT "Let"; llc = LIST1 let_clause SEP "And";
         tb = Vernac_.theorem_body; "Qed" ->
         (match llc with
 	| [Coqast.Node(_,"LETTOPCLAUSE",[id;c])] ->

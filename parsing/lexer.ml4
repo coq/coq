@@ -140,7 +140,7 @@ let init () =
       "Definition"; "Inductive"; "CoInductive"; 
       "Theorem"; "Variable"; "Axiom"; "Parameter"; "Hypothesis";
       "Orelse"; "Proof"; "Qed";
-      "Prop"; "Set"; "Type"
+      "Prop"; "Set"; "Type"; "And"
     ]; (* "let" is not a keyword because #Core#let.cci would not parse *)
   List.iter add_special_token 
     [ ":"; "("; ")"; "["; "]"; "{"; "}"; "_"; ";"; "`"; "``"; 

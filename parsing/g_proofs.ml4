@@ -38,7 +38,9 @@ GEXTEND Gram
   ;
   vrec_clause:
     [ [ name=identarg; it=LIST1 input_fun; ":="; body=tactic_expr ->
-          <:ast<(RECCLAUSE $name (FUNVAR ($LIST $it)) $body)>> ] ]
+        <:ast<(RECCLAUSE $name (FUNVAR ($LIST $it)) $body)>>
+      | name=identarg; ":="; body=tactic_expr ->
+        <:ast<(RECCLAUSE $name $body)>> ] ]
   ;
   command:
     [ [ IDENT "Goal"; c = constrarg -> <:ast< (GOAL $c) >>
@@ -103,22 +105,25 @@ GEXTEND Gram
         <:ast<(TACDEF $name (AST (FUN (FUNVAR ($LIST $largs)) $body)))>>
       | IDENT "Recursive"; deftok; "Definition"; vc=vrec_clause  ->
         (match vc with
-            Coqast.Node(_,"RECCLAUSE",nme::tl) ->
-              <:ast<(TACDEF $nme (AST (REC $vc)))>>
-           |_ ->
+         | Coqast.Node(_,"RECCLAUSE",nme::[_;_]) ->
+           <:ast<(TACDEF $nme (AST (REC $vc)))>>
+         | Coqast.Node(_,"RECCLAUSE",nme::[bd]) ->
+           <:ast<(TACDEF $nme (AST $bd))>>
+         | _ ->
              anomalylabstrm "Gram.vernac" [<'sTR "Not a correct RECCLAUSE">])
-      |IDENT "Recursive"; deftok; "Definition"; vc=vrec_clause;
-        IDENT "And"; vcl=LIST1 vrec_clause SEP IDENT "And" ->
+      | IDENT "Recursive"; deftok; "Definition"; vc=vrec_clause; "And";
+        vcl=LIST1 vrec_clause SEP "And" ->
         let nvcl=
           List.fold_right
             (fun e b -> match e with
-                Coqast.Node(_,"RECCLAUSE",nme::_) ->
-                  nme::<:ast<(AST (REC $e))>>::b
-               |_ ->
-                 anomalylabstrm "Gram.vernac" [<'sTR
-                   "Not a correct RECCLAUSE">]) (vc::vcl) []
-        in
-          <:ast<(TACDEF ($LIST $nvcl))>>
+             | Coqast.Node(_,"RECCLAUSE",nme::[_;_]) ->
+               nme::<:ast<(AST (REC $e))>>::b
+             | Coqast.Node(_,"RECCLAUSE",nme::[bd]) ->
+               nme::<:ast<(AST $bd)>>::b
+             | _ ->
+               anomalylabstrm "Gram.vernac" [<'sTR
+                 "Not a correct RECCLAUSE">]) (vc::vcl) [] in
+        <:ast<(TACDEF ($LIST $nvcl))>>
 
 (* Hints for Auto and EAuto *)
 
