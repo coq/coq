@@ -182,11 +182,11 @@ Syntax constr
     S [ (S $p) ] -> [$p:"nat_printer":9]
   | O [ O ]      -> ["(0)"].
 ].
+
+(* For parsing/printing based on scopes *)
 V7only [
 Module nat_scope.
 ].
-
-(* For parsing/printing based on scopes *)
 Infix 4 "+" plus : nat_scope V8only (left associativity).
 Infix 4 "-" minus : nat_scope V8only (left associativity).
 Infix 3 "*" mult : nat_scope V8only (left associativity).
