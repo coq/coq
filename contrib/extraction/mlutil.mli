@@ -10,7 +10,7 @@
 
 open Names
 open Term
-open Nametab
+open Libnames
 open Miniml
 
 
@@ -41,9 +41,9 @@ val named_lams : identifier list -> ml_ast -> ml_ast
 (*s Utility functions over ML types. [update_args sp vl t] puts [vl]
    as arguments behind every inductive types [(sp,_)]. *)
 
-val sp_of_r : global_reference -> section_path
+val kn_of_r : global_reference -> kernel_name
 
-val type_mem_sp : section_path -> ml_type -> bool
+val type_mem_kn : kernel_name -> ml_type -> bool
 
 (*s Utility functions over ML terms. [occurs n t] checks whether [Rel
     n] occurs (freely) in [t]. [ml_lift] is de Bruijn
@@ -54,6 +54,8 @@ val ast_iter : (ml_ast -> unit) -> ml_ast -> unit
 val occurs : int -> ml_ast -> bool
 
 val ml_lift : int -> ml_ast -> ml_ast
+
+val ml_subst : ml_ast -> ml_ast -> ml_ast
 
 val ml_pop : ml_ast -> ml_ast
 

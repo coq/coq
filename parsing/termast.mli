@@ -14,6 +14,7 @@ open Term
 open Termops
 open Sign
 open Environ
+open Libnames
 open Nametab
 open Rawterm
 open Pattern
@@ -36,7 +37,7 @@ val ast_of_existential  : env -> existential -> Coqast.t
 val ast_of_constructor  : env -> constructor -> Coqast.t
 val ast_of_inductive    : env -> inductive -> Coqast.t
 val ast_of_ref          : global_reference -> Coqast.t
-val ast_of_qualid       : Nametab.qualid -> Coqast.t
+val ast_of_qualid       : qualid -> Coqast.t
 
 (* For debugging *)
 val print_implicits : bool ref

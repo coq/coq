@@ -14,6 +14,7 @@ open Ast
 open Coqast
 open Hipattern
 open Names
+open Libnames
 open Pp
 open Proof_type
 open Tacticals

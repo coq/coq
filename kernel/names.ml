@@ -61,55 +61,203 @@ module ModIdmap = Map.Make(ModIdOrdered)
 let make_dirpath x = x
 let repr_dirpath x = x
 
+let empty_dirpath = []
+
 let string_of_dirpath = function
   | [] -> "<empty>"
   | sl ->
       String.concat "." (List.map string_of_id (List.rev sl))
 
-(*s Section paths are absolute names *)
 
-type section_path = {
-  dirpath : dir_path ;
-  basename : identifier }
+let u_number = ref 0 
+type uniq_ident = int * string * dir_path
+let make_uid dir s = incr u_number;(!u_number,s,dir)
+let string_of_uid (i,s,p) = 
+  "<"(*^string_of_dirpath p ^"#"^*) ^ s ^"#"^ string_of_int i^">"
 
-let make_path pa id = { dirpath = pa; basename = id }
-let repr_path { dirpath = pa; basename = id } = (pa,id)
+module Umap = Map.Make(struct 
+			 type t = uniq_ident 
+			 let compare = Pervasives.compare
+		       end)
 
-(* parsing and printing of section paths *)
-let string_of_path sp =
-  let (sl,id) = repr_path sp in
-  if sl = [] then string_of_id id
-  else (string_of_dirpath sl) ^ "." ^ (string_of_id id)
 
-let sp_ord sp1 sp2 =
-  let (p1,id1) = repr_path sp1
-  and (p2,id2) = repr_path sp2 in
-  let p_bit = compare p1 p2 in
-  if p_bit = 0 then id_ord id1 id2 else p_bit
+type mod_self_id = uniq_ident
+let make_msid = make_uid
+let string_of_msid = string_of_uid
 
-module SpOrdered =
-  struct
-    type t = section_path
-    let compare = sp_ord
-  end
+type mod_bound_id = uniq_ident
+let make_mbid = make_uid
+let string_of_mbid = string_of_uid
 
-module Spset = Set.Make(SpOrdered)
-module Sppred = Predicate.Make(SpOrdered)
-module Spmap = Map.Make(SpOrdered)
+type label = string
+let mk_label l = l
+let string_of_label l = l
 
-(*s********************************************************************)
-(* type of global reference *)
+let id_of_label l = l
+let label_of_id id = id
+
+module Labset = Idset
+module Labmap = Idmap
+
+type module_path =
+  | MPfile of dir_path
+  | MPbound of mod_bound_id
+  | MPself of mod_self_id 
+  | MPdot of module_path * label
+
+let rec string_of_mp = function
+  | MPfile sl -> string_of_dirpath sl
+  | MPbound uid -> string_of_uid uid
+  | MPself uid -> string_of_uid uid
+  | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l
+
+(* we compare labels first if two MPdot's *)
+let rec mp_ord mp1 mp2 = match (mp1,mp2) with
+    MPdot(mp1,l1), MPdot(mp2,l2) -> 
+      let c = Pervasives.compare l1 l2 in
+	if c<>0 then
+	  c
+	else
+	  mp_ord mp1 mp2
+  |  _,_ -> Pervasives.compare mp1 mp2
+
+module MPord = struct
+  type t = module_path
+  let compare = mp_ord
+end
+
+module MPmap = Map.Make(MPord)
+
+
+(* this is correct under the condition that bound and struct
+   identifiers can never be identical (i.e. get the same stamp)! *) 
+
+type substitution = module_path Umap.t
+
+let empty_subst = Umap.empty
+
+let add_msid = Umap.add 
+let add_mbid = Umap.add
+
+let map_msid msid mp = add_msid msid mp empty_subst
+let map_mbid mbid mp = add_msid mbid mp empty_subst
+
+let join subst = 
+  Umap.fold Umap.add subst
+
+let list_contents sub = 
+  let one_pair uid mp l =
+    (string_of_uid uid, string_of_mp mp)::l
+  in
+    Umap.fold one_pair sub []
+
+let debug_string_of_subst sub = 
+  let l = List.map (fun (s1,s2) -> s1^"|->"^s2) (list_contents sub) in
+    "{" ^ String.concat "; " l ^ "}"
+
+let debug_pr_subst sub = 
+  let l = list_contents sub in
+  let f (s1,s2) = hov 2 (str s1 ++ spc () ++ str "|-> " ++ str s2) 
+  in
+    str "{" ++ hov 2 (prlist_with_sep pr_coma f l) ++ str "}" 
+
+let rec subst_mp sub mp = (* 's like subst *)
+  match mp with
+    | MPself sid -> 
+	(try Umap.find sid sub with Not_found -> mp)
+    | MPbound bid ->
+	(try Umap.find bid sub with Not_found -> mp)
+    | MPdot (mp1,l) -> 
+	let mp1' = subst_mp sub mp1 in
+	  if mp1==mp1' then 
+	    mp
+	  else
+	    MPdot (mp1',l)
+    | _ -> mp
+
+
+let rec occur_in_path uid = function
+  | MPself sid -> sid = uid
+  | MPbound bid -> bid = uid
+  | MPdot (mp1,_) -> occur_in_path uid mp1
+  | _ -> false
+    
+let occur_uid uid sub = 
+  let check_one uid' mp =
+    if uid = uid' || occur_in_path uid mp then raise Exit
+  in
+    try 
+      Umap.iter check_one sub;
+      false
+    with Exit -> true
+
+let occur_msid = occur_uid
+let occur_mbid = occur_uid
+
+
+
+(* Kernel names *)
+
+type kernel_name = module_path * dir_path * label
+
+let make_kn mp dir l = (mp,dir,l)
+let repr_kn kn = kn
+
+let modpath kn = 
+  let mp,_,_ = repr_kn kn in mp
+
+let label kn = 
+  let _,_,l = repr_kn kn in l
+
+let string_of_kn (mp,dir,l) = 
+  string_of_mp mp ^ "#" ^ string_of_dirpath dir ^ "#" ^ string_of_label l
+
+let pr_kn kn = str (string_of_kn kn)
+
+
+let subst_kn sub (mp,dir,l as kn) = 
+  let mp' = subst_mp sub mp in
+    if mp==mp' then kn else (mp',dir,l)
+
+
+let kn_ord kn1 kn2 = 
+    let mp1,dir1,l1 = kn1 in
+    let mp2,dir2,l2 = kn2 in
+    let c = Pervasives.compare l1 l2 in
+      if c <> 0 then
+	c
+      else 
+	let c = Pervasives.compare dir1 dir2 in
+	  if c<>0 then
+	    c 
+	  else
+	    MPord.compare mp1 mp2
+
+
+module KNord = struct
+  type t = kernel_name
+  let compare =kn_ord
+end
+
+module KNmap = Map.Make(KNord)
+module KNpred = Predicate.Make(KNord)
+module KNset = Set.Make(KNord)
+
+
+let initial_msid = (make_msid [] "TOP")
+let initial_path = MPself initial_msid
+
 
 type variable = identifier
-type constant = section_path
-type inductive = section_path * int
+type constant = kernel_name
+type mutual_inductive = kernel_name
+type inductive = mutual_inductive * int
 type constructor = inductive * int
-type mutual_inductive = section_path
 
-let ith_mutual_inductive (sp,_) i = (sp,i)
-let ith_constructor_of_inductive ind_sp i = (ind_sp,i)
-let inductive_of_constructor (ind_sp,i) = ind_sp
-let index_of_constructor (ind_sp,i) = i
+let ith_mutual_inductive (kn,_) i = (kn,i)
+let ith_constructor_of_inductive ind i = (ind,i)
+let inductive_of_constructor (ind,i) = ind
+let index_of_constructor (ind,i) = i
 
 (* Hash-consing of name objects *)
 module Hname = Hashcons.Make(
@@ -136,16 +284,12 @@ module Hdir = Hashcons.Make(
     let hash = Hashtbl.hash
   end)
 
-module Hsp = Hashcons.Make(
+module Hkn = Hashcons.Make(
   struct 
-    type t = section_path
+    type t = kernel_name
     type u = identifier -> identifier
-    let hash_sub hident sp =
-      { dirpath = List.map hident sp.dirpath;
-        basename = hident sp.basename }
-    let equal sp1 sp2 =
-      (List.length sp1.dirpath = List.length sp2.dirpath) &&
-      (List.for_all2 (==) sp1.dirpath sp2.dirpath)
+    let hash_sub hident kn = Util.todo "hash_cons"; kn
+    let equal kn1 kn2 = kn1==kn2
     let hash = Hashtbl.hash
   end)
 
@@ -154,5 +298,5 @@ let hcons_names () =
   let hident = Hashcons.simple_hcons Hident.f hstring in
   let hname = Hashcons.simple_hcons Hname.f hident in
   let hdir = Hashcons.simple_hcons Hdir.f hident in
-  let hspcci = Hashcons.simple_hcons Hsp.f hident in
-  (hspcci,hdir,hname,hident,hstring)
+  let hkn = Hashcons.simple_hcons Hkn.f hident in
+  (hkn,hdir,hname,hident,hstring)

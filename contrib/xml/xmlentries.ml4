@@ -88,7 +88,7 @@ VERNAC COMMAND EXTEND Xml
 | [ "Print" "XML" "All" ] -> [ Xmlcommand.printAll () ]
 
 | [ "Print" "XML" "Module" diskname(dn) qualid(id) ] ->
-    [ Xmlcommand.printModule id dn ]
+    [ Xmlcommand.printLibrary id dn ]
 
 | [ "Print" "XML" "Section" diskname(dn) ident(id) ] ->
     [ Xmlcommand.printSection id dn ]

@@ -11,6 +11,7 @@
 open Util
 open Pp
 open Names
+open Libnames
 open Nametab
 open Term
 open Termops
@@ -44,14 +45,22 @@ let structure_table = (ref [] : (inductive * struc_typ) list ref)
 
 let cache_structure (_,x) = structure_table := x :: (!structure_table)
 
+let subst_structure (_,subst,((kn,i),struc as obj)) = 
+  let kn' = subst_kn subst kn in
+  let proj' = list_smartmap 
+		(option_smartmap (subst_kn subst)) 
+		struc.s_PROJ 
+  in
+    if proj' == struc.s_PROJ && kn' == kn then obj else
+      (kn',i),{struc with s_PROJ = proj'}
+
 let (inStruc,outStruc) =
-  declare_object
-    ("STRUCTURE", {
-       load_function = (fun _ -> ());
-       cache_function = cache_structure;
-       open_function = cache_structure;
-       export_function = (function x -> Some x)
-     })
+  declare_object {(default_object "STRUCTURE") with 
+                    cache_function = cache_structure;
+		    open_function = (fun i o -> if i=1 then cache_structure o);
+                    subst_function = subst_structure;
+		    classify_function = (fun (_,x) -> Substitute x);
+		    export_function = (function x -> Some x)  }
 
 let add_new_struc (s,c,n,l) = 
   Lib.add_anonymous_leaf (inStruc (s,{s_CONST=c;s_PARAM=n;s_PROJ=l}))
@@ -81,19 +90,42 @@ type obj_typ = {
   o_TPARAMS : constr list; (* dans l'ordre *)
   o_TCOMPS : constr list } (* dans l'ordre *)
 
+let subst_obj subst obj =
+  let o_DEF' = subst_mps subst obj.o_DEF in
+  let o_TABS' = list_smartmap (subst_mps subst) obj.o_TABS in    
+  let o_TPARAMS' = list_smartmap (subst_mps subst) obj.o_TPARAMS in 
+  let o_TCOMPS' = list_smartmap (subst_mps subst) obj.o_TCOMPS in 
+    if o_DEF' == obj.o_DEF
+      && o_TABS' == obj.o_TABS    
+      && o_TPARAMS' == obj.o_TPARAMS 
+      && o_TCOMPS' == obj.o_TCOMPS 
+    then 
+      obj
+    else
+      { o_DEF = o_DEF' ;
+	o_TABS = o_TABS' ;    
+	o_TPARAMS = o_TPARAMS' ; 
+	o_TCOMPS = o_TCOMPS' }
+
 let object_table =
   (ref [] : ((global_reference * global_reference) * obj_typ) list ref)
 
 let cache_object (_,x) = object_table := x :: (!object_table)
 
-let (inObjDef, outObjDef) =
-  declare_object
-    ("OBJDEF", {
-       load_function = (fun _ -> ());
-       open_function = cache_object;
-       cache_function = cache_object;
-       export_function = (function x -> Some x)
-     })
+let subst_object (_,subst,((r1,r2),o as obj)) = 
+  let r1' = subst_global subst r1 in
+  let r2' = subst_global subst r2 in
+  let o' = subst_obj subst o in
+    if r1' == r1 && r2' == r2 && o' == o then obj else
+      (r1',r2'),o'
+
+let (inObjDef,outObjDef) =
+  declare_object {(default_object "OBJDEF") with 
+		    open_function = (fun i o -> if i=1 then cache_object o);
+                    cache_function = cache_object;
+		    subst_function = subst_object;
+		    classify_function = (fun (_,x) -> Substitute x);
+                    export_function = (function x -> Some x) }
 
 let add_new_objdef (o,c,la,lp,l) =
   try 
@@ -104,14 +136,11 @@ let add_new_objdef (o,c,la,lp,l) =
 
 let cache_objdef1 (_,sp) = ()
 
-let (inObjDef1, outObjDef1) =
-  declare_object
-    ("OBJDEF1", {
-       load_function = (fun _ -> ());
-       open_function = cache_objdef1;
-       cache_function = cache_objdef1;
-       export_function = (function x -> Some x)
-     })
+let (inObjDef1,outObjDef1) =
+  declare_object {(default_object "OBJDEF1") with 
+		    open_function = (fun i o -> if i=1 then cache_objdef1 o);
+                    cache_function = cache_objdef1;
+                    export_function = (function x -> Some x) }
 
 let objdef_info o = List.assoc o !object_table
 

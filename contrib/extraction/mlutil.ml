@@ -18,7 +18,7 @@ open Miniml
 open Nametab
 open Table
 open Options
-open Nameops
+open Libnames
 (*i*)
 
 (*s Exceptions. *)
@@ -40,15 +40,15 @@ let id_of_name = function
 
 (*s Does a section path occur in a ML type ? *)
 
-let sp_of_r r = match r with 
-    | ConstRef sp -> sp
-    | IndRef (sp,_) -> sp
-    | ConstructRef ((sp,_),_) -> sp
+let kn_of_r r = match r with 
+    | ConstRef kn -> kn
+    | IndRef (kn,_) -> kn
+    | ConstructRef ((kn,_),_) -> kn
     | _ -> assert false
 
-let rec type_mem_sp sp = function 
-  | Tglob (r,l) -> (sp_of_r r) = sp || List.exists (type_mem_sp sp) l
-  | Tarr (a,b) -> (type_mem_sp sp a) || (type_mem_sp sp b)
+let rec type_mem_kn kn = function 
+  | Tglob (r,l) -> (kn_of_r r) = kn || List.exists (type_mem_kn kn) l
+  | Tarr (a,b) -> (type_mem_kn kn a) || (type_mem_kn kn b)
   | _ -> false
 
 (*S Generic functions over ML ast terms. *)
@@ -650,9 +650,9 @@ let is_ind = function
   | _ -> false 
 
 let is_rec_principle = function 
-  | ConstRef sp -> 
-      let d,i = repr_path sp in 
-      let s = string_of_id i in 
+  | ConstRef c -> 
+      let m,d,l = repr_kn c in 
+      let s = string_of_label l in 
       if Filename.check_suffix s "_rec" then 
 	let i' = id_of_string (Filename.chop_suffix s "_rec") in 
 	(try is_ind (locate (make_qualid d i'))
@@ -752,12 +752,13 @@ let inline_test t =
   not (is_fix t) && (is_constr t || (ml_size t < 12 && is_not_strict t))
 
 let manual_inline_list = 
-  List.map (fun s -> path_of_string ("Coq.Init."^s))
-    [ (* "Wf.Acc_rec" ; "Wf.Acc_rect" ; *)
-      "Wf.well_founded_induction" ; "Wf.well_founded_induction_type" ]
+  let dir =  dirpath_of_string "Coq.Init.Wf" 
+  in List.map (fun s -> encode_kn dir (id_of_string s))
+       [ "Acc_rec" ; "Acc_rect" ; 
+	 "well_founded_induction" ; "well_founded_induction_type" ]
 
 let manual_inline = function 
-  | ConstRef sp -> List.mem sp manual_inline_list
+  | ConstRef c -> List.mem c manual_inline_list
   | _ -> false 
 
 (* If the user doesn't say he wants to keep [t], we inline in two cases:
@@ -838,7 +839,7 @@ and optimize_Dfix prm r t b l =
 	  else optimize prm l
 	else 
 	  let v = try 
-	    let d = dirpath (sp_of_r r) in 
+	    let d,_ = decode_kn (kn_of_r r) in 
 	    Array.map (fun id -> locate (make_qualid d id)) f 
 	  with Not_found -> raise Impossible 
 	  in 

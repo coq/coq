@@ -11,11 +11,13 @@
 open Pp
 open Util
 open Names
+open Libnames
 open Nameops
 open Term
 open Termops
 open Environ
 open Declarations
+open Entries
 open Declare
 open Nametab
 open Coqast
@@ -49,7 +51,7 @@ let interp_decl sigma env = function
       (Name id,Some j.uj_val, j.uj_type)
 
 let build_decl_entry sigma env (id,t) =
-  (id,Typeops.LocalAssum (interp_type Evd.empty env t))
+  (id,Entries.LocalAssum (interp_type Evd.empty env t))
 
 let typecheck_params_and_fields ps fs =
   let env0 = Global.env () in
@@ -70,8 +72,8 @@ let typecheck_params_and_fields ps fs =
   newps, newfs
 
 let degenerate_decl id = function
-    (_,None,t) -> (id,Typeops.LocalAssum t)
-  | (_,Some c,t) -> (id,Typeops.LocalDef c)
+    (_,None,t) -> (id,Entries.LocalAssum t)
+  | (_,Some c,t) -> (id,Entries.LocalDef c)
 
 type record_error =
   | MissingProj of identifier * identifier list
@@ -184,7 +186,7 @@ let declare_projections indsp coers fields =
                   const_entry_type = None;
                   const_entry_opaque = false } in
 		let sp =
-		  declare_constant fid (ConstantEntry cie,NeverDischarge)
+		  declare_constant fid (DefinitionEntry cie,NeverDischarge)
 		in Some sp
               with Type_errors.TypeError (ctx,te) -> begin
 		warning_or_error coe indsp (BadTypedProj (fid,ctx,te));
@@ -193,9 +195,9 @@ let declare_projections indsp coers fields =
 	   match name with
 	     | None ->
 		 (nfi-1, None::sp_projs, NoProjection fi::subst)
-	     | Some sp ->
-		 let refi = ConstRef sp in
-		 let constr_fi = mkConst sp in
+	     | Some (sp,kn) ->
+		 let refi = ConstRef kn in
+		 let constr_fi = mkConst kn in
 		 if coe then begin
 		   let cl = Class.class_of_ref (IndRef indsp) in
 		   Class.try_add_new_coercion_with_source 
@@ -203,7 +205,7 @@ let declare_projections indsp coers fields =
 		 end;
 		 let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
 		 let constr_fip = applist (constr_fi,proj_args) in
-		 (nfi-1, name::sp_projs, Projection constr_fip::subst))
+		 (nfi-1, (Some kn)::sp_projs, Projection constr_fip::subst))
       (List.length fields,[],[]) coers (List.rev fields)
   in sp_projs
 

@@ -11,6 +11,7 @@
 (*i*)
 open Pp
 open Names
+open Libnames
 open Coqast
 open Genarg
 (*i*)
@@ -30,13 +31,13 @@ val nvar : identifier -> Coqast.t
 val ide : string -> Coqast.t
 val num : int -> Coqast.t
 val string : string -> Coqast.t
-val path : section_path -> Coqast.t
+val path : kernel_name -> Coqast.t
 val dynamic : Dyn.t -> Coqast.t
 
 val set_loc : Coqast.loc -> Coqast.t -> Coqast.t
 
-val path_section : Coqast.loc -> section_path -> Coqast.t
-val section_path : section_path -> section_path
+val path_section : Coqast.loc -> kernel_name -> Coqast.t
+val section_path : kernel_name -> kernel_name
 
 (* ast destructors *)
 val num_of_ast : Coqast.t -> int
@@ -100,7 +101,7 @@ val coerce_to_var : Coqast.t -> Coqast.t
 
 val coerce_to_id : Coqast.t -> identifier
 
-val coerce_qualid_to_id : Nametab.qualid Util.located -> identifier
+val coerce_qualid_to_id : qualid Util.located -> identifier
 
 val coerce_reference_to_id : Tacexpr.reference_expr -> identifier
 
@@ -151,3 +152,6 @@ val to_pat : entry_env -> Coqast.t -> (astpat * entry_env)
 
 val eval_act : Coqast.loc -> env -> act -> typed_ast
 val to_act_check_vars : entry_env -> ast_action_type -> grammar_action -> act
+
+val subst_astpat : Names.substitution -> astpat -> astpat
+val subst_act : Names.substitution -> act -> act

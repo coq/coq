@@ -229,7 +229,7 @@ let correctness_hook _ ref =
   register pf_id None
 
 let correctness s p opttac =
-  Library.check_required_module ["Coq";"correctness";"Correctness"];
+  Library.check_required_library ["Coq";"correctness";"Correctness"];
   Pmisc.reset_names();
   let p,oc,cty,v = coqast_of_prog p in
   let env = Global.env () in

@@ -12,12 +12,16 @@
 open Names
 open Term
 open Declarations
+open Entries
 (*i*)
 
-(*s Safe environments. Since we are now able to type terms, we can define an
-  abstract type of safe environments, where objects are typed before being
-  added. Internally, the datatype is still [env]. We re-export the
-  functions of [Environ] for the new type [environment]. *)
+(*s Safe environments. Since we are now able to type terms, we can
+  define an abstract type of safe environments, where objects are
+  typed before being added.
+
+  We also add [open_structure] and [close_section], [close_module] to
+  provide functionnality for sections and interactive modules 
+*)
 
 type safe_environment
 
@@ -34,30 +38,69 @@ val push_named_def :
     Univ.constraints * safe_environment
 
 (* Adding global axioms or definitions *)
-type constant_entry = {
-  const_entry_body   : constr;
-  const_entry_type   : types option;
-  const_entry_opaque : bool }
-
 type global_declaration = 
   | ConstantEntry of constant_entry
-  | ParameterEntry of types
   | GlobalRecipe of Cooking.recipe
 
 val add_constant : 
-  constant -> global_declaration -> safe_environment -> safe_environment
+  dir_path -> label -> global_declaration -> safe_environment -> 
+      kernel_name * safe_environment
 
 (* Adding an inductive type *)
 val add_mind : 
-  mutual_inductive -> Indtypes.mutual_inductive_entry -> safe_environment ->
-    safe_environment
+  dir_path -> label -> mutual_inductive_entry -> safe_environment ->
+    mutual_inductive * safe_environment
+
+(* Adding a module *)
+val add_module :
+  label -> module_entry -> safe_environment 
+    -> module_path * safe_environment
+
+(* Adding a module type *)
+val add_modtype :
+  label -> module_type_entry -> safe_environment 
+    -> kernel_name * safe_environment
 
 (* Adding universe constraints *)
-val add_constraints : Univ.constraints -> safe_environment -> safe_environment
+val add_constraints : 
+  Univ.constraints -> safe_environment -> safe_environment
 
-(* Loading and saving a module *)
-val export : safe_environment -> dir_path -> Environ.compiled_env
-val import : Environ.compiled_env -> safe_environment -> safe_environment
+
+(*s Interactive module functions *)
+val start_module : 
+  dir_path -> label -> (mod_bound_id * module_type_entry) list 
+    -> module_type_entry option 
+      -> safe_environment -> module_path * safe_environment
+
+val end_module :
+  label -> safe_environment -> module_path * safe_environment 
+
+
+val start_modtype :
+  dir_path -> label -> (mod_bound_id * module_type_entry) list
+    -> safe_environment -> module_path * safe_environment
+
+val end_modtype :
+  label -> safe_environment -> kernel_name * safe_environment
+
+
+val current_modpath : safe_environment -> module_path
+val current_msid : safe_environment -> mod_self_id
+
+
+(* Loading and saving compilation units *)
+
+(* exporting and importing modules *)
+type compiled_library
+
+val start_library : dir_path -> safe_environment 
+      -> module_path * safe_environment
+
+val export : safe_environment -> dir_path  
+      -> mod_self_id * compiled_library
+
+val import : compiled_library -> Digest.t -> safe_environment 
+      -> module_path * safe_environment
 
 
 (*s Typing judgments *)

@@ -8,6 +8,8 @@
 
 (* $Id$ *)
 
+open Names
+open Libnames
 open Q_util
 
 let dummy_loc = (0,0)
@@ -71,13 +73,13 @@ let rec mlexpr_of_ast = function
   | Coqast.Num loc i -> <:expr< Coqast.Num loc $int:string_of_int i$ >>
   | Coqast.Id loc id -> <:expr< Coqast.Id loc $str:id$ >>
   | Coqast.Str loc str -> <:expr< Coqast.Str loc $str:str$ >>
-  | Coqast.Path loc qid ->
-      let l,a = Names.repr_path qid in
+  | Coqast.Path loc kn ->
+      let l,a = Libnames.decode_kn kn in
       let mlexpr_of_modid id =
-	<:expr< Names.id_of_string $str:Names.string_of_id id$ >> in
-      let e = List.map mlexpr_of_modid (Names.repr_dirpath l) in
+	<:expr< Names.id_of_string $str:string_of_id id$ >> in
+      let e = List.map mlexpr_of_modid (repr_dirpath l) in
       let e = expr_list_of_var_list e in
-      <:expr< Coqast.Path loc (Names.make_path (Names.make_dirpath $e$)
+      <:expr< Coqast.Path loc (Libnames.encode_kn (Names.make_dirpath $e$)
                 (Names.id_of_string $str:Names.string_of_id a$)) >> 
   | Coqast.Dynamic _ _ ->
       failwith "Q_Coqast: dynamic: not implemented"
@@ -121,8 +123,8 @@ let mlexpr_of_dirpath dir =
   <:expr< Names.make_dirpath $mlexpr_of_list mlexpr_of_ident l$ >>
 
 let mlexpr_of_qualid qid =
-  let (dir, id) = Nametab.repr_qualid qid in
-  <:expr< Nametab.make_qualid $mlexpr_of_dirpath dir$ $mlexpr_of_ident id$ >>
+  let (dir, id) = repr_qualid qid in
+  <:expr< make_qualid $mlexpr_of_dirpath dir$ $mlexpr_of_ident id$ >>
 
 let mlexpr_of_reference = function
   | Tacexpr.RQualid (loc,qid) -> <:expr< Tacexpr.RQualid loc $mlexpr_of_qualid qid$ >>

@@ -52,7 +52,7 @@ type pcoq_hook = {
   solve : int -> unit;
   abort : string -> unit;
   search : searchable -> dir_path list * bool -> unit;
-  print_name : Nametab.qualid Util.located -> unit;
+  print_name : Libnames.qualid Util.located -> unit;
   print_check : Environ.unsafe_judgment -> unit;
   print_eval : (constr -> constr) -> Environ.env -> Coqast.t -> Environ.unsafe_judgment -> unit;
   show_goal : int option -> unit

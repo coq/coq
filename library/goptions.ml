@@ -14,6 +14,7 @@ open Pp
 open Util
 open Libobject
 open Names
+open Libnames
 open Term
 open Nametab
 
@@ -55,6 +56,7 @@ module MakeTable =
 	  type key
 	  val table : (string * key table_of_A) list ref
 	  val encode : key -> t
+	  val subst : substitution -> t -> t
           val printer : t -> std_ppcmds
           val key : option_name
           val title : string
@@ -66,10 +68,10 @@ module MakeTable =
       | GOadd
       | GOrmv
 
-    let kn = nickname A.key
+    let nick = nickname A.key
 
     let _ =
-      if List.mem_assoc kn !A.table then
+      if List.mem_assoc nick !A.table then
 	error "Sorry, this table name is already used"
 
     module MyType = struct type t = A.t let compare = Pervasives.compare end
@@ -82,7 +84,7 @@ module MakeTable =
 	let freeze () = !t in
 	let unfreeze c = t := c in
 	let init () = t := MySet.empty in
-	Summary.declare_summary kn
+	Summary.declare_summary nick
           { Summary.freeze_function = freeze;
             Summary.unfreeze_function = unfreeze;
             Summary.init_function = init;
@@ -90,17 +92,25 @@ module MakeTable =
 
     let (add_option,remove_option) =
       if A.synchronous then
-        let load_options _ = () in
         let cache_options (_,(f,p)) = match f with
           | GOadd -> t := MySet.add p !t
           | GOrmv -> t := MySet.remove p !t in
-        let export_options fp = Some fp in
+        let load_options i o = if i=1 then cache_options o in
+	let subst_options (_,subst,(f,p as obj)) = 
+	  let p' = A.subst subst p in
+	    if p' == p then obj else
+	      (f,p')
+	in
+	let export_options fp = Some fp in
         let (inGo,outGo) =
-          Libobject.declare_object (kn,
-              { Libobject.load_function = load_options;
-		Libobject.open_function = cache_options;
+          Libobject.declare_object {(Libobject.default_object nick) with
+                Libobject.load_function = load_options;
+		Libobject.open_function = load_options;
 		Libobject.cache_function = cache_options;
-		Libobject.export_function = export_options}) in
+		Libobject.subst_function = subst_options;
+		Libobject.classify_function = (fun (_,x) -> Substitute x);
+		Libobject.export_function = export_options} 
+	in
         ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
          (fun c -> Lib.add_anonymous_leaf (inGo (GOrmv, c))))
       else
@@ -126,7 +136,7 @@ module MakeTable =
       method print = print_table A.title A.printer !t 
     end
 
-    let _ = A.table := (kn,new table_of_A ())::!A.table
+    let _ = A.table := (nick,new table_of_A ())::!A.table
     let active c = MySet.mem c !t
     let elements () = MySet.elements !t
   end
@@ -149,6 +159,7 @@ struct
   type key = string
   let table = string_table
   let encode x = x
+  let subst _ x = x
   let printer = str
   let key = A.key
   let title = A.title
@@ -167,6 +178,7 @@ module type RefConvertArg =
 sig
   type t
   val encode : qualid located -> t
+  val subst : substitution -> t -> t
   val printer : t -> std_ppcmds
   val key : option_name
   val title : string
@@ -180,6 +192,7 @@ struct
   type key = qualid located
   let table = ref_table
   let encode = A.encode
+  let subst = A.subst
   let printer = A.printer
   let key = A.key
   let title = A.title
@@ -228,11 +241,9 @@ let declare_option cast uncast
   check_key key; 
   let write = if sync then 
     let (decl_obj,_) = 
-      declare_object ((nickname key),
-		      {load_function = (fun _ -> ());
-		       open_function = (fun _ -> ());
+      declare_object {(default_object (nickname key)) with
 		       cache_function = (fun (_,v) -> write v);
-		       export_function = (fun x -> None)})
+		       classify_function = (fun _ -> Dispose)}
     in 
     let _ = declare_summary (nickname key) 
 	      {freeze_function = read;
@@ -298,7 +309,7 @@ let msg_option_value (name,v) =
     | IntValue (Some n) -> int n
     | IntValue None   -> str "undefined"
     | StringValue s   -> str s
-    | IdentValue r    -> pr_global_env (Global.env()) r
+    | IdentValue r    -> pr_global_env None r
 
 let print_option_value key =
   let (name,(_,read,_)) = get_option key in

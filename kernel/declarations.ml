@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Names
 open Univ
 open Term
@@ -35,6 +36,11 @@ type recarg =
   | Mrec of int 
   | Imbr of inductive
 
+let subst_recarg sub r = match r with
+  | Norec | Mrec _  -> r
+  | Imbr (kn,i) -> let kn' = subst_kn sub kn in
+      if kn==kn' then r else Imbr (kn',i)
+
 type wf_paths = recarg Rtree.t
 
 let mk_norec = Rtree.mk_node Norec [||]
@@ -48,6 +54,8 @@ let dest_recarg p = fst (Rtree.dest_node p)
 let dest_subterms p =
   let (_,cstrs) = Rtree.dest_node p in
   Array.map (fun t -> Array.to_list (snd (Rtree.dest_node t))) cstrs
+
+let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
 
 (* [mind_typename] is the name of the inductive; [mind_arity] is
    the arity generalized over global parameters; [mind_lc] is the list
@@ -77,3 +85,78 @@ type mutual_inductive_body = {
   mind_packets : one_inductive_body array;
   mind_constraints : constraints;
   mind_singl : constr option }
+
+(* TODO: should be changed to non-coping after Term.subst_mps *)
+let subst_const_body sub cb = 
+  { const_body = option_app (Term.subst_mps sub) cb.const_body;
+    const_type = type_app (Term.subst_mps sub) cb.const_type;
+    const_hyps = (assert (cb.const_hyps=[]); []);
+    const_constraints = cb.const_constraints;
+    const_opaque = cb.const_opaque}
+  
+let subst_mind_packet sub mbp = 
+  { mind_consnames = mbp.mind_consnames;
+    mind_typename = mbp.mind_typename;
+    mind_nf_lc = 
+      array_smartmap (type_app (Term.subst_mps sub)) mbp.mind_nf_lc;
+    mind_nf_arity = type_app (Term.subst_mps sub) mbp.mind_nf_arity;
+    mind_user_lc = 
+      array_smartmap (type_app (Term.subst_mps sub)) mbp.mind_user_lc;
+    mind_user_arity = type_app (Term.subst_mps sub) mbp.mind_user_arity;
+    mind_sort = mbp.mind_sort;
+    mind_nrealargs = mbp.mind_nrealargs;
+    mind_kelim = mbp.mind_kelim;
+    mind_nparams = mbp.mind_nparams;
+    mind_params_ctxt = 
+      map_rel_context (Term.subst_mps sub) mbp.mind_params_ctxt;
+    mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*);
+}
+
+let subst_mind sub mib = 
+  { mind_finite = mib.mind_finite ;
+    mind_ntypes = mib.mind_ntypes ;
+    mind_hyps = (assert (mib.mind_hyps=[]); []) ;
+    mind_packets = array_smartmap (subst_mind_packet sub) mib.mind_packets ;
+    mind_constraints = mib.mind_constraints ;
+    mind_singl = option_app (Term.subst_mps sub) mib.mind_singl;
+}
+
+
+(*s Modules: signature component specifications, module types, and
+  module declarations *)
+
+type specification_body = 
+  | SPBconst of constant_body
+  | SPBmind of mutual_inductive_body
+  | SPBmodule of module_specification_body
+  | SPBmodtype of module_type_body
+
+and module_signature_body = (label * specification_body) list
+
+and module_type_body = 
+  | MTBident of kernel_name
+  | MTBfunsig of mod_bound_id * module_type_body * module_type_body
+  | MTBsig of mod_self_id * module_signature_body
+
+and module_expr_body =
+  | MEBident of module_path
+  | MEBfunctor of mod_bound_id * module_type_body * module_expr_body 
+  | MEBstruct of mod_self_id * module_structure_body
+  | MEBapply of module_expr_body * module_expr_body
+      * constraints
+
+and module_specification_body = module_type_body * module_path option
+
+and structure_elem_body = 
+  | SEBconst of constant_body
+  | SEBmind of mutual_inductive_body
+  | SEBmodule of module_body
+  | SEBmodtype of module_type_body
+
+and module_structure_body = (label * structure_elem_body) list
+
+and module_body = 
+    { mod_expr : module_expr_body option;
+      mod_user_type : (module_type_body * constraints) option;
+      mod_type : module_type_body;
+      mod_equiv : module_path option }

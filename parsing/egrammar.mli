@@ -38,3 +38,6 @@ val extend_tactic_grammar :
 
 val extend_vernac_command_grammar :
   string -> (string * grammar_tactic_production list) list -> unit
+
+val subst_all_grammar_command :
+  Names.substitution -> all_grammar_command -> all_grammar_command

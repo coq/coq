@@ -10,6 +10,7 @@
 
 open Names
 open Coqast
+open Libnames
 open Nametab
 open Rawterm
 open Util

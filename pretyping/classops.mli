@@ -10,6 +10,7 @@
 
 (*i*)
 open Names
+open Libnames
 open Nametab
 open Term
 open Evd
@@ -32,7 +33,7 @@ type cl_info_typ = {
   cl_param : int }
 
 (* This is the type of coercion kinds *)
-type coe_typ = global_reference
+type coe_typ = Libnames.global_reference
 
 (* This is the type of infos for declared coercions *)
 type coe_info_typ 
@@ -46,7 +47,7 @@ type coe_index
 (* This is the type of paths from a class to another *)
 type inheritance_path = coe_index list
 
-val coe_of_reference : global_reference -> coe_typ
+val coe_of_reference : Libnames.global_reference -> coe_typ
 
 (*s [declare_class] adds a class to the set of declared classes *)
 val declare_class : cl_typ * strength * int -> unit

@@ -81,13 +81,13 @@ let modify_opers replfun (constl,indl,cstrl) =
 	   with 
 	     | Not_found -> c')
 
-      | Const sp ->
+      | Const kn ->
 	  (try
-	     (match List.assoc sp constl with
+	     (match List.assoc kn constl with
 		| NOT_OCCUR -> failure ()
 		| DO_ABSTRACT (oper',abs_vars) ->
 		    mkApp (mkConst oper', abs_vars)
-		| DO_REPLACE cb -> substrec (replfun (sp,cb)))
+		| DO_REPLACE cb -> substrec (replfun (kn,cb)))
 	   with 
 	     | Not_found -> c')
   
@@ -98,11 +98,11 @@ let modify_opers replfun (constl,indl,cstrl) =
 let expmod_constr modlist c =
   let simpfun = 
     if modlist = ([],[],[]) then fun x -> x else nf_betaiota in
-  let expfun (sp,cb) = 
+  let expfun (kn,cb) = 
     if cb.const_opaque then
       errorlabstrm "expmod_constr"
 	(str"Cannot unfold the value of " ++
-        str(string_of_path sp) ++ spc () ++
+        str(string_of_kn kn) ++ spc () ++
         str"You cannot declare local lemmas as being opaque" ++ spc () ++
         str"and then require that theorems which use them" ++ spc () ++
         str"be transparent");

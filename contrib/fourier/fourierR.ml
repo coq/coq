@@ -18,6 +18,7 @@ open Term
 open Tactics
 open Clenv
 open Names
+open Libnames
 open Tacticals
 open Tacmach
 open Fourier
@@ -76,43 +77,46 @@ let parse s = Astterm.interp_constr Evd.empty (Global.env()) (parse_ast s);;
 let pf_parse_constr gl s =
    Astterm.interp_constr Evd.empty (pf_env gl) (parse_ast s);;
 
-let rec string_of_constr c =
+let string_of_R_constant kn = 
+  match Names.repr_kn kn with
+    | MPfile dir, sec_dir, id when 
+	sec_dir = empty_dirpath && 
+	string_of_dirpath dir = "Coq.Reals.Rdefinitions" 
+	-> string_of_label id
+    | _ -> "constant_not_of_R"
+
+let rec string_of_R_constr c =
  match kind_of_term c with
-   Cast (c,t) -> string_of_constr c
-  |Const c -> string_of_path c
-  |Var(c) -> string_of_id c
+   Cast (c,t) -> string_of_R_constr c
+  |Const c -> string_of_R_constant c
   | _ -> "not_of_constant"
-;;
 
 let rec rational_of_constr c =
   match kind_of_term c with
   | Cast (c,t) -> (rational_of_constr c)
   | App (c,args) ->
-        (match kind_of_term c with
-           Const c ->
-               (match (string_of_path c) with
-		 "Coq.Reals.Rdefinitions.Ropp" -> 
-		      rop (rational_of_constr args.(0))
-		|"Coq.Reals.Rdefinitions.Rinv" -> 
-                      rinv (rational_of_constr args.(0))
-                |"Coq.Reals.Rdefinitions.Rmult" -> 
-                      rmult (rational_of_constr args.(0))
-                            (rational_of_constr args.(1))
-                |"Coq.Reals.Rdefinitions.Rdiv" -> 
-                      rdiv (rational_of_constr args.(0))
-                            (rational_of_constr args.(1))
-                |"Coq.Reals.Rdefinitions.Rplus" -> 
-                      rplus (rational_of_constr args.(0))
-                            (rational_of_constr args.(1))
-                |"Coq.Reals.Rdefinitions.Rminus" -> 
-                      rminus (rational_of_constr args.(0))
-                             (rational_of_constr args.(1))
-                | _ -> failwith "not a rational")
-          | _ -> failwith "not a rational")
-  | Const c ->
-        (match (string_of_path c) with
-	       "Coq.Reals.Rdefinitions.R1" -> r1
-              |"Coq.Reals.Rdefinitions.R0" -> r0
+      (match (string_of_R_constr c) with
+	 | "Ropp" -> 
+	     rop (rational_of_constr args.(0))
+	 | "Rinv" -> 
+	     rinv (rational_of_constr args.(0))
+	 | "Rmult" -> 
+	     rmult (rational_of_constr args.(0))
+                   (rational_of_constr args.(1))
+	 | "Rdiv" -> 
+	     rdiv (rational_of_constr args.(0))
+                  (rational_of_constr args.(1))
+	 | "Rplus" -> 
+	     rplus (rational_of_constr args.(0))
+                   (rational_of_constr args.(1))
+	 | "Rminus" -> 
+	     rminus (rational_of_constr args.(0))
+                    (rational_of_constr args.(1))
+	 | _ -> failwith "not a rational")
+  | Const kn ->
+      (match (string_of_R_constant kn) with
+	       "R1" -> r1
+              |"R0" -> r0
               |  _ -> failwith "not a rational")
   |  _ -> failwith "not a rational"
 ;;
@@ -122,43 +126,40 @@ let rec flin_of_constr c =
     match kind_of_term c with
   | Cast (c,t) -> (flin_of_constr c)
   | App (c,args) ->
-        (match kind_of_term c with
-           Const c ->
-            (match (string_of_path c) with
-	     "Coq.Reals.Rdefinitions.Ropp" -> 
-                  flin_emult (rop r1) (flin_of_constr args.(0))
-	    |"Coq.Reals.Rdefinitions.Rplus"-> 
-                  flin_plus (flin_of_constr args.(0))
-	                    (flin_of_constr args.(1))
-	    |"Coq.Reals.Rdefinitions.Rminus"->
-                  flin_minus (flin_of_constr args.(0))
-	                     (flin_of_constr args.(1))
-	    |"Coq.Reals.Rdefinitions.Rmult"->
+      (match (string_of_R_constr c) with
+	   "Ropp" -> 
+             flin_emult (rop r1) (flin_of_constr args.(0))
+	 | "Rplus"-> 
+             flin_plus (flin_of_constr args.(0))
+	               (flin_of_constr args.(1))
+	 | "Rminus"->
+             flin_minus (flin_of_constr args.(0))
+	                (flin_of_constr args.(1))
+	 | "Rmult"->
 	     (try (let a=(rational_of_constr args.(0)) in
-                   try (let b = (rational_of_constr args.(1)) in
+                     try (let b = (rational_of_constr args.(1)) in
 			    (flin_add_cste (flin_zero()) (rmult a b)))
-		   with _-> (flin_add (flin_zero())
-		             args.(1) 
-                             a))
+		     with _-> (flin_add (flin_zero())
+				 args.(1) 
+				 a))
 	      with _-> (flin_add (flin_zero())
-				 args.(0) 
-				 (rational_of_constr args.(1))))
-	    |"Coq.Reals.Rdefinitions.Rinv"->
-	       let a=(rational_of_constr args.(0)) in
+			  args.(0) 
+			  (rational_of_constr args.(1))))
+	 | "Rinv"->
+	     let a=(rational_of_constr args.(0)) in
 	       flin_add_cste (flin_zero()) (rinv a)
-	    |"Coq.Reals.Rdefinitions.Rdiv"->
-	      (let b=(rational_of_constr args.(1)) in
-	       try (let a = (rational_of_constr args.(0)) in
+	 | "Rdiv"->
+	     (let b=(rational_of_constr args.(1)) in
+		try (let a = (rational_of_constr args.(0)) in
 		       (flin_add_cste (flin_zero()) (rdiv a b)))
-	       with _-> (flin_add (flin_zero())
-		             args.(0) 
-                             (rinv b)))
-            |_->assert false)
-           |_ -> assert false)
+		with _-> (flin_add (flin_zero())
+		            args.(0) 
+                            (rinv b)))
+         |_->assert false)
   | Const c ->
-        (match (string_of_path c) with
-	       "Coq.Reals.Rdefinitions.R1" -> flin_one ()
-              |"Coq.Reals.Rdefinitions.R0" -> flin_zero ()
+        (match (string_of_R_constant c) with
+	       "R1" -> flin_one ()
+              |"R0" -> flin_zero ()
               |_-> assert false)
   |_-> assert false)
   with _ -> flin_add (flin_zero())
@@ -191,29 +192,29 @@ let ineq1_of_constr (h,t) =
          let t2= args.(1) in
          (match kind_of_term f with
            Const c ->
-            (match (string_of_path c) with
-		 "Coq.Reals.Rdefinitions.Rlt" -> [{hname=h;
+            (match (string_of_R_constant c) with
+		 "Rlt" -> [{hname=h;
                            htype="Rlt";
 		           hleft=t1;
 			   hright=t2;
 			   hflin= flin_minus (flin_of_constr t1)
                                              (flin_of_constr t2);
 			   hstrict=true}]
-		|"Coq.Reals.Rdefinitions.Rgt" -> [{hname=h;
+		|"Rgt" -> [{hname=h;
                            htype="Rgt";
 		           hleft=t2;
 			   hright=t1;
 			   hflin= flin_minus (flin_of_constr t2)
                                              (flin_of_constr t1);
 			   hstrict=true}]
-		|"Coq.Reals.Rdefinitions.Rle" -> [{hname=h;
+		|"Rle" -> [{hname=h;
                            htype="Rle";
 		           hleft=t1;
 			   hright=t2;
 			   hflin= flin_minus (flin_of_constr t1)
                                              (flin_of_constr t2);
 			   hstrict=false}]
-		|"Coq.Reals.Rdefinitions.Rge" -> [{hname=h;
+		|"Rge" -> [{hname=h;
                            htype="Rge";
 		           hleft=t2;
 			   hright=t1;
@@ -221,15 +222,15 @@ let ineq1_of_constr (h,t) =
                                              (flin_of_constr t1);
 			   hstrict=false}]
                 |_->assert false)
-          | Ind (sp,i) ->
-              (match (string_of_path sp) with 
-		 "Coq.Init.Logic_Type.eqT" ->  let t0= args.(0) in
+          | Ind (kn,i) ->
+	      if IndRef(kn,i) = Coqlib.glob_eqT then
+		           let t0= args.(0) in
                            let t1= args.(1) in
                            let t2= args.(2) in
 		    (match (kind_of_term t0) with
                          Const c ->
-			   (match (string_of_path c) with
-			      "Coq.Reals.Rdefinitions.R"->
+			   (match (string_of_R_constant c) with
+			      "R"->
                          [{hname=h;
                            htype="eqTLR";
 		           hleft=t1;
@@ -246,7 +247,8 @@ let ineq1_of_constr (h,t) =
 			   hstrict=false}]
                            |_-> assert false)
                          |_-> assert false)
-                   |_-> assert false)
+	      else
+		assert false
           |_-> assert false)
         |_-> assert false
 ;;
@@ -373,17 +375,17 @@ let tac_use h = match h.htype with
 
 let is_ineq (h,t) =
     match (kind_of_term t) with
-       App (f,args) ->
-         (match (string_of_constr f) with
-		 "Coq.Reals.Rdefinitions.Rlt" -> true
-		|"Coq.Reals.Rdefinitions.Rgt" -> true
-		|"Coq.Reals.Rdefinitions.Rle" -> true
-		|"Coq.Reals.Rdefinitions.Rge" -> true
-		|"Coq.Init.Logic_Type.eqT" -> (match (string_of_constr args.(0)) with
-                            "Coq.Reals.Rdefinitions.R"->true
-			    |_->false)
-                |_->false)
-     |_->false
+	App (f,args) ->
+	  (match (string_of_R_constr f) with
+	       "Rlt" -> true
+	     | "Rgt" -> true
+	     | "Rle" -> true
+	     | "Rge" -> true
+	     | "eqT" -> (match (string_of_R_constr args.(0)) with
+			     "R" -> true
+			   | _ -> false)
+             | _ ->false)
+      |_->false
 ;;
 
 let list_of_sign s = List.map (fun (x,_,z)->(x,z)) s;;
@@ -395,7 +397,7 @@ let mkAppL a =
 
 (* Résolution d'inéquations linéaires dans R *)
 let rec fourier gl=
-    Library.check_required_module ["Coq";"fourier";"Fourier"];
+    Library.check_required_library ["Coq";"fourier";"Fourier"];
     let parse = pf_parse_constr gl in
     let goal = strip_outer_cast (pf_concl gl) in
     let fhyp=id_of_string "new_hyp_for_fourier" in
@@ -404,23 +406,23 @@ let rec fourier gl=
     try (let tac =
      match (kind_of_term goal) with
       App (f,args) ->
-      (match (string_of_constr f) with
-	     "Coq.Reals.Rdefinitions.Rlt" -> 
+      (match (string_of_R_constr f) with
+	     "Rlt" -> 
 	       (tclTHEN
 	         (tclTHEN (apply (parse "Rfourier_not_ge_lt"))
 			  (intro_using  fhyp))
 		 fourier)
-	    |"Coq.Reals.Rdefinitions.Rle" -> 
+	    |"Rle" -> 
 	     (tclTHEN
 	      (tclTHEN (apply (parse "Rfourier_not_gt_le"))
 		       (intro_using  fhyp))
 			fourier)
-	    |"Coq.Reals.Rdefinitions.Rgt" -> 
+	    |"Rgt" -> 
 	     (tclTHEN
 	      (tclTHEN (apply (parse "Rfourier_not_le_gt"))
 		       (intro_using  fhyp))
 	      fourier)
-	    |"Coq.Reals.Rdefinitions.Rge" -> 
+	    |"Rge" -> 
 	     (tclTHEN
 	      (tclTHEN (apply (parse "Rfourier_not_lt_ge"))
 		       (intro_using  fhyp))

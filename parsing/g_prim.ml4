@@ -15,6 +15,7 @@ camlp4o pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -im
 open Coqast
 open Pcoq
 open Names
+open Libnames
 
 ifdef Quotify then
 open Qast
@@ -26,7 +27,7 @@ open Prim
 ifdef Quotify then
 module Prelude = struct
 let local_id_of_string s = Apply ("Names","id_of_string", [s])
-let local_make_dirpath l = Qast.Apply ("Nametab","make_dirpath",[l])
+let local_make_dirpath l = Qast.Apply ("Names","make_dirpath",[l])
 let local_make_posint s = s
 let local_make_negint s = Apply ("Pervasives","~-", [s])
 let local_make_qualid l id' = 
@@ -34,7 +35,7 @@ let local_make_qualid l id' =
 let local_make_short_qualid id =
   Qast.Apply ("Nametab","make_short_qualid",[id])
 let local_make_path l id' =
-  Qast.Apply ("Names","make_path", [local_make_dirpath l;id'])
+  Qast.Apply ("Libnames","encode_kn", [local_make_dirpath l;id'])
 let local_make_binding loc a b =
   match a with
     | Qast.Node ("Nvar", [_;id]) ->
@@ -56,7 +57,7 @@ let local_make_qualid l id' = make_qualid (local_make_dirpath l) id'
 let local_make_short_qualid id = make_short_qualid id
 let local_make_posint = int_of_string
 let local_make_negint n = - int_of_string n
-let local_make_path l a = make_path (local_make_dirpath l) a
+let local_make_path l a = encode_kn (local_make_dirpath l) a
 let local_make_binding loc a b =
   match a with
     | Nvar (_,id) -> Slam(loc,Some id,b)

@@ -15,6 +15,7 @@ open Nameops
 open Sign
 open Term
 open Declarations
+open Entries
 open Environ
 open Evd
 open Declare
@@ -34,7 +35,7 @@ open Safe_typing
 type proof_topstate = {
   top_hyps : named_context * named_context;
   top_goal : goal;
-  top_strength : bool * Nametab.strength;
+  top_strength : bool * Libnames.strength;
   top_hook : declaration_hook }
 
 let proof_edits =

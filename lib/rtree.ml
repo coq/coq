@@ -61,6 +61,26 @@ let rec subst_rtree_rec depth sub = function
 
 let subst_rtree sub t = subst_rtree_rec 0 sub t
 
+let rec map f t = match t with
+    Param i -> Param i
+  | Node (a,sons) -> Node (f a, Array.map (map f) sons)
+  | Rec(j,defs) -> Rec (j, Array.map (map f) defs)
+
+let rec smartmap f t = match t with
+    Param i -> t
+  | Node (a,sons) -> 
+      let a'=f a and sons' = Util.array_smartmap (map f) sons in
+	if a'==a && sons'==sons then
+	  t
+	else
+	  Node (a',sons')
+  | Rec(j,defs) -> 
+      let defs' = Util.array_smartmap (map f) defs in
+	if defs'==defs then
+	  t
+	else
+	  Rec(j,defs')
+
 (* To avoid looping, we must check that every body introduces a node 
    or a parameter *)
 let rec expand_rtree = function

@@ -14,6 +14,7 @@ open Names
 open Term
 open Termops
 open Environ
+open Libnames
 open Reduction
 open Inductiveops
 open Proof_type
@@ -103,7 +104,7 @@ let head_in gls indl t =
   with Not_found -> false
        
 let inductive_of = function
-  | Nametab.IndRef ity -> ity
+  | IndRef ity -> ity
   | r ->
       errorlabstrm "Decompose"
         (Printer.pr_global r ++ str " is not an inductive type")

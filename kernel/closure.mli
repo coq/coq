@@ -24,14 +24,14 @@ val with_stats: 'a Lazy.t -> 'a
 
 type evaluable_global_reference =
   | EvalVarRef of identifier
-  | EvalConstRef of section_path
+  | EvalConstRef of kernel_name
 
 (*s Delta implies all consts (both global (= by
-  [section_path]) and local (= by [Rel] or [Var])), all evars, and letin's.
+  [kernel_name]) and local (= by [Rel] or [Var])), all evars, and letin's.
   Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of 
   a LetIn expression is Letin reduction *)
 
-type transparent_state = Idpred.t * Sppred.t
+type transparent_state = Idpred.t * KNpred.t
 
 val all_opaque      : transparent_state
 val all_transparent : transparent_state

@@ -12,6 +12,7 @@ open Util
 open Pp
 open Options
 open Names
+open Libnames
 open Nametab
 open Environ
 open Libobject
@@ -166,6 +167,29 @@ let lookup_pattern_path_between (s,t) =
 	 | Construct sp -> (sp, coe.coe_param)
 	 | _ -> raise Not_found) l
 
+
+let subst_cl_typ subst ct = match ct with
+    CL_SORT
+  | CL_FUN
+  | CL_SECVAR _ -> ct
+  | CL_CONST kn -> 
+      let kn' = subst_kn subst kn in 
+	if kn' == kn then ct else
+	  CL_CONST kn'
+  | CL_IND (kn,i) ->
+      let kn' = subst_kn subst kn in 
+	if kn' == kn then ct else
+	  CL_IND (kn',i)
+
+let subst_coe_typ = subst_global
+
+let subst_coe_info subst info = 
+  let jud = info.coe_value in
+  let val' = subst_mps subst (j_val jud) in
+  let type' = subst_mps subst (j_type jud) in
+    if val' == j_val jud && type' == j_type jud then info else
+      {info with coe_value = make_judge val' type'}
+
 (* library, summary *)
 
 (*val inClass : (cl_typ * cl_info_typ) -> Libobject.object = <fun>
@@ -173,12 +197,18 @@ let lookup_pattern_path_between (s,t) =
 
 let cache_class (_,x) = add_new_class x
 
+let subst_class (_,subst,(ct,ci as obj)) = 
+  let ct' = subst_cl_typ subst ct in
+    if ct' == ct then obj else
+      (ct',ci)
+
 let (inClass,outClass) =
-  declare_object ("CLASS",
-                  { load_function = cache_class;
-		    open_function = (fun _ -> ());
+  declare_object {(default_object "CLASS") with 
+		    load_function = (fun _ o -> cache_class o);
                     cache_function = cache_class;
-                    export_function = (function x -> Some x) })
+		    subst_function = subst_class;
+		    classify_function = (fun (_,x) -> Substitute x); 
+		    export_function = (function x -> Some x)  }
 
 let declare_class (cl,stre,p) = 
   Lib.add_anonymous_leaf (inClass ((cl,{ cl_strength = stre; cl_param = p })))
@@ -225,7 +255,7 @@ let inductive_class_of ind = fst (class_info (CL_IND ind))
 let class_args_of c = snd (decompose_app c)
 
 let strength_of_cl = function 
-  | CL_CONST sp -> constant_strength sp
+  | CL_CONST kn -> constant_strength (sp_of_global None (ConstRef kn))
   | CL_SECVAR sp -> variable_strength sp
   | _ -> NeverDischarge
 
@@ -233,11 +263,11 @@ let string_of_class = function
   | CL_FUN -> "FUNCLASS"
   | CL_SORT -> "SORTCLASS" 
   | CL_CONST sp ->
-      string_of_qualid (shortest_qualid_of_global (Global.env()) (ConstRef sp))
+      string_of_qualid (shortest_qualid_of_global None (ConstRef sp))
   | CL_IND sp ->
-      string_of_qualid (shortest_qualid_of_global (Global.env()) (IndRef sp))
+      string_of_qualid (shortest_qualid_of_global None (IndRef sp))
   | CL_SECVAR sp ->
-      string_of_qualid (shortest_qualid_of_global (Global.env()) (VarRef sp))
+      string_of_qualid (shortest_qualid_of_global None (VarRef sp))
 
 (* coercion_value : coe_index -> unsafe_judgment * bool *)
 
@@ -316,17 +346,27 @@ let cache_coercion (_,((coe,xf),cls,clt)) =
   let jf = add_new_coercion (coe,xf) in
   add_coercion_in_graph (jf,is,it)
 
+let subst_coercion (_,subst,((coe,xf),cls,clt as obj)) =
+  let coe' = subst_coe_typ subst coe in
+  let xf' = subst_coe_info subst xf in
+  let cls' = subst_cl_typ subst cls in
+  let clt' = subst_cl_typ subst clt in
+    if coe' == coe && xf' == xf && cls' == cls & clt' == clt then obj else
+      ((coe',xf'),cls',clt')
+      
+    
 (* val inCoercion : (coe_typ * coe_info_typ) * cl_typ * cl_typ  ->
                     -> Libobject.object 
    val outCoercion : Libobject.object -> (coe_typ * coe_info_typ) 
                          * cl_typ * cl_typ *)
 
 let (inCoercion,outCoercion) =
-  declare_object ("COERCION",
-                  { load_function = cache_coercion;
-		    open_function = (fun _ -> ());
+  declare_object {(default_object "COERCION") with 
+		    load_function = (fun _ o -> cache_coercion o);
                     cache_function = cache_coercion;
-                    export_function = (function x -> Some x) })
+		    subst_function = subst_coercion;
+		    classify_function = (fun (_,x) -> Substitute x); 
+                    export_function = (function x -> Some x)  }
 
 let declare_coercion coef v stre ~isid ~src:cls ~target:clt ~params:ps =
   Lib.add_anonymous_leaf
@@ -353,14 +393,15 @@ let coercion_of_qualid qid =
   let coe = coe_of_reference ref in
   if not (coercion_exists coe) then
     errorlabstrm "try_add_coercion" 
-      (Nametab.pr_global_env (Global.env()) ref ++ str" is not a coercion");
+      (Nametab.pr_global_env None ref ++ str" is not a coercion");
   coe
 
 module CoercionPrinting =
   struct
     type t = coe_typ
     let encode = coercion_of_qualid
-    let printer x = pr_global_env (Global.env()) x
+    let subst = subst_coe_typ
+    let printer x = pr_global_env None x
     let key = Goptions.SecondaryTable ("Printing","Coercion")
     let title = "Explicitly printed coercions: "
     let member_message x b =

@@ -12,6 +12,7 @@ open System
 open Pp
 open Ast
 open Names
+open Libnames
 open Nameops
 open Sign
 open Univ
@@ -39,9 +40,22 @@ let pppattern = (fun x -> pp(pr_pattern x))
 let pptype = (fun x -> pp(prtype x))
 
 let prid id = pp (pr_id id)
+let prlab l = pp (pr_lab l)
+
+let prmsid msid = pp (str (string_of_msid msid))
+let prmbid mbid = pp (str (string_of_mbid mbid))
+
+let prdir dir = pp (pr_dirpath dir)
+
+let prmp mp = pp(str (string_of_mp mp))
+let prkn kn = pp(pr_kn kn)
+
+let prsp sp = pp(pr_sp sp)
+
+let prqualid qid = pp(pr_qualid qid)
 
 let prconst (sp,j) =
-    pp (str"#" ++ pr_sp sp ++ str"=" ++ prterm j.uj_val)
+    pp (str"#" ++ pr_kn sp ++ str"=" ++ prterm j.uj_val)
 
 let prvar ((id,a)) =
     pp (str"#" ++ pr_id id ++ str":" ++ prterm a)
@@ -50,10 +64,6 @@ let genprj f j =
   let (c,t) = Termast.with_casts f j in (c ++ str " : " ++ t)
 
 let prj j = pp (genprj prjudge j)
-
-let prsp sp = pp(pr_sp sp)
-
-let prqualid qid = pp(Nametab.pr_qualid qid)
 
 let prgoal g = pp(prgl g)
 
@@ -81,6 +91,8 @@ let ppenv e = pp (pr_rel_context e (rel_context e))
 
 let pptac = (fun x -> pp(Pptactic.pr_raw_tactic x))
 
+let pr_obj obj = Format.print_string (Libobject.object_tag obj)
+
 let cnt = ref 0
 
 let constr_display csr =
@@ -99,11 +111,11 @@ let constr_display csr =
       ^(term_display t)^","^(term_display c)^")"
   | App (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
   | Evar (e,l) -> "Evar("^(string_of_int e)^","^(array_display l)^")"
-  | Const c -> "Const("^(string_of_path c)^")"
+  | Const c -> "Const("^(string_of_kn c)^")"
   | Ind (sp,i) ->
-      "MutInd("^(string_of_path sp)^","^(string_of_int i)^")"
+      "MutInd("^(string_of_kn sp)^","^(string_of_int i)^")"
   | Construct ((sp,i),j) ->
-      "MutConstruct(("^(string_of_path sp)^","^(string_of_int i)^"),"
+      "MutConstruct(("^(string_of_kn sp)^","^(string_of_int i)^"),"
       ^(string_of_int j)^")"
   | Case (ci,p,c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
@@ -243,13 +255,15 @@ let print_pure_constr csr =
     | Name id -> print_string (string_of_id id)
     | Anonymous -> print_string "_"
 (* Remove the top names for library and Scratch to avoid long names *)
-  and sp_display sp = let ls = 
-    match List.rev (List.map string_of_id (repr_dirpath (dirpath sp))) with 
-        ("Scratch"::l)-> l
-      | ("Coq"::_::l) -> l 
-      | l             -> l
-  in  List.iter (fun x -> print_string x; print_string ".") ls;
-      print_string (string_of_id  (basename sp))
+  and sp_display sp = 
+    let dir,l = decode_kn sp in
+    let ls = 
+      match List.rev (List.map string_of_id (repr_dirpath dir)) with 
+          ("Top"::l)-> l
+	| ("Coq"::_::l) -> l 
+	| l             -> l
+    in  List.iter (fun x -> print_string x; print_string ".") ls;
+      print_string (string_of_id l)
 
   in
      box_display csr; print_flush()
@@ -272,3 +286,4 @@ let _ =
   	      print_pure_constr (Astterm.interp_constr evmap sign c))
        | _ -> bad_vernac_args "PrintPureConstr")
 *)
+

@@ -10,7 +10,7 @@
 
 open Vernacinterp
 open Names
-open Nametab
+open Libnames
 
 (*s AutoInline parameter *) 
 

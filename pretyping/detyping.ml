@@ -23,6 +23,7 @@ open Impargs
 open Rawterm
 open Nameops
 open Termops
+open Libnames
 open Nametab
 
 (****************************************************************************)
@@ -66,7 +67,11 @@ module PrintingCasesMake =
   struct
     type t = inductive * int array
     let encode = Test.encode
-    let printer (ind,_) = pr_global_env (Global.env()) (IndRef ind)
+    let subst subst ((kn,i), ints as obj) =
+      let kn' = subst_kn subst kn in
+	if kn' == kn then obj else
+	  (kn',i), ints
+    let printer (ind,_) = pr_global_env None (IndRef ind)
     let key = Goptions.SecondaryTable ("Printing",Test.field)
     let title = Test.title
     let member_message x = Test.member_message (printer x)

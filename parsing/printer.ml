@@ -21,6 +21,7 @@ open Declare
 open Coqast
 open Ast
 open Termast
+open Libnames
 open Extend
 open Nametab
 open Ppconstr

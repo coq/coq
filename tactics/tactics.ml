@@ -20,6 +20,7 @@ open Inductive
 open Inductiveops
 open Reductionops
 open Environ
+open Libnames
 open Declare
 open Evd
 open Pfedit
@@ -906,8 +907,8 @@ let find_eliminator c gl =
   let env = pf_env gl in
   let (ind,t) = reduce_to_quantified_ind env (project gl) (pf_type_of gl c) in
   let s = elimination_sort_of_goal gl in
-  try Indrec.lookup_eliminator ind s 
-  with Not_found -> 
+    Indrec.lookup_eliminator ind s 
+(*  with Not_found -> 
     let dir, base = repr_path (path_of_inductive env ind) in
     let id = Indrec.make_elimination_ident base s in
     errorlabstrm "default_elim"
@@ -917,7 +918,7 @@ let find_eliminator c gl =
          pr_id base ++ spc () ++ str "on sort " ++
          spc () ++ print_sort (new_sort_in_family s) ++
 	 str " is probably not allowed")
-
+(* lookup_eliminator prints the message *) *)
 let default_elim (c,lbindc) gl = 
   general_elim (c,lbindc) (find_eliminator c gl,NoBindings) gl
 
@@ -925,6 +926,7 @@ let elim (c,lbindc) elim gl =
   match elim with
   | Some (elimc,lbindelimc) -> general_elim (c,lbindc) (elimc,lbindelimc) gl
   | None -> general_elim (c,lbindc) (find_eliminator c gl,NoBindings) gl 
+
 
 (* The simplest elimination tactic, with no substitutions at all. *)
 
@@ -1001,7 +1003,7 @@ let general_elim_in id (c,lbindc) (elimc,lbindelimc) gl =
 
 (* We recompute recargs because we are not sure the elimination lemma
 comes from a canonically generated one *)
-
+(* dead code ?
 let rec is_rec_arg env sigma indpath t =
   try
     let (ind_sp,_) = find_mrectype env sigma t in
@@ -1014,7 +1016,7 @@ let rec recargs indpath env sigma t =
 	(is_rec_arg env sigma indpath t)
 	::(recargs indpath (push_rel_assum (na,t) env) sigma c2)
     | _ -> []
-
+*)
 let induct_discharge old_style mind statuslists cname destopt avoid ra gl =
   let (lstatus,rstatus) = statuslists in
   let tophyp = ref None in
@@ -1598,7 +1600,7 @@ let abstract_subproof name tac gls =
   in
   if occur_existential concl then error "Abstract cannot handle existentials";
   let lemme =
-    start_proof na (false,Nametab.NeverDischarge) current_sign concl (fun _ _ -> ());
+    start_proof na (false,NeverDischarge) current_sign concl (fun _ _ -> ());
     let _,(const,(_,strength),_) =
       try
 	by (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)); 
@@ -1607,10 +1609,10 @@ let abstract_subproof name tac gls =
       with e when catchable_exception e -> 
 	(delete_current_proof(); raise e)
     in   (* Faudrait un peu fonctionnaliser cela *)
-    let cd = Safe_typing.ConstantEntry const in
+    let cd = Entries.DefinitionEntry const in
     let sp = Declare.declare_constant na (cd,strength) in
     let newenv = Global.env() in
-    Declare.constr_of_reference (ConstRef sp)
+    Declare.constr_of_reference (ConstRef (snd sp))
   in
   exact_no_check 
     (applist (lemme,

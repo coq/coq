@@ -102,7 +102,7 @@ module Prim :
   sig
     open Util
     open Names
-    open Nametab
+    open Libnames
     val preident : string Gram.Entry.e
     val ident : identifier Gram.Entry.e
     val rawident : identifier located Gram.Entry.e
@@ -150,6 +150,13 @@ module Constr :
     val ne_binders_list : Coqast.t list Gram.Entry.e
   end
 
+module Module : 
+  sig
+    val ne_binders_list : Coqast.t list Gram.Entry.e
+    val module_expr : Coqast.t Gram.Entry.e
+    val module_type : Coqast.t Gram.Entry.e
+  end
+
 module Tactic :
   sig
     open Rawterm
@@ -168,7 +175,7 @@ module Tactic :
 module Vernac_ :
   sig
     open Util
-    open Nametab
+    open Libnames
     val thm_token : theorem_kind Gram.Entry.e
     val class_rawexpr : class_rawexpr Gram.Entry.e
     val gallina : vernac_expr Gram.Entry.e

@@ -11,6 +11,7 @@
 open Pp
 open Util
 open Names
+open Libnames
 open Coqast
 open Tacexpr
 open Genarg
@@ -111,15 +112,6 @@ type act =
   | ActCase of act * (pat * act) list
   | ActCaseList of act * (pat * act) list
 
-(*
-type act =
-  | Aast of typed_ast
-  | Aastlist of patlist
-  | Acase of act * (Coqast.t * act) list
-  | Atypedcase of act * (typed_ast * act) list
-  | Acaselist of act * (patlist * act) list
-*)
-
 (* values associated to variables *)
 type typed_ast =
   | AstListNode of Coqast.t list
@@ -139,7 +131,7 @@ let rec print_ast ast =
   match ast with
     | Num(_,n) -> int n
     | Str(_,s) -> qs s
-    | Path(_,sl) -> str (string_of_path sl)
+    | Path(_,sl) -> str (string_of_kn sl)
     | Id (_,s) -> str "{" ++ str s ++ str "}"
     | Nvar(_,s) -> str (string_of_id s)
     | Nmeta(_,s) -> str s
@@ -226,8 +218,8 @@ let coerce_to_id a = match coerce_to_var a with
         (loc ast,"Ast.coerce_to_id",
          str"This expression should be a simple identifier")
 
-let coerce_qualid_to_id (loc,qid) = match Nametab.repr_qualid qid with
-  | dir, id when dir = Nameops.empty_dirpath -> id
+let coerce_qualid_to_id (loc,qid) = match repr_qualid qid with
+  | dir, id when dir = empty_dirpath -> id
   | _ ->
       user_err_loc (loc, "Ast.coerce_qualid_to_id",
         str"This expression should be a simple identifier")
@@ -749,3 +741,27 @@ and caselist vars etyp (pl,a) =
   (AstListPat apl,aa)
 
 let to_act_check_vars = act_of_ast
+
+let rec subst_astpat subst = function
+  | Pquote a -> Pquote (subst_ast subst a)
+  | Pmeta _ as p -> p
+  | Pnode (s,pl) -> Pnode (s,subst_astpatlist subst pl)
+  | Pslam (ido,p) -> Pslam (ido,subst_astpat subst p)
+  | Pmeta_slam (s,p) -> Pmeta_slam (s,subst_astpat subst p)
+
+and subst_astpatlist subst = function
+  | Pcons (p,pl) -> Pcons (subst_astpat subst p, subst_astpatlist subst pl)
+  | (Plmeta _ | Pnil) as pl -> pl
+
+let subst_pat subst = function
+  | AstListPat pl -> AstListPat (subst_astpatlist subst pl)
+  | PureAstPat p -> PureAstPat (subst_astpat subst p)
+
+let rec subst_act subst = function
+  | Act p -> Act (subst_pat subst p)
+  | ActCase (a,l) ->
+      ActCase (subst_act subst a,
+        List.map (fun (p,a) -> subst_pat subst p, subst_act subst a) l)
+  | ActCaseList (a,l) ->
+      ActCaseList (subst_act subst a,
+        List.map (fun (p,a) -> subst_pat subst p, subst_act subst a) l)

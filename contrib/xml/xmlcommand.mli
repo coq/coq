@@ -28,7 +28,7 @@
 (* Note: it is printed only (and directly) the most cooked available      *)
 (*       form of the definition (all the parameters are                   *)
 (*       lambda-abstracted, but the object can still refer to variables)  *)
-val print : Nametab.qualid Util.located -> string option -> unit
+val print : Libnames.qualid Util.located -> string option -> unit
 
 (* show dest                                                  *)
 (*  where dest is either None (for stdout) or (Some filename) *)
@@ -39,14 +39,14 @@ val show : string option -> unit
 (* Coq. No terms are printed. Useful only for debugging                    *)
 val printAll : unit -> unit
 
-(* printModule identifier directory_name *)
-(*  where identifier     is the qualified name of a module d                 *)
+(* printLibrary identifier directory_name *)
+(*  where identifier     is the qualified name of a library d                 *)
 (*  and   directory_name is the directory in which to root all the xml files *)
 (* prints all the xml files and directories corresponding to the subsections *)
-(* and terms of the module d                                                 *)
+(* and terms of the library d                                                 *)
 (* Note: the terms are printed in their uncooked form plus the informations  *)
 (* on the parameters of their most cooked form                               *)
-val printModule : Nametab.qualid Util.located -> string option -> unit
+val printLibrary : Libnames.qualid Util.located -> string option -> unit
 
 (* printSection identifier directory_name *)
 (*  where identifier     is the name of a closed section d                   *)

@@ -10,6 +10,7 @@
 
 (*i*)
 open Names
+open Libnames
 open Term
 open Environ
 open Nametab

@@ -20,6 +20,8 @@ exception UserError of string * std_ppcmds (* User errors *)
 let error string = raise (UserError(string, str string))
 let errorlabstrm l pps = raise (UserError(l,pps))
 
+let todo s = prerr_string ("TODO: "^s^"\n")
+
 (* raising located exceptions *)
 type loc = int * int
 type 'a located = loc * 'a
@@ -122,6 +124,13 @@ let list_assign l n e =
     | ([], _) -> failwith "list_assign"
   in 
   assrec [] (l,n)
+
+let rec list_smartmap f l = match l with
+    [] -> l
+  | h::tl -> 
+      let h' = f h and tl' = list_smartmap f tl in
+	if h'==h && tl'==tl then l
+	else h'::tl'
 
 let list_map_left f = (* ensures the order in case of side-effects *)
   let rec map_rec = function
@@ -302,6 +311,23 @@ let list_share_tails l1 l2 =
 
 let list_join_map f l = List.flatten (List.map f l)
 
+let rec list_fold_map f e = function 
+  |  []  -> (e,[])
+  |  h::t -> 
+       let e',h' = f e h in
+       let e'',t' = list_fold_map f e' t in
+	 e'',h'::t'
+
+(* (* tail-recursive version of the above function *)
+let list_fold_map f e l = 
+  let g (e,b') h = 
+    let (e',h') = f e h in
+      (e',h'::b') 
+  in
+  let (e',lrev) = List.fold_left g (e,[]) l in
+    (e',List.rev lrev)
+*)
+
 (* Arrays *)
 
 let array_exists f v = 
@@ -410,6 +436,35 @@ let array_chop n v =
   if n > vlen then failwith "array_chop";
   (Array.sub v 0 n, Array.sub v n (vlen-n))
 
+exception Local of int
+
+(* If none of the elements is changed by f we return ar itself.
+   The for loop looks for the first such an element.
+   If found it is temporarily stored in a ref and the new array is produced, 
+   but f is not re-applied to elements that are already checked *)
+let array_smartmap f ar = 
+  let ar_size = Array.length ar in
+  let aux = ref None in
+  try
+    for i = 0 to ar_size-1 do
+      let a = ar.(i) in
+      let a' = f a in
+	if a != a' then (* pointer (in)equality *) begin
+	  aux := Some a';
+	  raise (Local i)
+	end
+    done;
+    ar
+  with
+      Local i -> 
+	let copy j = 
+	  if j<i then ar.(j) 
+	  else if j=i then 
+	    match !aux with Some a' -> a' | None -> failwith "Error"
+	  else f (ar.(j))
+	in
+	  Array.init ar_size copy
+
 let array_map2 f v1 v2 =
   if Array.length v1 <> Array.length v2 then invalid_arg "array_map2";
   if Array.length v1 == 0 then 
@@ -507,6 +562,10 @@ let option_compare f a b = match (a,b) with
   | None, None -> true
   | Some a', Some b' -> f a' b'
   | _ -> failwith "option_compare"
+
+let option_smartmap f a = match a with
+  | None -> a
+  | Some x -> let x' = f x in if x'==x then a else Some x'
 
 let map_succeed f = 
   let rec map_f = function 

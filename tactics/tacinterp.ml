@@ -12,6 +12,7 @@ open Astterm
 open Closure
 open RedFlags
 open Declarations
+open Entries
 open Dyn
 open Libobject
 open Pattern
@@ -22,6 +23,7 @@ open Tacred
 open Util
 open Names
 open Nameops
+open Libnames
 open Nametab
 open Pfedit
 open Proof_type
@@ -121,7 +123,7 @@ let make_hyps = List.map (fun (id,_,typ) -> (id,body_of_type typ))
 (* Transforms an id into a constr if possible *)
 let constr_of_id ist id =
   match ist.goalopt with
-  | None -> construct_reference ist.env id
+  | None -> construct_reference (Some (Environ.named_context ist.env)) id
   | Some goal ->
     let hyps = pf_hyps goal in
     if mem_named_context id hyps then
@@ -196,7 +198,7 @@ let look_for_interp = Hashtbl.find interp_tab
 
 let find_reference ist qid =
   (* We first look for a variable of the current proof *)
-  match Nametab.repr_qualid qid, ist.goalopt with
+  match repr_qualid qid, ist.goalopt with
     | (d,id),Some gl when repr_dirpath d = [] & List.mem id (pf_ids_of_hyps gl)
 	-> VarRef id
     | _ -> Nametab.locate qid
@@ -308,7 +310,7 @@ let glob_hyp_or_metanum ist = function
   | MetaNum (loc,n) -> MetaNum (loc,glob_metanum ist loc n)
 
 let glob_qualid_or_metanum ist = function
-  | AN (loc,qid) -> AN (loc,qualid_of_sp (sp_of_global (Global.env())(Nametab.global (loc,qid))))
+  | AN (loc,qid) -> AN (loc,qualid_of_sp (sp_of_global None (Nametab.global (loc,qid))))
   | MetaNum (loc,n) -> MetaNum (loc,glob_metanum ist loc n)
 
 let glob_reference ist (_,qid as locqid) =
@@ -317,7 +319,7 @@ let glob_reference ist (_,qid as locqid) =
     if dir = empty_dirpath && List.mem id (fst ist) then qid
     else raise Not_found
   with Not_found ->
-    qualid_of_sp (sp_of_global (Global.env()) (Nametab.global locqid))
+    qualid_of_sp (sp_of_global None (Nametab.global locqid))
 
 let glob_ltac_qualid ist (loc,qid as locqid) =
   try qualid_of_sp (locate_tactic qid)
@@ -824,7 +826,7 @@ let constr_to_id loc c =
   else invalid_arg_loc (loc, "Not an identifier")
 
 let constr_to_qid loc c =
-  try qualid_of_sp (sp_of_global (Global.env ()) (reference_of_constr c))
+  try qualid_of_sp (sp_of_global None (reference_of_constr c))
   with _ -> invalid_arg_loc (loc, "Not a global reference")
 
 (* Check for LetTac *)
@@ -1706,15 +1708,14 @@ let register_tacdef (sp,td) =
 
 let cache_md (_,defs) =
   (* Needs a rollback if something goes wrong *)
-  List.iter (fun (sp,_) -> Nametab.push_tactic_path sp) defs;
+  List.iter (fun (sp,_) -> Nametab.push_tactic (Until 1) sp) defs;
   List.iter add (List.map register_tacdef defs)
 
 let (inMD,outMD) =
-  declare_object ("TAC-DEFINITION",
-    {cache_function  = cache_md;
-     load_function   = (fun _ -> ());
-     open_function   = cache_md;
-     export_function = (fun x -> Some x)})
+  declare_object {(default_object "TAC-DEFINITION") with
+     cache_function  = cache_md;
+     open_function   = (fun i o -> if i=1 then cache_md o);
+     export_function = (fun x -> Some x)}
 
 (* Adds a definition for tactics in the table *)
 let make_absolute_name (loc,id) =

@@ -24,10 +24,10 @@ type compilation_unit_name = dir_path * checksum
 type global = Constant | Inductive
 
 type globals = {
-  env_constants : constant_body Spmap.t;
-  env_inductives : mutual_inductive_body Spmap.t;
-  env_locals : (global * section_path) list;
-  env_imports : compilation_unit_name list }
+  env_constants : constant_body KNmap.t;
+  env_inductives : mutual_inductive_body KNmap.t;
+  env_modules : module_body MPmap.t;
+  env_modtypes : module_type_body KNmap.t }
 
 type env = {
   env_globals       : globals;
@@ -37,10 +37,10 @@ type env = {
   
 let empty_env = { 
   env_globals = {
-    env_constants = Spmap.empty;
-    env_inductives = Spmap.empty;
-    env_locals = [];
-    env_imports = [] };
+    env_constants = KNmap.empty;
+    env_inductives = KNmap.empty;
+    env_modules = MPmap.empty;
+    env_modtypes = KNmap.empty };
   env_named_context = empty_named_context;
   env_rel_context = empty_rel_context;
   env_universes = initial_universes }
@@ -118,29 +118,27 @@ let fold_named_context_reverse f ~init env =
   Sign.fold_named_context_reverse f ~init:init (named_context env) 
 
 (* Global constants *)
-let lookup_constant sp env =
-  Spmap.find sp env.env_globals.env_constants
+let lookup_constant kn env =
+  KNmap.find kn env.env_globals.env_constants
 
-let add_constant sp cb env =
-  let new_constants = Spmap.add sp cb env.env_globals.env_constants in
-  let new_locals = (Constant,sp)::env.env_globals.env_locals in
+let add_constant kn cb env =
+  let new_constants = KNmap.add kn cb env.env_globals.env_constants in
   let new_globals = 
     { env.env_globals with 
-	env_constants = new_constants; 
-	env_locals = new_locals } in
+	env_constants = new_constants } in 
   { env with env_globals = new_globals }
 
 (* constant_type gives the type of a constant *)
-let constant_type env sp =
-  let cb = lookup_constant sp env in
+let constant_type env kn =
+  let cb = lookup_constant kn env in
   cb.const_type  
 
 type const_evaluation_result = NoBody | Opaque
 
 exception NotEvaluableConst of const_evaluation_result
 
-let constant_value env sp =
-  let cb = lookup_constant sp env in
+let constant_value env kn =
+  let cb = lookup_constant kn env in
   if cb.const_opaque then raise (NotEvaluableConst Opaque);
   match cb.const_body with
     | Some body -> body
@@ -156,16 +154,14 @@ let evaluable_constant cst env =
   with Not_found | NotEvaluableConst _ -> false
 
 (* Mutual Inductives *)
-let lookup_mind sp env =
-  Spmap.find sp env.env_globals.env_inductives
+let lookup_mind kn env =
+  KNmap.find kn env.env_globals.env_inductives
 
-let add_mind sp mib env =
-  let new_inds = Spmap.add sp mib env.env_globals.env_inductives in
-  let new_locals = (Inductive,sp)::env.env_globals.env_locals in
+let add_mind kn mib env =
+  let new_inds = KNmap.add kn mib env.env_globals.env_inductives in
   let new_globals = 
     { env.env_globals with 
-	env_inductives = new_inds;
-	env_locals = new_locals } in
+	env_inductives = new_inds } in
   { env with env_globals = new_globals }
 
 (* Universe constraints *)
@@ -183,8 +179,8 @@ let lookup_constant_variables c env =
   let cmap = lookup_constant c env in
   Sign.instance_from_named_context cmap.const_hyps
 
-let lookup_inductive_variables (sp,i) env =
-  let mis = lookup_mind sp env in
+let lookup_inductive_variables (kn,i) env =
+  let mis = lookup_mind kn env in
   Sign.instance_from_named_context mis.mind_hyps
 
 let lookup_constructor_variables (ind,_) env =
@@ -195,9 +191,9 @@ let lookup_constructor_variables (ind,_) env =
 let vars_of_global env constr =
   match kind_of_term constr with
       Var id -> [id]
-    | Const sp ->
+    | Const kn ->
         List.map destVar 
-          (Array.to_list (lookup_constant_variables sp env))
+          (Array.to_list (lookup_constant_variables kn env))
     | Ind ind ->
         List.map destVar 
           (Array.to_list (lookup_inductive_variables ind env))
@@ -241,67 +237,27 @@ let keep_hyps env needed =
     ~init:empty_named_context
 
 
-(* Constants *)
+(* Modules *)
 
-(*s Modules (i.e. compiled environments). *)
-
-type compiled_env = {
-  cenv_stamped_id : compilation_unit_name;
-  cenv_needed : compilation_unit_name list;
-  cenv_constants : (section_path * constant_body) list;
-  cenv_inductives : (section_path * mutual_inductive_body) list }
-
-let exported_objects env =
-  let gl = env.env_globals in
-  let separate (cst,ind) = function
-    | (Constant,sp) -> (sp,Spmap.find sp gl.env_constants)::cst,ind
-    | (Inductive,sp) -> cst,(sp,Spmap.find sp gl.env_inductives)::ind
-  in
-  List.fold_left separate ([],[]) gl.env_locals
-
-let export env id = 
-  let (cst,ind) = exported_objects env in
-  { cenv_stamped_id = (id,0);
-    cenv_needed = env.env_globals.env_imports;
-    cenv_constants = cst;
-    cenv_inductives = ind }
-
-let check_imports env needed =
-  let imports = env.env_globals.env_imports in
-  let check (id,stamp) =
-    try
-      let actual_stamp = List.assoc id imports in
-      if stamp <> actual_stamp then
-	error ("Inconsistent assumptions over module " ^(string_of_dirpath id))
-    with Not_found -> 
-      error ("Reference to unknown module " ^ (string_of_dirpath id))
-  in
-  List.iter check needed
-
-let import_constraints g sp cst =
-  try
-    merge_constraints cst g
-  with UniverseInconsistency ->
-    error "import_constraints: Universe Inconsistency during import"
-
-let import cenv env =
-  check_imports env cenv.cenv_needed;
-  let add_list t = List.fold_left (fun t (sp,x) -> Spmap.add sp x t) t in
-  let gl = env.env_globals in
+let add_modtype ln mtb env = 
+  let new_modtypes = KNmap.add ln mtb env.env_globals.env_modtypes in
   let new_globals = 
-    { env_constants = add_list gl.env_constants cenv.cenv_constants;
-      env_inductives = add_list gl.env_inductives cenv.cenv_inductives;
-      env_locals = gl.env_locals;
-      env_imports = cenv.cenv_stamped_id :: gl.env_imports }
-  in
-  let g = universes env in
-  let g = List.fold_left 
-	    (fun g (sp,cb) -> import_constraints g sp cb.const_constraints) 
-	    g cenv.cenv_constants in
-  let g = List.fold_left 
-	    (fun g (sp,mib) -> import_constraints g sp mib.mind_constraints) 
-	    g cenv.cenv_inductives in
-  { env with env_globals = new_globals; env_universes = g }
+    { env.env_globals with 
+	env_modtypes = new_modtypes } in
+  { env with env_globals = new_globals }
+
+let shallow_add_module mp mb env = 
+  let new_mods = MPmap.add mp mb env.env_globals.env_modules in
+  let new_globals = 
+    { env.env_globals with 
+	env_modules = new_mods } in
+  { env with env_globals = new_globals }
+
+let lookup_module mp env = 
+  MPmap.find mp env.env_globals.env_modules
+
+let lookup_modtype ln env = 
+  KNmap.find ln env.env_globals.env_modtypes
 
 (*s Judgments. *)
 

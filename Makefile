@@ -81,14 +81,17 @@ LIBREP=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
 KERNEL=kernel/names.cmo kernel/univ.cmo \
        kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
        kernel/declarations.cmo kernel/environ.cmo kernel/closure.cmo \
-       kernel/conv_oracle.cmo kernel/reduction.cmo \
+       kernel/conv_oracle.cmo kernel/reduction.cmo kernel/entries.cmo \
+       kernel/modops.cmo \
        kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
-       kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo
+       kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
+       kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo
 
-LIBRARY=library/nameops.cmo library/libobject.cmo library/summary.cmo \
-        library/nametab.cmo library/lib.cmo library/global.cmo \
-	library/goptions.cmo library/library.cmo library/states.cmo \
-	library/impargs.cmo library/declare.cmo 
+LIBRARY=library/libnames.cmo library/nameops.cmo library/libobject.cmo \
+	library/summary.cmo \
+        library/nametab.cmo library/global.cmo library/lib.cmo \
+	library/declaremods.cmo library/library.cmo library/states.cmo \
+	library/impargs.cmo library/declare.cmo library/goptions.cmo 
 
 PRETYPING=pretyping/termops.cmo \
           pretyping/evd.cmo pretyping/instantiate.cmo \
@@ -103,7 +106,7 @@ PRETYPING=pretyping/termops.cmo \
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo \
         parsing/genarg.cmo proofs/tacexpr.cmo parsing/ast.cmo \
-        parsing/termast.cmo parsing/astterm.cmo \
+        parsing/termast.cmo parsing/astterm.cmo parsing/astmod.cmo \
 	parsing/extend.cmo parsing/esyntax.cmo \
         parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
 	parsing/coqlib.cmo parsing/prettyp.cmo parsing/search.cmo
@@ -111,6 +114,7 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo \
 HIGHPARSING= parsing/g_prim.cmo parsing/g_basevernac.cmo \
 	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
 	parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
+	parsing/g_module.cmo \
 	parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
 
 ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
@@ -181,10 +185,14 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
         kernel/term.cmo kernel/sign.cmo kernel/declarations.cmo \
 	kernel/environ.cmo \
 	kernel/closure.cmo kernel/conv_oracle.cmo kernel/reduction.cmo \
+	kernel/modops.cmo \
 	kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
-	kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo \
+	kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
+        kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo \
+	library/libnames.cmo \
 	library/nameops.cmo library/libobject.cmo library/summary.cmo \
 	library/nametab.cmo library/lib.cmo library/global.cmo \
+	library/declaremods.cmo \
 	library/library.cmo lib/options.cmo library/impargs.cmo \
         library/goptions.cmo \
 	pretyping/evd.cmo pretyping/instantiate.cmo \
@@ -203,7 +211,7 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo \
 	parsing/extend.cmo \
 	parsing/coqlib.cmo pretyping/detyping.cmo \
-	parsing/termast.cmo parsing/astterm.cmo \
+	parsing/termast.cmo parsing/astterm.cmo parsing/astmod.cmo \
 	parsing/egrammar.cmo parsing/esyntax.cmo toplevel/metasyntax.cmo \
 	parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
 	lib/stamps.cmo pretyping/typing.cmo \
@@ -272,9 +280,11 @@ JPROVERCMO=contrib/jprover/opname.cmo \
 
 ML4FILES += contrib/jprover/jprover.ml4
 
-CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) $(XMLCMO) \
-	$(FOURIERCMO) \
-	$(EXTRACTIONCMO) $(CORRECTNESSCMO) $(JPROVERCMO)
+CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
+	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO)
+
+#later $(CORRECTNESSCMO) 
+#later :) 
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -368,7 +378,7 @@ bin/coq-interface$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
 	$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
 
 bin/parser$(EXE): contrib/interface/ctast.cmo contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
-	$(OCAMLC) -cclib -lunix -custom $(MLINCLUDES) -o $@ $(CMA) \
+	$(OCAMLC) -cclib -lunix -custom $(BYTEFLAGS) -o $@ $(CMA) \
 	$(PARSERREQUIRES) \
 	ctast.cmo line_parser.cmo vtp.cmo xlate.cmo parse.cmo
 
@@ -393,6 +403,10 @@ SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
 
 states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
 	$(BESTCOQTOP) -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
+
+#       theories/Init/DatatypesHints.vo   theories/Init/PeanoHints.vo \
+#       theories/Init/LogicHints.vo       theories/Init/SpecifHints.vo \
+#       theories/Init/Logic_TypeHints.vo \
 
 INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/DatatypesSyntax.vo   theories/Init/Prelude.vo       \
@@ -784,7 +798,7 @@ clean::
 # NB: the -maxdepth 3 is for excluding files from contrib/extraction/test
 
 tags:
-	find . -maxdepth 3 -name "*.ml*" | sort -r | xargs \
+	find . -maxdepth 3 -regex ".*\.ml[i4]?" | sort -r | xargs \
 	etags --language=none\
 	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
@@ -822,10 +836,13 @@ CAMLP4EXTENSIONS= parsing/argextend.cmo parsing/tacextend.cmo \
 
 GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
 	   lib/dyn.cmo lib/options.cmo \
-	   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo $(KERNEL) \
-	   library/summary.cmo library/nameops.cmo library/nametab.cmo \
-	   library/libobject.cmo library/lib.cmo library/global.cmo \
-	   library/goptions.cmo pretyping/rawterm.cmo pretyping/evd.cmo \
+	   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo \
+	   $(KERNEL) \
+	   library/libnames.cmo \
+	   library/summary.cmo library/nameops.cmo \
+	   library/nametab.cmo \
+	   library/libobject.cmo library/lib.cmo library/goptions.cmo \
+	   pretyping/rawterm.cmo pretyping/evd.cmo \
 	   parsing/coqast.cmo parsing/genarg.cmo \
 	   proofs/tacexpr.cmo proofs/proof_type.cmo parsing/ast.cmo \
            parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
@@ -839,9 +856,12 @@ clean::
 	rm -f parsing/grammar.cma
 
 ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
-	   parsing/g_vernac.ml4 parsing/g_proofs.ml4 parsing/g_cases.ml4 \
-	   parsing/g_constr.ml4 parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
-	   parsing/argextend.ml4 parsing/tacextend.ml4 parsing/vernacextend.ml4
+	   parsing/g_vernac.ml4 parsing/g_proofs.ml4 \
+	   parsing/g_cases.ml4 \
+	   parsing/g_constr.ml4 parsing/g_module.ml4 \
+	   parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
+	   parsing/argextend.ml4 parsing/tacextend.ml4 \
+	   parsing/vernacextend.ml4
 
 # beforedepend:: $(GRAMMARCMO)
 
@@ -1002,6 +1022,9 @@ depend: beforedepend
 	done
 # 5. Finally, we erase the generated .ml files
 	rm -f $(ML4FILESML)
+# 6. Since .depend contains correct dependencies .depend.devel can be deleted
+# (see dev/Makefile.dir for details about this file)
+	if [ -e makefile ]; then >.depend.devel; else rm -f .depend.devel; fi
 
 ml4clean::
 	rm -f $(ML4FILESML)
@@ -1011,3 +1034,10 @@ clean::
 
 include .depend
 include .depend.coq
+
+
+# this sets up developper supporting stuff
+devel:	
+	touch .depend.devel
+	$(MAKE) -f dev/Makefile.devel setup-devel
+	$(MAKE) dev/top_printers.cmo

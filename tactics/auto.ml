@@ -30,10 +30,11 @@ open Tactics
 open Tacticals
 open Clenv
 open Hiddentac
+open Libnames
+open Nametab
 open Libobject
 open Library
 open Printer
-open Nametab
 open Declarations
 open Tacexpr
 
@@ -161,34 +162,7 @@ let _ = Summary.declare_summary "search"
 
  
 (**************************************************************************)
-(*               declaration of the AUTOHINT library object               *)
-(**************************************************************************)
-
-(* If the database does not exist, it is created *)
-(* TODO: should a warning be printed in this case ?? *)
-let add_hint dbname hintlist = 
-  try 
-    let db = searchtable_map dbname in
-    let db' = Hint_db.add_list hintlist db in
-    searchtable_add (dbname,db')
-  with Not_found -> 
-    let db = Hint_db.add_list hintlist Hint_db.empty in
-    searchtable_add (dbname,db)
-
-let cache_autohint (_,(name,hintlist)) =
-  try add_hint name hintlist with _ -> anomaly "Auto.add_hint"
-
-let export_autohint x = Some x
-
-let (inAutoHint,outAutoHint) =
-  declare_object ("AUTOHINT",
-                  { load_function = (fun _ -> ());
-                    cache_function = cache_autohint;
-		    open_function = cache_autohint;
-                    export_function = export_autohint })
-
-(**************************************************************************)
-(*                     The "Hint" vernacular command                      *)
+(*             Auxiliary functions to prepare AUTOHINT objects            *)
 (**************************************************************************)
 
 let rec nb_hyp c = match kind_of_term c with
@@ -261,22 +235,6 @@ let make_resolve_hyp env sigma (hname,_,htyp) =
     | Failure _ -> []
     | e when Logic.catchable_exception e -> anomaly "make_resolve_hyp"
 
-let add_resolves env sigma clist dbnames =
-  List.iter 
-    (fun dbname ->
-       Lib.add_anonymous_leaf
-	 (inAutoHint
-	    (dbname,
-     	     (List.flatten
-		(List.map
-		   (fun (name,c) -> 
-		      let ty = type_of env sigma c in
-		      let verbose = Options.is_verbose() in
-		      make_resolves env sigma name (true,verbose) (c,ty)) clist
-		))
-	    )))
-    dbnames
-
 (* REM : in most cases hintname = id *)
 let make_unfold (hintname, ref) =
   (Pattern.label_of_ref ref,
@@ -285,12 +243,6 @@ let make_unfold (hintname, ref) =
      pat = None;
      code = Unfold_nth ref })
 
-let add_unfolds l dbnames =
-  List.iter 
-    (fun dbname ->
-       Lib.add_anonymous_leaf (inAutoHint (dbname, List.map make_unfold l)))
-    dbnames
-
 let make_extern name pri pat tacast = 
   let hdconstr = try_head_pattern pat in 
   (hdconstr,
@@ -298,6 +250,126 @@ let make_extern name pri pat tacast =
      pri=pri;
      pat = Some pat;
      code= Extern tacast })
+
+let make_trivial env sigma (name,c) =
+  let t = hnf_constr env sigma (type_of env sigma c) in
+  let hd = head_of_constr_reference (List.hd (head_constr t)) in
+  let ce = mk_clenv_from () (c,t) in
+  (hd, { hname = name;
+	       pri=1;
+               pat = Some (Pattern.pattern_of_constr (clenv_template_type ce).rebus);
+               code=Res_pf_THEN_trivial_fail(c,ce) })
+
+open Vernacexpr
+
+(**************************************************************************)
+(*               declaration of the AUTOHINT library object               *)
+(**************************************************************************)
+
+let eager o = ref (Lazy.Value o)
+
+(* If the database does not exist, it is created *)
+(* TODO: should a warning be printed in this case ?? *)
+let add_hint dbname hintlist = 
+  try 
+    let db = searchtable_map dbname in
+    let db' = Hint_db.add_list hintlist db in
+    searchtable_add (dbname,db')
+  with Not_found -> 
+    let db = Hint_db.add_list hintlist Hint_db.empty in
+    searchtable_add (dbname,db)
+
+let cache_autohint (_,(name,l_hintlist)) =
+  try add_hint name (Lazy.force l_hintlist) with _ -> anomaly "Auto.add_hint"
+
+let subst_autohint (_,subst,((name,l_hintlist) as obj)) = 
+  let recalc_hints hintlist =
+    let env = Global.env() and sigma = Evd.empty in
+    let recalc_hint ((_,data) as hint) =
+      match data.code with
+	| Res_pf (c,_) ->
+	    let c' = Term.subst_mps subst c in
+	      if c==c' then hint else
+		make_apply_entry env sigma (false,false) 
+		  data.hname (c', type_of env sigma c')
+	| ERes_pf (c,_) ->
+	    let c' = Term.subst_mps subst c in
+	      if c==c' then hint else
+		make_apply_entry env sigma (true,false) 
+		  data.hname (c', type_of env sigma c')
+	| Give_exact c ->
+	    let c' = Term.subst_mps subst c in
+	      if c==c' then hint else
+		make_exact_entry data.hname (c',type_of env sigma c')
+	| Res_pf_THEN_trivial_fail (c,_) ->
+	    let c' = Term.subst_mps subst c in
+	      if c==c' then hint else
+		make_trivial env sigma (data.hname,c')
+	| Unfold_nth ref -> 
+	    let ref' = subst_global subst ref in
+	      if ref==ref' then hint else
+		make_unfold (data.hname,ref')
+	| Extern _ ->
+	    anomaly "Extern hints cannot be substituted!!!"
+    in
+      list_smartmap recalc_hint hintlist
+  in
+  let hintlist = Lazy.force l_hintlist in
+    try
+      let hintlist' = recalc_hints hintlist in
+	if hintlist'==hintlist then
+	  obj
+	else
+	  (name,eager hintlist')
+    with
+	_ -> (name,lazy (recalc_hints hintlist))
+
+let classify_autohint (_,((name,l_hintlist) as obj)) =
+  match Lazy.force l_hintlist with
+      [] -> Dispose   
+    | (_,{code=Extern _})::_ -> Keep obj (* TODO! should be changed *)
+    | _ -> Substitute obj
+
+let export_autohint x = Some x
+
+let (inAutoHint,outAutoHint) =
+  declare_object {(default_object "AUTOHINT") with
+                    cache_function = cache_autohint;
+		    load_function = (fun _ -> cache_autohint);
+		    subst_function = subst_autohint;
+		    classify_function = classify_autohint;
+                    export_function = export_autohint }
+
+
+(**************************************************************************)
+(*                     The "Hint" vernacular command                      *)
+(**************************************************************************)
+let add_resolves env sigma clist dbnames =
+  List.iter 
+    (fun dbname ->
+       Lib.add_anonymous_leaf
+	 (inAutoHint
+	    (dbname,
+	     let l =
+     	       List.flatten
+		 (List.map
+		    (fun (name,c) -> 
+		       let ty = type_of env sigma c in
+		       let verbose = Options.is_verbose() in
+			 make_resolves env sigma name (true,verbose) (c,ty)) clist
+		 )
+	     in
+	       eager l
+	    )))
+    dbnames
+
+
+let add_unfolds l dbnames =
+  List.iter 
+    (fun dbname -> Lib.add_anonymous_leaf 
+       (inAutoHint (dbname, eager (List.map make_unfold l))))
+    dbnames
+
 
 let add_extern name pri (patmetas,pat) tacast dbname =
   (* We check that all metas that appear in tacast have at least
@@ -312,28 +384,58 @@ let add_extern name pri (patmetas,pat) tacast dbname =
 	  (str "The meta-variable ?" ++ int i ++ str" is not bound")
     | []  ->
 	Lib.add_anonymous_leaf
-	  (inAutoHint(dbname, [make_extern name pri pat tacast]))
+	  (inAutoHint(dbname, eager [make_extern name pri pat tacast]))
 
 let add_externs name pri pat tacast dbnames = 
   List.iter (add_extern name pri pat tacast) dbnames
 
-let make_trivial (name,c) =
-  let sigma = Evd.empty and env = Global.env() in
-  let t = hnf_constr env sigma (type_of env sigma c) in
-  let hd = head_of_constr_reference (List.hd (head_constr t)) in
-  let ce = mk_clenv_from () (c,t) in
-  (hd, { hname = name;
-	       pri=1;
-               pat = Some (Pattern.pattern_of_constr (clenv_template_type ce).rebus);
-               code=Res_pf_THEN_trivial_fail(c,ce) })
 
-let add_trivials l dbnames =
+let add_trivials env sigma l dbnames =
   List.iter
     (fun dbname ->
-       Lib.add_anonymous_leaf (inAutoHint(dbname, List.map make_trivial l)))
+       Lib.add_anonymous_leaf (
+	 inAutoHint(dbname, eager (List.map (make_trivial env sigma) l))))
     dbnames
 
-open Vernacexpr
+
+let add_hints dbnames h =
+  let dbnames = if dbnames = [] then ["core"] else dbnames in match h with
+  | HintsResolve lhints ->	
+      let env = Global.env() and sigma = Evd.empty in
+      let f (n,c) = 
+	let c = Astterm.interp_constr sigma env c in
+	let n = match n with
+	  | None -> basename (sp_of_global None (Declare.reference_of_constr c))
+	  | Some n -> n in
+	(n,c) in
+      add_resolves env sigma (List.map f lhints) dbnames
+  | HintsImmediate lhints ->
+      let env = Global.env() and sigma = Evd.empty in
+      let f (n,c) = 
+	let c = Astterm.interp_constr sigma env c in
+	let n = match n with
+	  | None -> basename (sp_of_global None (Declare.reference_of_constr c))
+	  | Some n -> n in
+	(n,c) in
+      add_trivials env sigma (List.map f lhints) dbnames
+  | HintsUnfold lhints ->
+      let f (n,locqid) =
+	let r = Nametab.global locqid in
+	let n = match n with
+	  | None -> basename (sp_of_global None r)
+	  | Some n -> n in
+	(n,r) in
+      add_unfolds (List.map f lhints) dbnames
+  | HintsConstructors (hintname, qid) ->
+      let env = Global.env() and sigma = Evd.empty in
+      let isp = global_inductive qid in
+      let consnames = (snd (Global.lookup_inductive isp)).mind_consnames in
+      let lcons = list_tabulate (fun i -> mkConstruct (isp,i+1)) (Array.length consnames) in
+      let lcons = List.map2 (fun id c -> (id,c)) (Array.to_list consnames) lcons in
+      add_resolves env sigma lcons dbnames
+  | HintsExtern (hintname, pri, patcom, tacexp) ->
+      let pat =	Astterm.interp_constrpattern Evd.empty (Global.env()) patcom in
+      add_externs hintname pri pat tacexp dbnames
 
 (**************************************************************************)
 (*                    Functions for printing the hints                    *)
@@ -436,45 +538,6 @@ let print_searchtable () =
        msg (str "In the database " ++ str name ++ fnl ());
        print_hint_db db)
     !searchtable
-
-let add_hints dbnames h =
-  let dbnames = if dbnames = [] then ["core"] else dbnames in match h with
-  | HintsResolve lhints ->	
-      let env = Global.env() and sigma = Evd.empty in
-      let f (n,c) = 
-	let c = Astterm.interp_constr sigma env c in
-	let n = match n with
-	  | None -> basename (sp_of_global env (Declare.reference_of_constr c))
-	  | Some n -> n in
-	(n,c) in
-      add_resolves env sigma (List.map f lhints) dbnames
-  | HintsImmediate lhints ->
-      let env = Global.env() and sigma = Evd.empty in
-      let f (n,c) = 
-	let c = Astterm.interp_constr sigma env c in
-	let n = match n with
-	  | None -> basename (sp_of_global env (Declare.reference_of_constr c))
-	  | Some n -> n in
-	(n,c) in
-      add_trivials (List.map f lhints) dbnames
-  | HintsUnfold lhints ->
-      let f (n,locqid) =
-	let r = Nametab.global locqid in
-	let n = match n with
-	  | None -> basename (sp_of_global (Global.env()) r)
-	  | Some n -> n in
-	(n,r) in
-      add_unfolds (List.map f lhints) dbnames
-  | HintsConstructors (hintname, qid) ->
-      let env = Global.env() and sigma = Evd.empty in
-      let isp = global_inductive qid in
-      let consnames = (snd (Global.lookup_inductive isp)).mind_consnames in
-      let lcons = list_tabulate (fun i -> mkConstruct (isp,i+1)) (Array.length consnames) in
-      let lcons = List.map2 (fun id c -> (id,c)) (Array.to_list consnames) lcons in
-      add_resolves env sigma lcons dbnames
-  | HintsExtern (hintname, pri, patcom, tacexp) ->
-      let pat =	Astterm.interp_constrpattern Evd.empty (Global.env()) patcom in
-      add_externs hintname pri pat tacexp dbnames
 
 (**************************************************************************)
 (*                           Automatic tactics                            *)
@@ -811,7 +874,7 @@ let default_superauto g = superauto !default_search_depth [] [] g
 
 let interp_to_add gl locqid =
   let r = Nametab.global locqid in
-  let id = basename (sp_of_global (Global.env()) r) in
+  let id = basename (sp_of_global None r) in
   (next_ident_away id (pf_ids_of_hyps gl), Declare.constr_of_reference r)
 
 let gen_superauto nopt l a b gl =
@@ -821,5 +884,4 @@ let gen_superauto nopt l a b gl =
 
 let h_superauto no l a b =
   Refiner.abstract_tactic (TacSuperAuto (no,l,a,b)) (gen_superauto no l a b)
-
 

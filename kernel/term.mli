@@ -127,12 +127,12 @@ val mkConst : constant -> constr
 
 (* Inductive types *)
 
-(* Constructs the ith (co)inductive type of the block named sp *)
+(* Constructs the ith (co)inductive type of the block named kn *)
 (* The array of terms correspond to the variables introduced in the section *)
 val mkInd : inductive -> constr
 
 (* Constructs the jth constructor of the ith (co)inductive type of the 
-   block named sp. The array of terms correspond to the variables
+   block named kn. The array of terms correspond to the variables
    introduced in the section *)
 val mkConstruct : constructor -> constr
 
@@ -439,6 +439,12 @@ val subst_vars : identifier list -> constr -> constr
    if two names are identical, the one of least indice is keeped *)
 val substn_vars : int -> identifier list -> constr -> constr
 
+
+(* [subst_mps sub c] performs the substitution [sub] on all kernel
+   names appearing in [c] *)
+val subst_mps : substitution -> constr -> constr
+
+
 (*s Functionals working on the immediate subterm of a construction *)
 
 (* [fold_constr f acc c] folds [f] on the immediate subterms of [c]
@@ -496,7 +502,7 @@ val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
 (*********************************************************************)
 
 val hcons_constr:
-  (section_path -> section_path) *
+  (kernel_name -> kernel_name) *
   (dir_path -> dir_path) *
   (name -> name) *
   (identifier -> identifier) *

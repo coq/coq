@@ -79,8 +79,8 @@ val reduction_of_redexp : red_expr -> reduction_function
 val declare_red_expr : string -> reduction_function -> unit
 
 (* Opaque and Transparent commands. *)
-val set_opaque_const      : section_path -> unit
-val set_transparent_const : section_path -> unit
+val set_opaque_const      : constant -> unit
+val set_transparent_const : constant -> unit
 
 val set_opaque_var      : identifier -> unit
 val set_transparent_var : identifier -> unit

@@ -15,6 +15,8 @@ open Reductionops
 open Term
 open Termops
 open Names
+open Entries
+open Libnames
 open Nameops
 open Util
 open Pp
@@ -51,7 +53,7 @@ let constant dir s =
     try 
       Declare.global_reference_in_absolute_module dir id
   with Not_found ->
-    anomaly ("Setoid: cannot find "^(Nametab.string_of_qualid (Nametab.make_qualid dir id)))
+    anomaly ("Setoid: cannot find "^(string_of_qualid (make_qualid dir id)))
 
 let global_constant dir s =
   let dir = make_dirpath
@@ -60,7 +62,7 @@ let global_constant dir s =
     try 
       Declare.global_reference_in_absolute_module dir id
   with Not_found ->
-    anomaly ("Setoid: cannot find "^(Nametab.string_of_qualid (Nametab.make_qualid dir id)))
+    anomaly ("Setoid: cannot find "^(string_of_qualid (make_qualid dir id)))
 
 let current_constant id =
   try
@@ -97,6 +99,21 @@ let setoid_table_add (s,th) = setoid_table := Gmap.add s th !setoid_table
 let setoid_table_find s = Gmap.find s !setoid_table
 let setoid_table_mem s = Gmap.mem s !setoid_table
 
+let subst_setoid subst setoid = 
+  let set_a' = subst_mps subst setoid.set_a in
+  let set_aeq' = subst_mps subst setoid.set_aeq in
+  let set_th' = subst_mps subst setoid.set_th in
+    if set_a' == setoid.set_a
+      && set_aeq' == setoid.set_aeq
+      && set_th' == setoid.set_th
+    then
+      setoid
+    else
+      { set_a = set_a' ;
+	set_aeq = set_aeq' ;
+	set_th = set_th' ;
+      }
+      
 let equiv_list () = List.map (fun x -> x.set_aeq) (Gmap.rng !setoid_table)
 
 let _ = 
@@ -110,13 +127,19 @@ let _ =
 
 let (setoid_to_obj, obj_to_setoid)=
   let cache_set (_,(s, th)) = setoid_table_add (s,th)
+  and subst_set (_,subst,(s,th as obj)) =
+    let s' = subst_mps subst s in
+    let th' = subst_setoid subst th in
+      if s' == s && th' == th then obj else
+	(s',th')
   and export_set x = Some x 
   in 
-    declare_object ("setoid-theory",
-		    { cache_function = cache_set;
-		      load_function = (fun _ -> ());
-		      open_function = cache_set;
-		      export_function = export_set})
+    declare_object {(default_object "setoid-theory") with
+		      cache_function = cache_set;
+		      open_function = (fun i o -> if i=1 then cache_set o);
+		      subst_function = subst_set;
+		      classify_function = (fun (_,x) -> Substitute x);
+		      export_function = export_set}
 
 (******************************* Table of declared morphisms ********************)
 
@@ -127,6 +150,23 @@ let morphism_table = ref Gmap.empty
 let morphism_table_add (m,c) = morphism_table := Gmap.add m c !morphism_table
 let morphism_table_find m = Gmap.find m !morphism_table
 let morphism_table_mem m = Gmap.mem m !morphism_table
+
+let subst_morph subst morph = 
+  let lem' = subst_mps subst morph.lem in
+  let arg_types' = list_smartmap (subst_mps subst) morph.arg_types in
+  let lem2' = option_smartmap (subst_mps subst) morph.lem2 in
+    if lem' == morph.lem
+      && arg_types' == morph.arg_types
+      && lem2' == morph.lem2
+    then
+      morph
+    else
+      { lem = lem' ;
+	profil = morph.profil ;
+	arg_types = arg_types' ;
+	lem2 = lem2' ;
+      }
+
 
 let _ = 
   Summary.declare_summary "morphism-table"
@@ -139,13 +179,19 @@ let _ =
 
 let (morphism_to_obj, obj_to_morphism)=
   let cache_set (_,(m, c)) = morphism_table_add (m, c)
+  and subst_set (_,subst,(m,c as obj)) = 
+    let m' = subst_mps subst m in
+    let c' = subst_morph subst c in
+      if m' == m && c' == c then obj else
+	(m',c')
   and export_set x = Some x 
   in 
-    declare_object ("morphism-definition",
-		    { cache_function = cache_set;
-		      load_function = (fun _ -> ());
-		      open_function = cache_set;
-		      export_function = export_set})
+    declare_object {(default_object "morphism-definition") with
+		      cache_function = cache_set;
+		      open_function = (fun i o -> if i=1 then cache_set o);
+		      subst_function = subst_set;
+		      classify_function = (fun (_,x) -> Substitute x);
+		      export_function = export_set}
 
 (************************** Adding a setoid to the database *********************)
 
@@ -238,15 +284,15 @@ let add_setoid a aeq th =
 	    let eq_ext_name = gen_eq_lem_name () in 
 	    let eq_ext_name2 = gen_eq_lem_name () in 
 	    let _ = Declare.declare_constant eq_ext_name
-		      ((ConstantEntry {const_entry_body = eq_morph; 
+		      ((DefinitionEntry {const_entry_body = eq_morph; 
 		                       const_entry_type = None;
                                        const_entry_opaque = true}),
-		       Nametab.NeverDischarge) in
+		       Libnames.NeverDischarge) in
 	    let _ = Declare.declare_constant eq_ext_name2
-		      ((ConstantEntry {const_entry_body = eq_morph2; 
+		      ((DefinitionEntry {const_entry_body = eq_morph2; 
 				       const_entry_type = None;
                                        const_entry_opaque = true}),
-		       Nametab.NeverDischarge) in
+		       Libnames.NeverDischarge) in
 	    let eqmorph = (current_constant eq_ext_name) in
 	    let eqmorph2 = (current_constant eq_ext_name2) in
 	      (Lib.add_anonymous_leaf
@@ -290,10 +336,10 @@ let check_is_dependent t n =
 
 let gen_lem_name m = match kind_of_term m with 
   | Var id -> add_suffix id "_ext"
-  | Const sp -> add_suffix (basename sp) "_ext"
-  | Ind (sp, i) -> add_suffix (basename sp) ((string_of_int i)^"_ext")
-  | Construct ((sp,i),j) -> add_suffix
-      (basename sp) ((string_of_int i)^(string_of_int j)^"_ext")
+  | Const kn -> add_suffix (id_of_label (label kn)) "_ext"
+  | Ind (kn, i) -> add_suffix (id_of_label (label kn)) ((string_of_int i)^"_ext")
+  | Construct ((kn,i),j) -> add_suffix
+      (id_of_label (label kn)) ((string_of_int i)^(string_of_int j)^"_ext")
   | _ -> errorlabstrm "New Morphism" (str "The term " ++ prterm m ++ str "is not a known name")
 
 let gen_lemma_tail m lisset body n =
@@ -359,7 +405,7 @@ let new_morphism m id hook =
 	let lem = (gen_compat_lemma env m body args_t poss) in
 	let lemast = (ast_of_constr true env lem) in
 	new_edited id m poss;
-	start_proof_com (Some id) (false,Nametab.NeverDischarge) lemast hook;
+	start_proof_com (Some id) (false,Libnames.NeverDischarge) lemast hook;
 	(Options.if_verbose Vernacentries.show_open_subgoals ()))
 
 let rec sub_bool l1 n = function
@@ -451,10 +497,10 @@ let add_morphism lem_name (m,profil) =
 	 (let lem_2 = gen_lem_iff env m mext args_t poss in
 	  let lem2_name = add_suffix lem_name "2" in
 	  let _ = Declare.declare_constant lem2_name
-		    ((ConstantEntry {const_entry_body = lem_2; 
+		    ((DefinitionEntry {const_entry_body = lem_2; 
 				     const_entry_type = None;
                                      const_entry_opaque = true}),
-		     Nametab.NeverDischarge) in
+		     Libnames.NeverDischarge) in
 	  let lem2 = (current_constant lem2_name) in
 	    (Lib.add_anonymous_leaf
 	       (morphism_to_obj (m, 
@@ -472,7 +518,7 @@ let add_morphism lem_name (m,profil) =
 				lem2 = None}))));
       Options.if_verbose ppnl (prterm m ++str " is registered as a morphism")   
 let morphism_hook stre ref =
-  let pf_id = basename (sp_of_global (Global.env()) ref) in
+  let pf_id = basename (sp_of_global None ref) in
   if (is_edited pf_id)
   then 
     (add_morphism pf_id (what_edited pf_id); no_more_edited pf_id)

@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(*i $Id$ i*)
+
+(*i*)
+
 open Pp
 open Ast
 open Coqast
@@ -42,6 +54,9 @@ val terminal : string -> string * string
 
 val rename_command : string -> string
 
+val subst_grammar_command : 
+  Names.substitution -> grammar_command -> grammar_command
+
 (*s Pretty-print. *)
 
 (* Dealing with precedences *)
@@ -67,8 +82,13 @@ type 'pat unparsing_hunk =
   | UNP_TBRK of int * int
   | UNP_TAB
   | UNP_FNL
-  | UNP_INFIX of Nametab.extended_global_reference * string * string *
+  | UNP_INFIX of Libnames.extended_global_reference * string * string *
       (parenRelation * parenRelation)
+
+(*val subst_unparsing_hunk : 
+  Names.substitution -> (Names.substitution -> 'pat -> 'pat) -> 
+  'pat unparsing_hunk -> 'pat unparsing_hunk
+*)
 
 (* Checks if the precedence of the parent printer (None means the
    highest precedence), and the child's one, follow the given
@@ -86,9 +106,18 @@ type 'pat syntax_entry = {
   syn_astpat : 'pat;
   syn_hunks : 'pat unparsing_hunk list }
 
+val subst_syntax_entry : 
+  (Names.substitution -> 'pat -> 'pat) -> 
+  Names.substitution -> 'pat syntax_entry -> 'pat syntax_entry
+
+
 type 'pat syntax_command = { 
   sc_univ : string; 
   sc_entries : 'pat syntax_entry list }
+
+val subst_syntax_command : 
+  (Names.substitution -> 'pat -> 'pat) -> 
+  Names.substitution -> 'pat syntax_command -> 'pat syntax_command
 
 type syntax_rule = string * Coqast.t * Coqast.t unparsing_hunk list
 type syntax_entry_ast = precedence * syntax_rule list

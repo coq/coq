@@ -71,6 +71,15 @@ let rel_context_nhyps hyps =
 let fold_rel_context f l ~init:x = List.fold_right f l x
 let fold_rel_context_reverse f ~init:x l = List.fold_left f x l
 
+let map_rel_context f l = 
+  let map_decl (n, body_o, typ as decl) =
+    let body_o' = option_smartmap f body_o in
+    let typ' = f typ in
+      if body_o' == body_o && typ' == typ then decl else
+	(n, body_o', typ')
+  in
+    list_smartmap map_decl l
+
 (* Push named declarations on top of a rel context *)
 (* Bizarre. Should be avoided. *)
 let push_named_to_rel_context hyps ctxt =

@@ -26,6 +26,7 @@ open Table
 open Mlutil
 open Closure
 open Summary
+open Libnames
 open Nametab
 (*i*)
 
@@ -91,13 +92,13 @@ let add_constructor c e = constructor_table := Gmap.add c e !constructor_table
 let lookup_constructor c = Gmap.find c !constructor_table
 
 let constant_table = 
-  ref (Gmap.empty : (section_path, ml_decl) Gmap.t)
-let add_constant sp d = constant_table := Gmap.add sp d !constant_table
-let lookup_constant sp = Gmap.find sp !constant_table
+  ref (Gmap.empty : (kernel_name, ml_decl) Gmap.t)
+let add_constant kn d = constant_table := Gmap.add kn d !constant_table
+let lookup_constant kn = Gmap.find kn !constant_table
 
-let signature_table = ref (Gmap.empty : (section_path, signature) Gmap.t)
-let add_signature sp s = signature_table := Gmap.add sp s !signature_table
-let lookup_signature sp = Gmap.find sp !signature_table 
+let signature_table = ref (Gmap.empty : (kernel_name, signature) Gmap.t)
+let add_signature kn s = signature_table := Gmap.add kn s !signature_table
+let lookup_signature kn = Gmap.find kn !signature_table 
 
 (* Tables synchronization. *)
 
@@ -116,15 +117,15 @@ let _ = declare_summary "Extraction tables"
 
 (*S Warning and Error messages. *)
 
-let axiom_error_message sp =
+let axiom_error_message kn =
   errorlabstrm "axiom_message"
     (str "You must specify an extraction for axiom" ++ spc () ++ 
-       pr_sp sp ++ spc () ++ str "first.")
+       pr_kn kn ++ spc () ++ str "first.")
 
-let axiom_warning_message sp = 
+let axiom_warning_message kn = 
   Options.if_verbose warn 
     (str "This extraction depends on logical axiom" ++ spc () ++ 
-     pr_sp sp ++ str "." ++ spc() ++ 
+     pr_kn kn ++ str "." ++ spc() ++ 
      str "Having false logical axiom in the environment when extracting" ++ 
      spc () ++ str "may lead to incorrect or non-terminating ML terms.")
     
@@ -140,7 +141,7 @@ let type_of env c = Retyping.get_type_of env none (strip_outer_cast c)
 
 let sort_of env c = Retyping.get_sort_family_of env none (strip_outer_cast c)
 
-let is_axiom sp = (Global.lookup_constant sp).const_body = None
+let is_axiom kn = (Global.lookup_constant kn).const_body = None
 
 (*s [flag_of_type] transforms a type [t] into a [flag]. 
   Really important function. *)
@@ -191,12 +192,12 @@ let rec type_sign_vl env c =
 
 (*s Function recording signatures of section paths. *)
 
-let signature_of_sp sp = 
-  try lookup_signature sp
+let signature_of_kn kn = 
+  try lookup_signature kn
   with Not_found -> 
     let env = Global.env () in 
-    let s = term_sign env (constant_type env sp)
-    in add_signature sp s; s
+    let s = term_sign env (constant_type env kn)
+    in add_signature kn s; s
 
 (*S Management of type variable contexts. *)
 
@@ -261,16 +262,16 @@ let rec extract_type env db c args =
 	   | _ -> 
 	       let n' = List.nth db (n-1) in 
 	       if n' = 0 then Tunknown else Tvar n')
-    | Const sp ->
-	let t = constant_type env sp in 
+    | Const kn ->
+	let t = constant_type env kn in 
 	(match flag_of_type env t with 
 	   | (Info,Arity) -> 
-	       extract_type_app env db (ConstRef sp, type_sign env t) args
+	       extract_type_app env db (ConstRef kn, type_sign env t) args
 	   | (Info,_) -> Tunknown
 	   | (Logic,_) -> Tdummy)
-    | Ind spi ->
-	(match extract_inductive spi with 
-	   | Iml (si,_) -> extract_type_app env db (IndRef spi,si) args
+    | Ind kni ->
+	(match extract_inductive kni with 
+	   | Iml (si,_) -> extract_type_app env db (IndRef kni,si) args
 	   | Iprop -> Tdummy)
     | Sort _ -> Tdummy 
     | Case _ | Fix _ | CoFix _ -> Tunknown
@@ -341,8 +342,8 @@ and extract_constructor (((sp,_),_) as c) =
   extract_mib sp;
   lookup_constructor c
 
-and extract_mib sp =
-  let ind = (sp,0) in
+and extract_mib kn =
+  let ind = (kn,0) in
   if not (Gmap.mem ind !inductive_table) then begin
     let (mib,mip) = Global.lookup_inductive ind in
     let env = Global.env () in 
@@ -353,7 +354,7 @@ and extract_mib sp =
     (* First pass: we store inductive signatures together with *)
     (* their type var list. *)
     for i = 0 to mib.mind_ntypes - 1 do
-      let ip = (sp,i) in 
+      let ip = (kn,i) in 
       let (mib,mip) = Global.lookup_inductive ip in 
       if mip.mind_sort = (Prop Null) then 
 	add_inductive ip Iprop
@@ -364,7 +365,7 @@ and extract_mib sp =
     done;
     (* Second pass: we extract constructors *)
     for i = 0 to mib.mind_ntypes - 1 do
-      let ip = (sp,i) in
+      let ip = (kn,i) in
       let (mib,mip) = Global.lookup_inductive ip in
       match lookup_inductive ip with 
 	| Iprop -> 
@@ -400,11 +401,11 @@ let is_singleton_inductive ind =
   (mib.mind_ntypes = 1) &&
   (Array.length mip.mind_consnames = 1) && 
   match extract_constructor (ind,1) with 
-    | Cml ([mlt],_,_)-> not (type_mem_sp (fst ind) mlt)
+    | Cml ([mlt],_,_)-> not (type_mem_kn (fst ind) mlt)
     | _ -> false
           
-let is_singleton_constructor ((sp,i),_) = 
-  is_singleton_inductive (sp,i) 
+let is_singleton_constructor ((kn,i),_) = 
+  is_singleton_inductive (kn,i) 
 
 (*S Modification of the signature of terms. *)
 
@@ -465,9 +466,9 @@ let rec extract_real_args env args s =
 
 (*s Abstraction of an constant. *)
 
-and apply_constant env sp args = 
-  let head = MLglob (ConstRef sp) in 
-  let s = signature_of_sp sp in 
+and apply_constant env kn args = 
+  let head = MLglob (ConstRef kn) in 
+  let s = signature_of_kn kn in 
   let ls = List.length s in 
   let la = Array.length args in 
   if ls = 0 then begin
@@ -552,15 +553,15 @@ and extract_term env c =
     | App (f,a) ->
 	(match kind_of_term (strip_outer_cast f) with 
 	   | App _ -> assert false 
-      	   | Const sp -> apply_constant env sp a 
+      	   | Const kn -> apply_constant env kn a 
 	   | Construct cp -> apply_constructor env cp a
 	   | _ -> 
 	       let mlargs = 
 		 Array.fold_right 
 		   (fun a l -> (extract_constr_to_term env a) :: l) a []
 	       in MLapp (extract_term env f, mlargs))
-    | Const sp ->
-	apply_constant env sp [||]
+    | Const kn ->
+	apply_constant env kn [||]
     | Construct cp ->
 	apply_constructor env cp [||]
     | Case ({ci_ind=ip},_,c,br) ->
@@ -652,17 +653,17 @@ and extract_constr_to_term_wt env c t =
 
 (*s From a constant to a ML declaration. *)
 
-let extract_constant sp r = 
+let extract_constant kn r = 
   let env = Global.env() in    
-  let cb = Global.lookup_constant sp in
+  let cb = Global.lookup_constant kn in
   let typ = cb.const_type in
   match cb.const_body with
     | None -> (* A logical axiom is risky, an informative one is fatal. *) 
         (match flag_of_type env typ with
-           | (Info,_) -> axiom_error_message sp 
-           | (Logic,Arity) -> axiom_warning_message sp; 
+           | (Info,_) -> axiom_error_message kn 
+           | (Logic,Arity) -> axiom_warning_message kn; 
 	       DdummyType r
-	   | (Logic,_) -> axiom_warning_message sp;
+	   | (Logic,_) -> axiom_warning_message kn;
 	       Dterm (r, MLdummy'))
     | Some body ->
 	(match flag_of_type env typ with
@@ -676,20 +677,20 @@ let extract_constant sp r =
 	   | (Info, _) -> 
 		 let a = extract_term env body in
 		 if a <> MLdummy' then 
-		   Dterm (r, kill_prop_lams_eta a (signature_of_sp sp))
+		   Dterm (r, kill_prop_lams_eta a (signature_of_kn kn))
 		 else Dterm (r, a))
 		   
-let extract_constant_cache sp r = 
-  try lookup_constant sp 
+let extract_constant_cache kn r = 
+  try lookup_constant kn 
   with Not_found ->
-    let d = extract_constant sp r
-    in add_constant sp d; d
+    let d = extract_constant kn r
+    in add_constant kn d; d
 
 (*s From an inductive to a ML declaration. *)
       
-let extract_inductive_declaration sp =
-  extract_mib sp;
-  let ip = (sp,0) in 
+let extract_inductive_declaration kn =
+  extract_mib kn;
+  let ip = (kn,0) in 
   if is_singleton_inductive ip then
     let t = match lookup_constructor (ip,1) with 
       | Cml ([t],_,_)-> t
@@ -701,7 +702,7 @@ let extract_inductive_declaration sp =
      in 
     Dtype (IndRef ip,vl,t)
   else
-    let mib = Global.lookup_mind sp in
+    let mib = Global.lookup_mind kn in
     let one_ind ip n = 
       iterate_for (-n) (-1)
 	(fun j l -> 
@@ -713,7 +714,7 @@ let extract_inductive_declaration sp =
     let l = 
       iterate_for (1 - mib.mind_ntypes) 0
 	(fun i acc -> 
-	   let ip = (sp,-i) in
+	   let ip = (kn,-i) in
 	   let nc = Array.length mib.mind_packets.(-i).mind_consnames in 
 	   match lookup_inductive ip with
 	     | Iprop -> acc
@@ -725,9 +726,9 @@ let extract_inductive_declaration sp =
 (*s From a global reference to a ML declaration. *)
 
 let extract_declaration r = match r with
-  | ConstRef sp -> extract_constant sp r
-  | IndRef (sp,_) -> extract_inductive_declaration sp
-  | ConstructRef ((sp,_),_) -> extract_inductive_declaration sp
+  | ConstRef kn -> extract_constant kn r
+  | IndRef (kn,_) -> extract_inductive_declaration kn
+  | ConstructRef ((kn,_),_) -> extract_inductive_declaration kn
   | VarRef _ -> assert false
 
 (*s Check if a global reference corresponds to a logical inductive. *)
@@ -743,3 +744,4 @@ let decl_is_logical_ind = function
 let decl_is_singleton = function 
   | ConstructRef cp -> is_singleton_constructor cp 
   | _ -> false 
+

@@ -3,3 +3,5 @@ coqtop
 minicoq
 coqtop.opt
 glob.dump
+tmp
+.depend.devel

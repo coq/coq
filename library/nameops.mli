@@ -34,9 +34,11 @@ val next_name_away_with_default :
 
 val out_name : name -> identifier
 
-(* Section and module mechanism: dealinng with dir paths *)
-val pr_dirpath : dir_path -> Pp.std_ppcmds
-val empty_dirpath : dir_path
+
+val pr_lab : label -> Pp.std_ppcmds
+
+(* some preset paths *)
+
 val default_module : dir_path
 
 (* This is the root of the standard library of Coq *)
@@ -45,31 +47,3 @@ val coq_root : module_ident
 (* This is the default root prefix for developments which doesn't
    mention a root *)
 val default_root_prefix : dir_path
-
-
-val dirpath_of_string : string -> dir_path
-val path_of_string : string -> section_path
-
-val path_of_constructor : env -> constructor -> section_path
-val path_of_inductive   : env -> inductive -> section_path
-
-
-val dirpath : section_path -> dir_path
-val basename : section_path -> identifier
-
-(* Give the immediate prefix of a [dir_path] *)
-val dirpath_prefix : dir_path -> dir_path 
-
-(* Give the immediate prefix and basename of a [dir_path] *)
-val split_dirpath : dir_path -> dir_path * identifier
-
-val extend_dirpath : dir_path -> module_ident -> dir_path
-val add_dirpath_prefix : module_ident -> dir_path -> dir_path
-
-val extract_dirpath_prefix : int -> dir_path -> dir_path
-val is_dirpath_prefix_of : dir_path -> dir_path -> bool
-
-val restrict_path : int -> section_path -> section_path
-
-(* Section path *)
-val pr_sp : section_path -> Pp.std_ppcmds

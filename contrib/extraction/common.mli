@@ -12,7 +12,7 @@ open Pp
 open Miniml
 open Mlutil
 open Names
-open Nametab
+open Libnames
 
 val is_long_module : dir_path -> global_reference -> bool
 

@@ -67,7 +67,7 @@ val get_undo : unit -> int option
     declare the built constructions as a coercion or a setoid morphism) *)
 
 val start_proof : 
-  identifier -> bool * strength -> named_context -> constr
+  identifier -> bool * Libnames.strength -> named_context -> constr
     -> declaration_hook -> unit
 
 (* [restart_proof ()] restarts the current focused proof from the beginning
@@ -96,7 +96,7 @@ val suspend_proof : unit -> unit
 
 val cook_proof : unit -> 
   identifier *
-  (Safe_typing.constant_entry * (bool * strength) * declaration_hook)
+  (Entries.definition_entry * (bool * Libnames.strength) * declaration_hook)
 
 (* To export completed proofs to xml *)
 val set_xml_cook_proof : (pftreestate -> unit) -> unit

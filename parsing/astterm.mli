@@ -14,6 +14,7 @@ open Term
 open Sign
 open Evd
 open Environ
+open Libnames
 open Rawterm
 open Pattern
 (*i*)
@@ -25,7 +26,7 @@ val constrIn : constr -> Coqast.t
 val constrOut : Coqast.t -> constr
 
 (* Interprets global names, including syntactic defs and section variables *)
-val interp_global_constr : env -> Nametab.qualid Util.located -> constr
+val interp_global_constr : env -> qualid Util.located -> constr
 
 val interp_rawconstr     : evar_map -> env -> Coqast.t -> rawconstr
 val interp_rawconstr_gen : 
@@ -81,13 +82,13 @@ val interp_constrpattern :
     bound idents in grammar or pretty-printing rules) *)
 val globalize_constr : Coqast.t -> Coqast.t
 val globalize_ast    : Coqast.t -> Coqast.t
-val globalize_qualid : Nametab.qualid Util.located -> Coqast.t
+val globalize_qualid : qualid Util.located -> Coqast.t
 
-val ast_of_extended_ref_loc : loc -> Nametab.extended_global_reference -> Coqast.t
+val ast_of_extended_ref_loc : loc -> Libnames.extended_global_reference -> Coqast.t
 
 (* This transforms args of a qualid keyword into a qualified ident *)
 (* it does no relocation *)
-val interp_qualid : Coqast.t list -> Nametab.qualid
+val interp_qualid : Coqast.t list -> qualid
 
 (*i Translation rules from V6 to V7:
 

@@ -177,7 +177,10 @@ let variables l =
   -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/xml \\
   -I $(CAMLP4LIB)\n";
   print "ZFLAGS=$(OCAMLLIBS) $(COQSRC)\n";
-  print "OPT="; if !opt = "-byte" then print "-byte"; print "\n";
+  if !opt = "-byte" then 
+    print "override OPT=-byte\n"
+  else
+    print "OPT=\n";
   print "COQFLAGS=-q $(OPT) $(COQLIBS)\n";
   print "COQC=$(COQBIN)coqc\n";
   print "GALLINA=gallina\n";

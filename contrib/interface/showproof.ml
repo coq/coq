@@ -6,6 +6,7 @@ open Environ
 open Evd
 open Names
 open Nameops
+open Libnames
 open Term
 open Termops
 open Util

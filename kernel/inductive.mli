@@ -43,6 +43,10 @@ val type_of_constructor  : env -> constructor -> types
 (* Return constructor types in normal form *)
 val arities_of_constructors : env -> inductive -> types array
 
+(* Transforms inductive specification into types (in nf) *)
+val arities_of_specif : 
+  kernel_name -> mutual_inductive_body * one_inductive_body -> types array 
+
 (* [type_case_branches env (I,args) (p:A) c] computes useful types
    about the following Cases expression:
       <p>Cases (c :: (I args)) of b1..bn end

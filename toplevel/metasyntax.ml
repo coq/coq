@@ -59,13 +59,16 @@ let _ =
 (* Pretty-printing objects = syntax_entry *)
 let cache_syntax (_,ppobj) = Esyntax.add_ppobject ppobj
 
+let subst_syntax (_,subst,ppobj) = 
+  Extend.subst_syntax_command Ast.subst_astpat subst ppobj
+
 let (inPPSyntax,outPPSyntax) =
-  declare_object
-    ("PPSYNTAX",
-     { load_function = (fun _ -> ());
-       open_function = cache_syntax;
+  declare_object {(default_object "PPSYNTAX") with
+       open_function = (fun i o -> if i=1 then cache_syntax o);
        cache_function = cache_syntax;
-       export_function = (fun x -> Some x) })
+       subst_function = subst_syntax;
+       classify_function = (fun (_,o) -> Substitute o);       
+       export_function = (fun x -> Some x) }
 
 (* Syntax extension functions (registered in the environnement) *)
 
@@ -93,25 +96,27 @@ let _ =
 let cache_token (_,s) = Pcoq.lexer.Token.using ("", s)
 
 let (inToken, outToken) =
-  declare_object
-    ("TOKEN",
-     { load_function = (fun _ -> ());
-       open_function = cache_token;
+  declare_object {(default_object "TOKEN") with
+       open_function = (fun i o -> if i=1 then cache_token o);
        cache_function = cache_token;
-       export_function = (fun x -> Some x)})
+       subst_function = Libobject.ident_subst_function;
+       classify_function = (fun (_,o) -> Substitute o);
+       export_function = (fun x -> Some x)}
 
 let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 
 (* Grammar rules *)
 let cache_grammar (_,a) = Egrammar.extend_grammar a
 
+let subst_grammar (_,subst,a) = Egrammar.subst_all_grammar_command subst a
+
 let (inGrammar, outGrammar) =
-  declare_object
-    ("GRAMMAR",
-     { load_function = (fun _ -> ());
-       open_function = cache_grammar;
+  declare_object {(default_object "GRAMMAR") with
+       open_function = (fun i o -> if i=1 then cache_grammar o);
        cache_function = cache_grammar;
-       export_function = (fun x -> Some x)})
+       subst_function = subst_grammar;
+       classify_function = (fun (_,o) -> Substitute o);
+       export_function = (fun x -> Some x)}
 
 let gram_define_entry (u,_ as univ) ((ntl,nt),et,assoc,rl) =
   let etyp = match et with None -> entry_type_from_name u | Some e -> e in
@@ -164,13 +169,17 @@ let cache_infix (_,(gr,se)) =
   Egrammar.extend_grammar gr;
   Esyntax.add_ppobject {sc_univ="constr";sc_entries=se}
 
+let subst_infix (_,subst,(gr,se)) =
+  (Egrammar.subst_all_grammar_command subst gr,
+   list_smartmap (Extend.subst_syntax_entry Ast.subst_astpat subst) se)
+
 let (inInfix, outInfix) =
-  declare_object
-    ("INFIX",
-     { load_function = (fun _ -> ());
-       open_function = cache_infix;
+  declare_object {(default_object "INFIX") with
+       open_function = (fun i o -> if i=1 then cache_infix o);
        cache_function = cache_infix;
-       export_function = (fun x -> Some x)})
+       subst_function = subst_infix;
+       classify_function = (fun (_,o) -> Substitute o);
+       export_function = (fun x -> Some x)}
 
 (* Build the syntax and grammar rules *)
 
@@ -261,27 +270,31 @@ let make_infix_symbols assoc n sl =
   NonTerminal ((n,lp),"$a")::(List.map (fun s -> Terminal s) sl)
   @[NonTerminal ((n,rp),"$b")]
 
+let subst_infix2 (_, subst, (ref,inf as node)) = 
+  let ref' = Libnames.subst_ext subst ref in
+    if ref' == ref then node else
+      (ref', inf)
 
 let cache_infix2 (_,(ref,inf)) =
   let sp = match ref with
-  | Nametab.TrueGlobal r -> Nametab.sp_of_global (Global.env()) r
-  | Nametab.SyntacticDef sp -> sp in
+  | Libnames.TrueGlobal r -> Nametab.sp_of_global None r
+  | Libnames.SyntacticDef kn -> Nametab.sp_of_syntactic_definition kn in
   declare_infix_symbol sp inf
 
 let (inInfix2, outInfix2) =
-  declare_object
-    ("INFIX2",
-     { load_function = (fun _ -> ());
-       open_function = cache_infix2;
+  declare_object {(default_object "INFIX2") with
+       open_function = (fun i o -> if i=1 then cache_infix2 o);
        cache_function = cache_infix2;
-       export_function = (fun x -> Some x)})
+       subst_function = subst_infix2;
+       classify_function = (fun (_,o) -> Substitute o);
+       export_function = (fun x -> Some x)}
 
 let add_infix assoc n inf (loc,qid) =
   let ref = 
     try
       Nametab.extended_locate qid
     with Not_found ->
-      error ("Unknown reference: "^(Nametab.string_of_qualid qid)) in
+      error ("Unknown reference: "^(Libnames.string_of_qualid qid)) in
   let pr = Astterm.ast_of_extended_ref_loc loc ref in
   (* check the precedence *)
   if n<1 or n>10 then

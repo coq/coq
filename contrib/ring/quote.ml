@@ -127,7 +127,7 @@ let constant dir s =
     Declare.global_reference_in_absolute_module dir id
   with Not_found ->
     anomaly ("Quote: cannot find "^
-	     (Nametab.string_of_qualid (Nametab.make_qualid dir id)))
+	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))
 
 let coq_Empty_vm = lazy (constant ["Quote"] "Empty_vm")
 let coq_Node_vm = lazy (constant ["Quote"] "Node_vm")
@@ -389,7 +389,7 @@ let rec sort_subterm gl l =
   [gl: goal sigma]\\ *)
 
 let quote_terms ivs lc gl =
-  Library.check_required_module ["Coq";"ring";"Quote"];
+  Library.check_required_library ["Coq";"ring";"Quote"];
   let varhash  = (Hashtbl.create 17 : (constr, constr) Hashtbl.t) in
   let varlist = ref ([] : constr list) in (* list of variables *)
   let counter = ref 1 in (* number of variables created + 1 *)

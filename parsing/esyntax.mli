@@ -42,7 +42,7 @@ module Ppprim :
     val add : string * t -> unit
   end
 
-val declare_infix_symbol : Names.section_path -> string -> unit
+val declare_infix_symbol : Libnames.section_path -> string -> unit
 
 (* Generic printing functions *) 
 val token_printer: std_printer -> std_printer

@@ -12,6 +12,7 @@
 open Names
 open Sign
 open Term
+open Libnames
 open Nametab
 (*i*)
 
@@ -57,7 +58,7 @@ type 'ctxt reference =
   | REVar of int * 'ctxt
 
 type rawconstr = 
-  | RRef of loc * global_reference
+  | RRef of loc * Libnames.global_reference
   | RVar of loc * identifier
   | REvar of loc * existential_key
   | RMeta of loc * int
@@ -92,6 +93,8 @@ val dummy_loc : loc
 val loc_of_rawconstr : rawconstr -> loc
 val set_loc_of_rawconstr : loc -> rawconstr -> rawconstr
 val join_loc : loc -> loc -> loc
+
+val subst_raw : Names.substitution -> rawconstr -> rawconstr
 
 type 'a raw_red_flag = {
   rBeta : bool;

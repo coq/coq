@@ -41,7 +41,7 @@ open Vernacinterp
    put all the needed names into the ML Module object.) *)
 
 (* This path is where we look for .cmo *)
-let coq_mlpath_copy = ref []
+let coq_mlpath_copy = ref ["."]
 let keep_copy_mlpath s = 
   let dir = glob s in
   coq_mlpath_copy := dir :: !coq_mlpath_copy
@@ -283,11 +283,10 @@ let cache_ml_module_object (_,{mnames=mnames}) =
 let export_ml_module_object x = Some x
 					 
 let (inMLModule,outMLModule) =
-  declare_object ("ML-MODULE",
-                  { load_function = cache_ml_module_object;
+  declare_object {(default_object "ML-MODULE") with
+                    load_function = (fun _ -> cache_ml_module_object);
                     cache_function = cache_ml_module_object;
-		    open_function = (fun _ -> ());
-                    export_function = export_ml_module_object })
+                    export_function = export_ml_module_object }
 
 let declare_ml_modules l =
   Lib.add_anonymous_leaf (inMLModule {mnames=l})

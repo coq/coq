@@ -143,6 +143,11 @@ let sort_cmp pb s0 s1 cuniv =
     | (_, _) -> raise NotConvertible
 
 
+let conv_sort env s0 s1 = sort_cmp CONV s0 s1 Constraint.empty
+
+let conv_sort_leq env s0 s1 = sort_cmp CUMUL s0 s1 Constraint.empty
+
+
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb infos lft1 lft2 term1 term2 cuniv = 
   eqappr cv_pb infos

@@ -1,0 +1,52 @@
+# this Makefile contains goals common for directory and main devel makefiles
+
+ifndef TOPDIR
+TOPDIR=..
+endif
+
+ifndef BASEDIR
+BASEDIR=
+endif
+
+# the following entries are used to make synchronize two source trees
+# (on big computer and on a laptop for example)
+
+OTHER_FILE=$(TOPDIR)/dev/other
+OTHER=$(shell cat $(OTHER_FILE))
+
+# this is a directory of useful temporary things
+WORKDIR=tmp
+
+ifneq (,$(findstring n,$(MAKEFLAGS)))
+NFLAG=-n
+else
+NFLAG=
+endif
+
+check_other:
+	+@(if [ "$(OTHER)" = "" ] ; then \
+	  echo You must put the ssh path to the other Coq source in $(OTHER_FILE) ; \
+	  echo For example: chrzaszc@ruta:coq/V7 ; \
+	  exit 1; \
+	fi)
+
+get:	check_other
+	+rsync -Cauvz $(NFLAG) $(OTHER)/ $(TOPDIR)/
+	+@(if [ -d $(TOPDIR)/$(WORKDIR) ]; then \
+	  rsync -auvz $(NFLAG) $(OTHER)/tmp/ $(TOPDIR)/tmp/ ; \
+	fi)
+
+put:	check_other
+	+rsync -Cauvz $(NFLAG) $(TOPDIR)/ $(OTHER)/
+	+@(if [ -d $(TOPDIR)/$(WORKDIR) ]; then \
+	  rsync -auvz $(NFLAG) $(TOPDIR)/tmp/ $(OTHER)/tmp/ ; \
+	fi)
+
+sync:	get put
+
+
+conflicts:
+	cvs status | grep File | grep conflicts | less
+
+confl:	conflicts
+

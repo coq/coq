@@ -200,11 +200,10 @@ type destructor_data_object = identifier * destructor_data
 
 let ((inDD : destructor_data_object->obj),
      (outDD : obj->destructor_data_object)) =
-  declare_object ("DESTRUCT-HYP-CONCL-DATA",
-                  { load_function = (fun _ -> ());
+  declare_object {(default_object "DESTRUCT-HYP-CONCL-DATA") with
                     cache_function = cache_dd;
-		    open_function = cache_dd;
-                    export_function = export_dd })
+		    open_function = (fun i o -> if i=1 then cache_dd o);
+                    export_function = export_dd }
     
 let add_destructor_hint na loc pat pri code =
   begin match loc, code with

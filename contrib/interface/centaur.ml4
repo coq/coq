@@ -7,6 +7,7 @@ open Util;;
 open Ast;;
 open Term;;
 open Pp;;
+open Libnames;;
 open Libobject;;
 open Library;;
 open Vernacinterp;;
@@ -258,9 +259,8 @@ let filter_by_module_from_varg_list l =
 
 let add_search (global_reference:global_reference) assumptions cstr =
   try 
-    let env = Global.env() in
   let id_string =
-    string_of_qualid (Nametab.shortest_qualid_of_global env 
+    string_of_qualid (Nametab.shortest_qualid_of_global None 
 			global_reference) in
   let ast = 
     try
@@ -321,15 +321,13 @@ and ntyp = nf_betaiota typ in
 
 (* The following function is copied from globpr in env/printer.ml *)
 let globcv x =
-  let env = Global.env() in 
     match x with
       | Node(_,"MUTIND", (Path(_,sp))::(Num(_,tyi))::_) ->
-	  let env = Global.env() in
 	    convert_qualid
-	      (Nametab.shortest_qualid_of_global env (IndRef(sp,tyi)))
+	      (Nametab.shortest_qualid_of_global None (IndRef(sp,tyi)))
       | Node(_,"MUTCONSTRUCT",(Path(_,sp))::(Num(_,tyi))::(Num(_,i))::_) ->
 	  convert_qualid
-            (Nametab.shortest_qualid_of_global env
+            (Nametab.shortest_qualid_of_global None
 	       (ConstructRef ((sp, tyi), i)))
   | _ -> failwith "globcv : unexpected value";;
 
@@ -412,20 +410,20 @@ let inspect n =
       (fun a ->
 	 try
            (match a with
-             	sp, Lib.Leaf lobj ->
-		  (match sp, object_tag lobj with
-                       _, "VARIABLE" ->
+             	oname, Lib.Leaf lobj ->
+		  (match oname, object_tag lobj with
+                       (sp,_), "VARIABLE" ->
 			 let ((_, _, v), _) = get_variable (basename sp) in
 			   add_search2 (Nametab.locate (qualid_of_sp sp)) v
-		     | sp, ("CONSTANT"|"PARAMETER") ->
-			 let {const_type=typ} = Global.lookup_constant sp in
+		     | (sp,kn), ("CONSTANT"|"PARAMETER") ->
+			 let {const_type=typ} = Global.lookup_constant kn in
 			   add_search2 (Nametab.locate (qualid_of_sp sp)) typ
-		     | sp, "MUTUALINDUCTIVE" ->
+		     | (sp,kn), "MUTUALINDUCTIVE" ->
 			 add_search2 (Nametab.locate (qualid_of_sp sp))
 			   (Pretyping.understand Evd.empty (Global.env())
-			      (RRef(dummy_loc, IndRef(sp,0))))
+			      (RRef(dummy_loc, IndRef(kn,0))))
 		     | _ -> failwith ("unexpected value 1 for "^ 
-				      (string_of_id (basename sp))))
+				      (string_of_id (basename (fst oname)))))
               | _ -> failwith "unexpected value")
 	 with e -> ())
       l;

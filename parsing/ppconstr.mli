@@ -14,7 +14,7 @@
 open Pp
 open Environ
 open Term
-open Nametab
+open Libnames
 open Pcoq
 open Rawterm
 open Extend

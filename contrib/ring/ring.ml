@@ -15,6 +15,7 @@ open Util
 open Options
 open Term
 open Names
+open Libnames
 open Nameops
 open Reductionops
 open Tacticals
@@ -44,7 +45,7 @@ let constant dir s =
     Declare.global_reference_in_absolute_module dir id
   with Not_found ->
     anomaly ("Ring: cannot find "^
-	     (Nametab.string_of_qualid (Nametab.make_qualid dir id)))
+	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))
 
 (* Ring theory *)
 let coq_Ring_Theory = lazy (constant ["ring";"Ring_theory"] "Ring_Theory")
@@ -199,14 +200,93 @@ let _ =
    The functions theory_to_obj and obj_to_theory do the conversions
    between theories and environement objects. *)
 
+
+let subst_morph subst morph = 
+  let plusm' = subst_mps subst morph.plusm in
+  let multm' = subst_mps subst morph.multm in
+  let oppm' = option_smartmap (subst_mps subst) morph.oppm in
+    if plusm' == morph.plusm 
+      && multm' == morph.multm 
+      && oppm' == morph.oppm then 
+	morph
+    else
+      { plusm = plusm' ;
+	multm = multm' ;
+	oppm = oppm' ;
+      }
+  
+let subst_set subst cset = 
+  let same = ref true in
+  let copy_subst c newset = 
+    let c' = subst_mps subst c in
+      if not (c' == c) then same := false;
+      ConstrSet.add c' newset
+  in
+  let cset' = ConstrSet.fold copy_subst cset ConstrSet.empty in
+    if !same then cset else cset'
+
+let subst_theory subst th = 
+  let th_equiv' = option_smartmap (subst_mps subst) th.th_equiv in
+  let th_setoid_th' = option_smartmap (subst_mps subst) th.th_setoid_th in
+  let th_morph' = option_smartmap (subst_morph subst) th.th_morph in
+  let th_a' = subst_mps subst th.th_a in                   
+  let th_plus' = subst_mps subst th.th_plus in
+  let th_mult' = subst_mps subst th.th_mult in
+  let th_one' = subst_mps subst th.th_one in
+  let th_zero' = subst_mps subst th.th_zero in
+  let th_opp' = option_smartmap (subst_mps subst) th.th_opp in
+  let th_eq' = subst_mps subst th.th_eq in
+  let th_t' = subst_mps subst th.th_t in          
+  let th_closed' = subst_set subst th.th_closed in
+    if th_equiv' == th.th_equiv 
+      && th_setoid_th' == th.th_setoid_th 
+      && th_morph' == th.th_morph
+      && th_a' == th.th_a
+      && th_plus' == th.th_plus
+      && th_mult' == th.th_mult
+      && th_one' == th.th_one
+      && th_zero' == th.th_zero
+      && th_opp' == th.th_opp
+      && th_eq' == th.th_eq
+      && th_t' == th.th_t
+      && th_closed' == th.th_closed 
+    then 
+      th 
+    else
+    { th_ring = th.th_ring ;  
+      th_abstract = th.th_abstract ;
+      th_setoid = th.th_setoid ;  
+      th_equiv = th_equiv' ;
+      th_setoid_th = th_setoid_th' ;
+      th_morph = th_morph' ;
+      th_a = th_a' ;            
+      th_plus = th_plus' ;
+      th_mult = th_mult' ;
+      th_one = th_one' ;
+      th_zero = th_zero' ;
+      th_opp = th_opp' ;        
+      th_eq = th_eq' ;
+      th_t = th_t' ;            
+      th_closed = th_closed' ;  
+    }
+
+
+let subst_th (_,subst,(c,th as obj)) = 
+  let c' = subst_mps subst c in
+  let th' = subst_theory subst th in
+    if c' == c && th' == th then obj else
+      (c',th')
+
+
 let (theory_to_obj, obj_to_theory) = 
   let cache_th (_,(c, th)) = theories_map_add (c,th)
   and export_th x = Some x in
-  declare_object ("tactic-ring-theory",
-		  { load_function = (fun _ -> ());
-		    open_function = cache_th;
+  declare_object {(default_object "tactic-ring-theory") with
+		    open_function = (fun i o -> if i=1 then cache_th o);
                     cache_function = cache_th;
-		    export_function = export_th })
+		    subst_function = subst_th;
+		    classify_function = (fun (_,x) -> Substitute x);
+		    export_function = export_th }
 
 (* from the set A, guess the associated theory *)
 (* With this simple solution, the theory to use is automatically guessed *)
@@ -647,24 +727,30 @@ module SectionPathSet =
    SectionPathSet; peut-être faudra-t-il la déplacer dans Closure *)
 let constants_to_unfold = 
 (*  List.fold_right SectionPathSet.add *)
-    [ path_of_string "Coq.ring.Ring_normalize.interp_cs";
-      path_of_string "Coq.ring.Ring_normalize.interp_var";
-      path_of_string "Coq.ring.Ring_normalize.interp_vl";
-      path_of_string "Coq.ring.Ring_abstract.interp_acs";
-      path_of_string "Coq.ring.Ring_abstract.interp_sacs";
-      path_of_string "Coq.ring.Quote.varmap_find";
+  let transform s = 
+    let sp = path_of_string s in
+    let dir, id = repr_path sp in
+      Libnames.encode_kn dir id 
+  in
+  List.map transform
+    [ "Coq.ring.Ring_normalize.interp_cs";
+      "Coq.ring.Ring_normalize.interp_var";
+      "Coq.ring.Ring_normalize.interp_vl";
+      "Coq.ring.Ring_abstract.interp_acs";
+      "Coq.ring.Ring_abstract.interp_sacs";
+      "Coq.ring.Quote.varmap_find";
       (* anciennement des Local devenus Definition *)
-      path_of_string "Coq.ring.Ring_normalize.ics_aux";
-      path_of_string "Coq.ring.Ring_normalize.ivl_aux";
-      path_of_string "Coq.ring.Ring_normalize.interp_m";
-      path_of_string "Coq.ring.Ring_abstract.iacs_aux";
-      path_of_string "Coq.ring.Ring_abstract.isacs_aux";
-      path_of_string "Coq.ring.Setoid_ring_normalize.interp_cs";
-      path_of_string "Coq.ring.Setoid_ring_normalize.interp_var";
-      path_of_string "Coq.ring.Setoid_ring_normalize.interp_vl";
-      path_of_string "Coq.ring.Setoid_ring_normalize.ics_aux";
-      path_of_string "Coq.ring.Setoid_ring_normalize.ivl_aux";
-      path_of_string "Coq.ring.Setoid_ring_normalize.interp_m";
+      "Coq.ring.Ring_normalize.ics_aux";
+      "Coq.ring.Ring_normalize.ivl_aux";
+      "Coq.ring.Ring_normalize.interp_m";
+      "Coq.ring.Ring_abstract.iacs_aux";
+      "Coq.ring.Ring_abstract.isacs_aux";
+      "Coq.ring.Setoid_ring_normalize.interp_cs";
+      "Coq.ring.Setoid_ring_normalize.interp_var";
+      "Coq.ring.Setoid_ring_normalize.interp_vl";
+      "Coq.ring.Setoid_ring_normalize.ics_aux";
+      "Coq.ring.Setoid_ring_normalize.ivl_aux";
+      "Coq.ring.Setoid_ring_normalize.interp_m";
     ]
 (*    SectionPathSet.empty *)
 
@@ -782,7 +868,7 @@ let match_with_equiv c = match (kind_of_term c) with
   | _ -> None
 
 let polynom lc gl =
-  Library.check_required_module ["Coq";"ring";"Ring"];
+  Library.check_required_library ["Coq";"ring";"Ring"];
   match lc with 
    (* If no argument is given, try to recognize either an equality or
       a declared relation with arguments c1 ... cn, 

@@ -18,24 +18,12 @@ open Sign
 open Environ
 open Reduction
 open Typeops
+open Entries
 
 (* [check_constructors_names id s cl] checks that all the constructors names
    appearing in [l] are not present in the set [s], and returns the new set
    of names. The name [id] is the name of the current inductive type, used
    when reporting the error. *)
-
-(*s Declaration. *)
-
-type one_inductive_entry = {
-  mind_entry_params : (identifier * local_entry) list;
-  mind_entry_typename : identifier;
-  mind_entry_arity : constr;
-  mind_entry_consnames : identifier list;
-  mind_entry_lc : constr list }
-
-type mutual_inductive_entry = {
-  mind_entry_finite : bool;
-  mind_entry_inds : one_inductive_entry list }
 
 (***********************************************************************)
 (* Various well-formedness check for inductive declarations            *)
@@ -48,6 +36,7 @@ type inductive_error =
   | NonPar of env * constr * int * constr * constr
   | SameNamesTypes of identifier
   | SameNamesConstructors of identifier * identifier
+  | SameNamesOverlap of identifier list
   | NotAnArity of identifier
   | BadEntry
   (* These are errors related to recursors building in Indrec *)
@@ -356,11 +345,11 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps i indlc =
                 if not (List.for_all (noccur_between n ntypes) largs)
 	        then raise (IllFormedInd (LocalNonPos n)));
           rarg
-      | Ind ind_sp ->
+      | Ind ind_kn ->
           (* If the inductive type being defined appears in a
              parameter, then we have an imbricated type *)
           if List.for_all (noccur_between n ntypes) largs then mk_norec
-          else check_positive_imbr ienv (ind_sp, largs)
+          else check_positive_imbr ienv (ind_kn, largs)
       | err -> 
 	  if noccur_between n ntypes x &&
              List.for_all (noccur_between n ntypes) largs 
@@ -548,3 +537,4 @@ let check_inductive env mie =
   let recargs = check_positivity env_arities inds in
   (* Build the inductive packets *)
   build_inductive env env_arities mie.mind_entry_finite inds recargs cst
+

@@ -22,7 +22,7 @@ val add_token_obj : string -> unit
 val add_tactic_grammar :  (string * (string * grammar_production list) * Tacexpr.raw_tactic_expr) list -> unit
 
 val add_infix :
-  Gramext.g_assoc option -> int -> string -> Nametab.qualid Util.located -> unit
+  Gramext.g_assoc option -> int -> string -> Libnames.qualid Util.located -> unit
 val add_distfix :
   Gramext.g_assoc option -> int -> string -> Coqast.t -> unit
 

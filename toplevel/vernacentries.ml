@@ -14,6 +14,7 @@ open Pp
 open Util
 open Options
 open Names
+open Entries
 open Nameops
 open Term
 open Pfedit
@@ -25,6 +26,8 @@ open Printer
 open Tacinterp
 open Command
 open Goptions
+(*open Declare*)
+open Libnames
 open Nametab
 open Vernacexpr
 
@@ -161,8 +164,8 @@ let print_loadpath () =
 		 prlist_with_sep pr_fnl print_path_entry l))
 
 let print_modules () =
-  let opened = Library.opened_modules ()
-  and loaded = Library.loaded_modules () in
+  let opened = Library.opened_libraries ()
+  and loaded = Library.loaded_libraries () in
   let loaded_opened = list_intersect loaded opened
   and only_loaded = list_subtract loaded opened in
   str"Loaded and imported modules: " ++ 
@@ -194,13 +197,25 @@ let locate_file f =
 
 let print_located_qualid (_,qid) =
   try
-    let sp = Nametab.sp_of_global (Global.env()) (Nametab.locate qid) in
+    let sp = Nametab.sp_of_global None (Nametab.locate qid) in
     msgnl (pr_sp sp)
   with Not_found -> 
   try
-    msgnl (pr_sp (Syntax_def.locate_syntactic_definition qid) ++ fnl ())
+    let kn = Nametab.locate_syntactic_definition qid in
+    let sp = Nametab.sp_of_syntactic_definition kn in
+    msgnl (pr_sp sp)
   with Not_found ->
     msgnl (pr_qualid qid ++ str " is not a defined object")
+
+(*let print_path_entry (s,l) =
+  (str s ++ tbrk (0,2) ++ str (string_of_dirpath l))
+
+let print_loadpath () =
+  let l = Library.get_full_load_path () in
+  msgnl (Pp.t (str "Physical path:                                 " ++
+		 tab () ++ str "Logical Path:" ++ fnl () ++ 
+		 prlist_with_sep pr_fnl print_path_entry l))
+*)
 
 let msg_found_library = function
   | Library.LibLoaded, fulldir, file ->
@@ -210,13 +225,13 @@ let msg_found_library = function
       msgnl(pr_dirpath fulldir ++ str " is bound to file " ++ str file)
 let msg_notfound_library loc qid = function
   | Library.LibUnmappedDir ->
-      let dir = fst (Nametab.repr_qualid qid) in
+      let dir = fst (repr_qualid qid) in
       user_err_loc (loc,"locate_library",
         str "Cannot find a physical path bound to logical path " ++
            pr_dirpath dir ++ fnl ())
   | Library.LibNotFound ->
       msgnl (hov 0 
-	(str"Unable to locate library" ++ spc () ++ Nametab.pr_qualid qid))
+	(str"Unable to locate library" ++ spc () ++ pr_qualid qid))
   | e -> assert false
 
 let print_located_library (loc,qid) =
@@ -232,8 +247,8 @@ let vernac_syntax = Metasyntax.add_syntax_obj
 let vernac_grammar = Metasyntax.add_grammar_obj
 
 let vernac_infix assoc n inf qid =
-  let sp = sp_of_global (Global.env()) (global qid) in
-  let dir = repr_dirpath (Nameops.dirpath sp) in
+  let sp = sp_of_global None (global qid) in
+  let dir = repr_dirpath (dirpath sp) in
 (*
   if dir <> [] then begin
     let modname = List.hd dir in
@@ -252,14 +267,14 @@ let vernac_distfix assoc n inf qid =
 
 let interp_assumption = function
   | (AssumptionHypothesis | AssumptionVariable) -> Declare.make_strength_0 ()
-  | (AssumptionAxiom | AssumptionParameter) -> Nametab.NeverDischarge
+  | (AssumptionAxiom | AssumptionParameter) -> Libnames.NeverDischarge
 
 let interp_definition = function
-  | Definition -> (false, Nametab.NeverDischarge)
+  | Definition -> (false, Libnames.NeverDischarge)
   | LocalDefinition -> (true, Declare.make_strength_0 ())
 
 let interp_theorem = function
-  | (Theorem | Lemma | Decl) -> Nametab.NeverDischarge
+  | (Theorem | Lemma | Decl) -> Libnames.NeverDischarge
   | Fact -> Declare.make_strength_1 ()
   | Remark -> Declare.make_strength_0 ()
 
@@ -282,10 +297,14 @@ let rec generalize_rawconstr c = function
 let vernac_definition kind id def hook =
   let (local,stre as k) = interp_definition kind in
   match def with
-  | ProveBody (bl,t) ->
-      let hook _ _ = () in
-      let t = generalize_rawconstr t bl in
-      start_proof_and_print (Some id) k t hook
+  | ProveBody (bl,t) ->   (* local binders, typ *)
+      if Lib.is_specification () then
+	let ref = declare_assumption id stre bl t in
+	hook stre ref
+      else
+	let hook _ _ = () in
+	let t = generalize_rawconstr t bl in
+	start_proof_and_print (Some id) k t hook
   | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
         | None -> None
@@ -299,10 +318,16 @@ let vernac_start_proof kind sopt t lettop hook =
   if not(refining ()) then
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
-	(str "Let declarations can only be used in proof editing mode")
-(*    else if s = None then
-      error "repeated Goal not permitted in refining mode"*);
-  start_proof_and_print sopt (false, interp_theorem kind) t hook
+	(str "Let declarations can only be used in proof editing mode");
+  let stre = interp_theorem kind in
+  match Lib.is_specification (), sopt with
+    | true, Some id ->
+	let ref = declare_assumption id stre [] t in
+	hook stre ref
+    | _ -> 
+	(* an explicit Goal command starts the refining mode 
+	   even in a specification *)
+	start_proof_and_print sopt (false, stre) t hook
 
 let vernac_end_proof is_opaque idopt =
   if_verbose show_script ();
@@ -323,7 +348,7 @@ let vernac_assumption kind l =
   let stre = interp_assumption kind in
   List.iter
     (fun (is_coe,(id,c)) ->
-      let r = declare_assumption id stre c in
+      let r = declare_assumption id stre [] c in
       if is_coe then Class.try_add_new_coercion r stre) l
 
 let vernac_inductive f indl = build_mutual indl f
@@ -333,6 +358,92 @@ let vernac_fixpoint = build_recursive
 let vernac_cofixpoint = build_corecursive
 
 let vernac_scheme = build_scheme
+
+(**********************)
+(* Modules            *)
+
+let vernac_declare_module id bl mty_ast_o mexpr_ast_o = 
+  let evd = Evd.empty in
+  let env = Global.env () in
+  let arglist,base_mty_o,base_mexpr_o =
+    Astmod.interp_module_decl evd env bl mty_ast_o mexpr_ast_o 
+  in
+  let argids, args = List.split arglist 
+  in (* We check the state of the system (in module, in module type)
+	and what parts are supplied *)
+    match Lib.is_specification (), base_mty_o, base_mexpr_o with
+      | _, None, None 
+      | false, _, None ->
+	  Declaremods.start_module id argids args base_mty_o;
+	  if_verbose message 
+	    ("Interactive Module "^ string_of_id id ^" started")
+	  
+      | true, Some _, None
+      | false, _, Some _ ->
+	  let mexpr_o = 
+	    option_app
+	      (List.fold_right 
+		 (fun (mbid,mte) me -> MEfunctor(mbid,mte,me))
+		 args)
+	      base_mexpr_o
+	  in
+	  let mty_o = 
+	    option_app
+	      (List.fold_right 
+		 (fun (arg_id,arg_t) mte -> MTEfunsig(arg_id,arg_t,mte))
+		 args)
+	      base_mty_o
+	  in
+	  let mod_entry = 
+	    {mod_entry_type = mty_o;
+	     mod_entry_expr = mexpr_o}
+	  in
+	    Declaremods.declare_module id mod_entry;
+	    if_verbose message 
+	      ("Module "^ string_of_id id ^" is defined")
+
+      | true, _, Some _ ->
+	  error "Module definition not allowed in a Module Type"
+
+
+let vernac_end_module id =
+  Declaremods.end_module id;
+  if_verbose message 
+    ("Module "^ string_of_id id ^" is defined")
+  
+
+
+let vernac_declare_module_type id bl mty_ast_o =
+  let evd = Evd.empty in
+  let env = Global.env () in
+  let arglist,base_mty_o,_ =
+    Astmod.interp_module_decl evd env bl mty_ast_o None
+  in
+  let argids, args = List.split arglist 
+  in (* We check the state of the system (in module, in module type)
+	and what parts are supplied *)
+    match Lib.is_specification (), base_mty_o with
+      | _, None ->
+	  Declaremods.start_modtype id argids args;
+	  if_verbose message 
+	    ("Interactive Module "^ string_of_id id ^" started")
+
+      | _, Some base_mty ->
+	  let mty = 
+	    List.fold_right 
+	      (fun (arg_id,arg_t) mte -> MTEfunsig(arg_id,arg_t,mte))
+	      args
+	      base_mty
+	  in
+	    Declaremods.declare_modtype id mty;
+	    if_verbose message 
+	      ("Module Type "^ string_of_id id ^" is defined")
+
+
+let vernac_end_modtype id =
+  Declaremods.end_modtype id;
+  if_verbose message 
+    ("Module Type "^ string_of_id id ^" is defined")
 
 
 (**********************)
@@ -350,8 +461,19 @@ let vernac_record struc binders sort nameopt cfs =
 let vernac_begin_section id = let _ = Lib.open_section id in ()
 
 let vernac_end_section id =
-  check_no_pending_proofs ();
   Discharge.close_section (is_verbose ()) id
+
+
+let vernac_end_segment id =
+  check_no_pending_proofs ();
+  try
+    match Lib.what_is_opened () with
+      | _,Lib.OpenedModule _ -> vernac_end_module id
+      | _,Lib.OpenedModtype _ -> vernac_end_modtype id
+      | _,Lib.OpenedSection _ -> vernac_end_section id
+      | _ -> anomaly "No more opened things"
+  with
+      Not_found -> error "There is nothing to end."
 
 let is_obsolete_module (_,qid) =
   match repr_qualid qid with
@@ -367,8 +489,8 @@ let is_obsolete_module (_,qid) =
 let vernac_require import _ qidl =
   try
     match import with
-      | None -> List.iter Library.read_module qidl
-      | Some b -> Library.require_module None qidl b
+      | None -> List.iter Library.read_library qidl
+      | Some b -> Library.require_library None qidl b
   with e ->
   (* Compatibility message *)
     let qidl' = List.filter is_obsolete_module qidl in
@@ -381,7 +503,20 @@ let vernac_require import _ qidl =
       raise e
       
 let vernac_import export qidl =
-  List.iter (Library.import_module export) qidl
+  if export then
+    List.iter Library.export_library qidl
+  else
+    let import (loc,qid) = 
+      try
+	let mp = Nametab.locate_module qid in
+	  Declaremods.import_module mp
+      with Not_found ->
+	user_err_loc
+        (loc,"vernac_import",
+	 str ((string_of_qualid qid)^" is not a module"))
+    in
+      List.iter import qidl;
+      Lib.add_frozen_state ()
 
 let vernac_canonical locqid =
   Recordobj.objdef_declare (Nametab.global locqid)
@@ -396,7 +531,7 @@ let vernac_coercion stre (loc,qid as locqid) qids qidt =
   let source = cl_of_qualid qids in
   let ref = Nametab.global locqid in
   Class.try_add_new_coercion_with_target ref stre source target;
-  if_verbose message ((Nametab.string_of_qualid qid) ^ " is now a coercion")
+  if_verbose message ((string_of_qualid qid) ^ " is now a coercion")
 
 let vernac_identity_coercion stre id qids qidt =
   let target = cl_of_qualid qidt in
@@ -431,7 +566,7 @@ let vernac_solve_existential = instantiate_nth_evar_com
 (* Auxiliary file management *)
 
 let vernac_require_from export spec id filename =
-  Library.require_module_from_file spec (Some id) filename export
+  Library.require_library_from_file spec (Some id) filename export
 
 let vernac_add_loadpath isrec pdir ldiropt =
   let alias = match ldiropt with
@@ -595,9 +730,9 @@ let vernac_mem_option key lv =
 
 let vernac_print_option key =
   try (get_ref_table key)#print
-  with not_found ->
+  with Not_found ->
   try (get_string_table key)#print
-  with not_found ->
+  with Not_found ->
   try print_option_value key
   with Not_found -> error_undeclared_key key
 
@@ -655,7 +790,6 @@ let vernac_print = function
   | PrintHintDbName s -> Auto.print_hint_db_by_name s
   | PrintHintDb -> Auto.print_searchtable ()
 
-
 let global_loaded_library (loc, qid) =
   try Nametab.locate_loaded_library qid
   with Not_found -> 
@@ -692,7 +826,7 @@ let vernac_goal = function
   | None -> ()
   | Some c ->
       if not (refining()) then begin
-        start_proof_com None (false,Nametab.NeverDischarge) c (fun _ _ ->());
+        start_proof_com None (false,Libnames.NeverDischarge) c (fun _ _ ->());
 	print_subgoals ()
       end else 
 	error "repeated Goal not permitted in refining mode"
@@ -844,7 +978,7 @@ let _ =
 	     let ref = Nametab.global (dummy_loc, qid) in
 	     Class.try_add_new_class ref stre;
              if_verbose message
-               ((Nametab.string_of_qualid qid) ^ " is now a class")
+               ((string_of_qualid qid) ^ " is now a class")
        | _ -> bad_vernac_args "CLASS")
 
 (* Meta-syntax commands *)
@@ -893,10 +1027,18 @@ let interp c = match c with
   | VernacCoFixpoint l -> vernac_cofixpoint l
   | VernacScheme l -> vernac_scheme l
 
+  (* Modules *)
+  | VernacDeclareModule (id,bl,mtyo,mexpro) -> 
+      vernac_declare_module id bl mtyo mexpro
+  | VernacDeclareModuleType (id,bl,mtyo) -> 
+      vernac_declare_module_type id bl mtyo
+
   (* Gallina extensions *)
-  | VernacRecord (id,bl,s,idopt,fs) -> vernac_record id bl s idopt fs
   | VernacBeginSection id -> vernac_begin_section id
-  | VernacEndSection id -> vernac_end_section id
+
+  | VernacEndSegment id -> vernac_end_segment id
+
+  | VernacRecord (id,bl,s,idopt,fs) -> vernac_record id bl s idopt fs
   | VernacRequire (export,spec,qidl) -> vernac_require export spec qidl
   | VernacImport (export,qidl) -> vernac_import export qidl
   | VernacCanonical qid -> vernac_canonical qid

@@ -448,6 +448,11 @@ let error_same_names_constructors id cid =
   str "is used twice is the definition of type" ++ spc () ++
   pr_id id
 
+let error_same_names_overlap idl = 
+  str "The following names" ++ spc () ++ 
+  str "are used both as type names and constructor names:" ++ spc () ++
+  prlist_with_sep pr_coma pr_id idl
+
 let error_not_an_arity id =
   str "The type of" ++ spc () ++ pr_id id ++ spc () ++ str "is not an arity."
 
@@ -477,6 +482,7 @@ let explain_inductive_error = function
   | NonPar (env,c,n,v1,v2) -> error_bad_ind_parameters env c n v1 v2
   | SameNamesTypes id -> error_same_names_types id
   | SameNamesConstructors (id,cid) -> error_same_names_constructors id cid
+  | SameNamesOverlap idl -> error_same_names_overlap idl
   | NotAnArity id -> error_not_an_arity id
   | BadEntry -> error_bad_entry ()
   (* These are errors related to recursors *)

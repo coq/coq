@@ -1,0 +1,46 @@
+# to be linked to makefile (lowercase - takes precedence over Makefile)
+# in main directory
+
+TOPDIR=.
+BASEDIR=
+
+SOURCEDIRS=lib kernel library pretyping parsing proofs tactics toplevel
+
+default:	noargument
+
+# set the devel makefile
+setup-devel:
+	@ln -sfv dev/Makefile.devel makefile
+	@(for i in $(SOURCEDIRS); do \
+	    (cd $(TOPDIR)/$$i; ln -sfv ../dev/Makefile.dir Makefile) \
+	done)
+
+clean-devel:
+	echo rm -f makefile .depend.devel
+	echo rm -f $(foreach dir,$(SOURCEDIRS), $(TOPDIR)/$(dir)/Makefile)
+
+coqtop:	bin/coqtop.byte
+	ln -sf bin/coqtop.byte coqtop
+
+quick: 
+	$(MAKE) states BEST=byte
+
+include Makefile
+
+include $(TOPDIR)/dev/Makefile.common
+
+# this file is better described in dev/Makefile.dir
+include .depend.devel
+
+#if dev/Makefile.local exists, it is included
+ifneq ($(wildcard $(TOPDIR)/dev/Makefile.local),)
+include $(TOPDIR)/dev/Makefile.local
+endif
+
+#runs coqtop with all theories required
+total:
+	ledit ./bin/coqtop.byte $(foreach th,$(THEORIESVO),-require $(notdir $(basename $(th))))
+
+#runs coqtop storing using the history file
+run:	$(TOPDIR)/coqtop
+	ledit -h $(TOPDIR)/dev/debug_history -x $(TOPDIR)/coqtop

@@ -11,6 +11,7 @@
 (*i*)
 open Pp
 open Names
+open Libnames
 open Term
 open Sign
 open Environ

@@ -16,11 +16,13 @@ open Term
 open Termops
 open Inductive
 open Declarations
+open Entries
 open Environ
 open Inductive
 open Lib
 open Classops
 open Declare
+open Libnames
 open Nametab
 open Safe_typing
 
@@ -143,7 +145,7 @@ let uniform_cond nargs lt =
 let id_of_cl  = function
   | CL_FUN -> id_of_string "FUNCLASS"
   | CL_SORT -> id_of_string "SORTCLASS"
-  | CL_CONST sp -> basename sp
+  | CL_CONST kn -> id_of_label (label kn)
   | CL_IND ind ->
       let (_,mip) = Global.lookup_inductive ind in
       mip.mind_typename
@@ -259,12 +261,12 @@ let build_id_coercion idf_opt source =
                         (string_of_class (fst (find_class_type t)))) 
   in
   let constr_entry = (* Cast is necessary to express [val_f] is identity *)
-    ConstantEntry
+    DefinitionEntry
       { const_entry_body = mkCast (val_f, typ_f);
 	const_entry_type = None;
         const_entry_opaque = false } in
-  let sp = declare_constant idf (constr_entry,NeverDischarge) in
-  ConstRef sp
+  let (_,kn) = declare_constant idf (constr_entry,NeverDischarge) in
+  ConstRef kn
 
 (* 
 nom de la fonction coercion
@@ -332,7 +334,7 @@ let try_add_new_coercion_with_source ref stre ~source =
 let add_coercion_hook stre ref = 
   try_add_new_coercion ref stre;
   Options.if_verbose message
-    (string_of_qualid (shortest_qualid_of_global (Global.env()) ref)
+    (string_of_qualid (shortest_qualid_of_global None ref)
     ^ " is now a coercion")
 
 let add_subclass_hook stre ref =
@@ -374,52 +376,49 @@ let count_extra_abstractions hyps ids_to_discard =
       (hyps,0) ids_to_discard
   in n
 
-let defined_in_sec sp sec_sp = dirpath sp = sec_sp
+let defined_in_sec kn olddir = 
+  let _,dir,_ = repr_kn kn in
+    dir = olddir
 
 (* This moves the global path one step below *)
-let process_global sec_sp = function
+let process_global olddir = function
   | VarRef _ ->
       anomaly "process_global only processes global surviving the section"
-  | ConstRef sp as x ->
-      if defined_in_sec sp sec_sp then
-        let (_,spid) = repr_path sp in
-        let newsp = Lib.make_path spid in
-        ConstRef newsp
+  | ConstRef kn as x ->
+      if defined_in_sec kn olddir then
+        let newkn = Lib.make_kn (id_of_label (label kn)) in
+        ConstRef newkn
       else x
-  | IndRef (sp,i) as x -> 
-      if defined_in_sec sp sec_sp then
-        let (_,spid) = repr_path sp in
-        let newsp = Lib.make_path spid in
-        IndRef (newsp,i)
+  | IndRef (kn,i) as x -> 
+      if defined_in_sec kn olddir then
+        let newkn = Lib.make_kn (id_of_label (label kn)) in
+        IndRef (newkn,i)
       else x
-  | ConstructRef ((sp,i),j) as x -> 
-      if defined_in_sec sp sec_sp then
-        let (_,spid) = repr_path sp in
-        let newsp = Lib.make_path spid in
-        ConstructRef ((newsp,i),j)
+  | ConstructRef ((kn,i),j) as x -> 
+      if defined_in_sec kn olddir then
+        let newkn = Lib.make_kn (id_of_label (label kn)) in
+        ConstructRef ((newkn,i),j)
       else x
 
-let process_class sec_sp ids_to_discard x =
+let process_class olddir ids_to_discard x =
   let (cl,{cl_strength=stre; cl_param=p}) = x in
 (*  let env = Global.env () in*)
   match cl with 
     | CL_SECVAR _ -> x
-    | CL_CONST sp -> 
-        if defined_in_sec sp sec_sp then
-	  let (_,spid) = repr_path sp in
-          let newsp = Lib.make_path spid in
-	  let hyps = (Global.lookup_constant sp).const_hyps in
+    | CL_CONST kn -> 
+       if defined_in_sec kn olddir then
+         let newkn = Lib.make_kn (id_of_label (label kn)) in
+	 let hyps = (Global.lookup_constant kn).const_hyps in
+	 let n = count_extra_abstractions hyps ids_to_discard in
+           (CL_CONST newkn,{cl_strength=stre;cl_param=p+n})
+       else 
+	 x
+    | CL_IND (kn,i) ->
+	if defined_in_sec kn olddir then
+          let newkn = Lib.make_kn (id_of_label (label kn)) in
+	  let hyps = (Global.lookup_mind kn).mind_hyps in
 	  let n = count_extra_abstractions hyps ids_to_discard in
-          (CL_CONST newsp,{cl_strength=stre;cl_param=p+n})
-        else 
-	  x
-    | CL_IND (sp,i) ->
-        if defined_in_sec sp sec_sp then
-	  let (_,spid) = repr_path sp in
-          let newsp = Lib.make_path spid in 
-	  let hyps = (Global.lookup_mind sp).mind_hyps in
-	  let n = count_extra_abstractions hyps ids_to_discard in
-          (CL_IND (newsp,i),{cl_strength=stre;cl_param=p+n})
+          (CL_IND (newkn,i),{cl_strength=stre;cl_param=p+n})
         else 
 	  x
     | _ -> anomaly "process_class" 
@@ -427,28 +426,26 @@ let process_class sec_sp ids_to_discard x =
 let process_cl sec_sp cl =
   match cl with
     | CL_SECVAR id -> cl
-    | CL_CONST sp ->
-	if defined_in_sec sp sec_sp then
-	  let (_,spid) = repr_path sp in
-          let newsp = Lib.make_path spid in 
-          CL_CONST newsp
+    | CL_CONST kn ->
+	if defined_in_sec kn sec_sp then
+          let newkn = Lib.make_kn (id_of_label (label kn)) in
+          CL_CONST newkn
         else 
 	  cl
-    | CL_IND (sp,i) ->
-	if defined_in_sec sp sec_sp then
-	  let (_,spid) = repr_path sp in
-          let newsp = Lib.make_path spid in 
-          CL_IND (newsp,i)
+    | CL_IND (kn,i) ->
+	if defined_in_sec kn sec_sp then
+          let newkn = Lib.make_kn (id_of_label (label kn)) in
+          CL_IND (newkn,i)
         else 
 	  cl
     | _ -> cl
 
-let process_coercion sec_sp ids_to_discard ((coe,coeinfo),cls,clt) =
+let process_coercion olddir ids_to_discard ((coe,coeinfo),cls,clt) =
   let hyps = context_of_global_reference coe in
   let nargs = count_extra_abstractions hyps ids_to_discard in
-  (process_global sec_sp coe,
+  (process_global olddir coe,
    coercion_strength coeinfo,
    coercion_identity coeinfo,
-   process_cl sec_sp cls,
-   process_cl sec_sp clt,
+   process_cl olddir cls,
+   process_cl olddir clt,
    nargs + coercion_params coeinfo)

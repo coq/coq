@@ -29,6 +29,9 @@ exception NotConvertible
 exception NotConvertibleVect of int
 type 'a conversion_function = env -> 'a -> 'a -> Univ.constraints
 
+val conv_sort      : sorts conversion_function
+val conv_sort_leq  : sorts conversion_function
+
 val conv           : types conversion_function
 val conv_leq       : types conversion_function
 val conv_leq_vecti : types array conversion_function

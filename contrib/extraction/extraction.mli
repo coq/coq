@@ -11,7 +11,8 @@
 (*s Extraction from Coq terms to Miniml. *)
 
 open Miniml
-open Nametab
+open Environ
+open Libnames
 
 (*s ML declaration corresponding to a Coq reference. *)
 

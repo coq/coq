@@ -19,7 +19,7 @@ open Clenv
 open Pattern
 open Environ
 open Evd
-open Nametab
+open Libnames
 (*i*)
   
 type auto_tactic = 

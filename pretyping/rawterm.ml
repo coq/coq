@@ -13,6 +13,7 @@ open Util
 open Names
 open Sign
 open Term
+open Libnames
 open Nametab
 (*i*)
 
@@ -87,6 +88,91 @@ type rawconstr =
 
    - boolean in POldCase means it is recursive
 i*)
+
+let rec subst_pat subst pat = 
+  match pat with
+  | PatVar _ -> pat
+  | PatCstr (loc,((kn,i),j),cpl,n) -> 
+      let kn' = subst_kn subst kn 
+      and cpl' = list_smartmap (subst_pat subst) cpl in
+	if kn' == kn && cpl' == cpl then pat else
+	  PatCstr (loc,((kn',i),j),cpl',n)
+	
+let rec subst_raw subst raw = 
+  match raw with
+  | RRef (loc,ref) -> 
+      let ref' = subst_global subst ref in 
+	if ref' == ref then raw else
+	  RRef (loc,ref')
+
+  | RVar _ -> raw
+  | REvar _ -> raw
+  | RMeta _ -> raw
+
+  | RApp (loc,r,rl) -> 
+      let r' = subst_raw subst r 
+      and rl' = list_smartmap (subst_raw subst) rl in
+	if r' == r && rl' == rl then raw else
+	  RApp(loc,r',rl')
+
+  | RLambda (loc,n,r1,r2) -> 
+      let r1' = subst_raw subst r1 and r2' = subst_raw subst r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  RLambda (loc,n,r1',r2')
+
+  | RProd (loc,n,r1,r2) -> 
+      let r1' = subst_raw subst r1 and r2' = subst_raw subst r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  RProd (loc,n,r1',r2')
+
+  | RLetIn (loc,n,r1,r2) -> 
+      let r1' = subst_raw subst r1 and r2' = subst_raw subst r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  RLetIn (loc,n,r1',r2')
+
+  | RCases (loc,cs,ro,rl,branches) -> 
+      let ro' = option_smartmap (subst_raw subst) ro 
+      and rl' = list_smartmap (subst_raw subst) rl
+      and branches' = list_smartmap 
+			(fun (loc,idl,cpl,r as branch) ->
+			   let cpl' = list_smartmap (subst_pat subst) cpl
+			   and r' = subst_raw subst r in
+			     if cpl' == cpl && r' == r then branch else
+			       (loc,idl,cpl',r'))
+			branches
+      in
+	if ro' == ro && rl' == rl && branches' == branches then raw else
+	  RCases (loc,cs,ro',rl',branches')
+
+  | ROldCase (loc,b,ro,r,ra) -> 
+      let ro' = option_smartmap (subst_raw subst) ro
+      and r' = subst_raw subst r 
+      and ra' = array_smartmap (subst_raw subst) ra in
+	if ro' == ro && r' == r && ra' == ra then raw else
+	  ROldCase (loc,b,ro',r',ra')
+
+  | RRec (loc,fix,ida,ra1,ra2) -> 
+      let ra1' = array_smartmap (subst_raw subst) ra1
+      and ra2' = array_smartmap (subst_raw subst) ra2 in
+	if ra1' == ra1 && ra2' == ra2 then raw else
+	  RRec (loc,fix,ida,ra1',ra2')
+
+  | RSort _ -> raw
+
+  | RHole (loc,ImplicitArg (ref,i)) ->
+      let ref' = subst_global subst ref in 
+	if ref' == ref then raw else
+	  RHole (loc,ImplicitArg (ref',i))
+  | RHole (loc, 
+	   (AbstractionType _ | QuestionMark | CasesType | InternalHole)) ->
+      raw
+
+  | RCast (loc,r1,r2) -> 
+      let r1' = subst_raw subst r1 and r2' = subst_raw subst r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  RCast (loc,r1',r2')
+
+  | RDynamic _ -> raw
 
 let dummy_loc = (0,0)
 

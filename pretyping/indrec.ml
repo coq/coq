@@ -11,10 +11,12 @@
 open Pp
 open Util
 open Names
+open Libnames
 open Nameops
 open Term
 open Termops
 open Declarations
+open Entries
 open Inductive
 open Inductiveops
 open Instantiate
@@ -500,13 +502,14 @@ let declare_one_elimination ind =
   let (mib,mip) = Global.lookup_inductive ind in 
   let mindstr = string_of_id mip.mind_typename in
   let declare na c t =
-    let sp = Declare.declare_constant (id_of_string na)
-      (ConstantEntry
+    let kn = Declare.declare_constant (id_of_string na)
+      (DefinitionEntry
         { const_entry_body = c;
           const_entry_type = t;
           const_entry_opaque = false }, 
        NeverDischarge) in
-    Options.if_verbose ppnl (str na ++ str " is defined"); sp
+    Options.if_verbose ppnl (str na ++ str " is defined"); 
+    kn
   in
   let env = Global.env () in
   let sigma = Evd.empty in
@@ -519,7 +522,7 @@ let declare_one_elimination ind =
    if List.mem InType kelim then
     let cte =
       declare (mindstr^type_suff) (make_elim (new_sort_in_family InType)) None
-    in let c = mkConst cte and t = constant_type (Global.env ()) cte
+    in let c = mkConst (snd cte) and t = constant_type (Global.env ()) (snd cte)
     in List.iter  
 	 (fun (sort,suff) -> 
             let (t',c') = instanciate_type_indrec_scheme (new_sort_in_family sort) npars c t
@@ -548,8 +551,32 @@ let declare_eliminations sp =
 (* Look up function for the default elimination constant *)
 
 let lookup_eliminator ind_sp s =
-  let env = Global.env() in
-  let path = sp_of_global env (IndRef ind_sp) in
+  let kn,i = ind_sp in
+  let mp,dp,l = repr_kn kn in
+  let ind_id = (Global.lookup_mind kn).mind_packets.(i).mind_typename in
+  let id = add_suffix ind_id (elimination_suffix s) in
+  (* Try first to get an eliminator defined in the same section as the *)
+  (* inductive type *)
+  let ref = ConstRef (make_kn mp dp (label_of_id id)) in
+  try 
+    let _ = full_name ref in
+      constr_of_reference ref
+  with Not_found ->
+  (* Then try to get a user-defined eliminator in some other places *)
+  (* using short name (e.g. for "eq_rec") *)
+    try construct_reference None id
+    with Not_found ->
+      errorlabstrm "default_elim"
+	(str "Cannot find the elimination combinator " ++
+           pr_id id ++ spc () ++
+	   str "The elimination of the inductive definition " ++
+           pr_id id ++ spc () ++ str "on sort " ++ 
+           spc () ++ print_sort_family s ++
+	   str " is probably not allowed")
+
+
+(*  let env = Global.env() in
+  let path = sp_of_global None (IndRef ind_sp) in
   let dir, base = repr_path path in
   let id = add_suffix base (elimination_suffix s) in
   (* Try first to get an eliminator defined in the same section as the *)
@@ -558,7 +585,7 @@ let lookup_eliminator ind_sp s =
   with Not_found ->
   (* Then try to get a user-defined eliminator in some other places *)
   (* using short name (e.g. for "eq_rec") *)
-    try construct_reference env id
+    try construct_reference None id
     with Not_found ->
       errorlabstrm "default_elim"
 	(str "Cannot find the elimination combinator " ++
@@ -567,3 +594,4 @@ let lookup_eliminator ind_sp s =
            pr_id base ++ spc () ++ str "on sort " ++ 
            spc () ++ print_sort_family s ++
 	   str " is probably not allowed")
+*)

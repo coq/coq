@@ -29,7 +29,7 @@ let get_hyp_by_name g name =
        ("hyp",judgment.uj_type))
 (* je sais, c'est pas beau, mais je ne sais pas trop me servir de look_up...
    Loïc *)
-  with _ -> (let ast = Termast.ast_of_qualid (Nametab.make_short_qualid name)in
+  with _ -> (let ast = Termast.ast_of_qualid (Libnames.make_short_qualid name)in
              let c = Astterm.interp_constr evd env ast in
              ("cste",type_of (Global.env()) Evd.empty c))
 ;;
@@ -252,7 +252,7 @@ let reference dir s =
     Nametab.locate_in_absolute_module dir id
   with Not_found ->
     anomaly ("Coqlib: cannot find "^
-	     (Nametab.string_of_qualid (Nametab.make_qualid dir id)))
+	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))
 
 let constant dir s =  Declare.constr_of_reference (reference dir s);;
 

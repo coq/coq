@@ -12,6 +12,7 @@
 open Names
 open Nametab
 open Term
+open Libnames
 open Classops
 open Libobject
 open Library
@@ -27,10 +28,10 @@ val compter : bool ref
 type struc_typ = {
   s_CONST : identifier; 
   s_PARAM : int;
-  s_PROJ : section_path option list }
+  s_PROJ : constant option list }
 
 val add_new_struc : 
-  inductive * identifier * int * section_path option list -> unit
+  inductive * identifier * int * constant option list -> unit
 
 (* [find_structure isp] returns the infos associated to inductive path
    [isp] if it corresponds to a structure, otherwise fails with [Not_found] *)
@@ -50,5 +51,5 @@ val add_new_objdef :
 
 val inStruc : inductive * struc_typ -> obj
 val outStruc : obj -> inductive * struc_typ
-val inObjDef1 : section_path -> obj
-val outObjDef1 : obj -> section_path
+val inObjDef1 : kernel_name -> obj
+val outObjDef1 : obj -> kernel_name

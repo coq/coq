@@ -8,6 +8,7 @@ open Termast;;
 open Term;;
 open Impargs;;
 open Reduction;;
+open Libnames;;
 open Libobject;;
 open Environ;;
 open Declarations;;
@@ -83,7 +84,7 @@ let implicit_args_to_ast_list sp mipv =
 	| _ -> [VernacComments (List.rev implicit_args_descriptions)];;
 	      
 let convert_qualid qid =
-  let d, id = Nametab.repr_qualid qid in
+  let d, id = Libnames.repr_qualid qid in
     match repr_dirpath d with
 	[] -> nvar id
       | d -> ope("QUALID", List.fold_left (fun l s -> (nvar s)::l)
@@ -108,7 +109,7 @@ let convert_one_inductive sp tyi =
   let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp tyi in
   let env = Global.env () in
   let envpar = push_rel_context params env in
-  let sp = sp_of_global env (IndRef (sp, tyi)) in
+  let sp = sp_of_global None (IndRef (sp, tyi)) in
   (basename sp,
    convert_env(List.rev params),
    (ast_of_constr true envpar arity),
@@ -167,16 +168,16 @@ let make_definition_ast name c typ implicits =
   ::(implicits_to_ast_list implicits);;
 
 (* This function is inspired by print_constant *)
-let constant_to_ast_list sp =
-  let cb = Global.lookup_constant sp in
+let constant_to_ast_list kn =
+  let cb = Global.lookup_constant kn in
   let c = cb.const_body in
   let typ = cb.const_type in
-  let l = constant_implicits_list sp in
+  let l = constant_implicits_list kn in
   (match c with
       None -> 
-	make_variable_ast (basename sp) typ l
+	make_variable_ast (id_of_label (label kn)) typ l
     | Some c1 ->
-	make_definition_ast (basename sp) c1 typ l)
+	make_definition_ast (id_of_label (label kn)) c1 typ l)
 
 let variable_to_ast_list sp =
   let ((id, c, v), _) = get_variable sp in
@@ -195,13 +196,13 @@ let inductive_to_ast_list sp =
 
 (* this function is inspired by print_leaf_entry from pretty.ml *)
 
-let leaf_entry_to_ast_list (sp,lobj) =
+let leaf_entry_to_ast_list ((sp,kn),lobj) =
   let tag = object_tag lobj in
-  match (sp,tag) with
-  | (_, "VARIABLE") -> variable_to_ast_list (basename sp)
-  | (_, ("CONSTANT"|"PARAMETER")) -> constant_to_ast_list sp
-  | (_, "INDUCTIVE") -> inductive_to_ast_list sp
-  | (_, s) -> 
+  match tag with
+  | "VARIABLE" -> variable_to_ast_list (basename sp)
+  | "CONSTANT"|"PARAMETER" -> constant_to_ast_list kn
+  | "INDUCTIVE" -> inductive_to_ast_list kn
+  | s -> 
       errorlabstrm 
       	"print" (str ("printing of unrecognized object " ^
 		      s ^ " has been required"));;
@@ -210,13 +211,13 @@ let leaf_entry_to_ast_list (sp,lobj) =
 
 
 (* this function is inspired by print_name *)
-let name_to_ast (qid:Nametab.qualid) = 
+let name_to_ast qid = 
   let l = 
     try
       let sp = Nametab.locate_obj qid in
       let (sp,lobj) = 
       	let (sp,entry) =
-          List.find (fun en -> (fst en) = sp) (Lib.contents_after None)
+          List.find (fun en -> (fst (fst en)) = sp) (Lib.contents_after None)
       	in
 	  match entry with
             | Lib.Leaf obj -> (sp,obj)
@@ -232,7 +233,7 @@ let name_to_ast (qid:Nametab.qualid) =
 	  | VarRef sp -> variable_to_ast_list sp
   	with Not_found -> 
 	  try  (* Var locale de but, pas var de section... donc pas d'implicits *)
-	    let dir,name = Nametab.repr_qualid qid in 
+	    let dir,name = repr_qualid qid in 
 	      if (repr_dirpath dir) <> [] then raise Not_found;
 	      let (_,c,typ) = Global.lookup_named name in 
 		(match c with
@@ -240,12 +241,12 @@ let name_to_ast (qid:Nametab.qualid) =
 		   | Some c1 -> make_definition_ast name c1 typ [])
 	  with Not_found ->
 	    try
-	      let sp = Syntax_def.locate_syntactic_definition qid in
+	      let sp = Nametab.locate_syntactic_definition qid in
 		errorlabstrm "print"
       		  (str "printing of syntax definitions not implemented")
 	    with Not_found ->
 	      errorlabstrm "print"
-		(Nametab.pr_qualid qid ++
+		(pr_qualid qid ++
 		 spc () ++ str "not a defined object")
   in
   VernacList (List.map (fun x -> (dummy_loc,x)) l)

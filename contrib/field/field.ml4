@@ -34,7 +34,7 @@ let constant dir s =
     Declare.global_reference_in_absolute_module dir id
   with Not_found ->
     anomaly ("Field: cannot find "^
-	     (Nametab.string_of_qualid (Nametab.make_qualid dir id)))
+	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))
 
 (* To deal with the optional arguments *)
 let constr_of_opt a opt =
@@ -44,12 +44,12 @@ let constr_of_opt a opt =
   | Some f -> mkApp ((constant ["Field_Compl"] "Some"),[|ac;constr_of f|])
 
 (* Table of theories *)
-let th_tab = ref ((Hashtbl.create 53) : (constr,constr) Hashtbl.t)
+let th_tab = ref (Gmap.empty : (constr,constr) Gmap.t)
 
-let lookup typ = Hashtbl.find !th_tab typ
+let lookup typ = Gmap.find typ !th_tab
 
 let _ = 
-  let init () = th_tab := (Hashtbl.create 53) in
+  let init () = th_tab := Gmap.empty in
   let freeze () = !th_tab in
   let unfreeze fs = th_tab := fs in
   Summary.declare_summary "field"
@@ -59,17 +59,22 @@ let _ =
       Summary.survive_section   = false }
 
 let load_addfield _ = ()
-let cache_addfield (_,(typ,th)) = Hashtbl.add !th_tab typ th
+let cache_addfield (_,(typ,th)) = th_tab := Gmap.add typ th !th_tab
+let subst_addfield (_,subst,(typ,th as obj)) =
+  let typ' = subst_mps subst typ in
+  let th' = subst_mps subst th in
+    if typ' == typ && th' == th then obj else
+      (typ',th')
 let export_addfield x = Some x
 
 (* Declaration of the Add Field library object *)
 let (in_addfield,out_addfield)=
-  Libobject.declare_object
-    ("ADD_FIELD",
-     { Libobject.load_function = load_addfield;
-       Libobject.open_function = cache_addfield;
+  Libobject.declare_object {(Libobject.default_object "ADD_FIELD") with
+       Libobject.open_function = (fun i o -> if i=1 then cache_addfield o);
        Libobject.cache_function = cache_addfield;
-       Libobject.export_function = export_addfield })
+       Libobject.subst_function = subst_addfield;
+       Libobject.classify_function = (fun (_,a) -> Libobject.Substitute a);
+       Libobject.export_function = export_addfield }
 
 (* Adds a theory to the table *)
 let add_field a aplus amult aone azero aopp aeq ainv aminus_o adiv_o rth
@@ -128,7 +133,7 @@ END
 
 (* Guesses the type and calls Field_Gen with the right theory *)
 let field g =
-  Library.check_required_module ["Coq";"field";"Field"];
+  Library.check_required_library ["Coq";"field";"Field"];
   let evc = project g
   and env = pf_env g in
   let ist = { evc=evc; env=env; lfun=[]; lmatch=[];
@@ -162,7 +167,7 @@ let guess_theory env evc = function
 
 (* Guesses the type and calls Field_Term with the right theory *)
 let field_term l g =
-  Library.check_required_module ["Coq";"field";"Field"];
+  Library.check_required_library ["Coq";"field";"Field"];
   let env = (pf_env g)
   and evc = (project g) in
   let th = valueIn (VConstr (guess_theory env evc l))

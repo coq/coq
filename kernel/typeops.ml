@@ -15,6 +15,7 @@ open Term
 open Declarations
 open Sign
 open Environ
+open Entries
 open Reduction
 open Inductive
 open Type_errors
@@ -242,8 +243,8 @@ let judge_of_cast env cj tj =
 let judge_of_inductive env i =
   let constr = mkInd i in
   let _ =
-    let (sp,_) = i in
-    let mib = lookup_mind sp env in
+    let (kn,_) = i in
+    let mib = lookup_mind kn env in
     check_args env constr mib.mind_hyps in 
   make_judge constr (type_of_inductive env i)
 
@@ -258,8 +259,8 @@ let judge_of_inductive env i
 let judge_of_constructor env c =
   let constr = mkConstruct c in
   let _ =
-    let ((sp,_),_) = c in
-    let mib = lookup_mind sp env in
+    let ((kn,_),_) = c in
+    let mib = lookup_mind kn env in
     check_args env constr mib.mind_hyps in 
   make_judge constr (type_of_constructor env c)
 
@@ -456,10 +457,6 @@ let infer_v env cv =
   (jv, cst)
  
 (* Typing of several terms. *)
-
-type local_entry =
-  | LocalDef of constr
-  | LocalAssum of constr
 
 let infer_local_decl env id = function
   | LocalDef c -> 

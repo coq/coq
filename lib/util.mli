@@ -26,6 +26,12 @@ exception UserError of string * std_ppcmds
 val error : string -> 'a
 val errorlabstrm : string -> std_ppcmds -> 'a
 
+(* [todo] is for running of an incomplete code its implementation is
+   "do nothing" (or print a message), but this function should not be
+   used in a released code *)
+
+val todo : string -> unit
+
 type loc = int * int
 type 'a located = loc * 'a
 
@@ -67,6 +73,10 @@ val list_tabulate : (int -> 'a) -> int -> 'a list
 val list_assign : 'a list -> int -> 'a -> 'a list
 val list_distinct : 'a list -> bool
 val list_filter2 : ('a -> 'b -> bool) -> 'a list * 'b list -> 'a list * 'b list
+
+(* [list_smartmap f [a1...an] = List.map f [a1...an]] but if for all i
+   [ f ai == ai], then [list_smartmap f l==l] *)
+val list_smartmap : ('a -> 'a) -> 'a list -> 'a list
 val list_map_left : ('a -> 'b) -> 'a list -> 'b list
 val list_map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
 val list_map2_i : 
@@ -98,6 +108,10 @@ val list_map_append : ('a -> 'b list) -> 'a list -> 'b list
 val list_map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
 val list_share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
 val list_join_map : ('a -> 'b list) -> 'a list -> 'b list
+(* [list_fold_map f e_0 [l_1...l_n] = e_n,[k_1...k_n]]
+   where [(e_i,k_i)=f e_{i-1} l_i] *)
+val list_fold_map : 
+  ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list 
 
 (*s Arrays. *)
 
@@ -123,6 +137,7 @@ val array_app_tl : 'a array -> 'a list -> 'a list
 val array_list_of_tl : 'a array -> 'a list
 val array_map_to_list : ('a -> 'b) -> 'a array -> 'b list
 val array_chop : int -> 'a array -> 'a array * 'a array
+val array_smartmap : ('a -> 'a) -> 'a array -> 'a array
 val array_map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 val array_map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 val array_map3 : 
@@ -159,6 +174,7 @@ val in_some : 'a -> 'a option
 val out_some : 'a option -> 'a
 val option_app : ('a -> 'b) -> 'a option -> 'b option
 val option_compare : ('a -> 'b -> bool) -> 'a option -> 'b option -> bool 
+val option_smartmap : ('a -> 'a) -> 'a option -> 'a option
 
 (* In [map_succeed f l] an element [a] is removed if [f a] raises *)
 (* [Failure _] otherwise behaves as [List.map f l] *)

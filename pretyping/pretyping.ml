@@ -143,7 +143,7 @@ let error_unsolvable_implicit (loc,kind) =
 	str "Cannot infer a type of this anonymous abstraction"
     | ImplicitArg (c,n) ->
 	str "Cannot infer the " ++ pr_ord n ++
-	str " implicit argument of " ++ Nametab.pr_global_env (Global.env()) c
+	str " implicit argument of " ++ Nametab.pr_global_env None c
     | InternalHole ->
         str "Cannot infer a term for an internal placeholder"
   in

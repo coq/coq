@@ -147,7 +147,7 @@ let comp_term t1 t2 =
       & array_for_all2 (==) bl1 bl2
   | _ -> false
 
-let hash_term (sh_rec,(sh_sort,sh_sp,sh_na,sh_id)) t =
+let hash_term (sh_rec,(sh_sort,sh_kn,sh_na,sh_id)) t =
   match t with
   | Rel _ | Meta _ -> t
   | Var x -> Var (sh_id x)
@@ -158,10 +158,10 @@ let hash_term (sh_rec,(sh_sort,sh_sp,sh_na,sh_id)) t =
   | LetIn (na,b,t,c) -> LetIn (sh_na na, sh_rec b, sh_rec t, sh_rec c)
   | App (c,l) -> App (sh_rec c, Array.map sh_rec l)
   | Evar (e,l) -> Evar (e, Array.map sh_rec l)
-  | Const c -> Const (sh_sp c)
-  | Ind (sp,i) -> Ind (sh_sp sp,i)
-  | Construct ((sp,i),j) -> Construct ((sh_sp sp,i),j)
-  | Case (ci,p,c,bl) -> (* TO DO: extract ind_sp *)
+  | Const c -> Const (sh_kn c)
+  | Ind (kn,i) -> Ind (sh_kn kn,i)
+  | Construct ((kn,i),j) -> Construct ((sh_kn kn,i),j)
+  | Case (ci,p,c,bl) -> (* TO DO: extract ind_kn *)
       Case (ci, sh_rec p, sh_rec c, Array.map sh_rec bl)
   | Fix (ln,(lna,tl,bl)) ->
       Fix (ln,(Array.map sh_na lna,
@@ -177,15 +177,15 @@ module Hconstr =
     struct
       type t = constr
       type u = (constr -> constr) *
-               ((sorts -> sorts) * (section_path -> section_path)
+               ((sorts -> sorts) * (kernel_name -> kernel_name)
 		* (name -> name) * (identifier -> identifier))
       let hash_sub = hash_term
       let equal = comp_term
       let hash = Hashtbl.hash
     end)
 
-let hcons_term (hsorts,hsp,hname,hident) =
-  Hashcons.recursive_hcons Hconstr.f (hsorts,hsp,hname,hident)
+let hcons_term (hsorts,hkn,hname,hident) =
+  Hashcons.recursive_hcons Hconstr.f (hsorts,hkn,hname,hident)
 
 (* Constructs a DeBrujin index with number n *)
 let rels =
@@ -236,12 +236,12 @@ let mkConst c = Const c
 (* Constructs an existential variable *)
 let mkEvar e = Evar e
 
-(* Constructs the ith (co)inductive type of the block named sp *)
+(* Constructs the ith (co)inductive type of the block named kn *)
 (* The array of terms correspond to the variables introduced in the section *)
 let mkInd m = Ind m
 
 (* Constructs the jth constructor of the ith (co)inductive type of the 
-   block named sp. The array of terms correspond to the variables
+   block named kn. The array of terms correspond to the variables
    introduced in the section *)
 let mkConstruct c = Construct c
 
@@ -380,28 +380,28 @@ let isApp c = match kind_of_term c with App _ -> true | _ -> false
 
 (* Destructs a constant *)
 let destConst c = match kind_of_term c with
-  | Const sp -> sp
+  | Const kn -> kn
   | _ -> invalid_arg "destConst"
 
 let isConst c = match kind_of_term c with Const _ -> true | _ -> false
 
 (* Destructs an existential variable *)
 let destEvar c = match kind_of_term c with
-  | Evar (sp, a as r) -> r
+  | Evar (kn, a as r) -> r
   | _ -> invalid_arg "destEvar"
 
 let num_of_evar c = match kind_of_term c with
   | Evar (n, _) -> n
   | _ -> anomaly "num_of_evar called with bad args"
 
-(* Destructs a (co)inductive type named sp *)
+(* Destructs a (co)inductive type named kn *)
 let destInd c = match kind_of_term c with
-  | Ind (sp, a as r) -> r
+  | Ind (kn, a as r) -> r
   | _ -> invalid_arg "destInd"
 
 (* Destructs a constructor *)
 let destConstruct c = match kind_of_term c with
-  | Construct (sp, a as r) -> r
+  | Construct (kn, a as r) -> r
   | _ -> invalid_arg "dest"
 
 let isConstruct c = match kind_of_term c with
@@ -813,6 +813,32 @@ let substn_vars p vars =
 
 let subst_vars = substn_vars 1
 
+(* 
+map_kn : (kernel_name -> kernel_name) -> constr -> constr
+
+This should be rewritten to prevent duplication of constr's when not
+necessary.
+For now, it uses map_constr and is rather ineffective
+*)
+
+let rec map_kn f c = 
+  let func = map_kn f in
+    match kind_of_term c with
+      | Const kn -> 
+	  mkConst (f kn)
+      | Ind (kn,i) -> 
+	  mkInd (f kn,i)
+      | Construct ((kn,i),j) -> 
+	  mkConstruct ((f kn,i),j)
+      | Case (ci,p,c,l) ->
+	  let ci' = { ci with ci_ind = let (kn,i) = ci.ci_ind in f kn, i } in
+	  mkCase (ci', func p, func c, array_smartmap func l) 
+      | _ -> map_constr func c
+
+let subst_mps sub = 
+  map_kn (subst_kn sub)
+
+
 (*********************)
 (* Term constructors *)
 (*********************)
@@ -910,12 +936,12 @@ let mkConst = mkConst
 (* Constructs an existential variable *)
 let mkEvar = mkEvar
 
-(* Constructs the ith (co)inductive type of the block named sp *)
+(* Constructs the ith (co)inductive type of the block named kn *)
 (* The array of terms correspond to the variables introduced in the section *)
 let mkInd = mkInd
 
 (* Constructs the jth constructor of the ith (co)inductive type of the 
-   block named sp. The array of terms correspond to the variables
+   block named kn. The array of terms correspond to the variables
    introduced in the section *)
 let mkConstruct = mkConstruct
 
@@ -1169,9 +1195,9 @@ module Hsorts =
 
 let hsort = Hsorts.f
 
-let hcons_constr (hspcci,hdir,hname,hident,hstr) =
+let hcons_constr (hkn,hdir,hname,hident,hstr) =
   let hsortscci = Hashcons.simple_hcons hsort hcons1_univ in
-  let hcci = hcons_term (hsortscci,hspcci,hname,hident) in
+  let hcci = hcons_term (hsortscci,hkn,hname,hident) in
   let htcci = Hashcons.simple_hcons Htype.f (hcci,hsortscci) in
   (hcci,htcci)
 

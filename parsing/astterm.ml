@@ -19,6 +19,7 @@ open Termops
 open Environ
 open Evd
 open Reductionops
+open Libnames
 open Impargs
 open Declare
 open Rawterm
@@ -122,7 +123,7 @@ let add_glob loc ref =
   in
   let s = string_of_dirpath (find_module dir) in
   i*)
-  let sp = Nametab.sp_of_global (Global.env ()) ref in
+  let sp = Nametab.sp_of_global None ref in
   let id = let _,id = repr_path sp in string_of_id id in
   let dp = string_of_dirpath (Declare.library_part ref) in
   dump_string (Printf.sprintf "R%d %s.%s\n" (fst loc) dp id)
@@ -229,14 +230,15 @@ let maybe_constructor allow_var env = function
       if !dump then add_glob loc (ConstructRef c); 
       ConstrPat (loc,c)
 
-  | Path(loc,sp) ->
-      (match absolute_reference sp with 
-	| ConstructRef c as r -> 
-	    if !dump then add_glob loc (ConstructRef c);
-	    ConstrPat (loc,c)
-	| _ ->
-            error ("Unknown absolute constructor name: "^(string_of_path sp)))
-
+  | Path(loc,kn) ->
+      (let dir,id = decode_kn kn in
+       let sp = make_path dir id in
+	 match absolute_reference sp with 
+	   | ConstructRef c as r -> 
+	       if !dump then add_glob loc (ConstructRef c);
+	       ConstrPat (loc,c)
+	   | _ ->
+               error ("Unknown absolute constructor name: "^(string_of_path sp)))
   | Node(loc,("CONST"|"SECVAR"|"EVAR"|"MUTIND"|"SYNCONST" as key), l) ->
       user_err_loc (loc,"ast_to_pattern",
    (str "Found a pattern involving global references which are not constructors"
@@ -622,7 +624,7 @@ let ast_of_syndef loc sp = Node (loc, "SYNCONST", [path_section loc sp])
 
 let ast_of_extended_ref_loc loc = function
   | TrueGlobal ref -> ast_of_ref_loc loc ref
-  | SyntacticDef sp -> ast_of_syndef loc sp
+  | SyntacticDef kn -> ast_of_syndef loc kn
 
 let ast_of_extended_ref = ast_of_extended_ref_loc dummy_loc
 

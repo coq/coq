@@ -1,0 +1,7 @@
+# if you work in a sub/sub-rectory of Coq
+# you should make a link to that makefile 
+#    ln -s ../../dev/Makefile.subdir Makefile
+# in order to have all the facilities of dev/Makefile.dir
+
+TOPDIR=../..
+include $(TOPDIR)/dev/Makefile.dir
