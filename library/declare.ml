@@ -385,3 +385,7 @@ let strength_of_global = function
   | ConstRef sp -> constant_strength sp
   | VarRef id -> variable_strength id
   | IndRef _ | ConstructRef _ -> NeverDischarge 
+
+let library_part sp =
+  let dir,_ = repr_path sp in
+  extract_dirpath_prefix (depth_of_strength (constant_strength sp)) dir

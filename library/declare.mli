@@ -100,3 +100,5 @@ val construct_reference : Environ.env -> identifier -> constr
 val is_global : identifier -> bool
 
 val strength_of_global : global_reference -> strength
+
+val library_part : section_path -> dir_path
