@@ -62,8 +62,8 @@ let all_vars t =
   in 
   aux(t,[]) 
    
-let print_id_list l = 
-  [< 'sTR "[" ; prlist_with_sep pr_coma print_id l; 'sTR "]" >]
+let pr_id_list l = 
+  [< 'sTR "[" ; prlist_with_sep pr_coma pr_id l; 'sTR "]" >]
 
 open Environ
 
@@ -125,7 +125,7 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
 	   (warning_or_error coe
               [< 'sTR(string_of_id fi);
 		 'sTR" cannot be defined because the projection"; 'sTR s; 'sPC;
-                 prlist_with_sep pr_coma print_id bad_projs;
+                 prlist_with_sep pr_coma pr_id bad_projs;
 		 'sPC; 'sTR have; 'sTR "n't." >]);
            (None::sp_projs,fi::ids_not_ok,subst)
          end else 

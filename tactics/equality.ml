@@ -1361,7 +1361,7 @@ let general_rewrite_in lft2rgt id (c,lb) gls =
        let (_,ty) = lookup_named id (pf_env gls) in (body_of_type ty)
      with Not_found -> 
        errorlabstrm "general_rewrite_in" 
-	 [< 'sTR"No such hypothesis : "; print_id id >])
+	 [< 'sTR"No such hypothesis : "; pr_id id >])
   in
   let (wc,_) = startWalk gls
   and (_,_,t) = reduce_to_ind (pf_env gls) (project gls) (pf_type_of gls c) in
@@ -1380,7 +1380,7 @@ let general_rewrite_in lft2rgt id (c,lb) gls =
 		  (collapse_appl mbr_eq)) with
            | None ->
                errorlabstrm "general_rewrite_in" 
-		 [<'sTR "Nothing to rewrite in: "; print_id id>]
+		 [<'sTR "Nothing to rewrite in: "; pr_id id>]
            |Some (l2,nb_occ) ->
                (tclTHENSI 
 		  (tclTHEN 
@@ -1426,7 +1426,7 @@ let rewrite_in lR com id gls =
   (try 
      let _ = lookup_named id (pf_env gls) in () 
    with Not_found -> 
-     errorlabstrm "rewrite_in" [< 'sTR"No such hypothesis : " ;print_id id >]);
+     errorlabstrm "rewrite_in" [< 'sTR"No such hypothesis : " ;pr_id id >]);
   let c = pf_interp_constr gls com in
   let eqn = pf_type_of gls c in
   try

@@ -340,7 +340,7 @@ let msg_sync_option_value (name,v) =
     | BoolValue false -> [< 'sTR "false" >]
     | IntValue n      -> [< 'iNT n >]
     | StringValue s   -> [< 'sTR s >]
-    | IdentValue id    -> [< print_id id >]
+    | IdentValue id    -> [< pr_id id >]
 
 let msg_async_option_value (name,vref) =
   match vref with

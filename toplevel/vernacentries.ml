@@ -633,7 +633,7 @@ let _ =
     (function [] ->
        (fun () ->
 	  let l = Pfedit.get_all_proof_names() in 
-	  mSGNL (prlist_with_sep pr_spc print_id l))
+	  mSGNL (prlist_with_sep pr_spc pr_id l))
        | _  -> bad_vernac_args "ShowProofs")
 
 let _ =
@@ -753,14 +753,14 @@ let _ =
 		  ()
               with e ->
             	if is_unsafe "proof" then begin
-                  mSGNL [< 'sTR"Error: checking of theorem " ; print_id s ;
+                  mSGNL [< 'sTR"Error: checking of theorem " ; pr_id s ;
                            'sPC ; 'sTR"failed" ;
                            'sTR"... converting to Axiom" >];
                   delete_proof s;
                   parameter_def_var (string_of_id s) com
            	end else 
 		  errorlabstrm "vernacentries__TheoremProof"
-                    [< 'sTR"checking of theorem " ; print_id s ; 'sPC ;
+                    [< 'sTR"checking of theorem " ; pr_id s ; 'sPC ;
                        'sTR"failed... aborting" >])
        | _ -> bad_vernac_args "TheoremProof")
 

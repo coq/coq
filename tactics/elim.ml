@@ -95,7 +95,7 @@ let inductive_of_ident gls id =
     | IsMutInd ity -> ity
     | _ ->
 	errorlabstrm "Decompose"
-	  [< print_id id; 'sTR " is not an inductive type" >]
+	  [< pr_id id; 'sTR " is not an inductive type" >]
 
 let decompose_these c l gls =
   let indl = List.map (inductive_of_ident gls) l in 

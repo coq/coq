@@ -548,36 +548,36 @@ open Printer
 
 let pr_prim_rule = function
   | {name=Intro;newids=[id]} -> 
-      [< 'sTR"Intro " ; print_id id >]
+      [< 'sTR"Intro " ; pr_id id >]
 	
   | {name=Intro_after;newids=[id]} -> 
-      [< 'sTR"intro after " ; print_id id >]
+      [< 'sTR"intro after " ; pr_id id >]
 	
   | {name=Intro_replacing;newids=[id]} -> 
-      [< 'sTR"intro replacing " ; print_id id >]
+      [< 'sTR"intro replacing " ; pr_id id >]
 	
   | {name=Fix;newids=[f];params=[Num(_,n)]} -> 
-      [< 'sTR"Fix "; print_id f; 'sTR"/"; 'iNT n>]
+      [< 'sTR"Fix "; pr_id f; 'sTR"/"; 'iNT n>]
       
   | {name=Fix;newids=(f::lf);params=(Num(_,n))::ln;terms=lar} -> 
       let rec print_mut = 
         function (f::lf),((Num(_,n))::ln),(ar::lar) -> 
-          [< print_id f; 'sTR"/"; 'iNT n; 'sTR" : "; prterm ar;
+          [< pr_id f; 'sTR"/"; 'iNT n; 'sTR" : "; prterm ar;
              print_mut (lf,ln,lar)>]
           | _ -> [<>] in
-      [< 'sTR"Fix "; print_id f; 'sTR"/"; 'iNT n;
+      [< 'sTR"Fix "; pr_id f; 'sTR"/"; 'iNT n;
          'sTR" with "; print_mut (lf,ln,lar) >]
       
   | {name=Cofix;newids=[f];terms=[]} -> 
-      [< 'sTR"Cofix "; print_id f >]
+      [< 'sTR"Cofix "; pr_id f >]
       
   | {name=Cofix;newids=(f::lf);terms=lar} -> 
       let rec print_mut = 
         function (f::lf),(ar::lar) -> 
-	  [< print_id f; 'sTR" : "; prterm ar; print_mut (lf,lar)>]
+	  [< pr_id f; 'sTR" : "; prterm ar; print_mut (lf,lar)>]
           | _ -> [<>] 
       in
-      [< 'sTR"Cofix "; print_id f;  'sTR" with "; print_mut (lf,lar) >]
+      [< 'sTR"Cofix "; pr_id f;  'sTR" with "; print_mut (lf,lar) >]
 
   | {name=Refine;terms=[c]} -> 
       [< 'sTR(if occur_meta c then "Refine " else "Exact ") ; prterm c >]
@@ -586,13 +586,13 @@ let pr_prim_rule = function
       [< 'sTR"Change " ; prterm c >]
       
   | {name=Convert_hyp;hypspecs=[id];terms=[c]} ->
-      [< 'sTR"Change " ; prterm c ; 'sPC ; 'sTR"in " ; print_id id >]
+      [< 'sTR"Change " ; prterm c ; 'sPC ; 'sTR"in " ; pr_id id >]
       
   | {name=Thin;hypspecs=ids} ->
-      [< 'sTR"Clear " ; prlist_with_sep pr_spc print_id ids >]
+      [< 'sTR"Clear " ; prlist_with_sep pr_spc pr_id ids >]
       
   | {name=Move withdep;hypspecs=[id1;id2]} ->
       [< 'sTR (if withdep then "Dependent " else "");
-	 'sTR"Move " ; print_id id1; 'sTR " after "; print_id id2 >]
+	 'sTR"Move " ; pr_id id1; 'sTR " after "; pr_id id2 >]
       
   | _ -> anomaly "pr_prim_rule: Unrecognized primitive rule"

@@ -19,13 +19,13 @@ module Make = functor (P : Printer) -> struct
 
   let print_decl k env (s,typ) =
     let ptyp = P.pr_term k env (body_of_type typ) in 
-    [< 'sPC; print_id s; 'sTR" : "; ptyp >]
+    [< 'sPC; pr_id s; 'sTR" : "; ptyp >]
   
   let print_binding k env = function
     | Anonymous,ty -> 
 	[< 'sPC; 'sTR"_" ; 'sTR" : " ; P.pr_term k env (body_of_type ty) >]
     | Name id,ty -> 
-	[< 'sPC; print_id id ; 'sTR" : "; P.pr_term k env (body_of_type ty) >]
+	[< 'sPC; pr_id id ; 'sTR" : "; P.pr_term k env (body_of_type ty) >]
 
 (****
   let sign_it_with f sign e =
@@ -78,7 +78,7 @@ let explain_bad_assumption k ctx c =
      'bRK(1,1); pc; 'sPC; 'sTR "because this term is not a type." >];;
 
 let explain_reference_variables id =
-  [< 'sTR "the constant"; 'sPC; print_id id; 'sPC; 
+  [< 'sTR "the constant"; 'sPC; pr_id id; 'sPC; 
      'sTR "refers to variables which are not in the context" >]
 
 let msg_bad_elimination ctx k = function

@@ -39,7 +39,7 @@ let explain_bad_assumption k ctx c =
      'bRK(1,1); pc; 'sPC; 'sTR "because this term is not a type." >];;
 
 let explain_reference_variables id =
-  [< 'sTR "the constant"; 'sPC; print_id id; 'sPC; 
+  [< 'sTR "the constant"; 'sPC; pr_id id; 'sPC; 
      'sTR "refers to variables which are not in the context" >]
 
 let msg_bad_elimination ctx k = function
@@ -280,7 +280,7 @@ let explain_var_not_found k ctx id =
      'sPC ; 'sTR "in the current"; 'sPC ; 'sTR "environment" >]
 
 let explain_global_not_found k ctx q = 
-  [< 'sTR "The reference"; 'sPC; print_qualid q;
+  [< 'sTR "The reference"; 'sPC; pr_qualid q;
      'sPC ; 'sTR "was not found"; 
      'sPC ; 'sTR "in the current"; 'sPC ; 'sTR "environment" >]
 
@@ -458,16 +458,16 @@ let error_bad_ind_parameters k env c n v1 v2  =
      'sTR "must be "; pv1; 'sTR " in"; 'bRK(1,1); pc >]
 
 let error_same_names_types id =
-  [< 'sTR "The name"; 'sPC; print_id id; 'sPC; 
+  [< 'sTR "The name"; 'sPC; pr_id id; 'sPC; 
      'sTR "is used twice is the inductive types definition." >]
 
 let error_same_names_constructors id cid =
-  [< 'sTR "The constructor name"; 'sPC; print_id cid; 'sPC; 
+  [< 'sTR "The constructor name"; 'sPC; pr_id cid; 'sPC; 
      'sTR "is used twice is the definition of type"; 'sPC;
-     print_id id >]
+     pr_id id >]
 
 let error_not_an_arity id =
-  [< 'sTR "The type of"; 'sPC; print_id id; 'sPC; 'sTR "is not an arity." >]
+  [< 'sTR "The type of"; 'sPC; pr_id id; 'sPC; 'sTR "is not an arity." >]
 
 let error_bad_entry () =
   [< 'sTR "Bad inductive definition." >]
@@ -480,7 +480,7 @@ let error_not_allowed_case_analysis dep kind i =
 
 let error_bad_induction dep indid kind =
   [<'sTR (if dep then "Dependent" else "Non dependend");
-    'sTR " induction for type "; print_id indid;
+    'sTR " induction for type "; pr_id indid;
     'sTR " and sort "; print_sort kind; 
     'sTR "is not allowed">]
 

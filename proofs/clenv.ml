@@ -850,7 +850,7 @@ let clenv_lookup_name clenv id =
   match intmap_inv clenv.namenv id with
     | []  -> 
 	errorlabstrm "clenv_lookup_name"
-          [< 'sTR"No such bound variable "; print_id id >]
+          [< 'sTR"No such bound variable "; pr_id id >]
     | [n] -> 
 	n
     |  _  -> 
@@ -869,7 +869,7 @@ let clenv_match_args s clause =
              | Dep s ->
 		 if List.mem_assoc b t then 
 		   errorlabstrm "clenv_match_args" 
-		     [< 'sTR "The variable "; print_id s; 
+		     [< 'sTR "The variable "; pr_id s; 
 			'sTR " occurs more than once in binding" >]
 		 else 
 		   clenv_lookup_name clause s
@@ -1027,7 +1027,7 @@ let pr_clenv clenv =
   let pr_name mv =
     try 
       let id = Intmap.find mv clenv.namenv in
-      [< 'sTR"[" ; print_id id ; 'sTR"]" >]
+      [< 'sTR"[" ; pr_id id ; 'sTR"]" >]
     with Not_found -> [< >]
   in
   let pr_meta_binding = function

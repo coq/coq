@@ -513,7 +513,7 @@ let pr_com sigma goal com =
             (Astterm.interp_constr sigma (Evarutil.evar_env goal) com))
 
 let pr_one_binding sigma goal = function
-  | (Dep id,com)  -> [< print_id id ; 'sTR":=" ; pr_com sigma goal com >]
+  | (Dep id,com)  -> [< pr_id id ; 'sTR":=" ; pr_com sigma goal com >]
   | (NoDep n,com) -> [< 'iNT n ; 'sTR":=" ; pr_com sigma goal com >]
   | (Com,com)     -> [< pr_com sigma goal com >]
 

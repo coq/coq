@@ -85,7 +85,7 @@ let make_inv_predicate env sigma ind id status concl =
       | Dep dflt_concl ->
 	  if not (dependent (mkVar id) concl) then
 	    errorlabstrm "make_inv_predicate"
-              [< 'sTR "Current goal does not depend on "; print_id id >];
+              [< 'sTR "Current goal does not depend on "; pr_id id >];
           (* We abstract the conclusion of goal with respect to
              realargs and c to * be concl in order to rewrite and have
              c also rewritten when the case * will be done *)
@@ -360,12 +360,12 @@ let not_found_message ids =
 
 let dep_prop_prop_message id =
   errorlabstrm "Inv"
-    [< 'sTR "Inversion on "; print_id id ;
+    [< 'sTR "Inversion on "; pr_id id ;
        'sTR " would needs dependent elimination Prop-Prop" >]
  
 let not_inductive_here id =
   errorlabstrm "mind_specif_of_mind"
-    [< 'sTR "Cannot recognize an inductive predicate in "; print_id id ;
+    [< 'sTR "Cannot recognize an inductive predicate in "; pr_id id ;
        'sTR ". If there is one, may be the structure of the arity or of the type of constructors is hidden by constant definitions." >]
 
 (* Noms d'errreurs obsolètes ?? *)

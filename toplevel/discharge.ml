@@ -101,16 +101,16 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
 (* Discharge messages. *)
 
 let constant_message id =
-  if Options.is_verbose() then pPNL [< print_id id; 'sTR " is discharged." >]
+  if Options.is_verbose() then pPNL [< pr_id id; 'sTR " is discharged." >]
 
 let inductive_message inds =
   if Options.is_verbose() then 
     pPNL (hOV 0 
 	    (match inds with
 	       | [] -> assert false
-	       | [(i,_,_,_)] -> [< print_id i; 'sTR " is discharged." >]
+	       | [(i,_,_,_)] -> [< pr_id i; 'sTR " is discharged." >]
 	       | l -> [< prlist_with_sep pr_coma 
-			   (fun (id,_,_,_) -> print_id id) l;
+			   (fun (id,_,_,_) -> pr_id id) l;
 			 'sPC; 'sTR "are discharged.">]))
 
 (* Discharge operations for the various objects of the environment. *)
@@ -122,8 +122,7 @@ type discharge_operation =
   | Inductive of mutual_inductive_entry * bool
   | Class of cl_typ * cl_info_typ
   | Struc of inductive_path * struc_typ
-  | Coercion of ((coe_typ * coe_info_typ) * cl_typ * cl_typ) 
-              * identifier * int 
+  | Coercion of ((coe_typ * coe_info_typ) * cl_typ * cl_typ)
 
 (* Main function to traverse the library segment and compute the various
    discharge operations. *)
@@ -192,8 +191,8 @@ let process_object oldenv dir sec_sp
         if coeinfo.cOE_STRE = (DischargeAt sec_sp) then 
 	  (ops,ids_to_discard,work_alist)
         else
-	  let (y,idf,ps) = process_coercion sec_sp x in
-          ((Coercion (y,idf,ps))::ops, ids_to_discard, work_alist)
+	  let y = process_coercion sec_sp x in
+          ((Coercion y)::ops, ids_to_discard, work_alist)
                     
     | "STRUCTURE" ->
 	let ((sp,i),info) = outStruc lobj in
@@ -236,7 +235,7 @@ let process_operation = function
       Lib.add_anonymous_leaf (inClass (y1,y2))
   | Struc (newsp,strobj) ->
       Lib.add_anonymous_leaf (inStruc (newsp,strobj))
-  | Coercion ((_,_,clt) as y,idf,ps) ->
+  | Coercion y ->
       Lib.add_anonymous_leaf (inCoercion y) 
 
 let push_inductive_names ccitab sp mie =

@@ -53,7 +53,7 @@ let clenv_constrain_with_bindings bl clause =
               | Dep s ->
 		  if List.mem_assoc b t then 
 		    errorlabstrm "clenv_match_args" 
-                      [< 'sTR "The variable "; print_id s; 
+                      [< 'sTR "The variable "; pr_id s; 
 			 'sTR " occurs more than once in binding" >];
 		  clenv_lookup_name clause s
               | Nodep n ->

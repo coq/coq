@@ -270,7 +270,7 @@ let make_unfold (hintname, id) =
     (try 
        Declare.global_reference CCI id
      with Not_found -> 
-       errorlabstrm  "make_unfold" [<print_id id; 'sTR " not declared" >])
+       errorlabstrm  "make_unfold" [<pr_id id; 'sTR " not declared" >])
   in 
   (head_of_constr_reference hdconstr, 
    { hname = hintname;
@@ -489,7 +489,7 @@ let fmt_hint_id id =
     let c = Declare.global_reference CCI id in
     fmt_hint_list_for_head (head_of_constr_reference c)
   with Not_found -> 
-    [< print_id id; 'sTR " not declared" >]
+    [< pr_id id; 'sTR " not declared" >]
 
 (* Print all hints associated to head id in any database *)
 let print_hint_id id =  pPNL(fmt_hint_id id)
