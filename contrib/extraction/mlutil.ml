@@ -62,7 +62,7 @@ let rec ast_map f = function
   | MLfix (fi,ids,al) -> MLfix (fi, ids, List.map f al)
   | MLcast (a,t) -> MLcast (f a, t)
   | MLmagic a -> MLmagic (f a)
-  | a -> a
+  | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity as a -> a
 
 and ast_map_eqn f (c,ids,a) = (c,ids,f a)
 
@@ -99,11 +99,11 @@ let ml_pop c = ml_lift (-1) c
 
 let rec ml_subst v =
   let rec subst n m = function
-    | MLrel i ->
+    | MLrel i as a ->
 	if i = n then
 	  m
 	else 
-	  if i < n then MLrel i else MLrel (i-1)
+	  if i < n then a else MLrel (i-1)
     | MLlam (id,t) ->
 	MLlam (id, subst (n+1) (ml_lift 1 m) t)
     | MLletin (id,a,b) ->
@@ -117,7 +117,8 @@ let rec ml_subst v =
 	MLfix (i,ids, 
 	       let k = List.length ids in
 	       List.map (subst (n+k) (ml_lift k m)) cl)
-    | a -> ast_map (subst n m) a
+    | a -> 
+	ast_map (subst n m) a
   in 
   subst 1 v
 
@@ -178,7 +179,7 @@ let rec betaiota = function
 	 | MLlam (id,t) -> 
 	     (match nb_occur t with
 		| 0 -> betaiota (MLapp (ml_pop t, List.tl a'))
-		| 1 -> betaiota (MLapp (ml_subst (List.hd a') t,List.tl a'))
+		| 1 -> betaiota (MLapp (ml_subst (List.hd a') t, List.tl a'))
 		| _ -> betaiota (MLletin (id, List.hd a', 
 					  MLapp (t, List.tl a'))))
 	 (* application of a let in: we push arguments inside *)
@@ -207,7 +208,7 @@ let rec betaiota = function
 	     betaiota (MLapp (c',a))
 	 | e' -> 
 	     MLcase (e', Array.map (fun (n,l,t) -> (n,l,betaiota t)) br))
-  | MLletin(i,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
+  | MLletin(_,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
       betaiota (ml_subst c e)
   | a -> 
       ast_map betaiota a
