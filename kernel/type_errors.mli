@@ -22,8 +22,8 @@ type guard_error =
   (* Fixpoints *)
   | NotEnoughAbstractionInFixBody
   | RecursionNotOnInductiveType
-  | RecursionOnIllegalTerm
-  | NotEnoughArgumentsForFixCall
+  | RecursionOnIllegalTerm of int * constr * int list * int list
+  | NotEnoughArgumentsForFixCall of int
   (* CoFixpoints *)
   | CodomainNotInductiveType of constr
   | NestedRecursiveOccurrences
@@ -58,7 +58,7 @@ type type_error =
   | CantApplyBadType of
       (int * constr * constr) * unsafe_judgment * unsafe_judgment array
   | CantApplyNonFunctional of unsafe_judgment * unsafe_judgment array
-  | IllFormedRecBody of guard_error * name array * int * constr array
+  | IllFormedRecBody of guard_error * name array * int
   | IllTypedRecBody of
       int * name array * unsafe_judgment array * types array
 
@@ -96,7 +96,7 @@ val error_cant_apply_bad_type :
       unsafe_judgment -> unsafe_judgment array -> 'a
 
 val error_ill_formed_rec_body :
-  env -> guard_error -> name array -> int -> constr array -> 'a
+  env -> guard_error -> name array -> int -> 'a
 
 val error_ill_typed_rec_body  :
   env -> int -> name array -> unsafe_judgment array -> types array -> 'a

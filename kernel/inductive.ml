@@ -269,8 +269,6 @@ let check_case_info env indsp ci =
 
 (* Guard conditions for fix and cofix-points *)
 
-exception FixGuardError of guard_error
-
 (* Check if t is a subterm of Rel n, and gives its specification, 
    assuming lst already gives index of
    subterms with corresponding specifications of recursive arguments *)
@@ -509,10 +507,28 @@ and case_branches_specif renv c ind lbr =
 (* Check term c can be applied to one of the mutual fixpoints. *)
 let check_is_subterm renv c ind = 
   match subterm_specif renv c ind with
-    Subterm (Strict,_) | Dead_code -> ()
-  |  _ -> raise (FixGuardError RecursionOnIllegalTerm)
+    Subterm (Strict,_) | Dead_code -> true
+  |  _ -> false
 
 (***********************************************************************)
+
+exception FixGuardError of env * guard_error
+
+let error_illegal_rec_call renv fx arg =
+  let (_,le_vars,lt_vars) =
+    List.fold_left
+      (fun (i,le,lt) sbt ->
+        match sbt with
+            (Subterm(Strict,_) | Dead_code) -> (i+1, le, i::lt)
+          | (Subterm(Large,_)) -> (i+1, i::le, lt)
+          | _ -> (i+1, le ,lt))
+      (1,[],[]) renv.genv in
+  raise (FixGuardError (renv.env,
+                        RecursionOnIllegalTerm(fx,arg,le_vars,lt_vars)))
+
+let error_partial_apply renv fx =
+  raise (FixGuardError (renv.env,NotEnoughArgumentsForFixCall fx))
+
 
 (* Check if [def] is a guarded fixpoint body with decreasing arg.
    given [recpos], the decreasing arguments of each mutually defined
@@ -532,14 +548,14 @@ let check_one_fix renv recpos def =
 	    let glob = renv.rel_min+nfi-1-p in
             (* the decreasing arg of the rec call: *)
 	    let np = recpos.(glob) in
-	    if List.length l > np then 
-	      (match list_chop np l with
-		  (la,(z::lrest)) -> 
-                    (* Check the decreasing arg is smaller *)
-	            check_is_subterm renv z renv.inds.(glob);
-                    List.for_all (check_rec_call renv) (la@lrest)
-		| _ -> assert false)
-	    else raise (FixGuardError NotEnoughArgumentsForFixCall)
+            if List.length l <= np then error_partial_apply renv glob;
+	    match list_chop np l with
+		(la,(z::lrest)) -> 
+                  (* Check the decreasing arg is smaller *)
+	          if not (check_is_subterm renv z renv.inds.(glob)) then
+                    error_illegal_rec_call renv glob z;
+                  List.for_all (check_rec_call renv) (la@lrest)
+		| _ -> assert false
           (* otherwise check the arguments are guarded: *)
 	  else List.for_all (check_rec_call renv) l        
 
@@ -653,7 +669,7 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
   then anomaly "Ill-formed fix term";
   let fixenv = push_rec_types recdef env in
   let raise_err i err =
-    error_ill_formed_rec_body fixenv err names i bodies in
+    error_ill_formed_rec_body fixenv err names i in
   (* Check the i-th definition with recarg k *)
   let find_ind i k def = 
     if k < 0 then anomaly "negative recarg position";
@@ -686,9 +702,8 @@ let check_fix env ((nvect,_),(names,_,bodies as recdef) as fix) =
     let renv = make_renv fenv minds nvect.(i) minds.(i) in
     try
       let _ = check_one_fix renv nvect body in ()
-    with FixGuardError err ->
-      let fixenv = push_rec_types recdef env in
-      error_ill_formed_rec_body fixenv err names i bodies
+    with FixGuardError (fixenv,err) ->
+      error_ill_formed_rec_body fixenv err names i
   done
 
 (*
@@ -815,5 +830,5 @@ let check_cofix env (bodynum,(names,types,bodies as recdef)) =
       let _ = check_one_cofix fixenv nbfix bodies.(i) types.(i)
       in ()
     with CoFixGuardError err -> 
-      error_ill_formed_rec_body fixenv err names i bodies
+      error_ill_formed_rec_body fixenv err names i
   done
