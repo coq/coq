@@ -27,8 +27,8 @@
 
 exception ImpossiblePossible;;
 exception NotImplemented;;
-let dtdname = "http://localhost:8081/getdtd?url=cic.dtd";;
-let typesdtdname = "http://localhost:8081/getdtd?url=cictypes.dtd";;
+let dtdname = "http://mowgli.cs.unibo.it/dtd/cic.dtd";;
+let typesdtdname = "http://mowgli.cs.unibo.it/dtd/cictypes.dtd";;
 
 let rec find_last_id =
  function
@@ -50,7 +50,7 @@ let print_term ids_to_inner_sorts =
            "id",id ; "idref",idref; "sort",sort]
      | A.AVar (id,uri) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
-         X.xml_empty "VAR" ["relUri", uri ; "id",id ; "sort",sort]
+         X.xml_empty "VAR" ["uri", uri ; "id",id ; "sort",sort]
      | A.AEvar (id,n,l) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
          X.xml_nempty "META" ["no",(string_of_int n) ; "id",id ; "sort",sort]

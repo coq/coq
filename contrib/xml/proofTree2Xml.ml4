@@ -1,4 +1,4 @@
-let prooftreedtdname = "http://localhost:8081/getdtd?url=prooftree.dtd";;
+let prooftreedtdname = "http://mowgli.cs.unibo.it/dtd/prooftree.dtd";;
 
 let std_ppcmds_to_string s =
    Pp.msg_with Format.str_formatter s;

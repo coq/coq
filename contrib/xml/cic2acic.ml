@@ -37,10 +37,7 @@ let remove_module_dirpath_from_dirpath ~basedir dir =
 ;;
 
 
-(* get_depth_of_var is used to find the depth when we are printing *)
-(* an object in a closed section. Otherwise it returns None and we *)
-(* use Nametab to find its path.                                   *)
-let get_relative_uri_of_var v pvars =
+let get_uri_of_var v pvars =
  let module D = Declare in
  let module N = Names in
   let rec search_in_pvars names =
@@ -68,9 +65,9 @@ let get_relative_uri_of_var v pvars =
        None -> search_in_open_sections (N.repr_dirpath (Lib.cwd ()))
      | Some path -> path
    in
-    let current_module_dir = Lib.module_sp () in
-     remove_module_dirpath_from_dirpath
-      ~basedir:current_module_dir (N.make_dirpath path)
+    "cic:" ^
+     List.fold_left
+      (fun i x -> "/" ^ N.string_of_id x ^ i) "" path
 ;;
 
 type tag =
@@ -292,7 +289,7 @@ print_endline "PASSATO" ; flush stdout ;
                 add_inner_type fresh_id'' ;
                A.ARel (fresh_id'', n, List.nth idrefs (n-1), id)
            | T.Var id ->
-              let path = get_relative_uri_of_var (N.string_of_id id) pvars in
+              let path = get_uri_of_var (N.string_of_id id) pvars in
                Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
                if innersort = "Prop"  && expected_available then
                 add_inner_type fresh_id'' ;
@@ -312,7 +309,12 @@ print_endline "PASSATO" ; flush stdout ;
                add_inner_type fresh_id'' ;
               A.ACast (fresh_id'', aux' env idrefs v, aux' env idrefs t)
            | T.Prod (n,s,t) ->
-              let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
+              let n' =
+               match n with
+                  N.Anonymous -> N.Anonymous
+                | _ ->
+                  N.Name (Nameops.next_name_away n (Termops.ids_of_context env))
+              in
                Hashtbl.add ids_to_inner_sorts fresh_id''
                 (string_of_sort innertype) ;
                let sourcetype = Retyping.get_type_of env evar_map s in
@@ -329,12 +331,12 @@ print_endline "PASSATO" ; flush stdout ;
                         T.Prod _ -> true
                       | _ -> false
                 in
-                 (fresh_id'', n, aux' env idrefs s)::
+                 (fresh_id'', n', aux' env idrefs s)::
                   (if father_is_prod then
                     passed_lambdas_or_prods_or_letins
                    else [])
                in
-                let new_env = E.push_rel (N.Name n', None, s) env in
+                let new_env = E.push_rel (n', None, s) env in
                 let new_idrefs = fresh_id''::idrefs in
                  (match Term.kind_of_term t with
                      T.Prod _ ->
@@ -343,7 +345,12 @@ print_endline "PASSATO" ; flush stdout ;
                    | _ ->
                      A.AProds (new_passed_prods, aux' new_env new_idrefs t))
            | T.Lambda (n,s,t) ->
-              let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
+              let n' =
+               match n with
+                  N.Anonymous -> N.Anonymous
+                | _ ->
+                  N.Name (Nameops.next_name_away n (Termops.ids_of_context env))
+              in
                Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
                let sourcetype = Retyping.get_type_of env evar_map s in
                 Hashtbl.add ids_to_inner_sorts (source_id_of_id fresh_id'')
@@ -362,20 +369,34 @@ print_endline "PASSATO" ; flush stdout ;
                    ((not father_is_lambda) || expected_available)
                 then add_inner_type fresh_id'' ;
                 let new_passed_lambdas =
-                 (fresh_id'',n, aux' env idrefs s)::
+                 (fresh_id'',n', aux' env idrefs s)::
                   (if father_is_lambda then
                     passed_lambdas_or_prods_or_letins
                    else []) in
-                let new_env = E.push_rel (N.Name n', None, s) env in
+                let new_env = E.push_rel (n', None, s) env in
                 let new_idrefs = fresh_id''::idrefs in
                  (match Term.kind_of_term t with
                      T.Lambda _ ->
                       aux computeinnertypes (Some fresh_id'') new_passed_lambdas
                        new_env new_idrefs t
-                   | _ -> A.ALambdas
-                           (new_passed_lambdas, aux' new_env new_idrefs t))
+                   | _ ->
+                     let t' = aux' new_env new_idrefs t in
+                      (* eta-expansion for explicit named substitutions *)
+                      (* can create nested Lambdas. Here we perform the *)
+                      (* flattening.                                    *)
+                      match t' with
+                         A.ALambdas (lambdas, t'') ->
+                          A.ALambdas (lambdas@new_passed_lambdas, t'')
+                       | _ ->
+                         A.ALambdas (new_passed_lambdas, t')
+                 )
            | T.LetIn (n,s,t,d) ->
-              let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
+              let n' =
+               match n with
+                  N.Anonymous -> N.Anonymous
+                | _ ->
+                  N.Name (Nameops.next_name_away n (Termops.ids_of_context env))
+              in
                Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
                let sourcesort =
                 Retyping.get_sort_family_of env evar_map
@@ -396,11 +417,11 @@ print_endline "PASSATO" ; flush stdout ;
                 if innersort = "Prop" then
                  add_inner_type fresh_id'' ;
                 let new_passed_letins =
-                 (fresh_id'',n, aux' env idrefs s)::
+                 (fresh_id'',n', aux' env idrefs s)::
                   (if father_is_letin then
                     passed_lambdas_or_prods_or_letins
                    else []) in
-                let new_env = E.push_rel (N.Name n', Some s, t) env in
+                let new_env = E.push_rel (n', Some s, t) env in
                 let new_idrefs = fresh_id''::idrefs in
                  (match Term.kind_of_term d with
                      T.LetIn _ ->
@@ -493,8 +514,8 @@ print_endline "PASSATO" ; flush stdout ;
                      | N.Anonymous -> Util.error "Anonymous fix function met"
                    in
                     (id, fi', ai,
-                     aux' (E.push_rec_types rec_decl env) new_idrefs bi,
-                     aux' env idrefs ti)::i)
+                     aux' env idrefs ti,
+                     aux' (E.push_rec_types rec_decl env) new_idrefs bi)::i)
                  (Array.mapi
                   (fun j x -> (fresh_idrefs.(j),x,t.(j),b.(j),ai.(j))) f 
                  ) []
@@ -516,8 +537,8 @@ print_endline "PASSATO" ; flush stdout ;
                      | N.Anonymous -> Util.error "Anonymous fix function met"
                    in
                     (id, fi',
-                     aux' (E.push_rec_types rec_decl env) new_idrefs bi,
-                     aux' env idrefs ti)::i)
+                     aux' env idrefs ti,
+                     aux' (E.push_rec_types rec_decl env) new_idrefs bi)::i)
                  (Array.mapi
                    (fun j x -> (fresh_idrefs.(j),x,t.(j),b.(j)) ) f
                  ) []
