@@ -693,7 +693,7 @@ let letin_tac with_eq name c occs gl =
   let id =
     if name = Anonymous then next_global_ident_away x used_ids else
       if not (mem_named_context x (named_context env)) then x else
-	error ("Variable "^(string_of_id x)^" is already declared") in
+	error ("The variable "^(string_of_id x)^" is already declared") in
   let (depdecls,marks,ccl)= letin_abstract id c occs gl in 
   let t = pf_type_of gl c in
   let heq = next_global_ident_away (id_of_string "Heq") used_ids in
