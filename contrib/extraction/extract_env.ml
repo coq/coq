@@ -212,39 +212,21 @@ and extract_module env v mp all mb =
   { ml_mod_expr = extract_meb env v (Some mp) all meb;
     ml_mod_type = extract_mtb env v None mtb }
 
-(*s Extraction in the Coq toplevel. We display the extracted term in
-    Ocaml syntax and we use the Coq printers for globals. The
-    vernacular command is \verb!Extraction! [qualid]. *)
-
 let unpack = function MEstruct (_,sel) -> sel | _ -> assert false 
 
-let mono_environment refs = 
+let mono_environment refs mpl = 
   let l = environment_until None in 
   let v = 
-    let kns = List.fold_right (fun r -> KNset.add (kn_of_r r)) refs KNset.empty 
-    in let add_mp kn = MPset.union (prefixes_mp (modpath kn)) 
-    in { kn = kns; mp = KNset.fold add_mp kns MPset.empty } 
+    let add_kn r = KNset.add (kn_of_r r) in 
+    let kns = List.fold_right add_kn refs KNset.empty in 
+    let add_mp mp = MPset.union (prefixes_mp mp) in
+    let mps = List.fold_right add_mp mpl MPset.empty in 
+    let mps = KNset.fold (fun k -> add_mp (modpath k)) kns mps in 
+    { kn = kns; mp = mps }
   in 
   let env = Global.env () in 
   List.rev_map (fun (mp,m) -> mp, unpack (extract_meb env v (Some mp) false m)) 
     (List.rev l)
-
-let extraction qid = 
-  check_inside_section (); 
-  check_inside_module ();
-  let r = Nametab.global qid in 
-  if is_custom r then
-    msgnl (str "User defined extraction:" ++ spc () ++ 
-	   str (find_custom r) ++ fnl ()) 
-  else begin 
-    let prm = 
-      { modular = false; mod_name = id_of_string "Main"; to_appear = [r]} in 
-    let kn = kn_of_r r in 
-    let struc = optimize_struct prm None (mono_environment [r]) in 
-    let d = get_decl_in_structure r struc in 
-    print_one_decl struc (modpath kn) d;
-    reset_tables ()
-  end
 
 (*s Recursive extraction in the Coq toplevel. The vernacular command is
     \verb!Recursive Extraction! [qualid1] ... [qualidn]. We use [extract_env]
@@ -253,13 +235,47 @@ let extraction qid =
 let mono_extraction (f,m) qualids = 
   check_inside_section (); 
   check_inside_module ();
-  let refs = List.map Nametab.global qualids in
+  let rec find = function 
+    | [] -> [],[]
+    | q::l -> 
+	let refs,mps = find l in 
+	try 
+	  let mp = Nametab.locate_module (snd (qualid_of_reference q))
+	  in refs,(mp::mps)
+	with Not_found -> (Nametab.global q)::refs, mps 
+  in 	    
+  let refs,mps = find qualids in
   let prm = {modular=false; mod_name = m; to_appear= refs} in
-  let struc = optimize_struct prm None (mono_environment refs) in 
+  let struc = optimize_struct prm None (mono_environment refs mps) in 
   print_structure_to_file f prm struc; 
   reset_tables ()
 
 let extraction_rec = mono_extraction (None,id_of_string "Main")
+
+(*s Extraction in the Coq toplevel. We display the extracted term in
+    Ocaml syntax and we use the Coq printers for globals. The
+    vernacular command is \verb!Extraction! [qualid]. *)
+
+let extraction qid = 
+  check_inside_section (); 
+  check_inside_module ();
+  try 
+    let _ = Nametab.locate_module (snd (qualid_of_reference qid)) in 
+    extraction_rec [qid]
+  with Not_found -> 
+    let r = Nametab.global qid in 
+    if is_custom r then
+      msgnl (str "User defined extraction:" ++ spc () ++ 
+	     str (find_custom r) ++ fnl ()) 
+    else begin 
+      let prm = 
+	{ modular = false; mod_name = id_of_string "Main"; to_appear = [r]} in 
+      let kn = kn_of_r r in 
+      let struc = optimize_struct prm None (mono_environment [r] []) in 
+      let d = get_decl_in_structure r struc in 
+      print_one_decl struc (modpath kn) d;
+      reset_tables ()
+    end
 
 (*s Extraction to a file (necessarily recursive). 
     The vernacular command is 

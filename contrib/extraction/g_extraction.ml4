@@ -49,12 +49,6 @@ VERNAC COMMAND EXTEND Extraction
   -> [ extraction_file f l ]
 END
 
-(* Extraction of a Coq module in the Coq toplevel *)
-VERNAC COMMAND EXTEND ExtractionModule
-| [ "Extraction" "Module" global(m) ] 
-  -> [ extraction_module m ]   
-END
-
 (* Modular extraction (one Coq library = one ML module) *)
 VERNAC COMMAND EXTEND ExtractionLibrary
 | [ "Extraction" "Library" ident(m) ]
