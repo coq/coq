@@ -11,7 +11,7 @@
 Declare ML Module "xml" "xmlcommand" "xmlentries".
 
 Grammar vernac vernac : ast :=
-  xml_print [ "Print" "XML" identarg($id) "." ] ->
+  xml_print [ "Print" "XML" tactic:qualidarg($id) "." ] ->
                [(Print $id)]
 
 | xml_print_file [ "Print" "XML" "File" stringarg($fn) identarg($id) "." ] ->

@@ -17,9 +17,9 @@ open Vernacinterp;;
 
 vinterp_add "Print"
  (function
-     [VARG_IDENTIFIER id] ->
+     [VARG_QUALID id] ->
         (fun () -> Xmlcommand.print id None)
-   | [VARG_IDENTIFIER id ; VARG_STRING fn] ->
+   | [VARG_QUALID id ; VARG_STRING fn] ->
         (fun () -> Xmlcommand.print id (Some fn))
    | _ -> anomaly "This should be trapped");;
 

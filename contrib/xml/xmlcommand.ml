@@ -21,28 +21,29 @@ let verbose = ref true;; (* always set to true during a "Print XML All" *)
 
 let print_if_verbose s = if !verbose then print_string s;;
 
-let ext_of_tag =
- function
-    "CONSTANT"
-  | "PARAMETER"       -> "con"
-  | "INDUCTIVE"       -> "ind"
-  | "VARIABLE"        -> "var"
-  | _                 -> "err" (* uninteresting thing that won't be printed *)
+type tag =
+   Constant
+ | Inductive
+ | Variable
 ;;
 
-(*CSC: ORRENDO!!! MODIFICARE V7*)
-let tag_of_sp sp =
- let module G = Global in
-  try
-   let _ = G.lookup_constant sp in "CONSTANT" (*V7 Non distinguo gli assiomi*)
-  with
-   Not_found ->
-    try
-     let _ = G.lookup_mind sp in "INDUCTIVE"
-    with
-     Not_found ->
-      (* We could only hope it is a variable *)
-      "VARIABLE"
+(* Next exception is used only inside print_object and tag_of_string_tag *)
+exception Uninteresting;;
+
+let tag_of_string_tag =
+ function
+    "CONSTANT"
+  | "PARAMETER"       -> Constant
+  | "INDUCTIVE"       -> Inductive
+  | "VARIABLE"        -> Variable
+  | _                 -> raise Uninteresting
+;;
+
+let ext_of_tag =
+ function
+    Constant  -> "con"
+  | Inductive -> "ind"
+  | Variable  -> "var"
 ;;
 
 (* could_have_namesakes sp = true iff o is an object that could be cooked and *)
@@ -105,9 +106,9 @@ let trim_wrong_uri_prefix pref {System.relative_subdir=rs ; System.directory=d} 
 
 (* uri_of_path sp is a broken (wrong) uri pointing to the object whose        *)
 (* section path is sp                                                         *)
-let uri_of_path sp =
+let uri_of_path sp tag =
  let module N = Names in
-  let ext_of_sp sp = ext_of_tag (tag_of_sp sp) in
+  let ext_of_sp sp = ext_of_tag tag in
    let (sl,id,_) = N.repr_path sp in
     let module_path =
      match sl with
@@ -141,7 +142,8 @@ let string_of_name =
 
 (*CSC: commento sbagliato ed obsoleto *)
 (* list of variables availables in the actual section *)
-let pvars = ref [];;
+let pvars = ref ([[]] : string list list);;
+let cumenv = ref Environ.empty_env;;
 
 let string_of_vars_list =
  let add_prefix n s = string_of_int n ^ ": " ^ s in
@@ -179,13 +181,15 @@ let string_of_pvars pvars hyps =
   let rec aux n =
    function
       [] -> assert false
-(*print_string "\nPVARS:" ;
+(* (-1,"?") For Print XML *)
+(*
+print_string "\nPVARS:" ;
 List.iter (List.iter print_string) pvars ;
 print_string "\nHYPS:" ;
 List.iter print_string hyps ;
 print_string "\n" ;
 flush stdout ;
-(-1,"?")
+assert false
 *)
     | l::_ when List.mem v l -> (n,v)
     | _::tl -> aux (n+1) tl
@@ -195,12 +199,25 @@ flush stdout ;
   string_of_vars_list (List.map (find_depth pvars) (List.rev hyps))
 ;;
 
-exception XmlCommandInternalError;;
+type variables_type = 
+   Definition of string * Term.constr * Term.types
+ | Assumption of string * Term.constr
+;;
 
-let add_to_pvars v =
- match !pvars with
-    []       -> raise XmlCommandInternalError
-  | (he::tl) -> pvars := (v::he)::tl
+let add_to_pvars x =
+ let module E = Environ in
+  let v =
+   match x with
+      Definition (v, bod, typ) ->
+       cumenv := E.push_named_def (Names.id_of_string v, bod, typ) !cumenv ;
+       v
+    | Assumption (v, typ) ->
+       cumenv := E.push_named_assum (Names.id_of_string v, typ) !cumenv ;
+       v
+  in
+   match !pvars with
+      []       -> assert false
+    | (he::tl) -> pvars := (v::he)::tl
 ;;
 
 let get_depth_of_var v =
@@ -232,21 +249,32 @@ let get_next_id () =
 ;;
 
 (* FUNCTION TO PRINT A SINGLE TERM OF CIC *)
-
 (* print_term t l where t is a term of Cic returns a stream of XML tokens *)
 (* suitable to be printed via the pretty printer Xml.pp. l is the list of *)
 (* bound names                                                            *)
-let print_term l csr =
+let print_term inner_types l env csr =
  let module N = Names in
+ let module E = Environ in
  let module T = Term in
  let module X = Xml in
+ let module R = Retyping in
   let rec names_to_ids =
    function
       [] -> []
     | (N.Name id)::l -> id::(names_to_ids l)
     | _ -> names_to_ids l
   in
-  let rec term_display l cstr =
+
+  let rec inner_type_display l env term =
+   let type_of_term = R.get_type_of env (Evd.empty) term in
+   match R.get_sort_of env (Evd.empty) type_of_term with
+      T.Prop (T.Null) -> Some (term_display l env type_of_term)
+    | _               -> None
+
+  and term_display l env cstr =
+   let xmlinnertype = inner_type_display l env cstr in
+   let next_id = get_next_id () in
+    inner_types := (next_id, xmlinnertype)::!inner_types ;
    (* kind_of_term helps doing pattern matching hiding the lower level of *)
    (* coq coding of terms (the one of the logical framework)              *)
    match T.kind_of_term cstr with
@@ -256,8 +284,10 @@ let print_term l csr =
             X.xml_empty "REL"
              ["value",(string_of_int n) ;
               "binder",(N.string_of_id id) ;
-              "id", get_next_id ()]
-        | N.Anonymous -> raise XmlCommandInternalError
+              "id", next_id]
+        | N.Anonymous ->
+(*V7Local assert false*)
+X.xml_empty "REL" ["binder","BUG"]
      )
    | T.IsVar id ->
       let depth =
@@ -268,83 +298,112 @@ let print_term l csr =
       in
        X.xml_empty "VAR"
         ["relUri",depth ^ "," ^ (N.string_of_id id) ;
-         "id", get_next_id ()]
+         "id", next_id]
    | T.IsMeta n ->
-      X.xml_empty "META" ["no",(string_of_int n) ; "id", get_next_id ()]
+      X.xml_empty "META" ["no",(string_of_int n) ; "id", next_id]
    | T.IsSort s ->
-      X.xml_empty "SORT" ["value",(string_of_sort s) ; "id", get_next_id ()]
+      X.xml_empty "SORT" ["value",(string_of_sort s) ; "id", next_id]
    | T.IsCast (t1,t2) ->
-      X.xml_nempty "CAST" ["id", get_next_id ()]
-       [< X.xml_nempty "term" [] (term_display l t1) ;
-          X.xml_nempty "type" [] (term_display l t2)
+      X.xml_nempty "CAST" ["id", next_id]
+       [< X.xml_nempty "term" [] (term_display l env t1) ;
+          X.xml_nempty "type" [] (term_display l env t2)
        >]
-   | T.IsLetIn (nid,s,_,d)->
+   | T.IsLetIn (nid,s,t,d)->
       let nid' = N.next_name_away nid (names_to_ids l) in
-       X.xml_nempty "LETIN" ["id", get_next_id ()]
-        [< X.xml_nempty "term" [] (term_display l s) ;
+       X.xml_nempty "LETIN" ["id", next_id]
+        [< X.xml_nempty "term" [] (term_display l env s) ;
            X.xml_nempty "target" ["binder",(N.string_of_id nid')]
-            (term_display ((N.Name nid')::l) d)
+            (term_display
+             ((N.Name nid')::l)
+             (E.push_rel_def (N.Name nid', s, t) env)
+             d
+            )
         >]
    | T.IsProd (N.Name _ as nid, t1, t2) ->
       let nid' = N.next_name_away nid (names_to_ids l) in
-       X.xml_nempty "PROD" ["id", get_next_id ()]
-        [< X.xml_nempty "source" [] (term_display l t1) ;
+       X.xml_nempty "PROD" ["id", next_id]
+        [< X.xml_nempty "source" [] (term_display l env t1) ;
            X.xml_nempty "target" ["binder",(N.string_of_id nid')]
-            (term_display ((N.Name nid')::l) t2)
+            (term_display
+             ((N.Name nid')::l)
+             (E.push_rel_assum (N.Name nid', t1) env)
+             t2
+            )
         >]
    | T.IsProd (N.Anonymous as nid, t1, t2) ->
-      X.xml_nempty "PROD" ["id", get_next_id ()]
-       [< X.xml_nempty "source" [] (term_display l t1) ;
-          X.xml_nempty "target" [] (term_display (nid::l) t2)
+      X.xml_nempty "PROD" ["id", next_id]
+       [< X.xml_nempty "source" [] (term_display l env t1) ;
+          X.xml_nempty "target" []
+           (term_display
+            (nid::l)
+            (E.push_rel_assum (nid, t1) env)
+            t2
+           )
        >]
    | T.IsLambda (N.Name _ as nid, t1, t2) ->
       let nid' = N.next_name_away nid (names_to_ids l) in
-       X.xml_nempty "LAMBDA" ["id", get_next_id ()]
-        [< X.xml_nempty "source" [] (term_display l t1) ;
+       X.xml_nempty "LAMBDA" ["id", next_id]
+        [< X.xml_nempty "source" [] (term_display l env t1) ;
            X.xml_nempty "target" ["binder",(N.string_of_id nid')]
-            (term_display ((N.Name nid')::l) t2)
+            (term_display
+             ((N.Name nid')::l)
+             (E.push_rel_assum (N.Name nid', t1) env)
+             t2
+            )
         >]
    | T.IsLambda (N.Anonymous as nid, t1, t2) ->
-      X.xml_nempty "LAMBDA" ["id", get_next_id ()]
-       [< X.xml_nempty "source" [] (term_display l t1) ;
-          X.xml_nempty "target" [] (term_display (nid::l) t2) >]
+      X.xml_nempty "LAMBDA" ["id", next_id]
+       [< X.xml_nempty "source" [] (term_display l env t1) ;
+          X.xml_nempty "target" []
+           (term_display
+            (nid::l)
+            (E.push_rel_assum (nid, t1) env)
+            t2
+          )
+       >]
    | T.IsApp (h,t) ->
-      X.xml_nempty "APPLY" ["id", get_next_id ()]
-       [< (term_display l h) ;
-          (Array.fold_right (fun x i -> [< (term_display l x) ; i >]) t [<>])
+      X.xml_nempty "APPLY" ["id", next_id]
+       [< (term_display l env h) ;
+          (Array.fold_right (fun x i -> [< (term_display l env x); i >]) t [<>])
        >]
    | T.IsConst (sp,_) ->
-      X.xml_empty "CONST" ["uri",(uri_of_path sp) ; "id", get_next_id ()]
+      X.xml_empty "CONST"
+       ["uri",(uri_of_path sp Constant) ; "id", next_id]
    | T.IsMutInd ((sp,i),_) ->
       X.xml_empty "MUTIND"
-       ["uri",(uri_of_path sp) ;
+       ["uri",(uri_of_path sp Inductive) ;
         "noType",(string_of_int i) ;
-        "id", get_next_id ()]
+        "id", next_id]
    | T.IsMutConstruct (((sp,i),j),_) ->
       X.xml_empty "MUTCONSTRUCT"
-       ["uri",(uri_of_path sp) ;
+       ["uri",(uri_of_path sp Inductive) ;
         "noType",(string_of_int i) ;
         "noConstr",(string_of_int j) ;
-        "id", get_next_id ()]
+        "id", next_id]
    | T.IsMutCase ((_,((sp,i),_,_,_,_)),ty,term,a) ->
-      let (uri, typeno) = (uri_of_path sp),i in
+      let (uri, typeno) = (uri_of_path sp Inductive),i in
        X.xml_nempty "MUTCASE"
-        ["uriType",uri ; "noType",(string_of_int typeno) ; "id",get_next_id ()]
-        [< X.xml_nempty "patternsType" [] [< (term_display l ty) >] ;
-	   X.xml_nempty "inductiveTerm" [] [< (term_display l term) >] ;
+        ["uriType",uri ; "noType",(string_of_int typeno) ; "id",next_id]
+        [< X.xml_nempty "patternsType" [] [< (term_display l env ty) >] ;
+	   X.xml_nempty "inductiveTerm" [] [< (term_display l env term) >] ;
 	   Array.fold_right
             (fun x i ->
-              [< X.xml_nempty "pattern" [] [< term_display l x >] ; i>]
+              [< X.xml_nempty "pattern" [] [< term_display l env x >] ; i>]
             ) a [<>]
         >]
-   | T.IsFix ((ai,i),(t,f,b)) ->
-      X.xml_nempty "FIX" ["noFun", (string_of_int i) ; "id",get_next_id ()]
+   | T.IsFix ((ai,i),((t,f,b) as rec_decl)) ->
+      X.xml_nempty "FIX" ["noFun", (string_of_int i) ; "id",next_id]
        [< Array.fold_right
            (fun (fi,ti,bi,ai) i ->
              [< X.xml_nempty "FixFunction"
                  ["name", (string_of_name fi); "recIndex", (string_of_int ai)]
-	         [< X.xml_nempty "type" [] [< term_display l ti >] ;
-	            X.xml_nempty "body" [] [< term_display ((List.rev f)@l) bi >]
+	         [< X.xml_nempty "type" [] [< term_display l env ti >] ;
+	            X.xml_nempty "body" [] [<
+                     term_display
+                      ((List.rev f)@l)
+                      (E.push_rec_types rec_decl env)
+                      bi
+                    >]
 	         >] ;
                 i
              >]
@@ -352,13 +411,18 @@ let print_term l csr =
 	   (Array.mapi (fun j x -> (x,t.(j),b.(j),ai.(j)) ) (Array.of_list f) )
            [<>]
        >]
-   | T.IsCoFix (i,(t,f,b)) ->
-      X.xml_nempty "COFIX" ["noFun", (string_of_int i) ; "id",get_next_id ()]
+   | T.IsCoFix (i,((t,f,b) as rec_decl)) ->
+      X.xml_nempty "COFIX" ["noFun", (string_of_int i) ; "id",next_id]
        [< Array.fold_right
            (fun (fi,ti,bi) i ->
             [< X.xml_nempty "CofixFunction" ["name", (string_of_name fi)]
-	        [< X.xml_nempty "type" [] [< term_display l ti >] ;
-	           X.xml_nempty "body" [] [< term_display ((List.rev f)@l) bi >]
+	        [< X.xml_nempty "type" [] [< term_display l env ti >] ;
+	           X.xml_nempty "body" [] [<
+                    term_display
+                     ((List.rev f)@l)
+                     (E.push_rec_types rec_decl env)
+                     bi
+                   >]
 	        >] ;
                i
             >]
@@ -372,7 +436,7 @@ let print_term l csr =
   in
     (*CSC: ad l vanno andrebbero aggiunti i nomi da non *)
     (*CSC: mascherare (costanti? variabili?)            *)
-    term_display l csr
+    term_display l env csr
 ;;
 
 (* FUNCTIONS TO PRINT A SINGLE OBJECT OF COQ *)
@@ -386,18 +450,20 @@ let print_term l csr =
 let print_current_proof c typ id mv =
  let module X = Xml in
   reset_id () ;
-  [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
-     X.xml_cdata ("<!DOCTYPE CurrentProof SYSTEM \"" ^ dtdname ^ "\">\n\n") ;
-     X.xml_nempty "CurrentProof" ["name",id ; "id", get_next_id ()]
-       [< List.fold_right
-           (fun (j,t) i ->
-             [< X.xml_nempty "Conjecture" ["no",(string_of_int j)]
-                 [< print_term [] t >] ; i >])
-           mv [<>] ;
-          X.xml_nempty "body" [] [< print_term [] c >] ;
-          X.xml_nempty "type"  [] [< print_term [] typ >]
-       >]
-  >]
+  let inner_types = ref [] in
+  let env = (Safe_typing.env_of_safe_env (Global.safe_env ())) in
+   [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
+      X.xml_cdata ("<!DOCTYPE CurrentProof SYSTEM \"" ^ dtdname ^ "\">\n\n") ;
+      X.xml_nempty "CurrentProof" ["name",id ; "id", get_next_id ()]
+        [< List.fold_right
+            (fun (j,t) i ->
+              [< X.xml_nempty "Conjecture" ["no",(string_of_int j)]
+                  [< print_term inner_types [] env t >] ; i >])
+            mv [<>] ;
+           X.xml_nempty "body" [] [< print_term inner_types [] env c >] ;
+           X.xml_nempty "type"  [] [< print_term inner_types [] env typ >]
+        >]
+   >]
 ;;
 
 (* print_axiom id type params                                              *)
@@ -405,18 +471,19 @@ let print_current_proof c typ id mv =
 (*  and   id          is the identifier (name) of a                        *)
 (*  and   params      is the list of formal params for a                   *)
 (* returns a stream of XML tokens suitable to be pretty printed via Xml.pp *)
-let print_axiom id typ fv hyps =
+let print_axiom id typ fv hyps env =
  let module X = Xml in
  let module N = Names in
   reset_id () ;
-  [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
-     X.xml_cdata ("<!DOCTYPE Axiom SYSTEM \"" ^ dtdname ^ "\">\n\n") ;
-     X.xml_nempty "Axiom"
-      ["name",(N.string_of_id id) ;
-        "id", get_next_id () ;
-        "params",(string_of_pvars fv hyps)]
-      [< X.xml_nempty "type" [] (print_term [] typ) >]
-  >]
+  let inner_types = ref [] in
+   [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
+      X.xml_cdata ("<!DOCTYPE Axiom SYSTEM \"" ^ dtdname ^ "\">\n\n") ;
+      X.xml_nempty "Axiom"
+       ["name",(N.string_of_id id) ;
+         "id", get_next_id () ;
+         "params",(string_of_pvars fv hyps)]
+       [< X.xml_nempty "type" [] (print_term inner_types [] env typ) >]
+   >]
 ;;
 
 (* print_definition id term type params hyps                               *)
@@ -425,34 +492,42 @@ let print_axiom id typ fv hyps =
 (*  and   type        is the type of d                                     *)
 (*  and   params      is the list of formal params for d                   *)
 (* returns a stream of XML tokens suitable to be pretty printed via Xml.pp *)
-let print_definition id c typ fv hyps =
+let print_definition id c typ fv hyps env =
  let module X = Xml in
  let module N = Names in
   reset_id () ;
-  [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
-     X.xml_cdata ("<!DOCTYPE Definition SYSTEM \"" ^ dtdname ^ "\">\n\n") ;
-     X.xml_nempty "Definition"
-      ["name",(N.string_of_id id) ;
-       "id", get_next_id () ;
-       "params",(string_of_pvars fv hyps)]
-      [< X.xml_nempty "body" [] (print_term [] c) ;
-         X.xml_nempty "type"  [] (print_term [] typ) >]
-  >]
+  let inner_types = ref [] in
+   [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
+      X.xml_cdata ("<!DOCTYPE Definition SYSTEM \"" ^ dtdname ^ "\">\n\n") ;
+      X.xml_nempty "Definition"
+       ["name",(N.string_of_id id) ;
+        "id", get_next_id () ;
+        "params",(string_of_pvars fv hyps)]
+       [< X.xml_nempty "body" [] (print_term inner_types [] env c) ;
+          X.xml_nempty "type"  [] (print_term inner_types [] env typ) >]
+   >]
 ;;
 
 (* print_variable id type                                                  *)
 (*  where id          is the identifier (name) of a variable v             *)
 (*  and   type        is the type of v                                     *)
 (* returns a stream of XML tokens suitable to be pretty printed via Xml.pp *)
-let print_variable id typ =
+let print_variable id body typ env =
  let module X = Xml in
  let module N = Names in
   reset_id () ;
-  [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
-     X.xml_cdata ("<!DOCTYPE Variable SYSTEM \"" ^ dtdname ^ "\">\n\n") ;
-     X.xml_nempty "Variable" ["name",(N.string_of_id id) ; "id", get_next_id ()]
-      (X.xml_nempty "type" [] (print_term [] typ))
-  >]
+  let inner_types = ref [] in
+   [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
+      X.xml_cdata ("<!DOCTYPE Variable SYSTEM \"" ^ dtdname ^ "\">\n\n") ;
+      X.xml_nempty "Variable" ["name",(N.string_of_id id); "id", get_next_id ()]
+       [< (match body with
+              None -> [<>]
+            | Some body ->
+               X.xml_nempty "body" [] (print_term inner_types [] env body)
+          ) ;
+          X.xml_nempty "type" [] (print_term inner_types [] env typ)
+       >]
+   >]
 ;;
 
 (* print_mutual_inductive_packet p                                           *)
@@ -460,7 +535,7 @@ let print_variable id typ =
 (*          of mutual inductive definitions)                                 *)
 (* returns a stream of XML tokens suitable to be pretty printed via Xml.pp   *)
 (* Used only by print_mutual_inductive                                       *)
-let print_mutual_inductive_packet names p =
+let print_mutual_inductive_packet inner_types names env p =
  let module D = Declarations in
  let module N = Names in
  let module T = Term in
@@ -476,11 +551,12 @@ let print_mutual_inductive_packet names p =
         "inductive",(string_of_bool finite)
        ]
        [<
-          X.xml_nempty "arity" [] (print_term [] (T.body_of_type arity)) ;
+          X.xml_nempty "arity" []
+           (print_term inner_types [] env (T.body_of_type arity)) ;
           (Array.fold_right
            (fun (name,lc) i ->
              [< X.xml_nempty "Constructor" ["name",(N.string_of_id name)]
-                 (print_term names lc) ;
+                 (print_term inner_types names env lc) ;
                 i
              >])
 	   (Array.mapi (fun j x -> (x,T.body_of_type lc.(j)) ) consnames )
@@ -497,14 +573,23 @@ let print_mutual_inductive_packet names p =
 (*  and   nparams     is the number of "parameters" in the arity of the    *)
 (*                    mutual inductive types                               *)
 (* returns a stream of XML tokens suitable to be pretty printed via Xml.pp *)
-let print_mutual_inductive packs fv hyps nparams =
+let print_mutual_inductive packs fv hyps nparams env =
  let module D = Declarations in
+ let module E = Environ in
  let module X = Xml in
  let module N = Names in
+  let inner_types = ref [] in
   let names =
    List.map
     (fun p -> let {D.mind_typename=typename} = p in N.Name(typename))
     (Array.to_list packs)
+  in
+  let env =
+   List.fold_right
+    (fun {D.mind_typename=typename ; D.mind_nf_arity=arity} env ->
+     E.push_rel_assum (N.Name typename, arity) env)
+    (Array.to_list packs)
+    env
   in
    reset_id () ;
    [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
@@ -515,9 +600,9 @@ let print_mutual_inductive packs fv hyps nparams =
         "id",get_next_id () ;
         "params",(string_of_pvars fv hyps)]
        [< (Array.fold_right
-            (fun x i -> [< print_mutual_inductive_packet names x ; i >])
-            packs
-            [< >]
+            (fun x i ->
+             [< print_mutual_inductive_packet inner_types names env x ; i >]
+            ) packs [< >]
           )
        >]
    >]
@@ -525,56 +610,51 @@ let print_mutual_inductive packs fv hyps nparams =
 
 let string_list_of_named_context_list =
  List.map
-  (function
-      (n,None,_) -> Names.string_of_id n
-    | _          -> assert false
-  )
+  (function (n,_,_) -> Names.string_of_id n)
 ;;
 
 (* print id dest                                                          *)
-(*  where id   is the identifier (name) of a definition/theorem or of an  *)
-(*             inductive definition                                       *)
+(*  where sp   is the qualified identifier (section path) of a            *)
+(*             definition/theorem, variable or inductive definition       *)
 (*  and   dest is either None (for stdout) or (Some filename)             *)
 (* pretty prints via Xml.pp the object whose identifier is id on dest     *)
 (* Note: it is printed only (and directly) the most cooked available      *)
 (*       form of the definition (all the parameters are                   *)
 (*       lambda-abstracted, but the object can still refer to variables)  *)
-let print id fn =
+let print sp fn =
  let module D = Declarations in
  let module G = Global in
  let module N = Names in
  let module T = Term in
  let module X = Xml in
-  let str = N.string_of_id id in
-  let sp = Nametab.sp_of_id N.CCI id in
+  let (_,str) = N.repr_qualid sp in
+  let id = Names.id_of_string str in
+  let glob_ref = Nametab.locate sp in
+  let env = (Safe_typing.env_of_safe_env (G.safe_env ())) in
   let pp_cmds =
-   begin
-    try
-     let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
-      G.lookup_constant sp in
-     let hyps = string_list_of_named_context_list hyps in
-     let typ = T.body_of_type typ in
-      begin
-       match val0 with
-          None -> print_axiom id typ [] hyps
-        | Some c -> print_definition id c typ [] hyps
-      end
-    with
-     Not_found ->
-      try
+   match glob_ref with
+      T.VarRef sp ->
+       let (body,typ) = G.lookup_named id in
+        print_variable id body (T.body_of_type typ) env
+    | T.ConstRef sp ->
+       let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
+        G.lookup_constant sp in
+       let hyps = string_list_of_named_context_list hyps in
+       let typ = T.body_of_type typ in
+        begin
+         match val0 with
+            None -> print_axiom id typ [] hyps env
+          | Some c -> print_definition id c typ [] hyps env
+        end
+    | T.IndRef (sp,_) ->
        let {D.mind_packets=packs ; D.mind_nparams=nparams ; D.mind_hyps=hyps} =
         G.lookup_mind sp
        in
         let hyps = string_list_of_named_context_list hyps in
-         print_mutual_inductive packs [] hyps nparams
-      with
-       Not_found ->
-        try
-         let (_,typ) = G.lookup_named id in
-          print_variable id (T.body_of_type typ)
-        with
-         Not_found -> Util.anomaly ("print: this should not happen")
-   end
+         print_mutual_inductive packs [] hyps nparams env
+    | T.ConstructRef _
+    | T.EvarRef _ ->
+       Util.anomaly ("print: this should not happen")
   in
    Xml.pp pp_cmds fn
 ;;
@@ -597,7 +677,7 @@ let show fn =
 (*          list of possible variables, directory name)               *)
 (* used to collect informations on the uncooked and most cooked forms *)
 (* of objects that could be cooked (have namesakes)                   *)
-let toprint = ref [];;
+let printed = ref [];;
 
 (* makes a filename from a directory name, a section path and an extension *)
 let mkfilename dn sp ext =
@@ -641,9 +721,6 @@ let mkfilename dn sp ext =
         | _ -> assert false
 ;;
 
-(* Next exception is used only inside print_object *)
-exception Uninteresting;;
-
 (* print_object leaf_object id section_path directory_name formal_vars      *)
 (*  where leaf_object    is a leaf object                                   *)
 (*  and   id             is the identifier (name) of the definition/theorem *)
@@ -656,8 +733,9 @@ exception Uninteresting;;
 (* Note: it is printed only the uncooked available form of the object plus  *)
 (*       the list of parameters of the object deduced from it's most cooked *)
 (*       form                                                               *)
-let print_object lobj id sp dn fv =
+let print_object lobj id sp dn fv env =
  let module D = Declarations in
+ let module E = Environ in
  let module G = Global in
  let module N = Names in
  let module T = Term in
@@ -674,8 +752,8 @@ let print_object lobj id sp dn fv =
          let typ = T.body_of_type typ in
           begin
            match val0 with
-              None -> print_axiom id typ fv hyps
-            | Some c -> print_definition id c typ fv hyps
+              None -> print_axiom id typ fv hyps env
+            | Some c -> print_definition id c typ fv hyps env
           end
     | "INDUCTIVE" ->
          let
@@ -685,26 +763,26 @@ let print_object lobj id sp dn fv =
           } = G.lookup_mind sp
          in
           let hyps = string_list_of_named_context_list hyps in
-           print_mutual_inductive packs fv hyps nparams
+           print_mutual_inductive packs fv hyps nparams env
     | "VARIABLE" ->
         let (_,(varentry,_,_)) = Declare.out_variable lobj in
-         add_to_pvars (N.string_of_id id) ;
          begin
           match varentry with
              Declare.SectionLocalDef body ->
-              print_string "************** UNIMPLEMENTED ***********\n" ;
-              flush stdout ;
-              [<>]
+              let typ = Retyping.get_type_of env Evd.empty body in
+               add_to_pvars (Definition (N.string_of_id id, body, typ)) ;
+               print_variable id (Some body) typ env
            | Declare.SectionLocalAssum typ ->
-              print_variable id (T.body_of_type typ)
+              add_to_pvars (Assumption (N.string_of_id id, typ)) ;
+              print_variable id None (T.body_of_type typ) env
          end
     | "CLASS"
     | "COERCION"
     | _ -> raise Uninteresting
-  and fileext = ext_of_tag tag
+  and fileext () = ext_of_tag (tag_of_string_tag tag)
   in
    try
-    Xml.pp (pp_cmds ()) (mkfilename dn sp fileext)
+    Xml.pp (pp_cmds ()) (mkfilename dn sp (fileext ()))
    with
     Uninteresting -> ()
 ;;
@@ -731,44 +809,31 @@ and print_node n id sp bprintleaf dn =
       print_if_verbose "LEAF\n" ;
       if bprintleaf then
        begin
-        let to_print =
-         try
-          let _ =
-           List.find (function (x,_,_,_,_,_) -> x=id) !toprint
-          in
-           false
-         with Not_found -> true
-        in
-         if to_print then
+         if not (List.mem id !printed) then
           (* this is an uncooked term or a local (with no namesakes) term *)
           begin
            if could_have_namesakes o sp then
             begin
              (* this is an uncooked term *)
-             print_if_verbose ("Rimando " ^ Names.string_of_id id ^ "\n") ;
-             toprint := (id,sp,sp,o,!pvars,dn)::!toprint
+             print_if_verbose ("OK, stampo solo questa volta " ^ Names.string_of_id id ^ "\n") ;
+             print_object o id sp dn !pvars !cumenv ;
+             printed := id::!printed
             end
            else
             begin
              (* this is a local term *)
              print_if_verbose ("OK, stampo " ^ Names.string_of_id id ^ "\n") ;
-             print_object o id sp dn !pvars
+             print_object o id sp dn !pvars !cumenv
             end
           end
          else
           begin
            (* update the least cooked sp *)
-           print_if_verbose ("Suppongo gia' stampato " ^ Names.string_of_id id ^ "\n") ;
-           toprint :=
-            List.map
-             (function
-                (id',usp,_,uo,pv,dn) when id' = id -> (id,usp,sp,uo,pv,dn)
-              | t -> t
-             ) !toprint
+           print_if_verbose ("Suppongo gia' stampato " ^ Names.string_of_id id ^ "\n")
           end
        end
-   | L.OpenedSection s -> print_if_verbose ("OpenDir " ^ s ^ "\n")
-   | L.ClosedSection (s,state) ->
+   | L.OpenedSection (s,_) -> print_if_verbose ("OpenDir " ^ s ^ "\n")
+   | L.ClosedSection (_,s,state) ->
       print_if_verbose("ClosedDir " ^ s ^ "\n") ;
       if bprintleaf then
        begin
@@ -777,7 +842,7 @@ and print_node n id sp bprintleaf dn =
         print_library_segment state bprintleaf dn ;
         (* close the scope *)
         match !pvars with
-           [] -> raise XmlCommandInternalError
+           [] -> assert false
          | he::tl -> pvars := tl
        end ;
       print_if_verbose "/ClosedDir\n"
@@ -795,22 +860,11 @@ and print_node n id sp bprintleaf dn =
 (* print_library_segment on all its sons                                     *)
 let print_closed_section s ls dn =
  let module L = Lib in
-  toprint := [] ;
-  (*CSC: this should always be empty yet! But just to be sure... :-) *)
-  pvars := [] ;
+  printed := [] ;
+  pvars := [[]] ;
+  cumenv := Safe_typing.env_of_safe_env (Global.safe_env ()) ;
   print_if_verbose ("Module " ^ s ^ ":\n") ;
   print_library_segment ls true dn ;
-  print_if_verbose "\nNow saving cooking information: " ;
-  List.iter
-   (function
-      (id,usp,csp,uo,pv,dn) ->
-       print_if_verbose ("\nCooked=" ^ (Names.string_of_path csp) ^
-        "\tUncooked=" ^ (Names.string_of_path usp)) ;
-       let formal_vars = pv in
-        pvars := pv ;
-        (*CSC Actual was Some *)
-        print_object uo id usp dn formal_vars
-   ) !toprint ;
   print_if_verbose "\n/Module\n" ;
 ;;
 
@@ -852,7 +906,7 @@ let printSection id dn =
    let rec find_closed_section =
     function
        [] -> raise Not_found
-     | (_,Lib.ClosedSection (str',ls))::_ when str' = str -> ls
+     | (_,Lib.ClosedSection (_,str',ls))::_ when str' = str -> ls
      | _::t -> find_closed_section t
    in
     print_string ("Searching " ^ Names.string_of_path sp ^ "\n") ;
@@ -870,7 +924,9 @@ let printAll () =
   let oldverbose = !verbose in
    verbose := true ;
    print_library_segment state false None ;
+(*
    let ml = Library.loaded_modules () in
     List.iter (function i -> printModule (Names.id_of_string i) None) ml ;
+*)
     verbose := oldverbose
 ;;
