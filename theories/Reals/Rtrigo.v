@@ -16,6 +16,7 @@ Require R_sqr.
 Require Rfunctions.
 Require Rsigma.
 Require Rlimit.
+Require Binome.
 Require Export Rtrigo_def.
 
 Lemma PI_neq0 : ~``PI==0``.
@@ -449,7 +450,68 @@ Definition sin_ub [a:R] : R := (sin_approx a (4)).
 Definition cos_lb [a:R] : R := (cos_approx a (3)).
 Definition cos_ub [a:R] : R := (cos_approx a (4)).
 
-Axiom sin_lb_gt_0 : (a:R) ``0<a``->``a<=PI/2``->``0<(sin_lb a)``.
+Lemma PI_4 : ``PI<=4``.
+Assert H0 := (PI_ineq O).
+Elim H0; Clear H0; Intros _ H0.
+Unfold tg_alt PI_tg in H0; Simpl in H0.
+Rewrite Rinv_R1 in H0; Rewrite Rmult_1r in H0; Unfold Rdiv in H0.
+Apply Rle_monotony_contra with ``/4``.
+Apply Rlt_Rinv; Sup0.
+Rewrite <- Rinv_l_sym; [Rewrite Rmult_sym; Assumption | DiscrR].
+Qed.
+
+Lemma sin_lb_gt_0 : (a:R) ``0<a``->``a<=PI/2``->``0<(sin_lb a)``.
+Intros.
+Unfold sin_lb; Unfold sin_approx; Unfold sin_term.
+Pose Un := [i:nat]``(pow a (plus (mult (S (S O)) i) (S O)))/(INR (fact (plus (mult (S (S O)) i) (S O))))``.
+Replace (sum_f_R0 [i:nat] ``(pow ( -1) i)*(pow a (plus (mult (S (S O)) i) (S O)))/(INR (fact (plus (mult (S (S O)) i) (S O))))`` (S (S (S O)))) with (sum_f_R0 [i:nat]``(pow (-1) i)*(Un i)`` (3)); [Idtac | Apply sum_eq; Intros; Unfold Un; Reflexivity].
+Cut (n:nat)``(Un (S n))<(Un n)``.
+Intro; Simpl.
+Repeat Rewrite Rmult_1l; Repeat Rewrite Rmult_1r; Replace ``-1*(Un (S O))`` with ``-(Un (S O))``; [Idtac | Ring]; Replace ``-1* -1*(Un (S (S O)))`` with ``(Un (S (S O)))``; [Idtac | Ring]; Replace ``-1*( -1* -1)*(Un (S (S (S O))))`` with ``-(Un (S (S (S O))))``; [Idtac | Ring]; Replace ``(Un O)+ -(Un (S O))+(Un (S (S O)))+ -(Un (S (S (S O))))`` with ``((Un O)-(Un (S O)))+((Un (S (S O)))-(Un (S (S (S O)))))``; [Idtac | Ring].
+Apply gt0_plus_gt0_is_gt0.
+Unfold Rminus; Apply Rlt_anti_compatibility with (Un (S O)); Rewrite Rplus_Or; Rewrite (Rplus_sym (Un (S O))); Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or; Apply H1.
+Unfold Rminus; Apply Rlt_anti_compatibility with (Un (S (S (S O)))); Rewrite Rplus_Or; Rewrite (Rplus_sym (Un (S (S (S O))))); Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or; Apply H1.
+Intro; Unfold Un.
+Cut (plus (mult (2) (S n)) (S O)) = (plus (plus (mult (2) n) (S O)) (2)).
+Intro; Rewrite H1.
+Rewrite pow_add; Unfold Rdiv; Rewrite Rmult_assoc; Apply Rlt_monotony.
+Apply pow_lt; Assumption.
+Rewrite <- H1; Apply Rlt_monotony_contra with (INR (fact (plus (mult (S (S O)) n) (S O)))).
+Apply lt_INR_0; Apply neq_O_lt.
+Assert H2 := (fact_neq_0 (plus (mult (2) n) (1))).
+Red; Intro; Elim H2; Symmetry; Assumption.
+Rewrite <- Rinv_r_sym.
+Apply Rlt_monotony_contra with (INR (fact (plus (mult (S (S O)) (S n)) (S O)))).
+Apply lt_INR_0; Apply neq_O_lt.
+Assert H2 := (fact_neq_0 (plus (mult (2) (S n)) (1))).
+Red; Intro; Elim H2; Symmetry; Assumption.
+Rewrite (Rmult_sym (INR (fact (plus (mult (S (S O)) (S n)) (S O))))); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Do 2 Rewrite Rmult_1r; Apply Rle_lt_trans with ``(INR (fact (plus (mult (S (S O)) n) (S O))))*4``.
+Apply Rle_monotony.
+Replace R0 with (INR O); [Idtac | Reflexivity]; Apply le_INR; Apply le_O_n.
+Simpl; Rewrite Rmult_1r; Replace ``4`` with ``(Rsqr 2)``; [Idtac | SqRing]; Replace ``a*a`` with (Rsqr a); [Idtac | Reflexivity]; Apply Rsqr_incr_1.
+Apply Rle_trans with ``PI/2``; [Assumption | Unfold Rdiv; Apply Rle_monotony_contra with ``2``; [ Apply Rgt_2_0 | Rewrite <- Rmult_assoc;  Rewrite Rinv_r_simpl_m; [Replace ``2*2`` with ``4``; [Apply PI_4 | Ring] | DiscrR]]].
+Left; Assumption.
+Left; Apply Rgt_2_0.
+Rewrite H1; Replace (plus (plus (mult (S (S O)) n) (S O)) (S (S O))) with (S (S (plus (mult (S (S O)) n) (S O)))).
+Do 2 Rewrite fact_simpl; Do 2 Rewrite mult_INR; Rewrite <- Rmult_assoc; Rewrite <- (Rmult_sym (INR (fact (plus (mult (S (S O)) n) (S O))))).
+Apply Rlt_monotony.
+Apply lt_INR_0; Apply neq_O_lt.
+Assert H2 := (fact_neq_0 (plus (mult (2) n) (1))).
+Red; Intro; Elim H2; Symmetry; Assumption.
+Do 2 Rewrite S_INR; Rewrite plus_INR; Rewrite mult_INR; Repeat Rewrite INR_eq_INR2; Unfold INR2; Fold INR2; Pose x := (INR2 n).
+Replace ``(2*x+1+1+1)*(2*x+1+1)`` with ``4*x*x+10*x+6``; [Idtac | Ring].
+Apply Rlt_anti_compatibility with ``-4``; Rewrite Rplus_Ropp_l; Replace ``-4+(4*x*x+10*x+6)`` with ``(4*x*x+10*x)+2``; [Idtac | Ring].
+Apply ge0_plus_gt0_is_gt0.
+Cut ``0<=x``.
+Intro; Apply ge0_plus_ge0_is_ge0; Repeat Apply Rmult_le_pos; Try (Left; Sup0) Orelse Assumption.
+Unfold x; Replace R0 with (INR O); [Rewrite <- INR_eq_INR2; Apply le_INR; Apply le_O_n | Reflexivity].
+Apply Rgt_2_0.
+Apply INR_eq; Do 2 Rewrite S_INR; Do 3 Rewrite plus_INR; Rewrite mult_INR; Repeat Rewrite S_INR; Ring.
+Apply INR_fact_neq_0.
+Apply INR_fact_neq_0.
+Apply INR_eq; Do 3 Rewrite plus_INR; Do 2 Rewrite mult_INR; Repeat Rewrite S_INR; Ring.
+Qed.
 
 Lemma SIN : (a:R) ``0<=a`` -> ``a<=PI`` -> ``(sin_lb a)<=(sin a)<=(sin_ub a)``.
 Intros; Unfold sin_lb sin_ub; Apply (sin_bound a (S O) H H0).
