@@ -55,6 +55,8 @@ let rec explain_exn_default = function
       hOV 0 [< 'sTR "Anomaly: Invalid argument "; 'sTR (guill s); report () >]
   | Sys.Break -> 
       hOV 0 [< 'fNL; 'sTR"User Interrupt." >]
+  | Univ.UniverseInconsistency -> 
+      hOV 0 [< 'sTR "Error: Universe Inconsistency." >]
   | TypeError(k,ctx,te) -> 
       hOV 0 [< 'sTR "Error:"; 'sPC; Himsg.explain_type_error k ctx te >]
   | InductiveError e -> 

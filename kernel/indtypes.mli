@@ -28,11 +28,6 @@ type inductive_error =
   | BadInduction of bool * identifier * sorts
   | NotMutualInScheme
 
-(* [mind_extract_params] extracts the parameters of an inductive
-   type declaration. *)
-
-val mind_extract_params : int -> constr -> Sign.rel_context * constr
-
 exception InductiveError of inductive_error
 
 (*s The following function does checks on inductive declarations. *)

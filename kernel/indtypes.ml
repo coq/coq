@@ -74,8 +74,7 @@ let mind_check_names mie =
    declaration, and checks that they are all present (and all the same)
    for all the given types. *)
 
-let mind_extract_params n c =
-  let (l,c') = decompose_prod_n_assum n c in (l,c')
+let mind_extract_params = decompose_prod_n_assum
 
 let mind_check_arities env mie =
   let check_arity id c =

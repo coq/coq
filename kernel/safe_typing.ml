@@ -470,7 +470,7 @@ let add_mind sp mie env =
 	 (ind'::inds, Constraint.union cst cst'))
       mie.mind_entry_inds
       params_arity_list
-      ([],Constraint.empty) in
+      ([],cst) in
 
   (* Finally, we build the inductive packet and push it to env *)
   let kind = kind_of_path sp in
