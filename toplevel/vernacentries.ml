@@ -1583,10 +1583,12 @@ let _ =
 	 |  _  -> invalid_arg "SOLVE"
        in
        (fun () -> 
+	  if not (refining ()) then
+	    error "Unknown command of the non proof-editing mode";
 	  solve_nth n (Tacinterp.interp tcom);
 	  print_subgoals();
           (* in case a strict subtree was completed, 
-              go back to the top of the prooftree *) 
+             go back to the top of the prooftree *) 
 	  if subtree_solved () then 
 	    (reset_top_of_tree (); print_subgoals()) 
        ))
