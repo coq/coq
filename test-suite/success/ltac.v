@@ -110,3 +110,10 @@ Qed.
 *)
 
 
+(* Check the precedences of rel context, ltac context and vars context *)
+(* (was wrong in V8.0) *)
+
+Tactic Definition check_binding y := Cut (([y]y) = S).
+Goal True.
+check_binding true.
+Abort.
