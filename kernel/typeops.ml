@@ -28,12 +28,11 @@ let j_val = j_val_only
 let j_val_cast j = mkCast j.uj_val j.uj_type
 
 let typed_type_of_judgment env j =
-  match whd_betadeltaiota env j.uj_type with
-    | DOP0(Sort s) -> { body = j.uj_val; typ = s }
-    | _ -> error_not_type CCI env j.uj_val
+  match whd_betadeltaiota env j.uj_kind with
+    | DOP0(Sort s) -> { body = j.uj_type; typ = s }
+    | _ -> error_not_type CCI env j.uj_type
 
-(* same function, but with a different error message *)
-let assumption_of_judgement env j =
+let assumption_of_judgment env j =
   match whd_betadeltaiota env j.uj_type with
     | DOP0(Sort s) -> { body = j.uj_val; typ = s }
     | _ -> error_assumption CCI env j.uj_val

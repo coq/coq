@@ -27,6 +27,9 @@ let gram = Grammar.create lexer
 
 let term = Grammar.Entry.create gram "term"
 let name = Grammar.Entry.create gram "name"
+let nametype = Grammar.Entry.create gram "nametype"
+let inductive = Grammar.Entry.create gram "inductive"
+let constructor = Grammar.Entry.create gram "constructor"
 let command = Grammar.Entry.create gram "command"
 
 let new_univ =
@@ -37,12 +40,15 @@ let new_univ =
 let path_of_string s = make_path [] (id_of_string s) CCI
 
 EXTEND
-  name: [ 
-    [ id = IDENT -> Name (id_of_string id)
+  name: 
+  [ [ id = IDENT -> Name (id_of_string id)
     | "_" -> Anonymous
   ] ];
-  term: [ 
-    [ id = IDENT -> 
+  nametype: 
+  [ [ id = IDENT; ":"; t = term -> (id_of_string id, t) 
+  ] ];
+  term: 
+  [ [ id = IDENT -> 
 	VAR (id_of_string id) 
     | IDENT "Rel"; n = INT ->
 	Rel (int_of_string n)
@@ -64,6 +70,8 @@ EXTEND
 	DOP2 (Lambda, t, DLAM (na, c))
     | "("; na = name; ":"; t = term; ")"; c = term ->
 	DOP2 (Prod, t, DLAM (na, c))
+    | c1 = term; "->"; c2 = term ->
+	DOP2 (Prod, c1, DLAM (Anonymous, c2))
     | "("; id = IDENT; cl = LIST1 term; ")" ->
 	let c = VAR (id_of_string id) in
 	DOPN (AppL, Array.of_list (c::cl))
@@ -78,8 +86,8 @@ EXTEND
       bl = LIST0 term; "end" ->
 	DOPN (MutCase None, Array.of_list (p :: c :: bl))
   ] ];
-  command: [ 
-    [ "Definition"; id = IDENT; ":="; c = term; "." ->
+  command: 
+  [ [ "Definition"; id = IDENT; ":="; c = term; "." ->
 	Definition (id_of_string id, None, c)
     | "Definition"; id = IDENT; ":"; t = term; ":="; c = term; "." ->
 	Definition (id_of_string id, Some t, c)
@@ -87,10 +95,19 @@ EXTEND
 	Parameter (id_of_string id, t)
     | "Variable"; id = IDENT; ":"; t = term; "." ->
 	Variable (id_of_string id, t)
+    | "Inductive"; "["; params = LIST0 nametype SEP ";"; "]"; 
+      inds = LIST1 inductive SEP "with" ->
+	Inductive (params, inds)
     | IDENT "Check"; c = term; "." ->
 	Check c
     | EOI -> raise End_of_file
   ] ];
+  inductive: 
+  [ [ id = IDENT; ":"; ar = term; ":="; constrs = LIST0 constructor SEP "|" ->
+        (id_of_string id,ar,constrs)
+  ] ];
+  constructor:
+  [ [ id = IDENT; ":"; c = term -> (id_of_string id,c) ] ];
 END
 
 (* Pretty-print. *)

@@ -117,7 +117,7 @@ let rec execute mf env cstr =
 	    
     | IsLambda (name,c1,c2) -> 
         let (j,u1) = execute mf env c1 in
-        let var = assumption_of_judgement env j in
+        let var = assumption_of_judgment env j in
 	let env1 = push_rel (name,var) (set_universes u1 env) in
         let (j',u2) = execute mf env1 c2 in 
 	let env2 = set_universes u2 env1 in
@@ -125,7 +125,7 @@ let rec execute mf env cstr =
 	  
     | IsProd (name,c1,c2) ->
         let (j,u1) = execute mf env c1 in
-        let var = assumption_of_judgement env j in
+        let var = assumption_of_judgment env j in
 	let env1 = push_rel (name,var) (set_universes u1 env) in
         let (j',u2) = execute mf env1 c2 in
 	let env2 = set_universes u2 env1 in
@@ -143,7 +143,7 @@ let rec execute mf env cstr =
 and execute_fix mf env lar lfi vdef =
   let (larj,u1) = execute_array mf env lar in
   let env1 = set_universes u1 env in
-  let lara = Array.map (assumption_of_judgement env1) larj in
+  let lara = Array.map (assumption_of_judgment env1) larj in
   let nlara = 
     List.combine (List.rev lfi) (Array.to_list (vect_lift_type lara)) in
   let env2 = 
@@ -170,7 +170,7 @@ and execute_list mf env = function
 
 let execute_type mf env constr = 
   let (j,_) = execute mf env constr in
-  typed_type_of_judgment env j
+  assumption_of_judgment env j
 
 
 (* Exported machines.  First safe machines, with no general fixpoint
@@ -262,7 +262,7 @@ let lookup_meta = lookup_meta
 let push_rel_or_var push (id,c) env =
   let (j,u) = safe_machine env c in
   let env' = set_universes u env in
-  let var = assumption_of_judgement env' j in
+  let var = assumption_of_judgment env' j in
   push (id,var) env'
 
 let push_var nvar env = push_rel_or_var push_var nvar env
@@ -290,7 +290,7 @@ let add_constant sp ce env =
 	  match conv env'' jb.uj_type jt.uj_val with
 	    | Convertible u'' -> 
 		let env'' = set_universes u'' env' in
-		env'', typed_type_of_judgment env'' jt
+		env'', assumption_of_judgment env'' jt
 	    | NotConvertible -> 
 		error_actual_type CCI env jb.uj_val jb.uj_type jt.uj_val
   in
@@ -335,7 +335,7 @@ let rec for_all_prods p env c =
 	 for_all_prods p env' c)
     | DOP2(Prod, b, DLAM(name,c)) -> 
 	let (jb,u) = unsafe_machine env b in
-	let var = assumption_of_judgement env jb in
+	let var = assumption_of_judgment env jb in
 	(p var) &&
 	(let env' = Environ.push_rel (name,var) (set_universes u env) in
 	 for_all_prods p env' c)
@@ -378,7 +378,7 @@ let is_unit env_par nparams ar spec =
 	(let (_,c') = decompose_prod_n nparams c in logic_constr env_par c')
     | _ -> false
 
-let type_one_inductive env_ar env_par nparams (id,ar,cnames,spec) =
+let type_one_inductive i env_ar env_par nparams ninds (id,ar,cnames,spec) =
   let (lna,vc) = decomp_all_DLAMV_name spec in
   let (env',(issmall,jlc)) = 
     List.fold_left 
@@ -390,7 +390,7 @@ let type_one_inductive env_ar env_par nparams (id,ar,cnames,spec) =
   let castlc = List.map cast_of_judgment jlc in
   let spec' = put_DLAMSV lna (Array.of_list castlc) in
   let isunit = is_unit env_par nparams ar spec in
-  let (_,tyar) = lookup_var id env' in
+  let (_,tyar) = lookup_rel (ninds+1-i) env' in
   (env', (id,tyar,cnames,issmall,isunit,spec'))
 
 let add_mind sp mie env =
@@ -399,17 +399,20 @@ let add_mind sp mie env =
   let params = mind_extract_and_check_params mie in
   let nparams = mie.mind_entry_nparams in
   mind_check_lc params mie;
+  let ninds = List.length mie.mind_entry_inds in
   let types_sign = 
     List.map (fun (id,ar,_,_) -> (Name id,ar)) mie.mind_entry_inds
   in
   let env_arities = push_rels types_sign env in
   let env_params = push_rels params env_arities in
-  let env_arities',inds =
+  let env_arities',_,inds =
     List.fold_left 
-      (fun (env,inds) ind -> 
-	 let (env',ind') = type_one_inductive env env_params nparams ind in
-	 (env',ind'::inds))
-      (env_arities,[]) mie.mind_entry_inds
+      (fun (env,i,inds) ind -> 
+	 let (env',ind') = 
+	   type_one_inductive i env env_params nparams ninds ind 
+	 in
+	 (env',succ i,ind'::inds))
+      (env_arities,1,[]) mie.mind_entry_inds
   in
   let kind = kind_of_path sp in
   let mib = 

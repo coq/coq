@@ -15,8 +15,12 @@ val make_judge : constr -> typed_type -> unsafe_judgment
 
 val j_val_only : unsafe_judgment -> constr
 
+(* If [j] is the judgement $c:t:s$, then [typed_type_of_judgment env j]
+   constructs the typed type $t:s$, while [assumption_of_judgement env j]
+   cosntructs the type type $c:t$, checking that $t$ is a sort. *)
+
 val typed_type_of_judgment : 'a unsafe_env -> unsafe_judgment -> typed_type
-val assumption_of_judgement : 'a unsafe_env -> unsafe_judgment -> typed_type
+val assumption_of_judgment : 'a unsafe_env -> unsafe_judgment -> typed_type
 
 val relative : 'a unsafe_env -> int -> unsafe_judgment
 

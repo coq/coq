@@ -5,6 +5,7 @@ open Pp
 open Util
 open Names
 open Generic
+open Term
 open Constant
 open Inductive
 open Typing
@@ -56,19 +57,52 @@ let variable id t =
   mSGNL (hOV 0 [< 'sTR"variable"; 'sPC; print_id id; 
 		  'sPC; 'sTR"is declared"; 'fNL >])
 
+let inductive par inds =
+  let nparams = List.length par in
+  let bvpar = List.rev (List.map (fun (id,_) -> Name id) par) in
+  let name_inds = List.map (fun (id,_,_) -> Name id) inds in
+  let bv = bvpar @  List.rev name_inds in
+  let par = List.map (fun (id,c) -> (Name id, globalize [] c)) par in
+  let one_inductive (id,ar,cl) =
+    let cv = Array.of_list (List.map snd cl) in
+    let cv = Array.map (fun c -> prod_it (globalize bv c) par) cv in
+    let c = put_DLAMSV name_inds cv in
+    (id, prod_it (globalize bvpar ar) par, List.map fst cl, c)
+  in
+  let inds = List.map one_inductive inds in
+  let mie = { 
+    mind_entry_nparams = nparams;
+    mind_entry_finite = true;
+    mind_entry_inds = inds }
+  in
+  let sp = let (id,_,_,_) = List.hd inds in make_path [] id CCI in
+  env := add_mind sp mie !env;
+  mSGNL (hOV 0 [< 'sTR"inductive type(s) are declared"; 'fNL >])
+
+
 let execute = function
   | Check c -> check c
   | Definition (id, ty, c) -> definition id ty c
   | Parameter (id, t) -> parameter id t
   | Variable (id, t) -> variable id t
-  | _ -> Printf.printf "not yet implemented\n"; flush stdout
+  | Inductive (par,inds) -> inductive par inds
 
-let main () =
+let parse_file f =
+  let c = open_in f in
+  let cs = Stream.of_channel c in
+  try
+    while true do
+      let c = Grammar.Entry.parse command cs in execute c
+    done
+  with 
+    | End_of_file | Stdpp.Exc_located (_, End_of_file) -> close_in c; exit 0
+    | exn -> close_in c; raise exn
+      
+let top () =
   let cs = Stream.of_channel stdin in
   while true do
     try
-      let c = Grammar.Entry.parse command cs in
-      execute c
+      let c = Grammar.Entry.parse command cs in execute c
     with 
       | End_of_file | Stdpp.Exc_located (_, End_of_file) -> 
 	  exit 0
@@ -78,5 +112,11 @@ let main () =
 	  mSGNL [< 'sTR"error: "; 'sTR (Printexc.to_string exn); 'fNL >]
   done
 
-let _ = Printexc.catch main ()
+let main () =
+  if Array.length Sys.argv = 1 then
+    parse_file "test"
+  else
+    if Sys.argv.(1) = "-top" then top () else parse_file (Sys.argv.(1))
+
+let _ = Printexc.print main ()
 
