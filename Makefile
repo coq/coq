@@ -1494,6 +1494,7 @@ archclean::
 	rm -f ide/utils/*.cmx* ide/utils/*.[soa]
 	rm -f translate/*.cmx* translate/*.[soa]
 	rm -f tools/*.cmx* tools/*.[soa]
+	rm -f tools/*/*.cmx* tools/*/*.[soa]
 	rm -f scripts/*.cmx* scripts/*.[soa]
 	rm -f dev/*.cmx* dev/*.[soa]
 
@@ -1514,6 +1515,7 @@ clean:: archclean
 	rm -f ide/utils/*.cm[ioa]
 	rm -f translate/*.cm[ioa]
 	rm -f tools/*.cm[ioa]
+	rm -f tools/*/*.cm[ioa]
 	rm -f scripts/*.cm[ioa]
 	rm -f dev/*.cm[ioa]
 	rm -f */*.pp[iox] contrib/*/*.pp[iox]
@@ -1596,9 +1598,7 @@ include .depend.coq
 include .depend.coq7
 
 clean::
-	rm -fr *.v8 states/*.v8 syntax/*.v8 ide/*.v8 \
-	  theories/*/*.v8 theories7/*/*.v8 test-suite/*/*.v8 \
-	  contrib/*/*.v8 contrib7/*/*.v8
+	rm -fr *.v8 syntax/*.v8 ide/*.v8 theories7/*/*.v8 contrib7/*/*.v8
 	find . -name "\.#*" -exec rm -f {} \;
 	find . -name "*~" -exec rm -f {} \;
 
