@@ -10,6 +10,8 @@ A revision of the standard library and of concrete syntax of Coq, including
   and new eqT is syntactic sugar for new eq (notation == is an alias
   for = and is written as it)
 - similarly, ex, ex2 and all are merged with exT, exT2 and allT.
+- a additional elimination Acc_iter for Acc, simplier than Acc_rect. 
+  This new elimination principle is used for definition well_founded_induction.
 
 Vernacular commands
 
