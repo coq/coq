@@ -34,7 +34,7 @@ let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
 (* Like Exc_located, but specifies the outermost file read, the filename
    associated to the location of the error, and the error itself. *)
 
-exception Error_in_file of string * (bool * string * Util.loc) * exn
+exception Error_in_file of string * (bool * string * loc) * exn
 
 (* Projections from triplets *)
 
