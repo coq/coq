@@ -481,6 +481,9 @@ let elimination_suffix = function
   | Prop Null -> "_ind"
   | Prop Pos  -> "_rec"
 
+let make_elimination_ident id s = 
+  id_of_string ((string_of_id id) ^ (elimination_suffix s))
+  
 let declare_one_elimination mispec =
   let mindstr = string_of_id (mis_typename mispec) in
   let declare na c =
