@@ -23,33 +23,33 @@ type kind_load=
   | WithoutTop
   | Native
 
-(*Sets and initializes the kind of loading*)
+(* Sets and initializes the kind of loading *)
 val set : kind_load -> unit
 val get : unit -> kind_load
 
-(*Resets the kind of loading*)
+(* Resets the kind of loading *)
 val remove : unit -> unit
 
-(*Tests if an Ocaml toplevel runs under Coq*)
+(* Tests if an Ocaml toplevel runs under Coq *)
 val is_ocaml_top : unit -> bool
 
-(*Tests if we can load ML files*)
+(* Tests if we can load ML files *)
 val enable_load : unit -> bool
 
-(*Starts the Ocaml toplevel loop *)
+(* Starts the Ocaml toplevel loop *)
 val ocaml_toploop : unit -> unit
 
-(*Dynamic loading of .cmo*)
+(* Dynamic loading of .cmo *)
 val dir_ml_load : string -> unit
 
-(*Dynamic interpretation of .ml*)
+(* Dynamic interpretation of .ml *)
 val dir_ml_use : string -> unit
 
-(*Adds a path to the ML paths*)
+(* Adds a path to the ML paths *)
 val add_ml_dir : string -> unit
 val add_rec_ml_dir : string -> unit
 
-(*Adds a path to the Coq and ML paths*)
+(* Adds a path to the Coq and ML paths *)
 val add_path : unix_path:string -> coq_root:Names.dir_path -> unit
 val add_rec_path : unix_path:string -> coq_root:Names.dir_path -> unit
 
