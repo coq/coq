@@ -47,7 +47,7 @@ Rewrite (Zmult_sym z y).
 Apply Zmult_Zminus_distr_l.
 Qed.
 
-Lemma Zmult_reg_left : (x,y,z:Z)`z>0` -> `z*x=z*y` -> x=y.
+Lemma Zmult_reg_left : (x,y,z:Z)`z<>0` -> `z*x=z*y` -> x=y.
 Intros.
 Generalize (Zeq_Zminus H0).
 Intro.
@@ -58,7 +58,7 @@ Omega.
 Trivial.
 Qed.
 
-Lemma Zmult_reg_right : (x,y,z:Z)`z>0` -> `x*z=y*z` -> x=y.
+Lemma Zmult_reg_right : (x,y,z:Z)`z<>0` -> `x*z=y*z` -> x=y.
 Intros x y z Hz.
 Rewrite (Zmult_sym x z).
 Rewrite (Zmult_sym y z).
@@ -111,7 +111,7 @@ Elim (Zle_lt_or_eq `x*z` `y*z` Hxy).
 Intros; Apply Zlt_le_weak.
 Apply Zlt_Zmult_right2 with z; Trivial.
 Intros; Apply Zle_refl.
-Apply Zmult_reg_right with z; Trivial.
+Apply Zmult_reg_right with z; Omega.
 Qed.
 
 Lemma Zgt_Zmult_right : (x,y,z:Z)`z>0` -> `x > y` -> `x*z > y*z`.
