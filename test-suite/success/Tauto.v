@@ -151,8 +151,23 @@ Proof.
   Tauto.
 Save.
 
-(* An example which was a bug *)
-Lemma old_bug:(~A<->B)->(~(C\/E)<->D/\F)->~(C\/A\/E)<->D/\B/\F.
+(* This example was a bug *)
+Lemma old_bug0:(~A<->B)->(~(C\/E)<->D/\F)->~(C\/A\/E)<->D/\B/\F.
+Proof.
+  Tauto.
+Save.
+
+(* Another bug *)
+Lemma old_bug1:((A->B->False)->False) -> (B->False) -> False.
+Proof.
+  Tauto.
+Save.
+
+(* A bug again *)
+Lemma old_bug2:
+  ((((C->False)->A)->((B->False)->A)->False)->False) ->
+  (((C->B->False)->False)->False) ->
+  ~A->A.
 Proof.
   Tauto.
 Save.
