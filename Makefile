@@ -68,11 +68,11 @@ CAMLP4OBJS=gramlib.cma
 
 CONFIG=config/coq_config.cmo
 
-LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
+LIBREP=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
     lib/bstack.cmo lib/edit.cmo lib/stamps.cmo lib/gset.cmo lib/gmap.cmo \
     lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
-    lib/predicate.cmo 
+    lib/predicate.cmo          # Rem: Cygwin already uses variable LIB 
 
 KERNEL=kernel/names.cmo kernel/univ.cmo \
        kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
@@ -219,7 +219,7 @@ CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) $(XMLCMO) \
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
-CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PRETYPING) $(PARSING) \
+CMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) $(PARSING) \
     $(PROOFS) $(TACTICS) $(TOPLEVEL) $(HIGHTACTICS) $(CONTRIB)
 CMX=$(CMO:.cmo=.cmx)
 
@@ -259,7 +259,7 @@ $(COQMKTOP): $(COQMKTOPCMO)
           $(COQMKTOPCMO) $(OSDEPLIBS)
 
 scripts/tolink.ml: Makefile
-	echo "let lib = \""$(LIB)"\"" > $@
+	echo "let lib = \""$(LIBREP)"\"" > $@
 	echo "let kernel = \""$(KERNEL)"\"" >> $@
 	echo "let library = \""$(LIBRARY)"\"" >> $@
 	echo "let pretyping = \""$(PRETYPING)"\"" >> $@
@@ -288,7 +288,7 @@ archclean::
 
 # we provide targets for each subdirectory
 
-lib: $(LIB)
+lib: $(LIBREP)
 kernel: $(KERNEL)
 library: $(LIBRARY)
 proofs: $(PROOFS)
@@ -336,7 +336,7 @@ INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/Logic_TypeSyntax.vo
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
-	$(COQC) -boot -$(BEST) -R theories Coq -is states/barestate.coq $<
+	$(COQTOP) -boot -$(BEST) -R theories Coq -is states/barestate.coq -compile $*
 
 init: $(INITVO)
 
@@ -348,10 +348,10 @@ TACTICSVO=tactics/Equality.vo \
 	  tactics/EqDecide.vo tactics/Setoid_replace.vo $(EXTRACTIONVO)
 
 tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
-	$(COQC) -boot -$(BEST) $(COQINCLUDES) -is states/barestate.coq $<
+	$(COQTOP) -boot -$(BEST) $(COQINCLUDES) -is states/barestate.coq -compile $*
 
 contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
-	$(COQC) -boot -$(BEST) $(COQINCLUDES) -is states/barestate.coq $<
+	$(COQTOP) -boot -$(BEST) $(COQINCLUDES) -is states/barestate.coq -compile $*
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO) $(BESTCOQTOP)
 	$(BESTCOQTOP) -boot -batch -silent -is states/barestate.coq $(COQINCLUDES) -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
@@ -501,10 +501,10 @@ INTERFACEV0 = contrib/interface/Centaur.vo contrib/interface/vernacrc
 FOURIERVO = contrib/fourier/Fourier_util.vo    contrib/fourier/Fourier.vo
 
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
-	$(COQC) -boot -byte  $(COQINCLUDES) $<
+	$(COQTOP) -boot -byte  $(COQINCLUDES) -compile $*
 
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
-	$(COQC) -boot -byte  $(COQINCLUDES) $<
+	$(COQTOP) -boot -byte  $(COQINCLUDES) -compile $*
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(CORRECTNESSVO)\
@@ -576,7 +576,7 @@ archclean::
 # minicoq
 ###########################################################################
 
-MINICOQCMO=$(CONFIG) $(LIB) $(KERNEL) \
+MINICOQCMO=$(CONFIG) $(LIBREP) $(KERNEL) \
 	   parsing/lexer.cmo parsing/g_minicoq.cmo \
 	   toplevel/fhimsg.cmo toplevel/minicoq.cmo
 
@@ -618,12 +618,12 @@ install: install-$(BEST) install-binaries install-library install-manpages
 install-byte:
 	$(MKDIR) $(FULLBINDIR)
 	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(FULLBINDIR)
-	cd $(FULLBINDIR); ln -sf coqtop.byte coqtop
+	cd $(FULLBINDIR); ln -sf coqtop.byte$(EXE) coqtop$(EXE)
 
 install-opt:
 	$(MKDIR) $(FULLBINDIR)
 	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(FULLBINDIR)
-	cd $(FULLBINDIR); ln -sf coqtop.opt coqtop
+	cd $(FULLBINDIR); ln -sf coqtop.opt$(EXE) coqtop$(EXE)
 
 install-binaries:
 	$(MKDIR) $(FULLBINDIR)
@@ -661,7 +661,7 @@ install-manpages:
 doc: doc/coq.tex
 	$(MAKE) -C doc coq.ps minicoq.dvi
 
-LPLIB = lib/doc.tex $(LIB:.cmo=.mli)
+LPLIB = lib/doc.tex $(LIBREP:.cmo=.mli)
 LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
 LPLIBRARY = library/doc.tex $(LIBRARY:.cmo=.mli)
 LPPRETYPING = pretyping/doc.tex pretyping/rawterm.mli $(PRETYPING:.cmo=.mli)
@@ -769,8 +769,18 @@ clean::
 .ml4.cmo:
 	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
+# Use these lines for Windows
+#.ml4.cmx:
+#	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -o $*.ppo -impl $< 
+#	$(OCAMLOPT) $(OPTFLAGS) -c -impl $*.ppo
+
+# Use these lines for Windows
+#.ml4.cmo:
+#	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -o $*.ppo -impl $< 
+#	$(OCAMLC) $(BYTEFLAGS) -c -impl $*.ppo
+
 .v.vo:
-	$(COQC) -boot -$(BEST) $(COQINCLUDES) $<
+	$(COQTOP) -boot -$(BEST) $(COQINCLUDES) -compile $*
 
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile
