@@ -354,16 +354,19 @@ let enforce_type_constructor env univ j =
 	set_universes (enforce_geq univ uc u) env
     | _ -> error "Type of Constructor not well-formed"
 
-let type_one_constructor env_ar env_par nparams ar c =
-  let (jc,u) = safe_machine env_ar c in
-  let env = set_universes u env_ar in
-  let env' = match sort_of_arity env_ar ar with
-    | Type u -> enforce_type_constructor env u jc
-    | Prop _ -> env 
+let type_one_constructor env_ar nparams ar c =
+  let (params,dc) = decompose_prod_n nparams c in
+  let env_par = push_rels params env_ar in
+  let (jc,u) = safe_machine env_par dc in
+  let env_par' = set_universes u env_par in
+  let env_par'' = match sort_of_arity env_ar ar with
+    | Type u -> enforce_type_constructor env_par' u jc
+    | Prop _ -> env_par'
   in
-  let (_,c) = decompose_prod_n nparams jc.uj_val in
+  let env_ar' = set_universes (universes env_par'') env_ar in
+  let (j,u) = safe_machine env_ar' c in
   let issmall = is_small_type env_par c in
-  (env', (issmall,jc))
+  (set_universes u env_ar', (issmall,j))
 
 let logic_constr env c =
   for_all_prods (fun t -> not (is_info_type env t)) env c
@@ -384,7 +387,7 @@ let type_one_inductive env_ar env_par nparams (id,ar,cnames,spec) =
   let (env',(issmall,jlc)) = 
     List.fold_left 
       (fun (env,(small,jl)) c -> 
-	 let (env',(sm,jc)) = type_one_constructor env env_par nparams ar c in
+	 let (env',(sm,jc)) = type_one_constructor env nparams ar c in
 	 (env', (small && sm,jc::jl)))
       (env_ar,(true,[])) (Array.to_list vc)
   in
