@@ -626,7 +626,7 @@ Intro x; NewInduction x as [p IHp|p IHp|]; [
 | Auto ].
 Qed.
 
-Theorem ZL10: (x,y:positive)
+Lemma ZL10: (x,y:positive)
  (sub_pos x y) = (IsPos xH) -> (sub_neg x y) = IsNul.
 Proof.
 Intro x; NewInduction x as [p|p|]; Intro y; NewDestruct y as [q|q|]; Simpl; 
@@ -644,7 +644,7 @@ Qed.
 
 (** Properties valid only for x>y *)
 
-Theorem sub_pos_SUPERIEUR:
+Lemma sub_pos_SUPERIEUR:
   (x,y:positive)(compare x y EGAL)=SUPERIEUR -> 
     (EX h:positive | (sub_pos x y) = (IsPos h) /\ (add y h) = x /\
                      (h = xH \/ (sub_neg x y) = (IsPos (sub_un h)))).
@@ -738,7 +738,7 @@ Require Plus.
 Require Mult.
 Require Minus.
 
-(** [IPN] is a morphism for addition *)
+(** [nat_of_P] is a morphism for addition *)
 
 Lemma convert_add_un :
   (x:positive)(m:nat)
@@ -798,7 +798,7 @@ Proof.
 Intros x y; Exact (add_verif x y (S O)).
 Qed.
 
-(** [IPN_shift] is a morphism for addition wrt the factor *)
+(** [Pmult_nat] is a morphism for addition *)
 
 Lemma ZL2:
   (y:positive)(m:nat)
@@ -819,7 +819,7 @@ Proof.
 Intro p;Change (2) with (plus (S O) (S O)); Rewrite ZL2; Trivial.
 Qed.
  
-(** [IPN] is a morphism for multiplication *)
+(** [nat_of_P] is a morphism for multiplication *)
 
 Theorem times_convert :
   (x,y:positive) (convert (times x y)) = (mult (convert x) (convert y)).
@@ -840,15 +840,15 @@ V7only [
     [x,y:positive;_:positive->positive](times_convert x y).
 ].
 
-(** IPN is strictly positive *)
+(** [nat_of_P] is strictly positive *)
 
-Theorem compare_positive_to_nat_O : 
+Lemma compare_positive_to_nat_O : 
 	(p:positive)(m:nat)(le m (positive_to_nat p m)).
 NewInduction p; Simpl; Auto with arith.
 Intro m; Apply le_trans with (plus m m);  Auto with arith.
 Qed.
 
-Theorem compare_convert_O : (p:positive)(lt O (convert p)).
+Lemma compare_convert_O : (p:positive)(lt O (convert p)).
 Intro; Unfold convert; Apply lt_le_trans with (S O); Auto with arith.
 Apply compare_positive_to_nat_O.
 Qed.
@@ -876,7 +876,7 @@ Proof.
   Intros. Rewrite <- positive_to_nat_mult. Reflexivity.
 Qed.
 
-(** Mapping of xH, xO and xI through IPN *)
+(** Mapping of xH, xO and xI through [nat_of_P] *)
 
 Lemma convert_xH : (convert xH)=(1).
 Proof.
@@ -905,7 +905,7 @@ Qed.
 (** Properties of the shifted injection from Peano natural numbers to 
     binary positive numbers *)
 
-(** Composition of [INP] and [IPN] is shifted identity on [nat] *)
+(** Composition of [P_of_succ_nat] and [nat_of_P] is successor on [nat] *)
 
 Theorem bij1 : (m:nat) (convert (anti_convert m)) = (S m).
 Proof.
@@ -914,7 +914,7 @@ Intro m; NewInduction m as [|n H]; [
 | Simpl; Rewrite cvt_add_un; Rewrite H; Auto ].
 Qed.
 
-(** Miscellaneous lemmas on [INP] *)
+(** Miscellaneous lemmas on [P_of_succ_nat] *)
 
 Lemma ZL3: (x:nat) (add_un (anti_convert (plus x x))) =  (xO (anti_convert x)).
 Proof.
@@ -941,7 +941,7 @@ Intro x; NewInduction x as [|n H];Simpl; [
 | Rewrite <- plus_n_Sm; Simpl; Simpl in H; Rewrite H; Auto with arith].
 Qed.
 
-(** Composition of [IPN] and [INP] is shifted identity on [positive] *)
+(** Composition of [nat_of_P] and [P_of_succ_nat] is successor on [positive] *)
 
 Theorem bij2 : (x:positive) (anti_convert (convert x)) = (add_un x).
 Proof.
@@ -960,7 +960,8 @@ Intro x; NewInduction x as [p H|p H|]; [
 | Unfold convert; Simpl; Auto with arith ].
 Qed.
 
-(** Composition of [IPN], [INP] and [Ppred] is identity on [positive] *)
+(** Composition of [nat_of_P], [P_of_succ_nat] and [Ppred] is identity
+    on [positive] *)
 
 Theorem bij3: (x:positive)(sub_un (anti_convert (convert x))) = x.
 Proof.
@@ -985,13 +986,13 @@ Intros m n H; Apply le_lt_trans with m:=(plus m n); [
 | Rewrite (plus_sym m n); Apply lt_reg_l with 1:=H ].
 Qed.
 
-(** [IPN] is a morphism from [positive] to [nat] for [lt] (expressed
+(** [nat_of_P] is a morphism from [positive] to [nat] for [lt] (expressed
     from [compare] on [positive])
 
     Part 1: [lt] on [positive] is finer than [lt] on [nat]
 *)
 
-Theorem compare_convert_INFERIEUR : 
+Lemma compare_convert_INFERIEUR : 
   (x,y:positive) (compare x y EGAL) = INFERIEUR -> 
     (lt (convert x) (convert y)).
 Proof.
@@ -1016,13 +1017,13 @@ Intro x; NewInduction x as [p H|p H|];Intro y; NewDestruct y as [q|q|];
 | Simpl; Discriminate H2 ].
 Qed.
 
-(** [IPN] is a morphism from [positive] to [nat] for [gt] (expressed
+(** [nat_of_P] is a morphism from [positive] to [nat] for [gt] (expressed
     from [compare] on [positive])
 
     Part 1: [gt] on [positive] is finer than [gt] on [nat]
 *)
 
-Theorem compare_convert_SUPERIEUR : 
+Lemma compare_convert_SUPERIEUR : 
   (x,y:positive) (compare x y EGAL)=SUPERIEUR -> (gt (convert x) (convert y)).
 Proof.
 Unfold gt; Intro x; NewInduction x as [p H|p H|];
@@ -1047,13 +1048,13 @@ Unfold gt; Intro x; NewInduction x as [p H|p H|];
 | Simpl; Discriminate H2 ].
 Qed.
 
-(** [IPN] is a morphism from [positive] to [nat] for [lt] (expressed
+(** [nat_of_P] is a morphism from [positive] to [nat] for [lt] (expressed
     from [compare] on [positive])
 
     Part 2: [lt] on [nat] is finer than [lt] on [positive]
 *)
 
-Theorem convert_compare_INFERIEUR : 
+Lemma convert_compare_INFERIEUR : 
   (x,y:positive)(lt (convert x) (convert y)) -> (compare x y EGAL) = INFERIEUR.
 Proof.
 Intros x y; Unfold gt; Elim (Dcompare (compare x y EGAL)); [
@@ -1067,13 +1068,13 @@ Intros x y; Unfold gt; Elim (Dcompare (compare x y EGAL)); [
     | Assumption ]]].
 Qed.
 
-(** [IPN] is a morphism from [positive] to [nat] for [gt] (expressed
+(** [nat_of_P] is a morphism from [positive] to [nat] for [gt] (expressed
     from [compare] on [positive])
 
     Part 2: [gt] on [nat] is finer than [gt] on [positive]
 *)
 
-Theorem convert_compare_SUPERIEUR : 
+Lemma convert_compare_SUPERIEUR : 
   (x,y:positive)(gt (convert x) (convert y)) -> (compare x y EGAL) = SUPERIEUR.
 Proof.
 Intros x y; Unfold gt; Elim (Dcompare (compare x y EGAL)); [
@@ -1120,19 +1121,19 @@ Qed.
 (** Extra properties of the injection from binary positive numbers to Peano 
     natural numbers *)
 
-(** [IPN] is a morphism for subtraction on positive numbers *)
+(** [nat_of_P] is a morphism for subtraction on positive numbers *)
 
 Theorem true_sub_convert:
   (x,y:positive) (compare x y EGAL) = SUPERIEUR -> 
      (convert (true_sub x y)) = (minus (convert x) (convert y)).
 Proof.
-Intros x y H; Apply (simpl_plus_l (convert y));
+Intros x y H; Apply plus_reg_l with (convert y);
 Rewrite le_plus_minus_r; [
   Rewrite <- convert_add; Rewrite sub_add; Auto with arith
 | Apply lt_le_weak; Exact (compare_convert_SUPERIEUR x y H)].
 Qed.
 
-(** [IPN] is injective *)
+(** [nat_of_P] is injective *)
 
 Lemma convert_intro : (x,y:positive)(convert x)=(convert y) -> x=y.
 Proof.
@@ -1288,7 +1289,7 @@ Qed.
 
 (** Parity properties of multiplication *)
 
-Theorem times_discr_xO_xI : 
+Lemma times_discr_xO_xI : 
   (x,y,z:positive)(times (xI x) z)<>(times (xO y) z).
 Proof.
 Intros x y z; NewInduction z as [|z IHz|]; Try Discriminate.
@@ -1297,7 +1298,7 @@ Do 2 Rewrite times_x_double in H.
 Injection H; Clear H; Intro H; Exact H.
 Qed.
 
-Theorem times_discr_xO : (x,y:positive)(times (xO x) y)<>y.
+Lemma times_discr_xO : (x,y:positive)(times (xO x) y)<>y.
 Proof.
 Intros x y; NewInduction y; Try Discriminate.
 Rewrite times_x_double; Injection; Assumption.
