@@ -700,7 +700,7 @@ noreal: logic arith bool zarith lists sets intmap relations wellfounded \
 glob.dump::
 	rm -f glob.dump
 	rm -f theories/*/*.vo
-	make GLOB="-dump-glob glob.dump" world
+	$(MAKE) GLOB="-dump-glob glob.dump" world
 
 clean::
 	rm -f theories/*/*.vo
