@@ -30,6 +30,8 @@ type goal = hyp list * concl
 
 val get_current_goals : unit -> goal list
 
+val get_current_goals_nb : unit -> int
+
 val print_no_goal : unit -> string
 
 val process_exn : exn -> string*((int*int) option)

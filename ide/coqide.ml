@@ -119,7 +119,7 @@ type 'a viewable_script =
     }
 
 
-class type analyzed_views = 
+class type analyzed_views= 
 object('self)
     val mutable act_id : GtkSignal.id option
     val current_all : 'self viewable_script
@@ -234,33 +234,6 @@ let coq_computing = Mutex.create ()
 (* To prevent Coq from interrupting during undoing...*)
 let coq_may_stop = Mutex.create ()
 
-let full_do_if_not_computing f x = 
-  if Mutex.try_lock coq_computing then 
-    ignore (Thread.create 
-	      (async (fun () ->
-			prerr_endline "Launching thread";
-			let idle = 
-			  Glib.Timeout.add ~ms:300
-			    ~callback:(fun () -> !pulse ();true) in
-			begin
-			  prerr_endline "Getting lock";
-			  try
-			    f x;
-			    Glib.Timeout.remove idle;
-			    prerr_endline "Releasing lock";
-			    Mutex.unlock coq_computing;
-			  with e -> 
-			    Glib.Timeout.remove idle;
-			    prerr_endline "Releasing lock (on error)";
-			    Mutex.unlock coq_computing;
-			    raise e
-			end))
-	      ())
-  else prerr_endline "Discarded order (computations are ongoing)"
-
-let do_if_not_computing f x = 
-  ignore (full_do_if_not_computing f x)
-
 let break () = 
   if not (Mutex.try_lock coq_computing) then 
     begin
@@ -274,6 +247,48 @@ let break () =
     Mutex.unlock coq_computing;
     prerr_endline "Break received and discarded (not computing)"
   end
+
+let full_do_if_not_computing f x = 
+    ignore (Thread.create 
+	      (async (fun () ->
+			if Mutex.try_lock coq_computing then begin
+			  prerr_endline "Launching thread";
+			  let w = Blaster_window.blaster_window () in
+			  if not (Mutex.try_lock w#lock) then begin 
+			    break ();
+			    let lck = Mutex.create () in
+			    Mutex.lock lck;
+			    prerr_endline "Waiting on blaster...";
+			    Condition.wait w#blaster_killed lck;
+			    prerr_endline "Waiting on blaster ok";
+			    Mutex.unlock lck
+			  end else Mutex.unlock w#lock;
+			  let idle = 
+			      Glib.Timeout.add ~ms:300
+				~callback:(fun () -> !pulse ();true) in
+			    begin
+			      prerr_endline "Getting lock";
+			      try
+				f x;
+				Glib.Timeout.remove idle;
+			    prerr_endline "Releasing lock";
+			    Mutex.unlock w#lock;
+			    Mutex.unlock coq_computing;
+			      with e -> 
+				Glib.Timeout.remove idle;
+				prerr_endline "Releasing lock (on error)";
+				Mutex.unlock w#lock;
+				Mutex.unlock coq_computing;
+				raise e
+			    end
+			end else 
+			  prerr_endline 
+			    "Discarded order (computations are ongoing)"))
+	      ())
+
+let do_if_not_computing f x = 
+  ignore (full_do_if_not_computing f x)
+
 
 let add_input_view tv = 
   Vector.append input_views tv
@@ -1050,7 +1065,9 @@ object(self)
 	false
 
   method process_until_iter_or_error stop =
+    let stop' = `OFFSET stop#offset in
     let start = self#get_start_of_input#copy in
+    let start' = `OFFSET start#offset in
     input_buffer#apply_tag_by_name 
       ~start
       ~stop
@@ -1065,6 +1082,9 @@ object(self)
      with Sys.Break -> 
        prerr_endline "Interrupted during process_until_iter_or_error");
     self#show_goals;
+    (* Start and stop might be invalid if an eol was added at eof *)
+    let start = input_buffer#get_iter start' in
+    let stop =  input_buffer#get_iter stop' in
     input_buffer#remove_tag_by_name ~start ~stop "to_process" ;
     input_view#set_editable true;
     !pop_info()
@@ -1226,30 +1246,55 @@ Please restart and report NOW.";
     else prerr_endline "undo_last_step discarded"
 
       
-  method blaster () =
-    prerr_endline "Blaster called";
-    let c = Blaster_window.blaster_window () in
-    c#clear ();
-    let set i s = 
-      c#set
-	i
-	s 
-	(fun () -> try_interptac (s ^ ". "))
-	(fun () -> self#insert_command (s^".\n") (s^".\n"))
-    in
-    set "Goal" "Assumption" ;
-    set "Goal" "Reflexivity" ;
-    set "Goal" "Trivial";
-    set "Goal" "Auto" ;
-    set "Goal" "EAuto";
-    set "Goal" "Auto with *" ;
-    set "Goal" "EAuto with *" ;
-    set "Goal" "Intuition";
-    set "Goal" "Ground";
-    let _ = Thread.create c#blaster () in
-    ()
+  method blaster () = 
     
-    
+    ignore (Thread.create 
+	      (fun () ->  
+		 prerr_endline "Blaster called";
+		 let c = Blaster_window.present_blaster_window () in
+		 if Mutex.try_lock c#lock then begin
+		   c#clear ();
+		   let current_gls = try get_current_goals () with _ -> [] in
+		   let gls_nb = List.length current_gls in
+		   
+		   let set_goal i (s,t) = 
+		     let gnb = string_of_int i in
+		     let s = gnb ^":"^s in
+		     let t' = gnb ^": Progress "^t in
+		     let t'' = gnb ^": "^t in
+		     c#set
+		       ("Goal "^gnb)
+		       s 
+		       (fun () -> try_interptac t')
+		       (fun () -> self#insert_command t'' t'')
+		   in
+		   let set_current_goal (s,t) = 
+		     c#set
+		       "Goal 1"
+		       s 
+		       (fun () -> try_interptac ("Progress "^t))
+		       (fun () -> self#insert_command t t)
+		   in
+		   begin match current_gls with 
+		   | [] -> ()
+		   | (hyp_l,current_gl)::r ->
+		       List.iter set_current_goal (concl_menu current_gl);
+		       List.iter 
+			 (fun hyp -> 
+			    List.iter set_current_goal (hyp_menu hyp))
+			 hyp_l;
+		       let i = ref 2 in
+		       List.iter 
+			 (fun (hyp_l,gl) -> 
+			    List.iter (set_goal !i) (concl_menu gl);
+			    incr i)
+			 r
+		   end;
+		   let _ =  c#blaster () in
+		   Mutex.unlock c#lock
+		 end else prerr_endline "Blaster discarded")
+	      ())
+      
   method insert_command cp ip = 
     self#clear_message;
     ignore (self#insert_this_phrase_on_success true false false cp ip)
@@ -1908,7 +1953,8 @@ let main files =
     else
       begin
 	!flash_info "New proof started";
-	activate_input (notebook ())#current_page
+	activate_input (notebook ())#current_page;
+	ignore (f analyzed_view)
       end
   in
 
@@ -1973,16 +2019,17 @@ let main files =
       ~accel_group 
       ~accel_modi:!current.modifier_for_tactics
   in
-  let do_if_active f () = 
+  let do_if_active_raw f () = 
     let current = get_current_view () in
     let analyzed_view = out_some current.analyzed_view in
     if analyzed_view#is_active then ignore (f analyzed_view)
   in
-  let do_if_active f = do_if_not_computing (do_if_active f) in
+  let do_if_active f = do_if_not_computing (do_if_active_raw f) in
 
   ignore (tactics_factory#add_item "_Blaster"
 	    ~key:GdkKeysyms._b
-	    ~callback:(do_if_active (fun a -> a#blaster ()))
+	    ~callback: (do_if_active_raw (fun a -> a#blaster ()))
+	    (* Custom locking mechanism! *)
 	 )
 	 ;
 

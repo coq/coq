@@ -76,6 +76,7 @@ let is_in_proof_mode () =
 
 let interp s = 
   prerr_endline "Starting interp...";
+  prerr_endline s;
   let pe = Pcoq.Gram.Entry.parse 
 	     Pcoq.main_entry 
 	     (Pcoq.Gram.parsable (Stream.of_string s)) 
@@ -121,9 +122,10 @@ let try_interptac s =
     | _ ->
 	prerr_endline "try_interptac: not a tactic"; Failed
   with 
-  | Sys.Break -> prerr_endline "try_interp: interrupted"; Interrupted
-  | _ -> prerr_endline "try_interp: failed"; Failed
-	  
+  | Sys.Break | Stdpp.Exc_located (_,Sys.Break)
+      -> prerr_endline "try_interp: interrupted"; Interrupted
+  | Stdpp.Exc_located (_,e) -> prerr_endline ("try_interp: failed ("^(Printexc.to_string e)); Failed
+  | e -> Failed	  
 
 let is_tactic = function
   | VernacSolve _ -> true
@@ -204,6 +206,10 @@ let get_current_goals () =
     let sigma = Tacmach.evc_of_pftreestate pfts in
     List.map (prepare_goal sigma) gls
 
+let get_current_goals_nb () = 
+  try List.length (get_current_goals ()) with _ -> 0
+
+  
 let print_no_goal () =
     let pfts = get_pftreestate () in
     let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in 
@@ -282,9 +288,6 @@ let reset_to_mod id =
 
 let hyp_menu (env, sigma, ((coqident,ident),_,ast),(s,pr_ast)) =
   [("Clear "^ident),("Clear "^ident^".");
-
-   ("Assumption"),
-   ("Assumption.");
    
    ("Apply "^ident),
    ("Apply "^ident^".");
@@ -335,7 +338,8 @@ let concl_menu (_,_,concl,_) =
     else 
       []) @
 
-  ["Omega", "Omega.";
+  ["Assumption" ,"Assumption.";
+   "Omega", "Omega.";
    "Ring", "Ring.";
    "Auto with *", "Auto with *.";
    "EAuto with *", "EAuto with *.";
@@ -350,7 +354,6 @@ let concl_menu (_,_,concl,_) =
    "Split", "Split.";
    "Left", "Left.";
    "Right", "Right.";
-
   ]
 
 
