@@ -87,23 +87,19 @@ let check_clear_forward cleared_ids used_ids whatfor =
    forces the user to give them in order). *)
 let clear_hyps ids gl =
   let env = Global.env() in
-  let (nhyps,subst,rmv) =
+  let (nhyps,rmv) =
     Sign.fold_named_context
-      (fun (id,c,ty as d) (hyps,subst,rmv) ->
+      (fun (id,c,ty as d) (hyps,rmv) ->
         if List.mem id ids then
-          match c with
-            | Some def -> (hyps,(id,def)::subst,rmv)
-            | None -> (hyps,subst,id::rmv)
+          (hyps,id::rmv)
         else begin
-          let d' =
-            (id, option_app (replace_vars subst) c, replace_vars subst ty) in
-          check_clear_forward rmv (global_vars_set_of_decl env d')
+          check_clear_forward rmv (global_vars_set_of_decl env d)
             ("hypothesis "^string_of_id id);
-          (add_named_decl d' hyps, subst, rmv)
+          (add_named_decl d hyps, rmv)
         end)
       gl.evar_hyps
-      ~init:(empty_named_context,[],[]) in
-  let ncl = replace_vars subst gl.evar_concl in
+      ~init:(empty_named_context,[]) in
+  let ncl = gl.evar_concl in
   check_clear_forward rmv (global_vars_set env ncl) "conclusion";
   mk_goal nhyps ncl
 
