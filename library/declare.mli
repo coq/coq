@@ -65,6 +65,8 @@ val global_operator : section_path -> identifier -> sorts oper * var_context
     [construct_reference] is a version which looks for variables in a 
     given environment instead of looking in the current global environment. *)
 
+val global_sp_reference : section_path -> identifier -> constr
+
 val global_reference : path_kind -> identifier -> constr
 val global_reference_imps : path_kind -> identifier -> constr * int list
 

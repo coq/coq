@@ -28,7 +28,8 @@ noargument:
 ###########################################################################
 
 LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
-              -I proofs -I tactics -I pretyping -I parsing -I toplevel
+              -I proofs -I tactics -I pretyping -I parsing -I toplevel  \
+              -I contrib/omega
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
 BYTEFLAGS=$(INCLUDES) $(CAMLDEBUG)
@@ -41,7 +42,8 @@ OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
 CAMLP4IFDEF=camlp4o pa_ifdef.cmo -D$(OSTYPE)
 
-COQINCLUDES=-I parsing -I theories/Init -I theories/Logic -I theories/Arith \
+COQINCLUDES=-I parsing -I contrib/omega \
+            -I theories/Init -I theories/Logic -I theories/Arith \
             -I theories/Bool -I theories/Zarith
 
 ###########################################################################
@@ -111,11 +113,13 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
 HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo # tactics/equality.cmo \
 #            tactics/tauto.cmo 
 
+CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo
+
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
 CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PRETYPING) $(PARSING) \
-    $(PROOFS) $(TACTICS) $(TOPLEVEL) $(HIGHTACTICS)
+    $(PROOFS) $(TACTICS) $(TOPLEVEL) $(HIGHTACTICS) $(CONTRIB)
 CMX=$(CMO:.cmo=.cmx) $(ARITHSYNTAX:.cmo=.cmx)
 
 ###########################################################################
@@ -251,6 +255,23 @@ clean::
 	rm -f theories/*/*.vo theories/*/*~
 	rm -f tactics/*.vo tactics/*~
 
+
+###########################################################################
+# contribs
+###########################################################################
+
+CONTRIBVO = contrib/omega/Omega.vo       contrib/omega/Zlogarithm.vo \
+            contrib/omega/OmegaSyntax.vo contrib/omega/Zpower.vo \
+            contrib/omega/Zcomplements.vo
+
+contrib: $(CONTRIBVO)
+
+clean::
+	rm -f contrib/*/*~ contrib/*/*.cm[io]
+
+archclean::
+	rm -f contrib/*/*.cmx contrib/*/*.[so]
+
 ###########################################################################
 # tools
 ###########################################################################
@@ -361,13 +382,10 @@ tags:
 # lexer (compiled with camlp4 to get optimized streams)
 
 parsing/lexer.cmo: parsing/lexer.ml
-	$(OCAMLC) $(BYTEFLAGS) -pp "camlp4o pa_ifdef.cmo" -c $<
+	$(OCAMLC_P4O) -c $<
 
 parsing/lexer.cmx: parsing/lexer.ml
-	$(OCAMLOPT) $(OPTFLAGS) -pp "camlp4o pa_ifdef.cmo" -c $<
-
-parsing/lexer.cmi: parsing/lexer.mli
-	$(OCAMLC) $(BYTEFLAGS) -pp "camlp4o pa_ifdef.cmo" -c $<
+	$(OCAMLOPT_P4O) -c $<
 
 clean::
 	rm -f parsing/lexer.ml
@@ -477,7 +495,7 @@ archclean::
 	rm -f toplevel/*.cmx toplevel/*.[so]
 	rm -f tools/*.cmx tools/*.[so]
 	rm -f coqtop.opt coqtop.byte minicoq
-	rm -f scripts/*.cmx scripts/*~
+	rm -f scripts/*.cmx
 
 clean:: archclean
 	rm -f *~
@@ -504,7 +522,7 @@ cleanconfig::
 alldepend: depend dependcoq dependcamlp4
 
 depend: beforedepend
-	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*.ml > .depend
+	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
 
 dependcoq: beforedepend
 	tools/coqdep $(COQINCLUDES) */*.v */*/*.v > .depend.coq

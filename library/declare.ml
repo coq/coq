@@ -238,8 +238,7 @@ let construct_operator env sp id =
 
 let global_operator sp id = construct_operator (Global.env()) sp id
 
-let construct_reference env kind id =
-  let sp = Nametab.sp_of_id kind id in
+let construct_sp_reference env sp id =
   try
     let (oper,hyps) = construct_operator env sp id in
     let hyps' = Global.var_context () in
@@ -250,7 +249,15 @@ let construct_reference env kind id =
   with Not_found -> 
     VAR (let _ = Environ.lookup_var id env in id)
 
-let global_reference kind id = construct_reference (Global.env()) kind id
+let construct_reference env kind id =
+  let sp = Nametab.sp_of_id kind id in
+  construct_sp_reference env sp id
+
+let global_sp_reference sp id = 
+  construct_sp_reference (Global.env()) sp id
+
+let global_reference kind id = 
+  construct_reference (Global.env()) kind id
 
 let global_reference_imps kind id =
   let c = global_reference kind id in
