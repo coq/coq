@@ -221,7 +221,7 @@ let rec pattern_of_constr t =
     | IsVar id -> PRef (RVar id)
     | IsSort (Prop c) -> PSort (RProp c)
     | IsSort (Type _) -> PSort RType
-    | IsCast (c,t)      -> pattern_of_constr c
+    | IsCast (c,_)      -> pattern_of_constr c
     | IsProd (na,c,b)   ->
 	PBinder (BProd,na,pattern_of_constr c,pattern_of_constr b)
     | IsLambda (na,c,b) ->

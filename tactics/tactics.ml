@@ -1038,7 +1038,7 @@ let induct_discharge indpath statuslists cname destopt avoid (_,t) =
 	      [ central_intro (IBasedOn (recvarname,avoid)) destopt false;
 		central_intro (IBasedOn (hyprecname,avoid)) None false;
 		peel_tac c]
-    | DOP2 (Cast,c,t) -> peel_tac c
+    | DOP2 (Cast,c,_) -> peel_tac c
     | DOP2 (Prod,t,DLAM(na,c))
       -> tclTHEN (central_intro (IAvoid avoid) destopt false)
 	  (peel_tac c)

@@ -136,7 +136,7 @@ varaibles only in Application and Case *)
 let collect_meta_variables c = 
   let rec collrec acc = function
     | DOP0(Meta mv) -> mv::acc
-    | DOP2(Cast,c,t) -> collrec acc c
+    | DOP2(Cast,c,_) -> collrec acc c
     | DOPN(AppL,cl) -> Array.fold_left collrec acc cl
     | DOPN(MutCase _,_) as mc -> 
 	let (_,p,c,lf) = destCase mc in
