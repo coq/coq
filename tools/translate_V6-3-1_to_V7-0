@@ -1,0 +1,14 @@
+#! /bin/sh
+
+echo Insertion of a space after a dot not followed by a separator
+for i in $*
+  do sed -e "s/\.\([A-Z]\)/\. \1/g" -e "s/AddPath$i/Add LoadPath/g" > $i.tmp$$
+  if diff $i.tmp$$ $i > /dev/null
+    then
+      rm $i.tmp$$
+    else
+      echo Le fichier $i a été modifié
+      mv $i.tmp$$ $i
+  fi
+  done
+echo
