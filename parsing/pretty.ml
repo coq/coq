@@ -445,8 +445,8 @@ let print_index_coercion c =
   print_coercion_value v
 
 let print_class i =
-  let cl,x = class_info_from_index i in
-  [< 'sTR x.cL_STR >]
+  let cl,_ = class_info_from_index i in
+  [< 'sTR (string_of_class cl) >]
   
 let print_path ((i,j),p) = 
   [< 'sTR"["; 
@@ -463,7 +463,8 @@ let print_graph () =
 let print_classes () = 
   [< prlist_with_sep pr_spc
        (fun (_,(cl,x)) -> 
-          [< 'sTR x.cL_STR  (*; 'sTR(string_of_strength x.cL_STRE) *) >]) 
+          [< 'sTR (string_of_class cl)
+	       (*; 'sTR(string_of_strength x.cL_STRE) *) >]) 
        (classes()) >]
 
 let print_coercions () = 
