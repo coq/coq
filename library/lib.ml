@@ -121,6 +121,8 @@ let open_section id =
   if Nametab.exists_section dir then
     errorlabstrm "open_section" [< pr_id id; 'sTR " already exists" >];
   add_entry sp (OpenedSection (id, freeze_summaries()));
+  (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
+  Nametab.push_section dir;
   path_prefix := dir;
   sp
 

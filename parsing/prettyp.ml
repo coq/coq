@@ -375,6 +375,7 @@ let list_filter_vec f vec =
   in 
   frec (Array.length vec -1) []
 
+(* This is designed to print the contents of an opened section *)
 let read_sec_context qid =
   let dir =
     try Nametab.locate_section qid
@@ -383,6 +384,8 @@ let read_sec_context qid =
     | ((sp,Lib.OpenedSection (_,_)) as hd)::rest ->
 	let dir' = make_dirpath (wd_of_sp sp) in
         if dir = dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
+    | ((sp,Lib.ClosedSection (_,_,ctxt)) as hd)::rest ->
+        error "Cannot print the contents of a closed section"
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest 
   in
