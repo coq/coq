@@ -219,12 +219,12 @@ ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
 	theories/Arith/Between.vo       theories/Arith/Le.vo          \
 	theories/Arith/Compare.vo       theories/Arith/Lt.vo          \
 	theories/Arith/Compare_dec.vo   theories/Arith/Min.vo         \
-	theories/Arith/Div.vo           theories/Arith/Minus.vo       \
-	theories/Arith/Div2.vo          theories/Arith/Mult.vo        \
+	theories/Arith/Div2.vo           theories/Arith/Minus.vo       \
+	theories/Arith/Mult.vo          theories/Arith/Even.vo \
 	theories/Arith/EqNat.vo         theories/Arith/Peano_dec.vo   \
 	theories/Arith/Euclid_def.vo    theories/Arith/Plus.vo        \
 	theories/Arith/Euclid_proof.vo  theories/Arith/Wf_nat.vo      \
-	theories/Arith/Even.vo
+#	theories/Arith/Div.vo 
 
 BOOLVO=theories/Bool/Bool.vo  theories/Bool/IfProp.vo \
        theories/Bool/Zerob.vo theories/Bool/DecBool.vo theories/Bool/Sumbool.vo
