@@ -866,10 +866,12 @@ parsing/printer.cmx: parsing/ast.cmx parsing/coqast.cmx library/declare.cmx \
     parsing/ppconstr.cmx kernel/sign.cmx kernel/term.cmx parsing/termast.cmx \
     pretyping/termops.cmx lib/util.cmx parsing/printer.cmi 
 parsing/printmod.cmo: kernel/declarations.cmi kernel/environ.cmi \
-    library/global.cmi kernel/names.cmi lib/pp.cmi lib/util.cmi \
+    library/global.cmi library/libnames.cmi library/nameops.cmi \
+    kernel/names.cmi library/nametab.cmi lib/pp.cmi lib/util.cmi \
     parsing/printmod.cmi 
 parsing/printmod.cmx: kernel/declarations.cmx kernel/environ.cmx \
-    library/global.cmx kernel/names.cmx lib/pp.cmx lib/util.cmx \
+    library/global.cmx library/libnames.cmx library/nameops.cmx \
+    kernel/names.cmx library/nametab.cmx lib/pp.cmx lib/util.cmx \
     parsing/printmod.cmi 
 parsing/q_coqast.cmo: parsing/coqast.cmi parsing/genarg.cmi \
     library/libnames.cmi kernel/names.cmi parsing/pcoq.cmi parsing/q_util.cmi \
@@ -1870,13 +1872,13 @@ toplevel/vernacentries.cmo: parsing/ast.cmi parsing/astmod.cmi \
     toplevel/metasyntax.cmi toplevel/mltop.cmi library/nameops.cmi \
     kernel/names.cmi library/nametab.cmi lib/options.cmi proofs/pfedit.cmi \
     lib/pp.cmi lib/pp_control.cmi parsing/prettyp.cmi parsing/printer.cmi \
-    proofs/proof_trees.cmi proofs/proof_type.cmi toplevel/record.cmi \
-    toplevel/recordobj.cmi proofs/refiner.cmi kernel/safe_typing.cmi \
-    parsing/search.cmi library/states.cmi lib/system.cmi \
-    tactics/tacinterp.cmi proofs/tacmach.cmi pretyping/tacred.cmi \
-    proofs/tactic_debug.cmi tactics/tactics.cmi kernel/term.cmi \
-    parsing/termast.cmi kernel/typeops.cmi kernel/univ.cmi lib/util.cmi \
-    toplevel/vernacexpr.cmo toplevel/vernacinterp.cmi \
+    parsing/printmod.cmi proofs/proof_trees.cmi proofs/proof_type.cmi \
+    toplevel/record.cmi toplevel/recordobj.cmi proofs/refiner.cmi \
+    kernel/safe_typing.cmi parsing/search.cmi library/states.cmi \
+    lib/system.cmi tactics/tacinterp.cmi proofs/tacmach.cmi \
+    pretyping/tacred.cmi proofs/tactic_debug.cmi tactics/tactics.cmi \
+    kernel/term.cmi parsing/termast.cmi kernel/typeops.cmi kernel/univ.cmi \
+    lib/util.cmi toplevel/vernacexpr.cmo toplevel/vernacinterp.cmi \
     toplevel/vernacentries.cmi 
 toplevel/vernacentries.cmx: parsing/ast.cmx parsing/astmod.cmx \
     parsing/astterm.cmx tactics/auto.cmx toplevel/class.cmx \
@@ -1889,13 +1891,13 @@ toplevel/vernacentries.cmx: parsing/ast.cmx parsing/astmod.cmx \
     toplevel/metasyntax.cmx toplevel/mltop.cmx library/nameops.cmx \
     kernel/names.cmx library/nametab.cmx lib/options.cmx proofs/pfedit.cmx \
     lib/pp.cmx lib/pp_control.cmx parsing/prettyp.cmx parsing/printer.cmx \
-    proofs/proof_trees.cmx proofs/proof_type.cmx toplevel/record.cmx \
-    toplevel/recordobj.cmx proofs/refiner.cmx kernel/safe_typing.cmx \
-    parsing/search.cmx library/states.cmx lib/system.cmx \
-    tactics/tacinterp.cmx proofs/tacmach.cmx pretyping/tacred.cmx \
-    proofs/tactic_debug.cmx tactics/tactics.cmx kernel/term.cmx \
-    parsing/termast.cmx kernel/typeops.cmx kernel/univ.cmx lib/util.cmx \
-    toplevel/vernacexpr.cmx toplevel/vernacinterp.cmx \
+    parsing/printmod.cmx proofs/proof_trees.cmx proofs/proof_type.cmx \
+    toplevel/record.cmx toplevel/recordobj.cmx proofs/refiner.cmx \
+    kernel/safe_typing.cmx parsing/search.cmx library/states.cmx \
+    lib/system.cmx tactics/tacinterp.cmx proofs/tacmach.cmx \
+    pretyping/tacred.cmx proofs/tactic_debug.cmx tactics/tactics.cmx \
+    kernel/term.cmx parsing/termast.cmx kernel/typeops.cmx kernel/univ.cmx \
+    lib/util.cmx toplevel/vernacexpr.cmx toplevel/vernacinterp.cmx \
     toplevel/vernacentries.cmi 
 toplevel/vernacexpr.cmo: parsing/ast.cmi parsing/coqast.cmi \
     parsing/extend.cmi parsing/genarg.cmi library/goptions.cmi \
