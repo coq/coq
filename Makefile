@@ -666,7 +666,7 @@ RINGVO = contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
 FIELDVO = contrib/field/Field_Compl.vo     contrib/field/Field_Theory.vo \
           contrib/field/Field_Tactic.vo    contrib/field/Field.vo
 
-XMLVO = Xml.vo
+XMLVO = 
 
 INTERFACEV0 = contrib/interface/Centaur.vo
 
