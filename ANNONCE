@@ -1,19 +1,30 @@
   The Coq development team is pleased to announce the release of Coq
-version 7.2. This release fixes version 7.1 known bugs and offers
-the following novelties or improvements
+version 7.3. This release fixes most of version 7.2 known bugs (see
+http://coq.inria.fr/bin/coq-bugs for the current status of reported
+bugs) and offers the following novelties or improvements.
 
-  - Extension of standard library (sorting; trigonometric, square and square
-    root functions; basic plane geometry; finite sums; more on continuity
-    and derivability; more on min and max; tail-recursive plus and mult)
-  - Extended tactic "Assert H := P" for forward reasoning
-  - Optimised extraction
-  - Coercions allowed in Cases patterns
-  - New declaration "Canonical Structure id = t : I" to help resolution of
-    implicit arguments in developments using Record/Structure
-  - New tactic "ClearBody H" to clear local definition bodies
+- New option -dump-glob to coqtop to dump globalizations (to be used by the 
+  new documentation tool coqdoc; see http://www.lri.fr/~filliatr/coqdoc).
+- Elimination to Set/Type from empty propositions and to Type from
+  "singleton" propositions now allowed (as a consequence eqT_rec and
+  False_rec are now automatically available).
+- New tactic "Rename x into y" for renaming hypotheses.
+- New tactics "Pose x:=u" and "Pose u" to add definitions to local context.
+- Record's now accept anonymous fields "_" (no projection is built then)
+- Haskell extraction now operational.
+- Extensions of [ZArith]: Zcomplements.v, Zpower.v and Zlogarithms.v
+  have been moved from contrib/omega to ZArith. They now include
+  the Zsgn function, more induction principles (Wf_Z.v and
+  tail of Zcomplements.v) and one more general Euclid theorem.
 
-  Coq V7.2 is available in several formats from http://coq.inria.fr
-and ftp://ftp.inria.fr/INRIA/coq/V7.2. We currently provide the
+  Inversion has been improved and Intuition simplified but not in a fully
+compatible way.
+
+  Pcoq user interface (http://www-sop.inria.fr/lemme/pcoq) is not
+ported to V7.3 yet.
+
+  Coq V7.3 is available in several formats from http://coq.inria.fr
+and ftp://ftp.inria.fr/INRIA/coq/V7.3. We currently provide the
 following versions
 
   package for sources
@@ -26,7 +37,7 @@ following versions
   The documentation is available in postscript, pdf and html format.
 
   Please refer to the accompanying document CHANGES or the location
-ftp://ftp.inria.fr/INRIA/coq/V7.2/doc/Changes.html for a full list of
+ftp://ftp.inria.fr/INRIA/coq/V7.3/doc/Changes.html for a full list of
 changes including sources of incompatibilities.
 
   Users are kindly invited to report bugs to coq-bugs@pauillac.inria.fr
