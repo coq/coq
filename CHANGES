@@ -4,11 +4,20 @@ Modifications depuis la V7.0
   défaut au corps de la définition. Extension de la notion de Clause
   pour forcer l'action sur le type des défs seulement sous la forme
   "Change c in Type of H."
-- Prise en compte des qualid dans Decompose
+- Prise en compte des qualid dans Decompose, flags de Delta, ...
+- Corrections de plusieurs bugs de Coercions
 - Correction bug inférence type Cases en présence de K-rédex
 - Correction bugs Cases en cas de prédicat dépendant
 - Le flag Delta n'inclut plus Zeta et Evar, nouveaux flags Zeta et Evar inclus
   dans Compute (à documenter)
+
+Différences oubliées dans la V7.0beta :
+
+- les objets non persistants (Grammaires, Hints) d'un module chargé par Require
+disparaissent à la fermeture de la section si le Require est dans la
+section. Les Require ultérieurs ne les réintroduisent pas.
+
+135.960u 9.850s 3:10.96 76.3%   0+0k 0+0io 126315pf+0w
 
 Différences V7.0beta / V7.0
 - Portage de Correctness
