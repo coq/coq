@@ -25,7 +25,7 @@ Require Zsyntax.
   Then the  diagram will be closed and the theorem proved. *)
 
 Lemma inject_nat_complete :
-  (x:Z)`0 <= x` -> (Ex [n:nat](x=(inject_nat n))).
+  (x:Z)`0 <= x` -> (EX n:nat | x=(inject_nat n)).
 Destruct x; Intros;
 [ Exists  O; Auto with arith
 | Specialize (ZL4 p); Intros Hp; Elim Hp; Intros;

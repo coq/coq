@@ -207,28 +207,52 @@ Definition Zodd_bool :=
 
 Lemma Zeven_odd_dec : (z:Z) { (Zeven z) }+{ (Zodd z) }.
 Proof.
+  Intro z. Case z;
+  [ Left; Compute; Trivial
+  | Intro p; Case p; Intros; 
+    (Right; Compute; Exact I) Orelse (Left; Compute; Exact I)
+  | Intro p; Case p; Intros; 
+    (Right; Compute; Exact I) Orelse (Left; Compute; Exact I) ].
+  (*** was 
   Realizer Zeven_bool.
   Repeat Program; Compute; Trivial.
+  ***)
 Save.
 
 Lemma Zeven_dec : (z:Z) { (Zeven z) }+{ ~(Zeven z) }.
 Proof.
+  Intro z. Case z;
+  [ Left; Compute; Trivial
+  | Intro p; Case p; Intros; 
+    (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) 
+  | Intro p; Case p; Intros; 
+    (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) ].
+  (*** was 
   Realizer Zeven_bool.
   Repeat Program; Compute; Trivial.
+  ***)
 Save.
 
 Lemma Zodd_dec : (z:Z) { (Zodd z) }+{ ~(Zodd z) }.
 Proof.
+  Intro z. Case z;
+  [ Right; Compute; Trivial
+  | Intro p; Case p; Intros; 
+    (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) 
+  | Intro p; Case p; Intros; 
+    (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) ].
+  (*** was 
   Realizer Zodd_bool.
   Repeat Program; Compute; Trivial.
+  ***)
 Save.
 
-Lemma Zeven_not_Zodd : (z:Z)(Zeven z)->~(Zodd z).
+Lemma Zeven_not_Zodd : (z:Z)(Zeven z) -> ~(Zodd z).
 Proof.
   Destruct z; [ Idtac | Destruct p | Destruct p  ]; Compute; Trivial.
 Save.
 
-Lemma Zodd_not_Zeven : (z:Z)(Zodd z)->~(Zeven z).
+Lemma Zodd_not_Zeven : (z:Z)(Zodd z) -> ~(Zeven z).
 Proof.
   Destruct z; [ Idtac | Destruct p | Destruct p  ]; Compute; Trivial.
 Save.
@@ -320,7 +344,7 @@ Apply rename with x:=`x ?= y`; Intro r; Elim r;
 Save.
 
 Lemma Zcompare_x_x : (x:Z) `x ?= x` = EGAL.
-(Intro; Apply Case (Zcompare_EGAL x x) of [h1,h2:?]h2 end).
+(Intro; Apply Case (Zcompare_EGAL x x) of [h1,h2: ?]h2 end).
 Apply refl_equal.
 Save.
 
@@ -339,7 +363,7 @@ Save.
 Lemma Zcompare_eq_case : 
   (c1,c2,c3:Prop)(x,y:Z) c1 -> x=y -> (Case `x ?= y` of c1 c2 c3 end).
 Intros.
-Rewrite -> (Case (Zcompare_EGAL x y) of [h1,h2:?]h2 end H0).
+Rewrite -> (Case (Zcompare_EGAL x y) of [h1,h2: ?]h2 end H0).
 Assumption.
 Save.
 

@@ -120,7 +120,7 @@ let identchar =
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' 
    '\'' '0'-'9']
 let symbolchar =
-  ['!' '$' '%' '&' '*' '+' '-' '<' '>' '/' '\\' ':' ',' ';' '=' '?' '@' '^'
+  ['!' '$' '%' '&' '*' '+' '-' '<' '>' '/' '\\' ':' ',' '=' '?' '@' '^'
    '|' '~' '#']
 let decimal_literal = ['0'-'9']+
 let hex_literal = '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
@@ -135,15 +135,15 @@ rule token = parse
 	if is_keyword s then ("",s) else ("IDENT",s) }
   | decimal_literal | hex_literal | oct_literal | bin_literal
       { ("INT", Lexing.lexeme lexbuf) }
-  | "(" | ")" | "[" | "]" | "{" | "}" | "." | "_" 
+  | "(" | ")" | "[" | "]" | "{" | "}" | "." | "_" | ";" | "`" | "->"
       { ("", Lexing.lexeme lexbuf) }
-  | "->"
-      { ("", "->") }
   | symbolchar+
       { ("", Lexing.lexeme lexbuf) }
+  (***
   | '`' [^'`']* '`'
       { let s = Lexing.lexeme lexbuf in
 	("QUOTED", String.sub s 1 (String.length s - 2)) }
+  ***)
   | "\""
       { Buffer.reset string_buffer;
         let string_start = Lexing.lexeme_start lexbuf in
@@ -261,12 +261,12 @@ let token_text = function
   | (con, prm) -> con ^ " \"" ^ prm ^ "\""
 
 let tparse (p_con, p_prm) =
-  ifdef CAMLP4_300 then 
-    None
-  else
+  None
+  (*i etait en ocaml 2.xx :
     if p_prm = "" then
       parser [< '(con, prm) when con = p_con >] -> prm
     else
       parser [< '(con, prm) when con = p_con && prm = p_prm >] -> prm
+  i*)
 
 }

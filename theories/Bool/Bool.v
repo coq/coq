@@ -106,6 +106,7 @@ Lemma Is_true_eq_true2 : (x:bool)  x=true -> (Is_true x).
 Destruct x; Simpl; Auto with bool.
 Save.
 
+(***** TODO
 Lemma eqb_subst : 
   (P:bool->Prop)(b1,b2:bool)(eqb b1 b2)=true->(P b1)->(P b2).
 Unfold eqb .
@@ -121,7 +122,8 @@ Intros H.
 Inversion_clear H.
 Trivial with bool.
 Save.
- 
+*****)
+
 Lemma eqb_reflx : (b:bool)(eqb b b)=true.
 Intro b.
 Case b.

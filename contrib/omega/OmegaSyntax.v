@@ -6,6 +6,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* $Id$ *)
+
 Grammar vernac vernac :=
   omega_sett [ "Set" "Omega" "Time" "." ] -> [(OmegaFlag "+time")]
 | omega_sets [ "Set" "Omega" "System" "." ] -> [(OmegaFlag "+system")]

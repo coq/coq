@@ -1,18 +1,7 @@
-(****************************************************************************)
-(*                 The Calculus of Inductive Constructions                  *)
-(*                                                                          *)
-(*                                Projet Coq                                *)
-(*                                                                          *)
-(*                     INRIA        LRI-CNRS        ENS-CNRS                *)
-(*              Rocquencourt         Orsay          Lyon                    *)
-(*                                                                          *)
-(*                                 Coq V6.3                                 *)
-(*                               July 1st 1999                              *)
-(*                                                                          *)
-(****************************************************************************)
-(*                              Zcomplements.v                              *)
-(****************************************************************************)
 
+(* $Id$ *)
+
+Require ZArith.
 Require Omega.
 Require Wf_nat.
 
@@ -95,7 +84,7 @@ Simpl; Do 2 Rewrite Zmult_n_1; Auto 1.
 Unfold Zs.
 Intros x0 Hx0; Repeat (Rewrite Zmult_plus_distr_r).
 Repeat Rewrite Zmult_n_1.
-Auto with zarith.
+Omega.
 Unfold Zpred; Omega.
 Save.
 
@@ -308,6 +297,3 @@ Destruct a;
 Save.
 
 End diveucl.
-
-(* $Id$ *)
-

@@ -129,7 +129,7 @@ CMX=$(CMO:.cmo=.cmx) $(ARITHSYNTAX:.cmo=.cmx)
 COQMKTOP=scripts/coqmktop
 COQC=scripts/coqc
 
-world: $(COQMKTOP) $(COQC) coqtop.byte coqtop.opt states theories tools
+world: $(COQMKTOP) $(COQC) coqtop.byte coqtop.opt states theories contrib tools
 
 coqtop.opt: $(COQMKTOP) $(CMX)
 	$(COQMKTOP) -opt -notactics $(OPTFLAGS) -o coqtop.opt

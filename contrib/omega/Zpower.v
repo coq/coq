@@ -1,18 +1,7 @@
-(****************************************************************************)
-(*                 The Calculus of Inductive Constructions                  *)
-(*                                                                          *)
-(*                                Projet Coq                                *)
-(*                                                                          *)
-(*                     INRIA        LRI-CNRS        ENS-CNRS                *)
-(*              Rocquencourt         Orsay          Lyon                    *)
-(*                                                                          *)
-(*                                 Coq V6.3                                 *)
-(*                               July 1st 1999                              *)
-(*                                                                          *)
-(****************************************************************************)
-(*                                  Zpower.v                                *)
-(****************************************************************************)
 
+(* $Id$ *)
+
+Require ZArith.
 Require Omega.
 Require Zcomplements.
 
@@ -82,7 +71,7 @@ Hints Unfold  Zpower_nat : zarith.
 
 Lemma Zpower_exp : (x:Z)(n,m:Z)
   `n >= 0` -> `m >= 0` -> `(Zpower x (n+m))=(Zpower x n)*(Zpower x m)`.
-Destruct n;  Destruct m; Auto with zarith.
+Destruct n; Destruct m; Auto with zarith.
 Simpl; Intros; Apply Zred_factor0.
 Simpl; Auto with zarith.
 Intros; Compute in H0; Absurd INFERIEUR=INFERIEUR; Auto with zarith.
@@ -392,5 +381,3 @@ Apply Zdiv_rest_proof with q:=y0 r:=y1; Assumption.
 Save.
 
 End power_div_with_rest.
-
-

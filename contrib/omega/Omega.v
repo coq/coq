@@ -6,6 +6,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* $Id$ *)
+
 Require Export ZArith.
 (* The constant minus is required in coq_omega.ml *)
 Require Export Minus.

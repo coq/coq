@@ -34,8 +34,8 @@ with formula :=
               -> [<<(Zlt $p $c)/\(Zle $c $c1)>>]
 | form_lt_lt [ expr($p) "<" expr($c) "<" expr($c1) ]
               -> [<<(Zlt $p $c)/\(Zlt $c $c1)>>]
-| form_neq  [ expr($p) "<>" expr($c) ] -> [<<~(eq Z $p $c)>>]
-| form_comp [ expr($p) "?" "=" expr($c) ] -> [<<(Zcompare $p $c)>>]
+| form_neq  [ expr($p) "<>" expr($c) ] -> [<< ~(eq Z $p $c)>>]
+| form_comp [ expr($p) "?=" expr($c) ] -> [<<(Zcompare $p $c)>>]
 
 with expr :=
   expr_plus [ expr($p) "+" expr($c) ] -> [<<(Zplus $p $c)>>]
@@ -60,7 +60,7 @@ with expr0 :=
 
 with application :=
   apply [ application($p) expr($c1) ] -> [<<($p $c1)>>]
-| pair [ expr($p) "," expr($c) ] -> [<<($p,$c)>>]
+| pair [ expr($p) "," expr($c) ] -> [<<($p, $c)>>]
 | appl0 [ expr($a) ] -> [$a]
 .
 
@@ -99,7 +99,7 @@ Syntax constr
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "?= " (ZEXPR $n2) "`" ]]
   | Zeq [<<(eq Z $n1 $n2)>>] -> 
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "= "(ZEXPR $n2)"`"]]
-  | Zneq [<<~(eq Z $n1 $n2)>>] ->
+  | Zneq [<< ~(eq Z $n1 $n2)>>] ->
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "<> "(ZEXPR $n2) "`"]]
   | Zle_Zle [<<(Zle $n1 $n2)/\(Zle $n2 $n3)>>] ->
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "<= " (ZEXPR $n2)
