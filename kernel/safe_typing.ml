@@ -63,8 +63,9 @@ let rec execute mf env cstr =
     | IsMutInd _ ->
 	(make_judge cstr (type_of_inductive env Evd.empty cstr), cst0)
 	  
-    | IsMutConstruct _ -> 
-	let (typ,kind) = destCast (type_of_constructor env Evd.empty cstr) in
+    | IsMutConstruct (sp,i,j,args) -> 
+	let (typ,kind) =
+	  destCast (type_of_constructor env Evd.empty (((sp,i),j),args)) in
         ({ uj_val = cstr; uj_type = typ; uj_kind = kind } , cst0)
 	  
     | IsMutCase (_,p,c,lf) ->

@@ -86,9 +86,11 @@ let rec type_of env cstr=
 
     | IsAbst _ -> error "No more Abst" (*type_of env (abst_value cstr)*)
     | IsConst _ -> (body_of_type (type_of_constant env sigma cstr))
+    | IsEvar _ -> type_of_existential env sigma cstr
     | IsMutInd _ -> (body_of_type (type_of_inductive env sigma cstr))
-    | IsMutConstruct _ -> 
-        let (typ,kind) = destCast (type_of_constructor env sigma cstr)
+    | IsMutConstruct (sp,i,j,args) -> 
+        let (typ,kind) =
+	  destCast (type_of_constructor env sigma (((sp,i),j),args))
         in typ
     | IsMutCase (_,p,c,lf) ->
         let {realargs=args;arity=arity;nparams=n} =

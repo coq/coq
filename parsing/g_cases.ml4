@@ -9,10 +9,12 @@ GEXTEND Gram
     [ [  -> []
       | p = pattern; pl = pattern_list -> p :: pl ] ]
   ;
+(*
   lsimple_pattern:
     [ [ c = simple_pattern2 -> c ] ]
   ;
-  simple_pattern:
+*)
+  pattern:
     [ [ id = ident -> id
       | "("; p = lsimple_pattern; ")" -> p ] ]
   ;
@@ -21,18 +23,19 @@ GEXTEND Gram
       | p = simple_pattern; pl = simple_pattern_list ->
 	   p :: pl ] ]
   ;
-  (* The XTRA"!" means we want to override the implicit arg mecanism of bdize,
-     since params are not given in patterns *)
-  simple_pattern2:
-    [ [ p = simple_pattern; lp = pattern_list ->
-          <:ast< (PATTCONSTRUCT $p ($LIST $lp)) >>
-      | p = simple_pattern; "as"; id = ident -> <:ast< (PATTAS $id $p) >>
+  lsimple_pattern:
+    [ [ id = ident; lp = ne_pattern_list ->
+	  <:ast< (PATTCONSTRUCT $id ($LIST $lp)) >>
+      | p = pattern; "as"; id = ident -> <:ast< (PATTAS $id $p)>>
       | c1 = simple_pattern; ","; c2 = simple_pattern ->
-          <:ast< (PATTCONSTRUCT pair $c1 $c2) >> ] ]
+          <:ast< (PATTCONSTRUCT pair $c1 $c2) >>
+      | "("; p = lsimple_pattern; ")" -> p ] ]
   ;
+(*
   pattern:
     [ [ p = simple_pattern -> p ] ]
   ;
+*)
   ne_pattern_list:
     [ [ c1 = pattern; cl = ne_pattern_list -> c1 :: cl
       | c1 = pattern -> [c1] ] ]

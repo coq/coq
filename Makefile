@@ -70,12 +70,12 @@ LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
 	library/nametab.cmo library/impargs.cmo library/redinfo.cmo \
         library/indrec.cmo library/declare.cmo library/goptions.cmo
 
-PRETYPING=pretyping/tacred.cmo pretyping/pretype_errors.cmo \
+PRETYPING=pretyping/rawterm.cmo \
+	  pretyping/tacred.cmo pretyping/pretype_errors.cmo \
           pretyping/retyping.cmo pretyping/typing.cmo \
 	  pretyping/classops.cmo pretyping/recordops.cmo \
 	  pretyping/evarutil.cmo pretyping/evarconv.cmo \
-          pretyping/coercion.cmo \
-	  pretyping/cases.cmo pretyping/pretyping.cmo \
+          pretyping/coercion.cmo pretyping/cases.cmo pretyping/pretyping.cmo \
 	  pretyping/syntax_def.cmo
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \

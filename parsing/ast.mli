@@ -90,6 +90,7 @@ val alpha_eq : Coqast.t * Coqast.t -> bool
 val alpha_eq_val : v * v -> bool
 
 val occur_var_ast : string -> Coqast.t -> bool
+val replace_var_ast : string -> string -> Coqast.t -> Coqast.t
 
 val bind_env : env -> string -> v -> env
 val ast_match : env -> pat -> Coqast.t -> env

@@ -110,11 +110,9 @@ let instantiate_lc mis =
   let lc = mis.mis_mip.mind_lc in
   instantiate_constr (ids_of_sign hyps) lc (Array.to_list mis.mis_args)
 
-let type_of_constructor env sigma c =
-  let (sp,i,j,args) = destMutConstruct c in
-  let mind = DOPN (MutInd (sp,i), args) in
-  let recmind = check_mrectype_spec env sigma mind in
-  let mis = lookup_mind_specif recmind env in
+let type_of_constructor env sigma ((ind_sp,j),args) =
+  let mind = DOPN (MutInd ind_sp, args) in
+  let mis = lookup_mind_specif mind env in
   check_hyps (basename mis.mis_sp) env sigma (mis.mis_mib.mind_hyps);
   let specif = instantiate_lc mis in
   let make_ik k = DOPN (MutInd (mis.mis_sp,k), mis.mis_args) in

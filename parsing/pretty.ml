@@ -452,8 +452,8 @@ let print_opaque_name name =
 	    anomaly "print_opaque_name"
       | DOPN(MutInd (sp,_),_) as x ->
           print_mutual sp (Global.lookup_mind sp)
-      | DOPN(MutConstruct _,_) as x -> 
-	  let ty = Typeops.type_of_constructor env sigma x in
+      | DOPN(MutConstruct cstr_sp,a) as x -> 
+	  let ty = Typeops.type_of_constructor env sigma (cstr_sp,a) in
 	  print_typed_value(x, ty)
       | VAR id ->
           let a = snd(lookup_sign id sign) in 

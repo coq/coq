@@ -23,7 +23,7 @@ val filter_sign :
 
 val dummy_sort : constr
 val do_restrict_hyps : 'a evar_map -> constr -> 'a evar_map * constr
-
+val has_ise : 'a evar_map -> constr -> bool
 
 type 'a evar_defs = 'a evar_map ref
 

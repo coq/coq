@@ -155,9 +155,6 @@ let jv_nf_ise sigma = Array.map (j_nf_ise sigma)
 (* Semble exagérement fort *)
 (* Faudra préférer une unification entre les types de toutes les clauses *)
 (* et autoriser des ? à rester dans le résultat de l'unification *)
-let has_ise sigma t = 
-  try let _ = whd_ise sigma t in true
-  with UserError _ -> false
 
 let evar_type_fixpoint env isevars lna lar vdefj =
   let lt = Array.length vdefj in 
@@ -277,10 +274,11 @@ let pretype_ref loc isevars env = function
     let cstr = mkMutInd sp i (ctxt_of_ids ids) in
     make_judge cstr (type_of_inductive env !isevars cstr)
  
-| RConstruct (((sp,i),j),ids) ->
-    let cstr = mkMutConstruct sp i j (ctxt_of_ids ids) in
-    let (typ,kind) = destCast (type_of_constructor env !isevars cstr) in
-    {uj_val=cstr; uj_type=typ; uj_kind=kind}
+| RConstruct (((sp,i),j) as cstr_sp,ids) ->
+    let ctxt = ctxt_of_ids ids in
+    let (typ,kind) =
+      destCast (type_of_constructor env !isevars (cstr_sp,ctxt)) in
+    {uj_val=mkMutConstruct sp i j ctxt; uj_type=typ; uj_kind=kind}
 
 (* pretype vtcon isevars env constr tries to solve the *)
 (* existential variables in constr in environment env with the *)
@@ -438,7 +436,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 | RCases (loc,prinfo,po,tml,eqns) ->
     Cases.compile_multcase
       ((fun vtyc env -> pretype vtyc env isevars),isevars)
-      vtcon env (po,tml,eqns)
+      vtcon env loc (po,tml,eqns)
 
 | RCast(loc,c,t) ->
   let tj = pretype def_vty_con env isevars t in

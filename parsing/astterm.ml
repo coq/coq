@@ -156,24 +156,38 @@ let destruct_binder = function
   | Node(_,"BINDER",c::idl) ->
       List.map (fun id -> (id_of_string (nvar_of_ast id),c)) idl
   | _ -> anomaly "BINDER is expected"
-	
-let rec dbize_pattern env = function
+
+let merge_aliases p = function
+  | a, Anonymous    -> a, p
+  | Anonymous, a    -> a, p
+  | Name id1, (Name id2 as na) ->
+      let s1 = string_of_id id1 in
+      let s2 = string_of_id id2 in
+      warning ("Alias variable "^s1^" is merged with "^s2);
+      na, replace_var_ast s1 s2 p
+
+let rec dbize_pattern env aliasopt = function
   | Node(_,"PATTAS",[Nvar (loc,s); p]) ->
-      (match name_of_nvar s with
-	 | Anonymous -> dbize_pattern env p
-	 | Name id   -> 
-	     let (ids,p') = dbize_pattern env p in (id::ids,PatAs (loc,id,p')))
+      let aliasopt',p' = merge_aliases p (aliasopt,name_of_nvar s) in
+      dbize_pattern env aliasopt' p'
+  | Nvar(loc,s) ->
+      (match maybe_constructor env s with
+	 | Some c ->
+	     let ids = match aliasopt with Anonymous -> [] | Name id -> [id] in
+	     (ids,PatCstr (loc,c,[],aliasopt))
+	 | None ->
+	     (match name_of_nvar s with
+		| Anonymous -> ([], PatVar (loc,Anonymous))
+		| Name id as name -> ([id], PatVar (loc,name))))
   | Node(_,"PATTCONSTRUCT", Nvar(loc,s)::((_::_) as pl)) ->
       (match maybe_constructor env s with
 	 | Some c ->
-	     let (idsl,pl') = List.split (List.map (dbize_pattern env) pl) in
-	     (List.flatten idsl,PatCstr (loc,c,pl'))
+	     let ids = match aliasopt with Anonymous -> [] | Name id -> [id] in
+	     let (idsl,pl') = 
+	       List.split (List.map (dbize_pattern env Anonymous) pl) in
+	     (List.flatten (ids::idsl),PatCstr (loc,c,pl',aliasopt))
 	 | None ->
 	     user_err_loc (loc,"dbize_pattern",mssg_hd_is_not_constructor s))
-  | Nvar(loc,s) ->
-      (match name_of_nvar s with
-	 | Anonymous -> ([], PatVar (loc,Anonymous))
-	 | Name id as name -> ([id], PatVar (loc,name)))
   | _ -> anomaly "dbize: badly-formed ast for Cases pattern"
 
 let rec dbize_fix = function
@@ -309,7 +323,8 @@ let dbize k sigma =
 
   and dbize_eqn n env = function
     | Node(loc,"EQN",rhs::lhs) ->
-	let (idsl,pl) = List.split (List.map (dbize_pattern env) lhs) in
+	let (idsl,pl) =
+	  List.split (List.map (dbize_pattern env Anonymous) lhs) in
 	let ids = List.flatten idsl in
 	(* Linearity implies the order in ids is irrelevant *)
 	check_linearity loc ids;

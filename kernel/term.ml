@@ -592,7 +592,7 @@ let lambda_implicit_lift n a = iterate lambda_implicit n (lift n a)
 (* prod_it b [x1:T1;..xn:Tn] = (x1:T1)..(xn:Tn)b *)
 let prod_it = List.fold_left (fun c (n,t)  -> mkProd n t c)
 
-(* lam_it b [x1:T1;..xn:Tn] = [x1:T1]..[xn:Tn]b *)
+(* lam_it b [x1:T1;..xn:Tn] = [x1:T1]..[xn:Tn]b with xn *)
 let lam_it = List.fold_left (fun c (n,t)  -> mkLambda n t c)
 
 (* prodn n ([x1:T1]..[xn:Tn]Gamma) b = (x1:T1)..(xn:Tn)b *)
@@ -665,19 +665,19 @@ let rec to_prod n lam =
  * if this does not work, then we use the string S as part of our
  * error message. *)
 
-let prod_app s t n =
+let prod_app t n =
   match strip_outer_cast t with
     | DOP2(Prod,_,b) -> sAPP b n
     | _ ->
-	errorlabstrm s [< 'sTR"Needed a product, but didn't find one in " ;
-			  'sTR s ; 'fNL >]
+	errorlabstrm "prod_app"
+	  [< 'sTR"Needed a product, but didn't find one" ; 'fNL >]
 
 
-(* prod_appvect s T [| a1 ; ... ; an |] -> (T a1 ... an) *)
-let prod_appvect s t nL = Array.fold_left (prod_app s) t nL
+(* prod_appvect T [| a1 ; ... ; an |] -> (T a1 ... an) *)
+let prod_appvect t nL = Array.fold_left prod_app t nL
 
-(* prod_applist s T [ a1 ; ... ; an ] -> (T a1 ... an) *)
-let prod_applist s t nL = List.fold_left (prod_app s) t nL
+(* prod_applist T [ a1 ; ... ; an ] -> (T a1 ... an) *)
+let prod_applist t nL = List.fold_left prod_app t nL
 
 
 (*********************************)

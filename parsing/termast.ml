@@ -68,10 +68,14 @@ let ast_of_ref = function
 let rec ast_of_pattern = function   (* loc is thrown away for printing *)
   | PatVar (loc,Name id) -> nvar (string_of_id id)
   | PatVar (loc,Anonymous) -> nvar "_"
-  | PatCstr(loc,cstr,args) ->
+  | PatCstr(loc,cstr,args,Name id) ->
+      ope("PATTAS",
+	  [nvar (string_of_id id);
+	   ope("PATTCONSTRUCT",
+	       (ast_of_constructor cstr)::List.map ast_of_pattern args)])
+  | PatCstr(loc,cstr,args,Anonymous) ->
       ope("PATTCONSTRUCT",
 	  (ast_of_constructor cstr)::List.map ast_of_pattern args)
-  | PatAs(loc,id,p) -> ope("PATTAS",[nvar (string_of_id id); ast_of_pattern p])
 	
 (* Nouvelle version de renommage des variables (DEC 98) *)
 (* This is the algorithm to display distinct bound variables 
@@ -800,7 +804,7 @@ and detype_eqn avoid env constr_id construct_params branch =
 	buildrec new_ids (pat::patlist) new_avoid new_env (l,new_b)
 	  
     | []  , rhs	-> 
-	(ids, [PatCstr(dummy_loc, constr_id, List.rev patlist)],
+	(ids, [PatCstr(dummy_loc, constr_id, List.rev patlist,Anonymous)],
 	 detype avoid env rhs)
   in 
   buildrec [] [] avoid env (construct_params,branch)

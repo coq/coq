@@ -322,6 +322,15 @@ let rec occur_var_ast s = function
   | Id _ | Str _ | Num _ | Path _ -> false
   | Dynamic _ -> (* Hum... what to do here *) false
 
+let rec replace_var_ast s1 s2 = function
+  | Node(loc,op,args) -> Node (loc,op, List.map (replace_var_ast s1 s2) args)
+  | Nvar(loc,s) as a -> if s = s1 then Nvar (loc,s2) else a
+  | Slam(loc,None,body) -> Slam(loc,None,replace_var_ast s1 s2 body)
+  | Slam(loc,Some s,body) as a -> if s=s1 then a else
+      Slam(loc,Some s,replace_var_ast s1 s2 body)
+  | Id _ | Str _ | Num _ | Path _ as a -> a
+  | Dynamic _ as a -> (* Hum... what to do here *) a
+
 exception No_match of string
 
 let no_match_loc (loc,s) = Stdpp.raise_with_loc loc (No_match s)

@@ -420,7 +420,7 @@ parsing/astterm.cmx: parsing/ast.cmx kernel/closure.cmx parsing/coqast.cmx \
     kernel/evd.cmx kernel/generic.cmx library/global.cmx library/impargs.cmx \
     kernel/names.cmx library/nametab.cmx parsing/pcoq.cmx lib/pp.cmx \
     pretyping/pretype_errors.cmx pretyping/pretyping.cmx \
-    pretyping/rawterm.cmi kernel/reduction.cmx kernel/sign.cmx \
+    pretyping/rawterm.cmx kernel/reduction.cmx kernel/sign.cmx \
     pretyping/syntax_def.cmx pretyping/tacred.cmx kernel/term.cmx \
     pretyping/typing.cmx lib/util.cmx parsing/astterm.cmi 
 parsing/coqast.cmo: lib/dyn.cmi lib/hashcons.cmi parsing/coqast.cmi 
@@ -491,22 +491,24 @@ parsing/termast.cmo: parsing/ast.cmi parsing/coqast.cmi library/declare.cmi \
 parsing/termast.cmx: parsing/ast.cmx parsing/coqast.cmx library/declare.cmx \
     kernel/generic.cmx library/global.cmx library/goptions.cmx \
     library/impargs.cmx kernel/inductive.cmx kernel/names.cmx \
-    library/nametab.cmx lib/pp.cmx pretyping/rawterm.cmi kernel/sign.cmx \
+    library/nametab.cmx lib/pp.cmx pretyping/rawterm.cmx kernel/sign.cmx \
     kernel/term.cmx kernel/univ.cmx lib/util.cmx parsing/termast.cmi 
-pretyping/cases-provisoire.cmo: parsing/ast.cmi kernel/environ.cmi \
+pretyping/cases.cmo: parsing/ast.cmi kernel/environ.cmi \
     pretyping/evarconv.cmi pretyping/evarutil.cmi kernel/evd.cmi \
     kernel/generic.cmi library/global.cmi library/indrec.cmi \
-    kernel/inductive.cmi kernel/names.cmi pretyping/rawterm.cmi \
-    kernel/reduction.cmi pretyping/retyping.cmi kernel/sign.cmi \
-    kernel/term.cmi kernel/typeops.cmi lib/util.cmi 
-pretyping/cases-provisoire.cmx: parsing/ast.cmx kernel/environ.cmx \
+    kernel/inductive.cmi kernel/names.cmi lib/pp.cmi \
+    pretyping/pretype_errors.cmi pretyping/rawterm.cmi kernel/reduction.cmi \
+    pretyping/retyping.cmi kernel/sign.cmi kernel/term.cmi \
+    kernel/type_errors.cmi kernel/typeops.cmi lib/util.cmi \
+    pretyping/cases.cmi 
+pretyping/cases.cmx: parsing/ast.cmx kernel/environ.cmx \
     pretyping/evarconv.cmx pretyping/evarutil.cmx kernel/evd.cmx \
     kernel/generic.cmx library/global.cmx library/indrec.cmx \
-    kernel/inductive.cmx kernel/names.cmx pretyping/rawterm.cmi \
-    kernel/reduction.cmx pretyping/retyping.cmx kernel/sign.cmx \
-    kernel/term.cmx kernel/typeops.cmx lib/util.cmx 
-pretyping/cases.cmo: pretyping/cases.cmi 
-pretyping/cases.cmx: pretyping/cases.cmi 
+    kernel/inductive.cmx kernel/names.cmx lib/pp.cmx \
+    pretyping/pretype_errors.cmx pretyping/rawterm.cmx kernel/reduction.cmx \
+    pretyping/retyping.cmx kernel/sign.cmx kernel/term.cmx \
+    kernel/type_errors.cmx kernel/typeops.cmx lib/util.cmx \
+    pretyping/cases.cmi 
 pretyping/classops.cmo: library/declare.cmi kernel/environ.cmi \
     kernel/generic.cmi library/lib.cmi library/libobject.cmi kernel/names.cmi \
     lib/options.cmi lib/pp.cmi library/summary.cmi pretyping/tacred.cmi \
@@ -545,7 +547,7 @@ pretyping/pretype_errors.cmo: kernel/environ.cmi library/global.cmi \
     kernel/names.cmi pretyping/rawterm.cmi kernel/sign.cmi \
     kernel/type_errors.cmi pretyping/pretype_errors.cmi 
 pretyping/pretype_errors.cmx: kernel/environ.cmx library/global.cmx \
-    kernel/names.cmx pretyping/rawterm.cmi kernel/sign.cmx \
+    kernel/names.cmx pretyping/rawterm.cmx kernel/sign.cmx \
     kernel/type_errors.cmx pretyping/pretype_errors.cmi 
 pretyping/pretyping.cmo: pretyping/cases.cmi pretyping/classops.cmi \
     pretyping/coercion.cmi kernel/environ.cmi pretyping/evarconv.cmi \
@@ -561,10 +563,14 @@ pretyping/pretyping.cmx: pretyping/cases.cmx pretyping/classops.cmx \
     pretyping/evarutil.cmx kernel/evd.cmx kernel/generic.cmx \
     library/indrec.cmx kernel/inductive.cmx kernel/instantiate.cmx \
     kernel/names.cmx lib/pp.cmx pretyping/pretype_errors.cmx \
-    pretyping/rawterm.cmi pretyping/recordops.cmx kernel/reduction.cmx \
+    pretyping/rawterm.cmx pretyping/recordops.cmx kernel/reduction.cmx \
     pretyping/retyping.cmx kernel/sign.cmx kernel/term.cmx \
     kernel/type_errors.cmx kernel/typeops.cmx lib/util.cmx \
     pretyping/pretyping.cmi 
+pretyping/rawterm.cmo: kernel/names.cmi kernel/sign.cmi kernel/term.cmi \
+    kernel/type_errors.cmi pretyping/rawterm.cmi 
+pretyping/rawterm.cmx: kernel/names.cmx kernel/sign.cmx kernel/term.cmx \
+    kernel/type_errors.cmx pretyping/rawterm.cmi 
 pretyping/recordops.cmo: pretyping/classops.cmi library/lib.cmi \
     library/libobject.cmi library/library.cmi kernel/names.cmi lib/pp.cmi \
     library/summary.cmi kernel/term.cmi kernel/typeops.cmi lib/util.cmi \
@@ -585,7 +591,7 @@ pretyping/syntax_def.cmo: library/lib.cmi library/libobject.cmi \
     kernel/names.cmi library/nametab.cmi pretyping/rawterm.cmi \
     library/summary.cmi pretyping/syntax_def.cmi 
 pretyping/syntax_def.cmx: library/lib.cmx library/libobject.cmx \
-    kernel/names.cmx library/nametab.cmx pretyping/rawterm.cmi \
+    kernel/names.cmx library/nametab.cmx pretyping/rawterm.cmx \
     library/summary.cmx pretyping/syntax_def.cmi 
 pretyping/tacred.cmo: kernel/closure.cmi library/declare.cmi \
     kernel/environ.cmi kernel/generic.cmi kernel/inductive.cmi \

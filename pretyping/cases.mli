@@ -14,7 +14,7 @@ open Evarutil
 
 val compile_multcase :
   (trad_constraint -> env -> rawconstr -> unsafe_judgment)
-  * 'a evar_defs -> trad_constraint -> env ->
+  * 'a evar_defs -> trad_constraint -> env -> loc ->
     rawconstr option * rawconstr list *
     (identifier list * pattern list * rawconstr) list ->
     unsafe_judgment

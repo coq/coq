@@ -31,9 +31,12 @@ val type_of_constant : env -> 'a evar_map -> constr -> typed_type
 
 val type_of_inductive : env -> 'a evar_map -> constr -> typed_type
 
-val type_of_constructor : env -> 'a evar_map -> constr -> constr
+val type_of_constructor :
+  env -> 'a evar_map -> (constructor_path * constr array) -> constr
 
 val type_of_existential : env -> 'a evar_map -> constr -> constr
+
+val sort_of_arity : env -> 'a Evd.evar_map -> constr -> constr 
 
 val type_of_case : env -> 'a evar_map 
   -> unsafe_judgment -> unsafe_judgment 
