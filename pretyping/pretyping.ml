@@ -405,7 +405,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 	tycon env (* loc *) (po,tml,eqns)
 
   | RCast(loc,c,t) ->
-      let tj = pretype_type (valcon_of_tycon tycon) env isevars lvar lmeta t in
+      let tj = pretype_type empty_tycon env isevars lvar lmeta t in
       let cj = pretype (mk_tycon tj.utj_val) env isevars lvar lmeta c in
       (* User Casts are for helping pretyping, experimentally not to be kept*)
       (* ... except for Correctness *)
