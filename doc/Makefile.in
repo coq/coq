@@ -4,7 +4,7 @@
 # Pdf: pdflatex
 # Html:
 #   - hevea: http://para.inria.fr/~maranget/hevea/
-#   - htmlSplit: http://coq.inria.fr/~delahaye
+#   - htmlSplit: http://coq.inria.fr/~delahaye/
 # Rapports INRIA: dviselect, rrkit (par Michel Mauny)
 
 DOCCOQTOP=@COQTOPBYTE@
