@@ -12,27 +12,32 @@
 open Names
 open Term
 open Tacmach
+open Tacexpr
+open Rawterm
 (*i*)
 
 type inversion_status = Dep of constr option | NoDep
 
 val inv_gen :
-  bool -> bool option -> inversion_status -> Rawterm.quantified_hypothesis -> tactic
-val invIn_gen : bool option -> Rawterm.quantified_hypothesis -> identifier list -> tactic
+  bool -> inversion_kind -> inversion_status ->
+    case_intro_pattern_expr -> quantified_hypothesis -> tactic
+val invIn_gen :
+  inversion_kind -> case_intro_pattern_expr -> identifier list -> 
+    quantified_hypothesis -> tactic
 
-val inv : bool option -> Rawterm.quantified_hypothesis -> tactic
-val dinv : bool option -> constr option -> Rawterm.quantified_hypothesis -> tactic
+val inv_clause :
+  inversion_kind -> case_intro_pattern_expr -> identifier list ->
+    quantified_hypothesis -> tactic
+
+val inv : inversion_kind -> case_intro_pattern_expr ->
+  quantified_hypothesis -> tactic
+
+val dinv : inversion_kind -> constr option -> case_intro_pattern_expr ->
+  quantified_hypothesis -> tactic
+
 val half_inv_tac : identifier -> tactic
 val inv_tac : identifier -> tactic
 val inv_clear_tac : identifier -> tactic
 val half_dinv_tac : identifier -> tactic
 val dinv_tac : identifier -> tactic
 val dinv_clear_tac : identifier -> tactic
-(*
-val half_dinv_with : identifier -> constr -> tactic
-val dinv_with : identifier -> constr -> tactic
-val dinv_clear_with : identifier -> constr -> tactic
-*)
-(*
-val invIn_tac : identifier -> identifier -> identifier list -> tactic
-*)
