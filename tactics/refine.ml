@@ -282,7 +282,8 @@ let dyn_tcc args gl = match args with
   | [Command com]  ->
       let env = pf_env gl in
       refine
-	(Astterm.interp_casted_openconstr (project gl) env com (pf_concl gl)) gl
+	(Astterm.interp_casted_openconstr (project gl) env com (pf_concl gl))
+	gl
   | [OpenConstr c] -> 
       refine c gl
   | _ -> assert false
