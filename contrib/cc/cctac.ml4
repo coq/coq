@@ -121,7 +121,7 @@ let build_projection (cstr:constructor) nargs argind ttype default atype gls=
   let env=pf_env gls in 
   let case_info=make_default_case_info (pf_env gls) RegularStyle ind in
   let body= mkCase(case_info, pred, casee, branches) in
-  let id=pf_get_new_id (id_of_string "C") gls in     
+  let id=pf_get_new_id (id_of_string "t") gls in     
     mkLambda(Name id,ttype,body)
 
 (* generate an adhoc tactic following the proof tree  *)
@@ -134,23 +134,29 @@ let rec proof_tac uf axioms=function
       (tclTHENS (transitivity t) 
 	 [(proof_tac uf axioms p1);(proof_tac uf axioms p2)])
   | Congr (p1,p2)->
-      (fun gls->
-	 let (s1,t1)=(type_proof axioms p1) and
-	   (s2,t2)=(type_proof axioms p2) in
-         let ts1=(make_term s1) and tt1=(make_term t1) 
-	and ts2=(make_term s2) and tt2=(make_term t2) in
-      let typ1=pf_type_of gls ts1 and typ2=pf_type_of gls ts2 in
-      let (typb,_,_)=(eq_type_of_term gls.it.evar_concl) in
-      let act=mkApp ((Lazy.force congr_theo),[|typ2;typb;ts1;tt1;ts2;tt2|]) in
-      tclORELSE 
-	(tclTHENS 
-	   (apply act)	 
-	   [(proof_tac uf axioms p1);(proof_tac uf axioms p2)])		
-	   (tclTHEN
-	      (let p=mkLambda(destProd typ1) in
-	      let acdt=mkApp((Lazy.force congr_dep_theo),
-			     [|typ2;p;ts1;tt1;ts2|]) in 
-	      apply acdt) (proof_tac uf axioms p1)) gls)
+      fun gls->
+	let (f1,f2)=(type_proof axioms p1) 
+	and (x1,x2)=(type_proof axioms p2) in
+        let tf1=make_term f1 and tx1=make_term x1 
+	and tf2=make_term f2 and tx2=make_term x2 in
+	let typf=pf_type_of gls tf1 and typx=pf_type_of gls tx1
+	and typfx=pf_type_of gls (mkApp(tf1,[|tx1|])) in
+	let id=pf_get_new_id (id_of_string "f") gls in
+	let appx1=mkLambda(Name id,typf,mkApp(mkRel 1,[|tx1|])) in
+	let lemma1=
+	  mkApp(Lazy.force f_equal_theo,[|typf;typfx;appx1;tf1;tf2|])
+	and lemma2=
+	  mkApp(Lazy.force f_equal_theo,[|typx;typfx;tf2;tx1;tx2|]) in
+	  (tclTHENS (transitivity (mkApp(tf2,[|tx1|])))
+	     [tclTHEN (apply lemma1) (proof_tac uf axioms p1);
+  	      tclFIRST
+		[tclTHEN (apply lemma2) (proof_tac uf axioms p2);
+		 reflexivity;
+		 fun gls ->
+		   errorlabstrm  "CC" 
+		   (Pp.str 
+		      "CC doesn't know how to handle dependent equality.")]]
+	     gls)
   | Inject (prf,cstr,nargs,argind)  as gprf->
       (fun gls ->
 	 let ti,tj=type_proof axioms prf in
@@ -168,19 +174,15 @@ let rec proof_tac uf axioms=function
 (* wrap everything *)
 	
 let cc_tactic gls=
-  Library.check_required_library ["Coq";"cc";"CC"];
+  Library.check_required_library ["Coq";"Init";"Logic"];
   let prb=
     try make_prb gls with 
 	Not_an_eq ->
-	  errorlabstrm  "CC" [< str "Goal is not an equality" >] in
+	  errorlabstrm  "CC" (str "Goal is not an equality") in
     match (cc_proof prb) with
-	None->errorlabstrm  "CC" [< str "CC couldn't solve goal" >] 
-      | Some (p,uf,axioms)->
-	  tclORELSE (proof_tac uf axioms p)
-	  (fun _->errorlabstrm  "CC" 
-	     [< str "CC doesn't know how to handle dependent equality." >]) 
-	  gls
-
+	None->errorlabstrm  "CC" (str "CC couldn't solve goal") 
+      | Some (p,uf,axioms)->proof_tac uf axioms p gls
+	
 (* Tactic registration *)
       
 TACTIC EXTEND CC

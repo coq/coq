@@ -1,4 +1,3 @@
-Require CC.
 
 Theorem t1: (A:Set)(a:A)(f:A->A)
 	(f a)=a->(f (f a))=a.
@@ -40,14 +39,16 @@ Theorem dep2:(A,B:Set)(f:(A:Set)(b:bool)if b then unit else A->unit)(e:A==B)
 Intros;Rewrite e;Reflexivity.
 Save.
 
-(* example with CCSolve *)
 
-Theorem t4 :  (A:Set; P:(A->Prop); u,v:A)u=v->(P u)->(P v).
-Intros.
-CCsolve.
+(* example that CC can solve 	
+	(dependent function applied to the same argument)*) 
+
+Theorem dep3:(A:Set)(P:(A->Set))(f,g:(x:A)(P x))f=g->(x:A)(f x)=(g x).		
+Intros.	
+CC.
 Save.
 
-(* Exambles with injection rule *)
+(* Examples with injection rule *)
 
 Theorem t5 : (A:Set;a,b,c,d:A)(a,c)=(b,d)->a=b/\c=d.
 Intros.
@@ -59,3 +60,12 @@ Intros.
 CC.
 Save.
 
+(* example with CCSolve (requires CC)*)
+
+Require CC.
+
+Theorem t4 :  (A:Set; P:(A->Prop); a,b,c,d:A)a=b->c=d->
+                 (P a)->((P b)->(P c))->(P d).
+Intros.
+CCsolve.
+Save.
