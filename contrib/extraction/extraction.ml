@@ -334,8 +334,8 @@ let rec extract_type env c =
 and extract_type_rec env c vl args = 
   (* We accumulate the context, arguments and generated variables list *)
   let t = type_of env (applist (c, args)) in
-  (* Since [ty] is an arity, there is two non-informative case: 
-     [ty] is an arity of sort [Prop], or 
+  (* Since [t] is an arity, there is two non-informative case: 
+     [t] is an arity of sort [Prop], or 
      [c] has a non-informative head symbol *)
   match get_arity env t with 
     | None -> 
@@ -365,6 +365,8 @@ and extract_type_rec_info env c vl args =
 	   | None ->
 	       let id = id_of_name (fst (lookup_rel_type n env)) in 
 	       Tmltype (Tvar id, [], vl))
+    | IsConst (sp,a) when args = [] && is_ml_extraction (ConstRef sp) ->
+	Tmltype (Tglob (ConstRef sp), [], vl)
     | IsConst (sp,a) when is_axiom sp -> 
 	let id = next_ident_away (basename sp) vl in 
 	Tmltype (Tvar id, [], id :: vl)
@@ -651,7 +653,7 @@ and extract_app env ctx f args =
 	 | (_,Arity) -> args
 	 | (Logic,NotArity) -> MLprop :: args
 	 | (Info,NotArity) -> 
-	     (* We can't trust tag [Vdefault], so we use [extract_constr]. *)
+	     (* We can't trust tag [default], so we use [extract_constr]. *)
 	     (mlterm_of_constr (extract_constr env ctx a)) :: args)
       (List.combine (list_firstn nargs sf) args)
       []
@@ -841,17 +843,17 @@ and extract_inductive_declaration sp =
   else
     let mib = Global.lookup_mind sp in
     let one_ind ip n = 
-      iterate_for 1 n
-	(fun j l -> 
-	   let cp = (ip,j) in 
-	   match lookup_constructor_extraction cp with 
-	     | Cprop -> assert false
-	     | Cml (t,_,_) -> (ConstructRef cp, t)::l) []
+	iterate_for (-n) (-1)
+	   (fun j l -> 
+	      let cp = (ip,-j) in 
+	      match lookup_constructor_extraction cp with 
+		| Cprop -> assert false
+		| Cml (t,_,_) -> (ConstructRef cp, t)::l) []
     in
     let l = 
-      iterate_for 0 (mib.mind_ntypes - 1)
+      iterate_for (1 - mib.mind_ntypes) 0
 	(fun i acc -> 
-	   let ip = (sp,i) in
+	   let ip = (sp,-i) in
 	   let mis = build_mis (ip,[||]) mib in 
 	   match lookup_inductive_extraction ip with
 	     | Iprop -> acc
@@ -859,7 +861,7 @@ and extract_inductive_declaration sp =
 		 (List.rev vl, IndRef ip, one_ind ip (mis_nconstr mis)) :: acc)
 	[] 
     in
-    Dtype (List.rev l, not (mind_type_finite mib 0))
+    Dtype (l, not (mind_type_finite mib 0))
 
 (*s Extraction of a global reference i.e. a constant or an inductive. *)
 
