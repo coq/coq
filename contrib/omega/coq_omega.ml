@@ -364,13 +364,14 @@ let coq_or = lazy (constant ["Init";"Logic"] "or")
 let coq_ex = lazy (constant ["Init";"Logic"] "ex")
 
 (* Section paths for unfold *)
-let sp_Zs = path_of_string "Zarith.zarith_aux.Zs"
-let sp_Zminus = path_of_string "Zarith.zarith_aux.Zminus"
-let sp_Zle = path_of_string "Zarith.zarith_aux.Zle"
-let sp_Zgt = path_of_string "Zarith.zarith_aux.Zgt"
-let sp_Zge = path_of_string "Zarith.zarith_aux.Zge"
-let sp_Zlt = path_of_string "Zarith.zarith_aux.Zlt"
-let sp_not = path_of_string "Init.Logic.not"
+let make_coq_path dir s = make_path ("Coq"::dir) (id_of_string s) CCI
+let sp_Zs = make_coq_path ["Zarith";"zarith_aux"] "Zs"
+let sp_Zminus = make_coq_path ["Zarith";"zarith_aux"] "Zminus"
+let sp_Zle = make_coq_path ["Zarith";"zarith_aux"] "Zle"
+let sp_Zgt = make_coq_path ["Zarith";"zarith_aux"] "Zgt"
+let sp_Zge = make_coq_path ["Zarith";"zarith_aux"] "Zge"
+let sp_Zlt = make_coq_path ["Zarith";"zarith_aux"] "Zlt"
+let sp_not = make_coq_path ["Init";"Logic"] "not"
 
 let mk_var v = mkVar (id_of_string v)
 let mk_plus t1 t2 = mkApp (Lazy.force coq_Zplus, [| t1; t2 |])
