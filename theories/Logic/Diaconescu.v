@@ -8,19 +8,19 @@
 
 (*i $Id$ i*)
 
-(* R. Diaconescu [1] showed that the Axiom of Choice in Set Theory
-   entails Excluded-Middle; S. Lacas and B. Werner [2] adapted the proof to
-   show that the axiom of choice in equivalence classes entails
-   Excluded-Middle in Type Theory.
+(* R. Diaconescu [Diaconescu] showed that the Axiom of Choice in Set Theory
+   entails Excluded-Middle; S. Lacas and B. Werner [LacasWerner]
+   adapted the proof to show that the axiom of choice in equivalence
+   classes entails Excluded-Middle in Type Theory.
 
    This is an adaptatation of the proof by Hugo Herbelin to show that
    the relational form of the Axiom of Choice + Extensionality for
    predicates entails Excluded-Middle
 
-   [1] R. Diaconescu, Axiom of Choice and Complementation, in
+   [Diaconescu] R. Diaconescu, Axiom of Choice and Complementation, in
    Proceedings of AMS, vol 51, pp 176-178, 1975.
 
-   [2] S. Lacas, B Werner, Which Choices imply the excluded middle?,
+   [LacasWerner] S. Lacas, B Werner, Which Choices imply the excluded middle?,
    preprint, 1999.
 
 *)
@@ -88,7 +88,7 @@ Qed.
 (* The proof of the excluded middle *)
 (* Remark: P could have been in Set or Type *)
 
-Theorem EM : (P:Prop)P\/~P.
+Theorem pred_ext_and_rel_choice_imp_EM : (P:Prop)P\/~P.
 Proof.
 Intro P.
 
