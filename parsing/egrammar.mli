@@ -22,7 +22,10 @@ type all_grammar_command =
       (int * Gramext.g_assoc option * notation * prod_item list *
       int list option)
   | Grammar of grammar_command
-  | TacticGrammar of (string * (string * grammar_production list) * Tacexpr.raw_tactic_expr) list
+  | TacticGrammar of
+      (string * (string * grammar_production list) * 
+      (Names.dir_path * Tacexpr.raw_tactic_expr))
+      list
 
 val extend_grammar : all_grammar_command -> unit
 

@@ -41,6 +41,12 @@ val user_err_loc : loc * string * std_ppcmds -> 'a
 val invalid_arg_loc : loc * string -> 'a
 val join_loc : loc -> loc -> loc
 
+(* Like [Exc_located], but specifies the outermost file read, the
+   input buffer associated to the location of the error (or the module name
+   if boolean is true), and the error itself. *)
+
+exception Error_in_file of string * (bool * string * loc) * exn
+
 (*s Projections from triplets *)
 
 val pi1 : 'a * 'b * 'c -> 'a

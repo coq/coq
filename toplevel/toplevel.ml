@@ -129,12 +129,15 @@ let print_highlight_location ib (bp,ep) =
 
 (* Functions to report located errors in a file. *)
 
-let print_location_in_file s fname (bp,ep) =
-  let errstrm = (str"Error while reading " ++ str s ++ str" :" ++ fnl () ++
-                   str"File " ++ str ("\""^fname^"\"")) in
+let print_location_in_file s inlibrary fname (bp,ep) =
+  let errstrm = (str"Error while reading " ++ str s ++ str" :" ++ fnl ()) in
   if (bp,ep) = dummy_loc then 
     (errstrm ++ str", unknown location." ++ fnl ())
   else
+    if inlibrary then
+      (errstrm ++ str"Module " ++ str ("\""^fname^"\"") ++
+       str" characters " ++ Cerrors.print_loc (bp,ep) ++ fnl ())
+    else
     let ic = open_in fname in
     let rec line_of_pos lin bol cnt =
       if cnt < bp then
@@ -146,7 +149,8 @@ let print_location_in_file s fname (bp,ep) =
     try
       let (line, bol) = line_of_pos 1 0 0 in
       close_in ic;
-      (errstrm ++ str", line " ++ int line ++
+      (errstrm  ++ str"File " ++ str ("\""^fname^"\"") ++
+         str", line " ++ int line ++
          str", characters " ++ Cerrors.print_loc (bp-bol,ep-bol) ++ fnl ())
     with e -> (close_in ic; (errstrm ++ str", invalid location." ++ fnl ()))
 	
@@ -218,8 +222,8 @@ let print_toplevel_error exc =
             (print_highlight_location top_buffer loc, ie)
           else 
 	    ((mt ()) (* print_command_location top_buffer dloc *), ie)
-      | Error_in_file (s, (fname, loc), ie) ->
-          (print_location_in_file s fname loc, ie)
+      | Error_in_file (s, (inlibrary, fname, loc), ie) ->
+          (print_location_in_file s inlibrary fname loc, ie)
       | _ -> 
 	  ((mt ()) (* print_command_location top_buffer dloc *), exc)
   in

@@ -10,11 +10,6 @@
 
 (* Parsing of vernacular. *)
 
-(* Like [Exc_located], but specifies the outermost file read, the input buffer
-   associated to the location of the error, and the error itself. *)
-
-exception Error_in_file of string * (string * Util.loc) * exn
-
 (* Read a vernac command on the specified input (parse only).
    Raises [End_of_file] if EOF (or Ctrl-D) is reached. *)
 

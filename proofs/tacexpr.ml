@@ -192,7 +192,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   (* For syntax extensions *)
   | TacAlias of loc * string *
       (identifier * ('constr,'tac) generic_argument) list
-      * 'tac
+      * (dir_path * 'tac)
 
 and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr =
   | TacAtom of loc * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr

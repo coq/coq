@@ -26,11 +26,6 @@ open Ppvernacnew
 
 exception DuringCommandInterp of Util.loc * exn
 
-(* Like Exc_located, but specifies the outermost file read, the filename
-   associated to the location of the error, and the error itself. *)
-
-exception Error_in_file of string * (string * Util.loc) * exn
-
 (* Specifies which file is read. The intermediate file names are
    discarded here. The Drop exception becomes an error. We forget
    if the error ocurred during interpretation or not *)
@@ -43,11 +38,11 @@ let raise_with_file file exc =
   in
   let (inner,inex) =
     match re with
-      | Error_in_file (_, (f,loc), e) when loc <> dummy_loc ->
-          ((f, loc), e)
+      | Error_in_file (_, (b,f,loc), e) when loc <> dummy_loc ->
+          ((b, f, loc), e)
       | Stdpp.Exc_located (loc, e) when loc <> dummy_loc ->
-          ((file, loc), e)
-      | _ -> ((file,cmdloc), re)
+          ((false,file, loc), e)
+      | _ -> ((false,file,cmdloc), re)
   in 
   raise (Error_in_file (file, inner, disable_drop inex))
 
