@@ -33,10 +33,25 @@ noargument:
 	@echo "   make install"
 	@echo "   make clean"
 	@echo "or make archclean"
+	@echo
+	@echo "For make to be verbose, add VERBOSE=1"
+
+
+
 
 ###########################################################################
 # Compilation options
 ###########################################################################
+
+# The QUIET variable control whether make will echo complete commands 
+# or only abbreviated versions. 
+# Quiet mode is ON by default except if VERBOSE=1 option is given to make
+
+ifeq ($(VERBOSE),1)
+ QUIET = 
+else	
+ QUIET = yes
+endif
 
 LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
               -I proofs -I tactics -I pretyping \
@@ -1146,22 +1161,22 @@ clean::
 # files compiled with -rectypes
 
 kernel/term.cmo: kernel/term.ml
-	$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
+	$(if $(QUIET),@echo 'OCAMLC    -rectypes $<' &&) $(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
 
 kernel/term.cmx: kernel/term.ml
-	$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
+	$(if $(QUIET),@echo 'OCAMLOPT  -rectypes $<' &&) $(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
 
 library/nametab.cmo: library/nametab.ml
-	$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
+	$(if $(QUIET),@echo 'OCAMLC    -rectypes $<' &&) $(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
 
 library/nametab.cmx: library/nametab.ml
-	$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
+	$(if $(QUIET),@echo 'OCAMLOPT  -rectypes $<' &&) $(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
 
 proofs/tacexpr.cmo: proofs/tacexpr.ml
-	$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
+	$(if $(QUIET),@echo 'OCAMLC    -rectypes $<' &&) $(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
 
 proofs/tacexpr.cmx: proofs/tacexpr.ml
-	$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
+	$(if $(QUIET),@echo 'OCAMLOPT  -rectypes $<' &&) $(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
 
 # files compiled with camlp4 because of streams syntax
 
@@ -1191,28 +1206,28 @@ parsing/lexer.cmo: parsing/lexer.ml4
 .SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .mly .ml4 .v .vo .el .elc
 
 .ml.cmo:
-	$(OCAMLC) $(BYTEFLAGS) -c $<
+	$(if $(QUIET),@echo 'OCAMLC    $<' &&) $(OCAMLC) $(BYTEFLAGS) -c $<
 
 .mli.cmi:
-	$(OCAMLC) $(BYTEFLAGS) -c $<
+	$(if $(QUIET),@echo 'OCAMLC    $<' &&) $(OCAMLC) $(BYTEFLAGS) -c $<
 
 .ml.cmx:
-	$(OCAMLOPT) $(OPTFLAGS) -c $<
+	$(if $(QUIET),@echo 'OCAMLOPT  $<' &&) $(OCAMLOPT) $(OPTFLAGS) -c $<
 
 .mll.ml:
-	ocamllex $<
+	$(if $(QUIET),@echo 'OCAMLOPT  $<' &&) ocamllex $<
 
 .mly.ml:
-	ocamlyacc $<
+	$(if $(QUIET),@echo 'OCAMLOPT  $<' &&) ocamlyacc $<
 
 .mly.mli:
-	ocamlyacc $<
+	$(if $(QUIET),@echo 'OCAMLOPT  $<' &&) ocamlyacc $<
 
 .ml4.cmx:
-	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
+	$(if $(QUIET),@echo 'OCAMLOPT4 $<' &&) $(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 .ml4.cmo:
-	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
+	$(if $(QUIET),@echo 'OCAMLC4   $<' &&) $(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 #.v.vo:
 #	$(BOOTCOQTOP) -compile $*
