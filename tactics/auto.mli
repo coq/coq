@@ -145,5 +145,7 @@ type autoArguments =
   | UsingTDB       
   | Destructing   
 
-val superauto : int -> (identifier * constr) list -> autoArguments list
-      -> tactic
+val fmt_autotactic : auto_tactic -> Pp.std_ppcmds
+
+val superauto : int -> (identifier * constr) list -> autoArguments list -> tactic
+

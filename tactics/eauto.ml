@@ -162,7 +162,7 @@ and e_my_find_search db_list local_db hdc concl =
   in 
   let tac_of_hint = 
     fun ({pri=b; pat = p; code=t} as patac) -> 
-      (b,
+      (b, let tac =
        match t with
 	 | Res_pf (term,cl) -> unify_resolve (term,cl)
 	 | ERes_pf (term,cl) -> unify_e_resolve (term,cl)
@@ -172,9 +172,14 @@ and e_my_find_search db_list local_db hdc concl =
 	       (e_trivial_fail_db db_list local_db)
 	 | Unfold_nth c -> unfold_constr c
 	 | Extern tacast -> Tacticals.conclPattern concl 
-	       (out_some p) tacast)
-  in 
-  List.map tac_of_hint hintl
+	       (out_some p) tacast
+       in tac)
+	 (*i fun gls -> pPNL (fmt_autotactic t); flush stdout; 
+                     try tac gls
+		     with e when Logic.catchable_exception(e) -> 
+                            (print_string "Fail\n"; flush stdout; raise e)
+	   i*)
+  in List.map tac_of_hint hintl
     
 and e_trivial_resolve db_list local_db gl = 
   try 
@@ -193,6 +198,7 @@ let e_possible_resolve db_list local_db gl =
 		      (List.hd (head_constr_bound gl [])) gl)
   with Bound | Not_found -> []
 
+(*i Replaced by a version doing breadth-first search
 (* A version with correct (?) backtracking using operations on lists 
    of goals *)
 
@@ -237,9 +243,71 @@ let rec e_search n db_list local_db lg =
     tclFIRSTLIST (assumption_tacs @ (intro_tac :: rec_tacs)) lg
   with Nogoals -> 
     tclIDTAC_list lg
+i*)
+
+(* Breadth-first search, a state is [(n,(lgls,val),hintl)] where 
+   [n] is the depth of search before failing
+   [lgls,val] is a non empty list of remaining goals and the current validation
+   hintl is a possible hints list to be added to the local hints database (after intro)
+   we manipulate a FILO of possible states.
+*) 
+type state = {depth : int; 
+	      tacres : goal list sigma * validation;
+              localhint :  (Pattern.constr_label * Auto.pri_auto_tactic) list}
+
+type state_queue = state list * state list
+
+let empty_queue = ([],[])
+
+let push_state s (l1,l2) = (s::l1,l2)
+
+let decomp_states = function 
+    [],[] -> raise Not_found
+  | (l1,a::l2)->(a,(l1,l2))
+  | (l1,[])-> let l2 = List.rev l1 in (List.hd l2,([],List.tl l2))
+
+let add_state n tacr hintl sl = push_state {depth=n;tacres=tacr;localhint=hintl} sl
+
+let e_search n db_list local_db gl =
+  let state0 = add_state n (tclIDTAC gl) [] empty_queue in
+  let rec process_state local_db stateq =
+    let (fstate,restq) = try decomp_states stateq 
+    with Not_found -> error "BOUND 2" (* no more states *)
+    in 
+    let (glls,v) = fstate.tacres 
+    and n = fstate.depth
+    and local_db'= Hint_db.add_list fstate.localhint local_db in 
+    let rec process_tacs tacl sq = 
+      match tacl with 
+	  [] -> (* no more tactics for the goal *)
+	    process_state local_db' sq (* continue with next state *)
+	| (b,tac)::tacrest ->
+            (try 
+	    let (lgls,ptl) = apply_tac_list tac glls in 
+	    let v' p = v (ptl p) in
+	    let k = List.length (sig_it lgls) in
+	      if k = 0 then (lgls,v') (* success *)
+	      else let n' = if k < List.length (sig_it glls) or b then n else n-1 in
+		   let sq' = if n'=0 then sq (* a depth 0 state is not added *)
+		   else let hintl = (* possible new hint list for assumptions *)
+		     if b then (* intro tactic *)
+		       let g' = first_goal lgls in 
+			 make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
+		     else []
+		        in add_state n' (lgls, v') hintl sq
+		   in process_tacs tacrest sq'
+	     with e when Logic.catchable_exception e -> process_tacs tacrest sq)
+    in let g = first_goal glls in 
+    let tac1 = List.map (fun id -> (false, e_give_exact_constr (mkVar id))) (pf_ids_of_hyps g)
+    and tac2 = (true,Tactics.intro)
+    and tac3 = List.map (fun tac -> (false,tac)) 
+		 (e_possible_resolve db_list local_db' (pf_concl g))
+    in process_tacs (tac1@tac2::tac3) restq
+ in process_state local_db state0
+
 
 let e_search_auto n db_list gl = 
-  tactic_list_tactic (e_search n db_list (make_local_hint_db gl)) gl
+  e_search n db_list (make_local_hint_db gl) gl
 
 let eauto n dbnames = 
   let db_list =
@@ -249,7 +317,7 @@ let eauto n dbnames =
 	 with Not_found -> error ("EAuto: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
-  tclTRY (tclCOMPLETE (e_search_auto n db_list))
+  tclTRY (e_search_auto n db_list)
 
 let default_eauto gl = eauto !default_search_depth [] gl
 
@@ -258,7 +326,7 @@ let full_eauto n gl =
   let dbnames =  list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> Stringmap.find x !searchtable) dbnames in
   let local_db = make_local_hint_db gl in
-  tclTRY (tclCOMPLETE (e_search_auto n db_list)) gl
+  tclTRY (e_search_auto n db_list) gl
 
 let default_full_auto gl = full_auto !default_search_depth gl
 
