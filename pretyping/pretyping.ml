@@ -60,18 +60,18 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
         (Array.map (lift (nar+2)) lf) constrs recargs 
     in 
     let deffix = 
-      it_lambda_name env
+      it_mkLambda_or_LetIn_name env
 	(lambda_create env
 	   (applist (mI,List.append (List.map (lift (nar+1)) params)
                        (rel_list 0 nar)),
             mkMutCase (ci, lift (nar+2) p, mkRel 1, branches)))
-        (lift_context 1 lnames) 
+        (lift_rel_context 1 lnames) 
     in
     if noccurn 1 deffix then 
       whd_beta (applist (pop deffix,realargs@[c]))
     else
       let typPfix = 
-	it_prod_name env
+	it_mkProd_or_LetIn_name env
 	  (prod_create env
 	     (applist (mI,(List.append 
 			     (List.map (lift nar) params)

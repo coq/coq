@@ -260,27 +260,35 @@ let get_arity (IndFamily (mispec,params)) =
 
 (* Functions to build standard types related to inductive *)
 
+let local_rels =
+  let rec relrec acc n = function (* more recent arg in front *)
+    | [] -> acc
+    | (_,None,_)::l -> relrec (mkRel n :: acc) (n+1) l
+    | (_,Some _,_)::l -> relrec acc (n+1) l
+  in relrec [] 1
+
 let build_dependent_constructor cs =
   applist
     (mkMutConstruct cs.cs_cstr,
-     (List.map (lift cs.cs_nargs) cs.cs_params)@(rel_list 0 cs.cs_nargs))
+     (List.map (lift cs.cs_nargs) cs.cs_params)@(local_rels cs.cs_args))
 
-let build_dependent_inductive (IndFamily (mis, params)) =
+let build_dependent_inductive (IndFamily (mis, params) as indf) =
+  let arsign,_ = get_arity indf in
   let nrealargs = mis_nrealargs mis in
   applist 
     (mkMutInd (mis_inductive mis),
-     (List.map (lift nrealargs) params)@(rel_list 0 nrealargs))
+     (List.map (lift nrealargs) params)@(local_rels arsign))
 
 (* builds the arity of an elimination predicate in sort [s] *)
 let make_arity env dep indf s =
   let (arsign,_) = get_arity indf in
   if dep then
     (* We need names everywhere *)
-    it_prod_name env
+    it_mkProd_or_LetIn_name env
       (mkArrow (build_dependent_inductive indf) (mkSort s)) arsign
   else
     (* No need to enforce names *)
-    prod_it (mkSort s) arsign
+    it_mkProd_or_LetIn (mkSort s) arsign
 
 (* [p] is the predicate and [cs] a constructor summary *)
 let build_branch_type env dep p cs =

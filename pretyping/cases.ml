@@ -81,7 +81,7 @@ let count_rec_arg j =
 let build_notdep_pred env sigma indf pred =
   let arsign,_ = get_arity indf in
   let nar = List.length arsign in
-  it_lambda_name env (lift nar pred) arsign
+  it_mkLambda_or_LetIn_name env (lift nar pred) arsign
 
 let pred_case_ml_fail env sigma isrec (IndType (indf,realargs)) (i,ft) =
   let pred =
@@ -598,15 +598,15 @@ let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
     let (sign,_) = get_arity indf in
     if array_for_all (fun (_,_,typ) -> the_conv_x env isevars typn typ) eqns
     then
-      let pred = lam_it (lift (List.length sign) typn) sign in
+      let pred = it_mkLambda_or_LetIn (lift (List.length sign) typn) sign in
       (false,pred) (* true = dependent -- par défaut *)
     else
       let s = get_sort_of env !isevars typs.(0) in
-      let predpred = lam_it (mkSort s) sign in
+      let predpred = it_mkLambda_or_LetIn (mkSort s) sign in
       let caseinfo = make_default_case_info mis in
       let brs = array_map2 abstract_conclusion typs cstrs in
       let predbody = mkMutCase (caseinfo, predpred, mkRel 1, brs) in
-      let pred = lam_it (lift (List.length sign) typn) sign in
+      let pred = it_mkLambda_or_LetIn (lift (List.length sign) typn) sign in
       (* "TODO4-2" *)
       error "General inference of annotation not yet implemented;\
              you need to give the predicate";
@@ -667,17 +667,14 @@ let rec extract_predicate = function
 let abstract_predicate env sigma indf = function
   | PrProd _ | PrCcl _ -> anomaly "abstract_predicate: must be some LetIn"
   | PrLetIn ((_,copt),pred) ->
-      let asign,_ = get_arity indf in
-      let sign =
-	List.map (fun (na,t) -> (named_hd (Global.env()) t na,t)) asign in
-      let dep = copt<> None in
+      let sign,_ = get_arity indf in
+      let dep = copt <> None in
       let sign' =
 	if dep then
-	  let ind = build_dependent_inductive indf in
-	  let na = named_hd (Global.env()) ind Anonymous in
-	  (na,ind)::sign
+	  let ind=get_assumption_of env sigma (build_dependent_inductive indf)
+	  in (Anonymous,None,ind)::sign
 	else sign in
-      (dep, lam_it (extract_predicate pred) sign')
+      (dep, it_mkLambda_or_LetIn_name env (extract_predicate pred) sign')
 
 let specialize_predicate_match tomatchs cs = function
   | PrProd _ | PrCcl _ ->
@@ -979,8 +976,8 @@ let build_expected_arity env isevars isdep tomatchl =
     | tm::ltm ->
 	let (ty1,aritysign) = cook n tm in
 	let rec follow n = function
-	  | (na,ty2)::sign -> mkProd (na, ty2, follow (n+1) sign)
-	  | _ ->
+	  | d::sign -> mkProd_or_LetIn d (follow (n+1) sign)
+	  | [] ->
 	      if isdep then mkProd (Anonymous, ty1, buildrec (n+1) ltm)
 	      else buildrec n ltm
 	in follow n (List.rev aritysign)

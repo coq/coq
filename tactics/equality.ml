@@ -461,8 +461,8 @@ let descend_then sigma env head dirn =
   (dirn_nlams,
    dirn_env,
    (fun dirnval (dfltval,resty) ->
-      let aritysign,_ = get_arity indf in
-      let p = lam_it (lift (mis_nrealargs mispec) resty) aritysign in
+      let arign,_ = get_arity indf in
+      let p = it_mkLambda_or_LetIn (lift (mis_nrealargs mispec) resty) arign in
       let build_branch i =
 	let result = if i = dirn then dirnval else dfltval in
 	it_mkLambda_or_LetIn_name env result cstr.(i-1).cs_args
@@ -505,7 +505,7 @@ let construct_discriminator sigma env dirn c sort =
       | Type_Type -> build_UnitT (), build_EmptyT (), (Type dummy_univ)
       | _         -> build_True (),  build_False (),  (Prop Null)
   in
-  let p = lam_it (mkSort sort_0) arsign in
+  let p = it_mkLambda_or_LetIn (mkSort sort_0) arsign in
   let cstrs = get_constructors indf in
   let build_branch i =
     let endpt = if i = dirn then true_0 else false_0 in

@@ -166,7 +166,7 @@ in
 let find_case_dep_nparams env sigma (c,p) (IndFamily (mis,_) as indf) typP =
   let kelim = mis_kelim mis in
   let arsign,s = get_arity indf in
-  let glob_t = prod_it (mkSort s) arsign in
+  let glob_t = it_mkProd_or_LetIn (mkSort s) arsign in
   let (dep,_) = is_correct_arity env sigma kelim (c,p) indf (typP,glob_t) in
   dep
 

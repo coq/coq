@@ -174,7 +174,7 @@ val get_constructor : inductive_family -> int -> constructor_summary
    of the products of the constructors types are not renamed when
    [Anonymous] *)
 
-val get_arity : inductive_family -> flat_arity
+val get_arity : inductive_family -> arity
 
 (* Examples: assume
   

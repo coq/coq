@@ -53,7 +53,7 @@ let mis_make_case_com depopt env sigma mispec kind =
       let ind = make_ind_family (mispec,rel_list nbprod nparams) in
       let lnamesar,_ = get_arity ind in
       let ci = make_default_case_info mispec in
-      it_lambda_name env'
+      it_mkLambda_or_LetIn_name env'
        	(lambda_create env'
            (build_dependent_inductive ind,
             mkMutCase (ci,
@@ -242,16 +242,16 @@ let mis_make_indrec env sigma listdepkind mispec =
 	    let indf = make_ind_family
 			 (mispeci,rel_list (nrec+nbconstruct) nparams) in
 	    let deftyi = 
-	      it_lambda_name env
+	      it_mkLambda_or_LetIn_name env
 		(lambda_create env
 		   (build_dependent_inductive
 		      (lift_inductive_family nrec indf),
 		    mkMutCase (make_default_case_info mispeci,
 			       mkRel (dect+j+1), mkRel 1, branches)))
-		(lift_context nrec lnames)
+		(Sign.lift_rel_context nrec lnames)
 	    in
 	    let typtyi = 
-	      it_prod_name env
+	      it_mkProd_or_LetIn_name env
 		(prod_create env
 		   (build_dependent_inductive indf,
 		    (if dep then 
