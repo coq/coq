@@ -99,7 +99,10 @@ type extraction_result =
 
 let none = Evd.empty
 
-let type_of env c = Typing.type_of env Evd.empty (strip_outer_cast c)
+let type_of env c = Retyping.get_type_of env Evd.empty (strip_outer_cast c)
+
+let sort_of env c = 
+  Retyping.get_sort_family_of env Evd.empty (strip_outer_cast c)
 
 open RedFlags
 let whd_betaiotalet = clos_norm_flags (UNIFORM, mkflags [fBETA;fIOTA;fZETA])
@@ -139,7 +142,7 @@ let rec get_arity env c =
   match kind_of_term (whd_betadeltaiota env none c) with
     | IsProd (x,t,c0) -> get_arity (push_rel_assum (x,t) env) c0
     | IsCast (t,_) -> get_arity env t
-    | IsSort s -> Some s
+    | IsSort s -> Some (family_of_sort s)
     | _ -> None
 
 (* idem, but goes through [Lambda] as well. Cf. [find_conclusion]. *)
@@ -149,7 +152,7 @@ let rec get_lam_arity env c =
     | IsLambda (x,t,c0) -> get_lam_arity (push_rel_assum (x,t) env) c0
     | IsProd (x,t,c0) -> get_lam_arity (push_rel_assum (x,t) env) c0
     | IsCast (t,_) -> get_lam_arity env t
-    | IsSort s -> Some s
+    | IsSort s -> Some (family_of_sort s)
     | _ -> None
 
 (*s Detection of non-informative parts. *)
@@ -157,25 +160,25 @@ let rec get_lam_arity env c =
 let is_non_info_sort env s = is_Prop (whd_betadeltaiota env none s)
 
 let is_non_info_type env t = 
-  is_non_info_sort env (type_of env t) || (get_arity env t) = Some (Prop Null)
+  (sort_of env t) = InProp  || (get_arity env t) = Some InProp
 
 (*i This one is not used, left only to precise what we call a non-informative 
    term.
 
 let is_non_info_term env c = 
   let t = type_of env c in
-  let s = type_of env t in
-  (is_non_info_sort env s) ||
+  let s = sort_of env t in
+  (s <> InProp) ||
   match get_arity env t with 
-    | Some (Prop Null) -> true
-    | Some (Type _) -> (get_lam_arity env c = Some (Prop Null))
+    | Some InProp -> true
+    | Some InType -> (get_lam_arity env c = Some InProp)
     | _ -> false
 i*)
 
 (* [v_of_t] transforms a type [t] into a [type_var] flag. *)
 
 let v_of_t env t = match get_arity env t with
-  | Some (Prop Null) -> logic_arity
+  | Some InProp -> logic_arity
   | Some _ -> info_arity
   | _ -> if is_non_info_type env t then logic else default
 
@@ -334,16 +337,22 @@ let rec extract_type env c =
 
 and extract_type_rec env c vl args = 
   (* We accumulate the context, arguments and generated variables list *)
-  let t = type_of env (applist (c, args)) in
-  (* Since [t] is an arity, there is two non-informative case: 
-     [t] is an arity of sort [Prop], or 
-     [c] has a non-informative head symbol *)
-  match get_arity env t with 
-    | None -> 
-	assert false (* Cf. precondition. *)
-    | Some (Prop Null) ->
-	Tprop 
-    | Some _ -> extract_type_rec_info env c vl args
+  try 
+    if sort_of env (applist (c, args)) = InProp 
+    then Tprop
+    else extract_type_rec_info env c vl args
+  with   
+      Anomaly _ -> 
+	let t = type_of env (applist (c, args)) in
+	(* Since [t] is an arity, there is two non-informative case: 
+	   [t] is an arity of sort [Prop], or 
+	   [c] has a non-informative head symbol *)
+	match get_arity env t with 
+	  | None -> 
+	      assert false (* Cf. precondition. *)
+	  | Some InProp ->
+	      Tprop 
+	  | Some _ -> extract_type_rec_info env c vl args
  
 and extract_type_rec_info env c vl args = 
   match (kind_of_term (whd_betaiotalet env none c)) with
@@ -490,9 +499,9 @@ and extract_term env ctx c =
   extract_term_with_type env ctx c (type_of env c)
 
 and extract_term_with_type env ctx c t =
-  let s = Typing.type_of env none t in
+  let s = sort_of env t in
   (* The only non-informative case: [s] is [Prop] *)
-  if is_Prop (whd_betadeltaiota env none s) then
+  if (s = InProp) then
     Rprop
   else 
     Rmlterm (extract_term_info_with_type env ctx c t)
