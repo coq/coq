@@ -32,7 +32,7 @@ Require Export Rpower.
 Axiom AppVar : R.
 
 (**********)
-Tactic Definition IntroHypG trm :=
+Recursive Tactic Definition IntroHypG trm :=
 Match trm With
 |[(plus_fct ?1 ?2)] -> 
  (Match Context With
@@ -95,7 +95,7 @@ Match trm With
  | _ -> Idtac).
 
 (**********)
-Tactic Definition IntroHypL trm pt :=
+Recursive Tactic Definition IntroHypL trm pt :=
 Match trm With
 |[(plus_fct ?1 ?2)] -> 
  (Match Context With
