@@ -438,6 +438,18 @@ esac
 
 chmod a-w $COQTOP/config/Makefile
 
+# Building the $COQTOP/dev/ocamldebug-v7 file
+
+if test "$coq_debug_flag" == "-g" ; then
+  rm -f $COQTOP/dev/ocamldebug-v7
+  sed -e "s|COQTOPDIRECTORY|$COQTOP|" \
+      -e "s|COQLIBDIRECTORY|$LIBDIR|" \
+      -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
+      -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
+      $COQTOP/dev/ocamldebug-v7.template > $COQTOP/dev/ocamldebug-v7
+  chmod a-w,a+x $COQTOP/dev/ocamldebug-v7
+fi
+
 # Building the $COQTOP/config/coq_config.ml file
 
 mlconfig_file=$COQTOP/config/coq_config.ml
