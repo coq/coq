@@ -677,12 +677,11 @@ let generalize_dep c gl =
 	  -> id::tothin
       | _ -> tothin
   in
-  let cl' =
-    List.fold_left 
-      (fun c d -> mkNamedProd_or_LetIn d c) (pf_concl gl) to_quantify in
+  let cl' = List.fold_right mkNamedProd_or_LetIn to_quantify (pf_concl gl) in
   let cl'' = generalize_goal gl c cl' in
+  let args = instance_from_named_context to_quantify in
   tclTHEN
-    (apply_type cl'' (c::(List.map mkVar qhyps)))
+    (apply_type cl'' (c::args))
     (thin (List.rev tothin'))
     gl
     
