@@ -98,6 +98,8 @@ GEXTEND Gram
 	  let n = Coqast.Str (loc,n) in <:ast< (NUMERAL $n) >>
       | "-"; n = INT ->
 	  let n = Coqast.Str (loc,n) in <:ast< (NEGNUMERAL $n) >>
+      | "!"; f = global ->
+          <:ast< (APPLISTEXPL $f) >>
   ] ]
   ;
   constr1:
@@ -194,7 +196,7 @@ GEXTEND Gram
           <:ast<(IMPLICITBINDINGS $c1 ($LIST $bl))>> ] ]
   ;
   constr10:
-    [ [ "!"; f = global; args = LIST0 constr9 ->
+    [ [ "!"; f = global; args = LIST1 constr9 ->
           <:ast< (APPLISTEXPL $f ($LIST $args)) >>
       | "!"; f = global; "with"; b = binding_list ->
 	  <:ast< (APPLISTWITH $f $b) >>
