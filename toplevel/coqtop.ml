@@ -73,16 +73,16 @@ let set_rec_include d p = check_coq_overwriting p; push_rec_include (d,p)
 let set_default_include d = set_include d Nameops.default_root_prefix
 let set_default_rec_include d = set_rec_include d Nameops.default_root_prefix
  
-let load_vernacular_list = ref ([] : string list)
-let add_load_vernacular s =
-  load_vernacular_list := (make_suffix s ".v") :: !load_vernacular_list
+let load_vernacular_list = ref ([] : (string * bool) list)
+let add_load_vernacular verb s =
+  load_vernacular_list := ((make_suffix s ".v"),verb) :: !load_vernacular_list
 let load_vernacular () =
   List.iter
-    (fun s -> 
+    (fun (s,b) -> 
       if Options.do_translate () then
-	with_option translate_file (Vernac.load_vernac false) s
+	with_option translate_file (Vernac.load_vernac b) s
       else
-	Vernac.load_vernac false s)
+	Vernac.load_vernac b s)
     (List.rev !load_vernacular_list)
 
 let load_vernacular_obj = ref ([] : string list)
@@ -192,8 +192,12 @@ let parse_args is_ide =
     | "-load-ml-source" :: []       -> usage ()
 
     | ("-load-vernac-source"|"-l") :: f :: rem -> 
-	add_load_vernacular f; parse rem
+	add_load_vernacular false f; parse rem
     | ("-load-vernac-source"|"-l") :: []       -> usage ()
+
+    | ("-load-vernac-source-verbose"|"-lv") :: f :: rem -> 
+	add_load_vernacular true f; parse rem
+    | ("-load-vernac-source-verbose"|"-lv") :: []       -> usage ()
 
     | "-load-vernac-object" :: f :: rem -> add_vernac_obj f; parse rem
     | "-load-vernac-object" :: []       -> usage ()
