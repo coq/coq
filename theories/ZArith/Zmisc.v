@@ -272,7 +272,7 @@ Save.
 
 Hints Unfold Zeven Zodd : zarith.
 
-(* Zdiv2 is defined on all Z, but notice that for odd negative integers
+(* [Zdiv2] is defined on all [Z], but notice that for odd negative integers
  * it is not the euclidean quotient: in that case we have n = 2*(n/2)-1
  *)
 
@@ -380,7 +380,7 @@ Rewrite -> (Case (Zcompare_EGAL x y) of [h1,h2: ?]h2 end H0).
 Assumption.
 Save.
 
-(* Four very basic lemmas about Zle, Zlt, Zge, Zgt *)
+(* Four very basic lemmas about [Zle], [Zlt], [Zge], [Zgt] *)
 Lemma Zle_Zcompare :
   (x,y:Z)`x <= y` -> Case `x ?= y` of True True False end.
 Intros x y; Unfold Zle; Elim `x ?=y`; Auto with arith.
@@ -401,7 +401,7 @@ Lemma Zgt_Zcompare :
 Intros x y; Unfold Zgt; Elim `x ?= y`; Intros; Discriminate Orelse Trivial with arith.
 Save.
 
-(* Lemmas about Zmin *)
+(* Lemmas about [Zmin] *)
 
 Lemma Zmin_plus : (x,y,n:Z) `(Zmin (x+n)(y+n))=(Zmin x y)+n`.
 Intros; Unfold Zmin.
@@ -411,7 +411,7 @@ Rewrite (Zcompare_Zplus_compatible x y n).
 Case `x ?= y`; Apply Zplus_sym.
 Save.
 
-(* Lemmas about absolu *)
+(* Lemmas about [absolu] *)
 
 Lemma absolu_lt : (x,y:Z) `0 <= x < y` -> (lt (absolu x) (absolu y)).
 Proof.
@@ -433,7 +433,7 @@ Compute. Intro H0. Discriminate H0. Intuition.
 Intros. Absurd `0 <= (NEG p)`. Compute. Auto with arith. Intuition.
 Save.
 
-(* Lemmas on Zle_bool used in contrib/graphs *)
+(* Lemmas on [Zle_bool] used in contrib/graphs *)
 
 Lemma Zle_bool_imp_le : (x,y:Z) (Zle_bool x y)=true -> (Zle x y).
 Proof.
