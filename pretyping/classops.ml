@@ -246,8 +246,8 @@ let strength_of_cl = function
   | _ -> Global
 
 let string_of_class = function
-  | CL_FUN -> "FUNCLASS"
-  | CL_SORT -> "SORTCLASS" 
+  | CL_FUN -> if !Options.v7 then "FUNCLASS" else "Funclass"
+  | CL_SORT -> if !Options.v7 then "SORTCLASS" else "Sortclass"
   | CL_CONST sp ->
       string_of_qualid (shortest_qualid_of_global Idset.empty (ConstRef sp))
   | CL_IND sp ->
