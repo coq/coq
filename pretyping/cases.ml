@@ -18,6 +18,37 @@ open Pretype_errors
 open Evarutil
 open Evarconv
 
+(* Pattern-matching errors *)
+
+type pattern_matching_error =
+  | BadPattern of constructor * constr
+  | BadConstructor of constructor * inductive
+  | WrongNumargConstructor of constructor_path * int
+  | WrongPredicateArity of constr * constr * constr
+  | NeedsInversion of constr * constr
+  | RedundantClause of cases_pattern list
+  | NonExhaustive of cases_pattern list
+
+exception PatternMatchingError of env * pattern_matching_error
+
+let raise_pattern_matching_error (loc,ctx,te) =
+  Stdpp.raise_with_loc loc (PatternMatchingError(ctx,te))
+
+let error_bad_pattern_loc loc cstr ind =
+  raise_pattern_matching_error (loc, Global.env(), BadPattern (cstr,ind))
+
+let error_bad_constructor_loc loc cstr ind =
+  raise_pattern_matching_error (loc, Global.env(), BadConstructor (cstr,ind))
+
+let error_wrong_numarg_constructor_loc loc c n =
+  raise_pattern_matching_error (loc, Global.env(), WrongNumargConstructor (c,n))
+
+let error_wrong_predicate_arity_loc loc env c n1 n2 =
+  raise_pattern_matching_error (loc, env, WrongPredicateArity (c,n1,n2))
+
+let error_needs_inversion k env x t =
+  raise (PatternMatchingError (env, NeedsInversion (x,t)))
+
 (*********************************************************************)
 (* A) Typing old cases                                               *)
 (* This was previously in Indrec but creates existential holes       *)
@@ -60,8 +91,8 @@ let branch_scheme env isevars isrec (IndFamily (mis,params) as indf) =
   else 
     Array.map (norec_branch_scheme env isevars) cstrs
 
-(***************************************************)
-(* Building ML like case expressions without types *)
+(******************************************************)
+(* B) Building ML like case expressions without types *)
 
 let concl_n env sigma = 
   let rec decrec m c = if m = 0 then c else 
@@ -89,11 +120,13 @@ let build_notdep_pred env sigma indf pred =
   let nar = List.length arsign in
   it_mkLambda_or_LetIn_name env (lift nar pred) arsign
 
+exception NotInferable of ml_case_error
+
 let pred_case_ml_fail env sigma isrec (IndType (indf,realargs)) (i,ft) =
   let pred =
     let mispec,_ = dest_ind_family indf in
     let recargs = mis_recarg mispec in
-    assert (Array.length recargs <> 0);
+    if Array.length recargs = 0 then raise (NotInferable MlCaseAbsurd);
     let recargi = recargs.(i) in
     let j = mis_index mispec in
     let nbrec = if isrec then count_rec_arg j recargi else 0 in
@@ -102,19 +135,21 @@ let pred_case_ml_fail env sigma isrec (IndType (indf,realargs)) (i,ft) =
     if noccur_between 1 nb_arg pred then 
       lift (-nb_arg) pred
     else 
-      failwith "Dependent"
+      raise (NotInferable MlCaseDependent)
   in
   if realargs = [] then 
     pred
   else (* we try with [_:T1]..[_:Tn](lift n pred) *)
     build_notdep_pred env sigma indf pred  
 
-let pred_case_ml env sigma isrec indt lf (i,ft) = 
-    pred_case_ml_fail env sigma isrec indt (i,ft)
+let pred_case_ml loc env sigma isrec indt lf (i,ft) = 
+  try pred_case_ml_fail env sigma isrec indt (i,ft)
+  with NotInferable e -> error_ml_case_loc loc env e indt lf.(i-1) ft
 
 (* similar to pred_case_ml but does not expect the list lf of braches *)
-let pred_case_ml_onebranch env sigma isrec indt (i,f,ft) = 
-    pred_case_ml_fail env sigma isrec indt (i,ft)
+let pred_case_ml_onebranch loc env sigma isrec indt (i,f,ft) = 
+  try pred_case_ml_fail env sigma isrec indt (i,ft)
+  with NotInferable e -> error_ml_case_loc loc env e indt f ft
 
 (************************************************************************)
 (*            Pattern-matching compilation (Cases)                      *)
@@ -135,13 +170,22 @@ let mssg_this_case_cannot_occur () =
 
 (* Utils *)
 
+let ids_of_ctxt ids =
+  try Array.to_list (Array.map destVar ids)
+  with _ -> anomaly "Context of constructor is not built from Var"
 let ctxt_of_ids ids = Array.of_list (List.map mkVar ids)
 let constructor_of_rawconstructor (cstr_sp,ids) = (cstr_sp,ctxt_of_ids ids)
+let rawconstructor_of_constructor (cstr_sp,ctxt) = (cstr_sp,ids_of_ctxt ctxt)
 let inductive_of_rawconstructor c =
   inductive_of_constructor (constructor_of_rawconstructor c)
 
+let make_anonymous_patvars =
+  list_tabulate (fun _ -> PatVar (dummy_loc,Anonymous)) 
+
 (* Environment management *)
 let push_rels vars env = List.fold_right push_rel_assum vars env
+
+let push_rel_defs vars env = List.fold_right push_rel_def vars env
 
 (**********************************************************************)
 (* Structures used in compiling pattern-matching *)
@@ -165,13 +209,15 @@ type rhs =
       private_ids: identifier list;
       user_ids   : identifier list;
       subst      : (identifier * constr) list;
-      rhs_lift   : int;
+      rhs_lifts  : int list; (* Lifts to adjust rhs_env wrt pb.pb_env *)
       it         : rawconstr }
 
 type equation =
     { dependencies : constr lifted list;
       patterns     : cases_pattern list; 
       rhs          : rhs;
+      alias_stack  : name list;
+      eqn_loc      : loc;
       tag          : pattern_source }
 
 type matrix = equation list
@@ -200,42 +246,71 @@ type predicate_signature =
   | PrNotInd of constr option * predicate_signature
   | PrCcl of constr
 
+(* We keep a constr for aliases and a cases_pattern for error message *)
 type pattern_history =
   | Top
-  | Arg of constr * pattern_history
+  | Arg of (constr * cases_pattern) * pattern_history
   | LiftHistory of int * pattern_history
-  | MakeConstruct of constr * pattern_continuation
+  | MakeConstruct of
+      (constr * (constructor_path * identifier list)) * pattern_continuation
 
 and pattern_continuation = 
   | Continuation of int * pattern_history
-  | Result of constr list
+  | Result of (constr list * cases_pattern list)
 
 let lift_history p = function
   | Continuation (n, h) -> Continuation (n, LiftHistory (n, h))
-  | Result l -> Result (List.map (lift p) l)
+  | Result (l, pl) -> Result (List.map (lift p) l, pl)
 
-let starting_history n = Continuation (n, Top)
+let start_history n = Continuation (n, Top)
 
-let rec build_partial_pattern k args = function
-  | Top -> Result args
-  | Arg (u, h) -> build_partial_pattern k ((lift k u)::args) h
-  | LiftHistory (n, h) -> build_partial_pattern (k+n) args h 
-  | MakeConstruct (ci, rh) -> contract_history (applist(lift k ci,args)) rh
-
-and contract_history c = function
-  | Continuation (1, h) -> build_partial_pattern 0 [c] h
-  | Continuation (n, h) when n>1 -> Continuation (n-1, Arg (c, h))
+let feed_history arg = function
+  | Continuation (n, h) when n>=1 -> Continuation (n-1, Arg (arg, h))
   | Continuation (n, _) ->
       anomaly ("Bad number of expected remaining patterns: "^(string_of_int n))
-  | Result _ -> 
-      anomaly "Exhausted pattern history"
+  | Result _ -> anomaly "Exhausted pattern history"
+
+let rec build_clause_pattern k (cargs,pargs as args) = function
+  | Top -> Result args, None
+  | Arg ((u, p), h) -> build_clause_pattern k ((lift k u)::cargs,p::pargs) h
+  | LiftHistory (n, h) -> build_clause_pattern (k+n) args h 
+  | MakeConstruct ((ci, pci), rh) ->
+      let c = applist(lift k ci,cargs) in
+      feed_history (c, PatCstr (dummy_loc,pci,pargs,Anonymous)) rh, Some c
+
+let rec simplify_history = function
+  | Continuation (0, h) ->
+      (match build_clause_pattern 0 ([],[]) h with
+	 | h, None -> [], h
+	 | h, Some c -> let l, h = simplify_history h in (c::l, h))
+  | h -> [], h
+
+(* This is for non exhaustive error message *)
+let rec rawpattern_of_partial_history l = function
+  | Continuation (n, h) ->
+      let args = make_anonymous_patvars (n - (List.length l)) in
+      build_rawpattern (l@args) h
+  | Result (_, pl) -> pl
+
+and build_rawpattern args = function
+  | Top -> args
+  | Arg ((_, p), h) -> build_rawpattern (p::args) h
+  | LiftHistory (n, h) -> build_rawpattern args h 
+  | MakeConstruct ((_, pci), rh) ->
+      rawpattern_of_partial_history
+	[PatCstr (dummy_loc, pci, args, Anonymous)] rh
+
+let complete_history = rawpattern_of_partial_history []
 
 (* Builds a continuation expecting [n] arguments and building [ci] applied
    to this [n] arguments *)
 
-let history_continuation n ci cont =
-  if n=0 then contract_history ci cont
-  else Continuation (n, MakeConstruct (ci, cont))
+let history_continuation n arg cont =
+(*
+  if n=0 then contract_history (ci, PatCstr (dummy_loc,pci,[],Anonymous)) cont
+  else 
+*)
+  Continuation (n, MakeConstruct (arg, cont))
 
 (* A pattern-matching problem has the following form:
 
@@ -306,7 +381,10 @@ let unalias_pat = function
 
 let remove_current_pattern eqn =
   match eqn.patterns with
-    | _::pats -> { eqn with patterns = pats }
+    | pat::pats -> 
+	{ eqn with
+	    patterns = pats;
+	    alias_stack = (* (alias_of_pat pat) *) Anonymous :: eqn.alias_stack }
     | [] -> anomaly "Empty list of patterns"
 
 let liftn_tomatch_type n depth = function
@@ -332,6 +410,7 @@ let lower_pattern_status = function
   | RegularPat -> DefaultPat 0
   | DefaultPat n -> DefaultPat (n+1)
 
+(*
 let pattern_status defaults eqns =
   if eqns <> [] then RegularPat
   else
@@ -342,6 +421,17 @@ let pattern_status defaults eqns =
 	   | _ -> n)
 	defaults 0 in
     DefaultPat min
+*)
+let pattern_status pats =
+  if array_exists ((=) RegularPat) pats then RegularPat
+  else 
+    let min =
+      Array.fold_right
+	(fun pat n -> match pat with
+	   | DefaultPat i when i<n -> i
+	   | _ -> n)
+	pats 0 in
+    DefaultPat min
 
 (**********************************************************************)
 (* Well-formedness tests *)
@@ -350,27 +440,44 @@ let pattern_status defaults eqns =
 let check_constructor loc ((_,j as cstr_sp,ids),args) mind cstrs =
   (* Check it is constructor of the right type *)
   if inductive_path_of_constructor_path cstr_sp <> fst mind
-  then error_bad_constructor_loc loc CCI (cstr_sp,ctxt_of_ids ids) mind;
+  then error_bad_constructor_loc loc (cstr_sp,ctxt_of_ids ids) mind;
   (* Check the constructor has the right number of args *)
   let nb_args_constr = cstrs.(j-1).cs_nargs in 
   if List.length args <> nb_args_constr
-  then error_wrong_numarg_constructor_loc loc CCI cstr_sp nb_args_constr
+  then error_wrong_numarg_constructor_loc loc cstr_sp nb_args_constr
 
 let check_all_variables typ mat =
   List.iter
     (fun eqn -> match current_pattern eqn with
        | PatVar (_,id) -> ()
        | PatCstr (loc,(cstr_sp,ids),_,_) ->
-	   error_bad_pattern_loc loc CCI (cstr_sp,ctxt_of_ids ids) typ)
+	   error_bad_pattern_loc loc (cstr_sp,ctxt_of_ids ids) typ)
     mat
 
-let check_number_of_regular_eqns eqns =
-  let n =
-    List.fold_left(fun i eqn ->if is_regular eqn then i+1 else i) 0 eqns in
-  match n with
-    | 0 -> (* warning "Found several default clauses, kept the first one" *) ()
-    | 1 -> ()
-    | n -> errorlabstrm "build_leaf" [<'sTR "Some clauses are redondant" >]
+let check_number_of_regular_eqns pb eqns =
+  match List.filter is_regular eqns with
+    | [] ->
+	let tms = match pb.history with
+	  | Result (_,tms) -> tms 
+	  | _ -> assert false in
+	raise_pattern_matching_error
+	  ((List.hd eqns).eqn_loc, pb.env, RedundantClause tms)
+(*	(*warning "Found several default clauses, kept the first one"*) ()  *)
+    | [_] -> ()
+    | _::eqn::_ ->
+	let tms = match pb.history with
+	  | Result (_,tms) -> tms 
+	  | _ -> assert false in
+	raise_pattern_matching_error
+	  (eqn.eqn_loc, pb.env, RedundantClause tms)
+
+let extract_rhs pb =
+  match pb.mat with 
+    | [] -> errorlabstrm "build_leaf" (mssg_may_need_inversion())
+    | (eqn::_::_ as eqns) ->
+	check_number_of_regular_eqns pb eqns;
+	eqn.tag, eqn.rhs
+    | [eqn] -> eqn.tag, eqn.rhs
 
 (**********************************************************************)
 (* Functions to deal with matrix factorization *)
@@ -392,7 +499,7 @@ let occur_rawconstr id =
     | RCast (loc,c,t) -> (occur c) or (occur t)
     | (RSort _ | RHole _ | RRef _ | REvar _ | RMeta _) -> false
 
-  and occur_pattern (idl,p,c) = not (List.mem id idl) & (occur c)
+  and occur_pattern (loc,idl,p,c) = not (List.mem id idl) & (occur c)
 
   and occur_option = function None -> false | Some p -> occur p
 
@@ -500,12 +607,6 @@ let rec pop_next_tomatchs acc = function
       pop_next_tomatchs (((na,t),deps)::acc) l
   | ((ToPush(_,(DepOnPrevious,_)) | Pushed _)::_ | []) as l -> (acc,l)
 
-let expand_defaults pats (* current *) (name,eqn) =
-  { eqn with
-      patterns = pats @ eqn.patterns;
-      rhs = (* replace_name_in_rhs name current *) eqn.rhs;
-      tag = lower_pattern_status eqn.tag }
-
 (************************************************************************)
 (* Some heuristics to get names for variables pushed in pb environment *)
 (* Typical requirement:
@@ -555,27 +656,58 @@ let rec recover_pat_names = function
   | [],_ -> []
   | _,[] -> anomaly "Cases.recover_pat_names: Not enough patterns"
 
+let rec adjust_rel k n = function
+  | p::subst -> if n=1 then k+p+1 else adjust_rel (k+p+1) (n-1) subst
+  | [] -> k+n
+
+let rec adjust_rels subst c = 
+  match kind_of_term c with
+    | IsRel n -> mkRel (adjust_rel 0 n subst)
+    | _ -> map_constr_with_binders (fun s -> 0::s) adjust_rels subst c
+
+let adjust_context subst sign =
+  snd
+    (List.fold_right
+       (fun (na,c) (subst,sign) -> (0::subst,(na,adjust_rels subst c)::sign))
+       sign (subst,[]))
+
 let push_rels_eqn sign eqn =
   let pats = List.rev (fst (list_chop (List.length sign) eqn.patterns)) in
-  let sign' = recover_pat_names (sign, pats) in
+  let sign = recover_pat_names (sign, pats) in
+  let sign = adjust_context eqn.rhs.rhs_lifts sign in
   {eqn with
-     rhs = {eqn.rhs with
-	      rhs_env = push_rels sign' eqn.rhs.rhs_env} }
-(*
-let push_decls_eqn sign eqn =
-  let pats = List.rev (fst (list_chop (List.length sign) eqn.patterns)) in
-  let sign' = recover_pat_names (sign, pats) in
-  {eqn with
-     rhs = {eqn.rhs with
-	      rhs_env = push_decls sign' eqn.rhs.rhs_env} }
-*)
+     rhs =
+     {eqn.rhs with
+	rhs_lifts = List.fold_right (fun _ s -> 0::s) sign eqn.rhs.rhs_lifts;
+	rhs_env = push_rels sign eqn.rhs.rhs_env} }
+
 let prepend_pattern tms eqn = {eqn with patterns = tms@eqn.patterns }
 
 (*
 let substitute_rhs current pb =
   if !substitute_alias then { pb with subst = current::pb.subst } else pb
 *)
+
+let insert_aliases sigma pats rhs names =
+  let rec insert sign n = function
+    | _::pats, Anonymous::names -> insert sign n (pats,names)
+    | pat::pats, na::names ->
+	let pat = adjust_rels (n::rhs.rhs_lifts) pat in
+	let t = Retyping.get_type_of rhs.rhs_env sigma pat in
+	insert ((na,pat,t)::sign) (n+1) (pats,names)
+    | [], names ->
+	names,
+	{rhs with
+	   rhs_env = push_rel_defs sign rhs.rhs_env;
+	   rhs_lifts = n::rhs.rhs_lifts }
+    | _ -> anomaly "Inconsistent alias and name lists"
+  in insert [] 0 (pats, names)
+
 let pop_pattern eqn = { eqn with patterns = List.tl eqn.patterns }
+
+let push_aliases sigma aliases eqn =
+  let names, rhs = insert_aliases sigma aliases eqn.rhs eqn.alias_stack in
+  { eqn with alias_stack = names; rhs = rhs }
 
 (**********************************************************************)
 (* Functions to deal with elimination predicate *)
@@ -810,57 +942,66 @@ let solve_constraints constr_info indt =
 
 let group_equations mind cstrs mat =
   let brs = Array.create (Array.length cstrs) [] in
-  let dflt = ref [] in
+  let only_default = ref true in
   let _ =
     List.fold_right (* To be sure it's from bottom to top *)
       (fun eqn () ->
 	 let rest = remove_current_pattern eqn in
 	 match current_pattern eqn with
-	   | PatVar (_,name) -> dflt := (name,rest) :: !dflt
+	   | PatVar (_,name) -> 
+	       for i=1 to Array.length cstrs do
+		 let args = make_anonymous_patvars cstrs.(i-1).cs_nargs in
+		 let rest = {rest with tag = lower_pattern_status rest.tag} in
+		 brs.(i-1) <- (args, rest) :: brs.(i-1)
+	       done
 	   | PatCstr(loc,((ind_sp,i),ids as cstr),largs,alias) ->
 	       check_constructor loc (cstr,largs) mind cstrs;
+	       only_default := false;
 	       brs.(i-1) <- (largs,rest) :: brs.(i-1)) mat () in
-  (brs,!dflt)
+  (brs,!only_default)
 
 (************************************************************************)
 (* Here start the pattern-matching compiling algorithm *)
 
 (* No more patterns: typing the right-hand-side of equations *)
 let build_leaf pb =
-  let rhs =
-    match pb.mat with 
-      | [] -> errorlabstrm "build_leaf" (mssg_may_need_inversion())
-      | (eqn::_::_ as eqns) ->
-	  check_number_of_regular_eqns eqns;
-	  eqn.rhs
-      | [eqn] -> eqn.rhs in
+  let tag, rhs = extract_rhs pb in
   let tycon = match pb.pred with
     | None -> empty_tycon
     | Some (PrCcl typ) -> mk_tycon typ
     | Some _ -> anomaly "not all parameters of pred have been consumed" in
-  pb.typing_function tycon rhs.rhs_env (prepare_rhs rhs)
+  tag, pb.typing_function tycon rhs.rhs_env (prepare_rhs rhs)
 
 (* Building the sub-problem when all patterns are variables *)
 let shift_problem current pb =
   (* rhs have alr. the right env: we just have to pop a pattern & cook pred *)
-  let history = contract_history current pb.history in
+  let h = feed_history (current, PatVar (dummy_loc, Anonymous)) pb.history in
+  let aliases, history = simplify_history h in
+  let mat = List.map pop_pattern pb.mat in
+  let mat = List.map (push_aliases !(pb.isevars) aliases) mat in
   {pb with
      pred = option_app specialize_predicate_var pb.pred;
      history = history;
-     mat = List.map pop_pattern pb.mat }
+     mat = mat }
 
 (* Building the sub-pattern-matching problem for a given branch *)
-let build_branch pb defaults eqns const_info =
+let build_branch pb eqns const_info =
+  (* We remember that we descend through a constructor *)
+  let partialci =
+    applist (mkMutConstruct const_info.cs_cstr, 
+	     (List.map (lift const_info.cs_nargs) const_info.cs_params)) in
+  let history = 
+    history_continuation const_info.cs_nargs 
+      (partialci, rawconstructor_of_constructor const_info.cs_cstr)
+      pb.history in
+
+  (* We find matching clauses *)
   let cs_args = assums_of_rel_context const_info.cs_args in
   let names = get_names pb.env cs_args eqns in
-  let newpats =
-    if !substitute_alias then
-      List.map (fun na -> PatVar (dummy_loc,na)) names
-    else
-      List.map (fun _ -> PatVar (dummy_loc,Anonymous)) names in
-  let submatdef = List.map (expand_defaults newpats) defaults in
   let submat = List.map (fun (tms,eqn) -> prepend_pattern tms eqn) eqns in
-  if submat = [] & submatdef = [] then error "Non exhaustive";
+  if submat = [] then
+    raise_pattern_matching_error
+      (dummy_loc, pb.env, NonExhaustive (complete_history history));
   let typs = List.map2 (fun (_,t) na -> (na,t)) cs_args (List.rev names) in
   let _,typs' =
     List.fold_right
@@ -881,18 +1022,16 @@ let build_branch pb defaults eqns const_info =
        (List.map (lift const_info.cs_nargs) const_info.cs_params)
        @(extended_rel_list 0 const_info.cs_args)) in
 
-  (* We remember that we descend through a constructor *)
-  let partialci =
-    applist (mkMutConstruct const_info.cs_cstr, 
-	     (List.map (lift const_info.cs_nargs) const_info.cs_params)) in
-  let history= history_continuation const_info.cs_nargs partialci pb.history in
+  (* A constant constructor may lead to aliases to push *)
+  let aliases, history = simplify_history history in
+  let mat = List.map (push_aliases !(pb.isevars) aliases) submat in
 
   (* We replace [(mkRel 1)] by its expansion [ci] *)
   let updated_old_tomatch =
     lift_subst_tomatch const_info.cs_nargs (1,ci) pb.tomatch in
   { pb with
       tomatch = topushs@updated_old_tomatch;
-      mat = submat@submatdef;
+      mat = mat;
       history = history;
       pred = option_app (specialize_predicate_match tomatchs const_info) pb.pred }
 
@@ -923,24 +1062,27 @@ and match_current pb (n,tm) =
   match typ with
     | NotInd typ ->
 	check_all_variables typ pb.mat;
-	compile (shift_problem current pb)
+	let pb = shift_problem current pb in
+	compile pb
     | IsInd (_,(IndType(indf,realargs) as indt)) ->
 	let mis,_ = dest_ind_family indf in
 	let cstrs = get_constructors indf in
-	let eqns,defaults = group_equations (mis_inductive mis) cstrs pb.mat in
-	if cstrs <> [||] & array_for_all ((=) []) eqns 
-	then compile (shift_problem current pb)
+	let eqns,onlydflt = group_equations (mis_inductive mis) cstrs pb.mat in
+	if cstrs <> [||] & onlydflt then
+	  let pb = shift_problem current pb in
+	  compile pb
 	else
           let constraints = Array.map (solve_constraints indt) cstrs in
-	  let pbs = array_map2 (build_branch pb defaults) eqns cstrs in
-	  let tags = Array.map (pattern_status defaults) eqns in
+	  let pbs = array_map2 (build_branch pb) eqns cstrs in
 	  let brs = Array.map compile pbs in
-	  let brvals = Array.map (fun j -> j.uj_val) brs in
-	  let brtyps = Array.map (fun j -> body_of_type j.uj_type) brs in
+	  let brvals = Array.map (fun (_,j) -> j.uj_val) brs in
+	  let brtyps = Array.map (fun (_,j) -> body_of_type j.uj_type) brs in
+	  let tags = Array.map fst brs in
 	  let (pred,typ,s) =
 	    find_predicate pb.env pb.isevars 
 	      pb.pred brtyps cstrs current indt in
 	  let ci = make_case_info mis None tags in
+	  pattern_status tags,
 	  { uj_val = mkMutCase (ci, (*eta_reduce_if_rel*)pred,current,brvals);
 	    uj_type = typ }
 
@@ -961,7 +1103,8 @@ and compile_further pb firstnext rest =
                 pred= option_app (weaken_predicate (List.length sign)) pb.pred;
 		history = lift_history (List.length sign) pb.history;
 		mat = List.map (push_rels_eqn sign) pb.mat } in
-  let j = compile pb' in
+  let tag, j = compile pb' in
+  tag,
   { uj_val = lam_it j.uj_val sign;
     uj_type = (* Pas d'univers ici: imprédicatif si Prop/Set, dummy si Type *)
       type_app (fun t -> prod_it t sign) j.uj_type }
@@ -985,20 +1128,23 @@ let prepare_initial_alias lpat tomatchl rhs =
  * and linearizing the _ patterns.
  * Syntactic correctness has already been done in astterm *)
 let matx_of_eqns env tomatchl eqns =
-  let build_eqn (ids,lpat,rhs) =
+  let build_eqn (loc,ids,lpat,rhs) =
     let initial_lpat,initial_rhs = prepare_initial_alias lpat tomatchl rhs in
+(*    let initial_lpat,initial_rhs = lpat,rhs in*)
     let rhs =
       { rhs_env = env;
 	other_ids = ids@(ids_of_named_context (named_context env));
 	private_ids = [];
 	user_ids = ids;
 	subst = [];
-	rhs_lift = 0;
+	rhs_lifts = [];
 	it = initial_rhs } in
     { dependencies = [];
-	 patterns = initial_lpat;
-	 tag = RegularPat;
-	 rhs = rhs }
+      patterns = initial_lpat;
+      tag = RegularPat;
+      alias_stack = [];
+      eqn_loc = loc;
+      rhs = rhs }
   in List.map build_eqn eqns
 
 (*--------------------------------------------------------------------------*
@@ -1052,7 +1198,7 @@ let coerce_row typing_fun isevars env cstropt tomatch =
 	     (* 2 cases : Not the right inductive or not an inductive at all *)
 	     try
 	       let mind,_ = find_mrectype env !isevars typ in
-	       error_bad_constructor_loc cloc CCI
+	       error_bad_constructor_loc cloc
 		 (constructor_of_rawconstructor c) mind
 	     with Induc ->
 	       error_case_not_inductive_loc
@@ -1150,13 +1296,15 @@ let prepare_predicate typing_fun isevars env tomatchs = function
 	let ndep_arity = build_expected_arity env isevars false tomatchs in
         try
 	  false, typing_fun (mk_tycon ndep_arity) env pred
-	with TypeError _ | Stdpp.Exc_located (_,TypeError _) ->
+	with PretypeError _ | TypeError _ |
+	    Stdpp.Exc_located (_,(PretypeError _ | TypeError _)) ->
         isevars := !isevars_copy;
         (* We then assume the predicate is dependent *)
 	let dep_arity = build_expected_arity env isevars true tomatchs in
 	try
 	  true, typing_fun (mk_tycon dep_arity) env pred
-	with TypeError _ | Stdpp.Exc_located (_,TypeError _) ->
+	with PretypeError _ | TypeError _ |
+	  Stdpp.Exc_located (_,(PretypeError _ | TypeError _)) ->
         isevars := !isevars_copy;
         (* Otherwise we attempt to type it without constraints, possibly *)
         (* failing with an error message; it may also be well-typed *)
@@ -1197,11 +1345,11 @@ let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
       isevars  = isevars;
       pred     = pred;
       tomatch  = initial_pushed;
-      history  = starting_history (List.length initial_pushed);
+      history  = start_history (List.length initial_pushed);
       mat      = matx;
       typing_function = typing_fun } in
   
-  let j = compile pb in
+  let _, j = compile pb in
   
   match tycon with
     | Some p ->	Coercion.inh_conv_coerce_to loc env isevars j p
