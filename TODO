@@ -11,6 +11,8 @@ Environnement:
 
 Tactiques:
 
+- Porter EqDecide Correctness (JCF)
+
 Noyau:
 
 - Gérer les alias avec un let in dans les cases
