@@ -181,8 +181,10 @@ let matches_core convert pat c =
 
       | PCase (_,a1,br1), IsMutCase (_,_,a2,br2) ->
 	  (* On ne teste pas le prédicat *)
-	  array_fold_left2 (sorec stk) (sorec stk sigma a1 a2)
-	    br1 br2
+          if (Array.length br1) = (Array.length br2) then
+  	    array_fold_left2 (sorec stk) (sorec stk sigma a1 a2) br1 br2
+          else
+            raise PatternMatchingFailure
       (* À faire *)
       |	PFix f0, IsFix f1 when f0 = f1 -> sigma
       |	PCoFix c0, IsCoFix c1 when c0 = c1 -> sigma

@@ -67,10 +67,10 @@ let definition_body_red red_option ident (local,n) com comtypeopt =
   let ce = constant_entry_of_com (com,comtypeopt) in
   let ce' = red_constant_entry ce red_option in
   match n with
-    | NeverDischarge -> declare_global_definition ident ce n local
+    | NeverDischarge -> declare_global_definition ident ce' n local
     | DischargeAt disch_sp ->
         if Lib.is_section_p disch_sp then begin
-	  let c = constr_of_constr_entry ce in
+	  let c = constr_of_constr_entry ce' in
           declare_variable ident (SectionLocalDef c,n,false);
 	  if is_verbose() then message ((string_of_id ident) ^ " is defined");
           if Pfedit.refining () then 
