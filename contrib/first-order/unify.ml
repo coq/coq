@@ -100,7 +100,7 @@ let value i t=
     vaux t
 	  
 type instance=
-    Real of constr*int (* instance*valeur heuristique*)
+    Real of (constr*int) (* instance*valeur heuristique*)
   | Phantom of constr (* domaine de quantification *)
  	  
 let unif_atoms i dom t1 t2=
@@ -139,104 +139,51 @@ end
   
 module RIS=Set.Make(OrderedRightInstance)
 module LIS=Set.Make(OrderedLeftInstance)
-  
-(* le premier argument est une sous formule a instancier *)
 
-let match_atom_with_latoms i dom (pol,atom) latoms accu=
-  if pol then 
-    let f latom accu=
-      match unif_atoms i dom atom latom with
-	  None->accu
-	| Some (Phantom _) ->(true,snd accu)
-	| Some (Real(t,i)) ->(false,RIS.add (t,i) (snd accu)) in
-      List.fold_right f latoms accu
-  else accu 
+let make_goal_atoms seq=
+  match seq.gl with
+      Atomic t->{negative=[];positive=[t]}
+    | Complex (_,_,l)->l 
 
-let match_atom_with_hyp_atoms i dom (pol,atom) lf accu=
-  let f (b,hatom) accu=
-    if b=pol then accu else
-      match unif_atoms i dom atom hatom with
-	  None->accu
-	| Some (Phantom _) ->(true,snd accu)
-	| Some (Real(t,i))->(false,RIS.add (t,i) (snd accu)) in
-    List.fold_right f lf.atoms accu
+let make_left_atoms seq=
+    {negative=seq.latoms;positive=[]}
 
-let match_atom_with_goal i dom (pol,atom) glatoms accu=
-  let f (b,glatom) accu=
-    if b=pol then accu else
-      match unif_atoms i dom atom glatom with
-	  None->accu
-	| Some (Phantom _) ->(true,snd accu)
-	| Some (Real(t,i)) ->(false,RIS.add (t,i) (snd accu)) in
-    List.fold_right f glatoms accu
+let do_sequent setref triv add mkelt seq i dom atoms=
+  let flag=ref true in
+  let phref=ref triv in
+  let do_atoms a1 a2 =
+    let do_pair t1 t2 = 
+      match unif_atoms i dom t1 t2 with
+	  None->()
+	| Some (Phantom _) ->phref:=true
+	| Some c ->flag:=false;setref:=add (mkelt c) !setref in
+      List.iter (fun t->List.iter (do_pair t) a2.negative) a1.positive;
+      List.iter (fun t->List.iter (do_pair t) a2.positive) a1.negative in
+    HP.iter (fun lf->do_atoms atoms lf.atoms) seq.redexes;
+    do_atoms atoms (make_left_atoms seq);
+    do_atoms atoms (make_goal_atoms seq);
+    !flag && !phref 
+ 
+let give_right_instances i dom triv atoms seq=
+  let setref=ref RIS.empty in
+  let inj=function
+       Real c->c
+     | _->anomaly "can't happen" in
+  if do_sequent setref triv RIS.add inj seq i dom atoms then
+    None
+  else
+    Some (RIS.elements !setref)
 
-let give_right_instances i dom ratoms seq=
-  let f ratom accu=
-    let accu1= match_atom_with_goal i dom ratom ratoms accu in
-    let accu2=
-      match_atom_with_latoms i dom ratom seq.latoms accu1 in
-      HP.fold (match_atom_with_hyp_atoms i dom ratom) seq.redexes accu2 in
-  let (b,accu0)=List.fold_right f ratoms (false,RIS.empty) in
-    if b & RIS.is_empty accu0 then 
-      None
-    else
-      Some (RIS.elements accu0)
-
-(*left*) 
-	  
-let match_named_atom_with_latoms id i dom (pol,atom) latoms accu=
-  if pol then 
-    let f latom accu=
-      match unif_atoms i dom atom latom with
-	  None->accu
-	| Some (Phantom _) ->(true,snd accu)
-	| Some inst ->(false,LIS.add (inst,id) (snd accu)) in
-      List.fold_right f latoms accu
-  else accu 
-
-let match_named_atom_with_hyp_atoms id i dom (pol,atom) lf accu=
-  let f (b,hatom) accu=
-    if b=pol then accu else
-      match unif_atoms i dom atom hatom with
-	  None->accu
-	| Some (Phantom _) ->(true,snd accu)
-	| Some inst->(false,LIS.add (inst,id) (snd accu)) in
-    List.fold_right f lf.atoms accu
-
-let match_named_atom_with_goal id i dom (pol,atom) gl accu=
-  match gl with 
-      Atomic t->
-	if pol then accu else
-	  (match unif_atoms i dom atom t with
-	       None->accu
-	     | Some (Phantom _) ->(true,snd accu)
-	     | Some inst ->(false,LIS.add (inst,id) (snd accu)))
-    | Complex (_,_,glatoms)->
-	let f (b,glatom) accu=
-	  if b=pol then accu else
-	    match unif_atoms i dom atom glatom with
-		None->accu
-	      | Some (Phantom _) ->(true,snd accu)
-	      | Some inst ->(false,LIS.add (inst,id) (snd accu)) in
-	  List.fold_right f glatoms accu
-
-let match_one_forall_hyp seq lf accu=
+let match_one_forall_hyp setref seq lf=
   match lf.pat with 
-      Lforall(i,dom)->
-	let f latom accu=
-	  let accu1=match_named_atom_with_goal lf.id i dom latom seq.gl accu in
-	  let accu2=
-	    match_named_atom_with_latoms lf.id i dom latom seq.latoms accu1 in
-	    HP.fold (match_named_atom_with_hyp_atoms lf.id i dom latom) 
-	      seq.redexes accu2 in
-	let (b,accu0)=List.fold_right f lf.atoms (false,LIS.empty) in
-	  if b & LIS.is_empty accu0 then 
-	    LIS.add (Phantom dom,lf.id) accu
-	  else
-	    LIS.union accu0 accu
+      Lforall(i,dom,triv)->
+	let inj x=(x,lf.id) in
+	  if do_sequent setref triv LIS.add inj seq i dom lf.atoms then
+	    setref:=LIS.add ((Phantom dom),lf.id) !setref 
     | _ ->anomaly "can't happen" 
 
 let give_left_instances lfh seq=
-  LIS.elements (List.fold_right (match_one_forall_hyp seq) lfh LIS.empty)
+  let setref=ref LIS.empty in
+    List.iter (match_one_forall_hyp setref seq) lfh;
+    LIS.elements !setref
 
-(* TODO: match with goal *)

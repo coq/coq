@@ -105,7 +105,7 @@ let rec collect_forall seq=
   else
     let hd,seq1=take_left seq in
       (match hd.pat with 
-	   Lforall(i,dom)-> 
+	   Lforall(_,_,_)-> 
 	     let (q,seq2)=collect_forall seq1 in
 	       ((hd::q),seq2)
 	 | _->[],seq)

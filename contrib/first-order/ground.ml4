@@ -24,6 +24,8 @@ open Goptions
 (* declaring search depth as a global option *)
 
 let ground_depth=ref 5
+
+let set_qflag b= qflag:=b
 		   
 let _=
   let gdopt=
@@ -70,12 +72,13 @@ let ground_tac solver startseq gl=
 		   tclORELSE
 		   (or_tac toptac (re_add seq))
 		   (left_tac seq ctx) gl
-	       | Rexists(i,dom)->
+	       | Rexists(i,dom,triv)->
 		   let cont_tac=left_tac seq ctx in
 		     if seq.depth<=0 || not !qflag then 
 		       cont_tac gl
 		     else 
-		       (match Unify.give_right_instances i dom atoms seq with
+		       (match 
+			  Unify.give_right_instances i dom triv atoms seq with
 			    Some l -> tclORELSE
 			      (exists_tac l toptac (re_add seq)) cont_tac gl
 			  | None ->
@@ -96,7 +99,7 @@ let ground_tac solver startseq gl=
 	      left_and_tac ind hd.id toptac (re_add seq1) gl
 	  | Lor ind->
 	      left_or_tac ind hd.id toptac (re_add seq1) gl
-	  | Lforall (i,dom)->
+	  | Lforall (_,_,_)->
 	      let (lfp,seq2)=collect_forall seq in
 		tclORELSE
 		  (if seq.depth<=0 || not !qflag then 
@@ -122,11 +125,11 @@ let ground_tac solver startseq gl=
 		     ll_ind_tac ind largs hd.id toptac (re_add seq1) 
 		 | LLforall p ->	      
 		     tclORELSE
-		     (if seq.depth<=0 || not !qflag then 
-			tclFAIL 0 "max depth" 
-		      else 
-			ll_forall_tac p hd.id toptac (re_add seq1))
-		     (left_tac seq1 (hd::ctx))
+		       (if seq.depth<=0 || not !qflag then 
+			  tclFAIL 0 "max depth" 
+			else 
+			  ll_forall_tac p hd.id toptac (re_add seq1))
+		       (left_tac seq1 (hd::ctx))
 		 | LLexists (ind,l) ->
 		     if !qflag then
 		       ll_ind_tac ind l hd.id toptac (re_add seq1) 
@@ -145,19 +148,18 @@ let default_solver=(Tacinterp.interp <:tactic<Auto with *>>)
     
 let fail_solver=tclFAIL 0 "GroundTauto failed"
 		      
-let gen_ground_tac flag taco l=
+let gen_ground_tac flag taco l gl=
   let backup= !qflag in
     try
-      qflag:=flag;
+      set_qflag flag;
       let solver= 
 	match taco with 
 	    Some tac->tac
 	  | None-> default_solver in
       let startseq=create_with_ref_list l !ground_depth in
-      let result=
-	ground_tac solver startseq
-      in qflag:=backup;result
-    with e -> qflag:=backup;raise e
+      let result=ground_tac solver startseq gl in 
+	set_qflag backup;result
+    with e -> set_qflag backup;raise e
 	   
 open Genarg
 open Pcoq

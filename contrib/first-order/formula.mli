@@ -43,20 +43,22 @@ type kind_of_formula=
 
 val kind_of_formula : Proof_type.goal Tacmach.sigma -> 
   constr -> kind_of_formula
+
+type atoms = {positive:constr list;negative:constr list}
 			
 val build_atoms : Proof_type.goal Tacmach.sigma -> counter -> 
-  bool -> constr -> (bool*constr) list
+  bool -> constr -> bool * atoms
 
 type right_pattern =
     Rand
   | Ror 
   | Rforall
-  | Rexists of metavariable*constr
+  | Rexists of metavariable*constr*bool
   | Rarrow
   | Revaluable of Names.evaluable_global_reference
     
 type right_formula =
-    Complex of right_pattern*constr*((bool*constr) list)
+    Complex of right_pattern*constr*atoms
   | Atomic of constr
       
 type left_arrow_pattern=
@@ -73,7 +75,7 @@ type left_pattern=
     Lfalse    
   | Land of inductive
   | Lor of inductive 
-  | Lforall of metavariable*constr
+  | Lforall of metavariable*constr*bool
   | Lexists of inductive
   | Levaluable of Names.evaluable_global_reference
   | LA of constr*left_arrow_pattern
@@ -81,7 +83,7 @@ type left_pattern=
 type left_formula={id:global_reference;
 		   constr:constr;
 		   pat:left_pattern;
-		   atoms:(bool*constr) list;
+		   atoms:atoms;
 		   internal:bool}
 
 (*exception Is_atom of constr*)
@@ -92,5 +94,3 @@ val build_left_entry :
 
 val build_right_entry : types -> Proof_type.goal Tacmach.sigma -> 
   counter -> right_formula
-
-
