@@ -134,7 +134,8 @@ let interp s =
 		  | VernacCheckMayEval _
 		  | VernacGlobalCheck _
 		  | VernacPrint _
-		  | VernacSearch _ ->   ()
+		  | VernacSearch _ ->   
+		      !flash_info ~delay:1000000 "Warning: query commands should not be inserted in scripts" 
 		  | _ -> ()
 	      end;
 	      Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s));

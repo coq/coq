@@ -38,9 +38,9 @@ let commands = [
    "Defined.";
    "Definition";
    "Derive Dependent Inversion";
-   "Derive Dependent Inversion_clear";
+   "Derive Dependent Inversion__clear";
    "Derive Inversion";
-   "Derive Inversion_clear";
+   "Derive Inversion__clear";
    (* "Drop"; *)];
   ["End";
    "End Silent.";
@@ -141,7 +141,7 @@ let commands = [
      "Section";
      "Set Extraction AutoInline";
      "Set Extraction Optimize";
-     "Set Hyps_limit";
+     "Set Hyps__limit";
      "Set Implicit Arguments";
      "Set Printing Coercion";
      "Set Printing Coercions";
@@ -174,7 +174,7 @@ let commands = [
    "Unfocus";
    "Unset Extraction AutoInline";
    "Unset Extraction Optimize";
-   "Unset Hyps_limit";
+   "Unset Hyps__limit";
    "Unset Implicit Arguments";
    "Unset Printing Coercion";
    "Unset Printing Coercions";
@@ -240,3 +240,192 @@ let state_preserving = [
   "Test Printing Synth";
   "Test Printing Wildcard";
 ]
+
+
+let tactics = 
+  [
+    [
+      "abstract";
+      "absurd";
+      "apply";
+      "apply __ with";
+      "assert";
+      "assumption.";
+      "auto.";
+      "auto with";
+      "autorewrite";
+    ];
+
+   [
+     "case";
+     "case __ with";
+     "cbv";
+     "change";
+     "change __ in";
+     "clear";
+     "clearbody";
+     "compare";
+     "compute";
+     "congruence";
+     "constructor";
+     "constructor __ with";
+     "contradiction.";
+     "cut";
+     "cutrewrite";
+   ];
+
+   [
+     "decide equality.";
+     "decompose";
+     "decompose record";
+     "decompose sum";
+     "dependent inversion";
+     "dependent inversion __ with";
+     "dependent inversion__clear";
+     "dependent inversion__clear __ with";
+     "dependent rewrite ->";
+     "dependent rewrite <-";
+     "destruct";
+     "discriminate.";
+     "discriminate";
+     "discrR.";
+     "do";
+     "double induction";
+   ];
+
+   [
+     "eapply";
+     "eauto.";
+     "eauto with";
+     "elim";
+     "elim __ using";
+     "elim __ with";
+     "elimtype";
+     "exact";
+     "exists";
+   ];
+
+   [
+     "fail.";
+     "field.";
+     "first";
+     "firstorder.";
+     "firstorder";
+     "firstorder using";
+     "firstorder with";
+     "fold";
+     "fourier.";
+     "functional induction";
+   ];
+
+   [
+     "generalize";
+     "generalize dependent";
+   ];
+   
+   [
+     "hnf";
+   ];
+
+   [
+     "idtac.";
+     "induction";
+     "info";
+     "injection";
+     "intro";
+     "intro after";
+     "intro __ after";
+     "intros";
+     "intros.";
+     "intros";
+     "intros <pattern> ";
+     "intros until";
+     "intuition.";
+     "intuition";
+     "inversion";
+     "inversion __ in";
+     "inversion __ using";
+     "inversion __ using __ in";
+     "inversion__clear";
+     "inversion__clear __ in";
+   ];
+
+   [
+     "jp <n>";
+     "jp.";
+   ];
+
+   [
+     "lapply";
+     "lazy";
+     "left";
+   ];
+
+   [
+     "move __ after";
+   ];
+
+   [
+     "omega";
+   ];
+
+   [
+     "pattern";
+     "pose";
+     "progress";
+   ];
+
+   [
+     "quote";
+   ];
+
+   [
+     "red.";
+     "red in";
+     "refine";
+     "reflexivity.";
+     "rename __ into";
+     "repeat";
+     "replace __ with";
+     "rewrite";
+     "rewrite __ in";
+     "rewrite ->";
+     "rewrite -> __ in";
+     "rewrite <-";
+     "rewrite <- __ in";
+     "right.";
+     "ring.";
+   ];
+
+   [
+     "set";
+     "setoid__replace";
+     "setoid__rewrite";
+     "simpl.";
+     "simpl __ in";
+     "simple destruct";
+     "simple induction";
+     "simple inversion";
+     "simplify__eq";
+     "solve";
+     "split.";
+     "split__Rabs.";
+     "split__Rmult.";
+     "subst";
+     "symmetry.";
+   ];
+
+   [
+     "tauto.";
+     "transitivity";
+     "trivial.";
+     "try";
+   ];
+   
+   [
+     "unfold";
+     "unfold __ in";
+   ];
+]
+
+

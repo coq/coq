@@ -100,7 +100,7 @@ let files_to_link userfiles =
   let toplevel_objs =
     if !top then topobjs else if !opt then notopobjs else [] in
   let ide_objs = if !coqide then 
-    "threads.cma"::"lablgtk.cma"::"gtkThread.cmo"::ide 
+    "str.cma"::"threads.cma"::"lablgtk.cma"::"gtkThread.cmo"::ide 
   else [] 
   in
   let objs = 

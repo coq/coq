@@ -8,40 +8,15 @@
 
 (* $Id$ *)
 
-let decompose_tab w = 
-  let vbox = new GPack.box ((Gobject.try_cast w "GtkBox"):Gtk.box Gtk.obj) in
-  let l = vbox#children in
-  match l with 
-    | [img;lbl] -> 
-	let img = new GMisc.image 
-		    ((Gobject.try_cast img#as_widget "GtkImage"):
-		       Gtk.image Gtk.obj) 
-	in
-	let lbl = GMisc.label_cast lbl in
-	vbox,img,lbl
-    | _ -> assert false
-
-
 class command_window () = 
   let window = GWindow.window 
 		 ~allow_grow:true ~allow_shrink:true 
 		 ~width:320 ~height:200
+		 ~position:`CENTER
 		 ~title:"CoqIde queries" ~show:false ()
   in
   let accel_group = GtkData.AccelGroup.create () in
   let vbox = GPack.vbox ~homogeneous:false ~packing:window#add () in
-(*
-  let menubar = GMenu.menu_bar ~packing:vbox#pack () in
-*)
-(*
-  let handle = GBin.handle_box 
-		 ~show:true
-		 ~handle_position:`LEFT
-		 ~snap_edge:`LEFT
-		 ~packing:vbox#pack
-		 ()
-  in
-*)
   let toolbar = GButton.toolbar 
 		  ~orientation:`HORIZONTAL 
 		  ~style:`ICONS
@@ -51,13 +26,6 @@ class command_window () =
 			       ~fill:false)
 		  ()
   in
-(*
-  let factory = new GMenu.factory menubar
-  in
-*)
-(*
-  let accel_group = factory#accel_group in
-*)
   let notebook = GPack.notebook ~scrollable:true 
 		   ~packing:(vbox#pack 
 			       ~expand:true
@@ -65,10 +33,6 @@ class command_window () =
 			    ) 
 		   ()
   in
-(*
-  let hide_menu = factory#add_item "_Hide Window" 
-		    ~callback:window#misc#hide
-*)
   let _ = 
     toolbar#insert_button
       ~tooltip:"Hide Window"
@@ -77,9 +41,6 @@ class command_window () =
       ~callback:window#misc#hide
       ()
   in
-(*
-  let new_page_menu = factory#add_item "_New Page" in
-*)
   let new_page_menu = 
     toolbar#insert_button
       ~tooltip:"New Page"
@@ -91,13 +52,6 @@ class command_window () =
       ()
   in
 
-(*
-  let kill_page_menu = 
-    factory#add_item "_Kill Page" 
-      ~callback:
-      (fun () -> notebook#remove_page notebook#current_page)
-  in
-*)
   let kill_page_menu = 
     toolbar#insert_button
       ~tooltip:"Kill Page"

@@ -9,8 +9,8 @@
 (* $Id$ *)
 
 val async : ('a -> unit) -> 'a -> unit
-val browse : string -> unit
-val browse_keyword : string -> unit
+val browse : (string -> unit) -> string -> unit
+val browse_keyword : (string -> unit) -> string -> unit
 val byte_offset_to_char_offset : string -> int -> int
 val clear_stdout : unit -> unit
 val debug : bool ref
@@ -65,3 +65,15 @@ val flash_info : (?delay:int -> string -> unit) ref
 val set_location : (string -> unit) ref
 
 val pulse : (unit -> unit) ref
+
+
+(*
+  checks if two file names refer to the same (existing) file
+*)
+
+val same_file : string -> string -> bool
+
+(*
+  returns an absolute filename equivalent to given filename
+*)
+val absolute_filename : string -> string

@@ -80,6 +80,7 @@ type pref =
       mutable modifiers_valid : Gdk.Tags.modifier list;
 
       mutable cmd_browse : string * string;
+      mutable cmd_editor : string * string;
 
       mutable text_font : Pango.font_description;
 
@@ -127,6 +128,7 @@ let (current:pref ref) =
 
     
     cmd_browse = "netscape -remote \"OpenURL(", ")\"";
+    cmd_editor = "emacs ", "";
     
     text_font = Pango.Font.from_string "Monospace 12";
 
@@ -191,6 +193,7 @@ let save_pref () =
     add "modifiers_valid" 
       (List.map mod_to_str p.modifiers_valid) ++
     add "cmd_browse" [fst p.cmd_browse; snd p.cmd_browse] ++
+    add "cmd_editor" [fst p.cmd_editor; snd p.cmd_editor] ++
 
     add "text_font" [Pango.Font.to_string p.text_font] ++
 
@@ -244,6 +247,7 @@ let load_pref () =
     set "modifiers_valid" 
       (fun v -> np.modifiers_valid <- List.map str_to_mod v);
     set_pair "cmd_browse" (fun v1 v2 -> np.cmd_browse <- (v1,v2));
+    set_pair "cmd_editor" (fun v1 v2 -> np.cmd_editor <- (v1,v2));
     set_hd "text_font" (fun v -> np.text_font <- Pango.Font.from_string v);
     set_hd "doc_url" (fun v -> np.doc_url <- v);
     set_hd "library_url" (fun v -> np.library_url <- v);
@@ -431,6 +435,26 @@ let configure () =
       ""
   in
 
+  let cmd_editor = 
+    string
+      ~f:(fun s -> 
+	    !current.cmd_editor <- 
+	    try 
+	      let i = String.index s '%' in
+	      let pre = (String.sub s 0 i) in
+	      if String.length s - 1 = i then 
+		pre,""
+	      else
+		let post = String.sub s (i+2) (String.length s - i - 2) in
+		prerr_endline pre;
+		prerr_endline post;
+		pre,post
+	    with Not_found -> s,""
+	    )
+      ~help:"(%s for file name)" 
+      "External editor"
+      ((fst !current.cmd_editor)^"%s"^(snd !current.cmd_editor))
+  in    
   let cmd_browse = 
     string
       ~f:(fun s -> 
@@ -491,6 +515,7 @@ let configure () =
 *)
      Section("Externals",
 	     [cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc; cmd_print;
+	      cmd_editor;
 	      cmd_browse;doc_url;library_url]);
      Section("Tactics Wizard",
 	     [automatic_tactics]);

@@ -1039,6 +1039,7 @@ let edit ?(with_apply=true)
     conf_struct_list =
   let return = ref Return_cancel in
   let window = GWindow.window
+		 ~position:`CENTER
       ~modal: true ~title: title
       ~width: width ~height: height ()
   in

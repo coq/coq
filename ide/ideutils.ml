@@ -127,35 +127,6 @@ let try_export file_name s =
   true
   with e -> prerr_endline (Printexc.to_string e);false
 
-let browse url =
-  let l,r = !current.cmd_browse in
-  ignore (Sys.command (l ^ url ^ r))
-
-let url_for_keyword =
-  let ht = Hashtbl.create 97 in
-  begin try
-    let cin = open_in (Filename.concat lib_ide "index_urls.txt") in
-    try while true do
-      let s = input_line cin in
-      try 
-	let i = String.index s ',' in
-	let k = String.sub s 0 i in
-	let u = String.sub s (i + 1) (String.length s - i - 1) in
-	Hashtbl.add ht k u
-      with _ ->
-	()
-    done with End_of_file ->
-      close_in cin
-  with _ ->
-    ()
-  end;
-  (Hashtbl.find ht : string -> string)
-
-
-let browse_keyword text = 
-  try let u = url_for_keyword text in browse (!current.doc_url ^ u) 
-  with _ -> ()
-
 let my_stat f = try Some (Unix.stat f) with _ -> None
 
 let revert_timer = ref None
@@ -274,6 +245,37 @@ let run_command f c =
   done;
   (Unix.close_process_full (cin,cout,cerr),  Buffer.contents result)
 
+let browse f url =
+  let l,r = !current.cmd_browse in
+  let (s,res) = run_command f (l ^ url ^ r) in
+  ()
+
+let url_for_keyword =
+  let ht = Hashtbl.create 97 in
+  begin try
+    let cin = open_in (Filename.concat lib_ide "index_urls.txt") in
+    try while true do
+      let s = input_line cin in
+      try 
+	let i = String.index s ',' in
+	let k = String.sub s 0 i in
+	let u = String.sub s (i + 1) (String.length s - i - 1) in
+	Hashtbl.add ht k u
+      with _ ->
+	()
+    done with End_of_file ->
+      close_in cin
+  with _ ->
+    ()
+  end;
+  (Hashtbl.find ht : string -> string)
+
+
+let browse_keyword f text = 
+  try let u = url_for_keyword text in browse f (!current.doc_url ^ u) 
+  with _ -> ()
+
+
 let underscore = Glib.Utf8.to_unichar "_" (ref 0)
 
 let arobase = Glib.Utf8.to_unichar "@" (ref 0)
@@ -281,3 +283,24 @@ let prime = Glib.Utf8.to_unichar "'" (ref 0)
 let bn = Glib.Utf8.to_unichar "\n" (ref 0)
 let space = Glib.Utf8.to_unichar " " (ref 0)
 let tab = Glib.Utf8.to_unichar "\t" (ref 0)
+
+
+(*
+  checks if two file names refer to the same (existing) file
+*)
+
+let same_file f1 f2 =
+  try
+    let s1 = Unix.stat f1
+    and s2 = Unix.stat f2 
+    in
+    (s1.Unix.st_dev = s2.Unix.st_dev) &&
+    (s1.Unix.st_ino = s2.Unix.st_ino) 
+  with
+      Unix.Unix_error _ -> false
+
+let absolute_filename f =
+  if Filename.is_relative f then 
+    Filename.concat (Sys.getcwd ()) f
+  else f
+	      

@@ -302,7 +302,7 @@ let init is_ide =
   if !batch_mode then (flush_all(); Profile.print_profile (); exit 0);
   Lib.declare_initial_state ()
 
-let init_ide () = init true; !ide_args
+let init_ide () = init true; List.rev !ide_args
 
 let start () =
   init false;
