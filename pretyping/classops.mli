@@ -55,7 +55,10 @@ val coercion_info_from_index : int -> coe_typ * coe_info_typ
 val coercion_params : 
   reference -> int (* raise [Not_found] if not a coercion *)
 val constructor_at_head : constr -> cl_typ * int
+
+(* raises [Not_found] if not convertible to a class *)
 val class_of : env -> 'c evar_map -> constr -> constr * int
+
 val class_args_of : constr -> constr list
 val inClass : (cl_typ * cl_info_typ) -> obj
 val outClass : obj -> (cl_typ * cl_info_typ)
