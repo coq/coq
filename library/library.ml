@@ -191,7 +191,8 @@ let require_module spec name fileopt export =
     | None -> name
     | Some f -> f 
   in
-  add_anonymous_leaf (in_require (name,file,export))
+  add_anonymous_leaf (in_require (name,file,export));
+  add_frozen_state ()
 
 (*s [save_module s] saves the module [m] to the disk. *)
 
