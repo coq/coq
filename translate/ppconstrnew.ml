@@ -336,7 +336,13 @@ let is_var id = function
   | _ -> false
 
 let tm_clash = function
-  | (CRef (Ident (_,id)), Some (_,_,nal)) when List.exists ((=) (Name id)) nal
+  | (CRef (Ident (_,id)), Some (CApp (_,_,nal))) 
+      when List.exists (function CRef (Ident (_,id')),_ -> id=id' | _ -> false)
+	nal
+      -> Some id
+  | (CRef (Ident (_,id)), Some (CAppExpl (_,_,nal))) 
+      when List.exists (function CRef (Ident (_,id')) -> id=id' | _ -> false)
+	nal
       -> Some id
   | _ -> None
 
@@ -350,9 +356,12 @@ let pr_case_item pr (tm,(na,indnalopt)) =
     | _ -> mt ()) ++
   (match indnalopt with
     | None -> mt ()
+(*
     | Some (_,ind,nal) ->
         spc () ++ str "in " ++ 
-        hov 0 (pr_reference ind ++ prlist (pr_arg pr_name) nal)))
+        hov 0 (pr_reference ind ++ prlist (pr_arg pr_name) nal))
+*)
+    | Some t -> spc () ++ str "in " ++ pr lsimple t))
 
 let pr_case_type pr po =
   match po with

@@ -32,6 +32,8 @@ let for_grammar f x =
   interning_grammar := false;
   a
 
+let variables_bind = ref false
+
 (* For the translator *)
 let temporary_implicits_in = ref []
 let set_temporary_implicits_in l = temporary_implicits_in := l
@@ -106,6 +108,10 @@ let error_unbound_patvar loc n =
   user_err_loc
     (loc,"glob_qualid_or_patvar", str "?" ++ pr_patvar n ++ 
       str " is unbound")
+
+let error_bad_inductive_type loc =
+  user_err_loc (loc,"",str 
+    "This should be an inductive type applied to names or \"_\"")
 
 (**********************************************************************)
 (* Dump of globalization (to be used by coqdoc)                       *)
@@ -583,18 +589,13 @@ let internalise sigma env allow_soapp lvar c =
 	  | RApp (loc', f', args') -> RApp (join_loc loc' loc, f',args'@args)
 	  | _ -> RApp (loc, c, args))
     | CCases (loc, (po,rtnpo), tms, eqns) ->
-        let rtnids = List.fold_right (fun (_,(na,x)) ids ->
-          let ids = match x with
-            | Some (_,_,nal) -> List.fold_right (name_fold Idset.add) nal ids
-            | _ -> ids in
-          name_fold Idset.add na ids) tms ids in
+        let tms,rtnids = List.fold_right (fun (tm,indnalo) (inds,ids) ->
+	  let typ,ids = intern_return_type env indnalo ids in
+	  (intern env tm,ref typ)::inds,ids)
+	  tms ([],ids) in
         let rtnpo =
           option_app (intern_type (rtnids,impls,tmp_scope,scopes)) rtnpo in
-	RCases (loc, (option_app (intern_type env) po, ref rtnpo),
-		List.map (fun (tm,(na,indnalo)) ->
-		  (intern env tm,ref (na,option_app (fun (loc,r,nal) ->
-		    let ind,l = intern_inductive r in
-		    (loc,ind,l@nal)) indnalo))) tms,
+	RCases (loc, (option_app (intern_type env) po, ref rtnpo), tms,
 		List.map (intern_eqn (List.length tms) env) eqns)
     | COrderedCase (loc, tag, po, c, cl) ->
 	let env = reset_tmp_scope env in
@@ -634,7 +635,7 @@ let internalise sigma env allow_soapp lvar c =
 
     | CDynamic (loc,d) -> RDynamic (loc,d)
 
-  and intern_type (ids,impls,tmp_scope,scopes) =
+  and intern_type (ids,impls,_,scopes) =
     intern (ids,impls,Some Symbols.type_scope,scopes)
 
   and intern_eqn n (ids,impls,tmp_scope,scopes as env) (loc,lhs,rhs) =
@@ -652,6 +653,27 @@ let internalise sigma env allow_soapp lvar c =
 	List.iter message_redundant_alias subst;
 	let env_ids = List.fold_right Idset.add eqn_ids ids in
 	(loc, eqn_ids,pl,intern (env_ids,impls,tmp_scope,scopes) rhs)
+
+  and intern_return_type (_,_,_,scopes as env) (na,t) ids =
+    let ids,typ = match t with
+    | Some t -> 
+	let tids = names_of_cases_indtype t in
+	let tids = List.fold_right Idset.add tids Idset.empty in
+	let t = intern_type (tids,[],None,scopes) t in
+	begin match t with
+	  | RApp (loc,RRef (_,IndRef ind),l) ->
+	      let nal = List.map (function
+		| RHole _ -> Anonymous
+		| RVar (_,id) -> Name id
+		| c ->
+		    user_err_loc (loc_of_rawconstr c,"",str "Not a name")) l in
+	      List.fold_right (name_fold Idset.add) nal ids,
+	      Some (loc,ind,nal)
+	  | _ -> error_bad_inductive_type (loc_of_rawconstr t)
+	end
+    | None -> 
+	ids, None in
+    (na,typ), name_fold Idset.add na ids
 
   and iterate_prod loc2 env ty body = function
     | (loc1,na)::nal ->

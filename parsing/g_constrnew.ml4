@@ -287,9 +287,7 @@ GEXTEND Gram
   ;
   pred_pattern:
     [ [ oid = ["as"; id=name -> snd id | -> Names.Anonymous];
-        ty = OPT ["in"; r=global; nal=LIST0 name ->
-          (loc,r,List.map snd nal)] ->
-          (oid,ty) ] ]
+        ty = OPT ["in"; t=lconstr -> t] -> (oid,ty) ] ]
   ;
   case_type:
     [ [ ty = OPT [ "return"; c = operconstr LEVEL "100" -> c ] -> ty ] ]

@@ -168,8 +168,8 @@ let rec subst_aconstr subst raw =
       let ref' = subst_global subst ref in 
 	if ref' == ref then raw else
 	  AHole (ImplicitArg (ref',i))
-  | AHole ( (BinderType _ | QuestionMark | CasesType |
-      InternalHole | TomatchTypeParameter _)) -> raw
+  | AHole (BinderType _ | QuestionMark | CasesType |
+      InternalHole | TomatchTypeParameter _) -> raw
 
   | ACast (r1,r2) -> 
       let r1' = subst_aconstr subst r1 and r2' = subst_aconstr subst r2 in
@@ -423,7 +423,7 @@ type constr_expr =
   | CApp of loc * (proj_flag * constr_expr) * 
       (constr_expr * explicitation located option) list
   | CCases of loc * (constr_expr option * constr_expr option) *
-      (constr_expr * (name * (loc * reference * name list) option)) list *
+      (constr_expr * (name * constr_expr option)) list *
       (loc * cases_pattern_expr list * constr_expr) list
   | COrderedCase of loc * case_style * constr_expr option * constr_expr
       * constr_expr list
@@ -536,6 +536,15 @@ let mkProdC (idl,a,b)   = CProdN (dummy_loc,[idl,a],b)
 
 (* Used in correctness and interface *)
 
+let names_of_cases_indtype =
+  let rec aux ids = function
+    (* We deal only with the regular cases *)
+  | CApp (_,_,l) -> List.fold_left (fun ids (a,_) -> aux ids a) ids l
+  | CNotation (_,_,l) | CAppExpl (_,_,l) -> List.fold_left aux ids l
+  | CRef (Ident (_,id)) -> id::ids
+  | _ -> ids
+  in aux []
+
 let map_binder g e nal = List.fold_right (fun (_,na) -> name_fold g na) nal e
 
 let map_binders f g e bl =
@@ -565,8 +574,9 @@ let map_constr_expr_with_binders f g e = function
 	List.fold_right
 	  (fun (tm,(na,indnal)) e ->
 	    option_fold_right
-	      (fun (loc,ind,nal) ->
-		List.fold_right (name_fold g) nal) indnal (name_fold g na e))
+	      (fun t ->
+		let ids = names_of_cases_indtype t in
+		List.fold_right g ids) indnal (name_fold g na e))
 	  a e
       in
       CCases (loc,(option_app (f e) po, option_app (f e') rtnpo),

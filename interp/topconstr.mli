@@ -86,7 +86,7 @@ type constr_expr =
   | CApp of loc * (proj_flag * constr_expr) * 
         (constr_expr * explicitation located option) list
   | CCases of loc * (constr_expr option * constr_expr option) *
-      (constr_expr * (name * (loc * reference * name list) option)) list *
+      (constr_expr * (name * constr_expr option)) list *
       (loc * cases_pattern_expr list * constr_expr) list
   | COrderedCase of loc * case_style * constr_expr option * constr_expr
       * constr_expr list
@@ -116,6 +116,9 @@ val replace_vars_constr_expr :
   (identifier * identifier) list -> constr_expr -> constr_expr
 
 val occur_var_constr_expr : identifier -> constr_expr -> bool
+
+(* Specific function for interning "in indtype" syntax of "match" *)
+val names_of_cases_indtype : constr_expr -> identifier list
 
 val mkIdentC : identifier -> constr_expr
 val mkRefC : reference -> constr_expr
