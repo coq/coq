@@ -201,7 +201,7 @@ TACTICS=\
   tactics/dhyp.cmo tactics/auto.cmo \
   tactics/setoid_replace.cmo tactics/equality.cmo \
   tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
-  tactics/tacinterp.cmo 
+  tactics/tacinterp.cmo tactics/autorewrite.cmo
 
 TOPLEVEL=\
   toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
@@ -216,8 +216,8 @@ TOPLEVEL=\
   toplevel/coqinit.cmo toplevel/coqtop.cmo
 
 HIGHTACTICS=\
-  tactics/autorewrite.cmo tactics/refine.cmo \
-  tactics/extraargs.cmo tactics/extratactics.cmo tactics/eauto.cmo
+  tactics/refine.cmo tactics/extraargs.cmo \
+  tactics/extratactics.cmo tactics/eauto.cmo
 
 SPECTAC= tactics/tauto.ml4 tactics/eqdecide.ml4
 USERTAC = $(SPECTAC)
