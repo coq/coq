@@ -51,6 +51,7 @@ type printable =
   | PrintClasses
   | PrintCoercions
   | PrintCoercionPaths of class_rawexpr * class_rawexpr
+  | PrintCanonicalStructures
   | PrintUniverses of string option
   | PrintHint of reference
   | PrintHintGoal

@@ -27,6 +27,7 @@ open Printer
 open Printmod
 open Libnames
 open Nametab
+open Recordops
 
 (*********************)
 (** Basic printing   *)
@@ -593,10 +594,10 @@ let print_class i =
   pr_class cl
   
 let print_path ((i,j),p) = 
-  (str"[" ++ 
-     prlist_with_sep pr_semicolon print_coercion_value p ++
-     str"] : " ++ print_class i ++ str" >-> " ++
-     print_class j)
+  hov 2 (
+    str"[" ++ hov 0 (prlist_with_sep pr_semicolon print_coercion_value p) ++
+    str"] : ") ++
+  print_class i ++ str" >-> " ++ print_class j
 
 let _ = Classops.install_path_printer print_path
 
@@ -626,5 +627,10 @@ let print_path_between cls clt =
         (str"No path between " ++ pr_class cls ++ str" and " ++ pr_class clt)
   in
   print_path ((i,j),p)
+
+let print_canonical_structures () =
+  prlist_with_sep pr_fnl (fun ((r1,r2),o) -> 
+    prterm o.o_DEF ++ str ": " ++ pr_global r1 ++ str " >-> " ++ pr_global r2)
+    (canonical_structures ())
 
 (*************************************************************************)

@@ -579,6 +579,7 @@ GEXTEND Gram
       | IDENT "Coercions" -> PrintCoercions
       | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr
          -> PrintCoercionPaths (s,t)
+      | IDENT "Canonical"; IDENT "Structures" -> PrintCanonicalStructures
       | IDENT "Tables" -> PrintTables
 (* Obsolete: was used for cooking V6.3 recipes ??
       | IDENT "Proof"; qid = global -> PrintOpaqueName qid

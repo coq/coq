@@ -894,6 +894,7 @@ let vernac_print = function
   | PrintCoercions -> ppnl (Prettyp.print_coercions())
   | PrintCoercionPaths (cls,clt) ->
       ppnl (Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt))
+  | PrintCanonicalStructures -> ppnl (Prettyp.print_canonical_structures ())
   | PrintUniverses None -> pp (Univ.pr_universes (Global.universes ()))
   | PrintUniverses (Some s) -> dump_universes s
   | PrintHint qid -> Auto.print_hint_ref (Nametab.global qid)

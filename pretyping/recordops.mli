@@ -48,3 +48,6 @@ val inStruc : inductive * struc_typ -> obj
 val outStruc : obj -> inductive * struc_typ
 
 val outCanonicalStructure : obj -> constant
+
+val canonical_structures : unit -> 
+  ((global_reference * global_reference) * obj_typ) list

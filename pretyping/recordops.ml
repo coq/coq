@@ -117,6 +117,8 @@ let subst_obj subst obj =
 let object_table =
   (ref [] : ((global_reference * global_reference) * obj_typ) list ref)
 
+let canonical_structures () = !object_table
+
 let cache_canonical_structure (_,(cst,lo)) =
   List.iter (fun (o,_ as x) ->
     if not (List.mem_assoc o !object_table) then
