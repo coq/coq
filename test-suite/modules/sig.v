@@ -1,7 +1,7 @@
 Module M.
   Module Type SIG.
-    Definition T:Set.
-    Definition x:T.
+    Parameter T:Set.
+    Parameter x:T.
   End SIG.
   Module N:SIG.
     Definition T:=nat.
@@ -12,9 +12,9 @@ End M.
 Module N:=M.
 
 Module Type SPRYT.
-  Module N.
+  Declare Module N.
     Definition T:=M.N.T.
-    Definition x:T.
+    Parameter x:T.
   End N.
 End SPRYT.
 
@@ -23,7 +23,7 @@ Module K':SPRYT:=M.
 
 Module Type SIG.
   Definition T:Set:=M.N.T.
-  Definition x:T.
+  Parameter x:T.
 End SIG.
 
 Module J:SIG:=M.N.

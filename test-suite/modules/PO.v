@@ -52,8 +52,8 @@ Module Check_Pair [X:PO][Y:PO] : PO := (Pair X Y).
 
 
 Module Type Fmono.
-  Module X:PO.
-  Module Y:PO.
+  Declare Module X:PO.
+  Declare Module Y:PO.
 
   Parameter f : X.T -> Y.T.
   

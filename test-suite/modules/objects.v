@@ -1,5 +1,3 @@
-Reset Initial.
-
 Module Type SET.
   Axiom T:Set.
   Axiom x:T.

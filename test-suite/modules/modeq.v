@@ -4,17 +4,17 @@ Module M.
 End M.
 
 Module Type SIG.
-  Module M:=Top.M.
+  Declare Module M:=Top.M.
   Module Type SIG.
-    Definition T:Set.
+    Parameter T:Set.
   End SIG.
-  Module N:SIG.
+  Declare Module N:SIG.
 End SIG.
 
 Module Z.
   Module M:=Top.M.
   Module Type SIG.
-    Definition T:Set.
+    Parameter T:Set.
   End SIG.
   Module N:=M.
 End Z.

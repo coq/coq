@@ -1,6 +1,6 @@
 Module Type SIG.
   Inductive w:Set:=A:w.
-  Definition f : w->w.
+  Parameter f : w->w.
 End SIG.
 
 Module M:SIG.
