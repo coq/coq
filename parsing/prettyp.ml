@@ -315,22 +315,30 @@ let print_leaf_entry with_values sep (sp,lobj) =
     | (_,"INDUCTIVE") ->
 	print_inductive sp
     | (_,"AUTOHINT") -> 
-	[< 'sTR" Hint Marker"; 'fNL >]
+(*	[< 'sTR" Hint Marker"; 'fNL >]*)
+	[< >]
     | (_,"GRAMMAR") -> 
-	[< 'sTR" Grammar Marker"; 'fNL >]
+(*	[< 'sTR" Grammar Marker"; 'fNL >]*)
+	[< >]
     | (_,"SYNTAXCONSTANT") -> 
 	print_syntactic_def sep sp
     | (_,"PPSYNTAX") -> 
-	[< 'sTR" Syntax Marker"; 'fNL >]
+(*	[< 'sTR" Syntax Marker"; 'fNL >]*)
+	[< >]
     | (_,"TOKEN") -> 
-	[< 'sTR" Token Marker"; 'fNL >]
+(*	[< 'sTR" Token Marker"; 'fNL >]*)
+	[< >]
     | (_,"CLASS") -> 
-	[< 'sTR" Class Marker"; 'fNL >]
+(*	[< 'sTR" Class Marker"; 'fNL >]*)
+	[< >]
     | (_,"COERCION") -> 
-	[< 'sTR" Coercion Marker"; 'fNL >]
+(*	[< 'sTR" Coercion Marker"; 'fNL >]*)
+	[< >]
     | (_,"REQUIRE") -> 
-	[< 'sTR" Require Marker"; 'fNL >]
+(*	[< 'sTR" Require Marker"; 'fNL >]*)
+	[< >]
     | (_,"END-SECTION") -> [< >]
+    | (_,"STRUCTURE") -> [< >]
     | (_,s) -> 
 	[< 'sTR(string_of_path sp); 'sTR" : ";
            'sTR"Unrecognized object "; 'sTR s; 'fNL >]
