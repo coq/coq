@@ -3,6 +3,21 @@ Métathéorie
 - Ajout de définitions locales (Let-In) avec la syntaxe [x:=u]t. Cela
 peut entrainer des comportements nouveaux pour certaines tactiques.
 
+- Les définitions globales de la bibliothèque standard sont associées
+à un nom long reflétant la structure logique de la notion. Un tel nom
+long a la forme Coq.Lists.PolyList.Map.flat_map où Coq dénote que la
+définition flat_map fait partie de la bibliothèque standard, Lists
+qu'elle se trouve dans le répertoire Lists, PolyList qu'elle se trouve
+dans le module PolyList, et Map qu'elle se trouve dans la section Map.
+
+- On peut (et il est conseillé) associer à un répertoire physique un
+nom logique dans la structure des noms de Coq. Les définitions de la
+bibliothèque standard sont associées au préfixe logique `Coq'. Pour
+associer un répertoire physique à un nom logique, il faut utiliser
+l'option -R de coqtop et coqc (cf Outils). Par défaut, le nom logique
+"Scratch" est utilisé pour toute définition globale non associée à un
+module non associé à un nom logique.
+
 Parsing
 
 - Le Lexeur considère maintenant comme token toute suite de symboles
@@ -13,6 +28,11 @@ spéciaux consécutifs)
   pretty-printing rules
 
 Syntaxe des constructions
+
+- Le nom long des définitions globales est accessible pour
+l'utilisateur par la notation pointée (style Coq.Arith.Plus.plus_assoc_l).
+La syntaxe du "." final change (cf Vernac). Le nommage des définitions
+globales change (cf Métathéorie).
 
 - Consecutive as in patterns are forbidden
 
@@ -83,9 +103,12 @@ que les 3 primitives), on peut typer avec "constr", "tactic", ou
 
 - SearchPattern / SearchRewrite (contrib de Yves Bertot)
 
+- Le point final des commandes doit être suivi d'un blanc (retour chariot, tabulation ou espace)
+
+
 Tactiques
 
-- Langage de tactique
+- Langage de tactique Ltac
 
 - Ajout (officiel) d'une tactique LetTac et d'un Induction "convivial"
 
@@ -115,6 +138,9 @@ Outils
   coqtop.byte sinon); -full maintenant obsolete
 
 - do_Makefile s'appelle maintenant coq_makefile
+
+- Utilisation de l'option -R de coqtop et coqc pour associer un
+g  répertoire physique à un répertoire logique (cf Métathéorie) 
 
 Utilisation générale
 
