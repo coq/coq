@@ -50,10 +50,6 @@ Hints Resolve refl_identity : core v62.
 
 Inductive option [A:Set] : Set := Some : A -> (option A) | None : (option A).
 
-(*
-Arguments Scope option [ type_scope ].
-*)
-
 (** [sum A B], equivalently [A + B], is the disjoint sum of [A] and [B] *)
 (* Syntax defined in Specif.v *)
 Inductive sum [A,B:Set] : Set
@@ -61,19 +57,12 @@ Inductive sum [A,B:Set] : Set
      | inr : B -> (sum A B).
 
 Notation "x + y" := (sum x y) : type_scope.
-(*
-Arguments Scope sum [type_scope type_scope].
-*)
 
 (** [prod A B], written [A * B], is the product of [A] and [B];
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
 
 Inductive prod [A,B:Set] : Set := pair : A -> B -> (prod A B).
 Add Printing Let prod.
-
-(*
-Arguments Scope prod [type_scope type_scope].
-*)
 
 Notation "x * y" := (prod x y) : type_scope.
 Notation "( x , y )" := (pair ? ? x y) V8only "x , y".
