@@ -590,7 +590,7 @@ let rec check_subterm_rec_meta env sigma vectn k def =
      (* n gives the index of the recursive variable *)
      (noccur_with_meta (n+k+1) nfi t) or 
      (* no recursive call in the term *)
-     (let f,l = whd_betaiota_stack t in
+     (let f,l = whd_betaiotazeta_stack t in
       match kind_of_term f with
 	| IsRel p -> 
 	    if n+k+1 <= p & p < n+k+nfi+1 then
@@ -675,16 +675,8 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 	       (n+1) (map_lift_fst lst) b) &&
             (List.for_all (check_rec_call env n lst) l)
 
-	| IsLetIn (x,a,b,c) as cst -> 
-	    (try 
-	    (check_rec_call env n lst a) &&
-	    (check_rec_call env n lst b) &&
-            (check_rec_call (push_rel_def (x,a, b) env)
-	       (n+1) (map_lift_fst lst) c) &&
-            (List.for_all (check_rec_call env n lst) l)
-	    with (FixGuardError NotEnoughArgumentsForFixCall) as e
-		-> check_rec_call env n lst (whd_betadeltaiota env sigma t)
-            )
+	| IsLetIn (x,a,b,c) -> 
+	    anomaly "check_rec_call: should have been reduced"
 
 	| IsMutInd (_,la) -> 
 	     (array_for_all (check_rec_call env n lst) la) &&

@@ -159,6 +159,7 @@ open RedFlags
 let beta = mkflags [fbeta]
 let betaevar = mkflags [fevar; fbeta]
 let betaiota = mkflags [fiota; fbeta]
+let betaiotazeta = mkflags [fiota; fbeta;fzeta]
 
 (* Contextual *)
 let delta = mkflags [fdelta;fevar]
@@ -398,6 +399,12 @@ let whd_betaiota_stack x =
   appterm_of_stack (whd_betaiota_state (x, empty_stack))
 let whd_betaiota x =
   app_stack (whd_betaiota_state (x, empty_stack))
+
+let whd_betaiotazeta_state = local_whd_state_gen betaiotazeta
+let whd_betaiotazeta_stack x =
+  appterm_of_stack (whd_betaiotazeta_state (x, empty_stack))
+let whd_betaiotazeta x =
+  app_stack (whd_betaiotazeta_state (x, empty_stack))
 
 let whd_betaiotaevar_state e = whd_state_gen betaiotaevar e
 let whd_betaiotaevar_stack env sigma x =

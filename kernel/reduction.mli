@@ -65,18 +65,21 @@ val nf_betadeltaiota : 'a reduction_function
 (* Lazy strategy, weak head reduction *)
 val whd_beta : local_reduction_function
 val whd_betaiota : local_reduction_function
+val whd_betaiotazeta : local_reduction_function
 val whd_betadeltaiota : 'a contextual_reduction_function
 val whd_betadeltaiota_nolet : 'a contextual_reduction_function
 val whd_betaetalet : local_reduction_function
 
 val whd_beta_stack : local_stack_reduction_function
 val whd_betaiota_stack : local_stack_reduction_function
+val whd_betaiotazeta_stack : local_stack_reduction_function
 val whd_betadeltaiota_stack : 'a contextual_stack_reduction_function
 val whd_betadeltaiota_nolet_stack : 'a contextual_stack_reduction_function
 val whd_betaetalet_stack : local_stack_reduction_function
 
 val whd_beta_state : local_state_reduction_function
 val whd_betaiota_state : local_state_reduction_function
+val whd_betaiotazeta_state : local_state_reduction_function
 val whd_betadeltaiota_state : 'a contextual_state_reduction_function
 val whd_betadeltaiota_nolet_state : 'a contextual_state_reduction_function
 val whd_betaetalet_state : local_state_reduction_function
