@@ -347,8 +347,8 @@ ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
 	theories/Arith/Div2.vo          theories/Arith/Minus.vo       \
 	theories/Arith/Mult.vo          theories/Arith/Even.vo        \
 	theories/Arith/EqNat.vo         theories/Arith/Peano_dec.vo   \
-	theories/Arith/Euclid_def.vo    theories/Arith/Plus.vo        \
-	theories/Arith/Euclid_proof.vo  theories/Arith/Wf_nat.vo      \
+	theories/Arith/Euclid.vo        theories/Arith/Plus.vo        \
+	theories/Arith/Wf_nat.vo      \
 #	theories/Arith/Div.vo 
 
 BOOLVO=theories/Bool/Bool.vo  theories/Bool/IfProp.vo \

@@ -6,12 +6,16 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
-Require Minus.
-Require Euclid_def.
+Require Mult.
 Require Compare_dec.
 Require Wf_nat.
+
+
+Inductive diveucl [a,b:nat] : Set 
+      := divex : (q,r:nat)(gt b r)->(a=(plus (mult q b) r))->(diveucl a b).
+
 
 Lemma eucl_dev : (b:nat)(gt b O)->(a:nat)(diveucl a b).
 Intros b H a; Pattern a; Apply gt_wf_rec; Intros n H0.
