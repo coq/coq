@@ -568,7 +568,7 @@ and pr_atom1 env = function
   | TacClear l ->
       hov 1 (str "clear" ++ spc () ++ prlist_with_sep spc pr_ident l)
   | TacClearBody l ->
-      hov 1 (str "clear" ++ spc () ++ prlist_with_sep spc pr_ident l)
+      hov 1 (str "clearbody" ++ spc () ++ prlist_with_sep spc pr_ident l)
   | TacMove (b,id1,id2) ->
       (* Rem: only b = true is available for users *)
       assert b;
