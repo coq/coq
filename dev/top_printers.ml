@@ -98,7 +98,9 @@ let print_uni u = (pp (pr_uni u))
 
 let pp_universes u = pp (str"[" ++ pr_universes u ++ str"]")
 
-let ppenv e = pp (pr_rel_context e (rel_context e))
+let ppenv e = pp
+  (str "[" ++ pr_named_context_of e ++ str "]" ++ spc() ++
+   str "[" ++ pr_rel_context e (rel_context e) ++ str "]")
 
 let pptac = (fun x -> pp(Pptactic.pr_glob_tactic x))
 
