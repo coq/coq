@@ -25,32 +25,32 @@ REQUIREMENT:
 	 should be enough.
 
 INSTALLATION
- 0) For optimal performance, OCaml must support native threads (aka
-	pthreads). 
-	If this not the case, this means that Coq computations will be
-	slow and "make ide" will fail. Use "make bin/coqide.byte"
-	instead. To fix this problem, just recompile OCaml from source
-	and configure OCaml with : "./configure --with-pthreads". 
-	In case you install over an existing copy of OCaml, you
-	should better empty the OCaml installation directory.
+ 0) For optimal performance, OCaml must support native threads (aka pthreads). 
+    If this not the case, this means that Coq computations will be slow and 
+    "make ide" will fail. Use "make bin/coqide.byte" instead. To fix this 
+    problem, just recompile OCaml from source and configure OCaml with : 
+	"./configure --with-pthreads". 
+    In case you install over an existing copy of OCaml, you should better 
+    empty the OCaml installation directory.
 
  1) You need to install the OCaml stub library lablgtk2. See 
-       		http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html
-	  The latest CVS snapshot version is not enough.
-	  Use this one :
-	http://www.lri.fr/~monate/download/lablgtk2-20030919.tar.gz
+       	http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html
+    The first official release of lablftk2 is here:
+	http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.2.0.tar.gz
+    Note that even if its README requires ocaml > 3.07, it works ok with 3.06.
     If you are in a hurry just run :
     
-    cd /tmp && \
-    wget 	http://www.lri.fr/~monate/download/lablgtk2-20030919.tar.gz && \
-    tar zxvf lablgtk2-20030919.tar.gz && \
-    cd lablgtk2-20030919 && \
-    ./configure && \
-    make world && \
-    make install
+cd /tmp && \
+wget \
+ http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.2.0.tar.gz && \
+tar zxvf lablgtk-2.2.0.tar.gz && \
+cd lablgtk-2.2.0 && \
+./configure && \
+make world && \
+make install
 
    You must have write access to the OCaml standard library path.
-   If this fails read lablgtk2-20030919/README.
+   If this fails read lablgtk-2.2.0/README.
 
 2) Go into your Coq source directory and, as usual, configure with:
 
