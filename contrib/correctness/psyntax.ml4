@@ -834,6 +834,8 @@ VERNAC COMMAND EXTEND ProgVariable
   -> [ global_variable ids t]
 END
 
+let pr_id id = pr_id (Constrextern.v7_to_v8_id id)
+
 (* Type printer *)
 
 let pr_reads = function
@@ -913,7 +915,16 @@ let pr_variant (c1,c2) =
    with _ -> spc() ++ hov 0 (str "for" ++ spc () ++ Ppconstrnew.pr_constr c2))
 
 let rec pr_desc = function
-  | Variable id -> pr_id id
+  | Variable id ->
+      (* Unsafe: should distinguish global names and bound vars *)
+      let vars = (* TODO *) Idset.empty in
+      let id = try 
+        snd (repr_qualid
+          (snd (qualid_of_reference 
+            (Constrextern.extern_reference
+              dummy_loc vars (Nametab.locate (make_short_qualid id))))))
+      with _ -> id in
+      pr_id id
   | Acc id -> str "!" ++ pr_id id
   | Aff (id,p) -> pr_id id ++ spc() ++ str ":=" ++ spc() ++ pr_prog p
   | TabAcc (b,id,p) -> pr_id id ++ str "[" ++ pr_prog p ++ str "]"
