@@ -89,7 +89,7 @@ let rec cvt_varg ast =
 	let q = Astterm.interp_qualid p in
 	let sp =
 	  try Nametab.locate_constant q
-	  with Not_found -> Nametab.error_global_not_found_loc loc q
+	  with Not_found -> Nametab.error_global_constant_not_found_loc loc q
 	in VARG_CONSTANT sp
     | Str(_,s) -> VARG_STRING s
     | Id(_,s) -> VARG_STRING s

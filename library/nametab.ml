@@ -32,19 +32,26 @@ let qualid_of_dirpath dir =
   make_qualid l a
 
 exception GlobalizationError of qualid
+exception GlobalizationConstantError of qualid
 
 let error_global_not_found_loc loc q =
   Stdpp.raise_with_loc loc (GlobalizationError q)
+
+let error_global_constant_not_found_loc loc q =
+  Stdpp.raise_with_loc loc (GlobalizationConstantError q)
 
 let error_global_not_found q = raise (GlobalizationError q)
 
 (*s Roots of the space of absolute names *)
 
-let roots = ref []
-let push_library_root s = roots := list_add_set s !roots
-
 let coq_root = id_of_string "Coq"
 let default_root_prefix = []
+
+(* Obsolète
+let roots = ref []
+let push_library_root s = roots := list_add_set s !roots
+*)
+let push_library_root s = ()
 
 (* Constructions and syntactic definitions live in the same space *)
 type extended_global_reference =
@@ -61,6 +68,16 @@ let the_libtab = ref (ModIdmap.empty : dirtab)
 let the_sectab = ref (ModIdmap.empty : dirtab)
 let the_objtab = ref (Idmap.empty : objtab)
 
+let dirpath_of_reference = function
+  | ConstRef sp -> dirpath sp
+  | VarRef sp -> dirpath sp
+  | ConstructRef ((sp,_),_) -> dirpath sp
+  | IndRef (sp,_) -> dirpath sp
+
+let dirpath_of_extended_ref = function
+  | TrueGlobal ref -> dirpath_of_reference ref
+  | SyntacticDef sp -> dirpath sp
+
 (* How necessarily_open works: concretely, roots and directory are
    always open but libraries are open only during their interactive
    construction or on demand if a precompiled one; then for a name
@@ -69,33 +86,41 @@ let the_objtab = ref (Idmap.empty : objtab)
 
 (* We add a binding of [[modid1;...;modidn;id]] to [o] in the name tab *)
 (* We proceed in the reverse way, looking first to [id] *)
-let push_tree tab dir o =
+let push_tree extract_dirpath tab dir o =
   let rec push necessarily_open (current,dirmap) = function
     | modid :: path as dir ->
 	let mc = 
 	  try ModIdmap.find modid dirmap
 	  with Not_found -> (None, ModIdmap.empty)
 	in
-	let this = if necessarily_open then Some o else current in
+	let this =
+          if necessarily_open then
+            if option_app extract_dirpath current = Some dir then
+              (* This is an absolute name, we must keep it otherwise it may
+                 become unaccessible forever *)
+              current
+            else
+              Some o
+          else current in
 	(this, ModIdmap.add modid (push true mc path) dirmap)
     | [] -> (Some o,dirmap) in
   push false tab (List.rev dir)
 
-let push_idtree tab dir id o =
+let push_idtree extract_dirpath tab dir id o =
   let modtab =
     try Idmap.find id !tab
     with Not_found -> (None, ModIdmap.empty) in
-  tab := Idmap.add id (push_tree modtab dir o) !tab
+  tab := Idmap.add id (push_tree extract_dirpath modtab dir o) !tab
 
-let push_long_names_ccipath = push_idtree the_ccitab
-let push_short_name_ccipath = push_idtree the_ccitab
-let push_short_name_objpath = push_idtree the_objtab
+let push_long_names_ccipath = push_idtree dirpath_of_extended_ref the_ccitab
+let push_short_name_ccipath = push_idtree dirpath_of_extended_ref the_ccitab
+let push_short_name_objpath = push_idtree dirpath the_objtab
 
 let push_modidtree tab dir id o =
   let modtab =
     try ModIdmap.find id !tab
     with Not_found -> (None, ModIdmap.empty) in
-  tab := ModIdmap.add id (push_tree modtab dir o) !tab
+  tab := ModIdmap.add id (push_tree (fun x -> x) modtab dir o) !tab
 
 let push_long_names_secpath = push_modidtree the_sectab
 let push_long_names_libpath = push_modidtree the_libtab
@@ -113,9 +138,9 @@ let push_cci sp ref =
 
 let push = push_cci
 
-let push_short_name id ref =
+let push_short_name sp ref =
   (* We push a volatile unqualified name *)
-  push_short_name_ccipath [] id (TrueGlobal ref)
+  push_short_name_ccipath [] (basename sp) (TrueGlobal ref)
 
 (* This is for Syntactic Definitions *)
 
@@ -142,7 +167,6 @@ let push_section fulldir =
   push_long_names_secpath [] s fulldir
 
 (* These are entry points to locate names *)
-(* If the name starts with the coq_root name, then it is an absolute name *)
 let locate_in_tree tab dir =
   let dir = List.rev dir in
   let rec search (current,modidtab) = function
@@ -185,8 +209,10 @@ let locate_section qid =
 (* Derived functions *)
 
 let locate_constant qid =
+  (* TODO: restrict to defined constants *)
   match locate_cci qid with
     | TrueGlobal (ConstRef sp) -> sp
+    | TrueGlobal (VarRef sp) -> sp
     | _ -> raise Not_found
 
 let sp_of_id _ id = match locate_cci (make_qualid [] id) with
@@ -200,6 +226,7 @@ let constant_sp_of_id id =
     | TrueGlobal (ConstRef sp) -> sp
     | _ -> raise Not_found
 
+(*
 let check_absoluteness dir =
   match dir with
     | a::_ when List.mem a !roots -> ()
@@ -216,34 +243,19 @@ let absolute_reference sp =
 let locate_in_absolute_module dir id =
   check_absoluteness dir;
   locate (make_qualid dir id)
-
-(*
-(* These are entry points to make the contents of a module/section visible *)
-(* in the current env (does not affect the absolute name space `coq_root') *)
-let open_module_contents qid =
-  let _, (Closed (ccitab,objtab,modtab)) = locate_module qid in
-  Idmap.iter push_cci_current ccitab;
-(*  Idmap.iter (fun _ -> Libobject.open_object) objtab;*)
-  Stringmap.iter push_mod_current modtab
-
-let conditional_push ref = push_cci_current ref (* TODO *)
-
-let open_section_contents qid =
-  let _, (Closed (ccitab,objtab,modtab)) = locate_module qid in
-  Idmap.iter push_cci_current ccitab;
-(*  Idmap.iter (fun _ -> Libobject.open_object) objtab;*)
-  Stringmap.iter push_mod_current modtab
-
-let rec rec_open_module_contents qid =
-  let _, (Closed (ccitab,objtab,modtab)) = locate_module qid in
-  Idmap.iter push_cci_current ccitab;
-(*  Idmap.iter (fun _ -> Libobject.open_object) objtab;*)
-  Stringmap.iter 
-    (fun m (sp,_ as mt) -> 
-       push_mod_current m mt;
-       rec_open_module_contents (qualid_of_sp sp))
-    modtab
 *)
+
+let absolute_reference sp =
+  let a = locate_cci (qualid_of_sp sp) in
+  if not (dirpath_of_extended_ref a = dirpath sp) then
+    anomaly ("Not an absolute path: "^(string_of_path sp));
+  match a with
+    | TrueGlobal ref -> ref
+    | _ -> raise Not_found
+
+let locate_in_absolute_module dir id =
+  absolute_reference (make_path dir id CCI)
+
 let exists_cci sp =
   try let _ = locate_cci (qualid_of_sp sp) in true
   with Not_found -> false
@@ -263,22 +275,22 @@ let init () =
   the_ccitab := Idmap.empty; 
   the_libtab := ModIdmap.empty;
   the_sectab := ModIdmap.empty;
-  the_objtab := Idmap.empty;
-  roots := []
+  the_objtab := Idmap.empty
+(*  ;roots := []*)
 
 let freeze () =
   !the_ccitab, 
   !the_libtab,
   !the_sectab,
-  !the_objtab,
-  !roots
+  !the_objtab
+(*  ,!roots*)
 
-let unfreeze (mc,ml,ms,mo,r) =
+let unfreeze (mc,ml,ms,mo(*,r*)) =
   the_ccitab := mc;
   the_libtab := ml;
   the_sectab := ms;
-  the_objtab := mo;
-  roots := r
+  the_objtab := mo(*;
+  roots := r*)
 
 let _ = 
   Summary.declare_summary "names"

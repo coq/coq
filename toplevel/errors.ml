@@ -81,6 +81,9 @@ let rec explain_exn_default = function
 	       'sTR "The reference"; 'sPC; Nametab.pr_qualid q;
 	       'sPC ; 'sTR "was not found"; 
 	       'sPC ; 'sTR "in the current"; 'sPC ; 'sTR "environment" >]
+  | Nametab.GlobalizationConstantError q ->
+      hOV 0 [< 'sTR "Error:"; 'sPC;
+	       'sTR "No constant of this name:"; 'sPC; Nametab.pr_qualid q >]
   | Tacmach.FailError i ->
       hOV 0 [< 'sTR "Error: Fail tactic always fails (level "; 
 	       'iNT i; 'sTR")." >]

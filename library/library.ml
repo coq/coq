@@ -271,7 +271,7 @@ and load_absolute_module_from dir =
       [< 'sTR"Cannot find module "; pr_dirpath dir; 'sTR" in loadpath">]
   | _ -> assert false
 
-let try_locate_qualified_library qid =
+let locate_qualified_library qid =
   (* Look if loaded *)
   try 
     let dir = Nametab.locate_loaded_library qid in
@@ -282,12 +282,9 @@ let try_locate_qualified_library qid =
     let dir, base = repr_qualid qid in 
     let loadpath =
       if dir = [] then get_load_path ()
-      else if is_absolute_dirpath dir then
+      else 
+        (* we assume dir is an absolute dirpath *)
 	load_path_of_logical_path dir
-      else
-	error
-	  ("Not loaded partially qualified library names not implemented: "
-	  ^(string_of_qualid qid))
     in
     if loadpath = [] then raise LibUnmappedDir;
     let name =  (string_of_id base)^".vo" in
@@ -295,9 +292,9 @@ let try_locate_qualified_library qid =
     (LibInPath, find_logical_path path@[base], file)
   with Not_found -> raise LibNotFound
 
-let locate_qualified_library qid =
+let try_locate_qualified_library qid =
   try
-    try_locate_qualified_library qid
+    locate_qualified_library qid
   with
   | LibUnmappedDir ->
       let prefix, id = repr_qualid qid in
@@ -346,10 +343,10 @@ let locate_module qid = function
       locate_by_filename_only (Some id) f
   | None ->
       (* No name, we need to find the file name *)
-      locate_qualified_library qid
+      try_locate_qualified_library qid
 
 let read_module qid =
-  ignore (load_module (locate_qualified_library qid))
+  ignore (load_module (try_locate_qualified_library qid))
 
 let read_module_from_file f =
   let _, f = System.find_file_in_path (get_load_path ()) (f^".vo") in

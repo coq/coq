@@ -179,11 +179,14 @@ let msg_found_library = function
 let msg_notfound_library qid = function
   | Library.LibUnmappedDir ->
       let dir = fst (Nametab.repr_qualid qid) in
-      mSG [< 'sTR "No physical path is bound to "; pr_dirpath dir; 'fNL >]
+      errorlabstrm "locate_library"
+        [< 'sTR "Cannot find a physical path bound to logical path ";
+           pr_dirpath dir; 'fNL >]
   | Library.LibNotFound ->
       mSG (hOV 0 
-	[< 'sTR"Unable to locate library"; 'sPC; Nametab.pr_qualid qid; 'fNL >])
-  | _ -> assert false
+	[< 'sTR"Unable to locate library";
+           'sPC; Nametab.pr_qualid qid; 'fNL >])
+  | e -> assert false
 
 let _ = 
   add "LocateLibrary"

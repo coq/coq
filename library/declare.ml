@@ -82,7 +82,7 @@ let cache_variable (sp,(id,(d,_,_) as vd)) =
     | SectionLocalAssum ty -> Global.push_named_assum (id,ty)
     | SectionLocalDef c -> Global.push_named_def (id,c)
   end;
-  Nametab.push_short_name id (VarRef sp);
+  Nametab.push_short_name sp (VarRef sp);
   vartab := let (m,l) = !vartab in (Spmap.add sp vd m, sp::l)
 
 let (in_variable, out_variable) =
@@ -107,7 +107,7 @@ let cache_parameter (sp,c) =
       [< pr_id (basename sp); 'sTR " already exists" >];
   Global.add_parameter sp c (current_section_context ());
   Nametab.push sp (ConstRef sp);
-  Nametab.push_short_name (basename sp) (ConstRef sp)
+  Nametab.push_short_name sp (ConstRef sp)
 
 let load_parameter (sp,_) =
   if Nametab.exists_cci sp then
@@ -116,7 +116,7 @@ let load_parameter (sp,_) =
   Nametab.push sp (ConstRef sp)
 
 let open_parameter (sp,_) =
-  Nametab.push_short_name (basename sp) (ConstRef sp)
+  Nametab.push_short_name sp (ConstRef sp)
 
 let export_parameter x = Some x
 
@@ -162,7 +162,7 @@ let cache_constant (sp,(cdt,stre,op)) =
     | ConstantRecipe r -> Global.add_discharged_constant sp r sc
   end;
   Nametab.push sp (ConstRef sp);
-  Nametab.push_short_name (basename sp) (ConstRef sp);
+  Nametab.push_short_name sp (ConstRef sp);
   if op then Global.set_opaque sp;
   csttab := Spmap.add sp stre !csttab
 
@@ -174,7 +174,7 @@ let load_constant (sp,(ce,stre,op)) =
   Nametab.push sp (ConstRef sp)
 
 let open_constant (sp,_) =
-  Nametab.push_short_name (basename sp) (ConstRef sp)
+  Nametab.push_short_name sp (ConstRef sp)
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = ConstantEntry { 
@@ -234,8 +234,9 @@ let cache_inductive (sp,mie) =
   let names = inductive_names sp mie in
   List.iter check_exists_inductive names;
   Global.add_mind sp mie (current_section_context ());
-  List.iter (fun (sp, ref) -> Nametab.push sp ref; Nametab.push_short_name
-  (basename sp) ref) names
+  List.iter 
+    (fun (sp, ref) -> Nametab.push sp ref; Nametab.push_short_name sp ref)
+    names
 
 let load_inductive (sp,mie) =
   let names = inductive_names sp mie in
@@ -244,7 +245,7 @@ let load_inductive (sp,mie) =
 
 let open_inductive (sp,mie) =
   let names = inductive_names sp mie in
-  List.iter (fun (sp, ref) -> Nametab.push_short_name (basename sp) ref) names
+  List.iter (fun (sp, ref) -> Nametab.push_short_name sp ref) names
 
 let dummy_one_inductive_entry mie = {
   mind_entry_nparams = 0;

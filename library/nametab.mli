@@ -37,17 +37,19 @@ val pr_qualid : qualid -> std_ppcmds
 val qualid_of_sp : section_path -> qualid
 
 exception GlobalizationError of qualid
+exception GlobalizationConstantError of qualid
 
 (* Raises a globalization error *)
 val error_global_not_found_loc : loc -> qualid -> 'a
 val error_global_not_found     : qualid -> 'a
+val error_global_constant_not_found_loc : loc -> qualid -> 'a
 
 (*s Register visibility of absolute paths by qualified names *)
 val push : section_path -> global_reference -> unit
 val push_syntactic_definition : section_path -> unit
 
 (*s Register visibility of absolute paths by short names *)
-val push_short_name : identifier -> global_reference -> unit
+val push_short_name : section_path -> global_reference -> unit
 val push_short_name_syntactic_definition : section_path -> unit
 val push_short_name_object : section_path -> unit
 
@@ -99,7 +101,9 @@ val push_library_root : module_ident -> unit
    references inside a block of mutual inductive *)
 val absolute_reference : section_path -> global_reference
 
+(*
 val is_absolute_dirpath : dir_path -> bool
+*)
 
 (* [locate_in_absolute_module dir id] finds [id] in module [dir] or in
    one of its section/subsection *)
