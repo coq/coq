@@ -6,13 +6,20 @@ open Names
 open Term
 open Sign
 open Rawterm
+open Pattern
 (*i*)
 
-(* Translation of pattern, rawterm and term into syntax trees for printing *)
+(* Translation of pattern, cases pattern, rawterm and term into syntax
+   trees for printing *)
 
-val ast_of_pattern : cases_pattern -> Coqast.t
+val ast_of_cases_pattern : cases_pattern -> Coqast.t
 val ast_of_rawconstr : rawconstr -> Coqast.t
-val bdize : bool -> unit assumptions -> constr -> Coqast.t
+val ast_of_pattern : unit assumptions -> constr_pattern -> Coqast.t
+
+(* If [b=true] in [ast_of_constr b env c] then the variables in the first 
+   level of quantification clashing with the variables in [env] are renamed *)
+
+val ast_of_constr : bool -> unit assumptions -> constr -> Coqast.t
 
 (*i C'est bdize qui sait maintenant s'il faut afficher les casts ou pas
 val bdize_no_casts : bool -> unit assumptions -> constr -> Coqast.t

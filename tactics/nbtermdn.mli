@@ -4,7 +4,7 @@
 (*i*)
 open Generic
 open Term
-open Rawterm
+open Pattern
 (*i*)
 
 (* Named, bounded-depth, term-discrimination nets. *)
@@ -27,5 +27,5 @@ val dnet_depth : int ref
 val freeze : ('na,'a) t -> ('na,'a) frozen_t
 val unfreeze : ('na,'a) frozen_t -> ('na,'a) t -> unit
 val empty : ('na,'a) t -> unit
-val to2lists : ('na,'a) t -> ('na * (Rawterm.constr_pattern * 'a)) list * 
-                             (Rawterm.constr_label option * 'a Btermdn.t) list
+val to2lists : ('na,'a) t -> ('na * (constr_pattern * 'a)) list * 
+                             (constr_label option * 'a Btermdn.t) list

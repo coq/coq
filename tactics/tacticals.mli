@@ -52,9 +52,8 @@ val clause_type : clause -> goal sigma -> constr
 val matches      : goal sigma -> constr -> marked_term -> bool
 val dest_match   : goal sigma -> constr -> marked_term -> constr list
 *)
-(* The second argument is the pattern *)
-val matches      : goal sigma -> constr -> marked_pattern -> bool
-val dest_match   : goal sigma -> constr -> constr -> constr list
+val gl_matches : goal sigma -> constr_pattern -> constr -> (int * constr) list
+val gl_is_matching : goal sigma -> constr_pattern -> constr -> bool
 
 val allHyps    : goal sigma -> clause list
 val afterHyp   : identifier -> goal sigma -> clause list
@@ -83,7 +82,7 @@ val ifOnClause     :
    [Pattern.somatches], then replace [?1] [?2] metavars in tacast by the
    right values to build a tactic *)
 
-val conclPattern : constr -> Rawterm.constr_pattern -> Coqast.t -> tactic
+val conclPattern : constr -> constr_pattern -> Coqast.t -> tactic
 
 (*s Elimination tacticals. *)
 

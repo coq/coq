@@ -9,6 +9,7 @@ open Evd
 open Environ
 open Proof_trees
 open Tacmach
+open Hipattern
 open Pattern
 open Wcclausenv
 open Tacticals

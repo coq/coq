@@ -8,6 +8,7 @@ open Sign
 open Evd
 open Environ
 open Rawterm
+open Pattern
 (*i*)
 
 (* Translation from AST to terms. *)

@@ -73,6 +73,20 @@ val incast_type : typed_type -> constr
 
 val outcast_type : constr -> typed_type
 
+(**********************************************************************)
+type binder_kind = BProd | BLambda
+
+type fix_kind = RFix of int array * int | RCofix of int
+
+type 'ctxt reference =
+  | RConst of section_path * 'ctxt
+  | RInd of inductive_path * 'ctxt
+  | RConstruct of constructor_path * 'ctxt
+  | RAbst of section_path
+  | RVar of identifier
+  | REVar of int * 'ctxt
+  | RMeta of int
+
 (*s Functions for dealing with constr terms.
   The following functions are intended to simplify and to uniform the 
   manipulation of terms. Some of these functions may be overlapped with

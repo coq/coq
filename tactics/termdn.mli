@@ -4,7 +4,7 @@
 (*i*)
 open Generic
 open Term
-open Rawterm
+open Pattern
 (*i*)
   
 (* Discrimination nets of terms. *)

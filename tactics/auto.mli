@@ -9,6 +9,7 @@ open Sign
 open Proof_trees
 open Tacmach
 open Clenv
+open Pattern
 (*i*)
   
 type auto_tactic = 
