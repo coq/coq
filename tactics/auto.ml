@@ -316,9 +316,9 @@ let add_externs name pri pat tacast dbnames =
 
 let make_trivial (name,c) =
   let sigma = Evd.empty and env = Global.env() in
-  let t = type_of env sigma c in
+  let t = hnf_constr env sigma (type_of env sigma c) in
   let hd = head_of_constr_reference (List.hd (head_constr t)) in
-  let ce = mk_clenv_from () (c,hnf_constr env sigma t) in
+  let ce = mk_clenv_from () (c,t) in
   (hd, { hname = name;
 	       pri=1;
                pat = Some (Pattern.pattern_of_constr (clenv_template_type ce).rebus);
