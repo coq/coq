@@ -62,7 +62,14 @@ let in_mp v mp = MPset.mem mp v.mp
 
 let visit_mp v mp = v.mp <- MPset.union (prefixes_mp mp) v.mp
 let visit_kn v kn = v.kn <- KNset.add kn v.kn; visit_mp v (modpath kn)
-let visit_ref v r = v.ref <- Refset.add r v.ref; visit_mp v (modpath_of_r r) 
+let visit_ref v r =
+ let r =
+  (* if we meet a constructor we must export the inductive definition *)
+  match r with
+     ConstructRef (r,_) -> IndRef r
+   | _ -> r
+ in
+  v.ref <- Refset.add r v.ref; visit_mp v (modpath_of_r r) 
 
 exception Impossible
 
