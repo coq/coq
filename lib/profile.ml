@@ -84,7 +84,7 @@ let init_profile () =
   outside.tottime <- - !init_time;
   outside.owntime <- - !init_time
 
-let ajoute o n =
+let ajoute n o =
   o.owntime <- o.owntime + n.owntime;
   o.tottime <- o.tottime + n.tottime;
   o.hiownalloc <- o.hiownalloc + n.hiownalloc;
@@ -96,7 +96,7 @@ let ajoute o n =
   o.immcount <- o.immcount + n.immcount
 
 let ajoute_to_list ((name,n) as e) l =
-  try ajoute (List.assoc name l) n; l
+  try ajoute n (List.assoc name l); l
   with Not_found -> e::l
 
 let magic = 1249
