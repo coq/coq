@@ -21,6 +21,6 @@ Destruct n; [Destruct 1; Auto with bool | Trivial with bool].
 Save.
 Hints Resolve zerob_false_intro : bool.
 
-Lemma zerob_false_elim : (n:nat)(zerob n)=false->~(n=O).
+Lemma zerob_false_elim : (n:nat)(zerob n)=false -> ~(n=O).
 Destruct n; [Intro H; Inversion H | Auto with bool].
 Save.
