@@ -936,8 +936,8 @@ let clenv_match_args s clause =
 		      str " occurs more than once in binding");
 		 (try 
 		    List.nth mvs (n-1)
-		  with Failure "item" -> errorlabstrm "clenv_match_args"
-                      (str"No such binder"))
+		  with Failure "nth" -> errorlabstrm "clenv_match_args"
+                      (str "No such binder"))
 	     | Com -> anomaly "No free term in clenv_match_args")
 	in
 	let k_typ = w_hnf_constr clause.hook (clenv_instance_type clause k)
