@@ -30,7 +30,6 @@ val named_context : unit -> Sign.named_context
 (* Extending env with variables, constants and inductives *)
 val push_named_assum : (identifier * types) -> Univ.constraints
 val push_named_def   : (identifier * constr * types option) -> Univ.constraints
-val pop_named_decls  : identifier list -> unit
 
 val add_constant    : constant -> global_declaration -> unit
 val add_mind        : mutual_inductive -> mutual_inductive_entry -> unit

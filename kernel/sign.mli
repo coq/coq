@@ -20,7 +20,6 @@ type section_context = named_context
 
 val empty_named_context : named_context
 val add_named_decl : named_declaration -> named_context -> named_context
-val pop_named_decl : identifier -> named_context -> named_context
 
 val lookup_named : identifier -> named_context -> named_declaration
 val named_context_length : named_context -> int

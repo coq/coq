@@ -45,7 +45,6 @@ let push_named_def d =
   let (cst,env) = push_named_def d !global_env in
   global_env := env;
   cst
-let pop_named_decls ids = global_env := pop_named_decls ids !global_env
 
 let add_constant sp ce = global_env := add_constant sp ce !global_env
 let add_mind sp mie = global_env := add_mind sp mie !global_env

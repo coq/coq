@@ -101,7 +101,6 @@ let named_context_app f env =
       env_named_context = f env.env_named_context }
 
 let push_named d   = named_context_app (Sign.add_named_decl d)
-let pop_named id         = named_context_app (Sign.pop_named_decl id)
 
 let reset_context env =
   { env with

@@ -498,10 +498,13 @@ let apply_type hdcty argl gl =
 let apply_term hdc argl gl =
   refine (applist (hdc,argl)) gl
 
-let bring_hyps hyps gl = 
-  let newcl = List.fold_right mkNamedProd_or_LetIn hyps (pf_concl gl) in
-  let f = mkCast (mkMeta (new_meta()),newcl) in
-  refine (mkApp (f, instance_from_named_context hyps)) gl
+let bring_hyps hyps = 
+  if hyps = [] then Refiner.tclIDTAC
+  else
+    (fun gl ->
+      let newcl = List.fold_right mkNamedProd_or_LetIn hyps (pf_concl gl) in
+      let f = mkCast (mkMeta (new_meta()),newcl) in
+      refine (mkApp (f, instance_from_named_context hyps)) gl)
 
 (* Resolution with missing arguments *)
 
@@ -876,8 +879,10 @@ let dyn_assumption = function
 let clear ids gl    = thin ids gl
 let dyn_clear = function
   | [Clause ids] ->
-      let out = function InHyp id -> id | _ -> assert false in
-      clear (List.map out ids)
+      if ids=[] then tclIDTAC
+      else
+        let out = function InHyp id -> id | _ -> assert false in
+        clear (List.map out ids)
   | l -> bad_tactic_args "clear" l
 
 let clear_body = thin_body

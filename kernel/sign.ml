@@ -35,10 +35,6 @@ let add_named_decl (id,_,_ as d) sign =
 
 let named_context_length = List.length
 
-let pop_named_decl id = function
-  | (id',_,_) :: sign -> assert (id = id'); sign
-  | [] -> assert false
-
 let instance_from_named_context sign =
   let rec inst_rec = function
     | (id,None,_) :: sign -> mkVar id :: inst_rec sign

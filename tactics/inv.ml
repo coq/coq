@@ -368,9 +368,11 @@ let raw_inversion inv_kind indbinding id status gl =
     make_inv_predicate env sigma indt id status (pf_concl gl) in
   let (cut_concl,case_tac) =
     if status <> NoDep & (dependent c (pf_concl gl)) then 
-      applist(elim_predicate,realargs@[c]),case_then_using 
+      Reduction.beta_appvect elim_predicate (Array.of_list (realargs@[c])),
+      case_then_using 
     else 
-      applist(elim_predicate,realargs),case_nodep_then_using 
+      Reduction.beta_appvect elim_predicate (Array.of_list realargs),
+      case_nodep_then_using 
   in
   (tclTHENS
      (true_cut_anon cut_concl)

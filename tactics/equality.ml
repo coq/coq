@@ -814,7 +814,7 @@ let inj id gls =
 			       mkVar id]) 
 	     in
 	     let ty =
-	       try pf_type_of gls pf
+	       try pf_nf gls (pf_type_of gls pf)
                with
 		 | UserError("refiner__fail",_) -> 
 		     errorlabstrm "InjClause" 
@@ -878,7 +878,7 @@ let decompEqThen ntac id gls =
 			 let pf = applist(lbeq.congr (),
 					  [t;resty;injfun;t1;t2;
 					   mkVar id]) in
-			 let ty = pf_type_of gls pf in
+			 let ty = pf_nf gls (pf_type_of gls pf) in
 			 ((tclTHENS (cut ty) 
 			     ([tclIDTAC;refine pf]))))
 		 (List.rev injectors))

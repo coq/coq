@@ -123,11 +123,6 @@ let add_mind sp mie env =
 
 let add_constraints = Environ.add_constraints
 
-let rec pop_named_decls idl env =
-  match idl with 
-    | [] -> env
-    | id::l -> pop_named_decls l (Environ.pop_named id env)
-
 let export = export
 let import = import
 

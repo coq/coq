@@ -53,7 +53,6 @@ val fold_rel_context :
 (***********************************************************************)
 (* Context of variables (section variables and goal assumptions) *)
 val push_named : named_declaration -> env -> env
-val pop_named  : identifier -> env -> env
 
 (* Looks up in the context of local vars referred by names ([named_context]) *)
 (* raises [Not_found] if the identifier is not found *)

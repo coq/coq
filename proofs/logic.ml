@@ -748,7 +748,7 @@ let pr_prim_rule = function
   | {name=Intro_after;newids=[id]} -> 
       str"intro after "  ++ pr_id id
 	
-  | {name=Intro_replacing;newids=[id]} -> 
+  | {name=Intro_replacing;hypspecs=[id]} -> 
       (str"intro replacing "  ++ pr_id id)
 	
   | {name=Cut b;terms=[t];newids=[id]} ->

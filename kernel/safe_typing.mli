@@ -32,7 +32,6 @@ val push_named_assum :
 val push_named_def :
   identifier * constr * types option -> safe_environment ->
     Univ.constraints * safe_environment
-val pop_named_decls : identifier list -> safe_environment -> safe_environment
 
 (* Adding global axioms or definitions *)
 type constant_entry = {
