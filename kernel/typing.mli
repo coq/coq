@@ -36,6 +36,7 @@ val add_parameter :
   section_path -> constr -> 'a environment -> 'a environment
 val add_mind : 
   section_path -> mutual_inductive_entry -> 'a environment -> 'a environment
+val add_constraints : constraints -> 'a environment -> 'a environment
 
 val lookup_var : identifier -> 'a environment -> name * typed_type
 val lookup_rel : int -> 'a environment -> name * typed_type

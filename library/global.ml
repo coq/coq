@@ -29,6 +29,7 @@ let push_rel nac = global_env := push_rel nac !global_env
 let add_constant sp ce = global_env := add_constant sp ce !global_env
 let add_parameter sp c = global_env := add_parameter sp c !global_env
 let add_mind sp mie = global_env := add_mind sp mie !global_env
+let add_constraints c = global_env := add_constraints c !global_env
 
 let lookup_var id = lookup_var id !global_env
 let lookup_rel n = lookup_rel n !global_env

@@ -415,6 +415,8 @@ let add_mind sp mie env =
   in
   add_mind sp mib (add_constraints cst env)
 
+let add_constraints = add_constraints
+
 let export = export
 let import = import
 

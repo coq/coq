@@ -1,4 +1,7 @@
 
+ o Termes
+     - introduire un constructeur pour les variables existentielles
+
  o Lib
      - écrire une fonction d'export qui supprimme les FrozenState,
        vérifie qu'il n'y a pas de section ouvert, et présente les
@@ -17,6 +20,7 @@
      - utiliser DOPL plutôt que DOPN (sauf pour Case)
      - batch mode => pas de undo, ni de reset
      - conversion : déplier la constante la plus récente
+     - un cache pour type_of_const, type_of_inductive, type_of_constructor
 
  o Lexer
      à compléter
