@@ -475,7 +475,7 @@ let fmt_hint_list_for_head c =
     [<'sTR "No hint declared for :"; pr_ref_label c >]
   else 
     hOV 0 
-      [< 'sTR"For "; pr_ref_label c; 'sTR" -> ";
+      [< 'sTR"For "; pr_ref_label c; 'sTR" -> "; 'fNL;
 	 prlist (fun (name,db,hintlist) ->
 	 	   [< 'sTR "  In the database "; 'sTR name; 'sTR " :"; 'fNL;
 		      fmt_hint_list hintlist >])
@@ -535,7 +535,7 @@ let print_hint_db db =
   Hint_db.iter 
     (fun head hintlist ->
        mSG (hOV 0 
-	      [< 'sTR "For "; pr_ref_label head; 'sTR " -> "; 
+	      [< 'sTR "For "; pr_ref_label head; 'sTR " -> ";
 		 fmt_hint_list hintlist; 'fNL >]))
     db
 
