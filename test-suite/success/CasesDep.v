@@ -1,3 +1,10 @@
+(* Check forward dependencies *)
+
+Check [P:nat->Prop][Q][A:(P O)->Q][B:(n:nat)(P (S n))->Q][x]
+  <[_]Q>Cases x of 
+  | (exist O H) => (A H)
+  | (exist (S n) H) => (B n H)
+  end.
 
 (* -------------------------------------------------------------------- *)
 (*   Example to test patterns matching on dependent families            *)     (* This exemple extracted from the developement done by Nacira Chabane  *)
