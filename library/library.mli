@@ -32,3 +32,8 @@ val require_module : bool option -> string -> string option -> bool -> unit
 
 val save_module_to : string -> string -> unit
 
+(*s Global load path *)
+val get_load_path : unit -> string list
+val add_path : string -> unit
+val rec_add_path : string -> unit
+val remove_path : string -> unit

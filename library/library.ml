@@ -11,6 +11,39 @@ open Lib
 (* Modules on disk contain the following informations (after the magic 
    number, and before the digest). *)
 
+let loadpath_name = "LoadPath"
+
+module LoadPath =
+struct
+  let check s = if not (System.exists_dir s) then warning (s^" was not found")
+  let key = Goptions.PrimaryTable loadpath_name
+  let title = "Load Paths for Coq files"
+  let member_message s b =
+    if b then s^" is declared in the load path for Coq files"
+    else s^" is not declared in the load path for Coq files"
+  let synchronous = false
+end
+
+(* This generates commands Add Path, Remove Path, Print Path *)
+module LoadPathTable = Goptions.MakeStringTable(LoadPath)
+
+let get_load_path = LoadPathTable.elements
+let add_path dir = 
+  (Goptions.get_string_table (Goptions.PrimaryTable loadpath_name))#add dir
+let remove_path dir =
+  (Goptions.get_string_table (Goptions.PrimaryTable loadpath_name))#remove dir
+let rec_add_path dir = List.iter add_path (System.all_subdirs dir)
+
+(* Vieilles versions
+let load_path = ref ([] : string list)
+let add_path dir = load_path := dir :: !load_path
+let remove_path dir =
+  if List.mem dir !load_path then
+    load_path := List.filter (fun s -> s <> dir) !load_path
+let get_load_path () = !load_path
+let rec_add_path dir = List.iter add_path (System.all_subdirs dir)
+*)
+
 type module_disk = { 
   md_name : string;
   md_compiled_env : compiled_env;
@@ -92,7 +125,7 @@ let load_objects decls =
   segment_iter load_object decls
 
 let rec load_module_from doexp s f =
-  let (fname,ch) = raw_intern_module f in
+  let (fname,ch) = raw_intern_module (get_load_path ()) f in
   let md = System.marshal_in ch in
   let digest = System.marshal_in ch in
   close_in ch;

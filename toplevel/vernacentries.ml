@@ -104,7 +104,7 @@ let show_top_evars () =
  
 let locate_file f =
   try
-    mSG [< 'sTR (System.where_in_path (System.search_paths()) f); 'fNL >]
+    mSG [< 'sTR (System.where_in_path (get_load_path()) f); 'fNL >]
   with Not_found -> 
     mSG (hOV 0 [< 'sTR"Can't find file"; 'sPC; 'sTR f; 'sPC;
 		  'sTR"on loadpath"; 'fNL >])
@@ -114,8 +114,9 @@ let locate_id id =
     mSG [< 'sTR (string_of_path (Nametab.sp_of_id CCI id)); 'fNL >]
   with Not_found -> 
     error ((string_of_id id) ^ " not a defined object")
+
 let print_loadpath () =
-  let l = search_paths () in
+  let l = get_load_path () in
   mSGNL [< 'sTR"Load Path:"; 'fNL; 'sTR"  ";
            hV 0 (prlist_with_sep pr_fnl (fun s -> [< 'sTR s >]) l) >]
 
@@ -149,24 +150,27 @@ let _ =
        | [VARG_IDENTIFIER id] -> (fun () -> locate_id id)
        | _  -> bad_vernac_args "Locate")
 
+(* For compatibility *)
 let _ = 
   add "ADDPATH"
     (function 
        | [VARG_STRING dir] -> (fun () -> add_path dir)
        | _ -> bad_vernac_args "ADDPATH")
 
+(* For compatibility *)
 let _ =
   add "DELPATH"
     (function 
-       | [VARG_STRING dir] -> (fun () -> del_path dir)
+       | [VARG_STRING dir] -> (fun () -> remove_path dir)
        | _ -> bad_vernac_args "DELPATH")
 
 let _ = 
   add "RECADDPATH"
     (function 
-       | [VARG_STRING dir] -> (fun () -> radd_path dir)
+       | [VARG_STRING dir] -> (fun () -> rec_add_path dir)
        | _ -> bad_vernac_args "RECADDPATH")
 
+(* For compatibility *)
 let _ = 
   add "PrintPath"
     (function 
@@ -1313,14 +1317,29 @@ let _ =
 	      let key = 
 		SecondaryTable (string_of_id t,string_of_id f) in
 	      try 
-		(get_option_table key)#add v
+		(get_ident_table key)#add v
+	      with Not_found -> 
+		error_undeclared_key key)
+       | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_STRING s] -> 
+	   (fun () ->
+	      let key = 
+		SecondaryTable (string_of_id t,string_of_id f) in
+	      try 
+		(get_string_table key)#add s
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER v] ->
 	   (fun () ->
 	      let key = PrimaryTable (string_of_id t) in
 	      try 
-		(get_option_table key)#add v
+		(get_ident_table key)#add v
+	      with Not_found -> 
+		error_undeclared_key key)
+       | [VARG_IDENTIFIER t; VARG_STRING s] ->
+	   (fun () ->
+	      let key = PrimaryTable (string_of_id t) in
+	      try 
+		(get_string_table key)#add s
 	      with Not_found -> 
 		error_undeclared_key key)
        | _ -> bad_vernac_args "TableField")
@@ -1333,14 +1352,29 @@ let _ =
 	      let key = 
 		SecondaryTable (string_of_id t,string_of_id f) in
 	      try 
-		(get_option_table key)#remove v
+		(get_ident_table key)#remove v
+	      with Not_found -> 
+		error_undeclared_key key)
+       | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_STRING v] -> 
+	   (fun () ->
+	      let key = 
+		SecondaryTable (string_of_id t,string_of_id f) in
+	      try 
+		(get_string_table key)#remove v
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER v] -> 
 	   (fun () ->
 	      let key = PrimaryTable (string_of_id t) in
 	      try 
-		(get_option_table key)#remove v
+		(get_ident_table key)#remove v
+	      with Not_found -> 
+		error_undeclared_key key)
+       | [VARG_IDENTIFIER t; VARG_STRING v] -> 
+	   (fun () ->
+	      let key = PrimaryTable (string_of_id t) in
+	      try 
+		(get_string_table key)#remove v
 	      with Not_found -> 
 		error_undeclared_key key)
   |  _ -> bad_vernac_args "TableField")
@@ -1353,14 +1387,29 @@ let _ =
 	      let key = 
 		SecondaryTable (string_of_id t,string_of_id f) in
 	      try 
-		(get_option_table key)#mem v
+		(get_ident_table key)#mem v
+	      with Not_found -> 
+		error_undeclared_key key)
+       | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_STRING v] -> 
+	   (fun () ->
+	      let key = 
+		SecondaryTable (string_of_id t,string_of_id f) in
+	      try 
+		(get_string_table key)#mem v
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER v] -> 
 	   (fun () ->
 	      let key = PrimaryTable (string_of_id t) in
 	      try 
-		(get_option_table key)#mem v
+		(get_ident_table key)#mem v
+	      with Not_found -> 
+		error_undeclared_key key)
+       | [VARG_IDENTIFIER t; VARG_STRING v] -> 
+	   (fun () ->
+	      let key = PrimaryTable (string_of_id t) in
+	      try 
+		(get_string_table key)#mem v
 	      with Not_found -> 
 		error_undeclared_key key)
        |  _ -> bad_vernac_args "TableField")
@@ -1372,25 +1421,31 @@ let _ =
 	 (fun () ->
 	    let key = SecondaryTable (string_of_id t,string_of_id f) in
 	    try 
-	      (get_option_table key)#print
+	      (get_ident_table key)#print
 	    with not_found ->
-              try 
-		print_option_value key
-              with Not_found -> 
-		error_undeclared_key key)
+	    try 
+	      (get_string_table key)#print
+	    with not_found ->
+            try 
+	      print_option_value key
+            with Not_found -> 
+	      error_undeclared_key key)
      | [VARG_IDENTIFIER t] -> 
 	 (fun () ->
 	    let key = PrimaryTable (string_of_id t) in
 	    try 
-	      (get_option_table key)#print
+	      (get_ident_table key)#print
 	    with not_found ->
-              try 
-		print_option_value key
-              with Not_found -> 
-	  	if (string_of_id t) = "Tables" then 
-		  print_tables ()
-	  	else 
-		  mSG(print_name t))
+	    try 
+	      (get_string_table key)#print
+	    with not_found ->
+            try 
+	      print_option_value key
+            with Not_found -> 
+            if (string_of_id t) = "Tables" then 
+	      print_tables ()
+	    else 
+	      mSG(print_name t))
      | _ -> bad_vernac_args "TableField")
 
 
