@@ -126,10 +126,14 @@ let locate_qualid qid =
   with Not_found ->
     error ((string_of_qualid qid) ^ " not a defined object")
 
+let print_path_entry s =
+  [< 'sTR s.directory; 'tBRK (0,2); 'sTR (string_of_dirpath s.coq_dirpath) >]
+
 let print_loadpath () =
   let l = get_load_path () in
-  mSGNL [< 'sTR"Load Path:"; 'fNL; 'sTR"  ";
-           hV 0 (prlist_with_sep pr_fnl (fun s -> [< 'sTR s.directory >]) l) >]
+  mSGNL (Pp.t [< 'sTR "Physical path:                                 ";
+		 'tAB; 'sTR "Logical Path:"; 'fNL; 
+		 prlist_with_sep pr_fnl print_path_entry l >])
 
 let get_current_context_of_args = function
   | [VARG_NUMBER n] -> get_goal_context n
@@ -451,6 +455,17 @@ let _ =
   add "IMPLICIT_ARGS_OFF"
     (function 
        | [] -> (fun () -> Impargs.make_implicit_args false)
+       | _  -> bad_vernac_args "IMPLICIT_ARGS_OFF")
+
+let _ =
+  add "TEST_IMPLICIT_ARGS"
+    (function 
+       | [] ->
+	   (fun () ->
+	      if Impargs.is_implicit_args () then
+		message "Implicit arguments mode is set"
+	      else 
+		message "Implicit arguments mode is unset")
        | _  -> bad_vernac_args "IMPLICIT_ARGS_OFF")
 
 let number_list = 

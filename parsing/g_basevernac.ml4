@@ -91,16 +91,29 @@ GEXTEND Gram
       | IDENT "Locate"; id = qualidarg; "." ->
 	  <:ast< (Locate $id) >>
 
-       (* For compatibility (now turned into a table) *)
-      | IDENT "AddPath"; dir = stringarg; IDENT "As"; alias = qualidarg; "." ->
+      (* Managing load paths *)
+      | IDENT "Add"; IDENT "LoadPath"; dir = stringarg; 
+	"as"; alias = qualidarg; "." -> <:ast< (ADDPATH $dir $alias) >>
+      | IDENT "Add"; IDENT "LoadPath"; dir = stringarg; "." ->
+	  <:ast< (ADDPATH $dir) >>
+      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; dir = stringarg;
+	"as"; alias=qualidarg; "." -> <:ast< (RECADDPATH $dir $alias) >>
+      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; dir = stringarg; "." ->
+         <:ast< (RECADDPATH $dir) >>
+      | IDENT "Remove"; IDENT "LoadPath"; dir = stringarg; "." ->
+	  <:ast< (DELPATH $dir) >>
+      | IDENT "Print"; IDENT "LoadPath"; "." -> <:ast< (PrintPath) >>
+
+       (* For compatibility *)
+      | IDENT "AddPath"; dir = stringarg; "as"; alias = qualidarg; "." ->
          <:ast< (ADDPATH $dir $alias) >>
       | IDENT "AddPath"; dir = stringarg; "." -> <:ast< (ADDPATH $dir) >>
-      | IDENT "DelPath"; dir = stringarg; "." -> <:ast< (DELPATH $dir) >>
-      | IDENT "Print"; IDENT "LoadPath"; "." -> <:ast< (PrintPath) >>
-      | IDENT "AddRecPath"; dir = stringarg;IDENT "As"; alias=qualidarg; "." ->
+      | IDENT "AddRecPath"; dir = stringarg; "as"; alias=qualidarg; "." ->
          <:ast< (RECADDPATH $dir $alias) >>
       | IDENT "AddRecPath"; dir = stringarg; "." ->
          <:ast< (RECADDPATH $dir) >>
+      | IDENT "DelPath"; dir = stringarg; "." -> <:ast< (DELPATH $dir) >>
+
       | IDENT "Print"; IDENT "Modules"; "." -> <:ast< (PrintModules) >>
       | IDENT "Print"; "Proof"; id = identarg; "." ->
           <:ast< (PrintOpaqueId $id) >>
@@ -146,6 +159,14 @@ GEXTEND Gram
           <:ast< (SETHYPSLIMIT $n) >>
       | IDENT "Unset"; IDENT "Hyps_limit"; "." ->
           <:ast< (UNSETHYPSLIMIT) >>
+
+      (* Standardized syntax for Implicit Arguments *)
+      | "Set"; IDENT "Implicit"; IDENT "Arguments"; "." ->
+          <:ast< (IMPLICIT_ARGS_ON) >>
+      | IDENT "Unset"; IDENT "Implicit"; IDENT "Arguments"; "." ->
+          <:ast< (IMPLICIT_ARGS_OFF) >>
+      | IDENT "Test"; IDENT "Implicit"; IDENT "Arguments"; "." ->
+          <:ast< (TEST_IMPLICIT_ARGS) >>
 
       (* Pour intervenir sur les tables de paramètres *)
       | "Set"; table = identarg; field = identarg;
