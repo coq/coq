@@ -145,8 +145,6 @@ First, we find propositional calculus connectives:
 
 \begin{coq_eval}
 Set Printing Depth 50.
-(********** Next parsing errors for /\ and \/ are harmless ***********)
-(******************* since output is not displayed *******************)
 \end{coq_eval}
 \begin{coq_example*}
 Inductive True : Prop := I.
@@ -200,9 +198,9 @@ The following abbreviations are allowed:
   \begin{tabular}[h]{|l|l|}
     \hline
     \verb+exists x:A, P+     & \verb+ex A (fun x:A => P)+ \\
-    \verb+exists x, P+       & \verb+ex A (fun x:A => P)+ \\
+    \verb+exists x, P+       & \verb+ex _ (fun x => P)+ \\
     \verb+exists2 x:A, P & Q+ & \verb+ex2 A (fun x:A => P) (fun x:A => Q)+ \\
-    \verb+exists2 x, P & Q+   & \verb+ex2 A (fun x:A => P) (fun x:A => Q)+ \\
+    \verb+exists2 x, P & Q+   & \verb+ex2 _ (fun x => P) (fun x => Q)+ \\
     \hline
   \end{tabular}
 \end{center}

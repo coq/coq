@@ -228,10 +228,10 @@ chapter \ref{Addoc-syntax}.
  & $|$ & {\tt let fix} {\fixpointbody} {\tt in} {\term} &(\ref{fixpoints})\\
  & $|$ & {\tt let cofix} {\cofixpointbody}
          {\tt in} {\term} &(\ref{fixpoints})\\
- & $|$ & {\tt let} {\tt (} \sequence{\name}{,} {\tt )} {\returntype}
+ & $|$ & {\tt let} {\tt (} \sequence{\name}{,} {\tt )} {\ifitem}
          {\tt :=} {\term}
          {\tt in} {\term}  &(\ref{caseanalysis}, \ref{Mult-match})\\
- & $|$ & {\tt if} {\ifitem} {\tt then} {\term}
+ & $|$ & {\tt if} {\term} {\ifitem} {\tt then} {\term}
          {\tt else} {\term} &(\ref{caseanalysis}, \ref{Mult-match})\\
  & $|$ & {\term} {\tt :} {\term} &(\ref{typecast})\\
  & $|$ & {\term} {\tt ->} {\term} &(\ref{products})\\
@@ -251,8 +251,8 @@ chapter \ref{Addoc-syntax}.
 {\termarg} & ::= & {\term} &\\
  & $|$ & {\tt (} {\ident} {\tt :=} {\term} {\tt )}
          &(\ref{Implicits-explicitation})\\
- & $|$ & {\tt (} {\num} {\tt :=} {\term} {\tt )}
-         &(\ref{Implicits-explicitation})\\
+%% & $|$ & {\tt (} {\num} {\tt :=} {\term} {\tt )}
+%%         &(\ref{Implicits-explicitation})\\
 &&&\\
 {\binderlist} & ::= & \nelist{\name}{} {\typecstr} & \ref{Binders} \\
  & $|$ & {\binder} \nelist{\binderlet}{} &\\
@@ -531,8 +531,9 @@ annotation has to be given when the resulting type of the whole {\tt
 match} depends on the actual {\term$_0$} matched.
 
 There are specific notations for case analysis on types with one or
-two constructors: {\tt if}\ldots{\tt then}\ldots{\tt else}\ldots and
-{\tt let (}\ldots{\tt ) :=}\ldots{\tt in}\ldots. 
+two constructors: {\tt if / then / else} and
+{\tt let (}\ldots{\tt ) :=} \ldots {\tt in}\ldots. \SeeAlso
+section~\ref{Mult-match} for details and examples.
 
 \SeeAlso Section~\ref{Mult-match} for details and examples.
 

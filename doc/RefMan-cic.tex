@@ -622,7 +622,7 @@ The declaration for the length of lists is:
 
 The declaration for a mutual inductive definition of forests and trees is:
 \[\NInd{}{\tree:\Set,\forest:\Set}
-      {\node:\forest \ra \tree,
+      {\\~~\node:\forest \ra \tree,
        \emptyf:\forest,\consf:\tree \ra \forest \ra \forest\-}\]
   
 These representations are the ones obtained as the result of the \Coq\ 
@@ -1179,7 +1179,7 @@ context being the same in all the judgments).
     {\Case{P}{l}{f_1~f_2}:(P~l)}\]
 
 \[\frac{
-     \begin{array}[b]{c} 
+     \begin{array}[b]{@{}c@{}} 
 H:(\LengthA~L~N) \\ P:\forall l:\ListA, \forall n:\nat, (\LengthA~l~n)\ra
   \Prop\\
  f_1:(P~(\Nil~A)~\nO~\LNil) \\
@@ -1363,9 +1363,13 @@ Definition sont (t:tree) : forest
    := let (f) := t in f.
 \end{coq_example}
 The following is not a conversion but can be proved after a case analysis.
+\begin{coq_eval}
+(******************************************************************)
+(** Error: Impossible to unify ....                              **)
+\end{coq_eval}
 \begin{coq_example}
 Goal forall t:tree, sizet t = S (sizef (sont t)).
-(** this one fails **) reflexivity.
+reflexivity. (** this one fails **)
 destruct t.
 reflexivity.
 \end{coq_example}

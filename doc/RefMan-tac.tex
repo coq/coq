@@ -1281,7 +1281,7 @@ Proof c.
 This tactic applies to any goal. If the variables {\ident$_1$} and
 {\ident$_2$} of the goal have an inductive type, then this tactic
 performs double induction on these variables.  For instance, if the
-current goal is \verb+(n,m:nat)(P n m)+ then, {\tt double induction n
+current goal is \verb+forall n m:nat, P n m+ then, {\tt double induction n
   m} yields the four cases with their respective inductive hypotheses.
 In particular the case for \verb+(P (S n) (S m))+ with the induction
 hypotheses \verb+(P (S n) m)+ and \verb+(m:nat)(P n m)+ (hence
@@ -1653,10 +1653,10 @@ introduced hypothesis.
 
 \item{\tt injection}\tacindex{injection} 
   
-  If the current goal is of the form {\tt
-    \verb=~={\term$_1$}={\term$_2$}}, the tactic computes the head
-  normal form of the goal and then behaves as the sequence: {\tt
-    unfold not; intro {\ident}; injection {\ident}}.
+  If the current goal is of the form {\term$_1$} {\tt <>} {\term$_2$},
+  the tactic computes the head normal form of the goal and then
+  behaves as the sequence: {\tt unfold not; intro {\ident}; injection
+  {\ident}}.
   
   \ErrMsg \errindex{goal does not satisfy the expected preconditions}
 \end{Variants}
@@ -1678,7 +1678,8 @@ latter is first introduced in the local context using
 \texttt{intros until \ident}.
 
 \begin{Variants}
-\item \texttt{simplify\_eq} \num\\
+\item \texttt{simplify\_eq} \num
+
   This does the same thing as \texttt{intros until \num} then
 \texttt{simplify\_eq \ident} where {\ident} is the identifier for the last
 introduced hypothesis.

@@ -20,9 +20,10 @@ construction allows to define ``signatures''.
 \begin{tabular}{lcl}
 {\sentence} & ++= & {\record}\\
   & & \\
-{\record} & ::= &  {\tt Record} {\ident} \sequence{\binderlet}{} :
-  {\sort} := \zeroone{\ident} \{ \zeroone{\nelist{\field}{;}} 
-    \} . \\
+{\record} & ::= &
+   {\tt Record} {\ident} \sequence{\binderlet}{} {\tt :} {\sort} \verb.:=. \\
+&& ~~~~\zeroone{\ident}
+       \verb!{! \zeroone{\nelist{\field}{;}} \verb!}! \verb:.:\\
   & & \\
 {\field} & ::= & {\name} : {\type} \\
  & $|$ & {\name} {\typecstr} := {\term}

@@ -349,13 +349,12 @@ Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
   | consn n' a y => consn (n' + m) a (concat n' y m l')
   end.
 \end{coq_example}
-The elimination predicate is $\lb n:\texttt{nat} \mto \lb
-l:(\texttt{listn}~ n) \mto (\texttt{listn}~ (n+m))$.
+The elimination predicate is {\tt fun (n:nat) (l:listn n) => listn~(n+m)}.
 In general if $m$ has type $(I~q_1\ldots q_r~t_1\ldots t_s)$ where 
 $q_1\ldots q_r$ are parameters, the elimination predicate should be of
 the form~:
-$\lb y_1\mto\ldots\lb y_s\mto \lb x:(I~q_1\ldots q_r~y_1\ldots y_s)
-P$. 
+{\tt fun $y_1$\ldots $y_s$ $x$:($I$~$q_1$\ldots $q_r$~$y_1$\ldots
+  $y_s$) => P}. 
 
 In the concrete syntax, it should be written~:
 \[ \kw{match}~m~\kw{as}~x~\kw{in}~(I~\_\ldots \_~y_1\ldots y_s)~\kw{return}~Q~\kw{with}~\ldots~\kw{end}\]
@@ -401,12 +400,10 @@ correct Coq raises an error message. For example:
 \begin{coq_eval}
 Reset concat.
 Set Printing Depth 50.
-(********** The following is not correct and should produce **********)
-(**** Error: The elimination predicate [n:nat](listn (plus n m))  ****)
-(*** should be of arity nat->nat->Type (for non dependent case) or ***)
-(** (n:nat)(listn n)->(n0:nat)(listn n0)->Type (for dependent case) **)
+(********** The following is not correct and should produce ***********)
+(** Error: the term l' has type listn m while it is expected to have **)
+(** type listn (?31 + ?32)                                           **)
 \end{coq_eval}
-
 \begin{coq_example}
 Fixpoint concat
  (n:nat) (l:listn n) (m:nat)

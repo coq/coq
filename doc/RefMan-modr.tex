@@ -273,9 +273,9 @@ Specification subtyping rules:
 \inference{%
   \frac{
     \WTECONV{}{\Gamma_P}{\Gamma_P'}%
-    ~~~~~~~~\WTECONV{\Gamma_P}{\Gamma_C}{\Gamma_C'}%
-    ~~~~~~~~\WTECONV{\Gamma_P;\Gamma_C}{\Gamma_I}{\Gamma_I'}%
-    ~~~~~~~~\WTECONV{}{p}{p'}
+    ~~~~~~\WTECONV{\Gamma_P}{\Gamma_C}{\Gamma_C'}%
+    ~~~~~~\WTECONV{\Gamma_P;\Gamma_C}{\Gamma_I}{\Gamma_I'}%
+    ~~~~~~\WTECONV{}{p}{p'}
   }{
     \WSE{\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}}%
         {\Indp{}{\Gamma_P'}{\Gamma_C'}{\Gamma_I'}{p'}}

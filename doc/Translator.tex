@@ -201,15 +201,15 @@ list_scope & \texttt{:: ++}
 \end{center}
 
 
+
 \subsubsection{Notation for implicit arguments}
 
 The explicitation of arguments is closer to the \emph{bindings}
 notation in tactics. Argument positions follow the argument names of
 the head constant. The example below assumes \verb+f+ is a function
-with two dependent arguments named \verb+x+ and \verb+y+, and a third
-non-dependent argument.
+with two implicit dependent arguments named \verb+x+ and \verb+y+.
 \begin{transbox}
-\TRANS{f 1!t1 2!t2 3!t3}{f (x:=t1) (y:=t2) (1:=t3)}
+\TRANS{f 1!t1 2!t2 t3}{f (x:=t1) (y:=t2) t3}
 \TRANS{!f t1 t2}{@f t1 t2}
 \end{transbox}
 
@@ -335,7 +335,7 @@ The same applies to cofixpoints, annotations are not allowed in that case.
 The main change is that all tactic names are lowercase. This also holds for
 Ltac keywords.
 
-\subsubsection{Renaming of tactics}
+\subsubsection{Renaming of induction tactics}
 
 \begin{transbox}
 \TRANS{NewDestruct}{destruct}
@@ -376,8 +376,8 @@ cases, when a \'{} was necessary, it is replaced by ``{\tt constr :}''
 {let x := constr:(fun x => S (S x)) in apply x}
 \end{transbox}
 
-{\tt Match Context} is now called {\tt match goal}. Its argument is an
-Ltac by default.
+{\tt Match Context With} is now called {\tt match goal with}. Its
+argument is an Ltac expression by default.
 
 
 \subsubsection{Named arguments of theorems ({\em bindings})}
@@ -400,9 +400,9 @@ the term itself and after keyword \TERM{as}.
 \subsubsection{{\tt LetTac} and {\tt Pose}}
 
 Tactic {\tt LetTac} was renamed into {\tt set}, and tactic {\tt Pose}
-was a particular case of {\tt LetTac}\footnote{There is a tactic
-called {\tt pose} in V8, but its behaviour is not to fold the
-abbreviation.}.
+was a particular case of {\tt LetTac} where the abbreviation is folded
+in the conclusion\footnote{There is a tactic called {\tt pose} in V8,
+but its behaviour is not to fold the abbreviation at all.}.
 
 \begin{transbox}
 \TRANS{LetTac x = t in H}{set (x := t) in H}
@@ -410,16 +410,16 @@ abbreviation.}.
 \end{transbox}
 
 {\tt LetTac} could be followed by a specification (called a clause) of
-the hypotheses where the abbreviation had to be folded (and also if it
-should occur in the conclusion). Clauses are the syntactic notion to
-denote in which parts of a goal a given transformation shold
-occur. Its basic notation is either \TERM{*} (meaning everywhere), or
-{\tt\textrm{\em hyps} |- \textrm{\em concl}} where {\em hyps} is
-either \TERM{*} (to denote all the hypotheses), or a comma-separated
-list of either hypothesis name, or {\tt (value of $H$)} or {\tt (type
-of $H$)}. Moreover, occurrences can be specified after every
-hypothesis after the {\TERM{at}} keyword. {\em concl} is either empty
-or \TERM{*}, and can be followed by occurences.
+the places where the abbreviation had to be folded (hypothese and/or
+conclusion). Clauses are the syntactic notion to denote in which parts
+of a goal a given transformation shold occur. Its basic notation is
+either \TERM{*} (meaning everywhere), or {\tt\textrm{\em hyps} |-
+\textrm{\em concl}} where {\em hyps} is either \TERM{*} (to denote all
+the hypotheses), or a comma-separated list of either hypothesis name,
+or {\tt (value of $H$)} or {\tt (type of $H$)}. Moreover, occurrences
+can be specified after every hypothesis after the {\TERM{at}}
+keyword. {\em concl} is either empty or \TERM{*}, and can be followed
+by occurences.
 
 \begin{transbox}
 \TRANS{in Goal}{in |- *}
@@ -433,6 +433,15 @@ or \TERM{*}, and can be followed by occurences.
 \subsection{Main changes in vernacular commands w.r.t. V7}
 
 
+\subsubsection{Require}
+
+The default behaviour of {\tt Require} is not to open the loaded
+module.
+
+\begin{transbox}
+\TRANS{Require Arith}{Require Import Arith}
+\end{transbox}
+
 \subsubsection{Binders}
 
 The binders of vernacular commands changed in the same way as those of
@@ -445,21 +454,15 @@ fixpoints. This also holds for parameters of inductive definitions.
       {Inductive and (A B:Prop): Prop := \\~~conj : A -> B -> and A B}
 \end{transbox}
 
-\subsubsection{Require}
-
-The default behaviour of {\tt Require} is not to open the loaded
-module.
-
-\begin{transbox}
-\TRANS{Require Arith}{Require Import Arith}
-\end{transbox}
-
 \subsubsection{Hints}
 
-Names of hints are not supported anymore, except for {\tt HintDestruct}.
+Both {\tt Hints} and {\tt Hint} commands are beginning with {\tt Hint}.
+
+Command {\tt HintDestruct} has disappeared.
+
 
 The syntax of \emph{Extern} hints changed: the pattern and the tactic
-to be applied are separated by a \TERM{$\Rightarrow$}.
+to be applied are separated by a {\tt =>}.
 \begin{transbox}
 \TRANS{Hint name := Resolve (f ? x)}%
 {Hint Resolve (f _ x)}
@@ -469,14 +472,14 @@ to be applied are separated by a \TERM{$\Rightarrow$}.
 \TRANS{Hints Resolve f : db1 db2}{Hint Resolve f : db1 db2}
 \TRANS{Hints Immediate x y z}{Hint Immediate x y z}
 \TRANS{Hints Unfold x y z}{Hint Unfold x y z}
-\TRANS{\begin{tabular}{@{}l}
-  HintDestruct Local Conclusion \\
-  ~~name (f ? ?) 3 [Apply thm]
-  \end{tabular}}%
-{\begin{tabular}{@{}l}
- Hint Local Destuct name := \\
- ~~3 Conclusion (f _ _) => apply thm
- \end{tabular}}
+%% \TRANS{\begin{tabular}{@{}l}
+%%   HintDestruct Local Conclusion \\
+%%   ~~name (f ? ?) 3 [Apply thm]
+%%   \end{tabular}}%
+%% {\begin{tabular}{@{}l}
+%%  Hint Local Destuct name := \\
+%%  ~~3 Conclusion (f _ _) => apply thm
+%%  \end{tabular}}
 \end{transbox}
 
 
@@ -559,20 +562,20 @@ Type}, so several definitions in {\tt Type} are superseded by them.
 \section{A guide to translation}
 \label{Translation}
 
-\subsection{Overview of the translation process}
+%%\subsection{Overview of the translation process}
 
-Here is a short description of the tools of the translation package:
+Here is a short description of the tools involved in the translation process:
 \begin{description}
 \item{\tt coqc -translate}
 is the automatic translator. It is a parser/pretty-printer. This means
-that the translation is made by parsing using a parser of old syntax,
-and every command is printed using the new syntax. Many efforts were
-made to preserve as much as possible the quality of the presentation:
-it avoids expansion of syntax extensions, comments are not discarded
-and placed at the same place.
-\item{\tt tools/translate-v8} is a small shell-script that will help
-translate developments that compile with a Makefile with minimum
-requirements.
+that the translation is made by parsing every command using a parser
+of old syntax, which is printed using the new syntax. Many efforts
+were made to preserve as much as possible of the quality of the
+presentation: it avoids expansion of syntax extensions, comments are
+not discarded and placed at the same place.
+\item{\tt translate-v8} (in the translation package) is a small
+shell-script that will help translate developments that compile with a
+Makefile with minimum requirements.
 \end{description}
 
 \subsection{Preparation to translation}
@@ -580,7 +583,9 @@ requirements.
 This step is very important because most of work shall be done before
 translation. If a problem occurs during translation, it often means
 that you will have to modify the original source and restart the
-translation process.
+translation process. This also means that it is recommended not to
+edit the output of the translator since it would be overwritten if
+the translation has to be restarted.
 
 \subsubsection{Compilation with {\tt coqc -v7}}
 
@@ -607,7 +612,7 @@ try and make the translation.
 The preferred way is to use script {\tt translate-v8} if your development
 is compiled by a Makefile with the following constraints:
 \begin{itemize}
-\item compilation is achievd by invoke make without specifying a target
+\item compilation is achieved by invoking make without specifying a target
 \item options are passed to Coq with make variable COQFLAGS that
   includes variables OPT, COQLIBS, OTHERFLAGS and COQ_XML.
 \end{itemize}
@@ -675,10 +680,11 @@ x\_}
 \item avoid clash with new keywords by adding a trailing {\tt \_}
 \end{itemize}
 
-If the choices made by translation or in the following cases:
+If the choices made by translation is not satisfactory 
+or in the following cases:
 \begin{itemize}
-\item usage of latin letters
-\item usage if iso-latin characters in notations
+\item use of latin letters
+\item use of iso-latin characters in notations
 \end{itemize}
 the user should change his development prior to translation.
 
@@ -832,7 +838,7 @@ Notation "{ x }" := (my_embedding x) (at level 1)
   V8only (at level 0, x at level 99).
 \end{verbatim}
 
-\paragraph{Confilct: a notation conflicts with the V8 grammar}
+\paragraph{Conflict: a notation conflicts with the V8 grammar}
 
 Again, use the {\tt V8only} modifier to tell the translator to
 automatically take in charge the new syntax.
@@ -880,10 +886,10 @@ with left associativity). Even better, use interpretation scopes (look
 at the Reference Manual).
 
 
-\subsubsection{Strict implicits}
+\subsubsection{Strict implicit arguments}
 
 In the case you want to adopt the new semantics of {\tt Set Implicit
- Arguments} (only setting rigid arguments implicit), add the option
+ Arguments} (only setting rigid arguments as implicit), add the option
 {\tt -strict-implicit} to the translator.
 
 Warning: changing the number of implicit arguments can break the

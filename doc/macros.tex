@@ -123,7 +123,7 @@
 \newcommand{\caseitems}{\nterm{match\_items}}
 \newcommand{\caseitem}{\nterm{match\_item}}
 \newcommand{\eqn}{\nterm{equation}}
-\newcommand{\ifitem}{\nterm{if\_item}}
+\newcommand{\ifitem}{\nterm{dep\_ret\_type}}
 \newcommand{\letclauses}{\nterm{letclauses}}
 \newcommand{\params}{\nterm{params}} % vernac
 \newcommand{\returntype}{\nterm{return\_type}}
@@ -364,15 +364,15 @@
 \newcommand{\CIPI}[1]{\CIP{#1}{I}{P}}
 \newcommand{\CIF}[1]{\mbox{$\{#1\}_{f_1.. f_n}$}}
 %BEGIN LATEX
-\newcommand{\NInd}[3]{\mbox{{\sf Ind}$(#1)(\begin{array}[t]{l}#2:=#3
+\newcommand{\NInd}[3]{\mbox{{\sf Ind}$(#1)(\begin{array}[t]{@{}l}#2:=#3
                                               \,)\end{array}$}}
-\newcommand{\Ind}[4]{\mbox{{\sf Ind}$(#1)[#2](\begin{array}[t]{l}#3:=#4
+\newcommand{\Ind}[4]{\mbox{{\sf Ind}$(#1)[#2](\begin{array}[t]{@{}l@{}}#3:=#4
                                                  \,)\end{array}$}}
 %END LATEX
 %HEVEA \newcommand{\NInd}[3]{\mbox{{\sf Ind}$(#1)(#2:=#3\,)$}}
 %HEVEA \newcommand{\Ind}[4]{\mbox{{\sf Ind}$(#1)[#2](#3:=#4\,)$}}
 
-\newcommand{\Indp}[5]{\mbox{{\sf Ind}$_{#5}(#1)[#2](\begin{array}[t]{l}#3:=#4
+\newcommand{\Indp}[5]{\mbox{{\sf Ind}$_{#5}(#1)[#2](\begin{array}[t]{@{}l}#3:=#4
                                                  \,)\end{array}$}}
 \newcommand{\Def}[4]{\mbox{{\sf Def}$(#1)(#2:=#3:#4)$}}
 \newcommand{\Assum}[3]{\mbox{{\sf Assum}$(#1)(#2:#3)$}}

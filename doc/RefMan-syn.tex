@@ -260,8 +260,8 @@ format} modifier. Here is an example
 \begin{small}
 \begin{coq_example}
 Notation "'If' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
- (at level 200, right associativity, format
-  "'[v   ' 'If'  c1 '/' '[' 'then'  c2  ']' '/' '[' 'else'  c3 ']' ']'").
+(at level 200, right associativity, format
+"'[v   ' 'If'  c1 '/' '[' 'then'  c2  ']' '/' '[' 'else'  c3 ']' ']'").
 \end{coq_example}
 \end{small}
 
@@ -770,6 +770,9 @@ expression. An abbreviation is a special form of notation with no
 parameter and only one symbol which is an identifier. This identifier
 is given with no quotes around. Example:
 
+\begin{coq_eval}
+Require Import List.
+\end{coq_eval}
 \begin{coq_example*}
 Notation List := (list nat).
 \end{coq_example*}

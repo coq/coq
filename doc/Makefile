@@ -28,7 +28,7 @@ COQTOP=`$(DOCCOQC) -where`
 COQTEX=$(COQBINPATH)coq-tex -n 72 -image $(DOCCOQTOP) -v -sl -small
 #COQWEBSTY=$(HOME)/lib/tex/
 COQWEBSTY=/usr/share/texmf/tex/latex/misc/
-HEVEALIB=/usr/local/lib/hevea
+HEVEALIB=/usr/local/lib/hevea:/usr/lib/hevea
 
 LATEX=latex
 BIBTEX=bibtex -min-crossrefs=10
@@ -48,15 +48,16 @@ LIBFILES=library/Logic.tex library/Datatypes.tex library/Peano.tex \
 REFMANCOQTEXFILES=\
   RefMan-gal.v.tex RefMan-ext.v.tex RefMan-mod.v.tex RefMan-tac.v.tex \
   RefMan-cic.v.tex RefMan-lib.v.tex RefMan-tacex.v.tex \
-  RefMan-syn.v.tex RefMan-ltac.v.tex RefMan-oth.v.tex
+  RefMan-syn.v.tex RefMan-oth.v.tex
 
 COQTEXFILES= Cases.v.tex Coercion.v.tex Extraction.v.tex \
   Omega.v.tex Changes.v.tex Tutorial.v.tex Polynom.v.tex \
-  Correctness.v.tex Setoid.v.tex # Program.v.tex Natural.v.tex 
+  Setoid.v.tex
+#SUPPRIME: Program.v.tex Natural.v.tex Correctness.v.tex
 
 REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
-  RefMan-pro.tex RefMan-com.tex RefMan-uti.tex RefMan-ide.tex \
-  coqide.eps coqide-queries.eps RefMan-add.tex RefMan-modr.tex \
+  RefMan-pro.tex RefMan-com.tex RefMan-ltac.tex RefMan-uti.tex \
+  RefMan-ide.tex coqide.eps coqide-queries.eps RefMan-add.tex RefMan-modr.tex \
   $(REFMANCOQTEXFILES) 
 
 REFMAN=Reference-Manual
@@ -292,9 +293,12 @@ Tutorial.v.pdf: ./version.tex ./title.tex Tutorial.v.tex
 
 Reference-Manual.ps: Reference-Manual.dvi
 
+# The second LATEX compilation is necessary otherwise the pages of the index
+# are not correct (don't know why...) - BB
 Reference-Manual.dvi: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
 	$(LATEX) Reference-Manual
 	$(BIBTEX) Reference-Manual
+	$(LATEX) Reference-Manual
 	$(MAKEINDEX) Reference-Manual
 	$(MAKEINDEX) Reference-Manual.tacidx -o Reference-Manual.tacind
 	$(MAKEINDEX) Reference-Manual.comidx -o Reference-Manual.comind
