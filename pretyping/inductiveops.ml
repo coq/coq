@@ -24,12 +24,12 @@ type inductive_family = inductive * constr list
 let make_ind_family (mis, params) = (mis,params)
 let dest_ind_family (mis,params) = (mis,params)
 
-let liftn_inductive_family n d (mis,params) =
-  (mis, List.map (liftn n d) params)
+let map_ind_family f (mis,params) = (mis, List.map f params)
+
+let liftn_inductive_family n d = map_ind_family (liftn n d)
 let lift_inductive_family n = liftn_inductive_family n 1
 
-let substnl_ind_family l n (mis,params) =
-  (mis, List.map (substnl l n) params)
+let substnl_ind_family l n = map_ind_family (substnl l n)
 
 
 type inductive_type = IndType of inductive_family * constr list
@@ -37,12 +37,13 @@ type inductive_type = IndType of inductive_family * constr list
 let make_ind_type (indf, realargs) = IndType (indf,realargs)
 let dest_ind_type (IndType (indf,realargs)) = (indf,realargs)
 
-let liftn_inductive_type n d (IndType (indf, realargs)) =
-  IndType (liftn_inductive_family n d indf, List.map (liftn n d) realargs)
+let map_inductive_type f (IndType (indf, realargs)) =
+  IndType (map_ind_family f indf, List.map f realargs)
+
+let liftn_inductive_type n d = map_inductive_type (liftn n d)
 let lift_inductive_type n = liftn_inductive_type n 1
 
-let substnl_ind_type l n (IndType (indf,realargs)) =
-  IndType (substnl_ind_family l n indf, List.map (substnl l n) realargs)
+let substnl_ind_type l n = map_inductive_type (substnl l n)
 
 let mkAppliedInd (IndType ((ind,params), realargs)) =
   applist (mkInd ind,params@realargs)
@@ -151,17 +152,11 @@ let get_arity env (ind,params) =
   destArity (prod_applist arity params)
 
 (* Functions to build standard types related to inductive *)
-let local_rels =
-  let rec relrec acc n = function (* more recent arg in front *)
-    | [] -> acc
-    | (_,None,_)::l -> relrec (mkRel n :: acc) (n+1) l
-    | (_,Some _,_)::l -> relrec acc (n+1) l
-  in relrec [] 1
-
 let build_dependent_constructor cs =
   applist
     (mkConstruct cs.cs_cstr,
-     (List.map (lift cs.cs_nargs) cs.cs_params)@(local_rels cs.cs_args))
+     (List.map (lift cs.cs_nargs) cs.cs_params)
+      @(extended_rel_list 0 cs.cs_args))
 
 let build_dependent_inductive env ((ind, params) as indf) =
   let arsign,_ = get_arity env indf in
@@ -169,7 +164,7 @@ let build_dependent_inductive env ((ind, params) as indf) =
   let nrealargs = mip.mind_nrealargs in
   applist 
     (mkInd ind,
-     (List.map (lift nrealargs) params)@(local_rels arsign))
+     (List.map (lift nrealargs) params)@(extended_rel_list 0 arsign))
 
 (* builds the arity of an elimination predicate in sort [s] *)
 
