@@ -58,7 +58,7 @@ let ctf_FileErrorMessage reqid pps =
   function has no effect on parsing *)
 let try_require_module import specif name fname =
  try Library.require_module (if specif = "UNSPECIFIED" then None
-  else Some (specif = "SPECIFICATION")) (Nametab.make_qualid [] (Names.id_of_string name)) fname (import = "IMPORT")
+  else Some (specif = "SPECIFICATION")) (Nametab.make_short_qualid (Names.id_of_string name)) fname (import = "IMPORT")
  with
  | e -> mSGNL [< 'sTR "Reinterning of "; 'sTR name; 'sTR " failed" >];;
 
@@ -292,24 +292,35 @@ let parse_file_action reqid file_name =
 (* This function is taken from Mltop.add_path *)
 
 let add_path dir coq_dirpath =
-  if coq_dirpath = [] then anomaly "add_path: empty path in library";
+(*
+  if coq_dirpath = Names.make_dirpath [] then
+    anomaly "add_path: empty path in library";
+*)
   if exists_dir dir then
     begin
       Library.add_load_path_entry (dir,coq_dirpath);
-      Nametab.push_library_root (List.hd coq_dirpath)
+      Nametab.push_library_root coq_dirpath
     end
   else
     wARNING [< 'sTR ("Cannot open " ^ dir) >]
 
+let convert_string d =
+  try Names.id_of_string d
+  with _ -> failwith "caught"
+
 let add_rec_path dir coq_dirpath =
-  if coq_dirpath = [] then anomaly "add_path: empty path in library";
+(*
+  if coq_dirpath = Names.make_dirpath [] then anomaly "add_path: empty path in library";
+*)
   let dirs = all_subdirs dir in
+  let prefix = Names.repr_dirpath coq_dirpath in
   if dirs <> [] then
-    let convert = List.map Names.id_of_string in
-    let dirs = List.map (fun (lp,cp) -> (lp,coq_dirpath@(convert cp))) dirs in
+    let convert_dirs (lp,cp) =
+      (lp,Names.make_dirpath (prefix@(List.map convert_string cp))) in
+    let dirs = map_succeed convert_dirs dirs in
     begin
       List.iter Library.add_load_path_entry dirs;
-      Nametab.push_library_root (List.hd coq_dirpath)
+      Nametab.push_library_root coq_dirpath
     end
     else
       wARNING [< 'sTR ("Cannot open " ^ dir) >];;
@@ -318,7 +329,7 @@ let add_path_action reqid string_arg =
   let directory_name = glob string_arg in
   let alias = Filename.basename directory_name in
     begin
-      add_path directory_name [Names.id_of_string alias]
+      add_path directory_name (Names.make_dirpath [Names.id_of_string alias])
     end;;
 
 let print_version_action () =
@@ -328,7 +339,7 @@ let print_version_action () =
 let load_syntax_action reqid module_name =
  mSG [< 'sTR "loading "; 'sTR module_name; 'sTR "... " >];
  try
-      (let qid = Nametab.make_qualid [] (Names.id_of_string module_name) in
+      (let qid = Nametab.make_short_qualid (Names.id_of_string module_name) in
       read_module qid;
       mSG [< 'sTR "opening... ">];
       let fullname = Nametab.locate_loaded_library qid in 
@@ -369,9 +380,9 @@ Libobject.relax true;
        else
 	 (mSGNL [< 'sTR "could not find the value of COQDIR" >]; exit 1) in
      begin
-       add_rec_path (Filename.concat coqdir "theories") [Nametab.coq_root];
-       add_path (Filename.concat coqdir "tactics") [Nametab.coq_root];
-       add_rec_path (Filename.concat coqdir "contrib") [Nametab.coq_root];
+       add_rec_path (Filename.concat coqdir "theories") (Names.make_dirpath [Nametab.coq_root]);
+       add_path (Filename.concat coqdir "tactics") (Names.make_dirpath [Nametab.coq_root]);
+       add_rec_path (Filename.concat coqdir "contrib") (Names.make_dirpath [Nametab.coq_root]);
        List.iter (fun a -> mSGNL [< 'sTR a >]) (get_load_path())
      end;
 (try 

@@ -149,12 +149,6 @@ GEXTEND Gram
           <:ast< (PARAMETER $hyp (BINDERLIST ($LIST $bl))) >>
       ] ]
   ;
-  gallina_ext:
-      [ [ IDENT "Abstraction"; id = identarg; "["; l = ne_numarg_list; "]";
-        ":="; c = constrarg ->
-          <:ast< (ABSTRACTION $id $c ($LIST $l)) >>
-      ] ]
-  ;
   END
 
 (* Gallina inductive declarations *)

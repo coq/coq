@@ -78,9 +78,9 @@ let qualid_of_global ref =
     if (try Nametab.locate qid = ref with Not_found -> false) then qid
     else match dir with
       | [] -> Nametab.qualid_of_sp sp
-      | a::l -> find_visible l (a::qdir)
+      | a::l -> find_visible l (add_dirpath_prefix a qdir)
   in
-  find_visible (List.rev (dirpath sp)) []
+  find_visible (rev_repr_dirpath (dirpath sp)) (make_dirpath [])
 
 let string_of_global ref = Nametab.string_of_qualid (qualid_of_global ref)
 

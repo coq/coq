@@ -196,7 +196,7 @@ let _ =
 	   (fun () -> Mltop.add_path dir Nametab.default_root_prefix)
        | [VARG_STRING dir ; VARG_QUALID alias] ->
            let aliasdir,aliasname = Nametab.repr_qualid alias in
-	   (fun () -> Mltop.add_path dir (aliasdir@[aliasname]))
+	   (fun () -> Mltop.add_path dir (extend_dirpath aliasdir aliasname))
        | _ -> bad_vernac_args "ADDPATH")
 
 (* For compatibility *)
@@ -213,7 +213,7 @@ let _ =
 	   (fun () -> Mltop.add_rec_path dir Nametab.default_root_prefix)
        | [VARG_STRING dir ; VARG_QUALID alias] ->
            let aliasdir,aliasname = Nametab.repr_qualid alias in
-	    (fun () -> Mltop.add_rec_path dir (aliasdir@[aliasname]))
+	   (fun () ->Mltop.add_rec_path dir (extend_dirpath aliasdir aliasname))
        | _ -> bad_vernac_args "RECADDPATH")
 
 (* For compatibility *)
@@ -320,7 +320,7 @@ let _ =
        | [VARG_IDENTIFIER id] ->
 	   let s = string_of_id id in
 	   let lpe,_ = System.find_file_in_path (Library.get_load_path ()) (s^".v") in
-	   let dir = (Library.find_logical_path lpe) @ [id] in
+	   let dir = extend_dirpath (Library.find_logical_path lpe) id in
 	   fun () ->
 	     Lib.start_module dir
        | _ -> bad_vernac_args "BeginModule")
@@ -1289,8 +1289,10 @@ let _ =
 
 let cl_of_qualid qid =
   match Nametab.repr_qualid qid with
-    | [], id when string_of_id id = "FUNCLASS" -> Classops.CL_FUN
-    | [], id when string_of_id id = "SORTCLASS" -> Classops.CL_SORT
+    | d, id when string_of_id id = "FUNCLASS" & is_empty_dirpath d ->
+	Classops.CL_FUN
+    | d, id when string_of_id id = "SORTCLASS"  & is_empty_dirpath d ->
+	Classops.CL_SORT
     | _ -> Class.class_of_ref (Nametab.global dummy_loc qid)	
 
 let _ =
@@ -1309,7 +1311,7 @@ let _ =
 	   let source = cl_of_qualid qids in
 	   fun () ->
 	     if isid then match Nametab.repr_qualid qid with
-	       | [], id ->
+	       | d, id when is_empty_dirpath d ->
 		   Class.try_add_new_identity_coercion id stre source target
 	       | _ -> bad_vernac_args "COERCION"
 	     else
@@ -1685,7 +1687,7 @@ let _ =
             if (string_of_id t) = "Tables" then 
 	      print_tables ()
 	    else 
-	      mSG(print_name (Nametab.make_qualid [] t)))
+	      mSG(print_name (Nametab.make_short_qualid t)))
      | _ -> bad_vernac_args "TableField")
 
 

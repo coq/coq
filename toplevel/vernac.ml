@@ -181,7 +181,8 @@ let compile verbosely f =
     let s = Filename.basename f in
     let m = Names.id_of_string s in
     let _,longf = find_file_in_path (Library.get_load_path ()) (f^".v") in
-    let ldir = (Library.find_logical_path (Filename.dirname longf)) @ [m] in
+    let ldir0 = Library.find_logical_path (Filename.dirname longf) in
+    let ldir = Names.extend_dirpath ldir0 m in
     Lib.start_module ldir;
     load_vernac verbosely longf;
     let mid = Lib.end_module m in

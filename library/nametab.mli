@@ -28,6 +28,7 @@ type qualid
 
 val make_qualid : dir_path -> identifier -> qualid
 val repr_qualid : qualid -> dir_path * identifier
+val make_short_qualid : identifier -> qualid
 
 val string_of_qualid : qualid -> string
 val pr_qualid : qualid -> std_ppcmds
@@ -89,7 +90,7 @@ val coq_root : module_ident
 val default_root_prefix : dir_path
 
 (* This is to declare a new root *)
-val push_library_root : module_ident -> unit
+val push_library_root : dir_path -> unit
 
 (* This turns a "user" absolute name into a global reference;
    especially, constructor/inductive names are turned into internal

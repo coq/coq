@@ -246,6 +246,17 @@ let hcons_term (hsorts,hsp,hname,hident) =
 (* Constructs a DeBrujin index with number n *)
 let mkRel   n = IsRel n
 
+let r = ref None
+
+let mkRel n =
+  let rels = match !r with
+    | None -> let a = 
+  [|mkRel  1;mkRel  2;mkRel  3;mkRel  4;mkRel  5;mkRel  6;mkRel  7; mkRel  8;
+    mkRel  9;mkRel 10;mkRel 11;mkRel 12;mkRel 13;mkRel 14;mkRel 15; mkRel 16|]
+      in r := Some a; a
+    | Some a -> a in
+  if 0<n & n<=16 then rels.(n-1) else mkRel n
+
 (* Constructs an existential variable named "?n" *)
 let mkMeta  n =  IsMeta n
 
@@ -254,6 +265,7 @@ let mkVar id = IsVar id
 
 (* Construct a type *)
 let mkSort s = IsSort s
+
 (* Constructs the term t1::t2, i.e. the term t1 casted with the type t2 *)
 (* (that means t2 is declared as the type of t1) *)
 let mkCast (t1,t2) =
@@ -1001,10 +1013,13 @@ let mkMeta = mkMeta
 let mkVar = mkVar
 
 (* Construct a type *)
-let mkSort   = mkSort
 let mkProp   = mkSort mk_Prop
 let mkSet    = mkSort mk_Set
 let mkType u = mkSort (Type u)
+let mkSort   = function
+  | Prop Null -> mkProp (* Easy sharing *)
+  | Prop Pos -> mkSet
+  | s -> mkSort s
 
 let prop = mk_Prop
 and spec = mk_Set
@@ -1651,22 +1666,20 @@ module Hsorts =
 
 let hsort = Hsorts.f
 
-let hcons_constr (hspcci,hspfw,hname,hident,hstr) =
+let hcons_constr (hspcci,hdir,hname,hident,hstr) =
   let hsortscci = Hashcons.simple_hcons hsort hcons1_univ in
-  let hsortsfw = Hashcons.simple_hcons hsort hcons1_univ in
   let hcci = hcons_term (hsortscci,hspcci,hname,hident) in
-  let hfw = hcons_term (hsortsfw,hspfw,hname,hident) in
   let htcci = Hashcons.simple_hcons Htype.f (hcci,hsortscci) in
-  (hcci,hfw,htcci)
+  (hcci,htcci)
 
 let hcons1_constr =
   let hnames = hcons_names () in
-  let (hc,_,_) = hcons_constr hnames in
+  let (hc,_) = hcons_constr hnames in
   hc
 
 let hcons1_types =
   let hnames = hcons_names () in
-  let (_,_,ht) = hcons_constr hnames in
+  let (_,ht) = hcons_constr hnames in
   ht
 
 (* Abstract decomposition of constr to deal with generic functions *)

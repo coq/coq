@@ -64,7 +64,7 @@ let recognize_number t =
 let constant dir s =
   try
     Declare.global_absolute_reference
-      (Names.make_path (List.map Names.id_of_string dir)
+      (Names.make_path (Names.make_dirpath (List.map Names.id_of_string dir))
                        (Names.id_of_string s) Names.CCI)
   with e -> print_endline (String.concat "." dir); print_endline s; 
             raise e

@@ -145,7 +145,8 @@ let module_is_loaded dir =
   try let _ = CompUnitmap.find dir !modules_table in true
   with Not_found -> false
 
-let module_is_opened s = (find_module [id_of_string s]).module_opened
+let module_is_opened s =
+  (find_module (make_dirpath [id_of_string s])).module_opened
 
 let loaded_modules () =
   CompUnitmap.fold (fun s _ l -> s :: l) !modules_table []
@@ -183,8 +184,8 @@ let segment_iter f =
   let rec apply = function
     | sp,Leaf obj -> f (sp,obj)
     | _,OpenedSection _ -> assert false
-    | sp,ClosedSection (export,s,seg) ->
-	push_section (wd_of_sp sp);
+    | sp,ClosedSection (export,dir,seg) ->
+	push_section dir;
 	if export then iter seg
     | _,(FrozenState _ | Module _) -> ()
   and iter seg =
@@ -263,9 +264,7 @@ let rec load_module = function
 	  [< 'sTR ("The file " ^ f ^ " contains module"); 'sPC;
 	  pr_dirpath md.md_name; 'sPC; 'sTR "and not module"; 'sPC;
 	  pr_dirpath dir >];
-      (match split_dirpath dir with
-	| [], id -> Nametab.push_library_root id
-	| _ -> ());
+      Nametab.push_library_root dir;
       compunit_cache := Stringmap.add f (md, digest) !compunit_cache;
       (md, digest) in
     intern_module digest f md
@@ -317,7 +316,7 @@ let locate_qualified_library qid =
   try
     let dir, base = repr_qualid qid in 
     let loadpath =
-      if dir = [] then get_load_path ()
+      if is_empty_dirpath dir then get_load_path ()
       else 
         (* we assume dir is an absolute dirpath *)
 	load_path_of_logical_path dir
@@ -325,7 +324,7 @@ let locate_qualified_library qid =
     if loadpath = [] then raise LibUnmappedDir;
     let name =  (string_of_id base)^".vo" in
     let path, file = System.where_in_path loadpath name in
-    (LibInPath, find_logical_path path@[base], file)
+    (LibInPath, extend_dirpath (find_logical_path path) base, file)
   with Not_found -> raise LibNotFound
 
 let try_locate_qualified_library qid =
@@ -365,9 +364,7 @@ let locate_by_filename_only id f =
        m.module_filename);
     (LibLoaded, md.md_name, m.module_filename)
   with Not_found ->
-    (match split_dirpath md.md_name with
-      | [], id -> Nametab.push_library_root id
-      | _ -> ());
+    Nametab.push_library_root md.md_name;
     compunit_cache := Stringmap.add f (md, digest) !compunit_cache;
     (LibInPath, md.md_name, f)
 
@@ -375,7 +372,7 @@ let locate_module qid = function
   | Some f ->
       (* A name is specified, we have to check it contains module id *)
       let prefix, id = repr_qualid qid in
-      assert (prefix = []);
+      assert (is_empty_dirpath prefix);
       let _, f = System.find_file_in_path (get_load_path ()) (f^".vo") in
       locate_by_filename_only (Some id) f
   | None ->

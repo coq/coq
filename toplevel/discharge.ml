@@ -310,9 +310,8 @@ let catch_not_found f x =
 
 let close_section _ s = 
   let oldenv = Global.env() in
-  let sec_sp,decls,fs = close_section false s in
-  let newdir = dirpath sec_sp in
-  let olddir = wd_of_sp sec_sp in
+  let olddir,decls,fs = close_section false s in
+  let newdir = fst (split_dirpath olddir) in
   let (ops,ids,_) = 
     List.fold_left 
       (process_item oldenv newdir olddir) ([],[],([],[],[])) decls 

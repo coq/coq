@@ -641,12 +641,11 @@ val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
 
 val hcons_constr:
   (section_path -> section_path) *
-  (section_path -> section_path) *
+  (dir_path -> dir_path) *
   (name -> name) *
   (identifier -> identifier) *
   (string -> string) 
   ->
-    (constr -> constr) *
     (constr -> constr) *
     (types -> types)
 

@@ -104,7 +104,7 @@ let make_ids ast = function
 (* Gives Qualid's and makes the possible injection identifier -> qualid *)
 let make_qid = function
   | VArg (Qualid _) as arg -> arg
-  | VArg (Identifier id) -> VArg (Qualid (make_qualid [] id))
+  | VArg (Identifier id) -> VArg (Qualid (make_short_qualid id))
   | VArg (Constr c) ->
     (match (kind_of_term c) with
     | IsConst cst -> VArg (Qualid (qualid_of_sp cst))
@@ -122,7 +122,7 @@ let constr_of_id id = function
     if mem_named_context id hyps then
       mkVar id
     else
-      let csr = global_qualified_reference (make_qualid [] id) in
+      let csr = global_qualified_reference (make_short_qualid id) in
       (match kind_of_term csr with
       | IsVar _ -> raise Not_found
       | _ -> csr)
@@ -209,7 +209,7 @@ let glob_const_nvar loc env qid =
   try
     (* We first look for a variable of the current proof *)
     match Nametab.repr_qualid qid with
-      | [],id ->
+      | d,id when is_empty_dirpath d ->
 	  (* lookup_value may raise Not_found *)
 	  (match Environ.lookup_named_value id env with
 	     | Some _ ->

@@ -350,8 +350,8 @@ let rec print_library_entry with_values ent =
   match ent with
     | (sp,Lib.Leaf lobj) -> 
 	[< print_leaf_entry with_values sep (sp,lobj) >]
-    | (_,Lib.OpenedSection (id,_)) -> 
-        [< 'sTR " >>>>>>> Section "; pr_id id; 'fNL >]
+    | (sp,Lib.OpenedSection (dir,_)) -> 
+        [< 'sTR " >>>>>>> Section "; pr_id (basename sp); 'fNL >]
     | (sp,Lib.ClosedSection _) -> 
         [< 'sTR " >>>>>>> Closed Section "; pr_id (basename sp); 'fNL >]
     | (_,Lib.Module dir) ->
@@ -391,8 +391,7 @@ let read_sec_context qid =
     try Nametab.locate_section qid
     with Not_found -> error "Unknown section" in
   let rec get_cxt in_cxt = function
-    | ((sp,Lib.OpenedSection (_,_)) as hd)::rest ->
-	let dir' = make_dirpath (wd_of_sp sp) in
+    | ((sp,Lib.OpenedSection (dir',_)) as hd)::rest ->
         if dir = dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | ((sp,Lib.ClosedSection (_,_,ctxt)) as hd)::rest ->
         error "Cannot print the contents of a closed section"
@@ -440,7 +439,7 @@ let print_name qid =
   with Not_found -> 
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in 
-    if dir <> [] then raise Not_found;
+    if not (is_empty_dirpath dir) then raise Not_found;
     let (c,typ) = Global.lookup_named str in 
     [< print_named_decl (str,c,typ) >]
   with Not_found ->

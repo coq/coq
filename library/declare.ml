@@ -43,24 +43,28 @@ let depth_of_strength = function
 
 let restrict_path n sp =
   let dir, s, k = repr_path sp in
-  let dir' = list_lastn n dir in
-  Names.make_path dir' s k
+  let dir' = list_lastn n (repr_dirpath dir) in
+  Names.make_path (make_dirpath dir') s k
 
 let make_strength_0 () = 
   let depth = Lib.sections_depth () in
   let cwd = Lib.cwd() in
   if depth > 0 then DischargeAt (cwd, depth) else NeverDischarge
 
+let extract_dirpath_prefix n dir =
+  let dir = repr_dirpath dir in
+  make_dirpath (list_firstn (List.length dir -n) dir)
+
 let make_strength_1 () =
   let depth = Lib.sections_depth () in
   let cwd = Lib.cwd() in
-  if depth > 1 then DischargeAt (list_firstn (List.length cwd -1) cwd, depth-1)
+  if depth > 1 then DischargeAt (extract_dirpath_prefix 1 cwd, depth-1)
   else NeverDischarge
 
 let make_strength_2 () =
   let depth = Lib.sections_depth () in
   let cwd = Lib.cwd() in
-  if depth > 2 then DischargeAt (list_firstn (List.length cwd -2) cwd, depth-2)
+  if depth > 2 then DischargeAt (extract_dirpath_prefix 2 cwd, depth-2)
   else NeverDischarge
 
 
@@ -450,10 +454,10 @@ let is_section_variable = function
 
 let is_global id =
   try 
-    let osp = Nametab.locate (make_qualid [] id) in
+    let osp = Nametab.locate (make_short_qualid id) in
     (* Compatibilité V6.3: Les variables de section ne sont pas globales
     not (is_section_variable osp) && *)
-    list_prefix_of (dirpath_of_global osp) (Lib.cwd())
+    is_dirpath_prefix_of (dirpath_of_global osp) (Lib.cwd())
   with Not_found -> 
     false
 

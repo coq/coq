@@ -229,7 +229,7 @@ let _ =
     those having an ML extraction. *)
 
 let extract_module m =
-  let m = Nametab.locate_loaded_library (Nametab.make_qualid [] m) in
+  let m = Nametab.locate_loaded_library (Nametab.make_short_qualid m) in
   let seg = Library.module_segment (Some m) in
   let get_reference = function
     | sp, Leaf o ->

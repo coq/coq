@@ -82,7 +82,7 @@ let rename_upper_global id = rename_global (uppercase_id id)
 
 (*s Modules considerations *)
 
-let module_of_r r = list_last (dirpath (sp_of_r r))
+let module_of_r r = snd (split_dirpath (dirpath (sp_of_r r)))
 
 let string_of_r r = string_of_id (basename (sp_of_r r))
 

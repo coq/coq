@@ -135,7 +135,7 @@ let interp_qualid p =
     | [] -> anomaly "interp_qualid: empty qualified identifier"
     | l -> 
 	let p, r = list_chop (List.length l -1) (List.map outnvar l) in
-	make_qualid p (List.hd r)
+	make_qualid (make_dirpath p) (List.hd r)
 
 let maybe_variable = function
   | [Nvar (_,s)] -> Some s
@@ -255,7 +255,7 @@ let rawconstr_of_qualid env vars loc qid =
   (* Is it a bound variable? *)
   try
     match repr_qualid qid with
-      | [],s -> ast_to_var env vars loc s
+      | d,s when is_empty_dirpath d -> ast_to_var env vars loc s
       | _ -> raise Not_found
   with Not_found ->
   (* Is it a global reference or a syntactic definition? *)
@@ -573,7 +573,7 @@ let adjust_qualid env loc ast qid =
   (* Is it a bound variable? *)
   try
     match repr_qualid qid with
-      | [],id -> ast_of_var env ast id
+      | d,id when is_empty_dirpath d -> ast_of_var env ast id
       | _ -> raise Not_found
   with Not_found ->
   (* Is it a global reference or a syntactic definition? *)
@@ -592,7 +592,7 @@ let ast_adjust_consts sigma =
     | Nmeta (loc, s) as ast -> ast
     | Nvar (loc, id) as ast ->
         if Idset.mem id env then ast
-        else adjust_qualid env loc ast (make_qualid [] id)
+        else adjust_qualid env loc ast (make_short_qualid id)
     | Node (loc, "QUALID", p) as ast ->
 	adjust_qualid env loc ast (interp_qualid p)
     | Slam (loc, None, t) -> Slam (loc, None, dbrec env t)

@@ -207,27 +207,7 @@ let kind_of_string = function
   | _ -> invalid_arg "kind_of_string"
 
 (*s Directory paths = section names paths *)
-type module_ident = identifier
-type dir_path = module_ident list
-
-module ModIdOrdered = 
-  struct
-    type t = identifier
-    let compare = Pervasives.compare
-  end
-
-module ModIdmap = Map.Make(ModIdOrdered)
-
-let make_dirpath x = x
-let repr_dirpath x = x
-
-let dirpath_prefix = function 
-  | [] -> anomaly "dirpath_prefix: empty dirpath"
-  | l -> snd (list_sep_last l)
-
-let split_dirpath d = let (b,d) = list_sep_last d in (d,b)
-
-let parse_sp s =
+let parse_fields s =
   let len = String.length s in
   let rec decoupe_dirs n =
     try
@@ -243,18 +223,53 @@ let parse_sp s =
   let id = String.sub s n (len-n) in
   dirs, (id_of_string id)
 
+type module_ident = identifier
+type dir_path = module_ident list
+
+module ModIdOrdered = 
+  struct
+    type t = identifier
+    let compare = Pervasives.compare
+  end
+
+module ModIdmap = Map.Make(ModIdOrdered)
+
+(* These are the only functions which depend on how a dirpath is encoded *)
+let make_dirpath x = List.rev x
+let repr_dirpath x = List.rev x
+let rev_repr_dirpath x = x
+
+let dirpath_prefix = function 
+  | [] -> anomaly "dirpath_prefix: empty dirpath"
+  | _::l -> l
+
+let split_dirpath = function
+  | [] -> failwith "Empty"
+  | d::b -> (b,d)
+
+let extend_dirpath d id = id::d
+let add_dirpath_prefix id d = d@[id]
+
+let is_dirpath_prefix_of d1 d2 = list_prefix_of (List.rev d1) (List.rev d2)
+(**)
+
+let is_empty_dirpath d = (d = [])
+
 let dirpath_of_string s =
   try
-    let sl,s = parse_sp s in
-    sl @ [s]
+    let sl,s = parse_fields s in
+    make_dirpath (sl @ [s])
   with
     | Invalid_argument _ -> invalid_arg "dirpath_of_string"
 
 let string_of_dirpath = function
   | [] -> "<empty>"
-  | sl -> String.concat "." (List.map string_of_id sl)
+  | sl -> String.concat "." (List.map string_of_id (repr_dirpath sl))
 
 let pr_dirpath sl = [< 'sTR (string_of_dirpath sl) >]
+
+let default_module_name = id_of_string "Top"
+let default_module = make_dirpath [default_module_name]
 
 (*s Section paths are absolute names *)
 
@@ -278,19 +293,12 @@ let string_of_path sp =
 
 let path_of_string s =
   try
-    let sl,s = parse_sp s in
-    make_path sl s CCI
+    let sl,s = parse_fields s in
+    make_path (make_dirpath sl) s CCI
   with
     | Invalid_argument _ -> invalid_arg "path_of_string"
 
 let pr_sp sp = [< 'sTR (string_of_path sp) >]
-
-let sp_of_wd = function
-  | [] -> invalid_arg "Names.sp_of_wd"
-  | l -> let (bn,dp) = list_sep_last l in make_path dp bn OBJ
-
-let wd_of_sp sp = 
-  let (sp,id,_) = repr_path sp in sp @ [id]
 
 let sp_ord sp1 sp2 =
   let (p1,id1,k) = repr_path sp1
@@ -301,8 +309,6 @@ let sp_ord sp1 sp2 =
     if p_bit = 0 then id_ord id1 id2 else p_bit
   else
     ck
-
-let is_dirpath_prefix_of = list_prefix_of
 
 module SpOrdered =
   struct
@@ -345,6 +351,15 @@ module Hname = Hashcons.Make(
     let hash = Hashtbl.hash
   end)
 
+module Hdir = Hashcons.Make(
+  struct 
+    type t = dir_path
+    type u = identifier -> identifier
+    let hash_sub hident d = List.map hident d
+    let equal d1 d2 = List.for_all2 (==) d1 d2
+    let hash = Hashtbl.hash
+  end)
+
 module Hsp = Hashcons.Make(
   struct 
     type t = section_path
@@ -364,6 +379,6 @@ let hcons_names () =
   let hstring = Hashcons.simple_hcons Hashcons.Hstring.f () in
   let hident = Hashcons.simple_hcons Hident.f hstring in
   let hname = Hashcons.simple_hcons Hname.f hident in
+  let hdir = Hashcons.simple_hcons Hdir.f hident in
   let hspcci = Hashcons.simple_hcons Hsp.f hident in
-  let hspfw = Hashcons.simple_hcons Hsp.f hident in
-  (hspcci,hspfw,hname,hident,hstring)
+  (hspcci,hdir,hname,hident,hstring)

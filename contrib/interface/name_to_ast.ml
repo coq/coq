@@ -84,9 +84,9 @@ let implicit_args_to_ast_list sp mipv =
 	      
 let convert_qualid qid =
   let d, id = Nametab.repr_qualid qid in
-    match d with
+    match repr_dirpath d with
 	[] -> nvar id
-      | _ -> ope("QUALID", List.fold_right (fun s l -> (nvar s)::l) d
+      | d -> ope("QUALID", List.fold_right (fun s l -> (nvar s)::l) d
 		   [nvar id]);;
 
 (* This function converts constructors for an inductive definition to a
@@ -228,7 +228,7 @@ let name_to_ast (qid:Nametab.qualid) =
   	with Not_found -> 
 	  try  (* Var locale de but, pas var de section... donc pas d'implicits *)
 	    let dir,name = Nametab.repr_qualid qid in 
-	      if dir <> [] then raise Not_found;
+	      if dir <> make_dirpath [] then raise Not_found;
 	      let (c,typ) = Global.lookup_named name in 
 		(match c with
 		     None -> make_variable_ast name typ []

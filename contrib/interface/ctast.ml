@@ -16,7 +16,10 @@ type t =
 
 let section_path sl k =
   match List.rev sl with
-    | s::pa -> make_path (List.rev (List.map id_of_string pa)) (id_of_string s) (kind_of_string k)
+    | s::pa ->
+	make_path
+	  (make_dirpath (List.rev (List.map id_of_string pa)))
+	  (id_of_string s) (kind_of_string k)
     | [] -> invalid_arg "section_path"
 
 let is_meta s = String.length s > 0 && s.[0] == '$'
@@ -53,7 +56,7 @@ let rec ast_to_ct = function
   | Coqast.Str (loc,a) -> Str (loc,a)
   | Coqast.Path (loc,a) ->
     let (sl,bn,pk) = repr_path a in
-    Path(loc, (List.map string_of_id sl) @ [string_of_id bn],(* Bidon *) "CCI")
+    Path(loc, (List.map string_of_id (repr_dirpath sl)) @ [string_of_id bn],(* Bidon *) "CCI")
   | Coqast.Dynamic (loc,a) -> Dynamic (loc,a)
 
 let loc = function

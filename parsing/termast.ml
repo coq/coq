@@ -107,7 +107,7 @@ let ast_of_ref = function
 
 let ast_of_qualid p =
   let dir, s = repr_qualid p in
-  let args = List.map nvar (dir@[s]) in
+  let args = List.map nvar ((repr_dirpath dir)@[s]) in
   ope ("QUALID", args)
 
 (**********************************************************************)

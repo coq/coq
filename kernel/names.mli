@@ -63,12 +63,14 @@ val kind_of_string : string -> path_kind
 
 (*s Directory paths = section names paths *)
 type module_ident = identifier
-type dir_path = module_ident list
+type dir_path (*= module_ident list*)
 
 module ModIdmap : Map.S with type key = module_ident
 
 val make_dirpath : module_ident list -> dir_path
 val repr_dirpath : dir_path -> module_ident list
+val rev_repr_dirpath : dir_path -> module_ident list
+val is_empty_dirpath : dir_path -> bool
 
 (* Give the immediate prefix of a [dir_path] *)
 val dirpath_prefix : dir_path -> dir_path 
@@ -76,10 +78,14 @@ val dirpath_prefix : dir_path -> dir_path
 (* Give the immediate prefix and basename of a [dir_path] *)
 val split_dirpath : dir_path -> dir_path * identifier
 
+val extend_dirpath : dir_path -> module_ident -> dir_path
+val add_dirpath_prefix : module_ident -> dir_path -> dir_path
+
 (* Printing of directory paths as ["coq_root.module.submodule"] *)
 val string_of_dirpath : dir_path -> string
 val pr_dirpath : dir_path -> std_ppcmds
 
+val default_module : dir_path
 
 (*s Section paths are {\em absolute} names *)
 type section_path
@@ -92,9 +98,6 @@ val repr_path : section_path -> dir_path * identifier * path_kind
 val dirpath : section_path -> dir_path
 val basename : section_path -> identifier
 val kind_of_path : section_path -> path_kind
-
-val sp_of_wd : module_ident list -> section_path
-val wd_of_sp : section_path -> module_ident list
 
 (* Parsing and printing of section path as ["coq_root.module.id"] *)
 val path_of_string : string -> section_path
@@ -128,5 +131,5 @@ type global_reference =
 
 (* Hash-consing *)
 val hcons_names : unit ->
-  (section_path -> section_path) * (section_path -> section_path) *
+  (section_path -> section_path) * (dir_path -> dir_path) *
   (name -> name) * (identifier -> identifier) * (string -> string)

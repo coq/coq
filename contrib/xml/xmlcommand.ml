@@ -100,7 +100,8 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
 let uri_of_path sp tag =
  let module N = Names in
   let ext_of_sp sp = ext_of_tag tag in
-  let dir = List.map N.string_of_id (N.wd_of_sp sp) in
+  let dir0 = N.extend_dirpath (N.dirpath sp) (N.basename sp) in
+  let dir = List.map N.string_of_id (N.repr_dirpath dir0) in
    "cic:/" ^ (String.concat "/" dir) ^ "." ^ (ext_of_sp sp)
 ;;
 
@@ -797,7 +798,8 @@ let mkfilename dn sp ext =
    match dn with
       None         -> None
     | Some basedir ->
-	let dir = List.map N.string_of_id (N.wd_of_sp sp) in
+	let dir0 = N.extend_dirpath (N.dirpath sp) (N.basename sp) in
+	let dir = List.map N.string_of_id (N.repr_dirpath dir0) in
        Some (basedir ^ join_dirs basedir dir ^ "." ^ ext)
 ;;
 
@@ -918,9 +920,11 @@ with _ -> print_if_verbose ("EXCEPTION RAISED!!!\n");
            print_if_verbose ("Suppongo gia' stampato " ^ Names.string_of_id id ^ "\n")
           end
        end
-   | L.OpenedSection (id,_) ->
+   | L.OpenedSection (dir,_) ->
+       let id = snd (Names.split_dirpath dir) in
        print_if_verbose ("OpenDir " ^ Names.string_of_id id ^ "\n")
-   | L.ClosedSection (_,id,state) ->
+   | L.ClosedSection (_,dir,state) ->
+      let id = snd (Names.split_dirpath dir) in
       print_if_verbose("ClosedDir " ^ Names.string_of_id id ^ "\n") ;
       if bprintleaf then
        begin
@@ -994,7 +998,8 @@ let printSection id dn =
    let rec find_closed_section =
     function
        [] -> raise Not_found
-     | (_,Lib.ClosedSection (_,id',ls))::_ when id' = id -> ls
+     | (_,Lib.ClosedSection (_,dir,ls))::_ when snd (N.split_dirpath dir) = id
+	 -> ls
      | _::t -> find_closed_section t
    in
     print_string ("Searching " ^ Names.string_of_path sp ^ "\n") ;

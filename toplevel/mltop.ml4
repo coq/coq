@@ -152,7 +152,7 @@ let add_path dir coq_dirpath =
     begin
       add_ml_dir dir;
       Library.add_load_path_entry (dir,coq_dirpath);
-      if coq_dirpath <> [] then Nametab.push_library_root (List.hd coq_dirpath)
+      Nametab.push_library_root coq_dirpath
     end
   else
     wARNING [< 'sTR ("Cannot open " ^ dir) >]
@@ -167,14 +167,16 @@ let convert_string d =
 
 let add_rec_path dir coq_dirpath =
   let dirs = all_subdirs dir in
+  let prefix = Names.repr_dirpath coq_dirpath in
   if dirs <> [] then
-    let convert_dirs (lp,cp) = (lp,coq_dirpath@(List.map convert_string cp)) in
+    let convert_dirs (lp,cp) =
+      (lp,Names.make_dirpath (prefix@(List.map convert_string cp))) in
     let dirs = map_succeed convert_dirs dirs in
     begin
       List.iter (fun lpe -> add_ml_dir (fst lpe)) dirs;
       List.iter Library.add_load_path_entry dirs;
-      if coq_dirpath <> [] then Nametab.push_library_root (List.hd coq_dirpath)
-      else List.iter (fun (_, cp) -> if cp <> [] then Nametab.push_library_root (List.hd cp)) dirs
+      if prefix <> [] then Nametab.push_library_root coq_dirpath
+      else List.iter (fun (_, cp) -> Nametab.push_library_root cp) dirs
     end
   else
     wARNING [< 'sTR ("Cannot open " ^ dir) >]

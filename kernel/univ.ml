@@ -67,7 +67,7 @@ let implicit_univ =
     { u_mod = Names.make_dirpath [Names.id_of_string "implicit_univ"];
       u_num = 0 }
 
-let current_module = ref []
+let current_module = ref Names.default_module
 
 let set_module m = current_module := m
 
@@ -461,12 +461,12 @@ module Huniv =
   Hashcons.Make(
     struct
       type t = universe
-      type u = Names.identifier -> Names.identifier
-      let hash_aux hstr {u_mod=sp; u_num=n} = {u_mod=List.map hstr sp; u_num=n}
-      let hash_sub hstr = function
-	| Variable u -> Variable (hash_aux hstr u)
+      type u = Names.dir_path -> Names.dir_path
+      let hash_aux hdir {u_mod=sp; u_num=n} = {u_mod = hdir sp; u_num = n}
+      let hash_sub hdir = function
+	| Variable u -> Variable (hash_aux hdir u)
 	| Max (gel,gtl) ->
-	    Max (List.map (hash_aux hstr) gel, List.map (hash_aux hstr) gtl)
+	    Max (List.map (hash_aux hdir) gel, List.map (hash_aux hdir) gtl)
       let equal u v =
 	match u, v with
 	  | Variable u, Variable v -> u == v
@@ -477,6 +477,6 @@ module Huniv =
     end)
 
 let hcons1_univ u =
-  let _,_,_,hid,_ = Names.hcons_names () in
-  Hashcons.simple_hcons Huniv.f hid u
+  let _,hdir,_,_,_ = Names.hcons_names () in
+  Hashcons.simple_hcons Huniv.f hdir u
 

@@ -244,7 +244,7 @@ let print_pure_constr csr =
     | Anonymous -> print_string "_"
 (* Remove the top names for library and Scratch to avoid long names *)
   and sp_display sp = let ls = 
-    match List.map string_of_id (dirpath sp) with 
+    match List.map string_of_id (repr_dirpath (dirpath sp)) with 
         ("Scratch"::l)-> l
       | ("Coq"::_::l) -> l 
       | l             -> l

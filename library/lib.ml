@@ -17,9 +17,9 @@ open Summary
 type node = 
   | Leaf of obj
   | Module of dir_path
-  | OpenedSection of module_ident * Summary.frozen
+  | OpenedSection of dir_path * Summary.frozen
   (* bool is to tell if the section must be opened automatically *)
-  | ClosedSection of bool * module_ident * library_segment
+  | ClosedSection of bool * dir_path * library_segment
   | FrozenState of Summary.frozen
 
 and library_entry = section_path * node
@@ -36,9 +36,7 @@ and library_segment = library_entry list
 
 let lib_stk = ref ([] : (section_path * node) list)
 
-let default_module_name = id_of_string "Top"
-let default_module = make_dirpath [default_module_name]
-let init_toplevel_root () = Nametab.push_library_root default_module_name
+let init_toplevel_root () = Nametab.push_library_root default_module
 
 let module_name = ref None
 let path_prefix = ref (default_module : dir_path)
@@ -48,23 +46,19 @@ let module_sp () =
 
 let recalc_path_prefix () =
   let rec recalc = function
-    | (sp, OpenedSection (modid,_)) :: _ -> (dirpath sp)@[modid]
+    | (sp, OpenedSection (dir,_)) :: _ -> dir
     | _::l -> recalc l
     | [] -> module_sp ()
   in
   path_prefix := recalc !lib_stk
 
-let pop_path_prefix () =
-  let rec pop = function
-    | [] -> assert false
-    | [_] -> []
-    | s::l -> s :: (pop l)
-  in
-  path_prefix := pop !path_prefix
+let pop_path_prefix () = path_prefix := fst (split_dirpath !path_prefix)
 
 let make_path id k = Names.make_path !path_prefix id k
 
-let sections_depth () = List.length !path_prefix - List.length (module_sp ())
+let sections_depth () =
+  List.length (rev_repr_dirpath !path_prefix)
+  - List.length (rev_repr_dirpath (module_sp ()))
 
 let cwd () = !path_prefix
 
@@ -122,11 +116,11 @@ let contents_after = function
 (* Sections. *)
 
 let open_section id =
-  let dir = !path_prefix @ [id] in
+  let dir = extend_dirpath !path_prefix id in
   let sp = make_path id OBJ in
   if Nametab.exists_section dir then
     errorlabstrm "open_section" [< pr_id id; 'sTR " already exists" >];
-  add_entry sp (OpenedSection (id, freeze_summaries()));
+  add_entry sp (OpenedSection (dir, freeze_summaries()));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
   Nametab.push_section dir;
   path_prefix := dir;
@@ -145,7 +139,7 @@ let start_module s =
   if !path_prefix <> default_module then
     error "some sections are already opened";
   module_name := Some s;
-  (match split_dirpath s with [],id -> Nametab.push_library_root id | _ -> ());
+  Nametab.push_library_root s;
   Univ.set_module s;
   let _ = add_anonymous_entry (Module s) in
   path_prefix := s
@@ -179,10 +173,12 @@ let export_segment seg =
   clean [] seg
 
 let close_section export id =
-  let sp,fs = 
+  let sp,dir,fs = 
     try match find_entry_p is_opened_section with
-      | sp,OpenedSection (id',fs) -> 
-	  if id<>id' then error "this is not the last opened section"; (sp,fs)
+      | sp,OpenedSection (dir,fs) -> 
+	  if id<>snd(split_dirpath dir) then
+	    error "this is not the last opened section";
+	  (sp,dir,fs)
       | _ -> assert false
     with Not_found ->
       error "no opened section"
@@ -191,8 +187,8 @@ let close_section export id =
   lib_stk := before;
   let after' = export_segment after in
   pop_path_prefix ();
-  add_entry (make_path id OBJ) (ClosedSection (export, id, after'));
-  (sp,after,fs)
+  add_entry (make_path id OBJ) (ClosedSection (export, dir, after'));
+  (dir,after,fs)
 
 (* The following function exports the whole library segment, that will be 
    saved as a module. Objects are presented in chronological order, and
@@ -252,7 +248,7 @@ let init () =
   lib_stk := [];
   add_frozen_state ();
   module_name := None;
-  path_prefix := [];
+  path_prefix := make_dirpath [];
   init_summaries()
 
 (* Initial state. *)

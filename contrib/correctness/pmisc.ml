@@ -143,7 +143,8 @@ let real_subst_in_constr = replace_vars
 (* Coq constants *)
 
 let coq_constant d s =
-  make_path (List.map id_of_string ("Coq" :: d)) (id_of_string s) CCI
+  make_path
+    (make_dirpath (List.map id_of_string ("Coq" :: d))) (id_of_string s) CCI
 
 let bool_sp = coq_constant ["Init"; "Datatypes"] "bool"
 let coq_true = mkMutConstruct ((bool_sp,0),1)

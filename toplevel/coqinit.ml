@@ -53,8 +53,8 @@ let add_ml_include s =
   Mltop.add_ml_dir s
 
 (* Puts dir in the path of ML and in the LoadPath *)
-let coq_add_path s = Mltop.add_path s [Nametab.coq_root]
-let coq_add_rec_path s = Mltop.add_rec_path s [Nametab.coq_root]
+let coq_add_path s = Mltop.add_path s (Names.make_dirpath [Nametab.coq_root])
+let coq_add_rec_path s = Mltop.add_rec_path s (Names.make_dirpath [Nametab.coq_root])
 
 (* By the option -include -I or -R of the command line *)
 let includes = ref []
@@ -95,10 +95,7 @@ let init_load_path () =
 
 (* Must be done after restoring initial state! *)
 let init_library_roots () =
-  List.iter
-    (fun (_,alias,_) ->
-      if alias <> [] then Nametab.push_library_root (List.hd alias))
-    !includes;
+  List.iter (fun (_,alias,_) -> Nametab.push_library_root alias) !includes;
   includes := []
 
 (* Initialises the Ocaml toplevel before launching it, so that it can

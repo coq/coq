@@ -18,14 +18,16 @@ type qualid = dir_path * identifier
 let make_qualid p id = (p,id)
 let repr_qualid q = q
 
-let string_of_qualid (l,id) =
-  let dir = if l = [] then "" else string_of_dirpath l ^ "." in
-  dir ^ string_of_id id
+let empty_dirpath = make_dirpath []
+let make_short_qualid id = (empty_dirpath,id)
+
+let string_of_qualid (l,id) = string_of_path (make_path l id CCI)
+
 let pr_qualid p = pr_str (string_of_qualid p)
 
 let qualid_of_sp sp = make_qualid (dirpath sp) (basename sp)
 let qualid_of_dirpath dir = 
-  let a,l = list_sep_last (repr_qualid dir) in
+  let (l,a) = split_dirpath dir in
   make_qualid l a
 
 exception GlobalizationError of qualid
@@ -42,11 +44,13 @@ let error_global_not_found q = raise (GlobalizationError q)
 (*s Roots of the space of absolute names *)
 
 let coq_root = id_of_string "Coq"
-let default_root_prefix = []
+let default_root_prefix = make_dirpath []
 
 (* Obsolète
 let roots = ref []
-let push_library_root s = roots := list_add_set s !roots
+let push_library_root = function
+  | [] -> ()
+  | s::_ -> roots := list_add_set s !roots
 *)
 let push_library_root s = ()
 
@@ -90,6 +94,7 @@ let dirpath_of_extended_ref = function
 (* We add a binding of [[modid1;...;modidn;id]] to [o] in the name tab *)
 (* We proceed in the reverse way, looking first to [id] *)
 let push_tree extract_dirpath tab visibility dir o =
+  let extract = option_app (fun c -> rev_repr_dirpath (extract_dirpath c)) in
   let rec push level (current,dirmap) = function
     | modid :: path as dir ->
 	let mc = 
@@ -98,7 +103,7 @@ let push_tree extract_dirpath tab visibility dir o =
 	in
 	let this =
           if level >= visibility then
-            if option_app extract_dirpath current = Some dir then
+            if extract current = Some dir then
               (* This is an absolute name, we must keep it otherwise it may
                  become unaccessible forever *)
               current
@@ -107,7 +112,7 @@ let push_tree extract_dirpath tab visibility dir o =
           else current in
 	(this, ModIdmap.add modid (push (level+1) mc path) dirmap)
     | [] -> (Some o,dirmap) in
-  push 0 tab (List.rev dir)
+  push 0 tab (rev_repr_dirpath dir)
 
 let push_idtree extract_dirpath tab n dir id o =
   let modtab =
@@ -149,14 +154,14 @@ let push_syntactic_definition sp =
 
 let push_short_name_syntactic_definition sp =
   let _, s = repr_qualid (qualid_of_sp sp) in
-  push_short_name_ccipath Pervasives.max_int [] s (SyntacticDef sp)
+  push_short_name_ccipath Pervasives.max_int empty_dirpath s (SyntacticDef sp)
 
 (* This is for dischargeable non-cci objects (removed at the end of the
    section -- i.e. Hints, Grammar ...) *) (* --> Unused *)
 
 let push_short_name_object sp =
   let _, s = repr_qualid (qualid_of_sp sp) in
-  push_short_name_objpath 0 [] s sp
+  push_short_name_objpath 0 empty_dirpath s sp
 
 (* This is to remember absolute Section/Module names and to avoid redundancy *)
 
@@ -164,18 +169,18 @@ let push_section fulldir =
   let dir, s = split_dirpath fulldir in
   (* We push all partially qualified name *)
   push_long_names_secpath dir s fulldir;
-  push_long_names_secpath [] s fulldir
+  push_long_names_secpath empty_dirpath s fulldir
 
 (* These are entry points to locate names *)
 let locate_in_tree tab dir =
-  let dir = List.rev dir in
+  let dir = rev_repr_dirpath dir in
   let rec search (current,modidtab) = function
     | modid :: path -> search (ModIdmap.find modid modidtab) path
     | [] -> match current with Some o -> o | _ -> raise Not_found
   in
   search tab dir
 
-let locate_cci qid =
+let locate_cci (qid:qualid) =
   let (dir,id) = repr_qualid qid in
   locate_in_tree (Idmap.find id !the_ccitab) dir
 
@@ -196,7 +201,7 @@ let locate_obj qid =
 let push_loaded_library fulldir =
   let dir, s = split_dirpath fulldir in
   push_long_names_libpath dir s fulldir;
-  push_long_names_libpath [] s fulldir
+  push_long_names_libpath empty_dirpath s fulldir
 
 let locate_loaded_library qid =
   let (dir,id) = repr_qualid qid in
@@ -215,14 +220,14 @@ let locate_constant qid =
     | TrueGlobal (VarRef sp) -> sp
     | _ -> raise Not_found
 
-let sp_of_id _ id = match locate_cci (make_qualid [] id) with
+let sp_of_id _ id = match locate_cci (make_short_qualid id) with
   | TrueGlobal ref -> ref
   | SyntacticDef _ ->
       anomaly ("sp_of_id: "^(string_of_id id)
 	       ^" is not a true global reference but a syntactic definition")
 
 let constant_sp_of_id id =
-  match locate_cci (make_qualid [] id) with
+  match locate_cci (make_short_qualid id) with
     | TrueGlobal (ConstRef sp) -> sp
     | _ -> raise Not_found
 
