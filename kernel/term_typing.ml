@@ -21,6 +21,8 @@ open Entries
 open Type_errors
 open Indtypes
 open Typeops
+open Symbol
+open Rules
 
 let constrain_type env j cst1 = function
   | None -> j.uj_type, cst1
@@ -85,12 +87,16 @@ let infer_declaration env dcl =
   | DefinitionEntry c ->
       let (j,cst) = infer env c.const_entry_body in
       let (typ,cst) = constrain_type env j cst c.const_entry_type in
-      Some (Declarations.from_val j.uj_val), typ, cst, c.const_entry_opaque
+	Some (Declarations.from_val j.uj_val), typ, cst,
+	c.const_entry_opaque, None
   | ParameterEntry (t,opaq) ->
       let (j,cst) = infer env t in
-      None, Typeops.assumption_of_judgment env j, cst, opaq
+	None, Typeops.assumption_of_judgment env j, cst, opaq, None
+  | SymbolEntry (t,se) ->
+      let (j,cst) = infer env t in
+	None, Typeops.assumption_of_judgment env j, cst, true, Some se
 
-let build_constant_declaration env (body,typ,cst,op) =
+let build_constant_declaration env (body,typ,cst,op,seopt) =
   let ids = match body with 
     | None -> global_vars_set env typ
     | Some b ->
@@ -99,20 +105,30 @@ let build_constant_declaration env (body,typ,cst,op) =
 	  (global_vars_set env typ) 
   in
   let hyps = keep_hyps env ids in
-    { const_body = body;
-      const_type = typ;
-      const_hyps = hyps;
-      const_constraints = cst;
-      const_opaque = op }
+  let siopt =
+    match seopt with
+      | Some se -> Some (check_symbol env typ se)
+      | _ -> None
+  in { const_body = body;
+       const_type = typ;
+       const_hyps = hyps;
+       const_constraints = cst;
+       const_opaque = op;
+       const_symb = siopt}
 
 (*s Global and local constant declaration. *)
 
 let translate_constant env ce =
   build_constant_declaration env (infer_declaration env ce)
 
-let translate_recipe env r = 
-  build_constant_declaration env (Cooking.cook_constant env r)
+let translate_recipe env r =
+  let body,typ,cst,op = Cooking.cook_constant env r in
+  build_constant_declaration env (body,typ,cst,op,None)
 
 (* Insertion of inductive types. *)
 
 let translate_mind env mie = check_inductive env mie 
+
+(* Insertion of rewrite rules *)
+
+let translate_rules = check_rules

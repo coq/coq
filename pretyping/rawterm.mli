@@ -118,6 +118,7 @@ type ('a,'b) red_expr_gen =
   | Fold of 'a list
   | Pattern of 'a occurrences list
   | ExtraRedExpr of string * 'a
+  | Simpl_rew
 
 type 'a or_metanum = AN of 'a | MetaNum of int located
 

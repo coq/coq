@@ -123,8 +123,8 @@ let process_inductive sec_sp osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
     array_map_to_list
       (fun mip ->
 	 let nparams = mip.mind_nparams in
-	 let arity = expmod_type modlist mip.mind_user_arity in
-	 let lc = Array.map (expmod_type modlist) mip.mind_user_lc in
+	 let arity = expmod_type oldenv modlist mip.mind_user_arity in
+	 let lc = Array.map (expmod_type oldenv modlist) mip.mind_user_lc in
 	 (nparams,
 	  mip.mind_typename,
 	  arity,
@@ -137,7 +137,7 @@ let process_inductive sec_sp osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
     Sign.fold_named_context
       (fun (x,b,t) sgn ->
         Sign.add_named_decl
-          (x, option_app (expmod_constr modlist) b,expmod_constr modlist t)
+          (x, option_app (expmod_constr oldenv modlist) b,expmod_constr oldenv modlist t)
           sgn)
       mib.mind_hyps ~init:empty_named_context in
   let (inds',abs_vars,discharged_hyps ) =

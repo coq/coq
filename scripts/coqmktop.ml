@@ -17,7 +17,7 @@ open Unix
 (* Objects to link *)
 
 (* 1. Core objects *)
-let ocamlobjs = ["unix.cma"]
+let ocamlobjs = ["unix.cma";"nums.cma";"libcime.cma"]
 let dynobjs = ["dynlink.cma"]
 let camlp4objs = [(*"odyl.cma"; "camlp4.cma";*) "gramlib.cma"]
 let configobjs = ["coq_config.cmo"]

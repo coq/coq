@@ -15,7 +15,7 @@ open Names
 open Declarations
 open Environ
 open Esubst
-
+open Print
 
 let stats = ref false
 let share = ref true
@@ -332,6 +332,11 @@ type table_key =
   | FarRelKey of int
    (* FarRel: index in the rel_context part of _initial_ environment *)
 
+let prtk = function
+  | ConstKey kn -> prn kn
+  | VarKey id -> print_string (string_of_id id)
+  | FarRelKey i -> print_char 'x'; print_int i
+
 type 'a infos = {
   i_flags : reds;
   i_repr : 'a infos -> constr -> 'a;
@@ -527,7 +532,58 @@ let fterm_of v = v.term
 let set_whnf v = if v.norm = Red then v.norm <- Whnf
 let set_cstr v = if v.norm = Red then v.norm <- Cstr
 let set_norm v = v.norm <- Norm
+let set_red v = v.norm <- Red
 let is_val v = v.norm = Norm
+
+(* Printing for debug *)
+let prft imap =
+  let rec prfc_rec fc = if fc.norm = Norm then prch '#'; prft_rec fc.term
+  and pr_sep fc = print_char ' '; prfc_rec fc
+  and prft_rec = function
+    | FRel i -> print_char 'x'; print_int i
+    | FFlex tk -> pr "flex:"; prtk tk
+    | FApp (f,va) ->
+	if Array.length va <= 0 then prfc_rec f
+	else print_char '('; prfc_rec f; Array.iter pr_sep va; print_char ')'
+    | FFix ((_,i),(vn,_,_),_,_) -> pr "fix:"; pr_name vn.(i)
+    | FCoFix (i,(vn,_,_),_,_) -> pr_name vn.(i)
+    | FConstruct c -> pr_construct imap c
+    | FInd i -> pr_ind imap i
+    | FAtom c -> prc imap c
+    | FCLOS (c,s) -> pr "clos:";prc imap c
+    | FLOCKED -> pr "lock"
+    | FLIFT (i,fc) -> prch '^'; pri i; prch ':'; prfc_rec fc
+    | FEvar _ -> pr "evar"
+    | FLetIn _ -> pr "let"
+    | FProd _ -> pr "prod"
+    | FLambda _ -> pr "lambda"
+    | FCases _ -> pr "case"
+    | FCast _ -> pr "cast"
+  in prft_rec
+
+let prfc imap fc = if fc.norm = Norm then prch '#'; prft imap fc.term
+
+let prfcv imap fcv =
+  if Array.length fcv = 0 then pr "<empty>"
+  else
+    let pr_sep i fc = if i>0 then pr ", "; prfc imap fc in
+      Array.iteri pr_sep fcv
+
+let prst imap =
+  let rec prstrec s = print_char '['; pr_list prstm "," s; print_char ']'
+  and prstml l = print_char '['; pr_list (prfc imap) "," l; print_char ']'
+  and prstm = function
+    | Zapp l -> prstml l
+    | Zfix (f,s) -> prfc imap f; prstrec s
+    | Zupdate fc -> pr "up:"; prfc imap fc
+    | Zshift i -> prch '^'; print_int i
+    | Zcase _ -> pr "case"
+  in prstrec
+
+let prfcst imap (m,stk) = prfc imap m; pr " "; prst imap stk
+let enter_fcst s info m stk = enter_pr s (prfcst (imap (info.i_env))) (m,stk)
+let leave_fc info = leave_pr (prfc (imap info.i_env))
+let leave_fcst info = leave_pr (prfcst (imap info.i_env))
 
 (* Could issue a warning if no is still Red, pointing out that we loose
    sharing. *)
@@ -574,7 +630,6 @@ let zupdate m s =
     let _ = m.term <- FLOCKED in
     Zupdate(m)::s'
   else s
-
 
 let clos_rel e i =
   match expand_rel i e with
@@ -705,12 +760,12 @@ let rec to_constr constr_fun lfts v =
    fconstr. When we find a closure whose substitution is the identity,
    then we directly return the constr to avoid possibly huge
    reallocation. *)
-let term_of_fconstr =
-  let rec term_of_fconstr_lift lfts v =
-    match v.term with
-      | FCLOS(t,env) when is_subs_id env & is_lift_id lfts -> t
-      | _ -> to_constr term_of_fconstr_lift lfts v in
-  term_of_fconstr_lift ELID
+let rec term_of_fconstr_lift lfts v =
+  match v.term with
+    | FCLOS(t,env) when is_subs_id env & is_lift_id lfts -> t
+    | _ -> to_constr term_of_fconstr_lift lfts v
+
+let term_of_fconstr = term_of_fconstr_lift ELID
 
 
 
@@ -738,9 +793,47 @@ let rec zip zfun m stk =
     | Zupdate(rf)::s ->
         zip zfun (update rf (m.norm,m.term)) s
 
-let fapp_stack (m,stk) = zip (fun x -> x) m stk
+(* let fapp_stack (m,stk) = zip (fun x -> x) m stk *)
 
-(*********************************************************************)
+let fapp_stack info =
+  let rec fapp m stk =
+    enter_fcst "fapp_stack" info m stk; leave_fc info (match stk with
+      | [] -> m
+      | Zapp args :: s ->
+	  fapp {m with term = FApp(m,Array.of_list args)} s
+      | Zcase(ci,p,br)::s ->
+          fapp {m with term = FCases(ci,p,m,br)} s
+      | Zfix(fx,par)::s ->
+          fapp fx (par @ append_stack_list ([m],s))
+      | Zshift(n)::s ->
+          fapp (lift_fconstr n m) s
+      | Zupdate(rf)::s ->
+          fapp (update rf (m.norm,m.term)) s)
+  in fun (m,stk) -> fapp m stk
+
+let inject = mk_clos (ESID 0)
+
+(* cache of constants: the body is computed only when needed. *)
+type clos_infos = fconstr infos
+
+let create_clos_infos flgs env =
+  create (fun _ -> inject) flgs env
+
+let is_rule_defined cinfo fl v =
+  match fl with
+    | ConstKey kn ->
+	lookup_rules kn cinfo.i_env <> [] &
+	arity (lookup_constant kn cinfo.i_env) <= stack_args_size v
+    | _ -> false
+
+let is_free cinfo = function
+  | ConstKey kn -> is_free (lookup_constant kn cinfo.i_env)
+  | _ -> true
+
+let env cinfo = cinfo.i_env
+let cime_env cinfo = cime cinfo.i_env
+
+let unfold_reference = ref_value_cache
 
 (* The assertions in the functions below are granted because they are
    called only when m is a constructor, a cofix
@@ -866,92 +959,115 @@ let contract_fix_vect fix =
    atom or a subterm that may produce a redex (abstraction,
    constructor, cofix, letin, constant), or a neutral term (product,
    inductive) *)
-let rec knh m stk =
-  match m.term with
-    | FLIFT(k,a) -> knh a (zshift k stk)
-    | FCLOS(t,e) -> knht e t (Zupdate(m)::stk)
+let rec knh info m stk =
+  enter_fcst "knh" info m stk; leave_fcst info (match m.term with
+    | FLIFT(k,a) -> knh info a (zshift k stk)
+    | FCLOS(t,e) -> knht info e t (Zupdate(m)::stk)
     | FLOCKED -> anomaly "Closure.knh: found lock"
-    | FApp(a,b) -> knh a (append_stack b (zupdate m stk))
-    | FCases(ci,p,t,br) -> knh t (Zcase(ci,p,br)::zupdate m stk)
+    | FApp(a,b) -> knh info a (append_stack b (zupdate m stk))
+    | FCases(ci,p,t,br) -> knh info t (Zcase(ci,p,br)::zupdate m stk)
     | FFix((ri,n),_,_,_) ->
-        (set_whnf m;
+        branch "fix";(set_whnf m;
          match get_nth_arg m ri.(n) stk with
-             (Some(pars,arg),stk') -> knh arg (Zfix(m,pars)::stk')
+             (Some(pars,arg),stk') -> knh info arg (Zfix(m,pars)::stk')
            | (None, stk') -> (m,stk'))
-    | FCast(t,_) -> knh t stk
+    | FCast(t,_) -> knh info t stk
 (* cases where knh stops *)
     | (FFlex _|FLetIn _|FConstruct _|FEvar _) -> (m, stk)
     | (FRel _|FAtom _|FInd _) -> (set_norm m; (m, stk))
     | (FLambda _|FCoFix _|FProd _) ->
-        (set_whnf m; (m, stk))
+        (set_whnf m; (m, stk)))
 
 (* The same for pure terms *)
-and knht e t stk =
+and knht info e t stk =
   match kind_of_term t with
     | App(a,b) ->
-        knht e a (append_stack (mk_clos_vect e b) stk)
+        knht info e a (append_stack (mk_clos_vect e b) stk)
     | Case(ci,p,t,br) ->
-        knht e t (Zcase(ci, mk_clos e p, mk_clos_vect e br)::stk)
-    | Fix _ -> knh (mk_clos_deep mk_clos e t) stk
-    | Cast(a,b) -> knht e a stk
-    | Rel n -> knh (clos_rel e n) stk
+        knht info e t (Zcase(ci, mk_clos e p, mk_clos_vect e br)::stk)
+    | Fix _ -> knh info (mk_clos_deep mk_clos e t) stk
+    | Cast(a,b) -> knht info e a stk
+    | Rel n -> knh info (clos_rel e n) stk
     | (Lambda _|Prod _|Construct _|CoFix _|Ind _|
-       LetIn _|Const _|Var _|Evar _|Meta _|Sort _) ->
+       LetIn _|Const _|Term.Var _|Evar _|Meta _|Sort _) ->
         (mk_clos_deep mk_clos e t, stk)
 
 
 (***********************************************************************)
 
 (* Computes a normal form from the result of knh. *)
-let rec knr info m stk =
-  match m.term with
+let rec knr info m stk lams =
+  enter_fcst "knr" info m stk; leave_fcst info (match m.term with
   | FLambda(_,_,_,f,e) when red_set info.i_flags fBETA ->
       (match get_arg m stk with
-          (Some(depth,arg),s) -> knit info (subs_shift_cons(depth,e,arg)) f s
+          (Some(depth,arg),s) -> knit info lams (subs_shift_cons(depth,e,arg)) f s
         | (None,s) -> (m,s))
+  | FFlex (ConstKey kn as fl) when red_set info.i_flags fIOTA ->
+      if lookup_rules kn info.i_env <> [] then (
+	let n = arity (lookup_constant kn info.i_env) in
+	  if stack_args_size stk < n then (set_norm m; (m,stk))
+	  else (
+	    match kind_of_term (term_of_fconstr (fapp_stack info (m,stk))) with
+	      | App (f,va) -> branch_pr "args:" (prv(imap info.i_env)) va;
+		  let va' = Array.map (fun c -> kl info lams (mk_clos (ESID lams) c)) va in branch_pr "args':" (prfcv(imap info.i_env)) va';
+		    let c = mkApp (f, Array.map term_of_fconstr va') in
+		      begin
+			match Cime.normalize (cime_env info) c with
+			  | Some c' -> branch_pr "cime result" (prc(imap info.i_env)) c';knh info (mk_clos (ESID lams) c') []
+			  | _ ->
+			      let m,stk = knh info (mk_clos (ESID lams) c) [] in
+				set_norm m; m,stk
+		      end
+	      | _ -> anomaly "knr"
+	  )
+      ) else (
+	match ref_value_cache info fl with
+          | Some v -> kni info lams v stk
+          | _ -> if red_set info.i_flags (fCONST kn) then set_norm m; m,stk
+      )
   | FFlex(ConstKey kn) when red_set info.i_flags (fCONST kn) ->
       (match ref_value_cache info (ConstKey kn) with
-          Some v -> kni info v stk
-        | None -> (set_norm m; (m,stk)))
+           Some v -> kni info lams v stk
+         | None -> (set_norm m; (m,stk)))
   | FFlex(VarKey id) when red_set info.i_flags (fVAR id) ->
       (match ref_value_cache info (VarKey id) with
-          Some v -> kni info v stk
+          Some v -> kni info lams v stk
         | None -> (set_norm m; (m,stk)))
   | FFlex(FarRelKey k) when red_set info.i_flags fDELTA ->
       (match ref_value_cache info (FarRelKey k) with
-          Some v -> kni info v stk
+          Some v -> kni info lams v stk
         | None -> (set_norm m; (m,stk)))
   | FConstruct(ind,c) when red_set info.i_flags fIOTA ->
       (match strip_update_shift_app m stk with
           (depth, args, Zcase(ci,_,br)::s) ->
             assert (ci.ci_npar>=0);
             let rargs = drop_parameters depth ci.ci_npar args in
-            kni info br.(c-1) (rargs@s)
+            kni info lams br.(c-1) (rargs@s)
         | (_, cargs, Zfix(fx,par)::s) ->
-            let rarg = fapp_stack(m,cargs) in
+            let rarg = fapp_stack info (m,cargs) in
             let stk' = par @ append_stack [|rarg|] s in
             let efx = contract_fix_vect fx.term in
-            kni info efx stk'
+            kni info lams efx stk'
         | (_,args,s) -> (m,args@s))
   | FCoFix _ when red_set info.i_flags fIOTA ->
       (match strip_update_shift_app m stk with
           (_, args, ((Zcase _::_) as stk')) ->
             let efx = contract_fix_vect m.term in
-            kni info efx (args@stk')
+            kni info lams efx (args@stk')
         | (_,args,s) -> (m,args@s))
   | FLetIn (_,v,_,_,bd,e) when red_set info.i_flags fZETA ->
-      knit info (subs_cons(v,e)) bd stk
+      knit info lams (subs_cons(v,e)) bd stk
   | _ -> (m,stk)
-
+									       )
 (* Computes the weak head normal form of a term *)
-and kni info m stk =
-  let (hm,s) = knh m stk in
-  knr info hm s
-and knit info e t stk =
-  let (ht,s) = knht e t stk in
-  knr info ht s
+and kni info lams m stk =
+  enter_fcst "kni" info m stk; leave_fcst info (let (hm,s) = knh info m stk in
+  knr info hm s lams)
+and knit info lams e t stk =
+  let (ht,s) = knht info e t stk in
+  knr info ht s lams
 
-let kh info v stk = fapp_stack(kni info v stk)
+and kh info v stk = fapp_stack info (kni info 0 v stk)
 
 (***********************************************************************)
 
@@ -959,53 +1075,44 @@ let kh info v stk = fapp_stack(kni info v stk)
    1- Calls kni
    2- tries to rebuild the term. If a closure still has to be computed,
       calls itself recursively. *)
-let rec kl info m =
-  if is_val m then (incr prune; m)
+and kl info lams m =
+  enter_fcst "kl" info m []; leave_fc info (if is_val m then (incr prune; m)
   else
-    let (nm,s) = kni info m [] in
-    down_then_up info nm s
+    let (nm,s) = kni info lams m [] in
+    down_then_up info nm s lams)
 
 (* no redex: go up for atoms and already normalized terms, go down
    otherwise. *) 
-and down_then_up info m stk =
-  let nm =
+and down_then_up info m stk lams =
+  enter_fcst "down_then_up" info m stk; leave_fc info (let nm =
     if is_val m then (incr prune; m) else 
       let nt =
       match m.term with
         | FLambda(na,ty,bd,f,e) ->
-            FLambda(na, kl info ty, kl info bd, f, e)
+            FLambda(na, kl info lams ty, kl info lams bd, f, e)
         | FLetIn(na,a,b,c,f,e) ->
-            FLetIn(na, kl info a, kl info b, kl info c, f, e)
+            FLetIn(na, kl info lams a, kl info lams b, kl info lams c, f, e)
         | FProd(na,dom,rng,f,e) ->
-            FProd(na, kl info dom, kl info rng, f, e)
+            FProd(na, kl info lams dom, kl info lams rng, f, e)
         | FCoFix(n,(na,ftys,fbds),bds,e) ->
-            FCoFix(n,(na, Array.map (kl info) ftys,
-                          Array.map (kl info) fbds),bds,e)
-        | FEvar(i,args) -> FEvar(i, Array.map (kl info) args)
+            FCoFix(n,(na, Array.map (kl info lams) ftys,
+                          Array.map (kl info lams) fbds),bds,e)
+        | FEvar(i,args) -> FEvar(i, Array.map (kl info lams) args)
         | t -> t in
       {norm=Norm;term=nt} in
 (* Precondition: m.norm = Norm *)
-  zip (kl info) nm stk
+  zip (kl info lams) nm stk)
 
+let whd_val_rew info v = term_of_fconstr (kh info v [])
+
+let norm_val_rew info lams v = term_of_fconstr (kl info lams v)
 
 (* Initialization and then normalization *)
 
 (* weak reduction *)
-let whd_val info v =
-  with_stats (lazy (term_of_fconstr (kh info v [])))
+let whd_val info v = with_stats (lazy (whd_val_rew info v))
 
 (* strong reduction *)
-let norm_val info v =
-  with_stats (lazy (term_of_fconstr (kl info v)))
-
-let inject = mk_clos (ESID 0)
+let norm_val info lams v = with_stats (lazy (norm_val_rew info lams v))
 
 let whd_stack = kni
-
-(* cache of constants: the body is computed only when needed. *)
-type clos_infos = fconstr infos
-
-let create_clos_infos flgs env =
-  create (fun _ -> inject) flgs env
-
-let unfold_reference = ref_value_cache

@@ -106,7 +106,7 @@ let error_cant_apply_bad_type_loc loc env sigma (n,c,t) rator randl =
         j_nf_evar sigma rator, ja))
 
 let error_ill_formed_branch_loc loc env sigma c i actty expty =
-  let simp t = Reduction.nf_betaiota (nf_evar sigma t) in
+  let simp t = Reduction.nf_betaiota_rew env (nf_evar sigma t) in
   raise_located_type_error
     (loc, env, sigma,
      IllFormedBranch (nf_evar sigma c,i,simp actty, simp expty))

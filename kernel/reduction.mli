@@ -20,7 +20,7 @@ val whd_betaiotazeta        : env -> constr -> constr
 val whd_betadeltaiota       : env -> constr -> constr
 val whd_betadeltaiota_nolet : env -> constr -> constr
 
-val nf_betaiota      : constr -> constr
+val nf_betaiota_rew      : env -> constr -> constr
 
 (***********************************************************************)
 (*s conversion functions *)

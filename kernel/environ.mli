@@ -13,6 +13,8 @@ open Names
 open Term
 open Declarations
 open Sign
+open Precedence
+open Symbol
 (*i*)
 
 (*s Unsafe environments. We define here a datatype for environments. 
@@ -31,6 +33,7 @@ type env
 
 val empty_env : env
 
+val imap          : env -> imap
 val universes     : env -> Univ.universes
 val rel_context   : env -> rel_context
 val named_context : env -> named_context
@@ -120,7 +123,13 @@ val add_constraints : Univ.constraints -> env -> env
 
 (***********************************************************************)
 (*s Rewriting rules *)
-val add_rule : symbol -> constr * constr -> env -> env
+
+val add_rules : rules_body -> env -> env
+val lookup_rules : symbol -> env -> rules_body list (* [] if not in env *)
+val rules : env -> (constr * constr) list
+val cime : env -> Cime.env
+val prec : env -> precedence
+val fold_rules : ('a -> rules_body -> 'a) -> 'a -> env -> 'a
 
 (***********************************************************************)
 (* Sets of referred section variables *)

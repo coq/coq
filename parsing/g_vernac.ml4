@@ -18,6 +18,7 @@ open Util
 open Constr
 open Vernac_
 open Prim
+open Symbol
 open Decl_kinds
 
 (* Dans join_binders, s'il y a un "?", on perd l'info qu'il est partagé *)
@@ -111,8 +112,7 @@ GEXTEND Gram
     [ [ "Hypothesis" -> (Local, Logical)
       | "Variable" -> (Local, Definitional)
       | "Axiom" -> (Global, Logical)
-      | "Parameter" -> (Global, Definitional)
-      | "Symbol" -> (Global, Symbol) ] ]
+      | "Parameter" -> (Global, Definitional) ] ]
   ;
   assumptions_token:
     [ [ IDENT "Hypotheses" -> (Local, Logical)
@@ -186,11 +186,59 @@ GEXTEND Gram
       | stre = assumptions_token; bl = ne_params_list ->
 	  test_plurial_form bl;
 	  VernacAssumption (stre, bl)
-      (* Rewriting rules *)
-      | "Rule"; bl = simple_binders_list; l = constr; "=>"; r = constr ->
-	  VernacRule (bl,l,r)
+
+      (* Symbols and rules *)
+      | IDENT "Symbol"; (a,e) = symb_arity; s = symb_status; m = symb_mons;
+	  am = symb_antimons; id = base_ident; ":"; t = constr ->
+	    VernacSymbol (id,t,a,e,s,m,am)
+      | IDENT "Rules"; ctx = rew_rules_ctx; subs = rew_rules_subs;
+        "{"; rules = ne_rew_rules_list; "}" -> VernacRules (ctx,subs,rules)
       ] ]
   ;
+  symb_arity:
+    [ [ IDENT "C" -> 2,C
+      | IDENT "AC" -> 2,AC
+      | n = natural -> n,Free ] ]
+  ;
+  symb_status:
+    [ [ IDENT "Lex" -> Lex
+      | IDENT "Mul" -> Mul
+      | IDENT "RLex" -> RevLex
+      | IDENT "Lex"; "("; l = LIST1 mul_status SEP ","; ")" -> Comb l ] ]
+  ;
+  mul_status:
+    [ [ n = natural -> [n]
+      | IDENT "Mul"; n = natural; l = LIST1 natural -> n::l ] ]
+  ;
+  symb_mons:
+    [ [ IDENT "Mon"; "("; l = LIST1 natural SEP ","; ")" -> l
+      | -> [] ] ]
+  ;
+  symb_antimons:
+    [ [ IDENT "Antimon"; "("; l = LIST1 natural SEP ","; ")" -> l
+      | -> [] ] ]
+  ;
+  rew_rules_ctx:
+    [ [ "["; l = LIST1 rew_rules_var_decl SEP ";"; "]" -> List.flatten l
+      | -> [] ] ]
+  ;
+  rew_rules_var_decl:
+    [ [ l = LIST1 base_ident SEP ","; ":"; c = constr -> join_binders (l,c) ] ]
+  ;
+  rew_rules_subs:
+    [ [ IDENT "let"; l = LIST1 rew_rules_simple_subs SEP ","; IDENT "in" -> l
+      | -> [] ] ]
+  ;
+  rew_rules_simple_subs:
+    [ [ id = base_ident; ":="; c = constr -> (id,c) ] ]
+  ;
+  ne_rew_rules_list:
+    [ [ rl = LIST1 rew_rule SEP ";" -> rl ] ]
+  ;
+  rew_rule:
+    [ [ l = constr; "=>"; r = constr -> (l,r) ] ]
+  ;
+
   (* Gallina inductive declarations *)
   finite_token:
     [ [ "Inductive" -> true

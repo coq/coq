@@ -28,6 +28,7 @@ open Printer
 open Printmod
 open Libnames
 open Nametab
+open Symbol
 
 let print_basename sp = pr_global (ConstRef sp)
 
@@ -163,12 +164,22 @@ let print_body = function
 let print_typed_body (val_0,typ) =
   (print_body val_0 ++ fnl () ++ str "     : " ++ prtype typ ++ fnl ())
 
+let print_symbol sp si typ =
+  str"Symbol " ++
+  (match si.symb_eqth with
+     | Free -> int si.symb_arity
+     | AC -> str"AC"
+     | C -> str"C"
+  ) ++ str" " ++ print_basename sp ++ str" : " ++ cut() ++ prtype typ ++ fnl()
+
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = cb.const_body in
   let typ = cb.const_type in
   let impls = constant_implicits_list sp in
-  hov 0 ((match val_0 with 
+  hov 0 (match cb.const_symb with
+	   | Some si -> print_symbol sp si typ
+	   | _ -> ((match val_0 with
 		| None -> 
 		    (str"*** [ " ++ 
 		       print_basename sp ++  
@@ -179,7 +190,7 @@ let print_constant with_values sep sp =
 		       if with_values then 
 			 print_typed_body (val_0,typ) 
 		       else 
-			 (prtype typ ++ fnl ()))) ++ 
+			 (prtype typ ++ fnl ())))) ++ 
 	     print_impl_args impls)
 
 let print_inductive sp = (print_mutual sp)
@@ -329,7 +340,7 @@ let print_name r =
 	| _ -> raise Not_found
     in
     print_leaf_entry true " = " (oname,lobj)
-  with Not_found -> 
+  with Not_found ->
   try 
     match Nametab.locate qid with
       | ConstRef sp -> print_constant true " = " sp
@@ -437,6 +448,23 @@ let inspect depth =
   let items = List.rev (inspectrec depth [] (Lib.contents_after None)) in
   print_context false items
 
+(* Rewrite rules *)
+
+let print_rule envl envr (l,r) =
+  prterm_env envl l ++ str" => " ++ prterm_env envr r ++ fnl()
+
+let print_rules_body rb =
+  let envr = push_rel_context rb.rules_ctx (Global.env()) in
+  let envl = push_rel_context rb.rules_subs envr in
+    prlist (print_rule envl envr) rb.rules_list
+
+let print_pp_rules_body pp rb = pp ++ (print_rules_body rb)
+
+let print_rules_of pp ref = pp ++ (str "TO DO")
+
+let print_rules = function
+  | [] -> fold_rules print_pp_rules_body (mt()) (Global.env())
+  | l -> List.fold_left print_rules_of (mt()) l
 
 (*************************************************************************)
 (* Pretty-printing functions coming from classops.ml                     *)

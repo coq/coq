@@ -119,6 +119,7 @@ val list_map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
 
 val array_exists : ('a -> bool) -> 'a array -> bool
 val array_for_all : ('a -> bool) -> 'a array -> bool
+val array_for_all_i : (int -> 'a -> bool) -> 'a array -> bool
 val array_for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
 val array_hd : 'a array -> 'a
 val array_tl : 'a array -> 'a array
@@ -144,6 +145,8 @@ val array_map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 val array_map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 val array_map3 : 
   ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
+val array_init_by_list_map : ('a -> 'b) -> 'b -> 'a list -> 'b array
+val array_to_rev_list : 'a array -> 'a list
 
 (*s Matrices *)
 

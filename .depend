@@ -23,31 +23,38 @@ interp/syntax_def.cmi: kernel/names.cmi pretyping/rawterm.cmi \
 interp/topconstr.cmi: lib/bignat.cmi lib/dyn.cmi library/libnames.cmi \
     kernel/names.cmi lib/pp.cmi pretyping/rawterm.cmi kernel/term.cmi \
     lib/util.cmi 
-kernel/closure.cmi: kernel/environ.cmi kernel/esubst.cmi kernel/names.cmi \
-    lib/pp.cmi kernel/term.cmi 
+kernel/cime.cmi: kernel/declarations.cmi kernel/names.cmi kernel/term.cmi 
+kernel/closure.cmi: kernel/cime.cmi kernel/declarations.cmi \
+    kernel/environ.cmi kernel/esubst.cmi kernel/names.cmi lib/pp.cmi \
+    kernel/term.cmi 
 kernel/conv_oracle.cmi: kernel/closure.cmi kernel/names.cmi 
 kernel/cooking.cmi: kernel/declarations.cmi kernel/environ.cmi \
     kernel/names.cmi kernel/term.cmi kernel/univ.cmi 
 kernel/declarations.cmi: kernel/names.cmi lib/rtree.cmi kernel/sign.cmi \
+    kernel/symbol.cmi kernel/term.cmi kernel/univ.cmi 
+kernel/entries.cmi: kernel/names.cmi kernel/sign.cmi kernel/symbol.cmi \
     kernel/term.cmi kernel/univ.cmi 
-kernel/entries.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi \
+kernel/environ.cmi: kernel/cime.cmi kernel/declarations.cmi kernel/names.cmi \
+    kernel/precedence.cmi kernel/sign.cmi kernel/symbol.cmi kernel/term.cmi \
     kernel/univ.cmi 
-kernel/environ.cmi: kernel/declarations.cmi kernel/names.cmi kernel/sign.cmi \
-    kernel/term.cmi kernel/univ.cmi 
 kernel/esubst.cmi: lib/util.cmi 
 kernel/indtypes.cmi: kernel/declarations.cmi kernel/entries.cmi \
     kernel/environ.cmi kernel/names.cmi kernel/term.cmi kernel/typeops.cmi \
     kernel/univ.cmi 
 kernel/inductive.cmi: kernel/declarations.cmi kernel/environ.cmi \
     kernel/names.cmi kernel/term.cmi kernel/univ.cmi 
-kernel/mod_typing.cmi: kernel/declarations.cmi kernel/entries.cmi \
-    kernel/environ.cmi 
 kernel/modops.cmi: kernel/declarations.cmi kernel/entries.cmi \
     kernel/environ.cmi kernel/names.cmi kernel/univ.cmi lib/util.cmi 
+kernel/mod_typing.cmi: kernel/declarations.cmi kernel/entries.cmi \
+    kernel/environ.cmi 
 kernel/names.cmi: lib/pp.cmi lib/predicate.cmi 
+kernel/ordering.cmi: kernel/symbol.cmi kernel/term.cmi 
+kernel/precedence.cmi: kernel/names.cmi 
+kernel/print.cmi: kernel/declarations.cmi kernel/names.cmi kernel/term.cmi 
 kernel/reduction.cmi: kernel/environ.cmi kernel/sign.cmi kernel/term.cmi \
     kernel/univ.cmi 
-kernel/rules.cmi: kernel/environ.cmi kernel/names.cmi kernel/term.cmi 
+kernel/rules.cmi: kernel/declarations.cmi kernel/entries.cmi \
+    kernel/environ.cmi kernel/names.cmi kernel/symbol.cmi kernel/term.cmi 
 kernel/safe_typing.cmi: kernel/cooking.cmi kernel/declarations.cmi \
     kernel/entries.cmi kernel/environ.cmi kernel/names.cmi kernel/term.cmi \
     kernel/univ.cmi 
@@ -64,9 +71,6 @@ kernel/typeops.cmi: kernel/entries.cmi kernel/environ.cmi kernel/names.cmi \
 kernel/univ.cmi: kernel/names.cmi lib/pp.cmi 
 lib/bignat.cmi: lib/pp.cmi 
 lib/pp.cmi: lib/pp_control.cmi 
-lib/rtree.cmi: lib/pp.cmi 
-lib/system.cmi: lib/pp.cmi 
-lib/util.cmi: lib/pp.cmi 
 library/declare.cmi: kernel/cooking.cmi library/decl_kinds.cmo \
     kernel/declarations.cmi library/dischargedhypsmap.cmi kernel/entries.cmi \
     kernel/indtypes.cmi library/libnames.cmi library/libobject.cmi \
@@ -95,6 +99,9 @@ library/library.cmi: library/libnames.cmi library/libobject.cmi \
 library/nameops.cmi: kernel/names.cmi lib/pp.cmi 
 library/nametab.cmi: library/libnames.cmi kernel/names.cmi lib/pp.cmi \
     kernel/sign.cmi lib/util.cmi 
+lib/rtree.cmi: lib/pp.cmi 
+lib/system.cmi: lib/pp.cmi 
+lib/util.cmi: lib/pp.cmi 
 parsing/ast.cmi: parsing/coqast.cmi lib/dyn.cmi interp/genarg.cmi \
     library/libnames.cmi kernel/names.cmi lib/pp.cmi interp/topconstr.cmi \
     lib/util.cmi 
@@ -287,9 +294,9 @@ toplevel/class.cmi: pretyping/classops.cmi library/decl_kinds.cmo \
 toplevel/command.cmi: library/decl_kinds.cmo library/declare.cmi \
     kernel/entries.cmi kernel/environ.cmi pretyping/evd.cmi \
     library/libnames.cmi library/library.cmi kernel/names.cmi \
-    library/nametab.cmi pretyping/rawterm.cmi proofs/tacexpr.cmo \
-    pretyping/tacred.cmi kernel/term.cmi interp/topconstr.cmi lib/util.cmi \
-    toplevel/vernacexpr.cmo 
+    library/nametab.cmi pretyping/rawterm.cmi kernel/symbol.cmi \
+    proofs/tacexpr.cmo pretyping/tacred.cmi kernel/term.cmi \
+    interp/topconstr.cmi lib/util.cmi toplevel/vernacexpr.cmo 
 toplevel/coqinit.cmi: kernel/names.cmi 
 toplevel/discharge.cmi: kernel/names.cmi 
 toplevel/fhimsg.cmi: kernel/environ.cmi kernel/names.cmi lib/pp.cmi \
@@ -308,11 +315,11 @@ toplevel/recordobj.cmi: library/libnames.cmi proofs/tacexpr.cmo
 toplevel/searchisos.cmi: library/libobject.cmi kernel/names.cmi \
     kernel/term.cmi 
 toplevel/toplevel.cmi: parsing/pcoq.cmi lib/pp.cmi 
-toplevel/vernac.cmi: parsing/pcoq.cmi lib/util.cmi toplevel/vernacexpr.cmo 
 toplevel/vernacentries.cmi: kernel/environ.cmi pretyping/evd.cmi \
     library/libnames.cmi kernel/names.cmi kernel/term.cmi \
     interp/topconstr.cmi toplevel/vernacexpr.cmo toplevel/vernacinterp.cmi 
 toplevel/vernacinterp.cmi: proofs/tacexpr.cmo 
+toplevel/vernac.cmi: parsing/pcoq.cmi lib/util.cmi toplevel/vernacexpr.cmo 
 translate/ppconstrnew.cmi: parsing/coqast.cmi kernel/environ.cmi \
     parsing/extend.cmi library/libnames.cmi kernel/names.cmi parsing/pcoq.cmi \
     lib/pp.cmi pretyping/rawterm.cmi proofs/tacexpr.cmo kernel/term.cmi \
@@ -325,15 +332,170 @@ translate/ppvernacnew.cmi: parsing/ast.cmi parsing/coqast.cmi \
     lib/pp.cmi parsing/ppconstr.cmi interp/ppextend.cmi parsing/pptactic.cmi \
     pretyping/rawterm.cmi interp/topconstr.cmi lib/util.cmi \
     toplevel/vernacexpr.cmo 
+cime/compat/ordered_maps.cmi: cime/compat/ordered_types.cmi 
+cime/compat/ordered_sets.cmi: cime/compat/ordered_types.cmi 
+cime/compat/ptset.cmi: cime/compat/hcons.cmi 
+cime/completion/abstract_rewriting.cmi: cime/terms/gen_terms.cmi \
+    cime/orderings/orderings_generalities.cmi \
+    cime/words/parameterized_rewriting.cmi \
+    cime/words/parameterized_signatures.cmi \
+    cime/words/parameterized_words.cmi cime/terms/rewrite_rules.cmi \
+    cime/terms/signatures.cmi cime/words/string_rewriting.cmi \
+    cime/words/string_signatures.cmi cime/terms/variables.cmi \
+    cime/words/words.cmi 
+cime/completion/ac_critical_pairs.cmi: cime/terms/gen_terms.cmi \
+    cime/terms/rewrite_rules.cmi cime/terms/signatures.cmi 
+cime/completion/confluence.cmi: cime/completion/abstract_rewriting.cmi \
+    cime/terms/rewrite_rules.cmi cime/terms/signatures.cmi \
+    cime/terms/user_signatures.cmi cime/terms/variables.cmi 
+cime/completion/standard_critical_pairs.cmi: cime/terms/gen_terms.cmi \
+    cime/terms/rewrite_rules.cmi cime/terms/signatures.cmi 
+cime/dioph_caml/comparaison.cmi: cime/orderings/orderings_generalities.cmi 
+cime/dioph_caml/init.cmi: cime/dioph_caml/type_de_donnees_dioph.cmi 
+cime/dioph_caml/notsolprocess.cmi: cime/dioph_caml/type_de_donnees_dioph.cmi 
+cime/dioph_caml/piles.cmi: cime/dioph_caml/type_de_donnees_dioph.cmi 
+cime/dioph_caml/solprocess.cmi: cime/dioph_caml/type_de_donnees_dioph.cmi 
+cime/dioph_caml/solve.cmi: cime/dioph_caml/type_de_donnees_dioph.cmi 
+cime/integer_solver/abstract_constraint.cmi: cime/compat/numbers.cmi 
+cime/integer_solver/i_solve_modulo.cmi: cime/integer_solver/i_solve.cmi 
+cime/integer_solver/linear_constraints.cmi: \
+    cime/integer_solver/abstract_constraint.cmi cime/compat/hcons.cmi \
+    cime/compat/inttagmap.cmi cime/compat/numbers.cmi cime/compat/ptset.cmi 
+cime/integer_solver/poly_lexer.cmi: cime/integer_solver/poly_parser.cmi 
+cime/integer_solver/poly_parser.cmi: \
+    cime/integer_solver/abstract_constraint.cmi cime/compat/numbers.cmi 
+cime/integer_solver/poly_syntax.cmi: \
+    cime/integer_solver/abstract_constraint.cmi 
+cime/integer_solver/presburger.cmi: \
+    cime/integer_solver/linear_constraints.cmi cime/compat/numbers.cmi 
+cime/matching/lazy_controle.cmi: cime/matching/lazy_list.cmi 
+cime/matching/matching.cmi: cime/terms/gen_terms.cmi \
+    cime/terms/signatures.cmi cime/terms/substitution.cmi \
+    cime/terms/variables.cmi 
+cime/orderings/finite_ord.cmi: cime/orderings/orderings_generalities.cmi 
+cime/rewriting/naive_dnet.cmi: cime/terms/gen_terms.cmi \
+    cime/terms/rewrite_rules.cmi cime/terms/signatures.cmi 
+cime/rewriting/rewriting.cmi: cime/terms/gen_terms.cmi \
+    cime/rewriting/naive_dnet.cmi cime/terms/rewrite_rules.cmi \
+    cime/terms/signatures.cmi cime/terms/substitution.cmi 
+cime/rewriting/standard_rewriting.cmi: cime/terms/gen_terms.cmi \
+    cime/rewriting/naive_dnet.cmi cime/terms/rewrite_rules.cmi \
+    cime/terms/substitution.cmi 
+cime/standard_matching_and_unification/standard_matching.cmi: \
+    cime/terms/gen_terms.cmi cime/terms/substitution.cmi 
+cime/strategies/innermost.cmi: cime/terms/gen_terms.cmi \
+    cime/terms/signatures.cmi cime/terms/substitution.cmi 
+cime/strategies/standard_innermost.cmi: cime/terms/gen_terms.cmi \
+    cime/terms/signatures.cmi cime/terms/substitution.cmi \
+    cime/terms/variables.cmi 
+cime/terms/gen_terms.cmi: cime/terms/positions.cmi cime/terms/signatures.cmi \
+    cime/terms/variables.cmi 
+cime/terms/rewrite_rules.cmi: cime/terms/gen_terms.cmi \
+    cime/terms/signatures.cmi cime/terms/variables.cmi 
+cime/terms/signature_lexer.cmi: cime/terms/signature_parser.cmi 
+cime/terms/signature_parser.cmi: cime/terms/signature_syntax.cmi \
+    cime/terms/signatures.cmi 
+cime/terms/signatures.cmi: cime/compat/ordered_maps.cmi \
+    cime/compat/ordered_sets.cmi cime/compat/ordered_types.cmi \
+    cime/orderings/orderings_generalities.cmi 
+cime/terms/substitution.cmi: cime/terms/gen_terms.cmi \
+    cime/terms/rewrite_rules.cmi cime/terms/signatures.cmi \
+    cime/terms/variables.cmi 
+cime/terms/user_signatures.cmi: cime/terms/signature_syntax.cmi \
+    cime/terms/signatures.cmi 
+cime/terms/variables.cmi: cime/compat/inttagmap.cmi \
+    cime/compat/ordered_sets.cmi cime/compat/ordered_types.cmi 
+cime/unification/ac_unification.cmi: cime/terms/gen_terms.cmi \
+    cime/terms/signatures.cmi cime/terms/substitution.cmi \
+    cime/terms/variables.cmi 
+cime/unification/arith_to_unif.cmi: cime/compat/bit_field.cmi \
+    cime/terms/gen_terms.cmi cime/unification/problems.cmi \
+    cime/unification/theory.cmi cime/terms/variables.cmi 
+cime/unification/cycle.cmi: cime/unification/problems.cmi \
+    cime/terms/signatures.cmi 
+cime/unification/eqe.cmi: cime/terms/gen_terms.cmi \
+    cime/unification/problems.cmi 
+cime/unification/e_res.cmi: cime/unification/problems.cmi \
+    cime/terms/signatures.cmi 
+cime/unification/mark_acu.cmi: cime/terms/gen_terms.cmi \
+    cime/unification/problems.cmi cime/unification/theory.cmi \
+    cime/terms/variables.cmi 
+cime/unification/mark.cmi: cime/unification/problems.cmi \
+    cime/unification/theory.cmi cime/terms/variables.cmi 
+cime/unification/merge_acu.cmi: cime/terms/gen_terms.cmi \
+    cime/unification/problems.cmi cime/unification/theory.cmi \
+    cime/terms/variables.cmi 
+cime/unification/oc.cmi: cime/terms/gen_terms.cmi cime/terms/signatures.cmi \
+    cime/terms/variables.cmi 
+cime/unification/problems.cmi: cime/terms/gen_terms.cmi \
+    cime/compat/ordered_maps.cmi cime/terms/signatures.cmi \
+    cime/unification/theory.cmi cime/terms/variables.cmi 
+cime/unification/theory.cmi: cime/compat/ordered_sets.cmi \
+    cime/compat/ordered_types.cmi cime/terms/signatures.cmi \
+    cime/terms/user_signatures.cmi 
+cime/unification/unif_aci.cmi: cime/terms/gen_terms.cmi \
+    cime/unification/problems.cmi cime/unification/theory.cmi \
+    cime/terms/variables.cmi 
+cime/unification/unif_ac.cmi: cime/terms/gen_terms.cmi \
+    cime/unification/problems.cmi cime/unification/theory.cmi \
+    cime/terms/variables.cmi 
+cime/unification/unif_acu.cmi: cime/terms/gen_terms.cmi \
+    cime/unification/problems.cmi cime/unification/theory.cmi \
+    cime/terms/variables.cmi 
+cime/unification/unif_ag_acun.cmi: cime/terms/gen_terms.cmi \
+    cime/unification/problems.cmi cime/unification/theory.cmi \
+    cime/terms/variables.cmi 
+cime/unification/unif_bool.cmi: cime/terms/gen_terms.cmi \
+    cime/unification/problems.cmi cime/terms/signatures.cmi 
+cime/unification/unif_commutative.cmi: cime/terms/gen_terms.cmi \
+    cime/unification/problems.cmi cime/terms/signatures.cmi 
+cime/unification/unif_free.cmi: cime/terms/gen_terms.cmi \
+    cime/unification/problems.cmi cime/terms/signatures.cmi \
+    cime/terms/variables.cmi 
+cime/unification/unification.cmi: cime/terms/gen_terms.cmi \
+    cime/terms/signatures.cmi cime/unification/theory.cmi \
+    cime/terms/variables.cmi 
+cime/unification/unif_to_arith.cmi: cime/terms/gen_terms.cmi \
+    cime/unification/problems.cmi cime/unification/theory.cmi \
+    cime/terms/variables.cmi 
+cime/unification/variable_abstraction.cmi: cime/terms/gen_terms.cmi \
+    cime/unification/theory.cmi 
+cime/words/parameterized_rewriting.cmi: \
+    cime/integer_solver/linear_constraints.cmi \
+    cime/words/parameterized_signatures.cmi \
+    cime/words/parameterized_signatures_syntax.cmi \
+    cime/words/parameterized_words.cmi 
+cime/words/parameterized_signatures.cmi: \
+    cime/integer_solver/linear_constraints.cmi 
+cime/words/parameterized_signatures_parser.cmi: \
+    cime/words/parameterized_signatures_syntax.cmi 
+cime/words/parameterized_signatures_syntax.cmi: \
+    cime/integer_solver/abstract_constraint.cmi 
+cime/words/parameterized_similitude.cmi: \
+    cime/integer_solver/linear_constraints.cmi \
+    cime/words/parameterized_words.cmi 
+cime/words/parameterized_words.cmi: \
+    cime/integer_solver/linear_constraints.cmi \
+    cime/words/parameterized_signatures.cmi \
+    cime/words/parameterized_signatures_syntax.cmi 
+cime/words/string_rewriting.cmi: cime/words/string_signatures.cmi \
+    cime/words/words.cmi 
+cime/words/string_unification.cmi: cime/words/words.cmi 
+cime/words/user_parameterized_words.cmi: \
+    cime/integer_solver/linear_constraints.cmi \
+    cime/orderings/orderings_generalities.cmi \
+    cime/words/parameterized_signatures.cmi \
+    cime/words/parameterized_words.cmi 
+cime/words/words.cmi: cime/words/string_signatures.cmi 
 contrib/cc/ccalgo.cmi: kernel/names.cmi kernel/term.cmi 
 contrib/cc/ccproof.cmi: contrib/cc/ccalgo.cmi kernel/names.cmi 
 contrib/correctness/past.cmi: kernel/names.cmi contrib/correctness/ptype.cmi \
     kernel/term.cmi interp/topconstr.cmi lib/util.cmi 
-contrib/correctness/pcic.cmi: contrib/correctness/past.cmi \
-    pretyping/rawterm.cmi 
 contrib/correctness/pcicenv.cmi: kernel/names.cmi \
     contrib/correctness/penv.cmi contrib/correctness/prename.cmi \
     kernel/sign.cmi kernel/term.cmi 
+contrib/correctness/pcic.cmi: contrib/correctness/past.cmi \
+    pretyping/rawterm.cmi 
 contrib/correctness/pdb.cmi: kernel/names.cmi contrib/correctness/past.cmi \
     contrib/correctness/ptype.cmi 
 contrib/correctness/peffect.cmi: kernel/names.cmi lib/pp.cmi 
@@ -457,6 +619,12 @@ doc/parse.cmo: parsing/ast.cmi
 doc/parse.cmx: parsing/ast.cmx 
 ide/command_windows.cmo: ide/coq.cmi ide/coq_commands.cmo ide/ideutils.cmo 
 ide/command_windows.cmx: ide/coq.cmx ide/coq_commands.cmx ide/ideutils.cmx 
+ide/coqide.cmo: ide/command_windows.cmo ide/coq.cmi ide/coq_commands.cmo \
+    ide/find_phrase.cmo ide/highlight.cmo ide/ideutils.cmo proofs/pfedit.cmi \
+    ide/preferences.cmo ide/undo.cmi lib/util.cmi toplevel/vernacexpr.cmo 
+ide/coqide.cmx: ide/command_windows.cmx ide/coq.cmx ide/coq_commands.cmx \
+    ide/find_phrase.cmx ide/highlight.cmx ide/ideutils.cmx proofs/pfedit.cmx \
+    ide/preferences.cmx ide/undo.cmx lib/util.cmx toplevel/vernacexpr.cmx 
 ide/coq.cmo: toplevel/cerrors.cmi config/coq_config.cmi toplevel/coqtop.cmi \
     kernel/environ.cmi pretyping/evarutil.cmi pretyping/evd.cmi \
     tactics/hipattern.cmi ide/ideutils.cmo library/lib.cmi kernel/names.cmi \
@@ -473,12 +641,6 @@ ide/coq.cmx: toplevel/cerrors.cmx config/coq_config.cmx toplevel/coqtop.cmx \
     proofs/refiner.cmx library/states.cmx proofs/tacmach.cmx kernel/term.cmx \
     lib/util.cmx toplevel/vernac.cmx toplevel/vernacentries.cmx \
     toplevel/vernacexpr.cmx ide/coq.cmi 
-ide/coqide.cmo: ide/command_windows.cmo ide/coq.cmi ide/coq_commands.cmo \
-    ide/find_phrase.cmo ide/highlight.cmo ide/ideutils.cmo proofs/pfedit.cmi \
-    ide/preferences.cmo ide/undo.cmi lib/util.cmi toplevel/vernacexpr.cmo 
-ide/coqide.cmx: ide/command_windows.cmx ide/coq.cmx ide/coq_commands.cmx \
-    ide/find_phrase.cmx ide/highlight.cmx ide/ideutils.cmx proofs/pfedit.cmx \
-    ide/preferences.cmx ide/undo.cmx lib/util.cmx toplevel/vernacexpr.cmx 
 ide/find_phrase.cmo: ide/ideutils.cmo 
 ide/find_phrase.cmx: ide/ideutils.cmx 
 ide/highlight.cmo: ide/ideutils.cmo 
@@ -571,12 +733,28 @@ interp/topconstr.cmo: lib/bignat.cmi lib/dyn.cmi library/libnames.cmi \
 interp/topconstr.cmx: lib/bignat.cmx lib/dyn.cmx library/libnames.cmx \
     library/nameops.cmx kernel/names.cmx lib/pp.cmx pretyping/rawterm.cmx \
     kernel/term.cmx lib/util.cmx interp/topconstr.cmi 
-kernel/closure.cmo: kernel/declarations.cmi kernel/environ.cmi \
-    kernel/esubst.cmi kernel/names.cmi lib/pp.cmi kernel/term.cmi \
-    lib/util.cmi kernel/closure.cmi 
-kernel/closure.cmx: kernel/declarations.cmx kernel/environ.cmx \
-    kernel/esubst.cmx kernel/names.cmx lib/pp.cmx kernel/term.cmx \
-    lib/util.cmx kernel/closure.cmi 
+kernel/cime.cmo: cime/completion/abstract_rewriting.cmi \
+    cime/completion/confluence.cmi library/decl_kinds.cmo \
+    kernel/declarations.cmi cime/terms/gen_terms.cmi \
+    cime/strategies/innermost.cmi cime/rewriting/naive_dnet.cmi \
+    kernel/names.cmi cime/orderings/orderings_generalities.cmi \
+    kernel/print.cmi cime/terms/rewrite_rules.cmi \
+    cime/rewriting/rewriting.cmi cime/terms/signatures.cmi kernel/symbol.cmi \
+    kernel/term.cmi lib/util.cmi cime/terms/variables.cmi kernel/cime.cmi 
+kernel/cime.cmx: cime/completion/abstract_rewriting.cmx \
+    cime/completion/confluence.cmx library/decl_kinds.cmx \
+    kernel/declarations.cmx cime/terms/gen_terms.cmx \
+    cime/strategies/innermost.cmx cime/rewriting/naive_dnet.cmx \
+    kernel/names.cmx cime/orderings/orderings_generalities.cmx \
+    kernel/print.cmx cime/terms/rewrite_rules.cmx \
+    cime/rewriting/rewriting.cmx cime/terms/signatures.cmx kernel/symbol.cmx \
+    kernel/term.cmx lib/util.cmx cime/terms/variables.cmx kernel/cime.cmi 
+kernel/closure.cmo: kernel/cime.cmi kernel/declarations.cmi \
+    kernel/environ.cmi kernel/esubst.cmi kernel/names.cmi lib/pp.cmi \
+    kernel/print.cmi kernel/term.cmi lib/util.cmi kernel/closure.cmi 
+kernel/closure.cmx: kernel/cime.cmx kernel/declarations.cmx \
+    kernel/environ.cmx kernel/esubst.cmx kernel/names.cmx lib/pp.cmx \
+    kernel/print.cmx kernel/term.cmx lib/util.cmx kernel/closure.cmi 
 kernel/conv_oracle.cmo: kernel/closure.cmi kernel/names.cmi \
     kernel/conv_oracle.cmi 
 kernel/conv_oracle.cmx: kernel/closure.cmx kernel/names.cmx \
@@ -588,17 +766,21 @@ kernel/cooking.cmx: kernel/declarations.cmx kernel/environ.cmx \
     kernel/names.cmx lib/pp.cmx kernel/reduction.cmx kernel/sign.cmx \
     kernel/term.cmx lib/util.cmx kernel/cooking.cmi 
 kernel/declarations.cmo: kernel/names.cmi lib/rtree.cmi kernel/sign.cmi \
-    kernel/term.cmi kernel/univ.cmi lib/util.cmi kernel/declarations.cmi 
+    kernel/symbol.cmi kernel/term.cmi kernel/univ.cmi lib/util.cmi \
+    kernel/declarations.cmi 
 kernel/declarations.cmx: kernel/names.cmx lib/rtree.cmx kernel/sign.cmx \
-    kernel/term.cmx kernel/univ.cmx lib/util.cmx kernel/declarations.cmi 
-kernel/entries.cmo: kernel/names.cmi kernel/sign.cmi kernel/term.cmi \
-    kernel/univ.cmi kernel/entries.cmi 
-kernel/entries.cmx: kernel/names.cmx kernel/sign.cmx kernel/term.cmx \
-    kernel/univ.cmx kernel/entries.cmi 
-kernel/environ.cmo: kernel/declarations.cmi kernel/names.cmi kernel/sign.cmi \
-    kernel/term.cmi kernel/univ.cmi lib/util.cmi kernel/environ.cmi 
-kernel/environ.cmx: kernel/declarations.cmx kernel/names.cmx kernel/sign.cmx \
-    kernel/term.cmx kernel/univ.cmx lib/util.cmx kernel/environ.cmi 
+    kernel/symbol.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
+    kernel/declarations.cmi 
+kernel/entries.cmo: kernel/names.cmi kernel/sign.cmi kernel/symbol.cmi \
+    kernel/term.cmi kernel/univ.cmi kernel/entries.cmi 
+kernel/entries.cmx: kernel/names.cmx kernel/sign.cmx kernel/symbol.cmx \
+    kernel/term.cmx kernel/univ.cmx kernel/entries.cmi 
+kernel/environ.cmo: kernel/cime.cmi kernel/declarations.cmi kernel/names.cmi \
+    kernel/precedence.cmi kernel/sign.cmi kernel/symbol.cmi kernel/term.cmi \
+    kernel/univ.cmi lib/util.cmi kernel/environ.cmi 
+kernel/environ.cmx: kernel/cime.cmx kernel/declarations.cmx kernel/names.cmx \
+    kernel/precedence.cmx kernel/sign.cmx kernel/symbol.cmx kernel/term.cmx \
+    kernel/univ.cmx lib/util.cmx kernel/environ.cmi 
 kernel/esubst.cmo: lib/util.cmi kernel/esubst.cmi 
 kernel/esubst.cmx: lib/util.cmx kernel/esubst.cmi 
 kernel/indtypes.cmo: kernel/declarations.cmi kernel/entries.cmi \
@@ -615,6 +797,12 @@ kernel/inductive.cmo: kernel/declarations.cmi kernel/environ.cmi \
 kernel/inductive.cmx: kernel/declarations.cmx kernel/environ.cmx \
     kernel/names.cmx kernel/reduction.cmx kernel/sign.cmx kernel/term.cmx \
     kernel/type_errors.cmx kernel/univ.cmx lib/util.cmx kernel/inductive.cmi 
+kernel/modops.cmo: kernel/declarations.cmi kernel/entries.cmi \
+    kernel/environ.cmi kernel/names.cmi lib/pp.cmi kernel/term.cmi \
+    kernel/univ.cmi lib/util.cmi kernel/modops.cmi 
+kernel/modops.cmx: kernel/declarations.cmx kernel/entries.cmx \
+    kernel/environ.cmx kernel/names.cmx lib/pp.cmx kernel/term.cmx \
+    kernel/univ.cmx lib/util.cmx kernel/modops.cmi 
 kernel/mod_typing.cmo: kernel/declarations.cmi kernel/entries.cmi \
     kernel/environ.cmi kernel/modops.cmi kernel/names.cmi \
     kernel/reduction.cmi kernel/subtyping.cmi kernel/term_typing.cmi \
@@ -623,39 +811,51 @@ kernel/mod_typing.cmx: kernel/declarations.cmx kernel/entries.cmx \
     kernel/environ.cmx kernel/modops.cmx kernel/names.cmx \
     kernel/reduction.cmx kernel/subtyping.cmx kernel/term_typing.cmx \
     kernel/typeops.cmx kernel/univ.cmx lib/util.cmx kernel/mod_typing.cmi 
-kernel/modops.cmo: kernel/declarations.cmi kernel/entries.cmi \
-    kernel/environ.cmi kernel/names.cmi lib/pp.cmi kernel/term.cmi \
-    kernel/univ.cmi lib/util.cmi kernel/modops.cmi 
-kernel/modops.cmx: kernel/declarations.cmx kernel/entries.cmx \
-    kernel/environ.cmx kernel/names.cmx lib/pp.cmx kernel/term.cmx \
-    kernel/univ.cmx lib/util.cmx kernel/modops.cmi 
 kernel/names.cmo: lib/hashcons.cmi lib/pp.cmi lib/predicate.cmi lib/util.cmi \
     kernel/names.cmi 
 kernel/names.cmx: lib/hashcons.cmx lib/pp.cmx lib/predicate.cmx lib/util.cmx \
     kernel/names.cmi 
-kernel/reduction.cmo: kernel/closure.cmi kernel/conv_oracle.cmi \
-    kernel/declarations.cmi kernel/environ.cmi kernel/esubst.cmi \
-    kernel/names.cmi kernel/sign.cmi kernel/term.cmi kernel/univ.cmi \
-    lib/util.cmi kernel/reduction.cmi 
-kernel/reduction.cmx: kernel/closure.cmx kernel/conv_oracle.cmx \
-    kernel/declarations.cmx kernel/environ.cmx kernel/esubst.cmx \
-    kernel/names.cmx kernel/sign.cmx kernel/term.cmx kernel/univ.cmx \
-    lib/util.cmx kernel/reduction.cmi 
-kernel/rules.cmo: kernel/declarations.cmi kernel/environ.cmi kernel/term.cmi \
-    lib/util.cmi kernel/rules.cmi 
-kernel/rules.cmx: kernel/declarations.cmx kernel/environ.cmx kernel/term.cmx \
-    lib/util.cmx kernel/rules.cmi 
+kernel/ordering.cmo: cime/orderings/orderings_generalities.cmi \
+    kernel/symbol.cmi kernel/term.cmi lib/util.cmi kernel/ordering.cmi 
+kernel/ordering.cmx: cime/orderings/orderings_generalities.cmx \
+    kernel/symbol.cmx kernel/term.cmx lib/util.cmx kernel/ordering.cmi 
+kernel/precedence.cmo: cime/orderings/finite_ord.cmi kernel/names.cmi \
+    cime/orderings/orderings_generalities.cmi lib/util.cmi \
+    kernel/precedence.cmi 
+kernel/precedence.cmx: cime/orderings/finite_ord.cmx kernel/names.cmx \
+    cime/orderings/orderings_generalities.cmx lib/util.cmx \
+    kernel/precedence.cmi 
+kernel/print.cmo: kernel/declarations.cmi kernel/names.cmi kernel/term.cmi \
+    kernel/print.cmi 
+kernel/print.cmx: kernel/declarations.cmx kernel/names.cmx kernel/term.cmx \
+    kernel/print.cmi 
+kernel/reduction.cmo: kernel/cime.cmi kernel/closure.cmi \
+    kernel/conv_oracle.cmi kernel/declarations.cmi kernel/environ.cmi \
+    kernel/esubst.cmi kernel/names.cmi kernel/print.cmi kernel/sign.cmi \
+    kernel/term.cmi kernel/univ.cmi lib/util.cmi kernel/reduction.cmi 
+kernel/reduction.cmx: kernel/cime.cmx kernel/closure.cmx \
+    kernel/conv_oracle.cmx kernel/declarations.cmx kernel/environ.cmx \
+    kernel/esubst.cmx kernel/names.cmx kernel/print.cmx kernel/sign.cmx \
+    kernel/term.cmx kernel/univ.cmx lib/util.cmx kernel/reduction.cmi 
+kernel/rules.cmo: kernel/cime.cmi kernel/declarations.cmi kernel/entries.cmi \
+    kernel/environ.cmi kernel/names.cmi kernel/ordering.cmi \
+    kernel/precedence.cmi kernel/reduction.cmi kernel/symbol.cmi \
+    kernel/term.cmi kernel/typeops.cmi lib/util.cmi kernel/rules.cmi 
+kernel/rules.cmx: kernel/cime.cmx kernel/declarations.cmx kernel/entries.cmx \
+    kernel/environ.cmx kernel/names.cmx kernel/ordering.cmx \
+    kernel/precedence.cmx kernel/reduction.cmx kernel/symbol.cmx \
+    kernel/term.cmx kernel/typeops.cmx lib/util.cmx kernel/rules.cmi 
 kernel/safe_typing.cmo: kernel/cooking.cmi kernel/declarations.cmi \
     kernel/entries.cmi kernel/environ.cmi kernel/indtypes.cmi \
     kernel/inductive.cmi kernel/mod_typing.cmi kernel/modops.cmi \
-    kernel/names.cmi kernel/reduction.cmi kernel/rules.cmi kernel/sign.cmi \
+    kernel/names.cmi kernel/reduction.cmi kernel/sign.cmi \
     kernel/subtyping.cmi kernel/term.cmi kernel/term_typing.cmi \
     kernel/type_errors.cmi kernel/typeops.cmi kernel/univ.cmi lib/util.cmi \
     kernel/safe_typing.cmi 
 kernel/safe_typing.cmx: kernel/cooking.cmx kernel/declarations.cmx \
     kernel/entries.cmx kernel/environ.cmx kernel/indtypes.cmx \
     kernel/inductive.cmx kernel/mod_typing.cmx kernel/modops.cmx \
-    kernel/names.cmx kernel/reduction.cmx kernel/rules.cmx kernel/sign.cmx \
+    kernel/names.cmx kernel/reduction.cmx kernel/sign.cmx \
     kernel/subtyping.cmx kernel/term.cmx kernel/term_typing.cmx \
     kernel/type_errors.cmx kernel/typeops.cmx kernel/univ.cmx lib/util.cmx \
     kernel/safe_typing.cmi 
@@ -671,6 +871,8 @@ kernel/subtyping.cmx: kernel/declarations.cmx kernel/environ.cmx \
     kernel/inductive.cmx kernel/modops.cmx kernel/names.cmx \
     kernel/reduction.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
     kernel/subtyping.cmi 
+kernel/symbol.cmo: lib/util.cmi kernel/symbol.cmi 
+kernel/symbol.cmx: lib/util.cmx kernel/symbol.cmi 
 kernel/term.cmo: kernel/esubst.cmi lib/hashcons.cmi kernel/names.cmi \
     lib/pp.cmi kernel/univ.cmi lib/util.cmi kernel/term.cmi 
 kernel/term.cmx: kernel/esubst.cmx lib/hashcons.cmx kernel/names.cmx \
@@ -678,13 +880,15 @@ kernel/term.cmx: kernel/esubst.cmx lib/hashcons.cmx kernel/names.cmx \
 kernel/term_typing.cmo: kernel/cooking.cmi kernel/declarations.cmi \
     kernel/entries.cmi kernel/environ.cmi kernel/indtypes.cmi \
     kernel/inductive.cmi kernel/names.cmi kernel/reduction.cmi \
-    kernel/sign.cmi kernel/term.cmi kernel/type_errors.cmi kernel/typeops.cmi \
-    kernel/univ.cmi lib/util.cmi kernel/term_typing.cmi 
+    kernel/rules.cmi kernel/sign.cmi kernel/symbol.cmi kernel/term.cmi \
+    kernel/type_errors.cmi kernel/typeops.cmi kernel/univ.cmi lib/util.cmi \
+    kernel/term_typing.cmi 
 kernel/term_typing.cmx: kernel/cooking.cmx kernel/declarations.cmx \
     kernel/entries.cmx kernel/environ.cmx kernel/indtypes.cmx \
     kernel/inductive.cmx kernel/names.cmx kernel/reduction.cmx \
-    kernel/sign.cmx kernel/term.cmx kernel/type_errors.cmx kernel/typeops.cmx \
-    kernel/univ.cmx lib/util.cmx kernel/term_typing.cmi 
+    kernel/rules.cmx kernel/sign.cmx kernel/symbol.cmx kernel/term.cmx \
+    kernel/type_errors.cmx kernel/typeops.cmx kernel/univ.cmx lib/util.cmx \
+    kernel/term_typing.cmi 
 kernel/type_errors.cmo: kernel/environ.cmi kernel/names.cmi \
     kernel/reduction.cmi kernel/sign.cmi kernel/term.cmi \
     kernel/type_errors.cmi 
@@ -715,34 +919,24 @@ lib/edit.cmo: lib/bstack.cmi lib/pp.cmi lib/util.cmi lib/edit.cmi
 lib/edit.cmx: lib/bstack.cmx lib/pp.cmx lib/util.cmx lib/edit.cmi 
 lib/explore.cmo: lib/explore.cmi 
 lib/explore.cmx: lib/explore.cmi 
-lib/gmap.cmo: lib/gmap.cmi 
-lib/gmap.cmx: lib/gmap.cmi 
 lib/gmapl.cmo: lib/gmap.cmi lib/util.cmi lib/gmapl.cmi 
 lib/gmapl.cmx: lib/gmap.cmx lib/util.cmx lib/gmapl.cmi 
+lib/gmap.cmo: lib/gmap.cmi 
+lib/gmap.cmx: lib/gmap.cmi 
 lib/gset.cmo: lib/gset.cmi 
 lib/gset.cmx: lib/gset.cmi 
 lib/hashcons.cmo: lib/hashcons.cmi 
 lib/hashcons.cmx: lib/hashcons.cmi 
 lib/options.cmo: lib/util.cmi lib/options.cmi 
 lib/options.cmx: lib/util.cmx lib/options.cmi 
-lib/pp.cmo: lib/pp_control.cmi lib/pp.cmi 
-lib/pp.cmx: lib/pp_control.cmx lib/pp.cmi 
 lib/pp_control.cmo: lib/pp_control.cmi 
 lib/pp_control.cmx: lib/pp_control.cmi 
+lib/pp.cmo: lib/pp_control.cmi lib/pp.cmi 
+lib/pp.cmx: lib/pp_control.cmx lib/pp.cmi 
 lib/predicate.cmo: lib/predicate.cmi 
 lib/predicate.cmx: lib/predicate.cmi 
 lib/profile.cmo: lib/profile.cmi 
 lib/profile.cmx: lib/profile.cmi 
-lib/rtree.cmo: lib/pp.cmi lib/util.cmi lib/rtree.cmi 
-lib/rtree.cmx: lib/pp.cmx lib/util.cmx lib/rtree.cmi 
-lib/stamps.cmo: lib/stamps.cmi 
-lib/stamps.cmx: lib/stamps.cmi 
-lib/system.cmo: config/coq_config.cmi lib/pp.cmi lib/util.cmi lib/system.cmi 
-lib/system.cmx: config/coq_config.cmx lib/pp.cmx lib/util.cmx lib/system.cmi 
-lib/tlm.cmo: lib/gmap.cmi lib/gset.cmi lib/tlm.cmi 
-lib/tlm.cmx: lib/gmap.cmx lib/gset.cmx lib/tlm.cmi 
-lib/util.cmo: lib/pp.cmi lib/util.cmi 
-lib/util.cmx: lib/pp.cmx lib/util.cmi 
 library/declare.cmo: library/decl_kinds.cmo kernel/declarations.cmi \
     library/dischargedhypsmap.cmi kernel/entries.cmi kernel/environ.cmi \
     library/global.cmi library/impargs.cmi kernel/indtypes.cmi \
@@ -847,6 +1041,16 @@ library/states.cmx: library/lib.cmx library/library.cmx library/summary.cmx \
     lib/system.cmx library/states.cmi 
 library/summary.cmo: lib/dyn.cmi lib/pp.cmi lib/util.cmi library/summary.cmi 
 library/summary.cmx: lib/dyn.cmx lib/pp.cmx lib/util.cmx library/summary.cmi 
+lib/rtree.cmo: lib/pp.cmi lib/util.cmi lib/rtree.cmi 
+lib/rtree.cmx: lib/pp.cmx lib/util.cmx lib/rtree.cmi 
+lib/stamps.cmo: lib/stamps.cmi 
+lib/stamps.cmx: lib/stamps.cmi 
+lib/system.cmo: config/coq_config.cmi lib/pp.cmi lib/util.cmi lib/system.cmi 
+lib/system.cmx: config/coq_config.cmx lib/pp.cmx lib/util.cmx lib/system.cmi 
+lib/tlm.cmo: lib/gmap.cmi lib/gset.cmi lib/tlm.cmi 
+lib/tlm.cmx: lib/gmap.cmx lib/gset.cmx lib/tlm.cmi 
+lib/util.cmo: lib/pp.cmi lib/util.cmi 
+lib/util.cmx: lib/pp.cmx lib/util.cmi 
 parsing/argextend.cmo: parsing/ast.cmi interp/genarg.cmi parsing/pcoq.cmi \
     parsing/q_coqast.cmo parsing/q_util.cmi lib/util.cmi \
     toplevel/vernacexpr.cmo 
@@ -895,13 +1099,13 @@ parsing/g_basevernac.cmo: parsing/ast.cmi interp/constrintern.cmi \
     parsing/coqast.cmi pretyping/evd.cmi parsing/extend.cmi \
     library/global.cmi library/goptions.cmi toplevel/metasyntax.cmi \
     kernel/names.cmi lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
-    interp/ppextend.cmi parsing/termast.cmi lib/util.cmi \
+    interp/ppextend.cmi kernel/print.cmi parsing/termast.cmi lib/util.cmi \
     toplevel/vernacexpr.cmo 
 parsing/g_basevernac.cmx: parsing/ast.cmx interp/constrintern.cmx \
     parsing/coqast.cmx pretyping/evd.cmx parsing/extend.cmx \
     library/global.cmx library/goptions.cmx toplevel/metasyntax.cmx \
     kernel/names.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
-    interp/ppextend.cmx parsing/termast.cmx lib/util.cmx \
+    interp/ppextend.cmx kernel/print.cmx parsing/termast.cmx lib/util.cmx \
     toplevel/vernacexpr.cmx 
 parsing/g_cases.cmo: parsing/g_constr.cmo library/libnames.cmi \
     parsing/pcoq.cmi lib/pp.cmi kernel/term.cmi interp/topconstr.cmi \
@@ -972,13 +1176,13 @@ parsing/g_tactic.cmx: parsing/ast.cmx interp/genarg.cmx kernel/names.cmx \
 parsing/g_vernac.cmo: parsing/ast.cmi toplevel/class.cmi \
     library/decl_kinds.cmo interp/genarg.cmi library/goptions.cmi \
     kernel/names.cmi lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
-    toplevel/recordobj.cmi interp/topconstr.cmi lib/util.cmi \
-    toplevel/vernacexpr.cmo 
+    toplevel/recordobj.cmi kernel/symbol.cmi interp/topconstr.cmi \
+    lib/util.cmi toplevel/vernacexpr.cmo 
 parsing/g_vernac.cmx: parsing/ast.cmx toplevel/class.cmx \
     library/decl_kinds.cmx interp/genarg.cmx library/goptions.cmx \
     kernel/names.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
-    toplevel/recordobj.cmx interp/topconstr.cmx lib/util.cmx \
-    toplevel/vernacexpr.cmx 
+    toplevel/recordobj.cmx kernel/symbol.cmx interp/topconstr.cmx \
+    lib/util.cmx toplevel/vernacexpr.cmx 
 parsing/g_zsyntax.cmo: parsing/ast.cmi lib/bignat.cmi parsing/coqast.cmi \
     parsing/esyntax.cmi parsing/extend.cmi library/libnames.cmi \
     kernel/names.cmi library/nametab.cmi parsing/pcoq.cmi lib/pp.cmi \
@@ -1030,8 +1234,9 @@ parsing/prettyp.cmo: pretyping/classops.cmi interp/constrextern.cmi \
     library/lib.cmi library/libnames.cmi library/libobject.cmi \
     library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
     parsing/printer.cmi parsing/printmod.cmi kernel/reduction.cmi \
-    kernel/safe_typing.cmi kernel/sign.cmi interp/syntax_def.cmi \
-    kernel/term.cmi pretyping/termops.cmi lib/util.cmi parsing/prettyp.cmi 
+    kernel/safe_typing.cmi kernel/sign.cmi kernel/symbol.cmi \
+    interp/syntax_def.cmi kernel/term.cmi pretyping/termops.cmi lib/util.cmi \
+    parsing/prettyp.cmi 
 parsing/prettyp.cmx: pretyping/classops.cmx interp/constrextern.cmx \
     kernel/declarations.cmx library/declare.cmx kernel/environ.cmx \
     pretyping/evd.cmx library/global.cmx library/impargs.cmx \
@@ -1039,8 +1244,9 @@ parsing/prettyp.cmx: pretyping/classops.cmx interp/constrextern.cmx \
     library/lib.cmx library/libnames.cmx library/libobject.cmx \
     library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/pp.cmx \
     parsing/printer.cmx parsing/printmod.cmx kernel/reduction.cmx \
-    kernel/safe_typing.cmx kernel/sign.cmx interp/syntax_def.cmx \
-    kernel/term.cmx pretyping/termops.cmx lib/util.cmx parsing/prettyp.cmi 
+    kernel/safe_typing.cmx kernel/sign.cmx kernel/symbol.cmx \
+    interp/syntax_def.cmx kernel/term.cmx pretyping/termops.cmx lib/util.cmx \
+    parsing/prettyp.cmi 
 parsing/printer.cmo: parsing/ast.cmi interp/constrextern.cmi \
     parsing/coqast.cmi library/declare.cmi kernel/environ.cmi \
     parsing/extend.cmi library/global.cmi library/libnames.cmi \
@@ -1309,14 +1515,14 @@ pretyping/retyping.cmx: kernel/declarations.cmx kernel/environ.cmx \
     kernel/inductive.cmx pretyping/inductiveops.cmx pretyping/instantiate.cmx \
     kernel/names.cmx pretyping/reductionops.cmx kernel/term.cmx \
     kernel/typeops.cmx kernel/univ.cmx lib/util.cmx pretyping/retyping.cmi 
-pretyping/tacred.cmo: pretyping/cbv.cmi kernel/closure.cmi \
+pretyping/tacred.cmo: pretyping/cbv.cmi kernel/cime.cmi kernel/closure.cmi \
     kernel/conv_oracle.cmi kernel/declarations.cmi kernel/environ.cmi \
     pretyping/evd.cmi library/global.cmi kernel/inductive.cmi \
     pretyping/instantiate.cmi library/libnames.cmi library/nameops.cmi \
     kernel/names.cmi library/nametab.cmi lib/pp.cmi pretyping/rawterm.cmi \
     pretyping/reductionops.cmi pretyping/retyping.cmi library/summary.cmi \
     kernel/term.cmi pretyping/termops.cmi lib/util.cmi pretyping/tacred.cmi 
-pretyping/tacred.cmx: pretyping/cbv.cmx kernel/closure.cmx \
+pretyping/tacred.cmx: pretyping/cbv.cmx kernel/cime.cmx kernel/closure.cmx \
     kernel/conv_oracle.cmx kernel/declarations.cmx kernel/environ.cmx \
     pretyping/evd.cmx library/global.cmx kernel/inductive.cmx \
     pretyping/instantiate.cmx library/libnames.cmx library/nameops.cmx \
@@ -1855,10 +2061,10 @@ tactics/wcclausenv.cmx: proofs/clenv.cmx kernel/environ.cmx \
     pretyping/reductionops.cmx proofs/refiner.cmx kernel/sign.cmx \
     proofs/tacmach.cmx kernel/term.cmx pretyping/termops.cmx lib/util.cmx \
     tactics/wcclausenv.cmi 
-tools/coq_vo2xml.cmo: config/coq_config.cmi toplevel/usage.cmi 
-tools/coq_vo2xml.cmx: config/coq_config.cmx toplevel/usage.cmx 
 tools/coqdep.cmo: config/coq_config.cmi tools/coqdep_lexer.cmo 
 tools/coqdep.cmx: config/coq_config.cmx tools/coqdep_lexer.cmx 
+tools/coq_vo2xml.cmo: config/coq_config.cmi toplevel/usage.cmi 
+tools/coq_vo2xml.cmx: config/coq_config.cmx toplevel/usage.cmx 
 tools/gallina.cmo: tools/gallina_lexer.cmo 
 tools/gallina.cmx: tools/gallina_lexer.cmx 
 toplevel/cerrors.cmo: parsing/ast.cmi pretyping/cases.cmi toplevel/himsg.cmi \
@@ -2061,16 +2267,6 @@ toplevel/toplevel.cmx: toplevel/cerrors.cmx library/lib.cmx \
     toplevel/vernac.cmx toplevel/vernacexpr.cmx toplevel/toplevel.cmi 
 toplevel/usage.cmo: config/coq_config.cmi toplevel/usage.cmi 
 toplevel/usage.cmx: config/coq_config.cmx toplevel/usage.cmi 
-toplevel/vernac.cmo: parsing/coqast.cmi parsing/lexer.cmi library/lib.cmi \
-    library/library.cmi kernel/names.cmi lib/options.cmi parsing/pcoq.cmi \
-    proofs/pfedit.cmi lib/pp.cmi translate/ppvernacnew.cmi library/states.cmi \
-    lib/system.cmi lib/util.cmi toplevel/vernacentries.cmi \
-    toplevel/vernacexpr.cmo toplevel/vernacinterp.cmi toplevel/vernac.cmi 
-toplevel/vernac.cmx: parsing/coqast.cmx parsing/lexer.cmx library/lib.cmx \
-    library/library.cmx kernel/names.cmx lib/options.cmx parsing/pcoq.cmx \
-    proofs/pfedit.cmx lib/pp.cmx translate/ppvernacnew.cmx library/states.cmx \
-    lib/system.cmx lib/util.cmx toplevel/vernacentries.cmx \
-    toplevel/vernacexpr.cmx toplevel/vernacinterp.cmx toplevel/vernac.cmi 
 toplevel/vernacentries.cmo: tactics/auto.cmi toplevel/class.cmi \
     pretyping/classops.cmi toplevel/command.cmi interp/constrextern.cmi \
     interp/constrintern.cmi library/decl_kinds.cmo library/declaremods.cmi \
@@ -2082,15 +2278,16 @@ toplevel/vernacentries.cmo: tactics/auto.cmi toplevel/class.cmi \
     interp/modintern.cmi library/nameops.cmi kernel/names.cmi \
     library/nametab.cmi lib/options.cmi proofs/pfedit.cmi lib/pp.cmi \
     lib/pp_control.cmi parsing/prettyp.cmi pretyping/pretyping.cmi \
-    parsing/printer.cmi parsing/printmod.cmi proofs/proof_trees.cmi \
-    proofs/proof_type.cmi toplevel/record.cmi toplevel/recordobj.cmi \
-    pretyping/reductionops.cmi proofs/refiner.cmi kernel/safe_typing.cmi \
-    parsing/search.cmi library/states.cmi interp/symbols.cmi lib/system.cmi \
-    tactics/tacinterp.cmi proofs/tacmach.cmi pretyping/tacred.cmi \
-    proofs/tactic_debug.cmi tactics/tactics.cmi kernel/term.cmi \
-    parsing/termast.cmi interp/topconstr.cmi kernel/typeops.cmi \
-    kernel/univ.cmi lib/util.cmi toplevel/vernacexpr.cmo \
-    toplevel/vernacinterp.cmi toplevel/vernacentries.cmi 
+    kernel/print.cmi parsing/printer.cmi parsing/printmod.cmi \
+    proofs/proof_trees.cmi proofs/proof_type.cmi toplevel/record.cmi \
+    toplevel/recordobj.cmi pretyping/reductionops.cmi proofs/refiner.cmi \
+    kernel/safe_typing.cmi parsing/search.cmi library/states.cmi \
+    interp/symbols.cmi lib/system.cmi tactics/tacinterp.cmi \
+    proofs/tacmach.cmi pretyping/tacred.cmi proofs/tactic_debug.cmi \
+    tactics/tactics.cmi kernel/term.cmi parsing/termast.cmi \
+    interp/topconstr.cmi kernel/typeops.cmi kernel/univ.cmi lib/util.cmi \
+    toplevel/vernacexpr.cmo toplevel/vernacinterp.cmi \
+    toplevel/vernacentries.cmi 
 toplevel/vernacentries.cmx: tactics/auto.cmx toplevel/class.cmx \
     pretyping/classops.cmx toplevel/command.cmx interp/constrextern.cmx \
     interp/constrintern.cmx library/decl_kinds.cmx library/declaremods.cmx \
@@ -2102,25 +2299,26 @@ toplevel/vernacentries.cmx: tactics/auto.cmx toplevel/class.cmx \
     interp/modintern.cmx library/nameops.cmx kernel/names.cmx \
     library/nametab.cmx lib/options.cmx proofs/pfedit.cmx lib/pp.cmx \
     lib/pp_control.cmx parsing/prettyp.cmx pretyping/pretyping.cmx \
-    parsing/printer.cmx parsing/printmod.cmx proofs/proof_trees.cmx \
-    proofs/proof_type.cmx toplevel/record.cmx toplevel/recordobj.cmx \
-    pretyping/reductionops.cmx proofs/refiner.cmx kernel/safe_typing.cmx \
-    parsing/search.cmx library/states.cmx interp/symbols.cmx lib/system.cmx \
-    tactics/tacinterp.cmx proofs/tacmach.cmx pretyping/tacred.cmx \
-    proofs/tactic_debug.cmx tactics/tactics.cmx kernel/term.cmx \
-    parsing/termast.cmx interp/topconstr.cmx kernel/typeops.cmx \
-    kernel/univ.cmx lib/util.cmx toplevel/vernacexpr.cmx \
-    toplevel/vernacinterp.cmx toplevel/vernacentries.cmi 
+    kernel/print.cmx parsing/printer.cmx parsing/printmod.cmx \
+    proofs/proof_trees.cmx proofs/proof_type.cmx toplevel/record.cmx \
+    toplevel/recordobj.cmx pretyping/reductionops.cmx proofs/refiner.cmx \
+    kernel/safe_typing.cmx parsing/search.cmx library/states.cmx \
+    interp/symbols.cmx lib/system.cmx tactics/tacinterp.cmx \
+    proofs/tacmach.cmx pretyping/tacred.cmx proofs/tactic_debug.cmx \
+    tactics/tactics.cmx kernel/term.cmx parsing/termast.cmx \
+    interp/topconstr.cmx kernel/typeops.cmx kernel/univ.cmx lib/util.cmx \
+    toplevel/vernacexpr.cmx toplevel/vernacinterp.cmx \
+    toplevel/vernacentries.cmi 
 toplevel/vernacexpr.cmo: library/decl_kinds.cmo parsing/extend.cmi \
     interp/genarg.cmi library/goptions.cmi library/libnames.cmi \
     kernel/names.cmi library/nametab.cmi interp/ppextend.cmi \
-    pretyping/rawterm.cmi proofs/tacexpr.cmo interp/topconstr.cmi \
-    lib/util.cmi 
+    pretyping/rawterm.cmi kernel/symbol.cmi proofs/tacexpr.cmo \
+    interp/topconstr.cmi lib/util.cmi 
 toplevel/vernacexpr.cmx: library/decl_kinds.cmx parsing/extend.cmx \
     interp/genarg.cmx library/goptions.cmx library/libnames.cmx \
     kernel/names.cmx library/nametab.cmx interp/ppextend.cmx \
-    pretyping/rawterm.cmx proofs/tacexpr.cmx interp/topconstr.cmx \
-    lib/util.cmx 
+    pretyping/rawterm.cmx kernel/symbol.cmx proofs/tacexpr.cmx \
+    interp/topconstr.cmx lib/util.cmx 
 toplevel/vernacinterp.cmo: parsing/ast.cmi parsing/coqast.cmi \
     parsing/extend.cmi toplevel/himsg.cmi library/libnames.cmi \
     kernel/names.cmi lib/options.cmi lib/pp.cmi proofs/proof_type.cmi \
@@ -2131,6 +2329,16 @@ toplevel/vernacinterp.cmx: parsing/ast.cmx parsing/coqast.cmx \
     kernel/names.cmx lib/options.cmx lib/pp.cmx proofs/proof_type.cmx \
     proofs/tacexpr.cmx tactics/tacinterp.cmx lib/util.cmx \
     toplevel/vernacexpr.cmx toplevel/vernacinterp.cmi 
+toplevel/vernac.cmo: parsing/coqast.cmi parsing/lexer.cmi library/lib.cmi \
+    library/library.cmi kernel/names.cmi lib/options.cmi parsing/pcoq.cmi \
+    proofs/pfedit.cmi lib/pp.cmi translate/ppvernacnew.cmi library/states.cmi \
+    lib/system.cmi lib/util.cmi toplevel/vernacentries.cmi \
+    toplevel/vernacexpr.cmo toplevel/vernacinterp.cmi toplevel/vernac.cmi 
+toplevel/vernac.cmx: parsing/coqast.cmx parsing/lexer.cmx library/lib.cmx \
+    library/library.cmx kernel/names.cmx lib/options.cmx parsing/pcoq.cmx \
+    proofs/pfedit.cmx lib/pp.cmx translate/ppvernacnew.cmx library/states.cmx \
+    lib/system.cmx lib/util.cmx toplevel/vernacentries.cmx \
+    toplevel/vernacexpr.cmx toplevel/vernacinterp.cmx toplevel/vernac.cmi 
 translate/ppconstrnew.cmo: parsing/ast.cmi lib/bignat.cmi \
     interp/constrextern.cmi interp/constrintern.cmi parsing/coqast.cmi \
     lib/dyn.cmi parsing/esyntax.cmi pretyping/evd.cmi interp/genarg.cmi \
@@ -2173,6 +2381,582 @@ translate/ppvernacnew.cmx: parsing/ast.cmx parsing/coqast.cmx \
     translate/ppconstrnew.cmx interp/ppextend.cmx translate/pptacticnew.cmx \
     pretyping/rawterm.cmx proofs/tacexpr.cmx interp/topconstr.cmx \
     lib/util.cmx toplevel/vernacexpr.cmx translate/ppvernacnew.cmi 
+cime/compat/arrayutils.cmo: cime/compat/arrayutils.cmi 
+cime/compat/arrayutils.cmx: cime/compat/arrayutils.cmi 
+cime/compat/balanced_trees2.cmo: cime/compat/balanced_trees2.cmi 
+cime/compat/balanced_trees2.cmx: cime/compat/balanced_trees2.cmi 
+cime/compat/balanced_trees.cmo: cime/compat/balanced_trees.cmi 
+cime/compat/balanced_trees.cmx: cime/compat/balanced_trees.cmi 
+cime/compat/bit_field.cmo: cime/compat/bit_field.cmi 
+cime/compat/bit_field.cmx: cime/compat/bit_field.cmi 
+cime/compat/hcons.cmo: cime/compat/hcons.cmi 
+cime/compat/hcons.cmx: cime/compat/hcons.cmi 
+cime/compat/inttagmap.cmo: cime/compat/inttagmap.cmi 
+cime/compat/inttagmap.cmx: cime/compat/inttagmap.cmi 
+cime/compat/inttagset.cmo: cime/compat/inttagset.cmi 
+cime/compat/inttagset.cmx: cime/compat/inttagset.cmi 
+cime/compat/int_utils.cmo: cime/compat/int_utils.cmi 
+cime/compat/int_utils.cmx: cime/compat/int_utils.cmi 
+cime/compat/listutils.cmo: cime/compat/listutils.cmi 
+cime/compat/listutils.cmx: cime/compat/listutils.cmi 
+cime/compat/numbers.cmo: cime/compat/numbers.cmi 
+cime/compat/numbers.cmx: cime/compat/numbers.cmi 
+cime/compat/ordered_maps.cmo: cime/compat/balanced_trees2.cmi \
+    cime/compat/ordered_types.cmi cime/compat/ordered_maps.cmi 
+cime/compat/ordered_maps.cmx: cime/compat/balanced_trees2.cmx \
+    cime/compat/ordered_types.cmx cime/compat/ordered_maps.cmi 
+cime/compat/ordered_sets.cmo: cime/compat/balanced_trees.cmi \
+    cime/compat/ordered_types.cmi cime/compat/ordered_sets.cmi 
+cime/compat/ordered_sets.cmx: cime/compat/balanced_trees.cmx \
+    cime/compat/ordered_types.cmx cime/compat/ordered_sets.cmi 
+cime/compat/ordered_types.cmo: cime/compat/ordered_types.cmi 
+cime/compat/ordered_types.cmx: cime/compat/ordered_types.cmi 
+cime/compat/ptset.cmo: cime/compat/hcons.cmi cime/compat/ptset.cmi 
+cime/compat/ptset.cmx: cime/compat/hcons.cmx cime/compat/ptset.cmi 
+cime/completion/abstract_rewriting.cmo: cime/completion/ac_critical_pairs.cmi \
+    cime/terms/gen_terms.cmi cime/strategies/innermost.cmi \
+    cime/integer_solver/linear_constraints.cmi cime/matching/matching.cmi \
+    cime/rewriting/naive_dnet.cmi cime/orderings/orderings_generalities.cmi \
+    cime/words/parameterized_rewriting.cmi \
+    cime/words/parameterized_signatures.cmi \
+    cime/words/parameterized_similitude.cmi \
+    cime/words/parameterized_words.cmi cime/terms/rewrite_rules.cmi \
+    cime/rewriting/rewriting.cmi cime/terms/signatures.cmi \
+    cime/completion/standard_critical_pairs.cmi \
+    cime/strategies/standard_innermost.cmi \
+    cime/standard_matching_and_unification/standard_matching.cmi \
+    cime/rewriting/standard_rewriting.cmi cime/words/string_rewriting.cmi \
+    cime/words/string_signatures.cmi cime/words/string_unification.cmi \
+    cime/terms/substitution.cmi cime/words/user_parameterized_words.cmi \
+    cime/terms/variables.cmi cime/words/words.cmi \
+    cime/completion/abstract_rewriting.cmi 
+cime/completion/abstract_rewriting.cmx: cime/completion/ac_critical_pairs.cmx \
+    cime/terms/gen_terms.cmx cime/strategies/innermost.cmx \
+    cime/integer_solver/linear_constraints.cmx cime/matching/matching.cmx \
+    cime/rewriting/naive_dnet.cmx cime/orderings/orderings_generalities.cmx \
+    cime/words/parameterized_rewriting.cmx \
+    cime/words/parameterized_signatures.cmx \
+    cime/words/parameterized_similitude.cmx \
+    cime/words/parameterized_words.cmx cime/terms/rewrite_rules.cmx \
+    cime/rewriting/rewriting.cmx cime/terms/signatures.cmx \
+    cime/completion/standard_critical_pairs.cmx \
+    cime/strategies/standard_innermost.cmx \
+    cime/standard_matching_and_unification/standard_matching.cmx \
+    cime/rewriting/standard_rewriting.cmx cime/words/string_rewriting.cmx \
+    cime/words/string_signatures.cmx cime/words/string_unification.cmx \
+    cime/terms/substitution.cmx cime/words/user_parameterized_words.cmx \
+    cime/terms/variables.cmx cime/words/words.cmx \
+    cime/completion/abstract_rewriting.cmi 
+cime/completion/ac_critical_pairs.cmo: cime/unification/ac_unification.cmi \
+    cime/unification/controle.cmi cime/terms/gen_terms.cmi \
+    cime/compat/listutils.cmi cime/terms/positions.cmi \
+    cime/terms/rewrite_rules.cmi cime/terms/substitution.cmi \
+    cime/completion/ac_critical_pairs.cmi 
+cime/completion/ac_critical_pairs.cmx: cime/unification/ac_unification.cmx \
+    cime/unification/controle.cmx cime/terms/gen_terms.cmx \
+    cime/compat/listutils.cmx cime/terms/positions.cmx \
+    cime/terms/rewrite_rules.cmx cime/terms/substitution.cmx \
+    cime/completion/ac_critical_pairs.cmi 
+cime/completion/confluence.cmo: cime/completion/abstract_rewriting.cmi \
+    cime/terms/user_signatures.cmi cime/completion/confluence.cmi 
+cime/completion/confluence.cmx: cime/completion/abstract_rewriting.cmx \
+    cime/terms/user_signatures.cmx cime/completion/confluence.cmi 
+cime/completion/standard_critical_pairs.cmo: cime/unification/controle.cmi \
+    cime/terms/gen_terms.cmi cime/compat/listutils.cmi \
+    cime/terms/positions.cmi cime/terms/rewrite_rules.cmi \
+    cime/terms/substitution.cmi cime/unification/unification.cmi \
+    cime/completion/standard_critical_pairs.cmi 
+cime/completion/standard_critical_pairs.cmx: cime/unification/controle.cmx \
+    cime/terms/gen_terms.cmx cime/compat/listutils.cmx \
+    cime/terms/positions.cmx cime/terms/rewrite_rules.cmx \
+    cime/terms/substitution.cmx cime/unification/unification.cmx \
+    cime/completion/standard_critical_pairs.cmi 
+cime/dioph_caml/comparaison.cmo: cime/orderings/orderings_generalities.cmi \
+    cime/dioph_caml/comparaison.cmi 
+cime/dioph_caml/comparaison.cmx: cime/orderings/orderings_generalities.cmx \
+    cime/dioph_caml/comparaison.cmi 
+cime/dioph_caml/init.cmo: cime/dioph_caml/piles.cmi \
+    cime/dioph_caml/type_de_donnees_dioph.cmi cime/dioph_caml/init.cmi 
+cime/dioph_caml/init.cmx: cime/dioph_caml/piles.cmx \
+    cime/dioph_caml/type_de_donnees_dioph.cmx cime/dioph_caml/init.cmi 
+cime/dioph_caml/notsolprocess.cmo: cime/dioph_caml/piles.cmi \
+    cime/dioph_caml/type_de_donnees_dioph.cmi \
+    cime/dioph_caml/notsolprocess.cmi 
+cime/dioph_caml/notsolprocess.cmx: cime/dioph_caml/piles.cmx \
+    cime/dioph_caml/type_de_donnees_dioph.cmx \
+    cime/dioph_caml/notsolprocess.cmi 
+cime/dioph_caml/piles.cmo: cime/dioph_caml/type_de_donnees_dioph.cmi \
+    cime/dioph_caml/piles.cmi 
+cime/dioph_caml/piles.cmx: cime/dioph_caml/type_de_donnees_dioph.cmx \
+    cime/dioph_caml/piles.cmi 
+cime/dioph_caml/solprocess.cmo: cime/dioph_caml/piles.cmi \
+    cime/dioph_caml/type_de_donnees_dioph.cmi cime/dioph_caml/solprocess.cmi 
+cime/dioph_caml/solprocess.cmx: cime/dioph_caml/piles.cmx \
+    cime/dioph_caml/type_de_donnees_dioph.cmx cime/dioph_caml/solprocess.cmi 
+cime/dioph_caml/solve.cmo: cime/dioph_caml/init.cmi \
+    cime/dioph_caml/notsolprocess.cmi cime/dioph_caml/piles.cmi \
+    cime/dioph_caml/solprocess.cmi cime/dioph_caml/type_de_donnees_dioph.cmi \
+    cime/dioph_caml/solve.cmi 
+cime/dioph_caml/solve.cmx: cime/dioph_caml/init.cmx \
+    cime/dioph_caml/notsolprocess.cmx cime/dioph_caml/piles.cmx \
+    cime/dioph_caml/solprocess.cmx cime/dioph_caml/type_de_donnees_dioph.cmx \
+    cime/dioph_caml/solve.cmi 
+cime/dioph_caml/type_de_donnees_dioph.cmo: \
+    cime/dioph_caml/type_de_donnees_dioph.cmi 
+cime/dioph_caml/type_de_donnees_dioph.cmx: \
+    cime/dioph_caml/type_de_donnees_dioph.cmi 
+cime/dioph_caml/zero_one_solve.cmo: cime/dioph_caml/comparaison.cmi \
+    cime/orderings/orderings_generalities.cmi \
+    cime/dioph_caml/zero_one_solve.cmi 
+cime/dioph_caml/zero_one_solve.cmx: cime/dioph_caml/comparaison.cmx \
+    cime/orderings/orderings_generalities.cmx \
+    cime/dioph_caml/zero_one_solve.cmi 
+cime/integer_solver/abstract_constraint.cmo: cime/compat/numbers.cmi \
+    cime/integer_solver/abstract_constraint.cmi 
+cime/integer_solver/abstract_constraint.cmx: cime/compat/numbers.cmx \
+    cime/integer_solver/abstract_constraint.cmi 
+cime/integer_solver/i_solve.cmo: cime/dioph_caml/solve.cmi \
+    cime/integer_solver/i_solve.cmi 
+cime/integer_solver/i_solve.cmx: cime/dioph_caml/solve.cmx \
+    cime/integer_solver/i_solve.cmi 
+cime/integer_solver/i_solve_modulo.cmo: cime/integer_solver/i_solve.cmi \
+    cime/dioph_caml/solve.cmi cime/integer_solver/i_solve_modulo.cmi 
+cime/integer_solver/i_solve_modulo.cmx: cime/integer_solver/i_solve.cmx \
+    cime/dioph_caml/solve.cmx cime/integer_solver/i_solve_modulo.cmi 
+cime/integer_solver/linear_constraints.cmo: \
+    cime/integer_solver/abstract_constraint.cmi cime/compat/hcons.cmi \
+    cime/compat/inttagmap.cmi cime/compat/inttagset.cmi \
+    cime/compat/numbers.cmi cime/compat/ptset.cmi \
+    cime/integer_solver/linear_constraints.cmi 
+cime/integer_solver/linear_constraints.cmx: \
+    cime/integer_solver/abstract_constraint.cmx cime/compat/hcons.cmx \
+    cime/compat/inttagmap.cmx cime/compat/inttagset.cmx \
+    cime/compat/numbers.cmx cime/compat/ptset.cmx \
+    cime/integer_solver/linear_constraints.cmi 
+cime/integer_solver/poly_lexer.cmo: cime/compat/numbers.cmi \
+    cime/integer_solver/poly_parser.cmi cime/integer_solver/poly_lexer.cmi 
+cime/integer_solver/poly_lexer.cmx: cime/compat/numbers.cmx \
+    cime/integer_solver/poly_parser.cmx cime/integer_solver/poly_lexer.cmi 
+cime/integer_solver/poly_parser.cmo: \
+    cime/integer_solver/abstract_constraint.cmi cime/compat/numbers.cmi \
+    cime/integer_solver/poly_parser.cmi 
+cime/integer_solver/poly_parser.cmx: \
+    cime/integer_solver/abstract_constraint.cmx cime/compat/numbers.cmx \
+    cime/integer_solver/poly_parser.cmi 
+cime/integer_solver/poly_syntax.cmo: cime/integer_solver/poly_lexer.cmi \
+    cime/integer_solver/poly_parser.cmi cime/integer_solver/poly_syntax.cmi 
+cime/integer_solver/poly_syntax.cmx: cime/integer_solver/poly_lexer.cmx \
+    cime/integer_solver/poly_parser.cmx cime/integer_solver/poly_syntax.cmi 
+cime/integer_solver/presburger.cmo: cime/compat/hcons.cmi \
+    cime/integer_solver/linear_constraints.cmi cime/compat/numbers.cmi \
+    cime/compat/ordered_sets.cmi cime/compat/ptset.cmi \
+    cime/integer_solver/presburger.cmi 
+cime/integer_solver/presburger.cmx: cime/compat/hcons.cmx \
+    cime/integer_solver/linear_constraints.cmx cime/compat/numbers.cmx \
+    cime/compat/ordered_sets.cmx cime/compat/ptset.cmx \
+    cime/integer_solver/presburger.cmi 
+cime/matching/lazy_controle.cmo: cime/matching/lazy_list.cmi \
+    cime/matching/lazy_controle.cmi 
+cime/matching/lazy_controle.cmx: cime/matching/lazy_list.cmx \
+    cime/matching/lazy_controle.cmi 
+cime/matching/lazy_list.cmo: cime/matching/lazy_list.cmi 
+cime/matching/lazy_list.cmx: cime/matching/lazy_list.cmi 
+cime/matching/matching.cmo: cime/terms/gen_terms.cmi \
+    cime/matching/lazy_controle.cmi cime/matching/lazy_list.cmi \
+    cime/terms/signatures.cmi cime/terms/substitution.cmi \
+    cime/terms/variables.cmi cime/matching/matching.cmi 
+cime/matching/matching.cmx: cime/terms/gen_terms.cmx \
+    cime/matching/lazy_controle.cmx cime/matching/lazy_list.cmx \
+    cime/terms/signatures.cmx cime/terms/substitution.cmx \
+    cime/terms/variables.cmx cime/matching/matching.cmi 
+cime/orderings/finite_ord.cmo: cime/orderings/orderings_generalities.cmi \
+    cime/orderings/finite_ord.cmi 
+cime/orderings/finite_ord.cmx: cime/orderings/orderings_generalities.cmx \
+    cime/orderings/finite_ord.cmi 
+cime/orderings/orderings_generalities.cmo: \
+    cime/orderings/orderings_generalities.cmi 
+cime/orderings/orderings_generalities.cmx: \
+    cime/orderings/orderings_generalities.cmi 
+cime/rewriting/naive_dnet.cmo: cime/terms/gen_terms.cmi \
+    cime/compat/inttagset.cmi cime/terms/rewrite_rules.cmi \
+    cime/rewriting/naive_dnet.cmi 
+cime/rewriting/naive_dnet.cmx: cime/terms/gen_terms.cmx \
+    cime/compat/inttagset.cmx cime/terms/rewrite_rules.cmx \
+    cime/rewriting/naive_dnet.cmi 
+cime/rewriting/rewriting.cmo: cime/matching/matching.cmi \
+    cime/rewriting/naive_dnet.cmi cime/terms/rewrite_rules.cmi \
+    cime/rewriting/rewriting.cmi 
+cime/rewriting/rewriting.cmx: cime/matching/matching.cmx \
+    cime/rewriting/naive_dnet.cmx cime/terms/rewrite_rules.cmx \
+    cime/rewriting/rewriting.cmi 
+cime/rewriting/standard_rewriting.cmo: cime/rewriting/naive_dnet.cmi \
+    cime/terms/rewrite_rules.cmi \
+    cime/standard_matching_and_unification/standard_matching.cmi \
+    cime/terms/substitution.cmi cime/rewriting/standard_rewriting.cmi 
+cime/rewriting/standard_rewriting.cmx: cime/rewriting/naive_dnet.cmx \
+    cime/terms/rewrite_rules.cmx \
+    cime/standard_matching_and_unification/standard_matching.cmx \
+    cime/terms/substitution.cmx cime/rewriting/standard_rewriting.cmi 
+cime/standard_matching_and_unification/standard_matching.cmo: \
+    cime/terms/gen_terms.cmi cime/terms/substitution.cmi \
+    cime/terms/variables.cmi \
+    cime/standard_matching_and_unification/standard_matching.cmi 
+cime/standard_matching_and_unification/standard_matching.cmx: \
+    cime/terms/gen_terms.cmx cime/terms/substitution.cmx \
+    cime/terms/variables.cmx \
+    cime/standard_matching_and_unification/standard_matching.cmi 
+cime/strategies/innermost.cmo: cime/terms/gen_terms.cmi \
+    cime/terms/substitution.cmi cime/terms/variables.cmi \
+    cime/strategies/innermost.cmi 
+cime/strategies/innermost.cmx: cime/terms/gen_terms.cmx \
+    cime/terms/substitution.cmx cime/terms/variables.cmx \
+    cime/strategies/innermost.cmi 
+cime/strategies/standard_innermost.cmo: cime/terms/gen_terms.cmi \
+    cime/terms/substitution.cmi cime/terms/variables.cmi \
+    cime/strategies/standard_innermost.cmi 
+cime/strategies/standard_innermost.cmx: cime/terms/gen_terms.cmx \
+    cime/terms/substitution.cmx cime/terms/variables.cmx \
+    cime/strategies/standard_innermost.cmi 
+cime/terms/gen_terms.cmo: cime/compat/listutils.cmi cime/terms/positions.cmi \
+    cime/terms/signature_syntax.cmi cime/terms/signatures.cmi \
+    cime/terms/variables.cmi cime/terms/gen_terms.cmi 
+cime/terms/gen_terms.cmx: cime/compat/listutils.cmx cime/terms/positions.cmx \
+    cime/terms/signature_syntax.cmx cime/terms/signatures.cmx \
+    cime/terms/variables.cmx cime/terms/gen_terms.cmi 
+cime/terms/positions.cmo: cime/terms/positions.cmi 
+cime/terms/positions.cmx: cime/terms/positions.cmi 
+cime/terms/rewrite_rules.cmo: cime/terms/gen_terms.cmi \
+    cime/compat/listutils.cmi cime/terms/variables.cmi \
+    cime/terms/rewrite_rules.cmi 
+cime/terms/rewrite_rules.cmx: cime/terms/gen_terms.cmx \
+    cime/compat/listutils.cmx cime/terms/variables.cmx \
+    cime/terms/rewrite_rules.cmi 
+cime/terms/signature_lexer.cmo: cime/terms/signature_parser.cmi \
+    cime/terms/signature_lexer.cmi 
+cime/terms/signature_lexer.cmx: cime/terms/signature_parser.cmx \
+    cime/terms/signature_lexer.cmi 
+cime/terms/signature_parser.cmo: cime/terms/signature_syntax.cmi \
+    cime/terms/signatures.cmi cime/terms/signature_parser.cmi 
+cime/terms/signature_parser.cmx: cime/terms/signature_syntax.cmx \
+    cime/terms/signatures.cmx cime/terms/signature_parser.cmi 
+cime/terms/signatures.cmo: cime/compat/ordered_maps.cmi \
+    cime/compat/ordered_sets.cmi cime/orderings/orderings_generalities.cmi \
+    cime/terms/signatures.cmi 
+cime/terms/signatures.cmx: cime/compat/ordered_maps.cmx \
+    cime/compat/ordered_sets.cmx cime/orderings/orderings_generalities.cmx \
+    cime/terms/signatures.cmi 
+cime/terms/signature_syntax.cmo: cime/terms/signature_syntax.cmi 
+cime/terms/signature_syntax.cmx: cime/terms/signature_syntax.cmi 
+cime/terms/substitution.cmo: cime/terms/gen_terms.cmi \
+    cime/terms/rewrite_rules.cmi cime/terms/variables.cmi \
+    cime/terms/substitution.cmi 
+cime/terms/substitution.cmx: cime/terms/gen_terms.cmx \
+    cime/terms/rewrite_rules.cmx cime/terms/variables.cmx \
+    cime/terms/substitution.cmi 
+cime/terms/user_signatures.cmo: cime/orderings/orderings_generalities.cmi \
+    cime/terms/signature_lexer.cmi cime/terms/signature_parser.cmi \
+    cime/terms/signature_syntax.cmi cime/terms/signatures.cmi \
+    cime/terms/user_signatures.cmi 
+cime/terms/user_signatures.cmx: cime/orderings/orderings_generalities.cmx \
+    cime/terms/signature_lexer.cmx cime/terms/signature_parser.cmx \
+    cime/terms/signature_syntax.cmx cime/terms/signatures.cmx \
+    cime/terms/user_signatures.cmi 
+cime/terms/variables.cmo: cime/compat/inttagmap.cmi \
+    cime/compat/ordered_sets.cmi cime/terms/variables.cmi 
+cime/terms/variables.cmx: cime/compat/inttagmap.cmx \
+    cime/compat/ordered_sets.cmx cime/terms/variables.cmi 
+cime/unification/ac_unification.cmo: cime/terms/signatures.cmi \
+    cime/terms/substitution.cmi cime/unification/theory.cmi \
+    cime/unification/unification.cmi cime/terms/variables.cmi \
+    cime/unification/ac_unification.cmi 
+cime/unification/ac_unification.cmx: cime/terms/signatures.cmx \
+    cime/terms/substitution.cmx cime/unification/theory.cmx \
+    cime/unification/unification.cmx cime/terms/variables.cmx \
+    cime/unification/ac_unification.cmi 
+cime/unification/arith_to_unif.cmo: cime/compat/arrayutils.cmi \
+    cime/compat/bit_field.cmi cime/unification/controle.cmi \
+    cime/terms/gen_terms.cmi cime/unification/hullot_bin_trees.cmi \
+    cime/unification/problems.cmi cime/unification/theory.cmi \
+    cime/terms/variables.cmi cime/unification/arith_to_unif.cmi 
+cime/unification/arith_to_unif.cmx: cime/compat/arrayutils.cmx \
+    cime/compat/bit_field.cmx cime/unification/controle.cmx \
+    cime/terms/gen_terms.cmx cime/unification/hullot_bin_trees.cmx \
+    cime/unification/problems.cmx cime/unification/theory.cmx \
+    cime/terms/variables.cmx cime/unification/arith_to_unif.cmi 
+cime/unification/controle.cmo: cime/unification/controle.cmi 
+cime/unification/controle.cmx: cime/unification/controle.cmi 
+cime/unification/cycle.cmo: cime/unification/controle.cmi \
+    cime/terms/gen_terms.cmi cime/unification/mark.cmi \
+    cime/unification/oc.cmi cime/unification/problems.cmi \
+    cime/unification/theory.cmi cime/terms/variables.cmi \
+    cime/unification/cycle.cmi 
+cime/unification/cycle.cmx: cime/unification/controle.cmx \
+    cime/terms/gen_terms.cmx cime/unification/mark.cmx \
+    cime/unification/oc.cmx cime/unification/problems.cmx \
+    cime/unification/theory.cmx cime/terms/variables.cmx \
+    cime/unification/cycle.cmi 
+cime/unification/eqe.cmo: cime/unification/controle.cmi \
+    cime/terms/gen_terms.cmi cime/unification/problems.cmi \
+    cime/terms/variables.cmi cime/unification/eqe.cmi 
+cime/unification/eqe.cmx: cime/unification/controle.cmx \
+    cime/terms/gen_terms.cmx cime/unification/problems.cmx \
+    cime/terms/variables.cmx cime/unification/eqe.cmi 
+cime/unification/e_res.cmo: cime/unification/controle.cmi \
+    cime/terms/gen_terms.cmi cime/unification/mark_acu.cmi \
+    cime/unification/merge_acu.cmi cime/unification/oc.cmi \
+    cime/unification/problems.cmi cime/unification/theory.cmi \
+    cime/unification/unif_ac.cmi cime/unification/unif_aci.cmi \
+    cime/unification/unif_acu.cmi cime/unification/unif_ag_acun.cmi \
+    cime/unification/unif_bool.cmi cime/unification/unif_commutative.cmi \
+    cime/unification/unif_free.cmi cime/unification/e_res.cmi 
+cime/unification/e_res.cmx: cime/unification/controle.cmx \
+    cime/terms/gen_terms.cmx cime/unification/mark_acu.cmx \
+    cime/unification/merge_acu.cmx cime/unification/oc.cmx \
+    cime/unification/problems.cmx cime/unification/theory.cmx \
+    cime/unification/unif_ac.cmx cime/unification/unif_aci.cmx \
+    cime/unification/unif_acu.cmx cime/unification/unif_ag_acun.cmx \
+    cime/unification/unif_bool.cmx cime/unification/unif_commutative.cmx \
+    cime/unification/unif_free.cmx cime/unification/e_res.cmi 
+cime/unification/hullot_bin_trees.cmo: cime/compat/bit_field.cmi \
+    cime/unification/hullot_bin_trees.cmi 
+cime/unification/hullot_bin_trees.cmx: cime/compat/bit_field.cmx \
+    cime/unification/hullot_bin_trees.cmi 
+cime/unification/mark_acu.cmo: cime/unification/controle.cmi \
+    cime/terms/gen_terms.cmi cime/unification/problems.cmi \
+    cime/unification/theory.cmi cime/terms/variables.cmi \
+    cime/unification/mark_acu.cmi 
+cime/unification/mark_acu.cmx: cime/unification/controle.cmx \
+    cime/terms/gen_terms.cmx cime/unification/problems.cmx \
+    cime/unification/theory.cmx cime/terms/variables.cmx \
+    cime/unification/mark_acu.cmi 
+cime/unification/mark.cmo: cime/unification/controle.cmi \
+    cime/terms/gen_terms.cmi cime/unification/problems.cmi \
+    cime/terms/signatures.cmi cime/unification/theory.cmi \
+    cime/terms/variables.cmi cime/unification/mark.cmi 
+cime/unification/mark.cmx: cime/unification/controle.cmx \
+    cime/terms/gen_terms.cmx cime/unification/problems.cmx \
+    cime/terms/signatures.cmx cime/unification/theory.cmx \
+    cime/terms/variables.cmx cime/unification/mark.cmi 
+cime/unification/merge_acu.cmo: cime/unification/arith_to_unif.cmi \
+    cime/compat/arrayutils.cmi cime/terms/gen_terms.cmi \
+    cime/orderings/orderings_generalities.cmi cime/unification/problems.cmi \
+    cime/dioph_caml/solve.cmi cime/unification/theory.cmi \
+    cime/unification/unif_acu.cmi cime/unification/unif_to_arith.cmi \
+    cime/terms/variables.cmi cime/unification/merge_acu.cmi 
+cime/unification/merge_acu.cmx: cime/unification/arith_to_unif.cmx \
+    cime/compat/arrayutils.cmx cime/terms/gen_terms.cmx \
+    cime/orderings/orderings_generalities.cmx cime/unification/problems.cmx \
+    cime/dioph_caml/solve.cmx cime/unification/theory.cmx \
+    cime/unification/unif_acu.cmx cime/unification/unif_to_arith.cmx \
+    cime/terms/variables.cmx cime/unification/merge_acu.cmi 
+cime/unification/oc.cmo: cime/compat/arrayutils.cmi \
+    cime/unification/controle.cmi cime/terms/gen_terms.cmi \
+    cime/terms/substitution.cmi cime/terms/variables.cmi \
+    cime/unification/oc.cmi 
+cime/unification/oc.cmx: cime/compat/arrayutils.cmx \
+    cime/unification/controle.cmx cime/terms/gen_terms.cmx \
+    cime/terms/substitution.cmx cime/terms/variables.cmx \
+    cime/unification/oc.cmi 
+cime/unification/problems.cmo: cime/terms/gen_terms.cmi \
+    cime/compat/ordered_maps.cmi cime/terms/signatures.cmi \
+    cime/terms/substitution.cmi cime/unification/theory.cmi \
+    cime/unification/variable_abstraction.cmi cime/terms/variables.cmi \
+    cime/unification/problems.cmi 
+cime/unification/problems.cmx: cime/terms/gen_terms.cmx \
+    cime/compat/ordered_maps.cmx cime/terms/signatures.cmx \
+    cime/terms/substitution.cmx cime/unification/theory.cmx \
+    cime/unification/variable_abstraction.cmx cime/terms/variables.cmx \
+    cime/unification/problems.cmi 
+cime/unification/theory.cmo: cime/compat/ordered_sets.cmi \
+    cime/terms/signatures.cmi cime/unification/theory.cmi 
+cime/unification/theory.cmx: cime/compat/ordered_sets.cmx \
+    cime/terms/signatures.cmx cime/unification/theory.cmi 
+cime/unification/unif_aci.cmo: cime/unification/arith_to_unif.cmi \
+    cime/compat/bit_field.cmi cime/terms/gen_terms.cmi \
+    cime/unification/hullot_bin_trees.cmi cime/unification/problems.cmi \
+    cime/unification/unif_to_arith.cmi cime/terms/variables.cmi \
+    cime/dioph_caml/zero_one_solve.cmi cime/unification/unif_aci.cmi 
+cime/unification/unif_aci.cmx: cime/unification/arith_to_unif.cmx \
+    cime/compat/bit_field.cmx cime/terms/gen_terms.cmx \
+    cime/unification/hullot_bin_trees.cmx cime/unification/problems.cmx \
+    cime/unification/unif_to_arith.cmx cime/terms/variables.cmx \
+    cime/dioph_caml/zero_one_solve.cmx cime/unification/unif_aci.cmi 
+cime/unification/unif_ac.cmo: cime/unification/arith_to_unif.cmi \
+    cime/compat/bit_field.cmi cime/terms/gen_terms.cmi \
+    cime/unification/hullot_bin_trees.cmi cime/unification/problems.cmi \
+    cime/dioph_caml/solve.cmi cime/unification/unif_to_arith.cmi \
+    cime/terms/variables.cmi cime/unification/unif_ac.cmi 
+cime/unification/unif_ac.cmx: cime/unification/arith_to_unif.cmx \
+    cime/compat/bit_field.cmx cime/terms/gen_terms.cmx \
+    cime/unification/hullot_bin_trees.cmx cime/unification/problems.cmx \
+    cime/dioph_caml/solve.cmx cime/unification/unif_to_arith.cmx \
+    cime/terms/variables.cmx cime/unification/unif_ac.cmi 
+cime/unification/unif_acu.cmo: cime/unification/arith_to_unif.cmi \
+    cime/compat/bit_field.cmi cime/terms/gen_terms.cmi \
+    cime/unification/problems.cmi cime/dioph_caml/solve.cmi \
+    cime/unification/theory.cmi cime/unification/unif_to_arith.cmi \
+    cime/terms/variables.cmi cime/unification/unif_acu.cmi 
+cime/unification/unif_acu.cmx: cime/unification/arith_to_unif.cmx \
+    cime/compat/bit_field.cmx cime/terms/gen_terms.cmx \
+    cime/unification/problems.cmx cime/dioph_caml/solve.cmx \
+    cime/unification/theory.cmx cime/unification/unif_to_arith.cmx \
+    cime/terms/variables.cmx cime/unification/unif_acu.cmi 
+cime/unification/unif_ag_acun.cmo: cime/unification/arith_to_unif.cmi \
+    cime/unification/controle.cmi cime/terms/gen_terms.cmi \
+    cime/integer_solver/i_solve.cmi cime/integer_solver/i_solve_modulo.cmi \
+    cime/unification/problems.cmi cime/unification/theory.cmi \
+    cime/unification/unif_acu.cmi cime/unification/unif_to_arith.cmi \
+    cime/terms/variables.cmi cime/unification/unif_ag_acun.cmi 
+cime/unification/unif_ag_acun.cmx: cime/unification/arith_to_unif.cmx \
+    cime/unification/controle.cmx cime/terms/gen_terms.cmx \
+    cime/integer_solver/i_solve.cmx cime/integer_solver/i_solve_modulo.cmx \
+    cime/unification/problems.cmx cime/unification/theory.cmx \
+    cime/unification/unif_acu.cmx cime/unification/unif_to_arith.cmx \
+    cime/terms/variables.cmx cime/unification/unif_ag_acun.cmi 
+cime/unification/unif_bool.cmo: cime/terms/gen_terms.cmi \
+    cime/compat/listutils.cmi cime/unification/problems.cmi \
+    cime/terms/substitution.cmi cime/unification/theory.cmi \
+    cime/terms/variables.cmi cime/unification/unif_bool.cmi 
+cime/unification/unif_bool.cmx: cime/terms/gen_terms.cmx \
+    cime/compat/listutils.cmx cime/unification/problems.cmx \
+    cime/terms/substitution.cmx cime/unification/theory.cmx \
+    cime/terms/variables.cmx cime/unification/unif_bool.cmi 
+cime/unification/unif_commutative.cmo: cime/unification/controle.cmi \
+    cime/terms/gen_terms.cmi cime/unification/oc.cmi \
+    cime/unification/problems.cmi cime/unification/unif_free.cmi \
+    cime/terms/variables.cmi cime/unification/unif_commutative.cmi 
+cime/unification/unif_commutative.cmx: cime/unification/controle.cmx \
+    cime/terms/gen_terms.cmx cime/unification/oc.cmx \
+    cime/unification/problems.cmx cime/unification/unif_free.cmx \
+    cime/terms/variables.cmx cime/unification/unif_commutative.cmi 
+cime/unification/unif_free.cmo: cime/unification/controle.cmi \
+    cime/terms/gen_terms.cmi cime/unification/oc.cmi \
+    cime/unification/problems.cmi cime/terms/variables.cmi \
+    cime/unification/unif_free.cmi 
+cime/unification/unif_free.cmx: cime/unification/controle.cmx \
+    cime/terms/gen_terms.cmx cime/unification/oc.cmx \
+    cime/unification/problems.cmx cime/terms/variables.cmx \
+    cime/unification/unif_free.cmi 
+cime/unification/unification.cmo: cime/unification/controle.cmi \
+    cime/unification/cycle.cmi cime/unification/e_res.cmi \
+    cime/unification/eqe.cmi cime/terms/gen_terms.cmi \
+    cime/unification/mark.cmi cime/unification/problems.cmi \
+    cime/terms/signatures.cmi cime/terms/substitution.cmi \
+    cime/unification/theory.cmi cime/unification/unif_free.cmi \
+    cime/terms/variables.cmi cime/unification/unification.cmi 
+cime/unification/unification.cmx: cime/unification/controle.cmx \
+    cime/unification/cycle.cmx cime/unification/e_res.cmx \
+    cime/unification/eqe.cmx cime/terms/gen_terms.cmx \
+    cime/unification/mark.cmx cime/unification/problems.cmx \
+    cime/terms/signatures.cmx cime/terms/substitution.cmx \
+    cime/unification/theory.cmx cime/unification/unif_free.cmx \
+    cime/terms/variables.cmx cime/unification/unification.cmi 
+cime/unification/unif_to_arith.cmo: cime/terms/gen_terms.cmi \
+    cime/compat/ordered_maps.cmi cime/unification/problems.cmi \
+    cime/unification/theory.cmi cime/terms/variables.cmi \
+    cime/unification/unif_to_arith.cmi 
+cime/unification/unif_to_arith.cmx: cime/terms/gen_terms.cmx \
+    cime/compat/ordered_maps.cmx cime/unification/problems.cmx \
+    cime/unification/theory.cmx cime/terms/variables.cmx \
+    cime/unification/unif_to_arith.cmi 
+cime/unification/variable_abstraction.cmo: cime/unification/controle.cmi \
+    cime/terms/gen_terms.cmi cime/compat/ordered_maps.cmi \
+    cime/terms/signatures.cmi cime/unification/theory.cmi \
+    cime/terms/variables.cmi cime/unification/variable_abstraction.cmi 
+cime/unification/variable_abstraction.cmx: cime/unification/controle.cmx \
+    cime/terms/gen_terms.cmx cime/compat/ordered_maps.cmx \
+    cime/terms/signatures.cmx cime/unification/theory.cmx \
+    cime/terms/variables.cmx cime/unification/variable_abstraction.cmi 
+cime/words/parameterized_rewriting.cmo: \
+    cime/integer_solver/linear_constraints.cmi cime/compat/listutils.cmi \
+    cime/compat/numbers.cmi cime/words/parameterized_similitude.cmi \
+    cime/words/parameterized_words.cmi cime/integer_solver/presburger.cmi \
+    cime/words/user_parameterized_words.cmi \
+    cime/words/parameterized_rewriting.cmi 
+cime/words/parameterized_rewriting.cmx: \
+    cime/integer_solver/linear_constraints.cmx cime/compat/listutils.cmx \
+    cime/compat/numbers.cmx cime/words/parameterized_similitude.cmx \
+    cime/words/parameterized_words.cmx cime/integer_solver/presburger.cmx \
+    cime/words/user_parameterized_words.cmx \
+    cime/words/parameterized_rewriting.cmi 
+cime/words/parameterized_signatures_lexer.cmo: \
+    cime/words/parameterized_signatures_parser.cmi \
+    cime/words/parameterized_signatures_syntax.cmi 
+cime/words/parameterized_signatures_lexer.cmx: \
+    cime/words/parameterized_signatures_parser.cmx \
+    cime/words/parameterized_signatures_syntax.cmx 
+cime/words/parameterized_signatures.cmo: \
+    cime/integer_solver/linear_constraints.cmi \
+    cime/words/parameterized_signatures.cmi 
+cime/words/parameterized_signatures.cmx: \
+    cime/integer_solver/linear_constraints.cmx \
+    cime/words/parameterized_signatures.cmi 
+cime/words/parameterized_signatures_parser.cmo: \
+    cime/integer_solver/abstract_constraint.cmi \
+    cime/words/parameterized_signatures.cmi \
+    cime/words/parameterized_signatures_syntax.cmi \
+    cime/integer_solver/poly_syntax.cmi \
+    cime/words/parameterized_signatures_parser.cmi 
+cime/words/parameterized_signatures_parser.cmx: \
+    cime/integer_solver/abstract_constraint.cmx \
+    cime/words/parameterized_signatures.cmx \
+    cime/words/parameterized_signatures_syntax.cmx \
+    cime/integer_solver/poly_syntax.cmx \
+    cime/words/parameterized_signatures_parser.cmi 
+cime/words/parameterized_signatures_syntax.cmo: \
+    cime/integer_solver/abstract_constraint.cmi \
+    cime/words/parameterized_signatures_syntax.cmi 
+cime/words/parameterized_signatures_syntax.cmx: \
+    cime/integer_solver/abstract_constraint.cmx \
+    cime/words/parameterized_signatures_syntax.cmi 
+cime/words/parameterized_similitude.cmo: cime/compat/int_utils.cmi \
+    cime/integer_solver/linear_constraints.cmi cime/compat/listutils.cmi \
+    cime/compat/numbers.cmi cime/words/parameterized_words.cmi \
+    cime/integer_solver/presburger.cmi \
+    cime/words/parameterized_similitude.cmi 
+cime/words/parameterized_similitude.cmx: cime/compat/int_utils.cmx \
+    cime/integer_solver/linear_constraints.cmx cime/compat/listutils.cmx \
+    cime/compat/numbers.cmx cime/words/parameterized_words.cmx \
+    cime/integer_solver/presburger.cmx \
+    cime/words/parameterized_similitude.cmi 
+cime/words/parameterized_words.cmo: \
+    cime/integer_solver/linear_constraints.cmi cime/compat/listutils.cmi \
+    cime/words/parameterized_signatures_syntax.cmi \
+    cime/words/parameterized_words.cmi 
+cime/words/parameterized_words.cmx: \
+    cime/integer_solver/linear_constraints.cmx cime/compat/listutils.cmx \
+    cime/words/parameterized_signatures_syntax.cmx \
+    cime/words/parameterized_words.cmi 
+cime/words/string_rewriting.cmo: cime/words/words.cmi \
+    cime/words/string_rewriting.cmi 
+cime/words/string_rewriting.cmx: cime/words/words.cmx \
+    cime/words/string_rewriting.cmi 
+cime/words/string_signatures.cmo: cime/compat/listutils.cmi \
+    cime/words/string_signatures.cmi 
+cime/words/string_signatures.cmx: cime/compat/listutils.cmx \
+    cime/words/string_signatures.cmi 
+cime/words/string_unification.cmo: cime/words/string_unification.cmi 
+cime/words/string_unification.cmx: cime/words/string_unification.cmi 
+cime/words/user_parameterized_words.cmo: \
+    cime/integer_solver/linear_constraints.cmi \
+    cime/orderings/orderings_generalities.cmi \
+    cime/words/parameterized_signatures.cmi \
+    cime/words/parameterized_signatures_lexer.cmo \
+    cime/words/parameterized_signatures_parser.cmi \
+    cime/words/parameterized_signatures_syntax.cmi \
+    cime/words/parameterized_words.cmi cime/integer_solver/poly_syntax.cmi \
+    cime/words/user_parameterized_words.cmi 
+cime/words/user_parameterized_words.cmx: \
+    cime/integer_solver/linear_constraints.cmx \
+    cime/orderings/orderings_generalities.cmx \
+    cime/words/parameterized_signatures.cmx \
+    cime/words/parameterized_signatures_lexer.cmx \
+    cime/words/parameterized_signatures_parser.cmx \
+    cime/words/parameterized_signatures_syntax.cmx \
+    cime/words/parameterized_words.cmx cime/integer_solver/poly_syntax.cmx \
+    cime/words/user_parameterized_words.cmi 
+cime/words/words.cmo: cime/words/words.cmi 
+cime/words/words.cmx: cime/words/words.cmi 
 contrib/cc/ccalgo.cmo: kernel/names.cmi kernel/term.cmi contrib/cc/ccalgo.cmi 
 contrib/cc/ccalgo.cmx: kernel/names.cmx kernel/term.cmx contrib/cc/ccalgo.cmi 
 contrib/cc/ccproof.cmo: contrib/cc/ccalgo.cmi kernel/names.cmi \
@@ -2193,6 +2977,18 @@ contrib/cc/cctac.cmx: contrib/cc/ccalgo.cmx contrib/cc/ccproof.cmx \
     lib/pp.cmx parsing/pptactic.cmx proofs/proof_type.cmx proofs/refiner.cmx \
     tactics/tacinterp.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
     tactics/tactics.cmx kernel/term.cmx lib/util.cmx 
+contrib/correctness/pcicenv.cmo: library/global.cmi kernel/names.cmi \
+    contrib/correctness/past.cmi contrib/correctness/penv.cmi \
+    contrib/correctness/pmisc.cmi contrib/correctness/pmonad.cmi \
+    contrib/correctness/prename.cmi contrib/correctness/ptype.cmi \
+    contrib/correctness/putil.cmi kernel/sign.cmi kernel/term.cmi \
+    kernel/univ.cmi contrib/correctness/pcicenv.cmi 
+contrib/correctness/pcicenv.cmx: library/global.cmx kernel/names.cmx \
+    contrib/correctness/past.cmi contrib/correctness/penv.cmx \
+    contrib/correctness/pmisc.cmx contrib/correctness/pmonad.cmx \
+    contrib/correctness/prename.cmx contrib/correctness/ptype.cmi \
+    contrib/correctness/putil.cmx kernel/sign.cmx kernel/term.cmx \
+    kernel/univ.cmx contrib/correctness/pcicenv.cmi 
 contrib/correctness/pcic.cmo: kernel/declarations.cmi library/declare.cmi \
     pretyping/detyping.cmi kernel/entries.cmi library/global.cmi \
     kernel/indtypes.cmi library/libnames.cmi library/nameops.cmi \
@@ -2209,18 +3005,6 @@ contrib/correctness/pcic.cmx: kernel/declarations.cmx library/declare.cmx \
     kernel/sign.cmx kernel/term.cmx pretyping/termops.cmx \
     interp/topconstr.cmx kernel/typeops.cmx lib/util.cmx \
     toplevel/vernacexpr.cmx contrib/correctness/pcic.cmi 
-contrib/correctness/pcicenv.cmo: library/global.cmi kernel/names.cmi \
-    contrib/correctness/past.cmi contrib/correctness/penv.cmi \
-    contrib/correctness/pmisc.cmi contrib/correctness/pmonad.cmi \
-    contrib/correctness/prename.cmi contrib/correctness/ptype.cmi \
-    contrib/correctness/putil.cmi kernel/sign.cmi kernel/term.cmi \
-    kernel/univ.cmi contrib/correctness/pcicenv.cmi 
-contrib/correctness/pcicenv.cmx: library/global.cmx kernel/names.cmx \
-    contrib/correctness/past.cmi contrib/correctness/penv.cmx \
-    contrib/correctness/pmisc.cmx contrib/correctness/pmonad.cmx \
-    contrib/correctness/prename.cmx contrib/correctness/ptype.cmi \
-    contrib/correctness/putil.cmx kernel/sign.cmx kernel/term.cmx \
-    kernel/univ.cmx contrib/correctness/pcicenv.cmi 
 contrib/correctness/pdb.cmo: library/declare.cmi library/global.cmi \
     kernel/names.cmi library/nametab.cmi contrib/correctness/past.cmi \
     contrib/correctness/peffect.cmi contrib/correctness/penv.cmi \
@@ -2797,6 +3581,14 @@ contrib/interface/pbp.cmx: interp/coqlib.cmx kernel/environ.cmx \
     tactics/tacinterp.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
     tactics/tactics.cmx kernel/term.cmx interp/topconstr.cmx \
     pretyping/typing.cmx lib/util.cmx contrib/interface/pbp.cmi 
+contrib/interface/showproof_ct.cmo: contrib/interface/ascent.cmi \
+    parsing/esyntax.cmi library/global.cmi toplevel/metasyntax.cmi lib/pp.cmi \
+    parsing/printer.cmi contrib/interface/translate.cmi \
+    contrib/interface/vtp.cmi contrib/interface/xlate.cmi 
+contrib/interface/showproof_ct.cmx: contrib/interface/ascent.cmi \
+    parsing/esyntax.cmx library/global.cmx toplevel/metasyntax.cmx lib/pp.cmx \
+    parsing/printer.cmx contrib/interface/translate.cmx \
+    contrib/interface/vtp.cmx contrib/interface/xlate.cmx 
 contrib/interface/showproof.cmo: proofs/clenv.cmi interp/constrintern.cmi \
     parsing/coqast.cmi kernel/declarations.cmi kernel/environ.cmi \
     pretyping/evd.cmi interp/genarg.cmi library/global.cmi \
@@ -2821,14 +3613,6 @@ contrib/interface/showproof.cmx: proofs/clenv.cmx interp/constrintern.cmx \
     pretyping/termops.cmx contrib/interface/translate.cmx \
     pretyping/typing.cmx lib/util.cmx toplevel/vernacinterp.cmx \
     contrib/interface/showproof.cmi 
-contrib/interface/showproof_ct.cmo: contrib/interface/ascent.cmi \
-    parsing/esyntax.cmi library/global.cmi toplevel/metasyntax.cmi lib/pp.cmi \
-    parsing/printer.cmi contrib/interface/translate.cmi \
-    contrib/interface/vtp.cmi contrib/interface/xlate.cmi 
-contrib/interface/showproof_ct.cmx: contrib/interface/ascent.cmi \
-    parsing/esyntax.cmx library/global.cmx toplevel/metasyntax.cmx lib/pp.cmx \
-    parsing/printer.cmx contrib/interface/translate.cmx \
-    contrib/interface/vtp.cmx contrib/interface/xlate.cmx 
 contrib/interface/translate.cmo: contrib/interface/ascent.cmi parsing/ast.cmi \
     interp/constrextern.cmi contrib/interface/ctast.cmo kernel/environ.cmi \
     pretyping/evarutil.cmi pretyping/evd.cmi library/libobject.cmi \
@@ -3061,12 +3845,12 @@ contrib/romega/refl_omega.cmx: parsing/ast.cmx tactics/auto.cmx \
     proofs/proof_type.cmx kernel/reduction.cmx kernel/sign.cmx \
     proofs/tacmach.cmx tactics/tacticals.cmx tactics/tactics.cmx \
     kernel/term.cmx lib/util.cmx 
-contrib/xml/acic.cmo: kernel/names.cmi kernel/term.cmi 
-contrib/xml/acic.cmx: kernel/names.cmx kernel/term.cmx 
 contrib/xml/acic2Xml.cmo: contrib/xml/acic.cmo contrib/xml/cic2acic.cmo \
     kernel/names.cmi kernel/term.cmi lib/util.cmi contrib/xml/xml.cmi 
 contrib/xml/acic2Xml.cmx: contrib/xml/acic.cmx contrib/xml/cic2acic.cmx \
     kernel/names.cmx kernel/term.cmx lib/util.cmx contrib/xml/xml.cmx 
+contrib/xml/acic.cmo: kernel/names.cmi kernel/term.cmi 
+contrib/xml/acic.cmx: kernel/names.cmx kernel/term.cmx 
 contrib/xml/cic2acic.cmo: contrib/xml/acic.cmo library/declare.cmi \
     library/dischargedhypsmap.cmi contrib/xml/doubleTypeInference.cmi \
     kernel/environ.cmi pretyping/evarutil.cmi pretyping/evd.cmi \
@@ -3121,8 +3905,6 @@ contrib/xml/proofTree2Xml.cmx: contrib/xml/acic.cmx contrib/xml/acic2Xml.cmx \
     contrib/xml/xml.cmx 
 contrib/xml/unshare.cmo: contrib/xml/unshare.cmi 
 contrib/xml/unshare.cmx: contrib/xml/unshare.cmi 
-contrib/xml/xml.cmo: contrib/xml/xml.cmi 
-contrib/xml/xml.cmx: contrib/xml/xml.cmi 
 contrib/xml/xmlcommand.cmo: contrib/xml/acic.cmo contrib/xml/acic2Xml.cmo \
     contrib/xml/cic2acic.cmo library/decl_kinds.cmo kernel/declarations.cmi \
     library/declare.cmi kernel/environ.cmi pretyping/evd.cmi \
@@ -3149,10 +3931,8 @@ contrib/xml/xmlentries.cmx: toplevel/cerrors.cmx parsing/egrammar.cmx \
     parsing/extend.cmx interp/genarg.cmx parsing/pcoq.cmx lib/pp.cmx \
     parsing/pptactic.cmx tactics/tacinterp.cmx lib/util.cmx \
     toplevel/vernacinterp.cmx contrib/xml/xmlcommand.cmx 
-ide/utils/configwin.cmo: ide/utils/configwin_ihm.cmo \
-    ide/utils/configwin_types.cmo ide/utils/configwin.cmi 
-ide/utils/configwin.cmx: ide/utils/configwin_ihm.cmx \
-    ide/utils/configwin_types.cmx ide/utils/configwin.cmi 
+contrib/xml/xml.cmo: contrib/xml/xml.cmi 
+contrib/xml/xml.cmx: contrib/xml/xml.cmi 
 ide/utils/configwin_html_config.cmo: ide/utils/configwin_ihm.cmo \
     ide/utils/configwin_messages.cmo ide/utils/configwin_types.cmo \
     ide/utils/uoptions.cmi 
@@ -3163,6 +3943,10 @@ ide/utils/configwin_ihm.cmo: ide/utils/configwin_messages.cmo \
     ide/utils/configwin_types.cmo ide/utils/okey.cmi ide/utils/uoptions.cmi 
 ide/utils/configwin_ihm.cmx: ide/utils/configwin_messages.cmx \
     ide/utils/configwin_types.cmx ide/utils/okey.cmx ide/utils/uoptions.cmx 
+ide/utils/configwin.cmo: ide/utils/configwin_ihm.cmo \
+    ide/utils/configwin_types.cmo ide/utils/configwin.cmi 
+ide/utils/configwin.cmx: ide/utils/configwin_ihm.cmx \
+    ide/utils/configwin_types.cmx ide/utils/configwin.cmi 
 ide/utils/configwin_types.cmo: ide/utils/configwin_keys.cmo \
     ide/utils/uoptions.cmi 
 ide/utils/configwin_types.cmx: ide/utils/configwin_keys.cmx \

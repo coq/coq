@@ -51,6 +51,9 @@ val add_mind :
   dir_path -> label -> mutual_inductive_entry -> safe_environment ->
     mutual_inductive * safe_environment
 
+(* Adding rewriting rules *)
+val add_rules : rules_entry -> safe_environment -> safe_environment
+
 (* Adding a module *)
 val add_module :
   label -> module_entry -> safe_environment 
@@ -64,9 +67,6 @@ val add_modtype :
 (* Adding universe constraints *)
 val add_constraints : 
   Univ.constraints -> safe_environment -> safe_environment
-
-(* Adding rewriting rules *)
-val add_rule : constr * constr -> safe_environment -> safe_environment
 
 (*s Interactive module functions *)
 val start_module : 

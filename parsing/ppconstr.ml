@@ -365,6 +365,7 @@ let pr_metanum pr = function
 let pr_red_expr (pr_constr,pr_ref) = function
   | Red false -> str "Red"
   | Hnf -> str "Hnf"
+  | Simpl_rew -> str "Simpl_rew"
   | Simpl o -> str "Simpl" ++ pr_opt (pr_occurrences pr_constr) o
   | Cbv f ->
       if f = {rBeta=true;rIota=true;rZeta=true;rDelta=true;rConst=[]} then

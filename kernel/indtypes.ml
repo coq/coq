@@ -517,6 +517,8 @@ let build_inductive env env_ar finite inds recargs cst =
       mind_user_lc = lc;
       mind_nf_lc = nf_lc;
       mind_recargs = recarg;
+      mind_cons_arity = Array.init (Array.length nf_lc)
+			  (fun i -> nb_prod nf_lc.(i));
     } in
   let packets = array_map2 build_one_packet inds recargs in
   (* Build the mutual inductive *)

@@ -72,6 +72,10 @@ val out_inductive : Libobject.obj -> mutual_inductive_entry
 val strength_min : strength * strength -> strength
 val string_of_strength : strength -> string
 
+(* Rewrite rules *)
+
+val declare_rules : rules_entry -> unit
+
 (*s Corresponding test and access functions. *)
 
 val is_constant : section_path -> bool

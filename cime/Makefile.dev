@@ -1,0 +1,52 @@
+###########################################################################
+# CiME
+###########################################################################
+
+USEFUL=dev/order_deps dev/get_files
+
+dev/order_deps: dev/order_deps.ml
+	$(OCAMLC) -o $@ str.cma $<
+
+dev/get_files: dev/get_files.ml
+	$(OCAMLC) -o $@ str.cma $<
+
+CIMEHOME=../local/cime-2002-06-30/ocaml_src
+
+CIMEDIRS=compat pvm orderings dioph_caml integer_solver words regexp terms \
+	term_orderings standard_matching_and_unification matching unification \
+	rewriting strategies completion eq_proof coq_interface termination \
+	automaton toplevel
+
+CIMEINCLUDES=-I cime $(CIMEDIRS:%=-I $(CIMEHOME)/%) -I cime/orderings
+
+CIMECMA=unix.cma nums.cma cime/libcime.cma
+CIMECMXA=$(CIMECMA:%.cma=%.cmxa)
+
+libcime: cime/libcime.cma cime/libcime.cmxa
+
+cime/libcime.cma: cime/cime-cmos
+	$(OCAMLC) -a -o $@ `cat cime/cime-cmos`
+
+cime/libcime.cmxa: cime/cime-cmos
+	$(OCAMLOPT) -a -o $@ `sed 's|\.cm.|.cmx|g' cime/cime-cmos`
+
+cime/cime-cmos: $(USEFUL) cime/cime-deps .depend
+	dev/order_deps `dev/get_files '$(CIMEHOME)/[^\.]*.cm.' < .depend | sed 's|\.cm.|.cmo|g'` < cime/cime-deps > $@
+
+cime/cime-deps:
+	$(OCAMLDEP) $(CIMEINCLUDES) $(CIMEHOME)/*/*.ml $(CIMEHOME)/*/*.mli > $@
+
+build-release: copy-cime cime/cimecmo-def
+	dev/copy_cime $(CIMEHOME) cime/cime-cmos
+	echo change Makefile (include cime/Makefile)
+	echo do make clean; make depend; make world
+
+copy-cime: cime/cime-cmos
+	dev/copy-cime $(CIMEHOME)
+
+cime/cimecmo-def:
+	echo -n CIMECMO= > $@
+	sed "s|$(CIMEHOME)|cime|g" cime/cime-cmos >> $@
+
+clean::
+	rm -f cime/libcime.*

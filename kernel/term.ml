@@ -1100,6 +1100,19 @@ let decompose_lam_n n =
   in 
   lamdec_rec [] n 
 
+(* Extracts T from [x1:T1]..[xn:Tn]T *)
+let decompose_lam_n_body n =
+  if n < 0 then
+    error "decompose_lam_n_body: integer parameter must be positive";
+  let rec lamdec_rec n c = 
+    if n=0 then c
+    else match kind_of_term c with 
+      | Lambda (x,t,c) -> lamdec_rec (n-1) c
+      | Cast (c,_)     -> lamdec_rec n c
+      | _ -> error "decompose_lam_n_body: not enough abstractions"
+  in
+  lamdec_rec n
+
 (* (nb_lam [na1:T1]...[nan:Tan]c) where c is not an abstraction
  * gives n (casts are ignored) *)
 let nb_lam = 

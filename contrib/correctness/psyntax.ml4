@@ -494,6 +494,7 @@ open Himsg
 open Vernacinterp
 open Vernacexpr
 open Declare
+open Decl_kinds
 
 let is_assumed global ids =
   if List.length ids = 1 then

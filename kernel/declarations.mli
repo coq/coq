@@ -13,6 +13,7 @@ open Names
 open Univ
 open Term
 open Sign
+open Symbol
 (*i*)
 
 (* This module defines the internal representation of global
@@ -31,9 +32,28 @@ type constant_body = {
   const_body : constr_substituted option;
   const_type : types;
   const_constraints : constraints;
-  const_opaque : bool }
+  const_opaque : bool;
+  const_symb : symbol_info option }
 
 val subst_const_body : substitution -> constant_body -> constant_body
+
+val is_symbol : constant_body -> bool
+val is_free : constant_body -> bool
+
+(* access functions for symbols *)
+val arity : constant_body -> int
+val eqth : constant_body -> eqth
+val status : constant_body -> status
+val delta : constant_body -> int -> delta
+
+
+(*s Rewrite rules *)
+
+type rules_body =
+  { rules_ctx : rel_context;
+    rules_subs : rel_context;
+    rules_list : (constr * constr) list }
+
 
 (*s Inductive types (internal representation with redundant
     information). *)
@@ -73,6 +93,7 @@ type one_inductive_body = {
   mind_nf_lc : types array; (* constrs and arity with pre-expanded ccl *)
   mind_user_lc : types array;
   mind_recargs : wf_paths;
+  mind_cons_arity : int array; (* nb_prod of mind_nf_lc *)
  }
 
 type mutual_inductive_body = {
@@ -84,6 +105,7 @@ type mutual_inductive_body = {
   mind_equiv : kernel_name option;
  }
 
+type imap = mutual_inductive_body KNmap.t
 
 val subst_mind : substitution -> mutual_inductive_body -> mutual_inductive_body
 
@@ -134,6 +156,4 @@ and module_body =
       mod_constraints : constraints }
     (*    type_of(mod_expr)  <: mod_user_type (if given)  *)
     (*  if equiv given then constraints are empty *)
-
-
 

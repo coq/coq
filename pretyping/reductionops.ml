@@ -431,10 +431,11 @@ let nf_evar sigma =
 
 (* lazy reduction functions. The infos must be created for each term *)
 let clos_norm_flags flgs env sigma t =
-  norm_val (create_clos_infos flgs env) (inject (nf_evar sigma t))
+  norm_val (create_clos_infos flgs env) 0 (inject (nf_evar sigma t))
 
 let nf_beta = clos_norm_flags Closure.beta empty_env Evd.empty
 let nf_betaiota = clos_norm_flags Closure.betaiota empty_env Evd.empty
+let nf_betaiota_rew env = clos_norm_flags Closure.betaiota env Evd.empty
 let nf_betadeltaiota env sigma =
   clos_norm_flags Closure.betadeltaiota env sigma
 

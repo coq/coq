@@ -183,6 +183,7 @@ GEXTEND Gram
   red_tactic:
     [ [ IDENT "Red" -> Red false
       | IDENT "Hnf" -> Hnf
+      | IDENT "Simpl_rew" -> Simpl_rew
       | IDENT "Simpl"; po = OPT pattern_occ -> Simpl po
       | IDENT "Cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
       | IDENT "Lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)
@@ -195,6 +196,7 @@ GEXTEND Gram
   red_expr:
     [ [ IDENT "Red" -> Red false
       | IDENT "Hnf" -> Hnf
+      | IDENT "Simpl_rew" -> Simpl_rew
       | IDENT "Simpl"; po = OPT pattern_occ -> Simpl po
       | IDENT "Cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
       | IDENT "Lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)

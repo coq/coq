@@ -77,16 +77,24 @@ Hints Resolve n_Sn : core v62.
 
 (** Addition *)
 
-Fixpoint plus [n:nat] : nat -> nat := 
+(* Fixpoint plus [n:nat] : nat -> nat := 
    [m:nat]Cases n of 
       O   => m 
-  | (S p) => (S (plus p m)) end.
+  | (S p) => (S (plus p m)) end. *)
+
+Symbol 2 Lex plus : nat -> nat -> nat.
+
+Rules [x,y:nat] {
+  (plus O x) => x;
+  (plus (S x) y) => (S (plus x y))
+}.
+
 Hint eq_plus : v62 := Resolve (f_equal2 nat nat nat plus).
 Hint eq_nat_binary : core := Resolve (f_equal2 nat nat).
 
 Lemma plus_n_O : (n:nat) n=(plus n O).
 Proof.
-  Induction n ; Simpl ; Auto.
+  Induction n ; Simpl_rew ; Auto.
 Qed.
 Hints Resolve plus_n_O : core v62.
 
@@ -97,7 +105,7 @@ Qed.
 
 Lemma plus_n_Sm : (n,m:nat) (S (plus n m))=(plus n (S m)).
 Proof.
-  Intros m n; Elim m; Simpl; Auto.
+  Intros m n; Elim m; Simpl_rew; Auto.
 Qed.
 Hints Resolve plus_n_Sm : core v62.
 
@@ -121,9 +129,9 @@ Hints Resolve mult_n_O : core v62.
 
 Lemma mult_n_Sm : (n,m:nat) (plus (mult n m) n)=(mult n (S m)).
 Proof.
-  Intros; Elim n; Simpl; Auto.
+  Intros; Elim n; Simpl; Simpl_rew; Auto.
   Intros p H; Case H; Elim plus_n_Sm; Apply (f_equal nat nat S).
-  Pattern 1 3 m; Elim m; Simpl; Auto.
+  Pattern 1 3 m; Elim m; Simpl_rew; Auto.
 Qed.
 Hints Resolve mult_n_Sm : core v62.
 

@@ -13,6 +13,7 @@ open Names
 open Univ
 open Term
 open Sign
+open Symbol
 (*i*)
 
 (* This module defines the entry types for global declarations. This
@@ -53,18 +54,35 @@ type mutual_inductive_entry = {
   mind_entry_inds : one_inductive_entry list }
 
 
-(*s Constants (Definition/Axiom) *)
+(*s Constants (Definition/Axiom/Symbol) *)
 
 type definition_entry = {
   const_entry_body   : constr;
   const_entry_type   : types option;
   const_entry_opaque : bool }
 
-type parameter_entry = types * (* opacity *) bool
+type symbol_entry = {
+  symb_entry_arity : int;
+  symb_entry_eqth : eqth;
+  symb_entry_status : status;
+  symb_entry_mons : int list;
+  symb_entry_antimons : int list }
+
+type parameter_entry = types * bool
 
 type constant_entry = 
   | DefinitionEntry of definition_entry
   | ParameterEntry of parameter_entry
+  | SymbolEntry of types * symbol_entry
+
+
+(*s Rewrite rules *)
+
+type rules_entry = {
+  rules_entry_ctx : (identifier * constr) list;
+  rules_entry_subs : (identifier * constr) list;
+  rules_entry_list : (constr * constr) list }
+
 
 (*s Modules *)
 

@@ -95,9 +95,9 @@ let modify_opers replfun (constl,indl,cstrl) =
   in 
   if (constl,indl,cstrl) = ([],[],[]) then fun x -> x else substrec
 
-let expmod_constr modlist c =
+let expmod_constr env modlist c =
   let simpfun = 
-    if modlist = ([],[],[]) then fun x -> x else nf_betaiota in
+    if modlist = ([],[],[]) then fun x -> x else nf_betaiota_rew env in
   let expfun (kn,cb) = 
     if cb.const_opaque then
       errorlabstrm "expmod_constr"
@@ -115,8 +115,8 @@ let expmod_constr modlist c =
     | Cast (value,typ) -> mkCast (simpfun value,simpfun typ)
     | _ -> simpfun c'
 
-let expmod_type modlist c =
-  type_app (expmod_constr modlist) c
+let expmod_type env modlist c =
+  type_app (expmod_constr env modlist) c
 
 let abstract_constant ids_to_abs hyps (body,typ) =
   let abstract_once_typ ((hyps,typ) as sofar) id =
@@ -152,19 +152,19 @@ let abstract_constant ids_to_abs hyps (body,typ) =
 
 let cook_constant env r =
   let cb = r.d_from in
-  let typ = expmod_type r.d_modlist cb.const_type in
+  let typ = expmod_type env r.d_modlist cb.const_type in
   let body = 
     option_app 
       (fun lconstr -> 
 	 Declarations.from_val 
-	   (expmod_constr r.d_modlist (Declarations.force lconstr))) 
+	   (expmod_constr env r.d_modlist (Declarations.force lconstr))) 
       cb.const_body
   in
   let hyps =
     Sign.fold_named_context
       (fun d ctxt ->
         Sign.add_named_decl
-          (map_named_declaration (expmod_constr r.d_modlist) d)
+          (map_named_declaration (expmod_constr env r.d_modlist) d)
           ctxt)
       cb.const_hyps
       ~init:empty_named_context in

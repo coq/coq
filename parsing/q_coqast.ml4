@@ -213,6 +213,7 @@ let mlexpr_of_occ_constr =
 let mlexpr_of_red_expr = function
   | Rawterm.Red b -> <:expr< Rawterm.Red $mlexpr_of_bool b$ >>
   | Rawterm.Hnf -> <:expr< Rawterm.Hnf >>
+  | Rawterm.Simpl_rew -> <:expr< Rawterm.Simpl_rew >>
   | Rawterm.Simpl o -> <:expr< Rawterm.Simpl $mlexpr_of_option mlexpr_of_occ_constr o$ >>
   | Rawterm.Cbv f ->
       <:expr< Rawterm.Cbv $mlexpr_of_red_flags f$ >>

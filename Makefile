@@ -33,6 +33,15 @@ noargument:
 	@echo "   make clean"
 	@echo "or make archclean"
 
+OCAMLDEP=ocamldep
+
+###########################################################################
+# CiME
+###########################################################################
+
+include Makefile.cime
+#include cime/Makefile.dev
+
 ###########################################################################
 # Compilation options
 ###########################################################################
@@ -46,18 +55,17 @@ LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
 	      -I contrib/extraction -I contrib/correctness \
               -I contrib/interface -I contrib/fourier \
 	      -I contrib/jprover -I contrib/cc -I contrib/linear \
-	      -I contrib/funind
+	      -I contrib/funind $(CIMEINCLUDES)
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
 BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG)
 OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF)
-OCAMLDEP=ocamldep
 DEPFLAGS=$(LOCALINCLUDES)
 
 OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
-CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo pa_ifdef.cmo q_MLast.cmo
+CAMLP4EXTENDFLAGS=-I . -I $(CAMLLIB) $(CIMEINCLUDES) pa_extend.cmo pa_extend_m.cmo pa_ifdef.cmo q_MLast.cmo $(CIMECMA)
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
@@ -86,13 +94,15 @@ LIBREP=\
 KERNEL=\
   kernel/names.cmo kernel/univ.cmo \
   kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
-  kernel/declarations.cmo kernel/environ.cmo kernel/closure.cmo \
-  kernel/conv_oracle.cmo kernel/reduction.cmo kernel/entries.cmo \
-  kernel/modops.cmo \
+  kernel/declarations.cmo kernel/print.cmo kernel/symbol.cmo kernel/cime.cmo \
+  cime/orderings/finite_ord.cmo kernel/precedence.cmo kernel/environ.cmo \
+  kernel/closure.cmo kernel/conv_oracle.cmo kernel/reduction.cmo \
+  kernel/entries.cmo kernel/modops.cmo \
   kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
-  kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
-  kernel/subtyping.cmo kernel/mod_typing.cmo kernel/rules.cmo \
-  kernel/safe_typing.cmo
+  kernel/indtypes.cmo kernel/cooking.cmo \
+  kernel/ordering.cmo kernel/positivity.cmo kernel/rules.cmo \
+  kernel/term_typing.cmo \
+  kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo
 
 LIBRARY=\
   library/nameops.cmo library/libnames.cmo library/libobject.cmo \
@@ -207,13 +217,16 @@ PARSERREQUIRES=\
   lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo lib/system.cmo \
   lib/bstack.cmo lib/edit.cmo lib/options.cmo lib/rtree.cmo lib/gset.cmo \
   lib/tlm.cmo kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
-  kernel/term.cmo kernel/sign.cmo kernel/declarations.cmo \
-  kernel/environ.cmo kernel/closure.cmo kernel/conv_oracle.cmo \
+  kernel/term.cmo kernel/sign.cmo kernel/symbol.cmo library/decl_kinds.cmo \
+  kernel/declarations.cmo kernel/print.cmo kernel/cime.cmo \
+  cime/orderings/finite_ord.cmo kernel/precedence.cmo kernel/environ.cmo \
+  kernel/closure.cmo kernel/conv_oracle.cmo \
   kernel/reduction.cmo kernel/modops.cmo kernel/type_errors.cmo \
   kernel/inductive.cmo kernel/typeops.cmo kernel/indtypes.cmo \
-  kernel/cooking.cmo kernel/term_typing.cmo kernel/subtyping.cmo \
-  kernel/mod_typing.cmo kernel/rules.cmo kernel/safe_typing.cmo \
-  library/nameops.cmo \
+  kernel/cooking.cmo \
+  kernel/ordering.cmo kernel/positivity.cmo kernel/rules.cmo \
+  kernel/term_typing.cmo kernel/subtyping.cmo \
+  kernel/mod_typing.cmo kernel/safe_typing.cmo library/nameops.cmo \
   library/libnames.cmo library/libobject.cmo library/summary.cmo \
   library/nametab.cmo library/lib.cmo library/global.cmo \
   library/declaremods.cmo library/library.cmo library/impargs.cmo \
@@ -247,7 +260,7 @@ PARSERREQUIRES=\
   tactics/btermdn.cmo tactics/nbtermdn.cmo tactics/dhyp.cmo \
   tactics/elim.cmo tactics/auto.cmo tactics/tacinterp.cmo \
   tactics/extraargs.cmo lib/bij.cmo lib/explore.cmo kernel/entries.cmo \
-  library/states.cmo library/decl_kinds.cmo proofs/proof_type.cmo \
+  library/states.cmo proofs/proof_type.cmo \
   parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo \
   toplevel/command.cmo toplevel/record.cmo toplevel/discharge.cmo \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
@@ -397,9 +410,9 @@ COQINTERFACE=bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE) bin/parser$(EXE
 COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
              $(COQINTERFACE) 
 
-coqbinaries:: ${COQBINARIES}
+coqbinaries:: $(COQBINARIES)
 
-world: coqbinaries states theories contrib tools
+world: libcime coqbinaries states theories contrib tools
 
 coqlight: coqbinaries states theories-light tools
 
@@ -525,9 +538,9 @@ bin/coq-interface$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
 bin/coq-interface.opt$(EXE): $(COQMKTOP) $(CMX) $(USERTACCMX) $(INTERFACECMX)
 	$(COQMKTOP) -opt $(OPTFLAGS) -o $@ $(INTERFACECMX)
 
-bin/parser$(EXE): contrib/interface/parse.cmx contrib/interface/line_parser.cmx $(PARSERREQUIRESCMX) contrib/interface/xlate.cmx contrib/interface/vtp.cmx
+bin/parser$(EXE): cime/libcime.cmxa contrib/interface/parse.cmx contrib/interface/line_parser.cmx $(PARSERREQUIRESCMX) contrib/interface/xlate.cmx contrib/interface/vtp.cmx
 	$(OCAMLOPT) -cclib -lunix $(OPTFLAGS) -o $@ $(CMXA) \
-	$(PARSERREQUIRESCMX) \
+	nums.cmxa cime/libcime.cmxa $(PARSERREQUIRESCMX) \
 	line_parser.cmx vtp.cmx xlate.cmx parse.cmx
 
 clean::
@@ -1049,11 +1062,12 @@ GRAMMARNEEDEDCMO=\
   lib/dyn.cmo lib/options.cmo \
   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo \
   kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo \
-  kernel/sign.cmo kernel/declarations.cmo kernel/environ.cmo\
+  kernel/sign.cmo kernel/symbol.cmo library/decl_kinds.cmo \
+  kernel/declarations.cmo kernel/print.cmo kernel/cime.cmo \
+  cime/orderings/finite_ord.cmo kernel/precedence.cmo kernel/environ.cmo \
   library/nameops.cmo library/libnames.cmo library/summary.cmo \
   library/nametab.cmo library/libobject.cmo library/lib.cmo \
-  library/goptions.cmo library/decl_kinds.cmo \
-  pretyping/rawterm.cmo pretyping/evd.cmo \
+  library/goptions.cmo pretyping/rawterm.cmo pretyping/evd.cmo \
   interp/topconstr.cmo interp/genarg.cmo \
   interp/ppextend.cmo parsing/coqast.cmo parsing/ast.cmo \
   proofs/tacexpr.cmo parsing/ast.cmo \
@@ -1070,8 +1084,8 @@ GRAMMARSCMO=\
 
 GRAMMARCMO=$(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
 
-parsing/grammar.cma: $(GRAMMARCMO)
-	$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
+parsing/grammar.cma: cime/libcime.cma $(GRAMMARCMO)
+	$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -a -o $@
 
 clean::
 	rm -f parsing/grammar.cma
@@ -1097,13 +1111,13 @@ toplevel/mltop.cmx: toplevel/mltop.optml
 	$(OCAMLOPT) $(OPTFLAGS) -c -impl toplevel/mltop.optml -o $@
 
 toplevel/mltop.byteml: toplevel/mltop.ml4
-	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo pa_ifdef.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
+	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
 
 toplevel/mltop.optml: toplevel/mltop.ml4
-	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo pa_ifdef.cmo -impl toplevel/mltop.ml4 > $@ || rm -f $@
+	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -impl toplevel/mltop.ml4 > $@ || rm -f $@
 
 toplevel/mltop.ml: toplevel/mltop.ml4
-	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo pa_ifdef.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
+	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
 
 ML4FILES += toplevel/mltop.ml4
 
@@ -1234,7 +1248,7 @@ dependcoq:: beforedepend
 # by making scratchdependml, one gets dependencies OK for .ml files and
 # .ml4 files not using fancy parsers. This is sufficient to get beforedepend
 # and depend targets successfully built
-scratchdepend:: dependp4
+scratchdepend:: libcime dependp4
 	-$(MAKE) -k -f Makefile.dep $(ML4FILESML)
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
 	$(MAKE) depend
@@ -1257,7 +1271,7 @@ dependp4::
 ml4filesml:: .depend.camlp4
 	$(MAKE) -f Makefile.dep $(ML4FILESML)
 
-depend: beforedepend dependp4 ml4filesml
+depend: beforedepend libcime dependp4 ml4filesml
 # 1. We express dependencies of the .ml files w.r.t their grammars
 # 2. Then we are able to produce the .ml files using Makefile.dep
 # 3. We compute the dependencies inside the .ml files using ocamldep

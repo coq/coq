@@ -375,6 +375,9 @@ val decompose_prod_n : int -> constr -> (name * constr) list * constr
    $[x_1:T_1]..[x_n:T_n]T$ into the pair $([(x_n,T_n);...;(x_1,T_1)],T)$ *)
 val decompose_lam_n : int -> constr -> (name * constr) list * constr
 
+(* Extracts T from [x1:T1]..[xn:Tn]T *)
+val decompose_lam_n_body : int -> constr -> constr
+
 (* [nb_lam] $[x_1:T_1]...[x_n:T_n]c$ where $c$ is not an abstraction
    gives $n$ (casts are ignored) *)
 val nb_lam : constr -> int

@@ -237,7 +237,7 @@ let correctness s p opttac =
   let env = Global.env () in
   let sign = Global.named_context () in
   let sigma = Evd.empty in
-  let cty = Reduction.nf_betaiota cty in
+  let cty = Reduction.nf_betaiota_rew env cty in
   let id = id_of_string s in 
   start_proof id (IsGlobal (Proof Lemma)) sign cty correctness_hook;
   Penv.new_edited id (v,p);

@@ -32,6 +32,7 @@ open Vernacexpr
 open Decl_kinds
 open Topconstr
 open Pretyping
+open Print
 
 (* Pcoq hooks *)
 
@@ -375,7 +376,9 @@ let vernac_cofixpoint = build_corecursive
 
 let vernac_scheme = build_scheme
 
-let vernac_rule = build_rule
+let vernac_symbol = declare_symbol
+
+let vernac_rules = declare_rules
 
 (**********************)
 (* Modules            *)
@@ -895,6 +898,7 @@ let vernac_print = function
   | PrintHintDbName s -> Auto.print_hint_db_by_name s
   | PrintHintDb -> Auto.print_searchtable ()
   | PrintScope s -> pp (Symbols.pr_scope (Constrextern.without_symbols pr_rawterm) s)
+  | PrintRules l -> msg (print_rules l)
 
 let global_module r =
   let (loc,qid) = qualid_of_reference r in
@@ -1143,7 +1147,8 @@ let interp c = match c with
   | VernacFixpoint l -> vernac_fixpoint l
   | VernacCoFixpoint l -> vernac_cofixpoint l
   | VernacScheme l -> vernac_scheme l
-  | VernacRule (ctx,l,r) -> vernac_rule ctx (l,r)
+  | VernacSymbol (id,t,a,e,s,m,am) -> vernac_symbol id t a e s m am
+  | VernacRules (ctx,subs,rules) -> vernac_rules ctx subs rules
 
   (* Modules *)
   | VernacDeclareModule (id,bl,mtyo,mexpro) -> 

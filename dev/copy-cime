@@ -1,0 +1,11 @@
+#!/bin/sh
+
+cimehome=$1
+cimecmos=$2
+
+for f in `sed "s|$cimehome/\([^\.]*\)\.cmo|\1|g" cimecmos`
+do
+	d=cime/`dirname $f`
+	mkdir -p $d
+	cp $cimehome/$f.ml* $d/
+done

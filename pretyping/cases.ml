@@ -1370,7 +1370,7 @@ and match_current pb ((current,typ as ct),deps) =
 	    find_predicate pb.caseloc pb.env pb.isevars 
 	      pb.pred brtyps cstrs current indt in
 	  let ci = make_case_info pb.env mind RegularStyle tags in
-	  let case = mkCase (ci,nf_betaiota pred,current,brvals) in
+	  let case = mkCase (ci,nf_betaiota_rew pb.env pred,current,brvals) in
 	  let inst = List.map mkRel deps in
 	  pattern_status tags,
 	  { uj_val = applist (case, inst);

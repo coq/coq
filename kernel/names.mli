@@ -12,9 +12,13 @@
 
 type identifier
 type name = Name of identifier | Anonymous
+
 (* Parsing and printing of identifiers *)
 val string_of_id : identifier -> string
 val id_of_string : string -> identifier
+
+val string_of_name : name -> string
+val pr_name : name -> unit
 
 val id_ord : identifier -> identifier -> int
 
@@ -140,11 +144,13 @@ val repr_kn : kernel_name -> module_path * dir_path * label
 val modpath : kernel_name -> module_path
 val label : kernel_name -> label
 
+val prn : kernel_name -> unit
+
 val string_of_kn : kernel_name -> string
 val pr_kn : kernel_name -> Pp.std_ppcmds
 val subst_kn : substitution -> kernel_name -> kernel_name
 
-
+module KNord : Map.OrderedType with type t = kernel_name
 module KNset  : Set.S with type elt = kernel_name
 module KNpred : Predicate.S with type elt = kernel_name
 module KNmap  : Map.S with type key = kernel_name

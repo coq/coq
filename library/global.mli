@@ -44,12 +44,12 @@ val add_constant :
 val add_mind        : 
   dir_path -> identifier -> mutual_inductive_entry -> kernel_name
 
+val add_rules       : rules_entry -> unit
+
 val add_module      : identifier -> module_entry -> module_path
 val add_modtype     : identifier -> module_type_entry -> kernel_name
 
 val add_constraints : constraints -> unit
-
-val add_rule        : constr * constr -> unit
 
 (*s Interactive modules and module types *)
 (* Both [start_*] functions take the [dir_path] argument to create a 

@@ -1,0 +1,29 @@
+###########################################################################
+# CiME
+###########################################################################
+
+CIMEDIRS=compat completion dioph_caml integer_solver matching orderings \
+	rewriting standard_matching_and_unification strategies terms \
+	unification words
+
+CIMEINCLUDES=-I cime $(CIMEDIRS:%=-I cime/%)
+
+CIMECMA=unix.cma nums.cma cime/libcime.cma
+
+CIMECMXA=$(CIMECMA:%.cma=%.cmxa)
+
+libcime: cime/libcime.cma cime/libcime.cmxa
+
+# definition of CIMECMO
+include cime/cimecmo-def
+
+CIMECMX=$(CIMECMO:%.cmo=%.cmx)
+
+cime/libcime.cma: $(CIMECMO)
+	$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(CIMECMO)
+
+cime/libcime.cmxa: $(CIMECMX)
+	$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(CIMECMX)
+
+clean::
+	rm -f cime/libcime.* cime/*/*.cmo

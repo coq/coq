@@ -44,6 +44,12 @@ module Idpred = Predicate.Make(IdOrdered)
 
 type name = Name of identifier | Anonymous
 
+let string_of_name = function
+  | Name id -> string_of_id id
+  | _ -> "_"
+
+let pr_name n = print_string (string_of_name n)
+
 (* Dirpaths are lists of module identifiers. The actual representation
    is reversed to optimise sharing: Coq.A.B is ["B";"A";"Coq"] *)
  
@@ -214,6 +220,8 @@ let label kn =
 
 let string_of_kn (mp,dir,l) = 
   string_of_mp mp ^ "#" ^ string_of_dirpath dir ^ "#" ^ string_of_label l
+
+let prn kn = print_string (string_of_label (label kn))
 
 let pr_kn kn = str (string_of_kn kn)
 

@@ -16,6 +16,7 @@ open Genarg
 open Topconstr
 open Decl_kinds
 open Ppextend
+open Symbol
 
 (* Toplevel control exceptions *)
 exception ProtectedLoop
@@ -57,6 +58,7 @@ type printable =
   | PrintHintDbName of string
   | PrintHintDb
   | PrintScope of string
+  | PrintRules of reference list
 
 type searchable =
   | SearchPattern of pattern_expr
@@ -180,7 +182,10 @@ type vernac_expr =
   | VernacFixpoint of fixpoint_expr list
   | VernacCoFixpoint of cofixpoint_expr list
   | VernacScheme of (identifier * bool * reference * sort_expr) list
-  | VernacRule of simple_binder list * constr_expr * constr_expr
+  | VernacSymbol of identifier * constr_expr * int * eqth * status
+      * int list * int list
+  | VernacRules of (identifier * constr_expr) list
+      * (identifier * constr_expr) list * (constr_expr * constr_expr) list
 
   (* Gallina extensions *)
   | VernacRecord of identifier with_coercion * simple_binder list

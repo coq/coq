@@ -14,12 +14,13 @@ open Names
 open Univ
 open Term
 open Sign
+open Symbol
 (*i*)
 
 (* This module defines the types of global declarations. This includes
    global constants/axioms and mutual inductive definitions *)
 
-(*s Constants (internal representation) (Definition/Axiom) *)
+(*s Constants (internal representation) (Definition/Axiom/Symbol) *)
 
 type subst_internal = 
   | Constr of constr 
@@ -47,7 +48,45 @@ type constant_body = {
   const_body : constr_substituted option;
   const_type : types;
   const_constraints : constraints;
-  const_opaque : bool }
+  const_opaque : bool;
+  const_symb : symbol_info option }
+
+let is_symbol cb =
+  match cb.const_symb with
+    | Some _ -> true
+    | _ -> false
+
+let is_free cb =
+  match cb.const_symb with
+    | Some si -> si.symb_eqth = Free
+    | _ -> true
+
+let arity cb =
+  match cb.const_symb with
+    | Some si -> si.symb_arity
+    | _ -> anomaly "arity"
+
+let eqth cb =
+  match cb.const_symb with
+    | Some si -> si.symb_eqth
+    | _ -> anomaly "eqth"
+
+let status cb =
+  match cb.const_symb with
+    | Some si -> si.symb_status
+    | _ -> anomaly "status"
+
+let delta cb k =
+  match cb.const_symb with
+    | Some si -> si.symb_mons.(k)
+    | _ -> anomaly "delta"
+
+(*s Rewrite rules *)
+
+type rules_body =
+  { rules_ctx : rel_context;
+    rules_subs : rel_context;
+    rules_list : (constr * constr) list }
 
 (*s Inductive types (internal representation with redundant
     information). *)
@@ -97,6 +136,7 @@ type one_inductive_body = {
   mind_nf_lc : types array; (* constrs and arity with pre-expanded ccl *)
   mind_user_lc : types array;
   mind_recargs : wf_paths;
+  mind_cons_arity : int array; (* nb_prod of mind_nf_lc *)
  }
 
 type mutual_inductive_body = {
@@ -108,13 +148,16 @@ type mutual_inductive_body = {
   mind_equiv : kernel_name option
  }
 
+type imap = mutual_inductive_body KNmap.t
+
 (* TODO: should be changed to non-coping after Term.subst_mps *)
 let subst_const_body sub cb = 
   { const_body = option_app (subst_constr_subst sub) cb.const_body;
     const_type = type_app (Term.subst_mps sub) cb.const_type;
     const_hyps = (assert (cb.const_hyps=[]); []);
     const_constraints = cb.const_constraints;
-    const_opaque = cb.const_opaque}
+    const_opaque = cb.const_opaque;
+    const_symb = cb.const_symb }
   
 let subst_mind_packet sub mbp = 
   { mind_consnames = mbp.mind_consnames;
@@ -132,6 +175,7 @@ let subst_mind_packet sub mbp =
     mind_params_ctxt = 
       map_rel_context (Term.subst_mps sub) mbp.mind_params_ctxt;
     mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*);
+    mind_cons_arity = mbp.mind_cons_arity
 }
 
 let subst_mind sub mib = 

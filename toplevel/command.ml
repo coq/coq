@@ -38,7 +38,9 @@ open Vernacexpr
 open Decl_kinds
 open Pretyping
 
-let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC([dummy_loc,Name x],a,b))
+let mkLambdaCit =
+  List.fold_right (fun (x,a) b -> mkLambdaC([dummy_loc,Name x],a,b))
+
 let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
 
 let rec abstract_rawconstr c = function
@@ -143,15 +145,46 @@ let declare_assumption ident (local,kind) bl c =
           msgerrnl (str"Warning: Variable " ++ pr_id ident ++ 
           str" is not visible from current goals");
         VarRef ident
-    | (Global|Local) ->
-        let (_,kn) =
-          declare_constant ident 
-	    (ParameterEntry (c,kind<>Symbol), IsAssumption kind) in
+    | Global | Local ->
+        let _,kn = declare_constant ident 
+		     (ParameterEntry (c,true), IsAssumption kind)
+        in
         assumption_message ident;
         if local=Local & Options.is_verbose () then
           msg_warning (pr_id ident ++ str" is declared as a parameter" ++
           str" because it is at a global level");
         ConstRef kn
+
+(* Symbols *)
+let declare_symbol id t a e s m am =
+  let t = interp_type Evd.empty (Global.env()) t
+  and se = { symb_entry_arity = a; symb_entry_eqth = e; symb_entry_status = s;
+	     symb_entry_mons = m; symb_entry_antimons = am; } in
+  let _ = declare_constant id (SymbolEntry (t,se),IsAssumption Definitional) in
+    assumption_message id
+
+(* Rewrite rules *)
+let declare_rules ctx subs rules =
+  let add_decl (env,l) (id,t) =
+    let t' = interp_constr Evd.empty env t in
+    let env' = push_rel (Name id,None,t') env in
+      (env',(id,t')::l)
+  in
+  let rhs_env,ctx' = List.fold_left add_decl (Global.env(),[]) ctx in
+  let add_decl (env,l) (id,t) =
+    let t' = interp_constr Evd.empty rhs_env t in
+    let env' = push_rel (Name id,Some t',mkMeta 0) env in
+      (env',(id,t')::l)
+  in
+  let lhs_env,subs' = List.fold_left add_decl (rhs_env,[]) subs in
+  let interp_lhs = interp_constr Evd.empty lhs_env
+  and interp_rhs = interp_constr Evd.empty rhs_env in
+  let interp_rule (l,r) = (interp_lhs l, interp_rhs r) in
+  let rules' = List.map interp_rule rules in
+  let re = { rules_entry_ctx = ctx';
+	     rules_entry_subs = subs';
+	     rules_entry_list = rules' } in
+    declare_rules re
 
 (* 3| Mutual Inductive definitions *)
 
@@ -452,16 +485,6 @@ let build_scheme lnamedepindsort =
   in 
   let lrecref = List.fold_right2 declare listdecl lrecnames [] in
   if_verbose ppnl (recursive_message (Array.of_list lrecref))
-
-let interp_in_context ctx l =
-  let genl = mkLambdaCit ctx l in
-  let genl = interp_constr Evd.empty (Global.env()) genl in
-  snd (decompose_lam_n (List.length ctx) genl)
-
-let build_rule ctx (l,r) =
-  let l = interp_in_context ctx l in
-  let r = interp_in_context ctx r in
-  Global.add_rule (l,r)
 
 let rec generalize_rawconstr c = function
   | [] -> c

@@ -307,7 +307,7 @@ let ct_print_eval ast red_fun env judg =
 let {uj_val=value; uj_type=typ} = judg in
 let nvalue = red_fun value
 (* // Attention , ici il faut peut être utiliser des environnemenst locaux *)
-and ntyp = nf_betaiota typ in
+and ntyp = nf_betaiota_rew env typ in
 (ctf_SearchResults !global_request_id,
  Some (P_pl
   (CT_premises_list

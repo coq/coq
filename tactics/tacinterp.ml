@@ -389,8 +389,8 @@ let glob_redexp ist = function
   | Lazy f -> Lazy (glob_flag ist f)
   | Pattern l -> Pattern (List.map (glob_constr_occurrence ist) l)
   | Simpl o -> Simpl (option_app (glob_constr_occurrence ist) o)
-  | (Red _ | Hnf as r) -> r
   | ExtraRedExpr (s,c) -> ExtraRedExpr (s, glob_constr ist c)
+  | (Red _ | Hnf | Simpl_rew as r) -> r
 
 (* Interprets an hypothesis name *)
 let glob_hyp_location ist = function
@@ -1025,8 +1025,8 @@ let redexp_interp ist sigma env = function
   | Lazy f -> Lazy (flag_interp ist env f)
   | Pattern l -> Pattern (List.map (pattern_interp ist sigma env) l)
   | Simpl o -> Simpl (option_app (pattern_interp ist sigma env) o)
-  | (Red _ |  Hnf as r) -> r
   | ExtraRedExpr (s,c) -> ExtraRedExpr (s,constr_interp ist sigma env c)
+  | (Red _ | Hnf | Simpl_rew as r) -> r
 
 let pf_redexp_interp ist gl = redexp_interp ist (project gl) (pf_env gl)
 

@@ -36,7 +36,7 @@ val cook_constant :
 
 (*s Utility functions used in module [Discharge]. *)
 
-val expmod_constr : work_list -> constr -> constr
-val expmod_type : work_list -> types -> types
+val expmod_constr : env -> work_list -> constr -> constr
+val expmod_type : env -> work_list -> types -> types
 
 

@@ -168,7 +168,6 @@ let pr_assumption_token = function
   | (Decl_kinds.Local,Decl_kinds.Definitional) -> str"Variable"
   | (Decl_kinds.Global,Decl_kinds.Logical) -> str"Axiom"
   | (Decl_kinds.Global,Decl_kinds.Definitional) -> str"Parameter"
-  | (_,Decl_kinds.Symbol) -> str"Symbol"
 
 let pr_params pr_c (a,(b,c)) = pr_id b ++ spc() ++ if a then str":>" else str":" ++ spc() ++ pr_c c
 
@@ -370,12 +369,10 @@ let rec pr_vernac = function
   | VernacCoFixpoint corecs -> let pr_onecorec (id,c,def) = pr_id id ++ spc() ++ str":" ++ pr_constrarg c ++ spc() ++ str":=" ++ pr_constrarg def      
     in hov 1 (str"CoFixpoint" ++ spc() ++ prlist_with_sep (fun _ -> brk(1,1) ++ str"with ") pr_onecorec corecs)  
   | VernacScheme l -> hov 1 (str"Scheme" ++ spc() ++ prlist_with_sep (fun _ -> brk(1,1) ++ str"with") pr_onescheme l)
-  | VernacRule (bl,l,r) -> hov 1 (str"Rule" ++ spc() ++
-(let pr_simple_binder (s,t) = pr_id s ++ str":" ++ pr_constr t in 
- let pr_simple_binder_list = function 
-   | [] -> mt ()
-   | l -> str"[" ++ prlist_with_sep (fun _ -> str";") pr_simple_binder l ++ str"]" in
- pr_simple_binder_list bl ++ pr_constrarg l ++ spc() ++ str "=>" ++ pr_constrarg r))
+
+  (* Symbols and rewrite rules *)
+  | VernacSymbol (id,t,a,e,s,m,am) -> str"Symbol" (* TO DO *)
+  | VernacRules (ctx,subs,rules) -> str"Rules" (* TO DO *)
 
   (* Gallina extensions *)
   | VernacRecord ((oc,name),ps,s,c,fs) -> let pr_simple_binder (s,t) = pr_id s ++ str":" ++ pr_constr t in 

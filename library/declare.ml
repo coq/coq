@@ -235,10 +235,9 @@ let cache_inductive ((sp,kn),mie) =
   let kn' = Global.add_mind dir (basename sp) mie in
     if kn' <> kn then
       anomaly "Kernel and Library names do not match";
-
-  List.iter 
-    (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref)
-    names
+    List.iter 
+      (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref)
+      names
 
 let load_inductive i ((sp,kn),mie) =
   let names = inductive_names sp kn mie in
@@ -295,6 +294,24 @@ let redeclare_inductive discharged_hyps mie =
  let oname = declare_inductive_common mie in
  Dischargedhypsmap.set_discharged_hyps (fst oname) discharged_hyps ;
  oname
+
+(* Rewrite rules *)
+
+let subst_rules s =
+  let subst_decl (id,t) = (id, subst_mps s t) in
+  let subst_rule (l,r) = (subst_mps s l, subst_mps s r) in
+    fun re ->
+      { rules_entry_ctx = List.map subst_decl re.rules_entry_ctx;
+	rules_entry_subs = List.map subst_decl re.rules_entry_subs;
+	rules_entry_list = List.map subst_rule re.rules_entry_list }
+
+let (in_rewrite_rule, out_rewrite_rule) =
+  declare_object {(default_object "REWRITE_RULE") with 
+    cache_function = (fun (_,re) -> Global.add_rules re);
+    classify_function = (fun (_,re) -> Substitute re);
+    subst_function = (fun (_,s,re) -> subst_rules s re) }
+
+let declare_rules re = add_anonymous_leaf (in_rewrite_rule re)
 
 (*s Test and access functions. *)
 

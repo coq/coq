@@ -347,6 +347,13 @@ let array_for_all f v =
   in 
   allrec ((Array.length v)-1) 
 
+let array_for_all_i f v = 
+  let rec allrec = function
+    | -1 -> true
+    | n -> (f n v.(n)) && (allrec (n-1))
+  in 
+  allrec ((Array.length v)-1) 
+
 let array_for_all2 f v1 v2 =
   let rec allrec = function
     | -1 -> true
@@ -504,6 +511,20 @@ let array_map3 f v1 v2 v3 =
     done;
     res
   end
+
+let array_init_by_list_map f v l =
+  let n = List.length l in
+  let a = Array.make n v in
+  let r = ref l in
+    for i = 0 to n-1 do
+      begin
+	match !r with
+	  | x::r' -> a.(i) <- f x; r := r'
+	  | _ -> anomaly "array_init_by_list_map"
+      end
+    done; a
+
+let array_to_rev_list a = Array.fold_left (fun l x -> x::l) [] a
 
 (* Matrices *)
 

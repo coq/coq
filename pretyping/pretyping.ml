@@ -366,7 +366,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 	     let v =
 	       let mis,_ = dest_ind_family indf in
 	       let ci = make_default_case_info env st mis in
-	       mkCase (ci, (nf_betaiota pj.uj_val), cj.uj_val,[|fv|])
+	       mkCase (ci, (nf_betaiota_rew env pj.uj_val), cj.uj_val,[|fv|])
 	     in 
 	     { uj_val = v;  uj_type = rsty }
 
@@ -424,7 +424,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 	     let v =
 	       let mis,_ = dest_ind_family indf in
 	       let ci = make_default_case_info env st mis in
-	       mkCase (ci, (nf_betaiota pj.uj_val), cj.uj_val,[|fv|] ) 
+	       mkCase (ci, (nf_betaiota_rew env pj.uj_val), cj.uj_val,[|fv|] ) 
 	     in
 	     { uj_val = v; uj_type = rsty })
 
@@ -501,7 +501,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 	  else
 	    let mis,_ = dest_ind_family indf in
 	    let ci = make_default_case_info env st mis in
-	    mkCase (ci, (nf_betaiota pj.uj_val), cj.uj_val,
+	    mkCase (ci, (nf_betaiota_rew env pj.uj_val), cj.uj_val,
                        Array.map (fun j-> j.uj_val) lfj)
 	in
 	{ uj_val = v;

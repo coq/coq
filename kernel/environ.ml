@@ -14,6 +14,9 @@ open Sign
 open Univ
 open Term
 open Declarations
+open Cime
+open Precedence
+open Symbol
 
 (* The type of environments. *)
 
@@ -28,7 +31,13 @@ type globals = {
   env_inductives : mutual_inductive_body KNmap.t;
   env_modules : module_body MPmap.t;
   env_modtypes : module_type_body KNmap.t;
-  env_rules : (constr * constr) list KNmap.t }
+
+  (* for rewriting *)
+  env_rules : rules_body list KNmap.t;
+  env_all_rules : (constr * constr) list;
+  env_cime : Cime.env;
+  env_prec : precedence;
+  env_status : status KNmap.t }
 
 type env = {
   env_globals       : globals;
@@ -42,11 +51,16 @@ let empty_env = {
     env_inductives = KNmap.empty;
     env_modules = MPmap.empty;
     env_modtypes = KNmap.empty;
-    env_rules = KNmap.empty };
+    env_rules = KNmap.empty;
+    env_all_rules = [];
+    env_cime = Cime.empty_env;
+    env_prec = empty_prec;
+    env_status = KNmap.empty };
   env_named_context = empty_named_context;
   env_rel_context = empty_rel_context;
   env_universes = initial_universes }
 
+let imap env = env.env_globals.env_inductives
 let universes env = env.env_universes
 let named_context env = env.env_named_context
 let rel_context env = env.env_rel_context
@@ -128,19 +142,64 @@ let lookup_constant kn env =
   KNmap.find kn env.env_globals.env_constants
 
 let add_constant kn cb env =
-  let new_constants = KNmap.add kn cb env.env_globals.env_constants in
-  let new_globals = 
-    { env.env_globals with 
-	env_constants = new_constants } in 
+  let globals = env.env_globals in
+  let new_constants = KNmap.add kn cb globals.env_constants in
+  let new_cime = Cime.add_symbol new_constants globals.env_cime in
+  let new_globals =
+    { globals with 
+	env_constants = new_constants; env_cime = new_cime } in 
   { env with env_globals = new_globals }
 
-let add_rule kn (l,r as rule) env =
-  let knrules = 
-    try KNmap.find kn env.env_globals.env_rules 
-    with Not_found -> [] in
-  let new_rules = KNmap.add kn (rule::knrules) env.env_globals.env_rules in
-  let new_globals = { env.env_globals with env_rules = new_rules } in 
-  { env with env_globals = new_globals }
+(* Rewrite rules *)
+let lookup_rules kn env =
+  try KNmap.find kn env.env_globals.env_rules
+  with Not_found -> []
+
+let fold_rules fold_fun init env =
+  let f _ rbs v = List.fold_left fold_fun v rbs in
+  KNmap.fold f env.env_globals.env_rules init
+
+let rules env = env.env_globals.env_all_rules
+let cime env = env.env_globals.env_cime
+let prec env = env.env_globals.env_prec
+
+let head_symbol c =
+  match kind_of_term c with
+    | App (f,_) ->
+        begin
+	  match kind_of_term f with
+	    | Const kn -> kn
+	    | _ -> error "Ill-formed rule"
+        end
+    | Const kn -> kn
+    | _ -> error "Ill-formed rule"
+
+let add_rules rb env =
+  let update env rule =
+    let kn = head_symbol (fst rule) in
+      try
+	let rbs = KNmap.find kn env in
+	let env' = KNmap.remove kn env in
+	let newrbs = match rbs with
+	  | b::rbs' ->
+	      if b.rules_ctx == rb.rules_ctx then
+		{ rb with rules_list = rule::b.rules_list } :: rbs'
+	      else { rb with rules_list = [rule] } :: rbs
+	  | _ -> anomaly "Environ.add_rules/update"
+	in KNmap.add kn newrbs env'
+      with
+	| Not_found ->
+	    let newrbs = [{ rb with rules_list = [rule] }] in
+	      KNmap.add kn newrbs env
+  in
+  let globals = env.env_globals in
+  let new_env_rules = List.fold_left update globals.env_rules rb.rules_list in
+  let new_env_cime = Cime.add_rules rb globals.env_cime in
+  let new_globals = { globals with
+			env_rules = new_env_rules;
+			env_all_rules = rb.rules_list @ globals.env_all_rules;
+			env_cime = new_env_cime } in
+    { env with env_globals = new_globals }
 
 (* constant_type gives the type of a constant *)
 let constant_type env kn =
@@ -172,10 +231,12 @@ let lookup_mind kn env =
   KNmap.find kn env.env_globals.env_inductives
 
 let add_mind kn mib env =
-  let new_inds = KNmap.add kn mib env.env_globals.env_inductives in
+  let globals = env.env_globals in
+  let new_inds = KNmap.add kn mib globals.env_inductives in
+  let new_cime = Cime.add_inductive new_inds globals.env_cime in
   let new_globals = 
-    { env.env_globals with 
-	env_inductives = new_inds } in
+    { globals with 
+	env_inductives = new_inds; env_cime = new_cime } in
   { env with env_globals = new_globals }
 
 (* Universe constraints *)

@@ -14,6 +14,7 @@ open Names
 open Term
 open Environ
 open Esubst
+open Declarations
 (*i*)
 
 (* Flags for profiling reductions. *)
@@ -90,6 +91,8 @@ type table_key =
   | FarRelKey of int
    (* FarRel: index in the [rel_context] part of {\em initial} environment *)
 
+val prtk : table_key -> unit
+
 type 'a infos
 val ref_value_cache: 'a infos -> table_key -> 'a option
 val info_flags: 'a infos -> reds
@@ -128,6 +131,8 @@ val stack_nth : 'a stack -> int -> 'a
 
 type fconstr
 
+val set_red : fconstr -> unit
+
 (* [fconstr] can be accessed by using the function [fterm_of] and by
    matching on type [fterm] *)
 
@@ -152,23 +157,38 @@ type fterm =
   | FCLOS of constr * fconstr subs
   | FLOCKED
 
+(* Global and local constant cache *)
+type clos_infos
+val create_clos_infos : reds -> env -> clos_infos
+val is_rule_defined : clos_infos -> table_key -> fconstr stack -> bool
+val is_free : clos_infos -> table_key -> bool
+val env : clos_infos -> env
+val cime_env : clos_infos -> Cime.env
+
+(* Printing for debug *)
+val prft : imap -> fterm -> unit
+val prfc : imap -> fconstr -> unit
+val prst : imap -> fconstr stack -> unit
+val prfcst : imap -> fconstr * fconstr stack -> unit
+val enter_fcst : string -> clos_infos -> fconstr -> fconstr stack -> unit
+val leave_fc : clos_infos -> fconstr -> fconstr
+val leave_fcst : clos_infos -> fconstr * fconstr stack
+  -> fconstr * fconstr stack
 
 (* To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
    a reduction function *)
 
+val fapp_stack : clos_infos -> fconstr * fconstr stack -> fconstr
 val inject : constr -> fconstr
 val fterm_of : fconstr -> fterm
+val term_of_fconstr_lift : lift -> fconstr -> constr
 val term_of_fconstr : fconstr -> constr
-
-(* Global and local constant cache *)
-type clos_infos
-val create_clos_infos : reds -> env -> clos_infos
 
 (* Reduction function *)
 
 (* [norm_val] is for strong normalization *)
-val norm_val : clos_infos -> fconstr -> constr
+val norm_val : clos_infos -> int -> fconstr -> constr
 
 (* [whd_val] is for weak head normalization *)
 val whd_val : clos_infos -> fconstr -> constr
@@ -176,7 +196,7 @@ val whd_val : clos_infos -> fconstr -> constr
 (* [whd_stack] performs weak head normalization in a given stack. It
    stops whenever a reduction is blocked. *)
 val whd_stack :
-  clos_infos -> fconstr -> fconstr stack -> fconstr * fconstr stack
+  clos_infos -> int -> fconstr -> fconstr stack -> fconstr * fconstr stack
 
 (* Conversion auxiliary functions to do step by step normalisation *)
 
@@ -198,9 +218,11 @@ val mk_clos_deep :
   (fconstr subs -> constr -> fconstr) ->
    fconstr subs -> constr -> fconstr
 
+(*
 val kni: clos_infos -> fconstr -> fconstr stack -> fconstr * fconstr stack
 val knr: clos_infos -> fconstr -> fconstr stack -> fconstr * fconstr stack
 val kl : clos_infos -> fconstr -> fconstr
+*)
 
 val to_constr : (lift -> fconstr -> constr) -> lift -> fconstr -> constr
 

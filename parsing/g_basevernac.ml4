@@ -17,6 +17,7 @@ open Vernac_
 open Goptions
 open Constr
 open Prim
+open Print
 
 GEXTEND Gram
   GLOBAL: class_rawexpr;
@@ -38,6 +39,8 @@ GEXTEND Gram
   ;
   command:
     [ [ IDENT "Comments"; l = LIST0 comment -> VernacComments l
+      | IDENT "Trace" -> trace(); VernacComments []
+      | IDENT "Untrace" -> untrace(); VernacComments []
 
       (* System directory *)
       | IDENT "Pwd" -> VernacChdir None
@@ -174,7 +177,8 @@ GEXTEND Gram
       | IDENT "Hint"; qid = global -> PrintHint qid
       | IDENT "Hint"; "*" -> PrintHintDb
       | IDENT "HintDb"; s = IDENT -> PrintHintDbName s
-      | IDENT "Scope"; s = IDENT -> PrintScope s ] ]
+      | IDENT "Scope"; s = IDENT -> PrintScope s
+      | IDENT "Rules"; l = LIST0 global -> PrintRules l ] ]
   ;
   locatable:
     [ [ qid = global -> LocateTerm qid

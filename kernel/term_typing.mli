@@ -32,3 +32,5 @@ val translate_mind :
 
 val translate_recipe : 
   env -> Cooking.recipe -> constant_body
+
+val translate_rules : env -> rules_entry -> rules_body

@@ -561,6 +561,10 @@ let hnf_constr env sigma c =
   in 
   redrec (c, empty_stack)
 
+(* Simpl_rew reduction tactic *)
+
+let rew_nf env sigma = Cime.nf (cime env)
+
 (* Simpl reduction tactic: same as simplify, but also reduces
    elimination constants *)
 
@@ -742,7 +746,7 @@ let unfoldoccs env sigma (occl,name) c =
     | []  -> unfold env sigma name c
     | l -> 
         match substlin env name 1 (Sort.list (<) l) c with
-          | (_,[],uc) -> nf_betaiota uc
+          | (_,[],uc) -> nf_betaiota_rew env uc
           | (1,_,_) -> error ((string_of_evaluable_ref name)^" does not occur")
           | _ -> error ("bad occurrence numbers of "
 			^(string_of_evaluable_ref name))
@@ -834,6 +838,7 @@ let reduction_of_redexp = function
   | Hnf -> hnf_constr
   | Simpl (Some lp) -> contextually lp nf
   | Simpl None -> nf
+  | Simpl_rew -> rew_nf
   | Cbv f -> cbv_norm_flags (make_flag f)
   | Lazy f -> clos_norm_flags (make_flag f)
   | Unfold ubinds -> unfoldn ubinds
@@ -895,7 +900,7 @@ let reduce_to_ind_gen allow_product env sigma t =
 	       (str"Not an inductive definition")
       | _ ->
           (try 
-	     let t' = nf_betaiota (one_step_reduce env sigma t) in 
+	     let t' = nf_betaiota_rew env (one_step_reduce env sigma t) in 
 	     elimrec env t' l
            with NotStepReducible ->
 	     errorlabstrm "tactics__reduce_to_mind"
