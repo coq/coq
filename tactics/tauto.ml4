@@ -96,7 +96,8 @@ let rec tauto_main t_reduce ist =
   <:tactic<
     $t_simplif;$t_axioms
     Orelse
-      (Match Context With
+      ($t_reduce;
+      Match Context With
       | [id:(?1-> ?2)-> ?3|- ?] ->
         Cut ?2-> ?3;[Intro;Cut ?1-> ?2;[Intro;Cut ?3;[Intro;Clear id|
           Intros;Apply id;Assumption]|Clear id]|Intros;Apply id;Try Intro;
@@ -112,7 +113,7 @@ let rec intuition_main t_reduce ist =
   and t_intuition_main = tacticIn (intuition_main t_reduce) in
   <:tactic<
     $t_simplif;$t_axioms
-    Orelse Try (Solve [Auto with *|Intro;$t_intuition_main])>>
+    Orelse ($t_reduce; Try (Solve [Auto with *|Intro;$t_intuition_main]))>>
 
 let unfold_not_iff = function
   | None -> interp <:tactic<Unfold not iff>>
