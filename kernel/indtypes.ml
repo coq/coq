@@ -132,9 +132,16 @@ let is_logic_constr infos = List.for_all (fun (logic,small) -> logic) infos
 let is_logic_arity infos =
   List.for_all (fun (logic,small) -> logic || small) infos
 
-let is_unit arinfos constrsinfos =
+(* An inductive definition is a "unit" if it has only one constructor
+   and that all arguments expected by this constructor are 
+   logical, this is the case for equality, conjonction of logical properties 
+*)
+let is_unit constrsinfos =
   match constrsinfos with  (* One info = One constructor *)
-   | [constrinfos] -> is_logic_constr constrinfos && is_logic_arity arinfos
+   | [constrinfos] -> is_logic_constr constrinfos 
+  (* CP : relax this constraint which was related 
+          to extraction 
+          && is_logic_arity arinfos *)
    | _ -> false
 
 let rec infos_and_sort env t =
@@ -148,10 +155,9 @@ let rec infos_and_sort env t =
     | Cast (c,_) -> infos_and_sort env c
     | _ -> []
 
-let small_unit constrsinfos (env_ar_par,short_arity) =
-  let issmall = List.for_all is_small constrsinfos in
-  let arinfos = infos_and_sort env_ar_par short_arity in
-  let isunit = is_unit arinfos constrsinfos in
+let small_unit constrsinfos =
+  let issmall = List.for_all is_small constrsinfos 
+  and isunit = is_unit constrsinfos in
   issmall, isunit
 
 (* This (re)computes informations relevant to extraction and the sort of an
@@ -178,7 +184,7 @@ let type_one_constructor env_ar_par params arsort c =
 
   (infos, full_cstr_type, cst2)
 
-let infer_constructor_packet env_ar params short_arity arsort vc =
+let infer_constructor_packet env_ar params arsort vc =
   let env_ar_par = push_rel_context params env_ar in
   let (constrsinfos,jlc,cst) = 
     List.fold_right
@@ -189,7 +195,7 @@ let infer_constructor_packet env_ar params short_arity arsort vc =
       vc
       ([],[],Constraint.empty) in
   let vc' = Array.of_list jlc in
-  let issmall,isunit = small_unit constrsinfos (env_ar_par,short_arity) in
+  let issmall,isunit = small_unit constrsinfos in
   (issmall,isunit,vc', cst)
 
 (* Type-check an inductive definition. Does not check positivity
@@ -235,7 +241,7 @@ let type_inductive env mie =
 	 let (_,arsort) = dest_arity env full_arity in
 	 let lc = ind.mind_entry_lc in
 	 let (issmall,isunit,lc',cst') =
-	   infer_constructor_packet env_arities params short_arity arsort lc
+	   infer_constructor_packet env_arities params arsort lc
 	 in
 	 let nparams = ind.mind_entry_nparams in
 	 let consnames = ind.mind_entry_consnames in
@@ -249,15 +255,21 @@ let type_inductive env mie =
 
 (***********************************************************************)
 (***********************************************************************)
+let all_sorts = [InProp;InSet;InType]
+let impredicative_sorts = [InProp;InSet]
+let logical_sorts = [InProp]
 
 let allowed_sorts issmall isunit = function
-  | Type _ -> 
-      [InProp;InSet;InType]
+  | Type _ -> all_sorts
   | Prop Pos -> 
-      if issmall then [InProp;InSet;InType]
-      else [InProp;InSet]
+      if issmall then all_sorts
+      else impredicative_sorts
   | Prop Null -> 
-      if isunit then [InProp;InSet] else [InProp]
+(* Added InType which is derivable :when the type is unit and small *)
+      if isunit then 
+	if issmall then all_sorts
+	else impredicative_sorts
+      else logical_sorts
 
 type ill_formed_ind =
   | LocalNonPos of int

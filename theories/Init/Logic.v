@@ -165,6 +165,7 @@ Section Logic_lemmas.
 
   End equality.
 
+(* Is now a primitive principle 
   Theorem eq_rect: (A:Set)(x:A)(P:A->Type)(P x)->(y:A)(eq ? x y)->(P y).
   Proof.
    Intros.
@@ -172,6 +173,7 @@ Section Logic_lemmas.
    NewDestruct 1; Auto.
    Elim H; Auto.
   Qed.
+*)
 
   Definition eq_ind_r : (A:Set)(x:A)(P:A->Prop)(P x)->(y:A)(eq ? y x)->(P y).
    Intros A x P H y H0; Case sym_eq with 1:= H0; Trivial.
