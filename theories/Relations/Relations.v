@@ -15,7 +15,7 @@ Require Export Operators_Properties.
 Lemma inverse_image_of_equivalence : (A,B:Set)(f:A->B)
   (r:(relation B))(equivalence B r)->(equivalence A [x,y:A](r (f x) (f y))).
 Intros; Split; Elim H; Red; Auto.
-Intros; Apply equiv_trans with (f y); Assumption.
+Intros _ equiv_trans _ x y z H0 H1; Apply equiv_trans with (f y); Assumption.
 Qed.
 
 Lemma inverse_image_of_eq : (A,B:Set)(f:A->B)

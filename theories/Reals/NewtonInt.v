@@ -25,7 +25,7 @@ Definition NewtonInt [f:R->R;a,b:R;pr:(Newton_integrable f a b)] : R := let g = 
 
 (* If f is differentiable, then f' is Newton integrable (Tautology ?) *)
 Lemma FTCN_step1 : (f:Differential;a,b:R) (Newton_integrable [x:R](derive_pt f x (cond_diff f x)) a b).
-Intros; Unfold Newton_integrable; Apply existTT with (d1 f); Unfold antiderivative; Intros; Case (total_order_Rle a b); Intro; [Left; Split; [Intros; Exists (cond_diff f x); Reflexivity | Assumption] | Right; Split; [Intros; Exists (cond_diff f x); Reflexivity | Auto with real]].
+Intros f a b; Unfold Newton_integrable; Apply existTT with (d1 f); Unfold antiderivative; Intros; Case (total_order_Rle a b); Intro; [Left; Split; [Intros; Exists (cond_diff f x); Reflexivity | Assumption] | Right; Split; [Intros; Exists (cond_diff f x); Reflexivity | Auto with real]].
 Defined.
 
 (* By definition, we have the Fondamental Theorem of Calculus *)
@@ -35,7 +35,7 @@ Qed.
 
 (* $\int_a^a f$ exists forall a:R and f:R->R *)
 Lemma NewtonInt_P1 : (f:R->R;a:R) (Newton_integrable f a a).
-Intros; Unfold Newton_integrable; Apply existTT with (mult_fct (fct_cte (f a)) id); Left; Unfold antiderivative; Split.
+Intros f a; Unfold Newton_integrable; Apply existTT with (mult_fct (fct_cte (f a)) id); Left; Unfold antiderivative; Split.
 Intros; Assert H1 : (derivable_pt (mult_fct (fct_cte (f a)) id) x).
 Apply derivable_pt_mult.
 Apply derivable_pt_const.
@@ -159,7 +159,7 @@ Qed.
 
 (* $\int_a^b \lambda f + g = \lambda \int_a^b f + \int_a^b f *)
 Lemma NewtonInt_P6 : (f,g:R->R;l,a,b:R;pr1:(Newton_integrable f a b);pr2:(Newton_integrable g a b)) (NewtonInt [x:R]``l*(f x)+(g x)`` a b (NewtonInt_P5 f g l a b pr1 pr2))==``l*(NewtonInt f a b pr1)+(NewtonInt g a b pr2)``.
-Intros; Unfold NewtonInt; Case (NewtonInt_P5 f g l a b pr1 pr2); Intros; Case pr1; Intros; Case pr2; Intros; Case (total_order_T a b); Intro.
+Intros f g l a b pr1 pr2; Unfold NewtonInt; Case (NewtonInt_P5 f g l a b pr1 pr2); Intros; Case pr1; Intros; Case pr2; Intros; Case (total_order_T a b); Intro.
 Elim s; Intro.
 Elim o; Intro.
 Elim o0; Intro.

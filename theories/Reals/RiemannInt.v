@@ -89,11 +89,11 @@ Elim n2; Assumption.
 Qed.
 
 Lemma RiemannInt_exists : (f:R->R;a,b:R;pr:(Riemann_integrable f a b);un:nat->posreal) (Un_cv un R0) -> (sigTT ? [l:R](Un_cv [N:nat](RiemannInt_SF (phi_sequence un pr N)) l)).
-Intros; Apply RiemannInt_P3 with f un [n:nat](projT1 ? ? (phi_sequence_prop un pr n)); [Apply H | Intro; Apply (projT2 ? ? (phi_sequence_prop un pr n))].
+Intros f; Intros; Apply RiemannInt_P3 with f un [n:nat](projT1 ? ? (phi_sequence_prop un pr n)); [Apply H | Intro; Apply (projT2 ? ? (phi_sequence_prop un pr n))].
 Qed.
 
 Lemma RiemannInt_P4 : (f:R->R;a,b,l:R;pr1,pr2:(Riemann_integrable f a b);un,vn:nat->posreal) (Un_cv un R0) -> (Un_cv vn R0) -> (Un_cv [N:nat](RiemannInt_SF (phi_sequence un pr1 N)) l) -> (Un_cv [N:nat](RiemannInt_SF (phi_sequence vn pr2 N)) l).
-Unfold Un_cv; Unfold R_dist; Intros; Assert H3 : ``0<eps/3``.
+Unfold Un_cv; Unfold R_dist; Intros f; Intros; Assert H3 : ``0<eps/3``.
 Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup0].
 Elim (H ? H3); Clear H; Intros N0 H; Elim (H0 ? H3); Clear H0; Intros N1 H0; Elim (H1 ? H3); Clear H1; Intros N2 H1; Pose N := (max (max N0 N1) N2); Exists N; Intros; Apply Rle_lt_trans with ``(Rabsolu ((RiemannInt_SF [(phi_sequence vn pr2 n)])-(RiemannInt_SF [(phi_sequence un pr1 n)])))+(Rabsolu ((RiemannInt_SF [(phi_sequence un pr1 n)])-l))``.
 Replace ``(RiemannInt_SF [(phi_sequence vn pr2 n)])-l`` with ``((RiemannInt_SF [(phi_sequence vn pr2 n)])-(RiemannInt_SF [(phi_sequence un pr1 n)]))+((RiemannInt_SF [(phi_sequence un pr1 n)])-l)``; [Apply Rabsolu_triang | Ring].
@@ -223,7 +223,7 @@ Definition max_N [a,b:R;del:posreal;h:``a<b``] : nat := Cases (maxN del h) of (e
 Definition SubEqui [a,b:R;del:posreal;h:``a<b``] :Rlist := (SubEquiN (S (max_N del h)) a b del).
 
 Lemma Heine_cor1 : (f:R->R;a,b:R) ``a<b`` -> ((x:R)``a<=x<=b``->(continuity_pt f x)) -> (eps:posreal) (sigTT ? [delta:posreal]``delta<=b-a``/\(x,y:R)``a<=x<=b``->``a<=y<=b``->``(Rabsolu (x-y)) < delta``->``(Rabsolu ((f x)-(f y))) < eps``).
-Intros; Pose E := [l:R]``0<l<=b-a``/\(x,y:R)``a <= x <= b``->``a <= y <= b``->``(Rabsolu (x-y)) < l``->``(Rabsolu ((f x)-(f y))) < eps``; Assert H1 : (bound E).
+Intro f; Intros; Pose E := [l:R]``0<l<=b-a``/\(x,y:R)``a <= x <= b``->``a <= y <= b``->``(Rabsolu (x-y)) < l``->``(Rabsolu ((f x)-(f y))) < eps``; Assert H1 : (bound E).
 Unfold bound; Exists ``b-a``; Unfold is_upper_bound; Intros; Unfold E in H1; Elim H1; Clear H1; Intros H1 _; Elim H1; Intros; Assumption.
 Assert H2 : (EXT x:R | (E x)).
 Assert H2 := (Heine f [x:R]``a<=x<=b`` (compact_P3 a b) H0 eps); Elim H2; Intros; Exists (Rmin x ``b-a``); Unfold E; Split; [Split; [Unfold Rmin; Case (total_order_Rle x ``b-a``); Intro; [Apply (cond_pos x) | Apply Rlt_Rminus; Assumption] | Apply Rmin_r] | Intros; Apply H3; Try Assumption; Apply Rlt_le_trans with (Rmin x ``b-a``); [Assumption | Apply Rmin_l]].
@@ -245,7 +245,7 @@ Apply H5; Intros; Unfold E in H6; Elim H6; Clear H6; Intros H6 _; Elim H6; Intro
 Qed.
 
 Lemma Heine_cor2 : (f:(R->R); a,b:R) ((x:R)``a <= x <= b``->(continuity_pt f x))->(eps:posreal)(sigTT posreal [delta:posreal]((x,y:R)``a <= x <= b``->``a <= y <= b``->``(Rabsolu (x-y)) < delta``->``(Rabsolu ((f x)-(f y))) < eps``)).
-Intros; Case (total_order_T a b); Intro.
+Intro f; Intros; Case (total_order_T a b); Intro.
 Elim s; Intro.
 Assert H0 := (Heine_cor1 a0 H eps); Elim H0; Intros; Apply existTT with x; Elim p; Intros; Apply H2; Assumption.
 Apply existTT with (mkposreal ? Rlt_R0_R1); Intros; Assert H3 : x==y; [Elim H0; Elim H1; Intros; Rewrite b0 in H3; Rewrite b0 in H5; Apply Rle_antisym; Apply Rle_trans with b; Assumption | Rewrite H3; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Apply (cond_pos eps)].
@@ -384,7 +384,7 @@ Apply le_lt_n_Sm; Assumption.
 Qed.
 
 Lemma RiemannInt_P7 : (f:R->R;a:R) (Riemann_integrable f a a).
-Unfold Riemann_integrable; Intros; Split with (mkStepFun (StepFun_P4 a a (f a))); Split with (mkStepFun (StepFun_P4 a a R0)); Split.
+Unfold Riemann_integrable; Intro f; Intros; Split with (mkStepFun (StepFun_P4 a a (f a))); Split with (mkStepFun (StepFun_P4 a a R0)); Split.
 Intros; Simpl; Unfold fct_cte; Replace t with a.
 Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Right; Reflexivity.
 Generalize H; Unfold Rmin Rmax; Case (total_order_Rle a a); Intros; Elim H0; Intros; Apply Rle_antisym; Assumption.
@@ -396,7 +396,7 @@ Intros; Case (total_order_T a b); Intro; [Elim s; Intro; [Apply RiemannInt_P6; A
 Qed.
 
 Lemma RiemannInt_P8 : (f:R->R;a,b:R;pr1:(Riemann_integrable f a b);pr2:(Riemann_integrable f b a)) ``(RiemannInt pr1)==-(RiemannInt pr2)``.
-Intros; EApply UL_sequence.
+Intro f; Intros; EApply UL_sequence.
 Unfold RiemannInt; Case (RiemannInt_exists pr1 5!RinvN RinvN_cv); Intros; Apply u.
 Unfold RiemannInt; Case (RiemannInt_exists pr2 5!RinvN RinvN_cv); Intros; Cut (EXT psi1:nat->(StepFun a b) | (n:nat) ((t:R)``(Rmin a b) <= t``/\``t <= (Rmax a b)``->``(Rabsolu ((f t)-([(phi_sequence RinvN pr1 n)] t)))<= (psi1 n t)``)/\``(Rabsolu (RiemannInt_SF (psi1 n))) < (RinvN n)``).
 Cut (EXT psi2:nat->(StepFun b a) | (n:nat) ((t:R)``(Rmin a b) <= t``/\``t <= (Rmax a b)``->``(Rabsolu ((f t)-([(phi_sequence RinvN pr2 n)] t)))<= (psi2 n t)``)/\``(Rabsolu (RiemannInt_SF (psi2 n))) < (RinvN n)``).
@@ -463,7 +463,7 @@ Qed.
 
 (* L1([a,b]) is a vectorial space *)
 Lemma RiemannInt_P10 : (f,g:R->R;a,b,l:R) (Riemann_integrable f a b) -> (Riemann_integrable g a b) -> (Riemann_integrable [x:R]``(f x)+l*(g x)`` a b).
-Unfold Riemann_integrable; Intros; Case (Req_EM_T l R0); Intro.
+Unfold Riemann_integrable; Intros f g; Intros; Case (Req_EM_T l R0); Intro.
 Elim (X eps); Intros; Split with x; Elim p; Intros; Split with x0; Elim p0; Intros; Split; Try Assumption; Rewrite e; Intros; Rewrite Rmult_Ol; Rewrite Rplus_Or; Apply H; Assumption.
 Assert H : ``0<eps/2``.
 Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos eps) | Apply Rlt_Rinv; Sup0].
@@ -483,7 +483,7 @@ Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym; [Rewrite Rmult_1l; Replace ``/(Ra
 Qed.
 
 Lemma RiemannInt_P11 : (f:R->R;a,b,l:R;un:nat->posreal;phi1,phi2,psi1,psi2:nat->(StepFun a b)) (Un_cv un R0) -> ((n:nat)((t:R)``(Rmin a b)<=t<=(Rmax a b)``->``(Rabsolu ((f t)-(phi1 n t)))<=(psi1 n t)``)/\``(Rabsolu (RiemannInt_SF (psi1 n)))<(un n)``) -> ((n:nat)((t:R)``(Rmin a b)<=t<=(Rmax a b)``->``(Rabsolu ((f t)-(phi2 n t)))<=(psi2 n t)``)/\``(Rabsolu (RiemannInt_SF (psi2 n)))<(un n)``) -> (Un_cv [N:nat](RiemannInt_SF (phi1 N)) l) -> (Un_cv [N:nat](RiemannInt_SF (phi2 N)) l).
-Unfold Un_cv; Intros.
+Unfold Un_cv; Intro f; Intros; Intros.
 Case (total_order_Rle a b); Intro Hyp.
 Assert H4 : ``0<eps/3``.
 Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup0].
@@ -595,7 +595,7 @@ Apply r_Rmult_mult with ``3``; [Unfold Rdiv; Rewrite Rmult_Rplus_distr; Do 2 Rew
 Qed.
 
 Lemma RiemannInt_P12 : (f,g:R->R;a,b,l:R;pr1:(Riemann_integrable f a b);pr2:(Riemann_integrable g a b);pr3:(Riemann_integrable [x:R]``(f x)+l*(g x)`` a b)) ``a<=b`` -> ``(RiemannInt pr3)==(RiemannInt pr1)+l*(RiemannInt pr2)``.
-Intros; Case (Req_EM l R0); Intro.
+Intro f; Intros; Case (Req_EM l R0); Intro.
 Pattern 2 l; Rewrite H0; Rewrite Rmult_Ol; Rewrite Rplus_Or; Unfold RiemannInt; Case (RiemannInt_exists pr3 5!RinvN RinvN_cv); Case (RiemannInt_exists pr1 5!RinvN RinvN_cv); Intros; EApply UL_sequence; [Apply u0 | Pose psi1 := [n:nat](projT1 ? ? (phi_sequence_prop RinvN pr1 n)); Pose psi2 := [n:nat](projT1 ? ? (phi_sequence_prop RinvN pr3 n)); Apply RiemannInt_P11 with f RinvN (phi_sequence RinvN pr1) psi1 psi2; [Apply RinvN_cv | Intro; Apply (projT2 ? ? (phi_sequence_prop RinvN pr1 n)) | Intro; Assert H1 : ((t:R) ``(Rmin a b) <= t``/\``t <= (Rmax a b)`` -> (Rle (Rabsolu (Rminus ``(f t)+l*(g t)`` (phi_sequence RinvN pr3 n t))) (psi2 n t))) /\ ``(Rabsolu (RiemannInt_SF (psi2 n))) < (RinvN n)``; [Apply (projT2 ? ? (phi_sequence_prop RinvN pr3 n)) | Elim H1; Intros; Split; Try Assumption; Intros; Replace (f t) with ``(f t)+l*(g t)``; [Apply H2; Assumption | Rewrite H0; Ring]] | Assumption]].
 EApply UL_sequence.
 Unfold RiemannInt; Case (RiemannInt_exists pr3 5!RinvN RinvN_cv); Intros; Apply u.
@@ -684,7 +684,7 @@ Unfold Un_cv; Intros; Split with O; Intros; Unfold R_dist; Unfold phi2; Rewrite 
 Qed.
 
 Lemma RiemannInt_P16 : (f:R->R;a,b:R) (Riemann_integrable f a b) -> (Riemann_integrable [x:R](Rabsolu (f x)) a b).
-Unfold Riemann_integrable; Intros; Elim (X eps); Clear X; Intros phi [psi [H H0]]; Split with (mkStepFun (StepFun_P32 phi)); Split with psi; Split; Try Assumption; Intros; Simpl; Apply Rle_trans with ``(Rabsolu ((f t)-(phi t)))``; [Apply Rabsolu_triang_inv2 | Apply H; Assumption].
+Unfold Riemann_integrable; Intro f; Intros; Elim (X eps); Clear X; Intros phi [psi [H H0]]; Split with (mkStepFun (StepFun_P32 phi)); Split with psi; Split; Try Assumption; Intros; Simpl; Apply Rle_trans with ``(Rabsolu ((f t)-(phi t)))``; [Apply Rabsolu_triang_inv2 | Apply H; Assumption].
 Qed.
 
 Lemma Rle_cv_lim : (Un,Vn:nat->R;l1,l2:R) ((n:nat)``(Un n)<=(Vn n)``) -> (Un_cv Un l1) -> (Un_cv Vn l2) -> ``l1<=l2``.
@@ -710,7 +710,7 @@ Apply r_Rmult_mult with ``2``; [Unfold Rdiv; Do 2 Rewrite -> (Rmult_sym ``2``); 
 Qed.
 
 Lemma RiemannInt_P17 : (f:R->R;a,b:R;pr1:(Riemann_integrable f a b);pr2:(Riemann_integrable [x:R](Rabsolu (f x)) a b)) ``a<=b`` -> ``(Rabsolu (RiemannInt pr1))<=(RiemannInt pr2)``.
-Intros; Unfold RiemannInt; Case (RiemannInt_exists 1!f 2!a 3!b pr1 5!RinvN RinvN_cv); Case (RiemannInt_exists 1!([x0:R](Rabsolu (f x0))) 2!a 3!b pr2 5!RinvN RinvN_cv); Intros; Pose phi1 := (phi_sequence RinvN pr1); Pose phi2 := [N:nat](mkStepFun (StepFun_P32 (phi1 N))); Apply Rle_cv_lim with [N:nat](Rabsolu (RiemannInt_SF (phi1 N))) [N:nat](RiemannInt_SF (phi2 N)).
+Intro f; Intros; Unfold RiemannInt; Case (RiemannInt_exists 1!f 2!a 3!b pr1 5!RinvN RinvN_cv); Case (RiemannInt_exists 1!([x0:R](Rabsolu (f x0))) 2!a 3!b pr2 5!RinvN RinvN_cv); Intros; Pose phi1 := (phi_sequence RinvN pr1); Pose phi2 := [N:nat](mkStepFun (StepFun_P32 (phi1 N))); Apply Rle_cv_lim with [N:nat](Rabsolu (RiemannInt_SF (phi1 N))) [N:nat](RiemannInt_SF (phi2 N)).
 Intro; Unfold phi2; Apply StepFun_P34; Assumption.
 Fold phi1 in u0; Apply (continuity_seq Rabsolu [N:nat](RiemannInt_SF (phi1 N)) x0); Try Assumption.
 Apply continuity_Rabsolu.
@@ -727,7 +727,7 @@ Elim H0; Clear H0; Intros psi3 H0; Elim H1; Clear H1; Intros psi2 H1; Apply Riem
 Qed.
 
 Lemma RiemannInt_P18 : (f,g:R->R;a,b:R;pr1:(Riemann_integrable f a b);pr2:(Riemann_integrable g a b)) ``a<=b`` -> ((x:R)``a<x<b``->``(f x)==(g x)``) -> ``(RiemannInt pr1)==(RiemannInt pr2)``.
-Intros; Unfold RiemannInt; Case (RiemannInt_exists 1!f 2!a 3!b pr1 5!RinvN RinvN_cv); Case (RiemannInt_exists 1!g 2!a 3!b pr2 5!RinvN RinvN_cv); Intros; EApply UL_sequence.
+Intro f; Intros; Unfold RiemannInt; Case (RiemannInt_exists 1!f 2!a 3!b pr1 5!RinvN RinvN_cv); Case (RiemannInt_exists 1!g 2!a 3!b pr2 5!RinvN RinvN_cv); Intros; EApply UL_sequence.
 Apply u0.
 Pose phi1 := [N:nat](phi_sequence RinvN 2!f 3!a 4!b pr1 N); Change (Un_cv [N:nat](RiemannInt_SF (phi1 N)) x); Assert H1 : (EXT psi1:nat->(StepFun a b) | (n:nat) ((t:R)``(Rmin a b) <= t``/\``t <= (Rmax a b)``->``(Rabsolu ((f t)-((phi1 n) t)))<= (psi1 n t)``)/\``(Rabsolu (RiemannInt_SF (psi1 n))) < (RinvN n)``).
 Split with [n:nat](projT1 ? ? (phi_sequence_prop RinvN pr1 n)); Intro; Apply (projT2 ? ? (phi_sequence_prop RinvN pr1 n)). 
@@ -803,7 +803,7 @@ Reflexivity.
 Qed.
 
 Lemma RiemannInt_P19 : (f,g:R->R;a,b:R;pr1:(Riemann_integrable f a b);pr2:(Riemann_integrable g a b)) ``a<=b`` -> ((x:R)``a<x<b``->``(f x)<=(g x)``) -> ``(RiemannInt pr1)<=(RiemannInt pr2)``.
-Intros; Apply Rle_anti_compatibility with ``-(RiemannInt pr1)``; Rewrite Rplus_Ropp_l; Rewrite Rplus_sym; Apply Rle_trans with (Rabsolu (RiemannInt (RiemannInt_P10 ``-1`` pr2 pr1))).
+Intro f; Intros; Apply Rle_anti_compatibility with ``-(RiemannInt pr1)``; Rewrite Rplus_Ropp_l; Rewrite Rplus_sym; Apply Rle_trans with (Rabsolu (RiemannInt (RiemannInt_P10 ``-1`` pr2 pr1))).
 Apply Rabsolu_pos.
 Replace ``(RiemannInt pr2)+ -(RiemannInt pr1)`` with (RiemannInt (RiemannInt_P16 (RiemannInt_P10 ``-1`` pr2 pr1))).
 Apply (RiemannInt_P17 (RiemannInt_P10 ``-1`` pr2 pr1) (RiemannInt_P16 (RiemannInt_P10 ``-1`` pr2 pr1))); Assumption.
@@ -1262,7 +1262,7 @@ Rewrite (RiemannInt_P8 pr1 (RiemannInt_P1 pr1)); Rewrite (RiemannInt_P8 pr2 (Rie
 Qed.
 
 Lemma RiemannInt_P27 : (f:R->R;a,b,x:R;h:``a<=b``;C0:((x:R)``a<=x<=b``->(continuity_pt f x))) ``a<x<b`` -> (derivable_pt_lim (primitive h (FTC_P1 h C0)) x (f x)).
-Intros; Elim H; Clear H; Intros; Assert H1 : (continuity_pt f x).
+Intro f; Intros; Elim H; Clear H; Intros; Assert H1 : (continuity_pt f x).
 Apply C0; Split; Left; Assumption.
 Unfold derivable_pt_lim; Intros; Assert Hyp : ``0<eps/2``.
 Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup0].
@@ -1392,7 +1392,7 @@ Apply Rle_trans with (Rabsolu h0); [Rewrite <- Rabsolu_Ropp; Apply Rle_Rabsolu |
 Qed.
 
 Lemma RiemannInt_P28 : (f:R->R;a,b,x:R;h:``a<=b``;C0:((x:R)``a<=x<=b``->(continuity_pt f x))) ``a<=x<=b`` -> (derivable_pt_lim (primitive h (FTC_P1 h C0)) x (f x)).
-Intros; Elim h; Intro.
+Intro f; Intros; Elim h; Intro.
 Elim H; Clear H; Intros; Elim H; Intro.
 Elim H1; Intro.
 Apply RiemannInt_P27; Split; Assumption.
@@ -1671,7 +1671,7 @@ Elim n0; Rewrite <- H0; Left; Assumption.
 Qed.
 
 Lemma RiemannInt_P29 : (f:R->R;a,b;h:``a<=b``;C0:((x:R)``a<=x<=b``->(continuity_pt f x))) (antiderivative f (primitive h (FTC_P1 h C0)) a b).
-Intros; Unfold antiderivative; Split; Try Assumption; Intros; Assert H0 := (RiemannInt_P28 h C0 H); Assert H1 : (derivable_pt (primitive h (FTC_P1 h C0)) x); [Unfold derivable_pt; Split with (f x); Apply H0 | Split with H1; Symmetry; Apply derive_pt_eq_0; Apply H0].
+Intro f; Intros; Unfold antiderivative; Split; Try Assumption; Intros; Assert H0 := (RiemannInt_P28 h C0 H); Assert H1 : (derivable_pt (primitive h (FTC_P1 h C0)) x); [Unfold derivable_pt; Split with (f x); Apply H0 | Split with H1; Symmetry; Apply derive_pt_eq_0; Apply H0].
 Qed.
 
 Lemma RiemannInt_P30 : (f:R->R;a,b:R) ``a<=b`` -> ((x:R)``a<=x<=b``->(continuity_pt f x)) -> (sigTT ? [g:R->R](antiderivative f g a b)).
@@ -1684,19 +1684,19 @@ diff0 : (derivable c1);
 cont1 : (continuity (derive c1 diff0)) }.
 
 Lemma RiemannInt_P31 : (f:C1_fun;a,b:R) ``a<=b`` -> (antiderivative (derive f (diff0 f)) f a b).
-Intros; Unfold antiderivative; Split; Try Assumption; Intros; Split with (diff0 f x); Reflexivity.
+Intro f; Intros; Unfold antiderivative; Split; Try Assumption; Intros; Split with (diff0 f x); Reflexivity.
 Qed.
 
 Lemma RiemannInt_P32 : (f:C1_fun;a,b:R) (Riemann_integrable (derive f (diff0 f)) a b).
-Intros; Case (total_order_Rle a b); Intro; [Apply continuity_implies_RiemannInt; Try Assumption; Intros; Apply (cont1 f) | Assert H : ``b<=a``; [Auto with real | Apply RiemannInt_P1; Apply continuity_implies_RiemannInt; Try Assumption; Intros; Apply (cont1 f)]].
+Intro f; Intros; Case (total_order_Rle a b); Intro; [Apply continuity_implies_RiemannInt; Try Assumption; Intros; Apply (cont1 f) | Assert H : ``b<=a``; [Auto with real | Apply RiemannInt_P1; Apply continuity_implies_RiemannInt; Try Assumption; Intros; Apply (cont1 f)]].
 Qed.
 
 Lemma RiemannInt_P33 : (f:C1_fun;a,b:R;pr:(Riemann_integrable (derive f (diff0 f)) a b)) ``a<=b`` -> (RiemannInt pr)==``(f b)-(f a)``.
-Intros; Assert H0 : (x:R)``a<=x<=b``->(continuity_pt (derive f (diff0 f)) x).
+Intro f; Intros; Assert H0 : (x:R)``a<=x<=b``->(continuity_pt (derive f (diff0 f)) x).
 Intros; Apply (cont1 f).
 Rewrite (RiemannInt_P20 H (FTC_P1 H H0) pr); Assert H1 := (RiemannInt_P29 H H0); Assert H2 := (RiemannInt_P31 f H); Elim (antiderivative_Ucte (derive f (diff0 f)) ? ? ? ? H1 H2); Intros C H3; Repeat Rewrite H3; [Ring | Split; [Right; Reflexivity | Assumption] | Split; [Assumption | Right; Reflexivity]].
 Qed.
 
 Lemma FTC_Riemann : (f:C1_fun;a,b:R;pr:(Riemann_integrable (derive f (diff0 f)) a b)) (RiemannInt pr)==``(f b)-(f a)``.
-Intros; Case (total_order_Rle a b); Intro; [Apply RiemannInt_P33; Assumption | Assert H : ``b<=a``; [Auto with real | Assert H0 := (RiemannInt_P1 pr); Rewrite (RiemannInt_P8 pr H0); Rewrite (RiemannInt_P33 H0 H); Ring]].
+Intro f; Intros; Case (total_order_Rle a b); Intro; [Apply RiemannInt_P33; Assumption | Assert H : ``b<=a``; [Auto with real | Assert H0 := (RiemannInt_P1 pr); Rewrite (RiemannInt_P8 pr H0); Rewrite (RiemannInt_P33 H0 H); Ring]].
 Qed.

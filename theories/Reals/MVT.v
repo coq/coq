@@ -107,7 +107,7 @@ Qed.
 
 (* Corollaries ... *)
 Lemma MVT_cor1 : (f:(R->R); a,b:R; pr:(derivable f)) ``a < b``->(EXT c:R | ``(f b)-(f a) == (derive_pt f c (pr c))*(b-a)``/\``a < c < b``).
-Intros; Cut (c:R)``a<c<b``->(derivable_pt f c); [Intro | Intros; Apply pr].
+Intros f a b pr H; Cut (c:R)``a<c<b``->(derivable_pt f c); [Intro | Intros; Apply pr].
 Cut (c:R)``a<c<b``->(derivable_pt id c); [Intro | Intros; Apply derivable_pt_id].
 Cut ((c:R)``a<=c<=b``->(continuity_pt f c)); [Intro | Intros; Apply derivable_continuous_pt; Apply pr].
 Cut ((c:R)``a<=c<=b``->(continuity_pt id c)); [Intro | Intros; Apply derivable_continuous_pt; Apply derivable_id].
@@ -120,7 +120,7 @@ Apply x.
 Qed.
 
 Theorem MVT_cor2 : (f,f':R->R;a,b:R) ``a<b`` -> ((c:R)``a<=c<=b``->(derivable_pt_lim f c (f' c))) -> (EXT c:R | ``(f b)-(f a)==(f' c)*(b-a)``/\``a<c<b``).
-Intros; Cut ((c:R)``a<=c<=b``->(derivable_pt f c)).
+Intros f f' a b H H0; Cut ((c:R)``a<=c<=b``->(derivable_pt f c)).
 Intro; Cut ((c:R)``a<c<b``->(derivable_pt f c)).
 Intro; Cut ((c:R)``a<=c<=b``->(continuity_pt f c)).
 Intro; Cut ((c:R)``a<=c<=b``->(derivable_pt id c)).
@@ -142,7 +142,7 @@ Intros; Unfold derivable_pt; Apply Specif.existT with (f' c); Apply H0; Apply H1
 Qed.
 
 Lemma MVT_cor3 : (f,f':(R->R); a,b:R) ``a < b``  -> ((x:R)``a <= x`` ->  ``x <= b``->(derivable_pt_lim f x (f' x))) -> (EXT c:R | ``a<=c``/\``c<=b``/\``(f b)==(f a) + (f' c)*(b-a)``).
-Intros; Assert H1 : (EXT c:R | ``(f b) -(f a) == (f' c)*(b-a)``/\``a<c<b``); [Apply MVT_cor2; [Apply H | Intros; Elim H1; Intros; Apply (H0 ? H2 H3)] | Elim H1; Intros; Exists x; Elim H2; Intros; Elim H4; Intros; Split; [Left; Assumption | Split; [Left; Assumption | Rewrite <- H3; Ring]]].
+Intros f f' a b H H0; Assert H1 : (EXT c:R | ``(f b) -(f a) == (f' c)*(b-a)``/\``a<c<b``); [Apply MVT_cor2; [Apply H | Intros; Elim H1; Intros; Apply (H0 ? H2 H3)] | Elim H1; Intros; Exists x; Elim H2; Intros; Elim H4; Intros; Split; [Left; Assumption | Split; [Left; Assumption | Rewrite <- H3; Ring]]].
 Qed.
 
 Lemma Rolle : (f:R->R;a,b:R;pr:(x:R)``a<x<b``->(derivable_pt f x)) ((x:R)``a<=x<=b``->(continuity_pt f x)) -> ``a<b`` -> (f a)==(f b) -> (EXT c:R | (EXT P: ``a<c<b`` | ``(derive_pt f c (pr c P))==0``)).
@@ -177,7 +177,7 @@ Qed.
  
 (**********)
 Lemma nonpos_derivative_0 : (f:R->R;pr:(derivable f)) (decreasing f) -> ((x:R) ``(derive_pt f x (pr x))<=0``).
-Intros; Assert H0 :=H; Unfold decreasing in H0; Generalize (derivable_derive f x (pr x)); Intro; Elim H1; Intros l H2.
+Intros f pr H x; Assert H0 :=H; Unfold decreasing in H0; Generalize (derivable_derive f x (pr x)); Intro; Elim H1; Intros l H2.
 Rewrite H2; Case (total_order l R0); Intro.
 Left; Assumption.
 Elim H3; Intro.
@@ -413,7 +413,7 @@ Qed.
 
 (**********)
 Lemma derive_increasing_interv_var : (a,b:R;f:R->R;pr:(derivable f)) ``a<b``-> ((t:R) ``a<t<b`` -> ``0<=(derive_pt f t (pr t))``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<=(f y)``).
-Intros; Generalize (derive_increasing_interv_ax a b f pr H); Intro; Elim H4; Intros _ H5; Apply (H5 H0 x y H1 H2 H3).
+Intros a b f pr H H0 x y H1 H2 H3; Generalize (derive_increasing_interv_ax a b f pr H); Intro; Elim H4; Intros _ H5; Apply (H5 H0 x y H1 H2 H3).
 Qed.
 
 (**********)

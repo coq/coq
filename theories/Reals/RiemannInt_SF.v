@@ -27,7 +27,7 @@ Unfold INZ;Intros; Apply inject_nat_complete_inf; Assumption.
 Qed.
 
 Lemma Nzorn : (I:nat->Prop) (EX n:nat | (I n)) -> (Nbound I) -> (sigTT ?  [n:nat](I n)/\(i:nat)(I i)->(le i n)).
-Intros; Pose E := [x:R](EX i:nat | (I i)/\(INR i)==x); Assert H1 : (bound E).
+Intros I H H0; Pose E := [x:R](EX i:nat | (I i)/\(INR i)==x); Assert H1 : (bound E).
 Unfold Nbound in H0; Elim H0; Intros N H1; Unfold bound; Exists (INR N); Unfold is_upper_bound; Intros; Unfold E in H2; Elim H2; Intros; Elim H3; Intros; Rewrite <- H5; Apply le_INR; Apply H1; Assumption.
 Assert H2 : (EXT x:R | (E x)).
 Elim H; Intros; Exists (INR x); Unfold E; Exists x; Split; [Assumption | Reflexivity].
@@ -109,7 +109,7 @@ end.
 (********************************)
 
 Lemma StepFun_P1 : (a,b:R;f:(StepFun a b)) (adapted_couple f a b (subdivision f) (subdivision_val f)).
-Intros; Unfold subdivision_val; Case (projT2 Rlist ([l:Rlist](is_subdivision f a b l)) (pre f)); Intros; Apply a0.
+Intros a b f; Unfold subdivision_val; Case (projT2 Rlist ([l:Rlist](is_subdivision f a b l)) (pre f)); Intros; Apply a0.
 Qed.
 
 Lemma StepFun_P2 : (a,b:R;f:R->R;l,lf:Rlist) (adapted_couple f a b l lf) -> (adapted_couple f b a l lf).
@@ -516,7 +516,7 @@ Intros; Induction l1; [Simpl; Ring | Induction l1; Simpl; [Ring | Simpl in Hrecl
 Qed.
 
 Lemma StepFun_P20 : (l:Rlist;f:R->R) (lt O (Rlength l)) -> (Rlength l)=(S (Rlength (FF l f))).
-Induction l; Intros; [Elim (lt_n_n ? H) | Simpl; Rewrite RList_P18; Rewrite RList_P14; Induction r0; [Reflexivity | Rewrite (H f); [Reflexivity | Simpl; Apply lt_O_Sn]]].
+Intros l f H; NewInduction l; [Elim (lt_n_n ? H) | Simpl; Rewrite RList_P18; Rewrite RList_P14; Reflexivity].
 Qed.
 
 Lemma StepFun_P21 : (a,b:R;f:R->R;l:Rlist) (is_subdivision f a b l) -> (adapted_couple f a b l (FF l f)).
@@ -765,11 +765,11 @@ Clear b0; Apply RList_P17; Try Assumption; [Apply RList_P2; Assumption | Elim (R
 Qed.
 
 Lemma StepFun_P25 : (a,b:R;f,g:R->R;lf,lg:Rlist) (is_subdivision f a b lf) -> (is_subdivision g a b lg) -> (is_subdivision g a b (cons_ORlist lf lg)).
-Intros; Case (total_order_Rle a b); Intro; [Apply StepFun_P24 with f; Assumption | Apply StepFun_P5; Apply StepFun_P24 with f; [Auto with real | Apply StepFun_P5; Assumption | Apply StepFun_P5; Assumption]].
+Intros a b f g lf lg H H0; Case (total_order_Rle a b); Intro; [Apply StepFun_P24 with f; Assumption | Apply StepFun_P5; Apply StepFun_P24 with f; [Auto with real | Apply StepFun_P5; Assumption | Apply StepFun_P5; Assumption]].
 Qed.
 
 Lemma StepFun_P26 : (a,b,l:R;f,g:R->R;l1:Rlist) (is_subdivision f a b l1) -> (is_subdivision g a b l1) -> (is_subdivision [x:R]``(f x)+l*(g x)`` a b l1).
-Unfold is_subdivision; Intros; Elim X; Elim X0; Intros; Clear X X0; Unfold adapted_couple in p p0; Decompose [and] p; Decompose [and] p0; Clear p p0; Apply existTT with (FF l1 [x:R]``(f x)+l*(g x)``); Unfold adapted_couple; Repeat Split; Try Assumption.
+Intros a b l f g l1; Unfold is_subdivision; Intros; Elim X; Elim X0; Intros; Clear X X0; Unfold adapted_couple in p p0; Decompose [and] p; Decompose [and] p0; Clear p p0; Apply existTT with (FF l1 [x:R]``(f x)+l*(g x)``); Unfold adapted_couple; Repeat Split; Try Assumption.
 Apply StepFun_P20; Apply neq_O_lt; Red; Intro; Rewrite <- H8 in H7; Discriminate.
 Intros; Unfold constant_D_eq open_interval; Unfold constant_D_eq open_interval in H9 H4; Intros; Rewrite (H9 ? H8 ? H10); Rewrite (H4 ? H8 ? H10); Assert H11 : ~l1==nil.
 Red; Intro; Rewrite H11 in H8; Elim (lt_n_O ? H8).
@@ -781,20 +781,20 @@ Rewrite RList_P14; Simpl; Rewrite H12 in H8; Simpl in H8; Apply lt_n_S; Apply H8
 Qed.
 
 Lemma StepFun_P27 : (a,b,l:R;f,g:R->R;lf,lg:Rlist) (is_subdivision f a b lf) -> (is_subdivision g a b lg) -> (is_subdivision [x:R]``(f x)+l*(g x)`` a b (cons_ORlist lf lg)).
-Intros; Apply StepFun_P26; [Apply StepFun_P23 with g; Assumption | Apply StepFun_P25 with f; Assumption].
+Intros a b l f g lf lg H H0; Apply StepFun_P26; [Apply StepFun_P23 with g; Assumption | Apply StepFun_P25 with f; Assumption].
 Qed.
 
 (* The set of step functions on [a,b] is a vectorial space *)
 Lemma StepFun_P28 : (a,b,l:R;f,g:(StepFun a b)) (IsStepFun [x:R]``(f x)+l*(g x)`` a b).
-Intros; Unfold IsStepFun; Assert H := (pre f); Assert H0 := (pre g); Unfold IsStepFun in H H0; Elim H; Elim H0; Intros; Apply Specif.existT with (cons_ORlist x0 x); Apply StepFun_P27; Assumption.
+Intros a b l f g; Unfold IsStepFun; Assert H := (pre f); Assert H0 := (pre g); Unfold IsStepFun in H H0; Elim H; Elim H0; Intros; Apply Specif.existT with (cons_ORlist x0 x); Apply StepFun_P27; Assumption.
 Qed.
 
 Lemma StepFun_P29 : (a,b:R;f:(StepFun a b)) (is_subdivision f a b (subdivision f)).
-Intros; Unfold is_subdivision; Apply existTT with (subdivision_val f); Apply StepFun_P1.
+Intros a b f; Unfold is_subdivision; Apply existTT with (subdivision_val f); Apply StepFun_P1.
 Qed.
 
 Lemma StepFun_P30 : (a,b,l:R;f,g:(StepFun a b)) ``(RiemannInt_SF (mkStepFun (StepFun_P28 l f g)))==(RiemannInt_SF f)+l*(RiemannInt_SF g)``.
-Intros; Unfold RiemannInt_SF; Case (total_order_Rle a b); (Intro; Replace ``(Int_SF (subdivision_val (mkStepFun (StepFun_P28 l f g))) (subdivision (mkStepFun (StepFun_P28 l f g))))`` with (Int_SF (FF (cons_ORlist (subdivision f) (subdivision g)) [x:R]``(f x)+l*(g x)``) (cons_ORlist (subdivision f) (subdivision g))); [Rewrite StepFun_P19; Replace (Int_SF (FF (cons_ORlist (subdivision f) (subdivision g)) f) (cons_ORlist (subdivision f) (subdivision g))) with (Int_SF (subdivision_val f) (subdivision f)); [Replace (Int_SF (FF (cons_ORlist (subdivision f) (subdivision g)) g) (cons_ORlist (subdivision f) (subdivision g))) with (Int_SF (subdivision_val g) (subdivision g)); [Ring | Apply StepFun_P17 with (fe g) a b; [Apply StepFun_P1 | Apply StepFun_P21; Apply StepFun_P25 with (fe f); Apply StepFun_P29]] | Apply StepFun_P17 with (fe f) a b; [Apply StepFun_P1 | Apply StepFun_P21; Apply StepFun_P23 with (fe g); Apply StepFun_P29]] | Apply StepFun_P17 with [x:R]``(f x)+l*(g x)`` a b; [Apply StepFun_P21; Apply StepFun_P27; Apply StepFun_P29 | Apply (StepFun_P1 (mkStepFun (StepFun_P28 l f g)))]]).
+Intros a b l f g; Unfold RiemannInt_SF; Case (total_order_Rle a b); (Intro; Replace ``(Int_SF (subdivision_val (mkStepFun (StepFun_P28 l f g))) (subdivision (mkStepFun (StepFun_P28 l f g))))`` with (Int_SF (FF (cons_ORlist (subdivision f) (subdivision g)) [x:R]``(f x)+l*(g x)``) (cons_ORlist (subdivision f) (subdivision g))); [Rewrite StepFun_P19; Replace (Int_SF (FF (cons_ORlist (subdivision f) (subdivision g)) f) (cons_ORlist (subdivision f) (subdivision g))) with (Int_SF (subdivision_val f) (subdivision f)); [Replace (Int_SF (FF (cons_ORlist (subdivision f) (subdivision g)) g) (cons_ORlist (subdivision f) (subdivision g))) with (Int_SF (subdivision_val g) (subdivision g)); [Ring | Apply StepFun_P17 with (fe g) a b; [Apply StepFun_P1 | Apply StepFun_P21; Apply StepFun_P25 with (fe f); Apply StepFun_P29]] | Apply StepFun_P17 with (fe f) a b; [Apply StepFun_P1 | Apply StepFun_P21; Apply StepFun_P23 with (fe g); Apply StepFun_P29]] | Apply StepFun_P17 with [x:R]``(f x)+l*(g x)`` a b; [Apply StepFun_P21; Apply StepFun_P27; Apply StepFun_P29 | Apply (StepFun_P1 (mkStepFun (StepFun_P28 l f g)))]]).
 Qed.
 
 Lemma StepFun_P31 : (a,b:R;f:R->R;l,lf:Rlist) (adapted_couple f a b l lf) -> (adapted_couple [x:R](Rabsolu (f x)) a b l (app_Rlist lf Rabsolu)).
@@ -804,7 +804,7 @@ Intros; Unfold constant_D_eq open_interval; Unfold constant_D_eq open_interval i
 Qed.
 
 Lemma StepFun_P32 : (a,b:R;f:(StepFun a b)) (IsStepFun [x:R](Rabsolu (f x)) a b).
-Intros; Unfold IsStepFun; Apply Specif.existT with (subdivision f); Unfold is_subdivision; Apply existTT with (app_Rlist (subdivision_val f) Rabsolu); Apply StepFun_P31; Apply StepFun_P1.
+Intros a b f; Unfold IsStepFun; Apply Specif.existT with (subdivision f); Unfold is_subdivision; Apply existTT with (app_Rlist (subdivision_val f) Rabsolu); Apply StepFun_P31; Apply StepFun_P1.
 Qed.
 
 Lemma StepFun_P33 : (l2,l1:Rlist) (ordered_Rlist l1) -> ``(Rabsolu (Int_SF l2 l1))<=(Int_SF (app_Rlist l2 Rabsolu) l1)``.
@@ -900,21 +900,21 @@ EApply StepFun_P23; Apply StepFun_P29.
 Qed.
 
 Lemma StepFun_P38 : (l:Rlist;a,b:R;f:R->R) (ordered_Rlist l) -> (pos_Rl l O)==a -> (pos_Rl l (pred (Rlength l)))==b -> (sigTT ? [g:(StepFun a b)](g b)==(f b)/\(i:nat)(lt i (pred (Rlength l)))->(constant_D_eq g (co_interval (pos_Rl l i) (pos_Rl l (S i))) (f (pos_Rl l i)))).
-Induction l.
-Intros; Simpl in H0; Simpl in H1; Exists (mkStepFun (StepFun_P4 a b (f b))); Split.
+Intros l a b f; Generalize a; Clear a; NewInduction l. 
+Intros a H H0 H1; Simpl in H0; Simpl in H1; Exists (mkStepFun (StepFun_P4 a b (f b))); Split.
 Reflexivity.
 Intros; Elim (lt_n_O ? H2).
-Induction r0.
-Intros; Simpl in H1; Simpl in H0; Exists (mkStepFun (StepFun_P4 a b (f b))); Split.
+Intros; NewDestruct l as [|r1 l].
+Simpl in H1; Simpl in H0; Exists (mkStepFun (StepFun_P4 a b (f b))); Split.
 Reflexivity.
-Intros; Elim (lt_n_O ? H2).
-Intros; Clear X; Assert H2 : (ordered_Rlist (cons r1 r2)).
+Intros i H2; Elim (lt_n_O ? H2).
+Intros; Assert H2 : (ordered_Rlist (cons r1 l)).
 Apply RList_P4 with r; Assumption.
-Assert H3 : (pos_Rl (cons r1 r2) O)==r1.
+Assert H3 : (pos_Rl (cons r1 l) O)==r1.
 Reflexivity.
-Assert H4 : (pos_Rl (cons r1 r2) (pred (Rlength (cons r1 r2))))==b.
+Assert H4 : (pos_Rl (cons r1 l) (pred (Rlength (cons r1 l))))==b.
 Rewrite <- H1; Reflexivity.
-Elim (X0 r1 b f H2 H3 H4); Intros g [H5 H6].
+Elim (IHl r1 H2 H3 H4); Intros g [H5 H6].
 Pose g' := [x:R]Cases (total_order_Rle r1 x) of
                       | (leftT _) => (g x)
                       | (rightT _) => (f a) end.
@@ -944,7 +944,7 @@ Simpl; Rewrite H13; Reflexivity.
 Intros; Simpl in H9; Induction i.
 Unfold constant_D_eq open_interval; Simpl; Intros; Assert H16 : (Rmin r1 b)==r1.
 Unfold Rmin; Case (total_order_Rle r1 b); Intro; [Reflexivity | Elim n; Assumption].
-Rewrite H16 in H12; Rewrite H12 in H14; Elim H14; Clear H14; Intros _ H14; Unfold g'; Case (total_order_Rle r1 x); Intro.
+Rewrite H16 in H12; Rewrite H12 in H14; Elim H14; Clear H14; Intros _ H14; Unfold g'; Case (total_order_Rle r1 x); Intro r3.
 Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? r3 H14)).
 Reflexivity.
 Change (constant_D_eq g' (open_interval (pos_Rl lg i) (pos_Rl lg (S i))) (pos_Rl lg2 i)); Clear Hreci; Assert H16 := (H15 i); Assert H17 : (lt i (pred (Rlength lg))).
@@ -968,14 +968,14 @@ Simpl; Unfold g'; Case (total_order_Rle r1 b); Intro.
 Assumption.
 Elim n; Assumption.
 Intros; Simpl in H9; Induction i.
-Unfold constant_D_eq co_interval; Simpl; Intros; Simpl in H0; Rewrite H0; Elim H10; Clear H10; Intros; Unfold g'; Case (total_order_Rle r1 x); Intro.
+Unfold constant_D_eq co_interval; Simpl; Intros; Simpl in H0; Rewrite H0; Elim H10; Clear H10; Intros; Unfold g'; Case (total_order_Rle r1 x); Intro r3.
 Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? r3 H11)).
 Reflexivity.
-Clear Hreci; Change (constant_D_eq (mkStepFun H8) (co_interval (pos_Rl (cons r1 r2) i) (pos_Rl (cons r1 r2) (S i))) (f (pos_Rl (cons r1 r2) i))); Assert H10 := (H6 i); Assert H11 : (lt i (pred (Rlength (cons r1 r2)))).
+Clear Hreci; Change (constant_D_eq (mkStepFun H8) (co_interval (pos_Rl (cons r1 l) i) (pos_Rl (cons r1 l) (S i))) (f (pos_Rl (cons r1 l) i))); Assert H10 := (H6 i); Assert H11 : (lt i (pred (Rlength (cons r1 l)))).
 Simpl; Apply lt_S_n; Assumption.
 Assert H12 := (H10 H11); Unfold constant_D_eq co_interval in H12; Unfold constant_D_eq co_interval; Intros; Rewrite <- (H12 ? H13); Simpl; Unfold g'; Case (total_order_Rle r1 x); Intro.
 Reflexivity.
-Elim n; Elim H13; Clear H13; Intros; Apply Rle_trans with (pos_Rl (cons r1 r2) i); Try Assumption; Change ``(pos_Rl (cons r1 r2) O)<=(pos_Rl (cons r1 r2) i)``; Elim (RList_P6 (cons r1 r2)); Intros; Apply H15; [Assumption | Apply le_O_n | Simpl; Apply lt_trans with (Rlength r2); [Apply lt_S_n; Assumption | Apply lt_n_Sn]].
+Elim n; Elim H13; Clear H13; Intros; Apply Rle_trans with (pos_Rl (cons r1 l) i); Try Assumption; Change ``(pos_Rl (cons r1 l) O)<=(pos_Rl (cons r1 l) i)``; Elim (RList_P6 (cons r1 l)); Intros; Apply H15; [Assumption | Apply le_O_n | Simpl; Apply lt_trans with (Rlength l); [Apply lt_S_n; Assumption | Apply lt_n_Sn]].
 Qed.
 
 Lemma StepFun_P39 : (a,b:R;f:(StepFun a b)) (RiemannInt_SF f)==(Ropp (RiemannInt_SF (mkStepFun (StepFun_P6 (pre f))))).
@@ -987,7 +987,7 @@ Assert H : ``a<b``; [Auto with real | Assert H0 : ``b<a``; [Auto with real | Eli
 Qed.
 
 Lemma StepFun_P40 : (f:R->R;a,b,c:R;l1,l2,lf1,lf2:Rlist) ``a<b`` -> ``b<c`` -> (adapted_couple f a b l1 lf1) -> (adapted_couple f b c l2 lf2) -> (adapted_couple f a c (cons_Rlist l1 l2) (FF (cons_Rlist l1 l2) f)).
-Unfold adapted_couple; Intros; Decompose [and] H1; Decompose [and] H2; Clear H1 H2; Repeat Split.
+Intros f a b c l1 l2 lf1 lf2 H H0 H1 H2; Unfold adapted_couple in H1 H2; Unfold adapted_couple; Decompose [and] H1; Decompose [and] H2; Clear H1 H2; Repeat Split.
 Apply RList_P25; Try Assumption.
 Rewrite H10; Rewrite H4; Unfold Rmin Rmax; Case (total_order_Rle a b); Case (total_order_Rle b c); Intros; (Right; Reflexivity) Orelse (Elim n; Left; Assumption).
 Rewrite RList_P22.
@@ -1117,11 +1117,11 @@ Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H r)).
 Qed.
 
 Lemma StepFun_P42 : (l1,l2:Rlist;f:R->R) (pos_Rl l1 (pred (Rlength l1)))==(pos_Rl l2 O) -> ``(Int_SF (FF (cons_Rlist l1 l2) f) (cons_Rlist l1 l2)) == (Int_SF (FF l1 f) l1) + (Int_SF (FF l2 f) l2)``.
-Induction l1; [Intros; Simpl; Ring | Induction r0; [Intros; Simpl in H0; Simpl; Induction l2; [Simpl; Ring | Simpl; Simpl in H0; Rewrite H0; Ring] | Intros; Simpl; Rewrite Rplus_assoc; Apply Rplus_plus_r; Apply (H0 l2 f); Rewrite <- H1; Reflexivity]].
+Intros l1 l2 f; NewInduction l1 as [|r l1 IHl1]; Intros H; [ Simpl; Ring | NewDestruct l1; [Simpl in H; Simpl; NewDestruct l2; [Simpl; Ring | Simpl; Simpl in H; Rewrite H; Ring] | Simpl; Rewrite Rplus_assoc; Apply Rplus_plus_r; Apply IHl1; Rewrite <- H; Reflexivity]].
 Qed.
 
 Lemma StepFun_P43 : (f:R->R;a,b,c:R;pr1:(IsStepFun f a b);pr2:(IsStepFun f b c);pr3:(IsStepFun f a c)) ``(RiemannInt_SF (mkStepFun pr1))+(RiemannInt_SF (mkStepFun pr2))==(RiemannInt_SF (mkStepFun pr3))``.
-Intros; Assert H1 : (SigT ? [l:Rlist](sigTT ? [l0:Rlist](adapted_couple f a b l l0))).
+Intros f; Intros; Assert H1 : (SigT ? [l:Rlist](sigTT ? [l0:Rlist](adapted_couple f a b l l0))).
 Apply pr1.
 Assert H2 : (SigT ? [l:Rlist](sigTT ? [l0:Rlist](adapted_couple f b c l l0))).
 Apply pr2.
@@ -1260,7 +1260,7 @@ Change (adapted_couple (mkStepFun pr1) a b (subdivision (mkStepFun 1!a 2!b 3!f p
 Qed.
 
 Lemma StepFun_P44 : (f:R->R;a,b,c:R) (IsStepFun f a b) -> ``a<=c<=b`` -> (IsStepFun f a c).
-Intros; Assert H0 : ``a<=b``.
+Intros f; Intros; Assert H0 : ``a<=b``.
 Elim H; Intros; Apply Rle_trans with c; Assumption.
 Elim H; Clear H; Intros; Unfold IsStepFun in X; Unfold is_subdivision in X; Elim X; Clear X; Intros l1 [lf1 H2]; Cut (l1,lf1:Rlist;a,b,c:R;f:R->R) (adapted_couple f a b l1 lf1) -> ``a<=c<=b`` -> (SigT ? [l:Rlist](sigTT ? [l0:Rlist](adapted_couple f a c l l0))).
 Intros; Unfold IsStepFun; Unfold is_subdivision; EApply X.
@@ -1334,7 +1334,7 @@ EApply StepFun_P7; [Elim H0; Intros; Apply Rle_trans with c; [Apply H2 | Apply H
 Qed.
 
 Lemma StepFun_P45 : (f:R->R;a,b,c:R) (IsStepFun f a b) -> ``a<=c<=b`` -> (IsStepFun f c b).
-Intros; Assert H0 : ``a<=b``.
+Intros f; Intros; Assert H0 : ``a<=b``.
 Elim H; Intros; Apply Rle_trans with c; Assumption.
 Elim H; Clear H; Intros; Unfold IsStepFun in X; Unfold is_subdivision in X; Elim X; Clear X; Intros l1 [lf1 H2]; Cut (l1,lf1:Rlist;a,b,c:R;f:R->R) (adapted_couple f a b l1 lf1) -> ``a<=c<=b`` -> (SigT ? [l:Rlist](sigTT ? [l0:Rlist](adapted_couple f c b l l0))).
 Intros; Unfold IsStepFun; Unfold is_subdivision; EApply X; [Apply H2 | Split; Assumption].
@@ -1381,7 +1381,7 @@ EApply StepFun_P7; [Elim H0; Intros; Apply Rle_trans with c; [Apply H2 | Apply H
 Qed.
 
 Lemma StepFun_P46 : (f:R->R;a,b,c:R) (IsStepFun f a b) -> (IsStepFun f b c) -> (IsStepFun f a c).
-Intros; Case (total_order_Rle a b); Case (total_order_Rle b c); Intros.
+Intros f; Intros; Case (total_order_Rle a b); Case (total_order_Rle b c); Intros.
 Apply StepFun_P41 with b; Assumption.
 Case (total_order_Rle a c); Intro.
 Apply StepFun_P44 with b; Try Assumption.
