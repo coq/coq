@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (*************************************************************************
 
    PROJET RNRT Calife - 2001
@@ -9,8 +10,10 @@
 Require Arith.
 Require PolyList.
 Require Bool.
-Require ZArith.
+Require ZArith_base.
 Require Import OmegaLemmas.
+
+Open Scope Z_scope.
 
 (* \subsection{Definition of basic types} *)
 
@@ -44,6 +47,13 @@ Inductive term : Set :=
  | Tvar : nat -> term
 .
 
+Delimits Scope romega_scope with term.
+Infix 4 "+" Tplus : romega_scope V8only.
+Infix 4 "*" Tmult : romega_scope V8only.
+Infix 4 "-" Tminus : romega_scope V8only.
+Notation "- x" := (Topp x) (at level 0) : romega_scope V8only.
+V8Notation "[ x ]" := (Tvar x) (at level 1) : romega_scope.
+
 (* \subsubsection{Definition of reified goals} *)
 (* Very restricted definition of handled predicates that should be extended
    to cover a wider set of operations.
@@ -67,13 +77,13 @@ Inductive proposition : Set :=
 .
 
 (* Definition of goals as a list of hypothesis *)
-Syntactic Definition hyps := (list proposition).      
+Notation hyps := (list proposition).      
 
 (* Definition of lists of subgoals  (set of open goals) *)
-Syntactic Definition lhyps := (list hyps).
+Notation lhyps := (list hyps).
 
 (* a syngle goal packed in a subgoal list *)
-Syntactic Definition singleton :=  [a: hyps] (cons a (nil hyps)).
+Notation singleton :=  [a: hyps] (cons a (nil hyps)).
 
 (* an absurd goal *)
 Definition absurd := (cons FalseTerm (nil proposition)).
@@ -167,7 +177,7 @@ Inductive p_step : Set :=
    type [p_step] permettant
    de parcourir à la fois les branches gauches et droit, on pourrait n'avoir
    qu'une normalisation par hypothèse. Et comme toutes les hypothèses sont 
-   utiles (sinon on ne les incluerait pas), on pourrait remplacer [h_step] 
+   utiles (sinon on ne les inclurait pas), on pourrait remplacer [h_step] 
    par une simple liste *)
 
 Inductive h_step : Set := pair_step : nat -> p_step -> h_step.
@@ -487,16 +497,14 @@ Fixpoint interp_hyps [envp: PropList; env : (list Z); l: hyps] : Prop :=
    [Generalize] et qu'une conjonction est forcément lourde (répétition des
    types dans les conjonctions intermédiaires) *)
 
-Fixpoint interp_goal_concl [envp: PropList;env : (list Z); c: proposition; l: hyps] : Prop :=
+Fixpoint interp_goal_concl [c: proposition; envp: PropList;env : (list Z); l: hyps] : Prop :=
   Cases l of 
      nil => (interp_proposition envp env c)
    | (cons p' l') => 
-	(interp_proposition envp env p') -> (interp_goal_concl envp env c l')
+	(interp_proposition envp env p') -> (interp_goal_concl c envp env l')
   end.
 
-Syntactic Definition interp_goal  :=
-  [envp: PropList;env : (list Z); l: hyps]
-	(interp_goal_concl envp env FalseTerm l).
+Notation interp_goal := (interp_goal_concl FalseTerm).
 
 (* Les théorèmes qui suivent assurent la correspondance entre les deux
    interprétations. *)
@@ -1313,7 +1321,7 @@ Definition fusion_right [trace : (list t_fusion)] : term -> term := [t: term]
 	end
   end.
 
-(* \paragraph{Fusion avec anihilation} *)
+(* \paragraph{Fusion avec annihilation} *)
 (* Normalement le résultat est une constante *)
 
 Fixpoint fusion_cancel [trace:nat] : term -> term := [t:term]
@@ -1329,7 +1337,7 @@ Unfold term_stable fusion_cancel; Intros trace e; Elim trace; [
 | Intros n H t; Elim H; Exact (T_OMEGA13_stable e t) ].
 Save. 
 
-(* \subsubsection{Opérations afines sur une équation} *)
+(* \subsubsection{Opérations affines sur une équation} *)
 (* \paragraph{Multiplication scalaire et somme d'une constante} *)
 
 Fixpoint scalar_norm_add [trace:nat] : term -> term := [t: term]
@@ -2575,7 +2583,7 @@ Definition concl_to_hyp := [p:proposition]
 Definition do_concl_to_hyp :
   (envp: PropList; env: (list Z); c : proposition; l:hyps)
     (interp_goal envp env (cons (concl_to_hyp c) l)) ->
-       (interp_goal_concl envp env c l).
+       (interp_goal_concl c envp env l).
 
 Simpl; Intros envp env c l; Induction l; [
   Simpl; Unfold concl_to_hyp; Pattern (decidability c); Apply bool_ind2; [
@@ -2594,7 +2602,7 @@ Theorem do_omega:
   (t1: e_step ; t2: (list h_step);
    envp: PropList; env: (list Z); c: proposition; l:hyps)
     (interp_list_goal envp env (omega_tactic t1 t2 c l)) ->
-       (interp_goal_concl envp env c l).
+       (interp_goal_concl c envp env l).
 
 Unfold omega_tactic; Intros; Apply do_concl_to_hyp; 
 Apply (normalize_hyps_goal t2); Apply (decompose_solve_valid t1); 

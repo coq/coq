@@ -1,3 +1,4 @@
+(* -*- coding: utf-8 -*- *)
 (*************************************************************************
 
    PROJET RNRT Calife - 2001
@@ -9,8 +10,10 @@
 Require Import Arith.
 Require Import List.
 Require Import Bool.
-Require Import ZArith.
+Require Import ZArith_base.
 Require Import OmegaLemmas.
+
+Open Scope Z_scope.
 
 (* \subsection{Definition of basic types} *)
 
@@ -45,6 +48,13 @@ Inductive term : Set :=
   | Topp : term -> term
   | Tvar : nat -> term.
 
+Delimit Scope romega_scope with term.
+Infix "+" := Tplus : romega_scope.
+Infix "*" := Tmult : romega_scope.
+Infix "-" := Tminus : romega_scope.
+Notation "- x" := (Topp x) : romega_scope.
+Notation "[ x ]" := (Tvar x) (at level 1) : romega_scope.
+
 (* \subsubsection{Definition of reified goals} *)
 (* Very restricted definition of handled predicates that should be extended
    to cover a wider set of operations.
@@ -67,13 +77,13 @@ Inductive proposition : Set :=
   | Tprop : nat -> proposition.
 
 (* Definition of goals as a list of hypothesis *)
-Notation hyps := (list proposition) (only parsing).      
+Notation hyps := (list proposition).      
 
 (* Definition of lists of subgoals  (set of open goals) *)
-Notation lhyps := (list (list proposition)) (only parsing).
+Notation lhyps := (list hyps).
 
 (* a syngle goal packed in a subgoal list *)
-Notation singleton := (fun a : list proposition => a :: nil) (only parsing).
+Notation singleton := (fun a : hyps => a :: nil).
 
 (* an absurd goal *)
 Definition absurd := FalseTerm :: nil.
@@ -176,7 +186,7 @@ Inductive p_step : Set :=
    type [p_step] permettant
    de parcourir à la fois les branches gauches et droit, on pourrait n'avoir
    qu'une normalisation par hypothèse. Et comme toutes les hypothèses sont 
-   utiles (sinon on ne les incluerait pas), on pourrait remplacer [h_step] 
+   utiles (sinon on ne les inclurait pas), on pourrait remplacer [h_step] 
    par une simple liste *)
 
 Inductive h_step : Set :=
@@ -360,29 +370,31 @@ Fixpoint eq_term (t1 t2 : term) {struct t2} : bool :=
                 | Tint st2 => eq_Z st1 st2
                 | _ => false
                 end
-  | Tplus st11 st12 =>
+  | (st11 + st12)%term =>
       match t2 with
-      | Tplus st21 st22 => eq_term st11 st21 && eq_term st12 st22
+      | (st21 + st22)%term => eq_term st11 st21 && eq_term st12 st22
       | _ => false
       end
-  | Tmult st11 st12 =>
+  | (st11 * st12)%term =>
       match t2 with
-      | Tmult st21 st22 => eq_term st11 st21 && eq_term st12 st22
+      | (st21 * st22)%term => eq_term st11 st21 && eq_term st12 st22
       | _ => false
       end
-  | Tminus st11 st12 =>
+  | (st11 - st12)%term =>
       match t2 with
-      | Tminus st21 st22 => eq_term st11 st21 && eq_term st12 st22
+      | (st21 - st22)%term => eq_term st11 st21 && eq_term st12 st22
       | _ => false
       end
-  | Topp st1 => match t2 with
-                | Topp st2 => eq_term st1 st2
-                | _ => false
-                end
-  | Tvar st1 => match t2 with
-                | Tvar st2 => eq_nat st1 st2
-                | _ => false
-                end
+  | (- st1)%term =>
+      match t2 with
+      | (- st2)%term => eq_term st1 st2
+      | _ => false
+      end
+  | [st1]%term =>
+      match t2 with
+      | [st2]%term => eq_nat st1 st2
+      | _ => false
+      end
   end.  
 
 Theorem eq_term_true : forall t1 t2 : term, eq_term t1 t2 = true -> t1 = t2.
@@ -488,7 +500,7 @@ Theorem relation_ind2 :
 simple induction b; auto.
 Qed.
 
-Ltac elim_Zcompare t1 t2 := pattern (t1 ?= t2)%Z in |- *; apply relation_ind2.
+Ltac elim_Zcompare t1 t2 := pattern (t1 ?= t2) in |- *; apply relation_ind2.
 
 (* \subsection{Interprétations}
    \subsubsection{Interprétation des termes dans Z} *)
@@ -496,11 +508,11 @@ Ltac elim_Zcompare t1 t2 := pattern (t1 ?= t2)%Z in |- *; apply relation_ind2.
 Fixpoint interp_term (env : list Z) (t : term) {struct t} : Z :=
   match t with
   | Tint x => x
-  | Tplus t1 t2 => (interp_term env t1 + interp_term env t2)%Z
-  | Tmult t1 t2 => (interp_term env t1 * interp_term env t2)%Z
-  | Tminus t1 t2 => (interp_term env t1 - interp_term env t2)%Z
-  | Topp t => (- interp_term env t)%Z
-  | Tvar n => nth n env 0%Z
+  | (t1 + t2)%term => interp_term env t1 + interp_term env t2
+  | (t1 * t2)%term => interp_term env t1 * interp_term env t2
+  | (t1 - t2)%term => interp_term env t1 - interp_term env t2
+  | (- t)%term => - interp_term env t
+  | [n]%term => nth n env 0
   end.
 
 (* \subsubsection{Interprétation des prédicats} *) 
@@ -508,13 +520,13 @@ Fixpoint interp_proposition (envp : PropList) (env : list Z)
  (p : proposition) {struct p} : Prop :=
   match p with
   | EqTerm t1 t2 => interp_term env t1 = interp_term env t2
-  | LeqTerm t1 t2 => (interp_term env t1 <= interp_term env t2)%Z
+  | LeqTerm t1 t2 => interp_term env t1 <= interp_term env t2
   | TrueTerm => True
   | FalseTerm => False
   | Tnot p' => ~ interp_proposition envp env p'
-  | GeqTerm t1 t2 => (interp_term env t1 >= interp_term env t2)%Z
-  | GtTerm t1 t2 => (interp_term env t1 > interp_term env t2)%Z
-  | LtTerm t1 t2 => (interp_term env t1 < interp_term env t2)%Z
+  | GeqTerm t1 t2 => interp_term env t1 >= interp_term env t2
+  | GtTerm t1 t2 => interp_term env t1 > interp_term env t2
+  | LtTerm t1 t2 => interp_term env t1 < interp_term env t2
   | NeqTerm t1 t2 => Zne (interp_term env t1) (interp_term env t2)
   | Tor p1 p2 =>
       interp_proposition envp env p1 \/ interp_proposition envp env p2
@@ -531,7 +543,7 @@ Fixpoint interp_proposition (envp : PropList) (env : list Z)
    à manipuler individuellement *)
 
 Fixpoint interp_hyps (envp : PropList) (env : list Z) 
- (l : list proposition) {struct l} : Prop :=
+ (l : hyps) {struct l} : Prop :=
   match l with
   | nil => True
   | p' :: l' => interp_proposition envp env p' /\ interp_hyps envp env l'
@@ -542,26 +554,22 @@ Fixpoint interp_hyps (envp : PropList) (env : list Z)
    [Generalize] et qu'une conjonction est forcément lourde (répétition des
    types dans les conjonctions intermédiaires) *)
 
-Fixpoint interp_goal_concl (envp : PropList) (env : list Z) 
- (c : proposition) (l : list proposition) {struct l} : Prop :=
+Fixpoint interp_goal_concl (c : proposition) (envp : PropList) 
+ (env : list Z) (l : hyps) {struct l} : Prop :=
   match l with
   | nil => interp_proposition envp env c
   | p' :: l' =>
-      interp_proposition envp env p' -> interp_goal_concl envp env c l'
+      interp_proposition envp env p' -> interp_goal_concl c envp env l'
   end.
 
-Notation interp_goal :=
-  (fun (envp : PropList) (env : list Z) (l : list proposition) =>
-   interp_goal_concl envp env FalseTerm l) (only parsing).
+Notation interp_goal := (interp_goal_concl FalseTerm).
 
 (* Les théorèmes qui suivent assurent la correspondance entre les deux
    interprétations. *)
 
 Theorem goal_to_hyps :
- forall (envp : PropList) (env : list Z) (l : list proposition),
- (interp_hyps envp env l -> False) ->
- (fun (envp : PropList) (env : list Z) (l : list proposition) =>
-  interp_goal_concl envp env FalseTerm l) envp env l.
+ forall (envp : PropList) (env : list Z) (l : hyps),
+ (interp_hyps envp env l -> False) -> interp_goal envp env l.
 
 simple induction l;
  [ simpl in |- *; auto
@@ -569,10 +577,8 @@ simple induction l;
 Qed.
 
 Theorem hyps_to_goal :
- forall (envp : PropList) (env : list Z) (l : list proposition),
- (fun (envp : PropList) (env : list Z) (l : list proposition) =>
-  interp_goal_concl envp env FalseTerm l) envp env l ->
- interp_hyps envp env l -> False.
+ forall (envp : PropList) (env : list Z) (l : hyps),
+ interp_goal envp env l -> interp_hyps envp env l -> False.
 
 simple induction l; simpl in |- *; [ auto | intros; apply H; elim H1; auto ].
 Qed.
@@ -603,22 +609,16 @@ Definition valid2 (f : proposition -> proposition -> proposition) :=
    liste de propositions et rend une nouvelle liste de proposition. 
    On reste contravariant *)
 
-Definition valid_hyps (f : list proposition -> list proposition) :=
-  forall (ep : PropList) (e : list Z) (lp : list proposition),
+Definition valid_hyps (f : hyps -> hyps) :=
+  forall (ep : PropList) (e : list Z) (lp : hyps),
   interp_hyps ep e lp -> interp_hyps ep e (f lp).
 
 (* Enfin ce théorème élimine la contravariance et nous ramène à une 
    opération sur les buts *)
 
  Theorem valid_goal :
-  forall (ep : PropList) (env : list Z) (l : list proposition)
-    (a : list proposition -> list proposition),
-  valid_hyps a ->
-  (fun (envp : PropList) (env : list Z) (l : list proposition) =>
-   interp_goal_concl envp env FalseTerm l) ep env (
-    a l) ->
-  (fun (envp : PropList) (env : list Z) (l : list proposition) =>
-   interp_goal_concl envp env FalseTerm l) ep env l.
+  forall (ep : PropList) (env : list Z) (l : hyps) (a : hyps -> hyps),
+  valid_hyps a -> interp_goal ep env (a l) -> interp_goal ep env l.
 
 intros; simpl in |- *; apply goal_to_hyps; intro H1;
  apply (hyps_to_goal ep env (a l) H0); apply H; assumption.
@@ -627,25 +627,22 @@ Qed.
 (* \subsubsection{Généralisation a des listes de buts (disjonctions)} *)
 
 
-Fixpoint interp_list_hyps (envp : PropList) (env : list Z)
- (l : list (list proposition)) {struct l} : Prop :=
+Fixpoint interp_list_hyps (envp : PropList) (env : list Z) 
+ (l : lhyps) {struct l} : Prop :=
   match l with
   | nil => False
   | h :: l' => interp_hyps envp env h \/ interp_list_hyps envp env l'
   end.
 
-Fixpoint interp_list_goal (envp : PropList) (env : list Z)
- (l : list (list proposition)) {struct l} : Prop :=
+Fixpoint interp_list_goal (envp : PropList) (env : list Z) 
+ (l : lhyps) {struct l} : Prop :=
   match l with
   | nil => True
-  | h :: l' =>
-      (fun (envp : PropList) (env : list Z) (l : list proposition) =>
-       interp_goal_concl envp env FalseTerm l) envp env h /\
-      interp_list_goal envp env l'
+  | h :: l' => interp_goal envp env h /\ interp_list_goal envp env l'
   end.
 
 Theorem list_goal_to_hyps :
- forall (envp : PropList) (env : list Z) (l : list (list proposition)),
+ forall (envp : PropList) (env : list Z) (l : lhyps),
  (interp_list_hyps envp env l -> False) -> interp_list_goal envp env l.
 
 simple induction l; simpl in |- *;
@@ -656,7 +653,7 @@ simple induction l; simpl in |- *;
 Qed.
 
 Theorem list_hyps_to_goal :
- forall (envp : PropList) (env : list Z) (l : list (list proposition)),
+ forall (envp : PropList) (env : list Z) (l : lhyps),
  interp_list_goal envp env l -> interp_list_hyps envp env l -> False.
 
 simple induction l; simpl in |- *;
@@ -665,21 +662,16 @@ simple induction l; simpl in |- *;
     [ apply hyps_to_goal with (1 := H1); assumption | auto ] ].
 Qed.
 
-Definition valid_list_hyps
-  (f : list proposition -> list (list proposition)) :=
-  forall (ep : PropList) (e : list Z) (lp : list proposition),
+Definition valid_list_hyps (f : hyps -> lhyps) :=
+  forall (ep : PropList) (e : list Z) (lp : hyps),
   interp_hyps ep e lp -> interp_list_hyps ep e (f lp).
 
-Definition valid_list_goal
-  (f : list proposition -> list (list proposition)) :=
-  forall (ep : PropList) (e : list Z) (lp : list proposition),
-  interp_list_goal ep e (f lp) ->
-  (fun (envp : PropList) (env : list Z) (l : list proposition) =>
-   interp_goal_concl envp env FalseTerm l) ep e lp.
+Definition valid_list_goal (f : hyps -> lhyps) :=
+  forall (ep : PropList) (e : list Z) (lp : hyps),
+  interp_list_goal ep e (f lp) -> interp_goal ep e lp.
 
 Theorem goal_valid :
- forall f : list proposition -> list (list proposition),
- valid_list_hyps f -> valid_list_goal f.
+ forall f : hyps -> lhyps, valid_list_hyps f -> valid_list_goal f.
 
 unfold valid_list_goal in |- *; intros f H ep e lp H1; apply goal_to_hyps;
  intro H2; apply list_hyps_to_goal with (1 := H1); 
@@ -687,7 +679,7 @@ unfold valid_list_goal in |- *; intros f H ep e lp H1; apply goal_to_hyps;
 Qed.
  
 Theorem append_valid :
- forall (ep : PropList) (e : list Z) (l1 l2 : list (list proposition)),
+ forall (ep : PropList) (e : list Z) (l1 l2 : lhyps),
  interp_list_hyps ep e l1 \/ interp_list_hyps ep e l2 ->
  interp_list_hyps ep e (l1 ++ l2).
 
@@ -703,10 +695,10 @@ Qed.
 (* \subsubsection{Opérateurs valides sur les hypothèses} *)
 
 (* Extraire une hypothèse de la liste *)
-Definition nth_hyps (n : nat) (l : list proposition) := nth n l TrueTerm.
+Definition nth_hyps (n : nat) (l : hyps) := nth n l TrueTerm.
 
 Theorem nth_valid :
- forall (ep : PropList) (e : list Z) (i : nat) (l : list proposition),
+ forall (ep : PropList) (e : list Z) (i : nat) (l : hyps),
  interp_hyps ep e l -> interp_proposition ep e (nth_hyps i l).
 
 unfold nth_hyps in |- *; simple induction i;
@@ -719,7 +711,7 @@ Qed.
 (* Appliquer une opération (valide) sur deux hypothèses extraites de 
    la liste et ajouter le résultat à la liste. *)
 Definition apply_oper_2 (i j : nat)
-  (f : proposition -> proposition -> proposition) (l : list proposition) :=
+  (f : proposition -> proposition -> proposition) (l : hyps) :=
   f (nth_hyps i l) (nth_hyps j l) :: l.
 
 Theorem apply_oper_2_valid :
@@ -732,8 +724,8 @@ Qed.
 
 (* Modifier une hypothèse par application d'une opération valide *)
 
-Fixpoint apply_oper_1 (i : nat) (f : proposition -> proposition)
- (l : list proposition) {struct i} : list proposition :=
+Fixpoint apply_oper_1 (i : nat) (f : proposition -> proposition) 
+ (l : hyps) {struct i} : hyps :=
   match l with
   | nil => nil (A:=proposition)
   | p :: l' =>
@@ -767,23 +759,23 @@ Qed.
 
 Definition apply_left (f : term -> term) (t : term) :=
   match t with
-  | Tplus x y => Tplus (f x) y
-  | Tmult x y => Tmult (f x) y
-  | Topp x => Topp (f x)
+  | (x + y)%term => (f x + y)%term
+  | (x * y)%term => (f x * y)%term
+  | (- x)%term => (- f x)%term
   | x => x
   end.
 
 Definition apply_right (f : term -> term) (t : term) :=
   match t with
-  | Tplus x y => Tplus x (f y)
-  | Tmult x y => Tmult x (f y)
+  | (x + y)%term => (x + f y)%term
+  | (x * y)%term => (x * f y)%term
   | x => x
   end.
 
 Definition apply_both (f g : term -> term) (t : term) :=
   match t with
-  | Tplus x y => Tplus (f x) (g y)
-  | Tmult x y => Tmult (f x) (g y)
+  | (x + y)%term => (f x + g y)%term
+  | (x * y)%term => (f x * g y)%term
   | x => x
   end.
 
@@ -866,12 +858,12 @@ Ltac loop t :=
        (* Propositions *)
        loop X1 || loop X2
   | (LeqTerm ?X1 ?X2) => loop X1 || loop X2
-  | (Tplus ?X1 ?X2) => 
-                        (* Termes *)
-                        loop X1 || loop X2
-  | (Tminus ?X1 ?X2) => loop X1 || loop X2
-  | (Tmult ?X1 ?X2) => loop X1 || loop X2
-  | (Topp ?X1) => loop X1
+  | (?X1 + ?X2)%term => 
+                         (* Termes *)
+                         loop X1 || loop X2
+  | (?X1 - ?X2)%term => loop X1 || loop X2
+  | (?X1 * ?X2)%term => loop X1 || loop X2
+  | (- ?X1)%term => loop X1
   | (Tint ?X1) =>
       loop X1
   | match ?X1 with
@@ -907,16 +899,16 @@ Ltac loop t :=
        | intro ]; auto; Simplify
   | match ?X1 with
     | Tint x => _
-    | Tplus x x0 => _
-    | Tmult x x0 => _
-    | Tminus x x0 => _
-    | Topp x => _
-    | Tvar x => _
+    | (x + x0)%term => _
+    | (x * x0)%term => _
+    | (x - x0)%term => _
+    | (- x)%term => _
+    | [x]%term => _
     end =>
       case X1;
        [ intro | intro; intro | intro; intro | intro; intro | intro | intro ];
        auto; Simplify
-  | match (?X1 ?= ?X2)%Z with
+  | match ?X1 ?= ?X2 with
     | Datatypes.Eq => _
     | Datatypes.Lt => _
     | Datatypes.Gt => _
@@ -955,7 +947,7 @@ Ltac prove_stable x th :=
 (* \subsubsection{Les règles elle mêmes} *)
 Definition Tplus_assoc_l (t : term) :=
   match t with
-  | Tplus n (Tplus m p) => Tplus (Tplus n m) p
+  | (n + (m + p))%term => (n + m + p)%term
   | _ => t
   end.
 
@@ -966,7 +958,7 @@ Qed.
 
 Definition Tplus_assoc_r (t : term) :=
   match t with
-  | Tplus (Tplus n m) p => Tplus n (Tplus m p)
+  | (n + m + p)%term => (n + (m + p))%term
   | _ => t
   end.
 
@@ -977,7 +969,7 @@ Qed.
 
 Definition Tmult_assoc_r (t : term) :=
   match t with
-  | Tmult (Tmult n m) p => Tmult n (Tmult m p)
+  | (n * m * p)%term => (n * (m * p))%term
   | _ => t
   end.
 
@@ -988,7 +980,7 @@ Qed.
 
 Definition Tplus_permute (t : term) :=
   match t with
-  | Tplus n (Tplus m p) => Tplus m (Tplus n p)
+  | (n + (m + p))%term => (m + (n + p))%term
   | _ => t
   end.
 
@@ -999,7 +991,7 @@ Qed.
 
 Definition Tplus_sym (t : term) :=
   match t with
-  | Tplus x y => Tplus y x
+  | (x + y)%term => (y + x)%term
   | _ => t
   end.
 
@@ -1010,7 +1002,7 @@ Qed.
 
 Definition Tmult_sym (t : term) :=
   match t with
-  | Tmult x y => Tmult y x
+  | (x * y)%term => (y * x)%term
   | _ => t
   end.
 
@@ -1021,12 +1013,10 @@ Qed.
 
 Definition T_OMEGA10 (t : term) :=
   match t with
-  | Tplus (Tmult (Tplus (Tmult v (Tint c1)) l1) (Tint k1)) (Tmult (Tplus
-    (Tmult v' (Tint c2)) l2) (Tint k2)) =>
+  | ((v * Tint c1 + l1) * Tint k1 + (v' * Tint c2 + l2) * Tint k2)%term =>
       match eq_term v v' with
       | true =>
-          Tplus (Tmult v (Tint (c1 * k1 + c2 * k2)))
-            (Tplus (Tmult l1 (Tint k1)) (Tmult l2 (Tint k2)))
+          (v * Tint (c1 * k1 + c2 * k2) + (l1 * Tint k1 + l2 * Tint k2))%term
       | false => t
       end
   | _ => t
@@ -1039,8 +1029,8 @@ Qed.
 
 Definition T_OMEGA11 (t : term) :=
   match t with
-  | Tplus (Tmult (Tplus (Tmult v1 (Tint c1)) l1) (Tint k1)) l2 =>
-      Tplus (Tmult v1 (Tint (c1 * k1))) (Tplus (Tmult l1 (Tint k1)) l2)
+  | ((v1 * Tint c1 + l1) * Tint k1 + l2)%term =>
+      (v1 * Tint (c1 * k1) + (l1 * Tint k1 + l2))%term
   | _ => t
   end.
 
@@ -1051,8 +1041,8 @@ Qed.
 
 Definition T_OMEGA12 (t : term) :=
   match t with
-  | Tplus l1 (Tmult (Tplus (Tmult v2 (Tint c2)) l2) (Tint k2)) =>
-      Tplus (Tmult v2 (Tint (c2 * k2))) (Tplus l1 (Tmult l2 (Tint k2)))
+  | (l1 + (v2 * Tint c2 + l2) * Tint k2)%term =>
+      (v2 * Tint (c2 * k2) + (l1 + l2 * Tint k2))%term
   | _ => t
   end.
 
@@ -1063,22 +1053,22 @@ Qed.
 
 Definition T_OMEGA13 (t : term) :=
   match t with
-  | Tplus (Tplus (Tmult v (Tint (Zpos x))) l1) (Tplus (Tmult v' (Tint (Zneg
-    x'))) l2) =>
+  | (v * Tint (Zpos x) + l1 + (v' * Tint (Zneg x') + l2))%term =>
       match eq_term v v' with
-      | true => match eq_pos x x' with
-                | true => Tplus l1 l2
-                | false => t
-                end
+      | true =>
+          match eq_pos x x' with
+          | true => (l1 + l2)%term
+          | false => t
+          end
       | false => t
       end
-  | Tplus (Tplus (Tmult v (Tint (Zneg x))) l1) (Tplus (Tmult v' (Tint (Zpos
-    x'))) l2) =>
+  | (v * Tint (Zneg x) + l1 + (v' * Tint (Zpos x') + l2))%term =>
       match eq_term v v' with
-      | true => match eq_pos x x' with
-                | true => Tplus l1 l2
-                | false => t
-                end
+      | true =>
+          match eq_pos x x' with
+          | true => (l1 + l2)%term
+          | false => t
+          end
       | false => t
       end
   | _ => t
@@ -1092,12 +1082,9 @@ Qed.
 
 Definition T_OMEGA15 (t : term) :=
   match t with
-  | Tplus (Tplus (Tmult v (Tint c1)) l1) (Tmult (Tplus (Tmult v' (Tint c2))
-    l2) (Tint k2)) =>
+  | (v * Tint c1 + l1 + (v' * Tint c2 + l2) * Tint k2)%term =>
       match eq_term v v' with
-      | true =>
-          Tplus (Tmult v (Tint (c1 + c2 * k2)))
-            (Tplus l1 (Tmult l2 (Tint k2)))
+      | true => (v * Tint (c1 + c2 * k2) + (l1 + l2 * Tint k2))%term
       | false => t
       end
   | _ => t
@@ -1110,8 +1097,7 @@ Qed.
 
 Definition T_OMEGA16 (t : term) :=
   match t with
-  | Tmult (Tplus (Tmult v (Tint c)) l) (Tint k) =>
-      Tplus (Tmult v (Tint (c * k))) (Tmult l (Tint k))
+  | ((v * Tint c + l) * Tint k)%term => (v * Tint (c * k) + l * Tint k)%term
   | _ => t
   end.
 
@@ -1123,7 +1109,7 @@ Qed.
 
 Definition Tred_factor5 (t : term) :=
   match t with
-  | Tplus (Tmult x (Tint Z0)) y => y
+  | (x * Tint Z0 + y)%term => y
   | _ => t
   end.
 
@@ -1135,7 +1121,7 @@ Qed.
 
 Definition Topp_plus (t : term) :=
   match t with
-  | Topp (Tplus x y) => Tplus (Topp x) (Topp y)
+  | (- (x + y))%term => (- x + - y)%term
   | _ => t
   end.
 
@@ -1147,7 +1133,7 @@ Qed.
 
 Definition Topp_opp (t : term) :=
   match t with
-  | Topp (Topp x) => x
+  | (- - x)%term => x
   | _ => t
   end.
 
@@ -1158,7 +1144,7 @@ Qed.
 
 Definition Topp_mult_r (t : term) :=
   match t with
-  | Topp (Tmult x (Tint k)) => Tmult x (Tint (- k))
+  | (- (x * Tint k))%term => (x * Tint (- k))%term
   | _ => t
   end.
 
@@ -1169,7 +1155,7 @@ Qed.
 
 Definition Topp_one (t : term) :=
   match t with
-  | Topp x => Tmult x (Tint (-1))
+  | (- x)%term => (x * Tint (-1))%term
   | _ => t
   end.
 
@@ -1180,7 +1166,7 @@ Qed.
 
 Definition Tmult_plus_distr (t : term) :=
   match t with
-  | Tmult (Tplus n m) p => Tplus (Tmult n p) (Tmult m p)
+  | ((n + m) * p)%term => (n * p + m * p)%term
   | _ => t
   end.
 
@@ -1191,7 +1177,7 @@ Qed.
 
 Definition Tmult_opp_left (t : term) :=
   match t with
-  | Tmult (Topp x) (Tint y) => Tmult x (Tint (- y))
+  | (- x * Tint y)%term => (x * Tint (- y))%term
   | _ => t
   end.
 
@@ -1202,7 +1188,7 @@ Qed.
 
 Definition Tmult_assoc_reduced (t : term) :=
   match t with
-  | Tmult (Tmult n (Tint m)) (Tint p) => Tmult n (Tint (m * p))
+  | (n * Tint m * Tint p)%term => (n * Tint (m * p))%term
   | _ => t
   end.
 
@@ -1211,7 +1197,7 @@ Theorem Tmult_assoc_reduced_stable : term_stable Tmult_assoc_reduced.
 prove_stable Tmult_assoc_reduced Zmult_assoc_reverse.
 Qed.
 
-Definition Tred_factor0 (t : term) := Tmult t (Tint 1).
+Definition Tred_factor0 (t : term) := (t * Tint 1)%term.
 
 Theorem Tred_factor0_stable : term_stable Tred_factor0.
 
@@ -1220,9 +1206,9 @@ Qed.
 
 Definition Tred_factor1 (t : term) :=
   match t with
-  | Tplus x y =>
+  | (x + y)%term =>
       match eq_term x y with
-      | true => Tmult x (Tint 2)
+      | true => (x * Tint 2)%term
       | false => t
       end
   | _ => t
@@ -1235,9 +1221,9 @@ Qed.
 
 Definition Tred_factor2 (t : term) :=
   match t with
-  | Tplus x (Tmult y (Tint k)) =>
+  | (x + y * Tint k)%term =>
       match eq_term x y with
-      | true => Tmult x (Tint (1 + k))
+      | true => (x * Tint (1 + k))%term
       | false => t
       end
   | _ => t
@@ -1254,9 +1240,9 @@ Qed.
 
 Definition Tred_factor3 (t : term) :=
   match t with
-  | Tplus (Tmult x (Tint k)) y =>
+  | (x * Tint k + y)%term =>
       match eq_term x y with
-      | true => Tmult x (Tint (1 + k))
+      | true => (x * Tint (1 + k))%term
       | false => t
       end
   | _ => t
@@ -1270,9 +1256,9 @@ Qed.
 
 Definition Tred_factor4 (t : term) :=
   match t with
-  | Tplus (Tmult x (Tint k1)) (Tmult y (Tint k2)) =>
+  | (x * Tint k1 + y * Tint k2)%term =>
       match eq_term x y with
-      | true => Tmult x (Tint (k1 + k2))
+      | true => (x * Tint (k1 + k2))%term
       | false => t
       end
   | _ => t
@@ -1283,7 +1269,7 @@ Theorem Tred_factor4_stable : term_stable Tred_factor4.
 prove_stable Tred_factor4 Zred_factor4.
 Qed.
 
-Definition Tred_factor6 (t : term) := Tplus t (Tint 0).
+Definition Tred_factor6 (t : term) := (t + Tint 0)%term.
 
 Theorem Tred_factor6_stable : term_stable Tred_factor6.
 
@@ -1294,7 +1280,7 @@ Transparent Zplus.
 
 Definition Tminus_def (t : term) :=
   match t with
-  | Tminus x y => Tplus x (Topp y)
+  | (x - y)%term => (x + - y)%term
   | _ => t
   end.
 
@@ -1313,37 +1299,37 @@ Qed.
 
 Fixpoint reduce (t : term) : term :=
   match t with
-  | Tplus x y =>
+  | (x + y)%term =>
       match reduce x with
       | Tint x' =>
           match reduce y with
           | Tint y' => Tint (x' + y')
-          | y' => Tplus (Tint x') y'
+          | y' => (Tint x' + y')%term
           end
-      | x' => Tplus x' (reduce y)
+      | x' => (x' + reduce y)%term
       end
-  | Tmult x y =>
+  | (x * y)%term =>
       match reduce x with
       | Tint x' =>
           match reduce y with
           | Tint y' => Tint (x' * y')
-          | y' => Tmult (Tint x') y'
+          | y' => (Tint x' * y')%term
           end
-      | x' => Tmult x' (reduce y)
+      | x' => (x' * reduce y)%term
       end
-  | Tminus x y =>
+  | (x - y)%term =>
       match reduce x with
       | Tint x' =>
           match reduce y with
           | Tint y' => Tint (x' - y')
-          | y' => Tminus (Tint x') y'
+          | y' => (Tint x' - y')%term
           end
-      | x' => Tminus x' (reduce y)
+      | x' => (x' - reduce y)%term
       end
-  | Topp x =>
+  | (- x)%term =>
       match reduce x with
       | Tint x' => Tint (- x')
-      | x' => Topp x'
+      | x' => (- x')%term
       end
   | _ => t
   end.
@@ -1412,7 +1398,7 @@ Definition fusion_right (trace : list t_fusion) (t : term) : term :=
       end
   end.
 
-(* \paragraph{Fusion avec anihilation} *)
+(* \paragraph{Fusion avec annihilation} *)
 (* Normalement le résultat est une constante *)
 
 Fixpoint fusion_cancel (trace : nat) (t : term) {struct trace} : term :=
@@ -1428,7 +1414,7 @@ unfold term_stable, fusion_cancel in |- *; intros trace e; elim trace;
  | intros n H t; elim H; exact (T_OMEGA13_stable e t) ].
 Qed. 
 
-(* \subsubsection{Opérations afines sur une équation} *)
+(* \subsubsection{Opérations affines sur une équation} *)
 (* \paragraph{Multiplication scalaire et somme d'une constante} *)
 
 Fixpoint scalar_norm_add (trace : nat) (t : term) {struct trace} : term :=
@@ -1547,7 +1533,7 @@ Qed.
 \subsubsection{Tactiques générant une contradiction}
 \paragraph{[O_CONSTANT_NOT_NUL]} *)
 
-Definition constant_not_nul (i : nat) (h : list proposition) :=
+Definition constant_not_nul (i : nat) (h : hyps) :=
   match nth_hyps i h with
   | EqTerm (Tint Z0) (Tint n) =>
       match eq_Z n 0 with
@@ -1562,13 +1548,13 @@ Theorem constant_not_nul_valid :
 
 unfold valid_hyps, constant_not_nul in |- *; intros;
  generalize (nth_valid ep e i lp); Simplify; simpl in |- *;
- elim_eq_Z ipattern:z0 0%Z; auto; simpl in |- *; intros H1 H2; 
+ elim_eq_Z ipattern:z0 0; auto; simpl in |- *; intros H1 H2; 
  elim H1; symmetry  in |- *; auto.
 Qed.   
 
 (* \paragraph{[O_CONSTANT_NEG]} *)
 
-Definition constant_neg (i : nat) (h : list proposition) :=
+Definition constant_neg (i : nat) (h : hyps) :=
   match nth_hyps i h with
   | LeqTerm (Tint Z0) (Tint (Zneg n)) => absurd
   | _ => h
@@ -1584,17 +1570,16 @@ Qed.
 
 (* \paragraph{[NOT_EXACT_DIVIDE]} *)
 Definition not_exact_divide (k1 k2 : Z) (body : term) 
-  (t i : nat) (l : list proposition) :=
+  (t i : nat) (l : hyps) :=
   match nth_hyps i l with
   | EqTerm (Tint Z0) b =>
       match
-        eq_term (scalar_norm_add t (Tplus (Tmult body (Tint k1)) (Tint k2)))
-          b
+        eq_term (scalar_norm_add t (body * Tint k1 + Tint k2)%term) b
       with
       | true =>
-          match (k2 ?= 0)%Z with
+          match k2 ?= 0 with
           | Datatypes.Gt =>
-              match (k1 ?= k2)%Z with
+              match k1 ?= k2 with
               | Datatypes.Gt => absurd
               | _ => l
               end
@@ -1611,27 +1596,26 @@ Theorem not_exact_divide_valid :
 
 unfold valid_hyps, not_exact_divide in |- *; intros;
  generalize (nth_valid ep e i lp); Simplify;
- elim_eq_term (scalar_norm_add t (Tplus (Tmult body (Tint k1)) (Tint k2))) t1;
+ elim_eq_term (scalar_norm_add t (body * Tint k1 + Tint k2)%term) t1; 
  auto; Simplify; intro H2; elim H2; simpl in |- *;
  elim (scalar_norm_add_stable t e); simpl in |- *; 
- intro H4; absurd ((interp_term e body * k1 + k2)%Z = 0%Z);
+ intro H4; absurd (interp_term e body * k1 + k2 = 0);
  [ apply OMEGA4; assumption | symmetry  in |- *; auto ].
 
 Qed.
 
 (* \paragraph{[O_CONTRADICTION]} *)
 
-Definition contradiction (t i j : nat) (l : list proposition) :=
+Definition contradiction (t i j : nat) (l : hyps) :=
   match nth_hyps i l with
   | LeqTerm (Tint Z0) b1 =>
       match nth_hyps j l with
       | LeqTerm (Tint Z0) b2 =>
-          match fusion_cancel t (Tplus b1 b2) with
-          | Tint k =>
-              match (0 ?= k)%Z with
-              | Datatypes.Gt => absurd
-              | _ => l
-              end
+          match fusion_cancel t (b1 + b2)%term with
+          | Tint k => match 0 ?= k with
+                      | Datatypes.Gt => absurd
+                      | _ => l
+                      end
           | _ => l
           end
       | _ => l
@@ -1648,9 +1632,9 @@ unfold valid_hyps, contradiction in |- *; intros t i j ep e l H;
  auto; intros z; case z; auto; case (nth_hyps j l); 
  auto; intros t3 t4; case t3; auto; intros z'; case z'; 
  auto; simpl in |- *; intros H1 H2;
- generalize (refl_equal (interp_term e (fusion_cancel t (Tplus t2 t4))));
- pattern (fusion_cancel t (Tplus t2 t4)) at 2 3 in |- *;
- case (fusion_cancel t (Tplus t2 t4)); simpl in |- *; 
+ generalize (refl_equal (interp_term e (fusion_cancel t (t2 + t4)%term)));
+ pattern (fusion_cancel t (t2 + t4)%term) at 2 3 in |- *;
+ case (fusion_cancel t (t2 + t4)%term); simpl in |- *; 
  auto; intro k; elim (fusion_cancel_stable t); simpl in |- *; 
  intro E; generalize (OMEGA2 _ _ H2 H1); rewrite E; 
  case k; auto; unfold Zle in |- *; simpl in |- *; intros p H3; 
@@ -1660,7 +1644,7 @@ Qed.
 
 (* \paragraph{[O_NEGATE_CONTRADICT]} *)
 
-Definition negate_contradict (i1 i2 : nat) (h : list proposition) :=
+Definition negate_contradict (i1 i2 : nat) (h : hyps) :=
   match nth_hyps i1 h with
   | EqTerm (Tint Z0) b1 =>
       match nth_hyps i2 h with
@@ -1683,12 +1667,12 @@ Definition negate_contradict (i1 i2 : nat) (h : list proposition) :=
   | _ => h
   end.
 
-Definition negate_contradict_inv (t i1 i2 : nat) (h : list proposition) :=
+Definition negate_contradict_inv (t i1 i2 : nat) (h : hyps) :=
   match nth_hyps i1 h with
   | EqTerm (Tint Z0) b1 =>
       match nth_hyps i2 h with
       | NeqTerm (Tint Z0) b2 =>
-          match eq_term b1 (scalar_norm t (Tmult b2 (Tint (-1)))) with
+          match eq_term b1 (scalar_norm t (b2 * Tint (-1))%term) with
           | true => absurd
           | false => h
           end
@@ -1697,7 +1681,7 @@ Definition negate_contradict_inv (t i1 i2 : nat) (h : list proposition) :=
   | NeqTerm (Tint Z0) b1 =>
       match nth_hyps i2 h with
       | EqTerm (Tint Z0) b2 =>
-          match eq_term b1 (scalar_norm t (Tmult b2 (Tint (-1)))) with
+          match eq_term b1 (scalar_norm t (b2 * Tint (-1))%term) with
           | true => absurd
           | false => h
           end
@@ -1732,11 +1716,11 @@ unfold valid_hyps, negate_contradict_inv in |- *; intros t i j ep e l H;
  auto; intros z; case z; auto; case (nth_hyps j l); 
  auto; intros t3 t4; case t3; auto; intros z'; case z'; 
  auto; simpl in |- *; intros H1 H2;
- (pattern (eq_term t2 (scalar_norm t (Tmult t4 (Tint (-1))))) in |- *;
+ (pattern (eq_term t2 (scalar_norm t (t4 * Tint (-1))%term)) in |- *;
    apply bool_ind2; intro Aux;
-   [ generalize (eq_term_true t2 (scalar_norm t (Tmult t4 (Tint (-1)))) Aux);
+   [ generalize (eq_term_true t2 (scalar_norm t (t4 * Tint (-1))%term) Aux);
       clear Aux
-   | generalize (eq_term_false t2 (scalar_norm t (Tmult t4 (Tint (-1)))) Aux);
+   | generalize (eq_term_false t2 (scalar_norm t (t4 * Tint (-1))%term) Aux);
       clear Aux ]);
  [ intro H3; elim H1; generalize H2; rewrite H3;
     rewrite <- (scalar_norm_stable t e); simpl in |- *;
@@ -1762,32 +1746,28 @@ Definition sum (k1 k2 : Z) (trace : list t_fusion)
   | EqTerm (Tint Z0) b1 =>
       match prop2 with
       | EqTerm (Tint Z0) b2 =>
-          EqTerm (Tint 0)
-            (fusion trace (Tplus (Tmult b1 (Tint k1)) (Tmult b2 (Tint k2))))
+          EqTerm (Tint 0) (fusion trace (b1 * Tint k1 + b2 * Tint k2)%term)
       | LeqTerm (Tint Z0) b2 =>
-          match (k2 ?= 0)%Z with
+          match k2 ?= 0 with
           | Datatypes.Gt =>
               LeqTerm (Tint 0)
-                (fusion trace
-                   (Tplus (Tmult b1 (Tint k1)) (Tmult b2 (Tint k2))))
+                (fusion trace (b1 * Tint k1 + b2 * Tint k2)%term)
           | _ => TrueTerm
           end
       | _ => TrueTerm
       end
   | LeqTerm (Tint Z0) b1 =>
-      match (k1 ?= 0)%Z with
+      match k1 ?= 0 with
       | Datatypes.Gt =>
           match prop2 with
           | EqTerm (Tint Z0) b2 =>
               LeqTerm (Tint 0)
-                (fusion trace
-                   (Tplus (Tmult b1 (Tint k1)) (Tmult b2 (Tint k2))))
+                (fusion trace (b1 * Tint k1 + b2 * Tint k2)%term)
           | LeqTerm (Tint Z0) b2 =>
-              match (k2 ?= 0)%Z with
+              match k2 ?= 0 with
               | Datatypes.Gt =>
                   LeqTerm (Tint 0)
-                    (fusion trace
-                       (Tplus (Tmult b1 (Tint k1)) (Tmult b2 (Tint k2))))
+                    (fusion trace (b1 * Tint k1 + b2 * Tint k2)%term)
               | _ => TrueTerm
               end
           | _ => TrueTerm
@@ -1801,23 +1781,20 @@ Definition sum (k1 k2 : Z) (trace : list t_fusion)
           | true => TrueTerm
           | false =>
               NeqTerm (Tint 0)
-                (fusion trace
-                   (Tplus (Tmult b1 (Tint k1)) (Tmult b2 (Tint k2))))
+                (fusion trace (b1 * Tint k1 + b2 * Tint k2)%term)
           end
       | _ => TrueTerm
       end
   | _ => TrueTerm
   end.
 
-Theorem sum1 :
- forall a b c d : Z, 0%Z = a -> 0%Z = b -> 0%Z = (a * c + b * d)%Z.
+Theorem sum1 : forall a b c d : Z, 0 = a -> 0 = b -> 0 = a * c + b * d.
 
 intros; elim H; elim H0; simpl in |- *; auto.
 Qed.
   
 Theorem sum2 :
- forall a b c d : Z,
- (0 <= d)%Z -> 0%Z = a -> (0 <= b)%Z -> (0 <= a * c + b * d)%Z.
+ forall a b c d : Z, 0 <= d -> 0 = a -> 0 <= b -> 0 <= a * c + b * d.
 
 intros; elim H0; simpl in |- *; generalize H H1; case b; case d;
  unfold Zle in |- *; simpl in |- *; auto.  
@@ -1825,21 +1802,19 @@ Qed.
 
 Theorem sum3 :
  forall a b c d : Z,
- (0 <= c)%Z ->
- (0 <= d)%Z -> (0 <= a)%Z -> (0 <= b)%Z -> (0 <= a * c + b * d)%Z.
+ 0 <= c -> 0 <= d -> 0 <= a -> 0 <= b -> 0 <= a * c + b * d.
 
 intros a b c d; case a; case b; case c; case d; unfold Zle in |- *;
  simpl in |- *; auto. 
 Qed.
 
-Theorem sum4 : forall k : Z, (k ?= 0)%Z = Datatypes.Gt -> (0 <= k)%Z.
+Theorem sum4 : forall k : Z, (k ?= 0) = Datatypes.Gt -> 0 <= k.
 
 intro; case k; unfold Zle in |- *; simpl in |- *; auto; intros; discriminate.  
 Qed.
 
 Theorem sum5 :
- forall a b c d : Z,
- c <> 0%Z -> 0%Z <> a -> 0%Z = b -> 0%Z <> (a * c + b * d)%Z.
+ forall a b c d : Z, c <> 0 -> 0 <> a -> 0 = b -> 0 <> a * c + b * d.
 
 intros a b c d H1 H2 H3; elim H3; simpl in |- *; rewrite Zplus_comm;
  simpl in |- *; generalize H1 H2; case a; case c; simpl in |- *; 
@@ -1857,9 +1832,8 @@ unfold valid2 in |- *; intros k1 k2 t ep e p1 p2; unfold sum in |- *;
  | apply sum2; try assumption; apply sum4; assumption
  | rewrite Zplus_comm; apply sum2; try assumption; apply sum4; assumption
  | apply sum3; try assumption; apply sum4; assumption
- | elim_eq_Z k1 0%Z; simpl in |- *; auto; elim (fusion_stable t);
-    simpl in |- *; intros; unfold Zne in |- *; apply sum5; 
-    assumption ].
+ | elim_eq_Z k1 0; simpl in |- *; auto; elim (fusion_stable t); simpl in |- *;
+    intros; unfold Zne in |- *; apply sum5; assumption ].
 Qed.
 
 (* \paragraph{[O_EXACT_DIVIDE]}
@@ -1869,7 +1843,7 @@ Definition exact_divide (k : Z) (body : term) (t : nat)
   (prop : proposition) :=
   match prop with
   | EqTerm (Tint Z0) b =>
-      match eq_term (scalar_norm t (Tmult body (Tint k))) b with
+      match eq_term (scalar_norm t (body * Tint k)%term) b with
       | true =>
           match eq_Z k 0 with
           | true => TrueTerm
@@ -1885,13 +1859,13 @@ Theorem exact_divide_valid :
 
 
 unfold valid1, exact_divide in |- *; intros k1 k2 t ep e p1; Simplify;
- simpl in |- *; auto; elim_eq_term (scalar_norm t (Tmult k2 (Tint k1))) t1;
- simpl in |- *; auto; elim_eq_Z k1 0%Z; simpl in |- *; 
+ simpl in |- *; auto; elim_eq_term (scalar_norm t (k2 * Tint k1)%term) t1;
+ simpl in |- *; auto; elim_eq_Z k1 0; simpl in |- *; 
  auto; intros H1 H2; elim H2; elim scalar_norm_stable; 
  simpl in |- *; generalize H1; case (interp_term e k2); 
  try trivial;
  (case k1; simpl in |- *;
-   [ intros; absurd (0%Z = 0%Z); assumption
+   [ intros; absurd (0 = 0); assumption
    | intros p2 p3 H3 H4; discriminate H4
    | intros p2 p3 H3 H4; discriminate H4 ]).
 
@@ -1908,13 +1882,12 @@ Definition divide_and_approx (k1 k2 : Z) (body : term)
   match prop with
   | LeqTerm (Tint Z0) b =>
       match
-        eq_term (scalar_norm_add t (Tplus (Tmult body (Tint k1)) (Tint k2)))
-          b
+        eq_term (scalar_norm_add t (body * Tint k1 + Tint k2)%term) b
       with
       | true =>
-          match (k1 ?= 0)%Z with
+          match k1 ?= 0 with
           | Datatypes.Gt =>
-              match (k1 ?= k2)%Z with
+              match k1 ?= k2 with
               | Datatypes.Gt => LeqTerm (Tint 0) body
               | _ => prop
               end
@@ -1931,7 +1904,7 @@ Theorem divide_and_approx_valid :
 
 unfold valid1, divide_and_approx in |- *; intros k1 k2 body t ep e p1;
  Simplify;
- elim_eq_term (scalar_norm_add t (Tplus (Tmult body (Tint k1)) (Tint k2))) t1;
+ elim_eq_term (scalar_norm_add t (body * Tint k1 + Tint k2)%term) t1;
  Simplify; auto; intro E; elim E; simpl in |- *;
  elim (scalar_norm_add_stable t e); simpl in |- *; 
  intro H1; apply Zmult_le_approx with (3 := H1); assumption.
@@ -1944,7 +1917,7 @@ Definition merge_eq (t : nat) (prop1 prop2 : proposition) :=
   | LeqTerm (Tint Z0) b1 =>
       match prop2 with
       | LeqTerm (Tint Z0) b2 =>
-          match eq_term b1 (scalar_norm t (Tmult b2 (Tint (-1)))) with
+          match eq_term b1 (scalar_norm t (b2 * Tint (-1))%term) with
           | true => EqTerm (Tint 0) b1
           | false => TrueTerm
           end
@@ -1965,7 +1938,7 @@ Qed.
 
 (* \paragraph{[O_CONSTANT_NUL]} *)
 
-Definition constant_nul (i : nat) (h : list proposition) :=
+Definition constant_nul (i : nat) (h : hyps) :=
   match nth_hyps i h with
   | NeqTerm (Tint Z0) (Tint Z0) => absurd
   | _ => h
@@ -1975,8 +1948,7 @@ Theorem constant_nul_valid : forall i : nat, valid_hyps (constant_nul i).
 
 unfold valid_hyps, constant_nul in |- *; intros;
  generalize (nth_valid ep e i lp); Simplify; simpl in |- *;
- unfold Zne in |- *; intro H1; absurd (0%Z = 0%Z); 
- auto.
+ unfold Zne in |- *; intro H1; absurd (0 = 0); auto.
 Qed.
 
 (* \paragraph{[O_STATE]} *)
@@ -1985,9 +1957,8 @@ Definition state (m : Z) (s : step) (prop1 prop2 : proposition) :=
   match prop1 with
   | EqTerm (Tint Z0) b1 =>
       match prop2 with
-      | EqTerm (Tint Z0) (Tplus b2 (Topp b3)) =>
-          EqTerm (Tint 0)
-            (rewrite s (Tplus b1 (Tmult (Tplus (Topp b3) b2) (Tint m))))
+      | EqTerm (Tint Z0) (b2 + - b3)%term =>
+          EqTerm (Tint 0) (rewrite s (b1 + (- b3 + b2) * Tint m)%term)
       | _ => TrueTerm
       end
   | _ => TrueTerm
@@ -2007,21 +1978,19 @@ Qed.
    \paragraph{[O_SPLIT_INEQ]} 
    La seule pour le moment (tant que la normalisation n'est pas réfléchie). *)
 
-Definition split_ineq (i t : nat)
-  (f1 f2 : list proposition -> list (list proposition))
-  (l : list proposition) :=
+Definition split_ineq (i t : nat) (f1 f2 : hyps -> lhyps) 
+  (l : hyps) :=
   match nth_hyps i l with
   | NeqTerm (Tint Z0) b1 =>
-      f1 (LeqTerm (Tint 0) (add_norm t (Tplus b1 (Tint (-1)))) :: l) ++
+      f1 (LeqTerm (Tint 0) (add_norm t (b1 + Tint (-1))%term) :: l) ++
       f2
         (LeqTerm (Tint 0)
-           (scalar_norm_add t (Tplus (Tmult b1 (Tint (-1))) (Tint (-1))))
-         :: l)
+           (scalar_norm_add t (b1 * Tint (-1) + Tint (-1))%term) :: l)
   | _ => l :: nil
   end.
 
 Theorem split_ineq_valid :
- forall (i t : nat) (f1 f2 : list proposition -> list (list proposition)),
+ forall (i t : nat) (f1 f2 : hyps -> lhyps),
  valid_list_hyps f1 ->
  valid_list_hyps f2 -> valid_list_hyps (split_ineq i t f1 f2).
 
@@ -2041,34 +2010,27 @@ Qed.
 
 (* \subsection{La fonction de rejeu de la trace} *)
 
-Fixpoint execute_omega (t : t_omega) (l : list proposition) {struct t} :
- list (list proposition) :=
+Fixpoint execute_omega (t : t_omega) (l : hyps) {struct t} : lhyps :=
   match t with
-  | O_CONSTANT_NOT_NUL n =>
-      (fun a : list proposition => a :: nil) (constant_not_nul n l)
-  | O_CONSTANT_NEG n =>
-      (fun a : list proposition => a :: nil) (constant_neg n l)
+  | O_CONSTANT_NOT_NUL n => singleton (constant_not_nul n l)
+  | O_CONSTANT_NEG n => singleton (constant_neg n l)
   | O_DIV_APPROX k1 k2 body t cont n =>
       execute_omega cont (apply_oper_1 n (divide_and_approx k1 k2 body t) l)
   | O_NOT_EXACT_DIVIDE k1 k2 body t i =>
-      (fun a : list proposition => a :: nil)
-        (not_exact_divide k1 k2 body t i l)
+      singleton (not_exact_divide k1 k2 body t i l)
   | O_EXACT_DIVIDE k body t cont n =>
       execute_omega cont (apply_oper_1 n (exact_divide k body t) l)
   | O_SUM k1 i1 k2 i2 t cont =>
       execute_omega cont (apply_oper_2 i1 i2 (sum k1 k2 t) l)
-  | O_CONTRADICTION t i j =>
-      (fun a : list proposition => a :: nil) (contradiction t i j l)
+  | O_CONTRADICTION t i j => singleton (contradiction t i j l)
   | O_MERGE_EQ t i1 i2 cont =>
       execute_omega cont (apply_oper_2 i1 i2 (merge_eq t) l)
   | O_SPLIT_INEQ t i cont1 cont2 =>
       split_ineq i t (execute_omega cont1) (execute_omega cont2) l
-  | O_CONSTANT_NUL i =>
-      (fun a : list proposition => a :: nil) (constant_nul i l)
-  | O_NEGATE_CONTRADICT i j =>
-      (fun a : list proposition => a :: nil) (negate_contradict i j l)
+  | O_CONSTANT_NUL i => singleton (constant_nul i l)
+  | O_NEGATE_CONTRADICT i j => singleton (negate_contradict i j l)
   | O_NEGATE_CONTRADICT_INV t i j =>
-      (fun a : list proposition => a :: nil) (negate_contradict_inv t i j l)
+      singleton (negate_contradict_inv t i j l)
   | O_STATE m s i1 i2 cont =>
       execute_omega cont (apply_oper_2 i1 i2 (state m s) l)
   end.
@@ -2126,14 +2088,12 @@ Qed.
 
 Definition move_right (s : step) (p : proposition) :=
   match p with
-  | EqTerm t1 t2 => EqTerm (Tint 0) (rewrite s (Tplus t1 (Topp t2)))
-  | LeqTerm t1 t2 => LeqTerm (Tint 0) (rewrite s (Tplus t2 (Topp t1)))
-  | GeqTerm t1 t2 => LeqTerm (Tint 0) (rewrite s (Tplus t1 (Topp t2)))
-  | LtTerm t1 t2 =>
-      LeqTerm (Tint 0) (rewrite s (Tplus (Tplus t2 (Tint (-1))) (Topp t1)))
-  | GtTerm t1 t2 =>
-      LeqTerm (Tint 0) (rewrite s (Tplus (Tplus t1 (Tint (-1))) (Topp t2)))
-  | NeqTerm t1 t2 => NeqTerm (Tint 0) (rewrite s (Tplus t1 (Topp t2)))
+  | EqTerm t1 t2 => EqTerm (Tint 0) (rewrite s (t1 + - t2)%term)
+  | LeqTerm t1 t2 => LeqTerm (Tint 0) (rewrite s (t2 + - t1)%term)
+  | GeqTerm t1 t2 => LeqTerm (Tint 0) (rewrite s (t1 + - t2)%term)
+  | LtTerm t1 t2 => LeqTerm (Tint 0) (rewrite s (t2 + Tint (-1) + - t1)%term)
+  | GtTerm t1 t2 => LeqTerm (Tint 0) (rewrite s (t1 + Tint (-1) + - t2)%term)
+  | NeqTerm t1 t2 => NeqTerm (Tint 0) (rewrite s (t1 + - t2)%term)
   | p => p
   end.
 
@@ -2165,7 +2125,7 @@ intros; unfold do_normalize in |- *; apply apply_oper_1_valid;
 Qed.
 
 Fixpoint do_normalize_list (l : list step) (i : nat) 
- (h : list proposition) {struct l} : list proposition :=
+ (h : hyps) {struct l} : hyps :=
   match l with
   | s :: l' => do_normalize_list l' (S i) (do_normalize i s h)
   | nil => h
@@ -2181,11 +2141,8 @@ simple induction l; simpl in |- *; unfold valid_hyps in |- *;
 Qed.
 
 Theorem normalize_goal :
- forall (s : list step) (ep : PropList) (env : list Z) (l : list proposition),
- (fun (envp : PropList) (env : list Z) (l : list proposition) =>
-  interp_goal_concl envp env FalseTerm l) ep env (do_normalize_list s 0 l) ->
- (fun (envp : PropList) (env : list Z) (l : list proposition) =>
-  interp_goal_concl envp env FalseTerm l) ep env l.
+ forall (s : list step) (ep : PropList) (env : list Z) (l : hyps),
+ interp_goal ep env (do_normalize_list s 0 l) -> interp_goal ep env l.
 
 intros; apply valid_goal with (2 := H); apply do_normalize_list_valid.
 Qed.
@@ -2193,17 +2150,15 @@ Qed.
 (* \subsubsection{Exécution de la trace} *)
 
 Theorem execute_goal :
- forall (t : t_omega) (ep : PropList) (env : list Z) (l : list proposition),
- interp_list_goal ep env (execute_omega t l) ->
- (fun (envp : PropList) (env : list Z) (l : list proposition) =>
-  interp_goal_concl envp env FalseTerm l) ep env l.
+ forall (t : t_omega) (ep : PropList) (env : list Z) (l : hyps),
+ interp_list_goal ep env (execute_omega t l) -> interp_goal ep env l.
 
 intros; apply (goal_valid (execute_omega t) (omega_valid t) ep env l H).
 Qed.
 
 
 Theorem append_goal :
- forall (ep : PropList) (e : list Z) (l1 l2 : list (list proposition)),
+ forall (ep : PropList) (e : list Z) (l1 l2 : lhyps),
  interp_list_goal ep e l1 /\ interp_list_goal ep e l2 ->
  interp_list_goal ep e (l1 ++ l2).
 
@@ -2262,15 +2217,15 @@ Qed.
    conclusion. We use an intermediate fixpoint. *)
 
 Fixpoint interp_full_goal (envp : PropList) (env : list Z) 
- (c : proposition) (l : list proposition) {struct l} : Prop :=
+ (c : proposition) (l : hyps) {struct l} : Prop :=
   match l with
   | nil => interp_proposition envp env c
   | p' :: l' =>
       interp_proposition envp env p' -> interp_full_goal envp env c l'
   end.
 
-Definition interp_full (ep : PropList) (e : list Z)
-  (lc : list proposition * proposition) : Prop :=
+Definition interp_full (ep : PropList) (e : list Z) 
+  (lc : hyps * proposition) : Prop :=
   match lc with
   | (l, c) => interp_full_goal ep e c l
   end.
@@ -2279,7 +2234,7 @@ Definition interp_full (ep : PropList) (e : list Z)
    of its hypothesis and conclusion *)
 
 Theorem interp_full_false :
- forall (ep : PropList) (e : list Z) (l : list proposition) (c : proposition),
+ forall (ep : PropList) (e : list Z) (l : hyps) (c : proposition),
  (interp_hyps ep e l -> interp_proposition ep e c) -> interp_full ep e (l, c).
 
 simple induction l; unfold interp_full in |- *; simpl in |- *;
@@ -2291,7 +2246,7 @@ Qed.
    If the decidability cannot be "proven", then just forget about the 
    conclusion (equivalent of replacing it with false) *)
 
-Definition to_contradict (lc : list proposition * proposition) :=
+Definition to_contradict (lc : hyps * proposition) :=
   match lc with
   | (l, c) => if decidability c then Tnot c :: l else l
   end.
@@ -2300,10 +2255,8 @@ Definition to_contradict (lc : list proposition * proposition) :=
    hypothesis implies the original goal *)
 
 Theorem to_contradict_valid :
- forall (ep : PropList) (e : list Z) (lc : list proposition * proposition),
- (fun (envp : PropList) (env : list Z) (l : list proposition) =>
-  interp_goal_concl envp env FalseTerm l) ep e (to_contradict lc) ->
- interp_full ep e lc.
+ forall (ep : PropList) (e : list Z) (lc : hyps * proposition),
+ interp_goal ep e (to_contradict lc) -> interp_full ep e lc.
 
 intros ep e lc; case lc; intros l c; simpl in |- *;
  pattern (decidability c) in |- *; apply bool_ind2;
@@ -2336,8 +2289,7 @@ Fixpoint map_cons (A : Set) (x : A) (l : list (list A)) {struct l} :
           hypothesis will get desynchronised and this will be a mess.
  *)
  
-Fixpoint destructure_hyps (nn : nat) (ll : list proposition) {struct nn} :
- list (list proposition) :=
+Fixpoint destructure_hyps (nn : nat) (ll : hyps) {struct nn} : lhyps :=
   match nn with
   | O => ll :: nil
   | S n =>
@@ -2371,8 +2323,7 @@ Fixpoint destructure_hyps (nn : nat) (ll : list proposition) {struct nn} :
   end.
 
 Theorem map_cons_val :
- forall (ep : PropList) (e : list Z) (p : proposition)
-   (l : list (list proposition)),
+ forall (ep : PropList) (e : list Z) (p : proposition) (l : lhyps),
  interp_proposition ep e p ->
  interp_list_hyps ep e l -> interp_list_hyps ep e (map_cons _ p l).
 
@@ -2514,7 +2465,7 @@ unfold prop_stable in |- *; intros f H ep e p; split;
       unfold decidable, Zne in |- *; tauto ]).
 Qed.
 
-Theorem Zlt_left_inv : forall x y : Z, (0 <= y + -1 + - x)%Z -> (x < y)%Z.
+Theorem Zlt_left_inv : forall x y : Z, 0 <= y + -1 + - x -> x < y.
 
 intros; apply Zsucc_lt_reg; apply Zle_lt_succ;
  apply (fun a b : Z => Zplus_le_reg_r a b (-1 + - x)); 
@@ -2570,8 +2521,7 @@ simple induction s; simpl in |- *;
  | unfold prop_stable in |- *; simpl in |- *; intros; split; auto ].
 Qed.
 
-Fixpoint normalize_hyps (l : list h_step) (lh : list proposition) {struct l}
- : list proposition :=
+Fixpoint normalize_hyps (l : list h_step) (lh : hyps) {struct l} : hyps :=
   match l with
   | nil => lh
   | pair_step i s :: r => normalize_hyps r (apply_oper_1 i (p_rewrite s) lh)
@@ -2590,12 +2540,8 @@ simple induction l; unfold valid_hyps in |- *; simpl in |- *;
 Qed.
 
 Theorem normalize_hyps_goal :
- forall (s : list h_step) (ep : PropList) (env : list Z)
-   (l : list proposition),
- (fun (envp : PropList) (env : list Z) (l : list proposition) =>
-  interp_goal_concl envp env FalseTerm l) ep env (normalize_hyps s l) ->
- (fun (envp : PropList) (env : list Z) (l : list proposition) =>
-  interp_goal_concl envp env FalseTerm l) ep env l.
+ forall (s : list h_step) (ep : PropList) (env : list Z) (l : hyps),
+ interp_goal ep env (normalize_hyps s l) -> interp_goal ep env l.
 
 intros; apply valid_goal with (2 := H); apply normalize_hyps_valid.
 Qed.
@@ -2675,8 +2621,7 @@ unfold valid1, co_valid1 in |- *; simple induction s;
 
 Qed.
 
-Fixpoint decompose_solve (s : e_step) (h : list proposition) {struct s} :
- list (list proposition) :=
+Fixpoint decompose_solve (s : e_step) (h : hyps) {struct s} : lhyps :=
   match s with
   | E_SPLIT i dl s1 s2 =>
       match extract_hyp_pos dl (nth_hyps i h) with
@@ -2721,17 +2666,15 @@ Qed.
 
 (* \subsection{La dernière étape qui élimine tous les séquents inutiles} *)
 
-Definition valid_lhyps
-  (f : list (list proposition) -> list (list proposition)) :=
-  forall (ep : PropList) (e : list Z) (lp : list (list proposition)),
+Definition valid_lhyps (f : lhyps -> lhyps) :=
+  forall (ep : PropList) (e : list Z) (lp : lhyps),
   interp_list_hyps ep e lp -> interp_list_hyps ep e (f lp).
 
-Fixpoint reduce_lhyps (lp : list (list proposition)) :
- list (list proposition) :=
+Fixpoint reduce_lhyps (lp : lhyps) : lhyps :=
   match lp with
   | (FalseTerm :: nil) :: lp' => reduce_lhyps lp'
   | x :: lp' => x :: reduce_lhyps lp'
-  | nil => nil (A:=list proposition)
+  | nil => nil (A:=hyps)
   end.
 
 Theorem reduce_lhyps_valid : valid_lhyps reduce_lhyps.
@@ -2744,7 +2687,7 @@ unfold valid_lhyps in |- *; intros ep e lp; elim lp;
 Qed.
 
 Theorem do_reduce_lhyps :
- forall (envp : PropList) (env : list Z) (l : list (list proposition)),
+ forall (envp : PropList) (env : list Z) (l : lhyps),
  interp_list_goal envp env (reduce_lhyps l) -> interp_list_goal envp env l.
 
 intros envp env l H; apply list_goal_to_hyps; intro H1;
@@ -2756,13 +2699,11 @@ Definition concl_to_hyp (p : proposition) :=
   if decidability p then Tnot p else TrueTerm.
 
 Definition do_concl_to_hyp :
-  forall (envp : PropList) (env : list Z) (c : proposition)
-    (l : list proposition),
-  (fun (envp : PropList) (env : list Z) (l : list proposition) =>
-   interp_goal_concl envp env FalseTerm l) envp env (
-    concl_to_hyp c :: l) -> interp_goal_concl envp env c l.
+  forall (envp : PropList) (env : list Z) (c : proposition) (l : hyps),
+  interp_goal envp env (concl_to_hyp c :: l) ->
+  interp_goal_concl c envp env l.
 
-simpl in |- *; intros envp env c l; induction  l as [| a l Hrecl];
+simpl in |- *; intros envp env c l; induction l as [| a l Hrecl];
  [ simpl in |- *; unfold concl_to_hyp in |- *;
     pattern (decidability c) in |- *; apply bool_ind2;
     [ intro H; generalize (decidable_correct envp env c H);
@@ -2772,14 +2713,14 @@ simpl in |- *; intros envp env c l; induction  l as [| a l Hrecl];
 Qed.
 
 Definition omega_tactic (t1 : e_step) (t2 : list h_step) 
-  (c : proposition) (l : list proposition) :=
+  (c : proposition) (l : hyps) :=
   reduce_lhyps (decompose_solve t1 (normalize_hyps t2 (concl_to_hyp c :: l))).
 
 Theorem do_omega :
  forall (t1 : e_step) (t2 : list h_step) (envp : PropList) 
-   (env : list Z) (c : proposition) (l : list proposition),
+   (env : list Z) (c : proposition) (l : hyps),
  interp_list_goal envp env (omega_tactic t1 t2 c l) ->
- interp_goal_concl envp env c l.
+ interp_goal_concl c envp env l.
 
 unfold omega_tactic in |- *; intros; apply do_concl_to_hyp;
  apply (normalize_hyps_goal t2); apply (decompose_solve_valid t1);
