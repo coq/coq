@@ -359,7 +359,7 @@ let prim_refiner r sigma goal =
     | { name = Fix; hypspecs = []; terms = []; 
 	newids = [f]; params = [Num(_,n)] } ->
      	let rec check_ind k cl = 
-          match kind_of_term (whd_castapp cl) with 
+          match kind_of_term (strip_outer_cast cl) with 
             | IsProd (_,c1,b) -> 
             	if k = 1 then 
 		  try 
@@ -379,7 +379,7 @@ let prim_refiner r sigma goal =
     
     | { name = Fix; hypspecs = []; terms = lar; newids = lf; params = ln } ->
      	let rec check_ind k cl = 
-          match kind_of_term (whd_castapp cl) with 
+          match kind_of_term (strip_outer_cast cl) with 
             | IsProd (_,c1,b) -> 
             	if k = 1 then 
 		  try 
@@ -410,7 +410,7 @@ let prim_refiner r sigma goal =
 
     | { name = Cofix; hypspecs = []; terms = lar; newids = lf; params = [] } ->
      	let rec check_is_coind cl = 
-	  let b = whd_betadeltaiota env sigma (whd_castapp cl) in
+	  let b = whd_betadeltaiota env sigma cl in
           match kind_of_term b with
             | IsProd (_,c1,b) -> check_is_coind  b
             | _ -> 
