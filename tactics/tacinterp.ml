@@ -964,6 +964,10 @@ let is_match_catchable = function
   | No_match | Eval_fail _ -> true
   | e -> is_failure e or Logic.catchable_exception e
 
+let hack_fail_level_shift = ref 0
+let hack_fail_level n =
+  if n >= !hack_fail_level_shift then n - !hack_fail_level_shift else 0
+
 (* Verifies if the matched list is coherent with respect to lcm *)
 let rec verify_metas_coherence gl lcm = function
   | (num,csr)::tl ->
@@ -1349,7 +1353,7 @@ and eval_tactic ist = function
   | TacMatchContext _ -> assert false
   | TacMatch (c,lmr) -> assert false
   | TacId s -> tclIDTAC_MESSAGE s
-  | TacFail (n,s) -> tclFAIL (interp_int_or_var ist n) s
+  | TacFail (n,s) -> tclFAIL (hack_fail_level (interp_int_or_var ist n)) s
   | TacProgress tac -> tclPROGRESS (interp_tactic ist tac)
   | TacAbstract (tac,s) -> Tactics.tclABSTRACT s (interp_tactic ist tac)
   | TacThen (t1,t2) -> tclTHEN (interp_tactic ist t1) (interp_tactic ist t2)
@@ -1675,7 +1679,14 @@ and interp_match ist g constr lmr =
       errorlabstrm "Tacinterp.apply_match" 
         (str "Argument of match does not evaluate to a term") in
   let ilr = read_match_rule (project g) env (fst (constr_list ist env)) lmr in
-  apply_match ist csr ilr
+  try
+    incr hack_fail_level_shift;
+    let x = apply_match ist csr ilr in
+    decr hack_fail_level_shift;
+    x
+  with e ->
+    decr hack_fail_level_shift;
+    raise e
 
 (* Interprets tactic expressions : returns a "tactic" *)
 and interp_tactic ist tac gl =
