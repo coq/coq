@@ -242,9 +242,15 @@ let computable p k =
 
 let lookup_name_as_renamed ctxt t s =
   let rec lookup avoid env_names n c = match kind_of_term c with
-    | IsProd (name,t,c') ->
+    | IsProd (name,_,c') ->
 	(match concrete_name avoid env_names name c' with
-             (Some id,avoid') -> 
+           | (Some id,avoid') -> 
+	       if id=s then (Some n) 
+	       else lookup avoid' (add_name (Name id) env_names) (n+1) c'
+	   | (None,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
+    | IsLetIn (name,_,_,c') ->
+	(match concrete_name avoid env_names name c' with
+           | (Some id,avoid') -> 
 	       if id=s then (Some n) 
 	       else lookup avoid' (add_name (Name id) env_names) (n+1) c'
 	   | (None,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
@@ -256,8 +262,12 @@ let lookup_index_as_renamed t n =
   let rec lookup n d c = match kind_of_term c with
     | IsProd (name,_,c') ->
 	  (match concrete_name [] empty_names_context name c' with
-          (Some _,_) -> lookup n (d+1) c'
-        | (None  ,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
+               (Some _,_) -> lookup n (d+1) c'
+             | (None  ,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
+    | IsLetIn (name,_,_,c') ->
+	  (match concrete_name [] empty_names_context name c' with
+             | (Some _,_) -> lookup n (d+1) c'
+             | (None  ,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
     | IsCast (c,_) -> lookup n d c
     | _ -> None
   in lookup n 1 t
