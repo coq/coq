@@ -633,8 +633,6 @@ Perhaps you may need to use \eauto.
 
 This is the same tactic as \auto, but it does some \eapply instead of \apply.
 
-
-
 \Question{I want to replace some term with another in the goal, how can I do it ?}
 
 If one of your hypothesis (say {\tt H}) states that the terms are equals you can use the \rewrite tactic. Otherwise you can use the \replace {\tt with} tactic. 
@@ -784,6 +782,10 @@ You can use the {\tt Admitted} command to state your current proof as an axiom.
 \section{Inductives}
 
 
+\Question{How can I define a fixpoint when no argument is structurally smaller ?}
+
+
+
 
 \Question{How can I prove that two constructors are different ?}
 
@@ -803,7 +805,17 @@ Qed.
 
 
 
-\section{Notations}
+\section{Syntax and notations}
+
+\Question{I do not want to type ``forall'' because it is too long, how can I do ?}
+
+You can define your own notation for forall :
+\begin{verbatim}
+Notation "fa x : t, P" := (forall x:t, P) (at level 200, x ident).
+\end{verbatim}
+or if your are using \CoqIde you can define a pretty symbol for for all and an input method (see \ref{forallcoqide}).
+
+
 
 \Question{How can I define a notation for square ?}
 
@@ -943,7 +955,9 @@ is rendered into something like
 Otherwise said, Generalize is not rendered in a forward-reasoning way,
 while Assert is.
 
-\Question{How can I define vectors of size n ?}
+
+\Question{How can I define vectors or lists of size n ?}
+
 
 \Question{How can I speed up \auto ?}
 
@@ -1042,7 +1056,7 @@ You can use {\tt coq\_tex}.
  Set the \verb#GDK_USE_XFT# variable to \verb#1#. This is by default with \verb#Gtk >= 2.2#.
     If some of your fonts are not available, set \verb#GDK_USE_XFT# to \verb#0#.
 
-\Question{How to use those Forall and Exists pretty symbols ?}
+\Question{How to use those Forall and Exists pretty symbols ?}\label{forallcoqide}
  Thanks to the notation features in \Coq, you just need to insert these
 lines in your \Coq buffer :
 \begin{verbatim}
