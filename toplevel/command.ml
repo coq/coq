@@ -124,26 +124,32 @@ let build_mutual lparams lnamearconstrs finite =
   and nparams = List.length lparams
   and sigma = Evd.empty 
   and env0 = Global.env() in
-  let mispecvec =
-    let (ind_env,arityl) =
-      List.fold_left 
-	(fun (env,arl) (recname,arityc,_) -> 
-           let raw_arity = mkProdCit lparams arityc in
-           let arj = type_judgment_of_rawconstr Evd.empty env raw_arity in
-	   let arity = arj.utj_val in
-	   let env' = Environ.push_rel_assum (Name recname,arity) env in
-	   (env', (arity::arl)))
-	(env0,[]) lnamearconstrs 
-    in
+  let env_params, params =
+    List.fold_left
+      (fun (env, params) (id,t) ->
+	 let p = interp_type sigma env t in
+	 (Environ.push_rel_assum (Name id,p) env, (Name id,p)::params))
+      (env0,[]) lparams
+  in
+  let (ind_env,arityl) =
+    List.fold_left
+      (fun (env,arl) (recname,arityc,_) ->
+         let arity = interp_type sigma env_params arityc in
+	 let fullarity = prod_it arity params in
+	 let env' = Environ.push_rel_assum (Name recname,fullarity) env in
+	 (env', (fullarity::arl)))
+      (env0,[]) lnamearconstrs
+  in
+  let ind_env_params = Environ.push_rels_assum params ind_env in
+  let mispecvec = 
     List.map2
-      (fun ar (name,_,lname_constr) -> 
-         let consconstrl =
-           List.map 
-             (fun (_,constr) -> interp_constr sigma ind_env
-                  (mkProdCit lparams constr))
-             lname_constr 
-	 in
-         (name, (body_of_type ar), List.map fst lname_constr, consconstrl))
+      (fun ar (name,_,lname_constr) ->
+	 let constrnames, bodies = List.split lname_constr in
+         let constrs =
+	   List.map
+	     (fun c -> prod_it (interp_constr sigma ind_env_params c) params)
+	     bodies
+	 in (name, ar, constrnames, constrs))
       (List.rev arityl) lnamearconstrs
   in
   let mie = { 
@@ -204,27 +210,27 @@ let build_recursive lnameargsardef =
       List.fold_left 
         (fun (env,arl) (recname,lparams,arityc,_) -> 
            let raw_arity = mkProdCit lparams arityc in
-           let arj = type_judgment_of_rawconstr Evd.empty env raw_arity in
-	   let arity = arj.utj_val in
+           let arity = interp_type sigma env0 raw_arity in
            declare_variable recname
-	     (SectionLocalAssum arj.utj_val,NeverDischarge,false);
+	     (SectionLocalAssum arity, NeverDischarge, false);
            (Environ.push_named_assum (recname,arity) env, (arity::arl)))
         (env0,[]) lnameargsardef
     with e ->
       States.unfreeze fs; raise e
-  in 
-  let recdef = (* TODO: remplacer mkCast par un appel à interp_casted_constr *)
+  in
+  let arityl = List.rev arityl in
+  let recdef =
     try 
-      List.map (fun (_,lparams,arityc,def) -> 
-                  interp_constr sigma rec_sign 
-                    (mkLambdaCit lparams (mkCastC(def,arityc))))
-        lnameargsardef
-    with e -> 
+      List.map2
+	(fun (_,lparams,_,def) arity ->
+           interp_casted_constr sigma rec_sign (mkLambdaCit lparams def) arity)
+        lnameargsardef arityl
+    with e ->
       States.unfreeze fs; raise e
   in
   States.unfreeze fs;
   let (lnonrec,(lnamerec,ldefrec,larrec,nvrec)) = 
-    collect_non_rec lrecnames recdef (List.rev arityl) (Array.to_list nv) in
+    collect_non_rec lrecnames recdef arityl (Array.to_list nv) in
   let n = NeverDischarge in 
   if lnamerec <> [] then begin
     let recvec = 

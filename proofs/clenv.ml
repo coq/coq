@@ -265,17 +265,17 @@ let unify m gls =
 
 let collect_metas c = 
   let rec collrec acc c =
-    match splay_constr c with
-      | OpMeta mv, _ -> mv::acc
-      | _, cl        -> Array.fold_left collrec acc cl
+    match kind_of_term c with
+      | IsMeta mv -> mv::acc
+      | _         -> fold_constr collrec acc c
   in
   List.rev (collrec [] c)
 
 let metavars_of c =  
   let rec collrec acc c =
-    match splay_constr c with
-      | OpMeta mv, _ -> Intset.add mv acc
-      | _, cl       ->  Array.fold_left collrec acc cl
+    match kind_of_term c with
+      | IsMeta mv -> Intset.add mv acc
+      | _         -> fold_constr collrec acc c
   in 
   collrec Intset.empty c
 
