@@ -39,3 +39,5 @@ val build_corecursive :  (identifier * Coqast.t * Coqast.t) list -> unit
 val build_scheme : (identifier * bool * identifier * Coqast.t) list -> unit
 
 val start_proof_com : string -> strength -> Coqast.t -> unit
+
+val get_current_context : unit -> Proof_type.evar_declarations * Environ.env
