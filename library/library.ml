@@ -142,23 +142,29 @@ let libraries_loaded_list = ref []
 let libraries_imports_list = ref []
 let libraries_exports_list = ref []
 
+(* cache for loaded libraries *)
+let compunit_cache = ref CompilingLibraryMap.empty
+
 let freeze () =
   !libraries_table,
   !libraries_loaded_list,
   !libraries_imports_list,
-  !libraries_exports_list
+  !libraries_exports_list,
+  !compunit_cache
 
-let unfreeze (mt,mo,mi,me) = 
+let unfreeze (mt,mo,mi,me,cu) = 
   libraries_table := mt;
   libraries_loaded_list := mo;
   libraries_imports_list := mi;
-  libraries_exports_list := me
+  libraries_exports_list := me;
+  compunit_cache := cu
 
 let init () =
   libraries_table := CompilingLibraryMap.empty;
   libraries_loaded_list := [];
   libraries_imports_list := [];
-  libraries_exports_list := []
+  libraries_exports_list := [];
+  compunit_cache := CompilingLibraryMap.empty
 
 let _ = 
   Summary.declare_summary "MODULES"
@@ -257,8 +263,6 @@ let open_libraries export modl =
 
 (************************************************************************)
 (*s Loading from disk to cache (preparation phase) *)
-
-let compunit_cache = ref CompilingLibraryMap.empty
 
 let vo_magic_number = 0704 (* V7.4 *)
 
