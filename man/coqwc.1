@@ -1,0 +1,47 @@
+.TH COQ 1 "16 March 2004" "Coq tools"
+
+.SH NAME
+coqwc \- print the number of specification, proof and comment lines in
+Coq files
+
+.SH SYNOPSIS
+.B coqwc
+[
+.BI \-p
+]
+[
+.BI \-s
+]
+[
+.BI \-r
+]
+[
+.BI \-e
+]
+.I files ...
+
+.SH DESCRIPTION
+
+.B coqwc
+computes the number of specification lines, proof lines and comment
+lines in Coq files.
+
+.SH OPTIONS
+
+.TP
+.BI \-p
+Print the percentage of comments
+.TP
+.BI \-s
+Print only the number of specification lines
+.TP
+.BI \-r
+Print only the number of proof lines
+.TP
+.BI \-e
+Do not skip headers
+
+.SH BUGS
+
+Please report any bug to
+.B coq-bugs@pauillac.inria.fr
