@@ -68,7 +68,7 @@ let test_int_bang =
 (* Hack to parse "`id:...`" at level 0 without conflicting with
    "`...`" from ZArith *)
 let test_ident_colon =
-  Gram.Entry.of_parser "test_int_bang"
+  Gram.Entry.of_parser "test_ident_colon"
     (fun strm ->
       match Stream.npeek 1 strm with
         | [("IDENT", _)] ->
@@ -146,9 +146,8 @@ GEXTEND Gram
       | "?"; n = Prim.natural -> CMeta (loc, n)
       | bll = binders; c = constr LEVEL "top" -> abstract_constr loc c bll
       (* Hack to parse syntax "(n)" as a natural number *)
-      | "("; test_int_rparen; n = INT; ")" ->
-	  let n = CNumeral (loc,Bignat.POS (Bignat.of_string n)) in
-          CDelimiters (loc,"N",n)
+      | "("; test_int_rparen; n = bigint; ")" ->
+          CDelimiters (loc,"N",CNumeral (loc,n))
       | "("; lc1 = lconstr; ":"; c = constr; (bl,body) = product_tail ->
           let id = coerce_to_name lc1 in
 	  CProdN (loc, ([id], c)::bl, body)
@@ -176,10 +175,9 @@ GEXTEND Gram
 	  CCoFix (loc, id, fbinders)
       | s = sort -> CSort (loc, s)
       | v = global -> CRef v
-      | n = INT -> CNumeral (loc,Bignat.POS (Bignat.of_string n))
-      | "-"; n = INT -> CNumeral (loc,Bignat.NEG (Bignat.of_string n))
+      | n = bigint -> CNumeral (loc,n)
       | "!"; f = global -> CAppExpl (loc,f,[])
-      | "`"; test_ident_colon; key = string; ":"; c = constr; "`" -> 
+      | "'"; test_ident_colon; key = IDENT; ":"; c = constr; "'" -> 
           CDelimiters (loc,key,c) ] ]
   ;
   lconstr:
