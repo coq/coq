@@ -1027,7 +1027,7 @@ pr_vbinders bl ++ spc())
       let pr_printable = function
 	| PrintFullContext -> str"Print All"
 	| PrintSectionContext s ->
-            str"Print Section" ++ spc() ++ pr_reference s
+            str"Print Section" ++ spc() ++ Libnames.pr_reference s
 	| PrintGrammar (uni,ent) ->
             str"Print Grammar" ++ spc() ++ str uni ++ spc() ++ str ent
 	| PrintLoadPath -> str"Print LoadPath"
