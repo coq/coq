@@ -145,6 +145,7 @@ let _ = List.iter
 	    "|-",  "\\ensuremath{\\vdash}";
 	    "forall", "\\ensuremath{\\forall}";
 	    "exists", "\\ensuremath{\\exists}";
+	    (* "fun", "\\ensuremath{\\lambda}" ? *)
 	  ]
 
 (*s Table of contents *)
