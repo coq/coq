@@ -16,7 +16,14 @@ open Util
 GEXTEND Gram
 
   identarg:
-    [ [ id = IDENT -> <:ast< ($VAR $id) >> ] ]
+    [ [ id = IDENT -> <:ast< ($VAR $id) >> 
+      | id = METAIDENT -> <:ast< ($VAR $id) >> ] ]
+  ;
+  qualidarg:
+    [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST l)) >> ] ]
+  ;
+  qualidconstarg:
+    [ [ l = Constr.qualid -> <:ast< (QUALIDCONSTARG ($LIST l)) >> ] ]
   ;
   pure_numarg:
      [ [ n = Prim.number -> n
@@ -43,6 +50,12 @@ GEXTEND Gram
   ;
   ne_identarg_list:
     [ [ l = LIST1 identarg -> l ] ]
+  ;
+  ne_qualidarg_list:
+    [ [ l = LIST1 qualidarg -> l ] ]
+  ;
+  ne_qualidconstarg_list:
+    [ [ l = LIST1 qualidarg -> l ] ]
   ;
   ne_num_list:
     [ [ n = numarg; l = ne_num_list -> n :: l | n = numarg -> [n] ] ]
@@ -283,8 +296,9 @@ GEXTEND Gram
       | n = pure_numarg -> n
       |	c = constrarg ->
           (match c with
-            Coqast.Node(_,"COMMAND",[Coqast.Nvar(_,s)]) -> <:ast<($VAR $s)>>
-           |_ -> c) ] ]
+             | Coqast.Node(_,"COMMAND",[Coqast.Nvar(_,s)]) -> <:ast<($VAR $s)>>
+	     | Coqast.Node(_,"COMMAND",[Coqast.Node(_,"QUALID",[Coqast.Nvar(_,s)])]) -> <:ast<($VAR $s)>>
+             |_ -> c) ] ]
   ;
   simple_tactic:
     [ [ IDENT "Fix"; n = numarg -> <:ast< (Fix $n) >>
