@@ -537,7 +537,6 @@ let rec pr sep inherited a =
 	hov 0 (str "else" ++ pr (fun () -> brk (1,1)) ltop b2)),
       lif
      
-(*
   | COrderedCase (_,st,po,c,[b1;b2]) when st = IfStyle ->
       (* On force les parenthèses autour d'un "if" sous-terme (même si le
 	 parsing est lui plus tolérant) *)
@@ -557,7 +556,7 @@ let rec pr sep inherited a =
                pr spc ltop c ++ str " in") ++
         pr spc ltop b),
       lletin
-*)
+
   | COrderedCase (_,style,po,c,bl) ->
       hv 0 (
 	str (if style=MatchStyle then "old_match " else "match ") ++ 
