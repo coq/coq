@@ -57,6 +57,10 @@ Changements dans les fonctions :
 	  map2_vect	   ->  array_map2
 	  list_of_tl_vect  ->  array_list_of_tl
 
+        Names
+          sign_it        -> fold_var_context (se fait sur env maintenant)
+	  it_sign        -> fold_var_context_reverse (sur env maintenant)
+
         Generic
 	  noccur_bet     -> noccur_between
           substn_many    -> substnl
@@ -105,6 +109,7 @@ Changements dans les fonctions :
           pf_constr_of_com_sort -> pf_interp_type
           pf_constr_of_com      -> pf_interp_constr
 	  pf_get_hyp            -> pf_get_hyp_typ
+          pf_hyps, pf_untyped_hyps -> pf_env (tout se fait sur env maintenant)
 
         Pattern
 	  raw_sopattern_of_compattern -> Astterm.interp_constrpattern
@@ -114,6 +119,8 @@ Changements dans les fonctions :
         Tacticals
 	  matches               -> gl_is_matching
           dest_match            -> gl_matches
+	  suff                  -> utiliser sort_of_goal
+          lookup_eliminator     -> utiliser sort_of_goal pour le dernier arg
 
         Divers
           initial_sign     -> var_context
