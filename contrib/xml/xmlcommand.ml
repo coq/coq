@@ -19,7 +19,7 @@
 
 (* CONFIGURATION PARAMETERS *)
 
-let verbose = ref true;;
+let verbose = ref false;;
 
 (* HOOKS *)
 let print_proof_tree, set_print_proof_tree =
@@ -461,7 +461,7 @@ let kind_of_variable id =
     | DK.IsAssumption DK.Conjectural -> "VARIABLE","Conjecture"
     | DK.IsDefinition -> "VARIABLE","LocalDefinition"
     | DK.IsConjecture -> "VARIABLE","Conjecture"
-    | DK.IsProof DK.LocalStatement -> "VARIABLE","Hypothesis"
+    | DK.IsProof DK.LocalStatement -> "VARIABLE","LocalFact"
 ;;
 
 let kind_of_constant kn = 
@@ -570,7 +570,7 @@ let show_pftreestate internal fn (kind,pftst) id =
       let uri =
        "cic:/" ^ String.concat "/"
         (Cic2acic.token_list_of_path (Lib.cwd ()) id Cic2acic.Variable) in
-      let kind_of_var = "VARIABLE","Hypothesis" in
+      let kind_of_var = "VARIABLE","LocalFact" in
        if not internal then print_object_kind uri kind_of_var;
       uri
    | Decl_kinds.IsGlobal _ ->
