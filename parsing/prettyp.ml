@@ -630,7 +630,7 @@ let print_path_between cls clt =
 
 let print_canonical_structures () =
   prlist_with_sep pr_fnl (fun ((r1,r2),o) -> 
-    prterm o.o_DEF ++ str ": " ++ pr_global r1 ++ str " >-> " ++ pr_global r2)
+    pr_global r2 ++ str " <- " ++ pr_global r1 ++ str " ( " ++ prterm o.o_DEF ++ str " )")
     (canonical_structures ())
 
 (*************************************************************************)
