@@ -242,10 +242,8 @@ let filter_by_module_from_varg_list (l:vernac_arg list) =
     Search.filter_by_module_from_list (dir_list, b);;
 
 let add_search (global_reference:global_reference) assumptions cstr =
-  mSGNL [< 'sTR "DEBUG: entering add_search" >];
   try 
   let id_string = string_of_qualid (Global.qualid_of_global global_reference) in
-  let _ = mSGNL [< 'sTR "DEBUG: " ; 'sTR id_string >] in
   let ast = 
     try
       CT_premise (CT_ident id_string, translate_constr assumptions cstr)
