@@ -139,13 +139,6 @@ let h_decompose_or c =
 let h_decompose_and c =
   Refiner.abstract_tactic (TacDecomposeAnd c) (decompose_and c)
 
-(*
-let vernac_decompose_and = 
-  hide_constr_tactic "DecomposeAnd" decompose_and
-let vernac_decompose_or  = 
-  hide_constr_tactic  "DecomposeOr"  decompose_or
-*)
-
 (* The tactic Double performs a double induction *)
 
 let simple_elimination c gls =
