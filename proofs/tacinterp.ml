@@ -396,15 +396,15 @@ let eval_with_fail interp ast goal =
       raise (FailError (lvl - 1))
 
 (* Verifies if the matched list is coherent with respect to lcm *)
-let rec verify_metas_coherence lcm = function
+let rec verify_metas_coherence ist lcm = function
   | (num,csr)::tl ->
     if (List.for_all
          (fun (a,b) ->
             if a=num then
-              eq_constr b csr
+              Reductionops.is_conv ist.env ist.evc b csr
             else
               true) lcm) then
-      (num,csr)::(verify_metas_coherence lcm tl)
+      (num,csr)::(verify_metas_coherence ist lcm tl)
     else
       raise Not_coherent_metas
   | [] -> []
@@ -417,7 +417,7 @@ let apply_matching pat csr =
      PatternMatchingFailure -> raise No_match
 
 (* Tries to match one hypothesis pattern with a list of hypotheses *)
-let apply_one_mhyp_context lmatch mhyp lhyps noccopt =
+let apply_one_mhyp_context ist lmatch mhyp lhyps noccopt =
   let get_pattern = function
     | Hyp (_,pat) -> pat
     | NoHypId pat -> pat
@@ -429,14 +429,15 @@ let apply_one_mhyp_context lmatch mhyp lhyps noccopt =
       (match (get_pattern mhyp) with
       | Term t ->
         (try
-          let lmeta = verify_metas_coherence lmatch (Pattern.matches t hyp) in
+          let lmeta = 
+            verify_metas_coherence ist lmatch (Pattern.matches t hyp) in
           (get_id_couple id mhyp,[],lmeta,tl,(id,hyp),None)
          with | PatternMatchingFailure | Not_coherent_metas ->
           apply_one_mhyp_context_rec mhyp (lhyps_acc@[id,hyp]) 0 tl)
       | Subterm (ic,t) ->
         (try
           let (lm,ctxt) = sub_match nocc t hyp in
-          let lmeta = verify_metas_coherence lmatch lm in
+          let lmeta = verify_metas_coherence ist lmatch lm in
           (get_id_couple id mhyp,give_context ctxt
             ic,lmeta,tl,(id,hyp),Some nocc)
          with
@@ -827,7 +828,7 @@ and apply_hyps_context ist mt lgmatch mhyps hyps =
     match mhyps with
       | hd::tl ->
         let (lid,lc,lm,newlhyps,hyp_match,noccopt) =
-          apply_one_mhyp_context lmatch hd lhyps_mhyp noccopt in
+          apply_one_mhyp_context ist lmatch hd lhyps_mhyp noccopt in
         begin
         db_matched_hyp ist.debug ist.env hyp_match;
         (try
