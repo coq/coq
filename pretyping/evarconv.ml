@@ -39,8 +39,11 @@ let flex_kind_of_term c l =
 let eval_flexible_term env c =
   match kind_of_term c with
   | Const c -> constant_opt_value env c
-  | Rel n -> let (_,v,_) = lookup_rel n env in option_app (lift n) v
-  | Var id -> let (_,v,_) = lookup_named id env in v
+  | Rel n ->
+      (try let (_,v,_) = lookup_rel n env in option_app (lift n) v
+      with Not_found -> None)
+  | Var id ->
+      (try let (_,v,_) = lookup_named id env in v with Not_found -> None)
   | LetIn (_,b,_,c) -> Some (subst1 b c)
   | Lambda _ -> Some c
   | _ -> assert false
