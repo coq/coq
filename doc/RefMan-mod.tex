@@ -68,7 +68,7 @@ This command defines the module identifier {\ident} to be equal to \modexpr.
 This command is used to start an interactif module type {\ident}.
 
 \begin{Variants}
-\item{\tt Module \ident [\modbindings]}\\
+\item{\tt Module Type \ident [\modbindings]}\\
   Starts an interactif functor type with parameters given by {\modbindings}.
 \end{Variants}
 
@@ -83,7 +83,7 @@ This command closes the interactif module type {\ident}.
 Define a module type \ident equal to \modtype.
 
 \begin{Variants}
-\item {\tt Module Type {\ident} {\modbindings} := {\modtype}} \\
+\item {\tt Module Type {\ident} [\modbindings] := {\modtype}} \\
   Define a functor type {\ident} specifying functors taking arguments
   {\modbindings} and returning {\modtype}.
 \end{Variants}
@@ -100,28 +100,33 @@ Module M.
   Defined.
 End M.
 \end{coq_example}
+
+\noindent
 Inside a module one can define constants, prove thorems and do any
 other things that can be done in the toplevel. Components of a closed
 module can be accessed using the dot notation:
+
 \begin{coq_example}
 Print M.x.
 \end{coq_example}
 A simple module type:
 \begin{coq_example}
 Module Type SIG.
-  Definition T:Set.
-  Definition x:T.
+  Parameter T:Set.
+  Parameter x:T.
 End SIG.
 \end{coq_example}
-Notice that \texttt{Definition}\ without body did not start the proof
-mode. Also \texttt{Lemma} or \texttt{Theorem} do not start one.
-Inside a module type \texttt{Definition}\ withount body,
-\texttt{Lemma}, \texttt{Theorem}, \texttt{Axiom}, \texttt{Parameter} are
-equivalent.
+
+\noindent
+Inside a module type \texttt{Definition}\ without body,
+\texttt{Lemma}, \texttt{Theorem} do not start the proof mode.
+In fact, inside a module type all three are equivalent and they are
+moreover equivalent to \texttt{Axiom} and \texttt{Parameter}.
 
 Now we can create a new module from \texttt{M}, giving it a less
 precise specification: the \texttt{y} component is dropped as well
 as the body of \texttt{x}.
+
 \begin{coq_example}
 Module N  :  SIG with Definition T:=nat  :=  M.
 Print N.T.
@@ -131,13 +136,16 @@ Print N.y.
 \begin{coq_eval}
 Reset N.
 \end{coq_eval}
+
+\noindent
 The definition of \texttt{N} using the module type expression
 \texttt{SIG with Definition T:=nat} is equivalent to the following
 one:
+
 \begin{coq_example*}
 Module Type SIG'.
   Definition T:Set:=nat.
-  Definition x:T.
+  Parameter x:T.
 End SIG'.
 Module N : SIG' := M.
 \end{coq_example*}
