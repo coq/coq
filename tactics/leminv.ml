@@ -230,9 +230,11 @@ let inversion_scheme env sigma t sort dep_option inv_op =
 
 let add_inversion_lemma name env sigma t sort dep inv_op =
   let invProof = inversion_scheme env sigma t sort dep inv_op in
-  declare_constant name
+  let _ = 
+    declare_constant name
     (ConstantEntry { const_entry_body = invProof; const_entry_type = None }, 
      NeverDischarge,false)
+  in ()
 
 (* open Pfedit *)
 

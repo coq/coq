@@ -256,12 +256,15 @@ let process_item oldenv dir sec_sp acc = function
 let process_operation = function
   | Variable (id,expmod_a,stre,sticky,imp) ->
       (* Warning:parentheses needed to get a side-effect from with_implicits *)
-      with_implicits imp (declare_variable id) (expmod_a,stre,sticky)
+      let _ = with_implicits imp (declare_variable id) (expmod_a,stre,sticky) in
+      ()
   | Parameter (spid,typ,imp) ->
-      with_implicits imp (declare_parameter spid) typ;
+      let _ = with_implicits imp (declare_parameter spid) typ in
       constant_message spid
   | Constant (spid,r,stre,opa,imp) ->
-      with_implicits imp (declare_constant spid) (ConstantRecipe r,stre,opa);
+      let _ =
+	with_implicits imp (declare_constant spid) (ConstantRecipe r,stre,opa)
+      in
       constant_message spid
   | Inductive (mie,imp) ->
       let _ = with_implicits imp declare_mind mie in
