@@ -1337,8 +1337,9 @@ Qed.
 \tacindex{functional induction}
 \label{FunInduction}}
 
-The tactic \texttt{functional induction} performs case analysis
-and induction following the definition of a function.
+The \emph{experimental} tactic \texttt{functional induction}
+performs case analysis and induction following the definition of
+a (not mutually recursive) function.
 
 \begin{coq_eval}
 Reset Initial.
@@ -1355,11 +1356,17 @@ Qed.
 \texttt{functional induction} is a shorthand for the more general
 command \texttt{Functional Scheme} which builds induction
 principles following the recursive structure of (possibly
-mutually recursive) functions.
+mutually recursive)
+functions. \SeeAlso{\ref{FunScheme-examples}} for the difference
+between using one or the other.
 
-\Rem \texttt{functional induction} does not work on polymorphic
-and dependently typed functions yet. It may also fail on
-functions built by certain tactics.
+\Rem \texttt{functional induction} may fail on functions built by
+tactics. In particular case analysis of a function are considered
+only if they are not inside an application.
+
+\Rem Arguments of the function must be given, including
+implicits. If the function is recursive, arguments must be
+variables, otherwise they may be any term.
 
 \SeeAlso{\ref{FunScheme},\ref{FunScheme-examples}}
 

@@ -352,14 +352,13 @@ Qed.
 \end{coq_example*}
 
 \paragraph{remark:} \texttt{functional induction} makes no use of
-a induction principle, so be warned that each time it is used, a
-term mimicking the structure of \texttt{div2} (roughly the size
-of {\tt div2\_ind}) is built. Using \texttt{Functional Scheme} is
-generally faster and less memory consuming.  On the other hand
-\texttt{functional induction} performs some extra simplifications
-that \texttt{Functional Scheme} does not, and as it is a tactic
-it can be used in tactic definitions.
-
+an induction principle, so be warned that each time it is
+applied, a term mimicking the structure of \texttt{div2} (roughly
+the size of {\tt div2\_ind}) is built. Using \texttt{Functional
+  Scheme} is generally faster and less memory consuming.  On the
+other hand \texttt{functional induction} performs some extra
+simplifications that \texttt{Functional Scheme} does not, and as
+it is a tactic it can be used in tactic definitions.
 
 
 \example{Induction scheme for \texttt{tree\_size}}
@@ -808,6 +807,8 @@ is undecidable in general case, don't expect miracles from it!
 
 \SeeAlso the \texttt{ring} tactic (Chapter~\ref{ring})
 
+
+
 \section{Using the tactical language}
 
 \subsection{About the cardinality of the set of natural numbers}
@@ -846,6 +847,11 @@ a {\tt match goal} structure and, in particular, with only one pattern (use
 of non-linear matching).
 
 \subsection{Permutation on closed lists}
+
+Another more complex example is the problem of permutation on closed lists. The
+aim is to show that a closed list is a permutation of another one.
+
+First, we define the permutation predicate as shown in table~\ref{permutpred}.
 
 \begin{figure}
 \begin{centerframe}
@@ -932,6 +938,7 @@ With {\tt PermutProve}, we can now prove lemmas as
 follows:
 %\begin{figure}
 %\begin{centerframe}
+
 \begin{coq_example*}
 Lemma permut_ex1 :
   permut nat (1 :: 2 :: 3 :: nil) (3 :: 2 :: 1 :: nil).
@@ -1050,6 +1057,12 @@ Proof. TautoProp. Qed.
 %\end{figure}
 
 \subsection{Deciding type isomorphisms}
+
+A more tricky problem is to decide equalities between types and modulo
+isomorphisms. Here, we choose to use the isomorphisms of the simply typed
+$\lb{}$-calculus with Cartesian product and $unit$ type (see, for example,
+\cite{RC95}). The axioms of this $\lb{}$-calculus are given by
+table~\ref{isosax}.
 
 \begin{figure}
 \begin{centerframe}
