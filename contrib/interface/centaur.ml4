@@ -57,7 +57,11 @@ let text_proof_flag = ref "en";;
 (* 
 let current_proof_name = ref "";;
 *)
-let current_proof_name () = string_of_id (get_current_proof_name ())
+let current_proof_name () = 
+  try 
+    string_of_id (get_current_proof_name ())
+  with
+      UserError("Pfedit.get_proof", _) -> "";;
 
 let current_goal_index = ref 0;;
 
@@ -482,6 +486,19 @@ let kill_node_verbose n =
 
 let set_text_mode s = text_proof_flag := s
 
+let pcoq_reset_initial() =
+  output_results(ctf_AbortedAllMessage()) None;
+  Vernacentries.abort_refine Lib.reset_initial ();
+  output_results(ctf_ResetInitialMessage()) None;;
+
+let pcoq_reset x =
+  if refining() then
+    output_results (ctf_AbortedAllMessage ()) None;
+    Vernacentries.abort_refine Lib.reset_name x;
+    output_results
+         (ctf_ResetIdentMessage !global_request_id (string_of_id x)) None;;
+
+
 VERNAC ARGUMENT EXTEND text_mode
 | [ "fr" ] -> [ "fr" ]
 | [ "en" ] -> [ "en" ]
@@ -510,6 +527,14 @@ END
 
 VERNAC COMMAND EXTEND KillSubProof
   [ "Kill" "SubProof" natural(n) ] -> [ logical_kill n ]
+END
+
+VERNAC COMMAND EXTEND PcoqReset
+  [ "Pcoq" "Reset" ident(x) ] -> [ pcoq_reset x ]
+END
+
+VERNAC COMMAND EXTEND PcoqResetInitial
+  [ "Pcoq" "ResetInitial" ] -> [ pcoq_reset_initial() ]
 END
 
 let start_proof_hook () =
@@ -909,38 +934,20 @@ let start_pcoq_mode debug =
     set_pcoq_hook pcoq_hook;
   end;;
 
-(*
-vinterp_add "START_PCOQ"
-            (function _ -> 
-              (function () ->
-                start_pcoq_mode false;
-		set_acknowledge_command ctf_acknowledge_command;
-                set_start_marker "CENTAUR_RESERVED_TOKEN_start_command";
-                set_end_marker "CENTAUR_RESERVED_TOKEN_end_command";
-                raise Vernacinterp.ProtectedLoop));;
 
-vinterp_add "START_PCOQ_DEBUG"
-            (function _ -> 
-              (function () ->
-                start_pcoq_mode true;
-		set_acknowledge_command ctf_acknowledge_command;
-                set_start_marker "--->";
-                set_end_marker "<---";
-                raise Vernacinterp.ProtectedLoop));;
-*)
 let start_pcoq () =
   start_pcoq_mode false;
   set_acknowledge_command ctf_acknowledge_command;
   set_start_marker "CENTAUR_RESERVED_TOKEN_start_command";
-  set_end_marker "CENTAUR_RESERVED_TOKEN_end_command"(*;
-  raise Vernacexpr.ProtectedLoop*)
+  set_end_marker "CENTAUR_RESERVED_TOKEN_end_command";
+  raise Vernacexpr.ProtectedLoop;;
 
 let start_pcoq_debug () =
   start_pcoq_mode true;
   set_acknowledge_command ctf_acknowledge_command;
   set_start_marker "--->";
-  set_end_marker "<---"(*;
-  raise Vernacexpr.ProtectedLoop;;*)
+  set_end_marker "<---";
+  raise Vernacexpr.ProtectedLoop;;
 
 VERNAC COMMAND EXTEND StartPcoq
   [ "Start" "Pcoq" "Mode" ] -> [ start_pcoq () ]

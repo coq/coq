@@ -1066,7 +1066,9 @@ and fTACTIC_COM = function
 | CT_exists(x1) ->
    fSPEC_LIST x1;
    fNODE "exists" 1
-| CT_fail -> fNODE "fail" 0
+| CT_fail(x1) ->
+   fINT x1;
+   fNODE "fail" 1
 | CT_first(x,l) ->
    fTACTIC_COM x;
    (List.iter fTACTIC_COM l);
@@ -1138,6 +1140,9 @@ and fTACTIC_COM = function
    fTACTIC_COM x;
    (List.iter fTACTIC_COM l);
    fNODE "parallel" (1 + (List.length l))
+| CT_progress(x1) ->
+   fTACTIC_COM x1;
+   fNODE "progress" 1
 | CT_prolog(x1, x2) ->
    fFORMULA_LIST x1;
    fINT x2;

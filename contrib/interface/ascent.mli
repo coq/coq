@@ -457,7 +457,7 @@ and ct_TACTIC_COM =
   | CT_elim_type of ct_FORMULA
   | CT_exact of ct_FORMULA
   | CT_exists of ct_SPEC_LIST
-  | CT_fail
+  | CT_fail of ct_INT
   | CT_first of ct_TACTIC_COM * ct_TACTIC_COM list
   | CT_fixtactic of ct_ID_OPT * ct_INT * ct_FIX_TAC_LIST
   | CT_generalize of ct_FORMULA_NE_LIST
@@ -479,6 +479,7 @@ and ct_TACTIC_COM =
   | CT_omega
   | CT_orelse of ct_TACTIC_COM * ct_TACTIC_COM
   | CT_parallel of ct_TACTIC_COM * ct_TACTIC_COM list
+  | CT_progress of ct_TACTIC_COM
   | CT_prolog of ct_FORMULA_LIST * ct_INT
   | CT_rec_tactic_in of ct_REC_TACTIC_FUN_LIST * ct_TACTIC_COM
   | CT_reduce of ct_RED_COM * ct_ID_LIST
