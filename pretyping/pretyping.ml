@@ -673,7 +673,8 @@ let rec pretype tycon env isevars lvar = function
           let nconstr = Array.length mip.mind_consnames in
           let tyi = snd ind in
           if isrec && mis_is_recursive_subset [tyi] recargs then
-            Some (Detyping.detype env [] (names_of_rel_context env)
+            Some (Detyping.detype env 
+	      (ids_of_context env) (names_of_rel_context env)
               (nf_evar (evars_of isevars) v))
   (*
             let sigma = evars_of isevars in
@@ -732,7 +733,12 @@ let rec pretype tycon env isevars lvar = function
               RApp (dummy_loc,fix,realargs@[c])
               (msgerrnl (str "Warning: could't translate Match"); None)
 *)
-          else
+          else if st = IfStyle & po = None then
+	    (* Translate into a "if ... then ... else" *)
+	    (* TODO: translate into a "if" even if po is dependent *)
+	    None
+	  else
+	    (* Translate into a "match ... with" *)
             let rtntypopt, indnalopt = match po with
               | None -> None, (Anonymous,None)
               | Some p ->
@@ -756,7 +762,11 @@ let rec pretype tycon env isevars lvar = function
                     else [Anonymous],p,[] in
                   let args = List.map (fun _ -> Anonymous) params @ nal in
                   (Some rtntyopt,(List.hd na,Some (dummy_loc,ind,args))) in
-
+	    if st = IfStyle & po = None then
+	      (* Translate into a "if ... then ... else" *)
+	      (* TODO: translate into a "if" even if po is dependent *)
+	      None
+	    else
             let detype_eqn constr construct_nargs branch =
               let name_cons = function 
                 | Anonymous -> fun l -> l

@@ -125,8 +125,13 @@ let translate_keyword = function
     | "if"  | "then" | "else" | "return" as s) ->
       let s' = s^"_" in
       msgerrnl
-      (str ("Warning: "^s^" is now a keyword; it has been translated to "^s'));
+      (str ("Warning: '"^
+          s^"' is now a keyword; it has been translated to '"^s'^"'"));
       s'
+  | "_" -> 
+      msgerrnl (str 
+	"Warning: '_' is no longer a keyword; it has been translated to 'xx'");
+      "xx"
   | s -> s
 
 let is_coq_root d =
