@@ -141,7 +141,7 @@ theories/Reals/Rderiv.vo: theories/Reals/Rderiv.v theories/Reals/Rfunctions.vo t
 theories/Reals/Rseries.vo: theories/Reals/Rseries.v theories/Reals/Rderiv.vo theories/Logic/Classical.vo theories/Arith/Compare.vo
 theories/Reals/Rtrigo_fun.vo: theories/Reals/Rtrigo_fun.v theories/Reals/Rseries.vo
 theories/Reals/Alembert.vo: theories/Reals/Alembert.v theories/Arith/Max.vo theories/Reals/Raxioms.vo theories/Reals/DiscrR.vo theories/Reals/Rbase.vo theories/Reals/Rseries.vo theories/Reals/Rtrigo_fun.vo
-theories/Reals/Binome.vo: theories/Reals/Binome.v theories/Reals/DiscrR.vo
+theories/Reals/Binome.vo: theories/Reals/Binome.v theories/Reals/DiscrR.vo theories/Reals/Rbase.vo theories/Reals/Rtrigo_fun.vo theories/Reals/Alembert.vo
 theories/Reals/Rsigma.vo: theories/Reals/Rsigma.v theories/Reals/Rbase.vo theories/Reals/Rseries.vo theories/Reals/Alembert.vo theories/Reals/Binome.vo
 theories/Reals/Rcomplet.vo: theories/Reals/Rcomplet.v theories/Arith/Max.vo theories/Reals/Raxioms.vo theories/Reals/DiscrR.vo theories/Reals/Rbase.vo theories/Reals/Rseries.vo theories/Logic/Classical.vo
 theories/Reals/Alembert_compl.vo: theories/Reals/Alembert_compl.v theories/Arith/Max.vo theories/Reals/Raxioms.vo theories/Reals/DiscrR.vo theories/Reals/Rbase.vo theories/Reals/Rseries.vo theories/Reals/Rcomplet.vo theories/Reals/Alembert.vo
