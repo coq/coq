@@ -38,7 +38,7 @@ Hints Resolve diff_true_false : bool v62.
 
 Lemma diff_false_true : ~false=true.
 Goal.
-(Red; Intros H; Apply diff_true_false).
+Red; Intros H; Apply diff_true_false.
 Symmetry.
 Assumption.
 Save.
@@ -52,7 +52,7 @@ Hints Resolve eq_true_false_abs : bool.
 Lemma not_true_is_false : (b:bool)~b=true->b=false.
 Destruct b.
 Intros.
-(Red in H; Elim H).
+Red in H; Elim H.
 Reflexivity.
 Intros abs.
 Reflexivity.
@@ -185,13 +185,13 @@ Save.
 Lemma negb_orb : (b1,b2:bool)
   (negb (orb b1 b2)) = (andb (negb b1) (negb b2)).
 Proof.
-  (Destruct b1; Destruct b2; Simpl; Reflexivity).
+  Destruct b1; Destruct b2; Simpl; Reflexivity.
 Qed.
 
 Lemma negb_andb : (b1,b2:bool)
   (negb (andb b1 b2)) = (orb (negb b1) (negb b2)).
 Proof.
-  (Destruct b1; Destruct b2; Simpl; Reflexivity).
+  Destruct b1; Destruct b2; Simpl; Reflexivity.
 Qed.
 
 Lemma negb_sym : (b,b':bool)(b'=(negb b))->(b=(negb b')).
@@ -223,12 +223,12 @@ Save.
 
 Lemma orb_prop : 
   (a,b:bool)(orb a b)=true -> (a = true)\/(b = true).
-Induction a; Induction b; Simpl; Try (Intro H;Discriminate H); Auto with bool.
+Induction a; Induction b; Simpl; Try '(Intro H;Discriminate H); Auto with bool.
 Save.
 
 Lemma orb_prop2 : 
   (a,b:bool)(Is_true (orb a b)) -> (Is_true a)\/(Is_true b).
-Induction a; Induction b; Simpl; Try (Intro H;Discriminate H); Auto with bool.
+Induction a; Induction b; Simpl; Try '(Intro H;Discriminate H); Auto with bool.
 Save.
 
 Lemma orb_true_intro 
@@ -306,14 +306,16 @@ Lemma andb_prop :
   (a,b:bool)(andb a b) = true -> (a = true)/\(b = true).
 
 Proof.
-  Induction a; Induction b; Simpl; Try (Intro H;Discriminate H);Auto with bool.
+  Induction a; Induction b; Simpl; Try '(Intro H;Discriminate H);
+  Auto with bool.
 Save.
 Hints Resolve andb_prop : bool v62.
 
 Lemma andb_prop2 : 
   (a,b:bool)(Is_true (andb a b)) -> (Is_true a)/\(Is_true b).
 Proof.
-  Induction a; Induction b; Simpl; Try (Intro H;Discriminate H); Auto with bool.
+  Induction a; Induction b; Simpl; Try '(Intro H;Discriminate H);
+  Auto with bool.
 Save.
 Hints Resolve andb_prop2 : bool v62.
 

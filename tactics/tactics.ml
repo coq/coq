@@ -16,6 +16,7 @@ open Pfedit
 open Tacred
 open Tacmach
 open Proof_trees
+open Proof_type
 open Logic
 open Clenv
 open Tacticals
@@ -37,13 +38,6 @@ let get_pairs_from_bindings =
     | _                  -> error "not a binding list!"
   in 
   List.map pair_from_binding
-
-let get_commands = 
-  let command_from_tacarg = function 
-    | (Command x) -> x
-    | _           -> error "get_commands: not a command!"
-  in 
-  List.map command_from_tacarg
     
 let rec string_head_bound = function 
   | DOPN(Const _,_) as x -> 
@@ -211,9 +205,9 @@ let unfold_option   loccname   = reduct_option   (unfoldn loccname)
 let pattern_option l = reduct_option (pattern_occs l)
 
 let dyn_change = function
-  | [Command (com); Clause cl] ->
+  | [Constr c; Clause cl] ->
       (fun goal -> 
-         let c = Astterm.interp_type (project goal) (pf_env goal) com in
+(*         let c = Astterm.interp_type (project goal) (pf_env goal) com in*)
          in_combinator (change_in_concl c) (change_in_hyp c) cl goal)
   | l -> bad_tactic_args "change" l
 
@@ -224,11 +218,7 @@ let reduce redexp cl goal =
   redin_combinator (reduction_of_redexp redexp) cl goal
 
 let dyn_reduce = function
-  | [Redexp (redn,args); Clause cl] ->
-      (fun goal -> 
-         let redexp =
-	   Astterm.redexp_of_ast (project goal) (pf_env goal) (redn,args) in  
-	 reduce redexp cl goal)
+  | [Redexp redexp; Clause cl] -> (fun goal -> reduce redexp cl goal)
   | l -> bad_tactic_args "reduce" l
 
 (* Unfolding occurrences of a constant *)
@@ -242,7 +232,7 @@ let unfold_constr c =
 	  [< 'sTR "Cannot unfold a non-constant." >]
 
 (*******************************************)
-(*         Introduction tactics        *)
+(*         Introduction tactics            *)
 (*******************************************)
 
 let next_global_ident_from id avoid = 
@@ -603,10 +593,10 @@ let generalize lconstr gl =
   apply_type newcl lconstr gl
 
 let dyn_generalize =
-  fun argsl -> tactic_com_list generalize (get_commands argsl)
+  fun argsl -> generalize (List.map Tacinterp.constr_of_Constr argsl)
       
 let dyn_generalize_dep = function
-  | [Command com] -> tactic_com generalize_dep com
+  | [Constr csr] -> generalize_dep csr
   | l -> bad_tactic_args "dyn_generalize_dep" l
 
 (* Faudra-t-il une version avec plusieurs args de generalize_dep ?

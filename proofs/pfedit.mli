@@ -8,7 +8,7 @@ open Term
 open Sign
 open Environ
 open Declare
-open Proof_trees
+open Proof_type
 open Tacmach
 (*i*)
 

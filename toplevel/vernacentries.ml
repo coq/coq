@@ -15,6 +15,7 @@ open Reduction
 open Pfedit
 open Tacmach
 open Proof_trees
+open Proof_type
 open Tacred
 open Library
 open Libobject
@@ -728,10 +729,10 @@ let _ =
 	   let typ_opt,red_option = match rest with
 	     | [] -> None, None
 	     | [VARG_CONSTR t] -> Some t, None
-	     | [VARG_TACTIC_ARG (Redexp(r1,r2))] ->
-		 None, Some (redexp_of_ast Evd.empty (Global.env()) (r1,r2))
-	     | [VARG_CONSTR t; VARG_TACTIC_ARG (Redexp(r1,r2))] ->
-		 Some t, Some (redexp_of_ast Evd.empty (Global.env()) (r1,r2))
+	     | [VARG_TACTIC_ARG (Redexp redexp)] ->
+		 None, Some redexp
+	     | [VARG_CONSTR t; VARG_TACTIC_ARG (Redexp redexp)] ->
+		 Some t, Some redexp
 	     | _ -> bad_vernac_args "DEFINITION"
 	   in 
 	   let stre,coe,objdef,idcoe = match kind with
@@ -807,9 +808,8 @@ let _ =
 let _ =
   add "Eval"
     (function
-       | VARG_TACTIC_ARG (Redexp (rn,unf)) :: VARG_CONSTR c :: g ->
+       | VARG_TACTIC_ARG (Redexp redexp) :: VARG_CONSTR c :: g ->
            let (evmap,sign) = get_evmap_sign (goal_of_args g) in
-           let redexp = redexp_of_ast evmap sign (rn,unf) in 
            let redfun = print_eval (reduction_of_redexp redexp) sign in 
 	   fun () -> mSG (redfun (judgment_of_com evmap sign c))
        | _ -> bad_vernac_args "Eval")
@@ -1196,20 +1196,19 @@ let _ =
        | _ -> bad_vernac_args "SYNTAX")
     
 let _ =
-  add "TacticDefinition"
-    (function 
-       | (VARG_IDENTIFIER na) :: (VARG_AST tacexp) :: idl ->
-	   let ids = 
-	     List.map 
-               (function
-                  | (VARG_IDENTIFIER id) -> (string_of_id id, Pcoq.ETast)
-                  | _ -> bad_vernac_args "TacticDefinition") 
-               idl
-	   in 
-	   fun () ->
-             let body = Ast.to_act_check_vars ids Pcoq.ETast tacexp in  
-	     Macros.add_macro_hint (string_of_id na) (List.map fst ids, body)
-       | _ -> bad_vernac_args "TacticDefinition")
+  add "TACDEF"
+    (let rec tacdef_fun lacc=function
+        (VARG_IDENTIFIER name)::(VARG_AST tacexp)::tl ->
+          let ve=
+            Tacinterp.val_interp (empty,empty_env,[],[],None) tacexp
+          in
+            tacdef_fun ((string_of_id name,ve)::lacc) tl
+       |[] ->
+         fun () ->
+           List.iter (fun (name,ve) -> Tacinterp.add_tacdef name ve) lacc
+       |_ -> bad_vernac_args "TACDEF"
+     in
+       tacdef_fun [])
 
 let _ =
   add "INFIX"

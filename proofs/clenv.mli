@@ -6,7 +6,7 @@ open Util
 open Names
 open Term
 open Tacmach
-open Proof_trees
+open Proof_type
 (*i*)
 
 (* The Type of Constructions clausale environments. *)

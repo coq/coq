@@ -11,7 +11,7 @@
 open Util
 open Pp
 open Reduction
-open Proof_trees
+open Proof_type
 open Ast
 open Names
 open Generic

@@ -84,9 +84,9 @@ Grammar tactic simple_tactic :=
 | rewriteRL [ "Rewrite" "<-" constrarg_binding_list($cl) ] -> [(RewriteRL ($LIST $cl))]
 | rewrite [ "Rewrite" constrarg_binding_list($cl) ] -> [(RewriteLR ($LIST $cl))]
 
-| condrewriteLR [ "Conditional" tactic_com($tac) "Rewrite" "->" constrarg_binding_list($cl) ] -> [(CondRewriteLR (TACTIC $tac) ($LIST $cl))]
-| condrewriteRL [ "Conditional" tactic_com($tac) "Rewrite" "<-" constrarg_binding_list($cl) ] -> [(CondRewriteRL (TACTIC $tac) ($LIST $cl))]
-| condrewrite [ "Conditional" tactic_com($tac) "Rewrite" constrarg_binding_list($cl) ] -> [(CondRewriteLR (TACTIC $tac) ($LIST $cl))]
+| condrewriteLR [ "Conditional" tactic_expr($tac) "Rewrite" "->" constrarg_binding_list($cl) ] -> [(CondRewriteLR (TACTIC $tac) ($LIST $cl))]
+| condrewriteRL [ "Conditional" tactic_expr($tac) "Rewrite" "<-" constrarg_binding_list($cl) ] -> [(CondRewriteRL (TACTIC $tac) ($LIST $cl))]
+| condrewrite [ "Conditional" tactic_expr($tac) "Rewrite" constrarg_binding_list($cl) ] -> [(CondRewriteLR (TACTIC $tac) ($LIST $cl))]
 
 | rewrite_in [ "Rewrite" constrarg_binding_list($cl) "in" identarg($h) ]
        -> [(RewriteLRin $h ($LIST $cl))]
@@ -96,15 +96,15 @@ Grammar tactic simple_tactic :=
        -> [(RewriteRLin $h ($LIST $cl))]
 
 | condrewriteLRin 
-  [ "Conditional" tactic_com($tac) "Rewrite" "->" constrarg_binding_list($cl) 
+  [ "Conditional" tactic_expr($tac) "Rewrite" "->" constrarg_binding_list($cl) 
 	"in" identarg($h) ] ->
 	   [(CondRewriteLRin (TACTIC $tac) $h ($LIST $cl))]
 | condrewriteRLin 
-  [ "Conditional" tactic_com($tac) "Rewrite" "<-" constrarg_binding_list($cl) 
+  [ "Conditional" tactic_expr($tac) "Rewrite" "<-" constrarg_binding_list($cl) 
 	"in" identarg($h)] ->
   	   [(CondRewriteRLin (TACTIC $tac) $h ($LIST $cl))]
 | condrewritein 
-  [ "Conditional" tactic_com($tac) "Rewrite" constrarg_binding_list($cl) "in" identarg($h) ] 
+  [ "Conditional" tactic_expr($tac) "Rewrite" constrarg_binding_list($cl) "in" identarg($h) ] 
         -> [(CondRewriteLRin (TACTIC $tac) $h ($LIST $cl))]
 
 | DRewriteLR [ "Dependent" "Rewrite" "->" identarg($id) ]

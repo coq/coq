@@ -16,7 +16,9 @@ GEXTEND Gram
     [ [ c = Prim.ast -> c ] ]
   ;
   constr:
-    [ [ c = constr8 -> c ] ]
+    [ [ c = constr8 -> c 
+      | IDENT "Eval"; rtc=Tactic.red_tactic; "in"; c=constr8 ->
+        <:ast<(EVAL $c (REDEXP $rtc))>> ] ]
   ;
   lconstr:
     [ [ c = constr10 -> c ] ]

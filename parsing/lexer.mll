@@ -135,7 +135,8 @@ rule token = parse
 	if is_keyword s then ("",s) else ("IDENT",s) }
   | decimal_literal | hex_literal | oct_literal | bin_literal
       { ("INT", Lexing.lexeme lexbuf) }
-  | "(" | ")" | "[" | "]" | "{" | "}" | "." | "_" | ";" | "`" | "->"
+  | "(" | ")" | "[" | "]" | "{" | "}" | "." | "_" | ";"| "`" | "()" | "'("
+  | "->"
       { ("", Lexing.lexeme lexbuf) }
   | symbolchar+
       { ("", Lexing.lexeme lexbuf) }

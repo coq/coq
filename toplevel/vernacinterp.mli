@@ -3,7 +3,7 @@
 
 (*i*)
 open Names
-open Proof_trees
+open Proof_type
 (*i*)
 
 (* Interpretation of vernac phrases. *)

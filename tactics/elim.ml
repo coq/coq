@@ -7,7 +7,7 @@ open Names
 open Generic
 open Term
 open Reduction
-open Proof_trees
+open Proof_type
 open Clenv
 open Hipattern
 open Tacmach

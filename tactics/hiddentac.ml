@@ -2,7 +2,7 @@
 (* $Id$ *)
 
 open Term
-open Proof_trees
+open Proof_type
 open Tacmach
 open Tacentries
 

@@ -130,7 +130,7 @@ let list_map2_i f i l1 l2 =
 let list_index x = 
   let rec index_x n = function
     | y::l -> if x = y then n else index_x (succ n) l
-    | [] -> failwith "index"
+    | [] -> raise Not_found
   in 
   index_x 1
 

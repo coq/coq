@@ -7,7 +7,7 @@ open Term
 open Sign
 open Evd
 open Environ
-open Proof_trees
+open Proof_type
 (*i*)
 
 (* The primitive refiner. *)

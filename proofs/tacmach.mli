@@ -8,6 +8,7 @@ open Sign
 open Environ
 open Reduction
 open Proof_trees
+open Proof_type
 open Refiner
 open Evar_refiner
 open Tacred
@@ -15,7 +16,9 @@ open Tacred
 
 (* Operations for handling terms under a local typing context. *)
 
-type 'a sigma
+type 'a sigma   = 'a Proof_type.sigma;;
+type validation = Proof_type.validation;;
+type tactic     = Proof_type.tactic;;
 
 val sig_it  : 'a sigma   -> 'a
 val sig_sig : goal sigma -> global_constraints
@@ -73,8 +76,6 @@ val pf_const_value : goal sigma -> constr -> constr
 val pf_conv_x      : goal sigma -> constr -> constr -> bool
 val pf_conv_x_leq  : goal sigma -> constr -> constr -> bool
 
-type validation            = proof_tree list -> proof_tree
-type tactic                = goal sigma -> (goal list sigma * validation)
 type transformation_tactic = proof_tree -> (goal list * validation)
 
 val frontier : transformation_tactic

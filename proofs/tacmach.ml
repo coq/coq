@@ -14,23 +14,20 @@ open Evd
 open Typing
 open Tacred
 open Proof_trees
+open Proof_type
 open Logic
 open Refiner
 open Evar_refiner
 
-
-type 'a sigma = 'a Refiner.sigma
-
-type validation = proof_tree list -> proof_tree
-
-type tactic = goal sigma -> (goal list sigma * validation)
-
 let re_sig it gc = { it = it; sigma = gc }
-
 
 (**************************************************************)
 (* Operations for handling terms under a local typing context *)
 (**************************************************************)
+
+type 'a sigma   = 'a Proof_type.sigma;;
+type validation = Proof_type.validation;;
+type tactic     = Proof_type.tactic;;
 
 let unpackage = Refiner.unpackage
 let repackage = Refiner.repackage

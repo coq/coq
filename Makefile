@@ -93,15 +93,15 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/astterm.cmo parsing/egrammar.cmo
 ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo
 
-PROOFS=proofs/proof_trees.cmo proofs/logic.cmo \
+PROOFS=proofs/proof_type.cmo proofs/proof_trees.cmo proofs/logic.cmo \
        proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
-       proofs/macros.cmo proofs/tacinterp.cmo proofs/clenv.cmo \
-       proofs/pfedit.cmo proofs/pattern.cmo
+       proofs/macros.cmo proofs/clenv.cmo proofs/stock.cmo proofs/pattern.cmo \
+       proofs/tacinterp.cmo proofs/pfedit.cmo
 
 TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
-        tactics/nbtermdn.cmo tactics/stock.cmo tactics/hipattern.cmo \
-	tactics/wcclausenv.cmo tactics/tacticals.cmo tactics/tactics.cmo \
-        tactics/tacentries.cmo tactics/hiddentac.cmo tactics/elim.cmo
+        tactics/nbtermdn.cmo tactics/hipattern.cmo tactics/wcclausenv.cmo \
+        tactics/tacticals.cmo tactics/tactics.cmo tactics/tacentries.cmo \
+        tactics/hiddentac.cmo tactics/elim.cmo
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
          toplevel/metasyntax.cmo toplevel/command.cmo toplevel/record.cmo \

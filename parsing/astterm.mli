@@ -20,11 +20,20 @@ val interp_type          : 'a evar_map -> env -> Coqast.t -> constr
 val typed_type_of_com    : 'a evar_map -> env -> Coqast.t -> typed_type
 val judgment_of_com      : 'a evar_map -> env -> Coqast.t -> unsafe_judgment
 
+(*Interprets a constr according to two lists of instantiations (variables and
+  metas)*)
+val interp_constr1     :
+  'a evar_map -> env -> (identifier * constr) list ->
+    (int * constr) list -> Coqast.t -> constr
+
+(*Interprets a casted constr according to two lists of instantiations
+  (variables and metas)*)
+val interp_casted_constr1 :
+  'a evar_map -> env -> (identifier * constr) list ->
+    (int * constr) list -> Coqast.t -> constr -> constr
+
 val interp_constrpattern : 
   'a evar_map -> env -> Coqast.t -> int list * constr_pattern
-
-val redexp_of_ast : 
-  'a evar_map -> env -> string * Coqast.t list -> Tacred.red_expr
 
 (* Translation rules from V6 to V7:
 

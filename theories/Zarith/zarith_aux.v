@@ -11,13 +11,11 @@
 Require Arith.
 Require Export fast_integer.
 
-Tactic Definition ElimCompare [$com1 $com2] :=
-  [ < : tactic : <  
-       Elim (Dcompare (Zcompare $com1 $com2)); [
+Tactic Definition ElimCompare com1 com2:=
+  Elim (Dcompare (Zcompare com1 com2)); [
          Idtac 
        | Intro hidden_auxiliary; Elim hidden_auxiliary; 
-         Clear hidden_auxiliary ] >>].
-
+         Clear hidden_auxiliary ].
 
 Definition Zlt := [x,y:Z](Zcompare x y) = INFERIEUR.
 Definition Zgt := [x,y:Z](Zcompare x y) = SUPERIEUR.
@@ -57,7 +55,7 @@ Save.
 
 Theorem Zle_gt_trans : (n,m,p:Z)(Zle m n)->(Zgt m p)->(Zgt n p).
 
-Unfold Zle Zgt; Intros n m p H1 H2; ElimCompare m n; [
+Unfold Zle Zgt; Intros n m p H1 H2; '(ElimCompare m n); [
   Intro E; Elim (Zcompare_EGAL m n); Intros H3 H4;Rewrite <- (H3 E); Assumption
 | Intro H3; Apply Zcompare_trans_SUPERIEUR with y:=m;[
     Elim (Zcompare_ANTISYM n m); Intros H4 H5;Apply H5; Assumption
@@ -67,7 +65,7 @@ Save.
 
 Theorem Zgt_le_trans : (n,m,p:Z)(Zgt n m)->(Zle p m)->(Zgt n p).
 
-Unfold Zle Zgt ;Intros n m p H1 H2; ElimCompare p m; [
+Unfold Zle Zgt ;Intros n m p H1 H2; '(ElimCompare p m); [
   Intros E;Elim (Zcompare_EGAL p m);Intros H3 H4; Rewrite (H3 E); Assumption
 | Intro H3; Apply Zcompare_trans_SUPERIEUR with y:=m; [
     Assumption
@@ -119,7 +117,7 @@ Save.
 
 Lemma Zle_gt_S       : (n,p:Z)(Zle n p)->(Zgt (Zs p) n).
 
-Unfold Zle Zgt ;Intros n p H; ElimCompare n p; [
+Unfold Zle Zgt ;Intros n p H; '(ElimCompare n p); [
   Intros H1;Elim (Zcompare_EGAL n p);Intros H2 H3; Rewrite <- H2; [
     Exact (Zgt_Sn_n n)
   | Assumption ]
@@ -154,7 +152,7 @@ Theorem Zcompare_et_un:
     ~(Zcompare x (Zplus y (POS xH)))=INFERIEUR.
 
 Intros x y; Split; [
-  Intro H; ElimCompare x (Zplus y (POS xH));[
+  Intro H; '(ElimCompare x (Zplus y (POS xH)));[
     Intro H1; Rewrite H1; Discriminate
   | Intros H1; Elim SUPERIEUR_POS with 1:=H; Intros h H2; 
     Absurd (gt (convert h) O) /\ (lt (convert h) (S O)); [
@@ -170,7 +168,7 @@ Intros x y; Split; [
         Rewrite (Zplus_sym x);Rewrite Zplus_assoc; Rewrite Zplus_inverse_r;
         Simpl; Exact H1 ]]
   | Intros H1;Rewrite -> H1;Discriminate ]
-| Intros H; ElimCompare x (Zplus y (POS xH)); [
+| Intros H; '(ElimCompare x (Zplus y (POS xH))); [
     Intros H1;Elim (Zcompare_EGAL x (Zplus y (POS xH))); Intros H2 H3;
     Rewrite  (H2 H1); Exact (Zgt_Sn_n y)
   | Intros H1;Absurd (Zcompare x (Zplus y (POS xH)))=INFERIEUR;Assumption
@@ -206,7 +204,7 @@ Save.
 
 Theorem Zgt_S        : (n,m:Z)(Zgt (Zs n) m)->((Zgt n m)\/(<Z>m=n)).
 
-Intros n m H; Unfold Zgt; ElimCompare n m; [
+Intros n m H; Unfold Zgt; '(ElimCompare n m); [
   Elim (Zcompare_EGAL n m); Intros H1 H2 H3;Rewrite -> H1;Auto with arith
 | Intros H1;Absurd (Zcompare m n)=SUPERIEUR; 
     [ Exact (Zgt_S_le m n H) | Elim (Zcompare_ANTISYM m n); Auto with arith ]
@@ -339,7 +337,7 @@ Save.
 
 Theorem Zle_antisym : (n,m:Z)(Zle n m)->(Zle m n)->(n=m).
 
-Unfold Zle ;Intros n m H1 H2; ElimCompare n m; [
+Unfold Zle ;Intros n m H1 H2; '(ElimCompare n m); [
   Elim (Zcompare_EGAL n m);Auto with arith
 | Intros H3;Absurd (Zcompare m n)=SUPERIEUR; [
     Assumption
@@ -432,7 +430,7 @@ Save.
  
 Theorem Zle_lt_or_eq : (n,m:Z)(Zle n m)->((Zlt n m) \/ n=m).
 
-Unfold Zle Zlt ;Intros n m H; ElimCompare n m; [
+Unfold Zle Zlt ;Intros n m H; '(ElimCompare n m); [
   Elim (Zcompare_EGAL n m);Auto with arith
 | Auto with arith
 | Intros H';Absurd (Zcompare n m)=SUPERIEUR;Assumption ].
@@ -440,7 +438,7 @@ Save.
 
 Theorem Zle_or_lt : (n,m:Z)((Zle n m)\/(Zlt m n)).
 
-Unfold Zle Zlt ;Intros n m; ElimCompare n m; [
+Unfold Zle Zlt ;Intros n m; '(ElimCompare n m); [
   Intros E;Rewrite -> E;Left;Discriminate
 | Intros E;Rewrite -> E;Left;Discriminate
 | Elim (Zcompare_ANTISYM n m); Auto with arith ].
@@ -478,18 +476,18 @@ Definition Zmin := [n,m:Z]
 Lemma Zmin_SS : (n,m:Z)((Zs (Zmin n m))=(Zmin (Zs n) (Zs m))).
 
 Intros n m;Unfold Zmin; Rewrite (Zcompare_n_S n m);
-ElimCompare n m;Intros E;Rewrite E;Auto with arith.
+'(ElimCompare n m);Intros E;Rewrite E;Auto with arith.
 Save.
 
 Lemma Zle_min_l : (n,m:Z)(Zle (Zmin n m) n).
 
-Intros n m;Unfold Zmin ; ElimCompare n m;Intros E;Rewrite -> E;
+Intros n m;Unfold Zmin ; '(ElimCompare n m);Intros E;Rewrite -> E;
   [ Apply Zle_n | Apply Zle_n | Apply Zlt_le_weak; Apply Zgt_lt;Exact E ].
 Save.
 
 Lemma Zle_min_r : (n,m:Z)(Zle (Zmin n m) m).
 
-Intros n m;Unfold Zmin ;ElimCompare n m;Intros E;Rewrite -> E;[
+Intros n m;Unfold Zmin ;'(ElimCompare n m);Intros E;Rewrite -> E;[
   Unfold Zle ;Rewrite -> E;Discriminate
 | Unfold Zle ;Rewrite -> E;Discriminate
 | Apply Zle_n ].

@@ -6,7 +6,7 @@ open Names
 open Term
 open Sign
 open Tacmach
-open Proof_trees
+open Proof_type
 open Clenv
 open Reduction
 open Pattern

@@ -42,7 +42,7 @@ GEXTEND Gram
     [ [ c = Constr.sort -> <:ast< (CONSTR $c) >> ] ]
   ;
   tacarg:
-    [ [ tcl = Tactic.tactic_com_list -> tcl ] ]
+    [ [ tcl = Tactic.tactic -> tcl ] ]
   ;
 END;
 

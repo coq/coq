@@ -8,6 +8,7 @@ open Sign
 open Environ
 open Evd
 open Proof_trees
+open Proof_type
 open Refiner
 (*i*)
 

@@ -2,7 +2,7 @@
 (* $Id$ *)
 
 (*i*)
-open Proof_trees
+open Proof_type
 open Tacmach
 (*i*)
 

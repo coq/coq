@@ -12,6 +12,7 @@ open Environ
 open Reduction
 open Typing
 open Proof_trees
+open Proof_type
 open Typeops
 open Type_errors
 open Coqast

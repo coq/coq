@@ -210,9 +210,9 @@ Proof.
   Intro z. Case z;
   [ Left; Compute; Trivial
   | Intro p; Case p; Intros; 
-    (Right; Compute; Exact I) Orelse (Left; Compute; Exact I)
+    '(Right; Compute; Exact I) Orelse '(Left; Compute; Exact I)
   | Intro p; Case p; Intros; 
-    (Right; Compute; Exact I) Orelse (Left; Compute; Exact I) ].
+    '(Right; Compute; Exact I) Orelse '(Left; Compute; Exact I) ].
   (*** was 
   Realizer Zeven_bool.
   Repeat Program; Compute; Trivial.
@@ -224,9 +224,9 @@ Proof.
   Intro z. Case z;
   [ Left; Compute; Trivial
   | Intro p; Case p; Intros; 
-    (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) 
+    '(Left; Compute; Exact I) Orelse '(Right; Compute; Trivial) 
   | Intro p; Case p; Intros; 
-    (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) ].
+    '(Left; Compute; Exact I) Orelse '(Right; Compute; Trivial) ].
   (*** was 
   Realizer Zeven_bool.
   Repeat Program; Compute; Trivial.
@@ -238,9 +238,9 @@ Proof.
   Intro z. Case z;
   [ Right; Compute; Trivial
   | Intro p; Case p; Intros; 
-    (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) 
+    '(Left; Compute; Exact I) Orelse '(Right; Compute; Trivial) 
   | Intro p; Case p; Intros; 
-    (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) ].
+    '(Left; Compute; Exact I) Orelse '(Right; Compute; Trivial) ].
   (*** was 
   Realizer Zodd_bool.
   Repeat Program; Compute; Trivial.
@@ -281,21 +281,21 @@ Lemma Zeven_div2 : (x:Z) (Zeven x) -> `x = 2*(Zdiv2 x)`.
 Proof.
 Destruct x.
 Auto with arith.
-(Destruct p; Auto with arith).
-Intros. (Absurd (Zeven (POS (xI p0))); Red; Auto with arith).
-Intros. (Absurd (Zeven `1`); Red; Auto with arith).
-(Destruct p; Auto with arith).
-Intros. (Absurd (Zeven (NEG (xI p0))); Red; Auto with arith).
-Intros. (Absurd (Zeven `-1`); Red; Auto with arith).
+Destruct p; Auto with arith.
+Intros. Absurd (Zeven (POS (xI p0))); Red; Auto with arith.
+Intros. Absurd (Zeven `1`); Red; Auto with arith.
+Destruct p; Auto with arith.
+Intros. Absurd (Zeven (NEG (xI p0))); Red; Auto with arith.
+Intros. Absurd (Zeven `-1`); Red; Auto with arith.
 Save.
 
 Lemma Zodd_div2 : (x:Z) `x >= 0` -> (Zodd x) -> `x = 2*(Zdiv2 x)+1`.
 Proof.
 Destruct x.
-Intros. (Absurd (Zodd `0`); Red; Auto with arith).
-(Destruct p; Auto with arith).
-Intros. (Absurd (Zodd (POS (xO p0))); Red; Auto with arith).
-Intros. (Absurd `(NEG p) >= 0`; Red; Auto with arith).
+Intros. Absurd (Zodd `0`); Red; Auto with arith.
+Destruct p; Auto with arith.
+Intros. Absurd (Zodd (POS (xO p0))); Red; Auto with arith.
+Intros. Absurd `(NEG p) >= 0`; Red; Auto with arith.
 Save.
 
 Lemma Z_modulo_2 : (x:Z) `x >= 0` -> { y:Z | `x=2*y` }+{ y:Z | `x=2*y+1` }.
@@ -344,7 +344,7 @@ Apply rename with x:=`x ?= y`; Intro r; Elim r;
 Save.
 
 Lemma Zcompare_x_x : (x:Z) `x ?= x` = EGAL.
-(Intro; Apply Case (Zcompare_EGAL x x) of [h1,h2: ?]h2 end).
+Intro; Apply Case (Zcompare_EGAL x x) of [h1,h2: ?]h2 end.
 Apply refl_equal.
 Save.
 

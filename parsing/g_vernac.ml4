@@ -2,7 +2,9 @@
 (* $Id$ *)
 
 open Pcoq
-
+open Pp
+open Tactic
+open Util
 open Vernac
 
 GEXTEND Gram
@@ -121,7 +123,8 @@ GEXTEND Gram
       [ [ IDENT "Abstraction"; id = identarg; "["; l = ne_numarg_list; "]";
         ":="; c = constrarg; "." ->
           <:ast< (ABSTRACTION $id $c ($LIST $l)) >>
-      ] ];
+      ] ]
+  ;
   END
 
 (* Gallina inductive declarations *)
@@ -425,6 +428,10 @@ GEXTEND Gram
   [ [ -> []
     | ":"; l = LIST1 identarg -> l ] ]
   ;
+  vrec_clause:
+    [ [ name=identarg; it=LIST1 input_fun; ":="; body=tactic_expr ->
+          <:ast<(RECCLAUSE $name (FUNVAR ($LIST $it)) $body)>> ] ]
+  ;
   command:
     [ [ IDENT "Goal"; c = constrarg; "." -> <:ast< (GOAL $c) >>
       | IDENT "Goal"; "." -> <:ast< (GOAL) >>
@@ -481,11 +488,29 @@ GEXTEND Gram
 
 (* Tactic Definition *)
 
-      | IDENT "Tactic"; "Definition"; id = identarg; "[";
-        ids = ne_identarg_list; "]"; ":="; tac = Prim.astact; "." ->
-          <:ast< (TacticDefinition $id (AST $tac) ($LIST $ids)) >>
-      | IDENT "Tactic"; "Definition"; id = identarg; ":="; tac = Prim.astact;
-        "." -> <:ast< (TacticDefinition $id (AST $tac)) >>
+      |IDENT "Tactic"; "Definition"; name=identarg; ":="; body=Tactic.tactic;
+        "." -> <:ast<(TACDEF $name (AST $body))>>
+      |IDENT "Tactic"; "Definition"; name=identarg; largs=LIST1 input_fun;
+        ":="; body=Tactic.tactic; "." ->
+        <:ast<(TACDEF $name (AST (FUN (FUNVAR ($LIST $largs)) $body)))>>
+      |IDENT "Recursive"; IDENT "Tactic"; "Definition"; vc=vrec_clause ; "." ->
+        (match vc with
+            Coqast.Node(_,"RECCLAUSE",nme::tl) ->
+              <:ast<(TACDEF $nme (AST (REC $vc)))>>
+           |_ ->
+             anomalylabstrm "Gram.vernac" [<'sTR "Not a correct RECCLAUSE">])
+      |IDENT "Recursive"; IDENT "Tactic"; "Definition"; vc=vrec_clause;
+        IDENT "And"; vcl=LIST1 vrec_clause SEP IDENT "And"; "." ->
+        let nvcl=
+          List.fold_right
+            (fun e b -> match e with
+                Coqast.Node(_,"RECCLAUSE",nme::_) ->
+                  nme::<:ast<(AST (REC $e))>>::b
+               |_ ->
+                 anomalylabstrm "Gram.vernac" [<'sTR
+                   "Not a correct RECCLAUSE">]) (vc::vcl) []
+        in
+          <:ast<(TACDEF ($LIST $nvcl))>>
 
 (* Hints for Auto and EAuto *)
 

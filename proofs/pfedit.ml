@@ -14,6 +14,7 @@ open Declare
 open Typing
 open Tacmach
 open Proof_trees
+open Proof_type
 open Lib
 open Astterm
 

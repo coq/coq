@@ -10,7 +10,7 @@ open Sign
 open Instantiate
 open Environ
 open Evd
-open Proof_trees
+open Proof_type
 open Logic
 open Reduction
 open Tacmach

@@ -13,7 +13,7 @@ open Reduction
 open Typing
 open Pattern
 open Tacmach
-open Proof_trees
+open Proof_type
 open Pfedit
 open Rawterm
 open Tacred

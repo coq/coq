@@ -14,7 +14,7 @@ open Instantiate
 open Typeops
 open Typing
 open Tacmach
-open Proof_trees
+open Proof_type
 open Logic
 open Wcclausenv
 open Pattern
@@ -1936,7 +1936,7 @@ let autorewrite lbases ltacstp opt_step ltacrest opt_rest depth_step gls =
     (repackage sigr gl,validation_fun)
 
 (*Collects the arguments of AutoRewrite ast node*)
-let dyn_autorewrite largs=
+(*let dyn_autorewrite largs=
   let rec explicit_base largs =
     let tacargs = List.map cvt_arg largs in 
     List.map 
@@ -2016,8 +2016,7 @@ let dyn_autorewrite largs=
 	anomalylabstrm "dyn_autorewrite" 
 	  [<'sTR "Bad call of list_args (not a REDEXP)">]
   in
-  list_args largs
+  list_args largs*)
 
 (*Adds and hides the AutoRewrite tactic*)
-let h_autorewrite = hide_tactic "AutoRewrite" dyn_autorewrite
-
+(*let h_autorewrite = hide_tactic "AutoRewrite" dyn_autorewrite*)

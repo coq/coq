@@ -4,7 +4,7 @@
 (*i*)
 open Names
 open Term
-open Proof_trees
+open Proof_type
 open Tacmach
 open Tacticals
 (*i*)

@@ -12,7 +12,6 @@ open Reduction
 open Environ
 open Declare
 open Tacmach
-open Proof_trees
 open Clenv
 open Pattern
 open Wcclausenv

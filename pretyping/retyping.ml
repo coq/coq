@@ -45,7 +45,6 @@ let rec type_of env cstr=
            with Not_found -> anomaly "type_of: this is not a well-typed term")
     | IsRel n -> lift n (body_of_type (snd (lookup_rel n env)))
     | IsVar id -> body_of_type (snd (lookup_var id env))
-
     | IsAbst _ -> error "No more Abst" (*type_of env (abst_value cstr)*)
     | IsConst c -> (body_of_type (type_of_constant env sigma c))
     | IsEvar _ -> type_of_existential env sigma cstr
@@ -67,10 +66,9 @@ let rec type_of env cstr=
           mkProd name c1 (type_of (push_rel (name,var) env) c2)
     | IsFix (vn,i,lar,lfi,vdef) -> lar.(i)
     | IsCoFix (i,lar,lfi,vdef) -> lar.(i)
-
-    | IsAppL(f,args)-> strip_outer_cast (subst_type env sigma (type_of env f) args)
+    | IsAppL(f,args)->
+      strip_outer_cast (subst_type env sigma (type_of env f) args)
     | IsCast (c,t) -> t
-
     | IsSort _ | IsProd (_,_,_) | IsMutInd _ -> mkSort (sort_of env cstr)
     | _ -> error "type_of: Unexpected constr"
 
@@ -94,3 +92,9 @@ in type_of, sort_of
 let get_type_of env sigma = fst (typeur sigma []) env
 let get_sort_of env sigma = snd (typeur sigma []) env
 let get_type_of_with_meta env sigma metamap = fst (typeur sigma metamap) env
+
+(*Makes an unsafe judgment from a constr*)
+let mk_unsafe_judgment env evc c=
+  let typ=get_type_of env evc c
+  in
+    {uj_val=c;uj_type=typ;uj_kind=(mkSort (get_sort_of env evc typ))};;

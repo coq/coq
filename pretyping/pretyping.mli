@@ -12,16 +12,24 @@ open Evarutil
 (*i*)
 
 (* Raw calls to the inference machine of Trad: boolean says if we must fail
- * on unresolved evars, or replace them by Metas *)
+   on unresolved evars, or replace them by Metas ; the unsafe_judgment list
+   allows us to extend env with some bindings *)
 val ise_resolve : bool -> 'a evar_map -> (int * constr) list ->
-  env -> rawconstr -> unsafe_judgment
+  env -> (identifier * unsafe_judgment) list ->
+  (int * unsafe_judgment) list -> rawconstr -> unsafe_judgment
+
 val ise_resolve_type : bool -> 'a evar_map -> (int * constr) list ->
   env -> rawconstr -> typed_type
 
 (* Call [ise_resolve] with empty metamap and [fail_evar=true]. The boolean says
  * if we must coerce to a type *)
 val ise_resolve1 : bool -> 'a evar_map -> env -> rawconstr -> constr
+val ise_resolve2 : 'a evar_map -> env -> (identifier * unsafe_judgment) list ->
+  (int * unsafe_judgment) list -> rawconstr -> constr
 
+val ise_resolve_casted_gen :
+  'a evar_map -> env -> (identifier * unsafe_judgment) list ->
+    (int * unsafe_judgment) list -> constr -> rawconstr -> constr
 val ise_resolve_casted : 'a evar_map -> env -> constr -> rawconstr -> constr
 
 (* progmach.ml tries to type ill-typed terms: does not perform the conversion
@@ -60,6 +68,7 @@ i*)
  * Unused outside Trad, but useful for debugging
  *)
 val pretype : 
-  trad_constraint -> env -> 'a evar_defs -> rawconstr -> unsafe_judgment
-
+  trad_constraint -> env -> 'a evar_defs ->
+    (identifier * unsafe_judgment) list -> (int * unsafe_judgment) list ->
+    rawconstr -> unsafe_judgment
 (*i*)

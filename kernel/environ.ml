@@ -103,10 +103,10 @@ let add_abstraction sp ab env =
 	env_abstractions = new_abs;
 	env_locals = new_locals } in
   { env with env_globals = new_globals }
-  
-let new_meta = 
-  let meta_ctr = ref 0 in
-  fun () -> (incr meta_ctr; !meta_ctr)
+
+let meta_ctr=ref 0;;
+
+let new_meta ()=incr meta_ctr;!meta_ctr;;
 
 (* Access functions. *)
   
@@ -310,4 +310,3 @@ type unsafe_judgment = {
 let cast_of_judgment = function
   | { uj_val = DOP2 (Cast,_,_) as c } -> c
   | { uj_val = c; uj_type = ty } -> mkCast c ty
-

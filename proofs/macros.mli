@@ -4,7 +4,7 @@
 (*i*)
 open Names
 open Tacmach
-open Proof_trees
+open Proof_type
 (*i*)
 
 (* This file contains the table of macro tactics. The body of the

@@ -13,14 +13,9 @@ open Reduction
 open Instantiate
 open Type_errors
 open Proof_trees
+open Proof_type
 open Logic
 
-type 'a sigma = { 
-  it : 'a ; 
-  sigma : global_constraints }
-
-type validation = (proof_tree list -> proof_tree)
-type tactic = goal sigma -> (goal list sigma * validation)
 type transformation_tactic = proof_tree -> (goal list * validation)
 
 let hypotheses gl = gl.evar_env

@@ -250,9 +250,13 @@ let check_capture s ty = function
 	[< 'sTR ("The variable "^s^" occurs in its type") >]
   | _ -> ()
 
-let dbize k allow_soapp sigma =
+let dbize k sigma env allow_soapp lvar =
   let rec dbrec env = function
-    | Nvar(loc,s) -> fst (dbize_ref k sigma env loc s)
+    | Nvar(loc,s) ->
+      if List.mem s lvar then
+        RRef(loc,RVar (id_of_string s))
+      else
+        fst (dbize_ref k sigma env loc s)
 	  
    (*
    | Slam(_,ona,Node(_,"V$",l)) ->
@@ -306,8 +310,13 @@ let dbize k allow_soapp sigma =
     | Node(loc,"APPLISTEXPL", f::args) ->
 	RApp (loc,dbrec env f,List.map (dbrec env) args)
     | Node(loc,"APPLIST", Nvar(locs,s)::args) ->
-	let (c, impargs) = dbize_ref k sigma env locs s in
-	RApp (loc, c, dbize_args env impargs args)
+	let (c, impargs) =
+          if List.mem s lvar then
+            RRef(loc,RVar (id_of_string s)),[]
+          else
+            dbize_ref k sigma env locs s
+        in
+	  RApp (loc, c, dbize_args env impargs args)
     | Node(loc,"APPLIST", f::args) ->	   
 	RApp (loc,dbrec env f,List.map (dbrec env) args)
 	  
@@ -403,13 +412,28 @@ let dbize k allow_soapp sigma =
     aux 1 l args
 
   in 
-  dbrec
+  dbrec env
 
 (* constr_of_com takes an environment of typing assumptions,
  * and translates a command to a constr. *)
 
+(*Takes a list of variables which must not be globalized*)
+let interp_rawconstr_gen sigma env allow_soapp lvar com =
+  dbize CCI sigma (unitize_env (context env)) allow_soapp lvar com
+
 let interp_rawconstr sigma env com =
-  dbize CCI false sigma (unitize_env (context env)) com
+  interp_rawconstr_gen sigma env false [] com
+
+(*The same as interp_rawconstr but with a list of variables which must not be
+  globalized*)
+let interp_rawconstr_wo_glob sigma env lvar com =
+  dbize CCI sigma (unitize_env (context env)) false lvar com
+
+(*let raw_fconstr_of_com sigma env com =
+  dbize_fw sigma (unitize_env (context env)) [] com
+
+let raw_constr_of_compattern sigma env com = 
+  dbize_cci sigma (unitize_env env) com*)
 
 (* Globalization of AST quotations (mainly used in command quotations
    to get statically bound idents in grammar or pretty-printing rules) *)
@@ -501,13 +525,28 @@ let interp_constr_gen is_ass sigma env com =
 let interp_constr sigma env c = interp_constr_gen false sigma env c
 let interp_type sigma env   c = interp_constr_gen true sigma env c
 
-
 let judgment_of_com sigma env com = 
   let c = interp_rawconstr sigma env com in
   try
-    ise_resolve false sigma [] env c
+    ise_resolve false sigma [] env [] [] c
   with e -> 
     Stdpp.raise_with_loc (Ast.loc com) e
+
+(*To retype a list of key*constr with undefined key*)
+let retype_list sigma env lst=
+  List.map (fun (x,csr) -> (x,Retyping.mk_unsafe_judgment env sigma csr)) lst;;
+
+(*Interprets a constr according to two lists of instantiations (variables and
+  metas)*)
+let interp_constr1 sigma env lvar lmeta com =
+  let c =
+    interp_rawconstr_gen sigma env false (List.map (fun x -> string_of_id (fst
+      x)) lvar) com
+  and rtype=fun lst -> retype_list sigma env lst in
+  try
+    ise_resolve2 sigma env (rtype lvar) (rtype lmeta) c
+  with e -> 
+    Stdpp.raise_with_loc (Ast.loc com) e;;
 
 let typed_type_of_com sigma env com =
   let c = interp_rawconstr sigma env com in
@@ -520,6 +559,15 @@ let typed_type_of_com sigma env com =
 
 let interp_casted_constr sigma env com typ = 
   ise_resolve_casted sigma env typ (interp_rawconstr sigma env com)
+
+(*Interprets a casted constr according to two lists of instantiations
+  (variables and metas)*)
+let interp_casted_constr1 sigma env lvar lmeta com typ =
+  let c =
+    interp_rawconstr_gen sigma env false (List.map (fun x -> string_of_id (fst
+      x)) lvar) com
+  and rtype=fun lst -> retype_list sigma env lst in 
+  ise_resolve_casted_gen sigma env (rtype lvar) (rtype lmeta) typ c;;
 
 (*
 let dbize_fw  sigma env com = dbize FW sigma env com
@@ -619,101 +667,9 @@ let pattern_of_rawconstr c =
   (!metas,p)
 
 let interp_constrpattern sigma env com = 
-  let c = dbize CCI true sigma (unitize_env (context env)) com in
+  let c = dbize CCI sigma (unitize_env (context env)) true [] com in
   try 
     pattern_of_rawconstr c
   with e -> 
     Stdpp.raise_with_loc (Ast.loc com) e
-
-(* Translation of reduction expression: we need trad because of Fold
- * Moreover, reduction expressions are used both in tactics and in
- * vernac. *)
-
-open Closure
-open Tacred
-
-let glob_nvar com =
-  let s = nvar_of_ast com in
-  try 
-    Nametab.sp_of_id CCI (id_of_string s)
-  with Not_found -> 
-    error ("unbound variable "^s)
-
-let cvt_pattern sigma env = function
-  | Node(_,"PATTERN", Node(_,"COMMAND",[com])::nums) ->
-      let occs = List.map num_of_ast nums in
-      let c = interp_constr sigma env com in
-      let j = Typing.unsafe_machine env sigma c in
-      (occs, j.uj_val, j.uj_type)
-  | arg -> invalid_arg_loc (Ast.loc arg,"cvt_pattern")
-
-let cvt_unfold = function
-  | Node(_,"UNFOLD", com::nums) -> (List.map num_of_ast nums, glob_nvar com)
-  | arg -> invalid_arg_loc (Ast.loc arg,"cvt_unfold")
-
-let cvt_fold sigma sign = function
-  | Node(_,"COMMAND",[c]) -> interp_constr sigma sign c
-  | arg -> invalid_arg_loc (Ast.loc arg,"cvt_fold")
-
-let flag_of_ast lf =
-  let beta = ref false in
-  let delta = ref false in
-  let iota = ref false in
-  let idents = ref (None: (sorts oper -> bool) option) in
-  let set_flag = function
-    | Node(_,"Beta",[]) -> beta := true
-    | Node(_,"Delta",[]) -> delta := true
-    | Node(_,"Iota",[]) -> iota := true
-    | Node(loc,"Unf",l) ->
-        if !delta then
-          if !idents = None then
-            let idl = List.map glob_nvar l in
-            idents := Some
-              (function
-                 | Const sp -> List.mem sp idl
-                 | Abst sp -> List.mem sp idl
-                 | _ -> false)
-          else 
-	    user_err_loc
-	      (loc,"flag_of_ast",
-	       [< 'sTR"Cannot specify identifiers to unfold twice" >])
-        else 
-	  user_err_loc(loc,"flag_of_ast",
-                       [< 'sTR"Delta must be specified before" >])
-    | Node(loc,"UnfBut",l) ->
-        if !delta then
-          if !idents = None then
-            let idl = List.map glob_nvar l in
-            idents := Some
-              (function
-                 | Const sp -> not (List.mem sp idl)
-                 | Abst sp -> not (List.mem sp idl)
-                 | _ -> false)
-          else 
-	    user_err_loc
-	      (loc,"flag_of_ast",
-	       [< 'sTR"Cannot specify identifiers to unfold twice" >])
-        else 
-	  user_err_loc(loc,"flag_of_ast",
-                       [< 'sTR"Delta must be specified before" >])
-    | arg -> invalid_arg_loc (Ast.loc arg,"flag_of_ast")
-  in
-  List.iter set_flag lf;
-  { r_beta = !beta;
-    r_iota = !iota;
-    r_delta = match (!delta,!idents) with
-      | (false,_) -> (fun _ -> false)
-      | (true,None) -> (fun _ -> true)
-      | (true,Some p) -> p }
-
-let redexp_of_ast sigma sign = function
-  | ("Red", []) -> Red
-  | ("Hnf", []) -> Hnf
-  | ("Simpl", []) -> Simpl
-  | ("Unfold", ul) -> Unfold (List.map cvt_unfold ul)
-  | ("Fold", cl) -> Fold (List.map (cvt_fold sigma sign) cl)
-  | ("Cbv",lf) -> Cbv(UNIFORM, flag_of_ast lf)
-  | ("Lazy",lf) -> Lazy(UNIFORM, flag_of_ast lf)
-  | ("Pattern",lp) -> Pattern (List.map (cvt_pattern sigma sign) lp)
-  | (s,_) -> invalid_arg ("malformed reduction-expression: "^s)
 

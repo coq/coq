@@ -111,8 +111,8 @@ open Generic
 open Term
 open Environ
 open Reduction
+open Proof_type
 open Rawterm
-open Proof_trees
 open Tacmach
 open Tactics
 open Clenv
@@ -279,17 +279,17 @@ let dHyp id gls = destructHyp false id gls
 
 open Tacinterp
 
-let _ = 
-  tacinterp_add
-    ("DHyp",(function
-	       | [Identifier id] -> dHyp id
-	       | _ -> bad_tactic_args "DHyp"))
+let _=
+  add_tactic "DHyp"
+    (function
+       | [Identifier id] -> dHyp id
+       | _ -> bad_tactic_args "DHyp")
 
-let _ = 
-  tacinterp_add
-    ("CDHyp",(function
-		| [Identifier id] -> cDHyp id
-		| _ -> bad_tactic_args "CDHyp"))
+let _=
+  add_tactic "CDHyp"
+    (function
+       | [Identifier id] -> cDHyp id
+       | _ -> bad_tactic_args "CDHyp")
 
 (* [DConcl gls]
 
@@ -302,11 +302,11 @@ let dConcl gls =
   let sorted_ddl = Sort.list (fun dd1 dd2 -> dd1.d_pri > dd2.d_pri) ddl in
   tclFIRST (List.map (applyDestructor None false) sorted_ddl) gls
 
-let _ = 
-  tacinterp_add
-    ("DConcl",(function
-		 | [] -> dConcl
-		 | _ -> bad_tactic_args "DConcl"))
+let _=
+  add_tactic "DConcl"
+    (function
+       | [] -> dConcl
+       | _ -> bad_tactic_args "DConcl")
 
 let to2Lists (table : t) = Nbtermdn.to2lists table
 

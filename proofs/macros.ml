@@ -5,7 +5,7 @@ open Pp
 open Util
 open Names
 open Term
-open Proof_trees
+open Proof_type
 open Libobject
 open Library
 open Coqast

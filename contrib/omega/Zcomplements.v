@@ -70,9 +70,9 @@ Lemma Zlt_Zmult_right : (x,y,z:Z)`z>0` -> `x < y` -> `x*z < y*z`.
 
 Intros; Rewrite (Zs_pred z); Generalize (Zgt0_le_pred H); Intro;
 Apply natlike_ind with P:=[z:Z]`x*(Zs z) < y*(Zs z)`;
-[ Simpl; Do 2 (Rewrite Zmult_n_1); Assumption
-| Unfold Zs; Intros x0 Hx0; Do 6 (Rewrite Zmult_plus_distr_r);
-  Repeat (Rewrite Zmult_n_1); 
+[ Simpl; Do 2 '(Rewrite Zmult_n_1); Assumption
+| Unfold Zs; Intros x0 Hx0; Do 6 '(Rewrite Zmult_plus_distr_r);
+  Repeat Rewrite Zmult_n_1;
   Intro; Apply Zlt_Zplus; Assumption
 | Assumption ].
 Save.
@@ -82,7 +82,7 @@ Intros x y z H; Rewrite (Zs_pred z).
 Apply natlike_ind with P:=[z:Z]`x*(Zs z) < y*(Zs z)`->`x < y`.
 Simpl; Do 2 Rewrite Zmult_n_1; Auto 1.
 Unfold Zs.
-Intros x0 Hx0; Repeat (Rewrite Zmult_plus_distr_r).
+Intros x0 Hx0; Repeat Rewrite Zmult_plus_distr_r.
 Repeat Rewrite Zmult_n_1.
 Omega.
 Unfold Zpred; Omega.

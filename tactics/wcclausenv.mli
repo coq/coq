@@ -7,7 +7,7 @@ open Term
 open Sign
 open Environ
 open Evd
-open Proof_trees
+open Proof_type
 open Tacmach
 open Clenv
 (*i*)

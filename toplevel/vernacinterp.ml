@@ -5,7 +5,7 @@ open Pp
 open Util
 open Names
 open Himsg
-open Proof_trees
+open Proof_type
 open Tacinterp
 open Coqast
 open Ast
@@ -95,7 +95,10 @@ let rec cvt_varg ast =
 
     | Node(_,"AST",[a]) -> VARG_AST a
     | Node(_,"ASTLIST",al) -> VARG_ASTLIST al
-    | Node(_,"TACTIC_ARG",[targ]) -> VARG_TACTIC_ARG (cvt_arg targ)
+    | Node(_,"TACTIC_ARG",[targ]) ->
+      let (evc,env)=Pfedit.get_evmap_sign None
+      in
+        VARG_TACTIC_ARG (interp_tacarg (evc,env,[],[],None) targ)
     | Node(_,"VERNACDYN",[Dynamic (_,d)]) -> VARG_DYN d
     | _ -> anomaly_loc (Ast.loc ast, "Vernacinterp.cvt_varg",
                         [< 'sTR "Unrecognizable ast node of vernac arg:";

@@ -12,6 +12,7 @@ open Evd
 open Reduction
 open Typing
 open Proof_trees
+open Proof_type
 open Logic
 open Refiner
 
@@ -58,7 +59,6 @@ let extract_decl sp evc =
 
 let restore_decl sp evd evc =
   let newctxt = { lc = (ts_it evc).focus;
-                  mimick = (get_mimick evd);
                   pgm = (get_pgm evd) } in
   let newgoal = { evar_env = evd.evar_env; 
 		  evar_concl = evd.evar_concl;

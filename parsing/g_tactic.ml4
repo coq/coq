@@ -16,9 +16,15 @@ GEXTEND Gram
   identarg:
     [ [ id = IDENT -> <:ast< ($VAR $id) >> ] ]
   ;
+  pure_numarg:
+     [ [ n = Prim.number -> n
+       | "-"; n = Prim.number -> Coqast.Num (Ast.loc n, ( - Ast.num_of_ast n))
+     ] ]
+  ;
   numarg:
     [ [ n = Prim.number -> n
       | "-"; n = Prim.number -> Coqast.Num (Ast.loc n, ( - Ast.num_of_ast n))
+      |	id = identarg -> id
       ] ]
   ;
   constrarg:
@@ -27,6 +33,9 @@ GEXTEND Gram
   lconstrarg:
     [ [ c = Constr.lconstr -> <:ast< (COMMAND $c) >> ] ]
   ;
+  castedconstrarg:
+    [ [ c = Constr.constr -> <:ast< (CASTEDCOMMAND $c) >> ] ]
+  ;
   ne_identarg_list:
     [ [ l = LIST1 identarg -> l ] ]
   ;
@@ -34,15 +43,18 @@ GEXTEND Gram
     [ [ n = numarg; l = ne_num_list -> n :: l | n = numarg -> [n] ] ]
   ;
   pattern_occ:
-    [ [ nl = ne_num_list; c = constrarg -> <:ast< (PATTERN $c ($LIST $nl)) >>
+    [ [ nl = LIST1 pure_numarg; c = constrarg ->
+         <:ast< (PATTERN $c ($LIST $nl)) >>
       | c = constrarg -> <:ast< (PATTERN $c) >> ] ]
   ;
   ne_pattern_list:
     [ [ l = LIST1 pattern_occ -> l ] ]
   ;
   pattern_occ_hyp:
-    [ [ nl = ne_num_list; IDENT "Goal" -> <:ast<(CCLPATTERN ($LIST $nl))>>
-      | nl = ne_num_list; id = identarg -> <:ast<(HYPPATTERN $id ($LIST $nl))>>
+    [ [ nl = LIST1 pure_numarg; IDENT "Goal" ->
+          <:ast<(CCLPATTERN ($LIST $nl))>>
+      | nl = LIST1 pure_numarg; id = identarg ->
+          <:ast<(HYPPATTERN $id ($LIST $nl))>>
       | IDENT "Goal" -> <:ast< (CCLPATTERN) >>
       | id = identarg -> <:ast< (HYPPATTERN $id) >> ] ]
   ;
@@ -53,8 +65,8 @@ GEXTEND Gram
     [ [ p= ne_intropattern ->  <:ast< (INTROPATTERN $p)>> ]]
   ;
   ne_intropattern:
-    [ [   tc = LIST1 simple_intropattern -> 
-           <:ast< (LISTPATTERN ($LIST $tc))>> ] ]
+    [ [ tc = LIST1 simple_intropattern -> 
+          <:ast< (LISTPATTERN ($LIST $tc))>> ] ]
   ;
   simple_intropattern:
     [ [ "["; tc = LIST1 intropattern  SEP "|" ; "]" -> 
@@ -86,7 +98,7 @@ GEXTEND Gram
             | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var "c1" c
             | _ -> assert false
           in <:ast<(BINDINGS (BINDING ($VAR $id) $c2) ($LIST $bl))>>
-      | n = numarg; ":="; c = constrarg; bl = simple_binding_list ->
+      | n = pure_numarg; ":="; c = constrarg; bl = simple_binding_list ->
           <:ast<(BINDINGS (BINDING $n $c) ($LIST $bl))>>
       | c1 = constrarg; bl = com_binding_list ->
           <:ast<(BINDINGS (BINDING $c1) ($LIST $bl))>>
@@ -105,7 +117,8 @@ GEXTEND Gram
     [ [ c = constrarg; l = constrarg_list -> c :: l | -> [] ] ]
   ;
   unfold_occ:
-    [ [ nl = ne_num_list; c = identarg -> <:ast< (UNFOLD $c ($LIST $nl)) >>
+    [ [ nl = LIST1 pure_numarg; c = identarg ->
+         <:ast< (UNFOLD $c ($LIST $nl)) >>
       | c = identarg -> <:ast< (UNFOLD $c) >> ] ]
   ;
   ne_unfold_occ_list:
@@ -169,20 +182,83 @@ GEXTEND Gram
 (* Tactics grammar rules *)
 
 GEXTEND Gram
-  tactic_com_list:
-    [ [ y = tactic_com; ";"; l = LIST1 tactic_com_tail SEP ";" ->
-          <:ast< (TACTICLIST $y ($LIST $l)) >>
-      | y = tactic_com -> <:ast< (TACTICLIST $y) >> ] ]
+  input_fun:
+    [ [ l = identarg -> l
+      | "()" -> <:ast< (VOID) >> ] ]
   ;
-  tactic_com_tail:
-    [ [ t1 = tactic_com -> t1
-      | "["; l = LIST0 tactic_com_list SEP "|"; "]" ->
-          <:ast< (TACLIST ($LIST $l)) >> ] ]
+  let_clause:
+    [ [ id = identarg; "="; te=tactic_expr -> <:ast< (LETCLAUSE $id $te) >> ] ]
   ;
-  tactic_com:
-    [ [ st = simple_tactic; "Orelse"; tc = tactic_com ->
-          <:ast< (ORELSE $st $tc) >>
-      | st = simple_tactic -> st ] ]
+  rec_clause:
+    [ [ name = identarg; it = LIST1 input_fun; "->"; body = tactic_expr ->
+          <:ast< (RECCLAUSE $name (FUNVAR ($LIST $it)) $body) >> ] ]
+  ;
+  match_hyps:
+    [ [ id = identarg; ":"; pc = constrarg ->
+          <:ast< (MATCHCONTEXTHYPS $id $pc) >>
+      | IDENT "_"; ":"; pc = constrarg -> <:ast< (MATCHCONTEXTHYPS $pc) >> ] ]
+  ;
+  match_context_rule:
+    [ [ "["; largs = LIST0 match_hyps SEP ";"; "|-"; pc = constrarg; "]"; "->";
+          te = tactic_expr ->
+            <:ast< (MATCHCONTEXTRULE ($LIST $largs) $pc $te) >> 
+      | IDENT "_"; "->"; te = tactic_expr -> <:ast< (MATCHCONTEXTRULE $te) >>
+    ] ]
+  ;
+  match_rule:
+    [ [ "["; com = constrarg; "]"; "->"; te = tactic_expr ->
+          <:ast<(MATCHRULE $com $te)>>
+      | IDENT "_"; "->"; te = tactic_expr -> <:ast< (MATCHRULE $te) >> ] ]
+  ;
+  tactic_expr:
+    [ [ ta0 = tactic_expr; ";"; ta1 = tactic_expr ->
+         <:ast< (TACTICLIST $ta0 $ta1) >>
+      | ta = tactic_expr; ";"; "["; lta = LIST0 tactic_expr SEP "|"; "]" ->
+         <:ast< (TACTICLIST $ta (TACLIST ($LIST $lta))) >>
+      | y = tactic_atom -> y ] ]
+  ;
+  tactic_atom:
+    [ [ IDENT "Fun"; it = LIST1 input_fun ; "->"; body = tactic_expr ->
+          <:ast< (FUN (FUNVAR ($LIST $it)) $body) >>
+      | IDENT "Rec"; rc = rec_clause -> <:ast< (REC $rc) >>
+      |	IDENT "Rec"; rc = rec_clause; IDENT "In"; body = tactic_expr ->
+          <:ast< (REC (RECDECL $rc) $body) >>
+      | IDENT "Rec"; rc = rec_clause; IDENT "And";
+          rcl = LIST1 rec_clause SEP IDENT "And"; IDENT "In";
+          body = tactic_expr ->
+            <:ast< (REC (RECDECL $rc ($LIST $rcl)) $body) >>
+      | IDENT "Let"; llc = LIST1 let_clause SEP IDENT "And"; IDENT "In";
+          u = tactic_expr -> <:ast< (LET (LETDECL ($LIST $llc)) $u) >>
+      |	IDENT "Match"; IDENT "Context"; IDENT "With";
+          mrl = LIST1 match_context_rule SEP "|" ->
+            <:ast< (MATCHCONTEXT ($LIST $mrl)) >>
+      |	IDENT "Match"; com = constrarg; IDENT "With";
+          mrl = LIST1 match_rule SEP "|" -> <:ast< (MATCH $com ($LIST $mrl)) >>
+      |	"'("; te = tactic_expr; ")" -> te
+      |	"'("; te = tactic_expr; tel=LIST1 tactic_expr; ")" ->
+          <:ast< (APP $te ($LIST tel)) >>
+      | IDENT "First" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
+          <:ast<(FIRST ($LIST $l))>>
+      | IDENT "Info"; tc = tactic_expr -> <:ast< (INFO $tc) >>
+      |	IDENT "Solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
+          <:ast<(TCLSOLVE ($LIST $l))>>
+      |	IDENT "Try"; ta = tactic_atom -> <:ast< (TRY $ta) >>
+      | IDENT "Do"; n = numarg; ta = tactic_atom -> <:ast< (DO $n $ta) >>
+      | IDENT "Repeat"; ta = tactic_atom -> <:ast< (REPEAT $ta) >>
+      |	IDENT "Idtac" -> <:ast< (IDTAC) >>
+      |	IDENT "Fail" -> <:ast<(FAIL)>>
+      |	ta0 = tactic_atom; "Orelse"; ta1 = tactic_atom ->
+          <:ast< (ORELSE $ta0 $ta1) >>
+      |	st = simple_tactic -> st
+      |	tca = tactic_arg -> tca ] ]
+  ;
+  tactic_arg:
+    [ [ "()" -> <:ast< (VOID) >>
+      | n = pure_numarg -> n
+      |	c=constrarg -> 
+          (match c with
+            Coqast.Node(_,"COMMAND",[Coqast.Nvar(_,s)]) -> <:ast<($VAR $s)>>
+           |_ -> c) ] ]
   ;
   simple_tactic:
     [ [ IDENT "Fix"; n = numarg -> <:ast< (Fix $n) >>
@@ -224,8 +300,9 @@ GEXTEND Gram
                    <:ast< (SuperAuto $a0 $a1 $a2 $a3) >>
       | IDENT "Auto"; n = numarg; IDENT "Decomp" -> <:ast< (DAuto $n) >>
       | IDENT "Auto"; IDENT "Decomp" -> <:ast< (DAuto) >>
-      | IDENT "Auto"; n = numarg; IDENT "Decomp"; p = numarg-> <:ast< (DAuto $n $p) >>
-      ]];
+      | IDENT "Auto"; n = numarg; IDENT "Decomp"; p = numarg ->
+          <:ast< (DAuto $n $p) >>
+      ] ];
     END
 
 GEXTEND Gram
@@ -250,7 +327,7 @@ GEXTEND Gram
           <:ast< (Elim ($LIST $cl)) >>
       | IDENT "Assumption" -> <:ast< (Assumption) >>
       | IDENT "Contradiction" -> <:ast< (Contradiction) >>
-      | IDENT "Exact"; c = constrarg -> <:ast< (Exact $c) >>
+      | IDENT "Exact"; c = castedconstrarg -> <:ast< (Exact $c) >>
       | IDENT "OldElim"; c = constrarg -> <:ast< (OldElim $c) >>
       | IDENT "ElimType"; c = constrarg -> <:ast< (ElimType $c) >>
       | IDENT "Case"; cl = constrarg_binding_list ->
@@ -264,10 +341,6 @@ GEXTEND Gram
              <:ast< (DecomposeOr $c) >>
       | IDENT "Decompose"; "["; l = ne_identarg_list; "]"; c = constrarg ->
           <:ast< (DecomposeThese (CLAUSE ($LIST $l)) $c) >>
-      |	IDENT "First" ; "["; l = LIST0 tactic_com_list SEP "|"; "]" ->
-          <:ast<(FIRST ($LIST $l))>>
-      |	IDENT "Solve" ; "["; l = LIST0 tactic_com_list SEP "|"; "]" ->
-          <:ast<(TCLSOLVE ($LIST $l))>>
       | IDENT "Cut"; c = constrarg -> <:ast< (Cut $c) >>
       | IDENT "Specialize"; n = numarg; lcb = constrarg_binding_list ->
           <:ast< (Specialize $n ($LIST $lcb))>>
@@ -285,13 +358,11 @@ GEXTEND Gram
                 <:ast< (Clear (CLAUSE ($LIST $l))) >>
       | IDENT "Move"; id1 = identarg; IDENT "after"; id2 = identarg -> 
                 <:ast< (MoveDep $id1 $id2) >>
-      | IDENT "Do"; n = numarg; tc = tactic_com -> <:ast< (DO $n $tc) >>
-      | IDENT "Try"; tc = tactic_com -> <:ast< (TRY $tc) >>
-      | IDENT "Info"; tc = tactic_com -> <:ast< (INFO $tc) >>
-      | IDENT "Repeat"; tc = tactic_com -> <:ast< (REPEAT $tc) >>
-      | IDENT "Abstract"; tc = tactic_com -> <:ast< (ABSTRACT (TACTIC $tc)) >>
-      | IDENT "Abstract"; tc = tactic_com; "using";  s=identarg 
-                                   -> <:ast< (ABSTRACT $s (TACTIC $tc)) >>
+(*To do: put Abstract in Refiner*)
+      | IDENT "Abstract"; tc = tactic_expr -> <:ast< (ABSTRACT (TACTIC $tc)) >>
+      | IDENT "Abstract"; tc = tactic_expr; "using";  s=identarg ->
+          <:ast< (ABSTRACT $s (TACTIC $tc)) >>
+(*End of To do*)
       | IDENT "Left"; bl = with_binding_list -> <:ast< (Left $bl) >>
       | IDENT "Right"; bl = with_binding_list -> <:ast< (Right $bl) >>
       | IDENT "Split"; bl = with_binding_list -> <:ast< (Split $bl) >>
@@ -305,23 +376,22 @@ GEXTEND Gram
       | IDENT "Absurd"; c = constrarg -> <:ast< (Absurd $c) >>
       | IDENT "Idtac" -> <:ast< (Idtac) >>
       | IDENT "Fail" -> <:ast< (Fail) >>
-      | "("; tcl = tactic_com_list; ")" -> tcl
       | r = red_tactic; cl = clausearg -> <:ast< (Reduce (REDEXP $r) $cl) >>
       (* Change ne doit pas s'appliquer dans un Definition t := Eval ... *)
       | IDENT "Change"; c = constrarg; cl = clausearg ->
 	  <:ast< (Change $c $cl) >> 
       | IDENT "ML"; s = Prim.string -> <:ast< (MLTACTIC $s) >> ]
 
-    | [ id = identarg; l = constrarg_list ->
+(*    | [ id = identarg; l = constrarg_list ->
           match (isMeta (nvar_of_ast id), l) with
             | (true, []) -> id
             | (false, _) -> <:ast< (CALL $id ($LIST $l)) >>
             | _ -> Util.user_err_loc
                   (loc, "G_tactic.meta_tactic",
                    [< 'sTR"Cannot apply arguments to a meta-tactic." >])
-      ] ]
+      ] *)]
   ;
   tactic:
-    [ [ tac = tactic_com_list -> tac ] ]
+    [ [ tac = tactic_expr -> tac ] ]
   ;
 END

@@ -100,9 +100,12 @@ let head_of_constr_reference = function
 
  *)
 
+exception PatternMatchingFailure
+
 let constrain ((n : int),(m : constr)) sigma =
   if List.mem_assoc n sigma then
-    if eq_constr m (List.assoc n sigma) then sigma else error "somatch"
+    if eq_constr m (List.assoc n sigma) then sigma
+    else raise PatternMatchingFailure
   else 
     (n,m)::sigma
     
@@ -123,8 +126,6 @@ let memb_metavars m n =
     | (Some mvs, n) -> List.mem n mvs
 
 let eq_context ctxt1 ctxt2 = array_for_all2 eq_constr ctxt1 ctxt2
-
-exception PatternMatchingFailure
 
 let matches_core convert pat c = 
   let rec sorec stk sigma p t =
@@ -179,6 +180,9 @@ let matches_core convert pat c =
 
       | PBinder(BLambda,na1,c1,d1), IsLambda(na2,c2,d2) ->
 	  sorec (na2::stk) (sorec stk sigma c1 c2) d1 d2
+
+      | PRef (RConst (sp1,ctxt1)), IsConst (sp2,ctxt2) 
+          when sp1 = sp2 && eq_context ctxt1 ctxt2 -> sigma
 
       | PRef (RConst (sp1,ctxt1)), _ when convert <> None ->
 	  let (env,evars) = out_some convert in

@@ -13,7 +13,7 @@ open Printer
 open Reduction
 open Retyping
 open Tacmach
-open Proof_trees
+open Proof_type
 open Clenv
 open Tactics
 open Wcclausenv

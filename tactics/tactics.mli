@@ -6,7 +6,7 @@ open Names
 open Term
 open Environ
 open Tacmach
-open Proof_trees
+open Proof_type
 open Reduction
 open Evd
 open Clenv

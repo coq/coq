@@ -91,6 +91,7 @@ module Tactic :
     val autoarg_excluding : Coqast.t Gram.Entry.e
     val autoarg_usingTDB : Coqast.t Gram.Entry.e
     val binding_list : Coqast.t Gram.Entry.e
+    val castedconstrarg : Coqast.t Gram.Entry.e
     val clausearg : Coqast.t Gram.Entry.e
     val cofixdecl : Coqast.t list Gram.Entry.e
     val com_binding_list : Coqast.t list Gram.Entry.e
@@ -99,9 +100,14 @@ module Tactic :
     val constrarg_list : Coqast.t list Gram.Entry.e
     val fixdecl : Coqast.t list Gram.Entry.e
     val identarg : Coqast.t Gram.Entry.e
+    val input_fun : Coqast.t Gram.Entry.e
     val intropattern : Coqast.t Gram.Entry.e
     val lconstrarg : Coqast.t Gram.Entry.e
     val lconstrarg_binding_list : Coqast.t list Gram.Entry.e
+    val let_clause : Coqast.t Gram.Entry.e
+    val match_context_rule : Coqast.t Gram.Entry.e
+    val match_hyps : Coqast.t Gram.Entry.e
+    val match_rule : Coqast.t Gram.Entry.e
     val ne_identarg_list : Coqast.t list Gram.Entry.e
     val ne_intropattern : Coqast.t Gram.Entry.e
     val ne_num_list : Coqast.t list Gram.Entry.e
@@ -113,6 +119,8 @@ module Tactic :
     val one_intropattern : Coqast.t Gram.Entry.e
     val pattern_occ : Coqast.t Gram.Entry.e
     val pattern_occ_hyp : Coqast.t Gram.Entry.e
+    val pure_numarg : Coqast.t Gram.Entry.e
+    val rec_clause : Coqast.t Gram.Entry.e
     val red_flag : Coqast.t Gram.Entry.e
     val red_tactic : Coqast.t Gram.Entry.e
     val simple_binding : Coqast.t Gram.Entry.e
@@ -120,10 +128,10 @@ module Tactic :
     val simple_intropattern : Coqast.t Gram.Entry.e
     val simple_tactic : Coqast.t Gram.Entry.e
     val tactic : Coqast.t Gram.Entry.e
-    val tactic_com : Coqast.t Gram.Entry.e
-    val tactic_com_list : Coqast.t Gram.Entry.e
-    val tactic_com_tail : Coqast.t Gram.Entry.e
+    val tactic_arg : Coqast.t Gram.Entry.e
+    val tactic_atom : Coqast.t Gram.Entry.e
     val tactic_eoi : Coqast.t Gram.Entry.e
+    val tactic_expr : Coqast.t Gram.Entry.e
     val unfold_occ : Coqast.t Gram.Entry.e
     val with_binding_list : Coqast.t Gram.Entry.e
   end
