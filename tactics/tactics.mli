@@ -235,6 +235,7 @@ val cut_intro                   : constr -> tactic
 val cut_replacing               : identifier -> constr -> tactic
 val cut_in_parallel             : constr list -> tactic
 
+val assert_tac                  : bool -> name -> constr -> tactic
 val true_cut                    : name -> constr -> tactic
 val letin_tac                   : bool -> name -> constr -> clause -> tactic
 val forward                     : bool -> name -> constr -> tactic

@@ -506,18 +506,19 @@ let cut_and_apply c gl =
 (*     Cut tactics        *)
 (**************************)
 
-let true_cut na c gl =
+let assert_tac first na c gl =
   match kind_of_term (hnf_type_of gl c) with
     | Sort s -> 
-	let id =
-	  match na with
+	let id = match na with
 	  | Anonymous -> 
               let d = match s with Prop _ -> "H" | Type _ -> "X" in
               fresh_id [] (id_of_string d) gl
 	  | Name id -> id
 	in
-	internal_cut id c gl
+	(if first then internal_cut else internal_cut_rev) id c gl
     | _  -> error "Not a proposition or a type"
+
+let true_cut = assert_tac true
 
 let cut c gl =
   match kind_of_term (hnf_type_of gl c) with

@@ -135,9 +135,9 @@ let abstract_replace clause c2 c1 unsafe gl =
     let e = (build_coq_eqT_data ()).eq in
     let sym = (build_coq_eqT_data ()).sym in
     let eq = applist (e, [t1;c1;c2]) in
-    tclTHENS (cut eq)
-      [tclTHEN intro (onLastHyp (fun id -> 
-	tclTHEN (rewriteRL_clause clause (mkVar id,NoBindings)) (clear [id])));
+    tclTHENS (assert_tac false Anonymous eq)
+      [onLastHyp (fun id -> 
+	tclTHEN (rewriteRL_clause clause (mkVar id,NoBindings)) (clear [id]));
        tclORELSE assumption 
 	(tclTRY (tclTHEN (apply sym) assumption))] gl
   else
