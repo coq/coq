@@ -915,7 +915,10 @@ and tac_interp lfun lmatch debug ast g =
   try tactic_of_value (val_interp ist ast) g
   with | NotTactic ->
     errorlabstrm "Tacinterp.tac_interp" [<'sTR
-    "Interpretation gives a non-tactic value">]
+      "Must be a command or must give a tactic value">]
+
+(*    errorlabstrm "Tacinterp.tac_interp" [<'sTR
+    "Interpretation gives a non-tactic value">] *)
 
 (*    match (val_interp (evc,env,lfun,lmatch,(Some g),debug) ast) with
       | VTactic tac -> (tac g)
