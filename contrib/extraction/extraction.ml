@@ -765,8 +765,7 @@ and is_singleton_inductive ind =
   (mib.mind_ntypes = 1) &&
   (Array.length mip.mind_consnames = 1) && 
   match extract_constructor (ind,1) with 
-    | Cml ([mlt],_,_)->
-        (try parse_ml_type (fst ind) mlt; true with Found_sp -> false)
+    | Cml ([mlt],_,_)-> not (type_mem_sp (fst ind) mlt)
     | _ -> false
 	  
 and is_singleton_constructor ((sp,i),_) = 

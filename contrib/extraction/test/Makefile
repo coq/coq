@@ -31,7 +31,7 @@ CMO:= $(patsubst %.ml,%.cmo,$(ML))
 #	General rules 
 #
 
-all: ml theories/Reals/addReals.cmo $(CMO) v2ml
+all: v2ml ml theories/Reals/addReals.cmo $(CMO)
 
 theories/Reals/addReals.ml: 
 	cp -f addReals theories/Reals/addReals.ml
@@ -59,7 +59,7 @@ clean:
 #
 
 open: 
-	find theories -name "*".ml -exec qualify2open \{\} \;
+	find theories -name "*".ml -exec ./qualify2open \{\} \;
 
 undo_open: 
 	find theories -name "*".ml -exec mv \{\}.orig \{\} \;
