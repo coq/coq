@@ -818,6 +818,7 @@ LIBFILESLIGHT=$(INITVO) $(THEORIESLIGHTVO)
 
 install-library:
 	$(MKDIR) $(FULLCOQLIB)
+	$(MKDIR) $(FULLCOQLIB)/tactics
 	for f in $(LIBFILES); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
 	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
