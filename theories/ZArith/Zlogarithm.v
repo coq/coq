@@ -6,19 +6,19 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (****************************************************************************)
 (*  The integer logarithms with base 2. There are three logarithms,	    *)
 (*    depending on the rounding of the real 2-based logarithm : 	    *)
 (*									    *)
-(*  Log_inf : y = (Log_inf x) iff 2^y <= x < 2^(y+1)			    *)
-(*  Log_sup : y = (Log_sup x) iff 2^(y-1) < x <= 2^y			    *)
-(*  Log_nearest : y= (Log_nearest x) iff 2^(y-1/2) < x <= 2^(y+1/2)	    *)
+(*  [Log_inf : y = (Log_inf x) iff 2^y <= x < 2^(y+1)]			    *)
+(*  [Log_sup : y = (Log_sup x) iff 2^(y-1) < x <= 2^y]			    *)
+(*  [Log_nearest : y= (Log_nearest x) iff 2^(y-1/2) < x <= 2^(y+1/2)]	    *)
 (*									    *)
-(*  (Log_inf x) is the biggest integer that is smaller than (Log x)	    *)
-(*  (Log_inf x) is the smallest integer that is bigger than (Log x)	    *)
-(*  (Log_nearest x) is the integer nearest from (Log x). 		    *)
+(*  [Log_inf x] is the biggest integer that is smaller than [Log x]	    *)
+(*  [Log_inf x] is the smallest integer that is bigger than [Log x]	    *)
+(*  [Log_nearest x] is the integer nearest from [Log x]. 		    *)
 (****************************************************************************)
 
 Require ZArith.
@@ -28,7 +28,7 @@ Require Zpower.
 
 Section Log_pos. (* Log of positive integers *)
 
-(* First we build log_inf and log_sup *)
+(* First we build [log_inf] and [log_sup] *)
 
 Fixpoint log_inf [p:positive] : Z :=  
   Cases p of
@@ -45,10 +45,10 @@ Fixpoint log_sup [p:positive] : Z :=
 
 Hints Unfold log_inf log_sup.
 
-(* Then we give the specifications of log_inf and log_sup 
+(* Then we give the specifications of [log_inf] and [log_sup] 
   and prove their validity *)
 
-(* Hints Resolve ZERO_le_S : zarith. *)
+(*i Hints Resolve ZERO_le_S : zarith. i*)
 Hints Resolve Zle_trans : zarith.
 
 Theorem log_inf_correct : (x:positive) ` 0 <= (log_inf x)` /\
@@ -83,8 +83,8 @@ Lemma log_sup_correct1 : (p:positive)` 0 <= (log_sup p)`.
 Induction p; Intros; Simpl; Auto with zarith.
 Save.
 
-(* For every p, either p is a power of two and (log_inf p)=(log_sup p)
-  either (log_sup p)=(log_inf p)+1 *)
+(* For every p, either p is a power of two and [(log_inf p)=(log_sup p)]
+  either [(log_sup p)=(log_inf p)+1] *)
 
 Theorem log_sup_log_inf : (p:positive)
   either (POS p)=(two_p (log_inf p)) 
@@ -112,7 +112,7 @@ Theorem log_sup_correct2 : (x:positive)
 
 Intro.
 Elim (log_sup_log_inf x).
-(* x is a power of two and log_sup = log_inf *)
+(* x is a power of two and [log_sup = log_inf] *)
 Intros (E1,E2); Rewrite E2.
 Split ; [ Apply two_p_pred; Apply log_sup_correct1 | Apply Zle_n ].
 Intros (E1,E2); Rewrite E2.
@@ -176,7 +176,7 @@ Case p0; Intros; Auto with zarith.
 Auto.
 Save.
 
-(*******************
+(i*******************
 Theorem log_near_correct: (p:positive)
   `| (two_p (log_near p)) - (POS p) | <= (POS p)-(two_p (log_inf p))`
   /\`| (two_p (log_near p)) - (POS p) | <= (two_p (log_sup p))-(POS p)`.
@@ -196,7 +196,7 @@ Unfold log_near; Fold log_near.
 Unfold log_inf; Fold log_inf.
 Repeat Rewrite E1.
 Split.
-***********************************)
+***********************************i)
 
 End Log_pos.
 
@@ -232,7 +232,7 @@ Induction n; Intros;
 | Rewrite -> inj_S; Rewrite <- H; Reflexivity].
 Save.
 
-(* (Is_power p) means that p is a power of two *)
+(* [Is_power p] means that p is a power of two *)
 Fixpoint Is_power[p:positive] : Prop :=
   Cases p of
     xH => True
@@ -262,3 +262,10 @@ Induction p;
 Save.
 
 End divers.
+
+
+
+
+
+
+

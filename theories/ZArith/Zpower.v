@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 Require ZArith.
 Require Omega.
@@ -14,13 +14,13 @@ Require Zcomplements.
 
 Section section1.
 
-(* (Zpower_nat z n) is the n-th power of x when n is an unary
+(* [Zpower_nat z n] is the n-th power of x when n is an unary
     integer (type nat) and z an signed integer (type Z) *) 
 
 Definition Zpower_nat := 
   [z:Z][n:nat] (iter_nat n Z ([x:Z]` z * x `) `1`).
  
-(* Zpower_nat_is_exp says Zpower_nat is a morphism for
+(* [Zpower_nat_is_exp] says [Zpower_nat] is a morphism for
    plus : nat->nat and Zmult : Z->Z *)
 
 Lemma Zpower_nat_is_exp : 
@@ -33,7 +33,7 @@ Intros; Elim n;
   Apply Zmult_assoc].
 Save.
 
-(* (Zpower_nat z n) is the n-th power of x when n is an binary
+(* [Zpower_nat z n] is the n-th power of x when n is an binary
    integer (type positive) and z an signed integer (type Z) *) 
 
 Definition Zpower_pos := 
@@ -48,8 +48,8 @@ Theorem Zpower_pos_nat :
 Intros; Unfold Zpower_pos; Unfold Zpower_nat; Apply iter_convert.
 Save.
 
-(* Using the theorem Zpower_pos_nat and the lemma Zpower_nat_is_exp we
-   deduce that the function [n:positive](Zpower_pos z n) is a morphism
+(* Using the theorem [Zpower_pos_nat] and the lemma [Zpower_nat_is_exp] we
+   deduce that the function [[n:positive](Zpower_pos z n)] is a morphism
    for add : positive->positive and Zmult : Z->Z *)
 
 Theorem Zpower_pos_is_exp : 
@@ -96,10 +96,10 @@ Section Powers_of_2.
 
 (* For the powers of two, that will be widely used, a more direct
    calculus is possible. We will also prove some properties such
-   as (x:positive) x < 2^x that are true for all integers bigger
+   as [(x:positive) x < 2^x] that are true for all integers bigger
    than 2 but more difficult to prove and useless. *)     
 
-(* shift n m computes 2^n * m, or m shifted by n positions *)
+(* [shift n m] computes [2^n * m], or m shifted by n positions *)
 
 Definition shift_nat := 
   [n:nat][z:positive](iter_nat n positive xO z). 
@@ -148,7 +148,7 @@ Rewrite -> (shift_nat_correct n).
 Omega.
 Save.
   
-(* Second we show that two_power_pos and two_power_nat are the same *)
+(* Second we show that [two_power_pos] and [two_power_nat] are the same *)
 Lemma shift_pos_nat : (p:positive)(x:positive)
   (shift_pos p x)=(shift_nat (convert p) x).
 
@@ -165,7 +165,7 @@ Apply f_equal with f:=POS.
 Apply shift_pos_nat.
 Save.
 
-(* Then we deduce that two_power_pos is also correct *)
+(* Then we deduce that [two_power_pos] is also correct *)
 
 Theorem shift_pos_correct :
   (p,x:positive) ` (POS (shift_pos p x)) = (Zpower_pos 2 p) * (POS x)`.
@@ -197,10 +197,10 @@ Rewrite -> (two_power_pos_correct y).
 Apply Zpower_pos_is_exp.
 Save.
 
-(* The exponentiation z -> 2^z for z a signed integer.   *)
-(* For convenience, we assume that 2^z = 0 for all z <0 *)
-(* We could also define a inductive type Log_result with *)
-(* 3 contructors Zero | Pos positive -> | minus_infty    *)
+(* The exponentiation [z -> 2^z] for z a signed integer.   *)
+(* For convenience, we assume that [2^z = 0] for all [z <0] *)
+(* We could also define a inductive type [Log_result] with *)
+(* 3 contructors [ Zero | Pos positive -> | minus_infty]    *)
 (* but it's more complexe and not so useful.		 *)
  
 Definition two_p :=
@@ -282,9 +282,9 @@ Section power_div_with_rest.
 
 (* Division by a power of two
   To n:Z and p:positive q,r are associated such that
-    n = 2^p.q + r and 0 <= r < 2^p *)
+    [n = 2^p.q + r] and [0 <= r < 2^p] *)
 
-(* Invariant : d*q + r = d'*q + r /\ d' = 2*d /\ 0<= r < d /\ 0 <= r' < d' *)
+(* Invariant : [d*q + r = d'*q + r /\ d' = 2*d /\ 0<= r < d /\ 0 <= r' < d'] *)
 Definition Zdiv_rest_aux :=
   [qrd:(Z*Z)*Z] 
   let (qr,d)=qrd in let (q,r)=qr in
