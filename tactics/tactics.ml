@@ -1058,17 +1058,19 @@ let induct_discharge old_style indpath statuslists cname destopt avoid ra gl =
   let (lstatus,rstatus) = statuslists in
   let tophyp = ref None in
   let n = List.fold_left (fun n b -> if b then n+1 else n) 0 ra in
-  let recvarname, avoid =
+  let recvarname =
     if n=1 then 
-      cname, avoid
+      cname
     else (* To force renumbering if there is only one *)
-      make_ident (string_of_id cname) (Some 1),
-      if old_style then avoid
-      else (* Forbid to use cname0 *)
-	(make_ident (string_of_id cname) (Some 0)) :: avoid
+      make_ident (string_of_id cname) (Some 1)
   in
   let indhyp = if old_style then "Hrec" else "IH" in
   let hyprecname = id_of_string (indhyp^(string_of_id recvarname)) in
+  let avoid =
+    if old_style then avoid
+    else (* Forbid to use cname0 and hyprecname0 *)
+      (make_ident (string_of_id cname) (Some 0)) ::
+      (make_ident (string_of_id hyprecname) (Some 0)) :: avoid in
   let rec peel_tac = function
     | true :: ra' ->
 		 (* For lstatus but _buggy_: if intro_gen renames
