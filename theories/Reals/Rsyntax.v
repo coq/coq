@@ -169,7 +169,7 @@ Syntax constr
   ;
 
   level 5:
- Ropp_inside [<<(REXPR <<(Ropp $n1)>>)>>] -> [ "-" (REXPR $n1):E  ]
+ Ropp_inside [<<(REXPR <<(Ropp $n1)>>)>>] -> [ " -" (REXPR $n1):E  ]
 |Rinv_inside [<<(REXPR <<(Rinv $n1)>>)>>] -> [ "1""/" (REXPR $n1):E  ]
 |Rdiv_inside
       [<<(REXPR <<(Rdiv $n1 $n2)>>)>>]
