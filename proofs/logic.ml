@@ -121,7 +121,10 @@ and mk_casegoals sigma goal goalacc p c =
   let env = goal.evar_env in
   let (acc',ct) = mk_hdgoals sigma goal goalacc c in 
   let (acc'',pt) = mk_hdgoals sigma goal acc' p in
-  let (_,lbrty,conclty) = type_case_branches env sigma ct pt p c in
+  let indspec =
+    try try_mutind_of env sigma ct
+    with Induc -> anomaly "mk_casegoals" in
+  let (lbrty,conclty) = type_case_branches env sigma indspec pt p c in
   (acc'',lbrty,conclty)
 
 

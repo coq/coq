@@ -242,18 +242,18 @@ let is_correct_arity env sigma kelim (c,p) =
       in 
       error_elim_arity CCI env ind listarity c p pt kinds
   in 
-  srec 
+  srec
 
 let find_case_dep_nparams env sigma (c,p) (mind,largs) typP =    
-  let mis = lookup_mind_specif mind env in 
+  let mis = lookup_mind_specif mind env in
   let nparams = mis_nparams mis
-  and kelim = mis_kelim mis 
+  and kelim = mis_kelim mis
   and t = body_of_type (instantiate_arity mis) in 
   let (globargs,la) = list_chop nparams largs in
   let glob_t = hnf_prod_applist env sigma "find_elim_boolean" t globargs in
   let arity = applist(mkMutInd mind,globargs) in
   let (dep,_) = is_correct_arity env sigma kelim (c,p) arity (typP,glob_t) in
-  (dep, (nparams, globargs,la))
+  dep
 
 let type_one_branch_dep env sigma (nparams,globargs,p) co t = 
   let rec typrec n c =
@@ -277,6 +277,19 @@ let type_one_branch_nodep env sigma (nparams,globargs,p) t =
   in 
   typrec 0 (hnf_prod_applist env sigma "type_case" t globargs)
 
+(* [p] is the predicate and [cs] a constructor summary *)
+let mytype_one_branch dep env p cs =
+  if dep then
+    let n = cs.cs_nargs in
+    let ci =
+      applist
+	(mkMutConstruct cs.cs_cstr,
+	 (List.map (lift n) cs.cs_params)@(rel_list 0 n)) in
+    it_prod_name env (applist (appvect (lift n p,cs.cs_concl_realargs), [ci]))
+      cs.cs_args
+  else
+    prod_it (appvect (lift cs.cs_nargs p,cs.cs_concl_realargs)) cs.cs_args
+
 (* type_case_branches type un <p>Case c of ... end 
    ct = type de c, si inductif il a la forme APP(mI,largs), sinon raise Induc
    pt = sorte de p
@@ -284,26 +297,17 @@ let type_one_branch_nodep env sigma (nparams,globargs,p) t =
    attendus dans les branches du Case; lr est le type attendu du resultat
  *)
 
-let type_case_branches env sigma ct pt p c =
-  try
-    let (mind,largs) = find_mrectype env sigma ct in
-    let (dep,(nparams,globargs,la)) =
-      find_case_dep_nparams env sigma (c,p) (mind,largs) pt
-    in
-    let (lconstruct,ltypconstr) = type_mconstructs env sigma mind in
-    let mI = mkMutInd mind in
-    if dep then 
-      (mI, 
-       array_map2 (type_one_branch_dep env sigma (nparams,globargs,p))
-         lconstruct ltypconstr,
-         beta_applist (p,(la@[c])))
-    else 
-      (mI,
-       Array.map (type_one_branch_nodep env sigma (nparams,globargs,p)) 
-         ltypconstr,
-         beta_applist (p,la))
-  with Induc -> 
-    error_case_not_inductive CCI env c ct
+let type_case_branches env sigma indspec pt p c =
+  let dep =
+    find_case_dep_nparams env sigma (c,p)
+      (indspec.mind,indspec.params@indspec.realargs) pt in
+  let constructs = get_constructors env sigma indspec in
+  let lc = Array.map (mytype_one_branch dep env p) constructs in
+  let la = indspec.realargs in
+  if dep then
+    (lc, beta_applist (p,(la@[c])))
+  else 
+    (lc, beta_applist (p,la))
 
 let check_branches_message env sigma (c,ct) (explft,lft) = 
   let n = Array.length explft 
@@ -317,8 +321,11 @@ let check_branches_message env sigma (c,ct) (explft,lft) =
 
 let type_of_case env sigma ci pj cj lfj =
   let lft = Array.map (fun j -> j.uj_type) lfj in
-  let (mind,bty,rslty) =
-    type_case_branches env sigma cj.uj_type pj.uj_type pj.uj_val cj.uj_val in
+  let indspec =
+    try try_mutind_of env sigma cj.uj_type
+    with Induc -> error_case_not_inductive CCI env cj.uj_val cj.uj_type in
+  let (bty,rslty) =
+    type_case_branches env sigma indspec pj.uj_type pj.uj_val cj.uj_val in
   let kind = mysort_of_arity env sigma pj.uj_type in
   check_branches_message env sigma (cj.uj_val,cj.uj_type) (bty,lft);
   { uj_val  = mkMutCaseA ci (j_val pj) (j_val cj) (Array.map j_val lfj);

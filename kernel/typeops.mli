@@ -40,8 +40,8 @@ val type_of_case : env -> 'a evar_map -> case_info
     -> unsafe_judgment array -> unsafe_judgment
 
 val type_case_branches :
-  env -> 'a evar_map -> constr -> constr -> constr -> constr 
-    -> constr * constr array * constr 
+  env -> 'a evar_map -> Inductive.inductive_summary -> constr -> constr
+    -> constr -> constr array * constr 
 
 val judge_of_prop_contents : contents -> unsafe_judgment
 
@@ -86,8 +86,7 @@ val make_arity_nodep :
 
 val find_case_dep_nparams :
   env -> 'a evar_map -> constr * constr ->
-    inductive * constr list ->
-      constr -> bool * (int * constr list * constr list) 
+    inductive * constr list -> constr -> bool
 
 (* The constr list is the global args list *)
 val type_inst_construct :

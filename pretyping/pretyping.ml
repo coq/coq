@@ -82,7 +82,7 @@ let transform_rec loc env sigma cl (ct,pt) =
   if Array.length lf <> expn then 
     error_number_branches_loc loc CCI env c ct expn;
   if is_recursive [mispec.mis_tyi] recargs then
-    let (dep,_) = find_case_dep_nparams env sigma (c,p) appmind pt in 
+    let dep = find_case_dep_nparams env sigma (c,p) appmind pt in 
     let ntypes = mis_ntypes mispec (* was mis_nconstr !?! *)
     and tyi = mispec.mis_tyi 
     and nparams = mis_nparams mispec in
@@ -414,7 +414,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
   let evalct = nf_ise1 !isevars cj.uj_type
   and evalPt = nf_ise1 !isevars pj.uj_type in
 
-  let (_,bty,rsty) =
+  let (bty,rsty) =
     Indrec.type_rec_branches isrec env !isevars evalct evalPt pj.uj_val cj.uj_val in
   if Array.length bty <> Array.length lf then
     wrong_number_of_cases_message loc env isevars (cj.uj_val,evalct)
