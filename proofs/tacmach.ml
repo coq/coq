@@ -66,6 +66,15 @@ let pf_get_hyp_typ gls id =
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
 
+let pf_get_new_id id gls = 
+  next_ident_away id (pf_ids_of_hyps gls)
+
+let pf_get_new_ids ids gls =
+  let avoid = pf_ids_of_hyps gls in
+  List.fold_right
+    (fun id acc -> (next_ident_away id (acc@avoid))::acc)
+    ids []
+
 let pf_interp_constr gls c =
   let evc = project gls in 
   Constrintern.interp_constr evc (pf_env gls) c

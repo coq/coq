@@ -60,6 +60,9 @@ val pf_interp_type        : goal sigma -> Topconstr.constr_expr -> types
 val pf_get_hyp            : goal sigma -> identifier -> named_declaration
 val pf_get_hyp_typ        : goal sigma -> identifier -> types
 
+val pf_get_new_id  : identifier      -> goal sigma -> identifier
+val pf_get_new_ids : identifier list -> goal sigma -> identifier list
+
 val pf_reduction_of_redexp : goal sigma -> red_expr -> constr -> constr
 
 
