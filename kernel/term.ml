@@ -802,7 +802,7 @@ let nb_prod =
   in 
   nbrec 0
 
-
+(* Trop compliqué...
 (********************************************************************)
 (*   various utility functions for implementing terms with bindings *)
 (********************************************************************)
@@ -933,6 +933,7 @@ let lambda_ize n t endpt =
   match lam_and_popl n env t [] with
     | (_,t,[]) -> t
     | _ -> anomaly "bud in Term.lamda_ize"
+*)
 	  
 let sort_hdchar = function
   | Prop(_) -> "P"
@@ -1672,3 +1673,51 @@ let sub_term_with_unif cref ceq=
           None
         else
           Some ((subst_with_lmeta l ceq),nb)
+
+type constr_operator =
+  | OpMeta of int
+  | OpSort of sorts
+  | OpRel of int | OpVar of identifier
+  | OpCast | OpProd of name | OpLambda of name
+  | OpAppL | OpConst of section_path | OpAbst of section_path
+  | OpEvar of existential_key
+  | OpMutInd of inductive_path
+  | OpMutConstruct of constructor_path
+  | OpMutCase of case_info
+  | OpRec of fix_kind
+
+let splay_constr = function
+  | Rel n                            -> OpRel n, []
+  | VAR id                           -> OpVar id, [] 
+  | DOP0 (Meta n)                    -> OpMeta n, []
+  | DOP0 (Sort s)                    -> OpSort s, []
+  | DOP2 (Cast, t1, t2)              -> OpCast, [t1;t2]
+  | DOP2 (Prod, t1, (DLAM (x,t2)))   -> OpProd x, [t1;t2]
+  | DOP2 (Lambda, t1, (DLAM (x,t2))) -> OpLambda x, [t1;t2]
+  | DOPN (AppL,a)                 -> OpAppL, Array.to_list a
+  | DOPN (Const sp, a)            -> OpConst sp, Array.to_list a
+  | DOPN (Evar sp, a)             -> OpEvar sp, Array.to_list a
+  | DOPN (MutInd ind_sp, l)       -> OpMutInd ind_sp, Array.to_list l
+  | DOPN (MutConstruct cstr_sp,l) -> OpMutConstruct cstr_sp, Array.to_list l
+  | DOPN (MutCase ci,v)           -> OpMutCase ci, Array.to_list v
+  | DOPN ((Fix (f,i),a))          -> OpRec (RFix (f,i)), Array.to_list a
+  | DOPN ((CoFix i),a)            -> OpRec (RCofix i), Array.to_list a
+  | _ -> errorlabstrm "Term.splay_term" [< 'sTR "ill-formed constr" >]
+
+let gather_constr = function
+  | OpRel n, []  -> Rel n
+  | OpVar id, [] -> VAR id
+  | OpMeta n, [] -> DOP0 (Meta n)
+  | OpSort s, [] -> DOP0 (Sort s)
+  | OpCast, [t1;t2]     -> DOP2 (Cast, t1, t2)
+  | OpProd x, [t1;t2]   -> DOP2 (Prod, t1, (DLAM (x,t2)))
+  | OpLambda x, [t1;t2] -> DOP2 (Lambda, t1, (DLAM (x,t2))) 
+  | OpAppL, a     -> DOPN (AppL,Array.of_list a)
+  | OpConst sp, a -> DOPN (Const sp,Array.of_list a)
+  | OpEvar sp, a  -> DOPN (Evar sp, Array.of_list a) 
+  | OpMutInd ind_sp, l        -> DOPN (MutInd ind_sp, Array.of_list l) 
+  | OpMutConstruct cstr_sp, l -> DOPN (MutConstruct cstr_sp,Array.of_list l)
+  | OpMutCase ci,  v    -> DOPN (MutCase ci,Array.of_list v)   
+  | OpRec (RFix (f,i)), a  -> DOPN ((Fix (f,i),Array.of_list a))
+  | OpRec (RCofix i), a -> DOPN ((CoFix i),Array.of_list a) 
+  | _ -> errorlabstrm "Term.gather_term" [< 'sTR "ill-formed constr" >]

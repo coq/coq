@@ -428,7 +428,7 @@ val nb_lam : constr -> int
 (* similar to [nb_lam], but gives the number of products instead *)
 val nb_prod : constr -> int
 
-
+(* Trop compliqué
 (*s Various utility functions for implementing terms with bindings. *)
 
 val extract_lifted : int * constr -> constr
@@ -502,7 +502,7 @@ val lam_and_popl_named :
    properly lifted, and then push back the products, but as lambda-
    abstractions *)
 val lambda_ize : int ->'a oper term -> 'a oper term -> 'a oper term
-
+*)
 
 (*s Flattening and unflattening of embedded applications and casts. *)
 
@@ -573,6 +573,20 @@ val subst_term_occ : int list -> constr -> constr -> constr
 
 val subst_meta : (int * constr) list -> constr -> constr
 
+type constr_operator =
+  | OpMeta of int
+  | OpSort of sorts
+  | OpRel of int | OpVar of identifier
+  | OpCast | OpProd of name | OpLambda of name
+  | OpAppL | OpConst of section_path | OpAbst of section_path
+  | OpEvar of existential_key
+  | OpMutInd of inductive_path
+  | OpMutConstruct of constructor_path
+  | OpMutCase of case_info
+  | OpRec of fix_kind
+
+val splay_constr : constr -> constr_operator * constr list
+val gather_constr : constr_operator * constr list -> constr
 
 (*s Hash-consing functions for constr. *)
 
