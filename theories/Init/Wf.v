@@ -19,6 +19,7 @@ V7only [Unset Implicit Arguments.].
 
 Require Logic.
 Require LogicSyntax.
+Require Datatypes.
 
 (** Well-founded induction principle on Prop *)
 
@@ -131,3 +132,27 @@ Qed.
 End FixPoint.
 
 End Well_founded. 
+
+(** A recursor over pairs *)
+
+Chapter Well_founded_2.
+
+  Variable A,B : Set.
+  Variable R : A * B -> A * B -> Prop.
+
+  Variable P : A -> B -> Type. 
+  Variable F : (x:A)(x':B)((y:A)(y':B)(R (y,y') (x,x'))-> (P y y'))->(P x x').
+
+  Fixpoint Acc_iter_2 [x:A;x':B;a:(Acc ? R (x,x'))] : (P x x')
+     := (F x x' ([y:A][y':B][h:(R (y,y') (x,x'))](Acc_iter_2 y y' (Acc_inv ? ? (x,x') a (y,y') h)))).
+
+  Hypothesis Rwf : (well_founded ? R).
+
+  Theorem well_founded_induction_type_2 : 
+     ((x:A)(x':B)((y:A)(y':B)(R (y,y') (x,x'))->(P y y'))->(P x x'))->(a:A)(b:B)(P a b).
+  Proof.
+   Intros; Apply Acc_iter_2; Auto.
+  Qed.
+
+End Well_founded_2.
+

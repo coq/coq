@@ -147,6 +147,23 @@ Intuition; Elim H1; Simpl; Trivial.
 Qed.
 
 Lemma natlike_rec2 : (P:Z->Type)(P `0`) -> 
+        ((z:Z)`0<=z` -> (P z) -> (P (Zs z))) -> (z:Z)`0<=z` -> (P z).
+Proof.
+Intros P Ho Hrec z; Pattern z; Apply (well_founded_induction_type Z R R_wf).
+Intro x; Case x.
+Trivial.
+Intros.
+Assert `0<=(Zpred (POS p))`.
+Apply Zlt_ZERO_pred_le_ZERO; Unfold Zlt; Simpl; Trivial.
+Rewrite Zs_pred.
+Apply Hrec.
+Auto.
+Apply X; Unfold R; Intuition.
+Intros; Elim H; Simpl; Trivial.
+Qed.
+
+(** variant using [Zpred] instead of [Zs] *)
+Lemma natlike_rec3 : (P:Z->Type)(P `0`) -> 
         ((z:Z)`0<z` -> (P (Zpred z)) -> (P z)) -> (z:Z)`0<=z` -> (P z).
 Proof.
 Intros P Ho Hrec z; Pattern z; Apply (well_founded_induction_type Z R R_wf).
@@ -205,7 +222,7 @@ Auto with zarith.
 
 Split; [ Assumption | Exact (Zlt_n_Sn x) ].
 
-Intros x0 Hx0; Generalize Hx0; Pattern x0; Apply natlike_rec.
+Intros x0 Hx0; Generalize Hx0; Pattern x0; Apply natlike_rec2.
 Intros.
 Absurd `0 <= 0`; Try Assumption.
 Apply Zgt_not_le.
@@ -221,3 +238,4 @@ Apply Zgt_S_le. Apply Zlt_gt. Intuition.
 
 Assumption.
 Qed.
+
