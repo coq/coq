@@ -88,6 +88,7 @@ and validation = (proof_tree list -> proof_tree)
 and tactic_arg =
   | Command        of Coqast.t
   | Constr         of constr
+  | OpenConstr     of ((int * constr) list * constr) (* constr with holes *)
   | Constr_context of constr
   | Identifier     of identifier
   | Integer        of int

@@ -269,24 +269,12 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 
 (* Et finalement la tactique refine elle-même : *)
 
-let refine c gl =
+let refine (lmeta,c) gl =
   let env = pf_env gl in
   let th = compute_metamap env c in
   tcc_aux th gl
 
-let refine_tac = Tacmach.hide_constr_tactic "Refine" refine
-
-let my_constr_of_com_casted sigma env com typ = 
-  let rawc = Astterm.interp_rawconstr sigma env com in
-  Printf.printf "ICI\n"; flush stdout;
-  let c = Pretyping.ise_resolve_casted_gen false sigma env [] [] typ rawc in
-  Printf.printf "LA\n"; flush stdout;
-  c
-  (**
-  let cc = mkCast (nf_ise1 sigma c, nf_ise1 sigma typ) in
-  try (unsafe_machine env sigma cc).uj_val
-  with e -> Stdpp.raise_with_loc (Ast.loc com) e
-  **)
+let refine_tac = Tacmach.hide_openconstr_tactic "Refine" refine
 
 open Proof_type
 
@@ -294,8 +282,8 @@ let dyn_tcc args gl = match args with
   | [Command com]  ->
       let env = pf_env gl in
       refine
-	(my_constr_of_com_casted (project gl) env com (pf_concl gl)) gl
-  | [Constr c] -> 
+	(Astterm.interp_casted_openconstr (project gl) env com (pf_concl gl)) gl
+  | [OpenConstr c] -> 
       refine c gl
   | _ -> assert false
 

@@ -19,6 +19,11 @@ val interp_casted_constr : 'a evar_map -> env -> Coqast.t -> constr -> constr
 val interp_type          : 'a evar_map -> env -> Coqast.t -> constr
 val interp_sort          : Coqast.t -> sorts
 
+val interp_openconstr    :
+  'a evar_map -> env -> Coqast.t -> (int * constr) list * constr
+val interp_casted_openconstr    :
+  'a evar_map -> env -> Coqast.t -> constr -> (int * constr) list * constr
+
 val judgment_of_rawconstr : 'a evar_map -> env -> Coqast.t -> unsafe_judgment
 val type_judgment_of_rawconstr :
   'a evar_map -> env -> Coqast.t -> unsafe_type_judgment

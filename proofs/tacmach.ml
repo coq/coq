@@ -67,6 +67,10 @@ let pf_interp_constr gls c =
   let evc = project gls in 
   Astterm.interp_constr evc (sig_it gls).evar_env c
 
+let pf_interp_openconstr gls c =
+  let evc = project gls in 
+  Astterm.interp_openconstr evc (sig_it gls).evar_env c
+
 let pf_interp_type gls c =
   let evc = project gls in 
   Astterm.interp_type evc (sig_it gls).evar_env c
@@ -296,6 +300,7 @@ let overwriting_tactic = Refiner.overwriting_add_tactic
 
 type ('a,'b) parse_combinator = ('a -> tactic) -> ('b -> tactic)
 
+(* Inutile ?! réécrit plus loin 
 let tactic_com tac t x = tac (pf_interp_constr x t) x
       
 let tactic_com_sort tac t x = tac (pf_interp_type x t) x
@@ -317,7 +322,7 @@ let tactic_com_bind_list_list tac args gl =
     (pf_interp_constr gl c,
      List.map (fun (b,c')->(b,pf_interp_constr gl c')) tl) in 
   tac (List.map translate args) gl
-
+*)
 
 (********************************************************)
 (* Functions for hiding the implementation of a tactic. *)
@@ -333,7 +338,11 @@ let overwrite_hidden_tactic s tac  =
   (fun args -> vernac_tactic(s,args))
 
 let tactic_com = 
+
   fun tac t x -> tac (pf_interp_constr x t) x
+
+let tactic_opencom = 
+  fun tac t x -> tac (pf_interp_openconstr x t) x
       
 let tactic_com_sort = 
   fun tac t x -> tac (pf_interp_type x t) x
@@ -405,6 +414,15 @@ let hide_constr_tactic s tac =
   in 
   add_tactic s tacfun;
   (fun c  -> vernac_tactic(s,[(Constr c)]))
+
+let hide_openconstr_tactic s tac =
+  let tacfun = function 
+    | [OpenConstr c] -> tac c
+    | [Command com] -> tactic_opencom tac com
+    | _ -> anomaly "hide_openconstr_tactic : neither OPENCONSTR nor COMMAND"
+  in 
+  add_tactic s tacfun;
+  (fun c  -> vernac_tactic(s,[(OpenConstr c)]))
 
 let hide_numarg_tactic s tac =
   let tacfun = (function [Integer n] -> tac n | _ -> assert false) in 

@@ -167,9 +167,6 @@ let pretype_id loc env lvar id =
 (*************************************************************************)
 (* Main pretyping function                                               *)
 
-let trad_metamap = ref []
-let trad_nocheck = ref false
-
 let pretype_ref pretype loc isevars env lvar = function
 | RVar id -> pretype_id loc env lvar id
 
@@ -177,7 +174,16 @@ let pretype_ref pretype loc isevars env lvar = function
     let cst = (sp,Array.map pretype ctxt) in
     make_judge (mkConst cst) (type_of_constant env !isevars cst)
 
-| REVar (sp,ctxt) -> error " Not able to type terms with dependent subgoals"
+| REVar (sp,ctxt) ->
+    let ev = (sp,Array.map pretype ctxt) in
+    let body = 
+      if Evd.is_defined !isevars sp then
+	existential_value !isevars ev
+      else
+	mkEvar ev
+    in
+    let typ = existential_type !isevars ev in
+    make_judge body (Retyping.get_assumption_of env !isevars typ)
 
 | RInd (ind_sp,ctxt) ->
     let ind = (ind_sp,Array.map pretype ctxt) in
@@ -211,14 +217,8 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
        List.assoc n lmeta
      with
         Not_found ->
-          let metaty =
-            try List.assoc n !trad_metamap
-            with Not_found ->
-	    (* Tester si la référence est castée *)
-	      user_err_loc (loc,"pretype",
-	        [< 'sTR "Metavariable "; 'iNT n; 'sTR" is unbound" >])
-	  in
-          { uj_val= mkMeta n; uj_type = outcast_type metaty })
+	  user_err_loc (loc,"pretype",
+			[< 'sTR "Metavariable "; 'iNT n; 'sTR" is unbound" >]))
 
 | RHole loc ->
   if !compter then nbimpl:=!nbimpl+1;
@@ -272,7 +272,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
       (rng_tycon,cj::jl)  in
     let jl = List.rev (snd (List.fold_left apply_one_arg
 			      (mk_tycon (body_of_type j.uj_type),[]) args)) in
-    inh_apply_rel_list !trad_nocheck loc env isevars jl j tycon
+    inh_apply_rel_list false loc env isevars jl j tycon
 
 | RBinder(loc,BLambda,name,c1,c2)      ->
     let (dom,rng) = split_tycon loc env isevars tycon in
@@ -399,56 +399,58 @@ and pretype_type valcon env isevars lvar lmeta = function
 	  error_unexpected_type_loc (loc_of_rawconstr c) env tj.uj_val v
 
 
-let unsafe_infer tycon nocheck isevars metamap env lvar lmeta constr =
-  trad_metamap := metamap;
-  trad_nocheck := nocheck;
+let unsafe_infer tycon isevars env lvar lmeta constr =
   reset_problems ();
   pretype tycon env isevars lvar lmeta constr
 
-
-let unsafe_infer_type valcon nocheck isevars metamap env lvar lmeta constr =
-  trad_metamap := metamap;
-  trad_nocheck := nocheck;
+let unsafe_infer_type valcon isevars env lvar lmeta constr =
   reset_problems ();
   pretype_type valcon env isevars lvar lmeta constr
 
+(* If fail_evar is false, [process_evars] turns unresolved Evar that
+   were not in initial sigma into Meta's; otherwise it fail on the first
+   unresolved Evar not already in the initial sigma
+   Rem: Does a side-effect on reference metamap *)
 (* [fail_evar] says how to process unresolved evars:
  *   true -> raise an error message
  *   false -> convert them into new Metas (casted with their type)
  *)
-let process_evars fail_evar env sigma =
-  (if fail_evar then
-     try whd_ise env sigma
-     with Uninstantiated_evar n ->
-          errorlabstrm "whd_ise"
-            [< 'sTR"There is an unknown subterm I cannot solve" >]
-   else whd_ise1_metas env sigma)
-
-(*
-let j_apply f env sigma j =
-  { uj_val= local_strong (under_outer_cast (f env sigma)) j.uj_val;
-    uj_type= typed_app (strong f env sigma) j.uj_type }
-*)
-let j_apply f env sigma j =
-  { uj_val= strong f env sigma j.uj_val;
-    uj_type= typed_app (strong f env sigma) j.uj_type }
-
-let utj_apply f env sigma j =
-  let under_outer_cast f env sigma c = match kind_of_term c with
-    | IsCast (b,t) -> mkCast (f env sigma b,f env sigma t)
-    | _ -> f env sigma c in
-  { utj_val = strong (under_outer_cast f) env sigma j.utj_val;
-    utj_type = j.utj_type }
-
+let process_evars fail_evar initial_sigma sigma metamap c =
+  let rec proc_rec c =
+    match kind_of_term c with
+      | IsEvar (ev,args as k) when Evd.in_dom sigma ev ->
+	  if Evd.is_defined sigma ev then
+      	    proc_rec (existential_value sigma k)
+	  else
+	    if Evd.in_dom initial_sigma ev then
+	      c
+	    else
+	      if fail_evar then
+		errorlabstrm "whd_ise"
+		  [< 'sTR"There is an unknown subterm I cannot solve" >]
+	      else
+		let n = new_meta () in
+		metamap := (n, existential_type sigma k) :: !metamap;
+		mkMeta n
+      | _ -> map_constr proc_rec c      
+  in
+  proc_rec c
+ 
 (* TODO: comment faire remonter l'information si le typage a resolu des
        variables du sigma original. il faudrait que la fonction de typage
        retourne aussi le nouveau sigma...
 *)
 
+type meta_map = (int * unsafe_judgment) list
+type var_map = (identifier * unsafe_judgment) list
+
 let ise_resolve_casted_gen fail_evar sigma env lvar lmeta typ c =
   let isevars = ref sigma in
-  let j = unsafe_infer (mk_tycon typ) false isevars [] env lvar lmeta c in
-  (j_apply (fun _ -> process_evars fail_evar) env !isevars j).uj_val
+  let j = unsafe_infer (mk_tycon typ) isevars env lvar lmeta c in
+  let metamap = ref [] in
+  let v = process_evars fail_evar sigma !isevars metamap j.uj_val in
+  let t = typed_app (process_evars fail_evar sigma !isevars metamap) j.uj_type in
+  !metamap, {uj_val = v; uj_type = t }
 
 let ise_resolve_casted sigma env typ c =
   ise_resolve_casted_gen true sigma env [] [] typ c
@@ -456,55 +458,41 @@ let ise_resolve_casted sigma env typ c =
 (* Raw calls to the unsafe inference machine: boolean says if we must fail
    on unresolved evars, or replace them by Metas; the unsafe_judgment list
    allows us to extend env with some bindings *)
-let ise_infer_gen fail_evar sigma metamap env lvar lmeta c =
+let ise_infer_gen fail_evar sigma env lvar lmeta exptyp c =
+  let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
   let isevars = ref sigma in
-  let j = unsafe_infer empty_tycon false isevars metamap env lvar lmeta c in
-  j_apply (fun _ -> process_evars fail_evar) env !isevars j
+  let j = unsafe_infer tycon isevars env lvar lmeta c in
+  let metamap = ref [] in
+  let v = process_evars fail_evar sigma !isevars metamap j.uj_val in
+  let t = typed_app (process_evars fail_evar sigma !isevars metamap) j.uj_type in
+  !metamap, {uj_val = v; uj_type = t }
 
-let ise_infer_type_gen fail_evar sigma metamap env c =
+let ise_infer_type_gen fail_evar sigma env lvar lmeta c =
   let isevars = ref sigma in
-  let j = unsafe_infer_type empty_valcon false isevars metamap env [] [] c in
+  let j = unsafe_infer_type empty_valcon isevars env lvar lmeta c in
   let tj = inh_ass_of_j env isevars j in
-  utj_apply (fun _ -> process_evars fail_evar) env !isevars tj
+  let metamap = ref [] in
+  let v = process_evars fail_evar sigma !isevars metamap tj.utj_val in
+  !metamap, {utj_val = v; utj_type = tj.utj_type }
 
-let ise_infer_nocheck sigma metamap env c =
-  let isevars = ref sigma in
-  let j = unsafe_infer empty_tycon true isevars metamap env [] [] c in
-  j_apply (fun _ -> process_evars true) env !isevars j
+let understand_judgment sigma env c =
+  snd (ise_infer_gen true sigma env [] [] None c)
 
-let ise_infer sigma env c =
-  ise_infer_gen true sigma [] env [] [] c
+let understand_type_judgment sigma env c =
+  snd (ise_infer_type_gen true sigma env [] [] c)
 
-let ise_infer_type sigma env c =
-  ise_infer_type_gen true sigma [] env c
+let understand sigma env c =
+  let _, c = ise_infer_gen true sigma env [] [] None c in
+  c.uj_val
 
-let ise_resolve sigma env c =
-  (ise_infer_gen true sigma [] env [] [] c).uj_val
+let understand_type sigma env c =
+  let _,c = ise_infer_type_gen true sigma env [] [] c in
+  c.utj_val
 
-let ise_resolve_type sigma env c =
-  (ise_infer_type_gen true sigma [] env c).utj_val
+let understand_gen sigma env lvar lmeta exptyp c =
+  let _, c = ise_infer_gen true sigma env lvar lmeta exptyp c in
+  c.uj_val
 
-let ise_resolve2 sigma env lmeta lvar c =
-  (ise_infer_gen true sigma [] env lmeta lvar c).uj_val;;
-
-(* Keeping universe constraints *)
-(*
-let fconstruct_type_with_univ_sp sigma sign sp c =
-  with_universes
-    (Mach.fexecute_type sigma sign) (sp,initial_universes,c) 
-
-
-let fconstruct_with_univ_sp sigma sign sp c =
-  with_universes
-    (Mach.fexecute sigma sign) (sp,initial_universes,c) 
-
-
-let infconstruct_type_with_univ_sp sigma (sign,fsign) sp c =
-  with_universes
-    (Mach.infexecute_type sigma (sign,fsign)) (sp,initial_universes,c) 
-
-
-let infconstruct_with_univ_sp sigma (sign,fsign) sp c =
-  with_universes
-    (Mach.infexecute sigma (sign,fsign)) (sp,initial_universes,c) 
-*)
+let understand_gen_tcc sigma env lvar lmeta exptyp c =
+  let metamap, c = ise_infer_gen false sigma env lvar lmeta exptyp c in
+  metamap, c.uj_val

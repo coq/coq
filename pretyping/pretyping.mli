@@ -11,65 +11,43 @@ open Rawterm
 open Evarutil
 (*i*)
 
-(* Raw calls to the inference machine of Trad: boolean says if we must fail
-   on unresolved evars, or replace them by Metas ; the [unsafe_judgment] list
-   allows us to extend env with some bindings *)
-val ise_infer_gen : bool -> 'a evar_map -> (int * constr) list ->
-  env -> (identifier * unsafe_judgment) list ->
-  (int * unsafe_judgment) list -> rawconstr -> unsafe_judgment
+type meta_map = (int * unsafe_judgment) list
+type var_map = (identifier * unsafe_judgment) list
 
-(* Standard call to get an unsafe judgment from a rawconstr, resolving
-   implicit args *)
-val ise_infer : 'a evar_map -> env -> rawconstr -> unsafe_judgment
+(* Generic call to the interpreter from rawconstr to constr, failing
+   unresolved holes in the rawterm cannot be instantiated.
 
-(* Standard call to get an unsafe type judgment from a rawconstr, resolving
-   implicit args *)
-val ise_infer_type : 'a evar_map -> env -> rawconstr -> unsafe_type_judgment
+   In [understand_gen sigma env varmap metamap typopt raw],
+
+   sigma : initial set of existential variables (typically dependent subgoals)
+   varmap : partial subtitution of variables (used for the tactic language)
+   metamap : partial subtitution of meta (used for the tactic language)
+   typopt : is not None, this is the expected type for raw (used to define evars)
+*)
+val understand_gen :
+  'a evar_map -> env -> var_map -> meta_map 
+    -> expected_type:(constr option) -> rawconstr -> constr
+
+
+(* Generic call to the interpreter from rawconstr to constr, turning
+   unresolved holes into metas. Returns also the typing context of
+   these metas. Work as [understand_gen] for the rest. *)
+val understand_gen_tcc :
+  'a evar_map -> env -> var_map -> meta_map 
+    -> constr option -> rawconstr -> (int * constr) list * constr
 
 (* Standard call to get a constr from a rawconstr, resolving implicit args *)
-val ise_resolve      : 'a evar_map -> env -> rawconstr -> constr
+val understand : 'a evar_map -> env -> rawconstr -> constr
 
 (* Idem but the rawconstr is intended to be a type *)
-val ise_resolve_type : 'a evar_map -> env -> rawconstr -> constr
+val understand_type : 'a evar_map -> env -> rawconstr -> constr
 
-val ise_resolve2 : 'a evar_map -> env -> (identifier * unsafe_judgment) list ->
-  (int * unsafe_judgment) list -> rawconstr -> constr
+(* Idem but returns the judgment of the understood term *)
+val understand_judgment : 'a evar_map -> env -> rawconstr -> unsafe_judgment
 
-val ise_resolve_casted_gen :
-  bool -> 'a evar_map -> env -> (identifier * unsafe_judgment) list ->
-    (int * unsafe_judgment) list -> constr -> rawconstr -> constr
-val ise_resolve_casted : 'a evar_map -> env -> constr -> rawconstr -> constr
-
-(* progmach.ml tries to type ill-typed terms: does not perform the conversion
- * test in application.
- *)
-val ise_infer_nocheck : 'a evar_map -> (int * constr) list ->
-  env -> rawconstr -> unsafe_judgment
-
-(* Typing with Trad, and re-checking with Mach *)
-(*i
-val infconstruct_type :
-  'c evar_map -> (env * env) ->
-    Coqast.t -> typed_type * information
-val infconstruct :
-  'c evar_map -> (env * env) ->
-    Coqast.t -> unsafe_judgment * information
-
-(* Typing, re-checking with universes constraints *)
-val fconstruct_with_univ :
-  'c evar_map -> env -> Coqast.t -> unsafe_judgment
-val fconstruct_with_univ_sp : 'c evar_map -> env
-  -> section_path -> constr -> Impuniv.universes * unsafe_judgment
-val fconstruct_type_with_univ_sp : 'c evar_map -> env
-  -> section_path -> constr -> Impuniv.universes * typed_type
-val infconstruct_with_univ_sp :
-  'c evar_map -> (env * env)
-  -> section_path -> constr -> Impuniv.universes * (unsafe_judgment * information)
-val infconstruct_type_with_univ_sp :
-  'c evar_map -> (env * env)
-  -> section_path -> constr 
-  -> Impuniv.universes * (typed_type * information)
-i*)
+(* Idem but returns the judgment of the understood type *)
+val understand_type_judgment : 'a evar_map -> env -> rawconstr 
+  -> unsafe_type_judgment
 
 (*i*)
 (* Internal of Pretyping...

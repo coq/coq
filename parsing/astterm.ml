@@ -524,12 +524,20 @@ let _ =
 (*********************************************************************)
 (* V6 compat: Functions before in ex-trad                            *)
 
-(* Endless^H^H^H^H^H^H^HShort list of alternative ways to call pretyping *)
+(* Functions to parse and interpret constructions *)
 
 let interp_constr sigma env c =
-  ise_resolve sigma env (interp_rawconstr sigma env c)
+  understand sigma env (interp_rawconstr sigma env c)
+
+let interp_openconstr sigma env c =
+  understand_gen_tcc sigma env [] [] None (interp_rawconstr sigma env c)
+
+let interp_casted_openconstr sigma env c typ =
+  understand_gen_tcc sigma env [] [] (Some typ) (interp_rawconstr sigma env c)
+
 let interp_type sigma env   c =
-  ise_resolve_type sigma env (interp_rawconstr sigma env c)
+  understand_type sigma env (interp_rawconstr sigma env c)
+
 let interp_sort = function
   | Node(loc,"PROP", []) -> Prop Null
   | Node(loc,"SET", [])  -> Prop Pos
@@ -537,40 +545,36 @@ let interp_sort = function
   | a -> user_err_loc (Ast.loc a,"interp_sort", [< 'sTR "Not a sort" >])
 
 let judgment_of_rawconstr sigma env c =
-  ise_infer sigma env (interp_rawconstr sigma env c)
+  understand_judgment sigma env (interp_rawconstr sigma env c)
 
 let type_judgment_of_rawconstr sigma env c =
-  ise_infer_type sigma env (interp_rawconstr sigma env c)
+  understand_type_judgment sigma env (interp_rawconstr sigma env c)
 
 (*To retype a list of key*constr with undefined key*)
 let retype_list sigma env lst=
   List.map (fun (x,csr) -> (x,Retyping.get_judgment_of env sigma csr)) lst;;
 
-(*Interprets a constr according to two lists of instantiations (variables and
-  metas)*)
-let interp_constr1 sigma env lvar lmeta com =
+(* Note: typ is retyped *)
+
+let interp_casted_gen_constr1 sigma env lvar lmeta exptyp com =
   let c =
     interp_rawconstr_gen sigma env false (List.map (fun x -> string_of_id (fst
       x)) lvar) com
   and rtype=fun lst -> retype_list sigma env lst in
-  try
-    ise_resolve2 sigma env (rtype lvar) (rtype lmeta) c
-  with e -> 
-    Stdpp.raise_with_loc (Ast.loc com) e
+  understand_gen sigma env (rtype lvar) (rtype lmeta) exptyp c;;
 
-(* Note: typ is retyped *)
-
-let interp_casted_constr sigma env com typ = 
-  ise_resolve_casted sigma env typ (interp_rawconstr sigma env com)
+(*Interprets a constr according to two lists of instantiations (variables and
+  metas)*)
+let interp_constr1 sigma env lvar lmeta com =
+  interp_casted_gen_constr1 sigma env lvar lmeta None com
 
 (*Interprets a casted constr according to two lists of instantiations
   (variables and metas)*)
 let interp_casted_constr1 sigma env lvar lmeta com typ =
-  let c =
-    interp_rawconstr_gen sigma env false (List.map (fun x -> string_of_id (fst
-      x)) lvar) com
-  and rtype=fun lst -> retype_list sigma env lst in 
-  ise_resolve_casted_gen true sigma env (rtype lvar) (rtype lmeta) typ c;;
+  interp_casted_gen_constr1 sigma env lvar lmeta (Some typ) com
+
+let interp_casted_constr sigma env com typ = 
+  understand_gen sigma env [] [] (Some typ) (interp_rawconstr sigma env com)
 
 (* To process patterns, we need a translation from AST to term
    without typing at all. *)

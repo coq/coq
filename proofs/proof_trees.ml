@@ -345,6 +345,8 @@ let ast_of_cvt_arg = function
   | Command c       -> ope ("COMMAND",[c])
   | Constr  c       -> 
     ope ("COMMAND",[ast_of_constr false (Global.env ()) c])
+  | OpenConstr  (_,c)       -> 
+    ope ("COMMAND",[ast_of_constr false (Global.env ()) c])
   | Constr_context _ ->
     anomalylabstrm "ast_of_cvt_arg" [<'sTR
       "Constr_context argument could not be used">]

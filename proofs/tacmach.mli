@@ -249,6 +249,7 @@ type 'a hide_combinator = string -> ('a -> tactic) -> ('a -> tactic)
 
 val hide_atomic_tactic  : string -> tactic -> tactic
 val hide_constr_tactic  : constr hide_combinator
+val hide_openconstr_tactic  : ((int * constr) list * constr) hide_combinator
 val hide_constrl_tactic : (constr list) hide_combinator
 val hide_numarg_tactic  : int hide_combinator
 val hide_ident_tactic   : identifier hide_combinator
