@@ -251,7 +251,7 @@ let open_libraries export modl =
          let subimport =
            List.fold_left
              (fun l m -> remember_last_of_each l (find_library m))
-             [] m.library_imports
+             l m.library_imports
          in remember_last_of_each subimport m)
       [] modl in
   List.iter (open_library export modl) to_open_list
