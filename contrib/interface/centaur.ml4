@@ -551,8 +551,8 @@ let solve_hook n =
 let abort_hook s = output_results_nl (ctf_AbortedMessage !global_request_id s)
 
 let interp_search_about_item = function
-  | SearchRef qid -> SearchRef (Nametab.global qid)
-  | SearchString s as x -> x
+  | SearchRef qid -> GlobSearchRef (Nametab.global qid)
+  | SearchString s -> GlobSearchString s
 
 let pcoq_search s l =
   ctv_SEARCH_LIST:=[];

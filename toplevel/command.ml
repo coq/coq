@@ -116,7 +116,7 @@ let declare_global_definition ident ce local =
   definition_message ident;
   ConstRef kn
 
-let declare_definition ident local bl red_option c typopt hook =
+let declare_definition ident (local,_) bl red_option c typopt hook =
   let ce = constant_entry_of_com (bl,c,typopt,false) in
   if bl<>[] && red_option <> None then 
     error "Evaluation under a local context not supported";
@@ -630,16 +630,6 @@ let start_proof_com sopt kind (bl,t) hook =
   let _ = Typeops.infer_type env c in
   start_proof id kind c hook
 
-(*
-let apply_tac_not_declare id pft = function
-  | None -> error "Type of Let missing"
-  | Some typ ->
-    let cutt = Hiddentac.h_cut typ
-    and exat = Hiddentac.h_exact pft in
-    Pfedit.delete_current_proof ();
-    Pfedit.by (Refiner.tclTHENSV cutt [|introduction id;exat|])
-*)
-
 let save id const kind hook =
   let {const_entry_body = pft;
        const_entry_type = tpo;
@@ -658,7 +648,6 @@ let save id const kind hook =
         let _,kn = declare_constant id (DefinitionEntry const, k) in
 	(Global, ConstRef kn) in
   hook l r;
-  if kind = IsGlobal (Proof Conjecture) then warning "Proved conjecture";
   Pfedit.delete_current_proof ();
   definition_message id
 

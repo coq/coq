@@ -499,7 +499,7 @@ let is_empty () = Stack.is_empty processed_stack
 
 let update_on_end_of_proof id =
   let lookup_lemma = function
-  | { ast = _, ( VernacDefinition (_, _, ProveBody _, _, _)
+  | { ast = _, ( VernacDefinition (_, _, ProveBody _, _)
 	       | VernacDeclareTacticDefinition _
 	       | VernacStartTheoremProof _) ; 
       reset_info = Reset (_, r) } -> 
@@ -1316,7 +1316,7 @@ Please restart and report NOW.";
 	  | { ast = _, ( VernacStartTheoremProof _ 
 		       | VernacGoal _
 		       | VernacDeclareTacticDefinition _
-		       | VernacDefinition (_,_,ProveBody _,_,_));
+		       | VernacDefinition (_,_,ProveBody _,_));
 	      reset_info=Reset(id,{contents=false})} ->
 	      ignore (pop ());
 	      (try 

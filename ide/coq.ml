@@ -286,7 +286,7 @@ let word_class s =
 type reset_info = NoReset | Reset of Names.identifier * bool ref
 
 let compute_reset_info = function 
-  | VernacDefinition (_, id, DefineBody _, _, _) 
+  | VernacDefinition (_, id, DefineBody _, _) 
   | VernacBeginSection id 
   | VernacDefineModule (id, _, _, _) 
   | VernacDeclareModule (id, _, _, _)
@@ -294,7 +294,7 @@ let compute_reset_info = function
   | VernacAssumption (_, (_,(id,_))::_)
   | VernacInductive (_, (id,_,_,_,_) :: _) ->
       Reset (id, ref true)
-  | VernacDefinition (_, id, ProveBody _, _, _)
+  | VernacDefinition (_, id, ProveBody _, _)
   | VernacStartTheoremProof (_, id, _, _, _) ->
       Reset (id, ref false)
   | _ -> NoReset

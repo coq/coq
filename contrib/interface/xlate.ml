@@ -1184,8 +1184,7 @@ let xlate_thm x = CT_thm (match x with
   | Theorem -> "Theorem"
   | Remark -> "Remark"
   | Lemma -> "Lemma"
-  | Fact -> "Fact"
-  | Conjecture -> "Conjecture")
+  | Fact -> "Fact")
 
 
 let xlate_defn x = CT_defn (match x with
@@ -1196,7 +1195,9 @@ let xlate_var x = CT_var (match x with
  | (Global,Definitional) -> "Parameter"
  | (Global,Logical) -> "Axiom"
  | (Local,Definitional) -> "Variable"
- | (Local,Logical) -> "Hypothesis");;
+ | (Local,Logical) -> "Hypothesis"
+ | (Global,Conjectural) -> "Conjecture"
+ | (Local,Conjectural) -> xlate_error "No local conjecture");;
 
 
 let xlate_dep =
@@ -1472,11 +1473,11 @@ let xlate_vernac =
       xlate_error "TODO: VernacStartTheoremProof"
   | VernacSuspend -> CT_suspend
   | VernacResume idopt -> CT_resume (xlate_ident_opt (option_app snd idopt))
-  | VernacDefinition (k,s,ProveBody (bl,typ),_,_) ->
+  | VernacDefinition ((k,_),s,ProveBody (bl,typ),_) ->
       if bl <> [] then xlate_error "TODO: Def bindings";
       CT_coerce_THEOREM_GOAL_to_COMMAND(
 	CT_theorem_goal (CT_coerce_DEFN_to_DEFN_OR_THM (xlate_defn k), xlate_ident s,xlate_formula typ))
-  | VernacDefinition (kind,s,DefineBody(bl,red_option,c,typ_opt),_,_) ->
+  | VernacDefinition ((kind,_),s,DefineBody(bl,red_option,c,typ_opt),_) ->
       CT_definition
 	(xlate_defn kind, xlate_ident s, xlate_binder_list bl,
 	   cvt_optional_eval_for_definition c red_option,

@@ -10,6 +10,10 @@
 
 (* Informal mathematical status of declarations *)
 
+type locality_flag = (*bool (* local = true; global = false *)*)
+  | Local
+  | Global
+
 (* Kinds used at parsing time *)
 
 type theorem_kind =
@@ -17,24 +21,16 @@ type theorem_kind =
   | Lemma
   | Fact
   | Remark
-  | Conjecture
 
-type definitionkind =
-  | LDefinition
-  | GDefinition
-  | LCoercion
-  | GCoercion
-  | LSubClass
-  | GSubClass
-  | SCanonical
-
-type locality_flag = (*bool (* local = true; global = false *)*)
-  | Local
-  | Global
+type definition_object_kind =
+  | Definition
+  | Coercion
+  | SubClass
+  | CanonicalStructure
 
 type strength = locality_flag (* For compatibility *)
 
-type type_as_formula_kind = Definitional | Logical
+type type_as_formula_kind = Definitional | Logical | Conjectural
 
 (* [assumption_kind] 
 
@@ -42,10 +38,11 @@ type type_as_formula_kind = Definitional | Logical
    ------------------------------------
    Definitional |  Variable   | Parameter
    Logical      |  Hypothesis | Axiom
+
 *)
 type assumption_kind = locality_flag * type_as_formula_kind
 
-type definition_kind = locality_flag
+type definition_kind = locality_flag * definition_object_kind
 
 (* Kinds used in proofs *)
 
