@@ -597,6 +597,15 @@ let whd_nf env sigma c =
 
 let nf env sigma c = strong whd_nf env sigma c
 
+let is_reference c = 
+  try let r = reference_of_constr c in true with _ -> false
+
+let is_head c t =
+  (is_reference c) &
+  match kind_of_term t with
+    | App (f,_) -> f = c
+    | _ -> false
+
 let contextually (locs,c) f env sigma t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref 1 in
@@ -608,7 +617,7 @@ let contextually (locs,c) f env sigma t =
    let rec traverse (env,c as envc) t =
     if locs <> [] & (not except) & (!pos > maxocc) then t
     else
-    if eq_constr c t then
+    if eq_constr c t or is_head c t then
       let r =
 	if except then 
 	  if List.mem (- !pos) locs then t else f env sigma t
