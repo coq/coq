@@ -749,9 +749,9 @@ let invfun c l dorew gl =
  let _ = prNamedLConstr "evars" (List.map snd (fst princ_applied_evars)) in
  let listargs_ids = List.map destVar (List.filter isVar listargs') in
  (* debug: impression du but*)
- let lgl = Evd.to_list (sig_sig gl) in
- let _ = prNamedLConstr "\ngl= " (List.map (fun x -> (snd x).evar_concl) lgl) in
- let _ = prstr "fin gl \n\n" in
+(*  let lgl = Evd.to_list (sig_sig gl) in *)
+(*  let _ = prNamedLConstr "\ngl= " (List.map (fun x -> (snd x).evar_concl) lgl) in *)
+(*  let _ = prstr "fin gl \n\n" in *)
  invfun_basic (mkevarmap_aux open_princ_proof_applied) listargs_ids 
   gl dorew lposeq
 
