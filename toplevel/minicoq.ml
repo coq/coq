@@ -33,7 +33,7 @@ let rec globalize bv c = match kind_of_term c with
       let mib = lookup_mind sp !env in mkMutInd (spi, args mib.mind_hyps)
   | IsMutConstruct ((sp,_),_ as spc, _) ->
       let mib = lookup_mind sp !env in mkMutConstruct (spc, args mib.mind_hyps)
-  | _ -> map_constr_with_binders (fun na l -> na::l) globalize bv c
+  | _ -> map_constr_with_named_binders (fun na l -> na::l) globalize bv c
 
 let check c = 
   let c = globalize [] c in
