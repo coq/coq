@@ -17,7 +17,9 @@ Différences V7.0beta / V7.0
 Différences oubliées dans la V7.0beta :
 
 - Du fait des noms qualifiés, les variables de buts n'évitent plus les
-globaux de même nom de base
+  globaux de même nom de base
+- Unfold ne peut s'appliquer qu'à des constantes dépliables (en
+  particulier pas à des Syntactic Definition)
 
 ----------------------------------------------------------------------
 English version of changes is available on
