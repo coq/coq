@@ -667,9 +667,8 @@ Recursive Tactic Definition loop t := (
 And Simplify := (
   Match Context With [|- ?1 ] -> Try (loop ?1) | _ -> Idtac).
 
-(* L'utilisation de Match n'est qu'un hack pour contourner un bug de la 7.0 *)
 Tactic Definition ProveStable x th :=
-  (Match x With [?1] -> Unfold term_stable ?1; Intros; Simplify; Simpl; Apply th).
+  Unfold term_stable x; Intros; Simplify; Simpl; Apply th.
 
 (* \subsubsection{Les règles elle mêmes} *)
 Definition Tplus_assoc_l [t: term] :=
