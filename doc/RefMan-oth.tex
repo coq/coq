@@ -9,7 +9,7 @@ This command displays on the screen informations about the declared or
 defined object {\ident}.
 
 \begin{ErrMsgs}
-\item {\ident} \errindex{not declared}
+\item {\ident} \errindex{not a defined object}
 \end{ErrMsgs}
 
 \begin{Variants}
@@ -28,9 +28,9 @@ environment, including sections and modules.
 \item {\tt Inspect \num.}\comindex{Inspect}\\
 This command displays the {\num} last objects of the current
 environment, including sections and modules.
-\item {\tt Print Section {\ident}.}\comindex{Print Section}\\
-should correspond to a currently open section, this command
-displays the objects defined since the beginning of this section.
+% \item {\tt Print Section {\ident}.}\comindex{Print Section}\\
+% should correspond to a currently open section, this command
+% displays the objects defined since the beginning of this section.
 \item {\tt Print.}\comindex{Print}\\
 This command displays the axioms and variables declarations in the
 environment as well as the constants defined since the last variable
@@ -101,7 +101,8 @@ values are of course relevant in general.
 \ref{Theorem}
 
 \begin{ErrMsgs}
-\item \ident\ \errindex{does not exist.}\\
+\item \errindex{The reference \ident\ was not found in the current
+environment}\\
     There is no constant in the environment named
     \ident. Nevertheless, if you asked \texttt{Opaque foo bar}
     and if \texttt{bar} does not exist, \texttt{foo} is set opaque.
@@ -122,9 +123,10 @@ can cause changes in tactic scripts behavior.
 %TODO: expliquer le rapport avec les sections
 
 \begin{ErrMsgs}
-\item \errindex{Can not set transparent.}\\
-    It is a constant from a required module or a parameter.
-\item {\ident} \errindex{does not exist.}\\
+% \item \errindex{Can not set transparent.}\\
+%     It is a constant from a required module or a parameter.
+\item \errindex{The reference \ident\ was not found in the current
+environment}\\
     There is no constant in the environment named
     \ident. Nevertheless, if you give the command \verb|Transparent foo bar.|
     and if \texttt{bar} does not exist, \texttt{foo} is set opaque.
@@ -138,6 +140,12 @@ This command displays the name and type of all theorems of the current
 context whose statement's conclusion has the form {\tt ({\qualid} t1 ..
   tn)}.  This command is useful to remind the user of the name of
 library lemmas.
+\begin{ErrMsgs}
+\item \errindex{The reference \qualid\ was not found in the current
+environment}\\
+    There is no constant in the environment named
+    \ident.
+\end{ErrMsgs}
 
 \subsection{\tt SearchPattern {\term}.}\comindex{SearchPattern}
 
@@ -189,35 +197,39 @@ This restricts the search to constructions defined in modules {\module$_1$}...{\
 {\module$_1$}...{\module$_n$}.
 
 \end{Variants}
+\begin{ErrMsgs}
+\item \errindex{Module/section \module{} not found}
+No module \module{} has been required (see section~\ref{Require}).
+\end{ErrMsgs}
 
-\subsection{\tt SearchIsos {\term}.}\comindex{SearchIsos}
-\label{searchisos}
-\texttt{SearchIsos} searches terms by their type modulo isomorphism.
-This command displays the full name of all constants, variables,
-inductive types, and inductive constructors of the current
-context whose type is isomorphic to {\term} modulo the contextual part of the
-following axiomatization (the mutual inductive types with one constructor,
-without implicit arguments, and for which projections exist, are regarded as a
-sequence of $\sa{}$):
+% \subsection{\tt SearchIsos {\term}.}\comindex{SearchIsos}
+% \label{searchisos}
+% \texttt{SearchIsos} searches terms by their type modulo isomorphism.
+% This command displays the full name of all constants, variables,
+% inductive types, and inductive constructors of the current
+% context whose type is isomorphic to {\term} modulo the contextual part of the
+% following axiomatization (the mutual inductive types with one constructor,
+% without implicit arguments, and for which projections exist, are regarded as a
+% sequence of $\sa{}$):
 
 
-\begin{tabbing}
-\ \ \ \ \=11.\ \=\kill
-\>1.\>$A=B\mx{ if }A\stackrel{\bt{}\io{}}{\lra{}}B$\\
-\>2.\>$\sa{}x:A.B=\sa{}y:A.B[x\la{}y]\mx{ if }y\not\in{}FV(\sa{}x:A.B)$\\
-\>3.\>$\Pi{}x:A.B=\Pi{}y:A.B[x\la{}y]\mx{ if }y\not\in{}FV(\Pi{}x:A.B)$\\
-\>4.\>$\sa{}x:A.B=\sa{}x:B.A\mx{ if }x\not\in{}FV(A,B)$\\
-\>5.\>$\sa{}x:(\sa{}y:A.B).C=\sa{}x:A.\sa{}y:B[y\la{}x].C[x\la{}(x,y)]$\\
-\>6.\>$\Pi{}x:(\sa{}y:A.B).C=\Pi{}x:A.\Pi{}y:B[y\la{}x].C[x\la{}(x,y)]$\\
-\>7.\>$\Pi{}x:A.\sa{}y:B.C=\sa{}y:(\Pi{}x:A.B).(\Pi{}x:A.C[y\la{}(y\sm{}x)]$\\
-\>8.\>$\sa{}x:A.unit=A$\\
-\>9.\>$\sa{}x:unit.A=A[x\la{}tt]$\\
-\>10.\>$\Pi{}x:A.unit=unit$\\
-\>11.\>$\Pi{}x:unit.A=A[x\la{}tt]$
-\end{tabbing}
+% \begin{tabbing}
+% \ \ \ \ \=11.\ \=\kill
+% \>1.\>$A=B\mx{ if }A\stackrel{\bt{}\io{}}{\lra{}}B$\\
+% \>2.\>$\sa{}x:A.B=\sa{}y:A.B[x\la{}y]\mx{ if }y\not\in{}FV(\sa{}x:A.B)$\\
+% \>3.\>$\Pi{}x:A.B=\Pi{}y:A.B[x\la{}y]\mx{ if }y\not\in{}FV(\Pi{}x:A.B)$\\
+% \>4.\>$\sa{}x:A.B=\sa{}x:B.A\mx{ if }x\not\in{}FV(A,B)$\\
+% \>5.\>$\sa{}x:(\sa{}y:A.B).C=\sa{}x:A.\sa{}y:B[y\la{}x].C[x\la{}(x,y)]$\\
+% \>6.\>$\Pi{}x:(\sa{}y:A.B).C=\Pi{}x:A.\Pi{}y:B[y\la{}x].C[x\la{}(x,y)]$\\
+% \>7.\>$\Pi{}x:A.\sa{}y:B.C=\sa{}y:(\Pi{}x:A.B).(\Pi{}x:A.C[y\la{}(y\sm{}x)]$\\
+% \>8.\>$\sa{}x:A.unit=A$\\
+% \>9.\>$\sa{}x:unit.A=A[x\la{}tt]$\\
+% \>10.\>$\Pi{}x:A.unit=unit$\\
+% \>11.\>$\Pi{}x:unit.A=A[x\la{}tt]$
+% \end{tabbing}
 
-For more informations about the exact working of this command, see
-\cite{Del97}.
+% For more informations about the exact working of this command, see
+% \cite{Del97}.
 
 \section{Loading files}
 
@@ -261,74 +273,76 @@ the commands contained in a compiled file will not be {\em replayed}.
 In particular, proofs will not be replayed. This avoids a useless
 waste of time.
 
-\Rem A module containing an open section cannot be compiled. 
+\Rem A module containing an opened section cannot be compiled. 
 
-\subsection{\tt Compile Module {\ident}.}
-\index{Modules}
-\comindex{Compile Module}
-\index{.vo files}
-This command loads the file
-{\ident}{\tt .v} and plays the script it contains. Declarations,
-definitions and proofs it contains are {\em "packaged"} in a compiled
-form: the {\em module} named {\ident}.
-A file {\ident}{\tt .vo} is then created.
-The file {\ident}{\tt .v} is searched according to the
-current loadpath.
-The {\ident}{\tt .vo} is then written in the directory where
-{\ident}{\tt .v} was found.
+% \subsection{\tt Compile Module {\ident}.}
+% \index{Modules}
+% \comindex{Compile Module}
+% \index{.vo files}
+% This command loads the file
+% {\ident}{\tt .v} and plays the script it contains. Declarations,
+% definitions and proofs it contains are {\em "packaged"} in a compiled
+% form: the {\em module} named {\ident}.
+% A file {\ident}{\tt .vo} is then created.
+% The file {\ident}{\tt .v} is searched according to the
+% current loadpath.
+% The {\ident}{\tt .vo} is then written in the directory where
+% {\ident}{\tt .v} was found.
 
-\begin{Variants}
-\item \texttt{Compile Module {\ident} {\str}.}\\ 
-  Uses the file {\str}{\tt .v} or {\str} if the previous one does not
-  exist to build the module {\ident}. In this case, {\str} is any
-  string giving a filename in the UNIX sense (see section
-  \ref{Load-str}). 
-  \Warning The given filename can not contain other caracters than
-  the caracters of \Coq's identifiers : letters or digits or the
-  underscore symbol ``\_''.
+% \begin{Variants}
+% \item \texttt{Compile Module {\ident} {\str}.}\\ 
+%   Uses the file {\str}{\tt .v} or {\str} if the previous one does not
+%   exist to build the module {\ident}. In this case, {\str} is any
+%   string giving a filename in the UNIX sense (see section
+%   \ref{Load-str}). 
+%   \Warning The given filename can not contain other caracters than
+%   the caracters of \Coq's identifiers : letters or digits or the
+%   underscore symbol ``\_''.
 
-\item \texttt{Compile Module Specification {\ident}.}\\
-  \comindex{Compile Module Specification}
-  Builds a specification module: only the types of terms are stored
-  in the module. The bodies (the proofs) are {\em not} written
-  in the module. In that case, the file created is {\ident}{\tt .vi}.
-  This is only useful when proof terms take too much place in memory
-  and are not necessary.
+% \item \texttt{Compile Module Specification {\ident}.}\\
+%   \comindex{Compile Module Specification}
+%   Builds a specification module: only the types of terms are stored
+%   in the module. The bodies (the proofs) are {\em not} written
+%   in the module. In that case, the file created is {\ident}{\tt .vi}.
+%   This is only useful when proof terms take too much place in memory
+%   and are not necessary.
   
-\item \texttt{Compile Verbose Module {\ident}.}\\ 
-  \comindex{Compile Verbose Module}
-  Verbose version of Compile: shows the contents of the file being
-  compiled.
-\end{Variants}
+% \item \texttt{Compile Verbose Module {\ident}.}\\ 
+%   \comindex{Compile Verbose Module}
+%   Verbose version of Compile: shows the contents of the file being
+%   compiled.
+% \end{Variants}
 
-These different variants can be combined.
+% These different variants can be combined.
 
 
-\begin{ErrMsgs}
-\item \texttt{You cannot open a module when there are things other than}\\
-  \texttt{Modules and Imports in the context.}\\ 
-  The only commands allowed before a {Compile Module} command are {\tt
-    Require},\\
-  {\tt Read Module} and {\tt Import}. Actually, The normal way to
-  compile modules is by the {\tt coqc} command (see chapter
-  \ref{Addoc-coqc}).
-\end{ErrMsgs}
+% \begin{ErrMsgs}
+% \item \texttt{You cannot open a module when there are things other than}\\
+%   \texttt{Modules and Imports in the context.}\\ 
+%   The only commands allowed before a {Compile Module} command are {\tt
+%     Require},\\
+%   {\tt Read Module} and {\tt Import}. Actually, The normal way to
+%   compile modules is by the {\tt coqc} command (see chapter
+%   \ref{Addoc-coqc}).
+% \end{ErrMsgs}
 
-\SeeAlso sections \ref{Opaque}, \ref{loadpath}, chapter
-\ref{Addoc-coqc}
+% \SeeAlso sections \ref{Opaque}, \ref{loadpath}, chapter
+% \ref{Addoc-coqc}
 
 \subsection{\tt Read Module {\ident}.}\comindex{Read Module}
-Loads the module stored in the file {\ident}, but does not open it:
-its contents is invisible to the user. The implementation file
-({\ident}{\tt.vo}) is searched first, then the specification file
-({\ident}{\tt.vi}) in case of failure.
+Loads the module stored in the file {\ident}{\tt .vo}, but does not open it:
+its contents is invisible to the user.
+%  The implementation file
+% ({\ident}{\tt.vo}) is searched first, then the specification file
+% ({\ident}{\tt.vi}) in case of failure.
 
 \subsection{\tt Require {\ident}.}
 \label{Require}
 \comindex{Require}
 This command loads and opens (imports) the module stored in the file
-{\ident}. The implementation file ({\ident}{\tt .vo}) is searched first,
-then the specification file ({\ident}{\tt .vi}) in case of failure.
+{\ident}{\tt .vo}.
+% The implementation file ({\ident}{\tt .vo}) is searched first,
+% then the specification file ({\ident}{\tt .vi}) in case of failure.
 If the module required has already been loaded, \Coq\ 
 simply opens it (as {\tt Import {\ident}} would do it).
 If the module required is already loaded and open, \Coq\ 
@@ -345,12 +359,12 @@ open it (See the {\tt Require Export} variant below).
     A} contains a command {\tt Require Export} {\it B}, then the
   command {\tt Require} {\it A} opens the module {\it B} as if the
   user would have typed {\tt Require}{\it B}.
-\item {\tt Require $[$ Implementation $|$ Specification $]$ {\ident}.}\\
-  \comindex{Require Implementation}
-  \comindex{Require Specification}
-  Is the same as {\tt Require}, but specifying explicitly the
-  implementation ({\tt.vo} file) or the specification ({\tt.vi}
-  file).
+% \item {\tt Require $[$ Implementation $|$ Specification $]$ {\ident}.}\\
+%   \comindex{Require Implementation}
+%   \comindex{Require Specification}
+%   Is the same as {\tt Require}, but specifying explicitly the
+%   implementation ({\tt.vo} file) or the specification ({\tt.vi}
+%   file).
 \item {\tt Require {\ident} {\str}.}\\ 
   Specifies the file to load as being {\str}, instead of
   {\ident}. The opened module is still {\ident} and therefore
@@ -385,15 +399,21 @@ This command shows the currently loaded and currently opened
 \comindex{Declare ML Module}
 This commands loads the Objective Caml compiled files {\str$_1$} \dots
 {\str$_n$} (dynamic link). It is mainly used to load tactics
-dynamically (see chapter \ref{WritingTactics}).  The files are
+dynamically.
+% (see chapter \ref{WritingTactics}).
+ The files are
 searched into the current Objective Caml loadpath (see the command {\tt
 Add ML Path} in the section \ref{loadpath}).  Loading of Objective Caml
 files is only possible under the bytecode version of {\tt coqtop}
 (i.e. not using options {\tt -opt} or {\tt -full} -- see chapter 
 \ref{Addoc-coqc}).
+\begin{ErrMsgs}
+\item \errindex{File not found on loadpath : \str}
+\item \errindex{Loading of ML object file forbidden in a native Coq}
+\end{ErrMsgs}
 
 \subsection{\tt Print ML Modules.}\comindex{Print ML Modules}
-This print the name of all \ocaml modules loaded with \texttt{Declare
+This print the name of all \ocaml{} modules loaded with \texttt{Declare
   ML Module}. To know from where these module were loaded, the user
 should use the command \texttt{Locate File} (\pageref{Locate File})
 
@@ -403,7 +423,7 @@ should use the command \texttt{Locate File} (\pageref{Locate File})
 There are currently two loadpaths in \Coq. A loadpath where seeking
 {\Coq} files (extensions {\tt .v} or {\tt .vo} or {\tt .vi}) and one where
 seeking Objective Caml files. The default loadpath contains the
-directory ``\texttt{.}'' denoting the current directory, so there also
+directory ``\texttt{.}'' denoting the current directory, so there are also
 commands to print and change the current working directory.
 
 \subsection{\tt Pwd.}\comindex{Pwd}\label{Pwd}
@@ -471,52 +491,31 @@ or declared object as well as the name of a section.  One cannot reset
 over the name of a module or of an object inside a module.
 
 \begin{ErrMsgs}
-\item \errindex{cannot reset to a nonexistent object}
+\item \ident: \errindex{no such entry}
 \end{ErrMsgs}
-
-\subsection{\tt Save State \ident.}
-\comindex{Save State}
-Saves the current state of the development (mainly the defined
-objects) such that one can go back at this point if necessary.
-
-\begin{Variants}
-\item {\tt Save State \ident\ \str.} \\ 
-  Associates to the state of name {\tt ident} the string {\str} as a
-  comment.
-\end{Variants}
-
-\subsection{\tt Print States.}
-\comindex{Print States}
-
-Prints the names of the currently saved states with the associated
-comment. The state {\tt Initial} is automatically built by the system
-and can not be removed.
 
 \subsection{\tt Restore State \ident.}
 \comindex{Restore State}
-Restores the set of known objects in the state {\ident}.
+  Restores the state contained in the file \str.
 
 \begin{Variants}
+\item {\tt Restore State \ident}
+ Equivalent to {\tt Restore State "}{\ident}{\tt .coq".}.
 \item {\tt Reset Initial.}\comindex{Reset Initial}\\ 
-  Is equivalent to {\tt Restore State Initial} and goes back to the
+  Goes back to the
   initial state (like after the command {\tt coqtop}).
 \end{Variants}
 
-\subsection{\tt Remove State \ident.}
-\comindex{Remove State}
-Remove the state \ident\ from the states list.
-
-\subsection{\tt Write States \str.}
-\comindex{Write States}
-Writes the current list of states into a UNIX file \str{\tt .coq} for
+\subsection{\tt Write State \str.}
+\comindex{Write State}
+Writes the current state into a file \str{} for
 use in a further session. This file can be given as the {\tt
-  inputstate} argument of the commands {\tt coqtop} and {\tt coqc}. A
-command {\tt Restore State \ident} is necessary afterwards to choose
-explicitly which state to use (the default is to use the last saved state).
+  inputstate} argument of the commands {\tt coqtop} and {\tt coqc}.
 
 \begin{Variants}
-\item {\tt Write States \ident} The suffix \texttt{.coq} is implicit,
-  and the state is saved in the current directory (see \pageref{Pwd}).
+\item {\tt Write State \ident}
+ Equivalent to {\tt Write State "}{\ident}{\tt .coq".}.
+ The state is saved in the current directory (see \pageref{Pwd}).
 \end{Variants}
 
 \section{Syntax facilities}
@@ -569,8 +568,7 @@ the user's own notation.  It may be used instead of the {\tt Syntactic
 Definition} pragma.  It can also be used by an advanced \Coq's user
 who programs his own tactics.
 
-\SeeAlso chapters \ref{Addoc-syntax}, 
-\ref{WritingTactics}
+\SeeAlso chapters \ref{Addoc-syntax}
 
 \subsection{\tt{Infix} {\num} {\str} {\ident}.}\comindex{Infix}
 
@@ -613,8 +611,10 @@ Objective Caml toplevel. The Objective Caml command:
 all abstract types of \Coq - section\_path, identfifiers, terms, judgements,
 \dots. You can also use the file \texttt{base\_include} instead,
 that loads only the pretty-printers for section\_paths and
-identfifiers. See section \ref{test-and-debug} more information on the
-usage of the toplevel. You can return back to \Coq{} with the command: 
+identfifiers.
+% See section \ref{test-and-debug} more information on the
+% usage of the toplevel.
+You can return back to \Coq{} with the command: 
 
 \begin{flushleft}
 \begin{verbatim}
@@ -632,22 +632,19 @@ invoked. It does not work if {\Coq} was invoked with the option
   \ref{EnvVariables})
 \end{Warnings}
 
-\subsection{\tt Begin Silent.}
+\subsection{\tt Set Silent.}
 \comindex{Begin Silent}
 \label{Begin-Silent}
 \index{Silent mode}
 This command turns off the normal displaying.
 
-\subsection{\tt End Silent.}\comindex{End Silent}
+\subsection{\tt Unset Silent.}\comindex{End Silent}
 This command turns the normal display on.
 
-\subsection{\tt Time.}\comindex{Time}
+\subsection{\tt Time \textrm{\textsl{command}}.}\comindex{Time}
 \label{time}
-This commands turns on the Time Search Display mode. The Time Search Display
-mode shows the user and system times for the {\tt SearchIsos} requests.
-
-\subsection{\tt Untime.}\comindex{Untime}
-This commands turns off the Time Search Display mode (see section~\ref{time}).
+This command executes the vernac command \textrm{\textsl{command}}
+and display the time needed to execute it.
 
 %\subsection{\tt Explain ...}
 %Not yet documented.

@@ -36,7 +36,7 @@ It is possible to edit several proofs at the same time: see section
 \ref{Resume}
 
 \ErrMsg When one attempts to use a proof editing command out of the
-proof editing mode, \Coq~ raises the error message : {\tt No focused
+proof editing mode, \Coq~ raises the error message : \errindex{No focused
   proof}.
 
 \section{Switching on/off the proof editing mode}
@@ -48,9 +48,12 @@ the original goal. It associates the name {\tt Unnamed\_thm} to
 that goal.
 
 \begin{ErrMsgs}
-\item \errindex{Proof objects can only be abstracted}
-\item \errindex{A goal should be a type}
+\item \errindex{the term \form\ has type \ldots{} which should be Set,
+    Prop or Type}
+%\item \errindex{Proof objects can only be abstracted}
+%\item \errindex{A goal should be a type}
 \item \errindex{repeated goal not permitted in refining mode}
+the command {\tt Goal} cannot be used while a proof is already being edited.
 \end{ErrMsgs}
 
 \SeeAlso section \ref{Theorem}
@@ -64,7 +67,7 @@ name is added to the environment as an {\tt Opaque} constant.
 
 \begin{ErrMsgs}
 \item \errindex{Attempt to save an incomplete proof}
-\item \errindex{Clash with previous constant ...}\\ 
+\item \ident\ \errindex{already exists}\\ 
   The implicit name is already defined. You have then to provide
   explicitly a new name (see variant 2 below).
 \item Sometimes an error occurs when building the proof term,
@@ -220,8 +223,8 @@ This command displays the current goals.
 \item {\tt Show {\num}.}\\ 
   Displays only the {\num}-th subgoal.\\ 
 \begin{ErrMsgs}
-\errindex{No such goal}
-\errindex{No focused proof}
+\item \errindex{No such goal}
+\item \errindex{No focused proof}
 \end{ErrMsgs}
 
 \item {\tt Show Implicits.}\comindex{Show Implicits}\\
