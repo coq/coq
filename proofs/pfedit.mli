@@ -6,6 +6,7 @@ open Pp
 open Sign
 open Declare
 open Proof_trees
+open Refiner
 (*i*)
 
 val proof_prompt : unit -> string

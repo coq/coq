@@ -127,6 +127,25 @@ let list_except x l = List.filter (fun y -> not (x = y)) l
 
 let list_for_all2eq f l1 l2 = try List.for_all2 f l1 l2 with Failure _ -> false
 
+let list_map_i f = 
+  let rec map_i_rec i = function
+    | [] -> [] 
+    | x::l -> let v = f i x in v::map_i_rec (i+1) l
+  in 
+  map_i_rec
+
+let rec list_sep_last = function
+  | [] -> failwith "sep_last"
+  | hd::[] -> (hd,[])
+  | hd::tl -> let (l,tl) = list_sep_last tl in (l,hd::tl)
+
+let list_try_find_i f = 
+  let rec try_find_f n = function
+    | [] -> failwith "try_find_i"
+    | h::t -> try f n h with Failure _ -> try_find_f (n+1) t
+  in 
+  try_find_f
+
 (* Arrays *)
 
 let array_exists f v = 
