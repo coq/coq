@@ -18,7 +18,7 @@ open Auto
 
 let e_give_exact c gl = tclTHEN (unify (pf_type_of gl c)) (Tactics.exact c) gl
 
-let assumption id = e_give_exact (VAR id)
+let assumption id = e_give_exact (mkVar id)
         
 let e_assumption gl = 
   tclFIRST (List.map assumption (pf_ids_of_hyps gl)) gl
@@ -26,7 +26,7 @@ let e_assumption gl =
 let e_give_exact_constr = hide_constr_tactic "EExact" e_give_exact
 
 let registered_e_assumption gl = 
-  tclFIRST (List.map (fun id gl -> e_give_exact_constr (VAR id) gl) 
+  tclFIRST (List.map (fun id gl -> e_give_exact_constr (mkVar id) gl) 
               (pf_ids_of_hyps gl)) gl
     
 let e_resolve_with_bindings_tac  (c,lbind) gl = 
@@ -53,8 +53,7 @@ let vernac_e_resolve_constr =
 
 let one_step l gl =
   [Tactics.intro]
-  @ (List.map e_resolve_constr (List.map (fun x -> VAR x)
-				  (pf_ids_of_hyps gl)))
+  @ (List.map e_resolve_constr (List.map mkVar (pf_ids_of_hyps gl)))
   @ (List.map e_resolve_constr l)
   @ (List.map assumption (pf_ids_of_hyps gl))
 
@@ -197,7 +196,7 @@ let e_possible_resolve db_list local_db gl =
 (* A version with correct (?) backtracking using operations on lists 
    of goals *)
 
-let assumption_tac_list id = apply_tac_list (e_give_exact_constr (VAR id))
+let assumption_tac_list id = apply_tac_list (e_give_exact_constr (mkVar id))
 
 exception Nogoals
 

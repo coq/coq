@@ -70,8 +70,8 @@ let ids_of_rctxt ctxt =
 let ids_of_ctxt ctxt =
   Array.to_list
     (Array.map
-       (function
-	  | VAR id -> id
+       (function c -> match kind_of_term c with
+	  | IsVar id -> id
 	  | _ ->
        error
        "Termast: arbitrary substitution of references not yet implemented")

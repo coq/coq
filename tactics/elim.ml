@@ -54,7 +54,7 @@ Another example :
 *)
 
 let elimClauseThen tac idopt gl =
-  elimination_then tac ([],[]) (VAR (out_some idopt)) gl
+  elimination_then tac ([],[]) (mkVar (out_some idopt)) gl
 
 let rec general_decompose_clause recognizer =
   ifOnClause recognizer
@@ -145,14 +145,14 @@ let induction_trailer abs_i abs_j bargs =
     (onLastHyp
        (fun idopt gls ->
 	  let id = out_some idopt in
-	  let idty = pf_type_of gls (VAR id) in
+	  let idty = pf_type_of gls (mkVar id) in
 	  let fvty = global_vars idty in
 	  let possible_bring_ids =
 	    (List.tl (List.map out_some (nLastHyps (abs_j - abs_i) gls)))
             @bargs.assums in
 	  let (ids,_) = List.fold_left 
 			  (fun (bring_ids,leave_ids) cid ->
-                             let cidty = pf_type_of gls (VAR cid) in
+                             let cidty = pf_type_of gls (mkVar cid) in
                              if not (List.mem cid leave_ids)
                              then (cid::bring_ids,leave_ids)
                              else (bring_ids,cid::leave_ids))
@@ -160,7 +160,7 @@ let induction_trailer abs_i abs_j bargs =
 	  in 
 	  (tclTHEN (tclTHEN (bring_hyps (List.map in_some ids))
 		      (clear_clauses (List.rev (List.map in_some ids))))
-             (simple_elimination (VAR id))) gls))
+             (simple_elimination (mkVar id))) gls))
 
 let double_ind abs_i abs_j gls =
   let cl = pf_concl gls in 
@@ -169,7 +169,7 @@ let double_ind abs_i abs_j gls =
        	(fun idopt ->
            elimination_then
              (introElimAssumsThen (induction_trailer abs_i abs_j))
-             ([],[]) (VAR (out_some idopt))))) gls
+             ([],[]) (mkVar (out_some idopt))))) gls
 
 let dyn_double_ind = function
   | [Integer i; Integer j] -> double_ind i j

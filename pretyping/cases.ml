@@ -132,8 +132,7 @@ let mssg_this_case_cannot_occur () =
 
 (* Utils *)
 
-let ctxt_of_ids ids =
-  Array.of_list (List.map (function id -> VAR id) ids)
+let ctxt_of_ids ids = Array.of_list (List.map mkVar ids)
 let constructor_of_rawconstructor (cstr_sp,ids) = (cstr_sp,ctxt_of_ids ids)
 let inductive_of_rawconstructor c =
   inductive_of_constructor (constructor_of_rawconstructor c)
@@ -589,7 +588,7 @@ let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
       let predpred = lam_it (mkSort s) sign in
       let caseinfo = make_default_case_info mis in
       let brs = array_map2 abstract_conclusion typs cstrs in
-      let predbody = mkMutCase (caseinfo, predpred, Rel 1, brs) in
+      let predbody = mkMutCase (caseinfo, predpred, mkRel 1, brs) in
       let pred = lam_it (lift (List.length sign) typn) sign in
       failwith "TODO4-2"; (true,pred)
 
@@ -631,11 +630,11 @@ let rec weaken_predicate n pred =
 		    anomaly "weaken_predicate: only product can be weakened"
     | PrProd ((dep,_,IsInd (_,IndType(indf,realargs))),pred) ->
 	(* To make it more uniform, we apply realargs but they not occur! *)
-	let copt = if dep then Some (Rel n) else None in
+	let copt = if dep then Some (mkRel n) else None in
 	PrLetIn ((realargs,copt), weaken_predicate (n-1)
 		   (lift_predicate (List.length realargs) pred))
     | PrProd ((dep,_,NotInd t),pred) ->
-	let copt = if dep then Some (Rel n) else None in
+	let copt = if dep then Some (mkRel n) else None in
 	PrLetIn (([],copt), weaken_predicate (n-1) pred)
 
 let rec extract_predicate = function
@@ -770,7 +769,7 @@ let build_branch pb defaults current eqns const_info =
        (List.map (lift const_info.cs_nargs) const_info.cs_params)
        @(rel_list 0 const_info.cs_nargs)) in
 
-  (* We replace [(Rel 1)] by its expansion [ci] *)
+  (* We replace [(mkRel 1)] by its expansion [ci] *)
   let updated_old_tomatch =
     lift_subst_tomatch const_info.cs_nargs (1,ci) pb.tomatch in
   { pb with
@@ -830,13 +829,13 @@ and match_current pb (n,tm) =
 and compile_further pb firstnext rest =
   (* We pop as much as possible tomatch not dependent one of the other *)
   let nexts,future = pop_next_tomatchs [firstnext] rest in
-  (* the next pattern to match is at the end of [nexts], it has ref (Rel n)
+  (* the next pattern to match is at the end of [nexts], it has ref (mkRel n)
      where n is the length of nexts *)
   let sign = List.map (fun ((na,t),_) -> (na,type_of_tomatch_type t)) nexts in
   let currents =
     list_map_i
       (fun i ((na,t),(_,rhsdep)) ->
-	 Pushed (insert_lifted ((Rel i, lift_tomatch_type i t), rhsdep)))
+	 Pushed (insert_lifted ((mkRel i, lift_tomatch_type i t), rhsdep)))
       1 nexts in
   let pb' = { pb with
 		env = push_rels sign pb.env;

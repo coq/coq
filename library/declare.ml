@@ -247,16 +247,6 @@ let global_operator kind id =
   let sp = Nametab.sp_of_id kind id in
   global_sp_operator (Global.env()) sp id
 
-(*
-let construct_sp_reference env sp id =
-  let (oper,hyps) = global_sp_operator env sp id in
-  let hyps' = Global.var_context () in
-  if not (hyps_inclusion env Evd.empty hyps hyps') then
-    error_reference_variables CCI env id;
-  let ids = ids_of_sign hyps in
-  DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids))
-*)
-
 let occur_decl env (id,c,t) hyps =
   try
     let (c',t') = Sign.lookup_id id hyps in
@@ -296,7 +286,12 @@ let construct_sp_reference env sp id =
   let hyps0 = Global.var_context () in
   let env0 = Environ.reset_context env in
   let args = List.map mkVar (ids_of_var_context hyps) in
-  let body = DOPN(oper,Array.of_list args) in
+  let body = match oper with
+    | Const sp -> mkConst (sp,Array.of_list args)
+    | MutConstruct sp -> mkMutConstruct (sp,Array.of_list args)
+    | MutInd sp -> mkMutInd (sp,Array.of_list args)
+    | _ -> assert false
+  in
   find_common_hyps_then_abstract body env0 hyps0 hyps
 
 let construct_reference env kind id =
@@ -304,7 +299,7 @@ let construct_reference env kind id =
     let sp = Nametab.sp_of_id kind id in
     construct_sp_reference env sp id
   with Not_found -> 
-    VAR (let _ = Environ.lookup_var id env in id)
+    mkVar (let _ = Environ.lookup_var id env in id)
 
 let global_sp_reference sp id = 
   construct_sp_reference (Global.env()) sp id
@@ -322,7 +317,7 @@ let global_reference_imps kind id =
     | _ -> assert false
 (*
 let global env id =
-  try let _ = lookup_glob id (Environ.context env) in VAR id
+  try let _ = lookup_glob id (Environ.context env) in mkVar id
   with Not_found -> global_reference CCI id
 *)
 let is_global id =
@@ -362,7 +357,7 @@ let declare_eliminations sp i =
   if not (list_subset ids (ids_of_var_context (Global.var_context ()))) then
     error ("Declarations of elimination scheme outside the section "^
     "of the inductive definition is not implemented");
-  let ctxt = Array.of_list (List.map (fun id -> VAR id) ids) in
+  let ctxt = Array.of_list (List.map mkVar ids) in
   let mispec = Global.lookup_mind_specif ((sp,i),ctxt) in 
   let mindstr = string_of_id (mis_typename mispec) in
   let declare na c =

@@ -144,7 +144,7 @@ let rec inh_conv_coerce_to_fail env isevars c1 hj =
                let env1 = push_rel_decl (name,assu1) env in
                let h1 = 
 		 inh_conv_coerce_to_fail env isevars t1
-		   {uj_val = Rel 1; 
+		   {uj_val = mkRel 1; 
 		    uj_type = typed_app (fun _ -> u1) assu1 } in
                let h2 = inh_conv_coerce_to_fail env isevars u2  
 			 { uj_val = mkAppL (lift 1 v, [|h1.uj_val|]);

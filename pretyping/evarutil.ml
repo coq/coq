@@ -174,7 +174,7 @@ let has_ise sigma t =
   with Uninstantiated_evar _ -> true
 
 (* We try to instanciate the evar assuming the body won't depend
- * on arguments that are not Rels or VARs, or appearing several times.
+ * on arguments that are not Rels or Vars, or appearing several times.
  *)
 (* Note: error_not_clean should not be an error: it simply means that the
  * conversion test that lead to the faulty call to [real_clean] should return
@@ -182,42 +182,18 @@ let has_ise sigma t =
  *)
 
 let real_clean isevars sp args rhs =
-  let subst = List.map (fun (x,y) -> (y,VAR x)) (filter_unique args) in
+  let subst = List.map (fun (x,y) -> (y,mkVar x)) (filter_unique args) in
   let rec subs k t =
     match kind_of_term t with
       |IsRel i ->
  	 if i<=k then t
- 	 else (try List.assoc (Rel (i-k)) subst with Not_found -> t)
+ 	 else (try List.assoc (mkRel (i-k)) subst with Not_found -> t)
       | IsVar _ -> (try List.assoc t subst with Not_found -> t)
       | _ -> map_constr_with_binders (fun na k -> k+1) subs k t
   in
   let body = subs 0 rhs in
   (* if not (closed0 body) then error_not_clean CCI empty_env sp body; *)
   body
-
-(*
-let real_clean isevars sp args rhs =
-  let subst = List.map (fun (x,y) -> (y,VAR x)) (filter_unique args) in
-  let rec subs k t =
-    match t with
-      Rel i ->
- 	if i<=k then t
- 	else (try List.assoc (Rel (i-k)) subst with Not_found -> t)
-    | VAR _ -> (try List.assoc t subst with Not_found -> t)
-    | DOP0 _ -> t
-    | DOP1(o,a) -> DOP1(o, subs k a)
-    | DOP2(o,a,b) -> DOP2(o, subs k a, subs k b)
-    | DOPN(o,v) -> restrict_hyps isevars (DOPN(o, Array.map (subs k) v))
-    | DLAM(n,a) -> DLAM(n, subs (k+1) a)
-    | DLAMV(n,v) -> DLAMV(n, Array.map (subs (k+1)) v)
-    | CLam (n,t,c)   -> CLam (n, typed_app (subs k) t, subs (k+1) c)  
-    | CPrd (n,t,c)   -> CPrd (n, typed_app (subs k) t, subs (k+1) c)
-    | CLet (n,b,t,c) -> CLet (n, subs k b, typed_app (subs k) t, subs (k+1) c)
-  in
-  let body = subs 0 rhs in
-  (* if not (closed0 body) then error_not_clean CCI empty_env sp body; *)
-  body
-*)
 
 let make_instance_with_rel env =
   let n = rel_context_length (rel_context env) in
@@ -250,7 +226,7 @@ let new_isevar isevars env typ k =
   evar
 
 (* [evar_define] solves the problem lhs = rhs when lhs is an uninstantiated
- * evar, i.e. tries to find the body ?sp for lhs=mkConst (sp,args)
+ * evar, i.e. tries to find the body ?sp for lhs=mkEvar (sp,args)
  * ?sp [ sp.hyps \ args ]  unifies to rhs
  * ?sp must be a closed term, not referring to itself.
  * Not so trivial because some terms of args may be terms that are not
@@ -266,11 +242,15 @@ let new_isevar isevars env typ k =
  * cannot be done, as in  [x:?1; y:nat; z:(le y y)] x=z
  * ?1 would be instantiated by (le y y) but y is not in the scope of ?1
  *)
+
+let keep_rels_and_vars c = match kind_of_term c with
+  | IsVar _ | IsRel _ -> c
+  | _ -> mkImplicit   (* Mettre mkMeta ?? *)
+
 let evar_define isevars lhs rhs =
   let (ev,argsv) = destEvar lhs in
   if occur_evar ev rhs then error_occur_check CCI empty_env ev rhs;
-  let args = List.map (function (VAR _ | Rel _) as t -> t | _ -> mkImplicit)
-      (Array.to_list argsv) in 
+  let args = List.map keep_rels_and_vars (Array.to_list argsv) in 
   let evd = ise_map isevars ev in
   (* the substitution to invert *)
   let worklist = make_subst evd.evar_env args in

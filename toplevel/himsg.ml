@@ -268,7 +268,7 @@ let explain_occur_check k ctx ev rhs =
      'sTR" with term"; 'bRK(1,1); pt >]
 
 let explain_not_clean k ctx ev t =
-  let c = Rel (Intset.choose (free_rels t)) in
+  let c = mkRel (Intset.choose (free_rels t)) in
   let id = "?" ^ string_of_int ev in
   let var = prterm_env ctx c in
   [< 'sTR"Tried to define "; 'sTR id;
@@ -396,6 +396,9 @@ let explain_refiner_bad_tactic_args s l =
   [< 'sTR "Internal tactic "; 'sTR s; 'sTR " cannot be applied to ";
      Tacmach.pr_tactic (s,l) >]
 
+let explain_intro_needs_product () =
+  [< 'sTR "Introduction tactics needs products" >]
+
 let explain_refiner_error = function
   | BadType (arg,ty,conclty) -> explain_refiner_bad_type arg ty conclty
   | OccurMeta t -> explain_refiner_occur_meta t
@@ -404,6 +407,7 @@ let explain_refiner_error = function
   | CannotGeneralize ty -> explain_refiner_cannot_generalize ty
   | NotWellTyped c -> explain_refiner_not_well_typed c
   | BadTacticArgs (s,l) -> explain_refiner_bad_tactic_args s l
+  | IntroNeedsProduct -> explain_intro_needs_product ()
 
 let error_non_strictly_positive k env c v  =
   let pc = prterm_env env c in

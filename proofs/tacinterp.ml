@@ -71,7 +71,7 @@ let rec constr_list goalopt = function
        | None -> constr_list goalopt tl
        | Some goal ->
          if mem_var_context id (pf_hyps goal) then
-           (id_of_string str,VAR id)::(constr_list goalopt tl)
+           (id_of_string str,mkVar id)::(constr_list goalopt tl)
          else
            constr_list goalopt tl))
   | _::tl -> constr_list goalopt tl
@@ -356,7 +356,7 @@ let apply_one_mhyp_context lmatch mhyp lhyps noccopt =
 (* Prepares the lfun list for constr substitutions *)
 let rec make_subs_list = function
   | (id,VArg (Identifier i))::tl ->
-    (id_of_string id,VAR i)::(make_subs_list tl)
+    (id_of_string id,mkVar i)::(make_subs_list tl)
   | (id,VArg (Constr c))::tl ->
     (id_of_string id,c)::(make_subs_list tl)
   | e::tl -> make_subs_list tl
@@ -748,57 +748,34 @@ and cvt_fold (evc,env,lfun,lmatch,goalopt) = function
 
 (* Interprets the reduction flags *)
 and flag_of_ast (evc,env,lfun,lmatch,goalopt) lf =
-  let beta = ref false in
-  let delta = ref false in
-  let iota = ref false in
-  let idents = ref (None: (sorts oper -> bool) option) in
-  let set_flag = function
-    | Node(_,"Beta",[]) -> beta := true
-    | Node(_,"Delta",[]) -> delta := true
-    | Node(_,"Iota",[]) -> iota := true
-    | Node(loc,"Unf",l) ->
-        if !delta then
-          if !idents = None then
-            let idl=
-              List.map (fun v -> glob_nvar (id_of_Identifier (unvarg
-                (val_interp (evc,env,lfun,lmatch,goalopt) v)))) l
-            in
-              idents := Some
-                (function
-                   | Const sp -> List.mem sp idl
-                   | _ -> false)
-          else user_err_loc(loc,"flag_of_ast",
-                  [<'sTR "Cannot specify identifiers to unfold twice">])
-        else user_err_loc(loc,"flag_of_ast",
-                  [<'sTR "Delta must be specified before">])
-    | Node(loc,"UnfBut",l) ->
-        if !delta then
-          if !idents = None then
-            let idl=
-              List.map (fun v -> glob_nvar (id_of_Identifier (unvarg
-                (val_interp (evc,env,lfun,lmatch,goalopt) v)))) l
-            in
-              idents := Some
-                (function
-                   | Const sp -> not (List.mem sp idl)
-                   | _ -> false)
-          else user_err_loc(loc,"flag_of_ast",
-                  [<'sTR "Cannot specify identifiers to unfold twice">])
-        else user_err_loc(loc,"flag_of_ast",
-                  [<'sTR "Delta must be specified before">])
-    | arg -> invalid_arg_loc (Ast.loc arg,"flag_of_ast")
+  let rec add_flag red = function
+    | [] -> red
+    | Node(_,"Beta",[])::lf -> add_flag (red_add red BETA) lf
+    | Node(_,"Delta",[])::lf ->
+	(match lf with
+	   | Node(loc,"Unf",l)::lf ->
+               let idl=
+		 List.map (fun v -> glob_nvar (id_of_Identifier (unvarg
+		   (val_interp (evc,env,lfun,lmatch,goalopt) v)))) l
+	       in add_flag (red_add red (CONST idl)) lf
+	   | Node(loc,"UnfBut",l)::lf ->
+               let idl=
+		 List.map (fun v -> glob_nvar (id_of_Identifier (unvarg
+                   (val_interp (evc,env,lfun,lmatch,goalopt) v)))) l
+               in add_flag (red_add red (CONSTBUT idl)) lf
+	   | _ -> add_flag (red_add red DELTA) lf)
+    | Node(_,"Iota",[])::lf -> add_flag (red_add red IOTA) lf
+    | Node(loc,("Unf"|"UnfBut"),l)::_ ->
+	user_err_loc(loc,"flag_of_ast",
+                     [<'sTR "Delta must be specified before">])
+
+    | arg::_ -> invalid_arg_loc (Ast.loc arg,"flag_of_ast")
   in
-    List.iter set_flag lf;
-    { r_beta = !beta;
-      r_iota = !iota;
-      r_delta = match (!delta,!idents) with
-          (false,_) -> (fun _ -> false)
-        | (true,None) -> (fun _ -> true)
-        | (true,Some p) -> p }
+  add_flag no_red lf;
 
 (* Interprets a reduction expression *)
 and redexp_of_ast (evc,env,lfun,lmatch,goalopt) = function
-  | ("Red", []) -> Red
+  | ("Red", []) -> Red false
   | ("Hnf", []) -> Hnf
   | ("Simpl", []) -> Simpl
   | ("Unfold", ul) ->

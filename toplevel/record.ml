@@ -128,13 +128,13 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
            (None::sp_projs,fi::ids_not_ok,subst)
          end else 
 	   let p = mkLambda (x, rp2, replace_vars subst ti) in
-	   let branch = mk_LambdaCit newfs (VAR fi) in
+	   let branch = mk_LambdaCit newfs (mkVar fi) in
 	   let ci = Inductive.make_case_info
 		      (Global.lookup_mind_specif (destMutInd r))
 		      (Some PrintLet) [| RegularPat |] in
 	   let proj = mk_LambdaCit newps 
 			(mkLambda (x, rp1,
-				   mkMutCase (ci, p, Rel 1, [|branch|]))) in
+				   mkMutCase (ci, p, mkRel 1, [|branch|]))) in
 	   let ok = 
 	     try
 	       let cie =
@@ -152,7 +152,7 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
 	       Class.try_add_new_coercion_record fi NeverDischarge idstruc;
              let constr_fi = global_reference CCI fi in
              let constr_fip = (* Rel 1 refers to "x" *)
-               applist (constr_fi,(List.map (fun id -> VAR id) idps)@[Rel 1])
+               applist (constr_fi,(List.map mkVar idps)@[mkRel 1])
              in (Some(path_of_const constr_fi)::sp_projs,
 		 ids_not_ok, (fi,constr_fip)::subst)
 	   end)

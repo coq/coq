@@ -128,16 +128,16 @@ let explain_ind_err ntyp env0 nbpar c err =
   let env = push_rels lpar env0 in
   match err with
     | LocalNonPos kt -> 
-	raise (InductiveError (NonPos (env,c',Rel (kt+nbpar))))
+	raise (InductiveError (NonPos (env,c',mkRel (kt+nbpar))))
     | LocalNotEnoughArgs kt -> 
 	raise (InductiveError 
-		 (NotEnoughArgs (env,c',Rel (kt+nbpar))))
+		 (NotEnoughArgs (env,c',mkRel (kt+nbpar))))
     | LocalNotConstructor ->
 	raise (InductiveError 
-		 (NotConstructor (env,c',Rel (ntyp+nbpar))))
+		 (NotConstructor (env,c',mkRel (ntyp+nbpar))))
     | LocalNonPar (n,l) ->
 	raise (InductiveError 
-		 (NonPar (env,c',n,Rel (nbpar-n+1), Rel (l+nbpar))))
+		 (NonPar (env,c',n,mkRel (nbpar-n+1), mkRel (l+nbpar))))
 
 let failwith_non_pos_vect n ntypes v =
   for i = 0 to Array.length v - 1 do
@@ -153,8 +153,9 @@ let check_correct_par env nparams ntypes n l largs =
     raise (IllFormedInd (LocalNotEnoughArgs l));
   let (lpar,largs') = array_chop nparams largs in
   for k = 0 to nparams - 1 do
-    if not ((Rel (n-k-1))= whd_betadeltaiotaeta env Evd.empty lpar.(k)) then
-      raise (IllFormedInd (LocalNonPar (k+1,l)))
+    match kind_of_term (whd_betadeltaiotaeta env Evd.empty lpar.(k)) with
+      | IsRel w when (n-k-1 = w) -> ()
+      | _ -> raise (IllFormedInd (LocalNonPar (k+1,l)))
   done;
   if not (array_for_all (noccur_between n ntypes) largs') then 
     failwith_non_pos_vect n ntypes largs'
@@ -166,7 +167,7 @@ let abstract_mind_lc env ntyps npars lc =
   else 
     let make_abs = 
       list_tabulate
-	(function i -> lambda_implicit_lift npars (Rel (i+1))) ntyps 
+	(function i -> lambda_implicit_lift npars (mkRel (i+1))) ntyps 
     in 
     Array.map (compose (nf_beta env Evd.empty) (substl make_abs)) lc
 

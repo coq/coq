@@ -31,8 +31,8 @@ let stre_max (stre1,stre2) =
 let stre_max4 stre1 stre2 stre3 stre4 =
   stre_max ((stre_max (stre1,stre2)),(stre_max (stre3,stre4)))
 
-let id_of_varid = function
-  | VAR id -> id
+let id_of_varid c = match kind_of_term c with
+  | IsVar id -> id
   | _ -> anomaly "class__id_of_varid"
 
 let stre_of_VAR c = variable_strength (destVar c)
@@ -141,7 +141,7 @@ let constructor_at_head1 t =
 let uniform_cond nargs lt = 
   let rec aux = function
     | (0,[]) -> true
-    | (n,t::l) -> (strip_outer_cast t = Rel n) & (aux ((n-1),l))
+    | (n,t::l) -> (strip_outer_cast t = mkRel n) & (aux ((n-1),l))
     | _ -> false
   in 
   aux (nargs,lt)
@@ -216,10 +216,11 @@ let prods_of t =
 let build_id_coercion idf_opt ids =
   let env = Global.env () in
   let vs = construct_reference env CCI ids in 
-  let c = match (strip_outer_cast vs) with
-    | (DOPN(Const sp,l) as c') when Environ.evaluable_constant env c' ->
-	(try Instantiate.constant_value env c'
-         with _ -> errorlabstrm "build_id_coercion"
+  let c = match kind_of_term (strip_outer_cast vs) with
+    | IsConst cst -> 
+	(try Instantiate.constant_value env cst
+         with Instantiate.NotEvaluableConst _ ->
+	   errorlabstrm "build_id_coercion"
              [< 'sTR(string_of_id ids);
 		'sTR" must be a transparent constant" >])
     | _ -> 
@@ -234,7 +235,7 @@ let build_id_coercion idf_opt ids =
     it_mkLambda_or_LetIn
       (mkLambda (Name (id_of_string "x"),
 		 applistc vs (rel_list 0 llams),
-		 Rel 1))
+		 mkRel 1))
        lams
   in
   let typ_f =

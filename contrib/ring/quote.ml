@@ -198,7 +198,7 @@ let compute_lhs typ i nargsi =
 let compute_rhs bodyi index_of_f =
   let rec aux c = 
     match decomp_term c with
-      | IsAppL (Rel j, args) when j = index_of_f (* recursive call *) -> 
+      | IsAppL (j, args) when j = mkRel (index_of_f) (* recursive call *) -> 
           let i = destRel (array_last args) in mkMeta i
       | IsAppL (f,args) ->
           mkAppL (f, Array.map aux args)
@@ -209,8 +209,9 @@ let compute_rhs bodyi index_of_f =
 
 (*s Now the function [compute_ivs] itself *)
 
-let compute_ivs gl f cs = 
-  let body = constant_value (Global.env()) f in
+let compute_ivs gl f cs =
+  let cst = try destConst f with _ -> i_can't_do_that () in
+  let body = constant_value (Global.env()) cst in
   match decomp_term body with
     | IsFix(([| len |], 0), ([| typ |], [ name ], [| body2 |])) ->
         let (args3, body3) = decompose_lam body2 in
@@ -233,8 +234,9 @@ let compute_ivs gl f cs =
                                       i nargsi)
            (* Then we test if the RHS is the RHS for variables *)
                    else begin match decomp_app bodyi with 
-                     | vmf, [_; _; Rel ri; Rel rj]
-                         when pf_conv_x gl vmf 
+                     | vmf, [_; _; a3; a4 ]
+                         when isRel a3 & isRel a4 &
+			   pf_conv_x gl vmf 
                            (Lazy.force coq_varmap_find)->
                              v_lhs := Some (compute_lhs 
                                               (snd (List.hd args3))

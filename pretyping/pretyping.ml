@@ -42,7 +42,7 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
       (mkAppliedInd indt) (mis_nconstr mispec);
   if mis_is_recursive_subset [tyi] mispec then
     let dep = find_case_dep_nparams env sigma (c,p) indf pt in 
-    let init_depFvec i = if i = tyi then Some(dep,Rel 1) else None in
+    let init_depFvec i = if i = tyi then Some(dep,mkRel 1) else None in
     let depFvec = Array.init (mis_ntypes mispec) init_depFvec in
     let constrs = get_constructors indf in
     (* build now the fixpoint *)
@@ -64,7 +64,7 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
 	(lambda_create env
 	   (applist (mI,List.append (List.map (lift (nar+1)) params)
                        (rel_list 0 nar)),
-            mkMutCase (ci, lift (nar+2) p, Rel 1, branches)))
+            mkMutCase (ci, lift (nar+2) p, mkRel 1, branches)))
         (lift_context 1 lnames) 
     in
     if noccurn 1 deffix then 
@@ -91,14 +91,6 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
 
 (***********************************************************************)
 
-(*
-let ctxt_of_ids ids =
-  Array.map
-    (function
-       | RRef (_,RVar id) -> VAR id
-       | _ -> error "pretyping: arbitrary subst of ref not implemented")
-    ids
-*)
 let ctxt_of_ids cl = cl
 
 let mt_evd = Evd.empty
@@ -164,11 +156,11 @@ let pretype_id loc env lvar id =
   with Not_found ->
   try
     let (n,typ) = lookup_rel_id id (rel_context env) in
-    { uj_val  = Rel n; uj_type = typed_app (lift n) typ }
+    { uj_val  = mkRel n; uj_type = typed_app (lift n) typ }
   with Not_found ->
   try
     let typ = lookup_id_type id (var_context env) in
-    { uj_val  = VAR id; uj_type = typ }
+    { uj_val  = mkVar id; uj_type = typ }
   with Not_found ->
     error_var_not_found_loc loc CCI id
 
@@ -442,9 +434,9 @@ let j_apply f env sigma j =
     uj_type= typed_app (strong f env sigma) j.uj_type }
 
 let utj_apply f env sigma j =
-  let under_outer_cast f env sigma = function
-    | DOP2 (Cast,b,t) -> DOP2 (Cast,f env sigma b,f env sigma t)
-    | c -> f env sigma c in
+  let under_outer_cast f env sigma c = match kind_of_term c with
+    | IsCast (b,t) -> mkCast (f env sigma b,f env sigma t)
+    | _ -> f env sigma c in
   { utj_val = strong (under_outer_cast f) env sigma j.utj_val;
     utj_type = j.utj_type }
 

@@ -91,20 +91,11 @@ let ident_of_nvar loc s =
     user_err_loc (loc,"ident_of_nvar", [< 'sTR "Unexpected wildcard" >])
   else (id_of_string s)
 
-(*
-let rctxt_of_ctxt =
-  Array.map
-    (function
-       | VAR id -> RRef (dummy_loc,RVar id)
-       | _ ->
-     error "Astterm: arbitrary substitution of references not yet implemented")
-*)
-
 let ids_of_ctxt ctxt =
   Array.to_list
     (Array.map
-       (function
-	  | VAR id -> id
+       (function c -> match kind_of_term c with
+	  | IsVar id -> id
 	  | _ ->
       error
 	"Astterm: arbitrary substitution of references not yet implemented")
@@ -132,8 +123,8 @@ let dbize_ctxt ctxt =
 
 let dbize_constr_ctxt =
   Array.map
-    (function
-       | VAR id ->
+    (function c -> match kind_of_term c with
+       | IsVar id ->
 	   (* RRef (dummy_loc,RVar (ident_of_nvar loc s)) *)
 	   RRef (dummy_loc, RVar id)
        | _ -> anomaly "Bad ast for local ctxt of a global reference")
@@ -141,7 +132,7 @@ let dbize_constr_ctxt =
 let dbize_rawconstr_ctxt =
   Array.map
     (function
-       | RRef (_, RVar id) -> VAR id
+       | RRef (_, RVar id) -> mkVar id
        | _ -> anomaly "Bad ast for local ctxt of a global reference")
 
 let dbize_global loc = function
@@ -584,8 +575,7 @@ let interp_casted_constr1 sigma env lvar lmeta com typ =
 (* To process patterns, we need a translation from AST to term
    without typing at all. *)
 
-let ctxt_of_ids ids =
-  Array.of_list (List.map (function id -> VAR id) ids)
+let ctxt_of_ids ids = Array.of_list (List.map mkVar ids)
 
 let rec pat_of_ref metas vars = function
   | RConst (sp,ctxt) -> RConst (sp, dbize_rawconstr_ctxt ctxt)

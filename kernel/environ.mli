@@ -5,7 +5,6 @@
 open Names
 open Term
 open Declarations
-open Abstraction
 open Univ
 open Sign
 (*i*)
@@ -74,9 +73,6 @@ val add_constant :
   section_path -> constant_body -> env -> env
 val add_mind : 
   section_path -> mutual_inductive_body -> env -> env
-val add_abstraction : 
-  section_path -> abstraction_body -> env -> env
-
 val new_meta : unit -> int
 
 (*s Looks up in environment *)

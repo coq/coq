@@ -94,10 +94,10 @@ let abstract_replace (eq,sym_eq) (eqt,sym_eqt) c2 c1 unsafe gl =
   and t2 = pf_type_of gl c2 in
   if unsafe or (pf_conv_x gl t1 t2) then
     let (e,sym) = 
-      match hnf_type_of gl t1 with 
-        | DOP0(Sort(Prop(Pos))) -> (eq,sym_eq)
-        | DOP0(Sort(Type(_)))   -> (eqt,sym_eqt)
-        | _                     -> error "replace"
+      match kind_of_term (hnf_type_of gl t1) with 
+        | IsSort (Prop(Pos)) -> (eq,sym_eq)
+        | IsSort (Type(_))   -> (eqt,sym_eqt)
+        | _                  -> error "replace"
     in 
     (tclTHENL (elim_type (applist (e, [t1;c1;c2])))
        (tclORELSE assumption 
@@ -343,24 +343,25 @@ exception DiscrFound of (sorts oper * int) list * sorts oper * sorts oper
 
 let find_positions env sigma t1 t2 =
   let rec findrec posn t1 t2 =
-    match (whd_betadeltaiota_stack env sigma t1,
-           whd_betadeltaiota_stack env sigma t2) with
+    let hd1,args1 = whd_betadeltaiota_stack env sigma t1 in
+    let hd2,args2 = whd_betadeltaiota_stack env sigma t2 in
+    match (kind_of_term hd1, kind_of_term hd2) with
   	
-      | ((DOPN(MutConstruct sp1 as oper1,_) as hd1,args1),
-	 (DOPN(MutConstruct sp2 as oper2,_) as hd2,args2)) ->
+      | IsMutConstruct (sp1,_), IsMutConstruct (sp2,_) ->
         (* both sides are constructors, so either we descend, or we can
            discriminate here. *)
 	  if sp1 = sp2 then
             List.flatten
 	      (list_map2_i
-		 (fun i arg1 arg2 -> findrec ((oper1,i)::posn) arg1 arg2)
+		 (fun i arg1 arg2 ->
+		    findrec ((MutConstruct sp1,i)::posn) arg1 arg2)
 		 0 args1 args2)
 	  else
-	    raise (DiscrFound(List.rev posn,oper1,oper2))
+	    raise (DiscrFound(List.rev posn,MutConstruct sp1,MutConstruct sp2))
 
-      | (t1_0,t2_0) ->
-	  let t1_0 = applist t1_0
-          and t2_0 = applist t2_0 in
+      | _ ->
+	  let t1_0 = applist (hd1,args1) 
+          and t2_0 = applist (hd2,args2) in
           if is_conv env sigma t1_0 t2_0 then 
 	    []
           else
@@ -524,7 +525,7 @@ let rec build_discriminator sigma env dirn c sort = function
       let _,arsort = get_arity indf in
       let nparams = mis_nparams (fst (dest_ind_family indf)) in
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
-      let newc = Rel(cnum_nlams-(argnum-nparams)) in
+      let newc = mkRel(cnum_nlams-(argnum-nparams)) in
       let subval = build_discriminator sigma cnum_env dirn newc sort l  in
       (match necessary_elimination arsort (destSort sort) with
          | Type_Type ->
@@ -546,7 +547,7 @@ let gen_absurdity id gl =
   if   (pf_is_matching gl (pat_False ()) (clause_type (Some id) gl)) 
     or (pf_is_matching gl (pat_EmptyT ()) (clause_type  (Some id) gl))
   then
-    simplest_elim (VAR id) gl
+    simplest_elim (mkVar id) gl
   else
     errorlabstrm "Equality.gen_absurdity" 
       [< 'sTR "Not the negation of an equality" >]
@@ -575,7 +576,7 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
 	let absurd_term = build_EmptyT () in
         let h = pf_get_new_id (id_of_string "HH")gls in
         let pred= mkNamedLambda e t 
-                    (mkNamedLambda h (applist (eq_term, [t;t1;(Rel 1)])) 
+                    (mkNamedLambda h (applist (eq_term, [t;t1;(mkRel 1)])) 
 		       discriminator)
         in (applist(eq_elim, [t;t1;pred;i;t2]), absurd_term)
 	     
@@ -608,7 +609,7 @@ let discr id gls =
 	   push_var_decl (e,assumption_of_judgment env sigma tj) env
 	 in
 	 let discriminator =
-	   build_discriminator sigma e_env dirn (VAR e) sort cpath in
+	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
 	 let (indt,_) = find_mrectype env sigma t in 
 	 let arity = Global.mind_arity indt in
 	 let (pf, absurd_term) =
@@ -616,7 +617,7 @@ let discr id gls =
 	 in
 	 tclCOMPLETE((tclTHENS (cut_intro absurd_term)
 			([onLastHyp (compose gen_absurdity out_some);
-			  refine (mkAppL (pf, [| VAR id |]))]))) gls
+			  refine (mkAppL (pf, [| mkVar id |]))]))) gls
      | _ -> assert false)
 
 let not_found_message id =
@@ -696,9 +697,9 @@ let find_sigma_data s =
 
    If [rty] depends on lind, then we will build the term
 
-     (existS A==[type_of(Rel lind)] P==(Lambda(na:type_of(Rel lind),
+     (existS A==[type_of(mkRel lind)] P==(Lambda(na:type_of(mkRel lind),
                                         [rty{1/lind}]))
-              [(Rel lind)] [rterm])
+              [(mkRel lind)] [rterm])
 
    which should have type (sigS A P) - we can verify it by
    typechecking at the end.
@@ -708,12 +709,12 @@ let make_tuple env sigma (rterm,rty) lind =
   if dependent (mkRel lind) rty then
     let {intro = exist_term; ex = sig_term} =
       find_sigma_data (get_sort_of env sigma rty) in
-    let a = type_of env sigma (Rel lind) in
-    (* We replace (Rel lind) by (Rel 1) in rty then abstract on (na:a) *)
-    let rty' = substnl [Rel 1] lind rty in
+    let a = type_of env sigma (mkRel lind) in
+    (* We replace (mkRel lind) by (mkRel 1) in rty then abstract on (na:a) *)
+    let rty' = substnl [mkRel 1] lind rty in
     let na = fst (lookup_rel_type lind env) in
     let p = mkLambda (na, a, rty') in
-    (applist(exist_term,[a;p;(Rel lind);rterm]),
+    (applist(exist_term,[a;p;(mkRel lind);rterm]),
      applist(sig_term,[a;p]))
   else
     (rterm,rty)
@@ -839,7 +840,7 @@ let rec build_injrec sigma env (t1,t2) c = function
       let (ity,_) = find_mrectype env sigma cty in
       let nparams = Global.mind_nparams ity in
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
-      let newc = Rel(cnum_nlams-(argnum-nparams)) in
+      let newc = mkRel(cnum_nlams-(argnum-nparams)) in
       let (subval,tuplety,dfltval) =
       	build_injrec sigma cnum_env (t1,t2) newc l
       in
@@ -891,7 +892,7 @@ let inj id gls =
 	  map_succeed
 	    (fun (cpath,t1_0,t2_0) ->
 	       let (injbody,resty) =
-		 build_injector sigma e_env (t1_0,t2_0) (VAR e) cpath in
+		 build_injector sigma e_env (t1_0,t2_0) (mkVar e) cpath in
 	       let injfun = mkNamedLambda e t injbody in
 	       try 
 		 let _ = type_of env sigma injfun in (injfun,resty)
@@ -907,7 +908,7 @@ let inj id gls =
 			      [t;resty;injfun;
 			       try_delta_expand env sigma t1;
 			       try_delta_expand env sigma t2;
-			       VAR id]) 
+			       mkVar id]) 
 	     in
 	     let ty = pf_type_of gls pf in
 	     ((tclTHENS  (cut  ty) ([tclIDTAC;refine pf]))))
@@ -953,13 +954,13 @@ let decompEqThen ntac id gls =
 	 let e_env =
 	   push_var_decl (e,assumption_of_judgment env sigma tj) env in
 	 let discriminator =
-	   build_discriminator sigma e_env dirn (VAR e) sort cpath in
+	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
 	 let (pf, absurd_term) =
 	   discrimination_pf e (t,t1,t2) discriminator lbeq gls in
 	 tclCOMPLETE
 	   ((tclTHENS (cut_intro absurd_term)
 	       ([onLastHyp (compose gen_absurdity out_some);
-		 refine (mkAppL (pf, [| VAR id |]))]))) gls
+		 refine (mkAppL (pf, [| mkVar id |]))]))) gls
      | Inr posns ->
 	 (let e = pf_get_new_id (id_of_string "e") gls in
 	  let e_env =
@@ -968,7 +969,7 @@ let decompEqThen ntac id gls =
 	    map_succeed
 	      (fun (cpath,t1_0,t2_0) ->
 		 let (injbody,resty) =
-		   build_injector sigma e_env (t1_0,t2_0) (VAR e) cpath in
+		   build_injector sigma e_env (t1_0,t2_0) (mkVar e) cpath in
 		 let injfun = mkNamedLambda e t injbody in
 		 try 
 		   let _ = type_of env sigma injfun in (injfun,resty)
@@ -982,7 +983,7 @@ let decompEqThen ntac id gls =
 	      (tclMAP (fun (injfun,resty) ->
 			 let pf = applist(get_squel lbeq.congr,
 					  [t;resty;injfun;t1;t2;
-					   VAR id]) in
+					   mkVar id]) in
 			 let ty = pf_type_of gls pf in
 			 ((tclTHENS (cut ty) 
 			     ([tclIDTAC;refine pf]))))
@@ -1047,7 +1048,7 @@ let swapEquandsInConcl gls =
 let swapEquandsInHyp id gls =
   ((tclTHENS (cut_replacing id (swap_equands gls (clause_type (Some id) gls)))
       ([tclIDTAC;
-      	(tclTHEN (swapEquandsInConcl) (exact (VAR id)))]))) gls
+      	(tclTHEN (swapEquandsInConcl) (exact (mkVar id)))]))) gls
 
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. It yields the boolean true wether
@@ -1070,19 +1071,19 @@ let find_elim  sort_of_gl  lbeq =
 
 (* builds a predicate [e:t][H:(lbeq t e t1)](body e)
    to be used as an argument for equality dependent elimination principle:
-   Preconditon: dependent body (Rel 1) *)
+   Preconditon: dependent body (mkRel 1) *)
 
 let build_dependent_rewrite_predicate (t,t1,t2) body lbeq gls =
   let e = pf_get_new_id  (id_of_string "e") gls in 
   let h = pf_get_new_id  (id_of_string "HH") gls in 
   let eq_term = get_squel lbeq.eq in
   (mkNamedLambda e t 
-     (mkNamedLambda h (applist (eq_term, [t;t1;(Rel 1)])) 
+     (mkNamedLambda h (applist (eq_term, [t;t1;(mkRel 1)])) 
         (lift 1 body))) 
 
 (* builds a predicate [e:t](body e) ???
    to be used as an argument for equality non-dependent elimination principle:
-   Preconditon: dependent body (Rel 1) *)
+   Preconditon: dependent body (mkRel 1) *)
 
 let build_non_dependent_rewrite_predicate (t,t1,t2) body gls =
   lambda_create (pf_env gls) (t,body)
@@ -1113,13 +1114,13 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
    and B might contain instances of the ei, we will return the term:
 
    ([x1:ty(e1)]...[xn:ty(en)]B
-    (projS1 (Rel 1))
-    (projS1 (projS2 (Rel 1)))
+    (projS1 (mkRel 1))
+    (projS1 (projS2 (mkRel 1)))
     ... etc ...)
 
    That is, we will abstract out the terms e1...en+1 as usual, but
    will then produce a term in which the abstraction is on a single
-   term - the debruijn index [Rel 1], which will be of the same type
+   term - the debruijn index [mkRel 1], which will be of the same type
    as dep_pair.
 
    ALGORITHM for abstraction:
@@ -1168,7 +1169,7 @@ let decomp_tuple_term env c t =
     with e when catchable_exception e ->
       [((ex,exty),inner_code)]
   in
-  List.split (decomprec (Rel 1) c t)
+  List.split (decomprec (mkRel 1) c t)
 
 (*
 let whd_const_state namelist env sigma = 
@@ -1198,7 +1199,7 @@ let subst_tuple_term env sigma dep_pair b =
     List.fold_right
       (fun (e,t) body -> lambda_create env (t,subst_term e body)) e_list b in
   let app_B = applist(abst_B,proj_list) in
-  (* inutile ?? les projs sont appliquées à (Rel 1) ?? *)
+  (* inutile ?? les projs sont appliquées à (mkRel 1) ?? *)
 (*
   let { proj1 = proj1_sp; proj2 = proj2_sp; elim = sig_elim_sp } =
     find_sigma_data (get_sort_of env sigma typ) in
@@ -1236,7 +1237,7 @@ let substInHyp eqn id gls =
   (tclTHENS (cut_replacing id (subst1 e2 body))
      ([tclIDTAC;
        (tclTHENS (bareRevSubstInConcl lbeq body (t,e1,e2))
-          ([exact (VAR id);tclIDTAC]))])) gls
+          ([exact (mkVar id);tclIDTAC]))])) gls
 
 let revSubstInHyp eqn id gls =
   (tclTHENS (substInHyp (swap_equands gls eqn) id)
@@ -1500,10 +1501,10 @@ let hypSubst id cls gls =
   match cls with
     | None -> 
 	(tclTHENS (substInConcl (clause_type (Some id) gls))
-	   ([tclIDTAC; exact (VAR id)])) gls
+	   ([tclIDTAC; exact (mkVar id)])) gls
     | Some hypid -> 
 	(tclTHENS (substInHyp (clause_type (Some id) gls) hypid)
-	   ([tclIDTAC;exact (VAR id)])) gls
+	   ([tclIDTAC;exact (mkVar id)])) gls
 
 (* id:a=b |- (P a)
  * HypSubst id.
@@ -1555,10 +1556,10 @@ let revHypSubst id cls gls =
   match cls with
     | None -> 
 	(tclTHENS (revSubstInConcl (clause_type (Some id) gls))
-	   ([tclIDTAC; exact (VAR id)])) gls
+	   ([tclIDTAC; exact (mkVar id)])) gls
     | Some hypid -> 
 	(tclTHENS (revSubstInHyp (clause_type (Some id) gls) hypid)
-	   ([tclIDTAC;exact (VAR id)])) gls
+	   ([tclIDTAC;exact (mkVar id)])) gls
 
 (* id:a=b |- (P b)
  * HypSubst id.

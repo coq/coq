@@ -134,13 +134,13 @@ let rec compute_metamap env c = match kind_of_term c with
   | IsCast (m,ty) when isMeta m -> TH (c,[destMeta m,ty],[None])
 
   (* abstraction => il faut décomposer si le terme dessous n'est pas pur
-   *    attention : dans ce cas il faut remplacer (Rel 1) par (VAR x)
+   *    attention : dans ce cas il faut remplacer (Rel 1) par (Var x)
    *    où x est une variable FRAICHE *)
   | IsLambda (name,c1,c2) ->
       let v = fresh env name in
       let tj = Retyping.get_assumption_of env Evd.empty c1 in
       let env' = push_var_decl (v,tj) env in
-      begin match compute_metamap env' (subst1 (VAR v) c2) with
+      begin match compute_metamap env' (subst1 (mkVar v) c2) with
 	(* terme de preuve complet *)
 	| TH (_,_,[]) -> TH (c,[],[])
 	(* terme de preuve incomplet *)    
@@ -162,14 +162,15 @@ let rec compute_metamap env c = match kind_of_term c with
 	  TH (c,[],[])
       end
 
-  | IsMutCase _ ->
+  | IsMutCase (ci,p,c,v) ->
       (* bof... *)
-      let op,v =
-	match c with DOPN(MutCase _ as op,v) -> (op,v) | _ -> assert false in
+      let v = Array.append [|p;c|] v in
       let a = Array.map (compute_metamap env) v in
       begin
 	try
-	  let v',mm,sgp = replace_in_array env a in TH (DOPN(op,v'),mm,sgp)
+	  let v',mm,sgp = replace_in_array env a in
+	  let v'' = Array.sub v' 2 (Array.length v) in
+	  TH (mkMutCase (ci,v'.(0),v'.(1),v''),mm,sgp)
 	with NoMeta ->
 	  TH (c,[],[])
       end
@@ -185,7 +186,7 @@ let rec compute_metamap env c = match kind_of_term c with
       in
       let a = Array.map
 		(compute_metamap env')
-		(Array.map (substl (List.map (fun x -> VAR x) vi)) v) 
+		(Array.map (substl (List.map mkVar vi)) v) 
       in
       begin
 	try

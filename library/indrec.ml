@@ -57,14 +57,14 @@ let mis_make_case_com depopt env sigma mispec kind =
        	(lambda_create env'
            (build_dependent_inductive ind,
             mkMutCase (ci,
-		       Rel (nbprod+nbargsprod),
-		       Rel 1,
+		       mkRel (nbprod+nbargsprod),
+		       mkRel 1,
 		       rel_vect nbargsprod k)))
        	lnamesar
     else
       let cs = lift_constructor (k+1) constrs.(k) in
       mkLambda_string "f"
-	(build_branch_type env' dep (Rel (k+1)) cs)
+	(build_branch_type env' dep (mkRel (k+1)) cs)
 	(add_branch (k+1))
   in
   let indf = make_ind_family (mispec,rel_list 0 nparams) in
@@ -100,7 +100,7 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
 	    let (_,realargs) = list_chop nparams largs in 
 	    let base = applist (lift i pk,realargs) in       
             if depK then 
-	      mkAppL (base, [|appvect (Rel (i+1),rel_vect 0 i)|])
+	      mkAppL (base, [|appvect (mkRel (i+1),rel_vect 0 i)|])
             else 
 	      base
       	| _ -> assert false 
@@ -124,13 +124,13 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
           (match optionpos with 
 	     | None -> 
 		 make_prod env (n,t,process_constr (i+1) c_0 rest 
-				  (mkAppL (lift 1 co, [|Rel 1|])))
+				  (mkAppL (lift 1 co, [|mkRel 1|])))
              | Some(dep',p) -> 
 		 let nP = lift (i+1+decP) p in
 		 let t_0 = process_pos dep' nP (lift 1 t) in 
 		 make_prod_dep (dep or dep') env
                    (n,t,mkArrow t_0 (process_constr (i+2) (lift 1 c_0) rest
-				       (mkAppL (lift 2 co, [|Rel 2|])))))
+				       (mkAppL (lift 2 co, [|mkRel 2|])))))
       | IsMutInd ((_,tyi),_) -> 
       	  let nP = match depPvect.(tyi) with 
 	    | Some(_,p) -> lift (i+decP) p
@@ -150,7 +150,7 @@ let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs =
 	| IsProd (n,t,c) -> lambda_name env (n,t,prec (i+1) c)
      	| IsMutInd _ -> 
             let (_,realargs) = list_chop nparams largs
-            and arg = appvect (Rel (i+1),rel_vect 0 i) in 
+            and arg = appvect (mkRel (i+1),rel_vect 0 i) in 
             applist(lift i fk,realargs@[arg])
      	| _ -> assert false
     in
@@ -170,14 +170,14 @@ let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs =
            | None -> 
 	       lambda_name env
 		 (n,incast_type t,process_constr (i+1)
-		    (whd_beta (applist (lift 1 f, [(Rel 1)])))
+		    (whd_beta (applist (lift 1 f, [(mkRel 1)])))
 		    (cprest,rest))
            | Some(_,f_0) -> 
 	       let nF = lift (i+1+decF) f_0 in
 	       let arg = process_pos nF (lift 1 (body_of_type t)) in 
                lambda_name env
 		 (n,incast_type t,process_constr (i+1)
-		    (whd_beta (applist (lift 1 f, [(Rel 1); arg])))
+		    (whd_beta (applist (lift 1 f, [(mkRel 1); arg])))
 		    (cprest,rest)))
     | (n,Some c,t)::cprest, rest -> failwith "TODO"
     | [],[] -> f
@@ -199,7 +199,7 @@ let mis_make_indrec env sigma listdepkind mispec =
       assign k = function 
 	| [] -> ()
         | (mispeci,dep,_)::rest -> 
-            (Array.set depPvec (mis_index mispeci) (Some(dep,Rel k));
+            (Array.set depPvec (mis_index mispeci) (Some(dep,mkRel k));
              assign (k-1) rest)
     in 
     assign nrec listdepkind  
@@ -230,7 +230,7 @@ let mis_make_indrec env sigma listdepkind mispec =
 		(make_rec_branch_arg env sigma (nparams,depPvec,nar+1))
                 vecfi constrs recargsvec.(tyi) in
 	    let j = (match depPvec.(tyi) with 
-		       | Some (_,Rel j) -> j 
+		       | Some (_,c) when isRel c -> destRel c 
 		       | _ -> assert false) in
 	    let indf = make_ind_family
 			 (mispeci,rel_list (nrec+nbconstruct) nparams) in
@@ -240,7 +240,7 @@ let mis_make_indrec env sigma listdepkind mispec =
 		   (build_dependent_inductive
 		      (lift_inductive_family nrec indf),
 		    mkMutCase (make_default_case_info mispeci,
-			       Rel (dect+j+1), Rel 1, branches)))
+			       mkRel (dect+j+1), mkRel 1, branches)))
 		(lift_context nrec lnames)
 	    in
 	    let typtyi = 
@@ -248,9 +248,9 @@ let mis_make_indrec env sigma listdepkind mispec =
 		(prod_create env
 		   (build_dependent_inductive indf,
 		    (if dep then 
-		       appvect (Rel (nbconstruct+nar+j+1), rel_vect 0 (nar+1)) 
+		       appvect (mkRel (nbconstruct+nar+j+1), rel_vect 0 (nar+1)) 
 		     else 
-		       appvect (Rel (nbconstruct+nar+j+1), rel_vect 1 nar))))
+		       appvect (mkRel (nbconstruct+nar+j+1), rel_vect 1 nar))))
           	lnames
 	    in 
 	    mrec (i+nctyi) (nar::ln) (typtyi::ltyp) (deftyi::ldef) rest

@@ -489,8 +489,8 @@ let occurence path (t : constr) =
   loop path t
 
 let abstract_path typ path t =
-  let term_occur = ref (Rel 0) in
-  let abstract = context (fun i t -> term_occur:= t; Rel i) path t in
+  let term_occur = ref (mkRel 0) in
+  let abstract = context (fun i t -> term_occur:= t; mkRel i) path t in
   mkLambda (Name (id_of_string "x"), typ, abstract), !term_occur
 
 let focused_simpl path gl =
@@ -565,9 +565,9 @@ let clever_rewrite_base_poly typ p result theorem gl =
 	  mkArrow typ mkProp,
           mkLambda
 	    (Name (id_of_string "H"),
-	     applist (Rel 1,[result]),
+	     applist (mkRel 1,[result]),
 	     mkAppL (Lazy.force coq_eq_ind_r, 
-		       [| typ; result; Rel 2; Rel 1; occ; theorem |]))),
+		       [| typ; result; mkRel 2; mkRel 1; occ; theorem |]))),
        [abstracted]) 
   in
   exact (applist(t,[mkNewMeta()])) gl
@@ -1214,7 +1214,7 @@ let replay_history tactic_normalisation =
 		      mkLambda
 			(Name(id_of_string v),
 			 Lazy.force coq_Z,
-			 mk_eq (Rel 1) eq1) |])
+			 mk_eq (mkRel 1) eq1) |])
 	  in
 	  let mm = mk_integer m in
 	  let p_initial = [P_APP 2;P_TYPE] in

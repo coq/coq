@@ -15,7 +15,8 @@ open Printer
 open Equality
 open Vernacinterp
 open Libobject
-open Closure 
+open Closure
+open Tacred
 open Tactics
 open Pattern 
 open Hiddentac
@@ -518,26 +519,21 @@ module SectionPathSet =
 	     let compare = Pervasives.compare
 	   end)
 
+(* Avec l'uniformisation des red_kind, on perd ici sur la structure
+   SectionPathSet; peut-être faudra-t-il la déplacer dans Closure *)
 let constants_to_unfold = 
-  List.fold_right SectionPathSet.add 
+(*  List.fold_right SectionPathSet.add *)
     [ path_of_string "#Ring_normalize#interp_cs.cci";
       path_of_string "#Ring_normalize#interp_var.cci";
       path_of_string "#Ring_normalize#interp_vl.cci";
       path_of_string "#Ring_abstract#interp_acs.cci";
       path_of_string "#Ring_abstract#interp_sacs.cci";
       path_of_string "#Quote#varmap_find.cci" ]
-    SectionPathSet.empty 
+(*    SectionPathSet.empty *)
 
 (* Unfolds the functions interp and find_btree in the term c of goal gl *)
 let polynom_unfold_tac =
-  let flags = 
-    (UNIFORM,
-     { r_beta = true;
-       r_delta = (function
-                    | Const sp -> SectionPathSet.mem sp constants_to_unfold
-                    | _ -> false);
-       r_iota = true })
-  in
+  let flags = (UNIFORM, red_add betaiota_red (CONST constants_to_unfold)) in
   reduct_in_concl (cbv_norm_flags flags)
       
 (* lc : constr list *)

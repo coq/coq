@@ -124,13 +124,6 @@ let corecursive_message = function
   | l   -> hOV 0 [< prlist_with_sep pr_coma print_id l;
                     'sPC; 'sTR "are corecursively defined">]
 
-let put_DLAMSV_subst lid lc = 
-  match lid with
-    | [] -> anomaly "put_DLAM"
-    | id::lrest ->  
-        List.fold_left (fun c id' -> DLAM(Name id',subst_var id' c)) 
-          (DLAMV(Name id,Array.map (subst_var id) lc)) lrest
-
 let build_mutual lparams lnamearconstrs finite =
   let allnames = 
     List.fold_left 
@@ -244,14 +237,18 @@ let build_recursive lnameargsardef =
     collect_non_rec lrecnames recdef (List.rev arityl) (Array.to_list nv) in
   let n = NeverDischarge in 
   if lnamerec <> [] then begin
-    let recvec = [|put_DLAMSV_subst (List.rev lnamerec)
-                       (Array.of_list ldefrec)|] in
+    let recvec = 
+      Array.map (subst_vars (List.rev lnamerec)) (Array.of_list ldefrec) in
     let varrec = Array.of_list (List.map incast_type larrec) in
     let rec declare i = function 
       | fi::lf ->
 	  let ce = 
 	    { const_entry_body =
-		Cooked (mkFixDlam (Array.of_list nvrec) i varrec recvec);
+		Cooked 
+		  (mkFix ((Array.of_list nvrec,i),
+			  (varrec,List.map (fun id -> Name id) lnamerec,
+			   recvec)));
+		  (* (mkFixDlam (Array.of_list nvrec) i varrec recvec); *)
 	      const_entry_type = None } 
 	  in
 	  declare_constant fi (ce, n);
@@ -313,13 +310,15 @@ let build_corecursive lnameardef =
       if lnamerec = [] then 
 	[||] 
       else 
-	[|put_DLAMSV_subst (List.rev lnamerec) (Array.of_list ldefrec)|] 
-    in
+	Array.map (subst_vars (List.rev lnamerec)) (Array.of_list ldefrec) in
     let varrec = Array.of_list (List.map incast_type larrec) in
     let rec declare i = function 
       | fi::lf ->
 	  let ce = 
-	    { const_entry_body = Cooked (mkCoFixDlam i varrec recvec);
+	    { const_entry_body =
+		Cooked 
+		  (mkCoFix (i, (varrec,List.map (fun id -> Name id) lnamerec,
+			      recvec)));
 	      const_entry_type = None } 
 	  in
           declare_constant fi (ce,n);

@@ -17,14 +17,13 @@ let (env : safe_environment ref) = ref empty_environment
 
 let lookup_var id =
   let rec look n = function
-    | [] -> VAR id
+    | [] -> mkVar id
     | (Name id')::_ when id = id' -> Rel n
     | _::r -> look (succ n) r
   in
   look 1
 
-let args sign = 
-  Array.of_list (List.map (fun id -> VAR id) (ids_of_var_context sign))
+let args sign = Array.of_list (List.map mkVar (ids_of_var_context sign))
 
 let rec globalize bv c = match kind_of_term c with
   | IsVar id -> lookup_var id bv
@@ -35,26 +34,6 @@ let rec globalize bv c = match kind_of_term c with
   | IsMutConstruct ((sp,_),_ as spc, _) ->
       let mib = lookup_mind sp !env in mkMutConstruct (spc, args mib.mind_hyps)
   | _ -> map_constr_with_binders (fun na l -> na::l) globalize bv c
-
-(*
-let rec globalize bv = function
-  | VAR id -> lookup_var id bv
-  | DOP1 (op,c) -> DOP1 (op, globalize bv c)
-  | DOP2 (op,c1,c2) -> DOP2 (op, globalize bv c1, globalize bv c2)
-  | DOPN (Const sp as op, _) ->
-      let cb = lookup_constant sp !env in DOPN (op, args cb.const_hyps)
-  | DOPN (MutInd (sp,_) as op, _) ->
-      let mib = lookup_mind sp !env in DOPN (op, args mib.mind_hyps)
-  | DOPN (MutConstruct ((sp,_),_) as op, _) ->
-      let mib = lookup_mind sp !env in DOPN (op, args mib.mind_hyps)
-  | DOPN (op,v) -> DOPN (op, Array.map (globalize bv) v)
-  | DLAM (na,c) -> DLAM (na, globalize (na::bv) c)
-  | DLAMV (na,v) -> DLAMV (na, Array.map (globalize (na::bv)) v)
-  | CLam(n,t,c)   -> CLam (n, globalize bv t, globalize (n::bv) c)  
-  | CPrd(n,t,c)   -> CPrd (n, globalize bv t, globalize (n::bv) c)
-  | CLet(n,b,t,c) -> CLet (n,globalize bv b,globalize bv t,globalize (n::bv) c)
-  | Rel _ | DOP0 _ as c -> c
-*)
 
 let check c = 
   let c = globalize [] c in

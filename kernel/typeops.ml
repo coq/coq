@@ -25,14 +25,14 @@ let typed_type_of_judgment env sigma j = j.uj_type
 
 (* This should be a type intended to be assumed *)
 let assumption_of_judgment env sigma j =
-  match whd_betadeltaiota env sigma (body_of_type j.uj_type) with
-    | DOP0(Sort s) -> make_typed j.uj_val s
+  match kind_of_term(whd_betadeltaiota env sigma (body_of_type j.uj_type)) with
+    | IsSort s -> make_typed j.uj_val s
     | _ -> error_assumption CCI env j.uj_val
 
 (* This should be a type (a priori without intension to be an assumption) *)
 let type_judgment env sigma j =
-  match whd_betadeltaiota env sigma (body_of_type j.uj_type) with
-    | DOP0(Sort s) -> {utj_val = j.uj_val; utj_type = s }
+  match kind_of_term(whd_betadeltaiota env sigma (body_of_type j.uj_type)) with
+    | IsSort s -> {utj_val = j.uj_val; utj_type = s }
     | _ -> error_not_type CCI env j
 
 let assumption_of_type_judgment j = make_typed j.utj_val j.utj_type
@@ -42,7 +42,7 @@ let assumption_of_type_judgment j = make_typed j.utj_val j.utj_type
 let relative env sigma n = 
   try
     let (_,typ) = lookup_rel_type n env in
-    { uj_val  = Rel n;
+    { uj_val  = mkRel n;
       uj_type = typed_app (lift n) typ }
   with Not_found -> 
     error_unbound_rel CCI env sigma n
@@ -141,7 +141,7 @@ let is_correct_arity env sigma kelim (c,p) indf (pt,t) =
 	    raise (Arity None)
       | IsProd (_,a1,a2), _ -> 
           let k = whd_betadeltaiota env sigma a2 in 
-          let ksort = (match k with DOP0(Sort s) -> s 
+          let ksort = (match kind_of_term k with IsSort s -> s 
 			 | _ -> raise (Arity None)) in
 	  let ind = build_dependent_inductive indf in
           if is_conv env sigma a1 ind then
@@ -219,12 +219,12 @@ let type_of_case env sigma ci pj cj lfj =
 (* Prop and Set *)
 
 let judge_of_prop =
-  { uj_val = DOP0(Sort prop);
-    uj_type = make_typed (DOP0(Sort type_0)) type_1 }
+  { uj_val = mkSort prop;
+    uj_type = make_typed (mkSort type_0) type_1 }
 
 let judge_of_set =
-  { uj_val = DOP0(Sort spec);
-    uj_type = make_typed (DOP0(Sort type_0)) type_1 }
+  { uj_val = mkSort spec;
+    uj_type = make_typed (mkSort type_0) type_1 }
 
 let judge_of_prop_contents = function
   | Null -> judge_of_prop
@@ -234,14 +234,14 @@ let judge_of_prop_contents = function
 
 let judge_of_type u =
   let (uu,uuu,c) = super_super u in
-  { uj_val = DOP0 (Sort (Type u));
-    uj_type = make_typed (DOP0(Sort (Type uu))) (Type uuu) },
+  { uj_val = mkSort (Type u);
+    uj_type = make_typed (mkSort (Type uu)) (Type uuu) },
   c
 
 let type_of_sort c =
-  match c with
-    | DOP0 (Sort (Type u)) -> let (uu,cst) = super u in Type uu, cst
-    | DOP0 (Sort (Prop _)) -> Type prop_univ, Constraint.empty
+  match kind_of_term c with
+    | IsSort (Type u) -> let (uu,cst) = super u in Type uu, cst
+    | IsSort (Prop _) -> Type prop_univ, Constraint.empty
     | _ -> invalid_arg "type_of_sort"
 
 (* Type of a lambda-abstraction. *)
@@ -290,8 +290,8 @@ let abs_rel env sigma name var j =
 
 let gen_rel env sigma name varj j =
   let var = assumption_of_type_judgment varj in
-  match whd_betadeltaiota env sigma (body_of_type j.uj_type) with
-    | DOP0(Sort s) ->
+  match kind_of_term(whd_betadeltaiota env sigma (body_of_type j.uj_type)) with
+    | IsSort s ->
 	let (s',g) = sort_of_product varj.utj_type s (universes env) in
 	let res_type = mkSort s' in
 	let (res_kind,g') = type_of_sort res_type in

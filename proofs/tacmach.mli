@@ -74,7 +74,7 @@ val pf_compute        : goal sigma -> constr -> constr
 val pf_unfoldn        : (int list * section_path) list -> goal sigma 
                         -> constr -> constr
 
-val pf_const_value : goal sigma -> constr -> constr
+val pf_const_value : goal sigma -> constant -> constr
 val pf_conv_x      : goal sigma -> constr -> constr -> bool
 val pf_conv_x_leq  : goal sigma -> constr -> constr -> bool
 
@@ -205,7 +205,7 @@ val ctxt_type_of        : readable_constraints -> constr -> constr
 val w_whd_betadeltaiota : walking_constraints -> constr -> constr
 val w_hnf_constr        : walking_constraints -> constr -> constr
 val w_conv_x            : walking_constraints -> constr -> constr -> bool
-val w_const_value       : walking_constraints -> constr -> constr
+val w_const_value       : walking_constraints -> constant -> constr
 val w_defined_const     : walking_constraints -> constr -> bool
 val w_defined_evar      : walking_constraints -> int -> bool
 

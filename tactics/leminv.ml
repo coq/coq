@@ -127,12 +127,12 @@ let rec add_prods_sign env sigma t =
   match kind_of_term (whd_betadeltaiota env sigma t) with
     | IsProd (na,c1,b) ->
 	let id = Environ.id_of_name_using_hdchar env t na in
-	let b'= subst1 (VAR id) b in
+	let b'= subst1 (mkVar id) b in
 	let j = Retyping.get_assumption_of env sigma c1 in
         add_prods_sign (Environ.push_var_decl (id,j) env) sigma b'
     | IsLetIn (na,c1,t1,b) ->
 	let id = Environ.id_of_name_using_hdchar env t na in
-	let b'= subst1 (VAR id) b in
+	let b'= subst1 (mkVar id) b in
 	let j = Retyping.get_assumption_of env sigma t1 in
         add_prods_sign (Environ.push_var_def (id,c1,j) env) sigma b'
     | _ -> (env,t)
@@ -158,7 +158,8 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
     if dep_option  then
       let pty = make_arity env true indf sort in
       let goal = 
-	mkProd (Anonymous, mkAppliedInd ind, applist(VAR p,realargs@[Rel 1]))
+	mkProd
+	  (Anonymous, mkAppliedInd ind, applist(mkVar p,realargs@[mkRel 1]))
       in
       pty,goal
     else
@@ -167,11 +168,11 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let revargs,ownsign =
 	fold_var_context
 	  (fun env (id,_,_ as d) (revargs,hyps) ->
-             if List.mem id ivars then ((VAR id)::revargs,add_var d hyps)
+             if List.mem id ivars then ((mkVar id)::revargs,add_var d hyps)
 	     else (revargs,hyps))
           env ([],[]) in
       let pty = it_mkNamedProd_or_LetIn (mkSort sort) ownsign in
-      let goal = mkArrow i (applist(VAR p, List.rev revargs)) in
+      let goal = mkArrow i (applist(mkVar p, List.rev revargs)) in
       (pty,goal)
   in
   let npty = nf_betadeltaiota env sigma pty in
@@ -215,7 +216,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     List.fold_left
       (fun (avoid,sign,mvb) (mv,mvty) ->
          let h = next_ident_away (id_of_string "H") avoid in
-	 (h::avoid, add_var_decl (h,mvty) sign, (mv,VAR h)::mvb))
+	 (h::avoid, add_var_decl (h,mvty) sign, (mv,mkVar h)::mvb))
       (ids_of_context invEnv, ownSign, [])
       meta_types in
   let invProof = 
@@ -322,7 +323,7 @@ let lemInv id c gls =
   try
     let (wc,kONT) = startWalk gls in
     let clause = mk_clenv_type_of wc c in
-    let clause = clenv_constrain_with_bindings [(Abs (-1),VAR id)] clause in
+    let clause = clenv_constrain_with_bindings [(Abs (-1),mkVar id)] clause in
     res_pf kONT clause gls
   with 
 (* Ce n'est pas l'endroit pour cela

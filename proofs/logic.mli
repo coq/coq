@@ -43,6 +43,7 @@ type refiner_error =
   | CannotGeneralize of constr
   | NotWellTyped of constr
   | BadTacticArgs of string * tactic_arg list
+  | IntroNeedsProduct
 
 exception RefinerError of refiner_error
 

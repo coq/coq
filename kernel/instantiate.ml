@@ -12,8 +12,8 @@ open Declarations
 open Environ
 
 let is_id_inst inst =
-  let is_id = function
-    | id, VAR id' -> id = id'
+  let is_id (id,c) = match kind_of_term c with
+    | IsVar id' -> id = id'
     | _ -> false
   in
   List.for_all is_id inst
@@ -36,15 +36,14 @@ let constant_type env sigma (sp,args) =
   (* TODO: check args *)
   instantiate_type cb.const_hyps cb.const_type (Array.to_list args)
 
-type const_evaluation_error = NotDefinedConst | OpaqueConst
+type const_evaluation_result = NoBody | Opaque
 
-exception NotEvaluableConst of const_evaluation_error
+exception NotEvaluableConst of const_evaluation_result
 
-let constant_value env cst =
-  let (sp,args) = destConst cst in
+let constant_value env (sp,args) =
   let cb = lookup_constant sp env in
-  if cb.const_opaque then raise (NotEvaluableConst OpaqueConst) else
-  if not (is_defined cb) then raise (NotEvaluableConst NotDefinedConst) else
+  if cb.const_opaque then raise (NotEvaluableConst Opaque) else
+  if not (is_defined cb) then raise (NotEvaluableConst NoBody) else
   match cb.const_body with
     | Some v -> 
 	let body = cook_constant v in
@@ -52,6 +51,10 @@ let constant_value env cst =
     | None ->
 	anomalylabstrm "termenv__constant_value"
 	  [< 'sTR "a defined constant with no body." >]
+
+let constant_opt_value env cst =
+  try Some (constant_value env cst)
+  with NotEvaluableConst _ -> None
 
 (* Existentials. *)
 
@@ -63,23 +66,17 @@ let existential_type sigma (n,args) =
   (* TODO: check args [this comment was in Typeops] *)
   instantiate_constr hyps info.evar_concl (Array.to_list args)
 
+exception NotInstantiatedEvar
+
 let existential_value sigma (n,args) =
   let info = Evd.map sigma n in
   let hyps = evar_hyps info in
-  match info.evar_body with
+  match evar_body info with
     | Evar_defined c ->
 	instantiate_constr hyps c (Array.to_list args)
     | Evar_empty ->
-	anomaly "a defined existential with no body"
+	raise NotInstantiatedEvar
 
-let const_evar_opt_value env sigma c =
-  match c with
-    | DOPN(Const sp,_) ->
-	if evaluable_constant env c then Some (constant_value env c) else None
-    | DOPN(Evar ev,args) ->
-	if Evd.is_defined sigma ev then 
-	  Some (existential_value sigma (ev,args)) 
-	else 
-	  None
-    | _ -> invalid_arg "const_abst_opt_value"
-
+let existential_opt_value sigma ev =
+  try Some (existential_value sigma ev)
+  with NotInstantiatedEvar -> None

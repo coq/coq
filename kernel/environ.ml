@@ -9,7 +9,6 @@ open Univ
 (* open Generic *)
 open Term
 open Declarations
-open Abstraction
 
 (* The type of environments. *)
 
@@ -17,12 +16,11 @@ type checksum = int
 
 type import = string * checksum
 
-type global = Constant | Inductive | Abstraction
+type global = Constant | Inductive
 
 type globals = {
   env_constants : constant_body Spmap.t;
   env_inductives : mutual_inductive_body Spmap.t;
-  env_abstractions : abstraction_body Spmap.t;
   env_locals : (global * section_path) list;
   env_imports : import list }
 
@@ -44,7 +42,6 @@ let empty_env = {
   env_globals = {
     env_constants = Spmap.empty;
     env_inductives = Spmap.empty;
-    env_abstractions = Spmap.empty;
     env_locals = [];
     env_imports = [] };
   env_universes = initial_universes }
@@ -110,7 +107,7 @@ let push_rels_to_vars env =
     (fun (na,c,t) (subst,avoid,sign) ->
        let na = if na = Anonymous then Name(id_of_string"_") else na in
        let id = next_name_away na avoid in
-       ((VAR id)::subst,id::avoid,
+       ((mkVar id)::subst,id::avoid,
 	add_var (id,option_app (substl subst) c,typed_app (substl subst) t)
 	  sign))
     env.env_context.env_rel_context ([],ids_of_var_context sign0,sign0)
@@ -166,15 +163,6 @@ let add_mind sp mib env =
 	env_locals = new_locals } in
   { env with env_globals = new_globals }
 
-let add_abstraction sp ab env =
-  let new_abs = Spmap.add sp ab env.env_globals.env_abstractions in
-  let new_locals = (Abstraction,sp)::env.env_globals.env_locals in
-  let new_globals = 
-    { env.env_globals with 
-	env_abstractions = new_abs;
-	env_locals = new_locals } in
-  { env with env_globals = new_globals }
-
 let meta_ctr=ref 0;;
 
 let new_meta ()=incr meta_ctr;!meta_ctr;;
@@ -200,9 +188,6 @@ let lookup_constant sp env =
 
 let lookup_mind sp env =
   Spmap.find sp env.env_globals.env_inductives
-
-let lookup_abst sp env =
-  Spmap.find sp env.env_globals.env_abstractions
 
 (* First character of a constr *)
 
@@ -311,12 +296,12 @@ let make_all_name_different env =
     env
 
 (* Constants *)
-let defined_constant env = function
-  | DOPN (Const sp, _) -> is_defined (lookup_constant sp env)
+let defined_constant env c = match kind_of_term c with
+  | IsConst (sp, _) -> is_defined (lookup_constant sp env)
   | _ -> invalid_arg "defined_constant"
 
-let opaque_constant env = function
-  | DOPN (Const sp, _) -> is_opaque (lookup_constant sp env)
+let opaque_constant env c = match kind_of_term c with
+  | IsConst (sp, _) -> is_opaque (lookup_constant sp env)
   | _ -> invalid_arg "opaque_constant"
 
 (* A const is evaluable if it is defined and not opaque *)
@@ -333,15 +318,13 @@ type compiled_env = {
   cenv_stamp : checksum;
   cenv_needed : import list;
   cenv_constants : (section_path * constant_body) list;
-  cenv_inductives : (section_path * mutual_inductive_body) list;
-  cenv_abstractions : (section_path * abstraction_body) list }
+  cenv_inductives : (section_path * mutual_inductive_body) list }
 
 let exported_objects env =
   let gl = env.env_globals in
   let separate (cst,ind,abs) = function
     | (Constant,sp) -> (sp,Spmap.find sp gl.env_constants)::cst,ind,abs
     | (Inductive,sp) -> cst,(sp,Spmap.find sp gl.env_inductives)::ind,abs
-    | (Abstraction,sp) -> cst,ind,(sp,Spmap.find sp gl.env_abstractions)::abs
   in
   List.fold_left separate ([],[],[]) gl.env_locals
 
@@ -351,8 +334,7 @@ let export env id =
     cenv_stamp = 0;
     cenv_needed = env.env_globals.env_imports;
     cenv_constants = cst;
-    cenv_inductives = ind;
-    cenv_abstractions = abs }
+    cenv_inductives = ind }
 
 let check_imports env needed =
   let imports = env.env_globals.env_imports in
@@ -380,7 +362,6 @@ let import cenv env =
   let new_globals = 
     { env_constants = add_list gl.env_constants cenv.cenv_constants;
       env_inductives = add_list gl.env_inductives cenv.cenv_inductives;
-      env_abstractions = add_list gl.env_abstractions cenv.cenv_abstractions;
       env_locals = gl.env_locals;
       env_imports = (cenv.cenv_id,cenv.cenv_stamp) :: gl.env_imports }
   in

@@ -437,7 +437,7 @@ let print_opaque_name name =
 	  let cb = Global.lookup_constant sp in
           if is_defined cb then
 	    let typ = constant_type env Evd.empty cst in
-            print_typed_value (constant_value env x, typ)
+            print_typed_value (constant_value env cst, typ)
           else 
 	    anomaly "print_opaque_name"
       | IsMutInd ((sp,_),_) ->
@@ -491,7 +491,7 @@ let fprint_judge {uj_val=trm;uj_type=typ} =
 
 let unfold_head_fconst = 
   let rec unfrec k = match kind_of_term k with
-    | IsConst _ -> constant_value (Global.env ()) k 
+    | IsConst cst -> constant_value (Global.env ()) cst 
     | IsLambda (na,t,b) -> mkLambda (na,t,unfrec b)
     | IsAppL (f,v) -> appvect (unfrec f,v)
     | _ -> k
@@ -526,8 +526,8 @@ let print_extracted_name name =
           let cont = snd(infexecute sigma (sign,fsign) a.body) in 
 	  (match cont with  (* Cradingue *)
              | Inf {_VAL=t;_TYPE=k} -> 
-		 (match whd_betadeltaiota sigma k with
-		    | DOP0 (Sort s) ->
+		 (match kind_of_term (whd_betadeltaiota sigma k) with
+		    | IsSort s ->
 			fprint_var (string_of_id name) {body=t;typ=s})
              | _  -> error "Non informative term")
 	  

@@ -73,7 +73,7 @@ let head_of_constr_reference c = match kind_of_term c with
 
 
 (* Second part : Given a term with second-order variables in it,
-   represented by Meta's, and possibly applied using XTRA[$SOAPP] to
+   represented by Meta's, and possibly applied using [SOAPP] to
    terms, this function will perform second-order, binding-preserving,
    matching, in the case where the pattern is a pattern in the sense
    of Dale Miller.

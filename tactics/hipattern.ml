@@ -67,8 +67,7 @@ let get_reference mods s =
 let soinstance squel arglist =
   let mvs,c = get_squel_core squel in
   let mvb = List.combine mvs arglist in 
-  Sosub.soexecute (Reduction.strong (fun _ _ -> Reduction.whd_meta mvb) 
-		     empty_env Evd.empty c)
+  Reduction.local_strong (Reduction.whd_meta mvb) c
 
 let get_squel m =
   let mvs, c = get_squel_core m in

@@ -213,7 +213,7 @@ let dyn_change = function
 (* A function which reduces accordingly to a reduction expression,
    as the command Eval does. *)
 
-let reduce redexp cl goal = 
+let reduce redexp cl goal =
   redin_combinator (reduction_of_redexp redexp) cl goal
 
 let dyn_reduce = function
@@ -265,6 +265,7 @@ let default_id gl =
 	   | IsSort (Prop _) -> (id_of_name_with_default "H" name)
 	   | IsSort (Type _) -> (id_of_name_with_default "X" name)
 	   | _                   -> anomaly "Wrong sort")
+    | IsLetIn (name,b,_,_) -> id_of_name_using_hdchar (pf_env gl) b name
     | _ -> error "Introduction needs a product"
 
 (* Non primitive introduction tactics are treated by central_intro
@@ -293,12 +294,12 @@ let rec central_intro name_flag move_flag force_flag gl =
       | None      -> introduction id gl
       | Some dest -> tclTHEN (introduction id) (move_hyp true id dest) gl
     end
-  with (UserError ("Introduction needs a product",_)) as e ->
+  with RefinerError IntroNeedsProduct as e ->
     if force_flag then
       try
-        ((tclTHEN (reduce Red []) (central_intro name_flag move_flag
-				     force_flag)) gl)
-      with UserError ("Term not reducible",_) ->
+        ((tclTHEN (reduce (Red true) [])
+	    (central_intro name_flag move_flag force_flag)) gl)
+      with Redelimination ->
         errorlabstrm "Intro" 
 	  [<'sTR "No product even after head-reduction">]
     else
@@ -349,8 +350,8 @@ let rec intros_until s g =
     | Some depth -> tclDO depth intro g
     | None -> 
 	try
-	  ((tclTHEN (reduce Red []) (intros_until s)) g)
-	with UserError ("Term not reducible",_) ->
+	  ((tclTHEN (reduce (Red true) []) (intros_until s)) g)
+	with Redelimination ->
           errorlabstrm "Intros" 
 	    [<'sTR "No such hypothesis in current goal";
 	      'sTR " even after head-reduction" >]
@@ -360,8 +361,8 @@ let rec intros_until_n n g =
     | Some depth -> tclDO depth intro g
     | None ->
 	try
-	  ((tclTHEN (reduce Red []) (intros_until_n n)) g)
-	with UserError ("Term not reducible",_) ->
+	  ((tclTHEN (reduce (Red true) []) (intros_until_n n)) g)
+	with Redelimination ->
           errorlabstrm "Intros" 
 	    [<'sTR "No such hypothesis in current goal";
 	      'sTR " even after head-reduction" >]

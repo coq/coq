@@ -28,6 +28,7 @@ type refiner_error =
   | CannotGeneralize of constr
   | NotWellTyped of constr
   | BadTacticArgs of string * tactic_arg list
+  | IntroNeedsProduct
 
 exception RefinerError of refiner_error
 
@@ -310,7 +311,7 @@ let prim_refiner r sigma goal =
 		 mk_goal info (push_var_def (id,c1,a) env) (subst1 v b) in
 	       [sg]
 	   | _ ->
-	       if !check then error "Introduction needs a product"
+	       if !check then raise (RefinerError IntroNeedsProduct)
 	       else anomaly "Intro: expects a product")
 	
     | { name = Intro_after; newids = [id]; hypspecs = [whereid] } ->

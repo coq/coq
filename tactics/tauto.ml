@@ -1762,7 +1762,7 @@ let rec cci_of_tauto_fml () =
 
 let search env id =
   try
-    Rel (fst (lookup_rel_id id (Environ.rel_context env)))
+    mkRel (fst (lookup_rel_id id (Environ.rel_context env)))
   with Not_found ->
   if mem_var_context id (Environ.var_context env) then
     mkVar id
@@ -1783,7 +1783,7 @@ let cci_of_tauto_term env t =
   and ci     = global_reference CCI (id_of_string "I") 
   in  
   let rec ter_constr l = function
-    | TVar x            -> (try (try Rel(pos_lis x l)
+    | TVar x            -> (try (try mkRel(pos_lis x l)
                                  with TacticFailure -> 
                                    search env (id_of_string x))
                             with _ -> raise TacticFailure)

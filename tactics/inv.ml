@@ -77,7 +77,7 @@ type inversion_status = Dep of constr option | NoDep
 
 let compute_eqn env sigma n i ai =
   (ai,get_type_of env sigma ai),
-  (Rel (n-i),get_type_of env sigma (Rel (n-i)))
+  (mkRel (n-i),get_type_of env sigma (mkRel (n-i)))
 
 let make_inv_predicate env sigma ind id status concl =
   let indf,realargs = dest_ind_type ind in
@@ -90,7 +90,7 @@ let make_inv_predicate env sigma ind id status concl =
 	  let env' = push_rels hyps_arity env in
 	  (hyps_arity,concl)
       | Dep dflt_concl ->
-	  if not (dependent (VAR id) concl) then
+	  if not (dependent (mkVar id) concl) then
 	    errorlabstrm "make_inv_predicate"
               [< 'sTR "Current goal does not depend on "; print_id id >];
           (* We abstract the conclusion of goal with respect to
@@ -102,7 +102,7 @@ let make_inv_predicate env sigma ind id status concl =
               | None ->
 		let sort = get_sort_of env sigma concl in
 		let p = make_arity env true indf sort in
-		abstract_list_all env sigma p concl (realargs@[VAR id])
+		abstract_list_all env sigma p concl (realargs@[mkVar id])
 	  in
 	  let hyps,_ = decompose_lam_n (nrealargs+1) pred in
 	  let c3 = whd_beta (applist (pred,rel_list nrealargs (nrealargs +1))) 
@@ -114,9 +114,9 @@ let make_inv_predicate env sigma ind id status concl =
   let realargs' = List.map (lift nhyps) realargs in
   let pairs = list_map_i (compute_eqn env' sigma nhyps) 0 realargs' in
   (* Now the arity is pushed, and we need to construct the pairs
-   * ai,Rel(n-i+1) *)
-  (* Now, we can recurse down this list, for each ai,(Rel k) whether to
-     push <Ai>(Rel k)=ai (when   Ai is closed).
+   * ai,mkRel(n-i+1) *)
+  (* Now, we can recurse down this list, for each ai,(mkRel k) whether to
+     push <Ai>(mkRel k)=ai (when   Ai is closed).
    In any case, we carry along the rest of pairs *)
   let rec build_concl eqns n = function
     | [] -> (prod_it concl eqns,n)
@@ -180,10 +180,10 @@ let make_inv_predicate env sigma ind id status concl =
 let introsReplacing = intros_replacing (* déplacé *)
 
 (* Computes the subset of hypothesis in the local context whose
-   type depends on t (should be of the form (VAR id)), then
+   type depends on t (should be of the form (mkVar id)), then
    it generalizes them, applies tac to rewrite all occurrencies of t,
    and introduces generalized hypotheis.
-   Precondition: t=(VAR id) *)
+   Precondition: t=(mkVar id) *)
     
 let rec dependent_hyps id idlist sign = 
   let rec dep_rec =function
@@ -229,22 +229,23 @@ let projectAndApply thin cls depids gls =
   let subst_hyp gls = 
     let orient_rule cls = 
       let (t,t1,t2) = dest_eq gls (clause_type cls gls) in
-      match (strip_outer_cast t1, strip_outer_cast t2) with
-        | (VAR id1, _) -> generalizeRewriteIntros (subst_hyp_LR cls) depids id1
-        | (_, VAR id2) -> generalizeRewriteIntros (subst_hyp_RL cls) depids id2
+      match (kind_of_term (strip_outer_cast t1),
+	     kind_of_term (strip_outer_cast t2)) with
+        | IsVar id1, _ -> generalizeRewriteIntros (subst_hyp_LR cls) depids id1
+        | _, IsVar id2 -> generalizeRewriteIntros (subst_hyp_RL cls) depids id2
         | _ -> subst_hyp_RL cls
     in 
     onLastHyp orient_rule gls 
   in
   let (t,t1,t2) = dest_eq gls (clause_type cls gls)  in
-  match (thin, strip_outer_cast t1, strip_outer_cast t2) with
-    | (true, VAR id1,  _) -> generalizeRewriteIntros
+  match (thin, kind_of_term (strip_outer_cast t1), kind_of_term (strip_outer_cast t2)) with
+    | (true, IsVar id1,  _) -> generalizeRewriteIntros
           (tclTHEN (subst_hyp_LR cls) (clear_clause cls)) depids id1 gls
-    | (false, VAR id1,  _) ->
+    | (false, IsVar id1,  _) ->
         generalizeRewriteIntros (subst_hyp_LR cls) depids id1 gls
-    | (true, _ , VAR id2) -> generalizeRewriteIntros
+    | (true, _ , IsVar id2) -> generalizeRewriteIntros
           (tclTHEN (subst_hyp_RL cls) (clear_clause cls)) depids id2 gls
-    | (false, _ , VAR id2) ->
+    | (false, _ , IsVar id2) ->
         generalizeRewriteIntros (subst_hyp_RL cls) depids id2 gls
     | (true, _, _) ->
         let deq_trailer neqns =
@@ -321,7 +322,7 @@ let case_trailer othin neqns ba gl =
 
 let res_case_then gene thin indbinding id status gl =
   let env = pf_env gl and sigma = project gl in
-  let c = VAR id in
+  let c = mkVar id in
   let (wc,kONT) = startWalk gl in
   let t = strong_prodspine (pf_whd_betadeltaiota gl) (pf_type_of gl c) in
   let indclause = mk_clenv_from wc (c,t) in
@@ -348,7 +349,7 @@ let res_case_then gene thin indbinding id status gl =
      [onLastHyp
         (fun cls->
            (tclTHEN (applyUsing
-                       (applist(VAR (out_some cls),
+                       (applist(mkVar (out_some cls),
                                 list_tabulate
                                   (fun _ -> mkMeta(new_meta())) neqns)))
               Auto.default_auto));

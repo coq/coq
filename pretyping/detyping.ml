@@ -262,12 +262,7 @@ let lookup_index_as_renamed t n =
   in lookup n 1 t
 
 let rec detype avoid env t =
-  match collapse_appl t with
-    (* Not well-formed constructions *)
-    | DLAM _ | DLAMV _ -> error "Cannot detype"
-    (* Well-formed constructions *)
-    | regular_constr -> 
-    (match kind_of_term regular_constr with
+  match kind_of_term (collapse_appl t) with
     | IsRel n ->
       (try match lookup_name_of_rel n env with
 	 | Name id   -> RRef (dummy_loc, RVar id)
@@ -331,7 +326,7 @@ let rec detype avoid env t =
 	end
 	
     | IsFix (nvn,(cl,lfn,vt)) -> detype_fix (RFix nvn) avoid env cl lfn vt
-    | IsCoFix (n,(cl,lfn,vt))  -> detype_fix (RCoFix n) avoid env cl lfn vt)
+    | IsCoFix (n,(cl,lfn,vt))  -> detype_fix (RCoFix n) avoid env cl lfn vt
 
 and detype_fix fk avoid env cl lfn vt =
   let lfi = List.map (fun id -> next_name_away id avoid) lfn in
@@ -366,7 +361,7 @@ and detype_eqn avoid env constr_id construct_nargs branch =
 	| _ -> (* eta-expansion : n'arrivera plus lorsque tous les
                   termes seront construits à partir de la syntaxe Cases *)
             (* nommage de la nouvelle variable *)
-	    let new_b = applist (lift 1 b, [Rel 1]) in
+	    let new_b = applist (lift 1 b, [mkRel 1]) in
             let pat,new_avoid,new_env,new_ids =
 	      make_pat Anonymous avoid env new_b ids in
 	    buildrec new_ids (pat::patlist) new_avoid new_env (n-1) new_b

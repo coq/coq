@@ -728,7 +728,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 	(tclTRY_sign decomp_empty_term extra_sign)
 	::
 	(List.map 
-	   (fun id -> tclTHEN (decomp_unary_term (VAR id)) 
+	   (fun id -> tclTHEN (decomp_unary_term (mkVar id)) 
 		(tclTHEN 
 		   (clear_one id)
 		   (search_gen decomp p db_list local_db [])))

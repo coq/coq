@@ -32,7 +32,12 @@ type modification_action = ABSTRACT | ERASE
 
 let interp_modif absfun oper (oper',modif) cl = 
   let rec interprec = function
-    | ([], cl) -> DOPN(oper',Array.of_list cl)
+    | ([], cl) -> 
+	(match oper' with
+	   | Const sp -> mkConst (sp,Array.of_list cl)
+	   | MutConstruct sp -> mkMutConstruct (sp,Array.of_list cl)
+	   | MutInd sp -> mkMutInd (sp,Array.of_list cl)
+	   | _ -> anomaly "not a reference operator")
     | (ERASE::tlm, c::cl) -> interprec (tlm,cl)
     | (ABSTRACT::tlm, c::cl) -> absfun (interprec (tlm,cl)) c
     | _ -> assert false
@@ -64,10 +69,10 @@ let modify_opers replfun absfun oper_alist =
 	  (try
 	     match List.assoc (MutInd spi) oper_alist with
 	       | DO_ABSTRACT (MutInd spi',_) ->
-		   DOPN(MutCase(n,(spi',a,b,c,d)),cl')
+		   gather_constr (OpMutCase (n,(spi',a,b,c,d)),cl')
 	       | _ -> raise Not_found
 	   with
-	     | Not_found -> DOPN(MutCase oper,cl'))
+	     | Not_found -> gather_constr (op,cl'))
 
       | OpMutInd spi ->
 	  (try
@@ -79,9 +84,9 @@ let modify_opers replfun absfun oper_alist =
 		    else 
 		      interp_modif absfun (MutInd spi) (oper',modif)
 			(Array.to_list cl')
-		| DO_REPLACE -> substrec (replfun (DOPN(MutInd spi,cl'))))
+		| DO_REPLACE -> assert false)
 	   with 
-	     | Not_found -> DOPN(MutInd spi,cl'))
+	     | Not_found -> mkMutInd (spi,cl'))
 
       | OpMutConstruct spi ->
 	  (try
@@ -93,9 +98,9 @@ let modify_opers replfun absfun oper_alist =
 		    else 
 		      interp_modif absfun (MutConstruct spi) (oper',modif)
 			(Array.to_list cl')
-		| DO_REPLACE -> substrec (replfun (DOPN(MutConstruct spi,cl'))))
+		| DO_REPLACE -> assert false)
 	   with 
-	     | Not_found -> DOPN(MutConstruct spi,cl'))
+	     | Not_found -> mkMutConstruct (spi,cl'))
 
       | OpConst sp ->
 	  (try
@@ -107,9 +112,9 @@ let modify_opers replfun absfun oper_alist =
 		    else 
 		      interp_modif absfun (Const sp) (oper',modif)
 			(Array.to_list cl')
-		| DO_REPLACE -> substrec (replfun (DOPN(Const sp,cl'))))
+		| DO_REPLACE -> substrec (replfun (sp,cl')))
 	   with 
-	     | Not_found -> DOPN(Const sp,cl'))
+	     | Not_found -> mkConst (sp,cl'))
   
     | _ -> gather_constr (op, cl')
   in 
@@ -117,18 +122,11 @@ let modify_opers replfun absfun oper_alist =
 
 (**)
 
-let under_dlams f = 
-  let rec apprec = function 
-    | DLAMV(na,c) -> DLAMV(na,Array.map f c)
-    | DLAM(na,c)  -> DLAM(na,apprec c)
-    | _           -> failwith "under_dlams"
-  in 
-  apprec 
-
 let abstract_inductive ids_to_abs hyps inds =
   let abstract_one_var d inds =
     let ntyp = List.length inds in 
-    let new_refs = list_tabulate (fun k -> applist(Rel (k+2),[Rel 1])) ntyp in 
+    let new_refs =
+      list_tabulate (fun k -> applist(mkRel (k+2),[mkRel 1])) ntyp in
     let inds' =
       List.map
       	(function (tname,arity,cnames,lc) -> 
@@ -191,8 +189,8 @@ let expmod_constr oldenv modlist c =
   let expfun cst = 
     try 
       constant_value oldenv cst
-    with Failure _ ->
-      let (sp,_) = destConst cst in
+    with NotEvaluableConst Opaque ->
+      let (sp,_) = cst in
       errorlabstrm "expmod_constr"
 	[< 'sTR"Cannot unfold the value of " ;
            'sTR(string_of_path sp) ; 'sPC;
@@ -200,13 +198,13 @@ let expmod_constr oldenv modlist c =
            'sTR"and then require that theorems which use them"; 'sPC;
            'sTR"be transparent" >];
   in
-  let under_casts f = function
-    | DOP2(Cast,c,t) -> (DOP2(Cast,f c,f t))
-    | c -> f c 
+  let under_casts f c = match kind_of_term c with
+    | IsCast (c,t) -> mkCast (f c,f t)
+    | _ -> f c 
   in
   let c' = modify_opers expfun (fun a b -> mkAppL (a, [|b|])) modlist c in
-  match c' with
-    | DOP2 (Cast,val_0,typ) -> DOP2 (Cast,simpfun val_0,simpfun typ)
+  match kind_of_term c' with
+    | IsCast (val_0,typ) -> mkCast (simpfun val_0,simpfun typ)
     | _ -> simpfun c'
 
 let expmod_type oldenv modlist c = 

@@ -16,15 +16,21 @@ val instantiate_constr :
 val instantiate_type : 
   var_context -> typed_type -> constr list -> typed_type
 
-type const_evaluation_error = NotDefinedConst | OpaqueConst
-exception NotEvaluableConst of const_evaluation_error
+(*s [constant_value env c] raises [NotEvaluableConst Opaque] if
+   [c] is opaque and [NotEvaluableConst NoBody] if it has no
+   body and [Not_found] if it does not exist in [env] *)
 
-(* [constant_value env c] raises [NotEvaluableConst OpaqueConst] if
-   [c] is opaque and [NotEvaluableConst NotDefinedConst] if undefined *)
-val constant_value : env -> constr -> constr
+type const_evaluation_result = NoBody | Opaque
+exception NotEvaluableConst of const_evaluation_result
+
+val constant_value : env -> constant -> constr
 val constant_type : env -> 'a evar_map -> constant -> typed_type
+val constant_opt_value : env -> constant -> constr option
 
+(*s [existential_value sigma ev] raises [NotInstantiatedEvar] if [ev] has
+no body and [Not_found] if it does not exist in [sigma] *)
+
+exception NotInstantiatedEvar
 val existential_value : 'a evar_map -> existential -> constr
 val existential_type : 'a evar_map -> existential -> constr
-
-val const_evar_opt_value : env -> 'a evar_map -> constr -> constr option
+val existential_opt_value : 'a evar_map -> existential -> constr option

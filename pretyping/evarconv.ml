@@ -14,7 +14,7 @@ open Recordops
 open Evarutil
 
 (* Pb: Mach cannot type evar in the general case (all Const must be applied
- * to VARs). But evars may be applied to Rels or other terms! This is the
+ * to Vars). But evars may be applied to Rels or other terms! This is the
  * difference between type_of_const and type_of_const2.
  *)
 
@@ -128,36 +128,37 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	in 
 	ise_try isevars [f1; f2]
 
-    | IsEvar (sp1,al1), IsConst (sp2,al2) ->
+    | IsEvar (sp1,al1), IsConst cst2 ->
 	let f1 () =
 	  (List.length l1 <= List.length l2) &
 	  let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
 	  solve_pb env isevars(pbty,term1,applist(term2,deb2))
           & list_for_all2eq (evar_conv_x env isevars CONV) l1 rest2
 	and f4 () =
-          if evaluable_constant env term2 then
-            evar_eqappr_x env isevars pbty
-              appr1 (evar_apprec env isevars l2 (constant_value env term2))
-          else false
+	  match constant_opt_value env cst2 with
+	    | Some v2 ->
+		evar_eqappr_x env isevars pbty
+		  appr1 (evar_apprec env isevars l2 v2)
+	    | None -> false
 	in 
 	ise_try isevars [f1; f4]
 
-    | IsConst (sp1,al1), IsEvar (sp2,al2) ->
+    | IsConst cst1, IsEvar (sp2,al2) ->
 	let f1 () =
        	  (List.length l2 <= List.length l1) &
        	  let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
 	  solve_pb env isevars(pbty,applist(term1,deb1),term2)
           & list_for_all2eq (evar_conv_x env isevars CONV) rest1 l2
 	and f4 () =
-          if evaluable_constant env term1 then
-            evar_eqappr_x env isevars pbty
-              (evar_apprec env isevars l1 (constant_value env term1)) appr2
-          else 
-	    false
+	  match constant_opt_value env cst1 with
+	    | Some v1 ->
+		evar_eqappr_x env isevars pbty
+		  (evar_apprec env isevars l1 v1) appr2
+	    | None -> false
 	in 
 	ise_try isevars [f1; f4]
 
-    | IsConst (sp1,al1), IsConst (sp2,al2) ->
+    | IsConst (sp1,al1 as cst1), IsConst (sp2,al2 as cst2) ->
 	let f2 () =
           (sp1 = sp2)
 	  & (array_for_all2 (evar_conv_x env isevars CONV) al1 al2)  
@@ -168,14 +169,16 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	      with Not_found -> check_conv_record appr2 appr1)
            with _ -> false)
 	and f4 () =
-          if evaluable_constant env term2 then
-            evar_eqappr_x env isevars pbty
-              appr1 (evar_apprec env isevars l2 (constant_value env term2))
-          else if evaluable_constant env term1 then
-            evar_eqappr_x env isevars pbty
-              (evar_apprec env isevars l1 (constant_value env term1)) appr2
-          else 
-	    false
+	  match constant_opt_value env cst2 with
+	    | Some v2 ->
+		evar_eqappr_x env isevars pbty
+		  appr1 (evar_apprec env isevars l2 v2)
+	    | None ->
+		match constant_opt_value env cst1 with
+		  | Some v1 ->
+		      evar_eqappr_x env isevars pbty
+			(evar_apprec env isevars l1 v1) appr2
+		  | None -> false
 	in 
 	ise_try isevars [f2; f3; f4]
 
@@ -191,25 +194,29 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	solve_pb env isevars(pbty,applist(term1,deb1),term2)
         & list_for_all2eq (evar_conv_x env isevars CONV) rest1 l2
 
-    | IsConst (_,_), _ ->
+    | IsConst cst1, _ ->
 	let f3 () =
 	  (try conv_record env isevars (check_conv_record appr1 appr2)
            with _ -> false)
-	and f4 () = 
-	  evaluable_constant env term1 &
- 	  evar_eqappr_x env isevars pbty
-            (evar_apprec env isevars l1 (constant_value env term1)) appr2
+	and f4 () =
+	  match constant_opt_value env cst1 with
+	    | Some v1 ->
+ 		evar_eqappr_x env isevars pbty
+		  (evar_apprec env isevars l1 v1) appr2
+	    | None -> false
 	in 
 	ise_try isevars [f3; f4]
 	     
-    | _ , IsConst (_,_) -> 
+    | _ , IsConst cst2 -> 
 	let f3 () = 
 	  (try (conv_record env isevars (check_conv_record appr2 appr1))
            with _ -> false)
 	and f4 () =
-          evaluable_constant env term2 &
- 	  evar_eqappr_x env isevars pbty
-            appr1 (evar_apprec env isevars l2 (constant_value env term2))
+	  match constant_opt_value env cst2 with
+	    | Some v2 ->
+ 		evar_eqappr_x env isevars pbty
+		  appr1 (evar_apprec env isevars l2 v2)
+	    | None -> false
 	in 
 	ise_try isevars [f3; f4]
 
@@ -287,12 +294,6 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	& (array_for_all2 (evar_conv_x env isevars CONV) bds1 bds2)
 	& (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
 
-    (***
-    | (DOP0(Implicit),[]),(DOP0(Implicit),[]) -> true
-    (* added to compare easily the specification of fixed points
-     * But b (optional env) is not updated! *)
-    ***)
-
     | (IsRel _ | IsVar _ | IsMeta _ | IsXtra _ | IsLambda _), _ -> false
     | _, (IsRel _ | IsVar _ | IsMeta _ | IsXtra _ | IsLambda _) -> false
 
@@ -320,8 +321,7 @@ and conv_record env isevars (c,bs,(xs,xs1),(us,us1),(ts,ts1),t) =
        xs1 xs)
     & (list_for_all2eq (evar_conv_x env isevars CONV) ts ts1)
     & (evar_conv_x env isevars CONV t 
-	 (if ks=[] then c 
-	  else  (DOPN(AppL,Array.of_list(c::(List.rev ks))))))
+	 (if ks=[] then c else applist (c,(List.rev ks))))
   then
     (*TR*) (if !compter then (nbstruc:=!nbstruc+1;
                               nbimplstruc:=!nbimplstruc+(List.length ks);true)
