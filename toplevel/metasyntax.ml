@@ -256,7 +256,7 @@ let is_operator s =
   let l = String.length s in l <> 0 &
   (s.[0] = '+' or s.[0] = '*' or s.[0] = '=' or
    s.[0] = '-' or s.[0] = '/' or s.[0] = '<' or s.[0] = '>' or
-   s.[0] = '@')
+   s.[0] = '@' or s.[0] = '\\' or s.[0] = '&' or s.[0] = '~')
 
 type previous_prod_status = NoBreak | CanBreak
 
@@ -320,19 +320,31 @@ let make_hunks etyps symbols =
 	  u :: make CanBreak prods
 
     | Terminal s :: prods when List.exists is_non_terminal prods ->
-        if ws = CanBreak then
-          if is_comma s || is_right_bracket s then
-	    UnpTerminal s :: add_break 1 (make NoBreak prods)
-          else if is_operator s then
-	    UnpTerminal (" "^s) :: add_break 1 (make NoBreak prods)
+        if is_comma s then
+	  UnpTerminal s :: add_break 1 (make NoBreak prods)
+	else if is_right_bracket s then
+	  UnpTerminal s :: add_break 0 (make NoBreak prods)
+	else if is_left_bracket s then
+          if ws = CanBreak then
+	    add_break 1 (UnpTerminal s :: make CanBreak prods)
 	  else
+	    UnpTerminal s :: make CanBreak prods
+	else if is_operator s then
+	  if ws = CanBreak then
+	    UnpTerminal (" "^s) :: add_break 1 (make NoBreak prods)
+	  else 
+	    UnpTerminal s :: add_break 1 (make NoBreak prods)
+	else
+	  if ws = CanBreak then
 	    add_break 1 (UnpTerminal (s^" ") :: make CanBreak prods)
-        else
-	  UnpTerminal (s^" ") :: make CanBreak prods
+	  else
+	    UnpTerminal (s^" ") :: make CanBreak prods
 
     | Terminal s :: prods ->
-        if ws = CanBreak then
-	  UnpTerminal (" "^s) :: make NoBreak prods
+	if is_right_bracket s then
+	  UnpTerminal s ::make NoBreak prods
+        else if ws = CanBreak then
+	  add_break 1 (UnpTerminal s :: make NoBreak prods)
         else
           UnpTerminal s :: make NoBreak prods
 
