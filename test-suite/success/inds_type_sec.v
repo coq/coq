@@ -6,5 +6,5 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 Section S.
-Inductive T [U:Type] : Set := c : U -> (T U).
+Inductive T [U:Type] : Type := c : U -> (T U).
 End S.
