@@ -217,10 +217,6 @@ open Symbols
 
 type white_status = Juxtapose | Separate of int | NextIsTerminal
 
-let add_break l = function
-  | Separate n -> UNP_BRK (n,1) :: l
-  | _ -> l
-
 let precedence_of_entry_type = function
   | ETConstr (n,BorderProd (_,None)) -> n, Prec n
   | ETConstr (n,BorderProd (left,Some a)) ->
@@ -229,48 +225,27 @@ let precedence_of_entry_type = function
   | ETOther ("constr","annot") -> 10, Prec 10
   | _ -> 0, E (* ?? *)
 
-(* x = y |-> x brk = y (breaks before any symbol) *)
-(* x =S y |-> x spc =S spc y (protect from confusion; each side for symmetry)*)
-(* + { |-> + { may breaks reversibility without space but oth. not elegant *)
-(* x y |-> x spc y *)
+(* Some breaking examples *)
+(* "x = y" : "x /1 = y" (breaks before any symbol) *)
+(* "x =S y" : "x /1 =S /1 y" (protect from confusion; each side for symmetry)*)
+(* "+ {" : "+ {" may breaks reversibility without space but oth. not elegant *)
+(* "x y" : "x spc y" *)
+(* "{ x } + { y }" : "{ x } / + { y }" *)
+(* "< x , y > { z , t }" : "< x , / y > / { z , / t }" *)
 
-(* For old ast printer *)
-let make_hunks_ast symbols etyps from =
-  let (_,l) =
-  List.fold_right
-    (fun it (ws,l) -> match it with
-      | NonTerminal m ->
-	  let _,lp = precedence_of_entry_type (List.assoc m etyps) in
-	  let u = PH (meta_pattern (string_of_id m), None, lp) in
-	  let l' = u :: (add_break l ws) in
-	  (Separate 1, l')
-      | Terminal s ->
-	    let n,(s,l) =
-	      if
-		is_letter (s.[0]) or 
-		is_letter (s.[String.length s -1]) or
-		is_digit (s.[String.length s -1])
-	      then
-		(* We want spaces around both sides *)
-		Separate 1,
-		if ws = Separate 0 then s^" ",l else s,add_break l ws
-	      else
-		Juxtapose, (s,add_break l ws) in
-	    (n, RO s :: l)
-      | Break n ->
-	    (Juxtapose, UNP_BRK (n,1) :: l))
-    symbols (Juxtapose,[])
-  in l
-
-let add_break l = function
-  | Separate n -> UnpCut (PpBrk(n,1)) :: l
-  | NextIsTerminal -> UnpCut (PpBrk(1,1)) :: l
-  | _ -> l
-
-let is_bracket s =
+let is_left_bracket s =
   let l = String.length s in l <> 0 &
-  (s.[0] = '{' or s.[0] = '[' or s.[0] = '(' or
-   s.[l-1] = '}' or s.[l-1] = ']' or s.[l-1] = ')')
+  (s.[0] = '{' or s.[0] = '[' or s.[0] = '(')
+
+let is_right_bracket s =
+  let l = String.length s in l <> 0 &
+  (s.[l-1] = '}' or s.[l-1] = ']' or s.[l-1] = ')')
+
+let is_left_bracket_on_left s =
+  let l = String.length s in l <> 0 & s.[l-1] = '>'
+
+let is_right_bracket_on_right s =
+  let l = String.length s in l <> 0 & s.[0] = '<'
 
 let is_comma s =
   let l = String.length s in l <> 0 &
@@ -282,41 +257,86 @@ let is_operator s =
    s.[0] = '-' or s.[0] = '/' or s.[0] = '<' or s.[0] = '>' or
    s.[0] = '@')
 
+type previous_prod_status = NoBreak | CanBreak
+
+let is_non_terminal = function
+  | NonTerminal _ -> true
+  | _ -> false
+
+let add_break n l = UNP_BRK (n,1) :: l
+
+(* For old ast printer *)
+let make_hunks_ast symbols etyps from =
+  let rec make ws = function
+    | NonTerminal m :: prods ->
+	let _,lp = precedence_of_entry_type (List.assoc m etyps) in
+	let u = PH (meta_pattern (string_of_id m), None, lp) in
+	if prods <> [] && is_non_terminal (List.hd prods) then
+	  u :: add_break 1 (make CanBreak prods)
+	else
+	  u :: make CanBreak prods
+
+    | Terminal s :: prods when List.exists is_non_terminal prods ->
+	let protect =
+	  is_letter s.[0] ||
+	  (is_non_terminal (List.hd prods) &&
+	    (is_letter (s.[String.length s -1])) ||
+	    (is_digit (s.[String.length s -1]))) in
+	if is_comma s || is_right_bracket s then
+	  RO s :: add_break 0 (make NoBreak prods)
+	else if (is_operator s || is_left_bracket s) && ws = CanBreak then
+	  add_break (if protect then 1 else 0)
+	    (RO (if protect then s^" " else s) :: make CanBreak prods)
+	else
+	  RO s :: make CanBreak prods
+
+    | Terminal s :: prods ->
+	RO s :: make NoBreak prods
+
+    | Break n :: prods ->
+	add_break n (make NoBreak prods)
+
+    | [] -> []
+
+  in make NoBreak symbols
+
+let add_break n l = UnpCut (PpBrk(n,1)) :: l
+
 let make_hunks etyps symbols =
   let vars,typs = List.split etyps in
-  let (_,l) =
-  List.fold_right
-    (fun it (ws,l) -> match it with
-      | NonTerminal m ->
-	  let i = list_index m vars in
-	  let _,prec = precedence_of_entry_type (List.nth typs (i-1)) in
-	  let u = UnpMetaVar (i ,prec) in
-	  let l' = u :: (add_break l ws) in
-	  (NextIsTerminal, l')
-      | Terminal s ->
-	    let nextsep,(s,l) =
-	      if
-		is_letter (s.[0]) or 
-		(ws = NextIsTerminal & 
-		  (is_letter (s.[String.length s -1])) or
-		  (is_digit (s.[String.length s -1])))
-	      then
-		(* We want spaces around both sides *)
-		Separate 1,
-		if ws = Separate 0 then s^" ",l else s,add_break l ws
-	      else
-		(* We want a break before symbols but brackets and commas *)
-		if is_bracket s or is_comma s then
-		  Juxtapose,
-		  (s,if ws = Separate 0 then add_break l ws else l)
-		else
-		  Separate 0, (s,l)
-	    in
-	    (nextsep, UnpTerminal s :: l)
-      | Break n ->
-	    (Juxtapose, UnpCut (PpBrk (n,1)) :: l))
-    symbols (Juxtapose,[])
-  in l
+  let rec make ws = function
+    | NonTerminal m :: prods ->
+	let i = list_index m vars in
+	let _,prec = precedence_of_entry_type (List.nth typs (i-1)) in
+	let u = UnpMetaVar (i ,prec) in
+	if prods <> [] && is_non_terminal (List.hd prods) then
+	  u :: add_break 1 (make CanBreak prods)
+	else
+	  u :: make CanBreak prods
+
+    | Terminal s :: prods when List.exists is_non_terminal prods ->
+	let protect =
+	  is_letter s.[0] ||
+	  (is_non_terminal (List.hd prods) &&
+	    (is_letter (s.[String.length s -1])) ||
+	    (is_digit (s.[String.length s -1]))) in
+	if is_comma s || is_right_bracket s then
+	  UnpTerminal s :: add_break 0 (make NoBreak prods)
+	else if (is_operator s || is_left_bracket s) && ws = CanBreak then
+	  add_break (if protect then 1 else 0)
+	    (UnpTerminal (if protect then s^" " else s) :: make CanBreak prods)
+	else
+	  UnpTerminal s :: make CanBreak prods
+
+    | Terminal s :: prods ->
+	UnpTerminal s :: make NoBreak prods
+
+    | Break n :: prods ->
+	add_break n (make NoBreak prods)
+
+    | [] -> []
+
+  in make NoBreak symbols
 
 let string_of_prec (n,p) =
   (string_of_int n)^(match p with E -> "E" | L -> "L" | _ -> "")
