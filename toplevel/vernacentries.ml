@@ -92,7 +92,7 @@ let show_script () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  msgnl (Refiner.print_script true evc (Global.named_context()) pf)
+  msgnl (Refiner.print_treescript true evc (Global.named_context()) pf)
 
 let show_top_evars () =
   let pfts = get_pftreestate () in 
@@ -983,9 +983,11 @@ let apply_subproof f occ =
   let pf = proof_of_pftreestate pts in
   f evc (Global.named_context()) pf
 
-let explain_proof occ = msg (apply_subproof (Refiner.print_script true) occ)
+let explain_proof occ =
+  msg (apply_subproof (Refiner.print_treescript true) occ)
 
-let explain_tree occ = msg (apply_subproof Refiner.print_proof occ)
+let explain_tree occ =
+  msg (apply_subproof Refiner.print_proof occ)
 
 let vernac_show = function
   | ShowGoal nopt ->
