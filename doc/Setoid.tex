@@ -12,7 +12,7 @@ Leibniz equality does not denote the intended equality. For example
 using lists to denote finite sets drive to difficulties since two
 non convertible terms can denote the same set.
 
-We present here a \Coq\ module, {\tt setoid\_replace}, which allow to
+We present here a \Coq\ module, {\tt setoid\_replace}, which allows to
 structure and automate some parts of the work. In particular, if
 everything has been registered a simple
 tactic can do replacement just as if the two terms were equal.
@@ -119,7 +119,7 @@ compatibility lemma.
 \item \errindex{The term \term \ should not be a dependent product}
 \end{ErrMsgs}
 
-The compatibility lemma genereted depends on the setoids already
+The compatibility lemma generated depends on the setoids already
 declared.
 
 \asection{The tactic itself}
@@ -133,10 +133,10 @@ use the tactic called \texttt{setoid\_replace}. The syntax is
 \texttt{setoid\_replace} $ term_1$ with $term_2$
 \end{quotation}
 
-The effect is similar to the one of \texttt{Replace}.
+The effect is similar to the one of \texttt{replace}.
 
 You also have a tactic called \texttt{setoid\_rewrite} which is the
-equivalent of \texttt{Rewrite} for setoids. The syntax is 
+equivalent of \texttt{rewrite} for setoids. The syntax is 
 
 \begin{quotation}
 \texttt{setoid\_rewrite} \term
@@ -147,8 +147,8 @@ equivalent of \texttt{Rewrite} for setoids. The syntax is
  \item \texttt{setoid\_rewrite <-} \term
 \end{Variants}
 
-The arrow tells the systems in which direction the rewriting has to be
-done. Moreover, you can use \texttt{Rewrite} for setoid
+The arrow tells the system in which direction the rewriting has to be
+done. Moreover, you can use \texttt{rewrite} for setoid
 rewriting. In that case the system will check if the term you give is
 an equality or a setoid equivalence and do the appropriate work.
 
