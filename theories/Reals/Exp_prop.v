@@ -26,7 +26,6 @@ Case (exist_exp x); Intro.
 Unfold exp_in Un_cv; Unfold infinit_sum E1; Trivial.
 Qed.
 
-(* Le reste du produit de Cauchy des sommes partielles de l'exponentielle *)
 Definition Reste_E [x,y:R] : nat->R := [N:nat](sum_f_R0 [k:nat](sum_f_R0 [l:nat]``/(INR (fact (S (plus l k))))*(pow x (S (plus l k)))*(/(INR (fact (minus N l)))*(pow y (minus N l)))`` (pred (minus N k))) (pred N)).
 
 Lemma exp_form : (x,y:R;n:nat) (lt O n) -> ``(E1 x n)*(E1 y n)-(Reste_E x y n)==(E1 (x+y) n)``.
@@ -44,7 +43,6 @@ Apply INR_fact_neq_0.
 Apply H.
 Qed.
 
-(* Un majorant du reste *)
 Definition maj_Reste_E [x,y:R] : nat->R := [N:nat]``4*(pow (Rmax R1 (Rmax (Rabsolu x) (Rabsolu y))) (mult (S (S O)) N))/(Rsqr (INR (fact (div2 (pred N)))))``.
 
 Lemma Rle_Rinv : (x,y:R) ``0<x`` -> ``0<y`` -> ``x<=y`` -> ``/y<=/x``.
@@ -91,7 +89,6 @@ Right; Reflexivity.
 Left; Apply lt_le_trans with (2); [Apply lt_n_Sn | Apply H1].
 Qed.
 
-(* Majoration du reste par une suite convergeant vers 0 *)
 Lemma Reste_E_maj : (x,y:R;N:nat) (lt O N) -> ``(Rabsolu (Reste_E x y N))<=(maj_Reste_E x y N)``.
 Intros; Pose M := (Rmax R1 (Rmax (Rabsolu x) (Rabsolu y))).
 Apply Rle_trans with (Rmult (pow M (mult (2) N)) (sum_f_R0 [k:nat](sum_f_R0 [l:nat]``/(Rsqr (INR (fact (div2 (S N)))))`` (pred (minus N k))) (pred N))). 
