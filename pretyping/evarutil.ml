@@ -97,8 +97,7 @@ let split_evar_to_arrow sigma c =
  * What we do is that ?2 is defined by a new evar ?4 whose context will be
  * a prefix of ?2's env, included in ?1's env. *)
 
-let do_restrict_hyps sigma c =
-  let (ev,args) = destEvar c in
+let do_restrict_hyps sigma (ev,args) =
   let args = Array.to_list args in
   let evd = Evd.map sigma ev in
   let env = evar_env evd in
@@ -164,13 +163,9 @@ let ise_defined isevars c = match kind_of_term c with
   | IsEvar (n,_) -> Evd.is_defined !isevars n
   | _ -> false
 
-let restrict_hyps isevars c =
-  if ise_undefined isevars c & not (closed0 c) then begin
-    let (sigma,rc) = do_restrict_hyps !isevars c in
-    isevars := sigma;
-    rc
-  end else 
-    c
+let need_restriction isevars (n,args) =
+  not (Evd.is_defined !isevars n) & not (array_for_all closed0 args)
+    
 
 (* We try to instanciate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times.
@@ -184,9 +179,16 @@ let real_clean isevars sp args rhs =
   let subst = List.map (fun (x,y) -> (y,mkVar x)) (filter_unique args) in
   let rec subs k t =
     match kind_of_term t with
-      |IsRel i ->
+      | IsRel i ->
  	 if i<=k then t
  	 else (try List.assoc (mkRel (i-k)) subst with Not_found -> t)
+      | IsEvar ev ->
+	  if need_restriction isevars ev then begin
+	    let (sigma,rc) = do_restrict_hyps !isevars ev in
+	    isevars := sigma;
+	    rc
+	  end else
+	    t
       | IsVar _ -> (try List.assoc t subst with Not_found -> t)
       | _ -> map_constr_with_binders succ subs k t
   in
