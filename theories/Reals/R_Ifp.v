@@ -44,7 +44,7 @@ Save.
 
 (**********)
 Lemma fp_R0:(frac_part R0)==R0.
-Unfold frac_part; Unfold Int_part;Elim (archimed R0);
+Unfold frac_part; Unfold Int_part; Elim (archimed R0);
  Intros; Unfold Rminus;
  Elim (Rplus_ne (Ropp (IZR `(up R0)-1`))); Intros a b;
  Rewrite b;Clear a b;Rewrite <- Z_R_minus;Cut (up R0)=`1`.
