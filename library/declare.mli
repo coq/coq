@@ -56,12 +56,13 @@ val make_strength_2 : unit -> strength
 (*s Corresponding test and access functions. *)
 
 val is_constant : section_path -> bool
-val constant_strength : section_path -> strength
-val constant_or_parameter_strength : section_path -> strength
+val constant_strength : constant_path -> strength
+val constant_or_parameter_strength : constant_path -> strength
 
 val out_variable : Libobject.obj -> identifier * variable_declaration
-val get_variable : section_path -> named_declaration * strength * sticky
-val variable_strength : qualid -> strength
+val get_variable : variable_path -> named_declaration * strength * sticky
+val variable_strength : variable_path -> strength
+val find_section_variable : identifier -> section_path
 
 (*s [global_reference k id] returns the object corresponding to
     the name [id] in the global environment. It may be a constant, 

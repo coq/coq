@@ -236,10 +236,8 @@ let get_variable sp =
   let (c,ty) = Global.lookup_named id in
   ((id,c,ty),str,sticky)
 
-let variable_strength qid =
-  match Nametab.locate qid with
-    | VarRef sp -> let _,(_,str,_) = Spmap.find sp !vartab in str
-    | _ -> anomaly "variable_strength: not the reference to a variable"
+let variable_strength sp =
+  let _,(_,str,_) = Spmap.find sp !vartab in str
 
 (* Global references. *)
 
@@ -325,6 +323,16 @@ let current_section_context () =
   List.fold_right
     (fun (id,_,_ as d) hyps -> if List.mem id current then d::hyps else hyps)
     (Global.named_context ()) []
+
+let find_section_variable id =
+  let l =
+    Spmap.fold
+      (fun sp (id',_) hyps -> if id=id' then sp::hyps else hyps)
+      !vartab [] in
+  match l with
+    | [] -> raise Not_found
+    | [sp] -> sp
+    | _ -> error "Arghh, you blasted me with several variables of same name"
 
 let extract_instance ref args =
   let hyps = context_of_global_reference Evd.empty (Global.env ()) ref in
