@@ -253,24 +253,34 @@ let mk_variable_obj id body typ =
 (* The evar map and the type, instead, are unshared by this function.     *)
 let mk_current_proof_obj id bo ty evar_map env =
  let unshared_ty = Term.unshare (Term.body_of_type ty) in
- let metasenv' =
+ let metasenv =
   List.map
    (function
      (n, {Evd.evar_concl = evar_concl ;
           Evd.evar_hyps = evar_hyps}
       ) ->
-       let context =
-        List.map
-         (function
-             (n,None,t)   -> n, Acic.Decl (Term.unshare t)
-           | (n,Some b,_) -> n, Acic.Def  (Term.unshare b)
-         ) evar_hyps
+       (* We map the named context to a rel context and every Var to a Rel *)
+       let final_var_ids,context =
+        let rec aux var_ids =
+         function
+            [] -> var_ids,[]
+          | (n,None,t)::tl ->
+              let final_var_ids,tl' = aux (n::var_ids) tl in
+              let t' = Term.subst_vars var_ids t in
+               final_var_ids,(n, Acic.Decl (Term.unshare t'))::tl'
+          | (n,Some b,t)::tl ->
+              let final_var_ids,tl' = aux (n::var_ids) tl in
+              let b' = Term.subst_vars var_ids b in
+               final_var_ids,(n, Acic.Def  (Term.unshare b'))::tl'
+        in
+         aux [] evar_hyps
        in
-        (n,context,Term.unshare evar_concl)
+        (* We map the named context to a rel context and every Var to a Rel *)
+        (n,context,Term.unshare (Term.subst_vars final_var_ids evar_concl))
    ) (Evd.non_instantiated evar_map)
  in
   let id' = Names.string_of_id id in
-   if metasenv' = [] then
+   if metasenv = [] then
     let ids =
      Names.Idset.union
       (Environ.global_vars_set env bo) (Environ.global_vars_set env ty) in
@@ -281,7 +291,7 @@ let mk_current_proof_obj id bo ty evar_map env =
     let params = filter_params variables hyps in
      Acic.Definition (id',bo,unshared_ty,params)
    else
-    Acic.CurrentProof (id',metasenv',bo,unshared_ty)
+    Acic.CurrentProof (id',metasenv,bo,unshared_ty)
 ;;
 
 let mk_constant_obj id bo ty variables hyps =

@@ -419,43 +419,47 @@ let acic_object_of_cic_object pvars sigma obj =
         A.AVariable (fresh_id (),id,abo,aty)
     | A.CurrentProof (id,conjectures,bo,ty) ->
        let aconjectures =
-prerr_endline "NON STAMPO LE IPOTESI: DA IMPLEMENTARE" ; flush stderr ;
-[] (*
         List.map
          (function (i,canonical_context,term) as conjecture ->
            let cid = "c" ^ string_of_int !conjectures_seed in
             Hashtbl.add ids_to_conjectures cid conjecture ;
             incr conjectures_seed ;
-            let acanonical_context =
-             let rec aux =
+            let canonical_env,acanonical_context =
+             let rec aux env =
               function
-                 [] -> []
-               | hyp::tl ->
+                 [] -> env,[]
+               | ((n,decl_or_def) as hyp)::tl ->
                   let hid = "h" ^ string_of_int !hypotheses_seed in
                    Hashtbl.add ids_to_hypotheses hid hyp ;
                    incr hypotheses_seed ;
-(*CSC: bug certo: dovrei usare un env ottenuto a partire da tl!!! *)
-                   match hyp with
-                      n,A.Decl t ->
-                        let at =
-                         acic_term_of_cic_term_context' env sigma t None
+                   match decl_or_def with
+                       A.Decl t ->
+                        let final_env,atl =
+                         aux (Environ.push_rel (Names.Name n,None,t) env) tl
                         in
-                         (hid,(n,A.Decl at))::(aux tl)
-                    | n,A.Def t ->
-                        let at =
-                         acic_term_of_cic_term_context' env sigma t None
+                         let at =
+                          acic_term_of_cic_term_context' env sigma t None
+                         in
+                          final_env,(hid,(n,A.Decl at))::atl
+                     | A.Def t ->
+                        let final_env,atl =
+                         aux
+                          (Environ.push_rel (Names.Name n,Some t,Term.mkProp)
+                            env) tl
                         in
-                         (hid,(n,A.Def at))::(aux tl)
+                         let at =
+                          acic_term_of_cic_term_context' env sigma t None
+                         in
+(*CSC: wrong: mkProp *)
+                          final_env,(hid,(n,A.Def at))::atl
              in
-              aux canonical_context
+              aux env canonical_context
             in
              let aterm =
-              acic_term_of_cic_term_context' env sigma
-               term None
+              acic_term_of_cic_term_context' canonical_env sigma term None
              in
-              (cid,i,acanonical_context,aterm)
+              (cid,i,List.rev acanonical_context,aterm)
          ) conjectures in
-*) in
        let abo = acic_term_of_cic_term_context' env sigma bo (Some ty) in
        let aty = acic_term_of_cic_term_context' env sigma ty None in
         A.ACurrentProof ("mettereaposto",id,aconjectures,abo,aty)
