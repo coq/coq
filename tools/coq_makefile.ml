@@ -22,9 +22,7 @@ type target =
 let output_channel = ref stdout
 
 let some_file = ref false
-
 let some_vfile = ref false
-
 let some_mlfile = ref false
 
 let opt = ref "-opt"
@@ -33,7 +31,7 @@ let print x = output_string !output_channel x
 
 let rec print_list sep = function
   | [ x ] -> print x
-  | x::l -> print x ; print sep ; print_list sep l
+  | x :: l -> print x; print sep; print_list sep l
   | [] -> ()
 
 let section s =
@@ -81,7 +79,7 @@ let standard sds =
   print "\t$(MAKE) all \"OPT=\"\n\n";
   print "opt:\n";
   if !opt = "" then print "\t@echo \"WARNING: opt is disabled\"\n";
-  print "\t$(MAKE) all \"OPT="; print !opt ; print "\"\n\n";
+  print "\t$(MAKE) all \"OPT="; print !opt; print "\"\n\n";
   if !some_file then print "include .depend\n\n";
   print "depend:\n";
   if !some_file then begin
@@ -125,33 +123,31 @@ let standard sds =
 
 let implicit () =
   let ml_rules () =
-    print ".mli.cmi:\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n" ;
-    print ".ml.cmo:\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n" ;
-    print ".ml.cmx:\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n" ;
+    print ".mli.cmi:\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
+    print ".ml.cmo:\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
+    print ".ml.cmx:\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
   and v_rule () =
-    print ".v.vo:\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n" ;
-    print ".v.vi:\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n" ;
-    print ".v.g:\n\t$(GALLINA) $<\n\n" ;
-    print ".v.html:\n\t$(COQ2HTML) $<\n\n" ;
-    print ".v.tex:\n\t$(COQ2LATEX) $< -latex -o $@\n\n" ;
-    print ".v.g.html:\n\t$(GALLINA) -stdout $< | $(COQ2HTML) -f > $@\n\n" ;
-    print 
-      ".v.g.tex:\n\t$(GALLINA) -stdout $< | $(COQ2LATEX) - -latex -o $@\n\n" ;
+    print ".v.vo:\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
+    print ".v.vi:\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
+    print ".v.g:\n\t$(GALLINA) $<\n\n";
+    print ".v.tex:\n\t$(COQWEB) $< -o $@\n\n";
+    print ".v.html:\n\t$(COQWEB) -html $< -o $@\n\n";
+    print ".g.g.tex:\n\t$(COQWEB) $< -o $@\n\n";
+    print ".g.g.html:\n\t$(COQWEB) -html $< -o $@\n\n"
   and ml_suffixes =
     if !some_mlfile then 
-      [ ".mli" ; ".ml" ; ".cmo" ; ".cmi"; ".cmx" ]
+      [ ".mli"; ".ml"; ".cmo"; ".cmi"; ".cmx" ]
     else 
       []
   and v_suffixes =
     if !some_vfile then 
-      [ ".v" ; ".vo" ; ".vi" ; ".g" ; ".html" ; ".tex" ;
-	".g.tex" ; ".g.html" ] 
+      [ ".v"; ".vo"; ".vi"; ".g"; ".html"; ".tex"; ".g.tex"; ".g.html" ] 
     else 
       []
   in
   let suffixes = ml_suffixes @ v_suffixes in
   if suffixes <> [] then begin
-    print ".SUFFIXES: " ; print_list " " suffixes ;
+    print ".SUFFIXES: "; print_list " " suffixes;
     print "\n\n"
   end;
   if !some_mlfile then ml_rules ();
@@ -160,8 +156,8 @@ let implicit () =
 let variables l =
   let rec var_aux = function
     | [] -> ()
-    | Def(v,def)::r -> print v ; print "=" ; print def ; print "\n";var_aux r
-    | _::r -> var_aux r
+    | Def(v,def) :: r -> print v; print "="; print def; print "\n"; var_aux r
+    | _ :: r -> var_aux r
   in
   section "Variables definitions.";
   print "CAMLP4LIB=`camlp4 -where`\n";
@@ -175,8 +171,7 @@ let variables l =
   print "COQFLAGS=-q $(OPT) $(COQLIBS)\n";
   print "COQC=$(COQBIN)coqc\n";
   print "GALLINA=gallina\n";
-  print "COQ2HTML=coq2html\n";
-  print "COQ2LATEX=coq2latex\n";
+  print "COQWEB=coqweb\n";
   print "CAMLC=ocamlc -c\n";
   print "CAMLOPTC=ocamlopt -c\n";
   print "CAMLLINK=ocamlc\n";
@@ -190,21 +185,19 @@ let include_dirs l =
   let include_aux' includeR =
    let rec include_aux = function
      | [] -> []
-     | Include x :: r -> ("-I "^x) :: (include_aux r)
+     | Include x :: r -> ("-I " ^ x) :: (include_aux r)
      | RInclude (p,l) :: r when includeR ->
-        let l' =
-         if l = "" then "\"\"" else l
-        in
-         ("-R "^p^" "^l') :: (include_aux r)
+        let l' = if l = "" then "\"\"" else l in
+        ("-R " ^ p ^ " " ^ l') :: (include_aux r)
      | _ :: r -> include_aux r
    in
     include_aux
   in
   let i_ocaml = "-I ." :: (include_aux' false l) in
   let i_coq   = "-I ." :: (include_aux' true  l) in
-    section "Libraries definition.";
-    print "OCAMLLIBS="; print_list "\\\n  " i_ocaml; print "\n";
-    print "COQLIBS=";   print_list "\\\n  " i_coq; print "\n\n"
+  section "Libraries definition.";
+  print "OCAMLLIBS="; print_list "\\\n  " i_ocaml; print "\n";
+  print "COQLIBS=";   print_list "\\\n  " i_coq; print "\n\n"
 
 let special l =
   let pr_sp (file,dependencies,com) =
@@ -213,8 +206,8 @@ let special l =
   in
   let rec sp_aux = function
     | [] -> []
-    | Special(file,dependencies,com)::r -> (file,dependencies,com)::(sp_aux r)
-    | _::r -> sp_aux r
+    | Special (file,deps,com) :: r -> (file,deps,com) :: (sp_aux r)
+    | _ :: r -> sp_aux r
   in
   let sps = sp_aux l in
   if sps <> [] then section "Custom targets.";
@@ -223,18 +216,19 @@ let special l =
 let subdirs l =
   let rec subdirs_aux = function
     | [] -> []
-    | Subdir x :: r -> x::(subdirs_aux r)
+    | Subdir x :: r -> x :: (subdirs_aux r)
     | _ :: r -> subdirs_aux r
   and pr_subdir s =
-    print s ; print ":\n\tcd " ; print s ; print " ; $(MAKE) all\n\n"
+    print s; print ":\n\tcd "; print s; print " ; $(MAKE) all\n\n"
   in
   let sds = subdirs_aux l in
   if sds <> [] then section "Subdirectories.";
   List.iter pr_subdir sds;
   section "Special targets.";
-  print ".PHONY: " ;
+  print ".PHONY: ";
   print_list " "
-    ("all"::"opt"::"byte"::"archclean"::"clean"::"install"::"depend"::"xml"::sds);
+    ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install" 
+     :: "depend" :: "xml" :: sds);
   print "\n\n";
   sds
 
@@ -244,68 +238,73 @@ let rec other_files suff = function
   | V n :: r -> 
       let f = (Filename.chop_suffix n ".vo") ^ suff in
       f :: (other_files suff r)
-  | _   :: r -> other_files suff r
-  | []       -> []
+  | _   :: r -> 
+      other_files suff r
+  | [] -> 
+      []
 
+let vfiles = other_files ".v"
 let gfiles = other_files ".g"
 let hfiles = other_files ".html"
 let tfiles = other_files ".tex"
 let vifiles = other_files ".vi"
-let gtfiles l = List.map (fun f -> f^".tex") (gfiles l)
-let ghfiles l = List.map (fun f -> f^".html") (gfiles l)
+let gtfiles l = List.map (fun f -> f ^ ".tex") (gfiles l)
+let ghfiles l = List.map (fun f -> f ^ ".html") (gfiles l)
 let vofiles = other_files ".vo"
 
 let all_target l =
   let rec fnames = function
-    | ML n :: r -> n::(fnames r)
-    | Subdir n ::r -> n::(fnames r)
-    | V n :: r -> n::(fnames r)
-    | Special (n,_,_) :: r -> n::(fnames r)
+    | ML n :: r -> n :: (fnames r)
+    | Subdir n :: r -> n :: (fnames r)
+    | V n :: r -> n :: (fnames r)
+    | Special (n,_,_) :: r -> n :: (fnames r)
     | Include _ :: r -> fnames r
     | RInclude _ :: r -> fnames r
     | Def _ :: r -> fnames r
     | [] -> []
   in
   section "Definition of the \"all\" target.";
-  print "all: "; print_list "\\\n  " (fnames l) ;
-  print "\n\n" ;
+  print "VFILES="; print_list "\\\n  " (vfiles l); print "\n";
+  print "VOFILES=$(VFILES:.v=.vo)\n";
+  print "VIFILES=$(VFILES:.v=.vi)\n";
+  print "GFILES=$(VFILES:.v=.g)\n";
+  print "HTMLFILES=$(VFILES:.v=.html)\n";
+  print "GHTMLFILES=$(VFILES:.v=.g.html)\n";
+  print "\n";
+  print "all: $(VOFILES)\n\n";
   if !some_vfile then begin
-    print "spec: "; print_list "\\\n  " (vifiles l) ;
-    print "\n\n";
-    print "gallina: "; print_list "\\\n  " (gfiles l) ;
-    print "\n\n";
-    print "html: "; print_list "\\\n  " (hfiles l) ;
-    print "\n\n";
-    print "tex: "; print_list "\\\n  " (tfiles l) ;
-    print "\n\n";
-    print "gallinatex: "; print_list "\\\n  " (gtfiles l) ;
-    print "\n\n";
-    print "gallinahtml: "; print_list "\\\n  " (ghfiles l) ;
-    print "\n\n";
-    print "xml:: .xml_time_stamp\n" ;
-    print ".xml_time_stamp: "; print_list "\\\n  " (vofiles l) ;
-     print "\n\t$(COQVO2XML) $(COQFLAGS) $(?:%.o=%)\n" ;
-     print "\ttouch .xml_time_stamp" ;
+    print "spec: $(VIFILES)\n\n";
+    print "gallina: $(GFILES)\n\n";
+    print "html: $(HTMLFILES)\n\n";
+    print "gallinahtml: $(GHTMLFILES)\n\n";
+    print "all.ps: $(VFILES)\n";
+    print "\t$(COQWEB) -ps -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+    print "all.g.ps: $(GFILES)\n";
+    print "\t$(COQWEB) -ps -o $@ `$(COQDEP) -sort -suffix .g $(VFILES)`\n\n";
+    print "xml:: .xml_time_stamp\n";
+    print ".xml_time_stamp: "; print_list "\\\n  " (vofiles l);
+    print "\n\t$(COQVO2XML) $(COQFLAGS) $(?:%.o=%)\n";
+    print "\ttouch .xml_time_stamp";
     print "\n\n"
   end
 
 let parse f =
   let rec string = parser 
     | [< '' ' | '\n' | '\t' >] -> ""
-    | [< 'c ; s >] -> (String.make 1 c)^(string s)
+    | [< 'c; s >] -> (String.make 1 c)^(string s)
     | [< >] -> ""
   and string2 = parser 
     | [< ''"' >] -> ""
-    | [< 'c ; s >] -> (String.make 1 c)^(string2 s)
+    | [< 'c; s >] -> (String.make 1 c)^(string2 s)
   and skip_comment = parser 
-    | [< ''\n' ; s >] -> s
-    | [< 'c ; s >] -> skip_comment s
+    | [< ''\n'; s >] -> s
+    | [< 'c; s >] -> skip_comment s
     | [< >] -> [< >]
   and args = parser 
     | [< '' ' | '\n' | '\t'; s >] -> args s
-    | [< ''#' ; s >] -> args (skip_comment s)
-    | [< ''"' ; str = string2 ; s >] -> (""^str)::args s
-    | [< 'c ; str = string ; s >] -> ((String.make 1 c)^str)::(args s)
+    | [< ''#'; s >] -> args (skip_comment s)
+    | [< ''"'; str = string2; s >] -> ("" ^ str) :: args s
+    | [< 'c; str = string; s >] -> ((String.make 1 c) ^ str) :: (args s)
     | [< >] -> []
   in
   let c = open_in f in
@@ -315,13 +314,13 @@ let parse f =
 
 let rec process_cmd_line = function
   | [] -> 
-      some_file := !some_file or !some_mlfile or !some_vfile ; []
+      some_file := !some_file or !some_mlfile or !some_vfile; []
   | ("-h"|"--help") :: _ -> 
       usage ()
   | ("-no-opt"|"-byte") :: r -> 
-      opt := "-byte" ; process_cmd_line r
-  | ("-full"|"-opt")::r -> 
-      opt := "-opt" ; process_cmd_line r
+      opt := "-byte"; process_cmd_line r
+  | ("-full"|"-opt") :: r -> 
+      opt := "-opt"; process_cmd_line r
   | "-custom" :: com :: dependencies :: file :: r ->
       some_file := true;
       Special (file,dependencies,com) :: (process_cmd_line r)
@@ -389,13 +388,13 @@ let directories_deps l =
     | [] -> 
 	()
     | (Subdir d) :: l -> 
-	print_dep d before; iter (d::dirs,d::before) l
+	print_dep d before; iter (d :: dirs, d :: before) l
     | (ML f) :: l ->
-	print_dep f dirs; iter (dirs,f::before) l
+	print_dep f dirs; iter (dirs, f :: before) l
     | (V f) :: l ->
-	print_dep f dirs; iter (dirs,f::before) l
+	print_dep f dirs; iter (dirs, f :: before) l
     | (Special (f,_,_)) :: l ->
-	print_dep f dirs; iter (dirs,f::before) l
+	print_dep f dirs; iter (dirs, f :: before) l
     | _ :: l -> 
 	iter acc l
   in
