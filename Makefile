@@ -1401,7 +1401,7 @@ lib/compat.cmo: lib/compat.ml4
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) -D$(CAMLVERSION) -impl" -c -impl $<
 
 lib/compat.cmx: lib/compat.ml4
-	$(SHOW)'OCAMLC  $<' 
+	$(SHOW)'OCAMLOPT  $<' 
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) -D$(CAMLVERSION) -impl" -c -impl $<
 
 # files compiled with camlp4 because of streams syntax
