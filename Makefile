@@ -26,7 +26,7 @@
 
 include config/Makefile
 
-noargument:
+NOARG:
 	@echo "Please use either"
 	@echo "   ./configure"
 	@echo "   make world"
@@ -84,7 +84,7 @@ DEPFLAGS=$(LOCALINCLUDES)
 
 OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
-CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo q_MLast.cmo
+CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo pa_macro.cmo q_MLast.cmo
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
@@ -107,7 +107,7 @@ CONFIG=\
   config/coq_config.cmo
 
 LIBREP=\
-  lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/bignat.cmo \
+  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bignat.cmo \
   lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
   lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
   lib/tlm.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
@@ -1297,7 +1297,7 @@ ML4FILES += parsing/lexer.ml4 parsing/q_util.ml4 parsing/q_coqast.ml4 \
             parsing/g_prim.ml4 parsing/pcoq.ml4
 
 GRAMMARNEEDEDCMO=\
-  lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/bignat.cmo \
+  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bignat.cmo \
   lib/dyn.cmo lib/options.cmo \
   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo \
   kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo \
@@ -1396,9 +1396,20 @@ proofs/tacexpr.cmx: proofs/tacexpr.ml
 	$(SHOW)'OCAMLOPT  -rectypes $<'
 	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
 
+# files compiled with camlp4 because of macros
+
+lib/compat.cmo: lib/compat.ml4
+	$(SHOW)'OCAMLC4  $<' 
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) -D$(CAMLVERSION) -impl" -c -impl $<
+
+lib/compat.cmx: lib/compat.ml4
+	$(SHOW)'OCAMLC  $<' 
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) -D$(CAMLVERSION) -impl" -c -impl $<
+
 # files compiled with camlp4 because of streams syntax
 
 ML4FILES += lib/pp.ml4 			\
+	 lib/compat.ml4 		\
 	 contrib/xml/xml.ml4		\
 	 contrib/xml/acic2Xml.ml4	\
 	 contrib/xml/proofTree2Xml.ml4	\

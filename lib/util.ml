@@ -1,10 +1,10 @@
-(************************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-(*   \VV/  **************************************************************)
-(*    //   *      This file is distributed under the terms of the       *)
-(*         *       GNU Lesser General Public License Version 2.1        *)
-(************************************************************************)
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
 
 (* $Id$ *)
 
@@ -22,10 +22,13 @@ let errorlabstrm l pps = raise (UserError(l,pps))
 
 let todo s = prerr_string ("TODO: "^s^"\n")
 
+type loc = Compat.loc
+let dummy_loc = Compat.dummy_loc
+let unloc = Compat.unloc
+let make_loc = Compat.make_loc
+
 (* raising located exceptions *)
-type loc = int * int
 type 'a located = loc * 'a
-let dummy_loc = (0,0)
 let anomaly_loc (loc,s,strm) = Stdpp.raise_with_loc loc (Anomaly (s,strm))
 let user_err_loc (loc,s,strm) = Stdpp.raise_with_loc loc (UserError (s,strm))
 let invalid_arg_loc (loc,s) = Stdpp.raise_with_loc loc (Invalid_argument s)
