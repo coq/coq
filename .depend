@@ -767,8 +767,8 @@ lib/system.cmo: config/coq_config.cmi lib/pp.cmi lib/util.cmi lib/system.cmi
 lib/system.cmx: config/coq_config.cmx lib/pp.cmx lib/util.cmx lib/system.cmi 
 lib/tlm.cmo: lib/gmap.cmi lib/gset.cmi lib/tlm.cmi 
 lib/tlm.cmx: lib/gmap.cmx lib/gset.cmx lib/tlm.cmi 
-lib/util.cmo: lib/pp.cmi lib/util.cmi 
-lib/util.cmx: lib/pp.cmx lib/util.cmi 
+lib/util.cmo: lib/pp.cmi lib/util.cmi lib/util.cmi 
+lib/util.cmx: lib/pp.cmx lib/util.cmx lib/util.cmi 
 library/declare.cmo: library/decl_kinds.cmo kernel/declarations.cmi \
     library/dischargedhypsmap.cmi kernel/entries.cmi kernel/environ.cmi \
     library/global.cmi library/impargs.cmi kernel/indtypes.cmi \
