@@ -80,6 +80,8 @@ let print_uni u = (pP (pr_uni u))
 
 let pp_universes u = pP [< 'sTR"[" ; pr_universes u ; 'sTR"]" >]
 
+let ppenv e = pP (pr_rel_context e (rel_context e))
+
 let cnt = ref 0
 
 let constr_display csr =
