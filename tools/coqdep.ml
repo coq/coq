@@ -71,10 +71,10 @@ let traite_fichier_ML md ext =
 let sort () = 
   let seen = Hashtbl.create 97 in
   let rec loop file =
-    let file = file_name file ^ ".v" in
+    let file = file_name file in
     if not (Hashtbl.mem seen file) then begin
       Hashtbl.add seen file ();
-      let cin = open_in file in
+      let cin = open_in (file ^ ".v") in
       let lb = Lexing.from_channel cin in
       try
 	while true do
@@ -89,7 +89,7 @@ let sort () =
 	done
       with Fin_fichier ->
 	close_in cin;
-	printf "%s " file
+	printf "%s%s " file !suffixe
     end
   in
   List.iter loop !vAccu
