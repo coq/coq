@@ -6,9 +6,9 @@
 # 
 ##################################
 
-VERSION=8.0
+VERSION=8.0-cdrom
 VERSIONSI=1.0
-DATE="Jan 2004"
+DATE="Mar 2004"
 
 # a local which command for sh
 which () {
