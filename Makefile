@@ -47,7 +47,8 @@ CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 COQINCLUDES=-I states -I contrib/omega -I contrib/ring -I contrib/xml \
             -I theories/Init -I theories/Logic -I theories/Arith \
             -I theories/Bool -I theories/Zarith -I theories/Lists \
-	    -I theories/Sets -I theories/Relations -I theories/Reals
+	    -I theories/Sets -I theories/Relations -I theories/Wellfounded \
+	    -I theories/Reals
 
 ###########################################################################
 # Objects files 
@@ -280,6 +281,16 @@ RELATIONSVO=theories/Relations/Newman.vo \
             theories/Relations/Relations.vo \
             theories/Relations/Rstar.vo
 
+WELLFOUNDEDVO=theories/Wellfounded/Disjoint_Union.vo \
+	      theories/Wellfounded/Inclusion.vo \
+              theories/Wellfounded/Inverse_Image.vo \
+	      theories/Wellfounded/Lexicographic_Exponentiation.vo \
+	      theories/Wellfounded/Transitive_Closure.vo \
+	      theories/Wellfounded/Union.vo \
+	      theories/Wellfounded/Wellfounded.vo \
+	      theories/Wellfounded/Well_Ordering.vo \
+	      theories/Wellfounded/Lexicographic_Product.vo 
+
 REALSVO=theories/Reals/R_Ifp.vo       theories/Reals/Reals.vo \
 	theories/Reals/Raxioms.vo     theories/Reals/Rfunctions.vo \
 	theories/Reals/Rbase.vo       theories/Reals/Rlimit.vo \
@@ -288,6 +299,7 @@ REALSVO=theories/Reals/R_Ifp.vo       theories/Reals/Reals.vo \
 
 THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
              $(SETSVO) $(RELATIONSVO) $(REALSVO)
+# TODO: add $(WELLFOUNDEDVO) 
 
 $(THEORIESVO): states/initial.coq
 
@@ -300,6 +312,7 @@ zarith: $(ZARITHVO)
 lists: $(LISTSVO)
 sets: $(SETSVO)
 relations: $(RELATIONSVO)
+wellfounded: $(WELLFOUNDEDVO)
 reals: $(REALSVO)
 
 clean::

@@ -6,6 +6,15 @@ theories/Zarith/Zmisc.vo: theories/Zarith/Zmisc.v theories/Zarith/fast_integer.v
 theories/Zarith/ZArith_dec.vo: theories/Zarith/ZArith_dec.v theories/Bool/Sumbool.vo theories/Zarith/fast_integer.vo theories/Zarith/zarith_aux.vo theories/Zarith/auxiliary.vo theories/Zarith/Zsyntax.vo
 theories/Zarith/ZArith.vo: theories/Zarith/ZArith.v theories/Zarith/fast_integer.vo theories/Zarith/zarith_aux.vo theories/Zarith/auxiliary.vo theories/Zarith/Zsyntax.vo theories/Zarith/ZArith_dec.vo theories/Zarith/Zmisc.vo theories/Zarith/Wf_Z.vo
 theories/Zarith/Wf_Z.vo: theories/Zarith/Wf_Z.v theories/Zarith/fast_integer.vo theories/Zarith/zarith_aux.vo theories/Zarith/auxiliary.vo theories/Zarith/Zsyntax.vo
+theories/Wellfounded/Wellfounded.vo: theories/Wellfounded/Wellfounded.v theories/Wellfounded/Disjoint_Union.vo theories/Wellfounded/Inclusion.vo theories/Wellfounded/Inverse_Image.vo theories/Wellfounded/Lexicographic_Exponentiation.vo theories/Wellfounded/Lexicographic_Product.vo theories/Wellfounded/Transitive_Closure.vo theories/Wellfounded/Union.vo theories/Wellfounded/Well_Ordering.vo
+theories/Wellfounded/Well_Ordering.vo: theories/Wellfounded/Well_Ordering.v theories/Logic/Eqdep.vo
+theories/Wellfounded/Union.vo: theories/Wellfounded/Union.v theories/Relations/Relation_Operators.vo theories/Relations/Relation_Definitions.vo theories/Wellfounded/Transitive_Closure.vo
+theories/Wellfounded/Transitive_Closure.vo: theories/Wellfounded/Transitive_Closure.v theories/Relations/Relation_Definitions.vo theories/Relations/Relation_Operators.vo
+theories/Wellfounded/Lexicographic_Product.vo: theories/Wellfounded/Lexicographic_Product.v theories/Logic/Eqdep.vo theories/Relations/Relation_Operators.vo theories/Wellfounded/Transitive_Closure.vo
+theories/Wellfounded/Lexicographic_Exponentiation.vo: theories/Wellfounded/Lexicographic_Exponentiation.v theories/Logic/Eqdep.vo theories/Lists/PolyList.vo theories/Lists/PolyListSyntax.vo theories/Relations/Relation_Operators.vo theories/Wellfounded/Transitive_Closure.vo
+theories/Wellfounded/Inverse_Image.vo: theories/Wellfounded/Inverse_Image.v
+theories/Wellfounded/Inclusion.vo: theories/Wellfounded/Inclusion.v theories/Relations/Relation_Definitions.vo
+theories/Wellfounded/Disjoint_Union.vo: theories/Wellfounded/Disjoint_Union.v theories/Relations/Relation_Operators.vo
 theories/Sets/Uniset.vo: theories/Sets/Uniset.v theories/Bool/Bool.vo theories/Sets/Permut.vo
 theories/Sets/Relations_3_facts.vo: theories/Sets/Relations_3_facts.v theories/Sets/Relations_1.vo theories/Sets/Relations_1_facts.vo theories/Sets/Relations_2.vo theories/Sets/Relations_2_facts.vo theories/Sets/Relations_3.vo
 theories/Sets/Relations_3.vo: theories/Sets/Relations_3.v theories/Sets/Relations_1.vo theories/Sets/Relations_2.vo
