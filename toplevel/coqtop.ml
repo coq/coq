@@ -58,8 +58,7 @@ let inputstate () =
   match !inputstate with
     | Some "" -> ()
     | Some s -> intern_state s
-    | None ->
-        intern_state (if !Options.v7 then "initial.coq" else "initialnew.coq")
+    | None -> intern_state "initial.coq"
 
 let outputstate = ref ""
 let set_outputstate s = outputstate:=s
