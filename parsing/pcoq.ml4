@@ -7,8 +7,8 @@ open Util
 (* The lexer of Coq *)
 
 (* Note: removing a token.
-   We do nothing because remove_token is called only when removing a grammar
-   rule with Grammar.delete_rule. The latter command is called only when
+   We do nothing because [remove_token] is called only when removing a grammar
+   rule with [Grammar.delete_rule]. The latter command is called only when
    unfreezing the state of the grammar entries (see GRAMMAR summary, file
    env/metasyntax.ml). Therefore, instead of removing tokens one by one,
    we unfreeze the state of the lexer. This restores the behaviour of the

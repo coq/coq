@@ -5,6 +5,8 @@ type error =
   | Illegal_character
   | Unterminated_comment
   | Unterminated_string
+  | Undefined_token
+  | Bad_token of string
 
 exception Error of error
 

@@ -512,22 +512,10 @@ tags:
 ### Special rules
 ###########################################################################
 
-# lexer (compiled with camlp4 to get optimized streams)
-
-parsing/lexer.cmo: parsing/lexer.ml
-	$(OCAMLC_P4O) -c $<
-
-parsing/lexer.cmx: parsing/lexer.ml
-	$(OCAMLOPT_P4O) -c $<
-
-clean::
-	rm -f parsing/lexer.ml
-
-beforedepend:: parsing/lexer.ml
-
 # grammar modules with camlp4
 
-ML4FILES += parsing/q_coqast.ml4 parsing/g_prim.ml4 parsing/pcoq.ml4
+ML4FILES += parsing/lexer.ml4 parsing/q_coqast.ml4 \
+            parsing/g_prim.ml4 parsing/pcoq.ml4
 
 GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/dyn.cmo \
 	   lib/hashcons.cmo parsing/coqast.cmo parsing/lexer.cmo \

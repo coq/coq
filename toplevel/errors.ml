@@ -76,6 +76,10 @@ let rec explain_exn_default = function
       hOV 0 [< 'sTR "Syntax error: Unterminated comment." >]
   | Lexer.Error Unterminated_string -> 
       hOV 0 [< 'sTR "Syntax error: Unterminated string." >]
+  | Lexer.Error Undefined_token -> 
+      hOV 0 [< 'sTR "Syntax error: Undefined token." >]
+  | Lexer.Error (Bad_token s) -> 
+      hOV 0 [< 'sTR "Syntax error: Bad token"; 'sPC; 'sTR s; 'sTR "." >]
   | reraise ->
       hOV 0 [< 'sTR "Anomaly: Uncaught exception "; 
 	       'sTR (Printexc.to_string reraise); report () >]
