@@ -18,6 +18,7 @@ open Extraction
 open Miniml
 open Table
 open Mlutil
+open Libnames
 open Nametab
 open Vernacinterp
 open Common
@@ -81,12 +82,13 @@ let check_modules m =
   We just keep constants and inductives. *)
 
 let extract_module m =
-  let seg = Library.module_segment (Some m) in
+  let seg1,seg2 = Declaremods.module_objects (MPfile m) in
+  let seg = seg1 @ seg2 in 
   let get_reference = function
-    | sp, Leaf o ->
+    | (_,kn), Leaf o ->
 	(match Libobject.object_tag o with
-	   | "CONSTANT" | "PARAMETER" -> ConstRef sp
-	   | "INDUCTIVE" -> IndRef (sp,0)
+	   | "CONSTANT" | "PARAMETER" -> ConstRef kn
+	   | "INDUCTIVE" -> IndRef (kn,0)
 	   | _ -> failwith "caught")
     | _ -> failwith "caught"
   in
@@ -204,7 +206,7 @@ let print_user_extract r =
 let decl_in_r r0 = function 
   | Dglob (r,_) -> r = r0
   | Dabbrev (r,_,_) -> r = r0
-  | Dtype ((_,r,_)::_, _) -> sp_of_r r = sp_of_r r0
+  | Dtype ((_,r,_)::_, _) -> kn_of_r r = kn_of_r r0
   | Dtype ([],_) -> false
   | Dcustom (r,_) ->  r = r0 
   | Dfix (rv,_) -> array_exists ((=) r0) rv

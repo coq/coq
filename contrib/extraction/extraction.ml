@@ -26,6 +26,7 @@ open Table
 open Mlutil
 open Closure
 open Summary
+open Libnames
 open Nametab
 (*i*)
 
@@ -100,13 +101,13 @@ let add_constructor c e = constructor_table := Gmap.add c e !constructor_table
 let lookup_constructor c = Gmap.find c !constructor_table
 
 let constant_table = 
-  ref (Gmap.empty : (section_path, extraction_result) Gmap.t)
-let add_constant sp e = constant_table := Gmap.add sp e !constant_table
-let lookup_constant sp = Gmap.find sp !constant_table
+  ref (Gmap.empty : (kernel_name, extraction_result) Gmap.t)
+let add_constant kn e = constant_table := Gmap.add kn e !constant_table
+let lookup_constant kn = Gmap.find kn !constant_table
 
-let signature_table = ref (Gmap.empty : (section_path, signature) Gmap.t)
-let add_signature sp s = signature_table := Gmap.add sp s !signature_table
-let lookup_signature sp = Gmap.find sp !signature_table 
+let signature_table = ref (Gmap.empty : (kernel_name, signature) Gmap.t)
+let add_signature kn s = signature_table := Gmap.add kn s !signature_table
+let lookup_signature kn = Gmap.find kn !signature_table 
 
 (* Tables synchronization. *)
 
@@ -125,15 +126,15 @@ let _ = declare_summary "Extraction tables"
 
 (*S Warning and Error messages. *)
 
-let axiom_error_message sp =
+let axiom_error_message kn =
   errorlabstrm "axiom_message"
     (str "You must specify an extraction for axiom" ++ spc () ++ 
-       pr_sp sp ++ spc () ++ str "first.")
+       pr_kn kn ++ spc () ++ str "first.")
 
-let axiom_warning_message sp = 
+let axiom_warning_message kn = 
   Options.if_verbose warn 
     (str "This extraction depends on logical axiom" ++ spc () ++ 
-     pr_sp sp ++ str "." ++ spc() ++ 
+     pr_kn kn ++ str "." ++ spc() ++ 
      str "Having false logical axiom in the environment when extracting" ++ 
      spc () ++ str "may lead to incorrect or non-terminating ML terms.")
     
@@ -149,7 +150,7 @@ let type_of env c = Retyping.get_type_of env none (strip_outer_cast c)
 
 let sort_of env c = Retyping.get_sort_family_of env none (strip_outer_cast c)
 
-let is_axiom sp = (Global.lookup_constant sp).const_body = None
+let is_axiom kn = (Global.lookup_constant kn).const_body = None
 
 (*s [flag_of_type] transforms a type [t] into a [flag]. 
   Really important function. *)
@@ -206,11 +207,11 @@ let rec app_sign env f t a =
   
 (*s Function recording signatures of section paths. *)
 
-let signature_of_sp sp typ = 
-  try lookup_signature sp
+let signature_of_kn kn typ = 
+  try lookup_signature kn
   with Not_found -> 
     let s = term_sign (Global.env()) typ in 
-    add_signature sp s; s
+    add_signature kn s; s
 
 (*S Modification of the signature of terms. *)
 
@@ -260,13 +261,13 @@ let prop_abstract f  =
 
 (*s Abstraction of an constant. *)
 
-let abstract_constant sp s = 
+let abstract_constant kn s = 
   if List.mem false s then  
     let f a = 
-      if List.mem true s then MLapp (MLglob (ConstRef sp), a)
-      else MLapp (MLglob (ConstRef sp), [MLdummy])
+      if List.mem true s then MLapp (MLglob (ConstRef kn), a)
+      else MLapp (MLglob (ConstRef kn), [MLdummy])
     in prop_abstract f s
-  else MLglob (ConstRef sp) 
+  else MLglob (ConstRef kn) 
 
 (*S Management of type variable contexts. *)
 
@@ -334,26 +335,26 @@ let rec extract_type env c args ctx =
 	   | _ -> 
 	       let n' = List.nth ctx (n-1) in 
 	       if n' = 0 then Tunknown else Tvar n')
-    | Const sp when is_ml_extraction (ConstRef sp) ->
-	Tglob (ConstRef sp)
-    | Const sp when is_axiom sp -> 
+    | Const kn when is_ml_extraction (ConstRef kn) ->
+	Tglob (ConstRef kn)
+    | Const kn when is_axiom kn -> 
 	Tunknown
-    | Const sp ->
-	let t = constant_type env sp in 
+    | Const kn ->
+	let t = constant_type env kn in 
 	if is_arity env none t then
-	  match extract_constant sp with 
+	  match extract_constant kn with 
 	    | Emltype (mlt, sc, _) -> 
 		if mlt = Tdummy then Tdummy
-		else extract_type_app env (ConstRef sp,sc) args ctx
+		else extract_type_app env (ConstRef kn,sc) args ctx
 	    | Emlterm _ -> assert false
 	else 
 	  (* We can't keep as ML type abbreviation a Coq constant *)
 	  (* which type is not an arity: we reduce this constant. *)
-	  let cvalue = constant_value env sp in
+	  let cvalue = constant_value env kn in
 	  extract_type env (applist (cvalue, args)) [] ctx
-    | Ind spi ->
-	(match extract_inductive spi with 
-	   | Iml (si,vli) -> extract_type_app env (IndRef spi,si) args ctx
+    | Ind kni ->
+	(match extract_inductive kni with 
+	   | Iml (si,vli) -> extract_type_app env (IndRef kni,si) args ctx
 	   | Iprop -> assert false (* Cf. initial tests *))
     | Case _ | Fix _ | CoFix _ -> Tunknown
     | Var _ -> section_message ()
@@ -441,8 +442,8 @@ and extract_term_wt env c t =
 	 else MLletin (dummy_name, MLdummy, c2')
      | Rel n ->
 	 MLrel n
-     | Const sp ->
-	 abstract_constant sp (signature_of_sp sp t)
+     | Const kn ->
+	 abstract_constant kn (signature_of_kn kn t)
      | App (f,a) ->
       	 extract_app env f a 
      | Construct cp ->
@@ -587,36 +588,36 @@ and extract_constr_wt env c t =
 	  
 (*S Extraction of a constant. *)
 		
-and extract_constant sp =
-  try lookup_constant sp 
+and extract_constant kn =
+  try lookup_constant kn 
   with Not_found ->
     let env = Global.env() in    
-    let cb = Global.lookup_constant sp in
+    let cb = Global.lookup_constant kn in
     let typ = cb.const_type in
     match cb.const_body with
       | None -> (* A logical axiom is risky, an informative one is fatal. *) 
           (match flag_of_type env typ with
-             | (Info,_) -> axiom_error_message sp 
-             | (Logic,Arity) -> axiom_warning_message sp; 
+             | (Info,_) -> axiom_error_message kn 
+             | (Logic,Arity) -> axiom_warning_message kn;
 		 Emltype (Tdummy,[],[])
-	     | (Logic,_) -> axiom_warning_message sp;
+	     | (Logic,_) -> axiom_warning_message kn;
 		 Emlterm MLdummy)
       | Some body ->
 	  let e = match extract_constr_wt env body typ with 
 	    | Emlterm MLdummy as e -> e
 	    | Emlterm a -> 
-		Emlterm (kill_prop_lams_eta a (signature_of_sp sp typ))
+		Emlterm (kill_prop_lams_eta a (signature_of_kn kn typ))
 	    | e -> e 
-	  in add_constant sp e; e
+	  in add_constant kn e; e
 
 (*S Extraction of an inductive. *)
     
-and extract_inductive ((sp,_) as i) =
-  extract_mib sp;
+and extract_inductive ((kn,_) as i) =
+  extract_mib kn;
   lookup_inductive i
 			     
-and extract_constructor (((sp,_),_) as c) =
-  extract_mib sp;
+and extract_constructor (((kn,_),_) as c) =
+  extract_mib kn;
   lookup_constructor c
 
 and signature_of_constructor cp = match extract_constructor cp with
@@ -633,14 +634,14 @@ and is_singleton_inductive ind =
   (mib.mind_ntypes = 1) &&
   (Array.length mip.mind_consnames = 1) && 
   match extract_constructor (ind,1) with 
-    | Cml ([mlt],_,_)-> not (type_mem_sp (fst ind) mlt)
+    | Cml ([mlt],_,_)-> not (type_mem_kn (fst ind) mlt)
     | _ -> false
           
-and is_singleton_constructor ((sp,i),_) = 
-  is_singleton_inductive (sp,i) 
+and is_singleton_constructor ((kn,i),_) = 
+  is_singleton_inductive (kn,i) 
 
-and extract_mib sp =
-  let ind = (sp,0) in
+and extract_mib kn =
+  let ind = (kn,0) in
   if not (Gmap.mem ind !inductive_table) then begin
     let (mib,mip) = Global.lookup_inductive ind in
     let env = Global.env () in 
@@ -651,7 +652,7 @@ and extract_mib sp =
     (* First pass: we store inductive signatures together with *)
     (* their type var list. *)
     for i = 0 to mib.mind_ntypes - 1 do
-      let ip = (sp,i) in 
+      let ip = (kn,i) in 
       let (mib,mip) = Global.lookup_inductive ip in 
       if mip.mind_sort = (Prop Null) then 
 	add_inductive ip Iprop
@@ -662,7 +663,7 @@ and extract_mib sp =
     done;
     (* Second pass: we extract constructors *)
     for i = 0 to mib.mind_ntypes - 1 do
-      let ip = (sp,i) in
+      let ip = (kn,i) in
       let (mib,mip) = Global.lookup_inductive ip in
       match lookup_inductive ip with 
 	| Iprop -> 
@@ -691,9 +692,9 @@ and extract_mib sp =
     done
   end	      
 
-and extract_inductive_declaration sp =
-  extract_mib sp;
-  let ip = (sp,0) in 
+and extract_inductive_declaration kn =
+  extract_mib kn;
+  let ip = (kn,0) in 
   if is_singleton_inductive ip then
     let t = match lookup_constructor (ip,1) with 
       | Cml ([t],_,_)-> t
@@ -705,7 +706,7 @@ and extract_inductive_declaration sp =
      in 
     Dabbrev (IndRef ip,vl,t)
   else
-    let mib = Global.lookup_mind sp in
+    let mib = Global.lookup_mind kn in
     let one_ind ip n = 
       iterate_for (-n) (-1)
 	(fun j l -> 
@@ -717,7 +718,7 @@ and extract_inductive_declaration sp =
     let l = 
       iterate_for (1 - mib.mind_ntypes) 0
 	(fun i acc -> 
-	   let ip = (sp,-i) in
+	   let ip = (kn,-i) in
 	   let nc = Array.length mib.mind_packets.(-i).mind_consnames in 
 	   match lookup_inductive ip with
 	     | Iprop -> acc
@@ -731,12 +732,12 @@ and extract_inductive_declaration sp =
 (* It is either a constant or an inductive. *)
 
 let extract_declaration r = match r with
-  | ConstRef sp -> 
-      (match extract_constant sp with
+  | ConstRef kn -> 
+      (match extract_constant kn with
 	 | Emltype (mlt, s, vl) -> Dabbrev (r, vl, mlt)
 	 | Emlterm t -> Dglob (r, t))
-  | IndRef (sp,_) -> extract_inductive_declaration sp
-  | ConstructRef ((sp,_),_) -> extract_inductive_declaration sp
+  | IndRef (kn,_) -> extract_inductive_declaration kn
+  | ConstructRef ((kn,_),_) -> extract_inductive_declaration kn
   | VarRef _ -> assert false
 
 (*s Check if a global reference corresponds to a logical inductive. *)
@@ -752,3 +753,4 @@ let decl_is_logical_ind = function
 let decl_is_singleton = function 
   | ConstructRef cp -> is_singleton_constructor cp 
   | _ -> false 
+

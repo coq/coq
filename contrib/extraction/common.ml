@@ -16,9 +16,10 @@ open Table
 open Mlutil
 open Extraction
 open Ocaml
-open Nametab
+open Libnames
 open Util
 open Declare
+open Nametab
 
 (*s Modules considerations *)
 
@@ -34,7 +35,7 @@ let qualid_of_dirpath d =
       
 let is_long_module d r = 
   let dir = repr_dirpath d 
-  and dir' = repr_dirpath (dirpath (sp_of_r r)) in 
+  and dir' = repr_dirpath (fst (decode_kn (kn_of_r r))) in 
   let l = List.length dir 
   and l' = List.length dir' in 
   if l' < l then false 
@@ -107,7 +108,7 @@ let cache r f =
 
 module ToplevelParams = struct
   let globals () = Idset.empty
-  let rename_global r _ = Termops.id_of_global (Global.env()) r
+  let rename_global r _ = id_of_global None r
   let pp_global r _ _ = Printer.pr_global r
 end
 
@@ -125,7 +126,7 @@ module MonoParams = struct
   let rename_global r upper = 
     cache r
       (fun r -> 
-	 let id = Termops.id_of_global (Global.env()) r in
+	 let id = id_of_global None r in
 	 rename_global_id 
 	   (if upper || (is_construct r) 
 	    then uppercase_id id else lowercase_id id))
@@ -144,7 +145,7 @@ module ModularParams = struct
 
   let clash r id = 
     try 
-      let _ = locate (make_qualid (dirpath (sp_of_r r)) id)
+      let _ = locate (make_qualid (fst (decode_kn (kn_of_r r))) id)
       in true
     with _ -> false
 
@@ -161,7 +162,7 @@ module ModularParams = struct
   let rename_global r upper =
     cache r 
       (fun r -> 
-	 let id = Termops.id_of_global (Global.env()) r in 
+	 let id = id_of_global None r in 
 	 if upper || (is_construct r) then 
 	   rename_global_id r id (uppercase_id id) "Coq_"
 	 else rename_global_id r id (lowercase_id id) "coq_")

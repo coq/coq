@@ -14,7 +14,7 @@ open Names
 open Term
 open Miniml
 open Environ
-open Nametab
+open Libnames
 
 (*s Result of an extraction. *)
 

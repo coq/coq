@@ -19,7 +19,7 @@ open Util
 open Pp
 open Term 
 open Declarations
-open Nametab
+open Libnames
 
 (*s AutoInline parameter *)
 
@@ -76,11 +76,11 @@ let lang_ref = ref Ocaml
 let lang () = !lang_ref
 
 let (extr_lang,_) = 
-  declare_object ("Extraction Lang", 
-		  {cache_function = (fun (_,l) -> lang_ref := l);
-		   load_function = (fun (_,l) -> lang_ref := l);
-		   open_function = (fun _ -> ());
-		   export_function = (fun x -> Some x) })
+  declare_object 
+    {(default_object "Extraction Lang") with  
+       cache_function = (fun (_,l) -> lang_ref := l);
+       load_function = (fun _ (_,l) -> lang_ref := l);
+       export_function = (fun x -> Some x)}
 
 let _ = declare_summary "Extraction Lang" 
 	  { freeze_function = (fun () -> !lang_ref);
@@ -110,11 +110,11 @@ let add_inline_entries b l =
 (*s Registration of operations for rollback. *)
 
 let (inline_extraction,_) = 
-  declare_object ("Extraction Inline",
-		  { cache_function = (fun (_,(b,l)) -> add_inline_entries b l);
-		    load_function = (fun (_,(b,l)) -> add_inline_entries b l);
-		    open_function = (fun _ -> ());
-		    export_function = (fun x -> Some x) })
+  declare_object 
+    {(default_object "Extraction Inline") with 
+       cache_function = (fun (_,(b,l)) -> add_inline_entries b l);
+       load_function = (fun _ (_,(b,l)) -> add_inline_entries b l);
+       export_function = (fun x -> Some x)}
 
 let _ = declare_summary "Extraction Inline"
 	  { freeze_function = (fun () -> !inline_table);
@@ -147,11 +147,10 @@ let print_extraction_inline () =
 
 let (reset_inline,_) = 
   declare_object
-    ("Reset Extraction Inline", 
-     {  cache_function = (fun (_,_)-> inline_table :=  empty_inline_table);
-	load_function = (fun (_,_)-> inline_table :=  empty_inline_table); 
-	open_function = (fun _ -> ());
-	export_function = (fun x -> Some x) })
+    {(default_object "Reset Extraction Inline") with  
+       cache_function = (fun (_,_)-> inline_table :=  empty_inline_table);
+       load_function = (fun _ (_,_)-> inline_table :=  empty_inline_table); 
+       export_function = (fun x -> Some x)}
 
 let reset_extraction_inline () = add_anonymous_leaf (reset_inline ())
 
@@ -181,11 +180,11 @@ let find_ml_extraction r =
 (*s Registration of operations for rollback. *)
 
 let (in_ml_extraction,_) = 
-  declare_object ("ML extractions",
-		  { cache_function = (fun (_,(r,s)) -> add_ml_extraction r s);
-		    load_function = (fun (_,(r,s)) -> add_ml_extraction r s);
-		    open_function = (fun _ -> ());
-		    export_function = (fun x -> Some x) })
+  declare_object 
+    {(default_object "ML extractions") with 
+       cache_function = (fun (_,(r,s)) -> add_ml_extraction r s);
+       load_function = (fun _ (_,(r,s)) -> add_ml_extraction r s);
+       export_function = (fun x -> Some x)}
 
 let _ = declare_summary "ML extractions"
 	  { freeze_function = (fun () -> !extractions);

@@ -12,7 +12,7 @@ open Pp
 open Miniml
 open Mlutil
 open Names
-open Nametab
+open Libnames
 
 module ToplevelPp : Mlpp
 module OcamlMonoPp : Mlpp

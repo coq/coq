@@ -11,7 +11,7 @@
 open Names
 open Term
 open Miniml
-open Nametab
+open Libnames
 
 (*s Special identifiers. [dummy_name] is to be used for dead code
     and will be printed as [_] in concrete (Caml) code. *)
@@ -40,9 +40,9 @@ val named_lams : identifier list -> ml_ast -> ml_ast
 (*s Utility functions over ML types. [update_args sp vl t] puts [vl]
    as arguments behind every inductive types [(sp,_)]. *)
 
-val sp_of_r : global_reference -> section_path
+val kn_of_r : global_reference -> kernel_name
 
-val type_mem_sp : section_path -> ml_type -> bool
+val type_mem_kn : kernel_name -> ml_type -> bool
 
 (*s Utility functions over ML terms. [occurs n t] checks whether [Rel
     n] occurs (freely) in [t]. [ml_lift] is de Bruijn

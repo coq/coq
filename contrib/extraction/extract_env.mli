@@ -12,7 +12,7 @@
 
 open Util
 open Names
-open Nametab
+open Libnames
 
 val extraction : Genarg.constr_ast -> unit
 val extraction_rec : qualid located list -> unit
