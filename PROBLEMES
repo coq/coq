@@ -1,30 +1,8 @@
-AddPath "/toto".
-Anomaly: Uncaught exception Unix.Unix_error(20, "stat", "/toto").
-Please report.
---> CORRIGE
-
 Declaration de Local a l'interieur d'un but ...
 Certains Clear deviennent impossible car la variable apparait dans 
 un lemme local, c'est plutot sain ...
 
 La syntaxe <A>x=y est parfois refusee
-
-Les arguments des Tactic Definition sont interpretes avant 
-l'application de la tactique, ils ne peuvent pas contenir des variables 
-qui seront introduites dans la tactique ....
-MUTUAL-EXCLUSION/binary/version1/Soundness.v
-
---> Il y a aussi une anomalie :
-fntf1 < (SolveCycleNode1 H '(not_true_is_false (hd o))).
-Toplevel input, characters 0-47
-> (SolveCycleNode1 H '(not_true_is_false (hd o))).
-
-> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Anomaly: Illegal application: (APP SolveCycleNode1 H
-                                 (COMMAND
-                                    (APPLIST (QUALID not_true_is_false)
-                                       (APPLIST (QUALID hd) (QUALID o))))).
-
 
 l'entree numarg de g_tactic.ml4 accepte aussi des id... (pour les
 binding je pense) d'ou des erreurs de syntaxe ...  pure_numarg est
@@ -37,8 +15,8 @@ CONTRIBS
 BellLabs/lazyPCF : OK
 
 Bordeaux/TREES :
-Bordeaux/Additions : 
-	echecs sur Realizer
+Bordeaux/Additions :
+  echecs sur Realizer
 
 Bordeaux/GROUPS : OK
 
@@ -74,7 +52,7 @@ The 2nd term has type (SStream A P) which should be coercible to
 
 Lyon/IEEE754 : OK
 
-
+Rocq/DEMOS : OK
 Rocq/GRAPHS
 /home/cpaulin/TYPES/V7/bin/coqc  -q  -I . lsort
 Utilise NewInduction
@@ -86,8 +64,7 @@ File "./cgraph.v", line 1866, characters 2-7
 Error: frontier was handed back a ill-formed proof.
 (Apres un EApply)
 
-Rocq/MUTUAL-EXCLUSION/
-	Incompatibilite interpretation des arguments de Tactic Definition
+Rocq/MUTUAL-EXCLUSION : échec sur Realizer
 
 Rocq/COC
 Realizer dans Conv_Dec.v, Expr.v, Infer.v, Machine.v MyList.v Names.v
