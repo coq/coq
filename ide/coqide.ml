@@ -1219,11 +1219,12 @@ Please restart and report NOW.";
 	      (match t with 
 	       | VernacBeginSection _ | VernacDefineModule _ 
 	       | VernacDeclareModule _ | VernacDeclareModuleType _
-	       | VernacEndSegment _ 
+	       | VernacEndSegment _
 		 -> reset_to_mod id
 	       | _ ->  reset_to id);
 	      update_input ()
 	  | { ast = _, ( VernacStartTheoremProof _ 
+		       | VernacGoal _
 		       | VernacDefinition (_,_,ProveBody _,_,_));
 	      reset_info=Reset(id,{contents=false})} ->
 	      ignore (pop ());
@@ -2273,6 +2274,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 	  !flash_info (f ^ " successfully compiled")
 	else begin
 	  !flash_info (f ^ " failed to compile");
+	  activate_input (notebook ())#current_page;
 	  av#process_until_end_or_error;
 	  av#insert_message "Compilation output:\n";
 	  av#insert_message res
