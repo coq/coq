@@ -294,12 +294,12 @@ let get_current_context () =
     with e when Logic.catchable_exception e -> 
       (Evd.empty, Global.env())
 
-let weak = ref true
+let strict_check = ref false
 
 (* Globalize a name which must be bound -- actually just check it is bound *)
 let glob_hyp ist (loc,id) =
   let (_,env) = get_current_context () in
-  if !weak or find_ident id ist then id
+  if (not !strict_check) or find_ident id ist then id
   else
 (*
     try let _ = lookup (make_short_qualid id) in id
@@ -333,8 +333,8 @@ let glob_ltac_qualid ist ref =
   try Qualid (loc,qualid_of_sp (locate_tactic qid))
   with Not_found -> glob_reference ist ref
 
-let glob_ltac_reference ist = function
-  | Ident (_loc,id) when !weak or find_ident id ist -> Ident (loc,id)
+let glob_ltac_reference strict ist = function
+  | Ident (_loc,id) when not strict or find_ident id ist -> Ident (loc,id)
   | r -> glob_ltac_qualid ist r
 
 let rec glob_intro_pattern lf ist = function
@@ -580,11 +580,11 @@ and glob_tactic_seq (lfun,lmeta,sigma,env as ist) = function
       let lrc = List.map (fun (n,b) -> (n,glob_tactic_fun ist b)) lrc in
       lfun, TacLetRecIn (lrc,glob_tactic ist u)
   | TacLetIn (l,u) ->
-      let l = List.map (fun (n,c,b) -> (n,option_app (glob_constr_may_eval ist) c,glob_tacarg ist b)) l in
+      let l = List.map (fun (n,c,b) -> (n,option_app (glob_constr_may_eval ist) c,glob_tacarg !strict_check ist b)) l in
       let ist' = ((extract_let_names l)@lfun,lmeta,sigma,env) in
       lfun, TacLetIn (l,glob_tactic ist' u)
   | TacLetCut l ->
-      let f (n,c,t) = (n,glob_constr_may_eval ist c,glob_tacarg ist t) in
+      let f (n,c,t) = (n,glob_constr_may_eval ist c,glob_tacarg !strict_check ist t) in
       lfun, TacLetCut (List.map f l)
   | TacMatchContext (lr,lmr) ->
       lfun, TacMatchContext(lr, glob_match_rule ist lmr)
@@ -610,21 +610,23 @@ and glob_tactic_seq (lfun,lmeta,sigma,env as ist) = function
       lfun, TacOrelse (glob_tactic ist tac1,glob_tactic ist tac2)
   | TacFirst l -> lfun, TacFirst (List.map (glob_tactic ist) l)
   | TacSolve l -> lfun, TacSolve (List.map (glob_tactic ist) l)
-  | TacArg a -> lfun, TacArg (glob_tacarg ist a)
+  | TacArg a -> lfun, TacArg (glob_tacarg true ist a)
 
 and glob_tactic_fun (lfun,lmeta,sigma,env) (var,body) = 
   let lfun' = List.rev_append (filter_some var) lfun in
   (var,glob_tactic (lfun',lmeta,sigma,env) body)
 
-and glob_tacarg ist = function
+and glob_tacarg strict ist = function
   | TacVoid -> TacVoid
-  | Reference r -> Reference (glob_ltac_reference ist r)
+  | Reference r -> Reference (glob_ltac_reference strict ist r)
   | Integer n -> Integer n
   | ConstrMayEval c -> ConstrMayEval (glob_constr_may_eval ist c)
   | MetaNumArg (_loc,n) -> MetaNumArg (loc,glob_metanum ist loc n)
   | MetaIdArg (_loc,_) -> error_syntactic_metavariables_not_allowed loc
   | TacCall (_loc,f,l) ->
-      TacCall (_loc,glob_ltac_reference ist f,List.map (glob_tacarg ist) l)
+      TacCall (_loc,
+        glob_ltac_reference strict ist f,
+	List.map (glob_tacarg !strict_check ist) l)
   | Tacexp t -> Tacexp (glob_tactic ist t)
   | TacDynamic(_,t) as x ->
       (match tag t with
@@ -660,7 +662,8 @@ and glob_genarg ist x =
   | IdentArgType ->
       in_gen rawwit_ident (glob_hyp ist (dummy_loc,out_gen rawwit_ident x))
   | RefArgType ->
-      in_gen rawwit_ref (glob_ltac_reference ist (out_gen rawwit_ref x))
+      in_gen rawwit_ref (glob_ltac_reference !strict_check ist 
+	(out_gen rawwit_ref x))
   | SortArgType ->
       in_gen rawwit_sort (out_gen rawwit_sort x)
   | ConstrArgType ->
@@ -1279,7 +1282,7 @@ and match_context_interp ist goal lr lmr =
     with
     | (FailError _) as e -> raise e
     | NextOccurrence _ -> raise No_match
-    | No_match | _ ->
+    | e when e = No_match or Logic.catchable_exception e ->
       apply_goal_sub ist (nocc + 1) (id,c) csr mt mhyps hyps in
   let rec apply_match_context ist = function
     | (All t)::tl ->
