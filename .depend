@@ -816,14 +816,14 @@ parsing/extend.cmx: parsing/ast.cmx parsing/coqast.cmx interp/genarg.cmx \
     interp/topconstr.cmx lib/util.cmx parsing/extend.cmi 
 parsing/g_basevernac.cmo: parsing/ast.cmi interp/constrintern.cmi \
     parsing/coqast.cmi pretyping/evd.cmi parsing/extend.cmi \
-    library/global.cmi library/goptions.cmi kernel/names.cmi parsing/pcoq.cmi \
-    lib/pp.cmi interp/ppextend.cmi parsing/termast.cmi lib/util.cmi \
-    toplevel/vernacexpr.cmo 
+    library/global.cmi library/goptions.cmi toplevel/metasyntax.cmi \
+    kernel/names.cmi parsing/pcoq.cmi lib/pp.cmi interp/ppextend.cmi \
+    parsing/termast.cmi lib/util.cmi toplevel/vernacexpr.cmo 
 parsing/g_basevernac.cmx: parsing/ast.cmx interp/constrintern.cmx \
     parsing/coqast.cmx pretyping/evd.cmx parsing/extend.cmx \
-    library/global.cmx library/goptions.cmx kernel/names.cmx parsing/pcoq.cmx \
-    lib/pp.cmx interp/ppextend.cmx parsing/termast.cmx lib/util.cmx \
-    toplevel/vernacexpr.cmx 
+    library/global.cmx library/goptions.cmx toplevel/metasyntax.cmx \
+    kernel/names.cmx parsing/pcoq.cmx lib/pp.cmx interp/ppextend.cmx \
+    parsing/termast.cmx lib/util.cmx toplevel/vernacexpr.cmx 
 parsing/g_cases.cmo: parsing/g_constr.cmo library/libnames.cmi \
     parsing/pcoq.cmi lib/pp.cmi kernel/term.cmi interp/topconstr.cmi \
     lib/util.cmi 
