@@ -682,10 +682,16 @@ GEXTEND Gram
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
            VernacNotation (local,c,Some(s,modl),None,sc)
 
+     | IDENT "Tactic"; IDENT "Notation"; s = STRING; 
+	 pil = LIST0 production_item; ":="; t = Tactic.tactic -> 
+	   VernacTacticGrammar ["",(s,pil),t]
+
+(*
      | IDENT "Grammar"; IDENT "tactic"; IDENT "simple_tactic";
-        OPT [ ":"; IDENT "tactic" ]; ":=";
+        (* OPT [ ":"; IDENT "tactic" ]; *) ":=";
         OPT "|"; tl = LIST0 grammar_tactic_rule SEP "|" -> 
 	  VernacTacticGrammar tl
+*)
 
      | IDENT "Grammar"; u = univ;
          tl = LIST1 grammar_entry SEP "with" -> 
@@ -751,10 +757,12 @@ GEXTEND Gram
      | IDENT "NONA" -> Some Gramext.NonA
      | -> None ]]
   ;
+(*
   grammar_tactic_rule:
-    [[ name = rule_name; "["; s = STRING; pil = LIST0 production_item; "]";
-       "->"; "["; t = Tactic.tactic; "]"  -> (name, (s,pil), t) ]]
+    [[ (* name = rule_name; *) "["; s = STRING; pil = LIST0 production_item; "]";
+       "->"; "["; t = Tactic.tactic; "]"  -> let name="" in (name,(s,pil),t) ]]
   ;
+*)
   grammar_rule:
     [[ name = rule_name; "["; pil = LIST0 production_item; "]"; "->";
        a = action -> (name, pil, a) ]]
@@ -764,10 +772,8 @@ GEXTEND Gram
   ;
   production_item:
     [[ s = STRING -> VTerm s
-     | nt = non_terminal; po = OPT [ "("; p = METAIDENT; ")" -> p ] ->
-         match po with
-           | Some p -> VNonTerm (loc,nt,Some (Names.id_of_string p))
-           | _ -> VNonTerm (loc,nt,None) ]]
+     | nt = non_terminal; po = OPT [ "("; p = ident; ")" -> p ] ->
+	 VNonTerm (loc,nt,po) ]]
   ;
   non_terminal:
     [[ u = IDENT; ":"; nt = IDENT ->
