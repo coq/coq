@@ -13,8 +13,6 @@ open Pp
 open Names
 open Sign
 open Term
-open Termops
-open Inductive
 open Environ
 open Reductionops
 open Nametab
@@ -22,7 +20,7 @@ open Nametab
 
 (* A Pretty-Printer for the Calculus of Inductive Constructions. *)
 
-val assumptions_for_print : name list -> names_context
+val assumptions_for_print : name list -> Termops.names_context
 
 val print_closed_sections : bool ref
 val print_impl_args : int list -> std_ppcmds

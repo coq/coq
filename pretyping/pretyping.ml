@@ -305,7 +305,7 @@ let rec pretype tycon env isevars lvar lmeta = function
       let env' = push_rel_assum var env in
       let j' = pretype_type empty_valcon env' isevars lvar lmeta c2 in
       let resj =
-	try fst (judge_of_product env name j j')
+	try judge_of_product env name j j'
 	with TypeError _ as e -> Stdpp.raise_with_loc loc e in
       inh_conv_coerce_to_tycon loc env isevars resj tycon
 	

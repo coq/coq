@@ -15,6 +15,12 @@ open Term
 open Sign
 open Environ
 
+(* Universes *)
+val set_module : Names.dir_path -> unit
+val new_univ : unit -> Univ.universe
+val new_sort_in_family : sorts_family -> sorts
+
+(* iterators on terms *)
 val print_sort : sorts -> std_ppcmds
 val prod_it : init:types -> (name * types) list -> types
 val lam_it : init:constr -> (name * types) list -> constr
@@ -138,6 +144,6 @@ val assums_of_rel_context : rel_context -> (name * constr) list
 val lift_rel_context : int -> rel_context -> rel_context
 val fold_named_context_both_sides :
   ('a -> named_declaration -> named_context -> 'a) ->
-    named_context -> 'a -> 'a
+    named_context -> init:'a -> 'a
 val mem_named_context : identifier -> named_context -> bool
 val make_all_name_different : env -> env

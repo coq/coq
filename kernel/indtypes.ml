@@ -461,18 +461,6 @@ let is_recursive listind =
   in 
   array_exists one_is_rec
 
-let abstract_inductive ntypes hyps (par,np,id,arity,cnames,issmall,isunit,lc) =
-  let args = instance_from_named_context (List.rev hyps) in
-  let nhyps = List.length hyps in
-  let nparams = Array.length args in (* nparams = nhyps - nb(letin) *)
-  let new_refs =
-    list_tabulate (fun k -> mkApp (mkRel (k+nhyps+1),args)) ntypes in
-  let abs_constructor b = it_mkNamedProd_or_LetIn (substl new_refs b) hyps in
-  let lc' = Array.map abs_constructor lc in
-  let arity' = it_mkNamedProd_or_LetIn arity hyps in
-  let par' = push_named_to_rel_context hyps par in
-  (par',np+nparams,id,arity',cnames,issmall,isunit,lc')
-
 let cci_inductive env env_ar finite inds cst =
   let ntypes = List.length inds in
   let ids = 
@@ -507,7 +495,7 @@ let cci_inductive env env_ar finite inds cst =
       mind_nf_lc = nf_lc;
       mind_user_arity  = ar;
       mind_nf_arity = nf_ar;
-      mind_nrealargs = List.length ar_sign - nparams;
+      mind_nrealargs = rel_context_length ar_sign - nparams;
       mind_sort = ar_sort;
       mind_kelim = kelim;
       mind_listrec = recargs;

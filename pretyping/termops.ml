@@ -23,6 +23,23 @@ let print_sort = function
 (*  | Type _ -> [< 'sTR "Type" >] *)
   | Type u -> [< 'sTR "Type("; Univ.pr_uni u; 'sTR ")" >]
 
+let current_module = ref empty_dirpath
+
+let set_module m = current_module := m
+
+let new_univ = 
+  let univ_gen = ref 0 in
+  (fun sp ->
+    incr univ_gen; 
+    Univ.make_univ (!current_module,!univ_gen))
+
+let new_sort_in_family = function 
+  | InProp -> mk_Prop
+  | InSet -> mk_Set
+  | InType -> Type (new_univ ())
+
+
+
 (* prod_it b [xn:Tn;..;x1:T1] = (x1:T1)..(xn:Tn)b *)
 let prod_it = List.fold_left (fun c (n,t)  -> mkProd (n, t, c))
 
@@ -580,9 +597,9 @@ let empty_names_context = []
 let ids_of_rel_context sign =
   Sign.fold_rel_context
     (fun (na,_,_) l -> match na with Name id -> id::l | Anonymous -> l)
-    sign []
+    sign ~init:[]
 let ids_of_named_context sign =
-  Sign.fold_named_context (fun (id,_,_) idl -> id::idl) sign []
+  Sign.fold_named_context (fun (id,_,_) idl -> id::idl) sign ~init:[]
 
 let ids_of_context env = 
   (ids_of_rel_context (rel_context env))
@@ -673,7 +690,7 @@ let process_rel_context f env =
   let sign = named_context env in
   let rels = rel_context env in
   let env0 = reset_with_named_context sign env in
-  Sign.fold_rel_context f rels env0
+  Sign.fold_rel_context f rels ~init:env0
 
 let assums_of_rel_context sign =
   Sign.fold_rel_context
@@ -681,7 +698,7 @@ let assums_of_rel_context sign =
       match c with
           Some _ -> l
         | None -> (na,body_of_type t)::l)
-    sign []
+    sign ~init:[]
 
 let lift_rel_context n sign =
   let rec liftrec k = function

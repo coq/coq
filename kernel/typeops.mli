@@ -13,7 +13,6 @@ open Names
 open Univ
 open Term
 open Environ
-open Inductive
 (*i*)
 
 (*s Typing functions (not yet tagged as safe) *)
@@ -40,13 +39,13 @@ val type_judgment          :  env -> unsafe_judgment -> unsafe_type_judgment
 
 (*s Type of sorts. *)
 val judge_of_prop_contents : contents -> unsafe_judgment
-val judge_of_type          : universe -> unsafe_judgment * constraints
+val judge_of_type          : universe -> unsafe_judgment
 
 (*s Type of a bound variable. *)
 val judge_of_relative : env -> int -> unsafe_judgment
 
 (*s Type of variables *)
-val judge_of_variable : env -> identifier -> unsafe_judgment
+val judge_of_variable : env -> variable -> unsafe_judgment
 
 (*s type of a constant *)
 val judge_of_constant : env -> constant -> unsafe_judgment
@@ -64,7 +63,7 @@ val judge_of_abstraction :
 (*s Type of a product. *)
 val judge_of_product :
   env -> name -> unsafe_type_judgment -> unsafe_type_judgment 
-    -> unsafe_judgment * constraints
+    -> unsafe_judgment
 
 (* s Type of a let in. *)
 val judge_of_letin :

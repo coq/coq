@@ -160,6 +160,7 @@ let compile verbosely f =
     let _,longf = find_file_in_path (Library.get_load_path ()) (f^".v") in
     let ldir0 = Library.find_logical_path (Filename.dirname longf) in
     let ldir = Nameops.extend_dirpath ldir0 m in
+    Termops.set_module ldir; (* Just for universe naming *)
     Lib.start_module ldir;
     let _ = load_vernac verbosely longf in
     let mid = Lib.end_module m in

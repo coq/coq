@@ -81,19 +81,22 @@ let constructor_instantiate mispec =
   substl s
 
 (* Instantiate the parameters of the inductive type *)
+(* TODO: verify the arg of LetIn correspond to the value in the
+   signature ? *)
 let instantiate_params t args sign =
-  let rec inst s t = function
-    | ((_,None,_)::ctxt,a::args) ->
-	(match kind_of_term t with
-	   | Prod(_,_,t) -> inst (a::s) t (ctxt,args)
-	   | _ -> anomaly"instantiate_params: type, ctxt and args mismatch")
-    | ((_,(Some b),_)::ctxt,args) -> 
-	(match kind_of_term t with
-	   | LetIn(_,_,_,t) -> inst ((substl s b)::s) t (ctxt,args)
-	   | _ -> anomaly"instantiate_params: type, ctxt and args mismatch")
-    | [], [] -> substl s t
-    | _ -> anomaly"instantiate_params: type, ctxt and args mismatch"
-  in inst [] t (List.rev sign,args)
+  let fail () =
+    anomaly "instantiate_params: type, ctxt and args mismatch" in
+  let (rem_args, subs, ty) =
+    Sign.fold_rel_context
+      (fun (_,copt,_) (largs,subs,ty) ->
+        match (copt, largs, kind_of_term ty) with
+          | (None, a::args, Prod(_,_,t)) -> (args, a::subs, t)
+          | (Some b,_,LetIn(_,_,_,t))    -> (largs, (substl subs b)::subs, t)
+	  | _                            -> fail())
+      sign
+      (args,[],t) in
+  if rem_args <> [] then fail();
+  substl subs ty
 
 let full_inductive_instantiate (mispec,params) t =
   instantiate_params t params mispec.mis_mip.mind_params_ctxt
@@ -177,12 +180,16 @@ let get_constructors ((mispec,params) as indf) =
 
 (* Type of case branches *)
 
-let local_rels =
-  let rec relrec acc n = function (* more recent arg in front *)
-    | [] -> acc
-    | (_,None,_)::l -> relrec (mkRel n :: acc) (n+1) l
-    | (_,Some _,_)::l -> relrec acc (n+1) l
-  in relrec [] 1
+let local_rels ctxt =
+  let (rels,_) =
+    Sign.fold_rel_context_reverse
+      (fun (rels,n) (_,copt,_) ->
+        match copt with
+            None   -> (mkRel n :: rels, n+1)
+          | Some _ -> (rels, n+1))
+      ([],1)
+      ctxt in
+  rels
 
 let build_dependent_constructor cs =
   applist
@@ -264,7 +271,7 @@ let is_correct_arity env kelim (c,pj) indf t =
     let create_sort = function 
       | InProp -> mkProp
       | InSet -> mkSet
-      | InType -> mkType (Univ.new_univ ()) in
+      | InType -> mkSort type_0 in
     let listarity = List.map create_sort kelim
 (*    let listarity =
       (List.map (fun s -> make_arity env true indf (create_sort s)) kelim)

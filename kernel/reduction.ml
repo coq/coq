@@ -290,7 +290,7 @@ let dest_prod env =
 	  decrec (push_rel d env) (Sign.add_rel_decl d m) c0
       | _ -> m,t
   in 
-  decrec env []
+  decrec env Sign.empty_rel_context
 
 (* The same but preserving lets *)
 let dest_prod_assum env = 

@@ -55,7 +55,7 @@ let env_ise sigma env =
         (na, option_app (nf_evar sigma) b, nf_evar sigma ty)
         e)
     ctxt
-    env0
+    ~init:env0
 
 (* This simplify the typing context of Cases clauses *)
 (* hope it does not disturb other typing contexts *)

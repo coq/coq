@@ -97,7 +97,7 @@ let new_evar =
 let make_evar_instance env =
   fold_named_context
     (fun env (id, b, _) l -> (*if b=None then*) mkVar id :: l (*else l*))
-    env []
+    env ~init:[]
 
 (* create an untyped existential variable *)
 let new_evar_in_sign env =
@@ -124,7 +124,7 @@ let new_Type () = mkType (new_univ ())
 
 let new_Type_sort () = Type (new_univ ())
 
-let judge_of_new_Type () = fst (Typeops.judge_of_type (new_univ ()))
+let judge_of_new_Type () = Typeops.judge_of_type (new_univ ())
 (*
 let new_Type () = mkType dummy_univ
 
@@ -304,7 +304,7 @@ let make_evar_instance_with_rel env =
   let vars = 
     fold_named_context
       (fun env (id,b,_) l -> (* if b=None then *) mkVar id :: l (*else l*))
-      env [] in
+      env ~init:[] in
   snd (fold_rel_context
     (fun env (_,b,_) (i,l) -> (i-1, (*if b=None then *) mkRel i :: l (*else l*)))
     env (n,vars))

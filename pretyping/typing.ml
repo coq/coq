@@ -86,7 +86,7 @@ let rec execute mf env sigma cstr =
 	judge_of_prop_contents c
 
     | Sort (Type u) ->
-	let (j,_) = judge_of_type u in j
+	judge_of_type u
 	  
     | App (f,args) ->
 	let j = execute mf env sigma f in
@@ -107,8 +107,7 @@ let rec execute mf env sigma cstr =
 	let env1 = push_rel (name,None,varj.utj_val) env in
         let j' = execute mf env1 sigma c2 in
         let varj' = type_judgment env sigma j' in
-	let (j,_) = judge_of_product env1 name varj varj' in
-	j
+	judge_of_product env1 name varj varj'
 
      | LetIn (name,c1,c2,c3) ->
         let j1 = execute mf env sigma c1 in

@@ -666,10 +666,14 @@ let generalize_dep c gl =
       or dependent_in_decl c d then 
       d::toquant
     else 
-      toquant
-  in
-  let to_quantify = List.fold_left seek [] sign in
-  let qhyps = List.map (fun (id,_,_) -> id) to_quantify in
+      toquant in
+  let toq_rev = Sign.fold_named_context_reverse seek [] sign in
+  let qhyps = List.map (fun (id,_,_) -> id) toq_rev in
+  let to_quantify =
+    List.fold_left
+      (fun sign d -> add_named_decl d sign)
+      empty_named_context
+      toq_rev in
   let tothin = List.filter (fun id -> not (List.mem id init_ids)) qhyps in
   let tothin' =
     match kind_of_term c with
@@ -677,9 +681,9 @@ let generalize_dep c gl =
 	  -> id::tothin
       | _ -> tothin
   in
-  let cl' = List.fold_right mkNamedProd_or_LetIn to_quantify (pf_concl gl) in
+  let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
   let cl'' = generalize_goal gl c cl' in
-  let args = Array.to_list (instance_from_named_context to_quantify) in
+  let args = List.map mkVar qhyps in
   tclTHEN
     (apply_type cl'' (c::args))
     (thin (List.rev tothin'))
@@ -766,9 +770,14 @@ let letin_tac with_eq name c occs gl =
       if not (mem_named_context x (named_context env)) then x else
 	error ("The variable "^(string_of_id x)^" is already declared") in
   let (depdecls,marks,ccl)= letin_abstract id c occs gl in 
+  let ctxt =
+    List.fold_left
+      (fun sign d -> add_named_decl d sign)
+      empty_named_context
+      depdecls in
   let t = pf_type_of gl c in
   let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
-  let args = Array.to_list (instance_from_named_context depdecls) in
+  let args = List.map (fun (id,_,_) -> mkVar id) depdecls in
   let newcl = mkNamedLetIn id c t tmpcl in
 (*
     if with_eq then

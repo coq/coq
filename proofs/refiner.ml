@@ -57,7 +57,7 @@ let norm_goal sigma gl =
     Sign.fold_named_context 
       (fun (d,b,ty) sign ->
         add_named_decl (d, option_app red_fun b, red_fun ty) sign)
-      empty_named_context gl.evar_hyps;
+      gl.evar_hyps ~init:empty_named_context;
     evar_body = gl.evar_body}
 
 
@@ -799,7 +799,7 @@ let thin_sign osign sign =
 	 if Sign.lookup_named id osign = (id,c,ty) then sign
 	 else raise Different
        with Not_found | Different -> add_named_decl d sign)
-    sign empty_named_context
+    sign ~init:empty_named_context
 
 let rec print_proof sigma osign pf =
   let {evar_hyps=hyps; evar_concl=cl; 

@@ -43,5 +43,5 @@ val conv_leq_vecti : types array conversion_function
 val dest_prod       : env -> types -> Sign.rel_context * types
 val dest_prod_assum : env -> types -> Sign.rel_context * types
 
-val dest_arity : env -> types -> arity
+val dest_arity : env -> types -> Sign.arity
 val is_arity   : env -> types -> bool

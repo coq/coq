@@ -18,7 +18,7 @@ open Environ
 
 exception Induc
 
-(*s Extracting an inductive type from a constructions *)
+(*s Extracting an inductive type from a construction *)
 
 (* [find_m*type env sigma c] coerce [c] to an recursive type (I args).
    [find_rectype], [find_inductive] and [find_coinductive]

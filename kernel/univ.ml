@@ -23,23 +23,23 @@
 open Pp
 open Util
 
-type universe_level = { u_mod : Names.dir_path; u_num : int }
+type universe_level =
+    { u_mod : Names.dir_path;
+      u_num : int }
 
 type universe =
   | Variable of universe_level
   | Max of universe_level list * universe_level list
-
-let universe_ord x y =
-  let c = x.u_num - y.u_num in
-  if c <> 0 then c else compare x.u_mod y.u_mod
   
 module UniverseOrdered = struct
   type t = universe_level
-  let compare = universe_ord
+  let compare = Pervasives.compare
 end
 
-let string_of_univ_level u = 
-  (Names.string_of_dirpath u.u_mod)^"."^(string_of_int u.u_num)
+let string_of_univ_level u =
+  Names.string_of_dirpath u.u_mod^"."^string_of_int u.u_num
+
+let make_univ (m,n) = Variable { u_mod=m; u_num=n }
 
 let string_of_univ = function
   | Variable u -> string_of_univ_level u
@@ -49,8 +49,7 @@ let string_of_univ = function
 	 ((List.map string_of_univ_level gel)@
 	  (List.map (fun u -> "("^(string_of_univ_level u)^")+1") gtl)))^")"
 
-let pr_uni_level u =
-  [< 'sTR (Names.string_of_dirpath u.u_mod) ; 'sTR"." ; 'iNT u.u_num >]
+let pr_uni_level u = [< 'sTR (string_of_univ_level u) >]
 
 let pr_uni = function
   | Variable u -> pr_uni_level u
@@ -62,20 +61,26 @@ let pr_uni = function
 	   (fun x -> [< 'sTR "("; pr_uni_level x; 'sTR")+1" >]) gtl;
 	 'sTR ")" >]
 
-let implicit_univ =
-  Variable 
-    { u_mod = Names.make_dirpath [Names.id_of_string "implicit_univ"];
-      u_num = 0 }
+(* Returns a fresh universe, juste above u. Does not create new universes
+   for Type_0 (the sort of Prop and Set).
+   Used to type the sort u. *)
+let super = function
+  | Variable u -> Max ([],[u])
+  | Max _ ->
+      anomaly ("Cannot take the successor of a non variable universes:\n"^
+       "you are probably typing a type already known to be the type\n"^
+       "of a user-provided term; if you really need this, please report")
 
-let current_module = ref (Names.make_dirpath[Names.id_of_string"Top"])
-
-let set_module m = current_module := m
-
-let new_univ = 
-  let univ_gen = ref 0 in
-  (fun sp ->
-     incr univ_gen; 
-     Variable { u_mod = !current_module; u_num = !univ_gen })
+(* returns the least upper bound of universes u and v. If they are not
+   constrained, then a new universe is created.
+   Used to type the products. *)
+let sup u v = 
+  match u,v with
+    | Variable u, Variable v -> Max ((if u = v then [u] else [u;v]),[])
+    | Variable u, Max (gel,gtl) -> Max (list_add_set u gel,gtl)
+    | Max (gel,gtl), Variable v -> Max (list_add_set v gel,gtl)
+    | Max (gel,gtl), Max (gel',gtl') ->
+	Max (list_union gel gel',list_union gtl gtl')
 
 (* Comparison on this type is pointer equality *)
 type canonical_arc =
@@ -386,28 +391,6 @@ let enforce_eq u v c =
 let merge_constraints c g =
   Constraint.fold enforce_constraint c g
 
-(* Returns a fresh universe, juste above u. Does not create new universes
-   for Type_0 (the sort of Prop and Set).
-   Used to type the sort u. *)
-let super = function
-  | Variable u -> Max ([],[u]), Constraint.empty
-  | Max _ ->
-      anomaly ("Cannot take the successor of a non variable universes:\n"^
-       "you are probably typing a type already known to be the type\n"^
-       "of a user-provided term; if you really need this, please report")
-
-(* returns the least upper bound of universes u and v. If they are not
-   constrained, then a new universe is created.
-   Used to type the products. *)
-let sup u v g = 
-  (match u,v with
-    | Variable u, Variable v -> Max ((if u = v then [u] else [u;v]),[])
-    | Variable u, Max (gel,gtl) -> Max (list_add_set u gel,gtl)
-    | Max (gel,gtl), Variable v -> Max (list_add_set v gel,gtl)
-    | Max (gel,gtl), Max (gel',gtl') ->
-	Max (list_union gel gel',list_union gtl gtl')),
-  Constraint.empty
-
 (* Pretty-printing *)
 
 let num_universes g =
@@ -462,7 +445,7 @@ module Huniv =
     struct
       type t = universe
       type u = Names.dir_path -> Names.dir_path
-      let hash_aux hdir {u_mod=sp; u_num=n} = {u_mod = hdir sp; u_num = n}
+      let hash_aux hdir u = { u with u_mod=hdir u.u_mod }
       let hash_sub hdir = function
 	| Variable u -> Variable (hash_aux hdir u)
 	| Max (gel,gtl) ->
@@ -477,6 +460,6 @@ module Huniv =
     end)
 
 let hcons1_univ u =
-  let _,hdir,_,_,_ = Names.hcons_names () in
+  let _,hdir,_,_,_ = Names.hcons_names() in
   Hashcons.simple_hcons Huniv.f hdir u
 

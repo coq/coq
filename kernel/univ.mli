@@ -12,18 +12,19 @@
 
 type universe
 
-val implicit_univ : universe
-
 val prop_univ : universe
+val make_univ : Names.dir_path * int -> universe
 
-val set_module : Names.dir_path -> unit
-
-val new_univ : unit -> universe
+(* The type of a universe *)
+val super : universe -> universe
+(* The max of 2 universes *)
+val sup   : universe -> universe -> universe
 
 (*s Graphs of universes. *)
 
 type universes
 
+(* The empty graph of universes *)
 val initial_universes : universes
 
 (*s Constraints. *)
@@ -36,10 +37,6 @@ type constraint_function = universe -> universe -> constraints -> constraints
 
 val enforce_geq : constraint_function
 val enforce_eq : constraint_function
-
-val super : universe -> universe * constraints
-
-val sup : universe -> universe -> universes -> universe * constraints
 
 (*s Merge of constraints in a universes graph. 
   The function [merge_constraints] merges a set of constraints in a given

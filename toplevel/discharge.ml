@@ -128,7 +128,7 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
         Sign.add_named_decl
           (x, option_app (expmod_constr modlist) b,expmod_constr modlist t)
           sgn)
-      mib.mind_hyps empty_named_context in
+      mib.mind_hyps ~init:empty_named_context in
   let (inds',abs_vars) = abstract_inductive ids_to_discard hyps' inds in
   let lmodif_one_mind i = 
     let nbc = Array.length mib.mind_packets.(i).mind_consnames in 

@@ -221,7 +221,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
       (fun env (id,_,_ as d) sign ->
          if mem_named_context id global_named_context then sign
 	 else add_named_decl d sign)
-      invEnv empty_named_context 
+      invEnv ~init:empty_named_context 
   in
   let (_,ownSign,mvb) =
     List.fold_left

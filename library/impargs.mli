@@ -12,7 +12,6 @@
 open Names
 open Term
 open Environ
-open Inductive
 open Nametab
 (*i*)
 

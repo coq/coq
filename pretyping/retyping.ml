@@ -90,7 +90,7 @@ let typeur sigma metamap =
     match kind_of_term t with
     | Cast (c,s) when isSort s -> destSort s
     | Sort (Prop c) -> type_0
-    | Sort (Type u) -> Type (fst (Univ.super u))
+    | Sort (Type u) -> Type (Univ.super u)
     | Prod (name,t,c2) ->
         (match (sort_of (push_rel (name,None,t) env) c2) with
 	  | Prop _ as s -> s

@@ -47,14 +47,15 @@ val push_rec_types : rec_declaration -> env -> env
 
 (*s Recurrence on [named_context]: older declarations processed first *)
 val fold_named_context :
-  (env -> named_declaration -> 'a -> 'a) -> env -> 'a -> 'a
+  (env -> named_declaration -> 'a -> 'a) -> env -> init:'a -> 'a
 
 (* Recurrence on [named_context] starting from younger decl *)
 val fold_named_context_reverse :
-  ('a -> named_declaration -> 'a) -> 'a -> env -> 'a
+  ('a -> named_declaration -> 'a) -> init:'a -> env -> 'a
 
 (*s Recurrence on [rel_context] *)
-val fold_rel_context : (env -> rel_declaration -> 'a -> 'a) -> env -> 'a -> 'a
+val fold_rel_context :
+  (env -> rel_declaration -> 'a -> 'a) -> env -> init:'a -> 'a
 
 (*s add entries to environment *)
 val set_universes : universes -> env -> env

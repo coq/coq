@@ -243,7 +243,7 @@ let apply_to_hyp sign id f =
 	   found := true; f sign d tail
 	 end else 
 	   add_named_decl d sign)
-      sign empty_named_context
+      sign ~init:empty_named_context
   in
   if (not !check) || !found then sign' else error "No such assumption"
 

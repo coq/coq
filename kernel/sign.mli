@@ -23,18 +23,17 @@ val add_named_decl : named_declaration -> named_context -> named_context
 val pop_named_decl : identifier -> named_context -> named_context
 
 val lookup_named : identifier -> named_context -> named_declaration
+val named_context_length : named_context -> int
 
 (*s Recurrence on [named_context]: older declarations processed first *)
 val fold_named_context :
-  (named_declaration -> 'a -> 'a) -> named_context -> 'a -> 'a
+  (named_declaration -> 'a -> 'a) -> named_context -> init:'a -> 'a
 (* newer declarations first *)
 val fold_named_context_reverse :
-  ('a -> named_declaration -> 'a) -> 'a -> named_context -> 'a
+  ('a -> named_declaration -> 'a) -> init:'a -> named_context -> 'a
 
 (*s Section-related auxiliary functions *)
 val instance_from_named_context : named_context -> constr array
-val instantiate_sign :
-  named_context -> constr array -> (identifier * constr) list
 
 (*s Signatures of ordered optionally named variables, intended to be
    accessed by de Bruijn indices *)
@@ -52,10 +51,10 @@ val push_named_to_rel_context : named_context -> rel_context -> rel_context
 
 (*s Recurrence on [rel_context]: older declarations processed first *)
 val fold_rel_context :
-  (rel_declaration -> 'a -> 'a) -> rel_context -> 'a -> 'a
+  (rel_declaration -> 'a -> 'a) -> rel_context -> init:'a -> 'a
 (* newer declarations first *)
 val fold_rel_context_reverse :
-  ('a -> rel_declaration -> 'a) -> 'a -> rel_context -> 'a
+  ('a -> rel_declaration -> 'a) -> init:'a -> rel_context -> 'a
 
 (*s Term constructors *)
 
@@ -66,6 +65,11 @@ val it_mkLambda_or_LetIn : constr -> rel_context -> constr
 val it_mkProd_or_LetIn : constr -> rel_context -> constr
 
 (*s Term destructors *)
+
+(* Destructs a term of the form $(x_1:T_1)..(x_n:T_n)s$ into the pair *)
+type arity = rel_context * sorts
+val destArity : constr -> arity
+val isArity : constr -> bool
 
 (* Transforms a product term $(x_1:T_1)..(x_n:T_n)T$ including letins
    into the pair $([(x_n,T_n);...;(x_1,T_1)],T)$, where $T$ is not a

@@ -47,11 +47,6 @@ let mk_Prop = Prop Null
 
 type sorts_family = InProp | InSet | InType
 
-let new_sort_in_family = function 
-  | InProp -> mk_Prop
-  | InSet -> mk_Set
-  | InType -> Type (Univ.new_univ ())
-
 let family_of_sort = function
   | Prop Null -> InProp
   | Prop Pos -> InSet
@@ -907,7 +902,6 @@ let mkSort   = function
 
 let prop = mk_Prop
 and spec = mk_Set
-and types = Type implicit_univ (* For eliminations *)
 and type_0 = Type prop_univ
 
 (* Constructs the term t1::t2, i.e. the term t1 casted with the type t2 *)
@@ -1031,7 +1025,7 @@ let mkFix = mkFix
 let mkCoFix = mkCoFix
 
 (* Construct an implicit *)
-let implicit_sort = Type implicit_univ
+let implicit_sort = Type (make_univ(make_dirpath[id_of_string"implicit"],0))
 let mkImplicit = mkSort implicit_sort
 
 let rec strip_outer_cast c = match kind_of_term c with
@@ -1123,28 +1117,6 @@ let prod_applist t nL = List.fold_left prod_app t nL
 (*********************************)
 (* Other term destructors        *)
 (*********************************)
-
-type arity = rel_declaration list * sorts
-
-(* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
-   ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
-let destArity = 
-  let rec prodec_rec l c =
-    match kind_of_term c with
-    | Prod (x,t,c) -> prodec_rec ((x,None,t)::l) c
-    | LetIn (x,b,t,c) -> prodec_rec ((x,Some b,t)::l) c
-    | Cast (c,_)   -> prodec_rec l c
-    | Sort s       -> l,s
-    | _              -> anomaly "destArity: not an arity"
-  in 
-  prodec_rec [] 
-
-let rec isArity c =
-  match kind_of_term c with
-  | Prod (_,_,c) -> isArity c
-  | Cast (c,_)   -> isArity c
-  | Sort _       -> true
-  | _ -> false
 
 (* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)

@@ -34,6 +34,10 @@ let explain_unbound_rel ctx n =
   [< 'sTR"Unbound reference: "; pe;
      'sTR"The reference "; 'iNT n; 'sTR" is free" >]
 
+let explain_unbound_var ctx v =
+  let var = pr_id v in
+  [< 'sTR"No such section variable or assumption : "; var >]
+
 let explain_not_type ctx j =
   let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of [< 'sTR"In environment" >] ctx in
@@ -288,6 +292,8 @@ let explain_wrong_case_info ctx ind ci =
 let explain_type_error ctx = function
   | UnboundRel n -> 
       explain_unbound_rel ctx n
+  | UnboundVar v -> 
+      explain_unbound_var ctx v
   | NotAType j -> 
       explain_not_type ctx j
   | BadAssumption c -> 

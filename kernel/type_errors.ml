@@ -36,6 +36,7 @@ type guard_error =
 
 type type_error =
   | UnboundRel of int
+  | UnboundVar of variable
   | NotAType of unsafe_judgment
   | BadAssumption of unsafe_judgment
   | ReferenceVariables of constr
@@ -47,12 +48,12 @@ type type_error =
   | IllFormedBranch of constr * int * constr * constr
   | Generalization of (name * types) * unsafe_judgment
   | ActualType of unsafe_judgment * types
-  | CantApplyBadType of (int * constr * constr)
-      * unsafe_judgment * unsafe_judgment array
+  | CantApplyBadType of
+      (int * constr * constr) * unsafe_judgment * unsafe_judgment array
   | CantApplyNonFunctional of unsafe_judgment * unsafe_judgment array
   | IllFormedRecBody of guard_error * name array * int * constr array
-  | IllTypedRecBody of int * name array * unsafe_judgment array 
-      * types array
+  | IllTypedRecBody of
+      int * name array * unsafe_judgment array * types array
 
 exception TypeError of env * type_error
 
@@ -61,6 +62,9 @@ let nfj {uj_val=c;uj_type=ct} =
 
 let error_unbound_rel env n =
   raise (TypeError (env, UnboundRel n))
+
+let error_unbound_var env v =
+  raise (TypeError (env, UnboundVar v))
 
 let error_not_type env j =
   raise (TypeError (env, NotAType j))

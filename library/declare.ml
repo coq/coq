@@ -377,7 +377,7 @@ let last_section_hyps dir =
         if dir=p then id::sec_ids else sec_ids
       with Not_found -> sec_ids)
     (Environ.named_context (Global.env()))
-    []
+    ~init:[]
 
 let constr_of_reference = function
   | VarRef id -> mkVar id

@@ -8,10 +8,6 @@
 
 (*i $Id$ i*)
 
-(*i*)
-open Pp
-(*i*)
-
 (*s Identifiers *)
 
 type identifier
@@ -19,7 +15,7 @@ type name = Name of identifier | Anonymous
 (* Parsing and printing of identifiers *)
 val string_of_id : identifier -> string
 val id_of_string : string -> identifier
-val pr_id : identifier -> std_ppcmds
+val pr_id : identifier -> Pp.std_ppcmds
 
 (* Identifiers sets and maps *)
 module Idset  : Set.S with type elt = identifier
@@ -38,7 +34,7 @@ val repr_dirpath : dir_path -> module_ident list
 
 (* Printing of directory paths as ["coq_root.module.submodule"] *)
 val string_of_dirpath : dir_path -> string
-val pr_dirpath : dir_path -> std_ppcmds
+val pr_dirpath : dir_path -> Pp.std_ppcmds
 
 
 (*s Section paths are {\em absolute} names *)
@@ -52,7 +48,7 @@ val repr_path : section_path -> dir_path * identifier
 
 (* Parsing and printing of section path as ["coq_root.module.id"] *)
 val string_of_path : section_path -> string
-val pr_sp : section_path -> std_ppcmds
+val pr_sp : section_path -> Pp.std_ppcmds
 
 module Spset  : Set.S with type elt = section_path
 module Sppred : Predicate.S with type elt = section_path

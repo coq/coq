@@ -415,7 +415,7 @@ let defined_vars flags env =
 	 match b with
 	   | None -> e
 	   | Some body -> (id, body)::e)
-      env []
+      env ~init:[]
 (*  else []*)
 
 let defined_rels flags env =

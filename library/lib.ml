@@ -129,7 +129,6 @@ let start_module s =
   if !path_prefix <> default_module then
     error "some sections are already opened";
   module_name := Some s;
-  Univ.set_module s;
   let _ = add_anonymous_entry (Module s) in
   path_prefix := s
 

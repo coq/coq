@@ -62,10 +62,9 @@ let judge_of_prop_contents = function
 (* Type of Type(i). *)
 
 let judge_of_type u =
-  let (uu,c) = super u in
+  let uu = super u in
   { uj_val = mkType u;
-    uj_type = mkType uu },
-  c
+    uj_type = mkType uu }
 
 (*s Type of a de Bruijn index. *)
 	  
@@ -82,6 +81,14 @@ let relativekey = Profile.declare_profile "judge_of_relative";;
 let judge_of_relative env n =
   Profile.profile2 relativekey judge_of_relative env n;;
 *)
+
+(* Type of variables *)
+let judge_of_variable env id =
+  try
+    let (_,_,ty) = lookup_named id env in
+    make_judge (mkVar id) ty
+  with Not_found -> 
+    error_unbound_var env id
 
 (* Management of context of variables. *)
 
@@ -115,14 +122,6 @@ let check_hyps id env hyps =
     error_reference_variables env id
 *)
 (* Instantiation of terms on real arguments. *)
-
-(* Type of variables *)
-let judge_of_variable env id =
-  try
-    let (_,_,ty) = lookup_named id env in
-    make_judge (mkVar id) ty
-  with Not_found -> 
-    error ("execute: variable " ^ (string_of_id id) ^ " not defined")
 
 (* Type of constants *)
 let judge_of_constant env cst =
@@ -198,16 +197,14 @@ let judge_of_apply env nocheck funj argjl
 
 (* Type of product *)
 
-let sort_of_product domsort rangsort g =
-  match rangsort with
+let sort_of_product domsort rangsort =
+  match (domsort, rangsort) with
     (* Product rule (s,Prop,Prop) *) 
-    | Prop _ -> rangsort, Constraint.empty
-    | Type u2 ->
-        (match domsort with
-           (* Product rule (Prop,Type_i,Type_i) *)
-           | Prop _ -> rangsort, Constraint.empty
-           (* Product rule (Type_i,Type_i,Type_i) *) 
-           | Type u1 -> let (u12,cst) = sup u1 u2 g in Type u12, cst)
+    | (_,       Prop _)  -> rangsort
+    (* Product rule (Prop,Type_i,Type_i) *)
+    | (Prop _,  Type _)  -> rangsort
+    (* Product rule (Type_i,Type_i,Type_i) *) 
+    | (Type u1, Type u2) -> Type (sup u1 u2)
 
 (* [judge_of_product env name (typ1,s1) (typ2,s2)] implements the rule
 
@@ -218,10 +215,9 @@ let sort_of_product domsort rangsort g =
   where j.uj_type is convertible to a sort s2
 *)
 let judge_of_product env name t1 t2 =
-  let (s,g) = sort_of_product t1.utj_type t2.utj_type (universes env) in
+  let s = sort_of_product t1.utj_type t2.utj_type in
   { uj_val = mkProd (name, t1.utj_val, t2.utj_val);
-    uj_type = mkSort s },
-  g
+    uj_type = mkSort s }
 
 (* Type of a type cast *)
 
@@ -339,7 +335,7 @@ let rec execute env cstr cu =
 	(judge_of_prop_contents c, cu)
 
     | Sort (Type u) ->
-	univ_combinator cu (judge_of_type u)
+	(judge_of_type u, cu)
 
     | Rel n -> 
 	(judge_of_relative env n, cu)
@@ -367,8 +363,7 @@ let rec execute env cstr cu =
         let (varj,cu1) = execute_type env c1 cu in
 	let env1 = push_rel (name,None,varj.utj_val) env in
         let (varj',cu2) = execute_type env1 c2 cu1 in
-	univ_combinator cu2
-          (judge_of_product env name varj varj')
+	(judge_of_product env name varj varj', cu2)
 
     | LetIn (name,c1,c2,c3) ->
         let (j1,cu1) = execute env c1 cu in
@@ -479,6 +474,6 @@ let infer_local_decls env decls =
   | (id, d) :: l -> 
       let env, l, cst1 = inferec env l in
       let d, cst2 = infer_local_decl env id d in
-      push_rel d env, d :: l, Constraint.union cst1 cst2
-  | [] -> env, [], Constraint.empty in
+      push_rel d env, add_rel_decl d l, Constraint.union cst1 cst2
+  | [] -> env, empty_rel_context, Constraint.empty in
   inferec env decls

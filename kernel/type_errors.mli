@@ -11,7 +11,6 @@
 (*i*)
 open Names
 open Term
-open Sign
 open Environ
 (*i*)
 
@@ -39,6 +38,7 @@ type guard_error =
 
 type type_error =
   | UnboundRel of int
+  | UnboundVar of variable
   | NotAType of unsafe_judgment
   | BadAssumption of unsafe_judgment
   | ReferenceVariables of constr
@@ -50,16 +50,18 @@ type type_error =
   | IllFormedBranch of constr * int * constr * constr
   | Generalization of (name * types) * unsafe_judgment
   | ActualType of unsafe_judgment * types
-  | CantApplyBadType of (int * constr * constr)
-      * unsafe_judgment * unsafe_judgment array
+  | CantApplyBadType of
+      (int * constr * constr) * unsafe_judgment * unsafe_judgment array
   | CantApplyNonFunctional of unsafe_judgment * unsafe_judgment array
   | IllFormedRecBody of guard_error * name array * int * constr array
-  | IllTypedRecBody of int * name array * unsafe_judgment array 
-      * types array
+  | IllTypedRecBody of
+      int * name array * unsafe_judgment array * types array
 
 exception TypeError of env * type_error
 
 val error_unbound_rel : env -> int -> 'a
+
+val error_unbound_var : env -> variable -> 'a
 
 val error_not_type : env -> unsafe_judgment -> 'a
 
@@ -71,20 +73,15 @@ val error_elim_arity :
   env -> inductive -> constr list -> constr 
     -> unsafe_judgment -> (constr * constr * string) option -> 'a
 
-val error_case_not_inductive : 
-  env -> unsafe_judgment -> 'a
+val error_case_not_inductive : env -> unsafe_judgment -> 'a
 
-val error_number_branches : 
-  env -> unsafe_judgment -> int -> 'a
+val error_number_branches : env -> unsafe_judgment -> int -> 'a
 
-val error_ill_formed_branch :
-  env -> constr -> int -> constr -> constr -> 'a
+val error_ill_formed_branch : env -> constr -> int -> constr -> constr -> 'a
 
-val error_generalization :
-  env -> name * types -> unsafe_judgment -> 'a
+val error_generalization : env -> name * types -> unsafe_judgment -> 'a
 
-val error_actual_type :
-  env -> unsafe_judgment -> types -> 'a
+val error_actual_type : env -> unsafe_judgment -> types -> 'a
 
 val error_cant_apply_not_functional : 
   env -> unsafe_judgment -> unsafe_judgment array -> 'a
@@ -97,6 +94,5 @@ val error_ill_formed_rec_body :
   env -> guard_error -> name array -> int -> constr array -> 'a
 
 val error_ill_typed_rec_body  :
-  env -> int -> name array -> unsafe_judgment array 
-    -> types array -> 'a
+  env -> int -> name array -> unsafe_judgment array -> types array -> 'a
 

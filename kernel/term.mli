@@ -29,7 +29,6 @@ val type_0  : sorts
 type sorts_family = InProp | InSet | InType
 
 val family_of_sort : sorts -> sorts_family
-val new_sort_in_family : sorts_family -> sorts
 
 (*s Useful types *)
 
@@ -343,11 +342,6 @@ val to_prod : int -> constr -> constr
 val prod_applist : constr -> constr list -> constr
 
 (*s Other term destructors. *)
-
-(* Destructs a term of the form $(x_1:T_1)..(x_n:T_n)s$ into the pair *)
-type arity = rel_declaration list * sorts
-val destArity : constr -> arity
-val isArity : constr -> bool
 
 (* Transforms a product term $(x_1:T_1)..(x_n:T_n)T$ into the pair
    $([(x_n,T_n);...;(x_1,T_1)],T)$, where $T$ is not a product.

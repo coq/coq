@@ -143,6 +143,6 @@ let cook_constant env r =
           (map_named_declaration (expmod_constr r.d_modlist) d)
           ctxt)
       cb.const_hyps
-      empty_named_context in
+      ~init:empty_named_context in
   let body,typ = abstract_constant r.d_abstract hyps (body,typ) in
   (body, typ, cb.const_constraints, cb.const_opaque)

@@ -79,10 +79,10 @@ let reset_rel_context env =
 
 
 
-let fold_named_context f env a =
+let fold_named_context f env ~init =
   snd (Sign.fold_named_context
 	 (fun d (env,e) -> (push_named_decl d env, f env d e))
-         (named_context env) (reset_context env,a))
+         (named_context env) (reset_context env,init))
 
 let fold_named_context_reverse f a env =
   Sign.fold_named_context_reverse f a (named_context env) 
@@ -97,10 +97,10 @@ let push_rec_types (lna,typarray,_) env =
   Array.fold_left
     (fun e assum -> push_rel_assum assum e) env ctxt
 
-let fold_rel_context f env a =
-  snd (List.fold_right
+let fold_rel_context f env ~init =
+  snd (fold_rel_context
 	 (fun d (env,e) -> (push_rel d env, f env d e))
-         (rel_context env) (reset_rel_context env,a))
+         (rel_context env) (reset_rel_context env,init))
 
 let set_universes g env =
   if env.env_universes == g then env else { env with env_universes = g }
@@ -184,19 +184,26 @@ let global_vars_set env constr =
    contained in the types of the needed variables. *)
 
 let keep_hyps env needed =
-  let rec keep_rec needed = function
-  | (id,copt,t as d) ::sign when Idset.mem id needed ->
-      let globc = 
-	match copt with
-	  | None -> Idset.empty
-	  | Some c -> global_vars_set env c in
-      let needed' =
-	Idset.union (global_vars_set env (body_of_type t)) 
-	  (Idset.union globc needed) in
-      d :: (keep_rec needed' sign)
-  | _::sign -> keep_rec needed sign
-  | [] -> [] in
-  keep_rec needed (named_context env)
+  let really_needed =
+    Sign.fold_named_context_reverse
+      (fun need (id,copt,t) ->
+        if Idset.mem id need then
+          let globc = 
+	    match copt with
+	      | None -> Idset.empty
+	      | Some c -> global_vars_set env c in
+	  Idset.union
+            (global_vars_set env (body_of_type t)) 
+	    (Idset.union globc need)
+        else need)
+      ~init:needed
+      (named_context env) in
+  Sign.fold_named_context
+    (fun (id,_,_ as d) nsign ->
+      if Idset.mem id really_needed then add_named_decl d nsign
+      else nsign)
+    (named_context env)
+    ~init:empty_named_context
 
 
 (* Constants *)
