@@ -16,6 +16,7 @@ Require ArrayPermut.
 Require ZArithRing.
 Require Omega.
 V7only [Import Z_scope.].
+Open Local Scope Z_scope.
 
 Set Implicit Arguments.
 
