@@ -56,6 +56,9 @@ val map_context : (constr -> constr) -> env -> env
 val fold_var_context : (env -> var_declaration -> 'a -> 'a) -> env -> 'a -> 'a
 val process_var_context : (env -> var_declaration -> env) -> env -> env
 
+(* Recurrence on [var_context] starting from younger decl *)
+val fold_var_context_reverse : ('a -> var_declaration -> 'a) -> 'a -> env -> 'a
+
 (* [process_var_context_both_sides f env] iters [f] on the var
    declarations of [env] taking as argument both the initial segment, the
    middle value and the tail segment *)

@@ -371,4 +371,15 @@ let ast_of_cvt_arg = function
   | Cofixexp (id,c) -> ope ("COFIXEXP",[(nvar (string_of_id id)); 
                                           (ope ("COMMAND",[c]))])
   | Intropattern p ->  ast_of_cvt_intro_pattern p
-  | Letpatterns _ -> failwith "TODO: ast_of_cvt_arg: Letpatterns"
+  | Letpatterns (gl_occ_opt,hyp_occ_list) ->
+     let hyps_pats =
+       List.map
+	 (fun (id,l) ->
+	    ope ("HYPPATTERN", nvar (string_of_id id) :: (List.map num l)))
+	 hyp_occ_list in
+     let all_pats =
+       match gl_occ_opt with
+	 | None -> hyps_pats
+	 | Some l -> hyps_pats @ [ope ("CCLPATTERN", List.map num l)] in
+     ope ("LETPATTERNS", all_pats)
+

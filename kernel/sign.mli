@@ -25,6 +25,7 @@ val ids_of_var_context : var_context -> identifier list
 val map_var_context : (constr -> constr) -> var_context -> var_context
 val mem_var_context : identifier -> var_context -> bool
 val fold_var_context : (var_declaration -> 'a -> 'a) -> var_context -> 'a -> 'a
+val fold_var_context_reverse : ('a -> var_declaration -> 'a) -> 'a -> var_context -> 'a
 val fold_var_context_both_sides :
   ('a -> var_declaration -> var_context -> 'a) -> var_context -> 'a -> 'a
 val it_var_context_quantifier :

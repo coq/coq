@@ -43,6 +43,7 @@ let rec mem_var_context id = function
   | _ :: sign -> mem_var_context id sign
   | [] -> false
 let fold_var_context = List.fold_right
+let fold_var_context_reverse = List.fold_left
 let fold_var_context_both_sides = list_fold_right_and_left
 let it_var_context_quantifier f = List.fold_left (fun c d -> f d c)
 

@@ -957,6 +957,12 @@ let substl laml =
   substn_many (Array.map make_substituend (Array.of_list laml)) 0
 let subst1 lam = substl [lam]
 
+let substl_decl laml (id,bodyopt,typ as d) =
+  match bodyopt with
+    | None -> (id,None,substl laml typ)
+    | Some body -> (id, Some (substl laml body), typed_app (substl laml) typ)
+let subst1_decl lam = substl_decl [lam]
+
 (* (thin_val sigma) removes identity substitutions from sigma *)
 
 let rec thin_val = function
@@ -1424,6 +1430,11 @@ let occur_var s c =
     | _ -> iter_constr occur_rec c
   in 
   try occur_rec c; false with Occur -> true
+
+let occur_var_in_decl hyp (_,c,typ) =
+  match c with
+    | None -> occur_var hyp (body_of_type typ)
+    | Some body -> occur_var hyp (body_of_type typ) || occur_var hyp body
 
 (***************************************)
 (*  alpha and eta conversion functions *)                         

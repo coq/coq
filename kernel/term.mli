@@ -478,6 +478,9 @@ val substnl : constr list -> int -> constr -> constr
 val substl : constr list -> constr -> constr
 val subst1 : constr -> constr -> constr
 
+val substl_decl : constr list -> var_declaration -> var_declaration
+val subst1_decl : constr -> var_declaration -> var_declaration
+
 (* [global_vars c] returns the list of [id]'s occurring as [VAR id] in [c] *)
 val global_vars : constr -> identifier list
 
@@ -525,6 +528,8 @@ val occur_evar : existential_key -> constr -> bool
 (* [(occur_var id c)] returns [true] if variable [id] occurs free
    in c, [false] otherwise *)
 val occur_var : identifier -> constr -> bool
+
+val occur_var_in_decl : identifier -> var_declaration -> bool
 
 (* [dependent M N] is true iff M is eq\_constr with a subterm of N 
    M is appropriately lifted through abstractions of N *)

@@ -277,7 +277,7 @@ type intro_name_flag =
   | IBasedOn of identifier * identifier list
   | IMustBe of identifier
 
-let rec central_intro name_flag move_flag force_flag gl =
+let rec intro_gen name_flag move_flag force_flag gl =
   try
     let id =
       match name_flag with
@@ -298,18 +298,21 @@ let rec central_intro name_flag move_flag force_flag gl =
     if force_flag then
       try
         ((tclTHEN (reduce (Red true) [])
-	    (central_intro name_flag move_flag force_flag)) gl)
+	    (intro_gen name_flag move_flag force_flag)) gl)
       with Redelimination ->
         errorlabstrm "Intro" 
 	  [<'sTR "No product even after head-reduction">]
     else
       raise e
 
-let intro_using_warning id = central_intro (IMustBe id) None false
-let intro_using id = central_intro (IBasedOn (id,[])) None false
-let intro_force force_flag = central_intro (IAvoid []) None force_flag
+let intro_using_warning id = intro_gen (IMustBe id) None false
+let intro_using id = intro_gen (IBasedOn (id,[])) None false
+let intro_force force_flag = intro_gen (IAvoid []) None force_flag
 let intro = intro_force false
 let introf = intro_force true
+
+(* For backwards compatibility *)
+let central_intro = intro_gen
 
 (**** Multiple introduction tactics ****)
 
@@ -335,14 +338,14 @@ let intros_replacing ids gls =
 (* User-level introduction tactics *)
 
 let dyn_intro = function
-  | []              -> central_intro (IAvoid []) None true
-  | [Identifier id] -> central_intro (IMustBe id) None true
+  | []              -> intro_gen (IAvoid []) None true
+  | [Identifier id] -> intro_gen (IMustBe id) None true
   |  l -> bad_tactic_args "intro" l
 
 let dyn_intro_move = function
-  | [Identifier id2] -> central_intro (IAvoid []) (Some id2) true
+  | [Identifier id2] -> intro_gen (IAvoid []) (Some id2) true
   | [Identifier id; Identifier id2] ->
-      central_intro (IMustBe id) (Some id2) true
+      intro_gen (IMustBe id) (Some id2) true
   | l -> bad_tactic_args "intro_move" l
 
 let rec intros_until s g =
@@ -396,15 +399,10 @@ let intros_do n g =
 let rec intros_move = function
   | [] -> tclIDTAC
   | (hyp,destopt) :: rest ->
-      tclTHEN (central_intro (IMustBe hyp) destopt false)
+      tclTHEN (intro_gen (IMustBe hyp) destopt false)
 	(intros_move rest)
 
-let occur_var_in_decl id (c,t) = 
-  match c with
-    | None -> occur_var id (body_of_type t)
-    | Some body -> occur_var id body || occur_var id (body_of_type t)
-
-let dependent_in_decl a (c,t) =
+let dependent_in_decl a (_,c,t) =
   match c with
     | None -> dependent a (body_of_type t)
     | Some body -> dependent a body || dependent a (body_of_type t)
@@ -419,13 +417,13 @@ let move_to_rhyp rhyp gl =
 	if Some hyp = rhyp then 
 	  lastfixed
 	else if List.exists (occur_var_in_decl hyp) depdecls then 
-	  get_lhyp lastfixed ((c,typ)::depdecls) rest
+	  get_lhyp lastfixed (ht::depdecls) rest
         else 
 	  get_lhyp (Some hyp) depdecls rest
   in
   let sign = pf_hyps gl in
-  let (hyp,c,typ) = List.hd sign in
-  match get_lhyp None [c,typ] sign with
+  let (hyp,c,typ as decl) = List.hd sign in
+  match get_lhyp None [decl] sign with
     | None -> tclIDTAC gl
     | Some hypto -> move_hyp true hyp hypto gl
 
@@ -588,9 +586,9 @@ let generalize_goal gl c cl =
 let generalize_dep c gl =
   let sign = pf_hyps gl in
   let init_ids = ids_of_var_context (Global.var_context()) in
-  let rec seek toquant (h,body,t as d) =
-    if List.exists (fun (id,_,_) -> occur_var_in_decl id (body,t)) toquant
-      or dependent_in_decl c (body,t) then 
+  let rec seek toquant d =
+    if List.exists (fun (id,_,_) -> occur_var_in_decl id d) toquant
+      or dependent_in_decl c d then 
       d::toquant
     else 
       toquant
@@ -643,7 +641,7 @@ let quantify lconstr =
    [letin_tac b na c occ_ccl occ_hyps gl] transforms
    [...x1:T1(c),...,x2:T2(c),... |- G(c)] into
    [...x:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is false or
-   [...x:T;H:x=c;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is true
+   [...x:=c:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is true
 
    [occ_hyps] and [occ_ccl] tells which occurrences of [c] have to be substd;
    if [occ_hyps] is empty, [c] is substituted in every hyp where it occurs;
@@ -654,14 +652,14 @@ let quantify lconstr =
    used to remember the place of x1, x2, ...: it is the list of hypotheses on
    the left of each x1, ...).
 *)
-(*
+
 let letin_abstract id c occ_ccl occ_hyps gl =
   let allhyp = occ_hyps=[] in
-  let hyps = pf_hyps gl in
+  let env = pf_env gl in
   let abstract ((depdecls,marks,occl as accu),lhyp) (hyp,bodyopt,typ as d) =
     try 
       let occ = if allhyp then [] else List.assoc hyp occl in
-      let newdecl = subst1 (mkVar id) (subst_term_occ_decl occ c d) in
+      let newdecl = subst1_decl (mkVar id) (subst_term_occ_decl occ c d) in
       let newoccl = list_except_assoc hyp occl in
       if d=newdecl then
 	(accu,Some hyp)
@@ -671,10 +669,10 @@ let letin_abstract id c occ_ccl occ_hyps gl =
       (accu,Some hyp) 
   in
   let (depdecls,marks,rest),_ =
-    it_sign abstract (([],[],[],occ_hyps),None) hyps in
+    fold_var_context_reverse abstract (([],[],occ_hyps),None) env in
   if rest <> [] then begin
     let id = fst (List.hd rest) in
-    if mem_sign hyps id
+    if mem_var_context id (var_context env)
     then error ("Hypothesis "^(string_of_id id)^" occurs twice")
     else error ("No such hypothesis : " ^ (string_of_id id))
   end;
@@ -686,9 +684,11 @@ let letin_abstract id c occ_ccl occ_hyps gl =
 
 let letin_tac with_eq name c occ_ccl occ_hyps gl =
   let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) name in
-  let hyps = pf_untyped_hyps gl in
-  let id = next_global_ident_away x (ids_of_sign hyps) in
-  if mem_sign hyps id then error "New variable is already declared";
+  let env = pf_env gl in
+  let used_ids = ids_of_context env in
+  let id = next_global_ident_away x used_ids in
+  if mem_var_context id (var_context env) then
+    error "New variable is already declared";
   let (depdecls,marks,ccl)= letin_abstract id c occ_ccl occ_hyps gl in 
   let t = pf_type_of gl c in
   let (eqc,reflc) =
@@ -699,23 +699,23 @@ let letin_tac with_eq name c occ_ccl occ_hyps gl =
       (pf_parse_const gl "eqT", pf_parse_const gl "refl_eqT")
     else error "Not possible with proofs yet" 
   in
-  let heq = next_global_ident_away (id_of_string "Heq") (ids_of_sign hyps) in
+  let heq = next_global_ident_away (id_of_string "Heq") used_ids in
   let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
-  let tmpargs = List.map (fun (id,_,_) -> mkVar id) depdecls in
-  let newcl,args =
+  let args = List.map (fun (id,_,_) -> mkVar id) depdecls in
+  let newcl =
     if with_eq then
       let eq = applist (eqc,[t;mkVar id;c]) in
       let refl = applist (reflc,[t;c]) in
-      (mkNamedProd id t (mkNamedProd heq eq tmpcl), c::refl::tmpargs)
+      mkNamedLetIn id c t tmpcl
     else
-      (mkNamedProd id t tmpcl, c::tmpargs) 
+      mkNamedProd id t tmpcl
   in
   let lastlhyp = if marks=[] then None else snd (List.hd marks) in
   tclTHENLIST
     [ apply_type newcl args;
-      thin dephyps;
-      central_intro (IMustBe id) lastlhyp false;
-      if with_eq then central_intro (IMustBe heq) lastlhyp false else tclIDTAC;
+      thin (List.map (fun (id,_,_) -> id) depdecls);
+      intro_gen (IMustBe id) lastlhyp false;
+(*      if with_eq then intro_gen (IMustBe heq) lastlhyp false else tclIDTAC;*)
       intros_move marks ] gl
 
 let dyn_lettac args gl = match args with
@@ -724,8 +724,6 @@ let dyn_lettac args gl = match args with
   | [Identifier id; Constr c; Letpatterns (o,l)]    ->
       letin_tac true (Name id) c o l gl
   | l -> bad_tactic_args "letin" l
-*)
-let dyn_lettac a = failwith "TO REDO"
 
 (********************************************************************)
 (*               Exact tactics                                      *)
@@ -1053,13 +1051,13 @@ let induct_discharge indpath statuslists cname destopt avoid (_,t) =
 	   | IsProd (nar,tr,c3) ->
 	       if !tophyp=None then tophyp:=Some hyprecname;(* for lstatus *)
 	       tclTHENLIST
-		 [ central_intro (IBasedOn (recvarname,avoid)) destopt false;
-		   central_intro (IBasedOn (hyprecname,avoid)) None false;
+		 [ intro_gen (IBasedOn (recvarname,avoid)) destopt false;
+		   intro_gen (IBasedOn (hyprecname,avoid)) None false;
 		   peel_tac c3]
 	   | _ -> anomaly "induct_discharge: rec arg leads to 2 products")
     | IsCast (c,_) -> peel_tac c
     | IsProd (na,t,c) ->
-	tclTHEN (central_intro (IAvoid avoid) destopt false)
+	tclTHEN (intro_gen (IAvoid avoid) destopt false)
 	  (peel_tac c)
     | _ -> tclIDTAC
   in
@@ -1076,7 +1074,7 @@ let induct_discharge indpath statuslists cname destopt avoid (_,t) =
      substitutions aussi sur l'argument voisin *)
 
 (* Marche pas... faut prendre en compte l'occurence précise... *)
-(*
+
 let atomize_param_of_ind hyp0 gl =
   let tmptyp0 = pf_get_hyp_typ gl hyp0 in
   let (mind,indtyp,typ0) = pf_reduce_to_mind gl tmptyp0 in
@@ -1090,7 +1088,8 @@ let atomize_param_of_ind hyp0 gl =
       let tmptyp0 = pf_get_hyp_typ gl hyp0 in
       let (_,indtyp,_) = pf_reduce_to_mind gl tmptyp0 in
       let argl = snd (decomp_app indtyp) in
-      match kind_of_term (List.index argl (i-1)) with
+      let c = List.nth argl (i-1) in
+      match kind_of_term c with
 	| IsVar id when not (List.exists (occur_var id) avoid) ->
 	    atomize_one (i-1) ((mkVar id)::avoid) gl
 	| IsVar id ->
@@ -1098,7 +1097,7 @@ let atomize_param_of_ind hyp0 gl =
 	    tclTHEN
 	      (letin_tac true (Name x) (mkVar id) (Some []) [])
 	      (atomize_one (i-1) ((mkVar x)::avoid)) gl
-	| c ->
+	| _ ->
 	    let id = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c)
 		       Anonymous in
 	    let x = fresh_id [] id gl in
@@ -1180,39 +1179,39 @@ let find_atomic_param_of_ind mind indtyp =
 
 exception Shunt of identifier option
 
-let cook_sign hyp0 indvars sign =
+let cook_sign hyp0 indvars env =
   (* First pass from L to R: get [indhyps], [dephyps] and [statuslist]
      for the hypotheses before (= more ancient than) hyp0 (see above) *)
   let allindhyps = hyp0::indvars in
   let indhyps = ref [] in
-  let hdeps = ref [] in
-  let tdeps = ref [] in
+  let decldeps = ref [] in
   let ldeps = ref [] in
   let rstatus = ref [] in
   let lstatus = ref [] in
   let before = ref true in
-  let seek_deps hyp typ rhyp =
+  let seek_deps env (hyp,_,_ as decl) rhyp =
     if hyp = hyp0 then begin
       before:=false; 
       None (* fake value *)
     end else if List.mem hyp indvars then begin
       indhyps := hyp::!indhyps; 
       rhyp
-    end else if (List.exists (fun id -> occur_var id typ) allindhyps
-		 or List.exists (fun id -> occur_var id typ) !hdeps) then begin
-      hdeps := hyp::!hdeps;
-      tdeps := typ::!tdeps;
-      if !before then 
-	rstatus := (hyp,rhyp)::!rstatus
-      else 
-	ldeps := hyp::!ldeps; (* status calculé lors de la 2ème passe *)
-      Some hyp
     end else
-      Some hyp
+      if (List.exists (fun id -> occur_var_in_decl id decl) allindhyps
+	  or List.exists (fun (id,_,_) -> occur_var_in_decl id decl) !decldeps)
+      then begin
+	decldeps := decl::!decldeps;
+	if !before then 
+	  rstatus := (hyp,rhyp)::!rstatus
+	else 
+	  ldeps := hyp::!ldeps; (* status calculé lors de la 2ème passe *)
+	Some hyp end
+      else
+	Some hyp
   in
-  let _ = sign_it seek_deps sign None in
+  let _ = fold_var_context seek_deps env None in
   (* 2nd pass from R to L: get left hyp of [hyp0] and [lhyps] *)
-  let compute_lstatus lhyp hyp typ =
+  let compute_lstatus lhyp (hyp,_,_ as d) =
     if hyp = hyp0 then raise (Shunt lhyp);
     if List.mem hyp !ldeps then begin
       lstatus := (hyp,lhyp)::!lstatus;
@@ -1221,11 +1220,11 @@ let cook_sign hyp0 indvars sign =
       (Some hyp) 
   in
   try 
-    let _ = it_sign compute_lstatus None sign in anomaly "hyp0 not found"
+    let _ = fold_var_context_reverse compute_lstatus None env in
+    anomaly "hyp0 not found"
   with Shunt lhyp0 ->
     let statuslists = (!lstatus,List.rev !rstatus) in
-    let deps = (List.rev !hdeps, List.rev !tdeps) in
-    (statuslists, lhyp0, !indhyps, deps)
+    (statuslists, lhyp0, !indhyps, !decldeps)
 
 
 (* Vieille version en une seule passe grace à l'ordre supérieur mais
@@ -1282,22 +1281,22 @@ let get_constructors varname (elimc,elimt) mind mindpath =
 
 let induction_from_context hyp0 gl =
    (*test suivant sans doute inutile car protégé par le letin_tac avant appel*)
-  if List.mem hyp0 (ids_of_sign (Global.var_context())) then
+  if List.mem hyp0 (ids_of_var_context (Global.var_context())) then
     errorlabstrm "induction" [< 'sTR "Cannot generalize a global variable" >];
-  let sign = pf_untyped_hyps gl in
-  let tsign = pf_hyps gl in
-  let tmptyp0 = pf_get_hyp gl hyp0 in
+  let env = pf_env gl in
+  let tmptyp0 = pf_get_hyp_typ gl hyp0 in
   let ((ind_sp,_) as mind,indtyp,typ0) = pf_reduce_to_mind gl tmptyp0 in
   let indvars = find_atomic_param_of_ind mind indtyp in
   let mindpath = Declare.path_of_inductive_path ind_sp in
-  let elimc = lookup_eliminator tsign mindpath (suff gl (pf_concl gl)) in
+  let elimc = lookup_eliminator env mindpath (sort_of_goal gl) in
   let elimt = pf_type_of gl elimc in
-  let (statlists,lhyp0,indhyps,deps) = cook_sign hyp0 indvars sign in
-  let (dephyps,deptyps) = deps in
-  let tmpcl = List.fold_right2 mkNamedProd dephyps deptyps (pf_concl gl) in
+  let (statlists,lhyp0,indhyps,deps) = cook_sign hyp0 indvars env in
+  let tmpcl = it_mkNamedProd_or_LetIn (pf_concl gl) deps in
   let lc = get_constructors hyp0 (elimc,elimt) mind mindpath in
+  let dephyps = List.rev (List.map (fun (id,_,_) -> id) deps) in
+  let args = List.map mkVar dephyps in
   tclTHENLIST
-    [ apply_type tmpcl (List.map mkVar dephyps);
+    [ apply_type tmpcl args;
       thin dephyps;
       tclTHENS
        	(tclTHEN
@@ -1313,7 +1312,7 @@ let induction_with_atomization_of_ind_arg hyp0 =
 
 let new_induct c gl =
   match kind_of_term c with
-    | IsVar id when not (List.mem id (ids_of_sign (Global.var_context()))) ->
+    | IsVar id when not (mem_var_context id (Global.var_context())) ->
 	tclORELSE
 	  (tclTHEN (intros_until id) (tclLAST_HYP simplest_elim))
 	  (induction_with_atomization_of_ind_arg id) gl
@@ -1324,7 +1323,7 @@ let new_induct c gl =
 	tclTHEN
 	  (letin_tac true (Name id) c (Some []) [])
 	  (induction_with_atomization_of_ind_arg id) gl
-*)
+
 (***)
 
 (* The registered tactic, which calls the default elimination
@@ -1345,28 +1344,23 @@ let dyn_elim = function
   | l -> bad_tactic_args "elim" l
 	
 (* Induction tactics *)
-(*
 let induct s =
   tclORELSE (tclTHEN (intros_until s) (tclLAST_HYP simplest_elim))
     (induction_from_context s)
-*)
-let induct s =
-  tclTHEN (intros_until s) (tclLAST_HYP simplest_elim)
-
 
 let induct_nodep n = tclTHEN (intros_do n) (tclLAST_HYP simplest_elim)
 
 (* Pour le futur
 let dyn_induct = function
-  | [(COMMAND c)] -> tactic_com new_induct x
-  | [(CONSTR x)]  -> new_induct x
-  | [(INTEGER n)] -> induct_nodep n
+  | [(Command c)] -> tactic_com new_induct x
+  | [(Constr x)]  -> new_induct x
+  | [(Integer n)] -> induct_nodep n
   | l             -> bad_tactic_args "induct" l
 *)
 
 let dyn_induct = function 
-  | [Identifier x] -> induct x 
-  | [Integer    n] -> induct_nodep n
+  | [Identifier x] -> induct x
+  | [Integer n]    -> induct_nodep n
   | l              -> bad_tactic_args "induct" l
 
 (* Case analysis tactics *)

@@ -88,6 +88,9 @@ let fold_var_context f env a =
 	 (fun d (env,e) -> (push_var d env, f env d e))
          (var_context env) (reset_context env,a))
 
+let fold_var_context_reverse f a env =
+  Sign.fold_var_context_reverse f a (var_context env) 
+
 let process_var_context f env =
   Sign.fold_var_context
     (fun d env -> f env d) (var_context env) (reset_context env)

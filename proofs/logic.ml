@@ -188,16 +188,11 @@ let split_sign hfrom hto l =
   in 
   splitrec [] false l
 
-let occur_decl hyp (_,c,typ) =
-  match c with
-    | None -> occur_var hyp (body_of_type typ)
-    | Some body -> occur_var hyp (body_of_type typ) || occur_var hyp body
-
 let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
   let test_dep (hyp,c,typ as d) (hyp2,c,typ2 as d2) =
     if toleft
-    then occur_decl hyp2 d
-    else occur_decl hyp d2
+    then occur_var_in_decl hyp2 d
+    else occur_var_in_decl hyp d2
   in
   let rec moverec first middle = function
     | [] -> error ("No such hypothesis : " ^ (string_of_id hto))
@@ -249,11 +244,8 @@ let check_backward_dependencies env d =
 
 let check_forward_dependencies id tail =
   List.iter
-    (function (id',c,t) ->
-       let b = match c with
-	 | None -> occur_var id (body_of_type t)
-	 | Some body -> occur_var id (body_of_type t) || occur_var id body in
-       if b then
+    (function (id',_,_ as decl) ->
+       if occur_var_in_decl id decl then
 	 error ((string_of_id id) ^ " is used in the hypothesis " 
 		^ (string_of_id id')))
     tail
