@@ -169,9 +169,12 @@ let explain_cant_apply k ctx s rator randl =
 (* (co)fixpoints *)
 let explain_ill_formed_rec_body k ctx str lna i vdefs =
   let pvd = P.pr_term k ctx vdefs.(i) in
+  let s =
+    match List.nth lna i with Name id -> string_of_id id | Anonymous -> "_" in
   [< str; 'fNL; 'sTR"The ";
      if Array.length vdefs = 1 then [<>] else [<'iNT (i+1); 'sTR "-th ">];
-     'sTR"recursive definition"; 'sPC ; pvd; 'sPC;
+     'sTR"recursive definition"; 'sPC; 'sTR s;
+	 'sPC ; 'sTR":="; 'sPC ; pvd; 'sPC;
      'sTR "is not well-formed" >]
     
 let explain_ill_typed_rec_body k ctx i lna vdefj vargs =
