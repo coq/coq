@@ -141,8 +141,7 @@ Case (Zgt_bool b `r+r`);
 (Rewrite POS_xO; Rewrite H0; Split ; [ Ring | Omega ]).
 
 Generalize (Zge_cases b `2`).
-Case (Zge_bool b `2`); 
-(Intros; Split; [Ring | Omega ]).
+Case (Zge_bool b `2`); (Intros; Split; [Ring | Omega ]).
 Omega.
 Save.
 
@@ -151,23 +150,11 @@ Save.
 Theorem Z_div_mod : (a,b:Z)`b > 0` -> 
   let (q,r) = (Zdiv_eucl a b) in `a = b*q + r` /\ `0<=r<b`.
 Proof.
-Intros a b; Case a; Case b.
-Simpl; Omega.
-Simpl; Intros; Omega.
-Simpl; Intros; Omega.
-Simpl; Intros; Omega.
+Intros a b; Case a; Case b; Try (Simpl; Intros; Omega).
 Unfold Zdiv_eucl; Intros; Apply Z_div_mod_POS; Trivial.
 
 Intros.
-Absurd `(NEG p) > 0`.
-Generalize (NEG_lt_ZERO p).
-Omega.
-Assumption.
-
-Intros; Absurd `0>0`.
-Unfold Zgt; Simpl.
-Discriminate.
-Assumption.
+Absurd `(NEG p) > 0`; [ Generalize (NEG_lt_ZERO p); Omega | Trivial ].
 
 Intros.
 Generalize (Z_div_mod_POS (POS p) H p0).
@@ -177,34 +164,21 @@ Intros z z0.
 Case z0.
 
 Intros [H1 H2].
-Split.
-Replace (NEG p0) with `-(POS p0)`.
-Rewrite H1.
-Ring.
-Trivial.
-Trivial.
+Split; Trivial.
+Replace (NEG p0) with `-(POS p0)`; [ Rewrite H1; Ring | Trivial ].
 
 Intros p1 [H1 H2].
-Split.
-Replace (NEG p0) with `-(POS p0)`.
-Rewrite H1.
-Ring.
-Trivial.
+Split; Trivial.
+Replace (NEG p0) with `-(POS p0)`; [ Rewrite H1; Ring | Trivial ].
 Generalize (POS_gt_ZERO p1); Omega.
 
 Intros p1 [H1 H2].
-Split.
-Replace (NEG p0) with `-(POS p0)`.
-Rewrite H1.
-Ring.
-Trivial.
+Split; Trivial.
+Replace (NEG p0) with `-(POS p0)`; [ Rewrite H1; Ring | Trivial ].
 Generalize (NEG_lt_ZERO p1); Omega.
 
-
 Intros.
-Absurd `(NEG p)>0`.
-Generalize (NEG_lt_ZERO p); Omega.
-Omega.
+Absurd `(NEG p)>0`; [ Generalize (NEG_lt_ZERO p); Omega | Omega ].
 Save.
 
 
