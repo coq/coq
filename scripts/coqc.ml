@@ -85,8 +85,15 @@ let rec make_compilation_args = function
 
 let compile command args files =
   let args' = command :: args @ (make_compilation_args files) in
-  Unix.handle_unix_error
-    Unix.execvpe command (Array.of_list args') environment 
+  match Sys.os_type with
+  | "Win32" -> 
+     let pid = 
+        Unix.create_process_env command (Array.of_list args') environment
+        Unix.stdin Unix.stdout Unix.stderr 
+     in
+     ignore (Unix.waitpid [] pid)
+  | _ ->
+     Unix.execvpe command (Array.of_list args') environment 
 
 (* parsing of the command line
  *
@@ -170,6 +177,6 @@ let main () =
     if !image <> "" then !image else Filename.concat !bindir (!binary ^ Coq_config.exec_extension)
   in
 (*  List.iter (compile coqtopname args) cfiles*)
-  compile coqtopname args cfiles
+  Unix.handle_unix_error (compile coqtopname args) cfiles
     
 let _ = Printexc.print main (); exit 0
