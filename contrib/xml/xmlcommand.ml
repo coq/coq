@@ -895,7 +895,7 @@ let _ =
            command (coqdoc^options^" -d "^dir^" "^fn^".v");
            let dot = if fn.[0]='/' then "." else "" in
            command ("mv "^dir^"/"^dot^"*.html "^fn^".xml ");
-           (*command ("rm "^fn^".v");*)
+           command ("rm "^fn^".v");
            print_string("\nWriting on file \"" ^ fn ^ ".xml\" was succesful\n"))
        (theory_filename xml_library_root))
 ;;
@@ -917,4 +917,16 @@ let _ =
 let _ =
   Lib.set_xml_close_section
     (fun _ -> theory_output_string "</ht:SECTION>")
+;;
+
+let uri_of_dirpath dir =
+  "/" ^ String.concat "/" 
+    (List.map Names.string_of_id (List.rev (Names.repr_dirpath dir)))
+;;
+
+let _ =
+  Library.set_xml_require
+    (fun d -> theory_output_string 
+      (Printf.sprintf "Require <a href=\"theory:%s.theory\">%s</a>"
+       (uri_of_dirpath d) (Names.string_of_dirpath d)))
 ;;
