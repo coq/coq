@@ -262,7 +262,36 @@ let declare_implicits = function
       let imps = (snd mib_imps.(i)).(j-1) in
       add_anonymous_leaf (in_constructor_implicits (consp, imps))
 
-let declare_manual_implicits r l = match r with
+let context_of_global_reference = function
+  | VarRef sp -> []
+  | ConstRef sp -> (Global.lookup_constant sp).const_hyps
+  | IndRef (sp,_) -> (Global.lookup_mind sp).mind_hyps
+  | ConstructRef ((sp,_),_) -> (Global.lookup_mind sp).mind_hyps
+
+let type_of_global r =
+  let args = 
+    Array.of_list
+      (Sign.instance_from_section_context (context_of_global_reference r)) in
+  match r with
+  | VarRef sp ->
+      lookup_named_type (basename sp) (Global.env ())
+  | ConstRef sp ->
+      Typeops.type_of_constant (Global.env ()) Evd.empty (sp,args)
+  | IndRef sp -> 
+      Typeops.type_of_inductive (Global.env ()) Evd.empty (sp,args)
+  | ConstructRef sp ->
+      Typeops.type_of_constructor (Global.env ()) Evd.empty (sp,args)
+
+let check_range n i =
+  if i<1 or i>n then error ("Bad argument number: "^(string_of_int i))
+
+let declare_manual_implicits r l =
+  let t = type_of_global r in
+  let n = List.length (fst (splay_prod (Global.env()) Evd.empty t)) in
+  if not (list_distinct l) then error ("Some numbers occur several time");
+  List.iter (check_range n) l;
+  let l = List.sort (-) l in
+  match r with
   | VarRef sp -> 
       add_anonymous_leaf (in_var_implicits (sp,Impl_manual l))
   | ConstRef sp ->
