@@ -13,7 +13,9 @@ open Environ
 val stats : bool ref
 val share : bool ref
 
-
+type evaluable_global_reference =
+  | EvalVarRef of identifier
+  | EvalConstRef of section_path
 
 (*s Delta implies all consts (both global (= by
   [section_path]) and local (= by [Rel] or [Var])), all evars, and letin's.
@@ -29,6 +31,7 @@ type red_kind =
   | CONST of section_path list
   | CONSTBUT of section_path list
   | VAR of identifier
+  | VARBUT of identifier
 
 (* Sets of reduction kinds. *)
 type reds
@@ -37,7 +40,7 @@ val no_red : reds
 val beta_red : reds
 val betaiota_red : reds
 val betadeltaiota_red : reds
-val unfold_red : section_path -> reds
+val unfold_red : evaluable_global_reference -> reds
 
 (* Tests if a reduction kind is set *)
 val red_set : reds -> red_kind -> bool
@@ -46,7 +49,7 @@ val red_set : reds -> red_kind -> bool
 val red_add : reds -> red_kind -> reds
 
 (* Gives the constant list *)
-val red_get_const : reds -> bool * (section_path list)
+val red_get_const : reds -> bool * (evaluable_global_reference list)
 
 (*s Reduction function specification. *)
 
@@ -70,7 +73,7 @@ val betaiota : flags
 val betadeltaiota : flags
 
 val hnf_flags : flags
-val unfold_flags : section_path -> flags
+val unfold_flags : evaluable_global_reference -> flags
 
 (*s Explicit substitutions of type ['a]. [ESID n] = %n~END = bounded identity. 
   [CONS(t,S)] = $S.t$ i.e. parallel substitution. [SHIFT(n,S)] = 

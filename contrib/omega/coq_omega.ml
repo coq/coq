@@ -365,7 +365,9 @@ let coq_or = lazy (constant ["Init";"Logic"] "or")
 let coq_ex = lazy (constant ["Init";"Logic"] "ex")
 
 (* Section paths for unfold *)
-let make_coq_path dir s = make_path ("Coq"::dir) (id_of_string s) CCI
+open Closure
+let make_coq_path dir s =
+  EvalConstRef (make_path ("Coq"::dir) (id_of_string s) CCI)
 let sp_Zs = make_coq_path ["Zarith";"zarith_aux"] "Zs"
 let sp_Zminus = make_coq_path ["Zarith";"zarith_aux"] "Zminus"
 let sp_Zle = make_coq_path ["Zarith";"zarith_aux"] "Zle"

@@ -142,9 +142,9 @@ GEXTEND Gram
     [ [ c = constrarg; l = constrarg_list -> c :: l | -> [] ] ]
   ;
   unfold_occ:
-    [ [ nl = LIST1 pure_numarg; c = identarg ->
+    [ [ nl = LIST1 pure_numarg; c = qualidarg ->
          <:ast< (UNFOLD $c ($LIST $nl)) >>
-      | c = identarg -> <:ast< (UNFOLD $c) >> ] ]
+      | c = qualidarg -> <:ast< (UNFOLD $c) >> ] ]
   ;
   ne_unfold_occ_list:
     [ [ p = unfold_occ; l = ne_unfold_occ_list -> p :: l
@@ -154,8 +154,8 @@ GEXTEND Gram
     [ [ IDENT "Beta" -> <:ast< (Beta) >>
       | IDENT "Delta" -> <:ast< (Delta) >>
       | IDENT "Iota" -> <:ast< (Iota) >>
-      | "["; idl = ne_identarg_list; "]" -> <:ast< (Unf ($LIST idl)) >>
-      | "-"; "["; idl = ne_identarg_list; "]" ->
+      | "["; idl = ne_qualidarg_list; "]" -> <:ast< (Unf ($LIST idl)) >>
+      | "-"; "["; idl = ne_qualidarg_list; "]" ->
           <:ast< (UnfBut ($LIST idl)) >> ] ]
   ;
   red_tactic:

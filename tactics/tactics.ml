@@ -222,8 +222,8 @@ let dyn_reduce = function
 (* Unfolding occurrences of a constant *)
 
 let unfold_constr = function 
-  | ConstRef sp -> unfold_in_concl [[],sp]
-  | VarRef sp -> unfold_in_concl [[],sp]
+  | ConstRef sp -> unfold_in_concl [[],Closure.EvalConstRef sp]
+  | VarRef sp -> unfold_in_concl [[],Closure.EvalVarRef (basename sp)]
   | _ -> errorlabstrm "unfold_constr" [< 'sTR "Cannot unfold a non-constant.">]
 
 (*******************************************)

@@ -29,54 +29,61 @@ let stop() =
 	   'sTR" zeta="; 'iNT !zeta; 'sTR" evar="; 'iNT !evar;
            'sTR" iota="; 'iNT !iota; 'sTR" prune="; 'iNT !prune; 'sTR"]" >]
 
+type evaluable_global_reference =
+  | EvalVarRef of identifier
+  | EvalConstRef of section_path
 
 (* [r_const=(true,cl)] means all constants but those in [cl] *)
 (* [r_const=(false,cl)] means only those in [cl] *)
 type reds = {
   r_beta : bool;
-  r_const : bool * constant_path list;
+  r_const : bool * constant_path list * identifier list;
   r_zeta : bool;
   r_evar : bool;
   r_iota : bool }
 
 let betadeltaiota_red = {
   r_beta = true;
-  r_const = true,[];
+  r_const = true,[],[];
   r_zeta = true;
   r_evar = true;
   r_iota = true } 
 
 let betaiota_red = {
   r_beta = true;
-  r_const = false,[];
+  r_const = false,[],[];
   r_zeta = false;
   r_evar = false;
   r_iota = true }
 		     
 let beta_red = {
   r_beta = true;
-  r_const = false,[];
+  r_const = false,[],[];
   r_zeta = false;
   r_evar = false;
   r_iota = false }
 
 let no_red = {
   r_beta = false;
-  r_const = false,[];
+  r_const = false,[],[];
   r_zeta = false;
   r_evar = false;
   r_iota = false }
 
 let betaiotazeta_red = {
   r_beta = true;
-  r_const = false,[];
+  r_const = false,[],[];
   r_zeta = true;
   r_evar = false;
   r_iota = true }
 
-let unfold_red sp = {
+let unfold_red sp =
+  let c = match sp with
+    | EvalVarRef id -> false,[],[id]
+    | EvalConstRef sp -> false,[sp],[]
+  in {
   r_beta = true;
-  r_const = false,[sp];
+  r_const = c;
   r_zeta = true;   (* false for finer behaviour ? *)
   r_evar = false;
   r_iota = true }
@@ -90,25 +97,40 @@ let unfold_red sp = {
 type red_kind =
     BETA | DELTA | ZETA | EVAR | IOTA
   | CONST of constant_path list | CONSTBUT of constant_path list
-  | VAR of identifier
+  | VAR of identifier | VARBUT of identifier
 
 let rec red_add red = function
   | BETA -> { red with r_beta = true }
   | DELTA ->
-      if snd red.r_const <> [] then error "Conflict in the reduction flags";
-      { red with r_const = true,[]; r_zeta = true; r_evar = true }
+      (match red.r_const with
+	| _,_::_,[] | _,[],_::_ -> error "Conflict in the reduction flags"
+	| _ -> { red with r_const = true,[],[]; r_zeta = true; r_evar = true })
   | CONST cl ->
-      if fst red.r_const then error "Conflict in the reduction flags";
-      { red with r_const = false, list_union cl (snd red.r_const) }
+      (match red.r_const with
+	| true,_,_ -> error "Conflict in the reduction flags"
+	| _,l1,l2 -> { red with r_const = false, list_union cl l1, l2 })
   | CONSTBUT cl ->
-      if not (fst red.r_const) & snd red.r_const <> [] then
-	error "Conflict in the reduction flags";
-      { red with r_const = true, list_union cl (snd red.r_const);
-	  r_zeta = true; r_evar = true }
+      (match red.r_const with
+	| false,_::_,_ | false,_,_::_ ->
+			   error "Conflict in the reduction flags"
+	| _,l1,l2 ->
+	    { red with r_const = true, list_union cl l1, l2;
+		r_zeta = true; r_evar = true })
   | IOTA -> { red with r_iota = true }
   | EVAR -> { red with r_evar = true }
   | ZETA -> { red with r_zeta = true }
-  | VAR id -> red_add red (CONST [make_path [] id CCI])
+  | VAR id ->
+      (match red.r_const with
+	| true,_,_ -> error "Conflict in the reduction flags"
+	| _,l1,l2 -> { red with r_const = false, l1, list_union [id] l2 })
+  | VARBUT cl ->
+      (match red.r_const with
+	| false,_::_,_ | false,_,_::_ ->
+			   error "Conflict in the reduction flags"
+	| _,l1,l2 ->
+	    { red with r_const = true, l1, list_union [cl] l2;
+		r_zeta = true; r_evar = true })
+
 
 let incr_cnt red cnt =
   if red then begin
@@ -117,32 +139,35 @@ let incr_cnt red cnt =
   end else 
     false
 
-let red_local_const red = fst red.r_const
+let red_delta_set red =
+  let b,_,_ = red.r_const in b
+
+let red_local_const = red_delta_set
 
 (* to know if a redex is allowed, only a subset of red_kind is used ... *)
 let red_set red = function
   | BETA -> incr_cnt red.r_beta beta
   | CONST [sp] -> 
-      let (b,l) = red.r_const in
+      let (b,l,_) = red.r_const in
       let c = List.mem sp l in
       incr_cnt ((b & not c) or (c & not b)) delta
   | VAR id -> (* En attendant d'avoir des sp pour les Var *)
-      let (b,l) = red.r_const in
-      let c = List.exists (fun sp -> basename sp = id) l in
+      let (b,_,l) = red.r_const in
+      let c = List.mem id l in
       incr_cnt ((b & not c) or (c & not b)) delta
   | ZETA -> incr_cnt red.r_zeta zeta
   | EVAR -> incr_cnt red.r_zeta evar
   | IOTA -> incr_cnt red.r_iota iota
-  | DELTA -> fst red.r_const  (* Used for Rel/Var defined in context *)
+  | DELTA -> red_delta_set red (*Used for Rel/Var defined in context*)
   (* Not for internal use *)
-  | CONST _ | CONSTBUT _ | VAR _ -> failwith "not implemented"
+  | CONST _ | CONSTBUT _ | VAR _ | VARBUT _ -> failwith "not implemented"
 
 (* Gives the constant list *)
 let red_get_const red =
-  if (fst red.r_const) then
-    (true,snd red.r_const)
-  else
-    (false,snd red.r_const)
+  let b,l1,l2 = red.r_const in
+  let l1' = List.map (fun x -> EvalConstRef x) l1 in
+  let l2' = List.map (fun x -> EvalVarRef x) l2 in
+  b, l1' @ l2'
 
 (* specification of the reduction function *)
 

@@ -482,13 +482,12 @@ let whd_nf env sigma c =
 
 let nf env sigma c = strong whd_nf env sigma c
 
-
 (* linear substitution (following pretty-printer) of the value of name in c.
  * n is the number of the next occurence of name.
  * ol is the occurence list to find. *)
 let rec substlin env name n ol c =
   match kind_of_term c with
-    | IsConst (sp,_ as const) when sp = name ->
+    | IsConst (sp,_ as const) when EvalConstRef sp = name ->
         if List.hd ol = n then
           try 
 	    (n+1, List.tl ol, constant_value env const)
@@ -499,13 +498,13 @@ let rec substlin env name n ol c =
         else 
 	  ((n+1), ol, c)
 
-    | IsVar id when id = basename name ->
+    | IsVar id when EvalVarRef id = name ->
         if List.hd ol = n then
           match lookup_named_value id env with
 	    | Some c -> (n+1, List.tl ol, c)
 	    | None -> 
 		errorlabstrm "substlin"
-		  [< pr_sp name; 'sTR " is not a defined constant" >]
+		  [< pr_id id; 'sTR " is not a defined constant" >]
         else 
 	  ((n+1), ol, c)
 
@@ -586,6 +585,9 @@ let rec substlin env name n ol c =
 let unfold env sigma name =
   clos_norm_flags (unfold_flags name) env sigma
 
+let string_of_evaluable_ref = function
+  | EvalVarRef id -> string_of_id id
+  | EvalConstRef sp -> string_of_qualid (qualid_of_sp sp)
 
 (* [unfoldoccs : (readable_constraints -> (int list * section_path) -> constr -> constr)]
  * Unfolds the constant name in a term c following a list of occurrences occl.
@@ -597,10 +599,9 @@ let unfoldoccs env sigma (occl,name) c =
     | l -> 
         match substlin env name 1 (Sort.list (<) l) c with
           | (_,[],uc) -> nf_betaiota env sigma uc
-          | (1,_,_) -> error ((string_of_qualid (qualid_of_sp name))
-			      ^" does not occur")
+          | (1,_,_) -> error ((string_of_evaluable_ref name)^" does not occur")
           | _ -> error ("bad occurrence numbers of "
-			^(string_of_qualid (qualid_of_sp name)))
+			^(string_of_evaluable_ref name))
 
 (* Unfold reduction tactic: *)
 let unfoldn loccname env sigma c = 
@@ -653,7 +654,7 @@ type red_expr =
   | Simpl
   | Cbv of Closure.flags
   | Lazy of Closure.flags
-  | Unfold of (int list * section_path) list
+  | Unfold of (int list * evaluable_global_reference) list
   | Fold of constr list
   | Pattern of (int list * constr * constr) list
 

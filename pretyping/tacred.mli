@@ -7,6 +7,7 @@ open Term
 open Environ
 open Evd
 open Reduction
+open Closure
 (*i*)
 
 (*s Reduction functions associated to tactics. \label{tacred} *)
@@ -23,7 +24,8 @@ val hnf_constr : 'a reduction_function
 val nf : 'a reduction_function
 
 (* Unfold *)
-val unfoldn : (int list * section_path) list -> 'a reduction_function
+val unfoldn : 
+  (int list * evaluable_global_reference) list -> 'a reduction_function
 
 (* Fold *)
 val fold_commands : constr list -> 'a reduction_function
@@ -53,7 +55,7 @@ type red_expr =
   | Simpl
   | Cbv of Closure.flags
   | Lazy of Closure.flags
-  | Unfold of (int list * section_path) list
+  | Unfold of (int list * evaluable_global_reference) list
   | Fold of constr list
   | Pattern of (int list * constr * constr) list
 

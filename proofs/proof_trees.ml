@@ -351,8 +351,13 @@ let last_of_cvt_flags (_,red) =
   (if (red_set red BETA) then [ope("Beta",[])]
    else [])@
   (let (n_unf,lconst) = red_get_const red in
-   let lqid = List.map (fun sp -> ast_of_qualid (Global.qualid_of_global 
-              (ConstRef sp))) lconst in
+   let lqid =
+     List.map
+       (function
+	  | EvalVarRef id -> nvar (string_of_id id)
+	  | EvalConstRef sp ->
+	      ast_of_qualid (Global.qualid_of_global (ConstRef sp)))
+       lconst in
    if lqid = [] then []
    else if n_unf then [ope("Delta",[]);ope("UnfBut",lqid)]
    else [ope("Delta",[]);ope("Unf",lqid)])@
@@ -368,7 +373,10 @@ let ast_of_cvt_redexp = function
   | Lazy flg -> ope("Lazy",last_of_cvt_flags flg)
   | Unfold l ->
     ope("Unfold",List.map (fun (locc,sp) -> ope("UNFOLD",
-      [ast_of_qualid (Global.qualid_of_global (ConstRef sp))]
+      [match sp with
+	| EvalVarRef id -> nvar (string_of_id id)
+	| EvalConstRef sp -> 					
+	    ast_of_qualid (Global.qualid_of_global (ConstRef sp))]
       @(List.map num locc))) l)
   | Fold l ->
     ope("Fold",List.map (fun c -> ope ("COMMAND",

@@ -116,11 +116,13 @@ val simpl_option      : identifier option -> tactic
 val normalise_in_concl: tactic
 val normalise_in_hyp  : identifier        -> tactic
 val normalise_option  : identifier option -> tactic
-val unfold_in_concl   : (int list * section_path) list -> tactic
+val unfold_in_concl   : (int list * Closure.evaluable_global_reference) list
+  -> tactic
 val unfold_in_hyp     : 
-  (int list * section_path) list -> identifier -> tactic
+  (int list * Closure.evaluable_global_reference) list -> identifier -> tactic
 val unfold_option     : 
-  (int list * section_path) list -> identifier option -> tactic
+  (int list * Closure.evaluable_global_reference) list -> identifier option
+    -> tactic
 val reduce            : red_expr -> identifier list -> tactic
 val dyn_reduce        : tactic_arg list -> tactic
 val dyn_change        : tactic_arg list -> tactic

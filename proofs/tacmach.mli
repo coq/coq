@@ -71,8 +71,8 @@ val pf_reduce_to_mind : goal sigma -> constr -> inductive * constr * constr
 val pf_reduce_to_ind  :
   goal sigma  -> constr -> section_path * constr * constr
 val pf_compute        : goal sigma -> constr -> constr
-val pf_unfoldn        : (int list * section_path) list -> goal sigma 
-                        -> constr -> constr
+val pf_unfoldn    : (int list * Closure.evaluable_global_reference) list
+        -> goal sigma -> constr -> constr
 
 val pf_const_value : goal sigma -> constant -> constr
 val pf_conv_x      : goal sigma -> constr -> constr -> bool
