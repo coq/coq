@@ -1,12 +1,17 @@
 Différences V7.0beta / V7.0
 
 - Ajout de déclarations locales aux Record (record à la Randy).
-- Correction de bugs (Identity Coercion; Rel not in scope of ?;
-  implicits in inductive defs).
+- Correction de bugs
+   - Identity Coercion
+   - Rel not in scope of ?
+   - implicits in inductive defs
+   - localisation des erreurs avec Syntactif Definition
 - Prise en compte noms longs dans Hints, Coercions et Unfold
 - Rétablissement des @Definition and co
 - Rétablissement des token extensibles et mélangeant symboles et lettres
+- Ajout d'une option Set/Unset/Test Printing Coercions
 - Possibilité de déplier des définitions locales à un but
+
 
 Différences oubliées dans la V7.0beta :
 
