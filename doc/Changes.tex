@@ -40,7 +40,9 @@ provided by Yves Bertot (see section \ref{Search})
 \item The tactic {\tt Field} which solves equalities using commutative field
 theory (see section~\ref{NewTactics})
 \item A command to export theories to XML to
-be used with Helm's publishing and rendering tools (see section \ref{XML})
+be used with Helm's publishing and rendering tools (see section
+\ref{XML})
+\item A new implementation of extraction (see section \ref{Extraction})
 \item As usual, several bugs fixed and a lot of new ones introduced
 \end{itemize}
 
@@ -285,7 +287,7 @@ recursors and elaborated matching operators for terms but also for proof
 contexts. This language can be directly used in proof scripts or in toplevel
 definitions ({\tt Tactic~Definition}). It has been noticed that non-trivial
 tactics can be written with $\ltac$ and to provide a Turing-complete
-programmation framework, a quotation has been built to use $\ltac$ in \oc{}.
+programming framework, a quotation has been built to use $\ltac$ in \oc{}.
 $\ltac$ has been contributed by David Delahaye and, for more details, see the
 Reference Manual. Regarding the foundations of this language, the author page
 can be visited at the following URL:\\
@@ -520,6 +522,30 @@ new name for {\tt do\_Makefile}.
 \paragraph{Error localisation} Several kind of typing errors are now
 located in the source file.
 
+\section{Extraction}\label{Extraction}
+Extraction code has been completely rewritten since version V6.3. 
+This work is still not finished, but most parts of it are already
+usable. It was successfully tested on the \coq{} theories.
+
+The new mechanism is able to extract programs from any \coq{} term
+(including terms at the Type level). 
+
+However, the resulting ML term is not guaranteed to be typable in ML
+(the next version should incorporate appropriate conversions).
+
+Only extraction towards Ocaml programs is currently available. More
+information can be found in \verb!$COQTOP/contrib/extraction/README!. 
+
+A new mechanism to extract Ocaml modules from Coq files has been
+added. 
+
+The \verb!ML import! command is not available anymore, use the command
+\verb!Extract Constant! to realize a \coq{} axiom by an ML program.
+
+The syntax of commands is described in the Reference Manual.
+
+\subsection{Principles}
+
 \section{Developers}
 \label{Developers}
 The internals of {\Coq} has changed a lot and will continue to change
@@ -550,8 +576,6 @@ documentation tool (see the ``doc'' directory in {\Coq} source).
   
   \item Definition of {\tt D\_in} (Reals/Rderiv.v) is now with Rdiv (Rmult and 
         Rinv before).
-
-  \item {\tt Extraction} is currently not available in {\Coq} V7.
 
   \item Pattern aliases of dependent type in \verb=Cases=
   expressions are currently not supported.
