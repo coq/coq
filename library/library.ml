@@ -209,7 +209,7 @@ let import_module = open_module true
    exported in the dependencies (it is [true] at the highest level;
    then same value as for caller is reused in recursive loadings). *)
 
-let load_objects s decls =
+let load_objects decls =
   segment_iter load_object decls
 
 exception LibUnmappedDir
