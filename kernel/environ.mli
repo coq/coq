@@ -5,7 +5,6 @@
 open Names
 open Term
 open Constant
-open Inductive
 open Abstraction
 open Univ
 open Sign
@@ -46,7 +45,6 @@ val lookup_var : identifier -> env -> name * typed_type
 val lookup_rel : int -> env -> name * typed_type
 val lookup_constant : section_path -> env -> constant_body
 val lookup_mind : section_path -> env -> mutual_inductive_body
-val lookup_mind_specif : inductive -> env -> mind_specif
 
 val id_of_global : env -> sorts oper -> identifier
 
@@ -57,18 +55,25 @@ val id_of_name_using_hdchar : env -> constr -> name -> identifier
 
 val named_hd : env -> constr -> name -> name
 
-(* The following functions build product or abstraction and create
-   names using [named_hd] for unnamed binders *)
+(* [lambda_name env (na,t,c)] builds [[[x:t]c] where [x] is created
+   using [named_hd] if [na] is [Anonymous]; [prod_name env (na,t,c)]
+   works similarly but build a product; for [it_lambda_name env c
+   sign] and [it_prod_name env c sign], more recent types should come
+   first in [sign]; none of these functions substitute named
+   variables in [c] by de Bruijn indices *)
 
 val lambda_name : env -> name * constr * constr -> constr
 val prod_name : env -> name * constr * constr -> constr
+
 val it_lambda_name : env -> constr -> (name * constr) list -> constr
 val it_prod_name : env -> constr -> (name * constr) list -> constr
 
 (* [lambda_create env (t,c)] builds [[x:t]c] where [x] is a name built
-   from [t] *)
+   from [t]; [prod_create env (t,c)] builds [(x:t)c] where [x] is a
+   name built from [t] *)
 
 val lambda_create : env -> constr * constr -> constr
+val prod_create : env -> constr * constr -> constr
 
 
 val translucent_abst : env -> constr -> bool

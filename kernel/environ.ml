@@ -9,7 +9,6 @@ open Univ
 open Generic
 open Term
 open Constant
-open Inductive
 open Abstraction
 
 (* The type of environments. *)
@@ -123,11 +122,6 @@ let lookup_constant sp env =
 let lookup_mind sp env =
   Spmap.find sp env.env_globals.env_inductives
 
-let lookup_mind_specif ((sp,tyi),args) env =
-  let mib = lookup_mind sp env in
-  { mis_sp = sp; mis_mib = mib; mis_tyi = tyi; mis_args = args;
-    mis_mip = mind_nth_type_packet mib tyi }
-
 let lookup_abst sp env =
   Spmap.find sp env.env_globals.env_abstractions
 
@@ -193,12 +187,13 @@ let named_hd env a = function
   | Anonymous -> Name (id_of_string (hdchar env a)) 
   | x         -> x
 
-let prod_name env (n,a,b) = mkProd (named_hd env a n) a b
+let prod_name   env (n,a,b) = mkProd (named_hd env a n) a b
 let lambda_name env (n,a,b) = mkLambda (named_hd env a n) a b
 
-let it_prod_name env = List.fold_left (fun c (n,t) ->prod_name env (n,t,c)) 
+let it_prod_name   env = List.fold_left (fun c (n,t) ->prod_name env (n,t,c)) 
 let it_lambda_name env = List.fold_left (fun c (n,t) ->lambda_name env (n,t,c))
 
+let prod_create   env (a,b) = mkProd (named_hd env a Anonymous) a b
 let lambda_create env (a,b) =  mkLambda (named_hd env a Anonymous) a b
 
 (* Abstractions. *)
