@@ -20,6 +20,8 @@ Import nat_scope.
 Import Z_scope.
 Import R_scope.
 
+Implicit Variable Type r:R.
+
 (***************************************************************************)
 (**       Instantiating Ring tactic on reals                               *)
 (***************************************************************************)

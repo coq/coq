@@ -13,6 +13,8 @@ Require Rfunctions.
 Require Classical.
 Require Compare.
 
+Implicit Variable Type r:R.
+
 (* classical is needed for [Un_cv_crit] *)
 (*********************************************************)
 (*           Definition of sequence and properties       *)

@@ -18,6 +18,8 @@ Require R_Ifp.
 Require Fourier.
 Import R_scope.
 
+Implicit Variable Type r:R.
+
 (*******************************)
 (**          Rmin              *)
 (*******************************)
