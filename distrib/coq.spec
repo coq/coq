@@ -27,10 +27,10 @@ Coq is a proof assistant which:
 
 %build
 ./configure -bindir /usr/bin -libdir /usr/lib/coq -mandir /usr/man -emacs emacs -emacslib /usr/share/emacs/site-lisp -opt         # Need ocamlc.opt and ocamlopt.opt
-make world-opt world       # Use native coq to compile theories
+make world       # Use native coq to compile theories
 
 %clean
-make cleanall
+make clean
 
 %install
 make -e COQINSTALLPREFIX=$RPM_BUILD_ROOT/ install
