@@ -5,6 +5,9 @@ open Ideutils
 
 let out_some s = match s with | None -> assert false | Some f -> f
 
+let cb = GtkBase.Clipboard.get Gdk.Atom.clipboard
+let last_cb_content = ref ""
+
 let yes_icon = "gtk-yes"
 let no_icon = "gtk-no"
 let save_icon = "gtk-save"
@@ -807,10 +810,7 @@ object(self)
     let start = it#backward_word_start in
     let stop = start#forward_word_end in
     let text = input_buffer#get_text ~slice:true ~start ~stop () in
-    try 
-      let u = url_for_keyword text in browse (current.doc_url ^ u) 
-    with _ -> ()
-
+    browse_keyword text
   initializer 
     ignore (message_buffer#connect#after#insert_text
 	      ~callback:(fun it s -> ignore 
@@ -834,6 +834,11 @@ object(self)
 			   ~stop:input_buffer#end_iter
 			   "error";
 			   Highlight.highlight_current_line input_buffer));
+(*    ignore (input_buffer#add_selection_clipboard cb);
+    ignore (input_view#connect#paste_clipboard
+            (fun () ->  match GtkBase.Clipboard.wait_for_text cb with
+		   | None -> prerr_endline "None selected";
+  | Some t -> prerr_endline "Some selected")) *)
 end
 
 let create_input_tab filename =
@@ -1299,9 +1304,16 @@ let main () =
 	  ~callback:(fun () -> browse current.library_url) in
   let _ = 
     help_factory#add_item "Help for keyword" ~key:GdkKeysyms._F1
-    ~callback:(fun () -> 
-		 let av = out_some ((get_current_view ()).analyzed_view) in
-		 av#help_for_keyword ())
+    ~callback:(fun () ->
+		 let av = out_some ((get_current_view ()).analyzed_view) in 
+		 match GtkBase.Clipboard.wait_for_text cb with
+		   | None -> 
+		       prerr_endline "None selected";
+		       av#help_for_keyword ()
+		   | Some t ->
+ 		       prerr_endline "Some selected";
+		       prerr_endline t;
+		       browse_keyword t)
   in
   let _ = help_factory#add_separator () in
   let about_m = help_factory#add_item "About" in
@@ -1309,12 +1321,10 @@ let main () =
   (* Window layout *)
 
   let hb = GPack.paned `HORIZONTAL  ~border_width:3 ~packing:vbox#add () in
-  let _ = hb#set_position (window_width/2 ) in
-  _notebook := Some (GPack.notebook ~packing:hb#add1 ());
+  _notebook := Some (GPack.notebook ~scrollable:true ~packing:hb#add1 ());
   let nb = notebook () in
   let fr2 = GBin.frame ~shadow_type:`ETCHED_OUT ~packing:hb#add2 () in 
   let hb2 = GPack.paned `VERTICAL  ~border_width:3 ~packing:fr2#add () in
-  hb2#set_position (window_height*7/10);
   let sw2 = GBin.scrolled_window 
 	      ~vpolicy:`AUTOMATIC 
 	      ~hpolicy:`AUTOMATIC
@@ -1420,7 +1430,19 @@ let main () =
      | None -> ()
      | Some f -> view#misc#modify_font f; tv2#misc#modify_font f; tv3#misc#modify_font f);
   ignore (about_m#connect#activate 
-	  ~callback:(fun () -> tv3#buffer#set_text "by Benjamin Monate"))
+	  ~callback:(fun () -> tv3#buffer#set_text "by Benjamin Monate"));
+  ignore (w#misc#connect#size_allocate 
+	    (let old_w = ref 0 
+	     and old_h = ref 0 in
+	     fun {Gtk.width=w;Gtk.height=h} -> 
+	       if !old_w <> w or !old_h <> h then
+		 begin
+		   old_h := h;
+		   old_w := w;
+		   hb#set_position (w/2);
+		   hb2#set_position (h*4/5)
+		 end
+	    ))
     
 let start () = 
   cant_break ();

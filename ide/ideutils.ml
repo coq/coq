@@ -73,3 +73,7 @@ let url_for_keyword =
   (Hashtbl.find ht : string -> string)
 
 
+let browse_keyword text = 
+  try 
+    let u = url_for_keyword text in browse (current.doc_url ^ u) 
+  with _ -> ()
