@@ -66,9 +66,9 @@ let rec compute_consteval c =
     let nargs = List.length l in
     match kind_of_term c' with
       | IsConst cst ->
-	  (match constant_eval cst with
+	  (match constant_descend cst with
 	     | NotAnElimination -> raise Elimconst
-	     | IsElimination (p,e) -> (p+n-nargs, EliminationConst e))
+	     | IsElimination (p,e) -> (max (p+n-nargs) n, EliminationConst e))
       | IsLambda (_,t,g) when l=[] -> srec (n+1) (t::labs) g
       | IsFix ((lv,i),(tys,_,bds)) -> 
           if (List.length l) > n then raise Elimconst;
@@ -88,7 +88,7 @@ let rec compute_consteval c =
 		     raise Elimconst) l
           in 
 	  if list_distinct (List.map fst li) then 
-	    (n-nargs+lv.(i), EliminationFix (li,n))
+	    (n-nargs+nbfix, EliminationFix (li,n))
           else 
 	    raise Elimconst
       | IsMutCase (_,_,d,_) when isRel d -> (n, EliminationCases)
@@ -97,15 +97,16 @@ let rec compute_consteval c =
   try IsElimination (srec 0 [] c)
   with Elimconst -> NotAnElimination
 
-and constant_eval (sp,_ as cst) =
+and constant_descend cst =
+  match constant_opt_value (Global.env ()) cst with
+    | None -> NotAnElimination
+    | Some c -> compute_consteval c
+
+let constant_eval (sp,_ as cst) =
   try
     Spmap.find sp !eval_table
   with Not_found -> begin
-    let v =
-      match constant_opt_value (Global.env ()) cst with
-	| None -> NotAnElimination
-	| Some c -> compute_consteval c
-    in
+    let v = constant_descend cst in
     eval_table := Spmap.add sp v !eval_table;
     v
   end
