@@ -45,7 +45,7 @@ let constants_table = ref Spmap.empty
 
 let declare_constant_implicits sp =
   let cb = Global.lookup_constant sp in
-  let imps = auto_implicits cb.const_type.body in
+  let imps = auto_implicits (body_of_type cb.const_type) in
   constants_table := Spmap.add sp imps !constants_table
 
 let declare_constant_manual_implicits sp imps =
@@ -67,7 +67,7 @@ let inductives_table = ref Spmap.empty
 let declare_inductive_implicits sp =
   let mib = Global.lookup_mind sp in
   let imps_one_inductive mip =
-    (auto_implicits mip.mind_arity.body,
+    (auto_implicits (body_of_type mip.mind_arity),
      let (_,lc) = decomp_all_DLAMV_name mip.mind_lc in
      Array.map auto_implicits lc)
   in
@@ -98,7 +98,7 @@ let var_table = ref Idmap.empty
 
 let declare_var_implicits id = 
   let (_,ty) = Global.lookup_var id in
-  let imps = auto_implicits ty.body in
+  let imps = auto_implicits (body_of_type ty) in
   var_table := Idmap.add id imps !var_table
 
 let implicits_of_var _ id =
