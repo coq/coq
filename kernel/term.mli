@@ -343,19 +343,19 @@ val appvect : constr * constr array -> constr
 val appvectc : constr -> constr array -> constr
 
 (* [prodn n l b] = $(x_1:T_1)..(x_n:T_n)b$ 
-   where $l = [(x_1,T_1);\dots;(x_n,T_n);Gamma]$ *)
+   where $l = [(x_n,T_n);\dots;(x_1,T_1);Gamma]$ *)
 val prodn : int -> (name * constr) list -> constr -> constr
 
 (* [lamn n l b] = $[x_1:T_1]..[x_n:T_n]b$
-   where $l = [(x_1,T_1);\dots;(x_n,T_n);Gamma]$ *)
+   where $l = [(x_n,T_n);\dots;(x_1,T_1);Gamma]$ *)
 val lamn : int -> (name * constr) list -> constr -> constr
 
 (* [prod_it b l] = $(x_1:T_1)..(x_n:T_n)b$ 
-   where $l = [x_1:T_1;..x_n:T_n]$ *)
+   where $l = [(x_n,T_n);\dots;(x_1,T_1)]$ *)
 val prod_it : constr -> (name * constr) list -> constr
 
 (* [lam_it b l] = $[x_1:T_1]..[x_n:T_n]b$ 
-   where $l = [x_1:T_1;..;x_n:T_n]$ *)
+   where $l = [(x_n,T_n);\dots;(x_1,T_1)]$ *)
 val lam_it : constr -> (name * constr) list -> constr
 
 (* [to_lambda n l] 

@@ -596,13 +596,13 @@ let abs_implicit c = mkLambda Anonymous mkImplicit c
 let lambda_implicit a = mkLambda (Name(id_of_string"y")) mkImplicit a
 let lambda_implicit_lift n a = iterate lambda_implicit n (lift n a)
 
-(* prod_it b [x1:T1;..xn:Tn] = (x1:T1)..(xn:Tn)b *)
+(* prod_it b [xn:Tn;..;x1:T1] = (x1:T1)..(xn:Tn)b *)
 let prod_it = List.fold_left (fun c (n,t)  -> mkProd n t c)
 
-(* lam_it b [x1:T1;..xn:Tn] = [x1:T1]..[xn:Tn]b with xn *)
+(* lam_it b [xn:Tn;..;x1:T1] = [x1:T1]..[xn:Tn]b *)
 let lam_it = List.fold_left (fun c (n,t)  -> mkLambda n t c)
 
-(* prodn n ([x1:T1]..[xn:Tn]Gamma) b = (x1:T1)..(xn:Tn)b *)
+(* prodn n [xn:Tn;..;x1:T1;Gamma] b = (x1:T1)..(xn:Tn)b *)
 let prodn n env b =
   let rec prodrec = function
     | (0, env, b)        -> b
@@ -611,7 +611,7 @@ let prodn n env b =
   in 
   prodrec (n,env,b)
 
-(* lamn n ([x1:T1]..[xn:T]Gamma) b = [x1:T1]..[xn:Tn]b *)
+(* lamn n [xn:Tn;..;x1:T1;Gamma] b = [x1:T1]..[xn:Tn]b *)
 let lamn n env b =
   let rec lamrec = function
     | (0, env, b)        -> b
@@ -668,9 +668,7 @@ let rec to_prod n lam =
 	    
 (* pseudo-reduction rule:
  * [prod_app  s (Prod(_,B)) N --> B[N]
- * with an strip_outer_cast on the first argument to produce a product.
- * if this does not work, then we use the string S as part of our
- * error message. *)
+ * with an strip_outer_cast on the first argument to produce a product *)
 
 let prod_app t n =
   match strip_outer_cast t with
