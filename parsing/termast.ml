@@ -473,9 +473,10 @@ let old_bdize_depcast opcast at_top env t =
 	       let oper = if n=1 then "PROD" else "PRODLIST" in
 	       ope(oper,[bdrec [] env ty;a])
 	   | IsLambda (na,ty,c) ->
-	       let (_,a) = factorize_binder 1 avoid env Lambda na ty c in
+	       let (n,a) = factorize_binder 1 avoid env Lambda na ty c in
                (* LAMBDA et LAMBDALIST se comportent pareil *)
-	       ope("LAMBDALIST",[bdrec [] env ty;a])
+	       let oper = if n=1 then "LAMBDA" else "LAMBDALIST" in
+	       ope(oper,[bdrec [] env ty;a])
 	   | IsAppL (f,args) ->
 	       bdize_app f (List.map (bdrec avoid env) (f::args))
 	   | IsConst (sp,cl) ->
@@ -734,7 +735,7 @@ let rec detype t =
 		     let constructs = 
 		       Array.init
 			 (Array.length mip.mind_consnames)
-			 (fun i -> ((indsp,i),[] (* on triche *))) in
+			 (fun i -> ((indsp,i+1),[] (* on triche *))) in
 		     let eqnv = array_map3 bdize_eqn constructs lcparams bl in
 		     let eqnl = Array.to_list eqnv in
 		     let tag =
@@ -848,7 +849,7 @@ let rec ast_of_raw avoid env = function
       let (n,a) = factorize_binder 1 avoid env bk na t c in
       let tag = match bk with
 	  (* LAMBDA et LAMBDALIST se comportent pareil *)
-	| BLambda -> "LAMBDALIST"
+	| BLambda -> if n=1 then "LAMBDA" else "LAMBDALIST"
 	  (* PROD et PRODLIST doivent être distingués à cause du cas *)
 	  (* non dépendant, pour isoler l'implication; peut-être un *)
 	  (* constructeur ARROW serait-il plus justifié ? *) 
