@@ -128,7 +128,7 @@ let rec build_args acc ce p_0 p_1 =
     | (_, (_::_)) -> failwith "mk_clenv_using"
 
 and build_term ce p_0 c =
-  let env = Global.env() in
+  let env = w_env ce.hook in
   match p_0, kind_of_term c with 
     | ((na,Some t), IsMeta mv) -> 
 (*    	let mv = new_meta() in *)
