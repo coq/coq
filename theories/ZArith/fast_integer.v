@@ -813,9 +813,9 @@ Qed.
 Lemma convert_xI : (p:positive) (convert (xI p))=(S (mult (2) (convert p))).
 Proof.
   Induction p. Unfold convert. Simpl. Intro p0. Intro. Rewrite positive_to_nat_2.
-  Rewrite positive_to_nat_4. Inversion H. Rewrite H1. Rewrite <- plus_Snm_nSm. Reflexivity.
+  Rewrite positive_to_nat_4; Injection H; Intro H1; Rewrite H1; Rewrite <- plus_Snm_nSm; Reflexivity.
   Unfold convert. Simpl. Intros. Rewrite positive_to_nat_2. Rewrite positive_to_nat_4.
-  Inversion H. Rewrite H1. Reflexivity.
+  Injection H; Intro H1; Rewrite H1; Reflexivity.
   Reflexivity.
 Qed.
 
@@ -1305,7 +1305,7 @@ Definition Prec : (A:Set)A->(positive->A->A)->positive->A :=
 
 (** Test *)
 
-Eval Compute in 
+Check
  let fact = (Prec positive xH [p;r](times (add_un p) r)) in
  let seven = (xI (xI xH)) in
  let five_thousand_forty= (xO(xO(xO(xO(xI(xI(xO(xI(xI(xI(xO(xO xH))))))))))))
