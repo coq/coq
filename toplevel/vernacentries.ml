@@ -1791,8 +1791,11 @@ let _ = vinterp_add "SHOWINTRO"
 		    let pf = get_pftreestate() in
 		    let gl = nth_goal_of_pftreestate 1 pf in
 		    let l,_= decompose_prod (strip_outer_cast (pf_concl gl)) in
-		    let n = List.hd (List.rev_map fst l) in
-		      message (string_of_id (fresh_id [] (id_of_name n) gl)))
+		    try 
+		       let n = 
+			 List.hd (List.rev_map fst l) in
+			 message (string_of_id (fresh_id [] (id_of_name n) gl))
+		    with Failure "hd" -> message "") 
 	     | _ -> bad_vernac_args "Show Intro")
 
 let _ =  vinterp_add "SHOWINTROS"
