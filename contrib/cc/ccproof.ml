@@ -127,8 +127,7 @@ let rec type_proof axioms p=
 
 let by_contradiction uf diseq axioms disaxioms= 
   try 
-    let id,cpl=
-      find_contradiction uf diseq in
+    let id,cpl=find_contradiction uf diseq in
     let prf=build_proof uf (`Refute_hyp cpl) in
       if List.assoc id disaxioms=type_proof axioms prf then
 	`Refute_hyp (id,prf)

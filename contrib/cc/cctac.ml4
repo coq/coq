@@ -244,14 +244,4 @@ let cc_tactic gls=
 TACTIC EXTEND CC
  [ "Congruence" ] -> [ tclSOLVE [tclTHEN (tclREPEAT introf) cc_tactic] ]
 END
-
-
-
-
-
-
-
-
-
-
    

@@ -349,7 +349,7 @@ let add_disaxioms uf disaxioms=
   let f (id,cpl)=(id,add_one_diseq uf cpl) in
     List.map f disaxioms
 
-let check_equal uf (i1,i2) = UF.find uf i2 = UF.find uf i2
+let check_equal uf (i1,i2) = UF.find uf i1 = UF.find uf i2
 
 let find_contradiction uf diseq =
   List.find (fun (id,cpl) -> check_equal uf cpl) diseq
