@@ -358,19 +358,19 @@ module Html = struct
     | '&' -> printf "&amp;"
     | c -> output_char c
 
+  let raw_ident s = for i = 0 to String.length s - 1 do char s.[i] done
+
   let latex_char _ = ()
   let latex_string _ = ()
 
-  let html_char = output_char
-  let html_string = output_string
+  let html_char = char
+  let html_string = raw_ident
 
   let start_latex_math () = ()
   let stop_latex_math () = ()
 
   let start_verbatim () = printf "<pre>"
   let stop_verbatim () = printf "</pre>\n"
-
-  let raw_ident s = for i = 0 to String.length s - 1 do char s.[i] done
 
   let module_ref m s = 
     printf "<a href=\"%s.html\">" m; raw_ident s; printf "</a>"
@@ -805,7 +805,7 @@ let start_verbatim =
 let stop_verbatim = 
   select Latex.stop_verbatim Html.stop_verbatim TeXmacs.stop_verbatim
 let verbatim_char = 
-  select output_char output_char TeXmacs.char
+  select output_char Html.char TeXmacs.char
 
 let make_index = select Latex.make_index Html.make_index TeXmacs.make_index
 let make_toc = select Latex.make_toc Html.make_toc TeXmacs.make_toc
