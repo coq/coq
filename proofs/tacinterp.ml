@@ -1117,24 +1117,26 @@ let bad_tactic_args s =
   anomalylabstrm s
     [<'sTR "Tactic "; 'sTR s; 'sTR " called with bad arguments">]
 
-(* Declaration of the META-DEFINITION object *)
+(* Declaration of the TAC-DEFINITION object *)
 let (inMD,outMD) =
   let add (na,td) = mactab := Gmap.add na td !mactab in
   let cache_md (_,(na,td)) =  
     let ve=val_interp (Evd.empty,Environ.empty_env,[],[],None,get_debug ()) td 
     in add (na,ve) in 
-    declare_object ("META-DEFINITION",
+    declare_object ("TAC-DEFINITION",
        {cache_function  = cache_md;
         load_function   = (fun _ -> ());
         open_function   = cache_md;
         export_function = (fun x -> Some x)})
 
-(* Adds a Meta Definition in the table *)
-let add_metadef na vbody =
+(* Adds a definition for tactics in the table *)
+let add_tacdef na vbody =
   begin
     if Gmap.mem na !mactab then
-      errorlabstrm "Tacinterp.add_metadef" 
-        [<'sTR "There is already a Meta Definition named "; 'sTR na>];
+      errorlabstrm "Tacinterp.add_tacdef" 
+      [< 'sTR
+         "There is already a Meta Definition or a Tactic Definition named ";
+         'sTR na>];
     let _ = Lib.add_leaf (id_of_string na) OBJ (inMD (na,vbody)) in
     if Options.is_verbose() then mSGNL [< 'sTR (na ^ " is defined") >]
   end

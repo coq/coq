@@ -49,8 +49,8 @@ val set_debug : debug_info -> unit
 (* Gives the state of debug *)
 val get_debug : unit -> debug_info
 
-(* Adds a Meta Definition in the table *)
-val add_metadef : string -> Coqast.t -> unit
+(* Adds a definition for tactics in the table *)
+val add_tacdef : string -> Coqast.t -> unit
 
 (* Interprets any expression *)
 val val_interp : interp_sign -> Coqast.t -> value
