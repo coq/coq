@@ -26,9 +26,12 @@ dir:
 # make all cmo's in this directory. Useful in case the main Makefile is not
 # up-to-date
 all:	
-	@(for i in *.ml{,4}; do \
-	   echo -n $(BASEDIR)/`basename $$i .ml`.cmo "" ; \
-	done \
+	@( ( for i in *.ml; do \
+	       echo -n $(BASEDIR)/`basename $$i .ml`.cmo "" ; \
+	     done; \
+	     for i in *.ml4; do \
+	       echo -n $(BASEDIR)/`basename $$i .ml4`.cmo "" ; \
+	     done ) \
 	  | xargs $(MAKE) -C $(TOPDIR) )
 
 # lists all files that should be compiled in this directory
@@ -36,8 +39,11 @@ list:
 	@(for i in *.mli; do \
 	   ls -l `basename $$i .mli`.cmi; \
 	done)
-	@(for i in *.ml{,4}; do \
+	@(for i in *.ml; do \
 	   ls -l `basename $$i .ml`.cmo; \
+	done)
+	@(for i in *.ml4; do \
+	   ls -l `basename $$i .ml4`.cmo; \
 	done)
 
 

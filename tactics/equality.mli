@@ -88,7 +88,7 @@ val hypSubst_LR : identifier -> clause -> tactic
 val hypSubst_RL : identifier -> clause -> tactic
 
 val discriminable : env -> evar_map -> constr -> constr -> bool
-
+(*
 (***************)
 (* AutoRewrite *)
 (***************)
@@ -124,7 +124,7 @@ val explicit_hint_base : goal sigma -> hint_base -> rewriting_rule list
 val autorewrite :
   hint_base list -> tactic list option -> option_step 
     -> tactic list option -> bool -> int -> tactic
-
+*)
 
 (* Subst *)
 

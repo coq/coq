@@ -1195,7 +1195,7 @@ let substHypInConcl_RL_tac =
    SubstHypInHyp id H.
     id:a=b H:(P a) |- G
 *)
-
+(*
 (**********************************************************************)
 (*                    AutoRewrite                                     *)
 (**********************************************************************)
@@ -1232,13 +1232,28 @@ let rules_of_base rbase = List.rev (Gmapl.find rbase !rew_tab)
 
 (*Functions necessary to the library object declaration*)
 let cache_autorewrite_rule (_,(rbase,lrl)) = add_list_rules rbase lrl
+
+let subst_autorewrite_rule (_,subst,(rbase,list as node)) = 
+  let subst_first (cst,b as pair) = 
+    let cst' = Term.subst_mps subst cst in
+      if cst == cst' then pair else
+	(cst',b)
+  in
+  let list' = list_smartmap subst_first list in
+    if list' == list then node else
+      (rbase,list')
+      
+let classify_autorewrite_rule (_,x) = Libobject.Substitute x
+
 let export_autorewrite_rule x = Some x
 
 (*Declaration of the AUTOREWRITE_RULE library object*)
 let (in_autorewrite_rule,out_autorewrite_rule)=
   Libobject.declare_object {(Libobject.default_object "AUTOREWRITE_RULE") with
-       Libobject.open_function = (fun i o -> if i=1 then cache_autorewrite_rule o);
        Libobject.cache_function = cache_autorewrite_rule;
+       Libobject.open_function = (fun i o -> if i=1 then cache_autorewrite_rule o);
+       Libobject.subst_function = subst_autorewrite_rule;
+       Libobject.classify_function = classify_autorewrite_rule;
        Libobject.export_function = export_autorewrite_rule }
 
 (****The tactic****)
@@ -1497,7 +1512,7 @@ let autorewrite lbases ltacstp opt_step ltacrest opt_rest depth_step gls =
         (fun l -> validation_gen nlvalid l)
     in
     (repackage sigr gl,validation_fun)
-
+*)
 
 (* Substitutions tactics (JCF) *)
 
