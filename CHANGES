@@ -107,11 +107,17 @@ Tactics
   arguments (e.g. the accessibility predicate) has been fixed (source
   of incompatibilities)
 - Symmetry now applies to hypotheses too
+- Inversion now accept a "as [ ... ]" option to name the hypotheses
 
 Bugs
 
 - Rename bug fixed (#244)
 - see coq-bugs server for the complete list of fixed bugs
+
+Miscellaneous
+
+- Implicit parameters of inductive types definition now taken into
+  account for infering other implicit arguments
 
 Changes from V7.3.1 to V7.4
 ===========================
