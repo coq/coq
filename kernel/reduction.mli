@@ -90,8 +90,9 @@ val hnf_lam_appvect :
   env -> 'a evar_map -> string -> constr -> constr array -> constr
 val hnf_lam_applist : 
   env -> 'a evar_map -> string -> constr -> constr list -> constr
-val splay_prod : 
-  env -> 'a evar_map -> constr -> (name * constr) list * constr
+val splay_prod : env -> 'a evar_map -> constr -> (name * constr) list * constr
+val splay_arity : env -> 'a evar_map -> constr -> (name * constr) list * sorts
+val sort_of_arity : env -> constr -> sorts
 val decomp_prod : env -> 'a evar_map -> constr -> int * constr
 val decomp_n_prod : 
   env -> 'a evar_map -> int -> constr -> ((name * constr) list) * constr
@@ -104,7 +105,7 @@ type 'a miota_args = {
   mlf     : 'a array }  (* the branch code vector *)
 
 val reducible_mind_case : constr -> bool
-val reduce_mind_case : env -> constr miota_args -> constr
+val reduce_mind_case : constr miota_args -> constr
 
 val is_arity : env -> 'a evar_map -> constr -> bool
 val is_info_arity : env -> 'a evar_map -> constr -> bool
@@ -179,7 +180,7 @@ val is_fconv : conv_pb -> env -> 'a evar_map -> constr -> constr -> bool
 
 val whd_meta : (int * constr) list -> constr -> constr
 val plain_instance : (int * constr) list -> constr -> constr
-val instance : (int * constr) list -> 'a reduction_function
+val instance : (int * constr) list -> constr -> constr
 
 (* [whd_ise] raise [Uninstantiated_evar] if an evar remains uninstantiated; *)
 (* *[whd_ise1]* is synonymous of *[whd_evar empty_env]* and *[nf_ise1]* of *)
@@ -211,6 +212,11 @@ val find_mcoinductype : env -> 'a evar_map -> constr -> inductive * constr list
 
 (* [try_mutind_of env sigma t] raises [Induc] if [t] is not an inductive type*)
 (* The resulting summary is relative to the current env *)
-val try_mutind_of : env -> 'a evar_map -> constr -> Inductive.inductive_summary
+open Inductive
+val try_mutind_of : env -> 'a evar_map -> constr -> inductive_summary
 
+val get_constructors : env -> 'a evar_map -> inductive_summary
+      -> constructor_summary array
+val get_arity : env -> 'a evar_map -> inductive_summary ->
+      (name * constr) list * sorts
 

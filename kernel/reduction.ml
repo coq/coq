@@ -275,7 +275,7 @@ let rec stacklam recfun env t stack =
 let beta_applist (c,l) = stacklam (fun c l -> applist(c,l)) [] c l
 
 
-let whd_beta_stack env sigma = 
+let whd_beta_stack_gen = 
   let rec whrec x stack = match x with
     | DOP2(Lambda,c1,DLAM(name,c2)) ->
 	(match stack with
@@ -288,8 +288,10 @@ let whd_beta_stack env sigma =
   in 
   whrec
 
-let whd_beta env sigma x = applist (whd_beta_stack env sigma x [])
+let whd_beta_gen x = applist (whd_beta_stack_gen x [])
 
+let whd_beta_stack env sigma = whd_beta_stack_gen 
+let whd_beta env sigma = whd_beta_gen
 
 (* 2. Delta Reduction *)
 		   
@@ -474,12 +476,11 @@ let contract_cofix = function
 let mind_nparams env i =
   let mis = lookup_mind_specif i env in mis.mis_mib.mind_nparams
 
-let reduce_mind_case env mia =
+let reduce_mind_case mia =
   match mia.mconstr with
     | DOPN(MutConstruct (ind_sp,i as cstr_sp),args) ->
-	let ind = inductive_of_constructor (cstr_sp,args) in
-	let nparams = mind_nparams env ind in
-	let real_cargs = snd (list_chop nparams mia.mcargs) in
+	let ncargs = (fst mia.mci).(i-1) in
+	let real_cargs = list_lastn ncargs mia.mcargs in
         applist (mia.mlf.(i-1),real_cargs)
     | DOPN(CoFix _,_) as cofix ->
 	let cofix_def = contract_cofix cofix in
@@ -528,7 +529,7 @@ let reduce_fix whfun fix stack =
                                      --------------------
 qui coute cher dans whd_betadeltaiota *)
 
-let whd_betaiota_stack env sigma = 
+let whd_betaiota_stack_gen = 
   let rec whrec x stack =
     match x with
       | DOP2(Cast,c,_) -> whrec c stack
@@ -541,7 +542,7 @@ let whd_betaiota_stack env sigma =
           let (ci,p,d,lf) = destCase x in
           let (c,cargs) = whrec d [] in
           if reducible_mind_case c then
-            whrec (reduce_mind_case env
+            whrec (reduce_mind_case
                      {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf}) stack
           else 
 	    (mkMutCaseA ci p (applist(c,cargs)) lf, stack)
@@ -553,7 +554,10 @@ let whd_betaiota_stack env sigma =
   in 
   whrec    
 
-let whd_betaiota env sigma x = applist (whd_betaiota_stack env sigma x [])
+let whd_betaiota_gen x = applist (whd_betaiota_stack_gen x [])
+
+let whd_betaiota_stack env sigma = whd_betaiota_stack_gen 
+let whd_betaiota env sigma = whd_betaiota_gen
 
 
 let whd_betaiotaevar_stack env sigma = 
@@ -579,7 +583,7 @@ let whd_betaiotaevar_stack env sigma =
           let (ci,p,d,lf) = destCase x in
           let (c,cargs) = whrec d [] in
           if reducible_mind_case c then
-	    whrec (reduce_mind_case env
+	    whrec (reduce_mind_case
                      {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf}) stack
           else 
 	    (mkMutCaseA ci p (applist(c,cargs)) lf,stack)
@@ -622,7 +626,7 @@ let whd_betadeltaiota_stack env sigma =
           let (ci,p,d,lf) = destCase x in
           let (c,cargs) = bdi_rec d [] in
           if reducible_mind_case c then
-            bdi_rec (reduce_mind_case env
+            bdi_rec (reduce_mind_case
 		       {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf}) stack
           else 
 	    (mkMutCaseA ci p (applist(c,cargs)) lf,stack)
@@ -681,7 +685,7 @@ let whd_betadeltaiotaeta_stack env sigma =
           let (ci,p,d,lf) = destCase x in
           let (c,cargs) = whrec d [] in
           if reducible_mind_case c then
-	    whrec (reduce_mind_case env
+	    whrec (reduce_mind_case
                      {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf}) stack
           else 
 	    (mkMutCaseA ci p (applist(c,cargs)) lf,stack)
@@ -952,8 +956,8 @@ let plain_instance s c =
   if s = [] then c else irec c
     
 (* Pourquoi ne fait-on pas nf_betaiota si s=[] ? *)
-let instance s env sigma c = 
-  if s = [] then c else nf_betaiota env sigma (plain_instance s c)
+let instance s c = 
+  if s = [] then c else strong whd_betaiota () () (plain_instance s c)
 
 
 (* pseudo-reduction rule:
@@ -995,6 +999,13 @@ let splay_prod env sigma =
       | t -> m,t
   in 
   decrec []
+
+let splay_arity env sigma c =
+  match splay_prod env sigma c with
+   | l, DOP0 (Sort s) -> l,s
+   | _, _ -> error "not an arity"
+
+let sort_of_arity env c = snd (splay_arity env Evd.empty c)
   
 let decomp_prod env sigma = 
   let rec decrec m c =
@@ -1104,7 +1115,7 @@ let whd_programs_stack env sigma =
 	  else
             let (c,cargs) = whrec d [] in
             if reducible_mind_case c then
-	      whrec (reduce_mind_case env
+	      whrec (reduce_mind_case
 		       {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf})
 		    stack
 	    else
@@ -1140,31 +1151,6 @@ let find_mcoinductype env sigma c =
         when not (mind_type_finite (lookup_mind sp env) i) -> (destMutInd t,l)
     | _ -> raise Induc
 
-let make_constructor_summary (hyps,lc,nconstr,ntypes) ind params =
-  let ((sp,i),ctxt) = ind in
-  let specif = instantiate_constr (Sign.ids_of_sign hyps) lc (Array.to_list ctxt) in
-  let make_ik i = DOPN (MutInd (sp,i), ctxt) in
-  let types = sAPPVList specif (list_tabulate make_ik ntypes) in
-  let nparams_plus1 = List.length params + 1 in
-  let make_ck j =
-    let (args,ccl) = decompose_prod (prod_applist types.(j) params) in
-    let lAV = destAppL (ensure_appl ccl) in
-    let (_,vargs) = array_chop nparams_plus1 lAV in
-    { cs_cstr = ith_constructor_of_inductive ind (j+1);
-      cs_params = params;
-      cs_nargs = List.length args;
-      cs_args = args;
-      cs_concl_realargs = vargs } in
-  Array.init nconstr make_ck
-
-let make_arity env sigma (hyps,arity) ind params =
-  let ((sp,i),ctxt) = ind in
-  let arity' =
-    instantiate_type (Sign.ids_of_sign hyps) arity (Array.to_list ctxt) in
-  match splay_prod env sigma (prod_applist (body_of_type arity') params) with
-    | (sign, DOP0 (Sort s)) -> (sign,s)
-    | _ -> anomaly "make_arity: the conclusion of this arity is not a sort"
-
 (* raise Induc if not an inductive type *)
 let try_mutind_of env sigma ty =
   let (mind,largs) = find_mrectype env sigma ty in
@@ -1179,10 +1165,27 @@ let try_mutind_of env sigma ty =
     realargs = realargs;
     nparams  = nparams;
     nrealargs = List.length realargs;
-    nconstr  = nconstr;
-    make_arity   = make_arity env sigma (hyps,mispec.mis_mip.mind_arity);
-    make_constrs = make_constructor_summary
-		  (hyps, mispec.mis_mip.mind_lc, nconstr, mis_ntypes mispec) }
+    nconstr  = nconstr }
+
+let get_constructors env sigma is =
+  let mispec = lookup_mind_specif is.mind env in
+  let specif = mis_lc mispec in
+  let make_ik i = DOPN (MutInd (mispec.mis_sp,i), mispec.mis_args) in
+  let types = sAPPVList specif (list_tabulate make_ik (mis_ntypes mispec)) in
+  let make_ck j =
+    let (args,ccl) = decompose_prod (prod_applist types.(j) is.params) in
+    let (_,vargs) = array_chop (is.nparams + 1) (destAppL (ensure_appl ccl)) in
+    { cs_cstr = ith_constructor_of_inductive is.mind (j+1);
+      cs_params = is.params;
+      cs_nargs = List.length args;
+      cs_args = args;
+      cs_concl_realargs = vargs } in
+  Array.init (mis_nconstr mispec) make_ck
+
+let get_arity env sigma is =
+  let mispec = lookup_mind_specif is.mind env in
+  let arity = mis_arity mispec in
+  splay_arity env sigma (prod_applist arity is.params)
 
 exception IsType
 
