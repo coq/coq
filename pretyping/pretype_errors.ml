@@ -8,7 +8,7 @@ open Type_errors
 open Rawterm
 
 let raise_pretype_error (loc,k,ctx,te) =
-  raise (Stdpp.Exc_located (loc, TypeError(k,ctx,te)))
+  Stdpp.raise_with_loc loc (TypeError(k,ctx,te))
 
 let error_var_not_found_loc loc k s =
   raise_pretype_error (loc,k, Global.context() (*bidon*), VarNotFound s)

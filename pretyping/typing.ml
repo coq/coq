@@ -32,7 +32,7 @@ let rec execute mf env sigma cstr =
 	{ uj_val = cstr; uj_type = jty }
 	
     | IsRel n -> 
-	relative env n
+	relative env sigma n
 
     | IsVar id -> 
       (try
@@ -111,7 +111,7 @@ let rec execute mf env sigma cstr =
         let tj = execute mf env sigma t in
         cast_rel env sigma cj tj
 	  
-      | _ -> error_cant_execute CCI env cstr
+    | IsXtra _ -> anomaly "Typing: found an Extra"
 	  
 and execute_fix mf env sigma lar lfi vdef =
   let larj = execute_array mf env sigma lar in
