@@ -533,7 +533,7 @@ let print internal glob_ref xml_library_root =
 (* show dest                                                  *)
 (*  where dest is either None (for stdout) or (Some filename) *)
 (* pretty prints via Xml.pp the proof in progress on dest     *)
-let show_pftreestate fn (kind,pftst) id =
+let show_pftreestate internal fn (kind,pftst) id =
  let str = Names.string_of_id id in
  let pf = Tacmach.proof_of_pftreestate pftst in
  let typ = (Proof_trees.goal_of_proof pf).Evd.evar_concl in
@@ -545,7 +545,7 @@ let show_pftreestate fn (kind,pftst) id =
  let env = Global.env () in
  let obj = mk_current_proof_obj id val0 typ evar_map env in
  let uri = Cic2acic.uri_of_declaration id Cic2acic.Constant in
-  print_object_kind uri (kind_of_goal kind);
+  if not internal then print_object_kind uri (kind_of_goal kind);
   print_object uri obj evar_map
    (Some (Tacmach.evc_of_pftreestate pftst,unshared_pf,proof_tree_to_constr,
     proof_tree_to_flattened_proof_tree)) fn
@@ -554,7 +554,7 @@ let show_pftreestate fn (kind,pftst) id =
 let show fn =
  let pftst = Pfedit.get_pftreestate () in
  let (id,kind,_,_) = Pfedit.current_proof_statement () in
-  show_pftreestate fn (kind,pftst) id
+  show_pftreestate false fn (kind,pftst) id
 ;;
 
 
@@ -589,7 +589,7 @@ let _ =
          (* It is a proof. Let's export it starting from the proof-tree *)
          (* I saved in the Pfedit.set_xml_cook_proof callback.          *)
         let fn = filename_of_path xml_library_root kn Cic2acic.Constant in
-         show_pftreestate fn pftreestate 
+         show_pftreestate internal fn pftreestate 
 	  (Names.id_of_label (Names.label kn)) ;
          proof_to_export := None)
 ;;
