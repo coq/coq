@@ -785,8 +785,11 @@ let rec pretype tycon env isevars lvar = function
                   let na,rtntyopt,_ = 
                     if dep then decomp_lam_force 1 avoid [] p
                     else [Anonymous],p,[] in
-                  let args = List.map (fun _ -> Anonymous) params @ nal in
-                  (Some rtntyopt,(List.hd na,Some (dummy_loc,ind,args))) in
+		  let intyp =
+		    if nal=[] then None else
+                      let args = List.map (fun _ -> Anonymous) params @ nal in
+		      Some (dummy_loc,ind,args) in
+                  (Some rtntyopt,(List.hd na,intyp)) in
 	    if st = IfStyle & snd indnalopt = None then
 	      (* Translate into a "if ... then ... else" *)
 	      (* TODO: translate into a "if" even if po is dependent *)
