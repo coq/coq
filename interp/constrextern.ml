@@ -129,21 +129,37 @@ let name_app f = function
   | Name id -> Name (f id)
   | Anonymous -> Anonymous
 
-let avoid_wildcard_string s =
-  if s = "_" then "x_" else s
-
-let avoid_wildcard id =
-  if id = id_of_string "_" then id_of_string "x_" else id
-
-let translate_keyword = function
-  | ("forall" | "fun" | "match" | "fix" | "cofix" | "for" | "let"
-    | "if"  | "then" | "else" | "return" | "mod" | "where" | "exists" as s) ->
+let rec translate_ident_string = function
+    (* translate keyword *)
+  | ("at" | "IF" | "forall" | "fun" | "match" | "fix" | "cofix" | "for" | "let"
+    | "if"  | "then" | "else" | "return" | "mod" | "where" 
+    | "exists" | "exists2" | "using" as s) ->
       let s' = s^"_" in
       msgerrnl
       (str ("Warning: '"^
           s^"' is now a keyword; it has been translated to '"^s'^"'"));
       s'
+  | "eval" as s ->
+      let s' = s^"_" in
+      msgerrnl
+      (str ("Warning: '"^
+          s^"' is a conflicting ident; it has been translated to '"^s'^"'"));
+      s'
+
+  (* avoid _ *)
+  | "_" -> 
+      msgerrnl (str 
+        "Warning: '_' is no longer an ident; it has been translated to 'x_'");
+      "x_"
+  (* avoid @ *)
+  | s when String.contains s '@' ->
+      let n = String.index s '@' in 
+      translate_ident_string
+      (String.sub s 0 n ^ "'at'" ^ String.sub s (n+1) (String.length s -n-1))
   | s -> s
+
+let translate_ident id =
+  id_of_string (translate_ident_string (string_of_id id))
 
 let is_coq_root d =
   let d = repr_dirpath d in d <> [] & string_of_id (list_last d) = "Coq"
@@ -645,10 +661,6 @@ let translate_v7_string dir = function
       (s' = "unicite" or s' = "unicity") -> c dir,
       "uniqueness"^(String.sub s 7 (String.length s - 7))
   (* Default *)
-  | "_" -> 
-      msgerrnl (str 
-	"Warning: '_' is no longer an ident; it has been translated to 'x_'");
-      c dir,"x_"
   | x -> [],x
 
 let id_of_v7_string s =
@@ -657,20 +669,29 @@ let id_of_v7_string s =
 let v7_to_v8_dir_id dir id =
   if Options.do_translate() then
     let s = string_of_id id in
-    let dir',s = 
+    let dir',s =
       if (is_coq_root (Lib.library_dp()) or is_coq_root dir)
-      then translate_v7_string dir s else [],avoid_wildcard_string s in
-    dir',id_of_string (translate_keyword s)
+      then translate_v7_string dir s else [], s in
+    dir',id_of_string (translate_ident_string s)
   else [],id
 
 let v7_to_v8_id id = snd (v7_to_v8_dir_id empty_dirpath id)
+
+let short_names = (* arbitrary *)
+  ["N";"Zabs_N";"Z_of_N";"Gt";"Eq";"Lt";"Pplus";"Z0";"Zpos";"Zneg";
+   "N0";"Npos";"Pminus";"Psucc";"Ppred";"Pdiv2";"Ndouble";"Zsucc";
+   "Z_of_nat";"nat_of_P";"Pcompare"]
 
 let shortest_qualid_of_v7_global ctx ref =
   let fulldir,_ = repr_path (sp_of_global ref) in
   let dir,id = repr_qualid (shortest_qualid_of_global ctx ref) in
   let dir',id = v7_to_v8_dir_id fulldir id in
   let dir'' =
-    if dir' = [] then dir else
+    if dir' = [] then
+(*      if dir = [] & List.exists (string_of_id id) allnames
+      then [List.hd fulldir]
+      else *)dir
+    else
       try
         let d,_ = repr_path (Nametab.full_name_cci (make_short_qualid id)) in
         (* The user has defined id, then we qualify the new name *)
@@ -1078,7 +1099,7 @@ let rec extern inctx scopes vars r =
       CArrow (loc,extern_type scopes vars t, extern_type scopes vars c)
 
   | RLetIn (loc,na,t,c) ->
-      let na = name_app avoid_wildcard na in
+      let na = name_app translate_ident na in
       CLetIn (loc,(loc,na),sub_extern false scopes vars t,
               extern inctx scopes (add_vname vars na) c)
 
@@ -1176,7 +1197,7 @@ and factorize_prod scopes vars aty = function
   | RProd (loc,(Name id as na),ty,c)
       when same aty (extern_type scopes vars (anonymize_if_reserved na ty))
 	& not (occur_var_constr_expr id aty) (* avoid na in ty escapes scope *)
-	-> let id = avoid_wildcard id in
+	-> let id = translate_ident id in
            let (nal,c) = factorize_prod scopes (Idset.add id vars) aty c in
            ((loc,Name id)::nal,c)
   | c -> ([],extern_type scopes vars c)
@@ -1185,7 +1206,7 @@ and factorize_lambda inctx scopes vars aty = function
   | RLambda (loc,na,ty,c)
       when same aty (extern_type scopes vars (anonymize_if_reserved na ty))
 	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)
-	-> let na = name_app avoid_wildcard na in
+	-> let na = name_app translate_ident na in
            let (nal,c) =
 	     factorize_lambda inctx scopes (add_vname vars na) aty c in
            ((loc,na)::nal,c)
