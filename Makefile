@@ -595,10 +595,6 @@ SETSVO=theories/Sets/Classical_sets.vo     theories/Sets/Permut.vo \
  theories/Sets/Multiset.vo          theories/Sets/Relations_3_facts.vo \
  theories/Sets/Partial_Order.vo     theories/Sets/Uniset.vo
 
-FSETSVO=theories/FSets/FSet.vo            theories/FSets/FSetList.vo \
-	theories/FSets/FSetBridge.vo      theories/FSets/FSetProperties.vo \
-	theories/FSets/FSetInterface.vo   theories/FSets/FSetRBT.vo 
-
 INTMAPVO=theories/IntMap/Adalloc.vo    theories/IntMap/Mapcanon.vo \
 theories/IntMap/Addec.vo      theories/IntMap/Mapcard.vo \
 theories/IntMap/Addr.vo       theories/IntMap/Mapc.vo \
@@ -683,9 +679,6 @@ bool: $(BOOLVO)
 zarith: $(ZARITHVO)
 lists: $(LISTSVO)
 sets: $(SETSVO)
-fsets: $(FSETSVO)
-install-fsets: $(FSETSVO)
-	cp --parents $(FSETSVO) $(FULLCOQLIB)/theories/FSets
 intmap: $(INTMAPVO)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
@@ -1210,7 +1203,7 @@ alldepend: depend dependcoq
 
 dependcoq:: beforedepend
 	$(COQDEP) -R theories Coq -R contrib Coq $(COQINCLUDES) \
-	 $(FSETSVO:.vo=.v) $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
+	 $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
 
 # Build dependencies ignoring failures in building ml files from ml4 files
 # This is useful to rebuild dependencies when they are strongly corrupted:
