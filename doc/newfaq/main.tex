@@ -79,7 +79,9 @@
 \def\repeat{{\tt repeat }}
 \def\eauto{{\tt eauto }}
 \def\subst{{\tt subst }}
+\def\symmetryin{{\tt symmetryin }}
 \def\instantiate{{\tt instantiate }}
+\def\inversion{{\tt inversion}}
 \def\Defined{{\tt Defined }}
 \def\Qed{{\tt Qed }}
 \def\pattern{{\tt pattern }}
@@ -640,9 +642,28 @@ assumption.
 Qed.
 \end{coq_example}
 
+An example using classical reasoning :
 
-todo exemple classique et rajouter dans classical prop.
+\begin{coq_example}
+Require Import Classical.
 
+Ltac classical_right := 
+match goal with 
+| _:_ |- ?X1 \/ _ => (elim (classic X1);intro;[left;trivial|right])
+end.
+
+Ltac classical_left := 
+match goal with 
+| _:_ |- _ \/ ?X1 => (elim (classic X1);intro;[right;trivial|left])
+end.
+
+
+Goal forall A B:Prop, (~A -> B) -> A\/B.
+intros.
+classical_right.
+auto.
+Qed.
+\end{coq_example}
 
 \Question{My goal is an universally quantified statement, how can I prove it ?}
 
@@ -725,17 +746,25 @@ Ltac DecompEx H P := elim H;intro P;intro TO;decompose [and] TO;clear TO;clear H
 \Question{My goal is an equality, how can I swap the left and right hand terms ?}
 
 Just use the \symmetry tactic.
-%\begin{coq_example}
-%Goal forall x y : nat, x=y -> y=x.
-%intros.
-%symmetry.
-%assumption.
-%Qed.
-%\end{coq_example}
+\begin{coq_example}
+Goal forall x y : nat, x=y -> y=x.
+intros.
+symmetry.
+assumption.
+Qed.
+\end{coq_example}
 
 \Question{My hypothesis is an equality, how can I swap the left and right hand terms ?}
 
-Just use the \symmetry in tactic.
+Just use the \symmetryin tactic.
+
+\begin{coq_example}
+Goal forall x y : nat, x=y -> y=x.
+intros.
+symmetry in H.
+assumption.
+Qed.
+\end{coq_example}
 
 
 \Question{My goal is an equality, how can I prove it by transitivity ?}
@@ -856,6 +885,7 @@ Qed.
 
 Just use the semi-decision tactic : \firstorder.
 
+todo : demander un exemple à Pierre
 
 \Question{My goal is solvable by a sequence of rewrites, how can I prove it ?}
 
@@ -871,12 +901,13 @@ Qed.
 \Question{My goal is a disequality solvable by a sequence of rewrites, how can I prove it ?}
 
 Just use the \congruence tactic.
-%\begin{coq_example}
-%Goal forall a b c d, a<>d -> b=a -> d=c+b -> b<>c+b.
-%intros.
-%congruence.
-%Qed.
-%\end{coq_example}
+
+\begin{coq_example}
+Goal forall a b c d, a<>d -> b=a -> d=c+b -> b<>c+b.
+intros.
+congruence.
+Qed.
+\end{coq_example}
 
 
 \Question{My goal is an equality on some ring (e.g. natural numbers), how can I prove it ?}
@@ -925,10 +956,9 @@ Qed.
 
 \Question{My goal is an equation solvable using equational hypothesis on some ring (e.g. natural numbers), how can I prove it ?}
 
-You need the \gb tactic see \url{todo}.
+You need the \gb tactic (see Loïc Pottier's homepage).
 
 \subsection{Tactics usage}
-
 
 \Question{I want to state a fact that I will use later as an hypothesis, how can I do it ?}
 
@@ -936,6 +966,27 @@ If you want to use forward reasoning (first proving the fact and then
 using it) you just need to use the \assert tactic. If you want to use
 backward reasoning (proving your goal using an assumption and then
 proving the assumption) use the \cut tactic.
+
+\begin{coq_example}
+Goal forall A B C D : Prop, (A -> B) -> (B->C) -> A -> C. 
+intros.
+assert (A->C).
+intro;apply H0;apply H;assumption.
+apply H2.
+assumption.
+Qed.
+
+Goal forall A B C D : Prop, (A -> B) -> (B->C) -> A -> C. 
+intros.
+cut (A->C).
+intro.
+apply H2;assumption.
+intro;apply H0;apply H;assumption.
+Qed.
+\end{coq_example}
+
+
+
 
 \Question{I want to state a fact that I will use later as an hypothesis and prove it later, how can I do it ?}
 
@@ -953,6 +1004,8 @@ These two commands perform type checking, but when \Defined is used the new defi
 
 You can use the {\tt info} command.
 
+
+
 \Question{Why \auto does not work ? How can I fix it ?}
 
 You can increase the depth of the proof search or add some lemmas in the base of hints.
@@ -967,13 +1020,13 @@ todo les espaces
 
 \Question{How can I speed up \auto ?}
 
-You can use info \auto to replace \auto by the tactics it generates.
+You can use \texttt{info }\auto to replace \auto by the tactics it generates.
 You can split your hint bases into smaller ones.
 
 
 \Question{What is the equivalent of \tauto for classical logic ?}
 
-Currently there are no equivalent tactic for classical logic. You can todo godel
+Currently there are no equivalent tactic for classical logic. You can use Gödel's ``not not'' translation.
 
 
 \Question{I want to replace some term with another in the goal, how can I do it ?}
@@ -1090,8 +1143,8 @@ to abstract the appropriate terms.
 
 \Question{What is the difference between assert, cut and generalize ?}
 
-PS: Notice for people that are interested in proof rendering that Assert
-and Pose (and Cut) are not rendered the same as Generalize (see the
+PS: Notice for people that are interested in proof rendering that \assert
+and \pose (and \cut) are not rendered the same as \generalize (see the
 HELM experimental rendering tool at \url{http://mowgli.cs.unibo.it}, link
 HELM, link COQ Online). Indeed \generalize builds a beta-expanded term
 while \assert, \pose and \cut uses a let-in.
@@ -1129,10 +1182,9 @@ is rendered into something like
 Otherwise said, \generalize is not rendered in a forward-reasoning way,
 while \assert is.
 
-
-
 \Question{Is there anyway to do pattern matching with dependent types ?}
 
+todo
 
 
 \section{Proof management}
@@ -1163,7 +1215,6 @@ You can use the {\tt Admitted} command to state your current proof as an axiom.
 
 You can use the {\tt Admitted} command to state your current proof as an axiom.
 
-
 \Question{What is the difference between a lemma, a fact and a theorem ?}
 
 From \Coq point of view there are no difference. But some tools can
@@ -1193,14 +1244,14 @@ discriminate.
 Qed.
 \end{coq_example}
 
-\Question{How to eliminate impossible cases of an inductive definition}
+\Question{During an inductive proof, how to get rid of impossible cases of an inductive definition ?}
 
-Use {\tt inversion}.
+Use the \inversion tactic.
 
 
 \Question{How can I prove that 2 terms in an inductive set are equal? Or different?}
 
- Cf "Decide Equality" and "Discriminate" in the \ahref{\refman}{Reference Manual}.
+Have a look at "decide equality" and "discriminate" in the \ahref{\refman}{Reference Manual}.
 
 \Question{Why is the proof of \coqtt{0+n=n} on natural numbers
 trivial but the proof of \coqtt{n+0=n} is not?}
