@@ -586,7 +586,8 @@ open Vernacentries
 let pcoq_show_goal = function
   | Some n -> show_nth n
   | None ->
-      if !pcoq_started = Some true (* = debug *) then show_open_subgoals ()
+      if !pcoq_started = Some true (* = debug *) then
+	msg (Pfedit.pr_open_subgoals ())
       else errorlabstrm "show_goal"
 	(str "Show must be followed by an integer in Centaur mode");;
 
