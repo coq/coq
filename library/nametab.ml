@@ -150,7 +150,7 @@ let constant_sp_of_id id =
 
 let check_absoluteness = function
   | a::_ when List.mem a !roots -> ()
-  | _ -> anomaly "Not an absolute path"
+  | l -> anomaly ("Not an absolute path: "^(string_of_dirpath l))
 
 let absolute_reference sp =
   check_absoluteness (dirpath sp);
