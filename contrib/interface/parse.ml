@@ -279,7 +279,8 @@ let parse_string_action reqid phylum char_stream string_list =
       | "FORMULA" ->
        P_f
         (xlate_formula
-	   (Gram.Entry.parse Pcoq.Constr.constr_eoi (Gram.parsable char_stream)))
+	   (Gram.Entry.parse 
+              (Pcoq.eoi_entry Pcoq.Constr.lconstr) (Gram.parsable char_stream)))
       | "ID" -> P_id (CT_ident
                         (Libnames.string_of_qualid 
 			 (snd 
