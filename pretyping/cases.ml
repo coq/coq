@@ -1029,8 +1029,13 @@ let generalize_predicate c ny d = function
       anomaly "generalize_predicate: expects a non trivial pattern"
 
 let rec extract_predicate l = function
-  | pred, Alias _::tms -> extract_predicate l (pred,tms)
+  | pred, Alias (deppat,nondeppat,_,_)::tms ->
+      let tms' = match kind_of_term nondeppat with
+        | Rel i -> replace_tomatch i deppat tms
+        | _ -> (* initial terms are not dependent *) tms in
+      extract_predicate l (pred,tms')
   | PrProd pred, Abstract d'::tms ->
+      let d' = map_rel_declaration (lift (List.length l)) d' in
       substl l (mkProd_or_LetIn d' (extract_predicate [] (pred,tms)))
   | PrLetIn ((0,dep),pred), Pushed ((cur,_),_)::tms ->
       extract_predicate (if dep then cur::l else l) (pred,tms)
