@@ -4,14 +4,14 @@
 This chapter presents detailed examples of certain tactics, to
 illustrate their behavior.
 
-\section{\tt Refine}
-\tacindex{Refine}
-\label{Refine-example}
+\section{\tt refine}
+\tacindex{refine}
+\label{refine-example}
 
 This tactic applies to any goal. It behaves like {\tt exact} with a
 big difference : the user can leave some holes (denoted by \texttt{?} or 
 {\tt (?::}{\it type}{\tt )}) in the term. 
-{\tt Refine} will generate as many
+{\tt refine} will generate as many
 subgoals as they are holes in the term. The type of holes must be
 either synthesized by the system or declared by an
 explicit cast like \verb|(?::nat->Prop)|. This low-level
@@ -101,9 +101,9 @@ Defined.
 % Abort.
 % \end{coq_eval}
 
-\section{\tt EApply}
-\tacindex{EApply}
-\label{EApply-example}
+\section{\tt eapply}
+\tacindex{eapply}
+\label{eapply-example}
 \Example
 Assume we have a relation on {\tt nat} which is transitive:
 
@@ -128,11 +128,11 @@ no value for {\tt y} in {\tt Rtrans} is found by {\tt Apply}:
 \begin{coq_eval}
 Set Printing Depth 50.
 \end{coq_eval}
+% (********** The following is not correct and should produce **********)
+% (**** Error: generated subgoal (R n ?17) has metavariables in it *****)
+% (* Just to adjust the prompt: *) apply Rtrans.
 \begin{coq_example}
-
-(********** The following is not correct and should produce **********)
-(**** Error: generated subgoal (R n ?17) has metavariables in it *****)
-(* Just to adjust the prompt: *) apply Rtrans.
+apply Rtrans.
 \end{coq_example}
 
 A solution is to rather apply {\tt (Rtrans n m p)}.
@@ -145,7 +145,7 @@ apply (Rtrans n m p).
 Undo.
 \end{coq_eval}
 
-More elegantly, {\tt Apply Rtrans with y:=m} allows to only mention
+More elegantly, {\tt apply Rtrans with y:=m} allows to only mention
 the unknown {\tt m}:
 
 \begin{coq_example}
@@ -180,7 +180,7 @@ Undo.
 Undo.
 \end{coq_eval}
 
-On the opposite, one can use {\tt EApply} which postpone the problem
+On the opposite, one can use {\tt eapply} which postpone the problem
 of finding {\tt m}. Then one can apply the hypotheses {\tt Rnm} and {\tt
 Rmp}. This instantiates the existential variable and completes the proof.
 
@@ -209,14 +209,15 @@ The definition of principle of mutual induction for {\tt tree} and
 Reset Initial.
 Variables A B : 
               Set.
+\end{coq_eval}
+
+\begin{coq_example*}
 Inductive tree : Set :=
     node : A -> forest -> tree
 with forest : Set :=
   | leaf : B -> forest
   | cons : tree -> forest -> forest.
-\end{coq_eval}
 
-\begin{coq_example*}
 Scheme tree_forest_rec := Induction for tree
   Sort Set
   with forest_tree_rec := Induction for forest Sort Set.
@@ -245,23 +246,24 @@ Let {\tt odd} and {\tt even} be inductively defined as:
 
 \begin{coq_eval}
 Reset Initial.
+Open Scope nat_scope.
 \end{coq_eval}
 
 \begin{coq_example*}
 Inductive odd : nat -> Prop :=
     oddS : forall n:nat, even n -> odd (S n)
 with even : nat -> Prop :=
-  | evenO : even 0%N
+  | evenO : even 0
   | evenS : forall n:nat, odd n -> even (S n).
 \end{coq_example*}
 
 The following command generates a powerful elimination
 principle:
 
-\begin{coq_example*}
+\begin{coq_example}
 Scheme odd_even := Minimality for   odd Sort Prop
   with even_odd := Minimality for even Sort Prop.
-\end{coq_example*}
+\end{coq_example}
 
 The type of {\tt odd\_even} for instance will be:
 
@@ -272,8 +274,8 @@ Check odd_even.
 The type of {\tt even\_odd} shares the same premises but the
 conclusion is {\tt (n:nat)(even n)->(Q n)}.
 
-\section{{\tt Functional Scheme} and {\tt Functional Induction}}
-\comindex{FunScheme}
+\section{{\tt Functional Scheme} and {\tt functional induction}}
+\comindex{Functional Scheme}\tacindex{functional induction}
 \label{FunScheme-examples}
 
 \firstexample
@@ -289,9 +291,9 @@ Reset Initial.
 Require Import Arith.
 Fixpoint div2 (n:nat) : nat :=
   match n with
-  | O => 0%N
+  | O => 0
   | S n0 => match n0 with
-            | O => 0%N
+            | O => 0
             | S n' => S (div2 n')
             end
   end.
@@ -314,7 +316,7 @@ We can now prove the following lemma using this principle:
 
 
 \begin{coq_example*}
-Lemma div2_le' : forall n:nat, (div2 n <= n)%N.
+Lemma div2_le' : forall n:nat, (div2 n <= n).
 intro n.
  pattern n.
 \end{coq_example*}
@@ -332,12 +334,12 @@ Qed.
 \end{coq_example*}
 
 Since \texttt{div2} is not mutually recursive, we can use
-directly the \texttt{Functional Induction} tactic instead of
+directly the \texttt{functional induction} tactic instead of
 building the principle:
 
 \begin{coq_example*}
 Reset div2_ind.
-Lemma div2_le : forall n:nat, (div2 n <= n)%N.
+Lemma div2_le : forall n:nat, (div2 n <= n).
 intro n.
 \end{coq_example*}
 
@@ -352,13 +354,13 @@ auto with arith.
 Qed.
 \end{coq_example*}
 
-\paragraph{remark:} \texttt{Functional Induction} makes no use of
+\paragraph{remark:} \texttt{functional induction} makes no use of
 a induction principle, so be warned that each time it is used, a
 term mimicking the structure of \texttt{div2} (roughly the size
 of {\tt div2\_ind}) is built. Using \texttt{Functional Scheme} is
 generally faster and less memory consuming.  On the other hand
-\texttt{Functional Induction} performs some extra simplification
-steps that \texttt{Functional Scheme} doesn't.
+\texttt{functional induction} performs some extra simplification
+steps that \texttt{Functional Scheme} does not.
 
 
 
@@ -389,8 +391,8 @@ Fixpoint tree_size (t:tree) : nat :=
   end
  with forest_size (f:forest) : nat :=
   match f with
-  | empty => 0%N
-  | cons t f' => (tree_size t + forest_size f')%N
+  | empty => 0
+  | cons t f' => (tree_size t + forest_size f')
   end.
 \end{coq_example*}
 
@@ -411,9 +413,9 @@ Check treeInd.
 
 
 
-\section{{\tt Inversion}}
-\tacindex{Inversion}
-\label{Inversion-examples}
+\section{{\tt inversion}}
+\tacindex{inversion}
+\label{inversion-examples}
 
 \subsection*{Generalities about inversion}
 
