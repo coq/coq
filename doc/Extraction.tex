@@ -1,4 +1,4 @@
-\achapter{Execution of extracted programs in Objective Caml and Haskell}
+\achapter{Execution of extracted programs in Objective Caml} %and Haskell}
 \label{Extraction}
 \aauthor{Jean-Christophe Filliâtre and Pierre Letouzey}
 \index{Extraction}
@@ -10,23 +10,20 @@ obtained at the \Coq\ toplevel with the command {\tt Extraction}
 (see \ref{ExtractionTerm}).
 
 We present here a \Coq\ module, {\tt Extraction}, which translates the
-extracted terms to ML dialects, namely Objective Caml and
-Haskell. In the following, we will not refer to a particular dialect
+extracted terms to ML dialects, namely Objective Caml. % and Haskell. 
+In the following, we will not refer to a particular dialect
 when possible and ``ML'' will be used to refer to any of the target
 dialects.
 
-One builds effective programs in an \FW\ toplevel (actually the \Coq\
-toplevel) which contains the extracted objects and in which one can
-import ML objects. Indeed, in order to instantiate and realize \Coq\
-type and term variables, it is possible to import ML
-objects in the \FW\ toplevel, as inductive types or axioms.
-
 \Rem
-The current mechanism of extraction of effective programs
-from \Coq\ proofs slightly differs from the one in the versions of
-\Coq\ anterior to the version V5.8. In these versions, there were an
-explicit toplevel for the language {\sf Fml}. Moreover, it was not
-possible to import ML objects in this {\sf Fml} toplevel.
+The extraction mechanism has been completely rewritten in version 7.0.
+In particular, the \FW\ toplevel used as intermediate step between 
+\Coq\ and ML has been abondoned.  It is also not possible 
+any more to import ML objects in this \FW\ toplevel.
+The current mechanism also differs from
+the one in versions of \Coq\ anterior to the version 
+ to the version V5.8. In these versions, there were an
+explicit toplevel for the language {\sf Fml}. 
 
 
 %\section{Extraction facilities}
@@ -44,22 +41,21 @@ In the first part of this document we describe the commands of the
 
 This section explains how to import ML objects, to realize axioms and
 finally to generate ML code from the extracted programs of \FW.
-
-These features do not belong to the core system, and appear as an
-independent module called {\tt Extraction.v} (which is compiled during the
-installation of the system). So the first thing to do is to load this
-module:
-
-\begin{coq_example*}
-Require Extraction.
-\end{coq_example*}
+These features now belong to the core system.  
 
 \asubsection{Generating executable ML code}
-\comindex{Write Caml File}
-\comindex{Write CamlLight File}
-\comindex{Write Haskell File}
+\comindex{Extraction}
+\comindex{Recursive Extraction}
+\comindex{Extraction Module}
 The \Coq\ commands to generate ML code are:
 \begin{center}\begin{tabular}{ll}
+  {\tt Extraction \ident.}
+    & ({\em for extracting one definition at the \Coq\ toplevel\/}) \\
+  {\tt Recursive Extraction  \ident$_1$ \dots\ \ident$_n$.} 
+    & ({\em for extraction Objective Caml\/}) \\
+  {\tt Write Caml File "\str" [ \ident$_1$ \dots\ \ident$_n$ ] 
+       {\it options}.}
+    & ({\em for Objective Caml\/}) \\
   {\tt Write Caml File "\str" [ \ident$_1$ \dots\ \ident$_n$ ] 
        {\it options}.}
     & ({\em for Objective Caml\/}) \\
