@@ -74,51 +74,63 @@ let p_uni u =
 let print_uni u = (pP (p_uni u))
 
 let pp_universes u = pP [< 'sTR"[" ; pr_universes u ; 'sTR"]" >]
-(*
+
 let constr_display csr =
-  let rec term_display = function
-    | DOP0 a -> "DOP0("^(oper_display a)^")"
-    | DOP1(a,b) -> "DOP1("^(oper_display a)^","^(term_display b)^")"
-    | DOP2(a,b,c) ->
-        "DOP2("^(oper_display a)^","^(term_display b)^","^(term_display c)^")"
-    | DOPN(a,b) ->
-        "DOPN("^(oper_display a)^",[|"^(Array.fold_right (fun x i ->
-        (term_display x)^(if not(i="") then (";"^i) else "")) b "")^"|])"
-    | DLAM(a,b) -> "DLAM("^(name_display a)^","^(term_display b)^")"
-    | DLAMV(a,b) ->
-        "DLAMV("^(name_display a)^",[|"^(Array.fold_right (fun x i ->
-        (term_display x)^(if not(i="") then (";"^i) else "")) b "")^"|]"
-    | CLam(a,b,c) -> "CLam("^(name_display a)^","^(term_display (body_of_type b))^","^(term_display c)^")"
-    | CPrd(a,b,c) -> "CPrd("^(name_display a)^","^(term_display (body_of_type b))^","^(term_display c)^")"
-    | CLet(a,b,c,d) -> "CLet("^(name_display a)^","^(term_display b)^","^(term_display (body_of_type c))^","^(term_display d)^")"
-    | VAR a -> "VAR "^(string_of_id a)
-    | Rel a -> "Rel "^(string_of_int a)
-  and oper_display = function
-    | Meta a -> "?"^(string_of_int a)
-    | Sort a -> "Sort("^(sort_display a)^")"
-    | Cast -> "Cast"
-    | Prod -> "Prod"
-    | Lambda -> "Lambda"
-    | AppL -> "AppL"
-    | Const sp -> "Const("^(string_of_path sp)^")"
-    | MutInd(sp,i) -> "MutInd("^(string_of_path sp)^","^(string_of_int i)^")"
-    | MutConstruct((sp,i),j) ->
-        "MutConstruct(("^(string_of_path sp)^","^(string_of_int i)^"),"^
-        (string_of_int j)^")"
-    | MutCase _ -> "MutCase(<abs>)"
-    | Evar i -> "Evar("^(string_of_int i)^")"
-    | Fix(t,i) ->
-        "Fix([|"^(Array.fold_right (fun x i -> (string_of_int x)^(if not(i="")
-        then (";"^i) else "")) t "")^"|],"^(string_of_int i)^")"
-    | CoFix i -> "CoFix "^(string_of_int i)
-    | XTRA s -> "XTRA("^s^")"
+  let rec term_display c = match kind_of_term c with
+  | IsRel n -> "Rel("^(string_of_int n)^")"
+  | IsMeta n -> "Meta("^(string_of_int n)^")"
+  | IsVar id -> "Var("^(string_of_id id)^")"
+  | IsSort s -> "Sort("^(sort_display s)^")"
+  | IsXtra s -> "Xtra("^s^")"
+  | IsCast (c,t) -> "Cast("^(term_display c)^","^(term_display t)^")"
+  | IsProd (na,t,c) ->
+      "Prod("^(name_display na)^","^(term_display t)^","^(term_display c)^")"
+  | IsLambda (na,t,c) ->
+      "Lambda("^(name_display na)^","^(term_display t)^","^(term_display c)^")"
+  | IsLetIn (na,b,t,c) ->
+      "LetIn("^(name_display na)^","^(term_display b)^","
+      ^(term_display t)^","^(term_display c)^")"
+  | IsAppL (c,l) -> "App("^(term_display c)^","^(array_display l)^")"
+  | IsEvar (e,l) -> "Evar("^(string_of_int e)^","^(array_display l)^")"
+  | IsConst (c,l) -> "Const("^(string_of_path c)^","^(array_display l)^")"
+  | IsMutInd ((sp,i),l) ->
+      "MutInd(("^(string_of_path sp)^","^(string_of_int i)^"),"
+      ^(array_display l)^")"
+  | IsMutConstruct (((sp,i),j),l) ->
+      "MutConstruct((("^(string_of_path sp)^","^(string_of_int i)^"),"
+      ^(string_of_int j)^"),"^(array_display l)^")"
+  | IsMutCase (ci,p,c,bl) ->
+      "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
+      ^(array_display bl)^")"
+  | IsFix ((t,i),(tl,lna,bl)) ->
+      "Fix(([|"^(Array.fold_right (fun x i -> (string_of_int x)^(if not(i="")
+        then (";"^i) else "")) t "")^"|],"^(string_of_int i)^"),"
+      ^(array_display tl)^","
+      ^(List.fold_right (fun x i -> (name_display x)^(if not(i="")
+        then (";"^i) else "")) lna "")^","
+      ^(array_display bl)^")"
+  | IsCoFix(i,(tl,lna,bl)) ->
+      "CoFix("^(string_of_int i)^"),"
+      ^(array_display tl)^","
+      ^(List.fold_right (fun x i -> (name_display x)^(if not(i="")
+        then (";"^i) else "")) lna "")^","
+      ^(array_display bl)^")"
+
+  and array_display v =
+    "[|"^
+    (Array.fold_right
+       (fun x i -> (term_display x)^(if not(i="") then (";"^i) else ""))
+       v "")^"|]"
+
   and sort_display = function
     | Prop(Pos) -> "Prop(Pos)"
     | Prop(Null) -> "Prop(Null)"
     | Type _ -> "Type"
+
   and name_display = function
     | Name id -> "Name("^(string_of_id id)^")"
     | Anonymous -> "Anonymous"
+
   in
     mSG [<'sTR (term_display csr);'fNL>]
 
@@ -130,4 +142,3 @@ let _ =
               let (evmap,sign) = Command.get_current_context () in
   	      constr_display (Astterm.interp_constr evmap sign c))
        | _ -> bad_vernac_args "PrintConstr")
-*)
