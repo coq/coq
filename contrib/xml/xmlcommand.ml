@@ -243,11 +243,14 @@ let print_term inner_types l env csr =
     | _             -> InnerType
   in
 
+(*WHICH FORCE FUNCTION DEPENDS ON THE ORDERING YOU WANT
   let rec force =
    parser
       [< 'he ; tl >] -> let tl = (force tl) in [< 'he ; tl >]
     | [< >] -> [<>]
   in
+*)
+  let force x = x in
 
   let rec term_display idradix in_lambda l env cstr =
    let next_id = get_next_id idradix in
@@ -631,7 +634,7 @@ let types_filename_of_filename =
   | None   -> None
 ;;
 
-let pp_cmds_of_inner_types inner_types =
+let pp_cmds_of_inner_types inner_types target_uri =
  let module X = Xml in
   let rec stream_of_list =
    function
@@ -640,7 +643,7 @@ let pp_cmds_of_inner_types inner_types =
   in
    [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
       X.xml_cdata ("<!DOCTYPE InnerTypes SYSTEM \"" ^ typesdtdname ^ "\">\n\n");
-      X.xml_nempty "InnerTypes" []
+      X.xml_nempty "InnerTypes" ["of",target_uri]
        (stream_of_list
         (List.map
           (function
@@ -670,19 +673,20 @@ let print sp fn =
   let env = (Safe_typing.env_of_safe_env (G.safe_env ())) in
   reset_ids () ;
   let inner_types = ref [] in
-  let pp_cmds =
+  let sp,tag,pp_cmds =
    match glob_ref with
       T.VarRef sp ->
        let (body,typ) = G.lookup_named id in
-        print_variable id body (T.body_of_type typ) env inner_types
+        sp,Variable,print_variable id body (T.body_of_type typ) env inner_types
     | T.ConstRef sp ->
        let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
         G.lookup_constant sp in
        let hyps = string_list_of_named_context_list hyps in
        let typ = T.body_of_type typ in
+        sp,Constant,
         begin
          match val0 with
-            None -> print_axiom id typ [] hyps env inner_types
+            None ->   print_axiom id typ [] hyps env inner_types
           | Some c -> print_definition id c typ [] hyps env inner_types
         end
     | T.IndRef (sp,_) ->
@@ -690,13 +694,15 @@ let print sp fn =
         G.lookup_mind sp
        in
         let hyps = string_list_of_named_context_list hyps in
-         print_mutual_inductive packs [] hyps nparams env inner_types
+         sp,Inductive,
+          print_mutual_inductive packs [] hyps nparams env inner_types
     | T.ConstructRef _
     | T.EvarRef _ ->
        Util.anomaly ("print: this should not happen")
   in
    Xml.pp pp_cmds fn ;
-   Xml.pp (pp_cmds_of_inner_types !inner_types) (types_filename_of_filename fn)
+   Xml.pp (pp_cmds_of_inner_types !inner_types (uri_of_path sp tag))
+    (types_filename_of_filename fn)
 ;;
  
 (* show dest                                                  *)
@@ -704,16 +710,17 @@ let print sp fn =
 (* pretty prints via Xml.pp the proof in progress on dest     *)
 let show fn =
  let pftst = Pfedit.get_pftreestate () in
- let id = Pfedit.get_current_proof_name () in
+ let str = Names.string_of_id (Pfedit.get_current_proof_name ()) in
  let pf = Tacmach.proof_of_pftreestate pftst in
  let typ = (Proof_trees.goal_of_proof pf).Evd.evar_concl in
  let val0,mv = Tacmach.extract_open_pftreestate pftst in
   reset_ids () ;
   let inner_types = ref [] in
   Xml.pp
-   (print_current_proof val0 typ (Names.string_of_id id) mv inner_types)
+   (print_current_proof val0 typ str mv inner_types)
    fn ;
-  Xml.pp (pp_cmds_of_inner_types !inner_types) (types_filename_of_filename fn)
+  Xml.pp (pp_cmds_of_inner_types !inner_types ("?" ^ str ^ "?"))
+   (types_filename_of_filename fn)
 ;;
 
 (* FUNCTIONS TO PRINT AN ENTIRE SECTION OF COQ *)
@@ -778,53 +785,54 @@ let print_object lobj id sp dn fv env =
  let module N = Names in
  let module T = Term in
  let module X = Xml in
-  let tag = Libobject.object_tag lobj in
-  reset_ids () ;
-  let inner_types = ref [] in
-  let pp_cmds () =
-   match tag with
-      "CONSTANT"  (* = Definition, Theorem *)
-    | "PARAMETER" (* = Axiom *) ->
-        let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
-         G.lookup_constant sp
-        in
-         let hyps = string_list_of_named_context_list hyps in
-         let typ = T.body_of_type typ in
-          begin
-           match val0 with
-              None -> print_axiom id typ fv hyps env inner_types
-            | Some c -> print_definition id c typ fv hyps env inner_types
-          end
-    | "INDUCTIVE" ->
-         let
-          {D.mind_packets=packs ;
-           D.mind_nparams=nparams ;
-           D.mind_hyps = hyps
-          } = G.lookup_mind sp
-         in
-          let hyps = string_list_of_named_context_list hyps in
-           print_mutual_inductive packs fv hyps nparams env inner_types
-    | "VARIABLE" ->
-        let (_,(varentry,_,_)) = Declare.out_variable lobj in
-         begin
-          match varentry with
-             Declare.SectionLocalDef body ->
-              let typ = Retyping.get_type_of env Evd.empty body in
-               add_to_pvars (Definition (N.string_of_id id, body, typ)) ;
-               print_variable id (Some body) typ env inner_types
-           | Declare.SectionLocalAssum typ ->
-              add_to_pvars (Assumption (N.string_of_id id, typ)) ;
-              print_variable id None (T.body_of_type typ) env inner_types
-         end
-    | "CLASS"
-    | "COERCION"
-    | _ -> raise Uninteresting
-  and fileext () = ext_of_tag (tag_of_string_tag tag)
-  in
+  let strtag = Libobject.object_tag lobj in
    try
-    let fn = (mkfilename dn sp (fileext ())) in
-    Xml.pp (pp_cmds ()) fn ;
-    Xml.pp (pp_cmds_of_inner_types !inner_types) (types_filename_of_filename fn)
+    let tag = tag_of_string_tag strtag in
+    reset_ids () ;
+    let inner_types = ref [] in
+    let pp_cmds =
+     match strtag with
+        "CONSTANT"  (* = Definition, Theorem *)
+      | "PARAMETER" (* = Axiom *) ->
+          let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
+           G.lookup_constant sp
+          in
+           let hyps = string_list_of_named_context_list hyps in
+           let typ = T.body_of_type typ in
+            begin
+             match val0 with
+                None -> print_axiom id typ fv hyps env inner_types
+              | Some c -> print_definition id c typ fv hyps env inner_types
+            end
+      | "INDUCTIVE" ->
+           let
+            {D.mind_packets=packs ;
+             D.mind_nparams=nparams ;
+             D.mind_hyps = hyps
+            } = G.lookup_mind sp
+           in
+            let hyps = string_list_of_named_context_list hyps in
+             print_mutual_inductive packs fv hyps nparams env inner_types
+      | "VARIABLE" ->
+          let (_,(varentry,_,_)) = Declare.out_variable lobj in
+           begin
+            match varentry with
+               Declare.SectionLocalDef body ->
+                let typ = Retyping.get_type_of env Evd.empty body in
+                 add_to_pvars (Definition (N.string_of_id id, body, typ)) ;
+                 print_variable id (Some body) typ env inner_types
+             | Declare.SectionLocalAssum typ ->
+                add_to_pvars (Assumption (N.string_of_id id, typ)) ;
+                print_variable id None (T.body_of_type typ) env inner_types
+           end
+      | "CLASS"
+      | "COERCION"
+      | _ -> raise Uninteresting
+    and fileext () = ext_of_tag tag in
+     let fn = (mkfilename dn sp (fileext ())) in
+      Xml.pp pp_cmds fn ;
+      Xml.pp (pp_cmds_of_inner_types !inner_types (uri_of_path sp tag))
+       (types_filename_of_filename fn)
    with
     Uninteresting -> ()
 ;;
