@@ -719,7 +719,7 @@ and intern_tacarg strict ist = function
   | MetaIdArg (loc,s) ->
       (* $id can occur in Grammar tactic... *)
       let id = id_of_string s in
-      if find_ltacvar id ist
+      if find_ltacvar id ist or Options.do_translate()
       then Reference (ArgVar (adjust_loc loc,strip_meta id))
       else error_syntactic_metavariables_not_allowed loc
   | TacCall (loc,f,l) ->
