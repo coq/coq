@@ -53,6 +53,8 @@ let rec unloc = function
       (dummy_loc,b,option_app unloc tyopt,unloc tm, Array.map unloc bv,x)
   | RLetTuple (_,nal,(na,po),b,c) ->
       RLetTuple (dummy_loc,nal,(na,option_app unloc po),unloc b,unloc c)
+  | RIf (_,c,(na,po),b1,b2) ->
+      RIf (dummy_loc,unloc c,(na,option_app unloc po),unloc b1,unloc b2)
   | RRec (_,fk,idl,tyl,bv) ->
       RRec (dummy_loc,fk,idl,Array.map unloc tyl,Array.map unloc bv)
   | RCast (_,c,t) -> RCast (dummy_loc,unloc c,unloc t)

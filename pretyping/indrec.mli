@@ -42,7 +42,7 @@ val build_mutual_indrec :
 (* These are for old Case/Match typing *)
 
 val type_rec_branches : bool -> env -> evar_map -> inductive_type
-  -> unsafe_judgment -> constr -> constr array * constr
+  -> constr -> constr -> constr array * constr
 val make_rec_branch_arg : 
   env -> evar_map ->
     int * ('b * constr) option array * int ->

@@ -241,6 +241,9 @@ let rec pat_of_raw metas vars = function
       PCase ((None,st),option_app (pat_of_raw metas vars) po,
              pat_of_raw metas vars c,
              Array.map (pat_of_raw metas vars) br)
+  | RIf (_,c,(_,None),b1,b2) ->
+      PCase ((None,IfStyle),None, pat_of_raw metas vars c,
+             [|pat_of_raw metas vars b1; pat_of_raw metas vars b2|])
   | RCases (loc,(po,_),[c,_],brs) ->
       let sp =
 	match brs with

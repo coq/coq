@@ -130,10 +130,11 @@ let count_rec_arg j =
  * [a_bar:A'_bar](lift k pred) 
  * where A'_bar = A_bar[p_bar <- globargs] *)
 
-let build_notdep_pred env sigma indf pred =
+let build_dep_pred env sigma indf pred =
   let arsign,_ = get_arity env indf in
-  let nar = List.length arsign in
-  it_mkLambda_or_LetIn_name env (lift nar pred) arsign
+  let psign = (Anonymous,None,build_dependent_inductive env indf)::arsign in
+  let nar = List.length psign in
+  it_mkLambda_or_LetIn_name env (lift nar pred) psign
 
 type ml_case_error =
   | MlCaseAbsurd
@@ -157,10 +158,7 @@ let pred_case_ml env sigma isrec (IndType (indf,realargs)) (i,ft) =
     else 
       raise (NotInferable MlCaseDependent)
   in
-  if realargs = [] then 
-    pred
-  else (* we try with [_:T1]..[_:Tn](lift n pred) *)
-    build_notdep_pred env sigma indf pred  
+  build_dep_pred env sigma indf pred  
 
 (************************************************************************)
 (*            Pattern-matching compilation (Cases)                      *)
@@ -597,9 +595,11 @@ let occur_rawconstr id =
 	or (List.exists occur_pattern pl)
     | ROrderedCase (loc,b,tyopt,tm,bv,_) -> 
 	(occur_option tyopt) or (occur tm) or (array_exists occur bv)
-    | RLetTuple (loc,nal,(na,tyopt),b,c) -> 
-	(na <> Name id & occur_option tyopt)
+    | RLetTuple (loc,nal,rtntyp,b,c) -> 
+	occur_return_type rtntyp id
         or (occur b) or (not (List.mem (Name id) nal) & (occur c))
+    | RIf (loc,c,rtntyp,b1,b2) -> 
+	occur_return_type rtntyp id or (occur c) or (occur b1) or (occur b2)
     | RRec (loc,fk,idl,tyl,bv) ->
 	(array_exists occur tyl) or
 	(not (array_exists (fun id2 -> id=id2) idl) & array_exists occur bv)
@@ -609,6 +609,8 @@ let occur_rawconstr id =
   and occur_pattern (loc,idl,p,c) = not (List.mem id idl) & (occur c)
 
   and occur_option = function None -> false | Some p -> occur p
+
+  and occur_return_type (na,tyopt) id = na <> Name id & occur_option tyopt
 
   in occur
 

@@ -323,6 +323,10 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 		   CT_if(xlate_formula_opt po,
                    xlate_formula c,xlate_formula b1,xlate_formula b2)		
    | CLetTuple (_,l, (na,po), c, b) -> xlate_error "LetTuple: TODO"
+   | CIf (_,c, (na,None), b1, b2) ->
+		   CT_if(ctv_FORMULA_OPT_NONE,
+                   xlate_formula c,xlate_formula b1,xlate_formula b2)
+   | CIf (_,c, (na,Some p), b1, b2) -> xlate_error "If: TODO"
 
    | COrderedCase (_,Term.LetStyle, po, c, [CLambdaN(_,[l,_],b)]) ->
        CT_inductive_let(xlate_formula_opt po,

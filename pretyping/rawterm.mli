@@ -72,6 +72,7 @@ type rawconstr =
       rawconstr array * rawconstr option ref
   | RLetTuple of loc * name list * (name * rawconstr option) * 
       rawconstr * rawconstr
+  | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
   | RRec of loc * fix_kind * identifier array * 
       rawconstr array * rawconstr array
   | RSort of loc * rawsort
@@ -93,8 +94,6 @@ val cases_predicate_names :
    - boolean in POldCase means it is recursive
    - option in PHole tell if the "?" was apparent or has been implicitely added
 i*)
-
-val loc : rawconstr -> loc
 
 val map_rawconstr : (rawconstr -> rawconstr) -> rawconstr -> rawconstr
 

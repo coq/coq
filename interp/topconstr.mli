@@ -34,6 +34,7 @@ type aconstr =
       (identifier list * cases_pattern list * aconstr) list
   | AOrderedCase of case_style * aconstr option * aconstr * aconstr array
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
+  | AIf of aconstr * (name * aconstr option) * aconstr * aconstr
   | ASort of rawsort
   | AHole of hole_kind
   | APatVar of patvar
@@ -91,6 +92,8 @@ type constr_expr =
       * constr_expr list
   | CLetTuple of loc * name list * (name * constr_expr option) *
       constr_expr * constr_expr
+  | CIf of loc * constr_expr * (name * constr_expr option)
+      * constr_expr * constr_expr
   | CHole of loc
   | CPatVar of loc * (bool * patvar)
   | CEvar of loc * existential_key

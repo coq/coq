@@ -33,6 +33,7 @@ type aconstr =
       (identifier list * cases_pattern list * aconstr) list
   | AOrderedCase of case_style * aconstr option * aconstr * aconstr array
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
+  | AIf of aconstr * (name * aconstr option) * aconstr * aconstr
   | ASort of rawsort
   | AHole of hole_kind
   | APatVar of patvar
@@ -69,6 +70,8 @@ let map_aconstr_with_binders_loc loc g f e = function
       ROrderedCase (loc,b,option_app (f e) tyopt,f e tm,Array.map (f e) bv,ref None)
   | ALetTuple (nal,(na,po),b,c) ->
       RLetTuple (loc,nal,(na,option_app (f e) po),f e b,f e c)
+  | AIf (c,(na,po),b1,b2) ->
+      RIf (loc,f e c,(na,option_app (f e) po),f e b1,f e b2)
   | ACast (c,t) -> RCast (loc,f e c,f e t)
   | ASort x -> RSort (loc,x)
   | AHole x  -> RHole (loc,x)
@@ -151,6 +154,14 @@ let rec subst_aconstr subst raw =
 	if po' == po && b' == b && c' == c then raw else
 	  ALetTuple (nal,(na,po'),b',c')
 
+  | AIf (c,(na,po),b1,b2) ->
+      let po' = option_smartmap (subst_aconstr subst) po
+      and b1' = subst_aconstr subst b1
+      and b2' = subst_aconstr subst b2 
+      and c' = subst_aconstr subst c in
+	if po' == po && b1' == b1 && b2' == b2 && c' == c then raw else
+	  AIf (c',(na,po'),b1',b2')
+
   | APatVar _ | ASort _ -> raw
 
   | AHole (ImplicitArg (ref,i)) ->
@@ -196,6 +207,8 @@ let aconstr_of_rawconstr vars a =
       AOrderedCase (b,option_app aux tyopt,aux tm, Array.map aux bv)
   | RLetTuple (loc,nal,(na,po),b,c) ->
       ALetTuple (nal,(na,option_app aux po),aux b,aux c)
+  | RIf (loc,c,(na,po),b1,b2) ->
+      AIf (aux c,(na,option_app aux po),aux b1,aux b2)
   | RCast (_,c,t) -> ACast (aux c,aux t)
   | RSort (_,s) -> ASort s
   | RHole (_,w) -> AHole w
@@ -416,6 +429,8 @@ type constr_expr =
       * constr_expr list
   | CLetTuple of loc * name list * (name * constr_expr option) *
       constr_expr * constr_expr
+  | CIf of loc * constr_expr * (name * constr_expr option)
+      * constr_expr * constr_expr
   | CHole of loc
   | CPatVar of loc * (bool * patvar)
   | CEvar of loc * existential_key
@@ -459,6 +474,7 @@ let constr_loc = function
   | CCases (loc,_,_,_) -> loc
   | COrderedCase (loc,_,_,_,_) -> loc
   | CLetTuple (loc,_,_,_,_) -> loc
+  | CIf (loc,_,_,_,_) -> loc
   | CHole loc -> loc
   | CPatVar (loc,_) -> loc
   | CEvar (loc,_) -> loc
@@ -498,6 +514,7 @@ let rec occur_var_constr_expr id = function
   | CCases (loc,_,_,_) 
   | COrderedCase (loc,_,_,_,_) 
   | CLetTuple (loc,_,_,_,_) 
+  | CIf (loc,_,_,_,_) 
   | CFix (loc,_,_) 
   | CCoFix (loc,_,_) -> 
       Pp.warning "Capture check in multiple binders not done"; false
@@ -560,6 +577,9 @@ let map_constr_expr_with_binders f g e = function
       let e' = List.fold_right (name_fold g) nal e in
       let e'' = name_fold g na e in
       CLetTuple (loc,nal,(na,option_app (f e'') po),f e b,f e' c)
+  | CIf (loc,c,(na,po),b1,b2) ->
+      let e' = name_fold g na e in
+      CIf (loc,f e c,(na,option_app (f e') po),f e b1,f e b2)
   | CFix (loc,id,dl) ->
       CFix (loc,id,List.map (fun (id,n,t,d) -> (id,n,f e t,f e d)) dl)
   | CCoFix (loc,id,dl) ->

@@ -464,29 +464,25 @@ let build_indrec env sigma ind =
 (**********************************************************************)
 (* To handle old Case/Match syntax in Pretyping                       *)
 
-(***********************************)
+(*****************************************)
 (* To interpret Case and Match operators *)
+(* Expects a dependent predicate *)
 
-let type_rec_branches recursive env sigma indt pj c = 
+let type_rec_branches recursive env sigma indt p c = 
   let IndType (indf,realargs) = indt in
-  let p = pj.uj_val in
   let (ind,params) = dest_ind_family indf in
   let (mib,mip) = lookup_mind_specif env ind in
   let recargs = mip.mind_recargs in
   let tyi = snd ind in
-  let is_rec = recursive && mis_is_recursive_subset [tyi] recargs in
-  let dep = is_dependent_elimination env pj.uj_type indf in 
-  let init_depPvec i = if i = tyi then Some(dep,p) else None in
+  let init_depPvec i = if i = tyi then Some(true,p) else None in
   let depPvec = Array.init mib.mind_ntypes init_depPvec in
   let vargs = Array.of_list params in
   let constructors = get_constructors env indf in
   let lft =
     array_map2
-      (type_rec_branch recursive dep env sigma (params,depPvec,0) tyi)
+      (type_rec_branch recursive true env sigma (params,depPvec,0) tyi)
       constructors (dest_subterms recargs) in
-  (lft,
-   if dep then Reduction.beta_appvect p (Array.of_list (realargs@[c])) 
-   else Reduction.beta_appvect p (Array.of_list realargs))
+  (lft,Reduction.beta_appvect p (Array.of_list (realargs@[c])))
 (* Non recursive case. Pb: does not deal with unification
     let (p,ra,_) = type_case_branches env (ind,params@realargs) pj c in
     (p,ra)

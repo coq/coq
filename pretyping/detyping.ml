@@ -276,6 +276,8 @@ let detype_case computable detype detype_eqn tenv avoid env indsp st p k c bl =
                     | _ -> (RApp (dummy_loc,p,[a]))) in
       let (nal,d) = decomp_lam_force consnargsl.(0) avoid [] bl.(0) in
       RLetTuple (dummy_loc,nal,(alias,newpred),tomatch,d)
+    else if not !Options.v7 && tag = IfStyle && aliastyp = None then
+      RIf (dummy_loc,tomatch,(alias,newpred),bl.(0),bl.(1))
     else
       let rec remove_type avoid args c =
 	match c,args with

@@ -262,7 +262,7 @@ let rec pr inherited a =
 	  str "if " ++ pr ltop c ++ spc () ++
 	  hov 0 (str "then" ++ brk (1,1) ++ pr ltop b1) ++ spc () ++
 	  hov 0 (str "else" ++ brk (1,1) ++ pr ltop b2))), lif
-  | CLetTuple (_,nal,(na,po),c,b) ->
+  | CLetTuple _ | CIf _ ->
       error "Let tuple not supported in v7"
 
   | COrderedCase (_,(MatchStyle|RegularStyle as style),po,c,bl) ->

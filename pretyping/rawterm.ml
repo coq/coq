@@ -75,6 +75,7 @@ type rawconstr =
       rawconstr array * rawconstr option ref
   | RLetTuple of loc * name list * (name * rawconstr option) * 
       rawconstr * rawconstr
+  | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
   | RRec of loc * fix_kind * identifier array * 
       rawconstr array * rawconstr array
   | RSort of loc * rawsort
@@ -97,24 +98,6 @@ let cases_predicate_names tml =
    - boolean in POldCase means it is recursive
 i*)
 
-let loc = function
-  | RVar (loc,_) -> loc
-  | RApp (loc,_,_) -> loc
-  | RLambda (loc,_,_,_) -> loc
-  | RProd (loc,_,_,_) -> loc
-  | RLetIn (loc,_,_,_) -> loc
-  | RCases (loc,_,_,_) -> loc
-  | ROrderedCase (loc,_,_,_,_,_) -> loc
-  | RLetTuple (loc,_,_,_,_) -> loc
-  | RRec (loc,_,_,_,_) -> loc
-  | RCast (loc,_,_) -> loc
-  | RSort (loc,_) -> loc
-  | RHole (loc,_) -> loc
-  | RRef (loc,_) -> loc
-  | REvar (loc,_) -> loc
-  | RPatVar (loc,_) -> loc
-  | RDynamic (loc,_) -> loc
-
 let map_rawconstr f = function
   | RVar (loc,id) -> RVar (loc,id)
   | RApp (loc,g,args) -> RApp (loc,f g, List.map f args)
@@ -129,6 +112,8 @@ let map_rawconstr f = function
       ROrderedCase (loc,b,option_app f tyopt,f tm, Array.map f bv,ref (option_app f !x))
   | RLetTuple (loc,nal,(na,po),b,c) ->
       RLetTuple (loc,nal,(na,option_app f po),f b,f c)
+  | RIf (loc,c,(na,po),b1,b2) ->
+      RIf (loc,f c,(na,option_app f po),f b1,f b2)
   | RRec (loc,fk,idl,tyl,bv) -> RRec (loc,fk,idl,Array.map f tyl,Array.map f bv)
   | RCast (loc,c,t) -> RCast (loc,f c,f t)
   | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) as x -> x
@@ -248,8 +233,16 @@ let rec subst_raw subst raw =
       and b' = subst_raw subst b 
       and c' = subst_raw subst c in
 	if po' == po && b' == b && c' == c then raw else
-          RLetTuple (loc,nal,(na,po),b,c)
+          RLetTuple (loc,nal,(na,po'),b',c')
       
+  | RIf (loc,c,(na,po),b1,b2) ->
+      let po' = option_smartmap (subst_raw subst) po
+      and b1' = subst_raw subst b1 
+      and b2' = subst_raw subst b2 
+      and c' = subst_raw subst c in
+	if c' == c & po' == po && b1' == b1 && b2' == b2 then raw else
+          RIf (loc,c',(na,po'),b1',b2')
+
   | RRec (loc,fix,ida,ra1,ra2) -> 
       let ra1' = array_smartmap (subst_raw subst) ra1
       and ra2' = array_smartmap (subst_raw subst) ra2 in
@@ -284,6 +277,7 @@ let loc_of_rawconstr = function
   | RCases (loc,_,_,_) -> loc
   | ROrderedCase (loc,_,_,_,_,_) -> loc
   | RLetTuple (loc,_,_,_,_) -> loc
+  | RIf (loc,_,_,_,_) -> loc
   | RRec (loc,_,_,_,_) -> loc
   | RSort (loc,_) -> loc
   | RHole (loc,_) -> loc

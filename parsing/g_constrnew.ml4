@@ -204,9 +204,10 @@ GEXTEND Gram
 	  po = return_type;
 	  ":="; c1 = operconstr; "in"; c2 = operconstr LEVEL "200" ->
           CLetTuple (loc,List.map snd lb,po,c1,c2)
-      | "if"; c1=operconstr; "then"; c2=operconstr LEVEL "200";
-        "else"; c3=operconstr LEVEL "200" ->
-          COrderedCase (loc, IfStyle, None, c1, [c2; c3])
+      | "if"; c=operconstr; po = return_type;
+	"then"; b1=operconstr LEVEL "200";
+        "else"; b2=operconstr LEVEL "200" ->
+          CIf (loc, c, po, b1, b2)
       | c=fix_constr -> c ] ]
   ;
   appl_arg:

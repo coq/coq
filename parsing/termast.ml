@@ -257,7 +257,7 @@ let rec ast_of_raw = function
 	    ::(ast_of_raw tm)
 	    ::(Array.to_list (Array.map ast_of_raw bv)))
 
-  | RLetTuple (loc,nal,(na,typopt),tm,b) ->
+  | RLetTuple _ | RIf _ ->
       error "Let tuple not supported in v7"
 
   | RRec (_,fk,idv,tyv,bv) ->
