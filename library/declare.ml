@@ -311,7 +311,9 @@ let find_common_hyps_then_abstract c env hyps' hyps =
 
 let rec quantify_extra_hyps c = function
   | (id,None,t)::hyps -> mkNamedLambda id t (quantify_extra_hyps c hyps)
-  | (_,Some _,_)::hyps -> quantify_extra_hyps c hyps
+  (* Buggé car id n'apparaît pas dans les instances des constantes dans c *)
+  (* et id n'est donc pas substitué dans ces constantes *)
+  | (id,Some b,t)::hyps -> mkNamedLetIn id b t (quantify_extra_hyps c hyps)
   | [] -> c
 
 let rec find_common_hyps_then_abstract c env hyps' = function
