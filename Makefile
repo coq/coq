@@ -704,6 +704,7 @@ ROMEGAVO=\
 RINGVO=\
  contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
  contrib/ring/Ring_theory.vo    contrib/ring/Ring.vo \
+ contrib/ring/NArithRing.vo     \
  contrib/ring/ZArithRing.vo     contrib/ring/Ring_abstract.vo \
  contrib/ring/Quote.vo		contrib/ring/Setoid_ring_normalize.vo \
  contrib/ring/Setoid_ring.vo	contrib/ring/Setoid_ring_theory.vo
