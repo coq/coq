@@ -123,7 +123,7 @@ val elimination_sort_of_goal : goal sigma -> sorts_family
 (*i val suff              : goal sigma -> constr -> string i*)
 
 val general_elim_then_using :
-  constr ->  (inductive -> int -> bool list) -> 
+  constr ->  (inductive -> bool list array) -> 
     (branch_args -> tactic) -> constr option -> 
       (arg_bindings * arg_bindings) -> constr -> tactic
 	  
