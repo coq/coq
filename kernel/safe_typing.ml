@@ -36,6 +36,7 @@ type modvariant =
 type module_info = 
     { msid : mod_self_id;
       modpath : module_path;
+      seed : dir_path; (* the "seed" of unique identifier generator *)
       label : label;
       variant : modvariant}
 
@@ -72,6 +73,7 @@ let rec empty_environment =
     modinfo = {
       msid = initial_msid;
       modpath = initial_path;
+      seed = initial_dir;
       label = mk_label "_";
       variant = NONE};
     labset = Labset.empty;
@@ -220,7 +222,7 @@ let add_module l me senv =
 
 (* Interactive modules *)
 
-let start_module dir l params result senv = 
+let start_module l params result senv = 
   check_label l senv.labset; 
   let rec trans_params env = function 
     | [] -> env,[] 
@@ -240,10 +242,11 @@ let start_module dir l params result senv =
   in
   let result_body = option_app (translate_modtype env) result in
   ignore (option_app check_sig result_body);
-  let msid = make_msid dir (string_of_label l) in
+  let msid = make_msid senv.modinfo.seed (string_of_label l) in
   let mp = MPself msid in
   let modinfo = { msid = msid;
 		  modpath = mp;
+		  seed = senv.modinfo.seed;
 		  label = l;
 		  variant = STRUCT(params_body,result_body) }
   in
@@ -294,7 +297,11 @@ let end_module l senv =
       mod_equiv = None;
       mod_constraints = cst }
   in
-  let mspec = mtb, None, Constraint.empty in
+  let mspec = 
+    { msb_modtype = mtb;
+      msb_equiv = None;
+      msb_constraints = Constraint.empty } 
+  in
   let mp = MPdot (oldsenv.modinfo.modpath, l) in
   let newenv = oldsenv.env in
   let newenv = 
@@ -318,7 +325,7 @@ let end_module l senv =
 
 (* Interactive module types *)
 
-let start_modtype dir l params senv = 
+let start_modtype l params senv = 
   check_label l senv.labset; 
   let rec trans_params env = function 
     | [] -> env,[] 
@@ -331,10 +338,11 @@ let start_modtype dir l params senv =
 	env, (mbid,mtb)::transrest
   in
   let env,params_body = trans_params senv.env params in
-  let msid = make_msid dir (string_of_label l) in
+  let msid = make_msid senv.modinfo.seed (string_of_label l) in
   let mp = MPself msid in
   let modinfo = { msid = msid;
 		  modpath = mp;
+		  seed = senv.modinfo.seed;
 		  label = l;
 		  variant = SIG params_body }
   in
@@ -421,6 +429,7 @@ let start_library dir senv =
   let mp = MPself msid in
   let modinfo = { msid = msid;
 		  modpath = mp;
+		  seed = dir;
 		  label = l;
 		  variant = LIBRARY dir }
   in
@@ -454,13 +463,6 @@ let export senv dir =
       mod_constraints = Constraint.empty }
   in
     modinfo.msid, (dir,mb,senv.imports)
-
-
-let import_constraints g kn cst =
-  try
-    merge_constraints cst g
-  with UniverseInconsistency ->
-    error "import_constraints: Universe Inconsistency during import"
 
 
 let check_imports senv needed =

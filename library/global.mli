@@ -57,7 +57,7 @@ val add_constraints : constraints -> unit
    of the started module / module type *)
 
 val start_module : 
-  dir_path -> identifier -> (mod_bound_id * module_type_entry) list 
+  identifier -> (mod_bound_id * module_type_entry) list 
     -> module_type_entry option 
       -> module_path
 
@@ -65,7 +65,7 @@ val end_module :
   identifier -> module_path
 
 val start_modtype :
-  dir_path -> identifier -> (mod_bound_id * module_type_entry) list
+  identifier -> (mod_bound_id * module_type_entry) list
     -> module_path
 
 val end_modtype :

@@ -68,7 +68,7 @@ val add_constraints :
 
 (*s Interactive module functions *)
 val start_module : 
-  dir_path -> label -> (mod_bound_id * module_type_entry) list 
+  label -> (mod_bound_id * module_type_entry) list 
     -> module_type_entry option 
       -> safe_environment -> module_path * safe_environment
 
@@ -77,7 +77,7 @@ val end_module :
 
 
 val start_modtype :
-  dir_path -> label -> (mod_bound_id * module_type_entry) list
+  label -> (mod_bound_id * module_type_entry) list
     -> safe_environment -> module_path * safe_environment
 
 val end_modtype :

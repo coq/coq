@@ -438,7 +438,7 @@ let start_module interp_modtype id args res_o =
   let arg_entries = List.concat (List.rev arg_entries_revlist) in
   let res_entry_o = option_app (interp_modtype env) res_o in
 
-  let mp = Global.start_module (Lib.module_dp()) id arg_entries res_entry_o in
+  let mp = Global.start_module id arg_entries res_entry_o in
 
   let mbids = List.map fst arg_entries in
   openmod_info:=(mbids,res_entry_o);
@@ -560,7 +560,7 @@ let start_modtype interp_modtype id args =
   in
   let arg_entries = List.concat (List.rev arg_entries_revlist) in
 
-  let mp = Global.start_modtype (Lib.module_dp()) id arg_entries in
+  let mp = Global.start_modtype id arg_entries in
 
   let mbids = List.map fst arg_entries in
   openmodtype_info := mbids;

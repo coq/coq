@@ -168,7 +168,9 @@ and module_expr_body =
       * constraints
 
 and module_specification_body = 
-    module_type_body * module_path option * constraints
+    { msb_modtype : module_type_body;
+      msb_equiv : module_path option; 
+      msb_constraints : constraints }
 
 and structure_elem_body = 
   | SEBconst of constant_body

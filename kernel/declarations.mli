@@ -108,12 +108,16 @@ and module_expr_body =
   | MEBident of module_path
   | MEBfunctor of mod_bound_id * module_type_body * module_expr_body 
   | MEBstruct of mod_self_id * module_structure_body
-  | MEBapply of module_expr_body * module_expr_body
-      * constraints
+  | MEBapply of module_expr_body * module_expr_body  (* (F A) *)
+      * constraints  (* type_of(A) <: input_type_of(F) *)
 
 and module_specification_body = 
-    module_type_body * module_path option * constraints
-
+    { msb_modtype : module_type_body;
+      msb_equiv : module_path option; 
+      msb_constraints : constraints }
+    (*    type_of(equiv) <: modtype  (if given)  
+       +  substyping of past With_Module mergers *)
+    
 and structure_elem_body = 
   | SEBconst of constant_body
   | SEBmind of mutual_inductive_body
@@ -128,8 +132,8 @@ and module_body =
       mod_type : module_type_body;
       mod_equiv : module_path option;
       mod_constraints : constraints }
-
-
+    (*    type_of(mod_expr)  <: mod_user_type (if given)  *)
+    (*  if equiv given then constraints are empty *)
 
 
 

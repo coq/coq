@@ -95,27 +95,34 @@ and merge_with env mtb with_decl =
 				      Some (Declarations.from_val j.uj_val);
 				    const_constraints = cst}
 		  | Some b -> 
-		      let cst1 = Reduction.conv env' c (Declarations.force b) in 
+		      let cst1 = Reduction.conv env' c (Declarations.force b) in
 		      let cst = Constraint.union cb.const_constraints cst1 in
 			SPBconst {cb with 
 				    const_body = Some (Declarations.from_val c);
 				    const_constraints = cst}
 	      end	
+(* and what about msid's ????? Don't they clash ? *)
 	| With_Module (id, mp) ->
-	    let (oldmtb,oldequiv,oldcst) = match spec with
-		SPBmodule (mtb,equiv,cst) -> (mtb,equiv,cst)
+	    let old = match spec with
+		SPBmodule msb -> msb
 	      | _ -> error_not_a_module (string_of_label l)
 	    in
 	    let mtb = type_modpath env' mp in
-	    let cst = check_subtypes env' mtb oldmtb in
+	 (* here, we should assert that there is no msid in mtb *)
+	    let cst = check_subtypes env' mtb old.msb_modtype in
 	    let equiv = 
- 	      match oldequiv with
+ 	      match old.msb_equiv with
 		| None -> Some mp
 		| Some mp' -> 
 		    check_modpath_equiv env' mp mp';
 		    Some mp
 	    in
-	      SPBmodule (mtb, equiv, Constraint.union oldcst cst)
+	    let msb =
+	      {msb_modtype = mtb; 
+	       msb_equiv = equiv; 
+	       msb_constraints = Constraint.union old.msb_constraints cst }
+	    in
+	      SPBmodule msb
       in
 	MTBsig(msid,  before@(l,new_spec)::after)
     with
@@ -135,7 +142,11 @@ and translate_entry_list env msid is_definition sig_e =
 	    add_mind kn mib env, (l, SEBmind mib), (l, SPBmind mib)
       | SPEmodule me ->
 	  let mb = translate_module env is_definition me in
-	  let mspec = mb.mod_type, mb.mod_equiv, mb.mod_constraints in
+	  let mspec = 
+	    { msb_modtype = mb.mod_type;
+	      msb_equiv = mb.mod_equiv;
+	      msb_constraints = mb.mod_constraints }
+	  in
 	  let mp' = MPdot (mp,l) in
 	    add_module mp' mb env, (l, SEBmodule mb), (l, SPBmodule mspec)
       | SPEmodtype mte ->
@@ -254,9 +265,16 @@ and add_struct_elem_constraints env = function
   | SEBmodtype mtb -> add_modtype_constraints env mtb
 
 and add_module_constraints env mb = 
+  (* if there is a body, the mb.mod_type is either inferred from the
+     body and hence uninteresting or equal to the non-empty
+     user_mod_type *)
   let env = match mb.mod_expr with
-    | None -> env
+    | None -> add_modtype_constraints env mb.mod_type
     | Some meb -> add_module_expr_constraints env meb
+  in
+  let env = match mb.mod_user_type with
+    | None -> env
+    | Some mtb -> add_modtype_constraints env mtb
   in
     Environ.add_constraints mb.mod_constraints env
 
@@ -275,7 +293,7 @@ and add_modtype_constraints env = function
 and add_sig_elem_constraints env = function 
   | SPBconst cb -> Environ.add_constraints cb.const_constraints env
   | SPBmind mib -> Environ.add_constraints mib.mind_constraints env
-  | SPBmodule (mtb,_,cst) -> 
+  | SPBmodule {msb_modtype=mtb; msb_constraints=cst} -> 
       add_modtype_constraints (Environ.add_constraints cst env) mtb
   | SPBmodtype mtb -> add_modtype_constraints env mtb
 

@@ -163,13 +163,12 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
 	  in
 	    check_conv cst conv env c1 c2
 	      
-let rec check_modules cst env msid1 l 
-  (mtb1,mpo1,cst1 as msb1) (mtb2,mpo2,cst2 as msb2) =
+let rec check_modules cst env msid1 l msb1 msb2 =
   let mp = (MPdot(MPself msid1,l)) in
-  let mty1 = strengthen env mtb1 mp in
-  let cst = check_modtypes cst env mty1 mtb2 false in
+  let mty1 = strengthen env msb1.msb_modtype mp in
+  let cst = check_modtypes cst env mty1 msb2.msb_modtype false in
   begin
-    match mpo1, mpo2 with
+    match msb1.msb_equiv, msb2.msb_equiv with
       | _, None -> ()
       | None, Some mp2 -> 
 	  check_modpath_equiv env mp mp2

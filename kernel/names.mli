@@ -125,6 +125,9 @@ val occur_mbid : mod_bound_id -> substitution -> bool
 val initial_msid : mod_self_id
 val initial_path : module_path (* [= MPself initial_msid] *)
 
+(* Initial "seed" of the unique identifier generator *)
+val initial_dir : dir_path
+
 (*s The absolute names of objects seen by kernel *)
 
 type kernel_name

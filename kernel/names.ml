@@ -246,9 +246,12 @@ module KNpred = Predicate.Make(KNord)
 module KNset = Set.Make(KNord)
 
 
-let initial_msid = (make_msid [] "TOP")
-let initial_path = MPself initial_msid
+let default_module_name = id_of_string "Top"
 
+let initial_dir = make_dirpath [default_module_name]
+
+let initial_msid = (make_msid initial_dir "Top")
+let initial_path = MPself initial_msid
 
 type variable = identifier
 type constant = kernel_name

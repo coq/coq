@@ -69,9 +69,9 @@ let add_constraints c = global_env := add_constraints c !global_env
 
 
 
-let start_module dir id params mtyo =
+let start_module id params mtyo =
   let l = label_of_id id in
-  let mp,newenv = start_module dir l params mtyo !global_env in
+  let mp,newenv = start_module l params mtyo !global_env in
     global_env := newenv;
     mp
   
@@ -82,9 +82,9 @@ let end_module id =
     mp
 
 
-let start_modtype dir id params = 
+let start_modtype id params = 
   let l = label_of_id id in
-  let mp,newenv = start_modtype dir l params !global_env in
+  let mp,newenv = start_modtype l params !global_env in
     global_env := newenv;
     mp
 
