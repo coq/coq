@@ -8,7 +8,7 @@ open Vernacinterp
 (*i*)
 
 val join_binders : ('a list * 'b) list -> ('a * 'b) list
-val add : string * (vernac_arg list -> unit -> unit) -> unit
+val add : string -> (vernac_arg list -> unit -> unit) -> unit
 val show_script : unit -> unit
 val show_prooftree : unit -> unit
 val show_open_subgoals : unit -> unit

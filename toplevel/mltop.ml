@@ -116,8 +116,7 @@ let dir_ml_dir s =
     | _ -> ()
 
 (* For Rec Add ML Path *)
-let rdir_ml_dir dir=
-  List.iter dir_ml_dir (alldir dir)
+let rdir_ml_dir dir = List.iter dir_ml_dir (all_subdirs dir)
 
 (* convertit un nom quelconque en nom de fichier ou de module *) 
 let mod_of_name name =

@@ -4,10 +4,13 @@
 (* Concrete syntax of the mathematical vernacular MV V2.6 *)
 
 open Pp
+open Util
+open Options
 open Stamps
 open System
 open Names
 open Term
+open Evd
 open Reduction
 open Pfedit
 open Tacmach
@@ -15,13 +18,14 @@ open Proof_trees
 open Library
 open Libobject
 open Environ
-open States
 open Vernacinterp
 open Declare
 open Coqast
 open Ast
-open Evd
-
+open Astterm
+open Pretty
+open Printer
+open Command
 
 (* Dans join_binders, s'il y a un "?", on perd l'info qu'il est partagé *)
 let join_binders binders = 
@@ -98,7 +102,7 @@ let show_top_evars () =
 (* Focus commands *)
 let reset_top_of_tree () = 
   let pts = get_pftreestate () in 
-  if not (is_top_pftreestate pts) then mutate top_of_tree
+  if not (is_top_pftreestate pts) then Pfedit.mutate top_of_tree
 
 (* Locate commands *)
  
@@ -177,7 +181,7 @@ let _ =
 let _ =
   add "PWD"
     (function 
-       | [] -> (fun () -> print_endline (System.getcwd()))
+       | [] -> (fun () -> print_endline (Sys.getcwd()))
        | _  -> bad_vernac_args "PWD")
 
 let _ =
@@ -207,8 +211,8 @@ let _ =
 		try Sys.chdir (glob s)
 		with Sys_error str -> warning ("Cd failed: " ^ str)
 	      end;
-              print_endline (System.getcwd()))
-       | [] -> (fun () -> print_endline (System.getcwd()))
+              print_endline (Sys.getcwd()))
+       | [] -> (fun () -> print_endline (Sys.getcwd()))
        | _  -> bad_vernac_args "CD")
 
 (* Managing states *)
@@ -216,52 +220,20 @@ let _ =
 let _ =
   add "SaveState"
     (function 
-       | [VARG_IDENTIFIER name; VARG_STRING desc] ->
-	   (fun () -> save_state (string_of_id name) desc)
+       | [VARG_STRING file] ->
+	   (fun () -> States.extern_state file)
        | _ -> bad_vernac_args "SaveState")
 
 let _ =
-  add "RestoreState"
+  add "LoadState"
     (function 
-       | [VARG_IDENTIFIER name] ->
-	   (fun () -> restore_state (string_of_id name))
+       | [VARG_STRING file] ->
+	   (fun () -> States.intern_state file)
        | _ -> bad_vernac_args "RestoreState")
-
-let _ =
-  add "RemoveState"
-    (function 
-       |[VARG_IDENTIFIER id] ->
-	   (fun () ->
-              let str = (string_of_id id) in
-              if str = "Initial" then error "Cannot forget Initial";
-              forget_state (is_silent()) str)
-       | _ -> bad_vernac_args "RemoveState")
-
-let _ =
-  add "WriteStates"
-    (function 
-       | [arg] ->
-	   (fun () -> 
-              let s = (match arg with
-			 | VARG_IDENTIFIER id -> string_of_id id
-			 | VARG_STRING s -> s
-			 | _ -> anomaly "To fill the empty holes...")
-              in 
-	      extern_state s)
-       | _ -> bad_vernac_args "WriteStates")
-
-let _ =
-  add "PrintStates"
-    (function 
-       | [] -> 
-	   (fun () ->
-              mSG (prlist (fun (n,desc) -> 
-			     [< 'sTR n; 'sTR" : "; 'sTR desc ; 'fNL >])
-                     (list_saved_states())))
-       | _ -> bad_vernac_args "PrintStates")
 
 (* Resetting *)
 
+(***
 let _ =
   add "ResetAfter"
     (function 
@@ -286,6 +258,7 @@ let _ =
     (function 
        | [VARG_IDENTIFIER id] -> (fun () -> reset_name id)
        | _ -> bad_vernac_args "ResetName")
+***)
 
 (* Modules *)
 
@@ -301,7 +274,7 @@ let _ =
     (function 
        | [VARG_IDENTIFIER id] ->
 	   fun () -> 
-	     without_mes_ambig Library.read_module (string_of_id id) None
+	     without_mes_ambig Library.load_module (string_of_id id) None
        | _ -> bad_vernac_args "ReadModule")
 
 let _ =
@@ -309,18 +282,15 @@ let _ =
     (function 
        | [] -> 
 	   (fun () ->
-              let opened = Library.search_imports ()
-	      and loaded = Library.search_modules () in
+              let opened = Library.opened_modules ()
+	      and loaded = Library.loaded_modules () in
               mSG [< 'sTR"Imported (open) Modules: " ;
 		     hOV 0 (prlist_with_sep pr_fnl
-			      (fun sp -> [< 'sTR(string_of_path sp) >]) 
-			      opened) ; 
+			      (fun s -> [< 'sTR s >]) opened) ; 
 		     'fNL ;
 		     'sTR"Loaded Modules: " ;
 		     hOV 0 (prlist_with_sep pr_fnl
-			      (fun (s,sp) -> [< 'sTR s ; 'sTR" = " ;
-						'sTR(string_of_path sp) >]) 
-			      loaded) ;
+			      (fun s -> [< 'sTR s >]) loaded) ;
 		     'fNL >])
        | _ -> bad_vernac_args "PrintModules")
 
@@ -330,9 +300,10 @@ let _ =
   add "BeginSection"
     (function 
        | [VARG_IDENTIFIER id] ->
-	   (fun () -> open_section (string_of_id id))
+	   (fun () -> let _ = Lib.open_section (string_of_id id) in ())
        | _ -> bad_vernac_args "BeginSection")
 
+(***
 let _ =
   add "EndSection"
     (function 
@@ -344,6 +315,7 @@ let _ =
                      'sTR"Use \"Abort All\" first or complete proof(s)." >];
               close_section_or_module (not (is_silent())) (string_of_id id))
        | _ -> bad_vernac_args "EndSection")
+***)
 
 (* Proof switching *)
 
@@ -418,13 +390,13 @@ let _ =
 let _ =          
   add "IMPLICIT_ARGS_ON"
     (function 
-       | [] -> (fun () -> make_implicit_args true)
+       | [] -> (fun () -> Impargs.make_implicit_args true)
        | _  -> bad_vernac_args "IMPLICIT_ARGS_ON")
 
 let _ =
   add "IMPLICIT_ARGS_OFF"
     (function 
-       | [] -> (fun () -> make_implicit_args false)
+       | [] -> (fun () -> Impargs.make_implicit_args false)
        | _  -> bad_vernac_args "IMPLICIT_ARGS_OFF")
 
 let _ =
@@ -459,6 +431,7 @@ let _ =
               save_anonymous_remark true (string_of_id id))
        | _ -> bad_vernac_args "SaveAnonymousRmk")
 
+(***
 let _ =
   add "TRANSPARENT"
     (fun id_list () ->
@@ -476,6 +449,7 @@ let _ =
 	    | VARG_IDENTIFIER id -> set_opaque id
 	    |   _  -> bad_vernac_args "OPAQUE")
 	 id_list)
+***)
 
 let _ =
   add "UNDO"
@@ -494,8 +468,9 @@ let _ =
 let _ =
   add "SHOWIMPL"
     (function
-       | [] -> (fun () -> with_implicits show_open_subgoals ())
-       | [VARG_NUMBER n] -> (fun () -> with_implicits show_nth_open_subgoal n)
+       | [] -> (fun () -> Impargs.implicitely show_open_subgoals ())
+       | [VARG_NUMBER n] -> 
+	   (fun () -> Impargs.implicitely show_nth_open_subgoal n)
        | _ -> bad_vernac_args "SHOWIMPL")
 
 let _ =
@@ -514,7 +489,7 @@ let _ =
   add "Go"
     (function 
        | [VARG_NUMBER n] ->
-	   (fun () -> (traverse n;show_node()))
+	   (fun () -> (Pfedit.traverse n;show_node()))
        | [VARG_STRING"top"] ->
            (fun () -> (mutate top_of_tree;show_node()))
        | [VARG_STRING"next"] ->
@@ -533,7 +508,7 @@ let _ =
 	      let cursor = cursor_of_pftreestate pts in
 	      let evc = ts_it (evc_of_pftreestate pts) in
 	      let (pfterm,meta_types) = 
-		Refiner.extract_open_proof pf.goal.hyps pf in
+		Refiner.extract_open_proof (var_context pf.goal.evar_env) pf in
 	      mSGNL [< 'sTR"LOC: " ;
 		       prlist_with_sep pr_spc pr_int (List.rev cursor); 'fNL ;
 		       'sTR"Subgoals" ; 'fNL ;
@@ -553,10 +528,11 @@ let _ =
 	      let pf = proof_of_pftreestate pts 
 	      and cursor = cursor_of_pftreestate pts in
 	      let (pfterm,meta_types) = 
-		Refiner.extract_open_proof pf.goal.hyps pf in
+		Refiner.extract_open_proof (var_context pf.goal.evar_env) pf in
 	      let message = 
 		try 
-		  Typing.control_only_guard empty_evd pfterm; 
+		  Typeops.control_only_guard pf.goal.evar_env 
+		    Evd.empty pfterm; 
 		  [< 'sTR "The condition holds up to here" >]
                 with UserError(_,s) -> 
 		  [< 'sTR ("Condition violated : ") ;s >]
@@ -591,7 +567,7 @@ let _ =
            | (n::l) -> aux (Tacmach.traverse n pts) l in 
          let pts = aux pts (l@[-1]) in
          let pf = proof_of_pftreestate pts in 
-	 mSG (Refiner.print_script true (ts_it evc) (initial_sign()) pf))
+	 mSG (Refiner.print_script true (ts_it evc) (Global.var_context()) pf))
 
 let _ =
   add "ExplainProofTree"
@@ -608,7 +584,7 @@ let _ =
            | (n::l) -> aux (Tacmach.traverse n pts) l in 
          let pts = aux pts (l@[-1]) in
          let pf = proof_of_pftreestate pts in 
-	 mSG (Refiner.print_proof (ts_it evc) (initial_sign()) pf))
+	 mSG (Refiner.print_proof (ts_it evc) (Global.var_context()) pf))
 
 let _ =
   add "ShowProofs"
@@ -635,7 +611,7 @@ let _ =
 let _ =
   add "PrintId"
     (function 
-       | [VARG_IDENTIFIER id] -> (fun () -> mSG(Pretty.print_name id))
+       | [VARG_IDENTIFIER id] -> (fun () -> mSG(print_name id))
        | _ -> bad_vernac_args "PrintId")
 
 let _ =
@@ -670,12 +646,12 @@ let _ =
 	   let stre = match kind with
 	     | "THEOREM" -> NeverDischarge
              | "LEMMA" -> NeverDischarge
-             | "FACT" -> make_strength(safe_cdr (Library.cwd()))
-             | "REMARK" -> make_strength(Library.cwd())
+             | "FACT" -> make_strength_1 ()
+             | "REMARK" -> make_strength_0 ()
              | "DEFINITION" -> NeverDischarge
-              | "LET" -> make_strength(safe_cddr (Library.cwd()))
-              | "LOCAL" -> make_strength(Library.cwd())
-              | _       -> anomaly "Unexpected string"
+             | "LET" -> make_strength_2 ()
+             | "LOCAL" -> make_strength_0 ()
+             | _       -> anomaly "Unexpected string"
            in 
 	   fun () ->
              begin
@@ -698,16 +674,16 @@ let _ =
 	   let (stre,opacity) = match kind with
 	     | "THEOREM" -> (NeverDischarge,true)
              | "LEMMA" -> (NeverDischarge,true)
-             | "FACT" -> (make_strength(safe_cdr (Library.cwd())),true)
-             | "REMARK" -> (make_strength(Library.cwd()),true)
+             | "FACT" -> (make_strength_1(),true)
+             | "REMARK" -> (make_strength_0(),true)
              | "DEFINITION" -> (NeverDischarge,false)
-             | "LET" -> (make_strength(safe_cdr (Library.cwd())),false)
-             | "LOCAL" -> (make_strength(Library.cwd()),false)
+             | "LET" -> (make_strength_1(),false)
+             | "LOCAL" -> (make_strength_0(),false)
              | _       -> anomaly "Unexpected string" 
 	   in
            (fun () ->
               try
-            	Library.with_heavy_rollback
+            	States.with_heavy_rollback
 		  (fun () ->
                      start_proof (string_of_id s) stre c;
                      if not (is_silent()) then show_open_subgoals();
@@ -728,31 +704,31 @@ let _ =
                        'sTR"failed... aborting" >])
        | _ -> bad_vernac_args "TheoremProof")
 
+(***
 let _ =
   add "DEFINITION"
     (function 
        | (VARG_STRING kind :: VARG_IDENTIFIER id :: VARG_COMMAND c ::optred) ->
 	   let red_option = match optred with 
 	     | [] -> None
-	     | [VARG_TACTIC_ARG (REDEXP(r1,r2))] -> 
-		 let (evmap,sign) = initial_sigma_sign() in
-		 let redexp = redexp_of_ast evmap sign (r1,r2) in 
+	     | [VARG_TACTIC_ARG (Redexp(r1,r2))] -> 
+		 let env = Global.env() in
+		 let redexp = redexp_of_ast Evd.empty env (r1,r2) in 
 		 Some redexp
 	     | _ -> bad_vernac_args "DEFINITION"
 	   in 
 	   let stre,coe,objdef,idcoe = match kind with
 	     | "DEFINITION" -> NeverDischarge,false,false,false
              | "COERCION" -> NeverDischarge,true,false,false
-             | "LCOERCION" -> make_strength(Library.cwd()),true,false,false
-             | "LET" -> 
-		 make_strength(safe_cddr (Library.cwd())),false,false,false
-             | "LOCAL" -> make_strength(Library.cwd()),false,false,false
+             | "LCOERCION" -> make_strength_0(),true,false,false
+             | "LET" -> make_strength_2(),false,false,false
+             | "LOCAL" -> make_strength_0(),false,false,false
              | "OBJECT" -> NeverDischarge,false,true,false
-             | "LOBJECT" -> make_strength(Library.cwd()),false,true,false
+             | "LOBJECT" -> make_strength_0(),false,true,false
              | "OBJCOERCION" -> NeverDischarge,true,true,false
-             | "LOBJCOERCION" -> make_strength(Library.cwd()),true,true,false
+             | "LOBJCOERCION" -> make_strength_0(),true,true,false
              | "SUBCLASS" -> NeverDischarge,false,false,true
-             | "LSUBCLASS" -> make_strength(Library.cwd()),false,false,true
+             | "LSUBCLASS" -> make_strength_0(),false,false,true
              | _       -> anomaly "Unexpected string"
 	   in 
 	   fun () ->
@@ -782,7 +758,7 @@ let _ =
              | "COERCIONS" -> true
              | _ -> false
 	   in
-	   let stre = make_strength(Library.cwd ()) in
+	   let stre = make_strength_0() in
 	   fun () ->
 	     List.iter 
 	       (fun (sl,c) -> 
@@ -797,7 +773,8 @@ let _ =
                     sl)
 	       slcl
        | _ -> bad_vernac_args "VARIABLE")
-    
+  ***)
+  
 let _ =
   add "PARAMETER"
     (function 
@@ -815,16 +792,17 @@ let _ =
                slcl
        | _ -> bad_vernac_args "PARAMETER")
 
+(***
 let _ =
   add "Eval"
     (function
-       | VARG_TACTIC_ARG (REDEXP (rn,unf)) :: VARG_COMMAND c :: g ->
+       | VARG_TACTIC_ARG (Redexp (rn,unf)) :: VARG_COMMAND c :: g ->
            let (evmap,sign) = get_evmap_sign (goal_of_args g) in
            let redexp = redexp_of_ast evmap sign (rn,unf) in 
            let redfun = print_eval (reduction_of_redexp redexp evmap) sign in 
 	   fun () -> mSG (redfun (fconstruct_with_univ evmap sign c))
        | _ -> bad_vernac_args "Eval")
-    
+
 let _ =
   add "Check"
     (function 
@@ -849,6 +827,7 @@ let _ =
     (function 
        | [] -> (fun () -> mSG(print_extraction ()))
        | _  -> bad_vernac_args "PrintExtract")
+    ***)
 
 let _ =
   add "SEARCH"
@@ -972,6 +951,7 @@ let _ =
 	   fun () -> build_mutual la lnamearconstructs (isfinite f)
        | _ -> bad_vernac_args "MUTUALINDUCTIVE")
 
+(***
 let _ =
   add "RECORD"
     (function
@@ -998,6 +978,7 @@ let _ =
            in 
 	   fun () -> definition_structure (coe,struc,ps,cfs,const,s)
        | _ -> bad_vernac_args "RECORD")
+***)
 
 let _ =
   add "MUTUALRECURSIVE"
@@ -1129,13 +1110,14 @@ let _ =
        | [] -> (fun () -> ())
        | _  -> bad_vernac_args "NOP")
 
+(***
 let _ =
   add "CLASS"
     (function 
        | [VARG_STRING kind;VARG_IDENTIFIER id] -> 
 	   let stre = 
 	     if kind = "LOCAL" then 
-	       make_strength(Library.cwd())
+	       make_strength_0()
              else 
 	       NeverDischarge 
 	   in
@@ -1144,7 +1126,7 @@ let _ =
              if (not (is_silent())) then
                message ((string_of_id id) ^ " is now a class")
        | _ -> bad_vernac_args "CLASS")
-    
+
 let _ =
   add "COERCION"
     (function 
@@ -1152,7 +1134,7 @@ let _ =
           VARG_IDENTIFIER id;VARG_IDENTIFIER ids;VARG_IDENTIFIER idt] -> 
 	   let stre = 
 	     if (kind = "LOCAL") then 
-	       make_strength(Library.cwd())
+	       make_strength_0()
              else 
 	       NeverDischarge 
 	   in
@@ -1162,7 +1144,8 @@ let _ =
                (Some idt) isid;
              message ((string_of_id id) ^ " is now a coercion")
        | _ -> bad_vernac_args "COERCION")
- 
+     ***)
+
 let _ =
   add "PrintGRAPH"
     (function 
@@ -1258,13 +1241,15 @@ let _ =
 let _ =
   add "Searchisos"
   (function
-     | [VARG_COMMAND c] -> 
+     | [VARG_COMMAND com] -> 
 	 (fun () ->
-	    let cc=nf_betaiota (constr_of_com empty_evd (initial_sign()) c) in
+	    let env = Global.env() in
+	    let c = constr_of_com Evd.empty env com in
+	    let cc = nf_betaiota env Evd.empty c in
             Searchisos.type_search cc)
      | _ -> bad_vernac_args "Searchisos")
     
-open Options
+open Goptions
 
 let _ = 
   declare_async_int_option
@@ -1279,7 +1264,7 @@ let _ =
        | [(VARG_IDENTIFIER t);(VARG_IDENTIFIER f);arg] -> 
 	   (fun () ->
 	      let key = 
-		Options.SecondaryTable (string_of_id t,string_of_id f) in
+		SecondaryTable (string_of_id t,string_of_id f) in
 	      match arg with
 		| VARG_NUMBER n -> set_int_option_value key n
 	 	| VARG_STRING s -> set_string_option_value key s
@@ -1287,18 +1272,18 @@ let _ =
        | [(VARG_IDENTIFIER t);(VARG_IDENTIFIER f)] -> 
 	   (fun () ->
 	      let key = 
-		Options.SecondaryTable (string_of_id t,string_of_id f) in
+		SecondaryTable (string_of_id t,string_of_id f) in
 	      set_bool_option_value key true)
        | [(VARG_IDENTIFIER t);arg] -> 
 	   (fun () ->
-	      let key = Options.PrimaryTable (string_of_id t) in
+	      let key = PrimaryTable (string_of_id t) in
 	      match arg with
 		| VARG_NUMBER n -> set_int_option_value key n
 	 	| VARG_STRING s -> set_string_option_value key s
          	| _ -> error "No such type of option value")
        | [(VARG_IDENTIFIER t)] -> 
 	   (fun () ->
-	      let key = Options.PrimaryTable (string_of_id t) in
+	      let key = PrimaryTable (string_of_id t) in
 	      set_bool_option_value key true)
        | _ -> bad_vernac_args "VernacOption")
 
@@ -1308,11 +1293,11 @@ let _ =
        | [(VARG_IDENTIFIER t);(VARG_IDENTIFIER f)] -> 
 	   (fun () ->
 	      let key = 
-		Options.SecondaryTable (string_of_id t,string_of_id f) in
+		SecondaryTable (string_of_id t,string_of_id f) in
 	      set_bool_option_value key false)
        | [(VARG_IDENTIFIER t)] -> 
 	   (fun () ->
-	      let key = Options.PrimaryTable (string_of_id t) in
+	      let key = PrimaryTable (string_of_id t) in
 	      set_bool_option_value key false)
        | _ -> bad_vernac_args "VernacOption")
 
@@ -1322,16 +1307,16 @@ let _ =
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_IDENTIFIER v] -> 
 	   (fun () ->
 	      let key = 
-		Options.SecondaryTable (string_of_id t,string_of_id f) in
+		SecondaryTable (string_of_id t,string_of_id f) in
 	      try 
-		(Options.get_option_table key)#add v
+		(get_option_table key)#add v
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER v] ->
 	   (fun () ->
-	      let key = Options.PrimaryTable (string_of_id t) in
+	      let key = PrimaryTable (string_of_id t) in
 	      try 
-		x(Options.get_option_table key)#add v
+		(get_option_table key)#add v
 	      with Not_found -> 
 		error_undeclared_key key)
        | _ -> bad_vernac_args "TableField")
@@ -1342,16 +1327,16 @@ let _ =
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_IDENTIFIER v] -> 
 	   (fun () ->
 	      let key = 
-		Options.SecondaryTable (string_of_id t,string_of_id f) in
+		SecondaryTable (string_of_id t,string_of_id f) in
 	      try 
-		(Options.get_option_table key)#remove v
+		(get_option_table key)#remove v
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER v] -> 
 	   (fun () ->
-	      let key = Options.PrimaryTable (string_of_id t) in
+	      let key = PrimaryTable (string_of_id t) in
 	      try 
-		(Options.get_option_table key)#remove v
+		(get_option_table key)#remove v
 	      with Not_found -> 
 		error_undeclared_key key)
   |  _ -> bad_vernac_args "TableField")
@@ -1362,16 +1347,16 @@ let _ =
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_IDENTIFIER v] -> 
 	   (fun () ->
 	      let key = 
-		Options.SecondaryTable (string_of_id t,string_of_id f) in
+		SecondaryTable (string_of_id t,string_of_id f) in
 	      try 
-		(Options.get_option_table key)#mem v
+		(get_option_table key)#mem v
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER v] -> 
 	   (fun () ->
-	      let key = Options.PrimaryTable (string_of_id t) in
+	      let key = PrimaryTable (string_of_id t) in
 	      try 
-		(Options.get_option_table key)#mem v
+		(get_option_table key)#mem v
 	      with Not_found -> 
 		error_undeclared_key key)
        |  _ -> bad_vernac_args "TableField")
@@ -1381,31 +1366,31 @@ let _ =
   (function
      | [VARG_IDENTIFIER t; VARG_IDENTIFIER f] -> 
 	 (fun () ->
-	    let key = Options.SecondaryTable (string_of_id t,string_of_id f) in
+	    let key = SecondaryTable (string_of_id t,string_of_id f) in
 	    try 
-	      (Options.get_option_table key)#print
+	      (get_option_table key)#print
 	    with not_found ->
               try 
-		Options.print_option_value key
+		print_option_value key
               with Not_found -> 
 		error_undeclared_key key)
      | [VARG_IDENTIFIER t] -> 
 	 (fun () ->
-	    let key = Options.PrimaryTable (string_of_id t) in
+	    let key = PrimaryTable (string_of_id t) in
 	    try 
-	      (Options.get_option_table key)#print
+	      (get_option_table key)#print
 	    with not_found ->
               try 
-		Options.print_option_value key
+		print_option_value key
               with Not_found -> 
 	  	if (string_of_id t) = "Tables" then 
-		  Options.print_tables ()
+		  print_tables ()
 	  	else 
-		  mSG(Pretty.print_name t))
+		  mSG(print_name t))
      | _ -> bad_vernac_args "TableField")
 
 (*Only for debug*)
-
+(***
 let _ =
   add "PrintConstr"
     (function
@@ -1413,3 +1398,4 @@ let _ =
 	   (fun () ->
 	      Term.constr_display (constr_of_com empty_evd (initial_sign()) c))
        | _ -> bad_vernac_args "PrintConstr")
+***)
