@@ -48,7 +48,7 @@ type prod_item =
 type grammar_rule = {
   gr_name : string; 
   gr_production : prod_item list; 
-  gr_action : aconstr }
+  gr_action : constr_expr }
 
 type grammar_entry = { 
   ge_name : string;
@@ -63,8 +63,9 @@ type grammar_associativity = Gramext.g_assoc option
 
 (* Globalisation and type-checking of Grammar actions *)
 type entry_context = identifier list
-val to_act_check_vars : entry_context -> grammar_action -> aconstr
-val set_ast_to_rawconstr : (entry_context -> constr_expr -> aconstr) -> unit
+
+val set_constr_globalizer : 
+  (entry_context -> constr_expr -> constr_expr) -> unit
 
 type syntax_modifier =
   | SetItemLevel of string list * int

@@ -262,7 +262,6 @@ type constr_expr =
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr
   | CNotation of loc * notation * (identifier * constr_expr) list
-  | CGrammar of loc * aconstr * (identifier * constr_expr) list
   | CNumeral of loc * Bignat.bigint
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
@@ -299,7 +298,6 @@ let constr_loc = function
   | CSort (loc,_) -> loc
   | CCast (loc,_,_) -> loc
   | CNotation (loc,_,_) -> loc
-  | CGrammar (loc,_,_) -> loc
   | CNumeral (loc,_) -> loc
   | CDelimiters (loc,_,_) -> loc
   | CDynamic _ -> dummy_loc
@@ -328,7 +326,6 @@ let rec occur_var_constr_expr id = function
   | CLetIn (_,na,a,b) -> occur_var_binders id b [[na],a]
   | CCast (loc,a,b) -> occur_var_constr_expr id a or occur_var_constr_expr id b
   | CNotation (_,_,l) -> List.exists (fun (_,x) -> occur_var_constr_expr id x) l
-  | CGrammar (loc,_,l) -> List.exists (fun (_,x) -> occur_var_constr_expr id x)l
   | CDelimiters (loc,_,a) -> occur_var_constr_expr id a
   | CHole _ | CMeta _ | CSort _ | CNumeral _ | CDynamic _ -> false
   | CCases (loc,_,_,_) 
@@ -371,7 +368,6 @@ let map_constr_expr_with_binders f g e = function
   | CLetIn (loc,na,a,b) -> CLetIn (loc,na,f e a,f (name_fold g (snd na) e) b)
   | CCast (loc,a,b) -> CCast (loc,f e a,f e b)
   | CNotation (loc,n,l) -> CNotation (loc,n,List.map (fun (x,t) ->(x,f e t)) l)
-  | CGrammar (loc,r,l) -> CGrammar (loc,r,List.map (fun (x,t) ->(x,f e t)) l)
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CMeta _ | CSort _ | CNumeral _ | CDynamic _ | CRef _ as x -> x
   | CCases (loc,po,a,bl) ->

@@ -134,7 +134,7 @@ let intern_var (env,impls,_) (vars1,vars2) loc id =
   RRef (loc, VarRef id), imps, args_scopes
 
 (* Is it a global reference or a syntactic definition? *)
-let intern_qualid env vars loc qid =
+let intern_qualid loc qid =
   try match Nametab.extended_locate qid with
   | TrueGlobal ref ->
     if !dump then add_glob loc ref;
@@ -146,14 +146,14 @@ let intern_qualid env vars loc qid =
 
 let intern_reference env lvar = function
   | Qualid (loc, qid) ->
-      intern_qualid env lvar loc qid
+      intern_qualid loc qid
   | Ident (loc, id) ->
       (* For old ast syntax compatibility *)
       if (string_of_id id).[0] = '$' then RVar (loc,id),[],[] else
       (* End old ast syntax compatibility *)
       try intern_var env lvar loc id
       with Not_found -> 
-      try intern_qualid env lvar loc (make_short_qualid id)
+      try intern_qualid loc (make_short_qualid id)
       with e ->
 	(* Extra allowance for grammars *)
 	if !interning_grammar then begin
@@ -161,6 +161,9 @@ let intern_reference env lvar = function
 	  RVar (loc, id), [], []
 	end
 	else raise e
+
+let interp_reference vars r =
+  let (r,_,_) = intern_reference (Idset.empty,[],[]) (vars,[]) r in r
 
 let apply_scope_env (ids,impls,scopes as env) = function
   | [] -> env, []
@@ -338,7 +341,7 @@ let traverse_binder id (subst,(ids,impls,scopes as env)) =
 let rec subst_rawconstr loc interp (subst,env as senv) = function
   | AVar id ->
       let a = try List.assoc id subst
-      with Not_found -> CRef (Ident (dummy_loc,id)) in
+      with Not_found -> CRef (Ident (loc,id)) in
       interp env a
   | t ->
       map_aconstr_with_binders_loc loc traverse_binder
@@ -425,9 +428,6 @@ let internalise sigma env allow_soapp lvar c =
 	RSort(loc,s)
     | CCast (loc, c1, c2) ->
 	RCast (loc,intern env c1,intern env c2)
-
-    | CGrammar (loc,c,subst) ->
-	subst_rawconstr loc intern (subst,env) c
 
     | CDynamic (loc,d) -> RDynamic (loc,d)
 

@@ -47,7 +47,7 @@ type prod_item =
 type grammar_rule = {
   gr_name : string; 
   gr_production : prod_item list; 
-  gr_action : aconstr }
+  gr_action : constr_expr }
 
 type grammar_entry = { 
   ge_name : string;
@@ -65,11 +65,14 @@ type grammar_associativity = Gramext.g_assoc option
 
 type entry_context = identifier list
 
-let ast_to_rawconstr = ref (fun _ _ -> AVar (id_of_string "Z"))
-let set_ast_to_rawconstr f = ast_to_rawconstr := f
+open Rawterm
+open Libnames
+
+let globalizer = ref (fun _ _ -> CHole dummy_loc)
+let set_constr_globalizer f = globalizer := f
 
 let act_of_ast vars = function
-  | SimpleAction (loc,ConstrNode a) -> !ast_to_rawconstr vars a
+  | SimpleAction (loc,ConstrNode a) -> !globalizer vars a
   | SimpleAction (loc,CasesPatternNode a) -> 
       failwith "TODO:act_of_ast: cases_pattern"
   | CaseAction _ -> failwith "case/let not supported"
@@ -92,8 +95,11 @@ type grammar_production =
 type raw_grammar_rule = string * grammar_production list * grammar_action
 type raw_grammar_entry = string * grammar_associativity * raw_grammar_rule list
 
+(* No kernel names in Grammar's *)
+let subst_constr_expr _ a = a
+
 let subst_grammar_rule subst gr =
-  { gr with gr_action = subst_aconstr subst gr.gr_action }
+  { gr with gr_action = subst_constr_expr subst gr.gr_action }
 
 let subst_grammar_entry subst ge =
   { ge with gl_rules = List.map (subst_grammar_rule subst) ge.gl_rules }

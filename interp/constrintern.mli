@@ -80,6 +80,8 @@ val interp_constrpattern_gen :
 val interp_constrpattern : 
   evar_map -> env -> constr_expr -> int list * constr_pattern
 
+val interp_reference : identifier list -> reference -> rawconstr
+
 (* Interprets into a abbreviatable constr *)
 val interp_aconstr : constr_expr -> aconstr
 

@@ -100,7 +100,7 @@ let idopt_of_name = function
 
 let extern_evar loc n = warning "No notation for Meta"; CMeta (loc,n)
 
-let extern_ref r = Qualid (dummy_loc,shortest_qualid_of_global None r)
+let extern_reference loc r = Qualid (loc,shortest_qualid_of_global None r)
 
 (**********************************************************************)
 (* conversion of terms and cases patterns                             *)
@@ -118,7 +118,7 @@ let rec extern_cases_pattern_in_scope scopes pat =
   | PatVar (_,Anonymous) -> CPatAtom (loc, None) 
   | PatCstr(_,cstrsp,args,na) ->
       let args = List.map (extern_cases_pattern_in_scope scopes) args in
-      let p = CPatCstr (loc,extern_ref (ConstructRef cstrsp),args) in
+      let p = CPatCstr (loc,extern_reference loc (ConstructRef cstrsp),args) in
       (match na with
 	| Name id -> CPatAlias (loc,p,id)
 	| Anonymous -> p)
@@ -186,7 +186,7 @@ let rec extern scopes r =
     extern_symbol scopes r (Symbols.uninterp_notations r)
   with No_match -> match r with
 
-  | RRef (_,ref) -> CRef (extern_ref ref)
+  | RRef (_,ref) -> CRef (extern_reference loc ref)
 
   | RVar (_,id) -> CRef (Ident (loc,id))
 
@@ -202,7 +202,8 @@ let rec extern scopes r =
 	 | RRef (loc,ref) ->
 	     let subscopes = Symbols.find_arguments_scope ref in
 	     let args = extern_args extern scopes args subscopes in
-	     extern_app (implicits_of_global ref) (extern_ref ref) args
+	     extern_app (implicits_of_global ref) (extern_reference loc ref)
+	       args
 	 | _       -> 
 	     explicitize [] (extern scopes f) (List.map (extern scopes) args))
 
@@ -333,7 +334,7 @@ let extern_constr at_top env t =
 (* Main translation function from pattern -> constr_expr *)
 
 let rec extern_pattern tenv env = function
-  | PRef ref -> CRef (extern_ref ref)
+  | PRef ref -> CRef (extern_reference loc ref)
 
   | PVar id -> CRef (Ident (loc,id))
 
@@ -359,7 +360,8 @@ let rec extern_pattern tenv env = function
       let args = List.map (extern_pattern tenv env) args in
       (match f with
 	 | PRef ref ->
-	     extern_app (implicits_of_global ref) (extern_ref ref) args
+	     extern_app (implicits_of_global ref) (extern_reference loc ref)
+	     args
 	 | _       -> explicitize [] (extern_pattern tenv env f) args)
 
   | PSoApp (n,args) ->

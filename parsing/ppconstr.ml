@@ -214,7 +214,33 @@ let rec pr_arrow pr = function
 
 let pr_annotation pr t = str "<" ++ pr ltop t ++ str ">"
 
-let pr_cases _ _ _ = str "<CASES(TODO)>"
+let rec pr_pat = function
+  | CPatAlias (_,p,x) -> pr_pat p ++ spc () ++ str "as" ++ spc () ++ pr_id x
+  | CPatCstr (_,c,[]) -> pr_reference c
+  | CPatCstr (_,c,pl) ->
+      hov 0 (
+	str "(" ++ pr_reference c ++ spc () ++ 
+	prlist_with_sep spc pr_pat pl ++ str ")")
+  | CPatAtom (_,Some c) -> pr_reference c
+  | CPatAtom (_,None) -> str "_"
+  | CPatNumeral (_,n) -> Bignat.pr_bigint n
+  | CPatDelimiters (_,key,p) -> pr_delimiters key (pr_pat p)
+
+let pr_eqn pr (_,patl,rhs) =
+  hov 0 (
+    prlist_with_sep spc pr_pat patl ++
+    str "=>" ++
+    brk (1,1) ++ pr ltop rhs)
+
+let pr_cases pr po tml eqns =
+  hov 0 (
+    pr_opt (pr_annotation pr) po ++
+    hv 0 (
+      hv 0 (
+	str "Cases" ++ brk (1,2) ++
+	prlist_with_sep spc (pr ltop) tml ++ spc() ++ str "of") ++
+      prlist_with_sep pr_bar (pr_eqn pr) eqns ++ spc () ++
+      str "end"))
 
 let rec pr inherited a =
   let (strm,prec) = match a with
@@ -239,8 +265,8 @@ let rec pr inherited a =
       hov 0 (
 	pr (latom,E) a ++ 
 	prlist (fun a -> brk (1,1) ++ pr_expl_args pr a) l), lapp
-  | CCases (_,po,c,eqns) ->
-      pr_cases po c eqns, lcases
+  | CCases (_,po,tml,eqns) ->
+      pr_cases pr po tml eqns, lcases
   | COrderedCase (_,IfStyle,po,c,[b1;b2]) ->
       (* On force les parenthèses autour d'un "if" sous-terme (même si le
 	 parsing est lui plus tolérant) *)
@@ -278,7 +304,6 @@ let rec pr inherited a =
   | CCast (_,a,b) ->
       hv 0 (pr (lcast,L) a ++ cut () ++ str "::" ++ pr (lcast,E) b), lcast
   | CNotation (_,s,env) -> pr_notation pr s env
-  | CGrammar _ -> failwith "CGrammar: TODO"
   | CNumeral (_,p) -> Bignat.pr_bigint p, latom
   | CDelimiters (_,sc,a) -> pr_delimiters sc (pr ltop a), latom
   | CDynamic _ -> str "<dynamic>", latom

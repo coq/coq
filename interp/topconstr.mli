@@ -85,7 +85,6 @@ type constr_expr =
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr
   | CNotation of loc * notation * (identifier * constr_expr) list
-  | CGrammar of loc * aconstr * (identifier * constr_expr) list
   | CNumeral of loc * Bignat.bigint
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t

@@ -33,7 +33,7 @@ val extern_pattern : env -> names_context -> constr_pattern -> constr_expr
    level of quantification clashing with the variables in [env] are renamed *)
 
 val extern_constr : bool -> env -> constr -> constr_expr
-val extern_ref    : global_reference -> reference
+val extern_reference : loc -> global_reference -> reference
 
 (* For debugging *)
 val print_implicits : bool ref
@@ -41,6 +41,7 @@ val print_arguments : bool ref
 val print_evar_arguments : bool ref
 val print_coercions : bool ref
 val print_universes : bool ref
+val print_no_symbol : bool ref
 
 (* This governs printing of implicit arguments. If [with_implicits] is
    on and not [with_arguments] then implicit args are printed prefixed
