@@ -17,3 +17,11 @@ Lemma lem2 : (x:Z) `x < 4` -> `x > 2` -> `x=3`.
 Intro.
 Omega.
 Qed.
+
+(* Proposed by Jean-Christophe Filliâtre *)
+
+Lemma lem3 : (x,y:Z) `x = y` -> `x+x = y+y`.
+Proof.
+Intros.
+Omega.
+Qed.
