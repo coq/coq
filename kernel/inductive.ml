@@ -74,10 +74,10 @@ type mutual_inductive_entry = {
   mind_entry_inds : (identifier * constr * identifier list * constr) list }
 
 type inductive_error =
-  | NonPos of int   
-  | NotEnoughArgs of int
-  | NotConstructor  
-  | NonPar of int * int
+  | NonPos of name list * constr * constr
+  | NotEnoughArgs of name list * constr * constr
+  | NotConstructor of name list * constr * constr
+  | NonPar of name list * constr * int * constr * constr
   | SameNamesTypes of identifier
   | SameNamesConstructors of identifier * identifier
   | NotAnArity of identifier
@@ -125,7 +125,7 @@ let mind_extract_params = decompose_prod_n
   
 let extract nparams c =
   try mind_extract_params nparams c 
-  with UserError _ -> raise (InductiveError (NotEnoughArgs nparams))
+  with UserError _ -> raise (InductiveError BadEntry)
 
 let check_params nparams params c = 
   if not (fst (extract nparams c) = params) then 

@@ -40,20 +40,45 @@ let allowed_sorts issmall isunit = function
 
 let is_small_type t = is_small t.typ
 
+type ill_formed_ind =
+  | NonPos of int
+  | NotEnoughArgs of int
+  | NotConstructor
+  | NonPar of int * int
+
+exception IllFormedInd of ill_formed_ind
+
+let explain_ind_err ntyp lna nbpar c err = 
+  let (lpar,c') = decompose_prod_n nbpar c in
+  let env = (List.map fst lpar)@lna in
+  match err with
+    | NonPos kt -> 
+	raise (InductiveError (Inductive.NonPos (env,c',Rel (kt+nbpar))))
+    | NotEnoughArgs kt -> 
+	raise (InductiveError 
+		 (Inductive.NotEnoughArgs (env,c',Rel (kt+nbpar))))
+    | NotConstructor ->
+	raise (InductiveError 
+		 (Inductive.NotConstructor (env,c',Rel (ntyp+nbpar))))
+    | NonPar (n,l) ->
+	raise (InductiveError 
+		 (Inductive.NonPar (env,c',n,Rel (nbpar-n+1), Rel (l+nbpar))))
+
 let failwith_non_pos_vect n ntypes v =
   for i = 0 to Array.length v - 1 do
     for k = n to n + ntypes - 1 do
-      if not (noccurn k v.(i)) then raise (InductiveError (NonPos (k-n+1)))
+      if not (noccurn k v.(i)) then raise (IllFormedInd (NonPos (k-n+1)))
     done
   done;
   anomaly "failwith_non_pos_vect: some k in [n;n+ntypes-1] should occur in v"
 
 let check_correct_par env nparams ntypes n l largs =
-  if Array.length largs < nparams then raise (InductiveError (NotEnoughArgs l));
+  if Array.length largs < nparams then 
+    raise (IllFormedInd (NotEnoughArgs l));
   let (lpar,largs') = array_chop nparams largs in
   for k = 0 to nparams - 1 do
     if not ((Rel (n-k-1))= whd_betadeltaiotaeta env Evd.empty lpar.(k)) then
-      raise (InductiveError (NonPar (k+1,l)))
+      raise (IllFormedInd (NonPar (k+1,l)))
   done;
   if not (array_for_all (noccur_bet n ntypes) largs') then 
     failwith_non_pos_vect n ntypes largs'
@@ -76,7 +101,7 @@ let listrec_mconstr env ntypes nparams i indlc =
   let rec check_pos n c = 
     match whd_betadeltaiota env Evd.empty c with 
       | DOP2(Prod,b,DLAM(na,d)) -> 
-          if not (noccur_bet n ntypes b) then raise (InductiveError (NonPos n));
+          if not (noccur_bet n ntypes b) then raise (IllFormedInd (NonPos n));
 	  check_pos (n+1) d
       | x -> 
 	  (match ensure_appl x with 
@@ -93,7 +118,7 @@ let listrec_mconstr env ntypes nparams i indlc =
 			  then Param(n-1-k)
                           else Norec
 			else 
-			  raise (InductiveError (NonPos n))
+			  raise (IllFormedInd (NonPos n))
                     | (DOPN(MutInd(sp,i),_) as mi) -> 
                         if (noccur_bet n ntypes x) then
                           Norec
@@ -101,7 +126,7 @@ let listrec_mconstr env ntypes nparams i indlc =
 			  Imbr(sp,i,imbr_positive n mi largs)
                     | err -> 
 			if noccur_bet n ntypes x then Norec
-			else raise (InductiveError (NonPos n)))
+			else raise (IllFormedInd (NonPos n)))
              | _ -> anomaly "check_pos")
 	  
   and imbr_positive n mi largs = 
@@ -109,10 +134,10 @@ let listrec_mconstr env ntypes nparams i indlc =
     let auxnpar = mis_nparams mispeci in
     let (lpar,auxlargs) = array_chop auxnpar largs in 
     if not (array_for_all (noccur_bet n ntypes) auxlargs) then
-      raise (InductiveError (NonPos n));
+      raise (IllFormedInd (NonPos n));
     let auxlc = mis_lc mispeci 
     and auxntyp = mis_ntypes mispeci in 
-    if auxntyp <> 1 then raise (InductiveError (NonPos n));
+    if auxntyp <> 1 then raise (IllFormedInd (NonPos n));
     let lrecargs = array_map_to_list (check_param_pos n) lpar in
     (* The abstract imbricated inductive type with parameters substituted *)
     let auxlcvect = abstract_mind_lc env auxntyp auxnpar auxlc in
@@ -149,12 +174,12 @@ let listrec_mconstr env ntypes nparams i indlc =
       | DOP2(Lambda,b,DLAM(na,d)) -> 
           if noccur_bet n ntypes b
           then check_param_pos (n+1) d
-          else raise (InductiveError (NonPos n))
+          else raise (IllFormedInd (NonPos n))
       (******************)
       | DOP2(Prod,b,DLAM(na,d)) -> 
           if (noccur_bet n ntypes b) 
           then check_param_pos (n+1) d
-          else raise (InductiveError (NonPos n))
+          else raise (IllFormedInd (NonPos n))
       | x -> 
 	  (match ensure_appl x with 
              | DOPN(AppL,cl) -> 
@@ -169,13 +194,13 @@ let listrec_mconstr env ntypes nparams i indlc =
 			  if (n-nparams) <= k & k <= (n-1)
                           then Param(n-1-k)
                           else Norec
-			else raise (InductiveError (NonPos n))
+			else raise (IllFormedInd (NonPos n))
                     | (DOPN(MutInd(sp,i),_) as mi) -> 
                         if (noccur_bet n ntypes x) 
                         then Norec
                         else Imbr(sp,i,imbr_positive n mi largs)
                     | err -> if noccur_bet n ntypes x then Norec
-		      else raise (InductiveError (NonPos n)))
+		      else raise (IllFormedInd (NonPos n)))
              | _ -> anomaly "check_param_pos")
   
   (* check the inductive types occur positively in the products of C, if
@@ -200,22 +225,22 @@ let listrec_mconstr env ntypes nparams i indlc =
                             if k = n+ntypes-i then 
 			      List.rev lrec 
                             else 
-			      raise (InductiveError (NonPos n))
-                        | _ -> raise (InductiveError (NonPos n)))
+			      raise (IllFormedInd (NonPos n))
+                        | _ -> raise (IllFormedInd (NonPos n)))
                    else 
                      if array_for_all (noccur_bet n ntypes) largs 
                      then List.rev lrec 
-                     else raise (InductiveError (NonPos n)) 
+                     else raise (IllFormedInd (NonPos n)) 
 	       | _ -> anomaly "ensure_appl should return an AppL") 
     in check_constr_rec []
   in
   let (lna,lC) = decomp_DLAMV_name ntypes indlc in
   Array.map
     (fun c ->
-       (* try *)
-       check_construct true (1+nparams) (decomp_par nparams c)
-       (* with InductiveError err -> 
-	    explain_ind_err (ntypes-i+1) lna nparams c err *))
+       try
+	 check_construct true (1+nparams) (decomp_par nparams c)
+       with IllFormedInd err -> 
+	 explain_ind_err (ntypes-i+1) lna nparams c err)
     lC
     
 let is_recursive listind =

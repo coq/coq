@@ -75,10 +75,10 @@ type mutual_inductive_entry = {
   definition. *)
 
 type inductive_error =
-  | NonPos of int   
-  | NotEnoughArgs of int
-  | NotConstructor  
-  | NonPar of int * int
+  | NonPos of name list * constr * constr
+  | NotEnoughArgs of name list * constr * constr
+  | NotConstructor of name list * constr * constr
+  | NonPar of name list * constr * int * constr * constr
   | SameNamesTypes of identifier
   | SameNamesConstructors of identifier * identifier
   | NotAnArity of identifier
