@@ -26,18 +26,35 @@ let load_path = ref ([],[] : System.physical_path list * logical_path list)
 let get_load_path () = fst !load_path
 
 (* Hints to partially detects if two paths refer to the same repertory *)
-let strip_path p = 
-  if String.length p > 2 && String.sub p 0 2 = "./" then
-    String.sub p 2 (String.length p - 2)
+let rec remove_path_dot p = 
+  let curdir = Filename.concat Filename.current_dir_name "" in (* Unix: "./" *)
+  let n = String.length curdir in
+  if String.length p > n && String.sub p 0 n = curdir then
+    remove_path_dot (String.sub p n (String.length p - n))
   else
-    let cwd = (Sys.getcwd ())^"/" in
-    let n = String.length cwd in
-    if String.length p > n && String.sub p 0 n = cwd then
-      String.sub p n (String.length p - n)
-    else p
+    p
+
+let strip_path p =
+  let cwd = Filename.concat (Sys.getcwd ()) "" in (* Unix: "`pwd`/" *)
+  let n = String.length cwd in
+  if String.length p > n && String.sub p 0 n = cwd then
+    remove_path_dot (String.sub p n (String.length p - n))
+  else
+    remove_path_dot p
+
+let canonical_path_name p =
+  let current = Sys.getcwd () in
+  try 
+    Sys.chdir p;
+    let p' = Sys.getcwd () in
+    Sys.chdir current;
+    p'
+  with Sys_error _ ->
+    (* We give up to find a canonical name and just simplify it... *)
+    strip_path p
 
 let find_logical_path phys_dir = 
-  let phys_dir = strip_path phys_dir in
+  let phys_dir = canonical_path_name phys_dir in
   match list_filter2 (fun p d -> p = phys_dir) !load_path with
   | _,[dir] -> dir
   | _,[] -> Nametab.default_root_prefix
@@ -47,7 +64,7 @@ let remove_path dir =
   load_path := list_filter2 (fun p d -> p <> dir) !load_path
 
 let add_load_path_entry (phys_path,coq_path) =
-  let phys_path = strip_path phys_path in
+  let phys_path = canonical_path_name phys_path in
   match list_filter2 (fun p d -> p = phys_path) !load_path with
   | _,[dir] ->
       if dir <> coq_path && coq_path <> Nametab.default_root_prefix then
@@ -192,8 +209,7 @@ let import_module = open_module true
    exported in the dependencies (it is [true] at the highest level;
    then same value as for caller is reused in recursive loadings). *)
 
-let load_objects decls =
-(*  segment_rec_iter load_object decls*)
+let load_objects s decls =
   segment_iter load_object decls
 
 exception LibUnmappedDir
