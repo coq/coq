@@ -410,7 +410,7 @@ Qed.
 
 (***********)
 Definition Rsqr:R->R:=[r:R]``r*r``.
-Notation "x ²" := (Rsqr x) (at level 2,left associativity).
+V7only[Notation "x ²" := (Rsqr x) (at level 2,left associativity).].
 
 (***********)
 Lemma Rsqr_O:(Rsqr ``0``)==``0``.

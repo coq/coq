@@ -394,12 +394,14 @@ let rec pr inherited a =
   | CRef r -> pr_reference r, latom
   | CFix (_,id,fix) ->
       let p = hov 0 (str"fix " ++ pr_recursive (pr_fixdecl pr) (snd id) fix) in
-      (if List.length fix = 1 & prec_less (fst inherited) ltop
-       then surround p else p),
-      lfix
+      if List.length fix = 1 & prec_less (fst inherited) ltop
+      then surround p, latom else p, lfix
   | CCoFix (_,id,cofix) ->
-      hov 0 (str "cofix " ++ pr_recursive (pr_cofixdecl pr) (snd id) cofix),
-      lfix
+      let p =
+        hov 0 (str "cofix " ++
+               pr_recursive (pr_cofixdecl pr) (snd id) cofix) in
+      if List.length cofix = 1 & prec_less (fst inherited) ltop
+      then surround p, latom else p, lfix
   | CArrow (_,a,b) ->
       hov 0 (pr (larrow,L) a ++ str " ->" ++ brk(1,0) ++ pr (-larrow,E) b),
       larrow
@@ -504,9 +506,6 @@ let rec pr inherited a =
         str "end"),
       latom
   | CHole _ -> str "_", latom
-(*
-  | CEvar (_,n) -> str "?" ++ int n, latom
-*)
   | CEvar (_,n) -> str (Evd.string_of_existential n), latom
   | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
   | CSort (_,s) -> pr_sort s, latom

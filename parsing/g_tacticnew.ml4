@@ -280,8 +280,8 @@ GEXTEND Gram
       | -> [] ] ]
   ;
   fixdecl:
-    [ [ id = base_ident; bl=LIST0 Constr.binder; ann=fixannot;
-        ":"; ty=lconstr -> (loc,id,bl,ann,ty) ] ]
+    [ [ "("; id = base_ident; bl=LIST0 Constr.binder; ann=fixannot;
+        ":"; ty=lconstr; ")" -> (loc,id,bl,ann,ty) ] ]
   ;
   fixannot:
     [ [ "{"; IDENT "struct"; id=name; "}" -> Some id
@@ -323,11 +323,11 @@ GEXTEND Gram
       | IDENT "casetype"; c = constr -> TacCaseType c
       | "fix"; n = natural -> TacFix (None,n)
       | "fix"; id = base_ident; n = natural -> TacFix (Some id,n)
-      | "fix"; id = base_ident; n = natural; "with"; fd = LIST0 fixdecl ->
+      | "fix"; id = base_ident; n = natural; "with"; fd = LIST1 fixdecl ->
 	  TacMutualFix (id,n,List.map mk_fix_tac fd)
       | "cofix" -> TacCofix None
       | "cofix"; id = base_ident -> TacCofix (Some id)
-      | "cofix"; id = base_ident; "with"; fd = LIST0 fixdecl ->
+      | "cofix"; id = base_ident; "with"; fd = LIST1 fixdecl ->
 	  TacMutualCofix (id,List.map mk_cofix_tac fd)
 
       | IDENT "cut"; c = constr -> TacCut c
@@ -342,7 +342,7 @@ GEXTEND Gram
       | IDENT "generalize"; lc = LIST1 constr -> TacGeneralize lc
       | IDENT "generalize"; IDENT "dependent"; c = constr ->
           TacGeneralizeDep c
-      | IDENT "lettac"; "("; id = base_ident; ":="; c = lconstr; ")";
+      | IDENT "set"; "("; id = base_ident; ":="; c = lconstr; ")";
           p = clause_pattern -> TacLetTac (id,c,p)
       | IDENT "instantiate"; "("; n = natural; ":="; c = lconstr; ")" ->
           TacInstantiate (n,c)

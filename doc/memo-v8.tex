@@ -8,7 +8,7 @@
 \usepackage{fullpage}
 
 \author{B.~Barras}
-\title{A introduction to syntax of Coq V8}
+\title{An introduction to syntax of Coq V8}
 
 %% Le _ est un caractère normal
 \catcode`\_=13
@@ -47,8 +47,8 @@ The lexical conventions changed: \TERM{_} is not a regular identifier
 anymore. It is used in terms as a placeholder for subterms to be inferred
 at type-checking, and in patterns as a non-binding variable.
 
-Furthermore, only letters, digits, single quotes and _ are allowed
-after the first character.
+Furthermore, only letters (unicode letters), digits, single quotes and
+_ are allowed after the first character.
 
 \subsection{Quoted string}
 
@@ -75,15 +75,17 @@ in many contexts.
 
 \subsection{Arithmetics and scopes}
 
-The specialized notation for \TERM{Z} and \TERM{R} (introduced by symbols \TERM{`} and \TERM{``}) have disappeared. They have been replaced by the general notion of scope.
+The specialized notation for \TERM{Z} and \TERM{R} (introduced by
+symbols \TERM{`} and \TERM{``}) have disappeared. They have been
+replaced by the general notion of scope.
 
 \begin{center}
 \begin{tabular}{l|l|l}
-type & scope name & key \\
+type & scope name & delimiter \\
 \hline
 types & type_scope & \TERM{T} \\
 \TERM{bool} & bool_scope & \\
-\TERM{nat} & nat_scope & \TERM{N} \\
+\TERM{nat} & nat_scope & \TERM{nat} \\
 \TERM{Z} & Z_scope & \TERM{Z} \\
 \TERM{R} & R_scope & \TERM{R} \\
 \TERM{positive} & positive_scope & \TERM{P}
@@ -93,7 +95,7 @@ types & type_scope & \TERM{T} \\
 In order to use notations of arithmetics on \TERM{Z}, its scope must be opened with command \verb+Open Scope Z_scope.+ Another possibility is using the scope change notation (\TERM{\%}). The latter notation is to be used when notations of several scopes appear in the same expression.
 
 In examples below, scope changes are not needed if the appropriate scope
-has been opened.
+has been opened. Scope nat_scope is opened in the initial state of Coq.
 \begin{transbox}
 \TRANSCOM{`0+x=x+0`}{0+x=x+0}{\textrm{Z_scope}}
 \TRANSCOM{``0 + [if b then ``1`` else ``2``]``}{0 + if b then 1 else 2}{\textrm{R_scope}}
@@ -113,24 +115,24 @@ scope & notations \\
 \hline
 nat_scope & $+ ~- ~* ~< ~\leq ~> ~\geq$ \\
 Z_scope & $+ ~- ~* ~/ ~\TERM{mod} ~< ~\leq ~> ~\geq ~?=$ \\
-R_scope & $+ ~- ~* ~/ ~< ~\leq ~> ~\geq ~{}^2$ \\
+R_scope & $+ ~- ~* ~/ ~< ~\leq ~> ~\geq$ \\
 type_scope & $* ~+$ \\
-bool_scope & $\TERM{\&\&} ~\TERM{$||$} ~\TERM{!!}$
+bool_scope & $\TERM{\&\&} ~\TERM{$||$} ~\TERM{-}$ \\
+list_scope & $\TERM{::} ~\TERM{++}$
 \end{tabular}
 \end{center}
-(Note: $\leq$ is written \TERM{$<=$}, and the square notation uses iso-latin
-character 178)
+(Note: $\leq$ is written \TERM{$<=$})
 
 
 
 \subsection{Notation for implicit arguments}
 
 The explicitation of arguments is closer to the \emph{bindings} notation in
-tactics.
+tactics. Argument positions follow the argument names of the head constant.
 
 \begin{transbox}
-\TRANS{f 1!x 2!y}{f @1:=x @2:=y}
-\TRANS{!f x y}{@f x y}
+\TRANS{f 1!t1 2!t2}{f (x:=t1) (y:=t2)}
+\TRANS{!f t1 t2}{@f t1 t2}
 \end{transbox}
 
 
@@ -228,7 +230,9 @@ Ltac keywords.
 
 \subsection{Ltac}
 
-Definitions of macros are introduced by \TERM{Ltac} instead of \TERM{Tactic Definition}, \TERM{Meta Definition} or \TERM{Recursive Definition}.
+Definitions of macros are introduced by \TERM{Ltac} instead of
+\TERM{Tactic Definition}, \TERM{Meta Definition} or \TERM{Recursive
+Definition}.
 
 Rules of a match command are not between square brackets anymore.
 
@@ -239,24 +243,19 @@ became \TERM{context}. Syntax is unified with subterm matching.
 \TRANS{match t with [C[x=y]] => inst C[y=x]}{match t with context C[x=y] => context C[y=x]}
 \end{transbox}
 
-\subsection{List of arguments}
-
-Since the precedence of application is now very tight, tactics that take
-a list of terms would require to put parenthesis around each argument
-very often. In the new syntax, terms are separated by commas. Tactics
-affected by this change are: \TERM{pattern}, \TERM{unfold}, \TERM{fold},
-\TERM{generalize} and the list of dependent bindings of \TERM{apply},
-\TERM{elim}, \TERM{case}, \TERM{specialize}, \TERM{left}, \TERM{right},
-\TERM{exists}, \TERM{split} and \TERM{constructor}.
+\subsection{Named arguments of theorems}
 
 \begin{transbox}
-\TRANS{Generalize t (f x)}{generalize t, f x}
-\TRANS{Apply t with (f x) b (g y)}{apply t with f x, b, g y}
+\TRANS{Apply thm with x:=t 1:=u}{apply thm with (x:=t) (1:=u)}
 \end{transbox}
+
 
 \subsection{Occurrences}
 
-Occurences of a term are now listed after the term itself.
+To avoid ambiguity between a numeric literal and the optionnal
+occurence numbers of this term, the occurence numbers are put after
+the term itself. This applies to tactic \TERM{pattern} and also
+\TERM{unfold}
 \begin{transbox}
 \TRANS{Pattern 1 2 (f x) 3 4 d}{pattern (f x) 1 2, d 3 4}
 \end{transbox}

@@ -362,16 +362,15 @@ let pr_fix_tac env (id,n,c) =
   let annot =
     if List.length names = 1 then mt()
     else spc() ++ str"{struct " ++ pr_id idarg ++ str"}" in
-  spc() ++ str"with " ++
-  hov 0 (pr_id id ++ 
-        prlist (pr_binder_fix env) bll ++ annot ++ str" :" ++ spc() ++
-        pr_lconstr env ty) in
+  hov 1 (str"(" ++ pr_id id ++ 
+        prlist (pr_binder_fix env) bll ++ annot ++ str" :" ++
+        pr_lconstrarg env ty ++ str")") in
 (*  spc() ++
   hov 0 (pr_id id ++ pr_intarg n ++ str":" ++ pr_constrarg
     env c)
 *)
 let pr_cofix_tac env (id,c) =
-  spc() ++ str"with " ++ hov 0 (pr_id id ++ str":" ++ pr_constrarg env c) in
+  hov 1 (str"(" ++ pr_id id ++ str" :" ++ pr_lconstrarg env c ++ str")") in
 
 
   (* Printing tactics as arguments *)
@@ -421,26 +420,29 @@ and pr_atom1 env = function
   | TacCaseType c -> hov 1 (str "casetype" ++ pr_constrarg env c)
   | TacFix (ido,n) -> hov 1 (str "fix" ++ pr_opt pr_id ido ++ pr_intarg n)
   | TacMutualFix (id,n,l) ->
-      hov 1 (str "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++
-             prlist (pr_fix_tac env) l)
+      hov 1 (str "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ cut() ++
+             str"with " ++ prlist_with_sep spc (pr_fix_tac env) l)
   | TacCofix ido -> hov 1 (str "cofix" ++ pr_opt pr_id ido)
   | TacMutualCofix (id,l) ->
-      hov 1 (str "cofix" ++ spc () ++ pr_id id ++ spc () ++
-             prlist (pr_cofix_tac env) l)
+      hov 1 (str "cofix" ++ spc () ++ pr_id id ++ cut () ++
+             str"with " ++ prlist_with_sep spc (pr_cofix_tac env) l)
   | TacCut c -> hov 1 (str "cut" ++ pr_constrarg env c)
   | TacTrueCut (None,c) -> 
       hov 1 (str "assert" ++ pr_constrarg env c)
   | TacTrueCut (Some id,c) -> 
-      hov 1 (str "assert" ++ spc () ++ str"(" ++ pr_id id ++ str ":" ++
-             pr_lconstrarg env c ++ str")")
+      hov 1 (str "assert" ++ spc () ++
+             hov 1 (str"(" ++ pr_id id ++ str " :" ++
+                    pr_lconstrarg env c ++ str")"))
   | TacForward (false,na,c) ->
-      hov 1 (str "assert" ++ spc () ++ str"(" ++ pr_name na ++ str " :=" ++
-             pr_lconstrarg env c ++ str")")
+      hov 1 (str "assert" ++ spc () ++
+             hov 1 (str"(" ++ pr_name na ++ str " :=" ++
+                    pr_lconstrarg env c ++ str")"))
   | TacForward (true,Anonymous,c) ->
       hov 1 (str "pose" ++ pr_constrarg env c)
   | TacForward (true,Name id,c) ->
-      hov 1 (str "pose" ++ spc() ++ str"(" ++ pr_id id ++ str " :=" ++
-             pr_lconstrarg env c ++ str")")
+      hov 1 (str "pose" ++ spc() ++
+             hov 1 (str"(" ++ pr_id id ++ str " :=" ++
+                    pr_lconstrarg env c ++ str")"))
   | TacGeneralize l ->
       hov 1 (str "generalize" ++ spc () ++
              prlist_with_sep spc (pr_constr env) l)
@@ -448,11 +450,14 @@ and pr_atom1 env = function
       hov 1 (str "generalize" ++ spc () ++ str "dependent" ++
              pr_constrarg env c)
   | TacLetTac (id,c,cl) ->
-      hov 1 (str "lettac" ++ spc () ++ str"(" ++ pr_id id ++ str " :=" ++
-        pr_lconstrarg env c ++ str")" ++ pr_clause_pattern pr_ident cl)
+      hov 1 (str "set" ++ spc () ++
+             hov 1 (str"(" ++ pr_id id ++ str " :=" ++
+                    pr_lconstrarg env c ++ str")") ++
+             pr_clause_pattern pr_ident cl)
   | TacInstantiate (n,c) ->
-      hov 1 (str "instantiate" ++ str"(" ++ pr_arg int n ++ str":=" ++
-             pr_lconstrarg env c ++ str")")
+      hov 1 (str "instantiate" ++ spc() ++
+             hov 1 (str"(" ++ pr_arg int n ++ str" :=" ++
+                    pr_lconstrarg env c ++ str")"))
 
   (* Derived basic tactics *)
   | TacSimpleInduction h ->
