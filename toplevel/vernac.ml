@@ -104,15 +104,19 @@ let pr_comments = function
   | None -> mt()
   | Some l -> h 0 (List.fold_left (++) (mt ()) (List.rev l))
 
+let not_loading_file = ref true
+
 let rec vernac_com interpfun (loc,com) =
   let rec interp = function
     | VernacLoad (verbosely, fname) ->
         let ch = !chan_translate in
         begin try
-          chan_translate := stdout;
-          read_vernac_file verbosely (make_suffix fname ".v")
-        with _ -> () end;
-        chan_translate := ch
+          not_loading_file := false;
+          read_vernac_file verbosely (make_suffix fname ".v");
+          not_loading_file := true
+        with e ->
+	  not_loading_file := true;
+	  raise e end;
 
     | VernacList l -> List.iter (fun (_,v) -> interp v) l
 
@@ -137,7 +141,7 @@ let rec vernac_com interpfun (loc,com) =
   in 
   try
     Options.v7_only := false;
-    if do_translate () then
+    if do_translate () & !not_loading_file then
       (Format.set_formatter_out_channel !chan_translate;
        Format.set_max_boxes max_int;
        (match com with
