@@ -4,7 +4,7 @@ let _ =
     let fml = Sys.argv.(1) in
     let f = Filename.chop_extension fml in 
     let fv = f ^ ".v" in
-    if Sys.file_exists fv then
+    if Sys.file_exists ("../../../" ^ fv) then
       print_endline fv
     else
       let d = Filename.dirname f in

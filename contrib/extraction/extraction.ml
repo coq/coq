@@ -817,7 +817,7 @@ and extract_inductive_declaration sp =
 (*s Extraction of a global reference i.e. a constant or an inductive. *)
 
 let false_rec_sp = path_of_string "Coq.Init.Specif.False_rec"
-let false_rec_e = MLexn (id_of_string "False_rec")
+let false_rec_e = MLlam (prop_name, MLexn (id_of_string "False_rec"))
 
 let extract_declaration r = match r with
   | ConstRef sp when sp = false_rec_sp -> Dglob (r, false_rec_e)

@@ -10,7 +10,7 @@ INCL= -I theories/Arith \
 -I theories/Relations \
 -I theories/Sets \
 -I theories/Wellfounded \
--I theories/Zarith
+-I theories/ZArith
 
 
 MLNAMES=
