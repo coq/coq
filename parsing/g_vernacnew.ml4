@@ -483,7 +483,6 @@ GEXTEND Gram
       (* Printing (careful factorization of entries) *)
       | IDENT "Print"; p = printable -> VernacPrint p
       | IDENT "Print"; qid = global -> VernacPrint (PrintName qid)
-      | IDENT "Print" -> VernacPrint PrintLocalContext 
       | IDENT "Print"; IDENT "Module"; "Type"; qid = global -> 
 	  VernacPrint (PrintModuleType qid)
       | IDENT "Print"; IDENT "Module"; qid = global -> 

@@ -948,12 +948,11 @@ let rec pr_vernac = function
         prlist_with_sep (fun () -> fnl() ++ str"with ") pr_tac_body l)
   | VernacHints (local,dbnames,h) ->
       pr_hints local dbnames h pr_constr pr_pattern
-  | VernacSyntacticDefinition (id,c,None) ->
-      hov 2 (str"Syntactic Definition " ++ pr_lident id ++ str" :=" ++
-             pr_lconstrarg c)
-  | VernacSyntacticDefinition (id,c,Some n) ->
-      hov 2 (str"Syntactic Definition " ++ pr_lident id ++ str" :=" ++
-             pr_lconstrarg c ++ spc() ++ str"|" ++ int n)
+  | VernacSyntacticDefinition (id,c,local,onlyparsing) ->
+      hov 2
+        (str"Notation " ++ pr_locality local ++ pr_id id ++ str" :=" ++
+         pr_constrarg c ++
+         pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
   | VernacDeclareImplicits (q,None) ->
       hov 2 (str"Implicit Arguments" ++ spc() ++ pr_reference q)
   | VernacDeclareImplicits (q,Some l) ->
@@ -1031,7 +1030,8 @@ let rec pr_vernac = function
 	| PrintHintDbName s -> str"Print HintDb" ++ spc() ++ str s
 	| PrintUniverses fopt -> str"Dump Universes" ++ pr_opt str fopt
 	| PrintName qid -> str"Print" ++ spc()  ++ pr_reference qid
-	| PrintLocalContext -> str"Print"
+	| PrintLocalContext -> assert false
+            (* str"Print" *) 
 	| PrintModuleType qid -> str"Print Module Type" ++ spc() ++ pr_reference qid
 	| PrintModule qid -> str"Print Module" ++ spc() ++ pr_reference qid
 	| PrintInspect n -> str"Inspect" ++ spc() ++ int n
@@ -1116,5 +1116,8 @@ let pr_vernac = function
       let a = Names.string_of_id a in
       a = "nat_scope" or a = "Z_scope" or a = "R_scope" -> mt()
   | VernacSyntax _  | VernacGrammar _ as x -> pr_vernac x
+  | VernacPrint PrintLocalContext -> 
+      warning ("\"Print.\" is discontinued");
+      mt ()
   | x -> pr_vernac x ++ sep_end ()
 
