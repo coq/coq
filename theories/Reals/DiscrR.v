@@ -54,5 +54,6 @@ Qed.
 
 Recursive Tactic Definition Sup0 :=
   Match Context With
+  | [ |- ``0<1`` ] -> Apply Rlt_R0_R1
   | [ |- ``0<?1`` ] -> Repeat (Apply Rmult_lt_pos Orelse Apply Rplus_lt_pos; Try Apply Rlt_R0_R1 Orelse Apply Rlt_R0_R2)
   | [ |- ``?1>0`` ] -> Change ``0<?1``; Sup0.
