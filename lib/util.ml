@@ -563,6 +563,10 @@ let option_compare f a b = match (a,b) with
   | Some a', Some b' -> f a' b'
   | _ -> failwith "option_compare"
 
+let option_iter f = function
+  | None -> ()
+  | Some x -> f x
+
 let option_smartmap f a = match a with
   | None -> a
   | Some x -> let x' = f x in if x'==x then a else Some x'
