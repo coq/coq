@@ -512,6 +512,11 @@ let rec xlate_intro_pattern =
   | IntroWildcard -> CT_coerce_ID_to_INTRO_PATT(CT_ident "_" )
   | IntroIdentifier c -> CT_coerce_ID_to_INTRO_PATT(xlate_ident c)
 
+let xlate_newind_names = 
+  function
+    | IntroIdentifier id -> xlate_ident id
+    | _ -> xlate_error "TODO: intro_patterns for NewDestruct/NewInduction"
+
 let compute_INV_TYPE_from_string = function
    "InversionClear" -> CT_inv_clear
  | "SimpleInversion" -> CT_inv_simple
@@ -1005,12 +1010,12 @@ and xlate_tac =
 	CT_new_destruct
 	  (xlate_int_or_constr a, xlate_using b, 
 	   CT_id_list_list
-	     (List.map (fun l -> CT_id_list(List.map xlate_ident l)) c))
+	     (List.map (fun l -> CT_id_list(List.map xlate_newind_names l)) c))
     | TacNewInduction(a,b,c) ->
 	CT_new_induction
 	  (xlate_int_or_constr a, xlate_using b, 
 	   CT_id_list_list
-	     (List.map (fun l -> CT_id_list(List.map xlate_ident l)) c))
+	     (List.map (fun l -> CT_id_list(List.map xlate_newind_names l)) c))
     | TacInstantiate (a, b) -> 
 	CT_instantiate(CT_int a, xlate_formula b)
     | TacLetTac (id, c, cl) ->

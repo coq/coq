@@ -95,3 +95,5 @@ let h_simplest_apply c  = h_apply (c,NoBindings)
 let h_simplest_elim c   = h_elim (c,NoBindings) None
 let h_simplest_case   c = h_case (c,NoBindings)
 
+let h_intro_patterns l = abstract_tactic (TacIntroPattern l) (intro_patterns l)
+

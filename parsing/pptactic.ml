@@ -130,23 +130,19 @@ let pr_bindings prc prlc = function
 let pr_with_bindings prc prlc (c,bl) = 
   prc c ++ hv 0 (pr_bindings prc prlc bl)
 
-let pr_with_names = function
-  | [] -> mt ()
-  | ids -> spc () ++ str "as [" ++
-      hv 0 (prlist_with_sep (fun () -> spc () ++ str "| ")
-              (prlist_with_sep spc pr_id) ids ++ str "]")
-
 let rec pr_intro_pattern = function
   | IntroOrAndPattern pll ->
       str "[" ++
       hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
       ++ str "]"
-(*
-  | IntroAndPattern pl ->
-      str "(" ++ hov 0 (prlist_with_sep pr_coma pr_intro_pattern pl) ++ str ")"
-*)
   | IntroWildcard -> str "_"
   | IntroIdentifier id -> pr_id id
+
+let pr_with_names = function
+  | [] -> mt ()
+  | ids -> spc () ++ str "as [" ++
+      hv 0 (prlist_with_sep (fun () -> spc () ++ str "| ")
+              (prlist_with_sep spc pr_intro_pattern) ids ++ str "]")
 
 let pr_hyp_location pr_id = function
   | InHyp id -> spc () ++ pr_id id

@@ -305,6 +305,8 @@ let intro_force force_flag = intro_gen (IntroAvoid []) None force_flag
 let intro = intro_force false
 let introf = intro_force true
 
+let introf_move_name destopt = intro_gen (IntroAvoid []) destopt true
+
 (* For backwards compatibility *)
 let central_intro = intro_gen
 
@@ -968,6 +970,46 @@ let general_elim_in id (c,lbindc) (elimc,lbindelimc) gl =
   let elimclause = make_clenv_binding wc (elimc,elimt) lbindelimc in 
   elimination_in_clause_scheme kONT id elimclause indclause gl
 
+(* Case analysis tactics *)
+
+let general_case_analysis (c,lbindc) gl =
+  let env = pf_env gl in
+  let (mind,_) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+  let sigma    = project gl in 
+  let sort     = elimination_sort_of_goal gl in
+  let case = if occur_term c (pf_concl gl) then Indrec.make_case_dep
+  else Indrec.make_case_gen in
+  let elim     = case env sigma mind sort in 
+  general_elim (c,lbindc) (elim,NoBindings) gl
+    
+let simplest_case c = general_case_analysis (c,NoBindings)
+
+(*****************************)
+(* Decomposing introductions *)
+(*****************************)
+
+let clear_last = tclLAST_HYP (fun c -> (clear [destVar c]))
+let case_last  = tclLAST_HYP simplest_case
+
+let rec intro_pattern destopt = function
+  | IntroWildcard ->
+      tclTHEN intro clear_last
+  | IntroIdentifier id ->
+      intro_gen (IntroMustBe id) destopt true
+  | IntroOrAndPattern l ->
+      tclTHEN introf
+        (tclTHENS
+	  (tclTHEN case_last clear_last)
+	  (List.map (intros_pattern destopt) l))
+
+and intros_pattern destopt l = tclMAP (intro_pattern destopt) l
+
+let intro_patterns = function 
+  | [] -> tclREPEAT intro
+  | l  -> intros_pattern None l
+
+let h_intro_patterns l = abstract_tactic (TacIntroPattern l) (intro_patterns l)
+
 (*
  * A "natural" induction tactic
  * 
@@ -1000,11 +1042,27 @@ let general_elim_in id (c,lbindc) (elimc,lbindelimc) gl =
 
  *)
 
+let rec str_intro_pattern = function
+  | IntroOrAndPattern pll ->
+      "["^(String.concat "|" 
+	(List.map 
+	  (fun pl -> String.concat " " (List.map str_intro_pattern pl)) pll))
+      ^"]"
+  | IntroWildcard -> "_"
+  | IntroIdentifier id -> string_of_id id
+
 let check_unused_names names =
   if names <> [] & Options.is_verbose () then
-    let s,are = if List.tl names = [] then " "," is" else "s "," are" in
-    let names = String.concat " " (List.map string_of_id names) in
-    warning ("Name"^s^names^are^" unused")
+    let s = if List.tl names = [] then " " else "s " in
+    let names = String.concat " " (List.map str_intro_pattern names) in
+    warning ("Unused introduction pattern"^s^": "^names)
+
+let rec first_name_buggy = function
+  | IntroOrAndPattern [] -> None
+  | IntroOrAndPattern ([]::l) -> first_name_buggy (IntroOrAndPattern l)
+  | IntroOrAndPattern ((p::_)::_) -> first_name_buggy p
+  | IntroWildcard -> None
+  | IntroIdentifier id -> Some id
 
 (* We recompute recargs because we are not sure the elimination lemma
 comes from a canonically generated one *)
@@ -1062,21 +1120,28 @@ let induct_discharge old_style mind statuslists cname destopt avoid ra names gl
   in
   let rec peel_tac ra names gl = match ra with
     | true :: ra' ->
-        let recvar,hyprec,names = match names with
+        let recpat,hyprec,names = match names with
           | [] ->
-              (fresh_id avoid recvarname gl, fresh_id avoid hyprecname gl, [])
-          | [id] -> (id, next_ident_away (add_prefix "IH" id) avoid, [])
-          | id1::id2::names -> (id1,id2,names) in
-	if !tophyp=None then tophyp := Some hyprec;
+              (IntroIdentifier (fresh_id avoid recvarname gl), 
+	       IntroIdentifier (fresh_id avoid hyprecname gl), [])
+          | [IntroIdentifier id as pat] ->
+	      (pat,
+	       IntroIdentifier (next_ident_away (add_prefix "IH" id) avoid),
+	       [])
+	  | [pat] ->
+	      (pat, IntroIdentifier (fresh_id avoid hyprecname gl), [])
+          | pat1::pat2::names -> (pat1,pat2,names) in
+	(* This is buggy for intro-or-patterns with different first hypnames *)
+	if !tophyp=None then tophyp := first_name_buggy hyprec;
         tclTHENLIST
-	  [ intro_gen (IntroMustBe recvar) destopt false;
-	    intro_gen (IntroMustBe hyprec) None false;
+	  [ intros_pattern destopt [recpat];
+	    intros_pattern None [hyprec];
 	    peel_tac ra' names ] gl
     | false :: ra' ->
-        let introstyle,names = match names with
-          | [] -> IntroAvoid avoid, []
-          | id::names -> IntroMustBe id,names in
-	tclTHEN (intro_gen introstyle destopt false) (peel_tac ra' names) gl
+        let introtac,names = match names with
+          | [] -> intro_gen (IntroAvoid avoid) destopt false, []
+          | pat::names -> intros_pattern destopt [pat],names in
+	tclTHEN introtac (peel_tac ra' names) gl
     | [] ->
         check_unused_names names;
         tclIDTAC gl
@@ -1399,20 +1464,6 @@ let old_induct_nodep = raw_induct_nodep
 let old_induct = function
   | NamedHyp id -> old_induct_id id
   | AnonHyp n -> old_induct_nodep n
-
-(* Case analysis tactics *)
-
-let general_case_analysis (c,lbindc) gl =
-  let env = pf_env gl in
-  let (mind,_) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  let sigma    = project gl in 
-  let sort     = elimination_sort_of_goal gl in
-  let case = if occur_term c (pf_concl gl) then Indrec.make_case_dep
-  else Indrec.make_case_gen in
-  let elim     = case env sigma mind sort in 
-  general_elim (c,lbindc) (elim,NoBindings) gl
-    
-let simplest_case c = general_case_analysis (c,NoBindings)
 
 (* Destruction tactics *)
 

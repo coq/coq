@@ -57,10 +57,10 @@ val h_old_induction   : quantified_hypothesis -> tactic
 val h_old_destruct    : quantified_hypothesis -> tactic
 val h_new_induction   :
   constr induction_arg -> constr with_bindings option ->
-    identifier list list -> tactic
+    intro_pattern_expr list list -> tactic
 val h_new_destruct    :
   constr induction_arg -> constr with_bindings option -> 
-    identifier list list -> tactic
+    intro_pattern_expr list list -> tactic
 val h_specialize      : int option -> constr with_bindings -> tactic
 val h_lapply          : constr -> tactic
 
@@ -101,3 +101,5 @@ val h_transitivity    : constr -> tactic
 val h_simplest_apply  : constr -> tactic 
 val h_simplest_elim   : constr -> tactic
 val h_simplest_case   : constr -> tactic
+
+val h_intro_patterns  : intro_pattern_expr list -> tactic

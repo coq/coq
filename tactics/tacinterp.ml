@@ -583,12 +583,12 @@ let rec intern_atomic lf ist x =
   | TacNewInduction (c,cbo,ids) ->
       TacNewInduction (intern_induction_arg ist c,
                option_app (intern_constr_with_bindings ist) cbo,
-               List.map (List.map (intern_ident lf ist)) ids)
+               List.map (List.map (intern_intro_pattern lf ist)) ids)
   | TacOldDestruct h -> TacOldDestruct (intern_quantified_hypothesis ist h)
   | TacNewDestruct (c,cbo,ids) ->
       TacNewDestruct (intern_induction_arg ist c,
                option_app (intern_constr_with_bindings ist) cbo,
-               List.map (List.map (intern_ident lf ist)) ids)
+               List.map (List.map (intern_intro_pattern lf ist)) ids)
   | TacDoubleInduction (h1,h2) ->
       let h1 = intern_quantified_hypothesis ist h1 in
       let h2 = intern_quantified_hypothesis ist h2 in
@@ -1547,7 +1547,7 @@ and interp_tactic ist tac gl =
 and interp_atomic ist gl = function
   (* Basic tactics *)
   | TacIntroPattern l ->
-      Elim.h_intro_patterns (List.map (interp_intro_pattern ist) l)
+      h_intro_patterns (List.map (interp_intro_pattern ist) l)
   | TacIntrosUntil hyp ->
       h_intros_until (interp_quantified_hypothesis ist gl hyp)
   | TacIntroMove (ido,ido') ->
@@ -1597,12 +1597,12 @@ and interp_atomic ist gl = function
   | TacNewInduction (c,cbo,ids) ->
       h_new_induction (interp_induction_arg ist gl c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
-        (List.map (List.map (eval_ident ist)) ids)
+        (List.map (List.map (interp_intro_pattern ist)) ids)
   | TacOldDestruct h -> h_old_destruct (interp_quantified_hypothesis ist gl h)
   | TacNewDestruct (c,cbo,ids) -> 
       h_new_destruct (interp_induction_arg ist gl c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
-        (List.map (List.map (eval_ident ist)) ids)
+        (List.map (List.map (interp_intro_pattern ist)) ids)
   | TacDoubleInduction (h1,h2) ->
       let h1 = interp_quantified_hypothesis ist gl h1 in
       let h2 = interp_quantified_hypothesis ist gl h2 in

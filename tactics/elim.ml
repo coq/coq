@@ -183,29 +183,4 @@ let double_ind h1 h2 gls =
 let h_double_induction h1 h2 =
   Refiner.abstract_tactic (TacDoubleInduction (h1,h2)) (double_ind h1 h2)
 
-(*****************************)
-(* Decomposing introductions *)
-(*****************************)
-
-let clear_last = tclLAST_HYP (fun c -> (clear [destVar c]))
-let case_last  = tclLAST_HYP h_simplest_case
-
-let rec intro_pattern = function
-  | IntroWildcard ->
-      tclTHEN intro clear_last
-  | IntroIdentifier id ->
-      intro_mustbe_force id
-  | IntroOrAndPattern l ->
-      tclTHEN introf
-        (tclTHENS
-	  (tclTHEN case_last clear_last)
-	  (List.map intros_pattern l))
-
-and intros_pattern l = tclMAP intro_pattern l
-
-let intro_patterns = function 
-  | [] -> tclREPEAT intro
-  | l  -> tclMAP intro_pattern l
-
-let h_intro_patterns l = Refiner.abstract_tactic (TacIntroPattern l) (intro_patterns l)
 

@@ -234,7 +234,7 @@ GEXTEND Gram
     [ [ "using"; el = constr_with_bindings -> el ] ]
   ;
   with_names:
-    [ [ "as"; "["; ids = LIST1 (LIST0 base_ident) SEP "|"; "]" -> ids
+    [ [ "as"; "["; ids = LIST1 (LIST0 simple_intropattern) SEP "|"; "]" -> ids
       | -> [] ] ]
   ;
   simple_tactic:

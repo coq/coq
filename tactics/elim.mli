@@ -34,11 +34,3 @@ val h_decompose_and   : constr -> tactic
 
 val double_ind : Rawterm.quantified_hypothesis -> Rawterm.quantified_hypothesis -> tactic
 val h_double_induction : Rawterm.quantified_hypothesis -> Rawterm.quantified_hypothesis->tactic
-
-val intro_pattern     : Tacexpr.intro_pattern_expr      -> tactic
-val intros_pattern    : Tacexpr.intro_pattern_expr list -> tactic
-(*
-val dyn_intro_pattern : tactic_arg list    -> tactic
-val v_intro_pattern   : tactic_arg list    -> tactic
-*)
-val h_intro_patterns  : Tacexpr.intro_pattern_expr list -> tactic

@@ -82,6 +82,7 @@ Tactics
 - Quantified names now avoid global names of the current module (like
   Intro names did) [source of rare incompatibilities: 2 changes in the set of
   user contribs]
+- NewDestruct/NewInduction accepts intro patterns as introduction names
 
 Bugs
 

@@ -91,6 +91,12 @@ val intros_clearing      : bool list -> tactic
 val try_intros_until :
   (identifier -> tactic) -> quantified_hypothesis -> tactic
 
+(*s Introduction tactics with eliminations. *)
+
+val intro_pattern     : identifier option -> intro_pattern_expr      -> tactic
+val intro_patterns    : intro_pattern_expr list -> tactic
+val intros_pattern    : identifier option -> intro_pattern_expr list -> tactic
+
 (*s Exact tactics. *)
 
 val assumption       : tactic
@@ -171,7 +177,7 @@ val general_elim_in : identifier -> constr * constr bindings ->
                       constr * constr bindings -> tactic
 
 val new_induct : constr induction_arg -> constr with_bindings option ->
-  identifier list list -> tactic
+  intro_pattern_expr list list -> tactic
 
 (*s Case analysis tactics. *)
 
@@ -180,7 +186,7 @@ val simplest_case         : constr -> tactic
 
 val old_destruct          : quantified_hypothesis -> tactic
 val new_destruct : constr induction_arg -> constr with_bindings option ->
-  identifier list list -> tactic
+  intro_pattern_expr list list -> tactic
 
 (*s Eliminations giving the type instead of the proof. *)
 
