@@ -166,7 +166,7 @@ let add_rec_path dir coq_dirpath =
       List.iter (fun lpe -> add_ml_dir (fst lpe)) dirs;
       List.iter Library.add_load_path_entry dirs;
       if coq_dirpath <> [] then Nametab.push_library_root (List.hd coq_dirpath)
-      else List.iter (fun (_, cp) -> Nametab.push_library_root (List.hd cp)) dirs
+      else List.iter (fun (_, cp) -> if cp <> [] then Nametab.push_library_root (List.hd cp)) dirs
     end
   else
     wARNING [< 'sTR ("Cannot open " ^ dir) >]
