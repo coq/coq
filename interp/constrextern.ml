@@ -126,6 +126,9 @@ let name_app f = function
   | Name id -> Name (f id)
   | Anonymous -> Anonymous
 
+let avoid_wildcard_string s =
+  if s = "_" then "x_" else s
+
 let avoid_wildcard id =
   if id = id_of_string "_" then id_of_string "x_" else id
 
@@ -220,11 +223,11 @@ let v7_to_v8_dir_id dir id =
     let s = string_of_id id in
     let s = 
       if (is_coq_root (Lib.library_dp()) or is_coq_root dir)
-      then translate_v7_string s else s in
+      then translate_v7_string s else avoid_wildcard_string s in
     id_of_string (translate_keyword s)
   else id
 
-let v7_to_v8_id id = avoid_wildcard (v7_to_v8_dir_id empty_dirpath id)
+let v7_to_v8_id id = v7_to_v8_dir_id empty_dirpath id
 
 let shortest_qualid_of_v7_global ctx ref =
   let fulldir,_ = repr_path (sp_of_global ref) in
