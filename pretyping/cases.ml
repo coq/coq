@@ -401,15 +401,81 @@ type pattern_matching_problem =
       caseloc  : loc;
       typing_function: type_constraint -> env -> rawconstr -> unsafe_judgment }
 
+(*--------------------------------------------------------------------------*
+ * A few functions to infer the inductive type from the patterns instead of *
+ * checking that the patterns correspond to the ind. type of the            *
+ * destructurated object. Allows type inference of examples like            *
+ *  [n]Cases n of O => true | _ => false end                                *
+ *--------------------------------------------------------------------------*)
+
+(* Computing the inductive type from the matrix of patterns *)
+
+let rec find_row_ind = function
+    [] -> None
+  | PatVar _ :: l -> find_row_ind l
+  | PatCstr(loc,c,_,_) :: _ -> Some (loc,c)
+
+exception NotCoercible
+
+let inh_coerce_to_ind isevars env ty tyi =
+  let (mib,mip) = Inductive.lookup_mind_specif env tyi in
+  let (ntys,_) = splay_prod env (evars_of isevars) mip.mind_nf_arity in
+   let (_,evarl) =
+    List.fold_right
+      (fun (na,ty) (env,evl) ->
+	 (push_rel (na,None,ty) env,
+	    (new_isevar isevars env ty)::evl))
+      ntys (env,[]) in
+  let expected_typ = applist (mkInd tyi,evarl) in
+     (* devrait être indifférent d'exiger leq ou pas puisque pour 
+        un inductif cela doit être égal *)
+  if the_conv_x_leq env isevars expected_typ ty then ty
+  else raise NotCoercible
+
+(* We do the unification for all the rows that contain
+ * constructor patterns. This is what we do at the higher level of patterns.
+ * For nested patterns, we do this unif when we ``expand'' the matrix, and we
+ * use the function above.
+ *)
+
+let unify_tomatch_with_patterns isevars env typ = function
+  | Some (cloc,(cstr,_ as c)) ->
+      (let tyi = inductive_of_constructor c in
+       try 
+	 let indtyp = inh_coerce_to_ind isevars env typ tyi in
+	 IsInd (typ,find_rectype env (evars_of isevars) typ)
+       with NotCoercible ->
+	 (* 2 cases : Not the right inductive or not an inductive at all *)
+	 try
+	   IsInd (typ,find_rectype env (evars_of isevars) typ)
+             (* will try to coerce later in check_and_adjust_constructor.. *)
+	 with Induc ->
+	   NotInd (None,typ))
+	     (* error will be detected in check_all_variables *)
+  | None -> 
+      try IsInd (typ,find_rectype env (evars_of isevars) typ)
+      with Induc -> NotInd (None,typ)
+
+let coerce_row typing_fun isevars env cstropt tomatch =
+  let j = typing_fun empty_tycon env tomatch in
+  let typ = body_of_type j.uj_type in
+  let t = unify_tomatch_with_patterns isevars env typ cstropt in
+  (j.uj_val,t)
+
+let coerce_to_indtype typing_fun isevars env matx tomatchl =
+  let pats = List.map (fun r ->  r.patterns) matx in
+  let matx' = match matrix_transpose pats with
+    | [] -> List.map (fun _ -> None) tomatchl (* no patterns at all *)
+    | m -> List.map find_row_ind m in
+  List.map2 (coerce_row typing_fun isevars env) matx' tomatchl
+
 (************************************************************************)
 (* Utils *)
 
-let to_mutind env sigma c t =
+let to_mutind env isevars tm c t =
   match c with
     | Some body -> NotInd (c,t)
-    | None ->
-        try IsInd (t,find_rectype env sigma t)
-        with Induc -> NotInd (c,t)
+    | None -> unify_tomatch_with_patterns isevars env t (find_row_ind tm)
 
 let type_of_tomatch = function
   | IsInd (t,_) -> t
@@ -1169,12 +1235,13 @@ let build_branch current typ pb eqns const_info =
     raise_pattern_matching_error
       (dummy_loc, pb.env, NonExhaustive (complete_history history));
   let typs = List.map2 (fun (_,c,t) na -> (na,c,t)) cs_args names in
-  let _,typs' =
+  let _,typs',_ =
     List.fold_right
-      (fun (na,c,t as d) (env,typs) ->
- 	 (push_rel d env,
-          ((na,to_mutind env (evars_of (pb.isevars)) c t),t)::typs))
-      typs (pb.env,[]) in
+      (fun (na,c,t as d) (env,typs,tms) ->
+	 let tm1 = List.map (fun c -> List.hd c) tms in
+	 let tms = List.map (fun c -> List.tl c) tms in
+ 	 (push_rel d env, ((na,to_mutind env pb.isevars tm1 c t),t)::typs,tms))
+      typs (pb.env,[],List.map fst eqns) in
   let tomatchs =
     List.fold_left2
       (fun l (d,t) dep_in_rhs -> (d,find_dependencies t l dep_in_rhs)::l)
@@ -1378,73 +1445,6 @@ let matx_of_eqns env tomatchl eqns =
       used = ref false;
       rhs = rhs }
   in List.map build_eqn eqns
-
-(*--------------------------------------------------------------------------*
- * A few functions to infer the inductive type from the patterns instead of *
- * checking that the patterns correspond to the ind. type of the            *
- * destructurated object. Allows type inference of examples like            *
- *  [n]Cases n of O => true | _ => false end                                *
- *--------------------------------------------------------------------------*)
-
-(* Computing the inductive type from the matrix of patterns *)
-
-let rec find_row_ind = function
-    [] -> None
-  | PatVar _ :: l -> find_row_ind l
-  | PatCstr(loc,c,_,_) :: _ -> Some (loc,c)
-
-(* We do the unification for all the rows that contain
- * constructor patterns. This is what we do at the higher level of patterns.
- * For nested patterns, we do this unif when we ``expand'' the matrix, and we
- * use the function above.
- *)
-
-exception NotCoercible
-
-let inh_coerce_to_ind isevars env ty tyi =
-  let (mib,mip) = Inductive.lookup_mind_specif env tyi in
-  let (ntys,_) = splay_prod env (evars_of isevars) mip.mind_nf_arity in
-   let (_,evarl) =
-    List.fold_right
-      (fun (na,ty) (env,evl) ->
-	 (push_rel (na,None,ty) env,
-	    (new_isevar isevars env ty)::evl))
-      ntys (env,[]) in
-  let expected_typ = applist (mkInd tyi,evarl) in
-     (* devrait être indifférent d'exiger leq ou pas puisque pour 
-        un inductif cela doit être égal *)
-  if the_conv_x_leq env isevars expected_typ ty then ty
-  else raise NotCoercible
-
-
-let coerce_row typing_fun isevars env cstropt tomatch =
-  let j = typing_fun empty_tycon env tomatch in
-  let typ = body_of_type j.uj_type in
-  let t = match cstropt with
-      | Some (cloc,(cstr,_ as c)) ->
-	  (let tyi = inductive_of_constructor c in
-	   try 
-	     let indtyp = inh_coerce_to_ind isevars env typ tyi in
-	     IsInd (typ,find_rectype env (evars_of isevars) typ)
-	   with NotCoercible ->
-	     (* 2 cases : Not the right inductive or not an inductive at all *)
-	     try
-	       IsInd (typ,find_rectype env (evars_of isevars) typ)
-               (* will try to coerce later in check_and_adjust_constructor.. *)
-	     with Induc ->
-	       error_case_not_inductive_loc
-		 (loc_of_rawconstr tomatch) env (evars_of isevars) j)
-      | None -> 
-	  try IsInd (typ,find_rectype env (evars_of isevars) typ)
-	  with Induc -> NotInd (None,typ)
-  in (j.uj_val,t)
-
-let coerce_to_indtype typing_fun isevars env matx tomatchl =
-  let pats = List.map (fun r ->  r.patterns) matx in
-  let matx' = match matrix_transpose pats with
-    | [] -> List.map (fun _ -> None) tomatchl (* no patterns at all *)
-    | m -> List.map find_row_ind m in
-  List.map2 (coerce_row typing_fun isevars env) matx' tomatchl
 
 (***********************************************************************)
 (* preparing the elimination predicate if any                          *)
