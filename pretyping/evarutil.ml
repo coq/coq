@@ -125,6 +125,7 @@ let do_restrict_hyps sigma c =
  * operations on the evar constraints *
  *------------------------------------*)
 
+type evar_constraint = conv_pb * constr * constr
 type 'a evar_defs = 'a Evd.evar_map ref
 
 (* ise_try [f1;...;fn] tries fi() for i=1..n, restoring the evar constraints
@@ -168,10 +169,6 @@ let restrict_hyps isevars c =
     rc
   end else 
     c
-
-let has_ise sigma t = 
-  try let _ = whd_ise sigma t in false
-  with Uninstantiated_evar _ -> true
 
 (* We try to instanciate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times.
@@ -247,8 +244,7 @@ let keep_rels_and_vars c = match kind_of_term c with
   | IsVar _ | IsRel _ -> c
   | _ -> mkImplicit   (* Mettre mkMeta ?? *)
 
-let evar_define isevars lhs rhs =
-  let (ev,argsv) = destEvar lhs in
+let evar_define isevars (ev,argsv) rhs =
   if occur_evar ev rhs then error_occur_check CCI empty_env ev rhs;
   let args = List.map keep_rels_and_vars (Array.to_list argsv) in 
   let evd = ise_map isevars ev in
@@ -258,23 +254,108 @@ let evar_define isevars lhs rhs =
   ise_define isevars ev body;
   [ev]
 
+(*-------------------*)
+(* Auxiliary functions for the conversion algorithms modulo evars
+ *)
 
+let has_undefined_isevars isevars t = 
+  try let _ = whd_ise !isevars t in false
+  with Uninstantiated_evar _ -> true
+
+let head_is_evar isevars = 
+  let rec hrec k = match kind_of_term k with
+    | IsEvar (n,_)   -> not (Evd.is_defined !isevars n)
+    | IsApp (f,_) -> hrec f
+    | IsCast (c,_) -> hrec c
+    | _ -> false
+  in 
+  hrec 
+
+let rec is_eliminator c = match kind_of_term c with
+  | IsApp _    -> true
+  | IsMutCase _ -> true
+  | IsCast (c,_) -> is_eliminator c
+  | _ -> false
+
+let head_is_embedded_evar isevars c =
+  (head_is_evar isevars c) & (is_eliminator c)
+
+let head_evar = 
+  let rec hrec c = match kind_of_term c with
+    | IsEvar (ev,_)       -> ev
+    | IsMutCase (_,_,c,_) -> hrec c
+    | IsApp (c,_)        -> hrec c
+    | IsCast (c,_)        -> hrec c
+    | _                   -> failwith "headconstant"
+  in 
+  hrec 
+
+(* This code (i.e. solve_pb, etc.) takes a unification
+ * problem, and tries to solve it. If it solves it, then it removes
+ * all the conversion problems, and re-runs conversion on each one, in
+ * the hopes that the new solution will aid in solving them.
+ *
+ * The kinds of problems it knows how to solve are those in which
+ * the usable arguments of an existential var are all themselves
+ * universal variables.
+ * The solution to this problem is to do renaming for the Var's,
+ * to make them match up with the Var's which are found in the
+ * hyps of the existential, to do a "pop" for each Rel which is
+ * not an argument of the existential, and a subst1 for each which
+ * is, again, with the corresponding variable. This is done by
+ * Tradevar.evar_define
+ *
+ * Thus, we take the arguments of the existential which we are about
+ * to assign, and zip them with the identifiers in the hypotheses.
+ * Then, we process all the Var's in the arguments, and sort the
+ * Rel's into ascending order.  Then, we just march up, doing
+ * subst1's and pop's.
+ *
+ * NOTE: We can do this more efficiently for the relative arguments,
+ * by building a long substituend by hand, but this is a pain in the
+ * ass.
+ *)
+
+let conversion_problems = ref ([] : evar_constraint list)
+
+let reset_problems () = conversion_problems := []
+
+let add_conv_pb pb = (conversion_problems := pb::!conversion_problems)
+
+let status_changed lev (pbty,t1,t2) =
+  try 
+    List.mem (head_evar t1) lev or List.mem (head_evar t2) lev
+  with Failure _ ->
+    try List.mem (head_evar t2) lev with Failure _ -> false
+
+let get_changed_pb lev =
+  let (pbs,pbs1) = 
+    List.fold_left
+      (fun (pbs,pbs1) pb ->
+    	 if status_changed lev pb then 
+	   (pb::pbs,pbs1)
+         else 
+	   (pbs,pb::pbs1))
+      ([],[])
+      !conversion_problems 
+  in
+  conversion_problems := pbs1;
+  pbs
 
 (* Solve pbs (?i x1..xn) = (?i y1..yn) which arises often in fixpoint
  * definitions. We try to unify the xi with the yi pairwise. The pairs
  * that don't unify are discarded (i.e. ?i is redefined so that it does not
  * depend on these args). *)
 
-let solve_refl conv_algo isevars c1 c2 =
-  let (ev,argsv1) = destEvar c1
-  and (_,argsv2) = destEvar c2 in
+let solve_refl conv_algo env isevars ev argsv1 argsv2 =
+  if argsv1 = argsv2 then [] else
   let evd = Evd.map !isevars ev in
   let env = evd.evar_env in
   let hyps = named_context env in
   let (_,rsign) = 
     array_fold_left2
       (fun (sgn,rsgn) a1 a2 ->
-	 if conv_algo a1 a2 then 
+	 if conv_algo env isevars CONV a1 a2 then 
 	   (List.tl sgn, add_named_decl (List.hd sgn) rsgn)
 	 else 
 	   (List.tl  sgn, rsgn))
@@ -288,87 +369,32 @@ let solve_refl conv_algo isevars c1 c2 =
 	       evar_body = Evar_empty; evar_info = None } in
   isevars :=
     Evd.define (Evd.add !isevars newev info) ev (mkEvar (newev,nargs));
-  Some [ev]
+  [ev]
 
 
 (* Tries to solve problem t1 = t2.
- * Precondition: one of t1,t2 is an uninstanciated evar, possibly
- * applied to arguments.
+ * Precondition: t1 is an uninstanciated evar
  * Returns an optional list of evars that were instantiated, or None
  * if the problem couldn't be solved. *)
 
 (* Rq: uncomplete algorithm if pbty = CONV_X_LEQ ! *)
-let rec solve_simple_eqn conv_algo isevars ((pbty,t1,t2) as pb) =
-  let t1 = nf_ise1 !isevars t1 in
+let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
   let t2 = nf_ise1 !isevars t2 in
-  if eq_constr t1 t2 then 
-    Some []
-  else 
-    match (ise_undefined isevars t1, ise_undefined isevars t2) with
-      | (true,true) ->
-	  if num_of_evar t1 = num_of_evar t2 then 
-	    solve_refl conv_algo isevars t1 t2
-	  else if Array.length(snd (destEvar t1)) < 
-	          Array.length(snd (destEvar t2)) then 
-	    Some (evar_define isevars t2 t1)
-	  else 
-	    Some (evar_define isevars t1 t2)
-      | (true,false) -> Some (evar_define isevars t1 t2)
-      | (false,true) -> Some (evar_define isevars t2 t1)
-      | _ -> None
-
-(*-------------------*)
-(* Now several auxiliary functions for the conversion algorithms modulo
- * evars. used in trad and progmach
- *)
-
-
-let has_undefined_isevars isevars c =
-  let rec hasrec k = match splay_constr k with
-    | OpEvar ev, cl when ise_in_dom isevars ev ->
-	if ise_defined isevars k then 
-	  hasrec (existential_value !isevars (ev,cl))
+  let lsp = match kind_of_term t2 with
+    | IsEvar (n2,args2 as ev2) when not (Evd.is_defined !isevars n2) ->
+	if n1 = n2 then
+	  solve_refl conv_algo env isevars n1 args1 args2
 	else
-	  failwith "caught"
-    | _, cl -> Array.iter hasrec cl
-  in 
-  (try (hasrec c ; false) with Failure "caught" -> true)
+	  if Array.length args1 < Array.length args2 then 
+	    evar_define isevars ev2 (mkEvar ev1)
+	  else 
+	    evar_define isevars ev1 t2
+    | _ ->
+	evar_define isevars ev1 t2 in
+  let pbs = get_changed_pb lsp in
+  List.for_all (fun (pbty,t1,t2) -> conv_algo env isevars pbty t1 t2) pbs
 
-let head_is_exist isevars = 
-  let rec hrec k = match kind_of_term k with
-    | IsEvar _     -> ise_undefined isevars k
-    | IsApp (f,_) -> hrec f
-    | IsCast (c,_) -> hrec c
-    | _ -> false
-  in 
-  hrec 
-
-let rec is_eliminator c = match kind_of_term c with
-  | IsApp _    -> true
-  | IsMutCase _ -> true
-  | IsCast (c,_) -> is_eliminator c
-  | _ -> false
-
-let head_is_embedded_exist isevars c =
-  (head_is_exist isevars c) & (is_eliminator c)
-
-let head_evar = 
-  let rec hrec c = match kind_of_term c with
-    | IsEvar (ev,_)       -> ev
-    | IsMutCase (_,_,c,_) -> hrec c
-    | IsApp (c,_)        -> hrec c
-    | IsCast (c,_)        -> hrec c
-    | _                   -> failwith "headconstant"
-  in 
-  hrec 
-    
-let status_changed lev (pbty,t1,t2) =
-  try 
-    List.mem (head_evar t1) lev or List.mem (head_evar t2) lev
-  with Failure _ ->
-    try List.mem (head_evar t2) lev with Failure _ -> false
-
-(* Operations on value/type constraints used in trad and progmach *)
+(* Operations on value/type constraints *)
 
 type type_constraint = constr option
 type val_constraint = constr option

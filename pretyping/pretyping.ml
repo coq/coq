@@ -315,7 +315,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 		let pred = 
 		  Cases.pred_case_ml_onebranch env !isevars isrec indt
 		    (i,fj.uj_val,efjt) in
-		if has_ise !isevars pred then findtype (i+1)
+		if has_undefined_isevars isevars pred then findtype (i+1)
 		else 
 		  let pty = Retyping.get_type_of env !isevars pred in
 		  { uj_val = pred; 

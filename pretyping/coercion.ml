@@ -156,7 +156,7 @@ let inh_conv_coerce_to loc env isevars cj t =
    each arg$_i$, if necessary *)
 
 let inh_apply_rel_list apploc env isevars argjl funj tycon =
-  let rec apply_rec n acc typ = function
+  let rec apply_rec env n acc typ = function
     | [] -> 
 	let resj =
       	  { uj_val = applist (j_val funj, List.rev acc);
@@ -170,7 +170,7 @@ let inh_apply_rel_list apploc env isevars argjl funj tycon =
 
     | hj::restjl ->
       	match kind_of_term (whd_betadeltaiota env !isevars typ) with
-          | IsProd (_,c1,c2) ->
+          | IsProd (na,c1,c2) ->
               let hj' =
 		(try 
 		   inh_conv_coerce_to_fail env isevars c1 hj 
@@ -181,10 +181,11 @@ let inh_apply_rel_list apploc env isevars argjl funj tycon =
 		     (j_nf_ise env !isevars funj)
 		     (jl_nf_ise env !isevars argjl))
 	      in
-	      apply_rec (n+1) ((j_val hj')::acc) (subst1 hj'.uj_val c2) restjl
+	      apply_rec (push_rel_assum (na,c1) env)
+		(n+1) ((j_val hj')::acc) (subst1 hj'.uj_val c2) restjl
           | _ ->
               error_cant_apply_not_functional_loc apploc env
 	      	(j_nf_ise env !isevars funj) (jl_nf_ise env !isevars argjl)
   in 
-  apply_rec 1 [] funj.uj_type argjl
+  apply_rec env 1 [] funj.uj_type argjl
 
