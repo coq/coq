@@ -81,7 +81,7 @@ GEXTEND Gram
 	  <:ast< (LocateFile $f) >>
       | IDENT "Locate"; IDENT "Library"; id = identarg; "." ->
 	  <:ast< (LocateLibrary $id) >>
-      | IDENT "Locate"; id = identarg; "." ->
+      | IDENT "Locate"; id = Tactic.qualidarg; "." ->
 	  <:ast< (Locate $id) >>
 
        (* For compatibility (now turned into a table) *)
@@ -206,10 +206,12 @@ GEXTEND Gram
 
      | "Syntax"; univ = univ; el=LIST1 Prim.syntax_entry SEP ";"; "." ->
          <:ast< (SYNTAX ($VAR univ) (ASTLIST ($LIST el))) >>
+
+     (* Faudrait une version de qualidarg dans Prim pour respecter l'ordre *)
      | IDENT "Infix"; as_ = entry_prec; n = numarg; op = Prim.string;
-       p = identarg; "." -> <:ast< (INFIX (AST $as_) $n $op $p) >>
+       p = Tactic.qualidarg; "." -> <:ast< (INFIX (AST $as_) $n $op $p) >>
      | IDENT "Distfix"; as_ = entry_prec; n = numarg; s = Prim.string;
-       p = identarg; "." -> <:ast< (DISTFIX (AST $as_) $n $s $p) >>
+       p = Tactic.qualidarg; "." -> <:ast< (DISTFIX (AST $as_) $n $s $p) >>
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
   ] ]
@@ -237,7 +239,7 @@ GEXTEND Gram
   ;
   production_item:
     [[ s = STRING -> <:ast< ($STR $s) >>
-     | nt = non_terminal; po = OPT [ "("; p = Prim.ident; ")" -> p ] ->
+     | nt = non_terminal; po = OPT [ "("; p = Prim.metaident; ")" -> p ] ->
          match po with
            | Some p -> <:ast< (NT $nt $p) >>
            | _ -> <:ast< (NT $nt) >> ]]
