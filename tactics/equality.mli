@@ -31,8 +31,7 @@ val eq_pattern  :  marked_term
 val eqT_pattern : marked_term
 val idT_pattern : marked_term
 
-val find_eq_pattern : constr -> constr -> constr
-
+val find_eq_pattern : sorts -> sorts -> constr
 
 val general_rewrite_bindings : bool -> (constr * constr substitution) -> tactic
 val general_rewrite          : bool -> constr -> tactic
@@ -80,7 +79,7 @@ type elimination_types =
 
 
 (* necessary_elimination [sort_of_arity] [sort_of_goal] *)
-val necessary_elimination : constr -> constr -> elimination_types 
+val necessary_elimination : sorts -> sorts -> elimination_types 
 
 val discr        : identifier -> tactic
 val discrClause  : clause -> tactic

@@ -233,8 +233,9 @@ type elimination_types =
   | Set_SetorProp
   | Type_SetorProp 
 
-let necessary_elimination sort_arity  sort =
-  if (is_Type sort) then
+let necessary_elimination sort_arity sort =
+  let sort_arity = mkSort sort_arity in
+  if (isType sort) then
     if is_Set sort_arity then
       Set_Type
     else 
@@ -252,9 +253,9 @@ let necessary_elimination sort_arity  sort =
       else  errorlabstrm "necessary_elimination" 
         [< 'sTR "no primitive equality on proofs" >]
 
-let find_eq_pattern arity sort = 
+let find_eq_pattern aritysort sort = 
   let mt =
-    match necessary_elimination (hd_of_prod arity) sort with
+    match necessary_elimination aritysort sort with
       | Set_Type       ->  eq.eq
       | Type_Type      ->  idT.eq
       | Set_SetorProp  ->  eq.eq
@@ -403,36 +404,25 @@ let discriminable env sigma t1 t2 =
 
 let descend_then sigma env head dirn =
   let headj = unsafe_machine env sigma head in
-  let (construct,largs,nparams,arityind,mispec,
-       consnamev,case_fun,type_branch_fun) = 
-    (match whd_betadeltaiota_stack env sigma headj.uj_type [] with
-       | (DOPN(MutInd (x_0,x_1),cl) as ity,largs) ->
-	   let mispec = Global.lookup_mind_specif ((x_0,x_1),cl) in 
-    	   let nparams = mis_nparams mispec
-	   and consnamev = mis_consnames mispec
-	   and arity = mis_arity mispec in 
-	   (DOPN(MutConstruct((x_0,x_1),dirn),cl),largs,nparams,
-	    mis_arity mispec,mispec,consnamev,mkMutCase,
-	    type_case_branches env sigma)
-	   | _ -> assert false)
-  in
-  let (globargs,largs) = list_chop nparams largs in
+  let indspec =
+    try try_mutind_of env sigma headj.uj_type
+    with Not_found -> assert false in
+  let construct =
+    mkMutConstruct (ith_constructor_of_inductive indspec.mind dirn) in
+  let mispec = lookup_mind_specif indspec.mind env in
   let dirn_cty = 
     strong (fun _ _ -> whd_castapp) env sigma
-      (type_of env sigma (applist(construct,globargs))) in
+      (type_of env sigma (applist(construct,indspec.Inductive.params))) in
   let dirn_nlams = nb_prod dirn_cty in
   let (_,dirn_env) = add_prods_rel sigma (dirn_cty,env) in
   (dirn_nlams,
    dirn_env,
    (fun dirnval (dfltval,resty) ->
-      let nconstructors = Array.length consnamev in
-      let arity = 
-	hnf_prod_applist env sigma "discriminate" arityind globargs in
-      let p = lambda_ize (nb_prod arity) arity resty in
+      let aritysign,_ = get_arity env sigma indspec in
+      let p = lam_it (lift indspec.nrealargs resty) aritysign in
       let nb_prodP = nb_prod p in
-      let (_,bty,_) =
-	type_branch_fun (DOP2(Cast,headj.uj_type,headj.uj_kind))
-	  (type_of env sigma p) p head in
+      let bty,_ =
+	type_case_branches env sigma indspec (type_of env sigma p) p head in
       let build_branch i =
 	let result = if i = dirn then dirnval else dfltval in
 	let nlams = nb_prod bty.(i-1) in
@@ -442,8 +432,8 @@ let descend_then sigma env head dirn =
 	  lam_and_popl_named (nlams-nb_prodP) typstack result [] in
 	branchval 
       in
-      case_fun (make_default_case_info mispec) p head 
-	(List.map build_branch (interval 1 nconstructors))))
+      mkMutCase (make_default_case_info mispec) p head 
+	(List.map build_branch (interval 1 indspec.nconstr))))
   
 (* Now we need to construct the discriminator, given a discriminable
    position.  This boils down to:
@@ -458,75 +448,43 @@ let descend_then sigma env head dirn =
 
  *)
 
-let necessary_elimination arity sort =
-  let ty = hd_of_prod arity in
-  if is_Type sort then
-    if is_Set ty then
-      Set_Type
-    else
-      if is_Type ty then
-	Type_Type
-      else  
-	errorlabstrm "necessary_elimination" 
-          [< 'sTR "no primitive equality on proofs" >]  
-  else
-    if is_Set ty then
-      Set_SetorProp
-    else
-      if is_Type ty then
-	Type_SetorProp
-      else
-	errorlabstrm "necessary_elimination" 
-          [< 'sTR "no primitive equality on proofs" >]
-
 (* [construct_discriminator env dirn headval]
    constructs a case-split on [headval], with the [dirn]-th branch
    giving [True], and all the rest giving False. *)
 
-let construct_discriminator sigma env dirn c sort=
-  let t = type_of env sigma c in
-  let (largs,nparams,arityind,mispec,consnamev,case_fun,type_branch_fun) = 
-    (match whd_betadeltaiota_stack env sigma t [] with
-       | (DOPN(MutInd (x_0,x_1),cl) as ity,largs) ->
-    	   let mispec = Global.lookup_mind_specif ((x_0,x_1),cl) in 
-    	   let nparams = mis_nparams mispec
-	   and consnamev = mis_consnames mispec
-	   and arity = mis_arity mispec in 
-	   (largs,nparams,mis_arity mispec,mispec,consnamev,mkMutCase,
-	    type_case_branches env sigma)
-       | _ -> (* one can find Rel(k) in case of dependent constructors 
-                 like T := c : (A:Set)A->T and a discrimination 
-                 on (c bool true) = (c bool false)
-                 CP : changed assert false in a more informative error
-	       *)
-           errorlabstrm "Equality.construct_discriminator"
-	     [< 'sTR "Cannot discriminate on inductive constructors with 
-		     dependent types" >])
-  in
-  let nconstructors = Array.length consnamev in
-  let (globargs,largs) = list_chop nparams largs in
-  let arity =
-    hnf_prod_applist env sigma "construct_discriminator" arityind globargs in
+let construct_discriminator sigma env dirn c sort =
+  let indspec =
+    try try_mutind_of env sigma (type_of env sigma c)
+    with Not_found ->
+       (* one can find Rel(k) in case of dependent constructors 
+          like T := c : (A:Set)A->T and a discrimination 
+          on (c bool true) = (c bool false)
+          CP : changed assert false in a more informative error
+       *)
+      errorlabstrm "Equality.construct_discriminator"
+	[< 'sTR "Cannot discriminate on inductive constructors with 
+		 dependent types" >] in
+  let mispec = lookup_mind_specif indspec.mind env in
+  let arsign,arsort = get_arity env sigma indspec in
   let (true_0,false_0,sort_0) = 
-    match necessary_elimination (hd_of_prod arity) sort with
+    match necessary_elimination arsort (destSort sort) with
       | Type_Type ->
 	  get_pat pat_UnitT, get_pat pat_EmptyT,
 	  (DOP0(Sort (Type(dummy_univ))))
       | _ ->
 	  get_pat pat_True, get_pat pat_False, (DOP0(Sort (Prop Null))) 
   in
-  let eq = find_eq_pattern arity sort in
-  let p = lambda_ize (nb_prod arity) arity sort_0 in
-  let (_,bty,_) = type_branch_fun (DOP2(Cast,t,type_of env sigma t)) 
-                    (type_of env sigma p) p c in
+  let eq = find_eq_pattern arsort (destSort sort) in
+  let p = lam_it sort_0 arsign in
+  let bty,_ = type_case_branches env sigma indspec (type_of env sigma p) p c in
   let build_branch i =
     let nlams = nb_prod bty.(i-1) in
     let endpt = if i = dirn then true_0 else false_0 in
     lambda_ize nlams bty.(i-1) endpt 
   in
   let build_match () =
-    case_fun (make_default_case_info mispec) p c 
-      (List.map build_branch (interval 1 nconstructors)) 
+    mkMutCase (make_default_case_info mispec) p c 
+      (List.map build_branch (interval 1 indspec.nconstr)) 
   in
   build_match()
     
@@ -534,13 +492,14 @@ let rec build_discriminator sigma env dirn c sort = function
   | [] -> construct_discriminator sigma env dirn c sort
   | (MutConstruct(sp,cnum),argnum)::l ->
       let cty = type_of env sigma c in
-      let (ity,_) = find_mrectype env sigma cty in
-      let arity = Global.mind_arity ity in 
-      let nparams = Global.mind_nparams ity in
+      let indspec =
+	try try_mutind_of env sigma cty with Not_found -> assert false in
+      let _,arsort = get_arity env sigma indspec in
+      let nparams = indspec.Inductive.nparams in
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
       let newc = Rel(cnum_nlams-(argnum-nparams)) in
       let subval = build_discriminator sigma cnum_env dirn newc sort l  in
-      (match necessary_elimination (hd_of_prod arity) sort with
+      (match necessary_elimination arsort (destSort sort) with
          | Type_Type ->
 	     kont subval (get_pat pat_EmptyT,DOP0(Sort(Type(dummy_univ))))
 	 | _ -> kont subval (get_pat pat_False,DOP0(Sort(Prop Null))))
@@ -586,7 +545,7 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
   let (indt,_) = find_mrectype env (project gls) t in 
   let arity = Global.mind_arity indt in
   let sort = pf_type_of gls (pf_concl gls) in 
-  match necessary_elimination (hd_of_prod arity) sort with
+  match necessary_elimination (destSort(hd_of_prod arity)) (destSort sort) with
     | Type_Type  ->
  	let rect = match lbeq.rect with Some x -> x | _ -> assert false in
 	let eq_elim     = get_pat rect in
@@ -606,24 +565,20 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
         (applist (eq_elim, [t;t1;mkNamedLambda e t discriminator;i;t2]),
  	 absurd_term)
 
+exception NotDiscriminable
+
 let discr id gls =
   let eqn = (pf_whd_betadeltaiota gls (clause_type (Some id) gls)) in
   let sort = pf_type_of gls (pf_concl gls) in 
   let (lbeq,(t,t1,t2)) =
-    try 
-      find_eq_data_decompose eqn
-    with e when catchable_exception e -> 
-      errorlabstrm  "Discriminate"
-        [<'sTR (string_of_id id); 'sTR" Not a discriminable equality">] 
+    try find_eq_data_decompose eqn
+    with e when catchable_exception e -> raise NotDiscriminable
   in
   let tj = pf_execute gls t in
   let sigma = project gls in
   let env = pf_env gls in
   (match find_positions env sigma t1 t2 with
-     | Inr _ -> 
-	 errorlabstrm "Discr"
-	   [< 'sTR (string_of_id id); 'sTR" Not a discriminable equality" >]
-	   
+     | Inr _ -> raise NotDiscriminable
      | Inl(cpath,MutConstruct(_,dirn),_) ->
 	 let e = pf_get_new_id (id_of_string "ee") gls in
 	 let e_env =
@@ -651,21 +606,33 @@ let insatisfied_prec_message cls =
     |  Some id -> [< 'sTR(string_of_id id); 'sPC;
 		     'sTR"does not satify the expected preconditions" >]
 
+let discrOnLastHyp gls =
+  try onLastHyp (compose discr out_some) gls
+  with NotDiscriminable ->
+    errorlabstrm "DiscrConcl" [< 'sTR" Not a discriminable equality" >]
+
 let discrClause cls gls =
   match cls with
     | None ->
     	if somatches (pf_concl gls) not_pattern then
-          (tclTHEN (tclTHEN hnf_in_concl intro)
-             (onLastHyp (compose discr out_some))) gls
+          (tclTHEN (tclTHEN hnf_in_concl intro) discrOnLastHyp) gls
     	else if somatches (pf_concl gls) imp_False_pattern then
-	  (tclTHEN intro (onLastHyp (compose discr out_some))) gls
+	  (tclTHEN intro discrOnLastHyp) gls
 	else 
 	  errorlabstrm "DiscrClause" (insatisfied_prec_message cls)
     | Some id ->
 	try (discr id gls)
-      	with Not_found -> errorlabstrm "DiscrClause" (not_found_message  id)
+      	with
+	  | Not_found -> errorlabstrm "DiscrClause" (not_found_message id)
+	  | NotDiscriminable ->
+	      errorlabstrm "DiscrHyp"
+		[< 'sTR(string_of_id id);'sTR" Not a discriminable equality" >]
 
-let discrEverywhere = Tacticals.tryAllClauses discrClause
+let discrEverywhere = 
+  tclORELSE
+    (Tacticals.tryAllClauses discrClause)
+    (errorlabstrm "DiscrEverywhere" [< 'sTR" No discriminable equalities" >])
+
 let discrConcl gls  = discrClause None gls
 let discrHyp id gls = discrClause (Some id) gls
 
