@@ -805,11 +805,28 @@ Qed.
 
 \section{Notations}
 
+\Question{How can I define a notation for square ?}
+
+You can use for instance :
+\begin{verbatim}
+Notation "x ^2" := (Rmult x x) (at level 20).
+\end{verbatim}
+Note that you can not use :
+\begin{verbatim}
+Notation "x ²" := (Rmult x x) (at level 20).
+\end{verbatim}
+because ``²'' is an iso-latin character. If you really want this kind of notation you should use UTF-8.
+
+
+
 \section{Modules}
+
 
 \section{Tactics in ml}
 
+\Question{Can you show an example of a tactic writen in OCaml ?}
 
+You have some examples of tactics written in Ocaml in the ``contrib'' directory of \Coq sources. 
 
 %%%%%%%
 \section{\Ltac}
