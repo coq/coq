@@ -525,6 +525,106 @@ let default_action_parser =
    translated in camlp4 into "constr" without level) or to another level
    (to be translated into "constr LEVEL n") *)
 
+let assoc_level = function
+  | Some Gramext.LeftA when !Options.v7 -> "L"
+  | _ -> ""
+
+let constr_level = function
+  | n,assoc -> (string_of_int n)^(assoc_level assoc)
+
+let constr_level2 = function
+  | n,assoc -> (string_of_int n)^(assoc_level (Some assoc))
+
+let default_levels_v7 =
+  [10,Gramext.RightA;
+   9,Gramext.RightA;
+   8,Gramext.RightA;
+   1,Gramext.RightA;
+   0,Gramext.RightA]
+
+let default_levels_v8 =
+  [200,Gramext.RightA;
+   100,Gramext.RightA;
+   80,Gramext.RightA;
+   10,Gramext.LeftA;
+   9,Gramext.RightA;
+   1,Gramext.LeftA;
+   0,Gramext.RightA]
+
+let level_stack = 
+  ref [if !Options.v7 then default_levels_v7 else default_levels_v8]
+
+(* At a same level, LeftA takes precedence over RightA and NoneA *)
+(* In case, several associativity exists for a level, we make two levels, *)
+(* first LeftA, then RightA and NoneA together *)
+exception Found of Gramext.g_assoc
+
+open Ppextend
+
+let admissible_assoc = function
+  | Gramext.LeftA, Some (Gramext.RightA | Gramext.NonA) -> false
+  | Gramext.RightA, Some Gramext.LeftA -> false
+  | _ -> true
+
+let create_assoc = function
+  | None -> Gramext.RightA
+  | Some a -> a
+
+let error_level_assoc p current expected =
+  let pr_assoc = function
+    | Gramext.LeftA -> str "left"
+    | Gramext.RightA -> str "right" 
+    | Gramext.NonA -> str "non" in
+  errorlabstrm ""
+    (str "Level " ++ int p ++ str " is already declared " ++
+     pr_assoc current ++ str " associative while it is now expected to be " ++
+     pr_assoc expected ++ str " associative")
+
+let find_position other assoc lev =
+  let default =
+    if !Options.v7 then (10,Gramext.RightA) else (200,Gramext.RightA) in
+  let current = List.hd !level_stack in 
+  match lev with
+  | None ->
+      level_stack := current :: !level_stack;
+      None, (if other then assoc else None), None
+  | Some n ->
+      if !Options.v7 & n = 8 & assoc = Some Gramext.LeftA then 
+	error "Left associativity not allowed at level 8";
+      let after = ref default in
+      let rec add_level q = function
+        | (p,_ as pa)::l when p > n -> pa :: add_level pa l
+        | (p,a as pa)::l as l' when p = n ->
+	    if admissible_assoc (a,assoc) then raise (Found a);
+	    (* No duplication of levels in v8 *)
+	    if not !Options.v7 then error_level_assoc p a (out_some assoc);
+	    (* Maybe this was (p,Left) and p occurs a second time *)
+	    if a = Gramext.LeftA then
+	      match l with
+		| (p,a)::_ as l' when p = n -> raise (Found a)
+		| _ -> after := pa; pa::(n,create_assoc assoc)::l
+	    else
+	      (* This was not (p,LeftA) hence assoc is RightA *)
+	      (after := q; (n,create_assoc assoc)::l')
+	| l ->
+	    after := q; (n,create_assoc assoc)::l
+      in
+      try
+	(* Create the entry *)
+        let current = List.hd !level_stack in
+        level_stack := add_level default current :: !level_stack;
+	let assoc = create_assoc assoc in
+        Some (Gramext.After (constr_level2 !after)),
+	Some assoc, Some (constr_level2 (n,assoc))
+      with
+          Found a ->
+            level_stack := current :: !level_stack;
+	    (* Just inherit the existing associativity and name (None) *)
+	    Some (Gramext.Level (constr_level2 (n,a))), None, None
+
+let remove_levels n =
+  level_stack := list_skipn n !level_stack
+
 (* Camlp4 levels do not treat NonA: use RightA with a NEXT on the left *)
 let camlp4_assoc = function
   | Some Gramext.NonA | Some Gramext.RightA -> Gramext.RightA 
@@ -636,18 +736,15 @@ let get_constr_production_entry ass from en =
 *)
     | _ -> compute_entry false (adjust_level ass from) en
 
-let assoc_level = function
-  | Some Gramext.LeftA -> "L"
-  | _ -> ""
-
-let constr_level = function
-  | n,assoc -> (string_of_int n)^(assoc_level assoc)
-
 let constr_prod_level assoc cur lev =
-  if cur then constr_level (lev,assoc) else
-  match lev with
-  | 4 when !Options.v7 -> "4L"
-  | n -> string_of_int n
+  if !Options.v7 then
+    if cur then constr_level (lev,assoc) else
+      match lev with
+	| 4 when !Options.v7 -> "4L"
+	| n -> string_of_int n
+  else
+    (* No duplication L/R of levels in v8 *)
+    constr_level (lev,assoc)
 
 let is_self from e =
   match from, e with

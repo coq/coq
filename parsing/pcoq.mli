@@ -177,3 +177,11 @@ module Vernac_ :
   end
 
 val reset_all_grammars : unit -> unit
+
+(* Registering/resetting the level of an entry *)
+
+val find_position : 
+  bool -> Gramext.g_assoc option -> int option ->
+    Gramext.position option * Gramext.g_assoc option * string option
+
+val remove_levels : int -> unit 

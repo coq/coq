@@ -177,11 +177,11 @@ GEXTEND Gram
     | "80" RIGHTA
       [ c1 = operconstr; "->"; c2 = binder_constr -> CArrow(loc,c1,c2)
       | c1 = operconstr; "->"; c2 = operconstr    -> CArrow(loc,c1,c2) ]
-    | "10L" LEFTA
+    | "10" LEFTA
       [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(None,f),args)
       | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args) ]
     | "9" [ ]
-    | "1L" LEFTA
+    | "1" LEFTA
       [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
 	CApp(loc,(Some (List.length args+1),CRef f),args@[c,None])
       | c=operconstr; ".("; "@"; f=global;
