@@ -211,9 +211,14 @@ let state_preserving = [
   "Print Module Type";
   "Print Modules";
   "Print Proof";
+  "Print Scope";
+  "Print Scopes.";
   "Print Section";
+  
   "Print Table Printing If";
   "Print Table Printing Let";
+
+  "Print Visibility";
 
   "Pwd.";
 
