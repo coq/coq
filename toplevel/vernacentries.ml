@@ -1445,7 +1445,7 @@ let _ =
   add "INFIX"
     (function
        | [VARG_AST assoc; VARG_NUMBER n; VARG_STRING inf; VARG_QUALID pref] ->
-	   let ref = Termast.ast_of_qualid pref in
+	   let ref = Termast.ast_of_ref (locate_qualid dummy_loc pref) in
            (fun () ->
 	      Metasyntax.add_infix (Extend.gram_assoc assoc) n inf ref)
        | _ -> bad_vernac_args "INFIX")
@@ -1454,7 +1454,7 @@ let _ =
   add "DISTFIX"
     (function
        | [VARG_AST assoc; VARG_NUMBER n; VARG_STRING s; VARG_QUALID pref] ->
-	   let ref = Termast.ast_of_qualid pref in
+	   let ref = Termast.ast_of_ref (locate_qualid dummy_loc pref) in
            (fun () ->
               Metasyntax.add_distfix (Extend.gram_assoc assoc) n s ref)
        | _ -> bad_vernac_args "DISTFIX")
