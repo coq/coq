@@ -103,7 +103,8 @@ let dotted_location (b,e) =
   else 
     (String.make (e-b-1) '.', " ")
 
-let print_highlight_location ib (bp,ep) =
+let print_highlight_location ib loc =
+  let (bp,ep) = unloc loc in
   let bp = bp - ib.start 
   and ep = ep - ib.start in
   let highlight_lines =
@@ -124,7 +125,7 @@ let print_highlight_location ib (bp,ep) =
                       str sn ++ str dn) in 
 	  (l1 ++ li ++ ln)
   in 
-  (str"Toplevel input, characters " ++ Cerrors.print_loc (bp,ep) ++ fnl () ++
+  (str"Toplevel input, characters " ++ Cerrors.print_loc loc ++ fnl () ++
      highlight_lines ++ fnl ())
 
 (* Functions to report located errors in a file. *)
@@ -138,6 +139,7 @@ let print_location_in_file s inlibrary fname (bp,ep) =
       (errstrm ++ str"Module " ++ str ("\""^fname^"\"") ++
        str" characters " ++ Cerrors.print_loc (bp,ep) ++ fnl ())
     else
+    let (bp,ep) = unloc (bp,ep) in
     let ic = open_in fname in
     let rec line_of_pos lin bol cnt =
       if cnt < bp then
@@ -151,7 +153,7 @@ let print_location_in_file s inlibrary fname (bp,ep) =
       close_in ic;
       (errstrm  ++ str"File " ++ str ("\""^fname^"\"") ++
          str", line " ++ int line ++
-         str", characters " ++ Cerrors.print_loc (bp-bol,ep-bol) ++ fnl ())
+         str", characters " ++ Cerrors.print_loc (make_loc (bp-bol,ep-bol)) ++ fnl ())
     with e -> (close_in ic; (errstrm ++ str", invalid location." ++ fnl ()))
 	
 let print_command_location ib dloc =
@@ -168,7 +170,8 @@ let valid_loc dloc (b,e) =
     | _ -> true
 	  
 let valid_buffer_loc ib dloc (b,e) =
-  valid_loc dloc (b,e) & b-ib.start >= 0 & e-ib.start < ib.len & b<=e 
+  valid_loc dloc (b,e) & 
+  let (b,e) = unloc (b,e) in b-ib.start >= 0 & e-ib.start < ib.len & b<=e 
 
 (*s The Coq prompt is the name of the focused proof, if any, and "Coq"
     otherwise. We trap all exceptions to prevent the error message printing

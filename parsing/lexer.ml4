@@ -147,7 +147,7 @@ let init () =
 let _ = init()
 
 (* Errors occuring while lexing (explained as "Lexer error: ...") *)
-let err loc str = Stdpp.raise_with_loc loc (Error str)
+let err loc str = Stdpp.raise_with_loc (Util.make_loc loc) (Error str)
 
 (* The string buffering machinery *)
 
@@ -483,7 +483,7 @@ let loct_func loct i =
     else if !loct.(i/tsz) = [| |] then None
     else !loct.(i/tsz).(i mod tsz)
   with
-    | Some loc -> loc
+    | Some loc -> Util.make_loc loc
     | _ -> locerr ()
 
 let loct_add loct i loc =
