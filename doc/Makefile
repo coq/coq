@@ -53,13 +53,13 @@ VERSION=POSITIONNEZ-CETTE-VARIABLE
 FTPDOCDIR=/net/pauillac/infosystems/ftp/coq/coq/$(VERSION)/doc
 WWWDOCDIR=/net/pauillac/infosystems/www/coq/doc
 
-FTPDOCS=Changes.dvi.gz Changes.ps.gz \
-        Reference-Manual-base.ps.gz Reference-Manual-base.dvi.gz \
+FTPDOCS=Reference-Manual-base.ps.gz Reference-Manual-base.dvi.gz \
         Reference-Manual-addendum.ps.gz Reference-Manual-addendum.dvi.gz\
         Reference-Manual-all.ps.gz Reference-Manual-all.dvi.gz\
         Library.dvi.gz Library.ps.gz\
         Tutorial.dvi.gz Tutorial.ps.gz\
-        README all-ps-docs.tar.gz
+        README all-ps-docs.tar.gz\
+#	Changes.dvi.gz Changes.ps.gz
 
 FTPHTMLDOCS=doc-html.tar.gz
 
@@ -77,13 +77,13 @@ coq-part: $(REFMANCOQTEXFILES) $(COQTEXFILES) demos-programs library/libdoc.tex
 
 latex-part: all-dvi
 
-all-dvi: Tutorial.v.dvi Reference-Manual.dvi Library.dvi Changes.v.dvi
+all-dvi: Tutorial.v.dvi Reference-Manual.dvi Library.dvi # Changes.v.dvi
 
-all-pdf: Tutorial.v.pdf Reference-Manual.pdf Library.pdf Changes.v.pdf
+all-pdf: Tutorial.v.pdf Reference-Manual.pdf Library.pdf # Changes.v.pdf
 
-all-ps: Tutorial.v.ps Reference-Manual.ps Library.ps Changes.v.ps
+all-ps: Tutorial.v.ps Reference-Manual.ps Library.ps # Changes.v.ps
 
-all-html: Tutorial.v.html Reference-Manual.html Library.html Changes.v.html
+all-html: Tutorial.v.html Reference-Manual.html Library.html # Changes.v.html
 
 
 # dvips et dviselect existent sur loupiac
@@ -99,12 +99,12 @@ compress-latex:
 	mv -f Tutorial.v.ps Tutorial.ps
 	mv -f Tutorial.v.dvi Tutorial.dvi
 	mv -f Reference-Manual.dvi Reference-Manual-all.dvi
-	mv -f Changes.v.ps Changes.ps
-	mv -f Changes.v.dvi Changes.dvi
+#	mv -f Changes.v.ps Changes.ps
+#	mv -f Changes.v.dvi Changes.dvi
 	- mv -f Tutorial.v.pdf Tutorial.pdf
-	- mv -f Changes.v.pdf Changes.pdf
+#	- mv -f Changes.v.pdf Changes.pdf
 	tar cf all-ps-docs.tar Reference-Manual-base.ps \
-	  Reference-Manual-addendum.ps Changes.ps Tutorial.ps Library.ps
+	  Reference-Manual-addendum.ps Tutorial.ps Library.ps # Changes.ps
 	gzip -f *.ps
 	gzip -f *.dvi
 	gzip -f *.pdf
@@ -125,13 +125,13 @@ doc-html.tar.gz: all-html
 	- $(MKDIR) coq-docs-html
 	rm -rf coq-docs-html/*
 	cp Tutorial.v.html coq-docs-html/tutorial.html
-	cp Changes.v.html coq-docs-html/changes.html
+#	cp Changes.v.html coq-docs-html/changes.html
 	cp Library.html coq-docs-html/library.html
 	cp Reference-Manual.html coq-docs-html 
 	(cd coq-docs-html;\
 	 htmlsplit -N -T "The Coq Proof Assistant Reference Manual"\
 	   ./Reference-Manual.html; rm ./Reference-Manual.html)
-#	cp cover.html coq-docs-html
+	cp cover.html coq-docs-html
 	tar cf doc-html.tar coq-docs-html
 	gzip -f doc-html.tar
 
@@ -140,7 +140,7 @@ html-www: all-html
 	- $(MKDIR) www
 	rm -rf www/*
 	cp Tutorial.v.html www/tutorial.html
-	cp Changes.v.html www/changes.html
+#	cp Changes.v.html www/changes.html
 	cp Library.html www/library.html
 	cp Reference-Manual.html www
 	(cd www;\
@@ -148,7 +148,7 @@ html-www: all-html
 	   -n ../icons/next.gif -p ../icons/prev.gif -r ../icons/root.gif\
 	   -s ../icons/sub.gif ./Reference-Manual.html;\
 	 rm ./Reference-Manual.html)
-#	cp cover.html www
+	cp cover.html www
 
 
 clean-refman:
@@ -173,7 +173,7 @@ clean-coq:
 clean: clean-coq clean-latex
 
 clean-html:
-	rm -f Tutorial.v.html Changes.v.html Reference-Manual.html
+	rm -f Tutorial.v.html Reference-Manual.html # Changes.v.html
 
 cleanall: clean clean-html
 
