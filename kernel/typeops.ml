@@ -8,11 +8,11 @@ open Univ
 open Generic
 open Term
 open Constant
-open Inductive
 open Sign
 open Environ
 open Reduction
-open Instantiate
+open Inductive
+
 open Type_errors
 
 let make_judge v tj =
@@ -91,7 +91,7 @@ let instantiate_arity mis =
   { body = instantiate_constr ids arity.body args;
     typ = arity.typ }
 *)
-let instantiate_arity = Instantiate.mis_typed_arity
+let instantiate_arity = mis_typed_arity
 
 let type_of_inductive env sigma i =
   let mis = lookup_mind_specif i env in
@@ -107,7 +107,7 @@ let instantiate_lc mis =
   let lc = mis.mis_mip.mind_lc in
   instantiate_constr (ids_of_sign hyps) lc (Array.to_list mis.mis_args)
 *)
-let instantiate_lc = Instantiate.mis_lc
+let instantiate_lc = mis_lc
 
 let type_of_constructor env sigma ((ind_sp,j),args as cstr) =
   let mind = inductive_of_constructor cstr in
@@ -151,19 +151,11 @@ let type_mconstruct env sigma i mind =
   let mis = lookup_mind_specif mind env in
   mis_type_mconstruct i mis
 
-let type_inst_construct env sigma i (mind,globargs) =
-  let mis = lookup_mind_specif mind env in
+let type_inst_construct i (IndFamily (mis,globargs)) =
   let tc = mis_type_mconstruct i mis in
-    hnf_prod_applist env sigma "Typing.type_construct" tc globargs
+  prod_applist tc globargs
 
-let type_of_existential env sigma c =
-  let (ev,args) = destEvar c in
-  let evi = Evd.map sigma ev in
-  let hyps = var_context evi.Evd.evar_env in
-  let id = id_of_string ("?" ^ string_of_int ev) in
-  (* TODO: check args *)
-  instantiate_constr (ids_of_sign hyps) evi.Evd.evar_concl (Array.to_list args)
-
+let type_of_existential env sigma c = Instantiate.existential_value sigma c
 
 (* Case. *)
 
@@ -172,23 +164,6 @@ let rec mysort_of_arity env sigma c =
     | DOP0(Sort( _)) as c' -> c'
     | DOP2(Prod,_,DLAM(_,c2)) -> mysort_of_arity env sigma c2
     | _ -> invalid_arg "mysort_of_arity"
-
-let make_arity_dep env sigma k = 
-  let rec mrec c m = match whd_betadeltaiota env sigma c with 
-    | DOP0(Sort _) -> mkArrow m k
-    | DOP2(Prod,b,DLAM(n,c_0)) ->
-        prod_name env (n,b,mrec c_0 (applist(lift 1 m,[Rel 1])))
-    | _ -> invalid_arg "make_arity_dep"
-  in 
-  mrec
-
-let make_arity_nodep env sigma k = 
-  let rec mrec c = match whd_betadeltaiota env sigma c with 
-    | DOP0(Sort _) -> k
-    | DOP2(Prod,b,DLAM(x,c_0)) -> DOP2(Prod,b,DLAM(x,mrec c_0))
-    | _ -> invalid_arg "make_arity_nodep"
-  in 
-  mrec
 
 let error_elim_expln env sigma kp ki =
   if is_info_sort env sigma kp && not (is_info_sort env sigma ki) then
@@ -201,91 +176,52 @@ let error_elim_expln env sigma kp ki =
 
 exception Arity of (constr * constr * string) option
 
-let is_correct_arity env sigma kelim (c,p) = 
-  let rec srec ind (pt,t) =
-    try 
-      (match whd_betadeltaiota env sigma pt, whd_betadeltaiota env sigma t with
-	 | DOP2(Prod,a1,DLAM(_,a2)), DOP2(Prod,a1',DLAM(_,a2')) ->
-             if is_conv env sigma a1 a1' then
-               srec (applist(lift 1 ind,[Rel 1])) (a2,a2') 
-             else 
-	       raise (Arity None)
-	 | DOP2(Prod,a1,DLAM(_,a2)), ki -> 
-             let k = whd_betadeltaiota env sigma a2 in 
-             let ksort = (match k with DOP0(Sort s) -> s 
-			    | _ -> raise (Arity None)) in
-             if is_conv env sigma a1 ind then
-               if List.exists (base_sort_cmp CONV ksort) kelim then
-		 (true,k)
-               else 
-		 raise (Arity (Some(k,ki,error_elim_expln env sigma k ki)))
-	     else 
-	       raise (Arity None)
-	 | k, DOP2(Prod,_,_) ->
-	     raise (Arity None)
-	 | k, ki -> 
-	     let ksort = (match k with DOP0(Sort s) -> s 
-                            | _ ->  raise (Arity None)) in
-             if List.exists (base_sort_cmp CONV ksort) kelim then 
-	       false,k
-             else 
-	       raise (Arity (Some(k,ki,error_elim_expln env sigma k ki))))
-    with Arity kinds ->
-      let listarity =
-	(List.map 
-	   (fun s -> make_arity_dep env sigma (DOP0(Sort s)) t ind) kelim)
-	@(List.map 
-	    (fun s -> make_arity_nodep env sigma (DOP0(Sort s)) t) kelim)
-      in 
-      error_elim_arity CCI env ind listarity c p pt kinds
-  in 
-  srec
+let is_correct_arity env sigma kelim (c,p) indf (pt,t) = 
+  let rec srec (pt,t) =
+    match whd_betadeltaiota env sigma pt, whd_betadeltaiota env sigma t with
+      | DOP2(Prod,a1,DLAM(_,a2)), DOP2(Prod,a1',DLAM(_,a2')) ->
+          if is_conv env sigma a1 a1' then
+            srec (a2,a2') 
+          else 
+	    raise (Arity None)
+      | DOP2(Prod,a1,DLAM(_,a2)), ki -> 
+          let k = whd_betadeltaiota env sigma a2 in 
+          let ksort = (match k with DOP0(Sort s) -> s 
+			 | _ -> raise (Arity None)) in
+	  let ind = build_dependent_inductive indf in
+          if is_conv env sigma a1 ind then
+            if List.exists (base_sort_cmp CONV ksort) kelim then
+	      (true,k)
+            else 
+	      raise (Arity (Some(k,ki,error_elim_expln env sigma k ki)))
+	  else 
+	    raise (Arity None)
+      | k, DOP2(Prod,_,_) ->
+	  raise (Arity None)
+      | k, ki -> 
+	  let ksort = (match k with DOP0(Sort s) -> s 
+                         | _ ->  raise (Arity None)) in
+          if List.exists (base_sort_cmp CONV ksort) kelim then 
+	    false,k
+          else 
+	    raise (Arity (Some(k,ki,error_elim_expln env sigma k ki)))
+in 
+  try srec (pt,t)
+  with Arity kinds ->
+    let listarity =
+      (List.map (make_arity env sigma true indf) kelim)
+      @(List.map (make_arity env sigma false indf) kelim)
+    in 
+    let ind = mis_inductive (fst (dest_ind_family indf)) in
+    error_elim_arity CCI env ind listarity c p pt kinds
 
-let find_case_dep_nparams env sigma (c,p) (mind,largs) typP =
-  let mis = lookup_mind_specif mind env in
-  let nparams = mis_nparams mis
-  and kelim = mis_kelim mis
-  and t = body_of_type (instantiate_arity mis) in 
-  let (globargs,la) = list_chop nparams largs in
-  let glob_t = hnf_prod_applist env sigma "find_elim_boolean" t globargs in
-  let arity = applist(mkMutInd mind,globargs) in
-  let (dep,_) = is_correct_arity env sigma kelim (c,p) arity (typP,glob_t) in
+
+let find_case_dep_nparams env sigma (c,p) (IndFamily (mis,_) as indf) typP =
+  let kelim = mis_kelim mis in
+  let arsign,s = get_arity env sigma indf in
+  let glob_t = prod_it (mkSort s) arsign in
+  let (dep,_) = is_correct_arity env sigma kelim (c,p) indf (typP,glob_t) in
   dep
-
-let type_one_branch_dep env sigma (nparams,globargs,p) co t = 
-  let rec typrec n c =
-    match whd_betadeltaiota env sigma c with
-      | DOP2(Prod,a1,DLAM(x,a2)) -> prod_name env (x,a1,typrec (n+1) a2)
-      | x -> let lAV = destAppL (ensure_appl x) in
-             let (_,vargs) = array_chop (nparams+1) lAV in
-             applist 
-               (appvect ((lift n p),vargs),
-		[applist(co,((List.map (lift n) globargs)@(rel_list 0 n)))])
-  in 
-  typrec 0 (hnf_prod_applist env sigma "type_case" t globargs)
-
-let type_one_branch_nodep env sigma (nparams,globargs,p) t = 
-  let rec typrec n c =
-    match whd_betadeltaiota env sigma c with 
-      | DOP2(Prod,a1,DLAM(x,a2)) -> DOP2(Prod,a1,DLAM(x,typrec (n+1) a2))
-      | x -> let lAV = destAppL(ensure_appl x) in
-             let (_,vargs) = array_chop (nparams+1) lAV in
-             appvect (lift n p,vargs)
-  in 
-  typrec 0 (hnf_prod_applist env sigma "type_case" t globargs)
-
-(* [p] is the predicate and [cs] a constructor summary *)
-let mytype_one_branch dep env p cs =
-  if dep then
-    let n = cs.cs_nargs in
-    let ci =
-      applist
-	(mkMutConstruct cs.cs_cstr,
-	 (List.map (lift n) cs.cs_params)@(rel_list 0 n)) in
-    it_prod_name env (applist (appvect (lift n p,cs.cs_concl_realargs), [ci]))
-      cs.cs_args
-  else
-    prod_it (appvect (lift cs.cs_nargs p,cs.cs_concl_realargs)) cs.cs_args
 
 (* type_case_branches type un <p>Case c of ... end 
    ct = type de c, si inductif il a la forme APP(mI,largs), sinon raise Induc
@@ -294,21 +230,17 @@ let mytype_one_branch dep env p cs =
    attendus dans les branches du Case; lr est le type attendu du resultat
  *)
 
-let type_case_branches env sigma indspec pt p c =
-  let dep =
-    find_case_dep_nparams env sigma (c,p)
-      (indspec.mind,indspec.params@indspec.realargs) pt in
-  let constructs = get_constructors env sigma indspec in
-  let lc = Array.map (mytype_one_branch dep env p) constructs in
-  let la = indspec.realargs in
+let type_case_branches env sigma (IndType (indf,realargs)) pt p c =
+  let dep = find_case_dep_nparams env sigma (c,p) indf pt in
+  let constructs = get_constructors indf in
+  let lc = Array.map (build_branch_type env dep p) constructs in
   if dep then
-    (lc, beta_applist (p,(la@[c])))
+    (lc, beta_applist (p,(realargs@[c])))
   else 
-    (lc, beta_applist (p,la))
+    (lc, beta_applist (p,realargs))
 
 let check_branches_message env sigma (c,ct) (explft,lft) = 
-  let n = Array.length explft 
-  and expn = Array.length lft in
+  let expn = Array.length explft and n = Array.length lft in
   if n<>expn then error_number_branches CCI env c ct expn;
   for i = 0 to n-1 do
     if not (is_conv_leq env sigma lft.(i) (explft.(i))) then

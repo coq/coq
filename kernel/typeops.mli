@@ -41,7 +41,7 @@ val type_of_case : env -> 'a evar_map -> case_info
     -> unsafe_judgment array -> unsafe_judgment
 
 val type_case_branches :
-  env -> 'a evar_map -> Inductive.inductive_summary -> constr -> constr
+  env -> 'a evar_map -> Inductive.inductive_type -> constr -> constr
     -> constr -> constr array * constr 
 
 val judge_of_prop_contents : contents -> unsafe_judgment
@@ -74,25 +74,13 @@ val control_only_guard : env -> 'a evar_map -> constr -> unit
 val type_fixpoint : env -> 'a evar_map -> name list -> typed_type array 
     -> unsafe_judgment array -> constraints
 
-val type_one_branch_dep : env -> 'a evar_map -> 
-  int * constr list * constr -> constr -> constr -> constr 
-
-val type_one_branch_nodep : env -> 'a evar_map -> 
-  int * constr list * constr -> constr -> constr 
-
-val make_arity_dep : 
-  env -> 'a evar_map -> constr -> constr -> constr -> constr 
-
-val make_arity_nodep : 
-  env -> 'a evar_map -> constr -> constr -> constr 
+open Inductive
 
 val find_case_dep_nparams :
-  env -> 'a evar_map -> constr * constr ->
-    inductive * constr list -> constr -> bool
+  env -> 'a evar_map -> constr * constr -> inductive_family -> constr -> bool
 
-(* The constr list is the global args list *)
-val type_inst_construct :
-  env -> 'a evar_map -> int -> inductive * constr list -> constr 
+(* Returns the type of the [i]$^{th}$ constructor of the inductive family *)
+val type_inst_construct : int -> inductive_family -> constr 
 
 val hyps_inclusion : env -> 'a evar_map -> var_context -> var_context -> bool
 

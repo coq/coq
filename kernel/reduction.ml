@@ -9,7 +9,6 @@ open Term
 open Univ
 open Evd
 open Constant
-open Inductive
 open Environ
 open Instantiate
 open Closure
@@ -489,9 +488,6 @@ let contract_cofix = function
       let make_Fi j = DOPN(CoFix(j),bodyvect) in
       sAPPViList bodynum (array_last bodyvect) (list_tabulate make_Fi nbodies)
   | _ -> assert false
-
-let mind_nparams env i =
-  let mis = lookup_mind_specif i env in mis.mis_mib.mind_nparams
 
 let reduce_mind_case mia =
   match mia.mconstr with
@@ -983,31 +979,27 @@ let instance s c =
  * if this does not work, then we use the string S as part of our
  * error message. *)
 
-let hnf_prod_app env sigma s t n =
+let hnf_prod_app env sigma t n =
   match whd_betadeltaiota env sigma t with
     | DOP2(Prod,_,b) -> sAPP b n
-    | _ ->
-	errorlabstrm s [< 'sTR"Needed a product, but didn't find one in " ;
-			  'sTR s ; 'fNL >]
+    | _ -> anomaly "hnf_prod_app: Need a product"
 
-let hnf_prod_appvect env sigma s t nl = 
-  Array.fold_left (hnf_prod_app env sigma s) t nl
+let hnf_prod_appvect env sigma t nl = 
+  Array.fold_left (hnf_prod_app env sigma) t nl
 
-let hnf_prod_applist env sigma s t nl = 
-  List.fold_left (hnf_prod_app env sigma s) t nl
+let hnf_prod_applist env sigma t nl = 
+  List.fold_left (hnf_prod_app env sigma) t nl
 				    
-let hnf_lam_app env sigma s t n =
+let hnf_lam_app env sigma t n =
   match whd_betadeltaiota env sigma t with
     | DOP2(Lambda,_,b) -> sAPP b n
-    | _ ->
-	errorlabstrm s [< 'sTR"Needed a product, but didn't find one in " ;
-			  'sTR s ; 'fNL >]
+    | _ -> anomaly "hnf_lam_app: Need an abstraction"
 
-let hnf_lam_appvect env sigma s t nl = 
-  Array.fold_left (hnf_lam_app env sigma s) t nl
+let hnf_lam_appvect env sigma t nl = 
+  Array.fold_left (hnf_lam_app env sigma) t nl
 
-let hnf_lam_applist env sigma s t nl = 
-  List.fold_left (hnf_lam_app env sigma s) t nl
+let hnf_lam_applist env sigma t nl = 
+  List.fold_left (hnf_lam_app env sigma) t nl
 
 let splay_prod env sigma = 
   let rec decrec m c =
@@ -1145,63 +1137,6 @@ let whd_programs_stack env sigma =
   whrec    
 
 let whd_programs env sigma x = applist (whd_programs_stack env sigma x [])
-
-exception Induc
-
-let find_mrectype env sigma c =
-  let (t,l) = whd_betadeltaiota_stack env sigma c [] in
-  match t with
-    | DOPN(MutInd ind_sp,args) ->  ((ind_sp,args),l)
-    | _ -> raise Induc
-
-let find_minductype env sigma c =
-  let (t,l) = whd_betadeltaiota_stack env sigma c [] in
-  match t with
-    | DOPN(MutInd (sp,i),_)
-        when mind_type_finite (lookup_mind sp env) i -> (destMutInd t,l)
-    | _ -> raise Induc
-
-let find_mcoinductype env sigma c =
-  let (t,l) = whd_betadeltaiota_stack env sigma c [] in
-  match t with
-    | DOPN(MutInd (sp,i),_)
-        when not (mind_type_finite (lookup_mind sp env) i) -> (destMutInd t,l)
-    | _ -> raise Induc
-
-(* raise Induc if not an inductive type *)
-let find_inductive env sigma ty =
-  let (mind,largs) = find_minductype env sigma ty in
-  let mispec = lookup_mind_specif mind env in 
-  let nparams = mis_nparams mispec in
-  let (params,realargs) = list_chop nparams largs in
-  let nconstr = mis_nconstr mispec in
-  let hyps = mispec.mis_mib.mind_hyps in
-  { mind     = mind;
-    params   = params;
-    realargs = realargs;
-    nparams  = nparams;
-    nrealargs = List.length realargs;
-    nconstr  = nconstr }
-
-let get_constructors env sigma is =
-  let mispec = lookup_mind_specif is.mind env in
-  let specif = mis_lc mispec in
-  let make_ik i = DOPN (MutInd (mispec.mis_sp,i), mispec.mis_args) in
-  let types = sAPPVList specif (list_tabulate make_ik (mis_ntypes mispec)) in
-  let make_ck j =
-    let (args,ccl) = decompose_prod (prod_applist types.(j) is.params) in
-    let (_,vargs) = array_chop (is.nparams + 1) (destAppL (ensure_appl ccl)) in
-    { cs_cstr = ith_constructor_of_inductive is.mind (j+1);
-      cs_params = is.params;
-      cs_nargs = List.length args;
-      cs_args = args;
-      cs_concl_realargs = vargs } in
-  Array.init (mis_nconstr mispec) make_ck
-
-let get_arity env sigma is =
-  let mispec = lookup_mind_specif is.mind env in
-  let arity = mis_arity mispec in
-  splay_arity env sigma (prod_applist arity is.params)
 
 exception IsType
 

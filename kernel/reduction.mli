@@ -81,18 +81,13 @@ val whd_evar : 'a reduction_function
 
 val beta_applist : (constr * constr list) -> constr
 
-val hnf_prod_app : 
-  env -> 'a evar_map -> string -> constr -> constr -> constr
-val hnf_prod_appvect : 
-  env -> 'a evar_map -> string -> constr -> constr array -> constr
-val hnf_prod_applist : 
-  env -> 'a evar_map -> string -> constr -> constr list -> constr
-val hnf_lam_app : 
-  env -> 'a evar_map -> string -> constr -> constr -> constr
-val hnf_lam_appvect : 
-  env -> 'a evar_map -> string -> constr -> constr array -> constr
-val hnf_lam_applist : 
-  env -> 'a evar_map -> string -> constr -> constr list -> constr
+val hnf_prod_app     : env -> 'a evar_map -> constr -> constr -> constr
+val hnf_prod_appvect : env -> 'a evar_map -> constr -> constr array -> constr
+val hnf_prod_applist : env -> 'a evar_map -> constr -> constr list -> constr
+val hnf_lam_app      : env -> 'a evar_map -> constr -> constr -> constr
+val hnf_lam_appvect  : env -> 'a evar_map -> constr -> constr array -> constr
+val hnf_lam_applist  : env -> 'a evar_map -> constr -> constr list -> constr
+
 val splay_prod : env -> 'a evar_map -> constr -> (name * constr) list * constr
 val splay_arity : env -> 'a evar_map -> constr -> (name * constr) list * sorts
 val sort_of_arity : env -> constr -> sorts
@@ -201,25 +196,3 @@ val whd_ise1_metas : 'a evar_map -> constr -> constr
 val hnf : env -> 'a evar_map -> constr -> constr * constr list
 val apprec : 'a stack_reduction_function
 val red_product : 'a reduction_function
-
-(* [find_m*type env sigma c] coerce [c] to an recursive type (I args).
-   [find_mrectype], [find_minductype] and [find_mcoinductype]
-   respectively accepts any recursive type, only an inductive type and
-   only a coinductive type.
-   They raise [Induc] if not convertible to a recursive type. *)
-
-exception Induc
-val find_mrectype     : env -> 'a evar_map -> constr -> inductive * constr list
-val find_minductype   : env -> 'a evar_map -> constr -> inductive * constr list
-val find_mcoinductype : env -> 'a evar_map -> constr -> inductive * constr list
-
-(* [find_inductive env sigma t] raises [Induc] if [t] is not an inductive type*)
-(* The resulting summary is relative to the current env *)
-open Inductive
-val find_inductive : env -> 'a evar_map -> constr -> inductive_summary
-
-val get_constructors : env -> 'a evar_map -> inductive_summary
-      -> constructor_summary array
-val get_arity : env -> 'a evar_map -> inductive_summary ->
-      (name * constr) list * sorts
-
