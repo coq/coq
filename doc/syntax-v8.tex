@@ -338,8 +338,8 @@ Of these notations, only the dot notation for field acces is implemented.
 
 \begin{rules}
 \EXTNT{constr}
-       \NT{constr}~\TERM{.(}~\NT{constr}~\PLUS{\NT{appl-arg}}~\KWD{)} &10L~~ & \RNAME{proj}
-\nlsep \NT{constr}~\TERM{.(}~\KWD{@}~\NT{reference}~\STAR{\NT{constr}}~\KWD{)} &10L~~ & \RNAME{proj-expl}
+       \NT{constr}~\TERM{.(}~\NT{constr}~\PLUS{\NT{appl-arg}}~\KWD{)} &9L~~ & \RNAME{proj}
+\nlsep \NT{constr}~\TERM{.(}~\KWD{@}~\NT{reference}~\STAR{\NT{constr}}~\KWD{)} &9L~~ & \RNAME{proj-expl}
 \nlsep \KWD{\{}~\NT{rfield}~\STARGR{\KWD{;}~\NT{rfield}}~\KWD{\}} &0
     &\RNAME{constructor}
 \SEPDEF
@@ -435,7 +435,7 @@ depending whether the $\NT{reference}$ is a module or not.
 %%
 \nlsep \TERM{reflexivity}
 \nlsep \TERM{symmetry}
-\nlsep \TERM{transitivity}
+\nlsep \TERM{transitivity}~\NT{constr}
 %%
 \nlsep \NT{red-expr}~\NT{clause}
 \nlsep \TERM{change}~\NT{conversion}~\NT{clause}
@@ -684,7 +684,8 @@ $$
 \SEPDEF
 \DEFNT{subgoal-command}
        \NT{check-command}
-\nlsep \OPT{\TERM{By}}~\OPT{\TERM{!!}}~\NT{tactic}
+\nlsep %\OPT{\TERM{By}}~
+   \OPT{\TERM{!!}}~\NT{tactic}
 \end{rules}
 
 \subsection{Gallina and extensions}
@@ -700,7 +701,7 @@ $$
 \nlsep \TERM{CoFixpoint}~\NT{rec-definitions}
 \nlsep \TERM{Scheme}~\NT{scheme}~\STARGR{\KWD{with}~\NT{scheme}}
 %% Extension: record
-\nlsep \NT{record-tok}~\OPT{\TERM{$>$}}~\NT{ident}~\STAR{\NT{binder}}
+\nlsep \NT{record-tok}~\OPT{\TERM{$>$}}~\NT{ident}~\STAR{\NT{binder-let}}
        ~\KWD{:}~\NT{constr}~\KWD{:=}
        ~\OPT{\NT{ident}}~\KWD{\{}~\NT{field-list}~\KWD{\}}
 \end{rules}
@@ -735,7 +736,7 @@ $$
        \TERM{Eval}~\NT{red-expr}~\KWD{in}
 \SEPDEF
 \DEFNT{inductive-definition}
-       \OPT{\NT{string}}~\NT{ident}~\STAR{\NT{binder}}~\KWD{:}
+       \OPT{\NT{string}}~\NT{ident}~\STAR{\NT{binder-let}}~\KWD{:}
        ~\NT{constr}~\KWD{:=}
        ~\OPT{\TERMbar}~\OPT{\NT{constructor-list}}
 \SEPDEF

@@ -100,7 +100,7 @@ of the arguments in the resulting type can be written
      
   Local fixpoints are written
 
-    "Fix f (n m:nat) z (x : X) {struct m} : nat := ...
+    "fix f (n m:nat) z (x : X) {struct m} : nat := ...
      with ..."
 
     and "struct" tells which argument is structurally decreasing.
@@ -121,7 +121,7 @@ this, the following renaming are applied:
   "Destruct" -> "olddestruct"
 
   For tactics with occurrences, the occurrences now comes after and
-  repeated uses is separated by coma as in
+  repeated use is separated by comma as in
 
   "Pattern 1 3 c d 4 e" -> "pattern c 3 1, d, e 4"
   "Unfold 1 3 f 4 g" -> "unfold f 1 3, g 4"
@@ -129,15 +129,85 @@ this, the following renaming are applied:
 
 3) Tactic language
 
-  Definition are now introduced with keyword "Ltac" (instead of
+  Definitions are now introduced with keyword "Ltac" (instead of
 "Tactic"/"Meta" "Definition") and are implicitly recursive
 ("Recursive" is no longer used).
 
   The new rule for simple quotes is:
 
-  Quote any tactic in argument position and any construction in head position.
+  "Quote any tactic in argument position and any construction in head position"
 
 4) Vernacular language
+
+a) Assumptions
+
+  The syntax for commands is mainly unchanged. Declaration of
+assumptions is now done as follows
+
+  Variable m : t.
+  Variables m n p : t.
+  Variables (m n : t) (u v : s) (w : r).
+  
+b) Definitions
+
+  Definitions are done as follows
+
+  Definition f m n : t := ... .
+  Definition f m n := ... .
+  Definition f m n := ... : t.
+  Definition f (m n : u) : t := ... .
+  Definition f (m n : u) := ... : t.
+  Definition f (m n : u) := ... .
+  Definition f a b (p q : v) r s (m n : t) : t := ... .
+  Definition f a b (p q : v) r s (m n : t) := ... .
+  Definition f a b (p q : v) r s (m n : t) := ... : t.
+
+c) Fixpoints
+
+  Fixpoints are done this way
+  
+  Fixpoint f x (y : t) z a (b c : u) {struct z} : v := ... with ... .
+  Fixpoint f x : v := ... .
+  Fixpoint f (x : t) : v := ... .
+
+  It is possible to give a concrete notation to a fixpoint as follows
+
+  Fixpoint plus (n m:nat) {struct n} : nat as "n + m" :=
+    match n with
+    | O => m
+    | S p => S (p + m)
+    end.
+
+d) Inductive types
+
+  The syntax for inductive types is as follows
+
+  Inductive t (a b : u) (d : e) : v :=
+     c1 : w1 | c2 : w2 | ... .
+
+  Inductive t (a b : u) (d : e) : v :=
+     c1 : w1 | c2 : w2 | ... .
+
+  Inductive t (a b : u) (d : e) : v :=
+     c1 (x y : t) : w1 | c2 (z : r) : w2 | ... .
+
+  As seen in the last example, arguments of the constructors can be
+given before the colon. If the type itself is omitted (allowed only in
+case the inductive type has no real arguments), this yields an
+ML-style notation as follows
+
+  Inductive nat : Set := O | S (n:nat).
+  Inductive bool : Set := true | false.
+
+  It is even possible to define a syntax at the same time, as follows:
+
+  Inductive or (A B:Prop) : Prop as "A \/ B":=
+    | or_introl (a:A) : A \/ B 
+    | or_intror (b:B) : A \/ B.
+
+  Inductive and (A B:Prop) : Prop as "A /\ B" := conj (a:A) (b:B).
+  
+
 
 
 
