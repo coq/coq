@@ -48,7 +48,7 @@ $(ML): ml2v
 	./extract `./ml2v $@`
 
 clean: 
-	rm -f theories/*/*.ml theories/*/*.cm*
+	rm -f theories/*/*.ml theories/*/*.cm* theories/*/*.ml.orig
 
 
 #
