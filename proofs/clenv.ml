@@ -949,13 +949,29 @@ let clenv_independent clenv =
   let deps = dependent_metas clenv mvs ctyp_mvs in
   List.filter (fun mv -> not (Intset.mem mv deps)) mvs
 
+let w_coerce wc c ctyp target =
+  let j = make_judge c ctyp in
+  let env = w_env wc in
+  let isevars = Evarutil.create_evar_defs (w_Underlying wc) in
+  let j' = Coercion.inh_conv_coerce_to dummy_loc env isevars j target in
+  (* faire quelque chose avec isevars ? *)
+  j'.uj_val
+
 let clenv_constrain_dep_args hyps_only clause = function
   | [] -> clause 
   | mlist ->
       let occlist = clenv_dependent hyps_only clause in
       if List.length occlist = List.length mlist then
 	List.fold_left2
-          (fun clenv k c -> clenv_unify true CONV (mkMeta k) c clenv)
+          (fun clenv k c ->
+	    let wc = clause.hook in
+	    try
+	      let k_typ = w_hnf_constr wc (clenv_instance_type clause k) in
+	      let c_typ = w_hnf_constr wc (w_type_of wc c) in
+	      let c' = w_coerce wc c c_typ k_typ in
+	      clenv_unify true CONV (mkMeta k) c' clenv
+	    with _ ->
+              clenv_unify true CONV (mkMeta k) c clenv)
           clause occlist mlist
       else 
 	error ("Not the right number of missing arguments (expected "
@@ -998,11 +1014,20 @@ let clenv_match_args s clause =
                   errorlabstrm "clenv_match_args" (str "No such binder")
 	in
 	let k_typ = w_hnf_constr clause.hook (clenv_instance_type clause k)
-	and c_typ = w_hnf_constr clause.hook (nf_betaiota (w_type_of clause.hook c)) in
-	(* whd_betaiota was before in type_of - useful to reduce types like *)
+	(* nf_betaiota was before in type_of - useful to reduce types like *)
 	(* (x:A)([x]P u) *)
-        matchrec 
-       	    (clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clause)) t
+	and c_typ = w_hnf_constr clause.hook
+          (nf_betaiota (w_type_of clause.hook c)) in
+	let cl =
+	  (* Try to infer some Meta/Evar from the type of [c] *)
+	  try 
+            clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clause)
+	  with _ ->
+	  (* Try to coerce to the type of [k]; cannot merge with the
+	     previous case because Coercion does not handle Meta *)
+          let c' = w_coerce clause.hook c c_typ k_typ in
+	  clenv_unify true CONV (mkMeta k) c' clause
+	in matchrec cl t
   in 
   matchrec clause s
 

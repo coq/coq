@@ -86,8 +86,7 @@ Tactics
   hypothesis was unfolded to `x < y` -> False. This is fixed. In addition,
   it can also recognize 'False' in the hypothesis and use it to solve the
   goal.
-- New syntax for Ring and Field when arguments are provided (use "Ring on" and
-  "Field on")
+- Coercions now handled in "with" bindings
 
 Miscellaneous
 
