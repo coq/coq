@@ -189,7 +189,7 @@ let matches_core convert pat c =
 	  if is_conv env evars (mkConst (sp1,ctxt1)) cT then sigma
 	  else raise PatternMatchingFailure
 
-      | PCase (_,a1,br1), IsMutCase (ci,p2,a2,br2) ->
+      | PCase (_,a1,br1), IsMutCase (_,_,a2,br2) ->
 	  (* On ne teste pas le prédicat *)
 	  array_fold_left2 (sorec stk) (sorec stk sigma a1 a2)
 	    br1 br2
@@ -203,6 +203,79 @@ let matches_core convert pat c =
   Sort.list (fun (a,_) (b,_) -> a<b) (sorec [] [] pat c)
 
 let matches = matches_core None
+
+(* To skip to the next occurrence *)
+exception NextOccurrence of int
+
+(* Tells if it is an authorized occurrence *)
+let authorized_occ nocc mres =
+  if nocc = 0 then mres
+  else raise (NextOccurrence nocc)
+
+(* Tries matches according to the occurrence *)
+let rec try_matches nocc pat = function
+  | [] -> raise (NextOccurrence nocc)
+  | c::tl ->
+    (try authorized_occ nocc (matches pat c) with
+    | PatternMatchingFailure -> (try_matches nocc pat tl)
+    | NextOccurrence nocc -> (try_matches (nocc - 1) pat tl))
+
+(* Tries to match a subterm of [c] with [pat] *)
+let rec sub_match nocc pat c =
+  match c with
+  | DOP2 (Cast,c1,c2) ->
+    (try authorized_occ nocc ((matches pat c),DOP0 (Meta (-1))) with
+    | PatternMatchingFailure ->
+      let (lm,lc) = try_sub_match nocc pat [c1] in
+      (lm,DOP2 (Cast,List.hd lc,c2))
+    | NextOccurrence nocc ->
+      let (lm,lc) = try_sub_match (nocc - 1) pat [c1] in
+      (lm,DOP2 (Cast,List.hd lc,c2)))
+  | DOP2 (ne,c1,DLAM (x,c2)) ->
+    (try authorized_occ nocc ((matches pat c),DOP0 (Meta (-1))) with
+    | PatternMatchingFailure ->
+      let (lm,lc) = try_sub_match nocc pat [c1;c2] in
+      (lm,DOP2 (ne,List.hd lc,DLAM (x,List.nth lc 1)))
+    | NextOccurrence nocc ->
+      let (lm,lc) = try_sub_match (nocc - 1) pat [c1;c2] in
+      (lm,DOP2 (ne,List.hd lc,DLAM (x,List.nth lc 1))))
+  | DOPN (AppL,a) when Array.length a <> 0 ->
+    let c1 = a.(0)
+    and lc = List.tl (Array.to_list a) in
+    (try authorized_occ nocc ((matches pat c),DOP0 (Meta (-1))) with
+    | PatternMatchingFailure ->
+      let (lm,le) = try_sub_match nocc pat (c1::lc) in
+      (lm,DOPN (AppL,Array.of_list le))
+    | NextOccurrence nocc ->
+      let (lm,le) = try_sub_match (nocc - 1) pat (c1::lc) in
+      (lm,DOPN (AppL,Array.of_list le)))
+  | DOPN (MutCase ci,v) ->
+    let hd = v.(0)
+    and c1 = v.(1)
+    and lc = Array.to_list (Array.sub v 2 (Array.length v - 2)) in
+    (try authorized_occ nocc ((matches pat c),DOP0 (Meta (-1))) with
+    | PatternMatchingFailure ->
+      let (lm,le) = try_sub_match nocc pat (c1::lc) in
+      (lm,DOPN (MutCase ci,Array.of_list (hd::le)))
+    | NextOccurrence nocc ->
+      let (lm,le) = try_sub_match (nocc - 1) pat (c1::lc) in
+      (lm,DOPN (MutCase ci,Array.of_list (hd::le))))
+  | c ->
+    (try authorized_occ nocc ((matches pat c),DOP0 (Meta (-1))) with
+    | PatternMatchingFailure -> raise (NextOccurrence nocc)
+    | NextOccurrence nocc -> raise (NextOccurrence (nocc - 1)))
+
+(* Tries [sub_match] for all terms in the list *)
+and try_sub_match nocc pat lc =
+  let rec try_sub_match_rec nocc pat lacc = function
+    | [] -> raise (NextOccurrence nocc)
+    | c::tl ->
+      (try 
+         let (lm,ce) = sub_match nocc pat c in
+         (lm,lacc@(ce::tl))
+       with
+      | NextOccurrence nocc -> try_sub_match_rec nocc pat (lacc@[c]) tl) in
+  try_sub_match_rec nocc pat [] lc
 
 let is_matching pat n =
   try let _ = matches pat n in true

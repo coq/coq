@@ -428,12 +428,15 @@ GEXTEND Gram
 
 (* Proof commands *)
 GEXTEND Gram
-  GLOBAL: command;
+  GLOBAL: command ne_constrarg_list;
 
   destruct_location :
   [ [ IDENT "Conclusion"  -> <:ast< (CONCL)>>
     | IDENT "Discardable"; "Hypothesis"  -> <:ast< (DiscardableHYP)>>
     | "Hypothesis"   -> <:ast< (PreciousHYP)>> ]]
+  ;
+  ne_constrarg_list:
+  [ [ l = LIST1 constrarg -> l ] ]
   ;
   opt_identarg_list:
   [ [ -> []

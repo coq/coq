@@ -113,7 +113,10 @@ module Tactic :
     val let_clause : Coqast.t Gram.Entry.e
     val match_context_rule : Coqast.t Gram.Entry.e
     val match_hyps : Coqast.t Gram.Entry.e
+    val match_pattern : Coqast.t Gram.Entry.e
+    val match_context_list : Coqast.t list Gram.Entry.e
     val match_rule : Coqast.t Gram.Entry.e
+    val match_list : Coqast.t list Gram.Entry.e
     val ne_identarg_list : Coqast.t list Gram.Entry.e
     val ne_intropattern : Coqast.t Gram.Entry.e
     val ne_num_list : Coqast.t list Gram.Entry.e
@@ -152,6 +155,7 @@ module Vernac :
     val stringarg : Coqast.t Gram.Entry.e
     val ne_stringarg_list : Coqast.t list Gram.Entry.e
     val constrarg : Coqast.t Gram.Entry.e
+    val ne_constrarg_list : Coqast.t list Gram.Entry.e
     val tacarg : Coqast.t Gram.Entry.e
     val sortarg : Coqast.t Gram.Entry.e
 

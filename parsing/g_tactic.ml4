@@ -4,8 +4,8 @@
 open Pp
 open Ast
 open Pcoq
-
 open Tactic
+open Util
 
 (* Please leave several GEXTEND for modular compilation under PowerPC *)
 
@@ -193,22 +193,41 @@ GEXTEND Gram
     [ [ name = identarg; it = LIST1 input_fun; "->"; body = tactic_expr ->
           <:ast< (RECCLAUSE $name (FUNVAR ($LIST $it)) $body) >> ] ]
   ;
+  match_pattern:
+    [ [ id = constrarg; "["; pc = constrarg; "]" ->
+          (match id with
+          | Coqast.Node(_,"COMMAND",[Coqast.Nvar(_,s)]) ->
+            <:ast< (SUBTERM ($VAR $s) $pc) >>
+          | _ ->
+            errorlabstrm "Gram.match_pattern" [<'sTR "Not a correct SUBTERM">])
+      | "["; pc = constrarg; "]" -> <:ast< (SUBTERM $pc) >>
+      | pc = constrarg -> <:ast< (TERM $pc) >> ] ]
+  ;
   match_hyps:
-    [ [ id = identarg; ":"; pc = constrarg ->
-          <:ast< (MATCHCONTEXTHYPS $id $pc) >>
-      | IDENT "_"; ":"; pc = constrarg -> <:ast< (MATCHCONTEXTHYPS $pc) >> ] ]
+    [ [ id = identarg; ":"; mp =  match_pattern ->
+          <:ast< (MATCHCONTEXTHYPS $id $mp) >>
+      | IDENT "_"; ":"; mp = match_pattern ->
+          <:ast< (MATCHCONTEXTHYPS $mp) >> ] ]
   ;
   match_context_rule:
-    [ [ "["; largs = LIST0 match_hyps SEP ";"; "|-"; pc = constrarg; "]"; "->";
-          te = tactic_expr ->
-            <:ast< (MATCHCONTEXTRULE ($LIST $largs) $pc $te) >> 
+    [ [ "["; largs = LIST0 match_hyps SEP ";"; "|-"; mp = match_pattern; "]";
+        "->"; te = tactic_expr ->
+            <:ast< (MATCHCONTEXTRULE ($LIST $largs) $mp $te) >> 
       | IDENT "_"; "->"; te = tactic_expr -> <:ast< (MATCHCONTEXTRULE $te) >>
     ] ]
   ;
+  match_context_list:
+    [ [ mrl = LIST1 match_context_rule SEP "|" -> mrl
+      | "|"; mrl = LIST1 match_context_rule SEP "|" -> mrl ] ]
+  ;
   match_rule:
-    [ [ "["; com = constrarg; "]"; "->"; te = tactic_expr ->
-          <:ast<(MATCHRULE $com $te)>>
+    [ [ "["; mp = match_pattern; "]"; "->"; te = tactic_expr ->
+        <:ast<(MATCHRULE $mp $te)>>
       | IDENT "_"; "->"; te = tactic_expr -> <:ast< (MATCHRULE $te) >> ] ]
+  ;
+  match_list:
+    [ [ mrl = LIST1 match_rule SEP "|" -> mrl
+      | "|"; mrl = LIST1 match_rule SEP "|" -> mrl ] ]
   ;
   tactic_expr:
     [ [ ta0 = tactic_expr; ";"; ta1 = tactic_expr ->
@@ -229,11 +248,10 @@ GEXTEND Gram
             <:ast< (REC (RECDECL $rc ($LIST $rcl)) $body) >>
       | IDENT "Let"; llc = LIST1 let_clause SEP IDENT "And"; IDENT "In";
           u = tactic_expr -> <:ast< (LET (LETDECL ($LIST $llc)) $u) >>
-      |	IDENT "Match"; IDENT "Context"; IDENT "With";
-          mrl = LIST1 match_context_rule SEP "|" ->
-            <:ast< (MATCHCONTEXT ($LIST $mrl)) >>
-      |	IDENT "Match"; com = constrarg; IDENT "With";
-          mrl = LIST1 match_rule SEP "|" -> <:ast< (MATCH $com ($LIST $mrl)) >>
+      |	IDENT "Match"; IDENT "Context"; IDENT "With"; mrl = match_context_list
+        -> <:ast< (MATCHCONTEXT ($LIST $mrl)) >>
+      |	IDENT "Match"; com = constrarg; IDENT "With"; mrl = match_list ->
+        <:ast< (MATCH $com ($LIST $mrl)) >>
       |	"'("; te = tactic_expr; ")" -> te
       |	"'("; te = tactic_expr; tel=LIST1 tactic_expr; ")" ->
           <:ast< (APP $te ($LIST tel)) >>

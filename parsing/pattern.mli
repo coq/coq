@@ -69,9 +69,15 @@ val is_matching      :
 val matches_conv :
   env -> 'a Evd.evar_map -> constr_pattern -> constr -> (int * constr) list
 
+(* To skip to the next occurrence *)
+exception NextOccurrence of int
+
+(* Tries to match a subterm of [c] with [pat] *)
+val sub_match :
+  int -> constr_pattern -> constr -> ((int * constr) list * constr)
+
 (* [is_matching_conv env sigma pat c] tells if [c] matches against [pat]
    up to conversion for constants in patterns *)
 
 val is_matching_conv :
   env -> 'a Evd.evar_map -> constr_pattern -> constr -> bool
-
