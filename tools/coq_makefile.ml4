@@ -89,8 +89,8 @@ let standard sds =
   print ".depend depend:\n";
   if !some_file then begin
     print "\trm -f .depend\n";
-    print "\t$(COQDEP) -i $(COQLIBS) $(VOFILES) *.ml *.mli >.depend\n";
-    print "\t$(COQDEP) $(COQLIBS) -suffix .html $(VOFILES) >>.depend\n";
+    print "\t$(COQDEP) -i $(COQLIBS) $(VFILES) *.ml *.mli >.depend\n";
+    print "\t$(COQDEP) $(COQLIBS) -suffix .html $(VFILES) >>.depend\n";
   end;
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) depend)\n")
