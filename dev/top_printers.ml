@@ -9,7 +9,7 @@ open Sign
 open Univ
 open Proof_trees
 open Environ
-(*i open Generic i*)
+(* open Generic *)
 open Printer
 open Refiner
 open Tacmach
@@ -101,7 +101,6 @@ let constr_display csr =
     | Lambda -> "Lambda"
     | AppL -> "AppL"
     | Const sp -> "Const("^(string_of_path sp)^")"
-    | Abst sp -> "Abst("^(string_of_path sp)^")"
     | MutInd(sp,i) -> "MutInd("^(string_of_path sp)^","^(string_of_int i)^")"
     | MutConstruct((sp,i),j) ->
         "MutConstruct(("^(string_of_path sp)^","^(string_of_int i)^"),"^

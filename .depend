@@ -187,8 +187,6 @@ toplevel/vernacentries.cmi: kernel/names.cmi kernel/term.cmi \
 toplevel/vernacinterp.cmi: parsing/coqast.cmi lib/dyn.cmi kernel/names.cmi \
     proofs/proof_type.cmi 
 toplevel/vernac.cmi: parsing/coqast.cmi parsing/pcoq.cmi 
-config/coq_config.cmo: config/coq_config.cmi 
-config/coq_config.cmx: config/coq_config.cmi 
 dev/db_printers.cmo: kernel/names.cmi lib/pp.cmi 
 dev/db_printers.cmx: kernel/names.cmx lib/pp.cmx 
 dev/top_printers.cmo: parsing/ast.cmi parsing/astterm.cmi proofs/clenv.cmi \
@@ -548,13 +546,15 @@ pretyping/detyping.cmx: kernel/declarations.cmx library/declare.cmx \
     kernel/sign.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
     pretyping/detyping.cmi 
 pretyping/evarconv.cmo: pretyping/classops.cmi kernel/environ.cmi \
-    pretyping/evarutil.cmi kernel/instantiate.cmi kernel/names.cmi \
-    pretyping/recordops.cmi kernel/reduction.cmi pretyping/retyping.cmi \
-    kernel/term.cmi pretyping/typing.cmi lib/util.cmi pretyping/evarconv.cmi 
+    pretyping/evarutil.cmi kernel/evd.cmi kernel/instantiate.cmi \
+    kernel/names.cmi pretyping/recordops.cmi kernel/reduction.cmi \
+    pretyping/retyping.cmi kernel/term.cmi pretyping/typing.cmi lib/util.cmi \
+    pretyping/evarconv.cmi 
 pretyping/evarconv.cmx: pretyping/classops.cmx kernel/environ.cmx \
-    pretyping/evarutil.cmx kernel/instantiate.cmx kernel/names.cmx \
-    pretyping/recordops.cmx kernel/reduction.cmx pretyping/retyping.cmx \
-    kernel/term.cmx pretyping/typing.cmx lib/util.cmx pretyping/evarconv.cmi 
+    pretyping/evarutil.cmx kernel/evd.cmx kernel/instantiate.cmx \
+    kernel/names.cmx pretyping/recordops.cmx kernel/reduction.cmx \
+    pretyping/retyping.cmx kernel/term.cmx pretyping/typing.cmx lib/util.cmx \
+    pretyping/evarconv.cmi 
 pretyping/evarutil.cmo: kernel/environ.cmi kernel/evd.cmi library/indrec.cmi \
     kernel/instantiate.cmi kernel/names.cmi lib/pp.cmi \
     pretyping/pretype_errors.cmi kernel/reduction.cmi kernel/sign.cmi \
@@ -736,7 +736,7 @@ proofs/tacmach.cmx: parsing/ast.cmx parsing/astterm.cmx library/declare.cmx \
     pretyping/tacred.cmx kernel/term.cmx pretyping/typing.cmx lib/util.cmx \
     proofs/tacmach.cmi 
 scripts/coqmktop.cmo: config/coq_config.cmi scripts/tolink.cmo 
-scripts/coqmktop.cmx: config/coq_config.cmx scripts/tolink.cmx 
+scripts/coqmktop.cmx: config/coq_config.cmi scripts/tolink.cmx 
 tactics/auto.cmo: parsing/astterm.cmi tactics/btermdn.cmi proofs/clenv.cmi \
     parsing/coqast.cmi library/declare.cmi tactics/dhyp.cmi kernel/evd.cmi \
     library/global.cmi tactics/hiddentac.cmi tactics/hipattern.cmi \
@@ -948,7 +948,7 @@ tactics/wcclausenv.cmx: proofs/clenv.cmx kernel/environ.cmx kernel/evd.cmx \
     kernel/sign.cmx proofs/tacmach.cmx kernel/term.cmx lib/util.cmx \
     tactics/wcclausenv.cmi 
 tools/coqdep.cmo: config/coq_config.cmi 
-tools/coqdep.cmx: config/coq_config.cmx 
+tools/coqdep.cmx: config/coq_config.cmi 
 toplevel/command.cmo: parsing/ast.cmi parsing/astterm.cmi parsing/coqast.cmi \
     kernel/declarations.cmi library/declare.cmi kernel/environ.cmi \
     kernel/evd.cmi library/global.cmi library/indrec.cmi kernel/inductive.cmi \
@@ -968,7 +968,7 @@ toplevel/command.cmx: parsing/ast.cmx parsing/astterm.cmx parsing/coqast.cmx \
 toplevel/coqinit.cmo: config/coq_config.cmi library/library.cmi \
     toplevel/mltop.cmi lib/options.cmi lib/pp.cmi lib/system.cmi \
     toplevel/toplevel.cmi toplevel/vernac.cmi toplevel/coqinit.cmi 
-toplevel/coqinit.cmx: config/coq_config.cmx library/library.cmx \
+toplevel/coqinit.cmx: config/coq_config.cmi library/library.cmx \
     toplevel/mltop.cmi lib/options.cmx lib/pp.cmx lib/system.cmx \
     toplevel/toplevel.cmx toplevel/vernac.cmx toplevel/coqinit.cmi 
 toplevel/coqtop.cmo: config/coq_config.cmi toplevel/coqinit.cmi \
@@ -976,7 +976,7 @@ toplevel/coqtop.cmo: config/coq_config.cmi toplevel/coqinit.cmi \
     toplevel/mltop.cmi lib/options.cmi lib/pp.cmi lib/profile.cmi \
     library/states.cmi lib/system.cmi toplevel/toplevel.cmi \
     toplevel/usage.cmi lib/util.cmi toplevel/vernac.cmi toplevel/coqtop.cmi 
-toplevel/coqtop.cmx: config/coq_config.cmx toplevel/coqinit.cmx \
+toplevel/coqtop.cmx: config/coq_config.cmi toplevel/coqinit.cmx \
     toplevel/errors.cmx library/lib.cmx library/library.cmx \
     toplevel/mltop.cmi lib/options.cmx lib/pp.cmx lib/profile.cmx \
     library/states.cmx lib/system.cmx toplevel/toplevel.cmx \
@@ -1031,6 +1031,14 @@ toplevel/metasyntax.cmx: parsing/ast.cmx parsing/coqast.cmx \
     library/lib.cmx library/libobject.cmx library/library.cmx \
     parsing/pcoq.cmx lib/pp.cmx library/summary.cmx lib/util.cmx \
     toplevel/metasyntax.cmi 
+toplevel/minicoq.cmo: kernel/declarations.cmi toplevel/fhimsg.cmi \
+    parsing/g_minicoq.cmi kernel/inductive.cmi kernel/names.cmi lib/pp.cmi \
+    kernel/safe_typing.cmi kernel/sign.cmi kernel/term.cmi \
+    kernel/type_errors.cmi lib/util.cmi 
+toplevel/minicoq.cmx: kernel/declarations.cmx toplevel/fhimsg.cmx \
+    parsing/g_minicoq.cmi kernel/inductive.cmx kernel/names.cmx lib/pp.cmx \
+    kernel/safe_typing.cmx kernel/sign.cmx kernel/term.cmx \
+    kernel/type_errors.cmx lib/util.cmx 
 toplevel/protectedtoplevel.cmo: toplevel/errors.cmi parsing/pcoq.cmi \
     lib/pp.cmi toplevel/vernac.cmi toplevel/vernacinterp.cmi \
     toplevel/protectedtoplevel.cmi 
