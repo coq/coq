@@ -31,10 +31,16 @@ type value =
   | VTactic of tactic
   | VFTactic of tactic_arg list * (tactic_arg list->tactic)
   | VRTactic of (goal list sigma * validation)
+  | VContext of (interp_sign -> goal sigma -> value)
   | VArg of tactic_arg
   | VFun of (string * value) list * string option list * Coqast.t
   | VVoid
   | VRec of value ref
+
+(* Signature for interpretation: val_interp and interpretation functions *)
+and interp_sign =
+  enamed_declarations * Environ.env * (string * value) list *
+    (int * constr) list * goal sigma option * debug_info
 
 (* For tactic_of_value *)
 exception NotTactic
@@ -122,11 +128,6 @@ let rec constr_list goalopt = function
           constr_list goalopt tl))*)
   | _::tl -> constr_list goalopt tl
   | [] -> []
-
-(* Signature for interpretation: val_interp and interpretation functions *)
-type interp_sign =
-  enamed_declarations * Environ.env * (string * value) list *
-    (int * constr) list * goal sigma option * debug_info
 
 (* For user tactics *)
 let ((ocamlIn : (unit -> Coqast.t) -> Dyn.t),
@@ -487,12 +488,12 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
     | Nvar(_,s) ->
       (try (unrec (List.assoc s lfun))
        with | Not_found ->
-         (try (lookup s)
+         (try (vcontext_interp (evc,env,lfun,lmatch,goalopt,debug) (lookup s))
           with | Not_found -> VArg (Identifier (id_of_string s))))
     | Node(_,"QUALID",[Nvar(_,s)]) ->
       (try (unrec (List.assoc s lfun))
        with | Not_found ->
-         (try (lookup s)
+         (try (vcontext_interp (evc,env,lfun,lmatch,goalopt,debug) (lookup s))
           with | Not_found -> VArg (Identifier (id_of_string s))))
     | Str(_,s) -> VArg (Quoted_string s)
     | Num(_,n) -> VArg (Integer n)
@@ -707,14 +708,14 @@ and letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
 
 (* Interprets the Match Context expressions *)
 and match_context_interp (evc,env,lfun,lmatch,goalopt,debug) ast lmr =
-  let goal =
+(*  let goal =
     (match goalopt with
     | None ->
       errorlabstrm "Tacinterp.apply_match_context" [< 'sTR
         "No goal available" >]
-    | Some g -> g) in
-  let rec apply_goal_sub evc env lfun lmatch goal nocc (id,c) csr mt mhyps hyps
-    =
+    | Some g -> g) in*)
+  let rec apply_goal_sub (evc,env,lfun,lmatch,goalopt,debug) goal nocc (id,c)
+    csr mt mhyps hyps =
     try
       let (lgoal,ctxt) = sub_match nocc c csr in
       let lctxt = give_context ctxt id in
@@ -728,14 +729,16 @@ and match_context_interp (evc,env,lfun,lmatch,goalopt,debug) ast lmr =
     | (FailError _) as e -> raise e
     | NextOccurrence _ -> raise No_match
     | No_match | _ ->
-      apply_goal_sub evc env lfun lmatch goal (nocc + 1) (id,c) csr mt mhyps
-        hyps in
-  let rec apply_match_context evc env lfun lmatch goal = function
+      apply_goal_sub (evc,env,lfun,lmatch,goalopt,debug) goal (nocc + 1) (id,c)
+      csr mt mhyps hyps in
+  let rec apply_match_context (evc,env,lfun,lmatch,goalopt,debug) goal =
+    function
     | (All t)::tl ->
       (try
          eval_with_fail (val_interp (evc,env,lfun,lmatch,Some goal,debug)) t
            goal
-       with No_match | _ -> apply_match_context evc env lfun lmatch goal tl)
+       with No_match | _ ->
+         apply_match_context (evc,env,lfun,lmatch,goalopt,debug) goal tl)
     | (Pat (mhyps,mgoal,mt))::tl ->
       let hyps = make_hyps (List.rev (pf_hyps goal))
       and concl = pf_concl goal in
@@ -753,17 +756,27 @@ and match_context_interp (evc,env,lfun,lmatch,goalopt,debug) ast lmr =
                 hyps
             end)
          with | No_match | _ ->
-           apply_match_context evc env lfun lmatch goal tl)
+           apply_match_context (evc,env,lfun,lmatch,goalopt,debug) goal tl)
       |	Subterm (id,mg) ->
         (try
-          apply_goal_sub evc env lfun lmatch goal 0 (id,mg) concl mt mhyps hyps
+          apply_goal_sub (evc,env,lfun,lmatch,goalopt,debug) goal 0 (id,mg)
+          concl mt mhyps hyps
          with
-        | No_match | _ -> apply_match_context evc env lfun lmatch goal tl))
+        | No_match | _ ->
+          apply_match_context (evc,env,lfun,lmatch,goalopt,debug) goal tl))
     | _ ->
       errorlabstrm "Tacinterp.apply_match_context" [<'sTR
         "No matching clauses for Match Context">] in
-  apply_match_context evc env lfun lmatch goal (read_match_context_rule evc env
-    (constr_list goalopt lfun) lmr)
+  let app_wo_goal = 
+    (fun (evc,env,lfun,lmatch,goalopt,debug) goal ->
+     apply_match_context (evc,env,lfun,lmatch,goalopt,debug) goal
+     (read_match_context_rule evc env (constr_list goalopt lfun) lmr)) in
+ (match goalopt with
+    | None -> VContext app_wo_goal
+    | Some g -> app_wo_goal (evc,env,lfun,lmatch,goalopt,debug) g)
+
+(*  apply_match_context evc env lfun lmatch goal (read_match_context_rule evc env
+    (constr_list goalopt lfun) lmr)*)
 
 (* Tries to match the hypotheses in a Match Context *)
 and apply_hyps_context evc env lfun_glob lmatch_glob goal debug mt lgmatch
@@ -803,6 +816,14 @@ and apply_hyps_context evc env lfun_glob lmatch_glob goal debug mt lgmatch
           "Empty list should not occur" >] in
   apply_hyps_context_rec evc env lfun_glob lmatch_glob goal mt [] lgmatch mhyps
     hyps hyps None
+
+(* Interprets a VContext value *)
+and vcontext_interp (evc,env,lfun,lmatch,goalopt,debug) = function
+  | (VContext f) as v ->
+    (match goalopt with
+    | None -> v
+    | Some g -> f (evc,env,lfun,lmatch,goalopt,debug) g)
+  | v -> v
 
 (* Interprets the Match expressions *)
 and match_interp (evc,env,lfun,lmatch,goalopt,debug) ast lmr =
@@ -1096,25 +1117,24 @@ let bad_tactic_args s =
   anomalylabstrm s
     [<'sTR "Tactic "; 'sTR s; 'sTR " called with bad arguments">]
 
-(* Declaration of the TACTIC-DEFINITION object *)
+(* Declaration of the META-DEFINITION object *)
 let (inMD,outMD) =
   let add (na,td) = mactab := Gmap.add na td !mactab in
   let cache_md (_,(na,td)) =  
     let ve=val_interp (Evd.empty,Environ.empty_env,[],[],None,get_debug ()) td 
     in add (na,ve) in 
-    declare_object ("TACTIC-DEFINITION",
+    declare_object ("META-DEFINITION",
        {cache_function  = cache_md;
         load_function   = (fun _ -> ());
         open_function   = cache_md;
         export_function = (fun x -> Some x)})
 
-(* Adds a Tactic Definition in the table *)
-let add_tacdef na vbody =
+(* Adds a Meta Definition in the table *)
+let add_metadef na vbody =
   begin
     if Gmap.mem na !mactab then
-      errorlabstrm "Tacdef.add_tacdef" 
-        [<'sTR "There is already a Tactic Definition named "; 'sTR na>];
+      errorlabstrm "Tacinterp.add_metadef" 
+        [<'sTR "There is already a Meta Definition named "; 'sTR na>];
     let _ = Lib.add_leaf (id_of_string na) OBJ (inMD (na,vbody)) in
     if Options.is_verbose() then mSGNL [< 'sTR (na ^ " is defined") >]
   end
-

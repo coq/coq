@@ -1342,16 +1342,16 @@ let _ =
        | _ -> bad_vernac_args "SYNTAX")
     
 let _ =
-  add "TACDEF"
-    (let rec tacdef_fun lacc=function
+  add "METADEF"
+    (let rec metadef_fun lacc=function
         (VARG_IDENTIFIER name)::(VARG_AST tacexp)::tl ->
-          tacdef_fun ((string_of_id name,tacexp)::lacc) tl
+          metadef_fun ((string_of_id name,tacexp)::lacc) tl
        |[] ->
          fun () ->
-           List.iter (fun (name,ve) -> Tacinterp.add_tacdef name ve) lacc
-       |_ -> bad_vernac_args "TACDEF"
+           List.iter (fun (name,ve) -> Tacinterp.add_metadef name ve) lacc
+       |_ -> bad_vernac_args "METADEF"
      in
-       tacdef_fun [])
+       metadef_fun [])
 
 let _ =
   add "INFIX"

@@ -85,20 +85,20 @@ GEXTEND Gram
       | IDENT "Show"; IDENT "Tree"; "." -> <:ast< (ShowTree) >>
       | IDENT "Show"; IDENT "Conjectures"; "." -> <:ast< (ShowProofs) >>
 
-(* Tactic Definition *)
+(* Meta Definition *)
 
-      |IDENT "Tactic"; "Definition"; name=identarg; ":="; body=Tactic.tactic;
-        "." -> <:ast<(TACDEF $name (AST $body))>>
-      |IDENT "Tactic"; "Definition"; name=identarg; largs=LIST1 input_fun;
+      |IDENT "Meta"; "Definition"; name=identarg; ":="; body=Tactic.tactic;
+        "." -> <:ast<(METADEF $name (AST $body))>>
+      |IDENT "Meta"; "Definition"; name=identarg; largs=LIST1 input_fun;
         ":="; body=Tactic.tactic; "." ->
-        <:ast<(TACDEF $name (AST (FUN (FUNVAR ($LIST $largs)) $body)))>>
-      |IDENT "Recursive"; IDENT "Tactic"; "Definition"; vc=vrec_clause ; "." ->
+        <:ast<(METADEF $name (AST (FUN (FUNVAR ($LIST $largs)) $body)))>>
+      |IDENT "Recursive"; IDENT "Meta"; "Definition"; vc=vrec_clause ; "." ->
         (match vc with
             Coqast.Node(_,"RECCLAUSE",nme::tl) ->
-              <:ast<(TACDEF $nme (AST (REC $vc)))>>
+              <:ast<(METADEF $nme (AST (REC $vc)))>>
            |_ ->
              anomalylabstrm "Gram.vernac" [<'sTR "Not a correct RECCLAUSE">])
-      |IDENT "Recursive"; IDENT "Tactic"; "Definition"; vc=vrec_clause;
+      |IDENT "Recursive"; IDENT "Meta"; "Definition"; vc=vrec_clause;
         IDENT "And"; vcl=LIST1 vrec_clause SEP IDENT "And"; "." ->
         let nvcl=
           List.fold_right
@@ -109,7 +109,7 @@ GEXTEND Gram
                  anomalylabstrm "Gram.vernac" [<'sTR
                    "Not a correct RECCLAUSE">]) (vc::vcl) []
         in
-          <:ast<(TACDEF ($LIST $nvcl))>>
+          <:ast<(METADEF ($LIST $nvcl))>>
 
 (* Hints for Auto and EAuto *)
 
