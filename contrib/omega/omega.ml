@@ -225,6 +225,9 @@ let map_eq_afine f e =
 
 let negate_eq = map_eq_afine (fun x -> -x)
 
+let opposite x y =
+  map_eq_linear (fun x -> - x) x.body = y.body & x.constant = y.constant
+
 let rec sum p0 p1 = match (p0,p1) with 
   | ([], l) -> l | (l, []) -> l
   | (((x1::l1) as l1'), ((x2::l2) as l2')) -> 
@@ -406,7 +409,7 @@ let redundancy_elimination system =
   let accu_ineq = ref [] in
   iter
     (fun p0 p1 -> match (p0,p1) with 
-       | (e, (Some x, Some y)) when x.constant = -y.constant -> 
+       | (e, (Some x, Some y)) when opposite x y ->
            let id=new_id () in
            add_event (MERGE_EQ(id,x,y.id));
            push {id=id; kind=EQUA; body=x.body; constant=x.constant} accu_eq
