@@ -525,9 +525,9 @@ ide/ideutils.cmo: config/coq_config.cmi lib/options.cmi lib/pp_control.cmi \
 ide/ideutils.cmx: config/coq_config.cmx lib/options.cmx lib/pp_control.cmx \
     ide/preferences.cmx ide/utf8_convert.cmx ide/ideutils.cmi 
 ide/preferences.cmo: ide/config_lexer.cmo ide/utils/configwin.cmi \
-    ide/utils/editable_cells.cmo lib/util.cmi ide/preferences.cmi 
+    lib/util.cmi ide/preferences.cmi 
 ide/preferences.cmx: ide/config_lexer.cmx ide/utils/configwin.cmx \
-    ide/utils/editable_cells.cmx lib/util.cmx ide/preferences.cmi 
+    lib/util.cmx ide/preferences.cmi 
 ide/undo.cmo: ide/ideutils.cmi ide/undo.cmi 
 ide/undo.cmx: ide/ideutils.cmx ide/undo.cmi 
 interp/constrextern.cmo: lib/bignat.cmi pretyping/classops.cmi \
