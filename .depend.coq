@@ -16,6 +16,11 @@ theories/Init/LogicSyntax.vo: theories/Init/LogicSyntax.v theories/Init/Logic.vo
 theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Datatypes.vo
 theories/Init/DatatypesSyntax.vo: theories/Init/DatatypesSyntax.v theories/Init/Datatypes.vo
 theories/Init/Datatypes.vo: theories/Init/Datatypes.v
+theories/Bool/Zerob.vo: theories/Bool/Zerob.v theories/Arith/Arith.vo theories/Bool/Bool.vo
+theories/Bool/Sumbool.vo: theories/Bool/Sumbool.v
+theories/Bool/IfProp.vo: theories/Bool/IfProp.v theories/Bool/Bool.vo
+theories/Bool/DecBool.vo: theories/Bool/DecBool.v
+theories/Bool/Bool.vo: theories/Bool/Bool.v
 theories/Arith/Wf_nat.vo: theories/Arith/Wf_nat.v theories/Arith/Lt.vo
 theories/Arith/Plus.vo: theories/Arith/Plus.v theories/Arith/Le.vo theories/Arith/Lt.vo
 theories/Arith/Peano_dec.vo: theories/Arith/Peano_dec.v

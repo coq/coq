@@ -173,10 +173,8 @@ let process_constant osecsp nsecsp oldenv (ids_to_discard,modlist) cb =
     expmod_constant_value cb.const_opaque oldenv modlist cb.const_body in
   let typ = expmod_type oldenv modlist cb.const_type in
   let hyps = map_sign_typ (expmod_type oldenv modlist) cb.const_hyps in
-  let (body',typ',modl) = 
-    abstract_constant ids_to_discard hyps (body,typ)
-  in
-  let mods = (Const osecsp, DO_ABSTRACT(Const nsecsp,modl)) :: modlist in
+  let (body',typ',modl) = abstract_constant ids_to_discard hyps (body,typ) in
+  let mods = [ (Const osecsp, DO_ABSTRACT(Const nsecsp,modl)) ] in
   (body', typ'.body, mods)
 
 
