@@ -3,6 +3,7 @@
 
 (*i*)
 open Names
+open Term
 open Tacmach
 (*i*)
 
@@ -12,8 +13,8 @@ val inv_clear_tac : identifier -> tactic
 val half_dinv_tac : identifier -> tactic
 val dinv_tac : identifier -> tactic
 val dinv_clear_tac : identifier -> tactic
-val half_dinv_with : identifier -> Coqast.t -> tactic
-val dinv_with : identifier -> Coqast.t -> tactic
-val dinv_clear_with : identifier -> Coqast.t -> tactic
+val half_dinv_with : identifier -> constr -> tactic
+val dinv_with : identifier -> constr -> tactic
+val dinv_clear_with : identifier -> constr -> tactic
 
 val invIn_tac : string -> identifier -> identifier list -> tactic
