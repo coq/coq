@@ -16,9 +16,9 @@ The current version V7 is a new implementation started in september 1999.
   	J-C. Filliâtre designed the architecture of the new system, a
 new represention of environments and wrote a new kernel for
 type-checking terms (LRI)
-	H. Herbelin introduced a new structure of terms with local
-definitions and redesigned the translation from the high-level
-language of Coq to the internal representation. He introduced an
+        H. Herbelin introduced a new structure of terms with local
+definitions. He introduced ``qualified'' names, wrote a new
+pattern-matching compilation algorithm and designed an
 algebraic structure for universes (INRIA)
 	D. Delahaye introduced a new language for tactics (INRIA)
 	B. Barras improved the reduction strategy for lazy evaluation (INRIA)
