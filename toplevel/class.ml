@@ -94,6 +94,7 @@ let explain_coercion_error g = function
 
 let rec arity_sort (ctx,a) = match kind_of_term a with
   | Sort (Prop _ | Type _) -> List.length ctx
+  | _ -> raise Not_found
 
 let check_reference_arity ref =
   let t = Global.type_of_global ref in
