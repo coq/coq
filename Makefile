@@ -712,11 +712,15 @@ clean::
 	rm -f bin/parser$(EXE) bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE)
 
 # install targets
-install-pcoq:: install-pcoq-binaries install-pcoq-manpages
+install-pcoq:: install-pcoq-binaries install-pcoq-files install-pcoq-manpages
 
 install-pcoq-binaries::
 	$(MKDIR) $(FULLBINDIR)
-	cp  $(COQINTERFACE) $(FULLBINDIR)
+	cp $(COQINTERFACE) $(FULLBINDIR)
+
+install-pcoq-files::
+	$(MKDIR) $(FULLCOQLIB)/contrib/interface
+	cp $(INTERFACERC) $(FULLCOQLIB)/contrib/interface
 
 PCOQMANPAGES=man/coq-interface.1 man/parser.1
 
@@ -1141,7 +1145,7 @@ archclean::
 
 COQINSTALLPREFIX=
   # Can be changed for a local installation (to make packages).
-  # You must put a "/" at the end (Cygnus for win32 does not like "//").
+  # You must NOT put a "/" at the end (Cygnus for win32 does not like "//").
 
 FULLBINDIR=$(COQINSTALLPREFIX)$(BINDIR)
 FULLCOQLIB=$(COQINSTALLPREFIX)$(COQLIB)

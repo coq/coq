@@ -443,8 +443,6 @@ Libobject.relax true;
      begin
        add_rec_path (Filename.concat coqdir "theories")
 	 (Names.make_dirpath [Nameops.coq_root]);
-       add_path (Filename.concat coqdir "tactics")
-	 	 (Names.make_dirpath [Nameops.coq_root]);
        add_rec_path (Filename.concat coqdir "contrib")
 	 (Names.make_dirpath [Nameops.coq_root])
      end;
