@@ -87,6 +87,7 @@ type pref =
       mutable library_url : string;
 
       mutable show_toolbar : bool;
+      mutable contextual_menus_on_goal : bool;
       mutable window_width : int;
       mutable window_height :int;
       mutable use_utf8_notation : bool;
@@ -134,6 +135,7 @@ let (current:pref ref) =
     library_url = "http://coq.inria.fr/library/";
     
     show_toolbar = true;
+    contextual_menus_on_goal = true;
     window_width = 800;
     window_height = 600; 
     use_utf8_notation = true;
@@ -143,6 +145,8 @@ let (current:pref ref) =
 let change_font = ref (fun f -> ())
 
 let show_toolbar = ref (fun x -> ())
+
+let contextual_menus_on_goal = ref (fun x -> ())
 
 let resize_window = ref (fun () -> ())
 
@@ -187,6 +191,8 @@ let save_pref () =
     add "doc_url" [p.doc_url] ++
     add "library_url" [p.library_url] ++
     add "show_toolbar" [string_of_bool p.show_toolbar] ++
+    add "contextual_menus_on_goal" 
+      [string_of_bool p.contextual_menus_on_goal] ++
     add "window_height" [string_of_int p.window_height] ++
     add "window_width" [string_of_int p.window_width] ++
     Config_lexer.print_file pref_file
@@ -239,6 +245,8 @@ let load_pref () =
     set_hd "doc_url" (fun v -> np.doc_url <- v);
     set_hd "library_url" (fun v -> np.library_url <- v);
     set_bool "show_toolbar" (fun v -> np.show_toolbar <- v);
+    set_bool "contextual_menus_on_goal" 
+      (fun v -> np.contextual_menus_on_goal <- v);
     set_int "window_width" (fun v -> np.window_width <- v);
     set_int "window_height" (fun v -> np.window_height <- v);
 
@@ -422,12 +430,23 @@ let configure () =
     let (w,get_data) = Editable_cells.create !current.automatic_tactics in
     box#add w#coerce;
     custom
-      ~label:"Wizzard tactics to try in order"
+      ~label:"Wizard tactics to try in order"
       box
       (fun () -> let d = get_data () in !current.automatic_tactics <- d)
       true
 
   in
+
+  let contextual_menus_on_goal =
+    bool 
+      ~f:(fun s -> 
+	    !current.contextual_menus_on_goal <- s; 
+	    !contextual_menus_on_goal s) 
+      "Contextual menus on goal" !current.contextual_menus_on_goal
+  in 
+
+  let misc = [contextual_menus_on_goal] in
+   
   let cmds =
     [Section("Fonts",
 	     [config_font]);
@@ -442,11 +461,13 @@ let configure () =
 	     ]);
      Section("Browser",
 	     [cmd_browse;doc_url;library_url]);
-     Section("Tactics Wizzard",
+     Section("Tactics Wizard",
 	     [automatic_tactics]);
      Section("Shortcuts",
 	     [modifiers_valid; modifier_for_tactics;
-	      modifier_for_templates; modifier_for_navigation;mod_msg])]
+	      modifier_for_templates; modifier_for_navigation;mod_msg]);
+     Section("Misc",
+	     misc)]
   in
   match edit ~width:500 "Customizations" cmds
   with 

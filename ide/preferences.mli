@@ -42,6 +42,7 @@ type pref =
       mutable library_url : string;
 
       mutable show_toolbar : bool;
+      mutable contextual_menus_on_goal : bool;
       mutable window_width : int;
       mutable window_height : int;
       mutable use_utf8_notation : bool;

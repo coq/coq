@@ -2849,12 +2849,15 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 	);
   ignore(tv2#event#connect#enter_notify
 	   (fun _ -> 
-	      let w = (out_some (get_active_view ()).analyzed_view) in
-	      !push_info "Computing advanced goal's menus";
-	      prerr_endline "Entering Goal Window. Computing Menus....";
-	      w#show_goals_full;
-	      prerr_endline "....Done with Goal menu";
-	      !pop_info();
+	      if !current.contextual_menus_on_goal then
+		begin
+		  let w = (out_some (get_active_view ()).analyzed_view) in
+		  !push_info "Computing advanced goal's menus";
+		  prerr_endline "Entering Goal Window. Computing Menus....";
+		  w#show_goals_full;
+		  prerr_endline "....Done with Goal menu";
+		  !pop_info();
+		end;
 	      false;
 	   ));
   List.iter load files;
