@@ -264,6 +264,12 @@ let compute_ivs gl f cs =
                 lci;
 	      
               if !c_lhs = None & !v_lhs = None then i_can't_do_that ();
+
+	      (* The Cases predicate is a lambda; we assume no dependency *)
+	      let p = match kind_of_term p with
+		| IsLambda (_,_,p) -> pop p
+		| _ -> p
+	      in
               
               { normal_lhs_rhs = List.rev !n_lhs_rhs;
                 variable_lhs = !v_lhs;
