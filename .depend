@@ -106,9 +106,9 @@ parsing/ast.cmi: parsing/coqast.cmi lib/dyn.cmi interp/genarg.cmi \
 parsing/coqast.cmi: lib/dyn.cmi library/libnames.cmi kernel/names.cmi \
     lib/util.cmi 
 parsing/egrammar.cmi: parsing/ast.cmi parsing/coqast.cmi parsing/extend.cmi \
-    interp/genarg.cmi kernel/names.cmi pretyping/rawterm.cmi \
-    interp/symbols.cmi proofs/tacexpr.cmo interp/topconstr.cmi lib/util.cmi \
-    toplevel/vernacexpr.cmo 
+    interp/genarg.cmi kernel/names.cmi interp/ppextend.cmi \
+    pretyping/rawterm.cmi interp/symbols.cmi proofs/tacexpr.cmo \
+    interp/topconstr.cmi lib/util.cmi toplevel/vernacexpr.cmo 
 parsing/esyntax.cmi: parsing/ast.cmi parsing/coqast.cmi parsing/extend.cmi \
     lib/pp.cmi interp/ppextend.cmi interp/symbols.cmi interp/topconstr.cmi 
 parsing/extend.cmi: parsing/ast.cmi parsing/coqast.cmi interp/genarg.cmi \
@@ -904,13 +904,13 @@ parsing/coqast.cmx: lib/dyn.cmx lib/hashcons.cmx library/libnames.cmx \
 parsing/egrammar.cmo: parsing/ast.cmi lib/bignat.cmi parsing/extend.cmi \
     interp/genarg.cmi parsing/lexer.cmi library/libnames.cmi \
     library/nameops.cmi kernel/names.cmi lib/options.cmi parsing/pcoq.cmi \
-    lib/pp.cmi library/summary.cmi interp/symbols.cmi proofs/tacexpr.cmo \
+    lib/pp.cmi interp/ppextend.cmi library/summary.cmi proofs/tacexpr.cmo \
     interp/topconstr.cmi lib/util.cmi toplevel/vernacexpr.cmo \
     parsing/egrammar.cmi 
 parsing/egrammar.cmx: parsing/ast.cmx lib/bignat.cmx parsing/extend.cmx \
     interp/genarg.cmx parsing/lexer.cmx library/libnames.cmx \
     library/nameops.cmx kernel/names.cmx lib/options.cmx parsing/pcoq.cmx \
-    lib/pp.cmx library/summary.cmx interp/symbols.cmx proofs/tacexpr.cmx \
+    lib/pp.cmx interp/ppextend.cmx library/summary.cmx proofs/tacexpr.cmx \
     interp/topconstr.cmx lib/util.cmx toplevel/vernacexpr.cmx \
     parsing/egrammar.cmi 
 parsing/esyntax.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/extend.cmi \
