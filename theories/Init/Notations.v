@@ -53,7 +53,7 @@ Uninterpreted Notation "/ x" (at level 0)
 (** Notations for pairs *)
 
 Uninterpreted Notation "( x , y )" (at level 0)
-  V8only "x , y" (at level 150, left associativity).
+  V8only "x , y" (at level 250, left associativity).
 
 (** Notations for sum-types *)
 
@@ -77,7 +77,7 @@ Uninterpreted Notation "B + { x : A & P & Q }"
 
 (* At level 1 to factor with {x:A|P} etc *)
 
-Uninterpreted Notation "{ A } + { B }" (at level 1)
+Uninterpreted Notation "{ A }  + { B }" (at level 1)
   V8only (at level 10, A at level 80).
 
 Uninterpreted Notation "A + { B }" (at level 4, left associativity)
