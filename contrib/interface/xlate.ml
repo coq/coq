@@ -39,6 +39,12 @@ Hashtbl.add type_table "Coq.Init.Logic.and"
 Hashtbl.add type_table "Coq.Init.Datatypes.prod"
   [|[|"dummy";"pair"|]|];;
 
+Hashtbl.add type_table "Coq.Zarith.fast_integer.Z"
+[|[|"";"ZERO";"POS";"NEG"|]|];;
+
+Hashtbl.add type_table "Coq.Zarith.fast_integer.positive"
+[|[|"";"xI";"xO";"XH"|]|];;
+
 (*The following two codes are added to cope with the distinction
   between ocaml and caml-light syntax while using ctcaml to
   manipulate the program *)
@@ -415,7 +421,8 @@ let xlate_op the_node opn a b =
 	     xlate_error
 	       ("MUTCONSTRUCT:" ^ 
                 " can't describe a constructor without its name " ^
-		name)
+		name ^ "(" ^ (string_of_int tyi) ^ "," ^
+	       (string_of_int n) ^ ")")
          | Some type_desc' -> 
               let type_desc'' = type_desc'.(tyi) in
               let ident = type_desc''.(n) in
