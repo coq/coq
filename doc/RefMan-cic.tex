@@ -103,18 +103,6 @@ have {\sf Type :Type}.
 We shall make precise in the typing rules the constraints between the
 indexes.
 
-\medskip
-\Rem
-The extraction mechanism is not compatible with this universe
-hierarchy. It is supposed to work only on terms which are explicitly
-typed in the Calculus of Constructions without universes and with
-Inductive Definitions at the Set level and only a small elimination.
-In other cases, extraction may generate a dummy answer and sometimes
-failed. To avoid failure when developing proofs, an error while
-extracting the computational contents of a proof will not stop the
-proof but only give a warning.
-
-
 \subsection{Constants}
 Besides the sorts, the language also contains constants denoting
 objects in the environment. These constants may denote previously
