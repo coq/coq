@@ -36,9 +36,11 @@ let pr_ltac_id id = pr_id (id_of_ltac_v7_id id)
 let pr_module = Libnames.pr_reference
 
 let pr_reference r =
+  let loc = loc_of_reference r in
   try match Nametab.extended_locate (snd (qualid_of_reference r)) with
     | TrueGlobal ref ->
-	pr_reference (Constrextern.extern_reference dummy_loc Idset.empty ref)
+        pr_with_comments loc
+	  (pr_reference (Constrextern.extern_reference loc Idset.empty ref))
     | SyntacticDef kn ->
 	let is_coq_root d =
 	  let d = repr_dirpath d in
@@ -55,11 +57,9 @@ let pr_reference r =
 		  (reference_of_constr (Coqlib.build_coq_eq_data ()).Coqlib.sym)
               | _ -> r)
           else r
-	in pr_reference r
+	in pr_with_comments loc (pr_reference r)
   with Not_found ->
     error_global_not_found (snd (qualid_of_reference r))
-
-let quote str = "\""^str^"\""
 
 let sep_end () = str"."
 
@@ -67,7 +67,7 @@ let start_theorem = ref false
 
 let insert_proof_keyword () =
   if !start_theorem then 
-    (start_theorem := false; str "Proof" ++ sep_end () ++ fnl())
+    (start_theorem := false; hv 0 (str "Proof" ++ sep_end () ++ fnl()))
   else
     mt ()
 
@@ -153,7 +153,7 @@ let pr_production_item = function
 
 let pr_comment pr_c = function
   | CommentConstr c -> pr_c c
-  | CommentString s -> qs s
+  | CommentString s -> qsnew s
   | CommentInt n -> int n
 
 let pr_in_out_modules = function
@@ -176,7 +176,7 @@ let pr_class_rawexpr = function
 
 let pr_option_ref_value = function
   | QualidRefValue id -> pr_reference id
-  | StringRefValue s -> qs s
+  | StringRefValue s -> qsnew s
 
 let pr_printoption a b = match a with
   | Goptions.PrimaryTable table -> str table ++ pr_opt (prlist_with_sep sep pr_option_ref_value) b
@@ -310,7 +310,7 @@ let pr_type_option pr_c = function
 
 let pr_decl_notation =
   pr_opt (fun (ntn,scopt) -> 
-    str "as " ++ str (quote ntn) ++ 
+    str "as " ++ qsnew ntn ++
     pr_opt (fun sc -> str " :" ++ str sc) scopt)
 
 let rec abstract_rawconstr c = function
@@ -415,12 +415,12 @@ let pr_grammar_tactic_rule (name,(s,pil),t) =
 (*
   hov 0 (
   (* str name ++ spc() ++ *)
-  hov 0 (str"[" ++ qs s ++ spc() ++
+  hov 0 (str"[" ++ qsnew s ++ spc() ++
   prlist_with_sep sep pr_production_item pil ++ str"]") ++
   spc() ++ hov 0 (str"->" ++ spc() ++ str"[" ++ pr_raw_tactic t ++ str"]"))
 *)
   hov 2 (str "Tactic Notation" ++ spc() ++ 
-    hov 0 (qs s ++ spc() ++ prlist_with_sep sep pr_production_item pil ++
+    hov 0 (qsnew s ++ spc() ++ prlist_with_sep sep pr_production_item pil ++
     spc() ++ str":= " ++ spc() ++ pr_raw_tactic t))
 
 let pr_box b = let pr_boxkind = function
@@ -434,14 +434,14 @@ in str"<" ++ pr_boxkind b ++ str">"
 let pr_paren_reln_or_extern = function
   | None,L -> str"L"
   | None,E -> str"E"
-  | Some pprim,Any -> qs pprim
-  | Some pprim,Prec p -> qs pprim ++ spc() ++ str":" ++ spc() ++ int p
+  | Some pprim,Any -> qsnew pprim
+  | Some pprim,Prec p -> qsnew pprim ++ spc() ++ str":" ++ spc() ++ int p
   | _ -> mt()
 
 let rec pr_next_hunks = function 
   | UNP_FNL -> str"FNL"
   | UNP_TAB -> str"TAB"
-  | RO c -> qs c
+  | RO c -> qsnew c
   | UNP_BOX (b,ll) -> str"[" ++ pr_box b ++ prlist_with_sep sep pr_next_hunks ll ++ str"]"
   | UNP_BRK (n,m) -> str"[" ++ int n ++ spc() ++ int m ++ str"]"
   | UNP_TBRK (n,m) -> str"[ TBRK" ++ int n ++ spc() ++ int m ++ str"]"
@@ -511,12 +511,13 @@ let rec pr_vernac = function
   | VernacBack i -> if i=1 then str"Back" else str"Back" ++ pr_intarg i
 
   (* State management *)
-  | VernacWriteState s -> str"Write State" ++ spc () ++ qs s
-  | VernacRestoreState s -> str"Restore State" ++ spc() ++ qs s
+  | VernacWriteState s -> str"Write State" ++ spc () ++ qsnew s
+  | VernacRestoreState s -> str"Restore State" ++ spc() ++ qsnew s
 
   (* Control *)
   | VernacList l -> hov 2 (str"[" ++ spc() ++ prlist_with_sep (fun _ -> sep_end () ++ fnl() ) (pr_located pr_vernac) l ++ spc() ++ str"]") 
-  | VernacLoad (f,s) -> str"Load" ++ if f then (spc() ++ str"Verbose" ++ spc()) else spc()  ++ str "\"" ++ str s ++ str "\""
+  | VernacLoad (f,s) -> str"Load" ++ if f then (spc() ++ str"Verbose"
+  ++ spc()) else spc()  ++ qsnew s
   | VernacTime v -> str"Time" ++ spc() ++ pr_vernac v
   | VernacVar id -> pr_id id
   
@@ -554,14 +555,14 @@ let rec pr_vernac = function
 	    (match a with None -> [] | Some a -> [SetAssoc a]),s
         | None -> [],s in
       hov 0 (hov 0 (str"Infix " ++ pr_locality local
-      ++ qs s ++ spc() ++ pr_reference q) ++
+      ++ qsnew s ++ spc() ++ pr_reference q) ++
       pr_syntax_modifiers mv8 ++
       (match sn with
     | None -> mt()
     | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
   | VernacDistfix (local,a,p,s,q,sn) ->
       hov 0 (str"Distfix " ++ pr_locality local ++ pr_entry_prec a ++ int p
-        ++ spc() ++ qs s ++ spc() ++ pr_reference q ++ (match sn with
+        ++ spc() ++ qsnew s ++ spc() ++ pr_reference q ++ (match sn with
     | None -> mt()
     | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
   | VernacNotation (local,c,sl,mv8,opt) ->
@@ -572,7 +573,7 @@ let rec pr_vernac = function
 	let n = String.length s in
 	if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' 
 	then str (String.sub s 1 (n-2))
-	else qs s in
+	else qsnew s in
       hov 2( str"Notation" ++ spc() ++ pr_locality local ++ ps ++
       str " :=" ++ pr_constrarg c ++ pr_syntax_modifiers l ++
       (match opt with
@@ -582,7 +583,7 @@ let rec pr_vernac = function
       let (s,l) = match mv8 with
           None -> out_some sl
         | Some ml -> ml in
-      str"Reserved Notation" ++ spc() ++ pr_locality local ++ qs s ++
+      str"Reserved Notation" ++ spc() ++ pr_locality local ++ qsnew s ++
       pr_syntax_modifiers l
 
   (* Gallina *)
@@ -919,20 +920,20 @@ pr_vbinders bl ++ spc())
         | None -> mt()
         | Some false -> str"Implementation" ++ spc()
         | Some true -> str"Specification" ++ spc ()) ++
-      qs f)
+      qsnew f)
   | VernacAddLoadPath (fl,s,d) -> hov 2
       (str"Add" ++
        (if fl then str" Rec " else spc()) ++
-       str"LoadPath" ++ spc() ++ qs s ++
+       str"LoadPath" ++ spc() ++ qsnew s ++
        (match d with 
          | None -> mt()
          | Some dir -> spc() ++ str"as" ++ spc() ++ pr_dirpath dir)) 
-  | VernacRemoveLoadPath s -> str"Remove LoadPath" ++ qs s
+  | VernacRemoveLoadPath s -> str"Remove LoadPath" ++ qsnew s
   | VernacAddMLPath (fl,s) ->
-      str"Add" ++ (if fl then str" Rec " else spc()) ++ str"ML Path" ++ qs s
+      str"Add" ++ (if fl then str" Rec " else spc()) ++ str"ML Path" ++ qsnew s
   | VernacDeclareMLModule l ->
-      hov 2 (str"Declare ML Module" ++ spc() ++ prlist_with_sep sep qs l)
-  | VernacChdir s -> str"Cd" ++ pr_opt qs s
+      hov 2 (str"Declare ML Module" ++ spc() ++ prlist_with_sep sep qsnew l)
+  | VernacChdir s -> str"Cd" ++ pr_opt qsnew s
 
   (* Commands *)
   | VernacDeclareTacticDefinition (rc,l) ->
@@ -1051,9 +1052,9 @@ pr_vbinders bl ++ spc())
   | VernacLocate loc -> 
       let pr_locate =function
 	| LocateTerm qid ->  pr_reference qid
-	| LocateFile f -> str"File" ++ spc() ++ qs f
+	| LocateFile f -> str"File" ++ spc() ++ qsnew f
 	| LocateLibrary qid -> str"Library" ++ spc () ++ pr_module qid
-	| LocateNotation s -> str ("\""^s^"\"")
+	| LocateNotation s -> qsnew s
       in str"Locate" ++ spc() ++ pr_locate loc
   | VernacComments l ->
       hov 2

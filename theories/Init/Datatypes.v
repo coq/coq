@@ -80,8 +80,8 @@ Notation Snd := (snd ? ?).
 
 Hints Resolve pair inl inr : core v62.
 
-(** Parsing only of things in [Datatypes.v] *)
 V7only[
+(** Parsing only of things in [Datatypes.v] *)
 Notation "< A , B > ( x , y )" := (pair A B x y) (at level 1, only parsing, A annot).
 Notation "< A , B > 'Fst' ( p )" := (fst A B p) (at level 1, only parsing, A annot).
 Notation "< A , B > 'Snd' ( p )" := (snd A B p) (at level 1, only parsing, A annot).

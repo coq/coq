@@ -74,6 +74,8 @@ let pr_notation pr s env =
 let pr_delimiters key strm =
   strm ++ str ("%"^key)
 
+let surround p = str"(" ++ p ++ str")"
+
 open Rawterm
 
 let pr_opt pr = function
@@ -106,7 +108,15 @@ let pr_name = function
   | Anonymous -> str"_"
   | Name id -> pr_id (Constrextern.v7_to_v8_id id)
 
-let pr_located pr (loc,x) = pr x
+let pr_located pr ((b,e),x) =
+  if Options.do_translate() then comment b ++ pr x ++ comment e
+  else pr x
+
+let pr_with_comments loc pp = pr_located (fun x -> x) (loc,pp)
+
+let pr_or_var pr = function
+  | Genarg.ArgArg x -> pr x
+  | Genarg.ArgVar (loc,s) -> pr_with_comments loc (pr_id s)
 
 let las = 12
 
@@ -124,16 +134,15 @@ let rec pr_patt inh p =
   | CPatDelimiters (_,k,p) ->
       pr_delimiters k (pr_patt (latom,E) p), latom
   in
-  if prec_less prec inh then strm
-  else str"(" ++ strm ++ str")"
+  let loc = cases_pattern_loc p in
+  pr_with_comments loc (if prec_less prec inh then strm else surround strm)
 
-let pr_eqn pr (_,pl,rhs) =
+let pr_eqn pr (loc,pl,rhs) =
   spc() ++ hov 4
-    (str "| " ++
-     hov 0 (prlist_with_sep sep_v (pr_patt ltop) pl ++ str " =>") ++
-     spc() ++ pr ltop rhs)
-
-let surround p = str"(" ++ p ++ str")"
+    (pr_with_comments loc
+      (str "| " ++
+      hov 0 (prlist_with_sep sep_v (pr_patt ltop) pl ++ str " =>") ++
+      spc() ++ pr ltop rhs))
 
 let pr_binder many pr (nal,t) =
   match t with
@@ -371,13 +380,39 @@ let pr_app pr a l =
     pr (lapp,L) a  ++ 
     prlist (fun a -> spc () ++ pr_expl_args pr a) l)
 
+
+let cs = function
+  | CRef(Ident(_,i)) -> "ID"
+  | CRef(Qualid(_,q)) -> "Q"
+  | CFix(_,x,a) -> "FX"
+  | CCoFix(_,x,a) -> "CFX"
+  | CArrow(_,a,b) -> "->"
+  | CProdN(_,bl,a) -> "Pi"
+  | CLambdaN(_,bl,a) -> "L"
+  | CLetIn(_,x,a,b) -> "LET"
+  | CAppExpl(_,f,a) -> "@E"
+  | CApp(_,f,a) -> "@"
+  | CCases(_,p,a,br) -> "C"
+  | COrderedCase(_,s,p,a,br) -> "OC"
+  | CLetTuple(_,ids,p,a,b) -> "LC"
+  | CIf(_,e,p,a,b) -> "LI"
+  | CHole _ -> "?"
+  | CPatVar(_,v) -> "PV"
+  | CEvar(_,ev) -> "EV"
+  | CSort(_,s) -> "S"
+  | CCast(_,a,b) -> "::"
+  | CNotation(_,n,l) -> "NOT"
+  | CNumeral(_,i) -> "NUM"
+  | CDelimiters(_,s,e) -> "DEL"
+  | CDynamic(_,d) -> "DYN"
+
 let rec pr inherited a =
   let (strm,prec) = match a with
   | CRef r -> pr_reference r, latom
   | CFix (_,id,fix) ->
       let p = hov 0 (str"fix " ++ pr_recursive (pr_fixdecl pr) (snd id) fix) in
       (if List.length fix = 1 & prec_less (fst inherited) ltop
-       then str"(" ++ p ++ str")" else p),
+       then surround p else p),
       lfix
   | CCoFix (_,id,cofix) ->
       hov 0 (str "cofix " ++ pr_recursive (pr_cofixdecl pr) (snd id) cofix),
@@ -494,8 +529,9 @@ let rec pr inherited a =
   | CDelimiters (_,sc,a) -> pr_delimiters sc (pr (latom,E) a), latom
   | CDynamic _ -> str "<dynamic>", latom
   in
-  if prec_less prec inherited then strm
-  else str"(" ++ strm ++ str")"
+  let loc = constr_loc a in
+  pr_with_comments loc
+    (if prec_less prec inherited then strm else surround strm)
 
 let rec strip_context n iscast t =
   if n = 0 then

@@ -22,7 +22,18 @@ open Pp_control
       (except if no mark yet on the reste of the line)
    \end{description}
  *)
-   
+ 
+let comments = ref []
+  
+let rec split_com comacc acc pos = function
+    [] -> comments := List.rev acc; comacc
+  | ((b,e),c as com)::coms ->
+      (* Take all comments that terminates before pos, or begin exactly
+         at pos (used to print comments attached after an expression) *)
+      if e<=pos || pos=b then split_com (c::comacc) acc pos coms
+      else  split_com comacc (com::acc) pos coms
+
+
 type block_type =
   | Pp_hbox of int
   | Pp_vbox of int
@@ -42,6 +53,7 @@ type 'a ppcmd_token =
   | Ppcmd_open_box of block_type
   | Ppcmd_close_box
   | Ppcmd_close_tbox
+  | Ppcmd_comment of int
 
 type 'a ppdir_token =
   | Ppdir_ppcmds of 'a ppcmd_token Stream.t
@@ -99,6 +111,7 @@ let tab () = [< 'Ppcmd_set_tab >]
 let fnl () = [< 'Ppcmd_force_newline >]
 let pifb () = [< 'Ppcmd_print_if_broken >]
 let ws n = [< 'Ppcmd_white_space n >]
+let comment n = [< ' Ppcmd_comment n >]
 
 (* derived commands *)
 let mt () = [< >]
@@ -117,6 +130,7 @@ let rec escape_string s =
       escape_at s' (i-1)
     else escape_at s (i-1) in
   escape_at s (String.length s - 1)
+
 
 let qstring s = str ("\""^(escape_string s)^"\"")
 let qs = qstring
@@ -139,6 +153,34 @@ let tclose () = [< 'Ppcmd_close_tbox >]
 
 let (++) = Stream.iapp
 
+(* This flag tells if the last printed comment ends with a newline, to
+  avoid empty lines *)
+let com_eol = ref false
+
+let com_brk ft = com_eol := false
+let com_if ft f =
+  if !com_eol then (com_eol := false; Format.pp_force_newline ft ())
+  else Lazy.force f
+
+let rec pr_com ft s =
+  let (s1,os) =
+    try
+      let n = String.index s '\n' in
+      String.sub s 0 n, Some (String.sub s (n+1) (String.length s - n - 1))
+    with Not_found -> s,None in
+  com_if ft (Lazy.lazy_from_val());
+(*  let s1 =
+    if String.length s1 <> 0 && s1.[0] = ' ' then
+      (Format.pp_print_space ft (); String.sub s1 1 (String.length s1 - 1))
+    else s1 in*)
+  Format.pp_print_as ft (utf8_length s1) s1;
+  match os with
+      Some s2 ->
+        if String.length s2 = 0 then (com_eol := true)
+        else
+          (Format.pp_force_newline ft (); pr_com ft s2)
+    | None -> ()
+
 (* pretty printing functions *)
 let pp_dirs ft = 
   let maxbox = (get_gp ft).max_depth in
@@ -150,29 +192,42 @@ let pp_dirs ft =
     | Pp_tbox     -> Format.pp_open_tbox ft () 
   in
   let rec pp_cmd = function
-    | Ppcmd_print(n,s)        -> Format.pp_print_as ft n s
+    | Ppcmd_print(n,s)        ->
+        com_if ft (Lazy.lazy_from_val()); Format.pp_print_as ft n s
     | Ppcmd_box(bty,ss)       -> (* Prevent evaluation of the stream! *)
+        com_if ft (Lazy.lazy_from_val());
         pp_open_box bty ;
         if not (Format.over_max_boxes ()) then Stream.iter pp_cmd ss;
         Format.pp_close_box ft ()
-    | Ppcmd_open_box bty      -> pp_open_box bty
+    | Ppcmd_open_box bty      -> com_if ft (Lazy.lazy_from_val()); pp_open_box bty
     | Ppcmd_close_box         -> Format.pp_close_box ft ()
     | Ppcmd_close_tbox        -> Format.pp_close_tbox ft ()
-    | Ppcmd_white_space n     -> Format.pp_print_break ft n 0
-    | Ppcmd_print_break(m,n)  -> Format.pp_print_break ft m n
+    | Ppcmd_white_space n     ->
+        com_if ft (Lazy.lazy_from_fun (fun()->Format.pp_print_break ft n 0))
+    | Ppcmd_print_break(m,n)  ->
+        com_if ft (Lazy.lazy_from_fun(fun()->Format.pp_print_break ft m n))
     | Ppcmd_set_tab           -> Format.pp_set_tab ft ()
-    | Ppcmd_print_tbreak(m,n) -> Format.pp_print_tbreak ft m n
-    | Ppcmd_force_newline     -> Format.pp_force_newline ft ()
-    | Ppcmd_print_if_broken   -> Format.pp_print_if_newline ft () 
+    | Ppcmd_print_tbreak(m,n) ->
+        com_if ft (Lazy.lazy_from_fun(fun()->Format.pp_print_tbreak ft m n))
+    | Ppcmd_force_newline     ->
+        com_brk ft; Format.pp_force_newline ft ()
+    | Ppcmd_print_if_broken   ->
+        com_if ft (Lazy.lazy_from_fun(fun()->Format.pp_print_if_newline ft ()))
+    | Ppcmd_comment i         ->
+        let coms = split_com [] [] i !comments in
+(*        Format.pp_open_hvbox ft 0;*)
+        List.iter (pr_com ft) coms(*;
+        Format.pp_close_box ft ()*)
   in
   let pp_dir = function
     | Ppdir_ppcmds cmdstream -> Stream.iter pp_cmd cmdstream
-    | Ppdir_print_newline    -> Format.pp_print_newline ft ()
+    | Ppdir_print_newline    ->
+        com_brk ft; Format.pp_print_newline ft ()
     | Ppdir_print_flush      -> Format.pp_print_flush ft () 
   in
   fun dirstream ->
     try  
-      Stream.iter pp_dir dirstream
+      Stream.iter pp_dir dirstream; com_brk ft
     with 
       | e -> Format.pp_print_flush ft () ; raise e
 

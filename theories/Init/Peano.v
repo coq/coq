@@ -205,8 +205,8 @@ Syntax constr
   | O [ O ]      -> ["(0)"].
 ].
 
-(* For parsing/printing based on scopes *)
 V7only [
+(* For parsing/printing based on scopes *)
 Module nat_scope.
 Infix 4 "+" plus : nat_scope.
 Infix 3 "*" mult : nat_scope.

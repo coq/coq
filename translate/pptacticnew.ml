@@ -23,6 +23,19 @@ open Genarg
 open Libnames
 open Pptactic
 
+(* In v8 syntax only double quote char is escaped by repeating it *)
+let rec escape_string_v8 s =
+  let rec escape_at s i =
+    if i<0 then s
+    else if s.[i] == '"' then
+      let s' = String.sub s 0 i^"\""^String.sub s i (String.length s - i) in
+      escape_at s' (i-1)
+    else escape_at s (i-1) in
+  escape_at s (String.length s - 1)
+
+let qstringnew s = str ("\""^escape_string_v8 s^"\"")
+let qsnew = qstringnew
+
 let translate_v7_ltac = function
   | "DiscrR" -> "discrR"
   | "Sup0" -> "prove_sup0"
@@ -106,7 +119,7 @@ let id_of_ltac_v7_id id =
 
 let pr_ltac_or_var pr = function
   | ArgArg x -> pr x
-  | ArgVar (_,id) -> pr_id (id_of_ltac_v7_id id)
+  | ArgVar (loc,id) -> pr_with_comments loc ( pr_id (id_of_ltac_v7_id id))
 
 let pr_id id = pr_id (Constrextern.v7_to_v8_id id)
 
@@ -191,7 +204,7 @@ let pr_clause_pattern pr_id = function
 
 let pr_induction_arg prc = function
   | ElimOnConstr c -> prc c
-  | ElimOnIdent (_,id) -> pr_id id
+  | ElimOnIdent (loc,id) -> pr_with_comments loc (pr_id id)
   | ElimOnAnonHyp n -> int n
 
 let pr_match_pattern pr_pat = function
@@ -200,7 +213,7 @@ let pr_match_pattern pr_pat = function
   | Subterm (Some id,a) -> pr_id id ++ str "[" ++ pr_pat a ++ str "]"
 
 let pr_match_hyps pr_pat = function
-  | Hyp ((_,na),mp) -> pr_name na ++ str ":" ++ pr_match_pattern pr_pat mp
+  | Hyp (nal,mp) -> pr_located pr_name nal ++ str ":" ++ pr_match_pattern pr_pat mp
 
 let pr_match_rule m pr pr_pat = function
   | Pat ([],mp,t) when m ->
@@ -217,11 +230,11 @@ let pr_funvar = function
   | Some id -> spc () ++ pr_id id
 
 let pr_let_clause k pr prc pr_cst = function
-  | ((_,id),None,t) ->
-      hov 0 (str k ++ pr_id id ++ str " :=" ++ brk (1,1) ++
+  | (id,None,t) ->
+      hov 0 (str k ++ pr_located pr_id id ++ str " :=" ++ brk (1,1) ++
              pr (TacArg t))
-  | ((_,id),Some c,t) ->
-      hv 0 (str k ++ pr_id id ++ str" :" ++ brk(1,2) ++
+  | (id,Some c,t) ->
+      hv 0 (str k ++ pr_located pr_id id ++ str" :" ++ brk(1,2) ++
       pr_may_eval prc prc pr_cst c ++
       str " :=" ++ brk (1,1) ++ pr (TacArg t))
 
@@ -232,8 +245,9 @@ let pr_let_clauses pr prc pr_cst = function
          prlist (fun t -> spc () ++ pr_let_clause "with " pr prc pr_cst t) tl)
   | [] -> anomaly "LetIn must declare at least one binding"
 
-let pr_rec_clause pr ((_,id),(l,t)) =
-  hov 0 (pr_id id ++ prlist pr_funvar l ++ str " :=") ++ spc () ++ pr t
+let pr_rec_clause pr (id,(l,t)) =
+  hov 0
+    (pr_located pr_id id ++ prlist pr_funvar l ++ str " :=") ++ spc () ++ pr t
 
 let pr_rec_clauses pr l = 
   prlist_with_sep (fun () -> fnl () ++ str "with ") (pr_rec_clause pr) l
@@ -295,10 +309,13 @@ let rec pr_atom0 env = function
 
   (* Main tactic printer *)
 and pr_atom1 env = function
-  | TacExtend (_,s,l) ->
-      pr_extend (pr_constr env) (pr_lconstr env) (pr_tac env) s l
-  | TacAlias (_,s,l,_) ->
-      pr_extend (pr_constr env) (pr_lconstr env) (pr_tac env) s (List.map snd l)
+  | TacExtend (loc,s,l) ->
+      pr_with_comments loc 
+        (pr_extend (pr_constr env) (pr_lconstr env) (pr_tac env) s l)
+  | TacAlias (loc,s,l,_) ->
+      pr_with_comments loc
+        (pr_extend (pr_constr env) (pr_lconstr env) (pr_tac env) s
+          (List.map snd l))
 
   (* Basic tactics *)
   | TacIntroPattern [] as t -> pr_atom0 env t
@@ -308,9 +325,10 @@ and pr_atom1 env = function
       hv 1 (str "intros until" ++ pr_arg pr_quantified_hypothesis h)
   | TacIntroMove (None,None) as t -> pr_atom0 env t
   | TacIntroMove (Some id1,None) -> str "intro " ++ pr_id id1
-  | TacIntroMove (ido1,Some (_,id2)) ->
+  | TacIntroMove (ido1,Some id2) ->
       hov 1
-      (str "intro" ++ pr_opt pr_id ido1 ++ spc () ++ str "after " ++ pr_id id2)
+      (str "intro" ++ pr_opt pr_id ido1 ++ spc () ++ str "after " ++
+       pr_located pr_id id2)
   | TacAssumption as t -> pr_atom0 env t
   | TacExact c -> hov 1 (str "exact" ++ pr_constrarg env c)
   | TacApply cb -> hov 1 (str "apply" ++ spc () ++ pr_with_bindings env cb)
@@ -403,8 +421,10 @@ and pr_atom1 env = function
   | TacAuto (n,db) -> hov 0 (str "auto" ++ pr_opt int n ++ pr_hintbases db)
   | TacAutoTDB None as x -> pr_atom0 env x
   | TacAutoTDB (Some n) -> hov 0 (str "autotdb" ++ spc () ++ int n)
-  | TacDestructHyp (true,(_,id)) -> hov 0 (str "cdhyp" ++ spc () ++ pr_id id)
-  | TacDestructHyp (false,(_,id)) -> hov 0 (str "dhyp" ++ spc () ++ pr_id id)
+  | TacDestructHyp (true,id) ->
+      hov 0 (str "cdhyp" ++ spc () ++ pr_located pr_id id)
+  | TacDestructHyp (false,id) ->
+      hov 0 (str "dhyp" ++ spc () ++ pr_located pr_id id)
   | TacDestructConcl as x -> pr_atom0 env x
   | TacSuperAuto (n,l,b1,b2) ->
       hov 1 (str "superauto" ++ pr_opt int n ++ pr_autoarg_adding l ++ 
@@ -555,21 +575,23 @@ let rec pr_tac env inherited tac =
   | TacFail (0,"") -> str "fail", latom
   | TacFail (n,s) -> 
       str "fail" ++ (if n=0 then mt () else pr_arg int n) ++
-      (if s="" then mt() else str " \"" ++ str s ++ str "\""), latom
+      (if s="" then mt() else qsnew s), latom
   | TacFirst tl ->
       str "first" ++ spc () ++ pr_seq_body (pr_tac env) tl, llet
   | TacSolve tl ->
       str "solve" ++ spc () ++ pr_seq_body (pr_tac env) tl, llet
   | TacId -> str "idtac", latom
-  | TacAtom (_,t) -> hov 1 (pr_atom1 env t), ltatom
+  | TacAtom (loc,t) ->
+      pr_with_comments loc (hov 1 (pr_atom1 env t)), ltatom
   | TacArg(Tacexp e) -> pr_tac0 env e, latom
   | TacArg(ConstrMayEval (ConstrTerm c)) -> str "'" ++ pr_constr env c, latom
   | TacArg(ConstrMayEval c) ->
       pr_may_eval (pr_constr env) (pr_lconstr env) (pr_cst env) c, leval
   | TacArg(Integer n) -> int n, latom
-  | TacArg(TacCall(_,f,l)) ->
-      hov 1 (pr_ref f ++ spc () ++
-             prlist_with_sep spc (pr_tacarg env) l),
+  | TacArg(TacCall(loc,f,l)) ->
+      pr_with_comments loc
+        (hov 1 (pr_ref f ++ spc () ++
+         prlist_with_sep spc (pr_tacarg env) l)),
       lcall
   | TacArg a -> pr_tacarg env a, latom
   in
@@ -577,13 +599,14 @@ let rec pr_tac env inherited tac =
   else str"(" ++ strm ++ str")"
 
 and pr_tacarg env = function
-  | TacDynamic (_,t) -> str ("<dynamic ["^(Dyn.tag t)^"]>")
-  | MetaIdArg (_,s) -> str ("$" ^ s)
+  | TacDynamic (loc,t) ->
+      pr_with_comments loc (str ("<dynamic ["^(Dyn.tag t)^"]>"))
+  | MetaIdArg (loc,s) -> pr_with_comments loc (str ("$" ^ s))
   | Identifier id -> pr_id id
   | TacVoid -> str "()"
   | Reference r -> pr_ref r
   | ConstrMayEval (ConstrTerm c) -> pr_constr env c
-  | TacFreshId sopt -> str "fresh" ++ pr_opt qstring sopt
+  | TacFreshId sopt -> str "fresh" ++ pr_opt qsnew sopt
   | (ConstrMayEval _|TacCall _|Tacexp _|Integer _) as a ->
       str "'" ++ pr_tac env (latom,E) (TacArg a)
 

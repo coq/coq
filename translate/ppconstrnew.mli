@@ -38,9 +38,14 @@ val prec_less : int -> int * Ppextend.parenRelation -> bool
 val pr_global : Idset.t -> global_reference -> std_ppcmds
  
 val pr_tight_coma : unit -> std_ppcmds
+val pr_located :
+  ('a -> std_ppcmds) -> 'a located -> std_ppcmds
+val pr_with_comments : loc -> std_ppcmds -> std_ppcmds
 val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
 val pr_name : name -> std_ppcmds
 val pr_qualid : qualid -> std_ppcmds
+val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
+val pr_metaid : identifier -> std_ppcmds
 val pr_red_expr :
   ('a -> std_ppcmds) * ('a -> std_ppcmds) *  ('b -> std_ppcmds) ->
     ('a,'b) red_expr_gen -> std_ppcmds
@@ -59,7 +64,6 @@ val pr_cases_pattern : cases_pattern_expr -> std_ppcmds
 val pr_may_eval :
   ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) -> ('a,'b) may_eval
     -> std_ppcmds
-val pr_metaid : identifier -> std_ppcmds
 
 val pr_rawconstr_env : env -> rawconstr -> std_ppcmds
 val pr_lrawconstr_env : env -> rawconstr -> std_ppcmds

@@ -100,27 +100,57 @@ let parse_phrase (po, verbch) =
 let just_parsing = ref false
 let chan_translate = ref stdout
 
-let pr_comments = function
-  | None -> mt()
-  | Some l -> h 0 (List.fold_left (++) (mt ()) (List.rev l))
+
+let pr_new_syntax loc ocom =
+  let com = match ocom with
+    | Some (VernacV7only _) ->
+        Options.v7_only := true;
+        mt()
+    | Some VernacNop -> mt()
+    | Some com ->
+	let fs = States.freeze () in
+        let com = pr_vernac com in
+        States.unfreeze fs;
+        com
+    | None -> mt() in
+  Format.set_formatter_out_channel !chan_translate;
+  Format.set_max_boxes max_int;
+  if !translate_file then
+    msg (hov 0 (
+(*str"{"++int (fst loc)++str"}"++List.fold_right (fun ((b,e),s) strm -> str"("++int b++str","++int
+  e++str":"++str s++str")"++strm)
+  !Pp.comments (mt()) ++*)
+comment (fst loc) ++ com ++ comment (snd loc - 1)))
+  else
+    msgnl (hov 4 (str"New Syntax:" ++ fnl() ++ com));
+  Constrintern.set_temporary_implicits_in [];
+  Constrextern.set_temporary_implicits_out [];
+  Format.set_formatter_out_channel stdout
 
 let rec vernac_com interpfun (loc,com) =
   let rec interp = function
     | VernacLoad (verbosely, fname) ->
         let ch = !chan_translate in
-        if Options.do_translate () then begin
+        let cs = Lexer.com_state() in
+        let cl = !Pp.comments in
+        if Options.do_translate() then begin
           let _,f = find_file_in_path (Library.get_load_path ())
             (make_suffix fname ".v") in
-          chan_translate:=open_out (f^"8")
+          chan_translate := open_out (f^"8");
+          Pp.comments := []
         end;
         begin try
           read_vernac_file verbosely (make_suffix fname ".v");
           if Options.do_translate () then close_out !chan_translate;
-          chan_translate := ch
-        with e ->
-          if Options.do_translate () then close_out !chan_translate;
           chan_translate := ch;
-	  raise e end;
+          Lexer.restore_com_state cs;
+          Pp.comments := cl
+        with e ->
+          if Options.do_translate() then close_out !chan_translate;
+          chan_translate := ch;
+          Lexer.restore_com_state cs;
+          Pp.comments := cl;
+          raise e end;
 
     | VernacList l -> List.iter (fun (_,v) -> interp v) l
 
@@ -133,7 +163,9 @@ let rec vernac_com interpfun (loc,com) =
 
     (* To be interpreted in v7 or translator input only *)
     | VernacV7only v ->
-        if !Options.v7 || Options.do_translate() then interp v
+        Options.v7_only := true;
+        if !Options.v7 || Options.do_translate() then interp v;
+        Options.v7_only := false
 
     (* To be interpreted in translator output only *)
     | VernacV8only v -> 
@@ -145,32 +177,11 @@ let rec vernac_com interpfun (loc,com) =
   in 
   try
     Options.v7_only := false;
-    if do_translate () then
-      (Format.set_formatter_out_channel !chan_translate;
-       Format.set_max_boxes max_int;
-       (match com with
-         | VernacV7only _ ->
-             Options.v7_only := true;
-             if !translate_file then msg (pr_comments !comments)
-	 | VernacNop ->
-             if !translate_file then msg (pr_comments !comments)
-         | _ ->
-	     let fs = States.freeze () in
-             let p = pr_vernac com in
-             if !translate_file then
-               msgnl (pr_comments !comments ++ hov 0 p)
-             else
-	       (msgnl
-                 (hov 4 (str"New Syntax:" ++ fnl() ++ pr_comments !comments ++
-                         p)));
-	     States.unfreeze fs);
-       Constrintern.set_temporary_implicits_in [];
-       Constrextern.set_temporary_implicits_out [];
-       comments := None;
-       Format.set_formatter_out_channel stdout);
+    if do_translate () then pr_new_syntax loc (Some com);
     interp com;
   with e -> 
     Format.set_formatter_out_channel stdout;
+    Options.v7_only := false;
     raise (DuringCommandInterp (loc, e))
 
 and vernac interpfun input =
@@ -192,7 +203,8 @@ and read_vernac_file verbosely s =
     Format.set_formatter_out_channel stdout;
     close_input in_chan input;    (* we must close the file first *)
     match real_error e with
-      | End_of_input -> ()
+      | End_of_input ->
+          if do_translate () then pr_new_syntax (max_int,max_int) None
       | _ -> raise_with_file fname e
 
 (* raw_do_vernac : char Stream.t -> unit
@@ -229,14 +241,10 @@ let compile verbosely f =
 *)
   let ldir,long_f_dot_v = Library.start_library f in
   if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
-  if Options.do_translate () then chan_translate := open_out (f^".v8");
+  chan_translate :=
+    if Options.do_translate () then open_out (f^".v8") else stdout;
   let _ = load_vernac verbosely long_f_dot_v in
-  if Options.do_translate () then begin
-    Format.set_formatter_out_channel !chan_translate;
-    msg (pr_comments !comments);
-    Format.set_formatter_out_channel stdout;
-    close_out !chan_translate
-  end;
+  if Options.do_translate () then close_out !chan_translate;
   if Pfedit.get_all_proof_names () <> [] then
     (message "Error: There are pending proofs"; exit 1);
   Library.save_library_to ldir (long_f_dot_v ^ "o")

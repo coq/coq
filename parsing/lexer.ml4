@@ -195,61 +195,99 @@ let rec number len = parser
 
 let escape len c = store len c
 
-let rec string bp len = parser
+let rec string_v8 bp len = parser
+  | [< ''"'; esc=(parser [<''"' >] -> true | [< >] -> false); s >] ->
+      if esc then string_v8 bp (store len '"') s else len
+  | [< 'c; s >] -> string_v8 bp (store len c) s 
+  | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
+
+let rec string_v7 bp len = parser
   | [< ''"' >] -> len
   | [< ''\\'; c = (parser [< ' ('"' | '\\' as c) >] -> c | [< >] -> '\\'); s >]
-     -> string bp (escape len c) s
+     -> string_v7 bp (escape len c) s
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
-  | [< 'c; s >] -> string bp (store len c) s 
+  | [< 'c; s >] -> string_v7 bp (store len c) s 
 
-let comments = ref None
+let string bp len s =
+  if !Options.v7 then string_v7 bp len s else string_v8 bp len s
 
-type commentar =
-  | InVernac
-  | InVernacEsc of string
-  | BeVernac of string
-  | InComment of string
+(* Utilities for comment translation *)
+let comment_begin = ref None
+let comm_loc bp = if !comment_begin=None then comment_begin := Some bp
 
-let current = ref (BeVernac "")
+let current = ref ""
+let between_com = ref true
 
-let add_comment () = let reinit () = match ! current with
-  | InVernac -> ()
-  | InVernacEsc s -> current := InVernacEsc ""
-  | BeVernac s -> current := BeVernac ""
-  | InComment s -> current := InComment "" in
-match (!comments,!current) with
-  | None , InVernac -> ()
-  | None , BeVernac s | None , InComment s | None , InVernacEsc s -> reinit (); comments := Some [str s]
-  | Some _ , InVernac -> ()
-  | Some l , BeVernac s | Some l , InComment s | Some l , InVernacEsc s -> reinit (); comments := Some (str s::l)
+type com_state = int option * string * bool
+let restore_com_state (o,s,b) =
+  comment_begin := o; current := s; between_com := b
+let dflt_com = (None,"",true)
+let com_state () =
+  let s = (!comment_begin, !current, !between_com) in
+  restore_com_state dflt_com; s
 
-let add_comment_pp s = match !comments with
-  | None -> comments := Some [s]
-  | Some l -> comments := Some (s::l) 
+let real_push_char c = current := !current ^ String.make 1 c
 
-let add_string s = match !current with
-  | InVernac -> ()
-  | InVernacEsc t -> current := InVernacEsc (t^s)
-  | BeVernac t -> current := BeVernac (t^s)
-  | InComment t -> current := InComment (t^s)
-	
-let rec comment bp = parser
+(* Add a char if it is between two commands, if it is a newline or
+   if the last char is not a space itself. *)
+let push_char c =
+  if
+    !between_com || List.mem c ['\n';'\r'] ||
+    (List.mem c [' ';'\t']&&
+     (String.length !current=0 ||
+      not (List.mem !current.[String.length !current - 1]
+        [' ';'\t';'\n';'\r'])))
+  then
+    real_push_char c
+
+let push_string s = current := !current ^ s
+
+let null_comment s =
+  let rec null i =
+    i<0 || (List.mem s.[i] [' ';'\t';'\n';'\r'] && null (i-1)) in
+  null (String.length s - 1)
+
+let comment_stop ep =
+  (if Options.do_translate() && !current <> "" &&
+    (!between_com || not(null_comment !current)) then
+    let bp = match !comment_begin with
+        Some bp -> bp
+      | None ->
+          msgerrnl(str"No begin location for comment '"++str !current++str"' ending at  "++int ep);
+          ep-1 in
+    Pp.comments := ((bp,ep),!current) :: !Pp.comments);
+  current := "";
+  comment_begin := None;
+  between_com := false
+
+(* Does not unescape!!! *)
+let rec comm_string bp = parser
+  | [< ''"' >] -> push_string "\""
+  | [< ''\\'; _ =
+           (parser [< ' ('"' | '\\' as c) >] ->
+             if c='"' then real_push_char c;
+             real_push_char c
+                 | [< >] -> real_push_char '\\'); s >]
+     -> comm_string bp s
+  | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
+  | [< 'c; s >] -> real_push_char c; comm_string bp s 
+
+let rec comment bp = parser bp2
   | [< ''(';
        _ = (parser
-              | [< ''*'; s >] -> add_string "(*"; comment bp s
-              | [< >] -> add_string "(" ); 
+              | [< ''*'; s >] -> push_string "(*"; comment bp s
+              | [< >] -> push_string "(" ); 
        s >] -> comment bp s
   | [< ''*';
        _ = parser
-         | [< '')' >] -> add_string "*)"; add_comment ()
-         | [< s >] -> add_string "*"; comment bp s >] -> ()
-  | [< ''"'; _ = (parser bp [< _ = string bp 0 >] -> ()); s >] ->
+         | [< '')' >] ep -> push_string "*)"
+         | [< s >] -> real_push_char '*'; comment bp s >] -> ()
+  | [< ''"'; s >] ->
+      if Options.do_translate() then (push_string"\"";comm_string bp2 s)
+      else ignore (string bp2 0 s);
       comment bp s
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_comment
-  | [< '_ as z; s >] -> 
-	(match z with
-	| '\n' -> add_comment (); add_comment_pp (fnl ())
-	| _ -> add_string (String.make 1 z)); comment bp s 
+  | [< '_ as z; s >] ep -> real_push_char z; comment bp s
 
 (* Parse a special token, using the [token_tree] *)
 
@@ -337,57 +375,57 @@ let parse_after_dot bp c strm =
 (* Parse a token in a char stream *)
 
 let rec next_token = parser bp
-  | [< ''\n'; s >] -> (match !current with
-	| BeVernac s -> current := InComment s
-	| InComment _ -> add_comment_pp (fnl ())
-	| _ -> ()); next_token s
-  | [< '' ' | '\t'; s >] -> (match !current with
-	| BeVernac _ |  InComment _ -> add_comment_pp (spc ())
-	| _ -> ()); next_token s
-  | [< ''\r'; s >] -> next_token s
+  | [< '' ' | '\t' | '\n' |'\r' as c; s >] ep ->
+      comm_loc bp; push_char c; next_token s
   | [< ''$'; len = ident (store 0 '$') >] ep -> 
+      comment_stop bp;
       (("METAIDENT", get_buff len), (bp,ep))
   | [< ''.' as c; t = parse_after_dot bp c >] ep ->
-      current:=BeVernac ""; (t, (bp,ep))
+      comment_stop bp;
+      if !Options.v7 & t=("",".") then between_com := true;
+      (t, (bp,ep))
   | [< ' ('_' | 'a'..'z' | 'A'..'Z' as c); len = ident (store 0 c) >] ep ->
-      let id = get_buff len in current:=InVernac; 
+      let id = get_buff len in 
+      comment_stop bp;
       (try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
   (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
   | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2); 
 	   len = ident (store (store 0 c1) c2) >] ep ->
-      let id = get_buff len in current:=InVernac; 
+      let id = get_buff len in
+      comment_stop bp;
       (try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
   (* utf-8 mathematical symbols have format E2 xx xx [E2=226] *)
   | [< ''\226' as c1; t = parse_226_tail (Some !token_tree) >] ep ->
+      comment_stop bp;
       (match t with
 	| TokSymbol (Some t) -> ("", t), (bp, ep)
 	| TokSymbol None -> err (bp, ep) Undefined_token
 	| TokIdent id ->
-	    current:=InVernac; 
 	    (try ("", find_keyword id) with Not_found -> ("IDENT", id)),
 	    (bp, ep))
   (* iso 8859-1 accentuated letters *)
   | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255' as c);
       len = ident (store 0 c) >] ep ->
-      let id = get_buff len in current:=InVernac; 
+      let id = get_buff len in
+      comment_stop bp;
       (try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
   | [< ' ('0'..'9' as c); len = number (store 0 c) >] ep ->
+      comment_stop bp;
       (("INT", get_buff len), (bp, ep))
-  | [< ''"'; len = string bp 0 >] ep ->
+  | [< ''\"'; len = string bp 0 >] ep ->
+      comment_stop bp;
       (("STRING", get_buff len), (bp, ep))
   | [< ' ('(' as c);
-       t = parser
-         | [< ''*'; c; s >] -> (match !current with
-				| InVernac -> current := InVernacEsc "(*"
-				| _ -> current := InComment "(*"); 
-	comment bp c; 
-	(match !current with
-	| InVernacEsc _ -> add_comment_pp (fnl ()); current := InVernac
-	| _ -> ()); 
-	next_token s
-         | [< t = process_chars bp c >] -> t >] -> t
-  | [< 'c; t = process_chars bp c >] -> t
-  | [< _ = Stream.empty >] -> (("EOI", ""), (bp, bp + 1))
+      t = parser
+        | [< ''*'; s >] ->
+            comm_loc bp;
+            push_string "(*";
+	    comment bp s; 
+	    next_token s
+        | [< t = process_chars bp c >] -> comment_stop bp; t >] ->
+      t
+  | [< 'c; t = process_chars bp c >] -> comment_stop bp; t
+  | [< _ = Stream.empty >] -> comment_stop bp; (("EOI", ""), (bp, bp + 1))
 
 (* Location table system for creating tables associating a token count
    to its location in a char stream (the source) *)

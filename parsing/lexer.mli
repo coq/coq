@@ -40,4 +40,6 @@ val freeze : unit -> frozen_t
 val unfreeze : frozen_t -> unit
 val init : unit -> unit
 
-val comments : (std_ppcmds list option) ref
+type com_state
+val com_state: unit -> com_state
+val restore_com_state: com_state -> unit

@@ -40,9 +40,9 @@ Notation "'EXT' x : t | p & q" := (ex2 ? [x:t]p [x:t]q)
   V8only "'EXT2' x : t | p & q" (at level 200, x at level 80).
 ].
 
-(** Parsing only of things in [Logic_type.v] *)
 
 V7only[
+(** Parsing only of things in [Logic_type.v] *)
 Notation "< A > x == y"  := (eq A x y)
    (A annot, at level 1, x at level 0, only parsing).
 

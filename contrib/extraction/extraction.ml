@@ -352,10 +352,11 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	let n = nb_default_params env mip0.mind_nf_arity in
 	let projs = try List.map out_some projs with _ -> raise (I Standard) in
 	let is_true_proj kn = 
-	  match kind_of_term (snd (decompose_lam (constant_value env kn))) with 
-	    | Rel _ -> false 
-	    | Case _ -> true
-	    | _ -> assert false
+          let (_,body) = Sign.decompose_lam_assum (constant_value env kn) in
+          match kind_of_term body with
+              | Rel _ -> false
+              | Case _ -> true
+              | _ -> assert false
 	in 
 	let projs = List.filter is_true_proj projs in 
  	let rec check = function 

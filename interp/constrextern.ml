@@ -548,17 +548,17 @@ let rec extern inctx scopes vars r =
 	  (f,args) in
       (match f with
 	 | REvar (loc,ev) -> extern_evar loc ev (* we drop args *)
-	 | RRef (loc,ref) ->
+	 | RRef (rloc,ref) ->
 	     let subscopes = Symbols.find_arguments_scope ref in
 	     let args =
 	       extern_args (extern true) (snd scopes) vars args subscopes in
 	     extern_app loc inctx (implicits_of_global_out ref)
-               (Some ref,extern_reference loc vars ref)
+               (Some ref,extern_reference rloc vars ref)
 	       args
-	 | RVar (loc,id) -> (* useful for translation of inductive *)
+	 | RVar (rloc,id) -> (* useful for translation of inductive *)
 	     let args = List.map (sub_extern true scopes vars) args in
 	     extern_app loc inctx (get_temporary_implicits_out id)
-	       (None,Ident (loc,v7_to_v8_id id))
+	       (None,Ident (rloc,v7_to_v8_id id))
 	       args
 	 | _       -> 
 	     explicitize loc inctx [] (None,sub_extern false scopes vars f)

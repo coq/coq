@@ -30,6 +30,9 @@ val pifb : unit -> std_ppcmds
 val ws : int -> std_ppcmds
 val mt : unit -> std_ppcmds
 
+val comment : int -> std_ppcmds
+val comments : ((int * int) * string) list ref
+
 (*s Concatenation. *)
 
 val (++) : std_ppcmds -> std_ppcmds -> std_ppcmds

@@ -44,6 +44,31 @@ let coerce_to_name = function
         (constr_loc ast,"Ast.coerce_to_var",
          (Pp.str"This expression should be a simple identifier"))
 
+let set_loc loc = function
+  | CRef(Ident(_,i)) -> CRef(Ident(loc,i))
+  | CRef(Qualid(_,q)) -> CRef(Qualid(loc,q))
+  | CFix(_,x,a) -> CFix(loc,x,a)
+  | CCoFix(_,x,a) -> CCoFix(loc,x,a)
+  | CArrow(_,a,b) -> CArrow(loc,a,b)
+  | CProdN(_,bl,a) -> CProdN(loc,bl,a)
+  | CLambdaN(_,bl,a) -> CLambdaN(loc,bl,a)
+  | CLetIn(_,x,a,b) -> CLetIn(loc,x,a,b)
+  | CAppExpl(_,f,a) -> CAppExpl(loc,f,a)
+  | CApp(_,f,a) -> CApp(loc,f,a)
+  | CCases(_,p,a,br) -> CCases(loc,p,a,br)
+  | COrderedCase(_,s,p,a,br) -> COrderedCase(loc,s,p,a,br)
+  | CLetTuple(_,ids,p,a,b) -> CLetTuple(loc,ids,p,a,b)
+  | CIf(_,e,p,a,b) -> CIf(loc,e,p,a,b)
+  | CHole _ -> CHole loc
+  | CPatVar(_,v) -> CPatVar(loc,v)
+  | CEvar(_,ev) -> CEvar(loc,ev)
+  | CSort(_,s) -> CSort(loc,s)
+  | CCast(_,a,b) -> CCast(loc,a,b)
+  | CNotation(_,n,l) -> CNotation(loc,n,l)
+  | CNumeral(_,i) -> CNumeral(loc,i)
+  | CDelimiters(_,s,e) -> CDelimiters(loc,s,e)
+  | CDynamic(_,d) -> CDynamic(loc,d)
+
 open Util
 
 let rec abstract_constr loc c = function
@@ -195,7 +220,8 @@ GEXTEND Gram
           let id1 = coerce_to_name lc1 in
           let id2 = coerce_to_name lc2 in
 	  CProdN (loc, (id1::id2::idl, c)::bl, body)
-      | "("; lc1 = lconstr; ")" -> lc1
+      | "("; lc1 = lconstr; ")" ->
+          if Options.do_translate() then set_loc loc lc1 else lc1
       | "("; lc1 = lconstr; ")"; "@"; "["; cl = ne_constr_list; "]" ->
 	  (match lc1 with
 	    | CPatVar (loc2,(false,n)) -> 

@@ -33,6 +33,9 @@ let thm_token = G_proofs.thm_token
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)
 
+let filter_com (b,e) =
+  Pp.comments := List.filter (fun ((b',e'),s) -> b'<b || e'>e) !Pp.comments 
+
 if !Options.v7 then
 GEXTEND Gram
   GLOBAL: vernac gallina_ext;
@@ -49,7 +52,8 @@ GEXTEND Gram
       | "["; l = vernac_list_tail -> VernacList l
 
       (* For translation from V7 to V8 *)
-      | IDENT "V7only"; v = vernac -> VernacV7only v
+      | IDENT "V7only"; v = vernac ->
+          filter_com loc; VernacV7only v
       | IDENT "V8only"; v = vernac -> VernacV8only v
 
 (*
