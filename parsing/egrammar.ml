@@ -223,9 +223,8 @@ let extend_entry univ (te, etyp, pos, name, ass, p4ass, rls) =
 (* Defines new entries. If the entry already exists, check its type *)
 let define_entry univ {ge_name=n; gl_assoc=ass; gl_rules=rls} =
   let typ = explicitize_entry (fst univ) n in
-  let e,lev = get_constr_entry typ in
-  let other = match typ with ETOther _ -> true | _ -> false in
-  let pos,p4ass,name = find_position other ass lev in
+  let e,lev,keepassoc = get_constr_entry typ in
+  let pos,p4ass,name = find_position keepassoc ass lev in
   (e,typ,pos,name,ass,p4ass,rls)
 
 (* Add a bunch of grammar rules. Does not check if it is well formed *)
@@ -254,24 +253,25 @@ let make_gen_act f pil =
         Gramext.action (fun v -> make ((p,in_generic t v) :: env) tl) in
   make [] (List.rev pil)
 
-let extend_constr entry (level,assoc) make_act pt =
+let extend_constr entry (level,assoc,keepassoc) make_act pt =
   let univ = get_univ "constr" in
   let pil = List.map (symbol_of_prod_item univ assoc) pt in
   let (symbs,ntl) = List.split pil in
   let act = make_act ntl in
-  let pos,p4assoc,name = find_position false assoc level in
+  let pos,p4assoc,name = find_position keepassoc assoc level in
   grammar_extend entry pos [(name, p4assoc, [symbs, act])]
 
 let extend_constr_notation (n,assoc,ntn,rule) =
   let mkact loc env = CNotation (loc,ntn,env) in
-  let (e,level) = get_constr_entry (ETConstr (n,())) in
-  extend_constr e (level,assoc) (make_act mkact) rule
+  let (e,level,keepassoc) = get_constr_entry (ETConstr (n,())) in
+  extend_constr e (level,assoc,keepassoc) (make_act mkact) rule
 
 let extend_constr_delimiters (sc,rule,pat_rule) =
   let mkact loc env = CDelimiters (loc,sc,snd (List.hd env)) in
-  extend_constr Constr.constr (Some 0,Some Gramext.NonA) (make_act mkact) rule;
+  extend_constr Constr.constr (Some 0,Some Gramext.NonA,false)
+    (make_act mkact) rule;
   let mkact loc env = CPatDelimiters (loc,sc,snd (List.hd env)) in
-  extend_constr Constr.pattern (None,None)
+  extend_constr Constr.pattern (None,None,false)
     (make_cases_pattern_act mkact) pat_rule
 
 (* These grammars are not a removable *)

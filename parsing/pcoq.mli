@@ -33,7 +33,7 @@ val object_of_typed_entry : typed_entry -> grammar_object Gram.Entry.e
 val weaken_entry : 'a Gram.Entry.e -> grammar_object Gram.Entry.e
 
 val get_constr_entry :
-  constr_entry -> grammar_object Gram.Entry.e * int option
+  constr_entry -> grammar_object Gram.Entry.e * int option * bool
 
 val symbol_of_production : Gramext.g_assoc option -> 
   constr_production_entry -> Token.t Gramext.g_symbol

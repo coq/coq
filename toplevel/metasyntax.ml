@@ -187,7 +187,7 @@ let add_tactic_grammar g =
 let print_grammar univ entry =
   let u = get_univ univ in
   let typ = explicitize_entry (fst u) entry in
-  let te,_ = get_constr_entry typ in
+  let te,_,_ = get_constr_entry typ in
   Gram.Entry.print te
 
 (* Infix, distfix, notations *)

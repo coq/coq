@@ -522,21 +522,22 @@ let adjust_level assoc = function
   | (n,InternalProd) -> Some (Some n)
 
 let compute_entry allow_create adjust = function
-  | ETConstr (10,_) -> weaken_entry Constr.lconstr, None
-  | ETConstr (9,_) -> weaken_entry Constr.constr9, None
-  | ETConstr (n,q) -> weaken_entry Constr.constr, adjust (n,q)
-  | ETIdent -> weaken_entry Constr.ident, None
-  | ETBigint -> weaken_entry Prim.bigint, None
-  | ETReference -> weaken_entry Constr.global, None
-  | ETPattern -> weaken_entry Constr.pattern, None
+  | ETConstr (10,_) -> weaken_entry Constr.lconstr, None, true
+  | ETConstr (9,_) -> weaken_entry Constr.constr9, None, true
+  | ETConstr (n,q) -> weaken_entry Constr.constr, adjust (n,q), false
+  | ETIdent -> weaken_entry Constr.ident, None, false
+  | ETBigint -> weaken_entry Prim.bigint, None, false
+  | ETReference -> weaken_entry Constr.global, None, false
+  | ETPattern -> weaken_entry Constr.pattern, None, false
   | ETOther (u,n) ->
       let u = get_univ u in
       let e =
         try get_entry u n
         with e when allow_create -> create_entry u n ConstrArgType in
-      object_of_typed_entry e, None
+      object_of_typed_entry e, None, true
 
 let get_constr_entry = compute_entry true (fun (n,()) -> Some n)
+
 let get_constr_production_entry ass = compute_entry false (adjust_level ass)
 
 let constr_prod_level = function
@@ -546,7 +547,7 @@ let constr_prod_level = function
 
 let symbol_of_production assoc typ =
   match get_constr_production_entry assoc typ with
-    | (eobj,None) -> Gramext.Snterm (Gram.Entry.obj eobj)
-    | (eobj,Some None) -> Gramext.Snext
-    | (eobj,Some (Some lev)) -> 
+    | (eobj,None,_) -> Gramext.Snterm (Gram.Entry.obj eobj)
+    | (eobj,Some None,_) -> Gramext.Snext
+    | (eobj,Some (Some lev),_) -> 
         Gramext.Snterml (Gram.Entry.obj eobj,constr_prod_level lev)
