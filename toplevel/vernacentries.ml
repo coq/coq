@@ -538,12 +538,14 @@ let vernac_canonical locqid =
 
 let locate_reference ref =
   let (loc,qid) = qualid_of_reference ref in
-  match Nametab.extended_locate qid with
+  try match Nametab.extended_locate qid with
     | TrueGlobal ref -> ref
     | SyntacticDef kn -> 
 	match Syntax_def.search_syntactic_definition loc kn with
 	  | Rawterm.RRef (_,ref) -> ref
-	  | _ -> error_global_not_found_loc loc qid
+	  | _ -> raise Not_found
+  with Not_found ->
+    error_global_not_found_loc loc qid
 
 let vernac_coercion stre ref qids qidt =
   let target = cl_of_qualid qidt in
