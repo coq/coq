@@ -157,13 +157,18 @@ End Choice_lemmas.
 
 Definition Exc := option.
 Definition value := Some.
-Definition error := None.
+Definition error := !None.
+
+Implicits error [1].
 
 Definition except := False_rec. (* for compatibility with previous versions *)
 
-Notation Except := (except ?).
-Notation Error := (error ?).
+Implicits except [1].
 
+V7only [
+Notation Except := (!except ?) (only parsing).
+Notation Error := (!error ?) (only parsing).
+].
 Theorem absurd_set : (A:Prop)(C:Set)A->(~A)->C.
 Proof.
   Intros A C h1 h2.
