@@ -356,7 +356,7 @@ macosx-pkg:
 	sed -e "s/VERSION/$(VERSION)/g" MacOS-X/Welcome.rtf.template > MacOS-X/Resources/Welcome.rtf
 	cp MacOS-X/ReadMe.rtf.template MacOS-X/Resources/ReadMe.rtf
 	# Builds the pkg file
-	package $(ARCHINSTALL) MacOS-X/coq-$(VERSION).info -r MacOS-X/Resources
+	MacOS-X/package $(ARCHINSTALL) MacOS-X/coq-$(VERSION).info -r MacOS-X/Resources
 
 
 macosx-dmg:
