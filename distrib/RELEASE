@@ -144,6 +144,24 @@ A5d) Création du package debian
   binaire sur toutes les architectures : ce sera fait par les machines
   de Debian dès que le paquet source leur sera fourni.
 
+A5e) Création du package windows
+
+  Habituellement fait sur jurancon.inria.fr, sous Windows NT, avec la
+  version Win32 de ocaml (pas la version cygwin car elle produit un
+  coqtop exécutable que sous cygwin) installée dans un répertoire ne
+  contenant pas d'espace, avec les variables CAMLLIB et CAMLP4LIB
+  positionnée (ainsi que ocamlc et camlp4 dans le PATH).
+
+  Faire un
+
+     make win
+
+  pour créer une archive zip.
+
+  Envoyer ensuite l'archive par ftp dans
+
+    pauillac:/net/pauillac/infosystems/ftp/coq/coq/V6.2.5
+
 A6) CREATION DU FICHIER DE PATCH (attention ne marche pas sur DEC je crois)
 
     make patch (pas déboggué)
@@ -359,11 +377,12 @@ D1) PRÉPARATION
    Cela se fait sous CVS : faire un check-out ou update du module
 "www" quelque part chez soi en dehors de l'archive V6, puis
 
-   - mettre à jour les fichiers (numéro de version, version
-     nécessaires de ocaml et camlp4, date de mise à jour)
+   - mettre à jour les fichiers suivants du répertoire coq (numéro de
+     version, version nécessaires de ocaml et camlp4, date de mise à
+     jour)
 
      distrib1-fra.html et distrib1-eng.html,
-     contribs1-fra.html et contribs1-eng.html
+     contribs1-fra.html et contribs1-eng.html (dont un ajout de ligne à la fin)
      coq1-eng.html et coq1-fra.html
      doc1-eng.html et doc1-fra.html
 
@@ -375,21 +394,21 @@ D1) PRÉPARATION
 
    - à partir de sa copie locale du répertoire www, faire
   
-     (cd contribs; make pages)
+     (cd coq/contribs; make pages)
 
    - positionner la variable THEORIES sur le repertoire theories
      d'une copie fraîche de l'archive et faire (sur PAUILLAC et avec
      gmake parce qu'un binaire devant tourner sur pauillac est fabriqué)
 
-     (cd library; gmake pages)
+     (cd coq/library; gmake pages)
 
 D2) ACTUALISATION DU SERVEUR WEB
 
      Enfin, faites-en part au monde entier :
 
-     make install
-     (cd contribs; make install)
-     (cd library; make install)
+     make install-coq
+     (cd coq/contribs; make install)
+     (cd coq/library; make install)
 
 
 (**************************************************************************)

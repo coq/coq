@@ -277,7 +277,7 @@ prep-ftp-install:
 	- mkdir $(FTPDIR)/V${VERSION}
 	- chmod g+w ${FTPDIR}/V${VERSION}
 
-final-ftp_install:
+final-ftp-install:
 	(cd $(FTPDIR); rm -f current;ln -sf V${VERSION} current)
 
 tar-gz-ftp-install: prep-ftp-install
