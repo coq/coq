@@ -77,15 +77,15 @@ Qed.
 
 Lemma app_eq_nil: (x,y:list) (x^y)=nil -> x=nil /\ y=nil.
 Proof.
- (Destruct x;Destruct y;Simpl;Auto).
- (Intros H;Discriminate H).
- (Intros a0 l0 H;Discriminate H).
+ Destruct x;Destruct y;Simpl;Auto.
+ Intros H;Discriminate H.
+ Intros a0 l0 H;Discriminate H.
 Qed.
 
 Lemma app_cons_not_nil: (x,y:list)(a:A)~nil=(x^(cons a y)).
 Proof.
 Unfold not .
- (Induction x;Simpl;Intros).
+ Induction x;Simpl;Intros.
  Discriminate H.
  Discriminate H0.
 Qed.
@@ -94,17 +94,17 @@ Lemma app_eq_unit:(x,y:list)(a:A)
      (x^y)=(cons a nil)-> (x=nil)/\ y=(cons a nil) \/ x=(cons a nil)/\ y=nil.
 
 Proof.
- (Destruct x;Destruct y;Simpl).
- (Intros a H;Discriminate H).
- (Left;Split;Auto).
- (Right;Split;Auto).
+ Destruct x;Destruct y;Simpl.
+ Intros a H;Discriminate H.
+ Left;Split;Auto.
+ Right;Split;Auto.
  Generalize H .
- (Generalize (app_nil_end  l) ;Intros E).
- (Rewrite <- E;Auto).
+ Generalize (app_nil_end  l) ;Intros E.
+ Rewrite <- E;Auto.
  Intros.
  Injection H.
  Intro.
- (Cut  nil=(l^(cons a0 l0));Auto).
+ Cut  nil=(l^(cons a0 l0));Auto.
  Intro.
  Generalize (app_cons_not_nil H1); Intro.
  Elim H2.
@@ -113,23 +113,23 @@ Qed.
 Lemma app_inj_tail : (x,y:list)(a,b:A)
    (x^(cons a nil))=(y^(cons b nil)) -> x=y /\ a=b.
 Proof.
- (Induction x;Induction y;Simpl;Auto).
+ Induction x;Induction y;Simpl;Auto.
  Intros.
  Injection H.
  Auto.
  Intros.
- (Injection H0;Intros).
- (Generalize (app_cons_not_nil H1) ;Induction 1).
+ Injection H0;Intros.
+ Generalize (app_cons_not_nil H1) ;Induction 1.
  Intros.
- (Injection H0;Intros).
- (Cut   nil=(l^(cons a0 nil));Auto).
+ Injection H0;Intros.
+ Cut   nil=(l^(cons a0 nil));Auto.
  Intro.
- (Generalize (app_cons_not_nil H3) ;Induction 1).
+ Generalize (app_cons_not_nil H3) ;Induction 1.
  Intros.
- (Injection H1;Intros).
+ Injection H1;Intros.
  Generalize (H l0 a1 b H2) .
- (Induction 1;Split;Auto).
- (Rewrite <- H3;Rewrite <- H5;Auto).
+ Induction 1;Split;Auto.
+ Rewrite <- H3;Rewrite <- H5;Auto.
 Qed.
 
 (****************************************)
@@ -436,24 +436,24 @@ Proof.
 
  Simpl.
  Intros.
- (Apply app_nil_end;Auto).
+ Apply app_nil_end;Auto.
 
  Intros.
  Simpl.
- (Generalize (H y) ;Intros E;Rewrite -> E).
+ Generalize (H y) ;Intros E;Rewrite -> E.
  Apply (app_ass (rev y) (rev l) (cons a nil)).
 Qed.
 
 Remark  rev_unit : (l:list)(a:A) (rev  l^(cons a nil))= (cons a (rev l)).
 Proof.
  Intros.
- (Apply (distr_rev l (cons a nil));Simpl;Auto).
+ Apply (distr_rev l (cons a nil));Simpl;Auto.
 Qed.
 
 Lemma idempot_rev : (l:list)(rev (rev l))=l.
 Proof.
  Induction l.
- (Simpl;Auto).
+ Simpl;Auto.
 
  Intros.
  Simpl.
@@ -480,7 +480,7 @@ Lemma rev_ind :
 Proof.
  Intros.
  Generalize (idempot_rev l) .
- (Intros E;Rewrite <- E).
+ Intros E;Rewrite <- E.
  Apply (rev_list_ind P).
  Auto.
 
