@@ -303,8 +303,8 @@ toplevel/fhimsg.cmi: kernel/environ.cmi kernel/names.cmi lib/pp.cmi \
 toplevel/himsg.cmi: pretyping/cases.cmi kernel/environ.cmi \
     kernel/indtypes.cmi proofs/logic.cmi kernel/names.cmi lib/pp.cmi \
     pretyping/pretype_errors.cmi kernel/type_errors.cmi 
-toplevel/metasyntax.cmi: pretyping/classops.cmi parsing/extend.cmi \
-    library/libnames.cmi kernel/names.cmi interp/ppextend.cmi \
+toplevel/metasyntax.cmi: pretyping/classops.cmi interp/constrintern.cmi \
+    parsing/extend.cmi library/libnames.cmi interp/ppextend.cmi \
     interp/symbols.cmi proofs/tacexpr.cmo interp/topconstr.cmi lib/util.cmi \
     toplevel/vernacexpr.cmo 
 toplevel/mltop.cmi: library/libobject.cmi kernel/names.cmi 
