@@ -71,6 +71,8 @@ val pr_lrawconstr_env : env -> rawconstr -> std_ppcmds
 val pr_rawconstr_env_no_translate : env -> rawconstr -> std_ppcmds
 val pr_lrawconstr_env_no_translate : env -> rawconstr -> std_ppcmds
 
+val pr_reference : reference -> std_ppcmds
+
 (** constr printers *)
 
 val pr_term_env : env -> constr -> std_ppcmds

@@ -665,6 +665,30 @@ let pr_rawconstr_env_no_translate env c =
 let pr_lrawconstr_env_no_translate env c =
   pr ltop (Constrextern.extern_rawconstr (Termops.vars_of_env env) c)
 
+(* Printing reference with translation *)
+
+let pr_reference r =
+  let loc = loc_of_reference r in
+  try match Nametab.extended_locate (snd (qualid_of_reference r)) with
+    | TrueGlobal ref ->
+        pr_with_comments loc
+	  (pr_reference (Constrextern.extern_reference loc Idset.empty ref))
+    | SyntacticDef kn ->
+	let is_coq_root d =
+	  let d = repr_dirpath d in
+	  d <> [] & string_of_id (list_last d) = "Coq" in
+        let dir,id = repr_path (sp_of_syntactic_definition kn) in
+	let r =
+          if (is_coq_root (Lib.library_dp()) or is_coq_root dir) then
+	    (match Syntax_def.search_syntactic_definition loc kn with
+	      | RRef (_,ref) ->
+		  Constrextern.extern_reference dummy_loc Idset.empty ref
+              | _ -> r)
+          else r
+	in pr_with_comments loc (pr_reference r)
+  with Not_found ->
+    error_global_not_found (snd (qualid_of_reference r))
+
 (** constr printers *)
 
 let pr_term_env env  c = pr lsimple (Constrextern.extern_constr false env c)

@@ -676,7 +676,7 @@ and prtac x = pr6 x
 in (prtac,pr0,pr_match_rule false pr_pat pr_tac)
 
 let pr_raw_extend prc prlc prtac = 
-  pr_extend_gen (pr_raw_generic prc prlc prtac pr_reference)
+  pr_extend_gen (pr_raw_generic prc prlc prtac Ppconstrnew.pr_reference)
 let pr_glob_extend prc prlc prtac =
   pr_extend_gen (pr_glob_generic prc prlc prtac)
 let pr_extend prc prlc prtac =
