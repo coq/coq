@@ -1,8 +1,8 @@
+open Preferences
 open Vernacexpr
 open Coq
 open Ideutils
 
-  
 let out_some s = match s with | None -> assert false | Some f -> f
 
 let yes_icon = "gtk-yes"
@@ -21,10 +21,10 @@ let default_monospace_font_name = "Monospace 14"
 let manual_monospace_font = ref None
 let manual_general_font = ref None
 
-let has_config_file = (Sys.file_exists ".coqiderc") || 
-		      (try Sys.file_exists 
-			 (Filename.concat (Sys.getenv "HOME") ".coqiderc")
-		       with Not_found -> false)
+let has_config_file = 
+  (Sys.file_exists (Filename.concat lib_ide ".coqiderc")) || 
+  (try Sys.file_exists (Filename.concat (Sys.getenv "HOME") ".coqiderc")
+   with Not_found -> false)
 
 let _ = if not has_config_file then 
   manual_monospace_font := Some (Pango.Font.from_string default_monospace_font_name);
@@ -138,6 +138,7 @@ object('self)
     method set_message : string -> unit
     method show_goals : unit
     method undo_last_step : unit
+    method help_for_keyword : unit -> unit
   end
 
 let (input_views:analyzed_views viewable_script Vector.t) = Vector.create ()
@@ -800,6 +801,16 @@ object(self)
 	   end;
 	 end;
 	 last_index <- not last_index;)
+
+  method help_for_keyword () =
+    let it = self#get_insert in
+    let start = it#backward_word_start in
+    let stop = start#forward_word_end in
+    let text = input_buffer#get_text ~slice:true ~start ~stop () in
+    try 
+      let u = url_for_keyword text in browse (current.doc_url ^ u) 
+    with _ -> ()
+
   initializer 
     ignore (message_buffer#connect#after#insert_text
 	      ~callback:(fun it s -> ignore 
@@ -890,7 +901,7 @@ let main () =
   let file_factory = new GMenu.factory file_menu ~accel_group in
 
   (* File/Load Menu *)
-  let load_m = file_factory#add_item "Open" ~key:GdkKeysyms._O in
+  let load_m = file_factory#add_item "Open/Create" ~key:GdkKeysyms._O in
   let load_f () = 	  
     match GToolbox.select_file ~title:"Load file" () with 
       | None -> ()
@@ -1000,24 +1011,61 @@ let main () =
   revert_m#misc#set_state `INSENSITIVE;
 
   (* File/Print Menu *)
-  let print_m = file_factory#add_item "Print" in
-  print_m#misc#set_state `INSENSITIVE;
+  let print_f () =
+    let v = get_current_view () in
+    let av = out_some v.analyzed_view in
+    match v.filename with
+      | None -> 
+	  !flash_info "Cannot print: this buffer has no name"
+      | Some f ->
+	  let cmd = 
+	    "cd " ^ Filename.dirname f ^ "; " ^
+	    current.cmd_coqdoc ^ " -ps " ^ Filename.basename f ^ 
+	    " | " ^ current.cmd_print
+	  in
+	  let c = Sys.command cmd in
+	  !flash_info (cmd ^ if c = 0 then " succeeded" else " failed")
+  in
+  let print_m = file_factory#add_item "Print" ~callback:print_f in
 
   (* File/Export to Menu *)
+  let export_f kind () =
+    let v = get_current_view () in
+    let av = out_some v.analyzed_view in
+    match v.filename with
+      | None -> 
+	  !flash_info "Cannot print: this buffer has no name"
+      | Some f ->
+	  let basef = Filename.basename f in
+	  let output = 
+	    let basef_we = try Filename.chop_extension basef with _ -> basef in
+	    match kind with
+	      | "latex" -> basef_we ^ ".tex"
+	      | "dvi" | "ps" | "html" -> basef_we ^ "." ^ kind
+	      | _ -> assert false
+	  in
+	  let cmd = 
+	    "cd " ^ Filename.dirname f ^ "; " ^
+	    current.cmd_coqdoc ^ " --" ^ kind ^ " -o " ^ output ^ " " ^ basef
+	  in
+	  let c = Sys.command cmd in
+	  !flash_info (cmd ^ if c = 0 then " succeeded" else " failed")
+  in
   let file_export_m =  file_factory#add_submenu "Export to" in
 
   let file_export_factory = new GMenu.factory file_export_m ~accel_group in
-  let export_html_m = file_export_factory#add_item "Html" in
-  export_html_m#misc#set_state `INSENSITIVE;
-  
-  let export_latex_m = file_export_factory#add_item "LaTeX" in
-  export_latex_m#misc#set_state `INSENSITIVE;
-
-  let export_dvi_m = file_export_factory#add_item "Dvi" in
-  export_dvi_m#misc#set_state `INSENSITIVE;
-
-  let export_ps_m = file_export_factory#add_item "Ps" in
-  export_ps_m#misc#set_state `INSENSITIVE;
+  let export_html_m = 
+    file_export_factory#add_item "Html" ~callback:(export_f "html") 
+  in
+  let export_latex_m = 
+    file_export_factory#add_item "LaTeX" ~callback:(export_f "latex")
+  in
+  let export_dvi_m = 
+    file_export_factory#add_item "Dvi" ~callback:(export_f "dvi") 
+  in
+  let export_ps_m = 
+    file_export_factory#add_item "Ps" ~callback:(export_f "ps") 
+  in
 
   (* File/Rehighlight Menu *)
   let rehighlight_m = file_factory#add_item "Rehighlight" ~key:GdkKeysyms._L in
@@ -1189,9 +1237,33 @@ let main () =
   (* Commands Menu *)
   let commands_menu =  factory#add_submenu "Commands" in
   let commands_factory = new GMenu.factory commands_menu ~accel_group in
-  ignore (commands_factory#add_item "Compile");
-  ignore (commands_factory#add_item "Make");
-  ignore (commands_factory#add_item "Make Makefile");
+  let compile_f () =
+    let v = get_active_view () in
+    let av = out_some v.analyzed_view in
+    match v.filename with
+      | None -> 
+	  !flash_info "Active buffer has no name"
+      | Some f ->
+	  let c = Sys.command (current.cmd_coqc ^ " " ^ f) in
+	  if c = 0 then
+	    !flash_info (f ^ " successfully compiled")
+	  else begin
+	    !flash_info (f ^ " failed to compile");
+	    av#process_until_end_or_error
+	  end
+  in
+  let compile_m = commands_factory#add_item "Compile" ~callback:compile_f in
+  let make_f () =
+    let c = Sys.command current.cmd_make in
+    !flash_info (current.cmd_make ^ if c = 0 then " succeeded" else " failed")
+  in
+  let make_m = commands_factory#add_item "Make" ~callback:make_f in
+  let coq_makefile_f () =
+    let c = Sys.command current.cmd_coqmakefile in
+    !flash_info 
+      (current.cmd_coqmakefile ^ if c = 0 then " succeeded" else " failed")
+  in
+  let _ = commands_factory#add_item "Make Makefile" ~callback:coq_makefile_f in
 
   (* Configuration Menu *)
 
@@ -1214,6 +1286,28 @@ let main () =
     configuration_factory#add_item "Customize fonts"
       ~callback:(fun () -> font_selector#present ())
   in
+
+  (* Help Menu *)
+
+  let help_menu = factory#add_submenu "Help" in
+  let help_factory = new GMenu.factory help_menu  
+		     ~accel_modi:[]
+		     ~accel_group in
+  let _ = help_factory#add_item "Browse Coq Manual" 
+	  ~callback:(fun () -> browse (current.doc_url ^ "main.html")) in
+  let _ = help_factory#add_item "Browse Coq Library" 
+	  ~callback:(fun () -> browse current.library_url) in
+  let _ = 
+    help_factory#add_item "Help for keyword" ~key:GdkKeysyms._F1
+    ~callback:(fun () -> 
+		 let av = out_some ((get_current_view ()).analyzed_view) in
+		 av#help_for_keyword ())
+  in
+  let _ = help_factory#add_separator () in
+  let about_m = help_factory#add_item "About" in
+
+  (* Window layout *)
+
   let hb = GPack.paned `HORIZONTAL  ~border_width:3 ~packing:vbox#add () in
   let _ = hb#set_position (window_width/2 ) in
   _notebook := Some (GPack.notebook ~packing:hb#add1 ());
@@ -1288,7 +1382,8 @@ let main () =
 			 font_selector#misc#hide ()));
 
   (try 
-     let startup_image = GdkPixbuf.from_file "coq.gif" in
+     let image = Filename.concat lib_ide "coq.gif" in
+     let startup_image = GdkPixbuf.from_file image in
      tv2#buffer#insert_pixbuf ~iter:tv2#buffer#start_iter 
        ~pixbuf:startup_image;
      tv2#buffer#insert ~iter:tv2#buffer#start_iter "\t\t";
@@ -1323,12 +1418,14 @@ let main () =
 
   (match !manual_monospace_font with 
      | None -> ()
-     | Some f -> view#misc#modify_font f; tv2#misc#modify_font f; tv3#misc#modify_font f)
+     | Some f -> view#misc#modify_font f; tv2#misc#modify_font f; tv3#misc#modify_font f);
+  ignore (about_m#connect#activate 
+	  ~callback:(fun () -> tv3#buffer#set_text "by Benjamin Monate"))
     
 let start () = 
   cant_break ();
   Coq.init ();
-  GtkMain.Rc.add_default_file ".coqiderc";
+  GtkMain.Rc.add_default_file (Filename.concat lib_ide ".coqiderc");
   (try 
      GtkMain.Rc.add_default_file (Filename.concat (Sys.getenv "HOME") ".coqiderc");
   with Not_found -> ());

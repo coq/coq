@@ -22,3 +22,5 @@ and skip_comment = parse
 	  skip_comment lexbuf}
   | _  { if Ideutils.is_char_start (Lexing.lexeme lexbuf).[0] then incr length; skip_comment lexbuf}
   | eof  { raise (Lex_error "No closing *)") }
+
+

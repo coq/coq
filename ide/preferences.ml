@@ -1,6 +1,7 @@
 type pref =
     {
       mutable cmd_coqc : string;
+      mutable cmd_make : string;
       mutable cmd_coqmakefile : string;
       mutable cmd_coqdoc : string;
 
@@ -11,21 +12,25 @@ type pref =
       mutable auto_save_delay : float;
       mutable auto_save_name : string*string;
 
-      mutable automatic_tactics : string * string list;
+      mutable automatic_tactics : (string * string) list;
       mutable cmd_print : string;
 
       mutable modifier_for_navigation : Gdk.Tags.modifier list;
       mutable modifier_for_templates : Gdk.Tags.modifier list;
       
+      mutable cmd_browse : string * string;
 
+      mutable doc_url : string;
+      mutable library_url : string;
     }
 
 
 let (current:pref) = 
   {
     cmd_coqc = "coqc";
-    cmd_coqmakefile = "coqmakefile";
-    cmd_coqdoc = "coqdoc";
+    cmd_make = "make";
+    cmd_coqmakefile = "coq_makefile -o Makefile *.v";
+    cmd_coqdoc = "coqdoc -q -g";
     cmd_print = "lpr";
     
 
@@ -40,4 +45,9 @@ let (current:pref) =
     
     modifier_for_navigation = [`CONTROL; `MOD1];
     modifier_for_templates = [`MOD1];
-  }
+    
+    cmd_browse = "netscape -remote \"OpenURL(", ")\"";
+
+    doc_url = "http://coq.inria.fr/doc/";
+    library_url = "http://coq.inria.fr/library/";
+ }

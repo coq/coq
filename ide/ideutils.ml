@@ -1,4 +1,8 @@
 
+open Preferences
+
+let lib_ide = Filename.concat Coq_config.coqlib "ide"
+  
 let get_insert input_buffer = input_buffer#get_iter_at_mark `INSERT
 
 let is_char_start c = let code = Char.code c in code < 0x80 || code >= 0xc0
@@ -43,3 +47,29 @@ let try_export file_name s =
     output_string oc s;
     close_out oc
   with e -> prerr_endline (Printexc.to_string e)
+
+let browse url =
+  let l,r = Preferences.current.cmd_browse in
+  ignore (Sys.command (l ^ url ^ r))
+
+let url_for_keyword =
+  let ht = Hashtbl.create 97 in
+  begin try
+    let cin = open_in (Filename.concat lib_ide "index_urls.txt") in
+    try while true do
+      let s = input_line cin in
+      try 
+	let i = String.index s ',' in
+	let k = String.sub s 0 i in
+	let u = String.sub s (i + 1) (String.length s - i - 1) in
+	Hashtbl.add ht k u
+      with _ ->
+	()
+    done with End_of_file ->
+      close_in cin
+  with _ ->
+    ()
+  end;
+  (Hashtbl.find ht : string -> string)
+
+

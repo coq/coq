@@ -422,10 +422,15 @@ COQIDEBYTE=bin/coqide.byte$(EXE)
 COQIDEOPT=bin/coqide.opt$(EXE)
 COQIDE=bin/coqide.$(BEST)$(EXE)
 
-COQIDECMO=ide/ideutils.cmo ide/find_phrase.cmo ide/highlight.cmo ide/coq.cmo ide/coqide.cmo
+COQIDECMO=ide/preferences.cmo \
+	  ide/ideutils.cmo ide/find_phrase.cmo \
+          ide/highlight.cmo ide/coq.cmo ide/coqide.cmo
 COQIDECMX=$(COQIDECMO:.cmo=.cmx)
 COQIDEFLAGS=-I +lablgtk2
 beforedepend:: ide/find_phrase.ml ide/highlight.ml
+
+FULLIDELIB=$(FULLCOQLIB)/ide
+IDEFILES=ide/coq.gif ide/.coqiderc
 
 ide: $(COQIDE)
 
@@ -900,6 +905,8 @@ install-library:
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLEMACSLIB)
 	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
+	$(MKDIR) $(FULLIDELIB)
+	cp $(IDEFILES) $(FULLIDELIB)
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)

@@ -469,6 +469,8 @@ ide/find_phrase.cmo: ide/ideutils.cmo
 ide/find_phrase.cmx: ide/ideutils.cmx 
 ide/highlight.cmo: ide/ideutils.cmo 
 ide/highlight.cmx: ide/ideutils.cmx 
+ide/ideutils.cmo: config/coq_config.cmi ide/preferences.cmo 
+ide/ideutils.cmx: config/coq_config.cmx ide/preferences.cmx 
 interp/constrextern.cmo: pretyping/classops.cmi library/declare.cmi \
     pretyping/detyping.cmi kernel/environ.cmi library/impargs.cmi \
     kernel/inductive.cmi library/libnames.cmi library/nameops.cmi \
