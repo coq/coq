@@ -63,6 +63,7 @@ val intro_using          : identifier -> tactic
 val intro_using_warning  : identifier -> tactic
 val intros_using         : identifier list -> tactic
 val intro_erasing        : identifier -> tactic
+val intros_replacing     : identifier list -> tactic
 
 val intros               : tactic
 

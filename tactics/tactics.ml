@@ -319,6 +319,17 @@ let intros = tclREPEAT (intro_force false)
 
 let intro_erasing id = tclTHEN (thin [id]) (intro_using id)
 
+let intros_replacing ids gls = 
+  let rec introrec = function
+    | [] -> tclIDTAC
+    | id::tl ->
+	(tclTHEN (tclORELSE (intro_replacing id)
+		    (tclORELSE (intro_erasing id)   (* ?? *)
+                       (intro_using id)))
+           (introrec tl))
+  in 
+  introrec ids gls
+
 (* User-level introduction tactics *)
 
 let dyn_intro = function
@@ -1623,7 +1634,7 @@ let abstract_subproof name tac gls =
       by (tclCOMPLETE (tclTHEN (tclDO (sign_length sign) intro) tac)); 
       save_named true
     with e when catchable_exception e -> 
-      (abort_current_goal(); raise e)
+      (abort_current_proof(); raise e)
   end;
   exact (applist ((Declare.construct_reference env' CCI na),
                   (List.map (fun id -> VAR(id)) 
