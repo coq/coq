@@ -180,6 +180,14 @@
     with _ ->
       ()
 
+  let extract_ident_re = Str.regexp "([ \t]*\\([^ \t]+\\)[ \t]*:="
+  let extract_ident s =
+    assert (String.length s >= 3);
+    if Str.string_match extract_ident_re s 0 then
+      Str.matched_group 1 s
+    else
+      String.sub s 1 (String.length s - 3)
+
 }
 
 (*s Regular expressions *)
@@ -330,8 +338,9 @@ and coq = parse
       { let s = lexeme lexbuf in
 	if !gallina then gallina_id s;
         ident s (lexeme_start lexbuf); coq lexbuf }
-  | "(" space* (identifier as id) space* ":=" 
-      { symbol "("; ident id (lexeme_start lexbuf); symbol ":="; coq lexbuf }
+  | "(" space* identifier space* ":=" 
+      { let id = extract_ident (lexeme lexbuf) in
+	symbol "("; ident id (lexeme_start lexbuf); symbol ":="; coq lexbuf }
   | (identifier '.')* identifier
       { let id = lexeme lexbuf in
 	if !gallina then gallina_id id;
