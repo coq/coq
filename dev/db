@@ -1,5 +1,6 @@
 load_printer "gramlib.cma"
-load_printer "top_printers.cmo"
+load_printer "printers.cma"
+
 install_printer Top_printers.prid
 install_printer Top_printers.prlab
 install_printer Top_printers.prmsid
@@ -26,8 +27,6 @@ install_printer Top_printers.prgoal
 install_printer Top_printers.prsigmagoal
 install_printer Top_printers.pproof
 install_printer Top_printers.prevd
-install_printer Top_printers.prevc
-install_printer Top_printers.prwc
 install_printer Top_printers.prclenv
 
 install_printer Top_printers.pptac
