@@ -71,5 +71,5 @@ Tactic Definition ArrayAccess i j H :=
 
 (* Symbolic notation for access *)
 
-Notation "# t [ c ]" := (access t c) (at level 0, t ident).
+Notation "# t [ c ]" := (access t c) (at level 0, t ident)
   V8only (at level 0, t at level 0).
