@@ -208,12 +208,18 @@ let build_coq_idT_data () = {
   congr = Lazy.force coq_idT_congr;
   sym  = Lazy.force coq_idT_sym }
 
+let lazy_init_constant_v7 d id id7 =
+  if !Options.v7 then lazy_init_constant d id else 
+  lazy (anomaly
+   (id7^" does no longer exist in V8 new syntax, use "^id
+    ^" instead (probably an error in ML contributed code)"))
+
 (* Empty Type *)
-let coq_EmptyT = lazy_init_constant ["Logic_Type"] "EmptyT"
+let coq_EmptyT = lazy_init_constant_v7 ["Logic"] "False" "EmptyT"
 
 (* Unit Type and its unique inhabitant *)
-let coq_UnitT  = lazy_init_constant ["Logic_Type"] "UnitT"
-let coq_IT     = lazy_init_constant ["Logic_Type"] "IT"
+let coq_UnitT  = lazy_init_constant_v7 ["Datatypes"] "unit" "UnitT"
+let coq_IT     = lazy_init_constant_v7 ["Datatypes"] "tt" "IT"
 
 (* The False proposition *)
 let coq_False  = lazy_init_constant ["Logic"] "False"
