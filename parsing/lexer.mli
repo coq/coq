@@ -23,6 +23,7 @@ val add_keyword : string -> unit
 val is_keyword : string -> bool
 
 val func : char Stream.t -> (string * string) Stream.t * (int -> int * int)
+val current_location_function : (int -> int  * int) ref
 
 val check_ident : string -> unit
 val check_special_token : string -> unit
