@@ -3237,13 +3237,11 @@ contrib/xml/xmlcommand.cmx: contrib/xml/acic.cmx contrib/xml/acic2Xml.cmx \
     proofs/tacmach.cmx kernel/term.cmx contrib/xml/unshare.cmx lib/util.cmx \
     toplevel/vernac.cmx contrib/xml/xml.cmx contrib/xml/xmlcommand.cmi 
 contrib/xml/xmlentries.cmo: toplevel/cerrors.cmi parsing/egrammar.cmi \
-    parsing/extend.cmi interp/genarg.cmi library/nametab.cmi parsing/pcoq.cmi \
-    lib/pp.cmi lib/util.cmi toplevel/vernacinterp.cmi \
-    contrib/xml/xmlcommand.cmi 
+    parsing/extend.cmi interp/genarg.cmi parsing/pcoq.cmi lib/pp.cmi \
+    lib/util.cmi toplevel/vernacinterp.cmi contrib/xml/xmlcommand.cmi 
 contrib/xml/xmlentries.cmx: toplevel/cerrors.cmx parsing/egrammar.cmx \
-    parsing/extend.cmx interp/genarg.cmx library/nametab.cmx parsing/pcoq.cmx \
-    lib/pp.cmx lib/util.cmx toplevel/vernacinterp.cmx \
-    contrib/xml/xmlcommand.cmx 
+    parsing/extend.cmx interp/genarg.cmx parsing/pcoq.cmx lib/pp.cmx \
+    lib/util.cmx toplevel/vernacinterp.cmx contrib/xml/xmlcommand.cmx 
 ide/utils/configwin.cmo: ide/utils/configwin_ihm.cmo \
     ide/utils/configwin_types.cmo ide/utils/configwin.cmi 
 ide/utils/configwin.cmx: ide/utils/configwin_ihm.cmx \
