@@ -421,17 +421,6 @@ let listrec_mconstr env ntypes hyps nparams i indlc =
 	    check_constr_rec (push_rel (na, None, b) env)
 	      (recarg::lrec) (n+1) d
 
-        (* LetIn's must be free of occurrence of the inductive types and
-	   they do not contribute to recargs *)
-        | LetIn (na,b,t,d) -> 
-	    assert (largs = []);
-            if not (noccur_between n ntypes b & noccur_between n ntypes t) then
-	      check_constr_rec (push_rel (na,Some b, b) env)
-		lrec n (subst1 b d)
-	    else
-              let recarg = check_pos env n b in 
-	      check_constr_rec (push_rel (na,Some b, b) env)
-		lrec (n+1) d 
 	| hd ->
 	    if check_head then
 	      if hd = Rel (n+ntypes-i) then
