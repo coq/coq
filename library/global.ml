@@ -61,13 +61,17 @@ let sp_of_global id = Environ.sp_of_global (env_of_safe_env !global_env) id
 
 (* To know how qualified a name should be to be understood in the current env*)
 
-let is_visible ref qid = (Nametab.locate qid = ref)
-
 let qualid_of_global ref =  
   let sp = sp_of_global ref in
-  let qid = make_qualid [] (string_of_id (basename sp)) in
-  if is_visible ref qid then qid
-  else make_qualid (dirpath sp) (string_of_id (basename sp))
+  let s = string_of_id (basename sp) in
+  let rec find_visible dir qdir =
+    let qid = make_qualid qdir s in
+    if (try Nametab.locate qid = ref with Not_found -> false) then qid
+    else match dir with
+      | [] -> qualid_of_sp sp
+      | a::l -> find_visible l (a::qdir)
+  in
+  find_visible (List.rev (dirpath sp)) []
 
 (*s Function to get an environment from the constants part of the global
     environment and a given context. *)
