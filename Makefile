@@ -1302,8 +1302,8 @@ GRAMMARNEEDEDCMO=\
   library/goptions.cmo library/decl_kinds.cmo library/global.cmo \
   pretyping/termops.cmo pretyping/evd.cmo \
   pretyping/rawterm.cmo pretyping/pattern.cmo \
-  proofs/tacexpr.cmo \
   interp/topconstr.cmo interp/genarg.cmo interp/ppextend.cmo \
+  proofs/tacexpr.cmo \
   parsing/coqast.cmo parsing/ast.cmo \
   parsing/ast.cmo parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
   toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_coqast.cmo \
