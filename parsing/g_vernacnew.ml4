@@ -365,8 +365,8 @@ GEXTEND Gram
 
   (* Module binder  *)
   module_binder:
-    [ [ "("; id = base_ident; ":"; mty = module_type; ")" ->
-          ([id],mty) ] ]
+    [ [ "("; idl = LIST1 base_ident; ":"; mty = module_type; ")" ->
+          (idl,mty) ] ]
   ;
 
   (* Module expressions *)
@@ -378,7 +378,7 @@ GEXTEND Gram
       ] ]
   ;
   with_declaration:
-    [ [ "Definition"; id = base_ident; ":="; c = Constr.constr ->
+    [ [ "Definition"; id = base_ident; ":="; c = Constr.lconstr ->
           CWith_Definition (id,c)
       | IDENT "Module"; id = base_ident; ":="; qid = qualid ->
 	  CWith_Module (id,qid)

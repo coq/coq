@@ -818,7 +818,10 @@ $$
 \nlsep \NT{mod-type}~\KWD{with}~\NT{with-declaration}
 \SEPDEF
 \DEFNT{with-declaration}
-       \TERM{Definition}~\NT{ident}~\KWD{:=}~\NTL{constr}{100}
+                                                          %on forcera les ( )
+                                                          %si exceptionnellemt
+                                                          %un fixpoint ici
+       \TERM{Definition}~\NT{ident}~\KWD{:=}~\NTL{constr}{} %{100}
 \nlsep \TERM{Module}~\NT{ident}~\KWD{:=}~\NT{reference}
 \SEPDEF
 \DEFNT{of-mod-type}
