@@ -551,7 +551,7 @@ let discr id gls =
 	   discrimination_pf e (t,t1,t2) discriminator lbeq gls 
 	 in
 	 tclCOMPLETE((tclTHENS (cut_intro absurd_term)
-			([onLastHyp (compose gen_absurdity out_some);
+			([onLastHyp gen_absurdity;
 			  refine (mkApp (pf, [| mkVar id |]))]))) gls)
 
 
@@ -566,7 +566,7 @@ let insatisfied_prec_message cls =
 		     'sTR"does not satify the expected preconditions" >]
 
 let discrOnLastHyp gls =
-  try onLastHyp (compose discr out_some) gls
+  try onLastHyp discr gls
   with NotDiscriminable ->
     errorlabstrm "DiscrConcl" [< 'sTR" Not a discriminable equality" >]
 
@@ -838,7 +838,7 @@ let injClause cls gls =
     | None ->
     	if is_matching (build_coq_not_pattern ()) (pf_concl gls) then
           (tclTHEN (tclTHEN hnf_in_concl intro)
-             (onLastHyp (compose inj out_some))) gls
+             (onLastHyp inj)) gls
     	else
 	  errorlabstrm "InjClause" (insatisfied_prec_message  cls)
     | Some id ->
@@ -875,7 +875,7 @@ let decompEqThen ntac id gls =
 	   discrimination_pf e (t,t1,t2) discriminator lbeq gls in
 	 tclCOMPLETE
 	   ((tclTHENS (cut_intro absurd_term)
-	       ([onLastHyp (compose gen_absurdity out_some);
+	       ([onLastHyp gen_absurdity;
 		 refine (mkApp (pf, [| mkVar id |]))]))) gls
      | Inr posns ->
 	 (let e = pf_get_new_id (id_of_string "e") gls in
@@ -915,7 +915,7 @@ let dEqThen ntac cls gls =
     	if is_matching (build_coq_not_pattern ()) (pf_concl gls) then
 	  (tclTHEN hnf_in_concl
 	     (tclTHEN intro
-         	(onLastHyp (compose (decompEqThen ntac) out_some)))) gls
+         	(onLastHyp (decompEqThen ntac)))) gls
     	else
 	  errorlabstrm "DEqThen" (insatisfied_prec_message  cls)
     | Some id ->
