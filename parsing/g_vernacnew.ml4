@@ -438,7 +438,7 @@ GEXTEND Gram
 	   let pos = option_app (List.map (fun id -> ExplByName id)) pos in
 	   VernacDeclareImplicits (qid,pos)
 
-      | IDENT "Implicit"; ["Type" | "Types"];
+      | IDENT "Implicit"; ["Type" | IDENT "Types"];
 	   idl = LIST1 ident; ":"; c = lconstr -> VernacReserve (idl,c)
 
       (* For compatibility *)
