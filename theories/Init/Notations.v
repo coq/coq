@@ -54,9 +54,10 @@ Uninterpreted Notation "x * y" (at level 3, right associativity)
 Uninterpreted V8Notation "x / y" (at level 40, left associativity).
 Uninterpreted Notation "x + y" (at level 4, left associativity).
 Uninterpreted Notation "x - y" (at level 4, left associativity).
-Uninterpreted Notation "- x" (at level 0) V8only (at level 50).
+Uninterpreted Notation "- x" (at level 0)
+  V8only (at level 10, right associativity).
 Uninterpreted Notation "/ x" (at level 0)
-  V8only (at level 40, left associativity).
+  V8only (at level 10, right associativity).
 
 Uninterpreted V8Notation "x ^ y" (at level 30, left associativity).
 

@@ -547,7 +547,7 @@ let default_levels_v8 =
    100,Gramext.RightA;
    99,Gramext.RightA;
    90,Gramext.RightA;
-   10,Gramext.LeftA;
+   10,Gramext.RightA;
    9,Gramext.RightA;
    1,Gramext.LeftA;
    0,Gramext.RightA]

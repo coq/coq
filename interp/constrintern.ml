@@ -586,9 +586,6 @@ let internalise sigma env allow_soapp lvar c =
     | CLetIn (loc,(_,na),c1,c2) ->
 	RLetIn (loc, na, intern (reset_tmp_scope env) c1,
           intern (push_name_env lvar env na) c2)
-    | CNotation (loc,"- _",[CNumeral(_,Bignat.POS p)]) ->
-	let scopes = option_cons tmp_scope scopes in
-        Symbols.interp_numeral loc (Bignat.NEG p) scopes
     | CNotation (loc,ntn,args) ->
 	let scopes = option_cons tmp_scope scopes in
 	let (ids,c) = Symbols.interp_notation ntn scopes in

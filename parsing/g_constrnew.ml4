@@ -178,9 +178,10 @@ GEXTEND Gram
     | "90" RIGHTA
       [ c1 = operconstr; "->"; c2 = binder_constr -> CArrow(loc,c1,c2)
       | c1 = operconstr; "->"; c2 = operconstr    -> CArrow(loc,c1,c2) ]
-    | "10" LEFTA
+    | "10"
       [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(None,f),args)
-      | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args) ]
+      | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args)
+      | "-"; n=INT -> CNumeral (loc,Bignat.NEG (Bignat.of_string n)) ]
     | "9" [ ]
     | "1" LEFTA
       [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->

@@ -205,37 +205,31 @@ Syntax constr
 (* For parsing/printing based on scopes *)
 Module R_scope.
 
-Infix "<=" Rle (at level 5, no associativity) : R_scope.
-Infix "<"  Rlt (at level 5, no associativity) : R_scope.
-Infix ">=" Rge (at level 5, no associativity) : R_scope.
-Infix ">" Rgt (at level 5, no associativity) : R_scope.
-Infix "+" Rplus (at level 4) : R_scope
-  V8only (at level 50, left associativity).
-Infix "-" Rminus (at level 4) : R_scope
-  V8only (at level 50, left associativity).
-Infix "*" Rmult (at level 3) : R_scope
-  V8only (at level 40, left associativity).
-Infix "/" Rdiv (at level 3) : R_scope
-  V8only (at level 40, left associativity).
-Notation "- x" := (Ropp x) (at level 0) : R_scope
-  V8only (at level 50, left associativity).
+Infix "<=" Rle (at level 5, no associativity) : R_scope V8only.
+Infix "<"  Rlt (at level 5, no associativity) : R_scope V8only.
+Infix ">=" Rge (at level 5, no associativity) : R_scope V8only.
+Infix ">" Rgt (at level 5, no associativity) : R_scope V8only.
+Infix "+" Rplus (at level 4) : R_scope V8only.
+Infix "-" Rminus (at level 4) : R_scope V8only.
+Infix "*" Rmult (at level 3) : R_scope V8only.
+Infix "/" Rdiv (at level 3) : R_scope V8only.
+Notation "- x" := (Ropp x) (at level 0) : R_scope V8only.
 Notation "x == y == z" := (eqT R x y)/\(eqT R y z)
-  (at level 5, y at level 4, no associtivity): R_scope
-  V8only "x = y = z" (at level 70, y at next level, no associativity).
+  (at level 5, y at level 4, no associtivity): R_scope.
 Notation "x <= y <= z" := (Rle x y)/\(Rle y z)
   (at level 5, y at level 4) : R_scope
-  V8only (at level 70, y at next level, no associativity).
+  V8only.
 Notation "x <= y < z" := (Rle x y)/\(Rlt y z)
   (at level 5, y at level 4) : R_scope
-  V8only (at level 70, y at next level, no associativity).
+  V8only.
 Notation "x < y < z" := (Rlt x y)/\(Rlt y z)
   (at level 5, y at level 4) : R_scope
-  V8only (at level 70, y at next level, no associativity).
+  V8only.
 Notation "x < y <= z" := (Rlt x y)/\(Rle y z)
   (at level 5, y at level 4) : R_scope
-  V8only (at level 70, y at next level, no associativity).
+  V8only.
 Notation "/ x" := (Rinv x) (at level 0): R_scope
-  V8only (at level 40, left associativity).
+  V8only.
 
 Open Local Scope R_scope.
 End R_scope.
