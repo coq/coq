@@ -660,7 +660,7 @@ let print_object lobj id sp dn fv =
          let typ =
           match varentry with
              Declare.SectionLocalDef _ -> assert false
-           | Declare.SectionLocalDecl typ -> typ
+           | Declare.SectionLocalAssum typ -> typ
          in
           add_to_pvars (N.string_of_id id) ;
           print_variable id (T.body_of_type typ)

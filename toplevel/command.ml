@@ -84,7 +84,7 @@ let hypothesis_def_var is_refining ident n c =
         if Lib.is_section_p disch_sp then begin
 	  let t = interp_type Evd.empty (Global.env()) c in
           declare_variable (id_of_string ident)
-             (SectionLocalDecl t,n,false);
+             (SectionLocalAssum t,n,false);
 	  if is_verbose() then message (ident ^ " is assumed");
           if is_refining then 
             mSGERRNL [< 'sTR"Warning: Variable "; 'sTR ident; 
@@ -207,7 +207,7 @@ let build_recursive lnameargsardef =
            let arj = type_judgment_of_rawconstr Evd.empty env raw_arity in
 	   let arity = arj.utj_val in
            declare_variable recname
-	     (SectionLocalDecl arj.utj_val,NeverDischarge,false);
+	     (SectionLocalAssum arj.utj_val,NeverDischarge,false);
            (Environ.push_named_assum (recname,arity) env, (arity::arl)))
         (env0,[]) lnameargsardef
     with e ->
@@ -274,7 +274,7 @@ let build_corecursive lnameardef =
            let arj = type_judgment_of_rawconstr Evd.empty env0 arityc in
 	   let arity = arj.utj_val in
            declare_variable recname
-	     (SectionLocalDecl arj.utj_val,NeverDischarge,false);
+	     (SectionLocalAssum arj.utj_val,NeverDischarge,false);
            (Environ.push_named_assum (recname,arity) env, (arity::arl)))
         (env0,[]) lnameardef
     with e -> 

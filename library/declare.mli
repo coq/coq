@@ -22,7 +22,7 @@ type strength =
 
 type section_variable_entry =
   | SectionLocalDef of constr
-  | SectionLocalDecl of constr
+  | SectionLocalAssum of constr
 
 type sticky = bool
 

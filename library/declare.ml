@@ -41,7 +41,7 @@ let make_strength_2 () =
 
 type section_variable_entry =
   | SectionLocalDef of constr
-  | SectionLocalDecl of constr
+  | SectionLocalAssum of constr
 
 type sticky = bool
 
@@ -56,7 +56,7 @@ let _ = Summary.declare_summary "VARIABLE"
 
 let cache_variable (sp,((id,(d,_,_) as vd),imps)) =
   begin match d with (* Fails if not well-typed *)
-    | SectionLocalDecl ty -> Global.push_named_assum (id,ty)
+    | SectionLocalAssum ty -> Global.push_named_assum (id,ty)
     | SectionLocalDef c -> Global.push_named_def (id,c)
   end;
   Nametab.push id sp;

@@ -139,7 +139,7 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
 	  let newdecl =
 	    match c with
 	      | None ->
-		  SectionLocalDecl
+		  SectionLocalAssum
 		    (expmod_constr oldenv work_alist (body_of_type t))
 	      | Some body ->
 		  SectionLocalDef
