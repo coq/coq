@@ -1021,6 +1021,11 @@ let whd_programs_stack env sigma =
 	    s 
 	  else 
 	    whrec (mkApp (f, Array.sub cl 0 n), append_stack [|c|] stack)
+      | IsLetIn (_,b,_,c) ->
+	  if occur_existential b then
+	    s
+	  else
+	    stacklam whrec [b] c stack
       | IsLambda (_,_,c) ->
           (match decomp_stack stack with
              | None -> s
