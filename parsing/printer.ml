@@ -38,15 +38,15 @@ let pr_qualified sp id =
   else 
     [< 'sTR(string_of_path sp) >]
 
-let pr_constant sp = pr_qualified sp (basename sp)
+let pr_constant (sp,_) = pr_qualified sp (basename sp)
 
-let pr_existential ev = [< 'sTR ("?" ^ string_of_int ev) >]
+let pr_existential (ev,_) = [< 'sTR ("?" ^ string_of_int ev) >]
 
-let pr_inductive (sp,tyi as ind_sp) =
+let pr_inductive (sp,tyi as ind_sp,_) =
   let id = id_of_global (MutInd ind_sp) in
   pr_qualified sp id
 
-let pr_constructor ((sp,tyi),i as cstr_sp) =
+let pr_constructor ((sp,tyi),i as cstr_sp,_) =
   let id = id_of_global (MutConstruct cstr_sp) in
   pr_qualified sp id
 
@@ -62,16 +62,16 @@ let globpr k gt = match gt with
   | Nvar(_,s) -> [< 'sTR s >]
   | Node(_,"EVAR", (Num (_,ev))::_) ->
       if !print_arguments then dfltpr gt
-      else pr_existential ev
+      else pr_existential (ev,[])
   | Node(_,"CONST",(Path(_,sl,s))::_) ->
       if !print_arguments then dfltpr gt
-      else pr_constant (section_path sl s)
+      else pr_constant (section_path sl s,[])
   | Node(_,"MUTIND",(Path(_,sl,s))::(Num(_,tyi))::_) ->
       if !print_arguments then (dfltpr gt)
-      else pr_inductive (section_path sl s,tyi)
+      else pr_inductive ((section_path sl s,tyi),[])
   | Node(_,"MUTCONSTRUCT",(Path(_,sl,s))::(Num(_,tyi))::(Num(_,i))::_) ->
       if !print_arguments then (dfltpr gt)
-      else pr_constructor ((section_path sl s,tyi),i)
+      else pr_constructor (((section_path sl s,tyi),i),[])
   | gt -> dfltpr gt
 
 let apply_prec = Some (("Term",(9,0,0)),Extend.L)

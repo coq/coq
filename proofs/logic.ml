@@ -281,14 +281,14 @@ let prim_refiner r sigma goal =
             | DOP2(Prod,c1,DLAM(_,b)) -> 
             	if k = 1 then 
 		  (try 
-		     find_minductype env sigma c1 
+		     let _ = find_minductype env sigma c1 in ()
 		   with Induc -> 
 		     error "cannot do a fixpoint on a non inductive type")
             	else 
 		  check_ind (k-1) b
             | _ -> error "not enough products"
 	in
-     	let _ = check_ind n cl in 
+     	check_ind n cl;
 	if mem_sign sign f then error "name already used in the environment";
         let a = mk_assumption env sigma cl in
         let sg = mk_goal info (push_var (f,a) env) cl in
@@ -300,7 +300,7 @@ let prim_refiner r sigma goal =
             | DOP2(Prod,c1,DLAM(_,b)) -> 
             	if k = 1 then 
 		  (try 
-		     find_minductype env sigma c1 
+		     fst (find_minductype env sigma c1)
 		   with Induc -> 
 		     error "cannot do a fixpoint on a non inductive type")
             	else 
@@ -308,10 +308,10 @@ let prim_refiner r sigma goal =
             | _ -> error "not enough products"
 	in
 	let n = (match ln with (Num(_,n))::_ -> n | _ -> assert false) in
-	let (sp,_,_) = destMutInd (fst (check_ind n cl)) in
+	let (sp,_) = check_ind n cl in
      	let rec mk_sign sign = function 
 	  | (ar::lar'),(f::lf'),((Num(_,n))::ln')->
-	      let (sp',_,_)  = destMutInd (fst (check_ind n ar)) in 
+	      let (sp',_)  = check_ind n ar in 
 	      if not (sp=sp') then 
 		error ("fixpoints should be on the same " ^ 
 		       "mutual inductive declaration");
@@ -331,12 +331,12 @@ let prim_refiner r sigma goal =
             | DOP2(Prod,c1,DLAM(_,b)) -> check_is_coind  b
             | b  -> 
 		(try 
-		   let _ = find_mcoinductype env sigma b in true
+		   let _ = find_mcoinductype env sigma b in ()
                  with Induc -> 
 		   error ("All methods must construct elements " ^
 			  "in coinductive types"))
 	in
-     	let _ = List.for_all check_is_coind (cl::lar) in
+     	List.iter check_is_coind (cl::lar);
         let rec mk_sign sign = function 
           | (ar::lar'),(f::lf') ->
 	      if mem_sign sign f then 

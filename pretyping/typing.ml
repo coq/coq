@@ -42,15 +42,14 @@ let rec execute mf env sigma cstr =
         else 
 	  error "Cannot typecheck an unevaluable abstraction"
 	      
-    | IsConst _ ->
-        make_judge cstr (type_of_constant env sigma cstr)
+    | IsConst c ->
+        make_judge cstr (type_of_constant env sigma c)
 	  
-    | IsMutInd _ ->
-	make_judge cstr (type_of_inductive env sigma cstr)
+    | IsMutInd ind ->
+	make_judge cstr (type_of_inductive env sigma ind)
 	  
-    | IsMutConstruct (sp,i,j,args) -> 
-	let (typ,kind) =
-	  destCast (type_of_constructor env sigma (((sp,i),j),args)) in
+    | IsMutConstruct cstruct -> 
+	let (typ,kind) = destCast (type_of_constructor env sigma cstruct) in
         { uj_val = cstr; uj_type = typ; uj_kind = kind }
 	  
     | IsMutCase (_,p,c,lf) ->

@@ -32,7 +32,7 @@ type 'a oper =
       (* an extra slot, for putting in whatever sort of
          operator we need for whatever sort of application *)
 
-and case_info = inductive_path option
+and case_info = inductive_path
 
 (* Sorts. *)
 
@@ -148,7 +148,7 @@ let mkAppList a l = DOPN (AppL, Array.of_list (a::l))
 
 (* Constructs a constant *) 
 (* The array of terms correspond to the variables introduced in the section *)
-let mkConst sp a = DOPN (Const  sp, a)
+let mkConst (sp,a) = DOPN (Const  sp, a)
 
 (* Constructs an existential variable *)
 let mkEvar n a = DOPN (Evar n, a)
@@ -158,12 +158,12 @@ let mkAbst sp a = DOPN (Abst sp, a)
 
 (* Constructs the ith (co)inductive type of the block named sp *)
 (* The array of terms correspond to the variables introduced in the section *)
-let mkMutInd sp i l = (DOPN (MutInd (sp,i), l))
+let mkMutInd (ind_sp,l) = DOPN (MutInd ind_sp, l)
 
 (* Constructs the jth constructor of the ith (co)inductive type of the 
    block named sp. The array of terms correspond to the variables
    introduced in the section *)
-let mkMutConstruct sp i j l =  (DOPN ((MutConstruct ((sp,i),j),l))) 
+let mkMutConstruct (cstr_sp,l) =  DOPN (MutConstruct cstr_sp,l)
 
 (* Constructs the term <p>Case c of c1 | c2 .. | cn end *)
 let mkMutCase ci p c ac = 
@@ -439,24 +439,22 @@ let args_of_abst = function
 
 (* Destructs a (co)inductive type named sp *)
 let destMutInd = function
-  | DOPN (MutInd (sp,i), l) -> (sp,i,l)
+  | DOPN (MutInd ind_sp, l) -> (ind_sp,l)
   | _ -> invalid_arg "destMutInd"
 	
 let op_of_mind = function
-  | DOPN(MutInd (sp,i),_) -> (sp,i)
+  | DOPN(MutInd ind_sp,_) -> ind_sp
   | _ -> anomaly "op_of_mind called with bad args"
 
 let args_of_mind = function
   | DOPN(MutInd _,args) -> args
   | _ -> anomaly "args_of_mind called with bad args"
 
-let ci_of_mind = function
-  | DOPN(MutInd(sp,tyi),_) -> Some (sp,tyi)
-  | _ -> invalid_arg "ci_of_mind"
+let ci_of_mind = op_of_mind
 
 (* Destructs a constructor *)
 let destMutConstruct = function
-  | DOPN (MutConstruct ((sp,i),j),l) -> (sp,i,j,l)
+  | DOPN (MutConstruct cstr_sp,l) -> (cstr_sp,l)
   | _ -> invalid_arg "dest"
 
 let op_of_mconstr = function
@@ -528,6 +526,11 @@ let destUntypedCoFix = function
 (* Term analysis  *)
 (******************)
 
+type existential = int * constr array
+type constant = section_path * constr array
+type constructor = constructor_path * constr array
+type inductive = inductive_path * constr array
+
 type kindOfTerm = 
   | IsRel          of int
   | IsMeta         of int
@@ -538,11 +541,11 @@ type kindOfTerm =
   | IsProd         of name * constr * constr
   | IsLambda       of name * constr * constr
   | IsAppL         of constr * constr list
-  | IsConst        of section_path * constr array 
   | IsAbst         of section_path * constr array
-  | IsEvar         of int * constr array
-  | IsMutInd       of section_path * int * constr array 
-  | IsMutConstruct of section_path * int * int * constr array 
+  | IsEvar         of existential
+  | IsConst        of constant
+  | IsMutInd       of inductive
+  | IsMutConstruct of constructor
   | IsMutCase      of case_info * constr * constr * constr array
   | IsFix          of int array * int * constr array * name list * constr array
   | IsCoFix        of int * constr array * name list * constr array
@@ -569,8 +572,8 @@ let kind_of_term c =
     | DOPN (Const sp, a)                   -> IsConst (sp,a)
     | DOPN (Evar sp, a)                    -> IsEvar (sp,a)
     | DOPN (Abst sp, a)                    -> IsAbst (sp, a)
-    | DOPN (MutInd (sp,i), l)              -> IsMutInd (sp,i,l)
-    | DOPN (MutConstruct ((sp,i), j),l)    -> IsMutConstruct (sp,i,j,l)
+    | DOPN (MutInd ind_sp, l)              -> IsMutInd (ind_sp,l)
+    | DOPN (MutConstruct cstr_sp,l)        -> IsMutConstruct (cstr_sp,l)
     | DOPN (MutCase ci,v)                  -> 
 	IsMutCase (ci,v.(0),v.(1),Array.sub v 2 (Array.length v - 2))
     | DOPN ((Fix (recindxs,i),a))           ->  
@@ -1316,7 +1319,7 @@ module Hoper =
         | Abst sp -> Abst (hsp sp)
         | MutInd (sp,i) -> MutInd (hsp sp, i)
         | MutConstruct ((sp,i),j) -> MutConstruct ((hsp sp,i),j)
-        | MutCase(Some (sp,i)) -> MutCase(Some (hsp sp, i))
+        | MutCase(sp,i) -> MutCase(hsp sp, i)
         | t -> t 
       let equal o1 o2 =
         match (o1,o2) with
@@ -1327,7 +1330,7 @@ module Hoper =
           | (MutInd (sp1,i1), MutInd (sp2,i2)) -> sp1==sp2 & i1=i2
           | (MutConstruct((sp1,i1),j1), MutConstruct((sp2,i2),j2)) ->
               sp1==sp2 & i1=i2 & j1=j2
-          | (MutCase(Some (sp1,i1)),MutCase(Some (sp2,i2))) -> sp1==sp2 & i1=i2
+          | (MutCase(sp1,i1),MutCase(sp2,i2)) -> sp1==sp2 & i1=i2
           | _ -> o1=o2
       let hash = Hashtbl.hash
     end)

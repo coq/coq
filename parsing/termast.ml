@@ -96,10 +96,12 @@ let occur_id env id0 c =
     | VAR id             -> id=id0
     | DOPN (Const sp,cl) -> (basename sp = id0) or (array_exists (occur n) cl)
     | DOPN (Abst sp,cl)  -> (basename sp = id0) or (array_exists (occur n) cl)
-    | DOPN (MutInd _, cl) as t -> 
-  	(basename (mind_path t) = id0) or (array_exists (occur n) cl)
-    | DOPN (MutConstruct _, cl) as t -> 
-    	(basename (mind_path t) = id0) or (array_exists (occur n) cl)
+    | DOPN (MutInd ind_sp, cl) as t -> 
+  	(basename (path_of_inductive_path ind_sp) = id0)
+	or (array_exists (occur n) cl)
+    | DOPN (MutConstruct cstr_sp, cl) as t -> 
+    	(basename (path_of_constructor_path cstr_sp) = id0)
+	or (array_exists (occur n) cl)
     | DOPN(_,cl)         -> array_exists (occur n) cl
     | DOP1(_,c)          -> occur n c
     | DOP2(_,c1,c2)      -> (occur n c1) or (occur n c2)
@@ -137,10 +139,12 @@ let global_vars_and_consts t =
     | VAR id             -> id::acc
     | DOPN (Const sp,cl) -> (basename sp)::(Array.fold_left collect acc cl)
     | DOPN (Abst sp,cl)  -> (basename sp)::(Array.fold_left collect acc cl)
-    | DOPN (MutInd _, cl) as t       -> 
-	(basename (mind_path t))::(Array.fold_left collect acc cl)
-    | DOPN (MutConstruct _, cl) as t -> 
-	(basename (mind_path t))::(Array.fold_left collect acc cl)
+    | DOPN (MutInd ind_sp, cl) as t       -> 
+	(basename (path_of_inductive_path ind_sp))
+	::(Array.fold_left collect acc cl)
+    | DOPN (MutConstruct cstr_sp, cl) as t -> 
+	(basename (path_of_constructor_path cstr_sp))
+	::(Array.fold_left collect acc cl)
     | DOPN(_,cl)         -> Array.fold_left collect acc cl
     | DOP1(_,c)          -> collect acc c
     | DOP2(_,c1,c2)      -> collect (collect acc c1) c2
@@ -485,23 +489,24 @@ let old_bdize_depcast opcast at_top env t =
 	   | IsAbst (sp,cl) ->
 	       ope("ABST",((path_section dummy_loc sp)::
 			   (array_map_to_list (bdrec avoid env) cl)))
-	   | IsMutInd (sp,tyi,cl) ->
+	   | IsMutInd ((sp,tyi),cl) ->
 	       ope("MUTIND",((path_section dummy_loc sp)::(num tyi)::
 			     (array_map_to_list (bdrec avoid env) cl)))
-	   | IsMutConstruct (sp,tyi,n,cl) ->
+	   | IsMutConstruct (((sp,tyi),n),cl) ->
 	       ope("MUTCONSTRUCT",
 		   ((path_section dummy_loc sp)::(num tyi)::(num n)::
 		    (array_map_to_list (bdrec avoid env) cl)))
 	   | IsMutCase (annot,p,c,bl) ->
 	       let synth_type = synthetize_type () in
 	       let tomatch = bdrec avoid env c in
-	       begin match annot with
-		 | None -> 
+	       begin 
+		 match annot with
+(*		 | None -> 
 	             (* Pas d'annotation --> affichage avec vieux Case *)
 		     let pred = bdrec avoid env p in
 		     let bl' = array_map_to_list (bdrec avoid env) bl in
 		     ope("MUTCASE",pred::tomatch::bl')
-		 | Some indsp ->
+		 | Some *) indsp ->
 		     let (mib,mip as lmis) = 
 		       mind_specif_of_mind_light indsp in
 		     let lc = lc_of_lmis lmis in
@@ -714,21 +719,22 @@ let rec detype avoid env t =
 	RRef(dummy_loc,REVar(ev,ids_of_var (Array.map (detype avoid env) cl)))
     | IsAbst (sp,cl) -> 
 	anomaly "bdize: Abst should no longer occur in constr"
-    | IsMutInd (sp,tyi,cl) ->
+    | IsMutInd (ind_sp,cl) ->
 	let ids = ids_of_var (Array.map (detype avoid env) cl) in
-	RRef (dummy_loc,RInd ((sp,tyi),ids))
-    | IsMutConstruct (sp,tyi,n,cl) ->
+	RRef (dummy_loc,RInd (ind_sp,ids))
+    | IsMutConstruct (cstr_sp,cl) ->
 	let ids = ids_of_var (Array.map (detype avoid env) cl) in
-	RRef (dummy_loc,RConstruct (((sp,tyi),n),ids))
+	RRef (dummy_loc,RConstruct (cstr_sp,ids))
     | IsMutCase (annot,p,c,bl) ->
 	let synth_type = synthetize_type () in
 	let tomatch = detype avoid env c in
-	begin match annot with
-	  | None -> (* Pas d'annotation --> affichage avec vieux Case *)
+	begin 
+	  match annot with
+(*	  | None -> (* Pas d'annotation --> affichage avec vieux Case *)
 	      warning "Printing in old Case syntax";
 	      ROldCase (dummy_loc,false,Some (detype avoid env p),
 			tomatch,Array.map (detype avoid env) bl)
-	  | Some indsp ->
+	  | Some *) indsp ->
 	      let (mib,mip as lmis) = mind_specif_of_mind_light indsp in
 	      let lc = lc_of_lmis lmis in
 	      let lcparams = Array.map get_params lc in

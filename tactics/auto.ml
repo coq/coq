@@ -358,7 +358,7 @@ let _ =
 	   begin 
 	     try
 	       let trad = Declare.global_reference CCI in
-	       let rectype = trad c in
+	       let rectype = destMutInd (trad c) in
 	       let consnames = 
 		 mis_consnames (Global.lookup_mind_specif rectype) in
 	       let lcons = 

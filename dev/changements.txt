@@ -67,7 +67,7 @@ Changements dans les fonctions :
 	  mis_lc	 ->  instantiate_lc	
 
 	Ex-Environ	 
-	  mind_path      -> Global.lookup_mind
+	  mind_of_path      -> Global.lookup_mind
 
 	Printer
 	  gentermpr	->   gen_pr_term
@@ -76,6 +76,12 @@ Changements dans les fonctions :
 	  type_of_type     ->  judge_of_type
 	  fcn_proposition  ->  judge_of_prop_contents
 
+Changements dans les inductifs
+------------------------------
+Nouveaux types "constructor" et "inductive" dans Term
+La plupart des fonctions de typage des inductives prennent maintenant
+un inductive au lieu d'un oonstr comme argument. Les seules fonctions
+à traduite un constr en inductive sont les find_mrectype and co.
 
 Changements dans les grammaires
 -------------------------------

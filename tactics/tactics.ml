@@ -48,8 +48,8 @@ let get_commands =
 let rec string_head_bound = function 
   | DOPN(Const _,_) as x -> 
       string_of_id (basename (path_of_const x))
-  | DOPN(MutInd _,_) as x -> 
-      let mispec = Global.lookup_mind_specif x in 
+  | DOPN(MutInd ind_sp,args) as x -> 
+      let mispec = Global.lookup_mind_specif (ind_sp,args) in 
       string_of_id (mis_typename mispec)
   |  DOPN(MutConstruct ((sp,tyi),i),_) ->
        let mib = Global.lookup_mind sp in
@@ -833,7 +833,6 @@ let dyn_move_dep = function
 let constructor_checking_bound  boundopt i lbind gl =
   let cl = pf_concl gl in 
   let (mind,_,redcl) = reduce_to_mind (pf_env gl) (project gl) cl in 
-  let (x_0,x_1,args) = destMutInd mind in
   let nconstr = mis_nconstr (Global.lookup_mind_specif mind) 
   and sigma   = project gl in
   if i=0 then error "The constructors are numbered starting from 1";
@@ -844,7 +843,7 @@ let constructor_checking_bound  boundopt i lbind gl =
 	  error "Not the expected number of constructors"
     | None -> ()
   end;
-  let cons = DOPN(MutConstruct((x_0,x_1),i),args) in
+  let cons = mkMutConstruct (ith_constructor_of_inductive mind i) in
   let apply_tac = apply_with_bindings (cons,lbind) in
   (tclTHENLIST [convert_concl redcl; intros; apply_tac]) gl
 
@@ -853,7 +852,6 @@ let one_constructor i = (constructor_checking_bound None i)
 let any_constructor gl = 
   let cl = pf_concl gl in 
   let (mind,_,redcl) = reduce_to_mind (pf_env gl) (project gl) cl in
-  let (x_0,x_1,args) = destMutInd mind in
   let nconstr = mis_nconstr (Global.lookup_mind_specif mind)
   and sigma   = project gl in
   if nconstr = 0 then error "The type has no constructors";
@@ -1003,9 +1001,9 @@ let simplest_elim c = default_elim (c,[])
 
 
 let rec is_rec_arg indpath t =
-  try 
-    Declare.mind_path (fst (find_mrectype (Global.env()) Evd.empty t)) 
-    = indpath
+  try
+    let ((ind_sp,_),_) = find_mrectype (Global.env()) Evd.empty t in
+    Declare.path_of_inductive_path ind_sp = indpath
   with Induc -> 
     false
 
@@ -1265,9 +1263,9 @@ let induction_from_context hyp0 gl =
   let sign = pf_untyped_hyps gl in
   let tsign = pf_hyps gl in
   let tmptyp0 = pf_get_hyp gl hyp0 in
-  let (mind,indtyp,typ0) = pf_reduce_to_mind gl tmptyp0 in
+  let ((ind_sp,_) as mind,indtyp,typ0) = pf_reduce_to_mind gl tmptyp0 in
   let indvars = find_atomic_param_of_ind mind indtyp in
-  let mindpath = Declare.mind_path mind in
+  let mindpath = Declare.path_of_inductive_path ind_sp in
   let elimc = lookup_eliminator tsign mindpath (suff gl (pf_concl gl)) in
   let elimt = pf_type_of gl elimc in
   let (statlists,lhyp0,indhyps,deps) = cook_sign hyp0 indvars sign in

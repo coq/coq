@@ -229,7 +229,7 @@ let ifOnClause pred tac1 tac2 cls gl =
   the elimination. *)
 
 type branch_args = {
-  ity        : constr;      (* the type we were eliminating on *)
+  ity        : inductive;   (* the type we were eliminating on *)
   largs      : constr list; (* its arguments *)
   branchnum  : int;         (* the branch number *)
   pred       : constr;      (* the predicate we used *)
@@ -245,16 +245,15 @@ type branch_assumptions = {
   recargs   : identifier list; (* the RECURSIVE constructor arguments *)
   indargs   : identifier list} (* the inductive arguments *)
 
-
 (* Hum ... the following function looks quite similar to the one 
- * defined with the same name in Tactics.ml. 
+ * (previously) defined with the same name in Tactics.ml. 
  *  --Eduardo (11/8/97) *)
 
-let reduce_to_ind gl t = 
+let reduce_to_ind_goal gl t = 
   let rec elimrec t l = 
     match decomp_app(t) with
-      | (DOPN(MutInd (sp,_),_) as mind,_) -> 
-	  (mind,mind_path mind,t,prod_it t l)
+      | (DOPN(MutInd ind_sp,args) as mind,_) -> 
+	  ((ind_sp,args),path_of_inductive_path ind_sp,t,prod_it t l)
       | (DOPN(Const _,_),_) -> 
 	  elimrec (pf_nf_betaiota gl (pf_one_step_reduce gl t)) l
       | (DOP2(Cast,c,_),[]) -> elimrec c l
@@ -272,7 +271,7 @@ let case_sign ity i =
   analrec [] recarg.(i-1)
 
 let elim_sign ity i =
-  let (_,j,_) = destMutInd ity in
+  let (_,j),_ = ity in
   let rec analrec acc = function 
     | (Param(_)::rest) -> analrec (false::acc) rest
     | (Norec::rest)    -> analrec (false::acc) rest
@@ -313,7 +312,7 @@ let last_arg = function
 
 let general_elim_then_using 
   elim elim_sign_fun tac predicate (indbindings,elimbindings) c gl =
-  let (ity,_,_,t) = reduce_to_ind gl (pf_type_of gl c) in
+  let (ity,_,_,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
   let name_elim =
     (match elim with
        | DOPN(Const sp,_) -> id_of_string(string_of_path sp)
@@ -361,7 +360,7 @@ let general_elim_then_using
 
 
 let elimination_then_using tac predicate (indbindings,elimbindings) c gl = 
-  let (ity,path_name,_,t) = reduce_to_ind gl (pf_type_of gl c) in
+  let (ity,path_name,_,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
   let elim = 
     lookup_eliminator (pf_hyps gl) path_name (suff gl (pf_concl gl))
   in
@@ -374,7 +373,7 @@ let simple_elimination_then tac = elimination_then tac ([],[])
 
 let case_then_using tac predicate (indbindings,elimbindings) c gl =
   (* finding the case combinator *)
-  let (ity,_,_,t) = reduce_to_ind gl (pf_type_of gl c) in
+  let (ity,_,_,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
   let sigma = project gl in 
   let sort  = sort_of_goal gl  in
   let elim  = Indrec.make_case_gen (pf_env gl) sigma ity sort in  
@@ -383,7 +382,7 @@ let case_then_using tac predicate (indbindings,elimbindings) c gl =
 
 let case_nodep_then_using tac predicate (indbindings,elimbindings) c gl =
   (* finding the case combinator *)
-  let (ity,_,_,t) = reduce_to_ind gl (pf_type_of gl c) in
+  let (ity,_,_,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
   let sigma = project gl in 
   let sort  = sort_of_goal gl  in
   let elim  = Indrec.make_case_nodep (pf_env gl) sigma ity sort in  
@@ -448,3 +447,4 @@ let make_case_branch_assumptions ba gl =
      with Failure _ -> anomaly "make_case_branch_assumptions")
 
 let case_on_ba tac ba gl = tac (make_case_branch_assumptions ba gl) gl
+

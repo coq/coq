@@ -27,12 +27,11 @@ val assumption_of_judgment :
 
 val relative : env -> int -> unsafe_judgment
 
-val type_of_constant : env -> 'a evar_map -> constr -> typed_type
+val type_of_constant : env -> 'a evar_map -> constant -> typed_type
 
-val type_of_inductive : env -> 'a evar_map -> constr -> typed_type
+val type_of_inductive : env -> 'a evar_map -> inductive -> typed_type
 
-val type_of_constructor :
-  env -> 'a evar_map -> (constructor_path * constr array) -> constr
+val type_of_constructor : env -> 'a evar_map -> constructor -> constr
 
 val type_of_existential : env -> 'a evar_map -> constr -> constr
 
@@ -89,10 +88,12 @@ val make_arity_nodep :
 
 val find_case_dep_nparams :
   env -> 'a evar_map -> constr * constr ->
-    constr * constr list ->
+    inductive * constr list ->
       constr -> bool * (int * constr list * constr list) 
 
-val type_inst_construct : env -> 'a evar_map -> int -> constr -> constr 
+(* The constr list is the global args list *)
+val type_inst_construct :
+  env -> 'a evar_map -> int -> inductive * constr list -> constr 
 
 val hyps_inclusion : env -> 'a evar_map -> var_context -> var_context -> bool
 

@@ -217,7 +217,7 @@ let explain_bad_constructor k ctx cstr ind =
      'sTR " in inductive type "; pt >]
 
 let explain_wrong_numarg_of_constructor k ctx cstr n =
-  let pc = pr_constructor cstr in
+  let pc = pr_constructor (cstr,[||]) in
   [<'sTR "The constructor "; pc;
     'sTR " expects " ; 'iNT n ; 'sTR " arguments. ">]
 

@@ -10,37 +10,6 @@ open Reduction
 open Environ
 open Typeops
 
-(* A light version of mind_specif_of_mind *)
-
-type mutind_id = inductive_path * constr array
-
-type mutind =
-    {fullmind : constr;
-     mind : mutind_id;
-     nparams : int;
-     nrealargs : int;
-     nconstr : int;
-     params : constr list;
-     realargs : constr list;
-     arity : constr}
-
-(* raise Induc if not an inductive type *)
-let try_mutind_of env sigma ty =
-  let (mind,largs) = find_mrectype env sigma ty in
-  let mispec = lookup_mind_specif mind env in 
-  let nparams = mis_nparams mispec in
-  let (params,realargs) = list_chop nparams largs in 
-  {fullmind = ty;
-   mind     = (let (sp,i,cv) = destMutInd mind in (sp,i),cv);
-   nparams  = nparams;
-   nrealargs = List.length realargs;
-   nconstr  = mis_nconstr mispec;
-   params   = params;
-   realargs = realargs;
-   arity    = Instantiate.mis_arity mispec}
-
-
-(********  A light version of type_of *********)
 type metamap = (int * constr) list
 
 let rec is_dep_case env sigma (pt,ar) =
@@ -85,13 +54,11 @@ let rec type_of env cstr=
     | IsVar id -> body_of_type (snd (lookup_var id env))
 
     | IsAbst _ -> error "No more Abst" (*type_of env (abst_value cstr)*)
-    | IsConst _ -> (body_of_type (type_of_constant env sigma cstr))
+    | IsConst c -> (body_of_type (type_of_constant env sigma c))
     | IsEvar _ -> type_of_existential env sigma cstr
-    | IsMutInd _ -> (body_of_type (type_of_inductive env sigma cstr))
-    | IsMutConstruct (sp,i,j,args) -> 
-        let (typ,kind) =
-	  destCast (type_of_constructor env sigma (((sp,i),j),args))
-        in typ
+    | IsMutInd ind -> (body_of_type (type_of_inductive env sigma ind))
+    | IsMutConstruct cstr -> 
+        let (typ,kind) = destCast (type_of_constructor env sigma cstr) in typ
     | IsMutCase (_,p,c,lf) ->
         let {realargs=args;arity=arity;nparams=n} =
           try try_mutind_of env sigma (type_of env c)

@@ -81,8 +81,7 @@ let check_hyps id env sigma hyps =
 
 (* Instantiation of terms on real arguments. *)
 
-let type_of_constant env sigma c =
-  let (sp,args) = destConst c in
+let type_of_constant env sigma (sp,args) =
   let cb = lookup_constant sp env in
   let hyps = cb.const_hyps in
   check_hyps (basename sp) env sigma hyps;
@@ -110,8 +109,8 @@ let instantiate_lc mis =
   let lc = mis.mis_mip.mind_lc in
   instantiate_constr (ids_of_sign hyps) lc (Array.to_list mis.mis_args)
 
-let type_of_constructor env sigma ((ind_sp,j),args) =
-  let mind = DOPN (MutInd ind_sp, args) in
+let type_of_constructor env sigma ((ind_sp,j),args as cstr) =
+  let mind = inductive_of_constructor cstr in
   let mis = lookup_mind_specif mind env in
   check_hyps (basename mis.mis_sp) env sigma (mis.mis_mib.mind_hyps);
   let specif = instantiate_lc mis in
@@ -137,8 +136,7 @@ let mis_type_mconstructs mis =
    sAPPVList specif (list_tabulate make_ik ntypes))
 
 let type_mconstructs env sigma mind =
-  let redmind = check_mrectype_spec env sigma mind in
-  let mis = lookup_mind_specif redmind env in 
+  let mis = lookup_mind_specif mind env in 
   mis_type_mconstructs mis
 
 let mis_type_mconstruct i mispec =
@@ -150,21 +148,13 @@ let mis_type_mconstruct i mispec =
   sAPPViList (i-1) specif (list_tabulate make_Ik ntypes)
 
 let type_mconstruct env sigma i mind =
-  let redmind = check_mrectype_spec env sigma mind in
-  let (sp,tyi,args) = destMutInd redmind in
-  let mispec = lookup_mind_specif redmind env in 
-  mis_type_mconstruct i mispec
+  let mis = lookup_mind_specif mind env in
+  mis_type_mconstruct i mis
 
-let type_inst_construct env sigma i mind = 
-  try 
-    let (mI,largs) = find_mrectype env sigma mind in 
-    let mispec = lookup_mind_specif mI env in 
-    let nparams = mis_nparams mispec in 
-    let tc = mis_type_mconstruct i mispec in
-    let (globargs,_) = list_chop nparams largs in
+let type_inst_construct env sigma i (mind,globargs) =
+  let mis = lookup_mind_specif mind env in
+  let tc = mis_type_mconstruct i mis in
     hnf_prod_applist env sigma "Typing.type_construct" tc globargs
-  with Induc -> 
-    error_not_inductive CCI env mind
 
 let type_of_existential env sigma c =
   let (ev,args) = destEvar c in
@@ -262,7 +252,7 @@ let find_case_dep_nparams env sigma (c,p) (mind,largs) typP =
   and t = cast_instantiate_arity mis in 
   let (globargs,la) = list_chop nparams largs in
   let glob_t = hnf_prod_applist env sigma "find_elim_boolean" t globargs in
-  let arity = applist(mind,globargs) in
+  let arity = applist(mkMutInd mind,globargs) in
   let (dep,_) = is_correct_arity env sigma kelim (c,p) arity (typP,glob_t) in
   (dep, (nparams, globargs,la))
 
@@ -297,11 +287,12 @@ let type_one_branch_nodep env sigma (nparams,globargs,p) t =
 
 let type_case_branches env sigma ct pt p c =
   try
-    let ((mI,largs) as indt) = find_mrectype env sigma ct in
+    let (mind,largs) = find_mrectype env sigma ct in
     let (dep,(nparams,globargs,la)) =
-      find_case_dep_nparams env sigma (c,p) indt pt
+      find_case_dep_nparams env sigma (c,p) (mind,largs) pt
     in
-    let (lconstruct,ltypconstr) = type_mconstructs env sigma mI in
+    let (lconstruct,ltypconstr) = type_mconstructs env sigma mind in
+    let mI = mkMutInd mind in
     if dep then 
       (mI, 
        array_map2 (type_one_branch_dep env sigma (nparams,globargs,p))
@@ -502,8 +493,8 @@ let map_lift_fst = map_lift_fst_n 1
 
 let rec instantiate_recarg sp lrc ra = 
   match ra with 
-    | Mrec(j)        -> Imbr(sp,j,lrc)
-    | Imbr(sp1,k,l)  -> Imbr(sp1,k, List.map (instantiate_recarg sp lrc) l)
+    | Mrec(j)        -> Imbr((sp,j),lrc)
+    | Imbr(ind_sp,l) -> Imbr(ind_sp, List.map (instantiate_recarg sp lrc) l)
     | Norec          -> Norec
     | Param(k)       -> List.nth lrc k
 
@@ -520,10 +511,10 @@ let check_term env mind_recvec f =
       | (Mrec(i)::lr,DOP2(Lambda,_,DLAM(_,b)))  -> 
           let l' = map_lift_fst l in
           crec (n+1) ((1,mind_recvec.(i))::l') (lr,b)
-      | (Imbr(sp,i,lrc)::lr,DOP2(Lambda,_,DLAM(_,b))) -> 
+      | (Imbr((sp,i) as ind_sp,lrc)::lr,DOP2(Lambda,_,DLAM(_,b))) -> 
           let l' = map_lift_fst l in
           let sprecargs = 
-	    mis_recargs (lookup_mind_specif (mkMutInd sp i [||]) env) in
+	    mis_recargs (lookup_mind_specif (ind_sp,[||]) env) in
           let lc = 
 	    Array.map (List.map (instantiate_recarg sp lrc)) sprecargs.(i)
 	  in
@@ -618,11 +609,10 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 	      error "Bad occurrence of recursive call"
         | _ -> error "Not enough abstractions in the definition") in
    let (c,d) = check_occur 1 def in 
-   let (mI, largs) = 
+   let ((sp,tyi),_ as mind, largs) = 
      (try find_minductype env sigma c 
       with Induc -> error "Recursive definition on a non inductive type") in
-   let (sp,tyi,_) = destMutInd mI in
-   let mind_recvec = mis_recargs (lookup_mind_specif mI env) in 
+   let mind_recvec = mis_recargs (lookup_mind_specif mind env) in 
    let lcx = mind_recvec.(tyi)  in
    (* n   = decreasing argument in the definition;
       lst = a mapping var |-> recargs
@@ -771,7 +761,8 @@ let check_fix env sigma = function
 (* Co-fixpoints. *)
 
 let mind_nparams env i =
-  let mis = lookup_mind_specif i env in mis.mis_mib.mind_nparams
+  let mis = lookup_mind_specif i env in
+  mis.mis_mib.mind_nparams
 
 let check_guard_rec_meta env sigma nbfix def deftype = 
   let rec codomain_is_coind c  =
@@ -781,11 +772,11 @@ let check_guard_rec_meta env sigma nbfix def deftype =
 	  (try find_mcoinductype env sigma b
            with 
 	     | Induc -> error "The codomain is not a coinductive type"
-	     | _ -> error "Type of Cofix function not as expected")
+(*	     | _ -> error "Type of Cofix function not as expected") ??? *) )
   in
-  let (mI, _) = codomain_is_coind deftype in
-  let (sp,tyi,_) = destMutInd mI in
-  let lvlra = (mis_recargs (lookup_mind_specif mI env)) in
+  let (mind, _) = codomain_is_coind deftype in
+  let ((sp,tyi),_) = mind in
+  let lvlra = (mis_recargs (lookup_mind_specif mind env)) in
   let vlra = lvlra.(tyi) in  
   let rec check_rec_call alreadygrd n vlra  t = 
     if noccur_with_meta n nbfix t then
@@ -807,9 +798,9 @@ let check_guard_rec_meta env sigma nbfix def deftype =
              else  
 	       error "check_guard_rec_meta: ???"
 		 
-	| (DOPN ((MutConstruct((x,y),i)),l), args)  ->
+	| (DOPN (MutConstruct(_,i as cstr_sp),l), args)  ->
             let lra =vlra.(i-1) in 
-            let mI = DOPN(MutInd(x,y),l) in
+            let mI = inductive_of_constructor (cstr_sp,l) in
             let _,realargs = list_chop (mind_nparams env mI) args in
             let rec process_args_of_constr l lra =
               match l with
@@ -825,9 +816,9 @@ let check_guard_rec_meta env sigma nbfix def deftype =
                             (check_rec_call true n newvlra t) &&
                             (process_args_of_constr lr lrar)
 			    
-                       |  (Imbr(sp,i,lrc)::lrar)  ->
+                       |  (Imbr((sp,i) as ind_sp,lrc)::lrar)  ->
 			    let mis =
-			      lookup_mind_specif (mkMutInd sp i [||]) env in
+			      lookup_mind_specif (ind_sp,[||]) env in
                             let sprecargs = mis_recargs mis in
                             let lc = (Array.map 
                                         (List.map 

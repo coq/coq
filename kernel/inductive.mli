@@ -14,7 +14,7 @@ type recarg =
   | Param of int 
   | Norec 
   | Mrec of int 
-  | Imbr of section_path * int * (recarg list)
+  | Imbr of inductive_path * (recarg list)
 
 type mutual_inductive_packet = {
   mind_consnames : identifier array;
@@ -63,6 +63,20 @@ val mis_consnames : mind_specif -> identifier array
 val mind_nth_type_packet : 
   mutual_inductive_body -> int -> mutual_inductive_packet
 
+(* A light version of mind_specif_of_mind with pre-splitted args
+   Invariant: We have
+   -- Hnf (fullmind) = DOPN(AppL,[|MutInd mind;..params..;..realargs..|])
+   -- with mind  = ((sp,i),localvars) for some sp, i, localvars
+ *)
+type inductive_summary =
+    {fullmind : constr;
+     mind : inductive;
+     nparams : int;
+     nrealargs : int;
+     nconstr : int;
+     params : constr list;
+     realargs : constr list;
+     arity : constr}
 
 (*s Declaration of inductive types. *)
 
@@ -107,4 +121,11 @@ val mind_extract_params : int -> constr -> (name * constr) list * constr
 
 val mind_check_lc : (name * constr) list -> mutual_inductive_entry -> unit
 
-val inductive_of_constructor : constructor_path -> inductive_path
+val inductive_of_constructor : constructor -> inductive
+
+val ith_constructor_of_inductive : inductive -> int -> constructor
+
+val inductive_path_of_constructor_path : constructor_path -> inductive_path
+
+val ith_constructor_path_of_inductive_path :
+  inductive_path -> int -> constructor_path

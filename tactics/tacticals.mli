@@ -83,7 +83,7 @@ val conclPattern : constr -> constr -> Coqast.t -> tactic
 (*s Elimination tacticals. *)
 
 type branch_args = { 
-  ity        : constr;      (* the type we were eliminating on *)
+  ity        : inductive;   (* the type we were eliminating on *)
   largs      : constr list; (* its arguments *)
   branchnum  : int;         (* the branch number *)
   pred       : constr;      (* the predicate we used *)
@@ -105,7 +105,7 @@ val lookup_eliminator :
   typed_type signature -> section_path -> string -> constr
 
 val general_elim_then_using :
-  constr ->  (constr -> int -> bool list) -> 
+  constr ->  (inductive -> int -> bool list) -> 
     (branch_args -> tactic) -> constr option -> 
       (arg_bindings * arg_bindings) -> constr -> tactic
 	  

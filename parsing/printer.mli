@@ -27,10 +27,10 @@ val pr_ne_env       : std_ppcmds -> path_kind -> context -> std_ppcmds
 val prrawterm       : Rawterm.rawconstr -> std_ppcmds
 val prpattern       : Rawterm.pattern -> std_ppcmds
 
-val pr_constant     : section_path -> std_ppcmds
-val pr_existential  : existential_key -> std_ppcmds
-val pr_constructor  : constructor_path -> std_ppcmds
-val pr_inductive    : inductive_path -> std_ppcmds
+val pr_constant     : constant -> std_ppcmds
+val pr_existential  : existential -> std_ppcmds
+val pr_constructor  : constructor -> std_ppcmds
+val pr_inductive    : inductive -> std_ppcmds
 
 val pr_sign         : var_context -> std_ppcmds
 val pr_env_opt      : context -> std_ppcmds

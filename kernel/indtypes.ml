@@ -111,7 +111,7 @@ let listrec_mconstr env ntypes nparams i indlc =
                  let hd = array_hd cl 
 		 and largs = array_tl cl in
                  (match hd with 
-                    | Rel k -> 
+                    | Rel k ->
                         if k >= n && k<n+ntypes then begin
 			  check_correct_par env nparams ntypes n (k-n+1) largs;
 			  Mrec(n+ntypes-k-1) 
@@ -121,17 +121,17 @@ let listrec_mconstr env ntypes nparams i indlc =
                           else Norec
 			else 
 			  raise (IllFormedInd (NonPos n))
-                    | (DOPN(MutInd(sp,i),_) as mi) -> 
+                    | DOPN(MutInd ind_sp,a) -> 
                         if (noccur_bet n ntypes x) then
                           Norec
                         else 
-			  Imbr(sp,i,imbr_positive n mi largs)
+			  Imbr(ind_sp,imbr_positive n (ind_sp,a) largs)
                     | err -> 
 			if noccur_bet n ntypes x then Norec
 			else raise (IllFormedInd (NonPos n)))
              | _ -> anomaly "check_pos")
 	  
-  and imbr_positive n mi largs = 
+  and imbr_positive n mi largs =
     let mispeci = lookup_mind_specif mi env in
     let auxnpar = mis_nparams mispeci in
     let (lpar,auxlargs) = array_chop auxnpar largs in 
@@ -197,10 +197,10 @@ let listrec_mconstr env ntypes nparams i indlc =
                           then Param(n-1-k)
                           else Norec
 			else raise (IllFormedInd (NonPos n))
-                    | (DOPN(MutInd(sp,i),_) as mi) -> 
+                    | DOPN(MutInd ind_sp,a) -> 
                         if (noccur_bet n ntypes x) 
                         then Norec
-                        else Imbr(sp,i,imbr_positive n mi largs)
+                        else Imbr(ind_sp,imbr_positive n (ind_sp,a) largs)
                     | err -> if noccur_bet n ntypes x then Norec
 		      else raise (IllFormedInd (NonPos n)))
              | _ -> anomaly "check_param_pos")
@@ -249,7 +249,7 @@ let listrec_mconstr env ntypes nparams i indlc =
 let is_recursive listind =
   let rec one_is_rec rvec = 
     List.exists (function Mrec(i) -> List.mem i listind 
-                   | Imbr(_,_,lvec) -> one_is_rec lvec
+                   | Imbr(_,lvec) -> one_is_rec lvec
                    | Norec -> false
                    | Param _ -> false) rvec
   in 

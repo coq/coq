@@ -151,7 +151,7 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
   let lmodif_one_mind i = 
     let nbc = Array.length (mind_nth_type_packet mib i).mind_consnames in 
     (MutInd(osecsp,i),DO_ABSTRACT(MutInd(nsecsp,i),modl))::
-    (MutCase(Some (osecsp,i)),DO_ABSTRACT(MutCase(Some (nsecsp,i)),[]))::
+    (MutCase(osecsp,i),DO_ABSTRACT(MutCase(nsecsp,i),[]))::
     (list_tabulate
        (function j -> 
 	  let j' = j + 1 in

@@ -16,7 +16,7 @@ type cl_typ =
   | CL_FUN 
   | CL_Var of identifier 
   | CL_SP of section_path
-  | CL_IND of section_path * int
+  | CL_IND of inductive_path
 
 type cl_info_typ = {
   cL_STR : string;

@@ -26,7 +26,7 @@ type 'a oper =
   | CoFix of int
   | XTRA of string
 
-and case_info = inductive_path option
+and case_info = inductive_path
 
 (*s The sorts of CCI. *)
 
@@ -73,6 +73,10 @@ val outcast_type : constr -> typed_type
   previous ones. *)
 
 (*  Concrete type for making pattern-matching. *)
+type existential = int * constr array
+type constant = section_path * constr array
+type constructor = constructor_path * constr array
+type inductive = inductive_path * constr array
 
 type kindOfTerm =
   | IsRel          of int
@@ -84,11 +88,11 @@ type kindOfTerm =
   | IsProd         of name * constr * constr
   | IsLambda       of name * constr * constr
   | IsAppL         of constr * constr list
-  | IsConst        of section_path * constr array
   | IsAbst         of section_path * constr array
-  | IsEvar         of int * constr array
-  | IsMutInd       of section_path * int * constr array
-  | IsMutConstruct of section_path * int * int * constr array
+  | IsEvar         of existential
+  | IsConst        of constant
+  | IsMutInd       of inductive
+  | IsMutConstruct of constructor
   | IsMutCase      of case_info * constr * constr * constr array
   | IsFix          of int array * int * constr array * name list * constr array
   | IsCoFix        of int * constr array * name list * constr array
@@ -158,7 +162,7 @@ val mkAppList : constr -> constr list  -> constr
 
 (* Constructs a constant *) 
 (* The array of terms correspond to the variables introduced in the section *)
-val mkConst : section_path -> constr array -> constr
+val mkConst : constant -> constr
 
 (* Constructs an existential variable *)
 val mkEvar : int -> constr array -> constr
@@ -168,12 +172,12 @@ val mkAbst : section_path -> constr array -> constr
 
 (* Constructs the ith (co)inductive type of the block named sp *)
 (* The array of terms correspond to the variables introduced in the section *)
-val mkMutInd : section_path -> int -> constr array -> constr
+val mkMutInd : inductive -> constr
 
 (* Constructs the jth constructor of the ith (co)inductive type of the 
    block named sp. The array of terms correspond to the variables
    introduced in the section *)
-val mkMutConstruct : section_path -> int -> int -> constr array -> constr
+val mkMutConstruct : constructor -> constr
 
 (* Constructs the term <p>Case c of c1 | c2 .. | cn end *)
 val mkMutCase : case_info -> constr -> constr -> constr list -> constr
@@ -291,13 +295,13 @@ val path_of_abst : constr -> section_path
 val args_of_abst : constr -> constr array
 
 (* Destructs a (co)inductive type *)
-val destMutInd : constr -> section_path * int * constr array
+val destMutInd : constr -> inductive
 val op_of_mind : constr -> inductive_path
 val args_of_mind : constr -> constr array
 val ci_of_mind : constr -> case_info
 
 (* Destructs a constructor *)
-val destMutConstruct : constr -> section_path * int * int * constr array
+val destMutConstruct : constr -> constructor
 val op_of_mconstr : constr -> constructor_path
 val args_of_mconstr : constr -> constr array
 

@@ -35,7 +35,7 @@ type type_error =
   | NotClean of int * constr
   | VarNotFound of identifier
   (* Pattern-matching errors *)
-  | BadConstructor of constructor_path * inductive_path
+  | BadConstructor of constructor * inductive
   | WrongNumargConstructor of constructor_path * int
   | WrongPredicateArity of constr * int * int
   | NeedsInversion of constr * constr

@@ -34,7 +34,7 @@ val lookup_var : identifier -> name * typed_type
 val lookup_rel : int -> name * typed_type
 val lookup_constant : section_path -> constant_body
 val lookup_mind : section_path -> mutual_inductive_body
-val lookup_mind_specif : constr -> mind_specif
+val lookup_mind_specif : inductive -> mind_specif
 
 val export : string -> compiled_env
 val import : compiled_env -> unit
@@ -46,10 +46,10 @@ val id_of_global : sorts oper -> identifier
 (*s Re-exported functions of [Inductive], composed with 
     [lookup_mind_specif]. *)
 
-val mind_is_recursive : constr -> bool
-val mind_nconstr : constr -> int
-val mind_nparams : constr -> int
-val mind_arity : constr -> constr
+val mind_is_recursive : inductive -> bool
+val mind_nconstr : inductive -> int
+val mind_nparams : inductive -> int
+val mind_arity : inductive -> constr
 
-val mind_lc_without_abstractions : constr -> constr array
+val mind_lc_without_abstractions : inductive -> constr array
 

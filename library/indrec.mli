@@ -11,12 +11,9 @@ open Evd
 
 (* Eliminations. *)
 
-val make_case_dep : env -> 'a evar_map -> constr -> sorts -> constr
-val make_case_nodep : env -> 'a evar_map -> constr -> sorts -> constr
-val make_case_gen : env -> 'a evar_map -> constr -> sorts -> constr
-
-val make_indrec : env -> 'a evar_map -> 
-  (mind_specif * bool * sorts) list -> constr -> constr array
+val make_case_dep : env -> 'a evar_map -> inductive -> sorts -> constr
+val make_case_nodep : env -> 'a evar_map -> inductive -> sorts -> constr
+val make_case_gen : env -> 'a evar_map -> inductive -> sorts -> constr
 
 val mis_make_indrec : env -> 'a evar_map -> 
   (mind_specif * bool * sorts) list -> mind_specif -> constr array
@@ -24,7 +21,7 @@ val mis_make_indrec : env -> 'a evar_map ->
 val instanciate_indrec_scheme : sorts -> int -> constr -> constr
 
 val build_indrec : 
-  env -> 'a evar_map -> (constr * bool * sorts) list -> constr array
+  env -> 'a evar_map -> (inductive * bool * sorts) list -> constr array
 
 val type_rec_branches : bool -> env -> 'c evar_map -> constr 
   -> constr -> constr -> constr -> constr * constr array * constr
@@ -42,13 +39,18 @@ i*)
 val is_mutind : env -> 'a evar_map -> constr -> bool 
 
 val branch_scheme : 
-  env -> 'a evar_map -> bool -> int -> constr -> constr
+  env -> 'a evar_map -> bool -> int -> inductive * constr list -> constr
 
-val pred_case_ml : env -> 'c evar_map -> bool -> (constr * constr) 
-  ->  constr array -> (int*constr)  ->constr
+(* In [inductive * constr list * constr list], the second argument is
+   the list of global parameters and the third the list of real args *)
+
+val pred_case_ml : env -> 'c evar_map -> bool ->
+  constr * (inductive * constr list * constr list)
+  ->  constr array -> int * constr  ->constr
 
 val pred_case_ml_onebranch : env ->'c evar_map -> bool ->
-  constr * constr ->int * constr * constr -> constr 
+  constr * (inductive * constr list * constr list)
+  -> int * constr * constr -> constr 
 
 val make_case_ml :
   bool -> constr -> constr -> case_info -> constr array -> constr

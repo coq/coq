@@ -17,7 +17,8 @@ kernel/instantiate.cmi: kernel/environ.cmi kernel/evd.cmi \
     kernel/inductive.cmi kernel/names.cmi kernel/term.cmi 
 kernel/names.cmi: lib/pp.cmi 
 kernel/reduction.cmi: kernel/closure.cmi kernel/environ.cmi kernel/evd.cmi \
-    kernel/generic.cmi kernel/names.cmi kernel/term.cmi kernel/univ.cmi 
+    kernel/generic.cmi kernel/inductive.cmi kernel/names.cmi kernel/term.cmi \
+    kernel/univ.cmi 
 kernel/safe_typing.cmi: kernel/constant.cmi kernel/environ.cmi \
     kernel/inductive.cmi kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
     kernel/term.cmi kernel/typeops.cmi kernel/univ.cmi 
@@ -70,6 +71,10 @@ parsing/printer.cmi: parsing/coqast.cmi kernel/names.cmi lib/pp.cmi \
     pretyping/rawterm.cmi kernel/sign.cmi kernel/term.cmi 
 parsing/termast.cmi: parsing/coqast.cmi kernel/names.cmi \
     pretyping/rawterm.cmi kernel/sign.cmi kernel/term.cmi 
+pretyping/cases.debug.cmi: kernel/environ.cmi pretyping/evarutil.cmi \
+    kernel/evd.cmi kernel/generic.cmi kernel/names.cmi lib/pp.cmi \
+    pretyping/rawterm.cmi pretyping/retyping.cmi kernel/sign.cmi \
+    kernel/term.cmi kernel/type_errors.cmi 
 pretyping/cases.cmi: kernel/environ.cmi pretyping/evarutil.cmi kernel/evd.cmi \
     kernel/names.cmi pretyping/rawterm.cmi kernel/term.cmi 
 pretyping/classops.cmi: library/declare.cmi kernel/environ.cmi kernel/evd.cmi \
@@ -262,9 +267,9 @@ kernel/term.cmo: kernel/generic.cmi lib/hashcons.cmi kernel/names.cmi \
 kernel/term.cmx: kernel/generic.cmx lib/hashcons.cmx kernel/names.cmx \
     lib/pp.cmx kernel/univ.cmx lib/util.cmx kernel/term.cmi 
 kernel/type_errors.cmo: kernel/environ.cmi kernel/names.cmi lib/pp.cmi \
-    kernel/sign.cmi kernel/term.cmi lib/util.cmi kernel/type_errors.cmi 
+    kernel/sign.cmi kernel/term.cmi kernel/type_errors.cmi 
 kernel/type_errors.cmx: kernel/environ.cmx kernel/names.cmx lib/pp.cmx \
-    kernel/sign.cmx kernel/term.cmx lib/util.cmx kernel/type_errors.cmi 
+    kernel/sign.cmx kernel/term.cmx kernel/type_errors.cmi 
 kernel/typeops.cmo: kernel/constant.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/generic.cmi kernel/inductive.cmi kernel/instantiate.cmi \
     kernel/names.cmi lib/pp.cmi kernel/reduction.cmi kernel/sign.cmi \
@@ -558,13 +563,13 @@ pretyping/recordops.cmx: pretyping/classops.cmx library/lib.cmx \
     library/summary.cmx kernel/term.cmx kernel/typeops.cmx lib/util.cmx \
     pretyping/recordops.cmi 
 pretyping/retyping.cmo: kernel/environ.cmi kernel/generic.cmi \
-    kernel/inductive.cmi kernel/instantiate.cmi kernel/names.cmi \
-    kernel/reduction.cmi kernel/term.cmi kernel/typeops.cmi kernel/univ.cmi \
-    lib/util.cmi pretyping/retyping.cmi 
+    kernel/inductive.cmi kernel/names.cmi kernel/reduction.cmi \
+    kernel/term.cmi kernel/typeops.cmi kernel/univ.cmi lib/util.cmi \
+    pretyping/retyping.cmi 
 pretyping/retyping.cmx: kernel/environ.cmx kernel/generic.cmx \
-    kernel/inductive.cmx kernel/instantiate.cmx kernel/names.cmx \
-    kernel/reduction.cmx kernel/term.cmx kernel/typeops.cmx kernel/univ.cmx \
-    lib/util.cmx pretyping/retyping.cmi 
+    kernel/inductive.cmx kernel/names.cmx kernel/reduction.cmx \
+    kernel/term.cmx kernel/typeops.cmx kernel/univ.cmx lib/util.cmx \
+    pretyping/retyping.cmi 
 pretyping/syntax_def.cmo: library/lib.cmi library/libobject.cmi \
     kernel/names.cmi library/nametab.cmi pretyping/rawterm.cmi \
     library/summary.cmi pretyping/syntax_def.cmi 
@@ -588,13 +593,13 @@ pretyping/typing.cmx: kernel/environ.cmx kernel/generic.cmx kernel/names.cmx \
 proofs/clenv.cmo: kernel/environ.cmi kernel/evd.cmi kernel/generic.cmi \
     kernel/instantiate.cmi proofs/logic.cmi kernel/names.cmi lib/pp.cmi \
     parsing/printer.cmi proofs/proof_trees.cmi kernel/reduction.cmi \
-    kernel/sign.cmi proofs/tacmach.cmi kernel/term.cmi kernel/type_errors.cmi \
-    pretyping/typing.cmi lib/util.cmi proofs/clenv.cmi 
+    kernel/sign.cmi proofs/tacmach.cmi kernel/term.cmi pretyping/typing.cmi \
+    lib/util.cmi proofs/clenv.cmi 
 proofs/clenv.cmx: kernel/environ.cmx kernel/evd.cmx kernel/generic.cmx \
     kernel/instantiate.cmx proofs/logic.cmx kernel/names.cmx lib/pp.cmx \
     parsing/printer.cmx proofs/proof_trees.cmx kernel/reduction.cmx \
-    kernel/sign.cmx proofs/tacmach.cmx kernel/term.cmx kernel/type_errors.cmx \
-    pretyping/typing.cmx lib/util.cmx proofs/clenv.cmi 
+    kernel/sign.cmx proofs/tacmach.cmx kernel/term.cmx pretyping/typing.cmx \
+    lib/util.cmx proofs/clenv.cmi 
 proofs/evar_refiner.cmo: kernel/environ.cmi kernel/evd.cmi kernel/generic.cmi \
     proofs/logic.cmi kernel/names.cmi lib/pp.cmi proofs/proof_trees.cmi \
     kernel/reduction.cmi proofs/refiner.cmi lib/stamps.cmi kernel/term.cmi \
@@ -606,13 +611,15 @@ proofs/evar_refiner.cmx: kernel/environ.cmx kernel/evd.cmx kernel/generic.cmx \
 proofs/logic.cmo: parsing/coqast.cmi library/declare.cmi kernel/environ.cmi \
     kernel/evd.cmi kernel/generic.cmi library/global.cmi kernel/names.cmi \
     lib/pp.cmi parsing/printer.cmi proofs/proof_trees.cmi \
-    kernel/reduction.cmi kernel/sign.cmi kernel/term.cmi kernel/typeops.cmi \
-    pretyping/typing.cmi lib/util.cmi proofs/logic.cmi 
+    kernel/reduction.cmi kernel/sign.cmi kernel/term.cmi \
+    kernel/type_errors.cmi kernel/typeops.cmi pretyping/typing.cmi \
+    lib/util.cmi proofs/logic.cmi 
 proofs/logic.cmx: parsing/coqast.cmx library/declare.cmx kernel/environ.cmx \
     kernel/evd.cmx kernel/generic.cmx library/global.cmx kernel/names.cmx \
     lib/pp.cmx parsing/printer.cmx proofs/proof_trees.cmx \
-    kernel/reduction.cmx kernel/sign.cmx kernel/term.cmx kernel/typeops.cmx \
-    pretyping/typing.cmx lib/util.cmx proofs/logic.cmi 
+    kernel/reduction.cmx kernel/sign.cmx kernel/term.cmx \
+    kernel/type_errors.cmx kernel/typeops.cmx pretyping/typing.cmx \
+    lib/util.cmx proofs/logic.cmi 
 proofs/macros.cmo: parsing/ast.cmi parsing/coqast.cmi library/lib.cmi \
     library/libobject.cmi library/library.cmi kernel/names.cmi \
     parsing/pcoq.cmi lib/pp.cmi proofs/proof_trees.cmi library/summary.cmi \
@@ -623,16 +630,16 @@ proofs/macros.cmx: parsing/ast.cmx parsing/coqast.cmx library/lib.cmx \
     kernel/term.cmx lib/util.cmx proofs/macros.cmi 
 proofs/pfedit.cmo: parsing/astterm.cmi kernel/constant.cmi \
     library/declare.cmi lib/edit.cmi kernel/environ.cmi kernel/evd.cmi \
-    kernel/generic.cmi library/global.cmi library/lib.cmi kernel/names.cmi \
-    lib/options.cmi lib/pp.cmi proofs/proof_trees.cmi kernel/sign.cmi \
-    proofs/tacmach.cmi kernel/term.cmi pretyping/typing.cmi lib/util.cmi \
-    proofs/pfedit.cmi 
+    kernel/generic.cmi library/global.cmi library/lib.cmi proofs/logic.cmi \
+    kernel/names.cmi lib/options.cmi lib/pp.cmi proofs/proof_trees.cmi \
+    kernel/sign.cmi proofs/tacmach.cmi kernel/term.cmi pretyping/typing.cmi \
+    lib/util.cmi proofs/pfedit.cmi 
 proofs/pfedit.cmx: parsing/astterm.cmx kernel/constant.cmx \
     library/declare.cmx lib/edit.cmx kernel/environ.cmx kernel/evd.cmx \
-    kernel/generic.cmx library/global.cmx library/lib.cmx kernel/names.cmx \
-    lib/options.cmx lib/pp.cmx proofs/proof_trees.cmx kernel/sign.cmx \
-    proofs/tacmach.cmx kernel/term.cmx pretyping/typing.cmx lib/util.cmx \
-    proofs/pfedit.cmi 
+    kernel/generic.cmx library/global.cmx library/lib.cmx proofs/logic.cmx \
+    kernel/names.cmx lib/options.cmx lib/pp.cmx proofs/proof_trees.cmx \
+    kernel/sign.cmx proofs/tacmach.cmx kernel/term.cmx pretyping/typing.cmx \
+    lib/util.cmx proofs/pfedit.cmi 
 proofs/proof_trees.cmo: parsing/ast.cmi parsing/coqast.cmi kernel/environ.cmi \
     kernel/evd.cmi kernel/names.cmi lib/pp.cmi parsing/pretty.cmi \
     parsing/printer.cmi kernel/sign.cmi lib/stamps.cmi kernel/term.cmi \
@@ -679,22 +686,24 @@ tactics/auto.cmo: parsing/astterm.cmi tactics/btermdn.cmi proofs/clenv.cmi \
     parsing/coqast.cmi library/declare.cmi tactics/dhyp.cmi kernel/evd.cmi \
     kernel/generic.cmi library/global.cmi tactics/hiddentac.cmi \
     kernel/inductive.cmi library/lib.cmi library/libobject.cmi \
-    library/library.cmi kernel/names.cmi lib/options.cmi tactics/pattern.cmi \
-    proofs/pfedit.cmi lib/pp.cmi parsing/printer.cmi proofs/proof_trees.cmi \
-    kernel/reduction.cmi kernel/sign.cmi library/summary.cmi \
-    proofs/tacmach.cmi pretyping/tacred.cmi tactics/tacticals.cmi \
-    tactics/tactics.cmi kernel/term.cmi pretyping/typing.cmi lib/util.cmi \
-    toplevel/vernacinterp.cmi tactics/auto.cmi 
+    library/library.cmi proofs/logic.cmi kernel/names.cmi lib/options.cmi \
+    tactics/pattern.cmi proofs/pfedit.cmi lib/pp.cmi parsing/printer.cmi \
+    proofs/proof_trees.cmi kernel/reduction.cmi kernel/sign.cmi \
+    library/summary.cmi proofs/tacmach.cmi pretyping/tacred.cmi \
+    tactics/tacticals.cmi tactics/tactics.cmi kernel/term.cmi \
+    pretyping/typing.cmi lib/util.cmi toplevel/vernacinterp.cmi \
+    tactics/auto.cmi 
 tactics/auto.cmx: parsing/astterm.cmx tactics/btermdn.cmx proofs/clenv.cmx \
     parsing/coqast.cmx library/declare.cmx tactics/dhyp.cmx kernel/evd.cmx \
     kernel/generic.cmx library/global.cmx tactics/hiddentac.cmx \
     kernel/inductive.cmx library/lib.cmx library/libobject.cmx \
-    library/library.cmx kernel/names.cmx lib/options.cmx tactics/pattern.cmx \
-    proofs/pfedit.cmx lib/pp.cmx parsing/printer.cmx proofs/proof_trees.cmx \
-    kernel/reduction.cmx kernel/sign.cmx library/summary.cmx \
-    proofs/tacmach.cmx pretyping/tacred.cmx tactics/tacticals.cmx \
-    tactics/tactics.cmx kernel/term.cmx pretyping/typing.cmx lib/util.cmx \
-    toplevel/vernacinterp.cmx tactics/auto.cmi 
+    library/library.cmx proofs/logic.cmx kernel/names.cmx lib/options.cmx \
+    tactics/pattern.cmx proofs/pfedit.cmx lib/pp.cmx parsing/printer.cmx \
+    proofs/proof_trees.cmx kernel/reduction.cmx kernel/sign.cmx \
+    library/summary.cmx proofs/tacmach.cmx pretyping/tacred.cmx \
+    tactics/tacticals.cmx tactics/tactics.cmx kernel/term.cmx \
+    pretyping/typing.cmx lib/util.cmx toplevel/vernacinterp.cmx \
+    tactics/auto.cmi 
 tactics/btermdn.cmo: tactics/dn.cmi kernel/term.cmi tactics/termdn.cmi \
     tactics/btermdn.cmi 
 tactics/btermdn.cmx: tactics/dn.cmx kernel/term.cmx tactics/termdn.cmx \
@@ -736,15 +745,15 @@ tactics/nbtermdn.cmx: tactics/btermdn.cmx kernel/generic.cmx lib/gmap.cmx \
     library/libobject.cmx library/library.cmx kernel/names.cmx \
     kernel/term.cmx tactics/termdn.cmx lib/util.cmx tactics/nbtermdn.cmi 
 tactics/pattern.cmo: parsing/astterm.cmi proofs/clenv.cmi kernel/environ.cmi \
-    kernel/evd.cmi kernel/generic.cmi library/global.cmi kernel/names.cmi \
-    parsing/pcoq.cmi lib/pp.cmi proofs/proof_trees.cmi kernel/reduction.cmi \
-    kernel/sosub.cmi tactics/stock.cmi kernel/term.cmi lib/util.cmi \
-    tactics/pattern.cmi 
+    kernel/evd.cmi kernel/generic.cmi library/global.cmi proofs/logic.cmi \
+    kernel/names.cmi parsing/pcoq.cmi lib/pp.cmi proofs/proof_trees.cmi \
+    kernel/reduction.cmi kernel/sosub.cmi tactics/stock.cmi kernel/term.cmi \
+    lib/util.cmi tactics/pattern.cmi 
 tactics/pattern.cmx: parsing/astterm.cmx proofs/clenv.cmx kernel/environ.cmx \
-    kernel/evd.cmx kernel/generic.cmx library/global.cmx kernel/names.cmx \
-    parsing/pcoq.cmx lib/pp.cmx proofs/proof_trees.cmx kernel/reduction.cmx \
-    kernel/sosub.cmx tactics/stock.cmx kernel/term.cmx lib/util.cmx \
-    tactics/pattern.cmi 
+    kernel/evd.cmx kernel/generic.cmx library/global.cmx proofs/logic.cmx \
+    kernel/names.cmx parsing/pcoq.cmx lib/pp.cmx proofs/proof_trees.cmx \
+    kernel/reduction.cmx kernel/sosub.cmx tactics/stock.cmx kernel/term.cmx \
+    lib/util.cmx tactics/pattern.cmi 
 tactics/stock.cmo: lib/bij.cmi lib/gmap.cmi lib/gmapl.cmi library/library.cmi \
     kernel/names.cmi lib/pp.cmi lib/util.cmi tactics/stock.cmi 
 tactics/stock.cmx: lib/bij.cmx lib/gmap.cmx lib/gmapl.cmx library/library.cmx \
@@ -756,17 +765,17 @@ tactics/tacentries.cmx: proofs/proof_trees.cmx proofs/tacmach.cmx \
 tactics/tacticals.cmo: proofs/clenv.cmi parsing/coqast.cmi \
     library/declare.cmi kernel/environ.cmi kernel/generic.cmi \
     library/global.cmi library/indrec.cmi kernel/inductive.cmi \
-    kernel/names.cmi tactics/pattern.cmi lib/pp.cmi parsing/pretty.cmi \
-    proofs/proof_trees.cmi kernel/reduction.cmi kernel/sign.cmi \
-    proofs/tacinterp.cmi proofs/tacmach.cmi kernel/term.cmi \
+    proofs/logic.cmi kernel/names.cmi tactics/pattern.cmi lib/pp.cmi \
+    parsing/pretty.cmi proofs/proof_trees.cmi kernel/reduction.cmi \
+    kernel/sign.cmi proofs/tacinterp.cmi proofs/tacmach.cmi kernel/term.cmi \
     parsing/termast.cmi lib/util.cmi tactics/wcclausenv.cmi \
     tactics/tacticals.cmi 
 tactics/tacticals.cmx: proofs/clenv.cmx parsing/coqast.cmx \
     library/declare.cmx kernel/environ.cmx kernel/generic.cmx \
     library/global.cmx library/indrec.cmx kernel/inductive.cmx \
-    kernel/names.cmx tactics/pattern.cmx lib/pp.cmx parsing/pretty.cmx \
-    proofs/proof_trees.cmx kernel/reduction.cmx kernel/sign.cmx \
-    proofs/tacinterp.cmx proofs/tacmach.cmx kernel/term.cmx \
+    proofs/logic.cmx kernel/names.cmx tactics/pattern.cmx lib/pp.cmx \
+    parsing/pretty.cmx proofs/proof_trees.cmx kernel/reduction.cmx \
+    kernel/sign.cmx proofs/tacinterp.cmx proofs/tacmach.cmx kernel/term.cmx \
     parsing/termast.cmx lib/util.cmx tactics/wcclausenv.cmx \
     tactics/tacticals.cmi 
 tactics/tactics.cmo: parsing/ast.cmi parsing/astterm.cmi proofs/clenv.cmi \

@@ -117,10 +117,10 @@ let coe_constructor_at_head t =
   let rec aux t' =
     match kind_of_term t' with
       | IsConst (sp,l) -> (Array.to_list l),NAM_SP sp
-      | IsMutInd (sp,_,l) -> (Array.to_list l),NAM_SP sp
+      | IsMutInd ((sp,_),l) -> (Array.to_list l),NAM_SP sp
       | IsVar id  -> [],NAM_Var id
       | IsCast (c,_) -> aux c
-      | IsMutConstruct (sp,i,j,l) -> (Array.to_list l),NAM_Construct ((sp,i),j)
+      | IsMutConstruct (cstr_sp,l) -> (Array.to_list l),NAM_Construct cstr_sp
       | IsAppL(f,args) -> aux f
       |  _ -> raise Not_found
   in 
@@ -130,7 +130,7 @@ let constructor_at_head1 t =
   let rec aux t' =
     match kind_of_term t' with
       | IsConst (sp,l) -> t',[],(Array.to_list l),CL_SP sp,0
-      | IsMutInd (sp,i,l) -> t',[],(Array.to_list l),CL_IND (sp,i),0
+      | IsMutInd (ind_sp,l) -> t',[],(Array.to_list l),CL_IND ind_sp,0
       | IsVar id -> t',[],[],CL_Var id,0
       | IsCast (c,_) -> aux c
       | IsAppL(f,args) -> 

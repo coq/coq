@@ -18,7 +18,7 @@ val nf : 'a reduction_function
 val one_step_reduce : 'a reduction_function
 
 val reduce_to_mind : 
-  env -> 'a evar_map -> constr -> constr * constr * constr
+  env -> 'a evar_map -> constr -> inductive * constr * constr
 
 val reduce_to_ind : 
   env -> 'a evar_map -> constr -> section_path * constr * constr

@@ -127,13 +127,10 @@ let lookup_constant sp env =
 let lookup_mind sp env =
   Spmap.find sp env.env_globals.env_inductives
 
-let lookup_mind_specif i env =
-  match i with
-    | DOPN (MutInd (sp,tyi), args) ->
-	let mib = lookup_mind sp env in
-	{ mis_sp = sp; mis_mib = mib; mis_tyi = tyi; mis_args = args;
-	  mis_mip = mind_nth_type_packet mib tyi }
-    | _ -> invalid_arg "lookup_mind_specif"
+let lookup_mind_specif ((sp,tyi),args) env =
+  let mib = lookup_mind sp env in
+  { mis_sp = sp; mis_mib = mib; mis_tyi = tyi; mis_args = args;
+    mis_mip = mind_nth_type_packet mib tyi }
 
 let lookup_abst sp env =
   Spmap.find sp env.env_globals.env_abstractions

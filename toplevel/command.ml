@@ -337,15 +337,16 @@ let build_corecursive lnameardef =
   in
   ()
 
-exception NotInductive
 let inductive_of_ident id =
-  try match kind_of_term (global_reference CCI id) with
+  let c =
+    try global_reference CCI id
+    with Not_found ->
+      errorlabstrm "inductive_of_ident" ((string_of_id id) ^ " not found")
+  in
+  match kind_of_term (global_reference CCI id) with
     | IsMutInd ind -> ind
-    | _ -> raise NotInductive
-  with Not_found | NotInductive ->
-       errorlabstrm "inductive_of_ident"
-	 [< 'sTR (string_of_id id); 'sPC;
-	    'sTR "is not an inductive type" >]
+    | _ -> errorlabstrm "inductive_of_ident"
+	[< 'sTR (string_of_id id); 'sPC; 'sTR "is not an inductive type" >]
 
 let build_scheme lnamedepindsort = 
   let lrecnames = List.map (fun (f,_,_,_) -> f) lnamedepindsort

@@ -80,8 +80,8 @@ let split_evar_to_arrow sigma c =
   let dsp = path_of_const (body_of_type dom) in
   let rsp = path_of_const (body_of_type rng) in
   (sigma3,
-   mkCast (mkConst dsp args) dummy_sort,
-   mkCast (mkConst rsp (array_cons (mkRel 1) args)) dummy_sort)
+   mkCast (mkConst (dsp,args)) dummy_sort,
+   mkCast (mkConst (rsp,array_cons (mkRel 1) args)) dummy_sort)
 
 
 (* Redefines an evar with a smaller context (i.e. it may depend on less

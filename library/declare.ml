@@ -274,19 +274,19 @@ let is_global id =
   with Not_found -> 
     false
 
-let mind_path = function
-  | DOPN(MutInd (sp,0),_) -> sp
-  | DOPN(MutInd (sp,tyi),_) -> 
-      let mib = Global.lookup_mind sp in
-      let mip = mind_nth_type_packet mib tyi in 
-      let (pa,_,k) = repr_path sp in 
-      Names.make_path pa (mip.mind_typename) k 
-  | DOPN(MutConstruct ((sp,tyi),ind),_) -> 
-      let mib = Global.lookup_mind sp in
-      let mip = mind_nth_type_packet mib tyi in 
-      let (pa,_,k) = repr_path sp in 
-      Names.make_path pa (mip.mind_consnames.(ind-1)) k 
-  | _ -> invalid_arg "mind_path"
+let path_of_constructor_path ((sp,tyi),ind) =
+   let mib = Global.lookup_mind sp in
+   let mip = mind_nth_type_packet mib tyi in 
+   let (pa,_,k) = repr_path sp in 
+   Names.make_path pa (mip.mind_consnames.(ind-1)) k 
+
+let path_of_inductive_path (sp,tyi) =
+  if tyi = 0 then sp
+  else
+    let mib = Global.lookup_mind sp in
+    let mip = mind_nth_type_packet mib tyi in 
+    let (pa,_,k) = repr_path sp in 
+    Names.make_path pa (mip.mind_typename) k 
 
 (* Eliminations. *)
 
@@ -294,8 +294,8 @@ let declare_eliminations sp i =
   let oper = MutInd (sp,i) in
   let mib = Global.lookup_mind sp in
   let ids = ids_of_sign mib.mind_hyps in
-  let mind = DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids)) in
-  let mispec = Global.lookup_mind_specif mind in 
+  let ctxt = Array.of_list (List.map (fun id -> VAR id) ids) in
+  let mispec = Global.lookup_mind_specif ((sp,i),ctxt) in 
   let mindstr = string_of_id (mis_typename mispec) in
   let declare na c =
     declare_constant (id_of_string na)

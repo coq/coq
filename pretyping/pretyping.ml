@@ -71,17 +71,18 @@ let it_lambda_name env =
   List.fold_left (fun c (n,t) -> lambda_name env (n,t,c))
 
 let transform_rec loc env sigma cl (ct,pt) = 
-  let (mI,largs as mind) = find_minductype env sigma ct in
+  let (mind,largs as appmind) = find_minductype env sigma ct in
   let p = cl.(0)
   and c = cl.(1)
   and lf = Array.sub cl 2 ((Array.length cl) - 2) in
-  let mispec = lookup_mind_specif mI env in 
+  let mispec = lookup_mind_specif mind env in
+  let mI = mkMutInd mind in
   let recargs = mis_recarg mispec in
   let expn = Array.length recargs in
   if Array.length lf <> expn then 
     error_number_branches_loc loc CCI env c ct expn;
   if is_recursive [mispec.mis_tyi] recargs then
-    let (dep,_) = find_case_dep_nparams env sigma (c,p) mind pt in 
+    let (dep,_) = find_case_dep_nparams env sigma (c,p) appmind pt in 
     let ntypes = mis_nconstr mispec 
     and tyi = mispec.mis_tyi 
     and nparams = mis_nparams mispec in
@@ -241,8 +242,8 @@ let pretype_ref loc isevars env = function
 | RVar id -> pretype_var loc env id
 
 | RConst (sp,ids) ->
-    let cstr = mkConst sp (ctxt_of_ids ids) in
-    make_judge cstr (type_of_constant env !isevars cstr)
+    let cst = (sp,ctxt_of_ids ids) in
+    make_judge (mkConst cst) (type_of_constant env !isevars cst)
 
 | RAbst sp -> failwith "Pretype: abst doit disparaître"
 (*
@@ -267,18 +268,17 @@ let pretype_ref loc isevars env = function
 *)
 | REVar (sp,ids) -> error " Not able to type terms with dependent subgoals"
 (* Not able to type goal existential yet
-    let cstr = mkConst sp (ctxt_of_ids ids) in
+    let cstr = mkConst (sp,ctxt_of_ids ids) in
     make_judge cstr (type_of_existential env !isevars cstr)
 *)
-| RInd ((sp,i),ids) ->
-    let cstr = mkMutInd sp i (ctxt_of_ids ids) in
-    make_judge cstr (type_of_inductive env !isevars cstr)
+| RInd (ind_sp,ids) ->
+    let ind = (ind_sp,ctxt_of_ids ids) in
+    make_judge (mkMutInd ind) (type_of_inductive env !isevars ind)
  
-| RConstruct (((sp,i),j) as cstr_sp,ids) ->
-    let ctxt = ctxt_of_ids ids in
-    let (typ,kind) =
-      destCast (type_of_constructor env !isevars (cstr_sp,ctxt)) in
-    {uj_val=mkMutConstruct sp i j ctxt; uj_type=typ; uj_kind=kind}
+| RConstruct (cstr_sp,ids) ->
+    let cstr = (cstr_sp,ctxt_of_ids ids) in
+    let (typ,kind) = destCast (type_of_constructor env !isevars cstr) in
+    {uj_val=mkMutConstruct cstr; uj_type=typ; uj_kind=kind}
 
 (* pretype vtcon isevars env constr tries to solve the *)
 (* existential variables in constr in environment env with the *)
@@ -373,8 +373,8 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 
 | ROldCase (loc,isrec,po,c,lf) ->
   let cj = pretype mt_tycon env isevars c in
-  let (mind,_) =
-    try find_mrectype env !isevars cj.uj_type
+  let {mind=mind;params=params;realargs=realargs} =
+    try try_mutind_of env !isevars cj.uj_type
     with Induc -> error_case_not_inductive CCI env
 	(nf_ise1 !isevars cj.uj_val) (nf_ise1 !isevars cj.uj_type) in
   let pj = match po with
@@ -392,12 +392,13 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 	    then error_cant_find_case_type_loc loc env cj.uj_val
 	    else
 	      try
-		let expti = Indrec.branch_scheme env !isevars isrec i cj.uj_type in
+		let expti =
+		  Indrec.branch_scheme env !isevars isrec i (mind,params) in
 		let fj = pretype (mk_tycon expti) env isevars lf.(i-1) in
 		let efjt = nf_ise1 !isevars fj.uj_type in 
 		let pred = 
 		  Indrec.pred_case_ml_onebranch env !isevars isrec 
-		    (cj.uj_val,cj.uj_type) (i,fj.uj_val,efjt) in
+		    (cj.uj_val,(mind,params,realargs)) (i,fj.uj_val,efjt) in
 		if has_ise !isevars pred then findtype (i+1)
 		else 
 		  let pty = Retyping.get_type_of env !isevars pred in

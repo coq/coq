@@ -12,7 +12,7 @@ type recarg =
   | Param of int 
   | Norec 
   | Mrec of int 
-  | Imbr of section_path * int * (recarg list)
+  | Imbr of inductive_path * recarg list
 
 type mutual_inductive_packet = {
   mind_consnames : identifier array;
@@ -51,11 +51,22 @@ let mis_recarg mis = mis.mis_mip.mind_listrec
 let mis_typename mis = mis.mis_mip.mind_typename
 let mis_consnames mis = mis.mis_mip.mind_consnames
 
+(* A light version of mind_specif_of_mind with pre-splitted args *)
+type inductive_summary =
+    {fullmind : constr;
+     mind : inductive;
+     nparams : int;
+     nrealargs : int;
+     nconstr : int;
+     params : constr list;
+     realargs : constr list;
+     arity : constr}
+
 let is_recursive listind = 
   let rec one_is_rec rvec = 
     List.exists (function
 		   | Mrec(i)        -> List.mem i listind 
-                   | Imbr(_,_,lvec) -> one_is_rec lvec
+                   | Imbr(_,lvec) -> one_is_rec lvec
                    | Norec          -> false
                    | Param(_)       -> false) rvec
   in 
@@ -158,4 +169,8 @@ let mind_check_lc params mie =
   in
   List.iter check_lc mie.mind_entry_inds
 
-let inductive_of_constructor (ind_sp,i) = ind_sp
+let inductive_path_of_constructor_path (ind_sp,i) = ind_sp
+let ith_constructor_path_of_inductive_path ind_sp i = (ind_sp,i)
+
+let inductive_of_constructor ((ind_sp,i),args) = (ind_sp,args)
+let ith_constructor_of_inductive (ind_sp,args) i = ((ind_sp,i),args)

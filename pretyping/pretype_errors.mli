@@ -31,7 +31,7 @@ val error_case_not_inductive_loc :
 (* Pattern-matching errors *)
 
 val error_bad_constructor_loc : 
-  loc -> path_kind -> constructor_path -> inductive_path -> 'b
+  loc -> path_kind -> constructor -> inductive -> 'b
 
 val error_wrong_numarg_constructor_loc : 
   loc -> path_kind -> constructor_path -> int -> 'b

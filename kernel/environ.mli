@@ -46,7 +46,7 @@ val lookup_var : identifier -> env -> name * typed_type
 val lookup_rel : int -> env -> name * typed_type
 val lookup_constant : section_path -> env -> constant_body
 val lookup_mind : section_path -> env -> mutual_inductive_body
-val lookup_mind_specif : constr -> env -> mind_specif
+val lookup_mind_specif : inductive -> env -> mind_specif
 
 val id_of_global : env -> sorts oper -> identifier
 

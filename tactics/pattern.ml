@@ -219,8 +219,8 @@ let match_with_non_recursive_type t =
     | IsAppL _ -> 
         let (hdapp,args) = decomp_app t in
         (match kind_of_term hdapp with
-           | IsMutInd _ -> 
-               if not (Global.mind_is_recursive hdapp) then 
+           | IsMutInd ind -> 
+               if not (Global.mind_is_recursive ind) then 
 		 Some (hdapp,args) 
 	       else 
 		 None 
@@ -235,11 +235,11 @@ let is_non_recursive_type t = op2bool (match_with_non_recursive_type t)
 let match_with_conjunction t =
   let (hdapp,args) = decomp_app t in 
   match kind_of_term hdapp with
-    | IsMutInd _ -> 
-        let nconstr = Global.mind_nconstr hdapp in  
+    | IsMutInd ind -> 
+        let nconstr = Global.mind_nconstr ind in  
 	if (nconstr = 1) && 
-          (not (Global.mind_is_recursive hdapp)) &&
-          (nb_prod (Global.mind_arity hdapp)) = (Global.mind_nparams hdapp)
+          (not (Global.mind_is_recursive ind)) &&
+          (nb_prod (Global.mind_arity ind)) = (Global.mind_nparams ind)
         then 
 	  Some (hdapp,args)
         else 
@@ -254,13 +254,13 @@ let is_conjunction t = op2bool (match_with_conjunction t)
 let match_with_disjunction t =
   let (hdapp,args) = decomp_app t in 
   match kind_of_term hdapp with
-    | IsMutInd _  -> 
+    | IsMutInd ind  ->
         let constr_types = 
-	  Global.mind_lc_without_abstractions hdapp in
+	  Global.mind_lc_without_abstractions ind in
         let only_one_arg c = 
-	  ((nb_prod c) - (Global.mind_nparams hdapp)) = 1 in 
+	  ((nb_prod c) - (Global.mind_nparams ind)) = 1 in 
 	if (array_for_all only_one_arg constr_types) &&
-          (not (Global.mind_is_recursive hdapp))
+          (not (Global.mind_is_recursive ind))
         then 
 	  Some (hdapp,args)
         else 
@@ -272,8 +272,8 @@ let is_disjunction t = op2bool (match_with_disjunction t)
 let match_with_empty_type t =
   let (hdapp,args) = decomp_app t in
   match (kind_of_term hdapp) with
-    | IsMutInd _ -> 
-        let nconstr = Global.mind_nconstr hdapp in  
+    | IsMutInd ind -> 
+        let nconstr = Global.mind_nconstr ind in  
 	if nconstr = 0 then Some hdapp else None
     | _ ->  None
 	  
@@ -282,11 +282,11 @@ let is_empty_type t = op2bool (match_with_empty_type t)
 let match_with_unit_type t =
   let (hdapp,args) = decomp_app t in
   match (kind_of_term hdapp) with
-    | IsMutInd _  -> 
+    | IsMutInd ind  -> 
         let constr_types = 
-	  Global.mind_lc_without_abstractions hdapp in 
-        let nconstr = Global.mind_nconstr hdapp in
-        let zero_args c = ((nb_prod c) - (Global.mind_nparams hdapp)) = 0 in  
+	  Global.mind_lc_without_abstractions ind in 
+        let nconstr = Global.mind_nconstr ind in
+        let zero_args c = ((nb_prod c) - (Global.mind_nparams ind)) = 0 in  
 	if nconstr = 1 && (array_for_all zero_args constr_types) then 
 	  Some hdapp
         else 
@@ -303,12 +303,12 @@ let is_unit_type t = op2bool (match_with_unit_type t)
 let match_with_equation  t =
   let (hdapp,args) = decomp_app t in
   match (kind_of_term hdapp) with
-    | IsMutInd _  -> 
+    | IsMutInd ind -> 
         let constr_types = 
-	  Global.mind_lc_without_abstractions hdapp in 
+	  Global.mind_lc_without_abstractions ind in 
         let refl_rel_term1 = put_pat mmk "(A:?)(x:A)(? A x x)" in
         let refl_rel_term2 = put_pat mmk "(x:?)(? x x)" in
-        let nconstr = Global.mind_nconstr hdapp in
+        let nconstr = Global.mind_nconstr ind in
 	if nconstr = 1 &&
            (somatches constr_types.(0) refl_rel_term1 ||
             somatches constr_types.(0) refl_rel_term2) 

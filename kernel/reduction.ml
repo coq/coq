@@ -15,7 +15,6 @@ open Instantiate
 open Closure
 
 exception Redelimination
-exception Induc
 exception Elimconst
 
 type 'a reduction_function = env -> 'a evar_map -> constr -> constr
@@ -480,9 +479,9 @@ let mind_nparams env i =
   let mis = lookup_mind_specif i env in mis.mis_mib.mind_nparams
 
 let reduce_mind_case env mia =
-  match mia.mconstr with 
-    | DOPN(MutConstruct((indsp,tyindx),i),_) ->
-	let ind = DOPN(MutInd(indsp,tyindx),args_of_mconstr mia.mconstr) in
+  match mia.mconstr with
+    | DOPN(MutConstruct (ind_sp,i as cstr_sp),args) ->
+	let ind = inductive_of_constructor (cstr_sp,args) in
 	let nparams = mind_nparams env ind in
 	let real_cargs = snd (list_chop nparams mia.mcargs) in
         applist (mia.mlf.(i-1),real_cargs)
@@ -1125,47 +1124,42 @@ let whd_programs_stack env sigma =
 
 let whd_programs env sigma x = applist (whd_programs_stack env sigma x [])
 
+exception Induc
+
 let find_mrectype env sigma c =
   let (t,l) = whd_betadeltaiota_stack env sigma c [] in
   match t with
-    | DOPN(MutInd (sp,i),_) ->  (t,l)
+    | DOPN(MutInd ind_sp,args) ->  ((ind_sp,args),l)
     | _ -> raise Induc
 
 let find_minductype env sigma c =
   let (t,l) = whd_betadeltaiota_stack env sigma c [] in
   match t with
     | DOPN(MutInd (sp,i),_)
-        when mind_type_finite (lookup_mind sp env) i -> (t,l)
+        when mind_type_finite (lookup_mind sp env) i -> (destMutInd t,l)
     | _ -> raise Induc
 
 let find_mcoinductype env sigma c =
   let (t,l) = whd_betadeltaiota_stack env sigma c [] in
   match t with
     | DOPN(MutInd (sp,i),_)
-        when not (mind_type_finite (lookup_mind sp env) i) -> (t,l)
+        when not (mind_type_finite (lookup_mind sp env) i) -> (destMutInd t,l)
     | _ -> raise Induc
 
-let minductype_spec env sigma c = 
-  try 
-    let (x,l) = find_minductype env sigma c in
-    if l<>[] then anomaly "minductype_spec: Not a recursive type 1" else x
-  with Induc -> 
-    anomaly "minductype_spec: Not a recursive type 2"
-      
-let mrectype_spec env sigma c = 
-  try 
-    let (x,l) = find_mrectype env sigma c in
-    if l<>[] then anomaly "mrectype_spec: Not a recursive type 1" else x
-  with Induc -> 
-    anomaly "mrectype_spec: Not a recursive type 2"
-
-let check_mrectype_spec env sigma c =
-  try 
-    let (x,l) = find_mrectype env sigma c in
-    if l<>[] then error "check_mrectype: Not a recursive type 1" else x
-  with Induc -> 
-    error "check_mrectype: Not a recursive type 2"
-
+(* raise Induc if not an inductive type *)
+let try_mutind_of env sigma ty =
+  let (mind,largs) = find_mrectype env sigma ty in
+  let mispec = lookup_mind_specif mind env in 
+  let nparams = mis_nparams mispec in
+  let (params,realargs) = list_chop nparams largs in 
+  {fullmind = ty;
+   mind     = mind;
+   nparams  = nparams;
+   nrealargs = List.length realargs;
+   nconstr  = mis_nconstr mispec;
+   params   = params;
+   realargs = realargs;
+   arity    = Instantiate.mis_arity mispec}
 
 exception IsType
 

@@ -97,8 +97,7 @@ let mis_make_case_com depopt env sigma mispec kinds =
   in 
   it_lambda_name env (make_lambda_string "P" typP (add_branch 0)) lnamespar
     
-let make_case_com depopt env sigma mind kinds =
-  let ity = mrectype_spec env sigma mind in
+let make_case_com depopt env sigma ity kinds =
   let mispec = lookup_mind_specif ity env in 
   mis_make_case_com depopt env sigma mispec kinds
 
@@ -356,11 +355,6 @@ let mis_make_indrec env sigma listdepkind mispec =
   in 
   Array.init nrec make_one_rec
 
-let make_indrec env sigma listdepkind mind =
-  let ity = minductype_spec env sigma mind in
-  let mispec = lookup_mind_specif ity env in  
-  mis_make_indrec env sigma listdepkind mispec 
-    
 let change_sort_arity sort = 
   let rec drec = function 
     | (DOP2(Cast,c,t)) -> drec c 
@@ -394,24 +388,25 @@ let check_arities listdepkind =
 	     'sTR "is not allowed">])
     listdepkind
 
+(* Utilisé pour construire les Scheme *)
 let build_indrec env sigma = function 
   | (mind,dep,s)::lrecspec ->
-      let redind = minductype_spec env sigma mind in 
-      let (sp,tyi,_) = destMutInd redind in 
+      let ((sp,tyi),_) = mind in
+      let mispec = lookup_mind_specif mind env in
       let listdepkind = 
-    	(lookup_mind_specif redind env, dep,s)::
-    	(List.map (function (mind',dep',s') ->
-		     let redind' = minductype_spec env sigma mind' in
-		     let (sp',_,_) = destMutInd redind' in
-		     if sp=sp' then 
-		       (lookup_mind_specif redind' env,dep',s') 
-		     else 
-		       error 
-			 "Induction schemes concern mutually inductive types") 
+    	(mispec, dep,s)::
+    	(List.map
+	   (function (mind',dep',s') ->
+	      let ((sp',_),_) = mind' in
+	      if sp=sp' then 
+		(lookup_mind_specif mind' env,dep',s') 
+	      else 
+		error 
+		  "Induction schemes concern mutually inductive types") 
 	   lrecspec) 
       in
       let _ = check_arities listdepkind in 
-      make_indrec env sigma listdepkind mind
+      mis_make_indrec env sigma listdepkind mispec
   | _ -> assert false
 	
 
@@ -433,7 +428,7 @@ let type_mutind_rec env sigma ct pt p c =
     let (constrvec,typeconstrvec) = mis_type_mconstructs mispec in
     let lft = array_map3 (type_rec_branch dep env sigma (vargs,depPvec,0)) 
                 constrvec typeconstrvec recargs in
-    (mI, lft,
+    (mkMutInd mI, lft,
      if dep then applist(p,realargs@[c]) 
      else applist(p,realargs) )
   else 
@@ -476,7 +471,7 @@ let norec_branch_scheme env sigma typc =
   in 
   crec typc
 
-let rec_branch_scheme env sigma j typc recargs = 
+let rec_branch_scheme env sigma ((sp,j),_) typc recargs = 
   let rec crec (typc,recargs) = 
     match whd_betadeltaiota env sigma typc, recargs with 
       | (DOP2(Prod,c,DLAM(name,t)),(ra::reca)) -> 
@@ -493,14 +488,12 @@ let rec_branch_scheme env sigma j typc recargs =
   in 
   crec (typc,recargs) 
     
-let branch_scheme env sigma isrec i mind = 
-  let typc = type_inst_construct env sigma i mind in 
+let branch_scheme env sigma isrec i (mind,args as appmind) = 
+  let typc = type_inst_construct env sigma i appmind in 
   if isrec then
-    let (mI,_) = find_mrectype env sigma mind in
-    let (_,j,_) = destMutInd mI in
-    let mispec = lookup_mind_specif mI env in 
+    let mispec = lookup_mind_specif mind env in 
     let recarg = (mis_recarg mispec).(i-1) in
-    rec_branch_scheme env sigma j typc recarg
+    rec_branch_scheme env sigma mind typc recarg
   else 
     norec_branch_scheme env sigma typc
 
@@ -522,44 +515,33 @@ let build_notdep_pred env sigma mispec nparams globargs pred =
   in 
   finalpred
 
-let pred_case_ml_fail env sigma isrec ct (i,ft) =
-  try 
-    let (mI,largs) = find_mrectype env sigma ct in
-    let (_,j,_) = destMutInd mI in
-    let mispec = lookup_mind_specif mI env in
-    let nparams = mis_nparams mispec in
-    let (globargs,la) = list_chop nparams largs in
-    let pred = 
-      let recargs = (mis_recarg mispec) in
-      assert (Array.length recargs <> 0);
-      let recargi = recargs.(i-1) in
-      let nbrec = if isrec then count_rec_arg j recargi else 0 in
-      let nb_arg = List.length (recargs.(i-1)) + nbrec in
-      let pred = concl_n env sigma nb_arg ft in
-      if noccur_bet 1 nb_arg pred then 
-	lift (-nb_arg) pred
-      else 
-	failwith "Dependent"
-    in
-    if la = [] then 
-      pred
-    else (* we try with [_:T1]..[_:Tn](lift n pred) *)
-      build_notdep_pred env sigma mispec nparams globargs pred  
-  with Induc -> 
-    failwith "Inductive"
+let pred_case_ml_fail env sigma isrec (mI,globargs,la) (i,ft) =
+  let (_,j),_ = mI in
+  let mispec = lookup_mind_specif mI env in
+  let nparams = mis_nparams mispec in
+  let pred = 
+    let recargs = (mis_recarg mispec) in
+    assert (Array.length recargs <> 0);
+    let recargi = recargs.(i-1) in
+    let nbrec = if isrec then count_rec_arg j recargi else 0 in
+    let nb_arg = List.length (recargs.(i-1)) + nbrec in
+    let pred = concl_n env sigma nb_arg ft in
+    if noccur_bet 1 nb_arg pred then 
+      lift (-nb_arg) pred
+    else 
+      failwith "Dependent"
+  in
+  if la = [] then 
+    pred
+  else (* we try with [_:T1]..[_:Tn](lift n pred) *)
+    build_notdep_pred env sigma mispec nparams globargs pred  
 
 let pred_case_ml env sigma isrec (c,ct) lf (i,ft) = 
-  try 
     pred_case_ml_fail env sigma isrec ct (i,ft)
-  with Failure mes -> 
-    error_ml_case CCI env mes c ct lf.(i-1) ft
 
 (* similar to pred_case_ml but does not expect the list lf of braches *)
 let pred_case_ml_onebranch env sigma isrec (c,ct) (i,f,ft) = 
-  try 
     pred_case_ml_fail env sigma isrec ct (i,ft)
-  with Failure mes -> 
-    error_ml_case CCI env mes c ct f ft
       
 let make_case_ml isrec pred c ci lf = 
   if isrec then 

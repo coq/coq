@@ -14,7 +14,6 @@ open Closure
 (* Reduction Functions. *)
 
 exception Redelimination
-exception Induc
 exception Elimconst
 
 type 'a reduction_function = env -> 'a evar_map -> constr -> constr
@@ -191,18 +190,25 @@ val whd_ise1 : 'a evar_map -> constr -> constr
 val nf_ise1 : 'a evar_map -> constr -> constr
 val whd_ise1_metas : 'a evar_map -> constr -> constr
 
-
 (*s Obsolete Reduction Functions *)
 
 val hnf : env -> 'a evar_map -> constr -> constr * constr list
 val apprec : 'a stack_reduction_function
 val red_product : 'a reduction_function
-val find_mrectype : 
-  env -> 'a evar_map -> constr -> constr * constr list
-val find_minductype : 
-  env -> 'a evar_map -> constr -> constr * constr list
-val find_mcoinductype : 
-  env -> 'a evar_map -> constr -> constr * constr list
-val check_mrectype_spec : env -> 'a evar_map -> constr -> constr
-val minductype_spec : env -> 'a evar_map -> constr -> constr
-val mrectype_spec : env -> 'a evar_map -> constr -> constr
+
+(* [find_m*type env sigma c] coerce [c] to an recursive type (I args).
+   [find_mrectype], [find_minductype] and [find_mcoinductype]
+   respectively accepts any recursive type, only an inductive type and
+   only a coinductive type.
+   They raise [Induc] if not convertible to a recursive type. *)
+
+exception Induc
+val find_mrectype     : env -> 'a evar_map -> constr -> inductive * constr list
+val find_minductype   : env -> 'a evar_map -> constr -> inductive * constr list
+val find_mcoinductype : env -> 'a evar_map -> constr -> inductive * constr list
+
+(* [try_mutind_of env sigma t] raises [Induc] if [t] is not an inductive type*)
+(* The resulting summary is relative to the current env *)
+val try_mutind_of : env -> 'a evar_map -> constr -> Inductive.inductive_summary
+
+

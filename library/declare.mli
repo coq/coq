@@ -71,4 +71,5 @@ val construct_reference : Environ.env -> path_kind -> identifier -> constr
 
 val is_global : identifier -> bool
 
-val mind_path : constr -> section_path
+val path_of_inductive_path : inductive_path -> section_path
+val path_of_constructor_path : constructor_path -> section_path

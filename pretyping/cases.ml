@@ -83,13 +83,14 @@ let prod_name env (n,a,b) =
 let ctxt_of_ids ids =
   Array.of_list (List.map (function id -> VAR id) ids)
 
-let mutconstruct_of_constructor (((sp,i),j),args) = 
-  mkMutConstruct sp i j (ctxt_of_ids args)
-let mutind_of_constructor (((sp,i),_),args) = mkMutInd sp i (ctxt_of_ids args)
-let mutind_of_ind ((sp,i),args) = mkMutInd sp i args
+let constructor_of_rawconstructor (cstr_sp,ids) = (cstr_sp,ctxt_of_ids ids)
 
-let ith_constructor i {mind=((sp, tyi), cl)} = mkMutConstruct sp tyi i cl
-
+let mutconstruct_of_rawconstructor c = 
+  mkMutConstruct (constructor_of_rawconstructor c)
+let inductive_of_rawconstructor c =
+  inductive_of_constructor (constructor_of_rawconstructor c)
+let ith_constructor i mind =
+  mkMutConstruct (ith_constructor_of_inductive mind i)
 
 (* determines whether is a predicate or not *)
 let is_predicate ind_data = (ind_data.nrealargs > 0)
@@ -110,7 +111,7 @@ let lift_lfconstr n (s,c) = (s+n,c)
 (* Partial check on patterns *)
 let check_pat_arity env = function
   | PatCstr (loc, (cstr_sp,ids as c), args, name) ->
-      let ity = mutind_of_constructor c in
+      let ity = inductive_of_rawconstructor c in
       let nparams = mis_nparams (lookup_mind_specif ity env) in
       let tyconstr =
 	type_of_constructor env Evd.empty (cstr_sp,ctxt_of_ids ids) in
@@ -127,10 +128,10 @@ let rec constr_of_pat isevars env = function
   | PatVar (_,Anonymous) -> VAR (id_of_string "_")
   (* invalid_arg "constr_of_pat"*)
   | PatCstr(_,c,args,name) ->
-      let ity = mutind_of_constructor c in
+      let ity = inductive_of_rawconstructor c in
       let mispec = Global.lookup_mind_specif ity in 
       let nparams = mis_nparams mispec in
-      let c = mutconstruct_of_constructor c in
+      let c = mutconstruct_of_rawconstructor c in
       let exl =
 	list_tabulate
 	  (fun _ ->
@@ -284,7 +285,9 @@ type info_flow = INH | SYNT | INH_FIRST
    the non-dependent case is applied to an object of dependent type.
 *)
 
-type tomatch = IsInd of constr * mutind | MayBeNotInd of constr * constr
+type tomatch =
+  | IsInd of constr * inductive_summary
+  | MayBeNotInd of constr * constr
 
 let to_mutind env sigma c t =
   try IsInd (c,try_mutind_of env sigma t)
@@ -475,17 +478,17 @@ let patt_are_var =
     (fun r -> match row_current r with PatVar _ -> true |_ -> false)
 
 
-let check_pattern (ind_sp,_) row =
+let check_pattern (ind_sp,_ as ind) row =
   match row_current row with
       PatVar (_,id) -> ()
-    | PatCstr (loc,(cstr_sp,_),args,name) ->
-        if inductive_of_constructor cstr_sp <> ind_sp then
-	  error_bad_constructor_loc loc CCI cstr_sp ind_sp
+    | PatCstr (loc,(cstr_sp,ids),args,name) ->
+        if inductive_path_of_constructor_path cstr_sp <> ind_sp then
+	  error_bad_constructor_loc loc CCI (cstr_sp,ctxt_of_ids ids) ind
 
 let check_patt_are_correct ity mat = List.iter (check_pattern ity) mat 
 
 (*The only variables that patterns can share with the environment are 
-  parameters of inducive definitions!. Thus patterns should also be 
+  parameters of inductive definitions!. Thus patterns should also be 
   lifted when pushing inthe context. *)
 
 
@@ -641,7 +644,7 @@ let submat depcase isevars env i ind_data params current mat =
   let constraints = matching concl_realargs ind_data.realargs in
 *)
   let nbargs_iconstr = constructor_numargs ind_data i in
-  let ci = ith_constructor i ind_data in
+  let ci = ith_constructor i ind_data.mind in
 
   let expand_row r =
     let build_new_row subpatts name =
@@ -670,7 +673,7 @@ let submat depcase isevars env i ind_data params current mat =
 	    | Anonymous -> None
 	    | Name id -> Some (mychange_name_rel env current id) in
 	  (envopt, [build_new_row None name])
-      | PatCstr(_,c,largs,alias) when mutconstruct_of_constructor c = ci ->
+      | PatCstr(_,c,largs,alias) when mutconstruct_of_rawconstructor c = ci ->
 	(* Avant: il y aurait eu un problème si un des largs contenait
    	   un "_". Un problème aussi pour inférer les params des
    	   constructeurs sous-jacents, car on n'avait pas accès ici
@@ -696,7 +699,7 @@ let submat depcase isevars env i ind_data params current mat =
 
 
 type status =
-  | Match_Current of (constr * mutind * info_flow) (* "(", ")" needed... *)
+  | Match_Current of (constr * inductive_summary * info_flow) (* "(", ")" needed... *)
   | Any_Tomatch | All_Variables
   | Any_Tomatch_Dep | All_Variables_Dep | Solve_Constraint 
 
@@ -958,7 +961,7 @@ let abstracted_inductive sigma env ind_data =
 
   let params0 = List.map (lift m) params in
   let args0 = rel_list 0 m in
-  let t = applist (mutind_of_ind ity, params0@args0) in
+  let t = applist (mkMutInd ity, params0@args0) in
   let na = named_hd (Global.env()) t Anonymous in
   (na,t)::sign, {ind_data with params=params0;realargs=args0}
 
@@ -1016,19 +1019,19 @@ let apply_to_dep env sigma pred = function
 
 (* analogue strategy as Christine's MLCASE *)
 let find_implicit_pred sigma ith_branch_builder env (current,ind_data,_) =
-  let {fullmind=ct;nconstr=nconstr} = ind_data in
+  let {nconstr=nconstr;mind=mind;params=params;realargs=realargs} = ind_data in
   let isrec = false in 
   let rec findtype i = 
     if i > nconstr then raise (CasesError (env, CantFindCaseType current))
     else 
       try
- 	(let expti = Indrec.branch_scheme env sigma isrec i ct in
+ 	(let expti = Indrec.branch_scheme env sigma isrec i (mind,params) in
        	let _,bri= ith_branch_builder i  in
        	let fi = bri.uj_type in 
        	let efit = nf_ise1 sigma fi in 
        	let pred =
           Indrec.pred_case_ml_onebranch env sigma isrec 
-            (current,ct) (i,bri.uj_val,efit) in
+            (current,(mind,params,realargs)) (i,bri.uj_val,efit) in
  	if has_ise sigma pred then error"isevar" else pred)
       with UserError _ -> findtype (i+1)
   in findtype 1  
@@ -1109,7 +1112,7 @@ let type_one_branch dep env sigma ind_data p im =
              let (_,vargs) = array_chop (nparams+1) lAV in
 	     let c1 = appvect (lift n p,vargs) in
 	     if dep then 
-	       let co = ith_constructor i ind_data in
+	       let co = ith_constructor i ind_data.mind in
 	       applist
 		 (c1,[applist(co,((List.map (lift n) params)@(rel_list 0 n)))])
 	     else c1
@@ -1244,7 +1247,7 @@ and build_dep_branch trad env gd bty (current,ind_data,info) i =
  let l,_ = splay_prod env sigma ty in
  let lpatt = List.map (fun (na,ty) -> (to_mutind env sigma xtra_tm ty,SYNT)) l in
  let ngd =  pop_and_prepend_tomatch lpatt gd in
- let ci_param = applist (ith_constructor i ind_data, params) in
+ let ci_param = applist (ith_constructor i ind_data.mind, params) in
 
  let rnnext_env0,next_mat = submat ngd.case_dep trad.isevars env i 
                                     ind_data params current ngd.mat in
@@ -1322,7 +1325,7 @@ and build_nondep_branch trad env gd next_pred bty
                   mat = ncurgd.mat}) in
  let nncur = lift k ncur in
  let lp = List.map (lift k) params in
- let ci = applist (ith_constructor i ind_data, lp@(rel_list 0 k)) in 
+ let ci = applist (ith_constructor i ind_data.mind, lp@(rel_list 0 k)) in 
 
  let rnnext_env0,next_mat=submat ngd.case_dep trad.isevars next_env i 
                                  ind_data lp nncur ngd.mat in
@@ -1411,7 +1414,7 @@ and match_current trad env (current,ind_data,info as cji) gd =
       match List.map (build_ith_branch gd) (interval 1 nconstr) with
 	  [] -> (*  nconstr=0 *)
 	   (context env),
-	  mkMutCaseA (ci_of_mind (mutind_of_ind ity)) 
+	  mkMutCaseA (ci_of_mind (mkMutInd ity)) 
 		    (eta_reduce_if_rel p) current [||]
 
       | (bre1,f)::lenv_f as brl ->
@@ -1429,7 +1432,7 @@ and match_current trad env (current,ind_data,info as cji) gd =
 	in
 	check_conv 0;
         (common_prefix_ctxt (context env) bre1,
-         mkMutCaseA (ci_of_mind (mutind_of_ind ity))
+         mkMutCaseA (ci_of_mind (mkMutInd ity))
 	   (eta_reduce_if_rel (nf_ise1 !(trad.isevars) p))
 	   current lf) in
     newenv,
@@ -1512,7 +1515,7 @@ and match_current_dep trad env (current,ind_data,info as cji) gd =
 		    (snd (build_ith_branch nenv ngd1 i)).uj_val)
                  (interval 1 nconstr) in
       let case_exp =
- 	mkMutCaseA (ci_of_mind (mutind_of_ind ity)) (eta_reduce_if_rel np)
+ 	mkMutCaseA (ci_of_mind (mkMutInd ity)) (eta_reduce_if_rel np)
 	  current (Array.of_list lf) in
       let (na,ty),_ = uncons_rel_env (context nenv) in
       let rescase = lambda_name env (na,body_of_type ty,case_exp) in
@@ -1524,7 +1527,7 @@ and match_current_dep trad env (current,ind_data,info as cji) gd =
        let lf = List.map (fun i -> 
 			      (snd (build_ith_branch nenv ngd1 i)).uj_val)
                   (interval 1 nconstr) in
-       let rescase = mkMutCaseA (ci_of_mind (mutind_of_ind ity)) 
+       let rescase = mkMutCaseA (ci_of_mind (mkMutInd ity)) 
 		 (eta_reduce_if_rel np) current (Array.of_list lf) in
        let casetyp = whd_beta nenv !(trad.isevars) (applist (np,args)) in
        (context nenv),rescase,casetyp
@@ -1544,7 +1547,7 @@ and match_current_dep trad env (current,ind_data,info as cji) gd =
          * this (Rel 1) by initial value will be done by the application 
          *)
         let case_exp =
-           mkMutCaseA (ci_of_mind (mutind_of_ind ity)) np1 (Rel 1) (Array.of_list lf) in
+           mkMutCaseA (ci_of_mind (mkMutInd ity)) np1 (Rel 1) (Array.of_list lf) in
         let nenv2,rescase = elam_and_popl_named n (context nenv1) case_exp in
 	let casetyp = whd_beta nenv1 !(trad.isevars) (applist (np,args@[(Rel 1)])) in
         nenv2,rescase,casetyp
@@ -1678,7 +1681,7 @@ let check_coercibility isevars env ty indty =
 let check_pred_correctness isevars env tomatchl pred =
   let cook n = function
     | IsInd(c,({mind=ity;params=params;realargs=args;arity=arity} as ind_data))
-      -> (applist (mutind_of_ind ity,(List.map (lift n) params)
+      -> (applist (mkMutInd ity,(List.map (lift n) params)
 		   @(rel_list 0 ind_data.nrealargs)),
 	  lift n (whd_beta env !isevars (applist (arity,params))))
     | MayBeNotInd (_,_) -> anomaly "Should have been catched in case_dependent"
@@ -1703,7 +1706,7 @@ let check_pred_correctness isevars env tomatchl pred =
 let build_expected_arity isdep env sigma tomatchl sort =
   let cook n = function
     | IsInd(c,({mind=ity;params=params;realargs=args;arity=arity} as ind_data))
-      -> (applist (mutind_of_ind ity,(List.map (lift n) params)
+      -> (applist (mkMutInd ity,(List.map (lift n) params)
 		   @(rel_list 0 ind_data.nrealargs)),
 	  lift n (whd_beta env sigma (applist (arity,params))))
     | MayBeNotInd (_,_) -> anomaly "Should have been catched in case_dependent"
@@ -1795,15 +1798,6 @@ let rec find_row_ind = function
   | PatVar _ :: l -> find_row_ind l
   | PatCstr(loc,c,_,_) :: _ -> Some (loc,c)
 
-
-let find_pretype mat =
-  let lpatt = List.map (fun r -> List.hd r.patterns) mat in
-  match find_row_ind lpatt with
-    Some (_,c) -> mutind_of_constructor c
-  | None -> anomalylabstrm "find_pretype" 
-       	[<'sTR "Expecting a patt. in constructor form and found empty list">]
-
-
 (* We do the unification for all the rows that contain
  * constructor patterns. This is what we do at the higher level of patterns.
  * For nested patterns, we do this unif when we ``expand'' the matrix, and we
@@ -1825,7 +1819,7 @@ let inh_coerce_to_ind isevars env ty tyi =
 	   (push_rel (na,(make_typed ty s)) env,
 	    fst (new_isevar isevars env (mkCast ty (mkSort s)) CCI)::evl))
       ntys (env,[]) in
-  let expected_typ = applist (tyi,evarl) in
+  let expected_typ = applist (mkMutInd tyi,evarl) in
      (* devrait être indifférent d'exiger leq ou pas puisque pour 
         un inductif cela doit être égal *)
   if Evarconv.the_conv_x_leq env isevars expected_typ ty then ty
@@ -1836,7 +1830,7 @@ let coerce_row trad env row tomatch =
   let j = trad.pretype mt_tycon env tomatch in
   match find_row_ind row with
       Some (cloc,(cstr,_ as c)) ->
-	(let tyi = mutind_of_constructor c in
+	(let tyi = inductive_of_rawconstructor c in
 	 try 
 	   let indtyp = inh_coerce_to_ind trad.isevars env j.uj_type tyi in
 	   IsInd (j.uj_val,try_mutind_of env !(trad.isevars) j.uj_type)
@@ -1844,7 +1838,8 @@ let coerce_row trad env row tomatch =
 	   (* 2 cas : pas le bon inductive ou pas un inductif du tout *)
 	   try
 	     let ind_data = try_mutind_of env !(trad.isevars) j.uj_type in
-	     error_bad_constructor_loc cloc CCI cstr (fst ind_data.mind)
+	     error_bad_constructor_loc cloc CCI
+	       (constructor_of_rawconstructor c) ind_data.mind
 	   with Induc ->
 	     error_case_not_inductive_loc
 	       (loc_of_rawconstr tomatch) CCI env j.uj_val j.uj_type)

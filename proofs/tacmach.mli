@@ -62,8 +62,9 @@ val pf_red_product             : goal sigma -> constr -> constr
 val pf_nf                      : goal sigma -> constr -> constr
 val pf_nf_betaiota             : goal sigma -> constr -> constr
 val pf_one_step_reduce         : goal sigma -> constr -> constr
-val pf_reduce_to_mind : goal sigma -> constr -> constr * constr * constr
-val pf_reduce_to_ind  : goal sigma  -> constr -> section_path * constr * constr
+val pf_reduce_to_mind : goal sigma -> constr -> inductive * constr * constr
+val pf_reduce_to_ind  :
+  goal sigma  -> constr -> section_path * constr * constr
 val pf_compute        : goal sigma -> constr -> constr
 val pf_unfoldn        : (int list * section_path) list -> goal sigma 
                         -> constr -> constr

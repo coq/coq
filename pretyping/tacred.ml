@@ -55,9 +55,6 @@ let make_elim_fun f largs =
   with Elimconst | Failure _ -> 
     raise Redelimination
 
-let mind_nparams env i =
-  let mis = lookup_mind_specif i env in mis.mis_mib.mind_nparams
-
 (* F is convertible to DOPN(Fix(recindices,bodynum),bodyvect) make 
    the reduction using this extra information *)
 
@@ -93,10 +90,13 @@ let contract_cofix_use_function f cofix =
   	sAPPViList bodynum (array_last bodyvect) lbodies
     | _ -> assert false
 
+let mind_nparams env i =
+  let mis = lookup_mind_specif i env in mis.mis_mib.mind_nparams
+
 let reduce_mind_case_use_function env f mia =
   match mia.mconstr with 
-    | DOPN(MutConstruct((indsp,tyindx),i),_) ->
-	let ind = DOPN(MutInd(indsp,tyindx),args_of_mconstr mia.mconstr) in
+    | DOPN(MutConstruct(ind_sp,i as cstr_sp),args) ->
+	let ind = inductive_of_constructor (cstr_sp,args) in
 	let nparams = mind_nparams env ind in
 	let real_cargs = snd(list_chop nparams mia.mcargs) in
 	applist (mia.mlf.(i-1),real_cargs)
@@ -325,7 +325,7 @@ let one_step_reduce env sigma =
 let reduce_to_mind env sigma t = 
   let rec elimrec t l = 
     match whd_castapp_stack t [] with
-      | (DOPN(MutInd _,_) as mind,_) -> (mind,t,prod_it t l)
+      | (DOPN(MutInd mind,args),_) -> ((mind,args),t,prod_it t l)
       | (DOPN(Const _,_),_) -> 
           (try 
 	     let t' = nf_betaiota env sigma (one_step_reduce env sigma t) in 
@@ -346,6 +346,5 @@ let reduce_to_mind env sigma t =
  elimrec t []
 
 let reduce_to_ind env sigma t =
-  let (mind,redt,c) = reduce_to_mind env sigma t in 
-  (Declare.mind_path mind, redt, c)
-
+  let ((ind_sp,_),redt,c) = reduce_to_mind env sigma t in 
+  (Declare.path_of_inductive_path ind_sp, redt, c)
