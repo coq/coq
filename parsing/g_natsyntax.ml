@@ -10,7 +10,7 @@
 
 (* This file to allow writing (3) for (S (S (S O))) 
    and still write (S y) for (S y) *)
-(*
+
 open Pcoq
 open Pp
 open Util
@@ -20,6 +20,9 @@ open Ast
 open Coqlib
 open Termast
 open Extend
+
+let ast_O = ast_of_ref glob_O
+let ast_S = ast_of_ref glob_S
 
 (* For example, (nat_of_string "3") is <<(S (S (S O)))>> *)
 let nat_of_int n dloc =
@@ -82,7 +85,7 @@ let nat_printer std_pr p =
     | None -> pr_S (pr_external_S std_pr p)
 
 let _ = Esyntax.Ppprim.add ("nat_printer", nat_printer)
-
+(*
 (* Declare the primitive parser *)
 
 let unat = create_univ_if_new "nat"
