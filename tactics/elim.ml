@@ -47,9 +47,9 @@ let introCaseAssumsThen tac ba =
 
 Require Elim.
 Require Le.
-   Goal (y:nat){x:nat | (le O x)/\(le x y)}->(le O y).
+   Goal (y:nat){x:nat | (le O x)/\(le x y)}->{x:nat | (le O x)}.
    Intros y H.
-   Decompose [sig and] H;EAuto.  [HUM HUM !! Y a peu de chance qu'ça marche !]
+   Decompose [sig and] H;EAuto.
    Qed.
 
 Another example :
@@ -59,33 +59,33 @@ Another example :
    Qed.
 *)
 
-let elimClauseThen tac idopt gl =
-  elimination_then tac ([],[]) (mkVar (out_some idopt)) gl
+let elimHypThen tac id gl =
+  elimination_then tac ([],[]) (mkVar id) gl
 
-let rec general_decompose_clause recognizer =
-  ifOnClause recognizer
-    (fun cls ->
-       elimClauseThen
-	 (introElimAssumsThen
-            (fun bas ->
-               (tclTHEN (clear_clause cls)
-		  (tclMAP (general_decompose_clause recognizer) 
-		     (List.map in_some bas.assums)))))
-	 cls)
-    (fun _ -> tclIDTAC)
+let rec general_decompose_on_hyp recognizer =
+  ifOnHyp recognizer (general_decompose recognizer) (fun _ -> tclIDTAC)
+
+and general_decompose recognizer id =
+  elimHypThen
+    (introElimAssumsThen
+       (fun bas ->
+	  tclTHEN (clear_one id)
+	    (tclMAP (general_decompose_on_hyp recognizer) bas.assums)))
+    id
 
 (* Faudrait ajouter un COMPLETE pour que l'hypothèse créée ne reste
    pas si aucune élimination n'est possible *)
 
 (* Meilleures stratégies mais perte de compatibilité *)
+let tmphyp_name = id_of_string "_TmpHyp"
 let up_to_delta = ref false (* true *)
-let tmphyp_name = id_of_string "TmpHyp" (* "H" *)
 
 let general_decompose recognizer c gl = 
   let typc = pf_type_of gl c in  
   (tclTHENS (cut typc) 
      [(tclTHEN (intro_using tmphyp_name)
-         (onLastHyp (general_decompose_clause recognizer)));
+         (onLastHyp
+	    (ifOnHyp recognizer (general_decompose recognizer) clear_one)));
       (exact_no_check c)]) gl
 
 let head_in gls indl t =
@@ -98,7 +98,10 @@ let head_in gls indl t =
   with Induc -> false
        
 let inductive_of_qualid gls qid =
-  let c = Declare.construct_qualified_reference (pf_env gls) qid in
+  let c = 
+    try Declare.construct_qualified_reference (pf_env gls) qid
+    with Not_found -> Nametab.error_global_not_found qid
+  in
   match kind_of_term c with
     | IsMutInd ity -> ity
     | _ ->
@@ -155,12 +158,11 @@ let induction_trailer abs_i abs_j bargs =
   tclTHEN 
     (tclDO (abs_j - abs_i) intro)
     (onLastHyp
-       (fun idopt gls ->
-	  let id = out_some idopt in
+       (fun id gls ->
 	  let idty = pf_type_of gls (mkVar id) in
 	  let fvty = global_vars idty in
 	  let possible_bring_ids =
-	    (List.tl (List.map out_some (nLastHyps (abs_j - abs_i) gls)))
+	    (List.tl (nLastHyps (abs_j - abs_i) gls))
             @bargs.assums in
 	  let (ids,_) = List.fold_left 
 			  (fun (bring_ids,leave_ids) cid ->
@@ -170,18 +172,17 @@ let induction_trailer abs_i abs_j bargs =
                              else (bring_ids,cid::leave_ids))
 			  ([],fvty) possible_bring_ids 
 	  in 
-	  (tclTHEN (tclTHEN (bring_hyps (List.map in_some ids))
-		      (clear_clauses (List.rev (List.map in_some ids))))
+	  (tclTHEN (tclTHEN (bring_hyps ids) (clear_clauses (List.rev ids)))
              (simple_elimination (mkVar id))) gls))
 
 let double_ind abs_i abs_j gls =
   let cl = pf_concl gls in 
   (tclTHEN (tclDO abs_i intro)
      (onLastHyp
-       	(fun idopt ->
+       	(fun id ->
            elimination_then
              (introElimAssumsThen (induction_trailer abs_i abs_j))
-             ([],[]) (mkVar (out_some idopt))))) gls
+             ([],[]) (mkVar id)))) gls
 
 let dyn_double_ind = function
   | [Integer i; Integer j] -> double_ind i j
@@ -199,7 +200,7 @@ let rec intro_pattern p =
   and case_last  = (tclLAST_HYP h_simplest_case) in  
   match p with
     | WildPat    -> (tclTHEN intro clear_last)
-    | IdPat  id  -> intro_using_warning id
+    | IdPat  id  -> intro_mustbe id
     | DisjPat l  -> (tclTHEN introf
                        (tclTHENS 
 			  (tclTHEN case_last clear_last)

@@ -24,12 +24,11 @@ val introElimAssumsThen :
 val introCaseAssumsThen :
   (branch_assumptions -> tactic) -> branch_args -> tactic
 
-val general_decompose_clause : (clause * constr -> bool) -> clause -> tactic
-val general_decompose        : (clause * constr -> bool) -> constr -> tactic
-val decompose_nonrec         : constr -> tactic
-val decompose_and            : constr -> tactic
-val decompose_or             : constr -> tactic
-val h_decompose              : section_path list -> constr -> tactic
+val general_decompose : (identifier * constr -> bool) -> constr -> tactic
+val decompose_nonrec  : constr -> tactic
+val decompose_and     : constr -> tactic
+val decompose_or      : constr -> tactic
+val h_decompose       : section_path list -> constr -> tactic
 
 val double_ind : int -> int -> tactic
 
