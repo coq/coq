@@ -25,25 +25,25 @@ let is_empty ist =
   if (is_empty_type (List.assoc 1 ist.lmatch)) then
     <:tactic<ElimType ?1;Assumption>>
   else
-    failwith "is_empty"
+    <:tactic<Fail>>
 
 let is_unit ist =
   if (is_unit_type (List.assoc 1 ist.lmatch)) then
     <:tactic<Idtac>>
   else
-    failwith "is_unit"
+    <:tactic<Fail>>
 
 let is_conj ist =
   if (is_conjunction (List.assoc 1 ist.lmatch)) then
      <:tactic<Idtac>>
   else
-    failwith "is_conj"
+    <:tactic<Fail>>
 
 let is_disj ist =
   if (is_disjunction (List.assoc 1 ist.lmatch)) then
      <:tactic<Idtac>>
   else
-    failwith "is_disj"
+    <:tactic<Fail>>
 
 let not_dep_intros ist =
   <:tactic<
@@ -109,6 +109,7 @@ let rec tauto_intuit t_reduce t_solver ist =
       $t_solver
    ) >>
 
+(*
 let unfold_not_iff = function
   | None -> interp <:tactic<Unfold not iff>>
   | Some id ->
@@ -118,12 +119,25 @@ let unfold_not_iff = function
 let reduction_not_iff = Tacticals.onAllClauses (fun ido -> unfold_not_iff ido)
 
 let t_reduction_not_iff = valueIn (VTactic reduction_not_iff)
+*)
+
+let reduction_not_iff ist =
+  match ist.goalopt with 
+    | None -> anomaly "reduction_not_iff"
+    | Some gl ->
+	List.fold_right
+	(fun id tac -> 
+	  let id = nvar id in <:tactic<Unfold not iff in $id; $tac>>)
+	(Tacmach.pf_ids_of_hyps gl)
+	<:tactic<Unfold not iff>>
+
+let t_reduction_not_iff = tacticIn reduction_not_iff
 
 let intuition_gen tac =
   interp (tacticIn (tauto_intuit t_reduction_not_iff tac))
 
 let tauto g =
-  try intuition_gen <:tactic<Failtac>> g
+  try intuition_gen <:tactic<Fail>> g
   with UserError _ -> errorlabstrm "tauto" [< str "Tauto failed" >]
 
 let default_intuition_tac = <:tactic< Auto with * >>

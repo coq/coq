@@ -20,8 +20,8 @@ open Term
 
 (* Values for interpretation *)
 type value =
-  | VTactic of tactic
-  | VFTactic of tactic_arg list * (tactic_arg list -> tactic)
+  | VTactic of interp_sign * Coqast.t
+  | VFTactic of tactic_arg list * string
   | VRTactic of (goal list sigma * validation)
   | VContext of (interp_sign -> goal sigma -> value)
   | VArg of tactic_arg
