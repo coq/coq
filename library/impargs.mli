@@ -26,7 +26,10 @@ val list_of_implicits : implicits -> int list
 
 val declare_var_implicits : section_path -> unit
 val declare_constant_implicits : section_path -> unit
-val declare_inductive_implicits : section_path -> unit
+val declare_mib_implicits : section_path -> unit
+
+val declare_implicits : global_reference -> unit
+val declare_manual_implicits : global_reference -> int list -> unit
 
 (*s Access to already computed implicits. *)
 
@@ -41,7 +44,7 @@ val constant_implicits_list : section_path -> int list
 val implicits_of_var : section_path -> int list
 
 val is_implicit_constant : section_path -> bool
-val is_implicit_inductive_definition : section_path -> bool
+val is_implicit_inductive_definition : inductive_path -> bool
 val is_implicit_var : section_path -> bool
 
 val implicits_of_global : global_reference -> int list

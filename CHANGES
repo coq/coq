@@ -57,6 +57,16 @@ que les 3 primitives), on peut typer avec "constr", "tactic", ou
   Begin Silent -> Set Silent
   End Silent -> Unset Silent.
 
+- Déclaration manuelle des implicites avec
+
+	Implicits ident.
+	Implicits ident [ num num ... num ].
+
+  Petit changement de sémantique : lors de la fermeture d'une section,
+  les implicites sont calculés selon la valeur *courante* de "Implicit 
+  Arguments" et non plus selon la valeur qu'elle avait au moment de la 
+  définition dans la section.
+
 Tactiques
 
 - Langage de tactique

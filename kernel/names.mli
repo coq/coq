@@ -12,7 +12,7 @@ type name = Name of identifier | Anonymous
 
 (* Constructor of an identifier;
    [make_ident] builds an identifier from a string and an optional index; if
-   the string ends by a digit, a "_" is inserted *)
+   the string ends by a digit, a ["_"] is inserted *)
 val make_ident : string -> int option -> identifier
 
 (* Some destructors of an identifier *)
@@ -36,7 +36,7 @@ val next_name_away : name -> identifier list -> identifier
 val next_name_away_with_default : 
   string -> name -> identifier list -> identifier
 
-(*s path_kind is currently degenerated, [FW] is not used *)
+(*s [path_kind] is currently degenerated, [FW] is not used *)
 type path_kind = CCI | FW | OBJ
 
 (* parsing and printing of path kinds *)
@@ -46,7 +46,7 @@ val kind_of_string : string -> path_kind
 (*s Directory paths = section names paths *)
 type dir_path = string list
 
-(* Printing of directory paths as "#module#submodule" *)
+(* Printing of directory paths as ["#module#submodule"] *)
 val string_of_dirpath : dir_path -> string
 
 (*s Section paths *)
@@ -64,12 +64,12 @@ val kind_of_path : section_path -> path_kind
 val sp_of_wd : string list -> section_path
 val wd_of_sp : section_path -> string list
 
-(* Parsing and printing of section path as "#module#id#kind" *)
+(* Parsing and printing of section path as ["#module#id#kind"] *)
 val path_of_string : string -> section_path
 val string_of_path : section_path -> string
 val print_sp : section_path -> std_ppcmds
 
-(*
+(*i
 val string_of_path_mind : section_path -> identifier -> string
 val coerce_path : path_kind -> section_path -> section_path
 val fwsp_of : section_path -> section_path
@@ -79,15 +79,15 @@ val fwsp_of_ccisp : section_path -> section_path
 val ccisp_of_fwsp : section_path -> section_path
 val append_to_path : section_path -> string -> section_path
 
-val sp_ord : section_path -> section_path -> int
 val sp_gt : section_path * section_path -> bool
-*)
+i*)
+val sp_ord : section_path -> section_path -> int
 
 (* [is_dirpath_prefix p1 p2=true] if [p1] is a prefix of or is equal to [p2] *)
 val dirpath_prefix_of : dir_path -> dir_path -> bool
-(*
+(*i
 module Spset : Set.S with type elt = section_path
-*)
+i*)
 module Spmap : Map.S with type key = section_path
 
 (*s Specific paths for declarations *)

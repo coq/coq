@@ -21,7 +21,7 @@ val push_module : string -> module_contents -> unit
 
 val sp_of_id : path_kind -> identifier -> global_reference
 
-(* This returns the section_path of a constant or fails with Not_found *)
+(* This returns the section path of a constant or fails with [Not_found] *)
 val constant_sp_of_id : identifier -> section_path
 
 val locate : section_path -> global_reference

@@ -436,6 +436,21 @@ let _ =
        | [] -> (fun () -> Impargs.make_implicit_args false)
        | _  -> bad_vernac_args "IMPLICIT_ARGS_OFF")
 
+let number_list = 
+  List.map (function VARG_NUMBER n -> n | _ -> bad_vernac_args "Number list") 
+
+let _ =
+  add "IMPLICITS"
+    (function 
+       | (VARG_STRING "") :: (VARG_IDENTIFIER id) :: l -> 
+	   (fun () -> 
+	      let imps = number_list l in
+	      Impargs.declare_manual_implicits (Nametab.sp_of_id CCI id) imps)
+       | [VARG_STRING "Auto"; VARG_IDENTIFIER id] -> 
+	   (fun () -> 
+	      Impargs.declare_implicits (Nametab.sp_of_id CCI id))
+       | _  -> bad_vernac_args "IMPLICITS")
+
 let _ =
   add "SaveNamed"
     (function 
@@ -588,10 +603,7 @@ let _ =
 let _ =
   add "ExplainProof"
     (function l ->
-       let l = List.map (function 
-			   | (VARG_NUMBER n) -> n 
-                           |   _   -> bad_vernac_args "ExplainProof") l
-       in
+       let l = number_list l in
        fun () ->
          let pts = get_pftreestate() in
          let evc = evc_of_pftreestate pts in
@@ -605,10 +617,7 @@ let _ =
 let _ =
   add "ExplainProofTree"
     (function l ->
-       let l = List.map (function 
-			   | (VARG_NUMBER n) -> n
-			   |   _  -> bad_vernac_args "ExplainProofTree") l
-       in 
+       let l = number_list l in 
        fun () ->
          let pts = get_pftreestate() in
          let evc = evc_of_pftreestate pts in

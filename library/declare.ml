@@ -188,7 +188,7 @@ let declare_mind mie =
     | [] -> anomaly "cannot declare an empty list of inductives"
   in
   let sp = add_leaf id CCI (in_inductive mie) in
-  if is_implicit_args() then declare_inductive_implicits sp;
+  if is_implicit_args() then declare_mib_implicits sp;
   sp
 
 (*s Test and access functions. *)

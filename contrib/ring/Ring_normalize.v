@@ -740,6 +740,12 @@ Save.
 (* End properties. *)
 End semi_rings.
 
+Implicits Cons_varlist.
+Implicits Cons_monom.
+Implicits SPconst.
+Implicits SPplus.
+Implicits SPmult.
+
 Section rings.
 
 (* Here the coercion between Ring and Semi-Ring will be useful *)

@@ -173,7 +173,7 @@ let process_object oldenv dir sec_sp
     | "INDUCTIVE" ->
 	let mib = Environ.lookup_mind sp oldenv in
 	let newsp = recalc_sp dir sp in
-	let imp = is_implicit_inductive_definition sp in
+	let imp = is_implicit_args() (* CHANGE *) in
 	let (mie,indmods,cstrmods) = 
 	  process_inductive sp newsp oldenv (ids_to_discard,work_alist) mib in
 	((Inductive(mie,imp)) :: ops, ids_to_discard,

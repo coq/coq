@@ -298,8 +298,7 @@ REALSVO=theories/Reals/R_Ifp.vo       theories/Reals/Reals.vo \
 	theories/Reals/Rderiv.vo
 
 THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
-             $(SETSVO) $(RELATIONSVO) $(REALSVO)
-# TODO: add $(WELLFOUNDEDVO) 
+             $(SETSVO) $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)
 
 $(THEORIESVO): states/initial.coq
 
