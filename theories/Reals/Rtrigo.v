@@ -264,7 +264,7 @@ Intros; Elim (sin_eq_0 x); Intros; Apply  (H1 H).
 Save.
 
 Lemma cos_eq_0_0 : (x:R) (cos x)==R0 -> (EXT k : Z | ``x==(IZR k)*PI+PI/2``). 
-Intros x H; Rewrite -> cos_sin in H; Generalize (sin_eq_0_0 (Rplus (Rdiv PI (INR (2))) x) H); Intro H2; Elim H2; Intros x0 H3; Exists (Zminus x0 (inject_nat (S O))); Rewrite <- Z_R_minus; Ring; Rewrite Rmult_sym; Rewrite <- H3; Field; DiscrR.
+Intros x H; Rewrite -> cos_sin in H; Generalize (sin_eq_0_0 (Rplus (Rdiv PI (INR (2))) x) H); Intro H2; Elim H2; Intros x0 H3; Exists (Zminus x0 (inject_nat (S O))); Rewrite <- Z_R_minus; Ring; Rewrite Rmult_sym; Rewrite <- H3; Unfold INR; Field; DiscrR.
 Save.
 
 Lemma  cos_eq_0_1 : (x:R) (EXT k : Z | ``x==(IZR k)*PI+PI/2``) -> ``(cos x)==0``.

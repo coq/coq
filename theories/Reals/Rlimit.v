@@ -618,8 +618,8 @@ Apply Rlt_Rinv; Cut ~(O=(2)); [Intro H17; Generalize (lt_INR_0 (2) (neq_O_lt (2)
 Replace ``(Rabsolu (f x))*(Rabsolu l)*/2*/(Rabsolu (f x))`` with ``(Rabsolu l)/2``.
 Replace ``(Rabsolu (f x))*(Rabsolu l)*/2*(2*/(Rabsolu l))`` with ``(Rabsolu (f x))``.
 Assumption.
-Field; Apply prod_neq_R0; [DiscrR | Case (case_Rabsolu l); Intro; [Apply Ropp_neq; Assumption | Assumption]].
-Unfold Rdiv; Field; Apply prod_neq_R0; [DiscrR | Case (case_Rabsolu (f x)); Intro; [Apply Ropp_neq; Assumption | Assumption]].
+Field; Apply prod_neq_R0; [DiscrR | Unfold Rabsolu; Case (case_Rabsolu l); Intro; [Apply Ropp_neq; Assumption | Assumption]].
+Unfold Rdiv; Field; Apply prod_neq_R0; [DiscrR | Unfold Rabsolu; Case (case_Rabsolu (f x)); Intro; [Apply Ropp_neq; Assumption | Assumption]].
 Apply Rabsolu_no_R0; Assumption.
 Apply Rabsolu_no_R0; Assumption.
 Apply Rabsolu_no_R0; Assumption.
@@ -631,7 +631,7 @@ Intro; Elim (Rlt_antirefl ``0`` (Rlt_trans ``0`` ``(Rabsolu l)/2`` ``0`` H17 H15
 Unfold Rdiv; Apply Rmult_lt_pos.
 Apply Rabsolu_pos_lt; Assumption.
 Apply Rlt_Rinv; Cut ~(O=(2)); [Intro H17; Generalize (lt_INR_0 (2) (neq_O_lt (2) H17)); Unfold INR; Intro; Assumption | Discriminate].
-Unfold Rdiv; Field; DiscrR.
+Field; DiscrR.
 Split; [Assumption | Apply Rlt_le_trans with (Rmin delta1 delta2); [Assumption | Apply Rmin_r]].
 Split; [Assumption | Apply Rlt_le_trans with (Rmin delta1 delta2); [Assumption | Apply Rmin_l]].
 Change ``0<eps*(Rsqr l)/2``; Unfold Rdiv; Repeat Rewrite Rmult_assoc; Repeat Apply Rmult_lt_pos.

@@ -750,7 +750,7 @@ Field.
 DiscrR.
 Case delta; Intros.
 Apply prod_neq_R0.
-Red; Intro H13; Rewrite H13 in cond_pos; Elim (Rlt_antirefl ``0`` cond_pos).
+Compute; Intro H13; Rewrite H13 in cond_pos; Elim (Rlt_antirefl ``0`` cond_pos).
 Apply Rinv_neq_R0; DiscrR.
 Replace ``((f (x+delta/2))-(f x))/(delta/2)`` with ``-(((f x)-(f (x+delta/2)))/(delta/2))``.
 Rewrite <- Ropp_O.
@@ -765,7 +765,7 @@ Left; Apply Rlt_Rinv; Assumption.
 Field.
 Case delta; Intros.
 Apply prod_neq_R0.
-Red; Intro H13; Rewrite H13 in cond_pos; Elim (Rlt_antirefl ``0`` cond_pos).
+Compute; Intro H13; Rewrite H13 in cond_pos; Elim (Rlt_antirefl ``0`` cond_pos).
 Apply Rinv_neq_R0; DiscrR.
 Split.
 Unfold Rdiv; Apply prod_neq_R0.
