@@ -19,6 +19,8 @@ Syntaxe des constructions
 
 - Davantage d'inférence automatique de "?".
 
+- Davantage d'arguments implicites engendrés par le discharge.
+
 - Les cas des Cases ne se lisent plus de manière séquentielle, sauf en
   cas de clauses par défaut redondantes auquel cas la première est prise
   avec un avertissement.
