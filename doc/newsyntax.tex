@@ -668,11 +668,6 @@ et en profondeur ? Quelle recherche par défaut ?
 
 \section*{Remarques pêle-mêle (HH)}
 
-Renommer Variable/Hypothesis hors section en Parameter/Axiom.
-
-Renommer les \verb=command0=, \verb=command1=, ... \verb=lcommand= etc en
-\verb=constr0=, \verb=constr1=, ... \verb=lconstr=.
-
 Autoriser la syntaxe
 
 \begin{verbatim}
@@ -684,23 +679,42 @@ Variables H (a : A) (b : B), J (k : K) : nat; Z (v : V) : Set.
 Renommer eqT, refl_eqT, eqT_ind, eqT_rect, eqT_rec en eq, refl_equal, etc.
 Remplacer == en =.
 
-Enlever le Export de Bool, Arith et ZARith de Ring quand inapproprié et
-l'ajouter à côté des Require Ring.
-
-Remplacer les noms Coq.omega.Omega par Coq.Omega ...
-
-Remplacer AddPath par Add LoadPath (ou + court)
-
-Remplacer Save. par Qed.
-
-Remplacer Implicit Arguments On/Off par Set/Unset Implicit Arguments.
-
-La syntaxe \verb=Intros (a,b)= est inutile, \verb=Intros [a b]= fait l'affaire.
-
 Mettre des \verb=?x= plutot que des \verb=?1= dans les motifs de ltac ??
 
-Virer \verb=Goal= sans argument (synonyme de \verb=Proof= et sans effets).
+\section{Moulinette}
 
-Remplacer "Check n" par "n:Check ..."
+\begin{itemize}
+
+\item Mettre \verb=/= et * au même niveau dans R.
+
+\item Changer la précédence du - unaire dans R.
+
+\item Ajouter Require Arith par necessite si Require ArithRing ou Require ZArithRing.
+
+\item Ajouter Require ZArith par necessite si Require ZArithRing ou Require Omega.
+
+\item Enlever le Export de Bool, Arith et ZARith de Ring quand inapproprié et
+l'ajouter à côté des Require Ring.
+
+\item Remplacer "Check n" par "n:Check ..."
+
+\item Renommer Variable/Hypothesis hors section en Parameter/Axiom.
+
+\item Renommer les \verb=command0=, \verb=command1=, ... \verb=lcommand= etc en
+\verb=constr0=, \verb=constr1=, ... \verb=lconstr=.
+
+\item Remplacer les noms Coq.omega.Omega par Coq.Omega ...
+
+\item Remplacer AddPath par Add LoadPath (ou + court)
+
+\item Remplacer Implicit Arguments On/Off par Set/Unset Implicit Arguments.
+
+\item La syntaxe \verb=Intros (a,b)= est inutile, \verb=Intros [a b]= fait l'affaire.
+
+\item Virer \verb=Goal= sans argument (synonyme de \verb=Proof= et sans effets).
+
+\item Remplacer Save. par Qed.
+
+\end{itemize}
 
 \end{document}
