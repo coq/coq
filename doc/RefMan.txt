@@ -42,7 +42,7 @@ MANUEL DE REFERENCE
 \include{Cases.v}%						CP
 \include{Coercion.v}%						HH
 %%SUPPRIME \include{Natural.v}%
-\include{Omega.v}%						JCF
+\include{Omega.v}%						JCF - fait
 %%Nouvelle version ROmega					Pierre Cregut
 %%SUPPRIME \include{Program.v}%
 %% A SUPPRIMER

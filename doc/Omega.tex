@@ -51,7 +51,7 @@ on atomic formulas. Atomic formulas are built from the predicates
 and in expressions of type \verb=Z=, {\tt Omega}~recognizes 
 
 \begin{quote}
-\verb!+, -, *, Zs!, and constants.
+\verb!+, -, *, Zsucc!, and constants.
 \end{quote}
 
 All expressions of type \verb=nat= or \verb=Z= not built on these
@@ -124,6 +124,7 @@ loaded by
 
 \begin{coq_example*}
 Require Import Omega.
+Open Scope Z_scope.
 \end{coq_example*}
 
 \example{}
