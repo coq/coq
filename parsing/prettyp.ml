@@ -102,20 +102,11 @@ let print_params env params =
     else 
       (pr_rel_context env params ++ brk(1,2))
 
-let rec contract_types = function
-  | [] -> []
-  | (id,c)::l ->
-      match contract_types l with
-	| (idl,c')::l' when eq_constr c c' -> (id::idl,c')::l'
-	| l' -> ([id],c)::l'
-
 let print_constructors envpar names types =
   let pc =
     prlist_with_sep (fun () -> brk(1,0) ++ str "| ")
-      (fun (id,c) -> prlist_with_sep pr_coma pr_id id ++ str " : " ++
-	prterm_env envpar c)
-      (contract_types 
-	(Array.to_list (array_map2 (fun n t -> (n,t)) names types)))
+      (fun (id,c) -> pr_id id ++ str " : " ++ prterm_env envpar c)
+      (Array.to_list (array_map2 (fun n t -> (n,t)) names types))
   in 
   hv 0 (str "  " ++ pc)
 
