@@ -12,7 +12,7 @@ Require Rbase.
 Require Rfunctions.
 Require Rsqrt_def.
 
-(* Voici un prolongement continu de Rsqrt sur R *)
+(* Here is a continuous extension of Rsqrt on R *)
 Definition sqrt : R->R := [x:R](Cases (case_Rabsolu x) of
       (leftT _) => R0
     | (rightT a) => (Rsqrt (mknonnegreal x (Rle_sym2 ? ? a))) end).
