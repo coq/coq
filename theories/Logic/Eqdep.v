@@ -16,7 +16,8 @@
     - Invariance by Substitution of Reflexive Equality Proofs.
     - Injectivity of Dependent Equality
     - Uniqueness of Identity Proofs
-    - Uniqueness of Reflexive Identity Proofs (usu. called Streicher's Axiom K)
+    - Uniqueness of Reflexive Identity Proofs
+    - Streicher's Axiom K
 
   These statements are independent of the calculus of constructions [2].
 
@@ -43,7 +44,7 @@ Hint Constructors eq_dep: core v62.
 Lemma eq_dep_sym :
  forall (p q:U) (x:P p) (y:P q), eq_dep p x q y -> eq_dep q y p x.
 Proof.
-simple induction 1; auto.
+destruct 1; auto.
 Qed.
 Hint Immediate eq_dep_sym: core v62.
 
@@ -51,45 +52,44 @@ Lemma eq_dep_trans :
  forall (p q r:U) (x:P p) (y:P q) (z:P r),
    eq_dep p x q y -> eq_dep q y r z -> eq_dep p x r z.
 Proof.
-simple induction 1; auto.
+destruct 1; auto.
 Qed.
+
+Scheme eq_indd := Induction for eq Sort Prop.
 
 Inductive eq_dep1 (p:U) (x:P p) (q:U) (y:P q) : Prop :=
     eq_dep1_intro : forall h:q = p, x = eq_rect q P y p h -> eq_dep1 p x q y.
 
-(** Invariance by Substitution of Reflexive Equality Proofs *)
-
-Axiom
-  eq_rect_eq :
-    forall (p:U) (Q:U -> Type) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
-
 Lemma eq_dep1_dep :
  forall (p:U) (x:P p) (q:U) (y:P q), eq_dep1 p x q y -> eq_dep p x q y.
 Proof.
-simple induction 1; intros eq_qp.
-cut (forall (h:q = p) (y0:P q), x = eq_rect q P y0 p h -> eq_dep p x q y0).
-intros; apply H0 with eq_qp; auto.
-rewrite eq_qp; intros h y0.
-elim eq_rect_eq.
-simple induction 1; auto.
+destruct 1 as (eq_qp, H).
+destruct eq_qp using eq_indd.
+rewrite H.
+apply eq_dep_intro.
 Qed.
 
 Lemma eq_dep_dep1 :
  forall (p q:U) (x:P p) (y:P q), eq_dep p x q y -> eq_dep1 p x q y.
 Proof.
-simple induction 1; intros.
+destruct 1.
 apply eq_dep1_intro with (refl_equal p).
 simpl in |- *; trivial.
 Qed.
 
-Lemma eq_dep1_eq : forall (p:U) (x y:P p), eq_dep1 p x p y -> x = y.
-Proof.
-simple induction 1; intro.
-elim eq_rect_eq; auto.
-Qed.
+(** Invariance by Substitution of Reflexive Equality Proofs *)
+
+Axiom eq_rect_eq :
+    forall (p:U) (Q:U -> Type) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
 
 (** Injectivity of Dependent Equality is a consequence of *)
 (** Invariance by Substitution of Reflexive Equality Proof *)
+
+Lemma eq_dep1_eq : forall (p:U) (x y:P p), eq_dep1 p x p y -> x = y.
+Proof.
+simple destruct 1; intro.
+rewrite <- eq_rect_eq; auto.
+Qed.
 
 Lemma eq_dep_eq : forall (p:U) (x y:P p), eq_dep p x p y -> x = y.
 Proof.
@@ -100,8 +100,6 @@ End Dependent_Equality.
 
 (** Uniqueness of Identity Proofs (UIP) is a consequence of *)
 (** Injectivity of Dependent Equality *)
-
-Scheme eq_indd := Induction for eq Sort Prop.
 
 Lemma UIP : forall (U:Type) (x y:U) (p1 p2:x = y), p1 = p2.
 Proof.
