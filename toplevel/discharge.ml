@@ -41,6 +41,10 @@ let recalc_kn dir kn =
   let (mp,_,l) = Names.repr_kn kn in
     Names.make_kn mp dir l
 
+let recalc_con dir con = 
+  let (mp,_,l) = Names.repr_con con in
+    Names.make_con mp dir l
+
 let rec find_var id = function
   | [] -> false
   | (x,b,_)::l -> if x = id then b=None else find_var id l
@@ -214,10 +218,10 @@ let process_object oldenv olddir full_olddir newdir
 	(* CONSTANT means never discharge (though visibility may vary) *)
  	let kind = constant_kind sp in
 	let kn = Nametab.locate_constant (qualid_of_sp sp) in
-	let lab = label kn in
+	let lab = con_label kn in
 	let cb = Environ.lookup_constant kn oldenv in
 	let imp = is_implicit_constant kn in
-	let newkn = recalc_kn newdir kn in
+	let newkn = recalc_con newdir kn in
 	let abs_vars,discharged_hyps0 =
          build_abstract_list full_olddir cb.const_hyps ids_to_discard in
         (* let's add the new discharged hypothesis to those already discharged*)
@@ -268,12 +272,12 @@ let process_object oldenv olddir full_olddir newdir
 	  let mib = Environ.lookup_mind newkn (Global.env ()) in
 	  { s_CONST = info.s_CONST;
 	    s_PARAM = mib.mind_packets.(0).mind_nparams;
-	    s_PROJ = List.map (option_app (fun kn -> recalc_kn newdir kn)) info.s_PROJ } in
+	    s_PROJ = List.map (option_app (fun kn -> recalc_con newdir kn)) info.s_PROJ } in
 	((Struc ((newkn,i),strobj))::ops, ids_to_discard, work_alist)
 
     | "OBJDEF1" -> 
 	let kn = outObjDef1 lobj in
-	let new_kn = recalc_kn newdir kn in
+	let new_kn = recalc_con newdir kn in
         ((Objdef new_kn)::ops, ids_to_discard, work_alist)
 
     | "REQUIRE" -> 

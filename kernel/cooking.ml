@@ -102,7 +102,7 @@ let expmod_constr modlist c =
     if cb.const_opaque then
       errorlabstrm "expmod_constr"
 	(str"Cannot unfold the value of " ++
-        str(string_of_kn kn) ++ spc () ++
+        str(string_of_con kn) ++ spc () ++
         str"You cannot declare local lemmas as being opaque" ++ spc () ++
         str"and then require that theorems which use them" ++ spc () ++
         str"be transparent");

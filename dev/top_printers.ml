@@ -59,7 +59,7 @@ let prastpat c = pp(print_astpat c)
 let prastpatl c = pp(print_astlpat c)
 
 let safe_prglobal = function 
-  | ConstRef kn -> pp (str "CONSTREF(" ++ pr_kn kn ++ str ")")
+  | ConstRef kn -> pp (str "CONSTREF(" ++ pr_con kn ++ str ")")
   | IndRef (kn,i) -> pp (str "INDREF(" ++ pr_kn kn ++ str "," ++ 
 			  int i ++ str ")")
   | ConstructRef ((kn,i),j) -> pp (str "INDREF(" ++ pr_kn kn ++ str "," ++ 
@@ -119,7 +119,7 @@ let constr_display csr =
       ^(term_display t)^","^(term_display c)^")"
   | App (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
   | Evar (e,l) -> "Evar("^(string_of_int e)^","^(array_display l)^")"
-  | Const c -> "Const("^(string_of_kn c)^")"
+  | Const c -> "Const("^(string_of_con c)^")"
   | Ind (sp,i) ->
       "MutInd("^(string_of_kn sp)^","^(string_of_int i)^")"
   | Construct ((sp,i),j) ->
@@ -200,7 +200,7 @@ let print_pure_constr csr =
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string"}"
   | Const c -> print_string "Cons(";
-      sp_display c;
+      sp_con_display c;
       print_string ")"
   | Ind (sp,i) ->
       print_string "Ind(";
@@ -273,6 +273,15 @@ let print_pure_constr csr =
 	| l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
       print_string (string_of_kn sp)
+  and sp_con_display sp = 
+(*    let dir,l = decode_kn sp in
+    let ls = 
+      match List.rev (List.map string_of_id (repr_dirpath dir)) with 
+          ("Top"::l)-> l
+	| ("Coq"::_::l) -> l 
+	| l             -> l
+    in  List.iter (fun x -> print_string x; print_string ".") ls;*)
+      print_string (string_of_con sp)
 
   in
     try 
@@ -317,7 +326,7 @@ let ppripos (ri,pos) =
   | Reloc_const _ ->
       print_string "structured constant\n"
   | Reloc_getglobal kn ->
-      print_string ("getglob "^(string_of_kn kn)^"\n"));
+      print_string ("getglob "^(string_of_con kn)^"\n"));
    print_flush ()
 
 let print_vfix () = print_string "vfix"
@@ -335,7 +344,7 @@ let print_idkey idk =
   match idk with 
   | ConstKey sp -> 
       print_string "Cons(";
-      print_string (string_of_kn sp);
+      print_string (string_of_con sp);
       print_string ")"
   | VarKey id -> print_string (string_of_id id)
   | RelKey i -> print_string "~";print_int i

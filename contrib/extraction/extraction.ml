@@ -358,16 +358,16 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	let field_names = 
 	  list_skipn mip0.mind_nparams (names_prod mip0.mind_user_lc.(0)) in 
 	assert (List.length field_names = List.length typ);
-	let projs = ref KNset.empty in 
+	let projs = ref Cset.empty in 
 	let mp,d,_ = repr_kn kn in 
 	let rec select_fields l typs = match l,typs with 
 	  | [],[] -> []
 	  | (Name id)::l, typ::typs -> 
 	      if type_eq (mlt_env env) Tdummy typ then select_fields l typs 
 	      else  
-		let knp = make_kn mp d (label_of_id id) in 
+		let knp = make_con mp d (label_of_id id) in 
 		if not (List.mem false (type_to_sign (mlt_env env) typ)) then 
-		  projs := KNset.add knp !projs; 
+		  projs := Cset.add knp !projs; 
 		(ConstRef knp) :: (select_fields l typs)
 	  | Anonymous::l, typ::typs -> 
 	      if type_eq (mlt_env env) Tdummy typ then select_fields l typs
@@ -382,7 +382,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	  let n = nb_default_params env mip0.mind_nf_arity in
 	  List.iter 
 	    (option_iter 
-	       (fun kn -> if KNset.mem kn !projs then add_projection n kn))
+	       (fun kn -> if Cset.mem kn !projs then add_projection n kn))
 	    (find_structure ip).s_PROJ 
 	with Not_found -> ()
 	end; 
@@ -417,7 +417,7 @@ and extract_type_cons env db dbmap c i =
 and mlt_env env r = match r with 
   | ConstRef kn -> 
       (try 
-	 if not (visible_kn kn) then raise Not_found; 
+	 if not (visible_con kn) then raise Not_found; 
 	 match lookup_term kn with 
 	   | Dtype (_,vl,mlt) -> Some mlt
 	   | _ -> None
@@ -446,7 +446,7 @@ let type_expunge env = type_expunge (mlt_env env)
 
 let record_constant_type env kn opt_typ = 
   try 
-    if not (visible_kn kn) then raise Not_found; 
+    if not (visible_con kn) then raise Not_found; 
     lookup_type kn 
   with Not_found ->
     let typ = match opt_typ with 

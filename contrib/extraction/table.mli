@@ -35,7 +35,9 @@ val check_inside_section : unit -> unit
 
 (*s utilities concerning [module_path]. *)
 
-val kn_of_r : global_reference -> kernel_name
+val occur_kn_in_ref : kernel_name -> global_reference -> bool
+val modpath_of_r : global_reference -> module_path
+val label_of_r : global_reference -> label
 
 val current_toplevel : unit -> module_path
 val base_mp : module_path -> module_path
@@ -43,14 +45,15 @@ val is_modfile : module_path -> bool
 val is_toplevel : module_path -> bool
 val at_toplevel : module_path -> bool 
 val visible_kn : kernel_name -> bool
+val visible_con : constant -> bool
 
 (*s Some table-related operations *)
 
-val add_term : kernel_name -> ml_decl -> unit
-val lookup_term : kernel_name -> ml_decl
+val add_term : constant -> ml_decl -> unit
+val lookup_term : constant -> ml_decl
 
-val add_type : kernel_name -> ml_schema -> unit
-val lookup_type : kernel_name -> ml_schema
+val add_type : constant -> ml_schema -> unit
+val lookup_type : constant -> ml_schema
 
 val add_ind : kernel_name -> ml_ind -> unit
 val lookup_ind : kernel_name -> ml_ind
@@ -58,7 +61,7 @@ val lookup_ind : kernel_name -> ml_ind
 val add_recursors : Environ.env -> kernel_name -> unit
 val is_recursor : global_reference -> bool 
 
-val add_projection : int -> kernel_name -> unit
+val add_projection : int -> constant -> unit
 val is_projection : global_reference -> bool 
 val projection_arity : global_reference -> int
 

@@ -19,7 +19,7 @@ let prerr_endline _ = ();;
 
 let cprop =
  let module N = Names in
-  N.make_kn
+  N.make_con
    (N.MPfile
      (Libnames.dirpath_of_string "CoRN.algebra.CLogic"))
    (N.make_dirpath [])

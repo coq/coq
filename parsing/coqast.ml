@@ -24,6 +24,7 @@ type t =
   | Str of loc * string
   | Id of loc * string
   | Path of loc * kernel_name
+  | ConPath of loc * constant
   | Dynamic of loc * Dyn.t
 
 type the_coq_ast = t
@@ -62,8 +63,9 @@ module Hast = Hashcons.Make(
     type u = 
 	(the_coq_ast -> the_coq_ast) *
 	((loc -> loc) * (string -> string)
-	 * (identifier -> identifier) * (kernel_name -> kernel_name))
-    let hash_sub (hast,(hloc,hstr,hid,hsp)) = function
+	 * (identifier -> identifier) * (kernel_name -> kernel_name)
+         * (constant -> constant))
+    let hash_sub (hast,(hloc,hstr,hid,hsp,hcon)) = function
       | Node(l,s,al) -> Node(hloc l, hstr s, List.map hast al)
       | Nmeta(l,s) -> Nmeta(hloc l, hstr s)
       | Nvar(l,s) -> Nvar(hloc l, hid s)
@@ -74,6 +76,7 @@ module Hast = Hashcons.Make(
       | Id(l,s) -> Id(hloc l, hstr s)
       | Str(l,s) -> Str(hloc l, hstr s)
       | Path(l,d) -> Path(hloc l, hsp d)
+      | ConPath(l,d) -> ConPath(hloc l, hcon d)
       | Dynamic(l,d) -> Dynamic(hloc l, d)
     let equal a1 a2 =
       match (a1,a2) with
@@ -89,13 +92,14 @@ module Hast = Hashcons.Make(
         | (Id(l1,s1), Id(l2,s2)) -> l1==l2 & s1==s2
         | (Str(l1,s1),Str(l2,s2)) -> l1==l2 & s1==s2
         | (Path(l1,d1), Path(l2,d2)) -> (l1==l2 & d1==d2)
+        | (ConPath(l1,d1), ConPath(l2,d2)) -> (l1==l2 & d1==d2)
         | _ -> false
     let hash = Hashtbl.hash
   end)
 
-let hcons_ast (hstr,hid,hpath) =
+let hcons_ast (hstr,hid,hpath,hconpath) =
   let hloc = Hashcons.simple_hcons Hloc.f () in
-  let hast = Hashcons.recursive_hcons Hast.f (hloc,hstr,hid,hpath) in
+  let hast = Hashcons.recursive_hcons Hast.f (hloc,hstr,hid,hpath,hconpath) in
   (hast,hloc)
 
 let rec subst_ast subst ast = match ast with
@@ -115,6 +119,10 @@ let rec subst_ast subst ast = match ast with
       let kn' = Names.subst_kn subst kn in
 	if kn' == kn then ast else
 	  Path(loc,kn')
+  | ConPath (loc,kn) -> 
+      let kn' = Names.subst_con subst kn in
+	if kn' == kn then ast else
+	  ConPath(loc,kn')
   | Nmeta _
   | Nvar _ -> ast
   | Num _

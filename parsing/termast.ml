@@ -119,7 +119,7 @@ let ast_body_of_binder bl t =
     bl t
 
 let ast_of_constant_ref sp =
-  ope("CONST", [path_section dummy_loc sp])
+  ope("CONST", [conpath_section dummy_loc sp])
 
 let ast_of_existential_ref ev =
 (*

@@ -1110,7 +1110,7 @@ let rec reify_meta_ast vars = function
       Smetalam (loc,string_of_id id,reify_meta_ast vars body)
   | Slam(loc,na,body) -> Slam(loc,na,reify_meta_ast vars body)
   | Nvar (loc,id) when List.mem id vars -> Nmeta (loc,string_of_id id)
-  | Nmeta _ | Id _ | Nvar _ | Str _ | Num _ | Path _ as a -> a
+  | Nmeta _ | Id _ | Nvar _ | Str _ | Num _ | Path _ | ConPath _ as a -> a
   | Dynamic _ as a -> (* Hum... what to do here *) a
 
 (* For old ast syntax *)

@@ -25,8 +25,9 @@ open Mlutil
 let add_structure mp msb env = 
   let add_one env (l,elem) = 
     let kn = make_kn mp empty_dirpath l in 
+    let con = make_con mp empty_dirpath l in 
     match elem with 
-      | SEBconst cb -> Environ.add_constant kn cb env 
+      | SEBconst cb -> Environ.add_constant con cb env 
       | SEBmind mib -> Environ.add_mind kn mib env 
       | SEBmodule mb -> Modops.add_module (MPdot (mp,l)) mb env 
       | SEBmodtype mtb -> Environ.add_modtype kn mtb env  
@@ -116,8 +117,15 @@ let rec parse_labels ll = function
 
 let labels_of_mp mp = parse_labels [] mp 
 
-let labels_of_kn kn = 
-  let mp,_,l = repr_kn kn in parse_labels [l] mp
+let labels_of_ref r = 
+ let mp,_,l =
+  match r with
+     ConstRef con -> repr_con con
+   | IndRef (kn,_)
+   | ConstructRef ((kn,_),_) -> repr_kn kn
+   | VarRef _ -> assert false
+ in
+  parse_labels [l] mp
 
 let rec add_labels_mp mp = function 
   | [] -> mp 
@@ -307,8 +315,7 @@ let signature_of_structure s =
 
 let get_decl_in_structure r struc = 
   try 
-    let kn = kn_of_r r in 
-    let base_mp,ll = labels_of_kn kn in 
+    let base_mp,ll = labels_of_ref r in 
     if not (at_toplevel base_mp) then error_not_visible r;
     let sel = List.assoc base_mp struc in
     let rec go ll sel = match ll with 
@@ -336,16 +343,16 @@ let get_decl_in_structure r struc =
 let dfix_to_mlfix rv av i = 
   let rec make_subst n s = 
     if n < 0 then s 
-    else make_subst (n-1) (KNmap.add (kn_of_r rv.(n)) (n+1) s)
+    else make_subst (n-1) (Refmap.add rv.(n) (n+1) s)
   in 
-  let s = make_subst (Array.length rv - 1) KNmap.empty 
+  let s = make_subst (Array.length rv - 1) Refmap.empty 
   in 
   let rec subst n t = match t with 
-    | MLglob (ConstRef kn) -> 
-	(try MLrel (n + (KNmap.find kn s)) with Not_found -> t)
+    | MLglob ((ConstRef kn) as refe) -> 
+	(try MLrel (n + (Refmap.find refe s)) with Not_found -> t)
     | _ -> ast_map_lift subst n t 
   in 
-  let ids = Array.map (fun r -> id_of_label (label (kn_of_r r))) rv in 
+  let ids = Array.map (fun r -> id_of_label (label_of_r r)) rv in 
   let c = Array.map (subst 0) av 
   in MLfix(i, ids, c)
 
@@ -356,7 +363,7 @@ let rec optim prm s = function
   | Dterm (r,t,typ) :: l ->
       let t = normalize (ast_glob_subst !s t) in 
       let i = inline r t in 
-      if i then s := KNmap.add (kn_of_r r) t !s; 
+      if i then s := Refmap.add r t !s; 
       if not i || prm.modular || List.mem r prm.to_appear 
       then 
 	let d = match optimize_fix t with 
@@ -370,10 +377,9 @@ let rec optim prm s = function
 let rec optim_se top prm s = function 
   | [] -> [] 
   | (l,SEdecl (Dterm (r,a,t))) :: lse -> 
-      let kn = kn_of_r r in 
       let a = normalize (ast_glob_subst !s a) in 
       let i = inline r a in 
-      if i then s := KNmap.add kn a !s; 
+      if i then s := Refmap.add r a !s; 
       if top && i && not prm.modular && not (List.mem r prm.to_appear)
       then optim_se top prm s lse
       else 
@@ -389,7 +395,7 @@ let rec optim_se top prm s = function
       let fake_body = MLfix (0,[||],[||]) in 
       for i = 0 to Array.length rv - 1 do 
 	if inline rv.(i) fake_body
-	then s := KNmap.add (kn_of_r rv.(i)) (dfix_to_mlfix rv av i) !s
+	then s := Refmap.add rv.(i) (dfix_to_mlfix rv av i) !s
 	else all := false
       done; 
       if !all && top && not prm.modular 
@@ -408,6 +414,6 @@ and optim_me prm s = function
   | MEfunctor (mbid,mt,me) -> MEfunctor (mbid,mt, optim_me prm s me)
 
 let optimize_struct prm before struc = 
-  let subst = ref (KNmap.empty : ml_ast KNmap.t) in 
+  let subst = ref (Refmap.empty : ml_ast Refmap.t) in 
   option_iter (fun l -> ignore (optim prm subst l)) before; 
   List.map (fun (mp,lse) -> (mp, optim_se true prm subst lse)) struc

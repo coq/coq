@@ -339,7 +339,7 @@ let general_elim_then_using
       | _ ->
 	  let name_elim =
 	    match kind_of_term elim with
-	      | Const kn -> string_of_kn kn
+	      | Const kn -> string_of_con kn
 	      | Var id -> string_of_id id
 	      | _ -> "\b"
 	  in

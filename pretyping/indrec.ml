@@ -518,7 +518,7 @@ let lookup_eliminator ind_sp s =
   let id = add_suffix ind_id (elimination_suffix s) in
   (* Try first to get an eliminator defined in the same section as the *)
   (* inductive type *)
-  let ref = ConstRef (make_kn mp dp (label_of_id id)) in
+  let ref = ConstRef (make_con mp dp (label_of_id id)) in
   try 
     let _ = sp_of_global ref in
     constr_of_reference ref

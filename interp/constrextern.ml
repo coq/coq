@@ -114,7 +114,7 @@ let extern_evar loc n =
 
 let raw_string_of_ref = function
   | ConstRef kn -> 
-      "CONST("^(string_of_kn kn)^")"
+      "CONST("^(string_of_con kn)^")"
   | IndRef (kn,i) ->
       "IND("^(string_of_kn kn)^","^(string_of_int i)^")"
   | ConstructRef ((kn,i),j) -> 

@@ -158,7 +158,7 @@ let subst_cl_typ subst ct = match ct with
   | CL_FUN
   | CL_SECVAR _ -> ct
   | CL_CONST kn -> 
-      let kn' = subst_kn subst kn in 
+      let kn' = subst_con subst kn in 
 	if kn' == kn then ct else
 	  CL_CONST kn'
   | CL_IND (kn,i) ->

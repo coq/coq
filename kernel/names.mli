@@ -158,12 +158,25 @@ module KNmap  : Map.S with type key = kernel_name
 (*s Specific paths for declarations *)
 
 type variable = identifier
-type constant = kernel_name
+type constant
 type mutual_inductive = kernel_name
 (* Beware: first inductive has index 0 *)
 type inductive = mutual_inductive * int
 (* Beware: first constructor has index 1 *)
 type constructor = inductive * int
+
+module Cmap  : Map.S with type key = constant
+module Cpred  : Predicate.S with type elt = constant
+module Cset  : Set.S with type elt = constant
+
+val constant_of_kn : kernel_name -> constant
+val make_con : module_path -> dir_path -> label -> constant
+val repr_con : constant -> module_path * dir_path * label
+val string_of_con : constant -> string
+val con_label : constant -> label
+val con_modpath : constant -> module_path
+val pr_con : constant -> Pp.std_ppcmds
+val subst_con : substitution -> constant -> constant
 
 val ith_mutual_inductive : inductive -> int -> inductive
 val ith_constructor_of_inductive : inductive -> int -> constructor
@@ -177,6 +190,7 @@ type evaluable_global_reference =
 
 (* Hash-consing *)
 val hcons_names : unit ->
+  (constant -> constant) *
   (kernel_name -> kernel_name) * (dir_path -> dir_path) *
   (name -> name) * (identifier -> identifier) * (string -> string)
 
@@ -188,7 +202,7 @@ type 'a tableKey =
   | VarKey of identifier
   | RelKey of 'a 
 
-type transparent_state = Idpred.t * KNpred.t
+type transparent_state = Idpred.t * Cpred.t
 
 type inv_rel_key = int (* index in the [rel_context] part of environment
 			  starting by the end, {\em inverse} 

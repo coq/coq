@@ -28,6 +28,7 @@ let loc = function
   | Id (loc,_) -> loc
   | Str (loc,_) -> loc
   | Path (loc,_) -> loc
+  | ConPath (loc,_) -> loc
   | Dynamic (loc,_) -> loc
 
 (* patterns of ast *)
@@ -58,6 +59,7 @@ let nvar s = Nvar(dummy_loc,s)
 let num n = Num(dummy_loc,n)
 let string s = Str(dummy_loc,s)
 let path sl = Path(dummy_loc,sl)
+let conpath sl = ConPath(dummy_loc,sl)
 let dynamic d = Dynamic(dummy_loc,d)
 
 let rec set_loc loc = function
@@ -70,11 +72,11 @@ let rec set_loc loc = function
   | Str(_,s) -> Str(loc,s)
   | Num(_,s) -> Num(loc,s)
   | Path(_,sl) -> Path(loc,sl)
+  | ConPath(_,sl) -> ConPath(loc,sl)
   | Dynamic(_,d) -> Dynamic(loc,d)
 
 let path_section loc sp = Coqast.Path(loc, sp)
-
-let section_path sp = sp
+let conpath_section loc sp = Coqast.ConPath(loc, sp)
 
 (* ast destructors *)
 let num_of_ast = function
@@ -129,12 +131,15 @@ let string_of_dirpath = function
 
 let pr_id id = str (string_of_id id)
 
-let print_kn kn =
-  let (mp,dp,l) = repr_kn kn in
+let print_kn_or_con repr kn =
+  let (mp,dp,l) = repr kn in
   let dpl = repr_dirpath dp in
   str (string_of_mp mp) ++ str "." ++
   prlist_with_sep (fun _ -> str".") pr_id dpl ++
   str (string_of_label l)
+
+let print_kn = print_kn_or_con repr_kn
+let print_con = print_kn_or_con repr_con
 
 (* Pretty-printing *)
 let rec print_ast ast =
@@ -142,6 +147,7 @@ let rec print_ast ast =
     | Num(_,n) -> int n
     | Str(_,s) -> qs s
     | Path(_,sl) -> print_kn sl
+    | ConPath(_,sl) -> print_con sl
     | Id (_,s) -> str "{" ++ str s ++ str "}"
     | Nvar(_,s) -> pr_id s
     | Nmeta(_,s) -> str s
@@ -208,6 +214,7 @@ let check_cast loc a k =
     | (Tid, Id _) -> ()
     | (Tvar, Nvar _) -> ()
     | (Tpath, Path _) -> ()
+    | (Tpath, ConPath _) -> ()
     | (Tstr, Str _) -> ()
     | (Tnum, Num _) -> ()
     | (Tlist, _) -> grammar_type_error (loc,"Ast.cast_val")
@@ -291,6 +298,7 @@ let rec alpha alp a1 a2 =
     | (Str(_,s1),Str(_,s2)) -> s1=s2
     | (Num(_,n1),Num(_,n2)) -> n1=n2
     | (Path(_,sl1),Path(_,sl2)) -> sl1=sl2
+    | (ConPath(_,sl1),ConPath(_,sl2)) -> sl1=sl2
     | ((Smetalam _ | Nmeta _ | Dynamic _), _) -> false
     | (_, (Smetalam _ | Nmeta _ | Dynamic _)) -> false
     | _ -> false
@@ -356,6 +364,7 @@ let rec amatch alp sigma spat ast =
     | (Pmeta(pv,Tnum), Num _) -> bind_env_ast sigma pv ast
     | (Pmeta(pv,Tstr), Str _) -> bind_env_ast sigma pv ast
     | (Pmeta(pv,Tpath), Path _) -> bind_env_ast sigma pv ast
+    | (Pmeta(pv,Tpath), ConPath _) -> bind_env_ast sigma pv ast
     | (Pmeta(pv,Tlist),_) -> grammar_type_error (loc ast,"Ast.amatch")
     | (Pmeta_slam(pv,pb), Slam(loc, Some s, b)) ->
         amatch alp (bind_env_ast sigma pv (Nvar(loc,s))) pb b
@@ -472,7 +481,7 @@ let rec pat_of_ast env ast =
         (Pnode(op,pargs), env')
 (* Compatibility with new parsing mode *)
     | Nvar(loc,id) when (string_of_id id).[0] = '$' -> make_astvar env loc (string_of_id id) Tany
-    | (Path _|Num _|Id _|Str _ |Nvar _) -> (Pquote (set_loc dummy_loc ast), env)
+    | (Path _|ConPath _|Num _|Id _|Str _ |Nvar _) -> (Pquote (set_loc dummy_loc ast), env)
     | Dynamic(loc,_) ->
         invalid_arg_loc(loc,"pat_of_ast: dynamic")
 	  
@@ -546,7 +555,7 @@ let rec val_of_ast env = function
   | Smetalam(loc,s,a) ->
     let _ = type_of_meta env loc s in (* ids are coerced to id lists *)
     Pmeta_slam(s, val_of_ast env a)
-  | (Path _|Num _|Id _|Str _|Nvar _ as ast) -> Pquote (set_loc dummy_loc ast)
+  | (Path _|ConPath _|Num _|Id _|Str _|Nvar _ as ast) -> Pquote (set_loc dummy_loc ast)
   | Slam(_,os,b) -> Pslam(os, val_of_ast env b)
   | Node(loc,op,_) when isMeta op ->
       user_err_loc(loc,"Ast.val_of_ast",
@@ -577,7 +586,7 @@ let rec occur_var_ast s = function
   | Node(loc,op,args) -> List.exists (occur_var_ast s) args
   | Smetalam _ | Nmeta _ -> anomaly "occur_var: metas should not occur here"
   | Slam(_,sopt,body) -> (Some s <> sopt) & occur_var_ast s body
-  | Id _ | Str _ | Num _ | Path _ -> false
+  | Id _ | Str _ | Num _ | Path _ | ConPath _ -> false
   | Dynamic _ -> (* Hum... what to do here *) false
 
 

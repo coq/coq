@@ -35,7 +35,7 @@ val dynamic : Dyn.t -> Coqast.t
 val set_loc : loc -> Coqast.t -> Coqast.t
 
 val path_section : loc -> kernel_name -> Coqast.t
-val section_path : kernel_name -> kernel_name
+val conpath_section : loc -> constant -> Coqast.t
 
 (* ast destructors *)
 val num_of_ast : Coqast.t -> int

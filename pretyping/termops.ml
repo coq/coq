@@ -35,6 +35,7 @@ let pr_name = function
   | Anonymous -> str "_"
 
 let pr_sp sp = str(string_of_kn sp)
+let pr_con sp = str(string_of_con sp)
 
 let rec pr_constr c = match kind_of_term c with
   | Rel n -> str "#"++int n
@@ -63,7 +64,7 @@ let rec pr_constr c = match kind_of_term c with
   | Evar (e,l) -> hov 1
       (str"Evar#" ++ int e ++ str"{" ++
        prlist_with_sep spc pr_constr (Array.to_list l) ++str"}")
-  | Const c -> str"Cst(" ++ pr_sp c ++ str")"
+  | Const c -> str"Cst(" ++ pr_con c ++ str")"
   | Ind (sp,i) -> str"Ind(" ++ pr_sp sp ++ str"," ++ int i ++ str")"
   | Construct ((sp,i),j) ->
       str"Constr(" ++ pr_sp sp ++ str"," ++ int i ++ str"," ++ int j ++ str")"
@@ -691,7 +692,7 @@ let hdchar env c =
     | Cast (c,_)         -> hdrec k c
     | App (f,l)         -> hdrec k f
     | Const kn       ->
-	let c = lowercase_first_char (id_of_label (label kn)) in
+	let c = lowercase_first_char (id_of_label (con_label kn)) in
 	if c = "?" then "y" else c
     | Ind ((kn,i) as x) ->
 	if i=0 then 
@@ -799,7 +800,6 @@ let rec is_imported_modpath = function
 
 let is_imported_ref = function
   | VarRef _ -> false
-  | ConstRef kn 
   | IndRef (kn,_)
   | ConstructRef ((kn,_),_) 
 (*  | ModTypeRef ln  *) -> 
@@ -807,6 +807,8 @@ let is_imported_ref = function
 (*  | ModRef mp ->
       is_imported_modpath mp
 *)
+  | ConstRef kn ->
+      let (mp,_,_) = repr_con kn in is_imported_modpath mp
 
 let is_global id =
   try 

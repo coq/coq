@@ -29,7 +29,7 @@ type constant_key = constant_body * key
 type engagement = ImpredicativeSet
 
 type globals = {
-  env_constants : constant_key KNmap.t;
+  env_constants : constant_key Cmap.t;
   env_inductives : mutual_inductive_body KNmap.t;
   env_modules : module_body MPmap.t;
   env_modtypes : module_type_body KNmap.t }
@@ -57,7 +57,7 @@ and env = {
 
 let empty_env = { 
   env_globals = {
-    env_constants = KNmap.empty;
+    env_constants = Cmap.empty;
     env_inductives = KNmap.empty;
     env_modules = MPmap.empty;
     env_modtypes = KNmap.empty };
@@ -218,13 +218,13 @@ let set_pos_constant (cb,r) bpos =
   else raise AllReadyEvaluated
 
 let lookup_constant_key kn env =
-  KNmap.find kn env.env_globals.env_constants
+  Cmap.find kn env.env_globals.env_constants
 
 let lookup_constant kn env = constant_key_body (lookup_constant_key kn env)
 
 let add_constant kn cs env =
   let new_constants = 
-    KNmap.add kn (cs,ref notevaluated) env.env_globals.env_constants in
+    Cmap.add kn (cs,ref notevaluated) env.env_globals.env_constants in
   let new_globals = 
     { env.env_globals with 
 	env_constants = new_constants } in 

@@ -148,7 +148,7 @@ let comp_term t1 t2 =
       & array_for_all2 (==) bl1 bl2
   | _ -> false
 
-let hash_term (sh_rec,(sh_sort,sh_kn,sh_na,sh_id)) t =
+let hash_term (sh_rec,(sh_sort,sh_con,sh_kn,sh_na,sh_id)) t =
   match t with
   | Rel _ -> t
   | Meta x -> Meta x
@@ -160,7 +160,7 @@ let hash_term (sh_rec,(sh_sort,sh_kn,sh_na,sh_id)) t =
   | LetIn (na,b,t,c) -> LetIn (sh_na na, sh_rec b, sh_rec t, sh_rec c)
   | App (c,l) -> App (sh_rec c, Array.map sh_rec l)
   | Evar (e,l) -> Evar (e, Array.map sh_rec l)
-  | Const c -> Const (sh_kn c)
+  | Const c -> Const (sh_con c)
   | Ind (kn,i) -> Ind (sh_kn kn,i)
   | Construct ((kn,i),j) -> Construct ((sh_kn kn,i),j)
   | Case (ci,p,c,bl) -> (* TO DO: extract ind_kn *)
@@ -179,15 +179,16 @@ module Hconstr =
     struct
       type t = constr
       type u = (constr -> constr) *
-               ((sorts -> sorts) * (kernel_name -> kernel_name)
-		* (name -> name) * (identifier -> identifier))
+               ((sorts -> sorts) * (constant -> constant) *
+               (kernel_name -> kernel_name) * (name -> name) *
+               (identifier -> identifier))
       let hash_sub = hash_term
       let equal = comp_term
       let hash = Hashtbl.hash
     end)
 
-let hcons_term (hsorts,hkn,hname,hident) =
-  Hashcons.recursive_hcons Hconstr.f (hsorts,hkn,hname,hident)
+let hcons_term (hsorts,hcon,hkn,hname,hident) =
+  Hashcons.recursive_hcons Hconstr.f (hsorts,hcon,hkn,hname,hident)
 
 (* Constructs a DeBrujin index with number n *)
 let rels =
@@ -797,11 +798,11 @@ necessary.
 For now, it uses map_constr and is rather ineffective
 *)
 
-let rec map_kn f c = 
-  let func = map_kn f in
+let rec map_kn f f_con c = 
+  let func = map_kn f f_con in
     match kind_of_term c with
       | Const kn -> 
-	  mkConst (f kn)
+	  mkConst (f_con kn)
       | Ind (kn,i) -> 
 	  mkInd (f kn,i)
       | Construct ((kn,i),j) -> 
@@ -812,7 +813,7 @@ let rec map_kn f c =
       | _ -> map_constr func c
 
 let subst_mps sub = 
-  map_kn (subst_kn sub)
+  map_kn (subst_kn sub) (subst_con sub)
 
 
 (*********************)
@@ -1178,9 +1179,9 @@ module Hsorts =
 
 let hsort = Hsorts.f
 
-let hcons_constr (hkn,hdir,hname,hident,hstr) =
+let hcons_constr (hcon,hkn,hdir,hname,hident,hstr) =
   let hsortscci = Hashcons.simple_hcons hsort hcons1_univ in
-  let hcci = hcons_term (hsortscci,hkn,hname,hident) in
+  let hcci = hcons_term (hsortscci,hcon,hkn,hname,hident) in
   let htcci = Hashcons.simple_hcons Htype.f (hcci,hsortscci) in
   (hcci,htcci)
 

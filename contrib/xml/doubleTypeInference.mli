@@ -14,7 +14,7 @@
 
 type types = { synthesized : Term.types; expected : Term.types option; } 
 
-val cprop : Names.kernel_name
+val cprop : Names.constant
 
 val whd_betadeltaiotacprop :
   Environ.env -> Evd.evar_map -> Term.constr -> Term.constr

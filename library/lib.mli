@@ -82,6 +82,7 @@ val make_path : identifier -> section_path
 (* Kernel-side names *)
 val current_prefix : unit -> module_path * dir_path
 val make_kn : identifier -> kernel_name
+val make_con : identifier -> constant
 
 (* Are we inside an opened section *)
 val sections_are_opened : unit -> bool

@@ -44,7 +44,7 @@ type global_declaration =
 
 val add_constant : 
   dir_path -> label -> global_declaration -> safe_environment -> 
-      kernel_name * safe_environment
+      constant * safe_environment
 
 (* Adding an inductive type *)
 val add_mind : 

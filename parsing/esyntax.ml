@@ -41,7 +41,7 @@ type key =
 let warning_verbose = ref true
 
 let ast_keys = function
-  | Node(_,"APPLIST", Node(_,"CONST", [Path (_,sl)]) ::_) ->
+  | Node(_,"APPLIST", Node(_,"CONST", [ConPath (_,sl)]) ::_) ->
       [Cst sl; Nod "APPLIST"; All]
   | Node(_,"APPLIST", Node(_,"SECVAR", [Nvar (_,s)]) ::_) ->
       [SecVar s; Nod "APPLIST"; All]
@@ -57,7 +57,7 @@ let spat_key astp =
   match astp with
     | Pnode("APPLIST",
             Pcons(Pnode("CONST",
-                        Pcons(Pquote(Path (_,sl)),_)), _))
+                        Pcons(Pquote(ConPath (_,sl)),_)), _))
       -> Cst sl
     | Pnode("APPLIST",
             Pcons(Pnode("SECVAR",
@@ -165,7 +165,7 @@ let _ = declare_primitive_printer "token" token_printer
 
 (* A printer for the tokens. *)
 let token_printer stdpr = function
-  | (Id _ | Num _ | Str _ | Path _ as ast) -> print_ast ast
+  | (Id _ | Num _ | Str _ | Path _ | ConPath _ as ast) -> print_ast ast
   | a -> stdpr a
 
 (* Unused ??

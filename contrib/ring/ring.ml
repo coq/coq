@@ -724,7 +724,7 @@ let constants_to_unfold =
   let transform s = 
     let sp = path_of_string s in
     let dir, id = repr_path sp in
-      Libnames.encode_kn dir id 
+      Libnames.encode_con dir id 
   in
   List.map transform
     [ "Coq.ring.Ring_normalize.interp_cs";

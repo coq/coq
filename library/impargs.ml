@@ -289,7 +289,7 @@ let list_of_implicits = function
 
 (*s Constants. *)
 
-let constants_table = ref KNmap.empty
+let constants_table = ref Cmap.empty
 
 let compute_constant_implicits kn =
   let env = Global.env () in
@@ -297,7 +297,7 @@ let compute_constant_implicits kn =
   auto_implicits env (body_of_type cb.const_type)
 
 let constant_implicits sp =
-  try KNmap.find sp !constants_table with Not_found -> No_impl,No_impl
+  try Cmap.find sp !constants_table with Not_found -> No_impl,No_impl
 
 (*s Inductives and constructors. Their implicit arguments are stored
    in an array, indexed by the inductive number, of pairs $(i,v)$ where
@@ -349,7 +349,7 @@ let cache_implicits_decl (r,imps) =
   | VarRef id -> 
       var_table := Idmap.add id imps !var_table
   | ConstRef kn ->
-      constants_table := KNmap.add kn imps !constants_table
+      constants_table := Cmap.add kn imps !constants_table
   | IndRef indp ->
       inductives_table := Indmap.add indp imps !inductives_table;
   | ConstructRef consp -> 
@@ -485,7 +485,7 @@ let test_if_implicit find a =
   with Not_found -> (false,false,false),(false,false,false)
     
 let is_implicit_constant sp =
-  test_if_implicit (KNmap.find sp) !constants_table
+  test_if_implicit (Cmap.find sp) !constants_table
 
 let is_implicit_inductive_definition indp =
   test_if_implicit (Indmap.find (indp,0)) !inductives_table
@@ -496,7 +496,7 @@ let is_implicit_var id =
 (*s Registration as global tables *)
 
 let init () =
-  constants_table := KNmap.empty;
+  constants_table := Cmap.empty;
   inductives_table := Indmap.empty;
   constructors_table := Constrmap.empty;
   var_table := Idmap.empty

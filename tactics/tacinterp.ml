@@ -1860,7 +1860,7 @@ let subst_induction_arg subst = function
 
 let subst_evaluable_reference subst = function
   | EvalVarRef id -> EvalVarRef id
-  | EvalConstRef kn -> EvalConstRef (subst_kn subst kn)
+  | EvalConstRef kn -> EvalConstRef (subst_con subst kn)
 
 let subst_and_short_name f (c,n) =
   assert (n=None); (* since tacdef are strictly globalized *)

@@ -90,7 +90,7 @@ let rec instruction ppf = function
       print_string " bodies = ";
       Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblb;
                    (* nb fv, init, lbl types, lbl bodies *)
-  | Kgetglobal id -> fprintf ppf "\tgetglobal %s" (Names.string_of_kn id)
+  | Kgetglobal id -> fprintf ppf "\tgetglobal %s" (Names.string_of_con id)
   | Kconst cst ->
       fprintf ppf "\tconst"
   | Kmakeblock(n, m) ->

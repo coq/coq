@@ -22,10 +22,23 @@ open Miniml
 
 (*S Utilities concerning [module_path] and [kernel_names] *)
 
-let kn_of_r r = match r with 
-    | ConstRef kn -> kn
-    | IndRef (kn,_) -> kn
-    | ConstructRef ((kn,_),_) -> kn
+let occur_kn_in_ref kn =
+ function
+  | IndRef (kn',_)
+  | ConstructRef ((kn',_),_) -> kn = kn'
+  | ConstRef _ -> false
+  | VarRef _ -> assert false
+
+let modpath_of_r r = match r with 
+    | ConstRef kn -> con_modpath kn
+    | IndRef (kn,_)
+    | ConstructRef ((kn,_),_) -> modpath kn
+    | VarRef _ -> assert false
+
+let label_of_r r = match r with 
+    | ConstRef kn -> con_label kn
+    | IndRef (kn,_)
+    | ConstructRef ((kn,_),_) -> label kn
     | VarRef _ -> assert false
 
 let current_toplevel () = fst (Lib.current_prefix ())
@@ -45,21 +58,22 @@ let at_toplevel mp =
   is_modfile mp || is_toplevel mp
 
 let visible_kn kn = at_toplevel (base_mp (modpath kn))
+let visible_con kn = at_toplevel (base_mp (con_modpath kn))
 
 
 (*S The main tables: constants, inductives, records, ... *)
 
 (*s Constants tables. *) 
 
-let terms = ref (KNmap.empty : ml_decl KNmap.t)
-let init_terms () = terms := KNmap.empty
-let add_term kn d = terms := KNmap.add kn d !terms
-let lookup_term kn = KNmap.find kn !terms
+let terms = ref (Cmap.empty : ml_decl Cmap.t)
+let init_terms () = terms := Cmap.empty
+let add_term kn d = terms := Cmap.add kn d !terms
+let lookup_term kn = Cmap.find kn !terms
 
-let types = ref (KNmap.empty : ml_schema KNmap.t)
-let init_types () = types := KNmap.empty
-let add_type kn s = types := KNmap.add kn s !types
-let lookup_type kn = KNmap.find kn !types 
+let types = ref (Cmap.empty : ml_schema Cmap.t)
+let init_types () = types := Cmap.empty
+let add_type kn s = types := Cmap.add kn s !types
+let lookup_type kn = Cmap.find kn !types 
 
 (*s Inductives table. *)
 
@@ -70,22 +84,22 @@ let lookup_ind kn = KNmap.find kn !inductives
 
 (*s Recursors table. *)
 
-let recursors = ref KNset.empty
-let init_recursors () = recursors := KNset.empty
+let recursors = ref Cset.empty
+let init_recursors () = recursors := Cset.empty
 
 let add_recursors env kn = 
-  let make_kn id = make_kn (modpath kn) empty_dirpath (label_of_id id) in 
+  let make_kn id = make_con (modpath kn) empty_dirpath (label_of_id id) in 
   let mib = Environ.lookup_mind kn env in 
   Array.iter 
     (fun mip -> 
        let id = mip.mind_typename in 
        let kn_rec = make_kn (Nameops.add_suffix id "_rec")
        and kn_rect = make_kn (Nameops.add_suffix id "_rect") in 
-       recursors := KNset.add kn_rec (KNset.add kn_rect !recursors))
+       recursors := Cset.add kn_rec (Cset.add kn_rect !recursors))
     mib.mind_packets
 
 let is_recursor = function 
-  | ConstRef kn -> KNset.mem kn !recursors
+  | ConstRef kn -> Cset.mem kn !recursors
   | _ -> false
 
 (*s Record tables. *)
@@ -109,7 +123,7 @@ let reset_tables () =
    done before. *)
 
 let id_of_global = function 
-  | ConstRef kn -> let _,_,l = repr_kn kn in id_of_label l
+  | ConstRef kn -> let _,_,l = repr_con kn in id_of_label l
   | IndRef (kn,i) -> (lookup_ind kn).ind_packets.(i).ip_typename
   | ConstructRef ((kn,i),j) -> (lookup_ind kn).ind_packets.(i).ip_consnames.(j-1)
   | _ -> assert false

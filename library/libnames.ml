@@ -23,7 +23,7 @@ type global_reference =
 let subst_global subst ref = match ref with
   | VarRef _ -> ref
   | ConstRef kn ->
-      let kn' = subst_kn subst kn in if kn==kn' then ref else
+      let kn' = subst_con subst kn in if kn==kn' then ref else
           ConstRef kn'
   | IndRef (kn,i) ->
       let kn' = subst_kn subst kn in if kn==kn' then ref else
@@ -190,8 +190,17 @@ type extended_global_reference =
 
 let encode_kn dir id = make_kn (MPfile dir) empty_dirpath (label_of_id id)
 
+let encode_con dir id = make_con (MPfile dir) empty_dirpath (label_of_id id)
+
 let decode_kn kn = 
   let mp,sec_dir,l = repr_kn kn in
+    match mp,(repr_dirpath sec_dir) with
+	MPfile dir,[] -> (dir,id_of_label l)
+      | _ , [] -> anomaly "MPfile expected!"
+      | _ -> anomaly "Section part should be empty!"
+
+let decode_con kn = 
+  let mp,sec_dir,l = repr_con kn in
     match mp,(repr_dirpath sec_dir) with
 	MPfile dir,[] -> (dir,id_of_label l)
       | _ , [] -> anomaly "MPfile expected!"

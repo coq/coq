@@ -86,6 +86,8 @@ type extended_global_reference =
 
 val encode_kn : dir_path -> identifier -> kernel_name
 val decode_kn : kernel_name -> dir_path * identifier
+val encode_con : dir_path -> identifier -> constant
+val decode_con : constant -> dir_path * identifier
 
 
 (*s A [qualid] is a partially qualified ident; it includes fully

@@ -465,6 +465,6 @@ module Huniv =
     end)
 
 let hcons1_univ u =
-  let _,hdir,_,_,_ = Names.hcons_names() in
+  let _,_,hdir,_,_,_ = Names.hcons_names() in
   Hashcons.simple_hcons Huniv.f hdir u
 

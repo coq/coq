@@ -175,7 +175,7 @@ let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 let rdefinitions = make_dir ["Coq";"Reals";"Rdefinitions"]
 
 (* TODO: temporary hack *)
-let make_path dir id = Libnames.encode_kn dir (id_of_string id)
+let make_path dir id = Libnames.encode_con dir (id_of_string id)
 
 let glob_R = ConstRef (make_path rdefinitions "R")
 let glob_R1 = ConstRef (make_path rdefinitions "R1")

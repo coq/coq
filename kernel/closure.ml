@@ -51,8 +51,8 @@ let with_stats c =
   end else
     Lazy.force c
 
-let all_opaque = (Idpred.empty, KNpred.empty)
-let all_transparent = (Idpred.full, KNpred.full)
+let all_opaque = (Idpred.empty, Cpred.empty)
+let all_transparent = (Idpred.full, Cpred.full)
 
 module type RedFlagsSig = sig
   type reds
@@ -107,7 +107,7 @@ module RedFlags = (struct
     | DELTA -> { red with r_delta = true; r_const = all_transparent }
     | CONST kn ->
 	let (l1,l2) = red.r_const in
-	{ red with r_const = l1, KNpred.add kn l2 }
+	{ red with r_const = l1, Cpred.add kn l2 }
     | IOTA -> { red with r_iota = true }
     | ZETA -> { red with r_zeta = true }
     | VAR id ->
@@ -119,7 +119,7 @@ module RedFlags = (struct
     | DELTA -> { red with r_delta = false }
     | CONST kn ->
  	let (l1,l2) = red.r_const in
-	{ red with r_const = l1, KNpred.remove kn l2 }
+	{ red with r_const = l1, Cpred.remove kn l2 }
     | IOTA -> { red with r_iota = false }
     | ZETA -> { red with r_zeta = false }
     | VAR id ->
@@ -135,7 +135,7 @@ module RedFlags = (struct
     | BETA -> incr_cnt red.r_beta beta
     | CONST kn -> 
 	let (_,l) = red.r_const in
-	let c = KNpred.mem kn l in
+	let c = Cpred.mem kn l in
 	incr_cnt c delta
     | VAR id -> (* En attendant d'avoir des kn pour les Var *)
 	let (l,_) = red.r_const in
@@ -149,7 +149,7 @@ module RedFlags = (struct
   let red_get_const red =
     let p1,p2 = red.r_const in
     let (b1,l1) = Idpred.elements p1 in
-    let (b2,l2) = KNpred.elements p2 in
+    let (b2,l2) = Cpred.elements p2 in
     if b1=b2 then
       let l1' = List.map (fun x -> EvalVarRef x) l1 in
       let l2' = List.map (fun x -> EvalConstRef x) l2 in

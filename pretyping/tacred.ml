@@ -55,7 +55,7 @@ let is_evaluable env ref =
   match ref with
       EvalConstRef kn ->
         let (ids,kns) = Conv_oracle.freeze() in
-        KNpred.mem kn kns &
+        Cpred.mem kn kns &
         let cb = Environ.lookup_constant kn env in
         cb.const_body <> None & not cb.const_opaque
     | EvalVarRef id ->
@@ -206,8 +206,8 @@ let invert_name labs l na0 env sigma ref = function
 	  | EvalRel _ | EvalEvar _ -> None
 	  | EvalVar id' -> Some (EvalVar id)
 	  | EvalConst kn ->
-	      let (mp,dp,_) = repr_kn kn in
-	      Some (EvalConst (make_kn mp dp (label_of_id id))) in
+	      let (mp,dp,_) = repr_con kn in
+	      Some (EvalConst (make_con mp dp (label_of_id id))) in
 	match refi with
 	  | None -> None
 	  | Some ref ->
@@ -392,8 +392,8 @@ let reduce_mind_case_use_function func env mia =
 	  match names.(i) with 
 	    | Name id ->
                 if isConst func then
-		  let (mp,dp,_) = repr_kn (destConst func) in
-		  let kn = make_kn mp dp (label_of_id id) in
+		  let (mp,dp,_) = repr_con (destConst func) in
+		  let kn = make_con mp dp (label_of_id id) in
 		  (match constant_opt_value env kn with
 		    | None -> None
 		    | Some _ -> Some (mkConst kn))
@@ -664,7 +664,7 @@ let rec substlin env name n ol c =
           with
 	      NotEvaluableConst _ ->
 		errorlabstrm "substlin"
-		  (pr_kn kn ++ str " is not a defined constant")
+		  (pr_con kn ++ str " is not a defined constant")
         else 
 	  ((n+1), ol, c)
 

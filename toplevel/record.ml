@@ -176,7 +176,7 @@ let declare_projections indsp coers fields =
 	        it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in
               let projtyp =
                 it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
-	      let (sp,kn) =
+	      let kn =
 	        try
 		  let cie = {
 		    const_entry_body = proj;
@@ -184,9 +184,9 @@ let declare_projections indsp coers fields =
                     const_entry_opaque = false;
 		    const_entry_boxed = false } in
 		  let k = (DefinitionEntry cie,IsDefinition) in
-		  let sp = declare_internal_constant fid k in
+		  let kn = declare_internal_constant fid k in
 		  Options.if_verbose message (string_of_id fid ^" is defined");
-		  sp
+		  kn
                 with Type_errors.TypeError (ctx,te) ->
                   raise (NotDefinable (BadTypedProj (fid,ctx,te))) in
 	      let refi = ConstRef kn in

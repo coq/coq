@@ -163,8 +163,9 @@ let subst_signature_msid msid mp =
 let rec add_signature mp sign env = 
   let add_one env (l,elem) =
     let kn = make_kn mp empty_dirpath l in
+    let con = make_con mp empty_dirpath l in
       match elem with
-	| SPBconst cb -> Environ.add_constant kn cb env
+	| SPBconst cb -> Environ.add_constant con cb env
 	| SPBmind mib -> Environ.add_mind kn mib env
 	| SPBmodule mb -> 
 	    add_module (MPdot (mp,l)) (module_body_of_spec mb) env 
@@ -189,7 +190,7 @@ let strengthen_const env mp l cb =
   | false, Some _ -> cb
   | true, Some _ 
   | _, None -> 
-      let const = mkConst (make_kn mp empty_dirpath l) in 
+      let const = mkConst (make_con mp empty_dirpath l) in 
       let const_subs = Some (Declarations.from_val const) in
 	{cb with 
       	   const_body = const_subs;

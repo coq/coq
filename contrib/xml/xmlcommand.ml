@@ -177,12 +177,12 @@ let rec join_dirs cwd =
       join_dirs newcwd tail
 ;;
 
-let filename_of_path xml_library_root kn tag =
+let filename_of_path xml_library_root tag =
  let module N = Names in
   match xml_library_root with
      None -> None  (* stdout *)
    | Some xml_library_root' ->
-      let tokens = Cic2acic.token_list_of_kernel_name kn tag in
+      let tokens = Cic2acic.token_list_of_kernel_name tag in
        Some (join_dirs xml_library_root' tokens)
 ;;
 
@@ -507,7 +507,7 @@ let print internal glob_ref kind xml_library_root =
  let module Ln = Libnames in
   (* Variables are the identifiers of the variables in scope *)
   let variables = search_variables () in
-  let kn,tag,obj =
+  let tag,obj =
    match glob_ref with
       Ln.VarRef id ->
        let sp = Declare.find_section_variable id in
@@ -517,23 +517,22 @@ let print internal glob_ref kind xml_library_root =
         N.make_kn mod_path dir_path (N.label_of_id (Ln.basename sp))
        in
        let (_,body,typ) = G.lookup_named id in
-        kn,Cic2acic.Variable,mk_variable_obj id body typ
+        Cic2acic.Variable kn,mk_variable_obj id body typ
     | Ln.ConstRef kn ->
-       let id = N.id_of_label (N.label kn) in
+       let id = N.id_of_label (N.con_label kn) in
        let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
         G.lookup_constant kn in
-        kn,Cic2acic.Constant,mk_constant_obj id val0 typ variables hyps
+        Cic2acic.Constant kn,mk_constant_obj id val0 typ variables hyps
     | Ln.IndRef (kn,_) ->
        let {D.mind_packets=packs ;
             D.mind_hyps=hyps;
             D.mind_finite=finite} = G.lookup_mind kn in
-          kn,Cic2acic.Inductive,
-           mk_inductive_obj kn packs variables hyps finite
+          Cic2acic.Inductive kn,mk_inductive_obj kn packs variables hyps finite
     | Ln.ConstructRef _ ->
        Util.anomaly ("print: this should not happen")
   in
-  let fn = filename_of_path xml_library_root kn tag in
-  let uri = Cic2acic.uri_of_kernel_name kn tag in
+  let fn = filename_of_path xml_library_root tag in
+  let uri = Cic2acic.uri_of_kernel_name tag in
    if not internal then print_object_kind uri kind;
    print_object uri obj Evd.empty None fn
 ;;
@@ -562,12 +561,13 @@ let show_pftreestate internal fn (kind,pftst) id =
      Decl_kinds.IsLocal ->
       let uri =
        "cic:/" ^ String.concat "/"
-        (Cic2acic.token_list_of_path (Lib.cwd ()) id Cic2acic.Variable) in
+        (Cic2acic.token_list_of_path (Lib.cwd ()) id Cic2acic.TVariable)
+      in
       let kind_of_var = "VARIABLE","LocalFact" in
        if not internal then print_object_kind uri kind_of_var;
       uri
    | Decl_kinds.IsGlobal _ ->
-      let uri = Cic2acic.uri_of_declaration id Cic2acic.Constant in
+      let uri = Cic2acic.uri_of_declaration id Cic2acic.TConstant in
        if not internal then print_object_kind uri (kind_of_global_goal kind);
        uri
  in
@@ -608,7 +608,7 @@ let _ =
 
 let _ =
   Declare.set_xml_declare_constant
-   (function (internal,(sp,kn)) ->
+   (function (internal,kn) ->
      match !proof_to_export with
         None ->
           print internal (Libnames.ConstRef kn) (kind_of_constant kn) 
@@ -616,9 +616,9 @@ let _ =
       | Some pftreestate ->
          (* It is a proof. Let's export it starting from the proof-tree *)
          (* I saved in the Pfedit.set_xml_cook_proof callback.          *)
-        let fn = filename_of_path xml_library_root kn Cic2acic.Constant in
+        let fn = filename_of_path xml_library_root (Cic2acic.Constant kn) in
          show_pftreestate internal fn pftreestate 
-	  (Names.id_of_label (Names.label kn)) ;
+	  (Names.id_of_label (Names.con_label kn)) ;
          proof_to_export := None)
 ;;
 

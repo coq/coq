@@ -142,9 +142,9 @@ let cache_constant ((sp,kn),(cdt,kind)) =
     errorlabstrm "cache_constant" (pr_id id ++ str " already exists"));
   let _,dir,_ = repr_kn kn in
   let kn' = Global.add_constant dir (basename sp) cdt in
-    if kn' <> kn then
+    if kn' <> (constant_of_kn kn) then
       anomaly "Kernel and Library names do not match";
-  Nametab.push (Nametab.Until 1) sp (ConstRef kn);
+  Nametab.push (Nametab.Until 1) sp (ConstRef kn');
   csttab := Spmap.add sp kind !csttab
 
 (* At load-time, the segment starting from the module name to the discharge *)
@@ -154,11 +154,11 @@ let load_constant i ((sp,kn),(_,kind)) =
     let (_,id) = repr_path sp in
     errorlabstrm "cache_constant" (pr_id id ++ str " already exists"));
   csttab := Spmap.add sp kind !csttab;
-  Nametab.push (Nametab.Until i) sp (ConstRef kn)
+  Nametab.push (Nametab.Until i) sp (ConstRef (constant_of_kn kn))
 
 (* Opening means making the name without its module qualification available *)
 let open_constant i ((sp,kn),_) =
-  Nametab.push (Nametab.Exactly i) sp (ConstRef kn)
+  Nametab.push (Nametab.Exactly i) sp (ConstRef (constant_of_kn kn))
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = ConstantEntry (ParameterEntry mkProp)
@@ -190,16 +190,17 @@ let hcons_constant_declaration = function
 
 let declare_constant_common id discharged_hyps (cd,kind) =
   let (sp,kn as oname) = add_leaf id (in_constant (cd,kind)) in
+  let kn = constant_of_kn kn in
   declare_constant_implicits kn;
   Symbols.declare_ref_arguments_scope (ConstRef kn);
   Dischargedhypsmap.set_discharged_hyps sp discharged_hyps;
-  oname
+  kn
 
 let declare_constant_gen internal id (cd,kind) =
   let cd = hcons_constant_declaration cd in
-  let oname = declare_constant_common id [] (ConstantEntry cd,kind) in
-  !xml_declare_constant (internal,oname);
-  oname
+  let kn = declare_constant_common id [] (ConstantEntry cd,kind) in
+  !xml_declare_constant (internal,kn);
+  kn
 
 let declare_internal_constant = declare_constant_gen true
 let declare_constant = declare_constant_gen false

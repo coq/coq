@@ -34,20 +34,20 @@ type struc_typ = {
   s_PROJ : constant option list }
 
 let structure_table = ref (Indmap.empty : struc_typ Indmap.t)
-let projection_table = ref KNmap.empty
+let projection_table = ref Cmap.empty
 
 let option_fold_right f p e = match p with Some a -> f a e | None -> e
 
 let cache_structure (_,(ind,struc)) =
   structure_table := Indmap.add ind struc !structure_table;
   projection_table := 
-    List.fold_right (option_fold_right (fun proj -> KNmap.add proj struc))
+    List.fold_right (option_fold_right (fun proj -> Cmap.add proj struc))
       struc.s_PROJ !projection_table
 
 let subst_structure (_,subst,((kn,i),struc as obj)) = 
   let kn' = subst_kn subst kn in
   let proj' = list_smartmap 
-		(option_smartmap (subst_kn subst)) 
+		(option_smartmap (subst_con subst)) 
 		struc.s_PROJ 
   in
     if proj' == struc.s_PROJ && kn' == kn then obj else
@@ -67,7 +67,7 @@ let add_new_struc (s,c,n,l) =
 let find_structure indsp = Indmap.find indsp !structure_table
 
 let find_projection_nparams = function
-  | ConstRef cst -> (KNmap.find cst !projection_table).s_PARAM
+  | ConstRef cst -> (Cmap.find cst !projection_table).s_PARAM
   | _ -> raise Not_found
 
 (*s Un "object" est une fonction construisant une instance d'une structure *)
@@ -139,11 +139,22 @@ let add_new_objdef (o,c,la,lp,l) =
 
 let cache_objdef1 (_,sp) = ()
 
-let (inObjDef1,outObjDef1) =
+let (inObjDef10,outObjDef10) =
   declare_object {(default_object "OBJDEF1") with 
 		    open_function = (fun i o -> if i=1 then cache_objdef1 o);
                     cache_function = cache_objdef1;
                     export_function = (function x -> Some x) }
+
+let outObjDef1 obj = constant_of_kn (outObjDef10 obj)
+
+let inObjDef1 con =
+ (*CSC: Here I am cheating by violating the fact that "constant" is an ADT
+   and this is the only place in the whole Coq code. My feeling is that the
+   implementation of "Canonical Structure"s should be improved to avoid this
+   situation (that is avoided for all the other non-logical objects). *)
+ let mp,sp,l = repr_con con in
+ let kn = make_kn mp sp l in
+  inObjDef10 kn
 
 let objdef_info o = List.assoc o !object_table
 
@@ -154,7 +165,7 @@ let unfreeze (s,p,o) =
   structure_table := s; projection_table := p; object_table := o
 
 let init () =
-  structure_table := Indmap.empty; projection_table := KNmap.empty;
+  structure_table := Indmap.empty; projection_table := Cmap.empty;
   object_table:=[]
 
 let _ = init()

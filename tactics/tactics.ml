@@ -1880,9 +1880,9 @@ let abstract_subproof name tac gls =
 	(delete_current_proof(); raise e)
     in   (* Faudrait un peu fonctionnaliser cela *)
     let cd = Entries.DefinitionEntry const in
-    let sp = Declare.declare_internal_constant na (cd,IsProof Lemma) in
+    let con = Declare.declare_internal_constant na (cd,IsProof Lemma) in
     let newenv = Global.env() in
-    constr_of_reference (ConstRef (snd sp))
+    constr_of_reference (ConstRef con)
   in
   exact_no_check 
     (applist (lemme, 

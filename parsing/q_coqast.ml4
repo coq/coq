@@ -85,6 +85,14 @@ let rec mlexpr_of_ast = function
       let e = expr_list_of_var_list e in
       <:expr< Coqast.Path loc (Libnames.encode_kn (Names.make_dirpath $e$)
                 (Names.id_of_string $str:Names.string_of_id a$)) >> 
+  | Coqast.ConPath (loc, kn) ->
+      let l,a = Libnames.decode_con kn in
+      let mlexpr_of_modid id =
+	<:expr< Names.id_of_string $str:string_of_id id$ >> in
+      let e = List.map mlexpr_of_modid (repr_dirpath l) in
+      let e = expr_list_of_var_list e in
+      <:expr< Coqast.Path loc (Libnames.encode_kn (Names.make_dirpath $e$)
+                (Names.id_of_string $str:Names.string_of_id a$)) >> 
   | Coqast.Dynamic (_, _) ->
       failwith "Q_Coqast: dynamic: not implemented"
 

@@ -17,12 +17,12 @@ open Environ
 open Libnames
 open Miniml
 
-val extract_constant : env -> kernel_name -> constant_body -> ml_decl
+val extract_constant : env -> constant -> constant_body -> ml_decl
 
-val extract_constant_spec : env -> kernel_name -> constant_body -> ml_spec
+val extract_constant_spec : env -> constant -> constant_body -> ml_spec
 
 val extract_fixpoint : 
-  env -> kernel_name array -> (constr, types) prec_declaration -> ml_decl 
+  env -> constant array -> (constr, types) prec_declaration -> ml_decl 
 
 val extract_inductive : env -> kernel_name -> ml_ind
 

@@ -143,13 +143,14 @@ and translate_entry_list env msid is_definition sig_e =
   let mp = MPself msid in
   let do_entry env (l,e) = 
     let kn = make_kn mp empty_dirpath l in
+    let con = make_con mp empty_dirpath l in
     match e with
       | SPEconst ce ->
-	  let cb = translate_constant env kn ce in
+	  let cb = translate_constant env con ce in
 	    begin match cb.const_hyps with
 	      |	(_::_) -> error_local_context (Some l)
 	      | [] ->
-		  add_constant kn cb env, (l, SEBconst cb), (l, SPBconst cb)
+		  add_constant con cb env, (l, SEBconst cb), (l, SPBconst cb)
 	    end
       | SPEmind mie -> 
 	  let mib = translate_mind env mie in

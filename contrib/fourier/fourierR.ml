@@ -76,7 +76,7 @@ open Vernacexpr
 type ineq = Rlt | Rle | Rgt | Rge
 
 let string_of_R_constant kn = 
-  match Names.repr_kn kn with
+  match Names.repr_con kn with
     | MPfile dir, sec_dir, id when 
 	sec_dir = empty_dirpath && 
 	string_of_dirpath dir = "Coq.Reals.Rdefinitions" 

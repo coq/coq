@@ -52,10 +52,11 @@ type constant_declaration = constant_entry * global_kind
 (* [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
    the full path of the declaration *)
-val declare_constant : identifier -> constant_declaration -> object_name
+val declare_constant :
+ identifier -> constant_declaration -> constant
 
 val declare_internal_constant :
-  identifier -> constant_declaration -> object_name
+  identifier -> constant_declaration -> constant
 
 val redeclare_constant :
  identifier -> Dischargedhypsmap.discharged_hyps -> 
@@ -98,5 +99,5 @@ val strength_of_global : global_reference -> strength
 
 (* hooks for XML output *)
 val set_xml_declare_variable : (object_name -> unit) -> unit
-val set_xml_declare_constant : (bool * object_name -> unit) -> unit
+val set_xml_declare_constant : (bool * constant -> unit) -> unit
 val set_xml_declare_inductive : (bool * object_name -> unit) -> unit

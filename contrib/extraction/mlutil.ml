@@ -210,7 +210,7 @@ end
 
 let rec type_mem_kn kn = function 
   | Tmeta _ -> assert false
-  | Tglob (r,l) -> (kn_of_r r) = kn || List.exists (type_mem_kn kn) l
+  | Tglob (r,l) -> occur_kn_in_ref kn r || List.exists (type_mem_kn kn) l
   | Tarr (a,b) -> (type_mem_kn kn a) || (type_mem_kn kn b)
   | _ -> false
 
@@ -594,11 +594,12 @@ let rec linear_beta_red a t = match a,t with
   linear beta reductions at modified positions. *)  
 
 let rec ast_glob_subst s t = match t with 
-  | MLapp ((MLglob (ConstRef kn)) as f, a) -> 
+  | MLapp ((MLglob ((ConstRef kn) as refe)) as f, a) -> 
       let a = List.map (ast_glob_subst s) a in 
-      (try linear_beta_red a (KNmap.find kn s) 
+      (try linear_beta_red a (Refmap.find refe s) 
        with Not_found -> MLapp (f, a))
-  | MLglob (ConstRef kn) -> (try KNmap.find kn s with Not_found -> t)
+  | MLglob ((ConstRef kn) as refe) ->
+      (try Refmap.find refe s with Not_found -> t)
   | _ -> ast_map (ast_glob_subst s) t
 
 
@@ -1117,7 +1118,7 @@ let inline_test t =
 
 let manual_inline_list = 
   let mp = MPfile (dirpath_of_string "Coq.Init.Wf") in 
-  List.map (fun s -> (make_kn mp empty_dirpath (mk_label s)))
+  List.map (fun s -> (make_con mp empty_dirpath (mk_label s)))
     [ "well_founded_induction_type"; "well_founded_induction"; 
       "Acc_rect"; "Acc_rec" ; "Acc_iter" ]
 

@@ -173,9 +173,9 @@ let constant_to_ast_list kn =
   let l = implicits_of_global (ConstRef kn) in
   (match c with
       None -> 
-	make_variable_ast (id_of_label (label kn)) typ l
+	make_variable_ast (id_of_label (con_label kn)) typ l
     | Some c1 ->
-	make_definition_ast (id_of_label (label kn)) (Declarations.force c1) typ l)
+	make_definition_ast (id_of_label (con_label kn)) (Declarations.force c1) typ l)
 
 let variable_to_ast_list sp =
   let (id, c, v) = get_variable sp in
@@ -198,7 +198,7 @@ let leaf_entry_to_ast_list ((sp,kn),lobj) =
   let tag = object_tag lobj in
   match tag with
   | "VARIABLE" -> variable_to_ast_list (basename sp)
-  | "CONSTANT" -> constant_to_ast_list kn
+  | "CONSTANT" -> constant_to_ast_list (constant_of_kn kn)
   | "INDUCTIVE" -> inductive_to_ast_list kn
   | s -> 
       errorlabstrm 

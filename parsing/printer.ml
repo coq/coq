@@ -46,7 +46,7 @@ let dfltpr ast = (str"#GENTERM " ++ print_ast ast);;
 let global_const_name kn =
   try pr_global Idset.empty (ConstRef kn)
   with Not_found -> (* May happen in debug *)
-    (str ("CONST("^(string_of_kn kn)^")"))
+    (str ("CONST("^(string_of_con kn)^")"))
 
 let global_var_name id =
   try pr_global Idset.empty (VarRef id)
@@ -67,14 +67,14 @@ let global_constr_name ((kn,tyi),i) =
 let globpr gt = match gt with
   | Nvar(_,s) -> (pr_id s)
   | Node(_,"EVAR", [Num (_,ev)]) -> (str ("?" ^ (string_of_int ev)))
-  | Node(_,"CONST",[Path(_,sl)]) ->
-      global_const_name (section_path sl)
+  | Node(_,"CONST",[ConPath(_,sl)]) ->
+      global_const_name sl
   | Node(_,"SECVAR",[Nvar(_,s)]) ->
       global_var_name s
   | Node(_,"MUTIND",[Path(_,sl); Num(_,tyi)]) ->
-      global_ind_name (section_path sl, tyi)
+      global_ind_name (sl, tyi)
   | Node(_,"MUTCONSTRUCT",[Path(_,sl); Num(_,tyi); Num(_,i)]) ->
-      global_constr_name ((section_path sl, tyi), i)
+      global_constr_name ((sl, tyi), i)
   | Dynamic(_,d) ->
     if (Dyn.tag d) = "constr" then (str"<dynamic [constr]>")
     else dfltpr gt

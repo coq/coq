@@ -45,17 +45,17 @@ let update_flags ()=
 *)
 
 let update_flags ()=
-  let predref=ref Names.KNpred.empty in
+  let predref=ref Names.Cpred.empty in
   let f coe=
     try
       let kn=destConst (Classops.get_coercion_value coe) in
-	predref:=Names.KNpred.add kn !predref
+	predref:=Names.Cpred.add kn !predref
     with Invalid_argument "destConst"-> () in
     List.iter f (Classops.coercions ());
     red_flags:=
     Closure.RedFlags.red_add_transparent 
       Closure.betaiotazeta 
-      (Names.Idpred.full,Names.KNpred.complement !predref)
+      (Names.Idpred.full,Names.Cpred.complement !predref)
 
 let ground_tac solver startseq gl=
   update_flags ();

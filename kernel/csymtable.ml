@@ -55,9 +55,9 @@ let num_boxed = ref 0
 
 let boxed_tbl = Hashtbl.create 53
 
-let cst_opaque = ref KNpred.full
+let cst_opaque = ref Cpred.full
 
-let is_opaque kn = KNpred.mem kn !cst_opaque
+let is_opaque kn = Cpred.mem kn !cst_opaque
 
 let set_global_boxed kn v = 
   let n = !num_boxed in
@@ -163,12 +163,12 @@ and val_of_constr env c =
   eval_to_patch env (to_memory ccfv)
  
 let set_transparent_const kn =
-  cst_opaque := KNpred.remove kn !cst_opaque;
+  cst_opaque := Cpred.remove kn !cst_opaque;
   List.iter (fun n -> (global_boxed()).(n) <- false) 
     (Hashtbl.find_all boxed_tbl kn)
 
 let set_opaque_const kn =
-  cst_opaque := KNpred.add kn !cst_opaque;
+  cst_opaque := Cpred.add kn !cst_opaque;
   List.iter (fun n -> (global_boxed()).(n) <- true) 
     (Hashtbl.find_all boxed_tbl kn)
 

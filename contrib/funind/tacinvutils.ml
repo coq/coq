@@ -263,7 +263,7 @@ let def_of_const t =
 (* nom d'une constante. Must be a constante. x*)
 let name_of_const t =
     match (kind_of_term t) with
-        Const cst -> Names.string_of_label (Names.label cst)
+        Const cst -> Names.string_of_label (Names.con_label cst)
 		|_ -> assert false
  ;;
 

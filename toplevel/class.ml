@@ -150,7 +150,7 @@ let uniform_cond nargs lt =
 let id_of_cl  = function
   | CL_FUN -> id_of_string "FUNCLASS"
   | CL_SORT -> id_of_string "SORTCLASS"
-  | CL_CONST kn -> id_of_label (label kn)
+  | CL_CONST kn -> id_of_label (con_label kn)
   | CL_IND ind ->
       let (_,mip) = Global.lookup_inductive ind in
       mip.mind_typename
@@ -271,7 +271,7 @@ let build_id_coercion idf_opt source =
 	const_entry_type = Some typ_f;
         const_entry_opaque = false;
 	const_entry_boxed = Options.boxed_definitions()} in
-  let (_,kn) = declare_constant idf (constr_entry,Decl_kinds.IsDefinition) in
+  let kn = declare_constant idf (constr_entry,Decl_kinds.IsDefinition) in
   ConstRef kn
 
 let check_source = function
@@ -390,13 +390,17 @@ let defined_in_sec kn olddir =
   let _,dir,_ = repr_kn kn in
     dir = olddir
 
+let con_defined_in_sec kn olddir = 
+  let _,dir,_ = repr_con kn in
+    dir = olddir
+
 (* This moves the global path one step below *)
 let process_global olddir = function
   | VarRef _ ->
       anomaly "process_global only processes global surviving the section"
   | ConstRef kn as x ->
-      if defined_in_sec kn olddir then
-        let newkn = Lib.make_kn (id_of_label (label kn)) in
+      if con_defined_in_sec kn olddir then
+        let newkn = Lib.make_con (id_of_label (con_label kn)) in
         ConstRef newkn
       else x
   | IndRef (kn,i) as x -> 
@@ -416,8 +420,8 @@ let process_class olddir ids_to_discard x =
   match cl with 
     | CL_SECVAR _ -> x
     | CL_CONST kn -> 
-       if defined_in_sec kn olddir then
-         let newkn = Lib.make_kn (id_of_label (label kn)) in
+       if con_defined_in_sec kn olddir then
+         let newkn = Lib.make_con (id_of_label (con_label kn)) in
 	 let hyps = (Global.lookup_constant kn).const_hyps in
 	 let n = count_extra_abstractions hyps ids_to_discard in
            (CL_CONST newkn,{cl_strength=stre;cl_param=p+n})
@@ -437,8 +441,8 @@ let process_cl sec_sp cl =
   match cl with
     | CL_SECVAR id -> cl
     | CL_CONST kn ->
-	if defined_in_sec kn sec_sp then
-          let newkn = Lib.make_kn (id_of_label (label kn)) in
+	if con_defined_in_sec kn sec_sp then
+          let newkn = Lib.make_con (id_of_label (con_label kn)) in
           CL_CONST newkn
         else 
 	  cl

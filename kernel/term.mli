@@ -512,6 +512,7 @@ val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
 (*********************************************************************)
 
 val hcons_constr:
+  (constant -> constant) *
   (kernel_name -> kernel_name) *
   (dir_path -> dir_path) *
   (name -> name) *

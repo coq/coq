@@ -363,7 +363,7 @@ let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
     | (_,"VARIABLE") ->
 	Some (print_section_variable (basename sp))
     | (_,"CONSTANT") ->
-	Some (print_constant with_values sep kn)
+	Some (print_constant with_values sep (constant_of_kn kn))
     | (_,"INDUCTIVE") ->
 	Some (print_inductive kn)
     | (_,"MODULE") ->
@@ -552,7 +552,7 @@ let print_local_context () =
     | (oname,Lib.Leaf lobj)::rest -> 
         (match object_tag lobj with
            | "CONSTANT" -> 
-	       let kn = snd oname in
+	       let kn = constant_of_kn (snd oname) in
                let {const_body=val_0;const_type=typ} = 
 		 Global.lookup_constant kn in
 		 (print_last_const rest ++

@@ -132,7 +132,7 @@ let hcons_constant_body cb =
 
 let add_constant dir l decl senv =
   check_label l senv.labset;
-  let kn = make_kn senv.modinfo.modpath dir l in 
+  let kn = make_con senv.modinfo.modpath dir l in 
   let cb = 
     match decl with 
     | ConstantEntry ce -> translate_constant senv.env kn ce

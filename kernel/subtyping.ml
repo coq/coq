@@ -174,7 +174,7 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
 	  let c2 = Declarations.force lc2 in
 	  let c1 = match cb1.const_body with
 	    | Some lc1 -> Declarations.force lc1
-	    | None -> mkConst (make_kn (MPself msid1) empty_dirpath l)
+	    | None -> mkConst (make_con (MPself msid1) empty_dirpath l)
 	  in
 	    check_conv cst conv env c1 c2
 	      

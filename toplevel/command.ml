@@ -113,7 +113,7 @@ let red_constant_entry ce = function
 	  reduction_of_redexp red (Global.env()) Evd.empty body }
 
 let declare_global_definition ident ce local =
-  let (_,kn) = declare_constant ident (DefinitionEntry ce,IsDefinition) in
+  let kn = declare_constant ident (DefinitionEntry ce,IsDefinition) in
   if local = Local then
     msg_warning (pr_id ident ++ str" is declared as a global definition");
   definition_message ident;
@@ -166,7 +166,7 @@ let declare_one_assumption is_coe (local,kind) c (_,ident) =
           str" is not visible from current goals");
         VarRef ident
     | (Global|Local) ->
-        let (_,kn) =
+        let kn =
           declare_constant ident (ParameterEntry c, IsAssumption kind) in
         assumption_message ident;
         if local=Local & Options.is_verbose () then
@@ -215,7 +215,7 @@ let declare_one_elimination ind =
   if List.mem InType kelim then
     let elim = make_elim (new_sort_in_family InType) in
     let cte = declare (mindstr^(Indrec.elimination_suffix InType)) elim None in
-    let c = mkConst (snd cte) and t = constant_type (Global.env()) (snd cte) in
+    let c = mkConst cte and t = constant_type (Global.env()) cte in
     List.iter (fun (sort,suff) -> 
       let (t',c') = 
 	Indrec.instanciate_type_indrec_scheme (new_sort_in_family sort)
@@ -514,7 +514,7 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)
         const_entry_type = Some arrec.(i);
         const_entry_opaque = false;
         const_entry_boxed = boxed} in
-    let (_,kn) = declare_constant fi (DefinitionEntry ce, IsDefinition) in
+    let kn = declare_constant fi (DefinitionEntry ce, IsDefinition) in
     (ConstRef kn)
   in 
   (* declare the recursive definitions *)
@@ -581,7 +581,7 @@ let build_corecursive lnameardef boxed =
         const_entry_opaque = false;
         const_entry_boxed = boxed } 
     in
-    let _,kn = declare_constant fi (DefinitionEntry ce, IsDefinition) in
+    let kn = declare_constant fi (DefinitionEntry ce, IsDefinition) in
     (ConstRef kn)
   in 
   let lrefrec = Array.mapi declare namerec in
@@ -621,7 +621,7 @@ let build_scheme lnamedepindsort =
                const_entry_type = Some decltype;
                const_entry_opaque = false;
 	       const_entry_boxed = Options.boxed_definitions() } in
-    let _,kn = declare_constant fi (DefinitionEntry ce, IsDefinition) in
+    let kn = declare_constant fi (DefinitionEntry ce, IsDefinition) in
     ConstRef kn :: lrecref
   in 
   let lrecref = List.fold_right2 declare listdecl lrecnames [] in
@@ -666,11 +666,11 @@ let save id const kind hook =
 	(Local, VarRef id)
     | IsLocal ->
         let k = IsDefinition in
-        let _,kn = declare_constant id (DefinitionEntry const, k) in
+        let kn = declare_constant id (DefinitionEntry const, k) in
 	(Global, ConstRef kn)
     | IsGlobal k ->
         let k = theorem_kind_of_goal_kind k in
-        let _,kn = declare_constant id (DefinitionEntry const, k) in
+        let kn = declare_constant id (DefinitionEntry const, k) in
 	(Global, ConstRef kn) in
   hook l r;
   Pfedit.delete_current_proof ();
@@ -707,7 +707,7 @@ let admit () =
   if k <> IsGlobal (Proof Conjecture) then
     error "Only statements declared as conjecture can be admitted";
 *)
-  let (_,kn) =
+  let kn =
     declare_constant id (ParameterEntry typ, IsAssumption Conjectural) in
   hook Global (ConstRef kn);
   Pfedit.delete_current_proof ();

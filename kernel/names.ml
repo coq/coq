@@ -273,6 +273,9 @@ end
 module KNmap = Map.Make(KNord)
 module KNpred = Predicate.Make(KNord)
 module KNset = Set.Make(KNord)
+module Cmap = KNmap
+module Cpred = KNpred
+module Cset = KNset
 
 
 let default_module_name = id_of_string "If you see this, it's a bug"
@@ -287,6 +290,15 @@ type constant = kernel_name
 type mutual_inductive = kernel_name
 type inductive = mutual_inductive * int
 type constructor = inductive * int
+
+let constant_of_kn kn = kn
+let make_con mp dir l = (mp,dir,l)
+let repr_con con = con
+let string_of_con = string_of_kn
+let con_label = label
+let pr_con = pr_kn
+let con_modpath = modpath
+let subst_con = subst_kn
 
 let ith_mutual_inductive (kn,_) i = (kn,i)
 let ith_constructor_of_inductive ind i = (ind,i)
@@ -373,12 +385,12 @@ let hcons_names () =
   let huniqid = Hashcons.simple_hcons Huniqid.f (hstring,hdir) in
   let hmod = Hashcons.simple_hcons Hmod.f (hdir,huniqid,hstring) in
   let hkn = Hashcons.simple_hcons Hkn.f (hmod,hdir,hstring) in
-  (hkn,hdir,hname,hident,hstring)
+  (hkn,hkn,hdir,hname,hident,hstring)
 
 
 (*******)
 
-type transparent_state = Idpred.t * KNpred.t
+type transparent_state = Idpred.t * Cpred.t
 
 type 'a tableKey =
   | ConstKey of constant

@@ -105,6 +105,10 @@ let make_kn id =
   let mp,dir = current_prefix () in
     Names.make_kn mp dir (label_of_id id)
 
+let make_con id = 
+  let mp,dir = current_prefix () in
+    Names.make_con mp dir (label_of_id id)
+
 
 let make_oname id = make_path id, make_kn id
 

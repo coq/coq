@@ -83,16 +83,28 @@ let get_uri_of_var v pvars =
 ;;
 
 type tag =
-   Constant
- | Inductive
- | Variable
+   Constant of Names.constant
+ | Inductive of Names.kernel_name
+ | Variable of Names.kernel_name
 ;;
+
+type etag =
+   TConstant
+ | TInductive
+ | TVariable
+;;
+
+let etag_of_tag =
+ function
+    Constant _ -> TConstant
+  | Inductive _ -> TInductive
+  | Variable _ -> TVariable
 
 let ext_of_tag =
  function
-    Constant  -> "con"
-  | Inductive -> "ind"
-  | Variable  -> "var"
+    TConstant -> "con"
+  | TInductive -> "ind"
+  | TVariable -> "var"
 ;;
 
 exception FunctorsXMLExportationNotImplementedYet;;
@@ -147,23 +159,24 @@ let token_list_of_path dir id tag =
    List.rev_map N.string_of_id (N.repr_dirpath dirpath) in
   token_list_of_dirpath dir @ [N.string_of_id id ^ "." ^ (ext_of_tag tag)]
 
-let token_list_of_kernel_name kn tag =
+let token_list_of_kernel_name tag =
  let module N = Names in
  let module LN = Libnames in
- let dir = match tag with
-   | Variable -> 
-       Lib.cwd ()
-   | Constant -> 
-       Lib.library_part (LN.ConstRef kn)
-   | Inductive ->
+ let id,dir = match tag with
+   | Variable kn -> 
+       N.id_of_label (N.label kn), Lib.cwd ()
+   | Constant con -> 
+       N.id_of_label (N.con_label con),
+       Lib.library_part (LN.ConstRef con)
+   | Inductive kn ->
+       N.id_of_label (N.label kn),
        Lib.library_part (LN.IndRef (kn,0))
  in
- let id = N.id_of_label (N.label kn) in
- token_list_of_path dir id tag
+ token_list_of_path dir id (etag_of_tag tag)
 ;;
 
-let uri_of_kernel_name kn tag =
-  let tokens = token_list_of_kernel_name kn tag in
+let uri_of_kernel_name tag =
+  let tokens = token_list_of_kernel_name tag in
    "cic:/" ^ String.concat "/" tokens
 
 let uri_of_declaration id tag =
@@ -709,7 +722,7 @@ print_endline "PASSATO" ; flush stdout ;
               if is_a_Prop innersort  && expected_available then
                add_inner_type fresh_id'' ;
               let compute_result_if_eta_expansion_not_required _ _ =
-               A.AConst (fresh_id'', subst, (uri_of_kernel_name kn Constant))
+               A.AConst (fresh_id'', subst, (uri_of_kernel_name (Constant kn)))
               in
                let (_,subst') = subst in
                 explicit_substitute_and_eta_expand_if_required tt []
@@ -717,7 +730,7 @@ print_endline "PASSATO" ; flush stdout ;
                  compute_result_if_eta_expansion_not_required
            | T.Ind (kn,i) ->
               let compute_result_if_eta_expansion_not_required _ _ =
-               A.AInd (fresh_id'', subst, (uri_of_kernel_name kn Inductive), i)
+               A.AInd (fresh_id'', subst, (uri_of_kernel_name (Inductive kn)), i)
               in
                let (_,subst') = subst in
                 explicit_substitute_and_eta_expand_if_required tt []
@@ -729,7 +742,7 @@ print_endline "PASSATO" ; flush stdout ;
                add_inner_type fresh_id'' ;
               let compute_result_if_eta_expansion_not_required _ _ =
                A.AConstruct
-                (fresh_id'', subst, (uri_of_kernel_name kn Inductive), i, j)
+                (fresh_id'', subst, (uri_of_kernel_name (Inductive kn)), i, j)
               in
                let (_,subst') = subst in
                 explicit_substitute_and_eta_expand_if_required tt []
@@ -743,7 +756,7 @@ print_endline "PASSATO" ; flush stdout ;
                Array.fold_right (fun x i -> (aux' env idrefs x)::i) a []
               in
                A.ACase
-                (fresh_id'', (uri_of_kernel_name kn Inductive), i,
+                (fresh_id'', (uri_of_kernel_name (Inductive kn)), i,
                   aux' env idrefs ty, aux' env idrefs term, a')
            | T.Fix ((ai,i),(f,t,b)) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;

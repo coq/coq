@@ -28,7 +28,7 @@ let toplevel_env () =
     | (_,kn), Lib.Leaf o ->
 	let mp,_,l = repr_kn kn in 
 	let seb = match Libobject.object_tag o with
-	  | "CONSTANT" -> SEBconst (Global.lookup_constant kn)
+	  | "CONSTANT" -> SEBconst (Global.lookup_constant (constant_of_kn kn))
 	  | "INDUCTIVE" -> SEBmind (Global.lookup_mind kn) 
 	  | "MODULE" -> SEBmodule (Global.lookup_module (MPdot (mp,l)))
 	  | "MODULE TYPE" -> SEBmodtype (Global.lookup_modtype kn)
@@ -52,14 +52,16 @@ let environment_until dir_opt =
 	  | _ -> assert false
   in parse (Library.loaded_libraries ())
 
-type visit = { mutable kn : KNset.t; mutable mp : MPset.t }
+type visit =
+ { mutable kn : KNset.t; mutable ref : Refset.t; mutable mp : MPset.t }
 
 let in_kn v kn = KNset.mem kn v.kn
+let in_ref v ref = Refset.mem ref v.ref
 let in_mp v mp = MPset.mem mp v.mp
 
 let visit_mp v mp = v.mp <- MPset.union (prefixes_mp mp) v.mp
 let visit_kn v kn = v.kn <- KNset.add kn v.kn; visit_mp v (modpath kn)
-let visit_ref v r = visit_kn v (kn_of_r r) 
+let visit_ref v r = v.ref <- Refset.add r v.ref; visit_mp v (modpath_of_r r) 
 
 exception Impossible
 
@@ -102,7 +104,7 @@ let get_spec_references v s =
 let rec extract_msig env v mp = function 
   | [] -> [] 
   | (l,SPBconst cb) :: msig -> 
-      let kn = make_kn mp empty_dirpath l in 
+      let kn = make_con mp empty_dirpath l in 
       let s = extract_constant_spec env kn cb in 
       if logical_spec s then extract_msig env v mp msig
       else begin
@@ -143,9 +145,9 @@ let rec extract_msb env v mp all = function
   | (l,SEBconst cb) :: msb -> 
       (try 
 	 let vl,recd,msb = factor_fix env l cb msb in 
-	 let vkn = Array.map (fun id -> make_kn mp empty_dirpath id) vl in
+	 let vkn = Array.map (fun id -> make_con mp empty_dirpath id) vl in
 	 let ms = extract_msb env v mp all msb in 
-	 let b = array_exists (in_kn v) vkn in 
+	 let b = array_exists (fun con -> in_ref v (ConstRef con)) vkn in 
 	 if all || b then 
 	   let d = extract_fixpoint env vkn recd in 
 	   if (not b) && (logical_decl d) then ms 
@@ -153,8 +155,8 @@ let rec extract_msb env v mp all = function
 	 else ms
        with Impossible ->
 	 let ms = extract_msb env v mp all msb in 
-	 let kn = make_kn mp empty_dirpath l in 
-	 let b = in_kn v kn in 
+	 let kn = make_con mp empty_dirpath l in 
+	 let b = in_ref v (ConstRef kn) in 
 	 if all || b then 
 	   let d = extract_constant env kn cb in
 	   if (not b) && (logical_decl d) then ms 
@@ -163,7 +165,7 @@ let rec extract_msb env v mp all = function
   | (l,SEBmind mib) :: msb ->
       let ms = extract_msb env v mp all msb in
       let kn = make_kn mp empty_dirpath l in 
-      let b = in_kn v kn in 
+      let b = in_ref v (IndRef (kn,0)) in  (* 0 is dummy *)
       if all || b then 
 	let d = Dind (kn, extract_inductive env kn) in 
 	if (not b) && (logical_decl d) then ms 
@@ -217,12 +219,12 @@ let unpack = function MEstruct (_,sel) -> sel | _ -> assert false
 let mono_environment refs mpl = 
   let l = environment_until None in 
   let v = 
-    let add_kn r = KNset.add (kn_of_r r) in 
-    let kns = List.fold_right add_kn refs KNset.empty in 
+    let add_ref r = Refset.add r in 
+    let refs = List.fold_right add_ref refs Refset.empty in 
     let add_mp mp = MPset.union (prefixes_mp mp) in
     let mps = List.fold_right add_mp mpl MPset.empty in 
-    let mps = KNset.fold (fun k -> add_mp (modpath k)) kns mps in 
-    { kn = kns; mp = mps }
+    let mps = Refset.fold (fun k -> add_mp (modpath_of_r k)) refs mps in 
+    { kn = KNset.empty; ref = refs; mp = mps }
   in 
   let env = Global.env () in 
   List.rev_map (fun (mp,m) -> mp, unpack (extract_meb env v (Some mp) false m)) 
@@ -270,10 +272,9 @@ let extraction qid =
     else begin 
       let prm = 
 	{ modular = false; mod_name = id_of_string "Main"; to_appear = [r]} in 
-      let kn = kn_of_r r in 
       let struc = optimize_struct prm None (mono_environment [r] []) in 
       let d = get_decl_in_structure r struc in 
-      print_one_decl struc (modpath kn) d;
+      print_one_decl struc (modpath_of_r r) d;
       reset_tables ()
     end
 
@@ -315,7 +316,7 @@ let extraction_module m =
 	let b = is_modfile mp in 
 	let prm = {modular=b; mod_name = id_of_string ""; to_appear= []} in
 	let l = environment_until None in 
-	let v = { kn = KNset.empty ; mp = prefixes_mp mp } in
+	let v={ kn = KNset.empty ; ref = Refset.empty; mp = prefixes_mp mp } in
 	let env = Global.env () in 
 	let struc = 
 	  List.rev_map
@@ -350,7 +351,9 @@ let extraction_library is_rec m =
     | Scheme -> error_scheme ()
     | _ -> 
 	let dir_m = dir_module_of_id m in 
-	let v = { kn = KNset.empty; mp = MPset.singleton (MPfile dir_m) } in 
+	let v =
+         { kn = KNset.empty; ref = Refset.empty;
+           mp = MPset.singleton (MPfile dir_m) } in 
 	let l = environment_until (Some dir_m) in 
 	let struc = 
 	  let env = Global.env () in

@@ -47,5 +47,5 @@ val add_new_objdef :
 
 val inStruc : inductive * struc_typ -> obj
 val outStruc : obj -> inductive * struc_typ
-val inObjDef1 : kernel_name -> obj
-val outObjDef1 : obj -> kernel_name
+val inObjDef1 : constant -> obj
+val outObjDef1 : obj -> constant
