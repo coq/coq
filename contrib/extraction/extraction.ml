@@ -763,8 +763,8 @@ and extract_mib sp =
     let env = Global.env () in 
     (* Everything concerning parameters. *)
     (* We do that first, since they are common to all the [mib]. *)
-    let par_nb = mip.mind_nparams in
-    let par_env = push_rel_context mip.mind_params_ctxt env in
+    let params_nb = mip.mind_nparams in
+    let params_env = push_rel_context mip.mind_params_ctxt env in
     (* First pass: we store inductive signatures together with *)
     (* an initial type var list. *)
     let vl0 = iterate_for 0 (mib.mind_ntypes - 1)
@@ -799,13 +799,13 @@ and extract_mib sp =
 	     iterate_for 1 (Array.length mip.mind_consnames)
 	       (fun j vl -> 
 		  let t = type_of_constructor env (ip,j) in
-		  let t = snd (decompose_prod_n par_nb t) in
-		  match extract_type_rec_info par_env t vl [] with
+		  let t = snd (decompose_prod_n params_nb t) in
+		  match extract_type_rec_info params_env t vl [] with
 		    | Tarity | Tprop -> assert false
 		    | Tmltype (mlt, v) -> 
 			let l = list_of_ml_arrows mlt
-			and s = signature par_env t in 
-			add_constructor (ip,j) (Cml (l,s,par_nb));
+			and s = signature params_env t in 
+			add_constructor (ip,j) (Cml (l,s,params_nb));
 			v)
 	       vl)
 	vl0

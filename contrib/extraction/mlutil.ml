@@ -730,6 +730,7 @@ let inline_test t =
 let manual_inline_list = 
   List.map (fun s -> path_of_string ("Coq.Init."^s))
     [ "Specif.sigS_rect" ; "Specif.sigS_rec" ; 
+      "Logic.and_rect"; "Logic.and_rec";
       "Datatypes.prod_rect" ; "Datatypes.prod_rec"; 
       "Wf.Acc_rec" ; "Wf.Acc_rect" ; 
       "Wf.well_founded_induction" ; "Wf.well_founded_induction_type" ]
