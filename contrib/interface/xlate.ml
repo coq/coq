@@ -314,9 +314,11 @@ let rec make_fix_struct b = function
 let rec xlate_binder = function
     (l,t) -> CT_binder(xlate_id_opt_ne_list l, xlate_formula t)
 and xlate_return_info = function
-  (None, None) -> CT_coerce_NONE_to_RETURN_INFO CT_none
+| (Some Anonymous, None) | (None, None) ->
+   CT_coerce_NONE_to_RETURN_INFO CT_none
 | (None, Some t) -> CT_return(xlate_formula t)
 | (Some x, Some t) -> CT_as_and_return(xlate_id_opt_aux x, xlate_formula t)
+
 | (Some _, None) -> assert false
 and xlate_formula_opt =
   function
@@ -1024,7 +1026,7 @@ and xlate_tac =
 	    if b then CT_cutrewrite_lr (c, ctv_ID_OPT_NONE)
 	    else CT_cutrewrite_rl (c, ctv_ID_OPT_NONE)
 	| _ -> xlate_error "")
-    | TacExtend (_,"DependentRewrite", [b; c; id]) -> (*CutRewrite in/SubstHyp*)
+    | TacExtend (_,"dependentrewrite", [b; c; id]) -> (*CutRewrite in/SubstHyp*)
       let b = out_gen Extraargs.rawwit_orient b in
       let c = xlate_formula (out_gen rawwit_constr c) in
       let id = xlate_ident (out_gen rawwit_ident id) in
@@ -1160,7 +1162,7 @@ and xlate_tac =
 	let id = xlate_quantified_hypothesis id in
 	  CT_use_inversion (id, xlate_formula c,
 	    CT_id_list (List.map xlate_hyp idlist))
-    | TacExtend (_,"Omega", []) -> CT_omega
+    | TacExtend (_,"omega", []) -> CT_omega
     | TacRename (id1, id2) -> CT_rename(xlate_hyp id1, xlate_hyp id2)
     | TacClearBody([]) -> assert false
     | TacClearBody(a::l) -> 
