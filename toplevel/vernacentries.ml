@@ -92,7 +92,7 @@ let show_node () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and cursor = cursor_of_pftreestate pts in
-  msg (prlist_with_sep pr_spc pr_int (List.rev cursor) ++ fnl () ++
+  msgnl (prlist_with_sep pr_spc pr_int (List.rev cursor) ++ fnl () ++
          prgl (goal_of_proof pf) ++ fnl () ++
          (match pf.Proof_type.ref with
             | None -> (str"BY <rule>")
@@ -100,14 +100,13 @@ let show_node () =
 		(str"BY " ++ Refiner.pr_rule r ++ fnl () ++
 		 str"  " ++
 		   hov 0 (prlist_with_sep pr_fnl prgl
-			    (List.map goal_of_proof spfl)))) ++
-         fnl ())
+			    (List.map goal_of_proof spfl)))))
     
 let show_script () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  msgnl(Refiner.print_script true evc (Global.named_context()) pf)
+  msgnl (Refiner.print_script true evc (Global.named_context()) pf)
 
 let show_top_evars () =
   let pfts = get_pftreestate () in 
@@ -119,7 +118,7 @@ let show_prooftree () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  msg(Refiner.print_proof evc (Global.named_context()) pf)
+  msg (Refiner.print_proof evc (Global.named_context()) pf)
 
 let print_subgoals () = if_verbose show_open_subgoals ()
 
@@ -176,7 +175,7 @@ let dump_universes s =
   try
     Univ.dump_universes output (Global.universes ());
     close_out output;
-    msg (str ("Universes written to file \""^s^"\".") ++ fnl ()) 
+    msgnl (str ("Universes written to file \""^s^"\".")) 
   with
       e -> close_out output; raise e
 
@@ -188,27 +187,27 @@ let locate_file f =
   try
     let _,file =
       System.where_in_path (Library.get_load_path()) f in
-    msg (str file ++ fnl ())
+    msgnl (str file)
   with Not_found -> 
-    msg (hov 0 (str"Can't find file" ++ spc () ++ str f ++ spc () ++
-		  str"on loadpath" ++ fnl ()))
+    msgnl (hov 0 (str"Can't find file" ++ spc () ++ str f ++ spc () ++
+		  str"on loadpath"))
 
 let print_located_qualid (_,qid) =
   try
     let sp = Nametab.sp_of_global (Global.env()) (Nametab.locate qid) in
-    msg (pr_sp sp ++ fnl ())
+    msgnl (pr_sp sp)
   with Not_found -> 
   try
-    msg (pr_sp (Syntax_def.locate_syntactic_definition qid) ++ fnl ())
+    msgnl (pr_sp (Syntax_def.locate_syntactic_definition qid) ++ fnl ())
   with Not_found ->
-    msg (pr_qualid qid ++ str " is not a defined object")
+    msgnl (pr_qualid qid ++ str " is not a defined object")
 
 let msg_found_library = function
   | Library.LibLoaded, fulldir, file ->
-      msg (pr_dirpath fulldir ++ str " has been loaded from file" ++ fnl () ++
-      str file ++ fnl ())
+      msgnl(pr_dirpath fulldir ++ str " has been loaded from file" ++ fnl () ++
+      str file)
   | Library.LibInPath, fulldir, file ->
-      msg (pr_dirpath fulldir ++ str " is bound to file " ++ str file ++ fnl ())
+      msgnl(pr_dirpath fulldir ++ str " is bound to file " ++ str file)
 let msg_notfound_library loc qid = function
   | Library.LibUnmappedDir ->
       let dir = fst (Nametab.repr_qualid qid) in
@@ -216,9 +215,8 @@ let msg_notfound_library loc qid = function
         str "Cannot find a physical path bound to logical path " ++
            pr_dirpath dir ++ fnl ())
   | Library.LibNotFound ->
-      msg (hov 0 
-	(str"Unable to locate library" ++
-           spc () ++ Nametab.pr_qualid qid ++ fnl ()))
+      msgnl (hov 0 
+	(str"Unable to locate library" ++ spc () ++ Nametab.pr_qualid qid))
   | e -> assert false
 
 let print_located_library (loc,qid) =
