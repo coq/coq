@@ -193,7 +193,7 @@ let _ =
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init;
-      Summary.survive_section = true }
+      Summary.survive_section = false }
 
 (* classe d'un terme *)
 
