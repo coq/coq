@@ -21,42 +21,20 @@ open Qast
 
 open Prim
 
-let local_make_qualid id l id' = Nametab.make_qualid (make_dirpath (id::l))id'
-let local_make_short_qualid id = Nametab.make_short_qualid id
-let local_make_posint = int_of_string
-let local_make_negint n = - int_of_string n
-let local_make_path id l a = make_path (make_dirpath (l@[id_of_string id])) a
-let local_make_binding loc a b =
-  match a with
-    | Nvar (_,id) -> Slam(loc,Some id,b)
-    | Nmeta (_,s) -> Smetalam(loc,s,b)
-    | _ -> failwith "Slam expects a var or a metavar"
-let local_append l id = l@[id]
-
 (* camlp4o pa_extend.cmo pa_extend_m.cmo pr_o.cmo q_prim.ml *)
 
 ifdef Quotify then
-let id_of_string s = Apply ("Names.id_of_string", [s])
-ifdef Quotify then
-let make_dirpath l = Apply ("Names.make_dirpath", [l])
-ifdef Quotify then
+module Prelude = struct
+let local_id_of_string s = Apply ("Names","id_of_string", [s])
+let local_make_dirpath l = Qast.Apply ("Nametab","make_dirpath",[l])
 let local_make_posint s = s
-ifdef Quotify then
-let local_make_negint s = Qast.Apply ("-", [s])
-ifdef Quotify then
-let local_make_qualid id l id' = 
-  Qast.Apply ("Nametab.make_qualid",
-    [Qast.Apply ("Nametab.make_dirpath",
-      [Qast.Cons (id, l)]); id'])
-ifdef Quotify then
+let local_make_negint s = Apply ("Pervasives","~-", [s])
+let local_make_qualid l id' = 
+  Qast.Apply ("Nametab","make_qualid", [local_make_dirpath l;id'])
 let local_make_short_qualid id =
-  Qast.Apply ("Nametab.make_short_qualid",[id])
-ifdef Quotify then
-let local_make_path id l a =
-  Qast.Apply ("Names.make_path",
-    [Qast.Apply ("Names.make_dirpath",
-      [Qast.Apply ("List.append",[l; id_of_string id]); a])])
-ifdef Quotify then
+  Qast.Apply ("Nametab","make_short_qualid",[id])
+let local_make_path l id' =
+  Qast.Apply ("Names","make_path", [local_make_dirpath l;id'])
 let local_make_binding loc a b =
   match a with
     | Qast.Node ("Nvar", [_;id]) ->
@@ -64,9 +42,30 @@ let local_make_binding loc a b =
     | Qast.Node ("Nmeta", [_;s]) ->
 	Qast.Node ("Smetalam", [Qast.Loc;s;b])
     | _ -> 
-	Qast.Apply ("failwith", [Qast.Str "Slam expects a var or a metavar"])
-ifdef Quotify then
-let local_append l id = Qast.Apply ("@", [l; Qast.List [id]])
+	Qast.Apply ("Pervasives", "failwith", [Qast.Str "Slam expects a var or a metavar"])
+let local_append l id = Qast.Apply ("List","append", [l; Qast.List [id]])
+end
+
+else
+
+module Prelude = struct
+open Nametab
+let local_id_of_string = id_of_string
+let local_make_dirpath = make_dirpath
+let local_make_qualid l id' = make_qualid (local_make_dirpath l) id'
+let local_make_short_qualid id = make_short_qualid id
+let local_make_posint = int_of_string
+let local_make_negint n = - int_of_string n
+let local_make_path l a = make_path (local_make_dirpath l) a
+let local_make_binding loc a b =
+  match a with
+    | Nvar (_,id) -> Slam(loc,Some id,b)
+    | Nmeta (_,s) -> Smetalam(loc,s,b)
+    | _ -> failwith "Slam expects a var or a metavar"
+let local_append l id = l@[id]
+end
+
+open Prelude
 
 ifdef Quotify then
 open Q
@@ -79,13 +78,13 @@ GEXTEND Gram
     [ [ s = METAIDENT -> Nmeta (loc,s) ] ]
   ;
   var:
-    [ [ s = IDENT -> Nvar(loc, id_of_string s) ] ]
+    [ [ id = ident -> Nvar(loc, id) ] ]
   ;
   preident:
     [ [ s = IDENT -> s ] ]
   ;
   ident:
-    [ [ s = IDENT -> id_of_string s ] ]
+    [ [ s = IDENT -> local_id_of_string s ] ]
   ;
   rawident:
     [ [ id = ident -> (loc,id) ] ]
@@ -98,21 +97,21 @@ GEXTEND Gram
       | "-"; i = INT -> local_make_negint i ] ]
   ;
   numarg:
-    [ [ n = integer -> Num (loc, n) ] ]
+    [ [ i = INT -> Num(loc, int_of_string i) ] ]
   ;
   field:
-    [ [ s = FIELD -> id_of_string s ] ]
+    [ [ s = FIELD -> local_id_of_string s ] ]
   ;
   dirpath:
-    [ [ id = ident; l = LIST0 field -> make_dirpath (id::l) ] ]
+    [ [ id = ident; l = LIST0 field -> local_make_dirpath (local_append l id) ] ]
   ;
   fields:
-    [ [ id = field; (l,id') = fields -> (id::l,id')
+    [ [ id = field; (l,id') = fields -> (local_append l id,id')
       | id = field -> ([],id)
       ] ]
   ;
   basequalid:
-    [ [ id = ident; (l,id') = fields -> local_make_qualid id l id'
+    [ [ id = ident; (l,id')=fields -> local_make_qualid (local_append l id) id'
       | id = ident -> local_make_short_qualid id
       ] ]
   ;
@@ -121,7 +120,7 @@ GEXTEND Gram
   ;
   reference:
     [ [ id = ident; (l,id') = fields ->
-        Tacexpr.RQualid (loc, local_make_qualid id l id')
+        Tacexpr.RQualid (loc, local_make_qualid (local_append l id) id')
       | id = ident -> Tacexpr.RIdent (loc,id)
       ] ]
   ;
@@ -129,17 +128,10 @@ GEXTEND Gram
     [ [ s = STRING -> s ] ]
   ;
   astpath:
-    [ [ id = IDENT; (l,a) = astfields -> Path(loc, local_make_path id l a)
-      | id = IDENT -> Nvar(loc, id_of_string id)
+    [ [ id = ident; (l,a) = fields ->
+          Path(loc, local_make_path (local_append l id) a)
+      | id = ident -> Nvar(loc, id)
       ] ]
-  ;
-  astfields:
-    [ [ id = FIELD; (l,a) = astfields -> local_append l (id_of_string id), a
-      | id = FIELD -> [], id_of_string id
-      ] ]
-  ;
-  astident:
-    [ [ s = IDENT -> s ] ]
   ;
   (* ast *)
   ast:
@@ -148,7 +140,7 @@ GEXTEND Gram
       | s = INT -> Num(loc, local_make_posint s)
       | s = STRING -> Str(loc, s)
       | "{"; s = METAIDENT; "}" -> Id(loc,s)
-      | "("; nname = astident; l = LIST0 ast; ")" -> Node(loc,nname,l)
+      | "("; nname = IDENT; l = LIST0 ast; ")" -> Node(loc,nname,l)
       | "("; METAIDENT "$LIST"; id = metaident; ")" -> Node(loc,"$LIST",[id])
       | "("; METAIDENT "$STR"; id = metaident; ")" -> Node(loc,"$STR",[id])
       | "("; METAIDENT "$VAR"; id = metaident; ")" -> Node(loc,"$VAR",[id])
@@ -168,10 +160,4 @@ GEXTEND Gram
   astlist:
     [ [ l = LIST0 Prim.ast -> l ] ]
   ;
-(*
-  astidoption:
-    [ [ "<>" -> None
-      | id = IDENT -> Some (id_of_string id) ] ]
-  ;
-*)
 END
