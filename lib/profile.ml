@@ -666,44 +666,77 @@ let profile7 e f a b c d g h i =
 
 open Obj
 
-let rec obj_stats d (s, b, m as u) t =
-  if is_int t || (tag t >= no_scan_tag) then (s, b, max d m)
+let c = ref 0
+let s = ref 0
+let b = ref 0
+let m = ref 0
+
+let rec obj_stats d t =
+  if is_int t then m := max d !m
+  else if tag t >= no_scan_tag then
+    if tag t = string_tag then
+      (c := !c + size t; b := !b + 1; m := max d !m)
+    else if tag t = double_tag then
+      (s := !s + 2; b := !b + 1; m := max d !m)
+    else if tag t = double_array_tag then
+      (s := !s + 2 * size t; b := !b + 1; m := max d !m)
+    else (b := !b + 1; m := max d !m)
   else
     let n = Obj.size t in
-    block_stats (d + 1) (s + n , b + 1, m) (n - 1) t
+    s := !s + n; b := !b + 1;
+    block_stats (d + 1) (n - 1) t
 
-and block_stats d u i t =
-  if i < 0 then u else block_stats d (obj_stats d u (field t i)) (i-1) t
+and block_stats d i t =
+  if i >= 0 then (obj_stats d (field t i); block_stats d (i-1) t)
 
-let obj_stats a = obj_stats 0 (0,0,0) (Obj.repr a)
+let obj_stats a =
+  c := 0; s:= 0; b:= 0; m:= 0;
+  obj_stats 0 (Obj.repr a);
+  (!c, !s + !b, !m)
 
-let tbl = Hashtbl.create 13
+module H = Hashtbl.Make(
+  struct 
+    type t = Obj.t 
+    let equal = (==) 
+    let hash o = Hashtbl.hash (magic o : int)
+  end)
+
+let tbl = H.create 13
 
 let rec obj_shared_size s t =
-  if is_int t || (tag t >= no_scan_tag) then s
-  else 
-    if Hashtbl.mem tbl t then s
-    else 
-      let n = Obj.size t in
-      Hashtbl.add tbl t t;
+  if is_int t then s
+  else if H.mem tbl t then s
+  else begin
+    H.add tbl t ();
+    let n = Obj.size t in
+    if tag t >= no_scan_tag then
+      if tag t = string_tag then (c := !c + n; s + 1)
+      else if tag t = double_tag then s + 3
+      else if tag t = double_array_tag then s + 2 * n + 1
+      else s + 1
+    else
       block_shared_size (s + n + 1) (n - 1) t
+  end
 
 and block_shared_size s i t =
   if i < 0 then s
   else block_shared_size (obj_shared_size s (field t i)) (i-1) t
 
 let obj_shared_size a =
-  Hashtbl.clear tbl;
-  obj_shared_size 0 (Obj.repr a)
+  H.clear tbl;
+  c := 0;
+  let s = obj_shared_size 0 (Obj.repr a) in
+  (s, !c)
 
 let print_logical_stats a =
-  let (s, b, d) = obj_stats a in
-  Printf.printf "Expanded size: %10d  Depth: %6d\n" (s + b) d
+  let (c, s, d) = obj_stats a in
+  Printf.printf "Expanded size: %10d (str: %8d) Depth: %6d\n" (s+c) c d
 
 let print_stats a =
-  let (s, b, d) = obj_stats a in
-  let o = obj_shared_size a in
-  Printf.printf "Size: %10d (%10d)  Depth: %6d\n" o (s + b) d
+  let (c1, s, d) = obj_stats a in
+  let (c2, o) = obj_shared_size a in
+  Printf.printf "Size: %8d (str: %8d) (exp: %10d)  Depth: %6d\n"
+    (o + c2) c2 (s + c1) d
 (*
 let _ = Gc.set { (Gc.get()) with Gc.verbose = 13 }
 *)

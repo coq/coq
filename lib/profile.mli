@@ -119,10 +119,11 @@ val print_logical_stats : 'a -> unit
    as the physical size of its argument) *)
 val print_stats : 'a -> unit
 
-(* Return physical size, logical size (in words) and depth of its argument *)
+(* Return logical size (first for strings, then for not strings),
+   (in words) and depth of its argument *)
 (* This function allocates itself a lot *)
 val obj_stats : 'a -> int * int * int
 
-(* Return physical size of its argument *)
+(* Return physical size of its argument (string part and rest) *)
 (* This function allocates itself a lot *)
-val obj_shared_size : 'a -> int
+val obj_shared_size : 'a -> int * int
