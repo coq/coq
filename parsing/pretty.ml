@@ -309,44 +309,35 @@ let crible (fn : std_ppcmds -> env -> constr -> unit) ref =
   let env = Global.env () in
   let imported = Library.opened_modules() in
   let const = constr_of_reference Evd.empty env ref in 
-  let rec crible_rec = function
-    | (spopt,Lib.Leaf lobj)::rest ->
-	(match (spopt,object_tag lobj) with
-	   | (_,"VARIABLE") ->
-	       let ((idc,_,typ),_,_) = get_variable spopt in 
-               if (head_const (body_of_type typ)) = const then  
-                 fn (pr_id idc) env (body_of_type typ);
-               crible_rec rest
-	   | (sp,("CONSTANT"|"PARAMETER")) ->
-	       let {const_type=typ} = Global.lookup_constant sp in
-               if (head_const (body_of_type typ)) = const then
-                 fn (pr_global (ConstRef sp)) env (body_of_type typ);
-               crible_rec rest
-	   | (sp,"INDUCTIVE") -> 
-               let mib = Global.lookup_mind sp in 
-	       let arities =
-		 array_map_to_list 
-		   (fun mip ->
-		      (Name mip.mind_typename, None, mip.mind_nf_arity))
-		   mib.mind_packets in
-	       let env_ar = push_rels arities env in
-               (match kind_of_term const with 
-		  | IsMutInd ((sp',tyi),_) -> 
-		      if sp=sp' then (*Suffit pas, cf les inds de Ensemble.v*)
-			print_constructors fn env_ar
-			  (mind_nth_type_packet mib tyi)
-		  | _ -> ());
-               crible_rec rest
-	   | _ -> crible_rec rest)
-
-    | (_, (Lib.OpenedSection _ | Lib.FrozenState _ | Lib.Module _))::rest -> 
-	crible_rec rest
-    | (_, Lib.ClosedSection _) :: rest ->
-	crible_rec rest
-    | []      -> ()
+  let crible_rec sp lobj =
+    match object_tag lobj with
+      | "VARIABLE" ->
+	  let ((idc,_,typ),_,_) = get_variable sp in 
+          if (head_const (body_of_type typ)) = const then  
+            fn (pr_id idc) env (body_of_type typ)
+      | "CONSTANT" 
+      | "PARAMETER" ->
+	  let {const_type=typ} = Global.lookup_constant sp in
+	  if (head_const (body_of_type typ)) = const then
+            fn (pr_global (ConstRef sp)) env (body_of_type typ)
+      | "INDUCTIVE" -> 
+          let mib = Global.lookup_mind sp in 
+	  let arities =
+	    array_map_to_list 
+	      (fun mip ->
+		 (Name mip.mind_typename, None, mip.mind_nf_arity))
+	      mib.mind_packets in
+	  let env_ar = push_rels arities env in
+          (match kind_of_term const with 
+	     | IsMutInd ((sp',tyi),_) -> 
+		 if sp=sp' then (*Suffit pas, cf les inds de Ensemble.v*)
+		   print_constructors fn env_ar
+		     (mind_nth_type_packet mib tyi)
+	     | _ -> ())
+      | _ -> ()
   in 
   try 
-    crible_rec (Lib.contents_after None)
+    Library.iter_all_segments false crible_rec 
   with Not_found -> 
     errorlabstrm "search"
       [< pr_global ref; 'sPC; 'sTR "not declared" >]
