@@ -88,8 +88,12 @@ let rec tauto_main () =
         Cut ?2-> ?3;[Intro;Cut ?1-> ?2;[Intro;Cut ?3;[Intro;Clear id|
           Intros;Apply id;Assumption]|Clear id]|Intros;Apply id;Intros;
           Assumption];$t_tauto_main
+      | [id:?1 -> ?2 |- ?] ->
+        Cut ?1;[Intro;Cut ?2;[Clear id ; $t_tauto_main | Intro; Apply id;
+         Assumption ]| Clear id ; $t_tauto_main]
       | [|- (?1 ? ?)] ->
         $t_is_disj;(Left;$t_tauto_main) Orelse (Right;$t_tauto_main)>>
+
 
 let intuition_main () =
   let t_axioms = tacticIn axioms
