@@ -304,7 +304,9 @@ GEXTEND Gram
       [ r = Prim.reference -> CPatAtom (loc,Some r)
       | "_" -> CPatAtom (loc,None)
       | "("; p = pattern LEVEL "200"; ")" ->
-          CPatNotation(loc,"( _ )",[p])
+          (match p with
+              CPatNumeral(_,Bignat.POS _) -> CPatNotation(loc,"( _ )",[p])
+            | _ -> p)
       | n = INT -> CPatNumeral (loc,Bignat.POS(Bignat.of_string n)) ] ]
   ;
   binder_list:

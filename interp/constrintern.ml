@@ -371,35 +371,53 @@ let subst_cases_pattern loc aliases intern subst scopes a =
 
 (* Differentiating between constructors and matching variables *)
 type pattern_qualid_kind =
-  | ConstrPat of constructor
+  | ConstrPat of (constructor * cases_pattern list)
   | VarPat of identifier
+
+let rec patt_of_rawterm loc cstr =
+  match cstr with
+    | RRef (_,(ConstructRef c as x)) ->
+	if !dump then add_glob loc x; 
+ 	(c,[])
+    | RApp (_,RApp(_,h,l1),l2) -> patt_of_rawterm loc (RApp(loc,h,l1@l2))
+    | RApp (_,RRef(_,(ConstructRef c as x)),pl) ->
+        if !dump then add_glob loc x;
+        let (_,mib) = Inductive.lookup_mind_specif (Global.env()) (fst c) in
+        let npar = mib.Declarations.mind_nparams in
+        let (params,args) =
+          if List.length pl <= npar then (pl,[]) else
+            list_chop npar pl in
+        (* All parameters must be _ *)
+        List.iter
+          (function RHole _ -> ()
+            | _ -> raise Not_found) params;
+        let pl' = List.map
+          (fun c ->
+            let (c,pl) = patt_of_rawterm loc c in
+            PatCstr(loc,c,pl,Anonymous)) args in
+        (c,pl')
+    | _ -> raise Not_found
 
 let find_constructor ref =
   let (loc,qid) = qualid_of_reference ref in
-  try match extended_locate qid with
+  let gref =
+    try extended_locate qid
+    with Not_found ->
+      raise (InternalisationError (loc,NotAConstructor ref)) in
+  match gref with
     | SyntacticDef sp ->
-	(match Syntax_def.search_syntactic_definition loc sp with
-	  | RRef (_,(ConstructRef c as x)) ->
-	      if !dump then add_glob loc x; 
- 	      c
-	  | _ ->
-	      raise (InternalisationError (loc,NotAConstructor ref)))
+        let sdef = Syntax_def.search_syntactic_definition loc sp in
+        patt_of_rawterm loc sdef
     | TrueGlobal r ->
         let rec unf = function
           | ConstRef cst ->
-              (try
-		let v = Environ.constant_value (Global.env()) cst in
-                unf (reference_of_constr v)
-              with
-                  Environ.NotEvaluableConst _ | Not_found ->
-		    raise (InternalisationError (loc,NotAConstructor ref)))
+	      let v = Environ.constant_value (Global.env()) cst in
+              unf (reference_of_constr v)
           | ConstructRef c -> 
 	      if !dump then add_glob loc r; 
-	      c
-          | _ -> raise (InternalisationError (loc,NotAConstructor ref))
+	      c, []
+          | _ -> raise Not_found
         in unf r
-  with Not_found ->
-    raise (InternalisationError (loc,NotAConstructor ref))
 
 let find_pattern_variable = function
   | Ident (loc,id) -> id
@@ -407,20 +425,27 @@ let find_pattern_variable = function
 
 let maybe_constructor ref =
   try ConstrPat (find_constructor ref)
-  with InternalisationError _ -> VarPat (find_pattern_variable ref)
+  with
+      (* patt var does not exists globally *)
+    | InternalisationError _ -> VarPat (find_pattern_variable ref)
+      (* patt var also exists globally but does not satisfy preconditions *)
+    | (Environ.NotEvaluableConst _ | Not_found) ->
+        warn (str "pattern " ++ pr_reference ref ++
+              str " is understood as a pattern variable");
+        VarPat (find_pattern_variable ref)
 
 let rec intern_cases_pattern scopes aliases tmp_scope = function
   | CPatAlias (loc, p, id) ->
       let aliases' = merge_aliases aliases id in
       intern_cases_pattern scopes aliases' tmp_scope p
   | CPatCstr (loc, head, pl) ->
-      let c = find_constructor head in
+      let c,pl0 = find_constructor head in
       let argscs =
 	simple_adjust_scopes (find_arguments_scope (ConstructRef c), pl) in
       let (idsl,pl') =
 	List.split (List.map2 (intern_cases_pattern scopes ([],[])) argscs pl)
       in
-      (aliases::(List.flatten idsl), PatCstr (loc,c,pl',alias_of aliases))
+      (aliases::(List.flatten idsl), PatCstr (loc,c,pl0@pl',alias_of aliases))
   | CPatNotation (loc,"- _",[CPatNumeral(_,Bignat.POS p)]) ->
       let scopes = option_cons tmp_scope scopes in
       ([aliases],
@@ -443,8 +468,8 @@ let rec intern_cases_pattern scopes aliases tmp_scope = function
         aliases None e
   | CPatAtom (loc, Some head) ->
       (match maybe_constructor head with
-	 | ConstrPat c ->
-	     ([aliases], PatCstr (loc,c,[],alias_of aliases))
+	 | ConstrPat (c,args) ->
+	     ([aliases], PatCstr (loc,c,args,alias_of aliases))
 	 | VarPat id ->
 	     let aliases = merge_aliases aliases id in
 	     ([aliases], PatVar (loc,alias_of aliases)))

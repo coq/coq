@@ -357,15 +357,19 @@ let unquote_notation_token s =
   let n = String.length s in
   if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' then String.sub s 1 (n-2) else s
 
+let is_normal_token str =
+  try let _ = Lexer.check_ident str in true with Lexer.Error _ -> false
+
 (* To protect alphabetic tokens and quotes from being seen as variables *)
 let quote_notation_token x =
   let n = String.length x in
-  if (n > 0 & Lexer.is_normal_token x) or (n > 2 & x.[0] = '\'') then "'"^x^"'"
+  let norm = is_normal_token x in
+  if (n > 0 & norm) or (n > 2 & x.[0] = '\'') then "'"^x^"'"
   else x
 
 let rec analyse_notation_tokens = function
   | []    -> [], []
-  | String x :: sl when Lexer.is_normal_token x ->
+  | String x :: sl when is_normal_token x ->
       Lexer.check_ident x;
       let id = Names.id_of_string x in
       let (vars,l) = analyse_notation_tokens sl in
@@ -373,7 +377,7 @@ let rec analyse_notation_tokens = function
 	error ("Variable "^x^" occurs more than once");
       (id::vars, NonTerminal id :: l)
   | String s :: sl ->
-      Lexer.check_special_token s;
+      Lexer.check_keyword s;
       let (vars,l) = analyse_notation_tokens sl in
       (vars, Terminal (unquote_notation_token s) :: l)
   | WhiteSpace n :: sl ->
@@ -629,10 +633,10 @@ let recompute_assoc typs =
     | _, Some Gramext.RightA -> Some Gramext.RightA
     | _ -> None
 
-let make_grammar_rule n typs symbols ntn =
+let make_grammar_rule n typs symbols ntn perm =
   let assoc = recompute_assoc typs in
   let prod = make_production typs symbols in
-  (n,assoc,ntn,prod)
+  (n,assoc,ntn,prod, perm)
 
 (* For old ast printer *)
 let metas_of sl =
@@ -882,7 +886,7 @@ let add_syntax_extension local mv mv8 =
   let prec,gram_rule = match data with
     | None -> None, None
     | Some ((_,_,notation),prec,(n,typs,symbols,_),_) -> 
-	Some prec, Some (make_grammar_rule n typs symbols notation) in
+	Some prec, Some (make_grammar_rule n typs symbols notation None) in
   match data, data8 with
     | None, None -> (* Nothing to do: V8Notation while not translating *) () 
     | _, Some d | Some d, None ->
@@ -962,6 +966,17 @@ let make_old_pp_rule n symbols typs r ntn scope vars =
   let rule_name = ntn^"_"^scope_name^"_notation" in
   make_syntax_rule n rule_name symbols typs ast ntn scope
 
+(* maps positions in v8-notation into positions in v7-notation (used
+   for parsing).
+   For instance  Notation "x < y < z" := .. V8only "y < z < x"
+   yields [1; 2; 0] (y is the second arg in v7; z is 3rd; x is fst) *)
+let mk_permut vars7 vars8 =
+  if vars7=vars8 then None else
+    Some
+      (List.fold_right
+        (fun v8 subs -> list_index v8 vars7 - 1 :: subs)
+        vars8 [])
+
 let add_notation_in_scope local df c mods omodv8 scope toks =
   let ((onlyparse,vars,notation),prec,(n,typs,symbols,_ as ppdata),df') =
     compute_syntax_data !Options.v7 (df,mods) in
@@ -974,32 +989,33 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
     (* In short: parsing does not depend on omodv8 *)
     (* Printing depends on mv8 if defined, otherwise of mods (scaled by 10) *)
     (* if in v7, or of mods without scaling if in v8 *)
-  let ppnot,ppprec,pp_rule =
+  let ppnot,ppvars,ppprec,pp_rule =
     match omodv8 with
     | Some mv8 ->
-        let (_,_,ntn8),p,d,_ = compute_syntax_data false mv8 in
-        ntn8,p,make_pp_rule d
+        let (_,vars8,ntn8),p,d,_ = compute_syntax_data false mv8 in
+        ntn8,vars8,p,make_pp_rule d
     | _ -> 
 	(* means the rule already exists: recover it *)
 	try 
 	  let _, oldprec8 = Symbols.level_of_notation notation in
 	  let rule,_ = Symbols.find_notation_printing_rule notation in
-	  notation,oldprec8,rule
+	  notation,vars,oldprec8,rule
 	with Not_found -> error "No known parsing rule for this notation in V8"
   in
-  let gram_rule = make_grammar_rule n typs symbols ppnot in
+  let permut = mk_permut vars ppvars in
+  let gram_rule = make_grammar_rule n typs symbols ppnot permut in
   Lib.add_anonymous_leaf
     (inSyntaxExtension
       (local,(Some prec,ppprec),ppnot,Some gram_rule,pp_rule));
 
   (* Declare interpretation *)
-  let a = interp_aconstr [] vars c in
+  let a = interp_aconstr [] ppvars c in
   let old_pp_rule =
     (* Used only by v7 *)
     if onlyparse then None
     else
       let r = interp_global_rawconstr_with_vars vars c in
-      Some (make_old_pp_rule n symbols typs r notation scope vars) in
+      Some (make_old_pp_rule n symbols typs r ppnot scope vars) in
   let onlyparse = onlyparse or !Options.v7_only in
   let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
   Lib.add_anonymous_leaf

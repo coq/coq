@@ -145,7 +145,7 @@ let id_of_ltac_v7_id id =
 let pr_ltac_or_var pr = function
   | ArgArg x -> pr x
   | ArgVar (loc,id) ->
-      pr_with_comments loc (Nameops.pr_id (id_of_ltac_v7_id id))
+      pr_with_comments loc (pr_id (id_of_ltac_v7_id id))
 
 let pr_arg pr x = spc () ++ pr x
 
@@ -331,9 +331,9 @@ let pr_seq_body pr tl =
 
 let duplicate force pr = function
   | [] -> pr (ref false,[])
-  | [x] -> pr x
+  | x::l when List.for_all (fun y -> snd x=snd y) l -> pr x
   | l ->
-      if List.exists (fun (b,ids) -> !b) l & (force or
+     if List.exists (fun (b,ids) -> !b) l & (force or
 	 List.exists (fun (_,ids) -> ids <> (snd (List.hd l))) (List.tl l))
       then pr_seq_body pr (List.rev l)
       else pr (ref false,[])

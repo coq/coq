@@ -18,7 +18,9 @@ open Rawterm
 (*i*)
 
 type all_grammar_command =
-  | Notation of (int * Gramext.g_assoc option * notation * prod_item list)
+  | Notation of
+      (int * Gramext.g_assoc option * notation * prod_item list *
+      int list option)
   | Grammar of grammar_command
   | TacticGrammar of (string * (string * grammar_production list) * Tacexpr.raw_tactic_expr) list
 

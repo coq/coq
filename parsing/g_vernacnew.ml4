@@ -76,7 +76,7 @@ END
 
 
 let test_plurial_form = function
-  | [_] ->
+  | [(_,([_],_))] ->
       Options.if_verbose warning
    "Keywords Variables/Hypotheses/Parameters expect more than one assumption"
   | _ -> ()

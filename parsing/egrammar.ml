@@ -21,7 +21,9 @@ open Nameops
 (* State of the grammar extensions *)
 
 type all_grammar_command =
-  | Notation of (int * Gramext.g_assoc option * notation * prod_item list)
+  | Notation of
+      (int * Gramext.g_assoc option * notation * prod_item list *
+      int list option)
   | Grammar of grammar_command
   | TacticGrammar of
       (string * (string * grammar_production list) * Tacexpr.raw_tactic_expr)
@@ -301,8 +303,12 @@ let extend_constr entry (n,assoc,pos,p4assoc,name) make_act (forpat,pt) =
   let act = make_act ntl in
   grammar_extend entry pos [(name, p4assoc, [symbs, act])]
 
-let extend_constr_notation (n,assoc,ntn,rule) =
-  let mkact loc env = CNotation (loc,ntn,List.map snd env) in
+let extend_constr_notation (n,assoc,ntn,rule,permut) =
+  let mkact =
+    match permut with
+        None -> (fun loc env -> CNotation (loc,ntn,List.map snd env))
+      | Some p -> (fun loc env ->
+          CNotation (loc,ntn,List.map (fun i -> snd (List.nth env i)) p)) in
   let (e,level,keepassoc) = get_constr_entry false (ETConstr (n,())) in
   let pos,p4assoc,name = find_position false keepassoc assoc level in
   extend_constr e (ETConstr(n,()),assoc,pos,p4assoc,name)

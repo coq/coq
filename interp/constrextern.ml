@@ -1131,13 +1131,18 @@ let rec match_cases_pattern metas sigma a1 a2 = match (a1,a2) with
   | PatCstr (loc,(ind,_ as r1),args1,Anonymous), _ ->
       let nparams =
 	(snd (Global.lookup_inductive ind)).Declarations.mind_nparams in
-      let params1 = list_tabulate (fun _ -> PatVar (loc,Anonymous)) nparams in
-      (match params1@args1, a2 with
-	| [], ARef (ConstructRef r2) when r1 = r2 -> sigma
-	| l1, AApp (ARef (ConstructRef r2),l2) 
-	    when r1 = r2 & List.length l1 = List.length l2 ->
-	    List.fold_left2 (match_cases_pattern metas) sigma l1 l2
-	| _ -> raise No_match)
+      let l2 =
+        match a2 with
+	  | ARef (ConstructRef r2) when r1 = r2 -> []
+	  | AApp (ARef (ConstructRef r2),l2)  when r1 = r2 -> l2
+          | _ -> raise No_match in
+      if List.length l2 <> nparams + List.length args1
+      then raise No_match
+      else
+        let (p2,args2) = list_chop nparams l2 in
+        (* All parameters must be _ *)
+        List.iter (function AHole _ -> () | _ -> raise No_match) p2;
+	List.fold_left2 (match_cases_pattern metas) sigma args1 args2
   | _ -> raise No_match
 
 let match_aconstr_cases_pattern c (metas_scl,pat) =
@@ -1205,8 +1210,8 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 		  insert_pat_delimiters (make_pat_notation loc ntn l) key)
           | SynDefRule kn ->
  	      CPatAtom (loc,Some (Qualid (loc, shortest_qualid_of_syndef kn)))
-	with
-	    No_match -> extern_symbol_pattern allscopes vars t rules
+      with
+	  No_match -> extern_symbol_pattern allscopes vars t rules
 
 (**********************************************************************)
 (* Externalising applications *)

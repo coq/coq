@@ -19,7 +19,7 @@ type error =
 
 exception Error of error
 
-val add_keyword : string -> unit
+val add_token : string * string -> unit
 val is_keyword : string -> bool
 
 val func : char Stream.t -> (string * string) Stream.t * (int -> int * int)
@@ -31,11 +31,7 @@ val location_table : unit -> location_table
 val restore_location_table : location_table -> unit
 
 val check_ident : string -> unit
-val check_special_token : string -> unit
-
-val is_normal_token : string -> bool
-
-val add_token : Token.pattern -> unit
+val check_keyword : string -> unit
 
 val tparse : string * string -> ((string * string) Stream.t -> string) option
 

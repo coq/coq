@@ -262,11 +262,14 @@ let split_product na' = function
       rename na na' t (CProdN(loc,(nal,t)::bl,c))
   | _ -> anomaly "ill-formed fixpoint body"
 
-let merge_binders (na1,ty1) (na2,ty2) =
+let merge_binders (na1,ty1) (na2,ty2) codom =
   let na =
     match snd na1, snd na2 with
         Anonymous, Name id -> na2
-      | Name id, Anonymous -> na1
+      | Name id, Anonymous ->
+          if occur_var_constr_expr id codom then
+            failwith "avoid capture"
+          else na1
       | Anonymous, Anonymous -> na1
       | Name id1, Name id2 ->
           if id1 <> id2 then failwith "not same name" else na1 in
@@ -277,18 +280,18 @@ let merge_binders (na1,ty1) (na2,ty2) =
       | _ ->
           Constrextern.check_same_type ty1 ty2;
           ty2 in
-  LocalRawAssum ([na],ty)
+  (LocalRawAssum ([na],ty), codom)
             
 let rec strip_domain bvar c =
   match c with
     | CArrow(loc,a,b) ->
-        (merge_binders bvar ((dummy_loc,Anonymous),a), b)
+        merge_binders bvar ((dummy_loc,Anonymous),a) b
     | CProdN(loc,[([na],ty)],c') ->
-        (merge_binders bvar (na,ty), c')
+        merge_binders bvar (na,ty) c'
     | CProdN(loc,([na],ty)::bl,c') ->
-        (merge_binders bvar (na,ty), CProdN(loc,bl,c'))
+        merge_binders bvar (na,ty) (CProdN(loc,bl,c'))
     | CProdN(loc,(na::nal,ty)::bl,c') ->
-        (merge_binders bvar (na,ty), CProdN(loc,(nal,ty)::bl,c'))
+        merge_binders bvar (na,ty) (CProdN(loc,(nal,ty)::bl,c'))
     | _ -> failwith "not a product"
 
 (* Note: binder sharing is lost *)

@@ -68,71 +68,64 @@ exception Error of error
 let bad_token str = raise (Error (Bad_token str))
 
 let check_special_token str =
-  let rec loop = parser
+  let rec loop_symb = parser
     | [< ' (' ' | '\n' | '\r' | '\t' | '"') >] -> bad_token str
     | [< _ = Stream.empty >] -> ()
-    | [< '_ ; s >] -> loop s
+    | [< '_ ; s >] -> loop_symb s
   in
-  loop (Stream.of_string str)
+  loop_symb (Stream.of_string str)
 
 let check_ident str =
-  let rec loop = parser
-    | [< ' ('$' | 'a'..'z' | 'A'..'Z' | '0'..'9' | ''' | '_'); s >] -> loop s
+  let first_letter = function
+      (''' | '0'..'9') -> false
+    | _ -> true in
+  let rec loop_id = parser
+    | [< ' ('$' | 'a'..'z' | 'A'..'Z' | '0'..'9' | ''' | '_'); s >] ->
+        loop_id s
     (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
-    | [< ' ('\206' | '\207'); ' ('\128'..'\191'); s >] -> loop s
-    (* iso 8859-1 accentuated letters *)
-    | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255'); s >] -> loop s
+    | [< ' ('\206' | '\207'); ' ('\128'..'\191'); s >] -> loop_id s
+    | [< ''\226'; 'c2; 'c3; s >] ->
+	  (match c2, c3 with
+	      (* utf8 letter-like unicode 2100-214F *) 
+	    | (('\132', '\128'..'\191') | ('\133', '\128'..'\143')) ->
+                loop_id s 
+		(* utf8 symbols (see [parse_226_tail]) *)
+	    | (('\134'..'\143' | '\152'..'\155'
+               | '\164'..'\165' | '\168'..'\171'),_) ->
+		bad_token str
+	    | _ -> (* default to iso 8859-1 "â" *)
+		if !Options.v7 then loop_id [< 'c2; 'c3; s >]
+                else bad_token str)
+	(* iso 8859-1 accentuated letters *)
+    | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255'); s >] ->
+        if !Options.v7 then loop_id s else bad_token str
     | [< _ = Stream.empty >] -> ()
     | [< >] -> bad_token str
   in
-  loop (Stream.of_string str)
+  if String.length str > 0 && first_letter str.[0] then
+    loop_id (Stream.of_string str)
+  else
+    bad_token str
 
-(* Special token dictionary *)
+let check_keyword str =
+  try check_special_token str
+  with Error _ -> check_ident str
+
+(* Keyword and symbol dictionary *)
 let token_tree = ref empty_ttree
 
-let add_special_token str =
-  check_special_token str;
-  token_tree := ttree_add !token_tree str
-
-(* Keyword identifier dictionary *)
-let keywords = ref empty_ttree
-
-let find_keyword s = ttree_find !keywords s
-
-let add_keyword str =
-  check_ident str;
-  keywords := ttree_add !keywords str
+let find_keyword s = ttree_find !token_tree s
 
 let is_keyword s = 
-  try let _ = ttree_find !keywords s in true with Not_found -> false
+  try let _ = ttree_find !token_tree s in true with Not_found -> false
 
-let is_normal_token str =
-  if String.length str > 0 then
-    match str.[0] with
-      | ' ' | '\n' | '\r' | '\t' | '"' -> bad_token str
-      | '$' | 'a'..'z' | 'A'..'Z' | '_' -> true
-	  (* utf-8 symbols of the form "E2 xx xx" [E2=226] *)
-      | '\226' when String.length str > 2 ->
-	  (match str.[1], str.[2] with
-	    | ('\132', '\128'..'\191') | ('\133', '\128'..'\143') ->
-		(* utf8 letter-like unicode 2100-214F *) true
-	    | (('\134'..'\143' | '\152'..'\155'
-               | '\164'..'\165' | '\168'..'\171'),_) ->
-		(* utf8 symbols (see [parse_226_tail] *)
-		false
-	    | _ ->
-		(* default to iso 8859-1 "â" *)
-		!Options.v7)
-	  (* iso 8859-1 accentuated letters *)
-      | '\192'..'\214' | '\216'..'\246' | '\248'..'\255' -> !Options.v7
-      | _ -> false
-  else 
-    bad_token str
+let add_keyword str =
+  check_keyword str;
+  token_tree := ttree_add !token_tree str
 
 (* Adding a new token (keyword or special token). *)
 let add_token (con, str) = match con with
-  | "" ->
-      if is_normal_token str then add_keyword str else add_special_token str
+  | "" -> add_keyword str
   | "METAIDENT" | "IDENT" | "FIELD" | "INT" | "STRING" | "EOI"
       -> ()
   | _ ->
@@ -141,16 +134,15 @@ the constructor \"" ^ con ^ "\" is not recognized by Lexer"))
 
 
 (* Freeze and unfreeze the state of the lexer *)
-type frozen_t = ttree * ttree
+type frozen_t = ttree
 
-let freeze () = (!keywords, !token_tree)
+let freeze () = !token_tree
 
-let unfreeze (kw,tt) =
-  keywords := kw;
+let unfreeze tt =
   token_tree := tt
 
 let init () =
-  unfreeze (empty_ttree, empty_ttree)
+  unfreeze empty_ttree
 
 let _ = init()
 
