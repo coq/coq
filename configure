@@ -270,14 +270,14 @@ esac
 CAMLC=`which $bytecamlc`
 case "$CAMLC" in
 	"") echo "$bytecamlc is not present in your path !"
-	echo "Give me manually the path to the ocamlc executable [/usr/local/bin by default]: "
+	echo "Give me manually the path to the $bytecamlc executable [/usr/local/bin by default]: "
 	read CAMLC
 	
 	case "$CAMLC" in
-		"") CAMLC=/usr/local/bin/ocamlc;;
+		"") CAMLC=/usr/local/bin/$bytecamlc;;
 		*/ocamlc|*/ocamlc.opt) true;;
-		*/) CAMLC="${CAMLC}"ocamlc;;
-		*) CAMLC="${CAMLC}"/ocamlc;;
+		*/) CAMLC="${CAMLC}"$bytecamlc;;
+		*) CAMLC="${CAMLC}"/$bytecamlc;;
 	esac
 	bytecamlc="$CAMLC"
 	nativecamlc=`dirname "$CAMLC"`/$nativecamlc;;
