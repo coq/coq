@@ -682,7 +682,7 @@ bin/coq-interface.opt$(EXE): $(COQMKTOP) $(CMX) $(USERTACCMX) $(INTERFACECMX)
 PARSERCODE=contrib/interface/line_parser.cmo contrib/interface/vtp.cmo \
            contrib/interface/xlate.cmo contrib/interface/parse.cmo
 PARSERCMO=$(PARSERREQUIRES) $(PARSERCODE)
-PARSERCMX= $(PARSERREQUIRESCMX) $(PARSECODE:.cmo=.cmx)
+PARSERCMX= $(PARSERREQUIRESCMX) $(PARSERCODE:.cmo=.cmx)
 
 bin/parser$(EXE): $(PARSERCMO)
 	$(SHOW)'OCAMLC -o $@'
