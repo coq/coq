@@ -67,6 +67,9 @@ val mk_clenv_rename_from_n : wc -> int option -> constr * constr -> wc clausenv
 val mk_clenv_hnf_constr_type_of : wc -> constr -> wc clausenv
 val mk_clenv_type_of : wc -> constr -> wc clausenv
 
+val subst_clenv : (substitution -> 'a -> 'a) -> 
+  substitution -> 'a clausenv -> 'a clausenv
+
 val connect_clenv : wc -> 'a clausenv -> wc clausenv
 val clenv_change_head : constr * constr -> 'a clausenv -> 'a clausenv
 val clenv_assign : int -> constr -> 'a clausenv -> 'a clausenv

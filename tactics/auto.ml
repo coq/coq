@@ -266,8 +266,6 @@ open Vernacexpr
 (*               declaration of the AUTOHINT library object               *)
 (**************************************************************************)
 
-let eager = Lazy.lazy_from_val
-
 (* If the database does not exist, it is created *)
 (* TODO: should a warning be printed in this case ?? *)
 let add_hint dbname hintlist = 
@@ -279,11 +277,9 @@ let add_hint dbname hintlist =
     let db = Hint_db.add_list hintlist Hint_db.empty in
     searchtable_add (dbname,db)
 
-let cache_autohint (_,(name,l_hintlist)) =
-  try add_hint name (Lazy.force l_hintlist) with _ -> anomaly "Auto.add_hint"
+let cache_autohint (_,(name,hintlist)) = add_hint name hintlist
 
-let subst_autohint (_,subst,((name,l_hintlist) as obj)) = 
-  let recalc_hints hintlist =
+(*  let recalc_hints hintlist =
     let env = Global.env() and sigma = Evd.empty in
     let recalc_hint ((_,data) as hint) =
       match data.code with
@@ -313,19 +309,52 @@ let subst_autohint (_,subst,((name,l_hintlist) as obj)) =
 	    anomaly "Extern hints cannot be substituted!!!"
     in
       list_smartmap recalc_hint hintlist
-  in
-  let hintlist = Lazy.force l_hintlist in
-    try
-      let hintlist' = recalc_hints hintlist in
-	if hintlist'==hintlist then
-	  obj
-	else
-	  (name,eager hintlist')
-    with
-	_ -> (name,lazy (recalc_hints hintlist))
+*)
 
-let classify_autohint (_,((name,l_hintlist) as obj)) =
-  match Lazy.force l_hintlist with
+let subst_autohint (_,subst,(name,hintlist as obj)) = 
+  let trans_clenv clenv = Clenv.subst_clenv (fun _ a -> a) subst clenv in
+  let trans_data data code = 	      
+    { data with
+	pat = option_smartmap (subst_pattern subst) data.pat ;
+	code = code ;
+    }
+  in
+  let subst_hint (lab,data as hint) =
+    let lab' = subst_label subst lab in
+    let data' = match data.code with
+      | Res_pf (c, clenv) ->
+	  let c' = Term.subst_mps subst c in
+	    if c==c' then data else
+	      trans_data data (Res_pf (c', trans_clenv clenv))
+      | ERes_pf (c, clenv) ->
+	  let c' = Term.subst_mps subst c in
+	    if c==c' then data else
+	      trans_data data (ERes_pf (c', trans_clenv clenv))
+      | Give_exact c ->
+	  let c' = Term.subst_mps subst c in
+	    if c==c' then data else
+	      trans_data data (Give_exact c')
+      | Res_pf_THEN_trivial_fail (c, clenv) ->
+	  let c' = Term.subst_mps subst c in
+	    if c==c' then data else
+	      let code' = Res_pf_THEN_trivial_fail (c', trans_clenv clenv) in
+		trans_data data code'
+      | Unfold_nth ref -> 
+	  let ref' = subst_global subst ref in
+	    if ref==ref' then data else
+	      trans_data data (Unfold_nth ref')
+      | Extern _ ->
+	  anomaly "Extern hints cannot be substituted!!!"
+    in
+      if lab' == lab && data' == data then hint else
+	(lab',data')
+  in
+  let hintlist' = list_smartmap subst_hint hintlist in
+    if hintlist' == hintlist then obj else
+      (name,hintlist')
+
+let classify_autohint (_,((name,hintlist) as obj)) =
+  match hintlist with
       [] -> Dispose   
     | (_,{code=Extern _})::_ -> Keep obj (* TODO! should be changed *)
     | _ -> Substitute obj
@@ -350,16 +379,13 @@ let add_resolves env sigma clist dbnames =
        Lib.add_anonymous_leaf
 	 (inAutoHint
 	    (dbname,
-	     let l =
-     	       List.flatten
-		 (List.map
-		    (fun (name,c) -> 
-		       let ty = type_of env sigma c in
-		       let verbose = Options.is_verbose() in
-			 make_resolves env sigma name (true,verbose) (c,ty)) clist
-		 )
-	     in
-	       eager l
+     	     List.flatten
+	       (List.map
+		  (fun (name,c) -> 
+		     let ty = type_of env sigma c in
+		     let verbose = Options.is_verbose() in
+		       make_resolves env sigma name (true,verbose) (c,ty)) clist
+	       )
 	    )))
     dbnames
 
@@ -367,7 +393,7 @@ let add_resolves env sigma clist dbnames =
 let add_unfolds l dbnames =
   List.iter 
     (fun dbname -> Lib.add_anonymous_leaf 
-       (inAutoHint (dbname, eager (List.map make_unfold l))))
+       (inAutoHint (dbname, List.map make_unfold l)))
     dbnames
 
 
@@ -384,7 +410,7 @@ let add_extern name pri (patmetas,pat) tacast dbname =
 	  (str "The meta-variable ?" ++ int i ++ str" is not bound")
     | []  ->
 	Lib.add_anonymous_leaf
-	  (inAutoHint(dbname, eager [make_extern name pri pat tacast]))
+	  (inAutoHint(dbname, [make_extern name pri pat tacast]))
 
 let add_externs name pri pat tacast dbnames = 
   List.iter (add_extern name pri pat tacast) dbnames
@@ -394,7 +420,7 @@ let add_trivials env sigma l dbnames =
   List.iter
     (fun dbname ->
        Lib.add_anonymous_leaf (
-	 inAutoHint(dbname, eager (List.map (make_trivial env sigma) l))))
+	 inAutoHint(dbname, List.map (make_trivial env sigma) l)))
     dbnames
 
 

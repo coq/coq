@@ -377,6 +377,20 @@ let mk_clenv_from_n wc n (c,cty) =
 
 let mk_clenv_from wc = mk_clenv_from_n wc None
 
+let map_fl f cfl = { cfl with rebus=f cfl.rebus }
+
+let map_clb f = function
+  | Cltyp cfl -> Cltyp (map_fl f cfl)
+  | Clval (cfl1,cfl2) -> Clval (map_fl f cfl1,map_fl f cfl2)
+
+let subst_clenv f sub clenv = 
+  { templval = map_fl (subst_mps sub) clenv.templval;
+    templtyp = map_fl (subst_mps sub) clenv.templtyp;
+    namenv = clenv.namenv;
+    env = Intmap.map (map_clb (subst_mps sub)) clenv.env;
+    hook = f sub clenv.hook }
+
+
 let connect_clenv wc clenv =
   { templval = clenv.templval;
     templtyp = clenv.templtyp;

@@ -49,6 +49,57 @@ let rec occur_meta_pattern = function
   | PMeta _ | PSoApp _ -> true
   | PEvar _ | PVar _ | PRef _ | PRel _ | PSort _ | PFix _ | PCoFix _ -> false
 
+let rec subst_pattern subst pat = match pat with
+  | PRef ref ->
+      let ref' = subst_global subst ref in
+	if ref' == ref then pat else 
+	  PRef ref'
+  | PVar _ 
+  | PEvar _
+  | PRel _ -> pat
+  | PApp (f,args) ->
+      let f' = subst_pattern subst f in 
+      let args' = array_smartmap (subst_pattern subst) args in
+	if f' == f && args' == args then pat else
+	  PApp (f',args')
+  | PSoApp (i,args) ->
+      let args' = list_smartmap (subst_pattern subst) args in
+	if args' == args then pat else
+	  PSoApp (i,args')
+  | PLambda (name,c1,c2) ->
+      let c1' = subst_pattern subst c1 in
+      let c2' = subst_pattern subst c2 in
+	if c1' == c1 && c2' == c2 then pat else
+	  PLambda (name,c1',c2')
+  | PProd (name,c1,c2) ->
+      let c1' = subst_pattern subst c1 in
+      let c2' = subst_pattern subst c2 in
+	if c1' == c1 && c2' == c2 then pat else
+	  PProd (name,c1',c2')
+  | PLetIn (name,c1,c2) ->
+      let c1' = subst_pattern subst c1 in
+      let c2' = subst_pattern subst c2 in
+	if c1' == c1 && c2' == c2 then pat else
+	  PLetIn (name,c1',c2')
+  | PSort _ 
+  | PMeta _ -> pat
+  | PCase (typ, c, branches) -> 
+      let typ' = option_smartmap (subst_pattern subst) typ in 
+      let c' = subst_pattern subst c in
+      let branches' = array_smartmap (subst_pattern subst) branches in
+	if typ' == typ && c' == c && branches' == branches then pat else
+	  PCase(typ', c', branches') 
+  | PFix fixpoint ->
+      let cstr = mkFix fixpoint in
+      let fixpoint' = destFix (subst_mps subst cstr) in
+	if fixpoint' == fixpoint then pat else
+	  PFix fixpoint'
+  | PCoFix cofixpoint ->
+      let cstr = mkCoFix cofixpoint in
+      let cofixpoint' = destCoFix (subst_mps subst cstr) in
+	if cofixpoint' == cofixpoint then pat else
+	  PCoFix cofixpoint'
+
 type constr_label =
   | ConstNode of constant
   | IndNode of inductive
@@ -63,6 +114,19 @@ let label_of_ref = function
   | ConstructRef sp -> CstrNode sp
   | VarRef id       -> VarNode id
 
+let ref_of_label = function
+  | ConstNode sp     -> ConstRef sp
+  | IndNode sp       -> IndRef sp
+  | CstrNode sp      -> ConstructRef sp
+  | VarNode id       -> VarRef id
+
+let subst_label subst cstl = 
+  let ref = ref_of_label cstl in
+  let ref' = subst_global subst ref in
+    if ref' == ref then cstl else
+      label_of_ref ref'
+      
+  
 let rec head_pattern_bound t =
   match t with
     | PProd (_,_,b)  -> head_pattern_bound b 

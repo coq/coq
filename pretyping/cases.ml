@@ -1148,7 +1148,7 @@ let specialize_predicate tomatchs deps cs = function
       let pred'' = subst_predicate (argsi, copti) pred' in
       (* We adjust pred st: gamma, x1..xn, x1..xn |- pred'' *)
       let pred''' = liftn_predicate n (n+1) pred'' in
-      (* We finally get gamma,x1..xn |- [X1,x1:=R1,x1]..[Xn,xn:=Rn,xn]pred'''*)
+      (* We finally get gamma,x1..xn |- [X1,x1:=R1,x1]..[Xn,xn:=Rn,xn]pred''' *)
       snd (List.fold_right2 (expand_arg n) tomatchs deps (n,pred'''))
 
 

@@ -35,6 +35,8 @@ type constr_pattern =
 
 val occur_meta_pattern : constr_pattern -> bool
 
+val subst_pattern : substitution -> constr_pattern -> constr_pattern
+
 type constr_label =
   | ConstNode of constant
   | IndNode of inductive
@@ -42,6 +44,8 @@ type constr_label =
   | VarNode of identifier
 
 val label_of_ref : global_reference -> constr_label
+
+val subst_label : substitution -> constr_label -> constr_label
 
 exception BoundPattern
 
