@@ -43,6 +43,10 @@ Grammar extensions
 Tactic language
 
 - Fail tactic now accepts a failure message
+
+Tactics
+
+- Replace can now replace proofs also
 - Fail levels are now decremented at "Match Context" blocks only and
   if the right-hand-side of "Match term With" are tactics, these
   tactics are never evaluated immediately and do not induce
