@@ -45,6 +45,8 @@ Bugs
 - Confusion between implicit args of locals and globals of same base name fixed
 - NatRing works (to check)
 - "Discriminate 1", "Injection 1", "Simplify_eq 1" now working
+- NewInduction bugs with let-in and recursively dependent hypotheses fixed
+- Syntax [x:=t:T]u now allowed as mentioned in documentation
 - Various incompatibilities wrt inference of "?" in V6.3.1 fixed
 - Known pattern-matching bugs fixed
 - Known coercions bugs
