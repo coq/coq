@@ -1038,7 +1038,7 @@ let build_initial_predicate env sigma isdep pred tomatchl =
 	Some (List.map (lift n) realargs), Some (lift n c)
     | c,NotInd _ -> None, Some (lift n c) in
   let decomp_lam_force p =
-    match kind_of_term (whd_betadeltaiota env sigma p) with
+    match kind_of_term p with
       | IsLambda (_,_,c) -> c
       | _ -> (* eta-expansion *) applist (lift 1 pred, [mkRel 1]) in
   let rec strip_and_adjust nargs pred =
