@@ -236,8 +236,14 @@ Generalize (H5 h H6 (Rlt_le_trans (Rabsolu h) (Rmin delta1 delta2) delta2 H7 (Rm
 Generalize (Rplus_lt ``(Rabsolu (((f1 (x+h))-(f1 x))/h-l1))`` ``eps/2`` ``(Rabsolu (((f2 (x+h))-(f2 x))/h-l2))`` ``eps/2`` H9 H8).
 Replace ``eps/2+eps/2`` with ``eps``.
 Intro H10; Assumption.
-Field; DiscrR.
-Field; Assumption.
+Apply double_var.
+Unfold Rdiv.
+Repeat Rewrite <- (Rmult_sym ``/h``).
+Repeat Rewrite Rminus_distr.
+Repeat Rewrite Rmult_Rplus_distr.
+Unfold Rminus.
+Repeat Rewrite Ropp_distr1.
+Ring.
 Discriminate.  
 Save.
 
@@ -259,11 +265,15 @@ Save.
 
 (* Opposite *)
 Lemma deriv_opposite : (f:R->R;x:R) (derivable_pt f x) -> ``(derive_pt (opp_fct f) x)==-(derive_pt f x)``.
-Intros; Generalize (derivable_derive f x H); Intro H0; Elim H0; Intros l H1; Rewrite H1; Unfold opp_fct; Apply derive_pt_def_0; Intros; Generalize (derive_pt_def_1 f x l H1); Intro H3; Elim (H3 eps H2); Intros delta H4; Exists delta; Intros; Replace ``( -(f (x+h))- -(f x))/h- -l`` with ``- (((f (x+h))-(f x))/h-l)``; [Rewrite Rabsolu_Ropp; Apply (H4 h H5 H6) | Field; Assumption].
+Intros; Generalize (derivable_derive f x H); Intro H0; Elim H0; Intros l H1; Rewrite H1; Unfold opp_fct; Apply derive_pt_def_0; Intros; Generalize (derive_pt_def_1 f x l H1); Intro H3; Elim (H3 eps H2); Intros delta H4; Exists delta; Intros; Replace ``( -(f (x+h))- -(f x))/h- -l`` with ``- (((f (x+h))-(f x))/h-l)``.
+Rewrite Rabsolu_Ropp; Apply (H4 h H5 H6).
+Unfold Rminus Rdiv; Rewrite Ropp_distr1; Repeat Rewrite Ropp_Ropp; Rewrite <- Ropp_mul1; Rewrite Ropp_distr1; Rewrite Ropp_Ropp; Reflexivity.
 Save.
 
 Lemma opposite_derivable_pt : (f:R->R;x:R) (derivable_pt f x) -> (derivable_pt (opp_fct f) x).
-Unfold opp_fct derivable_pt; Intros; Elim H; Intros; Exists ``-x0``; Intros; Elim (H0 eps H1); Intros; Exists x1; Intros; Generalize (H2 h H3 H4); Intro H5; Replace ``( -(f (x+h))- -(f x))/h- -x0`` with ``- (((f (x+h))-(f x))/h-x0)``; [Rewrite Rabsolu_Ropp; Assumption | Field; Assumption].
+Unfold opp_fct derivable_pt; Intros; Elim H; Intros; Exists ``-x0``; Intros; Elim (H0 eps H1); Intros; Exists x1; Intros; Generalize (H2 h H3 H4); Intro H5; Replace ``( -(f (x+h))- -(f x))/h- -x0`` with ``- (((f (x+h))-(f x))/h-x0)``.
+Rewrite Rabsolu_Ropp; Assumption.
+Unfold Rminus Rdiv; Rewrite Ropp_distr1; Repeat Rewrite Ropp_Ropp; Rewrite <- Ropp_mul1; Rewrite Ropp_distr1; Rewrite Ropp_Ropp; Reflexivity.
 Save.
 
 Lemma opposite_derivable : (f:R->R) (derivable f) -> (derivable (opp_fct f)).
@@ -303,7 +313,11 @@ Apply Rlt_monotony.
 Apply (Rabsolu_pos_lt a H1).
 Apply (H3 h H4 H5).
 Rewrite <- Rmult_sym; Unfold Rdiv; Rewrite Rmult_assoc; Rewrite <- (Rinv_l_sym (Rabsolu a)); [Apply Rmult_1r | Apply (Rabsolu_no_R0 a H1)].
-Field; Assumption.
+Rewrite Rminus_distr.
+Unfold Rdiv.
+Rewrite <- Rmult_assoc.
+Rewrite Rminus_distr.
+Reflexivity.
 Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply (Rabsolu_pos_lt a H1)].
 Save. 
 
@@ -318,7 +332,11 @@ Apply Rlt_monotony.
 Apply (Rabsolu_pos_lt a H1).
 Apply (H4 h H5 H6).
 Rewrite <- Rmult_sym; Unfold Rdiv; Rewrite Rmult_assoc; Rewrite <- (Rinv_l_sym (Rabsolu a)); [Apply Rmult_1r | Apply (Rabsolu_no_R0 a H1)].
-Field; Assumption.
+Rewrite Rminus_distr.
+Unfold Rdiv.
+Rewrite <- Rmult_assoc.
+Rewrite Rminus_distr.
+Reflexivity.
 Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply (Rabsolu_pos_lt a H1)].
 Save.
 
@@ -327,8 +345,7 @@ Intros; Generalize (scal_derivable_pt f a x H); Unfold mult_real_fct; Intro; Ass
 Save.
 
 Lemma scal_derivable : (f:R->R;a:R) (derivable f) -> (derivable (mult_real_fct a f)).
-Unfold derivable; Intros f a H1 x; Apply scal_derivable_pt; Exact
-(H1 x).
+Unfold derivable; Intros f a H1 x; Apply scal_derivable_pt; Exact (H1 x).
 Save.
 
 Lemma derive_scal : (f:R->R;a,x:R) (derivable_pt f x) -> (derive_pt ([x:R]``a*(f x)``) x)==``a*(derive_pt f x)``.
@@ -372,11 +389,21 @@ Save.
 Lemma deriv_id : (x:R) (derive_pt ([y:R] y) x)==``1``.
 Intro x; Apply derive_pt_def_0; Intros; Exists (mkposreal ``1`` Rlt_R0_R1); Intros; Replace ``(x+h-x)/h-1`` with ``0``.
 Rewrite Rabsolu_R0; Assumption.
-Field; Assumption.
+Unfold Rminus; Rewrite Rplus_assoc; Rewrite (Rplus_sym x); Rewrite Rplus_assoc.
+Rewrite Rplus_Ropp_l; Rewrite Rplus_Or; Unfold Rdiv; Rewrite <- Rinv_r_sym.
+Symmetry; Apply Rplus_Ropp_r.
+Assumption.
 Save.
 
 Lemma diff_id : (derivable ([x:R] x)).
-Unfold derivable; Intro x; Unfold derivable_pt; Exists ``1``; Intros eps Heps; Exists (mkposreal eps Heps); Intros h H1 H2; Replace ``(x+h-x)/h-1`` with ``0``; [Rewrite Rabsolu_R0; Apply Rle_lt_trans with ``(Rabsolu h)``; [Apply Rabsolu_pos | Assumption] | Field; Assumption].
+Unfold derivable; Intro x; Unfold derivable_pt; Exists ``1``; Intros eps Heps; Exists (mkposreal eps Heps); Intros h H1 H2; Replace ``(x+h-x)/h-1`` with ``0``.
+Rewrite Rabsolu_R0; Apply Rle_lt_trans with ``(Rabsolu h)``.
+Apply Rabsolu_pos.
+Assumption.
+Unfold Rminus; Rewrite Rplus_assoc; Rewrite (Rplus_sym x); Rewrite Rplus_assoc.
+Rewrite Rplus_Ropp_l; Rewrite Rplus_Or; Unfold Rdiv; Rewrite <- Rinv_r_sym.
+Symmetry; Apply Rplus_Ropp_r.
+Assumption.
 Save.
 
 (**********)
@@ -394,11 +421,27 @@ Save.
 
 (**********)
 Lemma deriv_Rsqr : (x:R) (derive Rsqr x)==``2*x``.
-Intro x; Unfold Rsqr; Unfold derive; Apply (derive_pt_def_0 ([x0:R]``x0*x0``) x); Intros eps Heps; Exists (mkposreal eps Heps); Intros h H1 H2; Replace ``((x+h)*(x+h)-x*x)/h-2*x`` with ``h``; [Assumption | Field; Assumption].
+Intro x; Unfold Rsqr; Unfold derive; Apply (derive_pt_def_0 ([x0:R]``x0*x0``) x); Intros eps Heps; Exists (mkposreal eps Heps); Intros h H1 H2; Replace ``((x+h)*(x+h)-x*x)/h-2*x`` with ``h``.
+Assumption.
+Replace ``(x+h)*(x+h)`` with ``(Rsqr (x+h))``.
+Rewrite Rsqr_plus; Unfold Rminus; Repeat Rewrite Rplus_assoc; Rewrite (Rplus_sym (Rsqr x)); Repeat Rewrite Rplus_assoc; Unfold Rsqr; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or; Unfold Rdiv; Rewrite Rmult_Rplus_distrl.
+Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_r_sym.
+Repeat Rewrite Rmult_1r; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r.
+Rewrite Rplus_Or; Reflexivity.
+Assumption.
+Unfold Rsqr; Reflexivity.
 Save.
 
 Lemma diff_Rsqr : (derivable Rsqr).
-Unfold derivable; Intro x; Unfold Rsqr; Unfold derivable_pt; Exists ``2*x``; Intros eps Heps; Exists (mkposreal eps Heps); Intros h H1 H2; Replace ``((x+h)*(x+h)-x*x)/h-2*x`` with ``h``; [Assumption | Field; Assumption].
+Unfold derivable; Intro x; Unfold Rsqr; Unfold derivable_pt; Exists ``2*x``; Intros eps Heps; Exists (mkposreal eps Heps); Intros h H1 H2; Replace ``((x+h)*(x+h)-x*x)/h-2*x`` with ``h``.
+Assumption.
+Replace ``(x+h)*(x+h)`` with ``(Rsqr (x+h))``.
+Rewrite Rsqr_plus; Unfold Rminus; Repeat Rewrite Rplus_assoc; Rewrite (Rplus_sym (Rsqr x)); Repeat Rewrite Rplus_assoc; Unfold Rsqr; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or; Unfold Rdiv; Rewrite Rmult_Rplus_distrl.
+Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_r_sym.
+Repeat Rewrite Rmult_1r; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r.
+Rewrite Rplus_Or; Reflexivity.
+Assumption.
+Unfold Rsqr; Reflexivity.
 Save.
 
 Lemma Rsqr_derivable_pt : (f:R->R;t:R) (derivable_pt f t) -> (derivable_pt ([x:R](Rsqr (f x))) t).
@@ -531,7 +574,10 @@ Unfold Rabsolu; Case (case_Rabsolu ``((f (c+(Rmin (delta/2) ((b+ -c)/2))))+ -(f 
 Replace `` -(((f (c+(Rmin (delta/2) ((b+ -c)/2))))+ -(f c))/(Rmin (delta/2) ((b+ -c)/2))+ -l)`` with ``l+ -(((f (c+(Rmin (delta/2) ((b+ -c)/2))))+ -(f c))/(Rmin (delta/2) ((b+ -c)/2)))``.
 Intro; Generalize (Rlt_compatibility ``-l`` ``l+ -(((f (c+(Rmin (delta/2) ((b+ -c)/2))))+ -(f c))/(Rmin (delta/2) ((b+ -c)/2)))`` ``l/2`` H20); Repeat Rewrite <- Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Ol; Replace ``-l+l/2`` with ``-(l/2)``.
 Intro; Generalize (Rlt_Ropp ``-(((f (c+(Rmin (delta/2) ((b+ -c)/2))))+ -(f c))/(Rmin (delta/2) ((b+ -c)/2)))`` ``-(l/2)`` H21); Repeat Rewrite Ropp_Ropp; Intro; Generalize (Rlt_trans ``0`` ``l/2`` ``((f (c+(Rmin (delta/2) ((b+ -c)/2))))+ -(f c))/(Rmin (delta/2) ((b+ -c)/2))`` H7 H22); Intro; Elim (Rlt_antirefl ``0`` (Rlt_le_trans ``0`` ``((f (c+(Rmin (delta/2) ((b+ -c)/2))))+ -(f c))/(Rmin (delta/2) ((b+ -c)/2))`` ``0`` H23 H17)).
-Field; DiscrR.
+Pattern 2 l; Rewrite double_var.
+Rewrite Ropp_distr1.
+Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l.
+Symmetry; Apply Rplus_Or.
 Ring.
 Intro; Generalize (Rle_sym2 ``0`` ``((f (c+(Rmin (delta/2) ((b+ -c)/2))))+ -(f c))/(Rmin (delta/2) ((b+ -c)/2))+ -l`` r); Intro; Elim (Rlt_antirefl ``0`` (Rle_lt_trans ``0`` ``((f (c+(Rmin (delta/2) ((b+ -c)/2))))+ -(f c))/(Rmin (delta/2) ((b+ -c)/2))+ -l`` ``0`` H21 H19)).
 Assumption.
@@ -541,7 +587,18 @@ Ring.
 Rewrite <- Ropp_O; Apply Rlt_Ropp; Assumption.
 Replace ``((f (c+(Rmin (delta/2) ((b-c)/2))))-(f c))/(Rmin (delta/2) ((b-c)/2))`` with ``- (((f c)-(f (c+(Rmin (delta/2) ((b-c)/2)))))/(Rmin (delta/2) ((b-c)/2)))``.
 Rewrite <- Ropp_O; Apply Rge_Ropp; Apply Rle_sym1; Unfold Rdiv; Apply Rmult_le_pos; [Generalize (Rle_compatibility_r ``-(f (c+(Rmin (delta*/2) ((b-c)*/2))))`` ``(f (c+(Rmin (delta*/2) ((b-c)*/2))))`` (f c) H16); Rewrite Rplus_Ropp_r; Intro; Assumption | Left; Apply Rlt_Rinv; Assumption].
-Field; Assumption.
+Unfold Rdiv.
+Rewrite <- Ropp_mul1.
+Repeat Rewrite <- (Rmult_sym ``/(Rmin (delta*/2) ((b-c)*/2))``).
+Apply r_Rmult_mult with ``(Rmin (delta*/2) ((b-c)*/2))``.
+Repeat Rewrite <- Rmult_assoc.
+Rewrite <- Rinv_r_sym.
+Repeat Rewrite Rmult_1l.
+Ring.
+Red; Intro.
+Unfold Rdiv in H13; Rewrite H17 in H13; Elim (Rlt_antirefl ``0`` H13).
+Red; Intro.
+Unfold Rdiv in H13; Rewrite H17 in H13; Elim (Rlt_antirefl ``0`` H13).
 Generalize (Rmin_r ``(delta/2)`` ``((b-c)/2)``); Intro; Generalize (Rle_compatibility ``c`` ``(Rmin (delta/2) ((b-c)/2))`` ``(b-c)/2`` H14); Intro; Apply Rle_lt_trans with ``c+(b-c)/2``.
 Assumption.
 Apply Rlt_monotony_contra with ``2``.
@@ -550,7 +607,12 @@ Replace ``2*(c+(b-c)/2)`` with ``c+b``.
 Replace ``2*b`` with ``b+b``.
 Apply Rlt_compatibility_r; Assumption.
 Ring.
-Field; DiscrR.
+Unfold Rdiv; Rewrite Rmult_Rplus_distr.
+Repeat Rewrite (Rmult_sym ``2``).
+Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r.
+Ring.
+Apply aze.
 Apply Rlt_trans with c.
 Assumption.
 Pattern 1 c; Rewrite <- (Rplus_Or c); Apply Rlt_compatibility; Assumption.
@@ -572,8 +634,8 @@ Rewrite Rmult_1l.
 Replace ``2*delta`` with ``delta+delta``. 
 Pattern 2 delta; Rewrite <- (Rplus_Or delta); Apply Rlt_compatibility.
 Rewrite Rplus_Or; Apply (cond_pos delta).
-Ring.
-DiscrR.
+Symmetry; Apply double.
+Apply aze.
 Cut ``0<delta/2``.
 Intro; Generalize (Rmin_stable_in_posreal (mkposreal ``delta/2`` H10) (mkposreal ``(b-c)/2`` H9)); Simpl; Intro; Red; Intro; Rewrite H12 in H11; Elim (Rlt_antirefl ``0`` H11).
 Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply Rlt_Rinv; Apply Rgt_2_0].
@@ -601,7 +663,8 @@ Intros; Generalize (Rlt_compatibility_r ``l`` ``(((f (c+(Rmax (-(delta/2)) ((a+ 
 Cut ``l/2<0``.
 Intros; Generalize (Rlt_trans ``((f (c+(Rmax ( -(delta/2)) ((a+ -c)/2))))+ -(f c))/(Rmax ( -(delta/2)) ((a+ -c)/2))`` ``l/2`` ``0`` H23 H22); Intro; Elim (Rlt_antirefl ``0`` (Rle_lt_trans ``0`` ``((f (c+(Rmax ( -(delta/2)) ((a-c)/2))))-(f c))/(Rmax ( -(delta/2)) ((a-c)/2))`` ``0`` H18 H24)).
 Rewrite <- (Ropp_Ropp ``l/2``); Rewrite <- Ropp_O; Apply Rlt_Ropp; Assumption.
-Field; DiscrR.
+Pattern 3 l; Rewrite double_var.
+Ring.
 Assumption.
 Apply ge0_plus_gt0_is_gt0; Assumption.
 Rewrite <- Ropp_O; Apply Rlt_Ropp; Assumption.
@@ -611,16 +674,22 @@ Generalize (Rle_compatibility ``-(f (c+(Rmax (-(delta*/2)) ((a-c)*/2))))`` ``(f 
 Intro; Assumption.
 Ring.
 Left; Apply Rlt_Rinv; Rewrite <- Ropp_O; Apply Rlt_Ropp; Assumption.
-Field; Apply prod_neq_R0; [Apply Ropp_neq; Assumption | Assumption].
+Unfold Rdiv.
+Rewrite <- Ropp_Rinv.
+Rewrite Ropp_mul2.
+Reflexivity.
+Unfold Rdiv in H12; Assumption.
 Generalize (Rlt_compatibility c ``(Rmax ( -(delta/2)) ((a-c)/2))`` ``0`` H11); Rewrite Rplus_Or; Intro; Apply Rlt_trans with ``c``; Assumption.
 Generalize (RmaxLess2 ``(-(delta/2))`` ``((a-c)/2)``); Intro; Generalize (Rle_compatibility c ``(a-c)/2`` ``(Rmax ( -(delta/2)) ((a-c)/2))`` H15); Intro; Apply Rlt_le_trans with ``c+(a-c)/2``.
 Apply Rlt_monotony_contra with ``2``.
 Apply Rgt_2_0.
 Replace ``2*(c+(a-c)/2)`` with ``a+c``.
-Replace ``2*a`` with ``a+a``.
+Rewrite double.
 Apply Rlt_compatibility; Assumption.
 Ring.
-Field; DiscrR.
+Rewrite <- Rplus_assoc.
+Rewrite <- double_var.
+Ring.
 Assumption.
 Unfold Rabsolu; Case (case_Rabsolu (Rmax ``-(delta/2)`` ``(a-c)/2``)).
 Intro; Generalize (RmaxLess1 ``-(delta/2)`` ``(a-c)/2``); Intro; Generalize (Rle_Ropp ``-(delta/2)`` ``(Rmax ( -(delta/2)) ((a-c)/2))`` H13); Rewrite Ropp_Ropp; Intro; Generalize (Rle_sym2 ``-(Rmax ( -(delta/2)) ((a-c)/2))`` ``delta/2`` H14); Intro; Apply Rle_lt_trans with ``delta/2``.
@@ -628,23 +697,36 @@ Assumption.
 Apply Rlt_monotony_contra with ``2``. 
 Apply Rgt_2_0.
 Unfold Rdiv; Rewrite <- (Rmult_sym ``/2``); Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym.
-Rewrite Rmult_1l; Replace ``2*delta`` with ``delta+delta``.
+Rewrite Rmult_1l; Rewrite double.
 Pattern 2 delta; Rewrite <- (Rplus_Or delta); Apply Rlt_compatibility; Rewrite Rplus_Or; Apply (cond_pos delta).
-Ring. 
-DiscrR.
+Apply aze. 
 Cut ``-(delta/2) < 0``.
 Cut ``(a-c)/2<0``.
 Intros; Generalize (Rmax_stable_in_negreal (mknegreal ``-(delta/2)`` H14) (mknegreal ``(a-c)/2`` H13)); Simpl; Intro; Generalize (Rle_sym2 ``0`` ``(Rmax ( -(delta/2)) ((a-c)/2))`` r); Intro; Elim (Rlt_antirefl ``0`` (Rle_lt_trans ``0`` ``(Rmax ( -(delta/2)) ((a-c)/2))`` ``0`` H16 H15)).
-Rewrite <- Ropp_O; Rewrite <- (Ropp_Ropp ``(a-c)/2``); Apply Rlt_Ropp; Replace ``-((a-c)/2)`` with ``(c-a)/2``; [Assumption | Field; DiscrR].
+Rewrite <- Ropp_O; Rewrite <- (Ropp_Ropp ``(a-c)/2``); Apply Rlt_Ropp; Replace ``-((a-c)/2)`` with ``(c-a)/2``.
+Assumption.
+Unfold Rdiv.
+Rewrite <- Ropp_mul1. 
+Rewrite (Ropp_distr2 a c).
+Reflexivity.
 Rewrite <- Ropp_O; Apply Rlt_Ropp; Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply (Rlt_Rinv ``2`` Rgt_2_0)].
 Red; Intro; Rewrite H12 in H11; Elim (Rlt_antirefl ``0`` H11).
 Cut ``(a-c)/2<0``.
 Intro; Cut ``-(delta/2)<0``.
 Intro; Apply (Rmax_stable_in_negreal (mknegreal ``-(delta/2)`` H12) (mknegreal ``(a-c)/2`` H11)).
 Rewrite <- Ropp_O; Apply Rlt_Ropp; Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply (Rlt_Rinv ``2`` Rgt_2_0)].
-Rewrite <- Ropp_O; Rewrite <- (Ropp_Ropp ``(a-c)/2``); Apply Rlt_Ropp; Replace ``-((a-c)/2)`` with ``(c-a)/2``; [Assumption | Field; DiscrR].
+Rewrite <- Ropp_O; Rewrite <- (Ropp_Ropp ``(a-c)/2``); Apply Rlt_Ropp; Replace ``-((a-c)/2)`` with ``(c-a)/2``.
+Assumption.
+Unfold Rdiv.
+Rewrite <- Ropp_mul1. 
+Rewrite (Ropp_distr2 a c).
+Reflexivity.
 Unfold Rdiv; Apply Rmult_lt_pos; [Generalize (Rlt_compatibility_r ``-a`` a c H); Rewrite Rplus_Ropp_r; Intro; Assumption | Apply (Rlt_Rinv ``2`` Rgt_2_0)].
-Replace ``-(l/2)`` with ``(-l)/2``; [Unfold Rdiv; Apply Rmult_lt_pos; [Rewrite <- Ropp_O; Apply Rlt_Ropp; Assumption | Apply (Rlt_Rinv ``2`` Rgt_2_0)] | Field; DiscrR].
+Replace ``-(l/2)`` with ``(-l)/2``.
+Unfold Rdiv; Apply Rmult_lt_pos.
+Rewrite <- Ropp_O; Apply Rlt_Ropp; Assumption.
+Apply (Rlt_Rinv ``2`` Rgt_2_0).
+Unfold Rdiv; Apply Ropp_mul1.
 Save.
 
 Theorem deriv_minimum : (f:R->R;a,b,c:R) ``a<c``->``c<b``->(derivable_pt f c)->((x:R) ``a<x``->``x<b``->``(f c)<=(f x)``)->``(derive_pt f c)==0``.
@@ -672,7 +754,8 @@ Intros; Generalize (Rlt_compatibility_r l ``((f (x+delta/2))-(f x))/(delta/2)-l`
 Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or; Intro; Generalize (Rle_lt_trans ``0`` ``((f (x+delta/2))-(f x))/(delta/2)`` ``l/2`` H10 H15); Intro; Cut ``l/2<0``.
 Intro; Elim (Rlt_antirefl ``0`` (Rlt_trans ``0`` ``l/2`` ``0`` H16 H17)).
 Rewrite <- Ropp_O in H6; Generalize (Rlt_Ropp ``-0`` ``-(l/2)`` H6); Repeat Rewrite Ropp_Ropp; Intro; Assumption.
-Field; DiscrR.
+Pattern 3 l ; Rewrite double_var.
+Ring.
 Unfold Rminus; Apply ge0_plus_ge0_is_ge0.
 Unfold Rdiv; Apply Rmult_le_pos.
 Cut ``x<=(x+(delta*/2))``.
@@ -702,7 +785,9 @@ Apply Rlt_compatibility.
 Rewrite Rplus_Or.
 Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply Rlt_Rinv; Apply Rgt_2_0].
 Ring.
-Field; DiscrR.
+Rewrite <- Rmult_assoc.
+Apply Rinv_r_simpl_m.
+Apply aze.
 Rewrite <- Ropp_O; Apply Rlt_Ropp; Unfold Rdiv; Generalize (Rlt_monotony_r ``/2`` l ``0`` (Rlt_Rinv ``2`` Rgt_2_0) H4); Rewrite Rmult_Ol; Intro; Assumption.
 Save.
 
@@ -731,7 +816,8 @@ Intro.
 Generalize (Rlt_trans ``0`` ``l/2`` ``((f (x+delta/2))-(f x))/(delta/2)`` H6 H16); Intro.
 Elim (Rlt_antirefl ``0`` (Rlt_le_trans ``0`` ``((f (x+delta/2))-(f x))/(delta/2)`` ``0`` H17 H10)).
 Ring.
-Field; DiscrR.
+Pattern 3 l; Rewrite double_var.
+Ring.
 Intros.
 Generalize (Rge_Ropp ``((f (x+delta/2))-(f x))/(delta/2)-l`` ``0`` r).
 Rewrite Ropp_O.
@@ -746,12 +832,15 @@ Intro; Generalize (H0 x ``x+(delta*/2)`` H13); Intro; Generalize (Rle_compatibil
 Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Left; Assumption.
 Left; Apply Rlt_Rinv; Assumption.
 Assumption.
-Field.
-DiscrR.
-Case delta; Intros.
-Apply prod_neq_R0.
-Compute; Intro H13; Rewrite H13 in cond_pos; Elim (Rlt_antirefl ``0`` cond_pos).
-Apply Rinv_neq_R0; DiscrR.
+Rewrite Ropp_distr2.
+Unfold Rminus.
+Rewrite (Rplus_sym l).
+Unfold Rdiv.
+Rewrite <- Ropp_mul1.
+Rewrite Ropp_distr1.
+Rewrite Ropp_Ropp.
+Rewrite (Rplus_sym (f x)).
+Reflexivity.
 Replace ``((f (x+delta/2))-(f x))/(delta/2)`` with ``-(((f x)-(f (x+delta/2)))/(delta/2))``.
 Rewrite <- Ropp_O.
 Apply Rge_Ropp.
@@ -762,11 +851,9 @@ Intro; Generalize (H0 x ``x+(delta*/2)`` H10); Intro.
 Generalize (Rle_compatibility ``-(f (x+delta/2))`` ``(f (x+delta/2))`` ``(f x)`` H13); Rewrite Rplus_Ropp_l; Rewrite Rplus_sym; Intro; Assumption.
 Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Left; Assumption.
 Left; Apply Rlt_Rinv; Assumption.
-Field.
-Case delta; Intros.
-Apply prod_neq_R0.
-Compute; Intro H13; Rewrite H13 in cond_pos; Elim (Rlt_antirefl ``0`` cond_pos).
-Apply Rinv_neq_R0; DiscrR.
+Unfold Rdiv; Rewrite <- Ropp_mul1.
+Rewrite Ropp_distr2.
+Reflexivity.
 Split.
 Unfold Rdiv; Apply prod_neq_R0.
 Generalize (cond_pos delta); Intro; Red; Intro H9; Rewrite H9 in H8; Elim (Rlt_antirefl ``0`` H8).
@@ -784,7 +871,9 @@ Apply Rlt_compatibility.
 Rewrite Rplus_Or.
 Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply Rlt_Rinv; Apply Rgt_2_0].
 Ring.
-Field; DiscrR.
+Rewrite <- Rmult_assoc.
+Apply Rinv_r_simpl_m.
+Apply aze.
 Unfold Rdiv; Apply Rmult_lt_pos.
 Assumption.
 Apply Rlt_Rinv; Apply Rgt_2_0.
