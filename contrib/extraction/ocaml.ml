@@ -274,7 +274,7 @@ let rec pp_expr par env args =
 			    par ((List.map (pp_expr true env' []) a) @ args))
 	     | _ -> raise Not_found
 	 with Not_found -> 
-	   if Array.length pv = 1 && record = None then 
+	   if Array.length pv = 1 then 
 	     let s1,s2 = pp_one_pat env pv.(0) in 
 	     apply 
 	       (hv 0 
