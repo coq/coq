@@ -21,12 +21,13 @@ open Util
 (* Tactics grammar rules *)
 
 GEXTEND Gram
+  GLOBAL: tactic_expr input_fun;
   input_fun:
     [ [ l = identarg -> l
       | "()" -> <:ast< (VOID) >> ] ]
   ;
   let_clause:
-    [ [ id = identarg; "="; te=tactic_atom -> <:ast< (LETCLAUSE $id $te) >>
+    [ [ id = identarg; "="; te=tactic_atom0 -> <:ast< (LETCLAUSE $id $te) >>
       | id = identarg; ":"; c = constrarg; ":="; "Proof" ->
         (match c with
         | Coqast.Node(_,"COMMAND",[csr]) ->
@@ -86,14 +87,7 @@ GEXTEND Gram
          <:ast< (TACTICLIST $ta0 $ta1) >>
       | ta = tactic_expr; ";"; "["; lta = LIST0 tactic_expr SEP "|"; "]" ->
          <:ast< (TACTICLIST $ta (TACLIST ($LIST $lta))) >>
-      | y = tactic_atom0 -> y ] ]
-  ;
-  tactic_atom0:
-    [ [ la = LIST1 tactic_atom ->
-        if (List.length la) = 1 then
-          let el = List.hd la in <:ast< $el >>
-        else
-          <:ast< (APP ($LIST $la)) >> ] ]
+      | y = tactic_atom -> y ] ]
   ;
   tactic_atom:
     [ [ IDENT "Fun"; it = LIST1 input_fun ; "->"; body = tactic_expr ->
@@ -122,9 +116,10 @@ GEXTEND Gram
         -> <:ast< (MATCHCONTEXT ($LIST $mrl)) >>
       |	IDENT "Match"; com = constrarg; IDENT "With"; mrl = match_list ->
         <:ast< (MATCH $com ($LIST $mrl)) >>
-      |	"("; te = tactic_expr; ")" -> te
+(*
       |	"("; te = tactic_expr; tel=LIST1 tactic_expr; ")" ->
         <:ast< (APP $te ($LIST $tel)) >>
+*)
       | IDENT "First" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
           <:ast<(FIRST ($LIST $l))>>
       | IDENT "Info"; tc = tactic_expr -> <:ast< (INFO $tc) >>
@@ -143,16 +138,22 @@ GEXTEND Gram
       |	ta0 = tactic_atom; "Orelse"; ta1 = tactic_atom ->
           <:ast< (ORELSE $ta0 $ta1) >>
       | IDENT "Progress"; ta = tactic_atom -> <:ast< (PROGRESS $ta) >>
+          (* Copy here to factorize with pure ident *)
+      |	IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = Constr.constr ->
+        <:ast< (COMMAND (EVAL $c (REDEXP $rtc))) >>
+      | IDENT "Inst"; id = identarg; "["; c = Constr.constr; "]" ->
+        <:ast< (COMMAND (CONTEXT $id $c)) >>
       |	st = simple_tactic -> st
-      |	tca = tactic_arg -> tca ] ]
+      | id = lqualid; la = LIST1 tactic_atom0 -> <:ast< (APP $id ($LIST $la)) >>
+      | id = lqualid -> id
+      | ta = tactic_atom0 -> ta ] ]
   ;
-  tactic_arg:
-    [ [ "()" -> <:ast< (VOID) >>
+  tactic_atom0:
+    (* Tactic arguments *)
+  [ [ "("; te = tactic_expr; ")" -> te
+      | id = lqualid -> id
+      | "()" -> <:ast< (VOID) >>
       | n = pure_numarg -> n
-      | l = Constr.qualid ->
-        (match l with
-	| [id] -> id
-        | _ -> <:ast< (QUALIDARG ($LIST $l)) >>)
       | id = Prim.metaident -> id
       |	"?" -> <:ast< (COMMAND (ISEVAR)) >>
       | "?"; n = Prim.number -> <:ast< (COMMAND (META $n)) >>
@@ -160,5 +161,12 @@ GEXTEND Gram
         <:ast< (COMMAND (EVAL $c (REDEXP $rtc))) >>
       | IDENT "Inst"; id = identarg; "["; c = Constr.constr; "]" ->
         <:ast< (COMMAND (CONTEXT $id $c)) >>
-      |	"'"; c = constrarg -> c ] ];
-    END
+      |	"'"; c = constrarg -> c ] ]
+  ;
+  lqualid:
+    [ [ l = Constr.qualid ->
+          (match l with
+	     | [id] -> id
+             | _ -> <:ast< (QUALIDARG ($LIST $l)) >>) ] ]
+  ;
+  END
