@@ -5,6 +5,7 @@ Declare ML Module "xlate".
 Declare ML Module "vtp".
 Declare ML Module "translate".
 Declare ML Module "pbp".
+Declare ML Module "blast".
 Declare ML Module "dad".
 Declare ML Module "showproof_ct".
 Declare ML Module "showproof".
@@ -55,6 +56,8 @@ Grammar tactic simple_tactic : ast :=
 | pbp2 [ "Pbp" identarg($id) ] -> [ (PcoqPbp $id) ]
 | pbp3 [ "Pbp" identarg($id) ne_num_list($ns)] ->
          [ (PcoqPbp $id ($LIST $ns)) ]
+| blast1 [ "Blast" ne_num_list($ns) ] ->
+         [ (PcoqBlast ($LIST $ns)) ]
 | dad00 [ "Dad" "to" ] -> [(Dad (TACTIC (to)))]
 | dad01 [ "Dad" "to" ne_num_list($ns) ] ->
         [(Dad (TACTIC (to)) ($LIST $ns))]

@@ -1,6 +1,4 @@
 (* A proof by pointing algorithm. *)
-
-
 open Util;;
 open Names;;
 open Term;;
@@ -20,14 +18,21 @@ open Typing;;
 open Pp;;
 
 (* get_hyp_by_name : goal sigma -> string -> constr,
-   looks up for an hypothesis, from its name *)
+   looks up for an hypothesis (or a global constant), from its name *)
 let get_hyp_by_name g name =
   let evd = project g in
   let env = pf_env g in
-  let judgment = 
-    Pretyping.understand_judgment 
-      evd env (RVar(dummy_loc, id_of_string name)) in
-    judgment.uj_type;;
+  try (let judgment = 
+         Pretyping.understand_judgment 
+          evd env (RVar(dummy_loc, id_of_string name)) in
+       ("hyp",judgment.uj_type))
+(* je sais, c'est pas beau, mais je ne sais pas trop me servir de look_up...
+   Loïc *)
+  with _ -> (let parse_ast = Pcoq.parse_string Pcoq.Constr.constr in
+             let parse s = Astterm.interp_constr Evd.empty (Global.env())
+	          (parse_ast s) in
+             ("cste",type_of (Global.env()) Evd.empty (parse name)))
+;;
 
 type pbp_rule = (identifier list *
                     string list *
@@ -62,8 +67,9 @@ let get_name_from_intro = function
 let make_clears =  function
     [] -> Node(zz, "Idtac",[])
   | str_list ->
-      Node(zz,"Clear",
-	   [Node(zz, "CLAUSE", List.map (function s -> Nvar(zz,s)) str_list)]);;
+      Node(zz, "TRY", [Node(zz,"Clear",
+	   [Node(zz, "CLAUSE", List.map (function s -> Nvar(zz,s)) str_list)])
+	       ]);;
 
 let add_clear_names_if_necessary tactic clear_names =
     match clear_names with
@@ -176,7 +182,7 @@ let (imply_elim2: pbp_rule) = function
   | _ -> None;;
 
 let reference dir s =
-  let dir = make_dirpath 
+  let dir = make_dirpath
               (List.map id_of_string (List.rev ("Coq"::"Init"::[dir]))) in
   let id = id_of_string s in
   try 
@@ -185,9 +191,7 @@ let reference dir s =
     anomaly ("Coqlib: cannot find "^
 	     (Nametab.string_of_qualid (Nametab.make_qualid dir id)))
 
-let constant dir s =
-  Declare.constr_of_reference (reference dir s);;
-
+let constant dir s =  Declare.constr_of_reference (reference dir s);;
 
 let andconstr: unit -> constr = Coqlib.build_coq_and;;
 let prodconstr () = constant "Datatypes" "prod";;
@@ -544,6 +548,9 @@ let default_ast optname constr path =
                    [Node(zz, "Exact",[Node(zz,"COMMAND",[Nvar(zz,a)])])]);;
 
 (* This is the main proof by pointing function. *)
+(* avoid: les noms a ne pas utiliser *)
+(* final_cmd: la fonction appelee par defaut *)
+(* opt_name: eventuellement le nom de l'hypothese sur laquelle on agit *)
 
 let rec pbpt final_cmd avoid clear_names clear_flag opt_name constr path =
   let rec try_all_rules rl =
@@ -645,7 +652,7 @@ let cleanup_clears empty_allowed names str_list other =
 		[]
 	      else [Node(zz,"Idtac",[])]
           | _ -> other)
-  | l -> Node(zz, "Clear", [Node(zz,"CLAUSE", l)])::other;;
+  | l -> Node(zz, "TRY", [Node(zz, "Clear", [Node(zz,"CLAUSE", l)])])::other;;
 
 
 (* This function takes care of compacting instanciations of universal
@@ -661,7 +668,7 @@ let rec optim3 str_list = function
 	     | Some s -> optim3_aux true (s::str_list)
                             (Node(a, "Generalize",
                                 [merge_ast_in_command com1 com2])::others))
-	|( Node(a,"Clear", [Node(_,"CLAUSE", names)]))::other ->
+	|( Node(zz, "TRY", [Node(a,"Clear", [Node(_,"CLAUSE", names)])]))::other ->
 	    cleanup_clears empty_allowed names str_list other
 	| [Node(a,"TACLIST",branches)] ->
 	    [Node(a,"TACLIST",List.map (optim3 str_list) branches)]
@@ -686,9 +693,16 @@ let pbp_tac display_function = function
             (Identifier a)::l -> 
                  (function g ->
                     let str = (string_of_id a) in
+		    let (ou,tstr) = (get_hyp_by_name g str) in
 		    let exp_ast =
-		      pbpt default_ast  (pf_ids_of_hyps g)
-                        [] false (Some str) (kind_of_term (get_hyp_by_name g str))
+		      pbpt default_ast
+		        (match ou with
+			       "hyp" ->(pf_ids_of_hyps g)
+			       |_ -> (a::(pf_ids_of_hyps g)))
+                        []
+			false
+			(Some str)
+			(kind_of_term tstr)
                         (tactic_args_to_ints l) in
                     (display_function (optim exp_ast);
                         tclIDTAC g))
@@ -704,3 +718,5 @@ let pbp_tac display_function = function
                      (display_function (default_ast None (pf_concl g) []);
                       tclIDTAC g))
           |  _ -> failwith "expecting other arguments";;
+
+

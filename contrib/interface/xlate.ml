@@ -42,16 +42,12 @@ Hashtbl.add type_table "Coq.Init.Datatypes.prod"
 Hashtbl.add type_table "Coq.Init.Datatypes.nat"
   [|[|"";"O"; "S"|]|];;
 
-(* //menage a faire....*)
-Hashtbl.add type_table "Coq.Zarith.fast_integer.Z"
-[|[|"";"ZERO";"POS";"NEG"|]|];;
 Hashtbl.add type_table "Coq.ZArith.fast_integer.Z"
 [|[|"";"ZERO";"POS";"NEG"|]|];;
-(*//itou *)
-Hashtbl.add type_table "Coq.Zarith.fast_integer.positive"
-[|[|"";"xI";"xO";"XH"|]|];;
+
+
 Hashtbl.add type_table "Coq.ZArith.fast_integer.positive"
-[|[|"";"xI";"xO";"XH"|]|];;
+[|[|"";"xI";"xO";"xH"|]|];;
 
 (*The following two codes are added to cope with the distinction
   between ocaml and caml-light syntax while using ctcaml to
@@ -71,7 +67,7 @@ let string_of_node_loc the_node =
   match loc the_node with
       (a,b) -> "(" ^ (string_of_int a) ^ ", " ^ (string_of_int b) ^ ")";;
 
-let xlate_error s = error ("Translation error: " ^ s);;
+let xlate_error s = failwith ("Translation error: " ^ s);;
 
 type astrecurse =   Rbinder of ct_ID_OPT * astrecurse
                   | Rform of ct_FORMULA
@@ -97,6 +93,10 @@ let ctf_ID_OPT_OR_ALL_SOME s =
 let ctv_ID_OPT_OR_ALL_ALL = CT_all;;
 
 let ctv_SPEC_OPT_NONE = CT_coerce_NONE_to_SPEC_OPT CT_none;;
+
+let ct_coerce_FORMULA_to_DEF_BODY x =
+    CT_coerce_CONTEXT_PATTERN_to_DEF_BODY
+    (CT_coerce_FORMULA_to_CONTEXT_PATTERN x);;
 
 let castc x = CT_coerce_TYPED_FORMULA_to_FORMULA x;;
 
@@ -310,6 +310,7 @@ let qualid_to_ct_ID =
 	    | (Nvar(_,s))::l ->  s ^ "." ^ (f l)
 	    | _ -> assert false in
 	  Some(CT_ident (f l))
+    | Node(_, "QUALIDMETA",[Num(_,n)]) -> Some(CT_metac (CT_int n))
     | _ -> None;;
 
 
@@ -322,7 +323,7 @@ let xlate_op the_node opn a b =
  match opn with
  | "META" ->
   (match a, b with
-  | ((Num (_, n)) :: []), [] -> CT_metac (CT_int n)
+  | ((Num (_, n)) :: []), [] -> CT_coerce_ID_to_FORMULA(CT_metac (CT_int n))
   | _, _ -> xlate_error "xlate_op : META ")
  | "ISEVAR" -> CT_existvarc
  | "FORCEIF" ->
@@ -403,15 +404,15 @@ let xlate_op the_node opn a b =
 	      CT_ident(Names.string_of_id
 			 (Nameops.basename (section_path sl))))
   	| _, _ -> xlate_error "xlate_op : MUTIND")
- | "MUTCASE" 
- | "CASE" ->
-     let compute_flag s = 
-       match s with "REC" -> "Match" | "NOREC" -> "Case" | _ -> assert false in
-     (match a, b with
-  	| [Str(_,v)], tl -> make_casec (compute_flag v) tl
-	| [Str(_,v); Str(_,"SYNTH")], tl ->
-	    make_casec (compute_flag v) (Rform CT_existvarc::tl)
-  	| _, _ -> xlate_error "xlate_op : MUTCASE")
+ | "CASE"
+ | "MATCH" ->
+     (let compute_flag s = 
+       	match s with "CASE" -> "Case" | "MATCH" -> "Match" | _ -> assert false in
+	match a, b with
+          | [], tl -> make_casec (compute_flag opn) tl
+      	  | [Str(_, "SYNTH")], tl ->
+              make_casec (compute_flag opn) (Rform CT_existvarc::tl)
+	| _, _ -> assert false)
  | (** string_of_path needs to be investigated.
       *)
    "MUTCONSTRUCT" ->
@@ -465,7 +466,8 @@ let id_to_pattern_var ctid =
      CT_coerce_ID_OPT_to_MATCH_PATTERN (CT_coerce_NONE_to_ID_OPT CT_none)
  | CT_ident id_string ->
      CT_coerce_ID_OPT_to_MATCH_PATTERN 
-       (CT_coerce_ID_to_ID_OPT (CT_ident id_string));;
+       (CT_coerce_ID_to_ID_OPT (CT_ident id_string))
+ | _ -> assert false;;
 
 let rec xlate_cases_pattern cont_function =
  function
@@ -491,6 +493,13 @@ let rec xlate_cases_pattern cont_function =
 	   | CT_coerce_ID_to_FORMULA id -> id_to_pattern_var id
 	   | _ -> assert false)
     | Node(_, s, _) -> xlate_error ("error for a pattern " ^ s)
+    | Path(_,sl) -> 
+        id_to_pattern_var (CT_ident (List.fold_right
+				       (fun a b ->
+					  if b = "" then
+					    a
+					  else
+					    a ^ "." ^ b) sl ""))
     | _ -> xlate_error "Unexpected data while translating a pattern";;
 
 (*This function recognizes and translates let constructs
@@ -502,82 +511,6 @@ let special_case_let_construct cont_function =
       (Rform
       (CT_letin(CT_ident b, strip_Rform (cont_function val_arg),
 		strip_Rform (cont_function body))))
-    | _ -> None;;
-
-(*This function recognizes and translates the integers introduced by P.Cregut.
-  However, it relies on the patterns given in our our version of integer_gram *)
-let compile_decomposed_number cont_function ast =
- (*cdn_rec returns a list of strings that represent the bits in a
-   binary representation of the number. 1 is represented by "xI" and 0 by "xO" *)
- let rec cdn_rec =
-  function
-     | Node (_, "APPLIST", ((Nvar (_, s)) :: args)) as t ->
-      (match s with
-      | "xI" | "xO" ->
-       (match args with
-       | arg :: [] ->
-        let digit_list, head = cdn_rec arg in
-        s::digit_list, head
-       | _ -> xlate_error "bad number of arguments for xI or XO")
-      | it -> [], Some t)
-     | Nvar (_, s) as t ->
-      (match s with
-      | "xH" -> ["xI"], None
-      | _ -> [], Some t)
-     | t -> [], Some t in
- (*when the number will appear as a binary number, we fake it by using base
-   10 when reconstructing the number  (A binary number looks like a decimal number
-   written only with ones and zeros).  Otherwise, we use base 2, respecting
-   the true meaning of each bit. *)
- let rec convert_to_number base =
-  function
-     | [] -> 0
-     | "xI" :: tail -> 1 + base * convert_to_number base tail
-     | "xO" :: tail -> base * convert_to_number base tail
-     | _ -> xlate_error "compile_decomposed_number" in
- match cdn_rec ast with
-  | (*binary representation is only used when constructing an incomplete number *)
-    digit_list, (Some formula) ->
-   CT_incomplete_binary
-    (strip_Rform (cont_function formula),
-    CT_binary (convert_to_number 10 digit_list))
-  | digit_list, None ->
-   CT_int_encapsulator (CT_int (convert_to_number 2 digit_list));;
-
-let special_case_omega_integer cont_function =
- function
-    | Node (_, "XTRA",
-              ((Str (_, "omega_integer_for_ctcoq")) :: ((Num (_, n)) :: []))) ->
-     Some (Rform (CT_int_encapsulator (CT_int n)))
-    | Node (_, "XTRA",
-              ((Str (_, "omega_binary_for_ctcoq")) :: ((Num (_, n)) :: []))) ->
-     Some (Rform (CT_coerce_BINARY_to_FORMULA (CT_binary n)))
-    | Node (_, "XTRA",
-              ((Str (_, "omega_variable_binary_for_ctcoq")) ::
-                (formula :: ((Num (_, n)) :: [])))) ->
-     Some
-      (Rform
-      (CT_incomplete_binary (strip_Rform (cont_function formula), CT_binary n)))
-    | Node (_, "APPLIST",
-              ((Nvar (_, pos_or_neg_string)) ::
-                ((Node (_, "APPLIST", ((Nvar (_, id)) :: (_ :: []))) as number)
-                  :: []))) ->
-     (match pos_or_neg_string with
-     | "POS" ->
-      (match id with
-      | "xI" | "xO" | "xH" ->
-       Some (Rform (compile_decomposed_number cont_function number))
-      | _ -> None)
-     | "NEG" ->
-      (match id with
-      | "xI" | "xO" | "xH" ->
-       Some
-        (Rform
-        (CT_appc
-        (CT_coerce_ID_to_FORMULA (CT_ident "NEG"),
-        CT_formula_ne_list (compile_decomposed_number cont_function number, []))))
-      | _ -> None)
-     | _ -> None)
     | _ -> None;;
 
 let cvt_binder cont_function =
@@ -796,7 +729,6 @@ let special_case_S cont_function ast =
 let xlate_formula_special_cases =
  [special_case_qualid;
  special_case_let_construct;
- special_case_omega_integer;
  special_case_fix;
  special_case_cofix;
  special_case_cases;
@@ -920,18 +852,23 @@ let strip_targ_intropatt =
 let rec get_flag_rec =
  function
     | n1 :: tail ->
+     	let conv_id_fun = (fun x -> match qualid_to_ct_ID x with
+                             Some y -> y
+                             | None -> assert false) in
      let conv_flags, red_ids = get_flag_rec tail in
      (match n1 with
       | Node (_, "Beta", []) -> CT_beta::conv_flags, red_ids
       | Node (_, "Delta", []) -> CT_delta::conv_flags, red_ids
       | Node (_, "Iota", []) -> CT_iota::conv_flags, red_ids
+      | Node (_, "Zeta", []) -> CT_zeta::conv_flags, red_ids
+      | Node (_, "Evar", []) -> CT_evar::conv_flags, red_ids
       | Node (_, "Unf", l) ->
        (match red_ids with
-       | CT_unf [] -> conv_flags, CT_unf (List.map xlate_id l)
+       | CT_unf [] -> conv_flags, CT_unf (List.map conv_id_fun l)
        | _ -> error "Cannot specify identifiers to unfold twice")
       | Node (_, "UnfBut", l) ->
        (match red_ids with
-       | CT_unf [] -> conv_flags, CT_unfbut (List.map xlate_id l)
+       | CT_unf [] -> conv_flags, CT_unfbut (List.map conv_id_fun l)
        | _ -> error "Cannot specify identifiers to unfold twice")
       | Node (_, a, _) -> error ("get_flag_rec : unexpected flag " ^ a)
       | _ -> error "get_flag_rec : unexpected flag")
@@ -974,6 +911,8 @@ let tactic_special_case cont_function cvt_arg = function
 let xlate_context_pattern = function
     Node(_,"TERM", [Node(_, "COMMAND", [v])]) -> 
       CT_coerce_FORMULA_to_CONTEXT_PATTERN (xlate_formula v)
+  | Node(_,"SUBTERM", [Node(_,"COMMAND",[v])]) ->
+      CT_context(ctv_ID_OPT_NONE, xlate_formula v)
   | Node(_,"SUBTERM", [Nvar(_, s); Node(_, "COMMAND", [v])]) ->
       CT_context(ctf_ID_OPT_SOME (CT_ident s), xlate_formula v)
   | _ -> assert false;;
@@ -1028,17 +967,29 @@ let rec cvt_arg =
     | Node (_, "COFIXEXP",
               ((Nvar (_, id)) :: ((Node (_, "COMMAND", (c :: []))) :: []))) ->
      Targ_cofixtac (CT_cofixtac (CT_ident id, xlate_formula c))
-    | Node (_, "CLAUSE", l) -> Targ_id_list (CT_id_list (List.map (function
-                                   | Nvar (_, x) -> CT_ident x
-                                   | _ ->
-                                    xlate_error
-                                     "expected identifiers in a CLAUSE") l))
+    | Node ((l1,l2), "CLAUSE", l) ->
+ 	Targ_id_list (CT_id_list 
+			(List.map 
+			   (function
+			      | Node(_, "INHYP", [Nvar (_, x)]) -> CT_ident x
+			      | Node(_, "INHYP", 
+				     [Node(_, "COMMAND",
+					     [Node(_, "META",
+						   [Num (_, x)])])]) ->
+				  CT_metac (CT_int x)
+                              | _ ->
+                                  xlate_error
+                                    ("expected identifiers in a CLAUSE " ^
+				     (string_of_int l1) ^ " " ^
+				    (string_of_int l2))) l))
     | Node (_, "REDEXP", (tac :: [])) -> Targ_redexp (xlate_red_tactic tac)
     | Node (_, "INTROPATTERN", 
           [Node(_,"LISTPATTERN", l)]) -> 
               Targ_intropatt (CT_intro_patt_list(List.map xlate_intro_pattern l))
     | Node(_, "Str", [x]) -> cvt_arg x
-    | Node (_, a, _) -> failwith ("cvt_arg on node " ^ a)
+    | Node ((l1,l2), a, _) -> failwith ("cvt_arg on node " ^ a ^ " at " ^
+				       (string_of_int l1) ^ " " ^
+				       (string_of_int l2))
     | _ -> failwith "cvt_arg"
 and xlate_red_tactic =
  function
@@ -1049,13 +1000,15 @@ and xlate_red_tactic =
      | "Simpl" -> CT_simpl
      | "Fold" -> CT_fold(CT_formula_list[])
      | _ -> xlate_error ("xlate_red_tactic, unexpected singleton " ^ s))
-    | Node (_, "Unfold", unf_list) ->
+    | Node ((l1,l2), "Unfold", unf_list) ->
      let ct_unf_list = List.map (function
          | Node (_, "UNFOLD", qid::nums) ->
 	     (match qualid_to_ct_ID qid with
 		 Some x -> 
 		   CT_unfold_occ (CT_int_list (List.map xlate_int nums), x)
-	       	| _ -> assert false)
+	       	| _ -> failwith ("bad form in Unfold at characters " ^
+                                 (string_of_int l1) ^ " " ^
+				 (string_of_int l2))  )
          | n -> 
 	     xlate_error ("xlate_red_tactic, expected unfold occurrence at " ^
 			  (string_of_node_loc n)))
@@ -1128,19 +1081,66 @@ and xlate_tactic =
      | ((s, l) as it) when (is_tactic_special_case s) ->
 	 tactic_special_case xlate_tactic cvt_arg it
      | "APP", (Nvar(_,s))::l ->
-         let f = fun x -> CT_coerce_FORMULA_to_TACTIC_ARG x in
          let args = 
 	   List.map (function 
-                        Node(_, "COMMAND", [x]) -> f (xlate_formula x)
-		       | x -> f (xlate_formula x)) l in
+                       | Node(_, "COMMAND", [x]) -> 
+			   CT_coerce_FORMULA_to_TACTIC_ARG (xlate_formula x)
+		       | x -> 
+			   CT_coerce_TACTIC_COM_to_TACTIC_ARG(xlate_tactic x))
+	     l in
          let fst,args2 = 
 	   match args with
 	       fst::args2 -> fst, args2
 	     | _ -> assert false in
 	 CT_simple_user_tac(CT_ident s, CT_tactic_arg_list(fst, args2))
+     | "MATCH", exp::rules ->
+        CT_match_tac(mk_let_value exp,
+		     match List.map 
+		       (function 
+			  | Node(_,"MATCHRULE", 
+				 [Node(_,"TERM", [Node(_,"COMMAND", [p])]);
+				 tac]) ->
+			      CT_match_tac_rule(
+			      	CT_coerce_FORMULA_to_CONTEXT_PATTERN 
+						  (xlate_formula p),
+						  mk_let_value tac)
+                          | Node(_,"MATCHRULE", [tac]) ->
+			      CT_match_tac_rule
+				(CT_coerce_FORMULA_to_CONTEXT_PATTERN
+				   CT_existvarc, 
+				   mk_let_value tac)
+			  | Node((l1,l2),s,_) ->
+                             failwith ("problem with match_tac at " ^
+				      (string_of_int l1) ^
+				      " " ^
+				      (string_of_int l2) ^
+				      ": " ^ s)
+			  | _ -> assert false) rules with
+			 | [] -> assert false
+			 | fst::others ->
+			     CT_match_tac_rules(fst, others))
      | "MATCHCONTEXT", rule1::rules ->
 	 CT_match_context(xlate_context_rule rule1,
                           List.map xlate_context_rule rules)
+     | "LET", [Node(_, "LETDECL",l);
+               t] -> 
+	 let cvt_clause =
+	   function
+	     | Node(_, "LETCLAUSE", [Nvar(_, s);Node(_,"COMMAND",[v])]) ->
+		 CT_let_clause(CT_ident s,
+			       CT_coerce_DEF_BODY_to_LET_VALUE
+                               (formula_to_def_body v)) 
+	     | Node(_, "LETCLAUSE", [Nvar(_, s); v]) ->
+		 CT_let_clause(CT_ident s,
+			       CT_coerce_TACTIC_COM_to_LET_VALUE
+                               (xlate_tactic v)) 
+	     | Node(_, s, _) -> failwith ("cvt_clause : unexpected " ^ s)
+	     | _ -> assert false in
+	 let cl_l = List.map cvt_clause l in
+         (match cl_l with
+	    | [] -> assert false 
+	    | fst::others ->
+	   	CT_lettac (CT_let_clauses(fst, others), mk_let_value t))
      | s, l -> xlate_tac (s, List.map cvt_arg l))
     | Nvar(_, s) -> ident_tac s
     | the_node -> xlate_error ("xlate_tactic at " ^
@@ -1349,7 +1349,7 @@ and xlate_tac =
        CT_clear (CT_id_ne_list (id, idl))
       | _ -> xlate_error "Clear expects a non empty list of identifiers")
     | (*For translating tactics/Inv.v *)
-      "Inv", [Targ_ident (CT_ident s); Targ_ident id] ->
+      "Inv", [Targ_string (CT_string s); Targ_ident id] ->
      CT_inversion (compute_INV_TYPE_from_string s, id, CT_id_list [])
     | "InvIn", ((Targ_ident (CT_ident s))::((Targ_ident id) :: idlist)) ->
      CT_inversion
@@ -1383,7 +1383,31 @@ and (xlate_context_rule: Ctast.t -> ct_CONTEXT_RULE) =
 	  | _ -> assert false in
 	let hyps, cpat, tactic = xlate_ctxt_rule_aux parts in
 	  CT_context_rule(CT_context_hyp_list hyps, cpat, tactic)
-    | _ -> assert false;;
+    | _ -> assert false
+and (formula_to_def_body : Ctast.t -> ct_DEF_BODY) =
+  function
+    | Node(_, "EVAL", [f;Node(_, "REDEXP", [tac])]) ->
+	(try 
+        CT_coerce_EVAL_CMD_to_DEF_BODY(
+	CT_eval(CT_coerce_NONE_to_INT_OPT CT_none,
+                xlate_red_tactic tac,
+		xlate_formula f))
+	with Failure s ->
+	  failwith ("error raised inside formula_to_def_body " ^
+		    s))
+    | f -> (try ct_coerce_FORMULA_to_DEF_BODY(xlate_formula f)
+            with Failure s -> 
+	      match f with
+		  Node(_,s1, _) ->
+		    failwith ("error raised inside formula_to_def_body (2) " ^
+			      s1 ^ " " ^ s)
+		| _ ->
+		    failwith("error raised inside formula_to_def_body (3) " ^
+			     s))
+and mk_let_value = function 
+    Node(_, "COMMAND", [v]) -> 
+      CT_coerce_DEF_BODY_to_LET_VALUE(formula_to_def_body v)
+  | v -> CT_coerce_TACTIC_COM_to_LET_VALUE(xlate_tactic v);;
 
 let strip_varg_int =
  function
@@ -1532,7 +1556,7 @@ let get_require_flags impexp spec =
 
 let cvt_optional_eval_for_definition c1 optional_eval =
   match optional_eval with
-    None -> CT_coerce_FORMULA_to_DEF_BODY c1
+    None -> ct_coerce_FORMULA_to_DEF_BODY c1
   | Some (Targ_redexp red_com) ->
       CT_coerce_EVAL_CMD_to_DEF_BODY(
       CT_eval(CT_coerce_NONE_to_INT_OPT CT_none,

@@ -457,7 +457,9 @@ and fCONTEXT_RULE = function
 and fCONVERSION_FLAG = function
 | CT_beta -> fNODE "beta" 0
 | CT_delta -> fNODE "delta" 0
+| CT_evar -> fNODE "evar" 0
 | CT_iota -> fNODE "iota" 0
+| CT_zeta -> fNODE "zeta" 0
 and fCONVERSION_FLAG_LIST = function
 | CT_conversion_flag_list l ->
    (List.iter fCONVERSION_FLAG l);
@@ -479,8 +481,8 @@ and fCO_IND = function
 | CT_coerce_DEFN_to_DEFN_OR_THM x -> fDEFN x
 | CT_coerce_THM_to_DEFN_OR_THM x -> fTHM x
 and fDEF_BODY = function
+| CT_coerce_CONTEXT_PATTERN_to_DEF_BODY x -> fCONTEXT_PATTERN x
 | CT_coerce_EVAL_CMD_to_DEF_BODY x -> fEVAL_CMD x
-| CT_coerce_FORMULA_to_DEF_BODY x -> fFORMULA x
 and fDEP = function
 | CT_dep x -> fATOM "dep";
    (f_atom_string x);
@@ -590,9 +592,6 @@ and fFORMULA = function
    fFORMULA x2;
    fFORMULA x3;
    fNODE "letin" 3
-| CT_metac(x1) ->
-   fINT x1;
-   fNODE "metac" 1
 | CT_prodc(x1, x2) ->
    fBINDER x1;
    fFORMULA x2;
@@ -632,7 +631,10 @@ and fHINT_EXPRESSION = function
 and fID = function
 | CT_ident x -> fATOM "ident";
    (f_atom_string x);
-   print_string "\n"and fIDENTITY_OPT = function
+   print_string "\n"| CT_metac(x1) ->
+   fINT x1;
+   fNODE "metac" 1
+and fIDENTITY_OPT = function
 | CT_coerce_NONE_to_IDENTITY_OPT x -> fNONE x
 | CT_identity -> fNODE "identity" 0
 and fID_LIST = function
@@ -728,6 +730,19 @@ and fIN_OR_OUT_MODULES = function
 | CT_out_modules(x1) ->
    fID_NE_LIST x1;
    fNODE "out_modules" 1
+and fLET_CLAUSE = function
+| CT_let_clause(x1, x2) ->
+   fID x1;
+   fLET_VALUE x2;
+   fNODE "let_clause" 2
+and fLET_CLAUSES = function
+| CT_let_clauses(x,l) ->
+   fLET_CLAUSE x;
+   (List.iter fLET_CLAUSE l);
+   fNODE "let_clauses" (1 + (List.length l))
+and fLET_VALUE = function
+| CT_coerce_DEF_BODY_to_LET_VALUE x -> fDEF_BODY x
+| CT_coerce_TACTIC_COM_to_LET_VALUE x -> fTACTIC_COM x
 and fLOCAL_OPT = function
 | CT_coerce_NONE_to_LOCAL_OPT x -> fNONE x
 | CT_local -> fNODE "local" 0
@@ -749,6 +764,16 @@ and fMATCH_PATTERN_NE_LIST = function
    fMATCH_PATTERN x;
    (List.iter fMATCH_PATTERN l);
    fNODE "match_pattern_ne_list" (1 + (List.length l))
+and fMATCH_TAC_RULE = function
+| CT_match_tac_rule(x1, x2) ->
+   fCONTEXT_PATTERN x1;
+   fLET_VALUE x2;
+   fNODE "match_tac_rule" 2
+and fMATCH_TAC_RULES = function
+| CT_match_tac_rules(x,l) ->
+   fMATCH_TAC_RULE x;
+   (List.iter fMATCH_TAC_RULE l);
+   fNODE "match_tac_rules" (1 + (List.length l))
 and fNATURAL_FEATURE = function
 | CT_contractible -> fNODE "contractible" 0
 | CT_implicit -> fNODE "implicit" 0
@@ -1088,15 +1113,18 @@ and fTACTIC_COM = function
 | CT_left(x1) ->
    fSPEC_LIST x1;
    fNODE "left" 1
-| CT_lettac(x1, x2, x3) ->
-   fID x1;
-   fFORMULA x2;
-   fUNFOLD_NE_LIST x3;
-   fNODE "lettac" 3
+| CT_lettac(x1, x2) ->
+   fLET_CLAUSES x1;
+   fLET_VALUE x2;
+   fNODE "lettac" 2
 | CT_match_context(x,l) ->
    fCONTEXT_RULE x;
    (List.iter fCONTEXT_RULE l);
    fNODE "match_context" (1 + (List.length l))
+| CT_match_tac(x1, x2) ->
+   fLET_VALUE x1;
+   fMATCH_TAC_RULES x2;
+   fNODE "match_tac" 2
 | CT_move_after(x1, x2) ->
    fID x1;
    fID x2;

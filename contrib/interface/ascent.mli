@@ -1,4 +1,3 @@
-
 type ct_ASSOC =
     CT_coerce_NONE_to_ASSOC of ct_NONE
   | CT_lefta
@@ -169,7 +168,9 @@ and ct_CONTEXT_RULE =
 and ct_CONVERSION_FLAG =
     CT_beta
   | CT_delta
+  | CT_evar
   | CT_iota
+  | CT_zeta
 and ct_CONVERSION_FLAG_LIST =
     CT_conversion_flag_list of ct_CONVERSION_FLAG list
 and ct_CONV_SET =
@@ -183,8 +184,8 @@ and ct_DEFN_OR_THM =
     CT_coerce_DEFN_to_DEFN_OR_THM of ct_DEFN
   | CT_coerce_THM_to_DEFN_OR_THM of ct_THM
 and ct_DEF_BODY =
-    CT_coerce_EVAL_CMD_to_DEF_BODY of ct_EVAL_CMD
-  | CT_coerce_FORMULA_to_DEF_BODY of ct_FORMULA
+    CT_coerce_CONTEXT_PATTERN_to_DEF_BODY of ct_CONTEXT_PATTERN
+  | CT_coerce_EVAL_CMD_to_DEF_BODY of ct_EVAL_CMD
 and ct_DEP =
     CT_dep of string
 and ct_DESTRUCTING =
@@ -226,7 +227,6 @@ and ct_FORMULA =
   | CT_int_encapsulator of ct_INT
   | CT_lambdac of ct_BINDER * ct_FORMULA
   | CT_letin of ct_ID * ct_FORMULA * ct_FORMULA
-  | CT_metac of ct_INT
   | CT_prodc of ct_BINDER * ct_FORMULA
 and ct_FORMULA_LIST =
     CT_formula_list of ct_FORMULA list
@@ -245,6 +245,7 @@ and ct_HINT_EXPRESSION =
   | CT_unfold_hint of ct_ID
 and ct_ID =
     CT_ident of string
+  | CT_metac of ct_INT
 and ct_IDENTITY_OPT =
     CT_coerce_NONE_to_IDENTITY_OPT of ct_NONE
   | CT_identity
@@ -307,6 +308,13 @@ and ct_IN_OR_OUT_MODULES =
     CT_coerce_NONE_to_IN_OR_OUT_MODULES of ct_NONE
   | CT_in_modules of ct_ID_NE_LIST
   | CT_out_modules of ct_ID_NE_LIST
+and ct_LET_CLAUSE =
+    CT_let_clause of ct_ID * ct_LET_VALUE
+and ct_LET_CLAUSES =
+    CT_let_clauses of ct_LET_CLAUSE * ct_LET_CLAUSE list
+and ct_LET_VALUE =
+    CT_coerce_DEF_BODY_to_LET_VALUE of ct_DEF_BODY
+  | CT_coerce_TACTIC_COM_to_LET_VALUE of ct_TACTIC_COM
 and ct_LOCAL_OPT =
     CT_coerce_NONE_to_LOCAL_OPT of ct_NONE
   | CT_local
@@ -318,6 +326,10 @@ and ct_MATCH_PATTERN =
   | CT_pattern_as of ct_MATCH_PATTERN * ct_ID_OPT
 and ct_MATCH_PATTERN_NE_LIST =
     CT_match_pattern_ne_list of ct_MATCH_PATTERN * ct_MATCH_PATTERN list
+and ct_MATCH_TAC_RULE =
+    CT_match_tac_rule of ct_CONTEXT_PATTERN * ct_LET_VALUE
+and ct_MATCH_TAC_RULES =
+    CT_match_tac_rules of ct_MATCH_TAC_RULE * ct_MATCH_TAC_RULE list
 and ct_NATURAL_FEATURE =
     CT_contractible
   | CT_implicit
@@ -460,8 +472,9 @@ and ct_TACTIC_COM =
   | CT_intros_until of ct_ID
   | CT_inversion of ct_INV_TYPE * ct_ID * ct_ID_LIST
   | CT_left of ct_SPEC_LIST
-  | CT_lettac of ct_ID * ct_FORMULA * ct_UNFOLD_NE_LIST
+  | CT_lettac of ct_LET_CLAUSES * ct_LET_VALUE
   | CT_match_context of ct_CONTEXT_RULE * ct_CONTEXT_RULE list
+  | CT_match_tac of ct_LET_VALUE * ct_MATCH_TAC_RULES
   | CT_move_after of ct_ID * ct_ID
   | CT_omega
   | CT_orelse of ct_TACTIC_COM * ct_TACTIC_COM

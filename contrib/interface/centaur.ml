@@ -1,7 +1,7 @@
 
 (*Toplevel loop for the communication between Coq and Centaur *)
 open Names;;
-open Nameops
+open Nameops;;
 open Util;;
 open Ast;;
 open Term;;
@@ -34,6 +34,7 @@ open Ascent;;
 open Translate;;
 open Name_to_ast;;
 open Pbp;;
+open Blast;;
 open Dad;;
 open Debug_tac;;
 open Search;;
@@ -67,7 +68,7 @@ let rec string_of_path p =
               | i::p -> (string_of_int i)^" "^ (string_of_path p)
 ;;
 let print_path p =
-    output_results_nl (str "Path:" ++ str (string_of_path p))
+    output_results_nl (str "Path:" ++ str  (string_of_path p))
 ;;
 
 let kill_proof_node index =
@@ -83,8 +84,8 @@ let kill_proof_node index =
 (*Message functions, the text of these messages is recognized by the protocols *)
 (*of CtCoq                                                                     *)
 let ctf_header message_name request_id =
-  fnl () ++ str "message" ++ fnl () ++ str message_name ++ fnl () ++ 
-  int request_id ++ fnl ();;
+ fnl () ++ str "message" ++ fnl() ++ str message_name ++ fnl() ++
+ int request_id ++ fnl();;
 
 let ctf_acknowledge_command request_id command_count opt_exn =
   let goal_count, goal_index = 
@@ -95,14 +96,14 @@ let ctf_acknowledge_command request_id command_count opt_exn =
         g_count, (min g_count !current_goal_index)
     else
       (0, 0) in
-  (ctf_header "acknowledge" request_id ++
-   int command_count ++ fnl () ++ 
-   int goal_count ++ fnl () ++ 
-   int goal_index ++ fnl () ++ 
-   str !current_proof_name ++ fnl () ++
-   (match opt_exn with
-	Some e -> Errors.explain_exn e
-      | None -> mt ()) ++ fnl () ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ());;
+   (ctf_header "acknowledge" request_id ++
+    int command_count ++ fnl() ++
+    int goal_count ++ fnl () ++
+    int goal_index ++ fnl () ++
+    str !current_proof_name ++ fnl() ++
+    (match opt_exn with
+      Some e -> Errors.explain_exn e
+    | None -> mt ()) ++ fnl() ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ());;
 
 let ctf_undoResults = ctf_header "undo_results";;
 
@@ -117,37 +118,36 @@ let ctf_Location = ctf_header "location";;
 let ctf_StateMessage = ctf_header "state";;
 
 let ctf_PathGoalMessage () =
-  fnl () ++ str "message" ++ fnl () ++ str "single_goal" ++ fnl ();;
+ fnl () ++ str "message" ++ fnl () ++ str "single_goal" ++ fnl ();;
 
 let ctf_GoalReqIdMessage = ctf_header "single_goal_state";;
 
 let ctf_NewStateMessage = ctf_header "fresh_state";;
 
-let ctf_SavedMessage () = fnl () ++ str "message" ++ fnl () ++ str "saved" ++ fnl ();;
+let ctf_SavedMessage () = fnl () ++ str "message" ++ fnl () ++
+			  str "saved" ++ fnl();;
 
 let ctf_KilledMessage req_id ngoals =
  ctf_header "killed" req_id ++ int ngoals ++ fnl ();;
 
 let ctf_AbortedAllMessage () =
- fnl () ++ str "message" ++ fnl () ++ str "aborted_all" ++ fnl ();;
+  fnl() ++ str "message" ++ fnl() ++ str "aborted_all" ++ fnl();;
 
 let ctf_AbortedMessage request_id na =
-  fnl () ++ str "message" ++ fnl () ++ str "aborted_proof" ++ fnl () ++ 
-  int request_id ++ fnl () ++
-  str na ++ fnl () ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ();;
+  ctf_header "aborted_proof" request_id ++ str na ++ fnl () ++ 
+  str "E-n-d---M-e-s-s-a-g-e" ++ fnl ();;
 
 let ctf_UserErrorMessage request_id stream =
-  let stream = guarded_force_eval_stream stream in
-  fnl () ++ str "message" ++ fnl () ++ str "user_error" ++ fnl () ++ 
-  int request_id ++ fnl () ++
-  stream ++ fnl () ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ();;
+ let stream = guarded_force_eval_stream stream in
+ ctf_header "user_error" request_id ++ stream ++ fnl() ++
+ str "E-n-d---M-e-s-s-a-g-e" ++ fnl();;
 
 let ctf_ResetInitialMessage () =
-  fnl () ++ str "message" ++ fnl () ++ str "reset_initial" ++ fnl ();;
+ fnl () ++ str "message" ++ fnl () ++ str "reset_initial" ++ fnl ();;
 
 let ctf_ResetIdentMessage request_id s =
-  fnl () ++ str "message" ++ fnl () ++ str "reset_ident" ++ fnl () ++ int request_id ++ fnl () ++
-  str s ++ fnl () ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ();;
+ ctf_header "reset_ident" request_id ++ str s ++ fnl () ++
+  str  "E-n-d---M-e-s-s-a-g-e" ++ fnl();;
 
 type vtp_tree =
   | P_rl of ct_RULE_LIST
@@ -219,7 +219,6 @@ let show_nth n =
   try
     let pf = proof_of_pftreestate (get_pftreestate()) in
     if (!text_proof_flag<>"off") then
-(*      errorlabstrm "debug" [< str "text printing unplugged" >]*)
        (if n=0
 	   then output_results (ctf_TextMessage !global_request_id)
                                (Some (P_text (show_proof !text_proof_flag [])))
@@ -248,9 +247,10 @@ let filter_by_module_from_varg_list (l:vernac_arg list) =
 let add_search (global_reference:global_reference) assumptions cstr =
   try 
     let env = Global.env() in
-    let id_string =
-      string_of_qualid (Nametab.shortest_qualid_of_global env global_reference) in
-    let ast = 
+  let id_string =
+    string_of_qualid (Nametab.shortest_qualid_of_global env 
+			global_reference) in
+  let ast = 
     try
       CT_premise (CT_ident id_string, translate_constr assumptions cstr)
     with Not_found ->
@@ -275,16 +275,13 @@ let print_check (ast, judg) =
       with UserError(f,str) ->
            raise(UserError(f,
 			   Ast.print_ast 
-			     (ast_of_constr true (Global.env()) value) ++
-			   fnl () ++ str))) 
- in
+				(ast_of_constr true (Global.env()) value) ++
+			      fnl () ++ str ))) in
  let type_ct_ast =
      (try translate_constr (Global.env()) typ
       with UserError(f,str) ->
            raise(UserError(f, Ast.print_ast (ast_of_constr true (Global.env())
-					       value) ++
-				 fnl () ++ str))) 
- in
+					       value) ++ fnl() ++ str))) in
  ((ctf_SearchResults !global_request_id),
  (Some  (P_pl
   (CT_premises_list
@@ -309,30 +306,36 @@ and ntyp = nf_betaiota typ in
 
 
 (* The following function is copied from globpr in env/printer.ml *)
-let globcv = function
-  | Node(_,"MUTIND", (Path(_,sp))::(Num(_,tyi))::_) ->
-      let env = Global.env() in
-      convert_qualid
-	 (Nametab.shortest_qualid_of_global env (IndRef(sp,tyi)))
-  | Node(_,"MUTCONSTRUCT",(Path(_,sp))::(Num(_,tyi))::(Num(_,i))::_) ->
-      let env = Global.env() in
-      convert_qualid
-          (Nametab.shortest_qualid_of_global env (ConstructRef ((sp, tyi), i)))
+let globcv x =
+  let env = Global.env() in 
+    match x with
+      | Node(_,"MUTIND", (Path(_,sp))::(Num(_,tyi))::_) ->
+	  let env = Global.env() in
+	    convert_qualid
+	      (Nametab.shortest_qualid_of_global env (IndRef(sp,tyi)))
+      | Node(_,"MUTCONSTRUCT",(Path(_,sp))::(Num(_,tyi))::(Num(_,i))::_) ->
+	  convert_qualid
+            (Nametab.shortest_qualid_of_global env
+	       (ConstructRef ((sp, tyi), i)))
   | _ -> failwith "globcv : unexpected value";;
 
 let pbp_tac_pcoq =
-    pbp_tac (function x -> 
+    pbp_tac (function (x:Ctast.t) -> 
       output_results
-  	(fnl () ++ str "message" ++ fnl () ++ str "pbp_results" ++ fnl () ++
-	 int !global_request_id ++  fnl ())
-	(Some (P_t(xlate_tactic x))));;
+        (ctf_header "pbp_results" !global_request_id)
+       (Some (P_t(xlate_tactic x))));;
+
+let blast_tac_pcoq =
+    blast_tac (function (x:Ctast.t) -> 
+      output_results
+	(ctf_header "pbp_results" !global_request_id)
+       (Some (P_t(xlate_tactic x))));;
 
 
 let dad_tac_pcoq =
   dad_tac(function x -> 
     output_results
-    (fnl () ++ str "message" ++ fnl () ++ str "pbp_results" ++ fnl () ++
-       int !global_request_id ++  fnl ())
+    (ctf_header "pbp_results" !global_request_id)
     (Some (P_t(xlate_tactic x))));;
 
 let search_output_results () =
@@ -351,8 +354,9 @@ let debug_tac2_pcoq = function
 	try
 	  let result = report_error ast the_goal the_ast the_path [] g in
 	  (errorlabstrm "DEBUG TACTIC"
-	    (str "no error here " ++ fnl () ++ pr_goal (sig_it g) ++
-	     fnl () ++ str "the tactic is" ++ fnl ()  ++ Printer.gentacpr ast);
+	     (str "no error here " ++ fnl () ++ pr_goal (sig_it g) ++
+	      fnl () ++ str "the tactic is" ++ fnl () ++
+	      Printer.gentacpr ast);
 	   result)
 	with
 	  e ->
@@ -487,7 +491,7 @@ let command_changes = [
 	      if kind = "LETTOP" && not(refining ()) then
 		errorlabstrm "StartProof"
 		  (str
-                     "Let declarations can only be used in proof editing mode"
+		     "Let declarations can only be used in proof editing mode"
 		  );
 		let str = (string_of_id s) in
 		start_proof_com (Some s) stre c;
@@ -600,12 +604,12 @@ let command_changes = [
    function
        (VARG_QUALID qid)::l ->
          (fun () -> 
-            ctv_SEARCH_LIST:=[];
+           ctv_SEARCH_LIST:=[];
 	    let global_ref = Nametab.global dummy_loc qid in
-            filtered_search
-              (filter_by_module_from_varg_list l)
-	      add_search (Nametab.locate qid);
-	    search_output_results())
+           filtered_search
+             (filter_by_module_from_varg_list l)
+	     add_search (Nametab.locate qid);
+	   search_output_results())
      |	_ -> failwith "bad form of arguments");
 
   ("SearchRewrite",
@@ -697,8 +701,7 @@ let command_changes = [
 	 (fun () -> 
 	   let results = dad_rule_names() in
 	   output_results
-	     (fnl () ++ str "message" ++ fnl () ++ str "dad_rule_names" ++ fnl () ++
-	      int !global_request_id ++ fnl ())
+	     (ctf_header "dad_rule_names" !global_request_id)
 	     (Some (P_ids
 		      (CT_id_list
 			 (List.map (fun s -> CT_ident s) results)))))
@@ -741,6 +744,7 @@ let start_pcoq_mode debug =
     set_xlate_mut_stuff (fun x ->Ctast.ast_to_ct (globcv (Ctast.ct_to_ast x)));
     declare_in_coq();
     add_tactic "PcoqPbp" pbp_tac_pcoq;
+    add_tactic "PcoqBlast" blast_tac_pcoq;
     add_tactic "Dad" dad_tac_pcoq;
     add_tactic "CtDebugTac" debug_tac2_pcoq;
     add_tactic "CtDebugTac2" debug_tac2_pcoq;

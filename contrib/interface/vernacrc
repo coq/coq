@@ -10,6 +10,7 @@ load_syntax_file 21 Equality
 load_syntax_file 22 Inv
 load_syntax_file 26 Tauto
 load_syntax_file 34 Omega
+load_syntax_file 27 Ring
 quiet_parse_string
 Goal a.
 && END--OF--DATA
