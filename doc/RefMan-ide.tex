@@ -27,59 +27,86 @@ obviously no meaning for \coqide{} being ignored.
 \label{fig:coqide}
 \end{figure}
 
-\coqide{} main screen is shown on Figure~\ref{fig:coqide}.  (Attention
-il manque la toolbar sur cet ecran car je l'ai enleve par defaut) At
-the top is a menu bar, the left window is displaying the various
-buffers, the upper right window is the ``goal window'', where goals to
-prove are displayed. The lower right window is the ``message window'',
+A sample \coqide{} main screen, while navigating into a file
+\verb|Fermat.v|, is shown on Figure~\ref{fig:coqide}.  At
+the top is a menu bar, and a tool bar below it. The large window on
+the left is displaying the various \emph{script buffers}. The upper right
+window is the \emph{goal window}, where goals to 
+prove are displayed. The lower right window is the \emph{message window},
 where various messages resulting from commands are displayed. At the
 bottom is the status bar.
 
-\section{The \texttt{File} menu}
+\section{Managing files and buffers}
 
-Open/Create
+In the script window, you may open arbitrarily many buffers to
+edit. The \emph{File} menu allows you to open files or create some,
+save them, print or export them into various formats. Among all these
+buffers, there is always one which is the current \emph{running
+  buffer}, whose name is displayed on a green background, which is the
+one where Coq commands are currently executed. 
 
-Save
+\section{Interactive navigation into \Coq{} scripts}
 
-Save as
+The running buffer is the one where navigation takes place. The
+toolbar proposes five basic commands for this. The first one,
+represented by a down arrow icon, is for going forward executing one
+command. If that command is successful, the part of the script that
+has been executed is displayed on a green background. If that command
+fails, the error message is displayed in the message window, and the
+location of the error is emphasized by a red underline.
 
-Save all
+On Figure~\ref{fig:coqide}, the running buffer is \verb|Fermat.v|, all
+commands until the \verb|Theorem| have been already executed, and the
+user tried to go forward executing \verb|Induction n|. That command
+failed because no such tactic exist (you remember that tactics in V8.0
+are lowercase, right ?), and the wrong word is underlined.
 
-Revert All Buffers
+Notice that the green part of the running buffer is not editable. If
+you ever want to modify something you have to go backward using the up
+arrow tool, or even better, put the cursor where you want to go back
+and use the \textsf{goto} button. Unlike with \verb|coqtop|, you
+should never use \verb|Undo| to go backward.
 
-Close Buffer
+Two additional tool buttons exist, one to go directly to the end and
+one to go back to the beginning. If you try to go to the end, or in
+general to run several commands using the \textsf{goto} button, the
+  execution will stop whenever an error is found.
 
-Print
+If you ever try to execute a long-running command, such as an
+\verb|intuition eauto with *|, and would like to abort it before its
+end, you may use the interrupt button, the red cross-like.
+ 
+Finally, notice that these navigation buttons are also available in
+the menu, where their keyboard shortcuts are given.
 
-Export to
+\section{Try tactics automatically}
 
-Rehighlight
+The menu \texttt{Try Tactics} provides some features for automatically
+trying to solve the current goal using simple tactics. If such a
+tactics succeeds in solving the goal, then its text is automatically
+inserted into the script. There is finally a combination of these
+tactics, called the \emph{proof wizard} which will try each of them in
+turn. This wizard is also available as a tool button, with a light
+bulb shape.  The set of tactics tried by the wizard is customizable in
+the preferences.
 
-Quit
+\section{Vernacular commands, templates}
 
-\section{The \texttt{Edit} menu}
+The \texttt{Templates} menu allows to use shortcuts to insert
+vernacular commands. This is a nice menu to use if you are not sure of
+the spelling of the command you want.
 
+Moreover, this menu offers some \emph{templates} which will automatic
+insert a complex command like Fixpoint with a convenient shape for its
+arguments. 
 
-\section{The \texttt{Navigation} menu}
+\section{Queries}
 
-Remplacer forward to et backward to par goto ?
-idem pour la toolbar
+\section{Compilation}
 
-\section{The \texttt{Try Tactics} menu}
+\section{Preferences}
 
-Is it useful ?
-
-\section{The \texttt{Templates} menu}
-
-Need update to V8 syntax
-
-\section{The \texttt{Commands} menu}
-
-\section{The \texttt{Externals} menu}
-
-\section{The \texttt{Configuration} menu}
-
-\section{The \texttt{Help} menu}
+auto save, auto revert, delays
 
 
 % $Id$ 

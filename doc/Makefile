@@ -1,6 +1,7 @@
 # Makefile for the Coq documentation
 
-# You need the environment variables COQTOP and COQBIN to be correctly set
+# You need the environment variable COQBIN to be correctly set
+# (COQTOP is autodetected)
 # (some files are preprocessed using Coq and some part of the documentation
 # is automatically built from the theories sources)
 
@@ -15,6 +16,7 @@
 
 DOCCOQTOP=$(COQBIN)/coqtop #.byte
 DOCCOQC=$(COQBIN)/coqc
+COQTOP=`$(DOCCOQC) -where`
 COQTEX=$(COQBIN)/coq-tex -image $(DOCCOQTOP) -v -sl -small
 #COQWEBSTY=$(HOME)/lib/tex/
 COQWEBSTY=/usr/share/texmf/tex/latex/misc/
@@ -95,7 +97,7 @@ version.tex: Makefile
 
 #image coqide
 coqide.eps: coqide.png
-	pngtopnm coqide.png | pnmtops -noturn -rle > coqide.eps
+	pngtopnm coqide.png | pnmtops -equalpixels -noturn -rle > coqide.eps
 
 
 # dvips et dviselect existent sur loupiac

@@ -404,14 +404,14 @@ section~\ref{delta}
 \item [ACC-INDP]
 \inference{%
   \frac{
-    \WT{E}{}{p:\sig{\Spec_1;\dots;\Spec_n;\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'};\dots}}
+    \WT{E}{}{p}{\sig{\Spec_1;\dots;\Spec_n;\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'};\dots}}
   }{
     \WTRED{E}{}{p.I_i}{\triangleright_\delta}{p'.I_i}
   }
 }
 \inference{%
   \frac{
-    \WT{E}{}{p:\sig{\Spec_1;\dots;\Spec_n;\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'};\dots}}
+    \WT{E}{}{p}{\sig{\Spec_1;\dots;\Spec_n;\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'};\dots}}
   }{
     \WTRED{E}{}{p.c_i}{\triangleright_\delta}{p'.c_i}
   }
