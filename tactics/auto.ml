@@ -492,12 +492,16 @@ let fmt_autotactic = function
   | Unfold_nth c -> [< 'sTR"Unfold " ;  pr_global c >]
   | Extern coqast -> [< 'sTR "Extern "; gentacpr coqast >]
 
+let fmt_hint v =
+  [< fmt_autotactic v.code; 'sTR"("; 'iNT v.pri; 'sTR")"; 'sPC >]
+
 let fmt_hint_list hintlist =
-  [< prlist 
-       (function v ->
-          [< fmt_autotactic v.code ; 'sTR"(" ; 'iNT v.pri;
-	     'sTR")"; 'sPC >]) 
-       hintlist >]
+  [< 'sTR "  "; hOV 0 (prlist fmt_hint hintlist); 'fNL >]
+
+let fmt_hints_db (name,db,hintlist) =
+  [< 'sTR "In the database "; 'sTR name; 'sTR ":";
+     if hintlist = [] then [< 'sTR " nothing"; 'fNL >]
+     else [< 'fNL; fmt_hint_list hintlist >] >]
 
 (* Print all hints associated to head c in any database *)
 let fmt_hint_list_for_head c = 
@@ -512,10 +516,7 @@ let fmt_hint_list_for_head c =
   else 
     hOV 0 
       [< 'sTR"For "; pr_ref_label c; 'sTR" -> "; 'fNL;
-	 prlist (fun (name,db,hintlist) ->
-	 	   [< 'sTR "  In the database "; 'sTR name; 'sTR " :"; 'fNL;
-		      fmt_hint_list hintlist >])
-	   valid_dbs >]
+	 hOV 0 (prlist fmt_hints_db valid_dbs) >]
 
 let fmt_hint_id id = 
   try 
@@ -549,12 +550,8 @@ let fmt_hint_term cl =
     if valid_dbs = [] then 
       [<'sTR "No hint applicable for current goal" >]
     else
-      [< 'sTR "Applicable Hints :";
-	 prlist (fun (name,db,hintlist) ->
-	 	   [< 'sTR "  In the database "; 'sTR name; 
-		      'sTR " :"; 'fNL;
-		      fmt_hint_list hintlist >])
-	   valid_dbs >]
+      [< 'sTR "Applicable Hints :"; 'fNL;
+	 hOV 0 (prlist fmt_hints_db valid_dbs) >]
   with Bound | Match_failure _ | Failure _ -> 
     [<'sTR "No hint applicable for current goal" >]
 	  
@@ -572,7 +569,7 @@ let print_hint_db db =
     (fun head hintlist ->
        mSG (hOV 0 
 	      [< 'sTR "For "; pr_ref_label head; 'sTR " -> ";
-		 fmt_hint_list hintlist; 'fNL >]))
+		 fmt_hint_list hintlist >]))
     db
 
 let print_hint_db_by_name dbname =
