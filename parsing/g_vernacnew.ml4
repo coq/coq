@@ -423,16 +423,6 @@ GEXTEND Gram
 	  VernacCoercion (Global, qid, s, t)
 
       (* Implicit *)
-(* Obsolete
-      | IDENT "Syntactic"; IDENT "Definition"; id = IDENT; ":="; c = lconstr;
-         n = OPT [ "|"; n = natural -> n ] ->
-	   let c = match n with
-	     | Some n ->
-		 let l = list_tabulate (fun _ -> (CHole (loc),None)) n in
-		 CApp (loc,c,l)
-	     | None -> c in
-	   VernacNotation (false,c,Some("'"^id^"'",[]),None,None)
-*)
       | IDENT "Implicit"; IDENT "Arguments"; qid = global; 
          pos = OPT [ "["; l = LIST0 ident; "]" -> l ] ->
 	   let pos = option_app (List.map (fun id -> ExplByName id)) pos in
