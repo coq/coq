@@ -161,19 +161,18 @@ val find_rectype : env -> 'a evar_map -> constr -> inductive_type
    from some inductive type already analysed as an [inductive_family];
    global parameters are already instanciated in the constructor
    types; the resulting summaries are valid in the environment where
-   [indf] is valid the names of the products of the constructors types
+   [indf] is valid; the names of the products of the constructors types
    are not renamed when [Anonymous] *)
 
 val get_constructors : inductive_family -> constructor_summary array
 
 val get_constructor : inductive_family -> int -> constructor_summary
 
-(* [get_arity inf] returns the product and the sort of the
-   arity of the inductive family described by [is]; global parameters are
-   already instanciated; [indf] must be defined w.r.t. [env] and [sigma];
-   the products signature is relative to [env] and [sigma]; the names
-   of the products of the constructors types are not renamed when
-   [Anonymous] *)
+(* [get_arity indf] returns the product and the sort of the arity of
+   the inductive family described by [indf]; global parameters are
+   already instanciated; the products signature is relative to the
+   environment definition of [indf]; the names of the products of the
+   constructors types are not renamed when [Anonymous] *)
 
 val get_arity : inductive_family -> arity
 
@@ -186,24 +185,24 @@ Inductive listn [A:Set] : nat -> Set :=
 \end{verbatim}
 
 has been defined. Then in some env containing ['x:nat'], 
+\begin{quote}
+[find_rectype env sigma (listn bool (S x))] returns [IndType (indf, '(S x)')]
+\end{quote}
+where [indf = IndFamily ('listn',['bool'])].
 
-[find_inductive env sigma (listn bool (S x))] returns
-
-[is = {mind = 'listn'; params = 'bool'; realargs = '(S x)';
-  nparams = 1; nrealargs = 1; nconstr = 2 }]
-
-then [get_constructors env sigma is] returns
-
+Then, [get_constructors indf] returns
+\begin{quote}
 [[| { cs_cstr = 'niln'; cs_params = 'bool'; cs_nargs = 0;
      cs_args = []; cs_concl_realargs = [|O|]};
    { cs_cstr = 'consn'; cs_params = 'bool'; cs_nargs = 3;
      cs_args = [(Anonymous,'(listn A n)'),(Anonymous,'A'),(Name n,'nat')];
      cs_concl_realargs = [|'(S n)'|]} |]]
-
-and [get_arity env sigma is] returns [[(Anonymous,'nat')],'Set'].
+\end{quote}
+and [get_arity indf] returns [[(Anonymous,'nat')],'Set'].
+\smallskip
 *)
 
-(* Cases info *)
+(*s [Cases] info *)
 
 val make_case_info : inductive_instance -> case_style option 
   -> pattern_source array -> case_info
