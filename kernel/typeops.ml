@@ -7,7 +7,6 @@ open Names
 open Univ
 open Generic
 open Term
-open Evd
 open Constant
 open Inductive
 open Sign
@@ -95,23 +94,6 @@ let type_of_constant env c =
   let hyps = cb.const_hyps in
   check_hyps (basename sp) env hyps;
   instantiate_type (ids_of_sign hyps) cb.const_type (Array.to_list args)
-
-(* Existentials. *)
-
-let type_of_existential env c =
-  let (sp,args) = destConst c in
-  let info = Evd.map (evar_map env) sp in
-  let hyps = info.evar_hyps in
-  check_hyps (basename sp) env hyps;
-  instantiate_type (ids_of_sign hyps) info.evar_concl (Array.to_list args)
-
-(* Constants or existentials. *)
-
-let type_of_constant_or_existential env c =
-  if is_existential c then
-    type_of_existential env c
-  else
-    type_of_constant env c
 
 (* Inductive types. *)
 
@@ -433,7 +415,7 @@ let apply_rel_list env nocheck argjl funj =
 (* Fixpoints. *)
 
 (* Checking function for terms containing existential variables.
- The function noccur_with_meta consideres the fact that
+ The function [noccur_with_meta] considers the fact that
  each existential variable (as well as each isevar)
  in the term appears applied to its local context,
  which may contain the CoFix variables. These occurrences of CoFix variables
@@ -441,13 +423,13 @@ let apply_rel_list env nocheck argjl funj =
 
 let noccur_with_meta sigma n m term = 
   let rec occur_rec n = function
-    | Rel(p) -> if n<=p & p<n+m then raise Occur
+    | Rel p -> if n<=p & p<n+m then raise Occur
     | VAR _ -> ()
     | DOPN(AppL,cl) ->
 	(match strip_outer_cast cl.(0) with
            | DOP0 (Meta _) -> ()
 	   | _ -> Array.iter (occur_rec n) cl)
-    | DOPN(Const sp, cl) when Evd.in_dom sigma sp -> ()
+    | DOPN(Const sp, cl) when Spset.mem sp sigma -> ()
     | DOPN(op,cl) -> Array.iter (occur_rec n) cl
     | DOPL(_,cl) -> List.iter (occur_rec n) cl
     | DOP0(_) -> ()
@@ -577,9 +559,9 @@ let is_subterm env lcx mind_recvec n lst c =
     false
 
 (* Auxiliary function: it checks a condition f depending on a deBrujin
- index  for a certain number of abstractions *)
+   index for a certain number of abstractions *)
 
-let rec check_subterm_rec_meta env vectn k def = 
+let rec check_subterm_rec_meta env sigma vectn k def = 
   (k < 0) or
   (let nfi = Array.length vectn in 
    (* check fi does not appear in the k+1 first abstractions, 
@@ -587,7 +569,7 @@ let rec check_subterm_rec_meta env vectn k def =
    let rec check_occur n def = 
      (match strip_outer_cast def with
 	| DOP2(Lambda,a,DLAM(_,b)) -> 
-	    if noccur_with_meta (evar_map env) n nfi a then
+	    if noccur_with_meta sigma n nfi a then
               if n = k+1 then (a,b) else check_occur (n+1) b
             else 
 	      error "Bad occurrence of recursive call"
@@ -605,7 +587,7 @@ let rec check_subterm_rec_meta env vectn k def =
    *)
    let rec check_rec_call n lst t = 
      (* n gives the index of the recursive variable *)
-     (noccur_with_meta (evar_map env) (n+k+1) nfi t) or 
+     (noccur_with_meta sigma (n+k+1) nfi t) or 
      (* no recursive call in the term *)
      (match whd_betadeltaiota_stack env t [] with 
 	| (Rel p,l) -> 
@@ -716,7 +698,7 @@ nvect is [|n1;..;nk|] which gives for each recursive definition
 the inductive-decreasing index 
 the function checks the convertibility of ti with Ai *)
 
-let check_fix env = function
+let check_fix env sigma = function
   | DOPN(Fix(nvect,j),vargs) -> 
       let nbfix = let nv = Array.length vargs in 
       if nv < 2 then error "Ill-formed recursive definition" else nv-1 in
@@ -731,7 +713,9 @@ let check_fix env = function
 	let vlna = Array.of_list lna in
 	let check_type i = 
 	  try
-	    let _ = check_subterm_rec_meta env nvect nvect.(i) vdefs.(i) in ()
+	    let _ = 
+	      check_subterm_rec_meta env sigma nvect nvect.(i) vdefs.(i) in 
+	    ()
 	  with UserError (s,str) ->
 	    error_ill_formed_rec_body CCI env str lna i vdefs 
 	in
@@ -744,7 +728,7 @@ let check_fix env = function
 let mind_nparams env i =
   let mis = lookup_mind_specif i env in mis.mis_mib.mind_nparams
 
-let check_guard_rec_meta env nbfix def deftype = 
+let check_guard_rec_meta env sigma nbfix def deftype = 
   let rec codomain_is_coind c  =
     match whd_betadeltaiota env (strip_outer_cast c) with
       | DOP2(Prod,a,DLAM(_,b)) -> codomain_is_coind b 
@@ -758,9 +742,8 @@ let check_guard_rec_meta env nbfix def deftype =
   let (sp,tyi,_) = destMutInd mI in
   let lvlra = (mis_recargs (lookup_mind_specif mI env)) in
   let vlra = lvlra.(tyi) in  
-  let evd = evar_map env in
   let rec check_rec_call alreadygrd n vlra  t = 
-    if (noccur_with_meta evd n nbfix t) then
+    if noccur_with_meta sigma n nbfix t then
       true 
     else 
       match whd_betadeltaiota_stack env t [] with 
@@ -770,7 +753,7 @@ let check_guard_rec_meta env nbfix def deftype =
              if n <= p && p < n+nbfix then
 	       (* recursive call *)
                if alreadygrd then
-		 if List.for_all (noccur_with_meta evd n nbfix) l then
+		 if List.for_all (noccur_with_meta sigma n nbfix) l then
 		   true
 		 else 
 		   error "Nested recursive occurrences"
@@ -809,14 +792,14 @@ let check_guard_rec_meta env nbfix def deftype =
                                (process_args_of_constr lr lrar)
 				 
                        |  _::lrar  -> 
-                            if (noccur_with_meta evd n nbfix t) 
+                            if (noccur_with_meta sigma n nbfix t) 
                             then (process_args_of_constr lr lrar)
                             else error "Recursive call inside a non-recursive argument of constructor")
             in (process_args_of_constr realargs lra)
 		 
 		 
 	| (DOP2(Lambda,a,DLAM(_,b)),[]) -> 
-            if (noccur_with_meta evd n nbfix a) then
+            if (noccur_with_meta sigma n nbfix a) then
               check_rec_call alreadygrd (n+1)  vlra b
             else 
 	      error "Recursive call in the type of an abstraction"
@@ -834,7 +817,7 @@ let check_guard_rec_meta env nbfix def deftype =
             let (lna,vdefs) = decomp_DLAMV_name la ldef in
             let vlna = Array.of_list lna 
             in 
-	    if (array_for_all (noccur_with_meta evd n nbfix) varit) then
+	    if (array_for_all (noccur_with_meta sigma n nbfix) varit) then
               (array_for_all (check_rec_call alreadygrd (n+1) vlra) vdefs)
               &&
               (List.for_all (check_rec_call alreadygrd (n+1) vlra) l) 
@@ -843,9 +826,9 @@ let check_guard_rec_meta env nbfix def deftype =
 		
 	| (DOPN(MutCase _,_) as mc,l) -> 
             let (_,p,c,vrest) = destCase mc in
-            if (noccur_with_meta evd n nbfix p) then
-              if (noccur_with_meta evd n nbfix c) then
-		if (List.for_all (noccur_with_meta evd n nbfix) l) then
+            if (noccur_with_meta sigma n nbfix p) then
+              if (noccur_with_meta sigma n nbfix c) then
+		if (List.for_all (noccur_with_meta sigma n nbfix) l) then
 		  (array_for_all (check_rec_call alreadygrd n vlra) vrest)
 		else 
 		  error "Recursive call in the argument of a function defined by cases"        
@@ -862,7 +845,7 @@ let check_guard_rec_meta env nbfix def deftype =
 (* The  function which checks that the whole block of definitions 
    satisfies the guarded condition *)
 
-let check_cofix env f = 
+let check_cofix env sigma f = 
   match f with
     | DOPN(CoFix(j),vargs) -> 
 	let nbfix = let nv = Array.length vargs in 
@@ -877,13 +860,16 @@ let check_cofix env f =
 	let (lna,vdefs) = decomp_DLAMV_name la ldef in
 	let vlna = Array.of_list lna in
 	let check_type i = 
-	  (try 
-	     let _ = check_guard_rec_meta env nbfix vdefs.(i) varit.(i) in ()
-	   with UserError (s,str) -> 
-	     error_ill_formed_rec_body CCI env str lna i vdefs) 
+	  try 
+	    let _ = 
+	      check_guard_rec_meta env sigma nbfix vdefs.(i) varit.(i) in 
+	    ()
+	  with UserError (s,str) -> 
+	    error_ill_formed_rec_body CCI env str lna i vdefs 
 	in
 	for i = 0 to nbfix-1 do check_type i done
     | _ -> assert false
+
 
 (* Checks the type of a (co)fixpoint.
    Fix and CoFix are typed the same way; only the guard condition differs. *)

@@ -15,6 +15,7 @@ type 'a oper =
   | Sort of 'a
   | Cast | Prod | Lambda
   | AppL | Const of section_path | Abst of section_path
+  | Evar of section_path
   | MutInd of section_path * int
   | MutConstruct of (section_path * int) * int
   | MutCase of case_info
@@ -75,13 +76,13 @@ type kindOfTerm =
   | IsProd         of name * constr * constr
   | IsLambda       of name * constr * constr
   | IsAppL         of constr array
-  | IsConst        of section_path  * constr array
-  | IsAbst         of section_path  * constr array
+  | IsConst        of section_path * constr array
+  | IsAbst         of section_path * constr array
+  | IsEvar         of section_path * constr array
   | IsMutInd       of section_path * int * constr array
   | IsMutConstruct of section_path * int * int * constr array
   | IsMutCase      of case_info * constr * constr * constr array
-  | IsFix          of int array * int * constr array * name list *
-                      constr array
+  | IsFix          of int array * int * constr array * name list * constr array
   | IsCoFix        of int * constr array * name list * constr array
 
 (* Discriminates which kind of term is it.  

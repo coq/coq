@@ -40,18 +40,10 @@ type 'a mach_flags = {
 let rec execute mf env cstr =
   let cst0 = Constraint.empty in
   match kind_of_term cstr with
-    | IsMeta n ->
-       	let metaty =
-          try lookup_meta n env
-          with Not_found -> error "A variable remains non instanciated" 
-	in
-        (match kind_of_term metaty with
-           | IsCast (typ,kind) -> 
-	       ({ uj_val = cstr; uj_type = typ; uj_kind = kind }, cst0)
-           | _ ->
-	       let (jty,cst) = execute mf env metaty in
-	       let k = whd_betadeltaiotaeta env jty.uj_type in
-	       ({ uj_val = cstr; uj_type = metaty; uj_kind = k }, cst))
+    | IsMeta _ ->
+	anomaly "the kernel does not understand metas"
+    | IsEvar _ ->
+	anomaly "the kernel does not understand existential variables"
 	
     | IsRel n -> 
 	(relative env n, cst0)
@@ -66,7 +58,7 @@ let rec execute mf env cstr =
 	  error "Cannot typecheck an unevaluable abstraction"
 	      
     | IsConst _ ->
-        (make_judge cstr (type_of_constant_or_existential env cstr), cst0)
+        (make_judge cstr (type_of_constant env cstr), cst0)
 	  
     | IsMutInd _ ->
 	(make_judge cstr (type_of_inductive env cstr), cst0)
@@ -87,13 +79,13 @@ let rec execute mf env cstr =
           error "General Fixpoints not allowed";
         let (larv,vdefv,cst) = execute_fix mf env lar lfi vdef in
         let fix = mkFix vn i larv lfi vdefv in
-        check_fix env fix;
+        check_fix env Spset.empty fix;
 	(make_judge fix larv.(i), cst)
 	  
     | IsCoFix (i,lar,lfi,vdef) ->
         let (larv,vdefv,cst) = execute_fix mf env lar lfi vdef in
         let cofix = mkCoFix i larv lfi vdefv in
-        check_cofix env cofix;
+        check_cofix env Spset.empty cofix;
 	(make_judge cofix larv.(i), cst)
 	  
     | IsSort (Prop c) -> 
@@ -239,13 +231,11 @@ let safe_machine_v env cv =
 
 (*s Safe environments. *)
 
-type 'a environment = 'a unsafe_env
+type environment = unsafe_env
 
 let empty_environment = empty_env
 
-let evar_map = evar_map
 let universes = universes
-let metamap = metamap
 let context = context
 
 let lookup_var = lookup_var
@@ -253,7 +243,6 @@ let lookup_rel = lookup_rel
 let lookup_constant = lookup_constant
 let lookup_mind = lookup_mind
 let lookup_mind_specif = lookup_mind_specif
-let lookup_meta = lookup_meta
 
 (* Insertion of variables (named and de Bruijn'ed). They are now typed before
    being added to the environment. *)

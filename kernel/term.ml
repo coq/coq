@@ -19,6 +19,7 @@ type 'a oper =
   | Cast | Prod | Lambda
   (* DOPN *)
   | AppL | Const of section_path | Abst of section_path
+  | Evar of section_path
   | MutInd of section_path * int
   | MutConstruct of (section_path * int) * int
   | MutCase of case_info
@@ -468,24 +469,23 @@ let destUntypedCoFix = function
 (******************)
 
 type kindOfTerm = 
-  | IsRel            of int
-  | IsMeta           of int
-  | IsVar            of identifier
-  | IsXtra           of string
-  | IsSort           of sorts
-  | IsCast           of constr*constr
-  | IsProd           of name*constr*constr
-  | IsLambda         of name*constr*constr
-  | IsAppL           of constr array
-  | IsConst          of section_path*constr array 
-  | IsAbst           of section_path*constr array
-  | IsMutInd         of section_path*int*constr array 
-  | IsMutConstruct   of section_path*int*int*constr array 
-  | IsMutCase        of case_info*constr*constr*(constr array)
-  | IsFix            of (int array)*int*
-                        (constr array)*(name list)*(constr array)
-  | IsCoFix          of int*(constr array) *
-                        (name list)*(constr array)
+  | IsRel          of int
+  | IsMeta         of int
+  | IsVar          of identifier
+  | IsXtra         of string
+  | IsSort         of sorts
+  | IsCast         of constr * constr
+  | IsProd         of name * constr * constr
+  | IsLambda       of name * constr * constr
+  | IsAppL         of constr array
+  | IsConst        of section_path * constr array 
+  | IsAbst         of section_path * constr array
+  | IsEvar         of section_path * constr array
+  | IsMutInd       of section_path * int * constr array 
+  | IsMutConstruct of section_path * int * int * constr array 
+  | IsMutCase      of case_info * constr * constr * constr array
+  | IsFix          of int array * int * constr array * name list * constr array
+  | IsCoFix        of int * constr array * name list * constr array
 
 
 (* Discriminates which kind of term is it.  
@@ -498,14 +498,15 @@ let kind_of_term c =
   match c with
     | Rel n                                -> IsRel n
     | VAR id                               -> IsVar id 
-    | DOP0 (Meta n)                        -> IsMeta  n
-    | DOP0 (Sort s)                        -> IsSort  s
+    | DOP0 (Meta n)                        -> IsMeta n
+    | DOP0 (Sort s)                        -> IsSort s
     | DOP0 (XTRA s)                        -> IsXtra s
-    | DOP2 (Cast, t1, t2)                  -> IsCast   (t1,t2)
+    | DOP2 (Cast, t1, t2)                  -> IsCast (t1,t2)
     | DOP2 (Prod, t1, (DLAM (x,t2)))       -> IsProd (x,t1,t2) 
     | DOP2 (Lambda, t1, (DLAM (x,t2)))     -> IsLambda (x,t1,t2)
     | DOPN (AppL,a)                        -> IsAppL a
-    | DOPN (Const  sp, a)                  -> IsConst (sp,a)
+    | DOPN (Const sp, a)                   -> IsConst (sp,a)
+    | DOPN (Evar sp, a)                   -> IsEvar (sp,a)
     | DOPN (Abst sp, a)                    -> IsAbst (sp, a)
     | DOPN (MutInd (sp,i), l)              -> IsMutInd (sp,i,l)
     | DOPN (MutConstruct ((sp,i), j),l)    -> IsMutConstruct (sp,i,j,l)
@@ -578,7 +579,7 @@ and appvectc f l = appvect (f,l)
 (* to_lambda n (x1:T1)...(xn:Tn)(xn+1:Tn+1)...(xn+j:Tn+j)T =
  * [x1:T1]...[xn:Tn](xn+1:Tn+1)...(xn+j:Tn+j)T *)
 let rec to_lambda n prod =
-  if n=0 then 
+  if n = 0 then 
     prod 
   else 
     match prod with 
@@ -601,8 +602,7 @@ let rec to_prod n lam =
  * [prod_app  s (Prod(_,B)) N --> B[N]
  * with an strip_outer_cast on the first argument to produce a product.
  * if this does not work, then we use the string S as part of our
- * error message.
- *)
+ * error message. *)
 
 let prod_app s t n =
   match strip_outer_cast t with
@@ -646,32 +646,28 @@ let decompose_lam =
 (* Given a positive integer n, transforms a product term (x1:T1)..(xn:Tn)T 
    into the pair ([(xn,Tn);...;(x1,T1)],T) *)
 let decompose_prod_n n =
-  if n < 0 then 
-    error "decompose_prod_n: integer parameter must be positive"
-  else
-    let rec prodec_rec l n c = 
-      if n=0 then l,c 
-      else match c with 
-	| DOP2(Prod,t,DLAM(x,c)) -> prodec_rec ((x,t)::l) (n-1) c
-        | DOP2(Cast,c,_)         -> prodec_rec l n c
-        | c -> error "decompose_prod_n: not enough products"
-    in 
-    prodec_rec [] n 
+  if n < 0 then error "decompose_prod_n: integer parameter must be positive";
+  let rec prodec_rec l n c = 
+    if n=0 then l,c 
+    else match c with 
+      | DOP2(Prod,t,DLAM(x,c)) -> prodec_rec ((x,t)::l) (n-1) c
+      | DOP2(Cast,c,_)         -> prodec_rec l n c
+      | c -> error "decompose_prod_n: not enough products"
+  in 
+  prodec_rec [] n 
 
 (* Given a positive integer n, transforms a lambda term [x1:T1]..[xn:Tn]T 
    into the pair ([(xn,Tn);...;(x1,T1)],T) *)
 let decompose_lam_n n =
-  if n < 0 then
-    error "decompose_lam_n: integer parameter must be positive"
-  else 
-    let rec lamdec_rec l n c = 
-      if n=0 then l,c 
-      else match c with 
-        | DOP2(Lambda,t,DLAM(x,c)) -> lamdec_rec ((x,t)::l) (n-1) c
-        | DOP2(Cast,c,_)           -> lamdec_rec l n c
-        | c -> error "decompose_lam_n: not enough abstractions"
-    in 
-    lamdec_rec [] n 
+  if n < 0 then error "decompose_lam_n: integer parameter must be positive";
+  let rec lamdec_rec l n c = 
+    if n=0 then l,c 
+    else match c with 
+      | DOP2(Lambda,t,DLAM(x,c)) -> lamdec_rec ((x,t)::l) (n-1) c
+      | DOP2(Cast,c,_)           -> lamdec_rec l n c
+      | c -> error "decompose_lam_n: not enough abstractions"
+  in 
+  lamdec_rec [] n 
 
 (* (nb_lam [na1:T1]...[nan:Tan]c) where c is not an abstraction
  * gives n (casts are ignored) *)
@@ -947,7 +943,7 @@ let whd_castapp x = applist(whd_castapp_stack x [])
 
 (* alpha conversion : ignore print names and casts *)
 let rec eq_constr_rec m n = 
-  if m = n then true else
+  (m = n) or
   match (strip_head_cast m,strip_head_cast n) with
     | (DOP2(Cast,c1,_),c2) 	       -> eq_constr_rec c1 c2
     | (c1,DOP2(Cast,c2,_))              -> eq_constr_rec c1 c2

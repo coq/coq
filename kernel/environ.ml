@@ -9,7 +9,6 @@ open Sign
 open Univ
 open Generic
 open Term
-open Evd
 open Constant
 open Inductive
 open Abstraction
@@ -27,11 +26,9 @@ type globals = {
   env_locals : (global * section_path) list;
   env_imports : import list }
 
-type 'a unsafe_env = {
+type unsafe_env = {
   env_context : context;
   env_globals : globals;
-  env_sigma : 'a evar_map;
-  env_metamap : (int * constr) list;
   env_universes : universes }
 
 let empty_env = { 
@@ -42,13 +39,9 @@ let empty_env = {
     env_abstractions = Spmap.empty;
     env_locals = [];
     env_imports = [] };
-  env_sigma = mt_evd;
-  env_metamap = [];
   env_universes = initial_universes }
 
 let universes env = env.env_universes
-let metamap env = env.env_metamap
-let evar_map env = env.env_sigma
 let context env = env.env_context
 
 (* Construction functions. *)
@@ -121,9 +114,6 @@ let lookup_mind_specif i env =
 	{ mis_sp = sp; mis_mib = mib; mis_tyi = tyi; mis_args = args;
 	  mis_mip = mind_nth_type_packet mib tyi }
     | _ -> invalid_arg "lookup_mind_specif"
-
-let lookup_meta n env =
-  List.assoc n env.env_metamap
 
 let lookup_abst sp env =
   Spmap.find sp env.env_globals.env_abstractions
@@ -204,32 +194,6 @@ let defined_constant env = function
       Constant.is_defined (lookup_constant sp env)
   | _ -> invalid_arg "defined_constant"
 
-(* A constant is an existential if its name has the existential id prefix *)
-let existential_id_prefix = "?"
-
-let is_existential_id id =
-  atompart_of_id id = existential_id_prefix
-
-let is_existential_oper = function
-  | Const sp -> is_existential_id (basename sp)
-  | _ -> false
-
-let is_existential = function
-  | DOPN (oper, _) -> is_existential_oper oper
-  | _ -> false
-
-let defined_existential env = function
-  | DOPN (Const sp, _) -> 
-      Evd.is_defined env.env_sigma sp
-  | _ -> invalid_arg "defined_existential"
-
-let defined_const env c =
-  (defined_constant env c) || 
-  ((is_existential c) && (defined_existential env c))
-
-let translucent_const env c =
-  (is_existential c) && (defined_existential env c)
-
 (* A const is opaque if it is a non-defined existential or
    a non-existential opaque constant *)
 
@@ -238,18 +202,10 @@ let opaque_constant env = function
       Constant.is_opaque (lookup_constant sp env)
   | _ -> invalid_arg "opaque_constant"
 
-let opaque_const env = function
-  | DOPN(Const sp,_) as k ->
-      if is_existential k then
-        not (defined_existential env k)
-      else 
-	opaque_constant env k
-  | _ -> invalid_arg "opaque_const"
-
 (* A const is evaluable if it is defined and not opaque *)
-let evaluable_const env k =
+let evaluable_constant env k =
   try 
-    defined_const env k && not (opaque_const env k)
+    defined_constant env k && not (opaque_constant env k)
   with Not_found -> 
     false
 

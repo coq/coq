@@ -7,22 +7,19 @@ open Names
 open Generic
 open Term
 open Univ
-open Evd
 open Constant
 open Inductive
 open Environ
 open Instantiate
 open Closure
 
-let mt_evd = Evd.mt_evd
-
 exception Redelimination
 exception Induc
 exception Elimconst
 
-type 'a reduction_function = 'a unsafe_env -> constr -> constr
-type 'a stack_reduction_function = 'a unsafe_env -> constr -> constr list 
-  -> constr * constr list
+type 'a reduction_function = unsafe_env -> constr -> constr
+type 'a stack_reduction_function = 
+    unsafe_env -> constr -> constr list -> constr * constr list
 
 (*************************************)
 (*** Reduction Functions Operators ***)
@@ -101,7 +98,7 @@ let red_product env c =
     match x with
       | DOPN(AppL,cl) -> 
 	  DOPN(AppL,Array.append [|redrec (array_hd cl)|] (array_tl cl))
-      | DOPN(Const _,_) when evaluable_const env x -> const_or_ex_value env x
+      | DOPN(Const _,_) when evaluable_constant env x -> constant_value env x
       | DOPN(Abst _,_) when evaluable_abst env x -> abst_value env x 
       | DOP2(Cast,c,_) -> redrec c
       | DOP2(Prod,a,DLAM(x,b)) -> DOP2(Prod, a, DLAM(x, redrec b))  
@@ -180,10 +177,10 @@ let subst_term_occ locs c t =
 let rec substlin env name n ol c =
   match c with
     | DOPN(Const sp,_) ->
-        if (path_of_const c)=name then
-          if (List.hd ol)=n then
-            if evaluable_const env c then 
-	      ((n+1),(List.tl ol), const_or_ex_value env c)
+        if path_of_const c = name then
+          if List.hd ol = n then
+            if evaluable_constant env c then 
+	      ((n+1),(List.tl ol), constant_value env c)
             else
               errorlabstrm "substlin"
                 [< 'sTR(string_of_path sp);
@@ -194,8 +191,8 @@ let rec substlin env name n ol c =
 	  (n,ol,c)
 
     | DOPN(Abst _,_) ->
-        if (path_of_abst c)=name then
-          if (List.hd ol)=n then 
+        if path_of_abst c = name then
+          if List.hd ol = n then 
 	    ((n+1),(List.tl ol), abst_value env c)
           else 
 	    ((n+1),ol,c)
@@ -363,8 +360,8 @@ let whd_const_stack namelist env =
     match x with
       | DOPN(Const sp,_) as c ->
 	  if List.mem sp namelist then
-            if evaluable_const env c then
-              whrec (const_or_ex_value env c) l
+            if evaluable_constant env c then
+              whrec (constant_value env c) l
             else 
 	      error "whd_const_stack"
 	  else 
@@ -391,8 +388,8 @@ let whd_delta_stack env =
   let rec whrec x l =
     match x with
       | DOPN(Const _,_) as c ->
-	  if evaluable_const env c then
-            whrec (const_or_ex_value env c) l
+	  if evaluable_constant env c then
+            whrec (constant_value env c) l
 	  else 
 	    x,l
       | (DOPN(Abst _,_)) as c ->
@@ -413,8 +410,8 @@ let whd_betadelta_stack env =
   let rec whrec x l =
     match x with
       | DOPN(Const _,_) ->
-          if evaluable_const env x then 
-	    whrec (const_or_ex_value env x) l
+          if evaluable_constant env x then 
+	    whrec (constant_value env x) l
           else 
 	    (x,l)
       | DOPN(Abst _,_) ->
@@ -439,8 +436,8 @@ let whd_betadeltat_stack env =
   let rec whrec x l =
     match x with
       | DOPN(Const _,_) ->
-          if translucent_const env x then 
-	    whrec (const_or_ex_value env x) l
+          if evaluable_constant env x then 
+	    whrec (constant_value env x) l
           else 
 	    (x,l)
       | DOPN(Abst _,_) ->
@@ -464,8 +461,8 @@ let whd_betadeltaeta_stack env =
   let rec whrec x stack =
     match x with
       | DOPN(Const _,_) ->
-          if evaluable_const env x then
-	    whrec (const_or_ex_value env x) stack
+          if evaluable_constant env x then
+	    whrec (constant_value env x) stack
           else 
 	    (x,stack)
       | DOPN(Abst _,_) ->
@@ -607,8 +604,8 @@ let whd_betadeltatiota_stack env =
   let rec whrec x stack =
     match x with
       | DOPN(Const _,_) ->
-          if translucent_const env x then
-            whrec (const_or_ex_value env x) stack
+          if evaluable_constant env x then
+            whrec (constant_value env x) stack
           else 
 	    (x,stack)
       | DOPN(Abst _,_) ->
@@ -643,8 +640,8 @@ let whd_betadeltaiota_stack env =
   let rec bdi_rec x stack =
     match x with
       | DOPN(Const _,_) ->
-          if evaluable_const env x then
-	    bdi_rec (const_or_ex_value env x) stack
+          if evaluable_constant env x then
+	    bdi_rec (constant_value env x) stack
           else 
 	    (x,stack)
       | DOPN(Abst _,_) ->
@@ -680,8 +677,8 @@ let whd_betadeltaiotaeta_stack env =
   let rec whrec x stack =
     match x with
       | DOPN(Const _,_) ->
-          if evaluable_const env x then 
-	    whrec (const_or_ex_value env x) stack
+          if evaluable_constant env x then 
+	    whrec (constant_value env x) stack
           else 
 	    (x,stack)
       | DOPN(Abst _,_) ->
@@ -742,7 +739,7 @@ let pb_equal = function
   | CONV_LEQ -> CONV
   | CONV -> CONV
 
-type 'a conversion_function = 'a unsafe_env -> constr -> constr -> constraints
+type 'a conversion_function = unsafe_env -> constr -> constr -> constraints
 
 (* Conversion utility functions *)
 
@@ -939,35 +936,6 @@ let is_conv env = test_conversion conv env
 let is_conv_leq env = test_conversion conv_leq env
 
 
-(********************************************************************)
-(*             Special-Purpose Reduction                            *)
-(********************************************************************)
-
-let whd_meta env = function
-  | DOP0(Meta p) as u -> (try List.assoc p (metamap env) with Not_found -> u)
-  | x -> x
-	
-(* Try to replace all metas. Does not replace metas in the metas' values
- * Differs from (strong whd_meta). *)
-let plain_instance env c = 
-  let s = metamap env in
-  let rec irec = function
-    | DOP0(Meta p) as u -> (try List.assoc p s with Not_found -> u)
-    | DOP1(oper,c)      -> DOP1(oper, irec c)
-    | DOP2(oper,c1,c2)  -> DOP2(oper, irec c1, irec c2)
-    | DOPN(oper,cl)     -> DOPN(oper, Array.map irec cl)
-    | DOPL(oper,cl)     -> DOPL(oper, List.map irec cl)
-    | DLAM(x,c)         -> DLAM(x, irec c)
-    | DLAMV(x,v)        -> DLAMV(x, Array.map irec v)
-    | u                 -> u
-  in 
-  if s = [] then c else irec c
-    
-(* Pourquoi ne fait-on pas nf_betaiota si s=[] ? *)
-let instance env c = 
-  let s = metamap env in
-  if s = [] then c else nf_betaiota env (plain_instance env c)
-
 
 (* pseudo-reduction rule:
  * [hnf_prod_app env s (Prod(_,B)) N --> B[N]
@@ -1048,8 +1016,8 @@ let special_red_case env whfun p c ci lf  =
     let (constr,cargs) = whfun c l in 
     match constr with 
       | DOPN(Const _,_) as g -> 
-          if (evaluable_const env g) then
-            let gvalue = (const_or_ex_value env g) in
+          if evaluable_constant env g then
+            let gvalue = constant_value env g in
             if reducible_mind_case  gvalue then
               reduce_mind_case_use_function env g
                 {mP=p; mconstr=gvalue; mcargs=cargs; mci=ci; mlf=lf}
@@ -1335,51 +1303,6 @@ let poly_args env t =
     | DOP2(Prod,a,DLAM(_,b)) -> aux 1 b
     | _ -> []
 
-(* Expanding existential variables (trad.ml, progmach.ml) *)
-(* 1- whd_ise fails if an existential is undefined *)
-let rec whd_ise env = function
-  | DOPN(Const sp,_) as k ->
-      if Evd.in_dom (evar_map env) sp then
-        if defined_const env k then
-          whd_ise env (const_or_ex_value env k)
-        else
-          errorlabstrm "whd_ise"
-            [< 'sTR"There is an unknown subterm I cannot solve" >]
-      else 
-	k
-  | DOP2(Cast,c,_) -> whd_ise env c
-  | DOP0(Sort(Type(_))) -> DOP0(Sort(Type(dummy_univ)))
-  | c -> c
-
-
-(* 2- undefined existentials are left unchanged *)
-let rec whd_ise1 env = function
-  | (DOPN(Const sp,_) as k) ->
-      if Evd.in_dom (evar_map env) sp & defined_const env k then
-        whd_ise1 env (const_or_ex_value env k)
-      else 
-	k
-  | DOP2(Cast,c,_) -> whd_ise1 env c
-  | DOP0(Sort(Type(_))) -> DOP0(Sort(Type(dummy_univ)))
-  | c -> c
-
-let nf_ise1 env = strong (whd_ise1 env) env
-
-(* Same as whd_ise1, but replaces the remaining ISEVAR by Metavariables
- * Similarly we have is_fmachine1_metas and is_resolve1_metas *)
-
-let rec whd_ise1_metas env = function
-  | (DOPN(Const sp,_) as k) ->
-      if Evd.in_dom (evar_map env) sp then
-	if defined_const env k then
-      	  whd_ise1_metas env (const_or_ex_value env k)
-	else 
-      	  let m = DOP0(Meta (new_meta())) in
-	  DOP2(Cast,m,const_or_ex_type env k)
-      else
-	k
-  | DOP2(Cast,c,_) -> whd_ise1_metas env c
-  | c -> c
 
 (* Fonction spéciale qui laisse les cast clés sous les Fix ou les MutCase *)
 

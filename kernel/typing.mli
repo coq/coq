@@ -6,7 +6,6 @@ open Pp
 open Names
 open Term
 open Univ
-open Evd
 open Sign
 open Constant
 open Inductive
@@ -19,36 +18,33 @@ open Typeops
   added. Internally, the datatype is still [unsafe_env]. We re-export the
   functions of [Environ] for the new type [environment]. *)
 
-type 'a environment
+type environment
 
-val empty_environment : 'a environment
+val empty_environment : environment
 
-val evar_map : 'a environment -> 'a evar_map
-val universes : 'a environment -> universes
-val metamap : 'a environment -> (int * constr) list
-val context : 'a environment -> context
+val universes : environment -> universes
+val context : environment -> context
 
-val push_var : identifier * constr -> 'a environment -> 'a environment
-val push_rel : name * constr -> 'a environment -> 'a environment
+val push_var : identifier * constr -> environment -> environment
+val push_rel : name * constr -> environment -> environment
 val add_constant : 
-  section_path -> constant_entry -> 'a environment -> 'a environment
+  section_path -> constant_entry -> environment -> environment
 val add_parameter :
-  section_path -> constr -> 'a environment -> 'a environment
+  section_path -> constr -> environment -> environment
 val add_mind : 
-  section_path -> mutual_inductive_entry -> 'a environment -> 'a environment
-val add_constraints : constraints -> 'a environment -> 'a environment
+  section_path -> mutual_inductive_entry -> environment -> environment
+val add_constraints : constraints -> environment -> environment
 
-val lookup_var : identifier -> 'a environment -> name * typed_type
-val lookup_rel : int -> 'a environment -> name * typed_type
-val lookup_constant : section_path -> 'a environment -> constant_body
-val lookup_mind : section_path -> 'a environment -> mutual_inductive_body
-val lookup_mind_specif : constr -> 'a environment -> mind_specif
-val lookup_meta : int -> 'a environment -> constr
+val lookup_var : identifier -> environment -> name * typed_type
+val lookup_rel : int -> environment -> name * typed_type
+val lookup_constant : section_path -> environment -> constant_body
+val lookup_mind : section_path -> environment -> mutual_inductive_body
+val lookup_mind_specif : constr -> environment -> mind_specif
 
-val export : 'a environment -> string -> compiled_env
-val import : compiled_env -> 'a environment -> 'a environment
+val export : environment -> string -> compiled_env
+val import : compiled_env -> environment -> environment
 
-val unsafe_env_of_env : 'a environment -> 'a unsafe_env
+val unsafe_env_of_env : environment -> unsafe_env
 
 (*s Typing without information. *)
 
@@ -58,20 +54,20 @@ val j_val : judgment -> constr
 val j_type : judgment -> constr
 val j_kind : judgment -> constr
 
-val safe_machine : 'a environment -> constr -> judgment * constraints
-val safe_machine_type : 'a environment -> constr -> typed_type
+val safe_machine : environment -> constr -> judgment * constraints
+val safe_machine_type : environment -> constr -> typed_type
 
-val fix_machine : 'a environment -> constr -> judgment * constraints
-val fix_machine_type : 'a environment -> constr -> typed_type
+val fix_machine : environment -> constr -> judgment * constraints
+val fix_machine_type : environment -> constr -> typed_type
 
-val unsafe_machine : 'a environment -> constr -> judgment * constraints
-val unsafe_machine_type : 'a environment -> constr -> typed_type
+val unsafe_machine : environment -> constr -> judgment * constraints
+val unsafe_machine_type : environment -> constr -> typed_type
 
-val type_of : 'a environment -> constr -> constr
+val type_of : environment -> constr -> constr
 
-val type_of_type : 'a environment -> constr -> constr
+val type_of_type : environment -> constr -> constr
 
-val unsafe_type_of : 'a environment -> constr -> constr
+val unsafe_type_of : environment -> constr -> constr
 
 
 (*s Typing with information (extraction). *)

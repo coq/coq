@@ -10,7 +10,6 @@ open Inductive
 open Environ
 open Instantiate
 open Univ
-open Evd
 
 
 let stats = ref false
@@ -136,7 +135,7 @@ let red_under (md,r) rk =
 type ('a, 'b) infos = {
   i_flags : flags;
   i_repr : ('a, 'b) infos -> constr -> 'a;
-  i_env : 'b unsafe_env;
+  i_env : unsafe_env;
   i_tab : (constr, 'a) Hashtbl.t }
 
 let const_value_cache info c =
@@ -150,8 +149,8 @@ let const_value_cache info c =
           Some v
       | None -> None
 
-let infos_under { i_flags = flg; i_repr = rfun; i_env = sigma; i_tab = tab } =
-  { i_flags = flags_under flg; i_repr = rfun; i_env = sigma; i_tab = tab }
+let infos_under { i_flags = flg; i_repr = rfun; i_env = env; i_tab = tab } =
+  { i_flags = flags_under flg; i_repr = rfun; i_env = env; i_tab = tab }
 
 
 (**** Call by value reduction ****)
@@ -465,10 +464,10 @@ and cbv_norm_value info = function (* reduction under binders *)
 type 'a cbv_infos = (cbv_value, 'a) infos
 
 (* constant bodies are normalized at the first expansion *)
-let create_cbv_infos flgs sigma =
+let create_cbv_infos flgs env =
   { i_flags = flgs;
     i_repr = (fun old_info c -> cbv_stack_term old_info TOP ESID c);
-    i_env = sigma;
+    i_env = env;
     i_tab = Hashtbl.create 17 }
 
 

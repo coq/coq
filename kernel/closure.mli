@@ -6,7 +6,6 @@ open Pp
 open Names
 open Generic
 open Term
-open Evd
 open Environ
 (*i*)
 
@@ -83,7 +82,7 @@ val fixp_reducible :
 
 (* normalization of a constr: the two functions to know... *)
 type 'a cbv_infos
-val create_cbv_infos : flags -> 'a unsafe_env -> 'a cbv_infos
+val create_cbv_infos : flags -> unsafe_env -> 'a cbv_infos
 val cbv_norm : 'a cbv_infos -> constr -> constr
 
 (* recursive functions... *)
@@ -159,8 +158,8 @@ type case_status =
 
 (* Constant cache *)
 type 'a clos_infos
-val create_clos_infos : flags -> 'a unsafe_env -> 'a clos_infos
-val clos_infos_env : 'a clos_infos -> 'a unsafe_env
+val create_clos_infos : flags -> unsafe_env -> 'a clos_infos
+val clos_infos_env : 'a clos_infos -> unsafe_env
 
 (* Reduction function *)
 val norm_val : 'a clos_infos -> fconstr -> constr
