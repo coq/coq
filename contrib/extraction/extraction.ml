@@ -88,6 +88,15 @@ let rec type_sign env c =
 	(is_info_scheme env t)::(type_sign (push_rel_assum (n,t) env) d)
     | _ -> []
 
+let rec type_scheme_nb_args env c = 
+  match kind_of_term (whd_betadeltaiota env none c) with
+    | Prod (n,t,d) -> 
+	let n = type_scheme_nb_args (push_rel_assum (n,t) env) d in 
+	if is_info_scheme env t then n+1 else n
+    | _ -> 0
+
+let _ = ugly_hack_arity_nb_args := type_scheme_nb_args
+
 (*s [type_sign_vl] does the same, plus a type var list. *)
 
 let rec type_sign_vl env c = 
@@ -104,7 +113,6 @@ let rec nb_default_params env c =
 	let n = nb_default_params (push_rel_assum (n,t) env) d in 
 	if is_default env t then n+1 else n
     | _ -> 0
-
 
 (*S Management of type variable contexts. *)
 
@@ -742,10 +750,8 @@ let extract_constant env kn cb =
     | None -> (* A logical axiom is risky, an informative one is fatal. *) 
         (match flag_of_type env typ with
 	   | (Info,TypeScheme) -> 
-	       if isSort typ then 
-		 if is_custom (long_r r) then Dtype (r, [], Tunknown) 
-		 else error_axiom r
-	       else error_axiom_scheme r
+	       if is_custom (long_r r) then Dtype (r, [], Tunknown) 
+	       else error_axiom r
            | (Info,Default) -> 
 	       if is_custom (long_r r) then 
 		 let t = snd (record_constant_type env kn (Some typ)) in 

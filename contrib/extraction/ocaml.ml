@@ -391,6 +391,9 @@ let rec pp_Dfix init i ((rv,c,t) as fix) =
 let pp_parameters l = 
   (pp_boxed_tuple pp_tvar l ++ space_if (l<>[]))
 
+let pp_string_parameters l = 
+  (pp_boxed_tuple str l ++ space_if (l<>[])) 
+
 let pp_one_ind prefix ip pl cv =
   let pl = rename_tvars keywords pl in
   let pp_constructor (r,l) =
@@ -485,9 +488,12 @@ let pp_decl mp =
 	if is_inline_custom r then failwith "empty phrase"
 	else 
 	  let l = rename_tvars keywords l in 
-	  let def = try str (find_custom r) with not_found -> pp_type false l t 
+	  let ids, def = try 
+	    let ids,s = find_type_custom r in 
+	    pp_string_parameters ids, str s 
+	  with not_found -> pp_parameters l, pp_type false l t
 	  in 
-	  hov 2 (str "type" ++ spc () ++ pp_parameters l ++ pp_global r ++ 
+	  hov 2 (str "type" ++ spc () ++ ids ++ pp_global r ++ 
 		 spc () ++ str "=" ++ spc () ++ def)
     | Dterm (r, a, t) -> 
 	if is_inline_custom r then failwith "empty phrase"
@@ -519,15 +525,17 @@ let pp_spec mp =
 	if is_inline_custom r then failwith "empty phrase"
 	else 
 	  let l = rename_tvars keywords vl in 
-	  let def = 
-	    try str "= " ++ str (find_custom r) 
+	  let ids, def = 
+	    try 
+	      let ids, s = find_type_custom r in 
+	      pp_string_parameters ids,  str "= " ++ str s 
 	    with not_found -> 
+	      let ids = pp_parameters l in 
 	      match ot with 
-		| None -> mt () 
-		| Some t -> str "=" ++ spc () ++ pp_type false l t 
+		| None -> ids, mt () 
+		| Some t -> ids, str "=" ++ spc () ++ pp_type false l t 
 	  in 
-	  hov 2 (str "type" ++ spc () ++ pp_parameters l ++ 
-		 pp_global r ++ spc () ++ def)
+	  hov 2 (str "type" ++ spc () ++ ids ++ pp_global r ++ spc () ++ def)
 
 let rec pp_structure_elem mp = function 
   | (_,SEdecl d) -> pp_decl mp d

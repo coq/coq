@@ -16,7 +16,7 @@ val id_of_global : global_reference -> identifier
 
 (*s Warning and Error messages. *)
 
-val error_axiom_scheme : global_reference -> 'a
+val error_axiom_scheme : global_reference -> int -> 'a
 val error_axiom : global_reference -> 'a
 val warning_axiom : global_reference -> unit
 val error_section : unit -> 'a
@@ -94,12 +94,12 @@ val to_keep : global_reference -> bool
 
 (*s Table for user-given custom ML extractions. *)
 
+val ugly_hack_arity_nb_args : (Environ.env -> Term.constr -> int) ref
+
 val is_custom : global_reference -> bool
 val is_inline_custom : global_reference -> bool
 val find_custom : global_reference -> string
-val all_customs : unit -> Refset.t
-val type_customs : unit -> (global_reference * string) list
-val term_customs : unit -> (global_reference * string) list
+val find_type_custom : global_reference -> string list * string
 
 (*s Extraction commands. *)
 
@@ -107,7 +107,8 @@ val extraction_language : lang -> unit
 val extraction_inline : bool -> reference list -> unit
 val print_extraction_inline : unit -> unit
 val reset_extraction_inline : unit -> unit
-val extract_constant_inline : bool -> reference -> string -> unit
+val extract_constant_inline : 
+  bool -> reference -> string list -> string -> unit
 val extract_inductive : reference -> string * string list -> unit
 
 
