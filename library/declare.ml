@@ -82,12 +82,14 @@ let set_xml_declare_inductive f = xml_declare_inductive := f
 (* Section variables. *)
 
 type section_variable_entry =
-  | SectionLocalDef of constr * types option
+  | SectionLocalDef of constr * types option * bool (* opacity *)
   | SectionLocalAssum of types
 
 type variable_declaration = dir_path * section_variable_entry * strength
 
-type checked_section_variable = constr option * types * Univ.constraints
+type checked_section_variable =
+  | CheckedSectionLocalDef of constr * types * Univ.constraints * bool
+  | CheckedSectionLocalAssum of types * Univ.constraints
 
 type checked_variable_declaration =
     dir_path * checked_section_variable * strength
@@ -104,11 +106,15 @@ let cache_variable (sp,(id,(p,d,strength))) =
   (* Constr raisonne sur les noms courts *)
   if Idmap.mem id !vartab then
     errorlabstrm "cache_variable" (pr_id id ++ str " already exists");
-  let cst = match d with (* Fails if not well-typed *)
-    | SectionLocalAssum ty -> Global.push_named_assum (id,ty)
-    | SectionLocalDef (c,t) -> Global.push_named_def (id,c,t) in
-  let (_,bd,ty) = Global.lookup_named id in
-  let vd = (bd,ty,cst) in
+  let vd = match d with (* Fails if not well-typed *)
+    | SectionLocalAssum ty ->
+        let cst = Global.push_named_assum (id,ty) in
+        let (_,bd,ty) = Global.lookup_named id in
+        CheckedSectionLocalAssum (ty,cst)
+    | SectionLocalDef (c,t,opaq) -> 
+        let cst = Global.push_named_def (id,c,t) in
+        let (_,bd,ty) = Global.lookup_named id in
+        CheckedSectionLocalDef (out_some bd,ty,cst,opaq) in
   Nametab.push 0 (restrict_path 0 sp) (VarRef id);
   vartab := Idmap.add id (p,vd,strength) !vartab
 
@@ -318,18 +324,29 @@ let is_constant sp =
 let constant_strength sp = Spmap.find sp !csttab
 
 let get_variable id = 
-  let (p,(c,ty,cst),str) = Idmap.find id !vartab in
-  ((id,c,ty),str)
+  let (p,x,str) = Idmap.find id !vartab in
+  let d = match x with
+    | CheckedSectionLocalDef (c,ty,cst,opaq) -> (id,Some c,ty)
+    | CheckedSectionLocalAssum (ty,cst) -> (id,None,ty) in
+  (d,str)
 
 let get_variable_with_constraints id = 
-  let (p,(c,ty,cst),str) = Idmap.find id !vartab in
-  ((id,c,ty),cst,str)
+  let (p,x,str) = Idmap.find id !vartab in
+  match x with
+    | CheckedSectionLocalDef (c,ty,cst,opaq) -> ((id,Some c,ty),cst,str)
+    | CheckedSectionLocalAssum (ty,cst) -> ((id,None,ty),cst,str)
 
 let variable_strength id =
   let (_,_,str) = Idmap.find id !vartab in str
 
 let find_section_variable id =
   let (p,_,_) = Idmap.find id !vartab in Names.make_path p id
+
+let variable_opacity id =
+  let (_,x,_) = Idmap.find id !vartab in
+  match x with
+    | CheckedSectionLocalDef (c,ty,cst,opaq) -> opaq
+    | CheckedSectionLocalAssum (ty,cst) -> false (* any.. *)
 
 (* Global references. *)
 

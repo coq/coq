@@ -29,7 +29,7 @@ open Nametab
 open Nametab
 
 type section_variable_entry =
-  | SectionLocalDef of constr * types option
+  | SectionLocalDef of constr * types option * bool (* opacity *)
   | SectionLocalAssum of types
 
 type variable_declaration = dir_path * section_variable_entry * strength

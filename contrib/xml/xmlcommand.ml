@@ -490,7 +490,7 @@ let print_coq_object lobj id sp dn fv env =
           let (_,(_,varentry,_)) = Declare.out_variable lobj in
            begin
             match varentry with
-               Declare.SectionLocalDef (body,optt) ->
+               Declare.SectionLocalDef (body,optt,opaq) ->
                  let typ = match optt with
 		   | None -> Retyping.get_type_of env Evd.empty body 
 		   | Some t -> t in

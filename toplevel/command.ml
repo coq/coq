@@ -98,7 +98,8 @@ let declare_definition ident (local,n) bl red_option c typopt =
     | NeverDischarge -> declare_global_definition ident ce' n local
     | DischargeAt (disch_sp,_) ->
         if Lib.is_section_p disch_sp then begin
-	  let c = SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type) in
+	  let c =
+            SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type,false) in
           let _ = declare_variable ident (Lib.cwd(), c, n) in
 	  if_verbose message ((string_of_id ident) ^ " is defined");
           if Pfedit.refining () then 
@@ -484,13 +485,13 @@ let apply_tac_not_declare id pft = function
     Pfedit.delete_current_proof ();
     Pfedit.by (Refiner.tclTHENSV cutt [|introduction id;exat|])
 
-let save id const strength hook =
+let save id const (local,strength) hook =
   let {const_entry_body = pft;
        const_entry_type = tpo;
        const_entry_opaque = opacity } = const in
   begin match strength with
-    | DischargeAt (disch_sp,_) when Lib.is_section_p disch_sp && not opacity ->
-	let c = SectionLocalDef (pft, tpo) in
+    | DischargeAt (disch_sp,_) when Lib.is_section_p disch_sp && local ->
+	let c = SectionLocalDef (pft, tpo, opacity) in
 	let _ = declare_variable id (Lib.cwd(), c, strength) in
 	hook strength (VarRef id)
     | NeverDischarge | DischargeAt _ ->
@@ -505,9 +506,9 @@ let save id const strength hook =
   end
 
 let save_named opacity =
-  let id,(const,(local,strength),hook) = Pfedit.cook_proof () in
+  let id,(const,persistence,hook) = Pfedit.cook_proof () in
   let const = { const with const_entry_opaque = opacity } in
-  save id const strength hook
+  save id const persistence hook
 
 let check_anonymity id save_ident =
   if atompart_of_id id <> "Unnamed_thm" then
@@ -517,16 +518,17 @@ let check_anonymity id save_ident =
 *)
 
 let save_anonymous opacity save_ident =
-  let id,(const,(local,strength),hook) = Pfedit.cook_proof () in
+  let id,(const,persistence,hook) = Pfedit.cook_proof () in
   let const = { const with const_entry_opaque = opacity } in
   check_anonymity id save_ident;
-  save save_ident const strength hook
+  save save_ident const persistence hook
 
 let save_anonymous_with_strength strength opacity save_ident =
   let id,(const,_,hook) = Pfedit.cook_proof () in
   let const = { const with const_entry_opaque = opacity } in
   check_anonymity id save_ident;
-  save save_ident const strength hook
+  (* we consider that non opaque behaves as local for discharge *)
+  save save_ident const (not opacity,strength) hook
 
 let get_current_context () =
   try Pfedit.get_current_goal_context ()
