@@ -71,7 +71,7 @@
 \def\repeat{{\tt repeat }}
 \def\eauto{{\tt eauto }}
 \def\subst{{\tt subst }}
-
+\def\pattern{{\tt pattern }}
 
 \begin{document}
 \bibliographystyle{plain}
@@ -144,11 +144,7 @@ HOL, Lego, Nuprl, PVS are examples of provers that are fairly similar
 to \Coq by the way they interact with the user. More distant relatives of
 \Coq are ACL2, ALF, Alfa, Mizar, $\Omega$mega\ldots
 
-
-
-
 \Question{Where can I find information about the theory behind \Coq ?}
-
 \begin{description}
 \item[Type theory] A book~\cite{ProofsTypes}, some lecture
 notes~\cite{Types:Dowek} and the \Coq manual~\cite{Coq:manual}
@@ -912,7 +908,14 @@ Ltac introIdGen := let id:=fresh in intro id.
 
 \Question{What can I do if I get ``Cannot solve a second-order unification problem'' ?}
 
-\Question{What is the use of the pattern tactic ?}
+\Question{What is the use of the \pattern tactic ?}  
+
+The \pattern tactic transforms the current goal, performing
+beta-expansion on all the applications featuring this tactic's
+argument. For instance, if the current goal includes a subterm {\tt
+phi(t)}, then {\tt pattern t} transforms the subterm into {\tt (fun
+x:A => phi(x)) t}. This can be useful when \apply fails on matching,
+to abstract the appropriate terms.
 
 \Question{What is the difference between assert, cut and generalize ?}
 
@@ -985,21 +988,30 @@ that is still unknown.
 
 \Question{What is a constr ?}
 
-\Question{What is Gallina ?}
+\Question{What is Gallina ?}  
+
+Gallina is the specification language of \Coq. Complete documentation
+of this language can be found in the Reference Manual.
 
 \Question{What is a command ?}
 
 \Question{What is difference between a lemma, a fact and a theorem ?}
 
-From \Coq point of view there are no difference. But some tools can have a different behaviour when you use a lemma rather than a theorem. For instance {\tt coqdoc} will not generate documentation for the lemmas within your development.  
+From \Coq point of view there are no difference. But some tools can
+have a different behaviour when you use a lemma rather than a
+theorem. For instance {\tt coqdoc} will not generate documentation for
+the lemmas within your development.
 
 \Question{How can I organize my proofs ?}
 
-You can organize your proofs using the section mechanism of \Coq. Have a look at the manual for further information.
+You can organize your proofs using the section mechanism of \Coq. Have
+a look at the manual for further information.
 
 \Question{What is a dependent type ?}
 
-A dependant type is a type which depends on some term. For instance ``vector of size n'' is a dependant type representing all the vectors of size $n$. Theis type depends on $n$
+A dependant type is a type which depends on some term. For instance
+``vector of size n'' is a dependant type representing all the vectors
+of size $n$. Theis type depends on $n$
 
 \Question{What is a proof by reflection ?}
 
