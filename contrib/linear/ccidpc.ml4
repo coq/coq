@@ -67,7 +67,7 @@ let is_forall_term t=op2bool (match_with_forall_term t)
 let constr_of_string s () =
   Libnames.constr_of_reference (Nametab.locate (Libnames.qualid_of_string s))
 
-let id_ex=constr_of_string "Coq.Init.Logic.ex" 
+let id_ex=constr_of_string "Logic.ex" 
 
 let match_with_exist_term t=
   match kind_of_term t with
@@ -75,15 +75,15 @@ let match_with_exist_term t=
 	if t=id_ex () && (Array.length v)=2 then
 	  match kind_of_term v.(1) with
 	      Lambda(na,a,b)->Some(na,a,b)
-	    |_->assert false
+	    |_->raise Impossible_case
 	else None
     | _->None
 
 let is_exist_term t=op2bool (match_with_exist_term t)
 
-let id_not=constr_of_string "Coq.Init.Logic.not"
+let id_not=constr_of_string "Logic.not"
 
-let id_false=constr_of_string "Coq.Init.Logic.False"
+let id_false=constr_of_string "Logic.False"
 
 let match_with_not_term t=
   match kind_of_term t with
@@ -107,7 +107,7 @@ let gen_ident id = make_ident (atompart_of_id id) (incr ctr;Some !ctr)
 let gen_name a na =
     match (named_hd Environ.empty_env a na) with 
 	(Name id)->gen_ident id
-      | Anonymous->assert false
+      | Anonymous->raise Impossible_case
 
 let dpc_of_cci_term lid = 
  let rec tradrec cciterm =
@@ -141,13 +141,19 @@ let cci_of_dpc_term tradsign sign =
     | APP (t::dpcargs) ->
 	let t' = tradrec t in
 	  Term.applist(t', List.map tradrec dpcargs)
-    | _-> assert false
+    | _-> raise Impossible_case
   in tradrec
     
 
 let dpc_of_cci_fmla gls cciterm = 
   let rec tradrec lid cciterm =
-    match match_with_conjunction cciterm with
+    match match_with_exist_term cciterm with
+	 Some ((na,a,b)as trp)->
+	   let id = gen_name a na in
+	   let f=whd_beta (mkApp ((mkLambda trp),[|mkVar id|])) in
+	     Exists(id,tradrec (id::lid) f)
+       |_-> 
+    (match match_with_conjunction cciterm with
 	Some (_,[a;b])->Conj(tradrec lid a,tradrec lid b)
       |_->
 	  (match match_with_disjunction cciterm with
@@ -165,12 +171,6 @@ let dpc_of_cci_fmla gls cciterm =
 	   let f=whd_beta (mkApp ((mkLambda trp),[|mkVar id|])) in
 	     ForAll(id,tradrec (id::lid) f)
        |_-> 
-	   (match match_with_exist_term cciterm with
-		Some ((na,a,b)as trp)->
-		  let id = gen_name a na in
-		  let f=whd_beta (mkApp ((mkLambda trp),[|mkVar id|])) in
-		    Exists(id,tradrec (id::lid) f)
-	      |_->   
     let (hd,args) = whd_betaiota_stack cciterm in
     let dpcargs = List.map (dpc_of_cci_term lid) args
     in (match kind_of_term hd with
@@ -214,11 +214,11 @@ let forAllE id t gls =
       tclTHEN (generalize [mkApp (mkVar id,[|t|])]) intro gls
     else  tclFAIL 0 gls
 
-let existE id gls =
+let existE id id2 gls =
   let (_,_,t)=lookup_named id (pf_hyps gls) in
     if is_exist_term t then
         ((tclTHEN (simplest_elim (mkVar id))
-         (tclDO 2 (dImp None)))) gls
+         (tclTHEN (intro_using id2) (dImp None)))) gls
     else tclFAIL 0 gls
 
 let negE id gls = 
@@ -230,16 +230,16 @@ let negE id gls =
 (*t exist_intro_head = put_pat mmk "ex_intro"*)
 
 let existI t gls =
-(*  if is_exist_term (pf_concl gls) then
+  if is_exist_term (pf_concl gls) then
     split (Rawterm.ImplicitBindings [t]) gls
-  else tclFAIL 0 gls *)
-    
+  else tclFAIL 0 gls 
+    (*
  
     let (wc,kONT) = Evar_refiner.startWalk gls in
     let clause = mk_clenv_hnf_constr_type_of wc (pf_concl gls) in
     let clause' = clenv_constrain_missing_args [t] clause
     in res_pf kONT clause' gls
-
+    *)
 
 let rec alpha_fmla bl1 bl2 p_0 p_1 =
   match p_0,p_1 with
@@ -273,16 +273,15 @@ let first_pred p =
  in firstrec
 
 
-let find_fmla_left (kspine,f) (jspine,gl) =
-    let ids = pf_ids_of_hyps gl 
-    and sign= pf_hyps gl in
-      first_pred 
-        (fun id -> 
-	   let (_,_,t)=lookup_named id sign in
-	   ( try alpha_eq (kspine,f)
+let find_fmla_left (kspine,f) (jspine,gl) = 
+    let sign= pf_hyps gl in
+    let (id,_,_)=first_pred 
+        (fun (id,_,t) -> 
+	   ( try
+	      alpha_eq (kspine,f)
                        (jspine,dpc_of_cci_fmla gl t)
 		     with _ -> false) 
-        ) ids
+        ) sign in id
 
 
 let onNthClause tac n gls =
@@ -299,7 +298,7 @@ let rec tradpf kspine jspine dpcpf gls =
 
     Proof2(_,_,Axiom2 f) ->
     let id = find_fmla_left (kspine,f) (jspine,gls)
-    in exact_no_check (mkVar id) gls
+    in (*exact_check (mkVar id)*)assumption gls
 
   | Proof2(_,_,LWeakening2(_,pf)) -> trad kspine jspine pf gls
 
@@ -347,10 +346,10 @@ let rec tradpf kspine jspine dpcpf gls =
 
   | Proof2(_,_,LExists2(kid,f,pf)) ->
     let id = find_fmla_left (kspine,Exists(kid,f)) (jspine,gls)
-    in ((tclTHEN (existE id)
+    in ((tclTHEN (existE id kid)
         ((onNthClause (function (Some jid) ->
                           trad (kid::kspine) (jid::jspine) pf
-			 | None-> assert false)
+			 | None-> raise Impossible_case)
          (-2))))) gls
 
   | Proof2(_,_,RExists2(kid,kterm,f,pf)) ->

@@ -106,7 +106,7 @@ let sep_at at llt (lmu,_) =
       	       	    then ((Po a)::l1,l2)
 		    else (l1,(Po a)::l2)
     | [] -> ([],[])
-    | _->assert false 
+    | _->raise Impossible_case 
   in sep_at_rec at
      
 let sep_nat nat llt (lmu,_) = 
@@ -118,7 +118,7 @@ let sep_nat nat llt (lmu,_) =
       	       	    then ((No a)::l1,l2)
 		    else (l1,(No a)::l2)
     | [] -> ([],[])
-    | _->assert false 
+    | _->raise Impossible_case 
   in sep_nat_rec nat
 
 let sep_neg neg llt (lmu,_) = 
@@ -195,7 +195,7 @@ let sep_path (at,nat,conj,rneg,lneg) p =
       [x] -> x
     | ((Po(Conj _),_,_) as c::_) -> c     (** on recherche d'abord A/\B **)
     | _::ll -> find_X0 ll
-    | _->assert false 
+    | _->raise Impossible_case 
   in let (x0,l1,l2) = if all_X0=[] then 
                        failwith "Can't find X0 in sep_path ! (impossible case)"
                       else find_X0 all_X0
@@ -211,7 +211,7 @@ let sep_path (at,nat,conj,rneg,lneg) p =
      and (nat1,nat2) = sep_nat nat litS1 p
   in let neg = lneg @ (List.map (function 
 				     (Po (Neg f)) -> (No f) 
-				   | _->assert false) rneg)
+				   | _->raise Impossible_case) rneg)
   in let (neg1,neg2) = sep_neg neg litS1 p
   in let lit_at1 = List.map proj at1
      and lit_nat1 = List.map proj nat1
@@ -246,7 +246,7 @@ let rec rneg_case pr = function
 	     and sq2' = (Neg f)::sq2
 	  in (Proof2(sq1',sq2',RNeg2(f,pr1)))
    | [] -> pr
-   | _->assert false 
+   | _->raise Impossible_case 
 
 
 let lneg_case ((Proof2(sq1,sq2,_)) as pr) =function 
@@ -254,7 +254,7 @@ let lneg_case ((Proof2(sq1,sq2,_)) as pr) =function
       let sq1' = (Neg f)::sq1
       and sq2' = substract sq2 [f]
       in (Proof2(sq1',sq2',LNeg2(f,pr)))
-  | _->assert false 
+  | _->raise Impossible_case 
 
 let find_lneg lneg = 
   let rec is_negneg = function
@@ -307,7 +307,7 @@ and cases (at,nat,conj,rneg,lneg) p =
       if rneg<>[] then
       	 let s = at@nat@lneg@(List.map (function 
 					    (Po (Neg f)) -> (No f)
-				          | _->assert false) rneg)
+				          | _->raise Impossible_case) rneg)
 	 in let pr = proof_of_path s p
 	 in rneg_case pr rneg
       else 
@@ -316,7 +316,7 @@ and cases (at,nat,conj,rneg,lneg) p =
       	      let s = at@nat@(substract lneg [g])@[Po f] in
 	      let pr = proof_of_path s p in
 		lneg_case pr g
-	  |_->assert false
+	  |_->raise Impossible_case
 
 
 (* pi_formula : separated formula -> formula 
@@ -733,7 +733,7 @@ let int_quant f u pr =
      and fr_var = free_var_formula f
      in let un_var = List.map (function 
 				   (Universal(id,_,_)) -> id
-				 | _ ->assert false) un_qt
+				 | _ ->raise Impossible_case) un_qt
      in let sk_var  = un_var @ fr_var
      in let u0 = unher_unif sk_var u
      in let pr0 = pi_proof pr
