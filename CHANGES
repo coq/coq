@@ -48,6 +48,11 @@ Standard library
   visible, one Zsgn function, more induction principles (Wf_Z.v and
   tail of Zcomplements.v), one more general Euclid theorem.
 
+Tools
+
+- new option -dump-glob to coqtop to dump globalizations (to be used by the 
+  new documentation tool coqdoc; see http://www.lri.fr/~filliatr/coqdoc) 
+
 User Contributions
 
 - Chinese has been rewritten using Z from ZArith as datatype. 
