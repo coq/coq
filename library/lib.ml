@@ -126,7 +126,7 @@ let close_section s =
   in
   let (after,_,before) = split_lib sp in
   lib_stk := before;
-  add_entry sp (ClosedSection (s,modp,List.rev after));
+  add_entry sp (ClosedSection (s,modp,after));
   add_frozen_state ();
   pop_path_prefix ()
 

@@ -10,12 +10,12 @@ open Evd
 open Environ
 (*i*)
 
-(* flags for profiling... *)
+(* Flags for profiling reductions. *)
 val stats : bool ref
 val share : bool ref
 
 
-(* sets of reduction kinds *)
+(*s The set of reduction kinds. *)
 type red_kind = BETA | DELTA of sorts oper | IOTA
 
 type reds = { 
@@ -31,16 +31,17 @@ val betadeltaiota_red : reds
 val red_set : reds -> red_kind -> bool
 
 
-(* reduction function specification *)
+(*s Reduction function specification. *)
 
 type red_mode = UNIFORM | SIMPL | WITHBACK
 
 type flags = red_mode * reds
 
-(* (UNIFORM,r)  == r-reduce in any context
- * (SIMPL,r)    == bdi-reduce under cases or fix, r otherwise (like hnf does)
- * (WITHBACK,r) == internal use: means we are under a case 
- *                 or in rec. arg. of fix *)
+(* [(UNIFORM,r)]  == [r]-reduce in any context.
+   [(SIMPL,r)]    == bdi-reduce under cases or fix, [r] otherwise 
+   (like hnf does).
+   [(WITHBACK,r)] == internal use: means we are under a case 
+   or in rec. arg. of fix. *)
 
 val flags_under : flags -> flags
 val red_top : flags -> red_kind -> bool
@@ -54,7 +55,7 @@ val betadeltaiota : flags
 val hnf_flags : flags
 
 
-(* Call by value functions *)
+(*s Call by value functions *)
 type cbv_value =
   | VAL of int * constr
   | LAM of name * constr * constr * cbv_value subs
@@ -96,11 +97,10 @@ val apply_stack : 'a cbv_infos -> constr -> stack -> constr
 val cbv_norm_value : 'a cbv_infos -> cbv_value -> constr
 
 
+(*s Lazy reduction. *)
 
-
-
-(* Lazy reduction *)
 type 'a freeze
+
 type 'a frterm =
   | FRel of int
   | FVAR of identifier

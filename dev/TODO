@@ -1,7 +1,16 @@
 
+ o Lib
+     - écrire une fonction d'export qui supprimme les FrozenState,
+       vérifie qu'il n'y a pas de section ouvert, et présente les
+       déclarations dans l'ordre chronologique (y compris dans les
+       sections fermées). A utiliser dans Library pour sauver un module.
+
+ o Convertibilité
+     - utiliser une exception plutôt qu'un type somme Convert. | Non Convert.
+
  o Univers
      - définir un type d'ensemble de contraintes, et sauver cet ensemble
-	pour chaque module et non pas le graphe complet
+       pour chaque module et non pas le graphe complet
 
  o configure
      - il faut tester la version du programme correspondant à $bytecamlc

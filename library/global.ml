@@ -9,6 +9,8 @@ open Summary
 
 let global_env = ref empty_environment
 
+let env () = !global_env
+
 let _ = 
   declare_summary "Global environment"
     { freeze_function = (fun () -> !global_env);

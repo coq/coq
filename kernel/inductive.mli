@@ -64,6 +64,9 @@ type mutual_inductive_entry = {
   mind_entry_finite : bool;
   mind_entry_inds : (identifier * constr * identifier list * constr) list }
 
+(*s The different kinds of errors that may result of a malformed inductive
+  definition. *)
+
 type inductive_error =
   | NonPos of int   
   | NotEnoughArgs of int
@@ -75,6 +78,9 @@ type inductive_error =
   | BadEntry
 
 exception InductiveError of inductive_error
+
+(*s The following functions are utility functions to check and to
+  decompose a declaration. *)
 
 (* [mind_check_names] checks the names of an inductive types declaration
    i.e. that all the types and constructors names are distinct. 
@@ -91,6 +97,5 @@ val mind_extract_and_check_params :
   mutual_inductive_entry -> (name * constr) list
 
 val mind_extract_params : int -> constr -> (name * constr) list * constr
-
 
 val mind_check_lc : (name * constr) list -> mutual_inductive_entry -> unit

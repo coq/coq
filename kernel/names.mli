@@ -24,6 +24,7 @@ val id_without_number : identifier -> bool
 val first_char : identifier -> string
 
 module Idset : Set.S with type elt = identifier
+module Idmap : Map.S with type key = identifier
 
 val lift_ident : identifier -> identifier
 val next_ident_away_from : identifier -> identifier list -> identifier

@@ -10,11 +10,14 @@ open Evd
 open Constant
 open Inductive
 open Environ
+open Typing
 (*i*)
 
 (* This module defines the global environment of Coq. 
    The functions below are the exactly the same as the ones in [Typing],
    operating on that global environment. *)
+
+val env : unit -> unit environment
 
 val evar_map : unit -> unit evar_map
 val universes : unit -> universes

@@ -7,25 +7,20 @@ open Generic
 (*i*)
 
 (*s The operators of the Calculus of Inductive Constructions. 
-  ['a] is the type of sorts. *)
+  ['a] is the type of sorts. ([XTRA] is an extra slot, for putting in 
+  whatever sort of operator we need for whatever sort of application.) *)
 
 type 'a oper = 
-  (* DOP0 *)
   | Meta of int
   | Sort of 'a
-  (* DOP2 *)
   | Cast | Prod | Lambda
-  (* DOPN *)
   | AppL | Const of section_path | Abst of section_path
   | MutInd of section_path * int
   | MutConstruct of (section_path * int) * int
   | MutCase of case_info
   | Fix of int array * int
   | CoFix of int
-
   | XTRA of string
-      (* an extra slot, for putting in whatever sort of
-         operator we need for whatever sort of application *)
 
 and case_info = (section_path * int) option
 
@@ -45,7 +40,7 @@ val mk_Prop : sorts
 
 (*s The type [constr] of the terms of CCI
   is obtained by instanciating the generic terms (type [term], 
-  see \citesec{generic_terms}) on the above operators, themselves instanciated
+  see \refsec{generic_terms}) on the above operators, themselves instanciated
   on the above sorts. *)
 
 type constr = sorts oper term
@@ -295,12 +290,11 @@ val args_of_mconstr : constr -> constr array
 (* Destructs a term <p>Case c of lc1 | lc2 .. | lcn end *)
 val destCase : constr -> case_info * constr * constr * constr array
 
-(* Destructs the ith function of the block  
-    [Fixpoint f1 [ctx1] = b1
-     with     f2 [ctx2] = b2
-     ...
-     with     fn [ctxn] = bn.]
-
+(* Destructs the $i$th function of the block  
+   $\mathit{Fixpoint} ~ f_1 ~ [ctx_1] = b_1
+    \mathit{with}     ~ f_2 ~ [ctx_2] = b_2
+    \dots
+    \mathit{with}     ~ f_n ~ [ctx_n] = b_n$,
    where the lenght of the $j$th context is $ij$.
 *)
 val destGralFix : 

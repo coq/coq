@@ -78,6 +78,7 @@ module IdOrdered =
   end
 
 module Idset = Set.Make(IdOrdered)
+module Idmap = Map.Make(IdOrdered)
 
 
 (* Fresh names *)

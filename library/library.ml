@@ -76,9 +76,8 @@ let open_module s =
    exported in the dependencies (usually it is [true] at the highest level;
    it is always [false] in recursive loadings). *)
 
-let load_objects s =
-  let m = find_module s in
-  segment_iter load_object m.module_declarations
+let load_objects decls =
+  segment_iter load_object decls
 
 let rec load_module_from doexp s f =
   let (fname,ch) = raw_intern_module f in
@@ -95,6 +94,8 @@ let rec load_module_from doexp s f =
   if s <> md.md_name then
     error ("The file " ^ fname ^ " does not contain module " ^ s);
   List.iter (load_mandatory_module doexp s) m.module_deps;
+  Global.import m.module_compiled_env;
+  load_objects m.module_declarations;
   Hashtbl.add modules_table s m;
   m
 

@@ -3,8 +3,6 @@
 
 (* Generic hash-consing. *)
 
-val stat : unit->unit
-
 module type Comp =
   sig
     type t

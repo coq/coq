@@ -21,7 +21,7 @@ end
 (*s The result is a module which provides a function [explain_type_error]
   to explain a type error for a given kind in a given context, which are 
   usually the three arguments carried by the exception [TypeError] 
-  (see \citesec{typeerrors}). *)
+  (see \refsec{typeerrors}). *)
 
 module Make (P : Printer) : sig
 

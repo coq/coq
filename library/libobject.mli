@@ -6,14 +6,14 @@ open Names
 (*i*)
 
 (* [Libobject] declares persistent objects, given with three methods:
-   - a caching function specifying how to add the object in the current
-     scope of theory modules;
-   - a loading function, specifying what to do when the object is loaded
-     from the disk;
-   - an opening function, specifying what to do when the module containing
-     the object is opened;
-   - a specification function, to extract its specification when writing
-     the specification of a module to the disk (.vi) *)
+   a caching function specifying how to add the object in the current
+   scope of theory modules;
+   a loading function, specifying what to do when the object is loaded
+   from the disk;
+   an opening function, specifying what to do when the module containing
+   the object is opened;
+   a specification function, to extract its specification when writing
+   the specification of a module to the disk (.vi) *)
 
 type 'a object_declaration = {
   cache_function : section_path * 'a -> unit;
@@ -21,8 +21,7 @@ type 'a object_declaration = {
   open_function : 'a -> unit;
   specification_function : 'a -> 'a }
 
-(*s Given the object-name, the "loading" function, the "caching" function, 
-   and the "specification" function, the function [declare_object]
+(*s Given an object name and a declaration, the function [declare_object]
    will hand back two functions, the "injection" and "projection"
    functions for dynamically typed library-objects. *)
 

@@ -14,7 +14,10 @@ open Environ
 open Typeops
 (*i*)
 
-(*s Safe environments. *)
+(*s Safe environments. Since we are now able to type terms, we can define an
+  abstract type of safe environments, where objects are typed before being
+  added. Internally, the datatype is still [unsafe_env]. We re-export the
+  functions of [Environ] for the new type [environment]. *)
 
 type 'a environment
 
@@ -43,6 +46,8 @@ val lookup_meta : int -> 'a environment -> constr
 
 val export : 'a environment -> string -> compiled_env
 val import : compiled_env -> 'a environment -> 'a environment
+
+val unsafe_env_of_env : 'a environment -> 'a unsafe_env
 
 (*s Typing without information. *)
 

@@ -6,13 +6,8 @@ open Util
 open Names
 (*i*)
 
-(* A generic notion of terms with binders. *)
-
-exception FreeVar
-exception Occur
-
-(* \label{generic_terms}
-   Generic terms, over any kind of operators. *)
+(* \label{generic_terms} A generic notion of terms with binders,
+   over any kind of operators. *)
 
 type 'oper term =
   | DOP0 of 'oper                            (* atomic terms *)
@@ -28,30 +23,42 @@ type 'oper term =
 val isRel  : 'a term -> bool
 val isVAR  : 'a term -> bool
 val free_rels : 'a term -> Intset.t
+
+exception FreeVar
+exception Occur
+
 val closedn : int -> 'a term -> unit
 val closed0 : 'a term -> bool
 val noccurn : int -> 'a term -> bool
 val noccur_bet : int -> int -> 'a term -> bool
 
+(*s Lifts. [ELSHFT(l,n)] == lift of [n], then apply [lift l].
+  [ELLFT(n,l)] == apply [l] to de Bruijn > [n] i.e under n binders. *)
 
-(* lifts *)
 type lift_spec =
   | ELID
-  | ELSHFT of lift_spec * int (* ELSHFT(l,n) == lift of n, then apply lift l *)
-  | ELLFT of int * lift_spec  (* ELLFT(n,l)  == apply l to de Bruijn > n *)
-                              (*                 i.e under n binders *)
+  | ELSHFT of lift_spec * int
+  | ELLFT of int * lift_spec
+
 val el_shft : int -> lift_spec -> lift_spec
 val el_lift : lift_spec -> lift_spec
 val el_liftn :  int -> lift_spec -> lift_spec
 val reloc_rel: int -> lift_spec -> int
+val exliftn : lift_spec -> 'a term -> 'a term
+val liftn : int -> int -> 'a term -> 'a term
+val lift : int -> 'a term -> 'a term
+val pop : 'a term -> 'a term
 
-(* explicit substitutions of type 'a *)
+(*s Explicit substitutions of type ['a]. [ESID] = identity. 
+  [CONS(t,S)] = $S.t$ i.e. parallel substitution. [SHIFT(n,S)] = 
+  $(\uparrow n~o~S)$ i.e. terms in S are relocated with n vars. 
+  [LIFT(n,S)] = $(\%n~S)$ stands for $((\uparrow n~o~S).n...1)$. *)
+
 type 'a subs =
-  | ESID                   (* ESID       =          identity *)
-  | CONS of 'a * 'a subs   (* CONS(t,S)  = (S.t)    parallel substitution *)
-  | SHIFT of int * 'a subs (* SHIFT(n,S)= (\^n o S) terms in S are relocated *)
-                           (*                        with n vars *)
-  | LIFT of int * 'a subs  (* LIFT(n,S)=(\%n S) stands for ((\^n o S).n...1) *)
+  | ESID
+  | CONS of 'a * 'a subs
+  | SHIFT of int * 'a subs
+  | LIFT of int * 'a subs
 
 val subs_cons  : 'a * 'a subs -> 'a subs
 val subs_lift  : 'a subs -> 'a subs
@@ -62,10 +69,6 @@ val expand_rel : int -> 'a subs -> (int * 'a, int) union
 type info = Closed | Open | Unknown
 type 'a substituend = { mutable sinfo : info; sit : 'a }
 
-val exliftn : lift_spec -> 'a term -> 'a term
-val liftn : int -> int -> 'a term -> 'a term
-val lift : int -> 'a term -> 'a term
-val pop : 'a term -> 'a term
 val lift_substituend : int -> 'a term substituend -> 'a term
 val make_substituend : 'a term -> 'a term substituend
 val substn_many : 'a term substituend array -> int -> 'a term -> 'a term
@@ -117,7 +120,8 @@ val rel_list : int -> int -> 'a term list
 
 val count_dlam : 'a term -> int
 
-(* For hash-consing use *)
+(*s For hash-consing. *)
+
 val hash_term :
   ('a term -> 'a term)
   * (('a -> 'a) * (name -> name) * (identifier -> identifier))

@@ -1,45 +1,7 @@
-(****************************************************************************)
-(*                 The Calculus of Inductive Constructions                  *)
-(*                                                                          *)
-(*                                Projet Coq                                *)
-(*                                                                          *)
-(*                     INRIA        LRI-CNRS        ENS-CNRS                *)
-(*              Rocquencourt         Orsay          Lyon                    *)
-(*                                                                          *)
-(*                                 Coq V6.3                                 *)
-(*                               July 1st 1999                              *)
-(*                                                                          *)
-(****************************************************************************)
-(*                               hashcons.ml                                *)
-(****************************************************************************)
+
+(* $Id$ *)
+
 (* Hash consing of datastructures *)
-
-(*
-open Pp;;
-let acces = ref 0;;
-let comparaison = ref 0;;
-let succes = ref 0;;
-let accesstr = ref 0;;
-let comparaisonstr = ref 0;;
-let successtr = ref 0;;
-*)let stat() = ();;
-(*
-  mSGNL [< 'sTR"acces="; 'iNT !acces; 'sPC;
-           'sTR"comp="; 'iNT !comparaison; 'sPC;
-           'sTR"succes="; 'iNT !succes; 'sPC >];
-  comparaison:=0;
-  acces:=0;
-  succes:=0;
-  mSGNL [< 'sTR"String:"; 'sPC;
-           'sTR"acces="; 'iNT !accesstr; 'sPC;
-           'sTR"comp="; 'iNT !comparaisonstr; 'sPC;
-           'sTR"succes="; 'iNT !successtr; 'sPC >];
-  comparaisonstr:=0;
-  accesstr:=0;
-  successtr:=0
-;;
-*)
-
 
 (* The generic hash-consing functions (does not use Obj) *)
 
@@ -54,6 +16,7 @@ let successtr = ref 0;;
  *
  * Note that this module type coerces to the argument of Hashtbl.Make.
  *)
+
 module type Comp =
   sig
     type t
@@ -72,13 +35,13 @@ module type Comp =
  *   argument the sub-hcons functions (the tables are created at that moment),
  *   and returns the hcons function for t.
  *)
+
 module type S =
   sig
     type t
     type u
     val f : unit -> (u -> t -> t)
   end
-
 
 module Make(X:Comp) =
   struct
@@ -109,7 +72,7 @@ module Make(X:Comp) =
             (* incr acces;*)
              try let r = Htbl.find tab y in(* incr succes;*) r
              with Not_found -> Htbl.add tab y y; y)
-  end;;
+  end
 
 (* A few usefull wrappers:
  * takes as argument the function f above and build a function of type
@@ -117,7 +80,7 @@ module Make(X:Comp) =
  * sub-hcons functions. *)
 
 (* For non-recursive types it is quite easy. *)
-let simple_hcons h u = h () u;;
+let simple_hcons h u = h () u
 
 (* For a recursive type T, we write the module of sig Comp with u equals
  * to (T -> T) * u0
@@ -128,8 +91,7 @@ let simple_hcons h u = h () u;;
 let recursive_hcons h u =
   let hc = h () in
   let rec hrec x = hc (hrec,u) x in
-    hrec
-;;
+  hrec
 
 (* If the structure may contain loops, use this one. *)
 let recursive_loop_hcons h u =
@@ -137,8 +99,8 @@ let recursive_loop_hcons h u =
   let rec hrec visited x =
     if List.memq x visited then x
     else hc (hrec (x::visited),u) x
-  in hrec []
-;;
+  in 
+  hrec []
 
 (* For 2 mutually recursive types *)
 let recursive2_hcons h1 h2 u1 u2 =
@@ -147,14 +109,10 @@ let recursive2_hcons h1 h2 u1 u2 =
   let rec hrec1 x = hc1 (hrec1,hrec2,u1) x
   and hrec2 x = hc2 (hrec1,hrec2,u2) x
   in (hrec1,hrec2)
-;;
-
-
-
 
 (* A set of global hashcons functions *)
-let hashcons_resets = ref [];;
-let init() = List.iter (fun f -> f()) !hashcons_resets;;
+let hashcons_resets = ref []
+let init() = List.iter (fun f -> f()) !hashcons_resets
 
 (* [register_hcons h u] registers the hcons function h, result of the above
  *   wrappers. It returns another hcons function that always uses the same
@@ -163,11 +121,8 @@ let init() = List.iter (fun f -> f()) !hashcons_resets;;
 let register_hcons h u =
   let hf = ref (h u) in
   let reset() = hf := h u in
-    hashcons_resets := reset :: !hashcons_resets;
-    (fun x -> !hf x)
-;;
-
-
+  hashcons_resets := reset :: !hashcons_resets;
+  (fun x -> !hf x)
 
 (* Basic hashcons modules for string and obj. Integers do not need be
    hashconsed.  *)
@@ -181,14 +136,14 @@ module Hstring = Make(
     let equal s1 s2 =(* incr comparaisonstr;
       if*) s1=s2(* then (incr successtr; true) else false*)
     let hash = Hashtbl.hash
-  end);;
+  end)
 
 (* Obj.t *)
-exception NotEq;;
+exception NotEq
 
 (* From CAMLLIB/caml/mlvalues.h *)
-let no_scan_tag = 251;;
-let tuple_p obj = Obj.is_block obj & (Obj.tag obj < no_scan_tag);;
+let no_scan_tag = 251
+let tuple_p obj = Obj.is_block obj & (Obj.tag obj < no_scan_tag)
 
 let comp_obj o1 o2 =
   if tuple_p o1 & tuple_p o2 then
@@ -201,7 +156,6 @@ let comp_obj o1 o2 =
         with NotEq -> false
       else false
   else o1=o2
-;;
 
 let hash_obj hrec o = 
   begin
@@ -212,7 +166,6 @@ let hash_obj hrec o =
         done
   end;
   o
-;;
 
 module Hobj = Make(
   struct
@@ -221,24 +174,19 @@ module Hobj = Make(
     let hash_sub (hrec,_) = hash_obj hrec
     let equal = comp_obj
     let hash = Hashtbl.hash
-  end);;
-
-
+  end)
 
 (* Hashconsing functions for string and obj. Always use the same
  * global tables. The latter can be reinitialized with init()
  *)
 (* string : string -> string *)
 (* obj : Obj.t -> Obj.t *)
-let string = register_hcons (simple_hcons Hstring.f) ();;
-let obj = register_hcons (recursive_hcons Hobj.f) ();;
+let string = register_hcons (simple_hcons Hstring.f) ()
+let obj = register_hcons (recursive_hcons Hobj.f) ()
 
 (* The unsafe polymorphic hashconsing function *)
-let magic_hash (c: 'a) =
+let magic_hash (c : 'a) =
   init();
   let r = obj (Obj.repr c) in
-    init();
-    (Obj.magic r : 'a)
-;;
-
-(* $Id$ *)
+  init();
+  (Obj.magic r : 'a)

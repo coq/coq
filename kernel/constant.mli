@@ -7,17 +7,13 @@ open Term
 open Sign
 (*i*)
 
-(* Constants. *)
+(* Constants (internal representation). *)
 
 type discharge_recipe
 
 type recipe =
   | Cooked of constr
   | Recipe of discharge_recipe
-
-type constant_entry = {
-  const_entry_body : constr;
-  const_entry_type : constr option }
 
 type constant_body = {
   const_kind : path_kind;
@@ -29,4 +25,10 @@ type constant_body = {
 val is_defined : constant_body -> bool
 
 val is_opaque : constant_body -> bool
+
+(*s Constant declaration. *)
+
+type constant_entry= {
+  const_entry_body : constr;
+  const_entry_type : constr option }
 

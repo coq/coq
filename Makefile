@@ -42,7 +42,8 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/typing.cmo
 
 LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
-	library/global.cmo library/states.cmo library/library.cmo
+	library/global.cmo library/states.cmo library/library.cmo \
+	library/nametab.cmo library/impargs.cmo
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
@@ -95,8 +96,10 @@ LPTOPLEVEL = toplevel/doc.tex $(TOPLEVEL:.cmo=.mli)
 LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL) $(LPLIBRARY) \
 	  $(LPTOPLEVEL)
 
-doc/coq.tex: $(LPFILES)
-	ocamlweb -o doc/coq.tex $(LPFILES)
+doc/coq.tex: doc/preamble.tex $(LPFILES)
+	cat doc/preamble.tex > doc/coq.tex
+	ocamlweb --no-preamble $(LPFILES) >> doc/coq.tex
+	echo "\end{document}" >> doc/coq.tex
 
 # Emacs tags
 
@@ -185,6 +188,7 @@ archclean::
 
 cleanall:: archclean
 	rm -f *~
+	rm -f doc/*~
 	rm -f config/*.cm[io] config/*~
 	rm -f lib/*.cm[io] lib/*~
 	rm -f kernel/*.cm[io] kernel/*~

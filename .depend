@@ -30,9 +30,11 @@ lib/pp.cmi: lib/pp_control.cmi
 lib/util.cmi: lib/pp.cmi 
 library/global.cmi: kernel/constant.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/inductive.cmi kernel/names.cmi kernel/sign.cmi kernel/term.cmi \
-    kernel/univ.cmi 
+    kernel/typing.cmi kernel/univ.cmi 
+library/impargs.cmi: kernel/names.cmi 
 library/lib.cmi: library/libobject.cmi kernel/names.cmi library/summary.cmi 
 library/libobject.cmi: kernel/names.cmi 
+library/nametab.cmi: kernel/names.cmi 
 library/summary.cmi: kernel/names.cmi 
 parsing/ast.cmi: parsing/coqast.cmi lib/dyn.cmi parsing/pcoq.cmi lib/pp.cmi 
 parsing/coqast.cmi: lib/dyn.cmi 
@@ -153,6 +155,14 @@ lib/util.cmo: lib/pp.cmi lib/util.cmi
 lib/util.cmx: lib/pp.cmx lib/util.cmi 
 library/global.cmo: library/summary.cmi kernel/typing.cmi library/global.cmi 
 library/global.cmx: library/summary.cmx kernel/typing.cmx library/global.cmi 
+library/impargs.cmo: kernel/constant.cmi kernel/generic.cmi \
+    library/global.cmi kernel/inductive.cmi kernel/names.cmi \
+    kernel/reduction.cmi library/summary.cmi kernel/term.cmi \
+    kernel/typing.cmi library/impargs.cmi 
+library/impargs.cmx: kernel/constant.cmx kernel/generic.cmx \
+    library/global.cmx kernel/inductive.cmx kernel/names.cmx \
+    kernel/reduction.cmx library/summary.cmx kernel/term.cmx \
+    kernel/typing.cmx library/impargs.cmi 
 library/lib.cmo: library/libobject.cmi kernel/names.cmi library/summary.cmi \
     lib/util.cmi library/lib.cmi 
 library/lib.cmx: library/libobject.cmx kernel/names.cmx library/summary.cmx \
@@ -161,10 +171,14 @@ library/libobject.cmo: lib/dyn.cmi kernel/names.cmi lib/util.cmi \
     library/libobject.cmi 
 library/libobject.cmx: lib/dyn.cmx kernel/names.cmx lib/util.cmx \
     library/libobject.cmi 
-library/library.cmo: kernel/environ.cmi library/lib.cmi library/libobject.cmi \
-    kernel/names.cmi lib/system.cmi lib/util.cmi library/library.cmi 
-library/library.cmx: kernel/environ.cmx library/lib.cmx library/libobject.cmx \
-    kernel/names.cmx lib/system.cmx lib/util.cmx library/library.cmi 
+library/library.cmo: kernel/environ.cmi library/global.cmi library/lib.cmi \
+    library/libobject.cmi kernel/names.cmi lib/system.cmi lib/util.cmi \
+    library/library.cmi 
+library/library.cmx: kernel/environ.cmx library/global.cmx library/lib.cmx \
+    library/libobject.cmx kernel/names.cmx lib/system.cmx lib/util.cmx \
+    library/library.cmi 
+library/nametab.cmo: kernel/names.cmi library/summary.cmi library/nametab.cmi 
+library/nametab.cmx: kernel/names.cmx library/summary.cmx library/nametab.cmi 
 library/states.cmo: library/lib.cmi library/summary.cmi lib/system.cmi \
     library/states.cmi 
 library/states.cmx: library/lib.cmx library/summary.cmx lib/system.cmx \

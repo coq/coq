@@ -304,18 +304,13 @@ let add_constant sp ce env =
   in
   add_constant sp cb env''
 
-let type_from_judgment env j =
-  match whd_betadeltaiota env j.uj_kind with
-    | DOP0(Sort s) -> { body = j.uj_type; typ = s }
-    | _ -> error_not_type CCI env j.uj_type (* shouldn't happen *)
-
-let add_parameter sp c env =
-  let (j,u) = safe_machine env c in
+let add_parameter sp t env =
+  let (jt,u) = safe_machine env t in
   let env' = set_universes u env in
   let cb = {
     const_kind = kind_of_path sp;
-    const_body = Some (ref (Cooked c));
-    const_type = type_from_judgment env' j;
+    const_body = None;
+    const_type = assumption_of_judgment env' jt;
     const_hyps = get_globals (context env);
     const_opaque = false } 
   in
@@ -423,6 +418,8 @@ let add_mind sp mie env =
 
 let export = export
 let import = import
+
+let unsafe_env_of_env e = e
 
 (*s Machines with information. *)
 
