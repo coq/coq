@@ -13,7 +13,6 @@ open Environ
 open Instantiate
 open Closure
 
-exception Redelimination
 exception Elimconst
 
 (* The type of (machine) stacks (= lambda-bar-calculus' contexts) *) 
@@ -114,33 +113,7 @@ let strong whdfun env sigma =
   strongrec
 
 let local_strong whdfun = 
-  let rec strongrec t = map_constr strongrec (whdfun t)
-
-(*
-match whdfun t with
-    | DOP0 _ as t -> t
-    | DOP1(oper,c) -> DOP1(oper,strongrec c)
-    | DOP2(oper,c1,c2) -> DOP2(oper,strongrec c1,strongrec c2)
-    (* Cas ad hoc *)
-    | DOPN(Fix _ as oper,cl) ->
-	let cl' = Array.copy cl in
-	let l = Array.length cl -1 in
-	for i=0 to l-1 do cl'.(i) <- strongrec cl.(i) done;
-	cl'.(l) <- strongrec_lam cl.(l);
-	DOPN(oper, cl')	
-    | DOPN(oper,cl) -> DOPN(oper,Array.map strongrec cl)
-    | CLam(n,t,c)   -> CLam (n, typed_app strongrec t, strongrec c)  
-    | CPrd(n,t,c)   -> CPrd (n, typed_app strongrec t, strongrec c)
-    | CLet(n,b,t,c) -> CLet (n, strongrec b,typed_app strongrec t, strongrec c)
-    | VAR _ as t -> t
-    | Rel _ as t -> t
-    | DLAM _ | DLAMV _ -> assert false
-  and strongrec_lam = function
-    | DLAM(na,c) -> DLAM(na,strongrec_lam c)
-    | DLAMV(na,c) -> DLAMV(na,Array.map strongrec c)
-    | _ -> assert false
-*)
-  in
+  let rec strongrec t = map_constr strongrec (whdfun t) in
   strongrec
 
 let rec strong_prodspine redfun c = 
@@ -153,18 +126,6 @@ let rec strong_prodspine redfun c =
 (*                   Reduction Functions                                    *)
 (****************************************************************************)
 
-
-(* call by value reduction functions *)
-let cbv_norm_flags flags env sigma t =
-  cbv_norm (create_cbv_infos flags env sigma) t
-
-let cbv_beta env = cbv_norm_flags beta env
-let cbv_betaiota env = cbv_norm_flags betaiota env
-let cbv_betadeltaiota env =  cbv_norm_flags betadeltaiota env
-
-let compute = cbv_betadeltaiota
-
-
 (* lazy reduction functions. The infos must be created for each term *)
 let clos_norm_flags flgs env sigma t =
   norm_val (create_clos_infos flgs env sigma) (inject t)
@@ -173,170 +134,10 @@ let nf_beta env = clos_norm_flags beta env
 let nf_betaiota env = clos_norm_flags betaiota env
 let nf_betadeltaiota env =  clos_norm_flags betadeltaiota env
 
-
 (* lazy weak head reduction functions *)
 (* Pb: whd_val parcourt tout le terme, meme si aucune reduction n'a lieu *)
 let whd_flags flgs env sigma t =
   whd_val (create_clos_infos flgs env sigma) (inject t)
-
-
-(* Red reduction tactic: reduction to a product *)
-let red_product env sigma c = 
-  let rec redrec x =
-    match kind_of_term x with
-      | IsAppL (f,l) -> appvect (redrec f, l)
-      | IsConst (_,_) when evaluable_constant env x -> constant_value env x
-      | IsEvar (ev,args) when Evd.is_defined sigma ev -> 
-	  existential_value sigma (ev,args)
-      | IsCast (c,_) -> redrec c
-      | IsProd (x,a,b) -> mkProd (x, a, redrec b)
-      | _ -> error "Term not reducible"
-  in 
-  nf_betaiota env sigma (redrec c)
-
-(* linear substitution (following pretty-printer) of the value of name in c.
- * n is the number of the next occurence of name.
- * ol is the occurence list to find. *)
-let rec substlin env name n ol c =
-  match kind_of_term c with
-    | IsConst (sp,_) when sp = name ->
-        if List.hd ol = n then
-          if evaluable_constant env c then 
-	    (n+1, List.tl ol, constant_value env c)
-          else
-            errorlabstrm "substlin"
-              [< print_sp sp; 'sTR " is not a defined constant" >]
-        else 
-	  ((n+1),ol,c)
-
-    (* INEFFICIENT: OPTIMIZE *)
-    | IsAppL (c1,cl) ->
-        Array.fold_left 
-	  (fun (n1,ol1,c1') c2 ->
-	     (match ol1 with 
-                | [] -> (n1,[],applist(c1',[c2]))
-                | _  ->
-                    let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-                    (n2,ol2,applist(c1',[c2']))))
-          (substlin env name n ol c1) cl
-
-    | IsLambda (na,c1,c2) ->
-        let (n1,ol1,c1') = substlin env name n ol c1 in
-        (match ol1 with 
-           | [] -> (n1,[],mkLambda (na,c1',c2))
-           | _  ->
-               let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-               (n2,ol2,mkLambda (na,c1',c2')))
-
-    | IsLetIn (na,c1,t,c2) ->
-        let (n1,ol1,c1') = substlin env name n ol c1 in
-        (match ol1 with 
-           | [] -> (n1,[],mkLambda (na,c1',c2))
-           | _  ->
-               let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-               (n2,ol2,mkLambda (na,c1',c2')))
-
-    | IsProd (na,c1,c2) ->
-        let (n1,ol1,c1') = substlin env name n ol c1 in
-        (match ol1 with 
-           | [] -> (n1,[],mkProd (na,c1',c2))
-           | _  ->
-               let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-               (n2,ol2,mkProd (na,c1',c2')))
-	
-    | IsMutCase (ci,p,d,llf) -> 
-        let rec substlist nn oll = function
-          | []     -> (nn,oll,[])
-          | f::lfe ->
-              let (nn1,oll1,f') = substlin env name nn oll f in
-              (match oll1 with
-                 | [] -> (nn1,[],f'::lfe)
-                 | _  ->
-                     let (nn2,oll2,lfe') = substlist nn1 oll1 lfe in
-                     (nn2,oll2,f'::lfe'))
-	in
-	let (n1,ol1,p') = substlin env name n ol p in  (* ATTENTION ERREUR *)
-        (match ol1 with                                 (* si P pas affiche *)
-           | [] -> (n1,[],mkMutCase (ci, p', d, llf))
-           | _  ->
-               let (n2,ol2,d') = substlin env name n1 ol1 d in
-               (match ol2 with
-		  | [] -> (n2,[],mkMutCase (ci, p', d', llf))
-		  | _  -> 
-	              let (n3,ol3,lf') = substlist n2 ol2 (Array.to_list llf)
-                      in (n3,ol3,mkMutCaseL (ci, p', d', lf'))))
-        
-    | IsCast (c1,c2)   ->
-        let (n1,ol1,c1') = substlin env name n ol c1 in
-        (match ol1 with 
-           | [] -> (n1,[],mkCast (c1',c2))
-           | _  ->
-               let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-               (n2,ol2,mkCast (c1',c2')))
-
-    | IsFix _ -> 
-        (warning "do not consider occurrences inside fixpoints"; (n,ol,c))
-	
-    | IsCoFix _ -> 
-        (warning "do not consider occurrences inside cofixpoints"; (n,ol,c))
-
-    | (IsRel _|IsMeta _|IsVar _|IsXtra _|IsSort _
-      |IsEvar _|IsConst _|IsMutInd _|IsMutConstruct _) -> (n,ol,c)
-	
-	  
-let unfold env sigma name =
-  let flag = 
-    (UNIFORM,{ r_beta = true;
-               r_delta = (fun op -> op=(Const name));
-               r_iota = true })
-  in 
-  clos_norm_flags flag env sigma
-
-
-(* unfoldoccs : (readable_constraints -> (int list * section_path) -> constr -> constr)
- * Unfolds the constant name in a term c following a list of occurrences occl.
- * at the occurrences of occ_list. If occ_list is empty, unfold all occurences.
- * Performs a betaiota reduction after unfolding. *)
-let unfoldoccs env sigma (occl,name) c =
-  match occl with
-    | []  -> unfold env sigma name c
-    | l -> 
-        match substlin env name 1 (Sort.list (<) l) c with
-          | (_,[],uc) -> nf_betaiota env sigma uc
-          | (1,_,_) -> error ((string_of_path name)^" does not occur")
-          | _ -> error ("bad occurrence numbers of "^(string_of_path name))
-
-(* Unfold reduction tactic: *)
-let unfoldn loccname env sigma c = 
-  List.fold_left (fun c occname -> unfoldoccs env sigma occname c) c loccname
-
-(* Re-folding constants tactics: refold com in term c *)
-let fold_one_com com env sigma c =
-  let rcom = red_product env sigma com in
-  subst1 com (subst_term rcom c)
-
-let fold_commands cl env sigma c =
-  List.fold_right (fun com -> fold_one_com com env sigma) (List.rev cl) c
-
-
-(* Pattern *)
-
-(* gives [na:ta]c' such that c converts to ([na:ta]c' a), abstracting only
- * the specified occurrences. *)
-
-let abstract_scheme env (locc,a,ta) t =
-  let na = named_hd env ta Anonymous in
-  if occur_meta ta then error "cannot find a type for the generalisation";
-  if occur_meta a then 
-    mkLambda (na,ta,t)
-  else 
-    mkLambda (na, ta,subst_term_occ locc a t)
-
-
-let pattern_occs loccs_trm_typ env sigma c =
-  let abstr_trm = List.fold_right (abstract_scheme env) loccs_trm_typ c in
-  applist(abstr_trm, List.map (fun (_,t,_) -> t) loccs_trm_typ)
-
 
 (*************************************)
 (*** Reduction using substitutions ***)
@@ -462,10 +263,14 @@ let reduce_fix whdfun fix stack =
 let whd_state_gen flags env sigma = 
   let rec whrec (x, stack as s) =
     match kind_of_term x with
-      | IsEvar (ev,args) when red_evar flags & Evd.is_defined sigma ev ->
-	  whrec (existential_value sigma (ev,args), stack)
-      | IsConst _ when red_delta flags & evaluable_constant env x ->
-	  whrec (constant_value env x, stack)
+      | IsEvar ev when red_evar flags ->
+	  (match existential_opt_value sigma ev with
+	     | Some  body -> whrec (body, stack)
+	     | None -> s)
+      | IsConst const when red_delta flags ->
+	  (match constant_opt_value env const with
+	     | Some  body -> whrec (body, stack)
+	     | None -> s)
       | IsLetIn (_,b,_,c) when red_delta flags -> stacklam whrec [b] c stack
       | IsCast (c,_) -> whrec (c, stack)
       | IsAppL (f,cl)  -> whrec (f, append_stack cl stack)
@@ -576,8 +381,8 @@ let whd_beta x = app_stack (whd_beta_state (x,empty_stack))
 let whd_delta_state env sigma = 
   let rec whrec (x, l as s) =
     match kind_of_term x with
-      | IsConst _ when evaluable_constant env x ->
-	  whrec (constant_value env x, l)
+      | IsConst const when evaluable_constant env x ->
+	  whrec (constant_value env const, l)
       | IsEvar (ev,args) when Evd.is_defined sigma ev ->
           whrec (existential_value sigma (ev,args), l)
       | IsLetIn (_,b,_,c) -> stacklam whrec [b] c l
@@ -598,9 +403,9 @@ let whd_delta env sigma c =
 let whd_betadelta_state env sigma = 
   let rec whrec (x, l as s) =
     match kind_of_term x with
-      | IsConst _ ->
+      | IsConst const ->
           if evaluable_constant env x then 
-	    whrec (constant_value env x, l)
+	    whrec (constant_value env const, l)
           else 
 	    s
       | IsEvar (ev,args) ->
@@ -657,8 +462,8 @@ let whd_betaevar env sigma c =
 let whd_betadeltaeta_state env sigma = 
   let rec whrec (x, l as s) =
     match kind_of_term x with
-      | IsConst _ when evaluable_constant env x ->
-	  whrec (constant_value env x, l)
+      | IsConst const when evaluable_constant env x ->
+	  whrec (constant_value env const, l)
       | IsEvar (ev,args) when Evd.is_defined sigma ev ->
 	  whrec (existential_value sigma (ev,args), l)
       | IsLetIn (_,b,_,c) -> stacklam whrec [b] c l
@@ -775,8 +580,8 @@ let whd_betaiotaevar env sigma x =
 let whd_betadeltaiota_state env sigma =
   let rec whrec (x, stack as s) =
     match kind_of_term x with
-      | IsConst _ when evaluable_constant env x ->
-	  whrec (constant_value env x, stack)
+      | IsConst const when evaluable_constant env x ->
+	  whrec (constant_value env const, stack)
       | IsEvar (ev,args) when Evd.is_defined sigma ev ->
 	  whrec (existential_value sigma (ev,args), stack)
       | IsLetIn (_,b,_,c) -> stacklam whrec [b] c stack
@@ -813,8 +618,8 @@ let whd_betadeltaiota env sigma x =
 let whd_betadeltaiotaeta_state env sigma = 
   let rec whrec (x, stack as s) =
     match kind_of_term x with
-      | IsConst _ when evaluable_constant env x ->
-	  whrec (constant_value env x, stack)
+      | IsConst const when evaluable_constant env x ->
+	  whrec (constant_value env const, stack)
       | IsEvar (ev,args) when Evd.is_defined sigma ev -> 
 	  whrec (existential_value sigma (ev,args), stack)
       | IsLetIn (_,b,_,c) -> stacklam whrec [b] c stack
@@ -887,8 +692,8 @@ exception NotConvertible
 let convert_of_bool b c =
   if b then c else raise NotConvertible
 
-let bool_and_convert b f = 
-  if b then f else fun _ -> raise NotConvertible
+let bool_and_convert b f c = 
+  if b then f c else raise NotConvertible
 
 let convert_and f1 f2 c = f2 (f1 c)
 
@@ -933,83 +738,70 @@ and eqappr cv_pb infos appr1 appr2 =
   and el2 = el_shft n2 lft2 in
   match (frterm_of hd1, frterm_of hd2) with
     (* case of leaves *)
-    | (FOP0(Sort s1), FOP0(Sort s2)) -> 
-	bool_and_convert
-	  (Array.length v1 = 0 && Array.length v2 = 0)
-	  (sort_cmp cv_pb s1 s2)
-	  
-    | (FVAR x1, FVAR x2) ->
-	bool_and_convert (x1=x2)
-	  (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
+    | (FAtom a1, FAtom a2) ->
+	(match kind_of_term a1, kind_of_term a2 with
+	   | (IsSort s1, IsSort s2) -> 
+	       bool_and_convert
+		 (Array.length v1 = 0 && Array.length v2 = 0)
+		 (sort_cmp cv_pb s1 s2)
+	   | (IsMeta n, IsMeta m) ->
+               bool_and_convert (n=m) 
+		 (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2)
+		    v1 v2)
+	   | IsXtra s1, IsXtra s2 ->
+               bool_and_convert (s1=s2)
+		 (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2)
+		    v1 v2)
+	   | _ -> fun _ -> raise NotConvertible)
 
+    (* 2 index known to be bound to no constant *)
     | (FRel n, FRel m) ->
         bool_and_convert 
-	  (reloc_rel n el1 = reloc_rel m el2)
+          (reloc_rel n el1 = reloc_rel m el2)
           (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
 
-    | (FOP0(Meta n), FOP0(Meta m)) ->
-        bool_and_convert (n=m) 
-	  (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
-
-    (* 2 constants, 2 existentials or 2 abstractions *)
-    | (FOPN(Const sp1,al1), FOPN(Const sp2,al2)) ->
+    (* 2 constants, 2 existentials or 2 local defined vars or 2 defined rels *)
+    | (FFlex (fl1,al1), FFlex (fl2,al2)) ->
 	convert_or
 	  (* try first intensional equality *)
-	  (bool_and_convert (sp1 == sp2 or sp1 = sp2)
+	  (bool_and_convert (fl1 = fl2)
 	     (convert_and
 		(convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) al1 al2)
 		(convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2)
 		   v1 v2)))
           (* else expand the second occurrence (arbitrary heuristic) *)
-          (match search_frozen_cst infos (Const sp2) al2 with
+          (fun u ->
+	     match search_frozen_value infos fl2 al2 with
              | Some def2 -> 
-		 eqappr cv_pb infos appr1 (lft2, fhnf_apply infos n2 def2 v2)
-             | None -> (match search_frozen_cst infos (Const sp1) al1 with
+		 eqappr cv_pb infos appr1 (lft2, fhnf_apply infos n2 def2 v2) u
+             | None -> (match search_frozen_value infos fl1 al1 with
                           | Some def1 -> eqappr cv_pb infos
-				(lft1, fhnf_apply infos n1 def1 v1) appr2
-			  | None -> fun _ -> raise NotConvertible))
+				(lft1, fhnf_apply infos n1 def1 v1) appr2 u
+			  | None -> raise NotConvertible))
 
-    | (FOPN(Evar ev1,al1), FOPN(Evar ev2,al2)) ->
-	convert_or
-	  (* try first intensional equality *)
-	  (bool_and_convert (ev1 == ev2)
-	     (convert_and
-		(convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) al1 al2)
-		(convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2)
-		   v1 v2)))
-          (* else expand the second occurrence (arbitrary heuristic) *)
-          (match search_frozen_cst infos (Evar ev2) al2 with
-             | Some def2 -> 
-		 eqappr cv_pb infos appr1 (lft2, fhnf_apply infos n2 def2 v2)
-             | None -> (match search_frozen_cst infos (Evar ev1) al1 with
-                          | Some def1 -> eqappr cv_pb infos
-				(lft1, fhnf_apply infos n1 def1 v1) appr2
-			  | None -> fun _ -> raise NotConvertible))
-
-    (* only one constant, existential or abstraction *)
-    | (FOPN((Const _ | Evar _) as op,al1), _)      ->
-        (match search_frozen_cst infos op al1 with
+    (* only one constant, existential, defined var or defined rel *)
+    | (FFlex (fl1,al1), _)      ->
+        (match search_frozen_value infos fl1 al1 with
            | Some def1 -> 
 	       eqappr cv_pb infos (lft1, fhnf_apply infos n1 def1 v1) appr2
            | None -> fun _ -> raise NotConvertible)
-
-    | (_, FOPN((Const _ | Evar _) as op,al2))      ->
-        (match search_frozen_cst infos op al2 with
+    | (_, FFlex (fl2,al2))      ->
+        (match search_frozen_value infos fl2 al2 with
            | Some def2 -> 
 	       eqappr cv_pb infos appr1 (lft2, fhnf_apply infos n2 def2 v2)
            | None -> fun _ -> raise NotConvertible)
 	
     (* other constructors *)
-    | (FLam (_,c1,c2,_,_), FLam (_,c'1,c'2,_,_)) ->
+    | (FLambda (_,c1,c2,_,_), FLambda (_,c'1,c'2,_,_)) ->
         bool_and_convert
 	  (Array.length v1 = 0 && Array.length v2 = 0)
           (convert_and
 	     (ccnv (pb_equal cv_pb) infos el1 el2 c1 c'1)
              (ccnv (pb_equal cv_pb) infos (el_lift el1) (el_lift el2) c2 c'2))
 
-    | (FLet _, _) | (_, FLet _) -> anomaly "Normally removed by fhnf"
+    | (FLetIn _, _) | (_, FLetIn _) -> anomaly "Normally removed by fhnf"
 
-    | (FPrd (_,c1,c2,_,_), FPrd (_,c'1,c'2,_,_)) ->
+    | (FProd (_,c1,c2,_,_), FProd (_,c'1,c'2,_,_)) ->
 	bool_and_convert
           (Array.length v1 = 0 && Array.length v2 = 0)
 	  (convert_and
@@ -1018,32 +810,50 @@ and eqappr cv_pb infos appr1 appr2 =
 
     (* Inductive types:  MutInd MutConstruct MutCase Fix Cofix *)
 
-         (* Le cas MutCase doit venir avant le cas general DOPN car, a
-            priori, 2 termes a base de MutCase peuvent etre convertibles
-            sans que les annotations des MutCase le soient *)
+      (* Les annotations du MutCase ne servent qu'à l'affichage *)
 
-    | (FOPN(MutCase _,cl1), FOPN(MutCase _,cl2)) ->
-        convert_and
-	  (convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) cl1 cl2)
-          (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
+    | (FCases (_,p1,c1,cl1), FCases (_,p2,c2,cl2)) ->
+	convert_and
+	  (ccnv (pb_equal cv_pb) infos el1 el2 p1 p2)
+	  (convert_and
+	     (ccnv (pb_equal cv_pb) infos el1 el2 c1 c2)
+	     (convert_and
+		(convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) cl1 cl2)
+		(convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
+	     ))
 
-     | (FOPN(op1,cl1), FOPN(op2,cl2)) ->
+     | (FInd (op1,cl1), FInd(op2,cl2)) ->
 	 bool_and_convert (op1 = op2)
 	   (convert_and
               (convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) cl1 cl2)
               (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2))
-
-     (* binders *)
-     | (FLAM(_,c1,_,_), FLAM(_,c2,_,_)) ->
-	 bool_and_convert
-           (Array.length v1 = 0 && Array.length v2 = 0)
-           (ccnv cv_pb infos (el_lift el1) (el_lift el2) c1 c2)
-
-     | (FLAMV(_,vc1,_,_), FLAMV(_,vc2,_,_)) ->
-	 bool_and_convert
-           (Array.length v1 = 0 & Array.length v2 = 0)
-           (convert_forall2 
-	      (ccnv cv_pb infos (el_lift el1) (el_lift el2)) vc1 vc2)
+     | (FConstruct (op1,cl1), FConstruct(op2,cl2)) ->
+	 bool_and_convert (op1 = op2)
+	   (convert_and
+              (convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) cl1 cl2)
+              (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2))
+     | (FFix (op1,(tys1,_,cl1),_,_), FFix(op2,(tys2,_,cl2),_,_)) ->
+	 let n = Array.length cl1 in
+	 bool_and_convert (op1 = op2)
+	   (convert_and
+              (convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) tys1 tys2)
+	      (convert_and
+		 (convert_forall2 (ccnv (pb_equal cv_pb) infos 
+				     (el_liftn n el1) (el_liftn n el2))
+		    cl1 cl2)
+		 (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2)
+		    v1 v2)))
+     | (FCoFix (op1,(tys1,_,cl1),_,_), FCoFix(op2,(tys2,_,cl2),_,_)) ->
+	 let n = Array.length cl1 in
+	 bool_and_convert (op1 = op2)
+	   (convert_and
+              (convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) tys1 tys2)
+	      (convert_and
+		 (convert_forall2 (ccnv (pb_equal cv_pb) infos
+				     (el_liftn n el1) (el_liftn n el2))
+		    cl1 cl2)
+		 (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2)
+		    v1 v2)))
 
      | _ -> (fun _ -> raise NotConvertible)
 
@@ -1055,7 +865,8 @@ let fconv cv_pb env sigma t1 t2 =
     Constraint.empty
   else
     let infos = create_clos_infos hnf_flags env sigma in
-    ccnv cv_pb infos ELID ELID (inject t1) (inject t2) Constraint.empty
+    ccnv cv_pb infos ELID ELID (inject t1) (inject t2)
+      Constraint.empty
 
 let conv env = fconv CONV env
 let conv_leq env = fconv CONV_LEQ env 
@@ -1083,9 +894,9 @@ let is_fconv = function | CONV -> is_conv | CONV_LEQ -> is_conv_leq
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)
 
-let whd_meta metamap = function
-  | DOP0(Meta p) as u -> (try List.assoc p metamap with Not_found -> u)
-  | x -> x
+let whd_meta metamap c = match kind_of_term c with
+  | IsMeta p -> (try List.assoc p metamap with Not_found -> c)
+  | _ -> c
 	
 (* Try to replace all metas. Does not replace metas in the metas' values
  * Differs from (strong whd_meta). *)
@@ -1148,8 +959,9 @@ let sort_of_arity env c = snd (splay_arity env Evd.empty c)
   
 let decomp_n_prod env sigma n = 
   let rec decrec m ln c = if m = 0 then (ln,c) else 
-    match whd_betadeltaiota env sigma c with
-      | CPrd (n,a,c0) ->
+    match kind_of_term (whd_betadeltaiota env sigma c) with
+      | IsProd (n,a,c0) ->
+	  let a = make_typed_lazy a (fun _ -> Type dummy_univ) in
 	  decrec (m-1) (Sign.add_rel_decl (n,a) ln) c0
       | _                      -> error "decomp_n_prod: Not enough products"
   in 
@@ -1180,8 +992,8 @@ let compute_consteval env sigma c =
 	  let p = Array.length tys in
           let li = 
             List.map
-	      (function
-                 | Rel k
+	      (function c -> match kind_of_term c with
+                 | IsRel k
 		     when (array_for_all (noccurn k) tys
 			   & array_for_all (noccurn (k+p)) bds)
 		       -> (k, List.nth labs (k-1)) 
@@ -1193,7 +1005,7 @@ let compute_consteval env sigma c =
           else 
 	    raise Elimconst
 
-      | IsMutCase (_,_,Rel _,_), _ -> ([],n,false)
+      | IsMutCase (_,_,c,_), _ when isRel c -> ([],n,false)
 
       | _ -> raise Elimconst
   in
@@ -1316,28 +1128,6 @@ let add_free_rels_until bound m acc =
     | _ -> fold_constr_with_binders succ frec depth acc c
   in 
   frec 1 acc m 
-
-(*
-let add_free_rels_until bound m acc =
-  let rec frec depth acc = function
-    | Rel n -> 
-	if (n < bound+depth) & (n >= depth) then
-	  Intset.add (bound+depth-n) acc
-	else
-	  acc
-    | DOPN(_,cl)    -> Array.fold_left (frec depth) acc cl
-    | DOP2(_,c1,c2) -> frec depth (frec depth acc c1) c2
-    | DOP1(_,c)     -> frec depth acc c
-    | DLAM(_,c)     -> frec (depth+1) acc c
-    | DLAMV(_,cl)   -> Array.fold_left (frec (depth+1)) acc cl
-    | CLam (_,t,c)   -> frec (depth+1) (frec depth acc (body_of_type t)) c
-    | CPrd (_,t,c)   -> frec (depth+1) (frec depth acc (body_of_type t)) c
-    | CLet (_,b,t,c) -> frec (depth+1) (frec depth (frec depth acc b) (body_of_type t)) c
-    | VAR _         -> acc
-    | DOP0 _        -> acc
-  in 
-  frec 1 acc m 
-*)
 
 (* calcule la liste des arguments implicites *)
 

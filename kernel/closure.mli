@@ -15,20 +15,35 @@ val stats : bool ref
 val share : bool ref
 
 
-(*s The set of reduction kinds. *)
-type red_kind = BETA | DELTA of sorts oper | IOTA
 
-type reds = { 
-  r_beta : bool;
-  r_delta : sorts oper -> bool;
-  r_iota : bool }
+(*s Delta implies all consts (both global (= by
+  section_path) and local (= by Rel or Var)), all evars, and letin's.
+  Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of 
+  a LetIn expression is Letin reduction *)
+
+type red_kind =
+  | BETA
+  | DELTA
+  | LETIN
+  | EVAR
+  | IOTA
+  | CONST of section_path list
+  | CONSTBUT of section_path list
+
+(* Sets of reduction kinds. *)
+type reds
 
 val no_red : reds
 val beta_red : reds
 val betaiota_red : reds
 val betadeltaiota_red : reds
+val unfold_red : section_path -> reds
 
+(* Tests if a reduction kind is set *)
 val red_set : reds -> red_kind -> bool
+
+(* Adds a reduction kind to a set *)
+val red_add : reds -> red_kind -> reds
 
 
 (*s Reduction function specification. *)
@@ -53,13 +68,14 @@ val betaiota : flags
 val betadeltaiota : flags
 
 val hnf_flags : flags
+val unfold_flags : section_path -> flags
 
-(*s Explicit substitutions of type ['a]. [ESID] = identity. 
+(*s Explicit substitutions of type ['a]. [ESID n] = %n~END = bounded identity. 
   [CONS(t,S)] = $S.t$ i.e. parallel substitution. [SHIFT(n,S)] = 
   $(\uparrow n~o~S)$ i.e. terms in S are relocated with n vars. 
   [LIFT(n,S)] = $(\%n~S)$ stands for $((\uparrow n~o~S).n...1)$. *)
 type 'a subs =
-  | ESID
+  | ESID of int
   | CONS of 'a * 'a subs
   | SHIFT of int * 'a subs
   | LIFT of int * 'a subs
@@ -104,7 +120,7 @@ val cbv_norm : 'a cbv_infos -> constr -> constr
 val cbv_stack_term : 'a cbv_infos ->
   stack -> cbv_value subs -> constr -> cbv_value
 val cbv_norm_term : 'a cbv_infos -> cbv_value subs -> constr -> constr
-val cbv_norm_more : 'a cbv_infos -> cbv_value -> cbv_value
+val cbv_norm_more : 'a cbv_infos -> cbv_value subs -> cbv_value -> cbv_value
 val norm_head : 'a cbv_infos ->
   cbv_value subs -> constr -> stack -> cbv_value * stack
 val apply_stack : 'a cbv_infos -> constr -> stack -> constr
@@ -113,24 +129,34 @@ val cbv_norm_value : 'a cbv_infos -> cbv_value -> constr
 
 (*s Lazy reduction. *)
 
-type freeze
+type freeze = { 
+  mutable norm: bool; 
+  mutable term: frterm }
 
-type frterm =
+and frterm =
   | FRel of int
-  | FVAR of identifier
-  | FOP0 of sorts oper
-  | FOP1 of sorts oper * freeze
-  | FOP2 of sorts oper * freeze * freeze
-  | FOPN of sorts oper * freeze array
-  | FLAM of name * freeze * constr * freeze subs
-  | FLAMV of name * freeze array * constr array * freeze subs
-  | FLam of name * type_freeze * freeze * constr * freeze subs
-  | FPrd of name * type_freeze * freeze * constr * freeze subs
-  | FLet of name * freeze * type_freeze * freeze * constr * freeze subs
+  | FAtom of constr
+  | FCast of freeze * freeze
+  | FFlex of frreference * freeze array
+  | FInd of inductive_path * freeze array
+  | FConstruct of constructor_path * freeze array
+  | FApp of freeze * freeze array
+  | FFix of (int array * int) * (freeze array * name list * freeze array)
+      * constr array * freeze subs
+  | FCoFix of int * (freeze array * name list * freeze array)
+      * constr array * freeze subs
+  | FCases of case_info * freeze * freeze * freeze array
+  | FLambda of name * freeze * freeze * constr * freeze subs
+  | FProd of name * freeze * freeze * constr * freeze subs
+  | FLetIn of name * freeze * freeze * freeze * constr * freeze subs
   | FLIFT of int * freeze
   | FFROZEN of constr * freeze subs
 
-and type_freeze = freeze
+and frreference =
+  | FConst of section_path
+  | FEvar of existential_key
+  | FVar of identifier
+  | FFarRel of int * int
 
 val frterm_of : freeze -> frterm
 val is_val : freeze -> bool
@@ -153,9 +179,14 @@ val applist_of_freeze : freeze array -> constr list
 (* contract a substitution *)
 val contract_subst : int -> constr -> freeze subs -> freeze -> freeze
 
+(* Global and local constant cache *)
+type 'a clos_infos
+val create_clos_infos : flags -> env -> 'a evar_map -> 'a clos_infos
+val clos_infos_env : 'a clos_infos -> env
 
 (* Calculus of Constructions *)
 type fconstr = freeze
+
 val inject : constr -> fconstr
 
 val strip_frterm :
@@ -164,21 +195,17 @@ val strip_freeze : fconstr -> int * fconstr * fconstr array
 
 
 (* Auxiliary functions for (co)fixpoint reduction *)
-val contract_fix_vect : (fconstr -> fconstr) -> frterm -> fconstr
-val copy_case : case_info -> fconstr array -> fconstr -> fconstr
+val contract_fix_vect : frterm -> fconstr
+val copy_case : case_info -> fconstr -> fconstr -> fconstr array -> fconstr
 
 
 (* Iota analysis: reducible ? *)
 type case_status =
   | CONSTRUCTOR of int * fconstr array
-  | COFIX of int * int * fconstr array * fconstr array
+  | COFIX of int * int * (fconstr array * name list * fconstr array) *
+      fconstr array * constr array * freeze subs
   | IRREDUCTIBLE
 
-
-(* Constant cache *)
-type 'a clos_infos
-val create_clos_infos : flags -> env -> 'a evar_map -> 'a clos_infos
-val clos_infos_env : 'a clos_infos -> env
 
 (* Reduction function *)
 val norm_val : 'a clos_infos -> fconstr -> constr
@@ -186,8 +213,8 @@ val whd_val : 'a clos_infos -> fconstr -> constr
 val fhnf: 'a clos_infos -> fconstr -> int * fconstr * fconstr array
 val fhnf_apply : 'a clos_infos ->
   int -> fconstr -> fconstr array -> int * fconstr * fconstr array
-val search_frozen_cst : 'a clos_infos ->
-  sorts oper -> fconstr array -> fconstr option
+val search_frozen_value : 
+  'a clos_infos -> frreference -> fconstr array -> fconstr option
 
 (* recursive functions... *)
 val unfreeze : 'a clos_infos -> fconstr -> fconstr

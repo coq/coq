@@ -13,7 +13,6 @@ open Closure
 
 (* Reduction Functions. *)
 
-exception Redelimination
 exception Elimconst
 
 (*s A [stack] is a context of arguments, arguments are pushed by
@@ -58,22 +57,15 @@ val stack_reduction_of_reduction :
 i*)
 val stacklam : (state -> 'a) -> constr list -> constr -> stack -> 'a 
 
-(*s Generic Optimized Reduction Functions using Closures *)
+(*s Generic Optimized Reduction Function using Closures *)
 
-(* 1. lazy strategy *)
 val clos_norm_flags : Closure.flags -> 'a reduction_function
 (* Same as [(strong whd_beta[delta][iota])], but much faster on big terms *) 
 val nf_beta : 'a reduction_function
 val nf_betaiota : 'a reduction_function
 val nf_betadeltaiota : 'a reduction_function
 
-(* 2. call by value strategy *)
-val cbv_norm_flags : flags -> 'a reduction_function
-val cbv_beta : 'a reduction_function
-val cbv_betaiota : 'a reduction_function
-val cbv_betadeltaiota : 'a reduction_function
-
-(* 3. lazy strategy, weak head reduction *)
+(* Lazy strategy, weak head reduction *)
 val whd_beta : local_reduction_function
 val whd_betaiota : local_reduction_function
 val whd_betadeltaiota : 'a contextual_reduction_function
@@ -146,13 +138,6 @@ i*)
 val poly_args : env -> 'a evar_map -> constr -> int list
 
 val whd_programs : 'a reduction_function
-
-val unfoldn : 
-  (int list * section_path) list -> 'a reduction_function
-val fold_one_com : constr -> 'a reduction_function
-val fold_commands : constr list -> 'a reduction_function
-val pattern_occs : (int list * constr * constr) list -> 'a reduction_function
-val compute : 'a reduction_function
 
 (* [reduce_fix] contracts a fix redex if it is actually reducible *)
 
@@ -231,4 +216,4 @@ val whd_ise1_metas : 'a evar_map -> constr -> constr
 val hnf : env -> 'a evar_map -> constr -> constr * constr list
 i*)
 val apprec : 'a state_reduction_function
-val red_product : 'a reduction_function
+
