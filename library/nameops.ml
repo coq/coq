@@ -14,60 +14,7 @@ open Names
 
 (* Identifiers *)
 
-let translate_v7_string = function 
-  (* ZArith *)
-  | "double_moins_un" -> "double_minus_one"
-  | "double_moins_deux" -> "double_minus_two"
-  | "entier" -> "N"
-  | "SUPERIEUR" -> "GREATER"
-  | "EGAL" -> "EQUAL"
-  | "INFERIEUR" -> "LESS"
-  | "add_un" -> "add_one"
-  | "sub_un" -> "sub_one"
-  | "convert_add_un" -> "convert_add_one"
-  | "compare_convert_INFERIEUR" -> "compare_convert_LESS"
-  | "compare_convert_SUPERIEUR" -> "compare_convert_GREATER"
-  | "compare_convert_EGAL"      -> "compare_convert_EQUAL"
-  | "convert_compare_INFERIEUR" -> "convert_compare_LESS"
-  | "convert_compare_SUPERIEUR" -> "convert_compare_GREATER"
-  | "convert_compare_EGAL"      -> "convert_compare_EQUAL"
-  | "Zcompare_EGAL"             -> "Zcompare_EQUAL"
-  | "Nul" -> "Null"
-  | "Un_suivi_de" -> "double_plus_one"
-  | "Zero_suivi_de" -> "double"
-  | "is_double_moins_un" -> "is_double_minus_one"
-  | "Zplus_sym" -> "Zplus_comm"
-  | "Zmult_sym" -> "Zmult_comm"
-  (* Arith *)
-  | "plus_sym" -> "plus_comm"
-  | "mult_sym" -> "mult_comm"
-  | "max_sym" -> "max_comm"
-  | "min_sym" -> "min_comm"
-  | "gt_not_sym" -> "gt_asym"
-  | "fact_growing" -> "fact_le"
-  (* Lists *)
-  | "idempot_rev" -> "involutive_rev"
-  (* Bool *)
-  | "orb_sym" -> "orb_comm"
-  | "andb_sym" -> "andb_comm"
-  (* Reals *)
-    (* redundant *)
-  | "Rle_sym1" -> "Rle_ge"
-  | "Rmin_sym" -> "Rmin_comm"
-  | s when String.length s >= 7 & 
-      let s' = String.sub s 0 7 in
-      (s' = "unicite" or s' = "unicity") ->
-      "uniqueness"^(String.sub s 7 (String.length s - 7))
-  (* Default *)
-  | x -> x
-
-let id_of_v7_string s =
-  id_of_string (if !Options.v7 then s else translate_v7_string s)
-let string_of_v7_id id =
-  let x = string_of_id id in
-  if Options.do_translate() then translate_v7_string x else x
-
-let pr_id id = str (string_of_v7_id id)
+let pr_id id = str (string_of_id id)
 
 let wildcard = id_of_string "_"
 
