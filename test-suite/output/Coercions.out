@@ -2,3 +2,5 @@
      : Prop
 (R x x)
      : Prop
+[x:foo; n:nat](x n)
+     : foo ->nat ->nat

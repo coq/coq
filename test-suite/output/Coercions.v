@@ -7,3 +7,9 @@ Section testSection.
 Variables S: Set; P: (pred S); R: (rel S); x:S.
 Check (P x).
 Check (R x x).
+End testSection.
+
+(* Check the removal of coercions with target Funclass *)
+
+Record foo : Type := { D :> nat -> nat }.
+Check [x:foo;n:nat](x n).
