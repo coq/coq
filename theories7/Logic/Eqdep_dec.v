@@ -26,10 +26,10 @@ Set Implicit Arguments.
 
   (** Bijection between [eq] and [eqT] *)
   Definition eq2eqT: (A:Set)(x,y:A)x=y->x==y :=
-    [A,x,_,eqxy]<[y:A]x==y>Cases eqxy of refl_equal => (refl_eqT ? x) end.
+    [A,x,y,eqxy]<[y:A]x==y>Cases eqxy of refl_equal => (refl_eqT ? x) end.
 
   Definition eqT2eq: (A:Set)(x,y:A)x==y->x=y :=
-    [A,x,_,eqTxy]<[y:A]x=y>Cases eqTxy of refl_eqT => (refl_equal ? x) end.
+    [A,x,y,eqTxy]<[y:A]x=y>Cases eqTxy of refl_eqT => (refl_equal ? x) end.
 
   Lemma eq_eqT_bij: (A:Set)(x,y:A)(p:x=y)p==(eqT2eq (eq2eqT p)).
 Intros.
