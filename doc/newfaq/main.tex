@@ -11,6 +11,8 @@
 
 % les macros d'amour
 \def\Coq{\textsc{Coq }}
+\def\Ltac{\textsc{Ltac }}
+
 
 \begin{document}
 \bibliographystyle{plain}
@@ -79,7 +81,27 @@ HOL, Lego, Nuprl, PVS are examples of provers that are fairly similar
 to \Coq by the way they interact with the user. More distant relatives of
 \Coq are ACL2, ALF, Alfa, Mizar, $\Omega$mega\ldots
 
+
 \Question[intuitionnisticlogic]{What is intuitionnistic logic ?}
+
+\Question[theory]{Where can I find informations about the theory behind \Coq ?}
+
+\begin{description}
+\item[Type theory]
+Proof and Types
+Cours de Gilles
+Manuel de Coq
+
+\item[Inductives]
+Habilitation Christine
+
+\item[Co-Inductives]
+Thèse 
+
+\item[Extraction]
+Pierre Letouzey
+\end{description}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -115,12 +137,35 @@ students, and engineers interested in formal methods and the
 development of zero-default software.''
 \end{quote}
 
+\Question[nbusers]{How many \Coq users are there ?}
+
+\Question[howold]{How old is \Coq ?}
+The first official release of \Coq (v. 4.1.0) was distributed in 1989.
+
+\Question[relatedtools]{What are the \Coq-related tools ?}
+
+\begin{description}
+\item[Coqide]
+\item[Pcoq]
+\item[Why]
+\item[Krakatoa]
+\item[coqwc] 
+\item[coq-tex] 
+\item[coqdoc] A documentation tool for \Coq.
+\item[Proof General]
+\item[Foc]
+\end{description}
+
+\Question[indutrial]{What are industrial application for \Coq ?}
+Trusted Logic ...
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Installation}
 
 \Question[coqlicence]{What is the licence of \Coq ?}
-It is distributed under the GNU Public Licence (GPL).
+It is distributed under the GNU Lesser General Licence (LGPL).
 
 \Question[coqsources]{Where can I find the sources of \Coq ?}
 The sources of \Coq can be found online in the tar.gz'ed packages
@@ -130,14 +175,10 @@ http://coqcvs.inria.fr/cvsserver-eng.html}
 
 \Question[platform]{On which platform \Coq is available ?}
 Compiled binaries are available for Linux, MacOs X, Solaris, and
-Windows.
+Windows. The sources can be easily adapted to all platform supporting Objective Caml.
 
-\Question[nbusers]{How many \Coq users are there ?}
 
-\Question[howold]{How old is \Coq ?}
-The first official release of \Coq (v. 4.1.0) was distributed in 1989.
 
-\Question[relatedtools]{What are the \Coq-related tools ?}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -147,7 +188,6 @@ The first official release of \Coq (v. 4.1.0) was distributed in 1989.
 
 \Question[goal]{What is a goal ?}
 
-\Question[ltac]{What is Ltac ?}
 
 \Question[metavariable]{What is a meta variable ?}
 
@@ -165,6 +205,35 @@ The first official release of \Coq (v. 4.1.0) was distributed in 1989.
 
 \Question[exist]{My goal is an existential, how can I prove it ?}
 
+\Question[taut]{My goal is a propositional tautology, how can I prove it ?}
+
+\Question[firstorder]{My goal is a first order formula, how can I prove it ?}
+
+\Question[cong]{My goal is solvable by a sequence of rewrites, how can I prove it ?}
+
+\Question[ring]{My goal is an equality on some ring (e.g. natural numbers), how can I prove it ?}
+
+\Question[field]{My goal is an equality on some field (e.g. reals), how can I prove it ?}
+
+\Question[omega]{My goal is an inequality on R, how can I prove it ?}
+
+\Question[gb]{My goal is an equation solvable using equational hypothesis on some ring (e.g. natural numbers), how can I prove it ?}
+
+\Question[apply]{My goal is solvable by  some lemma, how can I prove it ?}
+
+\Question[autowith]{My goal is solvable by  some lemma within a set of lemmas and I don't want to remember which one, how can I prove it ?}
+
+\Question[assumption]{My goal is one of the hypothesis, how can I prove it ?}
+
+\Question[trivial]{My goal is ???, how can I prove it ?}
+
+\Question[proofwith]{I want to automatize the use of a tactic how can I do it ?}
+
+\Question[complete]{I want to execute the proofwith tactic only if it solves the goal, how can I do it ?}
+
+
+
+
 \Question[subgoalsorder]{How can I change the order of the subgoals ?}
 
 \Question[hyphotesisorder]{How can I change the order of the hypothesis ?}
@@ -175,7 +244,25 @@ The first official release of \Coq (v. 4.1.0) was distributed in 1989.
 
 \Question[patternmatchingsyntax]{What is the syntax for pattern matching ?}
 
+\Question[reflection]{What is a proof by reflection ?}
 
+
+\section{\Ltac}
+
+\Question[ltac]{What is \Ltac ?}
+
+\Question[letltac]{What is the syntax for let in \Ltac ?}
+
+\Question[matchltac]{What is the syntax for pattern matching in \Ltac ?}
+\Question[matchsem]{What is the semantic for match context ?}
+\Question[fresh]{How can I generate a new name ?}
+
+\Question[statdyn]{How can I define static and dynamic code ?}
+
+
+
+
+\section{Coqide}
 
 
 
