@@ -10,3 +10,12 @@
 
 (*s This module declares the extraction commands. *)
 
+open Util
+open Names
+open Nametab
+
+val extraction : Genarg.constr_ast -> unit
+val extraction_rec : qualid located list -> unit
+val extraction_file : string -> qualid located list -> unit
+val extraction_module : identifier -> unit
+val recursive_extraction_module : identifier -> unit

@@ -1,3 +1,45 @@
+MAIN CHANGES FROM COQ V7.3
+==========================
+
+New parsing model for tactics and vernacular commands
+
+  - Introduction of a dedicated type for tactic expressions
+    (Tacexpr.raw_tactic_expr)
+  - Introduction of a dedicated type for vernac expressions
+    (Vernacexpr.vernac_expr)
+  - Declaration of new vernacular parsing rules by a new camlp4 macro
+    GRAMMAR COMMAND EXTEND ... END  to be used in ML files
+  - Declaration of new tactics parsing/printing rules by a new camlp4 macro
+    TACTIC EXTEND ... END  to be used in ML files
+
+New organisation of THENS:
+tclTHENS tac tacs : tacs is now an array
+tclTHENSFIRSTn tac1 tacs tac2 :
+  apply tac1 then, apply the array tacs on the first n subgoals and
+  tac2 on the remaining subgoals (previously tclTHENST)
+tclTHENSLASTn tac1 tac2 tacs :
+  apply tac1 then, apply tac2 on the first subgoals and apply the array
+  tacs on the last n subgoals
+tclTHENFIRSTn tac1 tacs = tclTHENSFIRSTn tac1 tacs tclIDTAC (prev. tclTHENSI)
+tclTHENLASTn tac1 tacs  = tclTHENSLASTn tac1 tclIDTAC tacs
+tclTHENFIRST tac1 tac2  = tclTHENFIRSTn tac1 [|tac2|]
+tclTHENLAST tac1 tac2   = tclTHENLASTn tac1 [|tac2|] (previously tclTHENL)
+tclTHENS tac1 tacs = tclTHENSFIRSTn tac1 tacs (fun _ -> error "wrong number")
+tclTHENSV same as tclTHENS but with an array
+tclTHENSi : no longer available
+
+Proof_type: subproof field in type proof_tree glued with the ref field
+
+Tacmach: no more echo from functions of module Refiner
+
+Files contrib/*/g_*.ml4 take the place of files contrib/*/*.v.
+Files parsing/{vernac,tac}extend.ml{4,i} implements TACTIC EXTEND andd
+  VERNAC COMMAND EXTEND macros
+File syntax/PPTactic.v moved to parsing/pptactic.ml
+Tactics about False and not now in tactics/contradiction.ml
+Tactics depending on Init now tactics/*.ml4 (no longer in tactics/*.v)
+File tacinterp.ml moved from proofs to directory tactics
+
 MAIN CHANGES FROM COQ V7.1 TO COQ V7.2
 ======================================
 

@@ -1,8 +1,6 @@
-contrib/extraction/Extraction.vo: contrib/extraction/Extraction.v
-contrib/jprover/JProver.vo: contrib/jprover/JProver.v
+contrib/interface/Centaur.vo: contrib/interface/Centaur.v
 contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/fourier/Fourier_util.vo contrib/field/Field.vo theories/Reals/DiscrR.vo
 contrib/fourier/Fourier_util.vo: contrib/fourier/Fourier_util.v theories/Reals/Rbase.vo
-contrib/interface/Centaur.vo: contrib/interface/Centaur.v
 contrib/correctness/Tuples.vo: contrib/correctness/Tuples.v
 contrib/correctness/Sorted.vo: contrib/correctness/Sorted.v contrib/correctness/Arrays.vo contrib/correctness/ArrayPermut.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo
 contrib/correctness/ProgWf.vo: contrib/correctness/ProgWf.v theories/ZArith/ZArith.vo theories/Arith/Wf_nat.vo
@@ -12,7 +10,6 @@ contrib/correctness/ArrayPermut.vo: contrib/correctness/ArrayPermut.v contrib/co
 contrib/correctness/Exchange.vo: contrib/correctness/Exchange.v contrib/correctness/ProgInt.vo contrib/correctness/Arrays.vo
 contrib/correctness/Correctness.vo: contrib/correctness/Correctness.v contrib/correctness/Tuples.vo contrib/correctness/ProgInt.vo contrib/correctness/ProgBool.vo contrib/correctness/ProgWf.vo contrib/correctness/Arrays.vo
 contrib/correctness/Arrays.vo: contrib/correctness/Arrays.v contrib/correctness/ProgInt.vo
-contrib/xml/Xml.vo: contrib/xml/Xml.v
 contrib/field/Field.vo: contrib/field/Field.v contrib/field/Field_Compl.vo contrib/field/Field_Theory.vo contrib/field/Field_Tactic.vo
 contrib/field/Field_Tactic.vo: contrib/field/Field_Tactic.v contrib/ring/Ring.vo contrib/field/Field_Compl.vo contrib/field/Field_Theory.vo
 contrib/field/Field_Theory.vo: contrib/field/Field_Theory.v theories/Arith/Peano_dec.vo contrib/ring/Ring.vo contrib/field/Field_Compl.vo
@@ -29,8 +26,7 @@ contrib/ring/Ring_normalize.vo: contrib/ring/Ring_normalize.v contrib/ring/Ring_
 contrib/ring/ArithRing.vo: contrib/ring/ArithRing.v contrib/ring/Ring.vo theories/Arith/Arith.vo theories/Logic/Eqdep_dec.vo
 contrib/romega/ROmega.vo: contrib/romega/ROmega.v contrib/omega/Omega.vo contrib/romega/ReflOmegaCore.vo
 contrib/romega/ReflOmegaCore.vo: contrib/romega/ReflOmegaCore.v theories/Arith/Arith.vo theories/Lists/PolyList.vo theories/Bool/Bool.vo theories/ZArith/ZArith.vo
-contrib/omega/OmegaSyntax.vo: contrib/omega/OmegaSyntax.v
-contrib/omega/Omega.vo: contrib/omega/Omega.v theories/ZArith/ZArith.vo theories/Arith/Minus.vo contrib/omega/OmegaSyntax.vo
+contrib/omega/Omega.vo: contrib/omega/Omega.v theories/ZArith/ZArith.vo theories/Arith/Minus.vo
 theories/Sorting/Sorting.vo: theories/Sorting/Sorting.v theories/Lists/PolyList.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo
 theories/Sorting/Permutation.vo: theories/Sorting/Permutation.v theories/Relations/Relations.vo theories/Lists/PolyList.vo theories/Sets/Multiset.vo
 theories/Sorting/Heap.vo: theories/Sorting/Heap.v theories/Lists/PolyList.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo theories/Sorting/Sorting.vo
@@ -136,7 +132,7 @@ theories/Bool/IfProp.vo: theories/Bool/IfProp.v theories/Bool/Bool.vo
 theories/Bool/Bool.vo: theories/Bool/Bool.v
 theories/Arith/Max.vo: theories/Arith/Max.v theories/Arith/Arith.vo
 theories/Arith/Wf_nat.vo: theories/Arith/Wf_nat.v theories/Arith/Lt.vo
-theories/Arith/Plus.vo: theories/Arith/Plus.v theories/Arith/Le.vo theories/Arith/Lt.vo
+theories/Arith/Plus.vo: theories/Arith/Plus.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/ArithSyntax.vo
 theories/Arith/Euclid.vo: theories/Arith/Euclid.v theories/Arith/Mult.vo theories/Arith/Compare_dec.vo theories/Arith/Wf_nat.vo
 theories/Arith/Peano_dec.vo: theories/Arith/Peano_dec.v theories/Logic/Decidable.vo
 theories/Arith/EqNat.vo: theories/Arith/EqNat.v
@@ -152,6 +148,7 @@ theories/Arith/Le.vo: theories/Arith/Le.v
 theories/Arith/Between.vo: theories/Arith/Between.v theories/Arith/Le.vo theories/Arith/Lt.vo
 theories/Arith/Gt.vo: theories/Arith/Gt.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo
 theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Gt.vo theories/Arith/Minus.vo theories/Arith/Mult.vo theories/Arith/Between.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo
+theories/Arith/ArithSyntax.vo: theories/Arith/ArithSyntax.v
 theories/Logic/JMeq.vo: theories/Logic/JMeq.v
 theories/Logic/Decidable.vo: theories/Logic/Decidable.v
 theories/Logic/Eqdep_dec.vo: theories/Logic/Eqdep_dec.v

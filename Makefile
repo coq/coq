@@ -54,7 +54,7 @@ DEPFLAGS=$(LOCALINCLUDES)
 
 OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
-CAMLP4EXTENDFLAGS=-I . pa_extend.cmo q_MLast.cmo
+CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo pa_ifdef.cmo q_MLast.cmo
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
@@ -101,45 +101,62 @@ PRETYPING=pretyping/termops.cmo \
           pretyping/coercion.cmo pretyping/cases.cmo pretyping/pretyping.cmo \
 	  pretyping/syntax_def.cmo pretyping/pattern.cmo 
 
-PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
-	parsing/termast.cmo parsing/astterm.cmo parsing/coqlib.cmo \
-	parsing/g_prim.cmo parsing/g_basevernac.cmo \
+PARSING=parsing/lexer.cmo parsing/coqast.cmo \
+        parsing/genarg.cmo proofs/tacexpr.cmo parsing/ast.cmo \
+        parsing/termast.cmo parsing/astterm.cmo \
+	parsing/extend.cmo parsing/esyntax.cmo \
+        parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
+	parsing/coqlib.cmo parsing/prettyp.cmo parsing/search.cmo
+
+HIGHPARSING= parsing/g_prim.cmo parsing/g_basevernac.cmo \
 	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
 	parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
-        parsing/extend.cmo parsing/esyntax.cmo \
-	parsing/printer.cmo parsing/prettyp.cmo parsing/search.cmo \
-        parsing/egrammar.cmo \
-        parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
+	parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
 
 ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
 
 PROOFS=proofs/proof_type.cmo proofs/proof_trees.cmo proofs/logic.cmo \
        proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
        proofs/clenv.cmo proofs/pfedit.cmo \
-       proofs/tactic_debug.cmo proofs/tacinterp.cmo
+       proofs/tactic_debug.cmo
 
 TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/nbtermdn.cmo tactics/hipattern.cmo tactics/wcclausenv.cmo \
-        tactics/tacticals.cmo tactics/tactics.cmo tactics/tacentries.cmo \
-        tactics/hiddentac.cmo tactics/elim.cmo
+        tactics/tacticals.cmo tactics/tactics.cmo \
+        tactics/hiddentac.cmo tactics/elim.cmo \
+	tactics/dhyp.cmo tactics/auto.cmo tactics/tacinterp.cmo
 
-TOPLEVEL=toplevel/himsg.cmo toplevel/cerrors.cmo \
-         toplevel/metasyntax.cmo toplevel/command.cmo toplevel/class.cmo \
-         toplevel/record.cmo toplevel/recordobj.cmo \
-         toplevel/discharge.cmo toplevel/vernacinterp.cmo toplevel/mltop.cmo \
-         toplevel/vernac.cmo toplevel/vernacentries.cmo \
+TOPLEVEL=toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
+	 toplevel/command.cmo toplevel/record.cmo toplevel/recordobj.cmo \
+         toplevel/discharge.cmo toplevel/vernacexpr.cmo \
+         toplevel/vernacinterp.cmo toplevel/mltop.cmo \
+         parsing/pcoq.cmo parsing/egrammar.cmo toplevel/metasyntax.cmo \
+         toplevel/vernacentries.cmo toplevel/vernac.cmo \
 	 toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
          toplevel/toplevel.cmo toplevel/usage.cmo \
 	 toplevel/coqinit.cmo toplevel/coqtop.cmo
 
-HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/setoid_replace.cmo\
-	    tactics/equality.cmo \
-            tactics/inv.cmo tactics/leminv.cmo tactics/eauto.cmo \
-            tactics/autorewrite.cmo tactics/refine.cmo tactics/eqdecide.cmo
+HIGHTACTICS=tactics/setoid_replace.cmo tactics/equality.cmo \
+            tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
+            tactics/autorewrite.cmo tactics/refine.cmo \
+	    tactics/extraargs.cmo tactics/extratactics.cmo tactics/eauto.cmo
 
-SPECTAC=tactics/tauto.ml4
+QUOTIFY=parsing/qast.cmo parsing/q_prim.cmo parsing/q_tactic.cmo
+
+parsing/q_prim.ml4: parsing/g_prim.ml4
+	camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_prim.ml4 -impl parsing/g_prim.ml4
+
+parsing/q_tactic.ml4: parsing/g_tactic.ml4
+	camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_tactic.ml4 -impl parsing/g_tactic.ml4
+
+parsing/q_ltac.ml4: parsing/g_ltac.ml4
+	camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_ltac.ml4 -impl parsing/g_ltac.ml4
+
+SPECTAC= tactics/tauto.ml4 tactics/eqdecide.ml4
 USERTAC = $(SPECTAC)
-ML4FILES += $(USERTAC)
+ML4FILES += $(USERTAC) tactics/extraargs.ml4 tactics/extratactics.ml4 \
+	tactics/eauto.ml4 
+
 USERTACCMO=$(USERTAC:.ml4=.cmo)
 USERTACCMX=$(USERTAC:.ml4=.cmx)
 
@@ -153,11 +170,13 @@ INTERFACE=contrib/interface/vtp.cmo \
 	contrib/interface/showproof_ct.cmo contrib/interface/showproof.cmo \
 	contrib/interface/blast.cmo contrib/interface/centaur.cmo
 
+ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
+
 PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	lib/util.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
         lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo \
         lib/system.cmo lib/bstack.cmo lib/edit.cmo lib/options.cmo \
-	lib/rtree.cmo \
+	lib/rtree.cmo lib/gset.cmo lib/tlm.cmo \
         kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
         kernel/term.cmo kernel/sign.cmo kernel/declarations.cmo \
 	kernel/environ.cmo \
@@ -167,6 +186,7 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	library/nameops.cmo library/libobject.cmo library/summary.cmo \
 	library/nametab.cmo library/lib.cmo library/global.cmo \
 	library/library.cmo lib/options.cmo library/impargs.cmo \
+        library/goptions.cmo \
 	pretyping/evd.cmo pretyping/instantiate.cmo \
         pretyping/termops.cmo \
         pretyping/reductionops.cmo pretyping/retyping.cmo library/declare.cmo \
@@ -177,35 +197,53 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	pretyping/coercion.cmo pretyping/inductiveops.cmo pretyping/cases.cmo \
         pretyping/indrec.cmo \
 	pretyping/pretyping.cmo pretyping/syntax_def.cmo \
-	parsing/lexer.cmo parsing/coqast.cmo \
+	parsing/lexer.cmo parsing/coqast.cmo parsing/genarg.cmo \
+	proofs/tacexpr.cmo toplevel/vernacexpr.cmo \
 	parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo \
-	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
-	parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
 	parsing/extend.cmo \
-	parsing/coqlib.cmo library/goptions.cmo pretyping/detyping.cmo \
+	parsing/coqlib.cmo pretyping/detyping.cmo \
 	parsing/termast.cmo parsing/astterm.cmo \
 	parsing/egrammar.cmo parsing/esyntax.cmo toplevel/metasyntax.cmo \
-	parsing/printer.cmo pretyping/typing.cmo \
+	parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
+	lib/stamps.cmo pretyping/typing.cmo \
 	proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
 	proofs/evar_refiner.cmo proofs/tacmach.cmo toplevel/himsg.cmo \
 	parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
-	toplevel/cerrors.cmo
+	toplevel/class.cmo toplevel/recordobj.cmo toplevel/cerrors.cmo \
+	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
+	parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
+	proofs/tactic_debug.cmo \
+	proofs/pfedit.cmo proofs/clenv.cmo tactics/wcclausenv.cmo \
+	tactics/tacticals.cmo tactics/hipattern.cmo \
+	tactics/tactics.cmo tactics/hiddentac.cmo \
+	tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
+	tactics/nbtermdn.cmo tactics/dhyp.cmo tactics/elim.cmo \
+	tactics/auto.cmo tactics/tacinterp.cmo tactics/extraargs.cmo \
+	$(CMO) # Solution de facilité...
 
-ML4FILES += contrib/correctness/psyntax.ml4 contrib/field/field.ml4
+ML4FILES += contrib/correctness/psyntax.ml4 contrib/omega/g_omega.ml4 \
+         contrib/romega/g_romega.ml4 contrib/ring/g_quote.ml4 \
+	 contrib/ring/g_ring.ml4 \
+         contrib/field/field.ml4 contrib/fourier/g_fourier.ml4 \
+	 contrib/extraction/g_extraction.ml4 contrib/xml/xmlentries.ml4
 
-OMEGACMO=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo
+OMEGACMO=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
+         contrib/omega/g_omega.cmo 
 
-ROMEGACMO=contrib/romega/const_omega.cmo contrib/romega/refl_omega.cmo 
+ROMEGACMO=contrib/romega/const_omega.cmo contrib/romega/refl_omega.cmo \
+         contrib/romega/g_romega.cmo 
 
-RINGCMO=contrib/ring/quote.cmo contrib/ring/ring.cmo 
+RINGCMO=contrib/ring/quote.cmo contrib/ring/g_quote.cmo \
+	contrib/ring/ring.cmo contrib/ring/g_ring.cmo 
 
 FIELDCMO=contrib/field/field.cmo 
 
 XMLCMO=contrib/xml/xml.cmo \
        contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo 	
 
-FOURIERCMO=contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo 	
+FOURIERCMO=contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo \
+        contrib/fourier/g_fourier.cmo
 
 EXTRACTIONCMO=contrib/extraction/table.cmo\
 	      contrib/extraction/mlutil.cmo\
@@ -213,7 +251,8 @@ EXTRACTIONCMO=contrib/extraction/table.cmo\
 	      contrib/extraction/haskell.cmo \
 	      contrib/extraction/extraction.cmo \
               contrib/extraction/common.cmo \
-	      contrib/extraction/extract_env.cmo
+	      contrib/extraction/extract_env.cmo \
+	      contrib/extraction/g_extraction.cmo
 
 CORRECTNESSCMO=contrib/correctness/pmisc.cmo				\
 	contrib/correctness/peffect.cmo contrib/correctness/prename.cmo	\
@@ -230,6 +269,7 @@ JPROVERCMO=contrib/jprover/opname.cmo \
            contrib/jprover/jtunify.cmo contrib/jprover/jall.cmo \
            contrib/jprover/jprover.cmo
 
+ML4FILES += contrib/jprover/jprover.ml4
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) $(XMLCMO) \
 	$(FOURIERCMO) \
@@ -238,8 +278,8 @@ CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) $(XMLCMO) \
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
-CMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) $(PARSING) \
-    $(PROOFS) $(TACTICS) $(TOPLEVEL) $(HIGHTACTICS) $(CONTRIB)
+CMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING)  \
+    $(PROOFS) $(TACTICS) $(PARSING) $(TOPLEVEL) $(HIGHPARSING) $(HIGHTACTICS) $(CONTRIB)
 CMX=$(CMO:.cmo=.cmx)
 
 ###########################################################################
@@ -288,6 +328,7 @@ scripts/tolink.ml: Makefile
 	echo "let proofs = \""$(PROOFS)"\"" >> $@
 	echo "let tactics = \""$(TACTICS)"\"" >> $@
 	echo "let toplevel = \""$(TOPLEVEL)"\"" >> $@
+	echo "let highparsing = \""$(HIGHPARSING)"\"" >> $@
 	echo "let hightactics = \""$(HIGHTACTICS)" "$(USERTACCMO)"\"" >> $@
 	echo "let contrib = \""$(CONTRIB)"\"" >> $@
 
@@ -316,7 +357,9 @@ proofs: $(PROOFS)
 tactics: $(TACTICS)
 parsing: $(PARSING)
 pretyping: $(PRETYPING)
+highparsing: $(HIGHPARSING)
 toplevel: $(TOPLEVEL)
+hightactics: $(HIGHTACTICS)
 
 # special binaries for debugging
 
@@ -344,7 +387,7 @@ check:: $(BESTCOQTOP)
 
 states:: states/barestate.coq states/initial.coq
 
-SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v syntax/PPTactic.v
+SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
 
 states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
 	$(BESTCOQTOP) -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
@@ -361,12 +404,9 @@ theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
 
 init: $(INITVO)
 
-EXTRACTIONVO=contrib/extraction/Extraction.vo
+EXTRACTIONVO=
 
-TACTICSVO=tactics/Equality.vo \
-	  tactics/Tauto.vo tactics/Inv.vo \
-          tactics/EAuto.vo tactics/AutoRewrite.vo tactics/Refine.vo \
-	  tactics/EqDecide.vo tactics/Setoid_replace.vo $(EXTRACTIONVO)
+TACTICSVO=$(EXTRACTIONVO)
 
 tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
 	$(BOOTCOQTOP) -is states/barestate.coq -compile $*
@@ -387,7 +427,8 @@ LOGICVO=theories/Logic/Hurkens.vo          theories/Logic/ProofIrrelevance.vo\
       theories/Logic/Berardi.vo       	     theories/Logic/Eqdep_dec.vo \
       theories/Logic/Decidable.vo            theories/Logic/JMeq.vo
 
-ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
+ARITHVO=theories/Arith/ArithSyntax.vo \
+	theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
 	theories/Arith/Between.vo       theories/Arith/Le.vo          \
 	theories/Arith/Compare.vo       theories/Arith/Lt.vo          \
 	theories/Arith/Compare_dec.vo   theories/Arith/Min.vo         \
@@ -516,7 +557,7 @@ CORRECTNESSVO=contrib/correctness/Arrays.vo				\
 	contrib/correctness/Tuples.vo
 #	contrib/correctness/ProgramsExtraction.vo			
 
-OMEGAVO = contrib/omega/Omega.vo  	contrib/omega/OmegaSyntax.vo
+OMEGAVO = contrib/omega/Omega.vo
 
 ROMEGAVO = contrib/romega/ReflOmegaCore.vo contrib/romega/ROmega.vo 
 
@@ -529,13 +570,13 @@ RINGVO = contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
 FIELDVO = contrib/field/Field_Compl.vo     contrib/field/Field_Theory.vo \
           contrib/field/Field_Tactic.vo    contrib/field/Field.vo
 
-XMLVO = contrib/xml/Xml.vo
+XMLVO = Xml.vo
 
 INTERFACEV0 = contrib/interface/Centaur.vo contrib/interface/vernacrc
 
 FOURIERVO = contrib/fourier/Fourier_util.vo    contrib/fourier/Fourier.vo
 
-JPROVERVO = contrib/jprover/JProver.vo
+JPROVERVO = 
 
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
 	$(BESTCOQTOP) -boot -byte  $(COQINCLUDES) -compile $*
@@ -544,9 +585,8 @@ contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/init
 	$(BESTCOQTOP) -boot -byte  $(COQINCLUDES) -compile $*
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
-	    $(CORRECTNESSVO)\
-            $(INTERFACEV0) $(FOURIERVO) \
-	    $(JPROVERVO)
+	    $(CORRECTNESSVO) $(FOURIERVO) \
+	    $(JPROVERVO) $(INTERFACEV0)
 
 $(CONTRIBVO): states/initial.coq
 
@@ -706,9 +746,9 @@ LPLIB = lib/doc.tex $(LIBREP:.cmo=.mli)
 LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
 LPLIBRARY = library/doc.tex $(LIBRARY:.cmo=.mli)
 LPPRETYPING = pretyping/doc.tex pretyping/rawterm.mli $(PRETYPING:.cmo=.mli)
-LPPARSING =$(PARSING:.cmo=.mli)
+LPPARSING =$(PARSING:.cmo=.mli) $(HIGHPARSING:.cmo=.mli)
 LPPROOFS = proofs/doc.tex $(PROOFS:.cmo=.mli)
-LPTACTICS = tactics/doc.tex $(TACTICS:.cmo=.mli)
+LPTACTICS = tactics/doc.tex $(TACTICS:.cmo=.mli) $(HIGHTACTICS:.cmo=.mli)
 LPTOPLEVEL = toplevel/doc.tex $(TOPLEVEL:.cmo=.mli)
 LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL) $(LPLIBRARY) \
 	  $(LPPRETYPING) $(LPPROOFS) $(LPTACTICS) $(LPTOPLEVEL)
@@ -741,13 +781,22 @@ tags:
 
 # grammar modules with camlp4
 
-ML4FILES += parsing/lexer.ml4 parsing/q_coqast.ml4 \
+ML4FILES += parsing/lexer.ml4 parsing/q_util.ml4 parsing/q_coqast.ml4 \
             parsing/g_prim.ml4 parsing/pcoq.ml4
 
-GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/dyn.cmo \
-	   lib/hashcons.cmo lib/predicate.cmo kernel/names.cmo \
-	   parsing/coqast.cmo parsing/lexer.cmo \
-	   parsing/pcoq.cmo parsing/q_coqast.cmo parsing/g_prim.cmo
+CAMLP4EXTENSIONS= parsing/tacextend.cmo parsing/vernacextend.cmo 
+
+GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
+	   lib/dyn.cmo lib/options.cmo \
+	   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo $(KERNEL) \
+	   library/summary.cmo library/nameops.cmo library/nametab.cmo \
+	   library/libobject.cmo library/lib.cmo library/global.cmo \
+	   library/goptions.cmo pretyping/rawterm.cmo pretyping/evd.cmo \
+	   parsing/coqast.cmo parsing/genarg.cmo \
+	   proofs/tacexpr.cmo proofs/proof_type.cmo parsing/ast.cmo \
+           parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
+           toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_coqast.cmo \
+           parsing/egrammar.cmo parsing/g_prim.cmo $(CAMLP4EXTENSIONS)
 
 parsing/grammar.cma: $(GRAMMARCMO)
 	$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
@@ -758,7 +807,7 @@ clean::
 ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
 	   parsing/g_vernac.ml4 parsing/g_proofs.ml4 parsing/g_cases.ml4 \
 	   parsing/g_constr.ml4 parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
-	   parsing/extend.ml4    
+	   parsing/tacextend.ml4 parsing/vernacextend.ml4
 
 # beforedepend:: $(GRAMMARCMO)
 
@@ -918,6 +967,9 @@ depend: beforedepend
 	  echo `$(CAMLP4DEPS) $$f` >> .depend; \
 	done
 # 5. Finally, we erase the generated .ml files
+	rm -f $(ML4FILESML)
+
+ml4clean::
 	rm -f $(ML4FILESML)
 
 clean::

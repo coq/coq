@@ -1,5 +1,39 @@
+Changes from V7.3 to ????
+-------------------------
+
+Language
+
+- Inductive definitions now accept ">" in constructor types to declare
+  the corresponding constructor as a coercion.
+
+ML tactic and vernacular commands
+
+- "Grammar tactic" and "Grammar vernac" of type "ast" are no longer
+  supported (only "Grammar tactic simple_tactic" of type "tactic"
+  remains available).
+- Concrete syntax for ML written vernacular commands and tactics is
+  now declared at ML level using camlp4 macros TACTIC EXTEND et VERNAC
+  COMMAND EXTEND.
+
+Tactic definitions
+
+- static globalisation of identifiers and global references (source of
+  incompatibilities, especially, Recursive keyword is required for
+  mutually recursive definitions).
+
+Tactics
+
+- Double Induction now referring to hypotheses like "Intro until"
+- "Inversion" now applies also on quantified hypotheses (naming as
+  for Intros until)
+- NewDestruct now accepts terms with missing hypotheses
+
+Miscellaneous
+
+- Printing Coercion now used through the standard keywords Set/Add, Test, Print
+
 Changes from V7.2 to V7.3
-=========================
+-------------------------
 
 Language
 

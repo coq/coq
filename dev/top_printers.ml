@@ -79,7 +79,7 @@ let pp_universes u = pp (str"[" ++ pr_universes u ++ str"]")
 
 let ppenv e = pp (pr_rel_context e (rel_context e))
 
-let pptac = (fun x -> pp(gentacpr x))
+let pptac = (fun x -> pp(Pptactic.pr_raw_tactic x))
 
 let cnt = ref 0
 

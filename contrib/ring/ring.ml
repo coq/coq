@@ -17,12 +17,14 @@ open Term
 open Names
 open Nameops
 open Reductionops
+open Tacticals
+open Tacexpr
 open Tacmach
-open Proof_type
 open Proof_trees
 open Printer
 open Equality
 open Vernacinterp
+open Vernacexpr
 open Libobject
 open Closure
 open Tacred
@@ -227,34 +229,34 @@ let unbox = function
 
 (* Add a Ring or a Semi-Ring to the database after a type verification *)
 
+let implement_theory env t th args =
+  is_conv env Evd.empty (Typing.type_of env Evd.empty t) (mkLApp (th, args))
+
 let add_theory want_ring want_abstract want_setoid a aequiv asetth amorph aplus amult aone azero aopp aeq t cset = 
   if theories_map_mem a then errorlabstrm "Add Semi Ring" 
     (str "A (Semi-)(Setoid-)Ring Structure is already declared for " ++
        prterm a);
   let env = Global.env () in
     if (want_ring & want_setoid &
-	(not (is_conv env Evd.empty (Typing.type_of env Evd.empty t)
-		(mkLApp (coq_Setoid_Ring_Theory, 
-			[| a; (unbox aequiv); aplus; amult; aone; azero; (unbox aopp); aeq|])))) &
-	(not (is_conv env Evd.empty (Typing.type_of env Evd.empty (unbox asetth))
-		(mkLApp (coq_Setoid_Theory, [| a; (unbox aequiv) |]))))) then 
+	not (implement_theory env t coq_Setoid_Ring_Theory
+	  [| a; (unbox aequiv); aplus; amult; aone; azero; (unbox aopp); aeq|])
+        &
+	not (implement_theory env (unbox asetth) coq_Setoid_Theory
+	  [| a; (unbox aequiv) |])) then 
       errorlabstrm "addring" (str "Not a valid Setoid-Ring theory");
     if (not want_ring & want_setoid &
-	(not (is_conv env Evd.empty (Typing.type_of env Evd.empty t)
-		(mkLApp (coq_Semi_Setoid_Ring_Theory, 
-			[| a; (unbox aequiv); aplus; amult; aone; azero; aeq|])))) &
-	(not (is_conv env Evd.empty (Typing.type_of env Evd.empty (unbox asetth))
-		(mkLApp (coq_Setoid_Theory, [| a; (unbox aequiv) |]))))) then 
+        not (implement_theory env t coq_Semi_Setoid_Ring_Theory 
+	  [| a; (unbox aequiv); aplus; amult; aone; azero; aeq|]) &
+	not (implement_theory env (unbox asetth) coq_Setoid_Theory
+	  [| a; (unbox aequiv) |])) then 
       errorlabstrm "addring" (str "Not a valid Semi-Setoid-Ring theory");
     if (want_ring & not want_setoid &
-	not (is_conv env Evd.empty (Typing.type_of env Evd.empty t)
-	       (mkLApp (coq_Ring_Theory, 
-		       [| a; aplus; amult; aone; azero; (unbox aopp); aeq |])))) then
+	not (implement_theory env t coq_Ring_Theory
+	  [| a; aplus; amult; aone; azero; (unbox aopp); aeq |])) then
       errorlabstrm "addring" (str "Not a valid Ring theory");
     if (not want_ring & not want_setoid &
-	not (is_conv  env Evd.empty (Typing.type_of env Evd.empty t) 
-	       (mkLApp (coq_Semi_Ring_Theory, 
-		       [| a; aplus; amult; aone; azero; aeq |])))) then 
+	not (implement_theory env t coq_Semi_Ring_Theory
+	  [| a; aplus; amult; aone; azero; aeq |])) then 
       errorlabstrm "addring" (str "Not a valid Semi-Ring theory");
     Lib.add_anonymous_leaf
       (theory_to_obj 
@@ -274,151 +276,6 @@ let add_theory want_ring want_abstract want_setoid a aequiv asetth amorph aplus 
 	       th_t = t;
 	       th_closed = cset }))
 
-(* The vernac commands "Add Ring" and "Add Semi Ring" *)
-(* see file Ring.v for examples of this command *)
-
-let constr_of_comarg = function 
-  | VARG_CONSTR c -> constr_of c
-  | _ -> anomaly "Add (Semi) (Setoid) Ring"
-  
-let cset_of_comarg_list l = 
-  List.fold_right ConstrSet.add (List.map constr_of_comarg l) ConstrSet.empty
-
-let _ = 
-  vinterp_add "AddSemiRing"
-    (function
-       | (VARG_CONSTR a)::(VARG_CONSTR aplus)::(VARG_CONSTR amult)
-	 ::(VARG_CONSTR aone)::(VARG_CONSTR azero)::(VARG_CONSTR aeq)
-	 ::(VARG_CONSTR t)::l -> 
-	   (fun () -> (add_theory false false false
-			 (constr_of a)
-			 None
-			 None
-			 None
-			 (constr_of aplus)
-			 (constr_of amult)
-			 (constr_of aone)
-			 (constr_of azero)
-			 None
-			 (constr_of aeq)
-			 (constr_of t)
-			 (cset_of_comarg_list l)))
-       | _ -> anomaly "AddSemiRing")
-
-let _ = 
-  vinterp_add "AddRing"
-    (function 
-       | (VARG_CONSTR a)::(VARG_CONSTR aplus)::(VARG_CONSTR amult)
-	 ::(VARG_CONSTR aone)::(VARG_CONSTR azero)::(VARG_CONSTR aopp)
-	 ::(VARG_CONSTR aeq)::(VARG_CONSTR t)::l -> 
-	   (fun () -> (add_theory true false false
-			 (constr_of a)
-			 None
-			 None
-			 None
-			 (constr_of aplus)
-			 (constr_of amult)
-			 (constr_of aone)
-			 (constr_of azero)
-			 (Some (constr_of aopp))
-			 (constr_of aeq)
-			 (constr_of t)
-			 (cset_of_comarg_list l)))
-       | _ -> anomaly "AddRing")
-    
-let _ = 
-  vinterp_add "AddSetoidRing"
-    (function 
-       | (VARG_CONSTR a)::(VARG_CONSTR aequiv)::(VARG_CONSTR asetth)::(VARG_CONSTR aplus)
-	 ::(VARG_CONSTR amult)::(VARG_CONSTR aone)::(VARG_CONSTR azero)::(VARG_CONSTR aopp)
-	 ::(VARG_CONSTR aeq)::(VARG_CONSTR pm)::(VARG_CONSTR mm)::(VARG_CONSTR om)
-	 ::(VARG_CONSTR t)::l -> 
-	   (fun () -> (add_theory true false true
-			 (constr_of a)
-			 (Some (constr_of aequiv))
-			 (Some (constr_of asetth))
-			 (Some {
-			    plusm = (constr_of pm);
-			    multm = (constr_of mm);
-			    oppm = Some (constr_of om)})
-			 (constr_of aplus)
-			 (constr_of amult)
-			 (constr_of aone)
-			 (constr_of azero)
-			 (Some (constr_of aopp))
-			 (constr_of aeq)
-			 (constr_of t)
-			 (cset_of_comarg_list l)))
-       | _ -> anomaly "AddSetoidRing")
-    
-let _ = 
-  vinterp_add "AddSemiSetoidRing"
-    (function 
-       | (VARG_CONSTR a)::(VARG_CONSTR aequiv)::(VARG_CONSTR asetth)::(VARG_CONSTR aplus)
-	 ::(VARG_CONSTR amult)::(VARG_CONSTR aone)::(VARG_CONSTR azero)
-	 ::(VARG_CONSTR aeq)::(VARG_CONSTR pm)::(VARG_CONSTR mm)
-	 ::(VARG_CONSTR t)::l -> 
-	   (fun () -> (add_theory false false true
-			 (constr_of a)
-			 (Some (constr_of aequiv))
-			 (Some (constr_of asetth))
-			 (Some {
-			    plusm = (constr_of pm);
-			    multm = (constr_of mm);
-			    oppm = None})
-			 (constr_of aplus)
-			 (constr_of amult)
-			 (constr_of aone)
-			 (constr_of azero)
-			 None
-			 (constr_of aeq)
-			 (constr_of t)
-			 (cset_of_comarg_list l)))
-       | _ -> anomaly "AddSemiSetoidRing")
-    
-let _ = 
-  vinterp_add "AddAbstractSemiRing"
-    (function 
-       | [VARG_CONSTR a; VARG_CONSTR aplus; 
-	  VARG_CONSTR amult; VARG_CONSTR aone;
-	  VARG_CONSTR azero; VARG_CONSTR aeq; VARG_CONSTR t] -> 
-	   (fun () -> (add_theory false true false
-			 (constr_of a)
-			 None
-			 None
-			 None
-			 (constr_of aplus)
-			 (constr_of amult)
-			 (constr_of aone)
-			 (constr_of azero)
-			 None
-			 (constr_of aeq)
-			 (constr_of t)
-			 ConstrSet.empty))
-       | _ -> anomaly "AddAbstractSemiRing")
-    
-let _ = 
-  vinterp_add "AddAbstractRing"
-    (function 
-       | [ VARG_CONSTR a; VARG_CONSTR aplus; 
-	   VARG_CONSTR amult; VARG_CONSTR aone;
-	   VARG_CONSTR azero; VARG_CONSTR aopp; 
-	   VARG_CONSTR aeq; VARG_CONSTR t ] -> 
-	   (fun () -> (add_theory true true false
-			 (constr_of a)
-			 None
-			 None
-			 None
-			 (constr_of aplus)
-			 (constr_of amult)
-			 (constr_of aone)
-			 (constr_of azero)
-			 (Some (constr_of aopp))
-			 (constr_of aeq)
-			 (constr_of t)
-			 ConstrSet.empty))
-       | _ -> anomaly "AddAbstractRing")
-    
 (******** The tactic itself *********)
 
 (*
@@ -894,14 +751,13 @@ let guess_eq_tac th =
         (tclTHEN
 	   (* Normalized sums associate on the right *)
 	   (tclREPEAT
-	      (tclTHENST
+	      (tclTHENFIRST
 		 (apply (mkApp(build_coq_f_equal2 (),
 		               [| th.th_a; th.th_a; th.th_a;
 				  th.th_plus |])))
-		 [reflexivity]
-		 tclIDTAC))
+		 reflexivity))
 	   (tclTRY
-	      (tclTHENL
+	      (tclTHENLAST
 		 (apply (mkApp(build_coq_f_equal2 (),
 			       [| th.th_a; th.th_a; th.th_a;
 				  th.th_plus |])))
@@ -964,13 +820,3 @@ let polynom lc gl =
 	    errorlabstrm "Ring :"
 	      (str" All terms must have the same type");
 	  (tclTHEN (raw_polynom th None lc) polynom_unfold_tac) gl
-
-let dyn_polynom ltacargs gl =  
-  polynom (List.map 
-	     (function 
-		| Command c -> pf_interp_constr gl c 
-		| Constr c -> c 
-		| _ -> anomaly "dyn_polynom")
-	     ltacargs) gl
-
-let v_polynom = add_tactic "Ring" dyn_polynom
