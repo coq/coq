@@ -18,6 +18,7 @@ open Instantiate
 open Environ
 open Evd
 open Proof_type
+open Proof_trees
 open Logic
 open Reductionops
 open Tacmach
@@ -79,9 +80,18 @@ let applyHead n c wc =
   apprec n c (w_type_of wc c) wc
 
 let mimick_evar hdc nargs sp wc =
-  (w_Focusing_THEN sp
+  let evd = Evd.map wc.sigma sp in
+  let wc' = extract_decl sp wc in
+  let (wc'', c) = applyHead nargs hdc wc' in
+    if wc'==wc''
+    then w_Define sp c wc
+    else 
+      let wc''' = restore_decl sp evd wc'' in
+	w_Define sp c {it = wc.it ; sigma = wc'''.sigma}
+
+(*  (w_Focusing_THEN sp
      (applyHead nargs hdc)
-     (fun c wc -> w_Define sp c wc)) wc
+     (fun c wc -> w_Define sp c wc)) wc *)
 
 
 (* Unification à l'ordre 0 de m et n: [unify_0 mc wc m n] renvoie deux listes:
@@ -266,7 +276,10 @@ and w_resrec metas evars wc =
    d'une même Meta sont compatibles. D'ailleurs le "fst" jette les metas
    provenant de w_Unify. (Utilisé seulement dans prolog.ml) *)
 
-let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc))
+(* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)
+let unifyTerms m n gls = 
+  tclIDTAC {it = gls.it; 
+	    sigma = (get_gc (fst (w_Unify CONV m n [] (Refiner.project_with_focus gls))))}
 
 let unify m gls =
   let n = pf_concl gls in unifyTerms m n gls

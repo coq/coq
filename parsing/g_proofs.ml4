@@ -77,14 +77,6 @@ GEXTEND Gram
       | IDENT "Show"; IDENT "Node" -> <:ast< (ShowNode) >>
       | IDENT "Show"; IDENT "Script" -> <:ast< (ShowScript) >>
       | IDENT "Show"; IDENT "Existentials" -> <:ast< (ShowEx) >>
-      | IDENT "Existential"; n = numarg; ":="; c = constrarg ->
-          <:ast< (EXISTENTIAL $n $c) >>
-      | IDENT "Existential"; n = numarg; ":="; c1 = Constr.constr; ":";
-        c2 = Constr.constr ->
-          <:ast< (EXISTENTIAL $n (CONSTR (CAST $c1 $c2))) >>
-      | IDENT "Existential"; n = numarg; ":"; c2 = Constr.constr; ":=";
-        c1 = Constr.constr ->
-          <:ast< (EXISTENTIAL $n (CONSTR (CAST $c1 $c2))) >>
       | IDENT "Explain"; "Proof"; l = numarg_list ->
           <:ast< (ExplainProof ($LIST $l)) >>
       | IDENT "Explain"; "Proof"; IDENT "Tree"; l = numarg_list ->

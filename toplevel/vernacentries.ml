@@ -22,6 +22,7 @@ open Pfedit
 open Tacmach
 open Proof_trees
 open Proof_type
+open Evar_refiner
 open Tacred
 open Environ
 open Vernacinterp

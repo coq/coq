@@ -99,30 +99,8 @@ let clenv_constrain_with_bindings bl clause =
     in 
     matchrec clause bl
 
-let add_prod_rel sigma (t,env) =
-  match kind_of_term t with
-    | Prod (na,t1,b) ->
-        (b,push_rel_assum (na, t1) env)
-    | LetIn (na,c1,t1,b) ->
-        (b,push_rel (na,Some c1, t1) env)
-    | _ -> failwith "add_prod_rel"
-
-let rec add_prods_rel sigma (t,env) =
-  try 
-    add_prods_rel sigma (add_prod_rel sigma (whd_betadeltaiota env sigma t,env))
-  with Failure "add_prod_rel" -> 
-    (t,env)
-
 (* What follows is part of the contents of the former file tactics3.ml *)
     
-let res_pf_THEN kONT clenv tac gls =
-  let clenv' = (clenv_unique_resolver false clenv gls) in 
-  (tclTHEN (clenv_refine kONT clenv') (tac clenv')) gls
-
-let res_pf_THEN_i kONT clenv tac gls =
-  let clenv' = (clenv_unique_resolver false clenv gls) in 
-  tclTHEN_i (clenv_refine kONT clenv') (tac clenv') gls
-
 let elim_res_pf_THEN_i kONT clenv tac gls =  
   let clenv' = (clenv_unique_resolver true clenv gls) in
   tclTHEN_i (clenv_refine kONT clenv') (tac clenv') gls
@@ -185,21 +163,3 @@ let applyUsing c gl =
   let clause = mk_clenv_using wc c in 
   res_pf kONT clause gl
 
-let clenv_apply_n_times n ce =
-  let templtyp = clenv_instance_template_type ce
-  and templval = (clenv_template ce).rebus in   
-  let rec apprec ce argacc (n,ty) =
-    let env = Global.env () in
-    let templtyp = whd_betadeltaiota env (w_Underlying ce.hook) ty in
-    match (n, kind_of_term templtyp) with 
-      | (0, _) ->
-	  clenv_change_head (applist(templval,List.rev argacc), templtyp) ce
-      | (n, Prod (na,dom,rng)) ->
-          let mv = new_meta() in
-          let newce = clenv_pose (na,mv,dom) ce in
-	  apprec newce (mkMeta mv::argacc) (n-1, subst1 (mkMeta mv) rng)
-      | (n, LetIn (na,b,t,c)) ->
-	  apprec ce argacc (n, subst1 b c)
-      | (n, _) -> failwith "clenv_apply_n_times"
-  in 
-  apprec ce [] (n, templtyp)

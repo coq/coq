@@ -27,9 +27,7 @@ open Refiner
 let rc_of_pfsigma sigma = rc_of_gc sigma.sigma sigma.it.goal
 let rc_of_glsigma sigma = rc_of_gc sigma.sigma sigma.it
 
-type 'a result_w_tactic = named_context sigma -> named_context sigma * 'a
 type w_tactic = named_context sigma -> named_context sigma
-
 
 let local_Constraints gs = refiner Change_evars gs
 
@@ -44,13 +42,6 @@ let startWalk gls =
           (local_Constraints (get_focus (ids_it wc'))
              {it=gls'.it; sigma = get_gc (ids_it wc')})*)
       else error "Walking"))
-
-let walking_THEN wt rt gls =
-  let (wc,kONT) = startWalk gls in
-  let (wc',rslt) = wt wc in 
-  tclTHEN (kONT wc') (rt rslt) gls
-
-let walking wt = walking_THEN (fun wc -> (wt wc,())) (fun () -> tclIDTAC)
 
 let extract_decl sp evc =
   let evdmap = evc.sigma in
@@ -71,7 +62,7 @@ let restore_decl sp evd evc =
  *
  * It is an error to cause SP to change state while we are focused on it. *)
 
-let w_Focusing_THEN sp (wt : 'a result_w_tactic) (wt' : 'a -> w_tactic)
+(* let w_Focusing_THEN sp (wt : 'a result_w_tactic) (wt' : 'a -> w_tactic)
                        (wc : named_context sigma) =
   let hyps  = wc.it
   and evd   = Evd.map wc.sigma sp in
@@ -82,29 +73,20 @@ let w_Focusing_THEN sp (wt : 'a result_w_tactic) (wt' : 'a -> w_tactic)
     wt' rslt wc
   else 
     let wc''' = restore_decl sp evd wc'' in 
-    wt' rslt {it = hyps; sigma = wc'''.sigma}
+    wt' rslt {it = hyps; sigma = wc'''.sigma} *)
       
 let w_add_sign (id,t) (wc : named_context sigma) =
   { it = Sign.add_named_decl (id,None,t) wc.it;
     sigma = wc.sigma }
 
-let ctxt_type_of evc c = 
-  type_of (Global.env_of_context evc.it) evc.sigma c
-
-let w_IDTAC wc = wc
-
-let w_Focusing sp wt = 
-  w_Focusing_THEN sp (fun wc -> (wt wc,())) (fun _ -> w_IDTAC)
-
 let w_Focus sp wc = extract_decl sp wc
 
 let w_Underlying wc = wc.sigma
 let w_whd wc c      = Evarutil.whd_castappevar (w_Underlying wc) c
-let w_type_of wc c  = ctxt_type_of wc c
+let w_type_of wc c  =
+  type_of (Global.env_of_context wc.it) wc.sigma c
 let w_env     wc    = get_env wc
 let w_hyps    wc    = named_context (get_env wc)
-let w_ORELSE wt1 wt2 wc = 
-  try wt1 wc with e when catchable_exception e -> wt2 wc
 let w_defined_const wc sp = defined_constant (w_env wc) sp
 let w_defined_evar wc k      = Evd.is_defined (w_Underlying wc) k
 let w_const_value wc         = constant_value (w_env wc)
@@ -123,7 +105,7 @@ let w_Define sp c wc =
   let spdecl = Evd.map (w_Underlying wc) sp in
   let cty = 
     try 
-      ctxt_type_of (w_Focus sp wc) (mkCast (c,spdecl.evar_concl))
+      w_type_of (w_Focus sp wc) (mkCast (c,spdecl.evar_concl))
     with Not_found -> 
       error "Instantiation contains unlegal variables"
   in 
@@ -141,23 +123,42 @@ let w_Define sp c wc =
 (* Instantiation of existential variables *)
 (******************************************)
 
-let instantiate_pf n c pfts = 
-  let gls = top_goal_of_pftreestate pfts in
-  let (wc,_) = startWalk gls in
-  let sigma  = (w_Underlying wc) in 
-  let (sp,_) = 
-    try 
-      List.nth (Evd.non_instantiated sigma) (n-1)
-    with Failure _ -> 
-      error "not so many uninstantiated existential variables"
+(* The instantiate tactic *)
+
+let evars_of evc c = 
+  let rec evrec acc c =
+    match kind_of_term c with
+    | Evar (n, _) when Evd.in_dom evc n -> c :: acc
+    | _ -> fold_constr evrec acc c
   in 
-  let wc' = w_Define sp c wc in 
-  let newgc = w_Underlying wc' in 
-  change_constraints_pftreestate newgc pfts
+  evrec [] c
+
+let instantiate n c gl = 
+  let wc = Refiner.project_with_focus gl in
+  let evl = evars_of wc.sigma gl.it.evar_concl in
+    if List.length evl < n then error "not enough evars";
+    let (n,_) as k = destEvar (List.nth evl (n-1)) in 
+      if Evd.is_defined wc.sigma n then 
+	error "Instantiate called on already-defined evar";
+      let wc' = w_Define n c wc in 
+	tclIDTAC {it = gl.it ; sigma = wc'.sigma}
+
+let pfic gls c =
+  let evc = gls.sigma in 
+  Astterm.interp_constr evc (Global.env_of_context gls.it.evar_hyps) c
+
+let instantiate_tac = function
+  | [Integer n; Command com] ->
+      (fun gl -> instantiate n (pfic gl com) gl)
+  | [Integer n; Constr c] ->
+      (fun gl -> instantiate n c gl)
+  | _ -> invalid_arg "Instantiate called with bad arguments"
+
+(* vernac command existential *)
 
 let instantiate_pf_com n com pfts = 
   let gls = top_goal_of_pftreestate pfts in
-  let (wc,_) = startWalk gls in
+  let wc = project_with_focus gls in
   let sigma = (w_Underlying wc) in 
   let (sp,evd) = 
     try
@@ -167,5 +168,7 @@ let instantiate_pf_com n com pfts =
   in 
   let c = Astterm.interp_constr sigma (Evarutil.evar_env evd) com in     
   let wc' = w_Define sp c wc in
-  let newgc = w_Underlying wc' in
+  let newgc = (w_Underlying wc') in
   change_constraints_pftreestate newgc pfts
+
+

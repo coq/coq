@@ -52,3 +52,4 @@ val v_destruct      : tactic_arg list -> tactic
 (*i val v_new_destruct  : tactic_arg list -> tactic i*)
 val v_fix           : tactic_arg list -> tactic
 val v_cofix         : tactic_arg list -> tactic
+val vernac_instantiate : tactic_arg list -> tactic

@@ -79,36 +79,6 @@ let prolog_tac l n gl =
   with UserError ("Refiner.tclFIRST",_) ->
     errorlabstrm "Prolog.prolog" [< 'sTR "Prolog failed" >]
 
-let evars_of evc c = 
-  let rec evrec acc c =
-    match kind_of_term c with
-    | Evar (n, _) when Evd.in_dom evc n -> c :: acc
-    | _ -> fold_constr evrec acc c
-  in 
-  evrec [] c
-
-let instantiate n c gl =
-  let sigma = project gl in
-  let evl = evars_of sigma (pf_concl gl) in
-  let (wc,kONT) = startWalk gl in
-  if List.length evl < n then error "not enough evars";
-  let (n,_) as k = destEvar (List.nth evl (n-1)) in 
-  if Evd.is_defined sigma n then 
-    error "Instantiate called on already-defined evar";
-  let wc' = w_Define n c wc in 
-  kONT wc' gl
-
-let instantiate_tac = function
-  | [Integer n; Command com] ->
-      (fun gl -> instantiate n (pf_interp_constr gl com) gl)
-  | [Integer n; Constr c] ->
-      (fun gl -> instantiate n c gl)
-  | _ -> invalid_arg "Instantiate called with bad arguments"
-
-let normEvars gl =
-  let sigma = project gl in
-  convert_concl (nf_betaiota (Evarutil.nf_evar sigma (pf_concl gl))) gl
-
 let vernac_prolog =
   let uncom = function
     | Constr c -> c
@@ -122,12 +92,6 @@ let vernac_prolog =
   in 
   fun coms n -> 
     gentac ((Integer n) :: (List.map (fun com -> (Constr com)) coms))
-
-let vernac_instantiate =
-  hide_tactic "Instantiate" instantiate_tac
-
-let vernac_normevars =
-  hide_atomic_tactic "NormEvars" normEvars
 
 open Auto
 

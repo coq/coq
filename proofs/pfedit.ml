@@ -223,7 +223,7 @@ let solve_nth k tac =
 let by tac = mutate (solve_pftreestate tac)
 
 let instantiate_nth_evar_com n c =
-  mutate (instantiate_pf_com n c)
+  mutate (Evar_refiner.instantiate_pf_com n c)
 
 let traverse n = mutate (traverse n)
  

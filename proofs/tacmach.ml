@@ -163,8 +163,6 @@ let prev_unproven           = prev_unproven
 let top_of_tree             = top_of_tree
 let frontier                = frontier
 let change_constraints_pftreestate = change_constraints_pftreestate
-let instantiate_pf     = Evar_refiner.instantiate_pf
-let instantiate_pf_com = Evar_refiner.instantiate_pf_com
 
 (*************************************************)
 (* Tacticals re-exported from the Refiner module.*)
