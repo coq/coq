@@ -8,7 +8,7 @@ open Term
 open Sign
 (*i*)
 
-(* Constants (internal representation). *)
+(*s Constants (internal representation). *)
 
 type lazy_constant_value =
   | Cooked of constr
@@ -36,7 +36,7 @@ type constant_entry= {
   const_entry_body : lazy_constant_value;
   const_entry_type : constr option }
 
-(* Inductive types (internal representation). *)
+(*s Inductive types (internal representation). *)
 
 type recarg = 
   | Param of int 
