@@ -164,8 +164,8 @@ type vernac_expr =
   | VernacBindScope of scope_name * class_rawexpr list
   | VernacArgumentsScope of reference * scope_name option list
   | VernacInfix of locality_flag *
-      grammar_associativity * precedence * string * reference * bool *
-      (grammar_associativity * precedence * string) option *
+      grammar_associativity * precedence option * string * reference * bool *
+      (grammar_associativity * precedence option* string) option *
       scope_name option
   | VernacNotation of
       locality_flag * constr_expr * (string * syntax_modifier list) option *

@@ -219,8 +219,6 @@ let prec_assoc = function
   | Gramext.LeftA -> (E,L)
   | Gramext.NonA -> (L,L)
 
-let level_rule (n,p) = if p = E then n else max (n-1) 0
-
 (* For old ast printer *)
 let meta_pattern m = Pmeta(m,Tany)
 
@@ -374,7 +372,7 @@ let string_of_symbol = function
   | Terminal s -> [s]
   | Break _ -> []
 
-let assoc_of_type n (_,typ) = level_rule (precedence_of_entry_type n typ)
+let assoc_of_type n (_,typ) = precedence_of_entry_type n typ
 
 let string_of_assoc = function
   | Some(Gramext.RightA) -> "RIGHTA"
@@ -483,8 +481,8 @@ let cache_syntax_extension (_,(_,prec,ntn,gr,se,translate)) =
   try 
     let oldprec = Symbols.level_of_notation ntn in
     if translate (* In case the ntn was only for the printer - V8Notation *)
-    then raise Not_found else 
-    if oldprec <> prec then
+    then raise Not_found
+    else if oldprec <> prec then
       if !Options.v7 then begin
 	Options.if_verbose
 	  warning ("Notation "^ntn^" was already assigned a different level");
@@ -555,14 +553,11 @@ let interp_modifiers a n =
 	interp assoc level etyps l
   in interp a n []
 
-(* Infix defaults to LEFTA (cf doc) *)
 let interp_infix_modifiers a n l =
   let (assoc,level,t,b) = interp_modifiers a n l in
   if t <> [] then
     error "explicit entry level or type unexpected in infix notation";
-  let assoc = match assoc with None -> Some Gramext.LeftA | a -> a in
-  let n = match level with None -> 1 | Some n -> n in
-  (assoc,n,b)
+  (assoc,level,b)
 
 (* Notation defaults to NONA *)
 let interp_notation_modifiers modl =
@@ -764,6 +759,8 @@ let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
   Lib.add_anonymous_leaf
     (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,false,df))
 
+let level_rule (n,p) = if p = E then n else max (n-1) 0
+
 let add_notation_interpretation_core local vars symbs df (a,r) sc onlyparse 
   onlypp =
   let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
@@ -774,7 +771,7 @@ let add_notation_interpretation_core local vars symbs df (a,r) sc onlyparse
       error "Parsing rule for this notation has to be previously declared" in
   let old_pp_rule =
     let typs = List.map2 
-      (fun id n -> id,ETConstr (NumLevel n,InternalProd)) vars (snd prec) in
+      (fun id n -> id,ETConstr (NumLevel (level_rule n),InternalProd)) vars (snd prec) in
     Some (make_old_pp_rule (fst prec) symbs typs r notation scope vars) in
   Lib.add_anonymous_leaf
     (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,onlypp,df))
@@ -802,36 +799,36 @@ let add_notation_interpretation df (c,l) sc =
   add_notation_interpretation_core local vars symbs df ((la,a),a_for_old) sc
     onlyparse false
 
+let add_notation_in_scope_v8only local df c (assoc,n,etyps,onlyparse) sc toks =
+  let onlyparse = false in
+  let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
+  let inner = (NumLevel 200,InternalProd) in
+  let (vars,symbols) = analyse_tokens toks in
+  let typs =
+    find_symbols
+      (NumLevel n,BorderProd(true,assoc)) inner 
+      (NumLevel n,BorderProd(false,assoc)) symbols in
+  (* To globalize... *)
+  let a = interp_aconstr vars c in
+  let typs = List.map (set_entry_type etyps) typs in
+  let assoc = recompute_assoc typs in
+  (* Declare the parsing and printing rules if not already done *)
+  let (prec,notation) = make_symbolic n symbols typs in
+  let pp_rule = make_pp_rule typs symbols n in
+  Lib.add_anonymous_leaf
+    (inSyntaxExtension(local,prec,notation,None,pp_rule,Options.do_translate()));
+  (* Declare the interpretation *)
+  let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
+  Lib.add_anonymous_leaf
+    (inNotation(local,None,notation,scope,a,onlyparse,true,df))
+
 let add_notation_v8only local c (df,modifiers) sc =
-  let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) sc toks =
-    let onlyparse = false in
-    let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
-    let inner = (NumLevel 200,InternalProd) in
-    let (vars,symbols) = analyse_tokens toks in
-    let typs =
-      find_symbols
-	(NumLevel n,BorderProd(true,assoc)) inner 
-	(NumLevel n,BorderProd(false,assoc)) symbols in
-    (* To globalize... *)
-    let a = interp_aconstr vars c in
-    let typs = List.map (set_entry_type etyps) typs in
-    let assoc = recompute_assoc typs in
-    (* Declare the parsing and printing rules if not already done *)
-    let (prec,notation) = make_symbolic n symbols typs in
-    let pp_rule = make_pp_rule typs symbols n in
-    Lib.add_anonymous_leaf
-      (inSyntaxExtension(local,prec,notation,None,pp_rule,Options.do_translate()));
-    (* Declare the interpretation *)
-    let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
-    Lib.add_anonymous_leaf
-      (inNotation(local,None,notation,scope,a,onlyparse,true,df))
-  in
   let toks = split df in
   match toks with 
     | [String x] when (modifiers = [] or modifiers = [SetOnlyParsing]) ->
 	(* This is a ident to be declared as a rule *)
-        add_notation_in_scope local df c (None,0,[],modifiers=[SetOnlyParsing])
-          sc toks
+        add_notation_in_scope_v8only
+	  local df c (None,0,[],modifiers=[SetOnlyParsing]) sc toks
     | _ ->
 	let (assoc,lev,typs,onlyparse) = interp_modifiers None None modifiers
 	in
@@ -852,7 +849,7 @@ let add_notation_v8only local c (df,modifiers) sc =
 	    (* Declare both syntax and interpretation *)
 	    let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
 	    let mods = (assoc,n,typs,onlyparse)	in
-            add_notation_in_scope local df c mods sc toks
+            add_notation_in_scope_v8only local df c mods sc toks
 
 let add_notation local c dfmod mv8 sc =
   match dfmod with
@@ -935,8 +932,27 @@ let add_distfix local assoc n df r sc =
   add_notation_in_scope local df a (Some assoc,n,[],false) None sc (split df)
 
 let add_infix local assoc n inf pr onlyparse mv8 sc =
+  if inf="" (* Code for V8Infix only *) then
+    let (a8,v8,p8) = out_some mv8 in
+    let metas = [inject_var "x"; inject_var "y"] in
+    let a = mkAppC (mkRefC pr,metas) in
+    let df = "x "^(quote p8)^" y" in
+    let toks = split df in
+    if v8=None & a8=None then
+      (* Declare only interpretation *)
+      let (vars,symbs) = analyse_tokens toks in
+      let a' = interp_aconstr vars a in
+      let a_for_old = interp_rawconstr_gen
+	false Evd.empty (Global.env()) [] false (vars,[]) a in
+      add_notation_interpretation_core local vars symbs df
+	(a',a_for_old) sc onlyparse false
+    else
+      let v8 = match v8 with None -> 1 | Some n -> n in
+      let a8 = match a8 with None -> Some Gramext.LeftA | a -> a in
+      add_notation_in_scope_v8only local df a (a8,v8,[],onlyparse) sc toks
+  else begin
   (* check the precedence *)
-  if !Options.v7 & (n<1 or n>10) then
+  if !Options.v7 & (n<> None & (out_some n < 1 or out_some n > 10)) then
     errorlabstrm "Metasyntax.infix_grammar_entry"
       (str"Precedence must be between 1 and 10.");
   (*
@@ -947,11 +963,30 @@ let add_infix local assoc n inf pr onlyparse mv8 sc =
   let metas = [inject_var "x"; inject_var "y"] in
   let a = mkAppC (mkRefC pr,metas) in
   let df = "x "^(quote inf)^" y" in
+  let toks = split df in
+  if not !Options.v7 & n=None & assoc=None then
+    (* En v8, une notation sans information de parsing signifie *)
+    (* de ne déclarer que l'interprétation *)
+    (* Declare only interpretation *)
+    let (vars,symbs) = analyse_tokens toks in
+    let a' = interp_aconstr vars a in
+    let a_for_old = interp_rawconstr_gen
+      false Evd.empty (Global.env()) [] false (vars,[]) a in
+    add_notation_interpretation_core local vars symbs df
+      (a',a_for_old) sc onlyparse false
+  else
+  (* Infix defaults to LEFTA (cf doc) *)
+  let n = match n with None -> 1 | Some n -> n in
+  let assoc = match assoc with None -> Some Gramext.LeftA | a -> a in
   let mv8 = match mv8 with
       None -> Some(split df,(assoc,n*10,[],false))
     | Some(a8,n8,s8) ->
+	let a8 = match a8 with None -> Some Gramext.LeftA | a -> a in
+	let n8 = match n8 with None -> 1 | Some n -> n in
         Some(split ("x "^quote s8^" y"),(a8,n8,[],false)) in
-  add_notation_in_scope local df a (assoc,n,[],onlyparse) mv8 sc (split df)
+  add_notation_in_scope local df a (assoc,n,[],onlyparse) mv8 sc toks
+  end
+
 
 (* Delimiters and classes bound to scopes *)
 type scope_command = ScopeDelim of string | ScopeClasses of Classops.cl_typ

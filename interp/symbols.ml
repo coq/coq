@@ -40,7 +40,7 @@ open Ppextend
 (* Scope of symbols *)
 
 type scopes = scope_name list
-type level = precedence * precedence list
+type level = precedence * tolerability list
 type delimiters = string
 
 type scope = {

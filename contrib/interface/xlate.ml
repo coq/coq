@@ -1625,7 +1625,7 @@ let xlate_vernac =
 
    | VernacSyntaxExtension _ -> xlate_error "Syntax Extension not implemented"
 
-   | VernacInfix (false,str_assoc, n, str, id, false, _, None) ->
+   | VernacInfix (false,str_assoc, Some n, str, id, false, _, None) ->
       CT_infix (
        (match str_assoc with
         | Some Gramext.LeftA -> CT_lefta

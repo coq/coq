@@ -27,7 +27,7 @@ open Ppextend
 (*s A scope is a set of interpreters for symbols + optional
    interpreter and printers for integers + optional delimiters *)
 
-type level = precedence * precedence list
+type level = precedence * tolerability list
 type delimiters = string
 type scope
 type scopes = scope_name list

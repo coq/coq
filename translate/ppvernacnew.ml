@@ -404,6 +404,11 @@ let pr_syntax_modifier = function
   | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_entry_type typ
   | SetOnlyParsing -> str"only parsing"
 
+let pr_syntax_modifiers = function
+  | [] -> mt()
+  | l -> spc() ++ 
+      hov 0 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
+
 let pr_grammar_tactic_rule (name,(s,pil),t) =
 (*
   hov 0 (
@@ -545,9 +550,10 @@ let rec pr_vernac = function
           Some mv8 -> mv8
         | None -> (a,p,s) in
       hov 0 (hov 0 (str"Infix " ++ pr_locality local
-      (* ++ pr_entry_prec a ++ int p ++ spc() *)
-      ++ qs s ++ spc() ++ pr_reference q) ++ spc()
-      ++ str "(at level " ++ int p ++ pr_prec a ++ str")" ++
+      ++ qs s ++ spc() ++ pr_reference q) ++
+      pr_syntax_modifiers
+	((match p with None -> [] | Some p -> [SetLevel p])@
+	 (match a with None -> [] | Some a -> [SetAssoc a])) ++
       (match sn with
     | None -> mt()
     | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
@@ -566,11 +572,7 @@ let rec pr_vernac = function
 	then str (String.sub s 1 (n-2))
 	else qs s in
       hov 2( str"Notation" ++ spc() ++ pr_locality local ++ ps ++
-      str " :=" ++ pr_constrarg c ++
-      (match l with
-        | [] -> mt()
-        | _ as t ->
-            spc() ++ hov 0 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier t ++ str")")) ++
+      str " :=" ++ pr_constrarg c ++ pr_syntax_modifiers l ++
       (match opt with
         | None -> mt()
         | Some sc -> str" :" ++ spc() ++ str sc))
@@ -579,8 +581,7 @@ let rec pr_vernac = function
           None -> out_some sl
         | Some ml -> ml in
       str"Uninterpreted Notation" ++ spc() ++ pr_locality local ++ qs s ++
-      (match l with | [] -> mt() | _ as l -> 
-	str" (" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
+      pr_syntax_modifiers l
 
   (* Gallina *)
   | VernacDefinition (d,id,b,f,e) -> (* A verifier... *)
