@@ -19,6 +19,9 @@ val push : section_path -> global_reference -> unit
 val push_object : section_path -> Libobject.obj -> unit
 val push_module : section_path -> module_contents -> unit
 
+val push_local : section_path -> global_reference -> unit
+val push_local_object : section_path -> Libobject.obj -> unit
+
 (* This should eventually disappear *)
 val sp_of_id : path_kind -> identifier -> global_reference
 
@@ -36,5 +39,14 @@ val exists_cci : section_path -> bool
 val open_module_contents : qualid -> unit
 val rec_open_module_contents : qualid -> unit
 
+(*s Roots of the space of absolute names *)
+
+(* This is the root of the standard library of Coq *)
+val coq_root : string
+
+(* This is the default root for developments which doesn't mention a root *)
+val default_root : string
+
+(* This is to declare a new root *)
 val push_library_root : string -> unit
 
