@@ -236,7 +236,7 @@ let rec detype tenv avoid env t =
 	let indsp = annot.ci_ind in
         let considl = annot.ci_pp_info.cnames in
         let k = annot.ci_pp_info.ind_nargs in
-	let consnargsl = mis_constr_nargs (*_env tenv*) indsp in
+	let consnargsl = mis_constr_nargs_env tenv indsp in
 	let pred = 
 	  if synth_type & computable p k & considl <> [||] then
 	    None
