@@ -510,11 +510,11 @@ let construct_discriminator sigma env dirn c sort =
   let cstrs = get_constructors indf in
   let build_branch i =
     let endpt = if i = dirn then true_0 else false_0 in
-    lam_it endpt cstrs.(i).cs_args 
+    lam_it endpt cstrs.(i-1).cs_args 
   in
   let build_match =
     mkMutCase (make_default_case_info mispec) p c 
-      (List.map build_branch (interval 0 (mis_nconstr mispec)))
+      (List.map build_branch (interval 1 (mis_nconstr mispec)))
   in
   build_match
     
