@@ -152,7 +152,7 @@ let enforce_type_constructor env arsort smax cst =
   match smax, arsort with
     | Type uc, Type ua -> enforce_geq ua uc cst
     | Type uc, Prop Pos when engagement env <> Some StronglyConstructive ->
-        error "Large inductive types in Set need option -strongly-constructive"
+        error "Large inductive types must be in Type, unless option -strongly-constructive is set"
     | _,_ -> cst
 
 let type_one_constructor env_ar_par params arsort c =
