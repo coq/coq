@@ -25,7 +25,6 @@ type constr_substituted
 
 val from_val : constr -> constr_substituted
 val force : constr_substituted -> constr
-val subst_constr_subst : substitution -> constr_substituted -> constr_substituted
 
 type constant_body = {
   const_hyps : section_context; (* New: younger hyp at top *)
