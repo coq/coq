@@ -154,6 +154,10 @@ let evar_type_case isevars env ct pt lft p c =
   in check_branches_message isevars env (c,ct) (bty,lft); (mind,rslty)
 *)
 
+let adjust_name_from_type name = function
+  | Anonymous -> name
+  | na -> na
+
 let strip_meta id = (* For Grammar v7 compatibility *)
   let s = string_of_id id in
   if s.[0]='$' then id_of_string (String.sub s 1 (String.length s - 1))
@@ -314,9 +318,10 @@ let rec pretype tycon env isevars lvar = function
       inh_conv_coerce_to_tycon loc env isevars resj tycon
 
   | RLambda(loc,name,c1,c2)      ->
-      let (dom,rng) = split_tycon loc env isevars tycon in
+      let (name',dom,rng) = split_tycon loc env isevars tycon in
       let dom_valcon = valcon_of_tycon dom in
       let j = pretype_type dom_valcon env isevars lvar c1 in
+      let name = adjust_name_from_type name' name in
       let var = (name,None,j.utj_val) in
       let j' = pretype rng (push_rel var env) isevars lvar c2 in 
       judge_of_abstraction env name j j'

@@ -564,15 +564,15 @@ let define_evar_as_sort isevars (ev,args) =
    an evar instantiate it with the product of 2 new evars. *)
 
 let split_tycon loc env isevars = function
-  | None -> None,None
+  | None -> Anonymous,None,None
   | Some c ->
       let sigma = evars_of isevars in
       let t = whd_betadeltaiota env sigma c in
       match kind_of_term t with
-        | Prod (na,dom,rng) -> Some dom, Some rng
+        | Prod (na,dom,rng) -> na, Some dom, Some rng
 	| Evar (n,_ as ev) when not (Evd.is_defined isevars.evars n) ->
 	    let (_,evdom,evrng) = refine_evar_as_arrow isevars ev in
-	    Some (mkEvar evdom), Some (mkEvar evrng)
+	    Anonymous, Some (mkEvar evdom), Some (mkEvar evrng)
 	| _ -> error_not_product_loc loc env sigma c
 
 let valcon_of_tycon x = x
