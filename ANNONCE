@@ -1,7 +1,9 @@
 
-  Finally... the final version of Coq 8.0 is coming out. This major
-evolution of the Coq system provides the following features (for changes
-wrt to the beta version of Coq 8.0 see further).
+  Coq version 8.0 is a major evolution of the Coq system. The final
+version of is now coming out.
+
+Coq version 8.0 features
+------------------------
 
   First, the logical system of Coq version 8.0 has been simplified by
 removing the impredicativity of the sort Set. This allows to benefit
@@ -36,21 +38,28 @@ statements and various improvements of existing tactics.
   Last but not the least, Coq version 8.0 comes with CoqIde, a new
 integrated gtk-based user interface in the style of ProofGeneral.
 
+New book on Coq
+---------------
 
-  For the first time, a comprehensive textbook on the art of Coq is
-going to be published. We are extremely thankful to the authors, Yves
-Bertot and Pierre Casteran, for this essential contribution to the
-development of Coq. This 470-pages book is based on Coq V8.0 and it
-comes with about 200 exercices and their solution in Coq. Details are
-on http://www.labri.fr/~casteran/CoqArt.
+  For the first time, a comprehensive textbook on the art of Coq,
+accompanies the distribution of Coq. We are extremely thankful to the
+authors, Yves Bertot and Pierre Casteran, for this essential
+contribution to the development of Coq. This 470-pages book comes with
+about 200 exercises and their solution in Coq. Details are on
+http://www.labri.fr/~casteran/CoqArt.
 
+Changes wrt Coq version 8.0 beta
+--------------------------------
 
-  The main change wrt to Coq 8.0 beta is a modified semantics of the
+  The main change wrt to Coq 8.0 beta is a different semantics for the
 if-then-else construction, which may lead to the need of rerunning the
-translator, or to modify some few lines by hand. All other
-modifications consist in extensions or bug fixes (see file
-Changes.html on Coq web site for the details).
+translator, or to modify a few lines by hand. The other modifications
+mainly consist in extensions or upgrading (a few tactics and commands,
+XML exportation of theories and proof scripts, coqdoc compatibility)
+and bug fixes. See file Changes.html on Coq web site for details.
 
+Downloading and documentation
+-----------------------------
 
   The sources of Coq V8.0, including its integrated development
 environment, are available from http://coq.inria.fr/ and
@@ -70,6 +79,7 @@ and to mail Coq-Club@pauillac.inria.fr for general questions or remarks.
 Note that you can now choose your personal options at
 http://pauillac.inria.fr/mailman/listinfo/coq-club and consult the 
 mails archive at http://pauillac.inria.fr/pipermail/coq-club.
+
 
   The Coq development team
 
