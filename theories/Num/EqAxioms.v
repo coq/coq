@@ -3,7 +3,6 @@
 (*s Axioms for equality *)
 Require Export Params.
 Require Export EqParams.
-Require Export NeqDef.
 Require Export NSyntax.
 
 (*s Basic Axioms for [eq] *)

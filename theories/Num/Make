@@ -1,9 +1,14 @@
 Params.v
 EqParams.v
-NeqDef.v
 NSyntax.v
+
 Axioms.v
 EqAxioms.v
+
+NeqParams.v
+NeqAxioms.v
+NeqDef.v
+NeqProps.v
 AddProps.v
 LtProps.v
 OppProps.v

@@ -416,8 +416,8 @@ Fixpoint nth_error [l:list;n:nat] : (Exc A) :=
 
 Definition nth_default : A -> list -> nat -> A :=
   [default,l,n]Cases (nth_error l n) of
-  | (value x) => x
-  | error => default
+  | (Some x) => x
+  | None => default
   end.
 
 

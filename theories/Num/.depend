@@ -6,16 +6,20 @@ OppProps.vo: OppProps.v
 OppProps.vi: OppProps.v
 OppAxioms.vo: OppAxioms.v
 OppAxioms.vi: OppAxioms.v
+NeqProps.vo: NeqProps.v NeqParams.vo NeqAxioms.vo EqParams.vo EqAxioms.vo
+NeqProps.vi: NeqProps.v NeqParams.vo NeqAxioms.vo EqParams.vo EqAxioms.vo
+NeqParams.vo: NeqParams.v Params.vo
+NeqParams.vi: NeqParams.v Params.vo
 NeqDef.vo: NeqDef.v Params.vo EqParams.vo
 NeqDef.vi: NeqDef.v Params.vo EqParams.vo
+NeqAxioms.vo: NeqAxioms.v EqParams.vo NeqParams.vo
+NeqAxioms.vi: NeqAxioms.v EqParams.vo NeqParams.vo
 NatSyntax.vo: NatSyntax.v
 NatSyntax.vi: NatSyntax.v
-NSyntax.vo: NSyntax.v Params.vo EqParams.vo NeqDef.vo
-NSyntax.vi: NSyntax.v Params.vo EqParams.vo NeqDef.vo
+NSyntax.vo: NSyntax.v Params.vo
+NSyntax.vi: NSyntax.v Params.vo
 LtProps.vo: LtProps.v Axioms.vo AddProps.vo
 LtProps.vi: LtProps.v Axioms.vo AddProps.vo
-LeibnizEq.vo: LeibnizEq.v Params.vo
-LeibnizEq.vi: LeibnizEq.v Params.vo
 LeProps.vo: LeProps.v LtProps.vo LeAxioms.vo
 LeProps.vi: LeProps.v LtProps.vo LeAxioms.vo
 LeAxioms.vo: LeAxioms.v Axioms.vo LtProps.vo
@@ -30,27 +34,29 @@ GeAxioms.vo: GeAxioms.v Axioms.vo LtProps.vo
 GeAxioms.vi: GeAxioms.v Axioms.vo LtProps.vo
 EqParams.vo: EqParams.v Params.vo
 EqParams.vi: EqParams.v Params.vo
-EqAxioms.vo: EqAxioms.v Params.vo EqParams.vo NeqDef.vo NSyntax.vo
-EqAxioms.vi: EqAxioms.v Params.vo EqParams.vo NeqDef.vo NSyntax.vo
+EqAxioms.vo: EqAxioms.v Params.vo EqParams.vo NSyntax.vo
+EqAxioms.vi: EqAxioms.v Params.vo EqParams.vo NSyntax.vo
 DiscrProps.vo: DiscrProps.v DiscrAxioms.vo LtProps.vo
 DiscrProps.vi: DiscrProps.v DiscrAxioms.vo LtProps.vo
 DiscrAxioms.vo: DiscrAxioms.v Params.vo NSyntax.vo
 DiscrAxioms.vi: DiscrAxioms.v Params.vo NSyntax.vo
 Definitions.vo: Definitions.v
 Definitions.vi: Definitions.v
-Axioms.vo: Axioms.v Params.vo EqParams.vo NeqDef.vo NSyntax.vo
-Axioms.vi: Axioms.v Params.vo EqParams.vo NeqDef.vo NSyntax.vo
-AddProps.vo: AddProps.v Axioms.vo
-AddProps.vi: AddProps.v Axioms.vo
+Axioms.vo: Axioms.v Params.vo EqParams.vo NSyntax.vo
+Axioms.vi: Axioms.v Params.vo EqParams.vo NSyntax.vo
+AddProps.vo: AddProps.v Axioms.vo EqAxioms.vo NeqProps.vo
+AddProps.vi: AddProps.v Axioms.vo EqAxioms.vo NeqProps.vo
 SubProps.html: SubProps.v
 Params.html: Params.v
 OppProps.html: OppProps.v
 OppAxioms.html: OppAxioms.v
+NeqProps.html: NeqProps.v NeqParams.html NeqAxioms.html EqParams.html EqAxioms.html
+NeqParams.html: NeqParams.v Params.html
 NeqDef.html: NeqDef.v Params.html EqParams.html
+NeqAxioms.html: NeqAxioms.v EqParams.html NeqParams.html
 NatSyntax.html: NatSyntax.v
-NSyntax.html: NSyntax.v Params.html EqParams.html NeqDef.html
+NSyntax.html: NSyntax.v Params.html
 LtProps.html: LtProps.v Axioms.html AddProps.html
-LeibnizEq.html: LeibnizEq.v Params.html
 LeProps.html: LeProps.v LtProps.html LeAxioms.html
 LeAxioms.html: LeAxioms.v Axioms.html LtProps.html
 GtProps.html: GtProps.v
@@ -58,9 +64,9 @@ GtAxioms.html: GtAxioms.v Axioms.html LeProps.html
 GeProps.html: GeProps.v
 GeAxioms.html: GeAxioms.v Axioms.html LtProps.html
 EqParams.html: EqParams.v Params.html
-EqAxioms.html: EqAxioms.v Params.html EqParams.html NeqDef.html NSyntax.html
+EqAxioms.html: EqAxioms.v Params.html EqParams.html NSyntax.html
 DiscrProps.html: DiscrProps.v DiscrAxioms.html LtProps.html
 DiscrAxioms.html: DiscrAxioms.v Params.html NSyntax.html
 Definitions.html: Definitions.v
-Axioms.html: Axioms.v Params.html EqParams.html NeqDef.html NSyntax.html
-AddProps.html: AddProps.v Axioms.html
+Axioms.html: Axioms.v Params.html EqParams.html NSyntax.html
+AddProps.html: AddProps.v Axioms.html EqAxioms.html NeqProps.html

@@ -60,6 +60,22 @@ Section Equivalence.
 
   Definition iff := [P,Q:Prop] (and (P->Q) (Q->P)).
 
+
+Theorem iff_refl : (a:Prop) (iff a a).
+  Proof.
+    Split; Auto.
+  Qed.
+
+Theorem iff_trans : (a,b,c:Prop) (iff a b) -> (iff b c) -> (iff a c).
+  Proof.
+    Intros a b c (H1,H2) (H3,H4); Split; Auto.
+  Qed.
+
+Theorem iff_sym : (a,b:Prop) (iff a b) -> (iff b a).
+  Proof.
+    Intros a b (H1,H2); Split; Auto.
+  Qed.
+
 End Equivalence.
 
 (* [(IF P Q R)], or more suggestively [(either P and_then Q or_else R)],
@@ -197,6 +213,8 @@ Proof.
 Qed.
 
 Hints Immediate sym_eq sym_not_eq : core v62.
+
+
 
 Syntactic Definition Ex := ex | 1.
 Syntactic Definition Ex2 := ex2 | 1.

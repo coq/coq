@@ -10,7 +10,6 @@
 (*s Axioms for the basic numerical operations *)
 Require Export Params.
 Require Export EqParams.
-Require Export NeqDef.
 Require Export NSyntax.
 
 (*s Axioms for [eq] *)

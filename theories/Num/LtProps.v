@@ -7,6 +7,7 @@
 (***********************************************************************)
 Require Export Axioms.
 Require Export AddProps.
+Require Export NeqProps.
 
 (*s This file contains basic properties of the less than relation *)
 

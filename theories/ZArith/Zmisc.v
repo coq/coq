@@ -83,6 +83,7 @@ Definition Zgt_bool := [x,y:Z]Case ` x ?= y` of false false true end.
 Definition Zeq_bool := [x,y:Z]Cases `x ?= y` of EGAL => true | _ => false end.
 Definition Zneq_bool := [x,y:Z]Cases `x ?= y` of EGAL =>false | _ => true end.
 
+
 End numbers.
 
 Section iterate.
@@ -432,6 +433,131 @@ Compute. Intro H0. Discriminate H0. Intuition.
 Intros. Absurd `0 <= (NEG p)`. Compute. Auto with arith. Intuition.
 Save.
 
+(* Lemmas on Zle_bool used in contrib/graphs *)
+
+Lemma Zle_bool_imp_le : (x,y:Z) (Zle_bool x y)=true -> (Zle x y).
+Proof.
+  Unfold Zle_bool Zle. Intros x y. Unfold not. Case (Zcompare x y). Intros. Discriminate H0.
+  Intros. Discriminate H0.
+  Intro. Discriminate H.
+Qed.
+
+Lemma Zle_imp_le_bool : (x,y:Z) (Zle x y) -> (Zle_bool x y)=true.
+Proof.
+  Unfold Zle Zle_bool. Intros x y. Case (Zcompare x y); Trivial. Intro. Elim (H (refl_equal ? ?)).
+Qed.
+
+Lemma Zle_bool_refl : (x:Z) (Zle_bool x x)=true.
+Proof.
+  Intro. Apply Zle_imp_le_bool. Apply Zle_refl. Reflexivity.
+Qed.
+
+Lemma Zle_bool_antisym : (x,y:Z) (Zle_bool x y)=true -> (Zle_bool y x)=true -> x=y.
+Proof.
+  Intros. Apply Zle_antisym. Apply Zle_bool_imp_le. Assumption.
+  Apply Zle_bool_imp_le. Assumption.
+Qed.
+
+Lemma Zle_bool_trans : (x,y,z:Z) (Zle_bool x y)=true -> (Zle_bool y z)=true -> (Zle_bool x z)=true.
+Proof.
+  Intros. Apply Zle_imp_le_bool. Apply Zle_trans with m:=y. Apply Zle_bool_imp_le. Assumption.
+  Apply Zle_bool_imp_le. Assumption.
+Qed.
+
+Lemma Zle_bool_total : (x,y:Z) {(Zle_bool x y)=true}+{(Zle_bool y x)=true}.
+Proof.
+  Intros. Unfold Zle_bool. Cut (Zcompare x y)=SUPERIEUR<->(Zcompare y x)=INFERIEUR.
+  Case (Zcompare x y). Left . Reflexivity.
+  Left . Reflexivity.
+  Right . Rewrite (proj1 ? ? H (refl_equal ? ?)). Reflexivity.
+  Apply Zcompare_ANTISYM.
+Qed.
+
+Lemma Zle_bool_plus_mono : (x,y,z,t:Z) (Zle_bool x y)=true -> (Zle_bool z t)=true ->
+                                (Zle_bool (Zplus x z) (Zplus y t))=true.
+Proof.
+  Intros. Apply Zle_imp_le_bool. Apply Zle_plus_plus. Apply Zle_bool_imp_le. Assumption.
+  Apply Zle_bool_imp_le. Assumption.
+Qed.
+
+Lemma Zone_pos : (Zle_bool `1` `0`)=false.
+Proof.
+  Reflexivity.
+Qed.
+
+Lemma Zone_min_pos : (x:Z) (Zle_bool x `0`)=false -> (Zle_bool `1` x)=true.
+Proof.
+  Intros. Apply Zle_imp_le_bool. Change (Zle (Zs ZERO) x). Apply Zgt_le_S. Generalize H.
+  Unfold Zle_bool Zgt. Case (Zcompare x ZERO). Intro H0. Discriminate H0.
+  Intro H0. Discriminate H0.
+  Reflexivity.
+Qed.
+
+
+ Lemma Zle_is_le_bool : (x,y:Z) (Zle x y) <-> (Zle_bool x y)=true.
+  Proof.
+    Intros. Split. Intro. Apply Zle_imp_le_bool. Assumption.
+    Intro. Apply Zle_bool_imp_le. Assumption.
+  Qed.
+
+  Lemma Zge_is_le_bool : (x,y:Z) (Zge x y) <-> (Zle_bool y x)=true.
+  Proof.
+    Intros. Split. Intro. Apply Zle_imp_le_bool. Apply Zge_le. Assumption.
+    Intro. Apply Zle_ge. Apply Zle_bool_imp_le. Assumption.
+  Qed.
+
+  Lemma Zlt_is_le_bool : (x,y:Z) (Zlt x y) <-> (Zle_bool x `y-1`)=true.
+  Proof.
+    Intros. Split. Intro. Apply Zle_imp_le_bool. Apply Zlt_n_Sm_le. Rewrite (Zs_pred y) in H.
+    Assumption.
+    Intro. Rewrite (Zs_pred y). Apply Zle_lt_n_Sm. Apply Zle_bool_imp_le. Assumption.
+  Qed.
+
+  Lemma Zgt_is_le_bool : (x,y:Z) (Zgt x y) <-> (Zle_bool y `x-1`)=true.
+  Proof.
+    Intros. Apply iff_trans with b:=`y < x`. Split. Exact (Zgt_lt x y).
+    Exact (Zlt_gt y x).
+    Exact (Zlt_is_le_bool y x).
+  Qed.
 
 End arith.
 
+(* Equivalence between inequalities used in contrib/graph *)
+
+
+  Lemma Zle_plus_swap : (x,y,z:Z) `x+z<=y` <-> `x<=y-z`.
+  Proof.
+    Intros. Split. Intro. Rewrite <- (Zero_right x). Rewrite <- (Zplus_inverse_r z).
+    Rewrite Zplus_assoc_l. Exact (Zle_reg_r ? ? ? H).
+    Intro. Rewrite <- (Zero_right y). Rewrite <- (Zplus_inverse_l z). Rewrite Zplus_assoc_l.
+    Apply Zle_reg_r. Assumption.
+  Qed.
+
+  Lemma Zge_iff_le : (x,y:Z) `x>=y` <-> `y<=x`.
+  Proof.
+    Intros. Split. Intro. Apply Zge_le. Assumption.
+    Intro. Apply Zle_ge. Assumption.
+  Qed.
+
+  Lemma Zlt_plus_swap : (x,y,z:Z) `x+z<y` <-> `x<y-z`.
+  Proof.
+    Intros. Split. Intro. Unfold Zminus. Rewrite Zplus_sym. Rewrite <- (Zero_left x).
+    Rewrite <- (Zplus_inverse_l z). Rewrite Zplus_assoc_r. Apply Zlt_reg_l. Rewrite Zplus_sym.
+    Assumption.
+    Intro. Rewrite Zplus_sym. Rewrite <- (Zero_left y). Rewrite <- (Zplus_inverse_r z).
+    Rewrite Zplus_assoc_r. Apply Zlt_reg_l. Rewrite Zplus_sym. Assumption.
+  Qed.
+
+  Lemma Zgt_iff_lt : (x,y:Z) `x>y` <-> `y<x`.
+  Proof.
+    Intros. Split. Intro. Apply Zgt_lt. Assumption.
+    Intro. Apply Zlt_gt. Assumption.
+  Qed.
+
+  Lemma Zeq_plus_swap : (x,y,z:Z) `x+z=y` <-> `x=y-z`.
+  Proof.
+    Intros. Split. Intro. Rewrite <- H. Unfold Zminus. Rewrite Zplus_assoc_r.
+    Rewrite Zplus_inverse_r. Apply sym_eq. Apply Zero_right.
+    Intro. Rewrite H. Unfold Zminus. Rewrite Zplus_assoc_r. Rewrite Zplus_inverse_l.
+    Apply Zero_right.
+  Qed.

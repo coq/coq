@@ -23,6 +23,17 @@ Save.
 
 Hints Resolve sumbool_of_bool : bool.
 
+Lemma bool_eq_rec : (b:bool)(P:bool->Set)
+                    ((b=true)->(P true))->((b=false)->(P false))->(P b).
+Induction b; Auto.
+Save.
+
+Lemma bool_eq_ind : (b:bool)(P:bool->Prop)
+                    ((b=true)->(P true))->((b=false)->(P false))->(P b).
+Induction b; Auto.
+Save.
+
+
 (*i pourquoi ce machin-la est dans BOOL et pas dans LOGIC ?  Papageno i*)
 
 (* Logic connectives on type sumbool *)

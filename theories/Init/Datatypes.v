@@ -36,6 +36,10 @@ Inductive identity [A:Set; a:A] : A->Set :=
      refl_identity: (identity A a a).
 Hints Resolve refl_identity : core v62.
 
+(* [option A] is the extension of A with a dummy element None *)
+
+Inductive option [A:Set] : Set := Some : A -> (option A) | None : (option A).
+
 (* [sum A B], equivalently [A + B], is the disjoint sum of [A] and [B] *)
 (* Syntax defined in Specif.v *)
 Inductive sum [A,B:Set] : Set

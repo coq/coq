@@ -30,10 +30,6 @@ Grammar constr lassoc_constr4 :=
       esac.
 
 Syntax constr
-  level 1:
-    equal [ (eqN $t1 $t2) ] -> [ [<hov 0> $t1:E [0 1]  "=" $t2:E ] ]
- ;
-
   level 4:
     sum [ (add $t1 $t2) ] -> [ [<hov 0> $t1:E [0 1] "+" $t2:L ] ]
 .
