@@ -92,11 +92,11 @@ if the original goal has been opened using the {\tt Goal} command.
  {\tt Save Lemma {\ident}.} \\
   Are equivalent to {\tt Save {\ident}.}
 \item {\tt Save Remark {\ident}.}\\
-  Defines the proved term as a constant that will not be visible
-  without qualification after the end of the current section.
+  Defines the proved term as a constant that will not be accessible
+  without using a qualified name after the end of the current section.
 \item {\tt Save Fact {\ident}.}\\
-  Defines the proved term as a constant that will not be visible
-  without qualification after the closing two levels of sectioning.
+  Defines the proved term as a constant that will not be accessible
+  without using a qualified name after the closing of two levels of sectioning.
 \end{Variants}
 
 \subsection{\tt Theorem {\ident} : {\form}.}\comindex{Theorem}\label{Theorem}
@@ -111,14 +111,17 @@ as a {\tt Theorem}, the name {\ident} is known at all section levels:
 \item {\tt Lemma {\ident} : {\form}.}\comindex{Lemma}\\
   It is equivalent to {\tt Theorem {\ident} : {\form}.}
 \item {\tt Remark {\ident} : {\form}.}\comindex{Remark}\\
-  Analogous to {\tt Theorem} except that {\ident} will be unknown
-  after closing the current section. All proofs of persistent objects
-  (such as theorems) referring to {\ident} within the section will be
-  replaced by the proof of {\ident}.  
+  Analogous to {\tt Theorem} except that {\ident} will be accessible
+  only by a qualified name after closing the current section.
+%%%%% This is no longer true:
+% All proofs of persistent objects
+% (such as theorems) referring to {\ident} within the section will be
+% replaced by the proof of {\ident}.  
 \item {\tt Fact {\ident} : {\form}.}\comindex{Fact}\\
-  Analogous to {\tt Theorem} except that {\ident} is known after
-  closing the current section but 
- will be unknown  after closing the section which is above the current section.
+  Analogous to {\tt Theorem} except that {\ident} is accessible by a
+  short name after closing the current section but 
+  will be accessible only by a qualified name after closing the
+  section which is above the current section. 
 \item {\tt Definition {\ident} : {\form}.}
 \comindex{Definition}\\
   Analogous to {\tt Theorem}, intended to be used in conjunction with
