@@ -70,6 +70,10 @@ parsing/printer.cmi: parsing/coqast.cmi kernel/names.cmi lib/pp.cmi \
     pretyping/rawterm.cmi kernel/sign.cmi kernel/term.cmi 
 parsing/termast.cmi: parsing/coqast.cmi kernel/names.cmi \
     pretyping/rawterm.cmi kernel/sign.cmi kernel/term.cmi 
+pretyping/cases.debug.cmi: kernel/environ.cmi pretyping/evarutil.cmi \
+    kernel/evd.cmi kernel/generic.cmi kernel/names.cmi lib/pp.cmi \
+    pretyping/rawterm.cmi pretyping/retyping.cmi kernel/sign.cmi \
+    kernel/term.cmi kernel/type_errors.cmi 
 pretyping/cases.cmi: kernel/environ.cmi pretyping/evarutil.cmi kernel/evd.cmi \
     kernel/names.cmi pretyping/rawterm.cmi kernel/term.cmi 
 pretyping/classops.cmi: library/declare.cmi kernel/environ.cmi kernel/evd.cmi \
@@ -821,8 +825,6 @@ tools/coqdep.cmo: config/coq_config.cmi tools/coqdep_lexer.cmo
 tools/coqdep.cmx: config/coq_config.cmx tools/coqdep_lexer.cmx 
 tools/coqdep_lexer.cmo: config/coq_config.cmi 
 tools/coqdep_lexer.cmx: config/coq_config.cmx 
-tools/gallina.cmo: tools/gallina_lexer.cmo 
-tools/gallina.cmx: tools/gallina_lexer.cmx 
 toplevel/class.cmo: pretyping/classops.cmi kernel/constant.cmi \
     library/declare.cmi kernel/environ.cmi kernel/evd.cmi kernel/generic.cmi \
     library/global.cmi kernel/inductive.cmi kernel/instantiate.cmi \

@@ -114,12 +114,12 @@ and evar_conv_x env isevars pbty term1 term2 =
       (add_conv_pb (pbty,applist(t1,l1),applist(t2,l2)); true)
     else 
       evar_eqappr_x env isevars pbty (t1,l1) (t2,l2)
-	
+
 and evar_eqappr_x env isevars pbty appr1 appr2 =
+  (* Evar must be undefined since we have whd_ised *)
   match (appr1,appr2) with
-    | ((DOPN(Const sp1,al1) as term1,l1), (DOPN(Const sp2,al2) as term2,l2)) ->
-	let f1 () = 
-      	  (ise_undefined isevars term1 or ise_undefined isevars term2) &
+    | ((DOPN(Evar sp1,al1) as term1,l1), (DOPN(Evar sp2,al2) as term2,l2)) ->
+	let f1 () =
 	  if List.length l1 > List.length l2 then 
             let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
             solve_pb env isevars(pbty,applist(term1,deb1),term2)
@@ -129,6 +129,43 @@ and evar_eqappr_x env isevars pbty appr1 appr2 =
 	    solve_pb env isevars(pbty,term1,applist(term2,deb2))
             & list_for_all2eq (evar_conv_x env isevars CONV) l1 rest2
 	and f2 () =
+          (sp1 = sp2)
+	  & (array_for_all2 (evar_conv_x env isevars CONV) al1 al2)  
+	  & (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
+	in 
+	ise_try isevars [f1; f2]
+
+    | ((DOPN(Evar sp1,al1) as term1,l1), (DOPN(Const sp2,al2) as term2,l2)) ->
+	let f1 () =
+	  (List.length l1 <= List.length l2) &
+	  let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
+	  solve_pb env isevars(pbty,term1,applist(term2,deb2))
+          & list_for_all2eq (evar_conv_x env isevars CONV) l1 rest2
+	and f4 () =
+          if evaluable_constant env term2 then
+            evar_eqappr_x env isevars pbty
+              appr1 (evar_apprec env isevars l2 (constant_value env term2))
+          else false
+	in 
+	ise_try isevars [f1; f4]
+
+    | ((DOPN(Const sp1,al1) as term1,l1), (DOPN(Evar sp2,al2) as term2,l2)) ->
+	let f1 () =
+       	  (List.length l2 <= List.length l1) &
+       	  let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
+	  solve_pb env isevars(pbty,applist(term1,deb1),term2)
+          & list_for_all2eq (evar_conv_x env isevars CONV) rest1 l2
+	and f4 () =
+          if evaluable_constant env term1 then
+            evar_eqappr_x env isevars pbty
+              (evar_apprec env isevars l1 (constant_value env term1)) appr2
+          else 
+	    false
+	in 
+	ise_try isevars [f1; f4]
+
+    | ((DOPN(Const sp1,al1) as term1,l1), (DOPN(Const sp2,al2) as term2,l2)) ->
+	let f2 () =
           (sp1 = sp2)
 	  & (array_for_all2 (evar_conv_x env isevars CONV) al1 al2)  
 	  & (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
@@ -147,41 +184,41 @@ and evar_eqappr_x env isevars pbty appr1 appr2 =
           else 
 	    false
 	in 
-	ise_try isevars [f1; f2; f3; f4]
+	ise_try isevars [f2; f3; f4]
 
-    | ((DOPN(Const _,_) as term1,l1),(t2,l2)) ->  
-	let f1 () =
-       	  ise_undefined isevars term1 &
-       	  (List.length l1 <= List.length l2) &
-       	  let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
-	  solve_pb env isevars(pbty,term1,applist(t2,deb2))
-          & list_for_all2eq (evar_conv_x env isevars CONV) l1 rest2
-	and f2 () =
+    | ((DOPN(Evar _,_) as term1,l1),(t2,l2)) ->
+       	(List.length l1 <= List.length l2) &
+       	let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
+	solve_pb env isevars(pbty,term1,applist(t2,deb2))
+        & list_for_all2eq (evar_conv_x env isevars CONV) l1 rest2
+
+    | ((t1,l1),(DOPN(Evar _,_) as t2,l2))  -> 
+       	(List.length l2 <= List.length l1) &
+       	let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
+	solve_pb env isevars(pbty,applist(t1,deb1),t2)
+        & list_for_all2eq (evar_conv_x env isevars CONV) rest1 l2
+
+    | ((DOPN(Const _,_) as term1,l1),(t2,l2)) ->
+	let f3 () =
 	  (try conv_record env isevars (check_conv_record appr1 appr2)
            with _ -> false)
-	and f3 () = 
+	and f4 () = 
 	  evaluable_constant env term1 &
  	  evar_eqappr_x env isevars pbty
             (evar_apprec env isevars l1 (constant_value env term1)) appr2
 	in 
-	ise_try isevars [f1; f2; f3]
+	ise_try isevars [f3; f4]
 	     
     | ((t1,l1),(DOPN(Const _,_) as t2,l2))  -> 
-	let f1 () =
-       	  ise_undefined isevars t2 &
-       	  (List.length l2 <= List.length l1) &
-       	  let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
-	  solve_pb env isevars(pbty,applist(t1,deb1),t2)
-          & list_for_all2eq (evar_conv_x env isevars CONV) rest1 l2
-	and f2 () = 
+	let f3 () = 
 	  (try (conv_record env isevars (check_conv_record appr2 appr1))
            with _ -> false)
-	and f3 () =
+	and f4 () =
           evaluable_constant env t2 &
  	  evar_eqappr_x env isevars pbty
             appr1 (evar_apprec env isevars l2 (constant_value env t2))
 	in 
-	ise_try isevars [f1; f2; f3]
+	ise_try isevars [f3; f4]
 
     | ((DOPN(Abst _,_) as term1,l1),(DOPN(Abst _,_) as term2,l2)) ->
 	let f1 () =

@@ -24,14 +24,6 @@ exception CasesError of env * type_error
 let starts_with_underscore id = 
  let s=string_of_id id in (String.get s 0)='_'
 
-
-let makelist n elem =
- let rec makerec n  =
-   if n=0 then []
-    else elem::(makerec (n-1)) 
- in makerec n 
-
- 
 let rec map_append_vect f v = 
   let length = Array.length v in 
   let rec map_rec i =
@@ -130,7 +122,7 @@ let check_pat_arity env = function
 (* Usage of this function should be avoided, because it requires that the
  * params are infered.
  *)
-let rec constr_of_pat = function
+let rec constr_of_pat isevars env = function
     PatVar (_,Name id) -> VAR id
   | PatVar (_,Anonymous) -> VAR (id_of_string "_")
   (* invalid_arg "constr_of_pat"*)
@@ -139,7 +131,12 @@ let rec constr_of_pat = function
       let mispec = Global.lookup_mind_specif ity in 
       let nparams = mis_nparams mispec in
       let c = mutconstruct_of_constructor c in
-      applist(c, makelist nparams mkExistential @ List.map constr_of_pat args)
+      let exl =
+	list_tabulate
+	  (fun _ ->
+	     fst (new_isevar isevars env (mkCast dummy_sort dummy_sort) CCI))
+	  nparams in
+      applist(c, exl @ List.map (constr_of_pat isevars env) args)
 
 
 
@@ -492,27 +489,6 @@ let check_patt_are_correct ity mat = List.iter (check_pattern ity) mat
   lifted when pushing inthe context. *)
 
 
-(* == functions to deal with names in contexts == *)
-
-(* If cur=(Rel j) then 
- * if env = ENVIRON(sign,[na_h:Th]...[na_j:Tj]...[na_1:T1])
- * then it yields ENVIRON(sign,[na_h:Th]...[Name id:Tj]...[na_1:T1])
- *)
-let change_name_rel env current id =
-  warning "change_name_rel not implemented"; env
-(*
- match current with 
-  (Rel j) -> 
-    if starts_with_underscore id 
-    then env 
-    else let ENVIRON(sign,db) = env in
-     ( match list_chop (j-1) db with
-	   db1,((_,ty)::db2) -> (ENVIRON(sign,db1@(Name id,ty)::db2))
-	 | _ -> assert false)
- |  _  -> env
-*)
- 
-
 (* == Function dealing with constraints in compilation of dep case == *)
 
 let xtra_tm = DOP0(XTRA("TMPATT"))
@@ -651,8 +627,15 @@ let get_names_for_constructor_arg cstr_sp mat =
   List.fold_left egalize_names anonymous_list mat
 *)
 
+let mychange_name_rel env current id =
+  match current with 
+      (Rel j) -> 
+	if starts_with_underscore id 
+	then env 
+	else change_name_rel env j id
+    |  _  -> env
 
-let submat depcase sigma env i ind_data params current mat =
+let submat depcase isevars env i ind_data params current mat =
 (* Futur...
   let concl_realargs = realargs_of_constructor_concl ind_data i in
   let constraints = matching concl_realargs ind_data.realargs in
@@ -671,7 +654,7 @@ let submat depcase sigma env i ind_data params current mat =
 	      List.map (fun id -> VAR id) new_ids
 	  | Some patts ->
 	      patts,
-              List.map constr_of_pat patts in
+              List.map (constr_of_pat isevars env) patts in
       let value =
 	if (is_predicate ind_data) or depcase
 	then applist (ci, params@largs)
@@ -685,7 +668,7 @@ let submat depcase sigma env i ind_data params current mat =
       | PatVar (_,name) ->
 	  let envopt = match name with
 	    | Anonymous -> None
-	    | Name id -> Some (change_name_rel env current id) in
+	    | Name id -> Some (mychange_name_rel env current id) in
 	  (envopt, [build_new_row None name])
       | PatCstr(_,c,largs,alias) when mutconstruct_of_constructor c = ci ->
 	(* Avant: il y aurait eu un problème si un des largs contenait
@@ -699,7 +682,7 @@ let submat depcase sigma env i ind_data params current mat =
 	   fait par "build_new_row" *)
 	  let envopt = match alias with
 	    | Anonymous -> None
-	    | Name id -> Some (change_name_rel env current id) in
+	    | Name id -> Some (mychange_name_rel env current id) in
 	    (envopt,[build_new_row (Some largs) alias])
       | PatCstr _ -> (None,[]) in
 
@@ -899,7 +882,7 @@ let rename_cur_ctxt env cur gd =
     let current = row_current r in
     match current with
       PatVar (_,Name id) when not (starts_with_underscore id) ->
- 	change_name_rel env cur id
+ 	mychange_name_rel env cur id
     | _ -> env
 
 
@@ -1114,32 +1097,56 @@ let rec to_lambda_pred isevars ind_data n env prod =
 (* =================================== *)
 (*   Principal functions               *)
 (* =================================== *)
+let type_one_branch dep env sigma ind_data p im =
+  let i = im + 1 in
+  let {mind=ity;params=params;nparams=nparams} = ind_data in
+  let ct =
+    type_of_constructor env sigma (ith_constructor_of_inductive ity i) in
+  let rec typrec n c =
+    match whd_betadeltaiota env sigma c with 
+      | DOP2(Prod,a1,DLAM(x,a2)) -> DOP2(Prod,a1,DLAM(x,typrec (n+1) a2))
+      | x -> let lAV = destAppL(ensure_appl x) in
+             let (_,vargs) = array_chop (nparams+1) lAV in
+	     let c1 = appvect (lift n p,vargs) in
+	     if dep then 
+	       let co = ith_constructor i ind_data in
+	       applist
+		 (c1,[applist(co,((List.map (lift n) params)@(rel_list 0 n)))])
+	     else c1
+  in 
+  typrec 0 (hnf_prod_applist env sigma "type_case" ct params)
 
-let my_norec_branch_scheme env sigma i mind = 
-  let typc = type_inst_construct env sigma i mind in
-  let rec crec typc =
-    match whd_betadeltaiota env sigma typc with 
-      DOP2(Prod,c,DLAM(name,t)) -> DOP2(Prod,c,DLAM(name,crec t))
-    | (DOPN(AppL,v))  ->  appvect (mkExistential, array_tl v)
-    | _ -> mkExistential
-  in crec typc
+let find_type_case_branches sigma env dep ind_data p =
+  let {nconstr=nconstr;mind=ity;params=params} = ind_data in
+  Array.init nconstr (type_one_branch dep env sigma ind_data p)
 
+(*
+let my_norec_branch_scheme env sigma i ind_data =
+  let typc = type_inst_construct env sigma i (mutind_to_ind mind) in
+  let rec typrec n typc =
+    match whd_betadeltaiota env sigma typc with
+      DOP2(Prod,c,DLAM(name,t)) -> DOP2(Prod,c,DLAM(name,typrec (n+1) t))
+      | x -> let lAV = destAppL(ensure_appl x) in
+             let (_,vargs) = array_chop (nparams+1) lAV in
+             appvect (lift n p,vargs)
+  in
+  typrec 0 (hnf_prod_applist env sigma "type_case" t globargs)
 
-let find_type_case_branches sigma env (current,ind_data,_) p =
+let find_type_case_branches isevars env (current,ind_data,_) p =
   let {fullmind=ct;mind=ity;params=params;realargs=args} = ind_data in
   if not (is_for_mlcase p) then
 
     (* En attendant mieux ... *)
-    let pt = get_type_of env sigma p in
+    let pt = get_type_of env !isevars p in
 
-    let evalpt = nf_ise1 sigma pt in
-    let (_,bty,_)= type_case_branches env sigma ct evalpt p current
+    let evalpt = nf_ise1 !isevars pt in
+    let (_,bty,_)= type_case_branches env !isevars ct evalpt p current
     in bty
   else
-    let build_branch i = my_norec_branch_scheme env sigma i ct in
+    let build_branch i = my_norec_branch_scheme env isevars i ct in
     let lbr = List.map build_branch (interval 1 ind_data.nconstr)
     in  Array.of_list lbr
-
+*)
 
 (* if ityparam :(d_bar:D_bar)s
  * then we abstract the dependencies and the object building the non-binding
@@ -1239,7 +1246,7 @@ and build_dep_branch trad env gd bty (current,ind_data,info) i =
  let ngd =  pop_and_prepend_tomatch lpatt gd in
  let ci_param = applist (ith_constructor i ind_data, params) in
 
- let rnnext_env0,next_mat = submat ngd.case_dep sigma env i 
+ let rnnext_env0,next_mat = submat ngd.case_dep trad.isevars env i 
                                     ind_data params current ngd.mat in
  let next_predicate = insert_constraint env ngd bty.(i-1) 
                                        ((current,info),ci_param)  in
@@ -1317,7 +1324,7 @@ and build_nondep_branch trad env gd next_pred bty
  let lp = List.map (lift k) params in
  let ci = applist (ith_constructor i ind_data, lp@(rel_list 0 k)) in 
 
- let rnnext_env0,next_mat=submat ngd.case_dep !(trad.isevars) next_env i 
+ let rnnext_env0,next_mat=submat ngd.case_dep trad.isevars next_env i 
                                  ind_data lp nncur ngd.mat in
 
  if next_mat = [] then
@@ -1394,7 +1401,7 @@ and match_current trad env (current,ind_data,info as cji) gd =
    build_predicate !(trad.isevars) env cji gd in
 
   (* we build the branches *)
-  let bty = find_type_case_branches !(trad.isevars) env cji p  in
+  let bty = find_type_case_branches !(trad.isevars) env false ind_data p  in
 
   let build_ith_branch gd = build_nondep_branch trad env gd 
                                next_pred bty cji   in
@@ -1416,13 +1423,14 @@ and match_current trad env (current,ind_data,info as cji) gd =
 	    if not (Evarconv.the_conv_x_leq env trad.isevars lft.(i) bty.(i))
 	    then 
 	      let c = nf_ise1 !(trad.isevars) current
-	      and lfi = nf_betaiota env !(trad.isevars) (nf_ise1 !(trad.isevars) lf.(i)) in
+	      and lfi = nf_betaiota env !(trad.isevars) (nf_ise1 !(trad.isevars) lft.(i)) in
 	      error_ill_formed_branch CCI env c i lfi (nf_betaiota env !(trad.isevars) bty.(i))
 	    else check_conv (i+1)
 	in
 	check_conv 0;
         (common_prefix_ctxt (context env) bre1,
-         mkMutCaseA (ci_of_mind (mutind_of_ind ity)) (eta_reduce_if_rel p)
+         mkMutCaseA (ci_of_mind (mutind_of_ind ity))
+	   (eta_reduce_if_rel (nf_ise1 !(trad.isevars) p))
 	   current lf) in
     newenv,
     {uj_val = v;
@@ -1488,7 +1496,7 @@ and match_current_dep trad env (current,ind_data,info as cji) gd =
   let np=whd_constraint p in
   
   (* we build the branches *)
-  let bty = find_type_case_branches !(trad.isevars) nenv cji np  in
+  let bty = find_type_case_branches !(trad.isevars) nenv true ind_data np in
 
   let build_ith_branch env gd = build_dep_branch trad env gd bty cji in
 

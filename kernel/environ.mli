@@ -27,6 +27,7 @@ val var_context : env -> var_context
 val push_var : identifier * typed_type -> env -> env
 val change_hyps : 
   (typed_type signature -> typed_type signature) -> env -> env
+val change_name_rel : env -> int -> identifier -> env
 
 val push_rel : name * typed_type -> env -> env
 

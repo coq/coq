@@ -20,14 +20,11 @@ open Rawterm
 (**********************************************************************)
 (* conversion of references                                           *)
 
-let ids_of_ctxt cl =
+let ids_of_var cl =
   List.map
     (function 
-       | VAR id -> id
-       | Rel n ->
-	   warning "ids_of_ctxt: rel";
-	   id_of_string ("REL "^(string_of_int n))
-       | _-> anomaly "ids_of_ctxt")
+       | RRef (_,RVar id) -> id
+       | _-> anomaly "ids_of_var")
     (Array.to_list cl)
 
 let ast_of_ident id = nvar (string_of_id id)
@@ -94,18 +91,6 @@ let rec ast_of_pattern = function   (* loc is thrown away for printing *)
 
 type used_idents = identifier list
 
-(*
-  let concrete_name (lo,l as ll) n c =
-    if n = Anonymous then
-      if dependent (Rel 1) c then anomaly "Anonymous should be non dependent"
-      else (None,ll)
-    else
-      let l' = match lo with None -> l | Some l0 -> l0@l in
-      let fresh_id = next_name_away n l' in
-      let idopt = if dependent (Rel 1) c then (Some fresh_id) else None in
-      (idopt, (lo,fresh_id::l))
-*)
-
 let occur_id env id0 c =
   let rec occur n = function
     | VAR id             -> id=id0
@@ -137,11 +122,11 @@ let next_name_not_occuring name l env t =
     | Name id   -> next id
     | Anonymous -> id_of_string "_"
 
+(* Remark: Anonymous var may be dependent in Evar's contexts *)
 let concrete_name l env n c =
-  if n = Anonymous then begin
-    if dependent (Rel 1) c then anomaly "Anonymous should be non dependent";
+  if n = Anonymous & not (dependent (Rel 1) c) then
     (None,l)
-  end else
+  else
     let fresh_id = next_name_not_occuring n l env c in
     let idopt = if dependent (Rel 1) c then (Some fresh_id) else None in
     (idopt, fresh_id::l)
@@ -712,8 +697,9 @@ let rec detype avoid env t =
 	 in RRef (dummy_loc, RVar (id_of_string s)))
     | IsMeta n -> RRef (dummy_loc,RMeta n)
     | IsVar id -> RRef (dummy_loc,RVar id)
-    | IsXtra s -> anomaly "bdize: Xtra should no longer occur in constr"
-	(*       ope("XTRA",((str s):: pl@(List.map detype cl)))*)
+    | IsXtra s -> warning "bdize: Xtra should no longer occur in constr";
+	RRef(dummy_loc,RVar (id_of_string ("XTRA"^s)))
+        (* ope("XTRA",((str s):: pl@(List.map detype cl)))*) 
     | IsSort (Prop c) -> RSort (dummy_loc,RProp c)
     | IsSort (Type _) -> RSort (dummy_loc,RType)
     | IsCast (c1,c2) ->
@@ -722,14 +708,18 @@ let rec detype avoid env t =
     | IsLambda (na,ty,c) -> detype_binder BLambda avoid env na ty c
     | IsAppL (f,args) ->
 	RApp (dummy_loc,detype avoid env f,List.map (detype avoid env) args)
-    | IsConst (sp,cl) -> RRef (dummy_loc,RConst (sp,ids_of_ctxt cl))
-    | IsEvar (ev,cl) -> RRef (dummy_loc,REVar (ev,ids_of_ctxt cl))
+    | IsConst (sp,cl) ->
+	RRef(dummy_loc,RConst(sp,ids_of_var (Array.map (detype avoid env) cl)))
+    | IsEvar (ev,cl) ->
+	RRef(dummy_loc,REVar(ev,ids_of_var (Array.map (detype avoid env) cl)))
     | IsAbst (sp,cl) -> 
 	anomaly "bdize: Abst should no longer occur in constr"
     | IsMutInd (sp,tyi,cl) ->
-	RRef (dummy_loc,RInd ((sp,tyi),ids_of_ctxt cl))
-    | IsMutConstruct (sp,tyi,n,cl) -> 
-	RRef (dummy_loc,RConstruct (((sp,tyi),n),ids_of_ctxt cl))
+	let ids = ids_of_var (Array.map (detype avoid env) cl) in
+	RRef (dummy_loc,RInd ((sp,tyi),ids))
+    | IsMutConstruct (sp,tyi,n,cl) ->
+	let ids = ids_of_var (Array.map (detype avoid env) cl) in
+	RRef (dummy_loc,RConstruct (((sp,tyi),n),ids))
     | IsMutCase (annot,p,c,bl) ->
 	let synth_type = synthetize_type () in
 	let tomatch = detype avoid env c in

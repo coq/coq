@@ -21,7 +21,3 @@ val bdize_no_casts : bool -> unit assumptions -> constr -> Coqast.t
 val lookup_name_as_renamed :
   unit assumptions -> constr -> identifier -> int option
 val lookup_index_as_renamed : constr -> int -> int option
-
-(*i This is temporary *)
-val ids_of_ctxt : constr array -> identifier list
-(*i*)
