@@ -181,7 +181,7 @@ GEXTEND Gram
           CDelimiters (loc,key,c) ] ]
   ;
   lconstr:
-    [ "10"
+    [ "10" NONA
       [ "!"; f = global; args = LIST0 constr9 -> CAppExpl (loc, f, args)
 (*
       | "!"; f = global; "with"; b = binding_list ->
@@ -196,7 +196,7 @@ GEXTEND Gram
       | c = constr9 -> (c, None) ] ]
   ;
   constr9:
-    [ [ c1 = constr -> c1
+    [ NONA [ c1 = constr -> c1
       | c1 = constr; "::"; c2 = constr -> CCast (loc, c1, c2) ] ]
   ;
   ne_name_comma_list:
