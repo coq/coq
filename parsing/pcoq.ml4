@@ -309,6 +309,7 @@ module Prim =
     let ident = gec_gen rawwit_ident "ident"
     let natural = gec_gen rawwit_int "natural"
     let integer = gec_gen rawwit_int "integer"
+    let bigint = Gram.Entry.create "Prim.bigint"
     let string = gec_gen rawwit_string "string"
     let reference = make_gen_entry uprim rawwit_ref "reference"
 
@@ -524,6 +525,7 @@ let compute_entry allow_create adjust = function
   | ETConstr (9,_) -> weaken_entry Constr.constr9, None
   | ETConstr (n,q) -> weaken_entry Constr.constr, adjust (n,q)
   | ETIdent -> weaken_entry Constr.ident, None
+  | ETBigint -> weaken_entry Prim.bigint, None
   | ETReference -> weaken_entry Constr.global, None
   | ETPattern -> weaken_entry Constr.pattern, None
   | ETOther (u,n) ->

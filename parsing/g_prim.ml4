@@ -69,7 +69,7 @@ ifdef Quotify then
 open Q
 
 GEXTEND Gram
-  GLOBAL: ident natural integer string preident ast
+  GLOBAL: ident natural integer bigint string preident ast
     astlist qualid reference dirpath identref name base_ident var;
 
  (* Compatibility: Prim.var is a synonym of Prim.ident *)
@@ -96,6 +96,10 @@ GEXTEND Gram
   ;
   natural:
     [ [ i = INT -> local_make_posint i ] ]
+  ;
+  bigint:
+    [ [ i = INT -> Bignat.POS (Bignat.of_string i)
+      | "-"; i = INT -> Bignat.NEG (Bignat.of_string i) ] ]
   ;
   integer:
     [ [ i = INT      -> local_make_posint i
