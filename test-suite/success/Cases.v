@@ -2274,3 +2274,7 @@ end.
 (* ------------------------------------------------------------------ *)
 
 End Sig.
+
+(* Test de la syntaxe avec nombres *)
+Require Arith.
+Check [n] Cases n of 2 => true | _ => false end.
