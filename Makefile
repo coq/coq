@@ -381,7 +381,7 @@ clean::
 
 check:: world
 	cd test-suite; ./check -$(BEST) | tee check.log
-	grep -F 'Error!' test-suite/check.log
+	if grep -F 'Error!' test-suite/check.log ; then false; fi
 
 ###########################################################################
 # theories and states
