@@ -443,8 +443,6 @@ GEXTEND Gram
            pos = OPT [ "["; l = LIST0 natural; "]" -> l ] ->
 	  VernacDeclareImplicits (qid,pos)
 
-      | IDENT "Implicits"; qid = global -> VernacDeclareImplicits (qid,None)
-
       | IDENT "Implicit"; ["Variable"; "Type" | IDENT "Variables"; "Type"];
 	   idl = LIST1 ident; ":"; c = constr -> VernacReserve (idl,c)
 
