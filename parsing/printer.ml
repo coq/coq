@@ -105,6 +105,9 @@ let gentermpr gt =
 let gentermpr_core at_top env t =
   if !Options.v7 then gentermpr (Termast.ast_of_constr at_top env t)
   else Ppconstrnew.pr_lconstr (Constrextern.extern_constr at_top env t)
+let gentypepr_core at_top env t =
+  if !Options.v7 then gentermpr (Termast.ast_of_constr at_top env t)
+  else Ppconstrnew.pr_lconstr (Constrextern.extern_type at_top env t)
 let pr_cases_pattern t =
   if !Options.v7 then gentermpr (Termast.ast_of_cases_pattern t)
   else Ppconstrnew.pr_cases_pattern
@@ -119,7 +122,8 @@ let pr_pattern_env tenv env t =
   
 let prterm_env_at_top env = gentermpr_core true env
 let prterm_env env = gentermpr_core false env
-let prtype_env env typ = prterm_env env typ
+let prtype_env_at_top env = gentypepr_core true env
+let prtype_env env = gentypepr_core false env
 let prjudge_env env j =
   (prterm_env env j.uj_val, prterm_env env j.uj_type)
 
@@ -260,7 +264,7 @@ let pr_context_of env = match Options.print_hyps_limit () with
 let pr_goal g =
   let env = evar_env g in
   let penv = pr_context_of env in
-  let pc = prterm_env_at_top env g.evar_concl in
+  let pc = prtype_env_at_top env g.evar_concl in
   str"  " ++ hv 0 (penv ++ fnl () ++
 		   str (emacs_str (String.make 1 (Char.chr 253)))  ++
                    str "============================" ++ fnl ()  ++
@@ -269,7 +273,7 @@ let pr_goal g =
 (* display the conclusion of a goal *)
 let pr_concl n g =
   let env = evar_env g in
-  let pc = prterm_env_at_top env g.evar_concl in
+  let pc = prtype_env_at_top env g.evar_concl in
   str (emacs_str (String.make 1 (Char.chr 253)))  ++
   str "subgoal " ++ int n ++ str " is:" ++ cut () ++ str" "  ++ pc
 

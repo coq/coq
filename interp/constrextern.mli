@@ -43,6 +43,7 @@ val extern_pattern : env -> names_context -> constr_pattern -> constr_expr
 val extern_constr : bool -> env -> constr -> constr_expr
 val extern_constr_in_scope : bool -> scope_name -> env -> constr -> constr_expr
 val extern_reference : loc -> Idset.t -> global_reference -> reference
+val extern_type : bool -> env -> types -> constr_expr
 
 (* Printing options *)
 val print_implicits : bool ref

@@ -1539,7 +1539,7 @@ let rec extern inctx scopes vars r =
 
   | RProd (loc,Anonymous,t,c) ->
       (* Anonymous product are never factorized *)
-      CArrow (loc,extern_type scopes vars t, extern_type scopes vars c)
+      CArrow (loc,extern_typ scopes vars t, extern_typ scopes vars c)
 
   | RLetIn (loc,na,t,c) ->
       let na = name_app translate_ident na in
@@ -1547,21 +1547,21 @@ let rec extern inctx scopes vars r =
               extern inctx scopes (add_vname vars na) c)
 
   | RProd (loc,na,t,c) ->
-      let t = extern_type scopes vars (anonymize_if_reserved na t) in
+      let t = extern_typ scopes vars (anonymize_if_reserved na t) in
       let (idl,c) = factorize_prod scopes (add_vname vars na) t c in
       CProdN (loc,[(dummy_loc,na)::idl,t],c)
 
   | RLambda (loc,na,t,c) ->
-      let t = extern_type scopes vars (anonymize_if_reserved na t) in
+      let t = extern_typ scopes vars (anonymize_if_reserved na t) in
       let (idl,c) = factorize_lambda inctx scopes (add_vname vars na) t c in
       CLambdaN (loc,[(dummy_loc,na)::idl,t],c)
 
   | RCases (loc,(typopt,rtntypopt),tml,eqns) ->
-      let pred = option_app (extern_type scopes vars) typopt in
+      let pred = option_app (extern_typ scopes vars) typopt in
       let vars' = 
 	List.fold_right (name_fold Idset.add)
 	  (cases_predicate_names tml) vars in
-      let rtntypopt' = option_app (extern_type scopes vars') !rtntypopt in
+      let rtntypopt' = option_app (extern_typ scopes vars') !rtntypopt in
       let tml = List.map (fun (tm,{contents=(na,x)}) ->
         let na' = match na,tm with
             Anonymous, RVar (_,id) when 
@@ -1576,7 +1576,7 @@ let rec extern inctx scopes vars r =
 	    | Anonymous -> RHole (dummy_loc,Evd.InternalHole) 
 	    | Name id -> RVar (dummy_loc,id)) nal in
 	  let t = RApp (dummy_loc,RRef (dummy_loc,IndRef ind),args) in
-	  (extern_type scopes vars t)) x))) tml in
+	  (extern_typ scopes vars t)) x))) tml in
       let eqns = List.map (extern_eqn (typopt<>None) scopes vars) eqns in 
       CCases (loc,(pred,rtntypopt'),tml,eqns)
 
@@ -1591,7 +1591,7 @@ let rec extern inctx scopes vars r =
       msgerrnl (str "Warning: unable to ensure the correctness of the translation of an if-then-else");
       let bv = Array.map (sub_extern (typopt<>None) scopes vars) [|c1;c2|] in
       COrderedCase
-	(loc,IfStyle,option_app (extern_type scopes vars) typopt,
+	(loc,IfStyle,option_app (extern_typ scopes vars) typopt,
          sub_extern false scopes vars tm,Array.to_list bv)
       (* We failed type-checking If and to translate it to CIf *)
       (* try to remove the dependances in branches anyway *)
@@ -1600,18 +1600,18 @@ let rec extern inctx scopes vars r =
   | ROrderedCase (loc,cs,typopt,tm,bv,_) ->
       let bv = Array.map (sub_extern (typopt<>None) scopes vars) bv in
       COrderedCase
-	(loc,cs,option_app (extern_type scopes vars) typopt,
+	(loc,cs,option_app (extern_typ scopes vars) typopt,
          sub_extern false scopes vars tm,Array.to_list bv)
 
   | RLetTuple (loc,nal,(na,typopt),tm,b) ->
       CLetTuple (loc,nal,
-        (Some na,option_app (extern_type scopes (add_vname vars na)) typopt),
+        (Some na,option_app (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars tm,
         extern false scopes (List.fold_left add_vname vars nal) b)
 
   | RIf (loc,c,(na,typopt),b1,b2) ->
       CIf (loc,sub_extern false scopes vars c,
-        (Some na,option_app (extern_type scopes (add_vname vars na)) typopt),
+        (Some na,option_app (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars b1, sub_extern false scopes vars b2)
 
   | RRec (loc,fk,idv,blv,tyv,bv) ->
@@ -1630,7 +1630,7 @@ let rec extern inctx scopes vars r =
                  let (ids,bl) = extern_local_binder scopes vars bl in
                  let vars0 = List.fold_right (name_fold Idset.add) ids vars in
                  let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
-		 (fi,nv.(i), bl, extern_type scopes vars0 ty,
+		 (fi,nv.(i), bl, extern_typ scopes vars0 ty,
                   extern false scopes vars1 def)) idv
 	     in 
 	     CFix (loc,(loc,idv.(n)),Array.to_list listdecl)
@@ -1640,7 +1640,7 @@ let rec extern inctx scopes vars r =
                  let (ids,bl) = extern_local_binder scopes vars blv.(i) in
                  let vars0 = List.fold_right (name_fold Idset.add) ids vars in
                  let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
-		 (fi,bl,extern_type scopes vars0 tyv.(i),
+		 (fi,bl,extern_typ scopes vars0 tyv.(i),
                   sub_extern false scopes vars1 bv.(i))) idv
 	     in
 	     CCoFix (loc,(loc,idv.(n)),Array.to_list listdecl))
@@ -1655,26 +1655,26 @@ let rec extern inctx scopes vars r =
   | RHole (loc,e) -> CHole loc
 
   | RCast (loc,c,t) ->
-      CCast (loc,sub_extern true scopes vars c,extern_type scopes vars t)
+      CCast (loc,sub_extern true scopes vars c,extern_typ scopes vars t)
 
   | RDynamic (loc,d) -> CDynamic (loc,d)
 
-and extern_type (_,scopes) = extern true (Some Symbols.type_scope,scopes)
+and extern_typ (_,scopes) = extern true (Some Symbols.type_scope,scopes)
 
 and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 
 and factorize_prod scopes vars aty = function
   | RProd (loc,(Name id as na),ty,c)
-      when same aty (extern_type scopes vars (anonymize_if_reserved na ty))
+      when same aty (extern_typ scopes vars (anonymize_if_reserved na ty))
 	& not (occur_var_constr_expr id aty) (* avoid na in ty escapes scope *)
 	-> let id = translate_ident id in
            let (nal,c) = factorize_prod scopes (Idset.add id vars) aty c in
            ((loc,Name id)::nal,c)
-  | c -> ([],extern_type scopes vars c)
+  | c -> ([],extern_typ scopes vars c)
 
 and factorize_lambda inctx scopes vars aty = function
   | RLambda (loc,na,ty,c)
-      when same aty (extern_type scopes vars (anonymize_if_reserved na ty))
+      when same aty (extern_typ scopes vars (anonymize_if_reserved na ty))
 	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)
 	-> let na = name_app translate_ident na in
            let (nal,c) =
@@ -1693,7 +1693,7 @@ and extern_local_binder scopes vars = function
       
   | (na,None,ty)::l ->
       let na = name_app translate_ident na in
-      let ty = extern_type scopes vars (anonymize_if_reserved na ty) in
+      let ty = extern_typ scopes vars (anonymize_if_reserved na ty) in
       (match extern_local_binder scopes (name_fold Idset.add na vars) l with
           (ids,LocalRawAssum(nal,ty')::l)
             when same ty ty' &
@@ -1758,7 +1758,7 @@ let extern_rawconstr vars c =
   extern false (None,Symbols.current_scopes()) vars c
 
 let extern_rawtype vars c =
-  extern_type (None,Symbols.current_scopes()) vars c
+  extern_typ (None,Symbols.current_scopes()) vars c
 
 let extern_cases_pattern vars p = 
   extern_cases_pattern_in_scope (None,Symbols.current_scopes()) vars p
@@ -1769,16 +1769,21 @@ let extern_cases_pattern vars p =
 let loc = dummy_loc (* for constr and pattern, locations are lost *)
 
 let extern_constr_gen at_top scopt env t =
-  let vars = vars_of_env env in
   let avoid = if at_top then ids_of_context env else [] in
-  extern (not at_top) (scopt,Symbols.current_scopes()) vars
-    (Detyping.detype (at_top,env) avoid (names_of_rel_context env) t)
+  let r = Detyping.detype (at_top,env) avoid (names_of_rel_context env) t in
+  let vars = vars_of_env env in
+  extern (not at_top) (scopt,Symbols.current_scopes()) vars r
 
 let extern_constr_in_scope at_top scope env t =
   extern_constr_gen at_top (Some scope) env t
 
 let extern_constr at_top env t =
   extern_constr_gen at_top None env t
+
+let extern_type at_top env t =
+  let avoid = if at_top then ids_of_context env else [] in
+  let r = Detyping.detype (at_top,env) avoid (names_of_rel_context env) t in
+  extern_rawtype (vars_of_env env) r
 
 (******************************************************************)
 (* Main translation function from pattern -> constr_expr *)
