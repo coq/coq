@@ -331,6 +331,8 @@ let get_current_context () =
 
 let strict_check = ref false
 
+let adjust_loc loc = if !strict_check then dummy_loc else loc
+
 (* Globalize a name which must be bound -- actually just check it is bound *)
 let intern_hyp ist (loc,id as locid) =
   let (_,env) = get_current_context () in
@@ -419,9 +421,7 @@ let intern_constr_with_bindings ist (c,bl) =
 
 let intern_clause_pattern ist (l,occl) =
   let rec check = function
-    | (hyp,l) :: rest -> 
-	let (_loc,_ as id) = skip_metaid hyp in
-	(intern_hyp ist id,l)::(check rest)
+    | (hyp,l) :: rest -> (intern_hyp ist (skip_metaid hyp),l)::(check rest)
     | [] -> []
   in (l,check occl)
 
@@ -429,10 +429,10 @@ let intern_clause_pattern ist (l,occl) =
 let intern_induction_arg ist = function
   | ElimOnConstr c -> ElimOnConstr (intern_constr ist c)
   | ElimOnAnonHyp n as x -> x
-  | ElimOnIdent (_loc,id) as x ->
+  | ElimOnIdent (loc,id) as x ->
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
-	ElimOnConstr (intern_constr ist (CRef (Ident (loc,id))))
+	ElimOnConstr (intern_constr ist (CRef (Ident (dummy_loc,id))))
       else
 	ElimOnIdent (loc,id)
 
@@ -478,12 +478,8 @@ let intern_redexp ist = function
 
 (* Interprets an hypothesis name *)
 let intern_hyp_location ist = function
-  | InHyp id ->
-      let (_loc,_ as id) = skip_metaid id in
-      InHyp (intern_hyp ist id)
-  | InHypType id -> 
-      let (_loc,_ as id) = skip_metaid id in
-      InHypType (intern_hyp ist id)
+  | InHyp id -> InHyp (intern_hyp ist (skip_metaid id))
+  | InHypType id -> InHypType (intern_hyp ist (skip_metaid id))
 
 (* Reads a pattern *)
 let intern_pattern evc env lfun = function
@@ -631,9 +627,9 @@ let rec intern_atomic lf ist x =
   | TacTransitivity c -> TacTransitivity (intern_constr ist c)
 
   (* For extensions *)
-  | TacExtend (_loc,opn,l) ->
+  | TacExtend (loc,opn,l) ->
       let _ = lookup_tactic opn in
-      TacExtend (loc,opn,List.map (intern_genarg ist) l)
+      TacExtend (adjust_loc loc,opn,List.map (intern_genarg ist) l)
   | TacAlias (loc,s,l,body) ->
       let (l1,l2) = ist.ltacvars in
       let ist' = { ist with ltacvars = ((List.map fst l)@l1,l2) } in
@@ -644,10 +640,10 @@ let rec intern_atomic lf ist x =
 and intern_tactic ist tac = (snd (intern_tactic_seq ist tac) : glob_tactic_expr)
 
 and intern_tactic_seq ist = function
-  | TacAtom (_loc,t) ->
+  | TacAtom (loc,t) ->
       let lf = ref ist.ltacvars in
       let t = intern_atomic lf ist t in
-      !lf, TacAtom (loc, t)
+      !lf, TacAtom (adjust_loc loc, t)
   | TacFun tacfun -> ist.ltacvars, TacFun (intern_tactic_fun ist tacfun)
   | TacLetRecIn (lrc,u) ->
       let names = extract_names lrc in
@@ -706,12 +702,14 @@ and intern_tacarg strict ist = function
   | MetaIdArg (loc,s) ->
       (* $id can occur in Grammar tactic... *)
       let id = id_of_string s in
-      if find_ltacvar id ist then Reference (ArgVar (dummy_loc,strip_meta id))
+      if find_ltacvar id ist
+      then Reference (ArgVar (adjust_loc loc,strip_meta id))
       else error_syntactic_metavariables_not_allowed loc
   | TacCall (loc,f,l) ->
       TacCall (loc,
         intern_tactic_reference ist f,
         List.map (intern_tacarg !strict_check ist) l)
+  | TacFreshId _ as x -> x
   | Tacexp t -> Tacexp (intern_tactic ist t)
   | TacDynamic(loc,t) as x ->
       (match tag t with
@@ -738,7 +736,7 @@ and intern_genarg ist x =
   | IntArgType -> in_gen globwit_int (out_gen rawwit_int x)
   | IntOrVarArgType ->
       let f = function
-	| ArgVar (_loc,id) -> ArgVar (intern_hyp ist (loc,id))
+	| ArgVar id -> ArgVar (intern_hyp ist id)
 	| ArgArg n as x -> x in
       in_gen globwit_int_or_var (f (out_gen rawwit_int_or_var x))
   | StringArgType ->
@@ -901,19 +899,6 @@ let constr_to_qid loc c =
   try shortest_qualid_of_global Idset.empty (reference_of_constr c)
   with _ -> invalid_arg_loc (loc, "Not a global reference")
 
-(* Check for LetTac *)
-let check_clause_pattern ist gl (l,occl) =
-  let sign = pf_hyps gl in
-  let rec check acc = function
-    | ((_,hyp),l) :: rest ->
-	if List.mem hyp acc then
-	  error ("Hypothesis "^(string_of_id hyp)^" occurs twice");
-	if not (mem_named_context hyp sign) then
-	  error ("No such hypothesis: " ^ (string_of_id hyp));
-	(hyp,l)::(check (hyp::acc) rest)
-    | [] -> []
-  in (l,check [] occl)
-
 (* Debug reference *)
 let debug = ref DebugOff
 
@@ -982,8 +967,15 @@ let eval_name ist = function
   | Anonymous -> Anonymous
   | Name id -> Name (eval_ident ist id)
 
-(* To avoid to move to much simple functions in the big recursive block *)
-let forward_vcontext_interp = ref (fun ist v -> failwith "not implemented")
+let interp_clause_pattern ist gl (l,occl) =
+  let rec check acc = function
+    | (hyp,l) :: rest ->
+	let hyp = interp_hyp ist gl hyp in
+	if List.mem hyp acc then
+	  error ("Hypothesis "^(string_of_id hyp)^" occurs twice");
+	(hyp,l)::(check (hyp::acc) rest)
+    | [] -> []
+  in (l,check [] occl)
 
 let interp_pure_qualid is_applied env (loc,qid) =
   try VConstr (constr_of_reference (find_reference env qid))
@@ -1237,6 +1229,9 @@ and interp_tacarg ist gl = function
       and largs = List.map (interp_tacarg ist gl) l in
       List.iter check_is_value largs;
       interp_app ist gl fv largs loc
+  | TacFreshId idopt -> 
+      let s = match idopt with None -> "H" | Some s -> s in
+      VIdentifier (Tactics.fresh_id [] (id_of_string s) gl)
   | Tacexp t -> val_interp ist gl t
   | TacDynamic(_,t) ->
       let tg = (tag t) in
@@ -1576,7 +1571,7 @@ and interp_atomic ist gl = function
   | TacGeneralize cl -> h_generalize (List.map (pf_interp_constr ist gl) cl)
   | TacGeneralizeDep c -> h_generalize_dep (pf_interp_constr ist gl c)
   | TacLetTac (id,c,clp) ->
-      let clp = check_clause_pattern ist gl clp in
+      let clp = interp_clause_pattern ist gl clp in
       h_let_tac (eval_ident ist id) (pf_interp_constr ist gl c) clp
   | TacInstantiate (n,c) -> h_instantiate n (pf_interp_constr ist gl c)
 
@@ -1890,16 +1885,14 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
 and subst_tactic_fun subst (var,body) = (var,subst_tactic subst body)
 
 and subst_tacarg subst = function
-  | TacVoid -> TacVoid
   | Reference r -> Reference (subst_or_var (subst_reference subst) r)
-  | Identifier id -> Identifier id
-  | Integer n -> Integer n
   | ConstrMayEval c -> ConstrMayEval (subst_raw_may_eval subst c)
   | MetaIdArg (_loc,_) -> assert false
   | TacCall (_loc,f,l) ->
       TacCall (_loc,
         subst_or_var (subst_reference subst) f,
 	List.map (subst_tacarg subst) l)
+  | (TacVoid | Identifier _ | Integer _ | TacFreshId _) as x -> x
   | Tacexp t -> Tacexp (subst_tactic subst t)
   | TacDynamic(_,t) as x ->
       (match tag t with
