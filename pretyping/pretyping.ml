@@ -43,6 +43,27 @@ let lift_context n l =
   let k = List.length l in 
   list_map_i (fun i (name,c) -> (name,liftn n (k-i) c)) 0 l
 
+(* Tells if a given predicate in v7 syntax is dependent or not *)
+
+let is_dep_arity env kelim predty nodep_ar = 
+  let rec srec pt nodep_ar =
+    let pt' = whd_betadeltaiota env Evd.empty pt in
+    match kind_of_term pt', kind_of_term nodep_ar with
+      | Prod (_,a1,a2), Prod (_,a1',a2') -> srec a2 a2'
+      | Prod (_,a1,a2), _ -> true
+      | _ -> false in 
+  srec predty nodep_ar
+
+let is_dependent_elimination env predty indf =
+  let (ind,params) = dest_ind_family indf in
+  let (_,mip) = Inductive.lookup_mind_specif env ind in
+  let kelim = mip.mind_kelim in
+  let arsign,s = get_arity env indf in
+  let glob_t = it_mkProd_or_LetIn (mkSort s) arsign in
+  is_dep_arity env kelim predty glob_t
+
+(* Interpret v7 Match construct *)
+
 let transform_rec loc env sigma (pj,c,lf) indt = 
   let p = pj.uj_val in
   let (indf,realargs) = dest_ind_type indt in

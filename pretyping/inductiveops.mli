@@ -74,9 +74,6 @@ val find_inductive   : env -> evar_map -> constr -> inductive * constr list
 val find_coinductive : env -> evar_map -> constr -> inductive * constr list
 
 (********************)
-(* Determines if a case predicate type corresponds to dependent elimination *)
-val is_dependent_elimination :
-  env -> types -> inductive_family -> bool
 
 (* Builds the case predicate arity (dependent or not) *)
 val arity_of_case_predicate :
