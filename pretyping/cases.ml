@@ -23,26 +23,31 @@ open Evarconv
 let mkExistential isevars env = new_isevar isevars env dummy_sort CCI
 
 let norec_branch_scheme env isevars cstr =
-  it_mkProd_or_LetIn (mkExistential isevars env) cstr.cs_args 
+  let rec crec env = function
+    | d::rea -> mkProd_or_LetIn d (crec (push_rel d env) rea)
+    | [] -> mkExistential isevars env in 
+  crec env (List.rev cstr.cs_args)
 
 let rec_branch_scheme env isevars ((sp,j),_) recargs cstr =
-  let rec crec (args,recargs) = 
+  let rec crec env (args,recargs) = 
     match args, recargs with 
-      | (name,None,c)::rea,(ra::reca) -> 
+      | (name,None,c as d)::rea,(ra::reca) -> 
 	  let d =
  	    match ra with 
-	      | Mrec k when k=j -> 
-		  mkArrow (mkExistential isevars env)
-		    (crec (List.rev (lift_rel_context 1 (List.rev rea)),reca))
-              | _ -> crec (rea,reca) in
+	      | Mrec k when k=j ->
+		  let t = mkExistential isevars env in
+		  mkArrow t
+		    (crec (push_rel_assum (Anonymous,t) env)
+		       (List.rev (lift_rel_context 1 (List.rev rea)),reca))
+              | _ -> crec (push_rel d env) (rea,reca) in
           mkProd (name, body_of_type c, d)
 
-      | (name,Some d,c)::rea, reca -> 
-	  mkLetIn (name, d, body_of_type c, crec (rea,reca))
+      | (name,Some b,c as d)::rea, reca -> 
+	  mkLetIn (name,b,body_of_type c,crec (push_rel d env) (rea,reca))
       | [],[] -> mkExistential isevars env
       | _ -> anomaly "rec_branch_scheme"
   in 
-  crec (List.rev cstr.cs_args,recargs) 
+  crec env (List.rev cstr.cs_args,recargs) 
     
 let branch_scheme env isevars isrec (IndFamily (mis,params) as indf) =
   let cstrs = get_constructors indf in 
@@ -606,8 +611,8 @@ let infer_predicate env isevars typs cstrs (IndType (indf,_) as indt) =
       let predbody = mkMutCase (caseinfo, predpred, mkRel 1, brs) in
       let pred = it_mkLambda_or_LetIn (lift (List.length sign) typn) sign in
       (* "TODO4-2" *)
-      error "General inference of annotation not yet implemented; \
-             you need to give the predicate";
+      error "Unable to infer a Cases predicate\n\
+Either there is a type incompatiblity or the problem involves dependencies";
       (true,pred)
 
 (* Propagation of user-provided predicate through compilation steps *)
