@@ -16,7 +16,7 @@ Tactics
 - New tactic "ClearBody H" to clear the body of definitions in local context
 - New tactic "Assert H := c" for forward reasoning
 - Slight improvement in naming strategy for NewInduction/NewDestruct
-- Intuition/Tauto does not perform useless unfolding
+- Intuition/Tauto do not perform useless unfolding and work up to conversion
 
 Standard library
 
@@ -56,6 +56,7 @@ Incompatibilities
 - Extra parentheses may exceptionally be needed in tactic definitions.
 - Coq extensions written in Ocaml need to be updated (see dev/changements.txt
   for a description of the main changes in the interface files of V7.2)
+- New behaviour of Intuition/Tauto may exceptionally lead to incompatibilities
 
 ----------------------------------------------------------------------------
 Changes from V6.3.1 and V7.0 to V7.1
