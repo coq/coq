@@ -48,10 +48,8 @@ GEXTEND Gram
           let id2 = Ast.coerce_to_var "lc2" lc2 in
             <:ast< (PRODLIST $c [$id1][$id2]($SLAM $idl $body)) >>
       | "("; lc1 = lconstr; ")" -> lc1
-(*
       | "("; lc1 = lconstr; ")"; "@"; "["; cl = ne_constr_list; "]" ->
           <:ast< (XTRA"$SOAPP" $lc1 ($LIST $cl)) >>
-*)
       | IDENT "Fix"; id = ident; "{"; fbinders = fixbinders; "}" ->
           <:ast< (FIX $id ($LIST $fbinders)) >>
       | IDENT "CoFix"; id = ident; "{"; fbinders = cofixbinders; "}" ->

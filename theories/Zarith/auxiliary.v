@@ -203,7 +203,7 @@ Theorem dec_ge:(x,y:nat)(decidable (ge x y)).
 Intros x y; Unfold ge; Apply dec_le.
 Save.
 
-Theorem not_not : (P:Prop)(decidable P) -> (~~P) -> P.
+Theorem not_not : (P:Prop)(decidable P) -> (~(~P)) -> P.
 Unfold decidable; Tauto. Save.
 
 Theorem not_or : (A,B:Prop) ~(A\/B) -> ~A /\ ~B.

@@ -213,7 +213,7 @@ let translucent_abst env = function
 
 let abst_value env = function
   | DOPN(Abst sp, args) ->
-    contract_abstraction (lookup_abst sp env) args
+      contract_abstraction (lookup_abst sp env) args
   | _ -> invalid_arg "abst_value"
 
 let defined_constant env = function

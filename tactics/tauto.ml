@@ -52,8 +52,8 @@ let true_pattern = put_pat mmk "True"
 let and_pattern   = put_pat mmk "(and ? ?)"
 let or_pattern    = put_pat mmk "(or ? ?)"
 let eq_pattern    = put_pat mmk "(eq ? ? ?)"
-let pi_pattern    = put_pat mmk "(x:?)((?)@[x])"
-let imply_pattern = put_pat mmk "?1->?2"
+let pi_pattern    = put_pat mmk "(x : ?)((?)@[x])"
+let imply_pattern = put_pat mmk "?1 -> ?2"
 let iff_pattern   = put_pat mmk "(iff ? ?)"
 let not_pattern   = put_pat mmk "(not ?1)"
 let mkIMP a b     = soinstance imply_pattern [a;b]    
@@ -120,7 +120,7 @@ let dyck_imply_intro = (dImp None)
     --------------
     A->B,A,Gamma |- G  (A Atomique)
  *)
-let atomic_imply_bot_pattern = put_pat mmk "?1->?2"
+let atomic_imply_bot_pattern = put_pat mmk "?1 -> ?2"
 
 let atomic_imply_step cls gls =
   let mvb = somatch (clause_type cls gls) atomic_imply_bot_pattern in 
@@ -190,7 +190,7 @@ let back_thru_1 id =
 
 let exact_last_hyp = onLastHyp (fun h -> exact (VAR (out_some h)))
 
-let imply_imply_bot_pattern = put_pat mmk "(?1->?2)->?3"
+let imply_imply_bot_pattern = put_pat mmk "(?1 -> ?2) -> ?3"
 
 let imply_imply_step cls gls =
   let h0 = out_some cls in (* (C->D)->B *)

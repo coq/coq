@@ -321,7 +321,7 @@ let match_with_equation  t =
 let is_equation t = op2bool (match_with_equation  t)
 
 let match_with_nottype t =
-  let notpat = put_pat mmk "(?1->?2)" in 
+  let notpat = put_pat mmk "(?1 -> ?2)" in 
   try 
     (match dest_somatch t notpat with
        | [arg;mind] when is_empty_type mind -> Some (mind,arg)
