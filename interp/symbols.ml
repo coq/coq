@@ -413,17 +413,17 @@ let find_class t =
     | Sort _ -> CL_SORT
     |  _ -> raise Not_found
 
-let rec compute_ref_arguments_scope t =
+let rec compute_arguments_scope t =
   match kind_of_term (Reductionops.whd_betaiotazeta t) with
     | Prod (_,t,u) ->
 	let sc =
 	  try Some (find_class_scope (find_class t)) with Not_found -> None in
-	sc :: compute_ref_arguments_scope u
+	sc :: compute_arguments_scope u
     | _ -> []
 
 let declare_ref_arguments_scope ref =
   let t = Global.type_of_global ref in
-  declare_arguments_scope ref (compute_ref_arguments_scope t)
+  declare_arguments_scope ref (compute_arguments_scope t)
 
 (********************************)
 (* Encoding notations as string *)

@@ -128,6 +128,8 @@ val find_arguments_scope : global_reference -> scope_name option list
 val declare_class_scope : scope_name -> Classops.cl_typ -> unit
 val declare_ref_arguments_scope : global_reference -> unit
 
+val compute_arguments_scope : Term.types -> scope_name option list
+
 (* Building notation key *)
 
 type symbol =
