@@ -236,9 +236,10 @@ its expanded form.
 \subsection{Pattern-matching on boolean values: the {\tt if} expression
 \index{if@{\tt if ... then ... else}}}
 
-For inductive types with exactly two constructors, it is possible to
-use a {\tt if ... then ... else} notation. For instance, the
-definition
+For inductive types with exactly two constructors and for
+pattern-matchings expressions which do not depend on the arguments of
+the constructors, it is possible to use a {\tt if ... then ... else}
+notation. For instance, the definition
 
 \begin{coq_example}
 Definition not (b:bool) :=
@@ -256,6 +257,32 @@ Reset not.
 \begin{coq_example}
 Definition not (b:bool) := if b then false else true.
 \end{coq_example}
+
+More generally, for an inductive type with constructors {\tt C$_1$}
+and {\tt C$_2$}, we have the following equivalence
+
+\smallskip
+
+{\tt if {\term} \zeroone{\ifitem} then {\term}$_1$ else {\term}$_2$} $\equiv$
+\begin{tabular}[c]{l}
+{\tt match {\term} \zeroone{\ifitem} with}\\
+{\tt \verb!|! C$_1$ \_ {\ldots} \_ \verb!=>! {\term}$_1$} \\
+{\tt \verb!|! C$_2$ \_ {\ldots} \_ \verb!=>! {\term}$_2$} \\
+{\tt end}
+\end{tabular}
+
+Here is an example.
+
+\begin{coq_example}
+Check (fun x (H:{x=0}+{x<>0}) =>
+  match H with
+  | left _ => true
+  | right _ => false
+  end).
+\end{coq_example}
+
+Notice that the printing uses the {\tt if} syntax because {\tt sumbool} is
+declared as such (see section \ref{printing-options}).
 
 \subsection{Irrefutable patterns: the destructuring {\tt let}
 \index{let in@{\tt let ... in}}
@@ -295,6 +322,13 @@ can be put in constructor form. Otherwise, reduction is blocked.
 The pretty-printing of a definition by matching on a
 irrefutable pattern can either be done using {\tt match} or the {\tt
 let} construction (see Section~\ref{printing-options}).
+
+The general equivalence for an inductive type with one constructors {\tt C} is
+
+\smallskip
+{\tt let ({\ident}$_1$,\ldots,{\ident}$_n$) \zeroone{\ifitem} := {\term} in {\term}'} \\
+$\equiv\;$
+{\tt match {\term} \zeroone{\ifitem} with \verb!|! C {\ident}$_1$ {\ldots} {\ident}$_n$ \verb!=>! {\term}' end}
 
 \subsection{Options for pretty-printing of {\tt match}
 \label{printing-options}}
