@@ -99,11 +99,6 @@ let type_of_inductive env sigma i =
 
 (* Constructors. *)
 
-(*
-let type_mconstructs env sigma mind =
-  mis_type_mconstructs (lookup_mind_specif mind env)
-*)
-
 let type_mconstruct env sigma i mind =
   mis_type_mconstruct i (lookup_mind_specif mind env)
 
@@ -167,8 +162,8 @@ in
   try srec (pt,t)
   with Arity kinds ->
     let listarity =
-      (List.map (make_arity env sigma true indf) kelim)
-      @(List.map (make_arity env sigma false indf) kelim)
+      (List.map (make_arity env true indf) kelim)
+      @(List.map (make_arity env false indf) kelim)
     in 
     let ind = mis_inductive (fst (dest_ind_family indf)) in
     error_elim_arity CCI env ind listarity c p pt kinds
@@ -176,7 +171,7 @@ in
 
 let find_case_dep_nparams env sigma (c,p) (IndFamily (mis,_) as indf) typP =
   let kelim = mis_kelim mis in
-  let arsign,s = get_arity env sigma indf in
+  let arsign,s = get_arity indf in
   let glob_t = prod_it (mkSort s) arsign in
   let (dep,_) = is_correct_arity env sigma kelim (c,p) indf (typP,glob_t) in
   dep

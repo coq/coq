@@ -402,7 +402,7 @@ let type_one_constructor env_ar nparams arsort c =
 
 let type_one_inductive i env_ar env_par nparams ninds (id,ar,cnames,vc) =
   let arsort = sort_of_arity env_ar ar in
-  let (constrsinfos,jlc,cst') = 
+  let (constrsinfos,jlc,cst) = 
     List.fold_right
       (fun c (infosl,jl,cst) -> 
 	 let (infos,jc,cst') = type_one_constructor env_ar nparams arsort c in
@@ -413,7 +413,7 @@ let type_one_inductive i env_ar env_par nparams ninds (id,ar,cnames,vc) =
   let vc' = Array.of_list jlc in
   let issmall,isunit = small_unit constrsinfos (env_par,nparams,ar) in
   let (_,tyar) = lookup_rel (ninds+1-i) env_ar in
-  ((id,tyar,cnames,issmall,isunit,vc'), cst')
+  ((id,tyar,cnames,issmall,isunit,vc'), cst)
 
 let add_mind sp mie env =
   mind_check_names mie;
