@@ -4,7 +4,9 @@ Métathéorie
 
 Parsing
 
-- Le Lexeur considère maintenant comme token toute suite de symboles.
+- Le Lexeur considère maintenant comme token toute suite de symboles
+(source d'incompatibilité : il faut insérer des espaces entre tokens
+spéciaux consécutifs)
 
 - "command" in grammars and quotations is now "constr" as in
   pretty-printing rules
