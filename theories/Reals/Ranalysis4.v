@@ -432,8 +432,11 @@ Match trm With
 |[sinh] -> Idtac
 |[exp] -> Idtac
 |[Rsqr] -> Idtac
+|[sqrt] -> Idtac
 |[id] -> Idtac
 |[(fct_cte ?)] -> Idtac
+|[(pow_fct ?)] -> Idtac
+|[Rabsolu] -> Idtac
 |[?1] -> Let p = ?1 In
  (Match Context With
  |[_:(derivable p)|- ?] -> Idtac
@@ -509,6 +512,7 @@ Match trm With
 |[Rsqr] -> Idtac
 |[id] -> Idtac
 |[(fct_cte ?)] -> Idtac
+|[(pow_fct ?)] -> Idtac
 |[sqrt] ->
  (Match Context With
  |[|-(derivable_pt ? ?)] -> Cut ``0<pt``; [Intro | Try Assumption]
@@ -529,40 +533,6 @@ Match trm With
  |[|-(continuity_pt ? ?)] -> Cut True -> (continuity_pt p pt); [Intro HYPPD; Cut (continuity_pt p pt); [Intro; Clear HYPPD | Apply HYPPD; Clear HYPPD; Trivial] | Idtac]
  |[|-(eqT ? (derive_pt ? ? ?) ?)] -> Cut True -> (derivable_pt p pt); [Intro HYPPD; Cut (derivable_pt p pt); [Intro; Clear HYPPD | Apply HYPPD; Clear HYPPD; Trivial] | Idtac]
  | _ -> Idtac).
-
-(**********)
-Recursive Tactic Definition IsDiff_glob :=
-Match Context With
- (* fonctions de base *)
-  [|-(derivable Rsqr)] -> Apply derivable_Rsqr
- |[|-(derivable id)] -> Apply derivable_id
- |[|-(derivable (fct_cte ?))] -> Apply derivable_const
- |[|-(derivable sin)] -> Apply derivable_sin
- |[|-(derivable cos)] -> Apply derivable_cos
- |[|-(derivable cosh)] -> Apply derivable_cosh
- |[|-(derivable sinh)] -> Apply derivable_sinh
- |[|-(derivable exp)] -> Apply derivable_exp
- |[|-(derivable (pow_fct ?))] -> Unfold pow_fct; Apply derivable_pow
-  (* regles de differentiabilite *)
-  (* PLUS *)
- |[|-(derivable (plus_fct ?1 ?2))] -> Apply (derivable_plus ?1 ?2); IsDiff_glob
-  (* MOINS *)
- |[|-(derivable (minus_fct ?1 ?2))] -> Apply (derivable_minus ?1 ?2); IsDiff_glob
-  (* OPPOSE *)
- |[|-(derivable (opp_fct ?1))] -> Apply (derivable_opp ?1); IsDiff_glob
-  (* MULTIPLICATION PAR UN SCALAIRE *)
- |[|-(derivable (mult_real_fct ?1 ?2))] -> Apply (derivable_scal ?2 ?1); IsDiff_glob
-  (* MULTIPLICATION *)
- |[|-(derivable (mult_fct ?1 ?2))] -> Apply (derivable_mult ?1 ?2); IsDiff_glob
-  (* DIVISION *)
- |[|-(derivable (div_fct ?1 ?2))] -> Apply (derivable_div ?1 ?2); [IsDiff_glob | IsDiff_glob | Try Assumption Orelse Unfold plus_fct mult_fct div_fct minus_fct opp_fct inv_fct id fct_cte comp pow_fct]
-  (* INVERSION *)
- |[|-(derivable (inv_fct ?1))] -> Apply (derivable_inv ?1); [Try Assumption Orelse Unfold plus_fct mult_fct div_fct minus_fct opp_fct inv_fct id fct_cte comp pow_fct | IsDiff_glob]
-  (* COMPOSITION *)
- |[|-(derivable (comp ?1 ?2))] -> Apply (derivable_comp ?2 ?1); IsDiff_glob
- |[_:(derivable ?1)|-(derivable ?1)] -> Assumption
- |[|-True->(derivable ?)] -> Intro HypTruE; Clear HypTruE; IsDiff_glob
- | _ -> Try Unfold plus_fct mult_fct div_fct minus_fct opp_fct inv_fct id fct_cte comp pow_fct.
  
 (**********)
 Recursive Tactic Definition IsDiff_pt :=
@@ -602,39 +572,39 @@ Match Context With
 | _ -> Try Unfold plus_fct mult_fct div_fct minus_fct opp_fct inv_fct id fct_cte comp pow_fct.
 
 (**********)
-Recursive Tactic Definition IsCont_glob :=
+Recursive Tactic Definition IsDiff_glob :=
 Match Context With
-  (* fonctions de base *)
-  [|-(continuity Rsqr)] -> Apply derivable_continuous; Apply derivable_Rsqr
- |[|-(continuity id)] -> Apply derivable_continuous; Apply derivable_id
- |[|-(continuity (fct_cte ?))] -> Apply derivable_continuous; Apply derivable_const
- |[|-(continuity sin)] -> Apply derivable_continuous; Apply derivable_sin
- |[|-(continuity cos)] -> Apply derivable_continuous; Apply derivable_cos
- |[|-(continuity exp)] -> Apply derivable_continuous; Apply derivable_exp
- |[|-(continuity (pow_fct ?))] -> Unfold pow_fct; Apply derivable_continuous; Apply derivable_pow
- |[|-(continuity sinh)] -> Apply derivable_continuous; Apply derivable_sinh
- |[|-(continuity cosh)] -> Apply derivable_continuous; Apply derivable_cosh
- |[|-(continuity Rabsolu)] -> Apply continuity_Rabsolu
- (* regles de continuite *)
- (* PLUS *)
-|[|-(continuity (plus_fct ?1 ?2))] -> Apply (continuity_plus ?1 ?2); Try IsCont_glob Orelse Assumption
- (* MOINS *)
-|[|-(continuity (minus_fct ?1 ?2))] -> Apply (continuity_minus ?1 ?2); Try IsCont_glob Orelse Assumption
- (* OPPOSE *)
-|[|-(continuity (opp_fct ?1))] -> Apply (continuity_opp ?1); Try IsCont_glob Orelse Assumption
- (* INVERSE *)
-|[|-(continuity (inv_fct ?1))] -> Apply (continuity_inv ?1); Try IsCont_glob Orelse Assumption
- (* MULTIPLICATION PAR UN SCALAIRE *)
-|[|-(continuity (mult_real_fct ?1 ?2))] -> Apply (continuity_scal ?2 ?1); Try IsCont_glob Orelse Assumption
- (* MULTIPLICATION *)
-|[|-(continuity (mult_fct ?1 ?2))] -> Apply (continuity_mult ?1 ?2); Try IsCont_glob Orelse Assumption
+ (* fonctions de base *)
+  [|-(derivable Rsqr)] -> Apply derivable_Rsqr
+ |[|-(derivable id)] -> Apply derivable_id
+ |[|-(derivable (fct_cte ?))] -> Apply derivable_const
+ |[|-(derivable sin)] -> Apply derivable_sin
+ |[|-(derivable cos)] -> Apply derivable_cos
+ |[|-(derivable cosh)] -> Apply derivable_cosh
+ |[|-(derivable sinh)] -> Apply derivable_sinh
+ |[|-(derivable exp)] -> Apply derivable_exp
+ |[|-(derivable (pow_fct ?))] -> Unfold pow_fct; Apply derivable_pow
+  (* regles de differentiabilite *)
+  (* PLUS *)
+ |[|-(derivable (plus_fct ?1 ?2))] -> Apply (derivable_plus ?1 ?2); IsDiff_glob
+  (* MOINS *)
+ |[|-(derivable (minus_fct ?1 ?2))] -> Apply (derivable_minus ?1 ?2); IsDiff_glob
+  (* OPPOSE *)
+ |[|-(derivable (opp_fct ?1))] -> Apply (derivable_opp ?1); IsDiff_glob
+  (* MULTIPLICATION PAR UN SCALAIRE *)
+ |[|-(derivable (mult_real_fct ?1 ?2))] -> Apply (derivable_scal ?2 ?1); IsDiff_glob
+  (* MULTIPLICATION *)
+ |[|-(derivable (mult_fct ?1 ?2))] -> Apply (derivable_mult ?1 ?2); IsDiff_glob
   (* DIVISION *)
- |[|-(continuity (div_fct ?1 ?2))] -> Apply (continuity_div ?1 ?2); [Try IsCont_glob Orelse Assumption | Try IsCont_glob Orelse Assumption | Try Assumption Orelse Unfold plus_fct mult_fct div_fct minus_fct opp_fct inv_fct id fct_cte pow_fct]
+ |[|-(derivable (div_fct ?1 ?2))] -> Apply (derivable_div ?1 ?2); [IsDiff_glob | IsDiff_glob | Try Assumption Orelse Unfold plus_fct mult_fct div_fct minus_fct opp_fct inv_fct id fct_cte comp pow_fct]
+  (* INVERSION *)
+ |[|-(derivable (inv_fct ?1))] -> Apply (derivable_inv ?1); [Try Assumption Orelse Unfold plus_fct mult_fct div_fct minus_fct opp_fct inv_fct id fct_cte comp pow_fct | IsDiff_glob]
   (* COMPOSITION *)
- |[|-(continuity (comp ?1 ?2))] -> Apply (continuity_comp ?2 ?1); Try IsCont_glob Orelse Assumption
- |[_:(continuity ?1)|-(continuity ?1)] -> Assumption
- |[|-True->(continuity ?)] -> Intro HypTruE; Clear HypTruE; IsCont_glob
- |[_:(derivable ?1)|-(continuity ?1)] -> Apply derivable_continuous; Assumption
+ |[|-(derivable (comp sqrt ?))] -> Unfold derivable; Intro; Try IsDiff_pt
+ |[|-(derivable (comp Rabsolu ?))] -> Unfold derivable; Intro; Try IsDiff_pt
+ |[|-(derivable (comp ?1 ?2))] -> Apply (derivable_comp ?2 ?1); IsDiff_glob
+ |[_:(derivable ?1)|-(derivable ?1)] -> Assumption
+ |[|-True->(derivable ?)] -> Intro HypTruE; Clear HypTruE; IsDiff_glob
  | _ -> Try Unfold plus_fct mult_fct div_fct minus_fct opp_fct inv_fct id fct_cte comp pow_fct.
 
 (**********)
@@ -675,6 +645,43 @@ Match Context With
 |[_:(derivable ?1)|-(continuity_pt ?1 ?2)] -> Cut (continuity ?1); [Intro HypDDPT; Apply HypDDPT | Apply derivable_continuous; Assumption]
 |[|-True->(continuity_pt ? ?)] -> Intro HypTruE; Clear HypTruE; IsCont_pt
 | _ -> Try Unfold plus_fct mult_fct div_fct minus_fct opp_fct inv_fct id fct_cte comp pow_fct.
+
+(**********)
+Recursive Tactic Definition IsCont_glob :=
+Match Context With
+  (* fonctions de base *)
+  [|-(continuity Rsqr)] -> Apply derivable_continuous; Apply derivable_Rsqr
+ |[|-(continuity id)] -> Apply derivable_continuous; Apply derivable_id
+ |[|-(continuity (fct_cte ?))] -> Apply derivable_continuous; Apply derivable_const
+ |[|-(continuity sin)] -> Apply derivable_continuous; Apply derivable_sin
+ |[|-(continuity cos)] -> Apply derivable_continuous; Apply derivable_cos
+ |[|-(continuity exp)] -> Apply derivable_continuous; Apply derivable_exp
+ |[|-(continuity (pow_fct ?))] -> Unfold pow_fct; Apply derivable_continuous; Apply derivable_pow
+ |[|-(continuity sinh)] -> Apply derivable_continuous; Apply derivable_sinh
+ |[|-(continuity cosh)] -> Apply derivable_continuous; Apply derivable_cosh
+ |[|-(continuity Rabsolu)] -> Apply continuity_Rabsolu
+ (* regles de continuite *)
+ (* PLUS *)
+|[|-(continuity (plus_fct ?1 ?2))] -> Apply (continuity_plus ?1 ?2); Try IsCont_glob Orelse Assumption
+ (* MOINS *)
+|[|-(continuity (minus_fct ?1 ?2))] -> Apply (continuity_minus ?1 ?2); Try IsCont_glob Orelse Assumption
+ (* OPPOSE *)
+|[|-(continuity (opp_fct ?1))] -> Apply (continuity_opp ?1); Try IsCont_glob Orelse Assumption
+ (* INVERSE *)
+|[|-(continuity (inv_fct ?1))] -> Apply (continuity_inv ?1); Try IsCont_glob Orelse Assumption
+ (* MULTIPLICATION PAR UN SCALAIRE *)
+|[|-(continuity (mult_real_fct ?1 ?2))] -> Apply (continuity_scal ?2 ?1); Try IsCont_glob Orelse Assumption
+ (* MULTIPLICATION *)
+|[|-(continuity (mult_fct ?1 ?2))] -> Apply (continuity_mult ?1 ?2); Try IsCont_glob Orelse Assumption
+  (* DIVISION *)
+ |[|-(continuity (div_fct ?1 ?2))] -> Apply (continuity_div ?1 ?2); [Try IsCont_glob Orelse Assumption | Try IsCont_glob Orelse Assumption | Try Assumption Orelse Unfold plus_fct mult_fct div_fct minus_fct opp_fct inv_fct id fct_cte pow_fct]
+  (* COMPOSITION *)
+ |[|-(continuity (comp sqrt ?))] -> Unfold continuity_pt; Intro; Try IsCont_pt
+ |[|-(continuity (comp ?1 ?2))] -> Apply (continuity_comp ?2 ?1); Try IsCont_glob Orelse Assumption
+ |[_:(continuity ?1)|-(continuity ?1)] -> Assumption
+ |[|-True->(continuity ?)] -> Intro HypTruE; Clear HypTruE; IsCont_glob
+ |[_:(derivable ?1)|-(continuity ?1)] -> Apply derivable_continuous; Assumption
+ | _ -> Try Unfold plus_fct mult_fct div_fct minus_fct opp_fct inv_fct id fct_cte comp pow_fct.
 
 (**********)
 Recursive Tactic Definition RewTerm trm :=
