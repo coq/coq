@@ -3,7 +3,7 @@ Distribution:
 - Faire fonctionner coqc/coqtop en non local
 - "System Error (Failure): "input_value: code mismatch" quand on
   charge en bytecode certains .vo compilés en natif (exemple typique:
-  Ring_abstract.v)
+  Ring_abstract.v) COMPRIS, EN SUSPENS
 - où va RELATIONS/WELLFOUNDED ?
 
 Environnement:
@@ -12,7 +12,7 @@ Environnement:
 - Faire fonctionner Abstract
 - Faire fonctionner Reset
 - Décider s'il faut garder Transparent/Opaque et si oui, l'implanter
-- Ajouter "parsing" aux chemins par défaut (pour g_{nat,z}syntax.cmo)
+- Ajouter "parsing" aux chemins par défaut (pour g_{nat,z}syntax.cmo) FAIT
 
 Tactiques
 
@@ -23,12 +23,7 @@ Noyau:
 
 - Intégrer Let dans whd_* et les fonctions de tacred
 
-Theories:
+Grammaires:
 
-- remplacer Realizer par Refine ou autre chose dans TheoryList.v
-
-Compatibilité:
-
-- Pourquoi EAuto fait-il plus dans Ring_theory ???
-
+- pb avec les extensions constr (cf Zsyntax et Cases x of `0` => ...)
 
