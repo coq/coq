@@ -61,6 +61,12 @@ Inductive option (A:Set) : Set :=
 
 Implicit Arguments None [A].
 
+Definition option_map (A B:Set) (f:A->B) o :=
+  match o with
+  | Some a => Some (f a)
+  | None => None
+  end.
+
 (** [sum A B], equivalently [A + B], is the disjoint sum of [A] and [B] *)
 (* Syntax defined in Specif.v *)
 Inductive sum (A B:Set) : Set :=
