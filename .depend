@@ -1843,14 +1843,14 @@ toplevel/coqinit.cmx: config/coq_config.cmx toplevel/mltop.cmx \
 toplevel/coqtop.cmo: toplevel/cerrors.cmi config/coq_config.cmi \
     toplevel/coqinit.cmi library/lib.cmi library/libnames.cmi \
     library/library.cmi toplevel/mltop.cmi library/nameops.cmi \
-    kernel/names.cmi lib/options.cmi proofs/pfedit.cmi lib/pp.cmi \
-    lib/profile.cmi library/states.cmi lib/system.cmi toplevel/toplevel.cmi \
+    kernel/names.cmi lib/options.cmi lib/pp.cmi lib/profile.cmi \
+    library/states.cmi lib/system.cmi toplevel/toplevel.cmi \
     toplevel/usage.cmi lib/util.cmi toplevel/vernac.cmi toplevel/coqtop.cmi 
 toplevel/coqtop.cmx: toplevel/cerrors.cmx config/coq_config.cmx \
     toplevel/coqinit.cmx library/lib.cmx library/libnames.cmx \
     library/library.cmx toplevel/mltop.cmx library/nameops.cmx \
-    kernel/names.cmx lib/options.cmx proofs/pfedit.cmx lib/pp.cmx \
-    lib/profile.cmx library/states.cmx lib/system.cmx toplevel/toplevel.cmx \
+    kernel/names.cmx lib/options.cmx lib/pp.cmx lib/profile.cmx \
+    library/states.cmx lib/system.cmx toplevel/toplevel.cmx \
     toplevel/usage.cmx lib/util.cmx toplevel/vernac.cmx toplevel/coqtop.cmi 
 toplevel/discharge.cmo: toplevel/class.cmi pretyping/classops.cmi \
     kernel/cooking.cmi library/decl_kinds.cmo kernel/declarations.cmi \
@@ -1977,13 +1977,15 @@ toplevel/toplevel.cmx: toplevel/cerrors.cmx library/lib.cmx \
 toplevel/usage.cmo: config/coq_config.cmi toplevel/usage.cmi 
 toplevel/usage.cmx: config/coq_config.cmx toplevel/usage.cmi 
 toplevel/vernac.cmo: parsing/coqast.cmi library/lib.cmi library/library.cmi \
-    kernel/names.cmi lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
-    library/states.cmi lib/system.cmi lib/util.cmi toplevel/vernacentries.cmi \
-    toplevel/vernacexpr.cmo toplevel/vernacinterp.cmi toplevel/vernac.cmi 
+    kernel/names.cmi lib/options.cmi parsing/pcoq.cmi proofs/pfedit.cmi \
+    lib/pp.cmi library/states.cmi lib/system.cmi lib/util.cmi \
+    toplevel/vernacentries.cmi toplevel/vernacexpr.cmo \
+    toplevel/vernacinterp.cmi toplevel/vernac.cmi 
 toplevel/vernac.cmx: parsing/coqast.cmx library/lib.cmx library/library.cmx \
-    kernel/names.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
-    library/states.cmx lib/system.cmx lib/util.cmx toplevel/vernacentries.cmx \
-    toplevel/vernacexpr.cmx toplevel/vernacinterp.cmx toplevel/vernac.cmi 
+    kernel/names.cmx lib/options.cmx parsing/pcoq.cmx proofs/pfedit.cmx \
+    lib/pp.cmx library/states.cmx lib/system.cmx lib/util.cmx \
+    toplevel/vernacentries.cmx toplevel/vernacexpr.cmx \
+    toplevel/vernacinterp.cmx toplevel/vernac.cmi 
 toplevel/vernacentries.cmo: tactics/auto.cmi toplevel/class.cmi \
     pretyping/classops.cmi toplevel/command.cmi interp/constrextern.cmi \
     interp/constrintern.cmi library/decl_kinds.cmo library/declaremods.cmi \
