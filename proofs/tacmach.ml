@@ -98,7 +98,8 @@ let pf_execute gls =
 let pf_reduction_of_redexp gls re c = 
   reduction_of_redexp re (pf_env gls) (project gls) c 
 
-let pf_reduce redfun gls c       = redfun (pf_env gls) (project gls) c 
+let pf_apply f gls = f (pf_env gls) (project gls)
+let pf_reduce = pf_apply
 
 let pf_whd_betadeltaiota         = pf_reduce whd_betadeltaiota
 let pf_whd_betadeltaiota_stack   = pf_reduce whd_betadeltaiota_stack
