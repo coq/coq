@@ -41,7 +41,7 @@ LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
               -I proofs -I tactics -I pretyping -I parsing -I toplevel  \
               -I contrib/omega -I contrib/ring -I contrib/xml \
 	      -I contrib/extraction -I contrib/correctness \
-              -I contrib/interface -I contrib/fourier -I contrib/setoid
+              -I contrib/interface -I contrib/fourier
 
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
@@ -123,7 +123,8 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo \
          toplevel/toplevel.cmo toplevel/usage.cmo \
 	 toplevel/coqinit.cmo toplevel/coqtop.cmo
 
-HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
+HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/setoid_replace.cmo\
+	    tactics/equality.cmo \
             tactics/inv.cmo tactics/leminv.cmo tactics/eauto.cmo \
             tactics/autorewrite.cmo tactics/refine.cmo tactics/eqdecide.cmo
 
@@ -195,7 +196,7 @@ PARSERREQUIRES=lib/pp_control.cmo lib/pp.cmo \
 ML4FILES += contrib/correctness/psyntax.ml4 contrib/field/field.ml4
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
-        contrib/setoid/setoid_replace.cmo contrib/ring/quote.cmo \
+        contrib/ring/quote.cmo \
 	contrib/ring/ring.cmo contrib/field/field.cmo \
 	contrib/xml/xml.cmo \
 	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo \
@@ -328,7 +329,8 @@ init: $(INITVO)
 
 EXTRACTIONVO=contrib/extraction/Extraction.vo
 
-TACTICSVO=tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo \
+TACTICSVO=tactics/Equality.vo \
+	  tactics/Tauto.vo tactics/Inv.vo \
           tactics/EAuto.vo tactics/AutoRewrite.vo tactics/Refine.vo \
 	  tactics/EqDecide.vo $(EXTRACTIONVO)
 
@@ -425,8 +427,11 @@ REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Rseries.vo      theories/Reals/Rtrigo_fun.vo \
 	theories/Reals/Reals.vo 
 
+SETOIDVO = theories/Setoid/Setoid_replace.vo
+
 THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
-             $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)
+             $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) \
+	     $(REALSVO) $(SETOIDVO)
 
 $(THEORIESVO): states/initial.coq
 
@@ -442,6 +447,7 @@ intmap: $(INTMAPVO)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
 reals: $(REALSVO)
+setoid: $(SETOIDVO)
 
 clean::
 	rm -f theories/*/*.vo
@@ -468,14 +474,13 @@ OMEGAVO = contrib/omega/Omega.vo       contrib/omega/Zlogarithm.vo \
 RINGVO = contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
          contrib/ring/Ring_theory.vo    contrib/ring/Ring.vo \
          contrib/ring/ZArithRing.vo     contrib/ring/Ring_abstract.vo \
-         contrib/ring/Quote.vo
+         contrib/ring/Quote.vo		contrib/ring/Setoid_ring_normalize.vo \
+	 contrib/ring/Setoid_ring.vo	contrib/ring/Setoid_ring_theory.vo
 
 FIELDVO = contrib/field/Field_Compl.vo     contrib/field/Field_Theory.vo \
           contrib/field/Field_Tactic.vo    contrib/field/Field.vo
 
 XMLVO = contrib/xml/Xml.vo
-
-SETOIDVO = contrib/setoid/Setoid_replace.vo
 
 INTERFACEV0 = contrib/interface/Centaur.vo contrib/interface/vernacrc
 
@@ -487,14 +492,13 @@ contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
 	$(COQC) -boot -byte  $(COQINCLUDES) $<
 
-CONTRIBVO = $(OMEGAVO) $(SETOIDVO) $(RINGVO) $(FIELDVO) $(XMLVO) $(CORRECTNESSVO)\
+CONTRIBVO = $(OMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) $(CORRECTNESSVO)\
             $(INTERFACEV0) $(FOURIERVO)
 
 $(CONTRIBVO): states/initial.coq
 
 contrib: $(CONTRIBVO)
 omega: $(OMEGAVO)
-setoid: $(SETOIDVO)
 ring: $(RINGVO)
 # xml_ instead of xml to avoid conflict with "make xml"
 xml_: $(XMLVO)
@@ -836,3 +840,4 @@ clean::
 
 include .depend
 include .depend.coq
+   
