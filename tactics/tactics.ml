@@ -252,7 +252,7 @@ let next_global_ident_away id avoid =
 
 let fresh_id avoid id gl =
   next_global_ident_away id (avoid@(pf_ids_of_hyps gl))
-    
+
 let id_of_name_with_default s = function
   | Anonymous -> id_of_string s
   | Name id   -> id
@@ -272,17 +272,17 @@ let default_id gl =
    possibly a move to do after the introduction *)
 
 type intro_name_flag =
-  | IAvoid of identifier list
-  | IBasedOn of identifier * identifier list
-  | IMustBe of identifier
+  | IntroAvoid of identifier list
+  | IntroBasedOn of identifier * identifier list
+  | IntroMustBe of identifier
 
 let rec intro_gen name_flag move_flag force_flag gl =
   try
     let id =
       match name_flag with
-        | IAvoid idl        -> fresh_id idl (default_id gl) gl
-        | IBasedOn (id,idl) -> fresh_id idl id gl
-        | IMustBe id        -> 
+        | IntroAvoid idl        -> fresh_id idl (default_id gl) gl
+        | IntroBasedOn (id,idl) -> fresh_id idl id gl
+        | IntroMustBe id        -> 
 	    let id' = fresh_id [] id gl in
   	    if id' <> id then error ((string_of_id id)^" is already used");
 	    id'
@@ -302,9 +302,9 @@ let rec intro_gen name_flag move_flag force_flag gl =
     else
       raise e
 
-let intro_using_warning id = intro_gen (IMustBe id) None false
-let intro_using id = intro_gen (IBasedOn (id,[])) None false
-let intro_force force_flag = intro_gen (IAvoid []) None force_flag
+let intro_using_warning id = intro_gen (IntroMustBe id) None false
+let intro_using id = intro_gen (IntroBasedOn (id,[])) None false
+let intro_force force_flag = intro_gen (IntroAvoid []) None force_flag
 let intro = intro_force false
 let introf = intro_force true
 
@@ -335,14 +335,14 @@ let intros_replacing ids gls =
 (* User-level introduction tactics *)
 
 let dyn_intro = function
-  | []              -> intro_gen (IAvoid []) None true
-  | [Identifier id] -> intro_gen (IMustBe id) None true
+  | []              -> intro_gen (IntroAvoid []) None true
+  | [Identifier id] -> intro_gen (IntroMustBe id) None true
   |  l -> bad_tactic_args "intro" l
 
 let dyn_intro_move = function
-  | [Identifier id2] -> intro_gen (IAvoid []) (Some id2) true
+  | [Identifier id2] -> intro_gen (IntroAvoid []) (Some id2) true
   | [Identifier id; Identifier id2] ->
-      intro_gen (IMustBe id) (Some id2) true
+      intro_gen (IntroMustBe id) (Some id2) true
   | l -> bad_tactic_args "intro_move" l
 
 let rec intros_until s g =
@@ -396,7 +396,7 @@ let intros_do n g =
 let rec intros_move = function
   | [] -> tclIDTAC
   | (hyp,destopt) :: rest ->
-      tclTHEN (intro_gen (IMustBe hyp) destopt false)
+      tclTHEN (intro_gen (IntroMustBe hyp) destopt false)
 	(intros_move rest)
 
 let dependent_in_decl a (_,c,t) =
@@ -711,8 +711,8 @@ let letin_tac with_eq name c occ_ccl occ_hyps gl =
   tclTHENLIST
     [ apply_type newcl args;
       thin (List.map (fun (id,_,_) -> id) depdecls);
-      intro_gen (IMustBe id) lastlhyp false;
-(*      if with_eq then intro_gen (IMustBe heq) lastlhyp false else tclIDTAC;*)
+      intro_gen (IntroMustBe id) lastlhyp false;
+(*  if with_eq then intro_gen (IntroMustBe heq) lastlhyp false else tclIDTAC;*)
       intros_move marks ] gl
 
 let dyn_lettac args gl = match args with
@@ -1040,10 +1040,8 @@ let induct_discharge indpath statuslists cname destopt avoid (_,t) =
   let recvarname =
     if n=1 then 
       cname
-    else if id_without_number cname then 
-      id_of_string ((string_of_id cname)^"1")
-    else 
-      id_of_string ((string_of_id cname)^"_1") 
+    else (* To force renumbering if there is only one *)
+      make_ident (string_of_id cname) 1
   in
   let hyprecname = id_of_string ("Hrec"^(string_of_id recvarname)) in
   let rec peel_tac c = match kind_of_term c with
@@ -1057,13 +1055,13 @@ let induct_discharge indpath statuslists cname destopt avoid (_,t) =
 	       if !tophyp=None then
 		 tophyp := Some (next_global_ident_away hyprecname avoid);
                tclTHENLIST
-		 [ intro_gen (IBasedOn (recvarname,avoid)) destopt false;
-		   intro_gen (IBasedOn (hyprecname,avoid)) None false;
+		 [ intro_gen (IntroBasedOn (recvarname,avoid)) destopt false;
+		   intro_gen (IntroBasedOn (hyprecname,avoid)) None false;
 		   peel_tac c3]
 	   | _ -> anomaly "induct_discharge: rec arg leads to 2 products")
     | IsCast (c,_) -> peel_tac c
     | IsProd (na,t,c) ->
-	tclTHEN (intro_gen (IAvoid avoid) destopt false)
+	tclTHEN (intro_gen (IntroAvoid avoid) destopt false)
 	  (peel_tac c)
     | _ -> tclIDTAC
   in
