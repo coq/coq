@@ -1140,6 +1140,8 @@ and flag_of_ast (evc,env,lfun,lmatch,goalopt,debug) lf =
 
 	   | _ -> add_flag (red_add red fDELTA) lf)
     | Node(_,"Iota",[])::lf -> add_flag (red_add red fIOTA) lf
+    | Node(_,"Zeta",[])::lf -> add_flag (red_add red fZETA) lf
+    | Node(_,"Evar",[])::lf -> add_flag (red_add red fEVAR) lf
     | Node(loc,("Unf"|"UnfBut"),l)::_ ->
 	user_err_loc(loc,"flag_of_ast",
                      [<'sTR "Delta must be specified just before">])

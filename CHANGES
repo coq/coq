@@ -7,6 +7,8 @@ Modifications depuis la V7.0
 - Prise en compte des qualid dans Decompose
 - Correction bug inférence type Cases en présence de K-rédex
 - Correction bugs Cases en cas de prédicat dépendant
+- Le flag Delta n'inclut plus Zeta et Evar, nouveaux flags Zeta et Evar inclus
+  dans Compute (à documenter)
 
 Différences V7.0beta / V7.0
 - Portage de Correctness
