@@ -331,6 +331,13 @@ GEXTEND Gram
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
          VernacNotation (local,c,None,Some(s,modl),sc)
 
+     | IDENT "V8Infix"; local = locality; op8 = STRING; p = global;
+         modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
+	 sc = OPT [ ":"; sc = IDENT -> sc] ->
+           let (a8,n8,b) =
+             Metasyntax.interp_infix_modifiers None None modl in
+           VernacInfix (local,None,None,"",p,b,Some(a8,n8,op8),sc)
+
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
   ] ]
