@@ -126,7 +126,9 @@ let interp_last last =
   try
     vernac_com (States.with_heavy_rollback Vernacentries.interp) last
   with e ->
-    let s,_ = process_exn e in prerr_endline s; raise e
+    let s,_ = process_exn e in prerr_endline ("Replay during undo failed because: "^s);
+    raise e
+
 
 (* type hyp = (identifier * constr option * constr) * string*)
 type hyp = env * evar_map *
@@ -245,6 +247,9 @@ let hyp_menu (env, sigma, ((coqident,ident),_,ast),(s,pr_ast)) =
    ("Apply "^ident),
    ("Apply "^ident^".");
    
+   ("Exact "^ident),
+   ("Exact "^ident^".");
+
    ("Generalize "^ident),
    ("Generalize "^ident^".");
    

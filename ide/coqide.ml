@@ -83,7 +83,6 @@ let get_current_tab_label () = get_tab_label (notebook())#current_page
 let get_current_page () = 
   let i = (notebook())#current_page in
   (notebook())#get_nth_page i
-
 				      
 
 let reset_tab_label i = set_tab_label i (get_tab_label i)
@@ -115,7 +114,6 @@ type 'a viewable_script =
     {view : Undo.undoable_view;
      mutable analyzed_view : 'a option;
     }
-
 
 
 class type analyzed_views = 
@@ -177,6 +175,7 @@ object('self)
     method show_goals_full : unit
     method undo_last_step : unit
     method help_for_keyword : unit -> unit
+    method complete_at_offset : int -> unit
   end
 
 let (input_views:analyzed_views viewable_script Vector.t) = Vector.create ()
@@ -221,10 +220,6 @@ let unset_break () =
 let pid = Unix.getpid ()
 let break () = Unix.kill pid Sys.sigusr1 
 
-(* let () = Sys.set_signal Sys.sigint (Sys.Signal_handle (fun _ -> Pervasives.prerr_endline "HELLO";
-	
-					      Pervasives.flush stderr))
-*)
 let can_break () = set_break () 
 let cant_break () = unset_break () 
 
@@ -554,7 +549,7 @@ object(self)
 	      )
 	      r;
 	    ignore (proof_view#scroll_to_mark my_mark) 
-      with e -> prerr_endline (Printexc.to_string e)
+      with e -> prerr_endline ("Don't worry be happy despite: "^Printexc.to_string e)
 	
 
   method show_goals_full = 
@@ -686,6 +681,7 @@ object(self)
 		    ~stop:stopi
 	   ));
       None
+
   method find_phrase_starting_at (start:GText.iter) = 
     prerr_endline "find_phrase_starting_at starting now";
     let trash_bytes = ref "" in
@@ -726,6 +722,9 @@ object(self)
       end_iter#nocopy#set_offset (start#offset + !Find_phrase.length);
       Some (start,end_iter)
     with _ -> None
+
+  method complete_at_offset (offset:int) = ()
+      
 
   method process_next_phrase display_goals do_highlight = 
     self#clear_message;
@@ -899,9 +898,11 @@ object(self)
     let done_smthg, undos = pop_commands false (Some 0) in
     if done_smthg then
       begin 
-	(match undos with 
-	   | None -> synchro () 
-	   | Some n -> try Pfedit.undo n with _ -> synchro ());
+	try (match undos with 
+	       | None -> synchro () 
+	       | Some n -> try Pfedit.undo n with _ -> synchro ())
+	with _ -> !push_info "WARNING: interrupted undo -> Coq might be in an inconsistent state.
+Restart and report if you never tried to interrupt an Undo.";
 	let start = if is_empty () then input_buffer#start_iter 
 	else input_buffer#get_iter_at_mark (top ()).stop 
 	in
@@ -1157,7 +1158,7 @@ object(self)
 			)
 	   );
     ignore (input_buffer#add_selection_clipboard (cb()));
-    let paren_highlight_tag = input_buffer#create_tag ~name:"paren" [`BACKGROUND "red"]  in
+    let paren_highlight_tag = input_buffer#create_tag ~name:"paren" [`BACKGROUND "purple"]  in
     self#electric_paren paren_highlight_tag;
     ignore (input_buffer#connect#after#mark_set 
 	      ~callback:(fun it (m:Gtk.textmark) -> 
@@ -1543,7 +1544,16 @@ let main files =
   let search_i = edit_f#add_item "Search"
 		   ~key:GdkKeysyms._F
 		   ~callback:(fun b -> 
-				let v = get_current_view () in ()
+				let v = get_current_view () in 
+				!flash_info "Search Unsupported"
+			     ) 
+  in
+  let complete_i = edit_f#add_item "Complete"
+		   ~key:GdkKeysyms._comma
+		   ~callback:(fun b -> 
+				let v =out_some (get_current_view ()).analyzed_view in 
+				v#complete_at_offset (v#get_insert#offset);
+				!flash_info "Complete Unsupported"
 			     ) 
   in
 (*  search_i#misc#set_state `INSENSITIVE;*)
