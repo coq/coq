@@ -24,8 +24,6 @@ Save.
 Parameter sin : R->R.
 Parameter cos : R->R.
 
-Axiom sin2_cos2 : (x:R) ``(Rsqr (sin x)) + (Rsqr (cos x))==1``.
-
 Axiom sin_plus : (x,y:R) ``(sin (x+y))==(sin x)*(cos y)+(cos x)*(sin y)``.
 
 Axiom sin_minus : (x,y:R) ``(sin (x-y))==(sin x)*(cos y)-(cos x)*(sin y)``.
@@ -37,6 +35,12 @@ Axiom cos_minus : (x,y:R) ``(cos (x-y))==(cos x)*(cos y)+(sin x)*(sin y)``.
 Axiom cos_0 : ``(cos 0)==1``.
 
 Axiom sin_PI2 : ``(sin (PI/2))==1``.
+
+(**********)
+Lemma sin2_cos2 : (x:R) ``(Rsqr (sin x)) + (Rsqr (cos x))==1``.
+Intro; Unfold Rsqr; Rewrite Rplus_sym; Rewrite <- (cos_minus x x); Unfold Rminus; Rewrite Rplus_Ropp_r; Apply cos_0.
+Save.
+
 
 (**********)
 Definition tan [x:R] : R := ``(sin x)/(cos x)``.
