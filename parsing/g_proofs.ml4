@@ -138,7 +138,7 @@ GEXTEND Gram
 	  <:ast<(HintImmediate $hintname (VERNACARGLIST ($LIST $dbnames)) $c)>>
 	  
       | IDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
-	IDENT "Unfold"; c = identarg ->
+	IDENT "Unfold"; c = qualidarg ->
 	  <:ast<(HintUnfold $hintname (VERNACARGLIST ($LIST $dbnames)) $c)>>
 	  
       | IDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
