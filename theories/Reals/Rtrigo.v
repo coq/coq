@@ -373,14 +373,6 @@ Intros; Unfold cos_lb cos_ub; Apply (cos_bound a (S O) H H0).
 Qed.
 
 (**********)
-Lemma PI4_RGT_0 : ``0<PI/4``.
-Unfold Rdiv; Apply Rmult_lt_pos; [Apply PI_RGT_0 | Apply Rlt_Rinv; Sup0].
-Qed.
-
-Lemma PI6_RGT_0 : ``0<PI/6``.
-Unfold Rdiv; Apply Rmult_lt_pos; [Apply PI_RGT_0 | Apply Rlt_Rinv; Sup0].
-Qed.
-
 Lemma _PI2_RLT_0 : ``-(PI/2)<0``.
 Rewrite <- Ropp_O; Apply Rlt_Ropp1; Apply PI2_RGT_0.
 Qed.
@@ -392,15 +384,6 @@ Apply Rinv_lt.
 Apply Rmult_lt_pos; Sup0.
 Pattern 1 ``2``; Rewrite <- Rplus_Or.
 Replace ``4`` with ``2+2``; [Apply Rlt_compatibility; Apply Rgt_2_0 | Ring].
-Qed.
-
-Lemma PI6_RLT_PI2 : ``PI/6<PI/2``.
-Unfold Rdiv; Apply Rlt_monotony.
-Apply PI_RGT_0.
-Apply Rinv_lt.
-Apply Rmult_lt_pos; Sup0.
-Pattern 1 ``2``; Rewrite <- Rplus_Or.
-Replace ``6`` with ``2+4``; [Apply Rlt_compatibility; Sup0 | Ring].
 Qed.
 
 Lemma PI2_Rlt_PI : ``PI/2<PI``.
@@ -880,26 +863,7 @@ Lemma tan_incr_1 : (x,y:R) ``-(PI/4)<=x``->``x<=PI/4`` ->``-(PI/4)<=y``->``y<=PI
 Intros; Case (total_order x y); Intro H4; [Left; Apply (tan_increasing_1 x y H H0 H1 H2 H4) | Elim H4; Intro H5; [Case (total_order (tan x) (tan y)); Intro H6; [Left; Assumption | Elim H6; Intro H7; [Right; Assumption | Generalize (tan_increasing_0 y x H1 H2 H H0 H7); Intro H8; Rewrite H5 in H8; Elim (Rlt_antirefl y H8)]] | Elim (Rlt_antirefl x (Rle_lt_trans x y x H3 H5))]].
 Qed.
 
-Lemma Rgt_3PI2_0 : ``0<3*(PI/2)``.
-Apply Rmult_lt_pos; [Apply Rgt_3_0 | Unfold Rdiv; Apply Rmult_lt_pos; [Apply PI_RGT_0 | Apply Rlt_Rinv; Apply Rgt_2_0]].
-Qed.
-  
-Lemma Rgt_2PI_0 : ``0<2*PI``.
-Apply Rmult_lt_pos; [Apply Rgt_2_0 | Apply PI_RGT_0].
-Qed.
-
-Lemma Rlt_PI_3PI2 : ``PI<3*(PI/2)``.
-Generalize PI2_RGT_0; Intro H1; Generalize (Rlt_compatibility PI ``0`` ``PI/2`` H1); Replace ``PI+(PI/2)`` with ``3*(PI/2)``.
-Rewrite Rplus_Or; Intro H2; Assumption.
-Pattern 2 PI; Rewrite double_var; Ring.
-Qed. 
- 
-Lemma Rlt_3PI2_2PI : ``3*(PI/2)<2*PI``.
-Generalize PI2_RGT_0; Intro H1; Generalize (Rlt_compatibility ``3*(PI/2)`` ``0`` ``PI/2`` H1); Replace ``3*(PI/2)+(PI/2)`` with ``2*PI``.
-Rewrite Rplus_Or; Intro H2; Assumption.
-Rewrite double; Pattern 1 2 PI; Rewrite double_var; Ring.
-Qed.
-
+(**********)
 Lemma sin_eq_0_1 : (x:R) (EXT k:Z | x==(Rmult (IZR k) PI)) -> (sin x)==R0.
 Intros.
 Elim H; Intros.
@@ -1178,21 +1142,4 @@ Qed.
 
 Lemma  cos_eq_0_2PI_1 : (x:R) ``0<=x`` -> ``x<=2*PI`` -> ``x==PI/2``\/``x==3*(PI/2)`` -> ``(cos x)==0``.
 Intros x H1 H2 H3; Elim H3; Intro H4; [ Rewrite H4; Rewrite -> cos_PI2; Reflexivity | Rewrite H4; Rewrite -> cos_3PI2; Reflexivity ].
-Qed.
-
-(***************************************************)
-(*                Other properties                 *)
-(***************************************************)
-
-Lemma sin_lb_ge_0 : (a:R) ``0<=a``->``a<=PI/2``->``0<=(sin_lb a)``.
-Intros; Case (total_order R0 a); Intro.
-Left; Apply sin_lb_gt_0; Assumption.
-Elim H1; Intro.
-Rewrite <- H2; Unfold sin_lb; Unfold sin_approx; Unfold sum_f_R0; Unfold sin_term; Repeat Rewrite pow_ne_zero.
-Unfold Rdiv; Repeat Rewrite Rmult_Ol; Repeat Rewrite Rmult_Or; Repeat Rewrite Rplus_Or; Right; Reflexivity.
-Simpl; Discriminate.
-Simpl; Discriminate.
-Simpl; Discriminate.
-Simpl; Discriminate.
-Elim (Rlt_antirefl ``0`` (Rle_lt_trans ``0`` a ``0`` H H2)).
 Qed.

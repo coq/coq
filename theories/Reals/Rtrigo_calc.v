@@ -10,6 +10,7 @@
 
 Require Rbase.
 Require DiscrR.
+Require Rseries.
 Require R_sqr.
 Require Rlimit.
 Require Rtrigo.
@@ -108,6 +109,19 @@ Rewrite Rmult_1r; Reflexivity.
 DiscrR.
 Qed.
 
+Lemma PI6_RGT_0 : ``0<PI/6``.
+Unfold Rdiv; Apply Rmult_lt_pos; [Apply PI_RGT_0 | Apply Rlt_Rinv; Sup0].
+Qed.
+
+Lemma PI6_RLT_PI2 : ``PI/6<PI/2``.
+Unfold Rdiv; Apply Rlt_monotony.
+Apply PI_RGT_0.
+Apply Rinv_lt.
+Apply Rmult_lt_pos; Sup0.
+Pattern 1 ``2``; Rewrite <- Rplus_Or.
+Replace ``6`` with ``2+4``; [Apply Rlt_compatibility; Sup0 | Ring].
+Qed.
+
 Lemma sin_PI6 : ``(sin (PI/6))==1/2``.
 Apply r_Rmult_mult with ``2*(cos (PI/6))``.
 Replace ``2*(cos (PI/6))*(sin (PI/6))`` with ``2*(sin (PI/6))*(cos (PI/6))``.
@@ -156,6 +170,10 @@ Qed.
 
 Lemma Rlt_sqrt3_0 : ``0<(sqrt 3)``.
 Cut ~(O=(1)); [Intro H0; Generalize (Rlt_le ``0`` ``2`` Rgt_2_0); Intro H1; Generalize (Rlt_le ``0`` ``3`` Rgt_3_0); Intro H2; Generalize (lt_INR_0 (1) (neq_O_lt (1) H0)); Unfold INR; Intro H3; Generalize (Rlt_compatibility ``2`` ``0`` ``1`` H3); Rewrite Rplus_sym; Rewrite Rplus_Ol; Replace ``2+1`` with ``3``; [Intro H4; Generalize (sqrt_lt_1 ``2`` ``3`` H1 H2 H4); Clear H3; Intro H3; Apply (Rlt_trans ``0`` ``(sqrt 2)`` ``(sqrt 3)`` Rlt_sqrt2_0 H3) | Ring] | Discriminate].
+Qed.
+
+Lemma PI4_RGT_0 : ``0<PI/4``.
+Unfold Rdiv; Apply Rmult_lt_pos; [Apply PI_RGT_0 | Apply Rlt_Rinv; Sup0].
 Qed.
 
 Lemma cos_PI4 : ``(cos (PI/4))==1/(sqrt 2)``.
@@ -439,6 +457,26 @@ Lemma sin_cos5PI4 : ``(cos (5*(PI/4)))==(sin (5*(PI/4)))``.
 Rewrite cos_5PI4; Rewrite sin_5PI4; Reflexivity.
 Qed.
 
+Lemma Rgt_3PI2_0 : ``0<3*(PI/2)``.
+Apply Rmult_lt_pos; [Apply Rgt_3_0 | Unfold Rdiv; Apply Rmult_lt_pos; [Apply PI_RGT_0 | Apply Rlt_Rinv; Apply Rgt_2_0]].
+Qed.
+
+Lemma Rgt_2PI_0 : ``0<2*PI``.
+Apply Rmult_lt_pos; [Apply Rgt_2_0 | Apply PI_RGT_0].
+Qed.
+
+Lemma Rlt_PI_3PI2 : ``PI<3*(PI/2)``.
+Generalize PI2_RGT_0; Intro H1; Generalize (Rlt_compatibility PI ``0`` ``PI/2`` H1); Replace ``PI+(PI/2)`` with ``3*(PI/2)``.
+Rewrite Rplus_Or; Intro H2; Assumption.
+Pattern 2 PI; Rewrite double_var; Ring.
+Qed. 
+ 
+Lemma Rlt_3PI2_2PI : ``3*(PI/2)<2*PI``.
+Generalize PI2_RGT_0; Intro H1; Generalize (Rlt_compatibility ``3*(PI/2)`` ``0`` ``PI/2`` H1); Replace ``3*(PI/2)+(PI/2)`` with ``2*PI``.
+Rewrite Rplus_Or; Intro H2; Assumption.
+Rewrite double; Pattern 1 2 PI; Rewrite double_var; Ring.
+Qed.
+
 (***************************************************************)
 (* Radian -> Degree | Degree -> Radian                         *)
 (***************************************************************)
@@ -484,4 +522,21 @@ Definition tand [x:R] : R := (tan (toRad x)).
 
 Lemma Rsqr_sin_cos_d_one : (x:R) ``(Rsqr (sind x))+(Rsqr (cosd x))==1``.
 Intro x; Unfold sind; Unfold cosd; Apply sin2_cos2.
+Qed.
+
+(***************************************************)
+(*                Other properties                 *)
+(***************************************************)
+
+Lemma sin_lb_ge_0 : (a:R) ``0<=a``->``a<=PI/2``->``0<=(sin_lb a)``.
+Intros; Case (total_order R0 a); Intro.
+Left; Apply sin_lb_gt_0; Assumption.
+Elim H1; Intro.
+Rewrite <- H2; Unfold sin_lb; Unfold sin_approx; Unfold sum_f_R0; Unfold sin_term; Repeat Rewrite pow_ne_zero.
+Unfold Rdiv; Repeat Rewrite Rmult_Ol; Repeat Rewrite Rmult_Or; Repeat Rewrite Rplus_Or; Right; Reflexivity.
+Simpl; Discriminate.
+Simpl; Discriminate.
+Simpl; Discriminate.
+Simpl; Discriminate.
+Elim (Rlt_antirefl ``0`` (Rle_lt_trans ``0`` a ``0`` H H2)).
 Qed.
