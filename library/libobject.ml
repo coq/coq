@@ -45,10 +45,12 @@ let declare_object (na,odecl) =
 
 let apply_dyn_fun f lobj =
   let tag = object_tag lobj in
-  try
-    let dodecl = Hashtbl.find cache_tab tag in f dodecl
-  with Not_found -> 
-    anomaly ("Cannot find library functions for an object with tag "^tag)
+  let dodecl =
+    try
+      Hashtbl.find cache_tab tag
+    with Not_found -> 
+      anomaly ("Cannot find library functions for an object with tag "^tag)
+  in f dodecl
 
 let cache_object ((_,lobj) as node) =
   apply_dyn_fun (fun d -> d.dyn_cache_function node) lobj
