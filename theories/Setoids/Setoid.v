@@ -574,6 +574,11 @@ Definition equality_morphism_of_setoid_theory:
  unfold make_compatibility_goal; simpl; split; eauto.
 Defined.
 
+Lemma eq_setoid : forall R, Setoid_Theory (@eq R).
+Proof
+  (fun R =>
+    Build_Setoid_Theory (@eq R) (@refl_equal R) (@sym_eq R) (@trans_eq R)).
+
 (* END OF UTILITY/BACKWARD COMPATIBILITY PART *)
 
 (* A FEW EXAMPLES *)
@@ -609,6 +614,10 @@ Add Morphism not : Not_Morphism.
 Qed.
 
 Theorem impl_refl: reflexive _ impl.
+ hnf; unfold impl; tauto.
+Qed.
+
+Theorem impl_trans: transitive _ impl.
  hnf; unfold impl; tauto.
 Qed.
 
