@@ -101,6 +101,9 @@ let push_rel d   = rel_context_app (add_rel_decl d)
 let push_rel_def def   = rel_context_app (add_rel_def def)
 let push_rel_assum decl = rel_context_app (add_rel_assum decl)
 let push_rels ctxt     = rel_context_app (concat_rel_context ctxt)
+let push_rels_assum decl env =
+  rel_context_app (List.fold_right add_rel_assum decl) env
+
 
 let push_rel_context_to_named_context env =
   let sign0 = env.env_context.env_named_context in
@@ -395,3 +398,4 @@ type unsafe_judgment = {
 type unsafe_type_judgment = { 
   utj_val : constr;
   utj_type : sorts }
+

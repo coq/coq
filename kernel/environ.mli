@@ -41,6 +41,7 @@ val push_rel : rel_declaration -> env -> env
 val push_rel_assum : name * types -> env -> env
 val push_rel_def : name * constr * types -> env -> env
 val push_rels : rel_context -> env -> env
+val push_rels_assum : (name * types) list -> env -> env
 val names_of_rel_context : env -> names_context
 
 (*s Returns also the substitution to be applied to rel's *)
