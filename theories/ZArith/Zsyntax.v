@@ -250,6 +250,11 @@ Notation "x <> y" := ~(eq Z x y) (at level 5) : Z_scope.
 (* Notation "| x |" (Zabs x) : Z_scope.(* "|" conflicts with THENS *)*)
 Notation "|| x ||" := (Zabs x) (at level 1) : Z_scope.
 
+(* Overwrite the printing of "`x = y`" *)
+Syntax constr level 0:
+  Zeq [ (eq Z $n1 $n2) ] -> [[<hov 0> $n1 [1 0] "= " $n2 ]].
+
+
 (* Warning: this hides sum and prod and breaks sumor symbolic notation *)
 Open Scope Z_scope.
 
