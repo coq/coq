@@ -227,29 +227,8 @@ let unfold_constr = function
 (*         Introduction tactics            *)
 (*******************************************)
 
-let is_section_variable id =
-  try let _ = Sign.lookup_named id (Global.named_context()) in true
-  with Not_found -> false
-
-let next_global_ident_from id avoid = 
-  let rec next_rec id =
-    let id = next_ident_away_from id avoid in
-    if is_section_variable id || not (is_global id) then
-      id
-    else  
-      next_rec (lift_ident id)
-  in 
-  next_rec id
-
-let next_global_ident_away id avoid =
-  let id  = next_ident_away id avoid in
-  if is_section_variable id || not (is_global id) then
-    id
-  else  
-    next_global_ident_from (lift_ident id) avoid
-
 let fresh_id avoid id gl =
-  next_global_ident_away id (avoid@(pf_ids_of_hyps gl))
+  next_global_ident_away true id (avoid@(pf_ids_of_hyps gl))
 
 let id_of_name_with_default s = function
   | Anonymous -> id_of_string s
@@ -1678,7 +1657,8 @@ let abstract_subproof name tac gls =
 	 if mem_named_context id current_sign then s else add_named_decl d s) 
       global_sign empty_named_context
   in
-  let na = next_global_ident_away name (ids_of_named_context global_sign) in
+  let na =
+    next_global_ident_away false name (ids_of_named_context global_sign) in
   let concl = 
     List.fold_left (fun t d -> mkNamedProd_or_LetIn d t) (pf_concl gls) sign 
   in

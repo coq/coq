@@ -55,7 +55,6 @@ val cofix           : identifier option -> tactic
 
 (*s Introduction tactics. *)
 
-val next_global_ident_away : identifier -> identifier list -> identifier
 val fresh_id : identifier list -> identifier -> goal sigma -> identifier
 
 val intro                : tactic

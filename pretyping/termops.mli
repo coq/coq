@@ -153,6 +153,8 @@ type used_idents = identifier list
 val occur_rel : int -> name list -> identifier -> bool
 val occur_id : name list -> identifier -> constr -> bool
 
+val next_global_ident_away : 
+  (*allow section vars:*) bool -> identifier -> identifier list -> identifier
 val next_name_not_occuring :
   bool -> name -> identifier list -> name list -> constr -> identifier
 val concrete_name :
@@ -183,4 +185,3 @@ val global_reference_in_absolute_module : dir_path -> identifier -> constr
 
 (* Test if an identifier is the basename of a global reference *)
 val is_global : identifier -> bool
-

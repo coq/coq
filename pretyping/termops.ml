@@ -693,6 +693,23 @@ let is_section_variable id =
   try let _ = Sign.lookup_named id (Global.named_context()) in true
   with Not_found -> false
 
+let next_global_ident_from allow_secvar id avoid = 
+  let rec next_rec id =
+    let id = next_ident_away_from id avoid in
+    if (allow_secvar && is_section_variable id) || not (is_global id) then
+      id
+    else  
+      next_rec (lift_ident id)
+  in 
+  next_rec id
+
+let next_global_ident_away allow_secvar id avoid =
+  let id  = next_ident_away id avoid in
+  if (allow_secvar && is_section_variable id) || not (is_global id) then
+    id
+  else  
+    next_global_ident_from allow_secvar (lift_ident id) avoid
+
 (* Nouvelle version de renommage des variables (DEC 98) *)
 (* This is the algorithm to display distinct bound variables 
 

@@ -126,7 +126,7 @@ let replace_in_array env gmm a =
     
 let fresh env n =
   let id = match n with Name x -> x | _ -> id_of_string "_" in
-  next_global_ident_away id (ids_of_named_context (named_context env))
+  next_global_ident_away true id (ids_of_named_context (named_context env))
 
 let rec compute_metamap env gmm c = match kind_of_term c with
   (* le terme est directement une preuve *)
