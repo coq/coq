@@ -45,9 +45,10 @@ let print_impl_args = function
    synthesizes the type nat of the abstraction on u *)
 
 let print_named_def name body typ =
-  [< 'sTR "*** [" ; 'sTR name ; 'sPC; 
-     hOV 0 [< 'sTR "="; prterm body; 'sPC; 'sTR ": "; prtype typ >] ;
-     'sTR "]"; 'fNL >]
+  [< 'sTR "*** ["; 'sTR name ; 'sPC; 
+     hOV 0 [< 'sTR ":="; 'sPC; prterm body; 'sPC;
+	      'sTR ": "; prtype typ >];
+	   'sTR "]"; 'fNL >]
 
 let print_named_assum name typ =
   [< 'sTR "*** [" ; 'sTR name ; 'sTR " : "; prtype typ; 'sTR "]"; 'fNL >]
