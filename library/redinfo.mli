@@ -12,7 +12,8 @@ open Term
    (section~\refsec{tacred}). *)
 
 type constant_evaluation = 
-  | Elimination of (int * constr) list * int * bool
+  | EliminationFix of (int * constr) list * int
+  | EliminationCases of int
   | NotAnElimination
 
 val constant_eval : section_path -> constant_evaluation

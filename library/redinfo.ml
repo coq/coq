@@ -9,7 +9,8 @@ open Constant
 open Reduction
 
 type constant_evaluation = 
-  | Elimination of (int * constr) list * int * bool
+  | EliminationFix of (int * constr) list * int
+  | EliminationCases of int
   | NotAnElimination
 
 let eval_table = ref Spmap.empty
@@ -45,20 +46,17 @@ let compute_consteval c =
 			    raise Elimconst) l
           in 
 	  if list_distinct (List.map fst li) then 
-	    (li,n,true) 
+	    EliminationFix (li,n) 
           else 
 	    raise Elimconst
       | (DOPN(MutCase _,_) as mc,lapp) -> 
           (match destCase mc with
-             | (_,_,Rel _,_) -> ([],n,false)
+             | (_,_,Rel _,_) -> EliminationCases n
              | _ -> raise Elimconst)
       | _ -> raise Elimconst
   in
-  try 
-    let (lv,n,b) = srec 0 [] c in 
-    Elimination (lv,n,b) 
-  with Elimconst -> 
-    NotAnElimination
+  try srec 0 [] c
+  with Elimconst -> NotAnElimination
 
 let constant_eval sp =
   try

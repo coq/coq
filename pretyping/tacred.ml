@@ -15,12 +15,6 @@ open Redinfo
 exception Elimconst
 exception Redelimination
 
-let is_elim c =
-  let (sp, _) = destConst c in
-  match constant_eval sp with
-    | NotAnElimination -> raise Elimconst
-    | Elimination (lv,n,b) -> (lv,n,b)
-
 let rev_firstn_liftn fn ln = 
   let rec rfprec p res l = 
     if p = 0 then 
@@ -33,26 +27,25 @@ let rev_firstn_liftn fn ln =
   rfprec fn []
 
 let make_elim_fun f largs =
-  try 
-    let (lv,n,b) = is_elim f 
-    and ll = List.length largs in 
-    if ll < n then raise Redelimination;
-    if b then
-      let labs,_ = list_chop n largs in
-      let p = List.length lv in
-      let la' = list_map_i 
-		  (fun q aq ->
-		     try (Rel (p+1-(list_index (n+1-q) (List.map fst lv)))) 
-		     with Failure _ -> aq) 1
-                  (List.map (lift p) labs) 
-      in
-      list_fold_left_i 
-	(fun i c (k,a) -> 
-           DOP2(Lambda,(substl (rev_firstn_liftn (n-k) (-i) la') a),
-                DLAM(Name(id_of_string"x"),c))) 0 (applistc f la') lv
-    else 
-      f
-  with Elimconst | Failure _ -> 
+  try
+    let (sp, _) = destConst f in
+    match constant_eval sp with
+    | EliminationCases n when List.length largs >= n -> f
+    | EliminationFix (lv,n) when List.length largs >= n ->
+	let labs,_ = list_chop n largs in
+	let p = List.length lv in
+	let la' = list_map_i 
+		    (fun q aq ->
+		       try (Rel (p+1-(list_index (n+1-q) (List.map fst lv)))) 
+		       with Failure _ -> aq) 1
+                    (List.map (lift p) labs) 
+	in
+	list_fold_left_i 
+	  (fun i c (k,a) -> 
+             DOP2(Lambda,(substl (rev_firstn_liftn (n-k) (-i) la') a),
+                  DLAM(Name(id_of_string"x"),c))) 0 (applistc f la') lv
+    | _ -> raise Redelimination
+  with Failure _ -> 
     raise Redelimination
 
 (* F is convertible to DOPN(Fix(recindices,bodynum),bodyvect) make 
