@@ -84,7 +84,8 @@ test_output() {
 	    nbtestsok=`expr $nbtestsok + 1`
         else 
 	    echo "Error! (unexpected output)"
-        fi 
+        fi
+	rm $tmpoutput
     done
 }
 
@@ -106,6 +107,7 @@ test_parser() {
             echo "Ok"
             nbtestsok=`expr $nbtestsok + 1`
         fi
+	rm $tmpoutput
     done
     fi
 }
