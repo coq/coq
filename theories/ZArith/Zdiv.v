@@ -210,3 +210,25 @@ Split.
 Rewrite <- Zmult_Zopp_left;Assumption.
 Rewrite Zabs_non_eq;[Assumption|Omega].
 Save.
+
+
+(** Syntax *)
+
+Grammar znatural expr2 : constr :=
+  expr_div  [ expr2($p) "/" expr2($c) ] -> [ (Zdiv $p $c) ]
+| expr_mod  [ expr2($p) "%" expr2($c) ] -> [ (Zmod $p $c) ]
+.
+
+Syntax constr
+  level 6:
+    Zdiv [ (Zdiv $n1 $n2) ]
+      -> [ [<hov 0> "`"(ZEXPR $n1):E "/" [0 0] (ZEXPR $n2):L "`"] ]
+  | Zmod [ (Zmod $n1 $n2) ]
+      -> [ [<hov 0> "`"(ZEXPR $n1):E "%" [0 0] (ZEXPR $n2):L "`"] ]
+  | Zdiv_inside
+      [ << (ZEXPR <<(Zdiv $n1 $n2)>>) >> ]
+      	 -> [ (ZEXPR $n1):E "/" [0 0] (ZEXPR $n2):L ]
+  | Zmod_inside
+      [ << (ZEXPR <<(Zmod $n1 $n2)>>) >> ]
+      	 -> [ (ZEXPR $n1):E "%" [0 0] (ZEXPR $n2):L ]
+.
