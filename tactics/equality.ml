@@ -33,6 +33,7 @@ open Tacinterp
 open Tacred
 open Vernacinterp
 open Coqlib
+open Setoid_replace
 
 (* Rewriting tactics *)
 
@@ -50,7 +51,10 @@ let general_rewrite_bindings lft2rgt (c,l) gl =
   let sigma = project gl in 
   let _,t = splay_prod env sigma ctype in
   match match_with_equation t with
-    | None -> error "The term provided does not end with an equation" 
+    | None -> 
+	if l = []
+	then general_s_rewrite lft2rgt c gl
+	else error "The term provided does not end with an equation" 
     | Some (hdcncl,_) -> 
         let hdcncls = string_head hdcncl in 
 	let suffix = Declare.elimination_suffix (sort_of_goal gl) in
