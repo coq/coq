@@ -940,6 +940,18 @@ let is_new_name s =
                         & s.[0] = 'R') or
   (String.length s >= 10 & String.sub s 0 10 = "uniqueness"))
 
+let v7_to_v8_dir fulldir dir =
+  if dir <> empty_dirpath then
+    let update s =
+      let l = List.map string_of_id (repr_dirpath dir) in
+      make_dirpath (List.map id_of_string (s :: List.tl l))
+    in
+    let l = List.map string_of_id (repr_dirpath fulldir) in
+    if l = [ "List"; "Lists"; "Coq" ] then update "MonoList"
+    else if l = [ "PolyList"; "Lists"; "Coq" ] then update "List"
+    else dir
+  else dir
+
 let shortest_qualid_of_v7_global ctx ref =
   let fulldir,_ = repr_path (sp_of_global ref) in
   let dir,id = repr_qualid (shortest_qualid_of_global ctx ref) in
@@ -954,17 +966,16 @@ let shortest_qualid_of_v7_global ctx ref =
         if fulldir <> empty_dirpath & not (is_coq_root fulldir)
         then make_dirpath [List.hd (repr_dirpath fulldir)] 
         else empty_dirpath
-      else dir
+      else v7_to_v8_dir fulldir dir
     else
       (* A stdlib name that has been renamed *)
       try
         let d,_ = repr_path (Nametab.full_name_cci (make_short_qualid id)) in
         if not (is_coq_root d) then 
           (* The user has defined id, then we qualify the new name *)
-          make_dirpath (List.map id_of_string dir')
+          v7_to_v8_dir fulldir (make_dirpath (List.map id_of_string dir'))
         else empty_dirpath
-      with Not_found -> dir
-  in
+      with Not_found -> v7_to_v8_dir fulldir dir in
   make_qualid dir'' id
 
 let extern_reference loc vars r =
