@@ -57,7 +57,7 @@ let set_pcoq_hook f = pcoq := Some f
 let cl_of_qualid = function
   | FunClass -> Classops.CL_FUN
   | SortClass -> Classops.CL_SORT
-  | RefClass r -> Class.class_of_ref (Nametab.global r)
+  | RefClass r -> Class.class_of_global (Nametab.global r)
 
 (*******************)
 (* "Show" commands *)
@@ -464,20 +464,19 @@ let vernac_record struc binders sort nameopt cfs =
 
 let vernac_begin_section id = let _ = Lib.open_section id in ()
 
-let vernac_end_section id =
-  Discharge.close_section (is_verbose ()) id
-
+let vernac_end_section id = Lib.close_section false id
 
 let vernac_end_segment id =
   check_no_pending_proofs ();
-  try
-    match Lib.what_is_opened () with
-      | _,Lib.OpenedModule (export,_,_) -> vernac_end_module export id
-      | _,Lib.OpenedModtype _ -> vernac_end_modtype id
-      | _,Lib.OpenedSection _ -> vernac_end_section id
-      | _ -> anomaly "No more opened things"
-  with
-      Not_found -> error "There is nothing to end."
+  let o = 
+    try Lib.what_is_opened ()
+    with Not_found -> error "There is nothing to end." in
+  match o with
+    | _,Lib.OpenedModule (export,_,_) -> vernac_end_module export id
+    | _,Lib.OpenedModtype _ -> vernac_end_modtype id
+    | _,Lib.OpenedSection _ -> vernac_end_section id
+    | _ -> anomaly "No more opened things"
+      
 
 let is_obsolete_module (_,qid) =
   match repr_qualid qid with
@@ -519,7 +518,7 @@ let vernac_require import _ qidl =
       
 
 let vernac_canonical locqid =
-  Recordobj.objdef_declare (Nametab.global locqid)
+  Recordops.declare_canonical_structure (Nametab.global locqid)
 
 let locate_reference ref =
   let (loc,qid) = qualid_of_reference ref in
@@ -894,7 +893,7 @@ let vernac_print = function
   | PrintCoercions -> ppnl (Prettyp.print_coercions())
   | PrintCoercionPaths (cls,clt) ->
       ppnl (Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt))
-  | PrintCanonicalStructures -> ppnl (Prettyp.print_canonical_structures ())
+  | PrintCanonicalConversions -> ppnl (Prettyp.print_canonical_projections ())
   | PrintUniverses None -> pp (Univ.pr_universes (Global.universes ()))
   | PrintUniverses (Some s) -> dump_universes s
   | PrintHint qid -> Auto.print_hint_ref (Nametab.global qid)
