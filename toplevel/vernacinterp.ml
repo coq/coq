@@ -97,7 +97,7 @@ let rec cvt_varg ast =
     | Node(_,"ASTLIST",al) -> VARG_ASTLIST al
     | Node(_,"TACTIC_ARG",[targ]) ->
       let (evc,env)= Command.get_current_context () in
-      VARG_TACTIC_ARG (interp_tacarg (evc,env,[],[],None) targ)
+      VARG_TACTIC_ARG (interp_tacarg (evc,env,[],[],None,get_debug ()) targ)
     | Node(_,"VERNACDYN",[Dynamic (_,d)]) -> VARG_DYN d
     | _ -> anomaly_loc (Ast.loc ast, "Vernacinterp.cvt_varg",
                         [< 'sTR "Unrecognizable ast node of vernac arg:";

@@ -27,6 +27,8 @@ open Ast
 open Astterm
 open Pretty
 open Printer
+open Tacinterp
+open Tactic_debug
 open Command
 
 (* Dans join_binders, s'il y a un "?", on perd l'info qu'il est partagé *)
@@ -664,6 +666,18 @@ let _ =
        | _  -> bad_vernac_args "EndSilent")
 
 let _ =
+  add "DebugOn"
+    (function 
+       | [] -> (fun () -> set_debug DebugOn)
+       | _  -> bad_vernac_args "DebugOn")
+
+let _ =
+  add "DebugOff"
+    (function 
+       | [] -> (fun () -> set_debug DebugOff)
+       | _  -> bad_vernac_args "DebugOff")
+
+let _ =
   add "StartProof"
     (function 
        | [VARG_STRING kind;VARG_IDENTIFIER s;VARG_CONSTR com] ->
@@ -1205,7 +1219,7 @@ let _ =
     (let rec tacdef_fun lacc=function
         (VARG_IDENTIFIER name)::(VARG_AST tacexp)::tl ->
           let ve=
-            Tacinterp.val_interp (empty,empty_env,[],[],None) tacexp
+            val_interp (empty,empty_env,[],[],None,get_debug ()) tacexp
           in
             tacdef_fun ((string_of_id name,ve)::lacc) tl
        |[] ->
