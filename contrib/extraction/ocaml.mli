@@ -8,9 +8,13 @@
 
 (*i $Id$ i*)
 
-(*s Production of Ocaml syntax. *)
+(*s Production of Ocaml syntax. We export both a functor to be used for 
+    extraction in the Coq toplevel and a module [Pp] to be used for
+    production of Ocaml files. *)
 
 open Miniml
 
 module Make : functor(P : Mlpp_param) -> Mlpp
+
+module Pp : Mlpp
 

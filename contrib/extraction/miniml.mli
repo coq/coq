@@ -14,14 +14,10 @@ open Term
 
 (*s Target language for extraction: a core ML called MiniML. *)
 
-(*s Identifiers of type are either parameters or type names. *)
-
-type ml_typeid = identifier
-
 (*s ML type expressions. *)
 
 type ml_type = 
-  | Tvar  of ml_typeid
+  | Tvar  of identifier
   | Tapp  of ml_type list
   | Tarr  of ml_type * ml_type
   | Tglob of global_reference
@@ -40,9 +36,9 @@ type ml_ast =
   | MLlam   of identifier * ml_ast
   | MLletin of identifier * ml_ast * ml_ast
   | MLglob  of global_reference
-  | MLcons  of int * identifier * ml_ast list
+  | MLcons  of global_reference * int * ml_ast list
   | MLcase  of ml_ast * (identifier * identifier list * ml_ast) array
-  | MLfix   of int * bool * (identifier list) * (ml_ast list)
+  | MLfix   of int * (identifier list) * (ml_ast list)
   | MLexn   of identifier
   | MLprop
   | MLarity
@@ -62,6 +58,7 @@ type ml_decl =
     functions to print types, terms and declarations. *)
 
 module type Mlpp_param = sig
+  val pp_type_global : global_reference -> std_ppcmds
   val pp_global : global_reference -> std_ppcmds
 end
 

@@ -93,3 +93,14 @@ Extraction sumbool_rec.
 Definition horibilis := [b:bool]<[b:bool]if b then Type else nat>if b then Set else O.
 
 Extraction horibilis.
+
+Inductive predicate : Type := 
+  | Atom : Prop -> predicate
+  | And  : predicate -> predicate -> predicate.
+
+Extraction predicate.
+
+(* eta-expansions *)
+Inductive t : Set := c : nat->nat->nat->nat->t.
+Extraction (c O).
+Extraction (c O (S O)).

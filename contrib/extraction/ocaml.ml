@@ -20,12 +20,12 @@ open Miniml
 
 let string s = [< 'sTR s >]
 
-let open_par = function true -> string "(" | false -> [<>]
+let open_par = function true -> string "(" | false -> [< >]
 
-let close_par = function true -> string ")" | false -> [<>]
+let close_par = function true -> string ")" | false -> [< >]
 
 let rec collapse_type_app = function
-  | (Tapp l1) :: l2 -> collapse_type_app (l1@l2)
+  | (Tapp l1) :: l2 -> collapse_type_app (l1 @ l2)
   | l -> l
 
 let pp_tuple f = function
@@ -42,7 +42,7 @@ let pp_boxed_tuple f = function
       	    hOV 0 [< prlist_with_sep (fun () -> [< 'sTR ","; 'sPC >]) f l;
 		     'sTR ")" >] >]
 
-let space_if = function true -> [< 'sPC >] | false -> [<>]
+let space_if = function true -> [< 'sPC >] | false -> [< >]
 
 (* collect_lambda MLlam(id1,...MLlam(idn,t)...) = [id1;...;idn],t *)
 
@@ -87,10 +87,10 @@ let pp_type t =
 	   | t::l -> [< open_par par; pp_tuple (pp_rec false) l; 
 			space_if (l <>[]); pp_rec false t; close_par par >])
     | Tarr (t1,t2) ->
-	[< open_par par; pp_rec true t1; 'sPC; 'sTR"->"; 'sPC; 
+	[< open_par par; pp_rec true t1; 'sPC; 'sTR "->"; 'sPC; 
 	   pp_rec false t2; close_par par >]
     | Tglob r -> 
-	P.pp_global r
+	P.pp_type_global r
     | Tprop ->
 	string "prop"
     | Tarity ->
@@ -107,7 +107,7 @@ let rec pp_expr par env args =
   let apply st = match args with
     | [] -> st
     | _  -> hOV 2 [< open_par par; st; 'sPC;
-                     prlist_with_sep (fun () -> [<'sPC>]) (fun s -> s) args;
+                     prlist_with_sep (fun () -> [< 'sPC >]) (fun s -> s) args;
                      close_par par >] 
   in
   function
@@ -119,7 +119,7 @@ let rec pp_expr par env args =
     | MLlam _ as a -> 
       	let fl,a' = collect_lambda a in
 	let fl = rename_bvars env fl in
-	let st = [< abst (List.rev fl); pp_expr false (fl@env) [] a' >] in
+	let st = [< abst (List.rev fl); pp_expr false (fl @ env) [] a' >] in
 	if args = [] then
           [< open_par par; st; close_par par >]
         else
@@ -129,25 +129,25 @@ let rec pp_expr par env args =
 	hOV 0 [< hOV 2 [< 'sTR "let "; pr_id (List.hd id'); 'sTR " ="; 'sPC;
 			  pp_expr false env [] a1; 'sPC; 'sTR "in" >];
 		 'sPC;
-		 pp_expr false (id'@env) [] a2 >] 
+		 pp_expr false (id' @ env) [] a2 >] 
     | MLglob r -> 
 	apply (P.pp_global r)
-    | MLcons (_,id,[]) ->
-	pr_id id
-    | MLcons (_,id,[a]) ->
-	[< open_par par; pr_id id; 'sPC; pp_expr true env [] a;
-	   pp_expr true env [] a ; close_par par >]
-    | MLcons (_,id,args') ->
-	[< open_par par; pr_id id; 'sPC;
+    | MLcons (r,_,[]) ->
+	P.pp_global r
+    | MLcons (r,_,[a]) ->
+	[< open_par par; P.pp_global r; 'sPC;
+	   pp_expr true env [] a; close_par par >]
+    | MLcons (r,_,args') ->
+	[< open_par par; P.pp_global r; 'sPC;
 	   pp_tuple (pp_expr true env []) args'; close_par par >]
     | MLcase (t, pv) ->
       	apply
-      	  [< if args<>[] then [< 'sTR"(" >]  else open_par par;
+      	  [< if args <> [] then [< 'sTR "(" >]  else open_par par;
       	     v 0 [< 'sTR "match "; pp_expr false env [] t; 'sTR " with";
-		    'fNL; 'sTR "  "; pp_pat env pv >] ;
-	     if args<>[] then [< 'sTR")" >] else close_par par >]
-    | MLfix (i,b,idl,al) ->
-      	pp_fix par env (i,b,idl,al) args
+		    'fNL; 'sTR "  "; pp_pat env pv >];
+	     if args <> [] then [< 'sTR ")" >] else close_par par >]
+    | MLfix (i,idl,al) ->
+      	pp_fix par env true (i,idl,al) args
     | MLexn id -> 
 	[< open_par par; 'sTR "failwith"; 'sPC; 
 	   'qS (string_of_id id); close_par par >]
@@ -170,24 +170,19 @@ and pp_pat env pv =
       | MLcase _ -> true
       | _        -> false 
     in
-    hOV 2 [< 'sTR(string_of_id name) ;
+    hOV 2 [< pr_id name;
 	     begin match ids with 
-		 [] -> [< >]
-	       | _  -> 
-      		   [< 'sTR " ";
-		      pp_boxed_tuple
-			(fun id -> [< 'sTR(string_of_id id) >]) 
-			(List.rev ids) >]
-	     end ;
-	     'sTR" ->" ; 'sPC ; pp_expr par (ids@env) [] t
-          >]
+	       | [] -> [< >]
+	       | _  -> [< 'sTR " "; pp_boxed_tuple pr_id ids >]
+	     end;
+	     'sTR " ->"; 'sPC; pp_expr par (List.rev ids @ env) [] t >]
   in 
-  [< prvect_with_sep (fun () -> [< 'fNL ; 'sTR"| " >]) pp_one_pat pv >]
+  [< prvect_with_sep (fun () -> [< 'fNL; 'sTR "| " >]) pp_one_pat pv >]
 
-and pp_fix par env (j,in_p,fid,bl) args =
+and pp_fix par env in_p (j,fid,bl) args =
   let env' = (List.rev fid) @ env in
   [< open_par par; 
-     v 0 [< 'sTR"let rec " ;
+     v 0 [< 'sTR "let rec " ;
 	    prlist_with_sep
       	      (fun () -> [< 'fNL; 'sTR "and " >])
 	      (fun (fi,ti) -> pp_function env' fi ti)
@@ -214,18 +209,18 @@ and pp_function env f t =
   match t' with 
     | MLcase(MLrel 1,pv) ->
 	if is_function pv then
-	  [< 'sTR(string_of_id f) ; pr_binding (List.rev (List.tl bl)) ;
-       	     'sTR" = function" ; 'fNL ;
-	     v 0 [< 'sTR"  " ; pp_pat (bl@env) pv >] >]
+	  [< pr_id f; pr_binding (List.rev (List.tl bl)) ;
+       	     'sTR " = function"; 'fNL;
+	     v 0 [< 'sTR "  "; pp_pat (bl @ env) pv >] >]
 	else
-          [< 'sTR(string_of_id f) ; pr_binding (List.rev bl) ; 
-             'sTR" = match " ;
-	     'sTR(string_of_id (List.hd bl)) ; 'sTR" with" ; 'fNL ;
-	     v 0 [< 'sTR"  " ; pp_pat (bl@env) pv >] >]
+          [< pr_id f; pr_binding (List.rev bl); 
+             'sTR " = match ";
+	     pr_id (List.hd bl); 'sTR " with"; 'fNL;
+	     v 0 [< 'sTR "  "; pp_pat (bl @ env) pv >] >]
 	  
-    | _ -> [< 'sTR(string_of_id f) ; pr_binding (List.rev bl) ;
-	      'sTR" =" ; 'fNL ; 'sTR"  " ;
-	      hOV 2 (pp_expr false (bl@env) [] t') >]
+    | _ -> [< pr_id f; pr_binding (List.rev bl);
+	      'sTR " ="; 'fNL; 'sTR "  ";
+	      hOV 2 (pp_expr false (bl @ env) [] t') >]
 	
 let pp_ast a = hOV 0 (pp_expr false [] [] a)
 
@@ -244,8 +239,8 @@ let pp_one_inductive (pl,name,cl) =
 		      (fun () -> [< 'sPC ; 'sTR "* " >]) pp_type l >] >] 
   in
   [< pp_parameters pl; pr_id name; 'sTR " ="; 'fNL; 
-     v 0 [< 'sTR "    " ;
-	    prlist_with_sep (fun () -> [< 'fNL ; 'sTR "  | ">])
+     v 0 [< 'sTR "    ";
+	    prlist_with_sep (fun () -> [< 'fNL; 'sTR "  | " >])
                             (fun c -> hOV 2 (pp_constructor c)) cl >] >]
 
 let pp_inductive il =
@@ -262,15 +257,29 @@ let pp_decl = function
   | Dabbrev (id, l, t) ->
       hOV 0 [< 'sTR "type"; 'sPC; pp_parameters l; 
 	       pr_id id; 'sPC; 'sTR "="; 'sPC; pp_type t >]
-  | Dglob (id, MLfix (n,_,idl,l)) ->
+  | Dglob (id, MLfix (n,idl,l)) ->
       let id' = List.nth idl n in
       if id = id' then
-	[<  hOV 2 (pp_fix false [] (n,false,idl,l) []) >]
+	[<  hOV 2 (pp_fix false [] false (n,idl,l) []) >]
       else
 	[< 'sTR "let "; pr_id id; 'sTR " ="; 'fNL;
 	   v 0 [< 'sTR "  "; 
-		  hOV 2 (pp_fix false [] (n,true,idl,l) []); 'fNL >] >]
+		  hOV 2 (pp_fix false [] true (n,idl,l) []); 'fNL >] >]
   | Dglob (id, a) ->
       hOV 0 [< 'sTR "let "; pp_function [] id a >]
 
 end
+
+(*s Renaming issues. *)
+
+module OcamlParams = struct
+
+let pp_type_global r = failwith "todo" 
+
+let pp_global r = failwith "todo"
+
+end
+
+(*s The ocaml pretty-printing module. *)
+
+module Pp = Make(OcamlParams)

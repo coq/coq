@@ -18,6 +18,7 @@ open Reduction
 open Inductive
 open Instantiate
 open Miniml
+open Mlutil
 open Mlimport
 open Closure
 
@@ -100,7 +101,7 @@ let array_foldi f a =
 let flexible_name = id_of_string "flex"
 
 let id_of_name = function
-  | Anonymous -> id_of_string "_"
+  | Anonymous -> id_of_string "x"
   | Name id   -> id
 
 (* This function [params_of_sign] extracts the type parameters ('a in Caml)
@@ -205,6 +206,14 @@ let rec push_many_rels_ctx env ctx = function
 let fix_environment env ctx fl tl =
   push_many_rels_ctx env ctx (List.combine fl (Array.to_list tl))
 
+(* Test for the application of a constructor *)
+
+let rec is_constructor_app c = match kind_of_term c with
+  | IsApp (c,_) -> is_constructor_app c
+  | IsCast (c,_) -> is_constructor_app c
+  | IsMutConstruct _ -> true
+  | _ -> false
+
 (* Decomposition of a type beginning with at least n products when reduced *)
 
 let decompose_prod_reduce n env c = 
@@ -213,22 +222,22 @@ let decompose_prod_reduce n env c =
       c 
     else 
       whd_betadeltaiota env Evd.empty c 
-  in decompose_prod_n n c
+  in 
+  decompose_prod_n n c
 
 (* Decomposition of a function expecting n arguments at least. We eta-expanse
    if needed *)
 
 let decompose_lam_eta n env c = 
   let dif = n - (nb_lam c) in 
-  if (dif <= 0) then 
+  if dif <= 0 then 
     decompose_lam_n n c
   else 
     let tyc = Typing.type_of env Evd.empty c in
     let (type_binders,_) = decompose_prod_reduce n env tyc in
     let (binders, e) = decompose_lam c in 
     let binders = (list_firstn dif type_binders) @ binders in 
-    let e =
-      applist (lift dif e, List.rev_map mkRel (interval 1 dif)) in
+    let e = applist (lift dif e, List.rev_map mkRel (interval 1 dif)) in
     (binders, e)
 
 
@@ -432,7 +441,11 @@ and extract_term_with_type env ctx c t =
     | IsConst (sp,_) ->
 	Rmlterm (MLglob (ConstRef sp))
     | IsMutConstruct (cp,_) ->
-	Rmlterm (MLglob (ConstructRef cp)) (* TODO eta-expansion *)
+	let (_,s) = extract_constructor cp in
+	let n = 
+	  List.fold_left (fun n (v,_) -> if v = Vdefault then n+1 else n) 0 s 
+	in
+	Rmlterm (MLcons (ConstructRef cp,n,[]))
     | IsMutCase ((ni,(ip,cnames,_,_,_)),p,c,br) ->
 	let extract_branch j b =
 	  let (_,s) = extract_constructor (ip,succ j) in
@@ -441,8 +454,9 @@ and extract_term_with_type env ctx c t =
 	  let (binders,e) = decompose_lam_eta ni.(j) env b in
 	  let binders = List.rev binders in
 	  let (env',ctx') = push_many_rels_ctx env ctx binders in
-	  (* Some patological cases need an extract_constr here 
-	     rather than an extract_term. See exemples in test_extraction.v *)
+	  (* Some patological cases need an [extract_constr] here 
+	     rather than an [extract_term]. See exemples in 
+	     [test_extraction.v] *)
 	  let e' = match extract_constr env' ctx' e with
 	    | Eprop -> MLprop
 	    | Emltype _ -> MLarity
@@ -456,10 +470,10 @@ and extract_term_with_type env ctx c t =
 	  in
 	  (cnames.(j), ids, e')
 	in
-	(* c has an  inductive type, not an arity type *)
+	(* [c] has an  inductive type, not an arity type *)
 	(match extract_term env ctx c with
 	   | Rmlterm a -> Rmlterm (MLcase (a, Array.mapi extract_branch br))
-	   | Rprop -> (* Singlaton elimination *)
+	   | Rprop -> (* Singleton elimination *)
 	       assert (Array.length br = 1);
 	       let (c,ids,e) = extract_branch 0 br.(0) in 	  
 	       Rmlterm e)
@@ -472,7 +486,7 @@ and extract_term_with_type env ctx c t =
 	    | Emlterm a -> a
 	in
 	let ei = array_map_to_list extract_fix_body ci in
-	Rmlterm (MLfix (i, true, List.map id_of_name fi, ei))
+	Rmlterm (MLfix (i, List.map id_of_name fi, ei))
     | IsLetIn (n, c1, t1, c2) ->
 	let id = id_of_name n in
 	let env' = push_rel (n,Some c1,t1) env in
@@ -622,7 +636,15 @@ let extract_declaration = function
 
 (*s Registration of vernac commands for extraction. *)
 
-module Pp = Ocaml.Make(struct let pp_global = Printer.pr_global end)
+module ToplevelParams = struct
+  let pp_type_global = Printer.pr_global
+  let pp_global = Printer.pr_global
+end
+
+module Pp = Ocaml.Make(ToplevelParams)
+
+let pp_ast a = Pp.pp_ast (uncurrify_ast a)
+let pp_decl d = Pp.pp_decl (uncurrify_decl d)
 
 open Vernacinterp
 
@@ -635,16 +657,16 @@ let _ =
 	      match kind_of_term c with
 		(* If it is a global reference, then output the declaration *)
 		| IsConst (sp,_) -> 
-		    mSGNL (Pp.pp_decl (extract_declaration (ConstRef sp)))
+		    mSGNL (pp_decl (extract_declaration (ConstRef sp)))
 		| IsMutInd (ind,_) ->
-		    mSGNL (Pp.pp_decl (extract_declaration (IndRef ind)))
+		    mSGNL (pp_decl (extract_declaration (IndRef ind)))
 		| IsMutConstruct (cs,_) ->
-		    mSGNL (Pp.pp_decl (extract_declaration (ConstructRef cs)))
+		    mSGNL (pp_decl (extract_declaration (ConstructRef cs)))
 		(* Otherwise, output the ML type or expression *)
 		| _ ->
 		    match extract_constr (Global.env()) [] c with
 		      | Emltype (t,_,_) -> mSGNL (Pp.pp_type t)
-		      | Emlterm a -> mSGNL (Pp.pp_ast a)
+		      | Emlterm a -> mSGNL (pp_ast a)
 		      | Eprop -> message "prop")
        | _ -> assert false)
 
