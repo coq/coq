@@ -663,6 +663,10 @@ and fID_OPT_OR_ALL = function
 and fID_OR_INT = function
 | CT_coerce_ID_to_ID_OR_INT x -> fID x
 | CT_coerce_INT_to_ID_OR_INT x -> fINT x
+and fID_OR_INT_OPT = function
+| CT_coerce_ID_OPT_to_ID_OR_INT_OPT x -> fID_OPT x
+| CT_coerce_ID_OR_INT_to_ID_OR_INT_OPT x -> fID_OR_INT x
+| CT_coerce_INT_OPT_to_ID_OR_INT_OPT x -> fINT_OPT x
 and fID_OR_STRING = function
 | CT_coerce_ID_to_ID_OR_STRING x -> fID x
 | CT_coerce_STRING_to_ID_OR_STRING x -> fSTRING x
@@ -1019,7 +1023,7 @@ and fTACTIC_COM = function
    fNODE "decompose_list" 2
 | CT_depinversion(x1, x2, x3) ->
    fINV_TYPE x1;
-   fID x2;
+   fID_OR_INT x2;
    fFORMULA_OPT x3;
    fNODE "depinversion" 3
 | CT_deprewrite_lr(x1) ->
@@ -1035,7 +1039,7 @@ and fTACTIC_COM = function
    fID x1;
    fNODE "dhyp" 1
 | CT_discriminate_eq(x1) ->
-   fID_OPT x1;
+   fID_OR_INT_OPT x1;
    fNODE "discriminate_eq" 1
 | CT_do(x1, x2) ->
    fINT x1;
@@ -1045,13 +1049,15 @@ and fTACTIC_COM = function
    fFORMULA x1;
    fSPEC_LIST x2;
    fNODE "eapply" 2
-| CT_eauto(x1) ->
-   fINT_OPT x1;
-   fNODE "eauto" 1
-| CT_eauto_with(x1, x2) ->
-   fINT_OPT x1;
-   fID_NE_LIST_OR_STAR x2;
-   fNODE "eauto_with" 2
+| CT_eauto(x1, x2) ->
+   fID_OR_INT_OPT x1;
+   fID_OR_INT_OPT x2;
+   fNODE "eauto" 2
+| CT_eauto_with(x1, x2, x3) ->
+   fID_OR_INT_OPT x1;
+   fID_OR_INT_OPT x2;
+   fID_NE_LIST_OR_STAR x3;
+   fNODE "eauto_with" 3
 | CT_elim(x1, x2, x3) ->
    fFORMULA x1;
    fSPEC_LIST x2;
@@ -1092,7 +1098,7 @@ and fTACTIC_COM = function
    fTACTIC_COM x1;
    fNODE "info" 1
 | CT_injection_eq(x1) ->
-   fID_OPT x1;
+   fID_OR_INT_OPT x1;
    fNODE "injection_eq" 1
 | CT_intro(x1) ->
    fID_OPT x1;
@@ -1109,7 +1115,7 @@ and fTACTIC_COM = function
    fNODE "intros_until" 1
 | CT_inversion(x1, x2, x3) ->
    fINV_TYPE x1;
-   fID x2;
+   fID_OR_INT x2;
    fID_LIST x3;
    fNODE "inversion" 3
 | CT_left(x1) ->
@@ -1228,7 +1234,7 @@ and fTACTIC_COM = function
    fFORMULA x1;
    fNODE "use" 1
 | CT_use_inversion(x1, x2, x3) ->
-   fID x1;
+   fID_OR_INT x1;
    fFORMULA x2;
    fID_LIST x3;
    fNODE "use_inversion" 3
@@ -1327,8 +1333,8 @@ and fVAR = function
 | CT_coerce_FORMULA_LIST_to_VARG x -> fFORMULA_LIST x
 | CT_coerce_FORMULA_OPT_to_VARG x -> fFORMULA_OPT x
 | CT_coerce_ID_OPT_OR_ALL_to_VARG x -> fID_OPT_OR_ALL x
+| CT_coerce_ID_OR_INT_OPT_to_VARG x -> fID_OR_INT_OPT x
 | CT_coerce_INT_LIST_to_VARG x -> fINT_LIST x
-| CT_coerce_INT_OPT_to_VARG x -> fINT_OPT x
 | CT_coerce_STRING_OPT_to_VARG x -> fSTRING_OPT x
 | CT_coerce_TACTIC_OPT_to_VARG x -> fTACTIC_OPT x
 | CT_coerce_VARG_LIST_to_VARG x -> fVARG_LIST x

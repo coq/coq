@@ -203,6 +203,18 @@ let xlate_int =
     | Num (_, n) -> CT_int n
     | _ -> xlate_error "xlate_int: not an int";;
 
+let xlate_id_to_id_or_int_opt s =
+   CT_coerce_ID_OPT_to_ID_OR_INT_OPT
+     (CT_coerce_ID_to_ID_OPT (CT_ident (string_of_id s)));;
+
+let xlate_int_to_id_or_int_opt n =
+   CT_coerce_ID_OR_INT_to_ID_OR_INT_OPT
+     (CT_coerce_INT_to_ID_OR_INT (CT_int n));;
+
+let none_in_id_or_int_opt =
+  CT_coerce_ID_OPT_to_ID_OR_INT_OPT
+    (CT_coerce_NONE_to_ID_OPT(CT_none));;
+
 let xlate_int_opt = function
   | Some n -> CT_coerce_INT_to_INT_OPT (CT_int n)
   | None ->  CT_coerce_NONE_to_INT_OPT CT_none
@@ -846,6 +858,12 @@ let xlate_quantified_hypothesis = function
   | AnonHyp n -> CT_coerce_INT_to_ID_OR_INT (CT_int n)
   | NamedHyp id -> CT_coerce_ID_to_ID_OR_INT (xlate_ident id)
 
+let xlate_quantified_hypothesis_opt = function
+  | None -> 
+      CT_coerce_ID_OPT_to_ID_OR_INT_OPT ctv_ID_OPT_NONE
+  | Some (AnonHyp n) -> xlate_int_to_id_or_int_opt n
+  | Some (NamedHyp id) -> xlate_id_to_id_or_int_opt id;;
+
 let xlate_explicit_binding (h,c) = 
   CT_binding (xlate_quantified_hypothesis h, xlate_constr c)
 
@@ -1094,13 +1112,15 @@ and xlate_tac =
     | TacDoubleInduction _ -> xlate_error "TODO: Double Induction id1 id2"
     | TacExtend ("Discriminate", [idopt]) ->
      CT_discriminate_eq
-         (xlate_ident_opt (out_gen (wit_opt rawwit_ident) idopt))
+         (xlate_quantified_hypothesis_opt
+	    (out_gen (wit_opt rawwit_quant_hyp) idopt))
     | TacExtend ("DEq", [idopt]) ->
      CT_simplify_eq
          (xlate_ident_opt (out_gen (wit_opt rawwit_ident) idopt))
     | TacExtend ("Injection", [idopt]) ->
      CT_injection_eq
-         (xlate_ident_opt (out_gen (wit_opt rawwit_ident) idopt))
+         (xlate_quantified_hypothesis_opt
+	    (out_gen (wit_opt rawwit_quant_hyp) idopt))
     | TacFix (idopt, n) ->
      CT_fixtactic (xlate_ident_opt idopt, CT_int n, CT_fix_tac_list [])
     | TacMutualFix (id, n, fixtac_list) ->
@@ -1205,15 +1225,26 @@ and xlate_tac =
              CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STAR(
              CT_id_ne_list(CT_ident id1, List.map (fun x -> CT_ident x) idl)))
     | TacExtend ("EAuto", [nopt; popt; idl]) ->
-	let control =
-	match out_gen (wit_opt rawwit_int_or_var) nopt with
-	  | Some breadth -> Some (true, breadth)
-	  | None ->
-	match out_gen (wit_opt rawwit_int_or_var) popt with
-	  | Some depth -> Some (false, depth)
-	  | None -> None in
-	let idl = out_gen (wit_opt (wit_list0 rawwit_string)) idl in
-	xlate_error "TODO: EAuto n p"
+	let first_n =
+	  match out_gen (wit_opt rawwit_int_or_var) nopt with
+	    | Some (ArgVar(_, s)) -> xlate_id_to_id_or_int_opt s
+	    | Some ArgArg n -> xlate_int_to_id_or_int_opt n
+	    | None -> none_in_id_or_int_opt in
+	let second_n =
+	  match out_gen (wit_opt rawwit_int_or_var) popt with
+	    | Some (ArgVar(_, s)) -> xlate_id_to_id_or_int_opt s
+	    | Some ArgArg n -> xlate_int_to_id_or_int_opt n
+	    | None -> none_in_id_or_int_opt in
+	let idl = out_gen Eauto.rawwit_hintbases idl in
+          (match idl with
+	    None -> CT_eauto_with(first_n, second_n, CT_star)
+	  | Some [] -> CT_eauto(first_n, second_n)
+	  | Some (a::l) -> 
+	      CT_eauto_with(first_n, second_n,
+			    CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STAR
+			      (CT_id_ne_list
+				 (CT_ident a,
+				  List.map (fun x -> CT_ident x) l))))
     | TacExtend ("Prolog", [cl; n]) ->
       let cl = List.map xlate_constr (out_gen (wit_list0 rawwit_constr) cl) in
       (match out_gen wit_int_or_var n with
@@ -1272,15 +1303,13 @@ and xlate_tac =
        CT_clear (CT_id_ne_list (ident_or_meta_to_ct_ID id, idl'))
     | (*For translating tactics/Inv.v *)
       TacExtend ("SimpleInversion"|"Inversion"|"InversionClear" as s, [id]) ->
-	let quant_hyp =  (out_gen rawwit_quant_hyp id) in
-	  (match quant_hyp with
-	       NamedHyp id1 -> 	let id = xlate_ident id1  in
-		 CT_inversion (compute_INV_TYPE_from_string s, id, CT_id_list [])
-	     | AnonHyp _ -> assert false)
+	let quant_hyp =  out_gen rawwit_quant_hyp id in
+	  CT_inversion(compute_INV_TYPE_from_string s,
+		       xlate_quantified_hypothesis quant_hyp, CT_id_list [])
     | TacExtend ("SimpleInversion"|"Inversion"|"InversionClear" as s,
         [id;copt_or_idl]) ->
-(* TODO: rawwit_ident should be rawwit_quant_hyp *)
-	let id = xlate_ident (out_gen rawwit_ident id) in
+	let quant_hyp = (out_gen rawwit_quant_hyp id) in
+	let id = xlate_quantified_hypothesis quant_hyp in
 	(match genarg_tag copt_or_idl with
 	  | List1ArgType IdentArgType -> (* InvIn *)
 	      let idl = out_gen (wit_list1 rawwit_ident) copt_or_idl in
@@ -1292,11 +1321,11 @@ and xlate_tac =
 		(compute_INV_TYPE_from_string s, id, xlate_constr_opt copt)
 	  | _ -> xlate_error "")
     | TacExtend ("InversionUsing", [id; c]) ->
-     let id = xlate_ident (out_gen rawwit_ident id) in
+     let id = xlate_quantified_hypothesis (out_gen rawwit_quant_hyp id) in
      let c = out_gen rawwit_constr c in
      CT_use_inversion (id, xlate_constr c, CT_id_list [])
     | TacExtend ("InversionUsing", [id; c; idlist]) ->
-     let id = xlate_ident (out_gen rawwit_ident id) in
+     let id = xlate_quantified_hypothesis (out_gen rawwit_quant_hyp id) in
      let c = out_gen rawwit_constr c in
      let idlist = out_gen (wit_list1 rawwit_ident) idlist in
      CT_use_inversion (id, xlate_constr c,
@@ -1385,11 +1414,15 @@ let coerce_genarg_to_VARG x =
   | BoolArgType -> xlate_error "TODO: generic boolean argument"
   | IntArgType ->
       let n = out_gen rawwit_int x in
-      CT_coerce_INT_OPT_to_VARG (CT_coerce_INT_to_INT_OPT (CT_int n))
+      CT_coerce_ID_OR_INT_OPT_to_VARG
+	(CT_coerce_INT_OPT_to_ID_OR_INT_OPT
+	   (CT_coerce_INT_to_INT_OPT (CT_int n)))
   | IntOrVarArgType ->
       (match out_gen rawwit_int_or_var x with
 	| ArgArg n -> 
-	    CT_coerce_INT_OPT_to_VARG (CT_coerce_INT_to_INT_OPT (CT_int n))
+      CT_coerce_ID_OR_INT_OPT_to_VARG
+	(CT_coerce_INT_OPT_to_ID_OR_INT_OPT
+	   (CT_coerce_INT_to_INT_OPT (CT_int n)))
 	| ArgVar (_,id) ->
 	    CT_coerce_ID_OPT_OR_ALL_to_VARG
 	      (CT_coerce_ID_OPT_to_ID_OPT_OR_ALL
@@ -1626,7 +1659,7 @@ let xlate_vernac =
     | VernacFocus nopt -> CT_focus (xlate_int_opt nopt)
     | VernacUnfocus -> CT_unfocus
   | VernacExtend ("HintRewrite", orient :: formula_list :: base :: t) ->
-      let orient = out_gen rawwit_bool orient in
+      let orient = out_gen Extraargs.rawwit_orient orient in
       let formula_list = out_gen (wit_list1 (rawwit_constr)) formula_list in
       let base = out_gen rawwit_pre_ident base in
       let t = match t with

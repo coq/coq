@@ -62,6 +62,26 @@ test_output() {
     done
 }
 
+# La fonction suivante teste l'analyseur syntaxique fournit par "parser"
+# Elle fonctionne comme test_output
+test_parser() {
+    for f in $1/*.v; do
+        nbtests=`expr $nbtests + 1`
+        printf "    "$f"..."
+        tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`
+        foutput=`dirname $f`/`basename $f .v`.out
+        echo "parse_file 1 \"$f\"" | ../bin/parser > $tmpoutput 2>&1
+        perl -ne 'if(/Starting.*Parser Loop/){$printit = 1};print if $printit' \
+            $tmpoutput | diff - $foutput > /dev/null
+        if [ $? = 0 ] ; then
+            echo "Ok"
+            nbtestsok=`expr $nbtestsok + 1`
+        else
+            echo "Error! (unexpected output)"
+        fi
+    done
+}
+
 # Programme principal
 
 echo "Output tests"
@@ -70,7 +90,8 @@ echo "Success tests"
 test_succes success
 echo "Failure tests"
 test_echec failure
-
+echo "Parser tests"
+test_parser parser
 pourcentage=`expr 100 \* $nbtestsok / $nbtests`
 echo
 echo "$nbtestsok tests passed over $nbtests, i.e. $pourcentage %"

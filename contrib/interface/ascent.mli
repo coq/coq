@@ -267,6 +267,10 @@ and ct_ID_OPT_OR_ALL =
 and ct_ID_OR_INT =
     CT_coerce_ID_to_ID_OR_INT of ct_ID
   | CT_coerce_INT_to_ID_OR_INT of ct_INT
+and ct_ID_OR_INT_OPT =
+    CT_coerce_ID_OPT_to_ID_OR_INT_OPT of ct_ID_OPT
+  | CT_coerce_ID_OR_INT_to_ID_OR_INT_OPT of ct_ID_OR_INT
+  | CT_coerce_INT_OPT_to_ID_OR_INT_OPT of ct_INT_OPT
 and ct_ID_OR_STRING =
     CT_coerce_ID_to_ID_OR_STRING of ct_ID
   | CT_coerce_STRING_to_ID_OR_STRING of ct_STRING
@@ -443,16 +447,16 @@ and ct_TACTIC_COM =
   | CT_cutrewrite_rl of ct_FORMULA * ct_ID_OPT
   | CT_dconcl
   | CT_decompose_list of ct_ID_NE_LIST * ct_FORMULA
-  | CT_depinversion of ct_INV_TYPE * ct_ID * ct_FORMULA_OPT
+  | CT_depinversion of ct_INV_TYPE * ct_ID_OR_INT * ct_FORMULA_OPT
   | CT_deprewrite_lr of ct_ID
   | CT_deprewrite_rl of ct_ID
   | CT_destruct of ct_ID_OR_INT
   | CT_dhyp of ct_ID
-  | CT_discriminate_eq of ct_ID_OPT
+  | CT_discriminate_eq of ct_ID_OR_INT_OPT
   | CT_do of ct_INT * ct_TACTIC_COM
   | CT_eapply of ct_FORMULA * ct_SPEC_LIST
-  | CT_eauto of ct_INT_OPT
-  | CT_eauto_with of ct_INT_OPT * ct_ID_NE_LIST_OR_STAR
+  | CT_eauto of ct_ID_OR_INT_OPT * ct_ID_OR_INT_OPT
+  | CT_eauto_with of ct_ID_OR_INT_OPT * ct_ID_OR_INT_OPT * ct_ID_NE_LIST_OR_STAR
   | CT_elim of ct_FORMULA * ct_SPEC_LIST * ct_USING
   | CT_elim_type of ct_FORMULA
   | CT_exact of ct_FORMULA
@@ -465,12 +469,12 @@ and ct_TACTIC_COM =
   | CT_idtac
   | CT_induction of ct_ID_OR_INT
   | CT_info of ct_TACTIC_COM
-  | CT_injection_eq of ct_ID_OPT
+  | CT_injection_eq of ct_ID_OR_INT_OPT
   | CT_intro of ct_ID_OPT
   | CT_intro_after of ct_ID_OPT * ct_ID
   | CT_intros of ct_INTRO_PATT_LIST
   | CT_intros_until of ct_ID
-  | CT_inversion of ct_INV_TYPE * ct_ID * ct_ID_LIST
+  | CT_inversion of ct_INV_TYPE * ct_ID_OR_INT * ct_ID_LIST
   | CT_left of ct_SPEC_LIST
   | CT_lettac of ct_LET_CLAUSES * ct_LET_VALUE
   | CT_match_context of ct_CONTEXT_RULE * ct_CONTEXT_RULE list
@@ -504,7 +508,7 @@ and ct_TACTIC_COM =
   | CT_trivial_with of ct_ID_NE_LIST_OR_STAR
   | CT_try of ct_TACTIC_COM
   | CT_use of ct_FORMULA
-  | CT_use_inversion of ct_ID * ct_FORMULA * ct_ID_LIST
+  | CT_use_inversion of ct_ID_OR_INT * ct_FORMULA * ct_ID_LIST
   | CT_user_tac of ct_ID * ct_TARG_LIST
 and ct_TACTIC_OPT =
     CT_coerce_NONE_to_TACTIC_OPT of ct_NONE
@@ -563,8 +567,8 @@ and ct_VARG =
   | CT_coerce_FORMULA_LIST_to_VARG of ct_FORMULA_LIST
   | CT_coerce_FORMULA_OPT_to_VARG of ct_FORMULA_OPT
   | CT_coerce_ID_OPT_OR_ALL_to_VARG of ct_ID_OPT_OR_ALL
+  | CT_coerce_ID_OR_INT_OPT_to_VARG of ct_ID_OR_INT_OPT
   | CT_coerce_INT_LIST_to_VARG of ct_INT_LIST
-  | CT_coerce_INT_OPT_to_VARG of ct_INT_OPT
   | CT_coerce_STRING_OPT_to_VARG of ct_STRING_OPT
   | CT_coerce_TACTIC_OPT_to_VARG of ct_TACTIC_OPT
   | CT_coerce_VARG_LIST_to_VARG of ct_VARG_LIST
