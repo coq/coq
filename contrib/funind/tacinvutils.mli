@@ -71,9 +71,10 @@ val expand_letins: constr -> constr
 
 val def_of_const: constr -> constr
 val name_of_const: constr -> string
+
 (*i
- Local Variables:
- compile-command: "make -k tacinvutils.cmi"
- End:
+ *** Local Variables: ***
+ *** compile-command: "make -C ../.. contrib/funind/tacinvutils.cmi" ***
+ *** End: ***
 i*)
 
