@@ -31,12 +31,12 @@ open Decl_kinds
 
 val declare_definition : identifier -> definition_kind ->
   local_binder list -> Tacred.red_expr option -> constr_expr ->
-    constr_expr option -> global_reference
+    constr_expr option -> declaration_hook -> unit
 
 val syntax_definition : identifier -> constr_expr -> unit
 
-val declare_assumption : identifier -> assumption_kind -> 
-  local_binder list -> constr_expr -> global_reference
+val declare_assumption : identifier -> coercion_flag -> assumption_kind -> 
+  local_binder list -> constr_expr -> unit
 
 val build_mutual : inductive_expr list -> bool -> unit
 

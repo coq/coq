@@ -100,12 +100,12 @@ let declare_global_definition ident ce local =
   if_verbose message ((string_of_id ident) ^ " is defined");
   ConstRef kn
 
-let declare_definition ident local bl red_option c typopt =
+let declare_definition ident local bl red_option c typopt hook =
   let ce = constant_entry_of_com (bl,c,typopt,false) in
   if bl<>[] && red_option <> None then 
     error "Evaluation under a local context not supported";
   let ce' = red_constant_entry ce red_option in
-  match local with
+  let r = match local with
     | Local when Lib.sections_are_opened () ->
         let c =
           SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type,false) in
@@ -116,8 +116,9 @@ let declare_definition ident local bl red_option c typopt =
           str" is not visible from current goals");
         VarRef ident
     | (Global|Local) ->
-        declare_global_definition ident ce' local
-
+        declare_global_definition ident ce' local in
+  Symbols.declare_ref_arguments_scope r;
+  hook local r
 
 let syntax_definition ident c =
   let c = snd (interp_aconstr [] c) in 
@@ -131,10 +132,10 @@ let syntax_definition ident c =
 let assumption_message id =
   if_verbose message ((string_of_id id) ^ " is assumed")
 
-let declare_assumption ident (local,kind) bl c =
+let declare_assumption ident is_coe (local,kind) bl c =
   let c = prod_rawconstr c bl in
   let c = interp_type Evd.empty (Global.env()) c in
-  match local with
+  let r = match local with
     | Local when Lib.sections_are_opened () ->
         let r = 
           declare_variable ident 
@@ -151,7 +152,9 @@ let declare_assumption ident (local,kind) bl c =
         if local=Local & Options.is_verbose () then
           msg_warning (pr_id ident ++ str" is declared as a parameter" ++
           str" because it is at a global level");
-        ConstRef kn
+        ConstRef kn in
+  if is_coe then Class.try_add_new_coercion r local;
+  Symbols.declare_ref_arguments_scope r
 
 (* 3| Mutual Inductive definitions *)
 
@@ -292,6 +295,11 @@ let build_mutual lind finite =
     option_iter (fun (_,names,(df,scope)) ->
       Metasyntax.add_notation_interpretation df
         (ARef (IndRef (kn,i)),names) scope)) notations;
+  list_iter_i (fun i (_,_,_,_,lc) ->
+    Symbols.declare_ref_arguments_scope (IndRef (kn,i));
+    for j=1 to List.length lc do
+      Symbols.declare_ref_arguments_scope (ConstructRef ((kn,i),j));
+    done) lind;
   List.iter
     (fun id -> 
       Class.try_add_new_coercion (locate (make_short_qualid id)) Global) coes
@@ -406,8 +414,11 @@ let build_recursive lnameargsardef =
       lnonrec 
   in
   List.iter (option_iter (fun (recname,names,(df,scope)) ->
-      Metasyntax.add_notation_interpretation df
-        (ARef (ConstRef (Lib.make_kn recname)),names) scope)) notations
+    Metasyntax.add_notation_interpretation df
+      (ARef (ConstRef (Lib.make_kn recname)),names) scope)) notations;
+  List.iter (fun recname ->
+    Symbols.declare_ref_arguments_scope (ConstRef (Lib.make_kn recname)))
+    lrecnames
 
 let build_corecursive lnameardef = 
   let lrecnames = List.map (fun (f,_,_) -> f) lnameardef
@@ -466,7 +477,9 @@ let build_corecursive lnameardef =
       (List.map var_subst (Array.to_list namerec))
       lnonrec 
   in
-  ()
+  List.iter (fun recname ->
+    Symbols.declare_ref_arguments_scope (ConstRef (Lib.make_kn recname)))
+    lrecnames
 
 let build_scheme lnamedepindsort = 
   let lrecnames = List.map (fun (f,_,_,_) -> f) lnamedepindsort
@@ -540,20 +553,21 @@ let save id const kind hook =
   let {const_entry_body = pft;
        const_entry_type = tpo;
        const_entry_opaque = opacity } = const in
-  begin match kind with
+  let l,r = match kind with
     | IsLocal when Lib.sections_are_opened () ->
 	let c = SectionLocalDef (pft, tpo, opacity) in
 	let _ = declare_variable id (Lib.cwd(), c, IsDefinition) in
-	hook Local (VarRef id)
+	(Local, VarRef id)
     | IsLocal ->
         let k = IsDefinition in
         let _,kn = declare_constant id (DefinitionEntry const, k) in
-	hook Global (ConstRef kn)
+	(Global, ConstRef kn)
     | IsGlobal k ->
         let k = theorem_kind_of_goal_kind k in
         let _,kn = declare_constant id (DefinitionEntry const, k) in
-	hook Global (ConstRef kn)
-  end;
+	(Global, ConstRef kn) in
+  hook l r;
+  Symbols.declare_ref_arguments_scope r;
   Pfedit.delete_current_proof ();
   if_verbose message ((string_of_id id) ^ " is defined")
 
