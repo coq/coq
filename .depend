@@ -1766,14 +1766,14 @@ tactics/extratactics.cmx: tactics/autorewrite.cmx toplevel/cerrors.cmx \
     pretyping/rawterm.cmx tactics/refine.cmx proofs/refiner.cmx \
     tactics/setoid_replace.cmx proofs/tacexpr.cmx tactics/tacinterp.cmx \
     kernel/term.cmx toplevel/vernacinterp.cmx tactics/extratactics.cmi 
-tactics/hiddentac.cmo: proofs/evar_refiner.cmi kernel/names.cmi \
-    proofs/proof_type.cmi pretyping/rawterm.cmi proofs/refiner.cmi \
-    proofs/tacexpr.cmo proofs/tacmach.cmi tactics/tactics.cmi kernel/term.cmi \
-    lib/util.cmi tactics/hiddentac.cmi 
-tactics/hiddentac.cmx: proofs/evar_refiner.cmx kernel/names.cmx \
-    proofs/proof_type.cmx pretyping/rawterm.cmx proofs/refiner.cmx \
-    proofs/tacexpr.cmx proofs/tacmach.cmx tactics/tactics.cmx kernel/term.cmx \
-    lib/util.cmx tactics/hiddentac.cmi 
+tactics/hiddentac.cmo: proofs/evar_refiner.cmi proofs/proof_type.cmi \
+    pretyping/rawterm.cmi proofs/refiner.cmi proofs/tacexpr.cmo \
+    proofs/tacmach.cmi tactics/tactics.cmi kernel/term.cmi lib/util.cmi \
+    tactics/hiddentac.cmi 
+tactics/hiddentac.cmx: proofs/evar_refiner.cmx proofs/proof_type.cmx \
+    pretyping/rawterm.cmx proofs/refiner.cmx proofs/tacexpr.cmx \
+    proofs/tacmach.cmx tactics/tactics.cmx kernel/term.cmx lib/util.cmx \
+    tactics/hiddentac.cmi 
 tactics/hipattern.cmo: proofs/clenv.cmi interp/coqlib.cmi \
     kernel/declarations.cmi kernel/environ.cmi pretyping/evd.cmi \
     library/global.cmi pretyping/inductiveops.cmi pretyping/matching.cmi \
