@@ -68,6 +68,7 @@ let id_of_name = function
 let string_of_name nme = string_of_id (id_of_name nme)
  (*end debugging *)
 
+(* Interpretation of constr's *)
 let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c
 
 let rec collect_cases l =
@@ -538,9 +539,6 @@ let rec proofPrinc mi lst_vars lst_eqs lst_recs:
 
 
 let mkevarmap_aux ex = let x,y = ex in	(mkevarmap_from_listex x),y
-
-(* Interpretation of constr's *)
-let constr_of_Constr c = Constrintern.interp_constr Evd.empty (Global.env()) c
 
 
 (* TODO: deal with any term, not only a constant. *)
