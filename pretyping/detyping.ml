@@ -68,6 +68,10 @@ let concrete_name l env_names n c =
     let idopt = if dependent (mkRel 1) c then (Some fresh_id) else None in
     (idopt, fresh_id::l)
 
+let concrete_let_name l env_names n c =
+  let fresh_id = next_name_not_occuring n l env_names c in
+  (Name fresh_id, fresh_id::l)
+
     (* Returns the list of global variables and constants in a term *)
 let global_vars_and_consts t =
   let rec collect acc c =
@@ -370,9 +374,12 @@ and detype_eqn avoid env constr_id construct_nargs branch =
   buildrec [] [] avoid env construct_nargs branch
 
 and detype_binder bk avoid env na ty c =
-  let na',avoid' = match concrete_name avoid env na c with
-    | (Some id,l') -> (Name id), l'
-    | (None,l')    -> Anonymous, l' in
+  let na',avoid' =
+    if bk = BLetIn then concrete_let_name avoid env na c
+    else
+      match concrete_name avoid env na c with
+	| (Some id,l') -> (Name id), l'
+	| (None,l')    -> Anonymous, l' in
   RBinder (dummy_loc,bk,
 	   na',detype [] env ty,
 	   detype avoid' (add_name na' env) c)
