@@ -25,6 +25,30 @@ val parse_section_path : string -> string list * string * string
 val intersect : 'a list -> 'a list -> 'a list
 val subtract : 'a list -> 'a list -> 'a list
 
+(* Arrays *)
+
+val array_exists : ('a -> bool) -> 'a array -> bool
+val array_for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
+val array_hd : 'a array -> 'a
+val array_tl : 'a array -> 'a array
+val array_cons : 'a -> 'a array -> 'a array
+val array_fold_left_from : int -> ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
+val array_fold_right_from : int -> ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
+val array_app_tl : 'a array -> 'a list -> 'a list
+val array_list_of_tl : 'a array -> 'a list
+val array_map_to_list : ('a -> 'b) -> 'a array ->'b list
+
+(* Functions *)
+
+val compose : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
+val iterate : ('a -> 'a) -> int -> 'a -> 'a
+
+(* Misc *)
+
+type ('a,'b) union = Inl of 'a | Inr of 'b
+
+module Intset : Set.S with type elt = int
+
 (* Pretty-printing *)
 
 val pr_spc : unit -> std_ppcmds

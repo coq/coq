@@ -69,6 +69,78 @@ let intersect l1 l2 =
 let subtract l1 l2 =
   if l2 = [] then l1 else List.filter (fun x -> not (List.mem x l2)) l1
 
+(* Arrays *)
+
+let array_exists f v = 
+  let rec exrec = function
+    | -1 -> false
+    | n -> (f v.(n)) || (exrec (n-1))
+  in 
+  exrec ((Array.length v)-1) 
+
+let array_for_all2 f v1 v2 =
+  let rec allrec = function
+    | -1 -> true
+    | n -> (f v1.(n) v2.(n)) && (allrec (n-1))
+  in 
+  let lv1 = Array.length v1 in
+  lv1 = Array.length v2 && allrec (pred lv1) 
+
+let array_tl v = 
+  match Array.length v with
+    | 0 -> failwith "array_tl"
+    | n -> Array.sub v 1 (pred n)
+
+let array_hd v = 
+  match Array.length v with
+    | 0 -> failwith "array_hd"
+    | _ -> v.(0)
+
+let array_cons e v = Array.append [|e|] v
+
+let array_fold_left_from n f a v = 
+  let rec fold a n =
+    if n >= Array.length v then a else fold (f a v.(n)) (succ n)
+  in 
+  fold a n
+
+let array_fold_right_from n f v a = 
+  let rec fold n =
+    if n >= Array.length v then a else f v.(n) (fold (succ n))
+  in 
+  fold n
+
+let array_app_tl v l = 
+  if Array.length v = 0 then 
+    invalid_arg "array_app_tl"
+  else 
+    array_fold_right_from 1 (fun e l -> e::l) v l
+
+let array_list_of_tl v =
+  if Array.length v = 0 then 
+    invalid_arg "array_list_of_tl"
+  else 
+    array_fold_right_from 1 (fun e l -> e::l) v []
+
+let array_map_to_list f v =
+  List.map f (Array.to_list v)
+
+(* Functions *)
+
+let compose f g x = f (g x)
+
+let iterate f = 
+  let rec iterate_f n x =
+    if n <= 0 then x else iterate_f (pred n) (f x)
+  in 
+  iterate_f
+ 
+(* Misc *)
+
+type ('a,'b) union = Inl of 'a | Inr of 'b
+
+module Intset = Set.Make(struct type t = int let compare = compare end)
+
 (* Pretty-printing *)
   
 let pr_spc () = [< 'sPC >];;
