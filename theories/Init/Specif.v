@@ -161,37 +161,6 @@ Definition error := None.
 Syntactic Definition Error := (error ?).
 Syntactic Definition Value := (value ?).
 
-(*******************************)
-(* Self realizing propositions *)
-(*******************************)
-
-(* [False -> C] can be proved for [C:Set] using informative 
-   elimination for equality  
-
-   [Axiom False_rec : (P:Set)False->P.]
-
-*)
-
-Definition Q:=[P:Set][b:bool]if b then unit else P.
-
-Lemma False_rec : (P:Set)False->P.
-Intros.
-Change (Q P false).
-Cut true=false.
-Intro H1; Case H1.
-Exact tt.
-Contradiction.
-Save.
-
-Lemma False_rect: (C:Type)False->C.
-Proof.
-  Intros.
-  Cut Empty_set.
-  NewDestruct 1.
-  Elim H.
-Qed.
-
-
 Definition except := False_rec. (* for compatibility with previous versions *)
 
 Syntactic Definition Except := (except ?).
@@ -202,17 +171,6 @@ Proof.
   Apply False_rec.
   Apply (h2 h1).
 Qed.
-
-(*i is now generated 
-Theorem and_rec : (A,B:Prop)(C:Set)(A->B->C)->(A/\B)->C.
-Proof.
-  Intros A B C F AB; Apply F; Elim AB; Auto.
-Qed. 
-i*)
-
-(*i is now a theorem
-Axiom eq_rec : (A:Set)(a:A)(P:A->Set)(P a)->(b:A) a=b -> (P b).
-i*)
 
 Hints Resolve left right inleft inright : core v62.
 

@@ -350,6 +350,7 @@ GEXTEND Gram
       | IDENT "Exists"; bl = binding_list -> <:ast< (Split $bl) >>
       | IDENT "Constructor"; nbl = numarg_binding_list ->
           <:ast<(Constructor ($LIST $nbl)) >>
+      | IDENT "Constructor" ; tc = tactic_expr -> <:ast<(Constructor (TACTIC $tc)) >>
       | IDENT "Constructor" -> <:ast<(Constructor) >>
       | IDENT "Reflexivity" -> <:ast< (Reflexivity) >>
       | IDENT "Symmetry" -> <:ast< (Symmetry) >>

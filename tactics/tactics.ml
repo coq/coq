@@ -995,12 +995,29 @@ let any_constructor gl =
   tclFIRST (List.map (fun i -> one_constructor i []) 
               (interval 1 nconstr)) gl
 
+(* Try to apply the constructor of the inductive definition followed by 
+   a tactic t given as an argument.
+   Should be generalize in Constructor (Fun c : I -> tactic)
+ *)
+
+let tclConstrThen t gl = 
+  let mind = fst (pf_reduce_to_quantified_ind gl (pf_concl gl))
+  in let lconstr =
+       (snd (Global.lookup_inductive mind)).mind_consnames
+  in let nconstr = Array.length lconstr 
+  in
+  if nconstr = 0 then error "The type has no constructors";
+  tclFIRST (List.map (fun i -> (tclTHEN (one_constructor i []) t))
+              (interval 1 nconstr)) gl
+
 let dyn_constructor = function 
   | [Integer i; Bindings binds]  -> tactic_bind_list (one_constructor i) binds
   | [Integer i; Cbindings binds] -> (one_constructor i) binds
+  | [Tac (tac,_)] -> tclConstrThen tac
   | []                           -> any_constructor 
   | l                            -> bad_tactic_args "constructor" l
-                       
+
+
 let left           = (constructor_checking_bound (Some 2) 1)
 let simplest_left  = left  []
 

@@ -392,6 +392,23 @@ let instanciate_indrec_scheme sort =
   in
   drec
 
+(* Change the sort in the type of an inductive definition, builds the corresponding eta-expanded term *)
+let instanciate_type_indrec_scheme sort npars term =
+  let rec drec np elim =
+    match kind_of_term elim with
+      | Prod (n,t,c) -> 
+	  if np = 0 then 
+            let t' = change_sort_arity sort t
+	    in mkProd (n, t', c), mkLambda (n, t', mkApp(term,Termops.rel_vect 0 (npars+1)))
+	  else 
+            let c',term' = drec (np-1) c in
+	    mkProd (n, t, c'), mkLambda (n, t, term')
+      | LetIn (n,b,t,c) -> let c',term' = drec np c in
+           mkLetIn (n,b,t,c'), mkLetIn (n,b,t,term') 
+      | _ -> anomaly "instanciate_type_indrec_scheme: wrong elimination type"
+  in
+  drec npars
+
 (**********************************************************************)
 (* Interface to build complex Scheme *)
 
@@ -469,8 +486,9 @@ let type_rec_branches recursive env sigma indt pj c =
 
 (*s Eliminations. *)
 
-let eliminations =
-  [ (InProp,"_ind") ; (InSet,"_rec") ; (InType,"_rect") ]
+let type_suff = "_rect"
+
+let non_type_eliminations = [ (InProp,"_ind") ; (InSet,"_rec")]
 
 let elimination_suffix = function
   | InProp -> "_ind"
@@ -482,14 +500,14 @@ let make_elimination_ident id s = add_suffix id (elimination_suffix s)
 let declare_one_elimination ind =
   let (mib,mip) = Global.lookup_inductive ind in 
   let mindstr = string_of_id mip.mind_typename in
-  let declare na c =
-    let _ = Declare.declare_constant (id_of_string na)
+  let declare na c t =
+    let sp = Declare.declare_constant (id_of_string na)
       (ConstantEntry
         { const_entry_body = c;
-          const_entry_type = None;
+          const_entry_type = t;
           const_entry_opaque = false }, 
        NeverDischarge) in
-    Options.if_verbose ppnl (str na ++ str " is defined")
+    Options.if_verbose ppnl (str na ++ str " is defined"); sp
   in
   let env = Global.env () in
   let sigma = Evd.empty in
@@ -497,11 +515,23 @@ let declare_one_elimination ind =
   let npars = mip.mind_nparams in
   let make_elim s = instanciate_indrec_scheme s npars elim_scheme in
   let kelim = mip.mind_kelim in
-  List.iter
+(* in case the inductive has a type elimination, generates only one induction scheme, 
+   the other ones share the same code with the apropriate type *)
+   if List.mem InType kelim then
+    let cte = declare (mindstr^type_suff) (make_elim (new_sort_in_family InType)) None
+    in let c = mkConst cte and t = constant_type (Global.env ()) cte
+    in List.iter  
+	 (fun (sort,suff) -> 
+            let (t',c') = instanciate_type_indrec_scheme (new_sort_in_family sort) npars c t
+            in let _ = declare (mindstr^suff) c' (Some t')
+            in ())
+	 non_type_eliminations
+   else (* Impredicative or logical inductive definition *)
+     List.iter
     (fun (sort,suff) -> 
        if List.mem sort kelim then
-	 declare (mindstr^suff) (make_elim (new_sort_in_family sort)))
-    eliminations
+	 let _ = declare (mindstr^suff) (make_elim (new_sort_in_family sort)) None in ())
+     non_type_eliminations
 
 let declare_eliminations sp =
   let mib = Global.lookup_mind sp in

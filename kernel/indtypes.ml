@@ -142,6 +142,7 @@ let is_unit constrsinfos =
   (* CP : relax this constraint which was related 
           to extraction 
           && is_logic_arity arinfos *)
+   | [] -> (* type without constructors *) true
    | _ -> false
 
 let rec infos_and_sort env t =

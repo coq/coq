@@ -231,6 +231,7 @@ val constructor_checking_bound : int option -> int ->
                                  constr substitution  -> tactic
 val one_constructor            : int -> constr substitution  -> tactic
 val any_constructor            : tactic
+val tclConstrThen              : tactic -> tactic
 val left                       : constr substitution -> tactic
 val simplest_left              : tactic
 val right                      : constr substitution -> tactic
