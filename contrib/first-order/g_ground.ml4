@@ -95,9 +95,9 @@ TACTIC EXTEND GTauto
   [ "GTauto" ] ->
      [ gen_ground_tac false (Some fail_solver) Void ]   
 END
+*)
 
 TACTIC EXTEND GIntuition
   [ "GIntuition" tactic_opt(t) ] ->
      [ gen_ground_tac false (option_app eval_tactic t) Void ]
 END
-*)
