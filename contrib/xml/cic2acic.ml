@@ -13,28 +13,27 @@ let remove_sections_from_dirpath dir =
 
 (*CSC: Problem: here we are using the wrong (???) hypothesis that there do *)
 (*CSC: not exist two modules whose dir_paths are one a prefix of the other *)
-let remove_module_dirpath_from_dirpath dir =
+let remove_module_dirpath_from_dirpath ~basedir dir =
  let module No = Nameops in
-  let current_module_dir = Lib.module_sp () in
-   let path =
-    if No.is_dirpath_prefix_of current_module_dir dir then
-     let ids = Names.repr_dirpath dir in
-     let rec remove_firsts n l =
-      match n,l with
-         (0,l) -> l
-       | (n,he::tl) -> remove_firsts (n-1) tl
-       | _ -> assert false
+  let path =
+   if No.is_dirpath_prefix_of basedir dir then
+    let ids = Names.repr_dirpath dir in
+    let rec remove_firsts n l =
+     match n,l with
+        (0,l) -> l
+      | (n,he::tl) -> remove_firsts (n-1) tl
+      | _ -> assert false
+    in
+     let ids' =
+      List.rev
+       (remove_firsts
+         (List.length (Names.repr_dirpath basedir))
+         (List.rev ids))
      in
-      let ids' =
-       List.rev
-        (remove_firsts
-          (List.length (Names.repr_dirpath current_module_dir))
-          (List.rev ids))
-      in
-       ids'
-    else Names.repr_dirpath dir
-   in
-    String.concat "/" (List.map Names.string_of_id (List.rev path))
+      ids'
+   else Names.repr_dirpath dir
+  in
+   String.concat "/" (List.map Names.string_of_id (List.rev path))
 ;;
 
 
@@ -69,7 +68,9 @@ let get_relative_uri_of_var v pvars =
        None -> search_in_open_sections (N.repr_dirpath (Lib.cwd ()))
      | Some path -> path
    in
-    remove_module_dirpath_from_dirpath (N.make_dirpath path)
+    let current_module_dir = Lib.module_sp () in
+     remove_module_dirpath_from_dirpath
+      ~basedir:current_module_dir (N.make_dirpath path)
 ;;
 
 type tag =
@@ -93,7 +94,6 @@ let uri_of_path sp tag =
   let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir1)) in
    "cic:/" ^ (String.concat "/" dir) ^ "." ^ (ext_of_tag tag)
 ;;
-
 
 (* Main Functions *)
 
@@ -266,16 +266,20 @@ print_endline "PASSATO" ; flush stdout ;
              let t' = Array.fold_right (fun x i -> (aux' env x)::i) t [] in
 (*CSC: stuff for explicit named substitution *)
              let subst,residual_args =
-              let variables =
+              let variables,basedir =
                match T.kind_of_term h with
                   T.Const sp
                 | T.Ind (sp,_)
                 | T.Construct ((sp,_),_) ->
-                   Dischargedhypsmap.get_discharged_hyps sp
+                   Dischargedhypsmap.get_discharged_hyps sp,
+                    fst (Names.repr_path sp)
                 | T.Var id ->
-                   Dischargedhypsmap.get_discharged_hyps
-                    (Declare.find_section_variable id)
-                | _ -> [] (* no explicit substitution needed *)
+                   let sp = Declare.find_section_variable id in
+                    Dischargedhypsmap.get_discharged_hyps sp,
+                     fst (Names.repr_path sp)
+                | _ ->
+                   (* no explicit substitution *)
+                   [], Nameops.dirpath_of_string "dummy"
               in
               (* returns a couple whose first element is  *)
               (* an explicit named substitution of "type" *)
@@ -290,7 +294,7 @@ print_endline "PASSATO" ; flush stdout ;
                    let subst,extra_args = get_explicit_subst tl1 tl2 in
                    let (he1_sp, he1_id) = Names.repr_path he1 in
                    let he1' =
-                    remove_module_dirpath_from_dirpath he1_sp ^ "/" ^
+                    remove_module_dirpath_from_dirpath ~basedir he1_sp ^ "/" ^
                      (Names.string_of_id he1_id) ^ ".var"
                    in
                     (he1',he2)::subst, extra_args
