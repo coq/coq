@@ -225,19 +225,19 @@ Abort.
 \ttindex{eq\_rec\_r}
 \ttindex{eq\_rect}
 \ttindex{eq\_rect\_r}
+%Definition eq_rect: (A:Set)(x:A)(P:A->Type)(P x)->(y:A)(x=y)->(P y).
 \begin{coq_example*}
 End equality.
 Definition eq_ind_r : (A:Set)(x:A)(P:A->Prop)(P x)->(y:A)(y=x)->(P y).
 Definition eq_rec_r : (A:Set)(x:A)(P:A->Set)(P x)->(y:A)(y=x)->(P y).
-Definition eq_rect: (A:Set)(x:A)(P:A->Type)(P x)->(y:A)(x=y)->(P y).
 Definition eq_rect_r : (A:Set)(x:A)(P:A->Type)(P x)->(y:A)(y=x)->(P y).
 \end{coq_example*}
 \begin{coq_eval}
 Abort.
 Abort.
 Abort.
-Abort.
 \end{coq_eval}
+%Abort (for now predefined eq_rect)
 \begin{coq_example*}
 Hints Immediate sym_eq sym_not_eq : core.
 \end{coq_example*}
@@ -486,18 +486,18 @@ interpretation.
 \ttindex{absurd\_set}
 \ttindex{and\_rec}
 
+%Lemma False_rec : (P:Set)False->P.
+%Lemma False_rect : (P:Type)False->P.
 \begin{coq_example*}
-Lemma False_rec : (P:Set)False->P.
-Lemma False_rect : (P:Type)False->P.
 Definition except := False_rec.
 Syntactic Definition Except := (except ?).
 Theorem absurd_set : (A:Prop)(C:Set)A->(~A)->C.
 Theorem and_rec : (A,B:Prop)(C:Set)(A->B->C)->(A/\B)->C.
 \end{coq_example*}
-\begin{coq_eval}
-Abort.
-Abort.
-\end{coq_eval}
+%\begin{coq_eval}
+%Abort.
+%Abort.
+%\end{coq_eval}
 
 \subsection{Basic Arithmetics}
 
