@@ -196,10 +196,10 @@ PARSERREQUIRES=lib/pp_control.cmo lib/pp.cmo \
 	parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
 	toplevel/errors.cmo
 
-ML4FILES += contrib/correctness/psyntax.ml4
+ML4FILES += contrib/correctness/psyntax.ml4 contrib/field/field.ml4
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
-        contrib/ring/quote.cmo contrib/ring/ring.cmo \
+        contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/field/field.cmo \
 	contrib/xml/xml.cmo \
 	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo \
 	$(EXTRACTIONCMO) $(CORRECTNESSCMO)
@@ -459,6 +459,9 @@ RINGVO = contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
          contrib/ring/ZArithRing.vo     contrib/ring/Ring_abstract.vo \
          contrib/ring/Quote.vo
 
+FIELDVO = contrib/field/Field_Compl.vo     contrib/field/Field_Theory.vo \
+          contrib/field/Field_Tactic.vo    contrib/field/Field.vo
+
 XMLVO = contrib/xml/Xml.vo
 
 INTERFACEV0 = contrib/interface/Centaur.vo
@@ -469,7 +472,8 @@ contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE)
 	$(COQC) -q -byte -bindir bin $(COQINCLUDES) $<
 
-CONTRIBVO = $(OMEGAVO) $(RINGVO) $(XMLVO) $(CORRECTNESSVO) $(INTERFACEV0)
+CONTRIBVO = $(OMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) $(CORRECTNESSVO)\
+            $(INTERFACEV0)
 
 $(CONTRIBVO): states/initial.coq
 

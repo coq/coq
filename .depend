@@ -1622,6 +1622,18 @@ contrib/extraction/ocaml.cmx: kernel/environ.cmx library/global.cmx \
     contrib/extraction/miniml.cmi contrib/extraction/mlutil.cmx \
     kernel/names.cmx lib/pp.cmx lib/pp_control.cmx kernel/term.cmx \
     lib/util.cmx contrib/extraction/ocaml.cmi 
+contrib/field/field.cmo: parsing/astterm.cmi parsing/coqast.cmi \
+    library/declare.cmi kernel/evd.cmi library/global.cmi library/lib.cmi \
+    library/libobject.cmi kernel/names.cmi library/nametab.cmi \
+    proofs/proof_type.cmi contrib/ring/quote.cmo contrib/ring/ring.cmo \
+    library/summary.cmi proofs/tacinterp.cmi proofs/tacmach.cmi \
+    kernel/term.cmi lib/util.cmi toplevel/vernacinterp.cmi 
+contrib/field/field.cmx: parsing/astterm.cmx parsing/coqast.cmx \
+    library/declare.cmx kernel/evd.cmx library/global.cmx library/lib.cmx \
+    library/libobject.cmx kernel/names.cmx library/nametab.cmx \
+    proofs/proof_type.cmx contrib/ring/quote.cmx contrib/ring/ring.cmx \
+    library/summary.cmx proofs/tacinterp.cmx proofs/tacmach.cmx \
+    kernel/term.cmx lib/util.cmx toplevel/vernacinterp.cmx 
 contrib/interface/centaur.cmo: contrib/interface/ascent.cmi parsing/ast.cmi \
     parsing/astterm.cmi pretyping/classops.cmi toplevel/command.cmi \
     parsing/coqast.cmi contrib/interface/dad.cmi \
@@ -1858,6 +1870,7 @@ contrib/xml/xmlentries.cmx: lib/util.cmx toplevel/vernacinterp.cmx \
     contrib/xml/xmlcommand.cmx 
 tactics/tauto.cmo: parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_constr.cmo
 contrib/correctness/psyntax.cmo: parsing/grammar.cma
+contrib/field/field.cmo: parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_constr.cmo
 parsing/lexer.cmo: 
 parsing/q_coqast.cmo: 
 parsing/g_prim.cmo: 

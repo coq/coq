@@ -15,6 +15,7 @@
 Require Export Raxioms.
 Require Export ZArithRing.
 Require Omega.
+Require Export Field.
 
 (***************************************************************************)
 (*s       Instantiating Ring tactic on reals                               *)
@@ -37,7 +38,8 @@ Lemma RTheory : (Ring_Theory Rplus Rmult R1 R0 Ropp [x,y:R]false).
   Intros; Contradiction.
 Defined.
 
-Add Abstract Ring R Rplus Rmult R1 R0 Ropp [x,y:R]false RTheory.
+Add Field R Rplus Rmult R1 R0 Ropp [x,y:R]false Rinv RTheory Rinv_l
+          with minus:=Rminus div:=Rdiv.
 
 (**************************************************************************)
 (*s  Relation between orders and equality                                 *)
