@@ -8,7 +8,7 @@ Fixpoint trivfun [n : nat] : nat :=
 
 Parameter varessai:nat.
 
-Lemma first_try (trivfun varessai) = O.
+Lemma first_try : (trivfun varessai) = O.
 Functional Induction trivfun varessai.
 Trivial.
 Simpl.
