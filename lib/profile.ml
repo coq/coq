@@ -1,62 +1,9 @@
-(* This program is a small time and allocation profiler for Objective Caml *)
 
-(* It requires the UNIX library *)
-
-(* Adapted from Christophe Raffalli *)
-
-(* To use it, link it with the program you want to profile (don not forget
-"-cclib -lunix -custom unix.cma" among the link options).
-
-To trace a function "f" you first need to get a key for it by using :
-
-let fkey = declare_profile "f";;
-
-(the string is used to print the profile infomation). Warning: this
-function does a side effect. Choose the ident you want instead "fkey".
-
-Then if the function has ONE argument add the following just after
-the definition of "f" or just after the declare_profile if this one
-follows the defintion of f.
-
-let f = profile fkey f;;
-
-If f has two arguments do the same with profile2, idem with 3, ...
-For more arguments than provided in this module, make a new copy of
-function profile and adapt for the needed arity.
-
-If you want to profile two mutually recursive functions, you had better
-to rename them :
-
-let fkey = declare_profile "f";;
-let gkey = declare_profile "g";;
-let f' = .... f' ... g'
-and g' = .... f' .... g'
-;;
-
-let f = profile fkey f';;
-let g = profile gkey g';;
-
-Before the program quits, you should call "print_profile ();;". It
-produces a result of the following kind:
-
-f 5.32 7.10
-g 4.00 4.00
-main 0.12 9.44
-total -9.44 0.00
-
-- The first column is the name of the function.
-
-- The third column give the time (utime + stime) spend inside the function.
-
-- The second column give the time spend inside the function minus the
-time spend in other profiled functions called by it
-
-- The 4th and 5th columns give the same for allocated words
-
-*)
+(* $Id$ *)
 
 open Gc
 
+let word_length = Sys.word_size / 8
 let int_size = Sys.word_size - 1
 let int_range = -2 * (1 lsl (int_size - 1))
 
@@ -75,11 +22,13 @@ let get_alloc_overhead =
   after - now                    (* Rem: overhead is 16 bytes in ocaml 3.00 *)
 
 let last_alloc = ref 0
+let carry_alloc = ref 0
 
 let spent_alloc () =
   let w = get_alloc () in
   let dw = w - !last_alloc in
-  let n,dw = if dw >= 0 then (0, dw) else (1, dw+int_range) in
+  let n,dw =
+    if dw >= 0 then (0, dw) else (incr carry_alloc; (1, dw+int_range)) in
   last_alloc := w;
   n, dw - get_alloc_overhead
 
@@ -135,44 +84,50 @@ let init_profile () =
   outside.tottime <- - !init_time;
   outside.owntime <- - !init_time
 
-let ajoute ((name,n) as e) l =
-  try let o = List.assoc name l in
-      o.owntime <- o.owntime + n.owntime;
-      o.tottime <- o.tottime + n.tottime;
-      o.hiownalloc <- o.hiownalloc + n.hiownalloc;
-      o.loownalloc <- o.loownalloc + n.loownalloc;
-      o.hitotalloc <- o.hitotalloc + n.hitotalloc;
-      o.lototalloc <- o.lototalloc + n.lototalloc;
-      o.owncount <- o.owncount + n.owncount;
-      o.intcount <- o.intcount + n.intcount;
-      o.immcount <- o.immcount + n.immcount;
-      l
+let ajoute o n =
+  o.owntime <- o.owntime + n.owntime;
+  o.tottime <- o.tottime + n.tottime;
+  o.hiownalloc <- o.hiownalloc + n.hiownalloc;
+  o.loownalloc <- o.loownalloc + n.loownalloc;
+  o.hitotalloc <- o.hitotalloc + n.hitotalloc;
+  o.lototalloc <- o.lototalloc + n.lototalloc;
+  o.owncount <- o.owncount + n.owncount;
+  o.intcount <- o.intcount + n.intcount;
+  o.immcount <- o.immcount + n.immcount
+
+let ajoute_to_list ((name,n) as e) l =
+  try ajoute (List.assoc name l) n; l
   with Not_found -> e::l
 
 let magic = 1249
 
-let merge_profile filename prof_table =
-  let new_prof_table =
+let merge_profile filename (curr_table, curr_outside, curr_total as new_data) =
+  let (old_table, old_outside, old_total) =
     try 
       let c = open_in filename in
       if input_binary_int c <> magic 
       then Printf.printf "Incompatible recording file: %s\n" filename;
-      let old_prof_table = input_value c in
+      let old_data = input_value c in
       close_in c;
-      List.fold_right ajoute prof_table old_prof_table
+      old_data
     with Sys_error msg ->
       (Printf.printf "Unable to open %s: %s\n" filename msg;
-       prof_table)
-  in begin
+       new_data) in
+  let updated_data =
+    let updated_table = List.fold_right ajoute_to_list curr_table old_table in
+    ajoute curr_outside old_outside;
+    ajoute curr_total old_total;
+    (updated_table, old_outside, old_total) in
+  begin
     (try
        let c =
 	 open_out_gen 
            [Open_creat;Open_wronly;Open_trunc;Open_binary] 0o644 filename in
        output_binary_int c magic;
-       output_value c new_prof_table;
+       output_value c updated_data;
        close_out c
      with Sys_error _ -> Printf.printf "Unable to create recording file");
-    new_prof_table
+    updated_data
   end
 
 (************************************************)
@@ -309,18 +264,18 @@ let time_overhead_B_C () =
   float_of_int ((after - before) - (afterloop - beforeloop)) /. float_of_int n
 
 let compute_alloc hi lo =
-  ((float_of_int hi) *. (float_of_int int_range) +. (float_of_int lo)) /. 1.
+  ((float_of_int hi) *. (float_of_int int_range) +. (float_of_int lo))
+  /. (float_of_int word_length)
 
 (************************************************)
 (* End a profiling session and print the result *)
 
-let format_profile prof_table outside (ovtime, tottime, ovalloc, totalloc) =
+let format_profile (table, outside, total) =
   print_newline ();
   Printf.printf 
     "%-23s  %9s %9s %10s %10s %10s\n"
     "Function name" "Own time" "Tot. time" "Own alloc" "Tot. alloc" "Calls ";
-  let l =
-    Sort.list (fun (_,{tottime=p}) (_,{tottime=p'}) -> p > p') prof_table in
+  let l = Sort.list (fun (_,{tottime=p}) (_,{tottime=p'}) -> p > p') table in
   List.iter (fun (name,e) ->
     Printf.printf
       "%-23s %9.2f %9.2f %10.0f %10.0f %6d %6d\n"
@@ -336,11 +291,15 @@ let format_profile prof_table outside (ovtime, tottime, ovalloc, totalloc) =
     (compute_alloc outside.hiownalloc outside.loownalloc)
     (compute_alloc outside.hitotalloc outside.lototalloc)
     outside.intcount;
+  (* Here, own contains overhead time/alloc *)
   Printf.printf "%-23s %9.2f %9.2f %10.0f %10.0f\n"
     "Est. overhead/total"
-    (float_of_time ovtime) (float_of_time tottime)
-    (float_of_int ovalloc) (float_of_int totalloc);
-  Printf.printf "Time in seconds and allocation in bytes\n";
+    (float_of_time total.owntime) (float_of_time total.tottime)
+    (compute_alloc total.hiownalloc total.loownalloc)
+    (compute_alloc total.hitotalloc total.lototalloc);
+  Printf.printf
+    "Time in seconds and allocation in words (1 word = %d bytes)\n" 
+    word_length
 
 let recording_file = ref ""
 let set_recording s = recording_file := s
@@ -350,8 +309,6 @@ let adjust_time ov_bc ov_ad e =
   let ad_imm = float_of_int e.immcount *. ov_ad in
   let abcd_all = float_of_int e.intcount *. (ov_ad +. ov_bc) in
   {e with
-     (* We should substract ov_ext_time *. immediate subcalls from tottime *)
-     (* but the number of immediate subcalls is unknown *)
      tottime = e.tottime - int_of_float (abcd_all +. bc_imm);
      owntime = e.owntime - int_of_float (ad_imm +. bc_imm) }
 
@@ -372,19 +329,31 @@ let close_profile print =
 	  let adjust (n,e) = (n, adjust_time ov_bc ov_ad e) in
 	  let adjtable = List.map adjust !prof_table in
 	  let adjoutside = adjust_time ov_bc ov_ad outside in
-	  let globtable =
+	  let lototalloc = !last_alloc - !init_alloc in
+	  let hitotalloc = !carry_alloc in
+	  let loovalloc = lototalloc - outside.lototalloc in
+	  let hiovalloc = hitotalloc - outside.hitotalloc in
+	  let hiovalloc, loovalloc =
+	    if loovalloc < 0 then
+	      hiovalloc - 1, loovalloc + int_range
+	    else
+	      hiovalloc, loovalloc in
+	  (* Here, own contains overhead time/alloc *)
+	  let total = {
+	    tottime = outside.tottime;
+	    owntime = outside.tottime - adjoutside.tottime;
+	    lototalloc = lototalloc;
+	    hitotalloc = hitotalloc;
+	    loownalloc = loovalloc;
+	    hiownalloc = hiovalloc;
+	    immcount = 0; owncount = 0; intcount = 0 (* Dummy values *) } in
+	  let current_data = (adjtable, adjoutside, total) in
+	  let updated_data =
 	    match !recording_file with
-	      |	"" -> adjtable
-	      | name -> merge_profile !recording_file adjtable
+	      |	"" -> current_data
+	      | name -> merge_profile !recording_file current_data
 	  in
-	  if print then
-	    let ovtime = outside.tottime - adjoutside.tottime in
-	    let tottime = outside.tottime in
-	    (* TODO : Gérer la retenue *)
-	    let totalloc = !last_alloc - !init_alloc in
-	    let ovalloc = totalloc - outside.lototalloc in
-	    format_profile globtable adjoutside
-	      (ovtime,tottime,ovalloc,totalloc);
+	  if print then format_profile updated_data;
 	  init_profile ()
 	end
     | _ -> failwith "Inconsistency"
@@ -393,6 +362,8 @@ let append_profile () = close_profile false
 let print_profile () = close_profile true
 
 let declare_profile name =
+  if name = "___outside___" or name = "___total___" then
+    failwith ("Error: "^name^" is a reserved keyword");
   let e = create_record () in
   prof_table := (name,e)::!prof_table;
   e
