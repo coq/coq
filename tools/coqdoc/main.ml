@@ -28,37 +28,36 @@ open Pretty
 let usage () =
   prerr_endline "";
   prerr_endline "Usage: coqdoc <options and files>";
-  prerr_endline "  --html          produce a HTML document (default)";
-  prerr_endline "  --latex         produce a LaTeX document";
-  prerr_endline "  --texmacs       produce a TeXmacs document";
-  prerr_endline "  --dvi           output the DVI";
-  prerr_endline "  --ps            output the PostScript";
-  prerr_endline "  -o <file>       write output in file <file>";
-  prerr_endline "                  (only with -latex, -dvi or -ps)";
-  prerr_endline "  -d <dir>        output files into directory <dir>";
-  prerr_endline "  -g              (gallina) skip proofs";
-  prerr_endline "  -s              (short) no titles for files";
-  prerr_endline "  -l              light mode (only defs and statements)";
-  prerr_endline "  -t <string>     give a title to the document";
-  prerr_endline "  --body-only     suppress LaTeX/HTML header and trailer";
-  prerr_endline "  --no-index      do not output the index";
-  prerr_endline "  --mutli-index   index split in multiple files";
-  prerr_endline "  --toc           output a table of contents";
-  prerr_endline "  --vernac <file> consider <file> as a .v file";
-  prerr_endline "  --tex <file>    consider <file> as a .tex file";
-  prerr_endline "  -p <string>     insert <string> in LaTeX preamble";
-  prerr_endline "  --files-from <file>";
-  prerr_endline "                  read file names to process in <file>";
-  prerr_endline "  --quiet         quiet mode";
-  prerr_endline "  --glob-from <f> read Coq globalizations from file <f>";
-  prerr_endline "  --no-externals  no links to Coq standard library";
-  prerr_endline "  --coqlib <url>  set URL for Coq standard library";
-  prerr_endline "                  (default is http://coq.inria.fr/library/)";
-  prerr_endline "  -R dir coqdir   map physical dir to Coq dir";
-  prerr_endline "  --latin1        set ISO-8859-1 input language";
-  prerr_endline "  --utf8          set UTF-8 input language";
-  prerr_endline "  --charset       set HTML charset";
-  prerr_endline "  --inputenc      set LaTeX input encoding";
+  prerr_endline "  --html              produce a HTML document (default)";
+  prerr_endline "  --latex             produce a LaTeX document";
+  prerr_endline "  --texmacs           produce a TeXmacs document";
+  prerr_endline "  --dvi               output the DVI";
+  prerr_endline "  --ps                output the PostScript";
+  prerr_endline "  -o <file>           write output in file <file>";
+  prerr_endline "  -d <dir>            output files into directory <dir>";
+  prerr_endline "  -g                  (gallina) skip proofs";
+  prerr_endline "  -s                  (short) no titles for files";
+  prerr_endline "  -l                  light mode (only defs and statements)";
+  prerr_endline "  -t <string>         give a title to the document";
+  prerr_endline "  --body-only         suppress LaTeX/HTML header and trailer";
+  prerr_endline "  --no-index          do not output the index";
+  prerr_endline "  --multi-index       index split in multiple files";
+  prerr_endline "  --toc               output a table of contents";
+  prerr_endline "  --vernac <file>     consider <file> as a .v file";
+  prerr_endline "  --tex <file>        consider <file> as a .tex file";
+  prerr_endline "  -p <string>         insert <string> in LaTeX preamble";
+  prerr_endline "  --files-from <file> read file names to process in <file>";
+  prerr_endline "  --quiet             quiet mode";
+  prerr_endline "  --glob-from <file>  read Coq globalizations from file <file>";
+  prerr_endline "  --no-externals      no links to Coq standard library";
+  prerr_endline "  --coqlib <url>      set URL for Coq standard library";
+  prerr_endline "                      (default is http://coq.inria.fr/library/)";
+  prerr_endline "  -R <dir> <coqdir>   map physical dir to Coq dir";
+  prerr_endline "  --latin1            set ISO-8859-1 input language";
+  prerr_endline "  --utf8              set UTF-8 input language";
+  prerr_endline "  --charset <string>  set HTML charset";
+  prerr_endline "  --inputenc <string> set LaTeX input encoding";
+  prerr_endline "  --raw-comments      don't insert comments in table";
   prerr_endline "";
   prerr_endline 
     "On-line documentation at http://www.lri.fr/~filliatr/coqdoc/\n";
@@ -271,7 +270,9 @@ let parse () =
 	Output.inputenc := s; parse_rec rem
     | ("-inputenc" | "--inputenc") :: [] ->
 	usage ()
-   | ("-latin1" | "--latin1") :: rem ->
+    | ("-raw-comments" | "--raw-comments") :: rem ->
+	Output.raw_comments := true; parse_rec rem
+    | ("-latin1" | "--latin1") :: rem ->
 	Output.set_latin1 (); parse_rec rem
     | ("-utf8" | "--utf8") :: rem ->
 	Output.set_utf8 (); parse_rec rem
