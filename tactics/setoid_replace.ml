@@ -847,8 +847,19 @@ let new_morphism m signature id hook =
   in
    let argsconstr,outputconstr,lem =
     gen_compat_lemma_statement args_ty_quantifiers_rev output_instance
-     args_instance (apply_to_rels m args_ty_quantifiers_rev)
-   in
+     args_instance (apply_to_rels m args_ty_quantifiers_rev) in
+   (* "unfold make_compatibility_goal" *)
+   let lem =
+    Reductionops.clos_norm_flags
+     (Closure.unfold_red (Lazy.force coq_make_compatibility_goal_eval_ref))
+     env Evd.empty lem in
+   (* "unfold make_compatibility_goal_aux" *)
+   let lem =
+    Reductionops.clos_norm_flags
+     (Closure.unfold_red(Lazy.force coq_make_compatibility_goal_aux_eval_ref))
+     env Evd.empty lem in
+   (* "simpl" *)
+   let lem = Tacred.nf env Evd.empty lem in
     if Lib.is_modtype () then
      begin
       ignore
@@ -863,22 +874,10 @@ let new_morphism m signature id hook =
      begin
       new_edited id
        (m,args_ty_quantifiers_rev,args,argsconstr,output,outputconstr);
-      (* "unfold make_compatibility_goal" *)
-      let lem =
-       Reductionops.clos_norm_flags
-        (Closure.unfold_red (Lazy.force coq_make_compatibility_goal_eval_ref))
-        env Evd.empty lem in
-      (* "unfold make_compatibility_goal_aux" *)
-      let lem =
-       Reductionops.clos_norm_flags
-        (Closure.unfold_red(Lazy.force coq_make_compatibility_goal_aux_eval_ref))
-        env Evd.empty lem in
-      (* "simpl" *)
-      let lem = Tacred.nf env Evd.empty lem in
-       Pfedit.start_proof id (IsGlobal (Proof Lemma)) 
-        (Declare.clear_proofs (Global.named_context ()))
-        lem hook;
-       Options.if_verbose msg (Printer.pr_open_subgoals ());
+      Pfedit.start_proof id (IsGlobal (Proof Lemma)) 
+       (Declare.clear_proofs (Global.named_context ()))
+       lem hook;
+      Options.if_verbose msg (Printer.pr_open_subgoals ());
      end
 
 let morphism_hook _ ref =
