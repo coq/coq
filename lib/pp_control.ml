@@ -76,7 +76,7 @@ let with_output_to ch =
   let ft = with_fp { fp_output = ch ;
       	             fp_output_function = (output ch) ;
 	             fp_flush_function = (fun () -> flush ch) } in
-  set_dflt_gp ft; 
+  set_gp ft deep_gp; 
   ft
 
 let std_ft = Format.std_formatter
