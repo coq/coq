@@ -455,7 +455,7 @@ beforedepend:: ide/config_lexer.ml ide/find_phrase.ml ide/highlight.ml
 FULLIDELIB=$(FULLCOQLIB)/ide
 IDEFILES=ide/coq.gif ide/.coqiderc
 
-ide: $(COQIDE)
+ide: $(COQIDE) states
 
 $(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) $(COQIDECMX)
 	$(COQMKTOP) -ide -opt $(COQIDEFLAGS) lablgtk.cmxa $(OPTFLAGS) -o $@ $(COQIDECMX)

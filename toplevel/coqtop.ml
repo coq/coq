@@ -112,7 +112,8 @@ let usage () =
 
 let warning s = msg_warning (str s)
 
-let parse_args () =
+let ide_args = ref []
+let parse_args is_ide =
   let rec parse = function
     | [] -> ()
 
@@ -200,8 +201,12 @@ let parse_args () =
 
     | "-v8" :: rem -> Options.v7 := false; parse rem
 
-    | s :: _ -> prerr_endline ("Don't know what to do with " ^ s); usage ()
-
+    | s :: _ -> 
+	if is_ide && Filename.check_suffix s ".v" then
+	  ide_args := s :: !ide_args
+	else begin
+	  prerr_endline ("Don't know what to do with " ^ s); usage ()
+	end
   in
   try
     parse (List.tl (Array.to_list Sys.argv))
@@ -218,13 +223,13 @@ let parse_args () =
 (* To prevent from doing the initialization twice *)
 let initialized = ref false
 
-let init () =
+let init is_ide =
   if not !initialized then begin
     initialized := true;
     Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
     Lib.init();
     try
-      parse_args ();
+      parse_args is_ide;
       re_exec ();
       if_verbose print_header ();
       init_load_path ();
@@ -245,8 +250,10 @@ let init () =
   if !batch_mode then (flush_all(); Profile.print_profile (); exit 0);
   Lib.declare_initial_state ()
 
+let init_ide () = init true; !ide_args
+
 let start () =
-  init ();
+  init false;
   Toplevel.loop();
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();

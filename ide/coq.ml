@@ -24,7 +24,7 @@ let msg x =
  
 let init () = 
   Options.make_silent true;
-  Coqtop.init ()
+  ignore (Coqtop.init_ide ())
 
 let i = ref 0
 

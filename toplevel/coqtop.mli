@@ -15,9 +15,9 @@
 
 val start : unit -> unit
 
-(* [init] is already called by [start], but exported here to be reused 
-   by the Coq IDE. It does everything [start] does, except launching
-   the toplevel loop. *)
+(* [init_ide] is to be used by the Coq IDE. 
+   It does everything [start] does, except launching the toplevel loop. 
+   It returns the list of Coq files given on the command line. *)
 
-val init : unit -> unit
+val init_ide : unit -> string list
 
