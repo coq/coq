@@ -16,3 +16,4 @@ Record stack : Type := {type : Set; elt : type;
 
 Check (type:Set; elt:type; empty:(type->bool))(empty elt)=true->stack.
 
+End Spec.
