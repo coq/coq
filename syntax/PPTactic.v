@@ -348,4 +348,7 @@ Syntax tactic
   ;
 
   level 8:
-  tactic_to_constr [<<(COMMAND $c)>>] -> [ $c:"constr":9 ].
+    tactic_to_constr [<<(COMMAND $c)>>] -> [ $c:"constr":9 ]
+  | tactic_to_constr [<<(CASTEDCOMMAND $c)>>] -> [ $c:"constr":9 ]
+  | tactic_to_constr [<<(CASTEDOPENCOMMAND $c)>>] -> [ $c:"constr":9 ].
+
