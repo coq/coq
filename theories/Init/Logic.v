@@ -99,13 +99,13 @@ Section First_order_quantifiers.
       construction [(all A P)], or simply [(All P)], is provided as an 
       abbreviation of [(x:A)(P x)] *) 
 
-  Inductive ex [A:Set;P:A->Prop] : Prop 
+  Inductive ex [A:Type;P:A->Prop] : Prop 
       := ex_intro : (x:A)(P x)->(ex A P).
 
-  Inductive ex2 [A:Set;P,Q:A->Prop] : Prop
+  Inductive ex2 [A:Type;P,Q:A->Prop] : Prop
       := ex_intro2 : (x:A)(P x)->(Q x)->(ex2 A P Q).
 
-  Definition all := [A:Set][P:A->Prop](x:A)(P x). 
+  Definition all := [A:Type][P:A->Prop](x:A)(P x). 
 
 End First_order_quantifiers.
 
@@ -117,7 +117,7 @@ Section Equality.
       The others properties (symmetry, transitivity, replacement of 
       equals) are proved below *)
 
-  Inductive eq [A:Set;x:A] : A->Prop
+  Inductive eq [A:Type;x:A] : A->Prop
          := refl_equal : (eq A x x).
 
 End Equality.
@@ -134,7 +134,7 @@ Section Logic_lemmas.
   Qed.
 
   Section equality.
-    Variable A,B : Set.
+    Variable A,B : Type.
     Variable f   : A->B.
     Variable x,y,z : A.
 
@@ -158,7 +158,7 @@ Section Logic_lemmas.
 
     Theorem sym_not_eq : (not (eq ? x y)) -> (not (eq ? y x)).
     Proof.
-     Red; Intros h1 h2; Apply h1; Elim h2; Trivial.
+     Red; Intros h1 h2; Apply h1; Case h2; Trivial.
     Qed.
 
     Definition sym_equal     := sym_eq.
@@ -168,7 +168,7 @@ Section Logic_lemmas.
   End equality.
 
 (* Is now a primitive principle 
-  Theorem eq_rect: (A:Set)(x:A)(P:A->Type)(P x)->(y:A)(eq ? x y)->(P y).
+  Theorem eq_rect: (A:Type)(x:A)(P:A->Type)(P x)->(y:A)(eq ? x y)->(P y).
   Proof.
    Intros.
    Cut (identity A x y).
@@ -177,33 +177,33 @@ Section Logic_lemmas.
   Qed.
 *)
 
-  Definition eq_ind_r : (A:Set)(x:A)(P:A->Prop)(P x)->(y:A)(eq ? y x)->(P y).
-   Intros A x P H y H0; Case sym_eq with 1:= H0; Trivial.
+  Definition eq_ind_r : (A:Type)(x:A)(P:A->Prop)(P x)->(y:A)(eq ? y x)->(P y).
+   Intros A x P H y H0; Elim sym_eq with 1:= H0; Trivial.
   Defined.
 
-  Definition eq_rec_r : (A:Set)(x:A)(P:A->Set)(P x)->(y:A)(eq ? y x)->(P y).
-    Intros A x P H y H0; Case sym_eq with 1:= H0; Trivial.
+  Definition eq_rec_r : (A:Type)(x:A)(P:A->Set)(P x)->(y:A)(eq ? y x)->(P y).
+    Intros A x P H y H0; Elim sym_eq with 1:= H0; Trivial.
   Defined.
 
-  Definition eq_rect_r : (A:Set)(x:A)(P:A->Type)(P x)->(y:A)(eq ? y x)->(P y).
+  Definition eq_rect_r : (A:Type)(x:A)(P:A->Type)(P x)->(y:A)(eq ? y x)->(P y).
     Intros A x P H y H0; Elim sym_eq with 1:= H0; Trivial.
   Defined.
 End Logic_lemmas.
 
-Theorem f_equal2 : (A1,A2,B:Set)(f:A1->A2->B)(x1,y1:A1)(x2,y2:A2)
+Theorem f_equal2 : (A1,A2,B:Type)(f:A1->A2->B)(x1,y1:A1)(x2,y2:A2)
   (eq ? x1 y1) -> (eq ? x2 y2) -> (eq ? (f x1 x2) (f y1 y2)).
 Proof.
   Induction 1; Induction 1; Trivial.
 Qed.
 
-Theorem f_equal3 : (A1,A2,A3,B:Set)(f:A1->A2->A3->B)(x1,y1:A1)(x2,y2:A2)
+Theorem f_equal3 : (A1,A2,A3,B:Type)(f:A1->A2->A3->B)(x1,y1:A1)(x2,y2:A2)
   (x3,y3:A3)(eq ? x1 y1) -> (eq ? x2 y2) -> (eq ? x3 y3) 
    -> (eq ? (f x1 x2 x3) (f y1 y2 y3)).
 Proof.
   Induction 1; Induction 1; Induction 1; Trivial.
 Qed.
 
-Theorem f_equal4 : (A1,A2,A3,A4,B:Set)(f:A1->A2->A3->A4->B)
+Theorem f_equal4 : (A1,A2,A3,A4,B:Type)(f:A1->A2->A3->A4->B)
   (x1,y1:A1)(x2,y2:A2)(x3,y3:A3)(x4,y4:A4)
   (eq ? x1 y1) -> (eq ? x2 y2) -> (eq ? x3 y3) -> (eq ? x4 y4)
    -> (eq ? (f x1 x2 x3 x4) (f y1 y2 y3 y4)).
@@ -211,7 +211,7 @@ Proof.
   Induction 1; Induction 1; Induction 1; Induction 1; Trivial.
 Qed.
 
-Theorem f_equal5 : (A1,A2,A3,A4,A5,B:Set)(f:A1->A2->A3->A4->A5->B)
+Theorem f_equal5 : (A1,A2,A3,A4,A5,B:Type)(f:A1->A2->A3->A4->A5->B)
   (x1,y1:A1)(x2,y2:A2)(x3,y3:A3)(x4,y4:A4)(x5,y5:A5)
   (eq ? x1 y1) -> (eq ? x2 y2) -> (eq ? x3 y3) -> (eq ? x4 y4) -> (eq ? x5 y5)
     -> (eq ? (f x1 x2 x3 x4 x5) (f y1 y2 y3 y4 y5)).

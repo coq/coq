@@ -40,7 +40,7 @@ let glob_O = ConstructRef path_of_O
 let glob_S = ConstructRef path_of_S
 
 let eq_path = make_path logic_module (id_of_string "eq")
-let eqT_path = make_path logic_type_module (id_of_string "eqT")
+let eqT_path = make_path logic_module (id_of_string "eq")
 
 let glob_eq = IndRef (eq_path,0)
 let glob_eqT = IndRef (eqT_path,0)
@@ -115,10 +115,10 @@ let coq_sumbool  = constant "Specif" "sumbool"
 let build_coq_sumbool () = Lazy.force coq_sumbool
 
 (* Equality on Type *)
-let coq_eqT_eq = constant "Logic_Type" "eqT"
-let coq_eqT_ind = constant "Logic_Type" "eqT_ind"
-let coq_eqT_congr =constant "Logic_Type" "congr_eqT"
-let coq_eqT_sym  = constant "Logic_Type" "sym_eqT"
+let coq_eqT_eq = constant "Logic" "eq"
+let coq_eqT_ind = constant "Logic" "eq_ind"
+let coq_eqT_congr =constant "Logic" "f_equal"
+let coq_eqT_sym  = constant "Logic" "sym_eq"
 
 let build_coq_eqT_data = {
   eq = (fun () -> Lazy.force coq_eqT_eq);
@@ -183,20 +183,20 @@ let build_coq_ex ()   = Lazy.force coq_ex
 
 (****************************************************************************)
 (*                             Patterns                                     *)
-(* This needs to have interp_constrpattern available ...
-let parse_astconstr s =
+(* This needs to have interp_constrpattern available ... 
+
+let parse_constr s =
   try 
     Pcoq.parse_string Pcoq.Constr.constr_eoi s 
   with Stdpp.Exc_located (_ , (Stream.Failure | Stream.Error _)) ->
     error "Syntax error : not a construction"
 
 let parse_pattern s =
-  Constrintern.interp_constrpattern Evd.empty (Global.env()) (parse_astconstr s)
-
+  Constrintern.interp_constrpattern Evd.empty (Global.env()) (parse_constr s)
 let coq_eq_pattern =
   lazy (snd (parse_pattern "(Coq.Init.Logic.eq ?1 ?2 ?3)"))
 let coq_eqT_pattern =
-  lazy (snd (parse_pattern "(Coq.Init.Logic_Type.eqT ?1 ?2 ?3)"))
+  lazy (snd (parse_pattern "(Coq.Init.Logic.eq ?1 ?2 ?3)"))
 let coq_idT_pattern =
   lazy (snd (parse_pattern "(Coq.Init.Logic_Type.identityT ?1 ?2 ?3)"))
 let coq_existS_pattern =
@@ -209,15 +209,15 @@ let coq_imp_False_pattern =
   lazy (snd (parse_pattern "? -> Coq.Init.Logic.False"))
 let coq_imp_False_pattern =
   lazy (snd (parse_pattern "? -> Coq.Init.Logic.False"))
-let coq_eqdec_partial_pattern
+let coq_eqdec_partial_pattern =
   lazy (snd (parse_pattern "(sumbool (eq ?1 ?2 ?3) ?4)"))
-let coq_eqdec_pattern
+let coq_eqdec_pattern =
   lazy (snd (parse_pattern "(x,y:?1){<?1>x=y}+{~(<?1>x=y)}"))
 *)
 
 (* The following is less readable but does not depend on parsing *)
 let coq_eq_ref      = lazy (reference "Logic" "eq")
-let coq_eqT_ref     = lazy (reference "Logic_Type" "eqT")
+let coq_eqT_ref     = lazy (reference "Logic" "eq")
 let coq_idT_ref     = lazy (reference "Logic_Type" "identityT")
 let coq_existS_ref  = lazy (reference "Specif" "existS")
 let coq_existT_ref  = lazy (reference "Specif" "existT")

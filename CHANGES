@@ -7,6 +7,10 @@ A revision of the standard library and of concrete syntax of Coq, including
 - renaming of various standard notions from French to English (esp in ZArith)
 - all notions of the standard library are declared with (strict)
   implicit arguments
+- eq merged with eqT: old eq disappear, new eq (written =) is old eqT
+  and new eqT is syntactic sugar for new eq (notation == is an alias
+  for = and is written as it)
+- similarly, ex, ex2 and all are merged with exT, exT2 and allT.
 
 Vernacular commands
 

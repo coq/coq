@@ -134,7 +134,7 @@ let abstract_replace (eq,sym_eq) (eqt,sym_eqt) c2 c1 unsafe gl =
     let (e,sym) = 
       match kind_of_term (hnf_type_of gl t1) with 
         | Sort (Prop(Pos)) -> (eq,sym_eq)
-        | Sort (Type(_))   -> (eqt,sym_eqt)
+        | Sort (Type(_))   -> (eq,sym_eq)
         | _                  -> error "replace"
     in 
     (tclTHENLAST (elim_type (applist (e, [t1;c1;c2])))
@@ -209,7 +209,7 @@ let find_eq_pattern aritysort sort =
     | Set_Type       ->  build_coq_eq_data.eq ()
     | Type_Type      ->  build_coq_idT_data.eq ()
     | Set_SetorProp  ->  build_coq_eq_data.eq ()
-    | Type_SetorProp ->  build_coq_eqT_data.eq ()
+    | Type_SetorProp ->  build_coq_eq_data.eq ()
 
 (* [find_positions t1 t2]
 

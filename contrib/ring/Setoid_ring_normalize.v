@@ -380,7 +380,8 @@ Hint SSR_plus_zero_right2_T := Resolve (SSR_plus_zero_right2 S T).
 Hint SSR_mult_one_right_T := Resolve (SSR_mult_one_right S T).
 Hint SSR_mult_one_right2_T := Resolve (SSR_mult_one_right2 S T).
 Hint SSR_plus_reg_right_T := Resolve (SSR_plus_reg_right S T).
-Hints Resolve refl_eqT sym_eqT trans_eqT.
+Hints Resolve refl_equal sym_equal trans_equal.
+(*Hints Resolve refl_eqT sym_eqT trans_eqT.*)
 Hints Immediate T.
 
 Lemma varlist_eq_prop : (x,y:varlist)
@@ -1036,7 +1037,8 @@ Hint STh_plus_zero_right2_T := Resolve (STh_plus_zero_right2 S T).
 Hint STh_mult_one_right_T := Resolve (STh_mult_one_right S T).
 Hint STh_mult_one_right2_T := Resolve (STh_mult_one_right2 S T).
 Hint STh_plus_reg_right_T := Resolve (STh_plus_reg_right S plus_morph T).
-Hints Resolve refl_eqT sym_eqT trans_eqT.
+Hints Resolve refl_equal sym_equal trans_equal.
+(*Hints Resolve refl_eqT sym_eqT trans_eqT.*)
 Hints Immediate T.
 
 

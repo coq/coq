@@ -138,7 +138,8 @@ Hint SR_plus_zero_right2_T := Resolve (SR_plus_zero_right2 T).
 Hint SR_mult_one_right_T := Resolve (SR_mult_one_right T).
 Hint SR_mult_one_right2_T := Resolve (SR_mult_one_right2 T).
 Hint SR_plus_reg_right_T := Resolve (SR_plus_reg_right T).
-Hints Resolve refl_eqT sym_eqT trans_eqT.
+Hints Resolve refl_equal sym_equal trans_equal.
+(*Hints Resolve refl_eqT sym_eqT trans_eqT.*)
 Hints Immediate T.
 
 Remark iacs_aux_ok : (x:A)(s:abstract_sum)
@@ -445,7 +446,8 @@ Hint Th_plus_zero_right2_T := Resolve (Th_plus_zero_right2 T).
 Hint Th_mult_one_right_T := Resolve (Th_mult_one_right T).
 Hint Th_mult_one_right2_T := Resolve (Th_mult_one_right2 T).
 Hint Th_plus_reg_right_T := Resolve (Th_plus_reg_right T).
-Hints Resolve refl_eqT sym_eqT trans_eqT.
+Hints Resolve refl_equal sym_equal trans_equal.
+(*Hints Resolve refl_eqT sym_eqT trans_eqT.*)
 Hints Immediate T.
 
 Lemma isacs_aux_ok : (x:A)(s:signed_sum)
