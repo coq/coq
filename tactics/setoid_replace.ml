@@ -1122,19 +1122,39 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
     match kind_of_term in_c with
       | App (c,al) -> 
          let mors_and_cs_and_als =
-          try
-           (*CSC: we should also look the table for (c al') where
-             al' is a prefix of al *)
-           let morphisms =
-            List.map relation_morphism_of_constr_morphism
-             (morphism_table_find c) in
-           let mors_and_cs_and_als =
-            List.map (unify_morphism_with_arguments gl (c,al)) morphisms
+          let mors_and_cs_and_als =
+           let morphism_table_find c =
+            try morphism_table_find c with Not_found -> [] in
+           let rec aux acc =
+            function
+               [] ->
+                let c' = mkApp (c, Array.of_list acc) in
+                let al' = [||] in
+                List.map (fun m -> m,c',al') (morphism_table_find c')
+             | (he::tl) as l ->
+                let c' = mkApp (c, Array.of_list acc) in
+                let al' = Array.of_list l in
+                let acc' = acc @ [he] in
+                 (List.map (fun m -> m,c',al') (morphism_table_find c')) @
+                  (aux acc' tl)
            in
-            List.filter
-             (fun (mor,_,_) -> subrelation gl mor.output output_relation)
+            aux [] (Array.to_list al) in
+          let mors_and_cs_and_als =
+           List.filter (function (_,c,_) -> not (dependent t c))
+            mors_and_cs_and_als in
+          let mors_and_cs_and_als =
+           List.map
+            (function (m,c,al) ->
+              relation_morphism_of_constr_morphism m, c, al)
+             mors_and_cs_and_als in
+          let mors_and_cs_and_als =
+           List.map
+            (function (m,c,al) -> unify_morphism_with_arguments gl (c,al) m)
              mors_and_cs_and_als
-          with Not_found -> []
+          in
+           List.filter
+            (fun (mor,_,_) -> subrelation gl mor.output output_relation)
+            mors_and_cs_and_als
          in
           (* First we look for well typed morphisms *)
           let res_mors =
