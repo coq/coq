@@ -143,9 +143,6 @@ let add_mbid = Umap.add
 let map_msid msid mp = add_msid msid mp empty_subst
 let map_mbid mbid mp = add_msid mbid mp empty_subst
 
-let join subst = 
-  Umap.fold Umap.add subst
-
 let list_contents sub = 
   let one_pair uid mp l =
     (string_of_uid uid, string_of_mp mp)::l
@@ -176,6 +173,9 @@ let rec subst_mp sub mp = (* 's like subst *)
 	    MPdot (mp1',l)
     | _ -> mp
 
+let join subst1 subst2 = 
+  let subst = Umap.map (subst_mp subst2) subst1 in
+  Umap.fold Umap.add subst2 subst
 
 let rec occur_in_path uid = function
   | MPself sid -> sid = uid

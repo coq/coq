@@ -96,6 +96,9 @@ val add_mbid :
 val map_msid : mod_self_id -> module_path -> substitution
 val map_mbid : mod_bound_id -> module_path -> substitution
 
+(* sequential composition: 
+   [substitute (join sub1 sub2) t = substitute sub2 (substitute sub1 t)]
+*)
 val join : substitution -> substitution -> substitution
 
 (*i debugging *)
