@@ -124,26 +124,22 @@ Intros; Apply inject_nat_set;
 | Assumption].
 Qed.
 
-Section natlike_rec2. 
+Section Efficient_Rec. 
+
 (** [natlike_rec2] is the same as [natlike_rec], but with a different proof, designed 
      to give a better extracted term. *)
 
-Local R := [a,b:Z]`0<=a`/\`a=(Zpred b)`.
+Local R := [a,b:Z]`0<=a`/\`a<b`.
 
 Local R_wf : (well_founded Z R).
 Proof.
 LetTac f := [z]Cases z of (POS p) => (convert p) | ZERO => O | (NEG _) => O end.
 Apply  well_founded_lt_compat with f.
-Unfold R f.
-Intros x y; Case x.
-Intuition; Rewrite (Zs_pred y); Rewrite <- H1; Simpl; Apply compare_convert_O.
-Case y; Intuition; Try Solve [ Simpl in H2; Inversion H2 ].
-Assert (POS p) = (POS (add_un p0)).
- Rewrite add_un_Zs; Rewrite H2; Auto with zarith.
-Inversion_clear H0; Unfold convert; Rewrite convert_add_un.
-Change 1 (positive_to_nat p0 (1)) with (plus (0) (positive_to_nat p0 (1))).
-Apply lt_reg_r; Auto.
-Intuition; Elim H1; Simpl; Trivial.
+Unfold R f; Clear f R.
+Intros x y; Case x; Intros; Elim H; Clear H.
+Case y; Intros; Apply compare_convert_O Orelse Inversion H0.
+Case y; Intros; Apply compare_convert_INFERIEUR Orelse Inversion H0; Auto.
+Intros; Elim H; Auto.
 Qed.
 
 Lemma natlike_rec2 : (P:Z->Type)(P `0`) -> 
@@ -158,11 +154,12 @@ Apply Zlt_ZERO_pred_le_ZERO; Unfold Zlt; Simpl; Trivial.
 Rewrite Zs_pred.
 Apply Hrec.
 Auto.
-Apply X; Unfold R; Intuition.
+Apply X; Auto; Unfold R; Intuition; Apply Zlt_pred_n_n.
 Intros; Elim H; Simpl; Trivial.
 Qed.
 
-(** variant using [Zpred] instead of [Zs] *)
+(** A variant of the previous using [Zpred] instead of [Zs]. *)
+
 Lemma natlike_rec3 : (P:Z->Type)(P `0`) -> 
         ((z:Z)`0<z` -> (P (Zpred z)) -> (P z)) -> (z:Z)`0<=z` -> (P z).
 Proof.
@@ -170,72 +167,34 @@ Intros P Ho Hrec z; Pattern z; Apply (well_founded_induction_type Z R R_wf).
 Intro x; Case x.
 Trivial.
 Intros; Apply Hrec.
-Unfold Zlt; Simpl; Trivial.
+Unfold Zlt; Trivial.
 Assert `0<=(Zpred (POS p))`.
 Apply Zlt_ZERO_pred_le_ZERO; Unfold Zlt; Simpl; Trivial.
-Apply X; Unfold R; Intuition.
+Apply X; Auto; Unfold R; Intuition; Apply Zlt_pred_n_n.
 Intros; Elim H; Simpl; Trivial.
 Qed.
 
-End natlike_rec2.
+(** A more general induction principal using [Zlt]. *)
+
+Lemma Z_lt_rec : (P:Z->Type)
+ ((x:Z)((y:Z)`0 <= y < x`->(P y))->(P x)) -> (x:Z)`0 <= x`->(P x).
+Proof.
+Intros P Hrec z; Pattern z; Apply (well_founded_induction_type Z R R_wf).
+Intro x; Case x; Intros.
+Apply Hrec; Intros.
+Assert H2: `0<0`.
+  Apply Zle_lt_trans with y; Intuition.
+Inversion H2.
+Ground.
+Unfold Zle Zcompare in H; Elim H; Auto.
+Defined.
 
 Lemma Z_lt_induction : 
   (P:Z->Prop)
      ((x:Z)((y:Z)`0 <= y < x`->(P y))->(P x))
   -> (x:Z)`0 <= x`->(P x).
 Proof.
-Intros P H x Hx.
-Cut (x:Z)`0 <= x`->(y:Z)`0 <= y < x`->(P y).
-Intro.
-Apply (H0 (Zs x)).
-Auto with zarith.
-
-Split; [ Assumption | Exact (Zlt_n_Sn x) ].
-
-Intros x0 Hx0; Generalize Hx0; Pattern x0; Apply natlike_ind.
-Intros.
-Absurd `0 <= 0`; Try Assumption.
-Apply Zgt_not_le.
-Apply Zgt_le_trans with m:=y.
-Apply Zlt_gt.
-Intuition. Intuition.
-
-Intros. Apply H. Intros.
-Apply (H1 H0).
-Split; [ Intuition | Idtac ].
-Apply Zlt_le_trans with y. Intuition.
-Apply Zgt_S_le. Apply Zlt_gt. Intuition.
-
-Assumption.
+Exact Z_lt_rec.
 Qed.
 
-Lemma Z_lt_rec : 
-  (P:Z->Set)
-     ((x:Z)((y:Z)`0 <= y < x`->(P y))->(P x))
-  -> (x:Z)`0 <= x`->(P x).
-Proof.
-Intros P H x Hx.
-Cut (x:Z)`0 <= x`->(y:Z)`0 <= y < x`->(P y).
-Intro.
-Apply (H0 (Zs x)).
-Auto with zarith.
-
-Split; [ Assumption | Exact (Zlt_n_Sn x) ].
-
-Intros x0 Hx0; Generalize Hx0; Pattern x0; Apply natlike_rec2.
-Intros.
-Absurd `0 <= 0`; Try Assumption.
-Apply Zgt_not_le.
-Apply Zgt_le_trans with m:=y.
-Apply Zlt_gt.
-Intuition. Intuition.
-
-Intros. Apply H. Intros.
-Apply (H1 H0).
-Split; [ Intuition | Idtac ].
-Apply Zlt_le_trans with y. Intuition.
-Apply Zgt_S_le. Apply Zlt_gt. Intuition.
-
-Assumption.
-Qed.
-
+End Efficient_Rec.
