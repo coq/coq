@@ -34,38 +34,42 @@ val exist_to_meta :
  *          use in instanciating metavars by name.
  * [evd] is the mapping from metavar and evar numbers to their types
  *       and values.
- * [hook] is generally signature (named_context) and a sigma: the
+ * [hook] is a signature (named_context) and a sigma: the
  *        typing context
  *)
-type 'a clausenv = {
+type wc = named_context sigma (* for a better reading of the following *)
+type clausenv = {
   templval : constr freelisted;
   templtyp : constr freelisted;
   namenv : identifier Metamap.t;
   env : meta_map;
-  hook : 'a }
+  hook : wc }
 
-type wc = named_context sigma (* for a better reading of the following *)
+val subst_clenv :
+  (substitution -> wc -> wc) -> substitution -> clausenv -> clausenv
 
-val subst_clenv : (substitution -> 'a -> 'a) -> 
-  substitution -> 'a clausenv -> 'a clausenv
+(* subject of clenv (instantiated) *)
+val clenv_value     : clausenv -> constr
+(* type of clanv (instantiated) *)
+val clenv_type      : clausenv -> types
+(* substitute resolved metas *)
+val clenv_nf_meta   : clausenv -> constr -> constr
+(* type of a meta in clenvś context *)
+val clenv_meta_type : clausenv -> metavariable -> types
 
-val clenv_nf_meta   : wc clausenv -> constr -> constr
-val clenv_meta_type : wc clausenv -> int -> constr
-val clenv_value     : wc clausenv -> constr
-val clenv_type      : wc clausenv -> constr
-
-val mk_clenv_from : evar_info sigma -> constr * constr -> wc clausenv
+val mk_clenv_from : evar_info sigma -> constr * types -> clausenv
 val mk_clenv_from_n :
-  evar_info sigma -> int option -> constr * constr -> wc clausenv
+  evar_info sigma -> int option -> constr * types -> clausenv
+val mk_clenv_rename_from : evar_info sigma -> constr * types -> clausenv
 val mk_clenv_rename_from_n :
-  evar_info sigma -> int option -> constr * constr -> wc clausenv
-val mk_clenv_type_of : evar_info sigma -> constr -> wc clausenv
+  evar_info sigma -> int option -> constr * types -> clausenv
+val mk_clenv_type_of : evar_info sigma -> constr -> clausenv
 
 (***************************************************************)
 (* linking of clenvs *)
 
-val connect_clenv : evar_info sigma -> 'a clausenv -> wc clausenv
-val clenv_fchain : metavariable -> 'a clausenv -> wc clausenv -> wc clausenv
+val connect_clenv : evar_info sigma -> clausenv -> clausenv
+val clenv_fchain : metavariable -> clausenv -> clausenv -> clausenv
 
 (***************************************************************)
 (* Unification with clenvs *)
@@ -73,16 +77,16 @@ val clenv_fchain : metavariable -> 'a clausenv -> wc clausenv -> wc clausenv
 (* Unifies two terms in a clenv. The boolean is allow_K (see Unification) *)
 val clenv_unify : 
   bool -> Reductionops.conv_pb -> constr -> constr ->
-  wc clausenv -> wc clausenv
+  clausenv -> clausenv
 
 (* unifies the concl of the goal with the type of the clenv *)
 val clenv_unique_resolver :
-  bool -> wc clausenv -> evar_info sigma -> wc clausenv
+  bool -> clausenv -> evar_info sigma -> clausenv
 
 (* same as above (allow_K=false) but replaces remaining metas
    with fresh evars *)
 val evar_clenv_unique_resolver :
-  wc clausenv -> evar_info sigma -> wc clausenv
+  clausenv -> evar_info sigma -> clausenv
 
 (***************************************************************)
 (* Bindings *)
@@ -92,51 +96,31 @@ val evar_clenv_unique_resolver :
    start from the rightmost argument of the template. *)
 type arg_bindings = (int * constr) list
 
-val clenv_independent : wc clausenv -> metavariable list
-val clenv_missing : 'a clausenv -> metavariable list
-val clenv_lookup_name : 'a clausenv -> identifier -> metavariable
+val clenv_independent : clausenv -> metavariable list
+val clenv_missing : clausenv -> metavariable list
+val clenv_lookup_name : clausenv -> identifier -> metavariable
 
 (* defines metas corresponding to the name of the bindings *)
 val clenv_match_args :
-  constr Rawterm.explicit_bindings -> wc clausenv -> wc clausenv
-val clenv_constrain_with_bindings : arg_bindings -> wc clausenv -> wc clausenv
+  constr Rawterm.explicit_bindings -> clausenv -> clausenv
+val clenv_constrain_with_bindings : arg_bindings -> clausenv -> clausenv
 
 (* start with a clenv to refine with a given term with bindings *)
 
 (* 1- the arity of the lemma is fixed *)
 val make_clenv_binding_apply :
   evar_info sigma -> int -> constr * constr -> constr Rawterm.bindings ->
-   wc clausenv
+   clausenv
 val make_clenv_binding :
-  evar_info sigma -> constr * constr -> constr Rawterm.bindings -> wc clausenv
+  evar_info sigma -> constr * constr -> constr Rawterm.bindings -> clausenv
 
 (***************************************************************)
 (* Pretty-print *)
-val pr_clenv : 'a clausenv -> Pp.std_ppcmds
+val pr_clenv : clausenv -> Pp.std_ppcmds
 
 (***************************************************************)
 (* Old or unused stuff... *)
 
-val collect_metas : constr -> metavariable list
-val mk_clenv : 'a -> constr -> 'a clausenv
-
-val mk_clenv_rename_from : evar_info sigma -> constr * constr -> wc clausenv
-val mk_clenv_hnf_constr_type_of : evar_info sigma -> constr -> wc clausenv
-
 val clenv_wtactic :
-  (evar_defs * meta_map -> evar_defs * meta_map) -> wc clausenv -> wc clausenv
-val clenv_assign : metavariable -> constr -> 'a clausenv -> 'a clausenv
-val clenv_instance_term : wc clausenv -> constr -> constr
-val clenv_pose : name * metavariable * constr -> 'a clausenv -> 'a clausenv
-val clenv_template : 'a clausenv -> constr freelisted
-val clenv_template_type : 'a clausenv -> constr freelisted
-val clenv_instance_type : wc clausenv -> metavariable -> constr
-val clenv_instance_template : wc clausenv -> constr
-val clenv_instance_template_type : wc clausenv -> constr
-val clenv_instance : 'a clausenv -> constr freelisted -> constr
-val clenv_type_of : wc clausenv -> constr -> constr
-val clenv_bchain : metavariable -> 'a clausenv -> wc clausenv -> wc clausenv
-val clenv_dependent : bool -> 'a clausenv -> metavariable list
-val clenv_constrain_missing_args : (* Used in user contrib Lannion *)
-  constr list -> wc clausenv -> wc clausenv
+  (evar_defs * meta_map -> evar_defs * meta_map) -> clausenv -> clausenv
 

@@ -830,7 +830,7 @@ let rec intros_clearing = function
 
 let new_hyp mopt (c,lbind) g =
   let clause  = make_clenv_binding g (c,pf_type_of g c) lbind in
-  let (thd,tstack) = whd_stack (clenv_instance_template clause) in
+  let (thd,tstack) = whd_stack (clenv_value clause) in
   let nargs = List.length tstack in
   let cut_pf = 
     applist(thd, 
@@ -899,7 +899,7 @@ let last_arg c = match kind_of_term c with
 	
 let elimination_clause_scheme elimclause indclause allow_K gl = 
   let indmv = 
-    (match kind_of_term (last_arg (clenv_template elimclause).rebus) with
+    (match kind_of_term (last_arg elimclause.templval.rebus) with
        | Meta mv -> mv
        | _  -> errorlabstrm "elimination_clause"
              (str "The type of elimination clause is not well-formed")) 
@@ -911,7 +911,7 @@ let elimination_clause_scheme elimclause indclause allow_K gl =
  * refine fails *)
 
 let type_clenv_binding wc (c,t) lbind = 
-  clenv_instance_template_type (make_clenv_binding wc (c,t) lbind)
+  clenv_type (make_clenv_binding wc (c,t) lbind)
 
 (* 
  * Elimination tactic with bindings and using an arbitrary 
@@ -976,12 +976,12 @@ let elimination_in_clause_scheme id elimclause indclause gl =
           (str "The type of elimination clause is not well-formed") in
   let elimclause'  = clenv_fchain indmv elimclause indclause in 
   let hyp = mkVar id in
-  let hyp_typ = clenv_type_of elimclause' hyp in
+  let hyp_typ = pf_type_of gl hyp in
   let hypclause =
     mk_clenv_from_n gl (Some 0) (hyp, hyp_typ) in
   let elimclause'' = clenv_fchain hypmv elimclause' hypclause in  
-  let new_hyp_prf  = clenv_instance_template elimclause'' in
-  let new_hyp_typ  = clenv_instance_template_type elimclause'' in
+  let new_hyp_prf  = clenv_value elimclause'' in
+  let new_hyp_typ  = clenv_type elimclause'' in
   if eq_constr hyp_typ new_hyp_typ then
     errorlabstrm "general_rewrite_in" 
       (str "Nothing to rewrite in " ++ pr_id id);
@@ -1662,11 +1662,11 @@ let simple_destruct = function
 
 let elim_scheme_type elim t gl =
   let clause = mk_clenv_type_of gl elim in
-  match kind_of_term (last_arg (clenv_template clause).rebus) with
+  match kind_of_term (last_arg clause.templval.rebus) with
     | Meta mv ->
         let clause' =
 	  (* t is inductive, then CUMUL or CONV is irrelevant *)
-	  clenv_unify true CUMUL t (clenv_instance_type clause mv) clause in
+	  clenv_unify true CUMUL t (clenv_meta_type clause mv) clause in
 	elim_res_pf clause' true gl
     | _ -> anomaly "elim_scheme_type"
 

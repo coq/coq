@@ -50,7 +50,7 @@ let clenv_cast_meta clenv =
 	  (try 
 	     match Metamap.find mv clenv.env with
                | Cltyp b ->
-		   let b' = clenv_instance clenv b in 
+		   let b' = clenv_nf_meta clenv b.rebus in 
 		   if occur_meta b' then u else mkCast (mkMeta mv, b')
 	       | Clval(_) -> u
 	   with Not_found -> 
@@ -66,12 +66,12 @@ let clenv_cast_meta clenv =
 let clenv_refine clenv gls =
   tclTHEN
     (tclEVARS clenv.hook.sigma) 
-    (refine (clenv_instance_template clenv)) gls
+    (refine (clenv_value clenv)) gls
 
 let clenv_refine_cast clenv gls =
   tclTHEN
     (tclEVARS clenv.hook.sigma) 
-    (refine (clenv_cast_meta clenv (clenv_instance_template clenv)))
+    (refine (clenv_cast_meta clenv (clenv_value clenv)))
     gls
 
 let res_pf clenv gls =

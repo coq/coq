@@ -359,8 +359,8 @@ let general_elim_then_using
                    0 branchsigns.(i);
                branchnum = i+1;
                ity = ity;
-               largs = List.map (clenv_instance_term ce) largs;
-               pred = clenv_instance_term ce hd }
+               largs = List.map (clenv_nf_meta ce) largs;
+               pred = clenv_nf_meta ce hd }
     in 
     tac ba gl
   in
@@ -368,7 +368,8 @@ let general_elim_then_using
   let elimclause' =
     match predicate with
        | None   -> elimclause'
-       | Some p -> clenv_assign pmv p elimclause'
+       | Some p ->
+           clenv_unify true Reductionops.CONV (mkMeta pmv) p elimclause'
   in 
   elim_res_pf_THEN_i elimclause' branchtacs gl
 

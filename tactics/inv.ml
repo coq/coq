@@ -448,8 +448,8 @@ let raw_inversion inv_kind indbinding id status names gl =
   let t = strong_prodspine (pf_whd_betadeltaiota gl) (pf_type_of gl c) in
   let indclause = mk_clenv_from gl (c,t) in
   let indclause' = clenv_constrain_with_bindings indbinding indclause in
-  let newc = clenv_instance_template indclause' in
-  let ccl = clenv_instance_template_type indclause' in
+  let newc = clenv_value indclause' in
+  let ccl = clenv_type indclause' in
   check_no_metas indclause' ccl;
   let IndType (indf,realargs) =
     try find_rectype env sigma ccl

@@ -961,9 +961,9 @@ let relation_rewrite c1 c2 (lft2rgt,cl) gl =
      Clenv.clenv_wtactic
        (fun evd-> fst (Unification.w_unify_to_subterm (pf_env gl) (c1,but) evd))
        cl in
-   let c1 = Clenv.clenv_instance_term cl' c1 in
-   let c2 = Clenv.clenv_instance_term cl' c2 in
-   (lft2rgt,Clenv.clenv_instance_template cl'), c1, c2
+   let c1 = Clenv.clenv_nf_meta cl' c1 in
+   let c2 = Clenv.clenv_nf_meta cl' c2 in
+   (lft2rgt,Clenv.clenv_value cl'), c1, c2
  in
   let input_relation = relation_of_hypothesis_and_term_to_rewrite gl hyp c1 in
   let marked_but = mark_occur c1 but in
@@ -979,8 +979,7 @@ let relation_rewrite c1 c2 (lft2rgt,cl) gl =
 let general_s_rewrite lft2rgt c gl =
  let ctype = pf_type_of gl c in
  let eqclause  = Clenv.make_clenv_binding gl (c,ctype) Rawterm.NoBindings in
- let (equiv, args) =
-  decompose_app (Clenv.clenv_instance_template_type eqclause) in
+ let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
  let rec get_last_two = function
    | [c1;c2] -> (c1, c2)
    | x::y::z -> get_last_two (y::z)

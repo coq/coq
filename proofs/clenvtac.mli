@@ -20,9 +20,9 @@ open Proof_type
 
 (* Tactics *)
 val unify : constr -> tactic
-val clenv_refine : wc clausenv -> tactic
-val res_pf      : wc clausenv -> tactic
-val res_pf_cast : wc clausenv -> tactic
-val elim_res_pf : wc clausenv -> bool -> tactic
-val e_res_pf : wc clausenv -> tactic
-val elim_res_pf_THEN_i : wc clausenv -> (wc clausenv -> tactic array) -> tactic
+val clenv_refine : clausenv -> tactic
+val res_pf      : clausenv -> tactic
+val res_pf_cast : clausenv -> tactic
+val elim_res_pf : clausenv -> bool -> tactic
+val e_res_pf : clausenv -> tactic
+val elim_res_pf_THEN_i : clausenv -> (clausenv -> tactic array) -> tactic
