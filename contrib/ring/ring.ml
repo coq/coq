@@ -294,6 +294,12 @@ let unbox = function
   | Some w -> w
   | None -> anomaly "Ring : Not in case of a setoid ring."
 
+(* Protects the convertibility test against undue exceptions when using it 
+   with untyped terms *)
+
+let safe_pf_conv_x c1 c2 = try pf_conv_x c1 c2 with _ -> false
+
+
 (* Add a Ring or a Semi-Ring to the database after a type verification *)
 
 let implement_theory env t th args =
@@ -365,9 +371,9 @@ let build_spolynom gl th lc =
      and builds the varmap with side-effects *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | App (binop,[|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+      | App (binop,[|c1; c2|]) when safe_pf_conv_x gl binop th.th_plus ->
 	  mkLApp(coq_SPplus, [|th.th_a; aux c1; aux c2 |])
-      | App (binop,[|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+      | App (binop,[|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
 	  mkLApp(coq_SPmult, [|th.th_a; aux c1; aux c2 |])
       | _ when closed_under th.th_closed c ->
 	  mkLApp(coq_SPconst, [|th.th_a; c |])
@@ -419,18 +425,18 @@ let build_polynom gl th lc =
   let counter = ref 1 in (* number of variables created + 1 *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+      | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_plus ->
 	  mkLApp(coq_Pplus, [|th.th_a; aux c1; aux c2 |])
-      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+      | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
 	  mkLApp(coq_Pmult, [|th.th_a; aux c1; aux c2 |])
       (* The special case of Zminus *)
       | App (binop, [|c1; c2|])
-	  when pf_conv_x gl c
+	  when safe_pf_conv_x gl c
             (mkApp (th.th_plus, [|c1; mkApp(unbox th.th_opp, [|c2|])|])) ->
 	    mkLApp(coq_Pplus,
                   [|th.th_a; aux c1;
 	            mkLApp(coq_Popp, [|th.th_a; aux c2|]) |])
-      | App (unop, [|c1|]) when pf_conv_x gl unop (unbox th.th_opp) ->
+      | App (unop, [|c1|]) when safe_pf_conv_x gl unop (unbox th.th_opp) ->
 	  mkLApp(coq_Popp, [|th.th_a; aux c1|])
       | _ when closed_under th.th_closed c ->
 	  mkLApp(coq_Pconst, [|th.th_a; c |])
@@ -485,12 +491,12 @@ let build_aspolynom gl th lc =
      and builds the varmap with side-effects *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+      | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_plus ->
 	  mkLApp(coq_ASPplus, [| aux c1; aux c2 |])
-      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+      | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
 	  mkLApp(coq_ASPmult, [| aux c1; aux c2 |])
-      | _ when pf_conv_x gl c th.th_zero -> Lazy.force coq_ASP0
-      | _ when pf_conv_x gl c th.th_one -> Lazy.force coq_ASP1
+      | _ when safe_pf_conv_x gl c th.th_zero -> Lazy.force coq_ASP0
+      | _ when safe_pf_conv_x gl c th.th_one -> Lazy.force coq_ASP1
       | _ -> 
 	  try Hashtbl.find varhash c 
 	  with Not_found -> 
@@ -537,20 +543,20 @@ let build_apolynom gl th lc =
   let counter = ref 1 in (* number of variables created + 1 *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+      | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_plus ->
 	  mkLApp(coq_APplus, [| aux c1; aux c2 |])
-      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+      | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
 	  mkLApp(coq_APmult, [| aux c1; aux c2 |])
       (* The special case of Zminus *)
       | App (binop, [|c1; c2|]) 
-	  when pf_conv_x gl c
+	  when safe_pf_conv_x gl c
             (mkApp(th.th_plus, [|c1; mkApp(unbox th.th_opp,[|c2|]) |])) ->
 	    mkLApp(coq_APplus,
                    [|aux c1; mkLApp(coq_APopp,[|aux c2|]) |])
-      | App (unop, [|c1|]) when pf_conv_x gl unop (unbox th.th_opp) ->
+      | App (unop, [|c1|]) when safe_pf_conv_x gl unop (unbox th.th_opp) ->
 	  mkLApp(coq_APopp, [| aux c1 |])
-      | _ when pf_conv_x gl c th.th_zero -> Lazy.force coq_AP0
-      | _ when pf_conv_x gl c th.th_one -> Lazy.force coq_AP1
+      | _ when safe_pf_conv_x gl c th.th_zero -> Lazy.force coq_AP0
+      | _ when safe_pf_conv_x gl c th.th_one -> Lazy.force coq_AP1
       | _ -> 
 	  try Hashtbl.find varhash c 
 	  with Not_found -> 
@@ -598,18 +604,18 @@ let build_setpolynom gl th lc =
   let counter = ref 1 in (* number of variables created + 1 *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+      | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_plus ->
 	  mkLApp(coq_SetPplus, [|th.th_a; aux c1; aux c2 |])
-      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+      | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
 	  mkLApp(coq_SetPmult, [|th.th_a; aux c1; aux c2 |])
       (* The special case of Zminus *)
       | App (binop, [|c1; c2|])
-	  when pf_conv_x gl c
-            (mkApp(th.th_plus, [|c1; mkApp(unbox th.th_opp,[|c2|])|])) ->
-	    mkLApp(coq_SetPplus,
-                   [| th.th_a; aux c1;
-	              mkLApp(coq_SetPopp, [|th.th_a; aux c2|]) |])
-      | App (unop, [|c1|]) when pf_conv_x gl unop (unbox th.th_opp) ->
+	  when safe_pf_conv_x gl c
+	    (mkApp(th.th_plus, [|c1; mkApp(unbox th.th_opp,[|c2|])|])) ->
+	      mkLApp(coq_SetPplus,
+                     [| th.th_a; aux c1;
+			mkLApp(coq_SetPopp, [|th.th_a; aux c2|]) |])
+      | App (unop, [|c1|]) when safe_pf_conv_x gl unop (unbox th.th_opp) ->
 	  mkLApp(coq_SetPopp, [| th.th_a; aux c1 |])
       | _ when closed_under th.th_closed c ->
 	  mkLApp(coq_SetPconst, [| th.th_a; c |])
@@ -665,9 +671,9 @@ let build_setspolynom gl th lc =
   let counter = ref 1 in (* number of variables created + 1 *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+      | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_plus ->
 	  mkLApp(coq_SetSPplus, [|th.th_a; aux c1; aux c2 |])
-      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+      | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
 	  mkLApp(coq_SetSPmult, [| th.th_a; aux c1; aux c2 |])
       | _ when closed_under th.th_closed c ->
 	  mkLApp(coq_SetSPconst, [| th.th_a; c |])
@@ -786,7 +792,7 @@ let raw_polynom th op lc gl =
          let c'''i = 
 	   if !term_quality then polynom_unfold_tac_in_term gl c''i else c''i 
 	 in
-         if !term_quality && pf_conv_x gl c'''i ci then 
+         if !term_quality && safe_pf_conv_x gl c'''i ci then 
 	   tac (* convertible terms *)
          else if th.th_setoid
 	 then
@@ -797,9 +803,11 @@ let raw_polynom th op lc gl =
 				  [| th.th_a; (unbox th.th_equiv);
                                      (unbox th.th_setoid_th);
 				     c'''i; ci; c'i_eq_c''i |]))))
-	      (tclTHENS 
+	      (tclTHEN 
 		 (Setoid_replace.setoid_replace ci c'''i None)
-		 [ h_exact c'i_eq_c''i; tac ])) 
+		 (tclTHEN 
+		    (tclTRY (h_exact c'i_eq_c''i))
+		    tac)))
 	 else
            (tclORELSE
               (tclORELSE
@@ -865,7 +873,7 @@ let polynom lc gl =
 	   | Some (eq,t::args) ->
 	       let th = guess_theory t in
 	       if List.exists 
-		 (fun c1 -> not (pf_conv_x gl t (pf_type_of gl c1))) args
+		 (fun c1 -> not (safe_pf_conv_x gl t (pf_type_of gl c1))) args
 	       then 
 		 errorlabstrm "Ring :"
 		   (str" All terms must have the same type");
@@ -875,7 +883,7 @@ let polynom lc gl =
 			 let t = (pf_type_of gl c1) in
 			 let th = (guess_theory t) in
 			   if List.exists 
-			     (fun c2 -> not (pf_conv_x gl t (pf_type_of gl c2))) args
+			     (fun c2 -> not (safe_pf_conv_x gl t (pf_type_of gl c2))) args
 			   then 
 			     errorlabstrm "Ring :"
 			       (str" All terms must have the same type");
@@ -888,7 +896,7 @@ let polynom lc gl =
 	let t = pf_type_of gl c in 
 	let th = guess_theory t in 
 	  if List.exists 
-	    (fun c1 -> not (pf_conv_x gl t (pf_type_of gl c1))) lc'
+	    (fun c1 -> not (safe_pf_conv_x gl t (pf_type_of gl c1))) lc'
 	  then 
 	    errorlabstrm "Ring :"
 	      (str" All terms must have the same type");
