@@ -22,6 +22,9 @@ val fterm0          : 'a assumptions -> constr -> std_ppcmds
 val term0           : 'a assumptions -> constr -> std_ppcmds
 val term0_at_top    : 'a assumptions -> constr -> std_ppcmds
 
+val prrawterm       : Rawterm.rawconstr -> std_ppcmds
+val prpattern       : Rawterm.pattern -> std_ppcmds
+
 val pr_sign         : var_context -> std_ppcmds
 val pr_env_opt      : context -> std_ppcmds
 

@@ -89,6 +89,7 @@ let rec gencompr k gt =
   in 
   gpr gt
 
+
 (* [at_top] means ids of env must be avoided in bound variables *)
 let gentermpr_core at_top k env t =
   let uenv = unitize_env env in
@@ -126,6 +127,23 @@ let fprtype_env env typ =
     fterm0 env typ.body
 
 let fprtype = fprtype_env (gLOB nil_sign)
+
+let genpatternpr k t =
+  try 
+    gencompr k (Termast.ast_of_pattern t)
+  with Failure _ | Anomaly _ | UserError _ | Not_found ->
+       [< 'sTR"<PP error: non-printable term>" >];;
+
+let prpattern = genpatternpr CCI
+
+let genrawtermpr k env t =
+  let uenv = unitize_env env in
+    try 
+      gencompr k (Termast.ast_of_rawconstr uenv t)
+    with Failure _ | Anomaly _ | UserError _ | Not_found ->
+      [< 'sTR"<PP error: non-printable term>" >];;
+
+let prrawterm = genrawtermpr CCI (gLOB nil_sign)
 
 let gentacpr gt =
   let rec gpr gt =
