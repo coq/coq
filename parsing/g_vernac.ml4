@@ -77,10 +77,6 @@ GEXTEND Gram
   def_tok:
     [ [ "Definition" -> <:ast< "DEFINITION" >>
       | IDENT "Local" -> <:ast< "LOCAL" >> 
-      | "@"; "Definition"  -> <:ast< "OBJECT" >>
-      | "@"; IDENT "Local"  -> <:ast< "LOBJECT" >>
-      | "@"; IDENT "Coercion"  -> <:ast< "OBJCOERCION" >>
-      | "@"; IDENT "Local"; IDENT "Coercion"  -> <:ast< "LOBJCOERCION" >>
       | IDENT "SubClass"  -> <:ast< "SUBCLASS" >>
       | IDENT "Local"; IDENT "SubClass"  -> <:ast< "LSUBCLASS" >> ] ]  
   ;
@@ -324,6 +320,7 @@ GEXTEND Gram
           <:ast< (CONSTR (CAST $c1 $c2)) >>
       | c = Constr.constr -> <:ast< (CONSTR $c) >>
   ] ];
+
   gallina_ext:
     [ [ 
 (* Sections *)
@@ -337,6 +334,24 @@ GEXTEND Gram
           <:ast< (TRANSPARENT ($LIST $l)) >>
       | IDENT "Opaque"; l = ne_qualidarg_list -> 
 	  <:ast< (OPAQUE ($LIST $l)) >>
+
+(* Canonical structure *)
+      | IDENT "Canonical"; IDENT "Structure"; qid = qualidarg ->
+          <:ast< (CANONICAL $qid) >>
+      | IDENT "Canonical"; IDENT "Structure"; qid = qualidarg; ":"; 
+	t = Constr.constr; ":="; c = Constr.constr ->
+          let s = Ast.coerce_to_var qid in
+          <:ast< (DEFINITION "OBJECT" $s (CONSTR $c) (CONSTR $t)) >>
+      | IDENT "Canonical"; IDENT "Structure"; qid = qualidarg; ":="; 
+	c = Constr.constr; ":"; t = Constr.constr ->
+          let s = Ast.coerce_to_var qid in
+          <:ast< (DEFINITION "OBJECT" $s (CONSTR $c) (CONSTR $t)) >>
+      | IDENT "Canonical"; IDENT "Structure"; qid = qualidarg; ":="; 
+	c = Constr.constr ->
+          let s = Ast.coerce_to_var qid in
+          <:ast< (DEFINITION "OBJECT" $s (CONSTR $c)) >>
+      (* Rem: LOBJECT, OBJCOERCION, LOBJCOERCION have been removed
+         (they were unused and undocumented *)
 
 (* Coercions *)
       | IDENT "Coercion"; qid = qualidarg; ":="; c = def_body ->

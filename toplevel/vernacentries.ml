@@ -916,6 +916,15 @@ let _ =
        | _ -> bad_vernac_args "DEFINITION")
 
 let _ =
+  add "CANONICAL"
+    (function
+       | [VARG_QUALID qid] -> 
+	   fun () ->
+	     let ref = Nametab.global dummy_loc qid in
+	     Recordobj.objdef_declare ref
+       | _ -> bad_vernac_args "CANONICAL")
+
+let _ =
   add "VARIABLE"
     (function 
        | [VARG_STRING kind; VARG_BINDERLIST slcl] ->
