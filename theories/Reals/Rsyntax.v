@@ -244,6 +244,6 @@ Open Local Scope R_scope.
 End R_scope.
 ].
 
-Delimits Scope R_scope with R.
-
+(*
 Arguments Scope up [R_scope].
+*)
