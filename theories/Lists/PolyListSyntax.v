@@ -8,12 +8,3 @@
 
 (*i $Id$ i*)
 
-(** Syntax for list concatenation *)
-
-Require PolyList.
-
-V8Infix "::" cons (at level 45, right associativity) : list_scope.
-
-Infix RIGHTA 7 "^" app : list_scope V8only RIGHTA 45 "++".
-
-Open Scope list_scope.

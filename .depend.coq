@@ -127,12 +127,13 @@ theories/ZArith/Zwf.vo: theories/ZArith/Zwf.v theories/ZArith/ZArith_base.vo the
 theories/ZArith/ZArith_base.vo: theories/ZArith/ZArith_base.v theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/ZArith/ZArith_dec.vo theories/ZArith/Zmisc.vo theories/ZArith/Wf_Z.vo theories/ZArith/Zhints.vo
 theories/ZArith/Zbool.vo: theories/ZArith/Zbool.v theories/ZArith/ZArith_base.vo theories/Bool/Sumbool.vo
 theories/ZArith/Zbinary.vo: theories/ZArith/Zbinary.v theories/Bool/Bvector.vo theories/ZArith/ZArith.vo theories/ZArith/Zpower.vo contrib/omega/Omega.vo
-theories/Lists/List.vo: theories/Lists/List.v theories/Arith/Le.vo
-theories/Lists/PolyListSyntax.vo: theories/Lists/PolyListSyntax.v theories/Lists/PolyList.vo
+theories/Lists/MonoList.vo: theories/Lists/MonoList.v theories/Arith/Le.vo
+theories/Lists/PolyListSyntax.vo: theories/Lists/PolyListSyntax.v
 theories/Lists/ListSet.vo: theories/Lists/ListSet.v theories/Lists/PolyList.vo
 theories/Lists/Streams.vo: theories/Lists/Streams.v
 theories/Lists/PolyList.vo: theories/Lists/PolyList.v theories/Arith/Le.vo
 theories/Lists/TheoryList.vo: theories/Lists/TheoryList.v theories/Lists/PolyList.vo theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Minus.vo theories/Bool/DecBool.vo
+theories/Lists/List.vo: theories/Lists/List.v theories/Arith/Le.vo
 theories/Sets/Classical_sets.vo: theories/Sets/Classical_sets.v theories/Sets/Ensembles.vo theories/Sets/Constructive_sets.vo theories/Logic/Classical_Type.vo
 theories/Sets/Permut.vo: theories/Sets/Permut.v
 theories/Sets/Constructive_sets.vo: theories/Sets/Constructive_sets.v theories/Sets/Ensembles.vo

@@ -579,9 +579,10 @@ ZARITHVO=\
  theories/ZArith/Zbool.vo	theories/ZArith/Zbinary.vo
 
 LISTSVO=\
- theories/Lists/List.vo		theories/Lists/PolyListSyntax.vo \
+ theories/Lists/MonoList.vo	theories/Lists/PolyListSyntax.vo \
  theories/Lists/ListSet.vo   	theories/Lists/Streams.vo \
- theories/Lists/PolyList.vo  	theories/Lists/TheoryList.vo
+ theories/Lists/PolyList.vo  	theories/Lists/TheoryList.vo \
+ theories/Lists/List.vo
 
 SETSVO=\
  theories/Sets/Classical_sets.vo    theories/Sets/Permut.vo \
@@ -678,7 +679,7 @@ logic: $(LOGICVO:%.vo=new%.vo)
 arith: $(ARITHVO:%.vo=new%.vo)
 bool: $(BOOLVO:%.vo=new%.vo)
 zarith: $(ZARITHVO:%.vo=new%.vo)
-lists: $(LISTSVO:%.vo=new%.vo)
+lists: $(LISTVO) $(LISTSVO:%.vo=new%.vo)
 sets: $(SETSVO:%.vo=new%.vo)
 intmap: $(INTMAPVO:%.vo=new%.vo)
 relations: $(RELATIONSVO:%.vo=new%.vo)
@@ -765,10 +766,11 @@ NEWINITV=$(INITVO:%.vo=new%.v)
 NEWTHEORIESV=$(THEORIESVO:%.vo=new%.v)
 NEWCONTRIBV=$(CONTRIBVO:%.vo=new%.v)
 
-# Made new*.v targets explicit, otherwise "make" removes them after use
+# Made *.vo and new*.v targets explicit, otherwise "make" 
+# either removes them after use or don't do them (e.g. List.vo)
 newinit:: $(NEWINITV) $(NEWINITVO)
-newtheories:: $(NEWTHEORIESV) $(NEWTHEORIESVO)
-newcontrib:: $(NEWCONTRIBV) $(NEWCONTRIBVO) $(CONTRIBCMO)
+newtheories:: $(THEORIESVO) $(NEWTHEORIESV) $(NEWTHEORIESVO)
+newcontrib::$(CONTRIBVO) $(NEWCONTRIBV) $(NEWCONTRIBVO) $(CONTRIBCMO)
 
 translation:: $(NEWTHEORIESV) $(NEWCONTRIBV)
 
@@ -824,6 +826,15 @@ contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
 # Obsolete ?
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
 	$(BESTCOQTOP) $(TRANSLATE) -boot -byte $(COQOPTS) -compile $*
+
+newtheories/Lists/List.v: newtheories/Lists/PolyList.v
+	(cd newtheories/Lists; cp -f PolyList.v List.v)
+
+newtheories/Lists/PolyList.vo:
+	rm newtheories/Lists/PolyList.v
+
+newtheories/Lists/PolyListSyntax.vo:
+	rm newtheories/Lists/PolyListSyntax.v
 
 # Obsolete ?
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
@@ -977,6 +988,8 @@ NEWLIBFILES=$(NEWTHEORIESVO) $(NEWCONTRIBVO)
 NEWLIBFILESLIGHT=$(NEWTHEORIESLIGHTVO)
 
 install-library:
+	- rm newtheories/Lists/PolyList.v{,o}        #obsolete module
+	- rm newtheories/Lists/PolyListSyntax.v{,o}  #obsolete module
 	$(MKDIR) $(FULLCOQLIB)
 	for f in $(LIBFILES) $(NEWLIBFILES); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
@@ -1296,7 +1309,7 @@ dependcoq:: beforedepend
 	 $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
 
 .depend.newcoq: .depend.coq Makefile
-	sed -e "s|theories/\([^ ]*\.v\)|newtheories/\1|g" -e "s|contrib/\([^ ]*\.v\)|newcontrib/\1|g" .depend.coq > .depend.newcoq
+	sed -e "s|theories/\([^ ]*\.v\)|newtheories/\1|g" -e "s|contrib/\([^ ]*\.v\)|newcontrib/\1|g" -e "s| newtheories/Lists/PolyListSyntax| newtheories/Lists/List|g" -e "s| newtheories/Lists/PolyList| newtheories/Lists/List|g" .depend.coq > .depend.newcoq
 
 # Build dependencies ignoring failures in building ml files from ml4 files
 # This is useful to rebuild dependencies when they are strongly corrupted:

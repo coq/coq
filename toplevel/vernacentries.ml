@@ -508,10 +508,19 @@ let is_obsolete_module (_,qid) =
 	  | "EqDecide" | "Xml" |  "Extraction" | "Tauto" | "Setoid_replace"
           | "Elimdep" 
 	  | "DatatypesSyntax" | "LogicSyntax" | "Logic_TypeSyntax"
-	  | "SpecifSyntax" | "PeanoSyntax" | "TypeSyntax")
+	  | "SpecifSyntax" | "PeanoSyntax" | "TypeSyntax" | "PolyListSyntax")
 	  -> true
 	| _ -> false)
   | _ -> false
+
+let test_renamed_module (_,qid) =
+  match repr_qualid qid with
+  | dir, id when dir = empty_dirpath ->
+      (match string_of_id id with
+	| "List" -> warning "List has been renamed into MonoList"
+        | "PolyList" -> warning "PolyList has been renamed into List and old List into MonoList"
+        | _ -> ())
+  | _ -> ()
 
 let vernac_require import _ qidl =
   let qidl = List.map qualid_of_reference qidl in
@@ -528,6 +537,7 @@ let vernac_require import _ qidl =
 	  warning ("Module "^(string_of_qualid qid)^
 	  " is now built-in and shouldn't be required")) qidl
     else
+      if not !Options.v7 then List.iter test_renamed_module qidl;
       raise e
       
 let vernac_import export refl =

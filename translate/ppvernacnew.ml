@@ -33,7 +33,19 @@ let pr_id id = pr_id (Constrextern.v7_to_v8_id id)
 
 let pr_ltac_id id = pr_id (id_of_ltac_v7_id id)
 
-let pr_module = Libnames.pr_reference
+let pr_module r =
+  let update_ref s = match r with
+    | Ident (loc,_) ->
+        Ident (loc,id_of_string s)
+    | Qualid (loc,qid) ->
+        Qualid (loc,make_qualid (fst (repr_qualid qid)) (id_of_string s)) in
+  let (_,dir,_) =
+    Library.locate_qualified_library (snd (qualid_of_reference r)) in
+  let r = match List.rev (List.map string_of_id (repr_dirpath dir)) with
+    | [ "Coq"; "Lists"; "List" ] -> update_ref "MonoList"
+    | [ "Coq"; "Lists"; "PolyList" ] -> update_ref "List"
+    | _ -> r in
+  Libnames.pr_reference r
 
 let pr_reference r =
   let loc = loc_of_reference r in
@@ -1097,7 +1109,7 @@ let pr_vernac = function
 	["Refine"; "Inv"; "Equality"; "EAuto"; "AutoRewrite"; "EqDecide"; 
          "Xml"; "Extraction"; "Tauto"; "Setoid_replace";"Elimdep";
 	 "DatatypesSyntax"; "LogicSyntax"; "Logic_TypeSyntax";
-	 "SpecifSyntax"; "PeanoSyntax"; "TypeSyntax"] ->
+	 "SpecifSyntax"; "PeanoSyntax"; "TypeSyntax"; "PolyListSyntax"] ->
       warning ("Forgetting obsolete module "^(string_of_id r));
       mt()
   | VernacSyntax _  | VernacGrammar _ as x -> pr_vernac x

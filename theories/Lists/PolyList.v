@@ -631,3 +631,11 @@ Reflexivity.
 Qed.
 
 End Functions_on_lists.
+
+(** Exporting list notations *)
+
+V8Infix "::" cons (at level 45, right associativity) : list_scope.
+
+Infix RIGHTA 7 "^" app : list_scope V8only RIGHTA 45 "++".
+
+Open Scope list_scope.
