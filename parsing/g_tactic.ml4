@@ -243,7 +243,7 @@ GEXTEND Gram
 	| _ -> errorlabstrm "Gram.let_clause" [<'sTR "Not a COMMAND">]) ] ]
   ;
   rec_clause:
-    [ [ name = identarg; it = LIST1 input_fun; "->"; body = tactic_expr ->
+    [ [ name = identarg; it = LIST1 input_fun; "->"; body = tactic_atom ->
           <:ast< (RECCLAUSE $name (FUNVAR ($LIST $it)) $body) >> ] ]
   ;
   match_pattern:
