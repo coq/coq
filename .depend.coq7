@@ -219,9 +219,9 @@ contrib7/ring/NArithRing.vo: contrib7/ring/NArithRing.v contrib7/ring/Ring.vo th
 contrib7/ring/ZArithRing.vo: contrib7/ring/ZArithRing.v contrib7/ring/ArithRing.vo theories7/ZArith/ZArith_base.vo theories7/Logic/Eqdep_dec.vo
 contrib7/ring/Ring_abstract.vo: contrib7/ring/Ring_abstract.v contrib7/ring/Ring_theory.vo contrib7/ring/Quote.vo contrib7/ring/Ring_normalize.vo
 contrib7/ring/Quote.vo: contrib7/ring/Quote.v
-contrib7/ring/Setoid_ring_normalize.vo: contrib7/ring/Setoid_ring_normalize.v contrib7/ring/Setoid_ring_theory.vo contrib7/ring/Quote.vo
+contrib7/ring/Setoid_ring_normalize.vo: contrib7/ring/Setoid_ring_normalize.v
 contrib7/ring/Setoid_ring.vo: contrib7/ring/Setoid_ring.v contrib7/ring/Setoid_ring_theory.vo contrib7/ring/Quote.vo contrib7/ring/Setoid_ring_normalize.vo
-contrib7/ring/Setoid_ring_theory.vo: contrib7/ring/Setoid_ring_theory.v theories7/Bool/Bool.vo theories7/Setoids/Setoid.vo
+contrib7/ring/Setoid_ring_theory.vo: contrib7/ring/Setoid_ring_theory.v
 contrib7/field/Field_Compl.vo: contrib7/field/Field_Compl.v
 contrib7/field/Field_Theory.vo: contrib7/field/Field_Theory.v theories7/Arith/Peano_dec.vo contrib7/ring/Ring.vo contrib7/field/Field_Compl.vo
 contrib7/field/Field_Tactic.vo: contrib7/field/Field_Tactic.v contrib7/ring/Ring.vo contrib7/field/Field_Compl.vo contrib7/field/Field_Theory.vo
