@@ -407,8 +407,8 @@ let intern_quantified_hypothesis ist x =
 let intern_constr {ltacvars=lfun; gsigma=sigma; genv=env} c =
   let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
   let c' = 
-    warn (Constrintern.interp_rawconstr_gen false sigma env []
-           false (fst lfun,[])) c in
+    warn (Constrintern.interp_rawconstr_gen false sigma env 
+      false (fst lfun,[])) c in
   begin if Options.do_translate () then try
       (* Try to infer old case and type annotations *)
       let _ = Pretyping.understand_gen_tcc sigma env [] None c' in 
@@ -494,12 +494,10 @@ let intern_hyp_location ist = function
 (* Reads a pattern *)
 let intern_pattern evc env lfun = function
   | Subterm (ido,pc) ->
-      let lfun = List.map (fun id -> (id, mkVar id)) lfun in
-      let (metas,pat) = interp_constrpattern_gen evc env (lfun,[]) pc  in
+      let (metas,pat) = interp_constrpattern_gen evc env lfun pc  in
       metas, Subterm (ido,pat)
   | Term pc ->
-      let lfun = List.map (fun id -> (id, mkVar id)) lfun in
-      let (metas,pat) = interp_constrpattern_gen evc env (lfun,[]) pc  in
+      let (metas,pat) = interp_constrpattern_gen evc env lfun pc  in
       metas, Term pat
 
 let intern_constr_may_eval ist = function
@@ -964,8 +962,8 @@ let id_of_Identifier = variable_of_value
 (* Extract a constr from a value, if any *)
 let constr_of_VConstr = constr_of_value
 
-(* Interprets a variable *)
-let eval_variable ist gl (loc,id) =
+(* Interprets an variable *)
+let interp_var ist gl (loc,id) =
   (* Look first in lfun for a value coercible to a variable *)
   try 
     let v = List.assoc id ist.lfun in
@@ -980,7 +978,8 @@ let eval_variable ist gl (loc,id) =
   else
     user_err_loc (loc,"eval_variable",pr_id id ++ str " not found")
 
-let interp_hyp = eval_variable
+(* Interprets an existing hypothesis (i.e. a declared variable) *)
+let interp_hyp = interp_var
 
 let eval_name ist = function
   | Anonymous -> Anonymous
@@ -1563,7 +1562,7 @@ and interp_atomic ist gl = function
       h_intros_until (interp_quantified_hypothesis ist gl hyp)
   | TacIntroMove (ido,ido') ->
       h_intro_move (option_app (eval_ident ist) ido)
-      (option_app (fun x -> eval_variable ist gl x) ido')
+        (option_app (interp_hyp ist gl) ido')
   | TacAssumption -> h_assumption
   | TacExact c -> h_exact (pf_interp_casted_constr ist gl c)
   | TacApply cb -> h_apply (interp_constr_with_bindings ist gl cb)
@@ -1665,13 +1664,11 @@ and interp_atomic ist gl = function
     let rec f x = match genarg_tag x with
     | IntArgType -> VInteger (out_gen globwit_int x)
     | StringArgType | BoolArgType | PreIdentArgType
-	-> error "This generic type is not supported in alias"
     | IntOrVarArgType -> 
 	VInteger (interp_int_or_var ist (out_gen globwit_int_or_var x))
     | IdentArgType -> 
-	let id = out_gen globwit_ident x in
-	(try VConstr (mkVar (eval_variable ist gl (dummy_loc,id)))
-	 with Not_found -> VIdentifier id)
+	VConstr 
+	  (mkVar (interp_hyp ist gl (dummy_loc,out_gen globwit_ident x)))
     | RefArgType -> 
         VConstr (constr_of_reference 
           (pf_interp_reference ist gl (out_gen globwit_ref x)))
