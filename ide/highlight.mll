@@ -29,7 +29,7 @@ let identchar =
 let ident = firstchar identchar*
 
 let keyword = 
-  "Add" | "AddPath" | "Chapter" |
+  "Add" | "AddPath" | "Chapter" | "Check" | 
   "CoInductive" |  "Compile" | "Defined" | 
   "End" | "Export" | "Extraction" | "Fact" | "Fix" | "Global" | 
   "Grammar" | "Hint" |
