@@ -456,5 +456,12 @@ let abs_rng_tycon env isevars = function
   | (_,(_,None)) -> empty_tycon
   | (_,(_,Some c)) ->
       (match whd_betadeltaiota env !isevars c with
-	 | DOP2(Prod,_,DLAM(_,b)) -> mk_tycon b
+	 | DOP2(Prod,t,DLAM(na,b)) ->
+	     mk_tycon (
+	       match b with 
+		 | DOP2(Cast,_,_) -> b
+		 | _ ->
+		     let s = Retyping.get_sort_of env !isevars t in
+		     let env' = push_rel (na,make_typed t s) env in
+		     mkCast b (Retyping.get_type_of env' !isevars b))
 	 | _ -> empty_tycon)
