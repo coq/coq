@@ -137,7 +137,7 @@ and frterm =
   | FRel of int
   | FAtom of constr
   | FCast of freeze * freeze
-  | FFlex of frreference * freeze array
+  | FFlex of frreference
   | FInd of inductive_path * freeze array
   | FConstruct of constructor_path * freeze array
   | FApp of freeze * freeze array
@@ -153,8 +153,8 @@ and frterm =
   | FFROZEN of constr * freeze subs
 
 and frreference =
-  | FConst of section_path
-  | FEvar of existential_key
+  | FConst of constant
+  | FEvar of (existential * freeze subs)
   | FVar of identifier
   | FFarRel of int
 
@@ -213,8 +213,7 @@ val whd_val : 'a clos_infos -> fconstr -> constr
 val fhnf: 'a clos_infos -> fconstr -> int * fconstr * fconstr array
 val fhnf_apply : 'a clos_infos ->
   int -> fconstr -> fconstr array -> int * fconstr * fconstr array
-val search_frozen_value : 
-  'a clos_infos -> frreference -> fconstr array -> fconstr option
+val search_frozen_value : 'a clos_infos -> frreference -> fconstr option
 
 (* recursive functions... *)
 val unfreeze : 'a clos_infos -> fconstr -> fconstr

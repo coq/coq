@@ -791,32 +791,29 @@ and eqappr cv_pb infos appr1 appr2 =
           (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
 
     (* 2 constants, 2 existentials or 2 local defined vars or 2 defined rels *)
-    | (FFlex (fl1,al1), FFlex (fl2,al2)) ->
+    | (FFlex fl1, FFlex fl2) ->
 	convert_or
 	  (* try first intensional equality *)
 	  (bool_and_convert (fl1 = fl2)
-	     (convert_and
-		(convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) al1 al2)
-		(convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2)
-		   v1 v2)))
+	     (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2))
           (* else expand the second occurrence (arbitrary heuristic) *)
           (fun u ->
-	     match search_frozen_value infos fl2 al2 with
+	     match search_frozen_value infos fl2 with
              | Some def2 -> 
 		 eqappr cv_pb infos appr1 (lft2, fhnf_apply infos n2 def2 v2) u
-             | None -> (match search_frozen_value infos fl1 al1 with
+             | None -> (match search_frozen_value infos fl1 with
                           | Some def1 -> eqappr cv_pb infos
 				(lft1, fhnf_apply infos n1 def1 v1) appr2 u
 			  | None -> raise NotConvertible))
 
     (* only one constant, existential, defined var or defined rel *)
-    | (FFlex (fl1,al1), _)      ->
-        (match search_frozen_value infos fl1 al1 with
+    | (FFlex fl1, _)      ->
+        (match search_frozen_value infos fl1 with
            | Some def1 -> 
 	       eqappr cv_pb infos (lft1, fhnf_apply infos n1 def1 v1) appr2
            | None -> fun _ -> raise NotConvertible)
-    | (_, FFlex (fl2,al2))      ->
-        (match search_frozen_value infos fl2 al2 with
+    | (_, FFlex fl2)      ->
+        (match search_frozen_value infos fl2 with
            | Some def2 -> 
 	       eqappr cv_pb infos appr1 (lft2, fhnf_apply infos n2 def2 v2)
            | None -> fun _ -> raise NotConvertible)

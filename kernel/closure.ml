@@ -249,35 +249,35 @@ let expand_rel k subs = exp_rel 0 k subs
  * instantiations (cbv or lazy) are.
  *)
 
-type table_key =
+type 'a table_key =
   | ConstBinding of constant
-  | EvarBinding of existential
+  | EvarBinding of (existential * 'a subs)
   | VarBinding of identifier
   | FarRelBinding of int
 
 type ('a, 'b) infos = {
   i_flags : flags;
-  i_repr : ('a, 'b) infos -> constr -> 'a;
+  i_repr : ('a, 'b) infos -> 'a subs -> constr -> 'a;
   i_env : env;
   i_evc : 'b evar_map;
   i_rels : int * (int * constr) list;
   i_vars : (identifier * constr) list;
-  i_tab : (table_key, 'a) Hashtbl.t }
+  i_tab : ('a table_key, 'a) Hashtbl.t }
 
 let ref_value_cache info ref =
   try  
     Some (Hashtbl.find info.i_tab ref)
   with Not_found ->
   try
-    let body =
+    let body,subs =
       match ref with
 	| FarRelBinding n ->
-	    let (s,l) = info.i_rels in lift n (List.assoc (s-n) l)
-	| VarBinding id -> List.assoc id info.i_vars
-	| EvarBinding evc -> existential_value info.i_evc evc
-	| ConstBinding cst -> constant_value info.i_env cst
+	    let (s,l) = info.i_rels in lift n (List.assoc (s-n) l), ESID 0
+	| VarBinding id -> List.assoc id info.i_vars, ESID 0
+	| EvarBinding (evc,subs) -> existential_value info.i_evc evc, subs
+	| ConstBinding cst -> constant_value info.i_env cst, ESID 0
     in
-    let v = info.i_repr info body in
+    let v = info.i_repr info subs body in
     Hashtbl.add info.i_tab ref v;
     Some v
   with
@@ -285,12 +285,6 @@ let ref_value_cache info ref =
     | NotInstantiatedEvar (* Evar *)
     | NotEvaluableConst _ (* Const *)
       -> None
-
-let make_constr_ref n = function
-  | FarRelBinding p -> mkRel (n+p)
-  | VarBinding id -> mkVar id
-  | EvarBinding evc -> mkEvar evc
-  | ConstBinding cst -> mkConst cst
 
 let defined_vars flags env =
   if red_local_const (snd flags) then
@@ -528,9 +522,7 @@ let rec norm_head info env t stack =
       let normt = (sp,Array.map (cbv_norm_term info env) vars) in
       norm_head_ref 0 info env stack (ConstBinding normt)
 
-  | IsEvar (n,vars) -> 
-      let normt = (n,Array.map (cbv_norm_term info env) vars) in
-      norm_head_ref 0 info env stack (EvarBinding normt)
+  | IsEvar ev -> norm_head_ref 0 info env stack (EvarBinding (ev,env))
 
   | IsLetIn (x, b, t, c) ->
       (* zeta means letin are contracted; delta without zeta means we *)
@@ -571,8 +563,15 @@ and norm_head_ref k info env stack normt =
     match ref_value_cache info normt with
       | Some body ->
 	  reduce_const_body (cbv_norm_more info env) (shift_value k body) stack
-      | None -> (VAL(0,make_constr_ref k normt), stack)
-  else (VAL(0,make_constr_ref k normt), stack)
+      | None -> (VAL(0,make_constr_ref k info normt), stack)
+  else (VAL(0,make_constr_ref k info normt), stack)
+
+and make_constr_ref n info = function
+  | FarRelBinding p -> mkRel (n+p)
+  | VarBinding id -> mkVar id
+  | EvarBinding ((ev,args),env) ->
+      mkEvar (ev,Array.map (cbv_norm_term info env) args)
+  | ConstBinding cst -> mkConst cst
 
 (* cbv_stack_term performs weak reduction on constr t under the subs
  * env, with context stack, i.e. ([env]t stack).  First computes weak
@@ -681,7 +680,7 @@ type 'a cbv_infos = (cbv_value, 'a) infos
 (* constant bodies are normalized at the first expansion *)
 let create_cbv_infos flgs env sigma =
   { i_flags = flgs;
-    i_repr = (fun old_info c -> cbv_stack_term old_info TOP (ESID (0)) c);
+    i_repr = (fun old_info s c -> cbv_stack_term old_info TOP s c);
     i_env = env;
     i_evc = sigma;
     i_rels = defined_rels flgs env;
@@ -722,7 +721,7 @@ and frterm =
   | FRel of int
   | FAtom of constr
   | FCast of freeze * freeze
-  | FFlex of frreference * freeze array
+  | FFlex of frreference
   | FInd of inductive_path * freeze array
   | FConstruct of constructor_path * freeze array
   | FApp of freeze * freeze array
@@ -738,8 +737,9 @@ and frterm =
   | FFROZEN of constr * freeze subs
 
 and frreference =
-  | FConst of section_path
-  | FEvar of existential_key
+  (* only vars as args of FConst ... exploited for caching *)
+  | FConst of constant
+  | FEvar of (existential * freeze subs)
   | FVar of identifier
   | FFarRel of int (* index in the rel_context part of _initial_ environment *)
 
@@ -799,7 +799,7 @@ let freeze_rec env (tys,lna,bds) =
 
 (* pourrait peut-etre remplacer freeze ?! (et alors FFROZEN
  * deviendrait inutile) *)
-
+(* traverse_term : freeze subs -> constr -> freeze *)
 let rec traverse_term env t =
   match kind_of_term t with
     | IsRel i -> (match expand_rel i env with
@@ -807,8 +807,8 @@ let rec traverse_term env t =
 		  | Inr (k,None) -> { norm = true; term = FRel k }
 		  | Inr (k,Some p) ->
 		      lift_frterm (k-p) 
-		      { norm = false; term = FFlex (FFarRel p, [||]) })
-    | IsVar x -> { norm = false; term = FFlex (FVar x, [||]) }
+		      { norm = false; term = FFlex (FFarRel p) })
+    | IsVar x -> { norm = false; term = FFlex (FVar x) }
     | IsMeta _ | IsSort _ | IsXtra _ ->  { norm = true; term = FAtom t }
     | IsCast (a,b) ->
         { norm = false;
@@ -820,12 +820,14 @@ let rec traverse_term env t =
         { norm = false; term = FInd (sp, Array.map (traverse_term env) v) }
     | IsMutConstruct (sp,v) ->
         { norm = false; term = FConstruct (sp,Array.map (traverse_term env) v)}
-    | IsConst (sp,v) ->
+    | IsConst (_,v as cst) ->
+	assert (array_for_all isVar v);
         { norm = false;
-	  term = FFlex (FConst sp, Array.map (traverse_term env) v) }
-    | IsEvar (sp,v) ->
+	  term = FFlex (FConst cst) }
+    | IsEvar (_,v as ev) ->
+	assert (array_for_all (fun a -> isVar a or isRel a) v);
         { norm = false;
-	  term = FFlex (FEvar sp, Array.map (traverse_term env) v) }
+	  term = FFlex (FEvar (ev, env)) }
 
     | IsMutCase (ci,p,c,v) ->
         { norm = false;
@@ -866,20 +868,21 @@ let rec traverse_term env t =
 let rec lift_term_of_freeze lfts v =
   match v.term with
     | FRel i -> mkRel (reloc_rel i lfts)
-    | FFlex (FVar x, v) -> assert (v=[||]); mkVar x
-    | FFlex (FFarRel p, v) -> assert (v=[||]); mkRel (reloc_rel p lfts)
+    | FFlex (FVar x) -> mkVar x
+    | FFlex (FFarRel p) -> mkRel (reloc_rel p lfts)
     | FAtom c -> c
     | FCast (a,b) ->
         mkCast (lift_term_of_freeze lfts a, lift_term_of_freeze lfts b)
-    | FFlex (FConst op,ve) ->
-	mkConst (op, Array.map (lift_term_of_freeze lfts) ve)
-    | FFlex (FEvar op,ve) ->
-	mkEvar (op, Array.map (lift_term_of_freeze lfts) ve)
-    | FInd (op,ve) ->
+    | FFlex (FConst cst) ->
+	mkConst cst
+    | FFlex (FEvar ((n,args), env)) ->
+	let f a = lift_term_of_freeze lfts (traverse_term env a) in
+	mkEvar (n, Array.map f args)
+    | FInd (op, ve) ->
 	mkMutInd (op, Array.map (lift_term_of_freeze lfts) ve)
-    | FConstruct (op,ve) -> 
+    | FConstruct (op, ve) -> 
 	mkMutConstruct (op, Array.map (lift_term_of_freeze lfts) ve)
-    | FCases (ci,p,c,ve) ->
+    | FCases (ci, p, c, ve) ->
 	mkMutCase (ci, lift_term_of_freeze lfts p,
 		   lift_term_of_freeze lfts c,
 		   Array.map (lift_term_of_freeze lfts) ve)
@@ -922,15 +925,16 @@ let applist_of_freeze appl = Array.to_list (Array.map term_of_freeze appl)
 let rec fstrong unfreeze_fun lfts v =
   match (unfreeze_fun v).term with
     | FRel i -> mkRel (reloc_rel i lfts)
-    | FFlex (FFarRel p, v) -> assert (v=[||]); mkRel (reloc_rel p lfts)
-    | FFlex (FVar x, v) -> assert (v=[||]); mkVar x
+    | FFlex (FFarRel p) -> mkRel (reloc_rel p lfts)
+    | FFlex (FVar x) -> mkVar x
     | FAtom c -> c
     | FCast (a,b) ->
         mkCast (fstrong unfreeze_fun lfts a, fstrong unfreeze_fun lfts b)
-    | FFlex (FConst op,ve) ->
-	mkConst (op, Array.map (fstrong unfreeze_fun lfts) ve)
-    | FFlex (FEvar op,ve) ->
-	mkEvar (op, Array.map (fstrong unfreeze_fun lfts) ve)
+    | FFlex (FConst (op,ve)) ->
+	mkConst (op, ve)
+    | FFlex (FEvar ((n,args),env)) ->
+	let f a = fstrong unfreeze_fun lfts (freeze env a) in
+	mkEvar (n, Array.map f args)
     | FInd (op,ve) ->
 	mkMutInd (op, Array.map (fstrong unfreeze_fun lfts) ve)
     | FConstruct (op,ve) -> 
@@ -1066,27 +1070,27 @@ and whnf_frterm info ft =
           { norm = uf.norm; term = FLIFT(k, uf) }
       | FCast (f,_) -> whnf_frterm info f  (* remove outer casts *)
       | FApp (f,appl) -> whnf_apply info f appl
-      | FFlex (FConst sp,vars) ->
+      | FFlex (FConst (sp,vars as cst)) ->
 	  if red_under info.i_flags (CONST [sp]) then
-            let cst = (sp, Array.map term_of_freeze vars) in
             (match ref_value_cache info (ConstBinding cst) with
                | Some def ->
                    let udef = unfreeze info def in
                    lift_frterm 0 udef
-               | None -> { norm = array_for_all is_val vars; term = ft.term })
+               | None ->
+		   { norm = true (* because only mkVar *); term = ft.term })
 	  else 
 	    ft
-      | FFlex (FEvar ev,vars) ->
+      | FFlex (FEvar ((_,vars),_ as ev)) ->
 	  if red_under info.i_flags EVAR then
-            let ev = (ev, Array.map term_of_freeze vars) in
             (match ref_value_cache info (EvarBinding ev) with
                | Some def ->
                    let udef = unfreeze info def in
                    lift_frterm 0 udef
-               | None -> { norm = array_for_all is_val vars; term = ft.term })
+               | None ->
+		   { norm = true (* because only mkVar/Rel *);term = ft.term })
 	  else 
 	    ft
-      | FFlex (FVar id, _) as t->
+      | FFlex (FVar id) as t->
 	  if red_under info.i_flags DELTA then
 	    match ref_value_cache info (VarBinding id) with
 	      | Some def ->
@@ -1094,7 +1098,7 @@ and whnf_frterm info ft =
 		  lift_frterm 0 udef
 	      | None -> { norm = true; term = t }
 	  else ft
-      | FFlex (FFarRel k,_) as t ->
+      | FFlex (FFarRel k) as t ->
 	  if red_under info.i_flags DELTA then
 	    match ref_value_cache info (FarRelBinding k) with
 	      | Some def ->
@@ -1167,11 +1171,9 @@ and whnf_term info env t =
 	       { norm = true; term = FRel n }
 	   | Inr (n,Some k) ->
 	       whnf_frterm info
-		 (lift_frterm (n-k) 
-		    { norm = false; term = FFlex (FFarRel k, [||]) }))
+		 (lift_frterm (n-k) { norm = false; term = FFlex(FFarRel k) }))
 
-    | IsVar x ->
-	whnf_frterm info { norm = false; term = FFlex (FVar x, [||]) }
+    | IsVar x -> whnf_frterm info { norm = false; term = FFlex(FVar x) }
 
     | IsSort _ | IsXtra _ | IsMeta _ -> {norm = true; term = FAtom t }
     | IsCast (c,_) -> whnf_term info env c    (* remove outer casts *)
@@ -1179,12 +1181,10 @@ and whnf_term info env t =
     | IsApp (f,ve) ->
       	whnf_frterm info
 	  { norm = false; term = FApp (freeze env f, freeze_vect env ve)}
-    | IsConst (op,ve) ->
-      	whnf_frterm info
-	  { norm = false; term = FFlex (FConst op, freeze_vect env ve) }
-    | IsEvar (op,ve) ->
-      	whnf_frterm info
-	  { norm = false; term = FFlex (FEvar op, freeze_vect env ve) }
+    | IsConst cst ->
+      	whnf_frterm info { norm = false; term = FFlex (FConst cst) }
+    | IsEvar ev ->
+      	whnf_frterm info { norm = false; term = FFlex (FEvar (ev, env)) }
     | IsMutCase (ci,p,c,ve) ->
       	whnf_frterm info
 	  { norm = false;
@@ -1231,16 +1231,11 @@ let whd_val info v =
 
 let inject = freeze (ESID 0)
 
-let search_frozen_value info f vars = match f with
-  | FConst op ->
-      ref_value_cache info (ConstBinding (op,Array.map (norm_val info) vars))
-  | FEvar op ->
-      ref_value_cache info (EvarBinding (op,Array.map (norm_val info) vars))
-  | FVar id ->
-      ref_value_cache info (VarBinding id)
-  | FFarRel p ->
-      ref_value_cache info (FarRelBinding p)
-
+let search_frozen_value info = function
+  | FConst cst -> ref_value_cache info (ConstBinding cst)
+  | FEvar ev -> ref_value_cache info (EvarBinding ev)
+  | FVar id -> ref_value_cache info (VarBinding id)
+  | FFarRel p -> ref_value_cache info (FarRelBinding p)
 
 (* cache of constants: the body is computed only when needed. *)
 type 'a clos_infos = (fconstr, 'a) infos
@@ -1248,7 +1243,7 @@ type 'a clos_infos = (fconstr, 'a) infos
 
 let create_clos_infos flgs env sigma =
   { i_flags = flgs;
-    i_repr = (fun old_info c -> freeze (ESID (0)) c);
+    i_repr = (fun old_info s c -> freeze s c);
     i_env = env;
     i_evc = sigma;
     i_rels = defined_rels flgs env;
