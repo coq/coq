@@ -27,15 +27,14 @@ LIBFILES=library/Logic.tex library/Datatypes.tex library/Peano.tex \
 REFMANCOQTEXFILES=\
   RefMan-gal.v.tex RefMan-ext.v.tex RefMan-tac.v.tex \
   RefMan-cic.v.tex RefMan-lib.v.tex RefMan-tacex.v.tex \
-  RefMan-syn.v.tex RefMan-tus.v.tex
+  RefMan-syn.v.tex RefMan-tus.v.tex RefMan-oth.v.tex
 
 COQTEXFILES= Cases.v.tex Coercion.v.tex Extraction.v.tex Program.v.tex\
   Omega.v.tex Natural.v.tex Changes.v.tex Tutorial.v.tex Polynom.v.tex \
   Programs.v.tex
 
 REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
-  RefMan-pro.tex RefMan-oth.tex \
-  RefMan-com.tex RefMan-uti.tex RefMan-add.tex \
+  RefMan-pro.tex RefMan-com.tex RefMan-uti.tex RefMan-add.tex \
   $(REFMANCOQTEXFILES) 
 
 REFMAN=Reference-Manual
