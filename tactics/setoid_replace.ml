@@ -33,17 +33,17 @@ open Constrintern
 let replace = ref (fun _ _ -> assert false)
 let register_replace f = replace := f
 
-type reflexive_relation =
-   { refl_a: constr ;
-     refl_aeq: constr;
-     refl_refl: constr;
-     refl_sym: constr option
+type relation =
+   { rel_a: constr ;
+     rel_aeq: constr;
+     rel_refl: constr option;
+     rel_sym: constr option
    }
 
 type 'a relation_class =
-   ACReflexive of 'a    (* the relation of the reflexive_relation
-                           or the reflexive_relation*)
- | ACLeibniz of constr  (* the carrier *)
+   Relation of 'a     (* the rel_aeq of the relation
+                           or the relation*)
+ | Leibniz of constr  (* the carrier *)
 
 type 'a morphism =
     { args : 'a relation_class list;
@@ -57,27 +57,27 @@ type funct =
     }
 
 type morphism_class =
-   ACMorphism of reflexive_relation morphism
+   ACMorphism of relation morphism
  | ACFunction of funct
 
 let subst_mps_in_relation_class subst =
  function
-    ACReflexive  t -> ACReflexive  (subst_mps subst t)
-  | ACLeibniz t -> ACLeibniz (subst_mps subst t) 
+    Relation  t -> Relation  (subst_mps subst t)
+  | Leibniz t -> Leibniz (subst_mps subst t) 
 
 let constr_relation_class_of_relation_relation_class =
  function
-    ACReflexive relation -> ACReflexive relation.refl_aeq
-  | ACLeibniz t -> ACLeibniz t
+    Relation relation -> Relation relation.rel_aeq
+  | Leibniz t -> Leibniz t
  
 
 let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c
 
 let constant dir s = Coqlib.gen_constant "Setoid_replace" ("Setoids"::dir) s
-let init_constant dir s = Coqlib.gen_constant "Setoid_replace" ("Init"::dir) s
+let gen_constant dir s = Coqlib.gen_constant "Setoid_replace" dir s
 let reference dir s = Coqlib.gen_reference "Setoid_replace" ("Setoids"::dir) s
 let eval_reference dir s = EvalConstRef (destConst (constant dir s))
-let eval_init_reference dir s = EvalConstRef (destConst (init_constant dir s))
+let eval_init_reference dir s = EvalConstRef (destConst (gen_constant ("Init"::dir) s))
 
 let current_constant id =
   try
@@ -87,7 +87,10 @@ let current_constant id =
 
 (* From Setoid.v *)
 
-let coq_is_reflexive = lazy(constant ["Setoid"] "is_reflexive")
+let coq_reflexive =
+ lazy(gen_constant ["Relations"; "Relation_Definitions"] "reflexive")
+let coq_symmetric =
+ lazy(gen_constant ["Relations"; "Relation_Definitions"] "symmetric")
 
 let coq_Relation_Class = lazy(constant ["Setoid"] "Relation_Class")
 let coq_Argument_Class = lazy(constant ["Setoid"] "Argument_Class")
@@ -97,11 +100,16 @@ let coq_Build_Morphism_Theory= lazy(constant ["Setoid"] "Build_Morphism_Theory")
 
 let coq_AsymmetricReflexive = lazy(constant ["Setoid"] "AsymmetricReflexive")
 let coq_SymmetricReflexive = lazy(constant ["Setoid"] "SymmetricReflexive")
+let coq_SymmetricAreflexive = lazy(constant ["Setoid"] "SymmetricAreflexive")
+let coq_AsymmetricAreflexive = lazy(constant ["Setoid"] "AsymmetricAreflexive")
 let coq_Leibniz = lazy(constant ["Setoid"] "Leibniz")
 
-let coq_RAsymmetricReflexive = lazy(constant ["Setoid"] "RAsymmetricReflexive")
-let coq_RSymmetricReflexive = lazy(constant ["Setoid"] "RSymmetricReflexive")
+let coq_RAsymmetric = lazy(constant ["Setoid"] "RAsymmetric")
+let coq_RSymmetric = lazy(constant ["Setoid"] "RSymmetric")
 let coq_RLeibniz = lazy(constant ["Setoid"] "RLeibniz")
+
+let coq_ASymmetric = lazy(constant ["Setoid"] "ASymmetric")
+let coq_AAsymmetric = lazy(constant ["Setoid"] "AAsymmetric")
 
 let coq_seq_refl = lazy(constant ["Setoid"] "Seq_refl")
 let coq_seq_sym = lazy(constant ["Setoid"] "Seq_sym")
@@ -128,13 +136,14 @@ let coq_make_compatibility_goal_aux_ref =
 let coq_App = lazy(constant ["Setoid"] "App")
 let coq_ToReplace = lazy(constant ["Setoid"] "ToReplace")
 let coq_ToKeep = lazy(constant ["Setoid"] "ToKeep")
+let coq_ProperElementToKeep = lazy(constant ["Setoid"] "ProperElementToKeep")
 let coq_fcl_singl = lazy(constant ["Setoid"] "fcl_singl")
 let coq_fcl_cons = lazy(constant ["Setoid"] "fcl_cons")
 
 let coq_setoid_rewrite = lazy(constant ["Setoid"] "setoid_rewrite")
-let coq_proj2 = lazy(init_constant ["Logic"] "proj2")
-let coq_unit = lazy(init_constant ["Datatypes"] "unit")
-let coq_tt = lazy(init_constant ["Datatypes"] "tt")
+let coq_proj2 = lazy(gen_constant ["Init"; "Logic"] "proj2")
+let coq_unit = lazy(gen_constant ["Init"; "Datatypes"] "unit")
+let coq_tt = lazy(gen_constant ["Init"; "Datatypes"] "tt")
 
 let coq_morphism_theory_of_function =
  lazy(constant ["Setoid"] "morphism_theory_of_function")
@@ -152,11 +161,11 @@ let coq_iff = lazy(eval_init_reference ["Logic"] "iff")
 let coq_impl = lazy(constant ["Setoid"] "impl")
 let coq_prop_relation =
  lazy (
-  ACReflexive {
-     refl_a = mkProp ;
-     refl_aeq = init_constant ["Logic"] "iff" ;
-     refl_refl = init_constant ["Logic"] "iff_refl";
-     refl_sym = Some (init_constant ["Logic"] "iff_sym")
+  Relation {
+     rel_a = mkProp ;
+     rel_aeq = gen_constant ["Init"; "Logic"] "iff" ;
+     rel_refl = Some (gen_constant ["Init"; "Logic"] "iff_refl");
+     rel_sym = Some (gen_constant ["Init"; "Logic"] "iff_sym")
    })
 
 
@@ -172,16 +181,16 @@ let relation_table_find s = Gmap.find s !relation_table
 let relation_table_mem s = Gmap.mem s !relation_table
 
 let prrelation s =
- str "(" ++ prterm s.refl_a ++ str "," ++ prterm s.refl_aeq ++ str ")"
+ str "(" ++ prterm s.rel_a ++ str "," ++ prterm s.rel_aeq ++ str ")"
 
 let prrelation_class =
  function
-    ACReflexive eq  ->
+    Relation eq  ->
      (try prrelation (relation_table_find eq)
       with Not_found ->
        (*CSC: still "setoid" in the error message *)
        str "[[ Error: setoid on equality " ++ prterm eq ++ str " not found! ]]")
-  | ACLeibniz ty -> prterm ty
+  | Leibniz ty -> prterm ty
 
 let prmorphism k m =
   prterm k ++ str ": " ++
@@ -194,8 +203,8 @@ let prmorphism k m =
   map to make it efficient. However, is this really worth of? *)
 let default_relation_for_carrier a =
  let rng = Gmap.rng !relation_table in
- match List.filter (fun {refl_a=refl_a} -> refl_a = a) rng with
-    [] -> ACLeibniz a
+ match List.filter (fun {rel_a=rel_a} -> rel_a = a) rng with
+    [] -> Leibniz a
   | relation::tl ->
      if tl <> [] then
       msg_warning
@@ -203,14 +212,14 @@ let default_relation_for_carrier a =
        (str "There are several setoids whose carrier is " ++ prterm a ++
          str ". The setoid " ++ prrelation relation ++
          str " is randomly chosen.") ;
-     ACReflexive relation
+     Relation relation
 
 let relation_morphism_of_constr_morphism =
  let relation_relation_class_of_constr_relation_class =
   function
-     ACLeibniz t -> ACLeibniz t
-   | ACReflexive aeq ->
-      ACReflexive (try relation_table_find aeq with Not_found -> assert false)
+     Leibniz t -> Leibniz t
+   | Relation aeq ->
+      Relation (try relation_table_find aeq with Not_found -> assert false)
  in
   function mor ->
    let args' = List.map relation_relation_class_of_constr_relation_class mor.args in
@@ -218,24 +227,24 @@ let relation_morphism_of_constr_morphism =
     {mor with args=args' ; output=output'}
 
 let subst_relation subst relation = 
-  let refl_a' = subst_mps subst relation.refl_a in
-  let refl_aeq' = subst_mps subst relation.refl_aeq in
-  let refl_refl' = subst_mps subst relation.refl_refl in
-  let refl_sym' = option_app (subst_mps subst) relation.refl_sym in
-    if refl_a' == relation.refl_a
-      && refl_aeq' == relation.refl_aeq
-      && refl_refl' == relation.refl_refl
-      && refl_sym' == relation.refl_sym
+  let rel_a' = subst_mps subst relation.rel_a in
+  let rel_aeq' = subst_mps subst relation.rel_aeq in
+  let rel_refl' = option_app (subst_mps subst) relation.rel_refl in
+  let rel_sym' = option_app (subst_mps subst) relation.rel_sym in
+    if rel_a' == relation.rel_a
+      && rel_aeq' == relation.rel_aeq
+      && rel_refl' == relation.rel_refl
+      && rel_sym' == relation.rel_sym
     then
       relation
     else
-      { refl_a = refl_a' ;
-        refl_aeq = refl_aeq' ;
-        refl_refl = refl_refl' ;
-        refl_sym = refl_sym'
+      { rel_a = rel_a' ;
+        rel_aeq = rel_aeq' ;
+        rel_refl = rel_refl' ;
+        rel_sym = rel_sym'
       }
       
-let equiv_list () = List.map (fun x -> x.refl_aeq) (Gmap.rng !relation_table)
+let equiv_list () = List.map (fun x -> x.rel_aeq) (Gmap.rng !relation_table)
 
 let _ = 
   Summary.declare_summary "relation-table"
@@ -254,24 +263,37 @@ let (relation_to_obj, obj_to_relation)=
      begin
       let old_relation = relation_table_find s in
        let th' =
-        {th with refl_sym =
-          match th.refl_sym with
-             None -> old_relation.refl_sym
+        {th with rel_sym =
+          match th.rel_sym with
+             None -> old_relation.rel_sym
            | Some t -> Some t} in
         (*CSC: still "setoid" in the error message *)
         msg_warning
          (str "The setoid " ++ prrelation th' ++ str " is redeclared. " ++
-          str "The new declaration (reflevity proved by " ++
-           prterm th'.refl_refl ++
-           (match th'.refl_sym with
+          str "The new declaration" ++
+           (match th'.rel_refl with
+              None -> str ""
+            | Some t -> str " (reflevity proved by " ++ prterm t) ++
+           (match th'.rel_sym with
                None -> str ""
-             | Some t -> str " and symmetry proved by " ++ prterm t) ++
-           str ") replaces the old declaration (reflexivity proved by "++
-           prterm old_relation.refl_refl ++
-           (match old_relation.refl_sym with
+             | Some t ->
+                (if th'.rel_refl = None then str " (" else str " and ") ++
+                str "symmetry proved by " ++ prterm t) ++
+           (if th'.rel_refl <> None && th'.rel_sym <> None then
+             str ")" else str "") ++
+           str " replaces the old declaration" ++
+           (match old_relation.rel_refl with
+              None -> str ""
+            | Some t -> str " (reflevity proved by " ++ prterm t) ++
+           (match old_relation.rel_sym with
                None -> str ""
-             | Some t -> str " and symmetry proved by " ++ prterm t) ++
-           str ").") ;
+             | Some t ->
+                (if old_relation.rel_refl = None then
+                  str " (" else str " and ") ++
+                str "symmetry proved by " ++ prterm t) ++
+           (if old_relation.rel_refl <> None && old_relation.rel_sym <> None
+            then str ")" else str "") ++
+           str ".");
         th'
      end
     else
@@ -368,11 +390,13 @@ let (morphism_to_obj, obj_to_morphism)=
 let print_setoids () =
   Gmap.iter
    (fun k relation ->
-     assert (k=relation.refl_aeq) ;
+     assert (k=relation.rel_aeq) ;
      (*CSC: still "Setoid" in the error message *)
-     ppnl (str"Setoid " ++ prrelation relation ++
-      str"; reflexivity granted by " ++ prterm relation.refl_refl ++
-      (match relation.refl_sym with
+     ppnl (str"Setoid " ++ prrelation relation ++ str";" ++
+      (match relation.rel_refl with
+          None -> str ""
+        | Some t -> str" reflexivity granted by " ++ prterm t) ++
+      (match relation.rel_sym with
           None -> str ""
         | Some t -> str " symmetry granted by " ++ prterm t)))
    !relation_table ;
@@ -388,24 +412,35 @@ let print_setoids () =
 
 (************************** Adding a relation to the database *********************)
 
+let check_refl env a aeq refl =
+ if
+  not
+   (is_conv env Evd.empty (Typing.type_of env Evd.empty refl)
+     (mkApp ((Lazy.force coq_reflexive), [| a; aeq |])))
+ then
+  errorlabstrm "Add Relation Class"
+   (str "Not a valid proof of reflexivity")
+ else ()
+
+let check_sym env a aeq sym =
+ if
+  not
+   (is_conv env Evd.empty (Typing.type_of env Evd.empty sym)
+     (mkApp ((Lazy.force coq_symmetric), [| a; aeq |])))
+ then
+  errorlabstrm "Add Relation Class"
+   (str "Not a valid proof of symmetry")
+
 let int_add_relation a aeq refl sym =
- match refl with
-    None -> assert false (*CSC: unimplemented yet*)
-  | Some refl ->
-     let env = Global.env () in
-       if
-        (is_conv env Evd.empty (Typing.type_of env Evd.empty refl)
-         (mkApp ((Lazy.force coq_is_reflexive), [| a; aeq |])))
-       then
-        Lib.add_anonymous_leaf 
-         (relation_to_obj 
-          (aeq, { refl_a = a;
-                  refl_aeq = aeq;
-                  refl_refl = refl;
-                  refl_sym = sym}))
-        else
-         errorlabstrm "Add Relation Class"
-          (str "Not a valid proof of reflexivity")
+ let env = Global.env () in
+  option_iter (check_refl env a aeq) refl ;
+  option_iter (check_sym env a aeq) sym ;
+  Lib.add_anonymous_leaf 
+   (relation_to_obj 
+    (aeq, { rel_a = a;
+            rel_aeq = aeq;
+            rel_refl = refl;
+            rel_sym = sym}))
 
 (* The vernac command "Add Relation ..." *)
 let add_relation a aeq refl sym =
@@ -440,31 +475,47 @@ let check_is_dependent t n =
 
 let cic_relation_class_of_X_relation_class typ value =
  function
-    ACReflexive
-     {refl_a=refl_a; refl_aeq=refl_aeq; refl_refl=refl_refl; refl_sym=None}
+    Relation
+     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=Some refl; rel_sym=None}
     ->
      mkApp ((Lazy.force coq_AsymmetricReflexive),
-      [| Lazy.force typ ; Lazy.force value ; refl_a ; refl_aeq; refl_refl |])
-  | ACReflexive
-     {refl_a=refl_a; refl_aeq=refl_aeq; refl_refl=refl_refl; refl_sym=Some sym}
+      [| Lazy.force typ ; Lazy.force value ; rel_a ; rel_aeq; refl |])
+  | Relation
+     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=Some refl; rel_sym=Some sym}
     ->
      mkApp ((Lazy.force coq_SymmetricReflexive),
-      [| Lazy.force typ ; refl_a ; refl_aeq; sym ; refl_refl |])
-  | ACLeibniz t -> mkApp ((Lazy.force coq_Leibniz), [| Lazy.force typ ; t |])
+      [| Lazy.force typ ; rel_a ; rel_aeq; sym ; refl |])
+  | Relation
+     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=None; rel_sym=None}
+    ->
+     mkApp ((Lazy.force coq_AsymmetricAreflexive),
+      [| Lazy.force typ ; Lazy.force value ; rel_a ; rel_aeq |])
+  | Relation
+     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=None; rel_sym=Some sym}
+    ->
+     mkApp ((Lazy.force coq_SymmetricAreflexive),
+      [| Lazy.force typ ; rel_a ; rel_aeq; sym |])
+  | Leibniz t -> mkApp ((Lazy.force coq_Leibniz), [| Lazy.force typ ; t |])
 
-let cic_reflexive_relation_class_of_relation_class =
+let cic_precise_relation_class_of_relation_class =
  function
-    ACReflexive
-     {refl_a=refl_a; refl_aeq=refl_aeq; refl_refl=refl_refl; refl_sym=None}
+    Relation
+     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=Some refl; rel_sym=None}
     ->
-     mkApp ((Lazy.force coq_RAsymmetricReflexive),
-      [| refl_a ; refl_aeq; refl_refl |])
-  | ACReflexive
-     {refl_a=refl_a; refl_aeq=refl_aeq; refl_refl=refl_refl; refl_sym=Some sym}
+     mkApp ((Lazy.force coq_RAsymmetric), [| rel_a ; rel_aeq; refl |]), true
+  | Relation
+     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=Some refl; rel_sym=Some sym}
     ->
-     mkApp ((Lazy.force coq_RSymmetricReflexive),
-      [| refl_a ; refl_aeq; sym ; refl_refl |])
-  | ACLeibniz t -> mkApp ((Lazy.force coq_RLeibniz), [| t |])
+     mkApp ((Lazy.force coq_RSymmetric), [| rel_a ; rel_aeq; sym ; refl |]),true
+  | Relation
+     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=None; rel_sym=None}
+    ->
+     mkApp ((Lazy.force coq_AAsymmetric), [| rel_a ; rel_aeq |]), false
+  | Relation
+     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=None; rel_sym=Some sym}
+    ->
+     mkApp ((Lazy.force coq_ASymmetric), [| rel_a ; rel_aeq; sym |]), false
+  | Leibniz t -> mkApp ((Lazy.force coq_RLeibniz), [| t |]), true
 
 let cic_relation_class_of_relation_class =
  cic_relation_class_of_X_relation_class coq_unit coq_tt
@@ -598,8 +649,8 @@ let add_setoid a aeq th =
          const_entry_opaque = false},
         IsDefinition) in
     let aeq_rel =
-     ACReflexive
-      {refl_a = a ; refl_aeq = aeq ; refl_refl = refl ; refl_sym = (Some sym)}
+     Relation
+      {rel_a = a ; rel_aeq = aeq ; rel_refl = Some refl ; rel_sym = Some sym}
     in
      add_morphism None mor_name
       (aeq,[aeq_rel;aeq_rel],Lazy.force coq_prop_relation)
@@ -793,7 +844,7 @@ let rec cic_type_nelist_of_list =
       [| mkType (Termops.new_univ ()); value; cic_type_nelist_of_list tl |])
 
 let syntactic_but_representation_of_marked_but hole_relation =
- let rec aux out reflexive_out =
+ let rec aux out (precise_out,is_reflexive) =
   function
      MApp (f, m, args) ->
       let morphism_theory, relations =
@@ -810,12 +861,12 @@ let syntactic_but_representation_of_marked_but hole_relation =
               mkApp ((Lazy.force coq_morphism_theory_of_function),
                [| cic_type_nelist_of_list f_args; f_output; f|])
            in
-            mt,List.map (fun x -> ACLeibniz x) f_args in
+            mt,List.map (fun x -> Leibniz x) f_args in
       let cic_relations =
        List.map
         (fun r ->
           cic_relation_class_of_relation_class r,
-          cic_reflexive_relation_class_of_relation_class r
+          cic_precise_relation_class_of_relation_class r
         ) relations in
       let cic_arguments =
        List.map cic_argument_class_of_argument_class relations in
@@ -833,19 +884,25 @@ let syntactic_but_representation_of_marked_but hole_relation =
       mkApp ((Lazy.force coq_ToReplace),
        [| hole_relation ; Lazy.force coq_Left2Right |])
    | ToKeep c ->
-       mkApp ((Lazy.force coq_ToKeep),
-        [| hole_relation ; Lazy.force coq_Left2Right ; reflexive_out ;
-           Lazy.force coq_Left2Right ; c |])
+       if is_reflexive then
+        mkApp ((Lazy.force coq_ToKeep),
+         [| hole_relation ; Lazy.force coq_Left2Right ; precise_out ;
+            Lazy.force coq_Left2Right ; c |])
+       else
+        let c_is_proper = assert false in (*CSC: unimplemented yet *)
+         mkApp ((Lazy.force coq_ProperElementToKeep),
+          [| hole_relation ; Lazy.force coq_Left2Right; precise_out ;
+             Lazy.force coq_Left2Right; c ; c_is_proper |])
  in aux
 
 let apply_coq_setoid_rewrite hole_relation c1 c2 (lft2rgt,h) m =
- let {refl_aeq=hole_equality; refl_sym=hole_symmetry} = hole_relation in
+ let {rel_aeq=hole_equality; rel_sym=hole_symmetry} = hole_relation in
  let hole_relation =
-  cic_relation_class_of_relation_class (ACReflexive hole_relation) in
+  cic_relation_class_of_relation_class (Relation hole_relation) in
  let prop_relation =
   cic_relation_class_of_relation_class (Lazy.force coq_prop_relation) in
- let reflexive_prop_relation =
-  cic_reflexive_relation_class_of_relation_class
+ let precise_prop_relation =
+  cic_precise_relation_class_of_relation_class
    (Lazy.force coq_prop_relation) in
  let hyp =
   if lft2rgt then h else
@@ -864,7 +921,7 @@ let apply_coq_setoid_rewrite hole_relation c1 c2 (lft2rgt,h) m =
    [| hole_relation ; Lazy.force coq_Left2Right ; prop_relation ;
       Lazy.force coq_Left2Right ; c1 ; c2 ;
       syntactic_but_representation_of_marked_but hole_relation
-       prop_relation reflexive_prop_relation m ; hyp |])
+       prop_relation precise_prop_relation m ; hyp |])
 
 let relation_rewrite c1 c2 (lft2rgt,cl) gl =
  let but = pf_concl gl in
@@ -933,10 +990,10 @@ let setoid_replace c1 c2 gl =
  try
   let relation =
    match default_relation_for_carrier (pf_type_of gl c1) with
-      ACReflexive sa -> sa
-    | ACLeibniz _ -> raise Use_replace
+      Relation sa -> sa
+    | Leibniz _ -> raise Use_replace
   in
-   let eq = mkApp (relation.refl_aeq, [| c1 ; c2 |]) in
+   let eq = mkApp (relation.rel_aeq, [| c1 ; c2 |]) in
     tclTHENS (assert_tac false Anonymous eq)
       [onLastHyp (fun id ->
         tclTHEN
