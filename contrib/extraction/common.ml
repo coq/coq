@@ -232,40 +232,29 @@ module HaskellModularPp = Haskell.Make(ModularParams)
 
 (*s Extraction to a file. *)
 
-let init_global_ids lang = 
-  Hashtbl.clear renamings;
-  keywords := 
-  (match lang with 
-     | Ocaml -> Ocaml.keywords
-     | Haskell -> Haskell.keywords);
-  global_ids := !keywords
-
 let extract_to_file f prm decls =
-  cons_cofix := Refset.empty;
-  current_module := prm.mod_name;
-  init_global_ids prm.lang;
+  let preamble,keyw = match prm.lang with 
+    | Ocaml -> Ocaml.preamble,Ocaml.keywords
+    | Haskell -> Haskell.preamble,Haskell.keywords
+  in 
   let pp_decl = match prm.lang,prm.modular with 
     | Ocaml, false -> OcamlMonoPp.pp_decl
     | Ocaml, _ -> OcamlModularPp.pp_decl
-    | Haskell, false -> HaskellMonoPp.pp_decl
+    | Haskell, false -> HaskellMonoPp.pp_decl    
     | Haskell, _ -> HaskellModularPp.pp_decl
-  in
-  let preamble,prop_decl,open_str = match prm.lang with 
-    | Ocaml -> Ocaml.preamble, Ocaml.prop_decl, "open "
-    | Haskell -> Haskell.preamble, Haskell.prop_decl, "import qualified "
   in
   let used_modules = if prm.modular then 
     Idset.remove prm.mod_name (decl_get_modules decls)
   else Idset.empty
   in 
+  cons_cofix := Refset.empty;
+  current_module := prm.mod_name;
+  Hashtbl.clear renamings;
+  keywords := keyw;
+  global_ids := keyw; 
   let cout = open_out f in
   let ft = Pp_control.with_output_to cout in
-  pp_with ft (preamble prm);
-  Idset.iter 
-    (fun m -> msgnl_with ft (str open_str ++ pr_id (uppercase_id m))) 
-    used_modules; 
-  if (decl_print_prop decls) then msgnl_with ft prop_decl
-  else msgnl_with ft (mt()); 
+  pp_with ft (preamble prm used_modules (decl_print_prop decls));
   begin 
     try
       List.iter (fun d -> msgnl_with ft (pp_decl d)) decls
@@ -273,4 +262,17 @@ let extract_to_file f prm decls =
       pp_flush_with ft (); close_out cout; raise e
   end;
   pp_flush_with ft ();
-  close_out cout  
+  close_out cout;  
+
+(*i 
+  (* names resolution *)
+  let cout = open_out (f^".ren") in 
+  let ft = Pp_control.with_output_to cout in
+  Hashtbl.iter 
+    (fun r id -> 
+       if short_module r = !current_module then 
+	 msgnl_with ft (pr_id id ++ str " " ++ pr_sp (sp_of_r r)))
+    renamings;
+  pp_flush_with ft ();
+  close_out cout;
+i*)    

@@ -117,14 +117,18 @@ let keywords =
     "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "prop" ; "arity" ] 
   Idset.empty
 
-let preamble _ = mt()
-
-let prop_decl = 
-  fnl () ++
-  str "type prop = unit" ++ fnl () ++
-  str "let prop = ()" ++ fnl () ++ fnl () ++
-  str "type arity = unit" ++ fnl () ++
-  str "let arity = ()" ++ fnl ()
+let preamble _ used_modules used_prop = 
+  (if used_prop then 
+    str "type prop = unit" ++ fnl () ++
+    str "let prop = ()" ++ fnl () ++ fnl () ++
+    str "type arity = unit" ++ fnl () ++
+    str "let arity = ()" ++ fnl () ++ fnl ()
+  else mt ())
+  ++
+  Idset.fold (fun m s -> s ++ str "open " ++ pr_id (uppercase_id m) ++ fnl())
+    used_modules (mt ())
+  ++ 
+  (if Idset.is_empty used_modules  then mt () else fnl ()) 
 
 (*s The pretty-printing functor. *)
 

@@ -31,17 +31,23 @@ let keywords =
     "as"; "qualified"; "hiding" ; "prop" ; "arity" ]
   Idset.empty
 
-let preamble prm =
+let preamble prm used_modules used_prop =
   let m = String.capitalize (string_of_id prm.mod_name)   in 
   str "module " ++ str m ++ str " where" ++ fnl () ++ fnl() ++ 
-  str "import qualified Prelude" ++ fnl()
+  str "import qualified Prelude" ++ fnl() ++
+  Idset.fold 
+    (fun m s -> 
+       s ++ str "import qualified " ++ pr_id (uppercase_id m) ++ fnl())
+    used_modules (mt ())
+  ++ 
+  (if used_prop then 
+     str "import qualified Unit" ++ fnl () ++ fnl () ++
+     str "type Prop = Unit.Unit" ++ fnl () ++
+     str "prop = Unit.unit" ++ fnl () ++ fnl () ++
+     str "data Arity = Unit.Unit" ++ fnl () ++
+     str "arity = Unit.unit" ++ fnl () ++ fnl () 
+   else fnl ())
 
-let prop_decl = 
-  str "import qualified Unit" ++ fnl () ++ fnl () ++
-  str "type Prop = Unit.Unit" ++ fnl () ++
-  str "prop = Unit.unit" ++ fnl () ++ fnl () ++
-  str "data Arity = Unit.Unit" ++ fnl () ++
-  str "arity = Unit.unit" ++ fnl ()
 
 let pp_abst = function
   | [] -> (mt ())
