@@ -2211,6 +2211,9 @@ let main files =
     find_w#misc#hide();
     v#coerce#misc#grab_focus()
   in
+  to_do_on_page_switch := 
+  (fun i -> if find_w#misc#visible then close_find()):: 
+    !to_do_on_page_switch;
   let find_again_forward () =
     search_backward := false;
     let (v,b,start,_) = last_find () in
