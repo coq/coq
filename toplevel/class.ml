@@ -54,9 +54,8 @@ let rec stre_unif_cond = function
 type coercion_error_kind =
   | AlreadyExists
   | NotAFunction
-  | NoSource
-  | NoSourceFunClass
-  | NoSourceSortClass
+  | NoSource of cl_typ option
+  | ForbiddenSourceClass of cl_typ
   | NotUniform
   | NoTarget
   | WrongTarget of cl_typ * cl_typ
@@ -70,12 +69,13 @@ let explain_coercion_error g = function
       (Printer.pr_global g ++ str" is already a coercion")
   | NotAFunction ->
       (Printer.pr_global g ++ str" is not a function")
-  | NoSource ->
-      (Printer.pr_global g ++ str ": cannot find the source class")
-  | NoSourceFunClass ->
-      (Printer.pr_global g ++ str ": FUNCLASS cannot be a source class")
-  | NoSourceSortClass ->
-      (Printer.pr_global g ++ str ": SORTCLASS cannot be a source class")
+  | NoSource (Some cl) ->
+      (str "Cannot recognize " ++ pr_class cl ++ str " as a source class of " 
+       ++ Printer.pr_global g)
+  | NoSource None ->
+      (str ": cannot find the source class of " ++ Printer.pr_global g)
+  | ForbiddenSourceClass cl ->
+      pr_class cl ++ str " cannot be a source class"
   | NotUniform ->
       (Printer.pr_global g ++
          str" does not respect the inheritance uniform condition");
@@ -83,8 +83,7 @@ let explain_coercion_error g = function
       (str"Cannot find the target class")
   | WrongTarget (clt,cl) ->
       (str"Found target class " ++ pr_class cl ++
-	str " while " ++ pr_class clt ++
-	str " is expected")
+       str " instead of " ++ pr_class clt)
   | NotAClass ref ->
       (str "Type of " ++ Printer.pr_global ref ++
          str " does not end with a sort")
@@ -274,6 +273,10 @@ let build_id_coercion idf_opt source =
   let (_,kn) = declare_constant idf (constr_entry,Decl_kinds.IsDefinition) in
   ConstRef kn
 
+let check_source = function
+| Some (CL_FUN|CL_SORT as s) -> raise (CoercionError (ForbiddenSourceClass s))
+| _ -> ()
+
 (* 
 nom de la fonction coercion
 strength de f
@@ -286,6 +289,7 @@ lorque source est None alors target est None aussi.
 *)
 
 let add_new_coercion_core coef stre source target isid =
+  check_source source;
   let env = Global.env () in
   let v = constr_of_reference coef in
   let vj = Retyping.get_judgment_of env Evd.empty v in
@@ -297,10 +301,9 @@ let add_new_coercion_core coef stre source target isid =
     try 
       get_source lp source
     with Not_found ->
-      raise (CoercionError NoSource)
+      raise (CoercionError (NoSource source))
   in
-  if (cls = CL_FUN) then raise (CoercionError NoSourceFunClass);
-  if (cls = CL_SORT) then raise (CoercionError NoSourceSortClass);
+  check_source (Some cls);
   if not (uniform_cond (llp-ind) lvs) then
     raise (CoercionError NotUniform);
   let clt =
