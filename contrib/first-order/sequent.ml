@@ -30,7 +30,7 @@ let priority = function (* pure heuristics, <=0 for non reversible *)
     | LA(_,lap) ->
 	match lap with
 	    LLatom             ->   0
-	  | LLfalse            -> 100
+	  | LLfalse (_,_)      -> 100
 	  | LLand (_,_)        ->  80
 	  | LLor (_,_)         ->  70
 	  | LLforall _         -> -20

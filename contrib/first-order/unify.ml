@@ -102,6 +102,24 @@ let value i t=
 type instance=
     Real of (constr*int) (* instance*valeur heuristique*)
   | Phantom of constr (* domaine de quantification *)
+
+let mk_rel_inst t=
+  let new_rel=ref 1 in
+  let rel_env=ref [] in
+  let rec renum_rec d t=
+    match kind_of_term t with 
+	Meta n->
+	  (try 
+	     mkRel (d+(List.assoc n !rel_env))
+	   with Not_found->
+	     let m= !new_rel in
+	       incr new_rel;
+	       rel_env:=(n,m) :: !rel_env;
+	       mkRel (m+d))
+      | _ -> map_constr_with_binders succ renum_rec d t
+  in 
+  let nt=renum_rec 0 t in
+    (!new_rel - 1,nt)
  	  
 let unif_atoms i dom t1 t2=
   if is_head_meta t1 || is_head_meta t2  then None else
@@ -113,6 +131,13 @@ let unif_atoms i dom t1 t2=
     with
 	UFAIL(_,_) ->None
       | Not_found ->Some (Phantom dom)
+
+(* ordre lexico:
+   nombre de metas dans terme;
+   profondeur de matching;
+   le reste
+*)
+
       
 let compare_instance inst1 inst2=
 	match inst1,inst2 with

@@ -57,8 +57,6 @@ val ll_arrow_tac : constr -> constr -> constr -> lseqtac
 
 val ll_atom_tac : constr -> lseqtac
 
-val ll_false_tac : lseqtac
-
 val left_false_tac : global_reference -> tactic
 
 val ll_ind_tac : inductive -> constr list -> lseqtac

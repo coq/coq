@@ -33,13 +33,13 @@ val match_with_evaluable : Proof_type.goal Tacmach.sigma ->
 
 type kind_of_formula=
     Arrow of constr*constr
+  | False of inductive*constr list
   | And of inductive*constr list
   | Or of inductive*constr list
   | Exists of inductive*constr list
   | Forall of constr*constr
   | Atom of constr
   | Evaluable of Names.evaluable_global_reference * Term.constr
-  | False
 
 val kind_of_formula : Proof_type.goal Tacmach.sigma -> 
   constr -> kind_of_formula
@@ -63,7 +63,7 @@ type right_formula =
       
 type left_arrow_pattern=
     LLatom
-  | LLfalse
+  | LLfalse of inductive*constr list
   | LLand of inductive*constr list
   | LLor of inductive*constr list
   | LLforall of constr

@@ -66,8 +66,9 @@ let ground_tac solver startseq gl=
   and right_tac seq ctx gl=
     let re_add s=re_add_left_list ctx s in
       match seq.gl with
-	  Complex (pat,_,atoms)->
-	    (match pat with
+	  Atomic _ -> left_tac seq ctx gl
+	| Complex (pat,_,atoms)->
+	    match pat with
 		 Ror->
 		   tclORELSE
 		   (or_tac toptac (re_add seq))
@@ -79,13 +80,12 @@ let ground_tac solver startseq gl=
 		     else 
 		       (match 
 			  Unify.give_right_instances i dom triv atoms seq with
-			    Some l -> tclORELSE
-			      (exists_tac l toptac (re_add seq)) cont_tac gl
-			  | None ->
-			      tclORELSE cont_tac
-			      (dummy_exists_tac dom  toptac (re_add seq)) gl)
-	       | _-> anomaly "unreachable place")
-	| Atomic _ -> left_tac seq ctx gl
+			      Some l -> tclORELSE
+				(exists_tac l toptac (re_add seq)) cont_tac gl
+			    | None ->
+				tclORELSE cont_tac
+				(dummy_exists_tac dom  toptac (re_add seq)) gl)
+	       | _-> anomaly "unreachable place"
   and left_tac seq ctx gl=
     if is_empty_left seq then 
       solver gl
@@ -119,17 +119,15 @@ let ground_tac solver startseq gl=
 	      (match lap with
 		   LLatom->
 		     right_tac seq1 (hd::ctx) 
-		 | LLfalse->
-		     ll_false_tac hd.id toptac (re_add seq1) 
-		 | LLand (ind,largs) | LLor(ind,largs) ->
+		 | LLfalse (ind,largs) | LLand (ind,largs) | LLor(ind,largs) ->
 		     ll_ind_tac ind largs hd.id toptac (re_add seq1) 
 		 | LLforall p ->	      
 		     tclORELSE
-		       (if seq.depth<=0 || not !qflag then 
-			  tclFAIL 0 "max depth" 
-			else 
-			  ll_forall_tac p hd.id toptac (re_add seq1))
-		       (left_tac seq1 (hd::ctx))
+		     (if seq.depth<=0 || not !qflag then 
+			tclFAIL 0 "max depth" 
+		      else 
+			ll_forall_tac p hd.id toptac (re_add seq1))
+		     (left_tac seq1 (hd::ctx))
 		 | LLexists (ind,l) ->
 		     if !qflag then
 		       ll_ind_tac ind l hd.id toptac (re_add seq1) 
@@ -140,8 +138,7 @@ let ground_tac solver startseq gl=
 		     (ll_arrow_tac a b c hd.id toptac (re_add seq1))
 		     (left_tac seq1 (hd::ctx))
 		 | LLevaluable egr->
-		     left_evaluable_tac egr hd.id toptac (re_add seq1))
-	      gl in
+		     left_evaluable_tac egr hd.id toptac (re_add seq1)) gl in
     wrap (List.length (pf_hyps gl)) true toptac (startseq gl) gl
       
 let default_solver=(Tacinterp.interp <:tactic<Auto with *>>)
@@ -161,10 +158,6 @@ let gen_ground_tac flag taco l gl=
 	set_qflag backup;result
     with e -> set_qflag backup;raise e
 	   
-open Genarg
-open Pcoq
-open Pp
-
 TACTIC EXTEND Ground
       |   [ "Ground" tactic(t) "with" ne_reference_list(l) ] -> 
 	    [ gen_ground_tac true (Some (snd t)) l ]

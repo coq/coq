@@ -84,13 +84,13 @@ let match_with_evaluable gl t=
 	
 type kind_of_formula=
     Arrow of constr*constr
+  | False of inductive*constr list
   | And of inductive*constr list
   | Or of inductive*constr list
   | Exists of inductive*constr list
   | Forall of constr*constr
   | Atom of constr
-  | Evaluable of evaluable_global_reference*constr
-  | False
+  | Evaluable of evaluable_global_reference*constr 
       
 let rec kind_of_formula gl term =
   let cciterm=whd_betaiotazeta term in
@@ -108,7 +108,7 @@ let rec kind_of_formula gl term =
 			Atom cciterm 
 		      else
 			(match Array.length mip.mind_consnames with
-			     0->False
+			     0->False(ind,l)
 			   | 1->And(ind,l)
 			   | _->Or(ind,l)) 
 		| _ ->  
@@ -130,7 +130,7 @@ let build_atoms gl metagen polarity cciterm =
   let pfenv=lazy (pf_env gl) in
   let rec build_rec env polarity cciterm =
     match kind_of_formula gl cciterm with
-	False->if not polarity then trivial:=true
+	False(_,_)->if not polarity then trivial:=true
       | Arrow (a,b)->
 	  build_rec env (not polarity) a;
 	  build_rec env polarity b
@@ -184,7 +184,7 @@ type right_formula =
       
 type left_arrow_pattern=
     LLatom
-  | LLfalse
+  | LLfalse of inductive*constr list
   | LLand of inductive*constr list
   | LLor of inductive*constr list
   | LLforall of constr
@@ -216,7 +216,7 @@ let build_left_entry nam typ internal gl metagen=
       else no_atoms in
     let pattern=
       match kind_of_formula gl typ with
-	  False        ->  Lfalse
+	  False(i,_)        ->  Lfalse
 	| Atom a       ->  raise (Is_atom a)
 	| And(i,_)         ->  Land i
 	| Or(i,_)          ->  Lor i
@@ -226,7 +226,7 @@ let build_left_entry nam typ internal gl metagen=
 	| Evaluable (egc,_) ->Levaluable egc 
 	| Arrow (a,b) ->LA (a, 
 			    match kind_of_formula gl a with
-				False->      LLfalse
+				False(i,l)-> LLfalse(i,l)
 			      | Atom t->     LLatom
 			      | And(i,l)->      LLand(i,l)
 			      | Or(i,l)->       LLor(i,l)
@@ -250,7 +250,7 @@ let build_right_entry typ gl metagen=
       else no_atoms in
     let pattern=
       match kind_of_formula gl typ with
-	  False        -> raise (Is_atom typ)
+	  False(_,_)        -> raise (Is_atom typ)
 	| Atom a       -> raise (Is_atom a)
 	| And(_,_)        -> Rand
 	| Or(_,_)         -> Ror
