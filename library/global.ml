@@ -46,8 +46,18 @@ let push_named_def d =
   global_env := env;
   cst
 
-let add_constant sp ce = global_env := add_constant sp ce !global_env
-let add_mind sp mie = global_env := add_mind sp mie !global_env
+let add_thing add kn thing =
+  let _,dir,l = repr_kn kn in
+  let kn',newenv = add dir l thing !global_env in
+    if kn = kn' then
+      global_env := newenv
+    else
+      anomaly "kernel names do not match"
+
+
+let add_constant = add_thing add_constant 
+let add_mind = add_thing add_mind
+
 let add_constraints c = global_env := add_constraints c !global_env
 
 let lookup_named id = lookup_named id (env())
@@ -55,8 +65,10 @@ let lookup_constant sp = lookup_constant sp (env())
 let lookup_inductive ind = Inductive.lookup_mind_specif (env()) ind
 let lookup_mind sp = lookup_mind sp (env())
 
-let export s = export !global_env s
-let import cenv = global_env := import cenv !global_env
+let export s = snd (export !global_env s)
+let import cenv digest = 
+  let newenv, mp = import cenv digest !global_env in 
+    global_env := newenv; mp
 
 (*s Function to get an environment from the constants part of the global
     environment and a given context. *)
@@ -76,4 +88,4 @@ let type_of_global t = type_of_reference (env ()) t
 
 
 let get_kn dp l = 
-  Libnames.encode_kn dp (id_of_label l)
+  make_kn (current_modpath !global_env) dp l

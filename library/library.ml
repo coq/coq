@@ -14,7 +14,7 @@ open Util
 open Names
 open Libnames
 open Nameops
-open Environ
+open Safe_typing
 open Libobject
 open Lib
 open Nametab
@@ -103,7 +103,7 @@ type compilation_unit_name = dir_path
 
 type module_disk = { 
   md_name : compilation_unit_name;
-  md_compiled_env : compiled_env;
+  md_compiled_env : compiled_module;
   md_declarations : library_segment;
   md_deps : (compilation_unit_name * Digest.t) list;
   md_imports : compilation_unit_name list }
@@ -114,7 +114,7 @@ type module_disk = {
 type module_t = {
   module_name : compilation_unit_name;
   module_filename : System.physical_path;
-  module_compiled_env : compiled_env;
+  module_compiled_env : compiled_module;
   module_declarations : library_segment;
   module_deps : (compilation_unit_name * Digest.t) list;
   module_imports : compilation_unit_name list;
@@ -326,10 +326,12 @@ let rec load_module dir =
         anomaly ((string_of_dirpath dir)^" should be in cache")
     in
     List.iter (fun (dir,_) -> ignore (load_module dir)) m.module_deps;
-    Global.import m.module_compiled_env;
+    let mp = Global.import m.module_compiled_env m.module_digest in
     load_objects m.module_declarations;
     register_loaded_module m;
     Nametab.push_loaded_library m.module_name;
+    (* TODO: chwilowy hak *)
+    Declaremods.push_module_with_components m.module_name mp true;
     m
 
 let mk_module md f digest = {

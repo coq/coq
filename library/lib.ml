@@ -59,8 +59,7 @@ let pop_path_prefix () =
 
 let make_path id = Libnames.make_path (fst !path_prefix) id
 
-let make_kn id = 
-  Names.make_kn (MPfile (module_dp ())) (snd !path_prefix) (label_of_id id)
+let make_kn id = Global.get_kn (snd !path_prefix) (label_of_id id)
 
 
 let sections_depth () =

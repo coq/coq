@@ -19,6 +19,7 @@ open Evd
 open Printer
 open Reductionops
 open Declarations
+open Entries
 open Inductiveops
 open Environ
 open Tacmach
@@ -244,7 +245,7 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
   let invProof = inversion_scheme env sigma t sort dep inv_op in
   let _ = 
     declare_constant name
-    (ConstantEntry { const_entry_body = invProof;
+    (DefinitionEntry { const_entry_body = invProof;
                      const_entry_type = None;
                      const_entry_opaque = false }, 
      Nametab.NeverDischarge)

@@ -17,6 +17,7 @@ open Term
 open Termops
 open Environ
 open Declarations
+open Entries
 open Declare
 open Nametab
 open Coqast
@@ -50,7 +51,7 @@ let interp_decl sigma env = function
       (Name id,Some j.uj_val, j.uj_type)
 
 let build_decl_entry sigma env (id,t) =
-  (id,Typeops.LocalAssum (interp_type Evd.empty env t))
+  (id,Entries.LocalAssum (interp_type Evd.empty env t))
 
 let typecheck_params_and_fields ps fs =
   let env0 = Global.env () in
@@ -71,8 +72,8 @@ let typecheck_params_and_fields ps fs =
   newps, newfs
 
 let degenerate_decl id = function
-    (_,None,t) -> (id,Typeops.LocalAssum t)
-  | (_,Some c,t) -> (id,Typeops.LocalDef c)
+    (_,None,t) -> (id,Entries.LocalAssum t)
+  | (_,Some c,t) -> (id,Entries.LocalDef c)
 
 type record_error =
   | MissingProj of identifier * identifier list
@@ -185,7 +186,7 @@ let declare_projections indsp coers fields =
                   const_entry_type = None;
                   const_entry_opaque = false } in
 		let sp =
-		  declare_constant fid (ConstantEntry cie,NeverDischarge)
+		  declare_constant fid (DefinitionEntry cie,NeverDischarge)
 		in Some sp
               with Type_errors.TypeError (ctx,te) -> begin
 		warning_or_error coe indsp (BadTypedProj (fid,ctx,te));

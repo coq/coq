@@ -439,6 +439,12 @@ val subst_vars : identifier list -> constr -> constr
    if two names are identical, the one of least indice is keeped *)
 val substn_vars : int -> identifier list -> constr -> constr
 
+
+(* [subst_mps sub c] performs the substitution [sub] on all kernel
+   names appearing in [c] *)
+val subst_mps : substitution -> constr -> constr
+
+
 (*s Functionals working on the immediate subterm of a construction *)
 
 (* [fold_constr f acc c] folds [f] on the immediate subterms of [c]

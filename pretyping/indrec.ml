@@ -16,6 +16,7 @@ open Nameops
 open Term
 open Termops
 open Declarations
+open Entries
 open Inductive
 open Inductiveops
 open Instantiate
@@ -502,7 +503,7 @@ let declare_one_elimination ind =
   let mindstr = string_of_id mip.mind_typename in
   let declare na c t =
     let kn = Declare.declare_constant (id_of_string na)
-      (ConstantEntry
+      (DefinitionEntry
         { const_entry_body = c;
           const_entry_type = t;
           const_entry_opaque = false }, 

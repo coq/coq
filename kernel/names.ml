@@ -61,6 +61,8 @@ module ModIdmap = Map.Make(ModIdOrdered)
 let make_dirpath x = x
 let repr_dirpath x = x
 
+let empty_dirpath = []
+
 let string_of_dirpath = function
   | [] -> "<empty>"
   | sl ->
@@ -69,14 +71,21 @@ let string_of_dirpath = function
 
 let u_number = ref 0 
 type uniq_ident = int * string * dir_path
+let make_uid dir s = incr u_number;(!u_number,s,dir)
 let string_of_uid (i,s,p) = "<"^string_of_dirpath p ^ s ^ string_of_int i^">"
 
+module Umap = Map.Make(struct 
+			 type t = uniq_ident 
+			 let compare = Pervasives.compare
+		       end)
+
+
 type mod_self_id = uniq_ident
-let make_msid dir s = incr u_number;(!u_number,s,dir)
+let make_msid = make_uid
 let string_of_msid = string_of_uid
 
 type mod_bound_id = uniq_ident
-let make_mbid dir s = incr u_number;(!u_number,s,dir)
+let make_mbid = make_uid
 let string_of_mbid = string_of_uid
 
 type label = string
@@ -87,6 +96,7 @@ let id_of_label l = l
 let label_of_id id = id
 
 module Labset = Idset
+module Labmap = Idmap
 
 type module_path =
   | MPfile of dir_path
@@ -118,6 +128,75 @@ end
 module MPmap = Map.Make(MPord)
 
 
+(* this is correct under the condition that bound and struct
+   identifiers can never be identical (i.e. get the same stamp)! *) 
+
+type substitution = module_path Umap.t
+
+let empty_subst = Umap.empty
+
+let add_msid = Umap.add 
+let add_mbid = Umap.add
+
+let map_msid msid mp = add_msid msid mp empty_subst
+let map_mbid mbid mp = add_msid mbid mp empty_subst
+
+let join subst = 
+  Umap.fold Umap.add subst
+
+let list_contents sub = 
+  let one_pair uid mp l =
+    (string_of_uid uid, string_of_mp mp)::l
+  in
+    Umap.fold one_pair sub []
+
+let debug_string_of_subst sub = 
+  let l = List.map (fun (s1,s2) -> s1^"|->"^s2) (list_contents sub) in
+    "{" ^ String.concat "; " l ^ "}"
+
+let debug_pr_subst sub = 
+  let l = list_contents sub in
+  let f (s1,s2) = hov 2 (str s1 ++ spc () ++ str "|-> " ++ str s2) 
+  in
+    str "{" ++ hov 2 (prlist_with_sep pr_coma f l) ++ str "}" 
+
+let rec subst_mp sub mp = (* 's like subst *)
+  match mp with
+    | MPself sid -> 
+	(try Umap.find sid sub with Not_found -> mp)
+    | MPbound bid ->
+	(try Umap.find bid sub with Not_found -> mp)
+    | MPdot (mp1,l) -> 
+	let mp1' = subst_mp sub mp1 in
+	  if mp1==mp1' then 
+	    mp
+	  else
+	    MPdot (mp1',l)
+    | _ -> mp
+
+
+let rec occur_in_path uid = function
+  | MPself sid -> sid = uid
+  | MPbound bid -> bid = uid
+  | MPdot (mp1,_) -> occur_in_path uid mp1
+  | _ -> false
+    
+let occur_uid uid sub = 
+  let check_one uid' mp =
+    if uid = uid' || occur_in_path uid mp then raise Exit
+  in
+    try 
+      Umap.iter check_one sub;
+      false
+    with Exit -> true
+
+let occur_msid = occur_uid
+let occur_mbid = occur_uid
+
+
+
+(* Kernel names *)
+
 type kernel_name = module_path * dir_path * label
 
 let make_kn mp dir l = (mp,dir,l)
@@ -133,6 +212,12 @@ let string_of_kn (mp,dir,l) =
   string_of_mp mp ^ "#" ^ string_of_dirpath dir ^ "#" ^ string_of_label l
 
 let pr_kn kn = str (string_of_kn kn)
+
+
+let subst_kn sub (mp,dir,l as kn) = 
+  let mp' = subst_mp sub mp in
+    if mp==mp' then kn else (mp',dir,l)
+
 
 let kn_ord kn1 kn2 = 
     let mp1,dir1,l1 = kn1 in
@@ -159,7 +244,9 @@ module KNset = Set.Make(KNord)
 
 
 (* TODO: revise this!!! *)
-let initial_path = MPself (make_msid [] "INIT")
+let initial_msid = (make_msid [] "INIT")
+let initial_path = MPself initial_msid
+
 
 type variable = identifier
 type constant = kernel_name

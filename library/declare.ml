@@ -16,6 +16,7 @@ open Nameops
 open Term
 open Sign
 open Declarations
+open Entries
 open Inductive
 open Indtypes
 open Reduction
@@ -120,7 +121,7 @@ let declare_variable id obj =
 
 (* Globals: constants and parameters *)
 
-type constant_declaration = global_declaration * strength
+type constant_declaration = constant_entry * strength
 
 let csttab = ref (Spmap.empty : strength Spmap.t)
 
@@ -165,7 +166,7 @@ let open_constant (sp,(_,stre,kn)) =
   Nametab.push n sp (ConstRef kn)
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_constant_entry = ParameterEntry mkProp
+let dummy_constant_entry = ConstantEntry (ParameterEntry mkProp)
 
 let export_constant (ce,stre,kn) = Some (dummy_constant_entry,stre,kn)
 
@@ -179,8 +180,8 @@ let (in_constant, out_constant) =
   declare_object ("CONSTANT", od)
 
 let hcons_constant_declaration = function
-  | (ConstantEntry ce, stre) ->
-      (ConstantEntry
+  | (DefinitionEntry ce, stre) ->
+      (DefinitionEntry
        { const_entry_body = hcons1_constr ce.const_entry_body;
 	 const_entry_type = option_app hcons1_constr ce.const_entry_type;
          const_entry_opaque = ce.const_entry_opaque }, stre)
@@ -189,7 +190,7 @@ let hcons_constant_declaration = function
 let declare_constant id (cd,stre) =
   (* let cd = hcons_constant_declaration cd in *)
   let kn = Lib.make_kn id in
-  let sp = add_leaf id (in_constant (cd,stre,kn)) in
+  let sp = add_leaf id (in_constant (ConstantEntry cd,stre,kn)) in
   if is_implicit_args() then declare_constant_implicits kn;
   kn
 

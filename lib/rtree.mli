@@ -23,6 +23,11 @@ val mk_rec   : 'a t array -> 'a t array
    to avoid captures when a tree appears under mk_rec *) 
 val lift : int -> 'a t -> 'a t
 
+val map : ('a -> 'b) -> 'a t -> 'b t
+
+(* [(smartmap f t) == t] if [(f a) ==a ] for all nodes *)
+val smartmap : ('a -> 'a) -> 'a t -> 'a t
+
 (* Destructors (recursive calls are expanded) *)
 val dest_param : 'a t -> int
 val dest_node  : 'a t -> 'a * 'a t array

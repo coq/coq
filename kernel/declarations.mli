@@ -15,10 +15,11 @@ open Term
 open Sign
 (*i*)
 
-(* This module defines the types of global declarations. This includes
-   global constants/axioms and mutual inductive definitions *)
+(* This module defines the internal representation of global
+   declarations. This includes global constants/axioms, mutual
+   inductive definitions, modules and module types *)
 
-(*s Constants (internal representation) (Definition/Axiom) *)
+(*s Constants (Definition/Axiom) *)
 
 type constant_body = {
   const_hyps : section_context; (* New: younger hyp at top *)
@@ -26,6 +27,8 @@ type constant_body = {
   const_type : types;
   const_constraints : constraints;
   const_opaque : bool }
+
+val subst_const_body : substitution -> constant_body -> constant_body
 
 (*s Inductive types (internal representation with redundant
     information). *)
@@ -35,12 +38,16 @@ type recarg =
   | Mrec of int 
   | Imbr of inductive
 
+val subst_recarg : substitution -> recarg -> recarg
+
 type wf_paths = recarg Rtree.t
 
 val mk_norec : wf_paths
 val mk_paths : recarg -> wf_paths list array -> wf_paths
 val dest_recarg : wf_paths -> recarg
 val dest_subterms : wf_paths -> wf_paths list array
+
+val subst_wf_paths : substitution -> wf_paths -> wf_paths
 
 (* [mind_typename] is the name of the inductive; [mind_arity] is
    the arity generalized over global parameters; [mind_lc] is the list
@@ -70,3 +77,28 @@ type mutual_inductive_body = {
   mind_packets : one_inductive_body array;
   mind_constraints : constraints;
   mind_singl : constr option }
+
+
+val subst_mind : substitution -> mutual_inductive_body -> mutual_inductive_body
+
+
+(*s Modules: signature component specifications, module types, and
+  module declarations *)
+
+type specification_body = 
+    SPBconst of constant_body
+  | SPBmind of mutual_inductive_body
+  | SPBmodule of module_body
+  | SPBmodtype of module_type_body
+
+and module_signature_body = (label * specification_body) list
+
+and module_type_body = 
+    MTBident of kernel_name
+  | MTBfunsig of mod_bound_id * module_type_body * module_type_body
+  | MTBsig of mod_self_id * module_signature_body
+
+and module_body = 
+    { mod_type : module_type_body;
+      mod_eq : module_path option }
+

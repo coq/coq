@@ -1608,7 +1608,7 @@ let abstract_subproof name tac gls =
       with e when catchable_exception e -> 
 	(delete_current_proof(); raise e)
     in   (* Faudrait un peu fonctionnaliser cela *)
-    let cd = Safe_typing.ConstantEntry const in
+    let cd = Entries.DefinitionEntry const in
     let sp = Declare.declare_constant na (cd,strength) in
     let newenv = Global.env() in
     Declare.constr_of_reference (ConstRef sp)

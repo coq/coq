@@ -15,6 +15,7 @@ open Nameops
 open Sign
 open Term
 open Declarations
+open Entries
 open Inductive
 open Instantiate
 open Reduction
@@ -98,8 +99,8 @@ let abstract_inductive ids_to_abs hyps inds =
 	 let params' =
 	   List.map 
 	     (function
-		| (Name id,None,p) -> id, LocalAssum p
-		| (Name id,Some p,_) -> id, LocalDef p
+		| (Name id,None,p) -> id, Entries.LocalAssum p
+		| (Name id,Some p,_) -> id, Entries.LocalDef p
 		| (Anonymous,_,_) -> anomaly"Unnamed inductive local variable")
 	     params in
 	 { mind_entry_params = params';

@@ -81,14 +81,16 @@ LIBREP=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
 KERNEL=kernel/names.cmo kernel/univ.cmo \
        kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
        kernel/declarations.cmo kernel/environ.cmo kernel/closure.cmo \
-       kernel/conv_oracle.cmo kernel/reduction.cmo \
+       kernel/conv_oracle.cmo kernel/reduction.cmo kernel/entries.cmo \
+       kernel/modops.cmo \
        kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
-       kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo
+       kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
+       kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo
 
 LIBRARY=library/libnames.cmo library/nameops.cmo library/libobject.cmo \
 	library/summary.cmo \
-        library/nametab.cmo library/lib.cmo library/global.cmo \
-	library/goptions.cmo library/library.cmo library/states.cmo \
+        library/nametab.cmo library/global.cmo library/lib.cmo \
+	library/goptions.cmo library/declaremods.cmo library/library.cmo library/states.cmo \
 	library/impargs.cmo library/declare.cmo 
 
 PRETYPING=pretyping/termops.cmo \
@@ -398,6 +400,9 @@ states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
 
 INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/DatatypesSyntax.vo   theories/Init/Prelude.vo       \
+       theories/Init/DatatypesHints.vo   theories/Init/PeanoHints.vo \
+       theories/Init/LogicHints.vo       theories/Init/SpecifHints.vo \
+       theories/Init/Logic_TypeHints.vo \
        theories/Init/Logic.vo             theories/Init/Specif.vo        \
        theories/Init/LogicSyntax.vo       theories/Init/SpecifSyntax.vo  \
        theories/Init/Logic_Type.vo        theories/Init/Wf.vo            \
@@ -795,7 +800,7 @@ GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
 	   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo $(KERNEL) \
 	   library/libnames.cmo \
 	   library/summary.cmo library/nameops.cmo library/nametab.cmo \
-	   library/libobject.cmo library/lib.cmo library/global.cmo \
+	   library/libobject.cmo library/global.cmo library/lib.cmo \
 	   library/goptions.cmo pretyping/rawterm.cmo pretyping/evd.cmo \
 	   parsing/coqast.cmo parsing/genarg.cmo \
 	   proofs/tacexpr.cmo proofs/proof_type.cmo parsing/ast.cmo \
@@ -973,6 +978,8 @@ depend: beforedepend
 	done
 # 5. Finally, we erase the generated .ml files
 	rm -f $(ML4FILESML)
+# 6. Since .depend contains correct dependencies .depend.devel can be deleted
+	> .depend.devel
 
 ml4clean::
 	rm -f $(ML4FILESML)
@@ -982,3 +989,5 @@ clean::
 
 include .depend
 include .depend.coq
+
+include .depend.devel

@@ -14,6 +14,7 @@ open Options
 open Term
 open Termops
 open Declarations
+open Entries
 open Inductive
 open Environ
 open Reduction
@@ -70,7 +71,7 @@ let red_constant_entry ce = function
 	  reduction_of_redexp red (Global.env()) Evd.empty body }
 
 let declare_global_definition ident ce n local =
-  let sp = declare_constant ident (ConstantEntry ce,n) in
+  let sp = declare_constant ident (DefinitionEntry ce,n) in
   if local then
     msg_warning (pr_id ident ++ str" is declared as a global definition");
   if_verbose message ((string_of_id ident) ^ " is defined");
@@ -333,7 +334,7 @@ let build_recursive lnameargsardef =
 		  recvec));
         const_entry_type = None;
         const_entry_opaque = false } in
-    let sp = declare_constant fi (ConstantEntry ce, n) in
+    let sp = declare_constant fi (DefinitionEntry ce, n) in
     (ConstRef sp)
   in 
   (* declare the recursive definitions *)
@@ -347,7 +348,7 @@ let build_recursive lnameargsardef =
 	 let ce = { const_entry_body = replace_vars subst def;
 		    const_entry_type = Some t;
                     const_entry_opaque = false } in
-	 let _ = declare_constant f (ConstantEntry ce,n) in
+	 let _ = declare_constant f (DefinitionEntry ce,n) in
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst (Array.to_list namerec))
@@ -397,7 +398,7 @@ let build_corecursive lnameardef =
         const_entry_type = None;
         const_entry_opaque = false } 
     in
-    let sp = declare_constant fi (ConstantEntry ce,n) in
+    let sp = declare_constant fi (DefinitionEntry ce,n) in
     (ConstRef sp)
   in 
   let lrefrec = Array.mapi declare namerec in
@@ -409,7 +410,7 @@ let build_corecursive lnameardef =
 	 let ce = { const_entry_body = replace_vars subst def;
 		    const_entry_type = Some t;
                     const_entry_opaque = false } in
-	 let _ = declare_constant f (ConstantEntry ce,n) in
+	 let _ = declare_constant f (DefinitionEntry ce,n) in
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst (Array.to_list namerec))
@@ -435,7 +436,7 @@ let build_scheme lnamedepindsort =
     let ce = { const_entry_body = decl;
                const_entry_type = None;
                const_entry_opaque = false } in
-    let sp = declare_constant fi (ConstantEntry ce,n) in
+    let sp = declare_constant fi (DefinitionEntry ce,n) in
     ConstRef sp :: lrecref
   in 
   let lrecref = List.fold_right2 declare listdecl lrecnames [] in
@@ -476,7 +477,7 @@ let save id const strength hook =
 	let _ = declare_variable id (Lib.cwd(), c, strength) in
 	hook strength (VarRef id)
     | NeverDischarge | DischargeAt _ ->
-        let ref = ConstRef (declare_constant id (ConstantEntry const,strength)) in
+        let ref = ConstRef (declare_constant id (DefinitionEntry const,strength)) in
 	hook strength ref
     | NotDeclare -> apply_tac_not_declare id pft tpo
   end;

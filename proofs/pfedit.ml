@@ -15,6 +15,7 @@ open Nameops
 open Sign
 open Term
 open Declarations
+open Entries
 open Environ
 open Evd
 open Declare

@@ -94,7 +94,7 @@ val suspend_proof : unit -> unit
 
 val cook_proof : unit -> 
   identifier *
-  (Safe_typing.constant_entry * (bool * strength) * declaration_hook)
+  (Entries.definition_entry * (bool * strength) * declaration_hook)
 
 (*s [get_pftreestate ()] returns the current focused pending proof or
    raises [UserError "no focused proof"] *)

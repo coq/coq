@@ -26,8 +26,8 @@ type global = Constant | Inductive
 type globals = {
   env_constants : constant_body KNmap.t;
   env_inductives : mutual_inductive_body KNmap.t;
-  env_locals : (global * kernel_name) list;
-  env_imports : compilation_unit_name list }
+  env_modules : module_body MPmap.t;
+  env_modtypes : module_type_body KNmap.t }
 
 type env = {
   env_globals       : globals;
@@ -39,8 +39,8 @@ let empty_env = {
   env_globals = {
     env_constants = KNmap.empty;
     env_inductives = KNmap.empty;
-    env_locals = [];
-    env_imports = [] };
+    env_modules = MPmap.empty;
+    env_modtypes = KNmap.empty };
   env_named_context = empty_named_context;
   env_rel_context = empty_rel_context;
   env_universes = initial_universes }
@@ -123,11 +123,9 @@ let lookup_constant kn env =
 
 let add_constant kn cb env =
   let new_constants = KNmap.add kn cb env.env_globals.env_constants in
-  let new_locals = (Constant,kn)::env.env_globals.env_locals in
   let new_globals = 
     { env.env_globals with 
-	env_constants = new_constants; 
-	env_locals = new_locals } in
+	env_constants = new_constants } in 
   { env with env_globals = new_globals }
 
 (* constant_type gives the type of a constant *)
@@ -161,11 +159,9 @@ let lookup_mind kn env =
 
 let add_mind kn mib env =
   let new_inds = KNmap.add kn mib env.env_globals.env_inductives in
-  let new_locals = (Inductive,kn)::env.env_globals.env_locals in
   let new_globals = 
     { env.env_globals with 
-	env_inductives = new_inds;
-	env_locals = new_locals } in
+	env_inductives = new_inds } in
   { env with env_globals = new_globals }
 
 (* Universe constraints *)
@@ -241,67 +237,27 @@ let keep_hyps env needed =
     ~init:empty_named_context
 
 
-(* Constants *)
+(* Modules *)
 
-(*s Modules (i.e. compiled environments). *)
-
-type compiled_env = {
-  cenv_stamped_id : compilation_unit_name;
-  cenv_needed : compilation_unit_name list;
-  cenv_constants : (kernel_name * constant_body) list;
-  cenv_inductives : (kernel_name * mutual_inductive_body) list }
-
-let exported_objects env =
-  let gl = env.env_globals in
-  let separate (cst,ind) = function
-    | (Constant,kn) -> (kn,KNmap.find kn gl.env_constants)::cst,ind
-    | (Inductive,kn) -> cst,(kn,KNmap.find kn gl.env_inductives)::ind
-  in
-  List.fold_left separate ([],[]) gl.env_locals
-
-let export env id = 
-  let (cst,ind) = exported_objects env in
-  { cenv_stamped_id = (id,0);
-    cenv_needed = env.env_globals.env_imports;
-    cenv_constants = cst;
-    cenv_inductives = ind }
-
-let check_imports env needed =
-  let imports = env.env_globals.env_imports in
-  let check (id,stamp) =
-    try
-      let actual_stamp = List.assoc id imports in
-      if stamp <> actual_stamp then
-	error ("Inconsistent assumptions over module " ^(string_of_dirpath id))
-    with Not_found -> 
-      error ("Reference to unknown module " ^ (string_of_dirpath id))
-  in
-  List.iter check needed
-
-let import_constraints g kn cst =
-  try
-    merge_constraints cst g
-  with UniverseInconsistency ->
-    error "import_constraints: Universe Inconsistency during import"
-
-let import cenv env =
-  check_imports env cenv.cenv_needed;
-  let add_list t = List.fold_left (fun t (kn,x) -> KNmap.add kn x t) t in
-  let gl = env.env_globals in
+let add_modtype ln mtb env = 
+  let new_modtypes = KNmap.add ln mtb env.env_globals.env_modtypes in
   let new_globals = 
-    { env_constants = add_list gl.env_constants cenv.cenv_constants;
-      env_inductives = add_list gl.env_inductives cenv.cenv_inductives;
-      env_locals = gl.env_locals;
-      env_imports = cenv.cenv_stamped_id :: gl.env_imports }
-  in
-  let g = universes env in
-  let g = List.fold_left 
-	    (fun g (kn,cb) -> import_constraints g kn cb.const_constraints) 
-	    g cenv.cenv_constants in
-  let g = List.fold_left 
-	    (fun g (kn,mib) -> import_constraints g kn mib.mind_constraints) 
-	    g cenv.cenv_inductives in
-  { env with env_globals = new_globals; env_universes = g }
+    { env.env_globals with 
+	env_modtypes = new_modtypes } in
+  { env with env_globals = new_globals }
+
+let shallow_add_module mp mb env = 
+  let new_mods = MPmap.add mp mb env.env_globals.env_modules in
+  let new_globals = 
+    { env.env_globals with 
+	env_modules = new_mods } in
+  { env with env_globals = new_globals }
+
+let lookup_module mp env = 
+  MPmap.find mp env.env_globals.env_modules
+
+let lookup_modtype ln env = 
+  KNmap.find ln env.env_globals.env_modtypes
 
 (*s Judgments. *)
 

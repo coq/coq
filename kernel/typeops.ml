@@ -15,6 +15,7 @@ open Term
 open Declarations
 open Sign
 open Environ
+open Entries
 open Reduction
 open Inductive
 open Type_errors
@@ -456,10 +457,6 @@ let infer_v env cv =
   (jv, cst)
  
 (* Typing of several terms. *)
-
-type local_entry =
-  | LocalDef of constr
-  | LocalAssum of constr
 
 let infer_local_decl env id = function
   | LocalDef c -> 

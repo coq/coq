@@ -15,6 +15,7 @@ open Reductionops
 open Term
 open Termops
 open Names
+open Entries
 open Libnames
 open Nameops
 open Util
@@ -239,12 +240,12 @@ let add_setoid a aeq th =
 	    let eq_ext_name = gen_eq_lem_name () in 
 	    let eq_ext_name2 = gen_eq_lem_name () in 
 	    let _ = Declare.declare_constant eq_ext_name
-		      ((ConstantEntry {const_entry_body = eq_morph; 
+		      ((DefinitionEntry {const_entry_body = eq_morph; 
 		                       const_entry_type = None;
                                        const_entry_opaque = true}),
 		       Nametab.NeverDischarge) in
 	    let _ = Declare.declare_constant eq_ext_name2
-		      ((ConstantEntry {const_entry_body = eq_morph2; 
+		      ((DefinitionEntry {const_entry_body = eq_morph2; 
 				       const_entry_type = None;
                                        const_entry_opaque = true}),
 		       Nametab.NeverDischarge) in
@@ -452,7 +453,7 @@ let add_morphism lem_name (m,profil) =
 	 (let lem_2 = gen_lem_iff env m mext args_t poss in
 	  let lem2_name = add_suffix lem_name "2" in
 	  let _ = Declare.declare_constant lem2_name
-		    ((ConstantEntry {const_entry_body = lem_2; 
+		    ((DefinitionEntry {const_entry_body = lem_2; 
 				     const_entry_type = None;
                                      const_entry_opaque = true}),
 		     Nametab.NeverDischarge) in

@@ -109,10 +109,12 @@ let type_of_constructor env cstr =
   if i > nconstr then error "Not enough constructors in the type";
   constructor_instantiate (fst ind) mib specif.(i-1)
 
-let arities_of_constructors env ind = 
-  let (mib,mip) = lookup_mind_specif env ind in
+let arities_of_specif kn (mib,mip) = 
   let specif = mip.mind_nf_lc in
-  Array.map (constructor_instantiate (fst ind) mib) specif
+  Array.map (constructor_instantiate kn mib) specif
+
+let arities_of_constructors env ind = 
+  arities_of_specif (fst ind) (lookup_mind_specif env ind)
 
 
 

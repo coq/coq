@@ -14,6 +14,7 @@ open Libnames
 open Term
 open Sign
 open Declarations
+open Entries
 open Indtypes
 open Safe_typing
 open Library
@@ -37,7 +38,7 @@ type variable_declaration = dir_path * section_variable_entry * strength
 
 val declare_variable : variable -> variable_declaration -> section_path
 
-type constant_declaration = global_declaration * strength
+type constant_declaration = constant_entry * strength
 
 (* [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns

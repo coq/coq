@@ -18,24 +18,12 @@ open Sign
 open Environ
 open Reduction
 open Typeops
+open Entries
 
 (* [check_constructors_names id s cl] checks that all the constructors names
    appearing in [l] are not present in the set [s], and returns the new set
    of names. The name [id] is the name of the current inductive type, used
    when reporting the error. *)
-
-(*s Declaration. *)
-
-type one_inductive_entry = {
-  mind_entry_params : (identifier * local_entry) list;
-  mind_entry_typename : identifier;
-  mind_entry_arity : constr;
-  mind_entry_consnames : identifier list;
-  mind_entry_lc : constr list }
-
-type mutual_inductive_entry = {
-  mind_entry_finite : bool;
-  mind_entry_inds : one_inductive_entry list }
 
 (***********************************************************************)
 (* Various well-formedness check for inductive declarations            *)

@@ -12,6 +12,7 @@ open Astterm
 open Closure
 open RedFlags
 open Declarations
+open Entries
 open Dyn
 open Libobject
 open Pattern

@@ -813,6 +813,32 @@ let substn_vars p vars =
 
 let subst_vars = substn_vars 1
 
+(* 
+map_kn : (kernel_name -> kernel_name) -> constr -> constr
+
+This should be rewritten to prevent duplication of constr's when not
+necessary.
+For now, it uses map_constr and is rather ineffective
+*)
+
+let rec map_kn f c = 
+  let func = map_kn f in
+    match kind_of_term c with
+      | Const kn -> 
+	  mkConst (f kn)
+      | Ind (kn,i) -> 
+	  mkInd (f kn,i)
+      | Construct ((kn,i),j) -> 
+	  mkConstruct ((f kn,i),j)
+      | Case (ci,p,c,l) ->
+	  let ci' = { ci with ci_ind = let (kn,i) = ci.ci_ind in f kn, i } in
+	  mkCase (ci', func p, func c, array_smartmap func l) 
+      | _ -> map_constr func c
+
+let subst_mps sub = 
+  map_kn (subst_kn sub)
+
+
 (*********************)
 (* Term constructors *)
 (*********************)

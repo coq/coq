@@ -1,0 +1,22 @@
+BASEDIR=$(shell basename `pwd`)
+
+dir:
+	$(MAKE) -C .. $(BASEDIR)
+
+all:	
+	(for i in *.ml; do \
+	   echo -n $(BASEDIR)/`basename $$i .ml`.cmo "" ; \
+	done \
+	  | xargs $(MAKE) -C .. )
+
+conflicts:
+	cvs status | grep File | grep conflicts | less
+
+confl:	conflicts
+
+
+clean:  
+	rm -f *.cmi *.cmo
+
+depend:
+	(cd ..; ocamldep -I $(BASEDIR) $(BASEDIR)/*.ml* > .depend.devel)

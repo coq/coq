@@ -34,6 +34,8 @@ type dir_path
 val make_dirpath : module_ident list -> dir_path
 val repr_dirpath : dir_path -> module_ident list
 
+val empty_dirpath : dir_path
+
 (* Printing of directory paths as ["coq_root.module.submodule"] *)
 val string_of_dirpath : dir_path -> string
 
@@ -63,6 +65,7 @@ val label_of_id : identifier -> label
 val id_of_label : label -> identifier
 
 module Labset : Set.S with type elt = label
+module Labmap : Map.S with type key = label
 
 (*s The module part of the kernel name *)
 type module_path =
@@ -72,49 +75,51 @@ type module_path =
   | MPdot of module_path * label
 (*i  | MPapply of module_path * module_path    in the future (maybe) i*)
 
-(*
-type substitution
-
-val empty_subst : substitution
-
-val add_msid : 
-  mod_str_id -> module_path -> substitution -> substitution
-val add_mbid : 
-  mod_bound_id -> module_path -> substitution -> substitution
-
-val map_msid : mod_str_id -> module_path -> substitution
-val map_mbid : mod_bound_id -> module_path -> substitution
-
-val join : substitution -> substitution -> substitution
-
-(*i debugging *)
-val debug_string_of_subst : substitution -> string
-val debug_pr_subst : substitution -> std_ppcmds
-(*i*)
-
-(* [subst_modpath_*id id by_path in_path] replaces bound/structure ident 
-   [id] with [by_path] in [in_path]. They quarantee that whenever 
-   [id] does not occur in [in_path], the result is [==] equal to 
-   [in_path] *)
-
-val subst_modpath : 
-  substitution -> module_path -> module_path
-
-(* [occur_*id id sub] returns true iff [id] occurs in [sub] 
-   on either side *)
-
-val occur_msid : mod_str_id -> substitution -> bool
-val occur_mbid : mod_bound_id -> substitution -> bool
-*)
 
 val string_of_mp : module_path -> string
 
 module MPmap : Map.S with type key = module_path
 
 
+(*s Substitutions *)
+
+type substitution
+
+val empty_subst : substitution
+
+val add_msid : 
+  mod_self_id -> module_path -> substitution -> substitution
+val add_mbid : 
+  mod_bound_id -> module_path -> substitution -> substitution
+
+val map_msid : mod_self_id -> module_path -> substitution
+val map_mbid : mod_bound_id -> module_path -> substitution
+
+val join : substitution -> substitution -> substitution
+
+(*i debugging *)
+val debug_string_of_subst : substitution -> string
+val debug_pr_subst : substitution -> Pp.std_ppcmds
+(*i*)
+
+(* [subst_mp sub mp] guarantees that whenever the result of the
+   substitution is structutally equal [mp], it is equal by pointers 
+   as well [==] *) 
+
+val subst_mp : 
+  substitution -> module_path -> module_path
+
+(* [occur_*id id sub] returns true iff [id] occurs in [sub] 
+   on either side *)
+
+val occur_msid : mod_self_id -> substitution -> bool
+val occur_mbid : mod_bound_id -> substitution -> bool
+     
+
 (* Name of the toplevel structure *)
 (* TODO: revise!*)
-val initial_path : module_path 
+val initial_msid : mod_self_id
+val initial_path : module_path (* [= MPself initial_msid] *)
 
 (*s The absolute names of objects seen by kernel *)
 
@@ -129,8 +134,8 @@ val label : kernel_name -> label
 
 val string_of_kn : kernel_name -> string
 val pr_kn : kernel_name -> Pp.std_ppcmds
-(*val subst_kn : substitution -> kernel_name -> kernel_name
-*)
+val subst_kn : substitution -> kernel_name -> kernel_name
+
 
 module KNset  : Set.S with type elt = kernel_name
 module KNpred : Predicate.S with type elt = kernel_name

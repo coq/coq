@@ -101,6 +101,16 @@ val add_mind : mutual_inductive -> mutual_inductive_body -> env -> env
 val lookup_mind : mutual_inductive -> env -> mutual_inductive_body
 
 (***********************************************************************)
+(*s Modules *)
+val add_modtype : kernel_name -> module_type_body -> env -> env
+
+(* [shallow_add_module] does not add module components *)
+val shallow_add_module : module_path -> module_body -> env -> env
+
+val lookup_module : module_path -> env -> module_body
+val lookup_modtype : kernel_name -> env -> module_type_body
+
+(***********************************************************************)
 (*s Universe constraints *)
 val set_universes   :   Univ.universes -> env -> env
 val add_constraints : Univ.constraints -> env -> env
@@ -114,14 +124,6 @@ val global_vars_set : env -> constr -> Idset.t
 val vars_of_global : env -> constr -> identifier list
 
 val keep_hyps : env -> Idset.t -> section_context
-
-(***********************************************************************)
-(*s Modules. *)
-
-type compiled_env
-
-val export : env -> dir_path -> compiled_env
-val import : compiled_env -> env -> env
 
 (***********************************************************************)
 (*s Unsafe judgments. We introduce here the pre-type of judgments, which is

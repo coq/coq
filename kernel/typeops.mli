@@ -13,6 +13,7 @@ open Names
 open Univ
 open Term
 open Environ
+open Entries
 (*i*)
 
 (*s Typing functions (not yet tagged as safe) *)
@@ -20,10 +21,6 @@ open Environ
 val infer      : env -> constr       -> unsafe_judgment * constraints
 val infer_v    : env -> constr array -> unsafe_judgment array * constraints
 val infer_type : env -> types        -> unsafe_type_judgment * constraints
-
-type local_entry =
-  | LocalDef of constr
-  | LocalAssum of constr
 
 val infer_local_decls :
   env -> (identifier * local_entry) list

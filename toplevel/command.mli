@@ -53,7 +53,7 @@ val declare_assumption : identifier -> strength -> Coqast.t -> unit
 val build_mutual : Vernacexpr.inductive_expr list -> bool -> unit
 
 val declare_mutual_with_eliminations :
-  Indtypes.mutual_inductive_entry -> mutual_inductive
+  Entries.mutual_inductive_entry -> mutual_inductive
 
 val build_recursive :
   (identifier * ((identifier * Coqast.t) list) * Coqast.t * Coqast.t) list 

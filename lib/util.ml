@@ -436,6 +436,35 @@ let array_chop n v =
   if n > vlen then failwith "array_chop";
   (Array.sub v 0 n, Array.sub v n (vlen-n))
 
+exception Local of int
+
+(* If none of the elements is changed by f we return ar itself.
+   The for loop looks for the first such an element.
+   If found it is temporarily stored in a ref and the new array is produced, 
+   but f is not re-applied to elements that are already checked *)
+let array_smartmap f ar = 
+  let ar_size = Array.length ar in
+  let aux = ref None in
+  try
+    for i = 0 to ar_size-1 do
+      let a = ar.(i) in
+      let a' = f a in
+	if a != a' then (* pointer (in)equality *) begin
+	  aux := Some a';
+	  raise (Local i)
+	end
+    done;
+    ar
+  with
+      Local i -> 
+	let copy j = 
+	  if j<i then ar.(j) 
+	  else if j=i then 
+	    match !aux with Some a' -> a' | None -> failwith "Error"
+	  else f (ar.(j))
+	in
+	  Array.init ar_size copy
+
 let array_map2 f v1 v2 =
   if Array.length v1 <> Array.length v2 then invalid_arg "array_map2";
   if Array.length v1 == 0 then 

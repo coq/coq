@@ -13,6 +13,7 @@ open Names
 open Univ
 open Term
 open Declarations
+open Entries
 open Indtypes
 open Safe_typing
    (*i*)
@@ -41,9 +42,9 @@ val lookup_constant  : constant -> constant_body
 val lookup_inductive : inductive -> mutual_inductive_body * one_inductive_body
 val lookup_mind      : mutual_inductive -> mutual_inductive_body
 
-(* Modules *)
-val export : dir_path -> Environ.compiled_env
-val import : Environ.compiled_env -> unit
+(* Compiled modules *)
+val export : dir_path -> compiled_module
+val import : compiled_module -> Digest.t -> module_path
 
 (*s Function to get an environment from the constants part of the global
  * environment and a given context. *)

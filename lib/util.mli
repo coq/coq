@@ -137,6 +137,7 @@ val array_app_tl : 'a array -> 'a list -> 'a list
 val array_list_of_tl : 'a array -> 'a list
 val array_map_to_list : ('a -> 'b) -> 'a array -> 'b list
 val array_chop : int -> 'a array -> 'a array * 'a array
+val array_smartmap : ('a -> 'a) -> 'a array -> 'a array
 val array_map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 val array_map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 val array_map3 : 
