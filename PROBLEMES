@@ -92,3 +92,13 @@ Montevideo/CtlTctl OK
 Montevideo/RailroadCrossing
 File "./railroad_crossing.v", line 613, characters 2-20
 Anomaly: useInversionLemma. Please report.
+
+Nijmegen OK
+Utrecht/Ramsey OK
+
+Utrecht/ABP
+coqc  -q  -I . abp_base
+File "./abp_base.v", line 42, characters 0-154
+Error: Cannot declare a variable or hypothesis over the term Y
+because this term is not a type.
+
