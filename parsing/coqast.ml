@@ -99,6 +99,23 @@ let hcons_ast (hstr,hid,hpath) =
   let hast = Hashcons.recursive_hcons Hast.f (hloc,hstr,hid,hpath) in
   (hast,hloc)
 
+let subst_ast subst ast = match ast with
+  | Node _
+  | Nmeta _
+  | Nvar _
+  | Slam _
+  | Smetalam _
+  | Num _
+  | Str _
+  | Id _
+  | Dynamic _ -> ast
+  | Path (loc,kn) -> 
+      let kn' = Names.subst_kn subst kn in
+	if kn' == kn then ast else
+	  Path(loc,kn')
+
+   
+
 (*
 type 'vernac_ast raw_typed_ast =
   | PureAstNode of t

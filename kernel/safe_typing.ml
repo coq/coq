@@ -435,8 +435,21 @@ let import (dp,mtb,depends) digest senv =
   check_imports senv depends;
   let mp = MPfile dp in
   let mb = module_body mtb in
+  let env = senv.env in
+(* <HACK> temporary -- only for libraries without module components *)
+  let add_constraints env = function
+    | _,SPBconst {const_constraints=constraints}  
+    | _,SPBmind {mind_constraints=constraints} ->
+	Environ.add_constraints constraints env
+    | _ -> todo "We are not ready for module components yet!"; env
+  in
+  let env = match mtb with
+    | MTBsig (_,sign) -> List.fold_left add_constraints env sign
+    | _ -> todo "We are not ready for non-structure libraries"; env
+  in
+(* </HACK> *)
   mp, { senv with 
-	  env = Modops.add_module mp mb senv.env; 
+	  env = Modops.add_module mp mb env; 
 	  imports = (dp,digest)::senv.imports;
 	  loads = (mp,mb)::senv.loads }
 

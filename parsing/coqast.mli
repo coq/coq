@@ -42,6 +42,8 @@ val hcons_ast:
   * (kernel_name -> kernel_name)
   -> (t -> t) * (loc -> loc)
 
+val subst_ast: Names.substitution -> t -> t
+
 (*
 val map_tactic_expr : (t -> t) -> (tactic_expr -> tactic_expr) -> tactic_expr -> tactic_expr
 val fold_tactic_expr :
