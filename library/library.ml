@@ -142,29 +142,23 @@ let libraries_loaded_list = ref []
 let libraries_imports_list = ref []
 let libraries_exports_list = ref []
 
-(* cache for loaded libraries *)
-let compunit_cache = ref CompilingLibraryMap.empty
-
 let freeze () =
   !libraries_table,
   !libraries_loaded_list,
   !libraries_imports_list,
-  !libraries_exports_list,
-  !compunit_cache
+  !libraries_exports_list
 
-let unfreeze (mt,mo,mi,me,cu) = 
+let unfreeze (mt,mo,mi,me) = 
   libraries_table := mt;
   libraries_loaded_list := mo;
   libraries_imports_list := mi;
-  libraries_exports_list := me;
-  compunit_cache := cu
+  libraries_exports_list := me
 
 let init () =
   libraries_table := CompilingLibraryMap.empty;
   libraries_loaded_list := [];
   libraries_imports_list := [];
-  libraries_exports_list := [];
-  compunit_cache := CompilingLibraryMap.empty
+  libraries_exports_list := []
 
 let _ = 
   Summary.declare_summary "MODULES"
@@ -268,6 +262,17 @@ let vo_magic_number = 0704 (* V7.4 *)
 
 let (raw_extern_library, raw_intern_library) =
   System.raw_extern_intern vo_magic_number ".vo"
+
+(* cache for loaded libraries *)
+let compunit_cache = ref CompilingLibraryMap.empty
+
+let _ = 
+  Summary.declare_summary "MODULES-CACHE"
+    { Summary.freeze_function = (fun () -> !compunit_cache);
+      Summary.unfreeze_function = (fun cu -> compunit_cache := cu);
+      Summary.init_function = 
+	(fun () -> compunit_cache := CompilingLibraryMap.empty);
+      Summary.survive_section = true }
 
 (*s [load_library s] loads the library [s] from the disk, and [find_library s]
    returns the library of name [s], loading it if necessary. 
