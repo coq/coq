@@ -448,16 +448,16 @@ let rec pretype tycon env isevars lvar = function
 	       match tycon with
 		 | Some pred ->
 		     let arsgn = make_arity_signature env true indf in
+                     let pred = lift (List.length arsgn) pred in
   		     let pred = 
-		       it_mkLambda_or_LetIn (nf_evar (evars_of isevars) pred)
+                       it_mkLambda_or_LetIn (nf_evar (evars_of isevars) pred)
 			 arsgn in
-                     false,
-		     Retyping.get_judgment_of env (evars_of isevars) pred
+                     false, pred
 	         | None ->
                      let sigma = evars_of isevars in
                      error_cant_find_case_type_loc loc env sigma cj.uj_val
 	     in
-             let ok, pj =
+             let ok, p =
 	       try
 		 let pred = 
 		   Cases.pred_case_ml 
@@ -466,22 +466,14 @@ let rec pretype tycon env isevars lvar = function
 		 if has_undefined_isevars isevars pred then
 		   use_constraint ()
 		 else
-		   let pty =
-                     Retyping.get_type_of env (evars_of isevars) pred in
-		   let pj = { uj_val = pred; uj_type = pty } in
-(*
-                   let _ = 
-		     option_app (the_conv_x_leq env isevars pred) tycon 
-		   in
-*)
-		   true, pj
+		   true, pred
 	       with Cases.NotInferable _ ->
 		 use_constraint ()
 	     in 
-	     let pj = j_nf_evar (evars_of isevars) pj in
+	     let p = nf_evar (evars_of isevars) p in
 	     let (bty,rsty) =
 	       Indrec.type_rec_branches
-		 false env (evars_of isevars) indt pj.uj_val cj.uj_val 
+		 false env (evars_of isevars) indt p cj.uj_val 
 	     in
 	     let _ = option_app (the_conv_x_leq env isevars rsty) tycon in
 	     let fj = 
@@ -493,7 +485,7 @@ let rec pretype tycon env isevars lvar = function
 	     let v =
 	       let mis,_ = dest_ind_family indf in
 	       let ci = make_default_case_info env st mis in
-	       mkCase (ci, (nf_betaiota pj.uj_val), cj.uj_val,[|fv|] ) 
+	       mkCase (ci, (nf_betaiota p), cj.uj_val,[|fv|] ) 
 	     in
 	     { uj_val = v; uj_type = rsty } in
 
@@ -652,6 +644,7 @@ let rec pretype tycon env isevars lvar = function
 	    match tycon with
 	      | Some pred ->
 		  let arsgn = make_arity_signature env true indf in
+                  let pred = lift (List.length arsgn) pred in
   		  it_mkLambda_or_LetIn (nf_evar (evars_of isevars) pred) arsgn 
 	      | None ->
                   let sigma = evars_of isevars in
@@ -700,6 +693,7 @@ let rec pretype tycon env isevars lvar = function
 	        match tycon with
 		  | Some pred ->
 		      let arsgn = make_arity_signature env true indf in
+                      let pred = lift (List.length arsgn) pred in
   		      let pred = 
 			it_mkLambda_or_LetIn (nf_evar (evars_of isevars) pred)
 			  arsgn in
