@@ -1057,6 +1057,13 @@ and pr_extend s cl =
     try pr_gen (Global.env()) a
     with Failure _ -> str ("<error in "^s^">") in
   try
+    (* Hack pour les syntaxes changeant non uniformément en passant a la V8 *)
+    let s =
+      print_string s; flush stdout;
+      let n = String.length s in
+      if Options.do_translate() & n > 2 & String.sub s (n-2) 2 = "V7"
+      then String.sub s 0 (n-2) ^ "V8"
+      else s in
     let rls = List.assoc s (Egrammar.get_extend_vernac_grammars()) in
     let (hd,rl) = match_vernac_rule (List.map Genarg.genarg_tag cl) rls in
     let (pp,_) =
