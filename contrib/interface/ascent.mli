@@ -30,7 +30,7 @@ and ct_BOOL =
 and ct_CASE =
     CT_case of string
 and ct_CLAUSE =
-    CT_clause of ct_HYP_LOCATION_LIST_OPT * ct_BOOL
+    CT_clause of ct_HYP_LOCATION_LIST_OR_STAR * ct_STAR_OPT
 and ct_COERCION_OPT =
     CT_coerce_NONE_to_COERCION_OPT of ct_NONE
   | CT_coercion_atm
@@ -115,7 +115,7 @@ and ct_COMMAND =
   | CT_rec_ml_add_path of ct_STRING
   | CT_rec_tactic_definition of ct_REC_TACTIC_FUN_LIST
   | CT_recaddpath of ct_STRING
-  | CT_record of ct_COERCION_OPT * ct_ID * ct_BINDER_LIST * ct_SORT_TYPE * ct_ID_OPT * ct_RECCONSTR_LIST
+  | CT_record of ct_COERCION_OPT * ct_ID * ct_BINDER_LIST * ct_FORMULA * ct_ID_OPT * ct_RECCONSTR_LIST
   | CT_remove_natural_feature of ct_NATURAL_FEATURE * ct_ID
   | CT_require of ct_IMPEXP * ct_SPEC_OPT * ct_ID * ct_STRING_OPT
   | CT_reset of ct_ID
@@ -231,7 +231,7 @@ and ct_FORMULA =
   | CT_appc of ct_FORMULA * ct_FORMULA_NE_LIST
   | CT_arrowc of ct_FORMULA * ct_FORMULA
   | CT_bang of ct_INT_OPT * ct_FORMULA
-  | CT_cases of ct_FORMULA_OPT * ct_FORMULA_NE_LIST * ct_EQN_LIST
+  | CT_cases of ct_MATCHED_FORMULA_NE_LIST * ct_FORMULA_OPT * ct_EQN_LIST
   | CT_cofixc of ct_ID * ct_COFIX_REC_LIST
   | CT_elimc of ct_CASE * ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA_LIST
   | CT_existvarc
@@ -263,13 +263,12 @@ and ct_HINT_EXPRESSION =
   | CT_resolve of ct_FORMULA
   | CT_unfold_hint of ct_ID
 and ct_HYP_LOCATION =
-    CT_coerce_ID_to_HYP_LOCATION of ct_ID
-  | CT_intype of ct_ID
-  | CT_invalue of ct_ID
-and ct_HYP_LOCATION_LIST =
-    CT_hyp_location_list of ct_HYP_LOCATION list
-and ct_HYP_LOCATION_LIST_OPT =
-    CT_hyp_location_list_opt of ct_HYP_LOCATION_LIST option
+    CT_coerce_UNFOLD_to_HYP_LOCATION of ct_UNFOLD
+  | CT_intype of ct_ID * ct_INT_LIST
+  | CT_invalue of ct_ID * ct_INT_LIST
+and ct_HYP_LOCATION_LIST_OR_STAR =
+    CT_coerce_STAR_to_HYP_LOCATION_LIST_OR_STAR of ct_STAR
+  | CT_hyp_location_list of ct_HYP_LOCATION list
 and ct_ID =
     CT_ident of string
   | CT_metac of ct_INT
@@ -285,7 +284,7 @@ and ct_ID_NE_LIST =
     CT_id_ne_list of ct_ID * ct_ID list
 and ct_ID_NE_LIST_OR_STAR =
     CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STAR of ct_ID_NE_LIST
-  | CT_star
+  | CT_coerce_STAR_to_ID_NE_LIST_OR_STAR of ct_STAR
 and ct_ID_OPT =
     CT_coerce_ID_to_ID_OPT of ct_ID
   | CT_coerce_NONE_to_ID_OPT of ct_NONE
@@ -354,6 +353,13 @@ and ct_LOCAL_OPT =
   | CT_local
 and ct_LOCN =
     CT_locn of string
+and ct_MATCHED_FORMULA =
+    CT_coerce_FORMULA_to_MATCHED_FORMULA of ct_FORMULA
+  | CT_formula_as of ct_FORMULA * ct_ID_OPT
+  | CT_formula_as_in of ct_FORMULA * ct_ID_OPT * ct_FORMULA
+  | CT_formula_in of ct_FORMULA * ct_FORMULA
+and ct_MATCHED_FORMULA_NE_LIST =
+    CT_matched_formula_ne_list of ct_MATCHED_FORMULA * ct_MATCHED_FORMULA list
 and ct_MATCH_PATTERN =
     CT_coerce_ID_OPT_to_MATCH_PATTERN of ct_ID_OPT
   | CT_pattern_app of ct_MATCH_PATTERN * ct_MATCH_PATTERN_NE_LIST
@@ -402,8 +408,8 @@ and ct_PREMISE_PATTERN =
 and ct_PROOF_SCRIPT =
     CT_proof_script of ct_COMMAND list
 and ct_RECCONSTR =
-    CT_coerce_CONSTR_to_RECCONSTR of ct_ID_OPT * ct_FORMULA
-  | CT_constr_coercion of ct_ID_OPT * ct_FORMULA
+    CT_constr_coercion of ct_ID_OPT * ct_FORMULA
+  | CT_recconstr of ct_ID_OPT * ct_FORMULA
 and ct_RECCONSTR_LIST =
     CT_recconstr_list of ct_RECCONSTR list
 and ct_REC_TACTIC_FUN =
@@ -449,6 +455,11 @@ and ct_SPEC_LIST =
 and ct_SPEC_OPT =
     CT_coerce_NONE_to_SPEC_OPT of ct_NONE
   | CT_spec
+and ct_STAR =
+    CT_star
+and ct_STAR_OPT =
+    CT_coerce_NONE_to_STAR_OPT of ct_NONE
+  | CT_coerce_STAR_to_STAR_OPT of ct_STAR
 and ct_STRING =
     CT_string of string
 and ct_STRING_NE_LIST =
@@ -606,7 +617,8 @@ and ct_THM_OPT =
 and ct_TYPED_FORMULA =
     CT_typed_formula of ct_FORMULA * ct_FORMULA
 and ct_UNFOLD =
-    CT_unfold_occ of ct_INT_LIST * ct_ID
+    CT_coerce_ID_to_UNFOLD of ct_ID
+  | CT_unfold_occ of ct_ID * ct_INT_NE_LIST
 and ct_UNFOLD_LIST =
     CT_unfold_list of ct_UNFOLD list
 and ct_UNFOLD_NE_LIST =

@@ -113,6 +113,13 @@ let ident_tac s = CT_user_tac (xlate_ident s, CT_targ_list []);;
 
 let ident_vernac s = CT_user_vernac (CT_ident s, CT_varg_list []);;
 
+let nums_to_int_list_aux l = List.map (fun x -> CT_int x) l;;
+
+let nums_to_int_list l =  CT_int_list(nums_to_int_list_aux l);;
+
+let nums_to_int_ne_list n l =
+  CT_int_ne_list(CT_int n, nums_to_int_list_aux l);;
+
 type iTARG =   Targ_command of ct_FORMULA
              | Targ_intropatt of ct_INTRO_PATT_LIST
              | Targ_id_list of ct_ID_LIST
@@ -261,11 +268,12 @@ let rec xlate_match_pattern =
     | CPatNotation _ -> xlate_error "CPatNotation";;
 
 
+let xlate_id_opt_aux = function
+    Name id -> ctf_ID_OPT_SOME(CT_ident (string_of_id id))
+  | Anonymous -> ctv_ID_OPT_NONE;;
 
 
-let xlate_id_opt = function
-  | (_,Name id) -> ctf_ID_OPT_SOME(CT_ident (string_of_id id))
-  | (_,Anonymous) -> ctv_ID_OPT_NONE;;
+let xlate_id_opt (_, v) = xlate_id_opt_aux v;;
 
 let xlate_id_opt_ne_list = function
     [] -> assert false
@@ -318,16 +326,18 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CLambdaN(_,ll,b)-> CT_lambdac(xlate_binder_ne_list ll, xlate_formula b)
    | CLetIn(_, v, a, b) -> 
        CT_letin(CT_def(xlate_id_opt v, xlate_formula a), xlate_formula b)
-   | CAppExpl(_, (_,r), l) -> (* TODO: proj notation *)
+   | CAppExpl(_, (_, r), l) -> (* TODO: proj notation *)
        CT_appc(CT_bang(xlate_int_opt None, varc (xlate_reference r)),
 	       xlate_formula_ne_list l)
    | CApp(_, (_,f), l) -> (* TODO: proj notation *)
        CT_appc(xlate_formula f, xlate_formula_expl_ne_list l)
-   | CCases (_,(po,None),tml,eqns)-> CT_cases(xlate_formula_opt po, 
-                         xlate_formula_ne_list (List.map fst tml),
-                         CT_eqn_list (List.map 
-         (fun x -> translate_one_equation x)
-			   eqns))
+   | CCases (_, _, [], _) -> assert false
+   | CCases (_, (Some _, _), _, _) -> xlate_error "TODO: Cases with Some"
+   | CCases (_,(None, None), tm::tml, eqns)->
+       CT_cases(CT_matched_formula_ne_list(xlate_matched_formula tm,
+					   List.map xlate_matched_formula tml),
+		ctv_FORMULA_OPT_NONE,
+                CT_eqn_list (List.map (fun x -> translate_one_equation x) eqns))
    | CCases (_,(po,Some _),tml,eqns)-> xlate_error "TODO"
    | COrderedCase (_,Term.IfStyle,po,c,[b1;b2]) -> 
 		   CT_if(xlate_formula_opt po,
@@ -386,6 +396,15 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 		       lmi)) 
    | CCoFix _ -> assert false
    | CFix _ -> assert false
+and xlate_matched_formula = function
+    (f, (Some x, Some y)) ->
+      CT_formula_as_in(xlate_formula f, xlate_id_opt_aux x, xlate_formula y)
+  | (f, (None, Some y)) ->
+      CT_formula_in(xlate_formula f, xlate_formula y)
+  | (f, (Some x, None)) ->
+      CT_formula_as(xlate_formula f, xlate_id_opt_aux x)
+  | (f, (None, None)) -> 
+      CT_coerce_FORMULA_to_MATCHED_FORMULA(xlate_formula f)
 and xlate_formula_expl = function
     (a, None) -> xlate_formula a
   | (a, Some (_,ExplByPos i)) -> 
@@ -410,21 +429,27 @@ let xlate_hyp = function
 
 let xlate_hyp_location =
  function
-  | AI (_,id), _, (InHypTypeOnly,_) -> CT_intype(xlate_ident id)
+  | AI (_,id), nums, (InHypTypeOnly,_) ->
+      CT_intype(xlate_ident id, nums_to_int_list nums)
   | AI (_,id), _, (InHyp,_) when !Options.v7 ->
-      CT_coerce_ID_to_HYP_LOCATION (xlate_ident id)
+      CT_coerce_UNFOLD_to_HYP_LOCATION 
+	(CT_coerce_ID_to_UNFOLD (xlate_ident id))
   | AI (_,id), _, ((InHypValueOnly|InHyp),_) ->
       xlate_error "TODO in v8: InHyp now means InHyp if variable but InHypValueOnly if a local definition"
   | MetaId _, _,_ -> 
       xlate_error "MetaId not supported in xlate_hyp_location (should occur only in quotations)"
 
 let xlate_clause cls =
+  let hyps_info =
+    match cls.onhyps with
+    	None -> CT_coerce_STAR_to_HYP_LOCATION_LIST_OR_STAR CT_star
+      | Some l -> CT_hyp_location_list(List.map xlate_hyp_location l) in
   CT_clause
-    (CT_hyp_location_list_opt
-      (option_app
-        (fun l -> CT_hyp_location_list(List.map xlate_hyp_location l))
-        cls.onhyps),
-      if cls.onconcl then CT_true else CT_false)
+    (hyps_info, 
+     if cls.onconcl then 
+       CT_coerce_STAR_to_STAR_OPT CT_star
+     else
+       CT_coerce_NONE_to_STAR_OPT CT_none)
 
 (** Tactics
    *)
@@ -585,23 +610,26 @@ let xlate_using = function
   | Some (c2,sl2) -> CT_using (xlate_formula c2, xlate_bindings sl2);;
 
 let xlate_one_unfold_block = function
-    (nums,qid) -> 
-      CT_unfold_occ (CT_int_list (List.map (fun x -> CT_int x) nums),
-		     tac_qualid_to_ct_ID qid);;
+    ([],qid) -> CT_coerce_ID_to_UNFOLD(tac_qualid_to_ct_ID qid)
+  | (n::nums, qid) ->
+      CT_unfold_occ(tac_qualid_to_ct_ID qid, nums_to_int_ne_list n nums);;
 
 let xlate_lettac_clauses = function
     (opt_l, l') ->
       let res = 
 	(List.map 
-	   (fun (id, l) -> 
-	      CT_unfold_occ(CT_int_list (List.map (fun x -> CT_int x) l),
-			    xlate_ident_or_metaid id)) l') in
+	   (function
+		(id, []) -> 
+		  CT_coerce_ID_to_UNFOLD(xlate_ident_or_metaid id)
+	      | (id, n::nums) ->
+	      CT_unfold_occ(xlate_ident_or_metaid id, nums_to_int_ne_list n nums)) l') in
 	match opt_l with
-	    Some l ->
+	    Some (n::nums) ->
 	      CT_unfold_list
 	      	((CT_unfold_occ
-		    (CT_int_list (List.map (fun x -> CT_int x) l),
-		     CT_ident "Goal"))::res)
+		    (CT_ident "Goal", nums_to_int_ne_list n nums))::res)
+	  | Some [] ->
+	      CT_unfold_list((CT_coerce_ID_to_UNFOLD(CT_ident "Goal"))::res)
 	  | None -> CT_unfold_list res;;
 
 let rec (xlate_tacarg:raw_tactic_arg -> ct_TACTIC_ARG) =
@@ -919,7 +947,9 @@ and xlate_tac =
         (if a4 then CT_usingtdb else CT_coerce_NONE_to_USINGTDB CT_none))
     | TacAutoTDB nopt -> CT_autotdb (xlate_int_opt nopt)
     | TacAuto (nopt, Some []) -> CT_auto (xlate_int_opt nopt)
-    | TacAuto (nopt, None) -> CT_auto_with (xlate_int_opt nopt, CT_star)
+    | TacAuto (nopt, None) ->
+ 	CT_auto_with (xlate_int_opt nopt,
+		      CT_coerce_STAR_to_ID_NE_LIST_OR_STAR CT_star)
     | TacAuto (nopt, Some (id1::idl)) ->
 	CT_auto_with(xlate_int_opt nopt,
              CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STAR(
@@ -937,7 +967,9 @@ and xlate_tac =
 	    | None -> none_in_id_or_int_opt in
 	let idl = out_gen Eauto.rawwit_hintbases idl in
           (match idl with
-	    None -> CT_eauto_with(first_n, second_n, CT_star)
+	    None -> CT_eauto_with(first_n,
+				  second_n,
+				  CT_coerce_STAR_to_ID_NE_LIST_OR_STAR CT_star)
 	  | Some [] -> CT_eauto(first_n, second_n)
 	  | Some (a::l) -> 
 	      CT_eauto_with(first_n, second_n,
@@ -955,7 +987,8 @@ and xlate_tac =
      let c = xlate_formula c and bindl = xlate_bindings bindl in
      CT_eapply (c, bindl)
     | TacTrivial (Some []) -> CT_trivial
-    | TacTrivial None -> CT_trivial_with(CT_star)
+    | TacTrivial None -> 
+	CT_trivial_with(CT_coerce_STAR_to_ID_NE_LIST_OR_STAR CT_star)
     | TacTrivial (Some (id1::idl)) ->
 	 CT_trivial_with(CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STAR(
             (CT_id_ne_list(CT_ident id1,List.map (fun x -> CT_ident x) idl))))
@@ -1262,8 +1295,7 @@ let build_record_field_list l =
   | AssumExpr (id,c) ->
       if coe then CT_constr_coercion (xlate_id_opt id, xlate_formula c)
       else
-	CT_coerce_CONSTR_to_RECCONSTR
-	  (xlate_id_opt id, xlate_formula c)
+	CT_recconstr(xlate_id_opt id, xlate_formula c)
   | DefExpr (id,c,topt) ->
       xlate_error "TODO: manifest fields in Record" in
  CT_recconstr_list (List.map build_record_field l);;
@@ -1455,10 +1487,9 @@ let xlate_vernac =
   | VernacShow (ShowIntros _|ShowGoalImplicitly _|ShowExistentials|ShowScript)
       -> xlate_error "TODO: Show Intro/Intros/Implicits/Existentials/Script"
   | VernacGo arg -> CT_go (xlate_locn arg)
-  | VernacShow ExplainProof l ->
-      CT_explain_proof (CT_int_list (List.map (fun x -> CT_int x) l))
+  | VernacShow ExplainProof l -> CT_explain_proof (nums_to_int_list l)
   | VernacShow ExplainTree l ->
-      CT_explain_prooftree (CT_int_list (List.map (fun x -> CT_int x) l))
+      CT_explain_prooftree (nums_to_int_list l)
   | VernacCheckGuard -> CT_guarded
   | VernacPrint p ->
       (match p with
@@ -1527,17 +1558,16 @@ let xlate_vernac =
 
   | (*Record from tactics/Record.v *)
     VernacRecord 
-      (_, (add_coercion, (_,s)), binders, CSort (_,c1), rec_constructor_or_none, field_list) ->
+      (_, (add_coercion, (_,s)), binders, c1,
+       rec_constructor_or_none, field_list) ->
       let record_constructor =
         xlate_ident_opt (option_app snd rec_constructor_or_none) in
       CT_record
        ((if add_coercion then CT_coercion_atm else
           CT_coerce_NONE_to_COERCION_OPT(CT_none)),
         xlate_ident s, xlate_binder_list binders, 
-	xlate_sort c1, record_constructor,
+	xlate_formula c1, record_constructor,
          build_record_field_list field_list)
-
-  |    VernacRecord _ -> xlate_error "TODO: Record in a defined sort"
 
 (* TODO
      | (*Inversions from tactics/Inv.v *)
@@ -1694,7 +1724,7 @@ let xlate_vernac =
 	(reference_to_ct_ID id,
 	 match opt_positions with
 	     None -> CT_int_list[]
-	   | Some l ->
+	   | Some l -> 
 	       CT_int_list
 	       (List.map (function ExplByPos x -> CT_int x | ExplByName _ ->
 		 xlate_error "TODO: explicit argument by name") l))

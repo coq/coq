@@ -70,14 +70,14 @@ and fBOOL = function
 and fCASE = function
 | CT_case x -> fATOM "case";
    (f_atom_string x);
-   print_string "\n"and fCOERCION_OPT = function
+   print_string "\n"and fCLAUSE = function
+| CT_clause(x1, x2) ->
+   fHYP_LOCATION_LIST_OR_STAR x1;
+   fSTAR_OPT x2;
+   fNODE "clause" 2
+and fCOERCION_OPT = function
 | CT_coerce_NONE_to_COERCION_OPT x -> fNONE x
 | CT_coercion_atm -> fNODE "coercion_atm" 0
-and fCLAUSE = function
-| CT_clause(x1,x2) ->
-   fHYP_LOCATION_LIST_OPT x1;
-   fBOOL x2;
-   fNODE "clause" 2
 and fCOFIXTAC = function
 | CT_cofixtac(x1, x2) ->
    fID x1;
@@ -320,7 +320,7 @@ and fCOMMAND = function
    fCOERCION_OPT x1;
    fID x2;
    fBINDER_LIST x3;
-   fSORT_TYPE x4;
+   fFORMULA x4;
    fID_OPT x5;
    fRECCONSTR_LIST x6;
    fNODE "record" 6
@@ -588,8 +588,8 @@ and fFORMULA = function
    fFORMULA x2;
    fNODE "bang" 2
 | CT_cases(x1, x2, x3) ->
-   fFORMULA_OPT x1;
-   fFORMULA_NE_LIST x2;
+   fMATCHED_FORMULA_NE_LIST x1;
+   fFORMULA_OPT x2;
    fEQN_LIST x3;
    fNODE "cases" 3
 | CT_cofixc(x1, x2) ->
@@ -677,23 +677,20 @@ and fHINT_EXPRESSION = function
    fID x1;
    fNODE "unfold_hint" 1
 and fHYP_LOCATION = function
-| CT_coerce_ID_to_HYP_LOCATION x -> fID x
-| CT_intype(x1) ->
+| CT_coerce_UNFOLD_to_HYP_LOCATION x -> fUNFOLD x
+| CT_intype(x1, x2) ->
    fID x1;
-   fNODE "intype" 1
-| CT_invalue(x1) ->
+   fINT_LIST x2;
+   fNODE "intype" 2
+| CT_invalue(x1, x2) ->
    fID x1;
-   fNODE "invalue" 1
-and fHYP_LOCATION_LIST = function
+   fINT_LIST x2;
+   fNODE "invalue" 2
+and fHYP_LOCATION_LIST_OR_STAR = function
+| CT_coerce_STAR_to_HYP_LOCATION_LIST_OR_STAR x -> fSTAR x
 | CT_hyp_location_list l ->
    (List.iter fHYP_LOCATION l);
    fNODE "hyp_location_list" (List.length l)
-and fHYP_LOCATION_LIST_OPT = function
-| CT_hyp_location_list_opt (Some l) ->
-   fHYP_LOCATION_LIST l;
-   fNODE "hyp_location_list_opt_some" 1
-| CT_hyp_location_list_opt None ->
-   fNODE "hyp_location_list_opt_none" 0
 and fID = function
 | CT_ident x -> fATOM "ident";
    (f_atom_string x);
@@ -720,7 +717,7 @@ and fID_NE_LIST = function
    fNODE "id_ne_list" (1 + (List.length l))
 and fID_NE_LIST_OR_STAR = function
 | CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STAR x -> fID_NE_LIST x
-| CT_star -> fNODE "star" 0
+| CT_coerce_STAR_to_ID_NE_LIST_OR_STAR x -> fSTAR x
 and fID_OPT = function
 | CT_coerce_ID_to_ID_OPT x -> fID x
 | CT_coerce_NONE_to_ID_OPT x -> fNONE x
@@ -826,7 +823,27 @@ and fLOCAL_OPT = function
 and fLOCN = function
 | CT_locn x -> fATOM "locn";
    (f_atom_string x);
-   print_string "\n"and fMATCH_PATTERN = function
+   print_string "\n"and fMATCHED_FORMULA = function
+| CT_coerce_FORMULA_to_MATCHED_FORMULA x -> fFORMULA x
+| CT_formula_as(x1, x2) ->
+   fFORMULA x1;
+   fID_OPT x2;
+   fNODE "formula_as" 2
+| CT_formula_as_in(x1, x2, x3) ->
+   fFORMULA x1;
+   fID_OPT x2;
+   fFORMULA x3;
+   fNODE "formula_as_in" 3
+| CT_formula_in(x1, x2) ->
+   fFORMULA x1;
+   fFORMULA x2;
+   fNODE "formula_in" 2
+and fMATCHED_FORMULA_NE_LIST = function
+| CT_matched_formula_ne_list(x,l) ->
+   fMATCHED_FORMULA x;
+   (List.iter fMATCHED_FORMULA l);
+   fNODE "matched_formula_ne_list" (1 + (List.length l))
+and fMATCH_PATTERN = function
 | CT_coerce_ID_OPT_to_MATCH_PATTERN x -> fID_OPT x
 | CT_pattern_app(x1, x2) ->
    fMATCH_PATTERN x1;
@@ -910,14 +927,14 @@ and fPROOF_SCRIPT = function
    (List.iter fCOMMAND l);
    fNODE "proof_script" (List.length l)
 and fRECCONSTR = function
-| CT_coerce_CONSTR_to_RECCONSTR (x1,x2) ->
-   fID_OPT x1;
-   fFORMULA x2;
-   fNODE "CONSTR_to_RECCONSTR" 2
 | CT_constr_coercion(x1, x2) ->
    fID_OPT x1;
    fFORMULA x2;
    fNODE "constr_coercion" 2
+| CT_recconstr(x1, x2) ->
+   fID_OPT x1;
+   fFORMULA x2;
+   fNODE "recconstr" 2
 and fRECCONSTR_LIST = function
 | CT_recconstr_list l ->
    (List.iter fRECCONSTR l);
@@ -1010,6 +1027,11 @@ and fSORT_TYPE = function
 and fSPEC_OPT = function
 | CT_coerce_NONE_to_SPEC_OPT x -> fNONE x
 | CT_spec -> fNODE "spec" 0
+and fSTAR = function
+| CT_star -> fNODE "star" 0
+and fSTAR_OPT = function
+| CT_coerce_NONE_to_STAR_OPT x -> fNONE x
+| CT_coerce_STAR_to_STAR_OPT x -> fSTAR x
 and fSTRING = function
 | CT_string x -> fATOM "string";
    (f_atom_string x);
@@ -1465,9 +1487,10 @@ and fTYPED_FORMULA = function
    fFORMULA x2;
    fNODE "typed_formula" 2
 and fUNFOLD = function
+| CT_coerce_ID_to_UNFOLD x -> fID x
 | CT_unfold_occ(x1, x2) ->
-   fINT_LIST x1;
-   fID x2;
+   fID x1;
+   fINT_NE_LIST x2;
    fNODE "unfold_occ" 2
 and fUNFOLD_LIST = function
 | CT_unfold_list l ->
