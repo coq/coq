@@ -127,6 +127,17 @@ The syntax is the following:
   ML recursive datatype.
 \end{description}
 
+\begin{Remarks}
+\item 
+  The given ML terms are always inlined; thus, it may be
+  useful to introduce definitions in a separate ML module and then to
+  use the corresponding qualified names.
+\item
+  The extraction of a module depending on axioms from another module
+  will not fail. It is the responsability of the ``extractor'' of that
+  other module to realize the given axioms.
+\end{Remarks}
+
 \Example
 Typical examples are the following:
 \begin{coq_example}
