@@ -563,9 +563,17 @@ let rec val_interp ist ast =
     | Node(loc,s,[]) ->
         VFTactic ([],(interp_atomic s))
     | Node(loc,s,l) ->
-        let fv = val_interp ist (Node(loc,"PRIMTACTIC",[Node(loc,s,[])]))
-        and largs = List.map (val_interp ist) l in
-        app_interp ist fv largs ast
+        (try
+          ((look_for_interp s) ist ast)
+        with
+           Not_found ->
+             if l = [] then
+               VFTactic ([],(interp_atomic s))
+             else
+               let fv = val_interp ist
+                          (Node(loc,"PRIMTACTIC",[Node(loc,s,[])]))
+               and largs = List.map (val_interp ist) l in
+               app_interp ist fv largs ast)
     | Dynamic(_,t) ->
       let tg = (tag t) in
       if tg = "tactic" then
