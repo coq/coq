@@ -569,7 +569,7 @@ REALS_all=theories/Reals/R_Ifp.vo \
 	theories/Reals/SplitAbsolu.vo  theories/Reals/SplitRmult.vo \
 	theories/Reals/ArithProp.vo    theories/Reals/Rfunctions.vo \
 	theories/Reals/Rseries.vo      theories/Reals/SeqProp.vo \
-	theories/Reals/Rcomplet.vo     theories/Reals/PartSum.vo \
+	theories/Reals/Rcomplete.vo     theories/Reals/PartSum.vo \
 	theories/Reals/AltSeries.vo    theories/Reals/Binomial.vo \
 	theories/Reals/Rsigma.vo       theories/Reals/Rprod.vo \
 	theories/Reals/Cauchy_prod.vo  theories/Reals/Alembert.vo \

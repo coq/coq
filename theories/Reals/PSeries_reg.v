@@ -163,7 +163,7 @@ Qed.
 
 (* As R is complete, normal convergence implies that (fn) is simply-uniformly convergent *) 
 Lemma CVN_R_CVS : (fn:nat->R->R) (CVN_R fn) -> ((x:R)(sigTT ? [l:R](Un_cv [N:nat](SP fn N x) l))).
-Intros; Apply R_complet.
+Intros; Apply R_complete.
 Unfold SP; Pose An := [N:nat](fn N x).
 Change (Cauchy_crit_series An).
 Apply cauchy_abs.
