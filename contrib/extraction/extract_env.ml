@@ -157,7 +157,7 @@ let print_user_extract r =
 let decl_in_r r0 = function 
   | Dglob (r,_) -> r = r0
   | Dabbrev (r,_,_) -> r = r0
-  | Dtype ((_,r,_)::_, _) -> r = r0
+  | Dtype ((_,r,_)::_, _) -> sp_of_r r = sp_of_r r0
   | Dtype ([],_) -> false
   | Dcustom (r,_) ->  r = r0 
 

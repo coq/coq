@@ -15,6 +15,8 @@ open Nametab
 
 module ToplevelPp : Mlpp
 
+val sp_of_r : global_reference -> section_path
+
 val module_of_r : global_reference -> identifier
 
 val extract_to_file : 
