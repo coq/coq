@@ -65,14 +65,14 @@ let reset_counters () =
 (*s Print results. *)
 
 let print_line sl pl dl fo =
-  if not !proof_only then Printf.printf "%7d" sl;
-  if not !spec_only then Printf.printf "%7d" pl;
-  if not (!proof_only || !spec_only) then Printf.printf " %7d" dl;
-  (match fo with Some f -> Printf.printf " %s" f | _ -> ());
+  if not !proof_only then printf " %8d" sl;
+  if not !spec_only then printf " %8d" pl;
+  if not (!proof_only || !spec_only) then printf " %8d" dl;
+  (match fo with Some f -> printf " %s" f | _ -> ());
   if !percentage then begin
     let s = sl + pl + dl in
     let p = if s > 0 then 100 * dl / s else 0 in
-    Printf.printf " (%d%%)" p
+    printf " (%d%%)" p
   end;
   print_newline ()
 
@@ -267,8 +267,10 @@ let usage () =
 let rec parse = function
   | [] -> []
   | ("-h" | "-?" | "-help" | "--help") :: _ -> usage ()
-  | ("-s" | "--spec-only") :: args -> spec_only := true; parse args
-  | ("-r" | "--proof-only") :: args -> proof_only := true; parse args
+  | ("-s" | "--spec-only") :: args -> 
+      proof_only := false; spec_only := true; parse args
+  | ("-r" | "--proof-only") :: args -> 
+      spec_only := false; proof_only := true; parse args
   | ("-p" | "--percentage") :: args -> percentage := true; parse args
   | ("-e" | "--header") :: args -> skip_header := false; parse args
   | f :: args -> f :: (parse args)
@@ -277,6 +279,8 @@ let rec parse = function
 
 let main () =
   let files = parse (List.tl (Array.to_list Sys.argv)) in
+  if not (!spec_only || !proof_only) then 
+    printf "     spec    proof comments\n";
   match files with
     | [] -> process_channel stdin; print_file None
     | [f] -> process_file f
