@@ -57,12 +57,12 @@ GEXTEND Gram
     [ [ "<"; p = lconstr; ">"; "Cases"; lc = LIST1 constr; "of";
         OPT "|"; eqs = ne_eqn_list; "end" ->
 	  CCases (loc, Some p, lc, eqs)
-      | "Cases"; lc = ne_constr_list; "of";
+      | "Cases"; lc = LIST1 constr; "of";
 	OPT "|"; eqs = ne_eqn_list; "end" ->
 	  CCases (loc, None, lc, eqs)
-      | "<"; p = lconstr; ">"; "Cases"; lc = ne_constr_list; "of"; "end" ->
+      | "<"; p = lconstr; ">"; "Cases"; lc = LIST1 constr; "of"; "end" ->
 	  CCases (loc, Some p, lc, [])
-      | "Cases"; lc = ne_constr_list; "of"; "end" -> 
+      | "Cases"; lc = LIST1 constr; "of"; "end" -> 
 	  CCases (loc, None, lc, []) ] ]
   ;
 END;
