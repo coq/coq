@@ -50,7 +50,7 @@ Inductive proposition : Set :=
 | NeqTerm: term -> term -> proposition.
 
 (* Définition des hypothèses *)
-Syntactic Definition hyps := (list proposition).      
+Notation hyps := (list proposition).      
 
 Definition absurd := (cons FalseTerm (nil proposition)).
 
@@ -413,7 +413,7 @@ Save.
 
 (* \subsubsection{Généralisation à des listes de buts (disjonctions)} *)
 
-Syntactic Definition lhyps := (list hyps).
+Notation lhyps := (list hyps).
 
 Fixpoint interp_list_hyps [env: (list Z); l : lhyps] : Prop :=
    Cases l of
@@ -1778,7 +1778,7 @@ Inductive t_omega : Set :=
  | O_NEGATE_CONTRADICT_INV : nat -> nat -> nat -> t_omega
  | O_STATE : Z -> step -> nat -> nat -> t_omega -> t_omega.
 
-Syntactic Definition singleton :=  [a: hyps] (cons a (nil hyps)).
+Notation singleton :=  [a: hyps] (cons a (nil hyps)).
 
 Fixpoint execute_omega [t: t_omega] : hyps -> lhyps := 
   [l : hyps] Cases t of

@@ -23,8 +23,7 @@ Variable B:A->Set.
 Variable leA: A->A->Prop.
 Variable leB: (x:A)(B x)->(B x)->Prop.
 
-
-Syntactic Definition LexProd := (lexprod A B leA leB).
+Notation LexProd := (lexprod A B leA leB).
 
 Hints Resolve t_step Acc_clos_trans wf_clos_trans.
 
@@ -86,7 +85,7 @@ Section Wf_Symmetric_Product.
   Variable leA: A->A->Prop.
   Variable leB: B->B->Prop.
 
-  Syntactic Definition Symprod := (symprod A B leA leB).
+  Notation Symprod := (symprod A B leA leB).
 
 (*i
   Local sig_prod:=
@@ -135,7 +134,7 @@ Section Swap.
   Variable A:Set.
   Variable R:A->A->Prop.
 
-  Syntactic Definition SwapProd :=(swapprod A R).
+  Notation SwapProd :=(swapprod A R).
 
 
   Lemma swap_Acc: (x,y:A)(Acc A*A SwapProd (x,y))->(Acc A*A SwapProd (y,x)).

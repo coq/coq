@@ -109,7 +109,7 @@ Definition Map_setoid := (Build_Setoid Map ext Equiv_map_eq).
 
 End Maps.
 
-Syntactic Definition ap := (explicit_ap ? ?). 
+Notation ap := (explicit_ap ? ?). 
 
 Grammar constr constr8 :=
   map_setoid [ constr7($c1) "=>" constr8($c2) ] 

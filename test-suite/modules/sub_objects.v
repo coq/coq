@@ -14,7 +14,7 @@ Module M.
     Definition idid:=[A:Set][x:A](id x).
     Grammar constr constr8 := 
       not_eq [ "#"  constr7($b) ] -> [ (idid $b) ].
-    Syntactic Definition inc := (plus (S O)). 
+    Notation inc := (plus (S O)). 
   End N.
 
   Definition zero:=(N.idid O).

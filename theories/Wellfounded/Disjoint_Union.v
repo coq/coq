@@ -19,7 +19,7 @@ Variable A,B:Set.
 Variable leA: A->A->Prop.
 Variable leB: B->B->Prop.
 
-Syntactic Definition Le_AsB := (le_AsB A B leA leB).
+Notation Le_AsB := (le_AsB A B leA leB).
 
 Lemma acc_A_sum: (x:A)(Acc A leA x)->(Acc A+B Le_AsB (inl A B x)).
 Proof.

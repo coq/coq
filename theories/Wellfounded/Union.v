@@ -18,7 +18,7 @@ Section WfUnion.
   Variable A: Set.
   Variable R1,R2: (relation A).
   
- Syntactic Definition Union := (union A R1 R2).
+ Notation Union := (union A R1 R2).
 
  Hints Resolve Acc_clos_trans wf_clos_trans.
 

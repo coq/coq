@@ -23,15 +23,15 @@ Section Wf_Lexicographic_Exponentiation.
 Variable A:Set.
 Variable leA: A->A->Prop.
 
-Syntactic Definition Power := (Pow A leA).
-Syntactic Definition Lex_Exp := (lex_exp A leA).
-Syntactic Definition ltl := (Ltl A leA).
-Syntactic Definition Descl := (Desc A leA).
+Notation Power := (Pow A leA).
+Notation Lex_Exp := (lex_exp A leA).
+Notation ltl := (Ltl A leA).
+Notation Descl := (Desc A leA).
 
-Syntactic Definition List := (list A).
-Syntactic Definition Nil := (nil A).
+Notation List := (list A).
+Notation Nil := (nil A).
 (* useless but symmetric *)
-Syntactic Definition Cons := (cons 1!A).
+Notation Cons := (cons 1!A).
 
 Syntax constr
   level 1:
