@@ -1,9 +1,8 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (*********************************************************)
-(*           Axiomatisation of the classical reals       *)
-(*                                                       *)
+(*s    {Axiomatisation of the classical reals}           *)
 (*********************************************************)
 
 Require Export ZArith.
@@ -11,17 +10,19 @@ Require Export Rsyntax.
 Require Export TypeSyntax.
 
 (*********************************************************)
-(*       Field axioms                                   *)
+(*              {Field axioms}                           *)
 (*********************************************************)
 (*********************************************************)
-(*       Addition                                        *)
+(*s      Addition                                        *)
 (*********************************************************)
 
 (**********)
 Axiom Rplus_sym:(r1,r2:R)``r1+r2==r2+r1``.
+Hints Resolve Rplus_sym : real.
 
 (**********)
 Axiom Rplus_assoc:(r1,r2,r3:R)``(r1+r2)+r3==r1+(r2+r3)``.
+Hints Resolve Rplus_assoc : real.
 
 (**********)
 Axiom Rplus_Ropp_r:(r:R)``r+(-r)==0``.
@@ -32,7 +33,7 @@ Axiom Rplus_ne:(r:R)``r+0==r``/\``0+r==r``.
 Hints Resolve Rplus_ne : real v62.
 
 (***********************************************************)       
-(*        Multiplication                                   *)
+(*s       Multiplication                                   *)
 (***********************************************************)
 
 (**********)
@@ -45,16 +46,19 @@ Hints Resolve Rmult_assoc : real v62.
 
 (**********)
 Axiom Rinv_l:(r:R)``r<>0``->``(1/r)*r==1``.
+Hints Resolve Rinv_l : real.
+
 
 (**********)
 Axiom Rmult_ne:(r:R)``r*1==r``/\``1*r==r``.
 Hints Resolve Rmult_ne : real v62.
 
 (**********)
-Axiom R1_neq_R0:(~R1==R0).
+Axiom R1_neq_R0:``1<>0``.
+Hints Resolve R1_neq_R0 : real.
 
 (*********************************************************)
-(*       Distributivity                                  *)
+(*s      Distributivity                                  *)
 (*********************************************************)
 
 (**********)
@@ -65,14 +69,14 @@ Hints Resolve Rmult_Rplus_distr : real v62.
 (*       Order axioms                                    *)
 (*********************************************************)
 (*********************************************************)
-(*       Total Order                                     *)
+(*s      Total Order                                     *)
 (*********************************************************)
 
 (**********)
 Axiom total_order_T:(r1,r2:R)(sumorT (sumboolT ``r1<r2`` r1==r2) ``r1>r2``).
 
 (*********************************************************)
-(*       Lower                                           *)
+(*s      Lower                                           *)
 (*********************************************************)
 
 (**********)
@@ -88,37 +92,39 @@ Axiom Rlt_compatibility:(r,r1,r2:R)``r1<r2``->``r+r1<r+r2``.
 (**********)
 Axiom Rlt_monotony:(r,r1,r2:R)``0<r``->``r1<r2``->``r*r1<r*r2``.
 
+Hints Resolve Rlt_antisym Rlt_compatibility Rlt_monotony : real.
+
 (**********************************************************) 
-(*       Injection from N to R                            *)
+(*s      Injection from N to R                            *)
 (**********************************************************)
 
 (**********)
 Fixpoint INR [n:nat]:R:=(Cases n of
-                          O      => R0
-                         |(S O)  => R1 
-                         |(S n)  => (Rplus (INR n) R1)
+                          O      => ``0``
+                         |(S O)  => ``1``
+                         |(S n)  => ``(INR n)+1``
                         end).  
 
 (**********************************************************) 
-(*       Injection from Z to R                            *)
+(*s      Injection from Z to R                            *)
 (**********************************************************)
 
 (**********)
 Definition IZR:Z->R:=[z:Z](Cases z of
-                         ZERO      => R0
+                         ZERO      => ``0``
                         |(POS n) => (INR (convert n))
-                        |(NEG n) => (Ropp (INR (convert n)))
+                        |(NEG n) => ``-(INR (convert n))``
                            end).  
 
 (**********************************************************)
-(*       R Archimedian                                    *)
+(*s      R Archimedian                                    *)
 (**********************************************************)
 
 (**********)
 Axiom archimed:(r:R)``(IZR (up r)) > r``/\``(IZR (up r))-r <= 1``.
 
 (**********************************************************)
-(*       R Complete                                        *)
+(*s      R Complete                                        *)
 (**********************************************************)
 
 (**********)

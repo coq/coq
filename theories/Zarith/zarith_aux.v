@@ -11,11 +11,11 @@
 Require Arith.
 Require Export fast_integer.
 
-Tactic Definition ElimCompare com1 com2:=
+Meta Definition ElimCompare com1 com2:=
   Elim (Dcompare (Zcompare com1 com2)); [
          Idtac 
        | Intro hidden_auxiliary; Elim hidden_auxiliary; 
-         Clear hidden_auxiliary ].
+         Clear hidden_auxiliary ] .
 
 Definition Zlt := [x,y:Z](Zcompare x y) = INFERIEUR.
 Definition Zgt := [x,y:Z](Zcompare x y) = SUPERIEUR.

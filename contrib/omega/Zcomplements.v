@@ -192,7 +192,7 @@ Induction a.
 
 Intro p; Simpl.
 Repeat Rewrite POS_xI.
-Rewrite (POS_xO (xO (floor_pos p))).
+Rewrite (POS_xO (xO (floor_pos p))). 
 Rewrite (POS_xO (floor_pos p)).
 Omega.
 

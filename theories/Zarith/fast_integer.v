@@ -1,12 +1,12 @@
 (**************************************************************************)
 (*                                                                        *)
-(* Binary Integers                                                        *)
+(*s Binary Integers                                                       *)
 (*                                                                        *)
 (* Pierre Crégut (CNET, Lannion, France)                                  *)
 (*                                                                        *)
 (**************************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 Require Le.
 Require Lt.
@@ -14,7 +14,8 @@ Require Plus.
 Require Mult.
 Require Minus.
 
-Section fast_integer.
+(*s Definition of fast binary integers *)
+Section fast_integers.
 
 Inductive positive : Set :=
   xI : positive -> positive
@@ -138,6 +139,19 @@ Induction m; [
   Unfold convert; Simpl; Trivial with arith
 | Unfold convert; Intros n H; Simpl; Rewrite convert_add_un; Rewrite H; Auto with arith].
 Save.
+
+Theorem compare_positive_to_nat_O : 
+	(p:positive)(m:nat)(le m  (positive_to_nat p m)).
+Induction p; Simpl; Auto with arith.
+Intros; Apply le_trans with (plus m m);  Auto with arith.
+Save.
+
+Theorem compare_convert_O : (p:positive)(lt O (convert p)).
+Intro; Unfold convert; Apply lt_le_trans with (S O); Auto with arith.
+Apply compare_positive_to_nat_O.
+Save.
+
+Hints Resolve compare_convert_O.
 
 Fixpoint double_moins_un [x:positive]:positive :=
   <positive>Cases x of
@@ -1441,5 +1455,4 @@ Intros x y;Case x;Case y; [
 | Unfold Zcompare; Intros q p; Rewrite <- ZC4; Intros H; Exists (true_sub q p);
   Simpl; Rewrite (ZC1 q p H); Trivial with arith].
 Save.
-
-End fast_integer.
+End fast_integers.
