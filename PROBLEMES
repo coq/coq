@@ -42,3 +42,9 @@ Rocq/ARITH/Chinese
 File "./Zdiv.v", line 34, characters 0-944
 Anomaly: Search error. Please report.
 Refine 
+
+Rocq/PARADOXES
+File "./BuraliForti.v", line 176, characters 0-26
+Anomaly: Uncaught exception Univ.UniverseInconsistency. Please report.
+A la fermeture de section, est-ce normal ? pourquoi une anomalie ?
+
