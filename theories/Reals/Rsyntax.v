@@ -110,7 +110,7 @@ Syntax constr
   level 7:
     Rplus [ (Rplus $n1 $n2) ]
       -> [ [<hov 0> "``"(REXPR $n1):E "+"  [0 0] (REXPR $n2):L "``"] ]
-   | Rconst [(Rplus $r R1)] -> [$r:"r_printer_outside"]
+   | Rconst [(Rplus R1 $r)] -> [$r:"r_printer_outside"]
    | Rminus [ (Rminus $n1 $n2) ]
       -> [ [<hov 0> "``"(REXPR $n1):E "-" [0 0] (REXPR $n2):L "``"] ]
   ;
