@@ -467,13 +467,13 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 		List.map (dbrec env) tms,
 		List.map (ast_to_eqn (List.length tms) env) eqns)
 
-    | Node(loc,"CASE",Str(_,isrectag)::p::c::cl) ->
+    | Node(loc,(("CASE"|"IF"|"LET"|"MATCH")as tag), p::c::cl) ->
 	let po = match p with 
 	  | Str(_,"SYNTH") -> None 
 	  | _ -> Some(dbrec env p) in
-	let isrec = match isrectag with
-	  | "REC" -> true | "NOREC" -> false 
-	  | _ -> anomaly "ast_to: wrong REC tag in CASE" in
+	let isrec = match tag with
+	  | "MATCH" -> true | ("LET"|"CASE"|"IF") -> false 
+	  | _ -> anomaly "ast_to: wrong tag in old case expression" in
 	ROldCase (loc,isrec,po,dbrec env c,
 		  Array.of_list (List.map (dbrec env) cl))
 

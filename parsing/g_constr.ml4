@@ -92,39 +92,38 @@ GEXTEND Gram
     [ [ "<"; ":"; IDENT "ast"; ":"; "<"; c = raw_constr; ">>" -> c
       | "<"; l1 = lconstr; ">"; IDENT "Match"; c = constr; "with";
         cl = ne_constr_list; "end" ->
-          <:ast< (CASE "REC" $l1 $c ($LIST $cl)) >>
+          <:ast< (MATCH $l1 $c ($LIST $cl)) >>
       | "<"; l1 = lconstr; ">"; IDENT "Match"; c = constr; "with"; "end"
         ->
-          <:ast< (CASE "REC" $l1 $c) >>
+          <:ast< (MATCH $l1 $c) >>
       | "<"; l1 = lconstr; ">"; IDENT "Case"; c = constr; "of";
         cl = ne_constr_list; "end" ->
-          <:ast< (CASE "NOREC" $l1 $c ($LIST $cl)) >>
+          <:ast< (CASE $l1 $c ($LIST $cl)) >>
       | "<"; l1 = lconstr; ">"; IDENT "Case"; c = constr; "of"; "end" ->
-          <:ast< (CASE "NOREC" $l1 $c) >>
+          <:ast< (CASE $l1 $c) >>
       | IDENT "Case"; c = constr; "of"; cl = ne_constr_list; "end" ->
-          <:ast< (CASE "NOREC" "SYNTH" $c ($LIST $cl)) >>
+          <:ast< (CASE "SYNTH" $c ($LIST $cl)) >>
       | IDENT "Case"; c = constr; "of"; "end" ->
-          <:ast< (CASE "NOREC" "SYNTH" $c) >>
+          <:ast< (CASE "SYNTH" $c) >>
       | IDENT "Match"; c = constr; "with"; cl = ne_constr_list; "end" ->
-          <:ast< (CASE "REC" "SYNTH" $c ($LIST $cl)) >>
+          <:ast< (MATCH "SYNTH" $c ($LIST $cl)) >>
       | IDENT "let"; "("; b = ne_ident_comma_list; ")"; "=";
         c = constr; "in"; c1 = constr ->
-          <:ast< (CASE "NOREC" "SYNTH" $c (LAMBDALIST (ISEVAR)
-                   ($SLAM $b $c1))) >>
+          <:ast< (LET "SYNTH" $c (LAMBDALIST (ISEVAR) ($SLAM $b $c1))) >>
       | IDENT "let"; id1 = IDENT ; "="; c = constr; "in"; c1 = constr -> 
 	  <:ast< (LETIN $c [$id1]$c1) >>
       | IDENT "if"; c1 = constr; IDENT "then"; c2 = constr;
         IDENT "else"; c3 = constr ->
-        <:ast< ( CASE "NOREC" "SYNTH" $c1 $c2 $c3) >>
+        <:ast< ( IF "SYNTH" $c1 $c2 $c3) >>
 (* EN ATTENTE DE REMPLACER CE QUI EST DANS Program.v ... *)
       | "<"; l1 = lconstr; ">";
         IDENT "let"; "("; b = ne_ident_comma_list; ")"; "=";
         c = constr; "in"; c1 = constr ->
-         <:ast< (CASE "NOREC" $l1 $c (LAMBDALIST (ISEVAR) ($SLAM $b $c1))) >>
+         <:ast< (LET $l1 $c (LAMBDALIST (ISEVAR) ($SLAM $b $c1))) >>
       | "<"; l1 = lconstr; ">";
         IDENT "if"; c1 = constr; IDENT "then";
         c2 = constr; IDENT "else"; c3 = constr ->
-          <:ast< (CASE "NOREC" $l1 $c1 $c2 $c3) >>
+          <:ast< (IF $l1 $c1 $c2 $c3) >>
       | c = constr0 -> c ] ]
   ;
   constr2: (* ~ will be here *)

@@ -78,8 +78,6 @@ Syntax constr
   | let_binder_tail_cons [ << (LETBINDERTAIL $var ($LIST $vars)) >> ]
       -> [ "," [1 0] $var (LETBINDERTAIL ($LIST $vars)) ]
 
-  | elim_pred      [ << (ELIMPRED $pred) >> ]          -> [ "<" $pred:E ">" [0 2] ]
-  | elim_pred_xtra [ << (ELIMPRED "SYNTH") >> ] -> [ ]
   ;
 
   (* On force les parenthèses autour d'un "if" sous-terme (même si le

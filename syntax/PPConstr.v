@@ -189,37 +189,34 @@ Syntax constr
 
 
   level 8:
-    recpr [ << (XTRA "REC" ($LIST $RECARGS)) >> ] -> [ (RECTERM ($LIST $RECARGS)) ]
-
-  | recterm [ << (RECTERM $P $c ($LIST $BL)) >> ] ->
-     [ [<hov 0> [<hov 0> "<" $P:E ">"
+  recterm [ << (MATCH $P $c ($LIST $BL)) >> ] ->
+     [ [<hov 0> [<hov 0> (ELIMPRED $P)
     		 [0 2] [<hov 0> "Match" [1 1] $c:E  [1 0] "with" ]]
 	         [1 3] [<hov 0> (MATCHBRANCHES ($LIST $BL)):E ] "end"] ]
-
-  | mlcasepr [ << (XTRA "MLCASE" "NOREC" ($LIST $RECARGS)) >> ]
-       -> [ (MLCASETERM ($LIST $RECARGS)) ]
-
-  | mlcaseterm [ << (MLCASETERM $c ($LIST $BL)) >> ] ->
-     [ [<hov 0> [<hov 0> "Case" [1 1] $c:E  [1 0] "of" ]
-                  [1 3] [<hov 0> (MATCHBRANCHES ($LIST $BL)):E ]"end"] ]
-
-  | mlmatchpr [ << (XTRA "MLCASE" "REC" ($LIST $RECARGS)) >> ]
-       -> [ (MLMATCHTERM ($LIST $RECARGS)) ]
-
-  | mlmatchterm [ << (MLMATCHTERM $c ($LIST $BL)) >> ] ->
-     [ [<hov 0> [<hov 0> "Match" [1 1] $c:E  [1 0] "with" ]
-                    [1 3] [<hov 0> (MATCHBRANCHES ($LIST $BL)):E ] "end"] ]
-
 
   | matchbranchescons [ << (MATCHBRANCHES $B ($LIST $T)) >> ]
        -> [ [<hov 0> [<hov 0> $B:E ] FNL] (MATCHBRANCHES ($LIST $T)):E ]
   | matchbranchesnil [ << (MATCHBRANCHES) >> ] -> [ ]
 
-  | casepr [ << (MUTCASE ($LIST $MATCHARGS)) >> ] -> [ (CASETERM ($LIST $MATCHARGS)) ]
-  | caseterm [ << (CASETERM $P $c ($LIST $BL)) >> ] ->
-     [ [<hov 0> [<hov 0> "<" $P:E ">"
+  | caseterm [ << (CASE $P $c ($LIST $BL)) >> ] ->
+     [ [<hov 0> [<hov 0> (ELIMPRED $P)
                   [0 2][<hov 0> "Case" [1 1] $c:E  [1 0] "of" ]]
                   [1 3][<hov 0> (MATCHBRANCHES ($LIST $BL)):E ] "end"] ]
+
+  | ifterm [ << (IF $P $c $b1 $b2) >> ] ->
+     [ (FORCEIF $P $c (EQN $b1 JUNK) (EQN $b2 JUNK)):E ]
+
+  | letterm [ << (LET $P $c (LAMBDALIST $_ $b)) >> ] ->
+     [ (LETSLAM $P $c $b) ]
+  | letslamend [ << (LETSLAM $P $c $b ($LIST $IDL))>> ] ->
+     [ (FORCELET $P $c (EQN $b (PATTCONSTRUCT JUNK ($LIST $IDL)))):E ]
+  | letslam [ << (LETSLAM $P $c [$ID]$b ($LIST $IDL))>> ] ->
+     [ (LETSLAM $P $c $b ($LIST $IDL) $ID) ]
+  | letslamanon [ << (LETSLAM $P $c [<>]$b ($LIST $IDL))>> ] ->
+     [ (LETSLAM $P $c $b ($LIST $IDL) _) ]
+
+  | elim_pred      [ << (ELIMPRED $pred) >> ]          -> [ "<" $pred:E ">" [0 2] ]
+  | elim_pred_xtra [ << (ELIMPRED "SYNTH") >> ] -> [ ]
   ;
 
   level 0:
