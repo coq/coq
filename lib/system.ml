@@ -16,8 +16,7 @@ type load_path_entry = {
 type load_path = load_path_entry list
 
 let exists_dir dir =
-  try let _ = opendir dir in true
-  with Unix_error _ -> false
+  try let _ = opendir dir in true with Unix_error _ -> false
 
 let all_subdirs root =
   let l = ref [] in
@@ -25,9 +24,7 @@ let all_subdirs root =
     l := { directory = f; root_dir = root; relative_subdir = rel } :: !l 
   in
   let rec traverse dir rel =
-    let dirh = 
-      try opendir dir with Unix_error _ -> invalid_arg "all_subdirs" 
-    in
+    let dirh = opendir dir in
     try
       while true do
 	let f = readdir dirh in
@@ -42,7 +39,8 @@ let all_subdirs root =
     with End_of_file ->
       closedir dirh
   in
-  traverse root ""; List.rev !l
+  if exists_dir root then traverse root ""; 
+  List.rev !l
 
 let safe_getenv_def var def =
   try 
