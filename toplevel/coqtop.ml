@@ -50,6 +50,9 @@ let engage () =
   
 let set_batch_mode () = batch_mode := true
 
+let toplevel_name = ref (make_dirpath [id_of_string "Top"])
+let set_toplevel_name id = toplevel_name := make_dirpath [id_of_string id]
+
 let remove_top_ml () = Mltop.remove ()
 
 let inputstate = ref None
@@ -164,6 +167,9 @@ let parse_args is_ide =
 
     | "-R" :: d :: p :: rem ->set_rec_include d (dirpath_of_string p);parse rem
     | "-R" :: ([] | [_]) -> usage ()
+
+    | "-top" :: d :: rem -> set_toplevel_name d; parse rem
+    | "-top" :: [] -> usage ()
 
     | "-q" :: rem -> no_load_rc (); parse rem
 
@@ -287,6 +293,7 @@ let init is_ide =
       init_load_path ();
       inputstate ();
       engage ();
+      if not !batch_mode then Declaremods.start_library !toplevel_name;
       init_library_roots ();
       load_vernac_obj ();
       require ();
