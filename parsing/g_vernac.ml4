@@ -135,7 +135,9 @@ ident_comma_list_tail:
   vardecls:
     [ [ id = ident; idl = ident_comma_list_tail; c = type_option ->
           LocalRawAssum (id::idl,c)
-      | id = ident; [ "=" | ":=" ]; c = opt_casted_constr ->
+      | id = ident; "="; c = opt_casted_constr ->
+          LocalRawDef (id,c)
+      | id = ident; ":="; c = opt_casted_constr ->
           LocalRawDef (id,c)
     ] ]
   ;
