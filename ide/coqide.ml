@@ -37,6 +37,9 @@ let (proof_view:GText.view option ref) = ref None
 let (_notebook:GPack.notebook option ref) = ref None
 let notebook () = out_some !_notebook
 
+
+(* Tabs contain the name of the edited file and 2 status informations: 
+   Saved state + Focused proof buffer *)
 let decompose_tab w = 
   let vbox = new GPack.box ((Gobject.try_cast w "GtkBox"):Gtk.box Gtk.obj) in
   let l = vbox#children in
@@ -85,8 +88,8 @@ let get_current_tab_label () = get_tab_label (notebook())#current_page
 let get_current_page () = 
   let i = (notebook())#current_page in
   (notebook())#get_nth_page i
-				      
 
+(* This function must remove "focused proof" decoration *)				      
 let reset_tab_label i = 
   set_tab_label i (get_tab_label i)
 
@@ -137,6 +140,9 @@ object('self)
     val mutable filename : string option
     val mutable stats : Unix.stats option
     val mutable detached_views : GWindow.window list
+    method without_auto_complete : 'a 'b. ('a -> 'b) -> 'a -> 'b
+    method set_auto_complete : bool -> unit
+
     method kill_detached_views : unit -> unit
     method add_detached_view : GWindow.window -> unit
     method remove_detached_view : GWindow.window -> unit
@@ -186,7 +192,7 @@ object('self)
     method show_goals_full : unit
     method undo_last_step : unit
     method help_for_keyword : unit -> unit
-    method complete_at_offset : int -> unit
+    method complete_at_offset : int -> bool
 
     method blaster : unit -> unit
 end
@@ -464,6 +470,7 @@ let is_empty () = Stack.is_empty processed_stack
 let update_on_end_of_proof id =
   let lookup_lemma = function
   | { ast = _, ( VernacDefinition (_, _, ProveBody _, _, _)
+	       | VernacDeclareTacticDefinition _
 	       | VernacStartTheoremProof _) ; 
       reset_info = Reset (_, r) } -> 
       if not !r then begin 
@@ -550,6 +557,17 @@ object(self)
   val mutable last_auto_save_time = 0.
   val mutable detached_views = []
 
+  val mutable auto_complete_on = true
+
+  method private toggle_auto_complete = 
+    auto_complete_on <- not auto_complete_on
+  method set_auto_complete t = auto_complete_on <- t
+  method without_auto_complete : 'a 'b. ('a -> 'b) -> 'a -> 'b = fun f x ->
+    let old = auto_complete_on in
+    self#set_auto_complete false;
+    let y = f x in
+    self#set_auto_complete old;
+    y
   method add_detached_view (w:GWindow.window) = 
     detached_views <- w::detached_views
   method remove_detached_view (w:GWindow.window) = 
@@ -982,13 +1000,14 @@ object(self)
       in
       prerr_endline ("Completion of prefix : " ^ w);
       match complete input_buffer w start#offset with 
-      | None -> () 
+      | None -> false
       | Some (ss,start,stop) -> 
 	  let completion = input_buffer#get_text ~start ~stop () in
 	  ignore (input_buffer#delete_selection ());
 	  ignore (input_buffer#insert_interactive completion);
 	  input_buffer#move_mark `SEL_BOUND (it())#backward_char;
-	  ()
+	  true
+    else false
 	  
   method process_next_phrase display_goals do_highlight = 
     begin
@@ -1256,6 +1275,7 @@ Please restart and report NOW.";
 	      update_input ()
 	  | { ast = _, ( VernacStartTheoremProof _ 
 		       | VernacGoal _
+		       | VernacDeclareTacticDefinition _
 		       | VernacDefinition (_,_,ProveBody _,_,_));
 	      reset_info=Reset(id,{contents=false})} ->
 	      ignore (pop ());
@@ -1496,8 +1516,24 @@ Please restart and report NOW.";
 			       "processed"
 			)
 	   );
-    ignore 
-      (input_buffer#connect#modified_changed
+    ignore (input_buffer#connect#after#insert_text
+		~callback:(fun it s ->
+			     if auto_complete_on && 
+			       String.length s = 1 && s <> " " && s <> "\n" 
+			     then 
+			       let v = out_some (get_current_view ()).analyzed_view 
+			       in 
+			       let has_completed = 
+				 v#complete_at_offset 
+				   ((v#view#buffer#get_iter `SEL_BOUND)#offset)
+			       in
+			       if has_completed then 
+				 input_buffer#move_mark `SEL_BOUND (input_buffer#get_iter `SEL_BOUND)#forward_char;
+		
+			       
+			  )
+	     );
+      ignore (input_buffer#connect#modified_changed
 	 ~callback:
 	 (fun () ->
 	    if input_buffer#modified then 
@@ -1771,7 +1807,6 @@ let main files =
   in   
   ignore (saveas_m#connect#activate saveas_f);
   
-  
   (* File/Save All Menu *)
   let saveall_m = file_factory#add_item "Sa_ve All" in
   let saveall_f () = 
@@ -1927,7 +1962,10 @@ let main files =
   let edit_f = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/Edit/" edit_menu ~accel_group in
   ignore(edit_f#add_item "_Undo" ~key:GdkKeysyms._u ~callback:
 	   (do_if_not_computing 
-	      (fun () -> ignore (get_current_view()).view#undo)));
+	      (fun () -> 
+		 ignore ((out_some ((get_current_view()).analyzed_view))#
+			   without_auto_complete 
+			   (fun () -> (get_current_view()).view#undo) ()))));
   ignore(edit_f#add_item "_Clear Undo Stack" ~key:GdkKeysyms._exclam ~callback:
 	   (fun () -> 
 	      ignore (get_current_view()).view#clear_undo));
@@ -1949,6 +1987,16 @@ let main files =
 		   GtkText.View.S.paste_clipboard
 		 with _ -> prerr_endline "EMIT PASTE FAILED")));
   ignore (edit_f#add_separator ());
+
+  let toggle_auto_complete_i = 
+    edit_f#add_check_item "_Auto Completion" 
+      ~active:true
+      ~key:GdkKeysyms._B
+      ~callback:(fun b -> match (get_current_view()).analyzed_view with
+		 | Some av -> av#set_auto_complete b
+		 | None -> ())
+  in
+
   let read_only_i = edit_f#add_check_item "Expert" ~active:false
 		      ~key:GdkKeysyms._B
 		      ~callback:(fun b -> ()
@@ -1973,8 +2021,8 @@ let main files =
 				((v#view#buffer#get_iter `SEL_BOUND)#offset)
 			))
   in
- 
-
+  complete_i#misc#set_state `INSENSITIVE;
+  
   to_do_on_page_switch := 
   (fun i -> 
      prerr_endline ("Switching to tab "^(string_of_int i));
@@ -2499,15 +2547,24 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   in
   search_input#disable_activate ();
   let ready_to_wrap_search = ref false in
+
   let start_of_search = ref None in
+  let start_of_found = ref None in
+  let end_of_found = ref None in
   let search_forward = ref true in
+  let matched_word = ref None in
+
   let memo_search () = 
-    if not (List.mem search_input#entry#text !search_history) then
+    matched_word := Some search_input#entry#text
+
+(*     if not (List.mem search_input#entry#text !search_history) then
       (search_history := 
-       search_input#entry#text::!search_history;
+      search_input#entry#text::!search_history;
        search_input#set_popdown_strings !search_history);
     start_of_search := None;
     ready_to_wrap_search := false
+*)
+
   in
   let end_search () = 
     prerr_endline "End Search";
@@ -2519,22 +2576,48 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
     search_lbl#misc#hide ();
     search_input#misc#hide ()
   in
-
+  let end_search_focus_out () = 
+    prerr_endline "End Search(focus out)";
+    memo_search ();
+    let v = (get_current_view ()).view in
+    v#buffer#move_mark `SEL_BOUND (v#buffer#get_iter_at_mark `INSERT);
+    search_input#entry#set_text "";
+    search_lbl#misc#hide ();
+    search_input#misc#hide ()
+  in
   ignore (search_input#entry#connect#activate ~callback:end_search);
+  ignore (search_input#entry#event#connect#key_press 
+	    ~callback:(fun k -> let kv = GdkEvent.Key.keyval k in
+		       if 
+			 kv = GdkKeysyms._Right
+			 || kv = GdkKeysyms._Up 
+			 || kv = GdkKeysyms._Left
+			 || (kv = GdkKeysyms._g 
+			     && (List.mem `CONTROL (GdkEvent.Key.state k)))
+		       then end_search (); 
+		       false));
+  ignore (search_input#entry#event#connect#focus_out
+	    ~callback:(fun _ -> end_search_focus_out (); false));
   to_do_on_page_switch := 
   (fun i -> 
      start_of_search := None;
      ready_to_wrap_search:=false)::!to_do_on_page_switch;
 
+(* TODO : make it work !!! *)
   let rec search_f () = 
     search_lbl#misc#show ();
     search_input#misc#show ();
 
     prerr_endline "search_f called";
-    if !start_of_search = None then 
+    if !start_of_search = None then begin
+      (* A full new search is starting *)
       start_of_search := 
       Some ((get_current_view ()).view#buffer#create_mark 
 	      ((get_current_view ()).view#buffer#get_iter_at_mark `INSERT));
+      start_of_found := !start_of_search;
+      end_of_found := !start_of_search;
+      matched_word := Some "";
+    end;
     let txt = search_input#entry#text in 
     let v = (get_current_view ()).view in
     let iit = v#buffer#get_iter_at_mark `SEL_BOUND in
@@ -2628,6 +2711,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 			 v#buffer#move_mark `SEL_BOUND old_sel;
 			 search_f ();
 		      ));
+
   let status_context = status_bar#new_context "Messages" in
   let flash_context = status_bar#new_context "Flash" in
   ignore (status_context#push "Ready");
