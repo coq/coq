@@ -116,10 +116,10 @@ let rec pp_expr par env args =
           apply [< 'sTR "("; st; 'sTR ")" >]
     | MLletin (id,a1,a2) ->
 	let id' = rename_bvars env [id] in
-	v 0 [< hOV 2 [< 'sTR "let "; pr_id (List.hd id'); 'sTR " ="; 'sPC;
-			pp_expr false env [] a1; 'sPC; 'sTR "in" >];
-	       'fNL;
-	       pp_expr false (id'@env) [] a2 >]
+	hOV 0 [< hOV 2 [< 'sTR "let "; pr_id (List.hd id'); 'sTR " ="; 'sPC;
+			  pp_expr false env [] a1; 'sPC; 'sTR "in" >];
+		 'sPC;
+		 pp_expr false (id'@env) [] a2 >] 
     | MLglob r -> 
 	apply (P.pp_global r)
     | MLcons (_,id,[]) ->
@@ -143,7 +143,7 @@ let rec pp_expr par env args =
 	   'qS (string_of_id id); close_par par >]
     | MLprop ->
 	string "Prop"
-    |MLarity ->
+    | MLarity ->
 	string "Arity"
     | MLcast (a,t) ->
 	[< open_par true; pp_expr false env args a; 'sPC; 'sTR ":"; 'sPC; 

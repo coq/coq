@@ -19,6 +19,8 @@ type type_var = Varity | Vprop | Vdefault
 
 type signature = (type_var * identifier) list
 
+type extraction_context = type_var list
+
 type extraction_result =
   | Emltype of ml_type * signature * identifier list
   | Emlterm of ml_ast
@@ -26,7 +28,8 @@ type extraction_result =
 
 (*s Extraction functions. *)
 
-val extract_constr : env -> constr -> extraction_result
+val extract_constr : 
+  env -> extraction_context -> constr -> extraction_result
 
 (*s ML declaration corresponding to a Coq reference. *)
 
