@@ -42,7 +42,8 @@ LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
               -I contrib/omega -I contrib/romega \
 	      -I contrib/ring -I contrib/xml \
 	      -I contrib/extraction -I contrib/correctness \
-              -I contrib/interface -I contrib/fourier
+              -I contrib/interface -I contrib/fourier \
+	      -I contrib/jprover
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
@@ -224,9 +225,15 @@ CORRECTNESSCMO=contrib/correctness/pmisc.cmo				\
 	contrib/correctness/pwp.cmo contrib/correctness/pmlize.cmo	\
 	contrib/correctness/ptactic.cmo	contrib/correctness/psyntax.cmo
 
+JPROVERCMO=contrib/jprover/opname.cmo \
+           contrib/jprover/jterm.cmo contrib/jprover/jlogic.cmo \
+           contrib/jprover/jtunify.cmo contrib/jprover/jall.cmo \
+           contrib/jprover/jprover.cmo
+
+
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) $(XMLCMO) \
 	$(FOURIERCMO) \
-	$(EXTRACTIONCMO) $(CORRECTNESSCMO)
+	$(EXTRACTIONCMO) $(CORRECTNESSCMO) $(JPROVERCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -527,6 +534,8 @@ INTERFACEV0 = contrib/interface/Centaur.vo contrib/interface/vernacrc
 
 FOURIERVO = contrib/fourier/Fourier_util.vo    contrib/fourier/Fourier.vo
 
+JPROVERVO = contrib/jprover/JProver.vo
+
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
 	$(BESTCOQTOP) -boot -byte  $(COQINCLUDES) -compile $*
 
@@ -535,7 +544,8 @@ contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/init
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(CORRECTNESSVO)\
-            $(INTERFACEV0) $(FOURIERVO)
+            $(INTERFACEV0) $(FOURIERVO) \
+	    $(JPROVERVO)
 
 $(CONTRIBVO): states/initial.coq
 
@@ -548,6 +558,7 @@ extraction: $(EXTRACTIONCMO) $(EXTRACTIONVO)
 correctness: $(CORRECTNESSCMO) $(CORRECTNESSVO)
 field: $(FIELDVO) $(FIELDCMO)
 fourier: $(FOURIERVO) $(FOURIERCMO)
+jprover: $(JPROVERVO) $(JPROVERCMO)
 
 ALLVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO) $(EXTRACTIONVO)
 
