@@ -9,7 +9,7 @@ open Term
 
 (* Signatures of named variables. *)
 
-type 'a signature (* = [identifier list * 'a list] *)
+type 'a signature
 
 val nil_sign : 'a signature
 val add_sign : (identifier * 'a) -> 'a signature -> 'a signature
@@ -63,7 +63,7 @@ val dbindv : 'a signature -> 'b term array -> 'a * 'b term
 
 (*s Signatures with named and de Bruijn variables. *)
 
-type 'a db_signature (* = [ (name * 'a) list ] *)
+type 'a db_signature
 type ('a,'b) sign = ENVIRON of 'a signature * 'b db_signature
 
 val gLOB : 'b signature -> ('b,'a) sign
@@ -89,6 +89,8 @@ val number_of_rels : ('b,'a) sign -> int
 (*i This is for Cases i*)
 (* raise [Not_found] if the integer is out of range *)
 val change_name_env: ('a, 'b) sign -> int -> identifier -> ('a, 'b) sign
+
+val make_all_name_different : ('a, 'b) sign -> ('a, 'b) sign
 
 type ('b,'a) search_result =
   | GLOBNAME of identifier  * 'b

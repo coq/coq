@@ -243,6 +243,14 @@ let lookup_id id env =
   with 
     | Not_found -> let (x,y) = lookup_glob id env in GLOBNAME(x,y)
 
+let make_all_name_different (ENVIRON((dom,_) as sign,dbs)) =
+  let _,newdbs =
+    List.fold_right
+      (fun (na,t) (avoid,newdbs) -> 
+	 let id = next_name_away na avoid in
+	 (id::avoid),((Name id,t)::newdbs))
+      dbs (dom,[])
+  in ENVIRON (sign,newdbs)
 
 type 'b assumptions = (typed_type,'b) sign
 type context = (typed_type,typed_type) sign

@@ -21,6 +21,7 @@ open Ast
 let guill s = "\""^s^"\""
 
 let explain_unbound_rel k ctx n =
+  let ctx = make_all_name_different ctx in
   let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
   [< 'sTR"Unbound reference: "; pe; 'fNL;
      'sTR"The reference "; 'iNT n; 'sTR" is free" >]
@@ -30,6 +31,7 @@ let explain_cant_execute k ctx c =
   [< 'sTR"Cannot execute term:"; 'bRK(1,1); tc >]
 
 let explain_not_type k ctx c =
+  let ctx = make_all_name_different ctx in
   let pe = pr_ne_env [< 'sTR"In environment" >] k ctx in
   let pc = prterm_env ctx c in
   [< pe; 'cUT; 'sTR "the term"; 'bRK(1,1); pc; 'sPC;
@@ -93,6 +95,7 @@ let explain_ill_formed_branch k ctx c i actty expty =
      'sTR "which should be"; 'bRK(1,1); pe >]
 
 let explain_generalization k ctx (name,var) c =
+  let ctx = make_all_name_different ctx in
   let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
   let pv = prterm_env ctx (body_of_type var) in
   let pc = prterm_env (add_rel (name,var) ctx) c in
@@ -102,6 +105,7 @@ let explain_generalization k ctx (name,var) c =
      'sTR"which should be typed by Set, Prop or Type." >]
 
 let explain_actual_type k ctx c ct pt =
+  let ctx = make_all_name_different ctx in
   let pe = pr_ne_env [< 'sTR"In environment" >] k ctx in
   let pc = prterm_env ctx c in
   let pct = prterm_env ctx ct in
@@ -112,6 +116,7 @@ let explain_actual_type k ctx c ct pt =
      'sTR"Actually, it has type" ; 'bRK(1,1); pct >]
 
 let explain_cant_apply k ctx s rator randl =
+  let ctx = make_all_name_different ctx in
   let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
   let pr = prterm_env ctx rator.uj_val in
   let prt = prterm_env ctx rator.uj_type in
