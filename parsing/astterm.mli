@@ -26,7 +26,7 @@ val constrOut : Coqast.t -> constr
 
 val interp_rawconstr     : evar_map -> env -> Coqast.t -> rawconstr
 val interp_constr        : evar_map -> env -> Coqast.t -> constr
-val interp_casted_constr : evar_map -> env -> Coqast.t -> constr -> constr
+val interp_casted_constr : evar_map -> env -> Coqast.t -> types -> constr
 val interp_type          : evar_map -> env -> Coqast.t -> types
 val interp_sort          : Coqast.t -> sorts
 
