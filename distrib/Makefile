@@ -149,7 +149,7 @@ arch-image: $(TARGZ)
 	(cd $(ARCHBUILDROOT);\
 	 gunzip -c $(DISTRIBDIR)/$(TARGZ) | tar xf -;\
 	 cd $(COQPACKAGE);\
-	 ./configure -bindir /usr/local/bin -libdir /usr/local/lib/coq -mandir /usr/local/man -emacs emacs -emacslib /usr/local/lib/emacs/site-lisp -opt -reals all -coqide no;\
+	 ./configure -prefix /usr -emacslib /usr/local/lib/emacs/site-lisp -opt -reals all;\
 	 $(MAKECOQ) coq check;\
 	 $(MAKECOQ) -e COQINSTALLPREFIX=$(ARCHINSTALL) BASETEXDIR=$(ARCHINSTALL) install-coq) > arch-image.log 2>&1
 	@echo " .... done"
@@ -233,7 +233,8 @@ $(COQSRCRPM): $(RPMTOPDIR) RH/coq.spec RH/coq.list $(TARGZ) RH/rpmrc
 	cp -f petit-coq.gif $(RPMTOPDIR)/SOURCES
 	cp -f $(TARGZ) $(RPMTOPDIR)/SOURCES
 	cp -f RH/coq.list $(RPMTOPDIR)
-	$(RPM) -bs RH/coq.spec
+	@echo "Building the source rpm... (see RH/rpm.log)"
+	$(RPM) -bs RH/coq.spec > RH/rpm.log
 	mv $(RPMTOPDIR)/SRPMS/$(COQSRCRPM) .
 	chmod g+w $(COQSRCRPM)
 	rm -fr $(RPMTOPDIR)/SOURCES/* $(RPMTOPDIR)/coq.list
@@ -241,74 +242,79 @@ $(COQSRCRPM): $(RPMTOPDIR) RH/coq.spec RH/coq.list $(TARGZ) RH/rpmrc
 $(COQRPM): $(COQSRCRPM)
 	@-rm -fr $(RPMBUILDROOT)
 	@mkdir -p $(RPMBUILDROOT)
-	@echo "Building the $(ARCH) rpms... (see RH/rpm.log)"
+	@echo "Building the $(ARCH) rpm... (see RH/rpm.log)"
 	cp -f RH/coq.list $(RPMTOPDIR)
-	$(RPM) --rebuild $(COQSRCRPM)
+	$(RPM) --rebuild $(COQSRCRPM) > RH/rpm.log
 	mv $(RPMTOPDIR)/RPMS/$(ARCH)/$(COQRPM) .
 	chmod g+w $(COQRPM)
 	rm -f $(RPMTOPDIR)/coq.list
 
-$(COQIDESRCRPM): $(RPMTOPDIR) RH/coqide.spec $(TARGZ) RH/rpmrc
+$(COQIDESRCRPM): $(RPMTOPDIR) RH/coqide.spec RH/coqide.spec $(TARGZ) RH/rpmrc
 	cp -f petit-coq.gif $(RPMTOPDIR)/SOURCES
 	cp -f $(TARGZ) $(RPMTOPDIR)/SOURCES
-	$(RPM) -bs RH/coqide.spec
+	cp -f RH/coqide.list $(RPMTOPDIR)
+	@echo "Building the source rpm... (see RH/rpm.log)"
+	$(RPM) -bs RH/coqide.spec > RH/rpm.log
 	mv $(RPMTOPDIR)/SRPMS/$(COQIDESRCRPM) .
 	chmod g+w $(COQIDESRCRPM)
-	rm -fr $(RPMTOPDIR)/SOURCES/*
+	rm -fr $(RPMTOPDIR)/SOURCES/* $(RPMTOPDIR)/coqide.list
 
 $(COQIDERPM): $(COQIDESRCRPM)
 	@-rm -fr $(RPMBUILDROOT)
 	@mkdir -p $(RPMBUILDROOT)
-	@echo "Building the $(ARCH) rpms... (see RH/rpm.log)"
-	$(RPM) --rebuild $(COQIDESRCRPM)
+	cp -f RH/coqide.list $(RPMTOPDIR)
+	@echo "Building the $(ARCH) rpm... (see RH/rpm.log)"
+	$(RPM) --rebuild $(COQIDESRCRPM) > RH/rpm.log
 	mv $(RPMTOPDIR)/RPMS/$(ARCH)/$(COQIDERPM) .
-	chmod g+w $(COQIDERPM)
+	chmod g+w $(COQIDERPM) $(RPMTOPDIR)/coqide.list
 
-$(PCOQSRCRPM): $(RPMTOPDIR) RH/coq_ext_for_pcoq.spec RH/coq-pcoq.list $(TARGZ) RH/rpmrc
+$(PCOQSRCRPM): $(RPMTOPDIR) RH/coq_ext_for_pcoq.spec RH/pcoq.list $(TARGZ) RH/rpmrc
 	cp -f petit-coq.gif $(RPMTOPDIR)/SOURCES
 	cp -f $(TARGZ) $(RPMTOPDIR)/SOURCES
-	cp -f RH/coq-pcoq.list $(RPMTOPDIR)
-	$(RPM) -bs RH/coq_ext_for_pcoq.spec
+	cp -f RH/pcoq.list $(RPMTOPDIR)
+	@echo "Building the source rpm... (see RH/rpm.log)"
+	$(RPM) -bs RH/coq_ext_for_pcoq.spec > RH/rpm.log
 	mv $(RPMTOPDIR)/SRPMS/$(PCOQSRCRPM) .
 	chmod g+w $(PCOQSRCRPM)
-	rm -fr $(RPMTOPDIR)/SOURCES/* $(RPMTOPDIR)/coq-pcoq.list
+	rm -fr $(RPMTOPDIR)/SOURCES/* $(RPMTOPDIR)/pcoq.list
 
 $(PCOQRPM): $(PCOQSRCRPM)
 	@-rm -fr $(RPMBUILDROOT)
 	@mkdir -p $(RPMBUILDROOT)
-	@echo "Building the $(ARCH) rpms... (see RH/rpm.log)"
-	cp -f RH/coq-pcoq.list $(RPMTOPDIR)
-	$(RPM) --rebuild $(PCOQSRCRPM)
+	@echo "Building the $(ARCH) rpm... (see RH/rpm.log)"
+	cp -f RH/pcoq.list $(RPMTOPDIR)
+	$(RPM) --rebuild $(PCOQSRCRPM) > RH/rpm.log
 	mv $(RPMTOPDIR)/RPMS/$(ARCH)/$(PCOQRPM) .
 	chmod g+w $(PCOQRPM)
-	rm -f $(RPMTOPDIR)/coq-pcoq.list
+	rm -f $(RPMTOPDIR)/pcoq.list
 
-RH/coq.list: $(TARGZ) config.distrib
+FILESDIR=$(DISTRIBDIR)/RH/build
+
+RH/$(COQPACKAGE)/config/Makefile: $(TARGZ) config.distrib
 	rm -rf RH/$(COQPACKAGE) RH/build
 	cd RH ; tar xzf ../$(TARGZ)
 	@echo "Building coq files list... (see RH/coqfiles.log)"
-	cd RH/$(COQPACKAGE) ; sh ../do_build > $(RPMFILESLOG)
-	cd RH/$(COQPACKAGE) ; $(MAKECOQ) COQINSTALLPREFIX=$(DISTRIBDIR)/RH/build BASETEXDIR=$(DISTRIBDIR)/RH/build install-coq >> $(RPMFILESLOG)
-	@echo " ... done"
-	echo "# This file has been generated" > RH/coq.list
-	echo "# Do not edit" >>RH/coq.list
-	cd RH/build ; find . '!' -type d | sed -e 's|^\./|/|g' >> ../coq.list
-	rm -rf RH/$(COQPACKAGE) RH/build
+	cd RH/$(COQPACKAGE) ; \
+	  ./configure -prefix /usr \
+	        -emacslib /usr/share/emacs/site-lisp -opt -reals all \
+	  > $(RPMFILESLOG)
 
-RH/coq-pcoq.list: $(TARGZ) config.distrib
-	rm -rf RH/$(COQPACKAGE) RH/build
-	cd RH ; tar xzf ../$(TARGZ)
-	@echo "Building pcoq files list... (see RH/coqfiles.log)"
-	cd RH/$(COQPACKAGE) ; sh ../do_build_pcoq > $(RPMFILESLOG)
-	cd RH/$(COQPACKAGE) ; $(MAKECOQ) COQINSTALLPREFIX=$(DISTRIBDIR)/RH/build BASETEXDIR=$(DISTRIBDIR)/RH/build install-pcoq >> $(RPMFILESLOG)
-	@echo " ... done"
-	echo "# This file has been generated" > RH/coq-pcoq.list
-	echo "# Do not edit" >>RH/coq-pcoq.list
-	cd RH/build ; find . '!' -type d | sed -e 's|^\./|/|g' >> ../coq-pcoq.list
-	rm -rf RH/$(COQPACKAGE) RH/build
+RH/pcoq.spec:
+	cd RH ; ln -s coq_ext_for_pcoq.spec pcoq.spec
+
+RH/%.list: RH/%.spec RH/$(COQPACKAGE)/config/Makefile
+	rm -rf $(FILESDIR)/$*
+	cd RH/$(COQPACKAGE) ;\
+	  $(MAKECOQ) COQINSTALLPREFIX=$(FILESDIR)/$* $* install-$* \
+	    >> $(RPMFILESLOG) 2>&1
+	echo "# This file has been generated. Do not edit" > $@
+	cd $(FILESDIR)/$* ; \
+	  find . '!' -type d | sed -e 's|^\./|/|g' >> $(DISTRIBDIR)/$@
+	@echo " ... $@ done"
+#	rm -rf $(FILESDIR)/$*
 
 clean::
-	rm -fr $(RPMTOPDIR) RH/coq.list RH/$(COQPACKAGE) RH/build RH/rpmmacros RH/rpmrc
+	rm -fr $(RPMTOPDIR) RH/coq.list RH/coqide.list RH/pcoq.list RH/$(COQPACKAGE) $(FILESDIR) RH/rpmmacros RH/rpmrc
 
 cleanall::
 	rm -f $(COQSRCRPM) $(COQRPM) $(COQIDESRCRPM) $(COQIDERPM) $(RPMLOG) $(RPMFILESLOG)

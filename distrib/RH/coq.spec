@@ -26,15 +26,15 @@ Coq is a proof assistant which:
 %setup
 
 %build
-./configure -prefix /usr -emacs emacs -emacslib /usr/share/emacs/site-lisp -opt -reals all -coqide no       # Need ocamlc.opt and ocamlopt.opt
-make coq                    # Use native coq to compile theories
+./configure -prefix /usr -emacslib /usr/share/emacs/site-lisp -opt -reals all -coqide no       # Need ocamlc.opt and ocamlopt.opt
+make coq       # Use native coq to compile theories
 
 
 %clean
 make clean
 
 %install
-make -e COQINSTALLPREFIX=$RPM_BUILD_ROOT/ BASETEXDIR=$RPM_BUILD_ROOT/ install-coq
+make -e COQINSTALLPREFIX=$RPM_BUILD_ROOT/ install-coq
 # To install only locally the binaries compiled with absolute paths
 
 %post
@@ -52,7 +52,8 @@ if [ -L /usr/local/lib/ocaml ]; then
   rm /usr/local/lib/ocaml
 fi
 
-# the spec file is moved to distrib/RH/src/SPECS but coq.list is in distrib/RH
+# the spec file is read from distrib/RH/src/SOURCES/coqX.Y
+# but coq.list is in distrib/RH/src
 %files -f ../../coq.list
 %defattr(-,root,root)
 

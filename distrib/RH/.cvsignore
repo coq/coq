@@ -1,3 +1,5 @@
-build
-coq.list
-coq-7.0
+build src
+coq.list pcoq.list coqide.list
+pcoq.spec
+rpmmacros rpmrc
+coq-*
