@@ -5,7 +5,7 @@ open Util
 open Names
 open Generic
 open Term
-open Constant
+open Declarations
 open Reduction
 
 type constant_evaluation = 

@@ -3,7 +3,7 @@ open Util
 open Names
 open Generic
 open Term
-open Constant
+open Declarations
 open Inductive
 open Environ
 open Sign
@@ -220,23 +220,9 @@ let lift_tomatch_type n = liftn_tomatch_type n 1
 let lift_tomatch n ((current,typ),info) =
   ((lift n current,lift_tomatch_type n typ),info)
 
-let substn_many_ind_instance cv depth mis = {
-  mis_sp = mis.mis_sp;
-  mis_mib = mis.mis_mib;
-  mis_tyi = mis.mis_tyi;
-  mis_args = Array.map (substn_many cv depth) mis.mis_args;
-  mis_mip = mis.mis_mip
-}
-
-let substn_many_ind_data cv depth (IndFamily (mis,params)) =
-  IndFamily (substn_many_ind_instance cv depth mis,
-	     List.map (substn_many cv depth) params)
-
 let substn_many_tomatch v depth = function
-  | IsInd (t,IndType (ind_data,realargs)) ->
-      IsInd (substn_many v depth t,
-	     IndType (substn_many_ind_data v depth ind_data,
-		      List.map (substn_many v depth) realargs))
+  | IsInd (t,indt) ->
+      IsInd (substn_many v depth t,substn_many_ind_type v depth indt)
   | NotInd t -> NotInd (substn_many v depth t)
 
 let subst_tomatch (depth,c) = substn_many_tomatch [|make_substituend c|] depth

@@ -6,6 +6,7 @@ open Util
 open Names
 open Generic
 open Term
+open Declarations
 open Declare
 open Coqast
 open Ast
@@ -135,8 +136,8 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
 	   let ok = 
 	     try
 	       let cie =
-		 { Constant.const_entry_body = Constant.Cooked proj;
-		   Constant.const_entry_type = None } in
+		 { const_entry_body = Cooked proj;
+		   const_entry_type = None } in
 	       (declare_constant fi (cie,NeverDischarge); true)
              with UserError(s,pps) ->
                ((warning_or_error coe 

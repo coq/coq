@@ -7,7 +7,7 @@ open Names
 open Sign
 open Generic
 open Term
-open Constant
+open Declarations
 open Environ
 open Evd
 open Declare

@@ -7,7 +7,7 @@ open Names
 open Generic
 open Term
 open Inductive
-open Constant
+open Declarations
 open Environ
 open Lib
 open Classops

@@ -7,7 +7,7 @@ open Names
 open Term
 open Univ
 open Sign
-open Constant
+open Declarations
 open Inductive
 open Environ
 open Typeops
@@ -46,7 +46,7 @@ val lookup_var : identifier -> safe_environment -> name * typed_type
 val lookup_rel : int -> safe_environment -> name * typed_type
 val lookup_constant : section_path -> safe_environment -> constant_body
 val lookup_mind : section_path -> safe_environment -> mutual_inductive_body
-val lookup_mind_specif : inductive -> safe_environment -> mind_specif
+val lookup_mind_specif : inductive -> safe_environment -> inductive_instance
 
 val export : safe_environment -> string -> compiled_env
 val import : compiled_env -> safe_environment -> safe_environment

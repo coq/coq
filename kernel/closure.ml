@@ -309,7 +309,7 @@ let fixp_reducible redfun flgs op stk =
     false
 
 let mindsp_nparams env sp =
-  let mib = lookup_mind sp env in mib.Constant.mind_nparams
+  let mib = lookup_mind sp env in mib.Declarations.mind_nparams
 
 (* The main recursive functions
  *

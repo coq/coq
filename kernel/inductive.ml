@@ -7,11 +7,11 @@ open Univ
 open Generic
 open Term
 open Sign
-open Constant
+open Declarations
 open Environ
 open Reduction
 
-type mind_specif = {
+type inductive_instance = {
   mis_sp : section_path;
   mis_mib : mutual_inductive_body;
   mis_tyi : int;
@@ -19,9 +19,11 @@ type mind_specif = {
   mis_mip : mutual_inductive_packet }
 
 let mis_ntypes mis = mis.mis_mib.mind_ntypes
-let mis_index mis = mis.mis_tyi
-let mis_nconstr mis = Array.length (mis.mis_mip.mind_consnames)
 let mis_nparams mis = mis.mis_mib.mind_nparams
+
+let mis_index mis = mis.mis_tyi
+
+let mis_nconstr mis = Array.length (mis.mis_mip.mind_consnames)
 let mis_nrealargs mis = mis.mis_mip.mind_nrealargs
 let mis_kelim mis = mis.mis_mip.mind_kelim
 let mis_recargs mis =
@@ -46,15 +48,28 @@ let mis_lc_without_abstractions mis =
   in 
   strip_DLAM (mis_lc mis)
 
+(* gives the vector of constructors and of 
+   types of constructors of an inductive definition 
+   correctly instanciated *)
+
 let mis_type_mconstructs mispec =
   let specif = mis_lc mispec
   and ntypes = mis_ntypes mispec
   and nconstr = mis_nconstr mispec in
   let make_Ik k = mkMutInd ((mispec.mis_sp,k),mispec.mis_args) 
-  and make_Ck k = mkMutConstruct (((mispec.mis_sp,mispec.mis_tyi),k+1),
+  and make_Ck k = mkMutConstruct
+		    (((mispec.mis_sp,mispec.mis_tyi),k+1),
 		       mispec.mis_args) in
   (Array.init nconstr make_Ck, 
    sAPPVList specif (list_tabulate make_Ik ntypes))
+
+let mis_type_mconstruct i mispec =
+  let specif = mis_lc mispec
+  and ntypes = mis_ntypes mispec
+  and nconstr = mis_nconstr mispec in
+  let make_Ik k = DOPN(MutInd(mispec.mis_sp,k),mispec.mis_args) in 
+  if i > nconstr then error "Not enough constructors in the type";
+  sAPPViList (i-1) specif (list_tabulate make_Ik ntypes)
 
 let mis_typed_arity mis =
   let idhyps = ids_of_sign mis.mis_mib.mind_hyps 
@@ -81,33 +96,16 @@ let liftn_inductive_instance n depth mis = {
 
 let lift_inductive_instance n = liftn_inductive_instance n 1
 
-
-type constructor_summary = {
-  cs_cstr : constructor;
-  cs_params : constr list;
-  cs_nargs : int;
-  cs_args : (name * constr) list;
-  cs_concl_realargs : constr array
-}
-
-let lift_constructor n cs = {
-  cs_cstr = (let (csp,ctxt) = cs.cs_cstr in (csp,Array.map (lift n) ctxt));
-  cs_params = List.map (lift n) cs.cs_params;
-  cs_nargs = cs.cs_nargs;
-  cs_args = lift_context n cs.cs_args;
-  cs_concl_realargs = Array.map (liftn n (cs.cs_nargs+1)) cs.cs_concl_realargs
+let substn_many_ind_instance cv depth mis = {
+  mis_sp = mis.mis_sp;
+  mis_mib = mis.mis_mib;
+  mis_tyi = mis.mis_tyi;
+  mis_args = Array.map (substn_many cv depth) mis.mis_args;
+  mis_mip = mis.mis_mip
 }
 
 (* [inductive_family] = [inductive_instance] applied to global parameters *)
-type inductive_family = IndFamily of mind_specif * constr list
-(* = {
-  mind : inductive;
-  params : constr list;
-  nparams : int;
-  nrealargs : int;
-  nconstr : int;
-  ind_kelim : sorts list;
-} *)
+type inductive_family = IndFamily of inductive_instance * constr list
 
 type inductive_type = IndType of inductive_family * constr list
 
@@ -118,6 +116,14 @@ let lift_inductive_family n = liftn_inductive_family n 1
 let liftn_inductive_type n d (IndType (indf, realargs)) =
   IndType (liftn_inductive_family n d indf, List.map (liftn n d) realargs)
 let lift_inductive_type n = liftn_inductive_type n 1
+
+let substn_many_ind_family cv depth (IndFamily (mis,params)) =
+  IndFamily (substn_many_ind_instance cv depth mis,
+	     List.map (substn_many cv depth) params)
+
+let substn_many_ind_type cv depth (IndType (indf,realargs)) =
+  IndType (substn_many_ind_family cv depth indf,
+	   List.map (substn_many cv depth) realargs)
 
 let make_ind_family (mis, params) = IndFamily (mis,params)
 let dest_ind_family (IndFamily (mis,params)) = (mis,params)
@@ -160,25 +166,21 @@ let inductive_path_of_constructor_path (ind_sp,i) = ind_sp
 let ith_constructor_path_of_inductive_path ind_sp i = (ind_sp,i)
 
 let inductive_of_constructor ((ind_sp,i),args) = (ind_sp,args)
+let index_of_constructor ((ind_sp,i),args) = i
 let ith_constructor_of_inductive (ind_sp,args) i = ((ind_sp,i),args)
 
-let build_dependent_constructor cs =
-  applist
-    (mkMutConstruct cs.cs_cstr,
-     (List.map (lift cs.cs_nargs) cs.cs_params)@(rel_list 0 cs.cs_nargs))
-
-let build_dependent_inductive (IndFamily (mis, params)) =
-  let nrealargs = mis_nrealargs mis in
-  applist 
-    (mkMutInd (mis_inductive mis),
-     (List.map (lift nrealargs) params)@(rel_list 0 nrealargs))
-
 exception Induc
+
+let extract_mrectype env sigma t =
+  let (t,l) = whd_stack env sigma t [] in
+  match t with
+    | DOPN(MutInd ind_sp,args) -> ((ind_sp,args),l)
+    | _ -> raise Induc
 
 let find_mrectype env sigma c =
   let (t,l) = whd_betadeltaiota_stack env sigma c [] in
   match t with
-    | DOPN(MutInd ind_sp,args) ->  ((ind_sp,args),l)
+    | DOPN(MutInd ind_sp,args) -> ((ind_sp,args),l)
     | _ -> raise Induc
 
 let find_minductype env sigma c =
@@ -208,10 +210,24 @@ let find_inductive env sigma ty =
   let (params,realargs) = list_chop nparams largs in
   make_ind_type (make_ind_family (mispec,params),realargs)
 
+type constructor_summary = {
+  cs_cstr : constructor;
+  cs_params : constr list;
+  cs_nargs : int;
+  cs_args : (name * constr) list;
+  cs_concl_realargs : constr array
+}
+
+let lift_constructor n cs = {
+  cs_cstr = (let (csp,ctxt) = cs.cs_cstr in (csp,Array.map (lift n) ctxt));
+  cs_params = List.map (lift n) cs.cs_params;
+  cs_nargs = cs.cs_nargs;
+  cs_args = lift_context n cs.cs_args;
+  cs_concl_realargs = Array.map (liftn n (cs.cs_nargs+1)) cs.cs_concl_realargs
+}
+
 let get_constructors (IndFamily (mispec,params)) =
-  let specif = mis_lc mispec in
-  let make_ik i = DOPN (MutInd (mispec.mis_sp,i), mispec.mis_args) in
-  let types = sAPPVList specif (list_tabulate make_ik (mis_ntypes mispec)) in
+  let _,types = mis_type_mconstructs mispec in
   let make_ck j =
     let (args,ccl) = decompose_prod (prod_applist types.(j) params) in
     let (_,vargs) = array_chop (mis_nparams mispec + 1) (destAppL (ensure_appl ccl)) in
@@ -225,6 +241,19 @@ let get_constructors (IndFamily (mispec,params)) =
 let get_arity env sigma (IndFamily (mispec,params)) =
   let arity = mis_arity mispec in
   splay_arity env sigma (prod_applist arity params)
+
+(* Functions to build standard types related to inductive *)
+
+let build_dependent_constructor cs =
+  applist
+    (mkMutConstruct cs.cs_cstr,
+     (List.map (lift cs.cs_nargs) cs.cs_params)@(rel_list 0 cs.cs_nargs))
+
+let build_dependent_inductive (IndFamily (mis, params)) =
+  let nrealargs = mis_nrealargs mis in
+  applist 
+    (mkMutInd (mis_inductive mis),
+     (List.map (lift nrealargs) params)@(rel_list 0 nrealargs))
 
 (* builds the arity of an elimination predicate in sort [s] *)
 let make_arity env sigma dep indf s =

@@ -9,7 +9,7 @@ open Generic
 open Term
 open Reduction
 open Sign
-open Constant
+open Declarations
 open Inductive
 open Environ
 open Type_errors

@@ -6,7 +6,7 @@ open Util
 open Options
 open Generic
 open Term
-open Constant
+open Declarations
 open Inductive
 open Reduction
 open Tacred
@@ -359,17 +359,12 @@ let build_scheme lnamedepindsort =
                 (inductive_of_ident indid,dep,s)) lnamedepindsort
   in
   let n = NeverDischarge in 
-  let listdecl = Indrec.build_indrec env0 sigma lrecspec in 
-  let rec declare i = function 
-    | fi::lf -> 
-	let ce = 
-	  { const_entry_body = Cooked listdecl.(i); const_entry_type = None } 
-	in
-	declare_constant fi (ce,n);
-        declare (i+1) lf
-    | _        -> ()
+  let listdecl = Indrec.build_mutual_indrec env0 sigma lrecspec in 
+  let rec declare decl fi =
+    let ce = { const_entry_body = Cooked decl; const_entry_type = None } 
+    in declare_constant fi (ce,n)
   in 
-  declare 0 lrecnames; 
+  List.iter2 declare listdecl lrecnames; 
   if is_verbose() then pPNL(recursive_message lrecnames)
 
 let start_proof_com s stre com =

@@ -8,7 +8,7 @@ open Generic
 open Term
 open Univ
 open Evd
-open Constant
+open Declarations
 open Environ
 open Instantiate
 open Closure

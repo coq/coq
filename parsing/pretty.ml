@@ -6,7 +6,7 @@ open Util
 open Names
 open Generic
 open Term
-open Constant
+open Declarations
 open Inductive
 open Sign
 open Reduction

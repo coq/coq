@@ -6,7 +6,7 @@ open Util
 open Names
 open Generic
 open Term
-open Constant
+open Declarations
 open Inductive
 open Instantiate
 open Environ
@@ -24,69 +24,9 @@ let make_prod_dep dep env = if dep then prod_name env else simple_prod
 
 (**********************************************************************)
 (* Building case analysis schemes *)
-(*
-let mis_make_case_com depopt env sigma mispec kind =
- 
-  let nparams = mis_nparams mispec in
-  let mind = mkMutInd ((mispec.mis_sp,mispec.mis_tyi),mispec.mis_args) in
-  let t = mis_arity mispec in
-  let (lc,lct) = mis_type_mconstructs mispec in
-  let lnames,sort = splay_prod env sigma t in
-  let nconstr = Array.length lc in
-  let dep = match depopt with 
-    | None -> (sort<>DOP0(Sort(Prop Null)))
-    | Some d -> d
-  in
-  if not (List.exists (base_sort_cmp CONV kind) (mis_kelim mispec)) then
-  raise (InductiveError (NotAllowedCaseAnalysis (dep,kind,ind.mind)));
-
-  let lnamesar,lnamespar = list_chop (List.length lnames - nparams) lnames in
-  let lgar = List.length lnamesar in
-  let ar = hnf_prod_appvect env sigma t (rel_vect 0 nparams) in
-
-  let typP = 
-    if dep then 
-      make_arity_dep env sigma (DOP0(Sort kind)) ar 
-       	(appvect (mind,rel_vect 0 nparams))
-    else 
-      make_arity_nodep env sigma (DOP0(Sort kind)) ar 
-  in 
-  let rec add_branch k = 
-    if k = nconstr then 
-      it_lambda_name env
-       	(lambda_create env
-           (appvect (mind,
-                     (Array.append (rel_vect (nconstr+lgar+1) nparams)
-                       	(rel_vect 0 lgar))),
-            mkMutCaseA (make_default_case_info mispec)
-	      (Rel (nconstr+lgar+2))
-              (Rel 1)
-              (rel_vect (lgar+1) nconstr)))
-       	(lift_context (nconstr+1) lnamesar)
-    else
-      mkLambda_string "f" 
-       	(if dep then 
-	   type_one_branch_dep env sigma
-             (nparams,(rel_list (k+1) nparams),Rel (k+1)) lc.(k) lct.(k)
-         else 
-	  type_one_branch_nodep env sigma
-            (nparams,(rel_list (k+1) nparams),Rel (k+1)) lct.(k))
-       	(add_branch (k+1))
-  in 
-  it_lambda_name env (mkLambda_string "P" typP (add_branch 0)) lnamespar
-*)
-
-(*
-let push_rel_type sigma (na,t) env =
-  push_rel (na,make_typed t (get_sort_of env sigma t)) env
-
-let push_rels vars env =
-  List.fold_left (fun env nvar -> push_rel_type Evd.empty nvar env) env vars
-*)
-
 (* Nouvelle version, plus concise mais plus coûteuse à cause de
-   lift_constructor et lift_inductive qui ne se contente pas de lifter les
-   paramètres globaux *)
+   lift_constructor et lift_inductive_family qui ne se contente pas de 
+   lifter les paramètres globaux *)
 
 let mis_make_case_com depopt env sigma mispec kind =
   let lnamespar = mis_params_ctxt mispec in
@@ -96,10 +36,9 @@ let mis_make_case_com depopt env sigma mispec kind =
     | Some d -> d
   in
   if not (List.exists (base_sort_cmp CONV kind) (mis_kelim mispec)) then
-    begin
-      let mind = ((mispec.mis_sp,mispec.mis_tyi),mispec.mis_args) in
-      raise (InductiveError (NotAllowedCaseAnalysis (dep,kind,mind)))
-    end;
+    raise
+      (InductiveError
+	 (NotAllowedCaseAnalysis (dep,kind,mis_inductive mispec)));
 
   let nbargsprod = mis_nrealargs mispec + 1 in
 
@@ -249,13 +188,6 @@ let mis_make_indrec env sigma listdepkind mispec =
   let nparams = mis_nparams mispec in
   let lnamespar = mis_params_ctxt mispec in
   let env' = (* push_rels lnamespar *) env in
-  let listdepkind = 
-    if listdepkind = [] then
-      let kind = mis_sort mispec in
-      let dep = kind <> Prop Null in [(mispec,dep,kind)] 
-    else
-      listdepkind
-  in
   let nrec = List.length listdepkind in
   let depPvec =
     Array.create (mis_ntypes mispec) (None : (bool * constr) option) in 
@@ -264,36 +196,12 @@ let mis_make_indrec env sigma listdepkind mispec =
       assign k = function 
 	| [] -> ()
         | (mispeci,dep,_)::rest -> 
-            (Array.set depPvec mispeci.mis_tyi (Some(dep,Rel k));
+            (Array.set depPvec (mis_index mispeci) (Some(dep,Rel k));
              assign (k-1) rest)
     in 
     assign nrec listdepkind  
   in 
   let recargsvec = mis_recargs mispec in
-(*
-  let ntypes = mis_ntypes mispec in
-  let mind_arity = mis_arity mispec in 
-  let (lnames, kind) = splay_arity env sigma mind_arity in
-  let lnamespar = list_lastn nparams lnames in
-  let listdepkind = 
-    if listdepkind = [] then 
-      let dep = kind <> Prop Null in [(mispec,dep,kind)] 
-    else 
-      listdepkind 
-  in
-  let nrec = List.length listdepkind in
-  let depPvec = Array.create ntypes (None : (bool * constr) option) in 
-  let _ = 
-    let rec 
-      assign k = function 
-	| [] -> ()
-        | (mispeci,dep,_)::rest -> 
-            (Array.set depPvec mispeci.mis_tyi (Some(dep,Rel k));
-             assign (k-1) rest)
-    in 
-    assign nrec listdepkind  
-  in 
-*)
   let make_one_rec p =
     let makefix nbconstruct =
       let rec mrec i ln ltyp ldef = function
@@ -358,7 +266,7 @@ let mis_make_indrec env sigma listdepkind mispec =
     in 
     let rec make_branch i = function 
       | (mispeci,dep,_)::rest ->
-          let tyi = mispeci.mis_tyi in
+          let tyi = mis_index mispeci in
 	  let (lc,lct) = mis_type_mconstructs mispeci in 
 	  let rec onerec j = 
 	    if j = Array.length lc then 
@@ -386,13 +294,13 @@ let mis_make_indrec env sigma listdepkind mispec =
     in 
     let (mispeci,dep,kind) = List.nth listdepkind p in
     if mis_is_recursive_subset
-      (List.map (fun (mispec,_,_) -> mispec.mis_tyi) listdepkind) mispeci
+      (List.map (fun (mispec,_,_) -> mis_index mispec) listdepkind) mispeci
     then 
       it_lambda_name env (put_arity 0 listdepkind) lnamespar
     else 
       mis_make_case_com (Some dep) env sigma mispeci kind 
   in 
-  Array.init nrec make_one_rec
+  list_tabulate make_one_rec nrec
 
 (**********************************************************************)
 (* This builds elimination predicate for Case tactic *)
@@ -419,15 +327,15 @@ let change_sort_arity sort =
   in 
   drec 
 
-let instanciate_indrec_scheme sort = 
+let instanciate_indrec_scheme sort =
   let rec drec npar elim =
     let (n,t,c) = destLambda (strip_outer_cast elim) in
     if npar = 0 then 
       mkLambda n (change_sort_arity sort t) c
     else 
       mkLambda n t (drec (npar-1) c) 
-  in 
-  drec 
+  in
+  drec
 
 (**********************************************************************)
 (* Interface to build complex Scheme *)
@@ -441,7 +349,7 @@ let check_arities listdepkind =
 	 raise (InductiveError (BadInduction (dep, id, kinds))))
     listdepkind
 
-let build_indrec env sigma = function 
+let build_mutual_indrec env sigma = function 
   | (mind,dep,s)::lrecspec ->
       let ((sp,tyi),_) = mind in
       let mispec = lookup_mind_specif mind env in
@@ -458,8 +366,13 @@ let build_indrec env sigma = function
       in
       let _ = check_arities listdepkind in 
       mis_make_indrec env sigma listdepkind mispec
-  | _ -> assert false
+  | _ -> anomaly "build_indrec expects a non empty list of inductive types"
 
+let build_indrec env sigma mispec =
+  let kind = mis_sort mispec in
+  let dep = kind <> Prop Null in
+  strip_all_casts
+    (List.hd (mis_make_indrec env sigma [(mispec,dep,kind)] mispec))
 
 (**********************************************************************)
 (* To handle old Case/Match syntax in Pretyping                       *)

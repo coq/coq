@@ -8,7 +8,7 @@ open Generic
 open Term
 open Sign
 open Evd
-open Constant
+open Declarations
 open Environ
 
 let is_id_inst ids args =

@@ -7,7 +7,7 @@ open Names
 open Generic
 open Term
 open Sign
-open Constant
+open Declarations
 open Inductive
 open Type_errors
 open Safe_typing

@@ -5,7 +5,7 @@
 open Names
 open Term
 open Sign
-open Constant
+open Declarations
 open Inductive
 (*i*)
 

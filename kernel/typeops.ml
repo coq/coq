@@ -7,7 +7,7 @@ open Names
 open Univ
 open Generic
 open Term
-open Constant
+open Declarations
 open Sign
 open Environ
 open Reduction
@@ -94,62 +94,21 @@ let instantiate_arity mis =
 let instantiate_arity = mis_typed_arity
 
 let type_of_inductive env sigma i =
-  let mis = lookup_mind_specif i env in
-  let hyps = mis.mis_mib.mind_hyps in
   (* TODO: check args *)
-  instantiate_arity mis
+  instantiate_arity (lookup_mind_specif i env)
 
 (* Constructors. *)
 
-(*
-let instantiate_lc mis =
-  let hyps = mis.mis_mib.mind_hyps in
-  let lc = mis.mis_mip.mind_lc in
-  instantiate_constr (ids_of_sign hyps) lc (Array.to_list mis.mis_args)
-*)
-let instantiate_lc = mis_lc
-
-let type_of_constructor env sigma ((ind_sp,j),args as cstr) =
-  let mind = inductive_of_constructor cstr in
-  let mis = lookup_mind_specif mind env in
-  (* TODO: check args *)
-  let specif = instantiate_lc mis in
-  let make_ik k = DOPN (MutInd (mis.mis_sp,k), mis.mis_args) in
-  if j > mis_nconstr mis then
-    anomaly "type_of_constructor"
-  else
-    sAPPViList (j-1) specif (list_tabulate make_ik (mis_ntypes mis))
-
-(* gives the vector of constructors and of 
-   types of constructors of an inductive definition 
-   correctly instanciated *)
-
-let mis_type_mconstructs mis =
-  let specif = instantiate_lc mis
-  and ntypes = mis_ntypes mis
-  and nconstr = mis_nconstr mis in
-  let make_ik k = DOPN (MutInd (mis.mis_sp,k), mis.mis_args) 
-  and make_ck k = 
-    DOPN (MutConstruct ((mis.mis_sp,mis.mis_tyi),k+1), mis.mis_args) 
-  in
-  (Array.init nconstr make_ck, 
-   sAPPVList specif (list_tabulate make_ik ntypes))
-
 let type_mconstructs env sigma mind =
-  let mis = lookup_mind_specif mind env in 
-  mis_type_mconstructs mis
-
-let mis_type_mconstruct i mispec =
-  let specif = instantiate_lc mispec
-  and ntypes = mis_ntypes mispec
-  and nconstr = mis_nconstr mispec in
-  let make_Ik k = DOPN(MutInd(mispec.mis_sp,k),mispec.mis_args) in 
-  if i > nconstr then error "Not enough constructors in the type";
-  sAPPViList (i-1) specif (list_tabulate make_Ik ntypes)
+  mis_type_mconstructs (lookup_mind_specif mind env)
 
 let type_mconstruct env sigma i mind =
-  let mis = lookup_mind_specif mind env in
-  mis_type_mconstruct i mis
+  mis_type_mconstruct i (lookup_mind_specif mind env)
+
+let type_of_constructor env sigma cstr =
+  type_mconstruct env sigma
+    (index_of_constructor cstr)
+    (inductive_of_constructor cstr)
 
 let type_inst_construct i (IndFamily (mis,globargs)) =
   let tc = mis_type_mconstruct i mis in
@@ -695,10 +654,6 @@ let check_fix env sigma = function
 
 (* Co-fixpoints. *)
 
-let mind_nparams env i =
-  let mis = lookup_mind_specif i env in
-  mis.mis_mib.mind_nparams
-
 let check_guard_rec_meta env sigma nbfix def deftype = 
   let rec codomain_is_coind c  =
     match whd_betadeltaiota env sigma (strip_outer_cast c) with
@@ -736,7 +691,8 @@ let check_guard_rec_meta env sigma nbfix def deftype =
 	| (DOPN (MutConstruct(_,i as cstr_sp),l), args)  ->
             let lra =vlra.(i-1) in 
             let mI = inductive_of_constructor (cstr_sp,l) in
-            let _,realargs = list_chop (mind_nparams env mI) args in
+	    let mis = lookup_mind_specif mI env in
+            let _,realargs = list_chop (mis_nparams mis) args in
             let rec process_args_of_constr l lra =
               match l with
                 | [] -> true 

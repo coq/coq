@@ -7,7 +7,7 @@ open Names
 open Generic
 open Term
 open Sign
-open Constant
+open Declarations
 open Inductive
 open Reduction
 open Type_errors
@@ -314,8 +314,7 @@ let declare_eliminations sp i =
   in
   let env = Global.env () in
   let sigma = Evd.empty in
-  let elim_scheme = 
-    strip_all_casts (mis_make_indrec env sigma [] mispec).(0) in
+  let elim_scheme = build_indrec env sigma mispec in
   let npars = mis_nparams mispec in
   let make_elim s = instanciate_indrec_scheme s npars elim_scheme in
   let kelim = mis_kelim mispec in

@@ -5,7 +5,7 @@
 open Names
 open Univ
 open Term
-open Constant
+open Declarations
 open Environ
 (*i*)
 

@@ -5,7 +5,7 @@ open Names
 open Generic
 open Term
 open Reduction
-open Constant
+open Declarations
 open Inductive
 
 type implicits =

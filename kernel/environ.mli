@@ -4,7 +4,7 @@
 (*i*)
 open Names
 open Term
-open Constant
+open Declarations
 open Abstraction
 open Univ
 open Sign

@@ -116,9 +116,9 @@ let encode_inductive id =
   (indsp,constr_lengths)
 
 let sp_of_spi (refsp,tyi) =
-  let mip = Constant.mind_nth_type_packet (Global.lookup_mind refsp) tyi in
+  let mip = Declarations.mind_nth_type_packet (Global.lookup_mind refsp) tyi in
   let (pa,_,k) = repr_path refsp in 
-  make_path pa mip.Constant.mind_typename k
+  make_path pa mip.Declarations.mind_typename k
 
 (*
   let (_,mip) = mind_specif_of_mind_light spi in

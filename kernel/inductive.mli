@@ -6,44 +6,83 @@ open Names
 open Univ
 open Term
 open Sign
-open Constant
+open Declarations
 open Environ
 open Evd
 (*i*)
 
-(*s To give a more efficient access to the informations related to a given
-  inductive type, we introduce the following type [mind_specif], which
-  contains all the informations about the inductive type, including its
-  instanciation arguments. *)
+(*s Inductives are accessible at several stages:
 
-type mind_specif = {
-  mis_sp : section_path;
-  mis_mib : mutual_inductive_body;
-  mis_tyi : int;
-  mis_args : constr array;
-  mis_mip : mutual_inductive_packet }
+A [mutual_inductive_body] contains all information about a
+declaration of mutual (co-)inductive types. These informations are
+closed (they depend on no free variables) and an instance of them
+corresponds to a [mutual_inductive_instance =
+mutual_inductive_body * constr list]. One inductive type in an
+instanciated packet corresponds to an [inductive_instance =
+mutual_inductive_instance * int]. Applying global parameters to an
+inductive_instance gives an [inductive_family = inductive_instance *
+constr list]. Finally, applying real parameters gives an
+[inductive_type = inductive_family * constr list]. At each level
+corresponds various appropriated functions *)
 
-val mis_index : mind_specif -> int
-val mis_ntypes : mind_specif -> int
-val mis_nconstr : mind_specif -> int
-val mis_nparams : mind_specif -> int
-val mis_nrealargs : mind_specif -> int
-val mis_kelim : mind_specif -> sorts list
-val mis_recargs : mind_specif -> (recarg list) array array
-val mis_recarg : mind_specif -> (recarg list) array
-val mis_typename : mind_specif -> identifier
-val mis_typepath : mind_specif -> section_path
-val mis_is_recursive_subset : int list -> mind_specif -> bool
-val mis_is_recursive : mind_specif -> bool
-val mis_consnames : mind_specif -> identifier array
-val mis_typed_arity : mind_specif -> typed_type
-val mis_inductive : mind_specif -> inductive
-val mis_arity : mind_specif -> constr
-val mis_lc : mind_specif -> constr
-val mis_lc_without_abstractions : mind_specif -> constr array
-val mis_type_mconstructs : mind_specif -> constr array * constr array
-val mis_params_ctxt : mind_specif -> (name * constr) list
-val mis_sort : mind_specif -> sorts
+type inductive_instance (* ex-mind_specif *)
+
+val mis_index : inductive_instance -> int
+val mis_ntypes : inductive_instance -> int
+val mis_nconstr : inductive_instance -> int
+val mis_nparams : inductive_instance -> int
+val mis_nrealargs : inductive_instance -> int
+val mis_kelim : inductive_instance -> sorts list
+val mis_recargs : inductive_instance -> (recarg list) array array
+val mis_recarg : inductive_instance -> (recarg list) array
+val mis_typename : inductive_instance -> identifier
+val mis_typepath : inductive_instance -> section_path
+val mis_is_recursive_subset : int list -> inductive_instance -> bool
+val mis_is_recursive : inductive_instance -> bool
+val mis_consnames : inductive_instance -> identifier array
+val mis_typed_arity : inductive_instance -> typed_type
+val mis_inductive : inductive_instance -> inductive
+val mis_arity : inductive_instance -> constr
+val mis_lc : inductive_instance -> constr
+val mis_lc_without_abstractions : inductive_instance -> constr array
+val mis_type_mconstructs : inductive_instance -> constr array * constr array
+val mis_type_mconstruct : int -> inductive_instance -> constr
+val mis_params_ctxt : inductive_instance -> (name * constr) list
+val mis_sort : inductive_instance -> sorts
+
+(*s [inductive_family] = [inductive_instance] applied to global parameters *)
+type inductive_family = IndFamily of inductive_instance * constr list
+
+val make_ind_family : inductive_instance * constr list -> inductive_family
+val dest_ind_family : inductive_family -> inductive_instance * constr list
+
+val liftn_inductive_family : int -> int -> inductive_family -> inductive_family
+val lift_inductive_family : int -> inductive_family -> inductive_family
+val substn_many_ind_family : constr Generic.substituend array -> int
+  -> inductive_family -> inductive_family
+
+(*s [inductive_type] = [inductive_family] applied to ``real'' parameters *)
+type inductive_type = IndType of inductive_family * constr list
+
+val make_ind_type : inductive_family * constr list -> inductive_type
+val dest_ind_type : inductive_type -> inductive_family * constr list
+
+val mkAppliedInd : inductive_type -> constr
+
+val liftn_inductive_type : int -> int -> inductive_type -> inductive_type
+val lift_inductive_type : int -> inductive_type -> inductive_type
+val substn_many_ind_type : constr Generic.substituend array -> int
+ -> inductive_type -> inductive_type
+
+(*s A [constructor] is an [inductive] + an index; the following functions
+    destructs and builds [constructor] *)
+val inductive_of_constructor : constructor -> inductive
+val index_of_constructor : constructor -> int
+val ith_constructor_of_inductive : inductive -> int -> constructor
+
+val inductive_path_of_constructor_path : constructor_path -> inductive_path
+val ith_constructor_path_of_inductive_path :
+  inductive_path -> int -> constructor_path
 
 (*s This type gathers useful informations about some instance of a constructor
     relatively to some implicit context (the current one)
@@ -65,42 +104,7 @@ type constructor_summary = {
 
 val lift_constructor : int -> constructor_summary -> constructor_summary
 
-(*s A variant of [mind_specif_of_mind] with pre-splitted args
-
-   We recover the inductive type as \par
-   [DOPN(AppL,[|MutInd mind;..params..;..realargs..|])] \par
-   with [mind]  = [((sp,i),localvars)] for some [sp, i, localvars].
-
- *)
-
-(* [inductive_family] = [inductive_instance] applied to global parameters *)
-type inductive_family = IndFamily of mind_specif * constr list
-
-val make_ind_family : mind_specif * constr list -> inductive_family
-val dest_ind_family : inductive_family -> mind_specif * constr list
-
-(* [inductive_type] = [inductive_family] applied to ``real'' parameters *)
-type inductive_type = IndType of inductive_family * constr list
-
-val make_ind_type : inductive_family * constr list -> inductive_type
-val dest_ind_type : inductive_type -> inductive_family * constr list
-
-val mkAppliedInd : inductive_type -> constr
-
-val liftn_inductive_family : int -> int -> inductive_family -> inductive_family
-val lift_inductive_family : int -> inductive_family -> inductive_family
-
-val liftn_inductive_type : int -> int -> inductive_type -> inductive_type
-val lift_inductive_type : int -> inductive_type -> inductive_type
-
-val inductive_of_constructor : constructor -> inductive
-
-val ith_constructor_of_inductive : inductive -> int -> constructor
-
-val inductive_path_of_constructor_path : constructor_path -> inductive_path
-
-val ith_constructor_path_of_inductive_path :
-  inductive_path -> int -> constructor_path
+(*s Functions to build standard types related to inductive *)
 
 (* This builds [(ci params (Rel 1)...(Rel ci_nargs))] which is the argument
    of a dependent predicate in a Cases branch *)
@@ -123,7 +127,8 @@ val make_arity : env -> 'a evar_map -> bool -> inductive_family ->
    [p]; if [dep=true], the predicate is assumed dependent *)
 val build_branch_type : env -> bool -> constr -> constructor_summary -> constr 
 
-(* [find_m*type env sigma c] coerce [c] to an recursive type (I args).
+
+(*s [find_m*type env sigma c] coerce [c] to an recursive type (I args).
    [find_mrectype], [find_minductype] and [find_mcoinductype]
    respectively accepts any recursive type, only an inductive type and
    only a coinductive type.
@@ -133,8 +138,9 @@ exception Induc
 val find_mrectype     : env -> 'a evar_map -> constr -> inductive * constr list
 val find_minductype   : env -> 'a evar_map -> constr -> inductive * constr list
 val find_mcoinductype : env -> 'a evar_map -> constr -> inductive * constr list
+val extract_mrectype  : env -> 'a evar_map -> constr -> inductive * constr list
 
-val lookup_mind_specif : inductive -> env -> mind_specif
+val lookup_mind_specif : inductive -> env -> inductive_instance
 
 (* [find_inductive env sigma t] builds an [inductive_type] or raises
    [Induc] if [t] is not an inductive type; The result is relative to
@@ -189,7 +195,6 @@ and [get_arity env sigma is] returns [[(Anonymous,'nat')],'Set'].
 
 (* Cases info *)
 
-val make_case_info : mind_specif -> case_style option -> pattern_source array 
-      -> case_info
-val make_default_case_info : mind_specif -> case_info
-
+val make_case_info : inductive_instance -> case_style option 
+  -> pattern_source array -> case_info
+val make_default_case_info : inductive_instance -> case_info

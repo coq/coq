@@ -4,7 +4,7 @@
 (*i*)
 open Names
 open Term
-open Constant
+open Declarations
 open Inductive
 open Environ
 open Evd
@@ -18,16 +18,16 @@ val make_case_dep : env -> 'a evar_map -> inductive -> sorts -> constr
 val make_case_nodep : env -> 'a evar_map -> inductive -> sorts -> constr
 val make_case_gen : env -> 'a evar_map -> inductive -> sorts -> constr
 
-(* This builds elimination scheme associated to inductive types *)
+(* This builds an elimination scheme associated (using the own arity
+   of the inductive) *)
 
-val mis_make_indrec : env -> 'a evar_map -> 
-  (mind_specif * bool * sorts) list -> mind_specif -> constr array
+val build_indrec : env -> 'a evar_map -> inductive_instance -> constr
 val instanciate_indrec_scheme : sorts -> int -> constr -> constr
 
 (* This builds complex [Scheme] *)
 
-val build_indrec : 
-  env -> 'a evar_map -> (inductive * bool * sorts) list -> constr array
+val build_mutual_indrec : 
+  env -> 'a evar_map -> (inductive * bool * sorts) list -> constr list
 
 (* These are for old Case/Match typing *)
 

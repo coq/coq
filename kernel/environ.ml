@@ -8,7 +8,7 @@ open Sign
 open Univ
 open Generic
 open Term
-open Constant
+open Declarations
 open Abstraction
 
 (* The type of environments. *)
@@ -212,13 +212,11 @@ let abst_value env = function
   | _ -> invalid_arg "abst_value"
 
 let defined_constant env = function
-  | DOPN (Const sp, _) ->
-      Constant.is_defined (lookup_constant sp env)
+  | DOPN (Const sp, _) -> is_defined (lookup_constant sp env)
   | _ -> invalid_arg "defined_constant"
 
 let opaque_constant env = function
-  | DOPN (Const sp, _) -> 
-      Constant.is_opaque (lookup_constant sp env)
+  | DOPN (Const sp, _) -> is_opaque (lookup_constant sp env)
   | _ -> invalid_arg "opaque_constant"
 
 (* A const is evaluable if it is defined and not opaque *)
