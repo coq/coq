@@ -1,3 +1,4 @@
+(* Test obsolete, Remark est maintenant global
 Section A.
 Section B.
 Section C.
@@ -8,3 +9,4 @@ End B.
 Locate B.C.t.
 End A.
 Locate A.B.C.t.
+*)
