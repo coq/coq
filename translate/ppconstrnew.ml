@@ -724,7 +724,7 @@ let pr_constr_pattern t =
 (* Automatic standardisation of names in Arith and ZArith by translator *)
 (* Very not robust *)
 
-let is_arith_dir dir id =
+let is_to_rename dir id =
   let dirs = List.map string_of_id (repr_dirpath dir) in
   match List.rev dirs with
   | "Coq"::"Arith"::"Between"::_ -> false
@@ -733,57 +733,75 @@ let is_arith_dir dir id =
   | "Coq"::("Arith"|"NArith"|"ZArith")::_ -> true
   | "Coq"::"Init"::"Peano"::_ -> true
   | "Coq"::"Init"::"Logic"::_ when string_of_id id = "iff_trans" -> true
+  | "Coq"::"Reals"::"RIneq"::_ -> true
   | _ -> false
 
-let is_arith ref =
+let is_ref_to_rename ref =
   let sp = sp_of_global ref in
-  is_arith_dir (dirpath sp) (basename sp)
+  is_to_rename (dirpath sp) (basename sp)
 
-let get_name (ln,lp,lz,ll) id n =
+let get_name (ln,lp,lz,ll,lr,lr') id refbase n =
   let id' = string_of_id n in
   (match id' with
-    | "nat" -> (id_of_string (List.hd ln),(List.tl ln,lp,lz,ll))
-    | "positive" -> (id_of_string (List.hd lp),(ln,List.tl lp,lz,ll))
-    | "Z" -> (id_of_string (List.hd lz),(ln,lp,List.tl lz,ll))
+    | "nat" -> (id_of_string (List.hd ln),(List.tl ln,lp,lz,ll,lr,lr'))
+    | "positive" -> (id_of_string (List.hd lp),(ln,List.tl lp,lz,ll,lr,lr'))
+    | "Z" -> (id_of_string (List.hd lz),(ln,lp,List.tl lz,ll,lr,lr'))
     | "Prop" when List.mem (string_of_id id) ["a";"b";"c"] -> 
 	(* pour iff_trans *)
-	(id_of_string (List.hd ll),(ln,lp,lz,List.tl ll))
-    | _ -> id,(ln,lp,lz,ll))
+	(id_of_string (List.hd ll),(ln,lp,lz,List.tl ll,lr,lr'))
+    | "R" when (* Noms r,r1,r2 *)
+	refbase = "Rle_refl" or
+	refbase = "Rlt_monotony_contra" or 
+	refbase = "Rle_monotony_contra" or 
+	refbase = "Rge_monotony" ->
+	(id_of_string (List.hd lr')),(ln,lp,lz,ll,lr,List.tl lr')
+    | "R" when (* Noms r1,r2,r3,r4 *)
+	List.mem (string_of_id id)
+	  ["x";"y";"x'";"y'";"z";"t";"n";"m";"a";"b";"c";"p";"q"] 
+	& refbase <> "sum_inequa_Rle_lt"
+	-> 
+	(id_of_string (List.hd lr),(ln,lp,lz,ll,List.tl lr,lr'))
+    | _ -> id,(ln,lp,lz,ll,lr,lr'))
 
-let get_name_constr names id t = match kind_of_term t with
+let get_name_constr names id refbase t = match kind_of_term t with
   | Ind ind ->
       let n = basename (sp_of_global (IndRef ind)) in
-      get_name names id n
-  | Sort _ -> get_name names id (id_of_string "Prop")
+      get_name names id refbase n
+  | Const sp ->
+      let n = basename (sp_of_global (ConstRef sp)) in
+      get_name names id refbase n
+  | Sort _ -> get_name names id refbase (id_of_string "Prop")
   | _ -> id,names
 
 let names = 
-  (["n";"m";"p";"q"],["p";"q";"r";"s"],["n";"m";"p";"q"],["A";"B";"C"])
+  (["n";"m";"p";"q"],["p";"q";"r";"s"],["n";"m";"p";"q"],["A";"B";"C"],
+   ["r1";"r2";"r3";"r4"],["r";"r1";"r2"])
 
-let znames t =
+let znames refbase t =
   let rec aux c names = match kind_of_term c with
     | Prod (Name id as na,t,c) ->
-	let (id,names) = get_name_constr names id t in
+	let (id,names) = get_name_constr names id refbase t in
 	(na,id) :: aux c names
     | Prod (Anonymous,t,c) ->
 	(Anonymous,id_of_string "ZZ") :: aux c names
     | _ -> []
   in aux t names
 
-let get_name_raw names id t = match t with
-  | CRef(Ident (_,n)) -> get_name names id n
-  | CSort _ -> get_name names id (id_of_string "Prop")
+let get_name_raw names id refbase t = match t with
+  | CRef(Ident (_,n)) -> get_name names id refbase n
+  | CSort _ -> get_name names id refbase (id_of_string "Prop")
   | _ -> id,names
 
-let rename_bound_variables id t =
-  if is_arith_dir (Lib.library_dp()) id then
+let rename_bound_variables id0 t =
+  if is_to_rename (Lib.library_dp()) id0 then
+  let refbase = string_of_id id0 in
   let rec aux c names subst = match c with
     | CProdN (loc,bl,c) ->
 	let rec aux2 names subst = function
 	  | (nal,t)::bl ->
 	      let rec aux3 names subst = function
 		| (loc,Name id)::nal ->
-		    let (id',names) = get_name_raw names id t in
+		    let (id',names) = get_name_raw names id refbase t in
 		    let (nal,names,subst) = aux3 names ((id,id')::subst) nal in
 		    (loc,Name id')::nal, names, subst
 		| x::nal -> 
@@ -806,7 +824,7 @@ let rename_bound_variables id t =
 
 let translate_binding kn n ebl =
   let t = Retyping.get_type_of (Global.env()) Evd.empty (mkConst kn) in
-  let subst = znames t in
+  let subst= znames (string_of_id (basename (sp_of_global (ConstRef kn)))) t in
   try
     let _,subst' = list_chop n subst in
     List.map (function
@@ -816,12 +834,13 @@ let translate_binding kn n ebl =
 
 let translate_with_bindings c bl =
   match bl with
-    | ExplicitBindings l -> ExplicitBindings
-	(match c with
-	  | RRef (_,(ConstRef kn as ref)) when is_arith ref -> 
-	      translate_binding kn 0 l
-	  | RApp (_,RRef (_,(ConstRef kn as ref)), args) when is_arith ref ->
-	      translate_binding kn (List.length args) l
-	  | _ ->
-	      l)
+  | ExplicitBindings l ->
+      let l = match c with
+	| RRef (_,(ConstRef kn as ref)) when is_ref_to_rename ref -> 
+	    translate_binding kn 0 l
+	| RApp (_,RRef (_,(ConstRef kn as ref)),args) when is_ref_to_rename ref
+	    -> translate_binding kn (List.length args) l
+	| _ ->
+	    l
+      in ExplicitBindings l
     | x -> x
