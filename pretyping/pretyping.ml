@@ -274,10 +274,12 @@ let rec pretype tycon env isevars lvar = function
       anomaly "Found a pattern variable in a rawterm to type"
 	   
   | RHole (loc,k) ->
-      (match tycon with
-	 | Some ty ->
-	     { uj_val = e_new_evar isevars env ~src:(loc,k) ty; uj_type = ty }
-	 | None -> error_unsolvable_implicit loc env (evars_of !isevars) k)
+      let ty =
+        match tycon with 
+          | Some ty -> ty
+          | None ->
+              e_new_evar isevars env ~src:(loc,InternalHole) (new_Type ()) in
+      { uj_val = e_new_evar isevars env ~src:(loc,k) ty; uj_type = ty }
 
   | RRec (loc,fixkind,names,bl,lar,vdef) ->
       let rec type_bl env ctxt = function
