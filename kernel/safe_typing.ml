@@ -227,7 +227,7 @@ let safe_machine_v env cv =
 
 (*s Safe environments. *)
 
-type environment = unsafe_env
+type safe_environment = env
 
 let empty_environment = empty_env
 
@@ -409,7 +409,7 @@ let add_constraints = add_constraints
 let export = export
 let import = import
 
-let unsafe_env_of_env e = e
+let env_of_safe_env e = e
 
 (*s Machines with information. *)
 

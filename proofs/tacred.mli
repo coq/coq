@@ -18,10 +18,10 @@ val nf : 'a reduction_function
 val one_step_reduce : 'a reduction_function
 
 val reduce_to_mind : 
-  unsafe_env -> 'a evar_map -> constr -> constr * constr * constr
+  env -> 'a evar_map -> constr -> constr * constr * constr
 
 val reduce_to_ind : 
-  unsafe_env -> 'a evar_map -> constr -> section_path * constr * constr
+  env -> 'a evar_map -> constr -> section_path * constr * constr
 
 type red_expr =
   | Red

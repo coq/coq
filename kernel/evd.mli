@@ -24,7 +24,7 @@ type evar_body =
 
 type 'a evar_info = {
   evar_concl : constr;
-  evar_env : unsafe_env;
+  evar_env : env;
   evar_body : evar_body;
   evar_info : 'a }
 

@@ -265,7 +265,7 @@ let case_sign ity i =
     | [] -> acc 
     | (c::rest) -> analrec (false::acc) rest
   in
-  let recarg = mis_recarg (lookup_mind_specif ity (Global.unsafe_env())) in 
+  let recarg = mis_recarg (lookup_mind_specif ity (Global.env())) in 
   analrec [] recarg.(i-1)
 
 let elim_sign ity i =
@@ -277,7 +277,7 @@ let elim_sign ity i =
     | (Mrec k::rest)   -> analrec ((j=k)::acc) rest
     | []               -> List.rev acc 
   in 
-  let recarg = mis_recarg (lookup_mind_specif ity (Global.unsafe_env())) in
+  let recarg = mis_recarg (lookup_mind_specif ity (Global.env())) in
   analrec [] recarg.(i-1)
 
 let sort_of_goal gl = 

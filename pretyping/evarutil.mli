@@ -35,7 +35,7 @@ val ise_defined : 'a evar_defs -> constr -> bool
 val real_clean :
   unit evar_defs -> int -> (identifier * constr) list -> constr -> constr
 val new_isevar :
-  unit evar_defs -> unsafe_env -> constr -> path_kind -> constr * constr
+  unit evar_defs -> env -> constr -> path_kind -> constr * constr
 val evar_define : unit evar_defs -> constr -> constr -> int list
 val solve_simple_eqn : (constr -> constr -> bool) -> unit evar_defs ->
   (conv_pb * constr * constr) -> int list option
@@ -59,15 +59,15 @@ val mk_tycon2 : trad_constraint -> constr -> trad_constraint
 
 (* application *)
 val app_dom_tycon : 
-  unsafe_env -> unit evar_defs -> trad_constraint -> trad_constraint
+  env -> unit evar_defs -> trad_constraint -> trad_constraint
 val app_rng_tycon :
-  unsafe_env -> 'a evar_defs -> constr -> trad_constraint -> trad_constraint
+  env -> 'a evar_defs -> constr -> trad_constraint -> trad_constraint
 
 (* abstraction *)
 val abs_dom_valcon : 
-  unsafe_env -> unit evar_defs -> trad_constraint -> trad_constraint
+  env -> unit evar_defs -> trad_constraint -> trad_constraint
 val abs_rng_tycon : 
-  unsafe_env -> 'a evar_defs -> trad_constraint -> trad_constraint
+  env -> 'a evar_defs -> trad_constraint -> trad_constraint
 
 
 (* $Id$ *)

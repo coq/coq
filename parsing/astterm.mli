@@ -38,18 +38,18 @@ val globalize_ast     : Coqast.t -> Coqast.t
 (*i Ceci était avant dans Trad
     Maintenant elles sont là car relève des ast i*)
 
-val type_of_com : unsafe_env -> Coqast.t -> typed_type
+val type_of_com : env -> Coqast.t -> typed_type
 
 val constr_of_com_casted : 'c evar_map -> context -> Coqast.t -> constr ->
   constr
 
-val constr_of_com1 : bool -> 'c evar_map -> unsafe_env -> Coqast.t -> constr
-val constr_of_com : 'c evar_map -> unsafe_env -> Coqast.t -> constr
-val constr_of_com_sort : 'c evar_map -> unsafe_env -> Coqast.t -> constr
+val constr_of_com1 : bool -> 'c evar_map -> env -> Coqast.t -> constr
+val constr_of_com : 'c evar_map -> env -> Coqast.t -> constr
+val constr_of_com_sort : 'c evar_map -> env -> Coqast.t -> constr
 
-val fconstr_of_com1 : bool -> 'c evar_map -> unsafe_env -> Coqast.t -> constr
-val fconstr_of_com : 'c evar_map -> unsafe_env -> Coqast.t -> constr
-val fconstr_of_com_sort : 'c evar_map -> unsafe_env -> Coqast.t -> constr
+val fconstr_of_com1 : bool -> 'c evar_map -> env -> Coqast.t -> constr
+val fconstr_of_com : 'c evar_map -> env -> Coqast.t -> constr
+val fconstr_of_com_sort : 'c evar_map -> env -> Coqast.t -> constr
 
 (* Typing with Trad, and re-checking with Mach *)
 

@@ -168,7 +168,7 @@ type global_constraints  = evar_declarations timestamped
 
 type evar_recordty = {
   focus : local_constraints;
-  env   : unsafe_env;
+  env   : env;
   decls : evar_declarations }
 
 and readable_constraints = evar_recordty timestamped

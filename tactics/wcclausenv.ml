@@ -82,7 +82,7 @@ let clenv_constrain_with_bindings bl clause =
                        [< 'sTR"Clause did not have " ; 'iNT n ; 'sTR"-th" ;
                           'sTR" absolute argument" >])
 	  in
-	  let env = Global.unsafe_env () in
+	  let env = Global.env () in
 	  let sigma = Evd.empty in
 	  let k_typ = nf_betaiota env sigma (clenv_instance_type clause k) in
 	  let c_typ = nf_betaiota env sigma (w_type_of clause.hook c) in 
@@ -141,7 +141,7 @@ let rec build_args acc ce p_0 p_1 =
     | (_, (_::_)) -> failwith "mk_clenv_using"
 
 and build_term ce p_0 p_1 =
-  let env = Global.unsafe_env() in
+  let env = Global.env() in
   match p_0,p_1 with 
     | ((na,Some t), (DOP0(Meta mv))) -> 
         build_term ce (na,Some t) mkExistential
@@ -196,7 +196,7 @@ let clenv_apply_n_times n ce =
   let templtyp = clenv_instance_template_type ce
   and templval = (clenv_template ce).rebus in   
   let rec apprec ce argacc (n,ty) =
-    let env = Global.unsafe_env () in
+    let env = Global.env () in
     match (n, whd_betadeltaiota env (w_Underlying ce.hook) ty) with 
       | (0, templtyp) ->
 	  clenv_change_head (applist(templval,List.rev argacc), templtyp) ce

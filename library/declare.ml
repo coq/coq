@@ -252,7 +252,7 @@ let mind_path = function
 (* Eliminations. *)
 
 let declare_eliminations sp =
-  let env = Global.unsafe_env () in
+  let env = Global.env () in
   let sigma = Evd.empty in
   let mindid = basename sp in
   let mind = global_reference (kind_of_path sp) mindid in

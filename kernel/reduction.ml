@@ -18,10 +18,10 @@ exception Redelimination
 exception Induc
 exception Elimconst
 
-type 'a reduction_function = unsafe_env -> 'a evar_map -> constr -> constr
+type 'a reduction_function = env -> 'a evar_map -> constr -> constr
 
 type 'a stack_reduction_function = 
-    unsafe_env -> 'a evar_map -> constr -> constr list -> constr * constr list
+    env -> 'a evar_map -> constr -> constr list -> constr * constr list
 
 (*************************************)
 (*** Reduction Functions Operators ***)
@@ -719,7 +719,7 @@ let pb_equal = function
   | CONV -> CONV
 
 type 'a conversion_function = 
-    unsafe_env -> 'a evar_map -> constr -> constr -> constraints
+    env -> 'a evar_map -> constr -> constr -> constraints
 
 (* Conversion utility functions *)
 

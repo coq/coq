@@ -45,7 +45,7 @@ val cte_of_constr : constr -> cte_typ
 val class_info : cl_typ -> (int * cl_info_typ)
 val coercion_info : coe_typ -> (int * coe_info_typ)
 val constructor_at_head : constr -> cl_typ * int
-val class_of : unsafe_env -> 'c evar_map -> constr -> constr * int
+val class_of : env -> 'c evar_map -> constr -> constr * int
 val class_args_of : constr -> constr list
 val inClass : (cl_typ * cl_info_typ) -> obj
 val outClass : obj -> (cl_typ * cl_info_typ)

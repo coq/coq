@@ -401,7 +401,7 @@ let prim_refiner r sigma goal =
     | _ -> anomaly "prim_refiner: Unrecognized primitive rule"
 
 let abst_value c =
-  let env = Global.unsafe_env () in
+  let env = Global.env () in
   Environ.abst_value env c
 	  
 let extract_constr = 

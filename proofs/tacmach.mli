@@ -29,7 +29,7 @@ val apply_sig_tac :
   global_constraints ref -> ('a sigma -> 'b sigma * 'c) -> 'a -> 'b * 'c
 
 val pf_concl              : goal sigma -> constr
-val pf_env                : goal sigma -> unsafe_env
+val pf_env                : goal sigma -> env
 val pf_hyps               : goal sigma -> typed_type signature
 val pf_untyped_hyps       : goal sigma -> constr signature
 val pf_nth_hyp            : goal sigma -> int -> identifier * constr
@@ -178,7 +178,7 @@ val w_Declare           : section_path -> constr -> w_tactic
 val w_Declare_At        : section_path -> section_path -> constr -> w_tactic
 val w_Define            : section_path -> constr -> w_tactic
 val w_Underlying        : walking_constraints -> evar_declarations
-val w_env               : walking_constraints -> unsafe_env
+val w_env               : walking_constraints -> env
 val w_hyps              : walking_constraints -> context
 val w_type_of           : walking_constraints -> constr -> constr
 val w_add_sign          : (identifier * typed_type) 

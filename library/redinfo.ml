@@ -29,7 +29,7 @@ exception Elimconst
 
 let compute_consteval c = 
   let rec srec n labs c =
-    match whd_betadeltaeta_stack (Global.unsafe_env()) Evd.empty c [] with 
+    match whd_betadeltaeta_stack (Global.env()) Evd.empty c [] with 
       | (DOP2(Lambda, t, DLAM(_,g)), []) -> 
 	  srec (n+1) (t::labs) g
       | (DOPN(Fix (nv,i), bodies), l) -> 

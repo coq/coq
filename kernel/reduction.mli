@@ -17,10 +17,10 @@ exception Redelimination
 exception Induc
 exception Elimconst
 
-type 'a reduction_function = unsafe_env -> 'a evar_map -> constr -> constr
+type 'a reduction_function = env -> 'a evar_map -> constr -> constr
 
 type 'a stack_reduction_function = 
-    unsafe_env -> 'a evar_map -> constr -> constr list -> constr * constr list
+    env -> 'a evar_map -> constr -> constr list -> constr * constr list
 
 val whd_stack : 'a stack_reduction_function
 
@@ -79,22 +79,22 @@ val whd_betadeltaiotaeta : 'a reduction_function
 val beta_applist : (constr * constr list) -> constr
 
 val hnf_prod_app : 
-  unsafe_env -> 'a evar_map -> string -> constr -> constr -> constr
+  env -> 'a evar_map -> string -> constr -> constr -> constr
 val hnf_prod_appvect : 
-  unsafe_env -> 'a evar_map -> string -> constr -> constr array -> constr
+  env -> 'a evar_map -> string -> constr -> constr array -> constr
 val hnf_prod_applist : 
-  unsafe_env -> 'a evar_map -> string -> constr -> constr list -> constr
+  env -> 'a evar_map -> string -> constr -> constr list -> constr
 val hnf_lam_app : 
-  unsafe_env -> 'a evar_map -> string -> constr -> constr -> constr
+  env -> 'a evar_map -> string -> constr -> constr -> constr
 val hnf_lam_appvect : 
-  unsafe_env -> 'a evar_map -> string -> constr -> constr array -> constr
+  env -> 'a evar_map -> string -> constr -> constr array -> constr
 val hnf_lam_applist : 
-  unsafe_env -> 'a evar_map -> string -> constr -> constr list -> constr
+  env -> 'a evar_map -> string -> constr -> constr list -> constr
 val splay_prod : 
-  unsafe_env -> 'a evar_map -> constr -> (name * constr) list * constr
-val decomp_prod : unsafe_env -> 'a evar_map -> constr -> int * constr
+  env -> 'a evar_map -> constr -> (name * constr) list * constr
+val decomp_prod : env -> 'a evar_map -> constr -> int * constr
 val decomp_n_prod : 
-  unsafe_env -> 'a evar_map -> int -> constr -> ((name * constr) list) * constr
+  env -> 'a evar_map -> int -> constr -> ((name * constr) list) * constr
 
 type 'a miota_args = {
   mP      : constr;     (* the result type *)
@@ -104,17 +104,17 @@ type 'a miota_args = {
   mlf     : 'a array }  (* the branch code vector *)
 
 val reducible_mind_case : constr -> bool
-val reduce_mind_case : unsafe_env -> constr miota_args -> constr
+val reduce_mind_case : env -> constr miota_args -> constr
 
-val is_arity : unsafe_env -> 'a evar_map -> constr -> bool
-val is_info_arity : unsafe_env -> 'a evar_map -> constr -> bool
-val is_info_sort : unsafe_env -> 'a evar_map -> constr -> bool
-val is_logic_arity : unsafe_env -> 'a evar_map -> constr -> bool
-val is_type_arity : unsafe_env -> 'a evar_map -> constr -> bool
-val is_info_type : unsafe_env -> 'a evar_map -> typed_type -> bool
-val is_info_cast_type : unsafe_env -> 'a evar_map -> constr -> bool
-val contents_of_cast_type : unsafe_env -> 'a evar_map -> constr -> contents
-val poly_args : unsafe_env -> 'a evar_map -> constr -> int list
+val is_arity : env -> 'a evar_map -> constr -> bool
+val is_info_arity : env -> 'a evar_map -> constr -> bool
+val is_info_sort : env -> 'a evar_map -> constr -> bool
+val is_logic_arity : env -> 'a evar_map -> constr -> bool
+val is_type_arity : env -> 'a evar_map -> constr -> bool
+val is_info_type : env -> 'a evar_map -> typed_type -> bool
+val is_info_cast_type : env -> 'a evar_map -> constr -> bool
+val contents_of_cast_type : env -> 'a evar_map -> constr -> contents
+val poly_args : env -> 'a evar_map -> constr -> int list
 
 val whd_programs : 'a reduction_function
 
@@ -152,7 +152,7 @@ val convert_forall2 :
   ('a -> 'b -> conversion_test) -> 'a array -> 'b array -> conversion_test
 
 type 'a conversion_function = 
-    unsafe_env -> 'a evar_map -> constr -> constr -> constraints
+    env -> 'a evar_map -> constr -> constr -> constraints
 
 val fconv : conv_pb -> 'a conversion_function
 
@@ -163,16 +163,16 @@ val conv : 'a conversion_function
 val conv_leq : 'a conversion_function
 
 val conv_forall2 : 
-  'a conversion_function -> unsafe_env -> 'a evar_map -> constr array 
+  'a conversion_function -> env -> 'a evar_map -> constr array 
     -> constr array -> constraints
 
 val conv_forall2_i : 
-  (int -> 'a conversion_function) -> unsafe_env -> 'a evar_map
+  (int -> 'a conversion_function) -> env -> 'a evar_map
     -> constr array -> constr array -> constraints
 
-val is_conv : unsafe_env -> 'a evar_map -> constr -> constr -> bool
-val is_conv_leq : unsafe_env -> 'a evar_map -> constr -> constr -> bool
-val is_fconv : conv_pb -> unsafe_env -> 'a evar_map -> constr -> constr -> bool
+val is_conv : env -> 'a evar_map -> constr -> constr -> bool
+val is_conv_leq : env -> 'a evar_map -> constr -> constr -> bool
+val is_fconv : conv_pb -> env -> 'a evar_map -> constr -> constr -> bool
 
 
 (*s Special-Purpose Reduction Functions *)
@@ -194,18 +194,18 @@ val whd_ise1_metas : 'a evar_map -> constr -> constr
 
 (*s Obsolete Reduction Functions *)
 
-val hnf : unsafe_env -> 'a evar_map -> constr -> constr * constr list
+val hnf : env -> 'a evar_map -> constr -> constr * constr list
 val apprec : 'a stack_reduction_function
 val red_product : 'a reduction_function
 val find_mrectype : 
-  unsafe_env -> 'a evar_map -> constr -> constr * constr list
+  env -> 'a evar_map -> constr -> constr * constr list
 val find_minductype : 
-  unsafe_env -> 'a evar_map -> constr -> constr * constr list
+  env -> 'a evar_map -> constr -> constr * constr list
 val find_mcoinductype : 
-  unsafe_env -> 'a evar_map -> constr -> constr * constr list
-val check_mrectype_spec : unsafe_env -> 'a evar_map -> constr -> constr
-val minductype_spec : unsafe_env -> 'a evar_map -> constr -> constr
-val mrectype_spec : unsafe_env -> 'a evar_map -> constr -> constr
+  env -> 'a evar_map -> constr -> constr * constr list
+val check_mrectype_spec : env -> 'a evar_map -> constr -> constr
+val minductype_spec : env -> 'a evar_map -> constr -> constr
+val mrectype_spec : env -> 'a evar_map -> constr -> constr
 
 (* Special function, which keep the key casts under Fix and MutCase. *)
 

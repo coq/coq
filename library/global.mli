@@ -16,8 +16,8 @@ open Safe_typing
    The functions below are exactly the same as the ones in [Typing],
    operating on that global environment. *)
 
-val env : unit -> environment
-val unsafe_env : unit -> unsafe_env
+val safe_env : unit -> safe_environment
+val env : unit -> env
 
 val universes : unit -> universes
 val context : unit -> context

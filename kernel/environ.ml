@@ -26,7 +26,7 @@ type globals = {
   env_locals : (global * section_path) list;
   env_imports : import list }
 
-type unsafe_env = {
+type env = {
   env_context : context;
   env_globals : globals;
   env_universes : universes }

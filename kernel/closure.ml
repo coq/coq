@@ -135,7 +135,7 @@ let red_under (md,r) rk =
 type ('a, 'b) infos = {
   i_flags : flags;
   i_repr : ('a, 'b) infos -> constr -> 'a;
-  i_env : unsafe_env;
+  i_env : env;
   i_evc : 'b evar_map;
   i_tab : (constr, 'a) Hashtbl.t }
 

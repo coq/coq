@@ -37,7 +37,7 @@ val w_Declare_At : evar -> evar -> constr -> w_tactic
 val w_Define     : evar -> constr -> w_tactic
 
 val w_Underlying : walking_constraints -> evar_declarations
-val w_env        : walking_constraints -> unsafe_env
+val w_env        : walking_constraints -> env
 val w_type_of    : walking_constraints -> constr -> constr
 val w_add_sign   : (identifier * typed_type) -> walking_constraints 
                      -> walking_constraints
