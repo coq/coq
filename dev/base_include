@@ -39,15 +39,13 @@ let parse_tac = Pcoq.parse_string Pcoq.Tactic.tactic;;
 (* For compatibility reasons *)
 let parse_ast = parse_com;;
 
-(* build a term of type constr without type-checking or resolution of 
+(* build a term of type rawconstr without type-checking or resolution of 
    implicit syntax *)
 
-let raw_constr_of_string s = 
-  Astterm.dbize_cci Evd.empty (unitize_env (Global.context()))
-    (parse_ast s);;
+let e s = Astterm.interp_rawconstr Evd.empty (Global.env()) (parse_ast s);;
 
-let e s    = 
-   Astterm.constr_of_com Evd.empty (Global.env()) (parse_ast s);;
+(* For compatibility *)
+let raw_constr_of_string = e;;
 
 (* Get the current goal *)
 
@@ -57,7 +55,7 @@ let get_nth_goal n = nth_goal_of_pftreestate n (Pfedit.get_pftreestate ());;
 let current_goal () = get_nth_goal 1;;
 
 let pf_e gl s = 
-    Astterm.constr_of_com (project gl) (pf_env gl) (parse_ast s);;
+    Astterm.interp_constr (project gl) (pf_env gl) (parse_ast s);;
 
 open Toplevel
 let go = loop
