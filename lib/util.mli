@@ -77,7 +77,6 @@ val list_map_append : ('a -> 'b list) -> 'a list -> 'b list
 (* raises [Invalid_argument] if the two lists don't have the same length *)
 val list_map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
 val list_share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
-val list_except_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
 val list_join_map : ('a -> 'b list) -> 'a list -> 'b list
 val list_try_find : ('a -> 'b) -> 'a list -> 'b
 

@@ -246,13 +246,6 @@ let list_share_tails l1 l2 =
   in 
   shr_rev [] (List.rev l1, List.rev l2)
 
-let list_except_assoc e = 
-  let rec except_e = function
-    | [] -> []
-    | (x,_ as y)::l -> if x=e then l else y::except_e l
-  in 
-  except_e 
-
 let list_join_map f l = List.flatten (List.map f l)
 
 let list_try_find f = 
