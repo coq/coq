@@ -309,7 +309,7 @@ let add_coercion_in_graph (ic,source,target) =
 	 end)
       old_inheritance_graph 
   end;
-  if (!ambig_paths <> []) & is_mes_ambig() then 
+  if (!ambig_paths <> []) && is_verbose () && is_mes_ambig() then 
     pPNL (message_ambig !ambig_paths)
 
 let cache_coercion (_,((coe,xf),cls,clt)) =
