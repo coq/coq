@@ -814,7 +814,7 @@ and match_current pb (n,tm) =
 	let mis,_ = dest_ind_family indf in
 	let cstrs = get_constructors indf in
 	let eqns,defaults = group_equations (mis_inductive mis) cstrs pb.mat in
-	if array_for_all ((=) []) eqns
+	if cstrs <> [||] & array_for_all ((=) []) eqns 
 	then compile (shift_problem pb)
 	else
           let constraints = Array.map (solve_constraints indt) cstrs in
@@ -927,12 +927,11 @@ let inh_coerce_to_ind isevars env ty tyi =
   else raise NotCoercible
 
 
-let coerce_row typing_fun isevars env row tomatch =
+let coerce_row typing_fun isevars env cstropt tomatch =
   let j = typing_fun empty_tycon env tomatch in
   let typ = body_of_type j.uj_type in
-  let t =
-    match find_row_ind row with
-	Some (cloc,(cstr,_ as c)) ->
+  let t = match cstropt with
+      | Some (cloc,(cstr,_ as c)) ->
 	  (let tyi = inductive_of_rawconstructor c in
 	   try 
 	     let indtyp = inh_coerce_to_ind isevars env typ tyi in
@@ -953,9 +952,10 @@ let coerce_row typing_fun isevars env row tomatch =
 
 let coerce_to_indtype typing_fun isevars env matx tomatchl =
   let pats = List.map (fun r ->  r.patterns) matx in
-  List.map2
-    (coerce_row typing_fun isevars env)
-    (matrix_transpose pats) tomatchl
+  let matx' = match matrix_transpose pats with
+    | [] -> List.map (fun _ -> None) tomatchl (* no patterns at all *)
+    | m -> List.map find_row_ind m in
+  List.map2 (coerce_row typing_fun isevars env) matx' tomatchl
 
 (***********************************************************************)
 (* preparing the elimination predicate if any                          *)
