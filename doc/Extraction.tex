@@ -58,14 +58,15 @@ The \Coq\ commands to generate ML code are:
   Recursive extraction of all the globals \qualid$_1$ \dots\
   \qualid$_n$ and all their dependencies in the \Coq\ toplevel.
 
-\item {\tt Extraction "{\em file}" \qualid$_1$ \dots\ \qualid$_n$.} ~\par
+\item {\tt Extraction "{\em file}"} {\em options} 
+      \qualid$_1$ \dots\ \qualid$_n$. ~\par
   Recursive extraction of all the globals \qualid$_1$ \dots\
   \qualid$_n$ and all their dependencies in file {\em file}.
   Global and local identifiers are renamed accordingly to the target
   language to fullfill its syntactic conventions, keeping original
   names as much as possible.
 
-\item  {\tt Extraction Module \ident.} ~\par
+\item  {\tt Extraction Module} {\em options} \ident. ~\par
   Extraction of the \Coq\ module \ident\ to an ML module {\tt\ident.ml}.
   Identifiers are here renamed using prefixes \verb!coq_! or
   \verb!Coq_! to ensure a session-independent renaming.
@@ -74,26 +75,26 @@ The list of globals \qualid$_i$ does not need to be
 exhaustive: it is automatically completed into a complete and minimal
 environment. Extraction will fail if it encounters an axiom.
 
-% \paragraph{Optimizations.} 
-% Since Caml Light and Objective Caml are strict languages, the extracted
-% code has to be optimized in order to be efficient (for instance, when
-% using induction principles we do not want to compute all the recursive
-% calls but only the needed ones). So an optimization routine will be
-% called each time the user want to generate Caml programs. Essentially,
-% it performs constants expansions and reductions.  Therefore some
-% constants will not appear in the resulting Caml program (A warning is
-% printed for each such constant). To avoid this, just put the constant
-% name in the previous list \ident$_1$ \dots\ \ident$_n$ and it will not
-% be expanded. Moreover, three options allow the user to control the
-% expansion strategy :
-% \begin{description}
-%   \item[\texttt{noopt}] : specifies not to do any optimization.
-%   \item[\texttt{exact}] : specifies to extract exactly the given
-%     objects (no recursivity).
-%   \item[\texttt{expand [ \ident$_1$ \dots\ \ident$_n$ ]}] : 
-%     forces the expansion of the constants \ident$_1$ \dots\ \ident$_n$
-%     (when it is possible).
-% \end{description}
+\paragraph{Optimizations.} 
+Since Objective Caml is a strict language, the extracted
+code has to be optimized in order to be efficient (for instance, when
+using induction principles we do not want to compute all the recursive
+calls but only the needed ones). So an optimization routine will be
+called each time the user want to generate Caml programs. Essentially,
+it performs constants expansions and reductions.  Therefore some
+constants will not appear in the resulting Caml program (A warning is
+printed for each such constant). To avoid this, just put the constant
+name in the previous list \qualid$_1$ \dots\ \qualid$_n$ and it will not
+be expanded. Moreover, two options allow the user to control the
+expansion strategy:
+\begin{description}
+  \item\texttt{[ noopt ]} ~\par
+    specifies not to do any optimization.
+  \item\texttt{[ expand \qualid$_1$ \dots\ \qualid$_n$ ]} ~\par
+    forces the expansion of the constants \qualid$_1$ \dots\ \qualid$_n$
+    (when it is possible).
+\end{description}
+Note that no optimization is performed for a modular extraction.
 
 
 \asection{Realizing axioms}
