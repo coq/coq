@@ -21,13 +21,12 @@ open Term
 
 (* Debug information *)
 type debug_info =
-  | DebugOn
+  | DebugOn of int
   | DebugOff
-  | Run of int
 
 (* Prints the state and waits *)
 val debug_prompt :
-  goal sigma -> debug_info -> Tacexpr.glob_tactic_expr -> debug_info
+  int -> goal sigma -> glob_tactic_expr -> (debug_info -> 'a) -> 'a
 
 (* Prints a constr *)
 val db_constr : debug_info -> env -> constr -> unit

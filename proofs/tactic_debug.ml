@@ -15,15 +15,20 @@ open Printer
 open Tacexpr
 open Termops
 
+let pr_glob_tactic x =
+  (if !Options.v7 then pr_glob_tactic else Pptacticnew.pr_glob_tactic (Global.env())) x
+
 (* This module intends to be a beginning of debugger for tactic expressions.
    Currently, it is quite simple and we can hope to have, in the future, a more
    complete panel of commands dedicated to a proof assistant framework *)
 
 (* Debug information *)
 type debug_info =
-  | DebugOn
+  | DebugOn of int
   | DebugOff
-  | Run of int
+
+(* An exception handler *)
+let explain_logic_error = ref (fun e -> mt())
 
 (* Prints the goal *)
 let db_pr_goal g =
@@ -38,11 +43,10 @@ let help () =
          str "          x=Exit")
 
 (* Prints the goal and the command to be executed *)
-let goal_com g tac_ast =
+let goal_com g tac =
   begin
     db_pr_goal g;
-    msg (str "Going to execute:" ++ fnl () ++ (pr_glob_tactic tac_ast) ++
-         fnl ())
+    msg (str "Going to execute:" ++ fnl () ++ pr_glob_tactic tac ++ fnl ())
   end
 
 (* Gives the number of a run command *)
@@ -54,65 +58,60 @@ let run_com inst =
   else
     raise (Invalid_argument "run_com")
 
+let allskip = ref 0
+let skip = ref 0
+
 (* Prints the run counter *)
-let run ini ctr =
-  if ini then msg (str "Executed expressions: 0" ++ fnl() ++ fnl())
-  else
-  begin
+let run ini =
+  if not ini then 
     for i=1 to 2 do
       print_char (Char.chr 8);print_char (Char.chr 13)
     done;
-    msg (str "Executed expressions: " ++ int ctr ++ fnl() ++ fnl())
-  end
+  msg (str "Executed expressions: " ++ int (!allskip - !skip) ++ 
+       fnl() ++ fnl())
 
 (* Prints the prompt *)
-let rec prompt () =
+let rec prompt level =
   begin
-    msg (fnl () ++ str "TcDebug > ");
+    msg (fnl () ++ str "TcDebug (" ++ int level ++ str ") > ");
     flush stdout;
     let inst = read_line () in
     match inst with
-    | ""  -> DebugOn
-    | "s" -> DebugOff
-    | "x" -> print_char (Char.chr 8);raise Sys.Break
+    | ""  -> true
+    | "s" -> false
+    | "x" -> print_char (Char.chr 8);skip:=0;allskip:=0;raise Sys.Break
     | "h"| "?" ->
       begin
         help ();
-        prompt ()
+        prompt level
       end
     | _ ->
-      (try let ctr=run_com inst in run true ctr;Run ctr
-       with Failure _ | Invalid_argument _ -> prompt ())
-  end
-
-(* Prints the whole state *)
-let state g tac_ast ctr =
-  begin
-    goal_com g tac_ast;
-    let debug = prompt () in
-    match debug with
-    | Run n -> ctr := 0;debug
-    | _ -> debug
+      (try let ctr=run_com inst in skip:=ctr;allskip:=ctr;run true;true
+       with Failure _ | Invalid_argument _ -> prompt level)
   end
 
 (* Prints the state and waits for an instruction *)
-let debug_prompt =
-  let ctr = ref 0 in
-  fun g debug tac_ast ->
-  match debug with
-  | Run n ->
-    if !ctr=n then state g tac_ast ctr
-    else (incr ctr;run false !ctr;debug)
-  | _ -> state g tac_ast ctr
+let debug_prompt lev g tac f =
+  (* What to print and to do next *)
+  let continue =
+    if !skip = 0 then (goal_com g tac; prompt lev)
+    else (decr skip; run false; if !skip=0 then allskip:=0; true) in
+  (* What to execute *)
+  try f (if continue then DebugOn (lev+1) else DebugOff)
+  with e ->
+    skip:=0; allskip:=0;
+    if Logic.catchable_exception e then
+      ppnl (str "Level " ++ int lev ++ str ": " ++ !explain_logic_error e);
+    raise e
 
 (* Prints a constr *)
 let db_constr debug env c =
-  if debug <> DebugOff then
+  if debug <> DebugOff & !skip = 0 then
     msgnl (str "Evaluated term: " ++ prterm_env env c)
 
 (* Prints the pattern rule *)
 let db_pattern_rule debug num r =
-  if debug = DebugOn then
+  if debug <> DebugOff & !skip = 0 then
   begin
     msgnl (str "Pattern rule " ++ int num ++ str ":");
     msgnl (str "|" ++ spc () ++ 
@@ -126,19 +125,19 @@ let hyp_bound = function
 
 (* Prints a matched hypothesis *)
 let db_matched_hyp debug env (id,c) ido =
-  if debug = DebugOn then
+  if debug <> DebugOff & !skip = 0 then
     msgnl (str "Hypothesis " ++
            str ((Names.string_of_id id)^(hyp_bound ido)^
                 " has been matched: ") ++ prterm_env env c)
 
 (* Prints the matched conclusion *)
 let db_matched_concl debug env c =
-  if debug = DebugOn then
+  if debug <> DebugOff & !skip = 0 then
     msgnl (str "Conclusion has been matched: " ++ prterm_env env c)
 
 (* Prints a success message when the goal has been matched *)
 let db_mc_pattern_success debug =
-  if debug = DebugOn then
+  if debug <> DebugOff & !skip = 0 then
     msgnl (str "The goal has been successfully matched!" ++ fnl() ++
            str "Let us execute the right-hand side part..." ++ fnl())
 
@@ -149,7 +148,7 @@ let pp_match_pattern env = function
 
 (* Prints a failure message for an hypothesis pattern *)
 let db_hyp_pattern_failure debug env (na,hyp) =
-  if debug = DebugOn then
+  if debug <> DebugOff & !skip = 0 then
     msgnl (str ("The pattern hypothesis"^(hyp_bound na)^
                 " cannot match: ") ++
            pr_match_pattern
@@ -158,24 +157,21 @@ let db_hyp_pattern_failure debug env (na,hyp) =
 
 (* Prints a matching failure message for a rule *)
 let db_matching_failure debug =
-  if debug = DebugOn then
+  if debug <> DebugOff & !skip = 0 then
     msgnl (str "This rule has failed due to matching errors!" ++ fnl() ++
            str "Let us try the next one...")
 
 (* Prints an evaluation failure message for a rule *)
 let db_eval_failure debug s =
-  if debug = DebugOn then
+  if debug <> DebugOff & !skip = 0 then
     let s = if s="" then "no message" else "message \""^s^"\"" in
     msgnl 
       (str "This rule has failed due to \"Fail\" tactic (" ++
        str s ++ str ", level 0)!" ++ fnl() ++ str "Let us try the next one...")
 
-(* An exception handler *)
-let explain_logic_error = ref (fun e -> mt())
-
 (* Prints a logic failure message for a rule *)
 let db_logic_failure debug err =
-  if debug = DebugOn then
+  if debug <> DebugOff & !skip = 0 then
   begin
     msgnl (!explain_logic_error err);
     msgnl (str "This rule has failed due to a logic error!" ++ fnl() ++
