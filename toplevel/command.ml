@@ -479,7 +479,7 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)  =
     let def = 
       try
 	List.iter (fun (df,c,scope) -> (* No scope for tmp notation *)
-	  Metasyntax.add_notation_interpretation df [] c None) notations;
+	 Metasyntax.add_notation_interpretation df rec_impls c None) notations;
 	List.map2
 	  (fun ((_,_,bl,_,def),_) arity ->
             let def = abstract_rawconstr def bl in
