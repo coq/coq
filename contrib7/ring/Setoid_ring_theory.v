@@ -8,6 +8,7 @@
 
 (* $Id$ *)
 
+(*
 Require Export Bool.
 Require Export Setoid.
 
@@ -42,15 +43,15 @@ Variable mult_morph : (a,a0,a1,a2:A) a == a0 -> a1 == a2 -> a*a1 == a0*a2.
 Variable opp_morph : (a,a0:A) a == a0 -> -a == -a0.
 
 Add Morphism Aplus : Aplus_ext.
-Exact plus_morph.
+Intros; Apply plus_morph; Assumption.
 Save.
 
 Add Morphism Amult : Amult_ext.
-Exact mult_morph.
+Intros; Apply mult_morph; Assumption.
 Save.
 
 Add Morphism Aopp : Aopp_ext.
-Exact opp_morph.
+Intros; Apply opp_morph; Assumption.
 Save.
 
 Section Theory_of_semi_setoid_rings.
@@ -427,3 +428,4 @@ Section power_ring.
 End power_ring.
 
 End Setoid_rings.
+*)
