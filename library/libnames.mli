@@ -52,6 +52,7 @@ val extract_dirpath_prefix : int -> dir_path -> dir_path
 val is_dirpath_prefix_of : dir_path -> dir_path -> bool
 
 module Dirset : Set.S with type elt = dir_path
+module Dirmap : Map.S with type key = dir_path
 
 (*s Section paths are {\em absolute} names *)
 type section_path

@@ -79,6 +79,7 @@ type module_path =
 
 val string_of_mp : module_path -> string
 
+module MPset : Set.S with type elt = module_path
 module MPmap : Map.S with type key = module_path
 
 

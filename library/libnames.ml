@@ -117,6 +117,7 @@ let dirpath_of_string s =
     | dir -> make_dirpath dir
 
 module Dirset = Set.Make(struct type t = dir_path let compare = compare end)
+module Dirmap = Map.Make(struct type t = dir_path let compare = compare end)
 
 (*s Section paths are absolute names *)
 

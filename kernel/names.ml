@@ -127,6 +127,7 @@ module MPord = struct
   let compare = mp_ord
 end
 
+module MPset = Set.Make(MPord)
 module MPmap = Map.Make(MPord)
 
 
