@@ -350,12 +350,13 @@ let next_name_not_occuring name l env t =
     | Anonymous -> id_of_string "_"
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
-let concrete_name l env n c =
+let concrete_name islam l env n c =
   if n = Anonymous & not (dependent (Rel 1) c) then
     (None,l)
   else
     let fresh_id = next_name_not_occuring n l env c in
-    let idopt = if dependent (Rel 1) c then (Some fresh_id) else None in
+    let idopt =
+      if islam or dependent (Rel 1) c then (Some fresh_id) else None in
     (idopt, fresh_id::l)
 
     (* Returns the list of global variables and constants in a term *)
@@ -477,7 +478,7 @@ let old_bdize at_top env t =
   let rec bdrec avoid env t = match collapse_appl t with
     (* Not well-formed constructions *)
     | DLAM(na,c) ->
-	(match concrete_name avoid env na c with
+	(match concrete_name true (*On ne sait pas si prod*)avoid env na c with
            | (Some id,avoid') -> 
 	       slam(Some (string_of_id id),
                     bdrec avoid' (add_rel (Name id,()) env) c)
@@ -696,7 +697,7 @@ let old_bdize at_top env t =
 
   and factorize_binder n avoid env oper na ty c =
     let (env2, avoid2,na2) =
-      match concrete_name avoid env na c with
+      match concrete_name (oper=Lambda) avoid env na c with
 	  (Some id,l') -> add_rel (Name id,()) env, l', Some (string_of_id id) 
 	| (None,l')    -> add_rel (Anonymous,()) env, l', None
     in
