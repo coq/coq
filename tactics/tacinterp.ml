@@ -1984,14 +1984,24 @@ let bad_tactic_args s =
 (* Declaration of the TAC-DEFINITION object *)
 let add (kn,td) = mactab := Gmap.add kn td !mactab
 
-let cache_md ((sp,kn),defs) =
+let load_md i ((sp,kn),defs) =
   let dp,_ = repr_path sp in
   let mp,dir,_ = repr_kn kn in
   List.iter (fun (id,t) -> 
     let sp = Libnames.make_path dp id in
     let kn = Names.make_kn mp dir (label_of_id id) in
-    Nametab.push_tactic (Until 1) sp kn;
+    Nametab.push_tactic (Until i) sp kn;
     add (kn,t)) defs
+
+let open_md i((sp,kn),defs) =
+  let dp,_ = repr_path sp in
+  let mp,dir,_ = repr_kn kn in
+  List.iter (fun (id,t) -> 
+    let sp = Libnames.make_path dp id in
+    let kn = Names.make_kn mp dir (label_of_id id) in
+    Nametab.push_tactic (Exactly i) sp kn) defs
+
+let cache_md x = load_md 1 x
 
 let subst_md (_,subst,defs) =
   List.map (fun (id,t) -> (id,subst_tactic subst t)) defs
@@ -1999,7 +2009,8 @@ let subst_md (_,subst,defs) =
 let (inMD,outMD) =
   declare_object {(default_object "TAC-DEFINITION") with
      cache_function  = cache_md;
-     open_function   = (fun i o -> if i=1 then cache_md o);
+     load_function   = load_md;
+     open_function   = open_md;
      subst_function = subst_md;
      classify_function = (fun (_,o) -> Substitute o);       
      export_function = (fun x -> Some x)}
