@@ -62,3 +62,16 @@ Qed.
 End connectives.
 
 Hints Resolve sumbool_and sumbool_or sumbool_not : core.
+
+
+(** Any decidability function in type [sumbool] can be turned into a function
+    returning a boolean with the corresponding specification: *)
+
+Definition bool_of_sumbool : 
+  (A,B:Prop) {A}+{B} -> { b:bool | if b then A else B }.
+Proof.
+Intros A B H.
+Elim H; [ Intro; Exists true; Assumption
+        | Intro; Exists false; Assumption ].
+Save.
+Implicits bool_of_sumbool.

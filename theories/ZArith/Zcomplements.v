@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require ZArith.
+Require ZArith_base.
 Require ZArithRing.
 Require Omega.
 Require Wf_nat.

@@ -439,6 +439,7 @@ ARITHVO=theories/Arith/ArithSyntax.vo \
 	theories/Arith/EqNat.vo         theories/Arith/Peano_dec.vo   \
 	theories/Arith/Euclid.vo        theories/Arith/Plus.vo        \
 	theories/Arith/Wf_nat.vo  	theories/Arith/Max.vo	      \
+	theories/Arith/Bool_nat.vo
 #	theories/Arith/Div.vo 
 
 SORTINGVO=theories/Sorting/Heap.vo \
@@ -456,7 +457,8 @@ ZARITHVO=theories/ZArith/Wf_Z.vo        theories/ZArith/Zsyntax.vo \
 	 theories/ZArith/Zhints.vo	theories/ZArith/Zlogarithm.vo \
 	 theories/ZArith/Zpower.vo 	theories/ZArith/Zcomplements.vo \
 	 theories/ZArith/Zdiv.vo	theories/ZArith/Zsqrt.vo \
-	 theories/ZArith/Zwf.vo
+	 theories/ZArith/Zwf.vo		theories/ZArith/ZArith_base.vo \
+	 theories/ZArith/Zbool.vo
 
 LISTSVO=theories/Lists/List.vo      theories/Lists/PolyListSyntax.vo \
         theories/Lists/ListSet.vo   theories/Lists/Streams.vo \

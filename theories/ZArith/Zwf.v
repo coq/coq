@@ -8,7 +8,7 @@
 
 (* $Id$ *)
 
-Require ZArith.
+Require ZArith_base.
 Require Export Wf_nat.
 
 (** Well-founded relations on Z. *)
