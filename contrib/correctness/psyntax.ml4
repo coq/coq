@@ -492,7 +492,7 @@ GEXTEND Gram
       | t = type_v3 -> t ] ]
   ;
   type_v3:
-    [ [ IDENT "array"; size = Constr.lconstr; "of"; v = type_v0 ->
+    [ [ IDENT "array"; size = Constr.lconstr; IDENT "of"; v = type_v0 ->
           Array (size,v)
       | "fun"; bl = binders; c = type_c -> make_arrow bl c
       | c = Constr.constr -> TypePure c	  
