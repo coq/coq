@@ -104,13 +104,23 @@ let compute = function
 
 let reduction = Tacticals.onAllClauses (fun ido -> compute ido)
 
+(* As a simple heuristic, first we try to avoid reduction both in *)
+(* tauto and intuition                                            *)
+
 let tauto =
   (tclTHEN (init_intros ())
-    (tclTHEN reduction (interp (tauto_main ()))))
+   (tclORELSE
+     (interp (tauto_main ()))
+     (tclTHEN reduction (interp (tauto_main ()))))
+   )
 
 let intuition =
-  (tclTHEN (init_intros ())
-    (tclTHEN reduction (interp (intuition_main ()))))
+ tclTHEN (init_intros ())
+  (tclORELSE
+    (interp (intuition_main ()))
+    (tclTHEN reduction (interp (intuition_main ())))
+  )
+
 
 let _ = hide_atomic_tactic "Tauto" tauto
 let _ = hide_atomic_tactic "Intuition" intuition
