@@ -1754,7 +1754,7 @@ Analogous to {\tt dependent rewrite ->} but uses the equality from
 right to left.
 \end{Variants}
 
-\section{inversion
+\section{Inversion
 \label{inversion}}
 
 \subsection{\tt inversion {\ident}
@@ -2561,7 +2561,7 @@ intros; fourier.
 Reset Initial.
 \end{coq_eval}
 
-\subsection{\tt autorewrite  [ \ident$_1$ \dots \ident$_n$ ]
+\subsection{\tt autorewrite with \ident$_1$ \dots \ident$_n$.
 \tacindex{autorewrite}}
 
 This tactic \footnote{The behavior of this tactic has much changed compared to
@@ -2584,9 +2584,17 @@ command.
 \Warning{} This tactic may loop if you build non terminating rewriting systems.
 
 \begin{Variant}
-\item {\tt autorewrite  [ \ident$_1$ \dots \ident$_n$ ] using \tac}\\
+\item {\tt autorewrite with \ident$_1$ \dots \ident$_n$ using \tac}\\
 Performs, in the same way, all the rewritings of the bases {\tt $ident_1$ $...$
 $ident_n$} applying {\tt \tac} to the main subgoal after each rewriting step.
+
+\item{\tt autorewrite [ \ident$_1$ \dots \ident$_n$ ]}\\
+{\tt autorewrite  [ \ident$_1$ \dots \ident$_n$ ] using \tac}\\
+These are syntactic variants for
+{\tt autorewrite with \ident$_1$ \dots \ident$_n$}
+and
+{\tt autorewrite  with \ident$_1$ \dots \ident$_n$ using \tac}.
+
 \end{Variant}
 
 \subsection{\tt Hint Rewrite \term$_1$ \dots \term$_n$ : \ident
@@ -2605,8 +2613,8 @@ declarations at the global level of that module are loaded.
 
 \begin{Variants}
 \item {\tt Hint Rewrite -> \term$_1$ \dots \term$_n$ : \ident}\\
-This is strictly equivalent to the command above (we only precise the
-orientation which is the default one).
+This is strictly equivalent to the command above (we only make explicit the
+orientation which otherwise defaults to {\tt ->}).
 
 \item {\tt Hint Rewrite <- \term$_1$ \dots \term$_n$ : \ident}\\
 Adds the rewriting rules {\tt \term$_1$ \dots \term$_n$} with a right-to-left

@@ -594,10 +594,10 @@ Axiom Ack2 : forall n m:nat, Ack (S n) (S m) = Ack n (Ack (S n) m).
 \end{coq_example*}
 
 \begin{coq_example}
-Hint Rewrite [ Ack0 Ack1 Ack2 ] in base0.
+Hint Rewrite Ack0 Ack1 Ack2 : base0.
 Lemma ResAck0 : 
  Ack 3 2 = 29.
-autorewrite [ base0 ] using try reflexivity.
+autorewrite with base0 using try reflexivity.
 \end{coq_example}
 
 \begin{coq_eval}
@@ -624,10 +624,10 @@ Axiom
 \end{coq_example*}
 
 \begin{coq_example}
-Hint Rewrite [ g0 g1 g2 ] in base1 using omega.
+Hint Rewrite g0 g1 g2 using omega : base1.
 Lemma Resg0 : 
  g 1 110 = 100.
-autorewrite [ base1 ] using reflexivity || simpl.
+autorewrite with base1 using reflexivity || simpl.
 \end{coq_example}
 
 \begin{coq_eval}
@@ -636,7 +636,7 @@ Abort.
 
 \begin{coq_example}
 Lemma Resg1 : g 1 95 = 91.
-autorewrite [ base1 ] using reflexivity || simpl.
+autorewrite with base1 using reflexivity || simpl.
 \end{coq_example}
 
 \begin{coq_eval}
