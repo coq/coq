@@ -5,6 +5,7 @@
 open Names
 open Term
 open Sign
+open Environ
 (*i*)
 
 (* The type of mappings for existential variables.
@@ -23,7 +24,7 @@ type evar_body =
 
 type 'a evar_info = {
   evar_concl : constr;
-  evar_hyps : typed_type signature;
+  evar_env : unsafe_env;
   evar_body : evar_body;
   evar_info : 'a }
 
@@ -48,3 +49,5 @@ val is_evar : 'a evar_map -> evar -> bool
 val is_defined : 'a evar_map -> evar -> bool
 
 val metamap : 'a evar_map -> (int * constr) list
+
+val evar_hyps : 'a evar_info -> typed_type signature

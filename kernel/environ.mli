@@ -4,7 +4,6 @@
 (*i*)
 open Names
 open Term
-open Evd
 open Constant
 open Inductive
 open Abstraction
@@ -25,7 +24,11 @@ val universes : unsafe_env -> universes
 val context : unsafe_env -> context
 
 val push_var : identifier * typed_type -> unsafe_env -> unsafe_env
+val change_hyps : 
+  (typed_type signature -> typed_type signature) -> unsafe_env -> unsafe_env
+
 val push_rel : name * typed_type -> unsafe_env -> unsafe_env
+
 val set_universes : universes -> unsafe_env -> unsafe_env
 val add_constraints : constraints -> unsafe_env -> unsafe_env
 val add_constant : 

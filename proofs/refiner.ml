@@ -23,7 +23,7 @@ type validation_list = proof_tree list -> proof_tree list
 
 type tactic_list = (goal list sigma) -> (goal list sigma) * validation_list
 
-let hypotheses gl = gl.evar_hyps
+let hypotheses gl = gl.evar_env
 let conclusion gl = gl.evar_concl
 
 let sig_it x = x.it
@@ -132,9 +132,9 @@ let lookup_tactic s =
 let bad_subproof () =
   errorlabstrm "Refiner.refiner" [< 'sTR"Bad subproof in validation.">]
 
-let refiner env = function
+let refiner = function
   | Prim pr as r ->
-      let prim_fun = prim_refiner pr env in
+      let prim_fun = prim_refiner pr in
       (fun goal_sigma ->
          let sgl = prim_fun (ts_it goal_sigma.sigma) goal_sigma.it in 
 	 ({it=sgl; sigma = goal_sigma.sigma},
@@ -163,7 +163,7 @@ let refiner env = function
   | ((Context ctxt) as r) ->
       (fun goal_sigma ->
          let gl = goal_sigma.it in
-         let sg = mk_goal ctxt gl.evar_hyps gl.evar_concl in
+         let sg = mk_goal ctxt gl.evar_env gl.evar_concl in
          ({it=[sg];sigma=goal_sigma.sigma},
           (fun pfl -> 
 	     let pf = List.hd pfl in
@@ -179,7 +179,7 @@ let refiner env = function
       (fun goal_sigma ->
          let gl = goal_sigma.it  in
          let ctxt = gl.evar_info in 
-         let sg = mk_goal ctxt gl.evar_hyps gl.evar_concl in
+         let sg = mk_goal ctxt gl.evar_env gl.evar_concl in
 	 ({it=[sg];sigma=goal_sigma.sigma},
           (fun pfl -> 
 	     let pf = List.hd pfl in
@@ -228,14 +228,14 @@ let extract_open_proof sign pf =
                match lookup_id id vl with
 		 | GLOBNAME _ -> failwith "caught"
 		 | RELNAME(n,_) -> (n,id))
-            (ids_of_sign goal.evar_hyps) in
+            (ids_of_sign (evar_hyps goal)) in
 	let sorted_rels = 
 	  Sort.list (fun (n1,_) (n2,_) -> n1>n2) visible_rels in
 	let abs_concl =
           List.fold_right
-            (fun (_,id) concl -> 
-	       mkNamedProd id (incast_type (snd(lookup_sign id goal.evar_hyps))) 
-		 concl)
+            (fun (_,id) concl ->
+	       let (_,ty) = lookup_sign id (evar_hyps goal) in
+	       mkNamedProd id (incast_type ty) concl)
             sorted_rels goal.evar_concl
 	in
 	let mv = new_meta() in

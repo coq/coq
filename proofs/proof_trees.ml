@@ -7,6 +7,7 @@ open Term
 open Sign
 open Evd
 open Stamps
+open Environ
 
 type bindOcc = 
   | Dep of identifier
@@ -93,9 +94,8 @@ let lc_toList lc = Intset.elements lc
 
 (* Functions on goals *)
 
-let mk_goal ctxt sign cl = 
-  { evar_hyps = sign; evar_concl = cl; evar_body = Evar_empty;
-    evar_info = ctxt }
+let mk_goal ctxt env cl = 
+  { evar_env = env; evar_concl = cl; evar_body = Evar_empty; evar_info = ctxt }
 
 (* Functions on the information associated with existential variables  *)
 
@@ -167,7 +167,7 @@ type global_constraints  = evar_declarations timestamped
 
 type evar_recordty = {
   focus : local_constraints;
-  sign  : typed_type signature;
+  env   : unsafe_env;
   decls : evar_declarations }
 
 and readable_constraints = evar_recordty timestamped
@@ -175,21 +175,21 @@ and readable_constraints = evar_recordty timestamped
 (* Functions on readable constraints *)
 			     
 let mt_evcty lc gc = 
-  ts_mk { focus = lc; sign = nil_sign; decls = gc }
+  ts_mk { focus = lc; env = empty_env; decls = gc }
 
 let evc_of_evds evds gl = 
-  ts_mk { focus = (get_lc gl); sign = gl.evar_hyps ; decls = evds }
+  ts_mk { focus = (get_lc gl); env = gl.evar_env; decls = evds }
 
 let rc_of_gc gc gl = evc_of_evds (ts_it gc) gl
 		       
 let rc_add evc (k,v) = 
   ts_mod
     (fun evc -> { focus = (Intset.add k evc.focus);
-                  sign  = evc.sign;
+                  env   = evc.env;
                   decls = Evd.add evc.decls k v })
     evc
 
-let get_hyps  evc = (ts_it evc).sign
+let get_env   evc = (ts_it evc).env
 let get_focus evc = (ts_it evc).focus
 let get_decls evc = (ts_it evc).decls
 let get_gc    evc = (ts_mk (ts_it evc).decls)
@@ -197,7 +197,7 @@ let get_gc    evc = (ts_mk (ts_it evc).decls)
 let remap evc (k,v) = 
   ts_mod
     (fun evc -> { focus = evc.focus;
-                  sign  = evc.sign;
+                  env   = evc.env;
                   decls = Evd.add evc.decls k v })
     evc
 

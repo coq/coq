@@ -8,6 +8,7 @@ open Names
 open Term
 open Sign
 open Evd
+open Environ
 (*i*)
 
 (* This module declares the structure of proof trees, global and
@@ -98,13 +99,13 @@ and ctxtty = {
 type evar_declarations = ctxtty evar_map
 
 
-val mk_goal : ctxtty -> typed_type signature -> constr -> goal
+val mk_goal : ctxtty -> unsafe_env -> constr -> goal
 
 val mt_ctxt    : local_constraints -> ctxtty
-val get_ctxt   : goal  -> ctxtty
+val get_ctxt   : goal -> ctxtty
 val get_pgm    : goal -> constr option
 val set_pgm    : constr option -> ctxtty -> ctxtty
-val get_mimick : goal ->  proof_tree option
+val get_mimick : goal -> proof_tree option
 val set_mimick : proof_tree option ->  ctxtty -> ctxtty
 val get_lc     : goal -> local_constraints
 
@@ -129,14 +130,14 @@ type global_constraints = evar_declarations timestamped
 
 type evar_recordty = {
   focus : local_constraints;
-  sign  : typed_type signature;
+  env  : unsafe_env;
   decls : evar_declarations }
 
 and readable_constraints = evar_recordty timestamped
 
 val rc_of_gc  : global_constraints -> goal -> readable_constraints
 val rc_add    : readable_constraints -> int * goal -> readable_constraints
-val get_hyps  : readable_constraints -> typed_type signature
+val get_env   : readable_constraints -> unsafe_env
 val get_focus : readable_constraints -> local_constraints
 val get_decls : readable_constraints -> evar_declarations
 val get_gc    : readable_constraints -> global_constraints

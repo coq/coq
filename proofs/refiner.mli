@@ -2,6 +2,8 @@
 (* $Id$ *)
 
 (*i*)
+open Term
+open Sign
 open Proof_trees
 (*i*)
 
@@ -34,3 +36,7 @@ val hide_tactic :
 
 val overwrite_hidden_tactic : 
   string -> (tactic_arg list -> tactic) -> (tactic_arg list -> tactic)
+
+val refiner : rule -> tactic
+
+val extract_open_proof : context -> proof_tree -> constr * (int * constr) list

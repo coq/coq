@@ -26,39 +26,39 @@ let conv_leq_goal env sigma arg ty conclty =
   if not (is_conv_leq env sigma ty conclty) then 
     raise (RefinerError (BadType (arg,ty,conclty)))
 
-let type_of env hyps c =
+let type_of env c =
   failwith "TODO: typage avec VE"
 
 let execute_type env ty =
   failwith "TODO: typage type avec VE"
 
-let rec mk_refgoals env sigma goal goalacc conclty trm =
-  let hyps = goal.evar_hyps in
+let rec mk_refgoals sigma goal goalacc conclty trm =
+  let env = goal.evar_env in
   match trm with
     | DOP0(Meta mv) ->
 	if occur_meta conclty then
           error "Cannot refine to conclusions with meta-variables";
 	let ctxt = goal.evar_info in 
-	(mk_goal ctxt hyps (nf_betaiota env sigma conclty))::goalacc, conclty
+	(mk_goal ctxt env (nf_betaiota env sigma conclty))::goalacc, conclty
 
     | DOP2(Cast,t,ty) ->
-	let _ = type_of env hyps ty in
+	let _ = type_of env ty in
 	conv_leq_goal env sigma trm ty conclty;
-	mk_refgoals env sigma goal goalacc ty t
+	mk_refgoals sigma goal goalacc ty t
 
     | DOPN(AppL,cl) ->
-	let (acc',hdty) = mk_hdgoals env sigma goal goalacc (array_hd cl) in
+	let (acc',hdty) = mk_hdgoals sigma goal goalacc (array_hd cl) in
 	let (acc'',conclty') = 
-	  mk_arggoals env sigma goal acc' hdty (array_list_of_tl cl) in
+	  mk_arggoals sigma goal acc' hdty (array_list_of_tl cl) in
 	let _ = conv_leq_goal env sigma trm conclty' conclty in
         (acc'',conclty')
 
     | DOPN(MutCase _,_) as mc -> 
 	let (_,p,c,lf) = destCase mc in
-	let (acc',lbrty,conclty') = mk_casegoals env sigma goal goalacc p c in
+	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
 	let acc'' = 
 	  array_fold_left2
-            (fun lacc ty fi -> fst (mk_refgoals env sigma goal lacc ty fi))
+            (fun lacc ty fi -> fst (mk_refgoals sigma goal lacc ty fi))
             acc' lbrty lf 
 	in
 	let _ = conv_leq_goal env sigma trm conclty' conclty in 
@@ -66,49 +66,51 @@ let rec mk_refgoals env sigma goal goalacc conclty trm =
 
     | t -> 
 	if occur_meta t then raise (RefinerError (OccurMeta t));
-      	let t'ty = type_of env hyps t in
+      	let t'ty = type_of env t in
 	conv_leq_goal env sigma t t'ty conclty;
         (goalacc,t'ty)
 
 (* Same as mkREFGOALS but without knowing te type of the term. Therefore,
  * Metas should be casted. *)
 
-and mk_hdgoals env sigma goal goalacc trm =
-  let hyps = goal.evar_hyps in
+and mk_hdgoals sigma goal goalacc trm =
+  let env = goal.evar_env in
   match trm with
     | DOP2(Cast,DOP0(Meta mv),ty) ->
-	let _ = type_of env hyps ty in
+	let _ = type_of env ty in
 	let ctxt = goal.evar_info in  
-	(mk_goal ctxt hyps (nf_betaiota env sigma ty))::goalacc,ty
+	(mk_goal ctxt env (nf_betaiota env sigma ty))::goalacc,ty
 	  
     | DOPN(AppL,cl) ->
-	let (acc',hdty) = mk_hdgoals env sigma goal goalacc (array_hd cl) in
-	mk_arggoals env sigma goal acc' hdty (array_list_of_tl cl)
+	let (acc',hdty) = mk_hdgoals sigma goal goalacc (array_hd cl) in
+	mk_arggoals sigma goal acc' hdty (array_list_of_tl cl)
 	
     | DOPN(MutCase _,_) as mc -> 
 	let (_,p,c,lf) = destCase mc in
-	let (acc',lbrty,conclty') = mk_casegoals env sigma goal goalacc p c in
+	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
 	let acc'' = 
 	  array_fold_left2
-            (fun lacc ty fi -> fst (mk_refgoals env sigma goal lacc ty fi))
+            (fun lacc ty fi -> fst (mk_refgoals sigma goal lacc ty fi))
             acc' lbrty lf 
 	in
 	(acc'',conclty')
 
-    | t -> goalacc,type_of env hyps t
+    | t -> goalacc,type_of env t
 
-and mk_arggoals env sigma goal goalacc funty = function
+and mk_arggoals sigma goal goalacc funty = function
   | [] -> goalacc,funty
   | harg::tlargs ->
+      let env = goal.evar_env in
       (match whd_betadeltaiota env sigma funty with
 	 | DOP2(Prod,c1,b) ->
-	     let (acc',hargty) = mk_refgoals env sigma goal goalacc c1 harg in
-	     mk_arggoals env sigma goal acc' (sAPP b harg) tlargs
+	     let (acc',hargty) = mk_refgoals sigma goal goalacc c1 harg in
+	     mk_arggoals sigma goal acc' (sAPP b harg) tlargs
 	 | t -> raise (RefinerError (CannotApply (t,harg))))
 
-and mk_casegoals env sigma goal goalacc p c= 
-  let (acc',ct) = mk_hdgoals env sigma goal goalacc c in 
-  let (acc'',pt) = mk_hdgoals env sigma goal acc' p in
+and mk_casegoals sigma goal goalacc p c =
+  let env = goal.evar_env in
+  let (acc',ct) = mk_hdgoals sigma goal goalacc c in 
+  let (acc'',pt) = mk_hdgoals sigma goal acc' p in
   let (_,lbrty,conclty) = type_case_branches env sigma ct pt p c in
   (acc'',lbrty,conclty)
 
@@ -209,8 +211,9 @@ let move_after with_dep toleft (left,htfrom,right) hto =
     
 (* Primitive tactics are handled here *)
 
-let prim_refiner r env sigma goal =
-  let sign = goal.evar_hyps in
+let prim_refiner r sigma goal =
+  let env = goal.evar_env in
+  let sign = get_globals (context env) in
   let cl = goal.evar_concl in
   let info = goal.evar_info in
   match r with
@@ -221,7 +224,7 @@ let prim_refiner r env sigma goal =
 	       if occur_meta c1 then error_use_instantiate();
 	       let a = mk_assumption env sign c1
 	       and v = VAR id in
-	       let sg = mk_goal info (add_sign (id,a) sign) (sAPP b v) in 
+	       let sg = mk_goal info (push_var (id,a) env) (sAPP b v) in 
 	       [sg]
 	   | _ -> error "Introduction needs a product")
 	
@@ -237,8 +240,8 @@ let prim_refiner r env sigma goal =
 		   "Can't introduce at that location: free variable conflict";
 	       let a = mk_assumption env sign c1
 	       and v = VAR id in
-	       let sg = mk_goal info 
-			  (add_sign_after whereid (id,a) sign) (sAPP b v) in 
+	       let env' = change_hyps (add_sign_after whereid (id,a)) env in
+	       let sg = mk_goal info env' (sAPP b v) in 
 	       [sg]
 	   | _ -> error "Introduction needs a product")
 	
@@ -256,8 +259,8 @@ let prim_refiner r env sigma goal =
 		   "Can't introduce at that location: free variable conflict";
 	       let a = mk_assumption env sign c1
 	       and v = VAR id in
-	       let sg = mk_goal info (add_sign_replacing id (id,a) sign) 
-			  (sAPP b v) in
+	       let env' = change_hyps (add_sign_replacing id (id,a)) env in
+	       let sg = mk_goal info env' (sAPP b v) in
 	       [sg]
 	   | _ -> error "Introduction needs a product")
 	
@@ -278,7 +281,7 @@ let prim_refiner r env sigma goal =
      	let _ = check_ind n cl in 
 	if mem_sign sign f then error "name already used in the environment";
         let a = mk_assumption env sign cl in
-        let sg = mk_goal info (add_sign (f,a) sign) cl in
+        let sg = mk_goal info (push_var (f,a) env) cl in
         [sg]
     
     | { name = Fix; hypspecs = []; terms = lar; newids = lf; params = ln } ->
@@ -307,7 +310,7 @@ let prim_refiner r env sigma goal =
 	      let a = mk_assumption env sign ar in
 	      mk_sign (add_sign (f,a) sign) (lar',lf',ln')
 	  | ([],[],[]) -> 
-	      List.map (mk_goal info sign) (cl::lar)
+	      List.map (mk_goal info env) (cl::lar)
 	  | _ -> error "not the right number of arguments"
 	in 
 	mk_sign sign (cl::lar,lf,ln)
@@ -330,21 +333,21 @@ let prim_refiner r env sigma goal =
 		error "name already used in the environment";
 	      let a = mk_assumption env sign ar in
 	      mk_sign (add_sign (f,a) sign) (lar',lf')
-	  | ([],[]) -> List.map (mk_goal info sign) (cl::lar)
+	  | ([],[]) -> List.map (mk_goal info env) (cl::lar)
 	  | _ -> error "not the right number of arguments"
      	in 
 	mk_sign sign (cl::lar,lf)
 	  
     | { name = Refine; terms = [c] } ->
 	let c = new_meta_variables c in
-	let (sgl,cl') = mk_refgoals env sigma goal [] cl c in
+	let (sgl,cl') = mk_refgoals sigma goal [] cl c in
 	let sgl = List.rev sgl in
 	sgl
 
     | { name = Convert_concl; terms = [cl'] } ->
     	let cl'ty = type_of env sign cl' in
 	if is_conv_leq env sigma cl' cl then
-          let sg = mk_goal info sign (DOP2(Cast,cl',cl'ty)) in
+          let sg = mk_goal info env (DOP2(Cast,cl',cl'ty)) in
           [sg]
 	else 
 	  error "convert-concl rule passed non-converting term"
@@ -353,7 +356,8 @@ let prim_refiner r env sigma goal =
       (* Faut-il garder la sorte d'origine ou celle du converti ?? *)
     	let tj = execute_type env (sign_before id sign) ty' in
 	if is_conv env sigma ty' (snd(lookup_sign id sign)).body then
-          [mk_goal info (modify_sign id tj sign) cl]
+	  let env' = change_hyps (modify_sign id tj) env in
+          [mk_goal info env' cl]
 	else 
 	  error "convert-hyp rule passed non-converting term"
 	    
@@ -376,7 +380,9 @@ let prim_refiner r env sigma goal =
             error ((string_of_id s) ^ " is used in the conclusion.");
           remove_pair s sign 
 	in
-     	let sg = mk_goal info (List.fold_left clear_aux sign ids) cl in
+	let env' = 
+	  change_hyps (fun sign -> List.fold_left clear_aux sign ids) env in
+     	let sg = mk_goal info env' cl in
      	[sg]
 
     | { name = Move withdep; hypspecs = ids } ->
@@ -386,7 +392,8 @@ let prim_refiner r env sigma goal =
   	let (left,right,typfrom,toleft) = split_sign hfrom hto hyps in
   	let hyps' = 
 	  move_after withdep toleft (left,(hfrom,typfrom),right) hto in
-  	[mk_goal info (make_sign hyps') cl]
+	let env' = change_hyps (fun _ -> make_sign hyps') env in
+  	[mk_goal info env' cl]
 	
     | _ -> anomaly "prim_refiner: Unrecognized primitive rule"
 

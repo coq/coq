@@ -50,6 +50,10 @@ let metamap env = failwith "Environ.metamap: TODO: unifier metas et VE"
 let push_var idvar env =
   { env with env_context = add_glob idvar env.env_context }
 
+let change_hyps f env =
+  let ctx = env.env_context in
+  { env with env_context = ENVIRON (f (get_globals ctx), get_rels ctx) }
+
 let push_rel idrel env =
   { env with env_context = add_rel idrel env.env_context }
 

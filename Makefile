@@ -36,9 +36,9 @@ LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/bstack.cmo lib/edit.cmo lib/stamps.cmo
 
 KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
-       kernel/sign.cmo kernel/constant.cmo kernel/evd.cmo \
+       kernel/sign.cmo kernel/constant.cmo \
        kernel/inductive.cmo kernel/sosub.cmo kernel/abstraction.cmo \
-       kernel/environ.cmo kernel/instantiate.cmo \
+       kernel/environ.cmo kernel/evd.cmo kernel/instantiate.cmo \
        kernel/closure.cmo kernel/reduction.cmo \
        kernel/type_errors.cmo kernel/typeops.cmo kernel/indtypes.cmo \
        kernel/typing.cmo
