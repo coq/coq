@@ -14,7 +14,7 @@ Grammar vernac vernac : ast :=
   xml_print [ "Print" "XML" tactic:qualidarg($id) "." ] ->
                [(Print $id)]
 
-| xml_print_file [ "Print" "XML" "File" stringarg($fn) identarg($id) "." ] ->
+| xml_print_file [ "Print" "XML" "File" stringarg($fn) tactic:qualidarg($id) "." ] ->
                [(Print $id $fn)]
 
 | xml_show [ "Show" "XML" "Proof" "." ] ->
