@@ -70,7 +70,7 @@ Grammar constr constr0 :=
   z_in_com [ "`" znatural:formula($c) "`" ] -> [$c].
 
 Grammar constr pattern :=
-  z_in_pattern [ "`" znatural:number($c) "`" ] -> [$c].   
+  z_in_pattern [ "`" prim:bigint($c) "`" ] -> [ 'Z: $c ' ].   
 
 (* The symbols "`" "`" must be printed just once at the top of the expressions,
   to avoid printings like |``x` + `y`` < `45`| 
@@ -234,7 +234,7 @@ Infix "<=" Zle (at level 5, no associativity) : Z_scope.
 Infix "<"  Zlt (at level 5, no associativity) : Z_scope.
 Infix ">=" Zge (at level 5, no associativity) : Z_scope.
 Infix ">"  Zgt (at level 5, no associativity) : Z_scope.
-Infix "?=" Zcompare (at level 5, no associativity) : Z_scope.
+Infix "? =" Zcompare (at level 5, no associativity) : Z_scope.
 Notation "x <= y <= z" := (Zle x y)/\(Zle y z)
   (at level 5, y at level 4):Z_scope.
 Notation "x <= y < z"  := (Zle x y)/\(Zlt y z)
