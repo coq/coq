@@ -34,6 +34,7 @@ type ('lev,'pos) constr_entry_key =
   | ETConstr of ('lev * 'pos)
   | ETPattern
   | ETOther of string * string
+  | ETConstrList of ('lev * 'pos) * Token.pattern list
 
 type constr_production_entry =
     (production_level,production_position) constr_entry_key
@@ -42,14 +43,14 @@ type simple_constr_production_entry = (production_level,unit) constr_entry_key
 
 type nonterm_prod =
   | ProdList0 of nonterm_prod
-  | ProdList1 of nonterm_prod
+  | ProdList1 of nonterm_prod * Token.pattern list
   | ProdOpt of nonterm_prod
   | ProdPrimitive of constr_production_entry
 
 type prod_item =
   | Term of Token.pattern
-  | NonTerm of
-      nonterm_prod * (Names.identifier * constr_production_entry) option
+  | NonTerm of constr_production_entry * 
+      (Names.identifier * constr_production_entry) option
 
 type grammar_rule = {
   gr_name : string; 

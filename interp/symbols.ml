@@ -175,6 +175,7 @@ let cases_pattern_key = function
 
 let aconstr_key = function
   | AApp (ARef ref,args) -> RefKey ref, Some (List.length args)
+  | AList (_,_,AApp (ARef ref,args),_) -> RefKey ref, Some (List.length args)
   | ARef ref -> RefKey ref, Some 0
   | _ -> Oth, None
 
@@ -430,11 +431,14 @@ let declare_ref_arguments_scope ref =
 type symbol =
   | Terminal of string
   | NonTerminal of identifier
+  | SProdList of identifier * symbol list
   | Break of int
 
-let string_of_symbol = function
+let rec string_of_symbol = function
   | NonTerminal _ -> ["_"]
   | Terminal s -> [s]
+  | SProdList (_,l) -> 
+     let l = List.flatten (List.map string_of_symbol l) in "_"::l@".."::l@["_"]
   | Break _ -> []
 
 let make_notation_key symbols =

@@ -33,6 +33,7 @@ type ('lev,'pos) constr_entry_key =
   | ETConstr of ('lev * 'pos)
   | ETPattern
   | ETOther of string * string
+  | ETConstrList of ('lev * 'pos) * Token.pattern list
 
 type constr_production_entry =
     (production_level,production_position) constr_entry_key
@@ -41,14 +42,14 @@ type simple_constr_production_entry = (production_level,unit) constr_entry_key
 
 type nonterm_prod =
   | ProdList0 of nonterm_prod
-  | ProdList1 of nonterm_prod
+  | ProdList1 of nonterm_prod * Token.pattern list
   | ProdOpt of nonterm_prod
   | ProdPrimitive of constr_production_entry
 
 type prod_item =
   | Term of Token.pattern
-  | NonTerm of
-      nonterm_prod * (Names.identifier * constr_production_entry) option
+  | NonTerm of constr_production_entry *
+      (Names.identifier * constr_production_entry) option
 
 type grammar_rule = {
   gr_name : string; 
@@ -236,10 +237,10 @@ let prod_item univ env = function
   | VTerm s -> env, Term (terminal s)
   | VNonTerm (loc, nt, Some p) ->
      let typ = nterm loc univ nt in
-      (p :: env, NonTerm (ProdPrimitive typ, Some (p,typ)))
+      (p :: env, NonTerm (typ, Some (p,typ)))
   | VNonTerm (loc, nt, None) ->
       let typ = nterm loc univ nt in 
-      env, NonTerm (ProdPrimitive typ, None)
+      env, NonTerm (typ, None)
 
 let rec prod_item_list univ penv pil current_pos =
   match pil with
@@ -256,7 +257,7 @@ let gram_rule univ (name,pil,act) =
   { gr_name = name; gr_production = pilc; gr_action = a }
 
 let border = function
-  | NonTerm (ProdPrimitive (ETConstr(_,BorderProd (_,a))),_) :: _ -> a
+  | NonTerm (ETConstr(_,BorderProd (_,a)),_) :: _ -> a
   | _ -> None
 
 let clever_assoc ass g =

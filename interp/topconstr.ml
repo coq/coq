@@ -21,11 +21,16 @@ open Term
 (**********************************************************************)
 (* This is the subtype of rawconstr allowed in syntactic extensions *)
 
+(* For AList: first constr is iterator, second is terminator;
+   first id is place of n-th argument in iterator and snd id is recursive
+   place in iterator *)
+
 type aconstr =
   (* Part common to rawconstr and cases_pattern *)
   | ARef of global_reference
   | AVar of identifier
   | AApp of aconstr * aconstr list
+  | AList of identifier * identifier * aconstr * aconstr
   (* Part only in rawconstr *)
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
@@ -48,6 +53,7 @@ let name_app f e = function
 let rawconstr_of_aconstr_with_binders loc g f e = function
   | AVar id -> RVar (loc,id)
   | AApp (a,args) -> RApp (loc,f e a, List.map (f e) args)
+  | AList _ -> anomaly "Recursive patterns of notations are not supported while translating to rawconstr"
   | ALambda (na,ty,c) ->
       let na,e = name_app g e na in RLambda (loc,na,f e ty,f e c)
   | AProd (na,ty,c) ->
@@ -103,6 +109,11 @@ let rec subst_aconstr subst raw =
       and rl' = list_smartmap (subst_aconstr subst) rl in
 	if r' == r && rl' == rl then raw else
 	  AApp(r',rl')
+
+  | AList (id1,id2,r1,r2) -> 
+      let r1' = subst_aconstr subst r1 and r2' = subst_aconstr subst r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  AList (id1,id2,r1',r2')
 
   | ALambda (n,r1,r2) -> 
       let r1' = subst_aconstr subst r1 and r2' = subst_aconstr subst r2 in
@@ -182,13 +193,55 @@ let add_name r = function
   | Anonymous -> ()
   | Name id -> r := id :: !r
 
-let aconstr_of_rawconstr vars a =
+let ldots_var = id_of_string ".."
+
+let has_ldots =
+  List.exists
+    (function RApp (_,RVar(_,v),_) when v = ldots_var -> true | _ -> false)
+
+let compare_rawconstr f t1 t2 = match t1,t2 with
+  | RRef (_,r1), RRef (_,r2) -> r1 = r2
+  | RVar (_,v1), RVar (_,v2) -> v1 = v2
+  | RApp (_,f1,l1), RApp (_,f2,l2) -> f f1 f2 & List.for_all2 f l1 l2
+  | RLambda (_,na1,ty1,c1), RLambda (_,na2,ty2,c2) when na1 = na2 ->
+      f ty1 ty2 & f c1 c2
+  | RProd (_,na1,ty1,c1), RProd (_,na2,ty2,c2) when na1 = na2 ->
+      f ty1 ty2 & f c1 c2
+  | RHole _, RHole _ -> true
+  | RSort (_,s1), RSort (_,s2) -> s1 = s2
+  | (RLetIn _ | RCases _ | ROrderedCase _ | RRec _ | RDynamic _
+    | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _),_
+  | _,(RLetIn _ | RCases _ | ROrderedCase _ | RRec _ | RDynamic _
+      | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _)
+      -> error "Unsupported construction in recursive notations"
+  | (RRef _ | RVar _ | RApp _ | RLambda _ | RProd _ | RHole _ | RSort _), _
+      -> false
+
+let rec eq_rawconstr t1 t2 = compare_rawconstr eq_rawconstr t1 t2
+
+let discriminate_patterns nl l1 l2 =
+  let diff = ref None in
+  let rec aux n c1 c2 = match c1,c2 with
+  | RVar (_,v1), RVar (_,v2) when v1<>v2 ->
+      if !diff = None then (diff := Some (v1,v2,(n<nl)); true)
+      else 
+        !diff = Some (v1,v2,(n<nl)) or !diff = Some (v2,v1,(n>=nl))
+        or (error
+          "Both ends of the recursive pattern differ in more than one place")
+  | _ -> compare_rawconstr (aux (n+1)) c1 c2 in
+  let l = list_map2_i aux 0 l1 l2 in
+  if not (List.for_all ((=) true) l) then
+    error "Both ends of the recursive pattern differ";
+  !diff
+
+let aconstr_and_vars_of_rawconstr a =
   let found = ref [] in
   let bound_binders = ref [] in
   let rec aux = function
   | RVar (_,id) -> 
       if not (List.mem id !bound_binders) then found := id::!found;
       AVar id
+  | RApp (_,f,args) when has_ldots args -> make_aconstr_list f args 
   | RApp (_,g,args) -> AApp (aux g, List.map aux args)
   | RLambda (_,na,ty,c) -> add_name bound_binders na; ALambda (na,aux ty,aux c)
   | RProd (_,na,ty,c) -> add_name bound_binders na; AProd (na,aux ty,aux c)
@@ -219,13 +272,55 @@ let aconstr_of_rawconstr vars a =
   | RDynamic _ | RRec _ | REvar _ ->
       error "Fixpoints, cofixpoints, existential variables and pattern-matching  not \
 allowed in abbreviatable expressions"
+
+  (* Recognizing recursive notations *)
+  and terminator_of_pat f1 ll1 lr1 = function
+  | RApp (loc,f2,l2) ->
+      if not (eq_rawconstr f1 f2) then error
+	"Cannot recognize the same head to both ends of the recursive pattern";
+      let nl = List.length ll1 in
+      let nr = List.length lr1 in
+      if List.length l2 <> nl + nr + 1 then
+	error "Both ends of the recursive pattern have different lengths";
+      let ll2,l2' = list_chop nl l2 in
+      let t = List.hd l2' and lr2 = List.tl l2' in
+      let discr = discriminate_patterns nl (ll1@lr1) (ll2@lr2) in
+      let x,y,order = match discr with Some z -> z | None -> 
+	error "Both ends of the recursive pattern are the same" in
+      List.iter (fun id ->
+        if List.mem id !bound_binders or List.mem id !found 
+        then error "Variables used in the recursive part of a pattern are not allowed to occur outside of the recursive part";
+        found := id::!found) [x;y];
+      let iter =
+        if order then RApp (loc,f1,ll1@RVar (loc,ldots_var)::lr1)
+        else RApp (loc,f2,ll2@RVar (loc,ldots_var)::lr2) in
+      (if order then x else y), ldots_var, aux iter, aux t
+  | _ -> error "One end of the recursive pattern is not an application"
+    
+  and make_aconstr_list f args =
+    let rec find_patterns acc = function
+      | RApp(_,RVar (_,a),[c]) :: l when a = ldots_var ->
+          (* We've found the recursive part *)
+	  let x,y,iter,terminator = terminator_of_pat f (List.rev acc) l c in
+	  AList (x,y,iter,terminator)
+      | a::l -> find_patterns (a::acc) l
+      | [] -> error "Ill-formed recursive notation"
+    in find_patterns [] args
+
   in
-  let a = aux a in
+  let t = aux a in
+  (* Side effect *)
+  t, !found, !bound_binders
+
+let aconstr_of_rawconstr vars a =
+  let a,notbindingvars,binders = aconstr_and_vars_of_rawconstr a in
   let check_type x =
-    if not (List.mem x !found or List.mem x !bound_binders) then
+    if not (List.mem x notbindingvars or List.mem x binders) then
       error ((string_of_id x)^" is unbound in the right-hand-side") in
   List.iter check_type vars;
   a
+
+let encode_list_value l = RApp (dummy_loc,RVar (dummy_loc,ldots_var),l)
 
 (* Pattern-matching rawconstr and aconstr *)
 
@@ -260,6 +355,9 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | RPatVar (_,(_,n1)), APatVar n2 when n1=n2 -> sigma
   | RApp (_,f1,l1), AApp (f2,l2) when List.length l1 = List.length l2 ->
       List.fold_left2 (match_ alp metas) (match_ alp metas sigma f1 f2) l1 l2
+  | RApp (_,f1,l1), AList (x,y,(AApp (f2,l2) as iter),termin) 
+      when List.length l1 = List.length l2 ->
+      match_alist alp metas sigma (f1::l1) (f2::l2) x y iter termin
   | RLambda (_,na1,t1,b1), ALambda (na2,t2,b2) ->
      match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
   | RProd (_,na1,t1,b1), AProd (na2,t2,b2) ->
@@ -284,6 +382,27 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | RHole _, AHole _ -> sigma
   | (RDynamic _ | RRec _ | REvar _), _ 
   | _,_ -> raise No_match
+
+and match_alist alp metas sigma l1 l2 x y iter termin =
+  (* match the iterator at least once *)
+  let sigma = List.fold_left2 (match_ alp (y::metas)) sigma l1 l2 in
+  (* Recover the recursive position *)
+  let rest = List.assoc y sigma in
+  (* Recover the first element *)
+  let t1 = List.assoc x sigma in
+  let sigma = List.remove_assoc x (List.remove_assoc y sigma) in
+  (* try to find the remaining elements or the terminator *)
+  let rec match_alist_tail alp metas sigma acc rest =
+    try 
+      let sigma = match_ alp (y::metas) sigma rest iter in
+      let rest = List.assoc y sigma in
+      let t = List.assoc x sigma in
+      let sigma = List.remove_assoc x (List.remove_assoc y sigma) in
+      match_alist_tail alp metas sigma (t::acc) rest
+    with No_match ->
+      List.rev acc, match_ alp metas sigma rest termin in
+  let tl,sigma = match_alist_tail alp metas sigma [t1] rest in
+  (x,encode_list_value tl)::sigma
 
 and match_binders alp metas sigma b1 b2 na1 na2 = match (na1,na2) with
   | (Name id1,Name id2) when List.mem id2 metas ->

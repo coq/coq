@@ -41,7 +41,8 @@ val ppcmd_of_box : ppbox -> std_ppcmds -> std_ppcmds
 val ppcmd_of_cut : ppcut -> std_ppcmds
 
 type unparsing = 
-  | UnpMetaVar of tolerability
+  | UnpMetaVar of int * parenRelation
+  | UnpListMetaVar of int * parenRelation * unparsing list
   | UnpTerminal of string
   | UnpBox of ppbox * unparsing list
   | UnpCut of ppcut

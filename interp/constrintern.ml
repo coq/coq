@@ -634,7 +634,16 @@ let traverse_binder subst id (ids,tmpsc,scopes as env) =
   let id = try coerce_to_id (fst (List.assoc id subst)) with Not_found -> id in
   id,(Idset.add id ids,tmpsc,scopes)
 
-let rec subst_rawconstr loc interp subst (ids,_,scopes as env) = function
+let decode_constrlist_value = function
+  | CAppExpl (_,_,l) -> l
+  | _ -> anomaly "Ill-formed list argument of notation"
+
+let rec subst_iterator y t = function
+  | RVar (_,id) as x -> if id = y then t else x
+  | x -> map_rawconstr (subst_iterator y t) x
+
+let rec subst_aconstr_in_rawconstr loc interp subst (ids,_,scopes as env) =
+  function
   | AVar id ->
       begin
 	(* subst remembers the delimiters stack in the interpretation *)
@@ -646,9 +655,25 @@ let rec subst_rawconstr loc interp subst (ids,_,scopes as env) = function
 	  (* Happens for local notation joint with inductive/fixpoint defs *)
 	  RVar (loc,id)
       end
+  | AList (x,y,iter,terminator) ->
+      (try 
+        (* All elements of the list are in scopes (scopt,subscopes) *)
+	let (a,(scopt,subscopes)) = List.assoc x subst in
+        let termin = 
+          subst_aconstr_in_rawconstr loc interp subst (ids,None,scopes) 
+            terminator in
+        let l = decode_constrlist_value a in
+	List.fold_right (fun a t -> 
+          subst_iterator y t
+            (subst_aconstr_in_rawconstr loc interp 
+              ((x,(a,(scopt,subscopes)))::subst)
+              (ids,None,scopes) iter))
+            l termin
+      with Not_found -> 
+          anomaly "Inconsistent substitution of recursive notation")
   | t ->
       rawconstr_of_aconstr_with_binders loc (traverse_binder subst)
-      (subst_rawconstr loc interp subst) (ids,None,scopes) t
+      (subst_aconstr_in_rawconstr loc interp subst) (ids,None,scopes) t
 
 let intern_notation intern (_,tmp_scope,scopes as env) loc ntn args =
   let ntn,args = contract_notation ntn args in
@@ -656,7 +681,7 @@ let intern_notation intern (_,tmp_scope,scopes as env) loc ntn args =
   let ((ids,c),df) = Symbols.interp_notation loc ntn scopes in
   if !dump then dump_notation_location (ntn_loc loc args ntn) ntn df;
   let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
-  subst_rawconstr loc intern subst env c
+  subst_aconstr_in_rawconstr loc intern subst env c
 
 let set_type_scope (ids,tmp_scope,scopes) =
   (ids,Some Symbols.type_scope,scopes)

@@ -130,6 +130,7 @@ let pr_set_entry_type = function
   | ETConstr _ -> str"constr"
   | ETOther (_,e) -> str e
   | ETBigint -> str "bigint"
+  | ETConstrList _ -> failwith "Internal entry type"
 
 let pr_non_terminal = function
   | NtQual (u,nt) -> (* no more qualified entries *) str nt
@@ -522,9 +523,12 @@ let rec pr_vernac = function
 *)      
   | VernacSyntax (u,el) ->
       msgerrnl (str"Warning : Syntax is discontinued; use Notation");
-      str"(* Syntax is discontinued " ++
+      str"(* <Warning> : Syntax is discontinued" ++ 
+(*
+      fnl () ++
       hov 1 (str"Syntax " ++ str u ++ spc() ++
       prlist_with_sep sep_v2 pr_syntax_entry el) ++ 
+*)
       str " *)"
   | VernacOpenCloseScope (local,opening,sc) ->
       str (if opening then "Open " else "Close ") ++ pr_locality local ++

@@ -180,7 +180,9 @@ GEXTEND Gram
     | "10" LEFTA
       [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(None,f),args)
       | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args) ]
-    | "9" [ ]
+    | "9"
+        [ ".."; ".."; c = operconstr LEVEL "0"; ".."; ".." ->
+          CAppExpl (loc,(None,Ident (loc,Topconstr.ldots_var)),[c]) ]
     | "1" LEFTA
       [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
 	CApp(loc,(Some (List.length args+1),CRef f),args@[c,None])

@@ -61,17 +61,32 @@ let env_assoc_value v env =
   try List.nth env (v-1)
   with Not_found -> anomaly ("Inconsistent environment for pretty-print rule")
 
+let decode_constrlist_value = function
+  | CAppExpl (_,_,l) -> l
+  | CApp (_,_,l) -> List.map fst l
+  | _ -> anomaly "Ill-formed list argument of notation"
+
+let decode_patlist_value = function
+  | CPatCstr (_,_,l) -> l
+  | _ -> anomaly "Ill-formed list argument of notation"
+
 open Symbols
 
-let rec print_hunk n pr env = function
+let rec print_hunk n decode pr env = function
   | UnpMetaVar (e,prec) -> pr (n,prec) (env_assoc_value e env)
+  | UnpListMetaVar (e,prec,sl) -> 
+      prlist_with_sep (fun () -> prlist (print_hunk n decode pr env) sl)
+      (pr (n,prec)) (decode (env_assoc_value e env))
   | UnpTerminal s -> str s
-  | UnpBox (b,sub) -> ppcmd_of_box b (prlist (print_hunk n pr env) sub)
+  | UnpBox (b,sub) -> ppcmd_of_box b (prlist (print_hunk n decode pr env) sub)
   | UnpCut cut -> ppcmd_of_cut cut
 
-let pr_notation pr s env =
+let pr_notation_gen decode pr s env =
   let unpl, level = find_notation_printing_rule s in
-  prlist (print_hunk level pr env) unpl, level
+  prlist (print_hunk level decode pr env) unpl, level
+
+let pr_notation = pr_notation_gen decode_constrlist_value
+let pr_patnotation = pr_notation_gen decode_patlist_value
 
 let pr_delimiters key strm =
   strm ++ str ("%"^key)
@@ -154,7 +169,7 @@ let rec pr_patt sep inh p =
   | CPatAtom (_,Some r) -> pr_reference r, latom
   | CPatNotation (_,"( _ )",[p]) ->
       pr_patt (fun()->str"(") (max_int,E) p ++ str")", latom
-  | CPatNotation (_,s,env) -> pr_notation (pr_patt mt) s env
+  | CPatNotation (_,s,env) -> pr_patnotation (pr_patt mt) s env
   | CPatNumeral (_,i) -> Bignat.pr_bigint i, latom
   | CPatDelimiters (_,k,p) -> pr_delimiters k (pr_patt mt lsimple p), 1
   in

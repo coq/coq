@@ -94,6 +94,10 @@ let make_act (f : loc -> constr_expr action_env -> constr_expr) pil =
     | Some (p, ETBigint) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:Bignat.bigint) ->
 	  make ((p,CNumeral (dummy_loc,v)) :: env) tl)
+    | Some (p, ETConstrList _) :: tl ->
+        Gramext.action (fun (v:constr_expr list) ->
+          let dummyid = Ident (dummy_loc,id_of_string "") in
+	  make ((p,CAppExpl (dummy_loc,(None,dummyid),v)) :: env) tl)
     | Some (p, ETPattern) :: tl -> 
 	failwith "Unexpected entry of type cases pattern" in
   make [] (List.rev pil)
@@ -116,11 +120,16 @@ let make_act_in_cases_pattern (* For Notations *)
     | Some (p, ETBigint) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:Bignat.bigint) ->
 	  make ((p,CPatNumeral (dummy_loc,v)) :: env) tl)
+    | Some (p, ETConstrList _) :: tl ->
+        Gramext.action (fun (v:cases_pattern_expr list) ->
+          let dummyid = Ident (dummy_loc,id_of_string "") in
+	  make ((p,CPatCstr (dummy_loc,dummyid,v)) :: env) tl)
     | Some (p, (ETPattern | ETOther _)) :: tl -> 
 	failwith "Unexpected entry of type cases pattern or other" in
   make [] (List.rev pil)
 
-let make_cases_pattern_act (* For Grammar *)
+(* For V7 Grammar only *)
+let make_cases_pattern_act
   (f : loc -> cases_pattern_expr action_env -> cases_pattern_expr) pil =
   let rec make (env : cases_pattern_expr action_env) = function
     | [] ->
@@ -134,7 +143,7 @@ let make_cases_pattern_act (* For Grammar *)
 	  tl)
     | Some (p, ETBigint) :: tl -> (* non-terminal *)
 	Gramext.action (fun v -> make ((p,CPatNumeral(dummy_loc,v)) :: env) tl)
-    | Some (p, (ETIdent | ETConstr _ | ETOther _)) :: tl ->
+    | Some (p, (ETConstrList _ | ETIdent | ETConstr _ | ETOther _)) :: tl ->
 	error "ident and constr entry not admitted in patterns cases syntax extensions" in
   make [] (List.rev pil)
 
@@ -145,16 +154,10 @@ let make_cases_pattern_act (* For Grammar *)
  * annotations are added when type-checking the command, function
  * Extend.of_ast) *)
 
-let rec build_prod_item univ assoc fromlevel pat = function
-  | ProdList0 s -> Gramext.Slist0 (build_prod_item univ assoc fromlevel pat s)
-  | ProdList1 s -> Gramext.Slist1 (build_prod_item univ assoc fromlevel pat s)
-  | ProdOpt s   -> Gramext.Sopt   (build_prod_item univ assoc fromlevel pat s)
-  | ProdPrimitive typ -> symbol_of_production assoc fromlevel pat typ
-
 let symbol_of_prod_item univ assoc from forpat = function
   | Term tok -> (Gramext.Stoken tok, None)
   | NonTerm (nt, ovar) ->
-      let eobj = build_prod_item univ assoc from forpat nt in
+      let eobj = symbol_of_production assoc from forpat nt in
       (eobj, ovar)
 
 let coerce_to_id = function
@@ -252,7 +255,9 @@ let subst_constr_expr a loc subs =
          subst t,subst d)) dl)
   in subst a
 
+(* For V7 Grammar only *)
 let make_rule univ assoc etyp rule =
+  if not !Options.v7 then anomaly "No Grammar in new syntax";
   let pil = List.map (symbol_of_prod_item univ assoc etyp false) rule.gr_production in
   let (symbs,ntl) = List.split pil in
   let act = match etyp with
@@ -264,13 +269,14 @@ let make_rule univ assoc etyp rule =
 	      CPatDelimiters (loc,s,a)
           | _ -> error "Unable to handle this grammar extension of pattern" in
 	make_cases_pattern_act f ntl
-    | ETIdent | ETBigint | ETReference -> error "Cannot extend"
+    | ETConstrList _ | ETIdent | ETBigint | ETReference -> error "Cannot extend"
     | ETConstr _ | ETOther _ -> 
 	make_act (subst_constr_expr rule.gr_action) ntl in
   (symbs, act)
 
 (* Rules of a level are entered in reverse order, so that the first rules
    are applied before the last ones *)
+(* For V7 Grammar only *)
 let extend_entry univ (te, etyp, pos, name, ass, p4ass, rls) =
   let rules = List.rev (List.map (make_rule univ ass etyp) rls) in
   grammar_extend te pos [(name, p4ass, rules)]
@@ -282,6 +288,7 @@ let define_entry univ {ge_name=typ; gl_assoc=ass; gl_rules=rls} =
   (e,typ,pos,name,ass,p4ass,rls)
 
 (* Add a bunch of grammar rules. Does not check if it is well formed *)
+(* For V7 Grammar only *)
 let extend_grammar_rules gram =
   let univ = get_univ gram.gc_univ in
   let tl = List.map (define_entry univ) gram.gc_entries in

@@ -722,6 +722,7 @@ let compute_entry allow_create adjust forpat = function
   | ETPattern -> weaken_entry Constr.pattern, None, false
   | ETOther ("constr","annot") -> 
       weaken_entry Constr.annot, None, false
+  | ETConstrList _ -> error "List of entries cannot be registered"
   | ETOther (u,n) ->
       let u = get_univ u in
       let e =
@@ -776,12 +777,23 @@ let is_binder_level from e =
       ETConstr(200,()), ETConstr(NumLevel 200,_) -> not !Options.v7
     | _ -> false
 
-let symbol_of_production assoc from forpat typ =
+let rec symbol_of_production assoc from forpat typ =
   if is_binder_level from typ then
     let eobj = snd (get_entry (get_univ "constr") "operconstr") in
     Gramext.Snterml (Gram.Entry.obj eobj,"200")
   else if is_self from typ then Gramext.Sself
   else
+    match typ with
+    | ETConstrList (typ',[]) ->
+        Gramext.Slist1 (symbol_of_production assoc from forpat (ETConstr typ'))
+    | ETConstrList (typ',tkl) ->
+        Gramext.Slist1sep
+          (symbol_of_production assoc from forpat (ETConstr typ'),
+           Gramext.srules
+             [List.map (fun x -> Gramext.Stoken x) tkl,
+              List.fold_right (fun _ v -> Gramext.action (fun _ -> v)) tkl
+                (Gramext.action (fun loc -> ()))])
+    | _ ->
     match get_constr_production_entry assoc from forpat typ with
       | (eobj,None,_) -> Gramext.Snterm (Gram.Entry.obj eobj)
       | (eobj,Some None,_) -> Gramext.Snext

@@ -133,6 +133,7 @@ val declare_ref_arguments_scope : global_reference -> unit
 type symbol =
   | Terminal of string
   | NonTerminal of identifier
+  | SProdList of identifier * symbol list
   | Break of int
 
 val make_notation_key : symbol list -> notation
@@ -155,4 +156,3 @@ val find_notation_printing_rule : notation -> unparsing_rule
 
 (**********************************************************************)
 (* Rem: printing rules for numerals are trivial *)
-

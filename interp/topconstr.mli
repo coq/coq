@@ -27,6 +27,7 @@ type aconstr =
   | ARef of global_reference
   | AVar of identifier
   | AApp of aconstr * aconstr list
+  | AList of identifier * identifier * aconstr * aconstr
   (* Part only in rawconstr *)
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
@@ -166,3 +167,6 @@ type module_type_ast =
 type module_ast = 
   | CMEident of qualid located
   | CMEapply of module_ast * module_ast
+
+(* Special identifier to encode recursive notations *)
+val ldots_var : identifier

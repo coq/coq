@@ -379,23 +379,65 @@ let quote_notation_token x =
   if (n > 0 & norm) or (n > 2 & x.[0] = '\'') then "'"^x^"'"
   else x
 
-let rec analyse_notation_tokens = function
+let rec raw_analyse_notation_tokens = function
   | []    -> [], []
+  | String ".." :: sl ->
+      let (vars,l) = raw_analyse_notation_tokens sl in
+      (list_add_set ldots_var vars, NonTerminal ldots_var :: l)
   | String x :: sl when is_normal_token x ->
       Lexer.check_ident x;
       let id = Names.id_of_string x in
-      let (vars,l) = analyse_notation_tokens sl in
+      let (vars,l) = raw_analyse_notation_tokens sl in
       if List.mem id vars then
 	error ("Variable "^x^" occurs more than once");
       (id::vars, NonTerminal id :: l)
   | String s :: sl ->
       Lexer.check_keyword s;
-      let (vars,l) = analyse_notation_tokens sl in
+      let (vars,l) = raw_analyse_notation_tokens sl in
       (vars, Terminal (unquote_notation_token s) :: l)
   | WhiteSpace n :: sl ->
-      let (vars,l) = analyse_notation_tokens sl in
+      let (vars,l) = raw_analyse_notation_tokens sl in
       (vars, Break n :: l)
 
+let rec find_pattern xl = function
+  | Break n as x :: l, Break n' :: l' when n=n' -> 
+      find_pattern (x::xl) (l,l')
+  | Terminal s as x :: l, Terminal s' :: l' when s = s' -> 
+      find_pattern (x::xl) (l,l')
+  | [NonTerminal x], NonTerminal x' :: l' ->
+      (x,x',xl),l'
+  | [NonTerminal _], Terminal s :: _ | Terminal s :: _, _ ->
+      error ("The token "^s^" occurs on one side of \"..\" but not on the other side")
+  | [NonTerminal _], Break s :: _ | Break s :: _, _ ->
+      error ("A break occurs on one side of \"..\" but not on the other side")
+  | ((SProdList _ | NonTerminal _) :: _ | []), _ -> assert false
+
+let rec interp_list_parser hd = function
+  | [] -> [], List.rev hd
+  | NonTerminal id :: tl when id = ldots_var ->
+      let ((x,y,sl),tl') = find_pattern [] (hd,tl) in
+      let yl,tl'' = interp_list_parser [] tl' in
+      (* We remember the second copy of each recursive part variable to *)
+      (* remove it afterwards *)
+      y::yl, SProdList (x,sl) :: tl''
+  | (Terminal _ | Break _) as s :: tl ->
+      if hd = [] then 
+        let yl,tl' = interp_list_parser [] tl in
+        yl, s :: tl'
+      else
+        interp_list_parser (s::hd) tl
+  | NonTerminal _ as x :: tl ->
+      let yl,tl' = interp_list_parser [x] tl in
+      yl, List.rev_append hd tl'
+  | SProdList _ :: _ -> anomaly "Unexpected SProdList in interp_list_parser"
+
+let analyse_notation_tokens l =
+  let vars,l = raw_analyse_notation_tokens l in
+  let recvars,l = interp_list_parser [] l in
+  ((if recvars = [] then [] else ldots_var::recvars), vars, l)
+
+let remove_vars = List.fold_right List.remove_assoc
+ 
 (* Build the syntax and grammar rules *)
 
 type printing_precedence = int * parenRelation
@@ -495,6 +537,9 @@ let make_hunks_ast symbols etyps from =
     | Break n :: prods ->
 	add_break n (make NoBreak prods)
 
+    | SProdList _ :: _ ->
+        anomaly "Recursive notations not supported in old syntax"
+
     | [] -> []
 
   in make NoBreak symbols
@@ -548,6 +593,11 @@ let make_hunks etyps symbols from =
 
     | Break n :: prods ->
 	add_break n (make NoBreak prods)
+
+    | SProdList (m,sl) :: prods ->
+	let i = list_index m vars in
+	let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
+	UnpListMetaVar (i,prec,make NoBreak sl) :: make CanBreak prods
 
     | [] -> []
 
@@ -615,11 +665,22 @@ let make_production etyps symbols =
       (fun t l -> match t with
         | NonTerminal m ->
 	    let typ = List.assoc m etyps in
-	    NonTerm (ProdPrimitive typ, Some (m,typ)) :: l
+	    NonTerm (typ, Some (m,typ)) :: l
         | Terminal s ->
 	    Term (Extend.terminal s) :: l
         | Break _ ->
-	    l)
+            l
+        | SProdList (x,sl) ->
+            let sl = List.flatten
+              (List.map (function Terminal s -> [Extend.terminal s] 
+                | Break _ -> []
+                | _ -> anomaly "Found a non terminal token in recursive notation separator") sl) in
+	    let y = match List.assoc x etyps with
+              | ETConstr x -> x
+              | _ ->
+                  error "Component of recursive patterns in notation must be constr" in
+            let typ = ETConstrList (y,sl) in
+            NonTerm (typ, Some (x,typ)) :: l)
       symbols [] in
   define_keywords prod
 
@@ -630,6 +691,8 @@ let rec find_symbols c_current c_next c_last = function
       (id, prec) :: (find_symbols c_next c_next c_last sl)
   | Terminal s :: sl -> find_symbols c_next c_next c_last sl
   | Break n :: sl -> find_symbols c_current c_next c_last sl
+  | SProdList (x,_) :: sl' -> 
+      (x,c_next)::(find_symbols c_next c_next c_last sl')
 
 let border = function
   | (_,ETConstr(_,BorderProd (_,a))) :: _ -> a
@@ -643,9 +706,8 @@ let recompute_assoc typs =
     | _ -> None
 
 let rec expand_squash = function
-  | Term ("","{") :: NonTerm (ProdPrimitive (ETConstr _), n) :: Term ("","}")
-    :: l ->
-      NonTerm (ProdPrimitive (ETConstr (NextLevel,InternalProd)),n)
+  | Term ("","{") :: NonTerm (ETConstr _, n) :: Term ("","}") :: l ->
+      NonTerm (ETConstr (NextLevel,InternalProd),n)
       :: expand_squash l
   | a :: l -> a :: expand_squash l
   | [] -> []
@@ -675,9 +737,6 @@ let make_syntax_rule n name symbols typs ast ntn sc =
     syn_astpat = make_pattern symbols ast;
     syn_hunks =
       [UNP_SYMBOLIC(sc,ntn,UNP_BOX (PpHOVB 1,make_hunks_ast symbols typs n))]}]
-
-let make_pp_rule (n,typs,symbols) =
-  [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
 
 let make_pp_rule (n,typs,symbols,fmt) =
   match fmt with
@@ -827,6 +886,7 @@ let set_entry_type etyps (x,typ) =
           ETConstr (n,BorderProd (left,None))
       | ETConstr (n,()), (_,InternalProd) -> ETConstr (n,InternalProd)
       | (ETPattern | ETIdent | ETBigint | ETOther _ | ETReference as t), _ -> t
+      | (ETConstrList _, _) -> assert false
     with Not_found -> ETConstr typ
   in (x,typ)
 
@@ -862,6 +922,7 @@ let find_precedence lev etyps symbols =
 	    if lev = None then
 	      error "Need an explicit level"
 	    else out_some lev
+        | ETConstrList _ -> assert false (* internally used in grammar only *)
       with Not_found -> 
 	if lev = None then
 	  error "A left-recursive notation must have an explicit level"
@@ -910,8 +971,7 @@ let compute_syntax_data forv7 (df,modifiers) =
   (* Notation defaults to NONA *)
   let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
   let toks = split_notation_string df in
-  let innerlevel = NumLevel (if forv7 then 10 else 200) in
-  let (vars,symbols) = analyse_notation_tokens toks in
+  let (recvars,vars,symbols) = analyse_notation_tokens toks in
   let ntn_for_interp = make_notation_key symbols in
   let symbols = remove_curly_brackets symbols in
   let notation = make_notation_key symbols in
@@ -919,6 +979,7 @@ let compute_syntax_data forv7 (df,modifiers) =
   let n =
     if !Options.v7 then find_precedence_v7 n etyps symbols
     else find_precedence n etyps symbols in
+  let innerlevel = NumLevel (if forv7 then 10 else 200) in
   let typs =
     find_symbols
       (NumLevel n,BorderProd(true,assoc))
@@ -929,20 +990,21 @@ let compute_syntax_data forv7 (df,modifiers) =
   let typs = List.map (set_entry_type etyps) typs in
   let ppdata = (n,typs,symbols,fmt) in
   let prec = (n,List.map (assoc_of_type n) typs) in
-  ((onlyparse,vars,ntn_for_interp,notation),prec,ppdata,(Lib.library_dp(),df))
+  ((onlyparse,recvars,vars,
+    ntn_for_interp,notation),prec,ppdata,(Lib.library_dp(),df))
 
 let add_syntax_extension local mv mv8 =
   let data8 = option_app (compute_syntax_data false) mv8 in
   let data = option_app (compute_syntax_data !Options.v7) mv in
   let prec,gram_rule = match data with
   | None -> None, None
-  | Some ((_,_,_,notation),prec,(n,typs,symbols,_),_) -> 
+  | Some ((_,_,_,_,notation),prec,(n,typs,symbols,_),_) -> 
       Some prec, Some (make_grammar_rule n typs symbols notation None) in
   match data, data8 with
   | None, None -> (* Nothing to do: V8Notation while not translating *) () 
   | _, Some d | Some d, None ->
-    let ((_,_,_,ntn),ppprec,ppdata,_) = d in
-    let ntn' = match data with Some ((_,_,_,ntn),_,_,_) -> ntn | _ -> ntn in
+    let ((_,_,_,_,ntn),ppprec,ppdata,_) = d in
+    let ntn' = match data with Some ((_,_,_,_,ntn),_,_,_) -> ntn | _ -> ntn in
     let pp_rule = make_pp_rule ppdata in
     Lib.add_anonymous_leaf
       (inSyntaxExtension (local,(prec,ppprec),ntn',gram_rule,pp_rule))
@@ -1042,7 +1104,7 @@ let contract_notation ntn =
   aux ntn 0
 
 let add_notation_in_scope local df c mods omodv8 scope toks =
-  let ((onlyparse,vars,intnot,notation),prec,(n,typs,symbols,_ as ppdata),df')=
+  let ((onlyparse,recs,vars,intnot,notation),prec,(n,typs,symbols,_ as ppdata),df')=
     compute_syntax_data !Options.v7 (df,mods) in
   (* Declare the parsing and printing rules if not already done *)
     (* For both v7 and translate: parsing is as described for v7 in v7 file *)
@@ -1053,13 +1115,13 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
     (* In short: parsing does not depend on omodv8 *)
     (* Printing depends on mv8 if defined, otherwise of mods (scaled by 10) *)
     (* if in v7, or of mods without scaling if in v8 *)
-  let intnot,ntn,ppvars,ppprec,pp_rule =
+  let intnot,ntn,pprecvars,ppvars,ppprec,pp_rule =
     match omodv8 with
     | Some mv8 ->
-        let (_,vars8,intnot8,ntn8),p,d,_ = compute_syntax_data false mv8 in
-        intnot8,ntn8,vars8,p,make_pp_rule d
+        let (_,recs8,vars8,intnot8,ntn8),p,d,_ = compute_syntax_data false mv8 in
+        intnot8,ntn8,recs8,vars8,p,make_pp_rule d
     | None when not !Options.v7 -> 
-        intnot,notation,vars,prec,make_pp_rule ppdata
+        intnot,notation,recs,vars,prec,make_pp_rule ppdata
     | None ->
 	(* means the rule already exists: recover it *)
         (* occurs only with V8only flag alone *)
@@ -1067,7 +1129,7 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
           let ntn = contract_notation notation in
 	  let _, oldprec8 = Symbols.level_of_notation ntn in
 	  let rule,_ = Symbols.find_notation_printing_rule ntn in
-	  notation,ntn,vars,oldprec8,rule
+	  notation,ntn,recs,vars,oldprec8,rule
 	with Not_found -> error "No known parsing rule for this notation in V8"
   in
   let permut = mk_permut vars ppvars in
@@ -1077,15 +1139,15 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
       (local,(Some prec,ppprec),ntn,Some gram_rule,pp_rule));
 
   (* Declare interpretation *)
-  let a = interp_aconstr [] ppvars c in
+  let (acvars,ac) = interp_aconstr [] ppvars c in
+  let a = (remove_vars pprecvars acvars,ac) (* For recursive parts *) in
   let old_pp_rule =
-    (* Used only by v7 *)
-    if onlyparse then None
+    (* Used only by v7; disable if contains a recursive pattern *)
+    if onlyparse or pprecvars <> [] then None
     else
       let r = interp_global_rawconstr_with_vars vars c in
       Some (make_old_pp_rule n symbols typs r intnot scope vars) in
   let onlyparse = onlyparse or !Options.v7_only in
-  let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
   Lib.add_anonymous_leaf
     (inNotation(local,old_pp_rule,intnot,scope,a,onlyparse,false,df'))
 
@@ -1101,6 +1163,11 @@ let check_notation_existence notation =
 let exists_notation_syntax ntn =
   try fst (Symbols.level_of_notation (contract_notation ntn)) <> None
   with Not_found -> false
+
+let set_data_for_v7_pp recs a vars =
+  if not !Options.v7 then None else
+    if recs=[] then Some (a,vars)
+    else (warning "No recursive notation in v7 syntax";None)
 
 let build_old_pp_rule notation scope symbs (r,vars) =
   let prec = 
@@ -1126,22 +1193,24 @@ let add_notation_interpretation_core local symbs for_old df a scope onlyparse
      (Lib.library_dp(),df)))
 
 let add_notation_interpretation df names c sc =
-  let (vars,symbs) = analyse_notation_tokens (split_notation_string df) in
+  let (recs,vars,symbs) = analyse_notation_tokens (split_notation_string df) in
   check_notation_existence (make_notation_key symbs);
-  let a = interp_aconstr names vars c in
+  let (acvars,ac) = interp_aconstr names vars c in
+  let a = (remove_vars recs acvars,ac) (* For recursive parts *) in
   let a_for_old = interp_rawconstr_with_implicits (Global.env()) vars names c 
   in
-  let for_oldpp = Some (a_for_old,vars) in
+  let for_oldpp = set_data_for_v7_pp recs a_for_old vars in
   add_notation_interpretation_core false symbs for_oldpp df a sc false false
 
 let add_notation_in_scope_v8only local df c mv8 scope toks =
-  let (_,vars,intnot,notation),prec,ppdata,df' = compute_syntax_data false (df,mv8) in
+  let (_,recs,vars,intnot,notation),prec,ppdata,df' = compute_syntax_data false (df,mv8) in
   let pp_rule = make_pp_rule ppdata in
   Lib.add_anonymous_leaf
     (inSyntaxExtension(local,(None,prec),notation,None,pp_rule));
   (* Declare the interpretation *)
   let onlyparse = false in
-  let a = interp_aconstr [] vars c in
+  let (acvars,ac) = interp_aconstr [] vars c in
+  let a = (remove_vars recs acvars,ac) (* For recursive parts *) in
   Lib.add_anonymous_leaf
     (inNotation(local,None,intnot,scope,a,onlyparse,true,df'))
 
@@ -1159,10 +1228,10 @@ let add_notation_v8only local c (df,modifiers) sc =
 		error "Parsing rule for this notation includes no level"
 	      else
 	        (* Declare only interpretation *)
-		let (vars,symbs) = analyse_notation_tokens toks in
+		let (recs,vars,symbs) = analyse_notation_tokens toks in
 		let onlyparse = modifiers = [SetOnlyParsing] in
-		let a = interp_aconstr [] vars c in
-		let a_for_old = interp_global_rawconstr_with_vars vars c in
+                let (acvars,ac) = interp_aconstr [] vars c in
+                let a = (remove_vars recs acvars,ac) in
 		add_notation_interpretation_core local symbs None df a sc 
 		  onlyparse true
 	  | Some n ->
@@ -1194,12 +1263,13 @@ let add_notation local c dfmod mv8 sc =
 		error "Parsing rule for this notation includes no level"
 	      else
 	        (* Declare only interpretation *)
-		let (vars,symbs) = analyse_notation_tokens toks in
+		let (recs,vars,symbs) = analyse_notation_tokens toks in
                 if exists_notation_syntax (make_notation_key symbs) then
 		  let onlyparse = modifiers = [SetOnlyParsing] in
-		  let a = interp_aconstr [] vars c in
+                  let (acvars,ac) = interp_aconstr [] vars c in
+                  let a = (remove_vars recs acvars,ac) in
 		  let a_for_old = interp_global_rawconstr_with_vars vars c in
-		  let for_old = Some (a_for_old,vars) in
+                  let for_old = set_data_for_v7_pp recs a_for_old vars in
 		  add_notation_interpretation_core local symbs for_old df a
 		    sc onlyparse false
                 else
@@ -1263,8 +1333,9 @@ let add_infix local (inf,modl) pr mv8 sc =
     let toks = split_notation_string df in
     if a8=None & n8=None & fmt=None then
       (* Declare only interpretation *)
-      let (vars,symbs) = analyse_notation_tokens toks in
-      let a' = interp_aconstr [] vars a in
+      let (recs,vars,symbs) = analyse_notation_tokens toks in
+      let (acvars,ac) = interp_aconstr [] vars a in
+      let a' = (remove_vars recs acvars,ac) in
       let a_for_old = interp_global_rawconstr_with_vars vars a in
       add_notation_interpretation_core local symbs None df a' sc 
 	onlyparse true
@@ -1291,11 +1362,12 @@ let add_infix local (inf,modl) pr mv8 sc =
     (* En v8, une notation sans information de parsing signifie *)
     (* de ne déclarer que l'interprétation *)
     (* Declare only interpretation *)
-    let (vars,symbs) = analyse_notation_tokens toks in
+    let (recs,vars,symbs) = analyse_notation_tokens toks in
     if exists_notation_syntax (make_notation_key symbs) then
-      let a' = interp_aconstr [] vars a in
+      let (acvars,ac) = interp_aconstr [] vars a in
+      let a' = (remove_vars recs acvars,ac) in
       let a_for_old = interp_global_rawconstr_with_vars vars a in
-      let for_old = Some (a_for_old,vars) in
+      let for_old = set_data_for_v7_pp recs a_for_old vars in
       add_notation_interpretation_core local symbs for_old df a' sc 
         onlyparse false
     else
