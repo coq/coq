@@ -99,7 +99,7 @@ Hints Resolve
 (*         Reversible lemmas relating operators                       *)
 (* Probably to be declared as hints but need to define precedences    *)
 
-(* A) Conversion between comparisons/predicates and arithmetic operators
+(*i A) Conversion between comparisons/predicates and arithmetic operators
 
 (* Lemmas ending by eq *)
 Zegal_left: (x,y:Z)`x = y`->`x+(-y) = 0`
@@ -185,12 +185,13 @@ Zgt_pred: (n,p:Z)`p > (Zs n)`->`(Zpred p) > n`
 
 (* Lemmas ending by Zlt *)
 Zlt_pred: (n,p:Z)`(Zs n) < p`->`n < (Zpred p)`
-*)
+
+i*)
 
 (**********************************************************************)
 (*                 Useful Bottom-up lemmas                            *)
 
-(* A) Bottom-up simplification: should be used 
+(*i A) Bottom-up simplification: should be used 
 
 (* Lemmas ending by eq *)
 Zeq_add_S: (n,m:Z)`(Zs n) = (Zs m)`->`n = m`
@@ -232,11 +233,11 @@ pZmult_lt: (x,y:Z)`x > 0`->`0 < y*x`->`0 < y`
 (* Lemmas ending by Zle *)
 Zmult_le: (x,y:Z)`x > 0`->`0 <= y*x`->`0 <= y`
 OMEGA1: (x,y:Z)`x = y`->`0 <= x`->`0 <= y`
-*)
+i*)
 
 (**********************************************************************)
 (*           Irreversible lemmas with meta-variables                  *)
-(* To be used by EAuto                                                
+(*i To be used by EAuto                                                
 
 Hints Immediate
 (* Lemmas ending by eq *)
@@ -258,13 +259,13 @@ Zle_lt_trans: (n,m,p:Z)`n <= m`->`m < p`->`n < p`
 
 (* Lemmas ending by Zle *)
 Zle_trans: (n,m,p:Z)`n <= m`->`m <= p`->`n <= p`
-*)
+i*)
 
 (**********************************************************************)
 (*               Unclear or too specific lemmas                       *)
 (* Not to be used ??                                                  *)
 
-(* A) Irreversible and too specific (not enough regular) 
+(*i A) Irreversible and too specific (not enough regular) 
 
 (* Lemmas ending by Zle *)
 Zle_mult: (x,y:Z)`x > 0`->`0 <= y`->`0 <= y*x`
@@ -290,11 +291,11 @@ Zmult_le_approx: (x,y,z:Z)`x > 0`->`x > z`->`0 <= y*x+z`->`0 <= y`
 
 (* Lemmas ending by Zlt *)
 Zlt_minus: (n,m:Z)`0 < m`->`n-m < n`
-*)
+i*)
 
 (**********************************************************************)
 (*               Lemmas to be used as rewrite rules                   *)
-(* but can also be used as hints                                      
+(*i but can also be used as hints                                      
 
 (* Left-to-right simplification lemmas (a symbol disappears) *)
 
@@ -373,4 +374,4 @@ inj_minus2: (x,y:nat)(gt y x)->`(inject_nat (minus x y)) = 0`
 
 (* Too specific ? *)
 Zred_factor5: (x,y:Z)`x*0+y = y`
-*)
+i*)

@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(* This file formalizes Berardi's paradox which says that in
+(*i This file formalizes Berardi's paradox which says that in
    the calculus of constructions, excluded middle (EM) and axiom of
    choice (AC) implie proof irrelevenace (PI).
    Here, the axiom of choice is not necessary because of the use
@@ -25,7 +25,7 @@
    pages     = {519-525}
 }
 
- *)
+ i*)
 
 Require Elimdep.
 
