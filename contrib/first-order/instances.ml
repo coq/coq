@@ -180,7 +180,7 @@ let right_instance_tac inst continue seq=
 	    (fun gls->
 	       split (Rawterm.ImplicitBindings 
 			[mkVar (Tacmach.pf_nth_hyp_id gls 1)]) gls);
-	    tclSOLVE [wrap 0 false continue (deepen seq)]];
+	    tclSOLVE [wrap 0 true continue (deepen seq)]];
 	 tclTRY assumption] 
     | Real ((0,t),_) ->
 	(tclTHEN (split (Rawterm.ImplicitBindings [t]))
