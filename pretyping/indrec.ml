@@ -263,7 +263,7 @@ let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
 	| (indi,mibi,mipi,dep,_)::rest ->
 	    let tyi = snd indi in
 	    let nctyi =
-              Array.length mipi.mind_consnames in (* nb constructeurs du type *) 
+              Array.length mipi.mind_consnames in (* nb constructeurs du type*)
 
             (* arity in the context of the fixpoint, i.e.
                 P1..P_nrec f1..f_nbconstruct *)
@@ -272,34 +272,41 @@ let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
 	    let lnames,_ = get_arity env indf in
 
 	    let nar = mipi.mind_nrealargs in
-	    let decf = nar+nrec+nbconstruct+nrec in 
 	    let dect = nar+nrec+nbconstruct in
-	    let vecfi = rel_vect (dect+1-i-nctyi) nctyi in
 
-            (* constructors in context of the Cases expr, i.e.
-                P1..P_nrec f1..f_nbconstruct F_1..F_nrec a_1..a_nar x:I *)
-	    let args' = extended_rel_list (decf+1) lnamespar in
-            let indf' = make_ind_family(indi,args') in
-	    let constrs = get_constructors env indf' in
 	    let branches = 
+              (* constructors in context of the Cases expr, i.e.
+                 P1..P_nrec f1..f_nbconstruct F_1..F_nrec a_1..a_nar x:I *)
+	      let args' = extended_rel_list (dect+nrec+1) lnamespar in
+              let indf' = make_ind_family(indi,args') in
+	      let constrs = get_constructors env indf' in
+	      let vecfi = rel_vect (dect+1-i-nctyi) nctyi in
 	      array_map3
 		(make_rec_branch_arg env sigma (nparams,depPvec,nar+1))
-                vecfi constrs
-                (dest_subterms recargsvec.(tyi)) in
+                vecfi constrs (dest_subterms recargsvec.(tyi)) in
 	    let j = (match depPvec.(tyi) with 
 		       | Some (_,c) when isRel c -> destRel c 
 		       | _ -> assert false) in
 	    let deftyi = 
+	      let ci = make_default_case_info env RegularStyle indi in
+	      let indf' = lift_inductive_family nrec indf in
+	      let depind = build_dependent_inductive env indf' in
+	      let lnames' = Termops.lift_rel_context nrec lnames in
+	      let p =
+		let arsign =
+		  if dep then (Anonymous,None,depind)::lnames' else lnames' in
+		it_mkLambda_or_LetIn_name env
+		  (appvect
+		    (mkRel ((if dep then nar+1 else nar) + dect + j),
+		    extended_rel_vect 0 arsign)) arsign
+	      in
 	      it_mkLambda_or_LetIn_name env
 		(lambda_create env
-		   (build_dependent_inductive env
-                     (lift_inductive_family nrec indf),
-		    mkCase (make_default_case_info env RegularStyle indi,
-			       mkRel (dect+j+1), mkRel 1, branches)))
-		(Termops.lift_rel_context nrec lnames)
+		  (depind,mkCase (ci, lift 1 p, mkRel 1, branches)))
+		lnames'
 	    in
-	    let ind = build_dependent_inductive env indf in
 	    let typtyi = 
+	      let ind = build_dependent_inductive env indf in
 	      it_mkProd_or_LetIn_name env
 		(prod_create env
 		   (ind,
