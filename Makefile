@@ -336,7 +336,7 @@ COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
 
 coqbinaries:: ${COQBINARIES}
 
-world: coqbinaries states theories contrib tools
+world: coqbinaries states theories contrib tools coqide
 
 coqlight: coqbinaries states theories-light tools
 
@@ -380,7 +380,7 @@ beforedepend:: scripts/tolink.ml
 
 COQIDEBYTE=bin/coqide.byte$(EXE)
 COQIDEOPT=bin/coqide.opt$(EXE)
-COQIDE=bin/coqide.$(BEST)$(EXE)
+COQIDE=bin/coqide$(EXE)
 
 COQIDECMO=ide/utils/okey.cmo ide/utils/uoptions.cmo \
 	  ide/utils/configwin_keys.cmo ide/utils/configwin_types.cmo \
@@ -402,7 +402,13 @@ beforedepend:: ide/utf8_convert.ml
 FULLIDELIB=$(FULLCOQLIB)/ide
 IDEFILES=ide/coq.png ide/.coqide-gtk2rc ide/FAQ
 
-ide: $(COQIDEBYTE) $(COQIDE) states
+coqide: coqide-$(HASCOQIDE)
+coqide-no:
+coqide-byte: $(COQIDEBYTE) $(COQIDE)
+coqide-opt:  $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
+
+ide: coqide-$(HASCOQIDE) states
+
 clean-ide: 
 	rm -f $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT)
 
@@ -412,6 +418,9 @@ $(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) $(COQIDECMX)
 
 $(COQIDEBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(COQIDECMO)
 	$(COQMKTOP) -g -ide -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
+
+$(COQIDE):
+	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)
 
 ide/%.cmo: ide/%.ml
 	$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
@@ -871,18 +880,19 @@ install-opt:
 	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(FULLBINDIR)
 	cd $(FULLBINDIR); ln -sf coqtop.opt$(EXE) coqtop$(EXE)
 
-install-binaries:
+install-binaries: install-ide-$(HASCOQIDE)
 	$(MKDIR) $(FULLBINDIR)
 	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(COQINTERFACE) $(COQVO2XML) $(FULLBINDIR)
 
-install-ide: install-ide-$(BEST)
-	cd $(FULLBINDIR); ln -sf coqide.$(BEST)$(EXE) coqide$(EXE)
+install-ide-no:
 
-install-ide-byte:
+install-ide-byte: 
 	cp $(COQIDEBYTE) $(FULLBINDIR)
+	cd $(FULLBINDIR); ln -sf coqide.byte$(EXE) coqide$(EXE)
 
-install-ide-opt: install-ide-byte
-	cp $(COQIDEOPT) $(FULLBINDIR)
+install-ide-opt:
+	cp $(COQIDEBYTE) $(COQIDEOPT) $(FULLBINDIR)
+	cd $(FULLBINDIR); ln -sf coqide.opt$(EXE) coqide$(EXE)
 
 LIBFILES=$(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO)
 LIBFILESLIGHT=$(INITVO) $(THEORIESLIGHTVO)

@@ -52,16 +52,24 @@ INSTALLATION
    You must have write access to the OCaml standard library path.
    If this fails read lablgtk2/README.
 
-2) Go into your Coq source directory and then : 
+2) Go into your Coq source directory and, as usual, configure with:
 
-   make ide
-   
+	./configure
+
+   This should detect the ability of making CoqIde.
+   Then compile with
+
+	make world
+
+   and install with
+
+	make install
+
    In case you are upgrading from an old version you may need to run
 	make clean-ide
 
-3) You may now run bin/coqide.opt or bin/coqide.byte.
-   If your coq install is not local, use 
-	make install-ide
+3) You may now run bin/coqide
+
 
 NOTES
 There are three configuration files located in your $(HOME) dir. 

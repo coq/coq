@@ -441,7 +441,9 @@ let reset_name (loc,id) =
 
 let is_mod_node = function 
   | OpenedModule _ | OpenedModtype _ | OpenedSection _ 
-  | ClosedSection _ -> true | _ -> false
+  | ClosedSection _ -> true 
+  (* | Leaf o -> let t = object_tag o in t = "MODULE" || t = "MODULE TYPE" *)
+  | _ -> false
 
 (* Reset on a module or section name in order to bypass constants with 
    the same name *) 
