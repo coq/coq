@@ -3162,8 +3162,6 @@ ide/utils/configwin_types.cmo: ide/utils/configwin_keys.cmo \
     ide/utils/uoptions.cmi 
 ide/utils/configwin_types.cmx: ide/utils/configwin_keys.cmx \
     ide/utils/uoptions.cmx 
-ide/utils/example.cmo: ide/utils/configwin.cmi 
-ide/utils/example.cmx: ide/utils/configwin.cmx 
 ide/utils/okey.cmo: ide/utils/okey.cmi 
 ide/utils/okey.cmx: ide/utils/okey.cmi 
 ide/utils/uoptions.cmo: ide/utils/uoptions.cmi 
