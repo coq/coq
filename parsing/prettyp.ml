@@ -461,7 +461,7 @@ let print_about ref =
   let k = locate_any_name ref in
   begin match k with
   | Term (ConstRef sp as ref) -> 
-      print_constant false " = " sp
+      print_constant false " : " sp
   | Term (IndRef ind as ref) ->
       let ty = Inductive.type_of_inductive env ind in
       print_typed_value (mkInd ind, ty) ++
