@@ -444,9 +444,9 @@ let get_default_action_parser () = !default_action_parser_ref
 let set_default_action_parser f = (default_action_parser_ref := f)
 
 let set_default_action_parser_by_name = function
-  | "constr" -> set_default_action_parser constr_parser
-  | "tactic" -> set_default_action_parser tactic_parser
-  | "vernac" -> set_default_action_parser vernac_parser
+  | "constr" -> set_default_action_parser !constr_parser
+  | "tactic" -> set_default_action_parser !tactic_parser
+  | "vernac" -> set_default_action_parser !vernac_parser
   | _ -> set_default_action_parser ast
 
 let default_action_parser =
