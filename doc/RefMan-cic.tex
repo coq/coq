@@ -47,9 +47,12 @@ a mutual recursive way and also because similar constructions can be
 applied to both terms and types and consequently can share the same
 syntactic structure.
 
-For instance the type of functions will have several meanings. Assume
-\nat\ is the type of natural numbers then $\nat\ra\nat$ is the type of
-functions from \nat\ to \nat, $\nat \ra \Prop$ is the type of unary
+Consider for instance the $\ra$ constructor and assume \nat\ is the
+type of natural numbers. Then $\ra$ is used both to denote
+$\nat\ra\nat$ which is the type of functions from \nat\ to \nat, and
+to denote $\nat \ra \Prop$ which is the type of unary predicates over
+the natural numbers. Consider abstraction which builds functions. It
+serves to build ``ordinary'' functions as $[x:\nat]({\tt mult} ~x~x)$ (assuming {\tt mult} is already defined) but may build also 
 predicates over the natural numbers. For instance $[x:\nat](x=x)$ will
 represent a predicate $P$, informally written in mathematics
 $P(x)\equiv x=x$. If $P$ has type $\nat \ra \Prop$, $(P~x)$ is a
@@ -61,8 +64,8 @@ type $(P~n)$ and consequently represent proofs of the formula
 \subsection{Sorts}\label{Sorts}
 \index{Sorts}
 Types are seen as terms of the language and then should belong to
-another type. The type of a type is always a constant of the language
-called a sort.
+another type. The type of a type is a always a constant of the language
+called a {\em sort}.
 
 The two basic sorts in the language of \CIC\ are \Set\ and \Prop.
 
@@ -137,32 +140,22 @@ environment. This roughly corresponds to the way they are actually
 implemented in the \Coq\ system. It is simple to map this presentation
 in a theory where inductive objects are represented by terms.
 
-\subsection{Language}
+\subsection{Terms}
 
-\paragraph{Types.}
+Terms are built from variables, global names, constructors,
+abstraction, application, local declarations bindings (``let-in''
+expressions) and product.
 
-Roughly speaking types can be separated into atomic and composed
-types.
-
-An atomic type of the {\em Calculus of Inductive Constructions} is
-either a sort or is built from a type variable or an inductive
-definition applied to some terms.
-
-A composed type will be a product $(x:T)U$ with $T$ and $U$ two types.
-
-\paragraph{Terms.}
-A term is either a type or a term variable or a term constant of the
-environment.
-
-As usual in $\lambda$-calculus, we combine objects using abstraction
-and application.
+From a syntactic point of view, types cannot be distingued from terms,
+except that they cannot start by an abstraction, and that if a term is
+a sort or a product, it should be a type.
 
 More precisely the language of the {\em Calculus of Inductive
-  Constructions} is built with the following rules:
+  Constructions} is built from the following rules:
 
 \begin{enumerate}
 \item the sorts {\sf Set, Prop, Type} are terms.
-\item constants of the environment are terms.
+\item names for global constant of the environment are terms.
 \item variables are terms.
 \item if $x$ is a variable and $T$, $U$ are terms then $(x:T)U$ is a
   term. If $x$ occurs in $U$, $(x:T)U$ reads as {\it ``for all x of
@@ -177,6 +170,10 @@ More precisely the language of the {\em Calculus of Inductive
   $T$ to $U$.
 \item if $T$ and $U$ are terms then $(T\ U)$ is a term.  The term $(T\ 
   U)$ reads as {\it ``T applied to U''}.
+\item if $x$ is a variable, and $T$, $U$ are terms then $[x:=T]U$ is a
+  term which denotes the term $U$ where the variable $x$ is locally
+  bound to $T$. This stands for the common ``let-in'' construction of
+  functional programs such as ML or Scheme.
 \end{enumerate}
 
 \paragraph{Notations.} Application associates to the left such that
@@ -186,6 +183,7 @@ D$ represents $(x:A)(B\ra (C\ra D))$.  One uses sometimes $(x,y:A)B$ or
 $[x,y:A]B$ to denote the abstraction or product of several variables
 of the same type. The equivalent formulation is $(x:A)(y:A)B$ or
 $[x:A][y:A]B$
+
 \paragraph{Free variables.}
 The notion of free variables is defined as usual.  In the expressions
 $[x:T]U$ and $(x:T)U$ the occurrences of $x$ in $U$ are bound.  They
@@ -193,49 +191,79 @@ are represented by de Bruijn indexes in the internal structure of
 terms.
 
 \paragraph{Substitution.} \index{Substitution}
-The notion of substituting a term $T$ to free occurrences of a
-variable $x$ in a term $U$ is defined as usual. The resulting term
-will be written $\subst{U}{x}{T}$.
+The notion of substituting a term $t$ to free occurrences of a
+variable $x$ in a term $u$ is defined as usual. The resulting term
+is written $\subst{u}{x}{t}$.
 
 
 \section{Typed terms}\label{Typed-terms}
-As objects of type theory, terms are subjected to {\em type
-  discipline}. The well typing of a term depends on a set of
-declarations of variables we call a {\em context}. A context $\Gamma$
-is written $[x_1:T_1;..; x_n:T_n]$ where the $x_i$'s are distinct
-variables and the $T_i$'s are terms. If $\Gamma$ contains some $x:T$,
-we write $(x:T)\in\Gamma$ and also $x \in\Gamma$. Contexts must be
-themselves {\em well formed}.  The notation $\Gamma::(y:T)$ denotes
-the context $[x_1:T_1;..;x_n:T_n;y:T]$. The notation $[]$ denotes the
-empty context.
-\index{Context}
 
-We define the inclusion of two contexts $\Gamma$ and $\Delta$ (written
-as $\Gamma \subset \Delta$) as the property, for all variable $x$ and
-type $T$, if $(x:T) \in \Gamma$ then $(x:T)\in \Delta$.  We write
-$|\Delta|$ for the length of the context $\Delta$ which is $n$ if
-$\Delta$ is $[x_1:T_1;..; x_n:T_n]$.
+As objects of type theory, terms are subjected to {\em type
+discipline}. The well typing of a term depends on an environment which
+consists in a global environment (see below) and a local context.
+
+\paragraph{Local context.}
+A {\em local context} (or shortly context) is an ordered list of
+declarations of variables. The declaration of some variable $x$ is
+either an assumption, written $x:T$ ($T$ is a type) or a definition,
+written $x:=t:T$.  We use brackets to write contexts. A
+typical example is $[x:T;y:=u:U;z:V]$.  Notice that the variables
+declared in a context must be distinct. If $\Gamma$ declares some $x$,
+we write $x \in\Gamma$. By writing $(x:T)\in\Gamma$ we mean that
+either $x:T$ is an assumption in $\Gamma$ or that there exists some $t$ such
+that $x:=t:T$ is a definition in $\Gamma$. If $\Gamma$ defines some
+$x:=t:T$, we also write $(x:=t:T)\in\Gamma$.  Contexts must be
+themselves {\em well formed}.  For the rest of the chapter, the
+notation $\Gamma::(y:T)$ (resp $\Gamma::(y:=t:T)$) denotes the context
+$\Gamma$ enriched with the declaration $y:T$ (resp $y:=t:T$). The
+notation $[]$ denotes the empty context.  \index{Context}
+
+% Does not seem to be used further...
+% 
+% We define the inclusion of two contexts $\Gamma$ and $\Delta$ (written
+% as $\Gamma \subset \Delta$) as the property, for all variable $x$,
+% type $T$ and term $t$, if $(x:T) \in \Gamma$ then $(x:T)\in \Delta$
+% and if $(x:=t:T) \in \Gamma$ then $(x:=t:T)\in \Delta$.  We write
+% $|\Delta|$ for the length of the context $\Delta$, that is for the number
+% of declarations (assumptions or definitions) in $\Delta$.
 
 A variable $x$ is said to be free in $\Gamma$ if $\Gamma$ contains a
 declaration $y:T$ such that $x$ is free in $T$.
 
 \paragraph{Environment.}\index{Environment}
-Because we are manipulating constants, we also need to consider an
-environment $E$. We shall give afterwards the rules for introducing
-new objects in the environment. For the typing relation of terms, it
-is enough to introduce two notions. One which says if a name is
-defined in the environment we shall write $c \in E$ and the other one
-which gives the type of this constant in $E$. We shall write $(c : T)
-\in E$.
+Because we are manipulating global declarations (constants and global
+assumptions), we also need to consider a global environment $E$.
 
-In the following, we assume $E$ is a valid environment.  We define
-simultaneously two judgments.  The first one \WTEG{t}{T} means the
-term $t$ is well-typed and has type $T$ in the environment $E$ and
-context $\Gamma$.  The second judgment \WFE{\Gamma} means that the
-environment $E$ is well-formed and the context $\Gamma$ is a valid
-context in this environment.  It also means a third property which
-makes sure that any constant in $E$ was defined in an environment
-which is included in $\Gamma$
+An environment is an ordered list of declarations of global
+names. Declarations are either assumptions or ``standard''
+definitions, that is abbreviations for well-formed terms
+but also definitions of inductive objects. In the latter
+case, an object in the environment will define one or more constants
+(that is types and constructors, see section \ref{Cic-inductive-definitions}).
+
+An assumption will be represented in the environment as
+\Assum{\Gamma}{c}{T} which means that $c$ is assumed of some type $T$
+well-defined in some context $\Gamma$. An (ordinary) definition will
+be represented in the environment as \Def{\Gamma}{c}{t}{T} which means
+that $c$ is a constant which is valid in some context $\Gamma$ whose
+value is $t$ and type is $T$.
+
+The rules for inductive definitions (see section
+\ref{Cic-inductive-definitions}) have to be considered as assumption
+rules to which the following definitions apply: if the name $c$ is
+declared in $E$, we write $c \in E$ and if $c:T$ or $c:=t:T$ is
+declared in $E$, we write $(c : T) \in E$.
+
+\paragraph{Typing rules.}\label{Typing-rules}\index{Typing rules}
+In the following, we assume $E$ is a valid environment wrt to
+inductive definitions.  We define simultaneously two
+judgments.  The first one \WTEG{t}{T} means the term $t$ is well-typed
+and has type $T$ in the environment $E$ and context $\Gamma$.  The
+second judgment \WFE{\Gamma} means that the environment $E$ is
+well-formed and the context $\Gamma$ is a valid context in this
+environment.  It also means a third property which makes sure that any
+constant in $E$ was defined in an environment which is included in
+$\Gamma$
 \footnote{This requirement could be relaxed if we instead introduced
   an explicit mechanism for instantiating constants. At the external
   level, the Coq engine works accordingly to this view that all the
@@ -245,17 +273,24 @@ which is included in $\Gamma$
 A term $t$ is well typed in an environment $E$ iff there exists a
 context $\Gamma$ and a term $T$ such that the judgment \WTEG{t}{T} can
 be derived from the following rules.
-\begin{itemize}\label{Typing-rules}\index{Typing rules}
+\begin{itemize}
 \item [W-E] \inference{\WF{[]}{[]}}
-\item [W-$s$]
+\item [W-S]  % Ce n'est pas vrai : x peut apparaitre plusieurs fois dans Gamma
 \inference{\frac{\WTEG{T}{s}~~~~s\in \Sort~~~~x \not\in
-      \Gamma \cup E}{\WFE{\Gamma::(x:T)}}}
+      \Gamma           % \cup E
+      }
+      {\WFE{\Gamma::(x:T)}}~~~~~
+    \frac{\WTEG{t}{T}~~~~x \not\in
+      \Gamma           % \cup E
+     }{\WFE{\Gamma::(x:=t:T)}}}
+\item[Def] \inference{\frac{\WTEG{t}{T}~~~c \notin E\cup \Gamma}
+                      {\WF{E;\Def{\Gamma}{c}{t}{T}}{\Gamma}}}
 \item [Ax] \index{Typing rules!Ax}
 \inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(p)}}~~~~~
 \frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(q)}}}\\[3mm]
 \inference{\frac{\WFE{\Gamma}~~~~i<j}{\WTEG{\Type(i)}{\Type(j)}}}
 \item[Var]\index{Typing rules!Var}
- \inference{\frac{ \WFE{\Gamma}~~~~~(x:T)\in\Gamma}{\WTEG{x}{T}}}
+ \inference{\frac{ \WFE{\Gamma}~~~~~(x:T)\in\Gamma~~\mbox{or}~~(x:=t:T)\in\Gamma~\mbox{for some $t$}}{\WTEG{x}{T}}}
 \item[Const]  \index{Typing rules!Const}
 \inference{\frac{\WFE{\Gamma}~~~~(c:T) \in E}{\WTEG{c}{T}}}
 \item [Prod]  \index{Typing rules!Prod}
@@ -272,7 +307,14 @@ be derived from the following rules.
 \item [App]\index{Typing rules!App}
  \inference{\frac{\WTEG{t}{(x:U)T}~~~~\WTEG{u}{U}}
                  {\WTEG{(t\ u)}{\subst{T}{x}{u}}}}
+\item [Let]\index{Typing rules!Let} 
+\inference{\frac{\WTEG{t}{T}~~~~ \WTE{\Gamma::(x:=t:T)}{u}{U}}
+        {\WTEG{[x:=t]u}{\subst{U}{x}{t}}}}
 \end{itemize}
+
+\noindent {\bf Remark. } We may have $[x:=t]u$ well-typed without
+having $([x:T]u~t)$ well-typed (where $T$ is a type of $t$). This is because 
+the value $t$ associated to $x$ may be used in a conversion rule (see section \ref{conv-rules}).
 
 \section{Conversion rules}
 \index{Conversion rules}
@@ -283,10 +325,10 @@ be derived from the following rules.
 We want to be able to identify some terms as we can identify the
 application of a function to a given argument with its result. For
 instance the identity function over a given type $T$ can be written
-$[x:T]x$. We want to identify any object $a$ (of type $T$) with the
+$[x:T]x$. In any environment $E$ and context $\Gamma$, we want to identify any object $a$ (of type $T$) with the
 application $([x:T]x~a)$. We define for this a {\em reduction} (or a
 {\em conversion}) rule we call $\beta$:
-\[ ([x:T]t~u) \triangleright_{\beta} \subst{t}{x}{u} \]
+\[ \WTEGRED{([x:T]t~u)}{\triangleright_{\beta}}{\subst{t}{x}{u}} \]
 
 We say that $\subst{t}{x}{u}$ is the {\em $\beta$-contraction} of
 $([x:T]t~u)$ and, conversely, that $([x:T]t~u)$ is the {\em
@@ -309,25 +351,36 @@ called $\iota$-reduction and is more precisely studied in
 
 
 \paragraph{$\delta$-reduction.}
-\label{convertibility}
 \label{delta}\index{delta-reduction@$\delta$-reduction}
-In the environment we also have constants representing abbreviations
-for terms. It is legal to identify a constant with its value.  This
-reduction will be precised in section \ref{deltared} where we define
-well-formed environments.  This reduction will be called
-$\delta$-reduction.
+
+We may have defined variables in contexts or constants in the global
+environment. It is legal to identify such a reference with its value,
+that is to expand (or unfold) it into its value. This
+reduction is called $\delta$-reduction and shows as follows.
+
+$$\WTEGRED{x}{\triangleright_{\delta}}{t}~~~~~\mbox{if $(x:=t:T)\in\Gamma$}~~~~~~~~~\WTEGRED{c}{\triangleright_{\delta}}{t}~~~~~\mbox{if $(c:=t:T)\in E$}$$
+
+
+\paragraph{$\zeta$-reduction.}
+\label{zeta}\index{zeta-reduction@$\zeta$-reduction}
+
+Coq allows also to remove local definitions occurring in terms by
+replacing the defined variable by its value. The declaration being
+destroyed, this reduction differs from $\delta$-reduction. It is
+called $\zeta$-reduction and shows as follows.
+
+$$\WTEGRED{[x:=u]t}{\triangleright_{\zeta}}{\subst{t}{x}{u}}$$
 
 \paragraph{Convertibility.}
-\index{beta-conversion@$\beta$-conversion}\index{iota-conversion@$\iota$-conversion}\index{delta-conversion@$\delta$-conversion}
+\label{convertibility}
+\index{beta-reduction@$\beta$-reduction}\index{iota-reduction@$\iota$-reduction}\index{delta-reduction@$\delta$-reduction}\index{zeta-reduction@$\zeta$-reduction}
 
-
-Let us write $t \triangleright u$ for the relation $t$ reduces to $u$
-with one of the previous reduction $\beta,\iota$ or $\delta$.
+Let us write $\WTEGRED{t}{\triangleright}{u}$ for the relation $t$ reduces to $u$ in the environment $E$ and context $\Gamma$ with one of the previous reduction $\beta$, $\iota$, $\delta$ or $\zeta$.
 
 We say that two terms $t_1$ and $t_2$ are {\em convertible} (or {\em
-  equivalent)} iff there exists a term $u$ such that $t_1
-\triangleright \ldots \triangleright u$ and $t_2 \triangleright \ldots
-\triangleright u$. We note $t_1 \convert t_2$.
+  equivalent)} in the environment $E$ and context $\Gamma$ iff there exists a term $u$ such that $\WTEGRED{t_1}{\triangleright \ldots \triangleright}{u}$
+and $\WTEGRED{t_2}{\triangleright \ldots \triangleright}{u}$.
+We then write $\WTEGCONV{t_1}{t_2}$.
 
 The convertibility relation allows to introduce a new typing rule
 which says that two convertible well-formed types have the same
@@ -339,10 +392,9 @@ the universe of index $i+1$. This property is included into the
 conversion rule by extending the equivalence relation of
 convertibility into an order inductively defined by:
 \begin{enumerate}
-\item if $M\convert N$ then $M\leconvert N$,
-\item if $i \leq j$ then $\Type(i)\leconvert\Type(j)$,
-\item if $T \convert U$ and $M\leconvert N$ then $(x:T)M\leconvert
-  (x:U)N$.
+\item if $\WTEGCONV{t}{u}$ then $\WTEGLECONV{t}{u}$,
+\item if $i \leq j$ then $\WTEGLECONV{\Type(i)}{\Type(j)}$,
+\item if $\WTEGCONV{T}{U}$ and $\WTELECONV{\Gamma::(x:T)}{T'}{U'}$ then $\WTEGLECONV{(x:T)T'}{(x:U)U'}$.
 \end{enumerate}
 
 The conversion rule is now exactly:
@@ -350,7 +402,7 @@ The conversion rule is now exactly:
 \begin{itemize}\label{Conv}
 \item [Conv]\index{Typing rules!Conv}
  \inference{
-      \frac{\WTEG{U}{S}~~~~\WTEG{t}{T}~~~~T \leconvert U}{\WTEG{t}{U}}}
+      \frac{\WTEG{U}{s}~~~~\WTEG{t}{T}~~~~\WTEGLECONV{T}{U}}{\WTEG{t}{U}}}
 \end{itemize}
 
 
@@ -359,8 +411,8 @@ An other important rule is the $\eta$-conversion. It is to identify
 terms over a dummy abstraction of a variable followed by an
 application of this variable. Let $T$ be a type, $t$ be a term in
 which the variable $x$ doesn't occurs free. We have
-\[ [x:T](t\ x) \triangleright t \]
-Indeed, as $x$ doesn't occurs free in $t$, for any $u$ one
+\[ \WTEGRED{[x:T](t\ x)}{\triangleright}{t} \]
+Indeed, as $x$ doesn't occur free in $t$, for any $u$ one
 applies to $[x:T](t\ x)$, it $\beta$-reduces to $(t\ u)$. So
 $[x:T](t\ x)$ and $t$ can be identified.
 
@@ -387,45 +439,10 @@ where $v$ is not an abstraction (nor an application).  Note that the
 head normal form must not be confused with the normal form since some
 $u_i$ can be reducible.
 
-Similar notions of head-normal forms involving $\delta$ and $\iota$
+Similar notions of head-normal forms involving $\delta$, $\iota$ and $\zeta$
 reductions or any combination of those can also be defined.
 
-\section{Definitions in environments}\label{Cic-definitions}
-We now give the rules for manipulating objects in the environment.
-Because a constant can depend on previously introduced constants, the
-environment will be an ordered list of declarations. When specifying
-an inductive definition, several objects will be introduced at the
-same time. So any object in the environment will define one or more
-constants.
-
-In this presentation we introduce two different sorts of objects in
-the environment. The first one is ordinary definitions which give a
-name to a particular well-formed term, the second one is inductive
-definitions which introduce new inductive objects.
-
-\subsection{Rules for definitions}
-
-\paragraph{Adding a new definition.}
-The simplest objects in the environment are definitions which can be
-seen as one possible mechanism for abbreviation.
-
-A definition will be represented in the environment as
-\Def{\Gamma}{c}{t}{T} which means that $c$ is a constant which is
-valid in the context $\Gamma$ whose value is $t$ and type is $T$.
-
-\paragraph{$\delta$-reduction.} \label{deltared}
-If \Def{\Gamma}{c}{t}{T} is in the environment $E$ then in this
-environment the $\delta$-reduc\-tion $c \triangleright_{\delta} t$ is
-introduced.
-
-The rule for adding a new definition is simple:
-
-\begin{description}
-\item[Def] \inference{\frac{\WTEG{t}{T}~~~c \notin E\cup \Gamma}
-                      {\WF{E;\Def{\Gamma}{c}{t}{T}}{\Gamma}}}
-\end{description}
-
-\subsection{Derived rules}
+\section{Derived rules for environments}
 
 From the original rules of the type system, one can derive new rules
 which change the context of definition of objects in the environment.

@@ -281,7 +281,7 @@ chapter \ref{Addoc-syntax}.
   & $|$ & \sort \\
  & $|$ & {\term} {\tt ->} {\term} \\
  & $|$ & {\tt (} {\nelist{\typedidents}{;}} {\tt )} {\term}\\
- & $|$ & {\tt [} {\nelist{\idents}{;}} {\tt ]} {\term}\\
+ & $|$ & {\tt [} {\nelist{\localdecls}{;}} {\tt ]} {\term}\\
  & $|$ & {\tt (} \nelist{\term}{} {\tt )}\\
  & $|$ & {\tt \zeroone{\annotation}} {\tt Cases} {\term} {\tt of}
         \sequence{\eqn}{|} {\tt end}\\
@@ -295,7 +295,10 @@ chapter \ref{Addoc-syntax}.
 {\annotation} & ::= & \verb!<! {\term} \verb!>!\\
  & & \\
 {\typedidents} & ::= &   \nelist{\ident}{,} {\tt :} {\term}\\
-{\idents} & ::= &   \nelist{\ident}{,} \zeroone{{\tt :} {\term}}\\
+{\localassums} & ::= &   \nelist{\ident}{,} \zeroone{{\tt :} {\term}}\\
+{\localdef} & ::= & {\ident} {\tt :=} {\term} \zeroone{{\tt :} {\term}}\\
+{\localdecls} & ::= &   \localassums \\
+ & $|$ & {\localdef} \\
  & & \\
 {\fixpointbody} & ::= & {\ident} {\tt [} \nelist{\typedidents}{;}  {\tt ]}\verb.:. 
     {\term} \verb.:=. {\term} \\
@@ -364,15 +367,18 @@ the notation {\tt [} {\ident$_{1}$} {\tt ,} {\ldots} {\tt ,}
 {\ident$_{n}$} {\tt :} \type {\tt ]} {\term} stands for 
 {\tt [} {\ident$_{1}$} {\tt :} \type {\tt ](} {\ldots} 
 {\tt ([} {\ident$_{n}$} {\tt :} \type {\tt ]} {\term} {\tt )} 
-\ldots {\tt )} and the notation {\tt [} {\typedidents$_{1}$} {\tt ;}
-{\ldots} {\tt ;} {\typedidents$_{m}$} {\tt ]} {\term} is a shorthand
-for {\tt [}~{\typedidents$_{1}$} {\tt ](} {\ldots} {\tt ([}
-{\typedidents$_{m}$} {\tt ]} {\term} {\tt )}\\ {\tt [} {\ident$_{1}$}
-{\tt ,} {\ldots} {\tt ,} {\ident$_{n}$} {\tt :} \type {\tt ]} {\term}.
+\ldots {\tt )} and the notation {\tt [} {\localassums$_{1}$} {\tt ;}
+{\ldots} {\tt ;} {\localassums$_{m}$} {\tt ]} {\term} is a shorthand
+for {\tt [}~{\localassums$_{1}$} {\tt ](} {\ldots} {\tt ([}
+{\localassums$_{m}$} {\tt ]} {\term} {\tt )}.
 
 \medskip
-\Rem  The types of variables may be omitted in an
+\Rem The types of variables may be omitted in an
 abstraction when they can be synthetized by the system.
+
+\Rem Local definitions may appear inside brackets mixed with
+assumptions. Obviously, this is expanded into unary abstractions
+separated by let-in's.
 
 \subsection{Products}
 \index{products}
@@ -401,6 +407,16 @@ denotes the application of the term \term$_0$ to the arguments
 \term$_1$ ... then \term$_n$.  It is equivalent to {\tt (} {\ldots}
 {\tt (} {\term$_0$} {\term$_1$} {\tt )} {\ldots} {\term$_n$} {\tt )}:
 associativity is to the left.
+
+\subsection{Local definitions (let-in)}
+\index{Local definitions}
+\index{let-in}
+
+{\tt [}{\ident}{\tt :=}{\term$_1$}{\tt ]}{\term$_2$} denotes the local
+binding of \term$_1$ to the variable $\ident$ in \term$_2$.
+
+\medskip
+Rem The expression {\tt [}{\ident}{\tt :=}{\term$_1$}{\tt :}{\type}{\tt ]}{\term$_2$} is equivalent to {\tt [}{\ident}{\tt :=(}{\term$_1$}{\tt ::}{\type}{\tt )]}{\term$_2$}.
 
 \subsection{Definition by case analysis}
 \index{Cases@{\tt Cases\ldots of\ldots end}}

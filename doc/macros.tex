@@ -111,7 +111,9 @@
 \newcommand{\flag}{\textrm{\textsl{flag}}}
 \newcommand{\form}{\textrm{\textsl{form}}}
 \newcommand{\gensymbol}{\textrm{\textsl{symbol}}}
-\newcommand{\idents}{\textrm{\textsl{idents}}}
+\newcommand{\localassums}{\textrm{\textsl{local\_assums}}}
+\newcommand{\localdef}{\textrm{\textsl{local\_def}}}
+\newcommand{\localdecls}{\textrm{\textsl{local\_decls}}}
 \newcommand{\ident}{\textrm{\textsl{ident}}}
 \newcommand{\inductivebody}{\textrm{\textsl{ind\_body}}}
 \newcommand{\inductive}{\textrm{\textsl{inductive}}}
@@ -274,6 +276,13 @@
 \newcommand{\WT}[4]{\mbox{$#1[#2] \vdash #3 : #4$}}
 \newcommand{\WTE}[3]{\WT{E}{#1}{#2}{#3}}
 \newcommand{\WTEG}[2]{\WTE{\Gamma}{#1}{#2}}
+
+\newcommand{\WTERED}[4]{\mbox{$E[#1] \vdash #2 #3 #4$}}
+\newcommand{\WTELECONV}[3]{\WTERED{#1}{#2}{\leconvert}{#3}}
+\newcommand{\WTEGRED}[3]{\WTERED{\Gamma}{#1}{#2}{#3}}
+\newcommand{\WTEGCONV}[2]{\WTERED{\Gamma}{#1}{\convert}{#2}}
+\newcommand{\WTEGLECONV}[2]{\WTERED{\Gamma}{#1}{\leconvert}{#2}}
+
 \newcommand{\CI}[2]{\mbox{$\{#1\}^{#2}$}}
 \newcommand{\CIP}[3]{\mbox{$\{#1\}_{#2}^{#3}$}}
 \newcommand{\CIPV}[1]{\CIP{#1}{I_1.. I_k}{P_1.. P_k}}
@@ -284,6 +293,7 @@
 \newcommand{\Ind}[4]{\mbox{{\sf Ind}$(#1)[#2](\begin{array}[t]{l}#3:=#4
                                                  \,)\end{array}$}}
 \newcommand{\Def}[4]{\mbox{{\sf Def}$(#1)(#2:=#3:#4)$}}
+\newcommand{\Assum}[3]{\mbox{{\sf Assum}$(#1)(#2:#3)$}}
 \newcommand{\Match}[3]{\mbox{$<\!#1\!>\!{\mbox{\tt Match}}~#2~{\mbox{\tt with}}~#3~{\mbox{\tt end}}$}}
 \newcommand{\Case}[3]{\mbox{$<\!#1\!>\!{\mbox{\tt Cases}}~#2~{\mbox{\tt of}}~#3~{\mbox{\tt end}}$}}
 \newcommand{\Fix}[2]{\mbox{\tt Fix}~#1\{#2\}}
@@ -292,8 +302,8 @@
 \newcommand{\subst}[3]{#1\{#2/#3\}}
 \newcommand{\substs}[4]{#1\{(#2/#3)_{#4}\}}
 \newcommand{\Sort}{\mbox{$\cal S$}}
-\newcommand{\convert}{=_{\beta\delta\iota}}
-\newcommand{\leconvert}{\leq_{\beta\delta\iota}}
+\newcommand{\convert}{=_{\beta\delta\iota\zeta}}
+\newcommand{\leconvert}{\leq_{\beta\delta\iota\zeta}}
 \newcommand{\NN}{\mbox{I\hspace{-7pt}N}}
 \newcommand{\inference}[1]{$${#1}$$}
 \newcommand{\compat}[2]{\mbox{$[#1|#2]$}}
