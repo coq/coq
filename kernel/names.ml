@@ -155,17 +155,16 @@ let dirpath sp = sp.dirpath
 
 let string_of_path_mind sp id =
   let (sl,_,k) = repr_path sp in
-  implode
-    (List.flatten 
-       (List.map (fun s -> ["#";s]) (List.rev (string_of_id id :: sl)))
-     @ [ "."; string_of_kind k ])
+  String.concat ""
+    ((List.flatten (List.map (fun s -> ["#";s]) sl))
+     @ [ "#"; string_of_id id; "."; string_of_kind k ])
     
 let string_of_path sp = string_of_path_mind sp sp.basename
 
 let path_of_string s =
   try
     let (sl,s,k) = parse_section_path s in
-    make_path (List.rev sl) (id_of_string s) (kind_of_string k)
+    make_path sl (id_of_string s) (kind_of_string k)
   with
     | Invalid_argument _ -> invalid_arg "path_of_string"
 
