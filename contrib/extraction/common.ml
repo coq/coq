@@ -291,27 +291,30 @@ module StdParams = struct
     let mp = modpath (kn_of_r r) in 
     let l,s = get_renamings r in 
     let n = length_common_prefix cur_l l in 
-    if n = 0 && !modular (* [r] is in another module *)
-    then 
-      if (Refset.mem r !must_qualify) || (lang () = Haskell)
-      then str (string_of_ren l s)
+    if not (is_modfile (base_mp cur_mp)) && (is_modfile (base_mp mp)) then 
+      str (string_of_ren (mp_to_list' mp) s)
+    else
+      if n = 0 && !modular (* [r] is in another module *)
+      then 
+	if (Refset.mem r !must_qualify) || (lang () = Haskell)
+	then str (string_of_ren l s)
+	else 
+	  try 
+	    if clash_in_contents mp s (decreasing_contents cur_mp) 
+	    then str (string_of_ren l s)
+	    else str s
+	  with Not_found -> str (string_of_ren l s) 
       else 
-	try 
-	  if clash_in_contents mp s (decreasing_contents cur_mp) 
-	  then str (string_of_ren l s)
-	  else str s
-	with Not_found -> str (string_of_ren l s) 
-    else 
-      let nl = List.length l in 
-      if n = nl && nl < List.length cur_l then (* strict prefix *)
-	try 
-	  if clash_in_contents mp s (decreasing_contents cur_mp) 
-	  then error_unqualified_name (string_of_ren l s) (string_of_modlist cur_l)
-	  else str s
-	with Not_found -> str (string_of_ren l s)
-      else (* [cur_mp] and [mp] are orthogonal *)
-	let l = remove_common cur_l l 
-	in str (string_of_ren l s)
+	let nl = List.length l in 
+	if n = nl && nl < List.length cur_l then (* strict prefix *)
+	  try 
+	    if clash_in_contents mp s (decreasing_contents cur_mp) 
+	    then error_unqualified_name (string_of_ren l s) (string_of_modlist cur_l)
+	    else str s
+	  with Not_found -> str (string_of_ren l s)
+	else (* [cur_mp] and [mp] are orthogonal *)
+	  let l = remove_common cur_l l 
+	  in str (string_of_ren l s)
 	     
   let pp_long_module cur_mp mp = 
     let cur_mp = long_mp cur_mp in 
