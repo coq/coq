@@ -52,7 +52,7 @@ REFMANCOQTEXFILES=\
 
 COQTEXFILES= Cases.v.tex Coercion.v.tex Extraction.v.tex \
   Omega.v.tex Changes.v.tex Tutorial.v.tex Polynom.v.tex \
-  Setoid.v.tex
+  Setoid.v.tex Helm.tex
 #SUPPRIME: Program.v.tex Natural.v.tex Correctness.v.tex
 
 REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
