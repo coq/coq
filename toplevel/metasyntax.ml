@@ -675,6 +675,7 @@ let pr_arg_level from = function
   | (n,L) when n=from -> str "at next level"
   | (n,E) -> str "at level " ++ int n
   | (n,L) -> str "at level below " ++ int n
+  | (n,Prec m) when m=n -> str "at level " ++ int n
   | (n,_) -> str "Unknown level"
 
 let pr_level ntn (from,args) =
