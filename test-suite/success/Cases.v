@@ -1,10 +1,3 @@
-(***********************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
-(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
-(*   \VV/  *************************************************************)
-(*    //   *      This file is distributed under the terms of the      *)
-(*         *       GNU Lesser General Public License Version 2.1       *)
-(***********************************************************************)
 (****************************************************************************)
 (* Pattern-matching when non inductive terms occur                          *)
 
@@ -14,6 +7,14 @@ Type <[_,_:nat]nat>Cases O eq O of O x y => O | (S x) y z => x end.
 
 (* Non dependent form of annotation *)
 Type <nat>Cases O eq of O x => O | (S x) y => x end.
+
+(* Combining dependencies and non inductive arguments *)
+Type [A:Set][a:A][H:O=O]<[x][H]H==H>Cases H a of _ _ => (refl_eqT ? H) end.
+
+(* Interaction with coercions *)
+Parameter bool2nat : bool -> nat.
+Coercion bool2nat : bool >-> nat.
+Check [x](Cases x of O => true | (S _) => O end :: nat).
 
 (****************************************************************************)
 (* All remaining examples come from Cristina Cornes' V6 TESTS/MultCases.v   *)
