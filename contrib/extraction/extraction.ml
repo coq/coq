@@ -795,7 +795,7 @@ let extract_declaration r = match r with
   | ConstRef kn -> extract_constant_cache kn r
   | IndRef (kn,_) -> extract_inductive_declaration kn
   | ConstructRef ((kn,_),_) -> extract_inductive_declaration kn
-  | VarRef _ -> assert false
+  | VarRef kn -> error_section ()
 
 (*s Check if a global reference corresponds to a logical inductive. *)
 
