@@ -98,8 +98,11 @@ let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
   if list_distinct (List.map fst li) then 
     let k = lv.(i) in
     if k < nargs then
+(*  Such an optimisation would need eta-expansion 
       let p = destRel (List.nth args k) in 
       EliminationFix (n-p+1,(nbfix,li,n))
+*)
+      EliminationFix (n,(nbfix,li,n))
     else
       EliminationFix (n-nargs+lv.(i)+1,(nbfix,li,n))
   else 
