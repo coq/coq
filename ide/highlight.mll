@@ -29,18 +29,21 @@ let identchar =
 let ident = firstchar identchar*
 
 let keyword = 
-  "Add" | "CoInductive" | "Defined" | 
+  "Add" | "Defined" | 
   "End" | "Export" | "Extraction" | "Hint" |
   "Implicits" | "Import" | 
   "Infix" | "Load" | "match" | "Module" | "Module Type" |
   "Proof" | "Qed" |
-  "Record" | "Require" | "Save" | "Scheme" |
+  "Require" | "Save" | "Scheme" |
   "Section" | "Unset" |
   "Set"  
 
 let declaration = 
   "Lemma" | "Axiom" | "CoFixpoint" | "Definition"  |
   "Fixpoint" | "Hypothesis" | 
+  "Hypotheses" | "Axioms" | "Parameters" | "Subclass" |
+  "Remark" | "Fact" | "Conjecture" | "Let" |
+  "CoInductive" | "Record" | "Structure" |
   "Inductive" | "Parameter" | "Theorem" | 
   "Variable" | "Variables" 
 
