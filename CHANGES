@@ -46,6 +46,9 @@ Bugs
 - NatRing works (to check)
 - "Discriminate 1", "Injection 1", "Simplify_eq 1" now working
 - Various incompatibilities wrt inference of "?" in V6.3.1 fixed
+- Known pattern-matching bugs fixed
+- Known coercions bugs
+- Improved errors messages for pattern-matching and projections
 
 ----------------------------------------------------------------------------
 Changes from V6.3.1 and V7.0 to V7.1
