@@ -43,8 +43,7 @@ type relation =
    }
 
 type 'a relation_class =
-   Relation of 'a     (* the rel_aeq of the relation
-                           or the relation*)
+   Relation of 'a     (* the rel_aeq of the relation or the relation*)
  | Leibniz of constr  (* the carrier *)
 
 type 'a morphism =
@@ -831,14 +830,33 @@ let relation_of_hypothesis_and_term_to_rewrite gl (_,h) t =
 
 exception BackTrack
 
-let mark_occur t in_c input_direction direction =
- let rec aux direction in_c =
-  if eq_constr t in_c then
-(*CSC: The following if should be enabled as soon as backtracking is activated.
-  CSC: Right now it would reject also cases of right-to-left rewriting in
-  CSC: symmetric arguments
+(* rel1 is a subrelation of rel2 whenever 
+    forall x1 x2, rel1 x1 x2 -> rel2 x1 x2
+   The Coq part of the tactic, however, needs rel1 == rel2.
+   Hence the third case commented out.
+   Note: accepting user-defined subtrelations seems to be the last
+   useful generalization that does not go against the original spirit of
+   the tactic.
 *)
-   if input_direction = direction then
+let subrelation rel1 rel2 =
+ match rel1,rel2 with
+    Relation {rel_aeq=rel_aeq1}, Relation {rel_aeq=rel_aeq2} ->
+     eq_constr rel_aeq1 rel_aeq2
+  | Leibniz t1, Leibniz t2 ->
+     eq_constr t1 t2
+(* This is the commented out case (see comment above)
+  | Leibniz t1, Relation {rel_a=t2; rel_refl = Some _} ->
+     eq_constr t1 t2
+*)
+  | _,_ -> false
+
+let mark_occur gl t in_c input_relation input_direction
+     output_relation output_direction
+=
+ let rec aux output_relation output_direction in_c =
+  if eq_constr t in_c then
+   if input_direction = output_direction
+   && subrelation (Relation input_relation) output_relation then
     ToReplace
    else
     raise BackTrack
@@ -863,103 +881,123 @@ let mark_occur t in_c input_direction direction =
                       prterm c ++
                       str ". The morphism " ++ prmorphism c morphism ++
                       str " is randomly chosen.") ;
-                  Some (relation_morphism_of_constr_morphism morphism)
+                  let relation_morphism =
+                   relation_morphism_of_constr_morphism morphism in
+                  if subrelation relation_morphism.output output_relation then
+                   Some relation_morphism
+                  else
+                   raise BackTrack
              end
             with Not_found -> None
          in
-          let a =
-           match mor with
-              None ->
-               (try
-                 Array.map (aux Left2Right) al
-                with BackTrack ->
-                 Array.map (aux Right2Left) al)
-            | Some mor ->
-               let variances = Array.of_list (List.map fst mor.args) in
+          (match mor with
+             Some mor ->
+              let a =
+               let arguments = Array.of_list mor.args in
                let apply_variance_to_direction default_dir =
                 function
                    None -> default_dir
-                 | Some true -> direction
-                 | Some false -> opposite_direction direction
+                 | Some true -> output_direction
+                 | Some false -> opposite_direction output_direction
                in
                 Util.array_map2
-                 (fun a variance ->
+                 (fun a (variance,relation) ->
                    try
-                    aux (apply_variance_to_direction Left2Right variance) a
+                    aux relation
+                     (apply_variance_to_direction Left2Right variance) a
                    with BackTrack ->
-                    aux (apply_variance_to_direction Right2Left variance) a
-                 ) al variances
-          in
-           if not (get_mark a) then ToKeep (in_c,direction)
-           else
-            (match mor with
-                Some mor -> MApp (c,ACMorphism mor,a,direction)
-              | None ->
-                (* the tactic works only if the function type is
-                   made of non-dependent products only. However, here we
-                   can cheat a bit by partially istantiating c to match
-                   the requirement when the arguments to be replaced are
-                   bound by non-dependent products only. *)
-                let env = Global.env() in
-                let typeofc = (Typing.type_of env Evd.empty c) in
-                let typ = nf_betaiota typeofc in
-                let rec find_non_dependent_function env c c_args_rev typ
-                         f_args_rev a_rev
-                =
-                 function
-                    [] ->
-                     let mor =
-                      ACFunction {f_args=List.rev f_args_rev ; f_output=typ} in
-                     let func = beta_expand c c_args_rev in
-                      MApp (func,mor,Array.of_list (List.rev a_rev),direction)
-                  | (he::tl) as a->
-                     let typnf = Reduction.whd_betadeltaiota env typ in
-                      match kind_of_term typnf with
-                        Cast (typ,_) ->
-                         find_non_dependent_function env c c_args_rev typ
-                          f_args_rev a_rev a
-                      | Prod (name,s,t) ->
-                         let env' = push_rel (name,None,s) env in
-                         begin
-                          match noccurn 1 t, he with
-                             _, ToKeep (arg,_) ->
-                              (* generic product, to keep *)
-                              find_non_dependent_function
-                               env' c ((Toapply arg)::c_args_rev)
-                               (subst1 arg t) f_args_rev a_rev tl
-                           | true, _ ->
-                              (* non-dependent product, to replace *)
-                              find_non_dependent_function
-                               env' c ((Toexpand (name,s))::c_args_rev)
-                                (lift 1 t) (s::f_args_rev) (he::a_rev) tl
-                           | false, _ ->
-                              (* dependent product, to replace *)
-                              (*CSC: this limitation is due to the reflexive
-                                implementation and it is hard to lift *)
-                              errorlabstrm "Setoid_replace"
-                               (str "Cannot rewrite in the argument of a " ++
-                                str "dependent product. If you need this " ++
-                                str "feature, please report to the authors.")
-                         end
-                      | _ -> assert false
-                in
-                 find_non_dependent_function env c [] typ [] []
-                  (Array.to_list a))
+try
+                    aux relation
+                     (apply_variance_to_direction Right2Left variance) a
+(*CSC: an horrible hack. This should be no longer useful once that every possibility is tried. *)
+with BackTrack -> ToKeep (a,apply_variance_to_direction Left2Right variance)
+                 ) al arguments
+              in
+               if not (get_mark a) then ToKeep (in_c,output_direction)
+               else
+                MApp (c,ACMorphism mor,a,output_direction)
+           | None ->
+             (* the tactic works only if the function type is
+                made of non-dependent products only. However, here we
+                can cheat a bit by partially istantiating c to match
+                the requirement when the arguments to be replaced are
+                bound by non-dependent products only. *)
+             let typeofc = Tacmach.pf_type_of gl c in
+             let typ = nf_betaiota typeofc in
+             let rec find_non_dependent_function env c c_args_rev typ
+                      f_args_rev a_rev
+             =
+              function
+                 [] ->
+                  if not (get_mark (Array.of_list a_rev)) then
+                   ToKeep (in_c,output_direction)
+                  else
+                   let mor =
+                    ACFunction {f_args=List.rev f_args_rev ; f_output=typ} in
+                   let func = beta_expand c c_args_rev in
+                    MApp
+                     (func,mor,Array.of_list (List.rev a_rev),
+                      output_direction)
+               | (he::tl) as a->
+                  let typnf = Reduction.whd_betadeltaiota env typ in
+                   match kind_of_term typnf with
+                     Cast (typ,_) ->
+                      find_non_dependent_function env c c_args_rev typ
+                       f_args_rev a_rev a
+                   | Prod (name,s,t) ->
+                      let env' = push_rel (name,None,s) env in
+                      let he =
+                       try
+                         aux (Leibniz s) Left2Right he
+                       with BackTrack ->
+                         aux (Leibniz s) Right2Left he in
+                      begin
+                       match noccurn 1 t, he with
+                          _, ToKeep (arg,_) ->
+                           (* generic product, to keep *)
+                           find_non_dependent_function
+                            env' c ((Toapply arg)::c_args_rev)
+                            (subst1 arg t) f_args_rev a_rev tl
+                        | true, _ ->
+                           (* non-dependent product, to replace *)
+                           find_non_dependent_function
+                            env' c ((Toexpand (name,s))::c_args_rev)
+                             (lift 1 t) (s::f_args_rev) (he::a_rev) tl
+                        | false, _ ->
+                           (* dependent product, to replace *)
+                           (*CSC: this limitation is due to the reflexive
+                             implementation and it is hard to lift *)
+                           errorlabstrm "Setoid_replace"
+                            (str "Cannot rewrite in the argument of a " ++
+                             str "dependent product. If you need this " ++
+                             str "feature, please report to the authors.")
+                      end
+                   | _ -> assert false
+             in
+              find_non_dependent_function (Tacmach.pf_env gl) c [] typ [] []
+               (Array.to_list al))
       | Prod (_, c1, c2) -> 
           if (dependent (mkRel 1) c2)
-          then ToKeep (in_c,direction)
+          then ToKeep (in_c,output_direction)
           else 
-            let c1m = aux (opposite_direction direction) c1 in
-            let c2m = aux direction c2 in
-              if ((is_to_replace c1m)||(is_to_replace c2m))
-              then
-               (* this can be optimized since c1 and c2 will be *)
-               (* processed again                               *)
-               aux direction (mkApp ((Lazy.force coq_impl), [| c1 ; c2 |]))
-              else ToKeep (in_c,direction)
-      | _ -> ToKeep (in_c,direction)
+           (*CSC: output_relation in the two lines below is a bug.
+             I should use the two arguments of the relation associated to
+             coq_impl. Indeed all the Prod case is a bit hackerish. *)
+           let c1m =
+            aux output_relation (opposite_direction output_direction) c1 in
+           let c2m =
+            aux output_relation output_direction c2
+           in
+             if ((is_to_replace c1m)||(is_to_replace c2m))
+             then
+              (* this can be optimized since c1 and c2 will be *)
+              (* processed again                               *)
+              aux output_relation output_direction
+               (mkApp ((Lazy.force coq_impl), [| c1 ; c2 |]))
+             else ToKeep (in_c,output_direction)
+      | _ -> ToKeep (in_c,output_direction)
  in
-  aux direction in_c 
+  aux output_relation output_direction in_c 
 
 let cic_morphism_context_list_of_list hole_relation hole_direction out_direction
 =
@@ -1096,19 +1134,29 @@ let apply_coq_setoid_rewrite hole_relation prop_relation c1 c2 (direction,h)
 let relation_rewrite c1 c2 (input_direction,cl) gl =
  let but = pf_concl gl in
  let (hyp,c1,c2) =
-   let (env',c1) = w_unify_to_subterm (pf_env gl) (c1,but) cl.env in
+   let (env',c1) =
+    w_unify_to_subterm ~mod_delta:false (pf_env gl) (c1,but) cl.env in
    let cl' = {cl with env = env' } in
    let c2 = Clenv.clenv_nf_meta cl' c2 in
    (input_direction,Clenv.clenv_value cl'), c1, c2
  in
   let input_relation = relation_of_hypothesis_and_term_to_rewrite gl hyp c1 in
-  let output_direction,marked_but =
+  let output_relation,output_direction,marked_but =
    (*CSC: this code must be moved into mark_occur, as well as the choice of
           the output relation *)
    try
-    Right2Left, mark_occur c1 but input_direction Right2Left
+    Lazy.force coq_prop_relation, Right2Left,
+     mark_occur gl c1 but input_relation input_direction
+      (Lazy.force coq_prop_relation) Right2Left
    with BackTrack -> try
-    Left2Right, mark_occur c1 but input_direction Left2Right
+    (* This is the case of a proposition of signature A ++> iff or B --> iff *)
+    Lazy.force coq_prop_relation, Left2Right,
+     mark_occur gl c1 but input_relation input_direction
+      (Lazy.force coq_prop_relation) Left2Right
+   with BackTrack -> try
+    Lazy.force coq_prop_relation2, Right2Left,
+     mark_occur gl c1 but input_relation input_direction
+      (Lazy.force coq_prop_relation2) Right2Left
    with BackTrack ->
     (*CSC: the error is too detailed. The tactic can now fail also for other
       CSC: more stupid reasons (i.e. randomly not choosing the right morphism *)
@@ -1118,9 +1166,9 @@ let relation_rewrite c1 c2 (input_direction,cl) gl =
         str "are in a contravariant position.")
   in
    let cic_output_direction = cic_direction_of_direction output_direction in
-let temporary_solution prop_relation gl =
+let temporary_solution gl =
    let th =
-    apply_coq_setoid_rewrite input_relation prop_relation c1 c2 hyp
+    apply_coq_setoid_rewrite input_relation output_relation c1 c2 hyp
      cic_output_direction marked_but
    in
     let new_but = Termops.replace_term c1 c2 but in
@@ -1135,19 +1183,16 @@ let temporary_solution prop_relation gl =
       Tactics.refine
        (mkApp (th', [| mkCast (Evarutil.mk_new_meta(), new_but) |])) gl
 in
-let temporary_solution2 prop_relation gl =
+let temporary_solution2 gl =
    let th =
-    apply_coq_setoid_rewrite input_relation prop_relation c1 c2 hyp
+    apply_coq_setoid_rewrite input_relation output_relation c1 c2 hyp
      cic_output_direction marked_but
    in
     let new_but = Termops.replace_term c1 c2 but in
      Tactics.refine
       (mkApp (th, [| mkCast (Evarutil.mk_new_meta(), new_but) |])) gl
 in
- (*CSC: the prop_relation will be returned by mark_occur *)
- Tacticals.tclFIRST 
-   [temporary_solution (Lazy.force coq_prop_relation);
-    temporary_solution2 (Lazy.force coq_prop_relation2)] gl
+ Tacticals.tclFIRST [temporary_solution ; temporary_solution2] gl
 
 let general_s_rewrite lft2rgt c gl =
  let direction = if lft2rgt then Left2Right else Right2Left in
