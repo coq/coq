@@ -69,7 +69,8 @@ type checked_section_variable =
   | CheckedSectionLocalDef of constr * types * Univ.constraints * bool
   | CheckedSectionLocalAssum of types * Univ.constraints
 
-type checked_variable_declaration = dir_path * checked_section_variable
+type checked_variable_declaration = 
+    dir_path * checked_section_variable * local_kind
 
 let vartab = ref (Idmap.empty : checked_variable_declaration Idmap.t)
 
@@ -94,7 +95,7 @@ let cache_variable ((sp,_),(id,(p,d,mk))) =
         let (_,bd,ty) = Global.lookup_named id in
         CheckedSectionLocalDef (out_some bd,ty,cst,opaq) in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
-  vartab := Idmap.add id (p,vd) !vartab
+  vartab := Idmap.add id (p,vd,mk) !vartab
 
 let (in_variable, out_variable) =
   declare_object { (default_object "VARIABLE") with
@@ -320,13 +321,13 @@ let constant_strength sp = Global
 let constant_kind sp = Spmap.find sp !csttab
 
 let get_variable id = 
-  let (p,x) = Idmap.find id !vartab in
+  let (p,x,_) = Idmap.find id !vartab in
   match x with
     | CheckedSectionLocalDef (c,ty,cst,opaq) -> (id,Some c,ty)
     | CheckedSectionLocalAssum (ty,cst) -> (id,None,ty)
 
 let get_variable_with_constraints id = 
-  let (p,x) = Idmap.find id !vartab in
+  let (p,x,_) = Idmap.find id !vartab in
   match x with
     | CheckedSectionLocalDef (c,ty,cst,opaq) -> ((id,Some c,ty),cst)
     | CheckedSectionLocalAssum (ty,cst) -> ((id,None,ty),cst)
@@ -334,13 +335,16 @@ let get_variable_with_constraints id =
 let variable_strength _ = Local
 
 let find_section_variable id =
-  let (p,_) = Idmap.find id !vartab in Libnames.make_path p id
+  let (p,_,_) = Idmap.find id !vartab in Libnames.make_path p id
 
 let variable_opacity id =
-  let (_,x) = Idmap.find id !vartab in
+  let (_,x,_) = Idmap.find id !vartab in
   match x with
     | CheckedSectionLocalDef (c,ty,cst,opaq) -> opaq
     | CheckedSectionLocalAssum (ty,cst) -> false (* any.. *)
+
+let variable_kind id =
+  pi3 (Idmap.find id !vartab)
 
 let clear_proofs sign =
   List.map
@@ -380,7 +384,7 @@ let last_section_hyps dir =
   fold_named_context
     (fun (id,_,_) sec_ids ->
       try
-        let (p,_) = Idmap.find id !vartab in
+        let (p,_,_) = Idmap.find id !vartab in
         if dir=p then id::sec_ids else sec_ids
       with Not_found -> sec_ids)
     (Environ.named_context (Global.env()))
