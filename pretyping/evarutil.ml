@@ -240,20 +240,9 @@ let do_restrict_hyps evd ev args =
   let evi = Evd.map (evars_of !evd) ev in
   let env = evar_env evi in
   let hyps = evi.evar_hyps in
-  let (_,(rsign,ncargs)) =
-    List.fold_left 
-      (fun (sign,(rs,na)) a ->
-	 (List.tl sign,
-	  if not(closed0 a) then 
-	    (rs,na)
-	  else 
-	    (add_named_decl (List.hd sign) rs, a::na)))
-      (hyps,([],[])) args 
-  in
-  let sign' = List.rev rsign in
-  let env' = reset_with_named_context sign' env in
+  let (sign,ncargs) = list_filter2 (fun _ a -> closed0 a) (hyps,args) in
   let (evd',nc) =
-    new_evar_instance sign' !evd evi.evar_concl
+    new_evar_instance sign !evd evi.evar_concl
       ~src:(evar_source ev !evd) ncargs in
   evd := Evd.evar_define ev nc evd';
   nc
