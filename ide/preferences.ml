@@ -16,6 +16,10 @@ let pref_file =
   try (Filename.concat (Sys.getenv "HOME") ".coqiderc")
   with _ -> ".coqiderc"
 
+let accel_file = 
+  try (Filename.concat (Sys.getenv "HOME") ".coqide.keys")
+  with _ -> ".coqide.keys"
+
 let mod_to_str (m:Gdk.Tags.modifier) = 
   match m with
     | `MOD1 -> "MOD1"
@@ -133,6 +137,8 @@ let show_toolbar = ref (fun x -> ())
 let resize_window = ref (fun () -> ())
 
 let save_pref () =
+  (try GtkData.AccelMap.save accel_file 
+  with _ -> ());
   let p = !current in
   try 
     let add = Stringmap.add in
@@ -173,6 +179,7 @@ let save_pref () =
   
 
 let load_pref () =
+  (try GtkData.AccelMap.load accel_file with _ -> ());
   let p = !current in 
   try 
     let m = Config_lexer.load_file pref_file in

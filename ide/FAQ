@@ -54,4 +54,9 @@ R6) Use
     or 
 	coqmktop -ide -opt m1.cmx...mi.cmx
 
-
+Q7) How to customize the shortcuts for menus?
+R6) Two solutions are offered:
+  - Edit $HOME/.coqide.keys by hand
+  - Add "gtk-can-change-accels = 1" in your .coqiderc.gtk2 file. Then
+    from CoqIde, you may select a menu entry and press the desired 
+    shortcut. Do not forget to save your preferences.

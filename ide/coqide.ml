@@ -31,7 +31,6 @@ let small_size = `SMALL_TOOLBAR
 
 let initial_cwd = Sys.getcwd ()
 
-
 let status = ref None
 let push_info = ref (function s -> failwith "not ready")
 let pop_info = ref (function s -> failwith "not ready")
@@ -1520,12 +1519,13 @@ let main files =
   show_toolbar := 
   (fun b -> if b then handle#misc#show () else handle#misc#hide ());
 
-  let factory = new GMenu.factory menubar in
+  let factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/" menubar in
   let accel_group = factory#accel_group in
 
   (* File Menu *)
   let file_menu = factory#add_submenu "_File" in
-  let file_factory = new GMenu.factory file_menu ~accel_group in
+
+  let file_factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/File/" file_menu ~accel_group in
 
   (* File/Load Menu *)
   let load f =
@@ -1568,7 +1568,8 @@ let main files =
       | Vector.Found i -> set_current_view i
       | e -> !flash_info ("Load failed: "^(Printexc.to_string e))
   in
-  let load_m = file_factory#add_item "_Open/Create" ~key:GdkKeysyms._O in
+  let load_m = file_factory#add_item "_Open/Create" 
+		 ~key:GdkKeysyms._O in
   let load_f () = 	  
     match  select_file ~title:"Load file" () with 
       | None -> ()
@@ -1577,7 +1578,8 @@ let main files =
   ignore (load_m#connect#activate (load_f));
 
   (* File/Save Menu *)
-  let save_m = file_factory#add_item "_Save" ~key:GdkKeysyms._S in
+  let save_m = file_factory#add_item "_Save" 
+		 ~key:GdkKeysyms._S in
   let save_f () = 
     let current = get_current_view () in
     try
@@ -1605,7 +1607,8 @@ let main files =
   ignore (save_m#connect#activate save_f);
 
   (* File/Save As Menu *)
-  let saveas_m = file_factory#add_item "S_ave as" in
+  let saveas_m = file_factory#add_item "S_ave as" 
+  in
   let saveas_f () = 
     let current = get_current_view () in
     try (match (out_some current.analyzed_view)#filename with 
@@ -1734,7 +1737,7 @@ let main files =
   in
   let file_export_m =  file_factory#add_submenu "E_xport to" in
 
-  let file_export_factory = new GMenu.factory file_export_m ~accel_group in
+  let file_export_factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/Export/" file_export_m ~accel_group in
   let export_html_m = 
     file_export_factory#add_item "_Html" ~callback:(export_f "html") 
   in
@@ -1779,13 +1782,14 @@ let main files =
 	| _ -> ()
     else exit 0
   in
-  let quit_m = file_factory#add_item "_Quit" ~key:GdkKeysyms._Q ~callback:quit_f
+  let quit_m = file_factory#add_item "_Quit" ~key:GdkKeysyms._Q 
+		 ~callback:quit_f
   in
   ignore (w#event#connect#delete (fun _ -> quit_f (); true));
 
   (* Edit Menu *)
   let edit_menu = factory#add_submenu "_Edit" in
-  let edit_f = new GMenu.factory edit_menu ~accel_group in
+  let edit_f = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/Edit/" edit_menu ~accel_group in
   ignore(edit_f#add_item "_Undo" ~key:GdkKeysyms._u ~callback:
 	   (do_if_not_computing 
 	      (fun () -> ignore (get_current_view()).view#undo)));
@@ -1811,8 +1815,9 @@ let main files =
 		 with _ -> prerr_endline "EMIT PASTE FAILED")));
   ignore (edit_f#add_separator ());
   let read_only_i = edit_f#add_check_item "Expert" ~active:false
-		      ~key:GdkKeysyms._Z
+		      (* ~key:GdkKeysyms._Z *)
 		      ~callback:(fun b -> 
+				   (* GtkData.AccelMap.save "test.accel" *) 
 				   ()
 				) 
   in
@@ -1845,6 +1850,7 @@ let main files =
   let navigation_menu =  factory#add_submenu "_Navigation" in
   let navigation_factory = 
     new GMenu.factory navigation_menu 
+      ~accel_path:"<CoqIde MenuBar>/Navigation/"
       ~accel_group 
       ~accel_modi:!current.modifier_for_navigation 
   in
@@ -1917,6 +1923,7 @@ let main files =
   let tactics_menu =  factory#add_submenu "_Try Tactics" in
   let tactics_factory = 
     new GMenu.factory tactics_menu 
+      ~accel_path:"<CoqIde MenuBar>/Tactics/"
       ~accel_group 
       ~accel_modi:!current.modifier_for_tactics
   in
@@ -1988,6 +1995,7 @@ let main files =
   (* Templates Menu *)
   let templates_menu =  factory#add_submenu "Te_mplates" in
   let templates_factory = new GMenu.factory templates_menu 
+			    ~accel_path:"<CoqIde MenuBar>/Templates/"
 			    ~accel_group 
 			    ~accel_modi:!current.modifier_for_templates
   in
@@ -2106,6 +2114,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   (* Commands Menu *)
   let commands_menu =  factory#add_submenu "_Commands" in
   let commands_factory = new GMenu.factory commands_menu ~accel_group
+			   ~accel_path:"<CoqIde MenuBar>/Commands"
 			   ~accel_modi:[]
   in
   
@@ -2143,7 +2152,9 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 
   (* Externals *)
   let externals_menu =  factory#add_submenu "_Externals" in
-  let externals_factory = new GMenu.factory externals_menu ~accel_group in
+  let externals_factory = new GMenu.factory externals_menu 
+			    ~accel_path:"<CoqIde MenuBar>/Externals/"
+			    ~accel_group in
   
   (* Command/Compile Menu *)
   let compile_f () =
@@ -2215,7 +2226,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   in reset_auto_save_timer (); (* to enable statup preferences timer *)
 
   let configuration_menu = factory#add_submenu "Confi_guration" in
-  let configuration_factory = new GMenu.factory configuration_menu ~accel_group
+  let configuration_factory = new GMenu.factory configuration_menu ~accel_path:"<CoqIde MenuBar>/Configuration" ~accel_group
   in
   let edit_prefs_m =
     configuration_factory#add_item "Edit _preferences"
@@ -2276,6 +2287,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 
   let help_menu = factory#add_submenu "_Help" in
   let help_factory = new GMenu.factory help_menu  
+		       ~accel_path:"<CoqIde MenuBar>/Help/"
 		       ~accel_modi:[]
 		       ~accel_group in
   let _ = help_factory#add_item "Browse Coq _Manual" 
