@@ -256,8 +256,15 @@ let segment_iter i v f =
 (*let open_objects i decls =
   segment_iter i (Exactly i) open_object decls*)
 
-let open_library export m =
-  if not (library_is_opened m.library_name) then begin
+let eq_lib_name m1 m2 = m1.library_name = m2.library_name
+
+let open_library export explicit_libs m =
+  if
+    (* Only libraries indirectly to open are not reopen *)
+    (* Libraries explicitly mentionned by the user are always reopen *)
+    List.exists (eq_lib_name m) explicit_libs
+    or not (library_is_opened m.library_name)
+  then begin
     register_open_library export m;
     Declaremods.import_module (MPfile m.library_name)
   end
@@ -275,7 +282,7 @@ let open_libraries export modl =
              [] m.library_imports
          in remember_last_of_each subimport m)
       [] modl in
-  List.iter (open_library export) to_open_list
+  List.iter (open_library export modl) to_open_list
 
 
 (************************************************************************)
