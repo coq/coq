@@ -142,9 +142,14 @@ let traite_fichier_ML md ext =
     (!a_faire, !a_faire_opt)
   with Sys_error _ -> ("","")
 
+let canonize f =
+  let n = String.length f in
+  if n > 1 && String.sub f 0 2 = "./" then String.sub f 2 (n - 2) else f
+
 let sort () = 
   let seen = Hashtbl.create 97 in
   let rec loop file =
+    let file = canonize file in
     if not (Hashtbl.mem seen file) then begin
       Hashtbl.add seen file ();
       let cin = open_in (file ^ ".v") in
