@@ -495,7 +495,7 @@ let rec proofPrinc mi lst_vars lst_eqs lst_recs:
        let metav = mknewmeta() in
        let substmeta t = popn 1 (substitterm 0 (mkRel 1) metav t) in
        let newrec_call = substmeta rec_call in
-       let newlevar = List.map (fun ev,tev -> ev, substmeta tev) levar in
+       let newlevar = List.map (fun (ev,tev) -> ev, substmeta tev) levar in
        let newabsc = Array.map substmeta absc in
        newrec_call,newlevar,lposeq,evararr,newabsc,((metav,nme, typ)::parms)
 
@@ -693,7 +693,7 @@ let invfun c l dorew gl =
  (* Generalize the goal. [[x1:T1][x2:T2]... g[arg1 <- x1 ...]]. *)
  let gl_abstr' = add_lambdas (pf_concl gl) gl listargs' in
  (* apply parameters immediately *)
- let gl_abstr = applistc gl_abstr' (List.map (fun x,y,z -> x) (List.rev parms)) in
+ let gl_abstr = applistc gl_abstr' (List.map (fun (x,y,z) -> x) (List.rev parms)) in
 
  (* we apply args of the fix now, the parameters will be applied later *)
  let princ_proof_applied_args = 
@@ -790,7 +790,7 @@ let buildFunscheme fonc mutflist =
  in
  let rec princ_replace_params params t = 
   List.fold_left (
-   fun acc ev,nam,typ -> 
+   fun acc (ev,nam,typ) -> 
     mkLambda (Name (id_of_name nam) , typ, 
     substitterm 0 ev (mkRel 1) (lift 0 acc)))
    t (List.rev params) in
