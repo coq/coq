@@ -1,0 +1,6 @@
+- The syntax "Specialize num ident" is temporarily not accepted outside "Tactic
+Definition". Syntax "Specialize ident" is OK.
+
+- Realizer and Program/Program_all not available
+
+
