@@ -11,35 +11,6 @@
 Require RIneq.
 Require Omega.
 
-Recursive Tactic Definition Isrealint trm:=
-  Match trm With
-  | [``0``] -> Idtac
-  | [``1``] -> Idtac
-  | [``?1+?2``] -> (Isrealint ?1);(Isrealint ?2)
-  | [``?1-?2``] -> (Isrealint ?1);(Isrealint ?2)
-  | [``?1*?2``] -> (Isrealint ?1);(Isrealint ?2)
-  | [``-?1``] -> (Isrealint ?1)
-  | _ -> Fail.
-
-Recursive Meta Definition ToINR trm:=
-  Match trm With
-  | [ ``1`` ] ->  '(S O)
-  | [ ``1 + ?1`` ] -> Let t=(ToINR ?1) In '(S t).
-
-Tactic Definition DiscrR :=
-  Try Match Context With
-  | [ |- ~(?1==?2) ] ->
-    Isrealint ?1;Isrealint ?2;
-    Apply Rminus_not_eq; Ring ``?1-?2``; 
-      (Match Context With
-      | [ |- [``-1``] ] -> 
-        Repeat Rewrite <- Ropp_distr1;Apply Ropp_neq
-      | _ -> Idtac);
-      (Match Context With
-      | [ |- ``?1<>0``] -> Let nbr=(ToINR ?1) In
-        Replace ?1 with (INR nbr);
-          [Apply not_O_INR;Discriminate|Simpl;Ring]).
-
 Lemma Rlt_R0_R2 : ``0<2``.
 Replace ``2`` with (INR (2)); [Apply lt_INR_0; Apply lt_O_Sn | Reflexivity].
 Qed.
@@ -52,6 +23,18 @@ Pattern 1 x; Rewrite <- Rplus_Or.
 Apply Rlt_compatibility.
 Assumption.
 Qed.
+
+Lemma IZR_eq : (z1,z2:Z) z1=z2 -> (IZR z1)==(IZR z2).
+Intros; Rewrite H; Reflexivity.
+Qed.
+
+Lemma IZR_neq : (z1,z2:Z) `z1<>z2` -> ``(IZR z1)<>(IZR z2)``.
+Intros; Red; Intro; Elim H; Apply eq_IZR; Assumption.
+Qed.
+
+Tactic Definition DiscrR :=
+  Try Match Context With
+  | [ |- ~(?1==?2) ] -> Replace ``2`` with (IZR `2`); [Replace R1 with (IZR `1`); [Replace R0 with (IZR `0`); [Repeat Rewrite <- plus_IZR Orelse Rewrite <- mult_IZR Orelse Rewrite <- Ropp_Ropp_IZR Orelse Rewrite Z_R_minus; Apply IZR_neq; Try Discriminate | Reflexivity] | Reflexivity] | Reflexivity].
 
 Recursive Tactic Definition Sup0 :=
   Match Context With
@@ -70,9 +53,5 @@ Recursive Tactic Definition Sup :=
   | [ |- (Rlt (Ropp ?1) ?2) ] -> Apply Rlt_trans with ``0``; Sup
   | [ |- (Rlt ?1 ?2) ] -> SupOmega
   | _ -> Idtac.
-
-Lemma IZR_eq : (z1,z2:Z) z1=z2 -> (IZR z1)==(IZR z2).
-Intros; Rewrite H; Reflexivity.
-Qed.
 
 Tactic Definition RCompute := Replace ``2`` with (IZR `2`); [Replace R1 with (IZR `1`); [Replace R0 with (IZR `0`); [Repeat Rewrite <- plus_IZR Orelse Rewrite <- mult_IZR Orelse Rewrite <- Ropp_Ropp_IZR Orelse Rewrite Z_R_minus; Apply IZR_eq; Try Reflexivity | Reflexivity] | Reflexivity] | Reflexivity].
