@@ -37,15 +37,20 @@ theories/Sorting/Sorting.vo: theories/Sorting/Sorting.v theories/Lists/PolyList.
 theories/Sorting/Permutation.vo: theories/Sorting/Permutation.v theories/Relations/Relations.vo theories/Lists/PolyList.vo theories/Sets/Multiset.vo
 theories/Sorting/Heap.vo: theories/Sorting/Heap.v theories/Lists/PolyList.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo theories/Sorting/Sorting.vo
 theories/Setoids/Setoid.vo: theories/Setoids/Setoid.v
-theories/Reals/Reals.vo: theories/Reals/Reals.v theories/Reals/Rdefinitions.vo theories/Reals/TypeSyntax.vo theories/Reals/Raxioms.vo theories/Reals/Rbase.vo theories/Reals/R_Ifp.vo theories/Reals/Rbasic_fun.vo theories/Reals/Rlimit.vo theories/Reals/Rfunctions.vo theories/Reals/Rderiv.vo theories/Reals/Rseries.vo theories/Reals/Rtrigo_fun.vo
+theories/Reals/Reals.vo: theories/Reals/Reals.v theories/Reals/Rdefinitions.vo theories/Reals/TypeSyntax.vo theories/Reals/Raxioms.vo theories/Reals/Rbase.vo theories/Reals/R_Ifp.vo theories/Reals/Rbasic_fun.vo theories/Reals/R_sqr.vo theories/Reals/Rsigma.vo theories/Reals/Rlimit.vo theories/Reals/Rfunctions.vo theories/Reals/Rtrigo.vo theories/Reals/Rgeom.vo theories/Reals/Rderiv.vo theories/Reals/Rseries.vo theories/Reals/Rtrigo_fun.vo theories/Reals/Ranalysis.vo theories/Reals/DiscrR.vo
+theories/Reals/Rgeom.vo: theories/Reals/Rgeom.v theories/Reals/Rbase.vo theories/Reals/R_sqr.vo theories/Reals/Rtrigo.vo
+theories/Reals/Ranalysis.vo: theories/Reals/Ranalysis.v theories/Reals/Rbase.vo theories/Reals/Rbasic_fun.vo theories/Reals/R_sqr.vo theories/Reals/Rlimit.vo theories/Reals/Rderiv.vo theories/Reals/DiscrR.vo theories/Reals/Rtrigo.vo
+theories/Reals/Rtrigo.vo: theories/Reals/Rtrigo.v theories/ZArith/ZArith.vo theories/Logic/Classical_Prop.vo theories/Reals/DiscrR.vo theories/Reals/Rbase.vo theories/Reals/R_sqr.vo theories/Reals/Rfunctions.vo theories/Reals/Rsigma.vo
+theories/Reals/Rsigma.vo: theories/Reals/Rsigma.v theories/Reals/Rbase.vo
 theories/Reals/Rtrigo_fun.vo: theories/Reals/Rtrigo_fun.v theories/Reals/Rseries.vo
 theories/Reals/Rseries.vo: theories/Reals/Rseries.v theories/Reals/Rderiv.vo theories/Logic/Classical.vo theories/Arith/Compare.vo
 theories/Reals/Rderiv.vo: theories/Reals/Rderiv.v theories/Reals/Rfunctions.vo theories/Reals/DiscrR.vo contrib/fourier/Fourier.vo theories/Logic/Classical_Pred_Type.vo contrib/omega/Omega.vo
-theories/Reals/Rlimit.vo: theories/Reals/Rlimit.v theories/Reals/Rbasic_fun.vo theories/Logic/Classical_Prop.vo theories/Reals/DiscrR.vo contrib/fourier/Fourier.vo theories/Reals/SplitAbsolu.vo
+theories/Reals/Rlimit.vo: theories/Reals/Rlimit.v theories/Reals/Rbasic_fun.vo theories/Reals/R_sqr.vo theories/Logic/Classical_Prop.vo theories/Reals/DiscrR.vo contrib/fourier/Fourier.vo theories/Reals/SplitAbsolu.vo
 theories/Reals/Rfunctions.vo: theories/Reals/Rfunctions.v theories/Reals/Rlimit.vo contrib/omega/Omega.vo contrib/omega/Zpower.vo
 theories/Reals/SplitRmult.vo: theories/Reals/SplitRmult.v theories/Reals/Rbase.vo
 theories/Reals/SplitAbsolu.vo: theories/Reals/SplitAbsolu.v theories/Reals/Rbasic_fun.vo
-theories/Reals/Rbasic_fun.vo: theories/Reals/Rbasic_fun.v theories/Reals/R_Ifp.vo contrib/fourier/Fourier.vo
+theories/Reals/R_sqr.vo: theories/Reals/R_sqr.v theories/Reals/Rbase.vo theories/Reals/DiscrR.vo theories/Reals/Rbasic_fun.vo
+theories/Reals/Rbasic_fun.vo: theories/Reals/Rbasic_fun.v theories/Reals/R_Ifp.vo theories/Reals/Rbase.vo contrib/fourier/Fourier.vo
 theories/Reals/R_Ifp.vo: theories/Reals/R_Ifp.v theories/Reals/Rbase.vo contrib/omega/Omega.vo
 theories/Reals/DiscrR.vo: theories/Reals/DiscrR.v theories/Reals/Rbase.vo
 theories/Reals/Rbase.vo: theories/Reals/Rbase.v theories/Reals/Raxioms.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo contrib/field/Field.vo
