@@ -44,12 +44,10 @@ let parse_section_path s =
     with
       | Not_found -> invalid_arg "parse_section_path"
   in
-  if len = 0 || String.get s 0 <> '#' then
-    invalid_arg "parse_section_path"
-  else
-    let dirs,n = decoupe_dirs 1 in
-    let id,k = decoupe_kind n in
-    dirs,id,k
+  if len = 0 || String.get s 0 <> '#' then invalid_arg "parse_section_path";
+  let dirs,n = decoupe_dirs 1 in
+  let id,k = decoupe_kind n in
+  dirs,id,k
 
 module Stringmap = Map.Make(struct type t = string let compare = compare end)
 
