@@ -2248,7 +2248,7 @@ toplevel/vernacinterp.cmx: toplevel/vernacexpr.cmx lib/util.cmx \
     lib/options.cmx kernel/names.cmx library/libnames.cmx toplevel/himsg.cmx \
     parsing/extend.cmx parsing/coqast.cmx parsing/ast.cmx \
     toplevel/vernacinterp.cmi 
-translate/ppconstrnew.cmo: lib/util.cmi interp/topconstr.cmi \
+translate/ppconstrnew.cmo: lib/util.cmi kernel/univ.cmi interp/topconstr.cmi \
     pretyping/termops.cmi kernel/term.cmi interp/syntax_def.cmi \
     interp/symbols.cmi pretyping/retyping.cmi pretyping/rawterm.cmi \
     pretyping/pretyping.cmi interp/ppextend.cmi lib/pp.cmi \
@@ -2257,7 +2257,7 @@ translate/ppconstrnew.cmo: lib/util.cmi interp/topconstr.cmi \
     library/global.cmi interp/genarg.cmi pretyping/evd.cmi parsing/coqast.cmi \
     interp/constrintern.cmi interp/constrextern.cmi lib/bignat.cmi \
     parsing/ast.cmi translate/ppconstrnew.cmi 
-translate/ppconstrnew.cmx: lib/util.cmx interp/topconstr.cmx \
+translate/ppconstrnew.cmx: lib/util.cmx kernel/univ.cmx interp/topconstr.cmx \
     pretyping/termops.cmx kernel/term.cmx interp/syntax_def.cmx \
     interp/symbols.cmx pretyping/retyping.cmx pretyping/rawterm.cmx \
     pretyping/pretyping.cmx interp/ppextend.cmx lib/pp.cmx \
