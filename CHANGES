@@ -1,7 +1,7 @@
 Changes from V8.0beta to V8.0
 =============================
 
-Commands
+Vernacular commands
 
 - New option "Set Printing All" to deactivate all high-level forms of
   printing (implicit arguments, coercions, destructing let,
@@ -12,6 +12,13 @@ Commands
   fonctionalities
 - Command "Print." discontinued.
 - Redundant syntax "Implicit Arguments On/Off" discontinued
+
+Syntax
+
+- Semantic change of the if-then-else construction: "if c then t1 else t2"
+  now stands for "match c with c1 _ ... _ => t1 | c2 _ ... _ => t2 end"
+  with no dependency of t1 and t2 in the arguments of the constructors;
+  this may cause incompatibilities for files translated using coq 8.0beta
 
 Interpretation scopes
 
@@ -27,6 +34,10 @@ Tactics
 Tactic Language
 
 - Intro patterns now supported in Ltac (parsed with prefix "ipattern:")
+
+Commands
+
+- Added option -top to change the name of the toplevel module "Top"
 
 Tools
 
