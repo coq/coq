@@ -782,7 +782,7 @@ let rec pr_tac env inherited tac =
   | TacFail (ArgArg 0,"") -> str "fail", latom
   | TacFail (n,s) -> 
       str "fail" ++ (if n=ArgArg 0 then mt () else pr_arg (pr_or_var int) n) ++
-      (if s="" then mt() else qsnew s), latom
+      (if s="" then mt() else (spc() ++ qsnew s)), latom
   | TacFirst tl ->
       str "first" ++ spc () ++ pr_seq_body (pr_tac env ltop) tl, llet
   | TacSolve tl ->

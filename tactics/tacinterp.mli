@@ -137,3 +137,4 @@ val overwriting_interp_add : string * (interp_sign -> Coqast.t -> value) ->
                              unit
 
 
+val declare_xml_printer : (out_channel -> Environ.env -> Evd.evar_map -> constr -> unit) -> unit

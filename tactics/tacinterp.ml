@@ -587,6 +587,24 @@ let intern_constr_may_eval ist = function
   | ConstrTypeOf c -> ConstrTypeOf (intern_constr ist c)
   | ConstrTerm c -> ConstrTerm (intern_constr ist c)
 
+(* External tactics *)
+let print_xml_term = ref (fun _ -> failwith "print_xml_term unset")
+let declare_xml_printer f = print_xml_term := f
+
+let internalise_tacarg ch = G_xml.parse_tactic_arg ch
+
+let extern_tacarg ch env sigma = function
+  | VConstr c -> !print_xml_term ch env sigma c
+  | VTactic _ | VRTactic _ | VFun _ | VVoid | VInteger _ | VConstr_context _
+  | VIntroPattern _  | VRec _ ->
+      error "Only externing of terms is implemented"
+
+let extern_request ch req gl la =
+  output_string ch "<REQUEST req=\""; output_string ch req;
+  output_string ch "\">\n";
+  List.iter (pf_apply (extern_tacarg ch) gl) la;
+  output_string ch "</REQUEST>\n"
+
 (* Reads the hypotheses of a Match Context rule *)
 let rec intern_match_context_hyps evc env lfun = function
   | (Hyp ((_,na) as locna,mp))::tl ->
@@ -619,7 +637,6 @@ let extract_let_names lrc =
 	  (loc, "glob_tactic", str "This variable is bound several times");
       name::l)
     lrc []
-
 
 let clause_app f = function
     { onhyps=None; onconcl=b;concl_occs=nl } ->
@@ -828,6 +845,8 @@ and intern_tacarg strict ist = function
       TacCall (loc,
         intern_tactic_reference ist f,
         List.map (intern_tacarg !strict_check ist) l)
+  | TacExternal (loc,com,req,la) -> 
+      TacExternal (loc,com,req,List.map (intern_tacarg !strict_check ist) la)
   | TacFreshId _ as x -> x
   | Tacexp t -> Tacexp (intern_tactic ist t)
   | TacDynamic(loc,t) as x ->
@@ -1183,7 +1202,7 @@ let interp_casted_constr ocl ist sigma env (c,ce) =
   let csr = 
     match ce with
     | None ->
-	Pretyping.understand_gen_ltac sigma env (tl1,l2) ocl c
+        Pretyping.understand_gen_ltac sigma env (tl1,l2) ocl c
       (* If at toplevel (ce<>None), the error can be due to an incorrect
          context at globalization time: we retype with the now known
          intros/lettac/inversion hypothesis names *)
@@ -1373,6 +1392,8 @@ and interp_tacarg ist gl = function
       and largs = List.map (interp_tacarg ist gl) l in
       List.iter check_is_value largs;
       interp_app ist gl fv largs loc
+  | TacExternal (loc,com,req,la) ->
+      interp_external loc ist gl com req (List.map (interp_tacarg ist gl) la)
   | TacFreshId idopt -> 
       let s = match idopt with None -> "H" | Some s -> s in
       let id = Tactics.fresh_id (extract_ids ist.lfun) (id_of_string s) gl in
@@ -1548,6 +1569,11 @@ and apply_hyps_context ist env lz goal mt lctxt lgmatch mhyps hyps =
         eval_with_fail {ist with lfun=lmatch@lfun@ist.lfun} lz goal mt
   in
   apply_hyps_context_rec lctxt lgmatch hyps (hyps,0) mhyps
+
+and interp_external loc ist gl com req la =
+  let f ch = extern_request ch req gl la in
+  let g ch = internalise_tacarg ch in
+  interp_tacarg ist gl (System.connect f g com)
 
   (* Interprets extended tactic generic arguments *)
 and interp_genarg ist goal x =
@@ -2053,6 +2079,8 @@ and subst_tacarg subst = function
   | MetaIdArg (_loc,_) -> assert false
   | TacCall (_loc,f,l) ->
       TacCall (_loc, subst_reference subst f, List.map (subst_tacarg subst) l)
+  | TacExternal (_loc,com,req,la) -> 
+      TacExternal (_loc,com,req,List.map (subst_tacarg subst) la)
   | (TacVoid | IntroPattern _ | Integer _ | TacFreshId _) as x -> x
   | Tacexp t -> Tacexp (subst_tactic subst t)
   | TacDynamic(_,t) as x ->
