@@ -68,7 +68,6 @@ LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
 
 KERNEL=kernel/names.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/sign.cmo kernel/declarations.cmo \
-       kernel/sosub.cmo kernel/abstraction.cmo \
        kernel/environ.cmo kernel/evd.cmo kernel/instantiate.cmo \
        kernel/closure.cmo kernel/reduction.cmo kernel/inductive.cmo\
        kernel/type_errors.cmo kernel/typeops.cmo kernel/indtypes.cmo \
@@ -77,7 +76,7 @@ KERNEL=kernel/names.cmo kernel/univ.cmo kernel/term.cmo \
 LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
 	library/goptions.cmo \
 	library/global.cmo library/library.cmo library/states.cmo \
-	library/nametab.cmo library/impargs.cmo library/redinfo.cmo \
+	library/nametab.cmo library/impargs.cmo \
         library/indrec.cmo library/declare.cmo 
 
 PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
