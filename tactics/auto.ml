@@ -644,7 +644,7 @@ and my_find_search db_list local_db hdc concl =
 	match t with
 	  | Res_pf (term,cl)  -> unify_resolve (term,cl)
 	  | ERes_pf (_,c) -> (fun gl -> error "eres_pf")
-	  | Give_exact c  -> exact c
+	  | Give_exact c  -> exact_no_check c
 	  | Res_pf_THEN_trivial_fail (term,cl) -> 
 	      tclTHEN 
 		(unify_resolve (term,cl)) 

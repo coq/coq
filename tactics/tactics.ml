@@ -729,7 +729,7 @@ let dyn_lettac args gl = match args with
 (*               Exact tactics                                      *)
 (********************************************************************)
 
-let exact c gl =
+let exact_check c gl =
   let concl = (pf_concl gl) in
   let ct = pf_type_of gl c in
   if pf_conv_x_leq gl ct concl then  
@@ -737,21 +737,25 @@ let exact c gl =
   else 
     error "Not an exact proof"
 
-(*
-let dyn_exact =  
-  function [(COMMAND com)] -> tactic_com exact com
-           | l             -> bad_tactic_args "exact" l
- 
-*)
+let exact_no_check = refine
 
-let dyn_exact cc gl = match cc with
-  | [Constr c] -> exact c gl
+let dyn_exact_no_check cc gl = match cc with
+  | [Constr c] -> exact_no_check c gl
   | [Command com] ->
       let evc = (project gl) in
       let concl = (pf_concl gl) in
       let c = Astterm.interp_casted_constr evc (pf_env gl) com concl in
       refine c gl 
-  | l -> bad_tactic_args "exact" l 
+  | l -> bad_tactic_args "exact_no_check" l 
+
+let dyn_exact_check cc gl = match cc with
+  | [Constr c] -> exact_check c gl
+  | [Command com] ->
+      let evc = (project gl) in
+      let concl = (pf_concl gl) in
+      let c = Astterm.interp_casted_constr evc (pf_env gl) com concl in
+      refine c gl 
+  | l -> bad_tactic_args "exact_check" l 
 
 let (assumption : tactic) = fun gl ->
   let concl =  pf_concl gl in 
@@ -822,7 +826,7 @@ let new_hyp mopt c blist g =
   in 
   (tclTHENL (tclTHEN (kONT clause.hook)
                (cut (pf_type_of g cut_pf)))
-     ((tclORELSE (apply cut_pf) (exact cut_pf)))) g
+     ((tclORELSE (apply cut_pf) (exact_no_check cut_pf)))) g
 
 let dyn_new_hyp argsl gl =
   match argsl with 
@@ -1523,7 +1527,7 @@ let absurd c gls =
 	       ((fun gl ->
 		   let ida = pf_nth_hyp_id gl 1
                    and idna = pf_nth_hyp_id gl 2 in
-                   exact (applist(mkVar idna,[mkVar ida])) gl)));
+                   exact_no_check (applist(mkVar idna,[mkVar ida])) gl)));
             tclIDTAC]));
        tclIDTAC])) gls
 
@@ -1667,7 +1671,7 @@ let abstract_subproof name tac gls =
     let newenv = Global.env() in
     Declare.construct_reference newenv CCI na
   in
-  exact (applist (lemme,
+  exact_no_check (applist (lemme,
 		  List.map mkVar (List.rev (ids_of_var_context sign))))
     gls
 

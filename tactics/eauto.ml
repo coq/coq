@@ -16,7 +16,7 @@ open Pattern
 open Clenv
 open Auto
 
-let e_give_exact c gl = tclTHEN (unify (pf_type_of gl c)) (Tactics.exact c) gl
+let e_give_exact c gl = tclTHEN (unify (pf_type_of gl c)) (exact_no_check c) gl
 
 let assumption id = e_give_exact (mkVar id)
         

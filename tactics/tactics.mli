@@ -86,8 +86,11 @@ val intros_clearing      : bool list -> tactic
 val assumption         : tactic
 val dyn_assumption     : tactic_arg list -> tactic
 
-val exact              : constr -> tactic
-val dyn_exact          : tactic_arg list -> tactic
+val exact_no_check      : constr -> tactic
+val dyn_exact_no_check  : tactic_arg list -> tactic
+
+val exact_check      : constr -> tactic
+val dyn_exact_check  : tactic_arg list -> tactic
 
 (*s Reduction tactics. *)
 

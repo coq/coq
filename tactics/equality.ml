@@ -1046,7 +1046,7 @@ let swapEquandsInConcl gls =
 let swapEquandsInHyp id gls =
   ((tclTHENS (cut_replacing id (swap_equands gls (clause_type (Some id) gls)))
       ([tclIDTAC;
-      	(tclTHEN (swapEquandsInConcl) (exact (mkVar id)))]))) gls
+      	(tclTHEN (swapEquandsInConcl) (exact_no_check (mkVar id)))]))) gls
 
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. It yields the boolean true wether
@@ -1205,7 +1205,7 @@ let substInHyp eqn id gls =
   (tclTHENS (cut_replacing id (subst1 e2 body))
      ([tclIDTAC;
        (tclTHENS (bareRevSubstInConcl lbeq body (t,e1,e2))
-          ([exact (mkVar id);tclIDTAC]))])) gls
+          ([exact_no_check (mkVar id);tclIDTAC]))])) gls
 
 let revSubstInHyp eqn id gls =
   (tclTHENS (substInHyp (swap_equands gls eqn) id)
@@ -1432,7 +1432,7 @@ let rewrite_in lR com id gls =
     (try 
        (tclTHENS 
           ((if lR then substInHyp else revSubstInHyp) eqn id) 
-          ([tclIDTAC ; exact c])) gls
+          ([tclIDTAC ; exact_no_check c])) gls
      with UserError("SubstInHyp",_) -> tclIDTAC gls)
   with UserError ("find_eq_data_decompose",_)->  
     errorlabstrm "rewrite_in" [< 'sTR"No equality here" >] 
@@ -1469,10 +1469,10 @@ let hypSubst id cls gls =
   match cls with
     | None -> 
 	(tclTHENS (substInConcl (clause_type (Some id) gls))
-	   ([tclIDTAC; exact (mkVar id)])) gls
+	   ([tclIDTAC; exact_no_check (mkVar id)])) gls
     | Some hypid -> 
 	(tclTHENS (substInHyp (clause_type (Some id) gls) hypid)
-	   ([tclIDTAC;exact (mkVar id)])) gls
+	   ([tclIDTAC;exact_no_check (mkVar id)])) gls
 
 (* id:a=b |- (P a)
  * HypSubst id.
@@ -1524,10 +1524,10 @@ let revHypSubst id cls gls =
   match cls with
     | None -> 
 	(tclTHENS (revSubstInConcl (clause_type (Some id) gls))
-	   ([tclIDTAC; exact (mkVar id)])) gls
+	   ([tclIDTAC; exact_no_check (mkVar id)])) gls
     | Some hypid -> 
 	(tclTHENS (revSubstInHyp (clause_type (Some id) gls) hypid)
-	   ([tclIDTAC;exact (mkVar id)])) gls
+	   ([tclIDTAC;exact_no_check (mkVar id)])) gls
 
 (* id:a=b |- (P b)
  * HypSubst id.

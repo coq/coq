@@ -80,7 +80,7 @@ let general_decompose recognizer c gl =
   (tclTHENS (cut typc) 
      [(tclTHEN (intro_using tmphyp_name)
          (onLastHyp (general_decompose_clause recognizer)));
-      (exact c)]) gl
+      (exact_no_check c)]) gl
 
 let head_in gls indl t =
   try

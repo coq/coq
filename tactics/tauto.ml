@@ -81,12 +81,10 @@ let is_atomic m =
       (is_matching (get_pat pi_pattern) m)  ||
       (is_matching (not_pattern ()) m))
       
-let hypothesis = function Some id -> exact (mkVar id) | None -> assert false
-
 (* Steps of the procedure *)
 
 (* 1. A,Gamma |- A *)
-let dyck_hypothesis = compose hypothesis in_some
+let dyck_hypothesis id = exact_check (mkVar id)
 
 (* 2. False,Gamma |- G *)
 let dyck_absurdity_elim = contradiction_on_hyp
@@ -210,7 +208,7 @@ let back_thru_2 id =
 let back_thru_1 id =
   applist(mkVar id,[mkMeta(new_meta())])
 
-let exact_last_hyp = onLastHyp (fun h -> exact (mkVar (out_some h)))
+let exact_last_hyp = onLastHyp (fun h -> exact_no_check (mkVar (out_some h)))
 
 let imply_imply_bot_pattern = put_pat mmk "(?1 -> ?2) -> ?3"
 
@@ -1841,7 +1839,7 @@ let exacto tt gls =
   let tac =
     try
       let t = cci_of_tauto_term (pf_env gls) tt in
-      exact t
+      exact_no_check t
     with _ -> tAUTOFAIL     (* Efectivamente, es cualquier cosa!! *)
   in tac gls                (* Esto confirma el comentario anterior *)
     
