@@ -184,12 +184,12 @@ object('self)
 let (input_views:analyzed_views viewable_script Vector.t) = Vector.create ()
 
 
-let signals_to_crash = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup; 
+let signals_to_crash = [] (*Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup; 
 			  Sys.sigill; Sys.sigpipe; Sys.sigquit; 
 			  (* Sys.sigsegv;*)  Sys.sigterm; Sys.sigusr2] 
-
+			  *)
 let crash_save i =
-  ignore (Unix.sigprocmask Unix.SIG_BLOCK signals_to_crash);
+(*  ignore (Unix.sigprocmask Unix.SIG_BLOCK signals_to_crash);*)
   Pervasives.prerr_endline "Trying to save all buffers in .crashcoqide files";
   let count = ref 0 in 
   Vector.iter 
@@ -1012,7 +1012,7 @@ object(self)
 
   (* backtrack Coq to the phrase preceding iterator [i] *)
   method backtrack_to i =
-    Mutex.lock coq_may_stop;
+    if Mutex.try_lock coq_may_stop then
     (* re-synchronize Coq to the current state of the stack *)
     let rec synchro () =
       if is_empty () then
@@ -1073,6 +1073,7 @@ object(self)
 	  !push_info "WARNING: undo failed badly -> Coq might be in an inconsistent state.
 Please restart and report NOW.";
       end
+    else prerr_endline "backtrack_to : discarded (...)"
       
   method backtrack_to_insert = 
     self#backtrack_to self#get_insert
