@@ -239,7 +239,7 @@ tactics/autorewrite.cmi: proofs/tacexpr.cmo proofs/tacmach.cmi \
     kernel/term.cmi 
 tactics/btermdn.cmi: pretyping/pattern.cmi kernel/term.cmi 
 tactics/contradiction.cmi: kernel/names.cmi proofs/proof_type.cmi \
-    kernel/term.cmi 
+    pretyping/rawterm.cmi kernel/term.cmi 
 tactics/dhyp.cmi: kernel/names.cmi proofs/tacexpr.cmo proofs/tacmach.cmi \
     interp/topconstr.cmi toplevel/vernacexpr.cmo 
 tactics/eauto.cmi: proofs/proof_type.cmi proofs/tacexpr.cmo kernel/term.cmi 
@@ -1637,13 +1637,13 @@ tactics/btermdn.cmo: tactics/dn.cmi pretyping/pattern.cmi kernel/term.cmi \
 tactics/btermdn.cmx: tactics/dn.cmx pretyping/pattern.cmx kernel/term.cmx \
     tactics/termdn.cmx tactics/btermdn.cmi 
 tactics/contradiction.cmo: interp/coqlib.cmi tactics/hipattern.cmi \
-    proofs/proof_type.cmi proofs/tacmach.cmi tactics/tacticals.cmi \
-    tactics/tactics.cmi kernel/term.cmi lib/util.cmi \
-    tactics/contradiction.cmi 
+    proofs/proof_type.cmi pretyping/rawterm.cmi pretyping/reductionops.cmi \
+    proofs/tacmach.cmi tactics/tacticals.cmi tactics/tactics.cmi \
+    kernel/term.cmi lib/util.cmi tactics/contradiction.cmi 
 tactics/contradiction.cmx: interp/coqlib.cmx tactics/hipattern.cmx \
-    proofs/proof_type.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
-    tactics/tactics.cmx kernel/term.cmx lib/util.cmx \
-    tactics/contradiction.cmi 
+    proofs/proof_type.cmx pretyping/rawterm.cmx pretyping/reductionops.cmx \
+    proofs/tacmach.cmx tactics/tacticals.cmx tactics/tactics.cmx \
+    kernel/term.cmx lib/util.cmx tactics/contradiction.cmi 
 tactics/dhyp.cmo: parsing/ast.cmi proofs/clenv.cmi interp/constrintern.cmi \
     kernel/environ.cmi pretyping/evd.cmi library/global.cmi library/lib.cmi \
     library/libnames.cmi library/libobject.cmi library/library.cmi \
