@@ -794,7 +794,7 @@ COQWC=bin/coqwc$(EXE)
 COQVO2XML=bin/coq_vo2xml$(EXE)
 RUNCOQVO2XML=coq_vo2xml$(EXE)   # Uses the one in PATH and not the one in bin
 
-tools:: $(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQVO2XML) dev/top_printers.cmo
+tools:: $(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQVO2XML) $(COQWC) dev/top_printers.cmo
 
 COQDEPCMO=config/coq_config.cmo tools/coqdep_lexer.cmo tools/coqdep.cmo
 
@@ -876,6 +876,8 @@ FULLEMACSLIB=$(COQINSTALLPREFIX)$(EMACSLIB)
 
 install: install-$(BEST) install-binaries install-library install-manpages
 
+install7: install-$(BEST) install-binaries install-library7 install-manpages
+
 install-coqlight: install-$(BEST) install-binaries install-library-light
 
 install-byte:
@@ -920,6 +922,9 @@ install-library:
 	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
 	$(MKDIR) $(FULLIDELIB)
 	cp $(IDEFILES) $(FULLIDELIB)
+
+install-library7:
+	$(MAKE) NEWLIBFILES= install-library
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
