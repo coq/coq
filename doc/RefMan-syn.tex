@@ -587,6 +587,11 @@ Reset Initial.
 forbid blanks with a rule that declares ``\verb+|-+'' as a single
 token:
 
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(*************** Syntax error: illegal begin of vernac ***************)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
+\end{coq_eval}
 \begin{coq_example}
 Grammar vernac vernac := 
   thesis [ "|-" constr:constr($term) "." ]
@@ -868,7 +873,7 @@ ne\_identarg\_list} is already defined with type {\tt ast list} but the
 % Test failure
 \begin{coq_example}           
 Grammar tactic ne_identarg_list :=
-  list_two [ identarg($id1) identarg($id2) ] -> [ $id1 $id2 ]. 
+  list_two [ identarg($id1) identarg($id2) ] -> [ $id1 ; $id2 ]. 
 \end{coq_example}
 
 All rules of a same grammar must have the same type. For instance, the
