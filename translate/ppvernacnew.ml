@@ -629,7 +629,7 @@ let rec pr_vernac = function
       (match bl with
         | [] -> mt()
         | _ -> error "Statements with local binders no longer supported")
-      ++ str":" ++ spc() ++ pr_type c)
+      ++ str":" ++ spc() ++ pr_type (rename_bound_variables id c))
   | VernacEndProof Admitted -> str"Admitted"
   | VernacEndProof (Proved (opac,o)) -> (match o with
     | None -> if opac then str"Qed" else str"Defined"
@@ -1076,9 +1076,20 @@ let pr_vernac = function
          "Xml"; "Extraction"; "Tauto"; "Setoid_replace";"Elimdep";
 	 "DatatypesSyntax"; "LogicSyntax"; "Logic_TypeSyntax";
 	 "SpecifSyntax"; "PeanoSyntax"; "TypeSyntax"; "PolyListSyntax";
-	 "Zsyntax";"zarith_aux"] ->
+	 "Zsyntax"] ->
       warning ("Forgetting obsolete module "^(string_of_id r));
       mt()
+  | VernacRequire (exp,spe,[Ident(_,r)]) when
+      (* Renamed modules *)
+      List.mem (string_of_id r) ["zarith_aux";"fast_integer"] ->
+      warning ("Replacing obsolete module "^(string_of_id r)^" with ZArith");
+	(str "Require" ++ pr_require_token exp ++ spc() ++
+	(match spe with
+	  | None -> mt()
+	  | Some flag ->
+	      (if flag then str"Specification" else str"Implementation") ++
+	      spc ()) ++
+	str "ZArith.")
   | VernacImport (false,[Libnames.Ident (_,a)]) when
       (* Pour ceux qui ont utilisé la couche "Import *_scope" de compat *)
       let a = Names.string_of_id a in
