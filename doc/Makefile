@@ -40,7 +40,7 @@ REFMANCOQTEXFILES=\
 
 COQTEXFILES= Cases.v.tex Coercion.v.tex Extraction.v.tex Program.v.tex\
   Omega.v.tex Natural.v.tex Changes.v.tex Tutorial.v.tex Polynom.v.tex \
-  Correctness.v.tex
+  Correctness.v.tex Setoid.v.tex
 
 REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
   RefMan-pro.tex RefMan-com.tex RefMan-uti.tex RefMan-add.tex \

@@ -1,0 +1,161 @@
+\achapter{The \texttt{Setoid\_replace} tactic}
+\aauthor{Cl\'ement Renard}
+\label{Setoid_replace}
+\tacindex{Setoid\_replace}
+
+This chapter presents  the \texttt{Setoid\_replace} tactic.
+
+\asection{Description of \texttt{Setoid\_replace}}
+
+Working on user-defined structures in \Coq\ is not very easy if
+Leibnitz equality does not denote the intended equality. For example
+using pairs of \verb|nat| to denote rationals always drive to prove
+some boring lemma like
+\verb| (P:nat -> Prop) (P ((3),(6)) ->(P ((1),(2))|.
+
+We present here a \Coq\ module, {\tt Setoid\_replace}, which allow to
+structure and automate some parts of the work. In particular, if
+everything has been registered a simple
+tactic can do replacement just as if the two terms were equal.
+
+\asection{Adding new setoid or morphisms}
+
+Under the toplevel
+load the \texttt{Setoid\_replace} files with the command:
+
+\begin{coq_eval}
+  Require Setoid_replace.
+\end{coq_eval}
+
+\begin{quotation}
+\begin{verbatim}
+Require Setoid_replace.
+\end{verbatim}
+\end{quotation}
+
+A setoid is just a type \verb+A+ and an equivalence relation on \verb+A+.
+
+The specification of a setoid can be found in the file
+
+\begin{quotation}
+\begin{verbatim}
+contrib/setoid/Setoid_replace.v
+\end{verbatim}
+\end{quotation}
+
+It looks like :
+\begin{small}
+\begin{flushleft}
+\begin{verbatim}
+Section Setoid.
+
+Variable A : Type.
+Variable Aeq : A -> A -> Prop.
+
+Record Setoid_Theory : Prop :=
+{ Seq_refl : (x:A) (Aeq x x);
+  Seq_sym : (x,y:A) (Aeq x y) -> (Aeq y x);
+  Seq_trans : (x,y,z:A) (Aeq x y) -> (Aeq y z) -> (Aeq x z)
+}.
+\end{verbatim}
+\end{flushleft}
+\end{small}
+
+To define a setoid structure on \verb+A+, you must provide a relation
+on \verb+A+, prove that this relation is an equivalence
+relation, and pack them with the \verb|Build_Setoid_Theory| 
+constructor.
+
+Finally to register a ring the syntax is:
+
+\comindex{Add Setoid}
+\begin{quotation}
+  \texttt{Add Setoid} \textit{ A Aequiv ST}
+\end{quotation}
+
+\noindent where \textit{Aequiv} is a term of type \texttt{A->A->Prop},
+\textit{ST} is a term of type 
+\texttt{(Setoid\_Theory }\textit{A Aequiv}\texttt{)}.
+
+\begin{ErrMsgs}
+\item \errindex{Not a valid setoid theory}.\\ 
+  That happens when the typing condition does not hold.
+\item \errindex{A Setoid Theory is already declared for \textit{A}}.\\
+  That happens when you try to declare a second setoid theory for the
+  same type.
+\end{ErrMsgs}
+
+Currently, the hypothesis is made than no more than one ring structure
+may be declared for a given type.
+This allows automatic detection of the theory used to achieve the
+replacement. On popular demand, we can change that and allow several
+ring structures on the same type.
+
+The table of theories of \texttt{Setoid} is compatible with the \Coq\ 
+sectioning mechanism. If you declare a Ring inside a section, the
+declaration will be thrown away when closing the section.
+And when you load a compiled file, all the \texttt{Add Setoid}
+commands of this file that are not inside a section will be loaded.
+
+\Warning Only the setoid on \texttt{Prop} is loaded by default with the
+\texttt{Setoid\_replace} module. The equivalence relation used is
+\texttt{iff} {\it i.e.} the logical equivalence.
+
+\asection{Adding new morphisms}
+
+A morphism is nothing else than a function compatible with the
+equivalence relation. 
+In order to be able to replace a term by an equivalent under an
+application, the term being compatible must be a morphism. For example
+you want to be able to replace \verb+((3),(6))+ with \verb+((1),(2))+
+in \verb+(plus ((3),(6)) ((1),(2)))+ but not in
+\verb+(fst ((3),(6)))+. To achieve this goal each morphism has to be
+declared to the system, which will ask you to prove the compatibility
+lemma.
+
+The syntax is the following :
+\comindex{Add Morphism}
+\begin{quotation}
+  \texttt{Add Morphism} \textit{ f}
+\end{quotation}
+
+\noindent where f is the name of a term which type is a non dependent
+product.
+
+\begin{Variants}
+\item \texttt{Add Morphism} \textit{ s t} 
+\end{Variants}
+
+\noindent where \textit{s} is a new identifier which will denote the
+compatibility lemma and \textit{t} is a term which type is a non
+dependent product.
+
+\begin{ErrMsgs}
+\item \errindex{The term \term \ is not a known name}\\
+That happens when the term you give was not a name. In this case, try
+the variant.
+\item \errindex{The term \term \ is already declared as a morphism}
+\item \errindex{The term \term \ is not a product}
+\item \errindex{The term \term \ should not be a dependent product}
+\end{ErrMsgs}
+
+The compatibility lemma genereted depends on the setoids already
+declared.
+
+\asection{The tactic itself}
+\tacindex{Setoid\_replace}
+
+After having registered all the setoids and morphisms needed, you can
+use the tactic called \texttt{Setoid\_replace}. The synatx is
+
+\begin{quotation}
+\texttt{Setoid\_replace} $ term_1$ with $term_2$
+\end{quotation}
+
+The effect is similar to the one of Replace except that some subgoals
+may appear asking to prove equivalence of subterm of the given terms.
+\texttt{Trivial} or \texttt{Auto} should be sufficient to solve the
+easiest ones. Otherwise you may have to use \verb+Seq_refl+,
+\verb+Seq_sym+ or \verb+Seq_trans+ with the right arguments (for
+example \verb+(Seq_refl Prop iff Prop_S)+ is of type
+\verb+(x:Prop)x<->x+).
