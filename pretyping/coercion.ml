@@ -1,4 +1,3 @@
-
 (* $Id$ *)
 
 open Util
@@ -16,7 +15,11 @@ open Retyping
 
 (* Typing operations dealing with coercions *)
 
-let class_of1 env sigma t = class_of env sigma (nf_ise1 sigma t)
+exception NoCoercion
+
+let class_of1 env sigma t =
+  try class_of env sigma (nf_ise1 sigma t)
+  with Not_found -> raise NoCoercion
 
 let j_nf_ise env sigma {uj_val=v;uj_type=t} =
   { uj_val = nf_ise1 sigma v; 
@@ -58,8 +61,7 @@ let apply_pcoercion env p hj typ_cl =
 		 jres),
 	      (body_of_type jres.uj_type))
            (hj,typ_cl) p)
-  with _ -> 
-    failwith "apply_pcoercion"
+  with _ -> anomaly "apply_pcoercion"
 
 let inh_app_fun env isevars j = 
   match whd_betadeltaiota env !isevars (body_of_type j.uj_type) with
@@ -69,7 +71,7 @@ let inh_app_fun env isevars j =
  	   let t,i1 = class_of1 env !isevars (body_of_type j.uj_type) in
       	   let p = lookup_path_to_fun_from i1 in
            apply_pcoercion env p j t
-	 with _ -> j)
+	 with Not_found | NoCoercion -> j)
 (* find out which exc we must trap (e.g we don't want to catch Sys.Break!) *)
 
 let inh_tosort_force env isevars j =
@@ -77,7 +79,7 @@ let inh_tosort_force env isevars j =
     let t,i1 = class_of1 env !isevars (body_of_type j.uj_type) in
     let p = lookup_path_to_sort_from i1 in
     apply_pcoercion env p j t 
-  with Not_found -> 
+  with Not_found | NoCoercion -> 
     j
 
 let inh_tosort env isevars j = 
@@ -94,24 +96,24 @@ let inh_ass_of_j env isevars j =
         let j1 = inh_tosort_force env isevars j in 
 	type_judgment env !isevars j1 
 
-let inh_coerce_to env isevars c1 hj =
+let inh_coerce_to_fail env isevars c1 hj =
   let t1,i1 = class_of1 env !isevars c1 in
   let t2,i2 = class_of1 env !isevars (body_of_type hj.uj_type) in
   let p = lookup_path_between (i2,i1) in
   let hj' = apply_pcoercion env p hj t2 in
   if the_conv_x_leq env isevars (body_of_type hj'.uj_type) c1 then 
     hj'
-  else 
-    failwith "inh_coerce_to"
+  else
+    raise NoCoercion
 
-let rec inh_conv_coerce_to env isevars c1 hj =
+let rec inh_conv_coerce_to_fail env isevars c1 hj =
   let {uj_val = v; uj_type = t} = hj in
   let t = body_of_type t in
   if the_conv_x_leq env isevars t c1 then hj
   else 
     try 
-      inh_coerce_to env isevars c1 hj
-    with _ ->  (* try ... with _ -> ... is BAD *)
+      inh_coerce_to_fail env isevars c1 hj
+    with NoCoercion ->  (* try ... with _ -> ... is BAD *)
       (*   (match (hnf_constr !isevars t,hnf_constr !isevars c1) with*)
       (match (whd_betadeltaiota env !isevars t,
 	      whd_betadeltaiota env !isevars c1) with
@@ -128,7 +130,7 @@ let rec inh_conv_coerce_to env isevars c1 hj =
 	          let assv1 = assumption_of_judgement env !isevars jv1 in *)
 	       let assv1 = outcast_type v1 in
                let env1 = push_rel (x,assv1) env in
-               let h2 = inh_conv_coerce_to env isevars u2
+               let h2 = inh_conv_coerce_to_fail env isevars u2
 			  {uj_val = v2;
 			   uj_type =
 			     make_typed t2 (get_sort_of env !isevars t2) } in
@@ -145,29 +147,28 @@ let rec inh_conv_coerce_to env isevars c1 hj =
                              | _ -> name) in
                let env1 = push_rel (name,assu1) env in
                let h1 = 
-		 inh_conv_coerce_to env isevars t1
+		 inh_conv_coerce_to_fail env isevars t1
 		   {uj_val = Rel 1; 
 		    uj_type = typed_app (fun _ -> u1) assu1 } in
-               let h2 = inh_conv_coerce_to env isevars u2  
+               let h2 = inh_conv_coerce_to_fail env isevars u2  
 			 { uj_val = DOPN(AppL,[|(lift 1 v);h1.uj_val|]);
                            uj_type =
 			     make_typed (subst1 h1.uj_val t2)
 			       (get_sort_of env !isevars t2) }
 	       in
 	       fst (abs_rel env !isevars name assu1 h2)
-	 | _ -> failwith "inh_coerce_to")
-            
-let inh_cast_rel loc env isevars cj tj =
-  let tj = assumption_of_judgment env !isevars tj in
+	 | _ -> raise NoCoercion)
+
+let inh_conv_coerce_to loc env isevars cj tj =
   let cj' = 
     try 
-      inh_conv_coerce_to env isevars (body_of_type tj) cj 
-    with Not_found | Failure _ -> 
+      inh_conv_coerce_to_fail env isevars (body_of_type tj) cj 
+    with NoCoercion -> 
       let rcj = j_nf_ise env !isevars cj in
-      let atj = nf_ise1 !isevars (body_of_type tj) in
-      error_actual_type_loc loc env rcj.uj_val (body_of_type rcj.uj_type) atj
+      let at = nf_ise1 !isevars (body_of_type tj) in
+      error_actual_type_loc loc env rcj.uj_val (body_of_type rcj.uj_type) at
   in
-  { uj_val = mkCast cj'.uj_val (body_of_type tj);
+  { uj_val = (* mkCast *) cj'.uj_val (* (body_of_type tj) *);
     uj_type = tj }
 
 let inh_apply_rel_list nocheck apploc env isevars argjl funj vtcon =
@@ -179,8 +180,8 @@ let inh_apply_rel_list nocheck apploc env isevars argjl funj vtcon =
       	in
       	(match vtcon with 
 	   | (_,(_,Some typ')) ->
-               (try inh_conv_coerce_to env isevars typ' resj
-          	with _ -> resj) (* try ... with _ -> ... is BAD *)
+               (try inh_conv_coerce_to_fail env isevars typ' resj
+          	with NoCoercion -> resj) (* try ... with _ -> ... is BAD *)
 	   | (_,(_,None)) -> resj)
 
     | hj::restjl ->
@@ -191,9 +192,9 @@ let inh_apply_rel_list nocheck apploc env isevars argjl funj vtcon =
 		  hj 
 		else 
 		  (try 
-		     inh_conv_coerce_to env isevars c1 hj 
-		   with Failure _ | Not_found ->
-                     error_cant_apply_bad_type_loc apploc env (n,c1,(body_of_type hj.uj_type))
+		     inh_conv_coerce_to_fail env isevars c1 hj 
+		   with NoCoercion ->
+                     error_cant_apply_bad_type_loc apploc env (n,c1,body_of_type hj.uj_type)
 		       (j_nf_ise env !isevars funj)
 		       (jl_nf_ise env !isevars argjl)) 
 	      in

@@ -516,12 +516,18 @@ let prepare_unif_pb typ cs =
     else 
       (* Il faudrait que noccur_between ne regarde pas la subst des Evar *)
       if match p with DOPN(Evar _,_) -> true | _ -> false then lift (-n) p
-      else failwith "TODO4-1" in
+      else
+	 failwith "TODO4-1" in
   let ci = applist
 	     (mkMutConstruct cs.cs_cstr, cs.cs_params@(rel_list (-n) n)) in
 
   (* This is the problem: finding P s.t. cs_args |- (P realargs ci) = p' *)
   (Array.map (lift (-n)) cs.cs_concl_realargs, ci, p')
+
+let abstract_conclusion typ cs =
+  let n = cs.cs_nargs in
+  let (sign,p) = decompose_prod_n n typ in
+  lam_it p sign
 
 let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
   (* Il faudra substituer les isevars a un certain moment *)
@@ -529,13 +535,22 @@ let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
 
   (* First strategy: no dependencies at all *)
   let (cclargs,_,typn) = eqns.(mis_nconstr mis -1) in
+  let (sign,_) = get_arity env !isevars indf in
   if array_for_all (fun (_,_,typ) -> the_conv_x env isevars typn typ) eqns
   then
-    let (sign,_) = get_arity env !isevars indf in
     let pred = lam_it (lift (List.length sign) typn) sign in
     (false,pred) (* true = dependent -- par défaut *)
   else
-    failwith "TODO4-2"
+    if Array.length typs = 0 then
+      failwith "TODO4-3"
+    else
+      let s = get_sort_of env !isevars typs.(0) in
+      let predpred = lam_it (mkSort s) sign in
+      let caseinfo = make_default_case_info mis in
+      let brs = array_map2 abstract_conclusion typs cstrs in
+      let predbody = mkMutCaseA caseinfo predpred (Rel 1) brs in
+      let pred = lam_it (lift (List.length sign) typn) sign in
+      failwith "TODO4-2"; (true,pred)
 
 (* Propagation of user-provided predicate through compilation steps *)
 
@@ -981,7 +996,7 @@ let prepare_predicate typing_fun isevars env tomatchs = function
 (**************************************************************************)
 (* Main entry of the matching compilation                                 *)
 
-let compile_cases (typing_fun,isevars) vtcon env (predopt, tomatchl, eqns) =
+let compile_cases loc (typing_fun,isevars) vtcon env (predopt, tomatchl, eqns)=
 
   (* We build the matrix of patterns and right-hand-side *)
   let matx = matx_of_eqns env eqns in
@@ -1008,5 +1023,7 @@ let compile_cases (typing_fun,isevars) vtcon env (predopt, tomatchl, eqns) =
   let j = compile pb in
   
   match vtcon with
-    | (_,(_,Some p)) -> Coercion.inh_conv_coerce_to env isevars p j
+    | (_,(_,Some p)) ->
+	let p = make_typed p (get_sort_of env !isevars p) in
+	Coercion.inh_conv_coerce_to loc env isevars j p
     | _ -> j

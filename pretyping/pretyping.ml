@@ -440,17 +440,17 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
      uj_type = make_typed rsty s }
 
 | RCases (loc,prinfo,po,tml,eqns) ->
-    Cases.compile_cases
+    Cases.compile_cases loc
       ((fun vtyc env -> pretype vtyc env isevars lvar lmeta),isevars)
       vtcon env (* loc *) (po,tml,eqns)
 
 | RCast(loc,c,t) ->
   let tj = pretype def_vty_con env isevars lvar lmeta t in
   let tj = inh_tosort_force env isevars tj in
+  let tj = assumption_of_judgment env !isevars tj in
   let cj =
-    pretype (mk_tycon2 vtcon (body_of_type (assumption_of_judgment env !isevars
-      tj))) env isevars lvar lmeta c in
-  inh_cast_rel loc env isevars cj tj
+    pretype (mk_tycon2 vtcon (body_of_type tj)) env isevars lvar lmeta c in
+  inh_conv_coerce_to loc env isevars cj tj
 
 (* Maintenant, tout s'exécute... 
   | _ -> error_cant_execute CCI env (nf_ise1 env !isevars cstr)
