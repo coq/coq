@@ -131,7 +131,7 @@ let declare_delimiters scope key =
   if sc.delimiters <> None && Options.is_verbose () then begin
     let old = out_some sc.delimiters in
     Options.if_verbose 
-      warning ("Overwritting previous delimiter key "^old^" in scope "^scope)
+      warning ("Overwritting previous delimiting key "^old^" in scope "^scope)
   end;
   let sc = { sc with delimiters = Some key } in
   scope_map := Stringmap.add scope sc !scope_map;
@@ -380,25 +380,25 @@ type symbol_token = WhiteSpace of int | String of string
 
 let split str =
   let push_token beg i l =
-    if beg == i then l else String (String.sub str beg (i - beg)) :: l 
+    if beg = i then l else String (String.sub str beg (i - beg)) :: l 
   in
   let push_whitespace beg i l =
     if beg = i then l else WhiteSpace (i-beg) :: l 
   in
   let rec loop beg i =
     if i < String.length str then
-      if str.[i] == ' ' then
-	push_token beg i (loop_on_whitespace (succ i) (succ i))
+      if str.[i] = ' ' then
+	push_token beg i (loop_on_whitespace (i+1) (i+1))
       else
-	loop beg (succ i)
+	loop beg (i+1)
     else
       push_token beg i []
   and loop_on_whitespace beg i =
     if i < String.length str then
       if str.[i] <> ' ' then
-	push_whitespace beg i (loop i (succ i))
+	push_whitespace beg i (loop i (i+1))
       else
-	loop_on_whitespace beg (succ i)
+	loop_on_whitespace beg (i+1)
     else
       push_whitespace beg i []
   in
@@ -447,7 +447,7 @@ let declare_ref_arguments_scope ref =
 (* Printing *)
 
 let pr_delimiters_info = function
-  | None -> str "No delimiter key"
+  | None -> str "No delimiting key"
   | Some key -> str "Delimiting key is " ++ str key
 
 let classes_of_scope sc =
