@@ -72,8 +72,10 @@ Notation exT_intro := ex_intro (only parsing).
 Notation exT_ind  := ex_ind (only parsing).
 
 Notation ExT  := (ex ?).
-Notation "'EXT' x | p"      := (ex ? [x]p)    (at level 10, p at level 8).
-Notation "'EXT' x : t | p"  := (ex ? [x:t]p)  (at level 10, p at level 8).
+Notation "'EXT' x | p"      := (ex ? [x]p)
+  (at level 10, p at level 8, only parsing).
+Notation "'EXT' x : t | p"  := (ex ? [x:t]p)
+  (at level 10, p at level 8, only parsing).
 
 (*
 Inductive exT2 [A:Type;P,Q:A->Prop] : Prop
@@ -201,10 +203,10 @@ Notation identityT := identity (only parsing).
 Notation refl_identityT := refl_identity (only parsing).
 
 Notation "< A > x === y" := (!identityT A x y)
-   (A annot, at level 1, x at level 0, only parsing).
+   (A annot, at level 1, x at level 0, only parsing) : type_scope.
 
 Notation "x === y" := (identityT ? x y)
-  (at level 5, no associativity) : type_scope.
+  (at level 5, no associativity, only parsing) : type_scope.
 
 (*
 Hints Resolve refl_identityT : core v62.
