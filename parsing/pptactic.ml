@@ -136,8 +136,9 @@ let pr_with_names = function
   | ids -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_case_intro_pattern ids)
 
 let pr_hyp_location pr_id = function
-  | InHyp id -> spc () ++ pr_id id
-  | InHypType id -> spc () ++ str "(Type of " ++ pr_id id ++ str ")"
+  | id, (InHyp,_) -> spc () ++ pr_id id
+  | id, (InHypTypeOnly,_) -> spc () ++ str "(Type of " ++ pr_id id ++ str ")"
+  | id, _ -> error "Unsupported hyp location in v7"
 
 let pr_clause pr_id = function
   | [] -> mt ()

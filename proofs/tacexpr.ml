@@ -50,9 +50,13 @@ let make_red_flag =
   add_flag
     {rBeta = false; rIota = false; rZeta = false; rDelta = false; rConst = []} 
 
-type 'a raw_hyp_location = (* To distinguish body and type of local defs *)
-  | InHyp of 'a
-  | InHypType of 'a
+type hyp_location_flag = (* To distinguish body and type of local defs *)
+  | InHyp
+  | InHypTypeOnly
+  | InHypValueOnly
+
+type 'a raw_hyp_location = 
+    'a * (hyp_location_flag * hyp_location_flag option ref)
 
 type 'a induction_arg =
   | ElimOnConstr of 'a

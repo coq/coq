@@ -217,8 +217,9 @@ GEXTEND Gram
       | s = IDENT; c = constr -> ExtraRedExpr (s,c) ] ]
   ;
   hypident:
-    [ [ id = id_or_meta -> InHyp id
-      | "("; "Type"; "of"; id = id_or_meta; ")" -> InHypType id ] ]
+    [ [ id = id_or_meta -> id,(InHyp,ref None)
+      | "("; "Type"; "of"; id = id_or_meta; ")" -> id,(InHypTypeOnly,ref None)
+    ] ]
   ;
   clause:
     [ [ "in"; idl = LIST1 hypident -> idl

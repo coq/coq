@@ -506,9 +506,7 @@ let intern_inversion_strength lf ist = function
       InversionUsing (intern_constr ist c, List.map (intern_hyp_or_metaid ist) idl)
 
 (* Interprets an hypothesis name *)
-let intern_hyp_location ist = function
-  | InHyp id -> InHyp (intern_hyp ist (skip_metaid id))
-  | InHypType id -> InHypType (intern_hyp ist (skip_metaid id))
+let intern_hyp_location ist (id,hl) = (intern_hyp ist (skip_metaid id), hl)
 
 (* Reads a pattern *)
 let intern_pattern evc env lfun = function
@@ -1059,9 +1057,7 @@ let interp_evaluable ist env = function
       coerce_to_evaluable_ref env (unrec (List.assoc id ist.lfun))
 
 (* Interprets an hypothesis name *)
-let interp_hyp_location ist gl = function
-  | InHyp id -> InHyp (interp_hyp ist gl id)
-  | InHypType id -> InHypType (interp_hyp ist gl id)
+let interp_hyp_location ist gl (id,hl) = (interp_hyp ist gl id,hl)
 
 let eval_opt_ident ist = option_app (eval_ident ist)
 

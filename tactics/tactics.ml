@@ -143,19 +143,22 @@ type tactic_reduction = env -> evar_map -> constr -> constr
 let reduct_in_concl redfun gl = 
   convert_concl_no_check (pf_reduce redfun gl (pf_concl gl)) gl
 
-let reduct_in_hyp redfun idref gl =
-  let inhyp,id = match idref with
-    | InHyp id -> true, id
-    | InHypType id -> false, id in
+let reduct_in_hyp redfun (id,(where,where')) gl =
   let (_,c, ty) = pf_get_hyp gl id in
-  let redfun' = under_casts (pf_reduce redfun gl) in
+  let redfun' = (*under_casts*) (pf_reduce redfun gl) in
   match c with
-    | None -> convert_hyp_no_check (id,None,redfun' ty) gl
-    | Some b ->
-	if inhyp then (* Default for defs: reduce in body *)
-	  convert_hyp_no_check (id,Some (redfun' b),ty) gl
-	else
-	  convert_hyp_no_check (id,Some b,redfun' ty) gl
+  | None -> 
+      if where = InHypValueOnly then
+	errorlabstrm "" (pr_id id ++ str "has no value");
+      if Options.do_translate () then where' := Some where;
+      convert_hyp_no_check (id,None,redfun' ty) gl
+  | Some b ->
+      let where =
+	if !Options.v7 & where = InHyp then InHypValueOnly else where in
+      let b' = if where <> InHypTypeOnly then redfun' b else b in
+      let ty' =	if where <> InHypValueOnly then redfun' ty else ty in
+      if Options.do_translate () then where' := Some where;
+      convert_hyp_no_check (id,Some b',ty') gl
 
 let reduct_option redfun = function
   | Some id -> reduct_in_hyp   redfun id 

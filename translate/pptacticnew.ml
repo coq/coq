@@ -206,12 +206,21 @@ let pr_with_names = function
   | ids -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_case_intro_pattern ids)
 
 let pr_hyp_location pr_id = function
-  | InHyp id -> spc () ++ pr_id id
-  | InHypType id -> spc () ++ str "(type of " ++ pr_id id ++ str ")"
+  | id, InHyp -> spc () ++ pr_id id
+  | id, InHypTypeOnly -> spc () ++ str "(type of " ++ pr_id id ++ str ")"
+  | id, InHypValueOnly -> spc () ++ str "(value of " ++ pr_id id ++ str ")"
+
+let pr_hyp_location pr_id (id,(hl,hl')) =
+  if !hl' <> None then pr_hyp_location pr_id (id,out_some !hl')
+  else
+    (if hl = InHyp && Options.do_translate () then 
+      msgerrnl (str "Warning: Unable to detect if " ++ pr_id id ++ str " denots a local definition; if it is the case, the translation is wrong");
+    pr_hyp_location pr_id (id,hl))
 
 let pr_clause pr_id = function
   | [] -> mt ()
-  | l -> spc () ++ hov 0 (str "in" ++ prlist (pr_hyp_location pr_id) l)
+  | l ->
+      spc () ++ hov 0 (str "in" ++ prlist (pr_hyp_location pr_id) l)
 
 let pr_simple_clause pr_id = function
   | [] -> mt ()

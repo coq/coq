@@ -159,8 +159,9 @@ let mlexpr_of_loc loc = <:expr< $dloc$ >>
 let mlexpr_of_hyp = mlexpr_of_or_metaid (mlexpr_of_located mlexpr_of_ident)
 
 let mlexpr_of_hyp_location = function
-  | Tacexpr.InHyp id -> <:expr< Tacexpr.InHyp $mlexpr_of_hyp id$ >>
-  | Tacexpr.InHypType id -> <:expr< Tacexpr.InHypType $mlexpr_of_hyp id$ >>
+  | id, (Tacexpr.InHyp,_) -> <:expr< ($mlexpr_of_hyp id$, (Tacexpr.InHyp, ref None)) >>
+  | id, (Tacexpr.InHypTypeOnly,_) -> <:expr< ($mlexpr_of_hyp id$, (Tacexpr.InHypTypeOnly, ref None)) >>
+  | id, (Tacexpr.InHypValueOnly,_) -> <:expr< ($mlexpr_of_hyp id$, (Tacexpr.InHypValueOnly,ref None)) >>
 
 (*
 let mlexpr_of_red_mode = function

@@ -211,4 +211,4 @@ let normalize_evaluables=
 	 None->unfold_in_concl (Lazy.force defined_connectives)
        | Some id-> 
 	   unfold_in_hyp (Lazy.force defined_connectives) 
-	   (Tacexpr.InHypType id))
+	   (id,(Tacexpr.InHypTypeOnly,ref None)))
