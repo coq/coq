@@ -262,7 +262,15 @@ let pp_decl = function
   | Dabbrev (id, l, t) ->
       hOV 0 [< 'sTR "type"; 'sPC; pp_parameters l; 
 	       pr_id id; 'sPC; 'sTR "="; 'sPC; pp_type t >]
+  | Dglob (id, MLfix (n,_,idl,l)) ->
+      let id' = List.nth idl n in
+      if id = id' then
+	[<  hOV 2 (pp_fix false [] (n,false,idl,l) []) >]
+      else
+	[< 'sTR "let "; pr_id id; 'sTR " ="; 'fNL;
+	   v 0 [< 'sTR "  "; 
+		  hOV 2 (pp_fix false [] (n,true,idl,l) []); 'fNL >] >]
   | Dglob (id, a) ->
-      hOV 0 [< 'sTR "let"; 'sPC; pr_id id; 'sPC; 'sTR "="; 'sPC; pp_ast a >]
+      hOV 0 [< 'sTR "let "; pp_function [] id a >]
 
 end

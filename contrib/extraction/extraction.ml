@@ -400,6 +400,7 @@ and extract_term_with_type env ctx c t =
     | IsMutConstruct (cp,_) ->
 	Rmlterm (MLglob (ConstructRef cp)) (* TODO eta-expansion *)
     | IsMutCase ((ni,(ip,cnames,_,_,_)),p,c,br) ->
+	(* TODO: [ni] probably without parameters *)
 	let extract_branch j b =
 	  let (_,s) = extract_constructor (ip,succ j) in
 	  assert (List.length s = ni.(j));
