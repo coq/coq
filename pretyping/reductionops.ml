@@ -157,6 +157,7 @@ let betadeltaiota_nolet = mkflags [fbeta;fdelta;fevar;fiota]
 let betadeltaiotaeta = mkflags [fbeta;fdelta;fzeta;fevar;fiota;feta]
 let betaiotaevar = mkflags [fbeta;fiota;fevar]
 let betaetalet = mkflags [fbeta;feta;fzeta]
+let betalet = mkflags [fbeta;fzeta]
 
 (* Beta Reduction tools *)
 
@@ -349,6 +350,10 @@ let whd_betaetalet_state = local_whd_state_gen betaetalet
 let whd_betaetalet_stack x =
   appterm_of_stack (whd_betaetalet_state (x, empty_stack))
 let whd_betaetalet x = app_stack (whd_betaetalet_state (x,empty_stack))
+
+let whd_betalet_state = local_whd_state_gen betalet
+let whd_betalet_stack x = appterm_of_stack (whd_betalet_state (x, empty_stack))
+let whd_betalet x = app_stack (whd_betalet_state (x,empty_stack))
 
 (* 2. Delta Reduction Functions *)
 

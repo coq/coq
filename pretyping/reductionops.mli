@@ -71,6 +71,7 @@ val whd_betaiotazeta : local_reduction_function
 val whd_betadeltaiota :  contextual_reduction_function
 val whd_betadeltaiota_nolet :  contextual_reduction_function
 val whd_betaetalet : local_reduction_function
+val whd_betalet : local_reduction_function
 
 val whd_beta_stack : local_stack_reduction_function
 val whd_betaiota_stack : local_stack_reduction_function
@@ -78,6 +79,7 @@ val whd_betaiotazeta_stack : local_stack_reduction_function
 val whd_betadeltaiota_stack :  contextual_stack_reduction_function
 val whd_betadeltaiota_nolet_stack :  contextual_stack_reduction_function
 val whd_betaetalet_stack : local_stack_reduction_function
+val whd_betalet_stack : local_stack_reduction_function
 
 val whd_state : local_state_reduction_function
 val whd_beta_state : local_state_reduction_function
@@ -86,6 +88,7 @@ val whd_betaiotazeta_state : local_state_reduction_function
 val whd_betadeltaiota_state :  contextual_state_reduction_function
 val whd_betadeltaiota_nolet_state :  contextual_state_reduction_function
 val whd_betaetalet_state : local_state_reduction_function
+val whd_betalet_state : local_state_reduction_function
 
 (*s Head normal forms *)
 
