@@ -207,13 +207,13 @@ GEXTEND Gram
   symb_status:
     [ [ IDENT "Lex" -> Some Lex
       | IDENT "Mul" -> Some Mul
-      | IDENT "RLex" -> Some RevLex
+      | IDENT "RLex" -> Some RLex
       | IDENT "Lex"; "("; l = LIST1 mul_status SEP ","; ")" -> Some (Comb l)
       | -> None ] ]
   ;
   mul_status:
     [ [ n = natural -> [n]
-      | IDENT "Mul"; n = natural; l = LIST1 natural -> n::l ] ]
+      | "{"; n = natural; ","; l = LIST1 natural SEP ","; "}" -> n::l ] ]
   ;
   symb_mons:
     [ [ IDENT "Mon"; "("; l = LIST1 natural SEP ","; ")" -> l

@@ -27,6 +27,7 @@ open Logic
 open Printer
 open Ast
 open Rawterm
+open Symbol
 
 let guill s = "\""^s^"\""
 
@@ -625,3 +626,68 @@ let explain_pattern_matching_error env = function
       explain_non_exhaustive env tms
   | CannotInferPredicate typs ->
       explain_cannot_infer_predicate env typs
+
+let explain_symbol_error = function
+  | Type_not_compatible_with_arity ->
+      str "The type is not compatible with the arity."
+  | Type_not_compatible_with_eqth ->
+      str "The type is not compatible with the equational theory."
+  | Both_monotonic_and_antimonotonic i ->
+      str (string_of_int i) ++ spc()
+      ++ str "is declared both as monotonic and antimonotonic."
+
+let pr_rule envl envr (l,r) =
+  prterm_env envl l ++ spc() ++ str "=>" ++ spc() ++ prterm_env envr r
+
+let prvec_from_status env =
+  let prmul_elt c p = str "," ++ spc() ++ prterm_env env c ++ p in
+  let prmul = function
+    | c::l ->
+	str "{" ++ prterm_env env c ++ List.fold_right prmul_elt l (str "}")
+    | _ -> invalid_arg "prmul"
+  in
+  let prlex_elt l p = str "," ++ spc() ++ prmul l ++ p in
+  let prlex = function
+    | m::l -> str "(" ++ prmul m ++ List.fold_right prlex_elt l (str ")")
+    | _ -> invalid_arg "prlex"
+  in
+    fun s vt -> prlex (select_from_status vt s)
+
+let explain_rule_err (l,r) envl envr = function
+  | Not_a_symbol kn ->
+      str "the left hand-side is not algebraic" ++ spc() ++ str "("
+      ++ str (string_of_kn kn) ++ str "is not a symbol)."
+  | Not_algebraic c ->
+      str "in the left-hand side," ++ spc() ++ prterm_env envl c ++ spc()
+      ++ str "is not an algebraic term."
+  | Not_a_symbol_or_a_constructor c ->
+      str "in the left-hand side," ++ spc() ++ prterm_env envl c ++ spc()
+      ++ str "is not a symbol or a constructor."
+  | Term_not_admissible_in_RHS c ->
+      str "in the right hand-side," ++ spc() ++ prterm_env envr c ++ spc()
+      ++ str "is not admissible."
+  | Not_symbol_headed ->
+      str "the left-hand side is not headed by a symbol."
+  | Not_linear ->
+      str "the left hand-side is not linear."
+  | Recursive_call_not_smaller (s,va,vl) ->
+      str "in the right hand-side," ++ spc() ++ prvec_from_status envr s va
+      ++ spc() ++ str "is not smaller than" ++ spc()
+      ++ prvec_from_status envl s vl ++ str "."
+  | Symbol_not_smaller (kn,kn') ->
+      str "in the right hand-side," ++ spc()
+      ++ str (string_of_label (label kn')) ++ spc()
+      ++ str "is not smaller than" ++ spc()
+      ++ str (string_of_label (label kn)) ++ str "."
+  | Variable_not_accessible c ->
+      str "the variable" ++ spc() ++ prterm_env envr c ++ spc()
+      ++ str "is not accessible."
+
+let explain_rule_error rule envl envr e =
+  str "in the rule" ++ spc() ++ pr_rule envl envr rule ++ str "," ++ spc()
+  ++ explain_rule_err rule envl envr e
+
+let explain_condition_error = function
+  | Not_locally_confluent ->
+      str "the rules do not preserve local confluence."
+

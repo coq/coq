@@ -21,14 +21,18 @@ open Names
 open Ordering
 open Precedence
 open Positivity
+open Type_errors
+
+(***********************************************************************)
+(*                       symbol declarations                           *)
+(***********************************************************************)
 
 (* check monotone arguments *)
 let check_mons arity mons antimons =
   let f i =
     if List.mem i mons then (
       if List.mem i antimons then
-	error (string_of_int i ^
-	       " is declared both monotone and anti-monotone.")
+	symbol_error (Both_monotonic_and_antimonotonic i)
       else Pos
     ) else (
       if List.mem i antimons then Neg
@@ -41,34 +45,78 @@ let check_C t =
   match kind_of_term t with
     | Prod (Anonymous,u,v) ->
 	(match kind_of_term v with
-	   | Prod (Anonymous,u',v) -> eq_constr u u'
-	   | _ -> false)
-    | _ -> false
+	   | Prod (Anonymous,u',v) ->
+	       if not (eq_constr u u') then
+		 symbol_error Type_not_compatible_with_eqth
+	   | _ -> symbol_error Type_not_compatible_with_eqth)
+    | _ -> symbol_error Type_not_compatible_with_eqth
 
 (* say if a type is compatible with commutativity and associativity *)
 let check_AC t =
   match kind_of_term t with
     | Prod (Anonymous,u,v) ->
 	(match kind_of_term v with
-	   | Prod (Anonymous,u',u'') -> eq_constr u u' & eq_constr u u''
-	   | _ -> false)
-    | _ -> false
+	   | Prod (Anonymous,u',u'') ->
+	       if not (eq_constr u u' & eq_constr u u'') then
+		 symbol_error Type_not_compatible_with_eqth
+	   | _ -> symbol_error Type_not_compatible_with_eqth)
+    | _ -> symbol_error Type_not_compatible_with_eqth
 
 (* say if a type is compatible with an equational theory *)
 let check_eqth = function
   | C -> check_C
   | AC -> check_AC
-  | _ -> fun _ -> true
+  | _ -> (fun _ -> ())
+
+(* compute accessibility of arguments *)
+let compute_access env ar t =
+  let l,u = decompose_prod_n ar t in
+    match kind_of_term (get_head u) with
+      | Ind (kn,_) ->
+	  let f (_,v) = occur_mind env kn Pos v in  
+	    array_init_by_list_map ar false f l
+      | Const kn ->
+	  let f (_,v) = occur_const env kn Pos v in  
+	    array_init_by_list_map ar false f l
+      | _ -> Array.make ar false
+
+(* check that a symbol declaration is correct *)
+let check_symbol env t se =
+  let ar = se.symb_entry_arity and eq = se.symb_entry_eqth
+  and st = se.symb_entry_status and mons = se.symb_entry_mons
+  and antimons = se.symb_entry_antimons
+  and prec_defs = se.symb_entry_prec_defs in
+    if nb_prod t < ar then symbol_error Type_not_compatible_with_arity;
+    check_eqth eq t;
+    let deltas = check_mons ar mons antimons
+    and accs = compute_access env ar t in
+      { symb_arity = ar; symb_eqth = eq;
+	symb_status = st; symb_mons = deltas;
+	symb_termin = General_Schema; symb_acc = accs;
+	symb_prec_defs = prec_defs }
+
+(***********************************************************************)
+(*                        rules declarations                           *)
+(***********************************************************************)
+
+exception Error_in_rule of rule_error
+
+let rule_err e = raise (Error_in_rule e)
+
+(* check that kn is a symbol *)
+let check_if_symbol env kn =
+  if not (is_symbol (lookup_constant kn env)) then
+    rule_err (Not_a_symbol kn)
 
 (* say if a constr is headed by a symbol *)
-let is_symbol_headed env c =
+let check_if_symbol_headed env c =
   match kind_of_term (collapse c) with
     | App (f,_) ->
         (match kind_of_term f with
-	   | Const kn -> is_symbol (lookup_constant kn env)
-	   | _ -> false)
-    | Const kn -> is_symbol (lookup_constant kn env)
-    | _ -> false
+	   | Const kn -> check_if_symbol env kn
+	   | _ -> rule_err Not_symbol_headed)
+    | Const kn -> check_if_symbol env kn
+    | _ -> rule_err Not_symbol_headed
 
 (* get head symbol of a symbol headed term *)
 let head_symbol c =
@@ -86,61 +134,33 @@ let head_symbol_and_args c =
     | App (f,va) ->
 	(match kind_of_term f with
 	   | Const kn -> (kn,va)
-	   | _ -> invalid_arg "head_symbol")
+	   | _ -> invalid_arg "head_symbol_and_args")
     | Const kn -> (kn,[||])
-    | _ -> invalid_arg "head_symbol"
+    | _ -> invalid_arg "head_symbol_and_args"
 
 (* say if a constr is algebraic *)
-let is_algebraic env =
-  let rec is_alg c =
+let check_if_algebraic env =
+  let rec check_alg c =
     match kind_of_term (collapse c) with
       | App (f,va) ->
 	  (match kind_of_term f with
-	     | Const kn -> is_symbol (lookup_constant kn env)
-		 & array_for_all is_alg va
-             | Construct _ -> array_for_all is_alg va
-	     | _ -> false)
-      | Construct _ | Rel _ -> true
-      | Const kn -> is_symbol (lookup_constant kn env)
-      | _ -> false
-  in is_alg
-
-(* compute accessibility of arguments *)
-let check_access env ar t =
-  let l,u = decompose_prod_n ar t in
-    match kind_of_term (get_head u) with
-      | Ind (kn,_) ->
-	  let f (_,v) = occur_mind env kn Pos v in  
-	    array_init_by_list_map ar false f l
-      | Const kn ->
-	  let f (_,v) = occur_const env kn Pos v in  
-	    array_init_by_list_map ar false f l
-      | _ -> Array.make ar false
-
-(* check that a symbol declaration is correct *)
-let check_symbol env t se =
-  let ar = se.symb_entry_arity and eq = se.symb_entry_eqth
-  and st = se.symb_entry_status and mons = se.symb_entry_mons
-  and antimons = se.symb_entry_mons and prec_defs = se.symb_entry_prec_defs in
-    if nb_prod t < ar then error "Type not compatible with arity.";
-    if not (check_eqth eq t) then
-      error "Type not compatible with equational theory";
-    let deltas = check_mons ar mons antimons
-    and accs = check_access env ar t in
-    { symb_arity = ar; symb_eqth = eq;
-      symb_status = st; symb_mons = deltas;
-      symb_termin = General_Schema; symb_acc = accs;
-      symb_prec_defs = prec_defs }
+	     | Const kn -> check_if_symbol env kn; Array.iter check_alg va
+             | Construct _ -> Array.iter check_alg va
+	     | _ -> rule_err (Not_a_symbol_or_a_constructor f))
+      | Construct _ | Rel _ -> ()
+      | Const kn -> check_if_symbol env kn
+      | _ -> rule_err (Not_algebraic c)
+  in check_alg
 
 (* say if a constr is an admissible RHS *)
-let is_wf_rhs env =
-  let rec is_wf c =
+let check_rhs env =
+  let rec chk_rhs c =
     match kind_of_term c with
-      | App (f,va) -> is_wf f & array_for_all is_wf va
-      | Construct _ | Ind _ | Const _ | Rel _ -> true
-      | Prod (_,t,b) | Lambda (_,t,b) -> is_wf t & is_wf b
-      | _ -> false
-  in is_wf
+      | App (f,va) -> chk_rhs f; Array.iter chk_rhs va
+      | Construct _ | Ind _ | Const _ | Rel _ -> ()
+      | Prod (_,t,b) | Lambda (_,t,b) -> chk_rhs t; chk_rhs b
+      | _ -> rule_err (Term_not_admissible_in_RHS c)
+  in chk_rhs
 
 (* say if an algebraic constr is linear *)
 let is_linear =
@@ -151,6 +171,17 @@ let is_linear =
       | App (f,va) -> is_lin f; array_for_all is_lin va
       | _ -> true
   in fun c -> vars := []; is_lin c
+
+(* check if an algebraic constr is linear *)
+let check_linear =
+  let vars = ref [] in
+  let rec check_lin c =
+    match kind_of_term c with
+      | Rel i ->
+	  if List.mem i !vars then rule_err Not_linear else vars := i::!vars
+      | App (f,va) -> check_lin f; Array.iter check_lin va
+      | _ -> ()
+  in fun c -> vars := []; check_lin c
 
 (* say if an algebraic rule if non-duplicating *)
 let is_non_dupl =
@@ -172,13 +203,12 @@ let is_non_dupl =
     array_for_all (fun v -> v >= 0) !vars
 
 (* check subject reduction *)
-let is_welltyped env envl envr (l,r) =
+let check_typing env envl envr (l,r) =
   let kn,args = head_symbol_and_args l in
   let cb = lookup_constant kn env in
   let t = hnf_prod_applist env cb.const_type (Array.to_list args) in
   let tl = j_type (typing envl l) and tr = j_type (typing envr r) in
-    try let _ = conv envl tl t and _ = conv envr tr t in true
-    with NotConvertible -> false
+  let _ = conv envl tl t and _ = conv envr tr t in ()
 
 (* sets of integers *)
 module IntOrd = struct
@@ -214,35 +244,36 @@ let acc_vars env =
 (* say if symbols in [c] are smaller or equivalent to [kn]
           symbols equivalent to [kn] are applied to arguments smaller than [vl]
           variables in [c] are accessible in [vl] *)
-let are_rec_calls_smaller env prec kn status vl =
+let check_rec_calls env prec kn status vl =
   let accs = acc_vars env vl in
-  let rec are_rc_smaller c =
+  let rec check_rc c =
     match kind_of_term c with
       | App (f,va) ->
-	  begin
-	    match kind_of_term f with
-	      | Const kn' ->
-		  begin
-		    match compare prec kn' kn with
-		      | Smaller -> array_for_all are_rc_smaller va
-		      | Equivalent -> is_struct_smaller_vec status va vl
-			  & array_for_all are_rc_smaller va
-		      | _ -> false
-		  end
-	      | _ -> are_rc_smaller f & array_for_all are_rc_smaller va
-	  end
-      | Const kn' -> compare prec kn' kn = Smaller
-      | Construct _ | Ind _ -> true
-      | Rel i -> IntSet.mem i accs
-      | Lambda (_,t,b) | Prod (_,t,b) -> are_rc_smaller t & are_rc_smaller b
-      | _ -> false
-  in are_rc_smaller
+	  (match kind_of_term f with
+	     | Const kn' ->
+		 (match compare prec kn' kn with
+		    | Smaller -> Array.iter check_rc va
+		    | Equivalent ->
+			if not (is_struct_smaller_vec status va vl) then
+			  rule_err (Recursive_call_not_smaller (status,va,vl))
+			else Array.iter check_rc va
+		    | _ -> rule_err (Symbol_not_smaller (kn',kn)))
+	     | _ -> check_rc f; Array.iter check_rc va)
+      | Const kn' ->
+	  if compare prec kn' kn <> Smaller then
+	    rule_err (Symbol_not_smaller (kn',kn))
+      | Construct _ | Ind _ -> ()
+      | Rel i ->
+	  if not (IntSet.mem i accs) then rule_err (Variable_not_accessible c)
+      | Lambda (_,t,b) | Prod (_,t,b) -> check_rc t; check_rc b
+      | _ -> rule_err (Term_not_admissible_in_RHS c)
+  in check_rc
 
 (* say if a rule satisfies the General Schema *)
-let satisfies_GS env (l,r) =
+let check_GS env (l,r) =
   let kn,vl = head_symbol_and_args l in
   let cb = lookup_constant kn env in
-  are_rec_calls_smaller env (prec env) kn (status cb) vl r
+  check_rec_calls env (prec env) kn (status cb) vl r
 
 (* check that the addition of some rules is correct *)
 let check_rules env re =
@@ -254,31 +285,22 @@ let check_rules env re =
   let envl,subs',_ = infer_local_decls envr subs in
   let rules = re.rules_entry_list in
 
-  (* check rule syntax *)
-  let is_rule_ok (l,r) = is_algebraic env l
-			& is_symbol_headed env l
-			& is_wf_rhs env r
-  in
-    if not (List.for_all is_rule_ok rules)
-    then error "There is an ill-formed rule.";
+  (* check rule syntax and subject reduction *)
+  let check_rule ((l,r) as rule) =
+    try
+      check_if_algebraic env l;
+      check_if_symbol_headed env l;
+      check_rhs envr r;
+      check_typing env envl envr rule;
+      check_linear l;
+      check_GS env rule
+    with Error_in_rule e -> rule_error rule envl envr e
+  in List.iter check_rule rules;
 
-  (* check subject reduction *)
-  if not (List.for_all (is_welltyped env envl envr) rules)
-  then error "There is a not type-preserving rule.";
+    (* check local confluence *)
+    if not (is_locally_confluent (cime env) rules)
+    then condition_error Not_locally_confluent;
 
-  (* check local confluence *)
-  if not (is_locally_confluent (cime env) rules)
-  then error "Non-confluent rules.";
-
-  (* check left-linearity *)
-  let is_left_linear (l,_) = is_linear l in
-    if not (List.for_all is_left_linear rules)
-    then error "There is a not left-linear rule.";
-
-  (* check termination *)
-  if not (List.for_all (satisfies_GS env) rules)
-  then error "There is a rule not satisfying the termination criterion.";
-
-  (* end check_rules *)
-  print_endline "Rules accepted.";
-  { rules_ctx = ctx'; rules_subs = subs'; rules_list = rules }
+    (* end check_rules *)
+    print_endline "Rules accepted.";
+    { rules_ctx = ctx'; rules_subs = subs'; rules_list = rules }

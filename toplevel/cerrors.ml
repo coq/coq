@@ -67,6 +67,13 @@ let rec explain_exn_default = function
       hov 0 (str "Error: Universe Inconsistency.")
   | TypeError(ctx,te) -> 
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_type_error ctx te)
+  | Symbol_error e ->
+      hov 0 (str "Error:" ++ spc () ++ Himsg.explain_symbol_error e)
+  | Rule_error (rule,envl,envr,e) ->
+      hov 0 (str "Error:" ++ spc ()
+	     ++ Himsg.explain_rule_error rule envl envr e)
+  | Condition_error e ->
+      hov 0 (str "Error:" ++ spc () ++ Himsg.explain_condition_error e)
   | PretypeError(ctx,te) ->
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_pretype_error ctx te)
   | InductiveError e -> 

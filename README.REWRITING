@@ -45,7 +45,7 @@ status ::= "Lex" | "Mul" | "RLex" | comb
 
 comb ::= "Lex" "(" mul ("," mul)* ")"
 
-mul ::= positive_number | "Mul" positive_number+
+mul ::= positive_number | "{" positive_number ("," positive_number)+ "}"
 
 monotonic_args ::= "Mon" pos_seq
 

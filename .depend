@@ -67,7 +67,8 @@ kernel/term.cmi: kernel/names.cmi kernel/univ.cmi
 kernel/term_typing.cmi: kernel/cooking.cmi kernel/declarations.cmi \
     kernel/entries.cmi kernel/environ.cmi kernel/inductive.cmi \
     kernel/names.cmi kernel/term.cmi kernel/typeops.cmi kernel/univ.cmi 
-kernel/type_errors.cmi: kernel/environ.cmi kernel/names.cmi kernel/term.cmi 
+kernel/type_errors.cmi: kernel/environ.cmi kernel/names.cmi kernel/symbol.cmi \
+    kernel/term.cmi 
 kernel/typeops.cmi: kernel/entries.cmi kernel/environ.cmi kernel/names.cmi \
     kernel/sign.cmi kernel/term.cmi kernel/univ.cmi 
 kernel/univ.cmi: kernel/names.cmi lib/pp.cmi 
@@ -305,7 +306,7 @@ toplevel/fhimsg.cmi: kernel/environ.cmi kernel/names.cmi lib/pp.cmi \
     kernel/sign.cmi kernel/term.cmi kernel/type_errors.cmi 
 toplevel/himsg.cmi: pretyping/cases.cmi kernel/environ.cmi \
     kernel/indtypes.cmi proofs/logic.cmi kernel/names.cmi lib/pp.cmi \
-    pretyping/pretype_errors.cmi kernel/type_errors.cmi 
+    pretyping/pretype_errors.cmi kernel/term.cmi kernel/type_errors.cmi 
 toplevel/metasyntax.cmi: parsing/extend.cmi library/libnames.cmi \
     interp/ppextend.cmi interp/symbols.cmi proofs/tacexpr.cmo \
     interp/topconstr.cmi lib/util.cmi toplevel/vernacexpr.cmo 
@@ -844,13 +845,13 @@ kernel/reduction.cmx: kernel/cime.cmx kernel/closure.cmx \
 kernel/rules.cmo: kernel/cime.cmi kernel/declarations.cmi kernel/entries.cmi \
     kernel/environ.cmi kernel/names.cmi kernel/ordering.cmi \
     kernel/positivity.cmi kernel/precedence.cmi kernel/reduction.cmi \
-    kernel/symbol.cmi kernel/term.cmi kernel/typeops.cmi lib/util.cmi \
-    kernel/rules.cmi 
+    kernel/symbol.cmi kernel/term.cmi kernel/type_errors.cmi \
+    kernel/typeops.cmi lib/util.cmi kernel/rules.cmi 
 kernel/rules.cmx: kernel/cime.cmx kernel/declarations.cmx kernel/entries.cmx \
     kernel/environ.cmx kernel/names.cmx kernel/ordering.cmx \
     kernel/positivity.cmx kernel/precedence.cmx kernel/reduction.cmx \
-    kernel/symbol.cmx kernel/term.cmx kernel/typeops.cmx lib/util.cmx \
-    kernel/rules.cmi 
+    kernel/symbol.cmx kernel/term.cmx kernel/type_errors.cmx \
+    kernel/typeops.cmx lib/util.cmx kernel/rules.cmi 
 kernel/safe_typing.cmo: kernel/cooking.cmi kernel/declarations.cmi \
     kernel/entries.cmi kernel/environ.cmi kernel/indtypes.cmi \
     kernel/inductive.cmi kernel/mod_typing.cmi kernel/modops.cmi \
@@ -896,10 +897,10 @@ kernel/term_typing.cmx: kernel/cooking.cmx kernel/declarations.cmx \
     kernel/type_errors.cmx kernel/typeops.cmx kernel/univ.cmx lib/util.cmx \
     kernel/term_typing.cmi 
 kernel/type_errors.cmo: kernel/environ.cmi kernel/names.cmi \
-    kernel/reduction.cmi kernel/sign.cmi kernel/term.cmi \
+    kernel/reduction.cmi kernel/sign.cmi kernel/symbol.cmi kernel/term.cmi \
     kernel/type_errors.cmi 
 kernel/type_errors.cmx: kernel/environ.cmx kernel/names.cmx \
-    kernel/reduction.cmx kernel/sign.cmx kernel/term.cmx \
+    kernel/reduction.cmx kernel/sign.cmx kernel/symbol.cmx kernel/term.cmx \
     kernel/type_errors.cmi 
 kernel/typeops.cmo: kernel/declarations.cmi kernel/entries.cmi \
     kernel/environ.cmi kernel/inductive.cmi kernel/names.cmi \
@@ -2184,14 +2185,14 @@ toplevel/himsg.cmo: parsing/ast.cmi pretyping/cases.cmi kernel/environ.cmi \
     proofs/logic.cmi library/nameops.cmi kernel/names.cmi library/nametab.cmi \
     lib/options.cmi lib/pp.cmi pretyping/pretype_errors.cmi \
     parsing/printer.cmi pretyping/rawterm.cmi kernel/reduction.cmi \
-    kernel/sign.cmi kernel/term.cmi pretyping/termops.cmi \
+    kernel/sign.cmi kernel/symbol.cmi kernel/term.cmi pretyping/termops.cmi \
     kernel/type_errors.cmi lib/util.cmi toplevel/himsg.cmi 
 toplevel/himsg.cmx: parsing/ast.cmx pretyping/cases.cmx kernel/environ.cmx \
     library/global.cmx kernel/indtypes.cmx kernel/inductive.cmx \
     proofs/logic.cmx library/nameops.cmx kernel/names.cmx library/nametab.cmx \
     lib/options.cmx lib/pp.cmx pretyping/pretype_errors.cmx \
     parsing/printer.cmx pretyping/rawterm.cmx kernel/reduction.cmx \
-    kernel/sign.cmx kernel/term.cmx pretyping/termops.cmx \
+    kernel/sign.cmx kernel/symbol.cmx kernel/term.cmx pretyping/termops.cmx \
     kernel/type_errors.cmx lib/util.cmx toplevel/himsg.cmi 
 toplevel/line_oriented_parser.cmo: toplevel/line_oriented_parser.cmi 
 toplevel/line_oriented_parser.cmx: toplevel/line_oriented_parser.cmi 

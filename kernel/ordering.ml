@@ -27,20 +27,6 @@ let lex_extension ord vt vt' =
 let revlex_extension ord vt vt' =
   lexicographic_extension ord (array_to_rev_list vt) (array_to_rev_list vt')
 
-(* combination of elements of [vt] whose indices are given by [l] *)
-let select vt =
-  (* elements of [vt] whose indices are given by [m] *)
-  let rec sel m =
-    match m with
-      | i::m' -> vt.(i)::(sel m')
-      | _ -> []
-  in
-  let rec selc l =
-    match l with
-      | m::l' -> (sel m)::(selc l')
-      | _ -> []
-  in selc
-
 (* combination extension *)
 let comb_extension l ord vt vt' =
   lexicographic_extension (multiset_extension ord) (select vt l) (select vt' l)
@@ -50,7 +36,7 @@ let extension s =
   match s with
     | Mul -> mul_extension
     | Lex -> lex_extension
-    | RevLex -> revlex_extension
+    | RLex -> revlex_extension
     | Comb l -> comb_extension l
 
 (* for debugging *)

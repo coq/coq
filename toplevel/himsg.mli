@@ -17,6 +17,7 @@ open Type_errors
 open Pretype_errors
 open Cases
 open Logic
+open Term
 (*i*)
 
 (* This module provides functions to explain the type errors. *)
@@ -31,3 +32,11 @@ val explain_refiner_error : refiner_error -> std_ppcmds
 
 val explain_pattern_matching_error :
   env -> pattern_matching_error -> std_ppcmds
+
+val explain_symbol_error : symbol_error -> std_ppcmds
+
+val explain_rule_error : (constr * constr) -> env -> env -> rule_error
+  -> std_ppcmds
+
+val explain_condition_error : condition_error -> std_ppcmds
+

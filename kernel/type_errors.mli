@@ -12,6 +12,7 @@
 open Names
 open Term
 open Environ
+open Symbol
 (*i*)
 
 (* Type errors. \label{typeerrors} *)
@@ -101,3 +102,39 @@ val error_ill_formed_rec_body :
 val error_ill_typed_rec_body  :
   env -> int -> name array -> unsafe_judgment array -> types array -> 'a
 
+(* Errors in symbol declarations *)
+
+type symbol_error =
+  | Type_not_compatible_with_arity
+  | Type_not_compatible_with_eqth
+  | Both_monotonic_and_antimonotonic of int
+
+exception Symbol_error of symbol_error
+
+val symbol_error : symbol_error -> 'a
+
+(* Errors in rules declarations *)
+
+type rule_error =
+  | Not_a_symbol of kernel_name
+  | Not_algebraic of constr
+  | Not_a_symbol_or_a_constructor of constr
+  | Term_not_admissible_in_RHS of constr
+  | Not_symbol_headed
+  | Not_linear
+  | Recursive_call_not_smaller of status * constr array * constr array
+  | Symbol_not_smaller of symbol * symbol
+  | Variable_not_accessible of constr
+
+exception Rule_error of (constr * constr) * env * env * rule_error
+
+val rule_error : (constr * constr) -> env -> env -> rule_error -> 'a
+
+(* Errors in conditions *)
+
+type condition_error =
+  | Not_locally_confluent
+
+exception Condition_error of condition_error
+
+val condition_error : condition_error -> 'a

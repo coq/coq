@@ -15,27 +15,31 @@ open Precedence
 type eqth = Free | C | AC
 
 (* statuses *)
-type status = Mul | Lex | RevLex | Comb of (int list) list
+type status = Mul | Lex | RLex | Comb of (int list) list
 
-(* say if a combination is linear *)
-let is_linear_comb =
-  let indices = ref [] in
-  let rec is_linear_mul = function
-    | i::m' ->
-	if List.mem i !indices then false
-	else (indices := i::!indices; is_linear_mul m')
-    | _ -> true
+(* combination of elements of [vt] whose indices are given by [l] *)
+let select vt =
+  (* elements of [vt] whose indices are given by [m] *)
+  let rec sel m =
+    match m with
+      | i::m' -> vt.(i)::(sel m')
+      | _ -> []
   in
-  let rec is_linear_lex = function
-    | m::l' -> is_linear_mul m & is_linear_lex l'
-    | _ -> true
-  in
-    fun l -> indices := []; is_linear_lex l
+  let rec selc l =
+    match l with
+      | m::l' -> (sel m)::(selc l')
+      | _ -> []
+  in selc
 
-(* say if a status is linear *)
-let is_linear = function
-  | Comb l -> is_linear_comb l
-  | _ -> true
+let rec gen_list_mul n = if n <= 0 then [] else n::(gen_list_mul (n-1))
+let rec gen_list_rlex n = if n <= 0 then [] else [n]::(gen_list_rlex (n-1))
+let rec gen_list_lex n = List.rev (gen_list_rlex n)
+
+let select_from_status vt = function
+  | Mul -> select vt [gen_list_mul (Array.length vt)]
+  | Lex -> select vt (gen_list_lex (Array.length vt))
+  | RLex -> select vt (gen_list_rlex (Array.length vt))
+  | Comb l -> select vt l
 
 (* kinds of occurrences *)
 type delta = Pos | Neg | Nul

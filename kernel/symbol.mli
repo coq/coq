@@ -14,10 +14,11 @@ open Precedence
 type eqth = Free | C | AC
 
 (* statuses *)
-type status = Mul | Lex | RevLex | Comb of (int list) list
+type status = Mul | Lex | RLex | Comb of (int list) list
 
-(* say if a status is linear *)
-val is_linear : status -> bool
+(* combination of elements of [vt] whose indices are given by [l] *)
+val select : 'a array -> (int list) list -> ('a list) list
+val select_from_status : 'a array -> status -> ('a list) list
 
 (* kinds of occurrences *)
 type delta = Pos | Neg | Nul

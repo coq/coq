@@ -13,6 +13,7 @@ open Term
 open Sign
 open Environ
 open Reduction
+open Symbol
 
 (* Type errors. *)
 
@@ -112,4 +113,39 @@ let error_ill_formed_rec_body env why lna i =
 let error_ill_typed_rec_body env i lna vdefj vargs =
   raise (TypeError (env, IllTypedRecBody (i,lna,vdefj,vargs)))
 
+(* Errors in symbol declarations *)
 
+type symbol_error =
+  | Type_not_compatible_with_arity
+  | Type_not_compatible_with_eqth
+  | Both_monotonic_and_antimonotonic of int
+
+exception Symbol_error of symbol_error
+
+let symbol_error e = raise (Symbol_error e)
+
+(* Errors in rules declarations *)
+
+type rule_error =
+  | Not_a_symbol of kernel_name
+  | Not_algebraic of constr
+  | Not_a_symbol_or_a_constructor of constr
+  | Term_not_admissible_in_RHS of constr
+  | Not_symbol_headed
+  | Not_linear
+  | Recursive_call_not_smaller of status * constr array * constr array
+  | Symbol_not_smaller of symbol * symbol
+  | Variable_not_accessible of constr
+
+exception Rule_error of (constr * constr) * env * env * rule_error
+
+let rule_error rule envl envr e = raise (Rule_error (rule,envl,envr,e))
+
+(* Errors in conditions *)
+
+type condition_error =
+  | Not_locally_confluent
+
+exception Condition_error of condition_error
+
+let condition_error e = raise (Condition_error e)
