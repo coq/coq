@@ -27,6 +27,22 @@ Definition Zgt := [x,y:Z](Zcompare x y) = SUPERIEUR.
 Definition Zle := [x,y:Z]~(Zcompare x y) = SUPERIEUR.
 Definition Zge := [x,y:Z]~(Zcompare x y) = INFERIEUR.
 
+V8Infix "<=" Zle : Z_scope.
+V8Infix "<"  Zlt : Z_scope.
+V8Infix ">=" Zge : Z_scope.
+V8Infix ">"  Zgt : Z_scope.
+
+V8Notation "x <= y <= z" := (Zle x y)/\(Zle y z)
+  (at level 50, y at next level):Z_scope.
+V8Notation "x <= y < z"  := (Zle x y)/\(Zlt y z)
+  (at level 50, y at next level):Z_scope.
+V8Notation  "x < y < z"  := (Zlt x y)/\(Zlt y z)
+  (at level 50, y at next level):Z_scope.
+V8Notation  "x < y <= z" := (Zlt x y)/\(Zle y z) 
+  (at level 50, y at next level):Z_scope.
+V8Notation  "x = y = z" := x=y/\y=z
+  (at level 50, y at next level) : Z_scope.
+
 (** Sign function *)
 Definition Zsgn [z:Z] : Z :=
   Cases z of 
@@ -667,6 +683,8 @@ Qed.
 
 
 Definition Zminus := [m,n:Z](Zplus m (Zopp n)).
+
+V8Infix "-" Zminus : Z_scope.
 
 Lemma Zminus_plus_simpl : 
   (n,m,p:Z)((Zminus n m)=(Zminus (Zplus p n) (Zplus p m))).

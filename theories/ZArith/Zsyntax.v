@@ -12,6 +12,7 @@ Require Export fast_integer.
 Require Export zarith_aux.
 
 V7only[
+
 Grammar znatural ident :=
   nat_id [ prim:var($id) ] -> [$id]
 
@@ -224,10 +225,9 @@ Syntax constr
 .
 ].
 
-(* For parsing/printing based on scopes *)
 V7only[
+(* For parsing/printing based on scopes *)
 Module Z_scope.
-].
 
 Infix LEFTA 4 "+" Zplus : Z_scope.
 Infix LEFTA 4 "-" Zminus : Z_scope.
@@ -261,7 +261,6 @@ Notation "x <> y" := ~(eq Z x y) (at level 5, no associativity) : Z_scope.
 
 (* Notation "| x |" (Zabs x) : Z_scope.(* "|" conflicts with THENS *)*)
 
-V7only[
 (* Overwrite the printing of "`x = y`" *)
 Syntax constr level 0:
   Zeq [ (eq Z $n1 $n2) ] -> [[<hov 0> $n1 [1 0] "= " $n2 ]].
@@ -270,10 +269,3 @@ Open Scope Z_scope.
 
 End Z_scope.
 ].
-
-(* Declare Scope positive_scope with Key P. *)
-
-(*
-Arguments Scope POS [positive_scope].
-Arguments Scope NEG [positive_scope].
-*)

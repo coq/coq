@@ -200,11 +200,9 @@ Syntax constr
   | Rodd_inside [<<(REXPR <<(Rplus R1 $r)>>)>>] -> [ $r:"r_printer_odd" ]
   | Reven_inside [<<(REXPR <<(Rmult (Rplus R1 R1) $r)>>)>>] -> [ $r:"r_printer_even" ]
 .
-].
+
 (* For parsing/printing based on scopes *)
-V7only [
 Module R_scope.
-].
 
 Infix "<=" Rle (at level 5, no associativity) : R_scope.
 Infix "<"  Rlt (at level 5, no associativity) : R_scope.
@@ -222,7 +220,7 @@ Notation "- x" := (Ropp x) (at level 0) : R_scope
   V8only (at level 40, left associativity).
 Notation "x == y == z" := (eqT R x y)/\(eqT R y z)
   (at level 5, y at level 4, no associtivity): R_scope
-  V8only (at level 50, y at next level, no associativity).
+  V8only "x = y = z" (at level 50, y at next level, no associativity).
 Notation "x <= y <= z" := (Rle x y)/\(Rle y z)
   (at level 5, y at level 4) : R_scope
   V8only (at level 50, y at next level, no associativity).
@@ -239,11 +237,6 @@ Notation "x < y <= z" := (Rlt x y)/\(Rle y z)
 Notation "/ x" := (Rinv x) (at level 0): R_scope
   V8only (at level 30, left associativity).
 
-V7only [
 Open Local Scope R_scope.
 End R_scope.
 ].
-
-(*
-Arguments Scope up [R_scope].
-*)

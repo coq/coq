@@ -23,20 +23,24 @@ Inductive positive : Set :=
 | xO : positive -> positive
 | xH : positive.
 
+(* Declare Scope positive_scope with Key P *)
 Delimits Scope positive_scope with P.
-Delimits Scope Z_scope with Z.
+
+(* Automatically open scope positive_scope for type positive, xO and xI *)
+Bind Scope positive_scope with positive.
 Arguments Scope xO [ positive_scope ].
 Arguments Scope xI [ positive_scope ].
 
 Inductive Z : Set := 
   ZERO : Z | POS : positive -> Z | NEG : positive -> Z.
 
-Bind Scope positive_scope with positive.
+(* Declare Scope positive_scope with Key Z *)
+Delimits Scope Z_scope with Z.
+
+(* Automatically open scope Z_scope for arguments of type Z, POS and NEG *)
 Bind Scope Z_scope with Z.
 Arguments Scope POS [ Z_scope ].
 Arguments Scope NEG [ Z_scope ].
-
-Section fast_integers.
 
 Inductive relation : Set := 
   EGAL :relation | INFERIEUR : relation | SUPERIEUR : relation.
@@ -86,7 +90,7 @@ with add_carry [x,y:positive]:positive :=
           end
   end.
 
-Infix LEFTA 4 "+" add : positive_scope.
+V8Infix "+" add : positive_scope.
 
 Open Scope positive_scope.
 
@@ -807,6 +811,8 @@ Definition Zplus := [x,y:Z]
              end
     end.
 
+V8Infix "+" Zplus : Z_scope.
+
 (** Opposite *)
 
 Definition Zopp := [x:Z]
@@ -815,6 +821,8 @@ Definition Zopp := [x:Z]
     | (POS x) => (NEG x)
     | (NEG x) => (POS x)
     end.
+
+V8Notation "- x" := (Zopp x) : Z_scope.
 
 Theorem Zero_left: (x:Z) (Zplus ZERO x) = x.
 Proof.
@@ -1031,7 +1039,7 @@ Fixpoint times [x:positive] : positive -> positive:=
   | xH => y
   end.
 
-Infix LEFTA 3 "*" times : positive_scope.
+V8Infix "*" times : positive_scope.
 
 (** Correctness of multiplication on positive *)
 Theorem times_convert :
@@ -1076,7 +1084,7 @@ Definition Zmult := [x,y:Z]
              end
     end.
 
-Infix LEFTA 3 "*" Zmult : Z_scope.
+V8Infix "*" Zmult : Z_scope.
 
 Open Scope Z_scope.
 
@@ -1201,6 +1209,8 @@ Definition Zcompare := [x,y:Z]
              | (NEG y') => (Op (compare x' y' EGAL))
              end
   end.
+
+V8Infix "?=" Zcompare (at level 50, no associativity) : Z_scope.
 
 Theorem Zcompare_EGAL : (x,y:Z) (Zcompare x y) = EGAL <-> x = y.
 Proof.
@@ -1471,7 +1481,6 @@ Intros x y;Case x;Case y; [
 | Unfold Zcompare; Intros q p; Rewrite <- ZC4; Intros H; Exists (true_sub q p);
   Simpl; Rewrite (ZC1 q p H); Trivial with arith].
 Qed.
-End fast_integers.
 
 V7only [
   Comments "Compatibility with the old version of times and times_convert".

@@ -85,6 +85,8 @@ Fixpoint plus [n:nat] : nat -> nat :=
 Hint eq_plus : v62 := Resolve (f_equal2 nat nat nat plus).
 Hint eq_nat_binary : core := Resolve (f_equal2 nat nat).
 
+V8Infix "+" plus : nat_scope.
+
 Lemma plus_n_O : (n:nat) n=(plus n O).
 Proof.
   NewInduction n ; Simpl ; Auto.
@@ -114,6 +116,8 @@ Fixpoint  mult [n:nat] : nat -> nat :=
                | (S p) => (plus m (mult p m)) end.
 Hint eq_mult : core v62 := Resolve (f_equal2 nat nat nat mult).
 
+V8Infix "*" mult : nat_scope.
+
 Lemma mult_n_O : (n:nat) O=(mult n O).
 Proof.
   NewInduction n; Simpl; Auto.
@@ -137,6 +141,8 @@ Fixpoint minus [n:nat] : nat -> nat :=
          | (S k) (S l) => (minus k l)
         end. 
 
+V8Infix "-" minus : nat_scope.
+
 (** Definition of the usual orders, the basic properties of [le] and [lt] 
     can be found in files Le and Lt *)
 
@@ -146,17 +152,25 @@ Inductive le [n:nat] : nat -> Prop
     := le_n : (le n n)
      | le_S : (m:nat)(le n m)->(le n (S m)).
 
+V8Infix "<=" le : nat_scope.
+
 Hint constr_le : core v62 := Constructors le.
 (*i equivalent to : "Hints Resolve le_n le_S : core v62." i*)
 
 Definition lt := [n,m:nat](le (S n) m).
 Hints Unfold lt : core v62.
 
+V8Infix "<" lt : nat_scope.
+
 Definition ge := [n,m:nat](le m n).
 Hints Unfold ge : core v62.
 
+V8Infix ">=" ge : nat_scope.
+
 Definition gt := [n,m:nat](lt m n).
 Hints Unfold gt : core v62.
+
+V8Infix ">" gt : nat_scope.
 
 (** Pattern-Matching on natural numbers *)
 
@@ -187,15 +201,12 @@ Syntax constr
 (* For parsing/printing based on scopes *)
 V7only [
 Module nat_scope.
-].
-Infix 4 "+" plus : nat_scope V8only (left associativity).
-Infix 4 "-" minus : nat_scope V8only (left associativity).
-Infix 3 "*" mult : nat_scope V8only (left associativity).
+Infix 4 "+" plus : nat_scope.
+Infix 3 "*" mult : nat_scope.
+Infix 4 "-" minus : nat_scope.
 Infix NONA 5 "<=" le : nat_scope.
 Infix NONA 5 "<" lt : nat_scope.
 Infix NONA 5 ">=" ge : nat_scope.
 Infix NONA 5 ">" gt : nat_scope.
-
-V7only [
 End nat_scope.
 ].
