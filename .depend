@@ -191,6 +191,7 @@ toplevel/mltop.cmi: library/libobject.cmi
 toplevel/protectedtoplevel.cmi: lib/pp.cmi 
 toplevel/record.cmi: parsing/coqast.cmi kernel/names.cmi kernel/sign.cmi \
     kernel/term.cmi 
+toplevel/recordobj.cmi: kernel/term.cmi 
 toplevel/searchisos.cmi: library/libobject.cmi kernel/names.cmi \
     kernel/term.cmi 
 toplevel/toplevel.cmi: parsing/pcoq.cmi lib/pp.cmi 
@@ -492,8 +493,8 @@ parsing/g_zsyntax.cmo: parsing/ast.cmi parsing/astterm.cmi parsing/coqast.cmi \
 parsing/g_zsyntax.cmx: parsing/ast.cmx parsing/astterm.cmx parsing/coqast.cmx \
     parsing/esyntax.cmx kernel/names.cmx parsing/pcoq.cmx lib/pp.cmx \
     lib/util.cmx parsing/g_zsyntax.cmi 
-parsing/lexer.cmo: lib/util.cmi parsing/lexer.cmi 
-parsing/lexer.cmx: lib/util.cmx parsing/lexer.cmi 
+parsing/lexer.cmo: parsing/lexer.cmi 
+parsing/lexer.cmx: parsing/lexer.cmi 
 parsing/pcoq.cmo: parsing/coqast.cmi parsing/lexer.cmi lib/pp.cmi \
     lib/util.cmi parsing/pcoq.cmi 
 parsing/pcoq.cmx: parsing/coqast.cmx parsing/lexer.cmx lib/pp.cmx \
@@ -1162,6 +1163,14 @@ toplevel/record.cmx: parsing/ast.cmx parsing/astterm.cmx toplevel/class.cmx \
     toplevel/himsg.cmx kernel/inductive.cmx kernel/names.cmx lib/pp.cmx \
     pretyping/recordops.cmx kernel/term.cmx kernel/type_errors.cmx \
     lib/util.cmx toplevel/record.cmi 
+toplevel/recordobj.cmo: pretyping/classops.cmi library/declare.cmi \
+    kernel/evd.cmi library/global.cmi kernel/instantiate.cmi library/lib.cmi \
+    kernel/names.cmi lib/pp.cmi parsing/printer.cmi pretyping/recordops.cmi \
+    kernel/term.cmi lib/util.cmi toplevel/recordobj.cmi 
+toplevel/recordobj.cmx: pretyping/classops.cmx library/declare.cmx \
+    kernel/evd.cmx library/global.cmx kernel/instantiate.cmx library/lib.cmx \
+    kernel/names.cmx lib/pp.cmx parsing/printer.cmx pretyping/recordops.cmx \
+    kernel/term.cmx lib/util.cmx toplevel/recordobj.cmi 
 toplevel/toplevel.cmo: parsing/ast.cmi toplevel/errors.cmi toplevel/mltop.cmi \
     kernel/names.cmi lib/options.cmi parsing/pcoq.cmi proofs/pfedit.cmi \
     lib/pp.cmi toplevel/protectedtoplevel.cmi lib/util.cmi \
@@ -1182,8 +1191,8 @@ toplevel/vernacentries.cmo: parsing/ast.cmi parsing/astterm.cmi \
     library/nametab.cmi lib/options.cmi proofs/pfedit.cmi lib/pp.cmi \
     lib/pp_control.cmi parsing/pretty.cmi pretyping/pretype_errors.cmi \
     parsing/printer.cmi proofs/proof_trees.cmi proofs/proof_type.cmi \
-    toplevel/record.cmi kernel/reduction.cmi proofs/refiner.cmi \
-    parsing/search.cmi lib/stamps.cmi library/states.cmi \
+    toplevel/record.cmi toplevel/recordobj.cmi kernel/reduction.cmi \
+    proofs/refiner.cmi parsing/search.cmi lib/stamps.cmi library/states.cmi \
     pretyping/syntax_def.cmi lib/system.cmi proofs/tacinterp.cmi \
     proofs/tacmach.cmi pretyping/tacred.cmi proofs/tactic_debug.cmi \
     tactics/tactics.cmi kernel/term.cmi kernel/typeops.cmi lib/util.cmi \
@@ -1198,8 +1207,8 @@ toplevel/vernacentries.cmx: parsing/ast.cmx parsing/astterm.cmx \
     library/nametab.cmx lib/options.cmx proofs/pfedit.cmx lib/pp.cmx \
     lib/pp_control.cmx parsing/pretty.cmx pretyping/pretype_errors.cmx \
     parsing/printer.cmx proofs/proof_trees.cmx proofs/proof_type.cmx \
-    toplevel/record.cmx kernel/reduction.cmx proofs/refiner.cmx \
-    parsing/search.cmx lib/stamps.cmx library/states.cmx \
+    toplevel/record.cmx toplevel/recordobj.cmx kernel/reduction.cmx \
+    proofs/refiner.cmx parsing/search.cmx lib/stamps.cmx library/states.cmx \
     pretyping/syntax_def.cmx lib/system.cmx proofs/tacinterp.cmx \
     proofs/tacmach.cmx pretyping/tacred.cmx proofs/tactic_debug.cmx \
     tactics/tactics.cmx kernel/term.cmx kernel/typeops.cmx lib/util.cmx \
