@@ -480,14 +480,27 @@ let pattern_status pats =
 (* Well-formedness tests *)
 (* Partial check on patterns *)
 
-let check_constructor loc (_,j as cstr_sp) mind cstrs args =
+exception NotAdjustable
+
+let rec adjust_local_defs = function
+  | (pat :: pats, (_,None,_) :: decls) ->
+      pat :: adjust_local_defs (pats,decls)
+  | (pats, (_,Some _,_) :: decls) ->
+      PatVar (dummy_loc, Anonymous) :: adjust_local_defs (pats,decls)
+  | [], [] -> []
+  | _ -> raise NotAdjustable
+
+let check_and_adjust_constructor loc (_,j as cstr_sp) mind cstrs pats =
   (* Check it is constructor of the right type *)
   if inductive_of_constructor cstr_sp <> mind
   then error_bad_constructor_loc loc cstr_sp mind;
   (* Check the constructor has the right number of args *)
-  let nb_args_constr = cstrs.(j-1).cs_nargs in 
-  if List.length args <> nb_args_constr
-  then error_wrong_numarg_constructor_loc loc cstr_sp nb_args_constr
+  let nb_args_constr = cstrs.(j-1).cs_nargs in
+  if List.length pats = nb_args_constr then pats
+  else
+    try adjust_local_defs (pats, cstrs.(j-1).cs_args)
+    with NotAdjustable ->
+      error_wrong_numarg_constructor_loc loc cstr_sp nb_args_constr
 
 let check_all_variables typ mat =
   List.iter
@@ -1038,11 +1051,12 @@ let group_equations mind current cstrs mat =
 		 let rest = {rest with tag = lower_pattern_status rest.tag} in
 		 brs.(i-1) <- (args, rest) :: brs.(i-1)
 	       done
-	   | PatCstr(loc,((ind_sp,i) as cstr),largs,alias) ->
+	   | PatCstr(loc,((_,i) as cstr),args,alias) ->
 	       (* This is a regular clause *)
-	       check_constructor loc cstr mind cstrs largs;
+	       let args' =
+		 check_and_adjust_constructor loc cstr mind cstrs args in
 	       only_default := false;
-	       brs.(i-1) <- (largs,rest) :: brs.(i-1)) mat () in
+	       brs.(i-1) <- (args',rest) :: brs.(i-1)) mat () in
   (brs,!only_default)
 
 (************************************************************************)
