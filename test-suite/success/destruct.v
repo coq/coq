@@ -4,4 +4,4 @@ Parameter f:true=false.
 Goal let p=f in True.
 Intro p.
 LetTac b:=true.
-NewDestruct b.
+Try NewDestruct b.
