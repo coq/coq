@@ -65,7 +65,7 @@ let set_coercion_description f =
  coercion_description_holder:=f; ();;
 
 let string_of_node_loc the_node =
-  match unloc (loc the_node) with
+  match Util.unloc (loc the_node) with
       (a,b) -> "(" ^ (string_of_int a) ^ ", " ^ (string_of_int b) ^ ")";;
 
 let xlate_error s = failwith ("Translation error: " ^ s);;
@@ -261,7 +261,6 @@ let rec xlate_match_pattern =
     | CPatAlias  (_,  pattern, id) ->
      CT_pattern_as
       (xlate_match_pattern pattern, CT_coerce_ID_to_ID_OPT (xlate_ident id))
-    | CPatOr (_,l) -> xlate_error "CPatOr: TODO"
     | CPatDelimiters(_, key, p) -> 
 	CT_pattern_delimitors(CT_num_type key, xlate_match_pattern p)
     | CPatNumeral(_,n) ->
@@ -725,7 +724,6 @@ and xlate_red_tactic =
  function
   | Red true -> xlate_error ""
   | Red false -> CT_red
-  | CbvVm -> CT_cbvvm
   | Hnf -> CT_hnf
   | Simpl None -> CT_simpl ctv_PATTERN_OPT_NONE
   | Simpl (Some (l,c)) -> 
@@ -795,8 +793,7 @@ and xlate_tactic =
 		   xlate_tactic t)
    | TacProgress t -> CT_progress(xlate_tactic t)
    | TacOrelse(t1,t2) -> CT_orelse(xlate_tactic t1, xlate_tactic t2)
-   | TacMatch (true,_,_) -> failwith "TODO: lazy match"
-   | TacMatch (false, exp, rules) ->
+   | TacMatch (exp, rules) ->
         CT_match_tac(xlate_tactic exp,
                      match List.map 
                        (function 
@@ -812,11 +809,11 @@ and xlate_tactic =
                          | [] -> assert false
                          | fst::others ->
                              CT_match_tac_rules(fst, others))
-   | TacMatchContext (_,_,[]) | TacMatchContext (true,_,_) -> failwith ""
-   | TacMatchContext (false,false,rule1::rules) ->
+   | TacMatchContext (_,[]) -> failwith ""
+   | TacMatchContext (false,rule1::rules) ->
          CT_match_context(xlate_context_rule rule1,
                           List.map xlate_context_rule rules)
-   | TacMatchContext (false,true,rule1::rules) ->
+   | TacMatchContext (true,rule1::rules) ->
          CT_match_context_reverse(xlate_context_rule rule1,
                           List.map xlate_context_rule rules)
    | TacLetIn (l, t) ->
@@ -984,7 +981,7 @@ and xlate_tac =
      let c = xlate_formula c and bindl = xlate_bindings bindl in
      if b then CT_condrewrite_lr (xlate_tactic t, c, bindl, ctv_ID_OPT_NONE)
      else CT_condrewrite_rl (xlate_tactic t, c, bindl, ctv_ID_OPT_NONE)
-    | TacExtend (_,"conditionalrewrite", [t; b; cbindl; id]) ->
+    | TacExtend (_,"conditionalrewritein", [t; b; cbindl; id]) ->
      let t = out_gen rawwit_tactic t in
      let b = out_gen Extraargs.rawwit_orient b in
      let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
@@ -992,21 +989,18 @@ and xlate_tac =
      let id = ctf_ID_OPT_SOME (xlate_ident (out_gen rawwit_ident id)) in
      if b then CT_condrewrite_lr (xlate_tactic t, c, bindl, id)
      else CT_condrewrite_rl (xlate_tactic t, c, bindl, id)
-    | TacExtend (_,"dependentrewrite", [b; c]) ->
+    | TacExtend (_,"dependentrewrite", [b; id_or_constr]) ->
       let b = out_gen Extraargs.rawwit_orient b in
-      let c = xlate_formula (out_gen rawwit_constr c) in
-      (match c with
-	| CT_coerce_ID_to_FORMULA (CT_ident _ as id) -> 
+      (match genarg_tag id_or_constr with
+	| IdentArgType -> (*Dependent Rewrite/SubstHypInConcl*)
+	    let id = xlate_ident (out_gen rawwit_ident id_or_constr) in
 	    if b then CT_deprewrite_lr id else CT_deprewrite_rl id
-	| _ -> xlate_error "dependent rewrite on term: not supported")
-    | TacExtend (_,"dependentrewrite", [b; c; id]) ->
-	xlate_error "dependent rewrite on terms in hypothesis: not supported"
-    | TacExtend (_,"cutrewrite", [b; c]) ->
-      let b = out_gen Extraargs.rawwit_orient b in
-      let c = xlate_formula (out_gen rawwit_constr c) in
-      if b then CT_cutrewrite_lr (c, ctv_ID_OPT_NONE)
-      else CT_cutrewrite_lr (c, ctv_ID_OPT_NONE)
-    | TacExtend (_,"cutrewrite", [b; c; id]) ->
+	| ConstrArgType -> (*CutRewrite/SubstConcl*)
+	    let c = xlate_formula (out_gen rawwit_constr id_or_constr) in
+	    if b then CT_cutrewrite_lr (c, ctv_ID_OPT_NONE)
+	    else CT_cutrewrite_rl (c, ctv_ID_OPT_NONE)
+	| _ -> xlate_error "")
+    | TacExtend (_,"dependentrewrite", [b; c; id]) -> (*CutRewrite in/SubstHyp*)
       let b = out_gen Extraargs.rawwit_orient b in
       let c = xlate_formula (out_gen rawwit_constr c) in
       let id = xlate_ident (out_gen rawwit_ident id) in
@@ -1022,7 +1016,6 @@ and xlate_tac =
     | TacTransitivity c -> CT_transitivity (xlate_formula c)
     | TacAssumption -> CT_assumption
     | TacExact c -> CT_exact (xlate_formula c)
-    | TacExactNoCheck c -> CT_exact_no_check (xlate_formula c)
     | TacDestructHyp (true, (_,id)) -> CT_cdhyp (xlate_ident id)
     | TacDestructHyp (false, (_,id)) -> CT_dhyp (xlate_ident id)
     | TacDestructConcl -> CT_dconcl
@@ -1157,9 +1150,9 @@ and xlate_tac =
 	CT_new_induction
 	  (xlate_int_or_constr a, xlate_using b,
 	   xlate_intro_patt_opt c)
-    (*| TacInstantiate (a, b, cl) -> 
+    | TacInstantiate (a, b, cl) -> 
         CT_instantiate(CT_int a, xlate_formula b,
-		       assert false) *)
+		       xlate_clause cl)
     | TacLetTac (na, c, cl) ->
         CT_lettac(xlate_id_opt ((0,0),na), xlate_formula c, 
 		  (* TODO LATER: This should be shared with Unfold,
@@ -1350,9 +1343,8 @@ let xlate_thm x = CT_thm (match x with
 
 
 let xlate_defn x = CT_defn (match x with
- | (Local, Definition _) -> "Local"
- | (Global, Definition true) -> "Boxed Definition"
- | (Global, Definition false) -> "Definition"
+ | (Local, Definition) -> "Local"
+ | (Global, Definition) -> "Definition"
  | (Global, SubClass) -> "SubClass"
  | (Global, Coercion) -> "Coercion"
  | (Local, SubClass) -> "Local SubClass"
@@ -1771,8 +1763,6 @@ let rec xlate_vernac =
 	| PrintHintDb -> CT_print_hintdb (CT_coerce_STAR_to_ID_OR_STAR CT_star)
 	| PrintHintDbName id -> 
 	    CT_print_hintdb (CT_coerce_ID_to_ID_OR_STAR (CT_ident id))
-	| PrintRewriteHintDbName id -> 
-	    CT_print_rewrite_hintdb (CT_ident id)
 	| PrintHint id ->
 	    CT_print_hint (CT_coerce_ID_to_ID_OPT (loc_qualid_to_ct_ID id))
 	| PrintHintGoal -> CT_print_hint ctv_ID_OPT_NONE
@@ -1787,7 +1777,6 @@ let rec xlate_vernac =
 	| PrintInspect n -> CT_inspect (CT_int n)
 	| PrintUniverses opt_s -> CT_print_universes(ctf_STRING_OPT opt_s)
 	| PrintLocalContext -> CT_print
-  | PrintSetoids -> CT_print_setoids
 	| PrintTables -> CT_print_tables
         | PrintModuleType a -> CT_print_module_type (loc_qualid_to_ct_ID a)
         | PrintModule a -> CT_print_module (loc_qualid_to_ct_ID a)
@@ -1866,8 +1855,8 @@ let rec xlate_vernac =
 	     translate_opt_notation_decl notopt) in
         CT_mind_decl
 	  (CT_co_ind co_or_ind, CT_ind_spec_list (List.map strip_mutind lmi))
-   | VernacFixpoint ([],_) -> xlate_error "mutual recursive"
-   | VernacFixpoint ((lm :: lmi),boxed) ->
+   | VernacFixpoint [] -> xlate_error "mutual recursive"
+   | VernacFixpoint (lm :: lmi) ->
       let strip_mutrec ((fid, n, bl, arf, ardef), ntn) =
         let (struct_arg,bl,arf,ardef) =
          if bl = [] then
@@ -1884,8 +1873,8 @@ let rec xlate_vernac =
           | _ -> xlate_error "mutual recursive" in
         CT_fix_decl
 	  (CT_fix_rec_list (strip_mutrec lm, List.map strip_mutrec lmi))
-   | VernacCoFixpoint ([],boxed) -> xlate_error "mutual corecursive"
-   | VernacCoFixpoint ((lm :: lmi),boxed) ->
+   | VernacCoFixpoint [] -> xlate_error "mutual corecursive"
+   | VernacCoFixpoint (lm :: lmi) ->
       let strip_mutcorec (fid, bl, arf, ardef) =
 	CT_cofix_rec (xlate_ident fid, xlate_binder_list bl,
                       xlate_formula arf, xlate_formula ardef) in
@@ -2056,7 +2045,6 @@ let rec xlate_vernac =
   | VernacReserve([], _) -> assert false
   | VernacLocate(LocateTerm id) -> CT_locate(reference_to_ct_ID id)
   | VernacLocate(LocateLibrary id) -> CT_locate_lib(reference_to_ct_ID id)
-  | VernacLocate(LocateModule _) -> xlate_error "TODO: Locate Module"
   | VernacLocate(LocateFile s) -> CT_locate_file(CT_string s)
   | VernacLocate(LocateNotation s) -> CT_locate_notation(CT_string s)
   | VernacTime(v) -> CT_time(xlate_vernac v)
