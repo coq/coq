@@ -173,28 +173,6 @@ let map_constr_with_named_binders g f l c = match kind_of_term c with
    time being almost those of the ML representation (except for
    (co-)fixpoint) *)
 
-let array_map_left f a = (* Ocaml does not guarantee Array.map is LR *)
-  let l = Array.length a in (* (even if so), then we rewrite it *)
-  if l = 0 then [||] else begin
-    let r = Array.create l (f a.(0)) in
-    for i = 1 to l - 1 do
-      r.(i) <- f a.(i)
-    done;
-    r
-  end
-
-let array_map_left_pair f a g b =
-  let l = Array.length a in
-  if l = 0 then [||],[||] else begin
-    let r = Array.create l (f a.(0)) in
-    let s = Array.create l (g b.(0)) in
-    for i = 1 to l - 1 do
-      r.(i) <- f a.(i);
-      s.(i) <- g b.(i)
-    done;
-    r, s
-  end
-
 let fold_rec_types g (lna,typarray,_) e =
   let ctxt =
     array_map2_i
