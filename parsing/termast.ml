@@ -160,7 +160,8 @@ let ast_of_app impl f args =
   if !print_implicits & not !print_implicits_explicit_args then 
     ope("APPLISTEXPL", f::args)
   else
-    ope("APPLIST", f::(explicitize impl args))
+    let args = explicitize impl args in
+    if args = [] then f else ope("APPLIST", f::args)
 
 let rec ast_of_raw = function
   | RRef (_,ref) -> ast_of_ref ref
