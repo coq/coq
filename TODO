@@ -7,7 +7,7 @@ Environnement:
 - Faire fonctionner Search
 - Faire fonctionner Abstract
 - Faire fonctionner Reset
-- Que les Infix soit chargés lors d'un Require
+- Que les Infix soit chargés lors d'un Require (DONE)
 - Problème de compatibilité du mode implicite au discharge (DONE)
 - ajouter "parsing" aux chemins par défaut (pour g_{nat,z}syntax.cmo)
 
