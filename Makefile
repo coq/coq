@@ -214,6 +214,9 @@ LOGICVO=theories/Logic/Classical.vo          theories/Logic/Classical_Type.vo \
       theories/Logic/Classical_Pred_Type.vo  theories/Logic/Eqdep_dec.vo      \
       theories/Logic/Classical_Prop.vo
 
+theories/Logic/%.vo: theories/Logic/%.v states/initial.coq
+	$(COQC) -q -I theories/Init $<
+
 theories: $(INITVO) $(LOGICVO)
 
 clean::
