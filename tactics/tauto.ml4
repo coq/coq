@@ -73,20 +73,21 @@ let simplif t_reduce ist =
     $t_not_dep_intros;
     Repeat
       ((Match Context With
-        | [id: (?1 ? ?) |- ?] -> $t_is_conj;Elim id;Do 2 Intro;Clear id
-        | [id: (?1 ? ?) |- ?] -> $t_is_disj;Elim id;Intro;Clear id
-        | [id: (?1 ?2 ?3) -> ?4|- ?] ->
-          $t_is_conj;Cut ?2-> ?3-> ?4;[Intro;Clear id|Intros;Apply id;
-            Try Split;Assumption]
-        | [id: (?1 ?2 ?3) -> ?4|- ?] ->
-          $t_is_disj;Cut ?3-> ?4;[Cut ?2-> ?4;[Intros;Clear id|Intros;Apply id;
-            Try Left;Assumption]|Intros;Apply id;Try Right;Assumption]
+        | [id: (?1 ? ?) |- ?] ->
+            $t_is_conj;Elim id;Do 2 Intro;Clear id;$t_reduce
+        | [id: (?1 ? ?) |- ?] -> $t_is_disj;Elim id;Intro;Clear id;$t_reduce
         | [id0: ?1-> ?2; id1: ?1|- ?] -> Generalize (id0 id1);Intro;Clear id0
         | [id: ?1 -> ?2|- ?] ->
           $t_is_unit;Cut ?2;[Intro;Clear id|Intros;Apply id;Constructor;Fail]
-        | [|- (?1 ? ?)] -> $t_is_conj;Split);
-       $t_not_dep_intros;
-       $t_reduce)>>
+        | [id: (?1 ?2 ?3) -> ?4|- ?] ->
+          $t_is_conj;Cut ?2-> ?3-> ?4;[Intro;Clear id;$t_reduce|
+            Intros;Apply id;Try Split;Assumption]
+        | [id: (?1 ?2 ?3) -> ?4|- ?] ->
+          $t_is_disj;Cut ?3-> ?4;[Cut ?2-> ?4;[Intros;Clear id;$t_reduce|
+            Intros;Apply id;
+            Try Left;Assumption]|Intros;Apply id;Try Right;Assumption]
+        | [|- (?1 ? ?)] -> $t_is_conj;Split;$t_reduce);
+       $t_not_dep_intros)>>
 
 let rec tauto_main t_reduce ist =
   let t_axioms = tacticIn axioms
@@ -124,26 +125,24 @@ let unfold_not_iff = function
 
 let reduction_not_iff = Tacticals.onAllClauses (fun ido -> unfold_not_iff ido)
 
-let hnf = function
-  | None -> interp <:tactic< Hnf >>
-  | Some id ->
-    let ast_id = nvar id in
-    interp <:tactic< Hnf in $ast_id >>
+(* Reduce until finding atoms in head normal form *)
+open Term
+open Termops
+open Environ
 
-let simpl = function
-  | None -> interp <:tactic< Simpl >>
-  | Some id ->
-    let ast_id = nvar id in
-    interp <:tactic< Simpl in $ast_id >>
+let rec reduce env sigma c =
+  let c = Tacred.hnf_constr env sigma c in
+  match Term.kind_of_term c with
+    | Prod (na,t,u) when not (dependent (mkRel 1) u) ->
+      mkProd (na,reduce env sigma t, reduce (push_rel (na,None,t) env) sigma u)
+    | _ -> c
 
-let reduction = Tacticals.onAllClauses hnf
+let reduction =
+  Tacticals.onAllClauses
+    (fun cl -> reduct_option reduce (option_app (fun id -> InHyp id) cl))
 
-(* Trick to coerce a tactic into an ast, since not provided in quotation *)
-let _ = hide_atomic_tactic "OnAllClausesRepeatRed" reduction
-let _ = hide_atomic_tactic "OnAllClausesUnfoldNotIff" reduction_not_iff
-
-let t_reduction = ope ("OnAllClausesRepeatRed",[])
-let t_reduction_not_iff = ope ("OnAllClausesUnfoldNotIff",[])
+let t_reduction = valueIn (VTactic reduction)
+let t_reduction_not_iff = valueIn (VTactic reduction_not_iff)
 
 (* As a simple heuristic, first we try to avoid reduction both in tauto and
    intuition *)
@@ -153,14 +152,14 @@ let tauto g =
     (tclTHEN init_intros
       (tclORELSE
         (interp (tacticIn (tauto_main t_reduction_not_iff)))
-        (tclTHEN (Tacticals.onAllClauses simpl) (interp (tacticIn (tauto_main t_reduction)))))) g
+        (interp (tacticIn (tauto_main t_reduction))))) g
   with UserError _ -> errorlabstrm "tauto" [< str "Tauto failed" >]
 
 let intuition =
   tclTHEN init_intros
     (tclORELSE
       (interp (tacticIn (intuition_main t_reduction_not_iff)))
-      (tclTHEN (Tacticals.onAllClauses simpl) (interp (tacticIn (intuition_main t_reduction)))))
+      (interp (tacticIn (intuition_main t_reduction))))
 
 let _ = hide_atomic_tactic "Tauto" tauto
 let _ = hide_atomic_tactic "Intuition" intuition
