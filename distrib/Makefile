@@ -249,7 +249,7 @@ $(COQRPM): $(COQSRCRPM)
 	chmod g+w $(COQRPM)
 	rm -f $(RPMTOPDIR)/coq.list
 
-$(COQIDESRCRPM): $(RPMTOPDIR) RH/coqide.spec RH/coqide.spec $(TARGZ) RH/rpmrc
+$(COQIDESRCRPM): $(RPMTOPDIR) RH/coqide.spec RH/coqide.list $(TARGZ) RH/rpmrc
 	cp -f petit-coq.gif $(RPMTOPDIR)/SOURCES
 	cp -f $(TARGZ) $(RPMTOPDIR)/SOURCES
 	cp -f RH/coqide.list $(RPMTOPDIR)
