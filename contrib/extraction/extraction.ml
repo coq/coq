@@ -762,15 +762,16 @@ let extract_constant env kn cb =
     | None -> (* A logical axiom is risky, an informative one is fatal. *) 
         (match flag_of_type env typ with
 	   | (Info,TypeScheme) -> 
-	       if is_custom r then Dtype (r, [], Tunknown) 
-	       else error_axiom r
+	       if not (is_custom r) then warning_info_ax r; 
+	       let n = type_scheme_nb_args env typ in 
+	       let ids = iterate (fun l -> anonymous::l) n [] in 
+	       Dtype (r, ids, Taxiom) 
            | (Info,Default) -> 
-	       if is_custom r then 
-		 let t = snd (record_constant_type env kn (Some typ)) in 
-		 Dterm (r, MLexn "axiom!", type_expunge env t) 
-	       else error_axiom r
-           | (Logic,TypeScheme) -> warning_axiom r; Dtype (r, [], Tdummy)
-	   | (Logic,Default) -> warning_axiom r; Dterm (r, MLdummy, Tdummy))
+	       if not (is_custom r) then warning_info_ax r; 
+	       let t = snd (record_constant_type env kn (Some typ)) in 
+	       Dterm (r, MLaxiom, type_expunge env t) 
+           | (Logic,TypeScheme) -> warning_log_ax r; Dtype (r, [], Tdummy)
+	   | (Logic,Default) -> warning_log_ax r; Dterm (r, MLdummy, Tdummy))
     | Some body ->
 	(match flag_of_type env typ with
 	   | (Logic, Default) -> Dterm (r, MLdummy, Tdummy)

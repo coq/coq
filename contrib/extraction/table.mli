@@ -17,8 +17,8 @@ val id_of_global : global_reference -> identifier
 (*s Warning and Error messages. *)
 
 val error_axiom_scheme : global_reference -> int -> 'a
-val error_axiom : global_reference -> 'a
-val warning_axiom : global_reference -> unit
+val warning_info_ax : global_reference -> unit
+val warning_log_ax : global_reference -> unit
 val error_constant : global_reference -> 'a
 val error_inductive : global_reference -> 'a
 val error_nb_cons : unit -> 'a

@@ -332,9 +332,8 @@ let ast_iter_rel f =
     | MLfix (_,ids,v) -> let k = Array.length ids in Array.iter (iter (n+k)) v
     | MLapp (a,l) -> iter n a; List.iter (iter n) l
     | MLcons (_,l) ->  List.iter (iter n) l
-    | MLcast (a,_) -> iter n a
     | MLmagic a -> iter n a
-    | MLglob _ | MLexn _ | MLdummy -> ()
+    | MLglob _ | MLexn _ | MLdummy | MLaxiom -> ()
   in iter 0 
 
 (*s Map over asts. *)
@@ -348,9 +347,8 @@ let ast_map f = function
   | MLfix (i,ids,v) -> MLfix (i, ids, Array.map f v)
   | MLapp (a,l) -> MLapp (f a, List.map f l)
   | MLcons (c,l) -> MLcons (c, List.map f l)
-  | MLcast (a,t) -> MLcast (f a, t)
   | MLmagic a -> MLmagic (f a)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> a
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLaxiom as a -> a
 
 (*s Map over asts, with binding depth as parameter. *)
 
@@ -364,9 +362,8 @@ let ast_map_lift f n = function
       let k = Array.length ids in MLfix (i,ids,Array.map (f (k+n)) v)
   | MLapp (a,l) -> MLapp (f n a, List.map (f n) l)
   | MLcons (c,l) -> MLcons (c, List.map (f n) l)
-  | MLcast (a,t) -> MLcast (f n a, t)
   | MLmagic a -> MLmagic (f n a)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> a	
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLaxiom as a -> a	
 
 (*s Iter over asts. *) 
 
@@ -379,9 +376,8 @@ let ast_iter f = function
   | MLfix (i,ids,v) -> Array.iter f v
   | MLapp (a,l) -> f a; List.iter f l
   | MLcons (c,l) -> List.iter f l
-  | MLcast (a,t) -> f a
   | MLmagic a -> f a
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> ()
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLaxiom as a -> ()
 
 (*S Operations concerning De Bruijn indices. *)
 
@@ -425,9 +421,8 @@ let nb_occur_match =
     | MLlam (_,a) -> nb (k+1) a
     | MLapp (a,l) -> List.fold_left (fun r a -> r+(nb k a)) (nb k a) l
     | MLcons (_,l) -> List.fold_left (fun r a -> r+(nb k a)) 0 l 
-    | MLcast (a,_) -> nb k a
     | MLmagic a -> nb k a
-    | MLglob _ | MLexn _ | MLdummy -> 0
+    | MLglob _ | MLexn _ | MLdummy | MLaxiom -> 0
   in nb 1
 
 (*s Lifting on terms.
@@ -974,7 +969,6 @@ let rec ml_size = function
       1 + ml_size t + (Array.fold_right (fun (_,_,t) a -> a + ml_size t) pv 0)
   | MLfix(_,_,f) -> ml_size_array f
   | MLletin (_,_,t) -> ml_size t
-  | MLcast (t,_) -> ml_size t
   | MLmagic t -> ml_size t
   | _ -> 0
 
@@ -1047,8 +1041,6 @@ let rec non_stricts add cand = function
 	   let cand = pop n (non_stricts add cand t) in
 	   Sort.merge (<=) cand c) [] v
 	(* [merge] may duplicates some indices, but I don't mind. *)
-  | MLcast (t,_) -> 
-      non_stricts add cand t
   | MLmagic t -> 
       non_stricts add cand t
   | _ -> 

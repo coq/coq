@@ -34,6 +34,7 @@ type ml_type =
   | Tmeta   of ml_meta (* used during ML type reconstruction *)
   | Tdummy
   | Tunknown
+  | Taxiom
   | Tcustom of string
 
 and ml_meta = { id : int; mutable contents : ml_type option }
@@ -83,7 +84,7 @@ type ml_ast =
   | MLfix    of int * identifier array * ml_ast array
   | MLexn    of string
   | MLdummy
-  | MLcast   of ml_ast * ml_type
+  | MLaxiom
   | MLmagic  of ml_ast
 
 (*s ML declarations. *)

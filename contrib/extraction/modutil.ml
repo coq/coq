@@ -171,7 +171,6 @@ let ast_iter_references do_term do_cons do_type a =
       | MLglob r -> do_term r
       | MLcons (r,_) -> do_cons r
       | MLcase (_,v) as a -> Array.iter (fun (r,_,_) -> do_cons r) v
-      | MLcast (_,t) -> type_iter_references do_type t 
       | _ -> ()
   in iter a
 

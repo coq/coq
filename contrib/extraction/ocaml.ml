@@ -170,7 +170,7 @@ let empty_env () = [], P.globals ()
 
 let rec pp_type par vl t =
   let rec pp_rec par = function
-    | Tmeta _ | Tvar' _ -> assert false
+    | Tmeta _ | Tvar' _ | Taxiom -> assert false
     | Tvar i -> (try pp_tvar (List.nth vl (pred i)) 
 		 with _ -> (str "'a" ++ int i))
     | Tglob (r,[]) -> pp_global r
@@ -291,12 +291,11 @@ let rec pp_expr par env args =
 	pp_par par (str "assert false" ++ spc () ++ str ("(* "^s^" *)"))
     | MLdummy ->
 	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
-    | MLcast (a,t) ->
-	apply (pp_par true 
-		 (pp_expr true env [] a ++ spc () ++ str ":" ++ 
-		  spc () ++ pp_type true [] t))
     | MLmagic a ->
 	pp_apply (str "Obj.magic") par (pp_expr true env [] a :: args)
+    | MLaxiom -> 
+	pp_par par (str "failwith \"AXIOM TO BE REALIZED\"")
+
 	  
 and pp_record_pat (projs, args) =
    str "{ " ++
@@ -482,11 +481,14 @@ let pp_decl mpl =
 	  let l = rename_tvars keywords l in 
 	  let ids, def = try 
 	    let ids,s = find_type_custom r in 
-	    pp_string_parameters ids, str s 
-	  with not_found -> pp_parameters l, pp_type false l t
+	    pp_string_parameters ids, str "=" ++ spc () ++ str s 
+	  with not_found -> 
+	    pp_parameters l, 
+	    if t = Taxiom then str "(* AXIOM TO BE REALIZED *)"
+	    else str "=" ++ spc () ++ pp_type false l t
 	  in 
 	  hov 2 (str "type" ++ spc () ++ ids ++ pp_global r ++ 
-		 spc () ++ str "=" ++ spc () ++ def)
+		 spc () ++ def)
     | Dterm (r, a, t) -> 
 	if is_inline_custom r then failwith "empty phrase"
 	else 
@@ -524,7 +526,8 @@ let pp_spec mpl =
 	    with not_found -> 
 	      let ids = pp_parameters l in 
 	      match ot with 
-		| None -> ids, mt () 
+		| None -> ids, mt ()
+		| Some Taxiom -> ids, str "(* AXIOM TO BE REALIZED *)" 
 		| Some t -> ids, str "=" ++ spc () ++ pp_type false l t 
 	  in 
 	  hov 2 (str "type" ++ spc () ++ ids ++ pp_global r ++ spc () ++ def)

@@ -106,10 +106,10 @@ let rec pp_expr env args =
 	paren (str "absurd")
     | MLdummy ->
 	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
-    | MLcast (a,t) ->
-	pp_expr env args a
     | MLmagic a ->
 	pp_expr env args a
+    | MLaxiom -> paren (str "absurd ;;AXIOM TO BE REALIZED\n")
+	
 
 and pp_one_pat env (r,ids,t) = 
   let pp_arg id = str "?" ++ pr_id id in 

@@ -133,12 +133,13 @@ let error_axiom_scheme r i =
        pr_global r ++ spc () ++ str "needs " ++ pr_int i ++ 
        str " type variable(s).") 
 
-let error_axiom r =
-  err (str "You must specify an extraction for axiom" ++ spc () ++ 
-       pr_global r ++ spc () ++ str "first.")
+let warning_info_ax r =
+  Options.if_verbose msg_warning
+    (str "You must realize axiom " ++
+     pr_global r ++ str " in the extracted code.")
 
-let warning_axiom r = 
-  Options.if_verbose warn 
+let warning_log_ax r = 
+  Options.if_verbose msg_warning
     (str "This extraction depends on logical axiom" ++ spc () ++ 
      pr_global r ++ str "." ++ spc() ++ 
      str "Having false logical axiom in the environment when extracting" ++ 

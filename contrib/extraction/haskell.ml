@@ -80,6 +80,7 @@ let rec pp_type par vl t =
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
     | Tdummy -> str "()"
     | Tunknown -> str "()"
+    | Taxiom -> str "() -- AXIOM TO BE REALIZED\n"
     | Tcustom s -> str s
  in 
   hov 0 (pp_rec par t)
@@ -144,8 +145,8 @@ let rec pp_expr par env args =
 	pp_par par (str "Prelude.error" ++ spc () ++ qs s)
     | MLdummy ->
 	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
-    | MLcast (a,t) -> pp_expr par env args a
     | MLmagic a ->  pp_expr par env args a
+    | MLaxiom -> pp_par par (str "Prelude.error \"AXIOM TO BE REALIZED\"")
 
 and pp_pat env pv = 
   let pp_one_pat (name,ids,t) =
