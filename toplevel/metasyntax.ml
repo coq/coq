@@ -664,12 +664,11 @@ let (inDelim,outDelim) =
 
 let make_delimiter_rule key typ =
   let e = Nameops.make_ident "e" None in
-  let m = key^":" in
-  let symbols = [Terminal "`"; Terminal m; NonTerminal e; Terminal "`"] in
+  let symbols = [Terminal ("'"^key^":"); NonTerminal e; Terminal "'"] in
   make_production [e,typ] symbols
 
 let add_delimiters scope key =
   let gram_rule = make_delimiter_rule key (ETConstr ((0,E),Some 0)) in
   let pat_gram_rule = make_delimiter_rule key ETPattern in
-  let dlms = ("`"^key^":", "`") in
+  let dlms = ("'"^key^":", "'") in
   Lib.add_anonymous_leaf (inDelim(gram_rule,pat_gram_rule,scope,dlms))
