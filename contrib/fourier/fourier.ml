@@ -43,6 +43,7 @@ let r1 = {num=1;den=1};;
 let rnorm x = let x = (if x.den<0 then {num=(-x.num);den=(-x.den)} else x) in
               if x.num=0 then r0
               else (let d=pgcd x.num x.den in
+		    let d= (if d<0 then -d else d) in
                     {num=(x.num)/d;den=(x.den)/d});;
  
 let rop x = rnorm {num=(-x.num);den=x.den};;
@@ -54,6 +55,8 @@ let rminus x y = rnorm {num=x.num*y.den - y.num*x.den;den=x.den*y.den};;
 let rmult x y = rnorm {num=x.num*y.num;den=x.den*y.den};;
 
 let rinv x = rnorm {num=x.den;den=x.num};;
+
+let rdiv x y = rnorm {num=x.num*y.den;den=x.den*y.num};;
 
 let rinf x y = x.num*y.den < y.num*x.den;;
 let rinfeq x y = x.num*y.den <= y.num*x.den;;

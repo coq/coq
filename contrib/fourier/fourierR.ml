@@ -95,6 +95,9 @@ let rec rational_of_constr c =
                 |"Coq.Reals.Rdefinitions.Rmult" -> 
                       rmult (rational_of_constr args.(0))
                             (rational_of_constr args.(1))
+                |"Coq.Reals.Rdefinitions.Rdiv" -> 
+                      rdiv (rational_of_constr args.(0))
+                            (rational_of_constr args.(1))
                 |"Coq.Reals.Rdefinitions.Rplus" -> 
                       rplus (rational_of_constr args.(0))
                             (rational_of_constr args.(1))
@@ -137,6 +140,16 @@ let rec flin_of_constr c =
 	      with _-> (flin_add (flin_zero())
 				 args.(0) 
 				 (rational_of_constr args.(1))))
+	    |"Coq.Reals.Rdefinitions.Rinv"->
+	       let a=(rational_of_constr args.(0)) in
+	       flin_add_cste (flin_zero()) (rinv a)
+	    |"Coq.Reals.Rdefinitions.Rdiv"->
+	      (let b=(rational_of_constr args.(1)) in
+	       try (let a = (rational_of_constr args.(0)) in
+		       (flin_add_cste (flin_zero()) (rdiv a b)))
+	       with _-> (flin_add (flin_zero())
+		             args.(0) 
+                             (rinv b)))
             |_->assert false)
            |_ -> assert false)
   | IsConst (c,l) ->
@@ -423,7 +436,7 @@ let rec fourier gl=
     let res=fourier_lineq (!lineq) in
     let tac=ref tclIDTAC in
     if res=[]
-    then (print_string "Tactic Fourier fails, perhaps because it cannot prove some equality on rationnal numbers with the tactic Ring.";
+    then (print_string "Tactic Fourier fails.";
 		       flush stdout)
     (* l'algorithme de Fourier a réussi: on va en tirer une preuve Coq *)
     else (match res with
@@ -517,7 +530,9 @@ let rec fourier gl=
 							   (parse "R1"))
 (* en attendant Field, ça peut aider Ring de remplacer 1/1 par 1 ... *)	
 
-      			        [(Ring.polynom []);
+      			        [tclORELSE
+                                   (Ring.polynom [])
+                                   tclIDTAC;
 					  (tclTHEN (apply (parse "sym_eqT"))
 						(apply (parse "Rinv_R1")))]
                                
@@ -530,7 +545,8 @@ let rec fourier gl=
       |_-> assert false) |_-> assert false
 	  );
 (*    ((tclTHEN !tac (tclFAIL 1 (* 1 au hasard... *))) gl) *)
-      ((tclABSTRACT None !tac) gl)
+      (!tac gl) 
+(*      ((tclABSTRACT None !tac) gl) *)
 
 ;;
 

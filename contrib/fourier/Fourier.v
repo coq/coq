@@ -14,13 +14,19 @@ Declare ML Module "quote".
 Declare ML Module "ring".
 Declare ML Module "fourier".
 Declare ML Module "fourierR".
+Declare ML Module "field".
 
 Require Export Fourier_util.
+Require Export Field.
+Require Export DiscrR.
 
 Grammar tactic simple_tactic:ast:=
   fourier
-  ["Fourier" constrarg_list($arg)] ->
+  ["FourierZ" constrarg_list($arg)] ->
   [(Fourier ($LIST $arg))].
+
+Tactic Definition Fourier  :=
+  Abstract (FourierZ;Field;DiscrR).
 
 Tactic Definition FourierEq  :=
   Apply Rge_ge_eq ; Fourier.
