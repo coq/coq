@@ -21,7 +21,7 @@ Grammar constr constr1 :=
              "&" lconstr($c2) "&" lconstr($c3) "}" ]
        -> [ (sigS2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3) ].
 
-Grammar constr constr1: Ast :=
+Grammar constr constr1: ast :=
   squash [ "{" lconstr($lc) "}" ] -> [(SQUASH $lc)].
 
 Grammar constr lassoc_constr4 :=
