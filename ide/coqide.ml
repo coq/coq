@@ -1541,7 +1541,9 @@ let main files =
       let b = Buffer.create 1024 in
       with_file f ~f:(input_channel b);
       let s = do_convert (Buffer.contents b) in
-      let view = create_input_tab (Glib.Convert.filename_to_utf8 (Filename.basename f)) in
+      let view = create_input_tab (Glib.Convert.filename_to_utf8 
+				     (Filename.basename f)) 
+      in
       view#misc#modify_font !current.text_font;
       let index = add_input_view {view = view;
 				  analyzed_view = None;
@@ -1811,7 +1813,7 @@ let main files =
   let read_only_i = edit_f#add_check_item "Expert" ~active:false
 		      ~key:GdkKeysyms._Z
 		      ~callback:(fun b -> 
-				GtkData.AccelGroup.save "tutu.l"
+				   ()
 				) 
   in
   read_only_i#misc#set_state `INSENSITIVE;
