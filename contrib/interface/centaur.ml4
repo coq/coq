@@ -956,6 +956,10 @@ VERNAC COMMAND EXTEND StartPcoq
   [ "Start" "Pcoq" "Mode" ] -> [ start_pcoq () ]
 END
 
+VERNAC COMMAND EXTEND Pcoq_inspect
+  [ "Pcoq_inspect" ] -> [ inspect 15 ]
+END
+
 VERNAC COMMAND EXTEND StartPcoqDebug
 | [ "Start" "Pcoq" "Debug" "Mode" ] -> [ start_pcoq_debug () ]
 END
