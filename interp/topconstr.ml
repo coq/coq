@@ -371,7 +371,8 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
      let sigma = List.fold_left2 
        (fun s (tm1,_) (tm2,_) -> match_ alp metas s tm1 tm2) sigma tml1 tml2 in
      List.fold_left2 (match_equations alp metas) sigma eqnl1 eqnl2
-  | ROrderedCase (_,st,po1,c1,bl1,_), AOrderedCase (st2,po2,c2,bl2) ->
+  | ROrderedCase (_,st,po1,c1,bl1,_), AOrderedCase (st2,po2,c2,bl2) 
+      when Array.length bl1 = Array.length bl2 ->
      let sigma = option_fold_left2 (match_ alp metas) sigma po1 po2 in
      array_fold_left2 (match_ alp metas) (match_ alp metas sigma c1 c2) bl1 bl2
   | RCast(_,c1,t1), ACast(c2,t2) ->
