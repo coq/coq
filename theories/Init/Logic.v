@@ -12,6 +12,8 @@ Set Implicit Arguments.
 
 Require Import Notations.
 
+(** * Propositional connectives *)
+
 (** [True] is the always true proposition *)
 Inductive True : Prop :=
     I : True. 
@@ -35,7 +37,7 @@ Section Conjunction.
 
   (** [and A B], written [A /\ B], is the conjunction of [A] and [B]
 
-      [conj A B p q], written [<p,q>] is a proof of [A /\ B] as soon as 
+      [conj p q] is a proof of [A /\ B] as soon as 
       [p] is a proof of [A] and [q] a proof of [B]
 
       [proj1] and [proj2] are first and second projections of a conjunction *)
@@ -86,26 +88,25 @@ Theorem iff_sym : forall A B:Prop, (A <-> B) -> (B <-> A).
 
 End Equivalence.
 
-(** [(IF P Q R)], or more suggestively [(either P and_then Q or_else R)],
-    denotes either [P] and [Q], or [~P] and [Q] *)
+(** [(IF_then_else P Q R)], written [IF P then Q else R] denotes
+    either [P] and [Q], or [~P] and [Q] *)
+
 Definition IF_then_else (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
 
 Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
   (at level 200) : type_scope.
 
-(** First-order quantifiers *)
-
-  (** [ex A P], or simply [exists x, P x], expresses the existence of an 
+(** * First-order quantifiers
+  - [ex A P], or simply [exists x, P x], expresses the existence of an 
       [x] of type [A] which satisfies the predicate [P] ([A] is of type 
-      [Set]). This is existential quantification. *)
-
-  (** [ex2 A P Q], or simply [exists2 x, P x & Q x], expresses the
+      [Set]). This is existential quantification.
+  - [ex2 A P Q], or simply [exists2 x, P x & Q x], expresses the
       existence of an [x] of type [A] which satisfies both the predicates
-      [P] and [Q] *)
-
-  (** Universal quantification (especially first-order one) is normally 
-      written [forall x:A, P x]. For duality with existential quantification, 
-      the construction [all P] is provided too *)
+      [P] and [Q].
+  - Universal quantification (especially first-order one) is normally 
+    written [forall x:A, P x]. For duality with existential quantification, 
+    the construction [all P] is provided too.
+*)
 
 Inductive ex (A:Type) (P:A -> Prop) : Prop :=
     ex_intro : forall x:A, P x -> ex (A:=A) P.
@@ -131,7 +132,7 @@ Notation "'exists2' x : t , p & q" := (ex2 (fun x:t => p) (fun x:t => q))
   : type_scope.
 
 
-(** Universal quantification *)
+(** Derived rules for universal quantification *)
 
 Section universal_quantification.
 
@@ -148,15 +149,16 @@ Section universal_quantification.
   red in |- *; auto.
   Qed.
 
-  End universal_quantification.
+End universal_quantification.
 
-(** Equality *)
+(** * Equality *)
 
-(** [eq A x y], or simply [x=y], expresses the (Leibniz') equality
+(** [eq x y], or simply [x=y], expresses the (Leibniz') equality
     of [x] and [y]. Both [x] and [y] must belong to the same type [A].
     The definition is inductive and states the reflexivity of the equality.
     The others properties (symmetry, transitivity, replacement of 
-    equals) are proved below *)
+    equals) are proved below. The type of [x] and [y] can be made explicit
+    using the notation [x = y :> A] *)
 
 Inductive eq (A:Type) (x:A) : A -> Prop :=
     refl_equal : x = x :>A 
