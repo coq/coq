@@ -196,9 +196,8 @@ let rec pp_expr par env args =
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' (Some i) (Array.of_list (List.rev ids'),defs) args
-    | MLexn id -> 
-	[< open_par par; 'sTR "error"; 'sPC; 
-	   'qS (string_of_id id); close_par par >]
+    | MLexn str -> 
+	[< open_par par; 'sTR "error"; 'sPC; 'qS str; close_par par >]
     | MLprop ->
 	string "prop"
     | MLarity ->
@@ -223,10 +222,7 @@ and pp_pat env pv =
 	     end;
 	     'sTR " ->"; 'sPC; pp_expr par env' [] t >]
   in 
-  if pv = [||] then
-    [< 'sTR "_ -> error \"shouldn't happen\" -- empty inductive" >]
-  else
-    [< prvect_with_sep (fun () -> [< 'fNL; 'sTR "  " >]) pp_one_pat pv >]
+  [< prvect_with_sep (fun () -> [< 'fNL; 'sTR "  " >]) pp_one_pat pv >]
 
 (*s names of the functions ([ids]) are already pushed in [env],
     and passed here just for convenience. *)
@@ -313,6 +309,9 @@ let pp_decl = function
 	   [< >] >]
   | Dglob (r, a) ->
       hOV 0 [< pp_function (empty_env ()) (pp_global r) a; 'fNL >]
+  | Dcustom (r,s) -> 
+      hOV 0  [< 'sTR (string_of_r r); 'sTR " ="; 
+		'sPC; 'sTR s; 'fNL  >]
 
 let pp_type = pp_type false
 
@@ -407,23 +406,11 @@ let haskell_preamble prm =
      'sTR "type Arity = ()"; 'fNL;
      'sTR "arity = ()"; 'fNL; 'fNL >]
 
-let haskell_header ft b ml_decls =
-  let l,l' = ml_cst_extractions () in
-  List.iter2 
-    (fun r s -> 
-       if (not b) or (Some (module_of_r r) = !current_module)  then 
-       pP_with ft (hV 0  
-	 [< 'sTR (string_of_r r); 'sTR " ="; 'sPC; 'sTR s; 'fNL ; 'fNL >]))
-    ((List.rev l) @ ml_decls)
-    ((List.rev l') @ (List.map find_ml_extraction ml_decls))
-
-
-let extract_to_file f prm decls ml_decls=
+let extract_to_file f prm decls=
   let pp_decl = if prm.modular then ModularPp.pp_decl else MonoPp.pp_decl in
   let cout = open_out f in
   let ft = Pp_control.with_output_to cout in
   pP_with ft (hV 0 (haskell_preamble prm));
-  haskell_header ft prm.modular ml_decls;
   begin 
     try
       List.iter (fun d -> mSGNL_with ft (pp_decl d)) decls

@@ -15,6 +15,7 @@ open Util
 open Names
 open Term
 open Miniml
+open Table
 open Mlutil
 open Options
 
@@ -92,8 +93,10 @@ let module_option r =
   else (String.capitalize (string_of_id m)) ^ "."
 
 let check_ml r d = 
-  try find_ml_extraction r
-  with Not_found -> d
+  if to_inline r then d else 
+    try 
+      find_ml_extraction r 
+    with Not_found -> d
 
 (*s de Bruijn environments for programs *)
 
@@ -233,9 +236,9 @@ let rec pp_expr par env args =
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' (Some i) (Array.of_list (List.rev ids'),defs) args
-    | MLexn id -> 
-	[< open_par par; 'sTR "failwith"; 'sPC; 
-	   'qS (string_of_id id); close_par par >]
+    | MLexn str -> 
+	[< open_par par; 'sTR "assert false"; 'sPC; 
+	   'sTR ("(* "^str^" *)"); close_par par >]
     | MLprop ->
 	string "prop"
     | MLarity ->
@@ -258,10 +261,7 @@ and pp_pat env pv =
 	     end;
 	     'sTR " ->"; 'sPC; pp_expr par env' [] t >]
   in 
-  if pv = [||] then
-    [< 'sTR "_ -> assert false (* empty inductive *)" >]
-  else
-    [< prvect_with_sep (fun () -> [< 'fNL; 'sTR "| " >]) pp_one_pat pv >]
+  [< prvect_with_sep (fun () -> [< 'fNL; 'sTR "| " >]) pp_one_pat pv >]
 
 (*s names of the functions ([ids]) are already pushed in [env],
     and passed here just for convenience. *)
@@ -367,6 +367,9 @@ let pp_decl = function
   | Dglob (r, a) ->
       hOV 0 [< 'sTR "let "; 
 	       pp_function (empty_env ()) (pp_global r) a; 'fNL >]
+  | Dcustom (r,s) -> 
+      hOV 0 [< 'sTR "let "; 'sTR (string_of_r r); 
+	       'sTR " ="; 'sPC; 'sTR s; 'fNL >]
 
 let pp_type = pp_type false
 
@@ -461,23 +464,11 @@ let ocaml_preamble () =
      'sTR "type arity = unit"; 'fNL;
      'sTR "let arity = ()"; 'fNL; 'fNL >]
 
-
-let ocaml_header ft b ml_decls =
-  let l,l' = ml_cst_extractions () in
-  List.iter2 
-    (fun r s -> 
-       if (not b) or (Some (module_of_r r) = !current_module)  then 
-       pP_with ft (hV 0  
-	 [< 'sTR "let "; 'sTR (string_of_r r); 'sTR " ="; 'sPC; 'sTR s; 'fNL ; 'fNL >]))
-    ((List.rev l) @ ml_decls)
-    ((List.rev l') @ (List.map find_ml_extraction ml_decls))
-
-let extract_to_file f prm decls ml_decls =
+let extract_to_file f prm decls =
   let pp_decl = if prm.modular then ModularPp.pp_decl else MonoPp.pp_decl in
   let cout = open_out f in
   let ft = Pp_control.with_output_to cout in
   pP_with ft (hV 0 (ocaml_preamble ()));
-  ocaml_header ft prm.modular ml_decls;
   begin 
     try
       List.iter (fun d -> mSGNL_with ft (pp_decl d)) decls

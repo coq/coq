@@ -50,30 +50,17 @@ val subst_glob_ast : global_reference -> ml_ast -> ml_ast -> ml_ast
 val normalize : ml_ast -> ml_ast
 val normalize_decl : ml_decl -> ml_decl
 
-(*s Extraction parameters *)
-
-module Refset : Set.S with type elt = global_reference
-
-type extraction_params = {
-  modular : bool;       (* modular extraction *)
-  module_name : string; (* module name if [modular] *)
-  optimization : bool;  (* we need optimization *)
-  to_keep : Refset.t;   (* globals to keep *)
-  to_expand : Refset.t; (* globals to expand *)
-}
-
 (*s Optimization. *)
 
-val optimize : extraction_params -> ml_decl list -> ml_decl list
+type extraction_params =  
+  { strict : bool; 
+    modular : bool; 
+    module_name : string; 
+    to_appear : global_reference list }
 
-(*s Table for direct extractions to ML values. *)
+val add_ml_decls : 
+  extraction_params -> ml_decl list -> ml_decl list
 
-val is_ml_extraction : global_reference -> bool
-val find_ml_extraction : global_reference -> string
+val optimize : 
+  extraction_params -> ml_decl list -> ml_decl list
 
-val ml_extractions : unit -> Refset.t
-
-(* List of Extract Constant directives *)
-
-val ml_cst_extractions : 
-  unit -> global_reference list * string list

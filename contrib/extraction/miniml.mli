@@ -40,7 +40,7 @@ type ml_ast =
   | MLcons  of global_reference * ml_ast list
   | MLcase  of ml_ast * (global_reference * identifier list * ml_ast) array
   | MLfix   of int * identifier array * ml_ast array
-  | MLexn   of identifier
+  | MLexn   of string
   | MLprop
   | MLarity
   | MLcast  of ml_ast * ml_type
@@ -52,6 +52,7 @@ type ml_decl =
   | Dtype   of ml_ind list * bool (* cofix *)
   | Dabbrev of global_reference * identifier list * ml_type
   | Dglob   of global_reference * ml_ast
+  | Dcustom of global_reference * string
 
 (*s Pretty-printing of MiniML in a given concrete syntax is parameterized
     by a function [pp_global] that pretty-prints global references. 

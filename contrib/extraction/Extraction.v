@@ -16,34 +16,42 @@ Grammar vernac vernac : ast :=
 
 (* Monolithic extraction to a file *)
 | extr_file
-     [ "Extraction" stringarg($f) options($o) ne_qualidarg_list($l) "." ] 
-  -> [ (ExtractionFile "ocaml" $o $f ($LIST $l)) ]
+     [ "Extraction" stringarg($f) ne_qualidarg_list($l) "." ] 
+  -> [ (ExtractionFile "ocaml" $f ($LIST $l)) ]
 | haskell_extr_file
-     [ "Haskell" "Extraction" stringarg($f) options($o) 
-       ne_qualidarg_list($l) "." ] 
-  -> [ (ExtractionFile "haskell" $o $f ($LIST $l)) ]
+     [ "Haskell" "Extraction" stringarg($f) ne_qualidarg_list($l) "." ] 
+  -> [ (ExtractionFile "haskell" $f ($LIST $l)) ]
 
 (* Modular extraction (one Coq module = one ML module) *)
 | extr_module 
-     [ "Extraction" "Module" options($o) identarg($m) "." ]
-  -> [ (ExtractionModule "ocaml" $o $m) ]
+     [ "Extraction" "Module" identarg($m) "." ]
+  -> [ (ExtractionModule "ocaml" $m) ]
 | haskell_extr_module 
-     [ "Haskell" "Extraction" "Module" options($o) identarg($m) "." ]
-  -> [ (ExtractionModule "haskell" $o $m) ]
+     [ "Haskell" "Extraction" "Module" identarg($m) "." ]
+  -> [ (ExtractionModule "haskell" $m) ]
+
+(* Custum inlining directives *)
+| inline_constant
+     [ "Extraction" "Inline" ne_qualidarg_list($l) "." ] 
+  -> [ (ExtractionInline ($LIST $l)) ]
+     
+| no_inline_constant 
+     [ "Extraction" "NoInline" ne_qualidarg_list($l) "." ] 
+  -> [ (ExtractionNoInline ($LIST $l)) ]
 
 (* Overriding of a Coq object by an ML one *)
 | extract_constant 
      [ "Extract" "Constant" qualidarg($x) "=>" idorstring($y) "." ]
-  -> [ (EXTRACT_CONSTANT $x $y) ]
+  -> [ (ExtractConstant $x $y) ]
 
 | extract_inlined_constant 
      [ "Extract" "Inlined" "Constant" qualidarg($x) 
       "=>" idorstring($y) "." ]
-  -> [ (EXTRACT_INLINED_CONSTANT $x $y) ]
+  -> [ (ExtractInlinedConstant $x $y) ]
 
 | extract_inductive 
      [ "Extract" "Inductive" qualidarg($x) "=>" mindnames($y) "."]
-  -> [ (EXTRACT_INDUCTIVE $x $y) ]
+  -> [ (ExtractInductive $x $y) ]
 
 (* Utility entries *)
 with mindnames : ast :=
@@ -57,9 +65,4 @@ with idorstring_list: ast list :=
 with idorstring : ast :=
   ids_ident  [ identarg($id) ] -> [ $id ]
 | ids_string [ stringarg($s) ] -> [ $s ]
-
-with options : ast :=
-| ext_opt_noopt [ "[" "noopt" "]" ] -> [ (VERNACARGLIST "noopt") ]
-| ext_op_expand [ "[" "expand" ne_qualidarg_list($l) "]" ] -> 
-                [ (VERNACARGLIST "expand" ($LIST $l)) ]
-| ext_opt_none  [ ] -> [ (VERNACARGLIST "nooption") ].
+.

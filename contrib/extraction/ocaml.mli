@@ -43,6 +43,6 @@ module Make : functor(P : Mlpp_param) -> Mlpp
 
 val current_module : Names.identifier option ref
 val extract_to_file : 
-  string -> extraction_params -> ml_decl list -> global_reference list -> unit
+  string -> extraction_params -> ml_decl list -> unit
 
 

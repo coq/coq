@@ -9,14 +9,12 @@
 (*i $Id$ i*)
 
 open Pp
-open Options
 open Names
 open Term
 open Declarations
-open Libobject
-open Lib
 open Util
 open Miniml
+open Table
 
 (*s Dummy names. *)
 
@@ -218,12 +216,10 @@ let check_identity_case br =
 	  check_list (List.length l) l'
       | _ -> raise Impossible
   in 
-  if br=[||] then raise Impossible;
   Array.iter check_one_branch br
 
 
 let check_constant_case br = 
-  if br = [||] then raise Impossible; 
   let (r,l,t) = br.(0) in
   let n = List.length l in 
   if occurs_itvl 1 n t then raise Impossible; 
@@ -234,7 +230,19 @@ let check_constant_case br =
     if (occurs_itvl 1 n t) || (cst <> (ml_lift (-n) t)) 
     then raise Impossible
   done; cst
-      
+
+
+let all_constr br = 
+  try 
+    Array.iter 
+      (fun (_,_,t)-> 
+	 match t with 
+	   | MLcons _ -> () 
+	   | _ -> raise Impossible) 
+      br;
+    true
+  with Impossible -> false
+  
 
 let rec betaiota = function
   | MLapp (f, []) ->
@@ -261,26 +269,37 @@ let rec betaiota = function
       	       	 (fun (n,l,t) -> 
 		    let k = List.length l in
 		    let a'' = List.map (ml_lift k) a' in
-      	       	    (n, l, betaiota (MLapp (t,a'')))) 
+      	       	      (n, l, betaiota (MLapp (t,a'')))) 
 		 br 
-	     in
-      	     betaiota (MLcase (e,br'))
+	     in betaiota (MLcase (e,br'))
 	 | _ ->
 	     MLapp (f',a'))
+  | MLcase (e,[||]) ->
+      MLexn "Empty inductive"
   | MLcase (e,br) ->
       (match betaiota e with
-	 (* iota redex *)
-	 | MLcons (r,a) ->
-	     let j = constructor_index r in
-	     let (_,ids,c) = br.(j) in
+	   (* iota redex *)
+	 | MLcons (r,a) ->  
+	     let (_,ids,c) = br.(constructor_index r) in
 	     let c' = List.fold_right (fun id t -> MLlam (id,t)) ids c in
 	     betaiota (MLapp (c',a))
+	 | MLcase(e',br') when (all_constr br') ->
+	     let new_br= 
+	       Array.map 
+		 (function 
+		    | (n, i, MLcons (r,a))-> 
+			let (_,ids,c) = br.(constructor_index r) in
+			let c = ml_lift (List.length i) c in 
+			let c' = List.fold_right (fun id t -> MLlam (id,t)) ids c in
+			(n,i,betaiota (MLapp (c',a)))
+		    | _ -> assert false) br'
+	     in MLcase(e', new_br)
 	 | e' -> 
 	     let br' = Array.map (fun (n,l,t) -> (n,l,betaiota t)) br in 
-	     try check_identity_case br'; e' 
-	     with Impossible -> 
-	       try check_constant_case br' 
-	       with Impossible -> MLcase (e', br'))
+		 try check_identity_case br'; e' 
+		 with Impossible -> 
+		   try check_constant_case br' 
+		   with Impossible -> MLcase (e', br'))
   | MLletin(_,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
       (* expansion of a letin in special cases *)
       betaiota (ml_subst c e)
@@ -289,22 +308,11 @@ let rec betaiota = function
     
 let normalize a = betaiota (merge_app a)
 
+let optional_normalize a = a (* TODO *)
+
 let normalize_decl = function
  | Dglob (id, a) -> Dglob (id, normalize a)
  | d -> d
-
-(*s Extraction parameters *)
-
-module Refset = 
-  Set.Make(struct type t = global_reference let compare = compare end)
-
-type extraction_params = {
-  modular : bool;       (* modular extraction *)
-  module_name : string; (* module name if [modular] *)
-  optimization : bool;  (* we need optimization *)
-  to_keep : Refset.t;   (* globals to keep *)
-  to_expand : Refset.t; (* globals to expand *)
-}
 
 (*s Utility functions used for the decision of expansion *)
 
@@ -344,7 +352,7 @@ exception Toplevel
 
 let lift n l = List.map ((+) n) l
 
-let pop n l = List.map (fun x -> if x-n<0 then raise Toplevel else x-n) l 
+let pop n l = List.map (fun x -> if x<=n then raise Toplevel else x-n) l 
 
 (* This function returns a list of de Bruijn indices of non-strict variables,
    or raises [Toplevel] if it has an internal non-strict variable. 
@@ -361,10 +369,11 @@ let rec non_stricts add cand = function
       pop 1 (non_stricts add cand t)
   | MLrel n -> 
       List.filter ((<>) n) cand  
-(*i old particular case 
   | MLapp (MLrel n, _) -> 
-      List.filter ((<>) n) cand  
-	(* In [(x y)] we say that only x is strict. (WHY?) *) i*)
+      List.filter ((<>) n) cand
+	(* In [(x y)] we say that only x is strict. Cf [sig_rec]. 
+	   We may gain something if x is replaced by a function like
+	   a projection *)
   | MLapp (t,l)-> 
       let cand = non_stricts false cand t in 
       List.fold_left (non_stricts false) cand l 
@@ -412,30 +421,31 @@ let is_not_strict t =
    If we could expand [t] (the user said nothing special), 
    should we expand ? 
    
-   We don't expand fixpoints, but always inductive constructors.
-   Last case of expansion is a term not to big with at least one 
-   non-strict variable (i.e. a variable that may not be evaluated). *)
+   We don't expand fixpoints, but always inductive constructors
+   and small terms.
+   Last case of expansion is a term with at least one non-strict 
+   variable (i.e. a variable that may not be evaluated). *)
 
 let expansion_test t = 
   (not (is_fix t))
   &&
-  ((is_constr t) 
-   ||
-   (ml_size t < 10 && is_not_strict t))
+  ((is_constr t) ||
+   (ml_size t < 3) ||
+   ((ml_size t < 12) && (is_not_strict t)))
 
 (* If the user doesn't say he wants to keep [t], we expand in two cases:
    \begin{itemize}
    \item the user explicitly requests it 
    \item [expansion_test] answers that the expansion is a good idea, and 
-   we are free to act (no [noopt] given as argument)
+   we are free to act (AutoInline is set)
    \end{itemize} *)
 
-let expand prm r t = 
-  (not (Refset.mem r prm.to_keep)) (* the user DOES want to keep it *)
+let expand strict_lang r t = 
+  (not (to_keep r)) (* the user DOES want to keep it *)
   &&
-  (Refset.mem r prm.to_expand (* the user DOES want to expand it *) 
+  ((to_inline r) (* the user DOES want to expand it *) 
    || 
-   (prm.optimization && expansion_test t)) 
+   (auto_inline () && strict_lang && expansion_test t)) 
 
 (*s Optimization *)
 
@@ -450,178 +460,47 @@ let subst_glob_decl r m = function
   | Dglob(r',t') -> Dglob(r', subst_glob_ast r m t')
   | d -> d
 
-let warning_expansion r = 
+let warning_expansion r t= 
   wARN (hOV 0 [< 'sTR "The constant"; 'sPC;
-		 Printer.pr_global r; 'sPC; 'sTR "is expanded." >])
+		 Printer.pr_global r; 
+    'sTR (" of size "^ (string_of_int (ml_size t))^" "); 
+    'sPC; 'sTR "is expanded." >])
+
+type extraction_params =  
+  { strict : bool ; 
+    modular : bool ; 
+    module_name : string ; 
+    to_appear : global_reference list }
+
+let print_ml_decl prm (r,_) = 
+  not (to_inline r) || List.mem r prm.to_appear
+
+let add_ml_decls prm decls = 
+  let l = sorted_ml_extractions () in 
+  let l = List.filter (print_ml_decl prm) l in 
+  let l = List.map (fun (r,s)-> Dcustom (r,s)) l in 
+  (List.rev l @ decls)
 
 let rec optimize prm = function
   | [] -> 
       []
-  | (Dtype _ | Dabbrev _) as d :: l -> 
+  | (Dtype _ | Dabbrev _ | Dcustom _) as d :: l -> 
       d :: (optimize prm l)
   | Dglob (r, MLprop) as d :: l ->
-      if Refset.mem r prm.to_keep then
+      if List.mem r prm.to_appear then
 	d :: (optimize prm l) 
       else optimize prm l
-  (*i
-  | Dglob(id,(MLexn _ as t)) as d :: l ->
-      let l' = List.map (expand (id,t)) l in optimize prm l'
-  i*)	    
   | Dglob (r,t) :: l ->
       let t = normalize t in
-      let b = expand prm r t in
+      let t = if optim() then optional_normalize t else t in 
+      let b = expand prm.strict r t in
       let l = if b then 
 	begin
-	  if_verbose warning_expansion r;
+	  (*i if_verbose i*) warning_expansion r t;
 	  List.map (subst_glob_decl r t) l
 	end
       else l in 
-      if prm.modular || l = [] || not b then 
+      if prm.modular || List.mem r prm.to_appear || not b then 
 	Dglob (r,t) :: (optimize prm l)
       else
 	optimize prm l
-
-(*s Table for direct ML extractions. *)
-
-module Refmap = 
-  Map.Make(struct type t = global_reference let compare = compare end)
-
-let empty_extractions = (Refmap.empty, Refset.empty)
-
-let extractions = ref empty_extractions
-
-let ml_extractions () = snd !extractions
-
-let add_ml_extraction r s = 
-  let (map,set) = !extractions in
-  extractions := (Refmap.add r s map, Refset.add r set)
-
-let is_ml_extraction r = Refset.mem r (snd !extractions)
-
-let find_ml_extraction r = Refmap.find r (fst !extractions)
-
-(*s Registration of operations for rollback. *)
-
-let (in_ml_extraction,_) = 
-  declare_object ("ML extractions",
-		  { cache_function = (fun (_,(r,s)) -> add_ml_extraction r s);
-		    load_function = (fun (_,(r,s)) -> add_ml_extraction r s);
-		    open_function = (fun _ -> ());
-		    export_function = (fun x -> Some x) })
-
-(*s Registration of the table for rollback. *)
-
-open Summary
-
-let _ = declare_summary "ML extractions"
-	  { freeze_function = (fun () -> !extractions);
-	    unfreeze_function = ((:=) extractions);
-	    init_function = (fun () -> extractions := empty_extractions);
-	    survive_section = true }
-
-(*s List of Extract Constant directives *)
-
-let cst_extractions = ref ([],[])
-
-let ml_cst_extractions () = !cst_extractions
-
-let add_ml_cst_extraction r s = 
-  let l,l' = !cst_extractions in 
-  cst_extractions := r::l,s::l'
-
-let (in_ml_cst_extraction,_) = 
-  declare_object ("ML constants extractions",
-		  { cache_function = (fun (_,(r,s)) -> add_ml_cst_extraction r s);
-		    load_function = (fun (_,(r,s)) -> add_ml_cst_extraction r s);
-		    open_function = (fun _ -> ());
-		    export_function = (fun x -> Some x) })
-
-let _ = declare_summary "ML constants extractions"
-	  { freeze_function = (fun () -> !cst_extractions);
-	    unfreeze_function = ((:=) cst_extractions);
-	    init_function = (fun () -> cst_extractions := [],[]);
-	    survive_section = true }
-
-(*s Grammar entries. *)
-
-open Vernacinterp
-
-let string_of_varg = function
-  | VARG_IDENTIFIER id -> string_of_id id
-  | VARG_STRING s -> s
-  | _ -> assert false
-
-let no_such_reference q =
-  errorlabstrm "reference_of_varg" 
-    [< Nametab.pr_qualid q; 'sTR ": no such reference" >]
-
-let reference_of_varg = function
-  | VARG_QUALID q -> 
-      (try Nametab.locate q with Not_found -> no_such_reference q)
-  | _ -> assert false
-
-(*s \verb!Extract Constant qualid => string! *)
-
-let extract_constant r s = match r with
-  | ConstRef sp -> 
-      let rs = string_of_id (basename sp) in
-      add_anonymous_leaf (in_ml_cst_extraction (r,s));
-      add_anonymous_leaf (in_ml_extraction (r,rs))
-  | _ -> 
-      errorlabstrm "extract_constant"
-	[< Printer.pr_global r; 'sPC; 'sTR "is not a constant" >]
-
-let _ = 
-  vinterp_add "EXTRACT_CONSTANT"
-    (function 
-       | [id; s] -> 
-	   (fun () -> 
-	      extract_constant 
-		(reference_of_varg id)
-		(string_of_varg s))
-       | _ -> assert false)
-
-(*s \verb!Extract Inlined Constant qualid => string! *)
-
-let extract_inlined_constant r s = match r with
-  | ConstRef _ -> 
-      add_anonymous_leaf (in_ml_extraction (r,s))
-  | _ -> 
-      errorlabstrm "extract_constant"
-	[< Printer.pr_global r; 'sPC; 'sTR "is not a constant" >]
-
-let _ = 
-  vinterp_add "EXTRACT_INLINED_CONSTANT"
-    (function 
-       | [id; s] -> 
-	   (fun () -> 
-	      extract_inlined_constant 
-		(reference_of_varg id) 
-		(string_of_varg s))
-       | _ -> assert false)
-
-(*s \verb!Extract Inductive qualid => string [ string ... string ]! *)
-
-let extract_inductive r (id2,l2) = match r with
-  | IndRef ((sp,i) as ip) ->
-      let mib = Global.lookup_mind sp in
-      let n = Array.length mib.mind_packets.(i).mind_consnames in
-      if n <> List.length l2 then
-	error "not the right number of constructors";
-      add_anonymous_leaf (in_ml_extraction (r,id2));
-      list_iter_i
-	(fun j s -> 
-	   add_anonymous_leaf 
-	     (in_ml_extraction (ConstructRef (ip,succ j),s))) l2
-  | _ -> 
-      errorlabstrm "extract_inductive"
-	[< Printer.pr_global r; 'sPC; 'sTR "is not an inductive type" >]
-
-let _ = 
-  vinterp_add "EXTRACT_INDUCTIVE"
-    (function 
-       | [q1; VARG_VARGLIST (id2 :: l2)] ->
-	   (fun () -> 
-	      extract_inductive (reference_of_varg q1) 
-		(string_of_varg id2, List.map string_of_varg l2))
-       | _ -> assert false)

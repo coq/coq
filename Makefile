@@ -197,7 +197,9 @@ XMLCMO=contrib/xml/xml.cmo \
 
 FOURIERCMO=contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo 	
 
-EXTRACTIONCMO=contrib/extraction/mlutil.cmo contrib/extraction/ocaml.cmo \
+EXTRACTIONCMO=contrib/extraction/table.cmo\
+	      contrib/extraction/mlutil.cmo\
+	      contrib/extraction/ocaml.cmo \
 	      contrib/extraction/haskell.cmo \
 	      contrib/extraction/extraction.cmo \
 	      contrib/extraction/extract_env.cmo

@@ -22,4 +22,4 @@ let rec int_to_Z i =
 	else 
 	  Fast_integer.NEG (int_to_positive (-i))
 
-let my_ceil x = int_to_Z (int_of_float (ceil x))
+let my_ceil x = int_to_Z (succ (int_of_float (floor x)))

@@ -15,7 +15,9 @@ open Term
 open Lib
 open Extraction
 open Miniml
+open Table
 open Mlutil
+open Vernacinterp
 
 (*s Recursive computation of the global references to extract. 
     We use a set of functions visiting the extracted objects in
@@ -85,6 +87,7 @@ and visit_decl eenv = function
       visit_type eenv t
   | Dglob (_,a) ->
       visit_ast eenv a
+  | Dcustom _ -> ()
 
 (*s Recursive extracted environment for a list of reference: we just
     iterate [visit_reference] on the list, starting with an empty
@@ -110,17 +113,16 @@ end
 
 module Pp = Ocaml.Make(ToplevelParams)
 
-open Vernacinterp
-
 let refs_set_of_list l = List.fold_right Refset.add l Refset.empty 
 
 let decl_of_refs refs =
-  let params = 
-    { modular = false ; module_name = "" ; 
-    optimization = true ; to_keep = refs_set_of_list refs;
-    to_expand = Refset.empty } in
-  let rl = List.map extract_declaration (extract_env refs) in
-  optimize params rl
+  List.map extract_declaration (extract_env refs) 
+
+let local_optimize refs = 
+  let prm = 
+    { strict = true ; modular = false ; 
+      module_name = "" ; to_appear = refs} in
+  optimize prm (decl_of_refs refs)
 
 let print_user_extract r = 
   mSGNL [< 'sTR "User defined extraction:"; 'sPC; 'sTR (find_ml_extraction r) ; 'fNL>]
@@ -129,7 +131,7 @@ let extract_reference r =
   if is_ml_extraction r then
     print_user_extract r 
   else
-    mSGNL (Pp.pp_decl (list_last (decl_of_refs [r])))
+    mSGNL (Pp.pp_decl (list_last (local_optimize [r])))
 
 let _ = 
   vinterp_add "Extraction"
@@ -153,17 +155,6 @@ let _ =
     \verb!Recursive Extraction! [qualid1] ... [qualidn]. We use [extract_env]
     to get the saturated environment to extract. *)
 
-let no_such_reference q =
-  errorlabstrm "reference_of_varg" 
-    [< Nametab.pr_qualid q; 'sTR ": no such reference" >]
-
-let reference_of_varg = function
-  | VARG_QUALID q -> 
-      (try Nametab.locate q with Not_found -> no_such_reference q)
-  | _ -> assert false
-
-let refs_of_vargl = List.map reference_of_varg
-
 let _ = 
   vinterp_add "ExtractionRec"
     (fun vl () ->
@@ -181,22 +172,6 @@ let strict_language = function
   | "haskell" -> false
   | _ -> assert false
 
-let interp_options lang keep modular m = function
-  | [VARG_STRING "noopt"] ->
-      { optimization = false; modular = modular; module_name = m;
-	to_keep = refs_set_of_list keep; to_expand = Refset.empty }
-  | [VARG_STRING "nooption"] ->
-      { optimization = strict_language lang; 
-	modular = modular; module_name = m;
-	to_keep = refs_set_of_list keep; to_expand = Refset.empty }
-  | VARG_STRING "expand" :: l ->
-      { optimization = strict_language lang; 
-	modular = modular; module_name = m;
-	to_keep = refs_set_of_list keep; 
-	to_expand = refs_set_of_list (refs_of_vargl l) }
-  | _ -> 
-      assert false
-
 (*s Extraction to a file (necessarily recursive). 
     The vernacular command is \verb!Extraction "file"! [qualid1] ... [qualidn].
     We just call [extract_to_file] on the saturated environment. *)
@@ -212,15 +187,14 @@ let _ =
        | VARG_STRING lang :: VARG_VARGLIST o :: VARG_STRING f :: vl ->
 	   (fun () -> 
 	      let refs = refs_of_vargl vl in
-	      let prm = interp_options lang refs false "" o in
+	      let prm = {strict=strict_language lang;
+			 modular=false;
+			 module_name="";
+			 to_appear= refs} in 
 	      let decls = decl_of_refs refs in 
+	      let decls = add_ml_decls prm decls in 
 	      let decls = optimize prm decls in
-	      let ml_decls = 
-		list_subtract 
-		  (List.filter is_ml_extraction refs)
-		  (fst (ml_cst_extractions ()))
-	      in
-	      extract_to_file lang f prm decls ml_decls)
+	      extract_to_file lang f prm decls)
        | _ -> assert false)
 
 (*s Extraction of a module. The vernacular command is \verb!Extraction Module!
@@ -246,6 +220,7 @@ let decl_mem rl = function
   | Dabbrev (r,_,_) -> List.mem r rl 
   | Dtype ((_,r,_)::_, _) -> List.mem r rl
   | Dtype ([],_) -> false
+  | Dcustom (r,s) ->  List.mem r rl 
 
 let file_suffix = function
   | "ocaml" -> ".ml"
@@ -260,9 +235,13 @@ let _ =
 	      Ocaml.current_module := Some m;
 	      let ms = Names.string_of_id m in
 	      let f = (String.uncapitalize ms) ^ (file_suffix lang) in
-	      let prm = interp_options lang [] true ms o in
+	      let prm = {strict=strict_language lang;
+			 modular=true;
+			 module_name= Names.string_of_id m;
+			 to_appear= []} in 
 	      let rl = extract_module m in 
 	      let decls = optimize prm (decl_of_refs rl) in
+	      let decls = add_ml_decls prm decls in 
 	      let decls = List.filter (decl_mem rl) decls in
-	      extract_to_file lang f prm decls [])
+	      extract_to_file lang f prm decls)
        | _ -> assert false)
