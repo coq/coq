@@ -268,7 +268,10 @@ let print_term inner_types l env csr =
       | InnerSet    -> ("sort","Set")::l'
       | InnerType   -> ("sort","Type")::l'
    in
-   (* kind_of_term helps doing pattern matching hiding the lower level of *)
+   let add_type_attribute l' =
+    ("type", string_of_sort (R.get_sort_of env (Evd.empty) cstr))::l'
+   in
+    (* kind_of_term helps doing pattern matching hiding the lower level of *)
    (* coq coding of terms (the one of the logical framework)              *)
    match T.kind_of_term cstr with
      T.IsRel n  ->
@@ -320,7 +323,7 @@ let print_term inner_types l env csr =
 )
    | T.IsProd (N.Name _ as nid, t1, t2) ->
       let nid' = N.next_name_away nid (names_to_ids l) in
-       X.xml_nempty "PROD" ["id", next_id]
+       X.xml_nempty "PROD" (add_type_attribute ["id", next_id])
 (force
         [< X.xml_nempty "source" [] (term_display idradix false l env t1) ;
            X.xml_nempty "target"
@@ -336,7 +339,7 @@ let print_term inner_types l env csr =
         >]
 )
    | T.IsProd (N.Anonymous as nid, t1, t2) ->
-      X.xml_nempty "PROD" ["id", next_id]
+      X.xml_nempty "PROD" (add_type_attribute ["id", next_id])
 (force
        [< X.xml_nempty "source" [] (term_display idradix false l env t1) ;
           X.xml_nempty "target" []
