@@ -246,8 +246,8 @@ Section FSetDefs.
       | (M2 m m') => (M2 unit (MapDom m) (MapDom m'))
     end.
 
-  Lemma MapDom_semantics_1 : (m:(Map A)) (a:ad) (y:A) (MapGet A m a)=(SOME A y) ->
-      (in_FSet a (MapDom m))=true.
+  Lemma MapDom_semantics_1 : (m:(Map A)) (a:ad) 
+      (y:A) (MapGet A m a)=(SOME A y) -> (in_FSet a (MapDom m))=true.
   Proof.
     Induction m. Intros. Discriminate H.
     Unfold MapDom. Unfold in_FSet. Unfold in_dom. Unfold MapGet. Intros a y a0 y0.
@@ -259,8 +259,8 @@ Section FSetDefs.
     Unfold in_FSet in_dom in H. Intro. Apply H with y:=y. Assumption.
   Qed.
 
-  Lemma MapDom_semantics_2 : (m:(Map A)) (a:ad) (in_FSet a (MapDom m))=true ->
-      {y:A | (MapGet A m a)=(SOME A y)}.
+  Lemma MapDom_semantics_2 : (m:(Map A)) (a:ad) 
+      (in_FSet a (MapDom m))=true -> {y:A | (MapGet A m a)=(SOME A y)}.
   Proof.
     Induction m. Intros. Discriminate H.
     Unfold MapDom. Unfold in_FSet. Unfold in_dom. Unfold MapGet. Intros a y a0. Case (ad_eq a a0).
@@ -272,16 +272,16 @@ Section FSetDefs.
     Unfold in_FSet in_dom in H. Intro. Apply H. Assumption.
   Qed.
 
-  Lemma MapDom_semantics_3 : (m:(Map A)) (a:ad) (MapGet A m a)=(NONE A) ->
-      (in_FSet a (MapDom m))=false.
+  Lemma MapDom_semantics_3 : (m:(Map A)) (a:ad) 
+      (MapGet A m a)=(NONE A) -> (in_FSet a (MapDom m))=false.
   Proof.
     Intros. Elim (sumbool_of_bool (in_FSet a (MapDom m))). Intro H0.
     Elim (MapDom_semantics_2 m a H0). Intros y H1. Rewrite H in H1. Discriminate H1.
     Trivial.
   Qed.
 
-  Lemma MapDom_semantics_4 : (m:(Map A)) (a:ad) (in_FSet a (MapDom m))=false ->
-      (MapGet A m a)=(NONE A).
+  Lemma MapDom_semantics_4 : (m:(Map A)) (a:ad) 
+      (in_FSet a (MapDom m))=false -> (MapGet A m a)=(NONE A).
   Proof.
     Intros. Elim (option_sum A (MapGet A m a)). Intro H0. Elim H0. Intros y H1.
     Rewrite (MapDom_semantics_1 m a y H1) in H. Discriminate H.

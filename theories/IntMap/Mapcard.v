@@ -297,7 +297,7 @@ Section MapCard.
   Qed.
 
   Lemma MapCard_Dom_Put_behind : (m:(Map A)) (a:ad) (y:A)
-    (MapDom A (MapPut_behind A m a y))=(MapDom A (MapPut A m a y)).
+      (MapDom A (MapPut_behind A m a y))=(MapDom A (MapPut A m a y)).
   Proof.
     Induction m. Trivial.
     Intros a y a0 y0. Simpl. Elim (ad_sum (ad_xor a a0)). Intro H. Elim H.
