@@ -12,7 +12,7 @@ Require Export Rderiv.
 Require Classical.
 Require Compare.
 
-(* classical is needed for Un_cv_crit *)
+(* classical is needed for [Un_cv_crit] *)
 (*********************************************************)
 (*           Definition of sequence and properties       *)
 (*                                                       *)
@@ -84,7 +84,7 @@ Unfold ge in H0;Generalize (H0 (S n0) H1 (lt_le_S n0 n1 y));Intro;
 Save.
 
 
-(* classical is needed: not_all_not_ex *)
+(* classical is needed: [not_all_not_ex] *)
 (*********)
 Lemma Un_cv_crit:Un_growing->(bound EUn)->(ExT [l:R] (Un_cv l)).
 Unfold Un_growing Un_cv;Intros;
