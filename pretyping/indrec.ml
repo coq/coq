@@ -53,7 +53,7 @@ let mis_make_case_com depopt env sigma (ind,mib,mip) kind =
 	 (NotAllowedCaseAnalysis
 	    (dep,(new_sort_in_family kind),ind)));
 
-  let nbargsprod = mip.mind_nrealargs + 1 in
+  let ndepar = mip.mind_nrealargs + 1 in
 
   (* Pas génant car env ne sert pas à typer mais juste à renommer les Anonym *)
   (* mais pas très joli ... (mais manque get_sort_of à ce niveau) *)
@@ -65,22 +65,28 @@ let mis_make_case_com depopt env sigma (ind,mib,mip) kind =
   let rec add_branch env k = 
     if k = Array.length mip.mind_consnames then
       let nbprod = k+1 in
-      let indf = make_ind_family(ind,extended_rel_list nbprod lnamespar) in
-      let lnamesar,_ = get_arity env indf in
+
+      let indf' = lift_inductive_family nbprod indf in
+      let arsign,_ = get_arity env indf' in
+      let depind = build_dependent_inductive env indf' in
+      let deparsign = (Anonymous,None,depind)::arsign in
+
       let ci = make_default_case_info env RegularStyle ind in
-      let depind = build_dependent_inductive env indf in
-      let deparsign = (Anonymous,None,depind)::lnamesar in
-      let p =
+      let pbody =
+        appvect
+          (mkRel (ndepar + nbprod),
+           if dep then extended_rel_vect 0 deparsign
+           else extended_rel_vect 1 arsign) in
+      let p = 
+	it_mkLambda_or_LetIn_name env'
+	  ((if dep then mkLambda_name env' else mkLambda)
+	   (Anonymous,depind,pbody))
+          arsign
+      in
       it_mkLambda_or_LetIn_name env'
-          (appvect
-            (mkRel ((if dep then nbargsprod else mip.mind_nrealargs) + nbprod),
-            if dep then extended_rel_vect 0 deparsign
-            else extended_rel_vect 0 lnamesar))
-          (if dep then deparsign else lnamesar) in
-      it_mkLambda_or_LetIn_name env'
-       	(mkCase (ci, lift nbargsprod p,
+       	(mkCase (ci, lift ndepar p,
 		     mkRel 1,
-		     rel_vect nbargsprod k))
+		     rel_vect ndepar k))
        	deparsign
     else
       let cs = lift_constructor (k+1) constrs.(k) in
@@ -269,56 +275,56 @@ let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
                 P1..P_nrec f1..f_nbconstruct *)
 	    let args = extended_rel_list (nrec+nbconstruct) lnamespar in
 	    let indf = make_ind_family(indi,args) in
-	    let lnames,_ = get_arity env indf in
+
+	    let arsign,_ = get_arity env indf in
+	    let depind = build_dependent_inductive env indf in
+	    let deparsign = (Anonymous,None,depind)::arsign in
 
 	    let nar = mipi.mind_nrealargs in
-	    let dect = nar+nrec+nbconstruct in
+	    let ndepar = nar + 1 in
+	    let dect = ndepar+nrec+nbconstruct in
 
 	    let branches = 
               (* constructors in context of the Cases expr, i.e.
                  P1..P_nrec f1..f_nbconstruct F_1..F_nrec a_1..a_nar x:I *)
-	      let args' = extended_rel_list (dect+nrec+1) lnamespar in
+	      let args' = extended_rel_list (dect+nrec) lnamespar in
               let indf' = make_ind_family(indi,args') in
 	      let constrs = get_constructors env indf' in
-	      let vecfi = rel_vect (dect+1-i-nctyi) nctyi in
+	      let vecfi = rel_vect (dect-i-nctyi) nctyi in
 	      array_map3
-		(make_rec_branch_arg env sigma (nparams,depPvec,nar+1))
+		(make_rec_branch_arg env sigma (nparams,depPvec,ndepar))
                 vecfi constrs (dest_subterms recargsvec.(tyi)) in
+
 	    let j = (match depPvec.(tyi) with 
 		       | Some (_,c) when isRel c -> destRel c 
 		       | _ -> assert false) in
+	    let pargs =
+	      if dep then extended_rel_vect 0 deparsign
+	      else extended_rel_vect 1 arsign in
+	    let concl = appvect (mkRel (nbconstruct+ndepar+j),pargs) in
+
+	    (* body of i-th component of the mutual fixpoint *)
 	    let deftyi = 
 	      let ci = make_default_case_info env RegularStyle indi in
-	      let indf' = lift_inductive_family nrec indf in
-	      let depind = build_dependent_inductive env indf' in
-	      let lnames' = Termops.lift_rel_context nrec lnames in
 	      let p =
-		let arsign =
-		  if dep then (Anonymous,None,depind)::lnames' else lnames' in
-		it_mkLambda_or_LetIn_name env
-		  (appvect
-		    (mkRel ((if dep then 1 else 0) + dect + j),
-		    extended_rel_vect 0 arsign)) arsign
+		it_mkLambda_or_LetIn_name env 
+		  ((if dep then mkLambda_name env else mkLambda)
+		   (Anonymous,depind,concl))
+		  arsign
 	      in
 	      it_mkLambda_or_LetIn_name env
-		(lambda_create env
-		  (depind,mkCase (ci, lift (nar+1) p, mkRel 1, branches)))
-		lnames'
+		(mkCase (ci, lift (nrec+ndepar) p, 
+		             mkRel 1,
+			     branches))
+		(lift_rel_context nrec deparsign)
 	    in
-	    let typtyi = 
-	      let ind = build_dependent_inductive env indf in
+
+	    (* type of i-th component of the mutual fixpoint *)
+	    let typtyi =
 	      it_mkProd_or_LetIn_name env
-		(prod_create env
-		   (ind,
-		    (if dep then 
-		       let ext_lnames = (Anonymous,None,ind)::lnames in
-		       let args = extended_rel_list 0 ext_lnames in
-		       applist (mkRel (nbconstruct+nar+j+1), args)
-		     else
-		       let args = extended_rel_list 1 lnames in
-		       applist (mkRel (nbconstruct+nar+j+1), args))))
-          	lnames
-	    in 
+		concl
+		deparsign
+	    in
 	    mrec (i+nctyi) (nar::ln) (typtyi::ltyp) (deftyi::ldef) rest
         | [] -> 
 	    let fixn = Array.of_list (List.rev ln) in
