@@ -97,7 +97,10 @@ let print_params env params =
   if List.length params = 0 then 
     (mt ()) 
   else
-    (str "[" ++ pr_rel_context env params ++ str "]" ++ brk(1,2))
+    if !Options.v7 then
+      (str "[" ++ pr_rel_context env params ++ str "]" ++ brk(1,2))
+    else 
+      (pr_rel_context env params ++ brk(1,2))
 
 let rec contract_types = function
   | [] -> []

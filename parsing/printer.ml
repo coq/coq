@@ -179,11 +179,16 @@ let pr_named_context_of env =
 let pr_rel_context env rel_context =
   let rec prec env = function
     | [] -> (mt ()) 
-    | [b] -> pr_rel_decl env b
+    | [b] -> 
+	if !Options.v7 then pr_rel_decl env b
+	else str "(" ++ pr_rel_decl env b ++ str")"
     | b::rest ->
         let pb = pr_rel_decl env b in
         let penvtl = prec (push_rel b env) rest in
-        (pb ++ str";" ++ spc () ++ penvtl)
+	if !Options.v7 then
+          (pb ++ str";" ++ spc () ++ penvtl)
+	else 
+          (str "(" ++ pb ++ str")" ++ spc () ++ penvtl)
   in 
   prec env (List.rev rel_context)
 
