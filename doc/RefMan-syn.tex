@@ -104,7 +104,7 @@ Notation "A /\ B" (and A B) (at level 6, right associativity).
 Notation "A \/ B" (or A B)  (at level 7, right associativity).
 \end{coq_example*}
 
-By default, no associativity is assigned to the notation and the
+By default, the notation is considered non associative and its
 precedence level is 1. The list of level already assigned
 is on figure~\ref{coq-symbols}.
 
@@ -319,7 +319,7 @@ and it is equivalent to
 where {\tt x} and {\tt y} are fresh names distinct from {\qualid}. Here is an example.
 
 \begin{coq_example*}
-Infix "/\" and (at level 6, right associativity).
+Infix "/\\" and (at level 6, right associativity).
 \end{coq_example*}
 
 \section{Symbolic interpretation scopes}
