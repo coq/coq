@@ -261,7 +261,6 @@ let rec ast_of_raw = function
       let nvar' = function Anonymous -> nvar wildcard | Name id -> nvar id in
       let rec f l = function
         | RLambda (_,na,RHole _,c) -> f (nvar' na :: l) c
-        | RLetIn (_,na,RHole _,c) -> f (nvar' na :: l) c
         | c -> List.rev l, ast_of_raw c in
       let l,c = f [] bv in
       let eqn = ope ("EQN", [c;ope ("PATTCONSTRUCT",(nvar wildcard)::l)]) in
@@ -280,7 +279,7 @@ let rec ast_of_raw = function
 	    ::(Array.to_list (Array.map ast_of_raw bv)))
 
   | RLetTuple _ | RIf _ ->
-      error "Let tuple not supported in v7"
+      anomaly "Let tuple and If not supported in v7"
 
   | RRec (_,fk,idv,blv,tyv,bv) ->
       let alfi = Array.map ast_of_ident idv in
