@@ -157,11 +157,19 @@ let add_path dir coq_dirpath =
   else
     wARNING [< 'sTR ("Cannot open " ^ dir) >]
 
+let convert_string d =
+  try Names.id_of_string d
+  with _ -> 
+    if_verbose warning 
+      ("Directory "^d^" cannot be used as a Coq identifier (skipped)");
+    flush_all ();
+    failwith "caught"
+
 let add_rec_path dir coq_dirpath =
   let dirs = all_subdirs dir in
   if dirs <> [] then
-    let convert = List.map Names.id_of_string in
-    let dirs = List.map (fun (lp,cp) -> (lp,coq_dirpath@(convert cp))) dirs in
+    let convert_dirs (lp,cp) = (lp,coq_dirpath@(List.map convert_string cp)) in
+    let dirs = map_succeed convert_dirs dirs in
     begin
       List.iter (fun lpe -> add_ml_dir (fst lpe)) dirs;
       List.iter Library.add_load_path_entry dirs;
