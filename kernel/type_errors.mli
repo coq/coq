@@ -63,6 +63,8 @@ type type_error =
   | WrongNumargConstructor of constructor_path * int
   | WrongPredicateArity of constr * int * int
   | NeedsInversion of constr * constr
+  (* Relocation error *)
+  | GlobalNotFound of section_path
 
 exception TypeError of path_kind * env * type_error
 
