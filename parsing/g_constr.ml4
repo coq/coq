@@ -124,13 +124,9 @@ GEXTEND Gram
         c = constr; "in"; c1 = constr ->
           <:ast< (LET "SYNTH" $c ($ABSTRACT "LAMBDALIST"
 	    (BINDERS (BINDER (ISEVAR) ($LIST $b))) $c1)) >>
-      | IDENT "let"; id1 = ident ; "="; c = constr; "in"; c1 = constr -> 
+      | IDENT "let"; id1 = ident ; "="; c = opt_casted_constr;
+        "in"; c1 = constr -> 
 	  <:ast< (LETIN $c [$id1]$c1) >>
-(*
-      | IDENT "let"; id1 = IDENT ; "="; c = constr; "in"; c1 = constr -> 
-	  let id1 = Names.id_of_string id1 in
-	  <:ast< (LETIN $c [$id1]$c1) >>
-*)
       | IDENT "if"; c1 = constr; IDENT "then"; c2 = constr;
         IDENT "else"; c3 = constr ->
         <:ast< ( IF "SYNTH" $c1 $c2 $c3) >>
@@ -188,12 +184,16 @@ GEXTEND Gram
     [ [ ","; idl = ne_ident_comma_list -> idl
       | -> [] ] ]
   ;
+  opt_casted_constr:
+    [ [ c = constr;  ":"; t = constr -> <:ast< (CAST $c $t) >>
+      | c = constr -> c ] ]
+  ;
   vardecls: (* This is interpreted by Pcoq.abstract_binder *)
     [ [ id = ident; idl = ident_comma_list_tail; c = type_option ->
           <:ast< (BINDER $c $id ($LIST $idl)) >>
-      | id = ident; ":="; c = constr ->
+      | id = ident; ":="; c = opt_casted_constr ->
 	  <:ast< (LETIN $c $id) >>
-      | id = ident; "="; c = constr ->
+      | id = ident; "="; c = opt_casted_constr ->
 	  <:ast< (LETIN $c $id) >> ] ]
   ;
   ne_vardecls_list:

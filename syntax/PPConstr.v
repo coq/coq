@@ -144,8 +144,11 @@ Syntax constr
 	 [ $A:L [0 0] "->" (ARROWBOX $B) ]
 
 (* These are synonymous *)
+(* redundant
   | let [ [$x = $M]$N ] -> [ [<hov 0> "[" $x "=" $M:E "]" [0 1] $N:E ] ]
+*)
   | letin [ [$x := $A]$B ] -> [ [ <hov 0> "[" $x ":=" $A:E "]" [0 1] $B:E ] ]
+  | letincast [ [$x := $A : $C]$B ] -> [ [ <hov 0> "[" $x ":=" $A:E ":" $C:E "]" [0 1] $B:E ] ]
   ;
 
 (* Things parsed in command9 *)
