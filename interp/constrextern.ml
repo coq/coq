@@ -1409,33 +1409,6 @@ let explicitize loc inctx impl (cf,f) args =
 	let args = exprec 1 (args,impl) in
 	if args = [] then f else CApp (loc, (None, f), args)
 
-let rec skip_coercion dest_ref (f,args as app) =
-  if !Options.raw_print or !print_coercions or Options.do_translate () then app
-  else
-    try
-      match dest_ref f with
-	| Some r ->
-	    (match Classops.hide_coercion r with
-	       | Some n ->
-		   if n >= List.length args then app
-		   else (* We skip a coercion *) 
-		     let fargs = list_skipn n args in
-		     (match fargs with
-		       | [] -> assert false
-		       | [RApp(_,a,l)] -> skip_coercion dest_ref (a,l)
-		       | [a] -> (a,[])
-		       | a::l ->
-			   (* If l'<>[], it is because a class reduces to
-			      a functional type, in which case the
-			      synthesis back of the coercion is not possible
-			      without a cast... Moving coercions to 
-			      detyping will be required for a better
-			      analysis *)
-			   app)
-	       | None -> app)
-	| None -> app
-    with Not_found -> app
-
 let extern_global loc impl f =
   if impl <> [] & List.for_all is_status_implicit impl then
     CAppExpl (loc, (None, f), [])
@@ -1464,16 +1437,28 @@ let rec extern_args extern scopes env args subscopes =
 	  | scopt::subscopes -> (scopt,scopes), subscopes in
 	extern argscopes env a :: extern_args extern scopes env args subscopes
 
-let rec remove_coercions_in_application inctx = function
-  | RApp (loc,f,args) ->
-      let f,args = 
-	if inctx then
-	  skip_coercion (function RRef(_,r) -> Some r | _ -> None) (f,args)
-	else 
-	  (f,args)
-      in
-      if args = [] then f
-      else RApp (loc,f,List.map (remove_coercions_in_application true) args)
+let rec remove_coercions inctx = function
+  | RApp (loc,RRef (_,r),args) as c
+      when
+        inctx &
+        not (!Options.raw_print or !print_coercions or Options.do_translate ())
+      ->
+      (try match Classops.hide_coercion r with
+	  | Some n when n < List.length args ->
+	      (* We skip a coercion *) 
+	      let l = list_skipn n args in
+              let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
+              let (a,l) =
+                (* Recursively remove the head coercions *)
+                match remove_coercions inctx a with
+                  | RApp (_,a,l') -> a,l'@l
+                  | a -> a,l in
+              if l = [] then a
+              else
+                (* Recursively remove coercions in arguments *)
+                RApp (loc,a,List.map (remove_coercions true) l)
+	  | _ -> c
+      with Not_found -> c)
   | c -> c
 
 let rec rename_rawconstr_var id0 id1 = function
@@ -1518,7 +1503,7 @@ let rec extern inctx scopes vars r =
       scopes (Symbols.uninterp_numeral r)
   with No_match ->
 
-  let r = remove_coercions_in_application inctx r in
+  let r = remove_coercions inctx r in
 
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
@@ -1535,13 +1520,6 @@ let rec extern inctx scopes vars r =
   | RPatVar (loc,n) -> if !print_meta_as_hole then CHole loc else CPatVar (loc,n)
 
   | RApp (loc,f,args) ->
-(*
-      let (f,args) =
-	if inctx then
-	  skip_coercion (function RRef(_,r) -> Some r | _ -> None) (f,args)
-	else 
-	  (f,args) in
-*)
       (match f with
 	 | RRef (rloc,ref) ->
 	     let subscopes = Symbols.find_arguments_scope ref in
