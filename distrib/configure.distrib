@@ -11,7 +11,6 @@
 #
 
 VERSION=`sed -n -e 's/^VERSION=\(.*\)/\1/p' ../configure`
-#VERSIONSI=`sed -n -e 's/^VERSIONSI=\(.*\)/\1/p' ../configure`
 DATE=`sed -n -e 's/^DATE=\(.*\)/\1/p' ../configure`
 RELEASENUM=1
 DISTRIBDIR=`pwd`

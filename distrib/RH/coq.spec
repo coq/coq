@@ -1,12 +1,12 @@
 Name: coq
-Version: 8.0cdrom
+Version: 8.0
 Release: 1
 Summary: The Coq Proof Assistant
 Copyright: freely redistributable
 Group: Applications/Math
 Vendor: INRIA & LRI
 URL: http://coq.inria.fr
-Source: ftp://ftp.inria.fr/INRIA/coq/V8.0/coq-8.0cdrom.tar.gz
+Source: ftp://ftp.inria.fr/INRIA/coq/V8.0/coq-8.0.tar.gz
 Icon: petit-coq.gif
 
 %description

@@ -1,14 +1,14 @@
 Name: coq_ext_for_pcoq
-Version: 8.0cdrom
+Version: 8.0
 Release: 1
 Summary: The Coq Extension for Pcoq
 Copyright: freely redistributable
 Group: Applications/Math
 Vendor: INRIA & LRI
 URL: http://coq.inria.fr
-Source: ftp://ftp.inria.fr/INRIA/coq/V8.0/coq-8.0cdrom.tar.gz
+Source: ftp://ftp.inria.fr/INRIA/coq/V8.0/coq-8.0.tar.gz
 Icon: petit-coq.gif
-Requires: coq = 8.0cdrom
+Requires: coq = 8.0
 
 %description
 The Coq Extension for Pcoq provides all facilities to interface Coq with

@@ -11,12 +11,10 @@ COQPACKAGE=coq-$VERSION
 CONFIGFILE=$COQPACKAGE/configure
 
 version=`grep "^VERSION=" $CONFIGFILE | sed -e 's/^VERSION=\(.*\)/\1/'`
-#versionsi=`grep "^VERSIONSI=" $CONFIGFILE | sed -e 's/^VERSIONSI=\(.*\)/\1/'`
 coqdate=`grep "^DATE=" $CONFIGFILE | sed -e 's/^DATE=\(.*\)/\1/'`
 
 echo "According to the configure file of the archive to be released"
 echo "  The release version is V$version"
-#echo "  The SearchIsos release version is V$versionsi"
 echo "  The date is $coqdate"
 echo
 echo "Comparing datas with expected ones"
@@ -24,9 +22,6 @@ echo "Comparing datas with expected ones"
 if [ ! "$version" = "$VERSION" ]; then
 	 echo "Inconsistent version number";exit
 fi
-#if [ ! "$versionsi" = "$VERSIONSI" ]; then
-#	echo "Inconsistent SearchIsos version number";exit
-#fi
 if [ ! "$date" = "$DATE" ]; then
 	echo "Inconsistent date release";exit
 fi
@@ -76,7 +71,7 @@ read a
 if [ "$a" != 'y' -a "$a" != 'Y' ]; then echo Aborting; exit 1; fi
 
 versionspec1=`sed -n -e 's!^Version: \(.*\)!\1!p' ./RH/coq.spec`
-versionspec2=`sed -n -e 's!.*coq-\(.*\)\.tar\.gz.*!\1!' ./RH/coq.spec`
+versionspec2=`sed -n -e 's!^Source: .*coq-\(.*\)\.tar\.gz.*!\1!p' ./RH/coq.spec`
 if [ "$versionspec1" = "$version" -a "$versionspec2" = "$version" ];
 then echo "Version number in coq.spec seems OK ($versionspec1)";
 else

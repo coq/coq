@@ -1,14 +1,14 @@
 Name: coqide
-Version: 8.0cdrom
+Version: 8.0
 Release: 1
 Summary: The Coq Integrated Development Interface
 Copyright: freely redistributable
 Group: Applications/Math
 Vendor: INRIA & LRI
 URL: http://coq.inria.fr
-Source: ftp://ftp.inria.fr/INRIA/coq/V8.0beta/coq-8.0cdrom.tar.gz
+Source: ftp://ftp.inria.fr/INRIA/coq/V8.0beta/coq-8.0.tar.gz
 Icon: petit-coq.gif
-Requires: coq = 8.0cdrom
+Requires: coq = 8.0
 
 %description
 The Coq Integrated Development Interface is a graphical interface for the 

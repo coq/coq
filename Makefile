@@ -663,7 +663,12 @@ ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
 PARSERREQUIRES=$(CMO) # Solution de facilité...
 PARSERREQUIRESCMX=$(CMX)
 
-COQINTERFACE=bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE) bin/parser$(EXE)
+ifeq ($(BEST),opt)
+  COQINTERFACE=bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE) bin/parser$(EXE) bin/parser.opt$(EXE)
+else
+  COQINTERFACE=bin/coq-interface$(EXE) bin/parser$(EXE)
+endif
+
 pcoq-binaries:: $(COQINTERFACE) 
 
 bin/coq-interface$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
@@ -674,10 +679,20 @@ bin/coq-interface.opt$(EXE): $(COQMKTOP) $(CMX) $(USERTACCMX) $(INTERFACECMX)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(COQMKTOP) -opt $(OPTFLAGS) -o $@ $(INTERFACECMX)
 
-bin/parser$(EXE): contrib/interface/parse.cmx contrib/interface/line_parser.cmx $(PARSERREQUIRESCMX) contrib/interface/xlate.cmx contrib/interface/vtp.cmx
+PARSERCODE=contrib/interface/line_parser.cmo contrib/interface/vtp.cmo \
+           contrib/interface/xlate.cmo contrib/interface/parse.cmo
+PARSERCMO=$(PARSERREQUIRES) $(PARSERCODE)
+PARSERCMX= $(PARSERREQUIRESCMX) $(PARSECODE:.cmo=.cmx)
+
+bin/parser$(EXE): $(PARSERCMO)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(OCAMLC) -linkall -cclib -lunix $(OPTFLAGS) -o $@ \
+	  dynlink.cma $(CMA) $(PARSERCMO)
+
+bin/parser.opt$(EXE): $(PARSERCMX)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) -linkall -cclib -lunix $(OPTFLAGS) -o $@ $(CMXA) \
-	$(PARSERREQUIRESCMX) line_parser.cmx vtp.cmx xlate.cmx parse.cmx
+	$(HIDE)$(OCAMLOPT) -linkall -cclib -lunix $(OPTFLAGS) -o $@ \
+	  $(CMXA) $(PARSERCMX)
 
 INTERFACEVO=
 
