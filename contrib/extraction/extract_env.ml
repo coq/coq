@@ -1,130 +1,90 @@
 
 open Pp
+open Util
 open Term
 open Lib
 open Extraction
 open Miniml
 open Mlutil
 
-(*s Topological sort of global CIC references. 
-    We introduce graphs of global references; a graph is a map
-    from edges to the set of their immediate successors. *)
+(*s Recursive computation of the global references to extract. 
+    We use a set of functions visiting the extracted objects in
+    a depth-first way ([visit_type], [visit_ast] and [visit_decl]).
+    We maintain an (imperative) structure [extracted_env] containing
+    the set of already visited references and the list of 
+    references to extract. The entry point is the function [visit_reference]:
+    it first normalizes the reference, and then check it has already been 
+    visisted; if not, it adds it to the set of visited references, then
+    recursively traverses its extraction and finally adds it to the 
+    list of references to extract. *) 
 
-module Refmap = 
-  Map.Make(struct type t = global_reference let compare = compare end)
+type extracted_env = {
+  mutable visited : Refset.t;
+  mutable to_extract : global_reference list 
+}
 
-module Refset = 
-  Set.Make(struct type t = global_reference let compare = compare end)
+let empty () = { visited = ml_extractions (); to_extract = [] }
 
-type graph = Refset.t Refmap.t
-
-let empty = Refmap.empty
-
-let add_arc x y g =
-  let s = try Refmap.find x g with Not_found -> Refset.empty in
-  let g' = Refmap.add x (Refset.add y s) g in
-  if not (Refmap.mem y g') then Refmap.add y Refset.empty g' else g'
-
-exception Found of global_reference
-
-let maximum g =
-  try 
-    Refmap.iter (fun x s -> if s = Refset.empty then raise (Found x)) g;
-    assert false
-  with Found m -> 
-    m
-
-let remove m g =
-  let g' = 
-    Refmap.fold (fun x s -> Refmap.add x (Refset.remove m s)) g Refmap.empty
-  in
-  Refmap.remove m g'
-
-let sorted g =
-  let rec sorted_aux acc g =
-    if g = Refmap.empty then
-      acc
-    else
-      let max = maximum g in
-      sorted_aux (max :: acc) (remove max g)
-  in
-  sorted_aux [] g
-
-(*s Computation of the global references appearing in an AST of a 
-    declaration. *)
-
-let globals_of_type t =
-  let rec collect s = function
-    | Tglob r -> Refset.add r s
-    | Tapp l -> List.fold_left collect s l
-    | Tarr (t1,t2) -> collect (collect s t1) t2
-    | Tvar _ | Tprop | Tarity -> s
-  in
-  collect Refset.empty t
-
-let globals_of_ast a =
-  let rec collect s = function
-    | MLglob r -> Refset.add r s
-    | MLapp (a,l) -> List.fold_left collect (collect s a) l
-    | MLlam (_,a) -> collect s a
-    | MLletin (_,a,b) -> collect (collect s a) b
-    | MLcons (r,_,l) -> List.fold_left collect (Refset.add r s) l
-    | MLcase (a,br) -> 
-	Array.fold_left 
-	  (fun s (r,_,a) -> collect (Refset.add r s) a) (collect s a) br
-    | MLfix (_,_,l) -> List.fold_left collect s l
-    | MLcast (a,t) -> Refset.union (collect s a) (globals_of_type t)
-    | MLmagic a -> collect s a
-    | MLrel _ | MLprop | MLarity | MLexn _ -> s
-  in
-  collect Refset.empty a
-
-let globals_of_inductive inds =
-  let globals_of_constructor ie (r,tl) =
-    List.fold_left 
-      (fun (i,e) t -> Refset.add r i, Refset.union (globals_of_type t) e) ie tl
-  in
-  let globals_of_ind (i,e) (_,r,cl) = 
-    List.fold_left globals_of_constructor (Refset.add r i, e) cl
-  in
-  let (i,e) = List.fold_left globals_of_ind (Refset.empty,Refset.empty) inds in
-  Refset.diff e i
-
-let globals_of_decl = function
-  | Dtype inds ->
-      globals_of_inductive inds
-  | Dabbrev (r,_,t) ->
-      Refset.remove r (globals_of_type t)
-  | Dglob (r,a) ->
-      Refset.remove r (globals_of_ast a)
-
-(*s Recursive extraction of a piece of environment. *)
-
-let add_dependency r r' g = 
-  let normalize = function
+let rec visit_reference eenv r =
+  let r' = match r with
     | ConstructRef ((sp,_),_) -> IndRef (sp,0)
-    | IndRef (sp,i) as r -> if i = 0 then r else IndRef (sp,0)
-    | r -> r
+    | IndRef (sp,i) -> if i = 0 then r else IndRef (sp,0)
+    | _ -> r
   in
-  add_arc (normalize r') (normalize r) g
+  if not (Refset.mem r' eenv.visited) then begin
+    (* we put [r'] in [visited] first to avoid loops in inductive defs *)
+    eenv.visited <- Refset.add r' eenv.visited;
+    visit_decl eenv (extract_declaration r);
+    eenv.to_extract <- r' :: eenv.to_extract
+  end
+
+and visit_type eenv t =
+  let rec visit = function
+    | Tglob r -> visit_reference eenv r
+    | Tapp l -> List.iter visit l
+    | Tarr (t1,t2) -> visit t1; visit t2
+    | Tvar _ | Tprop | Tarity -> ()
+  in
+  visit t
+
+and visit_ast eenv a =
+  let rec visit = function
+    | MLglob r -> visit_reference eenv r
+    | MLapp (a,l) -> visit a; List.iter visit l
+    | MLlam (_,a) -> visit a
+    | MLletin (_,a,b) -> visit a; visit b
+    | MLcons (r,_,l) -> visit_reference eenv r; List.iter visit l
+    | MLcase (a,br) -> 
+	visit a; Array.iter (fun (r,_,a) -> visit_reference eenv r; visit a) br
+    | MLfix (_,_,l) -> List.iter visit l
+    | MLcast (a,t) -> visit a; visit_type eenv t
+    | MLmagic a -> visit a
+    | MLrel _ | MLprop | MLarity | MLexn _ -> ()
+  in
+  visit a
+
+and visit_inductive eenv inds =
+  let visit_constructor (_,tl) = List.iter (visit_type eenv) tl in
+  let visit_ind (_,_,cl) = List.iter visit_constructor cl in
+  List.iter visit_ind inds
+
+and visit_decl eenv = function
+  | Dtype inds ->
+      visit_inductive eenv inds
+  | Dabbrev (_,_,t) ->
+      visit_type eenv t
+  | Dglob (_,a) ->
+      visit_ast eenv a
+
+(*s Recursive extracted environment for a list of reference: we just
+    iterate [visit_reference] on the list, starting with an empty
+    extracted environment, and we return the reversed list of 
+    references in the field [to_extract]. *)
 
 let extract_env rl =
-  let rec extract graph seen todo = 
-    if Refset.equal todo Refset.empty then
-      sorted graph
-    else 
-      let r = Refset.choose todo in
-      let todo' = Refset.remove r todo in
-      if Refset.mem r seen then
-	extract graph seen todo'
-      else
-	let d = extract_declaration r in
-	let deps = globals_of_decl d in
-	let graph' = Refset.fold (add_dependency r) deps graph in
-	extract graph' (Refset.add r seen) (Refset.union todo' deps)
-  in
-  extract empty Refset.empty (List.fold_right Refset.add rl Refset.empty)
-
+  let eenv = empty () in
+  List.iter (visit_reference eenv) rl;
+  List.rev eenv.to_extract
 
 (*s Registration of vernac commands for extraction. *)
 
@@ -139,7 +99,7 @@ module Pp = Ocaml.Make(ToplevelParams)
 open Vernacinterp
 
 let _ = 
-  overwriting_vinterp_add "Extraction"
+  vinterp_add "Extraction"
     (function 
        | [VARG_CONSTR ast] ->
 	   (fun () -> 
@@ -160,8 +120,13 @@ let _ =
 		      | Eprop -> message "prop")
        | _ -> assert false)
 
+let no_such_reference q =
+  errorlabstrm "reference_of_varg" 
+    [< Nametab.pr_qualid q; 'sTR ": no such reference" >]
+
 let reference_of_varg = function
-  | VARG_QUALID q -> Nametab.locate q
+  | VARG_QUALID q -> 
+      (try Nametab.locate q with Not_found -> no_such_reference q)
   | _ -> assert false
 
 let decl_of_vargl vl =

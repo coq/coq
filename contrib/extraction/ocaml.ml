@@ -125,6 +125,13 @@ let pr_binding = function
 
 module Make = functor(P : Mlpp_param) -> struct
 
+let pp_reference f r = 
+  try let s = find_ml_extraction r in [< 'sTR s >]
+  with Not_found -> f r
+ 
+let pp_type_global = pp_reference P.pp_type_global
+let pp_global = pp_reference P.pp_global
+
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
 
@@ -143,7 +150,7 @@ let rec pp_type par t =
 	[< open_par par; pp_rec true t1; 'sPC; 'sTR "->"; 'sPC; 
 	   pp_rec false t2; close_par par >]
     | Tglob r -> 
-	P.pp_type_global r
+	pp_type_global r
     | Tprop ->
 	string "prop"
     | Tarity ->
@@ -184,14 +191,14 @@ let rec pp_expr par env args =
 		 'sPC;
 		 pp_expr false env' [] a2 >] 
     | MLglob r -> 
-	apply (P.pp_global r)
+	apply (pp_global r)
     | MLcons (r,_,[]) ->
-	P.pp_global r
+	pp_global r
     | MLcons (r,_,[a]) ->
-	[< open_par par; P.pp_global r; 'sPC;
+	[< open_par par; pp_global r; 'sPC;
 	   pp_expr true env [] a; close_par par >]
     | MLcons (r,_,args') ->
-	[< open_par par; P.pp_global r; 'sPC;
+	[< open_par par; pp_global r; 'sPC;
 	   pp_tuple (pp_expr true env []) args'; close_par par >]
     | MLcase (t, pv) ->
       	apply
@@ -224,7 +231,7 @@ and pp_pat env pv =
       | MLcase _ -> true
       | _        -> false 
     in
-    hOV 2 [< P.pp_global name;
+    hOV 2 [< pp_global name;
 	     begin match ids with 
 	       | [] -> [< >]
 	       | _  -> [< 'sTR " "; pp_boxed_tuple pr_id (List.rev ids) >]
@@ -292,7 +299,7 @@ let pp_parameters l =
 
 let pp_one_inductive (pl,name,cl) =
   let pp_constructor (id,l) =
-    [< P.pp_global id;
+    [< pp_global id;
        match l with
          | [] -> [< >] 
 	 | _  -> [< 'sTR " of " ;
@@ -300,7 +307,7 @@ let pp_one_inductive (pl,name,cl) =
 		      (fun () -> [< 'sPC ; 'sTR "* " >]) (pp_type true) l >]
     >]
   in
-    [< pp_parameters pl; P.pp_global name; 'sTR " ="; 
+    [< pp_parameters pl; pp_global name; 'sTR " ="; 
        if cl = [] then
 	 [< 'sTR " unit (* empty inductive *)" >]
        else
@@ -326,7 +333,7 @@ let pp_decl = function
       hOV 0 (pp_inductive i)
   | Dabbrev (r, l, t) ->
       hOV 0 [< 'sTR "type"; 'sPC; pp_parameters l; 
-	       P.pp_type_global r; 'sPC; 'sTR "="; 'sPC; 
+	       pp_type_global r; 'sPC; 'sTR "="; 'sPC; 
 	       pp_type false  t; 'fNL >]
   | Dglob (r, MLfix (_,[_],[def])) ->
       let id = P.rename_global r in
@@ -334,7 +341,7 @@ let pp_decl = function
       [<  hOV 2 (pp_fix false env' None ([id],[def]) []) >]
   | Dglob (r, a) ->
       hOV 0 [< 'sTR "let "; 
-	       pp_function (empty_env ()) (P.pp_global r) a; 'fNL >]
+	       pp_function (empty_env ()) (pp_global r) a; 'fNL >]
 
 let pp_type = pp_type false
 let pp_ast a = pp_ast (betared_ast (uncurrify_ast a))

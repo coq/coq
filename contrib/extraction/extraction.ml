@@ -250,6 +250,12 @@ let decompose_lam_eta n env c =
 let rec abstract_n n a = 
   if n = 0 then a else MLlam (anonymous, ml_lift 1 (abstract_n (n-1) a))
 
+(*s Error message when extraction ends on an axiom. *)
+
+let axiom_message sp =
+  errorlabstrm "axiom_message"
+    [< 'sTR "You must specify an extraction for axiom"; 'sPC; 
+       pr_sp sp; 'sPC; 'sTR "first" >]
 
 
 (*s Tables to keep the extraction of inductive types and constructors. *)
@@ -602,10 +608,12 @@ and extract_constant sp =
   try
     Gmap.find sp !constant_table
   with Not_found ->
-    (* TODO: Axioms *)
     let cb = Global.lookup_constant sp in
     let typ = cb.const_type in
-    let body = match cb.const_body with Some c -> c | None -> assert false in
+    let body = match cb.const_body with 
+      | Some c -> c 
+      | None -> axiom_message sp
+    in
     let e = extract_constr_with_type (Global.env()) [] body typ in
     constant_table := Gmap.add sp e !constant_table;
     e

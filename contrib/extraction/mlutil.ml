@@ -1,4 +1,8 @@
 
+open Pp
+open Names
+open Term
+open Declarations
 open Util
 open Miniml
 
@@ -177,3 +181,92 @@ let uncurrify_decl = function
  | Dglob (id, a) -> Dglob (id, uncurrify_ast a)
  | d -> d
 
+(*s Table for direct ML extractions. *)
+
+module Refset = 
+  Set.Make(struct type t = global_reference let compare = compare end)
+
+module Refmap = 
+  Map.Make(struct type t = global_reference let compare = compare end)
+
+let extractions = ref (Refmap.empty, Refset.empty)
+
+let ml_extractions () = snd !extractions
+
+let add_ml_extraction r s = 
+  let (map,set) = !extractions in
+  extractions := (Refmap.add r s map, Refset.add r set)
+
+let is_ml_extraction r = Refset.mem r (snd !extractions)
+
+let find_ml_extraction r = Refmap.find r (fst !extractions)
+
+(*s Registration for rollback. *)
+
+open Summary
+
+let _ = declare_summary "ML extractions"
+	  { freeze_function = (fun () -> !extractions);
+	    unfreeze_function = ((:=) extractions);
+	    init_function = 
+	      (fun () -> extractions := (Refmap.empty, Refset.empty));
+	    survive_section = true }
+
+(*s Grammar entries. *)
+
+open Vernacinterp
+
+let string_of_varg = function
+  | VARG_IDENTIFIER id -> string_of_id id
+  | VARG_STRING s -> s
+  | _ -> assert false
+
+let no_such_reference q =
+  errorlabstrm "reference_of_varg" 
+    [< Nametab.pr_qualid q; 'sTR ": no such reference" >]
+
+let reference_of_varg = function
+  | VARG_QUALID q -> 
+      (try Nametab.locate q with Not_found -> no_such_reference q)
+  | _ -> assert false
+
+(*s \verb!Extract Constant qualid => string! *)
+
+let extract_constant r s = match r with
+  | ConstRef _ -> 
+      add_ml_extraction r s
+  | _ -> 
+      errorlabstrm "extract_constant"
+	[< Printer.pr_global r; 'sPC; 'sTR "is not a constant" >]
+
+let _ = 
+  vinterp_add "EXTRACT_CONSTANT"
+    (function 
+       | [id; s] -> 
+	   (fun () -> 
+	      extract_constant (reference_of_varg id) (string_of_varg s))
+       | _ -> assert false)
+
+(*s \verb!Extract Inductive qualid => string [ string ... string ]! *)
+
+let extract_inductive r (id2,l2) = match r with
+  | IndRef ((sp,i) as ip) ->
+      add_ml_extraction r id2;
+      let mib = Global.lookup_mind sp in
+      let n = Array.length mib.mind_packets.(i).mind_consnames in
+      if n <> List.length l2 then
+	error "not the right number of constructors";
+      list_iter_i
+	(fun j s -> add_ml_extraction (ConstructRef (ip,succ j)) s) l2
+  | _ -> 
+      errorlabstrm "extract_inductive"
+	[< Printer.pr_global r; 'sPC; 'sTR "is not an inductive type" >]
+
+let _ = 
+  vinterp_add "EXTRACT_INDUCTIVE"
+    (function 
+       | [q1; VARG_VARGLIST (id2 :: l2)] ->
+	   (fun () -> 
+	      extract_inductive (reference_of_varg q1) 
+		(string_of_varg id2, List.map string_of_varg l2))
+       | _ -> assert false)
