@@ -2662,18 +2662,18 @@ contrib/extraction/extraction.cmo: kernel/declarations.cmi kernel/environ.cmi \
     pretyping/evd.cmi kernel/inductive.cmi pretyping/inductiveops.cmi \
     library/libnames.cmi contrib/extraction/miniml.cmi \
     contrib/extraction/mlutil.cmi library/nameops.cmi kernel/names.cmi \
-    library/nametab.cmi pretyping/recordops.cmi pretyping/reductionops.cmi \
-    pretyping/retyping.cmi library/summary.cmi contrib/extraction/table.cmi \
-    kernel/term.cmi pretyping/termops.cmi lib/util.cmi \
-    contrib/extraction/extraction.cmi 
+    library/nametab.cmi pretyping/recordops.cmi kernel/reduction.cmi \
+    pretyping/reductionops.cmi pretyping/retyping.cmi library/summary.cmi \
+    contrib/extraction/table.cmi kernel/term.cmi pretyping/termops.cmi \
+    lib/util.cmi contrib/extraction/extraction.cmi 
 contrib/extraction/extraction.cmx: kernel/declarations.cmx kernel/environ.cmx \
     pretyping/evd.cmx kernel/inductive.cmx pretyping/inductiveops.cmx \
     library/libnames.cmx contrib/extraction/miniml.cmi \
     contrib/extraction/mlutil.cmx library/nameops.cmx kernel/names.cmx \
-    library/nametab.cmx pretyping/recordops.cmx pretyping/reductionops.cmx \
-    pretyping/retyping.cmx library/summary.cmx contrib/extraction/table.cmx \
-    kernel/term.cmx pretyping/termops.cmx lib/util.cmx \
-    contrib/extraction/extraction.cmi 
+    library/nametab.cmx pretyping/recordops.cmx kernel/reduction.cmx \
+    pretyping/reductionops.cmx pretyping/retyping.cmx library/summary.cmx \
+    contrib/extraction/table.cmx kernel/term.cmx pretyping/termops.cmx \
+    lib/util.cmx contrib/extraction/extraction.cmi 
 contrib/extraction/g_extraction.cmo: toplevel/cerrors.cmi \
     parsing/egrammar.cmi parsing/extend.cmi \
     contrib/extraction/extract_env.cmi interp/genarg.cmi parsing/pcoq.cmi \
@@ -2794,14 +2794,14 @@ contrib/first-order/ground.cmx: toplevel/cerrors.cmx parsing/egrammar.cmx \
     proofs/tacmach.cmx proofs/tactic_debug.cmx tactics/tacticals.cmx \
     tactics/tactics.cmx kernel/term.cmx contrib/first-order/unify.cmx \
     lib/util.cmx 
-contrib/first-order/rules.cmo: kernel/declarations.cmi \
+contrib/first-order/rules.cmo: interp/coqlib.cmi kernel/declarations.cmi \
     contrib/first-order/formula.cmi library/libnames.cmi kernel/names.cmi \
     pretyping/rawterm.cmi pretyping/reductionops.cmi \
     contrib/first-order/sequent.cmi kernel/sign.cmi proofs/tacexpr.cmo \
     proofs/tacmach.cmi tactics/tacticals.cmi tactics/tactics.cmi \
     kernel/term.cmi pretyping/termops.cmi contrib/first-order/unify.cmi \
     lib/util.cmi contrib/first-order/rules.cmi 
-contrib/first-order/rules.cmx: kernel/declarations.cmx \
+contrib/first-order/rules.cmx: interp/coqlib.cmx kernel/declarations.cmx \
     contrib/first-order/formula.cmx library/libnames.cmx kernel/names.cmx \
     pretyping/rawterm.cmx pretyping/reductionops.cmx \
     contrib/first-order/sequent.cmx kernel/sign.cmx proofs/tacexpr.cmx \
