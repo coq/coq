@@ -346,7 +346,7 @@ let rec process_cmd_line = function
       Include d :: (process_cmd_line r)
   | "-R" :: p :: l :: r ->
       RInclude (p,l) :: (process_cmd_line r)
-  | ("-I" | "-h" | "--help" | "-custom") :: _ -> 
+  | ("-I"|"-custom") :: _ -> 
       usage ()
   | "-f" :: file :: r -> 
       make_name := file;
