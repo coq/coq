@@ -13,7 +13,7 @@ Require Export Datatypes.
 (** Symbolic notations for things in [Datatypes.v] *)
 
 Infix LEFTA 4 "+" sum.
-Infix LEFTA 3 "*" prod.
+Infix RIGHTA 3 "*" prod.
 Notation "( x , y )" := (pair ? ? x y) (at level 0).
 Notation Fst := (fst ? ?).
 Notation Snd := (snd ? ?).
