@@ -1,36 +1,35 @@
 
   The LogiCal team (ex-Coq team) is releasing a new version of Coq.
-Its name is V7.0beta. This new version is still in debugging phase
-and is provided for users willing to experiment the new features which
-are:
+Its name is V7.0beta. This new version is a transition version and is
+provided for users willing to experiment the new features which are:
 
   - a primitive let-in construct
   - qualified names (such as Logic.f_equal)
   - a new tactic language based on a mini functional language with higher-
     level pattern-matching constructs on goals (contributed by David Delahaye)
-  - a new decision tactic for the real field (contributed by David Delahaye
-    and Micaëla Mayero)
   - an improved Search facilities using patterns (contributed by Yves Bertot)
+  - a "natural" syntax for real numbers
   - various bug fixes
-  - new user contributions on ...
-  - a module to export definitions, theorems and proofs to XML to be
-    used with Bologna rendering tools (see http://www.cs.unibo.it/helm)
+  - a command to export definitions, theorems and proofs to XML to be used with
+    Bologna publishing and rendering tools (see http://www.cs.unibo.it/helm)
 
-  Extraction and the Realizer/Program tactics are not available in Coq V7.0. 
+  Extraction and the Realizer/Program tactics are not available in Coq
+V7.0beta.
 
-  The internals of Coq have changed a lot. For the user, this shows
-through new and located error messages, improved efficiency, safer
-proof-checker. This justifies the new major version number 7.
-
-  However, the internals of Coq will continue to change significantly
-in the next months and we recommend tactic developers to take contact
-with us for adapting their code.
+  The internals of Coq have changed a lot and this justifies the new
+major version number 7 though the differences are small for end-users
+(e.g. most error messages are located). The internals of Coq will
+continue to change significantly in the next months and we recommend
+tactic developers to take contact with us for adapting their code.
 
   Coq V7.0beta is available as a source package from http://coq.inria.fr
 and ftp://ftp.inria.fr/INRIA/coq/V7
 
-  Please refer to the document CHANGES in the archive for a full list
-of changes including sources of incompatibilities (very few).
+  Please refer to the accompanying document Changes.dvi for a full
+list of changes including sources of incompatibilities (very few).
 
-  Jean-Christophe Filliâtre and Hugo Herbelin
+
+  The Coq development team
+  Jean-Christophe Filliâtre, Hugo Herbelin, Christine Paulin
+
 
