@@ -1175,16 +1175,7 @@ let subst_tuple_term env sigma dep_pair b =
   let abst_B =
     List.fold_right
       (fun (e,t) body -> lambda_create env (t,subst_term e body)) e_list b in
-  let app_B = applist(abst_B,proj_list) in
-  (* inutile ?? les projs sont appliquées à (mkRel 1) ?? *)
-(*
-  let { proj1 = proj1_sp; proj2 = proj2_sp; elim = sig_elim_sp } =
-    find_sigma_data (get_sort_of env sigma typ) in
-  strong (fun _ _ -> 
-	    compose (whd_betaiota env sigma)
-	      (whd_const [proj1_sp;proj2_sp;sig_elim_sp] env sigma)) 
-    env sigma *)
-  (* whd_betaiota *) app_B
+  let app_B = applist(abst_B,proj_list) in app_B
     
 (* |- (P e2)
      BY RevSubstInConcl (eq T e1 e2)
