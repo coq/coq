@@ -37,7 +37,7 @@ Grammar vernac vernac : ast :=
   -> [ (RecursiveExtractionModule "haskell" $m) ]
 
 
-(* Custum inlining directives *)
+(* Custom inlining directives *)
 | inline_constant
      [ "Extraction" "Inline" ne_qualidarg_list($l) "." ] 
   -> [ (ExtractionInline ($LIST $l)) ]
