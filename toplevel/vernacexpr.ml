@@ -203,7 +203,7 @@ type vernac_expr =
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)
-  | VernacRequireFrom of export_flag * specif_flag option * identifier * string
+  | VernacRequireFrom of export_flag * specif_flag option * string
   | VernacAddLoadPath of rec_flag * string * dir_path option
   | VernacRemoveLoadPath of string
   | VernacAddMLPath of rec_flag * string

@@ -558,8 +558,8 @@ let vernac_solve_existential = instantiate_nth_evar_com
 (*****************************)
 (* Auxiliary file management *)
 
-let vernac_require_from export spec id filename =
-  Library.require_library_from_file spec (Some id) filename export
+let vernac_require_from export spec filename =
+  Library.require_library_from_file spec None filename export
 
 let vernac_add_loadpath isrec pdir ldiropt =
   let alias = match ldiropt with
@@ -1077,7 +1077,7 @@ let interp c = match c with
   | VernacSolveExistential (n,c) -> vernac_solve_existential n c
 
   (* Auxiliary file and library management *)
-  | VernacRequireFrom (exp,spec,id,f) -> vernac_require_from exp spec id f
+  | VernacRequireFrom (exp,spec,f) -> vernac_require_from exp spec f
   | VernacAddLoadPath (isrec,s,alias) -> vernac_add_loadpath isrec s alias
   | VernacRemoveLoadPath s -> vernac_remove_loadpath s
   | VernacAddMLPath (isrec,s) -> vernac_add_ml_path isrec s

@@ -114,11 +114,11 @@ let execute_when_necessary v =
        with _ ->
 	 let l=prlist_with_sep spc pr_reference l in
 	 msgnl (str "Reinterning of " ++ l ++ str " failed"))
-  | VernacRequireFrom (_,_,name,_) ->
+  | VernacRequireFrom (_,_,f) ->
       (try 
 	Vernacentries.interp v
        with _ ->
-	 msgnl (str "Reinterning of " ++ Nameops.pr_id name ++ str " failed"))
+	 msgnl (str "Reinterning of " ++ Util.pr_str f ++ str " failed"))
   | _ -> ()); v;;
 
 let parse_to_dot =

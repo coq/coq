@@ -467,9 +467,12 @@ GEXTEND Gram
 	  VernacRequire (None, None, qidl)
       | IDENT "Require"; export = export_token; specif = specif_token;
         qidl = LIST1 global -> VernacRequire (Some export, specif, qidl)
-      | IDENT "Require"; export = export_token; specif = specif_token;
+(*      | IDENT "Require"; export = export_token; specif = specif_token;
         id = base_ident; filename = STRING -> 
-	  VernacRequireFrom (export, specif, id, filename)
+	  VernacRequireFrom (export, specif, id, filename) *)
+      | IDENT "Require"; export = export_token; specif = specif_token;
+        filename = STRING -> 
+	  VernacRequireFrom (export, specif, filename)
       | IDENT "Declare"; IDENT "ML"; IDENT "Module"; l = LIST1 STRING ->
 	  VernacDeclareMLModule l
       | IDENT "Import"; qidl = LIST1 global -> VernacImport (false,qidl)

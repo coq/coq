@@ -1437,8 +1437,10 @@ let xlate_vernac =
         CT_coerce_NONE_to_STRING_OPT CT_none)
    | VernacRequire (_,_,([]|_::_::_)) ->
        xlate_error "TODO: general form of future Require"
-   | VernacRequireFrom (impexp, spec, id, filename) ->
-      let ct_impexp, ct_spec = get_require_flags impexp spec in
+   | VernacRequireFrom (impexp, spec, filename) ->
+      let ct_impexp, ct_spec = get_require_flags impexp spec 
+      and id = id_of_string (Filename.basename filename)
+      in
       CT_require
        (ct_impexp, ct_spec, xlate_ident id, 
          CT_coerce_STRING_to_STRING_OPT (CT_string filename))
