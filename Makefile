@@ -315,7 +315,7 @@ COQTOP=bin/coqtop$(EXE)
 COQINTERFACE=bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE) bin/parser$(EXE)
 
 COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
-#             $(COQINTERFACE) 
+             $(COQINTERFACE) 
 
 coqbinaries:: ${COQBINARIES}
 

@@ -24,7 +24,7 @@ Record Field_Theory : Type :=
   Aminus : (option A);
   Adiv : (option A);
   RT : (Ring_Theory Aplus Amult Aone Azero Aopp Aeq);
-  Th_inv_def : (n:A)~(n==Azero)->(Amult (Ainv n) n)==Aone
+  Th_inv_def : (n:A)~(n=Azero)->(Amult (Ainv n) n)=Aone
 }.
 
 (* The reflexion structure *)
@@ -95,50 +95,50 @@ Add Abstract Ring AT AplusT AmultT AoneT AzeroT AoppT AeqT RTT.
 (*    Lemmas to be used    *)
 (***************************)
 
-Lemma AplusT_sym:(r1,r2:AT)(AplusT r1 r2)==(AplusT r2 r1).
+Lemma AplusT_sym:(r1,r2:AT)(AplusT r1 r2)=(AplusT r2 r1).
 Proof.
   Intros;Ring.
 Save.
 
-Lemma AplusT_assoc:(r1,r2,r3:AT)(AplusT (AplusT r1 r2) r3)==
+Lemma AplusT_assoc:(r1,r2,r3:AT)(AplusT (AplusT r1 r2) r3)=
                                 (AplusT r1 (AplusT r2 r3)).
 Proof.
   Intros;Ring.
 Save.
 
-Lemma AmultT_sym:(r1,r2:AT)(AmultT r1 r2)==(AmultT r2 r1).
+Lemma AmultT_sym:(r1,r2:AT)(AmultT r1 r2)=(AmultT r2 r1).
 Proof.
   Intros;Ring.
 Save.
 
-Lemma AmultT_assoc:(r1,r2,r3:AT)(AmultT (AmultT r1 r2) r3)==
+Lemma AmultT_assoc:(r1,r2,r3:AT)(AmultT (AmultT r1 r2) r3)=
                                 (AmultT r1 (AmultT r2 r3)).
 Proof.
   Intros;Ring.
 Save.
 
-Lemma AplusT_Ol:(r:AT)(AplusT AzeroT r)==r.
+Lemma AplusT_Ol:(r:AT)(AplusT AzeroT r)=r.
 Proof.
   Intros;Ring.
 Save.
 
-Lemma AmultT_1l:(r:AT)(AmultT AoneT r)==r.
+Lemma AmultT_1l:(r:AT)(AmultT AoneT r)=r.
 Proof.
   Intros;Ring.
 Save.
 
-Lemma AplusT_AoppT_r:(r:AT)(AplusT r (AoppT r))==AzeroT.
+Lemma AplusT_AoppT_r:(r:AT)(AplusT r (AoppT r))=AzeroT.
 Proof.
   Intros;Ring.
 Save.
 
-Lemma AmultT_AplusT_distr:(r1,r2,r3:AT)(AmultT r1 (AplusT r2 r3))==
+Lemma AmultT_AplusT_distr:(r1,r2,r3:AT)(AmultT r1 (AplusT r2 r3))=
                         (AplusT (AmultT r1 r2) (AmultT r1 r3)).
 Proof.
   Intros;Ring.
 Save.
 
-Lemma r_AplusT_plus:(r,r1,r2:AT)(AplusT r r1)==(AplusT r r2)->r1==r2.
+Lemma r_AplusT_plus:(r,r1,r2:AT)(AplusT r r1)=(AplusT r r2)->r1=r2.
 Proof.
   Intros; Transitivity (AplusT (AplusT (AoppT r) r) r1).
   Ring.
@@ -148,7 +148,7 @@ Proof.
 Save.
  
 Lemma r_AmultT_mult:
-  (r,r1,r2:AT)(AmultT r r1)==(AmultT r r2)->~r==AzeroT->r1==r2.
+  (r,r1,r2:AT)(AmultT r r1)=(AmultT r r2)->~r=AzeroT->r1=r2.
 Proof.
   Intros; Transitivity (AmultT (AmultT (AinvT r) r) r1).
   Rewrite Th_inv_defT;[Symmetry; Apply AmultT_1l;Auto|Auto].
@@ -157,28 +157,28 @@ Proof.
   Rewrite Th_inv_defT;[Apply AmultT_1l;Auto|Auto].
 Save.
 
-Lemma AmultT_Or:(r:AT) (AmultT r AzeroT)==AzeroT.
+Lemma AmultT_Or:(r:AT) (AmultT r AzeroT)=AzeroT.
 Proof.
   Intro; Ring.
 Save.
  
-Lemma AmultT_Ol:(r:AT)(AmultT AzeroT r)==AzeroT.
+Lemma AmultT_Ol:(r:AT)(AmultT AzeroT r)=AzeroT.
 Proof.
   Intro; Ring.
 Save.
  
-Lemma AmultT_1r:(r:AT)(AmultT r AoneT)==r.
+Lemma AmultT_1r:(r:AT)(AmultT r AoneT)=r.
 Proof.
   Intro; Ring.
 Save.
  
-Lemma AinvT_r:(r:AT)~r==AzeroT->(AmultT r (AinvT r))==AoneT.
+Lemma AinvT_r:(r:AT)~r=AzeroT->(AmultT r (AinvT r))=AoneT.
 Proof.
   Intros; Rewrite -> AmultT_sym; Apply Th_inv_defT; Auto.
 Save.
  
 Lemma without_div_O_contr:
-  (r1,r2:AT)~(AmultT r1 r2)==AzeroT ->~r1==AzeroT/\~r2==AzeroT.
+  (r1,r2:AT)~(AmultT r1 r2)=AzeroT ->~r1=AzeroT/\~r2=AzeroT.
 Proof.
   Intros r1 r2 H; Split; Red; Intro; Apply H; Rewrite H0; Ring.
 Save.
@@ -253,7 +253,7 @@ Fixpoint assoc [e:ExprA] : ExprA :=
 
 Lemma merge_mult_correct1:
   (e1,e2,e3:ExprA)(lvar:(listT (Sprod AT nat)))
-  (interp_ExprA lvar (merge_mult (EAmult e1 e2) e3))==
+  (interp_ExprA lvar (merge_mult (EAmult e1 e2) e3))=
   (interp_ExprA lvar (EAmult e1 (merge_mult e2 e3))).
 Proof.
 Intros e1 e2;Generalize e1;Generalize e2;Clear e1 e2.
@@ -267,14 +267,14 @@ Save.
 
 Lemma merge_mult_correct:
   (e1,e2:ExprA)(lvar:(listT (Sprod AT nat)))
-    (interp_ExprA lvar (merge_mult e1 e2))==
+    (interp_ExprA lvar (merge_mult e1 e2))=
     (interp_ExprA lvar (EAmult e1 e2)).
 Proof.
 Induction e1;Auto;Intros.
 Elim e0;Try (Intros;Simpl;Ring).
 Unfold interp_ExprA in H2;Fold interp_ExprA in H2;
  Cut (AmultT (interp_ExprA lvar e2) (AmultT (interp_ExprA lvar e4) 
-       (AmultT (interp_ExprA lvar e) (interp_ExprA lvar e3))))==
+       (AmultT (interp_ExprA lvar e) (interp_ExprA lvar e3))))=
        (AmultT (AmultT (AmultT (interp_ExprA lvar e) (interp_ExprA lvar e4)) 
        (interp_ExprA lvar e2)) (interp_ExprA lvar e3)).
 Intro H3;Rewrite H3;Rewrite <-H2;
@@ -284,7 +284,7 @@ Save.
 
 Lemma assoc_mult_correct1:(e1,e2:ExprA)(lvar:(listT (Sprod AT nat)))
   (AmultT (interp_ExprA lvar (assoc_mult e1)) 
-         (interp_ExprA lvar (assoc_mult e2)))==
+         (interp_ExprA lvar (assoc_mult e2)))=
   (interp_ExprA lvar (assoc_mult (EAmult e1 e2))).
 Proof.
 Induction e1;Auto;Intros.
@@ -294,7 +294,7 @@ Save.
 
 Lemma assoc_mult_correct:
   (e:ExprA)(lvar:(listT (Sprod AT nat)))
-    (interp_ExprA lvar (assoc_mult e))==(interp_ExprA lvar e).
+    (interp_ExprA lvar (assoc_mult e))=(interp_ExprA lvar e).
 Proof.
 Induction e;Auto;Intros.
 Elim e0;Intros.
@@ -316,7 +316,7 @@ Save.
 
 Lemma merge_plus_correct1:
   (e1,e2,e3:ExprA)(lvar:(listT (Sprod AT nat)))
-  (interp_ExprA lvar (merge_plus (EAplus e1 e2) e3))==
+  (interp_ExprA lvar (merge_plus (EAplus e1 e2) e3))=
   (interp_ExprA lvar (EAplus e1 (merge_plus e2 e3))).
 Proof.
 Intros e1 e2;Generalize e1;Generalize e2;Clear e1 e2.
@@ -330,14 +330,14 @@ Save.
 
 Lemma merge_plus_correct:
   (e1,e2:ExprA)(lvar:(listT (Sprod AT nat)))
-    (interp_ExprA lvar (merge_plus e1 e2))==
+    (interp_ExprA lvar (merge_plus e1 e2))=
     (interp_ExprA lvar (EAplus e1 e2)).
 Proof.
 Induction e1;Auto;Intros.
 Elim e0;Try Intros;Try (Simpl;Ring).
 Unfold interp_ExprA in H2;Fold interp_ExprA in H2;
   Cut (AplusT (interp_ExprA lvar e2) (AplusT (interp_ExprA lvar e4) 
-        (AplusT (interp_ExprA lvar e) (interp_ExprA lvar e3))))==
+        (AplusT (interp_ExprA lvar e) (interp_ExprA lvar e3))))=
         (AplusT (AplusT (AplusT (interp_ExprA lvar e) (interp_ExprA lvar e4)) 
        (interp_ExprA lvar e2)) (interp_ExprA lvar e3)).
 Intro H3;Rewrite H3;Rewrite <-H2;Rewrite merge_plus_correct1;Simpl;Ring.
@@ -345,7 +345,7 @@ Ring.
 Save.
 
 Lemma assoc_plus_correct:(e1,e2:ExprA)(lvar:(listT (Sprod AT nat)))
-  (AplusT (interp_ExprA lvar (assoc e1)) (interp_ExprA lvar (assoc e2)))==
+  (AplusT (interp_ExprA lvar (assoc e1)) (interp_ExprA lvar (assoc e2)))=
   (interp_ExprA lvar (assoc (EAplus e1 e2))).
 Proof.
 Induction e1;Auto;Intros.
@@ -355,7 +355,7 @@ Save.
 
 Lemma assoc_correct:
   (e:ExprA)(lvar:(listT (Sprod AT nat)))
-    (interp_ExprA lvar (assoc e))==(interp_ExprA lvar e).
+    (interp_ExprA lvar (assoc e))=(interp_ExprA lvar e).
 Proof.
 Induction e;Auto;Intros.
 Elim e0;Intros.
@@ -427,7 +427,7 @@ Definition distrib [e:ExprA] : ExprA := (distrib_main (distrib_EAopp e)).
 
 Lemma distrib_mult_right_correct:
   (e1,e2:ExprA)(lvar:(listT (Sprod AT nat)))
-     (interp_ExprA lvar (distrib_mult_right e1 e2))==
+     (interp_ExprA lvar (distrib_mult_right e1 e2))=
      (AmultT (interp_ExprA lvar e1) (interp_ExprA lvar e2)).
 Proof.
 Induction e1;Try Intros;Simpl;Auto.
@@ -437,7 +437,7 @@ Save.
 
 Lemma distrib_mult_left_correct:
   (e1,e2:ExprA)(lvar:(listT (Sprod AT nat)))
-     (interp_ExprA lvar (distrib_mult_left e1 e2))==
+     (interp_ExprA lvar (distrib_mult_left e1 e2))=
      (AmultT (interp_ExprA lvar e1)  (interp_ExprA lvar e2)).
 Proof.
 Induction e1;Try Intros;Simpl.
@@ -458,7 +458,7 @@ Save.
 
 Lemma distrib_correct:
   (e:ExprA)(lvar:(listT (Sprod AT nat)))
-    (interp_ExprA lvar (distrib e))==(interp_ExprA lvar e).
+    (interp_ExprA lvar (distrib e))=(interp_ExprA lvar e).
 Proof.
 Induction e;Intros;Auto.
 Simpl;Rewrite <- (H lvar);Rewrite <- (H0 lvar); Unfold distrib;Simpl;Auto.
@@ -473,9 +473,9 @@ Save.
 
 Lemma mult_eq:
   (e1,e2,a:ExprA)(lvar:(listT (Sprod AT nat)))
-    ~((interp_ExprA lvar a)==AzeroT)->
-      (interp_ExprA lvar (EAmult a e1))==(interp_ExprA lvar (EAmult a e2))->
-        (interp_ExprA lvar e1)==(interp_ExprA lvar e2).
+    ~((interp_ExprA lvar a)=AzeroT)->
+      (interp_ExprA lvar (EAmult a e1))=(interp_ExprA lvar (EAmult a e2))->
+        (interp_ExprA lvar e1)=(interp_ExprA lvar e2).
 Proof.
   Simpl;Intros;
     Apply (r_AmultT_mult (interp_ExprA lvar a) (interp_ExprA lvar e1)
@@ -497,7 +497,7 @@ Definition multiply [e:ExprA] : ExprA :=
 
 Lemma multiply_aux_correct:
   (a,e:ExprA)(lvar:(listT (Sprod AT nat)))
-    (interp_ExprA lvar (multiply_aux a e))==
+    (interp_ExprA lvar (multiply_aux a e))=
     (AmultT (interp_ExprA lvar a) (interp_ExprA lvar e)).
 Proof.
 Induction e;Simpl;Intros;Try (Rewrite merge_mult_correct);Auto.
@@ -506,7 +506,7 @@ Save.
 
 Lemma multiply_correct:
   (e:ExprA)(lvar:(listT (Sprod AT nat)))
-    (interp_ExprA lvar (multiply e))==(interp_ExprA lvar e).
+    (interp_ExprA lvar (multiply e))=(interp_ExprA lvar e).
 Proof.
   Induction e;Simpl;Auto.
   Intros;Apply multiply_aux_correct.
@@ -553,8 +553,8 @@ Fixpoint inverse_simplif [a,e:ExprA] : ExprA :=
   end.
 
 Lemma monom_remove_correct:(e,a:ExprA)
-  (lvar:(listT (Sprod AT nat)))~((interp_ExprA lvar a)==AzeroT)->
-  (interp_ExprA lvar (monom_remove a e))==
+  (lvar:(listT (Sprod AT nat)))~((interp_ExprA lvar a)=AzeroT)->
+  (interp_ExprA lvar (monom_remove a e))=
   (AmultT (interp_ExprA lvar a) (interp_ExprA lvar e)).
 Proof.
 Induction e; Intros.
@@ -580,8 +580,8 @@ Unfold monom_remove;Case (eqExprA (EAvar n) (EAinv a));Intros;
 Save.
 
 Lemma monom_simplif_rem_correct:(a,e:ExprA)
-  (lvar:(listT (Sprod AT nat)))~((interp_ExprA lvar a)==AzeroT)->
-  (interp_ExprA lvar (monom_simplif_rem a e))==
+  (lvar:(listT (Sprod AT nat)))~((interp_ExprA lvar a)=AzeroT)->
+  (interp_ExprA lvar (monom_simplif_rem a e))=
   (AmultT (interp_ExprA lvar a) (interp_ExprA lvar e)).
 Proof.
 Induction a;Simpl;Intros; Try Rewrite monom_remove_correct;Auto.
@@ -592,8 +592,8 @@ Ring.
 Save.
 
 Lemma monom_simplif_correct:(e,a:ExprA)
-  (lvar:(listT (Sprod AT nat)))~((interp_ExprA lvar a)==AzeroT)->
-  (interp_ExprA lvar (monom_simplif a e))==(interp_ExprA lvar e).
+  (lvar:(listT (Sprod AT nat)))~((interp_ExprA lvar a)=AzeroT)->
+  (interp_ExprA lvar (monom_simplif a e))=(interp_ExprA lvar e).
 Proof.
 Induction e;Intros;Auto.
 Simpl;Case (eqExprA a e0);Intros.
@@ -602,8 +602,8 @@ Simpl;Trivial.
 Save.
 
 Lemma inverse_correct:
-  (e,a:ExprA)(lvar:(listT (Sprod AT nat)))~((interp_ExprA lvar a)==AzeroT)->
-    (interp_ExprA lvar (inverse_simplif a e))==(interp_ExprA lvar e).
+  (e,a:ExprA)(lvar:(listT (Sprod AT nat)))~((interp_ExprA lvar a)=AzeroT)->
+    (interp_ExprA lvar (inverse_simplif a e))=(interp_ExprA lvar e).
 Proof.
 Induction e;Intros;Auto.
 Simpl;Rewrite (H0 a lvar H1); Rewrite monom_simplif_correct ; Auto.

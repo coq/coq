@@ -18,8 +18,8 @@ Recursive Tactic Definition MemAssoc var lvar :=
   Match lvar With
   | [(nilT ?)] -> false
   | [(consT ? ?1 ?2)] ->
-    (Match ?1==var With
-     | [?1==?1] -> true
+    (Match ?1=var With
+     | [?1=?1] -> true
      | _ -> (MemAssoc var ?2)).
 
 Recursive Tactic Definition SeekVarAux FT lvar trm :=
@@ -68,8 +68,8 @@ Recursive Tactic Definition Assoc elt lst :=
   Match lst With
   | [(nilT ?)] -> Fail
   | [(consT (Sprod ? nat) (Spair ? nat ?1 ?2) ?3)] ->
-    Match elt== ?1 With
-    | [?1== ?1] -> ?2
+    Match elt= ?1 With
+    | [?1= ?1] -> ?2
     | _ -> (Assoc elt ?3).
 
 Recursive Meta Definition interp_A FT lvar trm :=
@@ -144,30 +144,30 @@ Tactic Definition GiveMult trm :=
 (**** Associativity ****)
 
 Tactic Definition ApplyAssoc FT lvar trm :=
-  Cut (interp_ExprA FT lvar (assoc trm))==(interp_ExprA FT lvar trm);
+  Cut (interp_ExprA FT lvar (assoc trm))=(interp_ExprA FT lvar trm);
   [Intro;
    (Match Context With
-    | [id:(interp_ExprA ?1 ?2 (assoc ?3))== ?4 |- ?] ->
+    | [id:(interp_ExprA ?1 ?2 (assoc ?3))= ?4 |- ?] ->
       Let t=Eval Compute in (assoc ?3) In
-      Change (interp_ExprA ?1 ?2 t)== ?4 in id;Try (Rewrite <- id);Clear id)
+      Change (interp_ExprA ?1 ?2 t)= ?4 in id;Try (Rewrite <- id);Clear id)
   |Apply assoc_correct].
 
 (**** Distribution *****)
 
 Tactic Definition ApplyDistrib FT lvar trm :=
-  Cut (interp_ExprA FT lvar (distrib trm))==(interp_ExprA FT lvar trm);
+  Cut (interp_ExprA FT lvar (distrib trm))=(interp_ExprA FT lvar trm);
   [Intro;
    (Match Context With
-    | [id:(interp_ExprA ?1 ?2 (distrib ?3))== ?4 |- ?] ->
+    | [id:(interp_ExprA ?1 ?2 (distrib ?3))= ?4 |- ?] ->
       Let t=Eval Compute in (distrib ?3) In
-      Change (interp_ExprA ?1 ?2 t)== ?4 in id;Try (Rewrite <- id);Clear id)
+      Change (interp_ExprA ?1 ?2 t)= ?4 in id;Try (Rewrite <- id);Clear id)
   |Apply distrib_correct].
 
 (**** Multiplication by the inverse product ****)
 
 Tactic Definition GrepMult :=
   Match Context With
-    | [ id: ~(interp_ExprA ? ? ?)== ? |- ?] -> id.
+    | [ id: ~(interp_ExprA ? ? ?)= ? |- ?] -> id.
 
 Tactic Definition WeakReduce :=
   Match Context With
@@ -177,9 +177,9 @@ Tactic Definition WeakReduce :=
 
 Tactic Definition Multiply mul :=
   Match Context With
-  | [|-(interp_ExprA ?1 ?2 ?3)==(interp_ExprA ?1 ?2 ?4)] ->
+  | [|-(interp_ExprA ?1 ?2 ?3)=(interp_ExprA ?1 ?2 ?4)] ->
     Let AzeroT = Eval Cbv Beta Delta [Azero ?1] Iota in (Azero ?1) In
-    Cut ~(interp_ExprA ?1 ?2 mul)==AzeroT;
+    Cut ~(interp_ExprA ?1 ?2 mul)=AzeroT;
     [Intro;
      Let id = GrepMult In
      Apply (mult_eq ?1 ?3 ?4 mul ?2 id)
@@ -190,24 +190,24 @@ Tactic Definition Multiply mul :=
           | [|-[(AmultT ? AoneT)]] -> Rewrite (AmultT_1r ?1));Clear ?1 ?2].
 
 Tactic Definition ApplyMultiply FT lvar trm :=
-  Cut (interp_ExprA FT lvar (multiply trm))==(interp_ExprA FT lvar trm);
+  Cut (interp_ExprA FT lvar (multiply trm))=(interp_ExprA FT lvar trm);
   [Intro;
    (Match Context With
-    | [id:(interp_ExprA ?1 ?2 (multiply ?3))== ?4 |- ?] ->
+    | [id:(interp_ExprA ?1 ?2 (multiply ?3))= ?4 |- ?] ->
       Let t=Eval Compute in (multiply ?3) In
-      Change (interp_ExprA ?1 ?2 t)== ?4 in id;Try (Rewrite <- id);Clear id)
+      Change (interp_ExprA ?1 ?2 t)= ?4 in id;Try (Rewrite <- id);Clear id)
   |Apply multiply_correct].
 
 (**** Permutations and simplification ****)
 
 Tactic Definition ApplyInverse mul FT lvar trm :=
-  Cut (interp_ExprA FT lvar (inverse_simplif mul trm))==
+  Cut (interp_ExprA FT lvar (inverse_simplif mul trm))=
       (interp_ExprA FT lvar trm);
   [Intro;
    (Match Context With
-   | [id:(interp_ExprA ?1 ?2 (inverse_simplif ?3 ?4))== ?5 |- ?] ->
+   | [id:(interp_ExprA ?1 ?2 (inverse_simplif ?3 ?4))= ?5 |- ?] ->
      Let t=Eval Compute in (inverse_simplif ?3 ?4) In
-      Change (interp_ExprA ?1 ?2 t)== ?5 in id;Try (Rewrite <- id);Clear id)
+      Change (interp_ExprA ?1 ?2 t)= ?5 in id;Try (Rewrite <- id);Clear id)
   |Apply inverse_correct;Assumption].
 
 (**** Inverse test ****)
@@ -231,16 +231,16 @@ Recursive Tactic Definition InverseTestAux FT trm :=
 Tactic Definition InverseTest FT :=
   Let AplusT = Eval Cbv Beta Delta [Aplus] Iota in (Aplus FT) In
   Match Context With
-  | [|- ?1==?2] -> (InverseTestAux FT '(AplusT ?1 ?2)).
+  | [|- ?1=?2] -> (InverseTestAux FT '(AplusT ?1 ?2)).
 
 (**** Field itself ****)
 
 Tactic Definition ApplySimplif sfun :=
   (Match Context With
-   | [|- (interp_ExprA ?1 ?2 ?3)==(interp_ExprA ? ? ?)] ->
+   | [|- (interp_ExprA ?1 ?2 ?3)=(interp_ExprA ? ? ?)] ->
      (sfun ?1 ?2 ?3));
   (Match Context With
-   | [|- (interp_ExprA ? ? ?)==(interp_ExprA ?1 ?2 ?3)] ->
+   | [|- (interp_ExprA ? ? ?)=(interp_ExprA ?1 ?2 ?3)] ->
      (sfun ?1 ?2 ?3)).
 
 Tactic Definition Unfolds FT :=
@@ -264,12 +264,12 @@ Tactic Definition Reduce FT :=
 Recursive Tactic Definition Field_Gen_Aux FT :=
   Let AplusT = Eval Cbv Beta Delta [Aplus] Iota in (Aplus FT) In
   Match Context With
-  | [|- ?1==?2] ->
+  | [|- ?1=?2] ->
     Let lvar = (BuildVarList FT '(AplusT ?1 ?2)) In
     Let trm1 = (interp_A FT lvar ?1)
     And trm2 = (interp_A FT lvar ?2) In
     Let mul = (GiveMult '(EAplus trm1 trm2)) In
-    Cut [ft:=FT][vm:=lvar](interp_ExprA ft vm trm1)==(interp_ExprA ft vm trm2);
+    Cut [ft:=FT][vm:=lvar](interp_ExprA ft vm trm1)=(interp_ExprA ft vm trm2);
     [Compute;Auto
     |Intros ft vm;(ApplySimplif ApplyDistrib);(ApplySimplif ApplyAssoc);
      (Multiply mul);[(ApplySimplif ApplyMultiply);
