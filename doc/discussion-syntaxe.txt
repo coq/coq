@@ -4,6 +4,11 @@
 
 I) Constructions
 
+   Éléments de doctrine : 
+
+   - choix de mots-clés en minuscule
+   - proche de ml
+
 A) Produit
 
   Consensus apparent pour remplacer la syntaxe actuelle à base de
@@ -222,6 +227,48 @@ porter d'abord sur Fixpoint.
   du type résultat.
 
 
+N) Filtrage
+
+  N1) sans contrainte :
+
+      "match t with p1 => t1 | ... | pn => tn end" 
+
+  et pas de parenthèses autour des pattern si pas autour de l'application
+
+  N2) avec contrainte :
+
+      "match t as x : I p1 .. pn y1 .. yq => T with
+         p1 => t1
+       | ...
+       | pn => tn
+       end" 
+
+  N3) multiple
+
+      "match t1, .., tq with
+         p11, .., p1q => t1
+       | .. 
+       | pn1, .., pnq => tn
+       end" 
+
+  Problème avec le choix de la virgule : conflit avec la notation
+  primitive des n-uplets si ceux-ci ne sont pas entourées par des
+  parenthèses.
+
+  Alternative : séparation avec un "&" (pas d'ambiguïté avec les
+  paires) mais réquisitionne le symbole, et pas très standard (sauf
+  latex...), quoique le symbole est intuitif.
+
+  N4) multiple avec contrainte
+
+      "match t1 as x : I p1 .. pn y1 .. yq, .., tq as ... => T with
+         p11, .., p1q => t1
+       | .. 
+       | pn1, .., pnq => tn
+       end"  
+
+  Alternatives: case, cases, ...
+
 
 II) Gallina
 
@@ -253,3 +300,20 @@ C) Point fixe (cf I-M)
 
 III) Tactiques
 
+Questions ouvertes :
+
+- Incompatibilité de prendre en compte dans ltad des arguments
+  numériques en conflit avec des ident, comme dans "Unfold 1 3 plus".
+
+  Suggestion : "Unfold [1 3] plus".
+
+- La syntaxe "Pattern -2 -1 x" est-elle claire ? Le "-" voulant dire
+  sauf et non en partant de la fin.
+
+  Suggestion de CP : on réécrit le but avec des _ à la place des occurrences
+  souhaitées.
+
+
+IV) Bibliothèque standard
+
+Zcompare_EGAL -> Zcompare_EQUAL
