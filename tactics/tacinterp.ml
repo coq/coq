@@ -594,7 +594,9 @@ let rec intern_atomic lf ist x =
   | TacLetTac (id,c,clp) ->
       let id = intern_ident lf ist id in
       TacLetTac (id,intern_constr ist c,intern_clause_pattern ist clp)
-  | TacInstantiate (n,c) -> TacInstantiate (n,intern_constr ist c)
+  | TacInstantiate (n,c,ido) -> 
+      TacInstantiate (n,intern_constr ist c,
+		      (option_app (intern_hyp_or_metaid ist) ido))
 
   (* Automation tactics *)
   | TacTrivial l -> TacTrivial l
@@ -1593,7 +1595,8 @@ and interp_atomic ist gl = function
   | TacLetTac (id,c,clp) ->
       let clp = interp_clause_pattern ist gl clp in
       h_let_tac (eval_ident ist id) (pf_interp_constr ist gl c) clp
-  | TacInstantiate (n,c) -> h_instantiate n (pf_interp_constr ist gl c)
+  | TacInstantiate (n,c,ido) -> h_instantiate n (pf_interp_constr ist gl c)
+      (option_app (interp_hyp ist gl) ido)
 
   (* Automation tactics *)
   | TacTrivial l -> Auto.h_trivial l
@@ -1838,7 +1841,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacGeneralize cl -> TacGeneralize (List.map (subst_rawconstr subst) cl)
   | TacGeneralizeDep c -> TacGeneralizeDep (subst_rawconstr subst c)
   | TacLetTac (id,c,clp) -> TacLetTac (id,subst_rawconstr subst c,clp)
-  | TacInstantiate (n,c) -> TacInstantiate (n,subst_rawconstr subst c)
+  | TacInstantiate (n,c,ido) -> TacInstantiate (n,subst_rawconstr subst c,ido)
 
   (* Automation tactics *)
   | TacTrivial l -> TacTrivial l

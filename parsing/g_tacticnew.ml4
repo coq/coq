@@ -344,9 +344,10 @@ GEXTEND Gram
           TacGeneralizeDep c
       | IDENT "set"; "("; id = base_ident; ":="; c = lconstr; ")";
           p = clause_pattern -> TacLetTac (id,c,p)
-      | IDENT "instantiate"; "("; n = natural; ":="; c = lconstr; ")" ->
-          TacInstantiate (n,c)
-
+      | IDENT "instantiate"; "("; n = natural; ":="; c = lconstr; ")";
+	  ido = OPT [ "in"; id = id_or_meta -> id ] ->
+            TacInstantiate (n,c,ido)
+	    
       | IDENT "specialize"; n = OPT natural; lcb = constr_with_bindings ->
 	  TacSpecialize (n,lcb)
       | IDENT "lapply"; c = constr -> TacLApply c

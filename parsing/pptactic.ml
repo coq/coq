@@ -454,9 +454,11 @@ and pr_atom1 = function
   | TacLetTac (id,c,cl) ->
       hov 1 (str "LetTac" ++ spc () ++ pr_id id ++ str ":=" ++
         pr_constr c ++ pr_clause_pattern pr_ident cl)
-  | TacInstantiate (n,c) ->
+  | TacInstantiate (n,c,None) ->
       hov 1 (str "Instantiate" ++ pr_arg int n ++ pr_arg pr_constr c)
-
+  | TacInstantiate (n,c,Some id) ->
+      hov 1 (str "Instantiate" ++ pr_arg int n ++ pr_arg pr_constr c ++ 
+	     spc () ++ str "in" ++ pr_arg pr_ident id)
   (* Derived basic tactics *)
   | TacSimpleInduction h ->
       hov 1 (str "Induction" ++ pr_arg pr_quantified_hypothesis h)

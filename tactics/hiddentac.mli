@@ -49,7 +49,7 @@ val h_generalize      : constr list -> tactic
 val h_generalize_dep  : constr -> tactic 
 val h_forward         : bool -> name -> constr -> tactic 
 val h_let_tac         : identifier -> constr -> identifier clause_pattern -> tactic
-val h_instantiate     : int -> constr -> tactic
+val h_instantiate     : int -> constr -> Tacticals.clause -> tactic
 
 (* Derived basic tactics *)
 

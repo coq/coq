@@ -133,9 +133,14 @@ let evars_of evc c =
   in 
   evrec [] c
 
-let instantiate n c gl = 
+let instantiate n c ido gl = 
   let wc = Refiner.project_with_focus gl in
-  let evl = evars_of wc.sigma gl.it.evar_concl in
+  let evl = 
+    match ido with
+	None -> evars_of wc.sigma gl.it.evar_concl 
+      | Some id -> 
+	  let (_,_,typ)=Sign.lookup_named id gl.it.evar_hyps in
+	    evars_of wc.sigma typ in
     if List.length evl < n then error "not enough evars";
     let (n,_) as k = destEvar (List.nth evl (n-1)) in 
       if Evd.is_defined wc.sigma n then 

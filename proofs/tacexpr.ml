@@ -118,7 +118,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacGeneralize of 'constr list
   | TacGeneralizeDep of 'constr
   | TacLetTac of identifier * 'constr * 'id clause_pattern
-  | TacInstantiate of int * 'constr
+  | TacInstantiate of int * 'constr * 'id option
 
   (* Derived basic tactics *)
   | TacSimpleInduction of quantified_hypothesis

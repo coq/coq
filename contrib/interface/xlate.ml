@@ -1010,8 +1010,11 @@ and xlate_tac =
 	  (xlate_int_or_constr a, xlate_using b, 
 	   CT_id_list_list
 	     (List.map (fun l -> CT_id_list(List.map xlate_newind_names l)) c))
-    | TacInstantiate (a, b) -> 
+    | TacInstantiate (a, b, None) -> 
 	CT_instantiate(CT_int a, xlate_formula b)
+    | TacInstantiate (a, b, _) -> 
+	xlate_error "TODO: Instantiate ... in"
+
     | TacLetTac (id, c, cl) ->
         CT_lettac(xlate_ident id, xlate_formula c, 
 		  (* TODO LATER: This should be shared with Unfold,
