@@ -23,7 +23,7 @@ let print_usage_channel co command =
 "  -I dir                 add directory dir in the include path
   -include dir           (idem)
   -R dir coqdir          recursively map physical dir to logical coqdir 
-  -src                   add source directories in the include path
+  -top coqdir            set the toplevel name to be coqdir instead of Top
 
   -inputstate f          read state from file f.coq
   -is f                  (idem)
@@ -35,14 +35,14 @@ let print_usage_channel co command =
   -load-vernac-source f  load Coq file f.v (Load f.)
   -l f                   (idem) 
   -load-vernac-source-verbose f  load Coq file f.v (Load Verbose f.)
-  -lv f			(idem)
+  -lv f	                 (idem)
   -load-vernac-object f  load Coq object file f.vo
   -require f             load Coq object file f.vo and import it (Require f.)
   -compile f             compile Coq file f.v (implies -batch)
   -compile-verbose f     verbosely compile Coq file f.v (implies -batch)
 
-  -opt                   run the native-code version of Coq or Coq_SearchIsos
-  -byte                  run the bytecode version of Coq or Coq_SearchIsos
+  -opt                   run the native-code version of Coq
+  -byte                  run the bytecode version of Coq
 
   -where                 print Coq's standard library location and exit
   -v                     print Coq version and exit
@@ -59,6 +59,9 @@ let print_usage_channel co command =
   -xml                   export XML files either to the hierarchy rooted in
                          the directory $COQ_XML_LIBRARY_ROOT (if set) or to
                          stdout (if unset)
+  -quality               improve the legibility of the proof terms produced by
+                         some tactics
+  -h, --help             print this list of options
 "
 
 (* print the usage on standard error *)
@@ -72,5 +75,6 @@ let print_usage_coqc () =
   print_usage "Usage: coqc <options> <Coq options> file...\n
 options are:
   -verbose  compile verbosely
+  -bindir   override the default directory where coqc looks for coqtop
   -image f  specify an alternative executable for Coq
   -t        keep temporary files\n\n"
