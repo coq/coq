@@ -454,7 +454,12 @@ let internalise isarity sigma env allow_soapp lvar c =
 	    | CRef ref -> intern_reference env lvar ref
 	    | _ -> (intern false env f, [], [])
         in
-	  RApp (loc, c, intern_impargs c env impargs args_scopes args)
+	let args = intern_impargs c env impargs args_scopes args in
+	(match c with 
+	  | RApp (loc', f', args') ->
+	      (* May happen with the ``...`` and `...` grammars *)
+	      RApp (join_loc loc' loc, f',args'@args)
+	  | _ -> RApp (loc, c, args))
     | CCases (loc, po, tms, eqns) ->
 	RCases (loc, option_app (intern true env) po,
 		List.map (intern false env) tms,
