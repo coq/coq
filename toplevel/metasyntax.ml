@@ -59,10 +59,15 @@ let _ =
 (* Pretty-printing objects = syntax_entry *)
 let cache_syntax (_,ppobj) = Esyntax.add_ppobject ppobj
 
+let subst_syntax (_,subst,ppobj) = 
+  Extend.subst_syntax_command Ast.subst_astpat subst ppobj
+
 let (inPPSyntax,outPPSyntax) =
   declare_object {(default_object "PPSYNTAX") with
        open_function = (fun i o -> if i=1 then cache_syntax o);
        cache_function = cache_syntax;
+       subst_function = subst_syntax;
+       classify_function = (fun (_,o) -> Substitute o);       
        export_function = (fun x -> Some x) }
 
 (* Syntax extension functions (registered in the environnement) *)
@@ -94,6 +99,8 @@ let (inToken, outToken) =
   declare_object {(default_object "TOKEN") with
        open_function = (fun i o -> if i=1 then cache_token o);
        cache_function = cache_token;
+       subst_function = Libobject.ident_subst_function;
+       classify_function = (fun (_,o) -> Substitute o);
        export_function = (fun x -> Some x)}
 
 let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
@@ -108,6 +115,7 @@ let (inGrammar, outGrammar) =
        open_function = (fun i o -> if i=1 then cache_grammar o);
        cache_function = cache_grammar;
        subst_function = subst_grammar;
+       classify_function = (fun (_,o) -> Substitute o);
        export_function = (fun x -> Some x)}
 
 let gram_define_entry (u,_ as univ) ((ntl,nt),et,assoc,rl) =
@@ -162,13 +170,15 @@ let cache_infix (_,(gr,se)) =
   Esyntax.add_ppobject {sc_univ="constr";sc_entries=se}
 
 let subst_infix (_,subst,(gr,se)) =
-  (Egrammar.subst_all_grammar_command subst gr,se)
+  (Egrammar.subst_all_grammar_command subst gr,
+   list_smartmap (Extend.subst_syntax_entry Ast.subst_astpat subst) se)
 
 let (inInfix, outInfix) =
   declare_object {(default_object "INFIX") with
        open_function = (fun i o -> if i=1 then cache_infix o);
        cache_function = cache_infix;
        subst_function = subst_infix;
+       classify_function = (fun (_,o) -> Substitute o);
        export_function = (fun x -> Some x)}
 
 (* Build the syntax and grammar rules *)

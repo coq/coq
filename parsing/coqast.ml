@@ -99,20 +99,29 @@ let hcons_ast (hstr,hid,hpath) =
   let hast = Hashcons.recursive_hcons Hast.f (hloc,hstr,hid,hpath) in
   (hast,hloc)
 
-let subst_ast subst ast = match ast with
-  | Node _
-  | Nmeta _
-  | Nvar _
-  | Slam _
-  | Smetalam _
-  | Num _
-  | Str _
-  | Id _
-  | Dynamic _ -> ast
+let rec subst_ast subst ast = match ast with
+  | Node (l,s,astl) ->
+      let astl' = Util.list_smartmap (subst_ast subst) astl in
+	if astl' == astl then ast else
+	  Node (l,s,astl')
+  | Slam (l,ido,ast1) ->
+      let ast1' = subst_ast subst ast1 in
+	if ast1' == ast1 then ast else
+	  Slam (l,ido,ast1')
+  | Smetalam (l,s,ast1) ->
+      let ast1' = subst_ast subst ast1 in
+	if ast1' == ast1 then ast else
+	  Smetalam (l,s,ast1')
   | Path (loc,kn) -> 
       let kn' = Names.subst_kn subst kn in
 	if kn' == kn then ast else
 	  Path(loc,kn')
+  | Nmeta _
+  | Nvar _ -> ast
+  | Num _
+  | Str _
+  | Id _
+  | Dynamic _ -> ast
 
    
 

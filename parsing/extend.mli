@@ -85,6 +85,11 @@ type 'pat unparsing_hunk =
   | UNP_INFIX of Libnames.extended_global_reference * string * string *
       (parenRelation * parenRelation)
 
+(*val subst_unparsing_hunk : 
+  Names.substitution -> (Names.substitution -> 'pat -> 'pat) -> 
+  'pat unparsing_hunk -> 'pat unparsing_hunk
+*)
+
 (* Checks if the precedence of the parent printer (None means the
    highest precedence), and the child's one, follow the given
    relation. *)
@@ -101,9 +106,18 @@ type 'pat syntax_entry = {
   syn_astpat : 'pat;
   syn_hunks : 'pat unparsing_hunk list }
 
+val subst_syntax_entry : 
+  (Names.substitution -> 'pat -> 'pat) -> 
+  Names.substitution -> 'pat syntax_entry -> 'pat syntax_entry
+
+
 type 'pat syntax_command = { 
   sc_univ : string; 
   sc_entries : 'pat syntax_entry list }
+
+val subst_syntax_command : 
+  (Names.substitution -> 'pat -> 'pat) -> 
+  Names.substitution -> 'pat syntax_command -> 'pat syntax_command
 
 type syntax_rule = string * Coqast.t * Coqast.t unparsing_hunk list
 type syntax_entry_ast = precedence * syntax_rule list

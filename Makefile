@@ -578,7 +578,6 @@ clean::
 ###########################################################################
 
 CORRECTNESSVO=contrib/correctness/Arrays.vo				\
-	contrib/correctness/ArraySyntax.vo				\
 	contrib/correctness/Correctness.vo				\
 	contrib/correctness/Exchange.vo					\
 	contrib/correctness/ArrayPermut.vo				\

@@ -740,20 +740,20 @@ and caselist vars etyp (pl,a) =
 
 let to_act_check_vars = act_of_ast
 
-let rec subst_pat subst = function
+let rec subst_astpat subst = function
   | Pquote a -> Pquote (subst_ast subst a)
   | Pmeta _ as p -> p
-  | Pnode (s,pl) -> Pnode (s,subst_patlist subst pl)
-  | Pslam (ido,p) -> Pslam (ido,subst_pat subst p)
-  | Pmeta_slam (s,p) -> Pmeta_slam (s,subst_pat subst p)
+  | Pnode (s,pl) -> Pnode (s,subst_astpatlist subst pl)
+  | Pslam (ido,p) -> Pslam (ido,subst_astpat subst p)
+  | Pmeta_slam (s,p) -> Pmeta_slam (s,subst_astpat subst p)
 
-and subst_patlist subst = function
-  | Pcons (p,pl) -> Pcons (subst_pat subst p, subst_patlist subst pl)
+and subst_astpatlist subst = function
+  | Pcons (p,pl) -> Pcons (subst_astpat subst p, subst_astpatlist subst pl)
   | (Plmeta _ | Pnil) as pl -> pl
 
 let subst_pat subst = function
-  | AstListPat pl -> AstListPat (subst_patlist subst pl)
-  | PureAstPat p -> PureAstPat (subst_pat subst p)
+  | AstListPat pl -> AstListPat (subst_astpatlist subst pl)
+  | PureAstPat p -> PureAstPat (subst_astpat subst p)
 
 let rec subst_act subst = function
   | Act p -> Act (subst_pat subst p)

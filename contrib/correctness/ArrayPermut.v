@@ -17,7 +17,6 @@
 
 Require ProgInt.
 Require Arrays.
-Require ArraySyntax.
 Require Export Exchange.
 
 Require Omega.

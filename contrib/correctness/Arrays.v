@@ -69,3 +69,12 @@ Tactic Definition ArrayAccess i j H :=
       Intro H; Rewrite H; Rewrite store_def_1
     | Intro H; Rewrite store_def_2; [ Idtac | Idtac | Idtac | Exact H ] ].
 
+(* Syntax and pretty-print for arrays *)
+
+Grammar constr constr0 :=
+  array_access
+    [ "#" ident($t) "[" constr($c) "]" ] -> [ (access $t $c) ].
+
+Syntax constr level 0 :
+  array_access
+    [ << (access ($VAR $t) $c) >> ] -> [ "#" $t "[" $c:L "]" ].

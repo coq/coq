@@ -190,6 +190,25 @@ type 'pat unparsing_hunk =
   | UNP_INFIX of Libnames.extended_global_reference * string * string *
       (parenRelation * parenRelation)
 
+let rec subst_hunk subst_pat subst hunk = match hunk with
+  | PH (pat,so,pr) ->
+      let pat' = subst_pat subst pat in
+	if pat'==pat then hunk else
+	  PH (pat',so,pr)
+  | RO _ -> hunk
+  | UNP_BOX (ppbox, hunkl) ->
+      let hunkl' = list_smartmap (subst_hunk subst_pat subst) hunkl in
+	if hunkl' == hunkl then hunk else
+	  UNP_BOX (ppbox, hunkl')
+  | UNP_BRK _
+  | UNP_TBRK _
+  | UNP_TAB
+  | UNP_FNL -> hunk
+  | UNP_INFIX (ref,s1,s2,prs) ->
+      let ref' = Libnames.subst_ext subst ref in
+	if ref' == ref then hunk else
+	  UNP_INFIX (ref',s1,s2,prs)
+
 (* Checks if the precedence of the parent printer (None means the
    highest precedence), and the child's one, follow the given
    relation. *)
@@ -223,10 +242,29 @@ type 'pat syntax_entry = {
   syn_astpat : 'pat;
   syn_hunks : 'pat unparsing_hunk list }
 
+let subst_syntax_entry subst_pat subst sentry = 
+  let syn_astpat' = subst_pat subst sentry.syn_astpat in
+  let syn_hunks' = list_smartmap (subst_hunk subst_pat subst) sentry.syn_hunks 
+  in
+    if syn_astpat' == sentry.syn_astpat 
+      && syn_hunks' == sentry.syn_hunks then sentry 
+    else
+      { sentry with
+	  syn_astpat = syn_astpat' ;
+	  syn_hunks = syn_hunks' ;
+      }
+      
 type 'pat syntax_command = { 
   sc_univ : string; 
   sc_entries : 'pat syntax_entry list }
 
+let subst_syntax_command subst_pat subst scomm = 
+  let sc_entries' = 
+    list_smartmap (subst_syntax_entry subst_pat subst) scomm.sc_entries 
+  in
+    if sc_entries' == scomm.sc_entries then scomm else
+      { scomm with sc_entries = sc_entries' }
+      
 type syntax_rule = string * Coqast.t * Coqast.t unparsing_hunk list
 type syntax_entry_ast = precedence * syntax_rule list
 
