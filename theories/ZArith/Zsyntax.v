@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Export fast_integer.
+Require Export BinInt.
 
 V7only[
 

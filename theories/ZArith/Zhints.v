@@ -27,11 +27,12 @@
 
 (* Lemmas involving positive and compare are not taken into account *)
 
-Require fast_integer.
+Require BinInt.
 Require Zorder.
 Require Zmin.
 Require Zabs.
-Require zarith_aux.
+Require Zcompare.
+Require Znat.
 Require auxiliary.
 Require Zsyntax.
 Require Zmisc.

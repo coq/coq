@@ -585,9 +585,11 @@ NARITHVO=\
  theories/NArith/NArith.vo
 
 ZARITHVO=\
+ theories/ZArith/BinInt.vo \
  theories/ZArith/Wf_Z.vo	theories/ZArith/Zsyntax.vo \
  theories/ZArith/ZArith.vo	theories/ZArith/auxiliary.vo \
  theories/ZArith/ZArith_dec.vo	theories/ZArith/fast_integer.vo \
+ theories/ZArith/Zcompare.vo    theories/ZArith/Znat.vo \
  theories/ZArith/Zmisc.vo	theories/ZArith/zarith_aux.vo \
  theories/ZArith/Zorder.vo      theories/ZArith/Zabs.vo \
  theories/ZArith/Zmin.vo        theories/ZArith/Zeven.vo \

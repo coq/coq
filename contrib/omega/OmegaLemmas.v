@@ -78,7 +78,7 @@ Lemma OMEGA8:
 
 Intros x y H1 H2 H3; Elim (Zle_lt_or_eq ZERO x H1); [
   Intros H4; Absurd (Zlt ZERO x); [
-    Change (Zge ZERO x); Apply Zle_ge; Apply (Zsimpl_le_plus_l y);
+    Change (Zge ZERO x); Apply Zle_ge; Apply Zsimpl_le_plus_l with y;
     Rewrite -> H3; Rewrite Zplus_inverse_r; Rewrite Zero_right; Assumption
   | Assumption]
 | Intros H4; Rewrite -> H4; Trivial with arith].

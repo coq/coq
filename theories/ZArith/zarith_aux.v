@@ -7,7 +7,6 @@
 (***********************************************************************)
 (*i $Id$ i*)
 
-Require fast_integer.
 Require Export Zorder.
 Require Export Zmin.
 Require Export Zabs.
@@ -133,6 +132,7 @@ Notation Zminus_Sn_m := Zminus_Sn_m.
 Notation Zlt_minus := Zlt_minus.
 Notation Zlt_O_minus_lt := Zlt_O_minus_lt.
 Notation Zmult_plus_distr_l := Zmult_plus_distr_l.
+Notation Zmult_plus_distr := BinInt.Zmult_plus_distr_l.
 Notation Zmult_minus_distr := Zmult_minus_distr.
 Notation Zmult_assoc_r := Zmult_assoc_r.
 Notation Zmult_assoc_l := Zmult_assoc_l.
@@ -141,5 +141,7 @@ Notation Zmult_1_n := Zmult_1_n.
 Notation Zmult_n_1 := Zmult_n_1.
 Notation Zmult_Sm_n := Zmult_Sm_n.
 Notation Zmult_Zplus_distr := Zmult_plus_distr_r.
-Notation Zmult_plus_distr := Zmult_plus_distr_l.
+Export Zorder.
+Export Zmin.
+Export Zabs.
 ].

@@ -12,12 +12,19 @@
     These are the basic modules, required by [Omega] and [Ring] for instance. 
     The full library is [ZArith]. *)
 
+V7only [
 Require Export fast_integer.
 Require Export zarith_aux.
+].
+Require Export BinPos.
+Require Export BinNat.
+Require Export BinInt.
+Require Export Zcompare.
 Require Export Zorder.
 Require Export Zeven.
 Require Export Zmin.
 Require Export Zabs.
+Require Export Znat.
 Require Export auxiliary.
 Require Export Zsyntax.
 Require Export ZArith_dec.

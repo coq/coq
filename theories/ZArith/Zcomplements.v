@@ -15,31 +15,19 @@ Require Wf_nat.
 V7only [Import Z_scope.].
 Open Local Scope Z_scope.
 
-(**********************************************************************)
-(* Properties of comparison on Z *)
-
-Set Implicit Arguments.
-
-Theorem Zcompare_Zmult_right : (x,y,z:Z)` z>0` -> `x ?= y`=`x*z ?= y*z`.
-
-Intros; Apply Zcompare_egal_dec;
-[ Intros; Apply Zlt_Zmult_right; Trivial
-| Intro Hxy; Apply [a,b:Z](let (t1,t2)=(Zcompare_EGAL a b) in t2);
-  Rewrite ((let (t1,t2)=(Zcompare_EGAL x y) in t1) Hxy); Trivial
-| Intros; Apply Zgt_Zmult_right; Trivial
+V7only [
+Notation Zcompare_Zmult_right := Zcompare_Zmult_right.
+Notation Zcompare_Zmult_left := Zcompare_Zmult_left.
 ].
-Qed.
 
-Theorem  Zcompare_Zmult_left : (x,y,z:Z)`z>0` -> `x ?= y`=`z*x ?= z*y`.
-Intros;
-Rewrite (Zmult_sym z x);
-Rewrite (Zmult_sym z y);
-Apply Zcompare_Zmult_right; Assumption.
-Qed.
+V7only [Set Implicit Arguments.].
 
+(**********************************************************************)
+(** About parity *)
 
 Lemma two_or_two_plus_one : (x:Z) { y:Z | `x = 2*y`}+{ y:Z | `x = 2*y+1`}. 
-NewDestruct x.
+Proof.
+Intro x; NewDestruct x.
 Left ; Split with ZERO; Reflexivity.
 
 NewDestruct p.
@@ -60,6 +48,7 @@ Left ; Split with (NEG p); Reflexivity.
 Right ; Split with `-1`; Reflexivity.
 Qed.
 
+V7only [Unset Implicit Arguments.].
 
 (**********************************************************************)
 (** The biggest power of 2 that is stricly less than [a]
@@ -77,6 +66,7 @@ Fixpoint floor_pos [a : positive] : positive :=
 Definition floor := [a:positive](POS (floor_pos a)).
 
 Lemma floor_gt0 : (x:positive) `(floor x) > 0`.
+Proof.
 Intro.
 Compute.
 Trivial.
@@ -84,16 +74,17 @@ Qed.
 
 Lemma floor_ok : (a:positive) 
   `(floor a) <=  (POS a) < 2*(floor a)`. 
+Proof.
 Unfold floor.
-Induction a.
+Intro a; NewInduction a as [p|p|].
 
-Intro p; Simpl.
+Simpl.
 Repeat Rewrite POS_xI.
 Rewrite (POS_xO (xO (floor_pos p))). 
 Rewrite (POS_xO (floor_pos p)).
 Omega.
 
-Intro p; Simpl.
+Simpl.
 Repeat Rewrite POS_xI.
 Rewrite (POS_xO (xO (floor_pos p))).
 Rewrite (POS_xO (floor_pos p)).
@@ -103,12 +94,12 @@ Omega.
 Simpl; Omega.
 Qed.
 
-
 (**********************************************************************)
 (** Two more induction principles over [Z]. *)
 
 Theorem Z_lt_abs_rec : (P: Z -> Set)
   ((n: Z) ((m: Z) `|m|<|n|` -> (P m)) -> (P n)) -> (p: Z) (P p).
+Proof.
 Intros P HP p.
 LetTac Q:=[z]`0<=z`->(P z)*(P `-z`).
 Cut (Q `|p|`);[Intros|Apply (Z_lt_rec Q);Auto with zarith].
@@ -126,6 +117,7 @@ Qed.
 
 Theorem Z_lt_abs_induction : (P: Z -> Prop)
   ((n: Z) ((m: Z) `|m|<|n|` -> (P m)) -> (P n)) -> (p: Z) (P p).
+Proof.
 Intros P HP p.
 LetTac Q:=[z]`0<=z`->(P z) /\ (P `-z`).
 Cut (Q `|p|`);[Intros|Apply (Z_lt_induction Q);Auto with zarith].
@@ -140,8 +132,7 @@ Rewrite Zopp_Zopp;Intros.
 Elim (H `|m|`);Intros;Auto with zarith.
 Elim (Zabs_dec m);Intro eq;Rewrite eq;Trivial.
 Qed.
-
-Unset Implicit Arguments.
+V7only [Unset Implicit Arguments.].
 
 (** To do case analysis over the sign of [z] *) 
 
