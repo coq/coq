@@ -54,7 +54,8 @@ type relation =
    { rel_a: constr ;
      rel_aeq: constr;
      rel_refl: constr option;
-     rel_sym: constr option
+     rel_sym: constr option;
+     rel_quantifiers_no: int  (* it helps unification *)
    }
 
 type 'a relation_class =
@@ -189,18 +190,20 @@ let coq_prop_relation =
  lazy (
   Relation {
      rel_a = mkProp ;
-     rel_aeq = gen_constant ["Init"; "Logic"] "iff" ;
+     rel_aeq = gen_constant ["Init"; "Logic"] "iff";
      rel_refl = Some (gen_constant ["Init"; "Logic"] "iff_refl");
-     rel_sym = Some (gen_constant ["Init"; "Logic"] "iff_sym")
+     rel_sym = Some (gen_constant ["Init"; "Logic"] "iff_sym");
+     rel_quantifiers_no = 0
    })
 
 let coq_prop_relation2 =
  lazy (
   Relation {
-     rel_a = mkProp ;
-     rel_aeq = Lazy.force coq_impl ;
-     rel_refl = Some (constant ["Setoid"] "impl_refl") ;
-     rel_sym = None
+     rel_a = mkProp;
+     rel_aeq = Lazy.force coq_impl;
+     rel_refl = Some (constant ["Setoid"] "impl_refl");
+     rel_sym = None;
+     rel_quantifiers_no = 0
    })
 
 
@@ -304,7 +307,8 @@ let subst_relation subst relation =
       { rel_a = rel_a' ;
         rel_aeq = rel_aeq' ;
         rel_refl = rel_refl' ;
-        rel_sym = rel_sym'
+        rel_sym = rel_sym' ;
+        rel_quantifiers_no = relation.rel_quantifiers_no
       }
       
 let equiv_list () = List.map (fun x -> x.rel_aeq) (Gmap.rng !relation_table)
@@ -532,7 +536,8 @@ let int_add_relation a aeq refl sym =
     (aeq, { rel_a = a;
             rel_aeq = aeq;
             rel_refl = refl;
-            rel_sym = sym}))
+            rel_sym = sym;
+            rel_quantifiers_no = List.length a_quantifiers_rev }))
 
 (* The vernac command "Add Relation ..." *)
 let add_relation a aeq refl sym =
@@ -558,7 +563,7 @@ let no_more_edited id =
 let what_edited id =
   Gmap.find id !edited
 
-(*CSCXX: reimplementare con qualcosa che faccia senso *)
+(*CSCYY: reimplementare con qualcosa che faccia senso *)
 let check_is_dependent t n =
   let rec aux t i =
     if (i<n)
@@ -685,33 +690,37 @@ let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
    Options.if_verbose ppnl (prterm m ++ str " is registered as a morphism")   
 
 let apply_to_relation subst rel =
+ let new_quantifiers_no = rel.rel_quantifiers_no - Array.length subst in
+  assert (new_quantifiers_no >= 0) ;
   { rel_a = mkApp (rel.rel_a, subst) ;
     rel_aeq = mkApp (rel.rel_aeq, subst) ;
     rel_refl = option_app (fun c -> mkApp (c,subst)) rel.rel_refl ; 
-    rel_sym = option_app (fun c -> mkApp (c,subst)) rel.rel_sym }
+    rel_sym = option_app (fun c -> mkApp (c,subst)) rel.rel_sym;
+    rel_quantifiers_no = new_quantifiers_no }
 
 (* first order matching with a bit of conversion *)
 let unify_relation_carrier_with_type env rel t =
- let raise_error () =
+ let raise_error quantifiers_no =
   errorlabstrm "New Morphism"
    (str "One morphism argument or its output has type " ++ prterm t ++
     str " but the signature requires an argument of type (" ++
-    prterm rel.rel_a ++ str " ? ... ?)") in
+    prterm rel.rel_a ++ prvect_with_sep pr_spc (fun _ -> str  "?")
+     (Array.make quantifiers_no 0)) in
  let args =
-  match kind_of_term rel.rel_a, kind_of_term t with
-     App (he,args), App (he',args') ->
-      let argsno = Array.length args in
-(*CSCXX: knowing the number of quantifiers I could be more precise *)
+  match kind_of_term t with
+     App (he',args') ->
+      let argsno = Array.length args' - rel.rel_quantifiers_no in
       let args1 = Array.sub args' 0 argsno in
-      let args2 = Array.sub args' argsno (Array.length args' - argsno) in
+      let args2 = Array.sub args' argsno rel.rel_quantifiers_no in
        if is_conv env Evd.empty rel.rel_a (mkApp (he',args1)) then
         args2
        else
-        raise_error ()
-(*CSCXX: knowing the number of quantifiers I could be more precise *)
-   | _, App (t'',args) when is_conv env Evd.empty rel.rel_a t'' -> args
-   | _, _ when is_conv env Evd.empty rel.rel_a t -> [||]
-   | _, _ -> raise_error ()
+        raise_error rel.rel_quantifiers_no
+   | _  ->
+     if rel.rel_quantifiers_no = 0 && is_conv env Evd.empty rel.rel_a t then
+      [||] 
+     else
+      raise_error rel.rel_quantifiers_no
  in
   apply_to_relation args rel
 
@@ -785,7 +794,7 @@ let new_morphism m signature id hook =
     if (args_ty=[])
     then errorlabstrm "New Morphism"
      (str "The term " ++ prterm m ++ str " is not a product")
-(*CSCXX: check_is_dependent e' completamente bacata
+(*CSCYY: check_is_dependent e' completamente bacata
     else if (check_is_dependent typ (List.length args_ty))
     then  errorlabstrm "New Morphism"
      (str "The term " ++ prterm m ++ str" should not be a dependent product")
@@ -835,7 +844,7 @@ let new_morphism m signature id hook =
                 (fun i arg real_arg ->
                   find_relation_class_v arg (lift (-i) real_arg))
                 0 args real_args_ty) in
-            (*CSCXX: bug here; output deve essere de-liftato; ma a sto
+            (*CSCYY: bug here; output deve essere de-liftato; ma a sto
               punto meglio farsi tornare dalla check_non_dependent
               gli argomenti gia' deliftati *)
             let output,output_instance = find_relation_class output' output in
@@ -932,7 +941,12 @@ let add_setoid id a aeq th =
     let aeq_rel =
      None,
       Relation
-       {rel_a = a ; rel_aeq = aeq ; rel_refl = Some refl ; rel_sym = Some sym}
+       { rel_a = a ;
+         rel_aeq = aeq ;
+         rel_refl = Some refl ;
+         rel_sym = Some sym ;
+         (*CSCXX: 0 means no quantified setoids (yet???) *)
+         rel_quantifiers_no = 0}
     in
      (*CSCXX: [] means no quantified setoids (yet???) *)
      add_morphism None mor_name
