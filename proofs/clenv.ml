@@ -999,10 +999,9 @@ let clenv_match_args s clause =
                   errorlabstrm "clenv_match_args" (str "No such binder")
 	in
 	let k_typ = w_hnf_constr clause.hook (clenv_instance_type clause k)
-	and c_typ = w_hnf_constr clause.hook (w_type_of clause.hook c) in
+	and c_typ = w_hnf_constr clause.hook (nf_betaiota (w_type_of clause.hook c)) in
 	(* whd_betaiota was before in type_of - useful to reduce types like *)
 	(* (x:A)([x]P u) *)
-	let c_typ = nf_betaiota c_typ in
         matchrec 
        	    (clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clause)) t
   in 
