@@ -31,7 +31,7 @@ open Q
 type let_clause_kind =
   | LETTOPCLAUSE of Names.identifier * constr_expr
   | LETCLAUSE of
-      (Names.identifier Util.located * (constr_expr, Libnames.reference) may_eval option * raw_tactic_arg)
+      (Names.identifier Util.located * raw_tactic_expr option * raw_tactic_arg)
 
 ifdef Quotify then
 module Prelude = struct
@@ -82,7 +82,7 @@ GEXTEND Gram
       | id = base_ident; ":"; c = Constr.constr; ":="; "Proof" ->
           LETTOPCLAUSE (id, c)
       | id = identref; ":"; c = constrarg; ":="; te = tactic_letarg ->
-          LETCLAUSE (id, Some c, te)
+          LETCLAUSE (id, Some (TacArg(ConstrMayEval c)), te)
       |	id = base_ident; ":"; c = Constr.constr ->
 	  LETTOPCLAUSE (id, c) ] ]
   ;
@@ -150,35 +150,13 @@ GEXTEND Gram
 	  [IDENT "In" | "in"]; body = tactic_expr -> TacLetRecIn (rc::rcl,body)
       | IDENT "Let"; llc = LIST1 let_clause SEP "And"; IDENT "In";
           u = tactic_expr -> TacLetIn (make_letin_clause loc llc,u)
-(* Let cas LetCut est subsumé par "Assert id := c" tandis que le cas
-   StartProof ne fait pas vraiment de sens en tant que sous-expression
-   d'une tactique complexe... 
-      |	IDENT "Let"; llc = LIST1 let_clause SEP "And" -> 
-        (match llc with
-	| [LETTOPCLAUSE (id,c)] ->
-	    VernacStartProof ((NeverDischarge,false),id,c,true,(fun _ _ -> ()))
-        | l ->
-	    let l = List.map (function
-	      | LETCLAUSE (id,Some a,t) -> (id,a,t)
-	      | _ -> user_err_loc (loc, "", str "Syntax Error")) l in
-	    TacLetCut (loc, l))
-*)
-(*
-      |	IDENT "Let"; llc = LIST1 let_clause SEP "And";
-        tb = Vernac_.theorem_body; "Qed" ->
-          (match llc with
-	    | [LETTOPCLAUSE (id,c)] ->
-		EscapeVernac <:ast< (TheoremProof "LETTOP" $id $c $tb) >>
-	    | _ ->
-		errorlabstrm "Gram.tactic_atom" (str "Not a LETTOPCLAUSE"))
-*)
 
       | IDENT "Match"; IDENT "Context"; IDENT "With"; mrl = match_context_list
         -> TacMatchContext (false,mrl)
       | IDENT "Match"; IDENT "Reverse"; IDENT "Context"; IDENT "With"; mrl = match_context_list
         -> TacMatchContext (true,mrl)
       |	IDENT "Match"; c = constrarg; IDENT "With"; mrl = match_list ->
-        TacMatch (c,mrl)
+        TacMatch (TacArg(ConstrMayEval c),mrl)
 (*To do: put Abstract in Refiner*)
       | IDENT "Abstract"; tc = tactic_expr -> TacAbstract (tc,None)
       | IDENT "Abstract"; tc = tactic_expr; "using";  s = base_ident ->

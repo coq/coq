@@ -157,7 +157,7 @@ let field g =
       | _ -> error "The statement is not built from Leibniz' equality" in
   let th = VConstr (lookup (pf_env g) typ) in
   (interp_tac_gen [(id_of_string "FT",th)] (get_debug ())
-    <:tactic< match context with [|- (@eq _ _ _) ] => field_gen FT end >>) g
+    <:tactic< match context with |- (@eq _ _ _) => field_gen FT end >>) g
 
 (* Verifies that all the terms have the same type and gives the right theory *)
 let guess_theory env evc = function

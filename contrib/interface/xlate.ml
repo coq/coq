@@ -710,7 +710,7 @@ and xlate_tactic =
    | TacProgress t -> CT_progress(xlate_tactic t)
    | TacOrelse(t1,t2) -> CT_orelse(xlate_tactic t1, xlate_tactic t2)
    | TacMatch (exp, rules) ->
-        CT_match_tac(CT_coerce_DEF_BODY_to_LET_VALUE(formula_to_def_body exp),
+        CT_match_tac(xlate_tactic exp,
                      match List.map 
                        (function 
                           | Pat ([],p,tac) ->
@@ -737,23 +737,22 @@ and xlate_tactic =
          function
              ((_,s),None,ConstrMayEval v) ->
                  CT_let_clause(xlate_ident s,
-			       ctv_DEF_BODY_OPT_NONE,
+			       CT_coerce_NONE_to_TACTIC_OPT CT_none,
                                CT_coerce_DEF_BODY_to_LET_VALUE
                                (formula_to_def_body v))
            | ((_,s),None,Tacexp t) -> 
                  CT_let_clause(xlate_ident s,
-			       ctv_DEF_BODY_OPT_NONE,
+			       CT_coerce_NONE_to_TACTIC_OPT CT_none,
                                CT_coerce_TACTIC_COM_to_LET_VALUE
                                (xlate_tactic t))
            | ((_,s),None,t) -> 
                  CT_let_clause(xlate_ident s,
-			       ctv_DEF_BODY_OPT_NONE,
+			       CT_coerce_NONE_to_TACTIC_OPT CT_none,
                                CT_coerce_TACTIC_COM_to_LET_VALUE
                                (xlate_call_or_tacarg t))
            | ((_,s),Some c,t) -> 
 	       CT_let_clause(xlate_ident s,
-			     CT_coerce_DEF_BODY_to_DEF_BODY_OPT
-			     (formula_to_def_body c),
+			     CT_coerce_TACTIC_COM_to_TACTIC_OPT(xlate_tactic c),
                                CT_coerce_TACTIC_COM_to_LET_VALUE
 				 (xlate_call_or_tacarg t)) in
          let cl_l = List.map cvt_clause l in
@@ -761,7 +760,6 @@ and xlate_tactic =
             | [] -> assert false 
             | fst::others ->
                 CT_let_ltac (CT_let_clauses(fst, others), mk_let_value t))
-   | TacLetCut _ -> xlate_error "Unclear future of syntax Let x := t"
    | TacLetRecIn([], _) -> xlate_error "recursive definition with no definition"
    | TacLetRecIn(f1::l, t) -> 
        let tl =  CT_rec_tactic_fun_list

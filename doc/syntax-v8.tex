@@ -17,6 +17,7 @@
 
 \def\bfbar{\ensuremath{|\hskip -0.22em{}|\hskip -0.24em{}|}}
 \def\TERMbar{\bfbar}
+\def\TERMbarbar{\bfbar\bfbar}
 \def\notv{\text{_}}
 \def\infx#1{\notv#1\notv}
 
@@ -360,10 +361,25 @@ $$
 
 \section{Grammar of tactics}
 
-\subsection{Basic tactics}
-
 \def\tacconstr{\NTL{constr}{9}}
 \def\taclconstr{\NTL{constr}{200}}
+
+Additional symbols are:
+$$ \TERM{'}
+~~ \KWD{;}
+~~ \TERM{()}
+~~ \TERMbarbar
+~~ \TERM{$\vdash$}
+~~ \TERM{[}
+~~ \TERM{]}
+~~ \TERM{$\leftarrow$}
+$$
+Additional reserved keywords are:
+$$ \KWD{at}
+~~ \TERM{using}
+$$
+
+\subsection{Basic tactics}
 
 \begin{rules}
 \DEFNT{simple-tactic}
@@ -444,6 +460,11 @@ $$
 \nlsep \TERM{symmetry}
 \nlsep \TERM{transitivity}~\tacconstr
 %%
+\nlsep \NT{inversion-kwd}~\NT{quantified-hyp}~\NT{with-names}~\NT{clause}
+\nlsep \TERM{dependent}~\NT{inversion-kwd}~\NT{quantified-hyp}
+  ~\NT{with-names}~\OPTGR{\KWD{with}~\tacconstr}
+\nlsep \TERM{inversion}~\NT{quantified-hyp}~\TERM{using}~\tacconstr~\NT{clause}
+%%
 \nlsep \NT{red-expr}~\NT{clause}
 \nlsep \TERM{change}~\NT{conversion}~\NT{clause}
 \SEPDEF
@@ -458,8 +479,12 @@ $$
 \SEPDEF
 \DEFNT{conversion}
        \tacconstr~\TERM{at}~\PLUS{\NT{int}}~\KWD{with}~\tacconstr
-       \tacconstr~\KWD{with}~\tacconstr
+\nlsep \tacconstr~\KWD{with}~\tacconstr
 \nlsep \tacconstr
+\SEPDEF
+\DEFNT{inversion-kwd}
+       \TERM{inversion} ~\mid~ \TERM{invesion_clear} ~\mid~
+       \TERM{simple}~\TERM{inversion}
 \end{rules}
 
 Conflicts exists between integers and constrs.
@@ -471,7 +496,6 @@ Conflicts exists between integers and constrs.
 \DEFNT{induction-arg}
        \NT{int}~\mid~\tacconstr
 \SEPDEF
-%% TODO: lconstr not followed by a keyword
 \DEFNT{fix-spec}
        \KWD{(}~\NT{ident}~\STAR{\NT{binder}}~\OPT{\NT{annot}}
        ~\KWD{:}~\taclconstr~\KWD{)}
@@ -505,13 +529,15 @@ Conflicts exists between integers and constrs.
 \nlsep \PLUS{\NT{simple-binding}}
 \SEPDEF
 \DEFNT{simple-binding}
-       \KWD{(}~\NT{quantified-hyp}~\KWD{:=}~\NT{constr}~\KWD{)}
+       \KWD{(}~\NT{quantified-hyp}~\KWD{:=}~\taclconstr~\KWD{)}
 \SEPDEF
 \DEFNT{pattern-occ}
-       \tacconstr~\STAR{\NT{int}}
+       \KWD{(} ~\NT{constr} ~\OPTGR{\KWD{at}~\PLUS{\NT{int}}} ~\KWD{)}
+\nlsep \tacconstr
 \SEPDEF
 \DEFNT{unfold-occ}
-       \NT{reference}~\STAR{\NT{int}}
+       \KWD{(} \NT{reference}~\OPTGR{\KWD{at}~\PLUS{\NT{int}}} ~\KWD{)}
+\nlsep \NT{reference}
 \SEPDEF
 \DEFNT{red-flag}
        \TERM{beta} ~\mid~ \TERM{iota} ~\mid~ \TERM{zeta}
@@ -519,7 +545,7 @@ Conflicts exists between integers and constrs.
        \TERM{delta}~\OPT{\TERM{-}}~\TERM{[}~\PLUS{\NT{reference}}~\TERM{]}
 \SEPDEF
 \DEFNT{clause}
-       \OPTGR{\KWD{in}~\NT{hyp-ident}}
+       \OPTGR{\KWD{in}~\PLUS{\NT{hyp-ident}}}
 \SEPDEF
 \DEFNT{hyp-ident}
        \NT{ident}
@@ -543,17 +569,6 @@ Conflicts exists between integers and constrs.
 
 \subsection{Ltac}
 
-Additional symbols are:
-$$ \TERM{'}
-~~ \KWD{;}
-~~ \TERM{()}
-~~ \TERM{$\vdash$}
-$$
-Additional reserved keywords are:
-$$ \TERM{orelse}
-~~ \TERM{using}
-$$
-
 Currently, there are conflicts with keyword \KWD{in}: in the following,
 has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \begin{center}
@@ -573,15 +588,15 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \TERM{progress} ~\NT{tactic}
 \nlsep \TERM{info} ~\NT{tactic}
 %%
-\nlsep \NT{tactic} ~\TERM{orelse} ~\NT{tactic} &2R &\RNAME{Orelse}
+\nlsep \NT{tactic} ~\TERMbarbar ~\NT{tactic} &2R &\RNAME{Orelse}
 %%
 \nlsep \KWD{fun} ~\PLUS{\NT{name}} ~\KWD{$\Rightarrow$}
        ~\NT{tactic}  &1 &\RNAME{Fun-tac}
-\nlsep \TERM{rec} ~\NT{rec-clauses} ~\KWD{in} ~\NT{tactic}
 \nlsep \KWD{let} ~\NT{let-clauses} ~\KWD{in} ~\NT{tactic}
+\nlsep \KWD{let} ~\TERM{rec} ~\NT{rec-clauses} ~\KWD{in} ~\NT{tactic}
 \nlsep \KWD{match}~\OPT{\TERM{reverse}}~\TERM{context}~\KWD{with}
        ~\OPT{\TERMbar}~\OPT{\NT{match-ctxt-rules}} ~\KWD{end}
-\nlsep \KWD{match} ~\NTL{constr}{100} ~\KWD{with}
+\nlsep \KWD{match} ~\NT{tactic} ~\KWD{with}
        ~\OPT{\TERMbar}~\OPT{\NT{match-rules}} ~\KWD{end}
 \nlsep \TERM{abstract}~\NT{tactic}~\OPTGR{\TERM{using}~\NT{ident}}
 \nlsep \TERM{first}~\TERM{[} ~\NT{tactic-seq} ~\TERM{]}
@@ -589,8 +604,8 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \TERM{idtac}
 \nlsep \TERM{fail} ~\OPT{\NT{int}} ~\OPT{\NT{string}}
 \nlsep \TERM{fresh} ~\OPT{\NT{string}}
-\nlsep \TERM{context} ~\NT{ident} ~\TERM{[} ~\NT{constr} ~\TERM{]}
-\nlsep \TERM{eval} ~\NT{red-expr} ~\KWD{in} ~\NT{constr}
+\nlsep \TERM{context} ~\NT{ident} ~\TERM{[} ~\taclconstr ~\TERM{]}
+\nlsep \TERM{eval} ~\NT{red-expr} ~\KWD{in} ~\tacconstr
 \nlsep \TERM{check} ~\tacconstr
 \nlsep \TERM{'} ~\tacconstr
 \nlsep \NT{reference}~\STAR{\NT{tactic-arg}}  &&\RNAME{call-tactic}
@@ -606,7 +621,6 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \SEPDEF
 \DEFNT{tactic-atom}
        \NT{reference}
-\nlsep \NT{meta-ident}
 \nlsep \TERM{()}
 \SEPDEF
 \DEFNT{tactic-seq}
@@ -621,8 +635,10 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
        \NT{let-clause} ~\STARGR{\KWD{with}~\NT{let-clause}}
 \SEPDEF
 \DEFNT{let-clause}
-       \NT{ident} ~\STAR{\NT{name}} ~\NT{type-cstr} ~\KWD{:=} ~\NT{tactic}
-\nlsep \NT{ident} ~\KWD{:} ~\NT{constr} ~\OPTGR{\KWD{:=}~\TERM{proof}}
+       \NT{ident} ~\STAR{\NT{name}} ~\KWD{:=} ~\NT{tactic}
+\nlsep \NT{ident} ~\KWD{:} ~\tacconstr
+\nlsep \NT{ident} ~\KWD{:} ~\taclconstr ~\KWD{:=}~\TERM{proof}
+\nlsep \NT{ident} ~\KWD{:} ~\taclconstr ~\KWD{:=} ~\NT{tactic}
 \SEPDEF
 \DEFNT{rec-clauses}
        \NT{rec-clause} ~\KWD{with} ~\NT{rec-clauses}
@@ -638,6 +654,7 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \DEFNT{match-ctxt-rule}
        \NT{match-hyps-list} ~\TERM{$\vdash$} ~\NT{match-pattern}
        ~\KWD{$\Rightarrow$} ~\NT{tactic}
+\nlsep \KWD{_} ~\KWD{$\Rightarrow$} ~\NT{tactic}
 \SEPDEF
 \DEFNT{match-hyps-list}
        \NT{match-hyps} ~\KWD{,} ~\NT{match-hyps-list}
@@ -652,6 +669,7 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \SEPDEF
 \DEFNT{match-rule}
        \NT{match-pattern} ~\KWD{$\Rightarrow$} ~\NT{tactic}
+\nlsep \KWD{_} ~\KWD{$\Rightarrow$} ~\NT{tactic}
 \SEPDEF
 \DEFNT{match-pattern}
        \TERM{context}~\OPT{\NT{ident}}
@@ -662,11 +680,56 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
        \tacconstr
 \end{rules}
 
+\subsection{Other tactics}
+
+TODO
+
+\begin{rules}
+\EXTNT{simple-tactic}
+       \TERM{rewrite}
+\nlsep \TERM{replace}
+\nlsep \TERM{symplify_eq}
+\nlsep \TERM{discriminate}
+\nlsep \TERM{injection}
+\nlsep \TERM{conditional rewrite}
+\nlsep \TERM{dependent rewrite}
+\nlsep \TERM{absurd}
+\nlsep \TERM{contradiction}
+\nlsep \TERM{autorewrite}
+\nlsep \TERM{hint rewrite}
+\nlsep \TERM{refine}
+\nlsep \TERM{setoid_replace}
+\nlsep \TERM{setoid_rewrite}
+\nlsep \TERM{add setoid}
+\nlsep \TERM{add morphism}
+\nlsep \TERM{inversion}
+\nlsep \TERM{simple}~\TERM{inversion}
+\nlsep \TERM{derive}~\TERM{inversion_clear}
+\nlsep \TERM{derive}~\TERM{inversion}
+\nlsep \TERM{derive}~\TERM{dependent}~\TERM{inversion}
+\nlsep \TERM{derive}~\TERM{dependent}~\TERM{inversion_clear}
+\nlsep \TERM{subst}
+%% eqdecide.ml4
+\nlsep \TERM{decide}~\TERM{equality}
+\nlsep \TERM{compare}
+%% eauto
+\nlsep \TERM{eexact}
+\nlsep \TERM{eapply}
+\nlsep \TERM{prolog}
+\nlsep \TERM{eauto}
+\nlsep \TERM{eautod}
+%% tauto
+\nlsep \TERM{tauto}
+\nlsep \TERM{simplif}
+\nlsep \TERM{intuition}
+\nlsep \TERM{linearintuition}
+\end{rules}
+
 \section{Grammar of commands}
 
 New symbols:
 $$ \TERM{.}
-~~ \TERM{!!}
+~~ \TERM{..}
 ~~ \TERM{\tt >->}
 ~~ \TERM{:$>$}
 ~~ \TERM{$<$:}
@@ -688,7 +751,7 @@ $$
 \DEFNT{subgoal-command}
        \NT{check-command}
 \nlsep %\OPT{\TERM{By}}~
-   \OPT{\TERM{!!}}~\NT{tactic}
+   \NT{tactic}~\OPT{\KWD{..}}
 \end{rules}
 
 \subsection{Gallina and extensions}

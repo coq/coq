@@ -631,12 +631,8 @@ and pr6 = function
   | TacLetIn (llc,u) ->
       v 0
        (hv 0 (pr_let_clauses pr_tacarg0 llc ++ spc () ++ str "In") ++ fnl () ++ prtac u)
-  | TacLetCut llc ->
-      pr_let_clauses pr_tacarg0
-        (List.map (fun (id,c,t) -> ((dummy_loc,id),Some c,t)) llc)
-      ++ fnl ()
   | TacMatch (t,lrul) ->
-      hov 0 (str "Match" ++ spc () ++ pr_may_eval pr_constr pr_cst t ++ spc()
+      hov 0 (str "Match" ++ spc () ++ pr6 t ++ spc()
         ++ str "With"
         ++ prlist
 	  (fun r -> fnl () ++ str "|" ++ spc () ++

@@ -338,7 +338,7 @@ and ct_IN_OR_OUT_MODULES =
   | CT_in_modules of ct_ID_NE_LIST
   | CT_out_modules of ct_ID_NE_LIST
 and ct_LET_CLAUSE =
-    CT_let_clause of ct_ID * ct_DEF_BODY_OPT * ct_LET_VALUE
+    CT_let_clause of ct_ID * ct_TACTIC_OPT * ct_LET_VALUE
 and ct_LET_CLAUSES =
     CT_let_clauses of ct_LET_CLAUSE * ct_LET_CLAUSE list
 and ct_LET_VALUE =
@@ -524,7 +524,7 @@ and ct_TACTIC_COM =
   | CT_lettac of ct_ID * ct_FORMULA * ct_UNFOLD_LIST
   | CT_match_context of ct_CONTEXT_RULE * ct_CONTEXT_RULE list
   | CT_match_context_reverse of ct_CONTEXT_RULE * ct_CONTEXT_RULE list
-  | CT_match_tac of ct_LET_VALUE * ct_MATCH_TAC_RULES
+  | CT_match_tac of ct_TACTIC_COM * ct_MATCH_TAC_RULES
   | CT_move_after of ct_ID * ct_ID
   | CT_new_destruct of ct_FORMULA_OR_INT * ct_USING * ct_ID_LIST_LIST
   | CT_new_induction of ct_FORMULA_OR_INT * ct_USING * ct_ID_LIST_LIST

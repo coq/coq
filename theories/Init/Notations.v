@@ -85,7 +85,7 @@ Uninterpreted Notation "B + { x : A & P & Q }"
 (* At level 1 to factor with {x:A|P} etc *)
 
 Uninterpreted Notation "{ A }  + { B }" (at level 1)
-  V8only (at level 10, A at level 80).
+  V8only (at level 0, A at level 80).
 
 Uninterpreted Notation "A + { B }" (at level 4, left associativity)
   V8only (at level 40, B at level 80, left associativity).
@@ -93,13 +93,13 @@ Uninterpreted Notation "A + { B }" (at level 4, left associativity)
 (** Notations for sigma-types or subsets *)
 
 Uninterpreted Notation "{ x : A  |  P }" (at level 1)
-  V8only (at level 10, x at level 80).
+  V8only (at level 0, x at level 80).
 Uninterpreted Notation "{ x : A  |  P  &  Q }" (at level 1)
-  V8only (at level 10, x at level 80).
+  V8only (at level 0, x at level 80).
 
 Uninterpreted Notation "{ x : A  &  P }" (at level 1)
-  V8only (at level 10, x at level 80).
+  V8only (at level 0, x at level 80).
 Uninterpreted Notation "{ x : A  &  P  &  Q }" (at level 1)
-  V8only (at level 10, x at level 80).
+  V8only (at level 0, x at level 80).
 
 Delimits Scope type_scope with T.

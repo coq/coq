@@ -55,13 +55,13 @@ let is_disj ist =
 let not_dep_intros ist =
   <:tactic<
   repeat match context with
-  | [|- (?X1 -> ?X2) ] => intro
-  | [|- (Coq.Init.Logic.iff _ _)] => unfold Coq.Init.Logic.iff
-  | [|- (Coq.Init.Logic.not _)]   => unfold Coq.Init.Logic.not
-  | [ H:(Coq.Init.Logic.iff _ _)|- _] => unfold Coq.Init.Logic.iff in H
-  | [ H:(Coq.Init.Logic.not _)|-_]    => unfold Coq.Init.Logic.not in H
-  | [ H:(Coq.Init.Logic.iff _ _)->_|- _] => unfold Coq.Init.Logic.iff in H
-  | [ H:(Coq.Init.Logic.not _)->_|-_]    => unfold Coq.Init.Logic.not in H
+  | |- (?X1 -> ?X2) => intro
+  | |- (Coq.Init.Logic.iff _ _) => unfold Coq.Init.Logic.iff
+  | |- (Coq.Init.Logic.not _)   => unfold Coq.Init.Logic.not
+  | H:(Coq.Init.Logic.iff _ _)|- _ => unfold Coq.Init.Logic.iff in H
+  | H:(Coq.Init.Logic.not _)|-_    => unfold Coq.Init.Logic.not in H
+  | H:(Coq.Init.Logic.iff _ _)->_|- _ => unfold Coq.Init.Logic.iff in H
+  | H:(Coq.Init.Logic.not _)->_|-_    => unfold Coq.Init.Logic.not in H
   end >>
 				      
 let axioms ist =
@@ -69,9 +69,9 @@ let axioms ist =
   and t_is_empty = tacticIn is_empty in
     <:tactic<
     match reverse context with
-      |[|- ?X1] => $t_is_unit; constructor 1
-      |[_:?X1 |- _] => $t_is_empty; elimtype X1; assumption
-      |[_:?X1 |- ?X1] => assumption
+      | |- ?X1 => $t_is_unit; constructor 1
+      | _:?X1 |- _ => $t_is_empty; elimtype X1; assumption
+      | _:?X1 |- ?X1 => assumption
     end >>
 
 
@@ -84,27 +84,27 @@ let simplif ist =
     $t_not_dep_intros;
     repeat
        (match reverse context with
-        | [id: (?X1 _ _) |- _] =>
+        | id: (?X1 _ _) |- _ =>
             $t_is_conj; elim id; do 2 intro; clear id
-        | [id: (?X1 _ _) |- _] => $t_is_disj; elim id; intro; clear id
-        | [id0: ?X1-> ?X2, id1: ?X1|- _] =>
+        | id: (?X1 _ _) |- _ => $t_is_disj; elim id; intro; clear id
+        | id0: ?X1-> ?X2, id1: ?X1|- _ =>
 	    (* generalize (id0 id1); intro; clear id0 does not work
 	       (see Marco Maggiesi's bug PR#301)
 	    so we instead use Assert and exact. *)
 	    assert X2; [exact (id0 id1) | clear id0]
-        | [id: ?X1 -> ?X2|- _] =>
+        | id: ?X1 -> ?X2|- _ =>
           $t_is_unit; cut X2;
 	    [ intro; clear id
 	    | (* id : ?X1 -> ?X2 |- ?X2 *)
 	      cut X1; [exact id| constructor 1; fail]
 	    ]
-        | [id: (?X1 ?X2 ?X3) -> ?X4|- _] =>
+        | id: (?X1 ?X2 ?X3) -> ?X4|- _ =>
           $t_is_conj; cut (X2-> X3-> X4);
 	    [ intro; clear id
 	    | (* id: (?X1 ?X2 ?X3) -> ?X4 |- ?X2 -> ?X3 -> ?X4 *)
 	      intro; intro; cut (X1 X2 X3); [exact id| split; assumption]
 	    ]
-        | [id: (?X1 ?X2 ?X3) -> ?X4|- _] =>
+        | id: (?X1 ?X2 ?X3) -> ?X4|- _ =>
           $t_is_disj;
 	    cut (X3-> X4);
 	      [cut (X2-> X4);
@@ -115,7 +115,7 @@ let simplif ist =
 	      | (* id: (?X1 ?X2 ?X3) -> ?X4 |- ?X3 -> ?X4 *)
 		intro; cut (X1 X2 X3); [exact id| right; assumption]
 	      ]
-        | [|- (?X1 _ _)] => $t_is_conj; split
+        | |- (?X1 _ _) => $t_is_conj; split
         end;
         $t_not_dep_intros) >>
 
@@ -128,20 +128,20 @@ let rec tauto_intuit t_reduce solver ist =
   <:tactic<
    ($t_simplif;$t_axioms
    || match reverse context with
-      | [id:(?X1-> ?X2)-> ?X3|- _] =>
+      | id:(?X1-> ?X2)-> ?X3|- _ =>
 	  cut X3;
 	    [ intro; clear id; $t_tauto_intuit 
 	    | cut (X1 -> X2);
 		[ exact id
 		| generalize (fun y:X2 => id (fun x:X1 => y)); intro; clear id;
 		  solve [ $t_tauto_intuit ]]]
-      | [|- (?X1 _ _)] =>
+      | |- (?X1 _ _) =>
           $t_is_disj; solve [left;$t_tauto_intuit | right;$t_tauto_intuit]
       end
     ||
     (* NB: [|- _ -> _] matches any product *)
-    match context with |[ |- _ -> _ ] => intro; $t_tauto_intuit
-    |[ |- _ ] => $t_reduce;$t_solver
+    match context with | |- _ -> _ => intro; $t_tauto_intuit
+    |  |- _  => $t_reduce;$t_solver
     end
     ||
     $t_solver
@@ -150,8 +150,8 @@ let rec tauto_intuit t_reduce solver ist =
 let reduction_not_iff=interp
  <:tactic<repeat 
   match context with 
-  | [ |- _ ] => progress unfold Coq.Init.Logic.not, Coq.Init.Logic.iff 
-  | [ H:_ |- _ ] => progress unfold Coq.Init.Logic.not, Coq.Init.Logic.iff in H
+  | |- _     => progress unfold Coq.Init.Logic.not, Coq.Init.Logic.iff 
+  | H:_ |- _ => progress unfold Coq.Init.Logic.not, Coq.Init.Logic.iff in H
   end >>
 
 
@@ -174,7 +174,7 @@ let default_intuition_tac = interp <:tactic< auto with * >>
 let q_elim tac=
   <:tactic<
   match context with 
-  [ x : ?X1, H : ?X1 -> _ |- _ ] => generalize (H x); clear H; $tac
+    x : ?X1, H : ?X1 -> _ |- _ => generalize (H x); clear H; $tac
   end >>
 
 let rec lfo n gl=

@@ -689,17 +689,14 @@ and intern_tactic_seq ist = function
   | TacLetIn (l,u) ->
       let l = List.map
         (fun (n,c,b) ->
-          (n,option_app (intern_constr_may_eval ist) c, intern_tacarg !strict_check ist b)) l in
+          (n,option_app (intern_tactic ist) c, intern_tacarg !strict_check ist b)) l in
       let (l1,l2) = ist.ltacvars in
       let ist' = { ist with ltacvars = ((extract_let_names l)@l1,l2) } in
       ist.ltacvars, TacLetIn (l,intern_tactic ist' u)
-  | TacLetCut l ->
-      let f (n,c,t) = (n,intern_constr_may_eval ist c,intern_tacarg !strict_check ist t) in
-      ist.ltacvars, TacLetCut (List.map f l)
   | TacMatchContext (lr,lmr) ->
       ist.ltacvars, TacMatchContext(lr, intern_match_rule ist lmr)
   | TacMatch (c,lmr) ->
-      ist.ltacvars, TacMatch (intern_constr_may_eval ist c,intern_match_rule ist lmr)
+      ist.ltacvars, TacMatch (intern_tactic ist c,intern_match_rule ist lmr)
   | TacId -> ist.ltacvars, TacId
   | TacFail _ as x -> ist.ltacvars, x
   | TacProgress tac -> ist.ltacvars, TacProgress (intern_tactic ist tac)
@@ -1230,7 +1227,6 @@ and eval_tactic ist = function
   | TacFun (it,body) -> assert false
   | TacLetRecIn (lrc,u) -> assert false
   | TacLetIn (l,u) -> assert false
-  | TacLetCut l -> letcut_interp ist l
   | TacMatchContext _ -> assert false
   | TacMatch (c,lmr) -> assert false
   | TacId -> tclIDTAC
@@ -1347,15 +1343,16 @@ and interp_letin ist gl = function
       check_is_value v;
       (id,v):: (interp_letin ist gl tl)
   | ((loc,id),Some com,tce)::tl ->
-    let typ = interp_may_eval pf_interp_constr ist gl com
+    let env = pf_env gl in
+    let typ = constr_of_value env (val_interp ist gl com)
     and v = interp_tacarg ist gl tce in
     let csr = 
       try
-	constr_of_value (pf_env gl) v
+	constr_of_value env v
       with Not_found ->
       try
 	let t = tactic_of_value v in
-	let ndc = Environ.named_context (pf_env gl) in
+	let ndc = Environ.named_context env in
 	start_proof id IsLocal ndc typ (fun _ _ -> ());
 	by t;
 	let (_,({const_entry_body = pft},_,_)) = cook_proof () in
@@ -1366,32 +1363,6 @@ and interp_letin ist gl = function
 	errorlabstrm "Tacinterp.interp_letin"
           (str "Term or fully applied tactic expected in Let")
     in (id,VConstr (mkCast (csr,typ)))::(interp_letin ist gl tl)
-
-(* Interprets the clauses of a LetCut *)
-and letcut_interp ist = function 
-  | [] -> tclIDTAC
-  | (id,c,tce)::tl -> fun gl ->
-    let typ = interp_constr_may_eval ist gl c
-    and v = interp_tacarg ist gl tce in
-    let csr = 
-      try
-	constr_of_value (pf_env gl) v
-      with Not_found ->
-      try
-	let t = tactic_of_value v in
-	start_proof id IsLocal (pf_hyps gl) typ (fun _ _ -> ());
-	by t;
-	let (_,({const_entry_body = pft},_,_)) = cook_proof () in
-	delete_proof (dummy_loc,id);
-        pft
-      with | NotTactic ->
-	delete_proof (dummy_loc,id);
-	errorlabstrm "Tacinterp.interp_letin"
-          (str "Term or fully applied tactic expected in Let")
-    in
-    let cutt = h_cut typ
-    and exat = h_exact csr in
-    tclTHENSV cutt [|tclTHEN (introduction id) (letcut_interp ist tl);exat|] gl
 
 (* Interprets the Match Context expressions *)
 and match_context_interp ist g lr lmr =
@@ -1561,8 +1532,8 @@ and match_interp ist g constr lmr =
     | _ ->
       errorlabstrm "Tacinterp.apply_match" (str
         "No matching clauses for Match") in
-  let csr = interp_constr_may_eval ist g constr in
   let env = pf_env g in
+  let csr = constr_of_value env (val_interp ist g constr) in
   let ilr = read_match_rule (project g) env (fst (constr_list ist env)) lmr in
   apply_match ist csr ilr
 
@@ -1927,15 +1898,12 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
       let lrc = List.map (fun (n,b) -> (n,subst_tactic_fun subst b)) lrc in
       TacLetRecIn (lrc,(subst_tactic subst u:glob_tactic_expr))
   | TacLetIn (l,u) ->
-      let l = List.map (fun (n,c,b) -> (n,option_app (subst_raw_may_eval subst) c,subst_tacarg subst b)) l in
+      let l = List.map (fun (n,c,b) -> (n,option_app (subst_tactic subst) c,subst_tacarg subst b)) l in
       TacLetIn (l,subst_tactic subst u)
-  | TacLetCut l ->
-      let f (n,c,t) = (n,subst_raw_may_eval subst c,subst_tacarg subst t) in
-      TacLetCut (List.map f l)
   | TacMatchContext (lr,lmr) ->
       TacMatchContext(lr, subst_match_rule subst lmr)
   | TacMatch (c,lmr) ->
-      TacMatch (subst_raw_may_eval subst c,subst_match_rule subst lmr)
+      TacMatch (subst_tactic subst c,subst_match_rule subst lmr)
   | TacId | TacFail _ as x -> x
   | TacProgress tac -> TacProgress (subst_tactic subst tac:glob_tactic_expr)
   | TacAbstract (tac,s) -> TacAbstract (subst_tactic subst tac,s)

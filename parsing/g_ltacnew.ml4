@@ -31,7 +31,7 @@ open Q
 type let_clause_kind =
   | LETTOPCLAUSE of Names.identifier * constr_expr
   | LETCLAUSE of
-      (Names.identifier Util.located * (constr_expr, Libnames.reference) may_eval option * raw_tactic_arg)
+      (Names.identifier Util.located * raw_tactic_expr option * raw_tactic_arg)
 
 ifdef Quotify then
 module Prelude = struct
@@ -99,7 +99,7 @@ GEXTEND Gram
       | "match"; IDENT "reverse"; IDENT "context"; "with";
         mrl = match_context_list; "end" ->
           TacMatchContext (true,mrl)
-      |	"match"; c = constrarg; "with"; mrl = match_list; "end" ->
+      |	"match"; c = tactic_expr; "with"; mrl = match_list; "end" ->
           TacMatch (c,mrl)
 (*To do: put Abstract in Refiner*)
       | IDENT "abstract"; tc = tactic_expr -> TacAbstract (tc,None)
@@ -116,7 +116,7 @@ GEXTEND Gram
       | st = simple_tactic -> TacAtom (loc,st)
       | IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->
 	  TacArg(ConstrMayEval (ConstrEval (rtc,c)))
-      | IDENT "inst"; id = identref; "["; c = Constr.lconstr; "]" ->
+      | IDENT "context"; id = identref; "["; c = Constr.lconstr; "]" ->
 	  TacArg(ConstrMayEval (ConstrContext (id,c)))
       | IDENT "check"; c = Constr.constr ->
 	  TacArg(ConstrMayEval (ConstrTypeOf c))
@@ -148,11 +148,13 @@ GEXTEND Gram
   let_clause:
     [ [ id = identref; ":="; te = tactic_expr ->
           LETCLAUSE (id, None, arg_of_expr te)
-      | (_,id) = identref; ":"; c = Constr.constr; ":="; IDENT "proof" ->
+      | id = identref; args = LIST1 input_fun; ":="; te = tactic_expr ->
+          LETCLAUSE (id, None, arg_of_expr (TacFun(args,te)))
+      | (_,id) = identref; ":"; c = Constr.lconstr; ":="; IDENT "proof" ->
           LETTOPCLAUSE (id, c)
-      | id = identref; ":"; c = constrarg; ":="; te = tactic_expr ->
+      | id = identref; ":"; c = tactic_expr; ":="; te = tactic_expr ->
           LETCLAUSE (id, Some c, arg_of_expr te)
-      |	(_,id) = identref; ":"; c = Constr.lconstr ->
+      |	(_,id) = identref; ":"; c = Constr.constr ->
 	  LETTOPCLAUSE (id, c) ] ]
   ;
   rec_clause:
@@ -160,16 +162,16 @@ GEXTEND Gram
           (name,(it,body)) ] ]
   ;
   match_pattern:
-    [ [ id = Constr.lconstr_pattern; "["; pc = Constr.lconstr_pattern; "]" ->
-        let s = coerce_to_id id in Subterm (Some s, pc)
-      | "["; pc = Constr.lconstr_pattern; "]" -> Subterm (None,pc)
+    [ [ IDENT "context";  oid = OPT Constr.ident;
+          "["; pc = Constr.lconstr_pattern; "]" ->
+        Subterm (oid, pc)
       | pc = Constr.lconstr_pattern -> Term pc ] ]
   ;
   match_hyps:
     [ [ na = name; ":"; mp =  match_pattern -> Hyp (na, mp) ] ]
   ;
   match_context_rule:
-    [ [ "["; largs = LIST0 match_hyps SEP ","; "|-"; mp = match_pattern; "]";
+    [ [ largs = LIST0 match_hyps SEP ","; "|-"; mp = match_pattern;
         "=>"; te = tactic_expr -> Pat (largs, mp, te)
       | "_"; "=>"; te = tactic_expr -> All te ] ]
   ;
@@ -178,7 +180,7 @@ GEXTEND Gram
       | "|"; mrl = LIST1 match_context_rule SEP "|" -> mrl ] ]
   ;
   match_rule:
-    [ [ "["; mp = match_pattern; "]"; "=>"; te = tactic_expr -> Pat ([],mp,te)
+    [ [ mp = match_pattern; "=>"; te = tactic_expr -> Pat ([],mp,te)
       | "_"; "=>"; te = tactic_expr -> All te ] ]
   ;
   match_list:

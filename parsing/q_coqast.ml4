@@ -481,15 +481,12 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
       let f =
 	mlexpr_of_triple
 	  (mlexpr_of_pair (fun _ -> dloc) mlexpr_of_ident)
-	  (mlexpr_of_option (mlexpr_of_may_eval mlexpr_of_constr))
+	  (mlexpr_of_option mlexpr_of_tactic)
 	  mlexpr_of_tactic_arg in
       <:expr< Tacexpr.TacLetIn $mlexpr_of_list f l$ $mlexpr_of_tactic t$ >>
-(*
-  | Tacexpr.TacLetCut of (identifier * t * tactic_expr) list
-*)
   | Tacexpr.TacMatch (t,l) ->
       <:expr< Tacexpr.TacMatch
-        $mlexpr_of_may_eval mlexpr_of_constr t$
+        $mlexpr_of_tactic t$
         $mlexpr_of_list (mlexpr_of_match_rule mlexpr_of_tactic) l$>>
   | Tacexpr.TacMatchContext (lr,l) ->
       <:expr< Tacexpr.TacMatchContext 

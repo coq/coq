@@ -795,7 +795,7 @@ and fIN_OR_OUT_MODULES = function
 and fLET_CLAUSE = function
 | CT_let_clause(x1, x2, x3) ->
    fID x1;
-   fDEF_BODY_OPT x2;
+   fTACTIC_OPT x2;
    fLET_VALUE x3;
    fNODE "let_clause" 3
 and fLET_CLAUSES = function
@@ -1243,7 +1243,7 @@ and fTACTIC_COM = function
    (List.iter fCONTEXT_RULE l);
    fNODE "match_context_reverse" (1 + (List.length l))
 | CT_match_tac(x1, x2) ->
-   fLET_VALUE x1;
+   fTACTIC_COM x1;
    fMATCH_TAC_RULES x2;
    fNODE "match_tac" 2
 | CT_move_after(x1, x2) ->

@@ -238,40 +238,41 @@ let pr_induction_kind = function
 
 let pr_match_pattern pr_pat = function
   | Term a -> pr_pat a
-  | Subterm (None,a) -> str "[" ++ pr_pat a ++ str "]"
-  | Subterm (Some id,a) -> pr_id id ++ str "[" ++ pr_pat a ++ str "]"
+  | Subterm (None,a) -> str "context [" ++ pr_pat a ++ str "]"
+  | Subterm (Some id,a) ->
+      str "context " ++ pr_id id ++ str "[" ++ pr_pat a ++ str "]"
 
 let pr_match_hyps pr_pat = function
   | Hyp (nal,mp) -> pr_located pr_name nal ++ str ":" ++ pr_match_pattern pr_pat mp
 
 let pr_match_rule m pr pr_pat = function
   | Pat ([],mp,t) when m ->
-      str "[" ++ pr_match_pattern pr_pat mp ++ str "]"
-      ++ spc () ++ str "=>" ++ brk (1,4) ++ pr t
+      pr_match_pattern pr_pat mp ++
+      spc () ++ str "=>" ++ brk (1,4) ++ pr t
   | Pat (rl,mp,t) ->
-      str "[" ++ prlist_with_sep (fun () -> str",") (pr_match_hyps pr_pat) rl ++
+      prlist_with_sep (fun () -> str",") (pr_match_hyps pr_pat) rl ++
       spc () ++ str "|-" ++ spc () ++ pr_match_pattern pr_pat mp ++ spc () ++
-      str "] =>" ++ brk (1,4) ++ pr t
+      str "=>" ++ brk (1,4) ++ pr t
   | All t -> str "_" ++ spc () ++ str "=>" ++ brk (1,4) ++ pr t
 
 let pr_funvar = function
   | None -> spc () ++ str "()"
   | Some id -> spc () ++ pr_id id
 
-let pr_let_clause k pr prc pr_cst = function
+let pr_let_clause k pr = function
   | (id,None,t) ->
       hov 0 (str k ++ pr_located pr_id id ++ str " :=" ++ brk (1,1) ++
              pr (TacArg t))
   | (id,Some c,t) ->
       hv 0 (str k ++ pr_located pr_id id ++ str" :" ++ brk(1,2) ++
-      pr_may_eval prc prc pr_cst c ++
+      pr c ++
       str " :=" ++ brk (1,1) ++ pr (TacArg t))
 
-let pr_let_clauses pr prc pr_cst = function
+let pr_let_clauses pr = function
   | hd::tl ->
       hv 0
-        (pr_let_clause "let " pr prc pr_cst hd ++
-         prlist (fun t -> spc () ++ pr_let_clause "with " pr prc pr_cst t) tl)
+        (pr_let_clause "let " pr hd ++
+         prlist (fun t -> spc () ++ pr_let_clause "with " pr t) tl)
   | [] -> anomaly "LetIn must declare at least one binding"
 
 let pr_rec_clause pr (id,(l,t)) =
@@ -604,15 +605,12 @@ let rec pr_tac env inherited tac =
       llet
   | TacLetIn (llc,u) ->
       v 0
-       (hv 0 (pr_let_clauses (pr_tac env ltop) (pr_constr env) (pr_cst env) llc
+       (hv 0 (pr_let_clauses (pr_tac env ltop) llc
        ++ str " in") ++
        fnl () ++ pr_tac env (llet,E) u),
       llet
-  | TacLetCut llc -> assert false
   | TacMatch (t,lrul) ->
-      hov 0 (str "match " ++
-             pr_may_eval (pr_constr env) (pr_lconstr env) (pr_cst env) t
-        ++ str " with"
+      hov 0 (str "match " ++ pr_tac env ltop t ++ str " with"
         ++ prlist
 	  (fun r -> fnl () ++ str "| " ++
             pr_match_rule true (pr_tac env ltop) pr_pat r)
