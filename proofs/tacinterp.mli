@@ -22,7 +22,7 @@ type value =
   | VVoid
   | VRec of value ref
 
-(* Signature for interpretation: val_interp and interpretation functions *)
+(* Signature for interpretation: val\_interp and interpretation functions *)
 and interp_sign =
   enamed_declarations * Environ.env * (string * value) list *
     (int * constr) list * goal sigma option * debug_info

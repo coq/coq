@@ -37,7 +37,7 @@ val try_add_new_identity_coercion : identifier -> strength ->
   source:cl_typ -> target:cl_typ -> unit
 
 (* [try_add_new_class ref] declares [ref] as a new class; usually,
-   this is done implicitely by try_add_new_coercion's functions *)
+   this is done implicitely by [try_add_new_coercion]'s functions *)
 val try_add_new_class : global_reference -> strength -> unit
 
 (*s This is used for the discharge *)
