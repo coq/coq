@@ -175,7 +175,9 @@ Definition negb := [b:bool]Cases b of
 Infix "||" orb  (at level 4, left associativity) : bool_scope.
 Infix "&&" andb (at level 3, no associativity) : bool_scope
   V8only (at level 30, left associativity).
-Notation "!! b" := (negb b) (at level 0, right associativity) : bool_scope.
+Notation "- b" := (negb b) (at level 0, right associativity) : bool_scope
+  V8only.
+
 Open Scope bool_scope.
 
 (**************************)
@@ -184,12 +186,12 @@ Open Scope bool_scope.
 
 Lemma negb_intro : (b:bool)b=(negb (negb b)).
 Proof.
-Induction b; Reflexivity.
+NewDestruct b; Reflexivity.
 Qed.
 
 Lemma negb_elim : (b:bool)(negb (negb b))=b.
 Proof.
-Induction b; Reflexivity.
+NewDestruct b; Reflexivity.
 Qed.
        
 Lemma negb_orb : (b1,b2:bool)
@@ -206,12 +208,12 @@ Qed.
 
 Lemma negb_sym : (b,b':bool)(b'=(negb b))->(b=(negb b')).
 Proof.
-Induction b; Induction b'; Intros; Simpl; Trivial with bool.
+NewDestruct b; NewDestruct b'; Intros; Simpl; Trivial with bool.
 Qed.
 
 Lemma no_fixpoint_negb : (b:bool)~(negb b)=b.
 Proof.
-Induction b; Simpl; Unfold not; Intro; Apply diff_true_false; Auto with bool.
+NewDestruct b; Simpl; Unfold not; Intro; Apply diff_true_false; Auto with bool.
 Qed.
 
 Lemma eqb_negb1 : (b:bool)(eqb (negb b) b)=false.
@@ -229,7 +231,7 @@ Qed.
 
 Lemma if_negb : (A:Set) (b:bool) (x,y:A) (if (negb b) then x else y)=(if b then y else x).
 Proof.
-  Induction b;Trivial.
+  NewDestruct b;Trivial.
 Qed.
 
 
@@ -239,12 +241,12 @@ Qed.
 
 Lemma orb_prop : 
   (a,b:bool)(orb a b)=true -> (a = true)\/(b = true).
-Induction a; Induction b; Simpl; Try (Intro H;Discriminate H); Auto with bool.
+NewDestruct a; NewDestruct b; Simpl; Try (Intro H;Discriminate H); Auto with bool.
 Qed.
 
 Lemma orb_prop2 : 
   (a,b:bool)(Is_true (orb a b)) -> (Is_true a)\/(Is_true b).
-Induction a; Induction b; Simpl; Try (Intro H;Discriminate H); Auto with bool.
+NewDestruct a; NewDestruct b; Simpl; Try (Intro H;Discriminate H); Auto with bool.
 Qed.
 
 Lemma orb_true_intro 
@@ -323,20 +325,20 @@ Lemma andb_prop :
   (a,b:bool)(andb a b) = true -> (a = true)/\(b = true).
 
 Proof.
-  Induction a; Induction b; Simpl; Try (Intro H;Discriminate H);
+  NewDestruct a; NewDestruct b; Simpl; Try (Intro H;Discriminate H);
   Auto with bool.
 Qed.
 Hints Resolve andb_prop : bool v62.
 
 Definition andb_true_eq : (a,b:bool) true = (andb a b) -> true = a /\ true = b.
 Proof.
-  Destruct a; Destruct b; Clear a b; Auto.
+  NewDestruct a; NewDestruct b; Auto.
 Defined.
 
 Lemma andb_prop2 : 
   (a,b:bool)(Is_true (andb a b)) -> (Is_true a)/\(Is_true b).
 Proof.
-  Induction a; Induction b; Simpl; Try (Intro H;Discriminate H);
+  NewDestruct a; NewDestruct b; Simpl; Try (Intro H;Discriminate H);
   Auto with bool.
 Qed.
 Hints Resolve andb_prop2 : bool v62.
@@ -408,12 +410,12 @@ Hints Resolve andb_sym andb_assoc : bool v62.
 
 Lemma xorb_false : (b:bool) (xorb b false)=b.
 Proof.
-  Induction b; Trivial.
+  NewDestruct b; Trivial.
 Qed.
 
 Lemma false_xorb : (b:bool) (xorb false b)=b.
 Proof.
-  Induction b; Trivial.
+  NewDestruct b; Trivial.
 Qed.
 
 Lemma xorb_true : (b:bool) (xorb b true)=(negb b).
@@ -423,27 +425,27 @@ Qed.
 
 Lemma true_xorb : (b:bool) (xorb true b)=(negb b).
 Proof.
-  Induction b; Trivial.
+  NewDestruct b; Trivial.
 Qed.
 
 Lemma xorb_nilpotent : (b:bool) (xorb b b)=false.
 Proof.
-  Induction b; Trivial.
+  NewDestruct b; Trivial.
 Qed.
 
 Lemma xorb_comm : (b,b':bool) (xorb b b')=(xorb b' b).
 Proof.
-  Induction b; Induction b'; Trivial.
+  NewDestruct b; NewDestruct b'; Trivial.
 Qed.
 
 Lemma xorb_assoc : (b,b',b'':bool) (xorb (xorb b b') b'')=(xorb b (xorb b' b'')).
 Proof.
-  Induction b; Induction b'; Induction b''; Trivial.
+  NewDestruct b; NewDestruct b'; NewDestruct b''; Trivial.
 Qed.
 
 Lemma xorb_eq : (b,b':bool) (xorb b b')=false -> b=b'.
 Proof.
-  Induction b; Induction b'; Trivial.
+  NewDestruct b; NewDestruct b'; Trivial.
   Unfold xorb. Intros. Rewrite H. Reflexivity.
 Qed.
 
@@ -519,22 +521,22 @@ Qed.
 
 Lemma bool_3 : (b:bool) ~(negb b)=true -> b=true.
 Proof.
-  Induction b; Intuition.
+  NewDestruct b; Intuition.
 Qed.
 
 Lemma bool_4 : (b:bool) b=true -> ~(negb b)=true.  
 Proof.
-  Induction b; Intuition.
+  NewDestruct b; Intuition.
 Qed.
 
 Lemma bool_5 : (b:bool) (negb b)=true -> ~b=true.
 Proof.
-  Induction b; Intuition.
+  NewDestruct b; Intuition.
 Qed.
 
 Lemma bool_6 : (b:bool) ~b=true -> (negb b)=true.  
 Proof.
-  Induction b; Intuition.
+  NewDestruct b; Intuition.
 Qed.
 
 Hints Resolve bool_1 bool_2 bool_3 bool_4 bool_5 bool_6.
