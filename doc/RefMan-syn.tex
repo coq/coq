@@ -539,7 +539,7 @@ rule with identifiers and not metavariables, an error occurs:
 % Test failure
 \begin{coq_example}
 Grammar constr constr1 := 
-  not_eq [ command0(a) "#" command0(b) ] -> [~(a=b)].
+  not_eq [ constr0($a) "#" constr0($b) ] -> [~(a=b)].
 \end{coq_example}
 
 For instance, let us give the statement of the symmetry of \verb+#+:
@@ -566,7 +566,7 @@ effect as ``{\tt Goal term.}''.
 
 \begin{coq_example}
 Grammar vernac vernac := 
-  thesis [ "|" "-" constr:constr($term) "." ]
+  thesis [ "|-" constr:constr($term) "." ]
           -> [Goal $term.].
 \end{coq_example}
 
@@ -574,7 +574,7 @@ Grammar vernac vernac :=
 dash, as in
 
 \begin{coq_example}
-| - (A:Prop)A->A.
+|- (A:Prop)A->A.
 \end{coq_example}
 
 \begin{coq_eval}
@@ -587,7 +587,7 @@ token:
 
 \begin{coq_example}
 Grammar vernac vernac := 
-  thesis [ "|-" command:command($term) "." ]
+  thesis [ "|-" constr:constr($term) "." ]
           -> [Goal $term.].
 | - (A:Prop)A->A.
 \end{coq_example}
@@ -775,6 +775,11 @@ parsed with the term parser.
 \noindent The problem is that sometimes, the intermediate {\tt SQUASH}
 node cannot re-shaped, then we have a very specific error:
 
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(************** Error: Ill-formed specification **********************)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
+\end{coq_eval}
 \begin{coq_example}
 Check {True}.
 \end{coq_example}
@@ -800,6 +805,11 @@ Check ([x:nat]x || [y:nat]y).
 pattern matching succeeds. It fails when the two terms are not equal:
 
 % Test failure
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(************* Error: ...  Grammar case failure ... ******************)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
+\end{coq_eval}
 \begin{coq_example}
 Check ([x:nat]x || [z:bool]z).
 \end{coq_example}
@@ -848,6 +858,11 @@ depends on the universe name. The following command fails because {\tt
 ne\_identarg\_list} is already defined with type {\tt ast list} but the
 {\tt Grammar} command header assumes its type is {\tt ast}.
 
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(****** Error: ne_identarg_list already exists with another type *****)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
+\end{coq_eval}
 % Test failure
 \begin{coq_example}           
 Grammar tactic ne_identarg_list :=
@@ -860,6 +875,11 @@ has been already defined with type {\tt Ast}, and cannot be extended
 with a rule returning AST lists.
 
 % Test failure
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(********* Error: ']' expected after [default_action_parser] *********)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
+\end{coq_eval}
 \begin{coq_example}           
 Grammar constr constr1 :=
   carret_list [ constr0($c1) "^" constr0($c2)] -> [ $c1 $c2 ].
@@ -908,6 +928,11 @@ avoid these troubles. The problem arises in the {\gallina} syntax, to
 make {\camlpppp} factorize the rules for application and product. The
 natural grammar would be:
 
+% Test failure
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(******** Syntax error: ')' expected after [Constr.constr10] *********)
+\end{coq_eval}
 \begin{coq_example}
 Grammar constr constr0 : ast :=
   parenthesis [ "(" constr10($c) ")" ] -> [$c]
@@ -919,7 +944,6 @@ with constr10 : ast :=
 | inject_com91 [ constr9($c) ] -> [$c].
 Check (x:nat)nat.
 \end{coq_example}
-% Test failure
 
 \begin{coq_eval}
 Reset Initial.
@@ -943,6 +967,11 @@ the right-hand side of the rule, but the error message in the
 following example would not be as relevant:
 
 % Test failure
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(******* Error: This expression should be a simple identifier ********)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
+\end{coq_eval}
 \begin{coq_example}
 Check (S O:nat)nat.
 \end{coq_example}
@@ -1054,7 +1083,7 @@ order for a user-defined tactic:
 \begin{coq_example*}
 Declare ML Module "eqdecide".
 Syntax tactic level 0:
-  ComparePP [(Compare $com1 $com2)]    -> 
+  Compare_PP [(Compare $com1 $com2)]    -> 
             ["Compare" [1 2] $com1 [1 2] $com2].
 \end{coq_example*}
 
@@ -1142,7 +1171,7 @@ but preceded by \verb+$+.
 \end{itemize}
 
 Note that while grammar rules are related by the name of non-terminals
-(such as {\tt command6} and {\tt command7}) printing rules are
+(such as {\tt constr6} and {\tt constr7}) printing rules are
 isolated. The {\tt Pxor} rule tells how to print an {\tt Xor}
 expression but not how to print its subterms.  The printer looks up
 recursively the rules for the values of \verb+$t1+ and \verb+$t2+. The
@@ -1700,7 +1729,7 @@ understand what is happening. The printers are in the file {\tt
 src/typing/printer}. There you will find the functions:
 
 \begin{itemize}
-\item {\tt gencompr} : the printer of commands
+\item {\tt prterm} : the printer of constructions
 \item {\tt gentacpr} : the printer of tactics
 \end{itemize}
 

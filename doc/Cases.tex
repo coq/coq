@@ -190,6 +190,12 @@ the second one.
 
 Terms with useless patterns are not accepted by the
 system. Here is an example:
+% Test failure
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(**************** Error: This clause is redundant ********************)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
+\end{coq_eval}
 \begin{coq_example}
 Check [x:nat]Cases x of O => true | (S _) => false | x => true end.
 \end{coq_example}
@@ -218,6 +224,12 @@ Check [l:(List nat)]Cases l of
 
 
 When we use parameters in patterns there is an error message:
+% Test failure
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(******** Error: The constructor cons expects 2 arguments ************)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
+\end{coq_eval}
 \begin{coq_example}
 Check [l:(List nat)]Cases l of 
                              (nil A)      => (nil nat)
@@ -385,8 +397,14 @@ type of $e_1\ldots e_n$).
 When the arity of the predicate (i.e. number of abstractions) is not
 correct Coq raises an error message. For example:
 
+% Test failure
 \begin{coq_eval}
 Reset concat.
+(********** The following is not correct and should produce **********)
+(**** Error: The elimination predicate [n:nat](listn (plus n m))  ****)
+(*** should be of arity nat->nat->Type (for non dependent case) or ***)
+(** (n:nat)(listn n)->(n0:nat)(listn n0)->Type (for dependent case) **)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
 \end{coq_eval}
 
 \begin{coq_example}

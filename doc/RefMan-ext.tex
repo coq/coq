@@ -63,7 +63,7 @@ manifest) fields. For instance, {\tt Record} {\ident} {\tt [}
 \Example
 The set of rational numbers may be defined as:
 \begin{coq_eval}
-Restore State Initial.
+Reset Initial.
 \end{coq_eval}
 \begin{coq_example}
 Record Rat : Set := mkRat {
@@ -142,7 +142,7 @@ Eval Compute in (bottom half).
 Eval Compute in (Rat_bottom_cond half).
 \end{coq_example}
 \begin{coq_eval}
-Restore State Initial.
+Reset Initial.
 \end{coq_eval}
 
 \begin{Warnings}
@@ -901,10 +901,20 @@ Print the list of valid path coercions in the current context.
 \comindex{Set Printing Coercions}
 \comindex{Unset Printing Coercions}
 
-This command forces the coercions to be printed.
+This command forces all the coercions to be printed.
 To skip the printing of coercions, use
  {\tt Unset Printing Coercions.}.
 By default, coercions are not printed.
+
+\subsubsection{\tt Set Printing Coercion {\qualid}.}
+\comindex{Set Printing Coercions}
+\comindex{Unset Printing Coercions}
+
+This command forces coercion denoted by {\qualid} to be printed.
+To skip the printing of coercion {\qualid}, use
+ {\tt Unset Printing Coercion {\qualid}.}.
+By default, a coercion is never printed.
+
 
 %%% Local Variables: 
 %%% mode: latex

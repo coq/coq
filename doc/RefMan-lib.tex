@@ -101,6 +101,14 @@ First, we find propositional calculus connectives:
 \ttindex{proj1}
 \ttindex{proj2}
 
+\begin{coq_eval}
+(* We restate the grammar rule for /\ and \/ since *)
+(* it is only valid to parce Coq.Init.Logic.and *)
+Grammar constr constr6 :=
+  myand [ constr5($c1) "/\\" constr6($c2) ] -> [ (and $c1 $c2) ]
+with constr7 :=
+  myor [ constr6($c1) "\\/" constr7($c2) ] -> [ (or $c1 $c2) ].
+\end{coq_eval}
 \begin{coq_example*}
 Inductive True : Prop := I : True. 
 Inductive False : Prop := . 
@@ -272,11 +280,16 @@ again defined as inductive constructions over the sort
 \ttindex{nat}
 \ttindex{O}
 \ttindex{S}
+\ttindex{option}
+\ttindex{Some}
+\ttindex{None}
 
 \begin{coq_example*}
 Inductive unit : Set := tt : unit.
 Inductive bool : Set := true : bool 
                       | false : bool.
+Inductive option [A:Set] : Set := Some : A -> (option A)
+                                | None : (option A).
 Inductive nat : Set := O : nat 
                      | S : nat->nat.
 \end{coq_example*}
@@ -452,7 +465,7 @@ Abort.
 Abort.
 \end{coq_eval}
 
-The next construct builds a sum between a data type \verb|A:Set| and
+The next constructs builds a sum between a data type \verb|A:Set| and
 an exceptional value encoding errors:
 
 \ttindex{Exc}
@@ -460,8 +473,9 @@ an exceptional value encoding errors:
 \ttindex{error}
 
 \begin{coq_example*}
-Inductive Exc [A:Set] : Set := value : A->(Exc A) 
-                             | error : (Exc A).
+Definition Exc := option.
+Definition value := Some.
+Definition error := None.
 \end{coq_example*}
 
 
@@ -888,7 +902,7 @@ Reset Initial.
 
 \begin{coq_example*}
 Require Arith.
-Fixpoint even [n:nat] : nat :=
+Fixpoint even [n:nat] : bool :=
 Cases n of (0) => true 
         |  (1) => false
         | (S (S n)) => (even n)

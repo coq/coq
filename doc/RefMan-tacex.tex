@@ -121,6 +121,11 @@ Goal (R n p).
 The direct application of {\tt Rtrans} with {\tt Apply} fails because
 no value for {\tt y} in {\tt Rtrans} is found by {\tt Apply}:
 
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(**** Error: generated subgoal (R n ?17) has metavariables in it *****)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
+\end{coq_eval}
 \begin{coq_example}
 Apply Rtrans.
 \end{coq_example}
@@ -192,7 +197,7 @@ The definition of principle of mutual induction for {\tt tree} and
 {\tt forest} over the sort {\tt Set} is defined by the command:
 
 \begin{coq_eval}
-Restore State Initial.
+Reset Initial.
 Variables A,B:Set.
 Mutual Inductive tree : Set :=  node : A -> forest -> tree
 with forest : Set := leaf : B -> forest 
@@ -226,7 +231,7 @@ Check forest_tree_rec.
 Let {\tt odd} and {\tt even} be inductively defined as:
 
 \begin{coq_eval}
-Restore State Initial.
+Reset Initial.
 \end{coq_eval}
 
 \begin{coq_example*}
@@ -299,7 +304,7 @@ Let's consider the relation \texttt{Le} over natural numbers and the
 following variables:
 
 \begin{coq_eval}
-Restore State Initial.
+Reset Initial.
 \end{coq_eval}
 
 \begin{coq_example*}

@@ -934,9 +934,6 @@ Inductive
 with forest [A,B:Set] : Set := leaf : B -> (forest A B)
                    | cons : (tree A B) -> (forest A B) -> (forest A B).
 \end{coq_example*}
-\begin{coq_eval}
-Save State toto.
-\end{coq_eval}
 
 Assume we define an inductive definition inside a section.  When the
 section is closed, the variables declared in the section and occurring
@@ -1049,6 +1046,11 @@ decreases because it is a {\em pattern variable} coming from {\tt Cases
 \Example The following definition is not correct and generates an
 error message:
 
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(********* Error: Recursive call applied to an illegal term **********)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
+\end{coq_eval}
 \begin{coq_example}
 Fixpoint wrongplus [n:nat] : nat->nat 
    := [m:nat]Cases m of O => n | (S p) => (S (wrongplus n p)) end.
@@ -1092,7 +1094,7 @@ generally any mutually recursive definitions.
 \Example 
 The size of trees and forests can be defined the following way: 
 \begin{coq_eval}
-Restore State Initial.
+Reset Initial.
 Variables A,B:Set.
 Inductive tree : Set :=  node : A -> forest -> tree
 with forest : Set := leaf : B -> forest 
@@ -1137,6 +1139,11 @@ the single recursive call of \texttt{from} is guarded by an
 application of \texttt{Seq}. On the contrary, the following recursive
 function does not satisfy the guard condition:
 
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(***************** Error: Unguarded recursive call *******************)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
+\end{coq_eval}
 \begin{coq_example*}
 CoFixpoint filter  : (nat->bool)->Stream->Stream := 
    [p:nat->bool]

@@ -503,6 +503,11 @@ This command gives the status of the \Coq\ module {\dirpath}. If the module is l
 This command displays the full name of the qualified identifier {\qualid}
 and consequently the \Coq\ module in which it is defined.
 
+\begin{coq_eval}
+(***************** The last line should produce **************************)
+(************* Error: I.Dont.Exist not a defined object ******************)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
+\end{coq_eval}
 \begin{coq_example}
 Locate nat.
 Locate Datatypes.O.

@@ -624,6 +624,11 @@ parameters are applied in the correct manner in each recursive call.
 In particular, the following definition will not be accepted because 
 there is an occurrence of \List\ which is not applied to the parameter
 variable:
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(********* Error: The 1st argument of list' must be A in ... *********)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
+\end{coq_eval}
 \begin{coq_example}
 Inductive list' [A : Set] : Set := 
      nil' : (list' A) | cons' : A -> (list' A->A) -> (list' A).
@@ -1191,7 +1196,7 @@ But assuming the definition of a son function from \tree\ to \forest:
 The following is not a conversion but can be proved after a case analysis.
 \begin{coq_example}
 Goal (t:tree)(sizet t)=(S (sizef (sont t))).
-(* this one fails *)
+(** this one fails **)
 Reflexivity.
 Destruct t.
 Reflexivity.

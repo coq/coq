@@ -415,7 +415,7 @@ Suppose we give the following definitions in \Coq:
 
 First, the decidability of the ordering relation:
 \begin{coq_eval}
-Restore State Initial.
+Reset Initial.
 Require Le.
 Require Gt.
 \end{coq_eval}
@@ -531,7 +531,7 @@ Suppose we give the following definitions in \Coq:
 
 Declaration of the ordering relation:
 \begin{coq_eval}
-Restore State Initial.
+Reset Initial.
 Require List.
 Require Gt.
 \end{coq_eval}
@@ -542,7 +542,7 @@ Hypothesis inf_sup : (x,y:A){(inf x y)}+{(sup x y)}.
 \end{coq_example*}
 Definition of the concatenation of two lists:
 \begin{coq_eval}
-Save State toto.
+Write State toto.
 \end{coq_eval}
 \begin{coq_example*}
 Fixpoint app [l:list] : list -> list 
