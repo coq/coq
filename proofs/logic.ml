@@ -381,7 +381,7 @@ let prim_refiner r sigma goal =
 	
     | { name = Cut b; terms = [t]; newids = [id] } ->
         if occur_meta t then error_use_instantiate();
-        let sg1 = mk_goal info sign t in
+        let sg1 = mk_goal info sign (nf_betaiota t) in
         let sg2 = mk_goal info (add_named_decl (id,None,t) sign) cl in
         if b then [sg1;sg2] else [sg2;sg1]  
 
