@@ -1318,12 +1318,13 @@ Hints Resolve not_1_INR : real.
 
 V7only [
 (**********)
-Definition INZ:=inject_nat.
+Notation INZ:=inject_nat.
 ].
 
 (**********)
 Lemma IZN:(z:Z)(`0<=z`)->(Ex [n:nat] z=(INZ n)).
-Intros;Unfold INZ;Apply inject_nat_complete;Assumption.
+Intros. V7only [Unfold INZ.].
+Apply inject_nat_complete;Assumption.
 Qed.
 
 (**********)
