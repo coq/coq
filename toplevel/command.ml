@@ -186,7 +186,7 @@ let interp_mutual lparams lnamearconstrs finite =
   let env_params, params =
     List.fold_left
       (fun (env, params) (id,t) ->
-	 let p = interp_type sigma env t in
+	 let p = interp_binder sigma env (Name id) t in
 	 (Termops.push_rel_assum (Name id,p) env, (Name id,None,p)::params))
       (env0,[]) lparams
   in

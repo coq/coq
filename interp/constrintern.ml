@@ -590,6 +590,10 @@ let interp_casted_openconstr sigma env c typ =
 let interp_type sigma env c =
   understand_type sigma env (interp_rawtype sigma env c)
 
+let interp_binder sigma env na t =
+  let t = interp_rawtype sigma env t in
+  understand_type sigma env (locate_if_isevar (loc_of_rawconstr t) na t)
+
 let interp_type_with_implicits sigma env impls c =
   understand_type sigma env (interp_rawtype_with_implicits sigma env impls c)
 
