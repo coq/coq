@@ -510,7 +510,7 @@ let fmt_hint_term cl =
     in 
     if valid_dbs = [] then 
       [<'sTR "No hint applicable for current goal" >]
-    else 
+    else
       [< 'sTR "Applicable Hints :";
 	 prlist (fun (name,db,hintlist) ->
 	 	   [< 'sTR "  In the database "; 'sTR name; 

@@ -30,12 +30,11 @@ type interp_sign =
 (* Adds a Tactic Definition in the table *)
 val add_tacdef : string -> value -> unit
 
-(*Interprets any expression *)
+(* Interprets any expression *)
 val val_interp : interp_sign -> Coqast.t -> value
 
 (* Interprets tactic arguments *)
 val interp_tacarg : interp_sign -> Coqast.t -> tactic_arg
-
 
 val interp               : Coqast.t -> tactic
 val vernac_interp        : Coqast.t -> tactic

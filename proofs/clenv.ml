@@ -281,7 +281,6 @@ let unifyTerms m n = walking (fun wc -> fst (w_Unify m n [] wc))
 let unify m gls =
   let n = pf_concl gls in unifyTerms m n gls
 
-
 (* collects all metavar occurences, in left-to-right order, preserving
  * repetitions and all. *)
 

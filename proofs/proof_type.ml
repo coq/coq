@@ -7,8 +7,8 @@ open Term
 open Util
 (*i*)
 
-(*This module defines the structure of proof tree and the tactic type. So, it
-  is used by Proof_tree and Refiner*)
+(* This module defines the structure of proof tree and the tactic type. So, it
+   is used by Proof_tree and Refiner *)
 
 type bindOcc = 
   | Dep of identifier
@@ -17,7 +17,9 @@ type bindOcc =
 
 type 'a substitution = (bindOcc * 'a) list
 
-type pf_status = Complete_proof | Incomplete_proof
+type pf_status =
+  | Complete_proof
+  | Incomplete_proof
 
 type prim_rule_name = 
   | Intro
@@ -50,7 +52,7 @@ type evar_declarations = ctxtty evar_map
    with some extra information for the program tactic *)
 type global_constraints  = evar_declarations timestamped
 
-(*Signature useful to define the tactic type*)
+(* Signature useful to define the tactic type *)
 type 'a sigma = { 
   it : 'a ; 
   sigma : global_constraints }
