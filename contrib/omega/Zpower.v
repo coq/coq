@@ -344,7 +344,7 @@ Intros; Apply iter_pos_invariant with
     [ Intro; Rewrite NEG_xI; Unfold Zminus; Intro; Elim H; Intros; Split; 
       [ Rewrite H0; Rewrite Zplus_assoc;
       	Apply f_equal with f:=[z:Z]`z+r`;
-      	Do 2 (Rewrite Zmult_plus_distr_l);
+      	Do 2 '(Rewrite Zmult_plus_distr_l);
        	Rewrite Zmult_assoc; 
       	Rewrite (Zmult_sym (NEG p1) `2`);
       	Rewrite <- Zplus_assoc;
