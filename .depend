@@ -809,11 +809,13 @@ parsing/esyntax.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/extend.cmx \
     interp/symbols.cmx interp/topconstr.cmx lib/util.cmx \
     toplevel/vernacexpr.cmx parsing/esyntax.cmi 
 parsing/extend.cmo: parsing/ast.cmi parsing/coqast.cmi interp/genarg.cmi \
-    parsing/lexer.cmi kernel/names.cmi lib/pp.cmi interp/ppextend.cmi \
-    interp/topconstr.cmi lib/util.cmi parsing/extend.cmi 
+    parsing/lexer.cmi library/libnames.cmi kernel/names.cmi lib/pp.cmi \
+    interp/ppextend.cmi pretyping/rawterm.cmi interp/topconstr.cmi \
+    lib/util.cmi parsing/extend.cmi 
 parsing/extend.cmx: parsing/ast.cmx parsing/coqast.cmx interp/genarg.cmx \
-    parsing/lexer.cmx kernel/names.cmx lib/pp.cmx interp/ppextend.cmx \
-    interp/topconstr.cmx lib/util.cmx parsing/extend.cmi 
+    parsing/lexer.cmx library/libnames.cmx kernel/names.cmx lib/pp.cmx \
+    interp/ppextend.cmx pretyping/rawterm.cmx interp/topconstr.cmx \
+    lib/util.cmx parsing/extend.cmi 
 parsing/g_basevernac.cmo: parsing/ast.cmi interp/constrintern.cmi \
     parsing/coqast.cmi pretyping/evd.cmi parsing/extend.cmi \
     library/global.cmi library/goptions.cmi toplevel/metasyntax.cmi \
@@ -1880,24 +1882,24 @@ toplevel/himsg.cmx: parsing/ast.cmx pretyping/cases.cmx kernel/environ.cmx \
     kernel/type_errors.cmx lib/util.cmx toplevel/himsg.cmi 
 toplevel/line_oriented_parser.cmo: toplevel/line_oriented_parser.cmi 
 toplevel/line_oriented_parser.cmx: toplevel/line_oriented_parser.cmi 
-toplevel/metasyntax.cmo: parsing/ast.cmi interp/constrintern.cmi \
-    parsing/coqast.cmi parsing/egrammar.cmi parsing/esyntax.cmi \
-    pretyping/evd.cmi parsing/extend.cmi interp/genarg.cmi library/global.cmi \
-    library/lib.cmi library/libnames.cmi library/libobject.cmi \
-    library/library.cmi kernel/names.cmi parsing/pcoq.cmi lib/pp.cmi \
-    interp/ppextend.cmi pretyping/rawterm.cmi library/summary.cmi \
-    interp/symbols.cmi interp/syntax_def.cmi parsing/termast.cmi \
-    interp/topconstr.cmi lib/util.cmi toplevel/vernacexpr.cmo \
-    toplevel/metasyntax.cmi 
-toplevel/metasyntax.cmx: parsing/ast.cmx interp/constrintern.cmx \
-    parsing/coqast.cmx parsing/egrammar.cmx parsing/esyntax.cmx \
-    pretyping/evd.cmx parsing/extend.cmx interp/genarg.cmx library/global.cmx \
-    library/lib.cmx library/libnames.cmx library/libobject.cmx \
-    library/library.cmx kernel/names.cmx parsing/pcoq.cmx lib/pp.cmx \
-    interp/ppextend.cmx pretyping/rawterm.cmx library/summary.cmx \
-    interp/symbols.cmx interp/syntax_def.cmx parsing/termast.cmx \
-    interp/topconstr.cmx lib/util.cmx toplevel/vernacexpr.cmx \
-    toplevel/metasyntax.cmi 
+toplevel/metasyntax.cmo: parsing/ast.cmi interp/constrextern.cmi \
+    interp/constrintern.cmi parsing/coqast.cmi parsing/egrammar.cmi \
+    parsing/esyntax.cmi pretyping/evd.cmi parsing/extend.cmi \
+    interp/genarg.cmi library/global.cmi library/lib.cmi library/libnames.cmi \
+    library/libobject.cmi library/library.cmi kernel/names.cmi \
+    parsing/pcoq.cmi lib/pp.cmi interp/ppextend.cmi pretyping/rawterm.cmi \
+    library/summary.cmi interp/symbols.cmi interp/syntax_def.cmi \
+    parsing/termast.cmi interp/topconstr.cmi lib/util.cmi \
+    toplevel/vernacexpr.cmo toplevel/metasyntax.cmi 
+toplevel/metasyntax.cmx: parsing/ast.cmx interp/constrextern.cmx \
+    interp/constrintern.cmx parsing/coqast.cmx parsing/egrammar.cmx \
+    parsing/esyntax.cmx pretyping/evd.cmx parsing/extend.cmx \
+    interp/genarg.cmx library/global.cmx library/lib.cmx library/libnames.cmx \
+    library/libobject.cmx library/library.cmx kernel/names.cmx \
+    parsing/pcoq.cmx lib/pp.cmx interp/ppextend.cmx pretyping/rawterm.cmx \
+    library/summary.cmx interp/symbols.cmx interp/syntax_def.cmx \
+    parsing/termast.cmx interp/topconstr.cmx lib/util.cmx \
+    toplevel/vernacexpr.cmx toplevel/metasyntax.cmi 
 toplevel/minicoq.cmo: kernel/declarations.cmi toplevel/fhimsg.cmi \
     parsing/g_minicoq.cmi kernel/inductive.cmi kernel/names.cmi lib/pp.cmi \
     kernel/safe_typing.cmi kernel/sign.cmi kernel/term.cmi \
