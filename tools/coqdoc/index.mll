@@ -189,6 +189,8 @@ rule traverse = parse
   | "Inductive" space
       { current_type := Inductive; 
 	index_ident lexbuf; inductive lexbuf; traverse lexbuf }
+  | "Record" space
+      { current_type := Inductive; index_ident lexbuf; traverse lexbuf }
   | "Module" (space+ "Type")? space
       { current_type := Module; index_ident lexbuf; traverse lexbuf }
 (*i***

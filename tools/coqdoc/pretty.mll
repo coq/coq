@@ -63,6 +63,7 @@
   type gallina_state = Nothing | AfterDot | Proof
 
   let gstate = ref AfterDot
+  let gparen = ref 0
 
   let is_proof = 
     let t = Hashtbl.create 13 in
@@ -77,7 +78,10 @@
 	if id <> "Add" then gstate := Nothing
 
   let gallina_symbol s = 
-    if !gstate = AfterDot || (!gstate = Proof && s = ":=") then 
+    if s = "(" then incr gparen 
+    else if s = ")" then decr gparen
+    else if !gstate = AfterDot || 
+            (!gstate = Proof && !gparen = 0 && s = ":=") then 
       gstate := Nothing
 
   let is_space = function ' ' | '\t' | '\n' | '\r' -> true | _ -> false
@@ -202,7 +206,7 @@ let identifier = firstchar identchar*
 let symbolchar_no_brackets =
   ['!' '$' '%' '&' '*' '+' ',' '@' '^' '#'
    '\\' '/' '-' '<' '>' '|' ':' '?' '=' '~'
-   '{' '}'] |
+   '{' '}' '(' ')'] |
   (* utf-8 symbols *) 
   '\226' ['\134'-'\143' '\152'-'\155' '\164'-'\165' '\168'-'\171'] _
 let symbolchar = symbolchar_no_brackets | '[' | ']'
