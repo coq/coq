@@ -142,10 +142,10 @@ evaluation yields either a term, an integer or a tactic. Intermediary
 results can be terms or integers but the final result must be a tactic
 which is then applied to the current goal.
 
-There is a special case for Match expressions of which the clauses
-evaluate to tactics. Such expressions can only be used as end result
-of a tactic expression (never as argument of a local definition or of an
-application).
+There is a special case for {\tt Match Context} expressions of which
+the clauses evaluate to tactics. Such expressions can only be used as
+end result of a tactic expression (never as argument of a local
+definition or of an application).
 
 %% \subsection{Values}
 
@@ -223,11 +223,16 @@ We can carry out pattern matching on terms with:
 ~{\tt |} {\tt \_} {\tt ->} {\tacexpr}$_{n+1}$
 \end{tabular}
 
-if {\term} is matched (non-linear first order unification) by {\pattern}$_1$ then
-{\tacexpr}$_1$ is evaluated into some $v_1$ by substituting the pattern matching instantiations to
-the metavariables. If $v_1$ is a tactic value, then it is applied to the current goal. If this application fails, then, as if the matching with {\pattern}$_1$ had failed, the clause {\pattern}$_2$ {\tt ->} {\tacexpr}$_2$ is tried and so on.
-The pattern {\_} matches any term, but if the corresponding action is a tactic which fails, then the whole clause fails.
-If all clauses fail then a no-matching error is raised. \\
+the {\term} is matched (non-linear first order unification) against
+{\pattern}$_1$ then {\tacexpr}$_1$ is evaluated into some value by
+substituting the pattern matching instantiations to the
+metavariables. If the matching with {\pattern}$_1$ fails,
+{\pattern}$_2$ is used and so on.  The pattern {\_} matches any term
+and shunts all remaining patterns if any. If {\tacexpr}$_1$ evaluates
+to a tactic, this tactic is not immediately applied to the current
+goal (in contrast with {\tt Match Context}). If all clauses fail (in
+particular, there is no pattern {\_}) then a no-matching error is
+raised. \\
 
 {\tt Error message:}\\
 
@@ -358,8 +363,11 @@ We have the failing tactic:\\
 {\tt Fail} and {\tt Fail $n$} \\
 
 It always fails and leaves the goal unchanged. It does not appear in
-the proof script and can be catched by {\tt Try}. If no number is
-specified, it defaults to $0$.
+the proof script and can be catched by {\tt Try}. The number $n$ is
+the failure level. If no level is specified, it defaults to $0$.  The
+level is used in {\tt Match Context}.  If $0$, it makes {\tt Match
+Context} considering the next clause. If non zero, the current {\tt
+Match Context} block is aborted and the level is decremented.
 
 {\tt Error message:}\\
 
