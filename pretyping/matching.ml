@@ -242,6 +242,10 @@ and try_sub_match nocc pat lc =
       | NextOccurrence nocc -> try_sub_match_rec nocc pat (lacc@[c]) tl) in
   try_sub_match_rec nocc pat [] lc
 
+let match_subterm nocc pat c =
+  try sub_match nocc pat c
+  with NextOccurrence _ -> raise PatternMatchingFailure
+
 let is_matching pat n =
   try let _ = matches pat n in true
   with PatternMatchingFailure -> false

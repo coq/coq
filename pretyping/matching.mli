@@ -39,11 +39,10 @@ val is_matching : constr_pattern -> constr -> bool
 
 val matches_conv :env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
 
-(* To skip to the next occurrence *)
-exception NextOccurrence of int
-
-(* Tries to match a _closed_ subterm of [c] with [pat] *)
-val sub_match : int -> constr_pattern -> constr -> patvar_map * constr
+(* [match_subterm n pat c] returns the substitution and the context
+   corresponding to the [n+1]th _closed_ subterm of [c] matching [pat];
+   It raises PatternMatchingFailure if no such matching exists *)
+val match_subterm : int -> constr_pattern -> constr -> patvar_map * constr
 
 (* [is_matching_conv env sigma pat c] tells if [c] matches against [pat]
    up to conversion for constants in patterns *)
