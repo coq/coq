@@ -96,11 +96,6 @@ let standard sds =
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) depend)\n")
     sds;
   print "\n";
-  print "xml::\n";
-  List.iter
-    (fun x -> print "\t(cd "; print x; print " ; $(MAKE) xml)\n")
-    sds;
-  print "\n";
   print "install:\n";
   print "\tmkdir -p `$(COQC) -where`/user-contrib\n";
   if !some_vfile then print "\tcp -f *.vo `$(COQC) -where`/user-contrib\n";
@@ -205,7 +200,6 @@ let variables l =
   print "CAMLLINK=ocamlc\n";
   print "CAMLOPTLINK=ocamlopt\n";
   print "COQDEP=$(COQBIN)coqdep -c\n";
-  print "COQVO2XML=coq_vo2xml\n";
   print "GRAMMARS=grammar.cma\n";
   print "CAMLP4EXTEND=pa_extend.cmo pa_ifdef.cmo q_MLast.cmo\n";
   print "PP=-pp \"camlp4o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n";
@@ -259,7 +253,7 @@ let subdirs l =
   print ".PHONY: ";
   print_list " "
     ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install" 
-     :: "depend" :: "xml" :: "html" :: sds);
+     :: "depend" :: "html" :: sds);
   print "\n\n";
   sds
 
@@ -313,10 +307,6 @@ let all_target l =
     print "\t$(COQDOC) -ps -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
     print "all-gal.ps: $(VFILES)\n";
     print "\t$(COQDOC) -ps -g -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
-    print "xml:: .xml_time_stamp\n";
-    print ".xml_time_stamp: "; print_list "\\\n  " (vofiles l);
-    print "\n\t$(COQVO2XML) $(COQFLAGS) $(?:%.o=%)\n";
-    print "\ttouch .xml_time_stamp";
     print "\n\n"
   end
 
