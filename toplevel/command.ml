@@ -461,23 +461,19 @@ let save_named opacity =
   let id,(const,strength) = Pfedit.cook_proof () in
   save opacity id const strength
 
-let save_anonymous_with_strength opacity save_ident id const strength =
+let check_anonymity id save_ident =
   if atompart_of_id id <> "Unnamed_thm" then
-    message("Overriding name "^(string_of_id id)^" and using "^save_ident);
-  save opacity (id_of_string save_ident) const strength
+    message("Overriding name "^(string_of_id id)^" and using "^save_ident)
 
 let save_anonymous opacity save_ident =
   let id,(const,strength) = Pfedit.cook_proof () in
-  save_anonymous_with_strength opacity save_ident id const strength
+  check_anonymity id save_ident;
+  save opacity (id_of_string save_ident) const strength
 
-let save_anonymous_thm opacity save_ident =
+let save_anonymous_with_strength strength opacity save_ident =
   let id,(const,_) = Pfedit.cook_proof () in
-  save_anonymous_with_strength opacity save_ident id const NeverDischarge
-
-let save_anonymous_remark opacity save_ident =
-  let id,(const,_) = Pfedit.cook_proof ()
-  and path = try List.tl (List.tl (Lib.cwd())) with Failure _ -> [] in
-  save_anonymous_with_strength opacity save_ident id const (make_strength path)
+  check_anonymity id save_ident;
+  save opacity (id_of_string save_ident) const strength
 
 let get_current_context () =
   try Pfedit.get_current_goal_context ()

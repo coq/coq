@@ -577,6 +577,17 @@ let _ =
 	      Impargs.declare_implicits (locate_qualid dummy_loc qid))
        | _  -> bad_vernac_args "IMPLICITS")
 
+let interp_definition_kind = function
+  | "THEOREM" -> (NeverDischarge,     true)
+  | "LEMMA"   -> (NeverDischarge,     true)
+  | "FACT"    -> (make_strength_1 (), true)
+  | "REMARK"  -> (make_strength_0 (), true)
+  | "DEFINITION" -> (NeverDischarge,     false)
+  | "LET"        -> (make_strength_1 (), false)
+  | "LETTOP"     -> (NeverDischarge,     false)
+  | "LOCAL"      -> (make_strength_0 (), false)
+  | _       -> anomaly "Unexpected definition kind"
+
 let _ =
   add "SaveNamed"
     (function 
@@ -603,29 +614,16 @@ let _ =
 let _ =
   add "SaveAnonymous"
     (function 
+       | [VARG_STRING kind; VARG_IDENTIFIER id] -> 
+	   (fun () -> 
+	      let (strength, opacity) = interp_definition_kind kind in
+	      if_verbose show_script ();
+              save_anonymous_with_strength strength opacity (string_of_id id))
        | [VARG_IDENTIFIER id] -> 
 	   (fun () -> 
 	      if_verbose show_script ();
               save_anonymous true (string_of_id id))
        | _ -> bad_vernac_args "SaveAnonymous")
-
-let _ =
-  add "SaveAnonymousThm"
-    (function 
-       | [VARG_IDENTIFIER id] -> 
-	   (fun () -> 
-	      if_verbose show_script ();
-              save_anonymous_thm true (string_of_id id))
-       | _ -> bad_vernac_args "SaveAnonymousThm")
-
-let _ =
-  add "SaveAnonymousRmk"
-    (function 
-       | [VARG_IDENTIFIER id] -> 
-	   (fun () -> 
-	      if_verbose show_script ();
-              save_anonymous_remark true (string_of_id id))
-       | _ -> bad_vernac_args "SaveAnonymousRmk")
 
 let _ =
   add "TRANSPARENT"
@@ -853,17 +851,7 @@ let _ =
   add "StartProof"
     (function 
        | [VARG_STRING kind;VARG_IDENTIFIER s;VARG_CONSTR com] ->
-	   let stre = match kind with
-	     | "THEOREM" -> NeverDischarge
-             | "LEMMA" -> NeverDischarge
-             | "FACT" -> make_strength_1 ()
-             | "REMARK" -> make_strength_0 ()
-             | "DEFINITION" -> NeverDischarge
-             | "LET" -> make_strength_2 ()
-	     | "LETTOP" -> NotDeclare
-             | "LOCAL" -> make_strength_0 ()
-             | _       -> anomaly "Unexpected string"
-           in 
+	   let stre = fst (interp_definition_kind kind) in
 	   fun () ->
              begin
                if (kind = "LETTOP") && not(refining ()) then
@@ -885,17 +873,7 @@ let _ =
 			    | _ -> bad_vernac_args "")
 			 coml 
 	   in
-	   let (stre,opacity) = match kind with
-	     | "THEOREM" -> (NeverDischarge,true)
-             | "LEMMA" -> (NeverDischarge,true)
-             | "FACT" -> (make_strength_1(),true)
-             | "REMARK" -> (make_strength_0(),true)
-             | "DEFINITION" -> (NeverDischarge,false)
-             | "LET" -> (make_strength_1(),false)
-	     | "LETTOP" -> (NeverDischarge,false)
-             | "LOCAL" -> (make_strength_0(),false)
-             | _       -> anomaly "Unexpected string" 
-	   in
+	   let (stre,opacity) = interp_definition_kind kind in
            (fun () ->
               try
             	States.with_heavy_rollback

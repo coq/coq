@@ -178,6 +178,7 @@ module Vernac_ :
     val tacarg : Coqast.t Gram.Entry.e
     val sortarg : Coqast.t Gram.Entry.e
     val theorem_body : Coqast.t Gram.Entry.e
+    val thm_tok : Coqast.t Gram.Entry.e
 
     val gallina : Coqast.t Gram.Entry.e
     val gallina_ext : Coqast.t Gram.Entry.e

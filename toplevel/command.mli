@@ -63,14 +63,14 @@ under the name [name] and respects the strength of the declaration *)
 
 val save_anonymous : bool -> string -> unit
 
-(* [save_anonymous_thm b name] behaves as [save_named] but declares the
-theorem under the name [name] and gives it the strength of a theorem *)
+(* [save_anonymous_with_strength s b name] behaves as [save_anonymous] but
+   declares the theorem under the name [name] and gives it the
+   strength [strength] *)
 
-val save_anonymous_thm : bool -> string -> unit
+val save_anonymous_with_strength : strength -> bool -> string -> unit
 
-(* [save_anonymous_remark b name] behaves as [save_named] but declares the
-theorem under the name [name] and gives it the strength of a remark *)
-
-val save_anonymous_remark : bool -> string -> unit
+(* [get_current_context ()] returns the evar context and env of the
+   current open proof if any, otherwise returns the empty evar context
+   and the current global env *)
 
 val get_current_context : unit -> Proof_type.enamed_declarations * Environ.env

@@ -51,7 +51,7 @@ END
 
 (* Gallina declarations *)
 GEXTEND Gram
-  GLOBAL: gallina gallina_ext;
+  GLOBAL: gallina gallina_ext thm_tok;
 
   theorem_body_line:
     [ [ n = numarg; ":"; tac = tacarg; "." ->

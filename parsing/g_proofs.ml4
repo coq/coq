@@ -50,10 +50,8 @@ GEXTEND Gram
       | IDENT "Save" -> <:ast< (SaveNamed) >>
       | IDENT "Defined" -> <:ast< (DefinedNamed) >>
       |	IDENT "Defined"; id = identarg -> <:ast< (DefinedAnonymous $id) >>
-      | IDENT "Save"; IDENT "Remark"; id = identarg ->
-          <:ast< (SaveAnonymousRmk $id) >>
-      | IDENT "Save"; IDENT "Theorem"; id = identarg ->
-          <:ast< (SaveAnonymousThm $id) >>
+      | IDENT "Save"; tok = thm_tok; id = identarg ->
+          <:ast< (SaveAnonymous $tok $id) >>
       | IDENT "Save"; id = identarg -> <:ast< (SaveAnonymous $id) >>
       | IDENT "Suspend" -> <:ast< (SUSPEND) >>
       | IDENT "Resume" -> <:ast< (RESUME) >>

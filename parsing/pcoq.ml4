@@ -366,6 +366,7 @@ module Vernac_ =
     let tacarg = gec "tacarg"
     let sortarg = gec "sortarg"
     let theorem_body = gec "theorem_body"
+    let thm_tok = gec "thm_tok"
 
     let gallina = gec "gallina"
     let gallina_ext = gec "gallina_ext"
