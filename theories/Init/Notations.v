@@ -61,28 +61,15 @@ Reserved Notation "( x1 , x2 , x3 , x4 , x5 , x6 )" (at level 0).
 Reserved Notation "( x1 , x2 , x3 , x4 , x5 , x6 , x7 )" (at level 0).
 Reserved Notation "( x1 , x2 , x3 , x4 , x5 , x6 , x7 , x8 )" (at level 0).
 
+(** Notation "{ x }" is reserved and has a special status as component
+    of other notations; it is at level 0 to factor with {x:A|P} etc *)
+
+Reserved Notation "{ x }" (at level 0, x at level 99).
+
 (** Notations for sum-types *)
 
-(* Home-made factorization at level 4 to parse B+{x:A|P} without parentheses *)
-
-Reserved Notation "B + { x : A | P }"
-(at level 50, x at level 99, left associativity, only parsing).
-
-Reserved Notation "B + { x : A | P & Q }"
-(at level 50, x at level 99, left associativity, only parsing).
-
-Reserved Notation "B + { x : A & P }"
-(at level 50, x at level 99, left associativity, only parsing).
-
-Reserved Notation "B + { x : A & P & Q }"
-(at level 50, x at level 99, left associativity, only parsing).
-
-(* At level 1 to factor with {x:A|P} etc *)
-
-Reserved Notation "{ A }  + { B }" (at level 0, A at level 99).
-
-Reserved Notation "A + { B }"
-(at level 50, B at level 99, left associativity).
+Reserved Notation "{ A } + { B }" (at level 50, left associativity).
+Reserved Notation "A + { B }" (at level 50, left associativity).
 
 (** Notations for sigma-types or subsets *)
 

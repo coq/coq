@@ -108,17 +108,6 @@ Inductive sumor [A:Set;B:Prop] : Set
 
 where "A + { B }" := (sumor A B) : type_scope.
 
-(* Factorizing "sumor" at level 4 to parse B+{x:A|P} without parentheses *)
-
-Notation "B + { x : A | P }"     := B + (sig A [x:A]P)
-  (only parsing) : type_scope.
-Notation "B + { x : A | P & Q }" := B + (sig2 A [x:A]P [x:A]Q)
-  (only parsing) : type_scope.
-Notation "B + { x : A & P }"     := B + (sigS A [x:A]P)
-  (only parsing) : type_scope.
-Notation "B + { x : A & P & Q }" := B + (sigS2 A [x:A]P [x:A]Q)
-  (only parsing) : type_scope.
-
 (** Choice *)
 
 Section Choice_lemmas.

@@ -1074,15 +1074,43 @@ let same c d = try check_same_type c d; true with _ -> false
 let make_current_scopes (scopt,scopes) = 
   option_fold_right push_scope scopt scopes
 
+let has_curly_brackets ntn =
+  String.length ntn >= 6 & (String.sub ntn 0 6 = "{ _ } " or
+    String.sub ntn (String.length ntn - 6) 6 = " { _ }" or
+    string_string_contains ntn " { _ } ")
+
+let expand_curly_brackets make_ntn ntn l =
+  let ntn' = ref ntn in
+  let rec expand_ntn =
+    function
+    | [] -> []
+    | a::l as l' ->
+        let a' = 
+          try
+            let i = string_index_from !ntn' 0 "{ _ }" in
+            ntn' := 
+              String.sub !ntn' 0 i ^ "_" ^ 
+              String.sub !ntn' (i+5) (String.length !ntn' -i-5);
+            make_ntn "{ _ }" [a]
+          with Not_found -> a in
+        a' :: expand_ntn l in
+  let l = expand_ntn l in
+  (* side effect *)
+  make_ntn !ntn' l
+
 let make_notation loc ntn l =
-  match ntn,l with
+  if has_curly_brackets ntn
+  then expand_curly_brackets (fun n l -> CNotation (loc,n,l)) ntn l
+  else match ntn,l with
     (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
     | "- _", [CNumeral(_,Bignat.POS p)] ->
         CNotation (loc,ntn,[CNotation(loc,"( _ )",l)])
     | _ -> CNotation (loc,ntn,l)
 
 let make_pat_notation loc ntn l =
-  match ntn,l with
+  if has_curly_brackets ntn
+  then expand_curly_brackets (fun n l -> CPatNotation (loc,n,l)) ntn l
+  else match ntn,l with
     (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
     | "- _", [CPatNumeral(_,Bignat.POS p)] ->
         CPatNotation (loc,ntn,[CPatNotation(loc,"( _ )",l)])

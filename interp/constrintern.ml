@@ -160,6 +160,52 @@ let dump_notation_location =
     dump_string (Printf.sprintf "R%d %s \"%s\"%s\n" (fst loc) path df sc)
 
 (**********************************************************************)
+(* Contracting "{ _ }" in notations *)
+
+let rec wildcards ntn n =
+  if n = String.length ntn then []
+  else let l = spaces ntn (n+1) in if ntn.[n] = '_' then n::l else l
+and spaces ntn n =
+  if n = String.length ntn then []
+  else if ntn.[n] = ' ' then wildcards ntn (n+1) else spaces ntn (n+1)
+
+let expand_notation_string ntn n =
+  let pos = List.nth (wildcards ntn 0) n in
+  let hd = if pos = 0 then "" else String.sub ntn 0 pos in
+  let tl = 
+    if pos = String.length ntn then "" 
+    else String.sub ntn (pos+1) (String.length ntn - pos -1) in
+  hd ^ "{ _ }" ^ tl
+
+(* This contracts the special case of "{ _ }" for sumbool, sumor notations *)
+(* Remark: expansion of squash at definition is done in metasyntax.ml *)
+let contract_notation ntn l =
+  let ntn' = ref ntn in
+  let rec contract_squash n = function
+    | [] -> []
+    | CNotation (_,"{ _ }",[a]) :: l -> 
+        ntn' := expand_notation_string !ntn' n;
+        contract_squash n (a::l)
+    | a :: l ->
+        a::contract_squash (n+1) l in
+  let l = contract_squash 0 l in
+  (* side effect; don't inline *)
+  !ntn',l
+
+let contract_pat_notation ntn l =
+  let ntn' = ref ntn in
+  let rec contract_squash n = function
+    | [] -> []
+    | CPatNotation (_,"{ _ }",[a]) :: l -> 
+        ntn' := expand_notation_string !ntn' n;
+        contract_squash n (a::l)
+    | a :: l ->
+        a::contract_squash (n+1) l in
+  let l = contract_squash 0 l in
+  (* side effect; don't inline *)
+  !ntn',l
+
+(**********************************************************************)
 (* Remembering the parsing scope of variables in notations            *)
 
 let make_current_scope (scopt,scopes) = option_cons scopt scopes
@@ -454,6 +500,7 @@ let rec intern_cases_pattern scopes aliases tmp_scope = function
   | CPatNotation (_,"( _ )",[a]) ->
       intern_cases_pattern scopes aliases tmp_scope a
   | CPatNotation (loc, ntn, args) ->
+      let ntn,args = contract_pat_notation ntn args in
       let scopes = option_cons tmp_scope scopes in
       let ((ids,c),df) = Symbols.interp_notation ntn scopes in
       if !dump then dump_notation_location (patntn_loc loc args ntn) ntn df;
@@ -677,6 +724,7 @@ let internalise sigma env allow_soapp lvar c =
         Symbols.interp_numeral loc (Bignat.NEG p) scopes
     | CNotation (_,"( _ )",[a]) -> intern env a
     | CNotation (loc,ntn,args) ->
+        let ntn,args = contract_notation ntn args in
 	let scopes = option_cons tmp_scope scopes in
 	let ((ids,c),df) = Symbols.interp_notation ntn scopes in
         if !dump then dump_notation_location (ntn_loc loc args ntn) ntn df;

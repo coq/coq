@@ -576,9 +576,6 @@ let string_of_assoc = function
   | Some(Gramext.LeftA) | None -> "LEFTA"
   | Some(Gramext.NonA) -> "NONA"
 
-let make_symbolic n symbols etyps =
-  ((n,List.map (assoc_of_type n) etyps), make_notation_key symbols)
-
 let is_not_small_constr = function
     ETConstr _ -> true
   | ETOther("constr","binder_constr") -> true
@@ -632,6 +629,14 @@ let recompute_assoc typs =
     | Some Gramext.LeftA, _ -> Some Gramext.LeftA
     | _, Some Gramext.RightA -> Some Gramext.RightA
     | _ -> None
+
+let rec expand_squash = function
+  | Term ("","{") :: NonTerm (ProdPrimitive (ETConstr _), n) :: Term ("","}")
+    :: l ->
+      NonTerm (ProdPrimitive (ETConstr (NextLevel,InternalProd)),n)
+      :: expand_squash l
+  | a :: l -> a :: expand_squash l
+  | [] -> []
 
 let make_grammar_rule n typs symbols ntn perm =
   let assoc = recompute_assoc typs in
@@ -858,6 +863,35 @@ let find_precedence lev etyps symbols =
       if lev = None then error "Cannot determine the level";
       out_some lev
 
+let check_curly_brackets_notation_exists () =
+  try let _ = Symbols.level_of_notation "{ _ }" in ()
+  with Not_found -> 
+    error "Notations involving patterns of the form \"{ _ }\" are treated \n\
+specially and require that the notation \"{ _ }\" is already reserved"
+
+(* Remove patterns of the form "{ _ }", unless it is the "{ _ }" notation *)
+let remove_curly_brackets l = 
+  let rec next = function
+    | Break _ :: l -> next l
+    | l -> l in
+  let rec aux deb = function
+  | [] -> []
+  | Terminal "{" as t1 :: l -> 
+      (match next l with
+        | NonTerminal _ as x :: l' as l0 ->
+            (match next l' with
+              | Terminal "}" as t2 :: l'' as l1 ->
+                  if l <> l0 or l' <> l1 then
+                    warning "Skipping spaces inside curly brackets";
+                  if deb & l'' = [] then [t1;x;t2] else begin
+                    check_curly_brackets_notation_exists ();
+                    x :: aux false l''
+                  end
+              | l1 -> t1 :: x :: aux false l1)
+        | l0 -> t1 :: aux false l0)
+  | x :: l -> x :: aux false l
+  in aux true l
+
 let compute_syntax_data forv7 (df,modifiers) =
   let (assoc,n,etyps,onlyparse,fmt) = interp_modifiers modifiers in
   (* Notation defaults to NONA *)
@@ -865,6 +899,8 @@ let compute_syntax_data forv7 (df,modifiers) =
   let toks = split_notation_string df in
   let innerlevel = NumLevel (if forv7 then 10 else 200) in
   let (vars,symbols) = analyse_notation_tokens toks in
+  let symbols = remove_curly_brackets symbols in
+  let notation = make_notation_key symbols in
   check_rule_reversibility symbols;
   let n =
     if !Options.v7 then find_precedence_v7 n etyps symbols
@@ -877,24 +913,25 @@ let compute_syntax_data forv7 (df,modifiers) =
       symbols in
   (* To globalize... *)
   let typs = List.map (set_entry_type etyps) typs in
-  let (prec,notation) = make_symbolic n symbols typs in
-  ((onlyparse,vars,notation),prec,(n,typs,symbols,fmt),(Lib.library_dp(),df))
+  let ppdata = (n,typs,symbols,fmt) in
+  let prec = (n,List.map (assoc_of_type n) typs) in
+  ((onlyparse,vars,notation),prec,ppdata,(Lib.library_dp(),df))
 
 let add_syntax_extension local mv mv8 =
   let data8 = option_app (compute_syntax_data false) mv8 in
   let data = option_app (compute_syntax_data !Options.v7) mv in
   let prec,gram_rule = match data with
-    | None -> None, None
-    | Some ((_,_,notation),prec,(n,typs,symbols,_),_) -> 
-	Some prec, Some (make_grammar_rule n typs symbols notation None) in
+  | None -> None, None
+  | Some ((_,_,notation),prec,(n,typs,symbols,_),_) -> 
+      Some prec, Some (make_grammar_rule n typs symbols notation None) in
   match data, data8 with
-    | None, None -> (* Nothing to do: V8Notation while not translating *) () 
-    | _, Some d | Some d, None ->
-  let ((_,_,notation),ppprec,ppdata,_) = d in
-  let notation = match data with Some ((_,_,ntn),_,_,_) -> ntn | _ -> notation in
-  let pp_rule = make_pp_rule ppdata in
-  Lib.add_anonymous_leaf
-    (inSyntaxExtension (local,(prec,ppprec),notation,gram_rule,pp_rule))
+  | None, None -> (* Nothing to do: V8Notation while not translating *) () 
+  | _, Some d | Some d, None ->
+    let ((_,_,ntn),ppprec,ppdata,_) = d in
+    let ntn' = match data with Some ((_,_,ntn),_,_,_) -> ntn | _ -> ntn in
+    let pp_rule = make_pp_rule ppdata in
+    Lib.add_anonymous_leaf
+      (inSyntaxExtension (local,(prec,ppprec),ntn',gram_rule,pp_rule))
 	
 (**********************************************************************)
 (* Distfix, Infix, Symbols *)
@@ -977,6 +1014,18 @@ let mk_permut vars7 vars8 =
         (fun v8 subs -> list_index v8 vars7 - 1 :: subs)
         vars8 [])
 
+let contract_notation ntn =
+  let rec aux ntn i =
+    if i <= String.length ntn - 5 then
+      let ntn' =
+        if String.sub ntn i 5 = "{ _ }" then
+          String.sub ntn 0 i ^ "_" ^ 
+          String.sub ntn (i+5) (String.length ntn -i-5)
+        else ntn in
+      aux ntn' (i+1) 
+    else ntn in
+  aux ntn 0
+
 let add_notation_in_scope local df c mods omodv8 scope toks =
   let ((onlyparse,vars,notation),prec,(n,typs,symbols,_ as ppdata),df') =
     compute_syntax_data !Options.v7 (df,mods) in
@@ -997,8 +1046,9 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
     | _ -> 
 	(* means the rule already exists: recover it *)
 	try 
-	  let _, oldprec8 = Symbols.level_of_notation notation in
-	  let rule,_ = Symbols.find_notation_printing_rule notation in
+          let ntn = contract_notation notation in
+	  let _, oldprec8 = Symbols.level_of_notation ntn in
+	  let rule,_ = Symbols.find_notation_printing_rule ntn in
 	  notation,vars,oldprec8,rule
 	with Not_found -> error "No known parsing rule for this notation in V8"
   in
@@ -1025,7 +1075,7 @@ let level_rule (n,p) = if p = E then n else max (n-1) 0
 
 let check_notation_existence notation =
   try
-    let a,_ = Symbols.level_of_notation notation in
+    let a,_ = Symbols.level_of_notation (contract_notation notation) in
     if a = None then raise Not_found
   with Not_found ->
     error "Parsing rule for this notation has to be previously declared"
@@ -1033,7 +1083,7 @@ let check_notation_existence notation =
 let build_old_pp_rule notation scope symbs (r,vars) =
   let prec = 
     try
-      let a,_ = Symbols.level_of_notation notation in
+      let a,_ = Symbols.level_of_notation (contract_notation notation) in
       if a = None then raise Not_found else out_some a
     with Not_found ->
       error "Parsing rule for this notation has to be previously declared" in

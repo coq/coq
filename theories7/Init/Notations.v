@@ -69,33 +69,19 @@ Uninterpreted V8Notation "( x1 , x2 , x3 , x4 , x5 , x6 )" (at level 0).
 Uninterpreted V8Notation "( x1 , x2 , x3 , x4 , x5 , x6 , x7 )" (at level 0).
 Uninterpreted V8Notation "( x1 , x2 , x3 , x4 , x5 , x6 , x7 , x8 )" (at level 0).
 
+(** Notation "{ x }" is reserved and has a special status as component
+    of other notations; it is at level 1 to factor with {x:A|P} etc *)
+
+Uninterpreted Notation "{ x }" (at level 1)
+  V8only (at level 0, x at level 99).
+
 (** Notations for sum-types *)
 
-(* Home-made factorization at level 4 to parse B+{x:A|P} without parentheses *)
-
-Uninterpreted Notation "B + { x : A | P }"
-  (at level 4, left associativity, only parsing)
-  V8only (at level 50, x at level 99, left associativity, only parsing).
-
-Uninterpreted Notation "B + { x : A | P & Q }"
-  (at level 4, left associativity, only parsing)
-  V8only (at level 50, x at level 99, left associativity, only parsing).
-
-Uninterpreted Notation "B + { x : A & P }"
-  (at level 4, left associativity, only parsing)
-  V8only (at level 50, x at level 99, left associativity, only parsing).
-
-Uninterpreted Notation "B + { x : A & P & Q }"
-  (at level 4, left associativity, only parsing)
-  V8only (at level 50, x at level 99, left associativity, only parsing).
-
-(* At level 1 to factor with {x:A|P} etc *)
-
-Uninterpreted Notation "{ A }  + { B }" (at level 1)
-  V8only (at level 0, A at level 99).
+Uninterpreted Notation "{ A }  + { B }" (at level 4, left associativity)
+  V8only (at level 50, left associativity).
 
 Uninterpreted Notation "A + { B }" (at level 4, left associativity)
-  V8only (at level 50, B at level 99, left associativity).
+  V8only (at level 50, left associativity).
 
 (** Notations for sigma-types or subsets *)
 
