@@ -20,6 +20,21 @@ open Mlutil
 open Vernacinterp
 open Common
 
+(*s [extract_module m] returns all the global reference declared in a module *)
+
+let extract_module m =
+  let m = Nametab.locate_loaded_library (Nametab.make_short_qualid m) in
+  let seg = Library.module_segment (Some m) in
+  let get_reference = function
+    | sp, Leaf o ->
+	(match Libobject.object_tag o with
+	   | "CONSTANT" | "PARAMETER" -> ConstRef sp
+	   | "INDUCTIVE" -> IndRef (sp,0)
+	   | _ -> failwith "caught")
+    | _ -> failwith "caught"
+  in
+  Util.map_succeed get_reference seg
+
 (*s Recursive computation of the global references to extract. 
     We use a set of functions visiting the extracted objects in
     a depth-first way ([visit_type], [visit_ast] and [visit_decl]).
@@ -33,72 +48,89 @@ open Common
 
 type extracted_env = {
   mutable visited : Refset.t;
-  mutable to_extract : global_reference list 
+  mutable to_extract : global_reference list;
+  mutable modules : identifier list
 }
 
-let empty () = { visited = ml_extractions (); to_extract = [] }
+let empty () = 
+  { visited = ml_extractions (); to_extract = []; modules = []}
 
-let rec visit_reference eenv r =
+let rec visit_reference m eenv r =
   let r' = match r with
     | ConstructRef ((sp,_),_) -> IndRef (sp,0)
     | IndRef (sp,i) -> if i = 0 then r else IndRef (sp,0)
     | _ -> r
   in
   if not (Refset.mem r' eenv.visited) then begin
-    (* we put [r'] in [visited] first to avoid loops in inductive defs *)
+    (* we put [r'] in [visited] first to avoid loops in inductive defs 
+       and in module extraction *)
     eenv.visited <- Refset.add r' eenv.visited;
-    visit_decl eenv (extract_declaration r);
+    if m then begin 
+      let m_name = module_of_r r' in 
+      if not (List.mem m_name eenv.modules) then begin
+	eenv.modules <- m_name :: eenv.modules;
+ 	List.iter (visit_reference m eenv) (extract_module m_name)
+      end
+    end;
+    visit_decl m eenv (extract_declaration r);
     eenv.to_extract <- r' :: eenv.to_extract
   end
-
-and visit_type eenv t =
+    
+and visit_type m eenv t =
   let rec visit = function
-    | Tglob r -> visit_reference eenv r
+    | Tglob r -> visit_reference m eenv r
     | Tapp l -> List.iter visit l
     | Tarr (t1,t2) -> visit t1; visit t2
     | Tvar _ | Tprop | Tarity -> ()
   in
   visit t
-
-and visit_ast eenv a =
+    
+and visit_ast m eenv a =
   let rec visit = function
-    | MLglob r -> visit_reference eenv r
+    | MLglob r -> visit_reference m eenv r
     | MLapp (a,l) -> visit a; List.iter visit l
     | MLlam (_,a) -> visit a
     | MLletin (_,a,b) -> visit a; visit b
-    | MLcons (r,l) -> visit_reference eenv r; List.iter visit l
+    | MLcons (r,l) -> visit_reference m eenv r; List.iter visit l
     | MLcase (a,br) -> 
-	visit a; Array.iter (fun (r,_,a) -> visit_reference eenv r; visit a) br
+	visit a; Array.iter (fun (r,_,a) -> visit_reference m eenv r; visit a) br
     | MLfix (_,_,l) -> Array.iter visit l
-    | MLcast (a,t) -> visit a; visit_type eenv t
+    | MLcast (a,t) -> visit a; visit_type m eenv t
     | MLmagic a -> visit a
     | MLrel _ | MLprop | MLarity | MLexn _ -> ()
   in
   visit a
 
-and visit_inductive eenv inds =
-  let visit_constructor (_,tl) = List.iter (visit_type eenv) tl in
+and visit_inductive m eenv inds =
+  let visit_constructor (_,tl) = List.iter (visit_type m eenv) tl in
   let visit_ind (_,_,cl) = List.iter visit_constructor cl in
   List.iter visit_ind inds
 
-and visit_decl eenv = function
+and visit_decl m eenv = function
   | Dtype (inds,_) ->
-      visit_inductive eenv inds
+      visit_inductive m eenv inds
   | Dabbrev (_,_,t) ->
-      visit_type eenv t
+      visit_type m eenv t
   | Dglob (_,a) ->
-      visit_ast eenv a
+      visit_ast m eenv a
   | Dcustom _ -> ()
-
+	
 (*s Recursive extracted environment for a list of reference: we just
     iterate [visit_reference] on the list, starting with an empty
     extracted environment, and we return the reversed list of 
-    references in the field [to_extract]. *)
+    references in the field [to_extract], and the visited_modules in 
+    case of recursive module extraction *)
 
 let extract_env rl =
   let eenv = empty () in
-  List.iter (visit_reference eenv) rl;
+  List.iter (visit_reference false eenv) rl;
   List.rev eenv.to_extract
+
+let modules_extract_env m =
+  let eenv = empty () in
+  eenv.modules <- [m];
+  List.iter (visit_reference true eenv) (extract_module m);
+  eenv.modules, List.rev eenv.to_extract
 
 (*s Extraction in the Coq toplevel. We display the extracted term in
     Ocaml syntax and we use the Coq printers for globals. The
@@ -107,8 +139,7 @@ let extract_env rl =
 
 let refs_set_of_list l = List.fold_right Refset.add l Refset.empty 
 
-let decl_of_refs refs =
-  List.map extract_declaration (extract_env refs) 
+let decl_of_refs refs = List.map extract_declaration (extract_env refs)
 
 let local_optimize refs = 
   let prm = 
@@ -182,25 +213,12 @@ let _ =
     module [M]. We just keep constants and inductives, and we remove
     those having an ML extraction. *)
 
-let extract_module m =
-  let m = Nametab.locate_loaded_library (Nametab.make_short_qualid m) in
-  let seg = Library.module_segment (Some m) in
-  let get_reference = function
-    | sp, Leaf o ->
-	(match Libobject.object_tag o with
-	   | "CONSTANT" | "PARAMETER" -> ConstRef sp
-	   | "INDUCTIVE" -> IndRef (sp,0)
-	   | _ -> failwith "caught")
-    | _ -> failwith "caught"
-  in
-  Util.map_succeed get_reference seg
-
-let decl_mem rl = function 
-  | Dglob (r,_) -> List.mem r rl 
-  | Dabbrev (r,_,_) -> List.mem r rl 
-  | Dtype ((_,r,_)::_, _) -> List.mem r rl
+let decl_in_m m = function 
+  | Dglob (r,_) -> m = module_of_r r
+  | Dabbrev (r,_,_) -> m = module_of_r r
+  | Dtype ((_,r,_)::_, _) -> m = module_of_r r 
   | Dtype ([],_) -> false
-  | Dcustom (r,s) ->  List.mem r rl 
+  | Dcustom (r,_) ->  m = module_of_r r
 
 let file_suffix = function
   | "ocaml" -> ".ml"
@@ -212,15 +230,41 @@ let _ =
     (function 
        | [VARG_STRING lang; VARG_IDENTIFIER m] ->
 	   (fun () -> 
-	      let ms = Names.string_of_id m in
-	      let f = (String.uncapitalize ms) ^ (file_suffix lang) in
+	      let f = (String.uncapitalize (string_of_id m))
+		       ^ (file_suffix lang) in
 	      let prm = {lang=lang;
 			 toplevel=false;
-			 mod_name= Some ms;
+			 mod_name= Some m;
 			 to_appear= []} in 
 	      let rl = extract_module m in 
 	      let decls = optimize prm (decl_of_refs rl) in
 	      let decls = add_ml_decls prm decls in 
-	      let decls = List.filter (decl_mem rl) decls in
+	      let decls = List.filter (decl_in_m m) decls in
 	      extract_to_file f prm decls)
+       | _ -> assert false)
+
+
+let _ = 
+  vinterp_add "RecursiveExtractionModule"
+        (function 
+       | [VARG_STRING lang; VARG_IDENTIFIER m] ->
+	   (fun () -> 
+	      let modules,refs = modules_extract_env m in 
+	      let dummy_prm = {lang=lang;
+			      toplevel=false;
+			      mod_name= Some m;
+			      to_appear= []} in
+	      let decls = optimize dummy_prm (decl_of_refs refs) in
+	      let decls = add_ml_decls dummy_prm decls in
+	      List.iter 
+		(fun m ->
+		   let f = (String.uncapitalize (string_of_id m))
+			   ^ (file_suffix lang) in
+		   let prm = {lang=lang;
+			      toplevel=false;
+			      mod_name= Some m;
+			      to_appear= []} in 
+		   let decls = List.filter (decl_in_m m) decls in
+		   extract_to_file f prm decls)
+		modules)
        | _ -> assert false)

@@ -14,6 +14,8 @@ open Names
 
 module ToplevelPp : Mlpp
 
+val module_of_r : global_reference -> identifier
+
 val extract_to_file : 
   string -> extraction_params -> ml_decl list -> unit
 

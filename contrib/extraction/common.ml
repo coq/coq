@@ -22,12 +22,12 @@ open Nametab
 let current_module = ref None
 
 let module_of_r r = 
-  string_of_id (snd (split_dirpath (dirpath (sp_of_r r))))
+  snd (split_dirpath (dirpath (sp_of_r r)))
 
 let module_option r = 
   let m = module_of_r r in
   if Some m = !current_module then ""
-  else (String.capitalize m) ^ "."
+  else (String.capitalize (string_of_id m)) ^ "."
 
 let check_ml r d = 
   if to_inline r then 

@@ -32,7 +32,7 @@ let keywords =
 let preamble prm =
   let m = match prm.mod_name with 
     | None -> "Main" 
-    | Some m -> String.capitalize m 
+    | Some m -> String.capitalize (string_of_id m) 
   in 
   [< 'sTR "module "; 'sTR m; 'sTR " where"; 'fNL; 'fNL;
      'sTR "type Prop = ()"; 'fNL;

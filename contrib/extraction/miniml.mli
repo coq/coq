@@ -62,7 +62,7 @@ type ml_decl =
 type extraction_params =  
   { lang : string; 
     toplevel : bool; 
-    mod_name : string option; 
+    mod_name : identifier option; 
     to_appear : global_reference list }
 
 module type Mlpp_param = sig

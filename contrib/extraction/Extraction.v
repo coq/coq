@@ -29,6 +29,13 @@ Grammar vernac vernac : ast :=
 | haskell_extr_module 
      [ "Haskell" "Extraction" "Module" identarg($m) "." ]
   -> [ (ExtractionModule "haskell" $m) ]
+| rec_extr_module 
+     [ "Recursive" "Extraction" "Module" identarg($m) "." ]
+  -> [ (RecursiveExtractionModule "ocaml" $m) ]
+| rec_haskell_extr_module 
+     [ "Haskell" "Recursive" "Extraction" "Module" identarg($m) "." ]
+  -> [ (RecursiveExtractionModule "haskell" $m) ]
+
 
 (* Custum inlining directives *)
 | inline_constant
