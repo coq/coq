@@ -1041,6 +1041,8 @@ install-binaries: install-ide-$(HASCOQIDE)
 	$(MKDIR) $(FULLBINDIR)
 	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(COQWC) $(COQINTERFACE) $(COQVO2XML) $(FULLBINDIR)
 
+install-ide: install-ide-$(HASCOQIDE)
+
 install-ide-no:
 
 install-ide-byte: 
