@@ -814,7 +814,9 @@ let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
 let liftn_predicate n k pred =
   let rec liftrec k = function
   | PrCcl ccl -> PrCcl (liftn n k ccl)
-  | PrNotInd (copt,ccl) -> PrNotInd (option_app (liftn n k) copt,liftrec k ccl)
+  | PrNotInd (copt,ccl) ->
+      let p = if copt = None then 0 else 1 in
+      PrNotInd (option_app (liftn n k) copt,liftrec (k+p) ccl)
   | PrProd ((dep,na,t),pred) ->
 	PrProd ((dep,na,liftn_tomatch_type n k t), liftrec (k+1) pred)
   | PrLetIn ((args,copt),pred) ->
@@ -826,6 +828,7 @@ let liftn_predicate n k pred =
 
 let lift_predicate n = liftn_predicate n 1
 
+(* This is parallel substitution *)
 let subst_predicate (args,copt) pred =
   let sigma = match copt with
     | None -> List.rev args
@@ -833,7 +836,8 @@ let subst_predicate (args,copt) pred =
   let rec substrec k = function
     | PrCcl ccl -> PrCcl (substnl sigma k ccl)
     | PrNotInd (copt,pred) ->
-	PrNotInd (option_app (substnl sigma k) copt, substrec (k+1) pred)
+	let p = if copt = None then 0 else 1 in
+	PrNotInd (option_app (substnl sigma k) copt, substrec (k+p) pred)
     | PrProd ((dep,na,t),pred) ->
 	PrProd ((dep,na,substnl_tomatch sigma k t), substrec (k+1) pred)
     | PrLetIn ((args,copt),pred) ->
@@ -881,14 +885,15 @@ let known_dependent = function
 (*                                                                           *)
 (*  Gamma |- Cases ToPush (x1:T1) ... ToPush (xn:Tn) rest of ... end : pred  *)
 (*                                                                           *)
-(* We replace it by pred' = [X1:=rargs1,x1:=x1]...[Xn:=rargsn,xn:=xn]P s.t.  *)
+(* We replace it by pred' = [X1:=rargs1,x1:=y1]...[Xn:=rargsn,xn:=yn]P s.t.  *)
 (*                                                                           *)
-(*  Gamma,x1:T1...xn:Tn |- Cases Pushed(x1)...Pushd(xn) rest of...end: pred' *)
+(*  Gamma,y1:T1...yn:Tn |- Cases Pushed(y1)...Pushd(yn) rest of...end: pred' *)
 (*                                                                           *)
 (* The realargs are not necessary; it would be simpler not to take then into *)
 (* account; especially, no lift would be necessary (but                      *)
 (* [specialize_predicate_match] assumes realargs are given, then ...)        *)
 (*****************************************************************************)
+(*
 let weaken_predicate q pred =
   let rec weakrec n k pred =
     if n=0 then lift_predicate k pred else match pred with
@@ -907,14 +912,36 @@ let weaken_predicate q pred =
 	  let copt, p = if dep then Some (mkRel (q+k)), 1 else None, 0 in
 	  PrNotInd (copt, weakrec (n-1) (k+p) pred)
   in weakrec q 0 pred
+*)
+let weaken_predicate q pred =
+  let rec weakrec n k pred =
+    if n=0 then pred else match pred with
+      | (PrLetIn _ | PrCcl _ | PrNotInd _) ->
+	  anomaly "weaken_predicate: only product can be weakened"
+      | PrProd ((dep,_,IsInd (_,IndType(indf,realargs))),pred) ->
+	  (* To make it more uniform, we apply realargs but they dont occur! *)
+	  let copt, p = if dep then Some (mkRel (n+k)), 1 else None, 0 in
+	  (* We replace 1 product by |realargs| arguments + possibly copt *)
+	  (* Then we need to shift pred accordingly (but *)
+	  let nletargs = (List.length realargs)+p in
+	  let pred = liftn_predicate (nletargs-1) (p+1) pred in 
+	  (* The current lift to refer to the y1...yn is now k+nletargs *)
+	  PrLetIn ((realargs, copt), weakrec (n-1) (nletargs+k) pred)
+      | PrProd ((dep,_,NotInd t),pred) ->
+	  (* Does copt occur in pred ? Does it need to be remembered ? *)
+	  let copt, p = if dep then Some (mkRel (q+k)), 1 else None, 0 in
+          (* PrNotInd is a binding iff copt <> None *)
+	  PrNotInd (copt, weakrec (n-1) (k+p) pred)
+  in weakrec q 0 pred
 
 (*****************************************************************************)
 (* pred = [X:=realargs;x:=e]P types the following problem:                   *)
 (*                                                                           *)
 (*  Gamma |- Cases Pushed(e:I) rest of...end: pred                           *)
 (*                                                                           *)
-(* where the case of constructor C:(x1:T1)...(xn:Tn)->I is considered.       *)
-(* We replace pred by pred' = (x1:T1)...(xn:Tn)P[X:=realargs;x:=e] s.t.      *)
+(* where the branch with constructor Ci:(x1:T1)...(xn:Tn)->I(realargsi)      *)
+(* is considered. We let e=Ci(x1,...,xn) and                                 *)
+(* we replace pred by pred' = (x1:T1)...(xn:Tn)P[X:=realargsi;x:=e] s.t.     *)
 (*                                                                           *)
 (*  Gamma |- Cases ToPush(x1)...ToPush(xn) rest of...end: pred'              *)
 (*****************************************************************************)
@@ -922,10 +949,14 @@ let specialize_predicate_match tomatchs cs = function
   | (PrProd _ | PrCcl _ | PrNotInd _) ->
       anomaly "specialize_predicate_match: a matched pattern must be pushed"
   | PrLetIn ((args,copt),pred) ->
+      (* Assume some gamma st: gamma, (X,x:=realargs,copt) |- pred *)
       let k = List.length args + (if copt = None then 0 else 1) in
+      (* We adjust pred st: gamma, x1...xn, (X,x:=realargs,copt) |- pred *)
       let pred' = liftn_predicate cs.cs_nargs (k+1) pred in
       let argsi = Array.to_list cs.cs_concl_realargs in
       let copti = option_app (fun _ -> build_dependent_constructor cs) copt in
+      (* The substituends argsi, copti are all defined in gamma, x1...xn *)
+      (* We need _parallel_ substitution *)
       let pred'' = subst_predicate (argsi, copti) pred' in
       let dep = (copt <> None) in
       List.fold_right
