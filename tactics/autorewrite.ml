@@ -22,7 +22,8 @@ open Vernacinterp
 open Tacexpr
 
 (* Rewriting rules *)
-type rew_rule = constr * bool * glob_tactic_expr
+(* the type is the statement of the lemma constr. Used to elim duplicates. *)
+type rew_rule = constr * types * bool * glob_tactic_expr
 
 (* Summary and Object declaration *)
 let rewtab =
@@ -50,7 +51,7 @@ let one_base tac_main bas =
       errorlabstrm "AutoRewrite" 
         (str ("Rewriting base "^(bas)^" does not exist"))
   in
-  let lrul = List.map (fun (c,b,t) -> (c,b,Tacinterp.eval_tactic t)) lrul in
+  let lrul = List.map (fun (c,_,b,t) -> (c,b,Tacinterp.eval_tactic t)) lrul in
     tclREPEAT_MAIN (tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
       tclTHEN tac
         (tclREPEAT_MAIN 
@@ -67,7 +68,17 @@ let autorewrite tac_main lbas =
 let cache_hintrewrite (_,(rbase,lrl)) =
   let l = 
     try 
-      List.rev_append lrl (Stringmap.find rbase !rewtab) 
+      let oldl = Stringmap.find rbase !rewtab in
+      let lrl =
+       List.map
+        (fun (c,dummy,b,t) ->
+          (* here we substitute the dummy value with the right one *)
+          c,Typing.type_of (Global.env ()) Evd.empty c,b,t) lrl in
+       List.rev_append
+        (List.filter
+          (fun (_,typ,_,_) ->
+            not (List.exists (fun (_,typ',_,_) -> Term.eq_constr typ typ') oldl)
+          ) lrl) oldl
     with
       | Not_found -> List.rev lrl
   in
@@ -76,11 +87,16 @@ let cache_hintrewrite (_,(rbase,lrl)) =
 let export_hintrewrite x = Some x
 
 let subst_hintrewrite (_,subst,(rbase,list as node)) = 
-  let subst_first (cst,b,t as pair) = 
+  let subst_first (cst,typ,b,t as pair) = 
     let cst' = Term.subst_mps subst cst in
+    let typ' =
+     (* here we do not have the environment and Global.env () is not the
+        one where cst' lives in. Thus we can just put a dummy value and
+        override it in cache_hintrewrite *)
+     typ (* dummy value, it will be recomputed by cache_hintrewrite *) in
     let t' = Tacinterp.subst_tactic subst t in
-      if cst == cst' & t == t' then pair else
-	(cst',b,t)
+      if cst == cst' && t == t' then pair else
+	(cst',typ',b,t)
   in
   let list' = list_smartmap subst_first list in
     if list' == list then node else
@@ -100,5 +116,10 @@ let (in_hintrewrite,out_hintrewrite)=
 
 (* To add rewriting rules to a base *)
 let add_rew_rules base lrul =
-  let lrul = List.rev_map (fun (c,b,t) -> (c,b,Tacinterp.glob_tactic t)) lrul in
-  Lib.add_anonymous_leaf (in_hintrewrite (base,lrul))
+  let lrul =
+   List.rev_map
+    (fun (c,b,t) ->
+      (c,mkProp (* dummy value *), b,Tacinterp.glob_tactic t)
+    ) lrul
+  in
+   Lib.add_anonymous_leaf (in_hintrewrite (base,lrul))
