@@ -429,6 +429,8 @@ let rec pr_vernac = function
         | Decl_kinds.GCoercion -> str"Coercion"
         | Decl_kinds.LDefinition -> str"Local"
         | Decl_kinds.GDefinition -> str"Definition"
+        | Decl_kinds.LSubClass -> str"Local SubClass"
+        | Decl_kinds.GSubClass -> str"SubClass"
         | Decl_kinds.SCanonical -> str"Canonical Structure" in
       let pr_reduce = function
         | None -> mt()

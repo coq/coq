@@ -107,8 +107,8 @@ GEXTEND Gram
   def_token:
     [ [ "Definition" -> (fun _ _ -> ()), Global, GDefinition
       | IDENT "Local" -> (fun _ _ -> ()), Local, LDefinition
-      | IDENT "SubClass"  -> Class.add_subclass_hook, Global, GCoercion
-      | IDENT "Local"; IDENT "SubClass"  -> Class.add_subclass_hook, Local, LCoercion ] ] 
+      | IDENT "SubClass"  -> Class.add_subclass_hook, Global, GSubClass
+      | IDENT "Local"; IDENT "SubClass"  -> Class.add_subclass_hook, Local, LSubClass ] ] 
   ;
   assumption_token:
     [ [ "Hypothesis" -> (Local, Logical)

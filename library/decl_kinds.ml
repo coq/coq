@@ -23,6 +23,8 @@ type definitionkind =
   | GDefinition
   | LCoercion
   | GCoercion
+  | LSubClass
+  | GSubClass
   | SCanonical
 
 type locality_flag = (*bool (* local = true; global = false *)*)
