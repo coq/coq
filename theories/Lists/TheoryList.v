@@ -11,7 +11,7 @@
 (* Some programs and results about lists following CAML Manual *)
 
 Require Export PolyList.
-Implicit Arguments On.
+Set Implicit Arguments.
 Chapter Lists.
 
 Variable  A : Set.

@@ -6,9 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Section Streams. (* The set of streams : definition *)
 
@@ -166,6 +166,4 @@ Variable a : A.
 CoFixpoint const : (Stream A) := (Cons a const).
 End Constant_Stream.
 
-
-
-Implicit Arguments Off.
+Unset Implicit Arguments.
