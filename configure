@@ -326,7 +326,7 @@ CAMLP4VERSION=`$CAMLP4 -v 2>&1 | sed -n -e 's|.*version *\(.*\)$|\1|p'`
 case $CAMLP4VERSION in
   0.*|1.*|2.00*)
         echo "Your version of Camlp4 is $CAMLP4VERSION."
-	echo "You need Camlp4 2.01 or later !"
+	echo "You need Camlp4 3.00 or later !"
 	echo "Configuration script failed!"
 	exit 1;;
   ?*)	echo "You have Camlp4 $CAMLP4VERSION. Good!";;
