@@ -3,3 +3,7 @@ coqmktop
 coqtop.byte
 coqtop.opt
 minicoq
+coqdep
+coq_makefile
+gallina
+coq-tex
