@@ -24,6 +24,9 @@ val is_implicit_args : unit -> bool
 val implicitly : ('a -> 'b) -> 'a -> 'b
 val with_implicits : bool -> ('a -> 'b) -> 'a -> 'b
 
+val strict_implicit_args : bool ref
+val contextual_implicit_args : bool ref
+
 (*s An [implicits_list] is a list of positions telling which arguments
     of a reference can be automatically infered *)
 type implicit_status

@@ -20,7 +20,30 @@ open Libobject
 open Lib
 open Nametab
 
-(*s Calcul arguments implicites *)
+(*s Flags governing the computation of implicit arguments *)
+
+let implicit_args = ref false
+let strict_implicit_args = ref false
+let contextual_implicit_args = ref false
+
+let make_implicit_args flag = implicit_args := flag
+let is_implicit_args () = !implicit_args
+
+let with_implicits b f x =
+  let oimplicit = !implicit_args in
+  try 
+    implicit_args := b;
+    let rslt = f x in 
+    implicit_args := oimplicit;
+    rslt
+  with e -> begin
+    implicit_args := oimplicit;
+    raise e
+  end
+
+let implicitly f = with_implicits true f
+
+(*s Computation of implicit arguments *)
 
 (* We remember various information about why an argument is (automatically)
    inferable as implicit
@@ -52,9 +75,6 @@ type implicit_explanation =
   | DepFlex of argument_position
   | DepFlexAndRigid of (*flex*) argument_position * (*rig*) argument_position
   | Manual
-
-(* Set this to true to have arguments inferable from conclusion only implicit*)
-let conclusion_matters = false
 
 let argument_less = function
   | Hyp n, Hyp n' -> n<n'
@@ -128,15 +148,17 @@ let iter_constr_with_full_binders g f l c = match kind_of_term c with
 let push_lift d (e,n) = (push_rel d e,n+1)
 
 (* Precondition: rels in env are for inductive types only *)
-let add_free_rels_until bound env m pos acc =
+let add_free_rels_until strict bound env m pos acc =
   let rec frec rig (env,depth as ed) c =
     match kind_of_term (whd_betadeltaiota env c) with
     | Rel n when (n < bound+depth) & (n >= depth) ->
         acc.(bound+depth-n-1) <- update pos rig (acc.(bound+depth-n-1))
     | App (f,_) when rig & is_flexible_reference env bound depth f ->
-        iter_constr_with_full_binders push_lift (frec false) ed c
+	if strict then () else
+          iter_constr_with_full_binders push_lift (frec false) ed c
     | Case _ when rig ->
-        iter_constr_with_full_binders push_lift (frec false) ed c
+	if strict then () else
+          iter_constr_with_full_binders push_lift (frec false) ed c
     | _ ->
         iter_constr_with_full_binders push_lift (frec rig) ed c
   in 
@@ -149,10 +171,13 @@ let compute_implicits env t =
     let t = whd_betadeltaiota env t in
     match kind_of_term t with
       | Prod (x,a,b) ->
-	  add_free_rels_until n env a (Hyp (n+1))
+	  add_free_rels_until !strict_implicit_args n env a (Hyp (n+1))
             (aux (push_rel (x,None,a) env) (n+1) b)
       | _ -> 
-          add_free_rels_until n env t Conclusion (Array.create n None)
+	  let v = Array.create n None in
+	  if !contextual_implicit_args then
+	    add_free_rels_until !strict_implicit_args n env t Conclusion v
+	  else v
   in 
   match kind_of_term (whd_betadeltaiota env t) with 
     | Prod (x,a,b) ->
@@ -165,8 +190,6 @@ type implicits_list = implicit_status list
 
 let is_status_implicit = function
   | None -> false
-  | Some (DepRigid Conclusion) -> conclusion_matters
-  | Some (DepFlex Conclusion) -> conclusion_matters
   | _ -> true
 
 let is_inferable_implicit n = function
@@ -174,7 +197,7 @@ let is_inferable_implicit n = function
   | Some (DepRigid (Hyp p)) -> n >= p
   | Some (DepFlex (Hyp p)) -> false
   | Some (DepFlexAndRigid (_,Hyp q)) -> n >= q
-  | Some (DepRigid Conclusion) -> conclusion_matters
+  | Some (DepRigid Conclusion) -> true
   | Some (DepFlex Conclusion) -> false
   | Some (DepFlexAndRigid (_,Conclusion)) -> false
   | Some Manual -> true
@@ -190,25 +213,6 @@ type implicits =
   | Impl_auto of implicits_list
   | Impl_manual of implicits_list
   | No_impl
-
-let implicit_args = ref false
-
-let make_implicit_args flag = implicit_args := flag
-let is_implicit_args () = !implicit_args
-
-let with_implicits b f x =
-  let oimplicit = !implicit_args in
-  try 
-    implicit_args := b;
-    let rslt = f x in 
-    implicit_args := oimplicit;
-    rslt
-  with e -> begin
-    implicit_args := oimplicit;
-    raise e
-  end
-
-let implicitly f = with_implicits true f
 
 let using_implicits = function
   | No_impl -> with_implicits false

@@ -651,10 +651,34 @@ let _ =
 let _ =
   declare_bool_option 
     { optsync  = true;
+      optname  = "strict implicits";
+      optkey   = (SecondaryTable ("Strict","Implicits"));
+      optread  = (fun () -> !Impargs.strict_implicit_args);
+      optwrite = (fun b ->  Impargs.strict_implicit_args := b) }
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
+      optname  = "contextual implicits";
+      optkey   = (SecondaryTable ("Contextual","Implicits"));
+      optread  = (fun () -> !Impargs.contextual_implicit_args);
+      optwrite = (fun b ->  Impargs.contextual_implicit_args := b) }
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
       optname  = "coercion printing";
       optkey   = (SecondaryTable ("Printing","Coercions"));
       optread  = (fun () -> !Termast.print_coercions);
       optwrite = (fun b ->  Termast.print_coercions := b) }
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
+      optname  = "symbols printing";
+      optkey   = (SecondaryTable ("Printing","Symbols"));
+      optread  = (fun () -> !Constrextern.print_no_symbol);
+      optwrite = (fun b ->  Constrextern.print_no_symbol := not b) }
 
 let _ =
   declare_int_option
