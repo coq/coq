@@ -18,7 +18,7 @@ let section_path sl =
   match List.rev sl with
     | s::pa ->
 	make_path
-	  (make_dirpath (List.rev (List.map id_of_string pa)))
+	  (make_dirpath (List.map id_of_string pa))
 	  (id_of_string s)
     | [] -> invalid_arg "section_path"
 
