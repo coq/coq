@@ -23,6 +23,8 @@ val term_quality : bool ref
 
 val xml_export : bool ref
 
+val v7 : bool ref
+
 val make_silent : bool -> unit
 val is_silent : unit -> bool
 val is_verbose : unit -> bool
