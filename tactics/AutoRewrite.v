@@ -7,7 +7,8 @@ Grammar vernac orient : ast :=
 
 with vernac : ast :=
 | hint_rew_b [ "Hint" "Rewrite" orient($o) "[" ne_constrarg_list($l) "]" "in"
-  identarg($b) "."] -> [ (HintRewrite $o (CONSTRLIST ($LIST $l)) $b) ]
+  identarg($b) "."] ->
+  [ (HintRewrite $o (CONSTRLIST ($LIST $l)) $b (TACTIC (Idtac))) ]
 | hint_rew_t [ "Hint" "Rewrite" orient($o) "[" ne_constrarg_list($l) "]" "in"
   identarg($b) "using" tacarg($t) "." ] ->
   [ (HintRewrite $o (CONSTRLIST ($LIST $l)) $b (TACTIC $t)) ].

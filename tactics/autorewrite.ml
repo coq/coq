@@ -12,9 +12,12 @@ open Term
 open Util
 open Vernacinterp
 
+(* Rewriting rules *)
+type rew_rule = constr * bool * tactic
+
 (* Summary and Object declaration *)
 let rewtab =
-  ref ((Hashtbl.create 53):(string,constr * bool * tactic) Hashtbl.t)
+  ref ((Hashtbl.create 53) : (string,rew_rule) Hashtbl.t)
 
 let lookup id = Hashtbl.find id !rewtab
 
@@ -28,8 +31,8 @@ let _ =
       Summary.init_function     = init;
       Summary.survive_section   = false }
 
-(* Rewriting rules *)
-type rew_rule = constr * bool * tactic
+(* Rewriting rules before tactic interpretation *)
+type raw_rew_rule = constr * bool * t
 
 (* Applies all the rules of one base *)
 let one_base tac_main bas =
@@ -53,7 +56,8 @@ let autorewrite tac_main lbas =
 (* Functions necessary to the library object declaration *)
 let load_hintrewrite _ = ()
 let cache_hintrewrite (_,(rbase,lrl)) =
-  List.iter (fun c -> Hashtbl.add !rewtab rbase c) lrl
+  List.iter
+    (fun (c,b,t) -> Hashtbl.add !rewtab rbase (c,b,Tacinterp.interp t)) lrl
 let export_hintrewrite x = Some x
 
 (* Declaration of the Hint Rewrite library object *)
@@ -72,7 +76,7 @@ let add_rew_rules base lrul =
 (* The vernac declaration of HintRewrite *)
 let _ = vinterp_add "HintRewrite"
   (function
-    | [VARG_STRING ort;VARG_CONSTRLIST lcom;VARG_IDENTIFIER id]
+    | [VARG_STRING ort;VARG_CONSTRLIST lcom;VARG_IDENTIFIER id;VARG_TACTIC t]
       when ort = "LR" || ort = "RL" ->
       (fun () ->
        let (evc,env) = Command.get_current_context () in
@@ -84,21 +88,7 @@ let _ = vinterp_add "HintRewrite"
              (Node(loc,"COMMAND",l)))
            | _ -> bad_vernac_args "HintRewrite") lcom in
        add_rew_rules (string_of_id id)
-         (List.map (fun csr -> (csr,ort = "LR",tclIDTAC)) lcsr))
-    | [VARG_STRING ort;VARG_CONSTRLIST lcom;VARG_IDENTIFIER id;VARG_TACTIC t]
-      when ort = "LR" || ort = "RL" ->
-      (fun () ->
-       let (evc,env) = Command.get_current_context () in
-       let lcsr =
-         List.map (function
-	   | Node(loc,"CONSTR",l) ->
-             constr_of_Constr (interp_tacarg
-             (evc,env,[],[],None,Tactic_debug.DebugOff)
-             (Node(loc,"COMMAND",l)))
-           | _ -> bad_vernac_args "HintRewrite") lcom
-       and tac = Tacinterp.interp t in
-       add_rew_rules (string_of_id id)
-         (List.map (fun csr -> (csr,ort = "LR",tac)) lcsr))
+         (List.map (fun csr -> (csr,ort = "LR",t)) lcsr))
     | _  -> bad_vernac_args "HintRewrite")
 
 (* To get back the tactic arguments and call AutoRewrite *)
