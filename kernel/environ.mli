@@ -1,10 +1,10 @@
-(***********************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
-(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
-(*   \VV/  *************************************************************)
-(*    //   *      This file is distributed under the terms of the      *)
-(*         *       GNU Lesser General Public License Version 2.1       *)
-(***********************************************************************)
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
 (*i $Id$ i*)
 
@@ -43,7 +43,7 @@ val engagement    : env -> engagement option
 (* is the local context empty *)
 val empty_context : env -> bool
 
-(***********************************************************************)
+(************************************************************************)
 (*s Context of de Bruijn variables (rel_context) *)
 val push_rel         : rel_declaration -> env -> env
 val push_rel_context :     rel_context -> env -> env
@@ -58,7 +58,7 @@ val evaluable_rel : int -> env -> bool
 val fold_rel_context :
   (env -> rel_declaration -> 'a -> 'a) -> env -> init:'a -> 'a
 
-(***********************************************************************)
+(************************************************************************)
 (* Context of variables (section variables and goal assumptions) *)
 val push_named : named_declaration -> env -> env
 
@@ -80,7 +80,7 @@ val reset_context : env -> env
 (* This forgets rel context and sets a new named context *)
 val reset_with_named_context : named_context -> env -> env
 
-(***********************************************************************)
+(************************************************************************)
 (*s Global constants *)
 (*s Add entries to global environment *)
 val add_constant : constant -> constant_body -> env -> env
@@ -100,7 +100,7 @@ val constant_value     : env -> constant -> constr
 val constant_type      : env -> constant -> types
 val constant_opt_value : env -> constant -> constr option
 
-(***********************************************************************)
+(************************************************************************)
 (*s Inductive types *)
 val add_mind : mutual_inductive -> mutual_inductive_body -> env -> env
 
@@ -108,7 +108,7 @@ val add_mind : mutual_inductive -> mutual_inductive_body -> env -> env
 (* raises [Not_found] if the required path is not found *)
 val lookup_mind : mutual_inductive -> env -> mutual_inductive_body
 
-(***********************************************************************)
+(************************************************************************)
 (*s Modules *)
 val add_modtype : kernel_name -> module_type_body -> env -> env
 
@@ -118,14 +118,14 @@ val shallow_add_module : module_path -> module_body -> env -> env
 val lookup_module : module_path -> env -> module_body
 val lookup_modtype : kernel_name -> env -> module_type_body
 
-(***********************************************************************)
+(************************************************************************)
 (*s Universe constraints *)
 val set_universes   :   Univ.universes -> env -> env
 val add_constraints : Univ.constraints -> env -> env
 
 val set_engagement : engagement -> env -> env
 
-(***********************************************************************)
+(************************************************************************)
 (* Sets of referred section variables *)
 (* [global_vars_set env c] returns the list of [id]'s occurring as
    [VAR id] in [c] *)
@@ -135,7 +135,7 @@ val vars_of_global : env -> constr -> identifier list
 
 val keep_hyps : env -> Idset.t -> section_context
 
-(***********************************************************************)
+(************************************************************************)
 (*s Unsafe judgments. We introduce here the pre-type of judgments, which is
   actually only a datatype to store a term with its type and the type of its
   type. *)

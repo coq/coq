@@ -1,10 +1,10 @@
-(***********************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
-(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
-(*   \VV/  *************************************************************)
-(*    //   *      This file is distributed under the terms of the      *)
-(*         *       GNU Lesser General Public License Version 2.1       *)
-(***********************************************************************)
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
 (* $Id$ *)
 
@@ -219,9 +219,9 @@ let uninterp_positive p =
   with Non_closed_number -> 
     None
 
-(***********************************************************************)
+(************************************************************************)
 (* Declaring interpreters and uninterpreters for positive *)
-(***********************************************************************)
+(************************************************************************)
 
 let _ = Symbols.declare_numeral_interpreter "positive_scope"
   (glob_positive,positive_module)
@@ -284,7 +284,7 @@ let uninterp_n p =
   try Some (bignat_of_n p)
   with Non_closed_number -> None
 
-(***********************************************************************)
+(************************************************************************)
 (* Declaring interpreters and uninterpreters for N *)
 
 let _ = Symbols.declare_numeral_interpreter "N_scope"
@@ -348,7 +348,7 @@ let uninterp_z p =
     Some (bigint_of_z p)
   with Non_closed_number -> None
 
-(***********************************************************************)
+(************************************************************************)
 (* Declaring interpreters and uninterpreters for Z *)
 
 let _ = Symbols.declare_numeral_interpreter "Z_scope"
@@ -360,7 +360,7 @@ let _ = Symbols.declare_numeral_interpreter "Z_scope"
   uninterp_z,
   None)
    
-(***********************************************************************)
+(************************************************************************)
 (* Old V7 ast Printers *)
 
 open Esyntax

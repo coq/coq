@@ -506,7 +506,7 @@ let full_auto n gl =
   tclTRY (search n db_list (make_local_hint_db gl) hyps) gl
   
 let default_full_auto gl = full_auto !default_search_depth gl
-(***********************************************************************)
+(************************************************************************)
 
 let blast_tactic = ref (free_try default_full_auto)
 ;;

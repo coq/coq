@@ -1,10 +1,10 @@
-(***********************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
-(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
-(*   \VV/  *************************************************************)
-(*    //   *      This file is distributed under the terms of the      *)
-(*         *       GNU Lesser General Public License Version 2.1       *)
-(***********************************************************************)
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
 (*i $Id$ i*)
 
@@ -82,7 +82,7 @@ val betadeltaiotanolet : reds
 
 val unfold_red : evaluable_global_reference -> reds
 
-(***********************************************************************)
+(************************************************************************)
 
 type table_key =
   | ConstKey of constant
@@ -95,7 +95,7 @@ val ref_value_cache: 'a infos -> table_key -> 'a option
 val info_flags: 'a infos -> reds
 val create: ('a infos -> constr -> 'a) -> reds -> env -> 'a infos
 
-(***********************************************************************)
+(************************************************************************)
 (*s A [stack] is a context of arguments, arguments are pushed by
    [append_stack] one array at a time but popped with [decomp_stack]
    one by one *)
@@ -121,7 +121,7 @@ val app_stack : constr * constr stack -> constr
 val stack_tail : int -> 'a stack -> 'a stack
 val stack_nth : 'a stack -> int -> 'a
 
-(***********************************************************************)
+(************************************************************************)
 (*s Lazy reduction. *)
 
 (* [fconstr] is the type of frozen constr *)
@@ -185,7 +185,7 @@ val unfold_reference : clos_infos -> table_key -> fconstr option
 (* [mind_equiv] checks whether two mutual inductives are intentionally equal *)
 val mind_equiv : clos_infos -> mutual_inductive -> mutual_inductive -> bool
 
-(***********************************************************************)
+(************************************************************************)
 (*i This is for lazy debug *)
 
 val lift_fconstr      : int -> fconstr -> fconstr
