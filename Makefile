@@ -39,7 +39,8 @@ noargument:
 
 LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
               -I proofs -I tactics -I pretyping -I parsing -I toplevel  \
-              -I contrib/omega -I contrib/ring -I contrib/xml \
+              -I contrib/omega -I contrib/romega \
+	      -I contrib/ring -I contrib/xml \
 	      -I contrib/extraction -I contrib/correctness \
               -I contrib/interface -I contrib/fourier
 
@@ -183,6 +184,8 @@ ML4FILES += contrib/correctness/psyntax.ml4 contrib/field/field.ml4
 
 OMEGACMO=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo
 
+ROMEGACMO=contrib/romega/const_omega.cmo contrib/romega/refl_omega.cmo 
+
 RINGCMO=contrib/ring/quote.cmo contrib/ring/ring.cmo 
 
 FIELDCMO=contrib/field/field.cmo 
@@ -207,7 +210,8 @@ CORRECTNESSCMO=contrib/correctness/pmisc.cmo				\
 	contrib/correctness/pwp.cmo contrib/correctness/pmlize.cmo	\
 	contrib/correctness/ptactic.cmo	contrib/correctness/psyntax.cmo
 
-CONTRIB=$(OMEGACMO) $(RINGCMO) $(FIELDCMO) $(XMLCMO) $(FOURIERCMO) \
+CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) $(XMLCMO) \
+	$(FOURIERCMO) \
 	$(EXTRACTIONCMO) $(CORRECTNESSCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
@@ -478,6 +482,8 @@ OMEGAVO = contrib/omega/Omega.vo       contrib/omega/Zlogarithm.vo \
           contrib/omega/OmegaSyntax.vo contrib/omega/Zpower.vo \
           contrib/omega/Zcomplements.vo
 
+ROMEGAVO = contrib/romega/ReflOmegaCore.vo contrib/romega/ROmega.vo 
+
 RINGVO = contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
          contrib/ring/Ring_theory.vo    contrib/ring/Ring.vo \
          contrib/ring/ZArithRing.vo     contrib/ring/Ring_abstract.vo \
@@ -499,13 +505,14 @@ contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
 	$(COQC) -boot -byte  $(COQINCLUDES) $<
 
-CONTRIBVO = $(OMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) $(CORRECTNESSVO)\
+CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
+	    $(CORRECTNESSVO)\
             $(INTERFACEV0) $(FOURIERVO)
 
 $(CONTRIBVO): states/initial.coq
 
 contrib: $(CONTRIBVO) $(CONTRIBCMO)
-omega: $(OMEGAVO) $(OMEGACMO)
+omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
 ring: $(RINGVO) $(RINGCMO)
 # xml_ instead of xml to avoid conflict with "make xml"
 xml_: $(XMLVO) $(XMLCMO)
@@ -677,7 +684,7 @@ clean::
 
 tags:
 	find . -name "*.ml*" | sort -r | xargs \
-	etags "--regex='/let[ \t]+\([^ \t]+\)/\1/'" \
+	etags "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/and[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/type[ \t]+\([^ \t]+\)/\1/" \

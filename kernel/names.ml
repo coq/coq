@@ -113,7 +113,8 @@ let check_ident s =
   let l = String.length s in
   if l = 0 then error "The empty string is not an identifier";
   let c = String.get s 0 in
-  if (is_letter c) or c = '_' or c = '$' then check_ident_suffix 1 l s
+  if (is_letter c) or c = '_' or c = '$' or c = '?' 
+  then check_ident_suffix 1 l s
   else error (s^": an identifier should start with a letter")
 
 let is_ident s = try check_ident s; true with _ -> false
