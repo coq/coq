@@ -14,7 +14,7 @@
 
 let dtdname = "http://localhost:8081/getdtd?uri=cic.dtd";;
 let typesdtdname = "http://localhost:8081/getdtd?uri=cictypes.dtd";;
-let verbose = ref true;; (* always set to true during a "Print XML All" *)
+let verbose = ref false;; (* always set to true during a "Print XML All" *)
 
 (* UTILITY FUNCTIONS *)
 
