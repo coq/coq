@@ -12,7 +12,7 @@ Require Peano.
 
 Syntax constr
   level 0:
-    S [ (S $p) ] -> [$p:"nat_printer"]
+    S [ (S $p) ] -> [$p:"nat_printer":9]
   | O [ O ]      -> ["(0)"].
 
 (* Outside the module to be able to parse the grammar for 0,1,2... !! *)

@@ -1,0 +1,4 @@
+[n:nat](S (S n))
+     : nat->nat
+[n:nat](S (plus n n))
+     : nat->nat
