@@ -573,13 +573,13 @@ file are considered as a single command.
   Happens when there is vernacular command to undo.
 \end{ErrMsgs}
 
-\subsection{\tt Restore State \ident.}
+\subsection{\tt Restore State \str.}
 \comindex{Restore State}
   Restores the state contained in the file \str.
 
 \begin{Variants}
 \item {\tt Restore State \ident}\\
- Equivalent to {\tt Restore State "}{\ident}{\tt .coq".}.
+ Equivalent to {\tt Restore State "}{\ident}{\tt .coq"}.
 \item {\tt Reset Initial.}\comindex{Reset Initial}\\ 
   Goes back to the
   initial state (like after the command {\tt coqtop}).
@@ -593,7 +593,7 @@ use in a further session. This file can be given as the {\tt
 
 \begin{Variants}
 \item {\tt Write State \ident}\\
- Equivalent to {\tt Write State "}{\ident}{\tt .coq".}.
+ Equivalent to {\tt Write State "}{\ident}{\tt .coq"}.
  The state is saved in the current directory (see \pageref{Pwd}).
 \end{Variants}
 
