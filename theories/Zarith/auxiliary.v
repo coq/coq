@@ -564,7 +564,7 @@ Theorem OMEGA10:(v,c1,c2,l1,l2,k1,k2:Z)
   = (Zplus (Zmult v (Zplus (Zmult c1 k1) (Zmult c2 k2)))
            (Zplus (Zmult l1 k1) (Zmult l2 k2))).
 
-Intros; Repeat '(Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
+Intros; Repeat (Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
 Repeat Rewrite Zmult_assoc; Repeat Elim Zplus_assoc; 
 Rewrite (Zplus_permute (Zmult l1 k1) (Zmult (Zmult v c2) k2)); Trivial with arith.
 Save.
@@ -573,7 +573,7 @@ Theorem OMEGA11:(v1,c1,l1,l2,k1:Z)
   (Zplus (Zmult (Zplus (Zmult v1 c1) l1) k1) l2)
   = (Zplus (Zmult v1 (Zmult c1 k1)) (Zplus (Zmult l1 k1) l2)).
 
-Intros; Repeat '(Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
+Intros; Repeat (Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
 Repeat Rewrite Zmult_assoc; Repeat Elim Zplus_assoc; Trivial with arith.
 Save.
 
@@ -581,7 +581,7 @@ Theorem OMEGA12:(v2,c2,l1,l2,k2:Z)
   (Zplus l1 (Zmult (Zplus (Zmult v2 c2) l2) k2))
   = (Zplus (Zmult v2 (Zmult c2 k2)) (Zplus l1 (Zmult l2 k2))).
 
-Intros; Repeat '(Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
+Intros; Repeat (Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
 Repeat Rewrite Zmult_assoc; Repeat Elim Zplus_assoc; Rewrite Zplus_permute;
 Trivial with arith.
 Save.
@@ -610,7 +610,7 @@ Theorem OMEGA15:(v,c1,c2,l1,l2,k2:Z)
   = (Zplus (Zmult v (Zplus c1  (Zmult c2 k2)))
            (Zplus l1 (Zmult l2 k2))).
 
-Intros; Repeat '(Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
+Intros; Repeat (Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
 Repeat Rewrite Zmult_assoc; Repeat Elim Zplus_assoc; 
 Rewrite (Zplus_permute l1 (Zmult (Zmult v c2) k2)); Trivial with arith.
 Save.
@@ -619,7 +619,7 @@ Theorem OMEGA16:
   (v,c,l,k:Z)
    (Zmult (Zplus (Zmult v c) l) k) = (Zplus (Zmult v (Zmult c k)) (Zmult l k)).
 
-Intros; Repeat '(Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
+Intros; Repeat (Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
 Repeat Rewrite Zmult_assoc; Repeat Elim Zplus_assoc; Trivial with arith.
 Save.
 

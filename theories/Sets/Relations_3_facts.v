@@ -144,7 +144,7 @@ Generalize (H'2 v); Intro h; LApply h;
     [Intro H'14; LApply H'14;
       [Intro h1; Elim h1; Intros z1 h2; Elim h2; Intros H'15 H'16;
         Clear h h0 H'14 h1 h2 | Clear h h0] | Clear h h0] | Clear h]; Auto with sets.
-Red; '(Exists z1; Split); Auto with sets.
+Red; (Exists z1; Split); Auto with sets.
 Apply T with y1; Auto with sets.
 Apply T with t; Auto with sets.
 Qed.

@@ -24,7 +24,7 @@ Qed.
 Hints Immediate eq_eq_nat : arith v62.
 
 Theorem eq_nat_eq : (n,m:nat)(eq_nat n m)->(n=m).
-Induction n; Induction m; Simpl; '(Contradiction Orelse Auto with arith).
+Induction n; Induction m; Simpl; Contradiction Orelse Auto with arith.
 Qed.
 Hints Immediate eq_nat_eq : arith v62.
 

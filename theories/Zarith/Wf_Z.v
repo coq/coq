@@ -35,7 +35,7 @@ Destruct x; Intros;
   Apply f_equal with f:=POS;
   Apply convert_intro; Auto with arith
 | Absurd `0 <= (NEG p)`;
-  [ Unfold Zle; Simpl; Do 2 '(Unfold not); Auto with arith
+  [ Unfold Zle; Simpl; Do 2 (Unfold not); Auto with arith
   | Assumption]
 ].
 Save.
@@ -61,7 +61,7 @@ Destruct x; Intros;
   Apply f_equal with f:=POS;
   Apply convert_intro; Auto with arith
 | Absurd `0 <= (NEG p)`;
-  [ Unfold Zle; Simpl; Do 2 '(Unfold not); Auto with arith
+  [ Unfold Zle; Simpl; Do 2 (Unfold not); Auto with arith
   | Assumption]
 ].
 Save.

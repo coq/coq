@@ -221,12 +221,12 @@ Save.
 
 Lemma orb_prop : 
   (a,b:bool)(orb a b)=true -> (a = true)\/(b = true).
-Induction a; Induction b; Simpl; Try '(Intro H;Discriminate H); Auto with bool.
+Induction a; Induction b; Simpl; Try (Intro H;Discriminate H); Auto with bool.
 Save.
 
 Lemma orb_prop2 : 
   (a,b:bool)(Is_true (orb a b)) -> (Is_true a)\/(Is_true b).
-Induction a; Induction b; Simpl; Try '(Intro H;Discriminate H); Auto with bool.
+Induction a; Induction b; Simpl; Try (Intro H;Discriminate H); Auto with bool.
 Save.
 
 Lemma orb_true_intro 
@@ -304,7 +304,7 @@ Lemma andb_prop :
   (a,b:bool)(andb a b) = true -> (a = true)/\(b = true).
 
 Proof.
-  Induction a; Induction b; Simpl; Try '(Intro H;Discriminate H);
+  Induction a; Induction b; Simpl; Try (Intro H;Discriminate H);
   Auto with bool.
 Save.
 Hints Resolve andb_prop : bool v62.
@@ -312,7 +312,7 @@ Hints Resolve andb_prop : bool v62.
 Lemma andb_prop2 : 
   (a,b:bool)(Is_true (andb a b)) -> (Is_true a)/\(Is_true b).
 Proof.
-  Induction a; Induction b; Simpl; Try '(Intro H;Discriminate H);
+  Induction a; Induction b; Simpl; Try (Intro H;Discriminate H);
   Auto with bool.
 Save.
 Hints Resolve andb_prop2 : bool v62.

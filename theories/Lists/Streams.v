@@ -63,19 +63,19 @@ CoInductive EqSt  : Stream->Stream->Prop :=
 
 Tactic Definition CoInduction proof := 
   Cofix proof; Intros; Constructor;
-    [Clear proof | Try '(Apply proof;Clear proof)].
+    [Clear proof | Try (Apply proof;Clear proof)].
 
 
 (* Extensional equality is an equivalence relation *)
 
 Theorem  EqSt_reflex : (s:Stream)(EqSt s s).
-'(CoInduction EqSt_reflex).
+(CoInduction EqSt_reflex).
 Reflexivity.
 Qed.
 
 Theorem sym_EqSt : 
  (s1:Stream)(s2:Stream)(EqSt s1 s2)->(EqSt s2 s1).
-'(CoInduction Eq_sym).
+(CoInduction Eq_sym).
 Case H;Intros;Symmetry;Assumption.
 Case H;Intros;Assumption.
 Qed.
@@ -83,7 +83,7 @@ Qed.
 
 Theorem trans_EqSt : 
  (s1,s2,s3:Stream)(EqSt s1 s2)->(EqSt s2 s3)->(EqSt s1 s3).
-'(CoInduction Eq_trans).
+(CoInduction Eq_trans).
 Transitivity (hd s2).
 Case H; Intros; Assumption.
 Case H0; Intros; Assumption.
@@ -109,7 +109,7 @@ Qed.
 
 Theorem ntheq_eqst : 
   (s1,s2:Stream)((n:nat)(Str_nth n s1)=(Str_nth n s2))->(EqSt s1 s2).
-'(CoInduction Equiv2).
+(CoInduction Equiv2).
 Apply (H O).
 Intros n; Apply (H (S n)).
 Qed.
@@ -138,7 +138,7 @@ Hypothesis InvThenP   : (x:Stream)(Inv x)->(P x).
 Hypothesis InvIsStable: (x:Stream)(Inv x)->(Inv (tl x)).
 
 Theorem ForAll_coind : (x:Stream)(Inv x)->(ForAll x).
-'(CoInduction ForAll_coind);Auto.
+(CoInduction ForAll_coind);Auto.
 Qed.
 End Co_Induction_ForAll.
 

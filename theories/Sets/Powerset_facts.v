@@ -81,7 +81,7 @@ Theorem Couple_as_union:
   (x, y: U) (Union U (Singleton U x) (Singleton U y)) == (Couple U x y).
 Proof.
 Intros x y; Apply Extensionality_Ensembles; Split; Red.
-Intros x0 H'; Elim H'; '(Intros x1 H'0; Elim H'0; Auto with sets).
+Intros x0 H'; Elim H'; (Intros x1 H'0; Elim H'0; Auto with sets).
 Intros x0 H'; Elim H'; Auto with sets.
 Qed.
 
@@ -92,7 +92,7 @@ Theorem Triple_as_union :
 Proof.
 Intros x y z; Apply Extensionality_Ensembles; Split; Red.
 Intros x0 H'; Elim H'.
-Intros x1 H'0; Elim H'0; '(Intros x2 H'1; Elim H'1; Auto with sets).
+Intros x1 H'0; Elim H'0; (Intros x2 H'1; Elim H'1; Auto with sets).
 Intros x1 H'0; Elim H'0; Auto with sets.
 Intros x0 H'; Elim H'; Auto with sets.
 Qed.

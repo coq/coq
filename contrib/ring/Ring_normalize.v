@@ -8,7 +8,7 @@ Implicit Arguments On.
 
 Lemma index_eq_prop: (n,m:index)(Is_true (index_eq n m)) -> n=m.
 Proof.
-  Induction n; Induction m; Simpl; Try '(Reflexivity Orelse Contradiction).
+  Induction n; Induction m; Simpl; Try (Reflexivity Orelse Contradiction).
   Intros; Rewrite (H i0); Trivial.
   Intros; Rewrite (H i0); Trivial.
 Save.
@@ -845,7 +845,7 @@ Implicit Arguments Off.
 
 Lemma spolynomial_of_ok : (p:polynomial)
   (interp_p p)==(interp_sp Aplus Amult Azero vm (spolynomial_of p)).
-Induction p; Reflexivity Orelse '(Simpl; Intros).
+Induction p; Reflexivity Orelse (Simpl; Intros).
 Rewrite H; Rewrite H0; Reflexivity.
 Rewrite H; Rewrite H0; Reflexivity.
 Rewrite H.
@@ -857,7 +857,7 @@ Save.
 Theorem polynomial_normalize_ok : (p:polynomial)
   (polynomial_normalize p)
   ==(spolynomial_normalize Aplus Amult Aone (spolynomial_of p)).
-Induction p; Reflexivity Orelse '(Simpl; Intros).
+Induction p; Reflexivity Orelse (Simpl; Intros).
 Rewrite H; Rewrite H0; Reflexivity.
 Rewrite H; Rewrite H0; Reflexivity.
 Rewrite H; Simpl.

@@ -54,7 +54,7 @@ GEXTEND Gram
     [ [ l = LIST1 qualidarg -> l ] ]
   ;
   ne_qualidconstarg_list:
-    [ [ l = LIST1 qualidconstarg -> l ] ]
+    [ [ l = LIST1 qualidarg -> l ] ]
   ;
   ne_num_list:
     [ [ n = numarg; l = ne_num_list -> n :: l | n = numarg -> [n] ] ]
@@ -269,9 +269,9 @@ GEXTEND Gram
         -> <:ast< (MATCHCONTEXT ($LIST $mrl)) >>
       |	IDENT "Match"; com = constrarg; IDENT "With"; mrl = match_list ->
         <:ast< (MATCH $com ($LIST $mrl)) >>
-      |	"'("; te = tactic_expr; ")" -> te
-      |	"'("; te = tactic_expr; tel=LIST1 tactic_expr; ")" ->
-          <:ast< (APP $te ($LIST tel)) >>
+      |	"("; te = tactic_expr; ")" -> te
+      |	"("; te = tactic_expr; tel=LIST1 tactic_expr; ")" ->
+        <:ast< (APP $te ($LIST tel)) >>
       | IDENT "First" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
           <:ast<(FIRST ($LIST $l))>>
       | IDENT "Info"; tc = tactic_expr -> <:ast< (INFO $tc) >>
@@ -293,11 +293,13 @@ GEXTEND Gram
   tactic_arg:
     [ [ "()" -> <:ast< (VOID) >>
       | n = pure_numarg -> n
-      |	c = constrarg ->
+      |	id = identarg -> id
+      |	"'"; c = constrarg ->
           (match c with
-             | Coqast.Node(_,"COMMAND",[Coqast.Nvar(_,s)]) -> <:ast<($VAR $s)>>
-	     | Coqast.Node(_,"COMMAND",[Coqast.Node(_,"QUALID",[Coqast.Nvar(_,s)])]) -> <:ast<($VAR $s)>>
-             |_ -> c) ] ]
+           | Coqast.Node(_,"COMMAND",[Coqast.Nvar(_,s)]) -> <:ast<($VAR $s)>>
+	   | Coqast.Node(_,"COMMAND",[Coqast.Node(_,"QUALID",
+               [Coqast.Nvar(_,s)])]) -> <:ast<($VAR $s)>>
+           |_ -> c) ] ]
   ;
   simple_tactic:
     [ [ IDENT "Fix"; n = numarg -> <:ast< (Fix $n) >>

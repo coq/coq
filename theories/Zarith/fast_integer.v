@@ -155,14 +155,14 @@ Definition sub_un := [x:positive]
 
 Lemma sub_add_one : (x:positive) (sub_un (add_un x)) = x.
 Proof.
-'(Induction x; [Idtac | Idtac | Simpl;Auto with arith ]);
-'(Intros p; Elim p; [Idtac | Idtac | Simpl;Auto with arith]);
+(Induction x; [Idtac | Idtac | Simpl;Auto with arith ]);
+(Intros p; Elim p; [Idtac | Idtac | Simpl;Auto with arith]);
 Simpl; Intros q H1 H2; Case H2; Simpl; Trivial with arith.
 Save.
 
 Lemma is_double_moins_un : (x:positive) (add_un (double_moins_un x)) = (xO x).
 Proof.
-'(Induction x;Simpl;Auto with arith); Intros m H;Rewrite H;Trivial with arith.
+(Induction x;Simpl;Auto with arith); Intros m H;Rewrite H;Trivial with arith.
 Save.
 
 Lemma add_sub_one : (x:positive) (x=xH) \/ (add_un (sub_un x)) = x.
@@ -259,7 +259,7 @@ Theorem compare_convert1 :
   ~(compare x y SUPERIEUR) = EGAL /\ ~(compare x y INFERIEUR) = EGAL.
 Proof.
 Induction x;Induction y;Split;Simpl;Auto with arith;
-  Discriminate Orelse '(Elim (H p0); Auto with arith).
+  Discriminate Orelse (Elim (H p0); Auto with arith).
 Save.
 
 Theorem compare_convert_EGAL : (x,y:positive) (compare x y EGAL) = EGAL -> x=y.
@@ -319,18 +319,18 @@ Lemma ZLII:
  (x,y:positive) (compare x y INFERIEUR) = INFERIEUR ->
                 (compare x y EGAL) = INFERIEUR \/ x = y.
 Proof.
-'(Induction x;Induction y;Simpl;Auto with arith;Try Discriminate);
-  Intros z H1 H2; Elim (H z H2);Auto with arith; Intros E;Rewrite E;
-  Auto with arith.
+(Induction x;Induction y;Simpl;Auto with arith;Try Discriminate);
+ Intros z H1 H2; Elim (H z H2);Auto with arith; Intros E;Rewrite E;
+ Auto with arith.
 Save.
 
 Lemma ZLSS:
  (x,y:positive) (compare x y SUPERIEUR) = SUPERIEUR ->
                 (compare x y EGAL) = SUPERIEUR \/ x = y.
 Proof.
-'(Induction x;Induction y;Simpl;Auto with arith;Try Discriminate);
-  Intros z H1 H2; Elim (H z H2);Auto with arith; Intros E;Rewrite E;
-  Auto with arith.
+(Induction x;Induction y;Simpl;Auto with arith;Try Discriminate);
+ Intros z H1 H2; Elim (H z H2);Auto with arith; Intros E;Rewrite E;
+ Auto with arith.
 Save.
 
 Theorem compare_convert_INFERIEUR : 
@@ -524,7 +524,7 @@ Save.
 
 Lemma ZL11: (x:positive) (x=xH) \/ ~(x=xH).
 Proof.
-Intros x;Case x;Intros; '(Left;Reflexivity) Orelse '(Right;Discriminate).
+Intros x;Case x;Intros; (Left;Reflexivity) Orelse (Right;Discriminate).
 Save.
 
 Lemma ZL12: (q:positive) (add_un q) = (add q xH).
@@ -540,8 +540,8 @@ Save.
 Theorem ZL13:
   (x,y:positive)(add_carry x y) = (add_un (add x y)).
 Proof.
-'(Induction x;Induction y;Simpl;Auto with arith); Intros q H1;Rewrite H;
-  Auto with arith.
+(Induction x;Induction y;Simpl;Auto with arith); Intros q H1;Rewrite H;
+ Auto with arith.
 Save.
 
 Theorem ZL14:
@@ -673,7 +673,7 @@ Definition Op := [r:relation]
 
 Lemma ZC4: (x,y:positive) (compare x y EGAL) = (Op (compare y x EGAL)).
 Proof.
-'('('(Intros x y;Elim (Dcompare (compare y x EGAL));[Idtac | Intros H;Elim H]);
+(((Intros x y;Elim (Dcompare (compare y x EGAL));[Idtac | Intros H;Elim H]);
 Intros E;Rewrite E;Simpl); [Apply ZC3 | Apply ZC2 | Apply ZC1 ]); Assumption.
 Save.
 
@@ -795,7 +795,7 @@ Save.
 Theorem Zopp_Zplus: 
   (x,y:Z) (Zopp (Zplus x y)) = (Zplus (Zopp x) (Zopp y)).
 Proof.
-'(Intros x y;Case x;Case y;Auto with arith);
+(Intros x y;Case x;Case y;Auto with arith);
 Intros p q;Simpl;Case (compare q p EGAL);Auto with arith.
 Save.
 
@@ -804,10 +804,10 @@ Proof.
 Induction x;Induction y;Simpl;Auto with arith; [
   Intros q;Rewrite add_sym;Auto with arith
 | Intros q; Rewrite (ZC4 q p);
-  '(Elim (Dcompare (compare p q EGAL));[Idtac|Intros H;Elim H]);
+  (Elim (Dcompare (compare p q EGAL));[Idtac|Intros H;Elim H]);
   Intros E;Rewrite E;Auto with arith
 | Intros q; Rewrite (ZC4 q p);
-  '(Elim (Dcompare (compare p q EGAL));[Idtac|Intros H;Elim H]);
+  (Elim (Dcompare (compare p q EGAL));[Idtac|Intros H;Elim H]);
   Intros E;Rewrite E;Auto with arith
 | Intros q;Rewrite add_sym;Auto with arith ].
 Save.
@@ -841,9 +841,9 @@ Intros x y z';Case z'; [
   Auto with arith
 | Intros z;Simpl; Rewrite add_assoc;Auto with arith
 | Intros z; Simpl;
-  '(Elim (Dcompare (compare y z EGAL));[Idtac|Intros H;Elim H;Clear  H]);
+  (Elim (Dcompare (compare y z EGAL));[Idtac|Intros H;Elim H;Clear  H]);
   Intros E0;Rewrite E0;
-  '(Elim (Dcompare (compare (add x y) z EGAL));[Idtac|Intros H;Elim H;
+  (Elim (Dcompare (compare (add x y) z EGAL));[Idtac|Intros H;Elim H;
     Clear H]);Intros E1;Rewrite E1; [
     Absurd (compare (add x y) z EGAL)=EGAL; [    (* Cas 1 *)
       Rewrite convert_compare_SUPERIEUR; [
@@ -1114,9 +1114,9 @@ Theorem weak_Zmult_plus_distr_r:
    (Zmult (POS x) (Zplus y z)) = (Zplus (Zmult (POS x) y) (Zmult (POS x) z)).
 Proof.
 Intros x y' z';Case y';Case z';Auto with arith;Intros y z;
-  '(Simpl; Rewrite times_add_distr; Trivial with arith)
+  (Simpl; Rewrite times_add_distr; Trivial with arith)
 Orelse
- '(Simpl; '(Elim (Dcompare (compare z y EGAL));[Idtac|Intros H;Elim H;
+  (Simpl; (Elim (Dcompare (compare z y EGAL));[Idtac|Intros H;Elim H;
    Clear  H]);Intros E0;Rewrite E0; [
     Rewrite (compare_convert_EGAL z y E0);
     Rewrite (convert_compare_EGAL (times x y)); Trivial with arith
@@ -1167,12 +1167,12 @@ Definition Zcompare := [x,y:Z]
 Theorem Zcompare_EGAL : (x,y:Z) (Zcompare x y) = EGAL <-> x = y.
 Proof.
 Intros x y;Split; [
-  Case x;Case y;Simpl;Auto with arith; Try '(Intros;Discriminate H); [
+  Case x;Case y;Simpl;Auto with arith; Try (Intros;Discriminate H); [
     Intros x' y' H; Rewrite (compare_convert_EGAL y' x' H); Trivial with arith
   | Intros x' y' H; Rewrite (compare_convert_EGAL y' x'); [
       Trivial with arith
     | Generalize H; Case (compare y' x' EGAL);
-      Trivial with arith Orelse '(Intros C;Discriminate C)]]
+      Trivial with arith Orelse (Intros C;Discriminate C)]]
 | Intros E;Rewrite E; Case y; [
     Trivial with arith
   | Simpl;Exact convert_compare_EGAL
@@ -1183,18 +1183,18 @@ Theorem Zcompare_ANTISYM :
   (x,y:Z) (Zcompare x y) = SUPERIEUR <->  (Zcompare y x) = INFERIEUR.
 Proof.
 Intros x y;Split; [
-  Case x;Case y;Simpl;Intros;'(
-    Trivial with arith Orelse Discriminate H Orelse '(Apply ZC1; Assumption) Orelse
-    '(Cut (compare p p0 EGAL)=SUPERIEUR; [
+  Case x;Case y;Simpl;Intros;(Trivial with arith Orelse Discriminate H Orelse
+    (Apply ZC1; Assumption) Orelse
+    (Cut (compare p p0 EGAL)=SUPERIEUR; [
        Intros H1;Rewrite H1;Auto with arith
      | Apply ZC2; Generalize H ; Case (compare p0 p EGAL);
-       Trivial with arith Orelse '(Intros H2;Discriminate H2)]))
-| Case x;Case y;Simpl;Intros;'(
-    Trivial with arith Orelse Discriminate H Orelse '(Apply ZC2; Assumption) Orelse
-    '(Cut (compare p0 p EGAL)=INFERIEUR; [
+       Trivial with arith Orelse (Intros H2;Discriminate H2)]))
+| Case x;Case y;Simpl;Intros;(Trivial with arith Orelse Discriminate H Orelse
+    (Apply ZC2; Assumption) Orelse
+    (Cut (compare p0 p EGAL)=INFERIEUR; [
        Intros H1;Rewrite H1;Auto with arith
      | Apply ZC1; Generalize H ; Case (compare p p0 EGAL);
-       Trivial with arith Orelse '(Intros H2;Discriminate H2)]))].
+       Trivial with arith Orelse (Intros H2;Discriminate H2)]))].
 Save.
 
 Theorem le_minus: (i,h:nat) (le (minus i h) i).
@@ -1220,7 +1220,7 @@ Save.
 Theorem Zcompare_Zopp :
   (x,y:Z) (Zcompare x y) = (Zcompare (Zopp y) (Zopp x)).
 Proof.
-'(Intros x y;Case x;Case y;Simpl;Auto with arith);
+(Intros x y;Case x;Case y;Simpl;Auto with arith);
 Intros;Rewrite <- ZC4;Trivial with arith.
 Save.
 
@@ -1231,10 +1231,10 @@ Theorem weaken_Zcompare_Zplus_compatible :
     (Zcompare (Zplus (POS z) x) (Zplus (POS z) y)) = (Zcompare x y)) ->
    (x,y,z:Z) (Zcompare (Zplus z x) (Zplus z y)) = (Zcompare x y).
 Proof.
-'(Intros H x y z;Case x;Case y;Case z;Auto with arith;
-Try '(Intros; Rewrite Zcompare_Zopp; Do 2 Rewrite Zopp_Zplus;
+(Intros H x y z;Case x;Case y;Case z;Auto with arith;
+Try (Intros; Rewrite Zcompare_Zopp; Do 2 Rewrite Zopp_Zplus;
      Rewrite Zopp_NEG; Rewrite H; Simpl; Auto with arith));
-Try '(Intros; Simpl; Rewrite <- ZC4; Auto with arith).
+Try (Intros; Simpl; Rewrite <- ZC4; Auto with arith).
 Save.
 
 Hints Resolve ZC4.
@@ -1245,15 +1245,15 @@ Theorem weak_Zcompare_Zplus_compatible :
 Proof.
 Intros x y z;Case x;Case y;Simpl;Auto with arith; [
   Intros p;Apply convert_compare_INFERIEUR; Apply ZL17
-| Intros p;'(Elim (Dcompare(compare z p EGAL));[Idtac|Intros H;Elim H;
+| Intros p;(Elim (Dcompare(compare z p EGAL));[Idtac|Intros H;Elim H;
   Clear H]);Intros E;Rewrite E;Auto with arith;
   Apply convert_compare_SUPERIEUR; Rewrite true_sub_convert; [ Unfold gt ;
   Apply ZL16 | Assumption ]
-| Intros p;'(Elim (Dcompare(compare z p EGAL));[Idtac|Intros H;Elim H;
+| Intros p;(Elim (Dcompare(compare z p EGAL));[Idtac|Intros H;Elim H;
   Clear H]);Intros E;Auto with arith; Apply convert_compare_SUPERIEUR;
   Unfold gt;Apply ZL17
 | Intros p q;
-  '(Elim (Dcompare (compare q p EGAL));[Idtac|Intros H;Elim H;Clear  H]);
+  (Elim (Dcompare (compare q p EGAL));[Idtac|Intros H;Elim H;Clear  H]);
   Intros E;Rewrite E;[
     Rewrite (compare_convert_EGAL q p E); Apply convert_compare_EGAL
   | Apply convert_compare_INFERIEUR;Do 2 Rewrite convert_add;Apply lt_reg_l;
@@ -1261,27 +1261,27 @@ Intros x y z;Case x;Case y;Simpl;Auto with arith; [
   | Apply convert_compare_SUPERIEUR;Unfold gt ;Do 2 Rewrite convert_add;
     Apply lt_reg_l;Exact (compare_convert_SUPERIEUR q p E) ]
 | Intros p q; 
-  '(Elim (Dcompare (compare z p EGAL));[Idtac|Intros H;Elim H;Clear  H]);
+  (Elim (Dcompare (compare z p EGAL));[Idtac|Intros H;Elim H;Clear  H]);
   Intros E;Rewrite E;Auto with arith;
   Apply convert_compare_SUPERIEUR; Rewrite true_sub_convert; [
     Unfold gt; Apply lt_trans with m:=(convert z); [Apply ZL16 | Apply ZL17]
   | Assumption ]
-| Intros p;'(Elim (Dcompare(compare z p EGAL));[Idtac|Intros H;Elim H;
+| Intros p;(Elim (Dcompare(compare z p EGAL));[Idtac|Intros H;Elim H;
   Clear H]);Intros E;Rewrite E;Auto with arith; Simpl;
   Apply convert_compare_INFERIEUR;Rewrite true_sub_convert;[Apply ZL16|
   Assumption]
 | Intros p q;
-  '(Elim (Dcompare (compare z q EGAL));[Idtac|Intros H;Elim H;Clear  H]);
+  (Elim (Dcompare (compare z q EGAL));[Idtac|Intros H;Elim H;Clear  H]);
   Intros E;Rewrite E;Auto with arith; Simpl;Apply convert_compare_INFERIEUR;
   Rewrite true_sub_convert;[
     Apply lt_trans with m:=(convert z) ;[Apply ZL16|Apply ZL17]
   | Assumption]
 | Intros p q;
-  '(Elim (Dcompare (compare z q EGAL));[Idtac|Intros H;Elim H;Clear  H]);
+  (Elim (Dcompare (compare z q EGAL));[Idtac|Intros H;Elim H;Clear  H]);
   Intros E0;Rewrite E0;
-  '(Elim (Dcompare (compare z p EGAL));[Idtac|Intros H;Elim H;Clear  H]);
+  (Elim (Dcompare (compare z p EGAL));[Idtac|Intros H;Elim H;Clear  H]);
   Intros E1;Rewrite E1;
-  '(Elim (Dcompare (compare q p EGAL));[Idtac|Intros H;Elim H;Clear  H]);
+  (Elim (Dcompare (compare q p EGAL));[Idtac|Intros H;Elim H;Clear  H]);
   Intros E2;Rewrite E2;Auto with arith; [
     Absurd (compare q p EGAL)=INFERIEUR; [
       Rewrite <- (compare_convert_EGAL z q E0);
@@ -1414,7 +1414,7 @@ Theorem Zcompare_trans_SUPERIEUR :
             (Zcompare x z) = SUPERIEUR.
 Proof.
 Intros x y z;Case x;Case y;Case z; Simpl;
-Try '(Intros; Discriminate H Orelse Discriminate H0);
+Try (Intros; Discriminate H Orelse Discriminate H0);
 Auto with arith; [
   Intros p q r H H0;Apply convert_compare_SUPERIEUR; Unfold gt;
   Apply lt_trans with m:=(convert q);

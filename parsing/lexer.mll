@@ -120,7 +120,7 @@ let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' 
    '\'' '0'-'9']
 let symbolchar = ['!' '$' '%' '&' '*' '+' ',' '@' '^' '#']
-let extrachar = symbolchar | ['\\' '/' '-' '<' '>' '|' ':' '?' '=' '~']
+let extrachar = symbolchar | ['\\' '/' '-' '<' '>' '|' ':' '?' '=' '~' '\'']
 let decimal_literal = ['0'-'9']+
 let hex_literal = '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
 let oct_literal = '0' ['o' 'O'] ['0'-'7']+
@@ -136,8 +136,8 @@ rule token = parse
 	if is_keyword s then ("",s) else ("IDENT",s) }
   | decimal_literal | hex_literal | oct_literal | bin_literal
       { ("INT", Lexing.lexeme lexbuf) }
-  | "(" | ")" | "[" | "]" | "{" | "}" | "." | "_" | ";"| "`" | "``" | "()" | "'("
-  | "->" | "\\/" | "/\\" | "|-" | ":=" | "<->" | extrachar
+  | "(" | ")" | "[" | "]" | "{" | "}" | "." | "_" | ";"| "`" | "``" | "()"
+  | "->" | "\\/" | "/\\" | "|-" | ":=" | "<->" | '\'' | extrachar
       { ("", Lexing.lexeme lexbuf) }
   | "." blank
       { ("", ".") }
@@ -153,7 +153,7 @@ rule token = parse
      "<-"(symbolchar | '\\' | '/' | '|' | '-' | '?' | ':' | '=' | '<' | '~')+ |
      '~' (symbolchar | '\\' | '/' | '|' | '-' | '>' | ':' | '=' | '<' )+      |
      ':' (symbolchar | '\\' | '/' | '|' | '-' | '>' | ':' | '=' | '<' )+      |
-     '>' | '?') extrachar* | "<-"
+     '\'' symbolchar+ | '>' | '?') extrachar* | "<-"
     { ("", Lexing.lexeme lexbuf) }
   | symbolchar+ extrachar*
     { ("", Lexing.lexeme lexbuf) }

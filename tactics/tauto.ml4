@@ -63,7 +63,7 @@ let simplif () =
   <:tactic<
     $t_not_dep_intros;
     Repeat
-      '('(Match Context With
+      ((Match Context With
         | [id: (?1 ? ?) |- ?] -> $t_is_conj;Elim id;Do 2 Intro;Clear id
         | [id: (?1 ? ?) |- ?] -> $t_is_disj;Elim id;Intro;Clear id
         | [id: (?1 ?2 ?3) -> ?4|- ?] ->
@@ -89,7 +89,7 @@ let rec tauto_main () =
           Intros;Apply id;Assumption]|Clear id]|Intros;Apply id;Intros;
           Assumption];$t_tauto_main
       | [|- (?1 ? ?)] ->
-        $t_is_disj;'(Left;$t_tauto_main) Orelse '(Right;$t_tauto_main)>>
+        $t_is_disj;(Left;$t_tauto_main) Orelse (Right;$t_tauto_main)>>
 
 let intuition_main () =
   let t_axioms = tacticIn axioms

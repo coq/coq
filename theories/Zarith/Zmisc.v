@@ -210,9 +210,9 @@ Proof.
   Intro z. Case z;
   [ Left; Compute; Trivial
   | Intro p; Case p; Intros; 
-    '(Right; Compute; Exact I) Orelse '(Left; Compute; Exact I)
+    (Right; Compute; Exact I) Orelse (Left; Compute; Exact I)
   | Intro p; Case p; Intros; 
-    '(Right; Compute; Exact I) Orelse '(Left; Compute; Exact I) ].
+    (Right; Compute; Exact I) Orelse (Left; Compute; Exact I) ].
   (*** was 
   Realizer Zeven_bool.
   Repeat Program; Compute; Trivial.
@@ -224,9 +224,9 @@ Proof.
   Intro z. Case z;
   [ Left; Compute; Trivial
   | Intro p; Case p; Intros; 
-    '(Left; Compute; Exact I) Orelse '(Right; Compute; Trivial) 
+    (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) 
   | Intro p; Case p; Intros; 
-    '(Left; Compute; Exact I) Orelse '(Right; Compute; Trivial) ].
+    (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) ].
   (*** was 
   Realizer Zeven_bool.
   Repeat Program; Compute; Trivial.
@@ -238,9 +238,9 @@ Proof.
   Intro z. Case z;
   [ Right; Compute; Trivial
   | Intro p; Case p; Intros; 
-    '(Left; Compute; Exact I) Orelse '(Right; Compute; Trivial) 
+    (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) 
   | Intro p; Case p; Intros; 
-    '(Left; Compute; Exact I) Orelse '(Right; Compute; Trivial) ].
+    (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) ].
   (*** was 
   Realizer Zodd_bool.
   Repeat Program; Compute; Trivial.
