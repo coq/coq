@@ -133,6 +133,8 @@ let list_fold_left_i f =
   in 
   it_list_f 
 
+let list_iter_i f l = list_fold_left_i (fun i _ x -> f i x) 0 () l
+
 let list_for_all_i p = 
   let rec for_all_p i = function
     | [] -> true 

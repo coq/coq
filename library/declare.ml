@@ -1,6 +1,7 @@
 
 (* $Id$ *)
 
+open Pp
 open Util
 open Names
 open Generic
@@ -171,7 +172,8 @@ let declare_mind mie =
     | (id,_,_,_)::_ -> id
     | [] -> anomaly "cannot declare an empty list of inductives"
   in
-  let _ = add_leaf id CCI (in_inductive mie) in ()
+  let sp = add_leaf id CCI (in_inductive mie) in
+  sp
 
 
 (* Test and access functions. *)
@@ -280,19 +282,20 @@ let mind_path = function
 
 (* Eliminations. *)
 
-let declare_eliminations sp =
-  let env = Global.env () in
-  let sigma = Evd.empty in
-  let mindid = basename sp in
-  let mind = global_reference (kind_of_path sp) mindid in
-  let redmind = minductype_spec env sigma mind in
-  let mindstr = string_of_id mindid in
+let declare_eliminations sp i =
+  let oper = MutInd (sp,i) in
+  let ids = ids_of_sign (Global.var_context()) in
+  let mind = DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids)) in
+  let mispec = Global.lookup_mind_specif mind in 
+  let mindstr = string_of_id (mis_typename mispec) in
   let declare na c =
     declare_constant (id_of_string na)
       ({ const_entry_body = c; const_entry_type = None },
-       NeverDischarge,false)
+       NeverDischarge, false);
+    pPNL [< 'sTR na; 'sTR " is defined" >]
   in
-  let mispec = Global.lookup_mind_specif redmind in 
+  let env = Global.env () in
+  let sigma = Evd.empty in
   let elim_scheme = 
     strip_all_casts (mis_make_indrec env sigma [] mispec).(0) in
   let npars = mis_nparams mispec in

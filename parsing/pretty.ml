@@ -121,7 +121,7 @@ let implicit_args_msg sp mipv =
           [< (implicit_args_id mip.mind_typename (list_of_implicits imps));
              prvecti 
 	       (fun j idc ->
-		  let imps = constructor_implicits ((sp,i),j) in
+		  let imps = constructor_implicits ((sp,i),succ j) in
                   (implicit_args_id idc (list_of_implicits imps)))
                mip.mind_consnames 
           >])
@@ -245,7 +245,7 @@ let print_leaf_entry with_values sep (spopt,lobj) =
 	  hOV 0 [< 'sTR"Fw constant " ; 
 		   'sTR (print_basename (fwsp_of sp)) ; 'fNL>]
 
-    | (sp,"MUTUALINDUCTIVE") ->
+    | (sp,"INDUCTIVE") ->
 	let mib = Global.lookup_mind sp in
 	if kind_of_path sp = CCI then
 	  [< print_mutual sp mib; 'fNL >]
@@ -369,7 +369,7 @@ let crible (fn:string -> unit assumptions -> constr -> unit) name =
                if (head_const typ.body) = const then
                  fn (print_basename sp) hyps typ.body;
                crible_rec rest
-	   | (sp,"MUTUALINDUCTIVE") -> 
+	   | (sp,"INDUCTIVE") -> 
                let mib = Global.lookup_mind sp in 
                (match const with 
 		  | (DOPN(MutInd(sp',tyi),_)) -> 
@@ -490,11 +490,11 @@ let print_local_context () =
                [< print_last_const rest;
                   'sTR(print_basename sp) ;'sTR" = ";
                   print_typed_recipe (val_0,typ) >]
-           | "MUTUALINDUCTIVE" -> 
+           | "INDUCTIVE" -> 
                let mib = Global.lookup_mind sp in 
                [< print_last_const rest;print_mutual sp mib; 'fNL >]
-           |  "VARIABLE" ->  [< >]
-           |  _          ->  print_last_const rest)
+           | "VARIABLE" ->  [< >]
+           | _          ->  print_last_const rest)
     | (sp,Lib.ClosedSection _)::rest -> print_last_const rest
     | _ -> [< >]
   in 
@@ -583,7 +583,7 @@ let print_extraction () =
 		  (match cont with 
 		     | Some(t,_) -> fprint_var (string_of_id name) t
                      | _         -> [< >]) >]
-	   | (sp,"MUTUALINDUCTIVE") ->
+	   | (sp,"INDUCTIVE") ->
 	       [< print_rec rest; 
 		  (try 
 		     [< print_extracted_mutual sp ; 'fNL >] 
@@ -626,7 +626,7 @@ let print_extracted_context () =
 		     [< 'sTR (s ^" ==> "); fprint_recipe d; 'fNL >]
 		   with Not_found -> 
 		     [< >]) >]
-	   | "MUTUALINDUCTIVE" -> 
+	   | "INDUCTIVE" -> 
 	       [< print_last_constants rest; 
 		  try print_extracted_mutual sp with Not_found -> [<>] >]
 	   | "VARIABLE" -> 

@@ -930,8 +930,8 @@ let type_fixpoint env sigma lna lar vdefj =
   assert (Array.length lar = lt);
   try
     conv_forall2_i
-      (fun i e def ar -> 
-	 try conv_leq e def (lift lt ar) 
+      (fun i env sigma def ar -> 
+	 try conv_leq env sigma def (lift lt ar) 
 	 with NotConvertible -> raise (IllBranch i))
       env sigma
       (Array.map (fun j -> j.uj_type) vdefj) (Array.map body_of_type lar)

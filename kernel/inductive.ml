@@ -128,7 +128,14 @@ let extract nparams c =
   with UserError _ -> raise (InductiveError BadEntry)
 
 let check_params nparams params c = 
-  if not (fst (extract nparams c) = params) then 
+  let eparams = fst (extract nparams c) in
+  try
+    List.iter2 
+      (fun (n1,t1) (n2,t2) ->
+	 if n1 <> n2 || strip_outer_cast t1 <> strip_outer_cast t2 then
+	   raise (InductiveError BadEntry))
+      eparams params
+  with Invalid_argument _ ->
     raise (InductiveError BadEntry)
 
 let mind_extract_and_check_params mie =
@@ -146,7 +153,6 @@ let mind_check_lc params mie =
   let check_lc (_,_,_,lc) =
     let (lna,c) = decomp_all_DLAMV_name lc in
     Array.iter (check_params nparams params) c;
-    if not (List.length lna = ntypes) then
-      raise (InductiveError BadEntry)
+    if not (List.length lna = ntypes) then raise (InductiveError BadEntry)
   in
   List.iter check_lc mie.mind_entry_inds

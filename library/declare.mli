@@ -28,9 +28,9 @@ val declare_constant : identifier -> constant_declaration -> unit
 
 val declare_parameter : identifier -> constr -> unit
 
-val declare_mind : mutual_inductive_entry -> unit
+val declare_mind : mutual_inductive_entry -> section_path
 
-val declare_eliminations : section_path -> unit
+val declare_eliminations : section_path -> int -> unit
 
 val make_strength : string list -> strength
 val make_strength_0 : unit -> strength

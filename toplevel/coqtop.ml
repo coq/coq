@@ -20,7 +20,7 @@ let set_batch_mode () = batch_mode := true
 
 let remove_top_ml () = Mltop.remove ()
 
-let inputstate = ref "tactics.coq"
+let inputstate = ref "barestate.coq"
 let set_inputstate s = inputstate:= s
 let inputstate () =if !inputstate <> "" then intern_state !inputstate
 

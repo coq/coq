@@ -153,8 +153,11 @@ let build_mutual lparams lnamearconstrs finite =
       mind_entry_inds = mispecvec }
     in
     States.unfreeze fs;
-    declare_mind mie;
-    pPNL(minductive_message lrecnames)
+    let sp = declare_mind mie in
+    pPNL(minductive_message lrecnames);
+    for i = 0 to List.length mispecvec - 1 do
+      declare_eliminations sp i
+    done
   with e ->
     States.unfreeze fs; raise e
 
