@@ -450,14 +450,14 @@ let print_about ref =
       print_constant false " : " sp
   | Term (IndRef ind as ref) ->
       let ty = Inductive.type_of_inductive env ind in
-      print_typed_value (mkInd ind, ty) ++
+      print_typed_value (mkInd ind, ty) ++ fnl () ++
       print_name_infos ref
   | Term (ConstructRef cstr as ref) ->
       let ty = Inductive.type_of_constructor env cstr in
-      print_typed_value (mkConstruct cstr, ty) ++
+      print_typed_value (mkConstruct cstr, ty) ++ fnl () ++
       print_name_infos ref
   | Term (VarRef sp as ref) ->
-      print_named_decl (get_variable sp) ++
+      print_named_decl (get_variable sp) ++ fnl () ++
       print_name_infos ref
   | Syntactic kn ->
       print_syntactic_def " = " kn
