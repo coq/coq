@@ -313,6 +313,10 @@ let parse_ind_args si args =
 
 let rec extract_type env c args ctx = 
   match kind_of_term (whd_betaiotazeta c) with
+    | Lambda (_,_,d) -> 
+	(match args with 
+	   | [] -> assert false (* This lambda must be reductible. *)
+	   | a :: args -> extract_type env (subst1 a d) args ctx)
     | Sort _ ->
 	Tdummy 
     | Prod (n,t,d) ->
@@ -362,7 +366,11 @@ let rec extract_type env c args ctx =
 and extract_type_app env (r,s) args ctx =
   let ml_args = 
     List.fold_right 
-      (fun (b,t) a -> if b then (extract_type env t [] ctx) :: a else a)
+      (fun (b,c) a -> if not b then a 
+       else 
+	 let p = List.length (fst (splay_prod env none (type_of env c))) in
+	 let ctx = iterate (fun l -> 0 :: l) p ctx in
+	 (extract_type_arity env c ctx p) :: a)
       (List.combine s args) []
   in Tapp ((Tglob r) :: ml_args)
 
@@ -554,7 +562,8 @@ and extract_constr_to_term env c =
 (* Same, but With Type (wt). *)
 
 and extract_constr_to_term_wt env c t = 
-  if is_default env t then extract_term_wt env c t else MLdummy
+  if is_default env t then extract_term_wt env c t 
+  else dummy_lams MLdummy (List.length (fst (splay_prod env none t)))
 
 (*S Extraction of a constr. *)
 

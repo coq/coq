@@ -323,7 +323,7 @@ Definition idpropset :=
 
 Definition funProp := [b:bool][x:True]<natTrue>if b then O else x.
 
-(*s prop and arity can be applied.... *)
+(*s prop and arity can be applied.... -> fixed ? *)
 
 Definition f : (X:Type)(nat->X)->(X->bool)->bool := 
  [X:Type;x:nat->X;y:X->bool](y (x O)).
@@ -336,13 +336,13 @@ Definition f_prop := (f (O=O) [_](refl_equal ? O) [_]true).
 Extraction NoInline f.
 Extraction f_prop.
 (* let f_prop =
-  f () (fun _ -> True)
+  f (fun _ -> ()) (fun _ -> True)
 *)
 
 Definition f_arity := (f Set [_:nat]nat [_:Set]true).
 Extraction f_arity.
 (* let f_arity =
-  f () (fun _ -> True)
+  f (fun _ -> ()) (fun _ -> True)
 *)
 
 Definition f_normal := (f nat [x]x [x](Cases x of O => true | _ => false end)).
@@ -383,6 +383,8 @@ let oups h0 = match h0 with
   | Cons0 (n, l) -> n
 *)
 
+(* Dependant type over Type *)
 
-
+Extraction (sigT Set [a:Set](option a)).
+(* (unit, Obj.t option) sigT *)
 
