@@ -10,15 +10,9 @@ open Sign
 
 (* Constants (internal representation). *)
 
-type discharge_recipe
-
-type recipe =
-  | Cooked of constr
-  | Recipe of discharge_recipe
-
 type constant_body = {
   const_kind : path_kind;
-  const_body : recipe ref option;
+  const_body : constr option;
   const_type : typed_type;
   const_hyps : typed_type signature;
   const_constraints : constraints;

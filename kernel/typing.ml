@@ -284,7 +284,7 @@ let add_constant sp ce env =
   in
   let cb = { 
     const_kind = kind_of_path sp;
-    const_body = Some (ref (Cooked ce.const_entry_body));
+    const_body = Some ce.const_entry_body;
     const_type = ty;
     const_hyps = get_globals (context env);
     const_constraints = Constraint.union cst cst';

@@ -42,15 +42,14 @@ let constant_value env k =
   let cb = lookup_constant sp env in
   if not cb.const_opaque & defined_constant env k then
     match cb.const_body with
-      Some { contents = Cooked body } -> 
-        instantiate_constr 
-	  (ids_of_sign cb.const_hyps) body (Array.to_list args)
-    | Some { contents = Recipe _ } ->
-        anomalylabstrm "termenv__constant_value"
-          [< 'sTR "a transparent constant which was not cooked" >]
-    | None -> anomalylabstrm "termenv__constant_value"
-          [< 'sTR "a defined constant as no body." >]
-  else failwith "opaque"
+      | Some body -> 
+          instantiate_constr 
+	    (ids_of_sign cb.const_hyps) body (Array.to_list args)
+      | None -> 
+	  anomalylabstrm "termenv__constant_value"
+	    [< 'sTR "a defined constant as no body." >]
+  else 
+    failwith "opaque"
 
 let const_abst_opt_value env c =
   match c with
