@@ -28,6 +28,7 @@ val error_toplevel : unit -> 'a
 val error_scheme : unit -> 'a
 val error_not_visible : global_reference -> 'a
 val error_unqualified_name : string -> string -> 'a 
+val error_MPfile_as_mod : dir_path -> 'a
 
 val check_inside_module : unit -> unit
 val check_inside_section : unit -> unit

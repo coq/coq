@@ -192,6 +192,10 @@ let error_unqualified_name s1 s2 =
 	    "in ML from another name sharing the same basename.\n"  ^
 	    "Please do some renaming.\n"))
 
+let error_MPfile_as_mod d = 
+  err (str ("The whole file "^(string_of_dirpath d)^".v is used somewhere as a module.\n"^
+	    "Extraction cannot currently deal with this situation.\n"))
+
 (*S The Extraction auxiliary commands *)
 
 (*s Extraction AutoInline *)

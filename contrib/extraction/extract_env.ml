@@ -183,6 +183,7 @@ let rec extract_msb env v mp all = function
       else ms
 
 and extract_meb env v mpo all = function 
+  | MEBident (MPfile d) -> error_MPfile_as_mod d (* temporary (I hope) *)
   | MEBident mp -> visit_mp v mp; MEident mp 
   | MEBapply (meb, meb',_) -> 
       MEapply (extract_meb env v None true meb, 
