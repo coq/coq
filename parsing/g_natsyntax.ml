@@ -200,29 +200,30 @@ open Coqast
 open Ast
 open Termast
 
-let ast_O = ast_of_ref glob_O
-let ast_S = ast_of_ref glob_S
-
-exception Non_closed_number
+let _ = if !Options.v7 then
+let ast_O = ast_of_ref glob_O in
+let ast_S = ast_of_ref glob_S in
 
 let rec int_of_nat = function
   | Node (_,"APPLIST", [b; a]) when alpha_eq(b,ast_S) -> (int_of_nat a) + 1
   | a when alpha_eq(a,ast_O) -> 0
   | _ -> raise Non_closed_number
-	  
+in
 (* Prints not p, but the SUCCESSOR of p !!!!! *)
 let nat_printer_S p =
   try 
     Some (int (int_of_nat p + 1))
   with
     Non_closed_number -> None
-
+in
 let nat_printer_O _ =
   Some (int 0)
-
+in
 (* Declare the primitive printers *)
 let _ =
   Esyntax.declare_primitive_printer "nat_printer_S" "nat_scope" nat_printer_S
-
+in
 let _ = 
   Esyntax.declare_primitive_printer "nat_printer_O" "nat_scope" nat_printer_O
+in
+()

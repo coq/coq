@@ -92,6 +92,7 @@ let get_z_sign_ast loc =
     ast_of_id (id_of_string "POS"),
     ast_of_id (id_of_string "NEG")))
 
+let _ = if !Options.v7 then
 let rec bignat_of_pos c1 c2 c3 p =
   match p with
     | Node (_,"APPLIST", [b; a]) when alpha_eq(b,c1) ->
@@ -100,15 +101,15 @@ let rec bignat_of_pos c1 c2 c3 p =
         add_1 (mult_2 (bignat_of_pos c1 c2 c3 a))
     | a when alpha_eq(a,c3) -> Bignat.one
     | _ -> raise Non_closed_number
-	  
+in
 let bignat_option_of_pos xI xO xH p =
   try 
     Some (bignat_of_pos xO xI xH p)
   with Non_closed_number -> 
     None
-
-let pr_pos a = hov 0 (str "POS" ++ brk (1,1) ++ a)
-let pr_neg a = hov 0 (str "NEG" ++ brk (1,1) ++ a)
+in
+let pr_pos a = hov 0 (str "POS" ++ brk (1,1) ++ a) in
+let pr_neg a = hov 0 (str "NEG" ++ brk (1,1) ++ a) in
 
 let inside_printer posneg std_pr p =
   let ((xI,xO,xH),_) = get_z_sign_ast dummy_loc in
@@ -121,9 +122,9 @@ let inside_printer posneg std_pr p =
     | None -> 
 	let pr = if posneg then pr_pos else pr_neg in
 	str "(" ++ pr (std_pr (ope("ZEXPR",[p]))) ++ str ")"
-
+in
 let outside_zero_printer std_pr p = str "`0`"
-
+in
 let outside_printer posneg std_pr p =
   let ((xI,xO,xH),_) = get_z_sign_ast dummy_loc in
   match (bignat_option_of_pos xI xO xH p) with
@@ -135,12 +136,13 @@ let outside_printer posneg std_pr p =
       | None -> 
 	  let pr = if posneg then pr_pos else pr_neg in
 	  str "(" ++ pr (std_pr p) ++ str ")"
-
+in
 (* For printing with Syntax and without the scope mechanism *)
-let _ = Esyntax.Ppprim.add ("positive_printer", (outside_printer true))
-let _ = Esyntax.Ppprim.add ("negative_printer", (outside_printer false))
-let _ = Esyntax.Ppprim.add ("positive_printer_inside", (inside_printer true))
+let _ = Esyntax.Ppprim.add ("positive_printer", (outside_printer true)) in
+let _ = Esyntax.Ppprim.add ("negative_printer", (outside_printer false)) in
+let _ = Esyntax.Ppprim.add ("positive_printer_inside", (inside_printer true))in
 let _ = Esyntax.Ppprim.add ("negative_printer_inside", (inside_printer false))
+in ()
 
 (**********************************************************************)
 (* Parsing positive via scopes                                        *)
@@ -216,7 +218,7 @@ let uninterp_positive p =
 (***********************************************************************)
 
 let _ = Symbols.declare_numeral_interpreter "positive_scope"
-  ["Coq";"ZArith";"fast_integer_module"]
+  ["Coq";"ZArith";"fast_integer"]
   (interp_positive,Some pat_interp_positive)
   ([RRef (dummy_loc, glob_xI); 
     RRef (dummy_loc, glob_xO); 
@@ -291,8 +293,9 @@ let _ = Symbols.declare_numeral_interpreter "Z_scope"
 (***********************************************************************)
 (* Old ast Printers *)
 
-exception Non_closed_number
+open Esyntax
 
+let _ = if !Options.v7 then
 let bignat_of_pos p =
   let ((xI,xO,xH),_) = get_z_sign_ast dummy_loc in
   let c1 = xO in
@@ -304,13 +307,13 @@ let bignat_of_pos p =
     | a when alpha_eq(a,c3) -> Bignat.one
     | _ -> raise Non_closed_number
   in transl p
-	  
+in
 let bignat_option_of_pos p =
   try 
     Some (bignat_of_pos p)
   with Non_closed_number -> 
     None
-
+in
 let z_printer posneg p =
   match bignat_option_of_pos p with
     | Some n -> 
@@ -319,15 +322,15 @@ let z_printer posneg p =
 	else 
 	  Some (str "-" ++ str (Bignat.to_string n))
     | None -> None
-
+in
 let z_printer_ZERO _ =
   Some (int 0)
-
+in
 (* Declare pretty-printers for integers *)
-open Esyntax
 let _ =
-  declare_primitive_printer "z_printer_POS" "Z_scope" (z_printer true)
+  declare_primitive_printer "z_printer_POS" "Z_scope" (z_printer true) in
 let _ =
-  declare_primitive_printer "z_printer_NEG" "Z_scope" (z_printer false)
+  declare_primitive_printer "z_printer_NEG" "Z_scope" (z_printer false) in
 let _ =
-  declare_primitive_printer "z_printer_ZERO" "Z_scope" z_printer_ZERO
+  declare_primitive_printer "z_printer_ZERO" "Z_scope" z_printer_ZERO in
+()
