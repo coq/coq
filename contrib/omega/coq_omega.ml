@@ -1410,13 +1410,6 @@ let coq_omega gl =
 
 let coq_omega = solver_time coq_omega
 
-let rec is_nat_constant t =
-  match destructurate_term t with
-  | Kapp((Plus|Mult|Minus),[t1;t2]) -> is_nat_constant t1 & is_nat_constant t2
-  | Kapp((S|Pred),[t]) -> is_nat_constant t
-  | Kapp(O,[]) -> true
-  | _ -> false
-
 let nat_inject gl =
   let aux = id_of_string "auxiliary" in
   let table = Hashtbl.create 7 in
@@ -1429,7 +1422,7 @@ let nat_inject gl =
 	    (explore (P_APP 1 :: p) t1);
 	    (explore (P_APP 2 :: p) t2)
           ]
-      | Kapp(Mult,[t1;t2]) when is_nat_constant t1 or is_nat_constant t2 ->
+      | Kapp(Mult,[t1;t2]) ->
           tclTHENLIST [
 	    (clever_rewrite_gen p (mk_times (mk_inj t1) (mk_inj t2))
               ((Lazy.force coq_inj_mult),[t1;t2]));
