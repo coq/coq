@@ -43,11 +43,11 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
     let dep = find_case_dep_nparams env sigma (c,p) indf pt in 
     let init_depFvec i = if i = tyi then Some(dep,mkRel 1) else None in
     let depFvec = Array.init (mis_ntypes mispec) init_depFvec in
-    let constrs = get_constructors indf in
     (* build now the fixpoint *)
     let lnames,_ = get_arity indf in
     let nar = List.length lnames in
     let nparams = mis_nparams mispec in
+    let constrs = get_constructors (lift_inductive_family (nar+2) indf) in
     let ci = make_default_case_info mispec in
     let branches = 
       array_map3
