@@ -10,6 +10,7 @@
 
 Require Rbase.
 Require Rfunctions.
+Require Max.
 Require Export Rseries.
 Require Export SeqProp.
 Require Export Rcomplete.
@@ -199,4 +200,106 @@ Apply Rle_trans with (An (plus (S m) n0)); Assumption.
 Apply Rle_sym1.
 Apply cond_pos_sum; Intro.
 Elim (H (plus (S m) n0)); Intros; Assumption.
+Qed.
+
+(* Cesaro's theorem *)
+Lemma Cesaro : (An,Bn:nat->R;l:R) (Un_cv Bn l) -> ((n:nat)``0<(An n)``) -> (cv_infty [n:nat](sum_f_R0 An n)) -> (Un_cv [n:nat](Rdiv (sum_f_R0 [k:nat]``(An k)*(Bn k)`` n) (sum_f_R0 An n)) l).
+Proof with Trivial.
+Unfold Un_cv; Intros; Assert H3 : (n:nat)``0<(sum_f_R0 An n)``.
+Intro; Apply tech1.
+Assert H4 : (n:nat) ``(sum_f_R0 An n)<>0``.
+Intro; Red; Intro; Assert H5 := (H3 n); Rewrite H4 in H5; Elim (Rlt_antirefl ? H5).
+Assert H5 := (cv_infty_cv_R0 ? H4 H1); Assert H6 : ``0<eps/2``.
+Unfold Rdiv; Apply Rmult_lt_pos.
+Apply Rlt_Rinv; Sup.
+Elim (H ? H6); Clear H; Intros N1 H; Pose C := (Rabsolu (sum_f_R0 [k:nat]``(An k)*((Bn k)-l)`` N1)); Assert H7 : (EX N:nat | (n:nat) (le N n) -> ``C/(sum_f_R0 An n)<eps/2``).
+Case (Req_EM C R0); Intro.
+Exists O; Intros.
+Rewrite H7; Unfold Rdiv; Rewrite Rmult_Ol; Apply Rmult_lt_pos.
+Apply Rlt_Rinv; Sup.
+Assert H8 : ``0<eps/(2*(Rabsolu C))``.
+Unfold Rdiv; Apply Rmult_lt_pos.
+Apply Rlt_Rinv; Apply Rmult_lt_pos.
+Sup.
+Apply Rabsolu_pos_lt.
+Elim (H5 ? H8); Intros; Exists x; Intros; Assert H11 := (H9 ? H10); Unfold R_dist in H11; Unfold Rminus in H11; Rewrite Ropp_O in H11; Rewrite Rplus_Or in H11.
+Apply Rle_lt_trans with (Rabsolu ``C/(sum_f_R0 An n)``).
+Apply Rle_Rabsolu.
+Unfold Rdiv; Rewrite Rabsolu_mult; Apply Rlt_monotony_contra with ``/(Rabsolu C)``.
+Apply Rlt_Rinv; Apply Rabsolu_pos_lt.
+Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1l; Replace ``/(Rabsolu C)*(eps*/2)`` with ``eps/(2*(Rabsolu C))``.
+Unfold Rdiv; Rewrite Rinv_Rmult.
+Ring.
+DiscrR.
+Apply Rabsolu_no_R0.
+Apply Rabsolu_no_R0.
+Elim H7; Clear H7; Intros N2 H7; Pose N := (max N1 N2); Exists (S N); Intros; Unfold R_dist; Replace (Rminus (Rdiv (sum_f_R0 [k:nat]``(An k)*(Bn k)`` n) (sum_f_R0 An n)) l) with (Rdiv (sum_f_R0 [k:nat]``(An k)*((Bn k)-l)`` n) (sum_f_R0 An n)).
+Assert H9 : (lt N1 n).
+Apply lt_le_trans with (S N).
+Apply le_lt_n_Sm; Unfold N; Apply le_max_l.
+Rewrite (tech2 [k:nat]``(An k)*((Bn k)-l)`` ? ? H9); Unfold Rdiv; Rewrite Rmult_Rplus_distrl; Apply Rle_lt_trans with (Rplus (Rabsolu (Rdiv (sum_f_R0 [k:nat]``(An k)*((Bn k)-l)`` N1) (sum_f_R0 An n))) (Rabsolu (Rdiv (sum_f_R0 [i:nat]``(An (plus (S N1) i))*((Bn (plus (S N1) i))-l)`` (minus n (S N1))) (sum_f_R0 An n)))).
+Apply Rabsolu_triang.
+Rewrite (double_var eps); Apply Rplus_lt.
+Unfold Rdiv; Rewrite Rabsolu_mult; Fold C; Rewrite Rabsolu_right.
+Apply (H7 n); Apply le_trans with (S N).
+Apply le_trans with N; [Unfold N; Apply le_max_r | Apply le_n_Sn].
+Apply Rle_sym1; Left; Apply Rlt_Rinv.
+
+Unfold R_dist in H; Unfold Rdiv; Rewrite Rabsolu_mult; Rewrite (Rabsolu_right ``/(sum_f_R0 An n)``).
+Apply Rle_lt_trans with (Rmult (sum_f_R0 [i:nat](Rabsolu ``(An (plus (S N1) i))*((Bn (plus (S N1) i))-l)``) (minus n (S N1))) ``/(sum_f_R0 An n)``).
+Do 2 Rewrite <- (Rmult_sym ``/(sum_f_R0 An n)``); Apply Rle_monotony.
+Left; Apply Rlt_Rinv.
+Apply (sum_Rabsolu [i:nat]``(An (plus (S N1) i))*((Bn (plus (S N1) i))-l)`` (minus n (S N1))).
+Apply Rle_lt_trans with (Rmult (sum_f_R0 [i:nat]``(An (plus (S N1) i))*eps/2`` (minus n (S N1))) ``/(sum_f_R0 An n)``).
+Do 2 Rewrite <- (Rmult_sym ``/(sum_f_R0 An n)``); Apply Rle_monotony.
+Left; Apply Rlt_Rinv.
+Apply sum_Rle; Intros; Rewrite Rabsolu_mult; Pattern 2 (An (plus (S N1) n0)); Rewrite <- (Rabsolu_right (An (plus (S N1) n0))).
+Apply Rle_monotony.
+Apply Rabsolu_pos.
+Left; Apply H; Unfold ge; Apply le_trans with (S N1); [Apply le_n_Sn | Apply le_plus_l].
+Apply Rle_sym1; Left.
+Rewrite <- (scal_sum [i:nat](An (plus (S N1) i)) (minus n (S N1)) ``eps/2``); Unfold Rdiv; Repeat Rewrite Rmult_assoc; Apply Rlt_monotony.
+Pattern 2 ``/2``; Rewrite <- Rmult_1r; Apply Rlt_monotony.
+Apply Rlt_Rinv; Sup.
+Rewrite Rmult_sym; Apply Rlt_monotony_contra with (sum_f_R0 An n).
+Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym.
+Rewrite Rmult_1l; Rewrite Rmult_1r; Rewrite (tech2 An N1 n).
+Rewrite Rplus_sym; Pattern 1 (sum_f_R0 [i:nat](An (plus (S N1) i)) (minus n (S N1))); Rewrite <- Rplus_Or; Apply Rlt_compatibility.
+Apply Rle_sym1; Left; Apply Rlt_Rinv.
+Replace (sum_f_R0 [k:nat]``(An k)*((Bn k)-l)`` n) with (Rplus (sum_f_R0 [k:nat]``(An k)*(Bn k)`` n) (sum_f_R0 [k:nat]``(An k)*-l`` n)).
+Rewrite <- (scal_sum An n ``-l``); Field.
+Rewrite <- plus_sum; Apply sum_eq; Intros; Ring.
+Qed.
+
+Lemma Cesaro_1 : (An:nat->R;l:R) (Un_cv An l) -> (Un_cv [n:nat]``(sum_f_R0 An (pred n))/(INR n)`` l).
+Proof with Trivial.
+Intros Bn l H; Pose An := [_:nat]R1.
+Assert H0 : (n:nat) ``0<(An n)``.
+Intro; Unfold An; Apply Rlt_R0_R1.
+Assert H1 : (n:nat)``0<(sum_f_R0 An n)``.
+Intro; Apply tech1.
+Assert H2 : (cv_infty [n:nat](sum_f_R0 An n)).
+Unfold cv_infty; Intro; Case (total_order_Rle M R0); Intro.
+Exists O; Intros; Apply Rle_lt_trans with R0.
+Assert H2 : ``0<M``.
+Auto with real.
+Clear n; Pose m := (up M); Elim (archimed M); Intros; Assert H5 : `0<=m`.
+Apply le_IZR; Unfold m; Simpl; Left; Apply Rlt_trans with M.
+Elim (IZN ? H5); Intros; Exists x; Intros; Unfold An; Rewrite sum_cte; Rewrite Rmult_1l; Apply Rlt_trans with (IZR (up M)).
+Apply Rle_lt_trans with (INR x).
+Rewrite INR_IZR_INZ; Fold m; Rewrite <- H6; Right.
+Apply lt_INR; Apply le_lt_n_Sm.
+Assert H3 := (Cesaro ? ? ? H H0 H2).
+Unfold Un_cv; Unfold Un_cv in H3; Intros; Elim (H3 ? H4); Intros; Exists (S x); Intros; Unfold R_dist; Unfold R_dist in H5; Apply Rle_lt_trans with (Rabsolu (Rminus (Rdiv (sum_f_R0 [k:nat]``(An k)*(Bn k)`` (pred n)) (sum_f_R0 An (pred n))) l)).
+Right; Replace ``(sum_f_R0 Bn (pred n))/(INR n)-l`` with (Rminus (Rdiv (sum_f_R0 [k:nat]``(An k)*(Bn k)`` (pred n)) (sum_f_R0 An (pred n))) l).
+Unfold Rminus; Do 2 Rewrite <- (Rplus_sym ``-l``); Apply Rplus_plus_r.
+Unfold An; Replace (sum_f_R0 [k:nat]``1*(Bn k)`` (pred n)) with (sum_f_R0 Bn (pred n)).
+Rewrite sum_cte; Rewrite Rmult_1l; Replace (S (pred n)) with n.
+Apply S_pred with O; Apply lt_le_trans with (S x).
+Apply lt_O_Sn.
+Apply sum_eq; Intros; Ring.
+Apply H5; Unfold ge; Apply le_S_n; Replace (S (pred n)) with n.
+Apply S_pred with O; Apply lt_le_trans with (S x).
+Apply lt_O_Sn.
 Qed.
