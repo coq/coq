@@ -89,12 +89,18 @@ let rec rename_vars avoid = function
       let (idl', avoid') = rename_vars avoid idl in
       (id :: idl', avoid')
   | id :: idl ->
-      let id' = rename_id (lowercase_id id) avoid in
-      let (idl', avoid') = rename_vars (Idset.add id' avoid) idl in
-      (id' :: idl', avoid')
+      let (idl, avoid) = rename_vars avoid idl in
+      let id = rename_id (lowercase_id id) avoid in
+      (id :: idl, Idset.add id avoid)
 
 let rename_tvars avoid l = 
-  let l',_ = rename_vars avoid l in 
+  let rec rename avoid = function 
+    | [] -> [],avoid 
+    | id :: idl -> 
+	let id = rename_id (lowercase_id id) avoid in 
+	let idl, avoid = rename (Idset.add id avoid) idl in 
+	(id :: idl, avoid) in
+  let l',_ = rename avoid l in 
   l', List.fold_left2 (fun m i i' -> Idmap.add i i' m) Idmap.empty l l'
 
 let push_vars ids (db,avoid) =
