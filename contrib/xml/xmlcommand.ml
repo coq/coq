@@ -430,7 +430,7 @@ let theory_buffer = Buffer.create 4000;;
 
 let theory_output_string ?(do_not_quote = false) s = 
   (* prepare for coqdoc post-processing *)
-  let s = if do_not_quote then s else "(** ^"^s^"\n^*)\n" in
+  let s = if do_not_quote then s else "(** #"^s^"\n#*)\n" in
   print_if_verbose s;
    Buffer.add_string theory_buffer s
 ;;
