@@ -69,15 +69,9 @@ let init_load_path () =
     List.iter 
       (fun s -> add_include (Filename.concat Coq_config.coqtop s))
       ["states"; "dev"];
-    let theories = Filename.concat Coq_config.coqtop "theories" in
-    List.iter
-      (fun s -> add_include (Filename.concat theories (hm2 s)))
-      Coq_config.theories_dirs;
+    add_rec_include (Filename.concat Coq_config.coqtop "theories");
     add_include (Filename.concat Coq_config.coqtop "tactics");
-    let contrib = Filename.concat Coq_config.coqtop "contrib" in
-    List.iter
-      (fun s -> add_include (Filename.concat contrib (hm2 s)))
-      Coq_config.contrib_dirs
+    add_rec_include (Filename.concat Coq_config.coqtop "contrib");
   end else begin
     (* default load path; variable COQLIB overrides the default library *)
     let coqlib = getenv_else "COQLIB" Coq_config.coqlib in
