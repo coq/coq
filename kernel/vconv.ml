@@ -1,7 +1,6 @@
 open Names
 open Declarations
 open Term
-open Vm
 open Environ
 open Conv_oracle
 open Reduction 
