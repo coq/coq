@@ -267,15 +267,15 @@ let explain_ml_case k ctx mes c ct br brt =
       | "Decomp" ->
           let plf = P.pr_term k ctx br in
           let pft = P.pr_term k ctx brt in
-          (str "The branch " ++ plf ++ 'wS 1 ++ cut () ++ str "has type " ++ pft ++
-             'wS 1 ++ cut () ++
+          (str "The branch " ++ plf ++ ws 1 ++ cut () ++ str "has type " ++ pft ++
+             ws 1 ++ cut () ++
              str "does not correspond to the inductive definition")
       | "Dependent" ->
           (str "ML case not allowed for a dependent case elimination")
       | _ -> (mt ())
   in
-  hov 0 (str "In ML case expression on " ++ pc ++ 'wS 1 ++ cut () ++
-           str "of type" ++  'wS 1 ++ pct ++ 'wS 1 ++ cut () ++ 
+  hov 0 (str "In ML case expression on " ++ pc ++ ws 1 ++ cut () ++
+           str "of type" ++  ws 1 ++ pct ++ ws 1 ++ cut () ++ 
            str "which is an inductive predicate." ++ fnl () ++ expln)
 (*
 let explain_cant_find_case_type loc k ctx c =
@@ -283,7 +283,7 @@ let explain_cant_find_case_type loc k ctx c =
   Ast.user_err_loc
     (loc,"pretype",
      hov 3 (str "Cannot infer type of whole Case expression on" ++ 
-	     'wS 1 ++ pe))
+	     ws 1 ++ pe))
 *)
 let explain_type_error k ctx = function
   | UnboundRel n -> 

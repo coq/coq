@@ -54,7 +54,7 @@ let int_of_z = function
   | POS p -> int_of_pos p
   | NEG p -> -(int_of_pos p)
  ++ ++
-" >] (* '"' *)
+") (* '"' *)
 
 (* collect all section-path in a CIC constant *)
 
@@ -147,14 +147,14 @@ let rename_global id =
   Fwtoml.add_global_renaming (id,id') ++
   id'
 
-type rename_struct = { rn_map : identifier IdMap.t ++
+type rename_struct = { rn_map : identifier IdMap.t;
 		       rn_avoid : identifier list }
 
-let rn_empty = { rn_map = IdMap.empty ++ rn_avoid = [] }
+let rn_empty = { rn_map = IdMap.empty; rn_avoid = [] }
 
 let rename_local rn id =
   let id' = Ocaml_ren.rename_term (!Fwtoml.globals@rn.rn_avoid) (Name id) in
-  { rn_map = IdMap.add id id' rn.rn_map ++ rn_avoid = id' :: rn.rn_avoid },
+  { rn_map = IdMap.add id id' rn.rn_map; rn_avoid = id' :: rn.rn_avoid },
   id'
 
 let get_local_name rn id = IdMap.find id rn.rn_map
@@ -240,7 +240,7 @@ let pp_prog id =
 	   str" <-" ++ spc () ++ hov 2 (pp env rn false e2))
     | Seq bl ->
 	(str"begin" ++ fnl () ++
-	   str"  " ++ hov 0 (pp_block env rn bl ++) ++ fnl () ++
+	   str"  " ++ hov 0 (pp_block env rn bl) ++ fnl () ++
 	   str"end")
     | If (e1,e2,e3) ->
 	putpar par (str"if " ++ (pp env rn false e1) ++
@@ -256,15 +256,15 @@ let pp_prog id =
 			 None -> (mt ()) 
 		       | Some c -> (str"(* invariant: " ++ pTERM c.a_value ++ 
 				      str" *)" ++ fnl ())) ++
-		    pp_block env rn bl ++) ++ fnl () ++
-	   str"done" ++)
+		    pp_block env rn bl) ++ fnl () ++
+	   str"done")
     | Lam (bl,e) ->
 	let env' = traverse_binders env bl in
 	let rn' = rename_binders rn bl in
 	  putpar par 
 	    (hov 2 (str"fun" ++ pr_binding rn' bl ++ str" ->" ++
 		      spc () ++ pp env' rn' false e))
-    | SApp ((Var id)::_,  [e1 ++ e2])
+    | SApp ((Var id)::_,  [e1; e2])
 	when id = connective_and or id = connective_or ->
 	  let conn = if id = connective_and then "&" else "or" in
 	  putpar par 
@@ -467,6 +467,6 @@ let _ = vinterp_add "IMPERATIVEEXTRACTION"
 	  
 let _ = vinterp_add "INITIALIZE"
 	  (function 
-	     | [VARG_IDENTIFIER id ++ VARG_COMMAND com] ->
+	     | [VARG_IDENTIFIER id; VARG_COMMAND com] ->
 		 (fun () -> initialize id com)
 	     | _ -> assert false)
