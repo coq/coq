@@ -16,7 +16,7 @@ We call this calculus the
 {\em Predicative Calculus of (Co)Inductive
   Constructions}\index{Predicative Calculus of
   (Co)Inductive Constructions} (\pCIC\ in short).
-In section~\cite{impredicativity} we give the extra-rules for \iCIC. A
+In section~\ref{impredicativity} we give the extra-rules for \iCIC. A
   compiling option of \Coq{} allows to type-check theories in this
   extended system.
 
@@ -38,17 +38,19 @@ says {\em convertible}). Convertibility is presented in section
 The remaining sections are concerned with the type-checking of terms.
 The beginner can skip them.
 
-The reader seeking a background on the {\CIC} may read several papers.
-Giménez~\cite{Gim98} provides an introduction to inductive and
-coinductive definitions in Coq. In their book~\cite{CoqArt}, Bertot
-and Castéran give a precise description of the \CIC{} based on
-numerous practical examples.  Barras~\cite{Bar99}, Werner~\cite{Wer94}
-and Paulin-Mohring~\cite{Moh97} are the most recent theses on the
-{\CIC}. Coquand-Huet~\cite{CoHu85a,CoHu85b,CoHu86} introduces the
-Calculus of Constructions. Coquand-Paulin~\cite{CoPa89} introduces
-inductive definitions. The {\CIC} is a formulation of type theory
-including the possibility of inductive constructions.
-Barendregt~\cite{Bar91} studies the modern form of type theory.
+The reader seeking a background on the Calculus of Inductive
+Constructions may read several papers.  Giménez~\cite{Gim98} provides
+an introduction to inductive and coinductive definitions in Coq. In
+their book~\cite{CoqArt}, Bertot and Castéran give a precise
+description of the \CIC{} based on numerous practical examples.
+Barras~\cite{Bar99}, Werner~\cite{Wer94} and
+Paulin-Mohring~\cite{Moh97} are the most recent theses dealing with
+Inductive Definitions. Coquand-Huet~\cite{CoHu85a,CoHu85b,CoHu86}
+introduces the Calculus of Constructions. Coquand-Paulin~\cite{CoPa89}
+extended this calculus to inductive definitions. The {\CIC} is a
+formulation of type theory including the possibility of inductive
+constructions, Barendregt~\cite{Bar91} studies the modern form of type
+theory.
 
 \section{The terms}\label{Terms}
 
@@ -96,7 +98,7 @@ etc.
 These sorts themselves can be manipulated as ordinary terms.
 Consequently sorts also should be given a type.  Because assuming
 simply that \Set\ has type \Set\ leads to an inconsistent theory, we
-have infinitely many sorts in the language of \CIC\ . These are, in
+have infinitely many sorts in the language of \CIC. These are, in
 addition to \Set\ and \Prop\, a hierarchy of universes \Type$(i)$
 for any integer $i$.  We call \Sort\ the set of sorts
 which is defined by:
@@ -104,7 +106,7 @@ which is defined by:
 \index{Type@{\Type}}
 \index{Prop@{\Prop}}
 \index{Set@{\Set}}
-The sorts enjoy the following properties: {\Prop:\Type(0)} and
+The sorts enjoy the following properties: {\Prop:\Type(0)}, {\Set:\Type(0)} and
   {\Type$(i)$:\Type$(i+1)$}.
 
 The user will never mention explicitly the index $i$ when referring to
@@ -157,7 +159,7 @@ More precisely the language of the {\em Calculus of Inductive
 
 \begin{enumerate}
 \item the sorts {\sf Set, Prop, Type} are terms.
-\item names for global constant of the environment are terms.
+\item names for global constants of the environment are terms.
 \item variables are terms.
 \item if $x$ is a variable and $T$, $U$ are terms then $\forall~x:T,U$
   ($\kw{forall}~x:T,U$ in \Coq{} concrete syntax) is a term. If $x$
@@ -167,7 +169,7 @@ More precisely the language of the {\em Calculus of Inductive
   $\forall~x:T,U$ reads as {\it ``if T then U''}. A non dependent
   product can be written: $T \rightarrow U$.
 \item if $x$ is a variable and $T$, $U$ are terms then $\lb~x:T \mto U$
-  ($\lb~x:T\mto U$ in \Coq{} concrete syntax) is a term. This is a
+  ($\kw{fun}~x:T\Ra U$ in \Coq{} concrete syntax) is a term. This is a
   notation for the $\lambda$-abstraction of
   $\lambda$-calculus\index{lambda-calculus@$\lambda$-calculus}
   \cite{Bar81}. The term $\lb~x:T \mto U$ is a function which maps
@@ -188,8 +190,8 @@ products and arrows associate to the right such that $\forall~x:A,B\ra C\ra
 D$ represents $\forall~x:A,(B\ra (C\ra D))$.  One uses sometimes
 $\forall~x~y:A,B$ or
 $\lb~x~y:A\mto B$ to denote the abstraction or product of several variables
-of the same type. The equivalent formulation is $\forall~(x:A)(y:A),B$ or
-$\lb~(x:A)(y:A) \mto B$
+of the same type. The equivalent formulation is $\forall~x:A, \forall y:A,B$ or
+$\lb~x:A \mto \lb y:A \mto B$
 
 \paragraph{Free variables.}
 The notion of free variables is defined as usual.  In the expressions
@@ -304,15 +306,15 @@ be derived from the following rules.
 \item[Const]  \index{Typing rules!Const}
 \inference{\frac{\WFE{\Gamma}~~~~(c:T) \in E}{\WTEG{c}{T}}}
 \item [Prod]  \index{Typing rules!Prod}
-\inference{\frac{\WTEG{T}{s_1}~~~~
+\inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~
     \WTE{\Gamma::(x:T)}{U}{\Prop}}
       { \WTEG{\forall~x:T,U}{\Prop}}} 
-\inference{\frac{\WTEG{T}{s_1}~~~~s_1\in\{\Prop, \Set\}~~~~~~
+\inference{\frac{\WTEG{T}{s}~~~~s\in\{\Prop, \Set\}~~~~~~
     \WTE{\Gamma::(x:T)}{U}{\Set}}
       { \WTEG{\forall~x:T,U}{\Set}}} 
-\inference{\frac{\WTEG{T}{\Type(i)}~~~~
-    \WTE{\Gamma::(x:T)}{U}{\Type(j)}~~~i\leq
-    k~~~j \leq k}{ \WTEG{\forall~x:T,U}{\Type(k)}}}
+\inference{\frac{\WTEG{T}{\Type(i)}~~~~i\leq k~~~
+    \WTE{\Gamma::(x:T)}{U}{\Type(j)}~~~j \leq k}
+    {\WTEG{\forall~x:T,U}{\Type(k)}}}
 \item [Lam]\index{Typing rules!Lam} 
 \inference{\frac{\WTEG{\forall~x:T,U}{s}~~~~ \WTE{\Gamma::(x:T)}{t}{U}}
         {\WTEG{\lb~x:T\mto t}{\forall x:T, U}}}
@@ -325,7 +327,7 @@ be derived from the following rules.
 \end{itemize}
 
 \noindent {\bf Remark. } We may have $\kw{let}~x:=t~\kw{in}~u$
-well-typed without having $(\lb~x:T\mto u)~t$ well-typed (where
+well-typed without having $((\lb~x:T\mto u)~t)$ well-typed (where
 $T$ is a type of $t$). This is because the value $t$ associated to $x$
 may be used in a conversion rule (see section \ref{conv-rules}).
 
@@ -339,12 +341,12 @@ We want to be able to identify some terms as we can identify the
 application of a function to a given argument with its result. For
 instance the identity function over a given type $T$ can be written
 $\lb~x:T\mto x$. In any environment $E$ and context $\Gamma$, we want to identify any object $a$ (of type $T$) with the
-application $(\lb~x:T\mto x)~a$. We define for this a {\em reduction} (or a
+application $((\lb~x:T\mto x)~a)$. We define for this a {\em reduction} (or a
 {\em conversion}) rule we call $\beta$:
 \[ \WTEGRED{((\lb~x:T\mto
   t)~u)}{\triangleright_{\beta}}{\subst{t}{x}{u}} \] 
 We say that $\subst{t}{x}{u}$ is the {\em $\beta$-contraction} of
-$(\lb~x:T\mto t)~u$ and, conversely, that $(\lb~x:T\mto t)~u$
+$((\lb~x:T\mto t)~u)$ and, conversely, that $((\lb~x:T\mto t)~u)$
 is the {\em $\beta$-expansion} of $\subst{t}{x}{u}$.
 
 According to $\beta$-reduction, terms of the {\em Calculus of
@@ -439,19 +441,19 @@ A term which cannot be any more reduced is said to be in {\em normal
   form}. There are several ways (or strategies) to apply the reduction
 rule. Among them, we have to mention the {\em head reduction} which
 will play an important role (see chapter \ref{Tactics}). Any term can
-be written as $\lb~(x_1:T_1)\ldots (x_k:T_k) \mto 
+be written as $\lb~x_1:T_1\mto \ldots \lb x_k:T_k \mto 
 (t_0\ t_1\ldots t_n)$ where
 $t_0$ is not an application. We say then that $t_0$ is the {\em head
   of $t$}. If we assume that $t_0$ is $\lb~x:T\mto u_0$ then one step of
 $\beta$-head reduction of $t$ is:
-\[\lb~(x_1:T_1)\ldots(x_k:T_k)\mto (\lb~x:T\mto u_0\ t_1\ldots t_n) 
+\[\lb~x_1:T_1\mto \ldots \lb x_k:T_k\mto (\lb~x:T\mto u_0\ t_1\ldots t_n) 
 ~\triangleright ~ \lb~(x_1:T_1)\ldots(x_k:T_k)\mto 
 (\subst{u_0}{x}{t_1}\ t_2 \ldots t_n)\]
 Iterating the process of head reduction until the head of the reduced
 term is no more an abstraction leads to the {\em $\beta$-head normal
   form} of $t$:
 \[ t \triangleright \ldots \triangleright
-\lb~(x_1:T_1)\ldots(x_k:T_k)\mto (v\ u_1
+\lb~x_1:T_1\mto \ldots\lb x_k:T_k\mto (v\ u_1
 \ldots u_m)\]
 where $v$ is not an abstraction (nor an application).  Note that the
 head normal form must not be confused with the normal form since some
@@ -526,7 +528,7 @@ Stating the rules for inductive definitions in their general form
 needs quite tedious definitions. We shall try to give a concrete
 understanding of the rules by precising them on running examples.  We
 take as examples the type of natural numbers, the type of
-parameterized lists over a type $A$, the relation which state that
+parameterized lists over a type $A$, the relation which states that
 a list has some given length and the mutual inductive definition of trees and
 forests. 
 
@@ -555,7 +557,7 @@ represented by:
 
 \inference{\frac{\NInd{\Gamma}{\Gamma_I}{\Gamma_C} \in E
     ~~~~i=1.. n}
-   {(c_i:\subst{C_i}{I_j}{I_j}_{j=1\ldots k})\in E}}
+   {(c_i:C_i)\in E}}
 
 \subsubsection{Inductive definitions with parameters}
 
@@ -612,7 +614,7 @@ The declaration for parameterized lists is:
 The declaration for the length of lists is:
 \[\Ind{}{A:\Set}{\Length:(\List~A)\ra \nat\ra\Prop}
       {\LNil:(\Length~(\Nil~A)~\nO),\\ 
-     \LCons :\forall (a:A)(l:(\List~A))(n:\nat), (\Length~l~n)\ra (\Length~(\cons~A~a~l)~(\nS~n))}\]
+     \LCons :\forall a:A, \forall l:(\List~A),\forall n:\nat, (\Length~l~n)\ra (\Length~(\cons~A~a~l)~(\nS~n))}\]
 
 The declaration for a mutual inductive definition of forests and trees is:
 \[\NInd{}{\tree:\Set,\forest:\Set}
@@ -671,11 +673,11 @@ contains an inductive declaration.
   $[c_1:C_1;\ldots;c_n:C_n]$,
    
 \inference{\frac{\Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C} \in E
-    ~~j=1\ldots k}{(I_j:\forall~(p_1:P_1)\ldots(p_r:P_r),A_j) \in E}}
+    ~~j=1\ldots k}{(I_j:\forall~p_1:P_1,\ldots\forall p_r:P_r,A_j) \in E}}
 
 \inference{\frac{\Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C} \in E
     ~~~~i=1.. n}
-   {(c_i:\forall~(p_1:P_1)\ldots(p_r:P_r),\subst{C_i}{I_j}{(I_j~p_1\ldots
+   {(c_i:\forall~p_1:P_1,\ldots \forall p_r:P_r,\subst{C_i}{I_j}{(I_j~p_1\ldots
        p_r)}_{j=1\ldots k})\in E}}
 \end{description}
 
@@ -750,7 +752,7 @@ following cases:
 %strictly positively in $u$
 \end{itemize}
 
-The type constructor $T$ of $I$ {\em satisfies the imbricated
+The type of constructor $T$ of $I$ {\em satisfies the imbricated
 positivity condition} for a constant $X$ in the following
 cases:
 
@@ -762,12 +764,15 @@ the type $V$ satisfies the imbricated positivity condition for $X$
 \end{itemize}
 
 \paragraph{Example}
+
 $X$ occurs strictly positively in $A\ra X$ or $X*A$ or $({\tt list}
-X)$ but not in $X \ra A$ or $(X \ra A)\ra A$ assuming the notion of
-product and lists were already defined. Assuming $X$ has arity ${\tt
-  nat \ra Prop}$ and {\tt ex} is the inductively defined existential
-quantifier, the occurrence of $X$ in ${\tt (ex~ nat~ \lb~n:nat\ra
-  (X~ n))}$ is also strictly positive.
+X)$ but not in $X \ra A$ or $(X \ra A)\ra A$ nor $({\tt neg}~A)$
+assuming the notion of product and lists were already defined and {\tt
+  neg} is an inductive definition with declaration \Ind{}{A:\Set}{{\tt
+    neg}:\Set}{{\tt neg}:(A\ra{\tt False}) \ra {\tt neg}}.  Assuming
+$X$ has arity ${\tt nat \ra Prop}$ and {\tt ex} is the inductively
+defined existential quantifier, the occurrence of $X$ in ${\tt (ex~
+  nat~ \lb~n:nat\mto (X~ n))}$ is also strictly positive.
 
 \paragraph{Correctness rules.}
 We shall now describe the rules allowing the introduction of a new
@@ -818,7 +823,7 @@ Inductive exSet (P:Set->Prop) : Set
 It is possible to declare the same inductive definition in the
 universe \Type. 
 The \texttt{exType} inductive definition has type  $(\Type_i \ra\Prop)\ra
-\Type_j$ with $i<j$.
+\Type_j$ with the constraint $i<j$.
 \begin{coq_example*}
 Inductive exType (P:Type->Prop) : Type
   := exT_intro : forall X:Type, (P X) -> (exType P).
@@ -868,19 +873,20 @@ fixed point of this recursive equation.  This says that we are only
 manipulating finite objects. This analysis provides induction
 principles.
 
-For instance, in order to prove $(l:\ListA)(\LengthA~l~(\length~l))$
+For instance, in order to prove $\forall l:\ListA,(\LengthA~l~(\length~l))$
 it is enough to prove:
 
 \noindent $(\LengthA~\Nil~(\length~\Nil))$ and
 
 \smallskip
-$(a:A)(l:\ListA)(\LengthA~l~(\length~l)) \ra
+$\forall a:A, \forall l:\ListA, (\LengthA~l~(\length~l)) \ra
 (\LengthA~(\cons~A~a~l)~(\length~(\cons~A~a~l)))$.
 \smallskip
 
 \noindent which given the conversion equalities satisfied by \length\ is the
 same as proving:
-$(\LengthA~\Nil~\nO)$ and $(a:A)(l:\ListA)(\LengthA~l~(\length~l)) \ra
+$(\LengthA~\Nil~\nO)$ and $\forall a:A, \forall l:\ListA, 
+(\LengthA~l~(\length~l)) \ra
 (\LengthA~(\cons~A~a~l)~(\nS~(\length~l)))$.
 
 One conceptually simple way to do that, following the basic scheme
@@ -893,8 +899,7 @@ primitive recursion over the structure.
 But this operator is rather tedious to implement and use. We choose in
 this version of Coq to factorize the operator for primitive recursion
 into two more primitive operations as was first suggested by Th. Coquand
-in~\cite{Coq92}.  One is the definition by case
-analysis. The second one is a definition by guarded fixpoints. 
+in~\cite{Coq92}.  One is the definition by pattern-matching. The second one is a definition by guarded fixpoints. 
 
 \subsubsection{The {\tt match\ldots with \ldots end} construction.}
 \label{Caseexpr}
@@ -905,23 +910,38 @@ $m$ in an inductive type $I$ and we want to prove a property $(P~m)$
 which in general depends on $m$. For this, it is enough to prove the
 property for $m = (c_i~u_1\ldots  u_{p_i})$ for each constructor of $I$.
 
-This proof will be denoted by a generic term:
-\[\Case{P~x}{m~\kw{as}~x}{(c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
-  (c_n~x_{n1}...x_{np_n}) \Ra f_n }\] In this expression, if
+The \Coq{} term for this proof will be written~:
+\[\kw{match}~m~\kw{with}~ (c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
+  (c_n~x_{n1}...x_{np_n}) \Ra f_n~ \kw{end}\]
+In this expression, if
 $m$ is a term built from a constructor $(c_i~u_1\ldots u_{p_i})$ then
 the expression will behave as it is specified with $i$-th branch and
 will reduce to $f_i$ where the $x_{i1}$\ldots $x_{ip_i}$ are replaced
 by the $u_1\ldots u_p$ according to the $\iota$-reduction.
 
+Actually, for type-checking a \kw{match\ldots with\ldots end}
+expression we also need to know the predicate $P$ to be proved by case
+analysis.  \Coq{} can sometimes infer this predicate but sometimes
+not. The concrete syntax for describing this predicate uses the
+\kw{as\ldots return} construction. 
+The predicate will be explicited using the syntax~:
+\[\kw{match}~m~\kw{as}~ x~ \kw{return}~ (P~ x) ~\kw{with}~ (c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
+  (c_n~x_{n1}...x_{np_n}) \Ra f_n \kw{end}\]
+For the purpose of presenting the inference rules, we use a more
+compact notation~:
+\[ \Case{(\lb x \mto P)}{m}{ \lb x_{11}~...~x_{1p_1} \mto f_1 ~|~\ldots~|~
+  \lb x_{n1}...x_{np_n} \mto f_n}\]
+
 This is the basic idea which is generalized to the case where $I$ is
 an inductively defined $n$-ary relation (in which case the property
 $P$ to be proved will be a $n+1$-ary relation).
+
 
 \paragraph{Non-dependent elimination.}
 When defining a function by case analysis, we build an object of type $I
 \ra C$ and the minimality principle on an inductively defined logical
 predicate of type $A \ra \Prop$ is often used to prove a property
-$(x:A)(I~x)\ra (C~x)$.  This is a particular case of the dependent
+$\forall x:A,(I~x)\ra (C~x)$.  This is a particular case of the dependent
 principle that we stated before with a predicate which does not depend
 explicitly on the object in the inductive definition.
 
@@ -930,7 +950,7 @@ can be
 defined as:
 
 \[\lb~l:\ListA \mto\Case{\bool}{l}{\Nil~ \Ra~\true~ |~ (\cons~a~m)~ \Ra~\false}\]
-\noindent {\bf Remark. } 
+%\noindent {\bf Remark. } 
 
 % In the system \Coq\ the expression above, can be
 % written without mentioning
@@ -963,19 +983,14 @@ $I$.
 \begin{description}
 \item[Prod] \inference{\frac{\compat{(I~x):A'}{B'}}
                       {\compat{I:(x:A)A'}{(x:A)B'}}}
-\item[\Set] \inference{\frac{s \in
-      \{\Prop, \Set\}}{\compat{I:\Set}{I\ra s}}
-~~~~\frac{I \mbox{~is a small inductive definition}~~~~s \in
-      \{\Type(i)\}}
-         {\compat{I:\Set}{I\ra s}}}
-\item[\Type] \inference{\frac{
+\item[\Set \& \Type] \inference{\frac{
     s_1 \in \{\Set,\Type(j)\}, 
-    s_1 \in \{\Prop,\Set,\Type(j)\}}{\compat{I:s_1}{I\ra s_2}}}
+    s_2 \in \Sort}{\compat{I:s_1}{I\ra s_2}}}
 \end{description}
 
-The case of Inductive definition of sort \Prop{} is a bit more
+The case of Inductive Definitions of sort \Prop{} is a bit more
 complicated, because of our interpretation of this sort. The only
-harmless allowed elimination, is the one when predicate $P$ is also on
+harmless allowed elimination, is the one when predicate $P$ is also of
 sort \Prop.
 \begin{description}
 \item[\Prop] \inference{\compat{I:\Prop}{I\ra\Prop}}
@@ -983,7 +998,7 @@ sort \Prop.
 \Prop{} is the type of logical propositions, the proofs of properties
 $P$ in \Prop{} could not be used for computation and are consequentely
 ignored by the extraction mechanism.
-Assume a $A$ and $B$ are two propositions, and the logical disjunction
+Assume $A$ and $B$ are two propositions, and the logical disjunction
 $A\vee B$ is defined inductively by~:
 \begin{coq_example*}
 Inductive or (A B:Prop) : Prop :=
@@ -996,10 +1011,10 @@ Definition choice (A B :Prop) (x:or A B) :=
    match x with (lintro a) => true | (rintro b) => false end.
 \end{coq_example}
 From the computational point of view, the structure of the proof of
-\texttt{or A B} in this term is needed for computing the boolean
+\texttt{(or A B)} in this term is needed for computing the boolean
 value.
 
-In general, if $I$ has type \Prop\ and $P$ cannot have type $I\ra
+In general, if $I$ has type \Prop\ then $P$ cannot have type $I\ra
 \Set$, because it will mean to build an informative proof of type
 $(P~m)$ doing a case analysis over a non-computational object that
 will disappear in the extracted program.  But the other way is safe
@@ -1373,9 +1388,45 @@ More information on coinductive definitions can be found
 in~\cite{Gimenez95b,Gim98}.
 
 \section{\iCIC : the Calculus of Inductive Construction with
-  impreicative \Set}\label{impredicativity}
+  impredicative \Set}\label{impredicativity}
 
+\Coq{} can be used as a type-checker for \iCIC{}, the original 
+Calculus of Inductive Constructions with an impredicative sort \Set{}
+by using the compiler option \texttt{-impredicative-set}.
 
+For example, using the ordinary \texttt{coqtop} command, the following
+is rejected.
+\begin{coq_example}
+Definition id: Set := forall (X:Set),X->X.
+\end{coq_example}
+while it will type-check, if one use instead the \texttt{coqtop
+  -impredicative-set} command.
+
+The major change in the theory concerns the rule for product formation
+in the sort \Set, which is extendet to a domain in any sort~:
+\begin{description}
+\item [Prod]  \index{Typing rules!Prod (impredicative Set)}
+\inference{\frac{\WTEG{T}{s}~~~~s\in\Sort~~~~~~
+    \WTE{\Gamma::(x:T)}{U}{\Set}}
+      { \WTEG{\forall~x:T,U}{\Set}}} 
+\end{description}
+This extension has consequences on the inductive definitions which are
+allowed. 
+In the impredicative system, one can build so-called {\em large inductive
+  definitions} like the example of second-order existential
+quantifier (\texttt{exSet}).
+
+There should be restrictions on the eliminations which can be
+performed on such definitions. The eliminations rules in the
+impredicative system for sort \Set{} become~:
+\begin{description}
+\item[\Set] \inference{\frac{s \in
+      \{\Prop, \Set\}}{\compat{I:\Set}{I\ra s}}
+~~~~\frac{I \mbox{~is a small inductive definition}~~~~s \in
+      \{\Type(i)\}}
+         {\compat{I:\Set}{I\ra s}}}
+\end{description}
+     
 %They are described inchapter~\ref{Coinductives}.
 
 % $Id$ 
