@@ -680,7 +680,7 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)/states
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLEMACSLIB)
-	cp tools/coq.el $(FULLEMACSLIB)
+	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
 
 MANPAGES=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1 \
