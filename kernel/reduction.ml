@@ -53,6 +53,9 @@ let strong whdfun env sigma =
     | DOP0 _ as t -> t
     (* Cas ad hoc *)
     | DOP1(oper,c) -> DOP1(oper,strongrec c)
+    (* Faut differencier sinon fait planter kind_of_term *)
+    | DOP2(Prod|Lambda as oper,c1,DLAM(na,c2)) ->
+	DOP2(oper,strongrec c1,DLAM(na,strongrec c2))
     | DOP2(oper,c1,c2) -> DOP2(oper,strongrec c1,strongrec c2)
     | DOPN(oper,cl) -> DOPN(oper,Array.map strongrec cl)
     | DOPL(oper,cl) -> DOPL(oper,List.map strongrec cl)
