@@ -10,6 +10,16 @@
 
 Require Rstar.
 
+Section Newman.
+
+Variable A: Type. 
+Variable R: A->A->Prop.
+
+Local Rstar := (Rstar A R). 
+Local Rstar_reflexive := (Rstar_reflexive A R).
+Local Rstar_transitive := (Rstar_transitive A R).
+Local Rstar_Rstar' := (Rstar_Rstar' A R).
+
 Definition coherence := [x:A][y:A] (exT2 ? (Rstar x) (Rstar y)).
 
 Theorem coherence_intro :  (x:A)(y:A)(z:A)(Rstar x z)->(Rstar y z)->(coherence x y).
@@ -99,3 +109,7 @@ Theorem Newman : (x:A)(confluence x).
 Proof [x:A](Hyp1 x confluence Ind_proof).  
 
 End Newman_section.
+
+
+End Newman.
+

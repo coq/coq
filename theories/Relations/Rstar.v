@@ -10,8 +10,10 @@
 
 (* Properties of a binary relation R on type A *)
 
-Parameter A : Type.  
-Parameter R : A->A->Prop.  
+Section Rstar.
+
+Variable A : Type.  
+Variable R : A->A->Prop.  
 
 (* Definition of the reflexive-transitive closure R* of R *)
 (* Smallest reflexive P containing R o P *)
@@ -71,3 +73,7 @@ Theorem Rstar_Rstar':  (x:A)(y:A)(Rstar x y)->(Rstar' x y).
 Definition commut := [A:Set][R1,R2:A->A->Prop]
                        (x,y:A)(R1 y x)->(z:A)(R2 z y)
                         ->(EX y':A |(R2 y' x) & (R1 z y')).
+
+
+End Rstar.
+
