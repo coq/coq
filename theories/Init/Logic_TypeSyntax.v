@@ -15,8 +15,6 @@ Require Logic_Type.
 Notation "x == y"  := (eq ? x y) (at level 5, no associativity, only parsing).
 Notation "x === y" := (identityT ? x y) (at level 5, no associativity).
 
-Notation "'eqT'" := eq (at level 0).
-
 (* Order is important to give printing priority to fully typed ALL and EX *)
 
 Notation AllT := (all ?).
