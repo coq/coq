@@ -33,6 +33,7 @@ let print_usage_channel co command =
   -load-ml-object f      load ML object file f 
   -load-ml-source f      load ML file f 
   -load-vernac-source f  load Coq file f.v (Load f.)
+  -l f                   (idem) 
   -load-vernac-object f  load Coq object file f.vo
   -require f             load Coq object file f.vo and import it (Require f.)
   -compile f             compile Coq file f.v (implies -batch)

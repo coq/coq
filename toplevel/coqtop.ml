@@ -151,8 +151,9 @@ let parse_args () =
     | "-load-ml-source" :: f :: rem -> Mltop.dir_ml_use f; parse rem
     | "-load-ml-source" :: []       -> usage ()
 
-    | "-load-vernac-source" :: f :: rem -> add_load_vernacular f; parse rem
-    | "-load-vernac-source" :: []       -> usage ()
+    | ("-load-vernac-source"|"-l") :: f :: rem -> 
+	add_load_vernacular f; parse rem
+    | ("-load-vernac-source"|"-l") :: []       -> usage ()
 
     | "-load-vernac-object" :: f :: rem -> add_vernac_obj f; parse rem
     | "-load-vernac-object" :: []       -> usage ()
