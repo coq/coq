@@ -52,7 +52,17 @@ Intros; Case (total_order R0 x); Intro; [Unfold Rsqr; Apply Rmult_lt_pos; Assump
 Save.
 
 Lemma Rsqr_div : (x,y:R) ~``y==0`` -> ``(Rsqr (x/y))==(Rsqr x)/(Rsqr y)``.
-Intros; Unfold Rsqr; Field; Repeat Apply prod_neq_R0; Assumption.
+Intros; Unfold Rsqr.
+Unfold Rdiv.
+Rewrite Rinv_Rmult.
+Repeat Rewrite Rmult_assoc.
+Apply Rmult_mult_r.
+Pattern 2 x; Rewrite Rmult_sym.
+Repeat Rewrite Rmult_assoc.
+Apply Rmult_mult_r.
+Reflexivity.
+Assumption.
+Assumption.
 Save.
 
 Lemma Rsqr_eq_0 : (x:R) ``(Rsqr x)==0`` -> ``x==0``.
@@ -267,38 +277,156 @@ Definition sol_x1 [a:nonzeroreal;b,c:R] : R := ``(-b+(sqrt (Delta a b c)))/(2*a)
 Definition sol_x2 [a:nonzeroreal;b,c:R] : R := ``(-b-(sqrt (Delta a b c)))/(2*a)``.
 
 Lemma Rsqr_inv : (x:R) ~``x==0`` -> ``(Rsqr (/x))==/(Rsqr x)``.
-Intros; Unfold Rsqr; Field; Repeat Apply prod_neq_R0; Assumption.
+Intros; Unfold Rsqr.
+Rewrite Rinv_Rmult; Try Reflexivity Orelse Assumption.
 Save.
 
 Lemma Rsqr_sol_eq_0_1 : (a:nonzeroreal;b,c,x:R) (Delta_is_pos a b c) -> (x==(sol_x1 a b c))\/(x==(sol_x2 a b c)) -> ``a*(Rsqr x)+b*x+c==0``.
-Intros.
-Elim H0; Intro.
+Intros; Elim H0; Intro.
 Unfold sol_x1 in H1; Unfold Delta in H1; Rewrite H1; Unfold Rdiv; Repeat Rewrite Rsqr_times; Rewrite Rsqr_plus; Rewrite <- Rsqr_neg; Rewrite Rsqr_sqrt.
 Rewrite Rsqr_inv.
-Unfold Rsqr; Field.
-Case a.
-Intros y H2; Repeat Rewrite Rmult_assoc; Repeat Apply prod_neq_R0; Assumption Orelse DiscrR.
+Unfold Rsqr; Repeat Rewrite Rinv_Rmult.
+Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym a).
+Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Rewrite Rmult_Rplus_distrl.
+Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym ``2``).
+Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Rewrite (Rmult_Rplus_distrl ``-b`` ``(sqrt (b*b-4*(a*c))) `` ``(/2*/a)``).
+Rewrite Rmult_Rplus_distr; Repeat Rewrite Rplus_assoc.
+Replace ``( -b*((sqrt (b*b-4*(a*c)))*(/2*/a))+(b*( -b*(/2*/a))+(b*((sqrt (b*b-4*(a*c)))*(/2*/a))+c)))`` with ``(b*( -b*(/2*/a)))+c``.
+Unfold Rminus; Repeat Rewrite <- Rplus_assoc.
+Replace ``b*b+b*b`` with ``2*(b*b)``.
+Rewrite Rmult_Rplus_distrl; Repeat Rewrite Rmult_assoc.
+Rewrite (Rmult_sym ``2``); Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Replace ``2+1+1`` with ``2*2``.
+Rewrite Ropp_mul1; Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym ``2``).
+Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Rewrite (Rmult_sym ``/2``); Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym ``2``).
+Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Repeat Rewrite Rmult_assoc.
+Rewrite (Rmult_sym a); Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Rewrite <- Ropp_mul2.
+Ring.
+Apply (cond_nonzero a).
+DiscrR.
+DiscrR.
+Ring.
+DiscrR.
+Ring.
+Repeat Rewrite Rplus_assoc; Repeat Rewrite <- (Rplus_sym c); Repeat Rewrite Rplus_assoc.
+Rewrite (Rplus_sym ``-b*((sqrt (b*b-4*(a*c)))*(/2*/a))``); Repeat Rewrite Rplus_assoc.
+Repeat Rewrite Ropp_mul1; Rewrite Rplus_Ropp_r.
+Rewrite Rplus_Or; Apply Rplus_sym.
+DiscrR.
+Apply (cond_nonzero a).
+DiscrR.
+Apply (cond_nonzero a).
 Apply prod_neq_R0; [DiscrR | Apply (cond_nonzero a)].
-Unfold Delta_is_pos in H.
-Unfold Delta in H.
+Apply prod_neq_R0; [DiscrR | Apply (cond_nonzero a)].
+Apply prod_neq_R0; [DiscrR | Apply (cond_nonzero a)].
 Assumption.
 Unfold sol_x2 in H1; Unfold Delta in H1; Rewrite H1; Unfold Rdiv; Repeat Rewrite Rsqr_times; Rewrite Rsqr_minus; Rewrite <- Rsqr_neg; Rewrite Rsqr_sqrt.
 Rewrite Rsqr_inv.
-Unfold Rsqr; Field.
-Case a.
-Intros y H2; Repeat Rewrite Rmult_assoc; Repeat Apply prod_neq_R0; Assumption Orelse DiscrR.
-Apply prod_neq_R0; [DiscrR | Apply (cond_nonzero a)].
-Unfold Delta_is_pos in H.
-Unfold Delta in H.
+Unfold Rsqr; Repeat Rewrite Rinv_Rmult; Repeat Rewrite Rmult_assoc.
+Rewrite (Rmult_sym a); Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Unfold Rminus; Rewrite Rmult_Rplus_distrl.
+Rewrite Ropp_mul1; Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym ``2``).
+Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Rewrite (Rmult_Rplus_distrl ``-b`` ``-(sqrt (b*b+ -(4*(a*c)))) `` ``(/2*/a)``).
+Rewrite Rmult_Rplus_distr; Repeat Rewrite Rplus_assoc.
+Rewrite Ropp_mul1; Rewrite Ropp_Ropp.
+Replace ``(b*((sqrt (b*b+ -(4*(a*c))))*(/2*/a))+(b*( -b*(/2*/a))+(b*( -(sqrt (b*b+ -(4*(a*c))))*(/2*/a))+c)))`` with ``(b*( -b*(/2*/a)))+c``.
+Repeat Rewrite <- Rplus_assoc; Replace ``b*b+b*b`` with ``2*(b*b)``.
+Rewrite Rmult_Rplus_distrl; Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym ``2``); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Replace ``2+1+1`` with ``2*2``.
+Rewrite Ropp_mul1; Repeat Rewrite Rmult_assoc.
+Rewrite (Rmult_sym ``2``); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Rewrite (Rmult_sym ``/2``); Repeat Rewrite Rmult_assoc.
+Rewrite (Rmult_sym ``2``); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym a); Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Rewrite <- Ropp_mul2; Ring.
+Apply (cond_nonzero a).
+DiscrR.
+DiscrR.
+Ring.
+DiscrR.
+Ring.
+Ring.
+DiscrR.
+Apply (cond_nonzero a).
+DiscrR.
+Apply (cond_nonzero a).
+Apply prod_neq_R0; DiscrR Orelse Apply (cond_nonzero a).
+Apply prod_neq_R0; DiscrR Orelse Apply (cond_nonzero a).
+Apply prod_neq_R0; DiscrR Orelse Apply (cond_nonzero a).
 Assumption.
 Save.
 
 Lemma canonical_Rsqr : (a:nonzeroreal;b,c,x:R) ``a*(Rsqr x)+b*x+c == a* (Rsqr (x+b/(2*a))) + (4*a*c - (Rsqr b))/(4*a)``.
-Intros; Unfold Rsqr; Field; Case a; Intros y H1; Repeat Rewrite Rmult_assoc; Repeat Apply prod_neq_R0; Assumption Orelse DiscrR.
+Intros.
+Rewrite Rsqr_plus.
+Repeat Rewrite Rmult_Rplus_distr.
+Repeat Rewrite Rplus_assoc.
+Apply Rplus_plus_r.
+Unfold Rdiv Rminus.
+Rewrite (Rmult_Rplus_distrl ``4*a*c`` ``-(Rsqr b)`` ``/(4*a)``).
+Rewrite Rsqr_times.
+Repeat Rewrite Rinv_Rmult.
+Repeat Rewrite (Rmult_sym a).
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r.
+Rewrite (Rmult_sym ``2``).
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r.
+Rewrite (Rmult_sym ``/4``).
+Rewrite (Rmult_sym ``4``).
+Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r.
+Rewrite (Rmult_sym a).
+Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r.
+Rewrite (Rmult_sym x).
+Repeat Rewrite Rplus_assoc.
+Rewrite (Rplus_sym ``(Rsqr b)*((Rsqr (/2*/a))*a)``).
+Repeat Rewrite Rplus_assoc.
+Apply Rplus_plus_r.
+Rewrite Ropp_mul1.
+Unfold Rsqr.
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r.
+Rewrite <- (Rmult_sym ``(/a*/2)``).
+Rewrite Rmult_assoc.
+Rewrite <- (Rinv_Rmult ``2`` ``2``).
+Replace ``2*2`` with ``4``.
+Rewrite Rplus_Ropp_l.
+Symmetry; Apply Rplus_Or.
+Ring.
+DiscrR.
+DiscrR.
+Apply (cond_nonzero a).
+Apply (cond_nonzero a).
+DiscrR.
+DiscrR.
+Apply (cond_nonzero a).
+DiscrR.
+Apply (cond_nonzero a).
+DiscrR.
+Apply (cond_nonzero a).
 Save.
 
 Lemma Rsqr_eq : (x,y:R) (Rsqr x)==(Rsqr y) -> x==y \/ x==``-y``.
-Intros; Unfold Rsqr in H; Generalize (Rplus_plus_r ``-(y*y)`` ``x*x`` ``y*y`` H); Rewrite Rplus_Ropp_l; Replace ``-(y*y)+x*x`` with ``(x-y)*(x+y)``; [Intro; Generalize (without_div_Od ``x-y`` ``x+y`` H0); Intro; Elim H1; Intros; [Left; Apply Rminus_eq; Assumption | Right; Apply Rminus_eq; Unfold Rminus; Rewrite Ropp_Ropp; Assumption] | Ring].
+Intros; Unfold Rsqr in H; Generalize (Rplus_plus_r ``-(y*y)`` ``x*x`` ``y*y`` H); Rewrite Rplus_Ropp_l; Replace ``-(y*y)+x*x`` with ``(x-y)*(x+y)``.
+Intro; Generalize (without_div_Od ``x-y`` ``x+y`` H0); Intro; Elim H1; Intros.
+Left; Apply Rminus_eq; Assumption.
+Right; Apply Rminus_eq; Unfold Rminus; Rewrite Ropp_Ropp; Assumption.
+Ring.
 Save.
 
 Lemma Rsqr_sol_eq_0_0 : (a:nonzeroreal;b,c,x:R) (Delta_is_pos a b c) -> ``a*(Rsqr x)+b*x+c==0`` -> (x==(sol_x1 a b c))\/(x==(sol_x2 a b c)).
@@ -314,11 +442,24 @@ Right; Unfold sol_x2; Generalize (Rplus_plus_r ``-(b/(2*a))`` ``x+b/(2*a)`` ``-(
 Intro; Rewrite H6; Unfold Rdiv; Ring.
 Ring.
 Rewrite Rsqr_div.
-Rewrite Rsqr_sqrt; [Unfold Rdiv Rsqr; Field; Case a; Intros y H3; Repeat Rewrite Rmult_assoc; Repeat Apply prod_neq_R0; Assumption Orelse DiscrR | Unfold Delta_is_pos in H; Assumption].
+Rewrite Rsqr_sqrt.
+Unfold Rdiv.
+Repeat Rewrite Rmult_assoc.
+Rewrite (Rmult_sym ``/a``).
+Rewrite Rmult_assoc.
+Rewrite <- Rinv_Rmult.
+Replace ``4*a*a`` with ``(Rsqr (2*a))``.
+Reflexivity.
+SqRing.
+Apply prod_neq_R0; [DiscrR | Apply (cond_nonzero a)].
+Apply (cond_nonzero a).
+Assumption.
 Apply prod_neq_R0; [DiscrR | Apply (cond_nonzero a)].
 Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym.
 Symmetry; Apply Rmult_1l.
 Apply (cond_nonzero a).
-Unfold Rdiv; Field; Case a; Intros y H3; Apply prod_neq_R0; [DiscrR | Assumption].
-Unfold Delta; Reflexivity.
+Unfold Rdiv; Rewrite <- Ropp_mul1.
+Rewrite Ropp_distr2.
+Reflexivity.
+Reflexivity.
 Save.

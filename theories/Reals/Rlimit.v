@@ -20,6 +20,20 @@ Require DiscrR.
 Require Fourier.
 Require SplitAbsolu.
 
+(** Modif **)
+Lemma double : (x:R) ``2*x==x+x``.
+Intro; Ring.
+Save.
+
+Lemma aze : ``2<>0``.
+DiscrR.
+Save.
+
+Lemma double_var : (x:R) ``x == x/2 + x/2``.
+Intro; Rewrite <- double; Unfold Rdiv; Rewrite <- Rmult_assoc; Symmetry; Apply Rinv_r_simpl_m.
+Apply aze.
+Save.
+
 (*******************************)
 (*      Calculus               *)
 (*******************************)
@@ -32,7 +46,10 @@ Save.
 (*********)
 Lemma eps2:(eps:R)(Rplus (Rmult eps (Rinv (Rplus R1 R1)))
                         (Rmult eps (Rinv (Rplus R1 R1))))==eps.
-Intro esp;Field;DiscrR.
+Intro esp.
+Assert H := (double_var esp).
+Unfold Rdiv in H.
+Symmetry; Exact H.
 Save.
 
 (*********)
@@ -40,19 +57,51 @@ Lemma eps4:(eps:R)
   (Rplus (Rmult eps (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1) )))
         (Rmult eps (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1) ))))==
                   (Rmult eps (Rinv (Rplus R1 R1))).
-Intro eps;Field;DiscrR.
+Intro eps.
+Replace ``2+2`` with ``2*2``.
+Pattern 3 eps; Rewrite double_var.
+Rewrite (Rmult_Rplus_distrl ``eps/2`` ``eps/2`` ``/2``).
+Unfold Rdiv.
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_Rmult.
+Reflexivity.
+Apply aze.
+Apply aze.
+Ring.
 Save.
 
 (*********)
 Lemma Rlt_eps2_eps:(eps:R)(Rgt eps R0)->
         (Rlt (Rmult eps (Rinv (Rplus R1 R1))) eps).
-Intros;Fourier.
+Intros.
+Pattern 2 eps; Rewrite <- Rmult_1r.
+Repeat Rewrite (Rmult_sym eps).
+Apply Rlt_monotony_r.
+Exact H.
+Apply Rlt_monotony_contra with ``2``.
+Fourier.
+Rewrite Rmult_1r; Rewrite <- Rinv_r_sym.
+Fourier.
+DiscrR.
 Save.
 
 (*********)
 Lemma Rlt_eps4_eps:(eps:R)(Rgt eps R0)->
         (Rlt (Rmult eps (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1)))) eps).
-Intros;Fourier.
+Intros.
+Replace ``2+2`` with ``4``.
+Pattern 2 eps; Rewrite <- Rmult_1r.
+Repeat Rewrite (Rmult_sym eps).
+Apply Rlt_monotony_r.
+Exact H.
+Apply Rlt_monotony_contra with ``4``.
+Replace ``4`` with ``2*2``.
+Apply Rmult_lt_pos; Fourier.
+Ring.
+Rewrite Rmult_1r; Rewrite <- Rinv_r_sym.
+Fourier.
+DiscrR.
+Ring.
 Save. 
 
 (*********)
@@ -601,10 +650,22 @@ Intro; Rewrite Rabsolu_minus_sym in H5; Cut ``0<=/(Rabsolu (l*(f x)))``.
 Intro; Generalize (Rmult_lt2 ``(Rabsolu (l-(f x)))`` ``eps*(Rsqr l)/2`` ``/(Rabsolu (l*(f x)))`` ``2/(Rsqr l)`` (Rabsolu_pos ``l-(f x)``) H18 H5 H17); Replace ``eps*(Rsqr l)/2*2/(Rsqr l)`` with ``eps``.
 Intro; Assumption.
 Unfold Rdiv; Unfold Rsqr; Rewrite Rinv_Rmult.
-Field.
-Repeat Apply prod_neq_R0; [DiscrR | Assumption | Assumption].
-Assumption.
-Assumption.
+Repeat Rewrite Rmult_assoc.
+Rewrite (Rmult_sym l).
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r.
+Rewrite (Rmult_sym l).
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Reflexivity.
+Apply aze.
+Exact H0.
+Exact H0.
+Exact H0.
+Exact H0.
 Left; Apply Rlt_Rinv; Apply Rabsolu_pos_lt; Apply prod_neq_R0; Assumption.
 Rewrite Rmult_sym; Rewrite Rabsolu_mult; Rewrite Rinv_Rmult.
 Rewrite (Rsqr_abs l); Unfold Rsqr; Unfold Rdiv; Rewrite Rinv_Rmult.
@@ -618,20 +679,49 @@ Apply Rlt_Rinv; Cut ~(O=(2)); [Intro H17; Generalize (lt_INR_0 (2) (neq_O_lt (2)
 Replace ``(Rabsolu (f x))*(Rabsolu l)*/2*/(Rabsolu (f x))`` with ``(Rabsolu l)/2``.
 Replace ``(Rabsolu (f x))*(Rabsolu l)*/2*(2*/(Rabsolu l))`` with ``(Rabsolu (f x))``.
 Assumption.
-Field; Apply prod_neq_R0; [DiscrR | Unfold Rabsolu; Case (case_Rabsolu l); Intro; [Apply Ropp_neq; Assumption | Assumption]].
-Unfold Rdiv; Field; Apply prod_neq_R0; [DiscrR | Unfold Rabsolu; Case (case_Rabsolu (f x)); Intro; [Apply Ropp_neq; Assumption | Assumption]].
+Repeat Rewrite Rmult_assoc.
+Rewrite (Rmult_sym (Rabsolu l)).
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Reflexivity.
+Apply aze.
+Apply Rabsolu_no_R0.
+Assumption.
+Unfold Rdiv.
+Repeat Rewrite Rmult_assoc.
+Rewrite (Rmult_sym (Rabsolu (f x))).
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r.
+Reflexivity.
+Apply Rabsolu_no_R0; Assumption.
 Apply Rabsolu_no_R0; Assumption.
 Apply Rabsolu_no_R0; Assumption.
 Apply Rabsolu_no_R0; Assumption.
 Apply Rabsolu_no_R0; Assumption.
 Apply prod_neq_R0; Assumption.
-Field; Repeat Apply prod_neq_R0; Assumption.
+Rewrite (Rinv_Rmult ? ? H0 H16).
+Unfold Rminus; Rewrite Rmult_Rplus_distrl.
+Rewrite <- Rmult_assoc.
+Rewrite <- Rinv_r_sym.
+Rewrite Rmult_1l.
+Rewrite Ropp_mul1.
+Rewrite (Rmult_sym (f x)).
+Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r.
+Reflexivity.
+Assumption.
+Assumption.
 Red; Intro; Rewrite H16 in H15; Rewrite Rabsolu_R0 in H15; Cut ``0<(Rabsolu l)/2``.
 Intro; Elim (Rlt_antirefl ``0`` (Rlt_trans ``0`` ``(Rabsolu l)/2`` ``0`` H17 H15)).
 Unfold Rdiv; Apply Rmult_lt_pos.
 Apply Rabsolu_pos_lt; Assumption.
 Apply Rlt_Rinv; Cut ~(O=(2)); [Intro H17; Generalize (lt_INR_0 (2) (neq_O_lt (2) H17)); Unfold INR; Intro; Assumption | Discriminate].
-Field; DiscrR.
+Pattern 3 (Rabsolu l); Rewrite double_var.
+Ring.
 Split; [Assumption | Apply Rlt_le_trans with (Rmin delta1 delta2); [Assumption | Apply Rmin_r]].
 Split; [Assumption | Apply Rlt_le_trans with (Rmin delta1 delta2); [Assumption | Apply Rmin_l]].
 Change ``0<eps*(Rsqr l)/2``; Unfold Rdiv; Repeat Rewrite Rmult_assoc; Repeat Apply Rmult_lt_pos.
