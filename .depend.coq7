@@ -5,6 +5,7 @@ theories7/Init/Logic.vo: theories7/Init/Logic.v theories7/Init/Notations.vo
 theories7/Init/Specif.vo: theories7/Init/Specif.v theories7/Init/Notations.vo theories7/Init/Datatypes.vo theories7/Init/Logic.vo
 theories7/Init/Logic_Type.vo: theories7/Init/Logic_Type.v theories7/Init/Datatypes.vo theories7/Init/Logic.vo
 theories7/Init/Wf.vo: theories7/Init/Wf.v theories7/Init/Notations.vo theories7/Init/Logic.vo theories7/Init/Datatypes.vo
+theories7/Init/Tactics.vo: theories7/Init/Tactics.v
 theories7/Init/Prelude.vo: theories7/Init/Prelude.v theories7/Init/Notations.vo theories7/Init/Logic.vo theories7/Init/Datatypes.vo theories7/Init/Specif.vo theories7/Init/Peano.vo theories7/Init/Wf.vo
 theories7/Init/Notations.vo: theories7/Init/Notations.v
 theories7/Init/Datatypes.vo: theories7/Init/Datatypes.v theories7/Init/Notations.vo theories7/Init/Logic.vo
@@ -13,6 +14,7 @@ theories7/Init/Logic.vo: theories7/Init/Logic.v theories7/Init/Notations.vo
 theories7/Init/Specif.vo: theories7/Init/Specif.v theories7/Init/Notations.vo theories7/Init/Datatypes.vo theories7/Init/Logic.vo
 theories7/Init/Logic_Type.vo: theories7/Init/Logic_Type.v theories7/Init/Datatypes.vo theories7/Init/Logic.vo
 theories7/Init/Wf.vo: theories7/Init/Wf.v theories7/Init/Notations.vo theories7/Init/Logic.vo theories7/Init/Datatypes.vo
+theories7/Init/Tactics.vo: theories7/Init/Tactics.v
 theories7/Init/Prelude.vo: theories7/Init/Prelude.v theories7/Init/Notations.vo theories7/Init/Logic.vo theories7/Init/Datatypes.vo theories7/Init/Specif.vo theories7/Init/Peano.vo theories7/Init/Wf.vo
 theories7/Logic/Hurkens.vo: theories7/Logic/Hurkens.v
 theories7/Logic/ProofIrrelevance.vo: theories7/Logic/ProofIrrelevance.v theories7/Logic/Hurkens.vo
