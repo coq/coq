@@ -274,10 +274,6 @@ GEXTEND Gram
   fields:
     [ [ fs = LIST0 record_field SEP ";" -> fs ] ]
   ;
-  simple_params:
-    [ [ nal = LIST1 name SEP ","; ":"; c = constr -> LocalRawAssum (nal, c)
-      | nal = LIST1 name SEP "," -> LocalRawAssum (nal, evar_constr loc) ] ]
-  ;
   simple_binders:
     [ [ "["; bll = LIST1 vardecls SEP ";"; "]" -> bll ] ]
   ;
