@@ -87,10 +87,20 @@ Changements dans les fonctions :
           rawconstr_of_com     -> interp_rawconstr
           type_of_com          -> typed_type_of_com
 
+        Termast
+          bdize                -> ast_of_constr
+
         Tacmach
           pf_constr_of_com_sort -> pf_interp_type
           pf_constr_of_com      -> pf_interp_constr
 
+        Pattern
+	  somatch               -> is_matching
+          dest_somatch          -> matches
+
+        Tacticals
+	  matches               -> gl_is_matching
+          dest_match            -> gl_matches
 
 Changements dans les inductifs
 ------------------------------

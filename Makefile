@@ -96,10 +96,10 @@ ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo
 PROOFS=proofs/proof_trees.cmo proofs/logic.cmo \
        proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
        proofs/macros.cmo proofs/tacinterp.cmo proofs/clenv.cmo \
-       proofs/pfedit.cmo
+       proofs/pfedit.cmo proofs/pattern.cmo
 
 TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
-        tactics/nbtermdn.cmo tactics/stock.cmo tactics/pattern.cmo \
+        tactics/nbtermdn.cmo tactics/stock.cmo tactics/hipattern.cmo \
 	tactics/wcclausenv.cmo tactics/tacticals.cmo tactics/tactics.cmo \
         tactics/tacentries.cmo tactics/hiddentac.cmo tactics/elim.cmo
 
