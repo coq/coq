@@ -9,10 +9,27 @@ open Constr
 GEXTEND Gram
   GLOBAL: ident constr0 constr1 constr2 constr3 lassoc_constr4 constr5
           constr6 constr7 constr8 constr9 constr10 lconstr constr
-          ne_ident_comma_list ne_constr_list sort ne_binders_list;
-
+          ne_ident_comma_list ne_constr_list sort ne_binders_list qualid
+          global;
   ident:
-    [ [ id = IDENT -> <:ast< ($VAR $id) >> ] ]
+    [ [ id = IDENT -> <:ast< ($VAR $id) >> 
+
+      (* This is used in quotations *)
+      | id = METAIDENT -> <:ast< ($VAR $id) >> ] ]
+  ;
+  global:
+    [ [ l = qualid -> <:ast< (QUALID ($LIST l)) >>
+
+      (* This is used in quotations *)
+      | id = METAIDENT -> <:ast< ($VAR $id) >> ] ]
+  ;
+  qualid:
+    [ [ id = IDENT; l = fields -> <:ast< ($VAR $id) >> :: l ] ]
+  ;
+  fields:
+    [ [ id = FIELD; l = fields -> <:ast< ($VAR $id) >> :: l
+      | -> []
+      ] ]
   ;
   raw_constr:
     [ [ c = Prim.ast -> c ] ]
@@ -61,7 +78,8 @@ GEXTEND Gram
       | IDENT "CoFix"; id = ident; "{"; fbinders = cofixbinders; "}" ->
           <:ast< (COFIX $id ($LIST $fbinders)) >>
       | s = sort -> s
-      | v = ident -> v ] ]
+      | v = global -> v
+  ] ]
   ;
   constr1:
     [ [ "<"; ":"; IDENT "ast"; ":"; "<"; c = raw_constr; ">>" -> c
@@ -129,8 +147,8 @@ GEXTEND Gram
       | c1 = constr8; "::"; c2 = constr8 -> <:ast< (CAST $c1 $c2) >> ] ]
   ;
   constr10:
-    [ [ "!"; f = IDENT; args = ne_constr9_list ->
-          <:ast< (APPLISTEXPL ($VAR $f) ($LIST $args)) >>
+    [ [ "!"; f = global; args = ne_constr9_list ->
+          <:ast< (APPLISTEXPL $f ($LIST $args)) >>
       | f = constr9; args = ne_constr91_list ->
           <:ast< (APPLIST $f ($LIST $args)) >>
       | f = constr9 -> f ] ]
