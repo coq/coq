@@ -1,3 +1,14 @@
+Changes from V8.0 to V8.0 bugfix
+================================
+
+- Fixed typing bug for "if" with explicit type annotation (#690)
+- Fixed anomaly bug about a sort not being a sort (#705)
+- Fixed bug Not_found with destruct (#742)
+- Improved error message "w_Unify" (#667)
+- Fixed omega bug about mult in nat (#743) [Rem: though this makes
+  omega conform to the reference manual, it may cause "auto with
+  zarith" to succeed more often and lead to incompatibilities]
+
 Changes from V8.0beta to V8.0
 =============================
 
