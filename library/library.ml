@@ -1,10 +1,10 @@
-(***********************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
-(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
-(*   \VV/  *************************************************************)
-(*    //   *      This file is distributed under the terms of the      *)
-(*         *       GNU Lesser General Public License Version 2.1       *)
-(***********************************************************************)
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
 (* $Id$ *)
 
@@ -99,7 +99,7 @@ let load_path_of_logical_path dir =
 
 let get_full_load_path () = List.combine (fst !load_path) (snd !load_path)
 
-(***********************************************************************)
+(************************************************************************)
 (*s Modules on disk contain the following informations (after the magic 
     number, and before the digest). *)
 
@@ -631,7 +631,7 @@ let import_library export (loc,qid) =
         (loc,"import_library",
 	 str ((string_of_qualid qid)^" is not a module"))
   
-(***********************************************************************)
+(************************************************************************)
 (*s [save_library s] saves the library [m] to the disk. *)
 
 let start_library f = 
