@@ -22,6 +22,15 @@ open Termops
 
 val detype : env -> identifier list -> names_context -> constr -> rawconstr
 
+val detype_case : 
+  bool ->
+  (env -> identifier list -> names_context -> 'a -> rawconstr) ->
+  (env -> identifier list -> names_context -> constructor -> int -> 
+    'a -> Rawterm.loc * Names.identifier list * Rawterm.cases_pattern list *
+    Rawterm.rawconstr) ->
+    env -> identifier list -> names_context -> inductive -> case_style ->
+      'a option -> 'a -> 'a array -> rawconstr
+
 (* look for the index of a named var or a nondep var as it is renamed *)
 val lookup_name_as_renamed  : env -> constr -> identifier -> int option
 val lookup_index_as_renamed : env -> constr -> int -> int option
