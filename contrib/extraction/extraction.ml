@@ -213,22 +213,23 @@ let rec extract_type env sign c =
 	    extract_rec env sign fl c args
 	| _ -> 
 	    assert false
-					  and extract_type_app env sign fl (r,sc,flc) args =
-		    let nargs = List.length args in
-		    assert (List.length sc >= nargs);
-		    let (mlargs,fl') = 
-		      List.fold_right 
-			(fun (v,a) ((args,fl) as acc) -> match v with
-			   | (Vdefault | Vprop), _ -> acc
-			   | Varity,_ -> match extract_rec env sign fl a [] with
-			       | Tarity -> assert false
-			       | Tprop -> (Miniml.Tprop :: args, fl)
-			       | Tmltype (mla,_,fl') -> (mla :: args, fl'))
-			(List.combine (list_firstn nargs (List.rev sc)) args)
-			([],fl)
-		    in
-		    let flc = List.map (fun i -> Tvar i) flc in
-		    Tmltype (Tapp ((Tglob r) :: mlargs @ flc), sign, fl')
+
+and extract_type_app env sign fl (r,sc,flc) args =
+  let nargs = List.length args in
+  assert (List.length sc >= nargs);
+  let (mlargs,fl') = 
+    List.fold_right 
+      (fun (v,a) ((args,fl) as acc) -> match v with
+	 | (Vdefault | Vprop), _ -> acc
+	 | Varity,_ -> match extract_rec env sign fl a [] with
+	     | Tarity -> assert false
+	     | Tprop -> (Miniml.Tprop :: args, fl)
+	     | Tmltype (mla,_,fl') -> (mla :: args, fl'))
+      (List.combine (list_firstn nargs (List.rev sc)) args)
+      ([],fl)
+  in
+  let flc = List.map (fun i -> Tvar i) flc in
+  Tmltype (Tapp ((Tglob r) :: mlargs @ flc), sign, fl')
   in
   extract_rec env sign [] c []
 
@@ -286,75 +287,75 @@ and extract_constr_with_type c t =
     | None -> 
 	extract_term c
 
-			 and extract_constr c = 
-	      extract_constr_with_type c (Typing.type_of (Global.env()) Evd.empty c)
+and extract_constr c = 
+  extract_constr_with_type c (Typing.type_of (Global.env()) Evd.empty c)
 
-			 (*s Extraction of a constant. *)
+(*s Extraction of a constant. *)
 		
-			 and extract_constant sp =
-	      let cb = Global.lookup_constant sp in
-	      let typ = cb.const_type in
-	      let body = match cb.const_body with Some c -> c | None -> assert false in
-	      extract_constr_with_type body typ
-		
-			 (*s Extraction of an inductive. *)
-		
-			 and extract_inductive ((sp,_) as i) =
-	      extract_mib sp;
-			   lookup_inductive_extraction i
+and extract_constant sp =
+  let cb = Global.lookup_constant sp in
+  let typ = cb.const_type in
+  let body = match cb.const_body with Some c -> c | None -> assert false in
+  extract_constr_with_type body typ
+    
+(*s Extraction of an inductive. *)
+    
+and extract_inductive ((sp,_) as i) =
+  extract_mib sp;
+  lookup_inductive_extraction i
 			     
-			 and extract_constructor (((sp,_),_) as c) =
-	      extract_mib sp;
-			   lookup_constructor_extraction c
+and extract_constructor (((sp,_),_) as c) =
+  extract_mib sp;
+  lookup_constructor_extraction c
 
-			 and extract_mib sp =
-	      if not (Gmap.mem (sp,0) !inductive_extraction_table) then begin
-		let mib = Global.lookup_mind sp in
-		let genv = Global.env () in
-		(* first pass: we store inductive signatures together with empty flex. *)
-		Array.iteri
-		  (fun i ib -> add_inductive_extraction (sp,i) 
-		       (signature_of_arity genv ib.mind_nf_arity, []))
-		  mib.mind_packets;
-		(* second pass: we extract constructors arities and we accumulate
-		   all flexible variables. *)
-		let fl = 
-		  array_foldi
-		    (fun i ib fl ->
-		       let mis = build_mis ((sp,i),[||]) mib in
-		       array_foldi
-			 (fun j _ fl -> 
-			    let t = mis_constructor_type (succ j) mis in
-			    match extract_type genv [] t with
-			      | Tarity | Tprop -> assert false
-			      | Tmltype (mlt, s, f) -> 
-				  let l = list_of_ml_arrows mlt in
-				  add_constructor_extraction ((sp,i),succ j) (l,s);
-				  f @ fl)
-			 ib.mind_nf_lc fl)
-		    mib.mind_packets []
-		in
-		(* third pass: we update the inductive flexible variables. *)
-		for i = 0 to mib.mind_ntypes - 1 do
-		  let (s,_) = lookup_inductive_extraction (sp,i) in
-		  add_inductive_extraction (sp,i) (s,fl)
-		done
-	      end
-		
-			 (*s Extraction of a global reference i.e. a constant or an inductive. *)
-
-			 and extract_inductive_declaration sp =
-	      extract_mib sp;
-			   let mib = Global.lookup_mind sp in
-			   let one_constructor ind j id = 
-			     let (t,_) = lookup_constructor_extraction (ind,succ j) in (id, t)
-			   in
-			   let one_inductive i ip =
-			     let (s,fl) = lookup_inductive_extraction (sp,i) in
-			     (params_of_sign s @ fl, ip.mind_typename, 
-			      Array.to_list (Array.mapi (one_constructor (sp,i)) ip.mind_consnames))
-			   in
-			   Dtype (Array.to_list (Array.mapi one_inductive mib.mind_packets))
+and extract_mib sp =
+  if not (Gmap.mem (sp,0) !inductive_extraction_table) then begin
+    let mib = Global.lookup_mind sp in
+    let genv = Global.env () in
+    (* first pass: we store inductive signatures together with empty flex. *)
+    Array.iteri
+      (fun i ib -> add_inductive_extraction (sp,i) 
+	   (signature_of_arity genv ib.mind_nf_arity, []))
+      mib.mind_packets;
+    (* second pass: we extract constructors arities and we accumulate
+       all flexible variables. *)
+    let fl = 
+      array_foldi
+	(fun i ib fl ->
+	   let mis = build_mis ((sp,i),[||]) mib in
+	   array_foldi
+	     (fun j _ fl -> 
+		let t = mis_constructor_type (succ j) mis in
+		match extract_type genv [] t with
+		  | Tarity | Tprop -> assert false
+		  | Tmltype (mlt, s, f) -> 
+		      let l = list_of_ml_arrows mlt in
+		      add_constructor_extraction ((sp,i),succ j) (l,s);
+		      f @ fl)
+	     ib.mind_nf_lc fl)
+	mib.mind_packets []
+    in
+    (* third pass: we update the inductive flexible variables. *)
+    for i = 0 to mib.mind_ntypes - 1 do
+      let (s,_) = lookup_inductive_extraction (sp,i) in
+      add_inductive_extraction (sp,i) (s,fl)
+    done
+  end
+    
+(*s Extraction of a global reference i.e. a constant or an inductive. *)
+    
+and extract_inductive_declaration sp =
+  extract_mib sp;
+  let mib = Global.lookup_mind sp in
+  let one_constructor ind j id = 
+    let (t,_) = lookup_constructor_extraction (ind,succ j) in (id, t)
+  in
+  let one_inductive i ip =
+    let (s,fl) = lookup_inductive_extraction (sp,i) in
+    (params_of_sign s @ fl, ip.mind_typename, 
+     Array.to_list (Array.mapi (one_constructor (sp,i)) ip.mind_consnames))
+  in
+  Dtype (Array.to_list (Array.mapi one_inductive mib.mind_packets))
 
 (*s ML declaration from a reference. *)
 
