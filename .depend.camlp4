@@ -1,13 +1,13 @@
 tactics/tauto.cmo: parsing/ast.cmi parsing/coqast.cmi tactics/hipattern.cmi \
     kernel/names.cmi lib/pp.cmi proofs/proof_type.cmi proofs/tacinterp.cmi \
-    proofs/tacmach.cmi tactics/tacticals.cmi 
+    proofs/tacmach.cmi tactics/tacticals.cmi tactics/tactics.cmi 
 tactics/tauto.cmx: parsing/ast.cmx parsing/coqast.cmx tactics/hipattern.cmx \
     kernel/names.cmx lib/pp.cmx proofs/proof_type.cmx proofs/tacinterp.cmx \
-    proofs/tacmach.cmx tactics/tacticals.cmx 
+    proofs/tacmach.cmx tactics/tacticals.cmx tactics/tactics.cmx 
 parsing/q_coqast.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
 parsing/q_coqast.cmx: parsing/coqast.cmx parsing/pcoq.cmx 
-parsing/g_prim.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
-parsing/g_prim.cmx: parsing/coqast.cmx parsing/pcoq.cmx 
+parsing/g_prim.cmo: parsing/coqast.cmi parsing/pcoq.cmi toplevel/vernac.cmi 
+parsing/g_prim.cmx: parsing/coqast.cmx parsing/pcoq.cmx toplevel/vernac.cmx 
 parsing/pcoq.cmo: parsing/coqast.cmi parsing/lexer.cmi lib/pp.cmi \
     lib/util.cmi parsing/pcoq.cmi 
 parsing/pcoq.cmx: parsing/coqast.cmx parsing/lexer.cmx lib/pp.cmx \
@@ -25,6 +25,10 @@ parsing/g_minicoq.cmx: kernel/environ.cmx parsing/lexer.cmx kernel/names.cmx \
 parsing/g_vernac.cmo: parsing/coqast.cmi parsing/pcoq.cmi lib/pp.cmi \
     lib/util.cmi toplevel/vernac.cmi 
 parsing/g_vernac.cmx: parsing/coqast.cmx parsing/pcoq.cmx lib/pp.cmx \
+    lib/util.cmx toplevel/vernac.cmx 
+parsing/g_proofs.cmo: parsing/coqast.cmi parsing/pcoq.cmi lib/pp.cmi \
+    lib/util.cmi toplevel/vernac.cmi 
+parsing/g_proofs.cmx: parsing/coqast.cmx parsing/pcoq.cmx lib/pp.cmx \
     lib/util.cmx toplevel/vernac.cmx 
 parsing/g_cases.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
 parsing/g_cases.cmx: parsing/coqast.cmx parsing/pcoq.cmx 
@@ -51,7 +55,7 @@ parsing/pcoq.ml:
 parsing/g_basevernac.ml: parsing/grammar.cma
 parsing/g_minicoq.ml: parsing/grammar.cma
 parsing/g_vernac.ml: parsing/grammar.cma
-parsing/g_proofs.ml: 
+parsing/g_proofs.ml: parsing/grammar.cma
 parsing/g_cases.ml: parsing/grammar.cma
 parsing/g_constr.ml: parsing/grammar.cma
 parsing/g_tactic.ml: parsing/grammar.cma
