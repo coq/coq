@@ -393,6 +393,7 @@ contrib/correctness/ptyping.cmi: interp/topconstr.cmi kernel/term.cmi \
 contrib/correctness/putil.cmi: kernel/term.cmi lib/pp.cmi kernel/names.cmi 
 contrib/correctness/pwp.cmi: kernel/term.cmi 
 contrib/dp/dp.cmi: proofs/proof_type.cmi 
+contrib/dp/dp_simplify.cmi: contrib/dp/fol.cmi 
 contrib/extraction/common.cmi: kernel/names.cmi contrib/extraction/mlutil.cmi \
     contrib/extraction/miniml.cmi 
 contrib/extraction/extract_env.cmi: kernel/names.cmi library/libnames.cmi 
@@ -2639,10 +2640,14 @@ contrib/correctness/pwp.cmx: lib/util.cmx pretyping/termops.cmx \
     library/nametab.cmx kernel/names.cmx library/libnames.cmx \
     tactics/hipattern.cmx library/global.cmx kernel/environ.cmx \
     contrib/correctness/pwp.cmi 
-contrib/dp/dp.cmo: lib/util.cmi kernel/term.cmi proofs/tacmach.cmi lib/pp.cmi \
-    contrib/dp/fol.cmi contrib/dp/dp.cmi 
-contrib/dp/dp.cmx: lib/util.cmx kernel/term.cmx proofs/tacmach.cmx lib/pp.cmx \
-    contrib/dp/fol.cmi contrib/dp/dp.cmi 
+contrib/dp/dp.cmo: lib/util.cmi kernel/term.cmi tactics/tacticals.cmi \
+    proofs/tacmach.cmi lib/pp.cmi kernel/names.cmi library/nameops.cmi \
+    contrib/dp/fol.cmi interp/coqlib.cmi contrib/dp/dp.cmi 
+contrib/dp/dp.cmx: lib/util.cmx kernel/term.cmx tactics/tacticals.cmx \
+    proofs/tacmach.cmx lib/pp.cmx kernel/names.cmx library/nameops.cmx \
+    contrib/dp/fol.cmi interp/coqlib.cmx contrib/dp/dp.cmi 
+contrib/dp/dp_simplify.cmo: contrib/dp/fol.cmi contrib/dp/dp_simplify.cmi 
+contrib/dp/dp_simplify.cmx: contrib/dp/fol.cmi contrib/dp/dp_simplify.cmi 
 contrib/dp/g_dp.cmo: lib/util.cmi tactics/tacinterp.cmi proofs/tacexpr.cmo \
     proofs/refiner.cmi parsing/pptactic.cmi lib/pp.cmi parsing/pcoq.cmi \
     lib/options.cmi parsing/egrammar.cmi contrib/dp/dp.cmi \

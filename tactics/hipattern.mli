@@ -37,8 +37,6 @@ open Proof_trees
    intersection of the free-rels of the term and the current stack be
    contained in the arguments of the application *)
 
-val is_imp_term : constr -> bool
-
 (*s I implemented the following functions which test whether a term [t]
    is an inductive but non-recursive type, a general conjuction, a
    general disjunction, or a type with no constructors.
