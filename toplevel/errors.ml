@@ -47,7 +47,7 @@ let rec explain_exn_default = function
   | Stack_overflow -> 
       hOV 0 [< 'sTR "Stack overflow" >]
   | Ast.No_match s -> 
-      hOV 0 [< 'sTR "Anomaly: Ast matching error: "; 'sTR s >]
+      hOV 0 [< 'sTR "Anomaly: Ast matching error: "; 'sTR s; report () >]
   | Anomaly (s,pps) -> 
       hOV 1 [< 'sTR "Anomaly: "; where s; pps; report () >]
   | Match_failure(filename,pos1,pos2) ->
@@ -98,6 +98,14 @@ let rec explain_exn_default = function
       hOV 0 [< 'sTR "Syntax error: Undefined token." >]
   | Lexer.Error (Bad_token s) -> 
       hOV 0 [< 'sTR "Syntax error: Bad token"; 'sPC; 'sTR s; 'sTR "." >]
+  | Assert_failure (s,b,e) ->
+      hOV 0 [< 'sTR "Anomaly: assert failure"; 'sPC;
+	       if s <> "" then 
+		 [< 'sTR ("(file \"" ^ s ^ "\", characters "); 
+		    'iNT b; 'sTR "-"; 'iNT e; 'sTR ")" >]
+	       else
+		 [< >];
+	       report () >]
   | reraise ->
       hOV 0 [< 'sTR "Anomaly: Uncaught exception "; 
 	       'sTR (Printexc.to_string reraise); report () >]

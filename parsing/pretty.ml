@@ -446,10 +446,9 @@ let print_opaque_name qid =
       | IsConst (sp,_ as cst) ->
 	  let cb = Global.lookup_constant sp in
           if is_defined cb then
-	    let typ = constant_type env Evd.empty cst in
-            print_typed_value (constant_value env cst, typ)
+	    print_constant true " = " sp
           else 
-	    anomaly "print_opaque_name"
+	    error "not a defined constant"
       | IsMutInd ((sp,_),_) ->
           print_mutual sp
       | IsMutConstruct cstr -> 
@@ -458,7 +457,8 @@ let print_opaque_name qid =
       | IsVar id ->
           let (c,ty) = lookup_named id env in 
 	  print_named_decl (id,c,ty)
-      | _ -> failwith "print_name"
+      | _ -> 
+	  assert false
   with Not_found -> 
     errorlabstrm "print_opaque" [< pr_qualid qid; 'sPC; 'sTR "not declared" >]
 

@@ -138,7 +138,7 @@ GEXTEND Gram
       | IDENT "DelPath"; dir = stringarg -> <:ast< (DELPATH $dir) >>
 
       | IDENT "Print"; IDENT "Modules" -> <:ast< (PrintModules) >>
-      | IDENT "Print"; "Proof"; id = identarg ->
+      | IDENT "Print"; "Proof"; id = qualidarg ->
           <:ast< (PrintOpaqueId $id) >>
 (* Pris en compte dans PrintOption ci-dessous (CADUC) *)
       | IDENT "Print"; id = qualidarg -> <:ast< (PrintId $id) >>

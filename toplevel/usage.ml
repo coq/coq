@@ -18,7 +18,7 @@ let version () =
 
 let print_usage_channel co command =
   output_string co command;
-  output_string co "Options are:\n";
+  output_string co "Coq options are:\n";
   output_string co
 "  -I dir                 add directory dir in the include path
   -include dir           (idem)
@@ -37,7 +37,6 @@ let print_usage_channel co command =
   -require f             load Coq object file f.vo and import it (Require f.)
 
   -opt                   run the native-code version of Coq or Coq_SearchIsos
-  -image f               specify an alternative binary image f
   -bindir dir            specify an alternative directory for the binaries
   -libdir dir            specify an alternative directory for the library
 
@@ -56,11 +55,11 @@ let print_usage_channel co command =
 let print_usage = print_usage_channel stderr
 
 let print_usage_coqtop () =
-  print_usage "Usage: coqtop <options>\n";
-  output_string stderr
-"  -searchisos            run Coq_SearchIsos\n"
+  print_usage "Usage: coqtop <options>\n\n"
 
 let print_usage_coqc () =
-  print_usage "Usage: coqc [-t] [-verbose] <options> file...\n
+  print_usage "Usage: coqc <options> <Coq options> file...\n
+options are:
   -verbose  compile verbosely
+  -image f  specify an alternative executable for Coq
   -t        keep temporary files\n\n"
