@@ -70,7 +70,11 @@ let _ = Summary.declare_summary "VARIABLE"
 	    Summary.survive_section = false }
 
 let cache_variable (sp,(id,(d,_,_) as vd)) =
+(*
   if Nametab.exists_cci sp then
+*)
+  (* Constr raisonne sur les noms courts *)
+  if List.mem_assoc id (current_section_context ()) then
     errorlabstrm "cache_variable"
       [< pr_id (basename sp); 'sTR " already exists" >];
   begin match d with (* Fails if not well-typed *)
