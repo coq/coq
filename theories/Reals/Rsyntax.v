@@ -163,14 +163,17 @@ Syntax constr
     Rmult_inside
       [<<(REXPR <<(Rmult $n1 $n2)>>)>>]
       	 -> [ (REXPR $n1):E "*" [0 0] (REXPR $n2):L ]
-    |Rdiv_inside
+(*    |Rdiv_inside
       [<<(REXPR <<(Rdiv $n1 $n2)>>)>>]
-      	 -> [ (REXPR $n1):E "/" [0 0] (REXPR $n2):L ]
+      	 -> [ (REXPR $n1):E "/" [0 0] (REXPR $n2):L ]*)
   ;
 
   level 5:
  Ropp_inside [<<(REXPR <<(Ropp $n1)>>)>>] -> [ "-" (REXPR $n1):E  ]
 |Rinv_inside [<<(REXPR <<(Rinv $n1)>>)>>] -> [ "1""/" (REXPR $n1):E  ]
+|Rdiv_inside
+      [<<(REXPR <<(Rdiv $n1 $n2)>>)>>]
+      	 -> [ (REXPR $n1):E "/" [0 0] (REXPR $n2):L ]
   ;  
 
   level 0:
