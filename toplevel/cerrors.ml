@@ -51,10 +51,14 @@ let rec explain_exn_default = function
   | Anomaly (s,pps) -> 
       hov 1 (str "Anomaly: " ++ where s ++ pps ++ report ())
   | Match_failure(filename,pos1,pos2) ->
-      hov 1 (str "Anomaly: Match failure in file " ++
-	       str (guill filename) ++ str " from char #" ++
-	       int pos1 ++ str " to #" ++ int pos2 ++
-	       report ())
+      hov 1 (str "Anomaly: Match failure in file " ++ str (guill filename) ++ 
+      if Sys.ocaml_version = "3.06" then
+		   (str " from character " ++ int pos1 ++ 
+                    str " to " ++ int pos2)
+		 else
+		   (str " at line " ++ int pos1 ++
+		    str " character " ++ int pos2)
+	           ++ report ())
   | Not_found -> 
       hov 0 (str "Anomaly: uncaught exception Not_found" ++ report ())
   | Failure s -> 
