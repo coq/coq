@@ -340,6 +340,9 @@ la doc sous ftp depuis le répertoire doc avec
     On retrouve alors sous ftp avec le README, plusieurs couples
     .dvi.gz et .ps.gz, le tar de la doc html, le tar des docs en ps.
 
+    Ajouter à la main le fichier CHANGES de l'archive Coq dans 
+    
+      /net/pauillac/infosystems/ftp/coq/coq/V6.2.5/doc
 
 (**************************************************************************)
 D) LE SERVEUR WEB
