@@ -249,7 +249,9 @@ let dirpath_of_string s =
   with
     | Invalid_argument _ -> invalid_arg "dirpath_of_string"
 
-let string_of_dirpath sl = String.concat "." (List.map string_of_id sl)
+let string_of_dirpath = function
+  | [] -> "<empty>"
+  | sl -> String.concat "." (List.map string_of_id sl)
 
 let pr_dirpath sl = [< 'sTR (string_of_dirpath sl) >]
 
@@ -270,7 +272,8 @@ let dirpath sp = sp.dirpath
 (* parsing and printing of section paths *)
 let string_of_path sp =
   let (sl,id,k) = repr_path sp in
-  (string_of_dirpath sl) ^ "." ^ (string_of_id id)
+  if sl = [] then string_of_id id
+  else (string_of_dirpath sl) ^ "." ^ (string_of_id id)
 
 let path_of_string s =
   try
