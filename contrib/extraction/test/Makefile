@@ -30,7 +30,9 @@ CMO:= $(patsubst %.ml,%.cmo,$(ML))
 #	General rules 
 #
 
-all: v2ml ml theories/Reals/addReals.cmo $(CMO)
+#all: v2ml ml theories/Reals/addReals.cmo $(CMO)
+
+all: v2ml ml $(CMO)
 
 theories/Reals/addReals.ml: 
 	cp -f addReals theories/Reals/addReals.ml
