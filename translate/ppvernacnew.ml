@@ -545,14 +545,17 @@ let rec pr_vernac = function
       let pr_constructor_list l = match l with
         | [] -> mt()
         | _ ->
-            fnl() ++ str" | " ++
+            fnl() ++ str (if List.length l = 1 then "   " else " | ") ++
             prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l in
-      let pr_oneind (id,indpar,s,lc) =
-        hov 0 (pr_id id ++ spc() ++ pr_sbinders indpar ++ str":" ++ spc() ++
-        pr_lconstr s ++ str" :=") ++ pr_constructor_list lc in
+      let pr_oneind key (id,indpar,s,lc) =
+	hov 0 (str key ++ spc() ++ pr_id id ++ spc() ++
+	  pr_sbinders indpar ++ str":" ++ spc() ++
+          pr_lconstr s ++ str" :=") ++ pr_constructor_list lc in
       hov 1
-        ((if f then str"Inductive" else str"CoInductive") ++ spc() ++
- 	 prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_oneind l)
+        (pr_oneind (if f then "Inductive" else "CoInductive") (List.hd l)) ++ 
+      hov 1
+ 	(prlist (fun ind -> fnl() ++ pr_oneind "with" ind)
+	  (List.tl l))
 
   | VernacFixpoint recs ->
 
