@@ -316,9 +316,42 @@ reserved. Hence their precedence and associativity cannot be changed.
 
 \subsection{Simultaneous definition of terms and notations}
 
+Thanks to reserved notations, the inductive, coinductive, recursive
+and corecursive definitions can benefit of customized notations. To do
+this, insert a {\tt where} notation clause after the definition of the
+(co)inductive type or (co)recursive term (or after the definition of
+each of them in case of mutual definitions). The exact syntax is given
+on Figure \ref{notation-syntax}. Here are examples:
+
+\begin{coq_example*}
+Inductive and (A B:Prop) : Prop := conj : A -> B -> A /\ B 
+where "A /\ B" := (and A B).
+\end{coq_example*}
+
+\begin{coq_example*}
+Fixpoint plus (n m:nat) {struct n} : nat :=
+  match n with
+  | O => m
+  | S p => S (p+m)
+  end
+where "n + m" := (plus n m).
+\end{coq_example*}
+
 \subsection{Displaying informations about notations}
 
-% Set/Unset Printing Notation
+To deactivate the printing of all notations, use the command
+
+\medskip
+{\tt Unset Printing Notation}.
+\medskip
+
+To reactivate it, use the command
+
+\medskip
+{\tt Set Printing Notation}.
+\medskip
+
+The default is to use notations for printing terms wherever possible.
 
 \subsection{Locating notations}
 \comindex{Locate}
@@ -343,7 +376,72 @@ Locate "'exists' _ , _".
 
 \SeeAlso Section \ref{Locate}.
 
+\begin{figure}
+\begin{tabular}{|lcl|}
+\hline
+{\sentence} & ::= &
+   \texttt{Notation} \zeroone{\tt Local} {\str} \texttt{:=} {\term} 
+   \zeroone{\modifiers} \zeroone{:{\scope}} \verb=.=\\
+  & $|$ & 
+   \texttt{Infix} \zeroone{\tt Local} {\str} \texttt{:=} {\qualid} 
+   \zeroone{\modifiers} \zeroone{:{\scope}} \verb=.=\\
+  & $|$ & 
+   \texttt{Reserved Notation} \zeroone{\tt Local} {\str}
+   \zeroone{\modifiers} \verb=.=\\
+  & $|$ & {\tt Inductive}
+   \nelist{{\inductivebody} \zeroone{\declnotation}}{with}{\tt .}\\
+  & $|$ & {\tt CoInductive}
+   \nelist{{\inductivebody} \zeroone{\declnotation}}{with}{\tt .}\\
+  & $|$ & {\tt Fixpoint}
+   \nelist{{\fixpointbody} \zeroone{\declnotation}}{with} {\tt .} \\
+  & $|$ & {\tt CoFixpoint}
+   \nelist{{\cofixpointbody} \zeroone{\declnotation}}{with} {\tt .} \\
+\\
+{\declnotation} & ::= & 
+  \zeroone{{\tt where} {\str} {\tt :=} {\term} \zeroone{:{\scope}}} \verb=.=
+\\
+\\
+{\modifiers}
+  & ::= & \nelist{\ident}{,} {\tt at level} {\naturalnumber} \\
+  & $|$ & \nelist{\ident}{,} {\tt at next level} \\
+  & $|$ & {\tt at level} {\naturalnumber} \\
+  & $|$ & {\tt left associativity} \\
+  & $|$ & {\tt right associativity} \\
+  & $|$ & {\tt no associativity} \\
+  & $|$ & {\ident} {\tt ident} \\
+  & $|$ & {\ident} {\tt global} \\
+  & $|$ & {\ident} {\tt bigint} \\
+  & $|$ & {\tt only parsing} \\
+  & $|$ & {\tt format} {\str} \\
+\hline
+\end{tabular}
+\caption{Syntax of the variants of {\tt Notation}}
+\label{notation-syntax}
+\end{figure}
+
+\subsection{Summary}
+
+\paragraph{Syntax of notations}
+
+The different syntactic variants of the command \texttt{Notation} are
+given on Figure \ref{notation-syntax}. The optional {\tt :{\scope}} is
+described in the section \ref{scopes}.
+
+\Rem No typing of the denoted expression is performed at definition
+time. Type-checking is done only at the time of use of the notation.
+
+\Rem Many examples of {\tt Notation} may be found in the files
+composing the initial state of {\Coq} (see directory {\tt
+\$COQLIB/theories/Init}).
+
+\paragraph{Persistence of notations}
+
+Notations do not survive the end of sections. They survive modules
+unless the command {\tt Notation Local} is used instead of {\tt
+Notation}.
+
 \section{Interpretation scopes}
+\index{Interpretation scopes}
 \label{scopes}
 % Introduction
 
@@ -353,8 +451,21 @@ purely syntactical form of notations overloading: a same notation, for
 instance the infix symbol \verb=+= can be used to denote distinct
 definitions of an additive operator. Depending on which interpretation
 scopes is currently open, the interpretation is different.
+Interpretation scopes can include an interpretation for
+numerals. However, this is only made possible at the {\ocaml} level.
 
-\subsection{Interpretation rules for notations}
+See Figure \ref{notation-syntax} for the syntax of notations including
+the possibility to declare them in a given scope.  Here is a typical
+example which declares the notation for conjunction in the scope {\tt
+type\_scope}.
+
+\begin{verbatim}
+Notation "A /\ B" := (and A B) : type_scope.
+\end{verbatim}
+
+\Rem A notation not defined in a scope is called a {\em lonely} notation.
+
+\subsection{Global interpretation rules for notations}
 
 At any time, the interpretation of a notation for term is done within
 a {\em stack} of interpretation scopes and lonely notations. In case a
@@ -374,22 +485,125 @@ The initial state of {\Coq} declares three interpretation scopes and
 no lonely notations. These scopes, in opening order, are {\tt
 core\_scope}, {\tt type\_scope} and {\tt nat\_scope}.
 
-\subsection{Notations in scope}
+The command to add a scope to the interpretation scope stack is
+\comindex{Open Scope}
+\comindex{Close Scope}
 
-\subsection{Activation of interpretation scopes}
+\bigskip
+{\tt Open Scope} {\scope}.
+\bigskip
+
+It is also possible to remove a scope from the interpretation scope
+stack by using the command
+
+\bigskip
+{\tt Close Scope} {\scope}.
+\bigskip
+
+Notice that this command does not only cancel the last {\tt Open Scope
+{\scope}} but all the invocation of it.
+
+\Rem {\tt Open Scope} and {\tt Close Scope} do not survive the end of
+sections where they occur. When defined outside of a section, they are
+exported to the modules that import the module where they occur.
+
+\begin{Variants}
+\item
+{\tt Open Local Scope} {\scope}.
+\item
+{\tt Close Local Scope} {\scope}.\\
+These variants are not exported to the modules that import the module
+where they occur, even if outside a section.
+\end{Variants}
+
+\subsection{Local interpretation rules for notations}
+
+In addition to the global rules of interpretation of notations, some
+ways to change the interpretation of subterms are available.
+
+\subsubsection{Local opening of an interpretation scope} 
 \label{scopechange}
 \index{\%}
+\comindex{Delimit Scope}
 
-% Open (Local) Scope
-% Close (Local) Scope
+It is possible to locally extend the interpretation scope stack using
+the syntax {(\term)\%{\nterm{key} (or simply {\term}\%{\nterm{key}}
+for atomic terms), where {\nterm{key}} is a special identifier called
+{\em delimiting key} and bound to a given scope.
 
-\subsection{Interpretation of numerals}
+In such a situation, the term {\term}, and all its subterms, are
+interpreted in the scope stack extended with the scope bound to
+{\nterm{key}}.
 
-\subsection{Interpretation scopes of arguments}
+To bind a delimiting key to a scope, use the command
 
+\bigskip
+\texttt{Delimit Scope} {\scope} \texttt{with} {\ident} \\
+\bigskip
 
+\subsubsection{Binding arguments of a constant to an interpretation scope}
+\comindex{Arguments Scope}
 
-\subsection{The type interpretation scope}
+It is possible to set in advance that some arguments of a given
+constant have to be interpreted in a given scope. The command is
+
+\bigskip
+{\tt Arguments Scope} {\qualid} {\tt [ \nelist{\optscope}{} ]}\\
+\bigskip
+
+where the list is a list made either of {\tt \_} or of a scope name.
+Each scope in the list is bound to the corresponding parameter of
+{\qualid} in order.  When interpreting a term, if some of the
+arguments of {\qualid} are built from a notation, then this notation
+is interpreted in the scope stack extended by the scopes bound (if any)
+to these arguments.
+
+\SeeAlso The command to show the scopes bound to the arguments of a
+function is described in section \ref{About}.
+
+\subsubsection{Binding types of arguments to an interpretation scope}
+
+When an interpretation scope is naturally associated to a type
+(e.g. the scope of operations on the natural numbers), it may be
+convenient to bind it to this type. The effect of this is that any
+argument of a function that syntactically expects a parameter of this
+type is interpreted using scope. More precisely, it applies only if
+this argument is built from a notation, and if so, this notation is
+interpreted in the scope stack extended by this particular scope.  It
+does not apply to the subterms of this notation (unless the
+interpretation of the notation itself expects arguments of the same
+type that would trigger the same scope).
+
+\comindex{Bind Scope}
+More generally, any {\class} (see chapter \ref{Coercions-full}) can be
+bound to an interpretation scope. The command to do it is
+
+\bigskip
+{\tt Bind Scope} {\scope} \texttt{with} {\class}
+\bigskip
+
+\Example
+
+\begin{coq_example}
+Parameter U : Set.
+Bind Scope U_scope with U.
+Parameter Uplus : U -> U -> U.
+Parameter P : forall T:Set, T -> U -> Prop.
+Parameter f : forall T:Set, T -> U.
+Infix "+" := Uplus : U_scope.
+Unset Printing Notations.
+Open Scope nat_scope. (* Define + on the nat as the default for + *)
+Check (fun x y1 y2 z t => P _ (x + t) ((f _ (y1 + y2) + z))).
+\end{coq_example}
+
+\Rem The scope {\tt type\_scope} has also a local effect on
+interpretation. See the next section.
+
+\SeeAlso The command to show the scopes bound to the arguments of a
+function is described in section \ref{About}.
+
+\subsection{The {\tt type\_scope} interpretation scope}
+\index{type\_scope}
 
 The scope {\tt type\_scope} has a special status. It is a primitive
 interpretation scope which is temporarily activated each time a
@@ -419,18 +633,37 @@ delimited by key {\tt nat}.
 \subsubsection{\tt N\_scope}
 
 This includes the standard arithmetical operators and relations on
-type {\tt N} (binary natural numbers). It is delimited by key {\tt N}.
+type {\tt N} (binary natural numbers). It is delimited by key {\tt N}
+and comes with an interpretation for numerals as closed term of type {\tt Z}.
 
 \subsubsection{\tt Z\_scope}
 
 This includes the standard arithmetical operators and relations on
-type {\tt Z} (binary integer numbers). It is delimited by key {\tt Z}.
+type {\tt Z} (binary integer numbers). It is delimited by key {\tt Z} 
+and comes with an interpretation for numerals as closed term of type {\tt Z}.
 
-\subsubsection{\tt Z\_scope}
+
+\subsubsection{\tt positive\_scope}
 
 This includes the standard arithmetical operators and relations on
 type {\tt positive} (binary strictly positive numbers). It is
-delimited by key {\tt positive}.
+delimited by key {\tt positive} and comes with an interpretation for
+numerals as closed term of type {\tt positive}.
+
+\subsubsection{\tt real\_scope}
+
+This includes the standard arithmetical operators and relations on
+type {\tt R} (axiomatic real numbers). It is delimited by key {\tt R}
+and comes with an interpretation for numerals as term of type {\tt
+R}. The interpretation is based on the binary decomposition.  The
+numeral 2 is represented by $1+1$.  The interpretation $\phi(n)$ of an
+odd positive numerals greater $n$ than 3 is {\tt 1+(1+1)*$\phi((n-1)/2)$}.
+The interpretation $\phi(n)$ of an even positive numerals greater $n$
+than 4 is {\tt (1+1)*$\phi(n/2)$}.  Negative numerals are represented as the
+opposite of the interpretation of their absolute value. E.g. the
+syntactic object {\tt -11} is interpreted as {\tt
+-(1+(1+1)*((1+1)*(1+(1+1))))} where the unit $1$ and all the operations are
+those of {\tt R}.
 
 \subsubsection{\tt bool\_scope}
 
@@ -438,7 +671,8 @@ This includes notations for the boolean operators.
 
 \subsubsection{\tt list\_scope}
 
-This includes notations for the list operators.
+This includes notations for the list operators. It is
+delimited by key {\tt list}.
 
 \subsubsection{\tt core\_scope}
 
@@ -478,6 +712,7 @@ It also displays the lonely notations.
 \section{Abbreviations}
 \index{Abbreviations}
 \label{Abbreviations}
+\comindex{Notation}
 
 An {\em abbreviation} is a name denoting a (presumably) more complex
 expression. An abbreviation is a special form of notation with no
@@ -500,7 +735,14 @@ definition, and can be referred by partially qualified names too.
 Abbreviations are syntactic in the sense that they are bound to
 expressions which are not typed at the time of the definition of the
 abbreviation but at the time it is used. Especially, abbreviation can
-be bound to terms with holes (i.e. with ``\_'').
+be bound to terms with holes (i.e. with ``\_''). The general syntax
+for abbreviations is
+
+\bigskip
+\texttt{Notation} \zeroone{\tt Local} {\ident} \texttt{:=} {\term} 
+ \zeroone{\tt (only parsing)} \verb=.=
+\bigskip
+
 
 \Example
 
@@ -523,60 +765,6 @@ compatibility Abbreviations are similar to the {\em syntactic
 definitions} available in versions of {\Coq} prior to version 8.0,
 except that abbreviations are used for printing (unless the modifier
 \verb=(only parsing)= is given) while syntactic definitions were not.
-
-\section{Summary}
-
-\paragraph{Persistence of notations}
-
-Notations do not survive the end of sections. They survive modules
-unless the command {\tt Notation Local} is used instead of {\tt
-Notation}.
-
-\paragraph{Syntax of notations}
-
-The different syntactic variants of the command \texttt{Notation} are
-given on Figure \ref{Grammar-Notation}.
-
-\begin{figure}
-\begin{tabular}{|lcl|}
-\hline
-{\sentence} & ::= &
-   \texttt{Notation} \zeroone{\tt Local} {\str} \texttt{:=} {\term} 
-   \zeroone{\modifiers} \zeroone{:{\scope}} \verb=.=\\
-  & $|$ & 
-   \texttt{Infix} \zeroone{\tt Local} {\str} \texttt{:=} {\qualid} 
-   \zeroone{\modifiers} \zeroone{:{\scope}} \verb=.=\\
-  & $|$ & 
-   \texttt{Notation} \zeroone{\tt Local} {\ident} \texttt{:=} {\term} 
-   \zeroone{\tt (only parsing)} \verb=.=\\
-  & $|$ & 
-   \texttt{Reserved Notation} \zeroone{\tt Local} {\str}
-   \zeroone{\modifiers} \verb=.=\\
-\\
-{\modifiers}
-  & ::= & \nelist{\ident}{,} {\tt at level} {\naturalnumber} \\
-  & $|$ & \nelist{\ident}{,} {\tt at next level} \\
-  & $|$ & {\tt at level} {\naturalnumber} \\
-  & $|$ & {\tt left associativity} \\
-  & $|$ & {\tt right associativity} \\
-  & $|$ & {\tt no associativity} \\
-  & $|$ & {\ident} {\tt ident} \\
-  & $|$ & {\ident} {\tt global} \\
-  & $|$ & {\ident} {\tt bigint} \\
-  & $|$ & {\tt only parsing} \\
-  & $|$ & {\tt format} {\str} \\
-\hline
-\end{tabular}
-\caption{Syntax of the variants of {\tt Notation}}
-\label{record-syntax}
-\end{figure}
-
-\Rem No typing of the denoted expression is performed at definition
-time. Type-checking is done only at the time of use of the notation.
-
-\Rem Many examples of {\tt Notation} may be found in the files
-composing the initial state of {\Coq} (see directory {\tt
-\$COQLIB/theories/Init}).
 
 
 % $Id$ 
