@@ -114,7 +114,8 @@ let type_inst_construct i (IndFamily (mis,globargs)) =
   let tc = mis_type_mconstruct i mis in
   prod_applist tc globargs
 
-let type_of_existential env sigma c = Instantiate.existential_value sigma c
+let type_of_existential env sigma c =
+  Instantiate.existential_type sigma (destEvar c)
 
 (* Case. *)
 

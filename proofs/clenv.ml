@@ -177,9 +177,9 @@ let unify_0 mc wc m n =
 let whd_castappevar_stack sigma = 
   let rec whrec x l =
     match x with
-      | DOPN(Evar ev,_) as c ->
+      | DOPN(Evar ev,args) as c ->
 	  if is_defined sigma ev then
-	    whrec (existential_value sigma c) l
+	    whrec (existential_value sigma (ev,args)) l
 	  else
 	    x,l
       | DOP2(Cast,c,_) -> whrec c l

@@ -57,7 +57,7 @@ let tjudge_of_cast_safe sigma env var =
 let rec evar_apprec env isevars stack c =
   let (t,stack) = Reduction.apprec env !isevars c stack in 
   if ise_defined isevars t then 
-    evar_apprec env isevars stack (existential_value !isevars t)
+    evar_apprec env isevars stack (existential_value !isevars (destEvar t))
   else 
     (t,stack)
 

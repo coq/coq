@@ -124,8 +124,8 @@ let red_product env sigma c =
 	  DOPN(AppL,Array.append [|redrec (array_hd cl)|] (array_tl cl))
       | DOPN(Const _,_) when evaluable_constant env x -> 
 	  constant_value env x
-      | DOPN(Evar ev,_) when Evd.is_defined sigma ev -> 
-	  existential_value sigma x
+      | DOPN(Evar ev,args) when Evd.is_defined sigma ev -> 
+	  existential_value sigma (ev,args)
       | DOPN(Abst _,_) when evaluable_abst env x -> 
 	  abst_value env x 
       | DOP2(Cast,c,_) -> redrec c
@@ -353,9 +353,9 @@ let whd_delta_stack env sigma =
             whrec (constant_value env c) l
 	  else 
 	    x,l
-      | DOPN(Evar ev,_) as c ->
+      | DOPN(Evar ev,args) ->
 	  if Evd.is_defined sigma ev then
-            whrec (existential_value sigma c) l
+            whrec (existential_value sigma (ev,args)) l
 	  else 
 	    x,l
       | (DOPN(Abst _,_)) as c ->
@@ -380,9 +380,9 @@ let whd_betadelta_stack env sigma =
 	    whrec (constant_value env x) l
           else 
 	    (x,l)
-      | DOPN(Evar ev,_) ->
+      | DOPN(Evar ev,args) ->
           if Evd.is_defined sigma ev then 
-	    whrec (existential_value sigma x) l
+	    whrec (existential_value sigma (ev,args)) l
           else 
 	    (x,l)
       | DOPN(Abst _,_) ->
@@ -406,9 +406,9 @@ let whd_betadelta env sigma c = applist(whd_betadelta_stack env sigma c [])
 let whd_betaevar_stack env sigma = 
   let rec whrec x l =
     match x with
-      | DOPN(Evar ev,_) ->
+      | DOPN(Evar ev,args) ->
           if Evd.is_defined sigma ev then 
-	    whrec (existential_value sigma x) l
+	    whrec (existential_value sigma (ev,args)) l
           else 
 	    (x,l)
       | DOPN(Abst _,_) ->
@@ -437,9 +437,9 @@ let whd_betadeltaeta_stack env sigma =
 	    whrec (constant_value env x) stack
           else 
 	    (x,stack)
-      | DOPN(Evar ev,_) ->
+      | DOPN(Evar ev,args) ->
           if Evd.is_defined sigma ev then 
-	    whrec (existential_value sigma x) stack
+	    whrec (existential_value sigma (ev,args)) stack
           else 
 	    (x,stack)
       | DOPN(Abst _,_) ->
@@ -576,9 +576,9 @@ let whd_betaiota x = applist (whd_betaiota_stack x [])
 let whd_betaiotaevar_stack env sigma = 
   let rec whrec x stack =
     match x with
-      | DOPN(Evar ev,_) ->
+      | DOPN(Evar ev,args) ->
           if Evd.is_defined sigma ev then 
-	    whrec (existential_value sigma x) stack
+	    whrec (existential_value sigma (ev,args)) stack
           else 
 	    (x,stack)
       | DOPN(Abst _,_) ->
@@ -619,9 +619,9 @@ let whd_betadeltaiota_stack env sigma =
 	    bdi_rec (constant_value env x) stack
           else 
 	    (x,stack)
-      | DOPN(Evar ev,_) ->
+      | DOPN(Evar ev,args) ->
           if Evd.is_defined sigma ev then 
-	    bdi_rec (existential_value sigma x) stack
+	    bdi_rec (existential_value sigma (ev,args)) stack
           else 
 	    (x,stack)
       | DOPN(Abst _,_) ->
@@ -662,9 +662,9 @@ let whd_betadeltaiotaeta_stack env sigma =
 	    whrec (constant_value env x) stack
           else 
 	    (x,stack)
-      | DOPN(Evar ev,_) ->
+      | DOPN(Evar ev,args) ->
           if Evd.is_defined sigma ev then 
-	    whrec (existential_value sigma x) stack
+	    whrec (existential_value sigma (ev,args)) stack
           else 
 	    (x,stack)
       | DOPN(Abst _,_) ->
@@ -1240,12 +1240,10 @@ let poly_args env sigma t =
 exception Uninstantiated_evar of int
 
 let rec whd_ise sigma = function
-  | DOPN(Evar sp,_) as k ->
-      if Evd.in_dom sigma sp then
-        if Evd.is_defined sigma sp then
-          whd_ise sigma (existential_value sigma k)
-        else raise (Uninstantiated_evar sp)
-      else k
+  | DOPN(Evar ev,args) when Evd.in_dom sigma ev ->
+      if Evd.is_defined sigma ev then
+        whd_ise sigma (existential_value sigma (ev,args))
+      else raise (Uninstantiated_evar ev)
   | DOP2(Cast,c,_) -> whd_ise sigma c
   | DOP0(Sort(Type _)) -> DOP0(Sort(Type dummy_univ))
   | c -> c
@@ -1253,11 +1251,8 @@ let rec whd_ise sigma = function
 
 (* 2- undefined existentials are left unchanged *)
 let rec whd_ise1 sigma = function
-  | (DOPN(Evar sp,_) as k) ->
-      if Evd.in_dom sigma sp & Evd.is_defined sigma sp then
-        whd_ise1 sigma (existential_value sigma k)
-      else 
-	k
+  | DOPN(Evar ev,args) when Evd.in_dom sigma ev & Evd.is_defined sigma ev ->
+      whd_ise1 sigma (existential_value sigma (ev,args))
   | DOP2(Cast,c,_) -> whd_ise1 sigma c
   (* A quoi servait cette ligne ???
   | DOP0(Sort(Type _)) -> DOP0(Sort(Type dummy_univ))
@@ -1272,16 +1267,14 @@ let whd_evar env = whd_ise1
 (* Same as whd_ise1, but replaces the remaining ISEVAR by Metavariables
  * Similarly we have is_fmachine1_metas and is_resolve1_metas *)
 
-let rec whd_ise1_metas sigma = function
-  | (DOPN(Evar n,_) as k) ->
-      if Evd.in_dom sigma n then
-	if Evd.is_defined sigma n then
-      	  whd_ise1_metas sigma (existential_value sigma k)
-	else 
-      	  let m = DOP0(Meta (new_meta())) in
-	  DOP2(Cast,m,existential_type sigma k)
-      else
-	k
-  | DOP2(Cast,c,_) -> whd_ise1_metas sigma c
-  | c -> c
+let rec whd_ise1_metas sigma t = 
+  let t' = strip_outer_cast t in
+  match kind_of_term t' with
+  | IsEvar (ev,args as k) when Evd.in_dom sigma ev ->
+      if Evd.is_defined sigma ev then
+      	whd_ise1_metas sigma (existential_value sigma k)
+      else 
+      	let m = DOP0(Meta (new_meta())) in
+	DOP2(Cast,m,existential_type sigma k)
+  | _ -> t'
 

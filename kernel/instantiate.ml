@@ -58,15 +58,13 @@ let constant_value env cst =
 
 let name_of_existential n = id_of_string ("?" ^ string_of_int n)
 
-let existential_type sigma c =
-  let (n,args) = destEvar c in
+let existential_type sigma (n,args) =
   let info = Evd.map sigma n in
   let hyps = evar_hyps info in
   (* TODO: check args [this comment was in Typeops] *)
   instantiate_constr (ids_of_sign hyps) info.evar_concl (Array.to_list args)
 
-let existential_value sigma c =
-  let (n,args) = destEvar c in
+let existential_value sigma (n,args) =
   let info = Evd.map sigma n in
   let hyps = evar_hyps info in
   match info.evar_body with
@@ -79,9 +77,9 @@ let const_abst_opt_value env sigma c =
   match c with
     | DOPN(Const sp,_) ->
 	if evaluable_constant env c then Some (constant_value env c) else None
-    | DOPN(Evar ev,_) ->
+    | DOPN(Evar ev,args) ->
 	if Evd.is_defined sigma ev then 
-	  Some (existential_value sigma c) 
+	  Some (existential_value sigma (ev,args)) 
 	else 
 	  None
     | DOPN(Abst sp,_) ->

@@ -325,7 +325,7 @@ let has_undefined_isevars isevars c =
     | DOPN(Evar ev,cl) as k ->
 	if ise_in_dom isevars ev then 
 	  if ise_defined isevars k then 
-	    hasrec (existential_value !isevars k)
+	    hasrec (existential_value !isevars (ev,cl))
 	  else 
 	    failwith "caught"
 	else 
