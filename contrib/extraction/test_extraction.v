@@ -339,3 +339,8 @@ Extraction f_normal.
                            | S n -> False)
 *)
 
+Inductive Truc : Set->Set :=
+       chose  : (A:Set)(Truc A)
+     | machin : (A:Set)A->(Truc bool)->(Truc A).
+Extraction Truc.
+
