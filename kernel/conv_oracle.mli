@@ -18,11 +18,14 @@ open Closure
 val oracle_order : table_key -> table_key -> bool
 
 (* Changing the oracle *)
-val set_opaque_const      : kernel_name -> unit
-val set_transparent_const : kernel_name -> unit
+val set_opaque_const      : constant -> unit
+val set_transparent_const : constant -> unit
 
 val set_opaque_var      : identifier -> unit
 val set_transparent_var : identifier -> unit
+
+val is_opaque_cst : constant -> bool
+val is_opaque_var : identifier -> bool
 
 (*****************************)
 
