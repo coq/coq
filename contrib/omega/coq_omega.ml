@@ -424,7 +424,7 @@ type constr_path =
   | P_ARITY
   | P_ARG
 
-let context operation path (t:constr) =
+let context operation path (t : constr) =
   let rec loop i p0 p1 = 
     match (p0,p1) with 
       | (p, (DOP2(Cast,c,t))) -> DOP2(Cast,loop i p c,t)
@@ -460,7 +460,7 @@ let context operation path (t:constr) =
   in
   loop 1 path t
 
-let occurence path (t:constr) =
+let occurence path (t : constr) =
   let rec loop p0 p1 = match (p0,p1) with
     | (p, (DOP2(Cast,c,t))) -> loop p c
     | ([], t) -> t

@@ -87,7 +87,7 @@ exception NO_CONTRADICTION
 let intern_id,unintern_id =
   let cpt = ref 0 in
   let table = create 7 and co_table = create 7 in
-  (fun (name:string) -> 
+  (fun (name : string) -> 
      try find table name with Not_found -> 
        let idx = !cpt in
        add table name idx; add co_table idx name; incr cpt; idx),
@@ -197,13 +197,13 @@ let rec display_action = function
 
 let add_event, history, clear_history =
   let accu = ref [] in
-  (fun (v:action) -> if !debug then display_action [v]; push v accu), 
+  (fun (v : action) -> if !debug then display_action [v]; push v accu), 
   (fun () -> !accu),
   (fun () -> accu := [])
 
 let nf_linear = Sort.list (fun x y -> x.v > y.v)
 
-let nf ((b:bool),(e,(x:int))) = (b,(nf_linear e,x))
+let nf ((b : bool),(e,(x : int))) = (b,(nf_linear e,x))
 
 let map_eq_linear f = 
   let rec loop = function
