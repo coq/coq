@@ -436,7 +436,7 @@ let prim_refiner r sigma goal =
     | { name = Convert_concl; terms = [cl'] } ->
     	let cl'ty = type_of env sigma cl' in
 	if is_conv_leq env sigma cl' cl then
-          let sg = mk_goal info env (mkCast (cl',cl'ty)) in
+          let sg = mk_goal info env cl' in
           [sg]
 	else 
 	  error "convert-concl rule passed non-converting term"
