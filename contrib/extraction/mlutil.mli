@@ -33,16 +33,16 @@ val ml_lift : int -> ml_ast -> ml_ast
 
 val ml_subst : ml_ast -> ml_ast -> ml_ast
 
-(*s Some transformations of ML terms. [betared_ast] and [betared_ecl] reduce
+(*s Some transformations of ML terms. [normalize] and [normalize_decl] reduce
     all beta redexes (when the argument does not occur, it is just
     thrown away; when it occurs exactly once it is substituted; otherwise
-    a let in redex is created for clarity) *)
+    a let in redex is created for clarity) and iota redexes, plus some other
+    optimizations. *)
 
-val betared_ast : ml_ast -> ml_ast
-val betared_decl : ml_decl -> ml_decl
+val normalize : ml_ast -> ml_ast
+val normalize_decl : ml_decl -> ml_decl
 
 val uncurrify_ast : ml_ast -> ml_ast
-val uncurrify_decl : ml_decl -> ml_decl
 
 (*s Optimization. *)
 

@@ -824,7 +824,7 @@ let extract_declaration r = match r with
   | ConstRef sp -> 
       (match extract_constant sp with
 	 | Emltype (mlt, s, vl) -> Dabbrev (r, List.rev vl, mlt)
-	 | Emlterm t -> Dglob (r, t))
+	 | Emlterm t -> Dglob (r, uncurrify_ast t))
   | IndRef (sp,_) -> extract_inductive_declaration sp
   | ConstructRef ((sp,_),_) -> extract_inductive_declaration sp
   | VarRef _ -> assert false

@@ -108,6 +108,9 @@ end
 
 module Pp = Ocaml.Make(ToplevelParams)
 
+let pp_ast a = Pp.pp_ast (normalize a)
+let pp_decl a = Pp.pp_decl (normalize_decl a)
+
 open Vernacinterp
 
 let extract_reference r =
@@ -115,7 +118,7 @@ let extract_reference r =
     (if is_ml_extraction r then
        [< 'sTR "User defined extraction:"; 'sPC; 'sTR (find_ml_extraction r) >]
      else
-       Pp.pp_decl (extract_declaration r))
+       pp_decl (extract_declaration r))
 
 let _ = 
   vinterp_add "Extraction"
@@ -132,7 +135,7 @@ let _ =
 		| _ ->
 		    match extract_constr (Global.env()) [] c with
 		      | Emltype (t,_,_) -> mSGNL (Pp.pp_type t)
-		      | Emlterm a -> mSGNL (Pp.pp_ast a))
+		      | Emlterm a -> mSGNL (pp_ast a))
        | _ -> assert false)
 
 (*s Recursive extraction in the Coq toplevel. The vernacular command is
@@ -159,7 +162,7 @@ let _ =
   vinterp_add "ExtractionRec"
     (fun vl () ->
        let rl' = decl_of_refs (refs_of_vargl vl) in
-       List.iter (fun d -> mSGNL (Pp.pp_decl d)) rl')
+       List.iter (fun d -> mSGNL (pp_decl d)) rl')
 
 (*s Extraction parameters. *)
 

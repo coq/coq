@@ -350,8 +350,6 @@ let pp_decl = function
 	       pp_function (empty_env ()) (pp_global r) a; 'fNL >]
 
 let pp_type = pp_type false
-let pp_ast a = pp_ast (betared_ast (uncurrify_ast a))
-let pp_decl d = pp_decl (betared_decl (uncurrify_decl d))
 
 end
 
@@ -445,8 +443,6 @@ let ocaml_preamble () =
      'sTR "let arity = ()"; 'fNL; 'fNL >]
 
 let extract_to_file f prm decls =
-  let decls = List.map 
-		(fun d -> betared_decl (uncurrify_decl d)) decls in
   let decls = optimize prm decls in
   let pp_decl = if prm.modular then ModularPp.pp_decl else MonoPp.pp_decl in
   let cout = open_out f in

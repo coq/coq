@@ -141,28 +141,57 @@ let nb_occur a =
   in 
   count 1 a; !cpt
 
-(*s Beta-reduction *)
+(*s Beta-iota reduction *)
 
-let rec betared_ast = function
+let constructor_index = function
+  | ConstructRef (_,j) -> pred j
+  | _ -> assert false
+
+let rec normalize = function
   | MLapp (f, []) ->
-      betared_ast f
+      normalize f
   | MLapp (f, a) ->
-      let f' = betared_ast f 
-      and a' = List.map betared_ast a in
+      let f' = normalize f 
+      and a' = List.map normalize a in
       (match f' with
+	 (* beta redex *)
 	 | MLlam (id,t) -> 
 	     (match nb_occur t with
-		| 0 -> betared_ast (MLapp (ml_pop t, List.tl a'))
-		| 1 -> betared_ast (MLapp (ml_subst (List.hd a') t,List.tl a'))
+		| 0 -> normalize (MLapp (ml_pop t, List.tl a'))
+		| 1 -> normalize (MLapp (ml_subst (List.hd a') t,List.tl a'))
 		| _ -> MLletin (id, List.hd a', 
-				betared_ast (MLapp (t, List.tl a'))))
+				normalize (MLapp (t, List.tl a'))))
+	 (* application of a let in: we push arguments inside *)
+	 | MLletin (id,e1,e2) ->
+	     MLletin (id, e1, normalize (MLapp (e2, List.map (ml_lift 1) a')))
+	 (* application of a case: we push arguments inside *)
+	 | MLcase (e,br) ->
+	     let br' = 
+	       Array.map 
+      	       	 (fun (n,l,t) -> 
+		    let k = List.length l in
+		    let a'' = List.map (ml_lift k) a' in
+      	       	    (n, l, normalize (MLapp (t,a'')))) 
+		 br 
+	     in
+      	     normalize (MLcase (e,br'))
 	 | _ ->
 	     MLapp (f',a'))
+  | MLcase (e,br) ->
+      (match normalize e with
+	 (* iota redex *)
+	 | MLcons (r,_,a) ->
+	     let j = constructor_index r in
+	     let (_,ids,c) = br.(j) in
+	     let c' = List.fold_right (fun id t -> MLlam (id,t)) ids c in
+	     normalize (MLapp (c',a))
+	 | e' -> 
+	     MLcase (e', Array.map (fun (n,l,t) -> (n,l,normalize t)) br))
   | a -> 
-      ast_map betared_ast a
+      ast_map normalize a
     
-let betared_decl = function
- | Dglob (id, a) -> Dglob (id, betared_ast a)
+let normalize_decl = function
+ | Dglob (id, a) -> Dglob (id, normalize a)
  | d -> d
 
 (*s [uncurrify] uncurrifies the applications of constructors. *)
@@ -231,8 +260,6 @@ let subst_glob_decl r m = function
   | Dglob(r',t') -> Dglob(r', subst_glob_ast r m t')
   | d -> d
 
-let normalize = betared_ast
-
 let expansion_test r t = false
 
 let expand prm r t = 
@@ -248,13 +275,15 @@ let rec optimize prm = function
       []
   | (Dtype _ | Dabbrev _) as d :: l -> 
       d :: (optimize prm l)
+  | Dglob (_, MLprop) :: l ->
+      optimize prm l
   (*i
   | Dglob(id,(MLexn _ as t)) as d :: l ->
       let l' = List.map (expand (id,t)) l in optimize prm l'
   i*)	    
-  | [ Dglob(r,t) ] ->
+  | [ Dglob (r,t) ] ->
       let t' = normalize t in [ Dglob(r,t') ]
-  | Dglob(r,t) as d :: l ->
+  | Dglob (r,t) as d :: l ->
       let t' = normalize t in
       if expand prm r t' then begin
 	warning_expansion r;
@@ -264,7 +293,7 @@ let rec optimize prm = function
 	else
 	  optimize prm l'
       end else 
-	(Dglob(r,t')) :: (optimize prm l)
+	(Dglob (r,t')) :: (optimize prm l)
 
 (*s Table for direct ML extractions. *)
 
