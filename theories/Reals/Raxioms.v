@@ -52,7 +52,7 @@ Axiom Rmult_assoc:(r1,r2,r3:R)``(r1*r2)*r3==r1*(r2*r3)``.
 Hints Resolve Rmult_assoc : real v62.
 
 (**********)
-Axiom Rinv_l:(r:R)``r<>0``->``(1/r)*r==1``.
+Axiom Rinv_l:(r:R)``r<>0``->``(/r)*r==1``.
 Hints Resolve Rinv_l : real.
 
 (**********)

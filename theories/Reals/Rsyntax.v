@@ -57,7 +57,7 @@ with rexpr0 :=
 | expr_negnum [ "-" rnegnumber($n) ] -> [ $n ]
 | expr_div [ rexpr0($p) "/" rexpr0($c) ] -> [<<(Rdiv $p $c)>>]
 | expr_opp [ "-" rexpr0($c) ] -> [<<(Ropp $c)>>] 
-| expr_inv [ "1" "/" rexpr0($c) ] -> [<<(Rinv $c)>>]
+| expr_inv [ "/" rexpr0($c) ] -> [<<(Rinv $c)>>]
 
 with rapplication :=
   apply [ rapplication($p) rexpr($c1) ] -> [<<($p $c1)>>]
@@ -124,7 +124,7 @@ Syntax constr
 
   level 8:
     Ropp [(Ropp $n1)] -> [ [<hov 0> "``" "-"(REXPR $n1):E "``"] ]
-    |Rinv [(Rinv $n1)] -> [ [<hov 0> "``" "1""/"(REXPR $n1):E "``"] ]
+    |Rinv [(Rinv $n1)] -> [ [<hov 0> "``" "/"(REXPR $n1):E "``"] ]
   ;
 
   level 0:
@@ -174,7 +174,7 @@ Syntax constr
 
   level 5:
  Ropp_inside [<<(REXPR <<(Ropp $n1)>>)>>] -> [ " -" (REXPR $n1):E  ]
-|Rinv_inside [<<(REXPR <<(Rinv $n1)>>)>>] -> [ "1""/" (REXPR $n1):E  ]
+|Rinv_inside [<<(REXPR <<(Rinv $n1)>>)>>] -> [ "/" (REXPR $n1):E  ]
 |Rdiv_inside
       [<<(REXPR <<(Rdiv $n1 $n2)>>)>>]
       	 -> [ (REXPR $n1):E "/" [0 0] (REXPR $n2):L ]

@@ -315,16 +315,16 @@ Save.
 (***********************************************************)
 
 (**********)
-Lemma Rinv_r:(r:R)``r<>0``->``r* (1/r)==1``.
+Lemma Rinv_r:(r:R)``r<>0``->``r* (/r)==1``.
   Intros; Rewrite -> Rmult_sym; Auto with real.
 Save.
 Hints Resolve Rinv_r : real.
 
-Lemma Rinv_l_sym:(r:R)``r<>0``->``1==(1/r) * r``.
+Lemma Rinv_l_sym:(r:R)``r<>0``->``1==(/r) * r``.
   Symmetry; Auto with real.
 Save.
 
-Lemma Rinv_r_sym:(r:R)``r<>0``->``1==r* (1/r)``.
+Lemma Rinv_r_sym:(r:R)``r<>0``->``1==r* (/r)``.
   Symmetry; Auto with real.
 Save.
 Hints Resolve Rinv_l_sym Rinv_r_sym : real.
@@ -362,9 +362,9 @@ Save.
 
 (**********)
 Lemma r_Rmult_mult:(r,r1,r2:R)(``r*r1==r*r2``)->``r<>0``->(r1==r2).
-  Intros; Transitivity ``(1/r * r)*r1``.
+  Intros; Transitivity ``(/r * r)*r1``.
   Rewrite Rinv_l; Auto with real.
-  Transitivity ``(1/r * r)*r2``.
+  Transitivity ``(/r * r)*r2``.
   Repeat Rewrite Rmult_assoc; Rewrite H; Trivial.
   Rewrite Rinv_l; Auto with real.
 Save.
@@ -522,64 +522,64 @@ Intros; Ring.
 Save.
 
 (*s Inverse *)
-Lemma Rinv_R1:``1/1==1``.
-Apply (r_Rmult_mult ``1`` ``1/1`` ``1``); Auto with real.
+Lemma Rinv_R1:``/1==1``.
+Apply (r_Rmult_mult ``1`` ``/1`` ``1``); Auto with real.
 Rewrite (Rinv_r R1 R1_neq_R0);Auto with real.
 Save.
 Hints Resolve Rinv_R1 : real.
 
 (*********)
-Lemma Rinv_neq_R0:(r:R)``r<>0``->``(1/r)<>0``.
+Lemma Rinv_neq_R0:(r:R)``r<>0``->``(/r)<>0``.
 Red; Intros; Apply R1_neq_R0.
-Replace ``1`` with ``(1/r) * r``; Auto with real.
+Replace ``1`` with ``(/r) * r``; Auto with real.
 Save.
 Hints Resolve Rinv_neq_R0 : real.
 
 (*********)
-Lemma Rinv_Rinv:(r:R)``r<>0``->``1/(1/r)==r``.
-Intros;Apply (r_Rmult_mult ``1/r``); Auto with real.
+Lemma Rinv_Rinv:(r:R)``r<>0``->``/(/r)==r``.
+Intros;Apply (r_Rmult_mult ``/r``); Auto with real.
 Transitivity ``1``; Auto with real.
 Save.
 Hints Resolve Rinv_Rinv : real.
 
 (*********)
-Lemma Rinv_Rmult:(r1,r2:R)``r1<>0``->``r2<>0``->``1/(r1*r2)==(1/r1)*(1/r2)``.
+Lemma Rinv_Rmult:(r1,r2:R)``r1<>0``->``r2<>0``->``/(r1*r2)==(/r1)*(/r2)``.
 Intros; Apply (r_Rmult_mult ``r1*r2``);Auto with real.
 Transitivity ``1``; Auto with real.
-Transitivity ``(r1*1/r1)*(r2*(1/r2))``; Auto with real.
+Transitivity ``(r1*/r1)*(r2*(/r2))``; Auto with real.
 Rewrite Rinv_r; Trivial.
 Rewrite Rinv_r; Auto with real.
 Ring.
 Save.
 
 (*********)
-Lemma Ropp_Rinv:(r:R)``r<>0``->``-(1/r)==1/(-r)``.
+Lemma Ropp_Rinv:(r:R)``r<>0``->``-(/r)==/(-r)``.
 Intros; Apply (r_Rmult_mult ``-r``);Auto with real.
 Transitivity ``1``; Auto with real.
-Rewrite (Ropp_mul2 r ``1/r``); Auto with real.
+Rewrite (Ropp_mul2 r ``/r``); Auto with real.
 Save.
 
-Lemma Rinv_r_simpl_r : (r1,r2:R)``r1<>0``->``r1*(1/r1)*r2==r2``.
+Lemma Rinv_r_simpl_r : (r1,r2:R)``r1<>0``->``r1*(/r1)*r2==r2``.
 Intros; Transitivity ``1*r2``; Auto with real.
 Rewrite Rinv_r; Auto with real.
 Save.
 
-Lemma Rinv_r_simpl_l : (r1,r2:R)``r1<>0``->``r2*r1*(1/r1)==r2``.
+Lemma Rinv_r_simpl_l : (r1,r2:R)``r1<>0``->``r2*r1*(/r1)==r2``.
 Intros; Transitivity ``r2*1``; Auto with real.
-Transitivity ``r2*(r1*1/r1)``; Auto with real.
+Transitivity ``r2*(r1*/r1)``; Auto with real.
 Save.
 
-Lemma Rinv_r_simpl_m : (r1,r2:R)``r1<>0``->``r1*r2*(1/r1)==r2``.
+Lemma Rinv_r_simpl_m : (r1,r2:R)``r1<>0``->``r1*r2*(/r1)==r2``.
 Intros; Transitivity ``r2*1``; Auto with real.
-Transitivity ``r2*(r1*1/r1)``; Auto with real.
+Transitivity ``r2*(r1*/r1)``; Auto with real.
 Ring.
 Save.
 Hints Resolve Rinv_r_simpl_l Rinv_r_simpl_r Rinv_r_simpl_m : real.
 
 (*********)
-Lemma Rinv_Rmult_simpl:(a,b,c:R)``a<>0``->``(a*(1/b))*(c*(1/a))==c*(1/b)``.
+Lemma Rinv_Rmult_simpl:(a,b,c:R)``a<>0``->``(a*(/b))*(c*(/a))==c*(/b)``.
 Intros.
-Transitivity ``(a*1/a)*(c*(1/b))``; Auto with real.
+Transitivity ``(a*/a)*(c*(/b))``; Auto with real.
 Ring.
 Save.
 
@@ -812,19 +812,19 @@ Save.
 Hints Resolve Rlt_R0_R1 : real.
 
 (*s Order and inverse *)
-Lemma Rlt_Rinv:(r:R)``0<r``->``0<1/r``.
-Intros; Change ``1/r>0``; Apply not_Rle; Red; Intros.
+Lemma Rlt_Rinv:(r:R)``0<r``->``0</r``.
+Intros; Change ``/r>0``; Apply not_Rle; Red; Intros.
 Absurd ``1<=0``; Auto with real.
-Replace ``1`` with ``r*(1/r)``; Auto with real.
+Replace ``1`` with ``r*(/r)``; Auto with real.
 Replace ``0`` with ``r*0``; Auto with real.
 Save.
 Hints Resolve Rlt_Rinv : real.
 
 (*********)
-Lemma Rlt_Rinv2:(r:R)``r < 0``->``1/r < 0``.
-Intros; Change ``0>1/r``; Apply not_Rle; Red; Intros.
+Lemma Rlt_Rinv2:(r:R)``r < 0``->``/r < 0``.
+Intros; Change ``0>/r``; Apply not_Rle; Red; Intros.
 Absurd ``1<=0``; Auto with real.
-Replace ``1`` with ``r*(1/r)``; Auto with real.
+Replace ``1`` with ``r*(/r)``; Auto with real.
 Replace ``0`` with ``r*0``; Auto with real.
 Apply Rge_le; Auto with real.
 Save.
@@ -833,20 +833,20 @@ Hints Resolve Rlt_Rinv2 : real.
 (**********)
 Lemma Rlt_monotony_rev:
   (r,r1,r2:R)``0<r`` -> ``r*r1 < r*r2`` -> ``r1 < r2``.
-Intros; Replace r1 with ``1/r*(r*r1)``.
-Replace r2 with ``1/r*(r*r2)``; Auto with real.
-Transitivity ``r*1/r*r2``; Auto with real.
+Intros; Replace r1 with ``/r*(r*r1)``.
+Replace r2 with ``/r*(r*r2)``; Auto with real.
+Transitivity ``r*/r*r2``; Auto with real.
 Ring.
-Transitivity ``r*1/r*r1``; Auto with real.
+Transitivity ``r*/r*r1``; Auto with real.
 Ring.
 Save.
 
 (*********)
-Lemma Rinv_lt:(r1,r2:R)``0 < r1*r2`` -> ``r1 < r2`` -> ``1/r2 < 1/r1``.
+Lemma Rinv_lt:(r1,r2:R)``0 < r1*r2`` -> ``r1 < r2`` -> ``/r2 < /r1``.
 Intros; Apply Rlt_monotony_rev with ``r1*r2``; Auto with real.
 Case (without_div_O_contr r1 r2 ); Intros; Auto with real.
-Replace ``r1*r2*1/r2`` with r1.
-Replace ``r1*r2*1/r1`` with r2; Trivial.
+Replace ``r1*r2*/r2`` with r1.
+Replace ``r1*r2*/r1`` with r2; Trivial.
 Symmetry; Auto with real.
 Symmetry; Auto with real.
 Save.
