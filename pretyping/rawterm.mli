@@ -58,3 +58,4 @@ i*)
 
 val dummy_loc : loc
 val loc_of_rawconstr : rawconstr -> loc
+val join_loc : loc -> loc -> loc

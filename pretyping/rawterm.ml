@@ -73,5 +73,6 @@ let loc_of_rawconstr = function
   | RHole (None) -> dummy_loc
   | RCast (loc,_,_) -> loc
 
+let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
 
 
