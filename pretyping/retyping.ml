@@ -70,9 +70,9 @@ let typeur sigma metamap =
         let Inductiveops.IndType(_,realargs) =
           try Inductiveops.find_rectype env sigma (type_of env c)
           with Not_found -> anomaly "type_of: Bad recursive type" in
-        let t = applist (p, realargs) in
+        let t = whd_beta (applist (p, realargs)) in
         (match kind_of_term (whd_betadeltaiota env sigma (type_of env t)) with
-          | Prod _ -> applist (t, [c])
+          | Prod _ -> whd_beta (applist (t, [c]))
           | _ -> t)
     | Lambda (name,c1,c2) ->
           mkProd (name, c1, type_of (push_rel (name,None,c1) env) c2)
