@@ -244,7 +244,7 @@ let rec pp_expr par env args =
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' (Some i) (Array.of_list (List.rev ids'),defs) args
     | MLexn s -> 
-	assert (args=[]);
+	(* an [MLexn] may be applied, but I don't really care *)
 	(open_par par ++ str "assert false" ++ spc () ++ 
 	 str ("(* "^s^" *)") ++ close_par par)
     | MLprop ->
