@@ -298,7 +298,6 @@ let map_constr_expr_with_binders f g e = function
   | CHole _ | CMeta _ | CSort _ | CNumeral _ | CDynamic _ | CRef _ as x -> x
   | CCases (loc,po,a,bl) ->
       (* TODO: apply g on the binding variables in pat... *)
-      (* hard because no syntactic diff between a constructor and a var *)
       let bl = List.map (fun (loc,pat,rhs) -> (loc,pat,f e rhs)) bl in
       CCases (loc,option_app (f e) po,List.map (f e) a,bl)
   | COrderedCase (loc,s,po,a,bl) ->

@@ -57,6 +57,11 @@ let make_aconstr vars a =
   | RLambda (_,na,ty,c) -> add_name bound_binders na; ALambda (na,aux ty,aux c)
   | RProd (_,na,ty,c) -> add_name bound_binders na; AProd (na,aux ty,aux c)
   | RLetIn (_,na,b,c) -> add_name bound_binders na; ALetIn (na,aux b,aux c)
+  | RCases (_,tyopt,tml,eqnl) ->
+      let f (_,idl,pat,rhs) =
+        bound_binders := idl@(!bound_binders);
+        (idl,pat,aux rhs) in
+      ACases (option_app aux tyopt,List.map aux tml, List.map f eqnl)
   | ROrderedCase (_,b,tyopt,tm,bv) ->
       AOldCase (b,option_app aux tyopt,aux tm, Array.map aux bv)
   | RCast (_,c,t) -> ACast (aux c,aux t)
@@ -64,7 +69,7 @@ let make_aconstr vars a =
   | RHole (_,w) -> AHole w
   | RRef (_,r) -> ARef r
   | RMeta (_,n) -> AMeta n
-  | RDynamic _ | RRec _ | RCases _ | REvar _ ->
+  | RDynamic _ | RRec _ | REvar _ ->
       error "Fixpoints, cofixpoints, existential variables and pattern-matching  not \
 allowed in abbreviatable expressions"
   in
