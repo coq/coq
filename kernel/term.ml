@@ -61,8 +61,6 @@ type typed_term = typed_type judge
 
 let typed_app f tt = { body = f tt.body; typ = tt.typ }
 
-type conv_pb = CONV | CONV_LEQ | CONV_X | CONV_X_LEQ
-
 (****************************************************************************)
 (*              Functions for dealing with constr terms                     *)
 (****************************************************************************)
@@ -824,17 +822,6 @@ let lambda_ize n t endpt =
 let sort_hdchar = function
   | Prop(_) -> "P"
   | Type(_) -> "T"
-
-let pb_is_univ_adjust pb =
-  pb = CONV or pb = CONV_LEQ
-
-let pb_is_equal pb =
-  pb = CONV or pb = CONV_X
-
-let pb_equal = function
-  | CONV_LEQ -> CONV
-  | CONV_X_LEQ -> CONV_X
-  | pb -> pb
 
 (* Level comparison for information extraction : Prop <= Type *)
 let le_kind l m = (isprop l) or (is_Type m)

@@ -142,6 +142,13 @@ val reduction_of_redexp : red_expr -> 'a reduction_function
 
 (*s Conversion Functions (uses closures, lazy strategy) *)
 
+type conv_pb = 
+  | CONV 
+  | CONV_LEQ
+
+val pb_is_equal : conv_pb -> bool
+val pb_equal : conv_pb -> conv_pb
+
 type conversion_result =
   | Convertible of universes
   | NotConvertible
@@ -161,20 +168,15 @@ type 'a conversion_function =
 
 val fconv : conv_pb -> 'a conversion_function
 
-(* fconv has 4 instances:
+(* fconv has 2 instances:
    \begin{itemize}
    \item [conv = fconv CONV] : 
      conversion test, and adjust universes constraints
-   \item [conv_x = fconv CONV_X] : idem, without adjusting univ 
-     (used in tactics)
    \item [conv_leq = fconv CONV_LEQ] : cumulativity test, adjust universes
-   \item [conv_x_leq = fconv CONV_X_LEQ] : idem, without adjusting 
-     (used in tactics)
    \end{itemize} *)
+
 val conv : 'a conversion_function
 val conv_leq : 'a conversion_function
-val conv_x : 'a conversion_function
-val conv_x_leq : 'a conversion_function
 
 
 (*s Obsolete Reduction Functions *)

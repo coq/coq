@@ -731,6 +731,16 @@ let whd_betadeltaiotaeta env x = applist(whd_betadeltaiotaeta_stack env x [])
 (*                         Conversion                               *)
 (********************************************************************)
 
+type conv_pb = 
+  | CONV 
+  | CONV_LEQ
+
+let pb_is_equal pb = pb = CONV
+
+let pb_equal = function
+  | CONV_LEQ -> CONV
+  | CONV -> CONV
+
 type conversion_result =
   | Convertible of universes
   | NotConvertible
@@ -779,8 +789,7 @@ let sort_cmp pb s0 s1 =
     | (Type u1, Type u2) ->
 	(match pb with
            | CONV -> convert_of_constraint (enforce_eq u1 u2)
-	   | CONV_LEQ -> convert_of_constraint (enforce_geq u2 u1)
-	   | _ -> fun g -> Convertible g)
+	   | CONV_LEQ -> convert_of_constraint (enforce_geq u2 u1))
     | (_, _) -> fun _ -> NotConvertible
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
@@ -923,8 +932,6 @@ let fconv cv_pb env t1 t2 =
 
 let conv       env term1 term2 = fconv CONV env term1 term2
 let conv_leq   env term1 term2 = fconv CONV_LEQ env term1 term2
-let conv_x     env term1 term2 = fconv CONV_X env term1 term2
-let conv_x_leq env term1 term2 = fconv CONV_X_LEQ env term1 term2
 
 
 (********************************************************************)

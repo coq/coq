@@ -58,9 +58,6 @@ type typed_term = typed_type judge
 
 val typed_app : (constr -> constr) -> typed_type -> typed_type
 
-type conv_pb = CONV | CONV_LEQ | CONV_X | CONV_X_LEQ
-
-
 (*s Functions for dealing with constr terms.
   The following functions are intended to simplify and to uniform the 
   manipulation of terms. Some of these functions may be overlapped with
@@ -473,9 +470,6 @@ val same_kind : constr -> constr -> bool
 val le_kind : constr -> constr -> bool
 val le_kind_implicit : constr -> constr -> bool
 
-val pb_is_univ_adjust : conv_pb -> bool
-val pb_is_equal : conv_pb -> bool
-val pb_equal : conv_pb -> conv_pb
 val sort_hdchar : sorts -> string
 
 
