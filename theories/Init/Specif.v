@@ -45,10 +45,10 @@ Arguments Scope sig2 [type_scope type_scope type_scope].
 Arguments Scope sigS [type_scope type_scope].
 Arguments Scope sigS2 [type_scope type_scope type_scope].
 
-Notation "{ x : A  |  P }" := (sig A [x:A]P).
-Notation "{ x : A  |  P  &  Q }" := (sig2 A [x:A]P [x:A]Q).
-Notation "{ x : A  &  P }" := (sigS A [x:A]P).
-Notation "{ x : A  &  P  &  Q }" := (sigS2 A [x:A]P [x:A]Q).
+Notation "{ x : A  |  P }" := (sig A [x:A]P) : type_scope.
+Notation "{ x : A  |  P  &  Q }" := (sig2 A [x:A]P [x:A]Q) : type_scope.
+Notation "{ x : A  &  P }" := (sigS A [x:A]P) : type_scope.
+Notation "{ x : A  &  P  &  Q }" := (sigS2 A [x:A]P [x:A]Q) : type_scope.
 
 Add Printing Let sig.
 Add Printing Let sig2.
@@ -100,20 +100,24 @@ Inductive sumbool [A,B:Prop] : Set
     := left  : A -> {A}+{B}
      | right : B -> {A}+{B}
 
-where "{ A } + { B }" := (sumbool A B).
+where "{ A } + { B }" := (sumbool A B) : type_scope.
 
 Inductive sumor [A:Set;B:Prop] : Set
     := inleft  : A -> A+{B}
      | inright : B -> A+{B}
 
-where "A + { B }" := (sumor A B).
+where "A + { B }" := (sumor A B) : type_scope.
 
 (* Factorizing "sumor" at level 4 to parse B+{x:A|P} without parentheses *)
 
-Notation "B + { x : A | P }"     := B + (sig A [x:A]P) (only parsing).
-Notation "B + { x : A | P & Q }" := B + (sig2 A [x:A]P [x:A]Q) (only parsing).
-Notation "B + { x : A & P }"     := B + (sigS A [x:A]P) (only parsing).
-Notation "B + { x : A & P & Q }" := B + (sigS2 A [x:A]P [x:A]Q) (only parsing).
+Notation "B + { x : A | P }"     := B + (sig A [x:A]P)
+  (only parsing) : type_scope.
+Notation "B + { x : A | P & Q }" := B + (sig2 A [x:A]P [x:A]Q)
+  (only parsing) : type_scope.
+Notation "B + { x : A & P }"     := B + (sigS A [x:A]P)
+  (only parsing) : type_scope.
+Notation "B + { x : A & P & Q }" := B + (sigS2 A [x:A]P [x:A]Q)
+  (only parsing) : type_scope.
 
 (** Choice *)
 
