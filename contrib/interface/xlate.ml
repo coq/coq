@@ -1002,7 +1002,6 @@ and xlate_red_tactic =
 
 and xlate_tactic =
  function
-(*
    | TacFun (largs, t) ->
        let fst, rest =  xlate_largs_to_id_unit largs in
        CT_tactic_fun (CT_id_unit_list(fst, rest), xlate_tactic t)
@@ -1072,7 +1071,6 @@ and xlate_tactic =
 	   	CT_lettac (CT_let_clauses(fst, others), mk_let_value t))
    | TacLetCut _ -> xlate_error "Unclear future of syntax Let x := t"
    | TacLetRecIn _ -> xlate_error "TODO: Rec x = t In"
-*)
    | TacAtom (_, t) -> xlate_tac t 
    | TacFail 0 -> CT_fail
    | TacFail n -> xlate_error "TODO: Fail n"
