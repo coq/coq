@@ -171,7 +171,7 @@ let explicitize loc inctx impl f args =
   if args = [] then f else CApp (loc, f, args)
 
 let rec skip_coercion dest_ref (f,args as app) =
-  if !print_coercions then app
+  if !print_coercions or Options.do_translate () then app
   else
     try
       match dest_ref f with
