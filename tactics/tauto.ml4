@@ -52,12 +52,12 @@ let not_dep_intros ist =
   Repeat
     Match Context With
 | [|- ?1 -> ?2 ] -> Intro
-| [|- (iff ? ?)] -> Unfold iff
-| [|- (not ?)] -> Unfold not
-| [ H:(iff ? ?)|- ?] -> Unfold iff in H
-| [ H:(not ?)|-?] -> Unfold not in H
-| [ H:(iff ? ?)->?|- ?] -> Unfold iff in H
-| [ H:(not ?)->?|-?] -> Unfold not in H >>
+| [|- (Coq.Init.Logic.iff ? ?)] -> Unfold Coq.Init.Logic.iff
+| [|- (Coq.Init.Logic.not ?)] -> Unfold Coq.Init.Logic.not
+| [ H:(Coq.Init.Logic.iff ? ?)|- ?] -> Unfold Coq.Init.Logic.iff in H
+| [ H:(Coq.Init.Logic.not ?)|-?] -> Unfold Coq.Init.Logic.not in H
+| [ H:(Coq.Init.Logic.iff ? ?)->?|- ?] -> Unfold Coq.Init.Logic.iff in H
+| [ H:(Coq.Init.Logic.not ?)->?|-?] -> Unfold Coq.Init.Logic.not in H >>
 				      
 let axioms ist =
   let t_is_unit = tacticIn is_unit
@@ -136,9 +136,12 @@ let rec tauto_intuit t_reduce t_solver ist =
    ) >>
     
 let reduction_not_iff=interp
- <:tactic<Repeat (Match Context With 
-		 |[|- ?]->Progress Unfold not iff 
-		 |[H:?|- ?]->Progress Unfold not iff in H)>>
+ <:tactic<Repeat 
+	(Match Context With 
+	|[|- ?]->
+	   Progress Unfold Coq.Init.Logic.not Coq.Init.Logic.iff 
+	|[H:?|- ?]->
+	   Progress Unfold Coq.Init.Logic.not Coq.Init.Logic.iff in H)>>
 
 
 let t_reduction_not_iff = Tacexpr.TacArg (valueIn (VTactic reduction_not_iff))

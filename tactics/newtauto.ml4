@@ -56,10 +56,7 @@ let isrec ind=
   let (mib,mip) = Global.lookup_inductive ind in
   Inductiveops.mis_is_recursive (ind,mib,mip)
 
-let simplif=interp
- <:tactic<Repeat (Match Context With 
-		 |[|- ?]->Progress Unfold not iff 
-		 |[H:?|- ?]->Progress Unfold not iff in H)>>
+let simplif=Tauto.reduction_not_iff
 
 let rule_axiom=assumption
 		      
@@ -207,9 +204,7 @@ let q_elim tac=
   let vtac=Tacexpr.TacArg (valueIn (VTactic tac)) in	
   interp <:tactic<
   Match Context With 
-   [x:?1|-(? ?1 ?)]->
-      Exists x;$vtac  
-  |[x:?1;H:?1->?|-?]->
+    [x:?1;H:?1->?|-?]->
       Generalize (H x);Clear H;$vtac>>
 
 let rec lfo n=
