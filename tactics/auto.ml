@@ -201,7 +201,8 @@ let make_apply_entry env sigma (eapply,verbose) name (c,cty) =
   match kind_of_term cty with
     | IsProd _ ->
         let ce = mk_clenv_from () (c,cty) in
-	let pat = Pattern.pattern_of_constr (clenv_template_type ce).rebus in
+	let c' = (clenv_template_type ce).rebus in
+	let pat = Pattern.pattern_of_constr (whd_betaiota c') in
         let hd = (try head_pattern_bound pat
                   with BoundPattern -> failwith "make_apply_entry") in
         let nmiss = 
