@@ -176,13 +176,13 @@ let redin_combinator redfun = function
 
 (* Now we introduce different instances of the previous tacticals *)
 let change_hyp_and_check t env sigma c =
-  if is_conv (Global.env()) sigma t c then 
+  if is_conv env sigma t c then 
     t
   else 
     errorlabstrm "convert-check-hyp" [< 'sTR "Not convertible" >]
 
 let change_concl_and_check t env sigma c =
-  if is_conv_leq (Global.env()) sigma t c then 
+  if is_conv_leq env sigma t c then 
     t
   else 
     errorlabstrm "convert-check-concl" [< 'sTR "Not convertible" >]
