@@ -260,14 +260,15 @@ let rec detype tenv avoid env t =
 	if tag = RegularStyle then
 	  RCases (dummy_loc,pred,[tomatch],eqnl)
 	else
-	  let bl = Array.map (detype tenv avoid env) bl in
 	  let rec remove_type n c = if n = 0 then c else
 	    match c with
 	      | RLambda (loc,na,t,c) ->
 		  let h = RHole (loc,AbstractionType na) in
 		  RLambda (loc,na,h,remove_type (n-1) c)
-	      | RLetIn (loc,na,b,c) -> RLetIn (loc,na,b,remove_type (n-1) c)
-	      | _ -> anomaly "Not a context" in
+	      | RLetIn (loc,na,b,c) ->
+		  RLetIn (loc,na,b,remove_type (n-1) c)
+	      | c -> c in
+	  let bl = Array.map (detype tenv avoid env) bl in
 	  let bl = array_map2 remove_type consnargsl bl in
 	  ROrderedCase (dummy_loc,tag,pred,tomatch,bl)
 	
