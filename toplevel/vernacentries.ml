@@ -746,7 +746,7 @@ let impargs = if !Options.v7 then "Implicits" else "Implicit"
 let _ =
   declare_bool_option 
     { optsync  = false; (* synchronisation is in Impargs *)
-      optname  = "strict implicits";
+      optname  = "strict implicit arguments";
       optkey   = (SecondaryTable ("Strict",impargs));
       optread  = Impargs.is_strict_implicit_args;
       optwrite = Impargs.make_strict_implicit_args }
@@ -754,7 +754,7 @@ let _ =
 let _ =
   declare_bool_option 
     { optsync  = true;
-      optname  = "contextual implicits";
+      optname  = "contextual implicit arguments";
       optkey   = (SecondaryTable ("Contextual",impargs));
       optread  = Impargs.is_contextual_implicit_args;
       optwrite = Impargs.make_contextual_implicit_args }
@@ -770,7 +770,7 @@ let _ =
 let _ =
   declare_bool_option 
     { optsync  = true;
-      optname  = "implicits printing";
+      optname  = "implicit arguments printing";
       optkey   = (SecondaryTable ("Printing",impargs));
       optread  = (fun () -> !Constrextern.print_implicits);
       optwrite = (fun b ->  Constrextern.print_implicits := b) }
