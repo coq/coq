@@ -204,7 +204,7 @@ proofs/clenv.cmi: kernel/environ.cmi pretyping/evd.cmi kernel/names.cmi \
     kernel/term.cmi pretyping/termops.cmi lib/util.cmi 
 proofs/evar_refiner.cmi: kernel/environ.cmi pretyping/evd.cmi \
     kernel/names.cmi proofs/proof_type.cmi proofs/refiner.cmi kernel/sign.cmi \
-    kernel/term.cmi interp/topconstr.cmi 
+    tactics/tacticals.cmi kernel/term.cmi interp/topconstr.cmi 
 proofs/logic.cmi: kernel/environ.cmi pretyping/evd.cmi kernel/names.cmi \
     lib/pp.cmi proofs/proof_type.cmi kernel/sign.cmi kernel/term.cmi 
 proofs/pfedit.cmi: library/decl_kinds.cmo kernel/entries.cmi \
