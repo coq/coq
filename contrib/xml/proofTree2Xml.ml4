@@ -5,19 +5,27 @@ let print_proof_tree curi pf proof_tree_to_constr constr_to_ids =
  let module L = Logic in
  let module X = Xml in
   let ids_of_node node =
-   (*Acic.CicHash.find constr_to_ids (Hashtbl.find proof_tree_to_constr node)*)
-let constr =
+   let constr = Hashtbl.find proof_tree_to_constr node in
+(*
  try
-  Hashtbl.find proof_tree_to_constr node
+    Hashtbl.find proof_tree_to_constr node
  with _ -> Pp.ppnl (Pp.(++) (Pp.str "Node of the proof-tree that generated no lambda-term: ") (Refiner.print_script true (Evd.empty) (Global.named_context ()) node)) ; assert false (* Closed bug, should not happen any more *)
-in
-try Acic.CicHash.find constr_to_ids constr with _ -> Pp.ppnl (Pp.(++) (Pp.str "BUG QUI: problemi di unsharing:") (Printer.prterm constr)) ; "The_generated_term_is_not_a_subterm_of_the_final_lambda_term" ; assert false (* Open bug, to be understood; example in Logic.Berardi *)
+*)
+   try
+    Some (Acic.CicHash.find constr_to_ids constr)
+   with _ ->
+Pp.ppnl (Pp.(++) (Pp.str "The_generated_term_is_not_a_subterm_of_the_final_lambda_term") (Printer.prterm constr)) ; 
+    None
   in
   let rec aux node =
-   let id = ids_of_node node in
+   let of_attribute =
+    match ids_of_node node with
+       None -> []
+     | Some id -> ["of",id]
+   in
     match node with
        {PT.ref=Some(PT.Prim _,nodes)} ->
-         X.xml_nempty "Prim" ["of",id]
+         X.xml_nempty "Prim" of_attribute
           [< (List.fold_left (fun i n -> [< i ; (aux n) >]) [<>] nodes) >]
 	  
      | {PT.ref=Some(PT.Tactic (_,hidden_proof),nodes)} ->
@@ -27,17 +35,19 @@ try Acic.CicHash.find constr_to_ids constr with _ -> Pp.ppnl (Pp.(++) (Pp.str "B
          (*  for the holes in [hidden_proof]                               *)
 	 let sgl,v = Refiner.frontier hidden_proof in
 	 let flat_proof = v nodes in
+(*
 Pp.ppnl (Pp.(++) (Pp.str "Node: ") (Refiner.print_script true (Evd.empty) (Global.named_context ()) node)) ;
 Pp.ppnl (Pp.(++) (Pp.str "Hidden: ") (Refiner.print_script true (Evd.empty) (Global.named_context ()) hidden_proof)) ;
 Pp.ppnl (Pp.(++) (Pp.str "Flat: ") (Refiner.print_script true (Evd.empty) (Global.named_context ()) flat_proof)) ;
-          X.xml_nempty "Tactic" ["of",id] (aux flat_proof)
+*)
+          X.xml_nempty "Tactic" of_attribute (aux flat_proof)
 	  
      | {PT.ref=Some(PT.Change_evars,nodes)} ->
-         X.xml_nempty "Change_evars" ["of",id]
+         X.xml_nempty "Change_evars" of_attribute
           [< (List.fold_left (fun i n -> [< i ; (aux n) >]) [<>] nodes) >]
 	  
      | {PT.ref=None;PT.goal=goal} ->
-         X.xml_empty "Open_goal" ["of",id]
+         X.xml_empty "Open_goal" of_attribute
    in
     [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
        X.xml_cdata ("<!DOCTYPE ProofTree SYSTEM \"" ^ prooftreedtdname ^"\">\n\n");

@@ -102,7 +102,7 @@ let extract_open_proof sigma pf =
        ~already_unshared:(function e -> S.mem e !unshared_constrs)
        evar_nf_constr
     in
-(*CSC:
+(*
 Pp.ppnl (Pp.(++) (Pp.str "Registro tattica che ha creato:") (Printer.prterm unsharedconstr)) ;
 *)
      Hashtbl.add proof_tree_to_constr node unsharedconstr ;
