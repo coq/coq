@@ -22,6 +22,7 @@ val new_sort_in_family : sorts_family -> sorts
 
 (* iterators on terms *)
 val print_sort : sorts -> std_ppcmds
+val print_sort_family : sorts_family -> std_ppcmds
 val prod_it : init:types -> (name * types) list -> types
 val lam_it : init:constr -> (name * types) list -> constr
 val rel_vect : int -> int -> constr array

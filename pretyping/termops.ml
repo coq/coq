@@ -20,8 +20,12 @@ open Sign
 let print_sort = function
   | Prop Pos -> (str "Set")
   | Prop Null -> (str "Prop")
-(*  | Type _ -> (str "Type") *)
   | Type u -> (str "Type(" ++ Univ.pr_uni u ++ str ")")
+
+let print_sort_family = function
+  | InSet -> (str "Set")
+  | InProp -> (str "Prop")
+  | InType -> (str "Type")
 
 let current_module = ref empty_dirpath
 

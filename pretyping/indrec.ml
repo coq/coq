@@ -575,9 +575,9 @@ let lookup_eliminator ind_sp s =
     try construct_reference env id
     with Not_found ->
       errorlabstrm "default_elim"
-	(str "Cannot find the elimination combinator :" ++
+	(str "Cannot find the elimination combinator " ++
            pr_id id ++ spc () ++
-	   str "The elimination of the inductive definition :" ++
+	   str "The elimination of the inductive definition " ++
            pr_id base ++ spc () ++ str "on sort " ++ 
-           spc () ++ print_sort (new_sort_in_family s) ++
+           spc () ++ print_sort_family s ++
 	   str " is probably not allowed")
