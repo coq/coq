@@ -440,7 +440,7 @@ REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Rseries.vo      theories/Reals/Rtrigo_fun.vo \
 	theories/Reals/Reals.vo 
 
-SETOIDSVO=theories/Setoids/Setoid.v
+SETOIDSVO=theories/Setoids/Setoid.vo
 
 THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
              $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) \
