@@ -185,7 +185,7 @@ GEXTEND Gram
       | IDENT "Fold"; cl = LIST1 constr -> Fold cl
       | IDENT "Pattern"; pl = LIST1 pattern_occ -> Pattern pl
       | IDENT "Vm_compute" -> CbvVm   
-      | s = IDENT; c = constr -> ExtraRedExpr (s,c) ] ]
+      | s = IDENT; OPT constr -> ExtraRedExpr s ] ]
   ;
   hypident:
     [ [ id = id_or_meta -> id,[],(InHyp,ref None)

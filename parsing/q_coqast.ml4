@@ -257,9 +257,8 @@ let mlexpr_of_red_expr = function
       let f = mlexpr_of_list mlexpr_of_occ_constr in
       <:expr< Rawterm.Pattern $f l$ >>
   | Rawterm.CbvVm -> <:expr< Rawterm.CbvVm >>
-  | Rawterm.ExtraRedExpr (s,c) ->
-      let l = mlexpr_of_constr c in
-      <:expr< Rawterm.ExtraRedExpr $mlexpr_of_string s$ $l$ >>
+  | Rawterm.ExtraRedExpr s ->
+      <:expr< Rawterm.ExtraRedExpr $mlexpr_of_string s$ >>
 
 let rec mlexpr_of_argtype loc = function
   | Genarg.BoolArgType -> <:expr< Genarg.BoolArgType >>

@@ -123,7 +123,7 @@ type ('a,'b) red_expr_gen =
   | Unfold of 'b occurrences list
   | Fold of 'a list
   | Pattern of 'a occurrences list
-  | ExtraRedExpr of string * 'a
+  | ExtraRedExpr of string
   | CbvVm
 
 type ('a,'b) may_eval =
