@@ -129,7 +129,7 @@ let preamble _ used_modules print_dummy =
   (if Idset.is_empty used_modules  then mt () else fnl ())
   ++
   (if print_dummy then 
-     str "let (__:unit) = let rec f _ = Obj.magic f in Obj.magic f" 
+     str "let __ = let rec f _ = Obj.repr f in Obj.repr f" 
      ++ fnl () ++ fnl()
    else mt ())
 
@@ -162,7 +162,7 @@ let rec pp_type par vl t =
 	(open_par par ++ pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ 
 	   pp_rec false t2 ++ close_par par)
     | Tglob r -> pp_type_global r
-    | Tdummy -> str "unit"
+    | Tdummy -> str "Obj.t"
     | Tunknown -> str "Obj.t"
   in 
   hov 0 (pp_rec par t)
@@ -390,7 +390,7 @@ let pp_decl = function
       end else 
 	hov 0 (pp_ind i)
   | DdummyType r -> 
-      hov 0 (str "type " ++ pp_type_global r ++ str " = unit" ++ fnl ())
+      hov 0 (str "type " ++ pp_type_global r ++ str " = Obj.t" ++ fnl ())
   | Dtype (r, l, t) ->
       let l = rename_tvars keywords l in 
       hov 0 (str "type" ++ spc () ++ pp_parameters l ++ 

@@ -145,18 +145,21 @@ let is_axiom sp = (Global.lookup_constant sp).const_body = None
 (*s [flag_of_type] transforms a type [t] into a [flag]. 
   Really important function. *)
 
-let flag_of_type env t = match find_conclusion env none t with
-  | Sort (Prop Null) -> (Logic,Arity)
-  | Sort _ -> (Info,Arity)
-  | (Case _ | Fix _ | CoFix _) -> 
-      if (sort_of env t) = InProp then (Logic,Flexible) else (Info,Default)
-  | _ -> if (sort_of env t) = InProp then (Logic,Default) else (Info,Default)
+let rec flag_of_type env t = 
+  let t = whd_betadeltaiota env none t in 
+  match kind_of_term t with
+    | Prod (x,t,c) -> flag_of_type (push_rel (x,None,t) env) c
+    | Sort (Prop Null) -> (Logic,Arity)
+    | Sort _ -> (Info,Arity)
+    | (Case _ | Fix _ | CoFix _) -> 
+	if (sort_of env t) = InProp then (Logic,Flexible) else (Info,Default)
+    | _ -> if (sort_of env t) = InProp then (Logic,Default) else (Info,Default)
 
-(*s [is_default] is a particular case of the last function.
-    [is_default env t = true] iff [flag_of_type env t = (Info, Default)] *)
+(*s [is_default] and [is_info_arity] are particular cases of [flag_of_type]. *)
 
-let is_default env t = 
-  not (is_arity env none t) && (sort_of env t) <> InProp
+let is_default env t = (flag_of_type env t = (Info, Default))
+
+let is_info_arity env t = (flag_of_type env t = (Info, Arity))
 
 (*s [term_sign] gernerates a signature aimed at treating a term 
   application at the ML term level. *)
@@ -173,8 +176,7 @@ let rec term_sign env c =
 let rec type_sign env c = 
   match kind_of_term (whd_betadeltaiota env none c) with
     | Prod (n,t,d) -> 
-	let b = flag_of_type env t = (Info,Arity) in
-	b::(type_sign (push_rel_assum (n,t) env) d)
+	(is_info_arity env t)::(type_sign (push_rel_assum (n,t) env) d)
     | _ -> []
 
 (* There is also a variant producing at the same time a type var list. *)
@@ -183,12 +185,9 @@ let rec type_sign_vl env c =
   match kind_of_term (whd_betadeltaiota env none c) with
     | Prod (n,t,d) -> 
 	let s,vl = type_sign_vl (push_rel_assum (n,t) env) d in 
-	let b = flag_of_type env t = (Info,Arity) in
-	let vl = if not b then vl
-	else (next_ident_away (id_of_name n) vl) :: vl 
-	in b::s, vl
-    | Sort _ -> [],[]
-    | _ -> assert false
+	if not (is_info_arity env t) then false::s, vl
+	else true::s, (next_ident_away (id_of_name n) vl) :: vl
+    | _ -> [],[]
 
 (*s Function recording signatures of section paths. *)
 
@@ -237,8 +236,7 @@ let parse_ind_args si args =
 (*S Extraction of a type. *)
 
 (*s [extract_type env c args ctx] is used to produce an ML type from the 
-   coq term [(c args)], which is supposed to be a Coq type on an informative 
-   sort. *)
+   coq term [(c args)], which is supposed to be a Coq type. *)
 
 (* [ctx] is a context for translating Coq [Rel] into ML type [Tvar]. *)
 
@@ -246,10 +244,8 @@ let rec extract_type env c args ctx =
   match kind_of_term (whd_betaiotazeta c) with
     | Lambda (_,_,d) -> 
 	(match args with 
-	   | [] -> assert false (* This lambda must be reductible. *)
+	   | [] -> assert false (* otherwise the lambda would be reductible. *)
 	   | a :: args -> extract_type env (subst1 a d) args ctx)
-    | Sort _ ->
-	Tdummy 
     | Prod (n,t,d) ->
 	let mld = extract_type (push_rel_assum (n,t) env) d [] (0::ctx) in 
 	if mld = Tdummy then Tdummy 
@@ -271,11 +267,12 @@ let rec extract_type env c args ctx =
 	   | (Info,Arity) -> 
 	       extract_type_app env (ConstRef sp, type_sign env t) args ctx
 	   | (Info,_) -> Tunknown
-	   | (Logic,_) -> assert false (* Cf. initial tests *))
+	   | (Logic,_) -> Tdummy)
     | Ind spi ->
 	(match extract_inductive spi with 
 	   | Iml (si,_) -> extract_type_app env (IndRef spi,si) args ctx
-	   | Iprop -> assert false (* Cf. initial tests *))
+	   | Iprop -> Tdummy)
+    | Sort _ -> Tdummy 
     | Case _ | Fix _ | CoFix _ -> Tunknown
     | Var _ -> section_message ()
     | _ -> assert false
@@ -295,8 +292,8 @@ and extract_type_app env (r,s) args ctx =
       (List.combine s args) []
   in Tapp ((Tglob r) :: ml_args)
 
-(*s [extract_type_arity env c ctx p] works on a Coq term [c] whose type 
-  is an informative arity. It means that [c] is not a Coq type, but will 
+(*s [extract_type_arity env c ctx p] works on a Coq term [c] whose 
+  type is an arity. It means that [c] is not a Coq type, but will 
   be when applied to sufficiently many arguments ([p] in fact).  
   This function decomposes p lambdas, with eta-expansion if needed. *)
 
@@ -315,7 +312,7 @@ and extract_type_arity env c ctx p =
 	  let eta_args = List.rev_map mkRel (interval 1 p) in 
 	  extract_type env (lift p c) eta_args ctx
 
-(*s [extract_type_ind] extracts the type of an informative inductive 
+(*s [extract_type_ind] extracts the type of an inductive 
   constructor toward the corresponding list of ML types. *)
 
 (* [p] is the number of product in [c] and [ctx] is a context for 
@@ -432,7 +429,7 @@ let expansion_prop_eta s (ids,c) =
 	let a = List.rev_map (function MLrel x -> MLrel (i-x) | a -> a) rels
 	in ids, MLapp (ml_lift (i-1) c, a) 
     | true :: l -> abs (anonymous :: ids) (MLrel i :: rels) (i+1) l 
-    | false :: l -> abs (dummy_name :: ids) (MLdummy :: rels) (i+1) l
+    | false :: l -> abs (dummy_name :: ids) (MLdummy' :: rels) (i+1) l
   in abs ids [] 1 s
 
 let kill_all_prop_lams_eta e s = 
@@ -451,6 +448,11 @@ let kill_prop_lams_eta e s =
 
 (*s Auxiliary functions for [apply_constant] and [apply_constructor]. *)
 
+let rec anonym_or_dummy_lams c = function 
+  | [] -> c 
+  | true :: l -> MLlam(anonymous, anonym_or_dummy_lams c l)
+  | false :: l -> MLlam(dummy_name, anonym_or_dummy_lams c l)
+    
 let rec extract_eta_args n = function 
   | [] -> [] 
   | true :: s -> (MLrel n) :: (extract_eta_args (n-1) s) 
@@ -487,13 +489,13 @@ and apply_constant env sp args =
       let s1,s2 = list_chop n1 s in 
       let mla1 = List.map (ml_lift n2) (extract_real_args env args s1) in
       let mla2 = extract_eta_args n2 s2 in 
-      anonym_lams (MLapp (head, mla1 @ mla2)) n2
+      anonym_or_dummy_lams (MLapp (head, mla1 @ mla2)) s2
   else 
     if la >= ls then 
       let s' = iterate (fun l -> true :: l) (la-ls) [] in 
-      MLapp(head, MLdummy :: (extract_real_args env args s'))
+      MLapp(head, MLdummy' :: (extract_real_args env args s'))
     else (* [la < ls] *)
-      anonym_lams head (ls-la-1)
+      dummy_lams head (ls-la-1)
 
 (*s Application of an inductive constructor.
    \begin{itemize}
@@ -506,7 +508,8 @@ and apply_constant env sp args =
 
 and apply_constructor env cp args =
   let head mla = 
-    if is_singleton_constructor cp then List.hd mla (* assert (List.length mla = 1) *)
+    if is_singleton_constructor cp then 
+      List.hd mla (* assert (List.length mla = 1) *)
     else MLcons (ConstructRef cp, mla)
   in 
   match extract_constructor cp with 
@@ -523,9 +526,9 @@ and apply_constructor env cp args =
 	  let s1,s2 = list_chop n1 s in 
 	  let mla1 = List.map (ml_lift n2) (extract_real_args env args s1) in
 	  let mla2 = extract_eta_args n2 s2 in 
-	  anonym_lams (head (mla1 @ mla2)) n2
+	  anonym_or_dummy_lams (head (mla1 @ mla2)) s2
 	else (* [la < params_nb] *)
-	  anonym_lams (head (extract_eta_args ls s)) (ls + params_nb - la)
+	  dummy_lams (head (extract_eta_args ls s)) (ls + params_nb - la)
 	    
 (*S Extraction of a term. *)
 
@@ -644,7 +647,8 @@ and extract_constr_to_term_wt env c t =
   match flag_of_type env t with 
     | (Info, Default) -> extract_term env c
     | (Logic, Flexible) -> MLdummy'
-    | _ -> dummy_lams MLdummy (List.length (fst (splay_prod env none t)))
+    | _ -> MLdummy'
+(*i dummy_lams MLdummy (List.length (fst (splay_prod env none t))) i*) 
 
 (*S ML declarations. *)
 
@@ -661,19 +665,19 @@ let extract_constant sp r =
            | (Logic,Arity) -> axiom_warning_message sp; 
 	       DdummyType r
 	   | (Logic,_) -> axiom_warning_message sp;
-	       Dterm (r, MLdummy))
+	       Dterm (r, MLdummy'))
     | Some body ->
 	(match flag_of_type env typ with
 	   | (Logic, Arity) -> DdummyType r
 	   | (Info, Arity) -> 
 	       let s,vl = type_sign_vl env typ in 
-	       let t = extract_type_arity env body 
-			    (ctx_from_sign s) (List.length s) 
+	       let ctx = ctx_from_sign s in 
+	       let t = extract_type_arity env body ctx (List.length s)
 	       in Dtype (r, vl, t)
-	   | (Logic, _) -> Dterm (r, MLdummy)
+	   | (Logic, _) -> Dterm (r, MLdummy')
 	   | (Info, _) -> 
 		 let a = extract_term env body in
-		 if a <> MLdummy then 
+		 if a <> MLdummy' then 
 		   Dterm (r, kill_prop_lams_eta a (signature_of_sp sp))
 		 else Dterm (r, a))
 		   

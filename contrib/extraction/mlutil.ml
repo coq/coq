@@ -206,7 +206,7 @@ let gen_subst v d t =
 	let i'= i-n in 
 	if i' < 1 then a 
 	else if i' < Array.length v then 
-	  if v.(i') = 0 then MLdummy
+	  if v.(i') = 0 then MLdummy'
 	  else MLrel (v.(i')+n) 
 	else MLrel (i+d) 
     | a -> ast_map_lift subst n a
@@ -817,7 +817,7 @@ let rec expunge_fix_decls prm v c b = function
 let rec optimize prm = function
   | [] -> 
       []
-  | (DdummyType r | Dterm(r,MLdummy)) as d :: l ->
+  | (DdummyType r | Dterm(r,MLdummy')) as d :: l ->
       if List.mem r prm.to_appear then d :: (optimize prm l) 
       else optimize prm l
   | Dterm (r,t) :: l ->
