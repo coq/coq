@@ -225,7 +225,7 @@ Intro x; Rewrite -> sin_plus; Rewrite -> sin_PI2; Rewrite -> cos_PI2; Ring.
 Qed.
 
 Lemma PI2_RGT_0 : ``0<PI/2``.
-Cut ~(O=(2)); [Intro H; Generalize (lt_INR_0 (2) (neq_O_lt (2) H)); Rewrite INR_eq_INR2; Unfold INR2; Intro H1; Generalize (Rmult_lt_pos PI (Rinv ``2``) PI_RGT_0 (Rlt_Rinv ``2`` H1)); Intro H2; Assumption | Discriminate].
+Unfold Rdiv; Apply Rmult_lt_pos; [Apply PI_RGT_0 | Apply Rlt_Rinv; Sup].
 Qed. 
 
 Lemma SIN_bound : (x:R) ``-1<=(sin x)<=1``.
@@ -303,20 +303,13 @@ Apply Rlt_monotony.
 Apply lt_INR_0; Apply neq_O_lt.
 Assert H2 := (fact_neq_0 (plus (mult (2) n) (1))).
 Red; Intro; Elim H2; Symmetry; Assumption.
-Do 2 Rewrite S_INR; Rewrite plus_INR; Rewrite mult_INR; Repeat Rewrite INR_eq_INR2; Unfold INR2; Fold INR2; Pose x := (INR2 n).
+Do 2 Rewrite S_INR; Rewrite plus_INR; Rewrite mult_INR; Pose x := (INR n); Unfold INR.
 Replace ``(2*x+1+1+1)*(2*x+1+1)`` with ``4*x*x+10*x+6``; [Idtac | Ring].
 Apply Rlt_anti_compatibility with ``-4``; Rewrite Rplus_Ropp_l; Replace ``-4+(4*x*x+10*x+6)`` with ``(4*x*x+10*x)+2``; [Idtac | Ring].
 Apply ge0_plus_gt0_is_gt0.
 Cut ``0<=x``.
-Intro; Apply ge0_plus_ge0_is_ge0; Repeat Apply Rmult_le_pos.
-Left; Sup0.
-Left; Sup0.
-Assumption.
-Assumption.
-Left; Sup0.
-Left; Sup0.
-Assumption.
-Unfold x; Replace R0 with (INR O); [Rewrite <- INR_eq_INR2; Apply le_INR; Apply le_O_n | Reflexivity].
+Intro; Apply ge0_plus_ge0_is_ge0; Repeat Apply Rmult_le_pos; Assumption Orelse Left; Sup.
+Unfold x; Replace R0 with (INR O); [Apply le_INR; Apply le_O_n | Reflexivity].
 Sup0.
 Apply INR_eq; Do 2 Rewrite S_INR; Do 3 Rewrite plus_INR; Rewrite mult_INR; Repeat Rewrite S_INR; Ring.
 Apply INR_fact_neq_0.

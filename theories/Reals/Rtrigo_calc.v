@@ -386,8 +386,7 @@ Rewrite sqrt_def.
 Ring.
 Replace ``3`` with ``(INR (S (S (S O))))`` .
 Apply pos_INR.
-Rewrite INR_eq_INR2.
-Reflexivity.
+Unfold INR; Rewrite Rplus_sym; Reflexivity.
 DiscrR.
 DiscrR.
 DiscrR.

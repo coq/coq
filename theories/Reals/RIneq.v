@@ -1574,26 +1574,6 @@ Intro; Ring.
 Cut ~(O=(2)); [Intro H0; Generalize (lt_INR_0 (2) (neq_O_lt (2) H0)); Unfold INR; Intro; Assumption | Discriminate].
 Qed.
 
-(*****************************************************)
-(** Complementary results about [INR]                *)
-(*****************************************************)
-
-Fixpoint INR2 [n:nat] : R := Cases n of
-O => ``0``
-| (S n0) => Cases n0 of
-O => ``1``
-| (S _) => ``1+(INR2 n0)``
-end
-end.
-
-Theorem INR_eq_INR2 : (n:nat) (INR n)==(INR2 n).
-Induction n; [Unfold INR INR2; Reflexivity | Intros; Unfold INR INR2; Fold INR INR2; Rewrite H; Case n0; [Reflexivity | Intros; Ring]].
-Qed.
-
-Lemma add_auto : (p,q:nat) ``(INR2 (S p))+(INR2 q)==(INR2 p)+(INR2 (S q))``.
-Intros; Repeat Rewrite <- INR_eq_INR2; Repeat Rewrite S_INR; Ring.
-Qed.
-
 (**********)
 Lemma complet_weak : (E:R->Prop) (bound E) -> (ExT [x:R] (E x)) -> (ExT [m:R] (is_lub E m)).
 Intros; Elim (complet E H H0); Intros; Split with x; Assumption.
