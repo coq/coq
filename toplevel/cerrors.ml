@@ -105,8 +105,13 @@ let rec explain_exn_default = function
   | Assert_failure (s,b,e) ->
       hov 0 (str "Anomaly: assert failure" ++ spc () ++
 	       (if s <> "" then 
-		 (str ("(file \"" ^ s ^ "\", characters ") ++ 
+		 if Sys.ocaml_version = "3.06" then
+		   (str ("(file \"" ^ s ^ "\", characters ") ++ 
 		    int b ++ str "-" ++ int e ++ str ")")
+		 else
+		   (str ("(file \"" ^ s ^ "\", line ") ++ int b ++
+		    str ", characters " ++ int e ++ str "-" ++
+		    int (e+6) ++ str ")")
 	       else
 		 (mt ())) ++
 	       report ())
