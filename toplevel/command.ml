@@ -37,6 +37,7 @@ open Indtypes
 open Vernacexpr
 open Decl_kinds
 open Pretyping
+open Symbols
 
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
 let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
@@ -298,6 +299,7 @@ let interp_mutual lparams lnamearconstrs finite =
          let arity = interp_type sigma env_params arityc in
 	 let fullarity = it_mkProd_or_LetIn arity params in
 	 let env' = Termops.push_rel_assum (Name recname,fullarity) env in
+	 let argsc = compute_arguments_scope fullarity in
 	 let ind_impls' = 
 	   if Impargs.is_implicit_args() then
 	     let impl = Impargs.compute_implicits false env_params fullarity in
@@ -305,9 +307,9 @@ let interp_mutual lparams lnamearconstrs finite =
 	     let l = List.fold_right
 	       (fun imp l -> if Impargs.is_status_implicit imp then
 		 Impargs.name_of_implicit imp::l else l) paramimpl [] in
-	     (recname,(l,impl))::ind_impls
+	     (recname,(l,impl,argsc))::ind_impls
 	   else
-	     (recname,([],[]))::ind_impls in
+	     (recname,([],[],argsc))::ind_impls in
 	 (env', ind_impls', (arity::arl)))
       (env0, [], []) lnamearconstrs
   in
@@ -452,15 +454,19 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)  =
   and sigma = Evd.empty
   and env0 = Global.env()
   and nv = Array.of_list (List.map (fun ((_,n,_,_,_),_) -> n) lnameargsardef) in
-  let fs = States.freeze() in
-  (* Declare the notations for the recursive types pushed in local context*)
-  let (rec_sign,arityl) = 
+  (* Build the recursive context and notations for the recursive types *)
+  let (rec_sign,rec_impls,arityl) = 
     List.fold_left 
-      (fun (env,arl) ((recname,_,bl,arityc,_),_) -> 
+      (fun (env,impls,arl) ((recname,_,bl,arityc,_),_) -> 
         let arityc = prod_rawconstr arityc bl in
         let arity = interp_type sigma env0 arityc in
-        (Environ.push_named (recname,None,arity) env, (arity::arl)))
-      (env0,[]) lnameargsardef in
+	let impl = 
+	  if Impargs.is_implicit_args()
+	  then Impargs.compute_implicits false env0 arity
+	  else [] in
+	let impls' =(recname,([],impl,compute_arguments_scope arity))::impls in
+        (Environ.push_named (recname,None,arity) env, impls', arity::arl))
+      (env0,[],[]) lnameargsardef in
   let arityl = List.rev arityl in
   let notations = 
     List.fold_right (fun (_,ntnopt) l -> option_cons ntnopt l) 
@@ -468,21 +474,17 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)  =
 
   let recdef =
 
-    (* Declare local context and local notations *)
+    (* Declare local notations *)
     let fs = States.freeze() in
     let def = 
       try
 	List.iter (fun (df,c,scope) -> (* No scope for tmp notation *)
 	  Metasyntax.add_notation_interpretation df [] c None) notations;
-	List.iter2
-	  (fun recname arity -> 
-            let _ = declare_variable recname
-	      (Lib.cwd(),SectionLocalAssum arity, IsAssumption Definitional) in
-	    ()) lrecnames arityl;
 	List.map2
 	  (fun ((_,_,bl,_,def),_) arity ->
             let def = abstract_rawconstr def bl in
-            interp_casted_constr sigma rec_sign def arity)
+            interp_casted_constr_with_implicits 
+	      sigma rec_sign rec_impls def arity)
           lnameargsardef arityl
       with e ->
 	States.unfreeze fs; raise e in

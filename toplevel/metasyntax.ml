@@ -1199,8 +1199,7 @@ let add_notation_interpretation df names c sc =
   check_notation_existence (make_notation_key symbs);
   let (acvars,ac) = interp_aconstr names vars c in
   let a = (remove_vars recs acvars,ac) (* For recursive parts *) in
-  let a_for_old = interp_rawconstr_with_implicits (Global.env()) vars names c 
-  in
+  let a_for_old = interp_rawconstr_with_implicits Evd.empty (Global.env()) vars names c in
   let for_oldpp = set_data_for_v7_pp recs a_for_old vars in
   add_notation_interpretation_core false symbs for_oldpp df a sc false false
 

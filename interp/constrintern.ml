@@ -22,11 +22,13 @@ open Topconstr
 open Nametab
 open Symbols
 
-type implicits_env = (* To interpret inductive type with implicits *)
-    (identifier * (identifier list * Impargs.implicits_list)) list
+(* To interpret implicits and arg scopes of recursive variables in
+   inductive types and recursive definitions *)
+type var_internalisation_data =
+    identifier list * Impargs.implicits_list * scope_name option list
 
-type full_implicits_env =
-    identifier list * implicits_env
+type implicits_env = (identifier * var_internalisation_data) list
+type full_implicits_env = identifier list * implicits_env
 
 let interning_grammar = ref false
 
@@ -233,17 +235,17 @@ let intern_var (env,_,_ as genv) (ltacvars,vars2,vars3,_,impls) loc id =
   let (vars1,unbndltacvars) = ltacvars in
   (* Is [id] an inductive type potentially with implicit *)
   try
-    let l,impl = List.assoc id impls in
+    let l,impl,argsc = List.assoc id impls in
     let l = List.map 
       (fun id -> CRef (Ident (loc,id)), Some (loc,ExplByName id)) l in
-    RVar (loc,id), impl, [],
+    RVar (loc,id), impl, argsc,
     (if !Options.v7 & !interning_grammar then [] else l)
   with Not_found ->
   (* Is [id] bound in current env or is an ltac var bound to constr *)
   if Idset.mem id env or List.mem id vars1
   then
       RVar (loc,id), [], [], []
-  (* Is [id] a notation variables *)
+  (* Is [id] a notation variable *)
   else if List.mem_assoc id vars3
   then
     (set_var_scope loc id genv vars3; RVar (loc,id), [], [], [])
@@ -256,15 +258,16 @@ let intern_var (env,_,_ as genv) (ltacvars,vars2,vars3,_,impls) loc id =
 	  pr_id id ++ str " ist not bound to a term")
       | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
   with Not_found ->
-  (* Is [id] a section variable *)
+  (* Is [id] a goal or section variable *)
   let _ = Sign.lookup_named id vars2 in
-  (* Car Fixpoint met les fns définies temporairement comme vars de sect *)
-  let imps, args_scopes =
-    try
-      let ref = VarRef id in
-      implicits_of_global ref, find_arguments_scope ref
-    with _ -> [], [] in
-  RRef (loc, VarRef id), imps, args_scopes, []
+  try
+    (* [id] a section variable *)
+    (* Redundant: could be done in intern_qualid *)
+    let ref = VarRef id in
+    RRef (loc, ref), implicits_of_global ref, find_arguments_scope ref, []
+  with _ ->
+    (* [id] a goal variable *)
+    RVar (loc,id), [], [], []
 
 let find_appl_head_data (_,_,_,_,impls) = function
   | RRef (_,ref) as x -> x,implicits_of_global ref,find_arguments_scope ref,[]
@@ -1011,8 +1014,8 @@ let interp_rawtype sigma env c =
 let interp_rawtype_with_implicits sigma env impls c =
   interp_rawconstr_gen_with_implicits true sigma env impls false ([],[]) c
 
-let interp_rawconstr_with_implicits env vars impls c =
-  interp_rawconstr_gen_with_implicits false Evd.empty env ([],impls) false
+let interp_rawconstr_with_implicits sigma env vars impls c =
+  interp_rawconstr_gen_with_implicits false sigma env ([],impls) false
     (vars,[]) c
 
 (*
@@ -1084,6 +1087,10 @@ let interp_openconstr_gen sigma env (ltacvars,unbndltacvars) c exptyp =
 
 let interp_casted_constr sigma env c typ = 
   understand_gen sigma env [] (Some typ) (interp_rawconstr sigma env c)
+
+let interp_casted_constr_with_implicits sigma env impls c typ =
+  understand_gen sigma env [] (Some typ) 
+    (interp_rawconstr_with_implicits sigma env [] impls c)
 
 let interp_constrpattern_gen sigma env ltacvar c =
   let c = interp_rawconstr_gen false sigma env true (ltacvar,[]) c in
