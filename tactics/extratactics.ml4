@@ -19,22 +19,24 @@ open Extraargs
 open Equality
 
 TACTIC EXTEND Rewrite
-  [ "Rewrite" orient(b) constr_with_bindings(c) ] -> [general_rewrite_bindings b c]
+| [ "Rewrite" orient(b) constr_with_bindings(c) ] ->
+    [general_rewrite_bindings b c]
 END
 
 TACTIC EXTEND RewriteIn
- [ "Rewrite" orient(b) constr_with_bindings(c) "in" hyp(h) ] ->
- [general_rewrite_in b h c]
+| [ "Rewrite" orient(b) constr_with_bindings(c) "in" hyp(h) ] ->
+    [general_rewrite_bindings_in b h c]
 END
 
 let h_rewriteLR x = h_rewrite true (x,Rawterm.NoBindings)
 
 TACTIC EXTEND Replace
-  [ "Replace" constr(c1) "with" constr(c2) ] -> [ replace c1 c2 ]
+| [ "Replace" constr(c1) "with" constr(c2) ] ->
+    [ replace c1 c2 ]
 END
 
 TACTIC EXTEND ReplaceIn
-  [ "Replace" constr(c1) "with" constr(c2) "in" hyp(h) ] ->
+| [ "Replace" constr(c1) "with" constr(c2) "in" hyp(h) ] ->
     [ replace_in h c1 c2 ]
 END
 
@@ -93,10 +95,13 @@ TACTIC EXTEND ConditionalRewriteIn
 END
 
 TACTIC EXTEND DependentRewrite
-| [ "Dependent" "Rewrite" orient(b) hyp(id) ] -> [ substHypInConcl b id ]
-| [ "CutRewrite" orient(b) constr(eqn) ] -> [ substConcl b eqn ]
+| [ "Dependent" "Rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
+END
+
+TACTIC EXTEND CutRewrite
+| [ "CutRewrite" orient(b) constr(eqn) ] -> [ cutRewriteInConcl b eqn ]
 | [ "CutRewrite" orient(b) constr(eqn) "in" hyp(id) ]
-      -> [ substHyp b eqn id ]
+      -> [ cutRewriteInHyp b eqn id ]
 END
 
 (* Contradiction *)

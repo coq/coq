@@ -305,16 +305,16 @@ let remember_first_eq id x = if !x = None then x := Some id
 
 let projectAndApply thin id eqname names depids gls =
   let env = pf_env gls in
-  let clearer id =
-    if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC) in
-  let subst_hyp_LR id = tclTHEN (tclTRY(hypSubst_LR id onConcl)) (clearer id) in
-  let subst_hyp_RL id = tclTHEN (tclTRY(hypSubst_RL id onConcl)) (clearer id) in
+  let subst_hyp l2r id =
+    tclTHEN (tclTRY(rewriteInConcl l2r (mkVar id)))
+      (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
+  in
   let substHypIfVariable tac id gls =
     let (t,t1,t2) = Hipattern.dest_nf_eq gls (pf_get_hyp_typ gls id) in
     match (kind_of_term t1, kind_of_term t2) with
-      | Var id1, _ -> generalizeRewriteIntros (subst_hyp_LR id) depids id1 gls
-      | _, Var id2 -> generalizeRewriteIntros (subst_hyp_RL id) depids id2 gls
-      | _ -> tac id gls
+    | Var id1, _ -> generalizeRewriteIntros (subst_hyp true id) depids id1 gls
+    | _, Var id2 -> generalizeRewriteIntros (subst_hyp false id) depids id2 gls
+    | _ -> tac id gls
   in
   let deq_trailer id neqns =
     tclTHENSEQ 
@@ -324,7 +324,7 @@ let projectAndApply thin id eqname names depids gls =
 	   (intro_move idopt None)
 	   (* try again to substitute and if still not a variable after *)
 	   (* decomposition, arbitrarily try to rewrite RL !? *)
-	   (tclTRY (onLastHyp (substHypIfVariable subst_hyp_RL))))
+	   (tclTRY (onLastHyp (substHypIfVariable (subst_hyp false)))))
 	 names);
        (if names = [] then clear [id] else tclIDTAC)]
   in
