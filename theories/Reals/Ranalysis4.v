@@ -58,6 +58,94 @@ Unfold div_fct fct_cte inv_fct; Apply fct_eq.
 Intro; Unfold Rdiv; Rewrite Rmult_1l; Reflexivity.
 Qed.
 
+(* Regularity of hyperbolic functions *)
+Axiom derivable_pt_lim_exp : (x:R) (derivable_pt_lim exp x (exp x)).   
+
+Lemma derivable_pt_lim_cosh : (x:R) (derivable_pt_lim cosh x ``(sinh x)``).
+Intro.
+Unfold cosh sinh.
+Replace [x0:R]``((exp x0)+(exp ( -x0)))/2`` with (plus_fct (mult_real_fct ``/2`` exp) (mult_real_fct ``/2`` (comp exp (opp_fct id)))).
+Replace ``((exp x)-(exp ( -x)))/2`` with ``/2*(exp x)+/2*((exp (-x))*-1)``. 
+Apply derivable_pt_lim_plus.
+Apply derivable_pt_lim_scal.
+Apply derivable_pt_lim_exp.
+Apply derivable_pt_lim_scal.
+Apply derivable_pt_lim_comp.
+Apply derivable_pt_lim_opp.
+Apply derivable_pt_lim_id.
+Apply derivable_pt_lim_exp.
+Unfold Rdiv; Ring.
+Unfold plus_fct mult_real_fct comp opp_fct id; Apply fct_eq.
+Intro; Unfold Rdiv; Ring.
+Qed.
+
+Lemma derivable_pt_lim_sinh : (x:R) (derivable_pt_lim sinh x ``(cosh x)``).
+Intro.
+Unfold cosh sinh.
+Replace [x0:R]``((exp x0)-(exp ( -x0)))/2`` with (minus_fct (mult_real_fct ``/2`` exp) (mult_real_fct ``/2`` (comp exp (opp_fct id)))).
+Replace ``((exp x)+(exp ( -x)))/2`` with ``/2*(exp x)-/2*((exp (-x))*-1)``. 
+Apply derivable_pt_lim_minus.
+Apply derivable_pt_lim_scal.
+Apply derivable_pt_lim_exp.
+Apply derivable_pt_lim_scal.
+Apply derivable_pt_lim_comp.
+Apply derivable_pt_lim_opp.
+Apply derivable_pt_lim_id.
+Apply derivable_pt_lim_exp.
+Unfold Rdiv; Ring.
+Unfold minus_fct mult_real_fct comp opp_fct id; Apply fct_eq.
+Intro; Unfold Rdiv; Ring.
+Qed.
+
+Lemma derivable_pt_exp : (x:R) (derivable_pt exp x).
+Intro.
+Unfold derivable_pt.
+Apply Specif.existT with (exp x).
+Apply derivable_pt_lim_exp.
+Qed.
+
+Lemma derivable_pt_cosh : (x:R) (derivable_pt cosh x).
+Intro.
+Unfold derivable_pt.
+Apply Specif.existT with (sinh x).
+Apply derivable_pt_lim_cosh.
+Qed.
+
+Lemma derivable_pt_sinh : (x:R) (derivable_pt sinh x).
+Intro.
+Unfold derivable_pt.
+Apply Specif.existT with (cosh x).
+Apply derivable_pt_lim_sinh.
+Qed.
+
+Lemma derivable_exp : (derivable exp).
+Unfold derivable; Apply derivable_pt_exp.
+Qed.
+
+Lemma derivable_cosh : (derivable cosh).
+Unfold derivable; Apply derivable_pt_cosh.
+Qed.
+
+Lemma derivable_sinh : (derivable sinh).
+Unfold derivable; Apply derivable_pt_sinh.
+Qed.
+
+Lemma derive_pt_exp : (x:R) (derive_pt exp x (derivable_pt_exp x))==(exp x).
+Intro; Apply derive_pt_eq_0.
+Apply derivable_pt_lim_exp.
+Qed.
+
+Lemma derive_pt_cosh : (x:R) (derive_pt cosh x (derivable_pt_cosh x))==(sinh x).
+Intro; Apply derive_pt_eq_0.
+Apply derivable_pt_lim_cosh.
+Qed.
+
+Lemma derive_pt_sinh : (x:R) (derive_pt sinh x (derivable_pt_sinh x))==(cosh x).
+Intro; Apply derive_pt_eq_0.
+Apply derivable_pt_lim_sinh.
+Qed.
+
+
 (**********)
 Tactic Definition IntroHypG trm :=
 Match trm With
@@ -102,6 +190,9 @@ Match trm With
  | _ -> Idtac)
 |[cos] -> Idtac
 |[sin] -> Idtac
+|[cosh] -> Idtac
+|[sinh] -> Idtac
+|[exp] -> Idtac
 |[Rsqr] -> Idtac
 |[id] -> Idtac
 |[(fct_cte ?)] -> Idtac
@@ -174,6 +265,9 @@ Match trm With
  | _ -> Idtac)
 |[cos] -> Idtac
 |[sin] -> Idtac
+|[cosh] -> Idtac
+|[sinh] -> Idtac
+|[exp] -> Idtac
 |[Rsqr] -> Idtac
 |[id] -> Idtac
 |[(fct_cte ?)] -> Idtac
@@ -203,6 +297,9 @@ Match Context With
  |[|-(derivable (fct_cte ?))] -> Apply derivable_const
  |[|-(derivable sin)] -> Apply derivable_sin
  |[|-(derivable cos)] -> Apply derivable_cos
+ |[|-(derivable cosh)] -> Apply derivable_cosh
+ |[|-(derivable sinh)] -> Apply derivable_sinh
+ |[|-(derivable exp)] -> Apply derivable_exp
   (* regles de differentiabilite *)
   (* PLUS *)
  |[|-(derivable (plus_fct ?1 ?2))] -> Apply (derivable_plus ?1 ?2); IsDiff_glob
@@ -233,6 +330,9 @@ Match Context With
 |[|-(derivable_pt (fct_cte ?) ?)] -> Apply derivable_pt_const
 |[|-(derivable_pt sin ?)] -> Apply derivable_pt_sin
 |[|-(derivable_pt cos ?)] -> Apply derivable_pt_cos
+|[|-(derivable_pt sinh ?)] -> Apply derivable_pt_sinh
+|[|-(derivable_pt cosh ?)] -> Apply derivable_pt_cosh
+|[|-(derivable_pt exp ?)] -> Apply derivable_pt_exp
 |[|-(derivable_pt sqrt ?1)] -> Apply (derivable_pt_sqrt ?1); Assumption Orelse Unfold plus_fct minus_fct opp_fct mult_fct div_fct inv_fct comp id fct_cte
  (* regles de differentiabilite *)
  (* PLUS *)
@@ -265,6 +365,9 @@ Match Context With
  |[|-(continuity (fct_cte ?))] -> Apply derivable_continuous; Apply derivable_const
  |[|-(continuity sin)] -> Apply derivable_continuous; Apply derivable_sin
  |[|-(continuity cos)] -> Apply derivable_continuous; Apply derivable_cos
+ |[|-(continuity exp)] -> Apply derivable_continuous; Apply derivable_exp
+ |[|-(continuity sinh)] -> Apply derivable_continuous; Apply derivable_sinh
+ |[|-(continuity cosh)] -> Apply derivable_continuous; Apply derivable_cosh
  (* regles de continuite *)
  (* PLUS *)
 |[|-(continuity (plus_fct ?1 ?2))] -> Apply (continuity_plus ?1 ?2); Try IsCont_glob Orelse Assumption
@@ -296,6 +399,9 @@ Match Context With
 |[|-(continuity_pt (fct_cte ?) ?)] -> Apply derivable_continuous_pt; Apply derivable_pt_const
 |[|-(continuity_pt sin ?)] -> Apply derivable_continuous_pt; Apply derivable_pt_sin
 |[|-(continuity_pt cos ?)] -> Apply derivable_continuous_pt; Apply derivable_pt_cos
+|[|-(continuity_pt sinh ?)] -> Apply derivable_continuous_pt; Apply derivable_pt_sinh
+|[|-(continuity_pt cosh ?)] -> Apply derivable_continuous_pt; Apply derivable_pt_cosh
+|[|-(continuity_pt exp ?)] -> Apply derivable_continuous_pt; Apply derivable_pt_exp
 |[|-(derivable_pt sqrt ?1)] -> Apply derivable_continuous_pt; Apply (derivable_pt_sqrt ?1); Assumption Orelse Unfold plus_fct minus_fct opp_fct mult_fct div_fct inv_fct comp id fct_cte
  (* regles de differentiabilite *)
  (* PLUS *)
@@ -399,6 +505,9 @@ Match trm With
 | [(opp_fct ?1)] -> Let p1 = (ConsProof ?1 pt) In '(derivable_pt_opp ?1 pt p1)
 | [sin] -> '(derivable_pt_sin pt)
 | [cos] -> '(derivable_pt_cos pt)
+| [sinh] -> '(derivable_pt_sinh pt)
+| [cosh] -> '(derivable_pt_cosh pt)
+| [exp] -> '(derivable_pt_exp pt)
 | [id] -> '(derivable_pt_id pt)
 | [Rsqr] -> '(derivable_pt_Rsqr pt)
 | [sqrt] ->
@@ -426,6 +535,9 @@ Match trm With
 | [id] -> Try Rewrite derive_pt_id
 | [sin] -> Try Rewrite derive_pt_sin
 | [cos] -> Try Rewrite derive_pt_cos
+| [sinh] -> Try Rewrite derive_pt_sinh
+| [cosh] -> Try Rewrite derive_pt_cosh
+| [exp] -> Try Rewrite derive_pt_exp
 | [Rsqr] -> Try Rewrite derive_pt_Rsqr
 | [sqrt] -> Try Rewrite derive_pt_sqrt
 | [?1] -> Let aux = ?1 In
