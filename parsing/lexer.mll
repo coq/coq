@@ -11,7 +11,7 @@ type error =
 
 exception Error of error * int * int
 
-let is_keyword =
+let add_keyword,is_keyword =
   let table = Hashtbl.create 149 in
   List.iter (fun kw -> Hashtbl.add table kw ())
     [ "Grammar"; "Syntax"; "Quit"; "Load"; "Compile";
@@ -21,7 +21,8 @@ let is_keyword =
       "Theorem"; "Variable"; "Axiom"; "Parameter"; "Hypothesis";
       "Orelse"; "Proof"; "Qed";
       "Prop"; "Set"; "Type" ];
-  fun s -> try Hashtbl.find table s; true with Not_found -> false
+  (fun s -> Hashtbl.add table s ()),
+  (fun s -> try Hashtbl.find table s; true with Not_found -> false)
       
 let char_for_backslash =
   match Sys.os_type with

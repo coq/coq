@@ -43,7 +43,8 @@ let rec globalize bv = function
 let check c = 
   let c = globalize [] c in
   let (j,u) = safe_machine !env c in
-  mSGNL (hOV 0 [< 'sTR"  :"; 'sPC; hOV 0 (pr_term (j_type j)); 'fNL >])
+  let ty = j_type j in
+  mSGNL (hOV 0 [< 'sTR"  :"; 'sPC; hOV 0 (pr_term ty); 'fNL >])
 
 let definition id ty c =
   let c = globalize [] c in

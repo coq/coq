@@ -96,7 +96,7 @@ parsing/lexer.cmo: parsing/lexer.ml
 
 # Default rules
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .g4
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .ml4
 
 .ml.cmo:
 	$(OCAMLC) $(BYTEFLAGS) -c $<
@@ -110,10 +110,10 @@ parsing/lexer.cmo: parsing/lexer.ml
 .mll.ml:
 	ocamllex $<
 
-.g4.cmo:
+.ml4.cmo:
 	$(OCAMLC) $(BYTEFLAGS) -I $(CAMLP4LIB) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
 
-.g4.cmx:
+.ml44.cmx:
 	$(OCAMLOPT) $(OPTFLAGS) -I $(CAMLP4LIB) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
 
 # Cleaning

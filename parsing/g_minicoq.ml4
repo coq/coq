@@ -2,6 +2,7 @@
 (* $Id$ *)
 
 open Pp
+open Util
 open Names
 open Univ
 open Generic
@@ -9,7 +10,7 @@ open Term
 
 let lexer = {
   Token.func = Lexer.func;
-  Token.using = (fun _ -> ());
+  Token.using = (function ("",s) -> Lexer.add_keyword s | _ -> ());
   Token.removing = (fun _ -> ());
   Token.tparse = Lexer.tparse;
   Token.text = Lexer.token_text }
@@ -58,12 +59,12 @@ EXTEND
 	DOP0 (Sort (Prop Null))
     | "Type" ->
 	DOP0 (Sort (Type (new_univ())))
-    | IDENT "Const"; id = IDENT ->
+    | "Const"; id = IDENT ->
 	DOPN (Const (path_of_string id), [||])
-    | IDENT "Ind"; id = IDENT; n = INT ->
+    | "Ind"; id = IDENT; n = INT ->
 	let n = int_of_string n in
 	DOPN (MutInd (path_of_string id, n), [||])
-    | IDENT "Construct"; id = IDENT; n = INT; i = INT ->
+    | "Construct"; id = IDENT; n = INT; i = INT ->
 	let n = int_of_string n and i = int_of_string i in
 	DOPN (MutConstruct ((path_of_string id, n), i), [||])
     | "["; na = name; ":"; t = term; "]"; c = term ->
@@ -152,10 +153,13 @@ let rec pp bv = function
   | DOP2 (Cast, c, t) ->
       if !print_casts then 
 	[< 'sTR"("; pp bv c; 'sTR"::"; pp bv t; 'sTR")" >]
-      else
+      else 
 	pp bv c
-  | DOPN (AppL, cv) ->
-      [< >]
+  | DOPN (AppL, [|c|]) ->
+      pp bv c
+  | DOPN (AppL, v) ->
+      [< 'sTR"("; prvect_with_sep (fun () -> [< 'sPC >]) (pp bv) v;
+	 'sTR")" >]
   | DOPN (Const sp, _) ->
       [< 'sTR"Const "; print_id (basename sp) >]
   | DOPN (MutInd (sp,i), _) ->
