@@ -106,8 +106,8 @@ let dyn_conditional_rewrite lft2rgt = function
       tactic_com_bind_list 
 	(conditional_rewrite lft2rgt (Tacinterp.interp tac)) 
 	(com,binds)
-  | [(Tacexp tac); (Constr c);(Cbindings binds)] -> 
-      conditional_rewrite lft2rgt (Tacinterp.interp tac) (c,binds)
+  | [(Tac (tac,_)); (Constr c);(Cbindings binds)] -> 
+      conditional_rewrite lft2rgt tac (c,binds)
   | _ -> assert false
                  
 let v_rewriteLR = hide_tactic "RewriteLR" dyn_rewriteLR
@@ -162,8 +162,8 @@ let dyn_conditional_rewrite_in lft2rgt = function
       tactic_com_bind_list 
 	(conditional_rewrite_in lft2rgt id (Tacinterp.interp tac)) 
 	(com,binds)
-  | [(Tacexp tac); Identifier id; (Constr c);(Cbindings binds)] -> 
-      conditional_rewrite_in lft2rgt id (Tacinterp.interp tac) (c,binds)
+  | [(Tac (tac,_)); Identifier id; (Constr c);(Cbindings binds)] -> 
+      conditional_rewrite_in lft2rgt id tac (c,binds)
   | _ -> assert false
 
 let rewriteLR_in_tac =  hide_tactic "RewriteLRin" (dyn_rewrite_in true)
