@@ -114,7 +114,7 @@ Apply H4.
 Intros; Rewrite (H0 x); Rewrite (H0 x1); Apply H5; Apply H6.
 Intro; Unfold cos SFL.
 Case (cv x); Case (exist_cos (Rsqr x)); Intros.
-Symmetry; EApply UL_suite.
+Symmetry; EApply UL_sequence.
 Apply u.
 Unfold cos_in in c; Unfold infinit_sum in c; Unfold Un_cv; Intros.
 Elim (c ? H0); Intros N0 H1.
@@ -259,7 +259,7 @@ Unfold SFL sin.
 Case (cv h); Intros.
 Case (exist_sin (Rsqr h)); Intros.
 Unfold Rdiv; Rewrite (Rinv_r_simpl_m h x0 H6).
-EApply UL_suite.
+EApply UL_sequence.
 Apply u.
 Unfold sin_in in s; Unfold sin_n infinit_sum in s; Unfold SP fn Un_cv; Intros.
 Elim (s ? H10); Intros N0 H11.
@@ -270,7 +270,7 @@ Apply H11; Assumption.
 Apply sum_eq; Intros; Apply Rmult_mult_r; Unfold Rsqr; Rewrite pow_sqr; Reflexivity.
 Unfold SFL sin.
 Case (cv R0); Intros.
-EApply UL_suite.
+EApply UL_sequence.
 Apply u.
 Unfold SP fn; Unfold Un_cv; Intros; Exists (S O); Intros.
 Unfold R_dist; Replace (sum_f_R0 [k:nat]``(pow ( -1) k)/(INR (fact (plus (mult (S (S O)) k) (S O))))*(pow 0 (mult (S (S O)) k))`` n) with R1.

@@ -15,13 +15,12 @@ Require Classical.
 Require Max.
 
 Definition Un_decreasing [Un:nat->R] : Prop := (n:nat) (Rle (Un (S n)) (Un n)).
-Definition opp_sui [Un:nat->R] : nat->R := [n:nat]``-(Un n)``.
-Definition majoree [Un:nat->R] : Prop := (bound (EUn Un)).
-Definition minoree [Un:nat->R] : Prop := (bound (EUn (opp_sui Un))).
+Definition opp_seq [Un:nat->R] : nat->R := [n:nat]``-(Un n)``.
+Definition has_ub [Un:nat->R] : Prop := (bound (EUn Un)).
+Definition has_lb [Un:nat->R] : Prop := (bound (EUn (opp_seq Un))).
 
-(* Toute suite croissante et majoree converge *)
-(* Preuve inspiree de celle presente dans Rseries *)
-Lemma growing_cv : (Un:nat->R) (Un_growing Un) -> (majoree Un) -> (sigTT R [l:R](Un_cv Un l)).
+(**********)
+Lemma growing_cv : (Un:nat->R) (Un_growing Un) -> (has_ub Un) -> (sigTT R [l:R](Un_cv Un l)).
 Unfold Un_growing Un_cv;Intros; 
  Generalize (complet (EUn Un) H0 (EUn_noempty Un));Intro H1.
  Elim H1;Clear H1;Intros;Split with x;Intros.
@@ -60,19 +59,17 @@ Right;Auto.
 Apply (H2 (Un n) (Un_in_EUn Un n)).
 Qed.
 
-(* Pour toute suite decroissante, la suite "opposee" est croissante *)
-Lemma decreasing_growing : (Un:nat->R) (Un_decreasing Un) -> (Un_growing (opp_sui Un)).
+Lemma decreasing_growing : (Un:nat->R) (Un_decreasing Un) -> (Un_growing (opp_seq Un)).
 Intro.
-Unfold Un_growing opp_sui Un_decreasing.
+Unfold Un_growing opp_seq Un_decreasing.
 Intros.
 Apply Rle_Ropp1.
 Apply H.
 Qed.
 
-(* Toute suite decroissante et minoree converge *)
-Lemma decreasing_cv : (Un:nat->R) (Un_decreasing Un) -> (minoree Un) -> (sigTT R [l:R](Un_cv Un l)).
+Lemma decreasing_cv : (Un:nat->R) (Un_decreasing Un) -> (has_lb Un) -> (sigTT R [l:R](Un_cv Un l)).
 Intros.
-Cut (sigTT R [l:R](Un_cv (opp_sui Un) l)) -> (sigTT R [l:R](Un_cv Un l)).
+Cut (sigTT R [l:R](Un_cv (opp_seq Un) l)) -> (sigTT R [l:R](Un_cv Un l)).
 Intro.
 Apply X.
 Apply growing_cv.
@@ -83,7 +80,7 @@ Elim X; Intros.
 Apply existTT with ``-x``.
 Unfold Un_cv in p.
 Unfold R_dist in p.
-Unfold opp_sui in p.
+Unfold opp_seq in p.
 Unfold Un_cv.
 Unfold R_dist.
 Intros.
@@ -95,9 +92,9 @@ Replace ``-((Un n)- -x)`` with ``-(Un n)-x``; [Assumption | Ring].
 Qed.
 
 (***********)
-Lemma maj_sup : (Un:nat->R) (majoree Un) -> (sigTT R [l:R](is_lub (EUn Un) l)).
+Lemma maj_sup : (Un:nat->R) (has_ub Un) -> (sigTT R [l:R](is_lub (EUn Un) l)).
 Intros.
-Unfold majoree in H.
+Unfold has_ub in H.
 Apply complet.
 Assumption.
 Exists (Un O).
@@ -106,8 +103,8 @@ Exists O; Reflexivity.
 Qed.
 
 (**********)
-Lemma min_inf : (Un:nat->R) (minoree Un) -> (sigTT R [l:R](is_lub (EUn (opp_sui Un)) l)).
-Intros; Unfold minoree in H.
+Lemma min_inf : (Un:nat->R) (has_lb Un) -> (sigTT R [l:R](is_lub (EUn (opp_seq Un)) l)).
+Intros; Unfold has_lb in H.
 Apply complet.
 Assumption.
 Exists ``-(Un O)``.
@@ -115,18 +112,17 @@ Exists O.
 Reflexivity.
 Qed.
 
-Definition majorant [Un:nat->R;pr:(majoree Un)] : R := Cases (maj_sup Un pr) of (existTT a b) => a end.
+Definition majorant [Un:nat->R;pr:(has_ub Un)] : R := Cases (maj_sup Un pr) of (existTT a b) => a end.
 
-Definition minorant [Un:nat->R;pr:(minoree Un)] : R := Cases (min_inf Un pr) of (existTT a b) => ``-a`` end.
+Definition minorant [Un:nat->R;pr:(has_lb Un)] : R := Cases (min_inf Un pr) of (existTT a b) => ``-a`` end.
 
-(* Conservation de la propriete de majoration par extraction *)
-Lemma maj_ss : (Un:nat->R;k:nat) (majoree Un) -> (majoree [i:nat](Un (plus k i))).
+Lemma maj_ss : (Un:nat->R;k:nat) (has_ub Un) -> (has_ub [i:nat](Un (plus k i))).
 Intros.
-Unfold majoree in H.
+Unfold has_ub in H.
 Unfold bound in H.
 Elim H; Intros.
 Unfold is_upper_bound in H0.
-Unfold majoree.
+Unfold has_ub.
 Exists x.
 Unfold is_upper_bound.
 Intros.
@@ -135,14 +131,13 @@ Elim H1; Intros.
 Exists (plus k x1); Assumption.
 Qed.
 
-(* Conservation de la propriete de minoration par extraction *)
-Lemma min_ss : (Un:nat->R;k:nat) (minoree Un) -> (minoree [i:nat](Un (plus k i))).
+Lemma min_ss : (Un:nat->R;k:nat) (has_lb Un) -> (has_lb [i:nat](Un (plus k i))).
 Intros.
-Unfold minoree in H.
+Unfold has_lb in H.
 Unfold bound in H.
 Elim H; Intros.
 Unfold is_upper_bound in H0.
-Unfold minoree.
+Unfold has_lb.
 Exists x.
 Unfold is_upper_bound.
 Intros.
@@ -151,16 +146,15 @@ Elim H1; Intros.
 Exists (plus k x1); Assumption.
 Qed.
 
-Definition suite_majorant [Un:nat->R;pr:(majoree Un)] : nat -> R := [i:nat](majorant [k:nat](Un (plus i k)) (maj_ss Un i pr)).
+Definition sequence_majorant [Un:nat->R;pr:(has_ub Un)] : nat -> R := [i:nat](majorant [k:nat](Un (plus i k)) (maj_ss Un i pr)).
 
-Definition suite_minorant [Un:nat->R;pr:(minoree Un)] : nat -> R := [i:nat](minorant [k:nat](Un (plus i k)) (min_ss Un i pr)).
+Definition sequence_minorant [Un:nat->R;pr:(has_lb Un)] : nat -> R := [i:nat](minorant [k:nat](Un (plus i k)) (min_ss Un i pr)).
 
-(* La suite des majorants est decroissante *)
-Lemma Wn_decreasing : (Un:nat->R;pr:(majoree Un)) (Un_decreasing (suite_majorant Un pr)). 
+Lemma Wn_decreasing : (Un:nat->R;pr:(has_ub Un)) (Un_decreasing (sequence_majorant Un pr)). 
 Intros.
 Unfold Un_decreasing.
 Intro.
-Unfold suite_majorant.
+Unfold sequence_majorant.
 Assert H := (maj_sup [k:nat](Un (plus (S n) k)) (maj_ss Un (S n) pr)).
 Assert H0 := (maj_sup [k:nat](Un (plus n k)) (maj_ss Un n pr)).
 Elim H; Intros.
@@ -203,12 +197,11 @@ Case (maj_sup [k:nat](Un (plus (S n) k)) (maj_ss Un (S n) pr)).
 Trivial.
 Qed.
 
-(* La suite des minorants est croissante *)
-Lemma Vn_growing : (Un:nat->R;pr:(minoree Un)) (Un_growing (suite_minorant Un pr)).
+Lemma Vn_growing : (Un:nat->R;pr:(has_lb Un)) (Un_growing (sequence_minorant Un pr)).
 Intros.
 Unfold Un_growing.
 Intro.
-Unfold suite_minorant.
+Unfold sequence_minorant.
 Assert H := (min_inf [k:nat](Un (plus (S n) k)) (min_ss Un (S n) pr)).
 Assert H0 := (min_inf [k:nat](Un (plus n k)) (min_ss Un n pr)).
 Elim H; Intros.
@@ -227,12 +220,12 @@ Unfold is_upper_bound in H3.
 Apply H3.
 Elim H5; Intros.
 Exists (plus (1) x2).
-Unfold opp_sui in H6.
-Unfold opp_sui.
+Unfold opp_seq in H6.
+Unfold opp_seq.
 Replace (plus n (plus (S O) x2)) with (plus (S n) x2).
 Assumption.
 Replace (S n) with (plus (1) n); [Ring | Ring].
-Cut (is_lub (EUn (opp_sui [k:nat](Un (plus n k)))) (Ropp (minorant ([k:nat](Un (plus n k))) (min_ss Un n pr)))).
+Cut (is_lub (EUn (opp_seq [k:nat](Un (plus n k)))) (Ropp (minorant ([k:nat](Un (plus n k))) (min_ss Un n pr)))).
 Intro.
 Unfold is_lub in p0; Unfold is_lub in H1.
 Elim p0; Intros; Elim H1; Intros.
@@ -244,7 +237,7 @@ Unfold minorant.
 Case (min_inf [k:nat](Un (plus n k)) (min_ss Un n pr)).
 Intro; Rewrite Ropp_Ropp.
 Trivial.
-Cut (is_lub (EUn (opp_sui [k:nat](Un (plus (S n) k)))) (Ropp (minorant ([k:nat](Un (plus (S n) k))) (min_ss Un (S n) pr)))).
+Cut (is_lub (EUn (opp_seq [k:nat](Un (plus (S n) k)))) (Ropp (minorant ([k:nat](Un (plus (S n) k))) (min_ss Un (S n) pr)))).
 Intro.
 Unfold is_lub in p; Unfold is_lub in H1.
 Elim p; Intros; Elim H1; Intros.
@@ -258,12 +251,12 @@ Intro; Rewrite Ropp_Ropp.
 Trivial.
 Qed.
 
-(* Encadrement Vn,Un,Wn *)
-Lemma Vn_Un_Wn_order : (Un:nat->R;pr1:(majoree Un);pr2:(minoree Un)) (n:nat) ``((suite_minorant Un pr2) n)<=(Un n)<=((suite_majorant Un pr1) n)``. 
+(**********)
+Lemma Vn_Un_Wn_order : (Un:nat->R;pr1:(has_ub Un);pr2:(has_lb Un)) (n:nat) ``((sequence_minorant Un pr2) n)<=(Un n)<=((sequence_majorant Un pr1) n)``. 
 Intros.
 Split.
-Unfold suite_minorant.
-Cut (sigTT R [l:R](is_lub (EUn (opp_sui [i:nat](Un (plus n i)))) l)).
+Unfold sequence_minorant.
+Cut (sigTT R [l:R](is_lub (EUn (opp_seq [i:nat](Un (plus n i)))) l)).
 Intro.
 Elim X; Intros.
 Replace (minorant ([k:nat](Un (plus n k))) (min_ss Un n pr2)) with ``-x``.
@@ -274,9 +267,9 @@ Rewrite <- (Ropp_Ropp (Un n)).
 Apply Rle_Ropp1.
 Apply H.
 Exists O.
-Unfold opp_sui.
+Unfold opp_seq.
 Replace (plus n O) with n; [Reflexivity | Ring].
-Cut (is_lub (EUn (opp_sui [k:nat](Un (plus n k)))) (Ropp (minorant ([k:nat](Un (plus n k))) (min_ss Un n pr2)))).
+Cut (is_lub (EUn (opp_seq [k:nat](Un (plus n k)))) (Ropp (minorant ([k:nat](Un (plus n k))) (min_ss Un n pr2)))).
 Intro.
 Unfold is_lub in p; Unfold is_lub in H.
 Elim p; Intros; Elim H; Intros.
@@ -290,7 +283,7 @@ Intro; Rewrite Ropp_Ropp.
 Trivial.
 Apply min_inf.
 Apply min_ss; Assumption.
-Unfold suite_majorant.
+Unfold sequence_majorant.
 Cut (sigTT R [l:R](is_lub (EUn [i:nat](Un (plus n i))) l)).
 Intro.
 Elim X; Intros.
@@ -315,13 +308,12 @@ Apply maj_sup.
 Apply maj_ss; Assumption.
 Qed.
 
-(* La suite des minorants est majoree *)
-Lemma min_maj : (Un:nat->R;pr1:(majoree Un);pr2:(minoree Un)) (majoree (suite_minorant Un pr2)).
+Lemma min_maj : (Un:nat->R;pr1:(has_ub Un);pr2:(has_lb Un)) (has_ub (sequence_minorant Un pr2)).
 Intros.
 Assert H := (Vn_Un_Wn_order Un pr1 pr2).
-Unfold majoree.
+Unfold has_ub.
 Unfold bound.
-Unfold majoree in pr1.
+Unfold has_ub in pr1.
 Unfold bound in pr1.
 Elim pr1; Intros.
 Exists x.
@@ -336,13 +328,12 @@ Apply H0.
 Exists x1; Reflexivity.
 Qed.
 
-(* La suite des majorants est minoree *)
-Lemma maj_min : (Un:nat->R;pr1:(majoree Un);pr2:(minoree Un)) (minoree (suite_majorant Un pr1)). 
+Lemma maj_min : (Un:nat->R;pr1:(has_ub Un);pr2:(has_lb Un)) (has_lb (sequence_majorant Un pr1)). 
 Intros.
 Assert H := (Vn_Un_Wn_order Un pr1 pr2).
-Unfold minoree.
+Unfold has_lb.
 Unfold bound.
-Unfold minoree in pr2.
+Unfold has_lb in pr2.
 Unfold bound in pr2.
 Elim pr2; Intros.
 Exists x.
@@ -351,46 +342,46 @@ Intros.
 Unfold is_upper_bound in H0.
 Elim H1; Intros.
 Rewrite H2.
-Apply Rle_trans with ((opp_sui Un) x1).
+Apply Rle_trans with ((opp_seq Un) x1).
 Assert H3 := (H x1); Elim H3; Intros.
-Unfold opp_sui; Apply Rle_Ropp1.
+Unfold opp_seq; Apply Rle_Ropp1.
 Assumption.
 Apply H0.
 Exists x1; Reflexivity.
 Qed.
 
-(* Toute suite de Cauchy est majoree *)
-Lemma cauchy_maj : (Un:nat->R) (Cauchy_crit Un) -> (majoree Un).
+(**********)
+Lemma cauchy_maj : (Un:nat->R) (Cauchy_crit Un) -> (has_ub Un).
 Intros.
-Unfold majoree.
+Unfold has_ub.
 Apply cauchy_bound.
 Assumption.
 Qed.
 
 (**********)
-Lemma cauchy_opp : (Un:nat->R) (Cauchy_crit Un) -> (Cauchy_crit (opp_sui Un)).
+Lemma cauchy_opp : (Un:nat->R) (Cauchy_crit Un) -> (Cauchy_crit (opp_seq Un)).
 Intro.
 Unfold Cauchy_crit.
 Unfold R_dist.
 Intros.
 Elim (H eps H0); Intros.
 Exists x; Intros.
-Unfold opp_sui.
+Unfold opp_seq.
 Rewrite <- Rabsolu_Ropp.
 Replace ``-( -(Un n)- -(Un m))`` with ``(Un n)-(Un m)``; [Apply H1; Assumption | Ring].
 Qed.
 
-(* Toute suite de Cauchy est minoree *)
-Lemma cauchy_min : (Un:nat->R) (Cauchy_crit Un) -> (minoree Un).
+(**********)
+Lemma cauchy_min : (Un:nat->R) (Cauchy_crit Un) -> (has_lb Un).
 Intros.
-Unfold minoree.
+Unfold has_lb.
 Assert H0 := (cauchy_opp ? H).
 Apply cauchy_bound.
 Assumption.
 Qed.
 
-(* La suite des majorants converge *)
-Lemma maj_cv : (Un:nat->R;pr:(Cauchy_crit Un)) (sigTT R [l:R](Un_cv (suite_majorant Un (cauchy_maj Un pr)) l)).
+(**********)
+Lemma maj_cv : (Un:nat->R;pr:(Cauchy_crit Un)) (sigTT R [l:R](Un_cv (sequence_majorant Un (cauchy_maj Un pr)) l)).
 Intros.
 Apply decreasing_cv.
 Apply Wn_decreasing.
@@ -399,8 +390,8 @@ Apply cauchy_min.
 Assumption.
 Qed.
 
-(* La suite des minorants converge *)
-Lemma min_cv : (Un:nat->R;pr:(Cauchy_crit Un)) (sigTT R [l:R](Un_cv (suite_minorant Un (cauchy_min Un pr)) l)).
+(**********)
+Lemma min_cv : (Un:nat->R;pr:(Cauchy_crit Un)) (sigTT R [l:R](Un_cv (sequence_minorant Un (cauchy_min Un pr)) l)).
 Intros.
 Apply growing_cv.
 Apply Vn_growing.
@@ -409,7 +400,6 @@ Apply cauchy_maj.
 Assumption.
 Qed.
 
-(**********)
 Lemma cond_eq : (x,y:R) ((eps:R)``0<eps``->``(Rabsolu (x-y))<eps``) -> x==y.
 Intros.
 Case (total_order_T x y); Intro.
@@ -435,14 +425,13 @@ Apply Rlt_anti_compatibility with y.
 Rewrite Rplus_Or; Replace ``y+(x-y)`` with x; [Assumption | Ring].
 Qed.
 
-(**********)
 Lemma not_Rlt : (r1,r2:R)~(``r1<r2``)->``r1>=r2``.
 Intros r1 r2 ; Generalize (total_order r1 r2) ; Unfold Rge.
 Tauto.
 Qed. 
 
-(* On peut approcher la borne sup de toute suite majoree *)
-Lemma approx_maj : (Un:nat->R;pr:(majoree Un)) (eps:R) ``0<eps`` -> (EX k : nat | ``(Rabsolu ((majorant Un pr)-(Un k))) < eps``).
+(**********)
+Lemma approx_maj : (Un:nat->R;pr:(has_ub Un)) (eps:R) ``0<eps`` -> (EX k : nat | ``(Rabsolu ((majorant Un pr)-(Un k))) < eps``).
 Intros.
 Pose P := [k:nat]``(Rabsolu ((majorant Un pr)-(Un k))) < eps``.
 Unfold P.
@@ -502,8 +491,8 @@ Assert H2 := (H1 n).
 Apply not_Rlt; Assumption.
 Qed.
 
-(* On peut approcher la borne inf de toute suite minoree *)
-Lemma approx_min : (Un:nat->R;pr:(minoree Un)) (eps:R) ``0<eps`` -> (EX k :nat | ``(Rabsolu ((minorant Un pr)-(Un k))) < eps``).
+(**********)
+Lemma approx_min : (Un:nat->R;pr:(has_lb Un)) (eps:R) ``0<eps`` -> (EX k :nat | ``(Rabsolu ((minorant Un pr)-(Un k))) < eps``).
 Intros.
 Pose P := [k:nat]``(Rabsolu ((minorant Un pr)-(Un k))) < eps``.
 Unfold P.
@@ -516,16 +505,16 @@ Red; Intro.
 Unfold P in H1.
 Cut (n:nat)``(Rabsolu ((minorant Un pr)-(Un n))) >= eps``.
 Intro.
-Cut (is_lub (EUn (opp_sui Un)) ``-(minorant Un pr)``).
+Cut (is_lub (EUn (opp_seq Un)) ``-(minorant Un pr)``).
 Intro.
 Unfold is_lub in H3.
 Unfold is_upper_bound in H3.
 Elim H3; Intros.
 Cut (n:nat)``eps<=(Un n)-(minorant Un pr)``.
 Intro.
-Cut (n:nat)``((opp_sui Un) n)<=-(minorant Un pr)-eps``.
+Cut (n:nat)``((opp_seq Un) n)<=-(minorant Un pr)-eps``.
 Intro.
-Cut ((x:R)(EUn (opp_sui Un) x)->``x <= -(minorant Un pr)-eps``).
+Cut ((x:R)(EUn (opp_seq Un) x)->``x <= -(minorant Un pr)-eps``).
 Intro.
 Assert H9 := (H5 ``-(minorant Un pr)-eps`` H8).
 Cut ``eps<=0``.
@@ -540,7 +529,7 @@ Elim H8; Intros.
 Rewrite H9; Apply H7.
 Intro.
 Assert H7 := (H6 n).
-Unfold opp_sui.
+Unfold opp_seq.
 Apply Rle_anti_compatibility with ``eps+(Un n)``.
 Replace ``eps+(Un n)+ -(Un n)`` with ``eps``.
 Replace ``eps+(Un n)+(-(minorant Un pr)-eps)`` with ``(Un n)-(minorant Un pr)``.
@@ -567,8 +556,8 @@ Assert H2 := (H1 n).
 Apply not_Rlt; Assumption.
 Qed.
 
-(* Unicité de la limite pour les suites convergentes *) 
-Lemma UL_suite : (Un:nat->R;l1,l2:R) (Un_cv Un l1) -> (Un_cv Un l2) -> l1==l2. 
+(* Unicity of limit for convergent sequences *) 
+Lemma UL_sequence : (Un:nat->R;l1,l2:R) (Un_cv Un l1) -> (Un_cv Un l2) -> l1==l2. 
 Intros Un l1 l2; Unfold Un_cv; Unfold R_dist; Intros. 
 Apply cond_eq. 
 Intros; Cut ``0<eps/2``; [Intro | Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup0]]. 
@@ -582,7 +571,7 @@ Rewrite <- Rabsolu_Ropp; Rewrite Ropp_distr2; Apply H3; Unfold ge N; Apply le_ma
 Apply H4; Unfold ge N; Apply le_max_r. 
 Qed.
 
-(* La limite de la somme de deux suites convergentes est la somme des limites *) 
+(**********) 
 Lemma CV_plus : (An,Bn:nat->R;l1,l2:R) (Un_cv An l1) -> (Un_cv Bn l2) -> (Un_cv [i:nat]``(An i)+(Bn i)`` ``l1+l2``). 
 Unfold Un_cv; Unfold R_dist; Intros. 
 Cut ``0<eps/2``; [Intro | Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup0]]. 
@@ -598,7 +587,7 @@ Apply H3; Unfold ge; Apply le_trans with N; [Unfold N; Apply le_max_l | Assumpti
 Apply H4; Unfold ge; Apply le_trans with N; [Unfold N; Apply le_max_r | Assumption]. 
 Qed.
 
-(* Lien convergence / convergence absolue *) 
+(**********) 
 Lemma cv_cvabs : (Un:nat->R;l:R) (Un_cv Un l) -> (Un_cv [i:nat](Rabsolu (Un i)) (Rabsolu l)). 
 Unfold Un_cv; Unfold R_dist; Intros. 
 Elim (H eps H0); Intros. 
@@ -608,7 +597,7 @@ Apply Rabsolu_triang_inv2.
 Apply H1; Assumption. 
 Qed. 
 
-(* Toute suite convergente est de Cauchy *) 
+(**********) 
 Lemma CV_Cauchy : (Un:nat->R) (sigTT R [l:R](Un_cv Un l)) -> (Cauchy_crit Un). 
 Intros; Elim X; Intros. 
 Unfold Cauchy_crit; Intros. 
@@ -651,7 +640,7 @@ Apply existTT with (Rabsolu x).
 Apply cv_cvabs; Assumption. 
 Qed. 
  
-(* La limite du produit de deux suites convergentes est le produit des limites *) 
+(**********) 
 Lemma CV_mult : (An,Bn:nat->R;l1,l2:R) (Un_cv An l1) -> (Un_cv Bn l2) -> (Un_cv [i:nat]``(An i)*(Bn i)`` ``l1*l2``). 
 Intros. 
 Cut (sigTT R [l:R](Un_cv An l)). 
@@ -882,12 +871,12 @@ Replace ``l+((Un n)-l)`` with (Un n); [Assumption | Ring].
 Qed.
 
 (* Un->l => (-Un) -> (-l) *)
-Lemma CV_opp : (An:nat->R;l:R) (Un_cv An l) -> (Un_cv (opp_sui An) ``-l``).
+Lemma CV_opp : (An:nat->R;l:R) (Un_cv An l) -> (Un_cv (opp_seq An) ``-l``).
 Intros An l.
 Unfold Un_cv; Unfold R_dist; Intros.
 Elim (H eps H0); Intros.
 Exists x; Intros.
-Unfold opp_sui; Replace ``-(An n)- (-l)`` with ``-((An n)-l)``; [Rewrite Rabsolu_Ropp | Ring].
+Unfold opp_seq; Replace ``-(An n)- (-l)`` with ``-((An n)-l)``; [Rewrite Rabsolu_Ropp | Ring].
 Apply H1; Assumption.
 Qed.
 
@@ -898,17 +887,17 @@ Assert H1 := (decreasing_growing ? H).
 Assert H2 := (CV_opp ? ? H0).
 Assert H3 := (growing_ineq ? ? H1 H2).
 Apply Ropp_Rle.
-Unfold opp_sui in H3; Apply H3.
+Unfold opp_seq in H3; Apply H3.
 Qed.
 
 (**********)
 Lemma CV_minus : (An,Bn:nat->R;l1,l2:R) (Un_cv An l1) -> (Un_cv Bn l2) -> (Un_cv [i:nat]``(An i)-(Bn i)`` ``l1-l2``). 
 Intros. 
-Replace [i:nat]``(An i)-(Bn i)`` with [i:nat]``(An i)+((opp_sui Bn) i)``. 
+Replace [i:nat]``(An i)-(Bn i)`` with [i:nat]``(An i)+((opp_seq Bn) i)``. 
 Unfold Rminus; Apply CV_plus. 
 Assumption. 
 Apply CV_opp; Assumption. 
-Unfold Rminus opp_sui; Reflexivity. 
+Unfold Rminus opp_seq; Reflexivity. 
 Qed. 
 
 (* Un -> +oo *)

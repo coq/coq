@@ -924,7 +924,7 @@ Intros.
 Cut (Un_cv (C1 x y) ``(cos x)*(cos y)-(sin x)*(sin y)``). 
 Cut (Un_cv (C1 x y) ``(cos (x+y))``). 
 Intros. 
-Apply UL_suite with (C1 x y); Assumption. 
+Apply UL_sequence with (C1 x y); Assumption. 
 Apply C1_cvg. 
 Unfold Un_cv; Unfold R_dist. 
 Intros. 

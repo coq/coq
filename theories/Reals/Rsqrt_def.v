@@ -111,11 +111,11 @@ Assumption.
 Apply le_O_n.
 Qed.
 
-Lemma dicho_lb_maj : (x,y:R;P:R->bool) ``x<=y`` -> (majoree (dicho_lb x y P)).
+Lemma dicho_lb_maj : (x,y:R;P:R->bool) ``x<=y`` -> (has_ub (dicho_lb x y P)).
 Intros.
 Cut (n:nat)``(dicho_lb x y P n)<=y``.
 Intro.
-Unfold majoree.
+Unfold has_ub.
 Unfold bound.
 Exists y.
 Unfold is_upper_bound.
@@ -145,18 +145,18 @@ Assumption.
 Assumption.
 Qed.
 
-Lemma dicho_up_min : (x,y:R;P:R->bool) ``x<=y`` -> (minoree (dicho_up x y P)).
+Lemma dicho_up_min : (x,y:R;P:R->bool) ``x<=y`` -> (has_lb (dicho_up x y P)).
 Intros.
 Cut (n:nat)``x<=(dicho_up x y P n)``.
 Intro.
-Unfold minoree.
+Unfold has_lb.
 Unfold bound.
 Exists ``-x``.
 Unfold is_upper_bound.
 Intros.
 Elim H1; Intros.
 Rewrite H2.
-Unfold opp_sui.
+Unfold opp_seq.
 Apply Rle_Ropp1.
 Apply H0.
 Apply dicho_up_min_x; Assumption.
@@ -287,7 +287,7 @@ Intros.
 Assert H2 := (CV_minus ? ? ? ? H0 H1).
 Cut (Un_cv [i:nat]``(dicho_lb x y P i)-(dicho_up x y P i)`` R0).
 Intro.
-Assert H4 := (UL_suite ? ? ? H2 H3).
+Assert H4 := (UL_sequence ? ? ? H2 H3).
 Symmetry; Apply Rminus_eq_right; Assumption.
 Unfold Un_cv; Unfold R_dist.
 Intros.

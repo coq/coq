@@ -34,7 +34,7 @@ Apply sum_cv_maj with [l:nat](An (plus (S N) l)) [l:nat][x:R](fn (plus (S N) l) 
 Unfold SP; Apply H2.
 Apply H3.
 Intros; Apply H1.
-Symmetry; EApply UL_suite.
+Symmetry; EApply UL_sequence.
 Apply H3.
 Unfold Un_cv in H0; Unfold Un_cv; Intros; Elim (H0 eps H5); Intros N0 H6.
 Unfold R_dist in H6; Exists N0; Intros.
@@ -64,7 +64,7 @@ Apply sum_eq; Intros.
 Reflexivity.
 Apply le_lt_n_Sm; Apply le_plus_l.
 Apply le_O_n.
-Symmetry; EApply UL_suite.
+Symmetry; EApply UL_sequence.
 Apply H2.
 Unfold Un_cv in H; Unfold Un_cv; Intros.
 Elim (H eps H4); Intros N0 H5.
@@ -162,7 +162,7 @@ Apply le_plus_l.
 Apply le_O_n.
 Qed.
 
-(* Théorème de comparaison de convergence pour les séries *)
+(* Comparaison of convergence for series *)
 Lemma Rseries_CV_comp : (An,Bn:nat->R) ((n:nat)``0<=(An n)<=(Bn n)``) -> (sigTT ? [l:R](Un_cv [N:nat](sum_f_R0 Bn N) l)) -> (sigTT ? [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
 Intros; Apply cv_cauchy_2.
 Assert H0 := (cv_cauchy_1 ? X).

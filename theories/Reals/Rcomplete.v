@@ -24,8 +24,8 @@ Require Max.
 
 Theorem R_complete : (Un:nat->R) (Cauchy_crit Un) -> (sigTT R [l:R](Un_cv Un l)).
 Intros.
-Pose Vn := (suite_minorant Un (cauchy_min Un H)).
-Pose Wn := (suite_majorant Un (cauchy_maj Un H)).
+Pose Vn := (sequence_minorant Un (cauchy_min Un H)).
+Pose Wn := (sequence_majorant Un (cauchy_maj Un H)).
 Assert H0 := (maj_cv Un H).
 Fold Wn in H0.
 Assert H1 := (min_cv Un H).
@@ -126,7 +126,7 @@ Replace ``-(x-(Wn N))`` with ``(Wn N)-x``; [Apply H4 | Ring].
 Unfold ge N.
 Apply le_trans with (max N1 N2); Apply le_max_l.
 Unfold Wn Vn.
-Unfold suite_majorant suite_minorant.
+Unfold sequence_majorant sequence_minorant.
 Assert H7 := (approx_maj [k:nat](Un (plus N k)) (maj_ss Un N (cauchy_maj Un H))).
 Assert H8 := (approx_min [k:nat](Un (plus N k)) (min_ss Un N (cauchy_min Un H))).
 Cut (Wn N)==(majorant ([k:nat](Un (plus N k))) (maj_ss Un N (cauchy_maj Un H))).

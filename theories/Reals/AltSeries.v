@@ -97,8 +97,8 @@ Apply CV_ALT_step2; Assumption.
 Qed.
 
 (**********)
-Lemma CV_ALT_step4 : (Un:nat->R) (Un_decreasing Un) -> (positivity_seq Un) -> (majoree [N:nat](sum_f_R0 (tg_alt Un) (S (mult (2) N)))).
-Intros; Unfold majoree; Unfold bound.
+Lemma CV_ALT_step4 : (Un:nat->R) (Un_decreasing Un) -> (positivity_seq Un) -> (has_ub [N:nat](sum_f_R0 (tg_alt Un) (S (mult (2) N)))).
+Intros; Unfold has_ub; Unfold bound.
 Exists ``(Un O)``.
 Unfold is_upper_bound; Intros; Elim H1; Intros.
 Rewrite H2; Rewrite decomp_sum.

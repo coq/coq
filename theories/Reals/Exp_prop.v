@@ -618,7 +618,7 @@ Lemma exp_plus : (x,y:R) ``(exp (x+y))==(exp x)*(exp y)``.
 Intros; Assert H0 := (E1_cvg x).
 Assert H := (E1_cvg y).
 Assert H1 := (E1_cvg ``x+y``).
-EApply UL_suite.
+EApply UL_sequence.
 Apply H1.
 Assert H2 := (CV_mult ? ? ? ? H0 H).
 Assert H3 := (CV_minus ? ? ? ? H2 (Reste_E_cv x y)).
@@ -701,7 +701,7 @@ Apply (not_sym ? ? H6).
 Rewrite minus_R0; Apply H7.
 Unfold SFL.
 Case (cv ``0``); Intros.
-EApply UL_suite.
+EApply UL_sequence.
 Apply u.
 Unfold Un_cv SP.
 Intros; Exists (1); Intros.
@@ -721,7 +721,7 @@ Apply lt_le_trans with (1); [Apply lt_n_Sn | Apply H9].
 Unfold SFL exp.
 Unfold projT1.
 Case (cv h); Case (exist_exp h); Intros.
-EApply UL_suite.
+EApply UL_sequence.
 Apply u.
 Unfold Un_cv; Intros.
 Unfold exp_in in e.
