@@ -202,6 +202,9 @@ let sp_of_wd = function
   | bn::dp -> make_path dp (id_of_string bn) OBJ
   | _      -> invalid_arg "Names.sp_of_wd"
 
+let wd_of_sp sp = 
+  let (sp,id,_) = repr_path sp in sp @ [string_of_id id]
+
 let sp_ord sp1 sp2 =
   let (p1,id1,k) = repr_path sp1
   and (p2,id2,k') = repr_path sp2 in

@@ -55,6 +55,7 @@ val extract_open_proof :
 val tclIDTAC         : tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclTHEN          : tactic -> tactic -> tactic
+val tclTHENLIST      : tactic list -> tactic
 val tclTHEN_i        : tactic -> (int -> tactic) -> int -> tactic
 val tclTHENL         : tactic -> tactic -> tactic
 val tclTHENS         : tactic -> tactic list -> tactic
@@ -71,6 +72,7 @@ val tclDO            : int -> tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic
 val tclNOTSAMEGOAL   : tactic -> tactic
+val tclINFO          : tactic -> tactic
 
 
 (*s Tactics handling a list of goals. *)

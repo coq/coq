@@ -39,6 +39,7 @@ val close_section : string -> unit
 
 val make_path : identifier -> path_kind -> section_path
 val cwd : unit -> string list
+val is_section_p : section_path -> bool
 
 val open_module : string -> unit
 val export_module : unit -> library_segment

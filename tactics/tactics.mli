@@ -4,6 +4,7 @@
 (*i*)
 open Names
 open Term
+open Environ
 open Tacmach
 open Proof_trees
 open Reduction
@@ -84,9 +85,11 @@ val dyn_exact          : tactic_arg list -> tactic
 
 (*s Reduction tactics. *)
 
-val reduct_in_hyp     : 'a reduction_function -> identifier -> tactic
-val reduct_option     : 'a reduction_function -> identifier option -> tactic
-val reduct_in_concl   : 'a reduction_function -> tactic
+type 'a tactic_reduction = env -> evar_declarations -> constr -> constr
+
+val reduct_in_hyp     : 'a tactic_reduction -> identifier -> tactic
+val reduct_option     : 'a tactic_reduction -> identifier option -> tactic
+val reduct_in_concl   : 'a tactic_reduction -> tactic
 val change_in_concl   : constr -> tactic
 
 val change_in_hyp     : constr -> identifier -> tactic

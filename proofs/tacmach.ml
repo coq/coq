@@ -40,6 +40,7 @@ let sig_it     = Refiner.sig_it
 let sig_sig    = Refiner.sig_sig
 let project    = compose ts_it sig_sig
 let pf_env gls = (sig_it gls).evar_env
+let pf_hyps gls = var_context (sig_it gls).evar_env
 
 let pf_concl gls = (sig_it gls).evar_concl
 
@@ -71,11 +72,18 @@ let pf_check_type gls c1 c2 =
 
 let pf_constr_of_com gls c =
   let evc = project gls in 
-  Astterm.constr_of_com evc (sig_it gls).hyps c
+  Astterm.constr_of_com evc (sig_it gls).evar_env c
 
 let pf_constr_of_com_sort gls c =
   let evc = project gls in 
-  Astterm.constr_of_com_sort evc (sig_it gls).hyps c
+  Astterm.constr_of_com_sort evc (sig_it gls).evar_env c
+
+let pf_global gls id = Declare.global (sig_it gls).evar_env id
+let pf_parse_const gls = compose (pf_global gls) id_of_string
+
+let pf_execute gls =
+  let evc = project gls in 
+  Typing.unsafe_machine (sig_it gls).evar_env evc
 
 let pf_reduction_of_redexp gls re c = 
   reduction_of_redexp re (pf_env gls) (project gls) c 
@@ -91,8 +99,8 @@ let pf_nf_betaiota               = pf_reduce nf_betaiota
 let pf_compute                   = pf_reduce compute
 let pf_unfoldn ubinds            = pf_reduce (unfoldn ubinds)
 
-let pf_conv_x                   = pf_reduce conv
-let pf_conv_x_leq               = pf_reduce conv_leq
+let pf_conv_x                   = pf_reduce is_conv
+let pf_conv_x_leq               = pf_reduce is_conv_leq
 let pf_const_value              = pf_reduce (fun env _ -> constant_value env)
 let pf_one_step_reduce          = pf_reduce one_step_reduce
 let pf_reduce_to_mind           = pf_reduce reduce_to_mind
@@ -163,6 +171,7 @@ let w_Declare_At    = w_Declare_At
 let w_Define        = w_Define
 let w_Underlying    = w_Underlying
 let w_env           = w_env
+let w_hyps          = w_hyps
 let w_type_of       = w_type_of
 let w_IDTAC         = w_IDTAC
 let w_ORELSE        = w_ORELSE
@@ -171,7 +180,7 @@ let ctxt_type_of    = ctxt_type_of
 
 let w_defined_const wc k     = defined_constant (w_env wc) k
 let w_const_value wc         = constant_value (w_env wc)
-let w_conv_x wc m n          = conv (w_env wc) (w_Underlying wc) m n
+let w_conv_x wc m n          = is_conv (w_env wc) (w_Underlying wc) m n
 let w_whd_betadeltaiota wc c = whd_betadeltaiota (w_env wc) (w_Underlying wc) c
 let w_hnf_constr wc c        = hnf_constr (w_env wc) (w_Underlying wc) c
 
@@ -182,23 +191,25 @@ let w_hnf_constr wc c        = hnf_constr (w_env wc) (w_Underlying wc) c
 
 let tclIDTAC         = tclIDTAC
 let tclORELSE        = tclORELSE
-let tclTHEN          =  tclTHEN
-let tclTHEN_i        =  tclTHEN_i
-let tclTHENL         =  tclTHENL
-let tclTHENS         =  tclTHENS
-let tclTHENSI        =  tclTHENSI
-let tclREPEAT        =  tclREPEAT
-let tclFIRST         =  tclFIRST
-let tclSOLVE         =  tclSOLVE
-let tclTRY           =  tclTRY
-let tclTHENTRY       =  tclTHENTRY
-let tclCOMPLETE      =  tclCOMPLETE
-let tclAT_LEAST_ONCE =  tclAT_LEAST_ONCE
-let tclFAIL          =  tclFAIL
-let tclDO            =  tclDO
-let tclPROGRESS      =  tclPROGRESS
+let tclTHEN          = tclTHEN
+let tclTHENLIST      = tclTHENLIST
+let tclTHEN_i        = tclTHEN_i
+let tclTHENL         = tclTHENL
+let tclTHENS         = tclTHENS
+let tclTHENSI        = tclTHENSI
+let tclREPEAT        = tclREPEAT
+let tclFIRST         = tclFIRST
+let tclSOLVE         = tclSOLVE
+let tclTRY           = tclTRY
+let tclTHENTRY       = tclTHENTRY
+let tclCOMPLETE      = tclCOMPLETE
+let tclAT_LEAST_ONCE = tclAT_LEAST_ONCE
+let tclFAIL          = tclFAIL
+let tclDO            = tclDO
+let tclPROGRESS      = tclPROGRESS
 let tclWEAK_PROGRESS = tclWEAK_PROGRESS
 let tclNOTSAMEGOAL   = tclNOTSAMEGOAL
+let tclINFO          = tclINFO
 
 let unTAC            = unTAC
 
@@ -266,6 +277,35 @@ let add_tactic = Refiner.add_tactic
 let overwriting_tactic = Refiner.overwriting_add_tactic
 
 
+(* Some combinators for parsing tactic arguments. 
+   They transform the Coqast.t arguments of the tactic into 
+   constr arguments *)
+
+type ('a,'b) parse_combinator = ('a -> tactic) -> ('b -> tactic)
+
+let tactic_com tac t x = tac (pf_constr_of_com x t) x
+      
+let tactic_com_sort tac t x = tac (pf_constr_of_com_sort x t) x
+      
+let tactic_com_list tac tl x =
+  let translate = pf_constr_of_com x in 
+  tac (List.map translate tl) x
+    
+let tactic_bind_list tac tl x =
+  let translate = pf_constr_of_com x in 
+  tac (List.map (fun (b,c)->(b,translate c)) tl) x
+
+let tactic_com_bind_list tac (c,tl) x =
+  let translate = pf_constr_of_com x in 
+  tac (translate c,List.map (fun (b,c')->(b,translate c')) tl) x
+
+let tactic_com_bind_list_list tac args gl =
+  let translate (c,tl) = 
+    (pf_constr_of_com gl c,
+     List.map (fun (b,c')->(b,pf_constr_of_com gl c')) tl) in 
+  tac (List.map translate args) gl
+
+
 (********************************************************)
 (* Functions for hiding the implementation of a tactic. *)
 (********************************************************)
@@ -279,7 +319,6 @@ let overwrite_hidden_tactic s tac  =
   overwriting_add_tactic s tac;
   (fun args -> vernac_tactic(s,args))
 
-(*** 
 let tactic_com = 
   fun tac t x -> tac (pf_constr_of_com x t) x
       
@@ -427,7 +466,6 @@ let hide_cbindll_tactic s tac =
   in 
   add_tactic s tacfun;
   fun l -> vernac_tactic(s,putconstrbinds l)
-***)
 
 
 (* Pretty-printers *)
@@ -437,8 +475,8 @@ open Printer
 
 let pr_com sigma goal com =
   prterm (rename_bound_var 
-            (ids_of_sign goal.hyps) 
-            (Trad.constr_of_com sigma goal.hyps com))
+            (ids_of_sign (var_context goal.evar_env)) 
+            (Astterm.constr_of_com sigma goal.evar_env com))
 
 let pr_one_binding sigma goal = function
   | (Dep id,com)  -> [< print_id id ; 'sTR":=" ; pr_com sigma goal com >]

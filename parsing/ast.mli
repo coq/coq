@@ -9,11 +9,6 @@ open Pcoq
 
 (* Abstract syntax trees. *)
 
-(* raising located exceptions *)
-val anomaly_loc : Coqast.loc * string * std_ppcmds -> 'a
-val user_err_loc : Coqast.loc * string * std_ppcmds -> 'a
-val invalid_arg_loc : Coqast.loc * string -> 'a
-
 val dummy_loc : Coqast.loc
 val loc : Coqast.t -> Coqast.loc
 

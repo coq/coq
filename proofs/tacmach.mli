@@ -30,7 +30,7 @@ val apply_sig_tac :
 
 val pf_concl              : goal sigma -> constr
 val pf_env                : goal sigma -> env
-val pf_hyps               : goal sigma -> typed_type signature
+val pf_hyps               : goal sigma -> var_context
 val pf_untyped_hyps       : goal sigma -> constr signature
 val pf_nth_hyp            : goal sigma -> int -> identifier * constr
 val pf_ctxt               : goal sigma -> ctxtty
@@ -38,7 +38,7 @@ val pf_global             : goal sigma -> identifier -> constr
 val pf_parse_const        : goal sigma -> string -> constr
 val pf_type_of            : goal sigma -> constr -> constr
 val pf_check_type         : goal sigma -> constr -> constr -> constr
-val pf_fexecute           : goal sigma -> constr -> unsafe_judgment
+val pf_execute            : goal sigma -> constr -> unsafe_judgment
 val hnf_type_of           : goal sigma -> constr -> constr
 
 val pf_constr_of_com      : goal sigma -> Coqast.t -> constr
@@ -48,10 +48,15 @@ val pf_get_hyp             : goal sigma -> identifier -> constr
 
 val pf_reduction_of_redexp : goal sigma -> red_expr -> constr -> constr
 
-val pf_reduce : 'a reduction_function -> goal sigma -> constr -> constr
+
+
+val pf_reduce : 
+  (env -> evar_declarations -> constr -> constr) ->
+    goal sigma -> constr -> constr
 
 val pf_whd_betadeltaiota       : goal sigma -> constr -> constr
-val pf_whd_betadeltaiota_stack : goal sigma -> 'a stack_reduction_function
+val pf_whd_betadeltaiota_stack : 
+  goal sigma -> constr -> constr list -> constr * constr list 
 val pf_hnf_constr              : goal sigma -> constr -> constr
 val pf_red_product             : goal sigma -> constr -> constr
 val pf_nf                      : goal sigma -> constr -> constr
@@ -107,6 +112,7 @@ val change_constraints_pftreestate :
 val tclIDTAC         : tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclTHEN          : tactic -> tactic -> tactic
+val tclTHENLIST      : tactic list -> tactic
 val tclTHEN_i        : tactic -> (int -> tactic) -> int -> tactic
 val tclTHENL         : tactic -> tactic -> tactic
 val tclTHENS         : tactic -> tactic list -> tactic
@@ -172,14 +178,14 @@ val startWalk :
 
 val walking_THEN        : 'a result_w_tactic -> ('a -> tactic) -> tactic
 val walking             : w_tactic -> tactic
-val w_Focusing_THEN     : section_path -> 'a result_w_tactic 
+val w_Focusing_THEN     : int -> 'a result_w_tactic 
                           -> ('a -> w_tactic) -> w_tactic
-val w_Declare           : section_path -> constr -> w_tactic
-val w_Declare_At        : section_path -> section_path -> constr -> w_tactic
-val w_Define            : section_path -> constr -> w_tactic
+val w_Declare           : int -> constr -> w_tactic
+val w_Declare_At        : int -> int -> constr -> w_tactic
+val w_Define            : int -> constr -> w_tactic
 val w_Underlying        : walking_constraints -> evar_declarations
 val w_env               : walking_constraints -> env
-val w_hyps              : walking_constraints -> context
+val w_hyps              : walking_constraints -> var_context
 val w_type_of           : walking_constraints -> constr -> constr
 val w_add_sign          : (identifier * typed_type) 
                           -> walking_constraints -> walking_constraints
@@ -197,6 +203,26 @@ val w_defined_const     : walking_constraints -> constr -> bool
 
 val add_tactic         : string -> (tactic_arg list -> tactic) -> unit
 val overwriting_tactic : string -> (tactic_arg list -> tactic) -> unit
+
+
+(*s Transformation of tactic arguments. *)
+
+type ('a,'b) parse_combinator = ('a -> tactic) -> ('b -> tactic)
+
+val tactic_com       : (constr,Coqast.t) parse_combinator
+val tactic_com_sort  : (constr,Coqast.t) parse_combinator
+val tactic_com_list  : (constr list, Coqast.t list) parse_combinator
+
+val tactic_bind_list : ((bindOcc * constr) list,
+                        (bindOcc * Coqast.t) list) parse_combinator
+
+val tactic_com_bind_list : 
+  (constr   * (bindOcc * constr)   list,
+   Coqast.t * (bindOcc * Coqast.t) list) parse_combinator
+
+val tactic_com_bind_list_list :  
+  ((constr   * (bindOcc * constr)   list) list, 
+   (Coqast.t * (bindOcc * Coqast.t) list) list) parse_combinator
 
 
 (*s Hiding the implementation of tactics. *)

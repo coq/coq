@@ -1058,6 +1058,7 @@ let _ =
                 message ((string_of_id id) ^ " is now a syntax macro"))
        | _ -> bad_vernac_args "SyntaxMacro")
 
+(***
 let _ =
   add "ABSTRACTION"
     (function 
@@ -1072,6 +1073,7 @@ let _ =
               if (not(is_silent())) then
                 message ((string_of_id id)^" is now an abstraction"))
        | _ -> bad_vernac_args "ABSTRACTION")
+***)
 
 let _ =
   add "Require"
@@ -1238,6 +1240,7 @@ let _ =
 
 (* Search commands *)
 
+(***
 let _ =
   add "Searchisos"
   (function
@@ -1248,7 +1251,8 @@ let _ =
 	    let cc = nf_betaiota env Evd.empty c in
             Searchisos.type_search cc)
      | _ -> bad_vernac_args "Searchisos")
-    
+***)
+
 open Goptions
 
 let _ = 

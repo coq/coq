@@ -61,7 +61,7 @@ let restore_decl sp evd evc =
   let newgoal = { evar_env = evd.evar_env; 
 		  evar_concl = evd.evar_concl;
 		  evar_body = evd.evar_body;
-                  evar_info = newctxt } in
+                  evar_info = Some newctxt } in
   (rc_add evc (sp,newgoal))
 
 
@@ -114,6 +114,7 @@ let w_Focus sp wc = ids_mod (extract_decl sp) wc
 let w_Underlying wc = (ts_it (ids_it wc)).decls
 let w_type_of wc c  = ctxt_type_of (ids_it wc) c
 let w_env     wc    = get_env (ids_it wc)
+let w_hyps    wc    = var_context (get_env (ids_it wc))
 let w_ORELSE wt1 wt2 wc = try wt1 wc with UserError _ -> wt2 wc
 
 let w_Declare sp c (wc:walking_constraints) =
@@ -153,7 +154,7 @@ let w_Define sp c wc =
     	let access = evars_of (ids_it wc) c in
     	let spdecl' = { evar_env = spdecl.evar_env;
                        	evar_concl = spdecl.evar_concl;
-                       	evar_info = mt_ctxt access;
+                       	evar_info = Some (mt_ctxt access);
                        	evar_body = Evar_defined c }
     	in 
 	(ids_mod (fun evc -> (Proof_trees.remap evc (sp,spdecl'))) wc)

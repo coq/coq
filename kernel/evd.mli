@@ -26,7 +26,7 @@ type 'a evar_info = {
   evar_concl : constr;
   evar_env : env;
   evar_body : evar_body;
-  evar_info : 'a }
+  evar_info : 'a option }
 
 type 'a evar_map
 

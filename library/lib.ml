@@ -178,6 +178,7 @@ let reset_to sp =
   let (after,_,_) = split_lib spf in
   recache_context (List.rev after)
 
+let is_section_p sp = list_prefix_of (wd_of_sp sp) !path_prefix
 
 (* State and initialization. *)
 

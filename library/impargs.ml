@@ -91,21 +91,36 @@ let inductive_implicits_list ind_sp =
 let constant_implicits_list sp =
   list_of_implicits (constant_implicits sp)
 
-let implicits_of_var kind id =
-  failwith "TODO: implicits of vars"
+(* Variables. *)
+
+let var_table = ref Idmap.empty
+
+let declare_var_implicits id = 
+  let (_,ty) = Global.lookup_var id in
+  let imps = auto_implicits ty.body in
+  var_table := Idmap.add id imps !var_table
+
+let implicits_of_var _ id =
+  list_of_implicits (Idmap.find id !var_table)
 
 (* Registration as global tables and roolback. *)
 
-type frozen = implicits Spmap.t
+type frozen_t = implicits Spmap.t 
+              * (implicits * implicits array) array Spmap.t 
+              * implicits Idmap.t
 
 let init () =
-  constants_table := Spmap.empty
+  constants_table := Spmap.empty;
+  inductives_table := Spmap.empty;
+  var_table := Idmap.empty
 
 let freeze () =
-  !constants_table
+  !constants_table, !inductives_table, !var_table
 
-let unfreeze ct =
-  constants_table := ct
+let unfreeze (ct,it,vt) =
+  constants_table := ct;
+  inductives_table := it;
+  var_table := vt
 
 let _ = 
   Summary.declare_summary "implicits"

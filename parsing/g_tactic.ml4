@@ -312,7 +312,7 @@ GEXTEND Gram
           match (isMeta (nvar_of_ast id), l) with
             | (true, []) -> id
             | (false, _) -> <:ast< (CALL $id ($LIST $l)) >>
-            | _ -> user_err_loc
+            | _ -> Util.user_err_loc
                   (loc, "G_tactic.meta_tactic",
                    [< 'sTR"Cannot apply arguments to a meta-tactic." >])
       ] ]

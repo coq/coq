@@ -23,6 +23,9 @@ let (extern_state,intern_state) =
 
 (* Rollback. *)
 
+let freeze = get_state
+let unfreeze = set_state
+
 let with_heavy_rollback f x =
   let sum = freeze_summaries ()
   and flib = freeze() in

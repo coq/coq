@@ -177,7 +177,7 @@ let refiner = function
   | (Local_constraints lc) as r ->
       (fun goal_sigma ->
          let gl = goal_sigma.it  in
-         let ctxt = gl.evar_info in 
+         let ctxt = out_some gl.evar_info in 
          let sg = mk_goal ctxt gl.evar_env gl.evar_concl in
 	 ({it=[sg];sigma=goal_sigma.sigma},
           (fun pfl -> 
@@ -345,6 +345,12 @@ let tclTHEN (tac1:tactic) (tac2:tactic) (gls:goal sigma) =
   let gll,pl = List.split(List.map (apply_sig_tac sigr tac2) gl) in
   (repackage sigr (List.flatten gll), 
    compose p (mapshape(List.map List.length gll)pl))
+
+(* tclTHENLIST [t1;..;tn] applies t1;..tn. More convenient than tclTHEN
+   when n is large. *)
+let rec tclTHENLIST = function
+  | [] -> tclIDTAC
+  | t1::tacl -> tclTHEN t1 (tclTHENLIST tacl)
 
 (* tclTHEN_i tac1 tac2 n gls applies the tactic tac1 to gls and applies
    tac2 (i+n-1) to the i_th resulting subgoal *)
@@ -928,3 +934,15 @@ let print_subscript sigma sign pf =
   else 
     format_print_info_script sigma sign pf
 
+let tclINFO (tac:tactic) gls = 
+  let (sgl,v) as res = tac gls in 
+  begin try 
+    let pf = v (List.map leaf (sig_it sgl)) in
+    let sign = var_context (sig_it gls).evar_env in
+    mSGNL(hOV 0 [< 'sTR" == "; 
+                   print_subscript 
+                     ((compose ts_it sig_sig) gls) sign pf >])
+  with UserError _ -> 
+    mSGNL(hOV 0 [< 'sTR "Info failed to apply validation" >])
+  end;
+  res

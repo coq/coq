@@ -52,11 +52,6 @@ let section_path sl k =
 	make_path pa (id_of_string s) (kind_of_string k)
     | [] -> invalid_arg "section_path"
 
-(* raising located exceptions *)
-let anomaly_loc (loc,s,strm) = Stdpp.raise_with_loc loc (Anomaly (s,strm))
-let user_err_loc (loc,s,strm) = Stdpp.raise_with_loc loc (UserError (s,strm))
-let invalid_arg_loc (loc,s) = Stdpp.raise_with_loc loc (Invalid_argument s)
-
 (* ast destructors *)
 let num_of_ast = function
   | Num(_,n) -> n

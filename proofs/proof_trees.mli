@@ -144,6 +144,10 @@ val get_gc    : readable_constraints -> global_constraints
 val remap     : readable_constraints -> int * goal -> readable_constraints
 val ctxt_access : readable_constraints -> int -> bool
 
+val pf_lookup_name_as_renamed : 
+  var_context -> constr -> identifier -> int option
+val pf_lookup_index_as_renamed : constr -> int -> int option
+
 
 (*s Pretty printing functions. *)
 
@@ -156,15 +160,15 @@ val pr_subgoals  : goal list -> std_ppcmds
 val pr_subgoal   : int -> goal list -> std_ppcmds
 
 val pr_decl      : goal -> std_ppcmds
-val pr_decls     : global_constraints ->std_ppcmds
+val pr_decls     : global_constraints -> std_ppcmds
 val pr_evc       : readable_constraints -> std_ppcmds
 
 val prgl         : goal -> std_ppcmds
 val pr_seq       : goal -> std_ppcmds
 val pr_focus     : local_constraints -> std_ppcmds
 val pr_ctxt      : ctxtty -> std_ppcmds
-val pr_evars     : (int * goal) list ->  std_ppcmds
-val pr_evars_int : int -> (int * goal) list ->  std_ppcmds
+val pr_evars     : (int * goal) list -> std_ppcmds
+val pr_evars_int : int -> (int * goal) list -> std_ppcmds
 val pr_subgoals_existential : evar_declarations -> goal list -> std_ppcmds
 
 val ast_of_cvt_arg : tactic_arg ->  Coqast.t 

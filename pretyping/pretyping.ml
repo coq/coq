@@ -213,7 +213,7 @@ let pretype_ref loc isevars env = function
     let metaty =
       try List.assoc n !trad_metamap
       with Not_found ->
-	Ast.user_err_loc 
+	user_err_loc 
 	  (loc,"pretype",
 	   [< 'sTR "Metavariable "; 'iNT n; 'sTR "remains non instanciated" >])
 	  in
@@ -297,7 +297,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
       (match loc with
 	  None -> anomaly "There is an implicit argument I cannot solve"
 	| Some loc -> 
-	    Ast.user_err_loc
+	    user_err_loc
 	      (loc,"pretype",
 	       [< 'sTR "Cannot infer a term for this placeholder" >]))
   | _ -> anomaly "tycon")

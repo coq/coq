@@ -262,7 +262,8 @@ let print_leaf_entry with_values sep (spopt,lobj) =
         [< 'sTR" Syntax Macro " ; 
       	   print_id id ; 'sTR sep;  
            if with_values then 
-             let c = out_syntax_constant id in [< prterm c >]
+             let c = Syntax_def.search_syntactic_definition id in 
+	     [< prrawterm c >]
            else [<>]; 'fNL >]
 	
     | (_,"PPSYNTAX") -> [< 'sTR" Syntax Marker" ; 'fNL >]
@@ -428,9 +429,9 @@ let print_name name =
     | Not_found -> 
 	(try 
 	   let (_,typ) = Global.lookup_var name in 
-	   ([< print_var str typ;
-               try print_impl_args (implicits_of_var CCI name)
-               with _ -> [<>] >]) 
+	   [< print_var str typ;
+              try print_impl_args (implicits_of_var CCI name)
+              with _ -> [<>] >]
 	 with Not_found | Invalid_argument _ -> 
 	   error (str ^ " not a defined object"))
     | Invalid_argument _ -> error (str ^ " not a defined object")

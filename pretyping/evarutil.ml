@@ -50,7 +50,7 @@ let new_isevar_sign env sigma typ args =
     error "new_isevar_sign: two vars have the same name";
   let newev = Evd.new_evar() in
   let info = { evar_concl = typ; evar_env = env; 
-	       evar_body = Evar_empty; evar_info = () } in
+	       evar_body = Evar_empty; evar_info = None } in
   (Evd.add sigma newev info, mkEvar newev args)
 
 (* We don't try to guess in which sort the type should be defined, since
@@ -278,7 +278,7 @@ let solve_refl conv_algo isevars c1 c2 =
   let nargs = (Array.of_list (List.map mkVar (ids_of_sign nsign))) in
   let newev = Evd.new_evar () in
   let info = { evar_concl = evd.evar_concl; evar_env = nenv;
-	       evar_body = Evar_empty; evar_info = () } in
+	       evar_body = Evar_empty; evar_info = None } in
   isevars :=
     Evd.define (Evd.add !isevars newev info) ev (mkEvar newev nargs);
   Some [ev]

@@ -96,23 +96,24 @@ let lc_toList lc = Intset.elements lc
 (* Functions on goals *)
 
 let mk_goal ctxt env cl = 
-  { evar_env = env; evar_concl = cl; evar_body = Evar_empty; evar_info = ctxt }
+  { evar_env = env; evar_concl = cl; 
+    evar_body = Evar_empty; evar_info = Some ctxt }
 
 (* Functions on the information associated with existential variables  *)
 
 let mt_ctxt lc = { pgm = None; mimick = None; lc = lc }
 
-let get_ctxt gl = gl.evar_info
+let get_ctxt gl = out_some gl.evar_info
 
-let get_pgm gl = gl.evar_info.pgm
+let get_pgm gl = (out_some gl.evar_info).pgm
 
 let set_pgm pgm ctxt = { ctxt with pgm = pgm }
 
-let get_mimick gl = gl.evar_info.mimick
+let get_mimick gl = (out_some gl.evar_info).mimick
 
 let set_mimick mimick ctxt = { mimick = mimick; pgm = ctxt.pgm; lc = ctxt.lc }
 
-let get_lc gl = gl.evar_info.lc
+let get_lc gl = (out_some gl.evar_info).lc
 
 (* Functions on proof trees *)
 
@@ -225,6 +226,12 @@ let ctxt_access sigma sp =
   lc_exists (fun sp' -> sp' = sp or mentions sigma sp sp') (ts_it sigma).focus
 
 
+let pf_lookup_name_as_renamed hyps ccl s =
+  Termast.lookup_name_as_renamed (gLOB hyps) ccl s
+
+let pf_lookup_index_as_renamed ccl n =
+  Termast.lookup_index_as_renamed ccl n
+
 (*********************************************************************)
 (*                  Pretty printing functions                        *)
 (*********************************************************************)
@@ -299,7 +306,13 @@ let pr_pgm ctxt = match ctxt.pgm with
 let pr_ctxt ctxt =
   let pc = pr_pgm ctxt in [< 'sTR"[" ; pc; 'sTR"]" >]
 
-let pr_seq {evar_env=env; evar_concl=cl; evar_info=info} =
+let pr_seq evd = 
+  let env = evd.evar_env
+  and cl = evd.evar_concl
+  and info = match evd.evar_info with 
+    | Some i -> i 
+    | None -> anomaly "pr_seq : info = None"
+  in
   let (x,y) as hyps = var_context env in
   let sign = List.rev(List.combine x y) in
   let pc = pr_ctxt info in

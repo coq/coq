@@ -23,7 +23,6 @@ type strength =
 type variable_declaration = constr * strength * bool
 val declare_variable : identifier -> variable_declaration -> unit
 
-
 type constant_declaration = constant_entry * strength * bool
 val declare_constant : identifier -> constant_declaration -> unit
 
@@ -32,8 +31,6 @@ val declare_parameter : identifier -> constr -> unit
 val declare_mind : mutual_inductive_entry -> unit
 
 val declare_eliminations : section_path -> unit
-
-val declare_syntax_constant : identifier -> constr -> unit
 
 val make_strength : string list -> strength
 val make_strength_0 : unit -> strength
@@ -49,7 +46,6 @@ val is_variable : identifier -> bool
 val out_variable : section_path -> identifier * typed_type * strength * bool
 val variable_strength : identifier -> strength
 
-val out_syntax_constant : identifier -> constr
 
 (*s It also provides a function [global_reference] to construct a global
   constr (a constant, an inductive or a constructor) from an identifier.
@@ -60,6 +56,8 @@ val out_syntax_constant : identifier -> constr
 val global_operator : section_path -> identifier -> sorts oper * var_context
 val global_reference : path_kind -> identifier -> constr
 val global_reference_imps : path_kind -> identifier -> constr * int list
+
+val global : Environ.env -> identifier -> constr
 
 val is_global : identifier -> bool
 

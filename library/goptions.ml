@@ -49,7 +49,7 @@ module MakeTable =
     let kn = nickname A.key
 
     let _ =
-      if List.mem_assoc kn !param_table then 
+      if List.mem_assoc kn !param_table then
 	error "Sorry, this table name is already used"
 
     module MyType = struct type t = A.t let compare = Pervasives.compare end
@@ -81,8 +81,8 @@ module MakeTable =
 		Libobject.open_function = open_options;
 		Libobject.cache_function = cache_options;
 		Libobject.specification_function = specification_options}) in
-        ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
-         (fun c -> Lib.add_anonymous_leaf (inGo (GOrmv, c))))
+        ((fun c -> let _ = Lib.add_anonymous_leaf (inGo (GOadd, c)) in ()),
+         (fun c -> let _ = Lib.add_anonymous_leaf (inGo (GOrmv, c)) in ()))
       else
         ((fun c -> t := MySet.add c !t),
          (fun c -> t := MySet.remove c !t))
@@ -244,8 +244,8 @@ let set_option_value check_and_cast key v =
   in
   match info with
     | Sync  current  ->
-      	Lib.add_anonymous_leaf
-	  (inOptVal (key,(name,check_and_cast v current)))
+      	let _ = Lib.add_anonymous_leaf
+		  (inOptVal (key,(name,check_and_cast v current))) in ()
     | Async (read,write) -> write (check_and_cast v (read ()))
 
 let bad_type_error () = error "Bad type of value for this option"

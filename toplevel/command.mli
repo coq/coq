@@ -8,11 +8,18 @@ open Declare
 (*i*)
 
 val definition_body : identifier -> strength -> Coqast.t -> unit
+
 val definition_body_red : identifier -> strength -> Coqast.t 
   -> Tacred.red_expr option -> unit
+
 val syntax_definition : identifier -> Coqast.t -> unit
+
+(*i
 val abstraction_definition : identifier -> int array -> Coqast.t -> unit
+i*)
+
 val hypothesis_def_var : bool -> string -> strength -> Coqast.t -> unit
+
 val parameter_def_var : string -> Coqast.t -> unit
 
 val build_mutual : 

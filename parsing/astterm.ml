@@ -128,7 +128,7 @@ let ref_from_constr = function
   | _ -> anomaly "Not a reference"
 
 let error_var_not_found str loc s = 
-  Ast.user_err_loc 
+  Util.user_err_loc 
     (loc,str,
      [< 'sTR "The variable"; 'sPC; 'sTR s;
 	'sPC ; 'sTR "was not found"; 
@@ -150,7 +150,7 @@ let dbize_ref k sigma env loc s =
       RRef (loc,ref_from_constr c), il
     with UserError _ ->
       try 
-	RRef (loc,ref_from_constr (Declare.out_syntax_constant id)), []
+	(Syntax_def.search_syntactic_definition id, [])
       with Not_found -> 
 	error_var_not_found "dbize_ref" loc s
 	  
@@ -389,7 +389,7 @@ let ast_adjust_consts sigma = (* locations are kept *)
 	       | _ -> anomaly "Not a reference"
 	   with UserError _ | Not_found ->
 	     try 
-	       let _ = Declare.out_syntax_constant id in 
+	       let _ = Syntax_def.search_syntactic_definition id in 
 	       Node(loc,"SYNCONST",[Nvar(loc,s)])
 	     with Not_found -> 
 	       warning ("Could not globalize "^s); ast)
@@ -526,3 +526,96 @@ let fconstruct_with_univ sigma sign com =
 		(univ_sp, Constraintab.current_constraints(), c) in 
   j
 *)
+
+open Closure
+open Tacred
+
+(* Translation of reduction expression: we need trad because of Fold
+ * Moreover, reduction expressions are used both in tactics and in
+ * vernac. *)
+
+let glob_nvar com =
+  let s = nvar_of_ast com in
+  try 
+    Nametab.sp_of_id CCI (id_of_string s)
+  with Not_found -> 
+    error ("unbound variable "^s)
+
+let cvt_pattern sigma env = function
+  | Node(_,"PATTERN", Node(_,"COMMAND",[com])::nums) ->
+      let occs = List.map num_of_ast nums in
+      let c = constr_of_com sigma env com in
+      let j = Typing.unsafe_machine env sigma c in
+      (occs, j.uj_val, j.uj_type)
+  | arg -> invalid_arg_loc (Ast.loc arg,"cvt_pattern")
+
+let cvt_unfold = function
+  | Node(_,"UNFOLD", com::nums) -> (List.map num_of_ast nums, glob_nvar com)
+  | arg -> invalid_arg_loc (Ast.loc arg,"cvt_unfold")
+
+let cvt_fold sigma sign = function
+  | Node(_,"COMMAND",[c]) -> constr_of_com sigma sign c
+  | arg -> invalid_arg_loc (Ast.loc arg,"cvt_fold")
+
+let flag_of_ast lf =
+  let beta = ref false in
+  let delta = ref false in
+  let iota = ref false in
+  let idents = ref (None: (sorts oper -> bool) option) in
+  let set_flag = function
+    | Node(_,"Beta",[]) -> beta := true
+    | Node(_,"Delta",[]) -> delta := true
+    | Node(_,"Iota",[]) -> iota := true
+    | Node(loc,"Unf",l) ->
+        if !delta then
+          if !idents = None then
+            let idl = List.map glob_nvar l in
+            idents := Some
+              (function
+                 | Const sp -> List.mem sp idl
+                 | Abst sp -> List.mem sp idl
+                 | _ -> false)
+          else 
+	    user_err_loc
+	      (loc,"flag_of_ast",
+	       [< 'sTR"Cannot specify identifiers to unfold twice" >])
+        else 
+	  user_err_loc(loc,"flag_of_ast",
+                       [< 'sTR"Delta must be specified before" >])
+    | Node(loc,"UnfBut",l) ->
+        if !delta then
+          if !idents = None then
+            let idl = List.map glob_nvar l in
+            idents := Some
+              (function
+                 | Const sp -> not (List.mem sp idl)
+                 | Abst sp -> not (List.mem sp idl)
+                 | _ -> false)
+          else 
+	    user_err_loc
+	      (loc,"flag_of_ast",
+	       [< 'sTR"Cannot specify identifiers to unfold twice" >])
+        else 
+	  user_err_loc(loc,"flag_of_ast",
+                       [< 'sTR"Delta must be specified before" >])
+    | arg -> invalid_arg_loc (Ast.loc arg,"flag_of_ast")
+  in
+  List.iter set_flag lf;
+  { r_beta = !beta;
+    r_iota = !iota;
+    r_delta = match (!delta,!idents) with
+      | (false,_) -> (fun _ -> false)
+      | (true,None) -> (fun _ -> true)
+      | (true,Some p) -> p }
+  
+let redexp_of_ast sigma sign = function
+  | ("Red", []) -> Red
+  | ("Hnf", []) -> Hnf
+  | ("Simpl", []) -> Simpl
+  | ("Unfold", ul) -> Unfold (List.map cvt_unfold ul)
+  | ("Fold", cl) -> Fold (List.map (cvt_fold sigma sign) cl)
+  | ("Cbv",lf) -> Cbv(UNIFORM, flag_of_ast lf)
+  | ("Lazy",lf) -> Lazy(UNIFORM, flag_of_ast lf)
+  | ("Pattern",lp) -> Pattern (List.map (cvt_pattern sigma sign) lp)
+  | (s,_) -> invalid_arg ("malformed reduction-expression: "^s)
+

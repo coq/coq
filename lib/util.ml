@@ -13,6 +13,12 @@ exception UserError of string * std_ppcmds (* User errors *)
 let error string = raise (UserError(string,[< 'sTR string >]))
 let errorlabstrm l pps = raise (UserError(l,pps))
 
+(* raising located exceptions *)
+type loc = int * int
+let anomaly_loc (loc,s,strm) = Stdpp.raise_with_loc loc (Anomaly (s,strm))
+let user_err_loc (loc,s,strm) = Stdpp.raise_with_loc loc (UserError (s,strm))
+let invalid_arg_loc (loc,s) = Stdpp.raise_with_loc loc (Invalid_argument s)
+
 (* Strings *)
 
 let explode s = 
@@ -213,6 +219,14 @@ let list_share_tails l1 l2 =
     | (l1,l2) -> (List.rev l1, List.rev l2, acc)
   in 
   shr_rev [] (List.rev l1, List.rev l2)
+
+let list_except_assoc e = 
+  let rec except_e = function
+    | [] -> []
+    | (x,_ as y)::l -> if x=e then l else y::except_e l
+  in 
+  except_e 
+
 
 (* Arrays *)
 

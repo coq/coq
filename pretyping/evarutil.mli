@@ -22,7 +22,7 @@ val filter_sign :
   'a * identifier list * var_context
 
 val dummy_sort : constr
-val do_restrict_hyps : unit evar_map -> constr -> unit evar_map * constr
+val do_restrict_hyps : 'a evar_map -> constr -> 'a evar_map * constr
 
 
 type 'a evar_defs = 'a evar_map ref
@@ -33,11 +33,11 @@ val ise_undefined : 'a evar_defs -> constr -> bool
 val ise_defined : 'a evar_defs -> constr -> bool
 
 val real_clean :
-  unit evar_defs -> int -> (identifier * constr) list -> constr -> constr
+  'a evar_defs -> int -> (identifier * constr) list -> constr -> constr
 val new_isevar :
-  unit evar_defs -> env -> constr -> path_kind -> constr * constr
-val evar_define : unit evar_defs -> constr -> constr -> int list
-val solve_simple_eqn : (constr -> constr -> bool) -> unit evar_defs ->
+  'a evar_defs -> env -> constr -> path_kind -> constr * constr
+val evar_define : 'a evar_defs -> constr -> constr -> int list
+val solve_simple_eqn : (constr -> constr -> bool) -> 'a evar_defs ->
   (conv_pb * constr * constr) -> int list option
 
 val has_undefined_isevars : 'a evar_defs -> constr -> bool
@@ -59,13 +59,13 @@ val mk_tycon2 : trad_constraint -> constr -> trad_constraint
 
 (* application *)
 val app_dom_tycon : 
-  env -> unit evar_defs -> trad_constraint -> trad_constraint
+  env -> 'a evar_defs -> trad_constraint -> trad_constraint
 val app_rng_tycon :
   env -> 'a evar_defs -> constr -> trad_constraint -> trad_constraint
 
 (* abstraction *)
 val abs_dom_valcon : 
-  env -> unit evar_defs -> trad_constraint -> trad_constraint
+  env -> 'a evar_defs -> trad_constraint -> trad_constraint
 val abs_rng_tycon : 
   env -> 'a evar_defs -> trad_constraint -> trad_constraint
 

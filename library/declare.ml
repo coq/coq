@@ -47,6 +47,7 @@ let _ = Summary.declare_summary "VARIABLE"
 let cache_variable (sp,(id,(ty,_,_) as vd)) = 
   Global.push_var (id,ty);
   Nametab.push id sp;
+  declare_var_implicits id;
   vartab := Spmap.add sp vd !vartab
 
 let load_variable _ = 
@@ -69,16 +70,19 @@ let (in_variable, out_variable) =
 let declare_variable id ((ty,_,_) as obj) =
   Global.push_var (id,ty);
   let sp = add_leaf id CCI (in_variable (id,obj)) in
-  Nametab.push id sp
+  Nametab.push id sp;
+  declare_var_implicits id
 
 (* Parameters. *)
 
 let cache_parameter (sp,c) =
   Global.add_parameter sp c;
-  Nametab.push (basename sp) sp
+  Nametab.push (basename sp) sp;
+  declare_constant_implicits sp
 
 let open_parameter (sp,_) =
-  Nametab.push (basename sp) sp
+  Nametab.push (basename sp) sp;
+  declare_constant_implicits sp
 
 let specification_parameter obj = obj
 
@@ -93,7 +97,8 @@ let (in_parameter, out_parameter) =
 let declare_parameter id c =
   let sp = add_leaf id CCI (in_parameter c) in
   Global.add_parameter sp c;
-  Nametab.push (basename sp) sp
+  Nametab.push (basename sp) sp;
+  declare_constant_implicits sp
  
 (* Constants. *)
 
@@ -169,41 +174,6 @@ let declare_mind mie =
   push_inductive_names sp mie;
   declare_inductive_implicits sp
 
-(* Syntax constants. *)
-
-let syntax_table = ref (Idmap.empty : constr Idmap.t)
-
-let _ = Summary.declare_summary
-	  "SYNTAXCONSTANT"
-	  { Summary.freeze_function = (fun () -> !syntax_table);
-	    Summary.unfreeze_function = (fun ft -> syntax_table := ft);
-	    Summary.init_function = (fun () -> syntax_table := Idmap.empty) }
-
-let add_syntax_constant id c =
-  syntax_table := Idmap.add id c !syntax_table
-
-let cache_syntax_constant (sp,c) = 
-  add_syntax_constant (basename sp) c;
-  Nametab.push (basename sp) sp
-
-let open_syntax_constant (sp,_) =
-  Nametab.push (basename sp) sp
-
-let (in_syntax_constant, out_syntax_constant) =
-  let od = {
-    cache_function = cache_syntax_constant;
-    load_function = (fun _ -> ());
-    open_function = open_syntax_constant;
-    specification_function = (fun x -> x) } in
-  declare_object ("SYNTAXCONSTANT", od)
-
-let declare_syntax_constant id c =
-  let sp = add_leaf id CCI (in_syntax_constant c) in
-  add_syntax_constant id c;
-  Nametab.push (basename sp) sp
-
-let out_syntax_constant id = Idmap.find id !syntax_table
-
 (* Test and access functions. *)
 
 let is_constant sp = 
@@ -272,6 +242,8 @@ let global_reference_imps kind id =
     | DOPN (MutConstruct ((sp,i),j),_) ->
 	c, list_of_implicits (constructor_implicits ((sp,i),j))
     | _ -> assert false
+
+let global env id = global_reference CCI id
 
 let is_global id =
   try 

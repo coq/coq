@@ -56,10 +56,10 @@ let applyHead n c wc =
         | DOP2(Prod,c1,c2) ->
             let c1ty = w_type_of wc c1 in
 	    let evar = new_evar_in_sign (w_env wc) in
-            let (evar_sp, _) = destConst evar in
+            let (evar_n, _) = destEvar evar in
 	    (compose 
 	       (apprec (n-1) (applist(c,[evar])) (sAPP c2 evar))
-	       (w_Declare evar_sp (DOP2(Cast,c1,c1ty))))
+	       (w_Declare evar_n (DOP2(Cast,c1,c1ty))))
 	    wc
 	| _ -> error "Apply_Head_Then"
   in 
@@ -243,20 +243,20 @@ and w_resrec metas evars wc =
 	  
     | (lhs,(DOP0(Meta k) as rhs))::t -> w_resrec ((k,lhs)::metas) t wc
 	  
-    | (DOPN(Const evsp,_) as evar,rhs)::t ->
+    | (DOPN(Evar evn,_) as evar,rhs)::t ->
 	if w_defined_const wc evar then
           let (wc',metas') = w_Unify rhs evar metas wc in 
 	  w_resrec metas' t wc'
 	else
           (try 
-	     w_resrec metas t (w_Define evsp rhs wc)
+	     w_resrec metas t (w_Define evn rhs wc)
            with UserError _ ->
              (match rhs with
              	| DOPN(AppL,cl) ->
 		    (match cl.(0) with
 		       | DOPN(Const sp,_) ->
 			   let wc' = mimick_evar cl.(0) 
-				       ((Array.length cl) - 1) evsp wc in
+				       ((Array.length cl) - 1) evn wc in
 			   w_resrec metas evars wc'
 		       | _ -> error "w_Unify")
 		| _ -> error "w_Unify"))
@@ -555,13 +555,13 @@ and clenv_resrec metas evars clenv =
     | ((lhs,(DOP0(Meta k) as rhs))::t,metas) ->
     	clenv_resrec ((k,lhs)::metas) t clenv
 	  
-    | ((DOPN(Const evsp,_) as evar,rhs)::t,metas) ->
+    | ((DOPN(Evar evn,_) as evar,rhs)::t,metas) ->
     	if w_defined_const clenv.hook evar then
           let (metas',evars') = unify_0 [] clenv.hook rhs evar in
           clenv_resrec (metas'@metas) (evars'@t) clenv
     	else
           (try 
-	     clenv_resrec metas t (clenv_wtactic (w_Define evsp rhs) clenv)
+	     clenv_resrec metas t (clenv_wtactic (w_Define evn rhs) clenv)
            with UserError _ ->
              (match rhs with
 		| DOPN(AppL,cl) ->
@@ -569,7 +569,7 @@ and clenv_resrec metas evars clenv =
 		       | (DOPN(Const _,_) | DOPN(MutConstruct _,_)) ->
 			   clenv_resrec metas evars 
 			     (clenv_wtactic (mimick_evar cl.(0) 
-					       ((Array.length cl) - 1) evsp) 
+					       ((Array.length cl) - 1) evn) 
 				clenv)
 		       | _ -> error "w_Unify")
            	| _ -> error "w_Unify"))
@@ -857,10 +857,10 @@ let clenv_pose_dependent_evars clenv =
   List.fold_left
     (fun clenv mv ->
        let evar = new_evar_in_sign (w_env clenv.hook) in
-       let (evar_sp,_) = destConst evar in
+       let (evar_n,_) = destEvar evar in
        let tY = clenv_instance_type clenv mv in
        let tYty = w_type_of clenv.hook tY in
-       let clenv' = clenv_wtactic (w_Declare evar_sp (DOP2(Cast,tY,tYty))) 
+       let clenv' = clenv_wtactic (w_Declare evar_n (DOP2(Cast,tY,tYty))) 
 		      clenv in
        clenv_assign mv evar clenv')
     clenv
@@ -909,13 +909,13 @@ and clenv_resrec metas evars clenv =
     | ((lhs,(DOP0(Meta k) as rhs))::t,metas) ->
     	clenv_resrec ((k,lhs)::metas) t clenv
 
-    | ((DOPN(Const evsp,_) as evar,rhs)::t,metas) ->
+    | ((DOPN(Evar evn,_) as evar,rhs)::t,metas) ->
     	if w_defined_const clenv.hook evar then
           let (metas',evars') = unify_0 [] clenv.hook rhs evar in
           clenv_resrec (metas'@metas) (evars'@t) clenv
     	else
           (try 
-	     clenv_resrec metas t (clenv_wtactic (w_Define evsp rhs) clenv)
+	     clenv_resrec metas t (clenv_wtactic (w_Define evn rhs) clenv)
            with UserError _ ->
              (match rhs with
 		| DOPN(AppL,cl) ->
@@ -923,7 +923,7 @@ and clenv_resrec metas evars clenv =
 		       | (DOPN(Const _,_) |  DOPN(MutConstruct _,_)) ->
 			   clenv_resrec metas evars 
 			     (clenv_wtactic (mimick_evar cl.(0) 
-					       ((Array.length cl) - 1) evsp) 
+					       ((Array.length cl) - 1) evn) 
 				clenv)
 		       | _ -> error "w_Unify")
            	| _ -> error "w_Unify"))

@@ -40,7 +40,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
     | DOP0(Meta mv) ->
 	if occur_meta conclty then
           error "Cannot refine to conclusions with meta-variables";
-	let ctxt = goal.evar_info in 
+	let ctxt = out_some goal.evar_info in 
 	(mk_goal ctxt env (nf_betaiota env sigma conclty))::goalacc, conclty
 
     | DOP2(Cast,t,ty) ->
@@ -80,7 +80,7 @@ and mk_hdgoals sigma goal goalacc trm =
   match trm with
     | DOP2(Cast,DOP0(Meta mv),ty) ->
 	let _ = type_of env sigma ty in
-	let ctxt = goal.evar_info in  
+	let ctxt = out_some goal.evar_info in  
 	(mk_goal ctxt env (nf_betaiota env sigma ty))::goalacc,ty
 	  
     | DOPN(AppL,cl) ->
@@ -217,7 +217,7 @@ let prim_refiner r sigma goal =
   let env = goal.evar_env in
   let sign = var_context env in
   let cl = goal.evar_concl in
-  let info = goal.evar_info in
+  let info = out_some goal.evar_info in
   match r with
     | { name = Intro; newids = [id] } ->
     	if mem_sign sign id then error "New variable is already declared";
