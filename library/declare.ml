@@ -59,8 +59,8 @@ let cache_variable (sp,((id,(d,_,_) as vd),imps)) =
     | SectionLocalAssum ty -> Global.push_named_assum (id,ty)
     | SectionLocalDef c -> Global.push_named_def (id,c)
   end;
-  Nametab.push id sp;
-  if imps then declare_var_implicits id;
+  Nametab.push id (VarRef sp);
+  if imps then declare_var_implicits sp;
   vartab := Spmap.add sp vd !vartab
 
 let load_variable _ = ()
@@ -87,14 +87,14 @@ let declare_variable id obj =
 
 let cache_parameter (sp,(c,imps)) =
   Global.add_parameter sp c;
-  Nametab.push (basename sp) sp;
+  Nametab.push (basename sp) (ConstRef sp);
   if imps then declare_constant_implicits sp
 
 let load_parameter (sp,(_,imps)) =
   if imps then declare_constant_implicits sp
 
 let open_parameter (sp,_) =
-  Nametab.push (basename sp) sp
+  Nametab.push (basename sp) (ConstRef sp)
 
 let export_parameter obj = Some obj
 
@@ -130,7 +130,7 @@ let cache_constant (sp,((cdt,stre),imps)) =
     | ConstantEntry ce -> Global.add_constant sp ce
     | ConstantRecipe r -> Global.add_discharged_constant sp r
   end;
-  Nametab.push (basename sp) sp;
+  Nametab.push (basename sp) (ConstRef sp);
   if imps then declare_constant_implicits sp;
   csttab := Spmap.add sp stre !csttab
 
@@ -139,7 +139,7 @@ let load_constant (sp,((ce,stre),imps)) =
   csttab := Spmap.add sp stre !csttab
 
 let open_constant (sp,_) =
-  Nametab.push (basename sp) sp
+  Nametab.push (basename sp) (ConstRef sp)
 
 let export_constant obj = Some obj
 
@@ -159,11 +159,19 @@ let declare_constant id cd =
 (* Inductives. *)
 
 let push_inductive_names sp mie =
-  List.iter
-    (fun (id,_,cnames,_) ->
-       Nametab.push id sp;
-       List.iter (fun x -> Nametab.push x sp) cnames)
-    mie.mind_entry_inds
+  let _ = 
+    List.fold_left
+      (fun n (id,_,cnames,_) ->
+	 let indsp = (sp,n) in
+	 let _ =
+	   List.fold_left
+	     (fun p id ->
+		Nametab.push id (ConstructRef (indsp,p)); (p+1))
+	     1 cnames in
+	 Nametab.push id (IndRef indsp);
+	 n+1)
+      0 mie.mind_entry_inds
+  in ()
 
 let cache_inductive (sp,(mie,imps)) =
   Global.add_mind sp mie;
@@ -207,17 +215,19 @@ let constant_or_parameter_strength sp =
   try constant_strength sp with Not_found -> NeverDischarge
 
 let is_variable id = 
-  let sp = Nametab.sp_of_id CCI id in Spmap.mem sp !vartab
-  
+  match Nametab.sp_of_id CCI id with
+    | VarRef _ -> true
+    | _ -> false
+
 let get_variable sp = 
   let (id,(_,str,sticky)) = Spmap.find sp !vartab in
   let (c,ty) = Global.lookup_named id in
   ((id,c,ty),str,sticky)
 
 let variable_strength id =
-  let sp = Nametab.sp_of_id CCI id in 
-  let _,(_,str,_) = Spmap.find sp !vartab in
-  str
+  match Nametab.sp_of_id CCI id with
+    | VarRef sp -> let _,(_,str,_) = Spmap.find sp !vartab in str
+    | _ -> anomaly "variable_strength: not the reference to a variable"
 
 (* Global references. *)
 
@@ -243,16 +253,25 @@ let mind_oper_of_id sp id mib =
 	   mip.mind_consnames)
     mib.mind_packets
 
+let context_of_global_reference sigma env = function
+  | EvarRef n -> (Evd.map sigma n).Evd.evar_hyps
+  | VarRef sp -> [] (* Hum !, pas correct *)
+  | ConstRef sp -> (Environ.lookup_constant sp env).const_hyps
+  | IndRef (sp,_) -> (Environ.lookup_mind sp env).mind_hyps
+  | ConstructRef ((sp,_),_) -> (Environ.lookup_mind sp env).mind_hyps
+
+(*
 let global_sp_operator env sp id =
   try
-    let cb = Environ.lookup_constant sp env in ConstRef sp, cb.const_hyps
+
   with Not_found -> 
-    let mib = Environ.lookup_mind sp env in
+    let mib = 
     mind_oper_of_id sp id mib, mib.mind_hyps
+*)
 
 let global_operator kind id =
-  let sp = Nametab.sp_of_id kind id in
-  global_sp_operator (Global.env()) sp id
+  let r = Nametab.sp_of_id kind id in
+  r, context_of_global_reference Evd.empty (Global.env()) r
 
 let occur_decl env (id,c,t) hyps =
   try
@@ -288,48 +307,64 @@ let find_common_hyps_then_abstract c env hyps' hyps =
 	 hyps
 	 (env,c))
 
-let construct_sp_reference env sp id =
-  let (oper,hyps) = global_sp_operator env sp id in
+let extract_instance ref args =
+  let hyps = context_of_global_reference Evd.empty (Global.env ()) ref in
+  let hyps0 = Global.named_context () in
+  let na = Array.length args in
+  let rec peel n acc = function
+    | d::hyps ->
+	if List.mem d hyps0 then peel (n-1) acc hyps
+	else peel (n-1) (args.(n)::acc) hyps
+    | [] -> Array.of_list acc
+  in peel (na-1) [] hyps
+
+let constr_of_reference sigma env ref =
+  let hyps = context_of_global_reference sigma env ref in
   let hyps0 = Global.named_context () in
   let env0 = Environ.reset_context env in
   let args = List.map mkVar (ids_of_named_context hyps) in
-  let body = match oper with
+  let body = match ref with
+    | EvarRef n -> mkEvar (n,Array.of_list args)
+    | VarRef sp -> mkVar (basename sp)
     | ConstRef sp -> mkConst (sp,Array.of_list args)
     | ConstructRef sp -> mkMutConstruct (sp,Array.of_list args)
     | IndRef sp -> mkMutInd (sp,Array.of_list args)
   in
   find_common_hyps_then_abstract body env0 hyps0 hyps
 
+let construct_qualified_reference env sp =
+  let ref = Nametab.locate sp in
+  constr_of_reference Evd.empty env ref
+
 let construct_reference env kind id =
   try
-    let sp = Nametab.sp_of_id kind id in
-    construct_sp_reference env sp id
-  with Not_found -> 
+    let ref = Nametab.sp_of_id kind id in
+    constr_of_reference Evd.empty env ref
+  with Not_found ->
     mkVar (let _ = Environ.lookup_named id env in id)
 
-let global_sp_reference sp id = 
-  construct_sp_reference (Global.env()) sp id
+let global_qualified_reference sp = 
+  construct_qualified_reference (Global.env()) sp
 
 let global_reference kind id = 
   construct_reference (Global.env()) kind id
 
-let global_reference_imps kind id =
-  let c = global_reference kind id in
-  match kind_of_term c with
-    | IsConst (sp,_) -> c, list_of_implicits (constant_implicits sp)
-    | IsMutInd (isp,_) -> c, list_of_implicits (inductive_implicits isp)
-    | IsMutConstruct (csp,_) ->	c,list_of_implicits (constructor_implicits csp)
-    | IsVar id -> c, implicits_of_var id
-    | _ -> assert false
 (*
 let global env id =
   try let _ = lookup_glob id (Environ.context env) in mkVar id
   with Not_found -> global_reference CCI id
 *)
+let dirpath_of_global = function
+  | EvarRef n -> ["evar"]
+  | VarRef sp -> dirpath sp
+  | ConstRef sp -> dirpath sp
+  | IndRef (sp,_) -> dirpath sp
+  | ConstructRef ((sp,_),_) -> dirpath sp
+
 let is_global id =
   try 
     let osp = Nametab.sp_of_id CCI id in
-    list_prefix_of (dirpath osp) (Lib.cwd())
+    list_prefix_of (dirpath_of_global osp) (Lib.cwd())
   with Not_found -> 
     false
 
@@ -387,5 +422,4 @@ let declare_eliminations sp i =
 let lookup_eliminator env path s =
   let s = (string_of_id (basename path))^(elimination_suffix s) in
   construct_reference env (kind_of_path path) (id_of_string s)
-
-      
+  

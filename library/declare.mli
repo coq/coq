@@ -44,6 +44,8 @@ val declare_mind : mutual_inductive_entry -> section_path
 
 val declare_eliminations : section_path -> int -> unit
 
+val out_inductive : Libobject.obj -> mutual_inductive_entry * bool
+
 val make_strength : string list -> strength
 val make_strength_0 : unit -> strength
 val make_strength_1 : unit -> strength
@@ -76,11 +78,15 @@ val global_operator :
     [construct_reference] is a version which looks for variables in a 
     given environment instead of looking in the current global environment. *)
 
-val global_sp_reference : section_path -> identifier -> constr
+val extract_instance : global_reference -> constr array -> constr array
 
+val constr_of_reference :
+  'a Evd.evar_map -> Environ.env -> global_reference -> constr
+
+val global_qualified_reference : section_path -> constr
 val global_reference : path_kind -> identifier -> constr
-val global_reference_imps : path_kind -> identifier -> constr * int list
 
+val construct_qualified_reference : Environ.env -> section_path -> constr
 val construct_reference : Environ.env -> path_kind -> identifier -> constr
 
 val is_global : identifier -> bool
