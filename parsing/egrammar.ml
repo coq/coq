@@ -52,14 +52,17 @@ let find_position assoc = function
       let after = ref 8 in
       let rec add_level q = function
         | (p,_ as pa)::l when p > n -> pa :: add_level p l
-        | (p,a)::l when p = n -> raise (Found a)
-        | l -> after := q; (n,assoc)::l
+        | (p,a)::l when p = n ->
+	    if a = assoc or assoc = None then raise (Found a);
+	    after := q; (n,assoc)::l
+        | l ->
+	    after := q; (n,assoc)::l
       in
       try
         numeric_levels := add_level 8 !numeric_levels;
         Some (Gramext.After (constr_level !after)), assoc
       with
-          Found a -> Some (Gramext.Level (constr_level n)), a
+          Found _ -> Some (Gramext.Level (constr_level n)), assoc
 
 (* Interpretation of the right hand side of grammar rules *)
 
@@ -266,15 +269,14 @@ let rec interp_entry_name u s =
     let t, g = interp_entry_name u (String.sub s 0 (l-4)) in
     OptArgType t, Gramext.Sopt g
   else
-    let n = Extend.rename_command s in
-    let e = get_entry (get_univ u) n in
+    let e = get_entry (get_univ u) s in
     let o = object_of_typed_entry e in
     let t = type_of_typed_entry e in
     t,Gramext.Snterm (Pcoq.Gram.Entry.obj o)
 
 let qualified_nterm current_univ = function
-  | NtQual (univ, en) -> (rename_command univ, rename_command en)
-  | NtShort en -> (current_univ, rename_command en)
+  | NtQual (univ, en) -> (univ, en)
+  | NtShort en -> (current_univ, en)
 
 let make_vprod_item univ = function
   | VTerm s -> (Gramext.Stoken (Extend.terminal s), None)

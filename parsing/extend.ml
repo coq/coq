@@ -147,7 +147,7 @@ let warn nt nt' =
   warning ("'"^nt^"' grammar entry is obsolete; use name '"^nt'^"' instead");
   nt'
 
-let rename_command nt =
+let rename_command_entry nt =
   if String.length nt >= 7 & String.sub nt 0 7 = "command"
   then warn nt ("constr"^(String.sub nt 7 (String.length nt - 7)))
   else if nt = "lcommand" then warn nt "lconstr"
@@ -178,18 +178,36 @@ let explicitize_prod_entry pos univ nt =
 
 let explicitize_entry = explicitize_prod_entry ()
 
-let qualified_nterm current_univ pos = function
+(* Express border sub entries in function of the from level and an assoc *)
+(* We're cheating: not necessarily the same assoc on right and left *)
+let clever_explicitize_prod_entry pos univ from en =
+  let t = explicitize_prod_entry pos univ en in
+  match explicitize_entry univ from with
+    | ETConstr (from,()) ->
+	(match t with
+	  | ETConstr (n,BorderProd (left,None)) when (n=from & left) ->
+	      ETConstr (n,BorderProd (true,Some Gramext.LeftA))
+	  | ETConstr (n,BorderProd (left,None)) when (n=from-1 & not left) ->
+	      ETConstr (n+1,BorderProd (true,Some Gramext.LeftA))
+	  | ETConstr (n,BorderProd (left,None)) when (n=from-1 & left) ->
+	      ETConstr (n+1,BorderProd (true,Some Gramext.RightA))
+	  | ETConstr (n,BorderProd (left,None)) when (n=from & not left) ->
+	      ETConstr (n,BorderProd (true,Some Gramext.RightA))
+	  | t -> t)
+    | _ -> t
+
+let qualified_nterm current_univ pos from = function
   | NtQual (univ, en) ->
-      explicitize_prod_entry pos (rename_command univ) (rename_command en)
+      clever_explicitize_prod_entry pos univ from en
   | NtShort en ->
-      explicitize_prod_entry pos current_univ (rename_command en)
+      clever_explicitize_prod_entry pos current_univ from en
 
 let check_entry check_entry_type = function
   | ETOther (u,n) -> check_entry_type (u,n)
   | _ -> ()
 
-let nterm loc ((check_entry_type,univ),pos) nont =
-  let typ = qualified_nterm univ pos nont in
+let nterm loc (((check_entry_type,univ),from),pos) nont =
+  let typ = qualified_nterm univ pos from nont in
   check_entry check_entry_type typ;
   typ
 
@@ -217,13 +235,11 @@ let gram_rule univ (name,pil,act) =
   { gr_name = name; gr_production = pilc; gr_action = a }
 
 let gram_entry univ (nt, ass, rl) =
-  let name = rename_command nt in
-  { ge_name = name;
+  { ge_name = nt;
     gl_assoc = ass;
-    gl_rules = List.map (gram_rule univ) rl }
+    gl_rules = List.map (gram_rule (univ,nt)) rl }
 
 let interp_grammar_command univ ge entryl =
-  let univ = rename_command univ in
   { gc_univ = univ;
     gc_entries = List.map (gram_entry (ge,univ)) entryl }
 

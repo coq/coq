@@ -84,7 +84,7 @@ type raw_grammar_entry = string * grammar_associativity * raw_grammar_rule list
 
 val terminal : string -> string * string
 
-val rename_command : string -> string
+val rename_command_entry : string -> string
 
 val explicitize_entry : string -> string -> constr_entry
 

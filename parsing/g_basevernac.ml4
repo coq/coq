@@ -214,7 +214,8 @@ GEXTEND Gram
 	  VernacTacticGrammar tl
 
      | "Grammar"; u = univ;
-         tl = LIST1 grammar_entry SEP "with" -> VernacGrammar (u,tl)
+         tl = LIST1 grammar_entry SEP "with" -> 
+	   VernacGrammar (rename_command_entry u,tl)
 
      | "Syntax"; u = univ; el = LIST1 syntax_entry SEP ";" ->
          VernacSyntax (u,el)
@@ -294,8 +295,9 @@ GEXTEND Gram
            | _ -> VNonTerm (loc,nt,None) ]]
   ;
   non_terminal:
-    [[ u = IDENT; ":"; nt = IDENT -> NtQual(u, nt)
-     | nt = IDENT -> NtShort nt ]]
+    [[ u = IDENT; ":"; nt = IDENT ->
+        NtQual(rename_command_entry u, rename_command_entry nt)
+     | nt = IDENT -> NtShort (rename_command_entry nt) ]]
   ;
 
 
