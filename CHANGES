@@ -13,7 +13,7 @@ Bug fixes
 - Option -dump-glob now strips module segment as expected by coqdoc (which
   is still not aware of modules)
 - See coq-bugs web page for a full list of fixed bugs (look for
-  fixes committed before Jan 2004 to cvs version V8-0-bugfix)
+  fixes committed before Jan 2005 to cvs version V8-0-bugfix)
 
 Changes from V8.0 to V8.0pl1
 ============================
