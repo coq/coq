@@ -185,18 +185,21 @@ let pr_annotation pr = function
   | None -> mt ()
   | Some t -> str "<" ++ pr ltop t ++ str ">" ++ brk (0,2)
 
-let rec pr_cases_pattern = function
+let rec pr_cases_pattern _inh = function
   | CPatAlias (_,p,x) ->
-      pr_cases_pattern p ++ spc () ++ str "as" ++ spc () ++ pr_id x
+      pr_cases_pattern _inh p ++ spc () ++ str "as" ++ spc () ++ pr_id x
   | CPatCstr (_,c,[]) -> pr_reference c
   | CPatCstr (_,c,pl) ->
       hov 0 (
 	str "(" ++ pr_reference c ++ spc () ++ 
-	prlist_with_sep spc pr_cases_pattern pl ++ str ")")
+	prlist_with_sep spc (pr_cases_pattern _inh) pl ++ str ")")
   | CPatAtom (_,Some c) -> pr_reference c
   | CPatAtom (_,None) -> str "_"
+  | CPatNotation (_,s,env) -> fst (pr_notation pr_cases_pattern s env)
   | CPatNumeral (_,n) -> Bignat.pr_bigint n
-  | CPatDelimiters (_,key,p) -> pr_delimiters key (pr_cases_pattern p)
+  | CPatDelimiters (_,key,p) -> pr_delimiters key (pr_cases_pattern _inh p)
+
+let pr_cases_pattern = pr_cases_pattern (0,E) (* level unused *)
 
 let pr_eqn pr (_,patl,rhs) =
   hov 0 (

@@ -21,7 +21,6 @@ open Libnames
 
 type all_grammar_command =
   | Notation of (int * Gramext.g_assoc option * notation * prod_item list)
-  | Delimiters of (scope_name * prod_item list * prod_item list)
   | Grammar of grammar_command
   | TacticGrammar of
       (string * (string * grammar_production list) * Tacexpr.raw_tactic_expr)
@@ -29,7 +28,6 @@ type all_grammar_command =
 
 let subst_all_grammar_command subst = function
   | Notation _ -> anomaly "Notation not in GRAMMAR summary"
-  | Delimiters _ -> anomaly "Delimiters not in GRAMMAR summary"
   | Grammar gc -> Grammar (subst_grammar_command subst gc)
   | TacticGrammar g -> TacticGrammar g (* TODO ... *)
 
@@ -96,7 +94,29 @@ let make_act (f : loc -> constr_expr action_env -> constr_expr) pil =
 	failwith "Unexpected entry of type cases pattern" in
   make [] (List.rev pil)
 
-let make_cases_pattern_act 
+let make_act_in_cases_pattern (* For Notations *)
+  (f : loc -> cases_pattern_expr action_env -> cases_pattern_expr) pil =
+  let rec make (env : cases_pattern_expr action_env) = function
+    | [] ->
+	Gramext.action (fun loc -> f loc env)
+    | None :: tl -> (* parse a non-binding item *)
+        Gramext.action (fun _ -> make env tl)
+    | Some (p, ETConstr _) :: tl -> (* pattern non-terminal *)
+        Gramext.action (fun (v:cases_pattern_expr) -> make ((p,v) :: env) tl)
+    | Some (p, ETReference) :: tl -> (* non-terminal *)
+        Gramext.action (fun (v:reference) ->
+	  make ((p,CPatAtom (dummy_loc,Some v)) :: env) tl)
+    | Some (p, ETIdent) :: tl -> (* non-terminal *)
+        Gramext.action (fun (v:identifier) ->
+	  make ((p,CPatAtom (dummy_loc,Some (Ident (dummy_loc,v)))) :: env) tl)
+    | Some (p, ETBigint) :: tl -> (* non-terminal *)
+        Gramext.action (fun (v:Bignat.bigint) ->
+	  make ((p,CPatNumeral (dummy_loc,v)) :: env) tl)
+    | Some (p, (ETPattern | ETOther _)) :: tl -> 
+	failwith "Unexpected entry of type cases pattern or other" in
+  make [] (List.rev pil)
+
+let make_cases_pattern_act (* For Grammar *)
   (f : loc -> cases_pattern_expr action_env -> cases_pattern_expr) pil =
   let rec make (env : cases_pattern_expr action_env) = function
     | [] ->
@@ -121,16 +141,16 @@ let make_cases_pattern_act
  * annotations are added when type-checking the command, function
  * Extend.of_ast) *)
 
-let rec build_prod_item univ assoc fromlevel = function
-  | ProdList0 s -> Gramext.Slist0 (build_prod_item univ assoc fromlevel s)
-  | ProdList1 s -> Gramext.Slist1 (build_prod_item univ assoc fromlevel s)
-  | ProdOpt s   -> Gramext.Sopt   (build_prod_item univ assoc fromlevel s)
-  | ProdPrimitive typ -> symbol_of_production assoc fromlevel typ
+let rec build_prod_item univ assoc fromlevel pat = function
+  | ProdList0 s -> Gramext.Slist0 (build_prod_item univ assoc fromlevel pat s)
+  | ProdList1 s -> Gramext.Slist1 (build_prod_item univ assoc fromlevel pat s)
+  | ProdOpt s   -> Gramext.Sopt   (build_prod_item univ assoc fromlevel pat s)
+  | ProdPrimitive typ -> symbol_of_production assoc fromlevel pat typ
 
-let symbol_of_prod_item univ assoc from = function
+let symbol_of_prod_item univ assoc from forpat = function
   | Term tok -> (Gramext.Stoken tok, None)
   | NonTerm (nt, ovar) ->
-      let eobj = build_prod_item univ assoc from nt in
+      let eobj = build_prod_item univ assoc from forpat nt in
       (eobj, ovar)
 
 let coerce_to_id = function
@@ -159,6 +179,7 @@ let name_app f = function
   | Name id -> Name (f id)
   | Anonymous -> Anonymous
 
+(*
 let subst_cases_pattern_expr a loc subs =
   let rec subst = function
   | CPatAlias (_,p,x) -> CPatAlias (loc,subst p,x)
@@ -166,9 +187,11 @@ let subst_cases_pattern_expr a loc subs =
   | CPatCstr (_,ref,pl) -> CPatCstr (loc,ref,List.map subst pl)
   | CPatAtom (_,Some (Ident (_,id))) -> subst_pat_id loc subs id
   | CPatAtom (_,x) -> CPatAtom (loc,x)
+  | CPatNotation (_,ntn,l) -> CPatNotation 
   | CPatNumeral (_,n) -> CPatNumeral (loc,n)
   | CPatDelimiters (_,key,p) -> CPatDelimiters (loc,key,subst p)
   in subst a
+*)
 
 let subst_constr_expr a loc subs =
   let rec subst = function
@@ -220,7 +243,7 @@ let subst_constr_expr a loc subs =
   in subst a
 
 let make_rule univ assoc etyp rule =
-  let pil = List.map (symbol_of_prod_item univ assoc etyp) rule.gr_production in
+  let pil = List.map (symbol_of_prod_item univ assoc etyp false) rule.gr_production in
   let (symbs,ntl) = List.split pil in
   let act = match etyp with
     | ETPattern ->
@@ -244,7 +267,7 @@ let extend_entry univ (te, etyp, pos, name, ass, p4ass, rls) =
 
 (* Defines new entries. If the entry already exists, check its type *)
 let define_entry univ {ge_name=typ; gl_assoc=ass; gl_rules=rls} =
-  let e,lev,keepassoc = get_constr_entry typ in
+  let e,lev,keepassoc = get_constr_entry false typ in
   let pos,p4ass,name = find_position keepassoc ass lev in
   (e,typ,pos,name,ass,p4ass,rls)
 
@@ -274,27 +297,25 @@ let make_gen_act f pil =
         Gramext.action (fun v -> make ((p,in_generic t v) :: env) tl) in
   make [] (List.rev pil)
 
-let extend_constr entry (n,level,assoc,keepassoc) make_act pt =
+let extend_constr entry (n,assoc,pos,p4assoc,name) make_act (forpat,pt) =
   let univ = get_univ "constr" in
-  let pil = List.map (symbol_of_prod_item univ assoc n) pt in
+  let pil = List.map (symbol_of_prod_item univ assoc n forpat) pt in
   let (symbs,ntl) = List.split pil in
   let act = make_act ntl in
-  let pos,p4assoc,name = find_position keepassoc assoc level in
   grammar_extend entry pos [(name, p4assoc, [symbs, act])]
 
 let extend_constr_notation (n,assoc,ntn,rule) =
   let mkact loc env = CNotation (loc,ntn,List.map snd env) in
-  let (e,level,keepassoc) = get_constr_entry (ETConstr (n,())) in
-  extend_constr e (ETConstr(n,()),level,assoc,keepassoc) (make_act mkact) rule
-
-let extend_constr_delimiters (sc,rule,pat_rule) =
-  let mkact loc env = CDelimiters (loc,sc,snd (List.hd env)) in
-  extend_constr Constr.operconstr (ETConstr(0,()),Some 0,Some Gramext.NonA,false)
-    (make_act mkact) rule;
-  let mkact loc env = CPatDelimiters (loc,sc,snd (List.hd env)) in
-  extend_constr Constr.pattern (ETPattern,None,None,false)
-    (make_cases_pattern_act mkact) pat_rule
-
+  let (e,level,keepassoc) = get_constr_entry false (ETConstr (n,())) in
+  let pos,p4assoc,name = find_position keepassoc assoc level in
+  extend_constr e (ETConstr(n,()),assoc,pos,p4assoc,name)
+    (make_act mkact) (false,rule);
+  if not !Options.v7 then
+  let mkact loc env = CPatNotation (loc,ntn,List.map snd env) in
+  let (e,level,keepassoc) = get_constr_entry true (ETConstr (n,())) in
+  extend_constr e (ETConstr (n,()),assoc,pos,p4assoc,name)
+    (make_act_in_cases_pattern mkact) (true,rule)
+    
 (* These grammars are not a removable *)
 let make_rule univ f g (s,pt) =
   let hd = Gramext.Stoken ("IDENT", s) in
@@ -363,7 +384,6 @@ let add_tactic_entries gl =
 let extend_grammar gram =
   (match gram with
   | Notation a -> extend_constr_notation a
-  | Delimiters a -> extend_constr_delimiters a
   | Grammar g -> extend_grammar_rules g
   | TacticGrammar l -> add_tactic_entries l);
   grammar_state := gram :: !grammar_state
@@ -393,7 +413,6 @@ let number_of_entries gcl =
   List.fold_left
     (fun n -> function
       | Notation _ -> n + 1
-      | Delimiters _ -> n + 2 (* One rule for constr, one for pattern *)
       | Grammar gc -> n + (List.length gc.gc_entries)
       | TacticGrammar l -> n + 1)
     0 gcl

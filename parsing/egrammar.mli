@@ -25,7 +25,6 @@ val init : unit -> unit
 
 type all_grammar_command =
   | Notation of (int * Gramext.g_assoc option * notation * prod_item list)
-  | Delimiters of (scope_name * prod_item list * prod_item list)
   | Grammar of grammar_command
   | TacticGrammar of (string * (string * grammar_production list) * Tacexpr.raw_tactic_expr) list
 
