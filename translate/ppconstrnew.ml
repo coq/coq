@@ -527,6 +527,16 @@ let pr_lconstr_env env c = pr ltop (transf env c)
 let pr_constr c = pr_constr_env (Global.env()) c
 let pr_lconstr c = pr_lconstr_env (Global.env()) c
 
+let transf_pattern env c =
+  if Options.do_translate() then
+    Constrextern.extern_rawconstr (Termops.vars_of_env env)
+      (Constrintern.for_grammar
+	(Constrintern.interp_rawconstr_gen false Evd.empty env [] None ([],[]))
+	c)
+  else c
+
+let pr_pattern c = pr lsimple (transf_pattern (Global.env()) c)
+
 let pr_rawconstr_env env c =
   pr_constr (Constrextern.extern_rawconstr (Termops.vars_of_env env) c)
 let pr_lrawconstr_env env c =
@@ -547,7 +557,6 @@ let pr_binders l =
 
 let pr_cases_pattern = pr_patt ltop
 
-let pr_pattern = pr_constr
 let pr_occurrences prc (nl,c) =
   prlist (fun n -> int n ++ spc ()) nl ++
   str"(" ++ prc c ++ str")"

@@ -39,6 +39,10 @@ let pr_quantified_hypothesis = function
 
 let pr_quantified_hypothesis_arg h = spc () ++ pr_quantified_hypothesis h
 
+let pr_or_metanum pr = function
+  | AN x -> pr x
+  | MetaNum (_,n) -> Pattern.pr_patvar n
+
 (*
 let pr_binding prc = function
   | NamedHyp id, c -> hov 1 (pr_id id ++ str " := " ++ cut () ++ prc c)
@@ -108,8 +112,7 @@ let pr_match_pattern pr_pat = function
   | Subterm (Some id,a) -> pr_id id ++ str "[" ++ pr_pat a ++ str "]"
 
 let pr_match_hyps pr_pat = function
-  | NoHypId mp -> str "_:" ++ pr_match_pattern pr_pat mp
-  | Hyp ((_,id),mp) -> pr_id id ++ str ":" ++ pr_match_pattern pr_pat mp
+  | Hyp ((_,na),mp) -> pr_name na ++ str ":" ++ pr_match_pattern pr_pat mp
 
 let pr_match_rule m pr pr_pat = function
   | Pat ([],mp,t) when m ->
@@ -137,15 +140,15 @@ let pr_let_clause k pr prc pr_cst = function
 let pr_let_clauses pr prc pr_cst = function
   | hd::tl ->
       hv 0
-        (pr_let_clause "let " pr prc pr_cst hd ++ spc () ++
-         prlist_with_sep spc (pr_let_clause "with " pr prc pr_cst) tl)
+        (pr_let_clause "let " pr prc pr_cst hd ++
+         prlist (fun t -> spc () ++ pr_let_clause "with " pr prc pr_cst t) tl)
   | [] -> anomaly "LetIn must declare at least one binding"
 
 let pr_rec_clause pr ((_,id),(l,t)) =
-  pr_id id ++ prlist pr_funvar l ++ str "=>" ++ spc () ++ pr t
+  hov 0 (pr_id id ++ prlist pr_funvar l ++ str " :=") ++ spc () ++ pr t
 
 let pr_rec_clauses pr l = 
-  prlist_with_sep (fun () -> fnl () ++ str "and ") (pr_rec_clause pr) l
+  prlist_with_sep (fun () -> fnl () ++ str "with ") (pr_rec_clause pr) l
 
 let pr_hintbases = function
   | None -> spc () ++ str "with *"

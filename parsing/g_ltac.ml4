@@ -96,8 +96,7 @@ GEXTEND Gram
       | pc = Constr.constr_pattern -> Term pc ] ]
   ;
   match_hyps:
-    [ [ id = identref; ":"; mp =  match_pattern -> Hyp (id, mp)
-      | IDENT "_"; ":"; mp = match_pattern -> NoHypId mp ] ]
+    [ [ na = name; ":"; mp =  match_pattern -> Hyp (na, mp) ] ]
   ;
   match_context_rule:
     [ [ "["; largs = LIST0 match_hyps SEP ";"; "|-"; mp = match_pattern; "]";
@@ -146,8 +145,8 @@ GEXTEND Gram
       | IDENT "Rec"; rc = rec_clause ->
 	  warning "'Rec f ...' is obsolete; use 'Rec f ... In f' instead";
 	  TacLetRecIn ([rc],TacArg (Reference (Libnames.Ident (fst rc))))
-      | IDENT "Rec"; rcl = LIST1 rec_clause SEP "And"; IDENT "In";
-          body = tactic_expr -> TacLetRecIn (rcl,body)
+      | IDENT "Rec"; rc = rec_clause; rcl = LIST0 rec_clause SEP "And";
+	  [IDENT "In" | "in"]; body = tactic_expr -> TacLetRecIn (rc::rcl,body)
       | IDENT "Let"; llc = LIST1 let_clause SEP "And"; IDENT "In";
           u = tactic_expr -> TacLetIn (make_letin_clause loc llc,u)
 (* Let cas LetCut est subsumé par "Assert id := c" tandis que le cas

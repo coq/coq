@@ -89,7 +89,7 @@ GEXTEND Gram
     | "1" RIGHTA
       [ "fun"; it = LIST1 input_fun ; "=>"; body = tactic_expr ->
           TacFun (it,body)
-      | IDENT "rec"; rcl = LIST1 rec_clause SEP "with"; "in";
+      | "let"; IDENT "rec"; rcl = LIST1 rec_clause SEP "with"; "in";
           body = tactic_expr -> TacLetRecIn (rcl,body)
       | "let"; llc = LIST1 let_clause SEP "with"; "in";
           u = tactic_expr -> TacLetIn (make_letin_clause loc llc,u)
@@ -136,7 +136,6 @@ GEXTEND Gram
   tactic_atom:
     [ [ id = METAIDENT -> MetaIdArg (loc,id)
       | r = reference -> Reference r
-      | "?"; n = natural -> ConstrMayEval (ConstrTerm (CPatVar (loc,(false,Pattern.patvar_of_int n))))
       | "()" -> TacVoid ] ]
   ;
   input_fun:
@@ -154,7 +153,7 @@ GEXTEND Gram
 	  LETTOPCLAUSE (id, c) ] ]
   ;
   rec_clause:
-    [ [ name = identref; it = LIST1 input_fun; "=>"; body = tactic_expr ->
+    [ [ name = identref; it = LIST1 input_fun; ":="; body = tactic_expr ->
           (name,(it,body)) ] ]
   ;
   match_pattern:
@@ -164,8 +163,7 @@ GEXTEND Gram
       | pc = Constr.constr_pattern -> Term pc ] ]
   ;
   match_hyps:
-    [ [ id = identref; ":"; mp =  match_pattern -> Hyp (id, mp)
-      | IDENT "_"; ":"; mp = match_pattern -> NoHypId mp ] ]
+    [ [ na = name; ":"; mp =  match_pattern -> Hyp (na, mp) ] ]
   ;
   match_context_rule:
     [ [ "["; largs = LIST0 match_hyps SEP ","; "|-"; mp = match_pattern; "]";
