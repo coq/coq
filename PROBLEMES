@@ -1,7 +1,9 @@
 Declaration de Local a l'interieur d'un but ...
-add_entry etait fait avant cache_object qui peut echouer en laissant 
-la lib_stk dans un etat incoherent ....
 
+Les arguments des Tactic Definition sont interpretes avant 
+l'application de la tactique, ils ne peuvent pas contenir des variables 
+qui seront introduites dans la tactique ....
+MUTUAL-EXCLUSION/binary/version1/Soundness.v
 
 CONTRIBS
 ---------
@@ -28,3 +30,6 @@ File "./lsort.v", line 82, characters 4-17
 Error: Impossible to unify ad with
  (a:ad)(?334 a)->(?334 (ad_double_plus_un a))
 Induction a.
+
+Rocq/MUTUAL-EXCLUSION/
+	Incompatibilite interpretation des arguments de Tactic Definition
