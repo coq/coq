@@ -790,6 +790,10 @@ let new_morphism m signature id hook =
   let args_ty_quantifiers_rev,args,args_instance,output,output_instance =
    match signature with
       None ->
+       if args_ty = [] then
+        errorlabstrm "New Morphism"
+         (str "The term " ++ prterm m ++ str " has type " ++
+          prterm typeofm ++ str " that is not a product.") ;
        ignore (check_is_dependent 0 args_ty output) ;
        let args =
         List.map
