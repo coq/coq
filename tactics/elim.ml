@@ -169,7 +169,8 @@ let induction_trailer abs_i abs_j bargs =
 	  in
           let ids = List.rev (ids_of_named_context hyps) in
 	  (tclTHENSEQ
-            [bring_hyps hyps; clear ids; simple_elimination (mkVar id)])
+            [bring_hyps hyps; tclTRY (clear ids); 
+	     simple_elimination (mkVar id)])
           gls))
 
 let double_ind h1 h2 gls =
