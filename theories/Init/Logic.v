@@ -186,6 +186,15 @@ Notation "x = y" := (eq ? x y) : type_scope.
 Notation "x <> y  :> T" := ~ (!eq T x y) : type_scope.
 Notation "x <> y" := ~ x=y : type_scope.
 
+Implicits eq_ind [1].
+Implicits eq_rec [1].
+Implicits eq_rect [1].
+V7only [
+Implicits eq_ind [].
+Implicits eq_rec [].
+Implicits eq_rect [].
+].
+
 Hints Resolve I conj or_introl or_intror refl_equal : core v62.
 Hints Resolve ex_intro ex_intro2 : core v62.
 

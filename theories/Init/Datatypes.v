@@ -46,6 +46,15 @@ Inductive identity [A:Type; a:A] : A->Set :=
      refl_identity: (identity A a a).
 Hints Resolve refl_identity : core v62.
 
+Implicits identity_ind [1].
+Implicits identity_rec [1].
+Implicits identity_rect [1].
+V7only [
+Implicits identity_ind [].
+Implicits identity_rec [].
+Implicits identity_rect [].
+].
+
 (** [option A] is the extension of A with a dummy element None *)
 
 Inductive option [A:Set] : Set := Some : A -> (option A) | None : (option A).
