@@ -384,7 +384,7 @@ ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
 	theories/Arith/Mult.vo          theories/Arith/Even.vo        \
 	theories/Arith/EqNat.vo         theories/Arith/Peano_dec.vo   \
 	theories/Arith/Euclid.vo        theories/Arith/Plus.vo        \
-	theories/Arith/Wf_nat.vo      \
+	theories/Arith/Wf_nat.vo  	theories/Arith/Max.vo	      \
 #	theories/Arith/Div.vo 
 
 BOOLVO=theories/Bool/Bool.vo  		theories/Bool/IfProp.vo \

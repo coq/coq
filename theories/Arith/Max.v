@@ -6,76 +6,80 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*i $Id$ i*)
+(*i $Id$ *)
 
 Require Arith.
 
 (**************************************************************************)
-(*                    minimum of two natural numbers                      *)
+(*                    maximum of two natural numbers                      *)
 (**************************************************************************)
 
-Fixpoint min [n:nat] : nat -> nat :=  
+Fixpoint max [n:nat] : nat -> nat :=  
 [m:nat]Cases n m of
-          O      _     => O
-       | (S n')  O     => O
-       | (S n') (S m') => (S (min n' m'))
+          O      _     => m
+       | (S n')  O     => n
+       | (S n') (S m') => (S (max n' m'))
        end.
 
-(* Simplifications of min *)
+(* Simplifications of max *)
 
-Lemma min_SS : (n,m:nat)((S (min n m))=(min (S n) (S m))).
+
+Lemma max_SS : (n,m:nat)((S (max n m))=(max (S n) (S m))).
 Proof.
 Auto with arith.
 Qed.
 
-Lemma min_sym : (n,m:nat)(min n m)=(min m n).
+Lemma max_sym : (n,m:nat)(max n m)=(max m n).
 Proof.
 NewInduction n;NewInduction m;Simpl;Auto with arith.
 Qed.
 
-(* min and le *)
+(* max and le *)
 
-Lemma min_l : (n,m:nat)(le n m)->(min n m)=n.
+Lemma max_l : (n,m:nat)(le m n)->(max n m)=n.
 Proof.
 NewInduction n;NewInduction m;Simpl;Auto with arith.
 Qed.
 
-Lemma min_r : (n,m:nat)(le m n)->(min n m)=m.
+Lemma max_r : (n,m:nat)(le n m)->(max n m)=m.
 Proof.
 NewInduction n;NewInduction m;Simpl;Auto with arith.
 Qed.
 
-Lemma le_min_l : (n,m:nat)(le (min n m) n).
+Lemma le_max_l : (n,m:nat)(le n (max n m)).
 Proof.
 NewInduction n; Intros; Simpl; Auto with arith.
 Elim m; Intros; Simpl; Auto with arith.
 Qed.
 
-Lemma le_min_r : (n,m:nat)(le (min n m) m).
+Lemma le_max_r : (n,m:nat)(le m (max n m)).
 Proof.
 NewInduction n; Simpl; Auto with arith.
 NewInduction m; Simpl; Auto with arith.
 Qed.
-Hints Resolve min_l min_r le_min_l le_min_r : arith v62.
+Hints Resolve max_r max_l le_max_l le_max_r: arith v62.
 
-(* min n m is equal to n or m *)
 
-Lemma min_dec : (n,m:nat){(min n m)=n}+{(min n m)=m}.
+(* max n m is equal to n or m *)
+
+Lemma max_dec : (n,m:nat){(max n m)=n}+{(max n m)=m}.
 Proof.
 NewInduction n;NewInduction m;Simpl;Auto with arith.
 Elim (IHn m);Intro H;Elim H;Auto.
 Qed.
 
-Lemma min_case : (n,m:nat)(P:nat->Set)(P n)->(P m)->(P (min n m)).
+Lemma max_case : (n,m:nat)(P:nat->Set)(P n)->(P m)->(P (max n m)).
 Proof.
 NewInduction n; Simpl; Auto with arith.
 NewInduction m; Intros; Simpl; Auto with arith.
-Pattern (min n m); Apply IHn ; Auto with arith.
+Pattern (max n m); Apply IHn ; Auto with arith.
 Qed.
 
-Lemma min_case2 : (n,m:nat)(P:nat->Prop)(P n)->(P m)->(P (min n m)).
+Lemma max_case2 : (n,m:nat)(P:nat->Prop)(P n)->(P m)->(P (max n m)).
 Proof.
 NewInduction n; Simpl; Auto with arith.
 NewInduction m; Intros; Simpl; Auto with arith.
-Pattern (min n m); Apply IHn ; Auto with arith.
+Pattern (max n m); Apply IHn ; Auto with arith.
 Qed.
+
+
