@@ -76,6 +76,7 @@ expressions.
 & $|$ & {\sl quotation} & \\
 
 {\sl meta} & ::= & \verb+$+{\ident} & \\
+%$
 {\sl path} & ::= & \nelist{{\tt\#}{\ident}}{} \verb+.+ {\sl kind} & \\  
 {\sl kind} & ::= & \verb+cci+ $~|~$\verb+fw+ $~|~$ \verb+obj+ & \\
 {\sl name} & ::= & \verb+<>+ ~$|$~ {\ident} ~$\mid$~ {\sl meta} & \\
@@ -112,6 +113,7 @@ environment.
 
 As we will see later, metavariables may denote an AST or an AST list
 (when used with the \verb+$LIST+ special token).
+%$
 So, we introduce two types of variables: \verb+Ast+ and
 \verb+List+. The type of variables is checked statically: an
 expression referring to undefined metavariables, or using metavariables
@@ -127,8 +129,9 @@ the system.
 Nevertheless there are some application nodes that have some special
 meaning for the system. They are build on \verb+(+{\sl
 special-tok}~{\sl meta}\verb+)+, and cannot be confused with regular
-nodes since {\sl special-tok} begins with a \verb+$+. There is a
-description of these nodes below.
+nodes since {\sl special-tok} begins with a \verb+$+.
+%$
+There is a description of these nodes below.
 
 \subsubsection{Abstraction}
 
@@ -205,9 +208,12 @@ the variable \verb+$idl+ is bound to the list \verb+[x y z]+, the
 expression \verb+(Intros ($LIST $idl) a b c)+ will build the AST
 \verb+(Intros x y z a b c)+. Note that \verb+$LIST+ does not occur in
 the result.
+%$
 
 % Ameliorer le style!
-Since we know the type of variables, the \verb+$LIST+ is not really
+Since we know the type of variables, the \verb+$LIST+
+%$
+is not really
 necessary. We enforce this annotation to stress on the fact that the
 variable will be substituted by an arbitrary number of AST's.
 
@@ -222,6 +228,7 @@ The other special operators ({\tt\$VAR}, {\tt\$NUM}, {\tt\$STR},
 % PRODLIST).
 %\item \verb+($SLAM $l body)+ is used to denote an abstraction where
 %  the elements of the list variable \verb+$l+ are the variables
+%%$
 %  simultaneously abstracted in \verb+body+.
 %  The production to recognize a lambda abstraction of the form
 %  $[x_1,\ldots,x_n:T]body$ use the operator \verb+$SLAM+:
@@ -830,6 +837,7 @@ Grammar tactic ne_identarg_list : ast list :=
                   -> [ $id ($LIST $idl) ]
 | ne_idl_single [ identarg($id) ] -> [ $id ].
 \end{coq_example*}
+%$
 
 Note that the grammar type must be recalled in every extension
 command, or else the system could not discriminate between a single
@@ -907,6 +915,11 @@ with constr10 : ast :=
 | inject_com91 [ constr91($c) ] -> [$c].
 Check (x:nat)nat.
 \end{coq_example}
+%$
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
 
 But the factorization does not work, thus the product rule is never
 selected since identifiers match the {\tt constr10} grammar. The
@@ -919,6 +932,7 @@ Grammar constr constr0 : ast :=
             [(PROD $c1 [$c]$c2)].
 Check (x:nat)nat.
 \end{coq_example}
+%$
 
 \noindent We could have checked it explicitly with a {\tt case} in
 the right-hand side of the rule, but the error message in the
@@ -1049,6 +1063,10 @@ write one.
 \example{Defining the syntax for new constants.}
 
 Let's define the constant \verb+Xor+ in Coq:
+
+\begin{coq_eval}
+  Reset Initial.
+\end{coq_eval}
 
 \begin{coq_example*}
 Definition Xor := [A,B:Prop] A/\~B \/ ~A/\B.
@@ -1266,7 +1284,9 @@ Internally the AST of this term is the same as the AST of the
 term \verb+(explicit_comp nat nat nat (Id nat) (Id nat) O)+.
 When the system retrieves our rule it tries to match an application of
 six arguments with an application of five arguments (the AST of
-\verb+(explicit_comp $_ $_ $_ $f $g)+).  Then, the matching fails and
+\verb+(explicit_comp $_ $_ $_ $f $g)+).
+%$
+  Then, the matching fails and
 the term is printed using the rule for application.
 
 Note that the idea of adding a new rule for \verb+explicit_comp+ for
@@ -1297,6 +1317,7 @@ Syntax constr level 10:
     [<<(APPLIST explicit_comp $_ $_ $_ $f $g ($LIST $l))>>]
      -> [ [<hov 0> $f:L "o" $g:L (APPTAIL ($LIST $l)):E ] ].
 \end{coq_example*}
+%$
 
 Now we can see that this rule works for any application of the
 operator:
