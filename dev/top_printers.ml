@@ -9,9 +9,12 @@ open Sign
 open Univ
 open Proof_trees
 open Environ
+open Generic
 open Printer
 open Refiner
 open Tacmach
+open Term
+open Vernacinterp
 open Clenv
 
 let pP s = pP (hOV 0 s)
@@ -75,3 +78,59 @@ let print_uni u = (pP (p_uni u))
 
 let pp_universes u = pP [< 'sTR"[" ; pr_universes u ; 'sTR"]" >]
 
+let constr_display csr =
+  let rec term_display = function
+    | DOP0 a -> "DOP0("^(oper_display a)^")"
+    | DOP1(a,b) -> "DOP1("^(oper_display a)^","^(term_display b)^")"
+    | DOP2(a,b,c) ->
+        "DOP2("^(oper_display a)^","^(term_display b)^","^(term_display c)^")"
+    | DOPN(a,b) ->
+        "DOPN("^(oper_display a)^",[|"^(Array.fold_right (fun x i ->
+        (term_display x)^(if not(i="") then (";"^i) else "")) b "")^"|])"
+    | DOPL(a,b) ->
+        "DOPL("^(oper_display a)^",[|"^(List.fold_right (fun x i ->
+        (term_display x)^(if not(i="") then (";"^i) else "")) b "")^"|]"
+    | DLAM(a,b) -> "DLAM("^(name_display a)^","^(term_display b)^")"
+    | DLAMV(a,b) ->
+        "DLAMV("^(name_display a)^",[|"^(Array.fold_right (fun x i ->
+        (term_display x)^(if not(i="") then (";"^i) else "")) b "")^"|]"
+    | VAR a -> "VAR "^(string_of_id a)
+    | Rel a -> "Rel "^(string_of_int a)
+  and oper_display = function
+    | Meta a -> "?"^(string_of_int a)
+    | Sort a -> "Sort("^(sort_display a)^")"
+    | Cast -> "Cast"
+    | Prod -> "Prod"
+    | Lambda -> "Lambda"
+    | AppL -> "AppL"
+    | Const sp -> "Const("^(string_of_path sp)^")"
+    | Abst sp -> "Abst("^(string_of_path sp)^")"
+    | MutInd(sp,i) -> "MutInd("^(string_of_path sp)^","^(string_of_int i)^")"
+    | MutConstruct((sp,i),j) ->
+        "MutConstruct(("^(string_of_path sp)^","^(string_of_int i)^"),"^
+        (string_of_int j)^")"
+    | MutCase _ -> "MutCase(<abs>)"
+    | Evar i -> "Evar("^(string_of_int i)^")"
+    | Fix(t,i) ->
+        "Fix([|"^(Array.fold_right (fun x i -> (string_of_int x)^(if not(i="")
+        then (";"^i) else "")) t "")^"|],"^(string_of_int i)^")"
+    | CoFix i -> "CoFix "^(string_of_int i)
+    | XTRA s -> "XTRA("^s^")"
+  and sort_display = function
+    | Prop(Pos) -> "Prop(Pos)"
+    | Prop(Null) -> "Prop(Null)"
+    | Type _ -> "Type"
+  and name_display = function
+    | Name id -> "Name("^(string_of_id id)^")"
+    | Anonymous -> "Anonymous"
+  in
+    mSG [<'sTR (term_display csr);'fNL>]
+
+let _ =
+  Vernacentries.add "PrintConstr"
+    (function
+       | [VARG_CONSTR c] -> 
+	   (fun () ->
+              let (evmap,sign) = Pfedit.get_evmap_sign None in
+  	      constr_display (Astterm.interp_constr evmap sign c))
+       | _ -> bad_vernac_args "PrintConstr")
