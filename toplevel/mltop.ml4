@@ -36,7 +36,7 @@ open Vernacinterp
 let coq_mlpath_copy = ref []
 let keep_copy_mlpath s = 
   let dir = glob s in
-  let lpe = { directory = dir; root_dir = dir; relative_subdir = "" } in
+  let lpe = { directory = dir; root_dir = dir; relative_subdir = [] } in
   coq_mlpath_copy := lpe :: !coq_mlpath_copy
 
 (* If there is a toplevel under Coq *)
@@ -125,7 +125,7 @@ let dir_ml_dir s =
 
 (* For Rec Add ML Path *)
 let rdir_ml_dir dir = 
-  List.iter (fun lpe -> dir_ml_dir lpe.directory) (all_subdirs dir)
+  List.iter (fun lpe -> dir_ml_dir lpe.directory) (all_subdirs dir None)
 
 (* convertit un nom quelconque en nom de fichier ou de module *) 
 let mod_of_name name =

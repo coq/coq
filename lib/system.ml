@@ -11,14 +11,14 @@ open Unix
 type load_path_entry = {
   directory : string;
   root_dir : string;
-  relative_subdir : string }
+  relative_subdir : string list }
 
 type load_path = load_path_entry list
 
 let exists_dir dir =
   try let _ = opendir dir in true with Unix_error _ -> false
 
-let all_subdirs root =
+let all_subdirs root alias =
   let l = ref [] in
   let add f rel = 
     l := { directory = f; root_dir = root; relative_subdir = rel } :: !l 
@@ -31,7 +31,7 @@ let all_subdirs root =
 	if f <> "." && f <> ".." && (not Coq_config.local or (f <> "CVS")) then
 	  let file = Filename.concat dir f in
 	  if (stat file).st_kind = S_DIR then begin
-	    let newrel = Filename.concat rel f in
+	    let newrel = rel@[f] in
 	    add file newrel;
 	    traverse file newrel
 	  end
@@ -41,8 +41,12 @@ let all_subdirs root =
   in
   if exists_dir root then
    begin
-     add root "";
-     traverse root ""
+     let alias = match alias with 
+       | Some a -> a
+       | None -> [Filename.basename root]
+     in
+     add root alias;
+     traverse root alias
    end ;
   List.rev !l
 
@@ -74,7 +78,7 @@ let find_file_in_path paths name =
   let globname = glob name in
   if not (Filename.is_relative globname) then
     let root = Filename.dirname globname in
-    { directory = root; root_dir = root; relative_subdir = "" }, globname
+    { directory = root; root_dir = root; relative_subdir = [] }, globname
   else 
     try 
       search_in_path paths name

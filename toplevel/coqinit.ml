@@ -40,20 +40,23 @@ let load_rcfile() =
   else 
     if Options.is_verbose() then mSGNL [< 'sTR"Skipping rcfile loading." >]
 
-(* Puts dir in the path of ML and in the LoadPath *)
-let add_include s =
-  Mltop.dir_ml_dir s;
-  Library.add_path s
+let add_ml_include s =
+  Mltop.dir_ml_dir s
 
-let add_rec_include s = 
-  let subdirs = all_subdirs s in
+(* Puts dir in the path of ML and in the LoadPath *)
+let add_include s alias =
+  Mltop.dir_ml_dir s;
+  Library.add_path s alias
+
+let add_rec_include s alias = 
+  let subdirs = all_subdirs s (Some alias) in
   List.iter (fun lpe -> Mltop.dir_ml_dir lpe.directory) subdirs;
   List.iter Library.add_load_path_entry subdirs
 
 (* By the option -include -I or -R of the command line *)
 let includes = ref []
-let push_include s = includes := (s,false) :: !includes
-let push_rec_include s = includes := (s,true) :: !includes
+let push_include (s, alias) = includes := (s,alias,false) :: !includes
+let push_rec_include (s, alias) = includes := (s,alias,true) :: !includes
 
 (* Because find puts "./" and the loadpath is not nicely pretty-printed *)
 let hm2 s = 
@@ -67,22 +70,23 @@ let init_load_path () =
   if Coq_config.local then begin
     (* local use (no installation) *)
     List.iter 
-      (fun s -> add_include (Filename.concat Coq_config.coqtop s))
+      (fun s -> add_include (Filename.concat Coq_config.coqtop s) ["Coq"])
       ["states"; "dev"];
-    add_rec_include (Filename.concat Coq_config.coqtop "theories");
-    add_include (Filename.concat Coq_config.coqtop "tactics");
-    add_rec_include (Filename.concat Coq_config.coqtop "contrib");
+    add_rec_include (Filename.concat Coq_config.coqtop "theories") ["Coq"];
+    add_include (Filename.concat Coq_config.coqtop "tactics") ["Coq"];
+    add_rec_include (Filename.concat Coq_config.coqtop "contrib") ["Coq"];
   end else begin
     (* default load path; variable COQLIB overrides the default library *)
     let coqlib = getenv_else "COQLIB" Coq_config.coqlib in
-    add_rec_include coqlib
+    add_rec_include coqlib ["Coq"]
   end;
   let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
-  add_include camlp4;
-  add_include ".";
+  add_ml_include camlp4;
+  add_include "." ["Scratch"];
   (* additional loadpath, given with -I -include -R options *)
   List.iter 
-    (fun (s,reci) -> if reci then add_rec_include s else add_include s)
+    (fun (s,alias,reci) ->
+       if reci then add_rec_include s alias else add_include s alias)
     (List.rev !includes);
   includes := []
 

@@ -165,7 +165,11 @@ let _ =
 let _ = 
   add "ADDPATH"
     (function 
-       | [VARG_STRING dir] -> (fun () -> add_path dir)
+       | [VARG_STRING dir] ->
+	   let alias = Filename.basename dir in
+	   if alias = "" then
+	     error ("Cannot map "^dir^" to a root of Coq library");
+	   (fun () -> add_path dir [alias])
        | _ -> bad_vernac_args "ADDPATH")
 
 (* For compatibility *)
@@ -178,7 +182,11 @@ let _ =
 let _ = 
   add "RECADDPATH"
     (function 
-       | [VARG_STRING dir] -> (fun () -> rec_add_path dir)
+       | [VARG_STRING dir] ->
+	   let alias = Filename.basename dir in
+	   if alias = "" then
+	     error ("Cannot map "^dir^" to a root of Coq library");
+	   (fun () -> rec_add_path dir [alias])
        | _ -> bad_vernac_args "RECADDPATH")
 
 (* For compatibility *)
@@ -284,9 +292,9 @@ let _ =
     (function 
        | [VARG_IDENTIFIER id] ->
 	   let s = string_of_id id in
-	   let {relative_subdir = dir},_ = 
+	   let lpe,_ = 
 	     System.find_file_in_path (Library.get_load_path ()) (s^".v") in
-	   fun () -> Lib.start_module ((parse_loadpath dir)@[s])
+	   fun () -> Lib.start_module (lpe.relative_subdir @ [s])
        | _ -> bad_vernac_args "BeginModule")
 
 let _ =

@@ -8,11 +8,11 @@
 type load_path_entry = {
   directory : string;
   root_dir : string;
-  relative_subdir : string }
+  relative_subdir : string list }
 
 type load_path = load_path_entry list
 
-val all_subdirs : string -> load_path
+val all_subdirs : unix_path:string -> string list option -> load_path
 val is_in_path : load_path -> string -> bool
 val where_in_path : load_path -> string -> load_path_entry * string
 

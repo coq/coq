@@ -17,14 +17,19 @@ let get_load_path () = !load_path
 
 let add_load_path_entry lpe = load_path := lpe :: !load_path
 
-let add_path dir = 
-  add_load_path_entry { directory = dir; root_dir = dir; relative_subdir = "" }
+let add_path dir coq_dirpath = 
+  if coq_dirpath = [] then anomaly "add_path: empty path in library";
+  Nametab.push_library_root (List.hd coq_dirpath);
+  add_load_path_entry
+    { directory = dir; root_dir = dir; relative_subdir = coq_dirpath }
 
 let remove_path dir =
   load_path := List.filter (fun lpe -> lpe.directory <> dir) !load_path
 
-let rec_add_path dir = 
-  load_path := (all_subdirs dir) @ !load_path
+let rec_add_path dir coq_dirpath =
+  if coq_dirpath = [] then anomaly "add_path: empty path in library";
+  Nametab.push_library_root (List.hd coq_dirpath);
+  load_path := (all_subdirs dir (Some coq_dirpath)) @ !load_path
 
 (*s Modules on disk contain the following informations (after the magic 
     number, and before the digest). *)
@@ -159,8 +164,7 @@ let rec load_module_from s f =
     List.iter (load_mandatory_module s) m.module_deps;
     Global.import m.module_compiled_env;
     load_objects m.module_declarations;
-    let dir = parse_loadpath lpe.relative_subdir in
-    let sp = Names.make_path dir (id_of_string s) CCI in
+    let sp = Names.make_path lpe.relative_subdir (id_of_string s) CCI in
     Nametab.push_module sp m.module_nametab;
     modules_table := Stringmap.add s m !modules_table;
     m
