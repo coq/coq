@@ -221,14 +221,18 @@ GEXTEND Gram
           let id2 = coerce_to_name lc2 in
 	  CProdN (loc, (id1::id2::idl, c)::bl, body)
       | "("; lc1 = lconstr; ")" -> lc1
-      | c1 = annot; "->"; c2 = annot -> CArrow (loc, c1, c2)
-      | c1 = annot; "\\/"; c2 = annot -> CNotation (loc, "_ \\/ _", [c1;c2])
-      | c1 = annot; "/\\"; c2 = annot -> CNotation (loc, "_ /\\ _", [c1;c2])
-      | "~"; c = SELF -> CNotation (loc, "~ _", [c])
-      | c1 = SELF; "=="; c2 = NEXT -> CNotation (loc, "_ == _", [c1;c2])
-      | c1 = SELF; "="; c2 = NEXT -> CNotation (loc, "_ = _", [c1;c2])
-      | c = constr LEVEL "4L" -> c
-      ] ]
+      | c1 = annot; "->"; c2 = annot -> CArrow (loc, c1, c2) ]
+    | RIGHTA 
+      [ c1 = annot; "\\/"; c2 = annot -> CNotation (loc, "_ \\/ _", [c1;c2]) ]
+    | RIGHTA
+      [ c1 = annot; "/\\"; c2 = annot -> CNotation (loc, "_ /\\ _", [c1;c2]) ]
+    | RIGHTA
+      [ "~"; c = SELF -> CNotation (loc, "~ _", [c]) ]
+    | RIGHTA
+      [ c1 = SELF; "=="; c2 = NEXT -> CNotation (loc, "_ == _", [c1;c2]) ]
+    | RIGHTA
+      [ c1 = SELF; "="; c2 = NEXT -> CNotation (loc, "_ = _", [c1;c2]) ]
+    | [ c = constr LEVEL "4L" -> c ] ]
   ;
   product_annot_tail:
     [ [ ";"; idl = ne_name_comma_list; ":"; c = constr;
