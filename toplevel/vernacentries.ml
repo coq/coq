@@ -228,9 +228,9 @@ let print_located_module r =
       str "Module " ++ pr_dirpath dir
     with Not_found ->
       (if fst (repr_qualid qid) = empty_dirpath then
-	str "No module of basename "
+	str "No module is referred to by basename "
       else 
-	str "No module of suffix ") ++ pr_qualid qid
+	str "No module is referred to by name ") ++ pr_qualid qid
   in msgnl msg  
 
 (**********)

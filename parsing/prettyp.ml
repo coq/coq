@@ -216,7 +216,7 @@ let print_located_qualid ref =
 	(fun (o,oqid) ->
 	  hov 2 (pr_located_qualid o ++
 	  (if oqid <> qid then
-	    spc() ++ str "(visible as " ++ pr_qualid oqid ++ str")"
+	    spc() ++ str "(shorter name to refer to it is " ++ pr_qualid oqid ++ str")"
 	  else
 	    mt ()))) l
 
