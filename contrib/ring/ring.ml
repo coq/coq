@@ -153,7 +153,7 @@ module OperSet =
 type morph =
     { plusm : constr;
       multm : constr;
-      oppm : constr;
+      oppm : constr option;
     }
 
 type theory =
@@ -340,7 +340,7 @@ let _ =
 			 (Some {
 			    plusm = (constr_of pm);
 			    multm = (constr_of mm);
-			    oppm = (constr_of om)})
+			    oppm = Some (constr_of om)})
 			 (constr_of aplus)
 			 (constr_of amult)
 			 (constr_of aone)
@@ -356,7 +356,7 @@ let _ =
     (function 
        | (VARG_CONSTR a)::(VARG_CONSTR aequiv)::(VARG_CONSTR asetth)::(VARG_CONSTR aplus)
 	 ::(VARG_CONSTR amult)::(VARG_CONSTR aone)::(VARG_CONSTR azero)
-	 ::(VARG_CONSTR aeq)::(VARG_CONSTR pm)::(VARG_CONSTR mm)::(VARG_CONSTR om)
+	 ::(VARG_CONSTR aeq)::(VARG_CONSTR pm)::(VARG_CONSTR mm)
 	 ::(VARG_CONSTR t)::l -> 
 	   (fun () -> (add_theory false false true
 			 (constr_of a)
@@ -365,7 +365,7 @@ let _ =
 			 (Some {
 			    plusm = (constr_of pm);
 			    multm = (constr_of mm);
-			    oppm = (constr_of om)})
+			    oppm = None})
 			 (constr_of aplus)
 			 (constr_of amult)
 			 (constr_of aone)
@@ -720,7 +720,7 @@ let build_setpolynom gl th lc =
                   th.th_mult; th.th_one; th.th_zero;(unbox th.th_opp);
                   th.th_eq; v; th.th_t; (unbox th.th_setoid_th);
 		  (unbox th.th_morph).plusm; (unbox th.th_morph).multm;
-		  (unbox th.th_morph).oppm; p |])))
+		  (unbox (unbox th.th_morph).oppm); p |])))
     lp
 
 (*
