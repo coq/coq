@@ -191,12 +191,14 @@ let make_inv_predicate env sigma indf realargs id status concl =
    and introduces generalized hypotheis.
    Precondition: t=(mkVar id) *)
     
-let rec dependent_hyps id idlist sign = 
+let rec dependent_hyps id idlist gl = 
   let rec dep_rec =function
     | [] -> []
-    | (id1,_,id1ty as d1)::l -> 
-	if occur_var (Global.env()) id id1ty
-        then d1 :: dep_rec l
+    | (id1,_,_)::l -> 
+	(* Update the type of id1: it may have been subject to rewriting *)
+	let d = pf_get_hyp gl id1 in
+	if occur_var_in_decl (Global.env()) id d
+        then d :: dep_rec l
         else dep_rec l
   in 
   dep_rec idlist 
@@ -281,7 +283,7 @@ Nota: with Inversion_clear, only four useless hypotheses
 *)
 
 let generalizeRewriteIntros tac depids id gls = 
-  let dids = dependent_hyps id depids (pf_env gls) in
+  let dids = dependent_hyps id depids gls in
   (tclTHENSEQ
     [bring_hyps dids; tac; 
      (* may actually fail to replace if dependent in a previous eq *)
