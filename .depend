@@ -1991,8 +1991,8 @@ toplevel/vernacentries.cmo: tactics/auto.cmi toplevel/class.cmi \
     lib/pp_control.cmi parsing/prettyp.cmi pretyping/pretyping.cmi \
     parsing/printer.cmi parsing/printmod.cmi proofs/proof_trees.cmi \
     proofs/proof_type.cmi toplevel/record.cmi toplevel/recordobj.cmi \
-    proofs/refiner.cmi kernel/safe_typing.cmi parsing/search.cmi \
-    library/states.cmi interp/symbols.cmi lib/system.cmi \
+    pretyping/reductionops.cmi proofs/refiner.cmi kernel/safe_typing.cmi \
+    parsing/search.cmi library/states.cmi interp/symbols.cmi lib/system.cmi \
     tactics/tacinterp.cmi proofs/tacmach.cmi pretyping/tacred.cmi \
     proofs/tactic_debug.cmi tactics/tactics.cmi kernel/term.cmi \
     parsing/termast.cmi interp/topconstr.cmi kernel/typeops.cmi \
@@ -2011,8 +2011,8 @@ toplevel/vernacentries.cmx: tactics/auto.cmx toplevel/class.cmx \
     lib/pp_control.cmx parsing/prettyp.cmx pretyping/pretyping.cmx \
     parsing/printer.cmx parsing/printmod.cmx proofs/proof_trees.cmx \
     proofs/proof_type.cmx toplevel/record.cmx toplevel/recordobj.cmx \
-    proofs/refiner.cmx kernel/safe_typing.cmx parsing/search.cmx \
-    library/states.cmx interp/symbols.cmx lib/system.cmx \
+    pretyping/reductionops.cmx proofs/refiner.cmx kernel/safe_typing.cmx \
+    parsing/search.cmx library/states.cmx interp/symbols.cmx lib/system.cmx \
     tactics/tacinterp.cmx proofs/tacmach.cmx pretyping/tacred.cmx \
     proofs/tactic_debug.cmx tactics/tactics.cmx kernel/term.cmx \
     parsing/termast.cmx interp/topconstr.cmx kernel/typeops.cmx \
