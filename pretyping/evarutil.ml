@@ -304,8 +304,8 @@ let rec solve_simple_eqn conv_algo isevars ((pbty,t1,t2) as pb) =
       | (true,true) ->
 	  if num_of_evar t1 = num_of_evar t2 then 
 	    solve_refl conv_algo isevars t1 t2
-	  else if Array.length(args_of_const t1) < 
-	          Array.length(args_of_const t2) then 
+	  else if Array.length(snd (destEvar t1)) < 
+	          Array.length(snd (destEvar t2)) then 
 	    Some (evar_define isevars t2 t1)
 	  else 
 	    Some (evar_define isevars t1 t2)

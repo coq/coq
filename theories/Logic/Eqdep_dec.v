@@ -43,8 +43,8 @@ Section DecidableEqDep.
 
   Variable A: Type.
 
-  Local comp: (x,y,y':A)x==y->x==y'->y==y' :=
-    [x,y,y',eq1,eq2](eqT_ind ? ? [a]a==y' eq2 ? eq1).
+  Local comp [x,y,y':A]: x==y->x==y'->y==y' :=
+    [eq1,eq2](eqT_ind ? ? [a]a==y' eq2 ? eq1).
 
   Remark trans_sym_eqT: (x,y:A)(u:x==y)(comp u u)==(refl_eqT ? y).
 Intros.
@@ -59,11 +59,11 @@ Save.
   Variable x: A.
 
 
-  Local nu: (y:A)x==y->x==y :=
-    [y,u]Case (eq_dec x y) of
-       [H:x==y]H
-       [H:~x==y](False_ind ? (H u))
-       end.
+  Local nu [y:A]: x==y->x==y :=
+    [u]Cases (eq_dec x y) of
+       (or_introl eqxy)  => eqxy
+     | (or_intror neqxy) => (False_ind ? (neqxy u))
+     end.
 
   Remark nu_constant : (y:A)(u,v:x==y) (nu u)==(nu v).
 Intros.
@@ -75,7 +75,7 @@ Case y0; Trivial.
 Save.
 
 
-  Local nu_inv: (y:A)x==y->x==y := [y,v](comp (nu (refl_eqT ? x)) v).
+  Local nu_inv [y:A]: x==y->x==y := [v](comp (nu (refl_eqT ? x)) v).
 
 
   Remark nu_left_inv : (y:A)(u:x==y) (nu_inv (nu u))==u.
