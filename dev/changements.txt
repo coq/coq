@@ -56,6 +56,10 @@ Changements dans les fonctions :
 	  map2_vect	   ->  array_map2
 	  list_of_tl_vect  ->  array_list_of_tl
 
+        Generic
+	  noccur_bet     -> noccur_between
+          substn_many    -> substnl
+
 	Std 
 	  comp           ->  Util.compose
 	  rev_append	 ->  List.rev_append
@@ -120,6 +124,10 @@ Changements dans les fonctions :
 
         Declare
   	  machine_constant ->   declare_constant (+ modifs)
+
+	ex-Trad
+          inh_cast_rel        -> Coercion.inh_conv_coerce_to
+          inh_conv_coerce_to  -> Coercion.inh_conv_coerce_to_fail
 
 Changements dans les inductifs
 ------------------------------
