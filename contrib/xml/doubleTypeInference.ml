@@ -244,12 +244,13 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
           None ->
            (* No expected type *)
            {synthesized = synthesized' ; expected = None}, synthesized
-        (*CSC: in HELM we did not considered Casts to be irrelevant. *)
-        (*CSC: does it really matter? (eq_constr is up to casts)     *)
         | Some ty when Term.eq_constr synthesized' ty ->
-           (* The expected type is synthactically equal to *)
-           (* the synthesized type. Let's forget it.       *)
-           {synthesized = synthesized' ; expected = None}, synthesized
+           (* The expected type is synthactically equal to the    *)
+           (* synthesized type. Let's forget it.                  *)
+           (* Note: since eq_constr is up to casts, it is better  *)
+           (* to keep the expected type, since it can bears casts *)
+           (* that change the innersort to CProp                  *)
+           {synthesized = ty ; expected = None}, ty
         | Some expectedty' ->
            {synthesized = synthesized' ; expected = Some expectedty'},
            expectedty'
