@@ -194,7 +194,7 @@ let coq_prop_relation2 =
   Relation {
      rel_a = mkProp ;
      rel_aeq = Lazy.force coq_impl ;
-     rel_refl = None;
+     rel_refl = Some (constant ["Setoid"] "impl_refl") ;
      rel_sym = None
    })
 

@@ -608,9 +608,13 @@ Add Morphism not : Not_Morphism.
  tauto.
 Qed.
 
+Theorem impl_refl: reflexive _ impl.
+ hnf; unfold impl; tauto.
+Qed.
+
 (* THE ASYMMETRIC AREFLEXIVE RELATION impl WITH A FEW MORPHISMS *)
 
-Add Relation Prop impl.
+Add Relation Prop impl reflexivity proved by impl_refl.
 
 Add Morphism impl with signature impl --> impl ++> impl as Impl_Morphism2.
  unfold impl; tauto.
