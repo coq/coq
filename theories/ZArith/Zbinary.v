@@ -105,16 +105,10 @@ Definition Zmod2 := [z:Z] Cases z of
     		end
  	end.
 
-Lemma double_moins_un_add_un : (p:positive) 
-	(xI p)=(double_moins_un (add_un p)).
-Proof.
-	Induction p; Simpl; Intros.
-	Rewrite H; Auto.
-
-	Trivial.
-
-	Trivial.
-Save.
+V7only [
+Notation double_moins_un_add_un :=
+  [p](sym_eq ? ? ? (double_moins_un_add_un_xI p)).
+].
 
 Lemma Zmod2_twice : (z:Z)
 	`z = (2*(Zmod2 z) + (bit_value (Zodd_bool z)))`.
@@ -126,7 +120,7 @@ Proof.
 
 	NewDestruct p; Simpl.
 	NewDestruct p as [p|p|]; Simpl.
-	Rewrite (double_moins_un_add_un p); Trivial.
+	Rewrite <- (double_moins_un_add_un_xI p); Trivial.
 
 	Trivial.
 
@@ -216,16 +210,7 @@ Proof.
 	Auto with zarith.
 Save.
 
-Lemma add_un_double_moins_un_xO : (p:positive)
-	(add_un (double_moins_un p))=(xO p).
-Proof.
-	NewInduction p as [|p H|]; Simpl.
-	Trivial.
-
-	Rewrite H; Trivial.
-
-	Trivial.
-Save.
+V7only [Notation add_un_double_moins_un_xO := is_double_moins_un.].
 
 Lemma two_compl_value_Sn : (n:nat) (bv : (Bvector (S n))) (b:bool)
 	(two_compl_value (S n) (Bcons b (S n) bv)) =
