@@ -89,6 +89,29 @@ let need_expansion impl ref =
   impl <> [] & let _,lastimpl = list_chop nprods impl in
   List.filter is_status_implicit lastimpl <> []
 
+type opacity =
+  | FullyOpaque
+  | TransparentMaybeOpacified of bool
+
+let opacity env = function
+  | VarRef v when pi2 (Environ.lookup_named v env) <> None -> 
+      Some (TransparentMaybeOpacified (Conv_oracle.is_opaque_var v))
+  | ConstRef cst ->
+      let cb = Environ.lookup_constant cst env in
+      if cb.const_body = None then None
+      else if cb.const_opaque then Some FullyOpaque
+      else Some (TransparentMaybeOpacified (Conv_oracle.is_opaque_cst cst))
+  | _ -> None
+
+let print_opacity ref =
+  match opacity (Global.env()) ref with
+    | None -> mt ()
+    | Some s -> pr_global ref ++ str " is " ++ 
+        str (match s with
+          | FullyOpaque -> "opaque"
+          | TransparentMaybeOpacified true -> "basically transparent (but considered opaque for reduction)"
+          | TransparentMaybeOpacified false -> "transparent")
+    
 let print_name_infos ref =
   let impl = implicits_of_global ref in
   let scopes = Symbols.find_arguments_scope ref in
@@ -104,6 +127,7 @@ let print_name_infos ref =
   else mt())
   ++ type_for_implicit 
   ++ print_impl_args impl ++ print_argument_scopes scopes
+  ++ print_opacity ref
 
 let print_id_args_data test pr id l =
   if List.exists test l then
