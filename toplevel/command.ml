@@ -52,8 +52,26 @@ let red_constant_entry ce = function
 let definition_body_red ident n com comtypeopt red_option = 
   let ce = constant_entry_of_com (com,comtypeopt) in
   let ce' = red_constant_entry ce red_option in
-  declare_constant ident (ConstantEntry ce',n);
-  if is_verbose() then message ((string_of_id ident) ^ " is defined")
+  match n with
+    | NeverDischarge ->
+	declare_constant ident (ConstantEntry ce',n);
+	if is_verbose() then message ((string_of_id ident) ^ " is defined")
+    | DischargeAt disch_sp ->
+        if Lib.is_section_p disch_sp then begin
+	  let c = match ce.const_entry_type with
+	    | None -> ce.const_entry_body 
+	    | Some t -> mkCast (ce.const_entry_body, t) in
+          declare_variable ident (SectionLocalDef c,n,false);
+	  if is_verbose() then message ((string_of_id ident) ^ " is defined");
+          if Pfedit.refining () then 
+            mSGERRNL [< 'sTR"Warning: Variable "; pr_id ident; 
+                        'sTR" is not visible from current goals" >]
+        end else begin
+	  mSGERRNL [< 'sTR"Warning: "; pr_id ident; 
+                      'sTR" is declared as a global definition">];
+	  declare_constant ident (ConstantEntry ce',n);
+	  if is_verbose() then message ((string_of_id ident) ^ " is defined")
+	end
 
 let definition_body ident n com typ = definition_body_red ident n com typ None
 
@@ -93,7 +111,7 @@ let hypothesis_def_var is_refining ident n c =
 	  warning();
           parameter_def_var ident c
 	end
-	  
+
 (* 3| Mutual Inductive definitions *)
 
 let minductive_message = function 
