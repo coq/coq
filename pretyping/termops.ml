@@ -663,6 +663,36 @@ let ids_of_context env =
 let names_of_rel_context env =
   List.map (fun (na,_,_) -> na) (rel_context env)
 
+(**** Globality of identifiers *)
+
+(* TODO temporary hack!!! *)
+let rec is_imported_modpath = function
+  | MPfile dp -> dp <> (Lib.library_dp ())
+(*  | MPdot (mp,_) -> is_imported_modpath mp *)
+  | _ -> false
+
+let is_imported_ref = function
+  | VarRef _ -> false
+  | ConstRef kn 
+  | IndRef (kn,_)
+  | ConstructRef ((kn,_),_) 
+(*  | ModTypeRef ln  *) -> 
+      let (mp,_,_) = repr_kn kn in is_imported_modpath mp
+(*  | ModRef mp ->
+      is_imported_modpath mp
+*)
+
+let is_global id =
+  try 
+    let ref = locate (make_short_qualid id) in
+    not (is_imported_ref ref)
+  with Not_found -> 
+    false
+
+let is_section_variable id =
+  try let _ = Sign.lookup_named id (Global.named_context()) in true
+  with Not_found -> false
+
 (* Nouvelle version de renommage des variables (DEC 98) *)
 (* This is the algorithm to display distinct bound variables 
 
@@ -701,14 +731,11 @@ let occur_id env nenv id0 c =
   with Occur -> true
     | Not_found -> false (* Case when a global is not in the env *)
 
-let is_section_variable id =
-  try let _ = Declare.find_section_variable id in true with Not_found -> false
-
 let next_name_not_occuring env name l env_names t =
   let rec next id =
     if List.mem id l or occur_id env env_names id t or 
       (* To be consistent with intro mechanism *)
-      (Declare.is_global id & not (is_section_variable id))
+      (is_global id & not (is_section_variable id))
     then next (lift_ident id)
     else id
   in 
@@ -826,3 +853,16 @@ let rec rename_bound_var env l c =
         mkProd (Anonymous, c1, rename_bound_var env' l c2)
   | Cast (c,t) -> mkCast (rename_bound_var env l c, t)
   | x -> c
+
+(* References to constr *)
+
+let global_reference id = 
+  constr_of_reference (Nametab.locate (make_short_qualid id))
+
+let construct_reference ctx id =
+  try
+    mkVar (let _ = Sign.lookup_named id ctx in id)
+  with Not_found ->
+    global_reference id
+
+

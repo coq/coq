@@ -267,4 +267,3 @@ let pr_reference = function
 let loc_of_reference = function
   | Qualid (loc,qid) -> loc
   | Ident (loc,id) -> loc
-

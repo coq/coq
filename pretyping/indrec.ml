@@ -25,7 +25,6 @@ open Reductionops
 open Typeops
 open Type_errors
 open Indtypes (* pour les erreurs *)
-open Declare
 open Safe_typing
 open Nametab
 
@@ -405,7 +404,8 @@ let instanciate_indrec_scheme sort =
   in
   drec
 
-(* Change the sort in the type of an inductive definition, builds the corresponding eta-expanded term *)
+(* Change the sort in the type of an inductive definition, builds the
+   corresponding eta-expanded term *)
 let instanciate_type_indrec_scheme sort npars term =
   let rec drec np elim =
     match kind_of_term elim with
@@ -490,66 +490,12 @@ let type_rec_branches recursive env sigma indt p c =
 
 (*s Eliminations. *)
 
-let type_suff = "_rect"
-
-let non_type_eliminations = [ (InProp,"_ind") ; (InSet,"_rec")]
-
 let elimination_suffix = function
   | InProp -> "_ind"
   | InSet  -> "_rec"
   | InType -> "_rect"
 
 let make_elimination_ident id s = add_suffix id (elimination_suffix s)
-  
-let declare_one_elimination ind =
-  let (mib,mip) = Global.lookup_inductive ind in 
-  let mindstr = string_of_id mip.mind_typename in
-  let declare na c t =
-    let kn = Declare.declare_constant (id_of_string na)
-      (DefinitionEntry
-        { const_entry_body = c;
-          const_entry_type = t;
-          const_entry_opaque = false }, 
-       Decl_kinds.IsDefinition) in
-    Options.if_verbose ppnl (str na ++ str " is defined"); 
-    kn
-  in
-  let env = Global.env () in
-  let sigma = Evd.empty in
-  let elim_scheme = build_indrec env sigma ind in
-  let npars = mip.mind_nparams in
-  let make_elim s = instanciate_indrec_scheme s npars elim_scheme in
-  let kelim = mip.mind_kelim in
-(* in case the inductive has a type elimination, generates only one induction scheme, 
-   the other ones share the same code with the apropriate type *)
-   if List.mem InType kelim then
-    let cte =
-      declare (mindstr^type_suff) (make_elim (new_sort_in_family InType)) None
-    in let c = mkConst (snd cte) and t = constant_type (Global.env ()) (snd cte)
-    in List.iter  
-	 (fun (sort,suff) -> 
-            let (t',c') = instanciate_type_indrec_scheme (new_sort_in_family sort) npars c t
-            in let _ = declare (mindstr^suff) c' (Some t')
-            in ())
-	 non_type_eliminations
-   else (* Impredicative or logical inductive definition *)
-     List.iter
-    (fun (sort,suff) -> 
-       if List.mem sort kelim then
-	 let _ = declare (mindstr^suff) (make_elim (new_sort_in_family sort)) None in ())
-     non_type_eliminations
-
-let declare_eliminations sp =
-  let mib = Global.lookup_mind sp in
-(*
-  let ids = ids_of_named_context mib.mind_hyps in
-  if not (list_subset ids (ids_of_named_context (Global.named_context ()))) then    error ("Declarations of elimination scheme outside the section "^
-    "of the inductive definition is not implemented");
-*)
-  if mib.mind_finite then
-    for i = 0 to Array.length mib.mind_packets - 1 do
-      declare_one_elimination (sp,i)
-    done
 
 (* Look up function for the default elimination constant *)
 
@@ -563,19 +509,19 @@ let lookup_eliminator ind_sp s =
   let ref = ConstRef (make_kn mp dp (label_of_id id)) in
   try 
     let _ = sp_of_global ref in
-      constr_of_reference ref
+    constr_of_reference ref
   with Not_found ->
   (* Then try to get a user-defined eliminator in some other places *)
   (* using short name (e.g. for "eq_rec") *)
-    try construct_reference None id
-    with Not_found ->
-      errorlabstrm "default_elim"
-	(str "Cannot find the elimination combinator " ++
-           pr_id id ++ spc () ++
-	   str "The elimination of the inductive definition " ++
-           pr_id id ++ spc () ++ str "on sort " ++ 
-           spc () ++ print_sort_family s ++
-	   str " is probably not allowed")
+  try constr_of_reference (Nametab.locate (make_short_qualid id))
+  with Not_found ->
+    errorlabstrm "default_elim"
+      (str "Cannot find the elimination combinator " ++
+       pr_id id ++ spc () ++
+       str "The elimination of the inductive definition " ++
+       pr_id id ++ spc () ++ str "on sort " ++ 
+       spc () ++ print_sort_family s ++
+       str " is probably not allowed")
 
 
 (*  let env = Global.env() in
@@ -588,7 +534,7 @@ let lookup_eliminator ind_sp s =
   with Not_found ->
   (* Then try to get a user-defined eliminator in some other places *)
   (* using short name (e.g. for "eq_rec") *)
-    try construct_reference None id
+    try constr_of_reference (Nametab.locate (make_short_qualid id))
     with Not_found ->
       errorlabstrm "default_elim"
 	(str "Cannot find the elimination combinator " ++

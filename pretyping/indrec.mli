@@ -30,6 +30,8 @@ val make_case_gen : env -> evar_map -> inductive -> sorts_family -> constr
 
 val build_indrec : env -> evar_map -> inductive -> constr
 val instanciate_indrec_scheme : sorts -> int -> constr -> constr
+val instanciate_type_indrec_scheme : sorts -> int -> constr -> types ->
+  constr * types
 
 (* This builds complex [Scheme] *)
 
@@ -49,7 +51,6 @@ val make_rec_branch_arg :
     constr -> constructor_summary -> wf_paths list -> constr
 
 (* *)
-val declare_eliminations : mutual_inductive -> unit
 val lookup_eliminator : inductive -> sorts_family -> constr
 val elimination_suffix : sorts_family -> string
 val make_elimination_ident : identifier -> sorts_family -> identifier

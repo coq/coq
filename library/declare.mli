@@ -90,26 +90,7 @@ val clear_proofs : named_context -> named_context
 (*s Global references *)
 
 val context_of_global_reference : global_reference -> section_context
-
-val global_qualified_reference : qualid -> constr
-val global_absolute_reference : section_path -> constr
-val global_reference_in_absolute_module : dir_path -> identifier -> constr
-
-val construct_qualified_reference : qualid -> constr
-val construct_absolute_reference : section_path -> constr
-
-(* This should eventually disappear *)
-(*  [construct_reference] returns the object corresponding to
-    the name [id] in the global environment. It looks also for variables in a 
-    given environment instead of looking in the current global environment. *)
-val global_reference : identifier -> constr
-val construct_reference : Sign.named_context option -> identifier -> constr
-
-val is_global : identifier -> bool
-
 val strength_of_global : global_reference -> strength
-
-val library_part : global_reference -> dir_path
 
 (* hooks for XML output *)
 val set_xml_declare_variable : (object_name -> unit) -> unit

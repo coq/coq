@@ -14,7 +14,6 @@ open Decl_kinds
 open Term
 open Evd
 open Environ
-open Declare
 open Nametab
 (*i*)
 
@@ -25,6 +24,8 @@ type cl_typ =
   | CL_SECVAR of variable
   | CL_CONST of constant
   | CL_IND of inductive
+
+val subst_cl_typ : substitution -> cl_typ -> cl_typ
 
 (* This is the type of infos for declared classes *)
 type cl_info_typ = {
@@ -65,8 +66,6 @@ val class_of : env -> evar_map -> constr -> constr * cl_index
 val inductive_class_of : inductive -> cl_index
 
 val class_args_of : constr -> constr list
-
-val strength_of_cl : cl_typ -> strength
 
 (*s [declare_coercion] adds a coercion in the graph of coercion paths *)
 val declare_coercion : 

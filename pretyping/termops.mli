@@ -175,3 +175,12 @@ val make_all_name_different : env -> env
 
 val global_vars : env -> constr -> identifier list
 val global_vars_set_of_decl : env -> named_declaration -> Idset.t
+
+(* References to constr *)
+
+val construct_reference : named_context -> identifier -> constr
+val global_reference : identifier -> constr
+
+(* Test if an identifier is the basename of a global reference *)
+val is_global : identifier -> bool
+

@@ -117,6 +117,9 @@ val end_compilation : dir_path -> object_prefix * library_segment
    compiling library (or [default_library]) *)
 val library_dp : unit -> dir_path
 
+(* Extract the library part of a name even if in a section *)
+val library_part : global_reference -> dir_path
+
 (*s Sections *)
 
 val open_section : identifier -> object_prefix

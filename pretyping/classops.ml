@@ -17,7 +17,6 @@ open Nametab
 open Environ
 open Libobject
 open Library
-open Declare
 open Term
 open Termops
 open Rawterm
@@ -239,11 +238,6 @@ let class_of env sigma t =
 let inductive_class_of ind = fst (class_info (CL_IND ind))
 
 let class_args_of c = snd (decompose_app c)
-
-let strength_of_cl = function 
-  | CL_CONST kn -> constant_strength (sp_of_global (ConstRef kn))
-  | CL_SECVAR sp -> variable_strength sp
-  | _ -> Global
 
 let string_of_class = function
   | CL_FUN -> if !Options.v7 then "FUNCLASS" else "Funclass"
