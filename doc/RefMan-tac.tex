@@ -2675,20 +2675,18 @@ this tactic.
 \comindex{Hint}}
 
 The hints for \texttt{auto} and \texttt{eauto} are stored in
-databases.  Each databases maps head symbols to list of hints. One can
+databases.  Each database maps head symbols to a list of hints. One can
 use the command \texttt{Print Hint \ident} to display the hints
 associated to the head symbol \ident{} (see \ref{PrintHint}). Each
-hint has a cost that is an nonnegative integer, and a pattern. The
-hint is tried by \texttt{auto} if the conclusion of current goal
-matches its pattern, and after hints with a lower cost. The general
-command to add a hint to some databases \ident$_1$, \dots, \ident$_n$
-is:
+hint has a cost that is an nonnegative integer, and a pattern. 
+The hints with lower cost are tried first. A hint is tried by 
+\texttt{auto} when the conclusion of the current goal
+matches its pattern. The general
+command to add a hint to some database \ident$_1$, \dots, \ident$_n$ is:
 \begin{tabbing}
   \texttt{Hint} \textsl{hint\_definition} \texttt{:} \ident$_1$ \ldots\ \ident$_n$
 \end{tabbing}
 where {\sl hint\_definition} is one of the following expressions:
-
-\noindent where {\sl hint\_definition} is one of the following expressions:
 
 \begin{itemize}
 \item \texttt{Resolve} {\term} 
@@ -2886,9 +2884,12 @@ pattern-matching on hypotheses.
 
 \subsection{Hint databases defined in the \Coq\ standard library}
 
-Several hint databases are defined in the \Coq\ standard
-library. There is no systematic relation between the directories of the
-library and the databases.
+Several hint databases are defined in the \Coq\ standard library.  The
+actual content of a database is the collection of the hints declared
+to belong to this database in each of the various modules currently
+loaded.  Especially, requiring new modules potentially extend a
+database. At {\Coq} startup, only the {\tt core} and {\tt v62}
+databases are non empty and can be used.
 
 \begin{description}
 
@@ -2901,10 +2902,11 @@ library and the databases.
   arithmetic proven in the directories \texttt{Init} and
   \texttt{Arith}
 
-\item[\tt zarith] contains lemmas about binary signed integers from the
-  directories \texttt{theories/ZArith} and
-  \texttt{contrib/omega}. It contains also a hint with a high
-  cost that calls {\tt omega}.
+\item[\tt zarith] contains lemmas about binary signed integers from
+  the directories \texttt{theories/ZArith}. When required, the module
+  {\tt Omega} also extends the database {\tt zarith} with a high-cost
+  hint that calls {\tt omega} on equations and inequations in {\tt
+  nat} or {\tt Z}.
 
 \item[\tt bool] contains lemmas about booleans, mostly from directory
   \texttt{theories/Bool}.
