@@ -123,7 +123,7 @@ GEXTEND Gram
       | "()" -> TacVoid ] ]
   ;
   match_key:
-    [ [ b = [ IDENT "lazy" -> true | -> false ]; "match" -> b ] ]
+    [ [ "match" -> false ] ]
   ;
   input_fun:
     [ [ "_" -> None 
