@@ -104,11 +104,11 @@ val get_pftreestate : unit -> pftreestate
    the current focused proof or raises a [UserError] if there is no
    focused proof or if there is no more subgoals *)
 
-val get_goal_context : int -> enamed_declarations * env
+val get_goal_context : int -> Evd.evar_map * env
 
 (* [get_current_goal_context ()] works as [get_goal_context 1] *)
 
-val get_current_goal_context : unit -> enamed_declarations * env
+val get_current_goal_context : unit -> Evd.evar_map * env
 
 (*s [get_current_proof_name ()] return the name of the current focused
     proof or failed if no proof is focused *)

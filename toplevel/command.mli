@@ -76,4 +76,4 @@ val save_anonymous_with_strength : strength -> bool -> identifier -> unit
    current open proof if any, otherwise returns the empty evar context
    and the current global env *)
 
-val get_current_context : unit -> Proof_type.enamed_declarations * Environ.env
+val get_current_context : unit -> Evd.evar_map * Environ.env

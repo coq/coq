@@ -34,18 +34,12 @@ val is_complete_proof : proof_tree -> bool
 val is_leaf_proof     : proof_tree -> bool
 val is_tactic_proof   : proof_tree -> bool
 
-
-(*s A global constraint is a mappings of existential variables with
-    some extra information for the program and mimick tactics. *)
-
-type global_constraints = enamed_declarations timestamped
-
 (*s A readable constraint is a global constraint plus a focus set
     of existential variables and a signature. *)
 
 type evar_recordty = {
   hyps  : named_context;
-  decls : enamed_declarations }
+  decls : evar_map }
 
 and readable_constraints = evar_recordty timestamped
 
@@ -53,7 +47,7 @@ val rc_of_gc  : global_constraints -> goal -> readable_constraints
 val rc_add    : readable_constraints -> int * goal -> readable_constraints
 val get_hyps  : readable_constraints -> named_context
 val get_env   : readable_constraints -> env
-val get_decls : readable_constraints -> enamed_declarations
+val get_decls : readable_constraints -> evar_map
 val get_gc    : readable_constraints -> global_constraints
 val remap     : readable_constraints -> int * goal -> readable_constraints
 
@@ -80,7 +74,7 @@ val prgl         : goal -> std_ppcmds
 val pr_seq       : goal -> std_ppcmds
 val pr_evars     : (int * goal) list -> std_ppcmds
 val pr_evars_int : int -> (int * goal) list -> std_ppcmds
-val pr_subgoals_existential : enamed_declarations -> goal list -> std_ppcmds
+val pr_subgoals_existential : evar_map -> goal list -> std_ppcmds
 
 (* Gives the ast corresponding to a tactic argument *)
 val ast_of_cvt_arg : tactic_arg ->  Coqast.t 

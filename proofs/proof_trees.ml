@@ -66,22 +66,12 @@ let is_tactic_proof pf = (pf.subproof <> None)
 (*            Constraints for existential variables                *)
 (*******************************************************************)
 
-(* A local constraint is just a set of section_paths *)
-
-(* recall : type local_constraints = Intset.t *)
-
-(* A global constraint is a mappings of existential variables
-   with some extra information for the program and mimick
-   tactics. *)
-
-type global_constraints  = enamed_declarations timestamped
-
 (* A readable constraint is a global constraint plus a focus set
    of existential variables and a signature. *)
 
 type evar_recordty = {
   hyps  : named_context;
-  decls : enamed_declarations }
+  decls : evar_map }
 
 and readable_constraints = evar_recordty timestamped
 

@@ -28,7 +28,7 @@ type tactic     = Proof_type.tactic;;
 
 val sig_it  : 'a sigma   -> 'a
 val sig_sig : goal sigma -> global_constraints
-val project : goal sigma -> enamed_declarations
+val project : goal sigma -> Evd.evar_map
 
 val re_sig : 'a -> global_constraints -> 'a sigma
 
@@ -63,7 +63,7 @@ val pf_reduction_of_redexp : goal sigma -> red_expr -> constr -> constr
 
 
 val pf_reduce : 
-  (env -> enamed_declarations -> constr -> constr) ->
+  (env -> Evd.evar_map -> constr -> constr) ->
     goal sigma -> constr -> constr
 
 val pf_whd_betadeltaiota       : goal sigma -> constr -> constr
@@ -94,7 +94,7 @@ type pftreestate
 val proof_of_pftreestate    : pftreestate -> proof_tree
 val cursor_of_pftreestate   : pftreestate -> int list
 val is_top_pftreestate      : pftreestate -> bool
-val evc_of_pftreestate      : pftreestate -> enamed_declarations
+val evc_of_pftreestate      : pftreestate -> Evd.evar_map
 val top_goal_of_pftreestate : pftreestate -> goal sigma
 val nth_goal_of_pftreestate : int -> pftreestate -> goal sigma
 val traverse                : int -> pftreestate -> pftreestate

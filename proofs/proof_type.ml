@@ -55,13 +55,9 @@ type prim_rule = {
   params : Coqast.t list;
   terms : constr list }
 
-type local_constraints = Intset.t
-
-type enamed_declarations = evar_map
-
 (* A global constraint is a mappings of existential variables
    with some extra information for the program tactic *)
-type global_constraints  = enamed_declarations timestamped
+type global_constraints  = evar_map timestamped
 
 (* Signature useful to define the tactic type *)
 type 'a sigma = { 

@@ -32,7 +32,7 @@ type 'a result_w_tactic = walking_constraints -> walking_constraints * 'a
 type w_tactic = walking_constraints -> walking_constraints
 
 
-let local_Constraints lc gs = refiner Change_evars gs
+let local_Constraints gs = refiner Change_evars gs
 
 let startWalk gls =
   let evc = project_with_focus gls in

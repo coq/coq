@@ -31,7 +31,7 @@ type value =
 
 (* Signature for interpretation: val\_interp and interpretation functions *)
 and interp_sign =
-  { evc : enamed_declarations;
+  { evc : Evd.evar_map;
     env : Environ.env;
     lfun : (identifier * value) list;
     lmatch : (int * constr) list;

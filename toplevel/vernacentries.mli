@@ -28,7 +28,7 @@ val show_node : unit -> unit
 
 (* This function can be used by any command that want to observe terms
    in the context of the current goal, as for instance in pcoq *)
-val get_current_context_of_args : vernac_arg list -> Proof_type.enamed_declarations * Environ.env
+val get_current_context_of_args : vernac_arg list -> Evd.evar_map * Environ.env
 
 (* this function is used to analyse the extra arguments in search commands.
    It is used in pcoq. *)

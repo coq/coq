@@ -112,11 +112,11 @@ val dyn_exact_check  : tactic_arg list -> tactic
 
 (*s Reduction tactics. *)
 
-type 'a tactic_reduction = env -> enamed_declarations -> constr -> constr
+type tactic_reduction = env -> evar_map -> constr -> constr
 
-val reduct_in_hyp     : 'a tactic_reduction -> hyp_location -> tactic
-val reduct_option     : 'a tactic_reduction -> hyp_location option -> tactic
-val reduct_in_concl   : 'a tactic_reduction -> tactic
+val reduct_in_hyp     : tactic_reduction -> hyp_location -> tactic
+val reduct_option     : tactic_reduction -> hyp_location option -> tactic
+val reduct_in_concl   : tactic_reduction -> tactic
 val change_in_concl   : constr -> tactic
 
 val change_in_hyp     : constr -> hyp_location -> tactic

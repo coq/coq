@@ -153,7 +153,7 @@ let dyn_mutual_cofix argsl gl =
 (*          Reduction and conversion tactics                  *)
 (**************************************************************)
 
-type 'a tactic_reduction = env -> enamed_declarations -> constr -> constr
+type tactic_reduction = env -> evar_map -> constr -> constr
 
 (* The following two tactics apply an arbitrary
    reduction function either to the conclusion or to a 
