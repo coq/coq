@@ -98,6 +98,7 @@ let parse_phrase (po, verbch) =
  * parses, and is verbose on "primitives" commands if verbosely is true *)
 
 let just_parsing = ref false
+let chan_translate = ref stdout
 
 let pr_comments = function
   | None -> mt()
@@ -128,13 +129,16 @@ let rec vernac_com interpfun (loc,com) =
   in 
   try
     if do_translate () then
+      let _ = Format.set_formatter_out_channel stdout in
       let _ = interp com in
+      let _ = Format.set_formatter_out_channel !chan_translate in
       if !translate_file then
 	msgnl (pr_comments !comments ++ pr_vernac com ++ sep_end) 
       else
 	msgnl (hov 4 (str"New Syntax:" ++ fnl() ++ pr_comments !comments ++ pr_vernac com ++ sep_end)); comments := None
     else interp com
-  with e -> 
+  with e ->
+    Format.set_formatter_out_channel stdout;
     raise (DuringCommandInterp (loc, e))
 
 and vernac interpfun input =
@@ -153,6 +157,7 @@ and read_vernac_file verbosely s =
      * raised, which means that we raised the end of the file being loaded *)
     while true do vernac interpfun input; pp_flush () done
   with e ->   (* whatever the exception *)
+    Format.set_formatter_out_channel stdout;
     close_input in_chan input;    (* we must close the file first *)
     match real_error e with
       | End_of_input -> ()
@@ -192,10 +197,10 @@ let compile verbosely f =
 *)
   let ldir,long_f_dot_v = Library.start_library f in
   if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
-  let chano = if Options.do_translate () then open_out (f^".v8") else stdout in
-  let _ = Format.set_formatter_out_channel chano in
+  chan_translate := if Options.do_translate () then open_out (f^".v8") else stdout;
+  let _ = Format.set_formatter_out_channel !chan_translate in
   let _ = load_vernac verbosely long_f_dot_v in
-  let _ = close_out chano in
+  let _ = close_out !chan_translate in
   if Pfedit.get_all_proof_names () <> [] then
     (message "Error: There are pending proofs"; exit 1);
   Library.save_library_to ldir (long_f_dot_v ^ "o")
