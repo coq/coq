@@ -43,7 +43,7 @@ Tactic Definition Sup0_lt trm:=
   Replace ``0`` with (INR O);
   [Let nbr=(ToINR trm) In
       Replace trm with (INR nbr);
-      [Apply lt_INR; Auto|Simpl;Ring]|Simpl;Reflexivity].
+      [Apply lt_INR; Apply lt_O_Sn|Simpl;Ring]|Simpl;Reflexivity].
 
 Tactic Definition Sup0_gt trm:=
   Unfold Rgt; Sup0_lt trm.   
