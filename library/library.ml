@@ -116,8 +116,8 @@ let open_module s =
 (*s [load_module s] loads the module [s] from the disk, and [find_module s]
    returns the module of name [s], loading it if necessary. 
    The boolean [doexp] specifies if we open the modules which are declared
-   exported in the dependencies (usually it is [true] at the highest level;
-   it is always [false] in recursive loadings). *)
+   exported in the dependencies (it is [true] at the highest level;
+   then same value as for caller is reused in recursive loadings). *)
 
 let load_objects decls =
   segment_iter load_object decls
@@ -144,7 +144,7 @@ let rec load_module_from doexp s f =
   m
 
 and load_mandatory_module doexp caller (s,d,export) =
-  let m = find_module false s s in
+  let m = find_module export s s in
   if d <> m.module_digest then
     error ("module "^caller^" makes inconsistent assumptions over module "^s);
   if doexp && export then open_module s
