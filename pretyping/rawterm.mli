@@ -11,12 +11,12 @@ open Type_errors
 
 type loc = int * int
 
-type indtype_id = section_path * int
-type constructor_id = indtype_id * int
+type inductive_key = section_path * int
+type constructor_key = inductive_key * int
 
 type pattern =  (* locs here refers to the ident's location, not whole pat *)
   | PatVar of loc * name
-  | PatCstr of loc * (constructor_id * identifier list) * pattern list
+  | PatCstr of loc * (constructor_key * identifier list) * pattern list
   | PatAs of loc * identifier * pattern
 
 type binder_kind = BProd | BLambda
@@ -25,8 +25,8 @@ type rawsort = RProp of Term.contents | RType
 
 type reference =
   | RConst of section_path * identifier list
-  | RInd of indtype_id * identifier list
-  | RConstruct of constructor_id * identifier list
+  | RInd of inductive_key * identifier list
+  | RConstruct of constructor_key * identifier list
   | RAbst of section_path
   | RVar of identifier
   | REVar of int * identifier list
