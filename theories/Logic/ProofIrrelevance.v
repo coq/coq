@@ -26,7 +26,7 @@
 
     Proof skeleton: classical logic + dependent elimination of
     disjunction + discrimination of proofs implies the existence of a
-    retract from Prop into bool, hence inconsistency by encoding any
+    retract from [Prop] into [bool], hence inconsistency by encoding any
     paradox of system U- (e.g. Hurkens' paradox).
 *)
 
@@ -56,7 +56,7 @@ Hypothesis em : forall A:Prop, or A (~ A).
 Variable B : Prop.
 Variables b1 b2 : B.
 
-(** [p2b] and [b2p] form a retract if [~b1==b2] *)
+(** [p2b] and [b2p] form a retract if [~b1=b2] *)
 
 Definition p2b A := or_elim A (~ A) B (fun _ => b1) (fun _ => b2) (em A).
 Definition b2p b := b1 = b.
@@ -114,5 +114,5 @@ End Proof_irrelevance_CCI.
 
 (** Remark: in CCI, [bool] can be taken in [Set] as well in the
     paradox and since [~true=false] for [true] and [false] in
-    [bool], we get the inconsistency of [em : (A:Prop){A}+{~A}] in CCI
+    [bool], we get the inconsistency of [em : forall A:Prop, {A}+{~A}] in CCI
 *)
