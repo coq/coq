@@ -141,7 +141,9 @@ let w_refine ev rawc wc =
   let evd,typed_c = 
     Pretyping.understand_gen_tcc wc.sigma env [] 
       (Some e_info.evar_concl) rawc in
-    w_Define ev typed_c {wc with sigma=evd}
+  let inst_info = {e_info with evar_body = Evar_defined typed_c } in
+    restore_decl ev inst_info (extract_decl ev {wc with sigma=evd})
+ (*   w_Define ev typed_c {wc with sigma=evd} *)
 
 (* the instantiate tactic was moved to tactics/evar_tactics.ml *) 
 
