@@ -273,15 +273,6 @@ let make_constr_grammar_rule n fname prod action =
       ]
   }
 
-let rec translate_implicits n = function
-  | [] -> []
-  | q::l when q=n -> true::translate_implicits (n+1) l
-  | impls -> false::translate_implicits (n+1) impls
-
-let implicits_of_extended_reference = function
-  | Libnames.TrueGlobal ref -> translate_implicits 1 (Impargs.implicits_of_global ref)
-  | Libnames.SyntacticDef _ -> []
-
 let create_meta n = "$e"^(string_of_int n)
 
 let strip s =
