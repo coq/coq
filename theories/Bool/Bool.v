@@ -322,6 +322,11 @@ Proof.
 Save.
 Hints Resolve andb_prop : bool v62.
 
+Definition andb_true_eq : (a,b:bool) true = (andb a b) -> true = a /\ true = b.
+Proof.
+  Destruct a; Destruct b; Clear a b; Auto.
+Defined.
+
 Lemma andb_prop2 : 
   (a,b:bool)(Is_true (andb a b)) -> (Is_true a)/\(Is_true b).
 Proof.
