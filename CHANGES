@@ -11,7 +11,8 @@ Différences V7.0beta / V7.0
 - Rétablissement des token extensibles et mélangeant symboles et lettres
 - Ajout d'une option Set/Unset/Test Printing Coercions
 - Possibilité de déplier des définitions locales à un but
-
+- Suppression message .coqrc
+- Add ML Path est fait automatiquement par Add LoadPath
 
 Différences oubliées dans la V7.0beta :
 
