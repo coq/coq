@@ -356,16 +356,22 @@ let rec intros_until s g =
 	    [<'sTR "No such hypothesis in current goal";
 	      'sTR " even after head-reduction" >]
 
-let rec intros_until_n n g =
+let rec intros_until_n_gen red n g =
   match pf_lookup_index_as_renamed (pf_concl g) n with
     | Some depth -> tclDO depth intro g
     | None ->
+      if red then
 	try
-	  ((tclTHEN (reduce (Red true) []) (intros_until_n n)) g)
+          ((tclTHEN (reduce (Red true) []) (intros_until_n_gen red n)) g)
 	with Redelimination ->
           errorlabstrm "Intros" 
 	    [<'sTR "No such hypothesis in current goal";
 	      'sTR " even after head-reduction" >]
+      else
+        errorlabstrm "Intros" [<'sTR "No such hypothesis in current goal" >]
+
+let intros_until_n = intros_until_n_gen true
+let intros_until_n_wored = intros_until_n_gen false
 
 let dyn_intros_until = function 
   | [Identifier id] -> intros_until id

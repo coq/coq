@@ -77,6 +77,7 @@ val dyn_intros_using : tactic_arg list -> tactic
 i*)
 
 val intros_until         : identifier -> tactic
+val intros_until_n_wored : int -> tactic
 val dyn_intros_until     : tactic_arg list -> tactic
 
 val intros_clearing      : bool list -> tactic

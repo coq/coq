@@ -11,6 +11,7 @@ open Pp
 open Proof_type
 open Tacmach
 open Tacinterp
+open Tactics
 
 let is_empty () =
   if (is_empty_type (List.assoc 1 !r_lmatch)) then
@@ -28,19 +29,23 @@ let is_conj () =
   if (is_conjunction (List.assoc 1 !r_lmatch)) then
      <:tactic<Idtac>>
   else
-    failwith "is_conj";;
+    failwith "is_conj"
 
 let is_disj () =
   if (is_disjunction (List.assoc 1 !r_lmatch)) then
      <:tactic<Idtac>>
   else
-    failwith "is_disj";;
+    failwith "is_disj"
 
 let not_dep_intros () =
   <:tactic<
     Repeat
       Match Context With
       | [|- ?1 -> ?2 ] -> Intro>>
+
+let init_intros () =
+  (tclORELSE (tclTHEN (intros_until_n_wored 1) (interp (not_dep_intros ())))
+    intros)
 
 let axioms () =
   let t_is_unit = tacticIn is_unit
@@ -67,7 +72,7 @@ let simplif () =
         | [id: (?1 ?2 ?3) -> ?4|- ?] ->
           $t_is_disj;Cut ?3-> ?4;[Cut ?2-> ?4;[Intros;Clear id|Intro;Apply id;
             Left;Assumption]|Intro;Apply id;Right;Assumption]
-        | [id0: ?1-> ?; id1: ?1|- ?] -> Generalize (id0 id1);Intro;Clear id0
+        | [id0: ?1-> ?2; id1: ?1|- ?] -> Generalize (id0 id1);Intro;Clear id0
         | [|- (?1 ? ?)] -> $t_is_conj;Split);$t_not_dep_intros)>>
 
 let rec tauto_main () =
@@ -100,10 +105,12 @@ let compute = function
 let reduction = Tacticals.onAllClauses (fun ido -> compute ido)
 
 let tauto =
-  (tclTHEN reduction (interp (tauto_main ())))
+  (tclTHEN (init_intros ())
+    (tclTHEN reduction (interp (tauto_main ()))))
 
 let intuition =
-  (tclTHEN reduction (interp (intuition_main ())))
+  (tclTHEN (init_intros ())
+    (tclTHEN reduction (interp (intuition_main ()))))
 
 let _ = hide_atomic_tactic "Tauto" tauto
 let _ = hide_atomic_tactic "Intuition" intuition
