@@ -1,0 +1,10 @@
+
+Voici les changements d'organisation / modules :
+
+  AVANT					APRÈS
+  ================================	===============================
+  Std, More_util			lib/util.ml
+
+  Names					kernel/names.ml et kernel/sign.ml
+    (les parties noms et signatures ont été séparées)
+
