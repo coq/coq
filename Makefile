@@ -88,7 +88,7 @@ PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/pattern.cmo parsing/astterm.cmo parsing/termast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo \
-	parsing/g_vernac.cmo parsing/g_tactic.cmo \
+	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
 	parsing/g_constr.cmo parsing/g_cases.cmo \
         parsing/extend.cmo parsing/esyntax.cmo \
 	parsing/printer.cmo parsing/pretty.cmo parsing/egrammar.cmo \
@@ -482,7 +482,7 @@ clean::
 	rm -f parsing/grammar.cma
 
 ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
-	   parsing/g_vernac.ml4 parsing/g_cases.ml4 \
+	   parsing/g_vernac.ml4 parsing/g_proofs.ml4 parsing/g_cases.ml4 \
 	   parsing/g_constr.ml4 parsing/g_tactic.ml4 parsing/extend.ml4    
 
 beforedepend:: $(GRAMMARCMO)
