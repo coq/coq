@@ -1,2 +1,2 @@
-./configure -bindir /usr/bin -libdir /usr/lib/coq -mandir /usr/man -emacs emacs -emacslib /usr/share/emacs/site-lisp -opt         # Need ocamlc.opt and ocamlopt.opt
+./configure -bindir /usr/bin -libdir /usr/lib/coq -mandir /usr/man -emacs emacs -emacslib /usr/share/emacs/site-lisp -opt -reals all        # Need ocamlc.opt and ocamlopt.opt
 make world check      # Use native coq to compile theories
