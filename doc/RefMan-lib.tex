@@ -197,12 +197,12 @@ Inductive ex2 (A:Set) (P Q:A -> Prop) : Prop :=
 
 The following abbreviations are allowed:
 \begin{center}
-  \begin{tabular}[h]{|l|r|}
+  \begin{tabular}[h]{|l|l|}
     \hline
-    \verb+(exists x:A, P)+     & \verb+(ex A [x:A]P)+ \\
-    \verb+(exists x, P)+       & \verb+(ex A [x:A]P)+ \\
-    \verb+(exists2 x:A, P & Q)+ & \verb+(ex2 A [x:A]P [x:A]Q)+ \\
-    \verb+(exists2 x, P & Q)+   & \verb+(ex2 A [x:A]P [x:A]Q)+ \\
+    \verb+exists x:A, P+     & \verb+ex A (fun x:A => P)+ \\
+    \verb+exists x, P+       & \verb+ex A (fun x:A => P)+ \\
+    \verb+exists2 x:A, P & Q+ & \verb+ex2 A (fun x:A => P) (fun x:A => Q)+ \\
+    \verb+exists2 x, P & Q+   & \verb+ex2 A (fun x:A => P) (fun x:A => Q)+ \\
     \hline
   \end{tabular}
 \end{center}
