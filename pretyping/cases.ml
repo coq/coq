@@ -250,7 +250,7 @@ type 'a pattern_matching_problem =
 (* Utils *)
 
 let to_mutind env sigma t =
-  try IsInd (t,find_inductive env sigma t)
+  try IsInd (t,find_rectype env sigma t)
   with Induc -> NotInd t
 
 let type_of_tomatch_type = function
@@ -506,6 +506,22 @@ let pop_pattern eqn = { eqn with patterns = List.tl eqn.patterns }
 (**********************************************************************)
 (* Functions to deal with elimination predicate *)
 
+exception Occur
+let noccur_between_without_evar n m term = 
+  let rec occur_rec n = function
+    | Rel(p)        -> if n<=p && p<n+m then raise Occur
+    | VAR _         -> ()
+    | DOPN(Evar _,cl) -> ()
+    | DOPN(_,cl)    -> Array.iter (occur_rec n) cl
+    | DOPL(_,cl)    -> List.iter (occur_rec n) cl
+    | DOP1(_,c)     -> occur_rec n c
+    | DOP2(_,c1,c2) -> occur_rec n c1; occur_rec n c2
+    | DLAM(_,c)     -> occur_rec (n+1) c
+    | DLAMV(_,v)    -> Array.iter (occur_rec (n+1)) v
+    | _             -> ()
+  in 
+  try occur_rec n term; true with Occur -> false
+
 (* Infering the predicate *)
 let prepare_unif_pb typ cs =
   let n = cs.cs_nargs in
@@ -513,12 +529,9 @@ let prepare_unif_pb typ cs =
 
   (* We may need to invert ci if its parameters occur in p *)
   let p' =
-    if noccur_between 1 n p then lift (-n) p
+    if noccur_between_without_evar 1 n p then lift (-n) p
     else 
-      (* Il faudrait que noccur_between ne regarde pas la subst des Evar *)
-      if match p with DOPN(Evar _,_) -> true | _ -> false then lift (-n) p
-      else
-	 failwith "TODO4-1" in
+      failwith "TODO4-1" in
   let ci = applist
 	     (mkMutConstruct cs.cs_cstr, cs.cs_params@(rel_list (-n) n)) in
 
@@ -880,18 +893,18 @@ let coerce_row typing_fun isevars env row tomatch =
 	  (let tyi = inductive_of_rawconstructor c in
 	   try 
 	     let indtyp = inh_coerce_to_ind isevars env typ tyi in
-	     IsInd (typ,find_inductive env !isevars typ)
+	     IsInd (typ,find_rectype env !isevars typ)
 	   with NotCoercible ->
 	     (* 2 cas : pas le bon inductive ou pas un inductif du tout *)
 	     try
-	       let mind,_ = find_minductype env !isevars typ in
+	       let mind,_ = find_mrectype env !isevars typ in
 	       error_bad_constructor_loc cloc CCI
 		 (constructor_of_rawconstructor c) mind
 	     with Induc ->
 	       error_case_not_inductive_loc
 		 (loc_of_rawconstr tomatch) CCI env j.uj_val typ)
       | None -> 
-	  try IsInd (typ,find_inductive env !isevars typ)
+	  try IsInd (typ,find_rectype env !isevars typ)
 	  with Induc -> NotInd typ
   in (j.uj_val,t)
 
