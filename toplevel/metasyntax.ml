@@ -230,7 +230,7 @@ let is_right_bracket_on_right s =
 
 let is_comma s =
   let l = String.length s in l <> 0 &
-  (s.[0] = ',' or s.[0] = ';' or s.[0] = ':')
+  (s.[0] = ',' or s.[0] = ';')
 
 let is_operator s =
   let l = String.length s in l <> 0 &
@@ -459,7 +459,7 @@ let cache_syntax_extension (_,(_,prec,ntn,gr,se,translate)) =
 	  warning ("Notation "^ntn^" was already assigned a different level");
 	raise Not_found
       end else
-	error ("Notation "^ntn^" is already assigned a different level")
+	error ("Notation "^ntn^" is already assigned different level or sublevels")
     else
     (* The notation is already declared; no need to redeclare it *)
       ()
