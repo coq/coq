@@ -218,7 +218,8 @@ let rec push_many_rels_ctx keep_prop env ctx = function
       (env, ctx)
 
 let fix_environment env ctx fl tl =
-  push_many_rels_ctx true env ctx (List.combine fl (Array.to_list tl))
+  let tl' = Array.mapi lift tl in
+  push_many_rels_ctx true env ctx (List.combine fl (Array.to_list tl'))
 
 (* Decomposition of a type beginning with at least n products when reduced *)
 
@@ -499,9 +500,10 @@ and extract_term_with_type env ctx c t =
 	       let (_,e) = extract_branch_aux 0 br.(0) in 	  
 	       Rmlterm e)
     | IsFix ((_,i),(ti,fi,ci)) ->
+	let n = Array.length ti in
 	let (env', ctx') = fix_environment env ctx fi ti in
-	let extract_fix_body c t = 
-	  match extract_constr_with_type env' ctx' c t with
+	let extract_fix_body c t =
+	  match extract_constr_with_type env' ctx' c (lift n t) with
 	    | Eprop -> MLprop 
 	    | Emltype _ -> MLarity
 	    | Emlterm a -> a
@@ -570,9 +572,8 @@ and signature_of_application env f t a =
   else 
     let f' = mkApp (f, Array.sub a 0 nbp) in 
     let a' = Array.sub a nbp (nargs-nbp) in 
-    let t' = Typing.type_of env Evd.empty t in
+    let t' = Typing.type_of env Evd.empty f' in
     s @ signature_of_application env f' t' a'
-
 	  
 
 (*s Extraction of a constr. *)

@@ -32,8 +32,7 @@ type extraction_result =
 
 (*s Extraction functions. *)
 
-val extract_constr : 
-  env -> extraction_context -> constr -> extraction_result
+val extract_constr : env -> extraction_context -> constr -> extraction_result
 
 (*s ML declaration corresponding to a Coq reference. *)
 

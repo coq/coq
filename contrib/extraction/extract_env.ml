@@ -1,9 +1,10 @@
 
 open Pp
 open Term
+open Lib
+open Extraction
 open Miniml
 open Mlutil
-open Extraction
 
 (*s Topological sort of global CIC references. 
     We introduce graphs of global references; a graph is a map
@@ -140,7 +141,7 @@ let pp_decl d = Pp.pp_decl (betared_decl (uncurrify_decl d))
 open Vernacinterp
 
 let _ = 
-  vinterp_add "Extraction"
+  overwriting_vinterp_add "Extraction"
     (function 
        | [VARG_CONSTR ast] ->
 	   (fun () -> 
@@ -180,4 +181,29 @@ let _ =
     (function 
        | VARG_STRING f :: vl ->
 	   (fun () -> Ocaml.extract_to_file f (decl_of_vargl vl))
+       | _ -> assert false)
+
+(*s Extraction of a module. *)
+
+let extract_module m =
+  let seg = Library.module_segment (Some m) in
+  let get_reference = function
+    | sp, Leaf o ->
+	(match Libobject.object_tag o with
+	   | "CONSTANT" -> ConstRef sp
+	   | "INDUCTIVE" -> IndRef (sp,0)
+	   | _ -> failwith "caught")
+    | _ -> failwith "caught"
+  in
+  let rl = Util.map_succeed get_reference seg in
+  List.map extract_declaration rl
+
+let _ = 
+  vinterp_add "ExtractionModule"
+    (function 
+       | [VARG_IDENTIFIER m] ->
+	   (fun () -> 
+	      let m = Names.string_of_id m in
+	      let f = (String.uncapitalize m) ^ ".ml" in
+	      Ocaml.extract_to_file f (extract_module m))
        | _ -> assert false)

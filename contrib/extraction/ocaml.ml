@@ -15,6 +15,7 @@ open Util
 open Names
 open Term
 open Miniml
+open Mlutil
 
 (*s Some utility functions. *)
 
@@ -364,6 +365,9 @@ end
 
 module Pp = Make(OcamlParams)
 
+let pp_ast a = Pp.pp_ast (betared_ast (uncurrify_ast a))
+let pp_decl d = Pp.pp_decl (betared_decl (uncurrify_decl d))
+
 let ocaml_preamble () =
   [< 'sTR "type prop = Prop"; 'fNL; 'fNL;
      'sTR "type arity = Arity"; 'fNL; 'fNL >]
@@ -374,7 +378,7 @@ let extract_to_file f decls =
   pP_with ft (hV 0 (ocaml_preamble ()));
   begin 
     try
-      List.iter (fun d -> mSGNL_with ft (Pp.pp_decl d)) decls
+      List.iter (fun d -> mSGNL_with ft (pp_decl d)) decls
     with e ->
       pp_flush_with ft (); close_out cout; raise e
   end;
