@@ -363,7 +363,9 @@ let number_of_entries gcl =
 
 let unfreeze (grams, lex) =
   let (undo, redo, common) = factorize_grams !grammar_state grams in
-  remove_grammars (number_of_entries undo);
+  let n = number_of_entries undo in
+  remove_grammars n;
+  remove_levels n;
   grammar_state := common;
   Lexer.unfreeze lex;
   List.iter extend_grammar (List.rev redo)
