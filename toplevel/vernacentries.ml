@@ -120,7 +120,7 @@ let print_loadpath () =
   mSGNL [< 'sTR"Load Path:"; 'fNL; 'sTR"  ";
            hV 0 (prlist_with_sep pr_fnl (fun s -> [< 'sTR s >]) l) >]
 
-let get_goal_context_of_args = function
+let get_current_context_of_args = function
   | [VARG_NUMBER n] -> get_goal_context n
   | [] -> get_current_context ()
   | _ -> bad_vernac_args "goal_of_args"
@@ -814,7 +814,7 @@ let _ =
   add "Eval"
     (function
        | VARG_TACTIC_ARG (Redexp redexp) :: VARG_CONSTR c :: g ->
-           let (evmap,sign) = get_goal_context_of_args g in
+           let (evmap,sign) = get_current_context_of_args g in
            let redfun = print_eval (reduction_of_redexp redexp) sign in 
 	   fun () -> mSG (redfun (judgment_of_com evmap sign c))
        | _ -> bad_vernac_args "Eval")
@@ -823,7 +823,7 @@ let _ =
   add "Check"
     (function 
        | VARG_STRING kind :: VARG_CONSTR c :: g ->
-	   let (evmap, sign) = get_goal_context_of_args g in
+	   let (evmap, sign) = get_current_context_of_args g in
 	   let prfun = match kind with
 	     | "CHECK" -> print_val
              | "PRINTTYPE" -> print_type

@@ -126,14 +126,14 @@ let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
 		  let pc,pct = prjudge_env ctx c in
 		  hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl
   in
-  [< 'sTR"Illegal application (Type Error): "; pe; 'fNL;
+  [< 'sTR"Illegal application (Type Error): "; (* pe; *) 'fNL;
      'sTR"The term"; 'bRK(1,1); pr; 'sPC;
      'sTR"of type"; 'bRK(1,1); prt; 'sPC ;
      'sTR("cannot be applied to the "^term_string); 'fNL; 
      'sTR" "; v 0 appl; 'fNL;
-     'sTR"The ";'iNT n; 'sTR (many^" term of type ");
-     prterm_env ctx actualtyp;
-     'sTR" should be coercible to type "; prterm_env ctx exptyp >]
+     'sTR"The ";'iNT n; 'sTR (many^" term of type"); 'bRK(1,1); 
+     prterm_env ctx actualtyp; 'sPC;
+     'sTR"should be coercible to"; 'bRK(1,1); prterm_env ctx exptyp >]
 
 let explain_cant_apply_not_functional k ctx rator randl =
   let ctx = make_all_name_different ctx in
@@ -147,7 +147,7 @@ let explain_cant_apply_not_functional k ctx rator randl =
 		  let pct = prterm_env ctx (body_of_type c.uj_type) in
 		  hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl
   in
-  [< 'sTR"Illegal application (Non-functional construction): "; pe; 'fNL;
+  [< 'sTR"Illegal application (Non-functional construction): "; (* pe; *) 'fNL;
      'sTR"The term"; 'bRK(1,1); pr; 'sPC;
      'sTR"of type"; 'bRK(1,1); prt; 'sPC ;
      'sTR("cannot be applied to the "^term_string); 'fNL; 
