@@ -15,9 +15,18 @@ Section Lists.
 
 Variable A : Set.
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Inductive list : Set := nil : list | cons : A -> list -> list.
+
+(*************************)
+(** Discrimination       *)
+(*************************)
+
+Lemma nil_cons : (a:A)(m:list)~(nil=(cons a m)).
+Proof. 
+  Intros; Discriminate.
+Qed.
 
 (*************************)
 (** Concatenation        *)
@@ -61,6 +70,72 @@ Proof.
 Qed.
 Hints Resolve ass_app.
 
+Lemma app_comm_cons : (x,y:list)(a:A) (cons a (x^y))=((cons a x)^y).
+Proof.
+ Auto.
+Qed.
+
+Lemma app_eq_nil: (x,y:list) (x^y)=nil -> x=nil /\ y=nil.
+Proof.
+  NewDestruct x;NewDestruct y;Simpl;Auto.
+  Intros H;Discriminate H.
+  Intros;Discriminate H.
+Qed.
+
+Lemma app_cons_not_nil: (x,y:list)(a:A)~nil=(x^(cons a y)).
+Proof.
+Unfold not .
+  Induction x;Simpl;Intros.
+  Discriminate H.
+  Discriminate H0.
+Qed.
+
+Lemma app_eq_unit:(x,y:list)(a:A)
+     (x^y)=(cons a nil)-> (x=nil)/\ y=(cons a nil) \/ x=(cons a nil)/\ y=nil.
+
+Proof.
+  NewDestruct x;NewDestruct y;Simpl.
+  Intros a H;Discriminate H.
+  Left;Split;Auto.
+  Right;Split;Auto.
+  Generalize H .
+  Generalize (app_nil_end  l) ;Intros E.
+  Rewrite <- E;Auto.
+  Intros.
+  Injection H.
+  Intro.
+  Cut  nil=(l^(cons a0 l0));Auto.
+  Intro.
+  Generalize (app_cons_not_nil H1); Intro.
+  Elim H2.
+Qed.
+
+Lemma app_inj_tail : (x,y:list)(a,b:A)
+   (x^(cons a nil))=(y^(cons b nil)) -> x=y /\ a=b.
+Proof.
+  Induction x;Induction y;Simpl;Auto.
+  Intros.
+  Injection H.
+  Auto.
+  Intros.
+  Injection H0;Intros.
+  Generalize (app_cons_not_nil H1) ;Induction 1.
+  Intros.
+  Injection H0;Intros.
+  Cut   nil=(l^(cons a0 nil));Auto.
+  Intro.
+  Generalize (app_cons_not_nil H3) ;Induction 1.
+  Intros.
+  Injection H1;Intros.
+  Generalize (H l0 a1 b H2) .
+  Induction 1;Split;Auto.
+  Rewrite <- H3;Rewrite <- H5;Auto.
+Qed.
+
+(*************************)
+(** Head and tail        *)
+(*************************)
+
 Definition head :=
   [l:list]Cases l of
   | nil => Error
@@ -72,72 +147,6 @@ Definition tail : list -> list :=
   | nil => nil 
   | (cons a m) => m
   end.
-
-Lemma nil_cons : (a:A)(m:list)~(nil=(cons a m)).
-Intros; Discriminate.
-Qed.
-
-Lemma app_comm_cons : (x,y:list)(a:A) (cons a (x^y))=((cons a x)^y).
-Proof.
- Auto.
-Qed.
-
-Lemma app_eq_nil: (x,y:list) (x^y)=nil -> x=nil /\ y=nil.
-Proof.
- NewDestruct x;NewDestruct y;Simpl;Auto.
- Intros H;Discriminate H.
- Intros;Discriminate H.
-Qed.
-
-Lemma app_cons_not_nil: (x,y:list)(a:A)~nil=(x^(cons a y)).
-Proof.
-Unfold not .
- Induction x;Simpl;Intros.
- Discriminate H.
- Discriminate H0.
-Qed.
-
-Lemma app_eq_unit:(x,y:list)(a:A)
-     (x^y)=(cons a nil)-> (x=nil)/\ y=(cons a nil) \/ x=(cons a nil)/\ y=nil.
-
-Proof.
- NewDestruct x;NewDestruct y;Simpl.
- Intros a H;Discriminate H.
- Left;Split;Auto.
- Right;Split;Auto.
- Generalize H .
- Generalize (app_nil_end  l) ;Intros E.
- Rewrite <- E;Auto.
- Intros.
- Injection H.
- Intro.
- Cut  nil=(l^(cons a0 l0));Auto.
- Intro.
- Generalize (app_cons_not_nil H1); Intro.
- Elim H2.
-Qed.
-
-Lemma app_inj_tail : (x,y:list)(a,b:A)
-   (x^(cons a nil))=(y^(cons b nil)) -> x=y /\ a=b.
-Proof.
- Induction x;Induction y;Simpl;Auto.
- Intros.
- Injection H.
- Auto.
- Intros.
- Injection H0;Intros.
- Generalize (app_cons_not_nil H1) ;Induction 1.
- Intros.
- Injection H0;Intros.
- Cut   nil=(l^(cons a0 nil));Auto.
- Intro.
- Generalize (app_cons_not_nil H3) ;Induction 1.
- Intros.
- Injection H1;Intros.
- Generalize (H l0 a1 b H2) .
- Induction 1;Split;Auto.
- Rewrite <- H3;Rewrite <- H5;Auto.
-Qed.
 
 (****************************************)
 (** Length of lists                     *)
@@ -225,7 +234,7 @@ Hints Resolve in_cons.
 
 Lemma in_nil : (a:A)~(In a nil).
 Proof.
-Unfold not; Intros a H; Inversion_clear H.
+  Unfold not; Intros a H; Inversion_clear H.
 Qed.
 
 
@@ -243,7 +252,7 @@ Proof.
   Intros; Elim (H a0 a); Simpl; Auto.
   Elim H0; Simpl; Auto. 
   Right; Unfold not; Intros [Hc1 | Hc2]; Auto.
-Save.
+Qed.
 
 Lemma in_app_or : (l,m:list)(a:A)(In a (l^m))->((In a l)\/(In a m)).
 Proof. 
@@ -298,9 +307,10 @@ Proof.
 Qed.
 Hints Resolve in_or_app.
 
-(***********************)
-(** Inclusion on list  *)
-(***********************)
+(***************************)
+(** Set inclusion on list  *)
+(***************************)
+
 Definition incl := [l,m:list](a:A)(In a l)->(In a m).
 Hints Unfold  incl.
 
@@ -376,6 +386,7 @@ Hints Resolve incl_app.
 (**************************)
 (** Nth element of a list *)
 (**************************)
+
 Fixpoint nth [n:nat; l:list] : A->A :=
   [default]Cases n l of
     O (cons x l') => x
@@ -395,18 +406,20 @@ Fixpoint nth_ok [n:nat; l:list] : A->bool :=
 Lemma nth_in_or_default :
   (n:nat)(l:list)(d:A){(In (nth n l d) l)}+{(nth n l d)=d}.
 (* Realizer nth_ok. Program_all. *)
-Intros n l d; Generalize n; NewInduction l; Intro n0.
-Right; Case n0; Trivial.
-Case n0; Simpl.
-Auto.
-Intro n1; Elim (IHl n1); Auto.     
-Save.
+Proof. 
+  Intros n l d; Generalize n; NewInduction l; Intro n0.
+  Right; Case n0; Trivial.
+  Case n0; Simpl.
+  Auto.
+  Intro n1; Elim (IHl n1); Auto.     
+Qed.
 
 Lemma nth_S_cons :
  (n:nat)(l:list)(d:A)(a:A)(In (nth n l d) l)
    ->(In (nth (S n) (cons a l) d) (cons a l)).
-Simpl; Auto.
-Save.
+Proof. 
+  Simpl; Auto.
+Qed.
 
 Fixpoint nth_error [l:list;n:nat] : (Exc A) :=
   Cases n l of
@@ -421,25 +434,24 @@ Definition nth_default : A -> list -> nat -> A :=
   | None => default
   end.
 
-
-(*i
 Lemma nth_In :
   (n:nat)(l:list)(d:A)(lt n (length l))->(In (nth n l d) l).
 
-Unfold lt; Intros n l d Hnl.
-Inversion Hnl.
-Generalize H0; Elim l;
-[ Simpl; Intros; Inversion H1
-| ]
+Proof. 
+  Intros n l d.
+  Generalize n; Clear n.
+  NewInduction l.
+    Inversion 1.
+  Simpl.
+  NewInduction n.
+    Auto.
+  Right;Auto with arith.
+Qed.
 
-Unfold lt; Induction l; 
-[ Simpl; Intros; Inversion H
-| Simpl; Intros;
-].
-i*)
 
-
+(********************************)
 (** Decidable equality on lists *)
+(********************************)
 
 Lemma list_eq_dec : ((x,y:A){x=y}+{~x=y})->(x,y:list){x=y}+{~x=y}.
 Proof.
@@ -453,12 +465,9 @@ Proof.
   Apply e; Injection H1; Trivial.
 Qed.
 
-(*********************************************)
-(**  Reverse Induction Principle on Lists    *)
-(*********************************************)
-Section Reverse_Induction.
-
-Variable leA: A->A->Prop.
+(*************************)
+(**  Reverse             *)
+(*************************)
 
 Fixpoint rev [l:list] : list :=
    Cases l of
@@ -502,7 +511,14 @@ Proof.
  Rewrite -> H;Auto.
 Qed.
 
-Implicit Arguments Off.
+(*********************************************)
+(**  Reverse Induction Principle on Lists    *)
+(*********************************************)
+
+Section Reverse_Induction.
+
+Unset Implicit Arguments.
+
 Remark rev_list_ind: (P:list->Prop)
       (P nil)
        ->((a:A)(l:list)(P (rev l))->(P (rev  (cons a l)))) 
@@ -510,7 +526,7 @@ Remark rev_list_ind: (P:list->Prop)
 Proof.
  Induction l; Auto.
 Qed.
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Lemma rev_ind : 
  (P:list->Prop)
@@ -562,13 +578,14 @@ End Map.
 
 Lemma in_map : (A,B:Set)(f:A->B)(l:(list A))(x:A)
   (In x l) -> (In (f x) (map f l)).
-Induction l; Simpl;
-[ Auto
-| Intros; Elim H0; Intros; 
-  [ Left; Apply f_equal with f:=f; Assumption
-  | Auto]
-].
-Save.
+Proof. 
+  Induction l; Simpl;
+  [ Auto
+  | Intros; Elim H0; Intros; 
+    [ Left; Apply f_equal with f:=f; Assumption
+    | Auto]
+  ].
+Qed.
 
 Fixpoint flat_map [A,B:Set; f:A->(list B); l:(list A)] : (list B) :=
   Cases l of
@@ -586,23 +603,25 @@ Fixpoint list_prod [A:Set; B:Set; l:(list A)] : (list B)->(list A*B) :=
 Lemma in_prod_aux :
   (A:Set)(B:Set)(x:A)(y:B)(l:(list B))
     (In y l) -> (In (x,y) (map [y0:B](x,y0) l)).
-Induction l;
-[ Simpl; Auto
-| Simpl; Intros; Elim H0;
-  [ Left; Rewrite H1; Trivial
-  | Right; Auto]
-].
-Save.
+Proof. 
+  Induction l;
+  [ Simpl; Auto
+  | Simpl; Intros; Elim H0;
+    [ Left; Rewrite H1; Trivial
+    | Right; Auto]
+  ].
+Qed.
 
 Lemma in_prod : (A:Set)(B:Set)(l:(list A))(l':(list B))
   (x:A)(y:B)(In x l)->(In y l')->(In (x,y) (list_prod l l')).
-Induction l;
-[ Simpl; Intros; Tauto
-| Simpl; Intros; Apply in_or_app; Elim H0; Clear H0;
-  [ Left; Rewrite H0; Apply in_prod_aux; Assumption
-  | Right; Auto]
-].
-Save.
+Proof. 
+  Induction l;
+  [ Simpl; Intros; Tauto
+  | Simpl; Intros; Apply in_or_app; Elim H0; Clear H0;
+    [ Left; Rewrite H0; Apply in_prod_aux; Assumption
+    | Right; Auto]
+  ].
+Qed.
 
 (** [(list_power x y)] is [y^x], or the set of sequences of elts of [y]
     indexed by elts of [x], sorted in lexicographic order. *)
@@ -614,6 +633,10 @@ Fixpoint list_power [A,B:Set; l:(list A)] : (list B)->(list (list A*B)) :=
       	       	       	    (list_power t l'))
   end.
 
+(************************************)
+(** Left-to-right iterator on lists *)
+(************************************)
+
 Section Fold_Left_Recursor.
 Variables A,B:Set.
 Variable  f:A->B->A.
@@ -623,6 +646,10 @@ Fixpoint fold_left[l:(list B)] : A -> A :=
   | (cons b t) => (fold_left t (f a0 b))
   end.
 End Fold_Left_Recursor.
+
+(************************************)
+(** Right-to-left iterator on lists *)
+(************************************)
 
 Section Fold_Right_Recursor.
 Variables A,B:Set.
@@ -635,12 +662,12 @@ Fixpoint fold_right [l:(list B)] : A :=
   end.
 End Fold_Right_Recursor.
 
-(*i
 Theorem fold_symmetric :
   (A:Set)(f:A->A->A)
    ((x,y,z:A)(f x (f y z))=(f (f x y) z))
     ->((x,y:A)(f x y)=(f y x))
      ->(a0:A)(l:(list A))(fold_left f l a0)=(fold_right f a0 l).
+Proof.
 Induction l.
 Reflexivity.
 Simpl; Intros.
@@ -653,9 +680,8 @@ Repeat Rewrite H2.
 Do 2 Rewrite H.
 Rewrite (H0 a1 a3).
 Reflexivity.
-Save.
-i*)
+Qed.
 
 End Functions_on_lists.
 
-Implicit Arguments Off.
+Unset Implicit Arguments.
