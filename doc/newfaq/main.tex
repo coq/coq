@@ -188,37 +188,68 @@ interactively by using LCF-style tactics.
 Many other theorem provers are available for use nowadays. 
 Isabelle, HOL, HOL Light, Lego, Nuprl, PVS are examples of provers that are fairly similar
 to {\Coq} by the way they interact with the user. Other relatives of
-{\Coq} are ACL2, Alfa, Elf, Kiv, Mizar, NqThm, $\Omega$mega\ldots
+{\Coq} are ACL2, Alfa, Elf, Kiv, Mizar, NqThm, 
+\begin{htmlonly}%
+Omega\ldots
+\end{htmlonly}
+\begin{latexonly}%
+{$\Omega$}mega\ldots
+\end{latexonly}
 
 \Question{Who do I have to trust when I see a proof checked by Coq?}
 
-You have to trust :
+You have to trust:
 
 \begin{description}
-\item[The theory behind Coq] The proof of consistency is quite complicated. You can check the papers. 
-\item[The Coq kernel implementation] You have to trust that the implementation of the Coq kernel mirrors the theory behind Coq.
-\item[The Objective Caml compiler] The Coq kernel is written using the Objective Caml language, if the compiler contains a bug, Coq may prove False. The Coq kernel does not use every Ocaml features. (no object, no label ...)
-\item[Your hardware] In theory, if your hardware does not work properly, Coq can prove False.
-You can check your proof using different computers if you feel the need to. 
-\item[Your axioms] Your axioms must be consistent with the theory behind Coq.
+\item[The theory behind Coq] The theory of {\Coq} version 8.0 is
+generally admitted to be consistent wrt Zermelo-Fraenkel set theory +
+inaccessibles cardinals. Proofs of consistency of subsystems of the
+theory of Coq can be found in the literature.
+\item[The Coq kernel implementation] You have to trust that the
+implementation of the {\Coq} kernel mirrors the theory behind {\Coq}. The
+kernel is intentionally small to limit the risk of conceptual or
+accidental implementation bugs.
+\item[The Objective Caml compiler] The {\Coq} kernel is written using the
+Objective Caml language but it uses only the most standard features
+(no object, no label ...), so that it is highly unprobable that an
+Objective Caml bug breaks the consistency of {\Coq} without breaking all
+other kinds of features of {\Coq} or of other software compiled with
+Objective Caml.
+\item[Your hardware] In theory, if your hardware does not work
+properly, it can accidentally be the case that False becomes
+provable. But it is more likely the case that the whole {\Coq} system
+will be unusable. You can check your proof using different computers
+if you feel the need to.
+\item[Your axioms] Your axioms must be consistent with the theory
+behind {\Coq}.
 \end{description}
 
 
 \Question{Where can I find information about the theory behind {\Coq}?}
 \begin{description}
-\item[Type theory] A book~\cite{ProofsTypes}, some lecture
-notes~\cite{Types:Dowek} and the {\Coq} manual~\cite{Coq:manual}
+\item[The Calculus of Inductive Constructions] The
+\ahref{http://coq.inria.fr/doc/Reference-Manual006.html}{corresponding}
+chapter and the chapter on
+\ahref{http://coq.inria.fr/doc/Reference-Manual007.html}{modules} in
+the {\Coq} Reference Manual.
+\item[Type theory] A book~\cite{ProofsTypes} or some lecture
+notes~\cite{Types:Dowek}.
 \item[Inductive types]
-Christine Paulin-Mohring's habilitation thesis~\cite{Pau96b}
+Christine Paulin-Mohring's habilitation thesis~\cite{Pau96b}.
 \item[Co-Inductive types]
-Eduardo Giménez' thesis~\cite{EGThese}
+Eduardo Giménez' thesis~\cite{EGThese}.
+\item[Miscellaneous] A
+\ahref{http://coq.inria.fr/doc/biblio.html}{bibliography} about Coq
 \end{description}
 
 
 \Question{How can I use {\Coq} to prove programs?}
 
 You can either extract a program from a proof by using the extraction
-mechanism or use dedicated tools, such as \Why, \Krakatoa, \Caduceus, to prove
+mechanism or use dedicated tools, such as
+\ahref{http://why.lri.fr}{\Why},
+\ahref{http://krakatoa.lri.fr}{\Krakatoa},
+\ahref{http://why.lri.fr/caduceus/index.en.html}{\Caduceus}, to prove
 annotated programs written in other languages.
 
 \Question{How many {\Coq} users are there?}
@@ -245,7 +276,7 @@ was distributed in 1989.
 \item[coq-tex] A tool to insert {\Coq} examples within .tex files. 
 \item[coqdoc] A documentation tool for \Coq.
 \item[Proof General] A emacs mode for {\Coq} and many other proof assistants.
-\item[Foc] The Foc project aims at building an environment to develop certified computer algebra libraries. 
+\item[Foc] The \ahref{http://www-spi.lip6.fr/foc/index-en.html}{Foc} project aims at building an environment to develop certified computer algebra libraries. 
 \end{description}
 
 \Question{What are the high-level tactics of \Coq}
@@ -275,16 +306,21 @@ was distributed in 1989.
 and for proving properties of algorithms or programs libraries.
 
 The largest mathematical formalization has been done at the University
-of Nijmegen (see the Constructive Coq Repository at Nijmegen
-\ahref{http://vacuumcleaner.cs.kun.nl/c-corn}{\url{http://vacuumcleaner.cs.kun.nl/c-corn}}.
+of Nijmegen (see the
+\ahref{http://vacuumcleaner.cs.kun.nl/c-corn}{Constructive Coq
+Repository at Nijmegen}).
 
 
 \Question{What are the industrial applications for {\Coq}?}
 
-{\Coq} is used by Trusted Logic to prove properties of the JavaCard system.
+{\Coq} is used e.g. to prove properties of the JavaCard system
+(especially by the companies Schlumberger and Trusted Logic). It has
+also been used to formalize the semantics of the Lucid-Synchrone
+data-flow synchronous calculus used by Esterel-Technologies.
 
+\iffalse
 todo christine compilo lustre?
-
+\fi
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -292,14 +328,14 @@ todo christine compilo lustre?
 
 \Question{Where can I find documentation about {\Coq}?} 
 All the documentation about \Coq, from the reference manual~\cite{Coq:manual} to
-friendly tutorials~\cite{Coq:Tutorial} and documentation of the standard library, is available online at 
-\ahref{http://coq.inria.fr/doc-eng.html}{\url{http://coq.inria.fr/doc-eng.html}}.
+friendly tutorials~\cite{Coq:Tutorial} and documentation of the standard library, is available 
+\ahref{http://coq.inria.fr/doc-eng.html}{online}.
 All these documents are viewable either in browsable HTML, or as
 downloadable postscripts.
 
 \Question{Where can I find this FAQ on the web?}
 
-This FAQ is available online at \ahref{http://coq.inria.fr/faq.html}{\url{http://coq.inria.fr/faq.html}}.
+This FAQ is available online at \ahref{http://coq.inria.fr/doc/faq.html}{\url{http://coq.inria.fr/doc/faq.html}}.
 
 \Question{How can I submit suggestions / improvements / additions for this FAQ?}
 
@@ -338,7 +374,7 @@ development of zero-default software.''
 There are examples in the manual~\cite{Coq:manual} and in the
 Coq'Art~\cite{Coq:coqart} exercises \ahref{http://www.labri.fr/Perso/~casteran/CoqArt/index.html}{\url{http://www.labri.fr/Perso/~casteran/CoqArt/index.html}}.
 You can also find large developments using
-{\Coq} in the {\Coq} user contributions :
+{\Coq} in the {\Coq} user contributions:
 \ahref{http://coq.inria.fr/contrib-eng.html}{\url{http://coq.inria.fr/contrib-eng.html}}.
 
 \Question{How can I report a bug?}\label{coqbug}
@@ -352,12 +388,13 @@ You can use the web interface at \ahref{http://coq.inria.fr/bin/coq-bugs}{\url{h
 \section{Installation}
 
 \Question{What is the license of {\Coq}?}
-It is distributed under the GNU Lesser General License (LGPL).
+The main files are distributed under the GNU Lesser General License
+(LGPL). A few contributions are GPL.
 
 \Question{Where can I find the sources of {\Coq}?}
 The sources of {\Coq} can be found online in the tar.gz'ed packages
 (\ahref{http://coq.inria.fr/distrib-eng.html}{\url{http://coq.inria.fr/distrib-eng.html}}). Development sources can
-be accessed via anonymous CVS : \ahref{http://coqcvs.inria.fr/}{\url{http://coqcvs.inria.fr/}}
+be accessed via anonymous CVS: \ahref{http://coqcvs.inria.fr/}{\url{http://coqcvs.inria.fr/}}
 
 \Question{On which platform is {\Coq} available?}
 Compiled binaries are available for Linux, MacOS X, Solaris, and
@@ -380,9 +417,9 @@ predicates, and a stratified hierarchy of sets.
 \Question{Is \Coq's logic intuitionistic or classical?}
 
 {\Coq} theory is basically intuitionistic
-(i.e. excluded-middle $A\lor\neg A$ is not granted by default) with
+(i.e. excluded-middle $A\vee\neg A$ is not granted by default) with
 the possibility to reason classically on demand by requiring an
-optional axiom stating $A\lor\neg A$.
+optional axiom stating $A\vee\neg A$.
 
 \Question{Can I define non-terminating programs in \Coq?}
 
@@ -411,9 +448,9 @@ Calculus of Inductive Constructions and that can be safely added to
 standard library of {\Coq}. The most interesting ones are
 
 \begin{itemize}
-\item Excluded-middle: $\forall A:Prop, A \lor \neg A$
+\item Excluded-middle: $\forall A:Prop, A \vee \neg A$
 \item Proof-irrelevance: $\forall A:Prop, \forall p_1 p_2:A, p_1=p_2$
-\item Streicher's axiom $K$ stating the unicity of equality proofs
+\item Unicity of equality proofs (or equivalently Streicher's axiom $K$)
 \item The principle of description: $\forall x, \exists! y, R(x,y) \rightarrow \exists f, \forall x, R(x,f(x))$
 \item The functional axiom of choice: $\forall x, \exists y, R(x,y) \rightarrow \exists f, \forall x, R(x,f(x))$
 \item Extensionality of predicates: $\forall P Q:A\rightarrow Prop, (\forall x, P(x) \leftrightarrow Q(x)) \rightarrow P=Q$
@@ -711,7 +748,7 @@ Qed.
 
 \Question{My goal contains a conjunction as an hypothesis, how can I use it?}
 
-If you want to decompose your hypothesis into other hypothesis you can use the {\decompose} tactic :
+If you want to decompose your hypothesis into other hypothesis you can use the {\decompose} tactic:
 
 \begin{coq_example}
 Goal forall A B:Prop, A/\B-> B.
@@ -737,7 +774,7 @@ assumption.
 Qed.
 \end{coq_example}
 
-An example using classical reasoning :
+An example using classical reasoning:
 
 \begin{coq_example}
 Require Import Classical.
@@ -978,9 +1015,11 @@ Qed.
 
 \Question{My goal is a first order formula, how can I prove it?}
 
-Just use the semi-decision tactic : \firstorder.
+Just use the semi-decision tactic: \firstorder.
 
-todo : demander un exemple à Pierre
+\iffalse
+todo: demander un exemple à Pierre
+\fi
 
 \Question{My goal is solvable by a sequence of rewrites, how can I prove it?}
 
@@ -1085,7 +1124,7 @@ Qed.
 
 \Question{I want to state a fact that I will use later as an hypothesis and prove it later, how can I do it?}
 
-You can use {\cut} followed by {\intro} or you can use the following {\Ltac} command :
+You can use {\cut} followed by {\intro} or you can use the following {\Ltac} command:
 \begin{verbatim}
 Ltac assert_later t := cut t;[intro|idtac]. 
 \end{verbatim}
@@ -1108,10 +1147,11 @@ Perhaps you may need to use \eauto.
 
 \Question{What is {\eauto}?}
 
-This is the same tactic as \auto, but it does some {\eapply} instead of \apply.
+This is the same tactic as \auto, but it relies on {\eapply} instead of \apply.
 
+\iffalse
 todo les espaces
-
+\fi
 
 \Question{How can I speed up {\auto}?}
 
@@ -1179,7 +1219,7 @@ Qed.
 You need to use the {\tt proof with T} command and add {\ldots} at the
 end of your sentences.
 
-For instance :
+For instance:
 \begin{coq_example}
 Goal forall A B C : Prop, A -> B/\C -> A/\B/\C.
 Proof with assumption.
@@ -1190,7 +1230,7 @@ Qed.
 
 \Question{I want to execute the {\texttt proof with} tactic only if it solves the goal, how can I do it?}
 
-You need to use the {\try} and {\solve} tactics. For instance :
+You need to use the {\try} and {\solve} tactics. For instance:
 \begin{coq_example}
 Require Import ZArith.
 Require Ring.
@@ -1240,7 +1280,7 @@ to abstract the appropriate terms.
 
 PS: Notice for people that are interested in proof rendering that \assert
 and {\pose} (and \cut) are not rendered the same as {\generalize} (see the
-HELM experimental rendering tool at \ahref{http://mowgli.cs.unibo.it}{\url{http://mowgli.cs.unibo.it}}, link
+HELM experimental rendering tool at \ahref{http://helm.cs.unibo.it/library.html}{\url{http://helm.cs.unibo.it}}, link
 HELM, link COQ Online). Indeed {\generalize} builds a beta-expanded term
 while \assert, {\pose} and {\cut} uses a let-in.
 
@@ -1290,10 +1330,11 @@ For instance if you want to use the existence of ``nil'' on nat*nat lists:
 exists (nil (A:=(nat*nat))).
 \end{verbatim}
 
+\iffalse
 \Question{Is there anyway to do pattern matching with dependent types?}
 
 todo
-
+\fi
 
 \subsection{Proof management}
 
@@ -1603,7 +1644,7 @@ Qed.
 
 \Question{I do not want to type ``forall'' because it is too long, what can I do?}
 
-You can define your own notation for forall :
+You can define your own notation for forall:
 \begin{verbatim}
 Notation "fa x : t, P" := (forall x:t, P) (at level 200, x ident).
 \end{verbatim}
@@ -1613,11 +1654,11 @@ or if your are using {\CoqIde} you can define a pretty symbol for for all and an
 
 \Question{How can I define a notation for square?}
 
-You can use for instance :
+You can use for instance:
 \begin{verbatim}
 Notation "x ^2" := (Rmult x x) (at level 20).
 \end{verbatim}
-Note that you can not use :
+Note that you can not use:
 \begin{texttt}
 Notation "x $^²$" := (Rmult x x) (at level 20).
 \end{texttt}
@@ -1695,18 +1736,20 @@ next one. Underscore matches all terms.
 
 \Question{How can I generate a new name?}
 
-You can use the following syntax :
+You can use the following syntax:
 {\tt let id:=fresh in \ldots}\\
-For example :
+For example:
 \begin{coq_example}
 Ltac introIdGen := let id:=fresh in intro id.
 \end{coq_example}
 
 
+\iffalse
 \Question{How can I access the type of a term?}
 
 You can use typeof.
 todo
+\fi
 
 \Question{How can I define static and dynamic code?}
 
@@ -1749,7 +1792,7 @@ Qed.
 the equality on {\tt nat}?}
 \label{K-nat}
 
-Yes because equality is decidable on {\tt nat}. Here is the proof.
+Yes, because equality is decidable on {\tt nat}. Here is the proof.
 
 \begin{coq_example*}
 Require Import Eqdep_dec.
@@ -1847,7 +1890,7 @@ Reset Initial.
 
 \begin{coq_example*}
 Inductive Def1 : Set := c1 : Def1.
-Inductive DefProp : Def1 -> Set :=
+Inductive DefProp : Def1 -> Prop :=
   c2 : forall d:Def1, DefProp d.
 Inductive Comb : Set :=
   c3 : forall d:Def1, DefProp d -> Comb.
@@ -1946,7 +1989,7 @@ You can use {\tt coq\_tex}.
 
 \Question{How can I cite the {\Coq} reference manual?}
 
-You can use this bibtex entry :
+You can use this bibtex entry:
 \begin{verbatim}
 @Manual{Coq:manual,
   title =        {The Coq proof assistant reference manual},
@@ -1997,7 +2040,7 @@ rendering tool provided by the server (see
 
 \Question{How to use those Forall and Exists pretty symbols?}\label{forallcoqide}
  Thanks to the notation features in \Coq, you just need to insert these
-lines in your {\Coq} buffer :\\
+lines in your {\Coq} buffer:\\
 \begin{texttt}
 Notation "$\forall$ x : t, P" := (forall x:t, P) (at level 200, x ident).
 \end{texttt}\\
@@ -2019,11 +2062,11 @@ pretty simple notations.
 \Question{How to define an input method for non ASCII symbols?}\label{inputmeth}
 
 \begin{itemize}
-\item First solution : type \verb#<CONTROL><SHIFT>2200# to enter a forall in the script widow. 
+\item First solution: type \verb#<CONTROL><SHIFT>2200# to enter a forall in the script widow. 
 	2200 is the hexadecimal code for forall in unicode charts and is encoded as 	
 	in UTF-8.
 	2203 is for exists. See \ahref{http://www.unicode.org}{\url{http://www.unicode.org}} for more codes.
-\item Second solution : rebind \verb#<AltGr>a# to forall and \verb#<AltGr>e# to exists. 
+\item Second solution: rebind \verb#<AltGr>a# to forall and \verb#<AltGr>e# to exists. 
 	Under X11, you need to use something like
 \begin{verbatim}
 		xmodmap -e "keycode  24 = a A F13 F13" 
@@ -2124,7 +2167,7 @@ of size $n$. Its type depends on $n$
 \Question{What is a proof by reflection?}
 
 This is a proof generated by some computation which is done using the
-internal reduction of {\Coq} (not using the tactic language of \Coq
+internal reduction of {\Coq} (not using the tactic language of {\Coq}
 (\Ltac) nor the implementation language for \Coq).  An example of
 tactic using the reflection mechanism is the {\ring} tactic. The
 reflection method consist in reflecting a subset of {\Coq} language (for
@@ -2190,7 +2233,9 @@ printed as {\tt True=True} and re-parsed as {\tt (@eq Prop True
 True)}. The two terms are not convertible (hence they fool tactics
 like {\tt pattern}).
 
-  There is currently no satisfactory answer to the problem.
+  There is currently no satisfactory answer to the problem. However,
+the command {\tt Set Printing All} is useful for diagnosing the
+problem.
  
   Due to coercions, one may even face type-checking errors. In some
 rare cases, the criterion to hide coercions is a bit too loose, which
@@ -2221,7 +2266,7 @@ theorem proving in \Coq.
 
 %%%%%%%
 \typeout{*********************************************}
-\typeout{********* That makes \thequestion\space questions **********}
+\typeout{********* That makes \thequestion{\space} questions **********}
 \typeout{*********************************************}
 
 \end{document}
