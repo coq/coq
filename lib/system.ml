@@ -16,7 +16,6 @@ open Unix
 
 let safe_getenv_def var def =
   try 
-    print_string var;
     Sys.getenv var
   with Not_found ->
     warning ("Environment variable "^var^" not found: using '"^def^"' .");

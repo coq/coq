@@ -11,6 +11,7 @@
 (* $Id$ *)
 
 open Names
+open Libnames
 open Term
 open Termops
 open Nametab
@@ -19,6 +20,7 @@ open Indtypes
 open Sign
 open Rawterm
 open Typeops
+open Entries
 
 open Pmisc
 open Past
@@ -33,8 +35,9 @@ let make_hole c = mkCast (isevar, c)
  * wether they are dependant (last element only) or not. 
  * If necessary, tuples are generated ``on the fly''. *)
 
-let tuple_exists id =
-  try let _ = Nametab.sp_of_id id in true with Not_found -> false
+let tuple_exists id = 
+  try let _ = Nametab.locate (make_short_qualid id) in true
+  with Not_found -> false
 
 let ast_set = Ast.ope ("SET", [])
 
@@ -123,13 +126,13 @@ let tuple_ref dep n =
 	let name = Printf.sprintf "exist_%d" n in
 	let id = id_of_string name in
 	if not (tuple_exists id) then ignore (sig_n n);
-	Nametab.sp_of_id id
+	Nametab.locate (make_short_qualid id)
       end
     else begin
       let name = Printf.sprintf "Build_tuple_%d" n in
       let id = id_of_string name in
       if not (tuple_exists id) then tuple_n n;
-      Nametab.sp_of_id id
+      Nametab.locate (make_short_qualid id)
     end
 
 (* Binders. *)

@@ -13,6 +13,7 @@
 open Ptype
 open Past
 open Names
+open Libnames
 open Term
 
 (* Environment for imperative programs.
@@ -45,8 +46,8 @@ type typed_program = (typing_info, constr) t
 
 (* global environment *)
 
-val add_global : identifier -> type_v -> typed_program option -> section_path
-val add_global_set : identifier -> section_path
+val add_global : identifier -> type_v -> typed_program option -> object_name
+val add_global_set : identifier -> object_name
 val is_global : identifier -> bool
 val is_global_set : identifier -> bool
 val lookup_global : identifier -> type_v

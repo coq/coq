@@ -145,7 +145,7 @@ let real_subst_in_constr = replace_vars
 (* Coq constants *)
 
 let coq_constant d s =
-  make_path
+  Libnames.encode_kn
     (make_dirpath (List.rev (List.map id_of_string ("Coq"::d))))
     (id_of_string s)
 

@@ -23,7 +23,7 @@ type variable = identifier
 
 type pattern =
   | PatVar of identifier
-  | PatConstruct of identifier * ((section_path * int) * int)
+  | PatConstruct of identifier * ((kernel_name * int) * int)
   | PatAlias of pattern * identifier
   | PatPair of pattern * pattern
   | PatApp of pattern list

@@ -547,8 +547,8 @@ let _ =
 	      let v = Ptyping.cic_type_v env ren v in
 	      if not (is_mutable v) then begin
 		let c = 
-		  Safe_typing.ParameterEntry (trad_ml_type_v ren env v),
-		  Nametab.NeverDischarge in
+		  Entries.ParameterEntry (trad_ml_type_v ren env v),
+		  Libnames.NeverDischarge in
 		List.iter 
 		  (fun id -> ignore (Declare.declare_constant id c)) ids;
 		if_verbose (is_assumed false) ids

@@ -13,6 +13,7 @@
 open Pp
 open Options
 open Names
+open Libnames
 open Term
 open Pretyping
 open Pfedit
@@ -225,7 +226,8 @@ let register id n =
   Penv.register id id'
 
 let correctness_hook _ ref = 
-  let pf_id = Nameops.basename (Nametab.sp_of_global (Global.env()) ref) in
+  let ctx = Global.named_context () in
+  let pf_id = basename (Nametab.sp_of_global (Some ctx) ref) in
   register pf_id None
 
 let correctness s p opttac =
@@ -237,7 +239,7 @@ let correctness s p opttac =
   let sigma = Evd.empty in
   let cty = Reduction.nf_betaiota cty in
   let id = id_of_string s in 
-  start_proof id (false,Nametab.NeverDischarge) sign cty correctness_hook;
+  start_proof id (false, NeverDischarge) sign cty correctness_hook;
   Penv.new_edited id (v,p);
   if !debug then show_open_subgoals();
   deb_mess (str"Pred.red_cci: Reduction..." ++ fnl ());

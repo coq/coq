@@ -53,7 +53,7 @@ val subst_ast_in_ast : (identifier * Coqast.t) list -> Coqast.t -> Coqast.t
 val real_subst_in_constr : (identifier * constr) list -> constr -> constr
 
 val constant : string -> constr
-val coq_constant : string list -> string -> section_path
+val coq_constant : string list -> string -> kernel_name
 val conj : constr -> constr -> constr
 
 val coq_true : constr

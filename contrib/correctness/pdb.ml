@@ -87,31 +87,6 @@ let rec db_binders ((tids,pids,refs) as idl) = function
       let idl',rem' = db_binders idl rem in idl', a :: rem'
 
 
-(* db patterns *)
-
-let rec db_pattern = function
-  | (PatVar id) as t ->
-      (try 
-	 (match Nametab.sp_of_id id with
-	    | ConstructRef (x,y) -> [], PatConstruct (id,(x,y))
-	    | _                  -> [id],t)
-       with Not_found -> [id],t)
-  | PatAlias (p,id) ->
-      let ids,p' = db_pattern p in ids,PatAlias (p',id)
-  | PatPair (p1,p2) ->
-      let ids1,p1' = db_pattern p1 in
-      let ids2,p2' = db_pattern p2 in
-      	ids1@ids2, PatPair (p1',p2')
-  | PatApp pl ->
-      let ids,pl' =
-	List.fold_right
-	  (fun p (ids,pl) ->
-	     let ids',p' = db_pattern p in ids'@ids,p'::pl) pl ([],[]) in
-  	ids,PatApp pl'
-  | PatConstruct _ ->
-      assert false (* constructor in a pattern after parsing ! *)
-
-
 (* db programs *)
   
 let db_prog e =
