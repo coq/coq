@@ -61,9 +61,10 @@ val evar_define :
 (***********************************************************)
 (* Evars/Metas switching... *)
 
-(* [exist_to_meta] generates new metavariables for each existential
-   and performs the replacement in the given constr *)
-val exist_to_meta : evar_map -> open_constr -> (Termops.metamap * constr)
+(* [evars_to_metas] generates new metavariables for each non dependent
+   existential and performs the replacement in the given constr; it also
+   returns the evar_map extended with dependent evars *)
+val evars_to_metas : evar_map -> open_constr -> (evar_map * constr)
 
 val non_instantiated : evar_map -> (evar * evar_info) list
 

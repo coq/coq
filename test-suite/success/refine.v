@@ -53,3 +53,11 @@ Refine [n]
     Cases i of 0 => ? | (S _) => ? end }.
 Abort.
 
+(* Submitted by Roland Zumkeller (bug #931) *)
+(* Don't turn dependent evar into metas *)
+
+Goal ((n:nat)n=O->Prop) -> Prop.
+Intro P.
+Refine(P ? ?).
+Reflexivity.
+Abort.

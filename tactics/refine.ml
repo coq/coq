@@ -337,8 +337,8 @@ let rec tcc_aux subst (TH (c,mm,sgp) as th) gl =
 
 let refine oc gl =
   let sigma = project gl in
-  let (_gmm,c) = Evarutil.exist_to_meta sigma oc in
-  (* Relies on Cast's put on Meta's by exist_to_meta, because it is otherwise 
-     complicated to update gmm when passing through a binder *)
+  let (sigma,c) = Evarutil.evars_to_metas sigma oc in
+  (* Relies on Cast's put on Meta's by evars_to_metas, because it is otherwise 
+     complicated to update meta types when passing through a binder *)
   let th = compute_metamap (pf_env gl) c in
-  tcc_aux [] th gl
+  tclTHEN (Refiner.tclEVARS sigma) (tcc_aux [] th) gl

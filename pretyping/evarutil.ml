@@ -101,20 +101,36 @@ let new_meta =
 
 let mk_new_meta () = mkMeta(new_meta())
 
+let collect_evars emap c =
+  let rec collrec acc c =
+    match kind_of_term c with
+      | Evar (k,_) when 
+	  Evd.in_dom emap k & not (Evd.is_defined emap k) -> k::acc
+      | _         ->
+	  fold_constr collrec acc c in
+  list_uniquize (collrec [] c)
+
+let push_dependent_evars sigma emap =
+  Evd.fold (fun ev {evar_concl = ccl} (sigma',emap') ->
+    List.fold_left 
+      (fun (sigma',emap') ev -> 
+	(Evd.add sigma' ev (Evd.map emap' ev),Evd.rmv emap' ev))
+      (sigma',emap') (collect_evars emap' ccl))
+    emap (sigma,emap)
+    
 (* replaces a mapping of existentials into a mapping of metas.
    Problem if an evar appears in the type of another one (pops anomaly) *)
-let exist_to_meta sigma (emap, c) =
-  let metamap = ref [] in
+let evars_to_metas sigma (emap, c) =
+  let sigma',emap' = push_dependent_evars sigma emap in
   let change_exist evar =
     let ty = nf_betaiota (nf_evar emap (existential_type emap evar)) in
     let n = new_meta() in
-    metamap := (n, ty) :: !metamap;
     mkCast (mkMeta n, ty) in
   let rec replace c =
     match kind_of_term c with
-        Evar (k,_ as ev) when not (Evd.in_dom sigma k) -> change_exist ev
+        Evar (k,_ as ev) when Evd.in_dom emap' k -> change_exist ev
       | _ -> map_constr replace c in
-  (!metamap, replace c)
+  (sigma', replace c)
 
 (*************************************)
 (* Metas *)
