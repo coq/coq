@@ -82,7 +82,7 @@ let _ =
 
 (* Tokens *)
 
-let cache_token (_,s) = Pcoq.lexer.Token.using ("", s)
+let cache_token (_,s) = Pcoq.lexer.Token.tok_using ("", s)
 
 let (inToken, outToken) =
   declare_object
