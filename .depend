@@ -161,6 +161,7 @@ tactics/tactics.cmi: proofs/clenv.cmi parsing/coqast.cmi kernel/environ.cmi \
     kernel/evd.cmi kernel/names.cmi proofs/proof_trees.cmi \
     kernel/reduction.cmi proofs/tacmach.cmi pretyping/tacred.cmi \
     tactics/tacticals.cmi kernel/term.cmi 
+tactics/tauto.cmi: proofs/tacmach.cmi kernel/term.cmi 
 tactics/termdn.cmi: tactics/dn.cmi kernel/generic.cmi kernel/term.cmi 
 tactics/wcclausenv.cmi: proofs/clenv.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/names.cmi proofs/proof_trees.cmi kernel/sign.cmi \
@@ -874,6 +875,18 @@ tactics/tactics.cmx: parsing/ast.cmx parsing/astterm.cmx proofs/clenv.cmx \
     lib/stamps.cmx proofs/tacinterp.cmx proofs/tacmach.cmx \
     pretyping/tacred.cmx tactics/tacticals.cmx kernel/term.cmx lib/util.cmx \
     tactics/tactics.cmi 
+tactics/tauto.cmo: tactics/auto.cmi proofs/clenv.cmi library/declare.cmi \
+    kernel/environ.cmi kernel/generic.cmi kernel/names.cmi \
+    library/nametab.cmi tactics/pattern.cmi lib/pp.cmi proofs/proof_trees.cmi \
+    kernel/reduction.cmi kernel/sign.cmi proofs/tacmach.cmi \
+    tactics/tacticals.cmi tactics/tactics.cmi kernel/term.cmi lib/util.cmi \
+    tactics/tauto.cmi 
+tactics/tauto.cmx: tactics/auto.cmx proofs/clenv.cmx library/declare.cmx \
+    kernel/environ.cmx kernel/generic.cmx kernel/names.cmx \
+    library/nametab.cmx tactics/pattern.cmx lib/pp.cmx proofs/proof_trees.cmx \
+    kernel/reduction.cmx kernel/sign.cmx proofs/tacmach.cmx \
+    tactics/tacticals.cmx tactics/tactics.cmx kernel/term.cmx lib/util.cmx \
+    tactics/tauto.cmi 
 tactics/termdn.cmo: tactics/dn.cmi kernel/generic.cmi kernel/term.cmi \
     lib/util.cmi tactics/termdn.cmi 
 tactics/termdn.cmx: tactics/dn.cmx kernel/generic.cmx kernel/term.cmx \
