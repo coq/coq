@@ -125,6 +125,8 @@ let list_for_all_i p =
 
 let list_except x l = List.filter (fun y -> not (x = y)) l
 
+let list_for_all2eq f l1 l2 = try List.for_all2 f l1 l2 with Failure _ -> false
+
 (* Arrays *)
 
 let array_exists f v = 
@@ -261,6 +263,13 @@ let out_some = function
 let option_app f = function
   | None -> None
   | Some x -> Some (f x)
+
+let map_succeed f = 
+  let rec map_f = function 
+    | [] -> []
+    |  h::t -> try (let x = f h in x :: map_f t) with Failure _ -> map_f t
+  in 
+  map_f 
 
 (* Pretty-printing *)
   

@@ -40,6 +40,7 @@ val list_index : 'a -> 'a list -> int
 val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
 val list_for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
 val list_except : 'a -> 'a list -> 'a list
+val list_for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 
 (*s Arrays. *)
 
@@ -77,6 +78,8 @@ module Intmap : Map.S with type key = int
 
 val out_some : 'a option -> 'a
 val option_app : ('a -> 'b) -> 'a option -> 'b option
+
+val map_succeed : ('a -> 'b) -> 'a list -> 'b list
 
 (*s Pretty-printing. *)
 
