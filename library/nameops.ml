@@ -31,6 +31,7 @@ let translate_v7_string = function
   | "convert_compare_INFERIEUR" -> "convert_compare_LESS"
   | "convert_compare_SUPERIEUR" -> "convert_compare_GREATER"
   | "convert_compare_EGAL"      -> "convert_compare_EQUAL"
+  | "Zcompare_EGAL"             -> "Zcompare_EQUAL"
   | "Nul" -> "Null"
   | "Un_suivi_de" -> "double_plus_one"
   | "Zero_suivi_de" -> "double"
@@ -44,6 +45,8 @@ let translate_v7_string = function
   | "min_sym" -> "min_comm"
   | "gt_not_sym" -> "gt_asym"
   | "fact_growing" -> "fact_le"
+  (* Lists *)
+  | "idempot_rev" -> "involutive_rev"
   (* Bool *)
   | "orb_sym" -> "orb_comm"
   | "andb_sym" -> "andb_comm"
