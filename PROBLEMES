@@ -48,3 +48,31 @@ File "./BuraliForti.v", line 176, characters 0-26
 Anomaly: Uncaught exception Univ.UniverseInconsistency. Please report.
 A la fermeture de section, est-ce normal ? pourquoi une anomalie ?
 
+Rocq/CHECKER OK
+Rocq/COMPILER OK
+Rocq/DEMOS OK
+Rocq/HIGMAN OK
+Rocq/LAMBDA OK
+Rocq/SHUFFLE OK
+
+Rocq/SCHROEDER
+File "./Functions.v", line 95, characters 0-15
+Error: Bad inductive definition.
+A la fermeture de section
+
+Rocq/RATIONAL
+	Rewrite/LeibnizRewrite
+/home/cpaulin/coq/V7/bin/coqc  -q -byte -I . -I ../MLstuff HS
+[Loading ML file struct.cmo ...done]
+[Loading ML file sort_tac.cmo ...failed]
+File "./HS.v", line 6, characters 0-30
+Error: Cannot link ml-object sort_tac.cmo to Coq code.
+
+Rocq/SUBST
+File "./TS.v", line 69, characters 0-6
+Error: Attempt to save an incomplete proof
+
+Montevideo/CtlTctl OK
+Montevideo/RailroadCrossing
+File "./railroad_crossing.v", line 613, characters 2-20
+Anomaly: useInversionLemma. Please report.
