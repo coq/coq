@@ -42,3 +42,5 @@ Definition Rminus:R->R->R:=[r1,r2:R](Rplus r1 (Ropp r2)).
 
 (**********)
 Definition Rdiv:R->R->R:=[r1,r2:R](Rmult r1 (Rinv r2)).
+
+Hints Unfold Rgt : real.
