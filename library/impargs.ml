@@ -20,6 +20,7 @@ open Libobject
 open Lib
 open Nametab
 open Pp
+open Termops
 open Topconstr
 
 (*s Flags governing the computation of implicit arguments *)
@@ -163,30 +164,6 @@ let is_flexible_reference env bound depth f =
         let (_,value,_) = Environ.lookup_named id env in value <> None
     | Ind _ | Construct _ -> false
     |  _ -> true
-
-(* [iter_constr_with_full_binders g f acc c] iters [f acc] on the immediate
-   subterms of [c]; it carries an extra data [acc] which is processed by [g] at
-   each binder traversal; it is not recursive and the order with which
-   subterms are processed is not specified *)
-
-let iter_constr_with_full_binders g f l c = match kind_of_term c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> ()
-  | Cast (c,t) -> f l c; f l t
-  | Prod (na,t,c) -> f l t; f (g (na,None,t) l) c
-  | Lambda (na,t,c) -> f l t; f (g (na,None,t) l) c
-  | LetIn (na,b,t,c) -> f l b; f l t; f (g (na,Some b,t) l) c
-  | App (c,args) -> f l c; Array.iter (f l) args
-  | Evar (_,args) -> Array.iter (f l) args
-  | Case (_,p,c,bl) -> f l p; f l c; Array.iter (f l) bl
-  | Fix (_,(lna,tl,bl)) -> 
-      let l' = array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
-      Array.iter (f l) tl;
-      Array.iter (f l') bl
-  | CoFix (_,(lna,tl,bl)) ->
-      let l' = array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
-      Array.iter (f l) tl;
-      Array.iter (f l') bl
 
 let push_lift d (e,n) = (push_rel d e,n+1)
 

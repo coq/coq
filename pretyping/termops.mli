@@ -67,6 +67,10 @@ val map_constr_with_full_binders :
 val fold_constr_with_binders :
   ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
 
+val iter_constr_with_full_binders :
+  (rel_declaration -> 'a -> 'a) -> ('a -> constr -> unit) -> 'a -> 
+    constr -> unit
+
 (**********************************************************************)
 
 val strip_head_cast : constr -> constr
