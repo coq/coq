@@ -750,7 +750,7 @@ FIELDVO=\
 
 XMLVO= 
 
-INTERFACEVO= # contrib/interface/Centaur.vo
+INTERFACEVO=
 
 INTERFACERC= contrib/interface/vernacrc
 
@@ -876,10 +876,7 @@ contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
 contrib7/extraction/%.vo: contrib7/extraction/%.v states/barestate.coq $(COQC)
 	$(BOOTCOQTOP) $(TRANSLATE) -is states7/barestate.coq -compile $*
 
-# Obsolete ?
-contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
-	$(BESTCOQTOP) -boot -byte $(COQOPTS) -compile $*
-
+# Centaur grammar rules now in centaur.ml4
 contrib7/interface/Centaur.vo: contrib7/interface/Centaur.v $(INTERFACE)
 	$(BESTCOQTOP) $(TRANSLATE) -boot -byte $(COQOPTS) -compile $*
 
@@ -898,10 +895,7 @@ contrib7/interface/Centaur.vo: contrib7/interface/Centaur.v $(INTERFACE)
 #newtheories/ZArith/zarith_aux.vo:
 #	@cd #nil command: obsolete, don't compile it
 
-# Obsolete ?
-contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
-	$(BESTCOQTOP) -boot -byte  $(COQOPTS) -compile $*
-
+# Move the grammar rules to dad.ml ?
 contrib7/interface/AddDad.vo: contrib7/interface/AddDad.v $(INTERFACE) states7/initial.coq
 	$(BESTCOQTOP) $(TRANSLATE) -boot -byte  $(COQOPTS) -compile $*
 
@@ -1025,6 +1019,8 @@ FULLEMACSLIB=$(COQINSTALLPREFIX)$(EMACSLIB)
 
 install: install-$(BEST) install-binaries install-library install-manpages
 
+install8: install-$(BEST) install-binaries install-library8 install-manpages
+
 install7: install-$(BEST) install-binaries install-library7 install-manpages
 
 install-coqlight: install-$(BEST) install-binaries install-library-light
@@ -1059,25 +1055,31 @@ LIBFILESLIGHT=$(THEORIESLIGHTVO)
 NEWLIBFILES=$(NEWTHEORIESVO) $(NEWCONTRIBVO)
 NEWLIBFILESLIGHT=$(NEWTHEORIESLIGHTVO)
 
-install-library:
-	- rm newtheories/Lists/PolyList.v{,o}        #obsolete module
-	- rm newtheories/Lists/PolyListSyntax.v{,o}  #obsolete module
+install-library: install-library7 install-library8
+
+install-library8:
 	$(MKDIR) $(FULLCOQLIB)
-	for f in $(LIBFILES) $(NEWLIBFILES); do \
+	for f in $(NEWLIBFILES); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
 	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
 	$(MKDIR) $(FULLCOQLIB)/states
 	cp states/*.coq $(FULLCOQLIB)/states
-	$(MKDIR) $(FULLCOQLIB)/states7
-	cp states7/*.coq $(FULLCOQLIB)/states7
 	$(MKDIR) $(FULLEMACSLIB)
 	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
 	$(MKDIR) $(FULLIDELIB)
 	cp $(IDEFILES) $(FULLIDELIB)
 
 install-library7:
-	$(MAKE) NEWLIBFILES= install-library
+	$(MKDIR) $(FULLCOQLIB)
+	for f in $(LIBFILES); do \
+	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
+	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
+        done
+	$(MKDIR) $(FULLCOQLIB)/states7
+	cp states7/*.coq $(FULLCOQLIB)/states7
+	$(MKDIR) $(FULLEMACSLIB)
+	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
