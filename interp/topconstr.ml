@@ -371,19 +371,6 @@ type scope_name = string
 type interpretation = 
     (identifier * (scope_name option * scope_name list)) list * aconstr
 
-(*
-let match_aconstr sc c (metas_scl,pat) =
-  let subst = match_ sc [] (List.map fst metas_scl) [] c pat in
-  (* Reorder canonically the substitution *)
-  let find x subst =
-    try List.assoc x subst
-    with Not_found ->
-      (* Happens for binders bound to Anonymous *)
-      (* Find a better way to propagate Anonymous... *)
-      RVar (dummy_loc,x),None in
-  List.map (fun (x,scl) -> let (a,sc) = find x subst in (a,sc,scl)) metas_scl
-*)
-
 let match_aconstr c (metas_scl,pat) =
   let subst = match_ [] (List.map fst metas_scl) [] c pat in
   (* Reorder canonically the substitution *)
