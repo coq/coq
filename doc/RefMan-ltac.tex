@@ -542,7 +542,7 @@ Compute in} and we can get the terms back by {\tt Match}.
 {\parbox{6in}
 {
 \begin{coq_example}
-Tactic Definition Permut n:=
+Recursive Tactic Definition Permut n:=
  Match Context With
    [|-(permut ? ?1 ?1)] -> Apply permut_refl
   |[|-(permut ? (cons ?1 ?2) (cons ?1 ?3))] ->
@@ -760,7 +760,7 @@ And MainSimplif:=
   Match Context With
    [|- ?1== ?2] -> Try (DSimplif ?1);Try (DSimplif ?2).
 
-Tactic Definition Length trm:=
+Recursive Tactic Definition Length trm:=
   Match trm With
    [?*?1] ->
      Let succ=(Length ?1) In
