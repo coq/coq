@@ -981,11 +981,10 @@ let rec (xlate_tacarg:raw_tactic_arg -> ct_TACTIC_ARG) =
 and (xlate_call_or_tacarg:raw_tactic_arg -> ct_TACTIC_COM) =
  function
    (* Moved from xlate_tactic *)
-    | TacCall (_,Reference r, a::l) ->
+    | TacCall (_, r, a::l) ->
 	CT_simple_user_tac
 	  (reference_to_ct_ID r,
 	    CT_tactic_arg_list(xlate_tacarg a,List.map xlate_tacarg l))
-    | TacCall (_,_,_) -> xlate_error ""
     | Reference (Coqast.RIdent (_,s)) -> ident_tac s
     | t -> xlate_error "TODO: result other than tactic or constr"
 
