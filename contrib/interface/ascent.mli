@@ -14,7 +14,8 @@ and ct_AST_LIST =
 and ct_BINARY =
     CT_binary of int
 and ct_BINDER =
-    CT_binder of ct_ID_OPT_NE_LIST * ct_FORMULA
+    CT_coerce_DEF_to_BINDER of ct_DEF
+  | CT_binder of ct_ID_OPT_NE_LIST * ct_FORMULA
 and ct_BINDER_LIST =
     CT_binder_list of ct_BINDER list
 and ct_BINDER_NE_LIST =
@@ -69,11 +70,15 @@ and ct_COMMAND =
   | CT_hint of ct_ID * ct_ID_LIST * ct_HINT_EXPRESSION
   | CT_hintrewrite of ct_ORIENTATION * ct_FORMULA_NE_LIST * ct_ID * ct_TACTIC_COM
   | CT_hints of ct_ID * ct_ID_NE_LIST * ct_ID_LIST
+  | CT_implicits of ct_ID * ct_INT_LIST
   | CT_ind_scheme of ct_SCHEME_SPEC_LIST
   | CT_infix of ct_ASSOC * ct_INT * ct_STRING * ct_ID
   | CT_inspect of ct_INT
   | CT_kill_node of ct_INT
   | CT_load of ct_VERBOSE_OPT * ct_ID_OR_STRING
+  | CT_locate of ct_ID
+  | CT_locate_file of ct_STRING
+  | CT_locate_lib of ct_ID
   | CT_mind_decl of ct_CO_IND * ct_IND_SPEC_LIST
   | CT_ml_add_path of ct_STRING
   | CT_ml_declare_modules of ct_STRING_NE_LIST
@@ -117,6 +122,7 @@ and ct_COMMAND =
   | CT_restore_state of ct_ID
   | CT_resume of ct_ID_OPT
   | CT_save of ct_THM_OPT * ct_ID_OPT
+  | CT_scomments of ct_SCOMMENT_CONTENT_LIST
   | CT_search of ct_ID * ct_IN_OR_OUT_MODULES
   | CT_search_pattern of ct_FORMULA * ct_IN_OR_OUT_MODULES
   | CT_search_rewrite of ct_FORMULA * ct_IN_OR_OUT_MODULES
@@ -178,6 +184,8 @@ and ct_CONV_SET =
   | CT_unfbut of ct_ID list
 and ct_CO_IND =
     CT_co_ind of string
+and ct_DEF =
+    CT_def of ct_ID_OPT * ct_FORMULA
 and ct_DEFN =
     CT_defn of string
 and ct_DEFN_OR_THM =
@@ -225,7 +233,7 @@ and ct_FORMULA =
   | CT_fixc of ct_ID * ct_FIX_BINDER_LIST
   | CT_int_encapsulator of string
   | CT_lambdac of ct_BINDER_NE_LIST * ct_FORMULA
-  | CT_letin of ct_ID_OPT * ct_FORMULA * ct_FORMULA
+  | CT_letin of ct_DEF * ct_FORMULA
   | CT_notation of ct_STRING * ct_FORMULA_LIST
   | CT_prodc of ct_BINDER_NE_LIST * ct_FORMULA
 and ct_FORMULA_LIST =
@@ -392,6 +400,11 @@ and ct_SCHEME_SPEC =
     CT_scheme_spec of ct_ID * ct_DEP * ct_FORMULA * ct_SORT_TYPE
 and ct_SCHEME_SPEC_LIST =
     CT_scheme_spec_list of ct_SCHEME_SPEC * ct_SCHEME_SPEC list
+and ct_SCOMMENT_CONTENT =
+    CT_coerce_FORMULA_to_SCOMMENT_CONTENT of ct_FORMULA
+  | CT_coerce_ID_OR_STRING_to_SCOMMENT_CONTENT of ct_ID_OR_STRING
+and ct_SCOMMENT_CONTENT_LIST =
+    CT_scomment_content_list of ct_SCOMMENT_CONTENT list
 and ct_SECTION_BEGIN =
     CT_section of ct_ID
 and ct_SECTION_BODY =
@@ -493,6 +506,7 @@ and ct_TACTIC_COM =
   | CT_rewrite_lr of ct_FORMULA * ct_SPEC_LIST * ct_ID_OPT
   | CT_rewrite_rl of ct_FORMULA * ct_SPEC_LIST * ct_ID_OPT
   | CT_right of ct_SPEC_LIST
+  | CT_ring of ct_FORMULA_LIST
   | CT_simple_user_tac of ct_ID * ct_TACTIC_ARG_LIST
   | CT_simplify_eq of ct_ID_OPT
   | CT_specialize of ct_INT_OPT * ct_FORMULA * ct_SPEC_LIST
@@ -517,10 +531,9 @@ and ct_TARG =
     CT_coerce_BINDING_to_TARG of ct_BINDING
   | CT_coerce_COFIXTAC_to_TARG of ct_COFIXTAC
   | CT_coerce_FIXTAC_to_TARG of ct_FIXTAC
-  | CT_coerce_FORMULA_to_TARG of ct_FORMULA
   | CT_coerce_ID_OR_INT_to_TARG of ct_ID_OR_INT
-  | CT_coerce_ID_OR_STRING_to_TARG of ct_ID_OR_STRING
   | CT_coerce_PATTERN_to_TARG of ct_PATTERN
+  | CT_coerce_SCOMMENT_CONTENT_to_TARG of ct_SCOMMENT_CONTENT
   | CT_coerce_SIGNED_INT_LIST_to_TARG of ct_SIGNED_INT_LIST
   | CT_coerce_SPEC_LIST_to_TARG of ct_SPEC_LIST
   | CT_coerce_TACTIC_COM_to_TARG of ct_TACTIC_COM
@@ -569,6 +582,7 @@ and ct_VARG =
   | CT_coerce_ID_OPT_OR_ALL_to_VARG of ct_ID_OPT_OR_ALL
   | CT_coerce_ID_OR_INT_OPT_to_VARG of ct_ID_OR_INT_OPT
   | CT_coerce_INT_LIST_to_VARG of ct_INT_LIST
+  | CT_coerce_SCOMMENT_CONTENT_to_VARG of ct_SCOMMENT_CONTENT
   | CT_coerce_STRING_OPT_to_VARG of ct_STRING_OPT
   | CT_coerce_TACTIC_OPT_to_VARG of ct_TACTIC_OPT
   | CT_coerce_VARG_LIST_to_VARG of ct_VARG_LIST

@@ -314,7 +314,7 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CProdN(_,ll,b)-> CT_prodc(xlate_binder_ne_list ll, xlate_formula b)
    | CLambdaN(_,ll,b)-> CT_lambdac(xlate_binder_ne_list ll, xlate_formula b)
    | CLetIn(_, v, a, b) -> 
-       CT_letin(xlate_id_opt v, xlate_formula a, xlate_formula b)
+       CT_letin(CT_def(xlate_id_opt v, xlate_formula a), xlate_formula b)
    | CAppExpl(_, r, l) ->
        CT_appc(CT_bang(xlate_int_opt None, varc (xlate_reference r)),
 	       xlate_formula_ne_list l)
@@ -892,6 +892,11 @@ and xlate_tac =
     | TacForward (_, _, _) -> xlate_error "TODO: Assert/Pose id:=c"
     | TacTrueCut (_, _) -> xlate_error "TODO: Assert id:t"
     | TacAnyConstructor tacopt -> xlate_error "TODO: Constructor tac"
+    | TacExtend(_, "Ring", [arg]) -> 
+	CT_ring
+	  (CT_formula_list
+	     (List.map xlate_formula
+		(out_gen (wit_list0 rawwit_constr) arg)))
     | TacExtend (_,id, l) ->
      CT_user_tac (CT_ident id, CT_targ_list (List.map coerce_genarg_to_TARG l))
     | TacAlias (_, _, _) -> xlate_error "TODO: aliases"
@@ -910,7 +915,9 @@ and coerce_genarg_to_TARG x =
       CT_coerce_ID_OR_INT_to_TARG x
   | StringArgType ->
      let s = CT_string (out_gen rawwit_string x) in
-     CT_coerce_ID_OR_STRING_to_TARG (CT_coerce_STRING_to_ID_OR_STRING s)
+       CT_coerce_SCOMMENT_CONTENT_to_TARG
+	 (CT_coerce_ID_OR_STRING_to_SCOMMENT_CONTENT
+	    (CT_coerce_STRING_to_ID_OR_STRING s))
   | PreIdentArgType ->
       let id = CT_ident (out_gen rawwit_pre_ident x) in
       CT_coerce_ID_OR_INT_to_TARG (CT_coerce_ID_to_ID_OR_INT id)
@@ -922,10 +929,12 @@ and coerce_genarg_to_TARG x =
       CT_coerce_ID_OR_INT_to_TARG (CT_coerce_ID_to_ID_OR_INT id)
   (* Specific types *)
   | SortArgType ->
-      CT_coerce_FORMULA_to_TARG
-        (CT_coerce_SORT_TYPE_to_FORMULA (xlate_sort (out_gen rawwit_sort x)))
+      CT_coerce_SCOMMENT_CONTENT_to_TARG
+      (CT_coerce_FORMULA_to_SCOMMENT_CONTENT
+        (CT_coerce_SORT_TYPE_to_FORMULA (xlate_sort (out_gen rawwit_sort x))))
   | ConstrArgType ->
-      CT_coerce_FORMULA_to_TARG (xlate_formula (out_gen rawwit_constr x))
+      CT_coerce_SCOMMENT_CONTENT_to_TARG
+      (CT_coerce_FORMULA_to_SCOMMENT_CONTENT (xlate_formula (out_gen rawwit_constr x)))
   | ConstrMayEvalArgType -> xlate_error"TODO: generic constr-may-eval argument"
   | QuantHypArgType ->xlate_error"TODO: generic quantified hypothesis argument"
   | TacticArgType ->
@@ -1140,6 +1149,13 @@ let cvt_vernac_binders args =
 
 let cvt_fixpoint_binders bl =
   CT_binder_list(List.map xlate_binder bl)
+
+let xlate_comment = function
+    CommentConstr c -> CT_coerce_FORMULA_to_SCOMMENT_CONTENT(xlate_formula c)
+  | CommentString s -> CT_coerce_ID_OR_STRING_to_SCOMMENT_CONTENT
+      (CT_coerce_STRING_to_ID_OR_STRING(CT_string s))
+  | CommentInt n ->
+      CT_coerce_FORMULA_to_SCOMMENT_CONTENT(CT_int_encapsulator (string_of_int n));;
 
 let xlate_vernac =
  function
@@ -1506,14 +1522,25 @@ let xlate_vernac =
   | VernacDebug b -> xlate_error "TODO: Debug On/Off"
 
   | VernacList l -> xlate_error "Not treated here"
-  |VernacNop -> CT_proof_no_op
-  | (VernacLocate _|VernacGlobalCheck _|VernacPrintOption _|
+  | VernacNop -> CT_proof_no_op
+  | VernacComments l -> 
+      CT_scomments(CT_scomment_content_list (List.map xlate_comment l))
+  | VernacDeclareImplicits(id, opt_positions) ->
+      CT_implicits
+	(reference_to_ct_ID id,
+	 match opt_positions with
+	     None -> CT_int_list[]
+	   | Some l -> CT_int_list(List.map (fun x -> CT_int x) l))
+  | VernacLocate(LocateTerm id) -> CT_locate(reference_to_ct_ID id)
+  | VernacLocate(LocateLibrary id) -> CT_locate_lib(reference_to_ct_ID id)
+  | VernacLocate(LocateFile s) -> CT_locate_file(CT_string s)
+  | (VernacGlobalCheck _|VernacPrintOption _|
      VernacMemOption (_, _)|VernacRemoveOption (_, _)|VernacAddOption (_, _)|
-     VernacSetOption (_, _)|VernacUnsetOption _|VernacDeclareImplicits (_, _)|
+     VernacSetOption (_, _)|VernacUnsetOption _|
      VernacHintDestruct (_, _, _, _, _)|VernacBack _|VernacRestoreState _|
      VernacWriteState _|VernacSolveExistential (_, _)|VernacCanonical _|
      VernacImport (_, _)|VernacExactProof _|VernacDistfix (_, _, _, _, _)|
-     VernacTacticGrammar _|VernacVar _|VernacTime _|VernacComments _)
+     VernacTacticGrammar _|VernacVar _|VernacTime _)
     -> xlate_error "TODO: vernac"
 
   (* Modules and Module Types *)

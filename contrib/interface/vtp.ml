@@ -41,6 +41,7 @@ and fBINARY = function
 | CT_binary x -> fATOM "binary";
    (f_atom_int x);
    print_string "\n"and fBINDER = function
+| CT_coerce_DEF_to_BINDER x -> fDEF x
 | CT_binder(x1, x2) ->
    fID_OPT_NE_LIST x1;
    fFORMULA x2;
@@ -197,6 +198,10 @@ and fCOMMAND = function
    fID_NE_LIST x2;
    fID_LIST x3;
    fNODE "hints" 3
+| CT_implicits(x1, x2) ->
+   fID x1;
+   fINT_LIST x2;
+   fNODE "implicits" 2
 | CT_ind_scheme(x1) ->
    fSCHEME_SPEC_LIST x1;
    fNODE "ind_scheme" 1
@@ -216,6 +221,15 @@ and fCOMMAND = function
    fVERBOSE_OPT x1;
    fID_OR_STRING x2;
    fNODE "load" 2
+| CT_locate(x1) ->
+   fID x1;
+   fNODE "locate" 1
+| CT_locate_file(x1) ->
+   fSTRING x1;
+   fNODE "locate_file" 1
+| CT_locate_lib(x1) ->
+   fID x1;
+   fNODE "locate_lib" 1
 | CT_mind_decl(x1, x2) ->
    fCO_IND x1;
    fIND_SPEC_LIST x2;
@@ -332,6 +346,9 @@ and fCOMMAND = function
    fTHM_OPT x1;
    fID_OPT x2;
    fNODE "save" 2
+| CT_scomments(x1) ->
+   fSCOMMENT_CONTENT_LIST x1;
+   fNODE "scomments" 1
 | CT_search(x1, x2) ->
    fID x1;
    fIN_OR_OUT_MODULES x2;
@@ -475,7 +492,12 @@ and fCONV_SET = function
 and fCO_IND = function
 | CT_co_ind x -> fATOM "co_ind";
    (f_atom_string x);
-   print_string "\n"and fDEFN = function
+   print_string "\n"and fDEF = function
+| CT_def(x1, x2) ->
+   fID_OPT x1;
+   fFORMULA x2;
+   fNODE "def" 2
+and fDEFN = function
 | CT_defn x -> fATOM "defn";
    (f_atom_string x);
    print_string "\n"and fDEFN_OR_THM = function
@@ -583,11 +605,10 @@ and fFORMULA = function
    fBINDER_NE_LIST x1;
    fFORMULA x2;
    fNODE "lambdac" 2
-| CT_letin(x1, x2, x3) ->
-   fID_OPT x1;
+| CT_letin(x1, x2) ->
+   fDEF x1;
    fFORMULA x2;
-   fFORMULA x3;
-   fNODE "letin" 3
+   fNODE "letin" 2
 | CT_notation(x1, x2) ->
    fSTRING x1;
    fFORMULA_LIST x2;
@@ -893,6 +914,13 @@ and fSCHEME_SPEC_LIST = function
    fSCHEME_SPEC x;
    (List.iter fSCHEME_SPEC l);
    fNODE "scheme_spec_list" (1 + (List.length l))
+and fSCOMMENT_CONTENT = function
+| CT_coerce_FORMULA_to_SCOMMENT_CONTENT x -> fFORMULA x
+| CT_coerce_ID_OR_STRING_to_SCOMMENT_CONTENT x -> fID_OR_STRING x
+and fSCOMMENT_CONTENT_LIST = function
+| CT_scomment_content_list l ->
+   (List.iter fSCOMMENT_CONTENT l);
+   fNODE "scomment_content_list" (List.length l)
 and fSECTION_BEGIN = function
 | CT_section(x1) ->
    fID x1;
@@ -1182,6 +1210,9 @@ and fTACTIC_COM = function
 | CT_right(x1) ->
    fSPEC_LIST x1;
    fNODE "right" 1
+| CT_ring(x1) ->
+   fFORMULA_LIST x1;
+   fNODE "ring" 1
 | CT_simple_user_tac(x1, x2) ->
    fID x1;
    fTACTIC_ARG_LIST x2;
@@ -1249,10 +1280,9 @@ and fTARG = function
 | CT_coerce_BINDING_to_TARG x -> fBINDING x
 | CT_coerce_COFIXTAC_to_TARG x -> fCOFIXTAC x
 | CT_coerce_FIXTAC_to_TARG x -> fFIXTAC x
-| CT_coerce_FORMULA_to_TARG x -> fFORMULA x
 | CT_coerce_ID_OR_INT_to_TARG x -> fID_OR_INT x
-| CT_coerce_ID_OR_STRING_to_TARG x -> fID_OR_STRING x
 | CT_coerce_PATTERN_to_TARG x -> fPATTERN x
+| CT_coerce_SCOMMENT_CONTENT_to_TARG x -> fSCOMMENT_CONTENT x
 | CT_coerce_SIGNED_INT_LIST_to_TARG x -> fSIGNED_INT_LIST x
 | CT_coerce_SPEC_LIST_to_TARG x -> fSPEC_LIST x
 | CT_coerce_TACTIC_COM_to_TARG x -> fTACTIC_COM x
@@ -1335,6 +1365,7 @@ and fVAR = function
 | CT_coerce_ID_OPT_OR_ALL_to_VARG x -> fID_OPT_OR_ALL x
 | CT_coerce_ID_OR_INT_OPT_to_VARG x -> fID_OR_INT_OPT x
 | CT_coerce_INT_LIST_to_VARG x -> fINT_LIST x
+| CT_coerce_SCOMMENT_CONTENT_to_VARG x -> fSCOMMENT_CONTENT x
 | CT_coerce_STRING_OPT_to_VARG x -> fSTRING_OPT x
 | CT_coerce_TACTIC_OPT_to_VARG x -> fTACTIC_OPT x
 | CT_coerce_VARG_LIST_to_VARG x -> fVARG_LIST x
