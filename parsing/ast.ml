@@ -47,9 +47,9 @@ let path_section loc sp =
   Coqast.Path(loc, string_of_id bn :: (List.rev sl), string_of_kind pk)
 
 let section_path sl k =
-  match List.rev sl with
+  match sl with
     | s::pa -> 
-	make_path pa (id_of_string s) (kind_of_string k)
+	make_path (List.rev pa) (id_of_string s) (kind_of_string k)
     | [] -> invalid_arg "section_path"
 
 (* ast destructors *)
