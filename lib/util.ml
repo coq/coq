@@ -371,6 +371,12 @@ let array_map3 f v1 v2 v3 =
     res
   end
 
+(* Matrices *)
+
+let matrix_transpose mat =
+  List.fold_right (List.map2 (fun p c -> p::c)) mat
+    (if mat = [] then [] else List.map (fun _ -> []) (List.hd mat))
+
 (* Functions *)
 
 let compose f g x = f (g x)

@@ -101,6 +101,10 @@ val array_map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 val array_map3 : 
   ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
 
+(*s Matrices *)
+
+val matrix_transpose : 'a list list -> 'a list list
+
 (*s Functions. *)
 
 val compose : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
