@@ -3,7 +3,7 @@
 \label{Tactics}}
 
 A deduction rule is a link between some (unique) formula, that we call
-the {\em conclusion} and (several) formul{\ae} that we call the {\em
+the {\em conclusion} and (several) formulas that we call the {\em
 premises}. Indeed, a deduction rule can be read in two ways. The first
 one has the shape: {\it ``if I know this and this then I can deduce
 this''}. For instance, if I have a proof of $A$ and a proof of $B$
@@ -406,7 +406,7 @@ replacement only in the conclusion.
 
 \item {\tt set ( } {\ident} {\tt :=} {\term} {\tt ) in |- *}
   
-  This is equivalent to the default behaviour of {\tt set}.
+  This is equivalent to the default behavior of {\tt set}.
 
 \item {\tt set ( {\ident$_0$} {\tt :=} {\term} {\tt ) in} {\ident$_1$}}
   
@@ -660,7 +660,7 @@ This set of tactics implements different specialized usages of the
 tactic \texttt{change}.
 
 All conversion tactics (including \texttt{change}) can be
-parameterised by the parts of the goal where the conversion can
+parameterized by the parts of the goal where the conversion can
 occur. The specification of such parts are called \emph{clauses}. It
 can be either the conclusion, or an hypothesis. In the case of a
 defined hypothesis it is possible to specify if the conversion should
@@ -668,7 +668,7 @@ occur on the type part, the body part or both (default).
 
 \index{Clauses}
 Clauses are written after a conversion tactic (tactic
-\texttt{set}~\ref{tactic:set} also uses clasues) and are introduced by
+\texttt{set}~\ref{tactic:set} also uses clauses) and are introduced by
 the keyword \texttt{in}. If no clause is provided, the default is to
 perform the conversion only in the conclusion.
 
@@ -1061,7 +1061,7 @@ induction n.
   Section~\ref{intros-pattern}). This provides a concise notation for
   nested induction.
 
-\Rem for an inductive type with one constructeur, the pattern notation
+\Rem for an inductive type with one constructor, the pattern notation
 {\tt ($p_{1}$,\ldots,$p_{n}$)} can be used instead of
 {\tt [} $p_{1}$ \ldots $p_{n}$ {\tt ]}.
 
@@ -1204,7 +1204,7 @@ last introduced hypothesis.
 %  It is recommended to use this variant of {\tt destruct} for 
 %  robust proof scripts.
 
-\Rem for an inductive type with one constructeur, the pattern notation
+\Rem for an inductive type with one constructor, the pattern notation
 {\tt ($p_{1}$,\ldots,$p_{n}$)} can be used instead of
 {\tt [} $p_{1} $\ldots $p_{n}$ {\tt ]}.
 
@@ -1393,8 +1393,8 @@ between using one or the other.
 tactics. In particular case analysis of a function are considered
 only if they are not inside an application.
 
-\Rem Arguments of the function must be given, including
-implicits. If the function is recursive, arguments must be
+\Rem Arguments of the function must be given, including the
+implicit ones. If the function is recursive, arguments must be
 variables, otherwise they may be any term.
 
 \SeeAlso{\ref{FunScheme},\ref{FunScheme-examples}}
@@ -2195,7 +2195,7 @@ instantiation of \verb=x= is necessary.
 \tacindex{intuition}
 \label{intuition}}
 
-The tactic \texttt{intuition} takes advantage of the search-tree builded
+The tactic \texttt{intuition} takes advantage of the search-tree built
 by the decision procedure involved in the tactic {\tt tauto}. It uses
 this information to generate a set of subgoals equivalent to the
 original one (but simpler than it) and applies the tactic 
@@ -2214,7 +2214,7 @@ internally replaces it by the equivalent one:
 and then uses {\tt auto} which completes the proof.
 
 Originally due to C{\'e}sar~Mu{\~n}oz, these tactics ({\tt tauto} and {\tt intuition})
-have been completely reenginered by David~Delahaye using mainly the tactic
+have been completely reengineered by David~Delahaye using mainly the tactic
 language (see chapter~\ref{TacticLanguage}). The code is now quite shorter and
 a significant increase in performances has been noticed. The general behavior
 with respect to dependent types, unfolding and introductions has
@@ -2248,13 +2248,13 @@ instead may reason about any first-order class inductive definition.
  \item {\tt firstorder with \ident$_1$ \dots\ \ident$_n$ }
    \tacindex{firstorder with}
 
-   Adds lemmata \ident$_1$ \dots\ \ident$_n$ to the proof-search
+   Adds lemmas \ident$_1$ \dots\ \ident$_n$ to the proof-search
    environment.
 
  \item {\tt firstorder using \ident$_1$ \dots\ \ident$_n$ }
    \tacindex{firstorder using}
 
-   Adds lemmata in {\tt auto} hints bases \ident$_1$ \dots\ \ident$_n$
+   Adds lemmas in {\tt auto} hints bases \ident$_1$ \dots\ \ident$_n$
    to the proof-search environment.
 \end{Variants}
 
@@ -2427,10 +2427,10 @@ congruence.
 \label{omega}}
 
 The tactic \texttt{omega}, due to Pierre Cr{\'e}gut,
-is an automatic decision procedure for Prestburger
+is an automatic decision procedure for Presburger
 arithmetic. It solves quantifier-free 
-formulae build with \verb|~|, \verb|\/|, \verb|/\|,
-\verb|->| on top of equations and inequations on
+formulas built with \verb|~|, \verb|\/|, \verb|/\|,
+\verb|->| on top of equalities and inequalities on
 both the type \texttt{nat} of natural numbers and \texttt{Z} of binary
 integers. This tactic must be loaded by the command \texttt{Require Import
   Omega}. See the additional documentation about \texttt{omega}
@@ -2598,7 +2598,7 @@ Reset Initial.
 This tactic \footnote{The behavior of this tactic has much changed compared to
 the versions available in the previous distributions (V6). This may cause
 significant changes in your theories to obtain the same result. As a drawback
-of the reenginering of the code, this tactic has also been completely revised
+of the reengineering of the code, this tactic has also been completely revised
 to get a very compact and readable version.} carries out rewritings according
 the rewriting rule bases {\tt \ident$_1$ \dots \ident$_n$}.
 
