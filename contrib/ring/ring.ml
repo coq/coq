@@ -77,7 +77,7 @@ let coq_interp_asp =
   lazy (constant "#Ring_abstract#interp_asp.cci" "interp_asp")
 let coq_interp_ap = 
   lazy (constant "#Ring_abstract#interp_ap.cci" "interp_ap")
-let coq_interp_acs = 
+ let coq_interp_acs = 
   lazy (constant "#Ring_abstract#interp_acs.cci" "interp_acs")
 let coq_interp_sacs = 
   lazy (constant "#Ring_abstract#interp_sacs.cci" "interp_sacs")
@@ -585,8 +585,7 @@ let guess_eq_tac th =
 				th.th_a; th.th_a; th.th_a; 
 				th.th_mult |]))))))
 
-let polynom lcom gl =
-  let lc = (List.map (pf_interp_constr gl) lcom) in
+let polynom lc gl =
   match lc with 
    (* If no argument is given, try to recognize either an equality or
       a declared relation with arguments c1 ... cn, 
@@ -617,12 +616,13 @@ let polynom lcom gl =
 	    [< 'sTR" All terms must have the same type" >];
 	(tclTHEN (raw_polynom th None lc) polynom_unfold_tac) gl
 
-let dyn_polynom ltacargs =  
+let dyn_polynom ltacargs gl =  
   polynom (List.map 
 	     (function 
-		| Command c -> c 
+		| Command c -> pf_interp_constr gl c 
+		| Constr c -> c 
 		| _ -> anomaly "dyn_polynom")
-	     ltacargs) 
+	     ltacargs) gl
 
 let v_polynom = add_tactic "Ring" dyn_polynom
 
