@@ -135,6 +135,7 @@ and ct_COMMAND =
   | CT_print_opaqueid of ct_ID
   | CT_print_path of ct_ID * ct_ID
   | CT_print_proof of ct_ID
+  | CT_print_setoids
   | CT_print_scope of ct_ID
   | CT_print_scopes
   | CT_print_section of ct_ID

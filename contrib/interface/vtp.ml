@@ -451,6 +451,7 @@ and fCOMMAND = function
 | CT_print_scope(x1) ->
    fID x1;
    fNODE "print_scope" 1
+| CT_print_setoids -> fNODE "print_setoids" 0
 | CT_print_scopes -> fNODE "print_scopes" 0
 | CT_print_section(x1) ->
    fID x1;
