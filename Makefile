@@ -65,9 +65,9 @@ LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
 
 KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/sign.cmo kernel/constant.cmo \
-       kernel/inductive.cmo kernel/sosub.cmo kernel/abstraction.cmo \
+       kernel/sosub.cmo kernel/abstraction.cmo \
        kernel/environ.cmo kernel/evd.cmo kernel/instantiate.cmo \
-       kernel/closure.cmo kernel/reduction.cmo \
+       kernel/closure.cmo kernel/reduction.cmo kernel/inductive.cmo\
        kernel/type_errors.cmo kernel/typeops.cmo kernel/indtypes.cmo \
        kernel/safe_typing.cmo
 

@@ -9,7 +9,6 @@ open Term
 open Sign
 open Evd
 open Constant
-open Inductive
 open Environ
 
 let is_id_inst ids args =
@@ -55,28 +54,6 @@ let constant_value env cst =
 	anomalylabstrm "termenv__constant_value"
 	  [< 'sTR "a defined constant with no body." >]
 
-let mis_lc mis =
-  instantiate_constr (ids_of_sign mis.mis_mib.mind_hyps) mis.mis_mip.mind_lc
-    (Array.to_list mis.mis_args)
-
-let mis_lc_without_abstractions mis = 
-  let rec strip_DLAM = function
-    | (DLAM (n,c1)) -> strip_DLAM c1 
-    | (DLAMV (n,v)) -> v
-    | _ -> assert false
-  in 
-  strip_DLAM (mis_lc mis)
-
-let mis_type_mconstructs mispec =
-  let specif = mis_lc mispec
-  and ntypes = mis_ntypes mispec
-  and nconstr = mis_nconstr mispec in
-  let make_Ik k = DOPN(MutInd(mispec.mis_sp,k),mispec.mis_args) 
-  and make_Ck k = DOPN(MutConstruct((mispec.mis_sp,mispec.mis_tyi),k+1),
-		       mispec.mis_args) in
-  (Array.init nconstr make_Ck, 
-   sAPPVList specif (list_tabulate make_Ik ntypes))
-
 (* Existentials. *)
 
 let name_of_existential n = id_of_string ("?" ^ string_of_int n)
@@ -85,8 +62,8 @@ let existential_type sigma c =
   let (n,args) = destEvar c in
   let info = Evd.map sigma n in
   let hyps = evar_hyps info in
-  instantiate_constr (ids_of_sign hyps) info.evar_concl
-    (Array.to_list args)
+  (* TODO: check args [this comment was in Typeops] *)
+  instantiate_constr (ids_of_sign hyps) info.evar_concl (Array.to_list args)
 
 let existential_value sigma c =
   let (n,args) = destEvar c in
@@ -110,12 +87,4 @@ let const_abst_opt_value env sigma c =
     | DOPN(Abst sp,_) ->
 	if evaluable_abst env c then Some (abst_value env c) else None
     | _ -> invalid_arg "const_abst_opt_value"
-
-let mis_typed_arity mis =
-  let idhyps = ids_of_sign mis.mis_mib.mind_hyps 
-  and largs = Array.to_list mis.mis_args in
-  instantiate_type idhyps mis.mis_mip.mind_arity largs
-
-let mis_arity mispec = incast_type (mis_typed_arity mispec)
-
 
