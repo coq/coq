@@ -281,15 +281,15 @@ let _ =
     We just call [extract_to_file] on the saturated environment. *)
 
 let lang_suffix () = match lang () with 
-  | Ocaml -> "ml"
-  | Haskell -> "hs"
+  | Ocaml -> ".ml"
+  | Haskell -> ".hs"
   | Toplevel -> assert false
 
 let filename f = 
   let s = lang_suffix () in 
   if Filename.check_suffix f s then 
     Some f,id_of_string (Filename.chop_suffix f s) 
-  else Some (f^"."^s),id_of_string f
+  else Some (f^s),id_of_string f
 
 let lang_error () = 
   errorlabstrm "extraction_language"
