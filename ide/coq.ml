@@ -76,6 +76,18 @@ let is_in_coq_lib dir =
       Coq_config.theories_dirs
   with _ -> prerr_endline " No(because of a global exn)";false
 
+let is_in_coq_path f = 
+  try 
+  let base = Filename.chop_extension (Filename.basename f) in
+  let _ = Library.locate_qualified_library 
+	    (Libnames.make_qualid Names.empty_dirpath 
+	       (Names.id_of_string base)) in
+  prerr_endline (f ^ "is in coq path");
+  true
+  with _ ->  
+    prerr_endline (f ^ "is NOT in coq path");
+    false  
+
 let is_in_proof_mode () = 
   try ignore (get_pftreestate ()); true with _ -> false
 

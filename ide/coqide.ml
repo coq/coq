@@ -1409,13 +1409,16 @@ Please restart and report NOW.";
 		 (out_some ((Vector.get input_views index).analyzed_view))
 		 #filename 
 	       with
-	       | None -> initial_cwd
-	       | Some f -> Filename.dirname f
-	      )
-    in 
-    if not (is_in_coq_lib dir) then 
-      ignore (Coq.interp (Printf.sprintf "Add LoadPath \"%s\". " dir));
-    Sys.chdir dir
+	       | None -> ()
+	       | Some f ->     
+		   if not (is_in_coq_path f) then 
+		     begin
+		       let dir = Filename.dirname f in
+		       ignore (Coq.interp
+			       (Printf.sprintf "Add LoadPath \"%s\". "  dir))
+		     end)
+    in ()
+
       
       
   method electric_handler = 
