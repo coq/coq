@@ -31,7 +31,7 @@ case $ANSWER in
 esac
 
 # The main number of the release
-MAINNUMBER=`echo $VERSION | sed -e 's/^\([0-9]\+*\)\.[0-9]\+.*$/\1/'`
+MAINNUMBER=`echo $VERSION | sed -e 's/^\([0-9]\+\)\.[0-9]\+.*$/\1/'`
 # The minor number
 LASTNUMBER=`echo $VERSION | sed -e 's/^[0-9]\+\.\([0-9]\+\).*$/\1/'`
 # The release level: alpha, beta, etc.
