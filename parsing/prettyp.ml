@@ -99,11 +99,20 @@ let print_params env params =
   else
     (str "[" ++ pr_rel_context env params ++ str "]" ++ brk(1,2))
 
+let rec contract_types = function
+  | [] -> []
+  | (id,c)::l ->
+      match contract_types l with
+	| (idl,c')::l' when eq_constr c c' -> (id::idl,c')::l'
+	| l' -> ([id],c)::l'
+
 let print_constructors envpar names types =
   let pc =
-    prvect_with_sep (fun () -> brk(1,0) ++ str "| ")
-      (fun (id,c) -> pr_id id ++ str " : " ++ prterm_env envpar c)
-      (array_map2 (fun n t -> (n,t)) names types)
+    prlist_with_sep (fun () -> brk(1,0) ++ str "| ")
+      (fun (id,c) -> prlist_with_sep pr_coma pr_id id ++ str " : " ++
+	prterm_env envpar c)
+      (contract_types 
+	(Array.to_list (array_map2 (fun n t -> (n,t)) names types)))
   in 
   hv 0 (str "  " ++ pc)
 
@@ -119,149 +128,29 @@ let build_inductive sp tyi =
   let cstrnames = mip.mind_consnames in
   (IndRef (sp,tyi), params, arity, cstrnames, cstrtypes)
 
-let print_one_inductive sp tyi =
+let print_one_inductive (sp,tyi) =
   let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp tyi in
   let env = Global.env () in
   let envpar = push_rel_context params env in
-  (hov 0
-     ((hov 0
-	   (pr_global (IndRef (sp,tyi)) ++ brk(1,2) ++ print_params env params ++
-	      str ": " ++ prterm_env envpar arity ++ str " :=")) ++
-	brk(1,2) ++ print_constructors envpar cstrnames cstrtypes)) 
+  hov 0 (
+    pr_global (IndRef (sp,tyi)) ++ brk(1,2) ++ print_params env params ++
+    str ": " ++ prterm_env envpar arity ++ str " :=") ++
+  brk(0,2) ++ print_constructors envpar cstrnames cstrtypes
+
+let pr_mutual_inductive finite indl =
+  hov 0 (
+    str (if finite then "Inductive " else "CoInductive ") ++
+    prlist_with_sep (fun () -> fnl () ++ str"  with ")
+      print_one_inductive indl) ++
+  fnl ()
 
 let print_mutual sp =
   let (mib,mip) = Global.lookup_inductive (sp,0) in
   let mipv = mib.mind_packets in
-  if Array.length mib.mind_packets = 1 then
-    let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp 0 in
-    let sfinite =
-      if mib.mind_finite then "Inductive " else "CoInductive " in
-    let env = Global.env () in
-    let envpar = push_rel_context params env in
-    (hov 0 (
-       str sfinite ++ 
-      pr_global (IndRef (sp,0)) ++ brk(1,2) ++
-       print_params env params ++ brk(1,5) ++
-       str": " ++ prterm_env envpar arity ++ str" :=" ++
-       brk(0,4) ++ print_constructors envpar cstrnames cstrtypes ++ fnl () ++
-       implicit_args_msg sp mib.mind_packets) )
-  (* Mutual [co]inductive definitions *)
-  else
-    let _,(mipli,miplc) =
-      Array.fold_right
-        (fun mi (n,(li,lc)) ->
-           if mib.mind_finite then (n+1,(n::li,lc)) else (n+1,(li,n::lc)))
-        mipv (0,([],[])) 
-    in 
-    let strind =
-      if mipli = [] then (mt ()) 
-      else (str "Inductive" ++ brk(1,4) ++
-              (prlist_with_sep
-                 (fun () -> (fnl () ++ str"  with" ++ brk(1,4)))
-                 (print_one_inductive sp) mipli) ++ fnl ())
-    and strcoind =
-      if miplc = [] then (mt ()) 
-      else (str "CoInductive" ++ brk(1,4) ++
-              (prlist_with_sep
-                 (fun () -> (fnl () ++ str "  with" ++ brk(1,4))) 
-                 (print_one_inductive sp) miplc) ++ fnl ()) 
-    in
-    (hv 0 (str"Mutual " ++
-           (if mib.mind_finite then 
-	      strind ++ strcoind
-            else 
-	      strcoind ++ strind) ++
-           implicit_args_msg sp mipv))
+  let names = list_tabulate (fun x -> (sp,x)) (Array.length mipv) in
+  pr_mutual_inductive mib.mind_finite names ++
+  implicit_args_msg sp mipv
 
-(*
-  let env = Global.env () in
-  let evd = Evd.empty in
-  let {mind_packets=mipv} = mib in 
-  (* On suppose que tous les inductifs ont les même paramètres *)
-  let nparams = mipv.(0).mind_nparams in
-  let (lpars,_) = decomp_n_prod env evd nparams
-		    (body_of_type (mind_user_arity mipv.(0))) in
-  let arities = Array.map (fun mip -> (Name mip.mind_typename, None, mip.mind_nf_arity)) mipv in
-  let env_ar = push_rels lpars env in
-  let pr_constructor (id,c) =
-    (pr_id id ++ str " : " ++ prterm_env env_ar c) in
-  let print_constructors mis =
-    let (_,lC) = mis_type_mconstructs mis in
-    let lidC =
-      array_map2 (fun id c -> (id, snd (decomp_n_prod env evd nparams c)))
-	(mis_consnames mis) lC in
-    let plidC =
-      prvect_with_sep (fun () -> (brk(0,0) ++ str "| "))
-        pr_constructor
-	lidC
-    in
-    hV 0 (str "  " ++ plidC) 
-  in
-  let params =
-    if nparams = 0 then 
-      (mt ()) 
-    else
-      (str "[" ++ pr_rel_context env lpars ++ str "]" ++ brk(1,2)) in
-  let print_oneind tyi =
-    let mis =
-      build_mis
-	((sp,tyi),
-	 Array.of_list (instance_from_section_context mib.mind_hyps))
-	mib in
-    let (_,arity) = decomp_n_prod env evd nparams
-		      (body_of_type (mis_user_arity mis)) in
-      (hov 0
-         ((hov 0
-	       (pr_global (IndRef (sp,tyi)) ++ brk(1,2) ++ params ++
-	          str ": " ++ prterm_env env_ar arity ++ str " :=")) ++
-            brk(1,2) ++ print_constructors mis)) 
-  in 
-  let mis0 =
-    build_mis
-      ((sp,0),Array.of_list (instance_from_section_context mib.mind_hyps))
-      mib in
-  (* Case one [co]inductive *)
-  if Array.length mipv = 1 then
-    let (_,arity) = decomp_n_prod env evd nparams
-		      (body_of_type (mis_user_arity mis0)) in 
-    let sfinite = if mis_finite mis0 then "Inductive " else "CoInductive " in
-    (hov 0 (str sfinite ++ pr_global (IndRef (sp,0)) ++
-              if nparams = 0 then 
-		(mt ()) 
-              else 
-		(str" [" ++ pr_rel_context env lpars ++ str "]") ++
-              brk(1,5) ++ str": " ++ prterm_env env_ar arity ++ str" :=" ++
-              brk(0,4) ++ print_constructors mis0 ++ fnl () ++
-              implicit_args_msg sp mipv) )
-  (* Mutual [co]inductive definitions *)
-  else
-    let _,(mipli,miplc) =
-      List.fold_left 
-        (fun (n,(li,lc)) mi ->
-           if mi.mind_finite then (n+1,(n::li,lc)) else (n+1,(li,n::lc)))
-        (0,([],[])) (Array.to_list mipv) 
-    in 
-    let strind =
-      if mipli = [] then (mt ()) 
-      else (str "Inductive" ++ brk(1,4) ++
-              (prlist_with_sep
-                 (fun () -> (fnl () ++ str"  with" ++ brk(1,4)))
-                 print_oneind
-                 (List.rev mipli)) ++ fnl ())
-    and strcoind =
-      if miplc = [] then (mt ()) 
-      else (str "CoInductive" ++ brk(1,4) ++
-              (prlist_with_sep
-                 (fun () -> (fnl () ++ str "  with" ++ brk(1,4))) 
-                 print_oneind (List.rev miplc)) ++ fnl ()) 
-    in
-    (hV 0 (str"Mutual " ++ 
-             if mis_finite mis0 then 
-	       (strind ++ strcoind) 
-             else 
-	       (strcoind ++ strind) ++
-             implicit_args_msg sp mipv))
-*)
 let print_section_variable sp =
   let d = get_variable sp in
   let l = implicits_of_var sp in

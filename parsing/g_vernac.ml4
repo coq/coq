@@ -196,16 +196,12 @@ GEXTEND Gram
     [ [ IDENT "Record" -> () | IDENT "Structure" -> () ] ]
   ;
   constructor:
-    [ [ id = base_ident; coe = of_type_with_opt_coercion; c = constr ->
-        (coe,(id,c)) ] ]
-  ;
-  ne_constructor_list:
-    [ [ idc = constructor; "|"; l = ne_constructor_list -> idc :: l
-      | idc = constructor -> [idc] ] ]
+    [ [ idl = LIST1 base_ident SEP ","; coe = of_type_with_opt_coercion;
+        c = constr -> List.map (fun id -> (coe,(id,c))) idl ] ]
   ;
   constructor_list:
-    [ [ "|"; l = ne_constructor_list -> l
-      | l = ne_constructor_list -> l
+    [ [ "|"; l = LIST1 constructor SEP "|" -> List.flatten l
+      | l = LIST1 constructor SEP "|" -> List.flatten l
       |  -> [] ] ]
   ;
   block_old_style:
@@ -215,10 +211,6 @@ GEXTEND Gram
   oneind_old_style:
     [ [ id = base_ident; ":"; c = constr; ":="; lc = constructor_list ->
           (id,c,lc) ] ]
-  ;
-  block:
-    [ [ ind = oneind; "with"; indl = block -> ind :: indl
-      | ind = oneind -> [ind] ] ]
   ;
   oneind:
     [ [ id = base_ident; indpar = indpar; ":"; c = constr; ":=";
@@ -311,16 +303,16 @@ GEXTEND Gram
     ] ]
   ;
   gallina:
-    [ [ IDENT "Mutual"; f = finite_token; indl = block ->
+    [ [ IDENT "Mutual"; f = finite_token; indl = LIST1 oneind SEP "with" ->
+          VernacInductive (f,indl)
+      | f = finite_token; indl = LIST1 oneind SEP "with" ->
           VernacInductive (f,indl)
       | "Fixpoint"; recs = specifrec -> VernacFixpoint recs
       | "CoFixpoint"; corecs = specifcorec -> VernacCoFixpoint corecs
       | IDENT "Scheme"; l = schemes -> VernacScheme l
       | f = finite_token; s = csort; id = base_ident; indpar = indpar; ":=";
         lc = constructor_list -> 
-          VernacInductive (f,[id,indpar,s,lc])
-      | f = finite_token; indl = block ->
-          VernacInductive (f,indl) ] ]
+          VernacInductive (f,[id,indpar,s,lc]) ] ]
   ;
   csort:
     [ [ s = sort -> CSort (loc,s) ] ]
