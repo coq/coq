@@ -308,10 +308,10 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CLambdaN(_,ll,b)-> CT_lambdac(xlate_binder_ne_list ll, xlate_formula b)
    | CLetIn(_, v, a, b) -> 
        CT_letin(CT_def(xlate_id_opt v, xlate_formula a), xlate_formula b)
-   | CAppExpl(_, r, l) ->
+   | CAppExpl(_, (_,r), l) -> (* TODO: proj notation *)
        CT_appc(CT_bang(xlate_int_opt None, varc (xlate_reference r)),
 	       xlate_formula_ne_list l)
-   | CApp(_, f, l) ->
+   | CApp(_, (_,f), l) -> (* TODO: proj notation *)
        CT_appc(xlate_formula f, xlate_formula_expl_ne_list l)
    | CCases (_,po,tml,eqns)-> CT_cases(xlate_formula_opt po, 
                          xlate_formula_ne_list tml,

@@ -41,9 +41,16 @@ type struc_typ = {
   s_PARAM : int;
   s_PROJ : constant option list }
 
-let structure_table = (ref [] : (inductive * struc_typ) list ref)
+let structure_table = ref (Indmap.empty : struc_typ Indmap.t)
+let projection_table = ref KNmap.empty
 
-let cache_structure (_,x) = structure_table := x :: (!structure_table)
+let option_fold_right f p e = match p with Some a -> f a e | None -> e
+
+let cache_structure (_,(ind,struc)) =
+  structure_table := Indmap.add ind struc !structure_table;
+  projection_table := 
+    List.fold_right (option_fold_right (fun proj -> KNmap.add proj struc))
+      struc.s_PROJ !projection_table
 
 let subst_structure (_,subst,((kn,i),struc as obj)) = 
   let kn' = subst_kn subst kn in
@@ -65,7 +72,11 @@ let (inStruc,outStruc) =
 let add_new_struc (s,c,n,l) = 
   Lib.add_anonymous_leaf (inStruc (s,{s_CONST=c;s_PARAM=n;s_PROJ=l}))
 
-let find_structure indsp = List.assoc indsp !structure_table
+let find_structure indsp = Indmap.find indsp !structure_table
+
+let find_projection_nparams = function
+  | ConstRef cst -> (KNmap.find cst !projection_table).s_PARAM
+  | _ -> raise Not_found
 
 (*s Un "object" est une fonction construisant une instance d'une structure *)
 
@@ -144,11 +155,15 @@ let (inObjDef1,outObjDef1) =
 
 let objdef_info o = List.assoc o !object_table
 
-let freeze () = !structure_table, !object_table
+let freeze () =
+  !structure_table, !projection_table, !object_table
 
-let unfreeze (s,o) = structure_table := s; object_table := o
+let unfreeze (s,p,o) = 
+  structure_table := s; projection_table := p; object_table := o
 
-let init () = structure_table := []; object_table:=[]
+let init () =
+  structure_table := Indmap.empty; projection_table := KNmap.empty;
+  object_table:=[]
 
 let _ = init()
 

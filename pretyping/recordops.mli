@@ -37,6 +37,9 @@ val add_new_struc :
    [isp] if it corresponds to a structure, otherwise fails with [Not_found] *)
 val find_structure : inductive -> struc_typ
 
+(* raise [Not_found] if not a projection *)
+val find_projection_nparams : global_reference -> int
+
 type obj_typ = {
   o_DEF : constr;
   o_TABS : constr list; (* dans l'ordre *)
