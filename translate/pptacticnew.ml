@@ -240,7 +240,7 @@ let pr_hyp_location pr_id (id,occs,(hl,hl')) =
   if !hl' <> None then pr_hyp_location pr_id (id,occs,out_some !hl')
   else
     (if hl = InHyp && Options.do_translate () then 
-      msgerrnl (str "Translator warning: Unable to detect if " ++ pr_id id ++ str " denotes a local definition");
+      msgerrnl (h 0 (str "Translator warning: Unable to detect if " ++ pr_id id ++ spc () ++ str "denotes a local definition"));
     pr_hyp_location pr_id (id,occs,hl))
 
 let pr_in pp = spc () ++ hov 0 (str "in" ++ pp)

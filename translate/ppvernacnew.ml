@@ -132,6 +132,7 @@ let pr_set_entry_type = function
   | ETBigint -> str "bigint"
 
 let pr_non_terminal = function
+  | NtQual ("constr","constr") -> str "constr"
   | NtQual (u,nt) -> str u ++ str" : " ++ str nt
   | NtShort "constrarg" -> str "constr"
   | NtShort nt -> str nt
@@ -144,7 +145,7 @@ let strip_meta id =
 let pr_production_item = function
   | VNonTerm (loc,nt,Some p) -> pr_non_terminal nt ++ str"(" ++ pr_id (strip_meta p) ++ str")"
   | VNonTerm (loc,nt,None) -> pr_non_terminal nt
-  | VTerm s -> str s
+  | VTerm s -> qsnew s
 
 let pr_comment pr_c = function
   | CommentConstr c -> pr_c c
