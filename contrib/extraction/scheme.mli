@@ -17,7 +17,8 @@ open Nametab
 
 val keywords : Idset.t
 
-val preamble : extraction_params -> Idset.t -> bool * bool * bool -> std_ppcmds
+val preamble : 
+  extraction_params -> identifier list -> bool * bool * bool -> std_ppcmds
 
 module Make : functor(P : Mlpp_param) -> Mlpp
 

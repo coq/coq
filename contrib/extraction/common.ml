@@ -25,7 +25,7 @@ open Nametab
 
 let current_module = ref (id_of_string "")
 
-let is_construct = function ConstructRef _ -> true | _ -> false 
+let used_modules = ref []
 
 let long_module r = 
   match modpath (kn_of_r r) with 
@@ -94,7 +94,6 @@ let cache r f =
 
 module ToplevelParams = struct
   let globals () = Idset.empty
-  let rename_global r _ = id_of_global None r
   let pp_global r _ _ = Printer.pr_global r
 end
 
@@ -113,9 +112,7 @@ module MonoParams = struct
     cache r
       (fun r -> 
 	 let id = id_of_global None r in
-	 rename_global_id 
-	   (if upper || (is_construct r) 
-	    then uppercase_id id else lowercase_id id))
+	 rename_global_id (if upper then uppercase_id id else lowercase_id id))
       
   let pp_global r upper _ = 
     str (check_ml r (string_of_id (rename_global r upper)))
@@ -146,19 +143,24 @@ module ModularParams = struct
     cache r 
       (fun r -> 
 	 let id = id_of_global None r in 
-	 if upper || (is_construct r) then 
+	 if upper then
 	   rename_global_id r id (uppercase_id id) "Coq_"
 	 else rename_global_id r id (lowercase_id id) "coq_")
 
+  let qualify m id ctx = 
+    if m = !current_module then false
+    else if ctx = None then true 
+    else if Idset.mem id (out_some ctx) then true 
+    else false 
+      
   let pp_global r upper ctx = 
     let id = rename_global r upper in 
     let m = short_module r in
-    let mem id = match ctx with 
-      | None -> true
-      | Some ctx -> Idset.mem id ctx in 
-    let s = if (m <> !current_module) && (mem id) then 
-      (String.capitalize (string_of_id m)) ^ "." ^ (string_of_id id)
-    else (string_of_id id)
+    let s = string_of_id id in 
+    let s = 
+      if qualify m id ctx then 
+	String.capitalize (string_of_id m) ^ "." ^ (string_of_id id)
+      else string_of_id id 
     in str (check_ml r s)
 
 end
@@ -215,22 +217,22 @@ let extract_to_file f prm decls =
     | _ -> assert false 
   in 
   let pp_decl = pp_decl prm.modular in 
-  let used_modules = if prm.modular then 
-    Idset.remove prm.mod_name (decl_get_modules decls)
-  else Idset.empty
-  in 
   let print_dummys = 
     (decl_search MLdummy decls, 
      decl_type_search Tdummy decls, 
      decl_type_search Tunknown decls) in 
   cons_cofix := Refset.empty;
   current_module := prm.mod_name;
+  used_modules := if prm.modular then 
+    let set = (Idset.remove prm.mod_name (decl_get_modules decls))
+    in Idset.fold (fun m l -> m :: l) set [] 
+  else [];
   Hashtbl.clear renamings;
   let cout = match f with 
     | None -> stdout
     | Some f -> open_out f in
   let ft = Pp_control.with_output_to cout in
-  pp_with ft (preamble prm used_modules print_dummys);
+  pp_with ft (preamble prm !used_modules print_dummys);
   if not prm.modular then 
     List.iter (fun r -> pp_with ft (pp_logical_ind r)) 
       (List.filter decl_is_logical_ind prm.to_appear); 

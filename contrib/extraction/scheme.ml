@@ -30,7 +30,6 @@ let keywords =
       "apply"; "car"; "cdr"; 
       "error"; "delay"; "force"; "_"; "__"] 
     Idset.empty
-    
 
 let preamble _ _ (mldummy,_,_) = 
   (if mldummy then 
@@ -38,7 +37,7 @@ let preamble _ _ (mldummy,_,_) =
      ++ fnl () ++ fnl()
    else mt ())
 
-let paren st = str "(" ++ st ++ str ")"
+let paren = pp_par true
 
 let pp_abst st = function 
   | [] -> assert false
@@ -50,21 +49,17 @@ let pp_abst st = function
 
 module Make = functor(P : Mlpp_param) -> struct
 
-let pp_global r env = P.pp_global r false (Some (snd env))
-let pp_global' r = P.pp_global r false None
-
-let rename_global r = P.rename_global r false 
+let pp_global r = P.pp_global r false None
+let pp_global_ctx r env = P.pp_global r false (Some (snd env))
+let pp_global_up r = P.pp_global r true None
+let pp_global_up_ctx r env = P.pp_global r true (Some (snd env))
 
 let empty_env () = [], P.globals()
-
-let rec apply st = function 
-  | [] -> st 
-  | a :: args -> apply (paren (st ++ spc () ++ a)) args 
 
 (*s Pretty-printing of expressions.  *)
 
 let rec pp_expr env args = 
-  let apply st = apply st args in 
+  let apply st = pp_apply st true args in 
   function
     | MLrel n -> 
 	let id = get_db_name n env in apply (pr_id id)
@@ -87,12 +82,12 @@ let rec pp_expr env args =
 			 (pr_id (List.hd i) ++ spc () ++ pp_expr env [] a1)) 
 		    ++ spc () ++ hov 0 (pp_expr env' [] a2)))))
     | MLglob r -> 
-	apply (pp_global r env)
+	apply (pp_global_ctx r env)
     | MLcons (r,args') ->
 	assert (args=[]);
 	let st = 
 	  str "`" ++ 
-	  paren (pp_global r env ++ 
+	  paren (pp_global_up_ctx r env ++ 
 		 (if args' = [] then mt () else (spc () ++ str ",")) ++
 		 prlist_with_sep 
 		   (fun () -> spc () ++ str ",") 
@@ -130,7 +125,7 @@ and pp_one_pat env (r,ids,t) =
     if ids = [] then mt () 
     else (str " " ++ prlist_with_sep spc pp_arg (List.rev ids))
   in 
-  (pp_global r env ++ args), (pp_expr env' [] t)
+  (pp_global_up_ctx r env ++ args), (pp_expr env' [] t)
   
 and pp_pat env pv = 
   prvect_with_sep fnl  
@@ -148,7 +143,7 @@ and pp_fix env j (ids,bl) args =
 		  (fun (fi,ti) -> paren ((pr_id fi) ++ (pp_expr env [] ti)))
 		  (array_map2 (fun id b -> (id,b)) ids bl)) ++
 	     fnl () ++
-      	     hov 2 (apply (pr_id (ids.(j))) args))))
+      	     hov 2 (pp_apply (pr_id (ids.(j))) true args))))
 
 (*s Pretty-printing of a declaration. *)
 
@@ -157,21 +152,19 @@ let pp_decl = function
   | Dtype _ -> mt () 
   | DcustomType _ -> mt ()
   | Dfix (rv, defs,_) ->
-      let ids = Array.map rename_global rv in 
-      let env = List.rev (Array.to_list ids), P.globals() in
-      prvect_with_sep 
-	fnl 
-	(fun (fi,ti) -> 
+      let ppv = Array.map pp_global rv in 
+      prvect_with_sep fnl 
+	(fun (pi,ti) -> 
 	   hov 2 
-	     (paren (str "define " ++ pr_id fi ++ spc () ++ 
-		     (pp_expr env [] ti)) 
+	     (paren (str "define " ++ pi ++ spc () ++ 
+		     (pp_expr (empty_env ()) [] ti)) 
 	      ++ fnl ()))
-	(array_map2 (fun id b -> (id,b)) ids defs)
+	(array_map2 (fun p b -> (p,b)) ppv defs)
   | Dterm (r, a, _) ->
-      hov 2 (paren (str "define " ++ (pp_global' r) ++ spc () ++
+      hov 2 (paren (str "define " ++ pp_global r ++ spc () ++
 		    pp_expr (empty_env ()) [] a)) ++ fnl ()  
   | DcustomTerm (r,s) -> 
-      hov 2 (paren (str "define " ++ pp_global' r ++ spc () ++ str s) ++ fnl ())
+      hov 2 (paren (str "define " ++ pp_global r ++ spc () ++ str s) ++ fnl ())
 
 end
 

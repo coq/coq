@@ -487,18 +487,17 @@ let ast_subst e =
   in subst 0
 
 (*s Generalized substitution. 
-   [gen_subst v m d t] applies to [t] the substitution coded in the 
-   [v] array: [(Rel i)] becomes [(Rel v.(i))]. [d] is the correction applies 
-   to [Rel] greater than [m]. *)
+   [gen_subst v d t] applies to [t] the substitution coded in the 
+   [v] array: [(Rel i)] becomes [v.(i-1)]. [d] is the correction applies 
+   to [Rel] greater than [Array.length v]. *)
 
 let gen_subst v d t = 
   let rec subst n = function
     | MLrel i as a -> 
 	let i'= i-n in 
 	if i' < 1 then a 
-	else if i' < Array.length v then 
-	  if v.(i') = 0 then MLdummy
-	  else MLrel (v.(i')+n) 
+	else if i' <= Array.length v then 
+	  ast_lift n v.(i') 
 	else MLrel (i+d) 
     | a -> ast_map_lift subst n a
   in subst 0 t
@@ -798,14 +797,13 @@ let kill_some_lams bl (ids,c) =
   let n' = List.fold_left (fun n b -> if b then (n+1) else n) 0 bl in 
   if n = n' then ids,c
   else if n' = 0 then [],ast_lift (-n) c 
-  else begin 
-    let v = Array.make (n+1) 0 in 
+  else begin
+    let v = Array.make n MLdummy in 
     let rec parse_ids i j = function 
       | [] -> ()
-      | true :: q -> 
-	  v.(i) <- j; parse_ids (i+1) (j+1) q
-      | false :: q -> parse_ids (i+1) j q
-    in parse_ids 1 1 bl ; 
+      | true :: l -> v.(i) <- MLrel j; parse_ids (i+1) (j+1) l
+      | false :: l -> parse_ids (i+1) j l
+    in parse_ids 0 1 bl ; 
     select_via_bl bl ids, gen_subst v (n'-n) c
   end
 
@@ -1180,8 +1178,11 @@ let rec optimize prm = function
 and optimize_Dfix prm (r,t,typ) b l = 
   match t with 
     | MLfix (_, f, c) -> 
-	if Array.length f = 1 then 
-	  if b then Dfix ([|r|], c,[|typ|]) :: (optimize prm l)
+	let len = Array.length f in 
+	if len = 1 then 
+	  if b then 
+	    let c = [|ast_subst (MLglob r) c.(0)|] in 
+	    Dfix ([|r|], c, [|typ|]) :: (optimize prm l)
 	  else optimize prm l
 	else 
 	  let v = try 
@@ -1197,6 +1198,9 @@ and optimize_Dfix prm (r,t,typ) b l =
 		(fun r -> try Refmap.find r map
 		 with Not_found -> Tunknown) v 
 	    in 
+	    let c = 
+	      let gv = Array.map (fun r -> MLglob r) v in 
+	      Array.map (gen_subst gv (-len)) c in 
 	    Dfix (v, c, typs) :: (optimize prm l)
 	  else optimize prm l 
     | _ -> raise Impossible

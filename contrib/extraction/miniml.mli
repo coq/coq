@@ -78,7 +78,7 @@ type extraction_params =
 module type Mlpp_param = sig
   val globals : unit -> Idset.t
       (* the bool arg is: should we rename in uppercase or not ? *)
-  val rename_global : global_reference -> bool -> identifier
+      (* the identifier set correspond to local bindings to avoid. *)
   val pp_global : global_reference -> bool -> Idset.t option -> std_ppcmds
 end
 

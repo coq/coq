@@ -20,9 +20,9 @@ open Table
 val current_module : identifier option ref
 val cons_cofix : Refset.t ref
 
-val open_par : bool -> std_ppcmds
-val close_par : bool -> std_ppcmds
+val pp_par : bool -> std_ppcmds -> std_ppcmds
 val pp_abst : identifier list -> std_ppcmds
+val pp_apply : std_ppcmds -> bool -> std_ppcmds list -> std_ppcmds 
 val pr_binding : identifier list -> std_ppcmds
 
 val rename_id : identifier -> Idset.t -> identifier
@@ -39,7 +39,8 @@ val get_db_name : int -> env -> identifier
 
 val keywords : Idset.t
 
-val preamble : extraction_params -> Idset.t -> bool * bool * bool -> std_ppcmds
+val preamble : 
+  extraction_params -> identifier list -> bool * bool * bool -> std_ppcmds
 
 (*s Production of Ocaml syntax. We export both a functor to be used for 
     extraction in the Coq toplevel and a function to extract some 
