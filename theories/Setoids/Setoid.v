@@ -9,24 +9,20 @@
 
 (*i $Id$: i*)
 
+Require Export Relation_Definitions.
+
 Set Implicit Arguments.
 
 (* DEFINITIONS OF Relation_Class AND n-ARY Morphism_Theory *)
 
-Definition is_reflexive (A: Type) (Aeq: A -> A -> Prop) : Prop :=
- forall x:A, Aeq x x.
-
-Definition is_symmetric (A: Type) (Aeq: A -> A -> Prop) : Prop :=
- forall (x y:A), Aeq x y -> Aeq y x.
-
-(* X will be used to distinguish covariant arguments whose type is an          *)
-(* AsymmetricReflexive relation from covariant arguments of the same type*)
+(* X will be used to distinguish covariant arguments whose type is an   *)
+(* Asymmetric* relation from contravariant arguments of the same type *)
 Inductive X_Relation_Class (X: Type) : Type :=
    SymmetricReflexive :
-     forall A Aeq, @is_symmetric A Aeq -> is_reflexive Aeq -> X_Relation_Class X
- | AsymmetricReflexive : X -> forall A Aeq, @is_reflexive A Aeq -> X_Relation_Class X
- | Symmetric : forall A Aeq, @is_symmetric A Aeq -> X_Relation_Class X
- | Asymmetric : X -> forall A (Aeq : A -> A -> Prop), X_Relation_Class X
+     forall A Aeq, symmetric A Aeq -> reflexive _ Aeq -> X_Relation_Class X
+ | AsymmetricReflexive : X -> forall A Aeq, reflexive A Aeq -> X_Relation_Class X
+ | SymmetricAreflexive : forall A Aeq, symmetric A Aeq -> X_Relation_Class X
+ | AsymmetricAreflexive : X -> forall A (Aeq : relation A), X_Relation_Class X
  | Leibniz : Type -> X_Relation_Class X.
 
 Inductive variance : Set :=
@@ -40,10 +36,10 @@ Implicit Type Hole Out: Relation_Class.
 
 Definition relation_class_of_argument_class : Argument_Class -> Relation_Class.
  destruct 1.
- exact (SymmetricReflexive _ i i0).
- exact (AsymmetricReflexive tt i).
- exact (Symmetric _ i).
- exact (Asymmetric tt Aeq).
+ exact (SymmetricReflexive _ s r).
+ exact (AsymmetricReflexive tt r).
+ exact (SymmetricAreflexive _ s).
+ exact (AsymmetricAreflexive tt Aeq).
  exact (Leibniz _ T).
 Defined.
 
@@ -204,29 +200,29 @@ Inductive check_if_variance_is_respected :
       check_if_variance_is_respected (Some Contravariant) dir (opposite_direction dir).
 
 Inductive Reflexive_Relation_Class : Type :=
-   RSymmetricReflexive :
-     forall A Aeq, @is_symmetric A Aeq -> is_reflexive Aeq -> Reflexive_Relation_Class
- | RAsymmetricReflexive :
-     forall A Aeq, @is_reflexive A Aeq -> Reflexive_Relation_Class
+   RSymmetric :
+     forall A Aeq, symmetric A Aeq -> reflexive _ Aeq -> Reflexive_Relation_Class
+ | RAsymmetric :
+     forall A Aeq, reflexive A Aeq -> Reflexive_Relation_Class
  | RLeibniz : Type -> Reflexive_Relation_Class.
 
 Inductive Areflexive_Relation_Class  : Type :=
- | ASymmetric : forall A Aeq, @is_symmetric A Aeq -> Areflexive_Relation_Class
- | AAsymmetric : forall A (Aeq : A -> A -> Prop), Areflexive_Relation_Class.
+ | ASymmetric : forall A Aeq, symmetric A Aeq -> Areflexive_Relation_Class
+ | AAsymmetric : forall A (Aeq : relation A), Areflexive_Relation_Class.
 
 Definition relation_class_of_reflexive_relation_class:
  Reflexive_Relation_Class -> Relation_Class.
  induction 1.
-   exact (SymmetricReflexive _ i i0).
-   exact (AsymmetricReflexive tt i).
+   exact (SymmetricReflexive _ s r).
+   exact (AsymmetricReflexive tt r).
    exact (Leibniz _ T).
 Defined.
 
 Definition relation_class_of_areflexive_relation_class:
  Areflexive_Relation_Class -> Relation_Class.
  induction 1.
-   exact (Symmetric _ i).
-   exact (Asymmetric tt Aeq).
+   exact (SymmetricAreflexive _ s).
+   exact (AsymmetricAreflexive tt Aeq).
 Defined.
 
 Definition carrier_of_reflexive_relation_class :=
@@ -499,21 +495,15 @@ Theorem setoid_rewrite:
 
    unfold interp, Morphism_Context_rect2.
    (*CSC: reflexivity used here*)
-   destruct S; destruct dir'0; simpl.
-     apply i0.
-     apply i0.
-     apply i.
-     apply i.
-     reflexivity.
-     reflexivity.
+   destruct S; destruct dir'0; simpl; (apply r || reflexivity).
 
-  destruct dir'0; exact r.
+   destruct dir'0; exact r.
 
   destruct S; unfold directed_relation_of_argument_class; simpl in H0 |- *;
    unfold get_rewrite_direction; simpl.
      destruct dir'0; destruct dir'';
        (exact H0 ||
-        unfold directed_relation_of_argument_class; simpl; apply i; exact H0).
+        unfold directed_relation_of_argument_class; simpl; apply s; exact H0).
      (* the following mess with generalize/clear/intros is to help Coq resolving *)
      (* second order unification problems.                                                                *)
      generalize m c H0; clear H0 m c; inversion c;
@@ -521,7 +511,7 @@ Theorem setoid_rewrite:
          (exact H3 || rewrite (opposite_direction_idempotent dir'0); apply H3).
      destruct dir'0; destruct dir'';
        (exact H0 ||
-        unfold directed_relation_of_argument_class; simpl; apply i; exact H0).
+        unfold directed_relation_of_argument_class; simpl; apply s; exact H0).
 (* the following mess with generalize/clear/intros is to help Coq resolving *)
      (* second order unification problems.                                                                *)
      generalize m c H0; clear H0 m c; inversion c;
@@ -539,11 +529,11 @@ Theorem setoid_rewrite:
        (interp_relation_class_list E1 m0) (interp_relation_class_list E2 m0)).
    split.
      clear m0 H1; destruct S; simpl in H0 |- *; unfold get_rewrite_direction; simpl.
-        destruct dir''; destruct dir'0; (exact H0 || hnf; apply i; exact H0).
+        destruct dir''; destruct dir'0; (exact H0 || hnf; apply s; exact H0).
         inversion c.
           rewrite <- H3; exact H0.
           rewrite (opposite_direction_idempotent dir'0); exact H0.
-        destruct dir''; destruct dir'0; (exact H0 || hnf; apply i; exact H0).
+        destruct dir''; destruct dir'0; (exact H0 || hnf; apply s; exact H0).
         inversion c.
           rewrite <- H3; exact H0.
           rewrite (opposite_direction_idempotent dir'0); exact H0.
@@ -553,13 +543,13 @@ Qed.
 
 (* BEGIN OF UTILITY/BACKWARD COMPATIBILITY PART *)
 
-Record Setoid_Theory  (A: Type) (Aeq: A -> A -> Prop) : Prop := 
+Record Setoid_Theory  (A: Type) (Aeq: relation A) : Prop := 
   {Seq_refl : forall x:A, Aeq x x;
    Seq_sym : forall x y:A, Aeq x y -> Aeq y x;
    Seq_trans : forall x y z:A, Aeq x y -> Aeq y z -> Aeq x z}.
 
 Definition argument_class_of_setoid_theory:
- forall (A: Type) (Aeq: A -> A -> Prop),
+ forall (A: Type) (Aeq: relation A),
   Setoid_Theory Aeq -> Argument_Class.
  intros.
  apply (@SymmetricReflexive variance _ Aeq).
@@ -573,7 +563,7 @@ Definition relation_class_of_setoid_theory :=
    (@argument_class_of_setoid_theory A Aeq Setoid).
 
 Definition equality_morphism_of_setoid_theory:
- forall (A: Type) (Aeq: A -> A -> Prop) (ST: Setoid_Theory Aeq),
+ forall (A: Type) (Aeq: relation A) (ST: Setoid_Theory Aeq),
    let ASetoidClass := argument_class_of_setoid_theory ST in 
     (Morphism_Theory (cons ASetoidClass (singl ASetoidClass))
       Prop_Relation_Class).
