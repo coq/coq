@@ -70,6 +70,7 @@ val list_except : 'a -> 'a list -> 'a list
 val list_for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val list_sep_last : 'a list -> 'a * 'a list
 val list_try_find_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b
+val list_try_find : ('a -> 'b) -> 'a list -> 'b
 val list_uniquize : 'a list -> 'a list
 val list_subset : 'a list -> 'a list -> bool
 val list_splitby : ('a -> bool) -> 'a list -> 'a list * 'a list
@@ -83,7 +84,6 @@ val list_map_append : ('a -> 'b list) -> 'a list -> 'b list
 val list_map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
 val list_share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
 val list_join_map : ('a -> 'b list) -> 'a list -> 'b list
-val list_try_find : ('a -> 'b) -> 'a list -> 'b
 
 (*s Arrays. *)
 

@@ -193,6 +193,13 @@ let list_try_find_i f =
   in 
   try_find_f
 
+let list_try_find f = 
+  let rec try_find_f = function
+    | [] -> failwith "try_find"
+    | h::t -> try f h with Failure _ -> try_find_f t
+  in 
+  try_find_f
+
 let rec list_uniquize = function
   | [] -> []
   | h::t -> if List.mem h t then list_uniquize t else h::(list_uniquize t)
@@ -258,14 +265,6 @@ let list_share_tails l1 l2 =
   shr_rev [] (List.rev l1, List.rev l2)
 
 let list_join_map f l = List.flatten (List.map f l)
-
-let list_try_find f = 
-  let rec try_find_f = function
-    | [] -> failwith "try_find"
-    | h::t -> try f h with Failure _ -> try_find_f t
-  in 
-  try_find_f
-
 
 (* Arrays *)
 
