@@ -351,8 +351,9 @@ ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
 	theories/Arith/Wf_nat.vo      \
 #	theories/Arith/Div.vo 
 
-BOOLVO=theories/Bool/Bool.vo  theories/Bool/IfProp.vo \
-       theories/Bool/Zerob.vo theories/Bool/DecBool.vo theories/Bool/Sumbool.vo
+BOOLVO=theories/Bool/Bool.vo  		theories/Bool/IfProp.vo \
+       theories/Bool/Zerob.vo 		theories/Bool/DecBool.vo \
+	theories/Bool/Sumbool.vo 	theories/Bool/BoolEq.vo
 
 ZARITHVO=theories/ZArith/Wf_Z.vo        theories/ZArith/Zsyntax.vo \
 	 theories/ZArith/ZArith.vo      theories/ZArith/auxiliary.vo \
