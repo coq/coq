@@ -536,6 +536,7 @@ Metavariables are identifiers preceded by the ``\verb+$+'' symbol.
 They cannot be replaced by identifiers. For instance, if we enter a
 rule with identifiers and not metavariables, an error occurs:
 
+% Test failure
 \begin{coq_example}
 Grammar constr constr1 := 
   not_eq [ command0(a) "#" command0(b) ] -> [~(a=b)].
@@ -798,6 +799,7 @@ Check ([x:nat]x || [y:nat]y).
 \verb+$c2+ to \verb+[y:nat]y+. Since these two values are equal, the
 pattern matching succeeds. It fails when the two terms are not equal:
 
+% Test failure
 \begin{coq_example}
 Check ([x:nat]x || [z:bool]z).
 \end{coq_example}
@@ -846,6 +848,7 @@ depends on the universe name. The following command fails because {\tt
 ne\_identarg\_list} is already defined with type {\tt ast list} but the
 {\tt Grammar} command header assumes its type is {\tt ast}.
 
+% Test failure
 \begin{coq_example}           
 Grammar tactic ne_identarg_list :=
   list_two [ identarg($id1) identarg($id2) ] -> [ $id1 $id2 ]. 
@@ -856,6 +859,7 @@ following rule is refused because the \verb+constr:constr1+ grammar
 has been already defined with type {\tt Ast}, and cannot be extended
 with a rule returning AST lists.
 
+% Test failure
 \begin{coq_example}           
 Grammar constr constr1 :=
   carret_list [ constr0($c1) "^" constr0($c2)] -> [ $c1 $c2 ].
@@ -910,12 +914,12 @@ Grammar constr constr0 : ast :=
 | product [ "(" prim:var($id) ":" constr($c1) ")" constr0($c2) ] ->
             [(PROD $c1 [$id]$c2)]
 with constr10 : ast :=
-  application [ constr91($c1) ne_constr_list($lc) ] ->
+  application [ constr9($c1) ne_constr_list($lc) ] ->
                [(APPLIST $c1 ($LIST $lc))]
-| inject_com91 [ constr91($c) ] -> [$c].
+| inject_com91 [ constr9($c) ] -> [$c].
 Check (x:nat)nat.
 \end{coq_example}
-%$
+% Test failure
 
 \begin{coq_eval}
 Reset Initial.
@@ -938,6 +942,7 @@ Check (x:nat)nat.
 the right-hand side of the rule, but the error message in the
 following example would not be as relevant:
 
+% Test failure
 \begin{coq_example}
 Check (S O:nat)nat.
 \end{coq_example}
@@ -1083,9 +1088,6 @@ Grammar constr constr7 :=
 Note that the operator is associative to the right.  
 Now \verb+True X False+ is well parsed:
 
-\begin{coq_eval}
-Abort.
-\end{coq_eval}
 \begin{coq_example}
 Goal True X False.
 \end{coq_example}
@@ -1271,6 +1273,7 @@ Syntax constr level 6:
 
 Let's test the printing rule:
 
+% 2nd test should fail
 \begin{coq_example}
 Definition Id := [A:Set][x:A]x.
 Check (Id nat) o (Id nat).
@@ -1295,6 +1298,9 @@ polymorphism, we can always build a term with one argument more.  The
 rules for application deal with the problem of having an arbitrary
 number of arguments by using list patterns. Let's see these rules:
 
+\begin{coq_eval}
+Definition foo := O.
+\end{coq_eval}
 \begin{coq_example*}
 Syntax constr level 10:
   app [<<(APPLIST $H ($LIST $T))>>] ->
@@ -1302,8 +1308,11 @@ Syntax constr level 10:
 
 | apptailcons [<<(APPTAIL $H ($LIST $T))>>] ->
       [ [1 1] $H:L (APPTAIL ($LIST $T)):E ]
-| apptailnil [(APPTAIL)] -> [ ].
+| apptailnil [<<(APPTAIL)>>] -> [ ].
 \end{coq_example*}
+\begin{coq_eval}
+Reset foo.
+\end{coq_eval}
 
 The first rule prints the operator of the application, and the second
 prints the list of its arguments. Then, one solution to our problem is
@@ -1314,7 +1323,7 @@ least} five arguments:
 \begin{coq_example*}
 Syntax constr level 10:
   expl_comp 
-    [<<(APPLIST explicit_comp $_ $_ $_ $f $g ($LIST $l))>>]
+    [<<(APPLIST <<explicit_comp>> $_ $_ $_ $f $g ($LIST $l))>>]
      -> [ [<hov 0> $f:L "o" $g:L (APPTAIL ($LIST $l)):E ] ].
 \end{coq_example*}
 %$
