@@ -361,7 +361,8 @@ let ast_of_cvt_arg = function
 	   List.map 
 	     (ast_of_cvt_bind
 		(ast_of_constr false (assumptions_for_print []))) bl)
-  | Tacexp ast      -> ope ("TACTIC",[ast]) 
+  | Tacexp ast      -> ope ("TACTIC",[ast])
+  | Tac tac -> failwith "TODO: ast_of_cvt_arg: Tac"
   | Redexp red -> failwith "TODO: ast_of_cvt_arg: Redexp"
   | Fixexp (id,n,c) -> ope ("FIXEXP",[(nvar (string_of_id id)); 
                                       (num n); 
