@@ -702,7 +702,7 @@ let interp_type_with_implicits sigma env impls c =
 let interp_sort = function
   | Node(loc,"PROP", []) -> Prop Null
   | Node(loc,"SET", [])  -> Prop Pos
-  | Node(loc,"TYPE", _) -> Type Univ.dummy_univ
+  | Node(loc,"TYPE", _) -> new_Type_sort ()
   | a -> user_err_loc (Ast.loc a,"interp_sort", [< 'sTR "Not a sort" >])
 
 let judgment_of_rawconstr sigma env c =

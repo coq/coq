@@ -435,8 +435,9 @@ let construct_discriminator sigma env dirn c sort =
   let arsign,arsort = get_arity indf in
   let (true_0,false_0,sort_0) = 
     match necessary_elimination arsort (destSort sort) with
-      | Type_Type -> build_coq_UnitT (), build_coq_EmptyT (), (Type dummy_univ)
-      | _         -> build_coq_True (),  build_coq_False (),  (Prop Null)
+      | Type_Type ->
+	  build_coq_UnitT (), build_coq_EmptyT (), Evarutil.new_Type_sort ()
+      | _         -> build_coq_True (),  build_coq_False (), (Prop Null)
   in
   let p = it_mkLambda_or_LetIn (mkSort sort_0) arsign in
   let cstrs = get_constructors indf in
@@ -462,8 +463,7 @@ let rec build_discriminator sigma env dirn c sort = function
       let newc = mkRel(cnum_nlams-(argnum-nparams)) in
       let subval = build_discriminator sigma cnum_env dirn newc sort l  in
       (match necessary_elimination arsort (destSort sort) with
-         | Type_Type ->
-	     kont subval (build_coq_EmptyT (),mkSort (Type(dummy_univ)))
+         | Type_Type -> kont subval (build_coq_EmptyT (),Evarutil.new_Type ())
 	 | _ -> kont subval (build_coq_False (),mkSort (Prop Null)))
 
 let find_eq_data_decompose eqn =
