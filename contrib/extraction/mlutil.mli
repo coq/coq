@@ -1,6 +1,8 @@
 
 open Miniml
 
+val anonymous : Names.identifier
+
 val occurs : int -> ml_ast -> bool
 
 val ml_lift : int -> ml_ast -> ml_ast

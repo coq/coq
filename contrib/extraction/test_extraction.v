@@ -105,6 +105,11 @@ Inductive titi : Set := tata : nat->nat->nat->nat->titi.
 Extraction (tata O).
 Extraction (tata O (S O)).
 
+Inductive eta : Set := eta_c : nat->Prop->nat->Prop->eta.
+Extraction eta_c.
+Extraction (eta_c O).
+Extraction (eta_c O True).
+Extraction (eta_c O True O).
 
 Inductive bidon [A:Prop;B:Type] : Set := tb : (x:A)(y:B)(bidon A B). 
 Definition fbidon := [A,B:Type][f:A->B->(bidon True nat)][x:A][y:B](f x y).

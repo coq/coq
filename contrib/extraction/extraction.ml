@@ -241,6 +241,8 @@ let decompose_lam_eta n env c =
     let e = applist (lift dif e, List.rev_map mkRel (interval 1 dif)) in
     (binders, e)
 
+let rec abstract_n n a = 
+  if n = 0 then a else MLlam (anonymous, ml_lift 1 (abstract_n (n-1) a))
 
 (*s Tables to keep the extraction of inductive types and constructors. *)
 
@@ -257,7 +259,7 @@ let add_inductive_extraction i e =
 let lookup_inductive_extraction i = Gmap.find i !inductive_extraction_table
 
 type constructor_extraction_result = 
-  | Cml of ml_type list * signature
+  | Cml of ml_type list * signature * int
   | Cprop
 
 let constructor_extraction_table = 
@@ -427,8 +429,8 @@ and extract_term_with_type env ctx c t =
 	let d' = extract_term env' ctx' d in 
 	(* If [d] was of type an arity, [c] too would be so *)
 	(match v with
-	   | Varity | Vprop -> d'
-	   | Vdefault -> match d' with
+	   | Varity -> d'
+	   | Vprop | Vdefault -> match d' with
 	       | Rmlterm a -> Rmlterm (MLlam (id, a))
 	       | Rprop -> assert false (* Cf. rem. above *))
     | IsRel n ->
@@ -453,11 +455,17 @@ and extract_term_with_type env ctx c t =
     | IsConst (sp,_) ->
 	Rmlterm (MLglob (ConstRef sp))
     | IsMutConstruct (cp,_) ->
-	let s = signature_of_constructor cp in
-	let n =  
-	  List.fold_left (fun n (v,_) -> if v = Vdefault then n+1 else n) 0 s 
+	let (s,n) = signature_of_constructor cp in
+	let ns = List.length s + 1 in
+	let rec abstract rels i = function
+	  | [] -> 
+	      MLcons (ConstructRef cp, List.length rels, List.rev rels)
+	  | (Vdefault,id) :: l -> 
+	      MLlam (id, abstract (MLrel (ns - i) :: rels) (succ i) l)
+	  | (_,id) :: l ->
+	      MLlam (id, abstract rels (succ i) l)
 	in
-	Rmlterm (MLcons (ConstructRef cp,n,[]))
+	Rmlterm (abstract_n n (abstract [] 1 s))
     | IsMutCase ((ni,(ip,cnames,_,_,_)),p,c,br) ->
 	let extract_branch_aux j b = 	  
 	  let (binders,e) = decompose_lam_eta ni.(j) env b in
@@ -474,7 +482,7 @@ and extract_term_with_type env ctx c t =
 	in
 	let extract_branch j b =
 	  let cp = (ip,succ j) in
-	  let s = signature_of_constructor cp in
+	  let (s,_) = signature_of_constructor cp in
 	  assert (List.length s = ni.(j));
 	  (* number of arguments, without parameters *)
 	  let (binders, e') = extract_branch_aux j b in
@@ -531,7 +539,8 @@ and extract_app env ctx (f,tyf,sf) args =
   let mlargs = 
     List.fold_right 
       (fun (v,a) args -> match v with
-	 | (Varity | Vprop), _ -> args
+	 | Varity,_ -> args
+	 | Vprop,_ -> MLprop :: args
 	 | Vdefault,_ ->  
 	     (* We can't trust the tag [Vdefault], we use [extract_constr] *)
 	     match extract_constr env ctx a with 
@@ -592,7 +601,7 @@ and extract_constructor (((sp,_),_) as c) =
 
 and signature_of_constructor cp = match extract_constructor cp with
   | Cprop -> assert false
-  | Cml (_,s) -> s
+  | Cml (_,s,n) -> (s,n)
 
 and extract_mib sp =
   if not (Gmap.mem (sp,0) !inductive_extraction_table) then begin
@@ -613,10 +622,11 @@ and extract_mib sp =
     let fl = 
       array_foldi
 	(fun i ib fl ->
-	   let mis = build_mis ((sp,i),[||]) mib in
+	   let ip = (sp,i) in
+	   let mis = build_mis (ip,[||]) mib in
 	   if mis_sort mis = Prop Null then
 	     (for j = 0 to mis_nconstr mis do
-	       add_constructor_extraction ((sp,i),succ j) Cprop
+		add_constructor_extraction (ip,succ j) Cprop
 	      done;
 	      fl)
 	   else
@@ -630,7 +640,8 @@ and extract_mib sp =
 		    | Tarity | Tprop -> assert false
 		    | Tmltype (mlt, s, f) -> 
 			let l = list_of_ml_arrows mlt in
-			add_constructor_extraction ((sp,i),succ j) (Cml (l,s));
+			let cp = (ip,succ j) in
+			add_constructor_extraction cp (Cml (l,s,nparams));
 			f @ fl)
 	       ib.mind_nf_lc fl)
 	mib.mind_packets []
@@ -652,7 +663,7 @@ and extract_inductive_declaration sp =
     let cp = (ind,succ j) in
     match lookup_constructor_extraction cp with 
       | Cprop -> assert false
-      | Cml (t,_) -> (ConstructRef cp, t)
+      | Cml (t,_,_) -> (ConstructRef cp, t)
   in
   let l = 
     array_foldi

@@ -11,5 +11,5 @@ Declare ML Module "mlutil.cmo" "ocaml.cmo" "extraction.cmo" "extract_env.cmo".
 Grammar vernac vernac : ast :=
   extr_constr [ "Extraction" constrarg($c) "." ] -> 
               [(Extraction $c)]
-| extr_list   [ "Extraction" "[" ne_qualidarg_list($l) "]" "." ] ->
+| extr_list   [ "Extraction" "-r" ne_qualidarg_list($l) "." ] ->
               [(ExtractionList ($LIST $l))].
