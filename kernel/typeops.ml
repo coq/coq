@@ -712,12 +712,12 @@ let check_fix env sigma ((nvect,bodynum),(types,names,bodies as recdef)) =
     or bodynum >= nbfix
   then anomaly "Ill-formed fix term";
   for i = 0 to nbfix - 1 do
+    let fixenv = push_rec_types recdef env in
     try
-      let fixenv = push_rec_types recdef env in
       let _ = check_subterm_rec_meta fixenv sigma nvect nvect.(i) bodies.(i)
       in ()
     with FixGuardError err ->
-      error_ill_formed_rec_body	CCI env err (List.rev names) i bodies
+      error_ill_formed_rec_body	CCI fixenv err (List.rev names) i bodies
   done 
 
 (*
@@ -850,12 +850,12 @@ let check_guard_rec_meta env sigma nbfix def deftype =
 let check_cofix env sigma (bodynum,(types,names,bodies as recdef)) = 
   let nbfix = Array.length bodies in 
   for i = 0 to nbfix-1 do
+    let fixenv = push_rec_types recdef env in
     try 
-      let fixenv = push_rec_types recdef env in
       let _ = check_guard_rec_meta fixenv sigma nbfix bodies.(i) types.(i)
       in ()
     with CoFixGuardError err -> 
-      error_ill_formed_rec_body CCI env err (List.rev names) i bodies
+      error_ill_formed_rec_body CCI fixenv err (List.rev names) i bodies
   done
 
 (* Checks the type of a (co)fixpoint.
