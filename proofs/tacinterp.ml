@@ -477,7 +477,7 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
       VArg (Clause (List.map (fun ast -> id_of_Identifier (unvarg (val_interp
         (evc,env,lfun,lmatch,goalopt,debug) ast))) cl))
     | Node(_,"TACTIC",[ast]) ->
-      VArg (Tac (tac_interp lfun lmatch debug ast))
+      VArg (Tac ((tac_interp lfun lmatch debug ast),ast))
 (*Remains to treat*)
     | Node(_,"FIXEXP", [Nvar(_,s); Num(_,n);Node(_,"COMMAND",[c])]) ->
       VArg ((Fixexp (id_of_string s,n,c)))

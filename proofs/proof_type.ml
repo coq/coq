@@ -94,7 +94,7 @@ and tactic_arg =
   | Cbindings      of constr   substitution 
   | Quoted_string  of string
   | Tacexp         of Coqast.t
-  | Tac            of tactic
+  | Tac            of tactic * Coqast.t
   | Redexp         of Tacred.red_expr
   | Fixexp         of identifier * int * Coqast.t
   | Cofixexp       of identifier * Coqast.t

@@ -118,7 +118,7 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo \
 
 HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
             tactics/inv.cmo tactics/leminv.cmo tactics/eauto.cmo \
-            tactics/refine.cmo
+            tactics/autorewrite.cmo tactics/refine.cmo
 
 SPECTAC=tactics/tauto.ml4
 USERTAC = $(SPECTAC)
@@ -229,7 +229,7 @@ theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
 init: $(INITVO)
 
 TACTICSVO=tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo \
-          tactics/EAuto.vo tactics/Refine.vo
+          tactics/EAuto.vo tactics/AutoRewrite.vo tactics/Refine.vo
 
 tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
 	$(COQC) -$(BEST) -bindir bin -q -I tactics -is states/barestate.coq $<

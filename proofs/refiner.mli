@@ -59,8 +59,11 @@ val tclTHENL         : tactic -> tactic -> tactic
    an error if the number of resulting subgoals is not [n] *)
 val tclTHENS         : tactic -> tactic list -> tactic
 
-(* Same as [tclTHENS] but completes with [Idtac] if the number resulting 
-  subgoals is strictly less than [n] *)
+(* Same as [tclTHENS] but completes with [tac3] if the number resulting 
+   subgoals is strictly less than [n] *)
+val tclTHENST        : tactic -> tactic list -> tactic -> tactic
+
+(* Same as tclTHENST but completes with [Idtac] *)
 val tclTHENSI        : tactic -> tactic list -> tactic
 
 (* A special exception for levels for the Fail tactic *)
@@ -68,6 +71,7 @@ exception FailError of int
 
 val tclORELSE        : tactic -> tactic -> tactic
 val tclREPEAT        : tactic -> tactic
+val tclREPEAT_MAIN   : tactic -> tactic
 val tclFIRST         : tactic list -> tactic
 val tclSOLVE         : tactic list -> tactic
 val tclTRY           : tactic -> tactic

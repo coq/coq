@@ -1572,12 +1572,12 @@ let freeze () = !rew_tab
 let unfreeze ft = rew_tab := ft
 
 (*Declaration of the summary*)
-let _ = 
+(*let _ = 
   Summary.declare_summary "autorewrite"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init;
-      Summary.survive_section = false }
+      Summary.survive_section = false }*)
 
 (*Adds a list of rules to the rule table*)
 let add_list_rules rbase lrl = 

@@ -105,6 +105,9 @@ Tactiques
 
 - Unfold échoue si on lui donne en argument une définition non dépliable
 
+- AutoRewrite ne s'occupe maintenant que du but principal et c'est les
+  Hint Rewrite qui gèrent les sous-buts générés
+
 Outils
 
 - deux binaires maximum : coqtop.byte et coqtop.opt si plateforme native; 

@@ -398,7 +398,7 @@ let ast_of_cvt_arg = function
 	     (ast_of_cvt_bind
 		(ast_of_constr false (Global.env ()))) bl)
   | Tacexp ast      -> ope ("TACTIC",[ast])
-  | Tac tac -> failwith "TODO: ast_of_cvt_arg: Tac"
+  | Tac (tac,ast) -> ast
   | Redexp red -> ope("REDEXP",[ast_of_cvt_redexp red])
   | Fixexp (id,n,c) -> ope ("FIXEXP",[(nvar (string_of_id id)); 
                                       (num n); 

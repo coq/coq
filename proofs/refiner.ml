@@ -361,9 +361,12 @@ let tclTHEN_i tac1 tac2 = tclTHENSi tac1 [] tac2;;
 let tclTHENS tac1 tac2l =
   tclTHENSi tac1 tac2l (fun _ -> tclFAIL_s "Wrong number of tactics.");;
 
-(* Same as [tclTHENS] but completes with [Idtac] if the number resulting 
-  subgoals is strictly less than [n] *)
-let tclTHENSI tac1 tac2l = tclTHENSi tac1 tac2l (fun _ -> tclIDTAC);;
+(* Same as [tclTHENS] but completes with [tac3] if the number resulting 
+   subgoals is strictly less than [n] *)
+let tclTHENST tac1 tac2l tac3 = tclTHENSi tac1 tac2l (fun _ -> tac3)
+
+(* Same as tclTHENST but completes with [Idtac] *)
+let tclTHENSI tac1 tac2l = tclTHENST tac1 tac2l tclIDTAC
 
 (* [tclTHENL tac1 tac2 gls] applies the tactic [tac1] to [gls] and [tac2]
    to the last resulting subgoal *)
@@ -477,6 +480,10 @@ let rec tclREPEAT t g =
 
 let tclAT_LEAST_ONCE t = (tclTHEN t (tclREPEAT t))
 
+(* Repeat on the first subgoal *)
+let rec tclREPEAT_MAIN t g =
+  (tclORELSE (tclTHEN_i t (fun i -> if i = 1 then (tclREPEAT_MAIN t) else
+    tclIDTAC)) tclIDTAC) g
 
 (*s Tactics handling a list of goals. *)
 

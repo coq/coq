@@ -11,8 +11,6 @@ Environnement:
 
 Tactiques:
 
-- Réécrire AutoRewrite avec le langage de tactiques
-
 Noyau:
 
 - Gérer les alias avec un let in dans les cases
@@ -30,6 +28,7 @@ Doc:
 
 - restriction de syntaxe pour Cbv Delta [- toto].
 - documenter tactiques Induction, LetTac
+- documenter AutoRewrite
 - Ajouter let dans les règles du CIC
 - changement syntaxe de AddPath
 - une passe sur le chapitre extensions de syntaxe

@@ -5,5 +5,5 @@ Require Export Equality.
 Require Export Tauto.
 Require Export Inv.
 Require Export EAuto.
+Require Export AutoRewrite.
 Require Export Refine.
-
