@@ -97,10 +97,10 @@ GEXTEND Gram
       | IDENT "Structure" -> <:ast< "Structure" >> ] ]
   ;
   field:
-    [ [ id = identarg; ":"; c = Command.command ->
-          <:ast< (VERNACARGLIST "" $id (COMMAND $c)) >>
-      | id = identarg; ":>"; c = Command.command ->
-          <:ast< (VERNACARGLIST "COERCION" $id (COMMAND $c)) >> ] ]
+    [ [ id = identarg; ":"; c = Constr.constr ->
+          <:ast< (VERNACARGLIST "" $id (CONSTR $c)) >>
+      | id = identarg; ":>"; c = Constr.constr ->
+          <:ast< (VERNACARGLIST "COERCION" $id (CONSTR $c)) >> ] ]
   ;
   nefields:
     [ [ idc = field; ";"; fs = nefields -> idc :: fs
@@ -113,7 +113,7 @@ GEXTEND Gram
   onescheme:
     [ [ id = identarg; ":="; dep = dep; indid = identarg; IDENT "Sort";
         s = sortdef ->
-          <:ast< (VERNACARGLIST $id $dep $indid (COMMAND $s)) >> ] ]
+          <:ast< (VERNACARGLIST $id $dep $indid (CONSTR $s)) >> ] ]
   ;
   specifscheme:
     [ [ rec_ = onescheme; "with"; recl = specifscheme -> rec_ :: recl
@@ -180,11 +180,11 @@ GEXTEND Gram
     [ [ IDENT "Parameters" -> <:ast< "PARAMETERS" >> ] ]
   ;
   binder:
-    [ [ idl = ne_identarg_comma_list; ":"; c = Command.command ->
+    [ [ idl = ne_identarg_comma_list; ":"; c = Constr.constr ->
           <:ast< (BINDER $c ($LIST $idl)) >> ] ]
   ;
   idcom:
-    [ [ id = IDENT; ":"; c = Command.command ->
+    [ [ id = IDENT; ":"; c = Constr.constr ->
           <:ast< (BINDER $c ($VAR $id)) >> ] ]
   ;
   ne_lidcom:
@@ -207,16 +207,16 @@ GEXTEND Gram
         tb = theorem_body; "Qed"; "." ->
           <:ast< (TheoremProof $thm $id $c $tb) >>
 
-      | def = def_tok; s = identarg; ":"; c1 = Command.command; "." ->
-          <:ast< (StartProof $def $s (COMMAND $c1)) >>
-      | def = def_tok; s = identarg; ":="; c1 = Command.command; "." ->
-          <:ast< (DEFINITION $def $s (COMMAND $c1)) >>
-      | def = def_tok; s = identarg; ":="; c1 = Command.command; ":";
-        c2 = Command.command; "." ->
-          <:ast< (DEFINITION $def $s (COMMAND (CAST $c1 $c2))) >>
-      | def = def_tok; s = identarg; ":"; c1 = Command.command; ":=";
-        c2 = Command.command; "." ->
-          <:ast< (DEFINITION $def $s (COMMAND (CAST $c2 $c1))) >>
+      | def = def_tok; s = identarg; ":"; c1 = Constr.constr; "." ->
+          <:ast< (StartProof $def $s (CONSTR $c1)) >>
+      | def = def_tok; s = identarg; ":="; c1 = Constr.constr; "." ->
+          <:ast< (DEFINITION $def $s (CONSTR $c1)) >>
+      | def = def_tok; s = identarg; ":="; c1 = Constr.constr; ":";
+        c2 = Constr.constr; "." ->
+          <:ast< (DEFINITION $def $s (CONSTR (CAST $c1 $c2))) >>
+      | def = def_tok; s = identarg; ":"; c1 = Constr.constr; ":=";
+        c2 = Constr.constr; "." ->
+          <:ast< (DEFINITION $def $s (CONSTR (CAST $c2 $c1))) >>
 
 (* CP / Juillet 99 
    Ajout de la possibilite d'appliquer une regle de reduction au 
@@ -225,17 +225,17 @@ GEXTEND Gram
 *)
 
       | def = def_tok; s = identarg; ":="; 
-      IDENT "Eval"; r = Tactic.red_tactic; "in"; c1 = Command.command; "." ->
-          <:ast< (DEFINITION $def $s (COMMAND $c1) (TACTIC_ARG (REDEXP $r))) >>
+      IDENT "Eval"; r = Tactic.red_tactic; "in"; c1 = Constr.constr; "." ->
+          <:ast< (DEFINITION $def $s (CONSTR $c1) (TACTIC_ARG (REDEXP $r))) >>
       | def = def_tok; s = identarg; ":="; 
-      IDENT "Eval"; r = Tactic.red_tactic; "in"; c1 = Command.command; ":";
-        c2 = Command.command; "." ->
+      IDENT "Eval"; r = Tactic.red_tactic; "in"; c1 = Constr.constr; ":";
+        c2 = Constr.constr; "." ->
           <:ast< (DEFINITION $def $s 
-                 (COMMAND (CAST $c1 $c2)) (TACTIC_ARG (REDEXP $r))) >>
-      | def = def_tok; s = identarg; ":"; c1 = Command.command; ":=";
+                 (CONSTR (CAST $c1 $c2)) (TACTIC_ARG (REDEXP $r))) >>
+      | def = def_tok; s = identarg; ":"; c1 = Constr.constr; ":=";
         IDENT "Eval"; r = Tactic.red_tactic; "in"; 
-	c2 = Command.command; "." ->
-          <:ast< (DEFINITION $def $s (COMMAND (CAST $c2 $c1)) 
+	c2 = Constr.constr; "." ->
+          <:ast< (DEFINITION $def $s (CONSTR (CAST $c2 $c1)) 
 		    (TACTIC_ARG (REDEXP $r))) >>
 
 (* Papageno / Février 99
@@ -243,13 +243,13 @@ GEXTEND Gram
                      "Definition x := [c:nat]t" *)
 
       | def = def_tok; s = identarg; "["; id1 = IDENT; ":"; 
-	c = Command.command; t = definition_tail;  "." -> 
-	  <:ast< (DEFINITION $def $s (COMMAND (LAMBDA $c [$id1]$t))) >>
+	c = Constr.constr; t = definition_tail;  "." -> 
+	  <:ast< (DEFINITION $def $s (CONSTR (LAMBDA $c [$id1]$t))) >>
 
       | def = def_tok; s = identarg; "["; id1 = IDENT; ",";
-	idl = Command.ne_ident_comma_list; ":"; c = Command.command; 
+	idl = Constr.ne_ident_comma_list; ":"; c = Constr.constr; 
 	t = definition_tail; "." -> 
-	  <:ast< (DEFINITION $def $s (COMMAND 
+	  <:ast< (DEFINITION $def $s (CONSTR 
 			(LAMBDALIST $c [$id1]($SLAM $idl $t)))) >>
 
 
@@ -266,16 +266,16 @@ GEXTEND Gram
           <:ast< (ABSTRACTION $id $c ($LIST $l)) >>
       | f = finite_tok; s = sortdef; id = identarg; indpar = indpar; ":=";
         lidcom = lidcom; "." ->
-          <:ast< (ONEINDUCTIVE $f $id (COMMAND $s) $indpar $lidcom) >>
+          <:ast< (ONEINDUCTIVE $f $id (CONSTR $s) $indpar $lidcom) >>
       | f = finite_tok; indl = block; "." ->
           <:ast< (MUTUALINDUCTIVE $f (VERNACARGLIST ($LIST $indl))) >>
 
       | record_tok; name = identarg; ps = indpar; ":"; s = sortdef; ":=";
         c = rec_constr; "{"; fs = fields; "}"; "." ->
-          <:ast< (RECORD "" $name $ps (COMMAND $s) $c $fs) >>
+          <:ast< (RECORD "" $name $ps (CONSTR $s) $c $fs) >>
       | record_tok; ">"; name = identarg; ps = indpar; ":"; s = sortdef; ":=";
         c = rec_constr; "{"; fs = fields; "}"; "." ->
-          <:ast< (RECORD "COERCION" $name $ps (COMMAND $s) $c $fs) >>
+          <:ast< (RECORD "COERCION" $name $ps (CONSTR $s) $c $fs) >>
 
       | IDENT "Mutual"; "["; bl = ne_binder_list; "]" ; f = finite_tok;
         indl = block_old_style; "." ->
@@ -293,12 +293,12 @@ GEXTEND Gram
 
       
       definition_tail:
-    	[ [ ";"; idl = Command.ne_ident_comma_list;
-            ":"; c = Command.command; c2 = definition_tail ->
+    	[ [ ";"; idl = Constr.ne_ident_comma_list;
+            ":"; c = Constr.constr; c2 = definition_tail ->
               <:ast< (LAMBDALIST $c ($SLAM $idl $c2)) >>
-	| "]"; ":"; ty = Command.command; ":=" ; c = Command.command -> 
+	| "]"; ":"; ty = Constr.constr; ":=" ; c = Constr.constr -> 
 	    <:ast< (CAST $c $ty) >>
- 	| "]"; ":="; c = Command.command -> c 
+ 	| "]"; ":="; c = Constr.constr -> c 
 	] ];
 
   END
@@ -356,17 +356,17 @@ GEXTEND Gram
 
 (* Grammar extensions, Coercions, Implicits *)
 	  
-     | IDENT "Coercion"; s = identarg; ":="; c1 = Command.command; "." ->
-         <:ast< (DEFINITION "COERCION" $s (COMMAND $c1)) >>
-     | IDENT "Coercion"; s = identarg; ":="; c1 = Command.command; ":";
-        c2 = Command.command; "." ->
-          <:ast< (DEFINITION "COERCION" $s (COMMAND (CAST $c1 $c2))) >>
+     | IDENT "Coercion"; s = identarg; ":="; c1 = Constr.constr; "." ->
+         <:ast< (DEFINITION "COERCION" $s (CONSTR $c1)) >>
+     | IDENT "Coercion"; s = identarg; ":="; c1 = Constr.constr; ":";
+        c2 = Constr.constr; "." ->
+          <:ast< (DEFINITION "COERCION" $s (CONSTR (CAST $c1 $c2))) >>
      | IDENT "Coercion"; IDENT "Local"; s = identarg; ":="; 
-	c1 = Command.command; "." ->
-          <:ast< (DEFINITION "LCOERCION" $s (COMMAND $c1)) >>
+	c1 = Constr.constr; "." ->
+          <:ast< (DEFINITION "LCOERCION" $s (CONSTR $c1)) >>
      | IDENT "Coercion"; IDENT "Local"; s = identarg; ":="; 
-	c1 = Command.command; ":"; c2 = Command.command; "." ->
-          <:ast< (DEFINITION "LCOERCION" $s (COMMAND (CAST $c1 $c2))) >>
+	c1 = Constr.constr; ":"; c2 = Constr.constr; "." ->
+          <:ast< (DEFINITION "LCOERCION" $s (CONSTR (CAST $c1 $c2))) >>
 	  
 	  
      | IDENT "Syntactic"; "Definition"; id = identarg; ":="; com = comarg;
@@ -400,7 +400,7 @@ GEXTEND Gram
  ] ];
     END
 
-(* Proof commands *)
+(* Proof constrs *)
 GEXTEND Gram
   vernac:
     [ [ IDENT "Goal"; c = comarg; "." -> <:ast< (GOAL $c) >>
@@ -435,14 +435,14 @@ GEXTEND Gram
       | IDENT "Show"; IDENT "Node"; "." -> <:ast< (ShowNode) >>
       | IDENT "Show"; IDENT "Script"; "." -> <:ast< (ShowScript) >>
       | IDENT "Show"; IDENT "Existentials"; "." -> <:ast< (ShowEx) >>
-      | IDENT "Existential"; n = numarg; ":="; c = Command.command; "." ->
-          <:ast< (EXISTENTIAL $n (COMMAND $c)) >>
-      | IDENT "Existential"; n = numarg; ":="; c1 = Command.command; ":";
-        c2 = Command.command; "." ->
-          <:ast< (EXISTENTIAL $n (COMMAND (CAST $c1 $c2))) >>
-      | IDENT "Existential"; n = numarg; ":"; c2 = Command.command; ":=";
-        c1 = Command.command; "." ->
-          <:ast< (EXISTENTIAL $n (COMMAND (CAST $c1 $c2))) >>
+      | IDENT "Existential"; n = numarg; ":="; c = Constr.constr; "." ->
+          <:ast< (EXISTENTIAL $n (CONSTR $c)) >>
+      | IDENT "Existential"; n = numarg; ":="; c1 = Constr.constr; ":";
+        c2 = Constr.constr; "." ->
+          <:ast< (EXISTENTIAL $n (CONSTR (CAST $c1 $c2))) >>
+      | IDENT "Existential"; n = numarg; ":"; c2 = Constr.constr; ":=";
+        c1 = Constr.constr; "." ->
+          <:ast< (EXISTENTIAL $n (CONSTR (CAST $c1 $c2))) >>
       | IDENT "Explain"; "Proof"; l = numarg_list; "." ->
           <:ast< (ExplainProof ($LIST $l)) >>
       | IDENT "Explain"; "Proof"; IDENT "Tree"; l = numarg_list; "." ->

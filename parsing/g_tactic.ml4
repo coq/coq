@@ -12,6 +12,7 @@ open Tactic
 (* Auxiliary grammar rules *)
 
 GEXTEND Gram
+
   identarg:
     [ [ id = IDENT -> <:ast< ($VAR $id) >> ] ]
   ;
@@ -21,10 +22,10 @@ GEXTEND Gram
       ] ]
   ;
   comarg:
-    [ [ c = Command.command -> <:ast< (COMMAND $c) >> ] ]
+    [ [ c = Constr.constr -> <:ast< (COMMAND $c) >> ] ]
   ;
   lcomarg:
-    [ [ c = Command.lcommand -> <:ast< (COMMAND $c) >> ] ]
+    [ [ c = Constr.lconstr -> <:ast< (COMMAND $c) >> ] ]
   ;
   ne_identarg_list:
     [ [ l = LIST1 identarg -> l ] ]

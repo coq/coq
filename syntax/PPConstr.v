@@ -154,6 +154,10 @@ Syntax constr
                  -> [ [<hov 0>  $H:E  (APPTAIL ($LIST $T)):E ] ]
 
   | app_imp  [(APPLISTEXPL $H ($LIST $T))]
+                 -> [ [<hov 0>  "!" $H:E (APPTAIL ($LIST $T)):E ] ]
+
+(*
+  | app_imp  [(APPLISTEXPL $H ($LIST $T))]
                  -> [ (APPLISTIMPL (ACC $H) ($LIST $T)):E ]
 
   | app_imp_arg  [(APPLISTIMPL (ACC ($LIST $AC)) $a ($LIST $T))]
@@ -164,20 +168,21 @@ Syntax constr
 
   | app_imp_last [(APPLISTIMPL (ACC ($LIST $A)) $T)]
          -> [ (APPLIST ($LIST $A) $T):E ]
-
+*)
 
   | apptailcons
        [ (APPTAIL $H ($LIST $T))] -> [ [1 1] $H:L  (APPTAIL ($LIST $T)):E ]
   | apptailnil [(APPTAIL)] -> [ ]
   | apptailcons1  [(APPTAIL (EXPL "!" $n $c1) ($LIST $T))]
          -> [ [1 1] (EXPL $n $c1):L  (APPTAIL ($LIST $T)):E ]
+
   ;
 
 (* Implicits *)
   level 8:
     arg_implicit [(EXPL ($NUM $n) $c1)] -> [ $n "!" $c1:L ]
-  | arg_implicit1 [(EXPL "EX" ($NUM $n) $c1)] -> [ $n "!" $c1:L ]
-  | fun_explicit [(EXPL $f)] -> [ $f ]
+(*  | arg_implicit1 [(EXPL "EX" ($NUM $n) $c1)] -> [ $n "!" $c1:L ]
+  | fun_explicit [(EXPL $f)] -> [ $f ]*)
   ;
 
 
