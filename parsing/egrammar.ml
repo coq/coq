@@ -47,10 +47,11 @@ let constr_level = function
 
 let constr_prod_level = function
   | 8 -> "top"
+  | 4 -> "4L"
   | n -> string_of_int n
 
-let numeric_levels =
-  ref [8,Gramext.RightA; 1,Gramext.RightA; 0,Gramext.RightA]
+let default_levels = [8,Gramext.RightA; 1,Gramext.RightA; 0,Gramext.RightA]
+let level_stack = ref [default_levels]
 
 (* At a same level, LeftA takes precedence over RightA and NoneA *)
 (* In case, several associativity exists for a level, we make two levels, *)
@@ -64,8 +65,12 @@ let admissible_assoc = function
   | Gramext.RightA, Gramext.LeftA -> false
   | _ -> true
 
-let find_position other assoc = function
-  | None -> None, (if other then assoc else None), None
+let find_position other assoc lev =
+  let current = List.hd !level_stack in 
+  match lev with
+  | None ->
+      level_stack := current :: !level_stack;
+      None, (if other then assoc else None), None
   | Some n ->
       let assoc = out_some assoc in
       if n = 8 & assoc = Gramext.LeftA then 
@@ -88,13 +93,18 @@ let find_position other assoc = function
       in
       try
 	(* Create the entry *)
-        numeric_levels := add_level (8,Gramext.RightA) !numeric_levels;
+        let current = List.hd !level_stack in
+        level_stack := add_level (8,Gramext.RightA) current :: !level_stack;
         Some (Gramext.After (constr_level !after)),
 	Some assoc, Some (constr_level (n,assoc))
       with
           Found a ->
+            level_stack := current :: !level_stack;
 	    (* Just inherit the existing associativity and name (None) *)
 	    Some (Gramext.Level (constr_level (n,a))), None, None
+
+let remove_levels n =
+  level_stack := snd (list_chop n !level_stack)
 
 (* Interpretation of the right hand side of grammar rules *)
 
@@ -327,6 +337,7 @@ let add_tactic_entries gl =
   let f (s,l,tac) =
     make_rule univ (make_act s tac) (make_vprod_item "tactic") l in
   let rules = List.map f gl in
+  let _ = find_position true None None (* for synchronisation with remove *) in
   grammar_extend Tactic.simple_tactic None [(None, None, List.rev rules)]
 
 let extend_grammar gram =
