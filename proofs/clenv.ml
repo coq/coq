@@ -723,11 +723,8 @@ let constrain_clenv_to_subterm clause (op,cl) =
        else error "Bound 1"
      with ex when catchable_exception ex ->
        (match kind_of_term cl with 
-	  | IsApp (f,args) ->  (try 
-		 matchrec f
-	       with ex when catchable_exception ex -> 
-		 iter_fail matchrec args)
-	(* let n = Array.length args in
+	  | IsApp (f,args) ->
+	      let n = Array.length args in
 	      assert (n>0);
 	      let c1 = mkApp (f,Array.sub args 0 (n-1)) in
 	      let c2 = args.(n-1) in
@@ -735,7 +732,6 @@ let constrain_clenv_to_subterm clause (op,cl) =
 		 matchrec c1
 	       with ex when catchable_exception ex -> 
 		 matchrec c2)
-	   *)
           | IsMutCase(_,_,c,lf) -> (* does not search in the predicate *)
 	       (try 
 		 matchrec c
