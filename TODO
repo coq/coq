@@ -6,7 +6,7 @@ Distribution:
 
 Langage:
 
-- Avertir en cas de clause par défaut inutilisée
+- Propager les contraintes arrière dans Cases (cf example doc/Cases.tex)
 
 Environnement:
 
