@@ -81,8 +81,11 @@ if [ "$versionspec1" = "$version" -a "$versionspec2" = "$version" ];
 then echo "Version number in coq.spec seems OK ($versionspec1)";
 else
   echo "Wrong version numbers in coq.spec ($versionspec1 and $versionspec2 instead of $version)"
-  echo Aborting; exit 1
+  echo -n " is that OK? "
+  read a
+  if [ "$a" != 'y' -a "$a" != 'Y' ]; then echo Aborting; exit 1; fi
 fi
+
 #  ocamlversionspec=`grep "^Requires: ocaml" ./coq.spec | sed -e 's/Requires: ocaml >= \(.*\)/\1/'`
 #  if [ "$ocamlversionspec" = "$ocamlversion" ]
 #  then echo "Required version of Objective Caml in coq.spec seems OK ($ocamlversionspec)"
