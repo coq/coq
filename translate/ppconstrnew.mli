@@ -36,6 +36,7 @@ val prec_less : int -> int * Ppextend.parenRelation -> bool
  
 val pr_global : Idset.t -> global_reference -> std_ppcmds
  
+val pr_tight_coma : unit -> std_ppcmds
 val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
 val pr_name : name -> std_ppcmds
 val pr_qualid : qualid -> std_ppcmds

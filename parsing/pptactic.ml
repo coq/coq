@@ -113,19 +113,25 @@ let pr_quantified_hypothesis = function
 let pr_quantified_hypothesis_arg h = spc () ++ pr_quantified_hypothesis h
 
 let pr_binding prc = function
-  | loc, NamedHyp id, c -> hov 1 (pr_id id ++ str ":=" ++ cut () ++ prc c)
-  | loc, AnonHyp n, c -> hov 1 (int n ++ str ":=" ++ cut () ++ prc c)
+  | loc, NamedHyp id, c -> hov 1 (pr_id id ++ str " := " ++ cut () ++ prc c)
+  | loc, AnonHyp n, c -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
 
-let pr_bindings prc = function
+let pr_bindings prc prlc = function
   | ImplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
       prlist_with_sep spc prc l
   | ExplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++ 
-        prlist_with_sep spc (pr_binding prc) l
+        prlist_with_sep spc
+          (fun b -> if Options.do_translate () then
+	    str"(" ++ pr_binding prlc b ++ str")" 
+	   else
+	    pr_binding prc b)
+        l
   | NoBindings -> mt ()
 
-let pr_with_bindings prc (c,bl) = prc c ++ hv 0 (pr_bindings prc bl)
+let pr_with_bindings prc prlc (c,bl) = 
+  prc c ++ hv 0 (pr_bindings prc prlc bl)
 
 let pr_with_names = function
   | [] -> mt ()
@@ -231,7 +237,7 @@ let pr_autoarg_usingTDB = function
   | true -> spc () ++ str "Using TDB"
   | false -> mt ()
 
-let rec pr_raw_generic prc prtac x =
+let rec pr_raw_generic prc prlc prtac x =
   match Genarg.genarg_tag x with
   | BoolArgType -> pr_arg str (if out_gen rawwit_bool x then "true" else "false")
   | IntArgType -> pr_arg int (out_gen rawwit_int x)
@@ -254,17 +260,17 @@ let rec pr_raw_generic prc prtac x =
   | CastedOpenConstrArgType ->
       pr_arg prc (out_gen rawwit_casted_open_constr x)
   | ConstrWithBindingsArgType -> 
-      pr_arg (pr_with_bindings prc) (out_gen rawwit_constr_with_bindings x)
+      pr_arg (pr_with_bindings prc prlc) (out_gen rawwit_constr_with_bindings x)
   | List0ArgType _ -> 
-      hov 0 (fold_list0 (fun x a -> pr_raw_generic prc prtac x ++ a) x (mt()))
+      hov 0 (fold_list0 (fun x a -> pr_raw_generic prc prlc prtac x ++ a) x (mt()))
   | List1ArgType _ ->
-      hov 0 (fold_list1 (fun x a -> pr_raw_generic prc prtac x ++ a) x (mt()))
-  | OptArgType _ -> hov 0 (fold_opt (pr_raw_generic prc prtac) (mt()) x)
+      hov 0 (fold_list1 (fun x a -> pr_raw_generic prc prlc prtac x ++ a) x (mt()))
+  | OptArgType _ -> hov 0 (fold_opt (pr_raw_generic prc prlc prtac) (mt()) x)
   | PairArgType _ ->
       hov 0
         (fold_pair
-	  (fun a b -> pr_raw_generic prc prtac a ++ spc () ++ 
-            pr_raw_generic prc prtac b)
+	  (fun a b -> pr_raw_generic prc prlc prtac a ++ spc () ++ 
+            pr_raw_generic prc prlc prtac b)
 	  x)
   | ExtraArgType s -> 
       let tab = if Options.do_translate() then !genarg_pprule
@@ -273,7 +279,7 @@ let rec pr_raw_generic prc prtac x =
       with Not_found -> str " [no printer for " ++ str s ++ str "] "
 
 
-let rec pr_glob_generic prc prtac x =
+let rec pr_glob_generic prc prlc prtac x =
   match Genarg.genarg_tag x with
   | BoolArgType -> pr_arg str (if out_gen globwit_bool x then "true" else "false")
   | IntArgType -> pr_arg int (out_gen globwit_int x)
@@ -296,17 +302,17 @@ let rec pr_glob_generic prc prtac x =
   | CastedOpenConstrArgType ->
       pr_arg prc (out_gen globwit_casted_open_constr x)
   | ConstrWithBindingsArgType -> 
-      pr_arg (pr_with_bindings prc) (out_gen globwit_constr_with_bindings x)
+      pr_arg (pr_with_bindings prc prlc) (out_gen globwit_constr_with_bindings x)
   | List0ArgType _ -> 
-      hov 0 (fold_list0 (fun x a -> pr_glob_generic prc prtac x ++ a) x (mt()))
+      hov 0 (fold_list0 (fun x a -> pr_glob_generic prc prlc prtac x ++ a) x (mt()))
   | List1ArgType _ ->
-      hov 0 (fold_list1 (fun x a -> pr_glob_generic prc prtac x ++ a) x (mt()))
-  | OptArgType _ -> hov 0 (fold_opt (pr_glob_generic prc prtac) (mt()) x)
+      hov 0 (fold_list1 (fun x a -> pr_glob_generic prc prlc prtac x ++ a) x (mt()))
+  | OptArgType _ -> hov 0 (fold_opt (pr_glob_generic prc prlc prtac) (mt()) x)
   | PairArgType _ ->
       hov 0
         (fold_pair
-	  (fun a b -> pr_glob_generic prc prtac a ++ spc () ++ 
-            pr_glob_generic prc prtac b)
+	  (fun a b -> pr_glob_generic prc prlc prtac a ++ spc () ++ 
+            pr_glob_generic prc prlc prtac b)
 	  x)
   | ExtraArgType s -> 
       let tab = if Options.do_translate() then !genarg_pprule
@@ -316,7 +322,7 @@ let rec pr_glob_generic prc prtac x =
 
 open Closure
 
-let rec pr_generic prc prtac x =
+let rec pr_generic prc prlc prtac x =
   match Genarg.genarg_tag x with
   | BoolArgType -> pr_arg str (if out_gen wit_bool x then "true" else "false")
   | IntArgType -> pr_arg int (out_gen wit_int x)
@@ -337,17 +343,17 @@ let rec pr_generic prc prtac x =
   | CastedOpenConstrArgType ->
       pr_arg prc (snd (out_gen wit_casted_open_constr x))
   | ConstrWithBindingsArgType -> 
-      pr_arg (pr_with_bindings prc) (out_gen wit_constr_with_bindings x)
+      pr_arg (pr_with_bindings prc prlc) (out_gen wit_constr_with_bindings x)
   | List0ArgType _ -> 
-      hov 0 (fold_list0 (fun x a -> pr_generic prc prtac x ++ a) x (mt()))
+      hov 0 (fold_list0 (fun x a -> pr_generic prc prlc prtac x ++ a) x (mt()))
   | List1ArgType _ ->
-      hov 0 (fold_list1 (fun x a -> pr_generic prc prtac x ++ a) x (mt()))
-  | OptArgType _ -> hov 0 (fold_opt (pr_generic prc prtac) (mt()) x)
+      hov 0 (fold_list1 (fun x a -> pr_generic prc prlc prtac x ++ a) x (mt()))
+  | OptArgType _ -> hov 0 (fold_opt (pr_generic prc prlc prtac) (mt()) x)
   | PairArgType _ ->
       hov 0
         (fold_pair
-	  (fun a b -> pr_generic prc prtac a ++ spc () ++ 
-            pr_generic prc prtac b)
+	  (fun a b -> pr_generic prc prlc prtac a ++ spc () ++ 
+            pr_generic prc prlc prtac b)
 	  x)
   | ExtraArgType s -> 
       let tab = if Options.do_translate() then !genarg_pprule
@@ -373,8 +379,8 @@ let pr_extend_gen proj prgen s l =
 
 let make_pr_tac (pr_tac,pr_tac0,pr_constr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend) =
 
-let pr_bindings = pr_bindings pr_constr in
-let pr_with_bindings = pr_with_bindings pr_constr in
+let pr_bindings = pr_bindings pr_constr pr_constr in
+let pr_with_bindings = pr_with_bindings pr_constr pr_constr in
 let pr_eliminator cb = str "using" ++ pr_arg (pr_with_bindings) cb in
 let pr_constrarg c = spc () ++ pr_constr c in
 let pr_intarg n = spc () ++ int n in
@@ -395,8 +401,9 @@ let rec pr_atom0 = function
 
   (* Main tactic printer *)
 and pr_atom1 = function
-  | TacExtend (_,s,l) -> pr_extend pr_constr pr_tac s l
-  | TacAlias (_,s,l,_) -> pr_extend pr_constr pr_tac s (List.map snd l)
+  | TacExtend (_,s,l) -> pr_extend pr_constr pr_constr pr_tac s l
+  | TacAlias (_,s,l,_) ->
+      pr_extend pr_constr pr_constr pr_tac s (List.map snd l)
 
   (* Basic tactics *)
   | TacIntroPattern [] as t -> pr_atom0 t
@@ -658,9 +665,12 @@ and prtac x = pr6 x
 
 in (prtac,pr0,pr_match_rule false pr_pat pr_tac)
 
-let pr_raw_extend prc prtac = pr_extend_gen pi1 (pr_raw_generic prc prtac)
-let pr_glob_extend prc prtac = pr_extend_gen pi2 (pr_glob_generic prc prtac)
-let pr_extend prc prtac = pr_extend_gen pi3 (pr_generic prc prtac)
+let pr_raw_extend prc prlc prtac = 
+  pr_extend_gen pi1 (pr_raw_generic prc prlc prtac)
+let pr_glob_extend prc prlc prtac =
+  pr_extend_gen pi2 (pr_glob_generic prc prlc prtac)
+let pr_extend prc prlc prtac =
+  pr_extend_gen pi3 (pr_generic prc prlc prtac)
 
 let pr_and_constr_expr pr (c,_) = pr c
 

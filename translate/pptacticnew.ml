@@ -39,28 +39,31 @@ let pr_quantified_hypothesis = function
 
 let pr_quantified_hypothesis_arg h = spc () ++ pr_quantified_hypothesis h
 
+(*
 let pr_binding prc = function
-  | NamedHyp id, c -> hov 1 (pr_id id ++ str ":=" ++ cut () ++ prc c)
-  | AnonHyp n, c -> hov 1 (int n ++ str ":=" ++ cut () ++ prc c)
+  | NamedHyp id, c -> hov 1 (pr_id id ++ str " := " ++ cut () ++ prc c)
+  | AnonHyp n, c -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
+*)
 
 let pr_esubst prc l =
   let pr_qhyp = function
-      (_,AnonHyp n,c) -> int n ++ str":=" ++ prc c
-    | (_,NamedHyp id,c) -> pr_id id ++ str":=" ++ prc c in
+      (_,AnonHyp n,c) -> str "(" ++ int n ++ str" := " ++ prc c ++ str ")"
+    | (_,NamedHyp id,c) -> str "(" ++ pr_id id ++ str" := " ++ prc c ++ str ")"
+  in
   prlist_with_sep spc pr_qhyp l
 
-let pr_bindings_gen for_ex prc = function
+let pr_bindings_gen for_ex prlc prc = function
   | ImplicitBindings l ->
       spc () ++ (if for_ex then mt() else str "with ") ++
       hv 0 (prlist_with_sep spc prc l)
   | ExplicitBindings l ->
       spc () ++ (if for_ex then mt() else str "with ") ++
-      hv 0 (pr_esubst prc l)
+      hv 0 (pr_esubst prlc l)
   | NoBindings -> mt ()
 
-let pr_bindings prc = pr_bindings_gen false prc
+let pr_bindings prlc prc = pr_bindings_gen false prlc prc
 
-let pr_with_bindings prc (c,bl) = prc c ++ pr_bindings prc bl
+let pr_with_bindings prlc prc (c,bl) = prc c ++ pr_bindings prlc prc bl
 
 let pr_with_names = function
   | [] -> mt ()
@@ -175,9 +178,9 @@ open Closure
 
 let make_pr_tac (pr_tac,pr_tac0,pr_constr,pr_lconstr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend) =
 
-let pr_bindings env = pr_bindings (pr_constr env) in
-let pr_ex_bindings env = pr_bindings_gen true (pr_constr env) in
-let pr_with_bindings env = pr_with_bindings (pr_constr env) in
+let pr_bindings env = pr_bindings (pr_lconstr env) (pr_constr env) in
+let pr_ex_bindings env = pr_bindings_gen true (pr_lconstr env) (pr_constr env) in
+let pr_with_bindings env = pr_with_bindings (pr_lconstr env) (pr_constr env) in
 let pr_eliminator env cb = str "using" ++ pr_arg (pr_with_bindings env) cb in
 let pr_constrarg env c = spc () ++ pr_constr env c in
 let pr_lconstrarg env c = spc () ++ pr_lconstr env c in
@@ -201,9 +204,9 @@ let rec pr_atom0 env = function
   (* Main tactic printer *)
 and pr_atom1 env = function
   | TacExtend (_,s,l) ->
-      pr_extend (pr_constr env) (pr_tac env) s l
+      pr_extend (pr_constr env) (pr_lconstr env) (pr_tac env) s l
   | TacAlias (_,s,l,_) ->
-      pr_extend (pr_constr env) (pr_tac env) s (List.map snd l)
+      pr_extend (pr_constr env) (pr_lconstr env) (pr_tac env) s (List.map snd l)
 
   (* Basic tactics *)
   | TacIntroPattern [] as t -> pr_atom0 env t

@@ -59,25 +59,28 @@ val pr_glob_tactic : glob_tactic_expr -> std_ppcmds
 val pr_tactic : Proof_type.tactic_expr -> std_ppcmds
 
 val pr_glob_generic:
-  (rawconstr_and_expr -> std_ppcmds) -> (glob_tactic_expr -> std_ppcmds) ->
+  (rawconstr_and_expr -> std_ppcmds) -> 
+  (rawconstr_and_expr -> std_ppcmds) -> 
+  (glob_tactic_expr -> std_ppcmds) ->
     glob_generic_argument -> std_ppcmds
 
 val pr_raw_generic : 
+  (constr_expr -> std_ppcmds) ->
   (constr_expr -> std_ppcmds) ->
   (raw_tactic_expr -> std_ppcmds) ->
     (constr_expr, raw_tactic_expr) generic_argument ->
       std_ppcmds
 
 val pr_raw_extend:
-  (constr_expr -> std_ppcmds) ->
+  (constr_expr -> std_ppcmds) -> (constr_expr -> std_ppcmds) ->
   (raw_tactic_expr -> std_ppcmds) -> string ->
     raw_generic_argument list -> std_ppcmds
 
 val pr_glob_extend:
-  (rawconstr_and_expr -> std_ppcmds) ->
+  (rawconstr_and_expr -> std_ppcmds) -> (rawconstr_and_expr -> std_ppcmds) ->
   (glob_tactic_expr -> std_ppcmds) -> string ->
     glob_generic_argument list -> std_ppcmds
 
 val pr_extend :
-  (Term.constr -> std_ppcmds) ->
+  (Term.constr -> std_ppcmds) -> (Term.constr -> std_ppcmds) ->
   (glob_tactic_expr -> std_ppcmds) -> string -> closed_generic_argument list -> std_ppcmds

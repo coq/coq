@@ -92,7 +92,7 @@ let pr_expl_args pr (a,expl) =
 
 let pr_opt_type pr = function
   | CHole _ -> mt ()
-  | t -> cut () ++ str ":" ++ pr ltop t
+  | t -> cut () ++ str ":" ++ pr (if !Options.p1 then ltop else (latom,E)) t
 
 let pr_opt_type_spc pr = function
   | CHole _ -> mt ()
@@ -136,16 +136,64 @@ let pr_binder pr (nal,t) =
     prlist_with_sep sep (pr_located pr_name) nal ++
     pr_opt_type pr t)
 *)
+(* Option 1a *)
 let pr_oneb pr t na =
   match t with
       CHole _ -> pr_located pr_name na
     | _ -> hov 1
         (str "(" ++  pr_located pr_name na ++ pr_opt_type pr t ++ str ")")
-let pr_binder pr (nal,t) =
+let pr_binder1 pr (nal,t) =
   hov 0 (prlist_with_sep sep (pr_oneb pr t) nal)
 
-let pr_binders pr bl =
-  hv 0 (prlist_with_sep sep (pr_binder pr) bl)
+let pr_binders1 pr bl =
+  hv 0 (prlist_with_sep sep (pr_binder1 pr) bl)
+
+(* Option 1b *)
+let pr_binder1 pr (nal,t) =
+  match t with
+      CHole _ -> prlist_with_sep sep (pr_located pr_name) nal
+    | _ -> hov 1
+	(str "(" ++ prlist_with_sep sep (pr_located pr_name) nal ++ str ":" ++
+	 pr ltop t ++ str ")")
+
+let pr_binders1 pr bl =
+  hv 0 (prlist_with_sep sep (pr_binder1 pr) bl)
+
+let pr_opt_type' pr = function
+  | CHole _ -> mt ()
+  | t -> cut () ++ str ":" ++ pr (latom,E) t
+
+let pr_prod_binders1 pr = function
+(*  | [nal,t] -> hov 1 (prlist_with_sep sep (pr_located pr_name) nal ++ pr_opt_type' pr t)*)
+  | bl -> pr_binders1 pr bl
+
+(* Option 2 *)
+let pr_let_binder pr x a =
+  hov 0 (hov 0 (pr_name x ++ brk(0,1) ++ str ":=") ++ brk(0,1) ++ pr ltop a)
+
+let pr_binder2 pr (nal,t) =
+  hov 0 (
+    prlist_with_sep sep (pr_located pr_name) nal ++
+    pr_opt_type pr t)
+
+let pr_binders2 pr bl =
+  hv 0 (prlist_with_sep sep (pr_binder2 pr) bl)
+
+let pr_prod_binder2 pr (nal,t) =
+  str "for " ++ hov 0 (
+    prlist_with_sep sep (pr_located pr_name) nal ++
+    pr_opt_type pr t) ++ str ","
+
+let pr_prod_binders2 pr bl =
+  hv 0 (prlist_with_sep sep (pr_prod_binder2 pr) bl)
+
+(**)
+let pr_binders pr = (if !Options.p1 then pr_binders1 else pr_binders2) pr
+let pr_prod_binders pr bl = 
+  if !Options.p1 then 
+    str "!" ++ pr_prod_binders1 pr bl ++ str "."
+  else
+    pr_prod_binders2 pr bl
 
 let pr_arg_binders pr bl =
   if bl = [] then mt() else (spc() ++ pr_binders pr bl)
@@ -369,13 +417,14 @@ let rec pr inherited a =
       larrow
   | CProdN _ ->
       let (bl,a) = extract_prod_binders a in
-      hv 0 (str "!" ++ pr_binders pr bl ++ str "." ++ spc() ++ pr ltop a),
+      hv 0 (pr_prod_binders pr bl ++ spc() ++ pr ltop a),
       lprod
   | CLambdaN _ ->
       let (bl,a) = extract_lam_binders a in
+      let left, mid = str"fun" ++ spc(), " =>" in
       hov 2 (
-	str "fun" ++ spc () ++ pr_binders pr bl ++
-        str " =>" ++ spc() ++ pr ltop a),
+	left ++ pr_binders pr bl ++
+        str mid ++ spc() ++ pr ltop a),
       llambda
   | CLetIn (_,x,a,b) ->
       let (bl,a) = extract_lam_binders a in

@@ -171,6 +171,12 @@ let parse_args is_ide =
         translate_file := true;
         parse rem
 
+    | "-translate2" :: rem -> make_translate true; p1:=false; parse rem
+    | "-ftranslate2" :: rem ->
+        make_translate true; p1:= false;
+        translate_file := true;
+        parse rem
+
     | "-unsafe" :: f :: rem -> add_unsafe f; parse rem
     | "-unsafe" :: []       -> usage ()
 

@@ -142,11 +142,11 @@ let rec vernac_com interpfun (loc,com) =
          | _ ->
              if !translate_file then
                msgnl
-		 (pr_comments !comments ++ hov 0 (pr_vernac com) ++ sep_end)
+		 (pr_comments !comments ++ hov 0 (pr_vernac com) ++ sep_end())
              else
 	       msgnl
                  (hov 4 (str"New Syntax:" ++ fnl() ++ pr_comments !comments ++
-                         pr_vernac com ++ sep_end)));
+                         pr_vernac com ++ sep_end())));
        Constrintern.set_temporary_implicits_in [];
        Constrextern.set_temporary_implicits_out [];
        comments := None;

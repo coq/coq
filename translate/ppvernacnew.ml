@@ -34,6 +34,7 @@ let pr_raw_tactic_env l env t =
 
 let pr_gen env t =
   Pptactic.pr_raw_generic (Ppconstrnew.pr_constr_env env)
+    (Ppconstrnew.pr_lconstr_env env)
     (Pptacticnew.pr_raw_tactic env) t
 
 let pr_raw_tactic tac =
@@ -241,20 +242,23 @@ let anonymize_binder na c =
         (Constrintern.interp_rawconstr Evd.empty (Global.env())) c))
   else c
 
+let surround_binder p = 
+  if !Options.p1 then str"(" ++ p ++ str")" else p
+
 let pr_binder pr_c ty na =
   match anonymize_binder (snd na) ty with
       CHole _ -> pr_located pr_name na
     | _ ->
         hov 1
-          (str "(" ++ pr_located pr_name na ++ str ":" ++ cut() ++
-           pr_c ty ++ str")")
+        (surround_binder (pr_located pr_name na ++ str":" ++ cut() ++ pr_c ty))
 
 let pr_valdecls pr_c = function
   | LocalRawAssum (na,c) ->
-      prlist_with_sep spc (pr_binder pr_c c) na
+      let sep = if !Options.p1 then spc else pr_tight_coma in
+      prlist_with_sep sep (pr_binder pr_c c) na
   | LocalRawDef (na,c) ->
-      hov 1 (str"(" ++ pr_located pr_name na ++ str":=" ++ cut() ++
-             pr_c c ++ str")")
+      hov 1
+        (surround_binder (pr_located pr_name na ++ str":=" ++ cut() ++ pr_c c))
 
 let pr_vbinders pr_c l =
   hv 0 (prlist_with_sep spc (pr_valdecls pr_c) l)
@@ -280,12 +284,21 @@ let pr_assumption_token = function
   | (Decl_kinds.Global,Decl_kinds.Logical) -> str"Axiom"
   | (Decl_kinds.Global,Decl_kinds.Definitional) -> str"Parameter"
 
-let pr_params pr_c (a,(b,c)) =
-  hov 2 (str"(" ++ pr_id b ++ spc() ++
-         (if a then str":>" else str":") ++
-         spc() ++ pr_c c ++ str")")
+let pr_params pr_c (xl,(c,t)) =
+  hov 2 (surround_binder (prlist_with_sep sep pr_id xl ++ spc() ++
+         (if c then str":>" else str":") ++
+         spc() ++ pr_c t))
 
-let pr_ne_params_list pr_c l = prlist_with_sep spc (pr_params pr_c) l
+let rec factorize = function
+  | [] -> []
+  | (c,(x,t))::l ->
+      match factorize l with
+	| (xl,t')::l' when t' = (c,t) & not !Options.p1 -> (x::xl,t')::l'
+	| l' -> ([x],(c,t))::l'
+
+let pr_ne_params_list pr_c l =
+  let sep = if !Options.p1 then spc else pr_coma in
+  prlist_with_sep sep (pr_params pr_c) (factorize l)
 
 let pr_thm_token = function
   | Decl_kinds.Theorem -> str"Theorem"
@@ -354,7 +367,7 @@ let pr_syntax_entry (p,rl) =
   str"level" ++ spc() ++ int p ++ str" :" ++ fnl() ++
   prlist_with_sep (fun _ -> fnl() ++ str"| ") pr_syntax_rule rl
 
-let sep_end = str";"
+let sep_end () = if !Options.p1 then str";" else str"."
 
 (**************************************)
 (* Pretty printer for vernac commands *)
@@ -411,7 +424,7 @@ let rec pr_vernac = function
   | VernacRestoreState s -> str"Restore State" ++ spc() ++ qs s
 
   (* Control *)
-  | VernacList l -> hov 2 (str"[" ++ spc() ++ prlist_with_sep (fun _ -> sep_end ++ fnl() ) (pr_located pr_vernac) l ++ spc() ++ str"]") 
+  | VernacList l -> hov 2 (str"[" ++ spc() ++ prlist_with_sep (fun _ -> sep_end () ++ fnl() ) (pr_located pr_vernac) l ++ spc() ++ str"]") 
   | VernacLoad (f,s) -> str"Load" ++ if f then (spc() ++ str"Verbose" ++ spc()) else spc()  ++ str s
   | VernacTime v -> str"Time" ++ spc() ++ pr_vernac v
   | VernacVar id -> pr_id id
@@ -447,7 +460,12 @@ let rec pr_vernac = function
       let (s,l) = match mv8 with
           None -> (s,l)
         | Some ml -> ml in
-      hov 2( str"Notation" ++ spc() ++ pr_locality local ++ qs s ++
+      let ps =
+	let n = String.length s in
+	if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' 
+	then str (String.sub s 1 (n-2))
+	else qs s in
+      hov 2( str"Notation" ++ spc() ++ pr_locality local ++ ps ++
       str " :=" ++ pr_constrarg c ++
       (match l with
         | [] -> mt()

@@ -26,6 +26,6 @@ open Libnames
 open Ppextend
 open Topconstr
 
-val sep_end : std_ppcmds
+val sep_end : unit -> std_ppcmds
 
 val pr_vernac : vernac_expr -> std_ppcmds

@@ -281,8 +281,10 @@ GEXTEND Gram
      | IDENT "Distfix"; local = locality; a = entry_prec; n = natural; 
 	   s = STRING; p = global; sc = OPT [ ":"; sc = IDENT -> sc ] ->
 	     VernacDistfix (local,a,n,s,p,sc)
-     | IDENT "Notation"; local = locality; s = IDENT; ":="; c = constr ->
-	 VernacNotation (local,"'"^s^"'",c,[],None,None)
+     | IDENT "Notation"; local = locality; s = IDENT; ":="; c = constr;
+	   l = [ "("; IDENT "only"; IDENT "parsing"; ")" -> [SetOnlyParsing]
+	       | -> [] ] ->
+	 VernacNotation (local,"'"^s^"'",c,l,None,None)
      | IDENT "Notation"; local = locality; s = STRING; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ];
