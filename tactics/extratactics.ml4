@@ -34,8 +34,8 @@ TACTIC EXTEND Replace
 END
 
 TACTIC EXTEND ReplaceIn
-  [ "Replace" constr(c1) "with" constr(c2) "in" ident(h) ]
-  -> [ failwith "Replace in: TODO" ]
+  [ "Replace" constr(c1) "with" constr(c2) "in" ident(h) ] ->
+    [ replace_in h c1 c2 ]
 END
 
 TACTIC EXTEND Replacetermleft

@@ -116,7 +116,11 @@ let rewriteRLin = general_rewrite_in false
 let conditional_rewrite_in lft2rgt id tac (c,bl) = 
   tclTHENSFIRSTn (general_rewrite_in lft2rgt id (c,bl))
     [|tclIDTAC|] (tclCOMPLETE tac)
-    
+
+let rewriteRL_clause = function
+  | None -> rewriteRL_bindings
+  | Some id -> rewriteRLin id
+
 (* Replacing tactics *)
 
 (* eqt,sym_eqt : equality on Type and its symmetry theorem
@@ -124,21 +128,24 @@ let conditional_rewrite_in lft2rgt id tac (c,bl) =
    unsafe : If true, do not check that c1 and c2 are convertible
    gl : goal *)
 
-let abstract_replace (eqt,sym_eqt) c2 c1 unsafe gl =
+let abstract_replace clause c2 c1 unsafe gl =
   let t1 = pf_type_of gl c1 
   and t2 = pf_type_of gl c2 in
   if unsafe or (pf_conv_x gl t1 t2) then
-    let (e,sym) = (eqt,sym_eqt) in
-    (tclTHENLAST (elim_type (applist (e, [t1;c1;c2])))
-       (tclORELSE assumption 
-          (tclTRY (tclTHEN (apply sym) assumption)))) gl
+    let e = (build_coq_eqT_data ()).eq in
+    let sym = (build_coq_eqT_data ()).sym in
+    let eq = applist (e, [t1;c1;c2]) in
+    tclTHENS (cut eq)
+      [tclTHEN intro (onLastHyp (fun id -> 
+	tclTHEN (rewriteRL_clause clause (mkVar id,NoBindings)) (clear [id])));
+       tclORELSE assumption 
+	(tclTRY (tclTHEN (apply sym) assumption))] gl
   else
     error "terms does not have convertible types"
 
-let replace c2 c1 gl =
-  let eqT = (build_coq_eqT_data ()).eq in
-  let eqT_sym = (build_coq_eqT_data ()).sym in
-  abstract_replace (eqT,eqT_sym) c2 c1 false gl
+let replace c2 c1 gl = abstract_replace None c2 c1 false gl
+
+let replace_in id c2 c1 gl = abstract_replace (Some id) c2 c1 false gl
 
 (* End of Eduardo's code. The rest of this file could be improved
    using the functions match_with_equation, etc that I defined

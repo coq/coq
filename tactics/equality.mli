@@ -39,7 +39,8 @@ val general_rewrite_in : bool -> identifier -> constr with_bindings -> tactic
 val conditional_rewrite_in :
   bool -> identifier -> tactic -> constr with_bindings -> tactic
 
-val replace   : constr -> constr -> tactic
+val replace    : constr -> constr -> tactic
+val replace_in : identifier -> constr -> constr -> tactic
 
 type elimination_types =
   | Set_Type
