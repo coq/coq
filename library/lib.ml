@@ -10,7 +10,8 @@ type node =
   | Leaf of obj
   | Module of string
   | OpenedSection of string
-  | ClosedSection of string * library_segment
+  (* bool is to tell if the section must be opened automatically *)
+  | ClosedSection of bool * string * library_segment * Nametab.module_contents
   | FrozenState of Summary.frozen
 
 and library_entry = section_path * node
@@ -123,12 +124,20 @@ let start_module s =
 
 let is_opened_section = function (_,OpenedSection _) -> true | _ -> false
 
-let rec clean_segment = function
-  | [] -> []
-  | (_,FrozenState _) :: l -> clean_segment l
-  | node :: l -> node :: (clean_segment l)
+let export_segment seg =
+  let rec clean acc = function
+    | (_,Module _) :: _ | [] -> acc
+    | (sp,Leaf o) as node :: stk -> 
+	(match export_object o with 
+	   | None -> clean acc stk
+	   | Some o' -> clean ((sp,Leaf o') :: acc) stk)
+    | (sp,ClosedSection _ as item) :: stk -> clean (item :: acc) stk
+    | (_,OpenedSection _) :: _ -> error "there are still opened sections"
+    | (_,FrozenState _) :: stk -> clean acc stk
+  in
+  clean [] seg
 
-let close_section s =
+let close_section export f s =
   let sp = 
     try match find_entry_p is_opened_section with
       | sp,OpenedSection s' -> 
@@ -139,29 +148,21 @@ let close_section s =
   in
   let (after,_,before) = split_lib sp in
   lib_stk := before;
-  let after' = clean_segment after in
-  add_entry (make_path (id_of_string s) OBJ) (ClosedSection (s,after'));
+  let after' = export_segment after in
   pop_path_prefix ();
-  (sp,after')
+  let contents = f sp after' in
+  add_entry (make_path (id_of_string s) OBJ)
+    (ClosedSection (export, s,after',contents));
+  Nametab.push_module s contents;
+  if export then Nametab.open_module_contents s
 
 (* The following function exports the whole library segment, that will be 
    saved as a module. Objects are presented in chronological order, and
    frozen states are removed. *)
 
-let export_module () =
+let export_module f =
   if !module_name = None then error "no module declared";
-  let rec clean acc = function
-    | (_,Module _) :: _ | [] -> acc
-    | (sp,Leaf o) as node :: stk -> 
-	(match export_object o with 
-	   | None -> clean acc stk
-	   | Some o' -> clean ((sp,Leaf o') :: acc) stk)
-    | (sp,ClosedSection (s,ctx)) :: stk -> 
-	clean ((sp,ClosedSection (s, clean [] ctx)) :: acc) stk
-    | (_,OpenedSection _) :: _ -> error "there are still opened sections"
-    | (_,FrozenState _) :: stk -> clean acc stk
-  in
-  clean [] !lib_stk
+  export_segment !lib_stk
 
 (* Backtracking. *)
 
