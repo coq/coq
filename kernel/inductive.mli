@@ -20,12 +20,12 @@ corresponds to a [mutual_inductive_instance =
 mutual_inductive_body * constr list]. One inductive type in an
 instanciated packet corresponds to an [inductive_instance =
 mutual_inductive_instance * int]. Applying global parameters to an
-inductive_instance gives an [inductive_family = inductive_instance *
+[inductive_instance] gives an [inductive_family = inductive_instance *
 constr list]. Finally, applying real parameters gives an
 [inductive_type = inductive_family * constr list]. At each level
 corresponds various appropriated functions *)
 
-type inductive_instance (* ex-mind_specif *)
+type inductive_instance (* ex-[mind_specif] *)
 
 val mis_index : inductive_instance -> int
 val mis_ntypes : inductive_instance -> int

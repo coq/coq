@@ -548,7 +548,7 @@ val occur_evar : existential_key -> constr -> bool
    in c, [false] otherwise *)
 val occur_var : identifier -> 'a term -> bool
 
-(* [dependent M N] is true iff M is eq_constr with a subterm of N 
+(* [dependent M N] is true iff M is eq\_constr with a subterm of N 
    M is appropriately lifted through abstractions of N *)
 val dependent : constr -> constr -> bool
 

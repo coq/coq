@@ -4,7 +4,8 @@
 all: minicoq.dvi
 
 coq.dvi: coq.tex
-	latex coq && latex coq
+	latex coq
+	latex coq
 
 coq.tex::
 	make -C .. doc/coq.tex
