@@ -10,12 +10,12 @@ remains available as an option for experimented users still wishing to
 require this feature.
 
   Secondly, Coq version 8.0 comes with a completely new syntax of
-terms, and a revised uniformised syntax for tactics and
-commands. Besides a better uniformity and a lightening of the syntax,
+terms, and a revised more uniform syntax for tactics and
+commands. Besides a better uniformity and a simplification of the syntax,
 the purpose is to allow the use of high-level comforts, such as
 implicit types in quantification and notations for standard
 arithmetical notions (e.g. +,*,<,<=) without conflicts with the rest
-of syntax. A new notion of "interpretation scopes" allows also to
+of the syntax. A new notion of "interpretation scopes" allows also to
 reuse the same notations in different contexts of formalisation
 (e.g. +, * are valid on nat, Z, R, types, etc). The new syntax, with
 explanatory examples, is described in document ??? from the
@@ -27,12 +27,16 @@ on all types. The type "R" is now in Set and the library on Z has been
 re-organised. The basic notions from the initial state now have
 implicit arguments.
 
-  Coq version 8.0 comes with an automatic translator from old to new
-syntax. Follow the instructions in document ??? from the distribution
-to update your developments from old to new syntax.
+  Coq version 8.0 comes with a robust comment-preserving automatic
+translator from old to new syntax. Follow the instructions in document
+??? from the distribution to update your developments from old to new
+syntax.
 
   Coq version 8.0 brings also improved tactics (especially refined
 conversion and induction tactics).
+
+  Last but not the least, Coq version 8.0 comes with a new integrated
+gtk-based user interface in the style of ProofGeneral.
 
   Please refer to the accompanying document CHANGES or the location
 ftp://ftp.inria.fr/INRIA/LogiCal/coq/V8.0/doc/Changes.html for a full
@@ -47,7 +51,7 @@ and ftp://ftp.inria.fr/INRIA/coq/V8.0/
 http://coq.inria.fr/library-eng.html (these pages have been generated
 by coqdoc).
 
-p  Users are kindly invited to report bugs at http://coq.inria.fr/bin/coq-bugs
+  Users are kindly invited to report bugs at http://coq.inria.fr/bin/coq-bugs
 and to mail Coq-Club@pauillac.inria.fr for general questions or remarks.
 Note that you can now choose your personal options at
 http://pauillac.inria.fr/mailman/listinfo/coq-club and consult the 
