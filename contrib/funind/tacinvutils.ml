@@ -18,34 +18,10 @@ open Sign
 open Reductionops
 (*i*)
 
-(* FIXME: ref 1, pas bon, si? *)
-let evarcpt = ref 0
-let metacpt = ref 0
-let mknewexist ()= 
-  begin
-    evarcpt := !evarcpt+1;
-    !evarcpt,[||]
-  end
+(*s printing of constr -- debugging *)
 
-let mknewmeta ()= 
-  begin
-    metacpt := !metacpt+1;
-    mkMeta !metacpt
-  end
-
-let  rec mkevarmap_from_listex lex =
-  match lex with
-	 | [] -> Evd.empty
-	 | ((ex,_),typ)::lex' -> 
-		  let info ={
-			 evar_concl = typ;
-			 evar_hyps = empty_named_context;
-			 evar_body = Evar_empty} in
-		  Evd.add (mkevarmap_from_listex lex') ex info
-
-(*s printing of constr *)
-
-let prconstr c =  msg(str"  " ++ prterm c ++ str"\n")
+let msg x = () (* comment this to see debugging msgs *)
+let prconstr c =  msg (str"  " ++ prterm c ++ str"\n")
 let prlistconstr lc = List.iter prconstr lc
 let prstr s = msg(str s)
 
@@ -66,12 +42,53 @@ let prNamedLConstr s lc =
     prNamedLConstr_aux lc
   end
 
-let constant =Coqlib.gen_constant "Funind"
+
+(* FIXME: ref 1, pas bon, si? *)
+let evarcpt = ref 0
+let metacpt = ref 0
+let mknewexist ()= 
+  begin
+    evarcpt := !evarcpt+1;
+    !evarcpt,[||]
+  end
+
+let resetexist ()= evarcpt := 0
+
+let mknewmeta ()= 
+  begin
+    metacpt := !metacpt+1;
+    mkMeta !metacpt
+  end
+
+let resetmeta () = metacpt := 0
+
+let  rec mkevarmap_from_listex lex =
+  match lex with
+	 | [] -> Evd.empty
+	 | ((ex,_),typ)::lex' -> 
+		  let info ={
+			 evar_concl = typ;
+			 evar_hyps = empty_named_context;
+			 evar_body = Evar_empty} in
+		  Evd.add (mkevarmap_from_listex lex') ex info
+
+
+
+(* tire de const\_omega.ml *)
+let constant dir s =
+  try
+    Declare.global_absolute_reference
+      (Libnames.make_path
+        (Names.make_dirpath (List.map Names.id_of_string (List.rev dir)))
+        (Names.id_of_string s))
+  with e -> print_endline (String.concat "." dir); print_endline s; 
+            raise e
+(* fin const\_omega.ml *)
 
 let mkEq typ c1 c2 = 
   mkApp (build_coq_eq_data.eq(),[| typ; c1; c2|])
 let mkRefl typ c1 = 
-  mkApp ((constant ["Init"; "Logic"] "refl_equal"),
+  mkApp ((constant ["Coq"; "Init"; "Logic"] "refl_equal"),
          [| typ; c1|])
 
 let rec popn i c = if i<=0 then c else pop (popn (i-1) c)
@@ -106,7 +123,7 @@ let rec substitterm prof t by_t in_u =
 
 
 let apply_eqtrpl eq t =
-  let tb,b,by_t = eq in
+  let r,(tb,b,by_t) = eq in
   substitterm 0 b by_t t
 
 let apply_eqtrpl_lt lt eq =  List.map (apply_eqtrpl eq) lt
@@ -123,10 +140,10 @@ let apply_refl_term eq t =
 
 let apply_eq_leqtrpl leq eq =
   List.map 
-    (function (tb,b,t) 
-	-> tb,
-	(if isRel b then b else (apply_refl_term eq b)),
-	apply_refl_term eq t) leq
+    (function (r,(tb,b,t)) ->
+		r,(tb, 
+		(if isRel b then b else (apply_refl_term eq b)), apply_refl_term eq t))
+	 leq
 
 
 
@@ -150,7 +167,8 @@ let prod_it_lift ini lcpl =
 let prod_it_anonym_lift trm lst = List.fold_right mkArrow_lift lst trm
 
 let lam_it_anonymous trm lst =
-  List.fold_right (fun elt res -> mkLambda(Name(id_of_string "Hrec"),elt,res)) lst trm
+  List.fold_right 
+	 (fun elt res -> mkLambda(Name(id_of_string "Hrec"),elt,res)) lst trm
 
 let lambda_id id typeofid cstr =
   let cstr' = mkNamedLambda (id_of_string "FUNX") typeofid cstr in
@@ -173,7 +191,7 @@ let nth_dep_constructor indtype n =
   build_dependent_constructor cstr_sum,  cstr_sum.cs_nargs
 
 
-let coq_refl_equal = lazy(constant ["Init"; "Logic"] "refl_equal")
+let coq_refl_equal = lazy(constant ["Coq"; "Init"; "Logic"] "refl_equal")
 
 let rec buildrefl_from_eqs eqs = 
   match eqs with 
@@ -222,15 +240,18 @@ let rec substit_red prof t by_t in_u =
     map_constr_with_binders succ (fun i u -> substit_red i t by_t u)
     	prof in_u
 
-(* [exchange_reli_arrayi t=(reli x y ...) tarr (d,f)] exchange each reli by tarr.(f-i). *)
+(* [exchange_reli_arrayi t=(reli x y ...) tarr (d,f)] exchange each
+	reli by tarr.(f-i). *) 
 let exchange_reli_arrayi tarr (d,f) t =
   let hd,args= destApplication t in 
   let i = destRel hd in
   whd_beta (mkApp (tarr.(f-i) ,args))
 
-let exchange_reli_arrayi_L tarr (d,f) = List.map (exchange_reli_arrayi tarr (d,f))
+let exchange_reli_arrayi_L tarr (d,f) = 
+  List.map (exchange_reli_arrayi tarr (d,f))
 
 
+(* expand all letins in a term, before building the principle. *)
 let rec expand_letins mimick =
   match kind_of_term mimick with
     | LetIn(nme,cstr1, typ, cstr) ->
@@ -239,7 +260,7 @@ let rec expand_letins mimick =
     | x -> map_constr expand_letins mimick
 	  
 
-(* From Antonia: Valeur d'une constante *)
+(* Valeur d'une constante, or identity *)
 let def_of_const t =
   match kind_of_term t with
     | Const sp -> 
@@ -250,17 +271,18 @@ let def_of_const t =
 			 with _ -> assert false)
     | _ -> t
 
-(* nom d'une constante.*)
+(* nom d'une constante. Must be a constante. x*)
 let name_of_const t =
     match (kind_of_term t) with
-      Const cst -> string_of_kn cst
-     |_ -> assert false
+        Const cst -> Names.string_of_label (Names.label cst)
+		|_ -> assert false
  ;;
 
 
 (*i
- Local Variables:
- compile-command: "make -k tacinvutils.cmo"
+  Local Variables:
+  compile-command: "make -k tacinvutils.cmo"
+  test-command: "../../bin/coqtop -q -batch -load-vernac-source ../../test-suite/success/Funind.v"
  End:
 i*)
 

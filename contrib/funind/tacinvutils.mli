@@ -21,7 +21,7 @@ open Refine
 open Evd
 (*i*)
 
-(* printing *)
+(* printing debugging *)
 val prconstr: constr -> unit
 val prlistconstr: constr list  -> unit
 val prstr: string -> unit 
@@ -29,6 +29,8 @@ val prstr: string -> unit
 
 val mknewmeta: unit -> constr
 val mknewexist: unit -> existential
+val resetmeta: unit -> unit (* safe *)
+val resetexist: unit -> unit (* be careful with this one *)
 val mkevarmap_from_listex: (Term.existential * Term.types) list -> evar_map
 val mkEq: types -> constr -> constr -> constr
 (* let mkEq typ c1 c2 =   mkApp (build_coq_eq_data.eq(),[| typ; c1; c2|]) *)
@@ -50,12 +52,12 @@ val prod_id: constr -> constr -> constr -> constr
 val name_of_string : string -> name
 val newname_append: name -> string -> name
 
-val apply_eqtrpl: (constr*constr*constr) -> constr -> constr
+val apply_eqtrpl: constr*(constr*constr*constr) -> constr -> constr
 val substitterm: int -> constr -> constr -> constr -> constr
 val apply_leqtrpl_t: 
-  constr -> (constr*constr*constr) list -> constr
+  constr -> (constr*(constr*constr*constr)) list -> constr
 val apply_eq_leqtrpl: 
-  (constr*constr*constr) list -> constr -> (constr*constr*constr) list
+  (constr*(constr*constr*constr)) list -> constr -> (constr*(constr*constr*constr)) list
 (* val apply_leq_lt: constr list -> constr list -> constr list *)
 
 val hdMatchSub: constr -> constr -> constr list
