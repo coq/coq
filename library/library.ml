@@ -200,8 +200,10 @@ let (in_require, _) =
        export_function = (fun _ -> None) })
   
 let require_module spec name fileopt export =
+(* Trop contraignant
   if sections_are_opened () then
     warning ("Objets of "^name^" not surviving sections (e.g. Grammar \nand Hints) will be removed at the end of the section");
+*)
   let file = match fileopt with
     | None -> name
     | Some f -> f 
