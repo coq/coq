@@ -252,7 +252,8 @@ let judge_of_inductive env i =
     let (kn,_) = i in
     let mib = lookup_mind kn env in
     check_args env constr mib.mind_hyps in 
-  make_judge constr (type_of_inductive env i)
+  let specif = lookup_mind_specif env i in
+  make_judge constr (type_of_inductive specif)
 
 (*
 let toikey = Profile.declare_profile "judge_of_inductive";;
@@ -268,7 +269,8 @@ let judge_of_constructor env c =
     let ((kn,_),_) = c in
     let mib = lookup_mind kn env in
     check_args env constr mib.mind_hyps in 
-  make_judge constr (type_of_constructor env c)
+  let specif = lookup_mind_specif env (inductive_of_constructor c) in
+  make_judge constr (type_of_constructor c specif)
 
 (*
 let tockey = Profile.declare_profile "judge_of_constructor";;

@@ -134,7 +134,12 @@ open Libnames
 let type_of_reference env = function
   | VarRef id -> let (_,_,t) = Environ.lookup_named id env in t
   | ConstRef c -> Environ.constant_type env c
-  | IndRef ind -> Inductive.type_of_inductive env ind
-  | ConstructRef cstr -> Inductive.type_of_constructor env cstr
+  | IndRef ind ->
+     let specif = Inductive.lookup_mind_specif env ind in
+      Inductive.type_of_inductive specif
+  | ConstructRef cstr ->
+     let specif =
+      Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
+       Inductive.type_of_constructor cstr specif
 
 let type_of_global t = type_of_reference (env ()) t

@@ -18,6 +18,24 @@ open Declarations
 open Environ
 open Reductionops
 
+(* The following three functions are similar to the ones defined in
+   Inductive, but they expect an env *)
+
+let type_of_inductive env ind =
+ let specif = Inductive.lookup_mind_specif env ind in
+  Inductive.type_of_inductive specif
+
+(* Return type as quoted by the user *)
+let type_of_constructor env cstr =
+ let specif =
+  Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
+ Inductive.type_of_constructor cstr specif
+
+(* Return constructor types in normal form *)
+let arities_of_constructors env ind =
+ let specif = Inductive.lookup_mind_specif env ind in
+  Inductive.arities_of_constructors ind specif
+
 (* [inductive_family] = [inductive_instance] applied to global parameters *)
 type inductive_family = inductive * constr list
 

@@ -243,9 +243,9 @@ let typeur sigma metamap =
         let cb = Environ.lookup_constant c env in
         T.body_of_type cb.Declarations.const_type
     | T.Evar ev -> Evd.existential_type sigma ev
-    | T.Ind ind -> T.body_of_type (Inductive.type_of_inductive env ind)
+    | T.Ind ind -> T.body_of_type (Inductiveops.type_of_inductive env ind)
     | T.Construct cstr ->
-       T.body_of_type (Inductive.type_of_constructor env cstr)
+       T.body_of_type (Inductiveops.type_of_constructor env cstr)
     | T.Case (_,p,c,lf) ->
         let Inductiveops.IndType(_,realargs) =
           try Inductiveops.find_rectype env sigma (type_of env c)

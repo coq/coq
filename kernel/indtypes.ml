@@ -317,9 +317,10 @@ let ienv_push_var (env, n, ntypes, lra) (x,a,ra) =
 
 let ienv_push_inductive (env, n, ntypes, ra_env) (mi,lpar) =
   let auxntyp = 1 in
+  let specif = lookup_mind_specif env mi in
   let env' =
     push_rel (Anonymous,None,
-              hnf_prod_applist env (type_of_inductive env mi) lpar) env in
+              hnf_prod_applist env (type_of_inductive specif) lpar) env in
   let ra_env' = 
     (Imbr mi,Rtree.mk_param 0) ::
     List.map (fun (r,t) -> (r,Rtree.lift 1 t)) ra_env in

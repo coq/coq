@@ -129,7 +129,7 @@ let build_projection intype outtype (cstr:constructor) special default gls=
     try destApplication intype with 
 	Invalid_argument _ -> (intype,[||])  in
   let ind=destInd h in 
-  let types=Inductive.arities_of_constructors env ind in
+  let types=Inductiveops.arities_of_constructors env ind in
   let lp=Array.length types in
   let ci=(snd cstr)-1 in
   let branch i=

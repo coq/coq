@@ -507,7 +507,7 @@ let print_opaque_name qid =
     | IndRef (sp,_) ->
         print_mutual sp
     | ConstructRef cstr -> 
-	let ty = Inductive.type_of_constructor env cstr in
+	let ty = Inductiveops.type_of_constructor env cstr in
 	print_typed_value (mkConstruct cstr, ty)
     | VarRef id ->
         let (_,c,ty) = lookup_named id env in 

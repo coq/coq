@@ -406,7 +406,7 @@ let mk_inductive_obj sp packs variables hyps finite =
             D.mind_typename=typename ;
             D.mind_nf_arity=arity} = p
        in
-        let lc = Inductive.arities_of_constructors (Global.env ()) (sp,!tyno) in
+        let lc = Inductiveops.arities_of_constructors (Global.env ()) (sp,!tyno) in
         let cons =
          (Array.fold_right (fun (name,lc) i -> (name,lc)::i)
           (Array.mapi

@@ -18,6 +18,8 @@ open Environ
 open Reduction
 open Type_errors
 
+type mind_specif = mutual_inductive_body * one_inductive_body
+
 (* raise Not_found if not an inductive type *)
 let lookup_mind_specif env (kn,tyi) =
   let mib = Environ.lookup_mind kn env in
@@ -93,16 +95,13 @@ let full_constructor_instantiate (((mind,_),mib,mip),params) =
 
 (* Type of an inductive type *)
 
-let type_of_inductive env i =
-  let (_,mip) = lookup_mind_specif env i in
-  mip.mind_user_arity
+let type_of_inductive (_,mip) = mip.mind_user_arity
 
 (************************************************************************)
 (* Type of a constructor *)
 
-let type_of_constructor env cstr =
+let type_of_constructor cstr (mib,mip) =
   let ind = inductive_of_constructor cstr in
-  let (mib,mip) = lookup_mind_specif env ind in
   let specif = mip.mind_user_lc in
   let i = index_of_constructor cstr in
   let nconstr = Array.length mip.mind_consnames in
@@ -113,8 +112,8 @@ let arities_of_specif kn (mib,mip) =
   let specif = mip.mind_nf_lc in
   Array.map (constructor_instantiate kn mib) specif
 
-let arities_of_constructors env ind = 
-  arities_of_specif (fst ind) (lookup_mind_specif env ind)
+let arities_of_constructors ind specif = 
+  arities_of_specif (fst ind) specif
 
 
 

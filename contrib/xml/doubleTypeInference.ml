@@ -124,10 +124,10 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
         E.make_judge cstr (E.constant_type env c)
 	  
      | T.Ind ind ->
-        E.make_judge cstr (Inductive.type_of_inductive env ind)
+        E.make_judge cstr (Inductiveops.type_of_inductive env ind)
 	  
      | T.Construct cstruct -> 
-        E.make_judge cstr (Inductive.type_of_constructor env cstruct)
+        E.make_judge cstr (Inductiveops.type_of_constructor env cstruct)
 	  
      | T.Case (ci,p,c,lf) ->
         let expectedtype =

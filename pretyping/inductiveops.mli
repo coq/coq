@@ -14,6 +14,17 @@ open Declarations
 open Environ
 open Evd
 
+(* The following three functions are similar to the ones defined in
+   Inductive, but they expect an env *)
+
+val type_of_inductive    : env -> inductive -> types
+
+(* Return type as quoted by the user *)
+val type_of_constructor  : env -> constructor -> types
+
+(* Return constructor types in normal form *)
+val arities_of_constructors : env -> inductive -> types array
+
 (* An inductive type with its parameters *)
 type inductive_family
 val make_ind_family : inductive * constr list -> inductive_family

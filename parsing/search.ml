@@ -34,7 +34,7 @@ open Nametab
 
 let print_constructors indsp fn env nconstr =
   for i = 1 to nconstr do
-    fn (ConstructRef (indsp,i)) env (Inductive.type_of_constructor env (indsp,i))
+    fn (ConstructRef (indsp,i)) env (Inductiveops.type_of_constructor env (indsp,i))
   done
 
 let rec head_const c = match kind_of_term c with

@@ -16,6 +16,7 @@ open Reductionops
 open Type_errors
 open Pretype_errors
 open Inductive
+open Inductiveops
 open Typeops
 
 let meta_type env mv =
