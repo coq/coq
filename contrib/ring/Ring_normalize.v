@@ -885,3 +885,9 @@ Save.
 
 End rings.
 
+V8Infix "+" Pplus : ring_scope.
+V8Infix "*" Pmult : ring_scope.
+V8Notation "- x" := (Popp x) : ring_scope.
+V8Notation "[ x ]" := (Pvar x) (at level 1) : ring_scope.
+
+Delimits Scope ring_scope with ring.
