@@ -1,0 +1,20 @@
+Performance analysis for V8-0-bugfix branch
+-------------------------------------------
+
+Mar 20, 2005: fixed Logic.with_check bug
+  improved whole V8-0-bugfix bench by 4 %
+  (e.g. Nijmegen/CoRN: - 7.5 %, Nijmegen/QARITH: - 1.5 %)
+
+Mar 7-10, 2005: unexplained time reduction 
+  (on Mar 7, changed Ppconstrnew univ printer only)
+  (note also a server upgrade around Mar 10)
+
+Feb 17, 2005: fixed omega bug #922 (wrong STATE dependency):
+  improved whole V8-0-bugfix bench by 2 %
+  (e.g. Nijmegen/CoRN: - 6.5 %, Nijmegen/QARITH: - 3 %)
+
+Feb 2, 2005: fixed ltac var interpretation order
+
+Dec 20-29, 2004: reduced whole V8-0-bugfix due to Berkeley/Godel failure
+
+Nov 27 - Dec 10, 2005: strong instability
