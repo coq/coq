@@ -61,5 +61,3 @@ val split_tycon :
     type_constraint * type_constraint
 
 val valcon_of_tycon : type_constraint -> val_constraint
-
-(* $Id$ *)
