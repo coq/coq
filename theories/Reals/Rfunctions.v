@@ -72,19 +72,19 @@ Fixpoint pow [r:R;n:nat]:R:=
     |(S n) => (Rmult r (pow r n))
   end.
 
-Theorem pow_O: (e : R)  (pow e O) == R1.
+Lemma pow_O: (e : R)  (pow e O) == R1.
 Simpl; Auto with real.
-Qed.
+Save.
  
-Theorem pow_1: (e : R)  (pow e (1)) == e.
+Lemma pow_1: (e : R)  (pow e (1)) == e.
 Simpl; Auto with real.
-Qed.
+Save.
  
-Theorem pow_add:
+Lemma pow_add:
  (e : R) (n, m : nat)  (pow e (plus n m)) == (Rmult (pow e n) (pow e m)).
 Intros e n; Elim n; Simpl; Auto with real.
 Intros n0 H' m; Rewrite H'; Auto with real.
-Qed.
+Save.
 
 Lemma pow_nonzero:
   (x:R) (n:nat) ~(x==R0) -> ~((pow x n)==R0).
@@ -97,22 +97,22 @@ Save.
 
 Hints Resolve pow_O pow_1 pow_add pow_nonzero:real.
  
-Theorem pow_RN_plus:
+Lemma pow_RN_plus:
  (e : R)
  (n, m : nat)
  ~ e == R0 ->  (pow e n) == (Rmult (pow e (plus n m)) (Rinv (pow e m))).
 Intros e n; Elim n; Simpl; Auto with real.
 Intros n0 H' m H'0.
 Rewrite Rmult_assoc; Rewrite <- H'; Auto.
-Qed.
+Save.
 
-Theorem pow_lt: (e : R) (n : nat) (Rlt R0 e) ->  (Rlt R0 (pow e n)).
+Lemma pow_lt: (e : R) (n : nat) (Rlt R0 e) ->  (Rlt R0 (pow e n)).
 Intros e n; Elim n; Simpl; Auto with real.
 Intros n0 H' H'0; Replace R0 with (Rmult e R0); Auto with real.
-Qed.
+Save.
 Hints Resolve pow_lt :real.
 
-Theorem Rlt_pow_R1:
+Lemma Rlt_pow_R1:
  (e : R) (n : nat) (Rlt R1 e) -> (lt O n) ->  (Rlt R1 (pow e n)).
 Intros e n; Elim n; Simpl; Auto with real.
 Intros H' H'0; ElimType False; Omega.
@@ -124,10 +124,10 @@ Apply Rlt_trans with r2 := (Rmult e R1); Auto with real.
 Apply Rlt_monotony; Auto with real.
 Apply Rlt_trans with r2 := R1; Auto with real.
 Apply H'; Auto with arith.
-Qed.
+Save.
 Hints Resolve Rlt_pow_R1 :real.
 
-Theorem Rlt_pow:
+Lemma Rlt_pow:
  (e : R) (n, m : nat) (Rlt R1 e) -> (lt n m) ->  (Rlt (pow e n) (pow e m)).
 Intros e n m H' H'0; Replace m with (plus (minus m n) n).
 Rewrite pow_add.
@@ -144,7 +144,7 @@ Apply Rlt_pow_R1; Auto with arith.
 Apply simpl_lt_plus_l with p := n; Auto with arith.
 Rewrite le_plus_minus_r; Auto with arith; Rewrite <- plus_n_O; Auto.
 Rewrite plus_sym; Auto with arith.
-Qed.
+Save.
 Hints Resolve Rlt_pow :real.
 
 (*********)
@@ -217,7 +217,7 @@ Unfold Rgt in H.
 Apply Rlt_le; Assumption.
 Save.
 
-Lemma Power_Rabsolu: (x:R) (n:nat)
+Lemma Pow_Rabsolu: (x:R) (n:nat)
      (pow (Rabsolu x) n)==(Rabsolu (pow x n)).
 Intro;Induction n;Simpl.
 Apply sym_eqT;Apply Rabsolu_pos_eq;Apply Rlt_le;Apply Rlt_R0_R1.
@@ -235,7 +235,7 @@ Intros;Elim (archimed (Rmult b (Rinv (Rminus (Rabsolu x) R1))));Intros;
 Intro; Elim H1;Clear H1;Intros;Exists x0;Intros;
  Apply (Rge_trans (Rabsolu (pow x n)) (Rabsolu (pow x x0)) b).
 Apply Rle_sym1;Apply Power_monotonic;Assumption.
-Rewrite <- Power_Rabsolu;Cut (Rabsolu x)==(Rplus R1 (Rminus (Rabsolu x) R1)).
+Rewrite <- Pow_Rabsolu;Cut (Rabsolu x)==(Rplus R1 (Rminus (Rabsolu x) R1)).
 Intro; Rewrite H3;
  Apply (Rge_trans (pow (Rplus R1 (Rminus (Rabsolu x) R1)) x0)
                  (Rplus R1 (Rmult (INR x0)  
@@ -354,7 +354,7 @@ Assumption.
 Red;Intro; Apply R1_neq_R0;Assumption.
 Save.
 
-Theorem pow_R1:
+Lemma pow_R1:
  (r : R) (n : nat) (pow r n) == R1 ->  (Rabsolu r) == R1 \/ n = O.
 Intros r n H'.
 Case (Req_EM (Rabsolu r) R1); Auto; Intros H'1.
@@ -368,7 +368,7 @@ Replace (pow (Rabsolu (Rinv r)) (S n0)) with R1.
 Simpl; Apply Rlt_antirefl; Auto.
 Rewrite Rabsolu_Rinv; Auto.
 Rewrite <- Rinv_pow; Auto.
-Rewrite Power_Rabsolu; Auto.
+Rewrite Pow_Rabsolu; Auto.
 Rewrite H'0; Rewrite Rabsolu_right; Auto with real.
 Apply Rle_ge; Auto with real.
 Apply Rlt_pow; Auto with arith.
@@ -385,10 +385,10 @@ Cut ~ r == R0; [Intros Eq1 | Auto with real].
 Cut ~ (Rabsolu r) == R0; [Intros Eq2 | Apply Rabsolu_no_R0]; Auto.
 Absurd (Rlt (pow (Rabsolu r) O) (pow (Rabsolu r) (S n0))); 
   Auto with real arith.
-Repeat Rewrite Power_Rabsolu; Rewrite H'0; Simpl; Auto with real.
+Repeat Rewrite Pow_Rabsolu; Rewrite H'0; Simpl; Auto with real.
 Red;Intro;Absurd ``(pow r (S n0)) == 1``;Auto.
 Simpl; Rewrite H; Rewrite Rmult_Ol; Auto with real.
-Qed.
+Save.
 
 (*******************************)
 (*          PowerRZ            *)
@@ -405,25 +405,24 @@ Definition powerRZ :=
                      | (NEG p) => (Rinv (pow e (convert p)))
                     end.
 
-Theorem Zpower_NR0:
+Lemma Zpower_NR0:
  (e : Z) (n : nat) (Zle ZERO e) ->  (Zle ZERO (Zpower_nat e n)).
 Intros e n; Elim n; Unfold Zpower_nat; Simpl; Auto with zarith.
-Qed.
+Save.
 
-Theorem powerRZ_O: (e : R)  (powerRZ e ZERO) == R1.
+Lemma powerRZ_O: (e : R)  (powerRZ e ZERO) == R1.
 Simpl; Auto.
-Qed.
+Save.
  
-Theorem powerRZ_1: (e : R)  (powerRZ e (Zs ZERO)) == e.
+Lemma powerRZ_1: (e : R)  (powerRZ e (Zs ZERO)) == e.
 Simpl; Auto with real.
-Qed.
+Save.
  
-Theorem powerRZ_NOR: (e : R) (z : Z) ~ e == R0 ->  ~ (powerRZ e z) == R0.
+Lemma powerRZ_NOR: (e : R) (z : Z) ~ e == R0 ->  ~ (powerRZ e z) == R0.
 Intros e z; Case z; Simpl; Auto with real.
-Qed.
-Hints Resolve powerRZ_O powerRZ_1 powerRZ_NOR :real.
+Save.
  
-Theorem powerRZ_add:
+Lemma powerRZ_add:
  (e : R)
  (n, m : Z)
  ~ e == R0 ->  (powerRZ e (Zplus n m)) == (Rmult (powerRZ e n) (powerRZ e m)).
@@ -469,10 +468,10 @@ Intros H'; Rewrite pow_add; Auto with real.
 Apply Rinv_Rmult; Auto.
 Apply pow_nonzero; Auto.
 Apply pow_nonzero; Auto.
-Qed.
+Save.
 Hints Resolve powerRZ_O powerRZ_1 powerRZ_NOR powerRZ_add :real.
  
-Theorem Zpower_nat_powerRZ:
+Lemma Zpower_nat_powerRZ:
  (n, m : nat)
   (IZR (Zpower_nat (inject_nat n) m)) == (powerRZ (INR n) (inject_nat m)).
 Intros n m; Elim m; Simpl; Auto with real.
@@ -485,19 +484,19 @@ Rewrite H'; Simpl.
 Case m1; Simpl; Auto with real.
 Intros m2; Rewrite bij1; Auto.
 Unfold Zpower_nat; Auto.
-Qed.
+Save.
  
-Theorem powerRZ_lt: (e : R) (z : Z) (Rlt R0 e) ->  (Rlt R0 (powerRZ e z)).
+Lemma powerRZ_lt: (e : R) (z : Z) (Rlt R0 e) ->  (Rlt R0 (powerRZ e z)).
 Intros e z; Case z; Simpl; Auto with real.
-Qed.
+Save.
 Hints Resolve powerRZ_lt :real.
  
-Theorem powerRZ_le: (e : R) (z : Z) (Rlt R0 e) ->  (Rle R0 (powerRZ e z)).
+Lemma powerRZ_le: (e : R) (z : Z) (Rlt R0 e) ->  (Rle R0 (powerRZ e z)).
 Intros e z H'; Apply Rlt_le; Auto with real.
-Qed.
+Save.
 Hints Resolve powerRZ_le :real.
  
-Theorem Zpower_nat_powerRZ_absolu:
+Lemma Zpower_nat_powerRZ_absolu:
  (n, m : Z)
  (Zle ZERO m) ->  (IZR (Zpower_nat n (absolu m))) == (powerRZ (IZR n) m).
 Intros n m; Case m; Simpl; Auto with zarith.
@@ -505,16 +504,16 @@ Intros p H'; Elim (convert p); Simpl; Auto with zarith.
 Intros n0 H'0; Rewrite <- H'0; Simpl; Auto with zarith.
 Rewrite <- mult_IZR; Auto.
 Intros p H'; Absurd `0 <= (NEG p)`;Auto with zarith.
-Qed.
+Save.
 
-Theorem powerRZ_R1: (n : Z)  (powerRZ R1 n) == R1.
+Lemma powerRZ_R1: (n : Z)  (powerRZ R1 n) == R1.
 Intros n; Case n; Simpl; Auto.
 Intros p; Elim (convert p); Simpl; Auto; Intros n0 H'; Rewrite H'; Ring.
 Intros p; Elim (convert p); Simpl.
 Exact Rinv_R1.
 Intros n1 H'; Rewrite Rinv_Rmult; Try Rewrite Rinv_R1; Try Rewrite H';
  Auto with real.
-Qed.
+Save.
 
 (*******************************)
 (*  Sum of n first naturals    *)

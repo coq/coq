@@ -964,7 +964,7 @@ Rewrite (Rmult_sym x); Rewrite <- Rmult_assoc; Rewrite (Rmult_sym y (Rinv y));
 Apply imp_not_Req; Right.
 Red; Apply Rlt_trans with r2 := x; Auto with real.
 Save.
-Hints Resolve Rlt_Rinv_R1 :reals.
+Hints Resolve Rlt_Rinv_R1 :real.
 
 (*********************************************************)        
 (*s      Greater                                         *)
@@ -1461,6 +1461,7 @@ Intros;Cut `m<=n`.
 Intro H0;Elim (IZR_le m n H0);Intro;Auto.
 Generalize (eq_IZR m n H1);Intro;ElimType False;Omega.
 Omega.
+Save.
 
 Lemma one_IZR_lt1 : (z:Z)``-1<(IZR z)<1``->`z=0`.
 Intros z (H1,H2).
