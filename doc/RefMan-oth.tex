@@ -14,10 +14,11 @@ defined object referred by {\qualid}.
 
 \begin{Variants}
 \item {\tt Print Proof {\qualid}.}\comindex{Print Proof}\\
-In case \qualid\ denotes an opaque theorem defined in a section,
-it is stored on a special unprintable form and displayed as 
-{\tt <recipe>}. {\tt Print Proof} forces the printable form of \qualid\
-to be computed and displays it.
+This is a synonym to {\tt Print {\qualid}} when {\qualid} denotes a global constant.
+%In case \qualid\ denotes an opaque theorem defined in a section,
+%it is stored on a special unprintable form and displayed as 
+%{\tt <recipe>}. {\tt Print Proof} forces the printable form of \qualid\
+%to be computed and displays it.
 \end{Variants}
 
 \subsection{\tt Print All.}\comindex{Print All}
@@ -85,8 +86,8 @@ displayed as in \Coq\ terms.
 \SeeAlso chapter~\ref{Extraction}.
 
 \subsection{\tt Opaque \qualid$_1$ \dots \qualid$_n$.}
-\comindex{Opaque}\label{Opaque} This command forbids the unfolding of
-the constants {\qualid$_1$} \dots {\qualid$_n$} by tactics using
+\comindex{Opaque}\label{Opaque} This command tells not to unfold the
+the constants {\qualid$_1$} \dots {\qualid$_n$} in tactics using
 $\delta$-conversion. Unfolding a constant is replacing it by its
 definition. {\tt Opaque} can only apply on constants originally
 defined as {\tt Transparent}.
@@ -235,6 +236,23 @@ No module \module{} has been required (see section~\ref{Require}).
 % For more informations about the exact working of this command, see
 % \cite{Del97}.
 
+\subsection{\tt Locate {\qualid}.}\comindex{Locate}
+This command displays the full name of the qualified identifier {\qualid}
+and consequently the \Coq\ module in which it is defined.
+
+\begin{coq_eval}
+(***************** The last line should produce **************************)
+(************* Error: I.Dont.Exist not a defined object ******************)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
+\end{coq_eval}
+\begin{coq_example}
+Locate nat.
+Locate Datatypes.O.
+Locate Init.Datatypes.O.
+Locate Coq.Init.Datatypes.O.
+Locate I.Dont.Exist.
+\end{coq_example}
+
 \section{Loading files}
 
 \Coq\ offers the possibility of loading different
@@ -333,9 +351,12 @@ waste of time.
 % \SeeAlso sections \ref{Opaque}, \ref{loadpath}, chapter
 % \ref{Addoc-coqc}
 
-\subsection{\tt Read Module {\ident}.}\comindex{Read Module}
-Loads the module stored in the file {\ident}{\tt .vo}, but does not open it:
-its contents is invisible to the user.
+\subsection{\tt Read Module {\qualid}.}\comindex{Read Module}
+This looks for a physical file \texttt{file.vo} mapped to logical name
+{\qualid} in the current {\Coq} loadpath, then loads its contents but
+does not open it: its contents remains accesible to the user only by
+using names prefixed by the module name (i.e. {\qualid} or any other
+qualified names denoting the same module).
 %  The implementation file
 % ({\ident}{\tt.vo}) is searched first, then the specification file
 % ({\ident}{\tt.vi}) in case of failure.
@@ -415,7 +436,7 @@ dynamically.
 searched into the current Objective Caml loadpath (see the command {\tt
 Add ML Path} in the section \ref{loadpath}).  Loading of Objective Caml
 files is only possible under the bytecode version of {\tt coqtop}
-(i.e. not using options {\tt -opt} or {\tt -full} -- see chapter 
+(i.e. {\tt coqtop} called with options {\tt -byte}, see chapter 
 \ref{Addoc-coqc}).
 \begin{ErrMsgs}
 \item \errindex{File not found on loadpath : \str}
@@ -425,7 +446,7 @@ files is only possible under the bytecode version of {\tt coqtop}
 \subsection{\tt Print ML Modules.}\comindex{Print ML Modules}
 This print the name of all \ocaml{} modules loaded with \texttt{Declare
   ML Module}. To know from where these module were loaded, the user
-should use the command \texttt{Locate File} (\pageref{Locate File})
+should use the command \texttt{Locate File} (see page \pageref{Locate File})
 
 \section{Loadpath}
 \label{loadpath}\index{Loadpath}
@@ -433,8 +454,7 @@ should use the command \texttt{Locate File} (\pageref{Locate File})
 There are currently two loadpaths in \Coq. A loadpath where seeking
 {\Coq} files (extensions {\tt .v} or {\tt .vo} or {\tt .vi}) and one where
 seeking Objective Caml files. The default loadpath contains the
-directory ``\texttt{.}'' denoting the current directory, so there are also
-commands to print and change the current working directory.
+directory ``\texttt{.}'' denoting the current directory and mapped to the empty logical path (see section \ref{LongNames}).
 
 \subsection{\tt Pwd.}\comindex{Pwd}\label{Pwd}
 This command displays the current working directory.
@@ -451,23 +471,27 @@ which can be any valid path.
 \subsection{\tt Add LoadPath {\str} as {\dirpath}.}
 \comindex{Add LoadPath}\label{AddLoadPath}
 
-This command adds the path {\str} to the current \Coq\ loadpath and
+This command adds the path {\str} to the current {\Coq} loadpath and
 maps it to the logical directory {\dirpath}, which means that every
-file {\tt M.v} physically lying in directory {\str} will be considered
-as a module of logical name ``{\dirpath}{\tt{.M}}''.
+file {\tt M.v} physically lying in directory {\str} becomes accessible
+through logical name ``{\dirpath}{\tt{.M}}''. 
+
+\Rem {\tt Add LoadPath} also adds {\str} to the current ML loadpath.
 
 \begin{Variants}
 \item {\tt Add LoadPath {\str}.}\\
-Performs as {\tt Add LoadPath {\str} as {\dirpath}.} but for an empty directory path.
+Performs as {\tt Add LoadPath {\str} as {\dirpath}} but for the empty directory path.
 \end{Variants}
 
 \subsection{\tt Add Rec LoadPath {\str} as {\dirpath}.}\comindex{Add Rec LoadPath}\label{AddRecLoadPath}
 This command adds the directory {\str} and all its subdirectories 
-to the current \Coq\ loadpath. The top directory {\str} is mapped to the logical directory {\dirpath}, any subdirectory {\textsl{pdir}} will be mapped to logical directory {\dirpath}{\tt{.pdir}} and so on.
+to the current \Coq\ loadpath. The top directory {\str} is mapped to the logical directory {\dirpath} while any subdirectory {\textsl{pdir}} is mapped to logical directory {\dirpath}{\tt{.pdir}} and so on.
+
+\Rem {\tt Add Rec LoadPath} also recursively adds {\str} to the current ML loadpath.
 
 \begin{Variants}
 \item {\tt Add Rec LoadPath {\str}.}\\
-Works as {\tt Add Rec LoadPath {\str} as {\dirpath}.} but for the empty logical directory path.
+Works as {\tt Add Rec LoadPath {\str} as {\dirpath}} but for the empty logical directory path.
 \end{Variants}
 
 \subsection{\tt Remove LoadPath {\str}.}\comindex{Remove LoadPath}
@@ -492,7 +516,7 @@ the command {\tt Declare ML Module} in the section \ref{compiled}).
 \subsection{\tt Print ML Path {\str}.}\comindex{Print ML Path}
 This command displays the current Objective Caml loadpath.
 This command makes sense only under the bytecode version of {\tt
-oqtop}, i.e. not using {\tt -opt} or {\tt -full} options (see the
+coqtop}, i.e. using option {\tt -byte} (see the
 command {\tt Declare ML Module} in the section
 \ref{compiled}).
 
@@ -503,24 +527,9 @@ Typically, {\str} is a \texttt{.cmo} or \texttt{.vo} or \texttt{.v} file.
 
 \subsection{\tt Locate Library {\dirpath}.}
 \comindex{Locate Library}
-This command gives the status of the \Coq\ module {\dirpath}. If the module is loaded, then it is told. Otherwise, a file containing a module of this logical name is searched in the loadpath.
-
-\subsection{\tt Locate {\qualid}.}\comindex{Locate}
-This command displays the full name of the qualified identifier {\qualid}
-and consequently the \Coq\ module in which it is defined.
-
-\begin{coq_eval}
-(***************** The last line should produce **************************)
-(************* Error: I.Dont.Exist not a defined object ******************)
-(* Just to adjust the prompt: *) Set Printing Depth 50.
-\end{coq_eval}
-\begin{coq_example}
-Locate nat.
-Locate Datatypes.O.
-Locate Init.Datatypes.O.
-Locate Coq.Init.Datatypes.O.
-Locate I.Dont.Exist.
-\end{coq_example}
+This command gives the status of the \Coq\ module {\dirpath}. It tells if the
+module is loaded and if not searches in the load path for a module
+of logical name {\dirpath}.
 
 \section{States and Reset}
 
@@ -540,7 +549,7 @@ over the name of a module or of an object inside a module.
   Restores the state contained in the file \str.
 
 \begin{Variants}
-\item {\tt Restore State \ident}
+\item {\tt Restore State \ident}\\
  Equivalent to {\tt Restore State "}{\ident}{\tt .coq".}.
 \item {\tt Reset Initial.}\comindex{Reset Initial}\\ 
   Goes back to the
@@ -554,7 +563,7 @@ use in a further session. This file can be given as the {\tt
   inputstate} argument of the commands {\tt coqtop} and {\tt coqc}.
 
 \begin{Variants}
-\item {\tt Write State \ident}
+\item {\tt Write State \ident}\\
  Equivalent to {\tt Write State "}{\ident}{\tt .coq".}.
  The state is saved in the current directory (see \pageref{Pwd}).
 \end{Variants}
@@ -566,15 +575,41 @@ We will only sketch them here and refer the
 interested reader to chapter \ref{Addoc-syntax} for more details and
 examples.
 
-\subsection{\tt Implicit Arguments $[$ On $|$ Off $]$.}
-\comindex{Implicit Arguments On}
-\comindex{Implicit Arguments Off}
+\subsection{\tt Set Implicit Arguments.}
+\comindex{Set Implicit Arguments}
+\comindex{Unset Implicit Arguments}
 
-These commands sets and unsets the implicit argument mode. This mode
-forces not explicitly give some arguments (typically type arguments in
-polymorphic functions) which are deductible from the other arguments.
+This command sets the implicit argument mode on. Under this mode, the
+arguments of declared constructions (constants, inductive types,
+variables, ...) which can automatically be deduced from the others
+arguments (typically type arguments in polymorphic functions) are
+skipped. They are not printed and the user must not give them.  To
+show what are the implicit arguments associated to a declaration
+{\qualid}, use \texttt{Print \qualid}. You can change the implicit
+arguments of a specific declaration by using the command
+\texttt{Implicits} (see section \ref{Implicits}).  You can explicitely
+give an argument which otherwise should be implicit by using the
+symbol \verb=!= (see section \ref{Implicits-explicitation}).
+
+To set the implicit argument mode off, use {\tt Unset Implicit Arguments.}
+
+\begin{Variants}
+\item {\tt Implicit Arguments On.}\comindex{Implicit Arguments On}\\
+This is a deprecated equivalent to {\tt Set Implicit Arguments.} 
+\item {\tt Implicit Arguments Off.}\comindex{Implicit Arguments Off}\\
+This is a deprecated equivalent to {\tt Unset Implicit Arguments.} 
+\end{Variants}
 
 \SeeAlso section \ref{Auto-implicit}
+
+\subsection{\tt Implicits {\qualid} [} \num$_1$ \ldots \num$_n$ {\tt ]}
+\comindex{Implicits}
+\label{Implicits}
+
+This sets the implicit arguments of reference {\qualid} to be the
+arguments at positions {\num$_1$ \ldots \num$_n$}. As a particular
+case, if the list of numbers is empty then no implicit argument is
+associated to {\qualid}.
 
 \subsection{\tt Syntactic Definition {\ident} := \term.}
 \comindex{Syntactic Definition}
@@ -664,13 +699,9 @@ go();;
 \end{flushleft}
 
 \begin{Warnings}
-\item It only works if the bytecode version of {\Coq} was
-invoked. It does not work if {\Coq} was invoked with the option 
-{\tt -opt} or {\tt -full} (see \pageref{binary-images}).
-\item You must have downloaded the \emph{source code} of \Coq{} (not the
-  binary distribution), to have compiled \Coq{} and to set the
-  environment variable \texttt{COQTOP} to the right value (see
-  \ref{EnvVariables})
+\item It only works with the bytecode version of {\Coq} (i.e. {\tt coqtop} called with option {\tt -byte}, see page \pageref{binary-images}).
+\item You must have compiled {\Coq} from the source package and set the
+  environment variable \texttt{COQTOP} to the root of your copy of the sources (see section \ref{EnvVariables}).
 \end{Warnings}
 
 \subsection{\tt Set Silent.}
