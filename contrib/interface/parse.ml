@@ -6,6 +6,8 @@ open Ctast;;
 
 open Pp;;
 
+open Libnames;;
+
 open Library;;
 
 open Ascent;;
@@ -67,7 +69,7 @@ let try_require_module import specif names =
     else Some (specif = "SPECIFICATION"))
    (List.map 
      (fun name ->
-       (dummy_loc,Nametab.make_short_qualid (Names.id_of_string name)))
+       (dummy_loc,Libnames.make_short_qualid (Names.id_of_string name)))
       names)
    (import = "IMPORT")
  with
@@ -110,7 +112,7 @@ let execute_when_necessary v =
       (try 
 	Vernacentries.interp v
        with _ ->
-	 let l=prlist_with_sep spc (fun (_,qid) -> Nametab.pr_qualid qid) l in
+	 let l=prlist_with_sep spc (fun (_,qid) -> pr_qualid qid) l in
 	 msgnl (str "Reinterning of " ++ l ++ str " failed"))
   | VernacRequireFrom (_,_,name,_) ->
       (try 
@@ -427,10 +429,10 @@ let print_version_action () =
 let load_syntax_action reqid module_name =
  msg (str "loading " ++ str module_name ++ str "... ");
  try
-      (let qid = Nametab.make_short_qualid (Names.id_of_string module_name) in
-      read_module (dummy_loc,qid);
+      (let qid = Libnames.make_short_qualid (Names.id_of_string module_name) in
+      read_library (dummy_loc,qid);
       msg (str "opening... ");
-      import_module false (dummy_loc,qid); 
+      import_library false (dummy_loc,qid); 
       msgnl (str "done" ++ fnl ());
       ())
  with

@@ -15,6 +15,7 @@ open Ctast;;
 open Termast;;
 open Astterm;;
 open Vernacinterp;;
+open Libnames;;
 open Nametab
 
 open Proof_type;;

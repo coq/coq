@@ -2,7 +2,7 @@
 #   ln -s ../dev/Makefile.dir Makefile
 # if you are working in a sub/dir/ make a link to dev/Makefile.subdir instead
 # this Makefile provides many useful facilities to develop Coq
-# it is not compatible with .ml4 files unfortunately
+# it is not completely compatible with .ml4 files unfortunately
 
 ifndef TOPDIR
 TOPDIR=..
@@ -26,7 +26,7 @@ dir:
 # make all cmo's in this directory. Useful in case the main Makefile is not
 # up-to-date
 all:	
-	@(for i in *.ml; do \
+	@(for i in *.ml{,4}; do \
 	   echo -n $(BASEDIR)/`basename $$i .ml`.cmo "" ; \
 	done \
 	  | xargs $(MAKE) -C $(TOPDIR) )
@@ -36,7 +36,7 @@ list:
 	@(for i in *.mli; do \
 	   ls -l `basename $$i .mli`.cmi; \
 	done)
-	@(for i in *.ml; do \
+	@(for i in *.ml{,4}; do \
 	   ls -l `basename $$i .ml`.cmo; \
 	done)
 
@@ -47,7 +47,7 @@ confl:	conflicts
 
 
 clean::  
-	rm -f *.cmi *.cmo
+	rm -f *.cmi *.cmo *.cmx *.o
 
 # if grammar.cmo files cannot be compiled and main .depend cannot be
 # rebuilt, this is quite useful

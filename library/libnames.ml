@@ -146,14 +146,14 @@ type extended_global_reference =
   | TrueGlobal of global_reference
   | SyntacticDef of kernel_name
 
-let encode_kn dir id = make_kn (MPfile dir) (make_dirpath []) (label_of_id id)
+let encode_kn dir id = make_kn (MPfile dir) empty_dirpath (label_of_id id)
 
 let decode_kn kn = 
-  let mp,dir,l = repr_kn kn in
-    match mp with
-	MPfile dir -> (dir,id_of_label l)
-      | _ -> anomaly "MPfile expected!"
-
+  let mp,sec_dir,l = repr_kn kn in
+    match mp,(repr_dirpath sec_dir) with
+	MPfile dir,[] -> (dir,id_of_label l)
+      | _ , [] -> anomaly "MPfile expected!"
+      | _ -> anomaly "Section part should be empty!"
 
 (*s qualified names *)
 type qualid = section_path

@@ -18,7 +18,7 @@ type t =
 let section_path sl =
   match List.rev sl with
     | s::pa ->
-	make_path
+	Libnames.encode_kn
 	  (make_dirpath (List.map id_of_string pa))
 	  (id_of_string s)
     | [] -> invalid_arg "section_path"
@@ -56,7 +56,7 @@ let rec ast_to_ct = function
   | Coqast.Id (loc,a) -> Id (loc,a)
   | Coqast.Str (loc,a) -> Str (loc,a)
   | Coqast.Path (loc,a) ->
-    let (sl,bn) = repr_path a in
+    let (sl,bn) = Libnames.decode_kn a in
     Path(loc, (List.map string_of_id
                 (List.rev (repr_dirpath sl))) @ [string_of_id bn])
   | Coqast.Dynamic (loc,a) -> Dynamic (loc,a)

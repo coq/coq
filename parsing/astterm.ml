@@ -142,9 +142,8 @@ let ast_to_sp = function
 
 (* TODO: correct this vulgar hack! *)
 let sp_of_kn kn = 
-  match repr_kn kn with
-    | MPfile dir, _, l -> make_path dir (id_of_label l)
-    | _ -> anomaly "MPcomp module path expected"
+  let dir,id = Libnames.decode_kn kn in
+    make_path dir id
 
 let kn_of_sp sp = 
   Libnames.encode_kn (dirpath sp) (basename sp)

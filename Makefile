@@ -180,16 +180,8 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
         lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo \
         lib/system.cmo lib/bstack.cmo lib/edit.cmo lib/options.cmo \
 	lib/rtree.cmo lib/gset.cmo lib/tlm.cmo \
-        kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
-        kernel/term.cmo kernel/sign.cmo kernel/declarations.cmo \
-	kernel/environ.cmo \
-	kernel/closure.cmo kernel/conv_oracle.cmo kernel/reduction.cmo \
-	kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
-	kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo \
-	library/libnames.cmo library/nameops.cmo library/libobject.cmo \
-	library/summary.cmo library/nametab.cmo library/lib.cmo \
-	library/global.cmo library/library.cmo lib/options.cmo \
-	library/impargs.cmo library/goptions.cmo \
+	$(KERNEL) \
+	$(LIBRARY) \
 	pretyping/evd.cmo pretyping/instantiate.cmo \
         pretyping/termops.cmo \
         pretyping/reductionops.cmo pretyping/retyping.cmo library/declare.cmo \
@@ -569,6 +561,7 @@ clean::
 ###########################################################################
 
 CORRECTNESSVO=contrib/correctness/Arrays.vo				\
+	contrib/correctness/ArraySyntax.vo				\
 	contrib/correctness/Correctness.vo				\
 	contrib/correctness/Exchange.vo					\
 	contrib/correctness/ArrayPermut.vo				\

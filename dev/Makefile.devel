@@ -4,15 +4,20 @@
 TOPDIR=.
 BASEDIR=
 
+SOURCEDIRS=lib kernel library pretyping parsing proofs tactics toplevel
+
 default:	noargument
 
 # set the devel makefile
 setup-devel:
-	ln -sf dev/Makefile.devel makefile
+	@ln -sfv dev/Makefile.devel makefile
+	@(for i in $(SOURCEDIRS); do \
+	    (cd $(TOPDIR)/$$i; ln -sfv ../dev/Makefile.dir Makefile) \
+	done)
 
 clean-devel:
-	rm -f makefile .depend.devel
-
+	echo rm -f makefile .depend.devel
+	echo rm -f $(foreach dir,$(SOURCEDIRS), $(TOPDIR)/$(dir)/Makefile)
 
 coqtop:
 	ln -sf bin/coqtop.byte coqtop

@@ -17,23 +17,29 @@ OTHER=$(shell cat $(OTHER_FILE))
 # this is a directory of useful temporary things
 WORKDIR=tmp
 
+ifneq (,$(findstring n,$(MAKEFLAGS)))
+NFLAG=-n
+else
+NFLAG=
+endif
+
 check_other:
-	@(if [ "$(OTHER)" = "" ] ; then \
+	+@(if [ "$(OTHER)" = "" ] ; then \
 	  echo You must put the ssh path to the other Coq source in $(OTHER_FILE) ; \
 	  echo For example: chrzaszc@ruta:coq/V7 ; \
 	  exit 1; \
 	fi)
 
 get:	check_other
-	rsync -Cauvz $(OTHER)/ $(TOPDIR)/
-	@(if [ -d $(TOPDIR)/$(WORKDIR) ]; then \
-	  rsync -auvz $(OTHER)/tmp/ $(TOPDIR)/tmp/ ; \
+	+rsync -Cauvz $(NFLAG) $(OTHER)/ $(TOPDIR)/
+	+@(if [ -d $(TOPDIR)/$(WORKDIR) ]; then \
+	  rsync -auvz $(NFLAG) $(OTHER)/tmp/ $(TOPDIR)/tmp/ ; \
 	fi)
 
 put:	check_other
-	rsync -Cauvz $(TOPDIR)/ $(OTHER)/
-	@(if [ -d $(TOPDIR)/$(WORKDIR) ]; then \
-	  rsync -auvz $(TOPDIR)/tmp/ $(OTHER)/tmp/ ; \
+	+rsync -Cauvz $(NFLAG) $(TOPDIR)/ $(OTHER)/
+	+@(if [ -d $(TOPDIR)/$(WORKDIR) ]; then \
+	  rsync -auvz $(NFLAG) $(TOPDIR)/tmp/ $(OTHER)/tmp/ ; \
 	fi)
 
 sync:	get put

@@ -344,9 +344,9 @@ let qualid_to_ct_ID =
     | Node(_, "QUALIDMETA",[Num(_,n)]) -> Some(CT_metac (CT_int n))
     | _ -> None;;
 
-let tac_qualid_to_ct_ID qid = CT_ident (Nametab.string_of_qualid qid)
+let tac_qualid_to_ct_ID qid = CT_ident (Libnames.string_of_qualid qid)
 
-let loc_qualid_to_ct_ID (_,qid) = CT_ident (Nametab.string_of_qualid qid)
+let loc_qualid_to_ct_ID (_,qid) = CT_ident (Libnames.string_of_qualid qid)
 
 let qualid_or_meta_to_ct_ID = function
   | AN (_,qid) -> tac_qualid_to_ct_ID qid
@@ -360,7 +360,7 @@ let xlate_qualid_list l = CT_id_list (List.map loc_qualid_to_ct_ID l)
 
 let reference_to_ct_ID = function
   | RIdent (_,id) -> CT_ident (Names.string_of_id id)
-  | RQualid (_,qid) -> CT_ident (Nametab.string_of_qualid qid)
+  | RQualid (_,qid) -> CT_ident (Libnames.string_of_qualid qid)
 
 let xlate_class = function
   | FunClass -> CT_ident "FUNCLASS"
@@ -437,10 +437,10 @@ let xlate_op the_node opn a b =
   (match a, b with
   | ((Path (_, sl)) :: []), [] ->
     CT_coerce_ID_to_FORMULA(CT_ident
-       (Names.string_of_id (Nameops.basename (section_path sl))))
+       (Names.string_of_label (Names.label (section_path sl))))
   | ((Path (_, sl)) :: []), tl ->
  CT_coerce_ID_to_FORMULA(CT_ident   
-       (Names.string_of_id(Nameops.basename (section_path sl))))
+       (Names.string_of_label(Names.label (section_path sl))))
   | _, _ -> xlate_error "xlate_op : CONST")
  | (** string_of_path needs to be investigated.
     *)
@@ -454,8 +454,8 @@ let xlate_op the_node opn a b =
 		  | _ -> assert false
 	    else
 	    CT_coerce_ID_to_FORMULA(
-	      CT_ident(Names.string_of_id
-			 (Nameops.basename (section_path sl))))
+	      CT_ident(Names.string_of_label
+			 (Names.label (section_path sl))))
   	| _, _ -> xlate_error "xlate_op : MUTIND")
  | "CASE"
  | "MATCH" ->
@@ -478,7 +478,10 @@ let xlate_op the_node opn a b =
 	 | Some(Rform x) -> x
 	 | _ -> assert false
    else
-   let name = Names.string_of_path (section_path sl) in
+   let name = 
+     let dir,id = Libnames.decode_kn (section_path sl) in
+       Names.string_of_dirpath (Libnames.extend_dirpath dir id) 
+   in
      (* This is rather a patch to cope with the fact that identifier
         names have disappeared from the vo files for grammar rules *)
        let type_desc = (try Some (Hashtbl.find type_table name) with
@@ -3244,9 +3247,9 @@ let xlate_vernac =
       let local_opt =
        match s with
        (* Cannot decide whether it is a global or a Local but at toplevel *)
-       | Nametab.NeverDischarge -> CT_coerce_NONE_to_LOCAL_OPT CT_none
-       | Nametab.DischargeAt _ -> CT_local
-       | Nametab.NotDeclare -> assert false in
+       | Libnames.NeverDischarge -> CT_coerce_NONE_to_LOCAL_OPT CT_none
+       | Libnames.DischargeAt _ -> CT_local
+       | Libnames.NotDeclare -> assert false in
       CT_coercion (local_opt, id_opt, loc_qualid_to_ct_ID id1,
         xlate_class id2, xlate_class id3)
 
@@ -3255,9 +3258,9 @@ let xlate_vernac =
       let local_opt =
        match s with
        (* Cannot decide whether it is a global or a Local but at toplevel *)
-       | Nametab.NeverDischarge -> CT_coerce_NONE_to_LOCAL_OPT CT_none
-       | Nametab.DischargeAt _ -> CT_local 
-       | Nametab.NotDeclare -> assert false in
+       | Libnames.NeverDischarge -> CT_coerce_NONE_to_LOCAL_OPT CT_none
+       | Libnames.DischargeAt _ -> CT_local 
+       | Libnames.NotDeclare -> assert false in
       CT_coercion (local_opt, id_opt, xlate_ident id1,
         xlate_class id2, xlate_class id3)
 (* Not supported

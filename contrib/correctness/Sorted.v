@@ -11,6 +11,7 @@
 (* $Id$ *)
 
 Require Export Arrays.
+Require Export ArraySyntax.
 Require ArrayPermut.
 
 Require ZArithRing.
