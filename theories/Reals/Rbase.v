@@ -1056,7 +1056,7 @@ Apply (not_O_INR (convert p));Red; Intro;Clear H;Unfold convert in H0;
 Simpl in H1;Absurd (S (positive_to_nat p0 (2)))=(0); Auto with zarith real.
 Simpl in H1;Cut (2)=(plus (1) (1)); Auto with zarith real.
 Intro; Rewrite H2 in H1;Rewrite (ZL2 p0 (1)) in H1;Clear H2;
- Cut (positive_to_nat p0 (1))=(0);Auto with zarith real.
+ Cut (positive_to_nat p0 (1))=(0);Auto with (* zarith *) real; Omega.
 Simpl in H1;Absurd (1)=(0); Auto with zarith real.
 Generalize (eq_Ropp (Ropp (INR (convert p))) R0 H);Intro;Clear H;
  Rewrite (Ropp_Ropp (INR (convert p))) in H0;Rewrite Ropp_O in H0;
@@ -1066,7 +1066,7 @@ Apply (not_O_INR (convert p));Red; Intro;Clear H0;
 Simpl in H1;Absurd (S (positive_to_nat p0 (2)))=(0); Auto with zarith real.
 Simpl in H1;Cut (2)=(plus (1) (1)); Auto with zarith real.
 Intro; Rewrite H2 in H1;Rewrite (ZL2 p0 (1)) in H1;Clear H2;
- Cut (positive_to_nat p0 (1))=(0);Auto with zarith real.
+ Cut (positive_to_nat p0 (1))=(0);Auto with (* zarith *) real; Omega.
 Simpl in H0;Absurd (1)=(0); Auto with zarith real.
 Save.
 
