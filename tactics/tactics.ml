@@ -273,7 +273,8 @@ type intro_name_flag =
   | IntroMustBe of identifier
 
 let find_name decl gl = function
-  | IntroAvoid idl        -> fresh_id idl (default_id gl decl) gl
+  | IntroAvoid idl        -> 
+      let id = fresh_id idl (default_id gl decl) gl in id
   | IntroBasedOn (id,idl) -> fresh_id idl id gl
   | IntroMustBe id        -> 
       let id' = fresh_id [] id gl in
@@ -318,7 +319,7 @@ let rec intros_using = function
 
 let intros = tclREPEAT (intro_force false)
 
-let intro_erasing id = tclTHEN (thin [id]) (intro_using id)
+let intro_erasing id = tclTHEN (thin [id]) (intro_using id gl)
 
 let intros_replacing ids gls = 
   let rec introrec = function
@@ -1008,8 +1009,6 @@ let intro_patterns = function
   | [] -> tclREPEAT intro
   | l  -> intros_pattern None l
 
-let h_intro_patterns l = abstract_tactic (TacIntroPattern l) (intro_patterns l)
-
 (*
  * A "natural" induction tactic
  * 
@@ -1324,13 +1323,6 @@ let induction_tac varname typ (elimc,elimt,lbindelimc) gl =
   let elimclause =
     make_clenv_binding wc (mkCast (elimc,elimt),elimt) lbindelimc in
   elimination_clause_scheme kONT elimclause indclause true gl
-
-let compute_induction_names n names =
-  let names = if names = [] then Array.make n [] else Array.of_list names in
-  if Array.length names <> n then
-    errorlabstrm "induction_from_context"
-      (str "Expect " ++ int n ++ str " lists of names");
-  names
 
 let is_indhyp p n t =
   let l, c = decompose_prod t in
