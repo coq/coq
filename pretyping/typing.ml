@@ -106,8 +106,8 @@ let rec execute mf env sigma cstr =
         let varj = type_judgment env sigma j in
 	let env1 = push_rel (name,None,varj.utj_val) env in
         let j' = execute mf env1 sigma c2 in
-        let varj' = type_judgment env sigma j' in
-	judge_of_product env1 name varj varj'
+        let varj' = type_judgment env1 sigma j' in
+	judge_of_product env name varj varj'
 
      | LetIn (name,c1,c2,c3) ->
         let j1 = execute mf env sigma c1 in
