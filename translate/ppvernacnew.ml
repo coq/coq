@@ -324,14 +324,6 @@ let pr_vbinders l =
 let pr_binders_arg bl =
   if bl = [] then mt () else spc () ++ pr_binders bl
 
-let pr_sbinders sbl =
-  if sbl = [] then mt () else
-    let bl =
-      List.map (fun (id,c) -> 
-        let c = anonymize_binder (Name id) c in
-        LocalRawAssum ([(dummy_loc,Name id)],c)) sbl in
-    pr_binders bl ++ spc ()
-
 let pr_onescheme (id,dep,ind,s) =
   hov 0 (pr_id id ++ str" :=") ++ spc() ++
   hov 0 ((if dep then str"Induction for" else str"Minimality for")
@@ -843,8 +835,8 @@ pr_vbinders bl ++ spc())
                 pr_lconstr b)) in
       hov 2
         (str (if b then "Record" else "Structure") ++
-         (if oc then str" > " else str" ") ++ pr_id name ++ spc() ++
-         pr_sbinders ps ++ str" :" ++ spc() ++ pr_lconstr s ++ str" := " ++
+         (if oc then str" > " else str" ") ++ pr_id name ++ 
+         pr_binders_arg ps ++ str" :" ++ spc() ++ pr_lconstr s ++ str" := " ++
          (match c with
            | None -> mt()
            | Some sc -> pr_id sc) ++

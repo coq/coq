@@ -1508,7 +1508,8 @@ let xlate_vernac =
       CT_record
        ((if add_coercion then CT_coercion_atm else
           CT_coerce_NONE_to_COERCION_OPT(CT_none)),
-        xlate_ident s, cvt_vernac_binders binders, xlate_sort c1, record_constructor,
+        xlate_ident s, xlate_binder_list binders, 
+	xlate_sort c1, record_constructor,
          build_record_field_list field_list)
 
   |    VernacRecord _ -> xlate_error "TODO: Record in a defined sort"

@@ -184,7 +184,7 @@ type vernac_expr =
 
   (* Gallina extensions *)
   | VernacRecord of bool (* = Record or Structure *)
-      * identifier with_coercion * simple_binder list
+      * identifier with_coercion * local_binder list
       * constr_expr * identifier option * local_decl_expr with_coercion list
   | VernacBeginSection of identifier
   | VernacEndSegment of identifier

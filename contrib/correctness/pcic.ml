@@ -47,7 +47,10 @@ let ast_set = CSort (dummy_loc,RProp Pos)
 let tuple_n n =
   let id = make_ident "tuple_" (Some n) in
   let l1n = Util.interval 1 n in
-  let params = List.map (fun i -> (make_ident "T" (Some i), ast_set)) l1n in
+  let params =
+    List.map (fun i ->
+      (LocalRawAssum ([dummy_loc,Name (make_ident "T" (Some i))], ast_set)))
+      l1n in
   let fields = 
     List.map
       (fun i -> 

@@ -44,16 +44,20 @@ let interp_decl sigma env = function
       let j = judgment_of_rawconstr Evd.empty env c in
       (Name id,Some j.uj_val, j.uj_type)
 
-let build_decl_entry sigma env (id,t) =
-  (id,Entries.LocalAssum (interp_type Evd.empty env t))
-
 let typecheck_params_and_fields ps fs =
   let env0 = Global.env () in
   let env1,newps =
     List.fold_left
-      (fun (env,newps) (id,t) -> 
-        let decl = interp_decl Evd.empty env (Vernacexpr.AssumExpr (id,t)) in
-        (push_rel decl env,decl::newps))
+      (fun (env,newps) d -> match d with
+	| LocalRawAssum (nal,t) ->
+	    let t = interp_type Evd.empty env t in
+	    let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
+	    let ctx = List.rev ctx in
+	    (push_rel_context ctx env, ctx@newps)
+	| LocalRawDef ((_,na),c) ->
+	    let c = judgment_of_rawconstr Evd.empty env c in
+	    let d = (na, Some c.uj_val, c.uj_type) in
+	    (push_rel d env, d::newps))
       (env0,[]) ps
   in
   let env2,newfs =
@@ -65,9 +69,13 @@ let typecheck_params_and_fields ps fs =
   in
   newps, newfs
 
-let degenerate_decl id = function
-    (_,None,t) -> (id,Entries.LocalAssum t)
-  | (_,Some c,t) -> (id,Entries.LocalDef c)
+let degenerate_decl (na,b,t) =
+  let id = match na with
+    | Name id -> id
+    | Anonymous -> anomaly "Unnamed record variable" in 
+  match b with
+    | None -> (id, Entries.LocalAssum t)
+    | Some b -> (id, Entries.LocalDef b)
 
 type record_error =
   | MissingProj of identifier * identifier list
@@ -172,7 +180,10 @@ let declare_projections indsp coers fields =
 		    const_entry_body = proj;
                     const_entry_type = Some projtyp;
                     const_entry_opaque = false } in
-		  declare_constant fid (DefinitionEntry cie,IsDefinition)
+		  let k = (DefinitionEntry cie,IsDefinition) in
+		  let sp = declare_constant fid k in
+		  Options.if_verbose message (string_of_id fid ^" is defined");
+		  sp
                 with Type_errors.TypeError (ctx,te) ->
                   raise (NotDefinable (BadTypedProj (fid,ctx,te))) in
 	      let refi = ConstRef kn in
@@ -194,23 +205,17 @@ let declare_projections indsp coers fields =
    list telling if the corresponding fields must me declared as coercion *)
 let definition_structure ((is_coe,idstruc),ps,cfs,idbuild,s) =
   let coers,fs = List.split cfs in
-  let nparams = List.length ps in
-  let idps = List.map fst ps in
+  let nparams = local_binders_length ps in
   let extract_name = function Vernacexpr.AssumExpr(id,_) -> id | Vernacexpr.DefExpr (id,_,_) -> id in
-  let allnames =  idstruc::idps@(List.map extract_name fs) in
+  let allnames =  idstruc::(List.map extract_name fs) in
   if not (list_distinct allnames) then error "Two objects have the same name";
   (* Now, younger decl in params and fields is on top *)
   let params,fields = typecheck_params_and_fields ps fs in
-(*  let args =  List.map mkVar idps in*)
   let args = extended_rel_list (List.length fields) params in
-(*  let ind = applist (mkVar idstruc, args) in*)
   let ind = applist (mkRel (1+List.length params+List.length fields), args) in
-  let subst = List.rev (idstruc::idps) in
-(*  let named_type_constructor = it_mkNamedProd_or_LetIn ind fields in*)
-  let named_type_constructor = it_mkProd_or_LetIn ind fields in
-  let type_constructor = (* subst_vars subst *) named_type_constructor in
+  let type_constructor = it_mkProd_or_LetIn ind fields in
   let mie_ind =
-    { mind_entry_params = List.map2 degenerate_decl (List.rev idps) params;
+    { mind_entry_params = List.map degenerate_decl params;
       mind_entry_typename = idstruc;
       mind_entry_arity = mkSort s;
       mind_entry_consnames = [idbuild];

@@ -120,7 +120,7 @@ GEXTEND Gram
   ;
   gallina_ext:
     [ [ b = record_token; oc = opt_coercion; name = base_ident;
-        ps = LIST0 simple_binder; ":";
+        ps = LIST0 binder_let; ":";
 	s = lconstr; ":="; cstr = OPT base_ident; "{";
         fs = LIST0 record_field SEP ";"; "}" ->
 	  VernacRecord (b,(oc,name),ps,s,cstr,fs)
@@ -250,9 +250,6 @@ GEXTEND Gram
   ;
   (* Various Binders *)
   (* ... without coercions *)
-  simple_binder:
-    [ [ b = simple_binder_coe -> no_coercion loc b ] ]
-  ;
   binder_nodef:
     [ [ b = binder_let ->
       (match b with
@@ -282,13 +279,6 @@ GEXTEND Gram
   simple_assum_coe:
     [ [ idl = LIST1 base_ident; oc = of_type_with_opt_coercion; c = lconstr -> 
         (oc,(idl,c)) ] ]
-  ;
-  simple_binder_coe:
-    [ [ id=base_ident -> (false,(id,CHole loc))
-      | "("; id = base_ident; ")" -> (false,(id,CHole loc))
-      | "("; id = base_ident; oc = of_type_with_opt_coercion;
-             t = lconstr; ")" ->
-         (oc,(id,t)) ] ]
   ;
   constructor:
     [ [ id = base_ident; l = LIST0 binder_let; 
