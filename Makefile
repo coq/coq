@@ -555,7 +555,10 @@ coqide-opt:  $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
 coqide-files: $(IDEFILES)
 
 clean-ide: 
-	rm -f $(COQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
+	rm -f $(COQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE) 
+	rm -f ide/extract_index.ml ide/find_phrase.ml ide/highlight.ml
+	rm -f ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
+	rm -f ide/utf8_convert.ml
 
 $(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) ide/ide.cmxa
 	$(SHOW)'COQMKTOP -o $@'	
