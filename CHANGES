@@ -41,7 +41,7 @@ Incompatibilities
 
 - Ring: exceptional incompatibilities
      (1 above 650 in submitted user contribs, leading to a simplification)
-- Intuition: ??
+- Intuition: does not unfold any definition except "<->" and "~".
 
 
 Changes from V7.1 to V7.2
