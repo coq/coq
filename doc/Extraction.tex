@@ -1,4 +1,4 @@
-\achapter{Execution of extracted programs in Objective Caml and Haskell}
+\achapter{Extraction of programs in Objective Caml and Haskell}
 \label{Extraction}
 \aauthor{Jean-Christophe Filliâtre and Pierre Letouzey}
 \index{Extraction}
@@ -8,11 +8,11 @@
 \end{flushleft}
 We present here the \Coq\ extraction commands, used
 to build certified and relatively
-efficient ML programs, extracting them from the proofs of their
+efficient functional programs, extracting them from the proofs of their
 specifications. 
-The ML dialects available as output language are currently 
+The functional languages available as output are currently 
 \ocaml\ and {\sf Haskell}. In the following, ``ML'' will be 
-used to refer to any of the two.
+used (abusively) to refer to any of the two.
 
 \paragraph{Differences with old versions.}
 The current extraction mechanism is new for version 7.0 of {\Coq}.
@@ -78,10 +78,10 @@ non-terminating extracted terms.
 
 \asection{Extraction options}
 
-\asubsection{Setting the ML target language}
+\asubsection{Setting the target language}
 \comindex{Extraction Language}
 
-The ability to fix target ML dialect is the first and more important
+The ability to fix target language is the first and more important
 of the extraction options. Default is Ocaml. Besides Haskell, another
 language called Toplevel is provided. It is a pseudo-Ocaml,
 with no renaming on global names: so names are printed as in \Coq.
