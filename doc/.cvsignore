@@ -28,3 +28,5 @@ config.cache
 config.status
 Makefile
 Reference-Manual.rel
+library.files
+library.coqweb.tex

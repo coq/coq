@@ -1,8 +1,12 @@
 \documentclass[11pt]{article}
 
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fullpage}
+\usepackage[noweb]{coqweb}
+
 \input{./title}
 \input{./macros}
-\input{./library/macros}
 
 \begin{document}
  
@@ -25,21 +29,21 @@ The standard library is composed of the following subdirectories:
 \medskip
 \begin{tabular}{lp{12cm}}
   {\bf Logic}   & Classical logic and dependent equality \\
+  {\bf Bool}    & Booleans (basic functions and results) \\
   {\bf Arith}   & Basic Peano arithmetic \\
   {\bf Zarith}  & Basic integer arithmetic \\
-  {\bf Bool}    &  Booleans (basic functions and results) \\
+  {\bf Reals}   & Axiomatization of Real Numbers (classical, basic functions 
+                  and results, integer part and fractional part,
+                  requires the \textbf{Zarith} library).\\
   {\bf Lists}   & Monomorphic and polymorphic lists (basic functions and
-            results), Streams (infinite sequences defined with co-inductive
-            types) \\
+                  results), Streams (infinite sequences defined 
+                  with co-inductive types) \\
   {\bf Sets}    & Sets (classical, constructive, finite, infinite, power set,
-            etc.) \\
-  {\bf IntMap}    & Representation of finite sets by an efficient
-  structure of map (trees indexed by binary integers).\\
- {\bf Reals}   & Axiomatization of Real Numbers (classical, basic functions 
-                 and results, integer part and fractional part,
-                 requires the \textbf{Zarith} library).\\
- {\bf Relations} & Relations (definitions and basic results). \\
- {\bf Wellfounded} & Well-founded relations (basic results). \\
+                  etc.) \\
+  {\bf Relations}   & Relations (definitions and basic results). \\
+  {\bf Wellfounded} & Well-founded relations (basic results). \\
+  {\bf IntMap}      & Representation of finite sets by an efficient
+                      structure of map (trees indexed by binary integers).\\
 
 \end{tabular}
 \medskip
@@ -51,7 +55,7 @@ is also a version of this document in HTML format on the WWW, which
 you can access from the \Coq\ home page at
 \texttt{http://pauillac.inria.fr/coq/coq-eng.html}.
 
-\input{library/libdoc.tex}
+\input{library.coqweb.tex}
 
 \end{document}
 

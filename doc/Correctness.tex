@@ -19,7 +19,6 @@ it when necessary, with the following command:
 $$
 \mbox{\texttt{Require Correctness.}}
 $$
-\emph{Be aware that this tactic is still very experimental}.
 
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -635,7 +634,7 @@ The first set of libraries is automatically loaded with the module
   \item[Arrays]: this module defines an abstract type \texttt{array}
     for arrays, with the corresponding operations \texttt{new},
     \texttt{access} and \texttt{store}. Access in a array $t$ at index
-    $i$ may be written \texttt{$t$\#[$i$]} in \Coq, and in particular
+    $i$ may be written \texttt{\#$t$[$i$]} in \Coq, and in particular
     inside specifications.
     This module also provides some axioms to manipulate arrays
     expression, among which \texttt{store\_def\_1} and
