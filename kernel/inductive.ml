@@ -238,12 +238,13 @@ let get_constructor (IndFamily (mispec,params)) j =
   assert (j <= mis_nconstr mispec);
   let typi = mis_type_nf_mconstruct j mispec in
   let (args,ccl) = decompose_prod_assum (prod_applist typi params) in
-  let (_,vargs) = array_chop (mis_nparams mispec + 1) (destAppL (ensure_appl ccl)) in
+  let (_,allargs) = whd_stack ccl in
+  let (_,vargs) = list_chop (mis_nparams mispec) allargs in
   { cs_cstr = ith_constructor_of_inductive (mis_inductive mispec) j;
     cs_params = params;
     cs_nargs = rel_context_length args;
     cs_args = args;
-    cs_concl_realargs = vargs }
+    cs_concl_realargs = Array.of_list vargs }
 
 let get_constructors (IndFamily (mispec,params) as indf) =
   Array.init (mis_nconstr mispec) (fun j -> get_constructor indf (j+1))
