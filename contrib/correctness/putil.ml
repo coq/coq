@@ -232,7 +232,8 @@ and c_of_constr c =
 
 open Pp
 open Util
-open Printer
+
+let prterm x = Printer.prterm_env (Global.env()) x
 
 let pp_pre = function
     [] -> (mt ())

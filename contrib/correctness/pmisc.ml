@@ -22,7 +22,12 @@ let debug = ref false
 
 let deb_mess s =
   if !debug then begin
-    msgnl s;  pp_flush()
+    msgnl s; pp_flush()
+  end
+
+let deb_print f x =
+  if !debug then begin
+    msgnl (f x); pp_flush()
   end
 
 let list_of_some = function

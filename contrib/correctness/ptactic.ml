@@ -43,33 +43,33 @@ let coqast_of_prog p =
   let p = Ptyping.states ren env p in
   let ((_,v),_,_,_) as c = p.info.kappa in
   Perror.check_for_not_mutable p.loc v;
-  deb_mess (pp_type_c c);
+  deb_print pp_type_c c;
 
   (* 3. propagation annotations *)
   let p = Pwp.propagate ren p in
 
   (* 4a. traduction type *)
   let ty = Pmonad.trad_ml_type_c ren env c in
-  deb_mess (Printer.prterm ty);
+  deb_print (Printer.prterm_env (Global.env())) ty;
 
   (* 4b. traduction terme (terme intermédiaire de type cc_term) *)
   deb_mess 
     (fnl () ++ str"Mlize.trad: Translation program -> cc_term..." ++ fnl ());
   let cc = Pmlize.trans ren p in
   let cc = Pred.red cc in
-  deb_mess (Putil.pp_cc_term cc);
+  deb_print Putil.pp_cc_term cc;
 
   (* 5. traduction en constr *)
   deb_mess 
     (fnl () ++ str"Pcic.constr_of_prog: Translation cc_term -> rawconstr..." ++ 
        fnl ());
   let r = Pcic.rawconstr_of_prog cc in
-  deb_mess (Printer.pr_rawterm r);
+  deb_print Printer.pr_rawterm r;
 
   (* 6. résolution implicites *)
   deb_mess (fnl () ++ str"Resolution implicits (? => Meta(n))..." ++ fnl ());
   let oc = understand_gen_tcc Evd.empty (Global.env()) [] [] None r in
-  deb_mess (Printer.prterm (snd oc));
+  deb_print (Printer.prterm_env (Global.env())) (snd oc);
 
   p,oc,ty,v
 
@@ -230,7 +230,7 @@ let correctness s p opttac =
   deb_mess (str"Pred.red_cci: Reduction..." ++ fnl ());
   let oc = reduce_open_constr oc in
   deb_mess (str"AFTER REDUCTION:" ++ fnl ());
-  deb_mess (Printer.prterm (snd oc));
+  deb_mess (Printer.prterm_env (Global.env()) (snd oc));
   let tac = (tclTHEN (Refine.refine_tac oc) automatic) in
   let tac = match opttac with 
     | None -> tac

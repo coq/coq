@@ -72,4 +72,5 @@ val abstract : (identifier * constr) list -> constr -> constr
 
 val debug : bool ref
 val deb_mess : Pp.std_ppcmds -> unit
+val deb_print : ('a -> Pp.std_ppcmds) -> 'a -> unit
 
