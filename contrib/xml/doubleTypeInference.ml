@@ -53,7 +53,13 @@ let double_type_of env sigma cstr expectedty =
         let ty = T.unshare (Instantiate.existential_type sigma ev) in
         let jty = execute env sigma ty None in
         let jty = assumption_of_judgment env sigma jty in
-        let _ = Array.map (function t -> execute env sigma t None) l in
+        let evar_context = (Evd.map sigma n).Evd.evar_hyps in
+        let _ =
+         (* for side effects *)
+         List.map2
+          (fun t (_,_,ty) -> execute env sigma t (Some ty))
+           (Array.to_list l) evar_context
+        in
          E.make_judge cstr jty
 	
      | T.Rel n -> 
