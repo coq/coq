@@ -4,7 +4,7 @@
 %\geometry{a4paper,body={5in,8in}}
 
 This chapter gives a compact documentation of Ltac, the tactic
-language available in {\Coq}. We start by giving the syntax and, next,
+language available in {\Coq}. We start by giving the syntax, and next,
 we present the informal semantics. Finally, we show some examples which
 deal with small but also with non-trivial problems. If you want to
 know more regarding this language and especially about its fundations,
@@ -12,9 +12,12 @@ you can refer to~\cite{Del00}.
 
 \section{Syntax}
 
+\def\nterm#1{\textrm{\textsl{#1}}}
+
 \def\tacexpr{\textrm{\textsl{expr}}}
-\def\tacexprinf{\textrm{\textsl{tacexpr$_i$}}}
-\def\tacexprpref{\textrm{\textsl{tacexpr$_p$}}}
+\def\tacexprlow{\textrm{\textsl{tacexpr$_1$}}}
+\def\tacexprinf{\textrm{\textsl{tacexpr$_2$}}}
+\def\tacexprpref{\textrm{\textsl{tacexpr$_3$}}}
 \def\atom{\textrm{\textsl{atom}}}
 \def\recclause{\textrm{\textsl{rec\_clause}}}
 \def\letclause{\textrm{\textsl{let\_clause}}}
@@ -24,17 +27,12 @@ you can refer to~\cite{Del00}.
 \def\primitivetactic{\textrm{\textsl{primitive\_tactic}}}
 \def\tacarg{\textrm{\textsl{arg}}}
 \def\qstring{\textrm{\textsl{string}}}
-
+\def\name{\textrm{\textsl{name}}}
 
 The syntax of the tactic language is given in tables~\ref{ltac}
-and~\ref{ltax_aux}.  Terminal symbols are set in typewriter font ({\tt
-like this}).  Non-terminal symbols are set in italic font
-($like\sm{}that$). ... {\it |} ... denotes the or
-operation. \nelist{$entry$}{} denotes one or several repetitions of
-entry $entry$. \nelist{$entry$}{$sep$} denotes one or several
-repetitions separated by $sep$.
-%Parentheses {\it (}...{\it )} denote grouping. 
-The main entry is {\tacexpr} and the entries {\naturalnumber},
+and~\ref{ltac_aux}. See section~\ref{BNF-syntax} for a description of
+the BNF metasyntax used in these tables. Various already defined
+entries will be used in this chapter: entries {\naturalnumber},
 {\integer}, {\ident}, {\qualid}, {\term}, {\pattern} and
 {\primitivetactic} represent respectively the natural and integer
 numbers, the authorized identificators and qualified names, {\Coq}'s
@@ -42,10 +40,12 @@ terms and patterns and all the basic tactics. In {\pattern}, there can
 be specific variables like {\tt ?id} where {\tt id} is a {\ident} or
 {\tt \_}, which are metavariables for pattern matching. {\tt ?id} allows
 us to keep instantiations and to make constraints whereas {\tt \_}
-shows that we are not interested in what will be matched.
+shows that we are not interested in what will be matched. On the right
+hand side, they are used without the question mark.
 
-This language is used in proof mode but it can also be used in toplevel
-definitions as shown in table~\ref{ltactop}.
+The main entry of the grammar is {\tacexpr}. This language is used in
+proof mode but it can also be used in toplevel definitions as shown in
+table~\ref{ltactop}.
 
 \begin{table}[htbp]
 \noindent{}\framebox[6in][l]
@@ -66,15 +66,14 @@ definitions as shown in table~\ref{ltactop}.
 & \cn{}| & {\tacexprinf} \\
 \\
 {\tacexprinf} & \cn{}::= &
-           {\atom} {\tt ||} {\tacexprpref}\\
-& \cn{}| & {\atom}\\
+           {\tacexprlow} {\tt ||} {\tacexprpref}\\
+& \cn{}| & {\tacexprlow}\\
 \\
-{\atom} & \cn{}::= &
-%% TODO: not ident, but ident or _
-{\tt fun} \nelist{\ident}{} {\tt =>} {\tacexpr}\\
+{\tacexprlow} & \cn{}::= &
+{\tt fun} \nelist{\name}{} {\tt =>} {\atom}\\
 & \cn{}| &
 {\tt let} \nelist{\letclause}{\tt with} {\tt in}
-{\tacexpr}\\
+{\atom}\\
 & \cn{}| &
 {\tt let rec} \nelist{\recclause}{\tt with} {\tt in}
 {\tacexpr}\\
@@ -83,7 +82,7 @@ definitions as shown in table~\ref{ltactop}.
 & \cn{}| &
 {\tt match reverse goal with} \nelist{\contextrule}{\tt |} {\tt end}\\
 & \cn{}| &
-{\tt match} {\term} {\tt with} \nelist{\matchrule}{\tt |} {\tt end}\\
+{\tt match} {\tacexpr} {\tt with} \nelist{\matchrule}{\tt |} {\tt end}\\
 & \cn{}| & {\tt abstract} {\atom}\\
 & \cn{}| & {\tt abstract} {\atom} {\tt using} {\ident} \\
 & \cn{}| & {\tt first [} \nelist{\tacexpr}{\tt |} {\tt ]}\\
@@ -92,12 +91,16 @@ definitions as shown in table~\ref{ltactop}.
 & \cn{}| & {\tt fail} ~|~ {\tt fail} {\naturalnumber} {\qstring}\\
 & \cn{}| & {\tt fresh} ~|~ {\tt fresh} {\qstring}\\
 & \cn{}| & {\tt context} {\ident} {\tt [} {\term} {\tt ]}\\
-& \cn{}| & {\tt eval} {$redexpr$} {\tt in} {\term}\\
-& \cn{}| & {\tt type} {\term}\\
+& \cn{}| & {\tt eval} {\nterm{redexpr}} {\tt in} {\term}\\
+& \cn{}| & {\tt type of} {\term}\\
 & \cn{}| & {\tt constr :} {\term}\\
-& \cn{}| & {\qualid} \sequence{\tacarg}{}\\
-& \cn{}| & ()\\
 & \cn{}| & \primitivetactic\\
+& \cn{}| & {\qualid} \nelist{\tacarg}{}\\
+& \cn{}| & {\atom}\\
+\\
+{\atom} & \cn{}::= &
+           {\qualid} \\
+& \cn{}| & ()\\
 & \cn{}| & {\tt (} {\tacexpr} {\tt )}\\
 \end{tabular}
 \end{center}}}
@@ -112,29 +115,32 @@ definitions as shown in table~\ref{ltactop}.
 {\parbox{6in}
 {\begin{center}
 \begin{tabular}{lp{0.1in}l}
-\letclause & \cn{}::= & {\ident} \sequence{\ident}{} {\tt :=} {\tacexpr}\\
+\tacarg & \cn{}::= & 
+           {\qualid}\\
+& \cn{}| & {\tt ()} \\
+& \cn{}| & {\tt ltac :} {\atom}\\
+& \cn{}| & {\term}\\
 \\
-\recclause & \cn{}::= & {\ident} \nelist{\ident}{} {\tt :=} {\tacexpr}\\
+\letclause & \cn{}::= & {\ident} \sequence{\name}{} {\tt :=} {\tacexpr}\\
+\\
+\recclause & \cn{}::= & {\ident} \nelist{\name}{} {\tt :=} {\tacexpr}\\
 \\
 \contextrule & \cn{}::= &
-\nelist{\contexthyps}{\tt ;} {\tt |-}
+  \nelist{\contexthyps}{\tt ,} {\tt |-}
 {\pattern} {\tt =>} {\tacexpr}\\
 & \cn{}| & {\tt |-} {\pattern} {\tt =>} {\tacexpr}\\
 & \cn{}| & {\tt \_ =>} {\tacexpr}\\
 \\
 \contexthyps & \cn{}::= &
-           {\ident} {\tt :} {\pattern}\\
-& \cn{}| & {\tt \_ :} {\pattern}\\
+           {\name} {\tt :} {\pattern}\\
 \\
 \matchrule & \cn{}::= &
            {\pattern} {\tt =>} {\tacexpr}\\
+& \cn{}| & {\tt context} {\zeroone{\ident}} {\tt [} {\pattern} {\tt ]} {\tt =>} {\tacexpr}\\
 & \cn{}| & {\tt \_ =>} {\tacexpr}\\
 \\
-\tacarg & \cn{}::= & 
-           {\qualid}\\
-& \cn{}| & {\tt ()} \\
-& \cn{}| & {\tt ltac :}{\tacexpr}\\
-& \cn{}| & {\term}\\
+\name & \cn{}::= & {\ident} \\
+& \cn{}| & \_
 \end{tabular}
 \end{center}}}
 \caption{Syntax of the tactic language (continued)}
@@ -146,9 +152,9 @@ definitions as shown in table~\ref{ltactop}.
 {\parbox{6in}
 {\begin{center}
 \begin{tabular}{lp{0.1in}l}
-$top$ & \cn{}::= & {\tt Ltac} \nelist{$ltac\_def$}{\tt with} \\
+\nterm{top} & \cn{}::= & {\tt Ltac} \nelist{\nterm{ltac\_def}} {\tt with} \\
 \\
-$ltac\_def$ & \cn{}::= & {\ident} \sequence{\ident}{} {\tt :=} {\tacexpr}
+\nterm{ltac\_def} & \cn{}::= & {\ident} \sequence{\ident}{} {\tt :=} {\tacexpr}
 \end{tabular}
 \end{center}}}
 \caption{Tactic toplevel definitions}
@@ -213,83 +219,8 @@ of Ltac.
 
 %% \subsection{Evaluation}
 
-\subsubsection{Local definitions}
-
-Local definitions can be done as follows:
-
-%\newpage{}
-
-%\phantom{}
-%\vfill{}
-
-\begin{tabular}{l}
-{\tt let} {\ident}$_1$ {\tt :=} {\tacexpr}$_1$\\
-{\tt with} {\ident}$_2$ {\tt :=} {\tacexpr}$_2$\\
-...\\
-{\tt with} {\ident}$_n$ {\tt :=} {\tacexpr}$_n$ {\tt in}\\
-{\tacexpr}
-\end{tabular}
-
-each {\tacexpr}$_i$ is evaluated to $v_i$, then, {\tacexpr} is evaluated by substituting $v_i$
-to each occurrence of {\ident}$_i$, for $i=1,...,n$. There is no dependencies
-between the {\tacexpr}$_i$ and the {\ident}$_i$.
-
-Local definitions can be recursive by using {\tt let rec} instead of
-{\tt let}. Only functions can be defined by recursion, so at least one
-argument is required.
-
-\subsubsection{Pattern matching on terms}
-
-We can carry out pattern matching on terms with:
-
-\begin{tabular}{l}
-{\tt match} {\tacexpr} {\tt with}\\
-~~~{\pattern}$_1$ {\tt =>} {\tacexpr}$_1$\\
-~{\tt |} {\pattern}$_2$ {\tt =>} {\tacexpr}$_2$\\
-~...\\
-~{\tt |} {\pattern}$_n$ {\tt =>} {\tacexpr}$_n$\\
-~{\tt |} {\tt \_} {\tt =>} {\tacexpr}$_{n+1}$\\
-{\tt end}
-\end{tabular}
-
-The {\tacexpr} is evaluated and should yield a term which is matched
-(non-linear first order unification) against {\pattern}$_1$ then
-{\tacexpr}$_1$ is evaluated into some value by substituting the
-pattern matching instantiations to the metavariables. If the matching
-with {\pattern}$_1$ fails, {\pattern}$_2$ is used and so on.  The
-pattern {\_} matches any term and shunts all remaining patterns if
-any. If {\tacexpr}$_1$ evaluates to a tactic, this tactic is not
-immediately applied to the current goal (in contrast with {\tt match
-goal}). If all clauses fail (in particular, there is no pattern {\_})
-then a no-matching error is raised. \\
-
-{\tt Error messages:}\\
-
-{\tt No matching clauses for match}
-
-\hx{4}No pattern can be used and, in particular, there is no {\tt \_} pattern.
-
-{\tt Argument of match does not evaluate to a term}
-
-\hx{4}This happens when {\tacexpr} does not denote a term.
-
-\subsubsection{Application}
-
-An application is an expression of the following form:\\
-
-{\qualid} {\tacarg}$_1$ ... {\tacarg}$_n$\\
-
-The reference {\qualid} must be bound to some defined tactic
-definition expecting at least $n$ arguments.  The expressions
-{\tacexpr}$_i$ are evaluated to $v_i$, for $i=1,...,n$.
-%If {\tacexpr} is a {\tt Fun} or {\tt Rec} value then the body is evaluated by
-%substituting $v_i$ to the formal parameters, for $i=1,...,n$. For recursive
-%clauses, the bodies are lazily substituted (when an identifier to be evaluated
-%is the name of a recursive clause).
-
-%\subsection{Application of tactic values}
-
 \subsubsection{Sequence}
+\tacindex{;}
 
 A sequence is an expression of the following form:\\
 
@@ -301,6 +232,7 @@ and $v_2$ is applied to the subgoals generated by the application of
 $v_1$. Sequence is left associating.
 
 \subsubsection{General sequence}
+\tacindex{; [ | ]}
 
 We can generalize the previous sequence operator by:\\
 
@@ -312,17 +244,8 @@ applied and $v_i$ is applied to the $i$-th generated subgoal by the
 application of $v_0$, for $=1,...,n$. It fails if the application of
 $v_0$ does not generate exactly $n$ subgoals.
 
-\subsubsection{Branching}
-
-We can easily branch with the following structure:\\
-
-{\tacexpr}$_1$ {\tt ||} {\tacexpr}$_2$\\
-
-{\tacexpr}$_1$ and {\tacexpr}$_2$ are evaluated to $v_1$ and
-$v_2$. $v_1$ and $v_2$ must be tactic values. $v_1$ is applied and if
-it fails then $v_2$ is applied. Branching is left associating.
-
 \subsubsection{For loop}
+\tacindex{do}
 
 We have a for loop with:\\
 
@@ -334,6 +257,7 @@ least once, to the generated subgoals and so on. It fails if the application of
 $v$ fails before the $n$ applications have been completed.
 
 \subsubsection{Repeat loop}
+\tacindex{repeat}
 
 We have a repeat loop with:\\
 
@@ -346,6 +270,7 @@ so on. It stops when it fails for all the generated subgoals. It never
 fails.
 
 \subsubsection{Error catching}
+\tacindex{try}
 
 We can catch the tactic errors with:\\
 
@@ -353,7 +278,35 @@ We can catch the tactic errors with:\\
 
 {\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
 applied. If the application of $v$ fails, it catches the error and
-leaves the goal unchanged.  It never fails.
+leaves the goal unchanged. If the level of the exception is positive,
+then the exception is re-raised with its level decremented.
+
+\subsubsection{Detecting progress}
+\tacindex{progress}
+
+We can check if a tactic made progress with:\\
+
+{\tt progress} {\tacexpr}\\
+
+{\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
+applied. If the application of $v$ produced one subgoal equal to the
+initial goal (up to syntactical equality), then an error of level 0 is
+raised. 
+
+{\tt Error message:}\\
+
+\errindex{Failed to progress}
+
+\subsubsection{Branching}
+\tacindex{||}
+
+We can easily branch with the following structure:\\
+
+{\tacexpr}$_1$ {\tt ||} {\tacexpr}$_2$\\
+
+{\tacexpr}$_1$ and {\tacexpr}$_2$ are evaluated to $v_1$ and
+$v_2$. $v_1$ and $v_2$ must be tactic values. $v_1$ is applied and if
+it fails then $v_2$ is applied. Branching is left associating.
 
 \subsubsection{First tactic to work}
 
@@ -411,20 +364,131 @@ match goal} block is aborted and the level is decremented.
 
 {\tt Error message:}\\
 
-{\tt Tactic Failure "message" (level $n$)}.
+\errindex{Tactic Failure "message" (level $n$)}.
+
+\subsubsection{Local definitions}
+\tacindex{let}
+\tacindex{let rec}
+
+Local definitions can be done as follows:
+
+%\newpage{}
+
+%\phantom{}
+%\vfill{}
+
+\begin{tabular}{l}
+{\tt let} {\ident}$_1$ {\tt :=} {\tacexpr}$_1$\\
+{\tt with} {\ident}$_2$ {\tt :=} {\tacexpr}$_2$\\
+...\\
+{\tt with} {\ident}$_n$ {\tt :=} {\tacexpr}$_n$ {\tt in}\\
+{\tacexpr}
+\end{tabular}
+
+each {\tacexpr}$_i$ is evaluated to $v_i$, then, {\tacexpr} is
+evaluated by substituting $v_i$ to each occurrence of {\ident}$_i$,
+for $i=1,...,n$. There is no dependencies between the {\tacexpr}$_i$
+and the {\ident}$_i$.
+
+Local definitions can be recursive by using {\tt let rec} instead of
+{\tt let}. Only functions can be defined by recursion, so at least one
+argument is required.
+
+\subsubsection{Application}
+
+An application is an expression of the following form:\\
+
+{\qualid} {\tacarg}$_1$ ... {\tacarg}$_n$\\
+
+The reference {\qualid} must be bound to some defined tactic
+definition expecting at least $n$ arguments.  The expressions
+{\tacexpr}$_i$ are evaluated to $v_i$, for $i=1,...,n$.
+%If {\tacexpr} is a {\tt Fun} or {\tt Rec} value then the body is evaluated by
+%substituting $v_i$ to the formal parameters, for $i=1,...,n$. For recursive
+%clauses, the bodies are lazily substituted (when an identifier to be evaluated
+%is the name of a recursive clause).
+
+%\subsection{Application of tactic values}
+
+\subsubsection{Function construction}
+\tacindex{fun}
+
+A parameterized tactic can be built anonymously (without resorting to
+local definitions) with:\\
+
+{\tt fun} {\ident${}_1$} ... {\ident${}_n$} {\tt =>} {\tacexpr}\\
+
+Indeed, local definitions of functions are a syntactic sugar for
+binding a {\tt fun} tactic to an identifier.
+
+\subsubsection{Pattern matching on terms}
+\tacindex{match}
+
+We can carry out pattern matching on terms with:
+
+\begin{tabular}{l}
+{\tt match} {\tacexpr} {\tt with}\\
+~~~{\pattern}$_1$ {\tt =>} {\tacexpr}$_1$\\
+~{\tt |} {\pattern}$_2$ {\tt =>} {\tacexpr}$_2$\\
+~...\\
+~{\tt |} {\pattern}$_n$ {\tt =>} {\tacexpr}$_n$\\
+~{\tt |} {\tt \_} {\tt =>} {\tacexpr}$_{n+1}$\\
+{\tt end}
+\end{tabular}
+
+The {\tacexpr} is evaluated and should yield a term which is matched
+(non-linear first order unification) against {\pattern}$_1$ then
+{\tacexpr}$_1$ is evaluated into some value by substituting the
+pattern matching instantiations to the metavariables. If the matching
+with {\pattern}$_1$ fails, {\pattern}$_2$ is used and so on.  The
+pattern {\_} matches any term and shunts all remaining patterns if
+any. If {\tacexpr}$_1$ evaluates to a tactic, this tactic is not
+immediately applied to the current goal (in contrast with {\tt match
+goal}). If all clauses fail (in particular, there is no pattern {\_})
+then a no-matching error is raised. \\
+
+{\tt Error messages:}\\
+
+\errindex{No matching clauses for match}
+
+\hx{4}No pattern can be used and, in particular, there is no {\tt \_} pattern.
+
+\errindex{Argument of match does not evaluate to a term}
+
+\hx{4}This happens when {\tacexpr} does not denote a term.
+
+\tacindex{context (in pattern)}
+There is a special form of patterns to match a subterm against the
+pattern:\\
+
+{\tt context} {\ident} {\tt [} {\pattern} {\tt ]}\\
+
+It matches any term which one subterm matches {\pattern}. If there is
+a match, the optional {\ident} is assign the ``matched context'', that
+is the initial term where the matched subterm is replaced by a
+hole. The definition of {\tt context} in expressions below will show
+how to use such term contexts.
+
+This operator never makes backtracking. If there are several subterms
+matching the pattern, only the first match is considered. Note that
+the order of matching is left unspecified.
+%% TODO: clarify this point! It *should* be specified
+
 
 \subsubsection{Pattern matching on goals}
+\tacindex{match goal}
+\tacindex{match reverse goal}
 
 We can make pattern matching on goals using the following expression:
 
 \begin{tabular}{l}
 {\tt match goal with}\\
-~~~$context\_hyps_{1,1}${\tt ;}...{\tt ;}$context\_hyps_{1,m_1}$
+~~~$hyp_{1,1}${\tt ,}...{\tt ,}$hyp_{1,m_1}$
    ~~{\tt |-}{\pattern}$_1${\tt =>} {\tacexpr}$_1$\\
-~~{\tt |}$context\_hyps_{2,1}${\tt ;}...{\tt ;}$context\_hyps_{2,m_2}$
+~~{\tt |}$hyps_{2,1}${\tt ,}...{\tt ,}$hyp_{2,m_2}$
    ~~{\tt |-}{\pattern}$_2${\tt =>} {\tacexpr}$_2$\\
 ~~...\\
-~~{\tt |}$context\_hyps_{n,1}${\tt ;}...{\tt ;}$context\_hyps_{n,m_n}$
+~~{\tt |}$hyp_{n,1}${\tt ,}...{\tt ,}$hyp_{n,m_n}$
    ~~{\tt |-}{\pattern}$_n${\tt =>} {\tacexpr}$_n$\\
 ~~{\tt |\_}~~~~{\tt =>} {\tacexpr}$_{n+1}$\\
 {\tt end}
@@ -432,7 +496,7 @@ We can make pattern matching on goals using the following expression:
 
 % TODO: specify order of hypothesis and explain reverse...
 
-If each hypothesis pattern $context\_hyps_{1,i}$, with $i=1,...,m_1$
+If each hypothesis pattern $hyp_{1,i}$, with $i=1,...,m_1$
 is matched (non-linear first order unification) by an hypothesis of
 the goal and if {\pattern}$_1$ is matched by the conclusion of the
 goal, then {\tacexpr}$_1$ is evaluated to $v_1$ by substituting the
@@ -448,12 +512,104 @@ is applied.\\
 
 {\tt Error message:}\\
 
-{\tt No matching clauses for match goal}
+\errindex{No matching clauses for match goal}
 
 \hx{4}No goal pattern can be used and, in particular, there is no {\tt
 \_} goal pattern.
 
+It is important to know that each hypothesis of the goal can be
+matched by at most one hypothesis pattern. The order of matching is
+the following: hypothesis patterns are examined from the right to the
+left (i.e. $hyp_{i,m_i}$ before $hyp_{i,1}$). For each hypothesis
+pattern, the goal hypothesis are matched in order (fresher hypothesis
+first), but it possible to reverse this order (older first) with
+the {\tt match reverse goal with} variant.
+
+\subsubsection{Filling a term context}
+\tacindex{context (in expressions)}
+
+The following expression is not a tactic in the sense that it does not
+produce subgoals but generates a term to be used in tactic
+expressions:
+
+{\tt context} {\ident} {\tt [} {\tacexpr} {\tt ]}
+
+{\ident} must denote a context variable bound by a {\tt context}
+pattern of a {\tt match} expression. This expression evaluates
+replaces the hole of the value of {\ident} by the value of
+{\tacexpr}.
+
+{\tt Error message:}\\
+
+\errindex{not a context variable}
+
+
+\subsubsection{Generating fresh hypothesis names}
+\tacindex{fresh}
+
+Tactics sometimes have to generate new names for hypothesis. Letting
+the system decide a name with the {\tt intro} tactic is not so good
+since it is very awkward to retrieve the name the system gave.
+
+As before, the following expression returns a term:
+
+{\tt fresh} {\qstring}
+
+It evaluates to an identifier unbound in the goal, which is obtained
+by padding {\qstring} with a number if necessary. If no name is given,
+the prefix is {\tt H}.
+
+\subsubsection{Type of a constr}
+\tacindex{type of}
+
+{\tt type of} {\term}
+
+This tactic computes the type of {\term}.
+
+
+\subsubsection{Computing in a constr}
+\tacindex{eval}
+
+Evaluation of a term can be performed with:
+
+{\tt eval} {\nterm{redexpr}} {\tt in} {\term}\\
+
+where \nterm{redexpr} is a reduction tactic among {\tt red}, {\tt
+hnf}, {\tt compute}, {\tt simpl}, {\tt cbv}, {\tt lazy}, {\tt unfold},
+{\tt fold}, {\tt pattern}.
+
+
+\subsubsection{Accessing tactic decomposition}
+\tacindex{info}
+
+It is possible to print on standard output how a tactic was
+decomposed with:\\
+
+{\tt info} {\tacexpr}\\
+
+This may be useful to know what steps an automatic tactic made.
+
+
+\subsubsection{Making a subproof as a separate lemma}
+\tacindex{abstract}
+
+This tactical was made to avoid efficiency problems with huge proof
+terms. It allows to prove the current goal as a separate lemma by
+applying a tactic. This tactic is supposed to solve the goal.
+
+{\tt abstract} {\tacexpr} {\tt using} {\ident}
+
+Creates a constant {\ident} (if not provided, a fresh name is
+generated by the tactical), which type is the current goal and applies
+{\tacexpr} on it.
+
+{\tt Error messages:}
+
+\errindex{Proof is not complete}
+
+
 \subsection{Tactic toplevel definitions}
+\comindex{Ltac}
 
 Basically, tactics toplevel definitions are made as follows:\\
 
@@ -467,14 +623,16 @@ Basically, tactics toplevel definitions are made as follows:\\
 {\tt Ltac} {\ident} {\ident}$_1$ ... {\ident}$_n$ {\tt :=}
 {\tacexpr}\\
 
-\noindent This defines a new tactic that can be used in any tactic script or new tactic toplevel definition.
+\noindent This defines a new tactic that can be used in any tactic
+script or new tactic toplevel definition.
 
 \Rem The preceding definition can equivalently be written:\\
 
 {\tt Ltac} {\ident} {\tt := fun} {\ident}$_1$ ... {\ident}$_n$
 {\tt =>} {\tacexpr}\\
 
-\noindent Recursive and mutual recursive function definitions are also possible with the syntax:
+\noindent Recursive and mutual recursive function definitions are also
+possible with the syntax:
 \medskip
 
 \begin{tabular}{l}
@@ -507,12 +665,12 @@ Require Import List.
 \end{coq_eval}
 
 \begin{table}[ht]
-\noindent{}\framebox[6in][l]
-{\parbox{6in}
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
 {
 \begin{coq_example*}
 Lemma card_nat :
- ~ (exists x : nat | exists y : nat | forall z:nat, x = z \/ y = z).
+ ~ (exists x : nat, exists y : nat, forall z:nat, x = z \/ y = z).
 Proof.
 red; intros (x, (y, Hy)).
 elim (Hy 0); elim (Hy 1); elim (Hy 2); intros;
@@ -540,15 +698,16 @@ aim is to show that a closed list is a permutation of another one.
 First, we define the permutation predicate as shown in table~\ref{permutpred}.
 
 \begin{table}[ht]
-\noindent{}\framebox[6in][l]
-{\parbox{6in}
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
 {
 \begin{coq_example*}
 Section Sort.
 Variable A : Set.
 Inductive permut : list A -> list A -> Prop :=
   | permut_refl   : forall l, permut l l
-  | permut_cons   : forall a l0 l1, permut l0 l1 -> permut (a :: l0) (a :: l1)
+  | permut_cons   :
+      forall a l0 l1, permut l0 l1 -> permut (a :: l0) (a :: l1)
   | permut_append : forall a l, permut (a :: l) (l ++ a :: nil)
   | permut_trans  :
       forall l0 l1 l2, permut l0 l1 -> permut l1 l2 -> permut l0 l2.
@@ -582,8 +741,8 @@ structures so that {\Coq} makes the computations (reductions) by {\tt eval
 compute in} and we can get the terms back by {\tt match}.
  
 \begin{table}[p]
-\noindent{}\framebox[6in][l]
-{\parbox{6in}
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
 {
 \begin{coq_example}
 Ltac Permut n :=
@@ -618,8 +777,8 @@ With {\tt PermutProve}, we can now prove lemmas such those shown in
 table~\ref{permutlem}.
 
 \begin{table}[p]
-\noindent{}\framebox[6in][l]
-{\parbox{6in}
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
 {
 \begin{coq_example*}
 Lemma permut_ex1 :
@@ -644,20 +803,22 @@ Qed.
 \subsection{Deciding intuitionistic propositional logic}
 
 The pattern matching on goals allows a complete and so a powerful
-backtracking when returning tactic values. An interesting application is the
-problem of deciding intuitionistic propositional logic. Considering the
-contraction-free sequent calculi {\tt LJT*} of Roy~Dyckhoff (\cite{Dyc92}), it
-is quite natural to code such a tactic using the tactic language as shown in
-table~\ref{tautoltac}. The tactic {\tt Axioms} tries to conclude using usual
-axioms. The tactic {\tt DSimplif} applies all the reversible rules of Dyckhoff's
-system. Finally, the tactic {\tt TautoProp} (the main tactic to be called)
-simplifies with {\tt DSimplif}, tries to conclude with {\tt Axioms} and tries
-several paths using the backtracking rules (one of the four Dyckhoff's rules
-for the left implication to get rid of the contraction and the right or).
+backtracking when returning tactic values. An interesting application
+is the problem of deciding intuitionistic propositional
+logic. Considering the contraction-free sequent calculi {\tt LJT*} of
+Roy~Dyckhoff (\cite{Dyc92}), it is quite natural to code such a tactic
+using the tactic language as shown in table~\ref{tautoltac}. The
+tactic {\tt Axioms} tries to conclude using usual axioms. The tactic
+{\tt DSimplif} applies all the reversible rules of Dyckhoff's
+system. Finally, the tactic {\tt TautoProp} (the main tactic to be
+called) simplifies with {\tt DSimplif}, tries to conclude with {\tt
+Axioms} and tries several paths using the backtracking rules (one of
+the four Dyckhoff's rules for the left implication to get rid of the
+contraction and the right or).
 
 \begin{table}[ht]
-\noindent{}\framebox[6in][l]
-{\parbox{6in}
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
 {
 \begin{coq_example}
 Ltac Axioms :=
@@ -719,8 +880,8 @@ For example, with {\tt TautoProp}, we can prove tautologies like those in
 table~\ref{tautolem}.
 
 \begin{table}[ht]
-\noindent{}\framebox[6in][l]
-{\parbox{6in}
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
 {
 \begin{coq_example*}
 Lemma tauto_ex1 : forall A B:Prop, A /\ B -> A \/ B.
@@ -748,8 +909,8 @@ $\lb{}$-calculus with Cartesian product and $unit$ type (see, for example,
 table~\ref{isosax}.
 
 \begin{table}[ht]
-\noindent{}\framebox[6in][l]
-{\parbox{6in}
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
 {
 \begin{coq_eval}
 Reset Initial.
@@ -786,8 +947,8 @@ CompareStruct}). The main tactic to be called and realizing this algorithm is
 {\tt IsoProve}.
 
 \begin{table}[ht]
-\noindent{}\framebox[6in][l]
-{\parbox{6in}
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
 {
 \begin{coq_example}
 Ltac DSimplif trm :=
@@ -828,8 +989,8 @@ Ltac assoc := repeat rewrite <- Ass.
 \end{table}
 
 \begin{table}[ht]
-\noindent{}\framebox[6in][l]
-{\parbox{6in}
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
 {
 \begin{coq_example}
 Ltac DoCompare n :=
@@ -864,8 +1025,8 @@ Ltac IsoProve := MainSimplif; CompareStruct.
 Table~\ref{isoslem} gives examples of what can be solved by {\tt IsoProve}.
 
 \begin{table}[ht]
-\noindent{}\framebox[6in][l]
-{\parbox{6in}
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
 {
 \begin{coq_example*}
 Lemma isos_ex1 : 
