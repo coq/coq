@@ -33,7 +33,7 @@ Details of changes
 Language: new "let-in" construction
 -----------------------------------
 
-- New construction for local definitions (let-in) with syntax [x:=u]t (+)
+- New construction for local definitions (let-in) with syntax [x:=u]t (*)(+)
 
 - Local definitions allowed in Record (a.k.a. record à la Randy Pollack)
 
@@ -52,7 +52,7 @@ Language: long names
   conflict, by a "qualified" name, where the base name is prefixed
   by the module name (and possibly by a directory name, and so
   on). A fully qualified name is an absolute name which always refer
-  to the the construction it denotes (to preserve the visibility of
+  to the construction it denotes (to preserve the visibility of
   all constructions, no conflict is allowed for an absolute name) (+)
 
 - Long names are available for modules with the possibility of using
@@ -104,7 +104,8 @@ Reduction
 - Constants declared as opaque (using Qed) can no longer become
   transparent (a constant intended to be alternatively opaque and
   transparent must be declared as transparent (using Defined)); a risk
-  exists (until next Coq version) that Simpl reduces opaque constants (*)
+  exists (until next Coq version) that Simpl and Hnf reduces opaque
+  constants (*)
 
 
 New tactics
@@ -127,7 +128,7 @@ New tactics
 - New versions of Tauto and Intuition, fully rewritten in the new Ltac
   language; they run faster and produce more compact proofs; Tauto is
   fully compatible but, in exchange of a better uniformity, Intuition
-  is slightly weaker (then used Tauto instead) (**)(+)
+  is slightly weaker (then use Tauto instead) (**)(+)
 
 - New tactic Field to decide equalities on commutative fields (as a
   special case, it works on real numbers) (+)
@@ -160,7 +161,8 @@ Changes in existing tactics
 
 - Elim can no longer be used with an elimination schema different from
   the one defined at definition time of the inductive type. To overload
-  an elimination schema, use "Elim <hyp> with <name of the new schema>" (*)(+)
+  an elimination schema, use "Elim <hyp> using <name of the new schema>"
+  (*)(+)
 
 - Simpl no longer unfolds the recursive calls of a mutually defined 
   fixpoint (*)(+)
