@@ -39,10 +39,20 @@ GEXTEND Gram
       | g = gallina_ext; "." -> g
       | c = command; "." -> c 
       | c = syntax; "." -> c
-      | n = Prim.natural; ":"; tac = Tactic.tactic; "." -> VernacSolve (n,tac)
+      | n = Prim.natural; ":"; v = goal_vernac; "." -> v n
       | "["; l = vernac_list_tail -> VernacList l
       (* This is for "Grammar vernac" rules *)
       | id = Prim.metaident -> VernacVar (Ast.nvar_of_ast id) ] ]
+  ;
+  goal_vernac:
+    [ [ tac = Tactic.tactic -> fun n -> VernacSolve (n,tac)
+      | v = check_command -> fun n -> v (Some n) ] ]
+  ;
+  check_command:
+    [ [ IDENT "Eval"; r = Tactic.red_expr; "in"; c = constr ->
+          fun g -> VernacCheckMayEval (Some r, g, c)
+      | IDENT "Check"; c = constr ->
+	  fun g -> VernacCheckMayEval (None, g, c) ] ]
   ;
   vernac: FIRST
     [ [ IDENT "Time"; v = vernac  -> VernacTime v ] ]
