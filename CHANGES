@@ -50,6 +50,7 @@ Tactics
 - "Inversion" now applies also on quantified hypotheses (naming as
   for Intros until)
 - NewDestruct now accepts terms with missing hypotheses
+- NewDestruct and NewInduction now accept user-provided elimination scheme
 - Omega could solve goals such as ~`x<y` |- `x>=y` but failed when the
   hypothesis was unfolded to `x < y` -> False. This is fixed. In addition,
   it can also recognize 'False' in the hypothesis and use it to solve the

@@ -1335,32 +1335,33 @@ let induction_from_context isrec style elim hyp0 gl =
     ]
     gl
 
-let induction_with_atomization_of_ind_arg isrec hyp0 =
+let induction_with_atomization_of_ind_arg isrec elim hyp0 =
   tclTHEN
     (atomize_param_of_ind hyp0)
-    (induction_from_context isrec false None hyp0)
+    (induction_from_context isrec false elim hyp0)
 
 (* This is Induction since V7 ("natural" induction both in quantified
    premisses and introduced ones) *)
-let new_induct_gen isrec c gl =
+let new_induct_gen isrec elim c gl =
   match kind_of_term c with
     | Var id when not (mem_named_context id (Global.named_context())) ->
-	induction_with_atomization_of_ind_arg isrec id gl
+	induction_with_atomization_of_ind_arg isrec elim id gl
     | _        ->
 	let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) 
 		  Anonymous in
 	let id = fresh_id [] x gl in
 	tclTHEN
 	  (letin_tac true (Name id) c (None,[]))
-	  (induction_with_atomization_of_ind_arg isrec id) gl
+	  (induction_with_atomization_of_ind_arg isrec elim id) gl
 
-let new_induct_destruct isrec = function
-  | ElimOnConstr c -> new_induct_gen isrec c
+let new_induct_destruct isrec c elim = match c with
+  | ElimOnConstr c -> new_induct_gen isrec elim c
   | ElimOnAnonHyp n ->
-      tclTHEN (intros_until_n n) (tclLAST_HYP (new_induct_gen isrec))
+      tclTHEN (intros_until_n n) (tclLAST_HYP (new_induct_gen isrec elim))
   (* Identifier apart because id can be quantified in goal and not typable *)
   | ElimOnIdent (_,id) ->
-      tclTHEN (tclTRY (intros_until_id id)) (new_induct_gen isrec (mkVar id))
+      tclTHEN (tclTRY (intros_until_id id))
+        (new_induct_gen isrec elim (mkVar id))
 
 let new_induct = new_induct_destruct true
 let new_destruct = new_induct_destruct false

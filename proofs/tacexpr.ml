@@ -116,9 +116,9 @@ type ('constr,'cst,'ind,'id) gen_atomic_tactic_expr =
 
   (* Derived basic tactics *)
   | TacOldInduction of quantified_hypothesis
-  | TacNewInduction of 'constr induction_arg
+  | TacNewInduction of 'constr induction_arg * 'constr with_bindings option
   | TacOldDestruct of quantified_hypothesis
-  | TacNewDestruct of 'constr induction_arg
+  | TacNewDestruct of 'constr induction_arg * 'constr with_bindings option
 
   | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
   | TacDecomposeAnd of 'constr

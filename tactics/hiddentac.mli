@@ -55,8 +55,10 @@ val h_instantiate     : int -> constr -> tactic
 
 val h_old_induction   : quantified_hypothesis -> tactic
 val h_old_destruct    : quantified_hypothesis -> tactic
-val h_new_induction   : constr induction_arg -> tactic
-val h_new_destruct    : constr induction_arg -> tactic
+val h_new_induction   :
+  constr induction_arg -> constr with_bindings option -> tactic
+val h_new_destruct    :
+  constr induction_arg -> constr with_bindings option -> tactic
 val h_specialize      : int option -> constr with_bindings -> tactic
 val h_lapply          : constr -> tactic
 

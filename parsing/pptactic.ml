@@ -303,6 +303,7 @@ let make_pr_tac (pr_constr,pr_cst,pr_ind,pr_ident,pr_extend) =
 
 let pr_bindings = pr_bindings pr_constr in
 let pr_with_bindings = pr_with_bindings pr_constr in
+let pr_eliminator cb = str "using" ++ pr_arg pr_with_bindings cb in
 let pr_constrarg c = spc () ++ pr_constr c in
 let pr_intarg n = spc () ++ int n in
 
@@ -339,10 +340,9 @@ and pr_atom1 = function
   | TacAssumption as t -> pr_atom0 t
   | TacExact c -> hov 1 (str "Exact" ++ pr_arg pr_constr c)
   | TacApply cb -> hov 1 (str "Apply" ++ spc () ++ pr_with_bindings cb)
-  | TacElim (cb,None) -> hov 1 (str "Elim" ++ spc () ++ pr_with_bindings cb)
-  | TacElim (cb,Some cb') ->
+  | TacElim (cb,cbo) ->
       hov 1 (str "Elim" ++ pr_arg pr_with_bindings cb ++ 
-      spc () ++ str "using" ++ pr_arg pr_with_bindings cb')
+        pr_opt pr_eliminator cbo)
   | TacElimType c -> hov 1 (str "ElimType" ++ pr_arg pr_constr c)
   | TacCase cb -> hov 1 (str "Case" ++ spc () ++ pr_with_bindings cb)
   | TacCaseType c -> hov 1 (str "CaseType" ++ pr_arg pr_constr c)
@@ -383,12 +383,14 @@ and pr_atom1 = function
   (* Derived basic tactics *)
   | TacOldInduction h ->
       hov 1 (str "Induction" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewInduction h ->
-      hov 1 (str "NewInduction" ++ spc () ++ pr_induction_arg pr_constr h)
+  | TacNewInduction (h,e) ->
+      hov 1 (str "NewInduction" ++ spc () ++ pr_induction_arg pr_constr h ++
+        pr_opt pr_eliminator e)
   | TacOldDestruct h ->
       hov 1 (str "Destruct" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewDestruct h ->
-      hov 1 (str "NewDestruct" ++ spc () ++ pr_induction_arg pr_constr h)
+  | TacNewDestruct (h,e) ->
+      hov 1 (str "NewDestruct" ++ spc () ++ pr_induction_arg pr_constr h ++
+        pr_opt pr_eliminator e)
   | TacDoubleInduction (h1,h2) ->
       hov 1
         (str "Double Induction" ++ 

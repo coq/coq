@@ -52,8 +52,10 @@ let h_instantiate n c =
 (* Derived basic tactics *)
 let h_old_induction h = abstract_tactic (TacOldInduction h) (old_induct h)
 let h_old_destruct h  = abstract_tactic (TacOldDestruct h) (old_destruct h)
-let h_new_induction c = abstract_tactic (TacNewInduction c) (new_induct c)
-let h_new_destruct c = abstract_tactic (TacNewDestruct c) (new_destruct c)
+let h_new_induction c e =
+  abstract_tactic (TacNewInduction (c,e)) (new_induct c e)
+let h_new_destruct c e =
+  abstract_tactic (TacNewDestruct (c,e)) (new_destruct c e)
 let h_specialize n (c,bl as d) =
   abstract_tactic (TacSpecialize (n,d)) (new_hyp n c bl)
 let h_lapply c = abstract_tactic (TacLApply c) (cut_and_apply c)

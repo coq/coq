@@ -171,7 +171,7 @@ val old_induct     : quantified_hypothesis -> tactic
 val general_elim_in : identifier -> constr * constr substitution ->
                       constr * constr substitution -> tactic
 
-val new_induct     : constr induction_arg -> tactic
+val new_induct : constr induction_arg -> constr with_bindings option -> tactic
 
 (*s Case analysis tactics. *)
 
@@ -179,7 +179,7 @@ val general_case_analysis : constr with_bindings ->  tactic
 val simplest_case         : constr -> tactic
 
 val old_destruct          : quantified_hypothesis -> tactic
-val new_destruct          : constr induction_arg -> tactic
+val new_destruct : constr induction_arg -> constr with_bindings option ->tactic
 
 (*s Eliminations giving the type instead of the proof. *)
 

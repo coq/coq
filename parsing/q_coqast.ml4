@@ -355,12 +355,14 @@ let rec mlexpr_of_atomic_tactic = function
   (* Derived basic tactics *)
   | Tacexpr.TacOldInduction h ->
       <:expr< Tacexpr.TacOldInduction $mlexpr_of_quantified_hypothesis h$ >>
-  | Tacexpr.TacNewInduction c ->
-      <:expr< Tacexpr.TacNewInduction $mlexpr_of_induction_arg c$ >>
+  | Tacexpr.TacNewInduction (c,cbo) ->
+      let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
+      <:expr< Tacexpr.TacNewInduction $mlexpr_of_induction_arg c$ $cbo$ >>
   | Tacexpr.TacOldDestruct h ->
       <:expr< Tacexpr.TacOldDestruct $mlexpr_of_quantified_hypothesis h$ >>
-  | Tacexpr.TacNewDestruct c ->
-      <:expr< Tacexpr.TacNewDestruct $mlexpr_of_induction_arg c$ >>
+  | Tacexpr.TacNewDestruct (c,cbo) ->
+      let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
+      <:expr< Tacexpr.TacNewDestruct $mlexpr_of_induction_arg c$ $cbo$ >>
 
   (* Context management *)
   | Tacexpr.TacClear l ->

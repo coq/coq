@@ -237,6 +237,9 @@ GEXTEND Gram
       | "with"; l = LIST1 IDENT -> Some l
       | -> Some [] ] ]
   ;
+  eliminator:
+    [ [ "using"; el = constr_with_bindings -> el ] ]
+  ;
   simple_tactic:
     [ [ 
       (* Basic tactics *)
@@ -254,9 +257,8 @@ GEXTEND Gram
       | IDENT "Exact"; c = constr -> TacExact c
 
       | IDENT "Apply"; cl = constr_with_bindings -> TacApply cl
-      | IDENT "Elim"; cl = constr_with_bindings; "using";
-        el = constr_with_bindings -> TacElim (cl,Some el)
-      | IDENT "Elim"; cl = constr_with_bindings -> TacElim (cl,None)
+      | IDENT "Elim"; cl = constr_with_bindings; el = OPT eliminator ->
+          TacElim (cl,el)
       | IDENT "OldElim"; c = constr ->
 	  (* TacOldElim c *) error_oldelim ()
       | IDENT "ElimType"; c = constr -> TacElimType c
@@ -292,11 +294,13 @@ GEXTEND Gram
 
       (* Derived basic tactics *)
       | IDENT "Induction"; h = quantified_hypothesis -> TacOldInduction h
-      | IDENT "NewInduction"; c = induction_arg -> TacNewInduction c
+      | IDENT "NewInduction"; c = induction_arg; el = OPT eliminator ->
+          TacNewInduction (c,el)
       | IDENT "Double"; IDENT "Induction"; h1 = quantified_hypothesis;
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
       | IDENT "Destruct"; h = quantified_hypothesis -> TacOldDestruct h
-      | IDENT "NewDestruct"; c = induction_arg -> TacNewDestruct c
+      | IDENT "NewDestruct"; c = induction_arg; el = OPT eliminator ->
+          TacNewDestruct (c,el)
       | IDENT "Decompose"; IDENT "Record" ; c = constr -> TacDecomposeAnd c
       | IDENT "Decompose"; IDENT "Sum"; c = constr -> TacDecomposeOr c
       | IDENT "Decompose"; "["; l = LIST1 qualid_or_ltac_ref; "]"; c = constr
