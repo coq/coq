@@ -805,8 +805,7 @@ let raw_polynom th op lc gl =
 				     c'''i; ci; c'i_eq_c''i |]))))
 	      (tclTHENS 
 		 (Setoid_replace.setoid_replace ci c'''i None)
-		 [ tac;
-                   h_exact c'i_eq_c''i ])) 
+		 [ h_exact c'i_eq_c''i; tac ])) 
 	 else
            (tclORELSE
               (tclORELSE
@@ -886,7 +885,7 @@ let polynom lc gl =
 			   then 
 			     errorlabstrm "Ring :"
 			       (str" All terms must have the same type");
-			   (tclTHEN (raw_polynom th None args) (guess_equiv_tac th)) gl		   
+			   (tclTHEN (raw_polynom th None (c1::args)) (guess_equiv_tac th)) gl		   
 		     | _ -> errorlabstrm "polynom :" 
 			 (str" This goal is not an equality nor a setoid equivalence")))
     (* Elsewhere, guess the theory, check that all terms have the same type
