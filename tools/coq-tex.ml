@@ -42,8 +42,8 @@ let remove_prompt s = Str.replace_first any_prompt "" s
 (* First pass: extract the Coq phrases to evaluate from [texfile]
  * and put them into the file [inputv] *)
 
-let begin_coq = Str.regexp "\\\\begin{coq_\(example\|example\*\|eval\)}[ \t]*$"
-let end_coq   = Str.regexp "\\\\end{coq_\(example\|example\*\|eval\)}[ \t]*$"
+let begin_coq = Str.regexp "\\\\begin{coq_\(example\|example\*\|example\#\|eval\)}[ \t]*$"
+let end_coq   = Str.regexp "\\\\end{coq_\(example\|example\*\|example\#\|eval\)}[ \t]*$"
 
 let extract texfile inputv =
   let chan_in = open_in texfile in
@@ -72,9 +72,9 @@ let extract texfile inputv =
  * TeX file [texfile]. The result goes in file [result]. *)
 
 let begin_coq_example =
-  Str.regexp "\\\\begin{coq_\(example\|example\*\)}[ \t]*$"
+  Str.regexp "\\\\begin{coq_\(example\|example\*\|example\#\)}[ \t]*$"
 let begin_coq_eval = Str.regexp "\\\\begin{coq_eval}[ \t]*$"
-let end_coq_example = Str.regexp "\\\\end{coq_\(example\|example\*\)}[ \t]*$"
+let end_coq_example = Str.regexp "\\\\end{coq_\(example\|example\*\|example\#\)}[ \t]*$"
 let end_coq_eval = Str.regexp "\\\\end{coq_eval}[ \t]*$"
 let dot_end_line = Str.regexp "\\.[ \t]*$"
 
@@ -140,7 +140,8 @@ let insert texfile coq_output result =
       if !small then output_string c_out "\\begin{small}\n";
       output_string c_out "\\begin{flushleft}\n";
       if !hrule then output_string c_out "\\hrulefill\\\\\n";
-      inside (Str.matched_group 1 s = "example") 0 true
+      inside (Str.matched_group 1 s <> "example*")
+             (Str.matched_group 1 s <> "example#") 0 true
     end else if Str.string_match begin_coq_eval s 0 then
       eval 0
     else begin
@@ -150,7 +151,7 @@ let insert texfile coq_output result =
   (* we are inside a \begin{coq_example?} ... \end{coq_example?} block
    * show_answers tells what kind of block it is
    * k is the number of lines read until now *)
-  and inside show_answers k first_block = 
+  and inside show_answers  show_questions k first_block = 
     let s = input_line c_tex in
     if Str.string_match end_coq_example s 0 then begin
       if !hrule then output_string c_out "\\hrulefill\\\\\n";
@@ -160,14 +161,14 @@ let insert texfile coq_output result =
     end else begin
       if !verbose then Printf.printf "Coq < %s\n" s;
       if (not first_block) & k=0 then output_string c_out "\\medskip\n";
-      encapsule false c_out ("Coq < " ^ s);
+      if show_questions then encapsule false c_out ("Coq < " ^ s);
       if has_match dot_end_line s then begin
 	let bl = next_block (succ k) in
-	if !verbose then List.iter print_endline bl;
+	if !verbose then List.iter print_endline bl; 
 	if show_answers then print_block c_out bl;
-	inside show_answers 0 false
+	inside show_answers  show_questions 0 false
       end else
-	inside show_answers (succ k) first_block
+	inside show_answers  show_questions (succ k) first_block
     end
   (* we are inside a \begin{coq_eval} ... \end{coq_eval} block
    * k is the number of lines read until now *)
