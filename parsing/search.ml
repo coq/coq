@@ -58,8 +58,7 @@ let crible (fn : global_reference -> env -> constr -> unit) ref =
 	     let (idc,_,typ) = get_variable (basename sp) in 
              if (head_const typ) = const then fn (VarRef idc) env typ
 	   with Not_found -> (* we are in a section *) ())
-      | "CONSTANT" 
-      | "PARAMETER" ->
+      | "CONSTANT" ->
 	  let kn=locate_constant (qualid_of_sp sp) in
 	  let {const_type=typ} = Global.lookup_constant kn in
 	  if (head_const typ) = const then fn (ConstRef kn) env typ

@@ -205,7 +205,7 @@ let leaf_entry_to_ast_list ((sp,kn),lobj) =
   let tag = object_tag lobj in
   match tag with
   | "VARIABLE" -> variable_to_ast_list (basename sp)
-  | "CONSTANT"|"PARAMETER" -> constant_to_ast_list kn
+  | "CONSTANT" -> constant_to_ast_list kn
   | "INDUCTIVE" -> inductive_to_ast_list kn
   | s -> 
       errorlabstrm 

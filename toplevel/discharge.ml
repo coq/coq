@@ -209,9 +209,8 @@ let process_object oldenv olddir full_olddir newdir
 	(* always discharged *)
 	(Constraints cst :: ops, id :: ids_to_discard, work_alist)
 
-    | ("CONSTANT" | "PARAMETER") ->
-	(* CONSTANT/PARAMETER means never discharge (though visibility *)
-	(* may vary) *)
+    | "CONSTANT" ->
+	(* CONSTANT means never discharge (though visibility may vary) *)
  	let kind = constant_kind sp in
 	let kn = Nametab.locate_constant (qualid_of_sp sp) in
 	let lab = label kn in

@@ -32,8 +32,7 @@ exception Uninteresting;;
 (*CSC: CODE USEFUL ONLY FOR THE CODE COMMENTED OUT
 let tag_of_string_tag =
  function
-    "CONSTANT"
-  | "PARAMETER"       -> Constant
+    "CONSTANT"        -> Constant
   | "INDUCTIVE"       -> Inductive
   | "VARIABLE"        -> Variable
   | _                 -> raise Uninteresting
@@ -76,7 +75,6 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
           | DK.Local  -> false (* a local definition *)
           | DK.Global -> true  (* a non-local one    *)
         )
-    | "PARAMETER"                 (* axioms and                               *)
     | "INDUCTIVE"       -> true   (* mutual inductive types are never local   *)
     | "VARIABLE"        -> false  (* variables are local, so no namesakes     *)
     | _                 -> false  (* uninteresting thing that won't be printed*)
@@ -541,8 +539,7 @@ let print_coq_object lobj id sp dn fv env =
     let tag = tag_of_string_tag strtag in
     let obj =
      match strtag with
-        "CONSTANT"  (* = Definition, Theorem *)
-      | "PARAMETER" (* = Axiom *) ->
+        "CONSTANT"  (* = Definition, Theorem, Axiom *)
           let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
            G.lookup_constant sp
           in

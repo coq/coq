@@ -106,7 +106,7 @@ let extract_module m =
   let get_reference = function
     | (_,kn), Leaf o ->
 	(match Libobject.object_tag o with
-	   | "CONSTANT" | "PARAMETER" -> ConstRef kn
+	   | "CONSTANT" -> ConstRef kn
 	   | "INDUCTIVE" -> IndRef (kn,0)
 	   | _ -> failwith "caught")
     | _ -> failwith "caught"

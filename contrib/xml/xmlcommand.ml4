@@ -38,8 +38,7 @@ exception Uninteresting;;
 
 let tag_of_string_tag =
  function
-    "CONSTANT"
-  | "PARAMETER"       -> Constant
+    "CONSTANT"        -> Constant
   | "INDUCTIVE"       -> Inductive
   | "VARIABLE"        -> Variable
   | _                 -> raise Uninteresting
@@ -89,7 +88,6 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
           | L.NotDeclare     -> false (* not a definition *)
           | L.NeverDischarge -> true  (* a non-local one    *)
         )
-    | "PARAMETER"                 (* axioms and                               *)
     | "INDUCTIVE"       -> true   (* mutual inductive types are never local   *)
     | "VARIABLE"        -> false  (* variables are local, so no namesakes     *)
     | _                 -> false  (* uninteresting thing that won't be printed*)
@@ -848,8 +846,7 @@ let print_object lobj id (sp,kn) dn fv env =
     let inner_types = ref [] in
     let pp_cmds =
      match strtag with
-        "CONSTANT"  (* = Definition, Theorem *)
-      | "PARAMETER" (* = Axiom *) ->
+        "CONSTANT" -> (* = Definition, Theorem, Axiom *)
           let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
            G.lookup_constant kn
           in
