@@ -1,0 +1,69 @@
+--------------------------------------------------------------------------
+Coq with rewriting
+--------------------------------------------------------------------------
+
+This prototype allows users to define functions and predicates by
+rewrite rules. See README.REWRITING for a description of the added
+commands.
+
+See
+http://www-verimag.imag.fr/AVERROES/Fournitures/fournitures005.html or
+http://www.loria.fr/~blanqui/proj.html for details about the
+conditions on rewriting for preserving Coq safety, the architecture
+and the implantation of this prototype.
+
+If you have any problem, question or suggestion about this prototype,
+please contact Frederic Blanqui (blanqui@loria.fr,
+http://www.loria.fr/~blanqui/).
+
+--------------------------------------------------------------------------
+Installation
+--------------------------------------------------------------------------
+
+This prototype is based on Coq version V7-3-bugfix and CiME version of
+30th June 2002 (http://cime.lri.fr/). It must be compiled with OCaml
+3.06 (http://caml.inria.fr/ocaml/). See INSTALL for details.
+
+./configure -local -opt -debug
+make world
+
+--------------------------------------------------------------------------
+Using other CiME sources
+--------------------------------------------------------------------------
+
+- Get CiME version of 30th June 2002, slighty modified for compiling
+with OCaml 3.06, at
+http://www.loria.fr/equipes/protheo/users/blanqui/my-cime.tar.gz.
+
+- Compilation of CiME:
+./configure --enable-debug --enable-profiling
+make -C ocaml_src byte
+make -C ocaml_src opt
+
+- Replace "include Makefile.cime" by "include cime/Makefile.dev" in
+Makefile.
+
+- In cime/Makefile.dev, set CIMEHOME to the directory where are
+installed your CiME sources (it should be of the form
+/.../my-cime/ocaml_src).
+
+- In V7, do 'make depend' twice to recompute all the dependancies.
+
+- In V7, do 'make world'.
+
+--------------------------------------------------------------------------
+How it works ?
+--------------------------------------------------------------------------
+
+We first compute all the CiME dependancies in cime/cime-deps. Then,
+thanks to dev/order_deps, we build the ordered list (for compilation)
+of .cmo files in cime/cime-cmos. Then, we compile all these files in
+cime/libcime.cma.
+
+--------------------------------------------------------------------------
+Adding new CiME files in Coq
+--------------------------------------------------------------------------
+
+- In V7, 'make build-release' copies all the necessary files from
+CIMEHOME to V7/cime, and creates the file cime/cimecmo-def included in
+Makefile and defining the variable CIMECMO containing this list.

@@ -4,14 +4,9 @@
 *                                                                             *
 *******************************************************************************
 
-If you have any problem, question or suggestion about this new extension of
-Coq, please contact Frederic Blanqui (blanqui@loria.fr).
-
 In this extension, you can declare special parameters called "symbols" that can
 later be defined by rewrite rules [1]. Then, a tactic called "Simpl_rew" allows
 you to simplify goals and hypothesis by using these rewrite rules.
-
-Rewriting uses CiME (http://cime.lri.fr/).
 
 -------------------------------------------------------------------------------
 Basic examples:
