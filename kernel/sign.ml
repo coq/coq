@@ -15,7 +15,6 @@ open Term
 (*s Signatures of named hypotheses. Used for section variables and
     goal assumptions. *)
 
-type named_declaration = identifier * constr option * types
 type named_context = named_declaration list
 
 let empty_named_context = []
