@@ -1,3 +1,5 @@
+# This file has been generated from RH/coq.spec.tpl
+# Do not edit
 Name: coq
 Version: 8.0
 Release: 1
@@ -26,7 +28,9 @@ Coq is a proof assistant which:
 %setup
 
 %build
-m4_include(do_build)
+./configure -bindir /usr/bin -libdir /usr/lib/coq -mandir /usr/man -emacs emacs -emacslib /usr/share/emacs/site-lisp -opt -reals all -coqide no       # Need ocamlc.opt and ocamlopt.opt
+make coq      # Use native coq to compile theories
+
 
 %clean
 make clean
@@ -50,6 +54,6 @@ if [ -L /usr/local/lib/ocaml ]; then
   rm /usr/local/lib/ocaml
 fi
 
-%files
+%files -f ../../coq.list
 %defattr(-,root,root)
-m4_include(coq.list)
+
