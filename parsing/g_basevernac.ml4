@@ -183,6 +183,7 @@ GEXTEND Gram
       | IDENT "Hint"; qid = global -> PrintHint qid
       | IDENT "Hint"; "*" -> PrintHintDb
       | IDENT "HintDb"; s = IDENT -> PrintHintDbName s
+      | IDENT "Scopes" -> PrintScopes
       | IDENT "Scope"; s = IDENT -> PrintScope s ] ]
   ;
   locatable:
@@ -264,6 +265,9 @@ GEXTEND Gram
 
      | IDENT "Delimits"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
 	 VernacDelimiters (sc,key)
+
+     | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with"; 
+       refl = LIST1 class_rawexpr -> VernacBindScope (sc,refl)
 
      | IDENT "Arguments"; IDENT "Scope"; qid = global;
          "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
