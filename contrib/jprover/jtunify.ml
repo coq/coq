@@ -232,7 +232,7 @@ let rec apply_element fs ft (v,slist) =
 
 let rec shorten us ut =
    match (us,ut) with
-      ([],_) | (_,[])  -> raise jprover_bug
+      ([],_) | (_,[])  -> (us,ut) (*raise jprover_bug*)
     | ((fs::rs),(ft::rt)) ->
          if fs = ft then
             shorten rs rt
