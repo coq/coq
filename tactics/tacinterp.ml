@@ -1432,9 +1432,9 @@ and match_context_interp ist g lr lmr =
     (read_match_rule (project g) env (fst (constr_list ist env)) lmr)
 
 (* Tries to match the hypotheses in a Match Context *)
-and apply_hyps_context ist env goal mt (lgmatch:(Rawterm.patvar * Term.constr) list) mhyps hyps =
+and apply_hyps_context ist env goal mt lgmatch mhyps hyps =
   let rec apply_hyps_context_rec lfun lmatch lhyps_rest current = function
-    | Hyp ((_,hypname),mhyp)::tl ->
+    | Hyp ((_,hypname),mhyp)::tl as mhyps ->
         let (lids,lm,hyp_match,next) =
           apply_one_mhyp_context ist env goal lmatch (hypname,mhyp) current in
         db_matched_hyp ist.debug (pf_env goal) hyp_match hypname;
