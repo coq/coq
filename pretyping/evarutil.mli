@@ -25,6 +25,8 @@ val ise_try : 'a evar_defs -> (unit -> bool) list -> bool
 val ise_undefined : 'a evar_defs -> constr -> bool
 val has_undefined_isevars : 'a evar_defs -> constr -> bool
 
+val make_evar_instance : env -> constr list
+
 val new_isevar : 'a evar_defs -> env -> constr -> path_kind -> constr
 
 val is_eliminator : constr -> bool

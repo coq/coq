@@ -32,9 +32,8 @@ type 'a clausenv = {
 type wc = walking_constraints
 
 let new_evar_in_sign env =
-  let ids = ids_of_named_context (Environ.named_context env) in
   let ev = new_evar () in
-  mkEvar (ev, Array.of_list (List.map mkVar ids))
+  mkEvar (ev, Array.of_list (Evarutil.make_evar_instance env))
 
 let rec whd_evar sigma t = match kind_of_term t with
   | IsEvar (ev,_ as evc) when is_defined sigma ev ->
@@ -127,17 +126,19 @@ let unify_0 mc wc m n =
 	| _, IsEvar _ ->
 	    metasubst,((cN,cM)::evarsubst)
 
-	| IsConst _, _ ->
+	| (IsConst _ | IsVar _ | IsRel _), _ ->
 	    if is_conv env sigma cM cN then
 	      substn
 	    else 
 	      error_cannot_unify CCI (m,n)
 		
-	| _, IsConst _ ->
+	| _, (IsConst _ | IsVar _| IsRel _) ->
 	    if (not (occur_meta cM)) & is_conv env sigma cM cN then 
 	      substn
 	    else 
 	      error_cannot_unify CCI (m,n)
+
+	| IsLetIn (_,b,_,c), _ -> unirec_rec substn (subst1 b c) cN
 		
 	| _ -> error_cannot_unify CCI (m,n)
 	      

@@ -59,7 +59,7 @@ let new_isevar_sign env sigma typ instance =
    any type has type Type. May cause some trouble, but not so far... *)
 let dummy_sort = mkType dummy_univ
 
-let make_instance env =
+let make_evar_instance env =
   fold_named_context
     (fun env (id, b, _) l -> if b=None then mkVar id :: l else l)
     env []
@@ -67,7 +67,7 @@ let make_instance env =
 (* Declaring any type to be in the sort Type shouldn't be harmful since
    cumulativity now includes Prop and Set in Type. *)
 let new_type_var env sigma =
-  let instance = make_instance env in
+  let instance = make_evar_instance env in
   let (sigma',c) = new_isevar_sign env sigma dummy_sort instance in
   (sigma', c)
 
@@ -115,7 +115,7 @@ let do_restrict_hyps sigma c =
   in
   let sign' = List.rev rsign in
   let env' = change_hyps (fun _ -> sign') env in
-  let instance = make_instance env' in
+  let instance = make_evar_instance env' in
   let (sigma',nc) = new_isevar_sign env' sigma evd.evar_concl instance in
   let sigma'' = Evd.define sigma' ev nc in
   (sigma'', nc)
@@ -194,7 +194,7 @@ let real_clean isevars sp args rhs =
   (* if not (closed0 body) then error_not_clean CCI empty_env sp body; *)
   body
 
-let make_instance_with_rel env =
+let make_evar_instance_with_rel env =
   let n = rel_context_length (rel_context env) in
   let vars = 
     fold_named_context
@@ -219,7 +219,7 @@ let make_subst env args =
 let new_isevar isevars env typ k =
   let subst,env' = push_rel_context_to_named_context env in
   let typ' = substl subst typ in
-  let instance = make_instance_with_rel env in
+  let instance = make_evar_instance_with_rel env in
   let (sigma',evar) = new_isevar_sign env' !isevars typ' instance in
   isevars := sigma';
   evar
