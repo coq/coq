@@ -25,12 +25,13 @@ Add Printing If bool.
 Inductive nat : Set := O : nat 
                      | S : nat->nat.
 
-(** [Empty_set] has no inhabitants *)
+(** [Empty_set] has no inhabitant *)
 
 Inductive Empty_set:Set :=.
 
-(** [identity A a] is a singleton datatype containing only [a] of type [A];
-    the sole inhabitant is denoted [refl_identity A a] *)
+(** [identity A a] is the family of datatypes on [A] whose sole non-empty
+    member is the singleton datatype [identity A a a] whose
+    sole inhabitant is denoted [refl_identity A a] *)
 
 Inductive identity [A:Set; a:A] : A->Set :=
      refl_identity: (identity A a a).
