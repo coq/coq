@@ -1717,6 +1717,9 @@ let create_input_tab filename =
 	    ~name:"processed" 
 	    [`BACKGROUND "light green" ;`EDITABLE false]);
   tv1
+
+
+let last_make = ref "";;
  
 let main files = 
   (* Statup preferences *)
@@ -2549,10 +2552,23 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
     save_f ();
     av#insert_message "Command output:\n";
     let s,res = run_command av#insert_message !current.cmd_make in
+    last_make := res;
     !flash_info (!current.cmd_make ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
   in
   let make_m = externals_factory#add_item "_Make" ~callback:make_f in
   
+
+  (* Compile/Next Error *)
+  let next_error () = ()
+(*
+    let file,line,start,stop = search_next_error () in
+    av#insert_message 
+      ("Error in " ^ file ^ "," ^ (string_of_int line)
+*)
+  in
+  let next_error_m = externals_factory#add_item "_Next error" ~callback:next_error in
+  
+
   (* Command/CoqMakefile Menu*)
   let coq_makefile_f () =
     let v = get_active_view () in

@@ -103,24 +103,42 @@ let user_error_loc l s =
 let interp s = 
   prerr_endline "Starting interp...";
   prerr_endline s;
-  let pe = Pcoq.Gram.Entry.parse 
-	     Pcoq.main_entry 
-	     (Pcoq.Gram.parsable (Stream.of_string s)) 
-  in match pe with 
-    | Some (loc,( VernacDefinition _  | VernacStartTheoremProof _ 
-		| VernacBeginSection _ | VernacGoal _
-		| VernacDefineModule _ | VernacDeclareModuleType _))
-      when is_in_proof_mode () -> 
-	user_error_loc loc (str "cannot do that while in proof mode.")
-    | Some (loc, VernacDebug _ ) ->
-	user_error_loc loc (str "cannot do that within CoqIDE")
-    | _ -> 
-	Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s));
-	match pe with
-	  | Some last -> 
+  let pa = Pcoq.Gram.parsable (Stream.of_string s) in
+  let pe = Pcoq.Gram.Entry.parse Pcoq.main_entry pa in
+  match pe with 
+    | None -> assert false
+    | Some((loc,vernac) as last) ->
+	match vernac with
+	  | VernacDefinition _  | VernacStartTheoremProof _ 
+	  | VernacBeginSection _ | VernacGoal _
+	  | VernacDefineModule _ | VernacDeclareModuleType _
+		when is_in_proof_mode () -> 
+		  user_error_loc loc (str "CoqIDE do not support nested goals")
+	  | VernacDebug _ ->
+	      user_error_loc loc (str "Debug mode not available within CoqIDE")
+	  | VernacResetName _
+	  | VernacResetInitial 
+	  | VernacBack _ 
+	  | VernacAbort _ 
+	  | VernacAbortAll
+	  | VernacRestart
+	  | VernacSuspend
+	  | VernacResume _
+	  | VernacUndo _ ->
+	      user_error_loc loc (str "Use CoqIDE navigation instead") 
+	  | _ ->
+	      begin
+		match vernac with
+		  | VernacPrintOption _ 
+		  | VernacCheckMayEval _
+		  | VernacGlobalCheck _
+		  | VernacPrint _
+		  | VernacSearch _ ->   ()
+		  | _ -> ()
+	      end;
+	      Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s));
 	      prerr_endline ("...Done with interp of : "^s);
 	      last
-	  | None -> assert false
 
 let interp_and_replace s = 
   let result = interp s in

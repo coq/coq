@@ -60,12 +60,11 @@ let commands = [
    "Grammar";];
   ["Hint";
    "Hint Constructors";
-   "Hint Unfold";
+   "Hint Extern";
+   "Hint Immediate";
+   "Hint Resolve";
    "Hint Rewrite";
-   "Hints Extern";
-   "Hints Immediate";
-   "Hints Resolve";
-   "Hints Unfold";
+   "Hint Unfold";
    "Hypothesis";];
   ["Identity Coercion";
    "Implicit Arguments Off.";
