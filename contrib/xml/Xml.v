@@ -26,8 +26,14 @@ Grammar vernac vernac : Ast :=
 | xml_print_all [ "Print" "XML" "All" "." ] ->
                [(XmlPrintAll)]
 
-| xml_print_dir [ "Print" "XML" "Module" identarg($id) "." ] ->
+| xml_print_module [ "Print" "XML" "Module" identarg($id) "." ] ->
                [(XmlPrintModule $id)]
 
-| xml_print_dir_disk [ "Print" "XML" "Module" "Disk" stringarg($dn) identarg($id) "." ] ->
-               [(XmlPrintModule $id $dn)].
+| xml_print_module_disk [ "Print" "XML" "Module" "Disk" stringarg($dn) identarg($id) "." ] ->
+               [(XmlPrintModule $id $dn)]
+
+| xml_print_section [ "Print" "XML" "Section" identarg($id) "." ] ->
+               [(XmlPrintSection $id)]
+
+| xml_print_section_disk [ "Print" "XML" "Section" "Disk" stringarg($dn) identarg($id) "." ] ->
+               [(XmlPrintSection $id $dn)].

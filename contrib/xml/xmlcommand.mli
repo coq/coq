@@ -38,3 +38,12 @@ val printAll : unit -> unit
 (* Note: the terms are printed in their uncooked form plus the informations  *)
 (* on the parameters of their most cooked form                               *)
 val printModule : Names.identifier -> string option -> unit
+
+(* printSection identifier directory_name *)
+(*  where identifier     is the name of a closed section d                   *)
+(*  and   directory_name is the directory in which to root all the xml files *)
+(* prints all the xml files and directories corresponding to the subsections *)
+(* and terms of the closed section d                                         *)
+(* Note: the terms are printed in their uncooked form plus the informations  *)
+(* on the parameters of their most cooked form                               *)
+val printSection : Names.identifier -> string option -> unit

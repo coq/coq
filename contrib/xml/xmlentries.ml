@@ -42,3 +42,10 @@ vinterp_add "XmlPrintModule"
    | [VARG_IDENTIFIER id ; VARG_STRING dn] ->
         (fun () -> Xmlcommand.printModule id (Some dn))
    | _  -> anomaly "This should be trapped");;
+
+vinterp_add "XmlPrintSection"
+ (function
+     [VARG_IDENTIFIER id] -> (fun () -> Xmlcommand.printSection id None)
+   | [VARG_IDENTIFIER id ; VARG_STRING dn] ->
+        (fun () -> Xmlcommand.printSection id (Some dn))
+   | _  -> anomaly "This should be trapped");;

@@ -15,7 +15,7 @@
 (* CONFIGURATION PARAMETERS *)
 
 let dtdname = "http://localhost:8081/getdtd?url=cic.dtd";;
-let verbose = ref true;; (* always set to true during a "Print XML All" *)
+let verbose = ref false;; (* always set to true during a "Print XML All" *)
 
 
 
@@ -26,42 +26,14 @@ type formal_parameters =
 ;;
 
 
-(* LOCAL MODULES *)
-
-(* Next local module because I can't use the standard module Str in a tactic, *)
-(* so I reimplement the part of it I need                                     *)
-module Str =
- struct
-  exception WrongTermSuffix of string;;
-
-  (* substitute character c1 with c2 in string str *)
-  let rec substitute str c1 c2 =
-   try
-    let pos = String.index str c1 in
-     str.[pos] <- c2 ;
-     substitute str c1 c2
-   with
-    Not_found -> str ;;
-
-  (* change the suffix suf1 with suf2 in the string str *)
-  let change_suffix str suf1 suf2 =
-   let module S = String in
-    let len  = S.length str
-    and lens = S.length suf1 in
-     if S.sub str (len - lens) lens = suf1 then
-      (S.sub str 0 (len - lens)) ^ suf2
-     else
-      raise (WrongTermSuffix str) ;;
- end
-;;
-
 (* UTILITY FUNCTIONS *)
 
 let print_if_verbose s = if !verbose then print_string s;;
 
 let ext_of_tag =
  function
-    "CONSTANT"        -> "con"
+    "CONSTANT"
+  | "PARAMETER"       -> "con"
   | "INDUCTIVE"       -> "ind"
   | "VARIABLE"        -> "var"
   | _                 -> "err" (* uninteresting thing that won't be printed *)
@@ -71,7 +43,7 @@ let ext_of_tag =
 let tag_of_sp sp =
  let module G = Global in
   try
-   let _ = G.lookup_constant sp in "CONSTANT"
+   let _ = G.lookup_constant sp in "CONSTANT" (*V7 Non distinguo gli assiomi*)
   with
    Not_found ->
     try
@@ -95,21 +67,60 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
             D.DischargeAt _  -> false (* a local definition *)
           | D.NeverDischarge -> true  (* a non-local one    *)
         )
-    | "VARIABLE"        -> false  (* variables are local, so no namesakes     *)
+    | "PARAMETER"                 (* axioms and                               *)
     | "INDUCTIVE"       -> true   (* mutual inductive types are never local   *)
+    | "VARIABLE"        -> false  (* variables are local, so no namesakes     *)
     | _                 -> false  (* uninteresting thing that won't be printed*)
 ;;
+
+(*V7*)
+exception Not_match
+let trim_wrong_uri_prefix pref =
+ let map =
+  [(".","/prove");
+   ("/home/pauillac/coq3/sacerdot/V7/theories/Arith","/coq/Arith");
+   ("/home/pauillac/coq3/sacerdot/V7/theories/Bool","/coq/Bool");
+   ("/home/pauillac/coq3/sacerdot/V7/theories/Init","/coq/Init");
+   ("/home/pauillac/coq3/sacerdot/V7/theories/Lists","/coq/Lists");
+   ("/home/pauillac/coq3/sacerdot/V7/theories/Logic","/coq/Logic");
+   ("/home/pauillac/coq3/sacerdot/V7/theories/Reals","/coq/Reals");
+   ("/home/pauillac/coq3/sacerdot/V7/theories/Relations","/coq/Relations");
+   ("/home/pauillac/coq3/sacerdot/V7/theories/Sets","/coq/Sets");
+   ("/home/pauillac/coq3/sacerdot/V7/theories/Zarith","/coq/Zarith")
+  ] in
+ let try_trim (inp,out) =
+  for i = 0 to String.length inp - 1 do
+   if inp.[i] <> pref.[i] then raise Not_match
+  done ;
+  out
+ in
+ let rec trim =
+  function
+     [] -> assert false (*V7 WHAT NOW? *)
+   | he::tl ->
+      try
+       try_trim he
+      with
+       _ -> trim tl
+ in
+  trim map
+;;
+
 
 (* uri_of_path sp is a broken (wrong) uri pointing to the object whose        *)
 (* section path is sp                                                         *)
 let uri_of_path sp =
- let ext_of_sp sp = ext_of_tag (tag_of_sp sp) in
-  let module S = String in
-   let str = Names.string_of_path sp in
-    let uri = Str.substitute str '#' '/' in
-     let uri' = "cic:" ^ uri in
-      let uri'' = Str.change_suffix uri' ".cci" ("." ^ ext_of_sp sp) in
-       uri''
+ let module N = Names in
+  let ext_of_sp sp = ext_of_tag (tag_of_sp sp) in
+   let (sl,id,_) = N.repr_path sp in
+    let module_path =
+     match sl with
+        []             -> assert false (*V7 WHAT NOW? *)
+      | module_name::_ ->
+        trim_wrong_uri_prefix (Library.module_filename module_name)
+   in
+    "cic:" ^ module_path ^ "/" ^ (String.concat "/" sl) ^ "/" ^
+     (N.string_of_id id) ^ "." ^ (ext_of_sp sp)
 ;;
 
 let string_of_sort =
@@ -547,12 +558,7 @@ let show fn =
  let id = Pfedit.get_current_proof_name () in
  let pf = Tacmach.proof_of_pftreestate pftst in
  let typ = (Proof_trees.goal_of_proof pf).Evd.evar_concl in
-(*V7
- (*CSC: ntrefiner copied verbatim from natural, used, but _not_ understood *)
- let val0, mv = Ntrefiner.nt_extract_open_proof (Vartab.initial_sign ()) pf in
-*)
  let val0,mv = Tacmach.extract_open_pftreestate pftst in
- (*let mv_t = List.map (function i, (t, _) -> i,t) mv in*)
   Xml.pp (print_current_proof val0 typ (Names.string_of_id id) mv) fn
 ;;
 
@@ -582,9 +588,8 @@ let mkfilename dn sp ext =
       None         -> None
     | Some basedir ->
        let (dirs, filename, _) = N.repr_path sp in
-        let dirs = List.rev dirs in (* misteries of Coq *)
-         Some (basedir ^ "/" ^ join_dirs basedir dirs ^
-               N.string_of_id filename ^ "." ^ ext ^ ".xml")
+        Some (basedir ^ "/" ^ join_dirs basedir dirs ^
+              N.string_of_id filename ^ "." ^ ext ^ ".xml")
 ;;
 
 (* Next exception is used only inside print_object *)
@@ -612,9 +617,15 @@ let print_object o id sp dn fv =
   let tag = Libobject.object_tag lobj in
   let pp_cmds () =
    match tag with
-      "CONSTANT" ->
+      "CONSTANT"  (* = Definition, Theorem *)
+    | "PARAMETER" (* = Axiom *) ->
          (*CSC: QUI CI SONO ANCHE LE VARIABILI, CREDO, CHIAMATE const_hyps *)
+(*
          let {D.const_body=val0 ; D.const_type = typ} = G.lookup_constant sp in
+*)
+let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} = G.lookup_constant sp in
+if (Names.string_of_id id) = "SN" then
+ List.iter (fun (id,_,_) -> print_string ("*** " ^ N.string_of_id id ^ "\n")) hyps ;
          let typ = T.body_of_type typ in
           begin
            match val0 with
@@ -631,9 +642,13 @@ let print_object o id sp dn fv =
          in
            print_mutual_inductive packs fv nparams
     | "VARIABLE" ->
+(*V7 DON'T KNOW HOW TO DO IT
         let (_,typ) = G.lookup_named id in
+*)
          add_to_pvars (N.string_of_id id) ;
+(*
          print_variable id (T.body_of_type typ)
+*) [<>]
     | "CLASS"
     | "COERCION"
     | _ -> raise Uninteresting
@@ -762,6 +777,34 @@ let printModule id dn =
    print_closed_section str ls dn ;
    print_if_verbose ("MODULE_END " ^ str ^ " " ^ N.string_of_path sp ^ " " ^
     L.module_filename str ^ "\n")
+;;
+
+(* printSection identifier directory_name                                    *)
+(*  where identifier     is the name of a closed section d                   *)
+(*  and   directory_name is the directory in which to root all the xml files *)
+(* prints all the xml files and directories corresponding to the subsections *)
+(* and terms of the closed section d                                         *)
+(* Note: the terms are printed in their uncooked form plus the informations  *)
+(* on the parameters of their most cooked form                               *)
+let printSection id dn =
+ let module L = Library in
+ let module N = Names in
+ let module X = Xml in
+  let str = N.string_of_id id in 
+  let sp = Lib.make_path id N.OBJ in
+  let ls =
+   let rec find_closed_section =
+    function
+       [] -> raise Not_found
+     | (_,Lib.ClosedSection (str',ls))::_ when str' = str -> ls
+     | _::t -> find_closed_section t
+   in
+    print_string ("Searching " ^ Names.string_of_path sp ^ "\n") ;
+    find_closed_section (Lib.contents_after None)
+  in
+   print_if_verbose ("SECTION_BEGIN " ^ str ^ " " ^ N.string_of_path sp ^ "\n");
+   print_closed_section str ls dn ;
+   print_if_verbose ("SECTION_END " ^ str ^ " " ^ N.string_of_path sp ^ "\n")
 ;;
 
 (* print All () prints what is the structure of the current environment of *)
