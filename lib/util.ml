@@ -146,6 +146,11 @@ let list_try_find_i f =
   in 
   try_find_f
 
+let rec list_uniquize = function
+  | [] -> []
+  | h::t -> if List.mem h t then list_uniquize t else h::(list_uniquize t)
+
+
 (* Arrays *)
 
 let array_exists f v = 

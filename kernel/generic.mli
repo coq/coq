@@ -81,6 +81,8 @@ val occur_opern : 'a -> 'a term -> bool
 val occur_oper0 : 'a -> 'a term -> bool
 val occur_var : identifier -> 'a term -> bool
 val occur_oper : 'a -> 'a term -> bool
+val process_opers_of_term : 
+  ('a -> bool) -> ('a -> 'b) -> 'b list -> 'a term -> 'b list
 val dependent : 'a term -> 'a term -> bool
 val global_varsl : identifier list -> 'a term -> identifier list
 val global_vars : 'a term -> identifier list

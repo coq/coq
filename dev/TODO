@@ -6,8 +6,6 @@
  o Variables existentielles
      - traiter le constructeur Evar dans les fonctions de réductions
        (parallèlement à Const)
-     - ajouter dans Environ des fonctions d'introduction et de recherche
-       des ve
      - unifier Meta et Evar
 
  o Lib

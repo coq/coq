@@ -10,6 +10,7 @@ open Term
 open Sign
 open Environ
 open Reduction
+open Typing_ev
 open Proof_trees
 open Typeops
 open Coqast
@@ -26,12 +27,6 @@ let conv_leq_goal env sigma arg ty conclty =
   if not (is_conv_leq env sigma ty conclty) then 
     raise (RefinerError (BadType (arg,ty,conclty)))
 
-let type_of env c =
-  failwith "TODO: typage avec VE"
-
-let execute_type env ty =
-  failwith "TODO: typage type avec VE"
-
 let rec mk_refgoals sigma goal goalacc conclty trm =
   let env = goal.evar_env in
   match trm with
@@ -42,7 +37,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	(mk_goal ctxt env (nf_betaiota env sigma conclty))::goalacc, conclty
 
     | DOP2(Cast,t,ty) ->
-	let _ = type_of env ty in
+	let _ = type_of env sigma ty in
 	conv_leq_goal env sigma trm ty conclty;
 	mk_refgoals sigma goal goalacc ty t
 
@@ -66,7 +61,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 
     | t -> 
 	if occur_meta t then raise (RefinerError (OccurMeta t));
-      	let t'ty = type_of env t in
+      	let t'ty = type_of env sigma t in
 	conv_leq_goal env sigma t t'ty conclty;
         (goalacc,t'ty)
 
@@ -77,7 +72,7 @@ and mk_hdgoals sigma goal goalacc trm =
   let env = goal.evar_env in
   match trm with
     | DOP2(Cast,DOP0(Meta mv),ty) ->
-	let _ = type_of env ty in
+	let _ = type_of env sigma ty in
 	let ctxt = goal.evar_info in  
 	(mk_goal ctxt env (nf_betaiota env sigma ty))::goalacc,ty
 	  
@@ -95,7 +90,7 @@ and mk_hdgoals sigma goal goalacc trm =
 	in
 	(acc'',conclty')
 
-    | t -> goalacc,type_of env t
+    | t -> goalacc, type_of env sigma t
 
 and mk_arggoals sigma goal goalacc funty = function
   | [] -> goalacc,funty
@@ -142,7 +137,7 @@ let new_meta_variables =
   in 
   newrec
 
-let mk_assumption env c = execute_type env c
+let mk_assumption env sigma c = execute_type env sigma c
 				   
 let sign_before id = 
   let rec aux = function
@@ -222,7 +217,7 @@ let prim_refiner r sigma goal =
         (match strip_outer_cast cl with
 	   | DOP2(Prod,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let a = mk_assumption env sign c1
+	       let a = mk_assumption env sigma c1
 	       and v = VAR id in
 	       let sg = mk_goal info (push_var (id,a) env) (sAPP b v) in 
 	       [sg]
@@ -238,7 +233,7 @@ let prim_refiner r sigma goal =
                          (global_vars c1)) then
 		 error 
 		   "Can't introduce at that location: free variable conflict";
-	       let a = mk_assumption env sign c1
+	       let a = mk_assumption env sigma c1
 	       and v = VAR id in
 	       let env' = change_hyps (add_sign_after whereid (id,a)) env in
 	       let sg = mk_goal info env' (sAPP b v) in 
@@ -257,7 +252,7 @@ let prim_refiner r sigma goal =
 	       then 
 		 error 
 		   "Can't introduce at that location: free variable conflict";
-	       let a = mk_assumption env sign c1
+	       let a = mk_assumption env sigma c1
 	       and v = VAR id in
 	       let env' = change_hyps (add_sign_replacing id (id,a)) env in
 	       let sg = mk_goal info env' (sAPP b v) in
@@ -280,7 +275,7 @@ let prim_refiner r sigma goal =
 	in
      	let _ = check_ind n cl in 
 	if mem_sign sign f then error "name already used in the environment";
-        let a = mk_assumption env sign cl in
+        let a = mk_assumption env sigma cl in
         let sg = mk_goal info (push_var (f,a) env) cl in
         [sg]
     
@@ -307,7 +302,7 @@ let prim_refiner r sigma goal =
 		       "mutual inductive declaration");
 	      if mem_sign sign f then 
 		error "name already used in the environment";
-	      let a = mk_assumption env sign ar in
+	      let a = mk_assumption env sigma ar in
 	      mk_sign (add_sign (f,a) sign) (lar',lf',ln')
 	  | ([],[],[]) -> 
 	      List.map (mk_goal info env) (cl::lar)
@@ -331,7 +326,7 @@ let prim_refiner r sigma goal =
           | (ar::lar'),(f::lf') ->
 	      if mem_sign sign f then 
 		error "name already used in the environment";
-	      let a = mk_assumption env sign ar in
+	      let a = mk_assumption env sigma ar in
 	      mk_sign (add_sign (f,a) sign) (lar',lf')
 	  | ([],[]) -> List.map (mk_goal info env) (cl::lar)
 	  | _ -> error "not the right number of arguments"
@@ -345,7 +340,7 @@ let prim_refiner r sigma goal =
 	sgl
 
     | { name = Convert_concl; terms = [cl'] } ->
-    	let cl'ty = type_of env sign cl' in
+    	let cl'ty = type_of env sigma cl' in
 	if is_conv_leq env sigma cl' cl then
           let sg = mk_goal info env (DOP2(Cast,cl',cl'ty)) in
           [sg]
@@ -354,7 +349,8 @@ let prim_refiner r sigma goal =
 
     | { name = Convert_hyp; hypspecs = [id]; terms = [ty'] } ->
       (* Faut-il garder la sorte d'origine ou celle du converti ?? *)
-    	let tj = execute_type env (sign_before id sign) ty' in
+	let env' = change_hyps (sign_before id) env in
+    	let tj = execute_type env' sigma ty' in
 	if is_conv env sigma ty' (snd(lookup_sign id sign)).body then
 	  let env' = change_hyps (modify_sign id tj) env in
           [mk_goal info env' cl]

@@ -1425,3 +1425,5 @@ let rec strip_all_casts t =
     | DLAMV(na,c) -> DLAMV(na,Array.map (under_outer_cast strip_all_casts) c)
     | VAR _ as t -> t
     | Rel _ as t -> t
+
+

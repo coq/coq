@@ -44,6 +44,7 @@ val list_for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val list_map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
 val list_sep_last : 'a list -> 'a * 'a list
 val list_try_find_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b
+val list_uniquize : 'a list -> 'a list
 
 (*s Arrays. *)
 

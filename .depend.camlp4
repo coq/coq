@@ -1,0 +1,30 @@
+parsing/g_basevernac.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi \
+    toplevel/vernac.cmi 
+parsing/g_basevernac.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmi \
+    toplevel/vernac.cmx 
+parsing/g_command.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi 
+parsing/g_command.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmi 
+parsing/g_minicoq.cmo: kernel/generic.cmi parsing/lexer.cmi kernel/names.cmi \
+    lib/pp.cmi kernel/sign.cmi kernel/term.cmi kernel/univ.cmi lib/util.cmi \
+    parsing/g_minicoq.cmi 
+parsing/g_minicoq.cmx: kernel/generic.cmx parsing/lexer.cmx kernel/names.cmx \
+    lib/pp.cmx kernel/sign.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
+    parsing/g_minicoq.cmi 
+parsing/g_multiple_case.cmo: parsing/ast.cmi parsing/coqast.cmi \
+    parsing/pcoq.cmi 
+parsing/g_multiple_case.cmx: parsing/ast.cmx parsing/coqast.cmx \
+    parsing/pcoq.cmi 
+parsing/g_prim.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
+parsing/g_prim.cmx: parsing/coqast.cmx parsing/pcoq.cmi 
+parsing/g_tactic.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi \
+    lib/pp.cmi 
+parsing/g_tactic.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmi \
+    lib/pp.cmx 
+parsing/g_vernac.cmo: parsing/coqast.cmi parsing/pcoq.cmi toplevel/vernac.cmi 
+parsing/g_vernac.cmx: parsing/coqast.cmx parsing/pcoq.cmi toplevel/vernac.cmx 
+parsing/pcoq.cmo: parsing/coqast.cmi parsing/lexer.cmi lib/pp.cmi \
+    lib/util.cmi parsing/pcoq.cmi 
+parsing/pcoq.cmx: parsing/coqast.cmx parsing/lexer.cmx lib/pp.cmx \
+    lib/util.cmx parsing/pcoq.cmi 
+parsing/q_coqast.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
+parsing/q_coqast.cmx: parsing/coqast.cmx parsing/pcoq.cmi 

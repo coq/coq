@@ -301,6 +301,24 @@ let occur_oper s =
   in 
   occur_rec 
 
+let process_opers_of_term p f l constr = 
+  let rec filtrec acc = function
+    | DOP0 oper        -> if p oper then ((f oper)::acc) else acc
+    | VAR _            -> acc
+    | DOP1(oper,c)     -> let newacc = filtrec acc c in
+                          if p oper then ((f oper)::newacc) else newacc
+    | DOP2(oper,c1,c2) -> let newacc = filtrec (filtrec acc c1) c2 in
+                          if p oper then ((f oper)::newacc) else newacc
+    | DOPN(oper,cl)    -> let newacc = (Array.fold_left filtrec acc cl) in
+                          if p oper then ((f oper)::newacc) else newacc
+    | DOPL(oper,cl)    -> let newacc = (List.fold_left filtrec acc cl) in
+                          if p oper then ((f oper)::newacc) else newacc
+    | DLAM(_,c)        -> filtrec acc c
+    | DLAMV(_,v)       -> Array.fold_left filtrec acc v
+    | _                -> acc
+  in 
+  filtrec l constr
+
 (* Returns the list of global variables in a term *)
 
 let global_varsl l constr = 

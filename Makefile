@@ -51,7 +51,8 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
 	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_multiple_case.cmo
 
-PROOFS=proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo
+PROOFS=proofs/typing_ev.cmo proofs/proof_trees.cmo proofs/logic.cmo \
+       proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernac.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo
@@ -207,13 +208,19 @@ cleanconfig::
 
 # Dependencies
 
+alldepend: depend dependcamlp4
+
 depend: beforedepend
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*.ml > .depend
+
+dependcamlp4: beforedepend
+	rm -f .depend.camlp4
 	for f in */*.ml4; do \
 	  file=`dirname $$f`/`basename $$f .ml4`; \
 	  camlp4o $(INCLUDES) pa_extend.cmo q_MLast.cmo $(GRAMMARCMO) pr_o.cmo -impl $$f > $$file.ml; \
-	  ocamldep $(DEPFLAGS) $$file.ml >> .depend; \
+	  ocamldep $(DEPFLAGS) $$file.ml >> .depend.camlp4; \
 	  rm -f $$file.ml; \
 	done
 
 include .depend
+include .depend.camlp4

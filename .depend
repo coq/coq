@@ -51,6 +51,8 @@ parsing/pcoq.cmi: parsing/coqast.cmi
 parsing/printer.cmi: parsing/coqast.cmi kernel/names.cmi lib/pp.cmi \
     kernel/term.cmi 
 parsing/termast.cmi: parsing/coqast.cmi kernel/names.cmi kernel/term.cmi 
+proofs/evar_refiner.cmi: kernel/environ.cmi kernel/evd.cmi kernel/names.cmi \
+    proofs/proof_trees.cmi proofs/refiner.cmi kernel/sign.cmi kernel/term.cmi 
 proofs/logic.cmi: kernel/environ.cmi kernel/evd.cmi proofs/proof_trees.cmi \
     kernel/sign.cmi kernel/term.cmi 
 proofs/pfedit.cmi: library/declare.cmi lib/pp.cmi proofs/proof_trees.cmi \
@@ -59,6 +61,10 @@ proofs/proof_trees.cmi: parsing/coqast.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/names.cmi kernel/sign.cmi lib/stamps.cmi kernel/term.cmi \
     lib/util.cmi 
 proofs/refiner.cmi: proofs/proof_trees.cmi kernel/sign.cmi kernel/term.cmi 
+proofs/tacmach.cmi: kernel/environ.cmi proofs/evar_refiner.cmi \
+    kernel/names.cmi proofs/proof_trees.cmi kernel/reduction.cmi \
+    proofs/refiner.cmi kernel/sign.cmi proofs/tacred.cmi kernel/term.cmi 
+proofs/typing_ev.cmi: kernel/environ.cmi kernel/evd.cmi kernel/term.cmi 
 toplevel/errors.cmi: parsing/coqast.cmi lib/pp.cmi 
 toplevel/himsg.cmi: kernel/environ.cmi kernel/names.cmi lib/pp.cmi \
     kernel/sign.cmi kernel/term.cmi kernel/type_errors.cmi 
@@ -236,16 +242,24 @@ parsing/coqast.cmo: lib/dyn.cmi lib/hashcons.cmi parsing/coqast.cmi
 parsing/coqast.cmx: lib/dyn.cmx lib/hashcons.cmx parsing/coqast.cmi 
 parsing/lexer.cmo: lib/util.cmi parsing/lexer.cmi 
 parsing/lexer.cmx: lib/util.cmx parsing/lexer.cmi 
+proofs/evar_refiner.cmo: kernel/environ.cmi kernel/evd.cmi kernel/generic.cmi \
+    proofs/logic.cmi kernel/names.cmi lib/pp.cmi proofs/proof_trees.cmi \
+    kernel/reduction.cmi proofs/refiner.cmi lib/stamps.cmi kernel/term.cmi \
+    proofs/typing_ev.cmi lib/util.cmi proofs/evar_refiner.cmi 
+proofs/evar_refiner.cmx: kernel/environ.cmx kernel/evd.cmx kernel/generic.cmx \
+    proofs/logic.cmx kernel/names.cmx lib/pp.cmx proofs/proof_trees.cmx \
+    kernel/reduction.cmx proofs/refiner.cmx lib/stamps.cmx kernel/term.cmx \
+    proofs/typing_ev.cmx lib/util.cmx proofs/evar_refiner.cmi 
 proofs/logic.cmo: parsing/coqast.cmi library/declare.cmi kernel/environ.cmi \
     kernel/evd.cmi kernel/generic.cmi library/global.cmi kernel/names.cmi \
     lib/pp.cmi proofs/proof_trees.cmi kernel/reduction.cmi kernel/sign.cmi \
-    kernel/term.cmi kernel/typeops.cmi kernel/typing.cmi lib/util.cmi \
-    proofs/logic.cmi 
+    kernel/term.cmi kernel/typeops.cmi kernel/typing.cmi proofs/typing_ev.cmi \
+    lib/util.cmi proofs/logic.cmi 
 proofs/logic.cmx: parsing/coqast.cmx library/declare.cmx kernel/environ.cmx \
     kernel/evd.cmx kernel/generic.cmx library/global.cmx kernel/names.cmx \
     lib/pp.cmx proofs/proof_trees.cmx kernel/reduction.cmx kernel/sign.cmx \
-    kernel/term.cmx kernel/typeops.cmx kernel/typing.cmx lib/util.cmx \
-    proofs/logic.cmi 
+    kernel/term.cmx kernel/typeops.cmx kernel/typing.cmx proofs/typing_ev.cmx \
+    lib/util.cmx proofs/logic.cmi 
 proofs/proof_trees.cmo: parsing/coqast.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/names.cmi kernel/sign.cmi lib/stamps.cmi kernel/term.cmi \
     lib/util.cmi proofs/proof_trees.cmi 
@@ -260,6 +274,16 @@ proofs/refiner.cmx: kernel/environ.cmx kernel/evd.cmx kernel/generic.cmx \
     kernel/instantiate.cmx proofs/logic.cmx lib/pp.cmx proofs/proof_trees.cmx \
     kernel/reduction.cmx kernel/sign.cmx lib/stamps.cmx kernel/term.cmx \
     lib/util.cmx proofs/refiner.cmi 
+proofs/tacmach.cmo: proofs/tacmach.cmi 
+proofs/tacmach.cmx: proofs/tacmach.cmi 
+proofs/tacred.cmo: proofs/tacred.cmi 
+proofs/tacred.cmx: proofs/tacred.cmi 
+proofs/typing_ev.cmo: kernel/environ.cmi kernel/generic.cmi kernel/names.cmi \
+    kernel/reduction.cmi kernel/term.cmi kernel/type_errors.cmi \
+    kernel/typeops.cmi lib/util.cmi proofs/typing_ev.cmi 
+proofs/typing_ev.cmx: kernel/environ.cmx kernel/generic.cmx kernel/names.cmx \
+    kernel/reduction.cmx kernel/term.cmx kernel/type_errors.cmx \
+    kernel/typeops.cmx lib/util.cmx proofs/typing_ev.cmi 
 toplevel/errors.cmo: parsing/ast.cmi lib/options.cmi lib/pp.cmi lib/util.cmi \
     toplevel/errors.cmi 
 toplevel/errors.cmx: parsing/ast.cmx lib/options.cmx lib/pp.cmx lib/util.cmx \
@@ -306,33 +330,3 @@ toplevel/vernac.cmx: parsing/ast.cmx parsing/coqast.cmx library/library.cmx \
     lib/options.cmx parsing/pcoq.cmi proofs/pfedit.cmi lib/pp.cmx \
     library/states.cmx lib/system.cmx lib/util.cmx toplevel/vernacinterp.cmi \
     toplevel/vernac.cmi 
-parsing/g_basevernac.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi \
-    toplevel/vernac.cmi 
-parsing/g_basevernac.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmi \
-    toplevel/vernac.cmx 
-parsing/g_command.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi 
-parsing/g_command.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmi 
-parsing/g_minicoq.cmo: kernel/generic.cmi parsing/lexer.cmi kernel/names.cmi \
-    lib/pp.cmi kernel/sign.cmi kernel/term.cmi kernel/univ.cmi lib/util.cmi \
-    parsing/g_minicoq.cmi 
-parsing/g_minicoq.cmx: kernel/generic.cmx parsing/lexer.cmx kernel/names.cmx \
-    lib/pp.cmx kernel/sign.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
-    parsing/g_minicoq.cmi 
-parsing/g_multiple_case.cmo: parsing/ast.cmi parsing/coqast.cmi \
-    parsing/pcoq.cmi 
-parsing/g_multiple_case.cmx: parsing/ast.cmx parsing/coqast.cmx \
-    parsing/pcoq.cmi 
-parsing/g_prim.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
-parsing/g_prim.cmx: parsing/coqast.cmx parsing/pcoq.cmi 
-parsing/g_tactic.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi \
-    lib/pp.cmi 
-parsing/g_tactic.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmi \
-    lib/pp.cmx 
-parsing/g_vernac.cmo: parsing/coqast.cmi parsing/pcoq.cmi toplevel/vernac.cmi 
-parsing/g_vernac.cmx: parsing/coqast.cmx parsing/pcoq.cmi toplevel/vernac.cmx 
-parsing/pcoq.cmo: parsing/coqast.cmi parsing/lexer.cmi lib/pp.cmi \
-    lib/util.cmi parsing/pcoq.cmi 
-parsing/pcoq.cmx: parsing/coqast.cmx parsing/lexer.cmx lib/pp.cmx \
-    lib/util.cmx parsing/pcoq.cmi 
-parsing/q_coqast.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
-parsing/q_coqast.cmx: parsing/coqast.cmx parsing/pcoq.cmi 
