@@ -24,3 +24,5 @@ auto
 all-ps-docs.tar
 doc-html.tar.gz
 all-ps-docs.tar.gz
+config.cache
+config.status

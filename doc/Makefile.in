@@ -7,19 +7,17 @@
 #   - htmlSplit: http://coq.inria.fr/~delahaye
 # Rapports INRIA: dviselect, rrkit (par Michel Mauny)
 
-include ../config
+DOCCOQTOP=@COQTOPBYTE@
+DOCCOQC=@COQC@
+COQLIB=@COQLIB@
+COQTEX=@COQTEX@ -image $(DOCCOQTOP) -v -sl -small
 
 LATEX=latex
 BIBTEX=bibtex
 MAKEINDEX=makeindex
 PDFLATEX=pdflatex
-DOCCOQTOP="../bin/$(ARCH)/coqtop -full -bindir ../bin/$(ARCH)/ -libdir ../"
-DOCCOQC=../bin/$(ARCH)/coqc -full -bindir ../bin/$(ARCH)/ -libdir ../
-COQTEX=../bin/$(ARCH)/coq-tex -image $(DOCCOQTOP) -v -sl -small
-TEXINPUTS=$(COQTOP)/tools/coq-tex:/usr/local/lib/rrkit/RRINPUTSDIR:.:
-ZLIBS=-I ../src/lib/util -I ../src/parsing -I ../src/meta -I ../src/constr \
-      -I ../src/typing -I ../src/proofs -I ../src/env -I ../src/tactics \
-      -I ../tactics
+
+TEXINPUTS=/usr/local/lib/rrkit/RRINPUTSDIR:.:
 
 INPUTS=./macros.tex ./title.tex ./headers.tex ./Reference-Manual.tex
 
@@ -29,7 +27,7 @@ LIBFILES=library/Logic.tex library/Datatypes.tex library/Peano.tex \
 REFMANCOQTEXFILES=\
   RefMan-gal.v.tex RefMan-ext.v.tex RefMan-tac.v.tex \
   RefMan-cic.v.tex RefMan-lib.v.tex RefMan-tacex.v.tex \
-  RefMan-syn.v.tex RefMan-ppr.v.tex RefMan-tus.v.tex
+  RefMan-syn.v.tex RefMan-tus.v.tex
 
 COQTEXFILES= Cases.v.tex Coercion.v.tex Extraction.v.tex Program.v.tex\
   Omega.v.tex Natural.v.tex Changes.v.tex Tutorial.v.tex Polynom.v.tex \
@@ -61,7 +59,7 @@ FTPHTMLDOCS=doc-html.tar.gz
 # Principal targets 
 ########################
 
-all: demos-programs all-dvi all-pdf
+all: all-dvi all-pdf
 
 coq-part: $(REFMANCOQTEXFILES) $(COQTEXFILES) demos-programs library/libdoc.tex
 
@@ -188,22 +186,24 @@ cleanall: clean clean-html
 ##########################
 
 Library.dvi: $(INPUTS) library/libdoc.tex Library.tex
+	echo "======Library.dvi: A FAIRE========"
 Library.pdf: $(INPUTS) library/libdoc.tex Library.tex
+	echo "======Library.pdf: A FAIRE========"
 
 library/libdoc.tex: 
-	(cd ../theories ; make doc)
+#	(cd ../theories ; make doc)
 
 demos-programs:
-	(cd ../theories/DEMOS/PROGRAMS ; make all)
+#	(cd ../theories/DEMOS/PROGRAMS ; make all)
 
 Recursive-Definition.v.tex: ./title.tex Recursive-Definition.tex
 
 Tutorial.v.dvi: ./title.tex Tutorial.tex
 Tutorial.v.pdf: ./title.tex Tutorial.tex
 
-RefMan-ppr.v.tex: ../tactics/eqdecide.cmo
+# RefMan-ppr.v.tex: ../tactics/eqdecide.cmo
 
-RefMan-tus.v.tex: ../tactics/EqDecide.vo ../tactics/eqdecide.cmo
+# RefMan-tus.v.tex: ../tactics/EqDecide.vo ../tactics/eqdecide.cmo
 
 Reference-Manual.ps: Reference-Manual.dvi
 
