@@ -109,6 +109,8 @@ val eval_tactic : glob_tactic_expr -> tactic
 
 val interp : raw_tactic_expr -> tactic
 
+val subst_tactic : substitution -> glob_tactic_expr -> glob_tactic_expr
+
 (* Hides interpretation for pretty-print *)
 
 val hide_interp : raw_tactic_expr -> tactic option -> tactic

@@ -65,7 +65,7 @@ let autorewrite tac_main lbas =
 
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (_,(rbase,lrl)) =
-  let l = List.rev_map (fun (c,b,t) -> (c,b,Tacinterp.interp t)) lrl in
+  let l = List.rev_map (fun (c,b,t) -> (c,b,Tacinterp.eval_tactic t)) lrl in
   let l = 
     try 
       List.rev_append l (Stringmap.find rbase !rewtab) 
@@ -79,8 +79,8 @@ let export_hintrewrite x = Some x
 let subst_hintrewrite (_,subst,(rbase,list as node)) = 
   let subst_first (cst,b,t as pair) = 
     let cst' = Term.subst_mps subst cst in
-      todo "substitute tactics in autorewrite hints!";
-      if cst == cst' then pair else
+    let t' = Tacinterp.subst_tactic subst t in
+      if cst == cst' & t == t' then pair else
 	(cst',b,t)
   in
   let list' = list_smartmap subst_first list in
@@ -101,4 +101,5 @@ let (in_hintrewrite,out_hintrewrite)=
 
 (* To add rewriting rules to a base *)
 let add_rew_rules base lrul =
+  let lrul = List.rev_map (fun (c,b,t) -> (c,b,Tacinterp.glob_tactic t)) lrul in
   Lib.add_anonymous_leaf (in_hintrewrite (base,lrul))
