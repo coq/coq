@@ -288,14 +288,16 @@ let rec find_interpretation f = function
       with Not_found -> find_interpretation f scopes)
   | [] -> raise Not_found
 
-let rec interp_notation ntn scopes =
+let rec interp_notation loc ntn scopes =
   let f sc =
     let scope = find_scope sc in
     let (pat,df,pp8only) = Stringmap.find ntn scope.notations in
     if pp8only then raise Not_found;
     pat,(df,if sc = default_scope then None else Some sc) in
   try find_interpretation f (List.fold_right push_scope scopes !scope_stack)
-  with Not_found -> error ("Unknown interpretation for notation \""^ntn^"\"")
+  with Not_found -> 
+    user_err_loc
+      (loc,"",str ("Unknown interpretation for notation \""^ntn^"\""))
 
 let uninterp_notations c =
   Gmapl.find (rawconstr_key c) !notations_key_table

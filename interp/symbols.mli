@@ -93,7 +93,7 @@ val declare_notation_interpretation : notation -> scope_name option ->
 val declare_uninterpretation : interp_rule -> interpretation -> unit
 
 (* Returns the interpretation bound to a notation *)
-val interp_notation : notation -> scope_name list -> 
+val interp_notation : loc -> notation -> scope_name list -> 
       interpretation * ((dir_path * string) * scope_name option)
 
 (* Returns the possible notations for a given term *)
