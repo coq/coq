@@ -630,6 +630,10 @@ let check_projection isproj nargs r =
   | _, Some _ -> user_err_loc (loc_of_rawconstr r, "", str "Not a projection")
   | _, None -> ()
 
+let get_implicit_name n imps =
+  if !Options.v7 then None
+  else Some (Impargs.name_of_implicit (List.nth imps (n-1)))
+
 let set_hole_implicit i = function
   | RRef (loc,r) -> (loc,ImplicitArg (r,i))
   | RVar (loc,id) -> (loc,ImplicitArg (VarRef id,i))
@@ -982,7 +986,7 @@ let internalise sigma env allow_soapp lvar c =
 	    (* with implicit arguments *)
 	    []
 	  else
-	    RHole (set_hole_implicit n c) :: 
+	    RHole (set_hole_implicit (n,get_implicit_name n l) c) :: 
 	      aux (n+1) impl' subscopes' eargs rargs
 	  end
       | (imp::impl', a::rargs') ->
