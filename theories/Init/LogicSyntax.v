@@ -88,5 +88,5 @@ Syntax constr
 
   | ex2_pred [ (ex2 $_ $p1 $p2) ]
        -> [ [<hov 3> "Ex2 " $p1:L [1 0] $p2:L ] ]
-  | ex2 [ (ex2 $_ [$x : T]$P1 [$x : $T]$P2) ] 
+  | ex2 [ (ex2 $_ [$x : $T]$P1 [$x : $T]$P2) ] 
        -> [ [<hov 2> "EX " $x ":" $T:L " |" [1 2] $P1:L [1 0] "& " $P2:L] ].
