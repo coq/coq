@@ -363,7 +363,7 @@ let rec intros_until s g =
 	with UserError ("Term not reducible",_) ->
           errorlabstrm "Intros" 
 	    [<'sTR "No such hypothesis in current goal";
-	      'sTR "even after head-reduction" >]
+	      'sTR " even after head-reduction" >]
 
 let rec intros_until_n n g =
   match pf_lookup_index_as_renamed (pf_concl g) n with
@@ -374,7 +374,7 @@ let rec intros_until_n n g =
 	with UserError ("Term not reducible",_) ->
           errorlabstrm "Intros" 
 	    [<'sTR "No such hypothesis in current goal";
-	      'sTR "even after head-reduction" >]
+	      'sTR " even after head-reduction" >]
 
 let dyn_intros_until = function 
   | [Identifier id] -> intros_until id
