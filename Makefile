@@ -68,7 +68,7 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
               -I interp -I toplevel -I parsing -I ide/utils \
 	      -I ide -I translate \
               -I contrib/omega -I contrib/romega \
-	      -I contrib/ring -I contrib/xml \
+	      -I contrib/ring -I contrib/dp -I contrib/xml \
 	      -I contrib/extraction \
               -I contrib/interface -I contrib/fourier \
 	      -I contrib/jprover -I contrib/cc \
@@ -229,7 +229,7 @@ USERTACCMX=$(USERTAC:.ml4=.cmx)
 ML4FILES +=\
   contrib/omega/g_omega.ml4 \
   contrib/romega/g_romega.ml4 contrib/ring/g_quote.ml4 \
-  contrib/ring/g_ring.ml4 \
+  contrib/ring/g_ring.ml4 contrib/dp/g_dp.ml4 \
   contrib/field/field.ml4 contrib/fourier/g_fourier.ml4 \
   contrib/extraction/g_extraction.ml4 contrib/xml/xmlentries.ml4
 
@@ -244,6 +244,9 @@ ROMEGACMO=\
 RINGCMO=\
   contrib/ring/quote.cmo contrib/ring/g_quote.cmo \
   contrib/ring/ring.cmo contrib/ring/g_ring.cmo 
+
+DPCMO=\
+  contrib/dp/dp.cmo contrib/dp/g_dp.cmo
 
 FIELDCMO=\
   contrib/field/field.cmo 
@@ -292,7 +295,7 @@ CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4 \
   contrib/funind/tacinv.ml4 contrib/first-order/g_ground.ml4
 
-CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
+CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(DPCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
 	$(CCCMO) $(FUNINDCMO) $(FOCMO)
 
@@ -996,6 +999,7 @@ $(CONTRIBVO): states/initial.coq
 contrib: $(CONTRIBVO) $(CONTRIBCMO)
 omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
 ring: $(RINGVO) $(RINGCMO)
+dp: $(DPCMO)
 xml: $(XMLVO) $(XMLCMO)
 extraction: $(EXTRACTIONCMO)
 field: $(FIELDVO) $(FIELDCMO)
