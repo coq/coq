@@ -478,7 +478,7 @@ dev/top_printers.cmo: kernel/vm.cmi kernel/univ.cmi pretyping/termops.cmi \
     pretyping/evd.cmi kernel/environ.cmi kernel/declarations.cmi \
     interp/constrextern.cmi kernel/closure.cmi pretyping/clenv.cmi \
     toplevel/cerrors.cmi kernel/cemitcodes.cmi kernel/cbytecodes.cmi \
-    parsing/ast.cmi 
+    lib/bigint.cmi parsing/ast.cmi 
 dev/top_printers.cmx: kernel/vm.cmx kernel/univ.cmx pretyping/termops.cmx \
     kernel/term.cmx parsing/tactic_printer.cmx proofs/tacmach.cmx \
     lib/system.cmx kernel/sign.cmx proofs/refiner.cmx proofs/proof_trees.cmx \
@@ -487,7 +487,7 @@ dev/top_printers.cmx: kernel/vm.cmx kernel/univ.cmx pretyping/termops.cmx \
     pretyping/evd.cmx kernel/environ.cmx kernel/declarations.cmx \
     interp/constrextern.cmx kernel/closure.cmx pretyping/clenv.cmx \
     toplevel/cerrors.cmx kernel/cemitcodes.cmx kernel/cbytecodes.cmx \
-    parsing/ast.cmx 
+    lib/bigint.cmx parsing/ast.cmx 
 doc/parse.cmo: parsing/ast.cmi 
 doc/parse.cmx: parsing/ast.cmx 
 ide/blaster_window.cmo: ide/ideutils.cmi ide/coq.cmi 
