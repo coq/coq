@@ -44,6 +44,7 @@ let map evc k = Evarmap.find k evc
 let rmv evc k = Evarmap.remove k evc
 let remap evc k i = Evarmap.add k i evc
 let in_dom evc k = Evarmap.mem k evc
+let fold = Evarmap.fold
 
 let add evd ev newinfo =  Evarmap.add ev newinfo evd
 

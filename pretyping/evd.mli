@@ -46,6 +46,7 @@ val rmv : evar_map -> evar -> evar_map
 val remap : evar_map -> evar -> evar_info -> evar_map
 val in_dom : evar_map -> evar -> bool
 val to_list : evar_map -> (evar * evar_info) list
+val fold : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 
 val define : evar_map -> evar -> constr -> evar_map
 
