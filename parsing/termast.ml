@@ -69,7 +69,9 @@ let ast_of_qualified sp id =
 let ast_of_constant_ref (sp,ids) =
   if !print_arguments then
     ope("CONST", (path_section dummy_loc sp)::(List.map ast_of_ident ids))
-  else ast_of_qualified sp (basename sp)
+  else
+    try ast_of_qualified sp (basename sp)
+    with Not_found -> nvar (string_of_path sp) (* May happen while debugging *)
 
 let ast_of_constant (ev,ids) = ast_of_constant_ref (ev,ids_of_ctxt ids)
 
@@ -85,7 +87,9 @@ let ast_of_constructor_ref (((sp,tyi),n) as cstr_sp,ids) =
     ope("MUTCONSTRUCT",
 	(path_section dummy_loc sp)::(num tyi)::(num n)
 	::(List.map ast_of_ident ids))
-  else ast_of_qualified sp (Global.id_of_global (MutConstruct cstr_sp))
+  else 
+    try ast_of_qualified sp (Global.id_of_global (MutConstruct cstr_sp))
+    with Not_found -> nvar (string_of_path sp) (* May happen while debugging *)
 
 let ast_of_constructor (ev,ids) = ast_of_constructor_ref (ev,ids_of_ctxt ids)
 
@@ -93,7 +97,9 @@ let ast_of_inductive_ref ((sp,tyi) as ind_sp,ids) =
   if !print_arguments then
     ope("MUTIND",
 	(path_section dummy_loc sp)::(num tyi)::(List.map ast_of_ident ids))
-  else ast_of_qualified sp (Global.id_of_global (MutInd ind_sp))
+  else
+    try ast_of_qualified sp (Global.id_of_global (MutInd ind_sp))
+    with Not_found -> nvar (string_of_path sp) (* May happen while debugging *)
 
 let ast_of_inductive (ev,ids) = ast_of_inductive_ref (ev,ids_of_ctxt ids)
 
@@ -383,18 +389,6 @@ let ids_of_env = Sign.ids_of_env
 (* These functions implement a light form of Termenv.mind_specif_of_mind    *)
 (* specially for handle Cases printing; they respect arities but not typing *)
 
-let indsp_of_id id  =
-  let (oper,_) =
-    try 
-      let sp = Nametab.sp_of_id CCI id in global_operator sp id
-    with Not_found -> 
-      error ("Cannot find reference "^(string_of_id id))
-  in
-  match oper with
-    | MutInd(sp,tyi) -> (sp,tyi)
-    | _ -> errorlabstrm "indsp_of_id" 
-	  [< 'sTR ((string_of_id id)^" is not an inductive type") >]
-	  
 let mind_specif_of_mind_light (sp,tyi) =
   let mib = Global.lookup_mind sp in
   (mib,mind_nth_type_packet mib tyi)
