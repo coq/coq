@@ -29,7 +29,7 @@ let is_empty () =
 
 let is_unit () =
   if (is_unit_type (List.assoc 1 !r_lmatch)) then
-    <:tactic<Constructor>>
+    <:tactic<Idtac>>
   else
     failwith "is_unit"
 
@@ -60,12 +60,13 @@ let axioms () =
   and t_is_empty = tacticIn is_empty in
   <:tactic<
     Match Context With
-    |[ |- ?1] -> $t_is_unit
+    |[ |- ?1] -> $t_is_unit;Constructor
     |[ _:?1 |- ?] -> $t_is_empty
     |[ _:?1 |- ?1] -> Assumption>>
 
 let simplif () =
-  let t_is_conj = tacticIn is_conj
+  let t_is_unit = tacticIn is_unit
+  and t_is_conj = tacticIn is_conj
   and t_is_disj = tacticIn is_disj
   and t_not_dep_intros = tacticIn not_dep_intros in
   <:tactic<
@@ -81,6 +82,8 @@ let simplif () =
           $t_is_disj;Cut ?3-> ?4;[Cut ?2-> ?4;[Intros;Clear id|Intro;Apply id;
             Left;Assumption]|Intro;Apply id;Right;Assumption]
         | [id0: ?1-> ?2; id1: ?1|- ?] -> Generalize (id0 id1);Intro;Clear id0
+        | [id: ?1 -> ?2|- ?] ->
+          $t_is_unit;Cut ?2;[Intro;Clear id|Intros;Apply (id I);Assumption]
         | [|- (?1 ? ?)] -> $t_is_conj;Split);$t_not_dep_intros)>>
 
 let rec tauto_main () =
@@ -125,8 +128,8 @@ let compute = function
 
 let reduction = Tacticals.onAllClauses (fun ido -> compute ido)
 
-(* As a simple heuristic, first we try to avoid reduction both in *)
-(* tauto and intuition                                            *)
+(* As a simple heuristic, first we try to avoid reduction both in tauto and
+   intuition *)
 
 let tauto g =
   try
