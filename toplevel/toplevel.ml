@@ -186,7 +186,10 @@ let make_prompt () =
  * initialized when a vernac command is immediately followed by "\n",
  * or after a Drop. *)
 let top_buffer =
-  let pr() = (make_prompt())^(emacs_str (String.make 1 (Char.chr 249)))
+  let pr() = 
+    (make_prompt())^
+    (Printer.emacs_str ("*" ^ string_of_int (Lib.current_command_label ()) ^
+                String.make 1 (Char.chr 249)))
   in
   { prompt = pr;
     str = "";
@@ -197,7 +200,7 @@ let top_buffer =
 
 let set_prompt prompt =
   top_buffer.prompt
-  <- (fun () -> (prompt ()) ^ (emacs_str (String.make 1 (Char.chr 249))))
+  <- (fun () -> (prompt ())^(Printer.emacs_str (String.make 1 (Char.chr 249))))
 
 (* Removes and prints the location of the error. The following exceptions
    need not be located. *)
