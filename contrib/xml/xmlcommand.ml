@@ -324,8 +324,7 @@ let print (_,qid as locqid) fn =
 (* show dest                                                  *)
 (*  where dest is either None (for stdout) or (Some filename) *)
 (* pretty prints via Xml.pp the proof in progress on dest     *)
-let show fn =
- let pftst = Pfedit.get_pftreestate () in
+let show_pftreestate fn pftst =
  let id = Pfedit.get_current_proof_name () in
  let str = Names.string_of_id id in
  let pf = Tacmach.proof_of_pftreestate pftst in
@@ -337,6 +336,11 @@ let show fn =
   print_object (uri_of_path sp Constant) obj evar_map
    (Some (pf,proof_tree_to_constr)) fn (types_filename_of_filename fn)
     (prooftree_filename_of_filename fn)
+;;
+
+let show fn =
+ let pftst = Pfedit.get_pftreestate () in
+  show_pftreestate fn pftst
 ;;
 
 (* FUNCTIONS TO PRINT AN ENTIRE SECTION OF COQ *)
@@ -605,3 +609,5 @@ let printAll () =
 *)
     verbose := oldverbose
 ;;
+
+let _ = Pfedit.set_xml_cook_proof (show_pftreestate None);;
