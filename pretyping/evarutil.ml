@@ -155,16 +155,6 @@ let new_untyped_evar =
   let evar_ctr = ref 0 in
   fun () -> incr evar_ctr; existential_of_int !evar_ctr
 
-let make_evar_instance env =
-  fold_named_context
-    (fun env (id, b, _) l -> (*if b=None then*) mkVar id :: l (*else l*))
-    env ~init:[]
-
-(* create an untyped existential variable *)
-let new_untyped_evar_in_sign env =
-  let ev = new_untyped_evar () in
-  mkEvar (ev, Array.of_list (make_evar_instance env))
-
 (*------------------------------------*
  * functional operations on evar sets *
  *------------------------------------*)
@@ -262,10 +252,9 @@ let do_restrict_hyps evd ev args =
   in
   let sign' = List.rev rsign in
   let env' = reset_with_named_context sign' env in
-  let instance = make_evar_instance env' in
   let (evd',nc) =
     new_evar_instance sign' !evd evi.evar_concl
-      ~src:(evar_source ev !evd) instance in
+      ~src:(evar_source ev !evd) ncargs in
   evd := Evd.evar_define ev nc evd';
   nc
 
