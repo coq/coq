@@ -1,3 +1,10 @@
+Différences V7.0beta / V7.0
+
+- Ajout de déclarations locales aux Record (record à la Randy).
+
+- Correction de bugs (Identity Coercion; Rel not in scope of ?).
+
+----------------------------------------------------------------------
 English version of changes is available on
 
   http:coq.inria.fr
