@@ -272,7 +272,8 @@ let all_target l =
   print "HTMLFILES=$(VFILES:.v=.html)\n";
   print "GHTMLFILES=$(VFILES:.v=.g.html)\n";
   print "\n";
-  print "all: $(VOFILES)\n\n";
+  print "all: "; print_list "\\\n  " (fnames l);
+  print "\n\n";
   if !some_vfile then begin
     print "spec: $(VIFILES)\n\n";
     print "gallina: $(GFILES)\n\n";
