@@ -8,12 +8,12 @@
 
 (*i $Id$ i*)
 
-Require fast_integer.
+Require BinInt.
+Require Zcompare.
 Require Zorder.
-Require zarith_aux.
-Require auxiliary.
-Require Zsyntax.
+Require Znat.
 Require Zmisc.
+Require Zsyntax.
 Require Wf_nat.
 V7only [Import Z_scope.].
 Open Local Scope Z_scope.
@@ -38,7 +38,7 @@ Open Local Scope Z_scope.
 
 Lemma inject_nat_complete :
   (x:Z)`0 <= x` -> (EX n:nat | x=(inject_nat n)).
-NewDestruct x; Intros;
+Intro x; NewDestruct x; Intros;
 [ Exists  O; Auto with arith
 | Specialize (ZL4 p); Intros Hp; Elim Hp; Intros;
   Exists (S x); Intros; Simpl;
@@ -53,18 +53,18 @@ NewDestruct x; Intros;
 Qed.
 
 Lemma ZL4_inf: (y:positive) { h:nat | (convert y)=(S h) }.
-Induction y; [
-  Intros p H;Elim H; Intros x H1; Exists (plus (S x) (S x));
+Intro y; NewInduction y as [p H|p H1|]; [
+  Elim H; Intros x H1; Exists (plus (S x) (S x));
   Unfold convert ;Simpl; Rewrite ZL0; Rewrite ZL2; Unfold convert in H1;
   Rewrite H1; Auto with arith
-| Intros p H1;Elim H1;Intros x H2; Exists (plus x (S x)); Unfold convert;
+| Elim H1;Intros x H2; Exists (plus x (S x)); Unfold convert;
   Simpl; Rewrite ZL0; Rewrite ZL2;Unfold convert in H2; Rewrite H2; Auto with arith
 | Exists O ;Auto with arith].
 Qed.
 
 Lemma inject_nat_complete_inf :
   (x:Z)`0 <= x` -> { n:nat | (x=(inject_nat n)) }.
-NewDestruct x; Intros;
+Intro x; NewDestruct x; Intros;
 [ Exists  O; Auto with arith
 | Specialize (ZL4_inf p); Intros Hp; Elim Hp; Intros x0 H0;
   Exists (S x0); Intros; Simpl;
@@ -81,7 +81,7 @@ Qed.
 Lemma inject_nat_prop :
   (P:Z->Prop)((n:nat)(P (inject_nat n))) -> 
     (x:Z) `0 <= x` -> (P x).
-Intros.
+Intros P H x H0.
 Specialize (inject_nat_complete x H0).
 Intros Hn; Elim Hn; Intros.
 Rewrite -> H1; Apply H.
@@ -90,7 +90,7 @@ Qed.
 Lemma inject_nat_set :
   (P:Z->Set)((n:nat)(P (inject_nat n))) -> 
     (x:Z) `0 <= x` -> (P x).
-Intros.
+Intros P H x H0.
 Specialize (inject_nat_complete_inf x H0).
 Intros Hn; Elim Hn; Intros.
 Rewrite -> p; Apply H.
@@ -106,7 +106,7 @@ Qed.
 Lemma natlike_ind : (P:Z->Prop) (P `0`) ->
   ((x:Z)(`0 <= x` -> (P x) -> (P (Zs x)))) ->
   (x:Z) `0 <= x` -> (P x).
-Intros; Apply inject_nat_prop;
+Intros P H H0 x H1; Apply inject_nat_prop;
 [ Induction n;
   [ Simpl; Assumption
   | Intros; Rewrite -> (inj_S n0);
@@ -117,7 +117,7 @@ Qed.
 Lemma natlike_rec : (P:Z->Set) (P `0`) ->
   ((x:Z)(`0 <= x` -> (P x) -> (P (Zs x)))) ->
   (x:Z) `0 <= x` -> (P x).
-Intros; Apply inject_nat_set;
+Intros P H H0 x H1; Apply inject_nat_set;
 [ Induction n;
   [ Simpl; Assumption
   | Intros; Rewrite -> (inj_S n0);

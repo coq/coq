@@ -10,7 +10,8 @@
 (** Binary Integers (Pierre Crégut (CNET, Lannion, France) *)
 
 Require Arith.
-Require fast_integer.
+Require BinInt.
+Require Zcompare.
 Require Zorder.
 
 Open Local Scope Z_scope.
@@ -65,10 +66,37 @@ Qed.
 Lemma Zmin_plus :
  (x,y,n:Z)(Zmin (Zplus x n) (Zplus y n))=(Zplus (Zmin x y) n).
 Proof.
-Intros; Unfold Zmin.
+Intros x y n; Unfold Zmin.
 Rewrite (Zplus_sym x n);
 Rewrite (Zplus_sym y n);
 Rewrite (Zcompare_Zplus_compatible x y n).
 Case (Zcompare x y); Apply Zplus_sym.
+Qed.
+
+(**********************************************************************)
+(** Maximum of two binary integer numbers *)
+V7only [ (* From Zdivides *) ].
+
+Definition Zmax :=
+   [a, b : ?]  Cases (Zcompare a b) of INFERIEUR => b | _ => a end.
+
+(** Properties of maximum on binary integer numbers *)
+
+Tactic Definition CaseEq name :=
+Generalize (refl_equal ? name); Pattern -1 name; Case name.
+
+Theorem Zmax1: (a, b : ?)  (Zle a (Zmax a b)).
+Proof.
+Intros a b; Unfold Zmax; (CaseEq '(Zcompare a b)); Simpl; Auto with zarith.
+Unfold Zle; Intros H; Rewrite H; Red; Intros; Discriminate.
+Qed.
+
+Theorem Zmax2: (a, b : ?)  (Zle b (Zmax a b)).
+Proof.
+Intros a b; Unfold Zmax; (CaseEq '(Zcompare a b)); Simpl; Auto with zarith.
+Intros H;
+ (Case (Zle_or_lt b a); Auto; Unfold Zlt; Rewrite H; Intros; Discriminate).
+Intros H;
+ (Case (Zle_or_lt b a); Auto; Unfold Zlt; Rewrite H; Intros; Discriminate).
 Qed.
 

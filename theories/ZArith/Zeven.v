@@ -8,11 +8,11 @@
 
 (*i $Id$ i*)
 
-Require fast_integer.
+Require BinInt.
 Require Zsyntax.
 
 (**********************************************************************)
-(** Even and odd predicates on Z, division by 2 on Z *)
+(** About parity: even and odd predicates on Z, division by 2 on Z *)
 
 (**********************************************************************)
 (** [Zeven], [Zodd], [Zdiv2] and their related properties *)
@@ -78,35 +78,35 @@ Defined.
 
 Lemma Zeven_not_Zodd : (z:Z)(Zeven z) -> ~(Zodd z).
 Proof.
-  NewDestruct z; [ Idtac | NewDestruct p | NewDestruct p  ]; Compute; Trivial.
+  Intro z; NewDestruct z; [ Idtac | NewDestruct p | NewDestruct p  ]; Compute; Trivial.
 Qed.
 
 Lemma Zodd_not_Zeven : (z:Z)(Zodd z) -> ~(Zeven z).
 Proof.
-  NewDestruct z; [ Idtac | NewDestruct p | NewDestruct p  ]; Compute; Trivial.
+  Intro z; NewDestruct z; [ Idtac | NewDestruct p | NewDestruct p  ]; Compute; Trivial.
 Qed.
 
 Lemma Zeven_Sn : (z:Z)(Zodd z) -> (Zeven (Zs z)).
 Proof.
- NewDestruct z; Unfold Zs; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
+ Intro z; NewDestruct z; Unfold Zs; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
  Unfold double_moins_un; Case p; Simpl; Auto.
 Qed.
 
 Lemma Zodd_Sn : (z:Z)(Zeven z) -> (Zodd (Zs z)).
 Proof.
- NewDestruct z; Unfold Zs; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
+ Intro z; NewDestruct z; Unfold Zs; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
  Unfold double_moins_un; Case p; Simpl; Auto.
 Qed.
 
 Lemma Zeven_pred : (z:Z)(Zodd z) -> (Zeven (Zpred z)).
 Proof.
- NewDestruct z; Unfold Zpred; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
+ Intro z; NewDestruct z; Unfold Zpred; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
  Unfold double_moins_un; Case p; Simpl; Auto.
 Qed.
 
 Lemma Zodd_pred : (z:Z)(Zeven z) -> (Zodd (Zpred z)).
 Proof.
- NewDestruct z; Unfold Zpred; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
+ Intro z; NewDestruct z; Unfold Zpred; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
  Unfold double_moins_un; Case p; Simpl; Auto.
 Qed.
 
@@ -127,7 +127,7 @@ Definition Zdiv2 :=
 
 Lemma Zeven_div2 : (x:Z) (Zeven x) -> `x = 2*(Zdiv2 x)`.
 Proof.
-NewDestruct x.
+Intro x; NewDestruct x.
 Auto with arith.
 NewDestruct p; Auto with arith.
 Intros. Absurd (Zeven (POS (xI p))); Red; Auto with arith.
@@ -139,7 +139,7 @@ Qed.
 
 Lemma Zodd_div2 : (x:Z) `x >= 0` -> (Zodd x) -> `x = 2*(Zdiv2 x)+1`.
 Proof.
-NewDestruct x.
+Intro x; NewDestruct x.
 Intros. Absurd (Zodd `0`); Red; Auto with arith.
 NewDestruct p; Auto with arith.
 Intros. Absurd (Zodd (POS (xO p))); Red; Auto with arith.
@@ -148,7 +148,7 @@ Qed.
 
 Lemma Zodd_div2_neg : (x:Z) `x <= 0` -> (Zodd x) -> `x = 2*(Zdiv2 x)-1`.
 Proof.
-NewDestruct x.
+Intro x; NewDestruct x.
 Intros. Absurd (Zodd `0`); Red; Auto with arith.
 Intros. Absurd `(NEG p) >= 0`; Red; Auto with arith.
 NewDestruct p; Auto with arith.
