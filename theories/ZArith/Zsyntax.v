@@ -155,12 +155,12 @@ Syntax constr
 
   level 4:
     Zappl_inside [ << (ZEXPR (APPLIST $h ($LIST $t))) >> ]
-      -> [ [<hov 0> "("(ZEXPR $h):E [1 0] (APPLINSIDETAIL ($LIST $t)):E ")"] ]
+      -> [ [<hov 0> "("(ZEXPR $h):E [1 0] (ZAPPLINSIDETAIL ($LIST $t)):E ")"] ]
   | Zappl_inject_nat [ << (ZEXPR (APPLIST <<inject_nat>> $n)) >> ]
       -> [ (APPLIST <<inject_nat>> $n) ]
-  | Zappl_inside_tail [ << (APPLINSIDETAIL $h ($LIST $t)) >> ]
-      -> [(ZEXPR $h):E [1 0] (APPLINSIDETAIL ($LIST $t)):E] 
-  | Zappl_inside_one [ << (APPLINSIDETAIL $e) >> ] ->[(ZEXPR $e):E]
+  | Zappl_inside_tail [ << (ZAPPLINSIDETAIL $h ($LIST $t)) >> ]
+      -> [(ZEXPR $h):E [1 0] (ZAPPLINSIDETAIL ($LIST $t)):E] 
+  | Zappl_inside_one [ << (ZAPPLINSIDETAIL $e) >> ] ->[(ZEXPR $e):E]
   | pair_inside [ << (ZEXPR <<(pair $s1 $s2 $z1 $z2)>>) >> ] 
       -> [ [<hov 0> "("(ZEXPR $z1):E "," [1 0] (ZEXPR $z2):E ")"] ]
   ;

@@ -137,10 +137,10 @@ Syntax constr
 
   level 4:
     Rappl_inside [<<(REXPR (APPLIST $h ($LIST $t)))>>]
- -> [ [<hov 0> "("(REXPR $h):E [1 0] (APPLINSIDETAIL ($LIST $t)):E ")"] ]
-  | Rappl_inside_tail [<<(APPLINSIDETAIL $h ($LIST $t))>>]
-      -> [(REXPR $h):E [1 0] (APPLINSIDETAIL ($LIST $t)):E] 
-  | Rappl_inside_one [<<(APPLINSIDETAIL $e)>>] ->[(REXPR $e):E]
+ -> [ [<hov 0> "("(REXPR $h):E [1 0] (RAPPLINSIDETAIL ($LIST $t)):E ")"] ]
+  | Rappl_inside_tail [<<(RAPPLINSIDETAIL $h ($LIST $t))>>]
+      -> [(REXPR $h):E [1 0] (RAPPLINSIDETAIL ($LIST $t)):E] 
+  | Rappl_inside_one [<<(RAPPLINSIDETAIL $e)>>] ->[(REXPR $e):E]
   | rpair_inside [<<(REXPR <<(pair $s1 $s2 $r1 $r2)>>)>>] 
       -> [ [<hov 0> "("(REXPR $r1):E "," [1 0] (REXPR $r2):E ")"] ]
   ;
