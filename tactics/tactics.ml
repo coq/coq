@@ -735,13 +735,17 @@ let exact_proof c gl =
 
 let (assumption : tactic) = fun gl ->
   let concl =  pf_concl gl in 
-  let rec arec = function
-    | [] -> error "No such assumption"
+  let hyps = pf_hyps gl in
+  let rec arec only_eq = function
+    | [] -> 
+        if only_eq then arec false hyps else error "No such assumption"
     | (id,c,t)::rest -> 
-	if pf_conv_x_leq gl t concl then refine_no_check (mkVar id) gl
-	else arec rest
+	if (only_eq & eq_constr t concl) 
+          or (not only_eq & pf_conv_x_leq gl t concl)
+        then refine_no_check (mkVar id) gl
+	else arec only_eq rest
   in
-  arec (pf_hyps gl)
+  arec true hyps
 
 (*****************************************************************)
 (*          Modification of a local context                      *)
@@ -1679,8 +1683,8 @@ let abstract_subproof name tac gls =
     constr_of_reference (ConstRef (snd sp))
   in
   exact_no_check 
-    (applist (lemme,
-	      List.map mkVar (List.rev (ids_of_named_context sign))))
+    (applist (lemme, 
+              List.rev (Array.to_list (instance_from_named_context sign))))
     gls
 
 let tclABSTRACT name_op tac gls = 
