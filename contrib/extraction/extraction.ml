@@ -190,7 +190,8 @@ let rec extract_type env db j c args =
 	  (* There are two kinds of informative axioms here, *)
 	  (* - the types that should be realized via [Extract Constant] *)
 	  (* - the type schemes that are not realizable (yet). *) 
-	  if args = [] then error_axiom r else error_axiom_scheme r
+	  (* TODO: in modular extraction, we should try not to fail here !!! *)
+	  if args = [] then Tglob (r,[]) else error_axiom_scheme r
 	else 
 	  let body = constant_value env kn in 
 	  let mlt1 = extract_type env db j (applist (body, args)) [] in 
@@ -575,6 +576,7 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
   let br_size = Array.length br in 
   assert (Array.length ni = br_size); 
   if br_size = 0 then begin
+    add_recursors env kn; (* May have passed unseen if logical ... *)
     MLexn "absurd case"
   end else 
     (* [c] has an inductive type, and is not a type scheme type. *)
@@ -582,6 +584,7 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
     (* The only non-informative case: [c] is of sort [Prop] *)
     if (sort_of env t) = InProp then 
       begin 
+	add_recursors env kn; (* May have passed unseen if logical ... *)
 	(* Logical singleton case: *)
 	(* [match c with C i j k -> t] becomes [t'] *)
 	assert (br_size = 1);
