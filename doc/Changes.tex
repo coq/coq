@@ -28,7 +28,6 @@ V7 provides the following novelties:
 \begin{itemize}
 \item A more high-level tactic language called $\ltac$ (see
 section~\ref{Tactics})
-
 \item A primitive let-in construction (see section \ref{Letin})
 \item Structuration of the developments in libraries and use of the
 dot notation to access names (see section \ref{Names})
@@ -43,7 +42,7 @@ be used with Helm's publishing and rendering tools (see section \ref{XML})
 
 Incompatibilities are described in section
 \ref{Incompatibilities}. Please notice that extraction and the
-{\tt Program/Realizer} tactic are not yet available in {\Coq} V7.
+{\tt Program/Realizer} and {\tt Correctness} tactics are not yet available in {\Coq} V7.
 Developers of tactics in ML are invited to read section
 \ref{Developers}.
 
@@ -53,7 +52,7 @@ Developers of tactics in ML are invited to read section
 \subsection{Primitive {\tt let ... in ...} construction}
 \label{Letin}
 The {\tt let ... in ...} syntax in V6.3.1 was implemented as a
-macro. It is now a first-class constructions.
+macro. It is now a first-class construction.
 
 \begin{coq_example}
 Require ZArith.
@@ -169,6 +168,19 @@ name. Especially, both absolute names and short names are qualified
 names. Root names cannot be hidden in such a way fully qualified
 (i.e. absolute names) cannot be hidden.
 
+Examples:
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{coq_example}
+Check O.
+Definition nat := bool.
+Check O.
+Check Datatypes.nat.
+\end{coq_example}
+
 \paragraph{Requiring a file}
 
 When a ``.vo'' file is required in a physical directory mapped to some
@@ -200,18 +212,11 @@ Remark: A constant, say \verb:``4``:, is equivalent to
 
 \paragraph{{\tt Infix}} was inactive on pretty-printer. Now it works.
 
-\paragraph{Consecutive tokens} should now be separated (e.g. by a
-space). Typically, the string \verb:A->~<nat>O=O: is no longer
-recognized. It should be written \verb:A-> ~ <nat>O=O:... or simply
-\verb:A->~ <nat>O=O: because of a special treatment for \verb:->:!.
-Similarly, an expression such as \verb!(EX x:X |<X>x=y)! should be
-written \verb!(EX x:X | <X>x=y)!.
-
 \paragraph{Consecutive symbols} are now considered as an unique token.
 Exceptions have been coded in the lexer to separate tokens we do not want to
 separate (for example \verb:A->~B:), but this is not exhaustive and some spaces
 may have to be inserted in some cases which have not been treated
-(incompatibility).
+(e.g. \verb:~<nat>O=O: should now be written \verb:~ <nat>O=O:).
 Also, tokens mixing specials characters and letters or digits
 are currently forbidden (e.g. token \verb:=_S: cannot be used).
 
@@ -222,7 +227,7 @@ are currently forbidden (e.g. token \verb:=_S: cannot be used).
 
 \paragraph{The {\tt command} syntactic class for {\tt Grammar}} has
 been renamed {\tt constr} consistently with the usage for {\tt Syntax}
-extensions. Entries {\tt command1}, {\tt command2}, etc are renamed
+extensions. Entries {\tt command1}, {\tt command2}, ... are renamed
 accordingly. The type {\tt List} in {\tt Grammar} rules has been
 renamed {\tt ast list}.
 
@@ -524,11 +529,10 @@ documentation tool (see the ``doc'' directory in {\Coq} source).
 
   \end{itemize}
 
-A shell script \verb=translate6-3-1to7= is available in the archive to
-automatically translate V6.3.1 ``.v'' files to V7.0 syntax (caveat:
-the script is not involutive, use it only once per file; moreover it
-does not understand comments and then can do some unexpected
-translation there).
+A shell script \verb=translate_V6-3-1_to_V7= is available in the archive to
+automatically translate V6.3.1 ``.v'' files to V7.0 syntax
+(incompatibilities due to changes in tactics semantics are not
+treated).
 
 %\section{New users contributions}
 
