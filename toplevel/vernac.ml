@@ -103,14 +103,14 @@ let rec vernac interpfun input =
           let verbosely = verbosely = "Verbose" in
           raw_load_vernac_file verbosely (make_suffix fname ".v")
             
-      | Node (_,"CompileFile",[Str(_,verbosely); Str(_,only_spec);
+(*      | Node (_,"CompileFile",[Str(_,verbosely); Str(_,only_spec);
 			       Str (_,mname); Str(_,fname)]) ->
           let verbosely = verbosely = "Verbose" in
           let only_spec = only_spec = "Specification" in
           States.with_heavy_rollback (* to roll back in case of error *)
             (raw_compile_module verbosely only_spec mname)
             (make_suffix fname ".v")
-	    
+*)	    
       | Node(_,"VernacList",l) ->
 	  List.iter interp l
 
@@ -131,7 +131,9 @@ let rec vernac interpfun input =
 and raw_load_vernac_file verbosely s =
   let _ = read_vernac_file verbosely s in ()
 
+(*
 and raw_compile_module verbosely only_spec mname file =
+  assert false; (* I bet this code is never used in practice. Judicael. *)
   Library.import_module mname; (* ??? *)
   let lfname = read_vernac_file verbosely file in
   let base = Filename.chop_suffix lfname ".v" in
@@ -140,6 +142,7 @@ and raw_compile_module verbosely only_spec mname file =
     failwith ".vi not yet implemented"
   else 
     Discharge.save_module_to mname base
+*)
 
 and read_vernac_file verbosely s =
   let interpfun =

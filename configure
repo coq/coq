@@ -14,7 +14,7 @@ DATE="March 2001"
 which () {
 for i in `echo $PATH | tr ':' ' '` ; do 
   if test -z "$i"; then $i=.; fi 
-  if [ -f $i/$1 ] ; then
+  if [ -f "$i/$1" ] ; then
 	echo $i/$1
 	break
   fi
@@ -281,13 +281,13 @@ esac
 
 # do we have a native compiler: test of ocamlopt and its version
 
-if [ $best_compiler = "opt" ] ; then
+if [ "$best_compiler" = "opt" ] ; then
   CAMLOPT=`which $nativecamlc`
   case $CAMLOPT in
     "") best_compiler=byte
         echo "You have only bytecode compilation.";;
     *) CAMLOPTVERSION=`$CAMLOPT -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
-       if [ $CAMLOPTVERSION != $CAMLVERSION ] ; then \
+       if [ "$CAMLOPTVERSION" != "$CAMLVERSION" ] ; then \
          echo "native and bytecode compilers do not have the same version!"; fi
        echo "You have native-code compilation. Good!"
   esac

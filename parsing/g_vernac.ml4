@@ -404,7 +404,7 @@ GEXTEND Gram
     [ [ "Load"; verbosely = [ IDENT "Verbose" -> "Verbose" | -> "" ];
 	s = [ s = STRING -> s | s = IDENT -> s ] ->
           <:ast< (LoadFile ($STR $verbosely) ($STR $s)) >>
-      | "Compile";
+(*      | "Compile";
 	verbosely =
           [ IDENT "Verbose" -> "Verbose"
           | -> "" ];
@@ -417,6 +417,7 @@ GEXTEND Gram
           let fname = match fname with Some s -> s | None -> mname in
             <:ast< (CompileFile ($STR $verbosely) ($STR $only_spec)
                       ($STR $mname) ($STR $fname))>>
+*)
       | IDENT "Read"; IDENT "Module"; id = identarg ->
           <:ast< (ReadModule $id) >>
       | IDENT "Require"; import = import_tok; specif = specif_tok;

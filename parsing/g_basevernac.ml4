@@ -102,7 +102,6 @@ GEXTEND Gram
 	  <:ast< (PrintHintDb $s) >>
       | IDENT "Print"; IDENT "Section"; s = qualidarg ->
           <:ast< (PrintSec $s) >>
-      | IDENT "Print"; IDENT "States" -> <:ast< (PrintStates) >>
       (* This should be in "syntax" section but is here for factorization *)
       | IDENT "Print"; "Grammar"; uni = identarg; ent = identarg ->
           <:ast< (PrintGrammar $uni $ent) >>
