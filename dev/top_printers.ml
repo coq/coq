@@ -290,3 +290,4 @@ let _ =
        | _ -> bad_vernac_args "PrintPureConstr")
 *)
 
+let ppfconstr c = ppterm (Closure.term_of_fconstr c)
