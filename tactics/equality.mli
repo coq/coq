@@ -28,9 +28,9 @@ val eq  : leibniz_eq
 val eqT : leibniz_eq
 val idT : leibniz_eq
 
-val eq_pattern  :  marked_term
-val eqT_pattern : marked_term
-val idT_pattern : marked_term
+val eq_pattern  : unit -> constr_pattern
+val eqT_pattern : unit -> constr_pattern
+val idT_pattern : unit -> constr_pattern
 
 val find_eq_pattern : sorts -> sorts -> constr
 

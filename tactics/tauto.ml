@@ -16,6 +16,7 @@ open Reduction
 open Tacticals
 open Tactics
 open Pattern
+open Hipattern
 open Auto
 (* Chet's code *)
 open Proof_trees
@@ -44,29 +45,36 @@ let classically cltac = function
   | (Some _ as cls) -> (tclTHEN (cltac cls) (clear_clause cls))
   | None -> cltac None
 
-let somatch m pat = somatch None (get_pat pat) m
 let module_mark   = ["Logic"]
 (* patterns *)
 let mmk           = make_module_marker ["Prelude"]
-let false_pattern = put_pat mmk "False"
-let true_pattern = put_pat mmk "True"
-let and_pattern   = put_pat mmk "(and ? ?)"
-let or_pattern    = put_pat mmk "(or ? ?)"
-let eq_pattern    = put_pat mmk "(eq ? ? ?)"
+let false_pattern_mark = put_pat mmk "False"
+let true_pattern_mark = put_pat mmk "True"
+let and_pattern_mark   = put_pat mmk "(and ?1 ?2)"
+let or_pattern_mark    = put_pat mmk "(or ?1 ?2)"
+let eq_pattern_mark    = put_pat mmk "(eq ?1 ?2 ?3)"
 let pi_pattern    = put_pat mmk "(x : ?)((?)@[x])"
 let imply_pattern = put_pat mmk "?1 -> ?2"
 let atomic_imply_bot_pattern = put_pat mmk "?1 -> ?2"
-let iff_pattern   = put_pat mmk "(iff ? ?)"
-let not_pattern   = put_pat mmk "(not ?1)"
+let iff_pattern_mark   = put_pat mmk "(iff ?1 ?2)"
+let not_pattern_mark   = put_pat mmk "(not ?1)"
 (* squeletons *)
-let imply_squeleton = put_pat mmk "?1 -> ?2"
+let imply_squeleton = put_squel mmk "?1 -> ?2"
 let mkIMP a b       = soinstance imply_squeleton [a;b]    
+
+let false_pattern () = get_pat false_pattern_mark
+let true_pattern () = get_pat true_pattern_mark
+let and_pattern () = get_pat and_pattern_mark
+let or_pattern ()  = get_pat or_pattern_mark
+let eq_pattern ()  = get_pat eq_pattern_mark
+let iff_pattern ()  = get_pat iff_pattern_mark
+let not_pattern ()  = get_pat not_pattern_mark
 
 let is_atomic m =
  (not (is_conjunction m)     ||
       (is_disjunction m)     ||
-      (somatches m pi_pattern)  ||
-      (somatches m not_pattern))
+      (is_matching (get_pat pi_pattern) m)  ||
+      (is_matching (not_pattern ()) m))
       
 let hypothesis = function Some id -> exact (VAR id) | None -> assert false
 
@@ -126,9 +134,11 @@ let dyck_imply_intro = (dImp None)
  *)
 
 let atomic_imply_step cls gls =
-  let mvb = somatch (clause_type cls gls) atomic_imply_bot_pattern in 
-  if not (is_atomic (List.assoc 1 mvb)) then
-    error "atomic_imply_step"; 
+  begin try
+    let mvb = matches (get_pat atomic_imply_bot_pattern) (clause_type cls gls) in 
+    if not (is_atomic (List.assoc 1 mvb)) then
+      error "atomic_imply_step"
+  with PatternMatchingFailure -> error "atomic_imply_step" end;
   (tclTHENS (dImp cls) ([clear_clause cls;assumption])) gls
 
 let dyck_atomic_imply_elim = compose (atomic_imply_step) in_some
@@ -140,18 +150,20 @@ let dyck_atomic_imply_elim = compose (atomic_imply_step) in_some
  *)
 
 let and_imply_step cls gls =
-  let mvb = somatch (clause_type cls gls) imply_pattern in
-  let a = List.assoc 1 mvb
-  and b = List.assoc 2 mvb in
-  let l =  match match_with_conjunction a with
-    | Some (_,l) -> l
-    | None        -> error "and_imply_step"
-  in 
-  (tclTHENS (cut_intro (List.fold_right mkIMP l b))
-     [clear_clause cls ;
-      (tclTHENS (tclTHEN (tclDO (List.length l) intro) (dImp cls))
-         [assumption;
-          (tclTHEN (dAnd None) assumption)])]) gls
+  try
+    match matches (get_pat imply_pattern) (clause_type cls gls) with
+      | [(1,a);(2,b)] ->
+	  let l =  match match_with_conjunction a with
+	    | Some (_,l) -> l
+	    | None        -> error "and_imply_step"
+	  in 
+	  (tclTHENS (cut_intro (List.fold_right mkIMP l b))
+	     [clear_clause cls ;
+	      (tclTHENS (tclTHEN (tclDO (List.length l) intro) (dImp cls))
+		 [assumption;
+		  (tclTHEN (dAnd None) assumption)])]) gls
+      | _ -> anomaly "Inconsistent pattern-matching"
+  with PatternMatchingFailure -> error "and_imply_step"
 
 let dyck_and_imply_elim = compose (and_imply_step) in_some
 
@@ -162,20 +174,22 @@ let dyck_and_imply_elim = compose (and_imply_step) in_some
 *)
 
 let or_imply_step cls gls =
-  let mvb = somatch (clause_type cls gls) imply_pattern in
-  let a = List.assoc 1 mvb
-  and b = List.assoc 2 mvb in
-  let l =  match match_with_disjunction a with
-    | Some (_,l) -> l
-    | None        -> error "and_imply_step"
-  in 
-  (tclTHENS (cut_in_parallel (List.map (fun x -> (mkIMP x b)) l))
-     (clear_clause cls::
-      (List.map 
-         (fun i -> (tclTHENS (tclTHEN intro (dImp cls)) 
-                      [assumption ;
-                       (tclTHEN (one_constructor i []) assumption)]))
-         (interval 1 (List.length l))))) gls
+  try
+    match matches (get_pat imply_pattern) (clause_type cls gls) with
+      | [(1,a);(2,b)] ->
+	  let l =  match match_with_disjunction a with
+	    | Some (_,l) -> l
+	    | None        -> error "or_imply_step"
+	  in 
+	  (tclTHENS (cut_in_parallel (List.map (fun x -> (mkIMP x b)) l))
+	     (clear_clause cls::
+	      (List.map 
+		 (fun i -> (tclTHENS (tclTHEN intro (dImp cls)) 
+			      [assumption ;
+			       (tclTHEN (one_constructor i []) assumption)]))
+		 (interval 1 (List.length l))))) gls
+      | _ -> anomaly "Inconsistent pattern-matching"
+  with PatternMatchingFailure -> error "or_imply_step"
 
 let dyck_or_imply_elim = compose (or_imply_step) in_some
 
@@ -197,25 +211,27 @@ let imply_imply_bot_pattern = put_pat mmk "(?1 -> ?2) -> ?3"
 
 let imply_imply_step cls gls =
   let h0 = out_some cls in (* (C->D)->B *)
-  let mvb = somatch (clause_type cls gls) imply_imply_bot_pattern in
-  let c = List.assoc 1 mvb 
-  and d = List.assoc 2 mvb
-  and b = List.assoc 3 mvb
-  in
-  tclTHENS (cut_intro b)
-    [clear_clause cls; (* B |- G *)
-     tclTHENS (cut_intro (mkIMP (mkIMP d b) (mkIMP c d)))
-       [onLastHyp
-	  (fun h1opt (*(D->B)->(C->D)*) ->
-	     let h1 = out_some h1opt in
-             (tclTHENS (refine (back_thru_1 h0))
-		[tclTHENS (tclTHEN intro (* C *) (refine (back_thru_2 h1)))
-		   [tclTHENS (tclTHEN intro (* D *) (refine (back_thru_1 h0)))
-		      [tclTHEN intro (* C *) assumption];
-		    exact_last_hyp]]));
-	(tclTHEN (clear_clause cls) (intro))
-       ]
-    ] gls
+  try
+    match matches (get_pat imply_imply_bot_pattern) (clause_type cls gls) with
+      | [(1,c);(2,d);(3,b)] ->
+	  tclTHENS (cut_intro b)
+	    [clear_clause cls; (* B |- G *)
+	     tclTHENS (cut_intro (mkIMP (mkIMP d b) (mkIMP c d)))
+	       [onLastHyp
+		  (fun h1opt (*(D->B)->(C->D)*) ->
+		     let h1 = out_some h1opt in
+		     (tclTHENS (refine (back_thru_1 h0))
+			[tclTHENS
+			   (tclTHEN intro (* C *) (refine (back_thru_2 h1)))
+			   [tclTHENS
+			      (tclTHEN intro (* D *) (refine (back_thru_1 h0)))
+			      [tclTHEN intro (* C *) assumption];
+			    exact_last_hyp]]));
+		(tclTHEN (clear_clause cls) (intro))
+	       ]
+	    ] gls
+      | _ -> anomaly "Inconsistent pattern-matching"
+  with PatternMatchingFailure -> error "imply_imply_bot_step"
 
 let dyck_imply_imply_elim = compose (imply_imply_step) in_some
 
@@ -226,21 +242,23 @@ let dyck_imply_imply_elim = compose (imply_imply_step) in_some
 *)
 
 let true_imply_step cls gls =
-  let mvb = somatch (clause_type cls gls) imply_pattern in
-  let a = List.assoc 1 mvb 
-  and b = List.assoc 2 mvb in
-  let l =  match match_with_unit_type a with
-  (* match_with_unit_type retournait un constr list option avec un seul
-     element dans la liste; maintenant il renvoie un constr option *)
-  (*           Some (_::l) -> l *)
-    | Some _ -> []
-    | None        -> error "true_imply_step" 
-  in 
-  let h0 = out_some cls in  
-  (tclTHENS (cut_intro b)
-     [(clear_clause cls);
-      (tclTHEN (apply(VAR h0)) (one_constructor 1 []))]) gls
-  
+  try
+    match matches (get_pat imply_pattern) (clause_type cls gls) with
+      | [(1,a);(2,b)] ->
+	  let l =  match match_with_unit_type a with
+          (* match_with_unit_type retournait un constr list option avec un seul
+             element dans la liste; maintenant il renvoie un constr option *)
+	      (*           Some (_::l) -> l *)
+	    | Some _ -> []
+	    | None        -> error "true_imply_step" 
+	  in 
+	  let h0 = out_some cls in  
+	  (tclTHENS (cut_intro b)
+	     [(clear_clause cls);
+	      (tclTHEN (apply(VAR h0)) (one_constructor 1 []))]) gls
+      | _ -> anomaly "Inconsistent pattern-matching"
+  with PatternMatchingFailure -> error "true_imply_step"
+	  
 let dyck_true_imply_elim = compose (true_imply_step) in_some
 
 (* Chet's original algorithm 
@@ -1652,29 +1670,29 @@ let is_imp_term t =
 
 let tauto_of_cci_fmla gls cciterm = 
   let rec tradrec cciterm =
-    if matches gls cciterm and_pattern then
-      match dest_match gls cciterm and_pattern with
-	| [a;b] -> FAnd(tradrec a,tradrec b)
+    if pf_is_matching gls (and_pattern ()) cciterm then
+      match pf_matches gls (and_pattern ()) cciterm with
+	| [(1,a);(2,b)] -> FAnd(tradrec a,tradrec b)
 	| _ -> assert false
-    else if matches gls cciterm or_pattern then
-      match dest_match gls cciterm or_pattern with
-	| [a;b] -> FOr(tradrec a,tradrec b)
+    else if pf_is_matching gls (or_pattern ()) cciterm then
+      match pf_matches gls (or_pattern ()) cciterm with
+	| [(1,a);(2,b)] -> FOr(tradrec a,tradrec b)
 	| _ -> assert false
-    else if matches gls cciterm iff_pattern then
-      match dest_match gls cciterm iff_pattern with
-        | [a;b] -> FEqu(tradrec a,tradrec b)
+    else if pf_is_matching gls (iff_pattern ()) cciterm then
+      match pf_matches gls (iff_pattern ()) cciterm with
+        | [(1,a);(2,b)] -> FEqu(tradrec a,tradrec b)
 	| _ -> assert false
-    else if matches gls cciterm eq_pattern then
-      match dest_match gls cciterm eq_pattern with
-        | [a;b;c] -> FEq(FPred a,FPred b, FPred c)
+    else if pf_is_matching gls (eq_pattern ()) cciterm then
+      match pf_matches gls (eq_pattern ()) cciterm with
+        | [(1,a);(2,b);(3,c)] -> FEq(FPred a,FPred b, FPred c)
 	| _ -> assert false
-    else if matches gls cciterm not_pattern then
-      match dest_match gls cciterm not_pattern with
-        | [a] -> FNot(tradrec a)
+    else if pf_is_matching gls (not_pattern ()) cciterm then
+      match pf_matches gls (not_pattern ()) cciterm with
+        | [(1,a)] -> FNot(tradrec a)
 	| _ -> assert false
-    else if matches gls cciterm false_pattern then
+    else if pf_is_matching gls (false_pattern ()) cciterm then
       FFalse
-    else if matches gls cciterm true_pattern then
+    else if pf_is_matching gls (true_pattern ()) cciterm then
       FTrue
     else if is_imp_term cciterm then
       match cciterm with

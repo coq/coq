@@ -176,24 +176,28 @@ let find_constructor env sigma c =
 type leibniz_eq = {
   eq   : marked_term;
   ind  : marked_term;
-  rrec : marked_pattern option;
+  rrec : marked_term option;
   rect : marked_term option;
-  congr: marked_pattern;
-  sym  : marked_pattern }
+  congr: marked_term;
+  sym  : marked_term }
 
 let mmk = make_module_marker [ "Prelude"; "Logic_Type"; "Specif"; "Logic" ]
 
 (* Patterns *)
-let eq_pattern = put_pat mmk "(eq ? ? ?)"
-let not_pattern = put_pat mmk "(not ?)"
-let imp_False_pattern = put_pat mmk "? -> False"
+let eq_pattern_mark = put_pat mmk "(eq ?1 ?2 ?3)"
+let not_pattern_mark = put_pat mmk "(not ?)"
+let imp_False_pattern_mark = put_pat mmk "? -> False"
+
+let eq_pattern () = get_pat eq_pattern_mark
+let not_pattern () = get_pat not_pattern_mark
+let imp_False_pattern () = get_pat imp_False_pattern_mark
 
 let eq= { eq  = put_squel mmk "eq";
           ind = put_squel mmk "eq_ind" ;
-          rrec = Some (put_pat mmk "eq_rec");
+          rrec = Some (put_squel mmk "eq_rec");
           rect = Some (put_squel mmk "eq_rect");
-          congr = put_pat mmk "f_equal"  ;
-          sym  = put_pat mmk "sym_eq" }
+          congr = put_squel mmk "f_equal"  ;
+          sym  = put_squel mmk "sym_eq" }
 
 let build_eq eq = get_squel eq.eq
 let build_ind eq = get_squel eq.ind
@@ -202,23 +206,25 @@ let build_rect eq =
     | None -> assert false
     | Some sq -> get_squel sq
 	  
-let eqT_pattern = put_pat mmk "(eqT ? ? ?)"
+let eqT_pattern_mark = put_pat mmk "(eqT ?1 ?2 ?3)"
+let eqT_pattern () = get_pat eqT_pattern_mark
  
 let eqT= { eq  = put_squel mmk "eqT";
            ind = put_squel mmk "eqT_ind" ;
            rrec = None;
            rect = None;
-           congr = put_pat mmk "congr_eqT"  ;
-           sym  = put_pat mmk "sym_eqT" }
+           congr = put_squel mmk "congr_eqT"  ;
+           sym  = put_squel mmk "sym_eqT" }
 
-let idT_pattern = put_pat mmk "(identityT ? ? ?)"
+let idT_pattern_mark = put_pat mmk "(identityT ?1 ?2 ?3)"
+let idT_pattern () = get_pat idT_pattern_mark
 
 let idT = { eq  = put_squel mmk "identityT";
             ind = put_squel mmk "identityT_ind" ;
-            rrec = Some (put_pat mmk "identityT_rec")  ;
+            rrec = Some (put_squel mmk "identityT_rec")  ;
             rect = Some (put_squel mmk "identityT_rect");
-            congr = put_pat mmk "congr_idT"  ;
-            sym  = put_pat mmk "sym_idT" }
+            congr = put_squel mmk "congr_idT"  ;
+            sym  = put_squel mmk "sym_idT" }
 
 (* List of constructions depending of the initial state *)
 
@@ -238,9 +244,19 @@ let build_UnitT () = get_squel squel_UnitT
 let build_IT ()    = get_squel squel_IT
 let build_I ()     = get_squel squel_I
 
-let pat_False  = put_pat mmk "False"
-let pat_EmptyT = put_pat mmk "EmptyT"
+let pat_False_mark  = put_pat mmk "False"
+let pat_False () = get_pat pat_False_mark
+let pat_EmptyT_mark = put_pat mmk "EmptyT"
+let pat_EmptyT () = get_pat pat_EmptyT_mark
+
 let notT_pattern = put_pat mmk "(notT ?)"
+
+(* Destructuring patterns *)
+let match_eq eqn eq_pat =
+  match matches eqn eq_pat with
+    | [(1,t);(2,x);(3,y)] -> (t,x,y)
+    | _ -> anomaly "match_eq: an eq pattern should match 3 terms"
+
 
 let rec hd_of_prod prod =
   match strip_outer_cast prod with
@@ -274,14 +290,14 @@ let necessary_elimination sort_arity sort =
         [< 'sTR "no primitive equality on proofs" >]
 
 let find_eq_pattern aritysort sort = 
-(*  let mt =*)
+  let mt =
     match necessary_elimination aritysort sort with
       | Set_Type       ->  eq.eq
       | Type_Type      ->  idT.eq
       | Set_SetorProp  ->  eq.eq
       | Type_SetorProp ->  eqT.eq
-(*  in 
-  get_pat mt*)
+  in 
+  get_squel mt
 
 (* [find_positions t1 t2]
 
@@ -325,14 +341,15 @@ let find_positions env sigma t1 t2 =
     match (whd_betadeltaiota_stack env sigma t1 [],
            whd_betadeltaiota_stack env sigma t2 []) with
   	
-      | ((DOPN(MutConstruct _ as oper1,_) as hd1,args1),
-	 (DOPN(MutConstruct _ as oper2,_) as hd2,args2)) ->
+      | ((DOPN(MutConstruct sp1 as oper1,_) as hd1,args1),
+	 (DOPN(MutConstruct sp2 as oper2,_) as hd2,args2)) ->
         (* both sides are constructors, so either we descend, or we can
            discriminate here. *)
-	  if oper1 = oper2 then
-            List.flatten (list_map2_i (fun i arg1 arg2 ->
-					 findrec ((oper1,i)::posn) arg1 arg2)
-			    0 args1 args2)
+	  if sp1 = sp2 then
+            List.flatten
+	      (list_map2_i
+		 (fun i arg1 arg2 -> findrec ((oper1,i)::posn) arg1 arg2)
+		 0 args1 args2)
 	  else
 	    raise (DiscrFound(List.rev posn,oper1,oper2))
 
@@ -351,8 +368,8 @@ let find_positions env sigma t1 t2 =
 	  in 
 	  (try 
 	     Inr(findrec [] t1 t2)
-	   with DiscrFound (x_0,x_1,x_2) -> 
-	     Inl (x_0,x_1,x_2))
+	   with DiscrFound (path,c1,c2) -> 
+	     Inl (path,c1,c2))
 
 let discriminable env sigma t1 t2 =
   match find_positions env sigma t1 t2 with
@@ -526,24 +543,19 @@ let rec build_discriminator sigma env dirn c sort = function
 ,DOP0(Sort(Prop Null))))
   | _ -> assert false
 
-let dest_somatch_eq eqn eq_pat =
-  match matches eqn eq_pat with
-    | [t;x;y] -> (t,x,y)
-    | _ -> anomaly "dest_somatch_eq: an eq pattern should match 3 terms"
-	  
 let find_eq_data_decompose eqn =
-  if (matches eqn eq_pattern) then
-    (eq, dest_somatch_eq eqn eq_pattern)
-  else if (somatches eqn eqT_pattern) then
-    (eqT, dest_somatch_eq eqn eqT_pattern)
-  else if (somatches eqn idT_pattern) then
-    (idT, dest_somatch_eq eqn idT_pattern)
+  if (is_matching (eq_pattern ()) eqn) then
+    (eq, match_eq (eq_pattern ()) eqn)
+  else if (is_matching (eqT_pattern ()) eqn) then
+    (eqT, match_eq (eqT_pattern ()) eqn)
+  else if (is_matching (idT_pattern ()) eqn) then
+    (idT, match_eq (idT_pattern ()) eqn)
   else
     errorlabstrm  "find_eq_data_decompose" [< >]
 
 let gen_absurdity id gl =
-  if   (matches gl (clause_type (Some id) gl) pat_False) 
-    or (matches gl (clause_type  (Some id) gl) pat_EmptyT)
+  if   (pf_is_matching gl (pat_False ()) (clause_type (Some id) gl)) 
+    or (pf_is_matching gl (pat_EmptyT ()) (clause_type  (Some id) gl))
   then
     simplest_elim (VAR id) gl
   else
@@ -636,9 +648,9 @@ let discrOnLastHyp gls =
 let discrClause cls gls =
   match cls with
     | None ->
-    	if somatches (pf_concl gls) not_pattern then
+    	if is_matching (not_pattern ()) (pf_concl gls) then
           (tclTHEN (tclTHEN hnf_in_concl intro) discrOnLastHyp) gls
-    	else if somatches (pf_concl gls) imp_False_pattern then
+    	else if is_matching (imp_False_pattern ()) (pf_concl gls)  then
 	  (tclTHEN intro discrOnLastHyp) gls
 	else 
 	  errorlabstrm "DiscrClause" (insatisfied_prec_message cls)
@@ -688,16 +700,16 @@ let projT2_term = put_squel mmk "projT2"
 let sigT_rect_term = put_squel mmk "sigT_rect"
 
 let build_sigma_prop () =
-  (get_squel projS1_term,
-   get_squel projS2_term,
-   get_squel sigS_rec_term,
+  (fst (destConst (get_squel projS1_term)),
+   fst (destConst (get_squel projS2_term)),
+   fst (destConst (get_squel sigS_rec_term)),
    get_squel existS_term,
    get_squel sigS_term)
 
 let build_sigma_type () =
-  (get_squel projT1_term,
-   get_squel projT2_term,
-   get_squel sigT_rect_term,
+  (fst (destConst (get_squel projT1_term)),
+   fst (destConst (get_squel projT2_term)),
+   fst (destConst (get_squel sigT_rect_term)),
    get_squel existT_term,
    get_squel sigT_term)
 
@@ -774,24 +786,40 @@ let minimal_free_rels env sigma (c,cty) =
    dependencies are of the same sort
  *)
 
-let sig_clausale_forme env sigma sort_of_ty siglen ty =
+let sig_clausale_forme env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
   let (_,_,_,exist_term,_) = find_sigma_data sort_of_ty in 
   let rec sigrec_clausale_forme siglen ty =
     if siglen = 0 then
-      let mv = new_meta() in
-      (DOP0(Meta mv),(mv,ty),[(mv,ty)])
+      (* We obtain the components dependent in dFLT by matching *)
+      let headpat = nf_betadeltaiota env sigma ty in
+      let nf_ty = nf_betadeltaiota env sigma dFLTty in
+      let bindings =
+	list_try_find
+	  (fun ty -> 
+             try 
+            (* Test inutile car somatch ne prend pas en compte les univers *) 
+	       if is_Type headpat & is_Type ty then
+		 []
+	       else
+		 matches (pattern_of_constr headpat) ty 
+             with e when catchable_exception e -> failwith "caught")
+	  [dFLTty; nf_ty]
+      in
+      (bindings,dFLT)
     else
       let (a,p) = match whd_stack env sigma (whd_beta env sigma ty) [] with
 	| (_,[a;p]) -> (a,p)
  	| _ -> anomaly "sig_clausale_forme: should be a sigma type" in
       let mv = new_meta() in
       let rty = applist(p,[DOP0(Meta mv)]) in
-      let (rpat,headinfo,mvenv) = sigrec_clausale_forme (siglen-1) rty in
-      (applist(exist_term,[a;p;DOP0(Meta mv);rpat]),
-       headinfo,
-       (mv,a)::mvenv)
+      let (bindings,tuple_tail) = sigrec_clausale_forme (siglen-1) rty in
+      let w =
+	try List.assoc mv bindings
+	with Not_found ->
+	  anomaly "Not enough components to build the dependent tuple" in
+      (bindings,applist(exist_term,[a;p;w;tuple_tail]))
   in
-  sigrec_clausale_forme siglen ty 
+  snd (sigrec_clausale_forme siglen ty)
 
 (* [make_iterated_tuple sigma env DFLT c]
 
@@ -832,25 +860,9 @@ let make_iterated_tuple sigma env (dFLT,dFLTty) (c,cty) =
       sorted_rels 
   in
   if not(closed0 tuplety) then failwith "make_iterated_tuple";
-  let (tuplepat,(headmv,headpat),mvenv) = 
+  let dfltval = 
     sig_clausale_forme env sigma sort_of_cty (List.length sorted_rels) 
-      tuplety 
-  in
-  let headpat = nf_betadeltaiota env sigma headpat in
-  let nf_ty = nf_betadeltaiota env sigma dFLTty in
-  let dfltval =
-    list_try_find 
-      (fun ty -> 
-         try 
-	   let binding = 
-	     if is_Type headpat & is_Type ty then
-	       []
-	     else
-	       somatch None headpat ty 
-	   in
-           instance ((headmv,dFLT)::binding) tuplepat
-         with e when catchable_exception e -> failwith "caught")
-      [dFLTty; nf_ty] 
+      tuplety (dFLT,dFLTty)
   in
   (tuple,tuplety,dfltval)
 
@@ -927,7 +939,7 @@ let inj id gls =
 	    [<'sTR "Failed to decompose the equality">];
 	tclMAP 
 	  (fun (injfun,resty) ->
-	     let pf = applist(get_pat eq.congr,
+	     let pf = applist(get_squel eq.congr,
 			      [t;resty;injfun;
 			       try_delta_expand env sigma t1;
 			       try_delta_expand env sigma t2;
@@ -941,7 +953,7 @@ let inj id gls =
 let injClause cls gls =
   match cls with
     | None ->
-    	if somatches (pf_concl gls) not_pattern then
+    	if is_matching (not_pattern ()) (pf_concl gls) then
           (tclTHEN (tclTHEN hnf_in_concl intro)
              (onLastHyp (compose inj out_some))) gls
     	else
@@ -1004,7 +1016,7 @@ let decompEqThen ntac id gls =
               [<'sTR "Discriminate failed to decompose the equality">];
 	  ((tclTHEN
 	      (tclMAP (fun (injfun,resty) ->
-			 let pf = applist(get_pat lbeq.congr,
+			 let pf = applist(get_squel lbeq.congr,
 					  [t;resty;injfun;t1;t2;
 					   VAR id]) in
 			 let ty = pf_type_of gls pf in
@@ -1020,7 +1032,7 @@ let decompEq = decompEqThen (fun x -> tclIDTAC)
 let dEqThen ntac cls gls =
   match cls with
     | None ->
-    	if somatches (pf_concl gls) not_pattern then
+    	if is_matching (not_pattern ()) (pf_concl gls) then
 	  (tclTHEN hnf_in_concl
 	     (tclTHEN intro
          	(onLastHyp (compose (decompEqThen ntac) out_some)))) gls
@@ -1057,7 +1069,7 @@ let swap_equands gls eqn =
       find_eq_data_decompose eqn
     with _ -> errorlabstrm "swap_equamds" (rewrite_msg None)
   in 
-  applist(get_pat lbeq.eq,[t;e2;e1])
+  applist(get_squel lbeq.eq,[t;e2;e1])
 
 let swapEquandsInConcl gls =
   let (lbeq,(t,e1,e2)) =
@@ -1065,7 +1077,7 @@ let swapEquandsInConcl gls =
       find_eq_data_decompose (pf_concl gls)
     with _-> errorlabstrm "SwapEquandsInConcl" (rewrite_msg None) 
   in
-  let sym_equal = get_pat lbeq.sym in
+  let sym_equal = get_squel lbeq.sym in
   refine (applist(sym_equal,[t;e2;e1;DOP0(Meta(new_meta()))])) gls
 
 let swapEquandsInHyp id gls =
@@ -1080,15 +1092,15 @@ let swapEquandsInHyp id gls =
 
 let find_elim  sort_of_gl  lbeq =
   match  sort_of_gl  with
-    | DOP0(Sort(Prop Null))  (* Prop *)  ->  (get_pat lbeq.ind, false)  
+    | DOP0(Sort(Prop Null))  (* Prop *)  ->  (get_squel lbeq.ind, false)  
     | DOP0(Sort(Prop Pos))   (* Set *)   ->  
 	(match lbeq.rrec with
-           | Some eq_rec -> (get_pat eq_rec, false) 
+           | Some eq_rec -> (get_squel eq_rec, false) 
 	   | None -> errorlabstrm "find_elim"
 		 [< 'sTR "this type of elimination is not allowed">])
     | _ (* Type *) -> 
         (match lbeq.rect with
-           | Some eq_rect -> (get_pat eq_rect, true) 
+           | Some eq_rect -> (get_squel eq_rect, true) 
            | None -> errorlabstrm "find_elim"
 		 [< 'sTR "this type of elimination is not allowed">])
 
@@ -1099,7 +1111,7 @@ let find_elim  sort_of_gl  lbeq =
 let build_dependent_rewrite_predicate (t,t1,t2) body lbeq gls =
   let e = pf_get_new_id  (id_of_string "e") gls in 
   let h = pf_get_new_id  (id_of_string "HH") gls in 
-  let eq_term = get_pat lbeq.eq in
+  let eq_term = get_squel lbeq.eq in
   (mkNamedLambda e t 
      (mkNamedLambda h (applist (eq_term, [t;t1;(Rel 1)])) 
         (lift 1 body))) 
@@ -1156,26 +1168,27 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
  *)
 
 (* squeletons *)
-let comp_carS_squeleton = put_pat mmk "<<x>>(projS1 ? ? (?)@[x])"
-let comp_cdrS_squeleton = put_pat mmk "<<x>>(projS2 ? ? (?)@[x])"
+let comp_carS_squeleton = put_squel mmk "<<x>>(projS1 ? ? (?)@[x])"
+let comp_cdrS_squeleton = put_squel mmk "<<x>>(projS2 ? ? (?)@[x])"
 
-let comp_carT_squeleton = put_pat mmk "<<x>>(projT1 ? ? (?)@[x])"
-let comp_cdrT_squeleton = put_pat mmk "<<x>>(projT2 ? ? (?)@[x])"
+let comp_carT_squeleton = put_squel mmk "<<x>>(projT1 ? ? (?)@[x])"
+let comp_cdrT_squeleton = put_squel mmk "<<x>>(projT2 ? ? (?)@[x])"
 
-let dest_somatch_sigma ex ex_pat =
-  match dest_somatch ex ex_pat with
-    | [a;p;car;cdr] -> (a,p,car,cdr)
-    | _ -> anomaly "dest_somatch_sigma: a sigma pattern should match 4 terms"
+let match_sigma ex ex_pat =
+  match matches (get_pat ex_pat) ex with
+    | [(1,a);(2,p);(3,car);(4,cdr)] -> (a,p,car,cdr)
+    | _ ->
+	anomaly "match_sigma: a successful sigma pattern should match 4 terms"
 
 let find_sigma_data_decompose ex =
   try 
     (comp_carS_squeleton, comp_cdrS_squeleton,
-     dest_somatch_sigma ex existS_pattern)
-  with _ -> 
+     match_sigma ex existS_pattern)
+  with PatternMatchingFailure -> 
     (try 
        (comp_carT_squeleton,comp_cdrT_squeleton,
-        dest_somatch_sigma ex existT_pattern)   
-     with _ -> 
+        match_sigma ex existT_pattern)   
+     with PatternMatchingFailure -> 
        errorlabstrm "find_sigma_data_decompose" [< >])
 
 let decomp_tuple_term env = 
@@ -1194,7 +1207,7 @@ let decomp_tuple_term env =
 let subst_tuple_term env sigma dep_pair b =
   let sort_of_dep_pair =
     type_of env sigma (type_of env sigma dep_pair) in
-  let (proj1_term,proj2_term,sig_elim_term,_,_) =
+  let (proj1_sp,proj2_sp,sig_elim_sp,_,_) =
     find_sigma_data sort_of_dep_pair in 
   let e_list = decomp_tuple_term env dep_pair in
   let abst_B =
@@ -1206,9 +1219,6 @@ let subst_tuple_term env sigma dep_pair b =
   in
   let app_B = 
     applist(abst_B,(List.map (fun (_,_,c) -> (sAPP c (Rel 1))) e_list)) in
-  let (proj1_sp,_) = destConst (get_pat proj1_term)
-  and (proj2_sp,_) = destConst (get_pat proj2_term)
-  and (sig_elim_sp,_) = destConst (get_pat sig_elim_term) in
   strong (fun _ _ -> 
 	    compose (whd_betaiota env sigma)
 	      (whd_const [proj1_sp;proj2_sp;sig_elim_sp] env sigma)) 
