@@ -3,14 +3,14 @@ Changes from V7.3.1 to ????
 
 Symbolic notations
 
-- precedence of + (sum) and * (prod) moved to 7 (like \/) and 6 (like /\)
-- introduction of a notion of scope gathering notations in a consistent set;
+- Introduction of a notion of scope gathering notations in a consistent set;
   set a notation sets has been developped for nat, Z and R
 
 Library
 
-- Lemmas in Compare_dec.v (le_lt_dec, ...) are now transparent. This
-  may be source of incompatibilities.
+- Lemmas in Set from Compare_dec.v (le_lt_dec, ...) and Wf_nat.v
+  (lt_wf_rec, ...) are now transparent. This may be source of
+  incompatibilities.
 
 Language
 
