@@ -106,9 +106,9 @@ GEXTEND Gram
       | OPT[IDENT "Mutual"]; f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
           VernacInductive (f,indl)
-      | IDENT "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
+      | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           VernacFixpoint recs
-      | IDENT "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
+      | "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
           VernacCoFixpoint corecs
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l ] ]
   ;
@@ -124,23 +124,23 @@ GEXTEND Gram
     ] ]
   ;
   thm_token:
-    [ [ IDENT "Theorem" -> Theorem
+    [ [ "Theorem" -> Theorem
       | IDENT "Lemma" -> Lemma
       | IDENT "Fact" -> Fact
       | IDENT "Remark" -> Remark ] ]
   ;
   def_token:
-    [ [ IDENT "Definition" -> (fun _ _ -> ()), Global, GDefinition
+    [ [ "Definition" -> (fun _ _ -> ()), Global, GDefinition
       | IDENT "Local" -> (fun _ _ -> ()), Local, LDefinition
       | IDENT "SubClass"  -> Class.add_subclass_hook, Global, GCoercion
       | IDENT "Local"; IDENT "SubClass"  ->
           Class.add_subclass_hook, Local, LCoercion ] ] 
   ;
   assumption_token:
-    [ [ IDENT "Hypothesis" -> (Local, Logical)
-      | IDENT "Variable" -> (Local, Definitional)
-      | IDENT "Axiom" -> (Global, Logical)
-      | IDENT "Parameter" -> (Global, Definitional) ] ]
+    [ [ "Hypothesis" -> (Local, Logical)
+      | "Variable" -> (Local, Definitional)
+      | "Axiom" -> (Global, Logical)
+      | "Parameter" -> (Global, Definitional) ] ]
   ;
   assumptions_token:
     [ [ IDENT "Hypotheses" -> (Local, Logical)
@@ -148,8 +148,8 @@ GEXTEND Gram
       | IDENT "Parameters" -> (Global, Definitional) ] ]
   ;
   finite_token:
-    [ [ IDENT "Inductive" -> true
-      | IDENT "CoInductive" -> false ] ]
+    [ [ "Inductive" -> true
+      | "CoInductive" -> false ] ]
   ;
   record_token:
     [ [ IDENT "Record" -> () | IDENT "Structure" -> () ] ]
