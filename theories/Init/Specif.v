@@ -14,6 +14,7 @@
 
 Require Export Logic.
 Require LogicSyntax.
+Require Datatypes.
 
 Section Subsets.
 
@@ -166,7 +167,23 @@ Syntactic Definition Value := (value ?).
 (* Self realizing propositions *)
 (*******************************)
 
-Axiom False_rec : (P:Set)False->P.
+(* [False -> C] can be proved for [C:Set] using informative 
+   elimination for equality  
+
+   [Axiom False_rec : (P:Set)False->P.]
+
+*)
+
+Definition Q:=[P:Set][b:bool]if b then unit else P.
+
+Lemma False_rec : (P:Set)False->P.
+Intros.
+Change (Q P false).
+Cut true=false.
+Intro H1; Case H1.
+Exact tt.
+Contradiction.
+Save.
 
 Lemma False_rect: (C:Type)False->C.
 Proof.
