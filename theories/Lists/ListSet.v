@@ -27,7 +27,7 @@ Section first_definitions.
 
   Definition set := (list A).
 
-  Definition empty_set := (nil A).
+  Definition empty_set := (nil ?) : set.
 
   Fixpoint set_add [a:A; x:set] : set :=
     Cases x of
