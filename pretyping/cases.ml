@@ -870,6 +870,12 @@ let abstract_predicate env sigma indf = function
 	else sign in
       (dep, it_mkLambda_or_LetIn_name env (extract_predicate pred) sign')
 
+let known_dependent = function
+  | None -> false
+  | Some (PrLetIn ((_,copt),_)) -> copt <> None
+  | Some (PrProd _ | PrCcl _ | PrNotInd _) ->
+      anomaly "known_dependent: can only be used when patterns remain"
+
 (*****************************************************************************)
 (* pred = (x1:I1(args1))...(xn:In(argsn))P types the following problem:      *)
 (*                                                                           *)
@@ -994,7 +1000,9 @@ let shift_problem current pb =
 let build_branch current pb eqns const_info =
   (* We remember that we descend through a constructor *)
   let partialci =
-    if Array.length const_info.cs_concl_realargs = 0 then
+    if Array.length const_info.cs_concl_realargs = 0 &
+      not (known_dependent pb.pred)
+    then
       NonDepAlias current
     else
       let params = const_info.cs_params in
@@ -1038,8 +1046,7 @@ let build_branch current pb eqns const_info =
 
   { pb with
       tomatch = topushs@updated_old_tomatch;
-      pred =
-        option_app (specialize_predicate_match tomatchs const_info) pb.pred;
+      pred = option_app (specialize_predicate_match tomatchs const_info) pb.pred;
       history = history;
       mat = submat }
 
@@ -1168,7 +1175,7 @@ let is_dependent_indtype = function
   | NotInd _ -> false
   | IsInd (_, IndType(_,realargs)) -> List.length realargs <> 0
 
-let prepare_initial_alias_eqn tomatchl eqn =
+let prepare_initial_alias_eqn isdep tomatchl eqn =
   let (subst, pats) = 
   List.fold_right2
     (fun pat (tm,tmtyp) (subst, stripped_pats) ->
@@ -1176,15 +1183,15 @@ let prepare_initial_alias_eqn tomatchl eqn =
 	 | Anonymous -> (subst, pat::stripped_pats)
 	 | Name idpat as na ->
 	     match kind_of_term tm with
-	       | IsRel n when not (is_dependent_indtype tmtyp) 
+	       | IsRel n when not (is_dependent_indtype tmtyp) & not isdep
 		   -> (n, idpat)::subst, (unalias_pat pat::stripped_pats)
 	       | _ -> (subst, pat::stripped_pats))
     eqn.patterns tomatchl ([], []) in
   let env = rename_env subst eqn.rhs.rhs_env in
   { eqn with patterns = pats; rhs = { eqn.rhs with rhs_env = env } }
 
-let prepare_initial_aliases tomatchl mat =
-  List.map (prepare_initial_alias_eqn tomatchl) mat
+let prepare_initial_aliases isdep tomatchl mat =
+  List.map (prepare_initial_alias_eqn isdep tomatchl) mat
 
 (*
 let prepare_initial_alias lpat tomatchl rhs =
@@ -1407,12 +1414,12 @@ let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
   (* constructors found in patterns *)
   let tomatchs = coerce_to_indtype typing_fun isevars env matx tomatchl in
 
-  (* We deal with initial aliases *)
-  let matx = prepare_initial_aliases tomatchs matx in 
-
   (* We build the elimination predicate if any and check its consistency *)
   (* with the type of arguments to match *)
   let pred = prepare_predicate typing_fun isevars env tomatchs predopt in
+
+  (* We deal with initial aliases *)
+  let matx = prepare_initial_aliases (known_dependent pred) tomatchs matx in 
 
   (* We push the initial terms to match and push their alias to rhs' envs *)
   (* names of aliases will be recovered from patterns (hence Anonymous here) *)
