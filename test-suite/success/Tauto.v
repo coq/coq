@@ -179,6 +179,13 @@ Proof.
   Tauto.
 Save.
 
+(* sometimes, the behaviour of Tauto depends on the order of the hyps *)
+Lemma old_bug3bis:
+  ~((A->B)->B)->((~B\/~B)/\(~B\/~A)/\(B\/~B)/\(B\/~A)->False)->False.
+Proof.
+  Tauto.
+Save.
+
 (* A bug found by Freek Wiedijk <freek@cs.kun.nl> *)
 Lemma new_bug:
  ((A<->B)->(B<->C)) ->
@@ -188,6 +195,7 @@ Lemma new_bug:
 Proof.
   Tauto.
 Save.
+
 
 (*  A private club has the following rules :
  *
@@ -229,3 +237,4 @@ Lemma intu1:((A:Prop)A\/~A)->(x,y:nat)(x=y\/~x=y).
 Proof.
   Intuition.
 Save.
+
