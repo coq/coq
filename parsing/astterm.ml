@@ -604,54 +604,6 @@ let interp_casted_constr1 sigma env lvar lmeta com typ =
   and rtype=fun lst -> retype_list sigma env lst in 
   ise_resolve_casted_gen true sigma env (rtype lvar) (rtype lmeta) typ c;;
 
-(*
-let dbize_fw  sigma env com = dbize FW sigma env com
-
-let raw_fconstr_of_com sigma env com = dbize_fw sigma (unitize_env (context env)) com
-let raw_constr_of_compattern sigma env com = 
-  dbize_cci sigma (unitize_env env) com
-
-let fconstr_of_com1 is_ass sigma env com = 
-  let c = raw_fconstr_of_com sigma env com in
-  try 
-    ise_resolve1 is_ass sigma env c
-  with e -> 
-    Stdpp.raise_with_loc (Ast.loc com) e
- 
-let fconstr_of_com sigma hyps com =
-  fconstr_of_com1 false sigma hyps com 
-
-*)
-(* Typing with Trad, and re-checking with Mach *)
-(* Should be done in two passes by library commands ...
-let fconstruct_type sigma sign com =
-  let c = constr_of_com1 true sigma sign com in 
-  Mach.fexecute_type sigma sign c
-
-let fconstruct sigma sign com =
-  let c = constr_of_com1 false sigma sign com in 
-  Mach.fexecute sigma sign c
-
-let infconstruct_type sigma (sign,fsign) cmd =
-  let c = constr_of_com1 true sigma sign cmd in 
-  Mach.infexecute_type sigma (sign,fsign) c
-
-let infconstruct sigma (sign,fsign) cmd =
-  let c = constr_of_com1 false sigma sign cmd in 
-  Mach.infexecute sigma (sign,fsign) c
-
-(* Type-checks a term with the current universe constraints, the resulting
-   constraints are dropped. *)
-
-let univ_sp = make_path ["univ"] (id_of_string "dummy") OBJ
-
-let fconstruct_with_univ sigma sign com =
-  let c = constr_of_com sigma sign com in
-  let (_,j) = with_universes (Mach.fexecute sigma sign)
-		(univ_sp, Constraintab.current_constraints(), c) in 
-  j
-*)
-
 (* To process patterns, we need a translation from AST to term
    without typing at all. *)
 
