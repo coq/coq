@@ -565,14 +565,16 @@ let minimal_free_rels env sigma (c,cty) =
 
  *)
 
-let sig_clausal_form env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
+let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
   let { intro = exist_term } = find_sigma_data sort_of_ty in 
   let isevars = ref (Evd.create_evar_defs sigma) in
   let rec sigrec_clausal_form siglen p_i =
     if siglen = 0 then
-      if Evarconv.e_conv env isevars p_i dFLTty then
+      (* is the default value typable with the expected type *)
+      let dflt_typ = type_of env sigma dflt in
+      if Evarconv.e_cumul env isevars dflt_typ p_i then
 	(* the_conv_x had a side-effect on isevars *)
-	dFLT
+	dflt
       else
 	error "Cannot solve an unification problem"
     else
@@ -662,10 +664,8 @@ let make_iterated_tuple env sigma dflt (z,zty) =
   let dfltval = sig_clausal_form env sigma sort_of_zty n tuplety dflt in
   (tuple,tuplety,dfltval)
 
-let rec build_injrec sigma env (t1,t2) c = function
-  | [] ->
-      make_iterated_tuple env sigma (t1,type_of env sigma t1)
-        (c,type_of env sigma c)
+let rec build_injrec sigma env dflt c = function
+  | [] -> make_iterated_tuple env sigma dflt (c,type_of env sigma c)
   | ((sp,cnum),argnum)::l ->
       let cty = type_of env sigma c in
       let (ity,_) = find_mrectype env sigma cty in
@@ -674,13 +674,13 @@ let rec build_injrec sigma env (t1,t2) c = function
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
       let newc = mkRel(cnum_nlams-(argnum-nparams)) in
       let (subval,tuplety,dfltval) =
-      	build_injrec sigma cnum_env (t1,t2) newc l
+      	build_injrec sigma cnum_env dflt newc l
       in
       (kont subval (dfltval,tuplety),
        tuplety,dfltval)
 
-let build_injector sigma env (t1,t2) c cpath =
-  let (injcode,resty,_) = build_injrec sigma env (t1,t2) c cpath in
+let build_injector sigma env dflt c cpath =
+  let (injcode,resty,_) = build_injrec sigma env dflt c cpath in
   (injcode,resty)
 
 let try_delta_expand env sigma t =
@@ -717,7 +717,8 @@ let injEq (eq,(t,t1,t2)) id gls =
 	    (fun (cpath,t1_0,t2_0) ->
 	      try 
 		let (injbody,resty) =
-		  build_injector sigma e_env (t1_0,t2_0) (mkVar e) cpath in
+                  (* take arbitrarily t1_0 as the injector default value *)
+		  build_injector sigma e_env t1_0 (mkVar e) cpath in
 		let injfun = mkNamedLambda e t injbody in
 		let _ = type_of env sigma injfun in (injfun,resty)
 	      with e when catchable_exception e ->
@@ -781,7 +782,8 @@ let decompEqThen ntac (lbeq,(t,t1,t2)) id gls =
 	    map_succeed
 	      (fun (cpath,t1_0,t2_0) ->
 		 let (injbody,resty) =
-		   build_injector sigma e_env (t1_0,t2_0) (mkVar e) cpath in
+                  (* take arbitrarily t1_0 as the injector default value *)
+		   build_injector sigma e_env t1_0 (mkVar e) cpath in
 		 let injfun = mkNamedLambda e t injbody in
 		 try 
 		   let _ = type_of env sigma injfun in (injfun,resty)
