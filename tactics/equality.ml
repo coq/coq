@@ -1174,7 +1174,7 @@ let eq_rhs eq =
 
 let subst_one x gl = 
   let hyps = pf_hyps gl in
-  let (_,xval,_) = Sign.lookup_named x hyps in
+  let (_,xval,_) = pf_get_hyp gl x in
   (* If x has a body, simply replace x with body and clear x *)
   if xval <> None then tclTHEN (unfold_body x) (clear [x]) gl else
   (* x is a variable: *)
