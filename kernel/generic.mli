@@ -7,18 +7,21 @@ open Names
 (*i*)
 
 (* \label{generic_terms} A generic notion of terms with binders,
-   over any kind of operators. *)
+   over any kind of operators. 
+   [DLAM] is a de Bruijn binder on one term, and [DLAMV] on many terms.
+   [VAR] is used for named variables and [Rel] for variables as
+   de Bruijn indices. *)
 
 type 'oper term =
-  | DOP0 of 'oper                            (* atomic terms *)
-  | DOP1 of 'oper * 'oper term               (* operator of arity 1 *)
-  | DOP2 of 'oper * 'oper term * 'oper term  (* operator of arity 2 *)
-  | DOPN of 'oper * 'oper term array         (* operator of variadic arity *)
-  | DOPL of 'oper * 'oper term list          (* operator of variadic arity *)
-  | DLAM of name * 'oper term                (* deBruijn binder on one term*)
-  | DLAMV of name * 'oper term array         (* deBruijn binder on many terms*)
-  | VAR of identifier                        (* named variable *)
-  | Rel of int                               (* variable as deBruijn index *)
+  | DOP0 of 'oper
+  | DOP1 of 'oper * 'oper term
+  | DOP2 of 'oper * 'oper term * 'oper term
+  | DOPN of 'oper * 'oper term array
+  | DOPL of 'oper * 'oper term list
+  | DLAM of name * 'oper term
+  | DLAMV of name * 'oper term array
+  | VAR of identifier
+  | Rel of int
 
 val isRel  : 'a term -> bool
 val isVAR  : 'a term -> bool
