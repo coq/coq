@@ -154,7 +154,7 @@ and ct_COMMAND =
   | CT_unsethyp
   | CT_unsetundo
   | CT_user_vernac of ct_ID * ct_VARG_LIST
-  | CT_variable of ct_VAR * ct_BINDER_LIST
+  | CT_variable of ct_VAR * ct_BINDER_NE_LIST
   | CT_write_module of ct_ID * ct_STRING_OPT
 and ct_COMMAND_LIST =
     CT_command_list of ct_COMMAND * ct_COMMAND list
@@ -226,6 +226,7 @@ and ct_FIX_TAC_LIST =
 and ct_FORMULA =
     CT_coerce_BINARY_to_FORMULA of ct_BINARY
   | CT_coerce_ID_to_FORMULA of ct_ID
+  | CT_coerce_NUM_to_FORMULA of ct_NUM
   | CT_coerce_SORT_TYPE_to_FORMULA of ct_SORT_TYPE
   | CT_coerce_TYPED_FORMULA_to_FORMULA of ct_TYPED_FORMULA
   | CT_appc of ct_FORMULA * ct_FORMULA_NE_LIST
@@ -238,7 +239,6 @@ and ct_FORMULA =
   | CT_fixc of ct_ID * ct_FIX_BINDER_LIST
   | CT_if of ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA * ct_FORMULA
   | CT_inductive_let of ct_FORMULA_OPT * ct_ID_OPT_NE_LIST * ct_FORMULA * ct_FORMULA
-  | CT_int_encapsulator of string
   | CT_lambdac of ct_BINDER_NE_LIST * ct_FORMULA
   | CT_letin of ct_DEF * ct_FORMULA
   | CT_notation of ct_STRING * ct_FORMULA_LIST
@@ -362,8 +362,13 @@ and ct_MATCHED_FORMULA_NE_LIST =
     CT_matched_formula_ne_list of ct_MATCHED_FORMULA * ct_MATCHED_FORMULA list
 and ct_MATCH_PATTERN =
     CT_coerce_ID_OPT_to_MATCH_PATTERN of ct_ID_OPT
+  | CT_coerce_NUM_to_MATCH_PATTERN of ct_NUM
   | CT_pattern_app of ct_MATCH_PATTERN * ct_MATCH_PATTERN_NE_LIST
   | CT_pattern_as of ct_MATCH_PATTERN * ct_ID_OPT
+  | CT_pattern_delimitors of ct_NUM_TYPE * ct_MATCH_PATTERN
+  | CT_pattern_notation of ct_STRING * ct_MATCH_PATTERN_LIST
+and ct_MATCH_PATTERN_LIST =
+    CT_match_pattern_list of ct_MATCH_PATTERN list
 and ct_MATCH_PATTERN_NE_LIST =
     CT_match_pattern_ne_list of ct_MATCH_PATTERN * ct_MATCH_PATTERN list
 and ct_MATCH_TAC_RULE =
@@ -376,6 +381,8 @@ and ct_NATURAL_FEATURE =
   | CT_nat_transparent
 and ct_NONE =
     CT_none
+and ct_NUM =
+    CT_int_encapsulator of string
 and ct_NUM_TYPE =
     CT_num_type of string
 and ct_OMEGA_FEATURE =

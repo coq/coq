@@ -263,9 +263,15 @@ let rec xlate_match_pattern =
     | CPatAlias  (_,  pattern, id) ->
      CT_pattern_as
       (xlate_match_pattern pattern, CT_coerce_ID_to_ID_OPT (xlate_ident id))
-    | CPatDelimiters(_, _, _) -> xlate_error "CPatDelimitors"
-    | CPatNumeral(_,_) -> xlate_error "CPatNumeral"
-    | CPatNotation _ -> xlate_error "CPatNotation";;
+    | CPatDelimiters(_, key, p) -> 
+	CT_pattern_delimitors(CT_num_type key, xlate_match_pattern p)
+    | CPatNumeral(_,n) ->
+ 	CT_coerce_NUM_to_MATCH_PATTERN
+	  (CT_int_encapsulator(Bignat.bigint_to_string n))
+    | CPatNotation(_, s, l) -> 
+	CT_pattern_notation(CT_string s,
+			    CT_match_pattern_list(List.map xlate_match_pattern l))
+;;
 
 
 let xlate_id_opt_aux = function
@@ -360,12 +366,14 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 		  CT_formula_list(List.map xlate_formula l))
    | CSort(_, s) -> CT_coerce_SORT_TYPE_to_FORMULA(xlate_sort s)
    | CNotation(_, s, l) -> notation_to_formula s (List.map xlate_formula l)
-   | CNumeral(_, i) -> CT_int_encapsulator(Bignat.bigint_to_string i)
+   | CNumeral(_, i) -> 
+       CT_coerce_NUM_to_FORMULA(CT_int_encapsulator(Bignat.bigint_to_string i))
    | CHole _ -> CT_existvarc 
 (* I assume CDynamic has been inserted to make free form extension of
    the language possible, but this would go agains the logic of pcoq anyway. *)
    | CDynamic (_, _) -> assert false
-   | CDelimiters (_, key, num) -> CT_num_encapsulator(CT_num_type key , xlate_formula  num)
+   | CDelimiters (_, key, num) -> 
+	 CT_num_encapsulator(CT_num_type key , xlate_formula  num)
    | CCast (_, e, t) -> 
        CT_coerce_TYPED_FORMULA_to_FORMULA
 	 (CT_typed_formula(xlate_formula e, xlate_formula t))
@@ -1330,9 +1338,9 @@ let cvt_vernac_binder = function
          xlate_formula c)
   | ([],_) -> xlate_error "Empty list of vernac binder"
 
-let cvt_vernac_binders args =
-  CT_binder_list(List.map cvt_vernac_binder args)
-
+let cvt_vernac_binders = function
+    a::args -> CT_binder_ne_list(cvt_vernac_binder a, List.map cvt_vernac_binder args)
+  | [] -> assert false;;
 
 
 let xlate_comment = function
@@ -1340,7 +1348,8 @@ let xlate_comment = function
   | CommentString s -> CT_coerce_ID_OR_STRING_to_SCOMMENT_CONTENT
       (CT_coerce_STRING_to_ID_OR_STRING(CT_string s))
   | CommentInt n ->
-      CT_coerce_FORMULA_to_SCOMMENT_CONTENT(CT_int_encapsulator (string_of_int n));;
+      CT_coerce_FORMULA_to_SCOMMENT_CONTENT
+	(CT_coerce_NUM_to_FORMULA(CT_int_encapsulator (string_of_int n)));;
 
 let xlate_vernac =
  function

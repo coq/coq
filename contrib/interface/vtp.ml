@@ -434,7 +434,7 @@ and fCOMMAND = function
    fNODE "user_vernac" 2
 | CT_variable(x1, x2) ->
    fVAR x1;
-   fBINDER_LIST x2;
+   fBINDER_NE_LIST x2;
    fNODE "variable" 2
 | CT_write_module(x1, x2) ->
    fID x1;
@@ -573,6 +573,7 @@ and fFIX_TAC_LIST = function
 and fFORMULA = function
 | CT_coerce_BINARY_to_FORMULA x -> fBINARY x
 | CT_coerce_ID_to_FORMULA x -> fID x
+| CT_coerce_NUM_to_FORMULA x -> fNUM x
 | CT_coerce_SORT_TYPE_to_FORMULA x -> fSORT_TYPE x
 | CT_coerce_TYPED_FORMULA_to_FORMULA x -> fTYPED_FORMULA x
 | CT_appc(x1, x2) ->
@@ -619,9 +620,7 @@ and fFORMULA = function
    fFORMULA x3;
    fFORMULA x4;
    fNODE "inductive_let" 4
-| CT_int_encapsulator x -> fATOM "int_encapsulator";
-   (f_atom_string x);
-   print_string "\n"| CT_lambdac(x1, x2) ->
+| CT_lambdac(x1, x2) ->
    fBINDER_NE_LIST x1;
    fFORMULA x2;
    fNODE "lambdac" 2
@@ -845,6 +844,7 @@ and fMATCHED_FORMULA_NE_LIST = function
    fNODE "matched_formula_ne_list" (1 + (List.length l))
 and fMATCH_PATTERN = function
 | CT_coerce_ID_OPT_to_MATCH_PATTERN x -> fID_OPT x
+| CT_coerce_NUM_to_MATCH_PATTERN x -> fNUM x
 | CT_pattern_app(x1, x2) ->
    fMATCH_PATTERN x1;
    fMATCH_PATTERN_NE_LIST x2;
@@ -853,6 +853,18 @@ and fMATCH_PATTERN = function
    fMATCH_PATTERN x1;
    fID_OPT x2;
    fNODE "pattern_as" 2
+| CT_pattern_delimitors(x1, x2) ->
+   fNUM_TYPE x1;
+   fMATCH_PATTERN x2;
+   fNODE "pattern_delimitors" 2
+| CT_pattern_notation(x1, x2) ->
+   fSTRING x1;
+   fMATCH_PATTERN_LIST x2;
+   fNODE "pattern_notation" 2
+and fMATCH_PATTERN_LIST = function
+| CT_match_pattern_list l ->
+   (List.iter fMATCH_PATTERN l);
+   fNODE "match_pattern_list" (List.length l)
 and fMATCH_PATTERN_NE_LIST = function
 | CT_match_pattern_ne_list(x,l) ->
    fMATCH_PATTERN x;
@@ -874,7 +886,10 @@ and fNATURAL_FEATURE = function
 | CT_nat_transparent -> fNODE "nat_transparent" 0
 and fNONE = function
 | CT_none -> fNODE "none" 0
-and fNUM_TYPE = function
+and fNUM = function
+| CT_int_encapsulator x -> fATOM "int_encapsulator";
+   (f_atom_string x);
+   print_string "\n"and fNUM_TYPE = function
 | CT_num_type x -> fATOM "num_type";
    (f_atom_string x);
    print_string "\n"and fOMEGA_FEATURE = function
