@@ -18,6 +18,7 @@ open Tactics
 open Tacticals
 open Libnames
 
+(*
 let old_search=ref !Auto.searchtable 
 
 (* I use this solution as a means to know whether hints have changed, 
@@ -41,6 +42,20 @@ let update_flags ()=
 	Closure.RedFlags.red_add_transparent 
 	  Closure.betaiotazeta (Names.Idpred.full,!predref)
     end
+*)
+
+let update_flags ()=
+  let predref=ref Names.KNpred.empty in
+  let f coe=
+    try
+      let kn=destConst (Classops.get_coercion_value coe) in
+	predref:=Names.KNpred.add kn !predref
+    with Invalid_argument "destConst"-> () in
+    List.iter f (Classops.coercions ());
+    red_flags:=
+    Closure.RedFlags.red_add_transparent 
+      Closure.betaiotazeta 
+      (Names.Idpred.full,Names.KNpred.complement !predref)
 
 let ground_tac solver startseq gl=
   update_flags ();

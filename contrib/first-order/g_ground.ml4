@@ -16,8 +16,10 @@ open Ground
 open Goptions
 open Tactics
 open Tacticals
+open Tacinterp
 open Term
 open Names
+open Util
 open Libnames
 
 (* declaring search depth as a global option *)
@@ -52,7 +54,7 @@ let gen_ground_tac flag taco ext gl=
       qflag:=flag;
       let solver= 
 	match taco with 
-	    Some tac->tac
+	    Some tac-> tac
 	  | None-> default_solver in
       let startseq=
 	match ext with
@@ -80,18 +82,12 @@ let normalize_evaluables=
 	   (Tacexpr.InHypType id)) *)
 
 TACTIC EXTEND Ground
-    [ "Ground" tactic(t) "with" ne_reference_list(l) ] -> 
-      [ gen_ground_tac true (Some (snd t)) (Ids l) ]
-|   [ "Ground" "with" ne_reference_list(l) ] -> 
-      [ gen_ground_tac true None (Ids l) ]
-|   [ "Ground" tactic(t) "using" ne_preident_list(l) ] -> 
-      [ gen_ground_tac true (Some (snd t)) (Bases l) ]
-|   [ "Ground" "using" ne_preident_list(l) ] -> 
-      [ gen_ground_tac true None (Bases l) ]
-|   [ "Ground" tactic(t) ] -> 
-      [ gen_ground_tac true (Some (snd t)) Void ]
-|   [ "Ground" ] ->
-      [ gen_ground_tac true None Void ]
+    [ "Ground" tactic_opt(t) "with" ne_reference_list(l) ] -> 
+      [ gen_ground_tac true (option_app eval_tactic t) (Ids l) ]
+|   [ "Ground" tactic_opt(t) "using" ne_preident_list(l) ] -> 
+      [ gen_ground_tac true (option_app eval_tactic t) (Bases l) ]
+|   [ "Ground" tactic_opt(t) ] -> 
+      [ gen_ground_tac true (option_app eval_tactic t) Void ]
 END
 
 TACTIC EXTEND GTauto   
@@ -100,9 +96,7 @@ TACTIC EXTEND GTauto
 END
 
 TACTIC EXTEND GIntuition
-   [ "GIntuition" tactic(t) ] ->
-     [ gen_ground_tac false (Some (snd t)) Void ]
-|  [ "GIntuition" ] ->
-     [ gen_ground_tac false (Some default_solver) Void ] 
+  [ "GIntuition" tactic_opt(t) ] ->
+     [ gen_ground_tac false (option_app eval_tactic t) Void ]
 END
 
