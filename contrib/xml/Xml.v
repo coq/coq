@@ -2,10 +2,10 @@
 (*                                                                            *)
 (*                               PROJECT HELM                                 *)
 (*                                                                            *)
-(*                     A tactic to print Coq objects in XML                   *)
+(*                     A module to print Coq objects in XML                   *)
 (*                                                                            *)
 (*                Claudio Sacerdoti Coen <sacerdot@cs.unibo.it>               *)
-(*                                 17/11/1999                                 *)
+(*                                 06/12/2000                                 *)
 (******************************************************************************)
 
 Declare ML Module "xml" "xmlcommand" "xmlentries".
