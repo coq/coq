@@ -336,12 +336,12 @@ and extract_type_rec_info env vl c args =
     | IsConst (sp,a) ->
 	let cty = constant_type env Evd.empty (sp,a) in 
 	if is_arity env Evd.empty cty then
-	  let (sc,vlc) = 
-	    (match extract_constant sp with 
-	       | Emltype (mlt, sc, vlc) -> (sc,vlc)
+	  (match extract_constant sp with 
+	     | Emltype (Miniml.Tarity,_,_) -> Tarity
+	       | Emltype (Miniml.Tprop,_,_) -> Tprop
+	       | Emltype (mlt, sc, vlc) ->  
+		   extract_type_app env vl (ConstRef sp,sc,vlc) args 
 	       | Emlterm _ -> assert false) 
-	  in
-	  extract_type_app env vl (ConstRef sp,sc,vlc) args
 	else begin
 	  (* We can't keep as ML type abbreviation a CIC constant 
 	     which type is not an arity: we reduce this constant. *)
@@ -481,7 +481,12 @@ and extract_term_info_with_type env ctx c t =
 	  let rec abstract rels i = function
 	    | [] -> 
 		let rels = List.rev_map (fun x -> MLrel (i-x)) rels in
-		MLcons (ConstructRef cp, List.length rels, rels)
+		if (is_singleton_constructor cp) then 
+		  match rels with 
+		    | [var]->var
+		    | _ -> assert false
+		else
+		  MLcons (ConstructRef cp, List.length rels, rels)
 	    | (Info,NotArity) :: l -> 
 		MLlam (id_of_name Anonymous, abstract (i :: rels) (succ i) l)
 	    | (Logic,NotArity) :: l ->
@@ -519,8 +524,18 @@ and extract_term_info_with_type env ctx c t =
 	  in
 	  (* [c] has an inductive type, not an arity type *)
 	  (match extract_term env ctx c with
-	     | Rmlterm a -> MLcase (a, Array.mapi extract_branch br)
-	     | Rprop -> (* Singleton elimination *)
+	     | Rmlterm a -> 
+		 if (is_singleton_inductive ip) then 
+		   begin
+		     (* informative singleton case *)
+		     assert (Array.length br = 1);
+		     let (_,ids,e') = extract_branch 0 br.(0) in
+		     assert (List.length ids = 1);
+		     MLletin (List.hd ids,a,e')
+		   end
+		 else
+		   MLcase (a, Array.mapi extract_branch br)
+	     | Rprop -> (* Logical singleton elimination *)
 		 assert (Array.length br = 1);
 		 snd (extract_branch_aux 0 br.(0)))
       | IsFix ((_,i),(ti,fi,ci)) ->
@@ -639,6 +654,18 @@ and extract_constructor (((sp,_),_) as c) =
   extract_mib sp;
   lookup_constructor_extraction c
 
+and is_singleton_inductive (sp,_) = 
+  let mib = Global.lookup_mind sp in 
+  (mib.mind_ntypes = 1) &&
+  let mis = build_mis ((sp,0),[||]) mib in
+  (mis_nconstr mis = 1) && 
+  match extract_constructor ((sp,0),1) with 
+    | Cml ([_],_,_)-> true
+    | _ -> false
+	  
+and is_singleton_constructor ((sp,i),_) = 
+  is_singleton_inductive (sp,i) 
+
 and signature_of_constructor cp = match extract_constructor cp with
   | Cprop -> assert false
   | Cml (_,s,n) -> (s,n)
@@ -717,28 +744,40 @@ and extract_mib sp =
 
 and extract_inductive_declaration sp =
   extract_mib sp;
-  let mib = Global.lookup_mind sp in
-  let one_constructor ind j _ = 
-    let cp = (ind,succ j) in
-    match lookup_constructor_extraction cp with 
-      | Cprop -> assert false
-      | Cml (t,_,_) -> (ConstructRef cp, t)
-  in
-  let l = 
-    array_fold_left_i
-      (fun i acc packet -> 
-	 let ip = (sp,i) in
-	 match lookup_inductive_extraction ip with
-	   | Iprop -> acc
-	   | Iml (s,vl) -> 
-	       (List.rev vl, 
-		IndRef ip, 
-		Array.to_list 
-		  (Array.mapi (one_constructor ip) packet.mind_consnames))
-	       :: acc )
-	 [] mib.mind_packets 
-  in
-  Dtype (List.rev l)
+  let ip = (sp,0) in 
+  if (is_singleton_inductive ip) then
+    let t = match lookup_constructor_extraction (ip,1) with 
+	  | Cml ([t],_,_)-> t
+	  | _ -> assert false
+    in
+    let vl = match lookup_inductive_extraction ip with 
+      | Iml (_,vl) -> vl
+      | _ -> assert false
+    in 
+    Dabbrev (IndRef ip,vl,t)
+  else
+    let mib = Global.lookup_mind sp in
+    let one_constructor ind j _ = 
+      let cp = (ind,succ j) in
+      match lookup_constructor_extraction cp with 
+	| Cprop -> assert false
+	| Cml (t,_,_) -> (ConstructRef cp, t)
+    in
+    let l = 
+      array_fold_left_i
+	(fun i acc packet -> 
+	   let ip = (sp,i) in
+	   match lookup_inductive_extraction ip with
+	     | Iprop -> acc
+	     | Iml (s,vl) -> 
+		 (List.rev vl, 
+		  IndRef ip, 
+		  Array.to_list 
+		    (Array.mapi (one_constructor ip) packet.mind_consnames))
+		 :: acc )
+	[] mib.mind_packets 
+    in
+    Dtype (List.rev l)
 
 (*s Extraction of a global reference i.e. a constant or an inductive. *)
 

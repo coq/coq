@@ -141,26 +141,6 @@ let nb_occur a =
   in 
   count 1 a; !cpt
 
-(* elimination of inductive type with one constructor expecting
-   one argument (such as [Exist]) *)
-
-let rec elim_singleton_ast rl = function 
-  | MLcase (t, [|r,[a],t'|]) when (List.mem r rl) 
-      -> MLletin (a,elim_singleton_ast rl t,elim_singleton_ast rl t')   
-  | MLcons (r, n, [t]) when (List.mem r rl) 
-      -> elim_singleton_ast rl t
-  | t -> ast_map (elim_singleton_ast rl) t
-
-let elim_singleton = 
-  let rec elim_rec rl = function 
-    | [] -> [] 
-    | Dtype [il, ir, [cr,[t]]] :: dl -> 
-	Dabbrev (ir, il, t) :: (elim_rec (cr::rl) dl) 
-    | Dglob (r, a) :: dl -> 
-	Dglob (r, elim_singleton_ast rl a)  :: (elim_rec rl dl)
-    | d:: dl ->	d :: (elim_rec rl dl)
-  in elim_rec []
-
 (*s Beta-reduction *)
 
 let rec betared_ast = function
