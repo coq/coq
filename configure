@@ -325,12 +325,15 @@ case $CAMLP4VERSION in
      echo "Configuration script failed!"
      exit 1;;
 esac
-case $CAMLP4VERSION,$CAMLOSTYPE in
-  3.04,*)
+case $CAMLP4VERSION in
+  3.01|3.02|3.03) 
+    case $CAMLOSTYPE in
+      Win32) CAMLP4LIB=`"$CAMLP4" -where |sed -e 's|\\\|/|g'`;;
+      *) CAMLP4LIB=`"$CAMLP4" -where`;;
+    esac;;
+  3.0*)
     CAMLP4LIB=+camlp4;;
-  *,Win32)
-    CAMLP4LIB=`"$CAMLP4" -where |sed -e 's|\\\|/|g'`;;
-  *,*)
+  *)
     CAMLP4LIB=`"$CAMLP4" -where`;;
 esac
 
