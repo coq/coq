@@ -15,14 +15,19 @@ exception Redelimination
 
 (* Red (raise Redelimination if nothing reducible) *)
 val red_product : 'a reduction_function
+
 (* Hnf *)
 val hnf_constr : 'a reduction_function
+
 (* Simpl *)
 val nf : 'a reduction_function
+
 (* Unfold *)
 val unfoldn : (int list * section_path) list -> 'a reduction_function
+
 (* Fold *)
 val fold_commands : constr list -> 'a reduction_function
+
 (* Pattern *)
 val pattern_occs : (int list * constr * constr) list -> 'a reduction_function
 (* Rem: Lazy strategies are defined in Reduction *)
@@ -32,7 +37,7 @@ val cbv_norm_flags : Closure.flags -> 'a reduction_function
   val cbv_beta : 'a reduction_function
   val cbv_betaiota : 'a reduction_function
   val cbv_betadeltaiota : 'a reduction_function
-  val compute : 'a reduction_function  (* = cbv_betadeltaiota *)
+  val compute : 'a reduction_function  (* = [cbv_betadeltaiota] *)
 
 val one_step_reduce : 'a reduction_function
 

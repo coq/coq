@@ -1,9 +1,9 @@
 %!PS-Adobe-2.0
 %%Creator: dot version uwin98 (01-26-98)
-%%For: (jc) Jean-Christophe,,,,
+%%For: (jacek) Jacek Chrzaszcz
 %%Title: G
 %%Pages: (atend)
-%%BoundingBox: 36 36 576 145
+%%BoundingBox: 36 36 577 129
 %%EndComments
 %%BeginProlog
 save
@@ -47,7 +47,7 @@ DotDict begin
 		gsave
 			coordfont setfont
 			0 0 moveto
-			(() show i str cvs show (,) show j str cvs show ()) show
+			(\() show i str cvs show (,) show j str cvs show (\)) show
 		grestore
 	} if
 } bind def
@@ -139,12 +139,12 @@ def
 % /arrowwidth 5 def
 %%EndSetup
 %%Page: 1 1
-%%PageBoundingBox: 36 36 576 145
+%%PageBoundingBox: 36 36 577 129
 gsave
-35 35 541 110 boxprim clip newpath
+35 35 542 94 boxprim clip newpath
 36 36 translate
 0 0 1 beginpage
-0.7521 set_scale
+0.6444 set_scale
 0 0 translate 0 rotate
 0.000 0.000 0.000 graphcolor
 14.00 /Times-Roman set_font
@@ -269,6 +269,25 @@ stroke
 newpath 622 70 moveto
 632 72 lineto
 622 75 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Proof_type
+gsave 10 dict begin
+796 72 41 18 ellipse_path
+stroke
+gsave 10 dict begin
+796 73 moveto (Proof_type) 62 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Proof_trees -> Proof_type
+newpath 718 72 moveto
+727 72 736 72 744 72 curveto
+stroke
+newpath 744 70 moveto
+754 72 lineto
+744 75 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 

@@ -17,7 +17,7 @@ val share : bool ref
 
 
 (*s Delta implies all consts (both global (= by
-  section_path) and local (= by Rel or Var)), all evars, and letin's.
+  [section_path]) and local (= by [Rel] or [Var])), all evars, and letin's.
   Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of 
   a LetIn expression is Letin reduction *)
 
