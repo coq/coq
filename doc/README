@@ -1,7 +1,7 @@
 You can get the whole documentation of Coq in the tar file all-ps-docs.tar.
 
 You can also get separately each document. The documentation of Coq
-V7.1 is divided into the following documents :
+V7.2 is divided into the following documents :
 
      * Tutorial.ps: An introduction to the use of the Coq Proof Assistant;
 
@@ -14,16 +14,15 @@ V7.1 is divided into the following documents :
      - index on tactics, commands and error messages
 
      * Reference-Manual-addendum.ps, 75 pp., includes more detailed
-      explanations and examples about the following topics:
+       explanations and examples about the following topics:
 
      - the extended Cases (C.Cornes)
      - the Coercions (A. Saïbi)
      - the tactic Omega (P. Crégut)
-     - printing proofs in natural language (Y. Coscoy)
-     - the tactic Ring (S. Boutin and P. Loiseleur)
-     - the Program tactic (C. Parent)
      - the Correctness tactic (J.-C. Filliâtre)
-     - the extraction features (J.-C. Filliâtre)
+     - the extraction features (J.-C. Filliâtre and P. Letouzey) 
+     - the tactic Ring (S. Boutin and P. Loiseleur)
+     - the Setoid_replace tactic (C. Renard)
 
      Index, page and chapter numbers are shared by the two documents, in
      order to make cross-references possible. There is also a on the ftp
@@ -32,8 +31,8 @@ V7.1 is divided into the following documents :
 
      * Library.ps: A description of the Coq standard library;
 
-     * CHANGES: A description of the differences between the
-       versions 6.3.1 and V7.1;
+     * CHANGES: A description of the differences between version 7.2 
+       and previous versions
 
      * rectypes.ps : A tutorial on recursive types by Eduardo Gimenez
 
