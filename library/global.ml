@@ -47,7 +47,7 @@ let import cenv = global_env := import cenv !global_env
 
 (* Some instanciations of functions from [Environ]. *)
 
-let id_of_global = id_of_global !global_env
+let id_of_global = Environ.id_of_global (unsafe_env_of_env !global_env)
 
 (* Re-exported functions of [Inductive], composed with [lookup_mind_specif]. *)
 

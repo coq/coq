@@ -275,12 +275,14 @@ library/declare.cmx: kernel/constant.cmx kernel/evd.cmx kernel/generic.cmx \
     kernel/inductive.cmx library/lib.cmx library/libobject.cmx \
     kernel/names.cmx library/nametab.cmx kernel/reduction.cmx kernel/sign.cmx \
     kernel/term.cmx kernel/univ.cmx lib/util.cmx library/declare.cmi 
-library/global.cmo: kernel/generic.cmi kernel/inductive.cmi \
-    kernel/instantiate.cmi kernel/sign.cmi library/summary.cmi \
-    kernel/term.cmi kernel/typing.cmi lib/util.cmi library/global.cmi 
-library/global.cmx: kernel/generic.cmx kernel/inductive.cmx \
-    kernel/instantiate.cmx kernel/sign.cmx library/summary.cmx \
-    kernel/term.cmx kernel/typing.cmx lib/util.cmx library/global.cmi 
+library/global.cmo: kernel/environ.cmi kernel/generic.cmi \
+    kernel/inductive.cmi kernel/instantiate.cmi kernel/sign.cmi \
+    library/summary.cmi kernel/term.cmi kernel/typing.cmi lib/util.cmi \
+    library/global.cmi 
+library/global.cmx: kernel/environ.cmx kernel/generic.cmx \
+    kernel/inductive.cmx kernel/instantiate.cmx kernel/sign.cmx \
+    library/summary.cmx kernel/term.cmx kernel/typing.cmx lib/util.cmx \
+    library/global.cmi 
 library/impargs.cmo: kernel/constant.cmi kernel/evd.cmi kernel/generic.cmi \
     library/global.cmi kernel/inductive.cmi kernel/names.cmi \
     kernel/reduction.cmi library/summary.cmi kernel/term.cmi \
