@@ -24,7 +24,7 @@ open Ccidpc
 let rec intros_forall gls = 
   let t = pf_concl gls
   in if is_forall_term t
-     then ((tclTHEN forAllI (intros_forall))) gls
+     then ((tclTHEN intro (intros_forall))) gls
      else tclIDTAC gls
 
 let dPC_nq gls =

@@ -205,8 +205,8 @@ let rec alpha_term bl1 bl2 p_0 p_1 =
     | (_, _) -> false
 
 
-let forAllI gls=if is_forall_term (pf_concl gls) then
-  intro gls else tclFAIL 0 gls
+let forAllI id gls=if is_forall_term (pf_concl gls) then
+  intro_using id gls else tclFAIL 0 gls
 
 let forAllE id t gls =
   let rgl=pf_whd_betadeltaiota gls (pf_type_of gls (mkVar id)) in
@@ -334,7 +334,7 @@ let rec tradpf kspine jspine dpcpf gls =
              trad kspine jspine pf1]))) gls
 
   | Proof2(_,_,RForAll2(kid,f,pf)) ->
-    ((tclTHEN forAllI
+    ((tclTHEN (forAllI kid)
      ((onLastHyp (fun jid ->
                      trad (kid::kspine) (jid::jspine) pf))))) gls
 
