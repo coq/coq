@@ -28,3 +28,12 @@ Refine [l]<[l]l=l>
        | (cons O l0) => ?
        | (cons (S _) l0) => ?
        end.
+Abort.
+
+(* Submitted by Roland Zumkeller (bug #889) *)
+
+Goal (n:nat) nat -> n=0.
+Refine [n]
+  Fix f { f [i:nat] : n=0 :=
+    Cases i of 0 => ? | (S _) => ? end }.
+Abort.
