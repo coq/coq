@@ -89,6 +89,12 @@ Proof.
 Qed.
 Hints Resolve mult_le : arith.
 
+Lemma le_mult_right : (m,n,p:nat)(le m n)->(le (mult m p) (mult n p)).
+Intros m n p H.
+Rewrite mult_sym. Rewrite (mult_sym n).
+Auto with arith.
+Qed.
+
 Lemma mult_lt : (m,n,p:nat) (lt n p) -> (lt (mult (S m) n) (mult (S m) p)).
 Proof.
   NewInduction m. Intros. Simpl. Rewrite <- plus_n_O. Rewrite <- plus_n_O. Assumption.
@@ -96,6 +102,15 @@ Proof.
 Qed.
 
 Hints Resolve mult_lt : arith.
+
+Lemma lt_mult_right :
+  (m,n,p:nat) (lt m n) -> (lt (0) p) -> (lt (mult m p) (mult n p)).
+Intros m n p H H0.
+Induction p.
+Elim (lt_n_n ? H0).
+Rewrite mult_sym.
+Replace (mult n (S p)) with (mult (S p) n); Auto with arith.
+Qed.
 
 Lemma mult_le_conv_1 : (m,n,p:nat) (le (mult (S m) n) (mult (S m) p)) -> (le n p).
 Proof.

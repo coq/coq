@@ -60,6 +60,13 @@ Elim H ; Simpl ; Auto with arith.
 Qed.
 Hints Immediate le_S_n : arith v62.
 
+Lemma le_pred : (n,m:nat)(le n m)->(le (pred n) (pred m)).
+Proof.
+Induction n. Simpl. Auto with arith.
+Intros n0 Hn0. Induction m. Simpl. Intro H. Inversion H.
+Intros n1 H H0. Simpl. Auto with arith.
+Qed.
+
 (** Negative properties *)
 
 Theorem le_Sn_O : (n:nat)~(le (S n) O).
