@@ -75,6 +75,10 @@ Changements dans les fonctions :
 
 	Printer
 	  gentermpr	->   gen_pr_term
+          term0	        ->   prterm_env	
+          pr_sign       ->   pr_var_context
+	  pr_context_opt -> pr_context_of
+          pr_ne_env      -> pr_ne_context_of
 
 	Typing, Machops
 	  type_of_type     ->  judge_of_type
@@ -97,6 +101,7 @@ Changements dans les fonctions :
         Tacmach
           pf_constr_of_com_sort -> pf_interp_type
           pf_constr_of_com      -> pf_interp_constr
+	  pf_get_hyp            -> pf_get_hyp_typ
 
         Pattern
 	  raw_sopattern_of_compattern -> Astterm.interp_constrpattern
@@ -108,7 +113,11 @@ Changements dans les fonctions :
           dest_match            -> gl_matches
 
         Divers
-          initial_sign -> var_context
+          initial_sign     -> var_context
+
+        Sign
+          ids_of_sign      -> ids_of_var_context (or Environ.ids_of_context)
+          empty_sign       -> empty_var_context
 
         Pfedit
 	  list_proofs      -> get_all_proof_names

@@ -7,7 +7,7 @@
 - Numérotation dans l'ordre des hypothèses créées par Decompose
 - Correction de bugs (quand le type ne commence pas par un inductif)
 
-- Simpl ne déplie plus les appels récursifs d'un Fix réduit
+- Simpl ne déplie plus les appels récursifs d'un Fix mutuel réduit
 
 - Les cas des Cases ne se lisent plus de manière séquentielle, sauf en
   cas de clauses par défaut redondantes auquel cas la première est prise
