@@ -89,14 +89,13 @@ type constructor_summary = {
 
 (*s A variant of [mind_specif_of_mind] with pre-splitted args
 
-   Invariant: We have \par
-   [Hnf (fullmind)] = [DOPN(AppL,[|MutInd mind;..params..;..realargs..|])] \par
+   We recover the inductive type as \par
+   [DOPN(AppL,[|MutInd mind;..params..;..realargs..|])] \par
    with [mind]  = [((sp,i),localvars)] for some [sp, i, localvars].
 
  *)
 
 type inductive_summary = {
-  fullmind : constr;
   mind : inductive;
   params : constr list;
   realargs : constr list;

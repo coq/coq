@@ -64,7 +64,6 @@ type constructor_summary = {
 (* A light version of mind_specif_of_mind with pre-splitted args *)
 (* and a receipt to build a summary of constructors *)
 type inductive_summary = {
-  fullmind : constr;
   mind : inductive;
   params : constr list;
   realargs : constr list;

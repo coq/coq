@@ -123,8 +123,9 @@ type equation =
 
 type matrix = equation list
 
+(* 1st argument of IsInd is the original ind before extracting the summary *)
 type tomatch_type =
-  | IsInd of inductive_summary
+  | IsInd of constr * inductive_summary
   | NotInd of constr
 
 type dependency_in_rhs = DepInRhs | NotDepInRhs
@@ -189,11 +190,11 @@ type 'a pattern_matching_problem =
 (* Utils *)
 
 let to_mutind env sigma t =
-  try IsInd (try_mutind_of env sigma t)
+  try IsInd (t,try_mutind_of env sigma t)
   with Induc -> NotInd t
 
 let type_of_tomatch_type = function
-    IsInd ind_data -> ind_data.fullmind
+    IsInd (t,ind_data) -> t
   | NotInd t -> t
 
 let current_pattern eqn =
@@ -214,8 +215,7 @@ let liftn_ind_data n depth md =
   let mind' = 
     let (ind_sp,ctxt) = md.mind in
     (ind_sp, Array.map (liftn n depth) ctxt) in
-  { fullmind = liftn n depth md.fullmind;
-    mind = mind';
+  { mind = mind';
     nparams = md.nparams;
     nrealargs = md.nrealargs;
     nconstr = md.nconstr;
@@ -225,7 +225,7 @@ let liftn_ind_data n depth md =
 let lift_ind_data n = liftn_ind_data n 1
 
 let liftn_tomatch_type n depth = function
-  | IsInd ind_data -> IsInd (liftn_ind_data n depth ind_data)
+  | IsInd (t,ind) -> IsInd (liftn n depth t,liftn_ind_data n depth ind)
   | NotInd t -> NotInd (liftn n depth t)
 
 let lift_tomatch_type n = liftn_tomatch_type n 1
@@ -237,8 +237,7 @@ let substn_many_ind_data cv depth md =
   let mind' = 
     let (ind_sp,ctxt) = md.mind in
     (ind_sp, Array.map (substn_many cv depth) ctxt) in
-  { fullmind = substn_many cv depth md.fullmind;
-    mind = mind';
+  { mind = mind';
     nparams = md.nparams;
     nrealargs = md.nrealargs;
     nconstr = md.nconstr;
@@ -246,7 +245,8 @@ let substn_many_ind_data cv depth md =
     realargs = List.map (substn_many cv depth) md.realargs }
 
 let substn_many_tomatch v depth = function
-  | IsInd ind_data -> IsInd (substn_many_ind_data v depth ind_data)
+  | IsInd (t,ind_data) ->
+      IsInd (substn_many v depth t,substn_many_ind_data v depth ind_data)
   | NotInd t -> NotInd (substn_many v depth t)
 
 let subst_tomatch (depth,c) = substn_many_tomatch [|make_substituend c|] depth
@@ -539,7 +539,7 @@ let rec weaken_predicate n pred =
   if n=0 then pred else match pred with
     | PrLetIn _ | PrCcl _ ->
 		    anomaly "weaken_predicate: only product can be weakened"
-    | PrProd ((dep,_,IsInd ind_data),pred) ->
+    | PrProd ((dep,_,IsInd (_,ind_data)),pred) ->
 	(* To make it more uniform, we apply realargs but they not occur! *)
 	let tm = (ind_data.realargs,if dep then Some (Rel n) else None) in
 	PrLetIn (tm, weaken_predicate (n-1)
@@ -716,7 +716,7 @@ and match_current pb (n,tm) =
     | NotInd typ ->
 	check_all_variables typ pb.mat;
 	compile (shift_problem pb)
-    | IsInd ind_data ->
+    | IsInd (_,ind_data) ->
 	let cstrs = get_constructors pb.env !(pb.isevars) ind_data in
 	let eqns,defaults = group_equations ind_data.mind cstrs pb.mat in
 	if array_for_all ((=) []) eqns
@@ -831,7 +831,7 @@ let coerce_row typing_fun isevars env row tomatch =
 	  (let tyi = inductive_of_rawconstructor c in
 	   try 
 	     let indtyp = inh_coerce_to_ind isevars env j.uj_type tyi in
-	     IsInd (try_mutind_of env !isevars j.uj_type)
+	     IsInd (j.uj_type,try_mutind_of env !isevars j.uj_type)
 	 with NotCoercible ->
 	   (* 2 cas : pas le bon inductive ou pas un inductif du tout *)
 	   try
@@ -842,7 +842,7 @@ let coerce_row typing_fun isevars env row tomatch =
 	     error_case_not_inductive_loc
 	       (loc_of_rawconstr tomatch) CCI env j.uj_val j.uj_type)
       | None -> 
-	  try IsInd (try_mutind_of env !isevars j.uj_type)
+	  try IsInd (j.uj_type,try_mutind_of env !isevars j.uj_type)
 	  with Induc -> NotInd (j.uj_type)
   in (j.uj_val,t)
 
@@ -857,7 +857,7 @@ let coerce_to_indtype typing_fun isevars env matx tomatchl =
 
 let build_expected_arity env sigma isdep tomatchl sort =
   let cook n = function
-    | _,IsInd ind_data ->
+    | _,IsInd (_,ind_data) ->
 	let is = lift_ind_data n ind_data in
 	(build_dependent_inductive is, fst (get_arity env sigma is))
     | _,NotInd _ -> anomaly "Should have been catched in case_dependent"
@@ -876,7 +876,7 @@ let build_expected_arity env sigma isdep tomatchl sort =
 
 let build_initial_predicate isdep pred tomatchl =
   let cook n = function
-    | _,IsInd ind_data ->
+    | _,IsInd (_,ind_data) ->
 	let args = List.map (lift n) ind_data.realargs in
 	if isdep then
 	  let ty = lift n (build_dependent_inductive ind_data) in
@@ -917,7 +917,7 @@ let rec eta_expand env sigma c t =
  *)
 let case_dependent env sigma loc predj tomatchs =
   let nb_dep_ity = function
-      (_,IsInd ind_data) -> ind_data.nrealargs
+      (_,IsInd (_,ind_data)) -> ind_data.nrealargs
     | (c,NotInd t) ->
 	errorlabstrm "case_dependent" (error_case_not_inductive CCI env c t)
   in
