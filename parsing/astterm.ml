@@ -148,7 +148,7 @@ let ref_from_constr = function
   | DOPN (Evar ev,ctxt) -> REVar (ev, ctxt) 
   | DOPN (MutConstruct (spi,j),ctxt) -> RConstruct ((spi,j), ctxt)
   | DOPN (MutInd (sp,i),ctxt) -> RInd ((sp,i), ctxt)
-  | VAR id -> RVar id  (* utilisé dans trad pour coe_value (tmp) *)
+  | VAR id -> RVar id  (* utilisé pour coe_value (tmp) *)
   | _ -> anomaly "Not a reference"
 
 let dbize_ref k sigma env loc s =
