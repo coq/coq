@@ -219,6 +219,8 @@ let coerce_to_evaluable_ref env c =
   let ev = match c with
     | VConstr c when isConst c -> EvalConstRef (destConst c)
     | VConstr c when isVar c -> EvalVarRef (destVar c)
+    | VIntroPattern (IntroIdentifier id)
+        when Environ.evaluable_named id env -> EvalVarRef id
     | _ -> error_not_evaluable (pr_value env c)
   in
   if not (Tacred.is_evaluable env ev) then
