@@ -1,0 +1,49 @@
+
+7.0 -> 7.1 : mostly bug corrections. No theoretical problems dealed with.
+
+* The semantics of Extract Constant changed: If you provide a extraction 
+for p by Extract Constant p => "0", your generated ML file will begin by 
+a let p = 0. The old semantics, which was to replace p everywhere by the
+provided terms, is still available via the Extract Inlined Constant p => 
+"0" syntax.
+
+
+* There are more optimizations applied to the generated code: 
+- identity cases: match e with P x y -> P x y | Q z -> Q z | ...
+is simplified into e. Especially interesting with the sumbool terms: 
+there will be no more match ... with Left -> Left | Right -> Right
+
+- constant cases: match e with P x y -> c | Q z -> c | ...
+is simplified into c as soon as x, y, z do not occur in c.
+So no more match ... with Left -> Left | Right -> Left.
+  
+
+* the extraction at Toplevel (Extraction foo and Recursive Extraction foo),
+which was only a development tool at the beginning, is now closer to 
+the real extraction to a file. In particular optimizations are done, 
+and constants like recursors ( ..._rec ) are expanded. 
+
+
+* the singleton optimization is now protected against circular type.
+( Remind : this optimization is the one that simplify 
+type 'a sig = Exists of 'a  into type 'a sig = 'a and 
+match e with (Exists c) -> d into let c = e in d ) 
+
+
+* Fixed one bug concerning casted code
+
+
+* The inductives generated should now have always correct type-var list 
+('a,'b,'c...)
+
+
+* Code cleanup until three days before release. Messing-up code 
+in the last three days before release.
+
+
+
+
+
+
+
+6.x -> 7.0 : Everything changed. See README
