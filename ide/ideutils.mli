@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 val async : ('a -> unit) -> 'a -> unit
 val browse : (string -> unit) -> string -> unit

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* The CoqIde main module. The following function [start] will parse the
    command line, initialize the load path, load the input 
