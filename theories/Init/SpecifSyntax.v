@@ -28,9 +28,11 @@ Notation "{ A } + { B }" := (sumbool A B).
 Notation "A + { B }" := (sumor A B).
 *)
 
+V7only [
 Notation ProjS1 := (projS1 ? ?).
 Notation ProjS2 := (projS2 ? ?).
+Notation Value := (value ?).
+].
+
 Notation Except := (except ?).
 Notation Error := (error ?).
-Notation Value := (value ?).
-

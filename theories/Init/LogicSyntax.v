@@ -35,19 +35,19 @@ Notation "'IF' c1 'then' c2 'else' c3" := (IF c1 c2 c3)
 
 (* Order is important to give printing priority to fully typed ALL and EX *)
 
-Notation All := (all ?).
+V7only [ Notation All := (all ?). ].
 Notation "'ALL' x | p"     := (all ? [x]p)   (at level 10, p at level 8)
   V8only (at level 200, p at level 200).
 Notation "'ALL' x : t | p" := (all ? [x:t]p) (at level 10, p at level 8)
   V8only (at level 200).
 
-Notation Ex  := (ex ?).
+V7only [ Notation Ex  := (ex ?). ].
 Notation "'EX' x | p"      := (ex ? [x]p)    (at level 10, p at level 8)
   V8only (at level 200, x at level 80).
 Notation "'EX' x : t | p"  := (ex ? [x:t]p)  (at level 10, p at level 8)
   V8only (at level 200, x at level 80).
 
-Notation Ex2 := (ex2 ?).
+V7only [ Notation Ex2 := (ex2 ?). ].
 Notation "'EX' x | p & q"       := (ex2 ? [x]p [x]q)
   (at level 10, p, q at level 8)
   V8only "'EX2' x | p & q" (at level 200, x at level 80).

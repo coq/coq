@@ -74,8 +74,10 @@ Section projections.
    Definition snd := [p:(prod A B)]Cases p of (pair x y) => y end.
 End projections. 
 
+V7only [
 Notation Fst := (fst ? ?).
 Notation Snd := (snd ? ?).
+].
 
 Hints Resolve pair inl inr : core v62.
 
