@@ -55,4 +55,5 @@ val subst_all_grammar_command :
 val interp_entry_name : string -> string -> 
   entry_type * Token.t Gramext.g_symbol
 
-val recover_notation_grammar :  notation -> Symbols.level -> notation_grammar
+val recover_notation_grammar :
+  notation -> (precedence * tolerability list) -> notation_grammar
