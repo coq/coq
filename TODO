@@ -6,7 +6,7 @@ Environnement:
 
 - Porter SearchIsos
 - Require synchronisé
-- Interdire de faire 2 fois la même définition avec le même nom absolu
+- Interdire de faire 2 fois la même définition avec le même nom absolu FAIT
 
 Tactiques:
 
@@ -39,3 +39,4 @@ Doc:
 - revoir le chapitre sur les tactiques utilisateur
 - clarifier la sémantique de Decompose (i.e. travaille pas sous les ->)
 - faut-il mieux spécifier la sémantique de Simpl (??)
+- vérifier si Print Table id est à jour
