@@ -493,7 +493,7 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Generalize Hh z; Clear Hh z; Simpl in hl; Unfold hl hr.
     AVL avl_l; AVL avl_r; Intuition Try Omega.
     Inversion_clear avl_l; AVL H4; Omega.
-    Intro t2xr; Intros.
+    Intro t2xr; Intuition.
     Case (create t0 t1 t2xr).
     Inversion_clear bst_l; Trivial. 
     Inversion_clear avl_l; Trivial.
@@ -501,16 +501,11 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Intuition.
     Inversion_clear bst_l; Trivial.     
     Inversion_clear bst_l; Trivial. 
-    Intro; Intro; Intuition; Generalize (H10 y); Intuition.
+    Clear H2; Intro; Intro; Intuition; Generalize (H5 y); Intuition.
     Apply ME.lt_eq with x; Auto. 
     Apply E.lt_trans with x; Auto.
     Apply Hl; Auto.
     Apply Hr; Auto.
-    Apply ME.lt_eq with x; Auto. 
-    Apply E.lt_trans with x; Auto.
-    Apply Hl; Auto.
-    Apply Hr; Auto.
-
 
   Defined.
 
