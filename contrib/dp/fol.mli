@@ -31,8 +31,8 @@ and form =
   | And of form * form
   | Or of form * form
   | Not of form
-  | Forall of form
-  | Exists of form
+  | Forall of string * (typ list * typ) * form
+  | Exists of string * (typ list * typ) * form
   | True
   | False
 
