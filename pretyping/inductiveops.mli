@@ -44,6 +44,8 @@ val mis_constr_nargs : inductive -> int array
 
 val mis_constr_nargs_env : env -> inductive -> int array
 
+val mis_constructor_nargs_env : env -> constructor -> int
+
 type constructor_summary = {
   cs_cstr : constructor;
   cs_params : constr list;

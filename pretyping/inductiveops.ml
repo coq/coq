@@ -84,6 +84,11 @@ let mis_constr_nargs_env env (kn,i) =
   let recargs = dest_subterms mip.mind_recargs in
   Array.map List.length recargs
 
+let mis_constructor_nargs_env env ((kn,i),j) =
+  let mib = Environ.lookup_mind kn env in
+  let mip = mib.mind_packets.(i) in 
+  recarg_length mip.mind_recargs j + mip.mind_nparams
+
 (* Annotation for cases *)
 let make_case_info env ind style pats_source =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
