@@ -161,23 +161,6 @@ Definition error := None.
 Syntactic Definition Error := (error ?).
 Syntactic Definition Value := (value ?).
 
-(*
-Definition exc_rec :
- (A:Set; P:((Exc A)->Set))
- ((a:A)(P (Value a)))->(P Error)->(e:(Exc A))(P e)
- := option_rec.
-
-Definition exc_rect :
- (A:Set; P:((Exc A)->Type))
- ((a:A)(P (Value a)))->(P Error)->(e:(Exc A))(P e)
- := option_rect.
-
-Definition exc_ind :
- (A:Set; P:((Exc A)->Prop))
- ((a:A)(P (Value a)))->(P Error)->(e:(Exc A))(P e)
- := option_ind.
-*)
-
 (*******************************)
 (* Self realizing propositions *)
 (*******************************)
