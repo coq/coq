@@ -244,15 +244,11 @@ let is_correct_arity env sigma kelim (c,p) =
   in 
   srec 
 
-let cast_instantiate_arity mis =
-  let tty = instantiate_arity mis in
-  DOP2 (Cast, tty.body, DOP0 (Sort tty.typ))
-
 let find_case_dep_nparams env sigma (c,p) (mind,largs) typP =    
   let mis = lookup_mind_specif mind env in 
   let nparams = mis_nparams mis
   and kelim = mis_kelim mis 
-  and t = cast_instantiate_arity mis in 
+  and t = body_of_type (instantiate_arity mis) in 
   let (globargs,la) = list_chop nparams largs in
   let glob_t = hnf_prod_applist env sigma "find_elim_boolean" t globargs in
   let arity = applist(mkMutInd mind,globargs) in
