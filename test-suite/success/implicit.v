@@ -26,4 +26,6 @@ Check [x](lhs ? ? (f x)).
 Check [x](!lhs ? ? (f x)).
 Notation "'rhs'" := snd.
 Check [x](rhs ? ? (f x)).
-Check [x](!rhs ? ? (f x)).
+(* V8 seulement 
+Check (fun x => @ rhs ? ? (f x)).
+*)

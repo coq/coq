@@ -50,7 +50,7 @@ Lemma super_def : (I :Set)(e1, e2: (extension I))
 Proof.                 
  Induction 1.
  Inversion 1; Auto.
- Elim magic
+ Elim magic.
 Qed.
 
 (* Example from Norbert Schirmer on Coq-Club, Sep 2000 *)
