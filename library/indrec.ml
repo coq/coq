@@ -52,7 +52,7 @@ let mis_make_case_com depopt env sigma mispec kind =
     if k = mis_nconstr mispec then
       let nbprod = k+1 in
       let ind = make_ind_family (mispec,rel_list nbprod nparams) in
-      let lnamesar,_ = get_arity env' sigma ind in
+      let lnamesar,_ = get_arity ind in
       let ci = make_default_case_info mispec in
       it_lambda_name env'
        	(lambda_create env'
@@ -69,7 +69,7 @@ let mis_make_case_com depopt env sigma mispec kind =
 	(add_branch (k+1))
   in
   let indf = make_ind_family (mispec,rel_list 0 nparams) in
-  let typP = make_arity env' sigma dep indf kind in
+  let typP = make_arity env' dep indf kind in
   it_lambda_name env (mkLambda_string "P" typP (add_branch 0)) lnamespar
     
 (* check if the type depends recursively on one of the inductive scheme *)
@@ -210,7 +210,7 @@ let mis_make_indrec env sigma listdepkind mispec =
             (* arity in the context P1..P_nrec f1..f_nbconstruct *)
 	    let params = rel_list (nrec+nbconstruct) nparams in
 	    let indf = make_ind_family (mispeci,params) in
-	    let lnames,_ = get_arity env sigma indf in
+	    let lnames,_ = get_arity indf in
 
 	    let nar = mis_nrealargs mispeci in
 	    let decf = nar+nrec+nbconstruct+nrec in 
@@ -281,7 +281,7 @@ let mis_make_indrec env sigma listdepkind mispec =
     let rec put_arity i = function 
       | (mispeci,dep,kinds)::rest -> 
 	  let indf = make_ind_family (mispeci,rel_list i nparams) in
-	  let typP = make_arity env sigma dep indf kinds in
+	  let typP = make_arity env dep indf kinds in
 	  mkLambda_string "P" typP (put_arity (i+1) rest)
       | [] -> 
 	  make_branch 0 listdepkind 

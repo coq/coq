@@ -315,12 +315,30 @@ let cci_inductive env env_ar kind nparams finite inds cst =
     let recargs = listrec_mconstr env_ar ntypes nparams i lc in
     let isunit = isunit && ntypes = 1 && (not (is_recursive [0] recargs)) in
     let (ar_sign,ar_sort) = splay_arity env Evd.empty (body_of_type ar) in
+    let nf_ar,user_ar =
+      if isArity (body_of_type ar) then ar,None
+      else 
+	(make_typed_lazy (prod_it (mkSort ar_sort) ar_sign)
+	   (fun _ -> level_of_type ar)),
+	Some (body_of_type ar) in
     let kelim = allowed_sorts issmall isunit ar_sort in
+    let lc_bodies = Array.map body_of_type lc in
+    let splayed_lc = Array.map (splay_prod env Evd.empty) lc_bodies in
+    let nf_lc = Array.map (fun (d,b) -> prod_it b d) splayed_lc in
+    let nf_typed_lc,user_lc =
+      if nf_lc = lc_bodies then lc,None
+      else
+	(array_map2
+	   (fun nfc c -> make_typed_lazy nfc (fun _ -> level_of_type c))
+	   nf_lc lc),
+        Some lc_bodies in
     { mind_consnames = Array.of_list cnames;
       mind_typename = id;
-      mind_lc = lc;
+      mind_user_lc = user_lc;
+      mind_nf_lc = nf_typed_lc;
+      mind_user_arity  = user_ar;
+      mind_nf_arity = nf_ar;
       mind_nrealargs = List.length ar_sign - nparams;
-      mind_arity  = ar;
       mind_sort = ar_sort;
       mind_kelim = kelim;
       mind_listrec = recargs;

@@ -130,7 +130,7 @@ let print_mutual sp mib =
   let env = Global.env () in
   let evd = Evd.empty in
   let {mind_packets=mipv; mind_nparams=nparams} = mib in 
-  let (lpars,_) = decomp_n_prod env evd nparams (body_of_type mipv.(0).mind_arity) in
+  let (lpars,_) = decomp_n_prod env evd nparams (mind_user_arity mipv.(0)) in
   let lparsname = List.map fst lpars in
   let lna = Array.map (fun mip -> Name mip.mind_typename) mipv in
   let lparsprint = assumptions_for_print lparsname in
@@ -138,20 +138,18 @@ let print_mutual sp mib =
     let pc = pterminenv ass_name c in [< print_id id; 'sTR " : "; pc >] 
   in
   let print_constructors mip =
-    let lC = mip.mind_lc in
+    let lC = mind_user_lc mip in
     let ass_name = assumptions_for_print (lparsname@(Array.to_list lna)) in
     let lidC =
       Array.to_list 
-        (array_map2
-	   (fun id c ->
-	      (id,snd (decomp_n_prod env evd nparams (body_of_type c))))
+        (array_map2 (fun id c -> (id,snd (decomp_n_prod env evd nparams c)))
            mip.mind_consnames lC) in
     let plidC = prlist_with_sep (fun () -> [<'bRK(1,0); 'sTR "| " >])
                   (prass ass_name) lidC in
     (hV 0 [< 'sTR "  "; plidC >]) 
   in
   let print_oneind mip = 
-    let (_,arity) = decomp_n_prod env evd nparams (body_of_type mip.mind_arity) in
+    let (_,arity) = decomp_n_prod env evd nparams (mind_user_arity mip) in
       (hOV 0
          [< (hOV 0
 	       [< print_id mip.mind_typename ; 'bRK(1,2);
@@ -166,7 +164,7 @@ let print_mutual sp mib =
   let mip = mipv.(0) in
   (* Case one [co]inductive *)
   if Array.length mipv = 1 then 
-    let (_,arity) = decomp_n_prod env evd nparams (body_of_type mip.mind_arity) in 
+    let (_,arity) = decomp_n_prod env evd nparams (mind_user_arity mip) in 
     let sfinite = if mip.mind_finite then "Inductive " else "CoInductive " in
     (hOV 0 [< 'sTR sfinite ; print_id mip.mind_typename ;
               if nparams = 0 then 
@@ -327,45 +325,18 @@ let list_filter_vec f vec =
   in 
   frec (Array.length vec -1) []
 
- (* The four functions print_constructors_head, print_all_constructors_head,
-   print_constructors_rel and crible implement the behavior needed for the
-   Coq Search command.  These functions take as first argument the procedure
+ (* The functions print_constructors and crible implement the behavior needed
+   for the Coq Search command.
+   These functions take as first argument the procedure
    that will be called to treat each entry.  This procedure receives the name
    of the object, the assumptions that will make it possible to print its type,
    and the constr term that represent its type. *)
 
-(*
-let print_constructors_head
-  (fn : string -> unit assumptions -> constr -> unit) c lna mip = 
-  let lC = mip.mind_lc in
-  let ass_name = assumptions_for_print lna in
-  let lidC = array_map2 (fun id c_0 -> (id,c_0)) mip.mind_consnames lC in
-  let flid = list_filter_vec (fun (_,c_0) -> head_const (body_of_type c_0) = c) lidC in
-  List.iter
-    (function (id,c_0) -> fn (string_of_id id) ass_name (body_of_type c_0)) flid
-    
-let print_all_constructors_head fn c mib = 
-  let mipvec = mib.mind_packets 
-  and n = mib.mind_ntypes in
-  let lna = array_map_to_list (fun mip -> Name mip.mind_typename) mipvec in
-  for i = 0 to n-1 do
-    print_constructors_head fn c lna mipvec.(i)
-  done
-
-let print_constructors_rel fn lna mip = 
-  let lC = mip.mind_lc in
-  let ass_name = assumptions_for_print lna in
-  let lidC = array_map2 (fun id c -> (id,c)) mip.mind_consnames lC in
-  let flid = list_filter_vec (fun (_,c) -> isRel (head_const (body_of_type c))) lidC in
-  List.iter (function (id,c) -> fn (string_of_id id) ass_name (body_of_type c))
-    flid
-*)
-
 let print_constructors fn lna mip = 
   let ass_name = assumptions_for_print lna in
   let _ =
-    array_map2 (fun id c -> fn (string_of_id id) ass_name (body_of_type c))
-    mip.mind_consnames mip.mind_lc
+    array_map2 (fun id c -> fn (string_of_id id) ass_name c)
+    mip.mind_consnames (mind_user_lc mip)
   in ()
 
 let crible (fn : string -> unit assumptions -> constr -> unit) name =
