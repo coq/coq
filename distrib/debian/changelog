@@ -1,3 +1,11 @@
+coq (7.3.bf-2) unstable; urgency=low
+
+  * New bugfix upstream version.
+  * Proof General is now Recommended since he has been freed (closes:
+    Bug#162894).
+
+ --
+
 coq (7.3-1) unstable; urgency=low
 
   * New upstream version.
