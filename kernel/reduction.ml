@@ -103,6 +103,7 @@ let rec whd_state (x, stack as s) =
     | _             -> s
 
 let whd_stack x = appterm_of_stack (whd_state (x, empty_stack))
+let whd_castapp_stack = whd_stack
 
 let stack_reduction_of_reduction red_fun env sigma s =
   let t = red_fun env sigma (app_stack s) in
@@ -1186,7 +1187,7 @@ let rec whd_ise1 sigma c =
 	whd_ise1 sigma (existential_value sigma (ev,args))
     | IsCast (c,_) -> whd_ise1 sigma c
     (* A quoi servait cette ligne ???
-    | DOP0(Sort(Type _)) -> DOP0(Sort(Type dummy_univ))
+    | IsSort (Type _) -> mkSort (Type dummy_univ)
     *)
     | _ -> c
 
