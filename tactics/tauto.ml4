@@ -72,8 +72,7 @@ let simplif t_reduce ist =
   <:tactic<
     $t_not_dep_intros;
     Repeat
-      ($t_reduce;
-       (Match Context With
+      ((Match Context With
         | [id: (?1 ? ?) |- ?] -> $t_is_conj;Elim id;Do 2 Intro;Clear id
         | [id: (?1 ? ?) |- ?] -> $t_is_disj;Elim id;Intro;Clear id
         | [id: (?1 ?2 ?3) -> ?4|- ?] ->
@@ -86,7 +85,8 @@ let simplif t_reduce ist =
         | [id: ?1 -> ?2|- ?] ->
           $t_is_unit;Cut ?2;[Intro;Clear id|Intros;Apply id;Constructor;Fail]
         | [|- (?1 ? ?)] -> $t_is_conj;Split);
-       $t_not_dep_intros)>>
+       $t_not_dep_intros;
+       $t_reduce)>>
 
 let rec tauto_main t_reduce ist =
   let t_axioms = tacticIn axioms
@@ -94,10 +94,10 @@ let rec tauto_main t_reduce ist =
   and t_is_disj = tacticIn is_disj
   and t_tauto_main = tacticIn (tauto_main t_reduce) in
   <:tactic<
-    $t_simplif;$t_axioms
+   $t_reduce;
+   ($t_simplif;$t_axioms
     Orelse
-      ($t_reduce;
-      Match Context With
+      (Match Context With
       | [id:(?1-> ?2)-> ?3|- ?] ->
         Cut ?2-> ?3;[Intro;Cut ?1-> ?2;[Intro;Cut ?3;[Intro;Clear id|
           Intros;Apply id;Assumption]|Clear id]|Intros;Apply id;Try Intro;
@@ -105,15 +105,16 @@ let rec tauto_main t_reduce ist =
       | [|- (?1 ? ?)] ->
         $t_is_disj;(Left;$t_tauto_main) Orelse (Right;$t_tauto_main))
     Orelse
-      (Intro;$t_tauto_main)>>
+      (Intro;$t_tauto_main))>>
 
 let rec intuition_main t_reduce ist =
   let t_axioms = tacticIn axioms
   and t_simplif = tacticIn (simplif t_reduce)
   and t_intuition_main = tacticIn (intuition_main t_reduce) in
   <:tactic<
-    $t_simplif;$t_axioms
-    Orelse ($t_reduce; Try (Solve [Auto with *|Intro;$t_intuition_main]))>>
+   $t_reduce;
+   ($t_simplif;$t_axioms
+    Orelse Try (Solve [Auto with *|Intro;$t_intuition_main]))>>
 
 let unfold_not_iff = function
   | None -> interp <:tactic<Unfold not iff>>
@@ -123,13 +124,19 @@ let unfold_not_iff = function
 
 let reduction_not_iff = Tacticals.onAllClauses (fun ido -> unfold_not_iff ido)
 
-let red = function
-  | None -> interp <:tactic<Repeat Red>>
+let hnf = function
+  | None -> interp <:tactic< Hnf >>
   | Some id ->
     let ast_id = nvar id in
-    interp <:tactic<Repeat (Red in $ast_id)>>
+    interp <:tactic< Hnf in $ast_id >>
 
-let reduction = Tacticals.onAllClauses red
+let simpl = function
+  | None -> interp <:tactic< Simpl >>
+  | Some id ->
+    let ast_id = nvar id in
+    interp <:tactic< Simpl in $ast_id >>
+
+let reduction = Tacticals.onAllClauses hnf
 
 (* Trick to coerce a tactic into an ast, since not provided in quotation *)
 let _ = hide_atomic_tactic "OnAllClausesRepeatRed" reduction
@@ -146,14 +153,14 @@ let tauto g =
     (tclTHEN init_intros
       (tclORELSE
         (interp (tacticIn (tauto_main t_reduction_not_iff)))
-        (interp (tacticIn (tauto_main t_reduction))))) g
+        (tclTHEN (Tacticals.onAllClauses simpl) (interp (tacticIn (tauto_main t_reduction)))))) g
   with UserError _ -> errorlabstrm "tauto" [< str "Tauto failed" >]
 
 let intuition =
   tclTHEN init_intros
     (tclORELSE
       (interp (tacticIn (intuition_main t_reduction_not_iff)))
-      (interp (tacticIn (intuition_main t_reduction))))
+      (tclTHEN (Tacticals.onAllClauses simpl) (interp (tacticIn (intuition_main t_reduction)))))
 
 let _ = hide_atomic_tactic "Tauto" tauto
 let _ = hide_atomic_tactic "Intuition" intuition
