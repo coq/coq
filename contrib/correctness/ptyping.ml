@@ -34,6 +34,9 @@ open Pcicenv
  * Les annotations passent du type CoqAst.t au type Term.constr ici. 
  * Les post-conditions sont abstraites par rapport au résultat. *)
 
+let simplify_type_of env sigma t =
+  Reductionops.nf_betaiota (Typing.type_of env sigma t)
+
 let just_reads e =
   difference (get_reads e) (get_writes e)
 
@@ -45,7 +48,7 @@ let type_v_sup loc t1 t2 =
 
 let typed_var ren env (phi,r) =
   let sign = Pcicenv.before_after_sign_of ren env in
-  let a = Typing.type_of (Global.env_of_context sign) Evd.empty phi in
+  let a = simplify_type_of (Global.env_of_context sign) Evd.empty phi in
   (phi,r,a)
 
 (* Application de fonction *)
@@ -119,7 +122,7 @@ let state_coq_ast sign a =
 
 let type_of_expression ren env c =
   let sign = now_sign_of ren env in
-  Typing.type_of (Global.env_of_context sign) Evd.empty c
+  simplify_type_of (Global.env_of_context sign) Evd.empty c
 
 let rec is_pure_type_v = function
     TypePure _ -> true
@@ -341,7 +344,7 @@ let states_expression ren env expr =
   (*i WAS
   let c = (Trad.ise_resolve true empty_evd [] (gLOB sign) c)._VAL in
   i*)
-  let ty = Typing.type_of (Global.env_of_context sign) Evd.empty c in
+  let ty = simplify_type_of (Global.env_of_context sign) Evd.empty c in
   let v = TypePure ty in
   let ef = Peffect.union e0 e in
   Expression c, (v,ef), pl0@pl
