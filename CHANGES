@@ -6,6 +6,11 @@ Bugs
 - "Intros H" now working like "Intro H" trying first to reduce if not a product
 - Forward dependencies in Cases now taken into account
 
+Extraction (details in contrib/extraction/CHANGES or documentation)
+
+- Signatures of extracted terms are now mostly expunged from dummy arguments. 	
+- Haskell extraction is now operational (tested & debugged).  
+
 Standard library
 
 - Some additions in [ZArith]: three files (Zcomplements.v, Zpower.v and Zlogarithms.v)
