@@ -67,7 +67,7 @@
   let is_proof = 
     let t = Hashtbl.create 13 in
     List.iter (fun s -> Hashtbl.add t s true)
-      [ "Theorem"; "Lemma"; "Fact"; "Remark"; "Goal"; "Local";
+      [ "Theorem"; "Lemma"; "Fact"; "Remark"; "Goal"; "Let";
 	"Correctness"; "Definition"; "Morphism" ];
     fun s -> try Hashtbl.find t s with Not_found -> false
 
@@ -236,19 +236,17 @@ let end_verb = "(*" space* "end" space+ "verb" space* "*)"
 *)
 
 let coq_command_to_hide =
-  "Implicit" 's'? space |
-  ("Recursive" space+)? "Tactic" space+ "Definition" space |
+  "Implicit" space |
+  "Ltac" space | 
   "Require" space | 
   "Load" space |
-  "Hint" 's'? space |
+  "Hint" space |
   "Transparent" space |
   "Opaque" space |
-  "Syntax" space | 
-  "Grammar" space | 
   ("Declare" space+ ("Morphism" | "Step") space) |
   "Section" space | 
   "Variable" 's'? space | 
-  "Hypothesis" space | 
+  ("Hypothesis" | "Hypotheses") space | 
   "End" space |
   ("Set" | "Unset") space+ "Printing" space+ "Coercions" space |
   "Declare" space+ ("Left" | "Right") space+ "Step" space
@@ -487,7 +485,8 @@ and comment = parse
 
 and skip_proof = parse
   | "(*" { ignore (comment lexbuf); skip_proof lexbuf }
-  | "Save" | "Qed" | "Defined" | "Abort" | "Proof" { skip_to_dot lexbuf }
+  | "Save" | "Qed" | "Defined"
+  | "Abort" | "Proof" | "Admitted" { skip_to_dot lexbuf }
   | "Proof" space* '.' { skip_proof lexbuf }
   | identifier { skip_proof lexbuf } (* to avoid keywords within idents *)
   | eof { () }
@@ -549,7 +548,7 @@ and printing_token = parse
       | Vernac_file (f,m) -> 
 	  set_module m;
 	  let hf = m ^ ".html" in
-	  set_out_file hf;  
+	  set_out_file hf;
 	  header ();
 	  coq_file f m;
 	  trailer ();
