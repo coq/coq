@@ -217,7 +217,7 @@ COQTOPBYTE=bin/coqtop.byte$(EXE)
 COQTOPOPT=bin/coqtop.opt$(EXE)
 BESTCOQTOP=bin/coqtop.$(BEST)$(EXE)
 COQTOP=bin/coqtop$(EXE)
-COQINTERFACE=bin/coq-interface$(EXE) bin/parser
+COQINTERFACE=bin/coq-interface$(EXE) bin/parser$(EXE)
 
 COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
              $(COQINTERFACE) 
@@ -268,6 +268,7 @@ clean::
 
 archclean::
 	rm -f $(COQTOPBYTE) $(COQTOPOPT) $(BESTCOQTOP) $(COQC) $(COQMKTOP)
+	rm -f $(COQTOP)
 
 # we provide targets for each subdirectory
 
@@ -282,16 +283,17 @@ toplevel: $(TOPLEVEL)
 
 # special binaries for debugging
 
-bin/coq-interface: $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
+bin/coq-interface$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
 	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@ $(INTERFACE)
 
-bin/parser: contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
+bin/parser$(EXE): contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
 	$(OCAMLC) -cclib -lunix -custom $(INCLUDES) -o $@ $(CMA) \
 	$(PARSERREQUIRES) \
 	line_parser.cmo vtp.cmo xlate.cmo parse.cmo
 
 clean::
-	rm -f bin/parser bin/coq-interface
+	rm -f bin/parser$(EXE) bin/coq-interface$(EXE)
+
 ###########################################################################
 # tests
 ###########################################################################
