@@ -24,7 +24,7 @@
 (* in Summer 1995. Several developments by E. Ledinot were an inspiration.  *)
 (****************************************************************************)
 
-(*i $Id$ *i)
+(*i $Id$ i*)
 
 Require Export Relations_1.
 Require Export Relations_2.
