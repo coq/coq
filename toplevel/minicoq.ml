@@ -6,10 +6,13 @@ open Util
 open Names
 open Generic
 open Term
+open Sign
 open Constant
 open Inductive
 open Typing
 open G_minicoq
+
+let (env : unit environment ref) = ref empty_environment
 
 let lookup_var id =
   let rec look n = function
@@ -19,17 +22,23 @@ let lookup_var id =
   in
   look 1
 
+let args sign = Array.of_list (List.map (fun id -> VAR id) (fst sign))
+
 let rec globalize bv = function
   | VAR id -> lookup_var id bv
   | DOP1 (op,c) -> DOP1 (op, globalize bv c)
   | DOP2 (op,c1,c2) -> DOP2 (op, globalize bv c1, globalize bv c2)
+  | DOPN (Const sp as op, _) ->
+      let cb = lookup_constant sp !env in DOPN (op, args cb.const_hyps)
+  | DOPN (MutInd (sp,_) as op, _) ->
+      let mib = lookup_mind sp !env in DOPN (op, args mib.mind_hyps)
+  | DOPN (MutConstruct ((sp,_),_) as op, _) ->
+      let mib = lookup_mind sp !env in DOPN (op, args mib.mind_hyps)
   | DOPN (op,v) -> DOPN (op, Array.map (globalize bv) v)
   | DOPL (op,l) -> DOPL (op, List.map (globalize bv) l)
   | DLAM (na,c) -> DLAM (na, globalize (na::bv) c)
   | DLAMV (na,v) -> DLAMV (na, Array.map (globalize (na::bv)) v)
   | Rel _ | DOP0 _ as c -> c
-
-let (env : unit environment ref) = ref empty_environment
 
 let check c = 
   let c = globalize [] c in
