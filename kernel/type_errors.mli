@@ -35,6 +35,7 @@ type type_error =
   | OccurCheck of int * constr
   | NotClean of int * constr
   | VarNotFound of identifier
+  | UnexpectedType of constr * constr
   | NotProduct of constr
   (* Pattern-matching errors *)
   | BadConstructor of constructor * inductive
@@ -90,5 +91,7 @@ val error_not_inductive : path_kind -> env -> constr -> 'a
 
 val error_ml_case : path_kind -> env -> 
   string -> constr -> constr -> constr -> constr -> 'a
+
+val error_unexpected_type : env -> actual:constr -> expected:constr -> 'a
 
 val error_not_product : env -> constr -> 'a

@@ -49,13 +49,16 @@ let error_wrong_predicate_arity_loc loc k env c n1 n2 =
 let error_needs_inversion k env x t =
   raise (TypeError (k, env, NeedsInversion (x,t)))
 
-
 let error_ill_formed_branch_loc loc k env c i actty expty =
   raise_pretype_error (loc, k, env, IllFormedBranch (c,i,actty,expty))
+
+(*s Implicit arguments synthesis errors *)
+
+let error_unexpected_type_loc loc env actty expty =
+  raise_pretype_error (loc, CCI, env, UnexpectedType (actty, expty))
 
 let error_occur_check k env ev c =
   raise (TypeError (k, env, OccurCheck (ev,c)))
 
 let error_not_clean k env ev c =
   raise (TypeError (k, env, NotClean (ev,c)))
-

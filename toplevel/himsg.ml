@@ -153,6 +153,13 @@ let explain_cant_apply_not_functional k ctx rator randl =
      'sTR("cannot be applied to the "^term_string); 'fNL; 
      'sTR" "; v 0 appl; 'fNL >]
 
+let explain_unexpected_type k ctx actual_type expected_type =
+  let ctx = make_all_name_different ctx in
+  let pract = prterm_env ctx actual_type in
+  let prexp = prterm_env ctx expected_type in
+  [< 'sTR"This type is"; 'sPC; pract; 'sPC; 'sTR "but is expected to be";
+     'sPC; prexp; 'fNL >]
+
 let explain_not_product k ctx c =
   let ctx = make_all_name_different ctx in
   let pr = prterm_env ctx c in
@@ -306,6 +313,8 @@ let explain_type_error k ctx = function
       explain_not_clean k ctx n c
   | VarNotFound id ->
       explain_var_not_found k ctx id
+  | UnexpectedType (actual,expected) ->
+      explain_unexpected_type k ctx actual expected
   | NotProduct c ->
       explain_not_product k ctx c
   (* Pattern-matching errors *)

@@ -461,7 +461,8 @@ and pretype_type valcon env isevars lvar lmeta = function
 	then
 	  { uj_val = nf_ise1 !isevars tj.uj_val;
 	    uj_type = tj.uj_type }
-	else error "This type should be another one !"
+	else
+	  error_unexpected_type_loc (loc_of_rawconstr c) env tj.uj_val v
 
 
 let unsafe_fmachine tycon nocheck isevars metamap env lvar lmeta constr =

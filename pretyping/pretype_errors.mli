@@ -11,7 +11,7 @@ open Type_errors
 open Rawterm
 (*i*)
 
-(* The type of errors raised by the pretyper *)
+(*s The type of errors raised by the pretyper *)
 
 val error_var_not_found_loc :
   loc -> path_kind -> identifier -> 'a
@@ -38,7 +38,7 @@ val error_number_branches_loc :
 val error_case_not_inductive_loc :
   loc -> path_kind -> env -> constr -> constr -> 'b
 
-(* Pattern-matching errors *)
+(*s Pattern-matching errors *)
 
 val error_bad_constructor_loc : 
   loc -> path_kind -> constructor -> inductive -> 'b
@@ -52,7 +52,9 @@ val error_wrong_predicate_arity_loc :
 val error_needs_inversion : path_kind -> env -> constr -> constr -> 'a
 
 
-(* Implicit arguments synthesis errors *)
+(*s Implicit arguments synthesis errors *)
+
+val error_unexpected_type_loc : loc -> env -> constr -> constr -> 'b
 
 val error_occur_check : path_kind -> env -> int -> constr -> 'a
 
