@@ -81,7 +81,10 @@ let init_load_path () =
   if Sys.file_exists user_contrib then 
     Mltop.add_path user_contrib Nameops.default_root_prefix;
   (* then standard library *)
-  let dirs = "states" :: dev @ [ "theories"; "tactics"; "contrib"; "ide" ] in
+  let vdirs = 
+    if !Options.v7 then [ "theories"; "contrib" ]
+    else [ "newtheories"; "newcontrib" ] in
+  let dirs = "states" :: dev @ vdirs @ [ "ide" ] in
   List.iter (fun s -> coq_add_rec_path (Filename.concat coqlib s)) dirs;
   let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
   add_ml_include camlp4;

@@ -35,9 +35,14 @@ let set_batch_mode () = batch_mode := true
 
 let remove_top_ml () = Mltop.remove ()
 
-let inputstate = ref "initial.coq"
-let set_inputstate s = inputstate:= s
-let inputstate () = if !inputstate <> "" then intern_state !inputstate
+let inputstate = ref None
+let set_inputstate s = inputstate:= Some s
+let inputstate () =
+  match !inputstate with
+    | Some "" -> ()
+    | Some s -> intern_state s
+    | None ->
+        intern_state (if !Options.v7 then "initial.coq" else "initialnew.coq")
 
 let outputstate = ref ""
 let set_outputstate s = outputstate:=s
@@ -87,11 +92,18 @@ let set_opt () = re_exec_version := "opt"
 let re_exec () =
   let s = !re_exec_version in
   let is_native = (Mltop.get()) = Mltop.Native in
-  if (is_native && s = "byte") || ((not is_native) && s = "opt") then begin
-    let prog = Sys.argv.(0) in
+  let mustbe_v8 = not !Options.v7 in
+  let prog = Sys.argv.(0) in
+  let coq = Filename.basename prog in
+  let is_v8 = coq = "coqtopnew.byte" or coq = "coqtopnew.opt" in
+  if (is_native && s = "byte") || ((not is_native) && s = "opt")
+    || (is_v8 <> mustbe_v8)
+  then begin
+    let s = if s = "" then if is_native then "opt" else "byte" else s in
     let newprog = 
       let dir = Filename.dirname prog in
-      let com = "coqtop." ^ s ^ Coq_config.exec_extension in
+      let coqtop = if mustbe_v8 then "coqtopnew." else "coqtop." in
+      let com = coqtop ^ s ^ Coq_config.exec_extension in
       if dir <> "." then Filename.concat dir com else com 
     in
     Sys.argv.(0) <- newprog;
@@ -165,15 +177,11 @@ let parse_args is_ide =
     | "-compile-verbose" :: f :: rem -> add_compile true f; parse rem
     | "-compile-verbose" :: []       -> usage ()
 
+    | "-no-proofs" :: rem -> Options.dont_load_proofs := true; parse rem
+
     | "-translate" :: rem -> make_translate true; parse rem
     | "-ftranslate" :: rem ->
         make_translate true;
-        translate_file := true;
-        parse rem
-
-    | "-translate2" :: rem -> make_translate true; p1:=false; parse rem
-    | "-ftranslate2" :: rem ->
-        make_translate true; p1:= false;
         translate_file := true;
         parse rem
 
@@ -213,6 +221,10 @@ let parse_args is_ide =
        (* implicites stricts par défaut en v8 *)
        Impargs.make_strict_implicit_args true;
        parse rem
+
+    (* Translator options *)
+    | "-no-strict" :: rem -> 
+	Options.translate_strict_impargs := false; parse rem
 
     | s :: rem -> 
 	if is_ide then begin
