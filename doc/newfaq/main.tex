@@ -14,6 +14,10 @@
 
 %\input{../macros.tex}
 
+% Making hevea happy
+%HEVEA \renewcommand{\textbar}{|}
+%HEVEA \renewcommand{\textunderscore}{\_}
+
 \def\Question#1{\stepcounter{question}\subsubsection{#1}}
 
 % version et date
@@ -2204,9 +2208,12 @@ The initial state corresponds to the state of coqtop when the interactive
 session began. It does not make sense in files to compile.
 
 
-\Question{What can I do if I get ``(*No more subgoals but non-instantiated existential variables*)''?}
+\Question{What can I do if I get ``No more subgoals but non-instantiated existential variables''?}
 
-
+This means that {\eauto} or {\eapply} didn't instantiate an
+existential variable which eventually got erased by some computation.
+You have to backtrack to the faulty occurrence of {\eauto} or
+{\eapply} and give the missing argument an explicit value.
 
 \Question{What can I do if I get ``Cannot solve a second-order unification problem''?}
 
