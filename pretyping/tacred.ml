@@ -858,8 +858,9 @@ let reduction_of_redexp = function
   | Unfold ubinds -> unfoldn ubinds
   | Fold cl -> fold_commands cl
   | Pattern lp -> pattern_occs lp
-  | ExtraRedExpr (s,c) -> Stringmap.find s !red_expr_tab
-
+  | ExtraRedExpr (s,c) ->
+      (try Stringmap.find s !red_expr_tab
+      with Not_found -> error("unknown user-defined reduction \""^s^"\""))
 (* Used in several tactics. *)
 
 exception NotStepReducible
