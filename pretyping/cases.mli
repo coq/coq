@@ -26,6 +26,7 @@ type pattern_matching_error =
   | NeedsInversion of constr * constr
   | UnusedClause of cases_pattern list
   | NonExhaustive of cases_pattern list
+  | CannotInferPredicate of (constr * types) array
 
 exception PatternMatchingError of env * pattern_matching_error
 

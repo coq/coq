@@ -37,6 +37,7 @@ type pattern_matching_error =
   | NeedsInversion of constr * constr
   | UnusedClause of cases_pattern list
   | NonExhaustive of cases_pattern list
+  | CannotInferPredicate of (constr * types) array
 
 exception PatternMatchingError of env * pattern_matching_error
 
@@ -197,18 +198,14 @@ let it_mkSpecialLetIn =
 *)
 
 type alias_constr =
-  | DepAlias of types
-  | NonDepAlias of types
+  | DepAlias
+  | NonDepAlias
 
-let lift_alias_constr k = function
-  | DepAlias t -> DepAlias (lift k t)
-  | NonDepAlias t -> NonDepAlias (lift k t)
-
-let mkSpecialLetInJudge j (na,(deppat,nondeppat,t)) =
+let mkSpecialLetInJudge j (na,(deppat,nondeppat,d,t)) =
   { uj_val =
-      (match t with
-	| DepAlias t -> mkLetIn (na,deppat,t,j.uj_val)
-	| NonDepAlias t ->
+      (match d with
+	| DepAlias -> mkLetIn (na,deppat,t,j.uj_val)
+	| NonDepAlias ->
 	    if (not (dependent (mkRel 1) j.uj_type))
 	      or (* A leaf: *) isRel deppat
 	    then 
@@ -273,7 +270,7 @@ type tomatch_stack = tomatch_status list
    
 type predicate_signature =
   | PrLetIn of (constr list * constr option) * predicate_signature
-  | PrProd of (bool * name * tomatch_type) * predicate_signature
+  | PrProd of name * tomatch_type * predicate_signature
   | PrNotInd of constr option * predicate_signature
   | PrCcl of constr
 
@@ -346,7 +343,7 @@ let rec eval_partial_args k (cargs,pargs as args) = function
   | HistoryLift n :: h -> eval_partial_args (k+n) args h 
   | [] -> k, args
 
-let rec simplify_lifted_history k = function
+let rec simplify_history = function
   | Continuation (0, l, Top) -> [], Result (eval_partial_pattern_args [] l)
   | Continuation (0, l, MakeAlias (f, rh)) ->
       let (k,(cargs,pargs)) = eval_partial_args 0 ([],[]) l in
@@ -354,18 +351,16 @@ let rec simplify_lifted_history k = function
 	| AliasConstructor ((c1,c2,d),pci) ->
 	    let c1 = applist(lift k c1,cargs) in
 	    let c2 = lift k c2 in
-	    let d = lift_alias_constr k d in
 	    (c1,c2,d), PatCstr (dummy_loc,pci,pargs,Anonymous)
 	| AliasLeaf (x,t) -> 
 	    assert (l = []);
 	    let c = lift k x in
-	    let t = lift k t in
-	    (c,c,NonDepAlias t), PatVar (dummy_loc, Anonymous) in
-      let l, h = simplify_lifted_history k (feed_history (nondeppat,pat) rh) in
+	    (c,c,NonDepAlias), PatVar (dummy_loc, Anonymous) in
+      let l, h = simplify_history
+		   (feed_history (nondeppat,pat) (lift_history k rh)) in
       (d::l, h)
-  | h -> [], lift_history k h
+  | h -> [], h
 
-let simplify_history = simplify_lifted_history 0
 (* Builds a continuation expecting [n] arguments and building [ci] applied
    to this [n] arguments *)
 
@@ -411,6 +406,7 @@ type pattern_matching_problem =
       tomatch  : tomatch_stack;
       history  : pattern_continuation;
       mat      : matrix;
+      caseloc  : loc;
       typing_function: type_constraint -> env -> rawconstr -> unsafe_judgment }
 
 (************************************************************************)
@@ -726,26 +722,15 @@ let build_aliases_context env sigma names allpats pats =
     | _::pats, Anonymous::names ->
 	insert env sign1 sign2
 	  n newallpats (List.map List.tl oldallpats) (pats,names)
-    | (deppat,nondeppat,d as a)::pats, na::names ->
+    | (deppat,nondeppat,d)::pats, na::names ->
 	let nondeppat = lift n nondeppat in
 	let deppat = lift n deppat in
-	let d = lift_alias_constr n d in
-(*
-	let t = Retyping.get_type_of env sigma pat in
-*)
 	let newallpats =
 	  List.map2 (fun l1 l2 -> List.hd l2::l1) newallpats oldallpats in
 	let oldallpats = List.map List.tl oldallpats in
-	let decl =
-	  match d with
-	    | DepAlias t ->
-		(* The alias refinement induces a refinement of its type *)
-		(* The body is needed to ensure the type *)
-		(na,Some deppat,t)
-	    | NonDepAlias t ->
-		(* The type of alias is the same as its expansion *)
-		(* Do as if it has no body *)
-		(na,Some deppat,t) in
+	let t = Retyping.get_type_of env sigma deppat in
+	let decl = (na,Some deppat,t) in
+	let a = (deppat,nondeppat,d,t) in
 	insert (push_rel decl env) (decl::sign1) ((na,a)::sign2) (n+1) 
 	  newallpats oldallpats (pats,names)
     | [], [] -> newallpats, sign1, sign2, env
@@ -882,7 +867,7 @@ let abstract_conclusion typ cs =
   let (sign,p) = decompose_prod_n n typ in
   lam_it p sign
 
-let infer_predicate env isevars typs cstrs ((mis,_) as indf) =
+let infer_predicate loc env isevars typs cstrs ((mis,_) as indf) =
   (* Il faudra substituer les isevars a un certain moment *)
   if Array.length cstrs = 0 then (* "TODO4-3" *)
     error "Inference of annotation for empty inductive types not implemented"
@@ -919,8 +904,14 @@ let infer_predicate env isevars typs cstrs ((mis,_) as indf) =
       let pred = it_mkLambda_or_LetIn (lift (List.length sign) mtyp) sign in
 *)
       (* "TODO4-2" *)
-      error ("Unable to infer a Cases predicate\n"^
-"Either there is a type incompatiblity or the problem involves dependencies")
+      (* We skip parameters *)
+      let cis = 
+	Array.map
+	  (fun cs ->
+	     applist (mkConstruct cs.cs_cstr, extended_rel_list 0 cs.cs_args))
+	  cstrs in
+      let ct = array_map2 (fun ci (_,_,t) -> (ci,t)) cis eqns in
+      raise_pattern_matching_error (loc,env, CannotInferPredicate ct)
 (*
       (true,pred)
 *)
@@ -933,8 +924,8 @@ let liftn_predicate n k pred =
   | PrNotInd (copt,ccl) ->
       let p = if copt = None then 0 else 1 in
       PrNotInd (option_app (liftn n k) copt,liftrec (k+p) ccl)
-  | PrProd ((dep,na,t),pred) ->
-	PrProd ((dep,na,liftn_tomatch_type n k t), liftrec (k+1) pred)
+  | PrProd (na,t,pred) ->
+      PrProd (na,liftn_tomatch_type n k t, liftrec (k+1) pred)
   | PrLetIn ((args,copt),pred) ->
       let args' = List.map (liftn n k) args in
       let copt' = option_app (liftn n k) copt in
@@ -954,8 +945,8 @@ let subst_predicate (args,copt) pred =
     | PrNotInd (copt,pred) ->
 	let p = if copt = None then 0 else 1 in
 	PrNotInd (option_app (substnl sigma k) copt, substrec (k+p) pred)
-    | PrProd ((dep,na,t),pred) ->
-	PrProd ((dep,na,substnl_tomatch sigma k t), substrec (k+1) pred)
+    | PrProd (na,t,pred) ->
+	PrProd (na, substnl_tomatch sigma k t, substrec (k+1) pred)
     | PrLetIn ((args,copt),pred) ->
 	let args' = List.map (substnl sigma k) args in
 	let copt' = option_app (substnl sigma k) copt in
@@ -970,7 +961,7 @@ let specialize_predicate_var = function
   | PrLetIn (tm,pred) -> subst_predicate tm pred
 
 let rec extract_predicate = function
-  | PrProd ((_,na,t),pred) -> mkProdTomatch na t (extract_predicate pred)
+  | PrProd (na,t,pred) -> mkProdTomatch na t (extract_predicate pred)
   | PrNotInd (Some c,pred) -> substl [c] (extract_predicate pred)
   | PrNotInd (None,pred) -> extract_predicate pred
   | PrLetIn ((args,Some c),pred) -> substl (c::(List.rev args)) (extract_predicate pred)
@@ -1012,21 +1003,30 @@ let weaken_predicate q pred =
     if n=0 then pred else match pred with
       | (PrLetIn _ | PrCcl _ | PrNotInd _) ->
 	  anomaly "weaken_predicate: only product can be weakened"
-      | PrProd ((dep,_,IsInd (_,IndType(indf,realargs))),pred) ->
-	  (* To make it more uniform, we apply realargs but they dont occur! *)
+      | PrProd (_,t,pred) ->
+	  (* copt can occur in pred even if the original problem *)
+	  (* is not dependent *)
+	  let dep = 
+            (* We are lazy, and do as if it were always dependent *)
+            true
+            (* dependent_predicate (mkRel 1) pred *)
+          in
 	  let copt, p = if dep then Some (mkRel (n+k)), 1 else None, 0 in
-	  (* We replace 1 product by |realargs| arguments + possibly copt *)
-	  (* Then we need to shift pred accordingly (but *)
-	  let nletargs = (List.length realargs)+p in
-	  let pred = liftn_predicate (nletargs-p) (p+1) pred in 
-	  (* The current lift to refer to the y1...yn is now k+nletargs *)
-	  PrLetIn ((realargs, copt), weakrec (n-1) (nletargs+k) pred)
-      | PrProd ((dep,_,NotInd _),pred) ->
-	  (* Does copt occur in pred ? Does it need to be remembered ? *)
-	  let copt, p = if dep then Some (mkRel (n+k)), 1 else None, 0 in
-          (* PrNotInd is a binding iff copt <> None *)
-	  PrNotInd (copt, weakrec (n-1) (k+p) pred)
-  in weakrec q 0 (lift_predicate q pred)
+	  match t with
+	    | IsInd (_,IndType(_,realargs)) ->
+		(* To make it more uniform, we apply realargs but *)
+		(* they dont occur! *)
+		(* We replace 1 product by |realargs| arguments + possibly  *)
+		(* copt Then we need to shift pred accordingly *)
+		let nletargs = List.length realargs in
+		let pred = liftn_predicate nletargs (p+1) pred in 
+		(* The lift to refer to the y1...yn is now k+nletargs+p *)
+		PrLetIn ((realargs, copt), weakrec (n-1) (k+nletargs+p) pred)
+	    | NotInd _ ->
+		PrNotInd (copt, weakrec (n-1) (k+p) pred) in
+  (* We inserted q arguments in context then we lift pred by q *)
+  let pred = lift_predicate q pred in
+  weakrec q 0 pred
 
 (*****************************************************************************)
 (* pred = [X:=realargs;x:=e]P types the following problem:                   *)
@@ -1046,8 +1046,7 @@ let specialize_predicate_match tomatchs cs = function
       (* Assume some gamma st: gamma, (X,x:=realargs,copt) |- pred *)
       let k = List.length args + (if copt = None then 0 else 1) in
       (* We adjust pred st: gamma, x1...xn, (X,x:=realargs,copt) |- pred *)
-      let depth = if copt = None then 0 else cs.cs_nargs in
-      let pred' = liftn_predicate depth (k+1) pred in
+      let pred' = liftn_predicate cs.cs_nargs (k+1) pred in
       let argsi = Array.to_list cs.cs_concl_realargs in
       let copti = option_app (fun _ -> build_dependent_constructor cs) copt in
       (* The substituends argsi, copti are all defined in gamma, x1...xn *)
@@ -1055,14 +1054,15 @@ let specialize_predicate_match tomatchs cs = function
       let pred'' = subst_predicate (argsi, copti) pred' in
       let dep = (copt <> None) in
       List.fold_right
-	(* Ne perd-on pas des cas en ne posant pas true à la place de dep ? *)
-	(fun ((na,t),_) p -> PrProd ((dep,na,t),p)) tomatchs pred''
+	(* realargs doit être rehaussé non? *)
+	(fun ((na,t),_) p -> PrProd (na,t,p)) tomatchs pred''
 
-let find_predicate env isevars p typs cstrs current (IndType (indf,realargs)) =
+let find_predicate loc env isevars p typs cstrs current
+  (IndType (indf,realargs)) =
   let (dep,pred) =
     match p with
       | Some p -> abstract_predicate env (evars_of isevars) indf p
-      | None -> infer_predicate env isevars typs cstrs indf in
+      | None -> infer_predicate loc env isevars typs cstrs indf in
   let typ = whd_beta (applist (pred, realargs)) in
   if dep then
     (pred, whd_beta (applist (typ, [current])), new_Type ())
@@ -1131,12 +1131,9 @@ let build_branch current typ pb eqns const_info =
     if Array.length const_info.cs_concl_realargs = 0
       & not (known_dependent pb.pred)
     then
-      NonDepAlias (type_of_tomatch typ)
-    else
-      let tyi = inductive_of_constructor const_info.cs_cstr in
-      let params = List.map (lift const_info.cs_nargs) const_info.cs_params in
+      NonDepAlias
+    else 
       DepAlias
-	(applist(mkInd tyi,params@Array.to_list const_info.cs_concl_realargs))
   in
   let partialci =
     applist (mkConstruct const_info.cs_cstr, const_info.cs_params) in
@@ -1224,7 +1221,7 @@ and match_current pb (n,tm) =
 	  let brtyps = Array.map (fun (_,j) -> body_of_type j.uj_type) brs in
 	  let tags = Array.map fst brs in
 	  let (pred,typ,s) =
-	    find_predicate pb.env pb.isevars 
+	    find_predicate pb.caseloc pb.env pb.isevars 
 	      pb.pred brtyps cstrs current indt in
 	  let ci = make_case_info pb.env mind None tags in
 	  pattern_status tags,
@@ -1323,8 +1320,8 @@ let prepare_initial_alias_eqn isdep tomatchl eqn =
   let env = rename_env subst eqn.rhs.rhs_env in
   { eqn with patterns = pats; rhs = { eqn.rhs with rhs_env = env } }
 
-let prepare_initial_aliases isdep tomatchl mat =
-  List.map (prepare_initial_alias_eqn isdep tomatchl) mat
+let prepare_initial_aliases isdep tomatchl mat = mat
+(*  List.map (prepare_initial_alias_eqn isdep tomatchl) mat*)
 
 (*
 let prepare_initial_alias lpat tomatchl rhs =
@@ -1598,6 +1595,7 @@ let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
       tomatch  = initial_pushed;
       history  = start_history (List.length initial_pushed);
       mat      = matx;
+      caseloc  = loc;
       typing_function = typing_fun } in
   
   let _, j = compile pb in
