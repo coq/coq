@@ -530,6 +530,9 @@ scripts won't be modular. If you add some hyphothesis to your theorem
 (or change their order), you will have to change your proof to adapt
 to the new names.
 
+\Question[namedintrosbis]{How can I automatize that ?}
+
+You can use the {\tt Show Intro.} command to generate the names and use your editor to generate a fully named \intro tactic. 
 
 \Question[assert]{I want to state a fact that I will use later as an hypothesis, how can I do it ?}
 
@@ -574,7 +577,6 @@ Qed.
 \Question[subgoalsorder]{How can I change the order of the subgoals ?}
 
 
-
 \Question[hyphotesisorder]{How can I change the order of the hypothesis ?}
 
 You can use the {\tt move ... after} command.
@@ -605,6 +607,9 @@ You should use the \eapply tactic.
 Sometime you can use the \abstractt tactic, which makes as if you had
 stated one intermediated lemmas, this speeds up the typing process.
 
+\Question[admitted]{How can use a proof which is not finished ?}
+
+You can use the {\tt Admitted} command to state your current proof as an axiom.
 
 %%%%%%%
 \subsection{\Ltac}
@@ -695,31 +700,6 @@ that is still unknown.
 
 \Question[dependanttype]{What is a dependent type ?}
 
-\Question[coqlatex]{How can I generate some latex from my development ?}
-
-\Question[coqhtml]{How can I generate some HTML from my development ?}
-
-\Question[depgraph]{How can I generate some dependancy graph from my development ?}
-
-\Question[coqtex]{How can I cite some \Coq in my latex document ?}
-
-\Question[coqidedescr]{What is \CoqIde ?}
-
-\Question[irrelevance]{What is proof-irrelevance ?}
-
-
-
-\Question[extraction]{What is program extraction ?}
-
-Program extraction consist in generating a prgram from a constructive proof.
-
-\Question[extraclang]{Which language can I extract to ?}
-
-You can extract your programs to Objective Caml and Haskell.
-
-\Question[extraaxiom]{How can I change extract an incomplete proof ?}
-
-You can provide programs for your axioms.
 
 \Question[reflection]{What is a proof by reflection ?}
 
@@ -732,6 +712,40 @@ example the arithmetical expressions) into an object of the Coq
 language itself (in this case an inductive type denoting arithmetical
 expressions).  For more information see~\cite{howe,harrison,boutin}
 and the last chapter of the Coq'Art.
+
+
+\Question[irrelevance]{What is proof-irrelevance ?}
+
+
+\section{Publishing tools}
+
+\Question[coqlatex]{How can I generate some latex from my development ?}
+
+\Question[coqhtml]{How can I generate some HTML from my development ?}
+
+\Question[depgraph]{How can I generate some dependancy graph from my development ?}
+
+\Question[coqtex]{How can I cite some \Coq in my latex document ?}
+
+
+\section{CoqIde}
+
+\Question[coqidedescr]{What is \CoqIde ?}
+
+
+\section{Extraction}
+
+\Question[extraction]{What is program extraction ?}
+
+Program extraction consist in generating a prgram from a constructive proof.
+
+\Question[extraclang]{Which language can I extract to ?}
+
+You can extract your programs to Objective Caml and Haskell.
+
+\Question[extraaxiom]{How can I change extract an incomplete proof ?}
+
+You can provide programs for your axioms.
 
 
 \section{Conclusion and Farewell.}
