@@ -8,7 +8,7 @@
 
 VERSION=8.0beta
 VERSIONSI=1.0
-DATE="Dec 2003"
+DATE="Jan 2004"
 
 # a local which command for sh
 which () {
