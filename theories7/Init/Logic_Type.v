@@ -268,9 +268,9 @@ Notation sym_idT  := sym_id (only parsing).
 Notation trans_idT  := trans_id (only parsing).
 Notation congr_idT  := congr_id (only parsing).
 Notation sym_not_idT  := sym_not_id (only parsing).
-Notation identityT_ind_r := identityT_ind_r (only parsing).
-Notation identityT_rec_r  := identityT_rec_r (only parsing).
-Notation identityT_rect_r := identityT_rect_r (only parsing).
+Notation identityT_ind_r := identity_ind_r (only parsing).
+Notation identityT_rec_r  := identity_rec_r (only parsing).
+Notation identityT_rect_r := identity_rect_r (only parsing).
 ].
 Inductive prodT [A,B:Type] : Type := pairT : A -> B -> (prodT A B).
 
