@@ -897,6 +897,111 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Ground.
   Defined.
 
+  Definition merge :
+    (s1,s2:tree)(bst s1) -> (avl s1) -> (bst s2) -> (avl s2) ->
+    ((y1,y2:elt)(In_tree y1 s1) -> (In_tree y2 s2) -> (X.lt y1 y2)) ->
+    `-2 <= (height s1) - (height s2) <= 2` ->
+    { s:tree | (bst s) /\ (avl s) /\
+               ((height_of_node s1 s2 (height s)) \/
+                (height_of_node s1 s2 ((height s)+1))) /\
+               ((y:elt)(In_tree y s) <-> 
+                       ((In_tree y s1) \/ (In_tree y s2))) }.
+  Proof.
+    Destruct s1; Simpl.
+    (* s1 = Leaf *)
+    Intros; Exists s2; Unfold height_of_node; Simpl; Intuition.
+    AVL H2; Omega.
+    Inversion_clear H7.
+    (* s1 = Node t0 t1 t2 *)
+    Destruct s2; Simpl.
+    (* s2 = Leaf *)
+    Intros; Exists (Node t0 t1 t2 z); Unfold height_of_node; Simpl; Intuition.
+    AVL H0; Omega.
+    Inversion_clear H7.
+    (* s2 = Node t3 t4 t5 *)
+    Intros; Case (Z_ge_lt_dec z z0); Intro.
+    (* z >= z0 *)
+    Case (remove_max (Node t0 t1 t2 z)); Auto.
+    Discriminate.
+    Intros (s'1,m); Intuition.
+    Case (bal s'1 m (Node t3 t4 t5 z0)); Auto.
+    Ground.
+    Clear H3 H11; AVL H0; AVL H2; AVL H8; Simpl in H7; Omega.
+    Intro s'; Unfold height_of_node; Intuition. 
+    Exists s'.
+    Do 3 (Split; Trivial).
+    Clear H3 H9 H11 H15; AVL H0; AVL H2; AVL H8; AVL H13.
+    Simpl in H7 H14 H12; Simpl.
+    Intuition Omega.
+    Clear H7 H14 H12; Ground.
+    (* z < z0 *)
+    Case (remove_min (Node t3 t4 t5 z0)); Auto.
+    Discriminate.
+    Intros (s'2,m); Intuition.
+    Case (bal (Node t0 t1 t2 z) m s'2); Auto.
+    Ground.
+    Clear H3 H11; AVL H0; AVL H2; AVL H8; Simpl in H7; Omega.
+    Intro s'; Unfold height_of_node; Intuition. 
+    Exists s'.
+    Do 3 (Split; Trivial).
+    Clear H3 H9 H11 H15; AVL H0; AVL H2; AVL H8; AVL H13.
+    Simpl in H7 H14 H12; Simpl.
+    Intuition Omega.
+    Clear H7 H14 H12; Ground.
+  Defined.
+
+  Definition remove_rec :
+    (x:elt)(s:tree)(bst s) -> (avl s) ->
+    { s':tree | (bst s') /\ (avl s') /\
+                ((height s') = (height s) \/ (height s') = (height s) - 1) /\
+                ((y:elt)(In_tree y s') <-> (~(E.eq y x) /\ (In_tree y s))) }.
+  Proof.
+    Induction s; Simpl; Intuition.
+    (* s = Leaf *)
+    Exists Leaf; Simpl; Intuition; 
+      (Inversion_clear H1 Orelse Inversion_clear H3).
+    (* s = Node t0 t1 t2 *)
+    Case (X.compare x t1); Intro.
+    (* x < t1 *)
+    Clear H0; Case H; Clear H.
+    Inversion_clear H1; Trivial.
+    Inversion_clear H2; Trivial.
+    Intros t'0; Intuition.
+    Case (bal t'0 t1 t2); Auto.
+    Inversion_clear H1; Trivial.
+    Inversion_clear H2; Trivial.
+    Clear H0; Intro; Intro; Generalize (H5 y); Clear H5; Intuition.
+    Inversion_clear H1; Auto.
+    Inversion_clear H1; Auto.
+    Clear H5; AVL H2; AVL H3; Omega.
+    Intros s'; Unfold height_of_node; Intuition.
+    Exists s'; Do 3 (Split; Trivial).
+    Clear H5 H9; AVL H2; AVL H3; AVL H7; Omega.
+    Clear H0 H8 H6; Intuition.
+    Generalize (H9 y) (H5 y); Clear H5 H9; Intuition.
+    Apply (!ME.eq_not_lt y t1); Auto.
+    Apply ME.eq_lt with x; Auto.
+    Apply (!ME.lt_not_gt t1 y); Auto.
+    Inversion_clear H1; Apply H16; Auto.
+    Apply ME.eq_lt with x; Auto.
+    Generalize (H9 y) (H5 y); Clear H5 H9; Intuition.
+    Inversion_clear H8; 
+    Generalize (H9 y) (H5 y); Clear H5 H9; Intuition.
+    (* x = t1 *)
+    Clear H H0; Case (merge t0 t2).
+    Inversion_clear H1; Auto.
+    Inversion_clear H2; Auto.
+    Inversion_clear H1; Auto.
+    Inversion_clear H2; Auto.
+    Intros; Apply X.lt_trans with t1; Inversion_clear H1; Auto.
+    AVL H2; Omega.
+    Intro s'; Unfold height_of_node; Intuition.
+    Exists s'; Do 3 (Split; Trivial).
+    Clear H5; AVL H2; AVL H3; Omega.
+    Clear H0; Intro; Generalize (H5 y); Clear H5; Intuition.
+
+  Defined.
+
   (** * Deletion *)
 
 
