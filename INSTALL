@@ -15,7 +15,7 @@ WHAT DO YOU NEED ?
        (available at http://caml.inria.fr/camlp4/)
 
    Until now, it has mainly been tested on Sun workstations running Solaris,
-   and DEC alpha and Pentium workstations running Linux. By ftp, Coq
+   and DEC alpha and Pentium workstations running Linux. By FTP, Coq
    comes as a single compressed tar-file. You have probably already
    decompressed it if you are reading this document.
 
@@ -33,27 +33,27 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 =================================================
 
 1- Check that you have the Objective Caml compiler version 3.00 (or later)
-   installed on your computer and that "ocamlmktop" and "ocamlc.opt" (or
-   its bytecode version "ocamlc") lie in a directory which is present
-   in your $PATH enviroment variable. 
+   installed on your computer and that "ocamlmktop" and "ocamlc" (or
+   its native code version "ocamlc.opt") lie in a directory which is present
+   in your $PATH environment variable. 
 
    To get Coq in native-code, (it runs 4 to 10 times faster than
    bytecode, but it takes more time to compile, uses more space),
-   you will also need the "ocamlopt.opt" (or its bytecode version
-   "ocamlopt") command.
+   you will also need the "ocamlopt" (or its native code version
+   "ocamlopt.opt") command.
 
 2- Check that you have Camlp4 installed on your 
    computer and that the command "camlp4" lies in a directory which
-   is present in your $PATH  enviroment variable path.
+   is present in your $PATH environment variable path.
    (You need Camlp4 in both bytecode and native versions if
    your platform supports it).
 
 3- The uncompression and un-tarring of the distribution file gave birth 
-   to a directory named "coq-7". You can rename this directory and put 
+   to a directory named "coq-7.xx". You can rename this directory and put 
    it wherever you want. Just keep in mind that you will need some spare
    space during the compilation (about 20 Mb of disk space for the whole
    system in bytecode, and 15 Mb more for native-code compilation). Once
-   installed, the binaries take about 14 Mb, and the library about 7 Mb.
+   installed, the binaries take about 14 Mb, and the library about 9 Mb.
 
 4- First you need to configure the system. It is done automatically with
    the command:
@@ -86,7 +86,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 -arch <value>			(default is the result of the command "arch")
 	An arbitrary architecture name for your machine (useful when
 	compiling Coq on two different architectures for which the
-	result of "arch" is the same, e.g. SunOS and Solaris)
+	result of "arch" is the same, e.g. Sun OS and Solaris)
 
 -local
         Compile Coq to run in its source directory. The installation (step 6)
@@ -107,7 +107,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    to compile Coq in Objective Caml bytecode (and native-code if supported).
 
    This will compile the entire system. This phase can take more or less time,
-   depending on your architecture (about 30 minutes for both complilations
+   depending on your architecture (about 30 minutes for both compilations
    on a Pentium Pro 150), and is fairly verbose. 
 
 6- You can now install the Coq system. Executables, libraries, manual pages
@@ -126,7 +126,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 
 7- You can now clean all the sources. (You can even erase them.)
 
-	make cleanall
+	make clean
 
 
 INSTALLATION PROCEDURE FOR ADVANCED USERS.
@@ -142,10 +142,7 @@ INSTALLATION PROCEDURE FOR ADVANCED USERS.
 	./configure -local <other options>
 
    Then compile the sources as described in step 5 above. The resulting
-   binaires will reside in the subdirectory bin/<arch> where <arch> stands
-   for your architecture (usually the result of the Unix command "arch").
-   Once the compilation is done, you can clean some directories with
-   "make clean-src" to save some disk space, the system still being usable.
+   binaries will reside in the subdirectory bin/.
 
    If you want to compile the sources for debugging (i.e. with the option
    -g of the Caml compiler) then add the -debug option at configuration
@@ -159,31 +156,6 @@ INSTALLATION PROCEDURE FOR ADVANCED USERS.
    to use coqmktop and the Objective Caml debugger with Coq.
 
 
-UN-INSTALLATION.
-================
-
-  Maybe one day you want to move the binaries, libaries and man pages
-of Coq to another place, remove them to install a newer version, or simply
-remove completely Coq from your system.
-
-  The installation procedure (during the "make install" invocation)
-produces a file COQFILES which lists all files
-copied during the installation. This file is created in the Coq Library
-directory, which can be easily known by typing "coqtop -where"
-
-  To remove the binaries and the library files on a Unix system, you
-just have to type :
-
-	coqtop -uninstall
-
-Of course, you may need to be root to do that.
-
-NOTA BENE : In order not to delete others files than the coq system files, 
-	`coqtop -uninstall' deletes only files, not directories. Maybe after
-	the un-installation, they are some empty directories. You can delete
-	them (especially /usr/local/lib/coq) by hand after having verified
-	that they are empty.
-
 THE AVAILABLE COMMANDS.
 =======================
 
@@ -192,49 +164,27 @@ THE AVAILABLE COMMANDS.
 	coqtop		The Coq toplevel
 	coqc		The Coq compiler
 
-   Add option "-opt" to get Coq running natively (but then you cannot load
-   your own tactics dynamically -- see also option "-full")
+   There are actually two binaries for the interactive system, coqtop.byte
+   and coqtop.opt (respectively bytecode and native code versions of Coq). 
+   coqtop is a link to the fastest version, i.e. coqtop.opt if any, and
+   coqtop.byte otherwise. coqc also invokes the fastest version of Coq.
+   Options -opt and -byte to coqtop and coqc selects a particular binary.
 
     * `coqtop' launches Coq in the interactive mode. The default state
-      (see the "-inputstate" option) is `tactics.coq', which contains some 
+      (see the "-inputstate" option) is `initial.coq', which contains some 
       basic logical definitions, the associated parsing and printing rules,
-      and the following tactic modules: Tauto, ProPre, Program, Prolog and Inv.
-      This top-level is built on a Objective Caml top-level. From the `coqtop'
-      top-level, one can go to the Objective Caml top-level with the command:
-	
-		Drop. 
-
-      One goes back to Coq through the Objective Caml commands:
-
-                #use "include.ml";;
-		go();;
+      and the following tactic modules: Equality, Tauto, Inv, EAuto and Refine.
 
     * `coqc' allows compilation of Coq files directly from the command line.
       To compile a file foo.v, do:
 
-		coqc foo
+		coqc foo.v
 
       It will produce a file foo.vo, that you can now load through the Coq 
       command "Require". 
 
-   For both coqtop and coqc the option -opt launches the native-code version,
-   and the option -full a native-code version with all the tactics (that is 
-   the tactics Linear, Extraction and Natural added to the standard tactics). 
-
-   The `make world' and `make world-opt' commands create three distinct
-   possible input states which can be used by `coqtop':
-
-    * tactics, which is the default state described above.
-
-    * state,  which is similar to `tactics' regarding the pre-loaded Coq
-      definitions, but does not load any tactic file.
-
-    * barestate, which gives you Coq without any pre-loaded definition. It is
-      essentially used for compiling theories/INIT/ and thus building the 
-      other state files.
-
    A detailed description of these commands and of their options is given
-   in the Reference Manual (which you can get by ftp, in the doc/ directory) 
+   in the Reference Manual (which you can get by FTP, in the doc/ directory) 
    and in the corresponding manual pages.
 
 
@@ -249,7 +199,7 @@ COMMON PROBLEMS.
 	./configure -src <correct path> <other options>
 
     * The `make install' procedure uses mkdirhier, a program that may
-   not be present on certain systems. T fix that, try to replace
+   not be present on certain systems. To fix that, try to replace
    mkdirhier with mkdir -p
 
 COMPILING FOR DIFFERENT ARCHITECTURES.
@@ -257,7 +207,7 @@ COMPILING FOR DIFFERENT ARCHITECTURES.
 
    This section explains how to compile Coq for several architecture,
    sharing the same sources. The important fact is that some files are 
-   architecture dependent (.cmx .o and executable  files for instance)
+   architecture dependent (.cmx, .o and executable  files for instance)
    but others are not (.cmo and .vo). Consequently, you can :
 
    o  save some time during compilation by not cleaning the architecture
@@ -278,7 +228,7 @@ COMPILING FOR DIFFERENT ARCHITECTURES.
 		./configure <options>
 
      You can specify the same directory for the standard library but you
-     MUST specify a different directory for the binaires (of course).
+     MUST specify a different directory for the binaries (of course).
 
    * Compile and install the system as described in steps 5 and 6 above.
 
@@ -286,14 +236,14 @@ COMPILING FOR DIFFERENT ARCHITECTURES.
 MOVING BINARIES OR LIBRARY.
 ===========================
 
-   If you move the binaries or the library, Coq will be "lost". Usually,
-   running "coqtop" will then return an error message of the kind:
+   If you move the binaries or the library, Coq will be "lost".
+   Running "coqtop" would then return an error message of the kind:
 
 	Error during initialization :
-	Error: Can't find file tactics.coq on loadpath
+	Error: Can't find file initial.coq on loadpath
 
    If you really have (or want) to move the binaries or the library, then
-   you have to tell their new places to Coq, using the options -bindir (for
+   you have to indicate their new places to Coq, using the options -bindir (for
    the binaries directory) and -libdir (for the standard library directory) :
 
 	coqtop -bindir <new directory> -libdir <new directory>
