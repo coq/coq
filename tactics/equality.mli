@@ -99,7 +99,7 @@ val dEq : clause -> tactic
 val dEqThen : (int -> tactic) -> clause -> tactic
 
 val make_iterated_tuple : 
-  'a evar_map -> env -> (constr * constr) -> (constr * constr) 
+  env -> 'a evar_map -> (constr * constr) -> (constr * constr) 
     -> constr * constr * constr
 
 val subst : constr -> clause -> tactic

@@ -9,6 +9,7 @@ open Term
 open Global
 open Sign
 open Environ
+open Inductive
 open Printer
 open Reduction
 open Retyping
@@ -83,19 +84,6 @@ let dest_match_eq gls eqn =
 	  errorlabstrm "dest_match_eq" 
 	    [< 'sTR "no primitive equality here" >]))
     
-let type_of_predicate_argument gls ity globargs =
-  let env = pf_env gls in
-  let sigma = project gls in 
-  let sort = sort_of_goal gls  in
-  let elim = Indrec.make_case_gen env sigma ity sort in
-  let type_elim = type_of env sigma elim in
-  let nparams = mind_nparams ity in
-  let (hyps,predicate,_) = named_push_and_liftl env nparams [] type_elim [] in
-  let (_,predicate,_) = lam_and_popl nparams hyps predicate [] in
-  let prod = whd_beta env Evd.empty (applist (predicate,globargs)) in
-  let (_,ty,_) = destProd prod in
-  ty
-
 let implicit = Sort implicit_sort
 
 let change_sign env (vars,rels) =
@@ -105,83 +93,80 @@ let change_sign env (vars,rels) =
        let tt = execute_type env Evd.empty t in push_rel (n,tt) env)
     env' rels
 
-let make_inv_predicate (ity,args) c dflt_concl dep_option gls =
-  let env = pf_env gls in
-  let sigma = project gls in
-  let sign = pf_hyps gls in
-  let concl = (pf_concl gls) in
-  let id = destVar c in 
-  let nparams = mind_nparams ity in
-  let (globargs,largs_init) = list_chop nparams args in
-  let arity = hnf_prod_applist env sigma "make_inv_predicate" 
-                (nf_betadeltaiota env sigma (mind_arity ity)) globargs in 
-  let len = List.length largs_init in
-  let hyps = [] in
-  let largs = List.map insert_lifted largs_init in
-  let (hyps,larg_var_list,concl,dephyp) =                   
-    if not dep_option (* (dependent (VAR id) concl) *) then 
-      (* We push de arity and leave concl unchanged *)
-      let hyps_ar,_,largs_ar = named_push_and_liftl env len hyps arity largs in
-      let larg_var_list =
-        list_map_i (fun i ai -> (extract_lifted ai,len-i+1)) 1 largs
-      in 
-      (hyps_ar,larg_var_list,concl,0)
-    else 
-      if not (dependent (VAR id) concl) then errorlabstrm "make_inv_predicate"
-        [< 'sTR "Current goal does not depend on "; print_id id >]
-      else   
-       (* We abstract the conclusion of goal with respect to args and c to be
-	* concl in order to rewrite and have c also rewritten when the case
-        * will be done *)
-        let p=type_of_predicate_argument gls ity globargs in
-        let c2 =
-          (match dflt_concl with
-             | None -> abstract_list_all gls p concl (largs_init@[c])  
-             | (Some concl) -> concl) 
-	in  
-        let hyps,_,largs =
-          named_push_lambda_and_liftl env (nb_lam c2) hyps c2 largs in     
-        let c3 = whd_beta env Evd.empty
-                   (applist (c2,Array.to_list
-                               (rel_vect (List.length largs)
-                                  (nb_prod arity +1)))) 
-	in
-        let larg_var_list =
-          list_map_i (fun i ai-> (extract_lifted ai,len-i+2)) 1 largs 
-        in 
-	(hyps,larg_var_list,c3,1)
+(* Environment management *)
+let push_rel_type sigma (na,t) env =
+  push_rel (na,make_typed t (get_sort_of env sigma t)) env
+
+let push_rels vars env =
+  List.fold_left (fun env nvar -> push_rel_type Evd.empty nvar env) env vars
+
+type inversion_status = Dep of constr option | NoDep
+
+let compute_eqn env sigma n i ai =
+  (ai,get_type_of env sigma ai),
+  (Rel (n-i),get_type_of env sigma (Rel (n-i)))
+
+let make_inv_predicate env sigma ind id status concl =
+  let indf,realargs = dest_ind_type ind in
+  let nrealargs = List.length realargs in
+  let (hyps,concl) =
+    match status with
+      | NoDep ->
+	  (* We push the arity and leave concl unchanged *)
+	  let hyps_arity,_ = get_arity env sigma indf in
+	  let env' = push_rels hyps_arity env in
+	  (hyps_arity,concl)
+      | Dep dflt_concl ->
+	  if not (dependent (VAR id) concl) then
+	    errorlabstrm "make_inv_predicate"
+              [< 'sTR "Current goal does not depend on "; print_id id >];
+          (* We abstract the conclusion of goal with respect to
+             realargs and c to * be concl in order to rewrite and have
+             c also rewritten when the case * will be done *)
+	  let pred =
+            match dflt_concl with
+              | Some concl -> concl (*assumed it's some [x1..xn,H:I(x1..xn)]C*)
+              | None ->
+		let sort = get_sort_of env sigma concl in
+		let p = make_arity env sigma true indf sort in
+		abstract_list_all env sigma p concl (realargs@[VAR id])
+	  in
+	  let hyps,_ = decompose_lam pred in
+	  let c3 =
+	    whd_beta env sigma
+	      (applist (pred,rel_list nrealargs (nrealargs +1))) 
+	  in
+
+
+		(hyps,c3)
   in
+  let n = List.length hyps in
+  let env' = push_rels hyps env in
+  let realargs' = List.map (lift n) realargs in
+  let pairs = list_map_i (compute_eqn env' sigma n) 0 realargs' in
+  let nhyps = List.length hyps in
   (* Now the arity is pushed, and we need to construct the pairs
    * ai,Rel(n-i+1) *)
   (* Now, we can recurse down this list, for each ai,(Rel k) whether to
      push <Ai>(Rel k)=ai (when   Ai is closed).
    In any case, we carry along the rest of larg_var_list *)
-  let rec build_concl hyps n = function
-      | [] ->
-          let neqns = (List.length hyps) - dephyp - len in
-	  let (hyps1,hyps2) = list_chop neqns hyps in
-          let hyps,concl,_ = prod_and_popl neqns hyps concl [] in
-	  (lam_it (prod_it concl hyps1) hyps2,neqns)
-      | (ai,k)::restlist ->
-	  let ai = lift n ai in
-	  let k = k+n in
-          let tk = (Typeops.relative (change_sign env (sign,hyps)) k).uj_type in
-          let (lhs,eqnty,rhs) =
-            if closed0 tk then 
-	      (Rel k,tk,ai)
-            else 
-	      make_iterated_tuple Evd.empty
-		(change_sign env (sign,hyps))
-		(ai,type_of env Evd.empty ai)
-		(Rel k,tk)
-	  in
-          let type_type_rhs = get_sort_of env sigma (type_of env sigma rhs) in
-          let sort = destSort (pf_type_of gls (pf_concl gls)) in 
-          let eq_term = find_eq_pattern type_type_rhs sort in
-          let eqn = applist (eq_term ,[eqnty;lhs;rhs]) in 
-	  build_concl ((Anonymous,eqn)::hyps) (n+1) restlist
+  let rec build_concl eqns n = function
+    | [] -> (prod_it concl eqns,n)
+    | ((ai,ati),(xi,ti))::restlist ->
+        let (lhs,eqnty,rhs) =
+          if closed0 ti then 
+	    (xi,ti,ai)
+          else 
+	    make_iterated_tuple env' sigma (ai,ati) (xi,ti)
+	in
+        let type_type_rhs = get_sort_of env sigma (type_of env sigma rhs) in
+        let sort = get_sort_of env sigma concl in 
+        let eq_term = find_eq_pattern type_type_rhs sort in
+        let eqn = applist (eq_term ,[eqnty;lhs;rhs]) in 
+	build_concl ((Anonymous,lift n eqn)::hyps) (n+1) restlist
   in
-  let (predicate,neqns) = build_concl hyps 0 larg_var_list in
+  let (newconcl,neqns) = build_concl hyps 0 pairs in
+  let predicate = it_lambda_name env newconcl hyps in
   (* OK - this predicate should now be usable by res_elimination_then to
      do elimination on the conclusion. *)
   (predicate,neqns)
@@ -366,25 +351,25 @@ let case_trailer othin neqns ba gl =
 	   rewrite_eqns)))
   gl
 
-let res_case_then gene thin indbinding c dflt_concl dep_option gl =
+let res_case_then gene thin indbinding id status gl =
+  let env = pf_env gl and sigma = project gl in
+  let c = VAR id in
   let (wc,kONT) = startWalk gl in
   let t = 
     strong_prodspine (fun _ _ -> pf_whd_betadeltaiota gl) 
-      (pf_env gl) (project gl) (pf_type_of gl c) in
+      env sigma (pf_type_of gl c) in
   let indclause = mk_clenv_from wc (c,t) in
   let indclause' = clenv_constrain_with_bindings indbinding indclause in
   let newc = clenv_instance_template indclause' in
-  let (ity,args) = decomp_app (clenv_instance_template_type indclause') in
-  let ity = destMutInd ity in
+  let (IndType (indf,realargs) as indt) =
+    find_inductive env sigma (clenv_instance_template_type indclause') in
   let (elim_predicate,neqns) =
-    make_inv_predicate (ity,args) c dflt_concl dep_option gl in
-  let nparams = mind_nparams ity in
-  let largs = snd (list_chop nparams args) in
+    make_inv_predicate env sigma indt id status (pf_concl gl) in
   let (cut_concl,case_tac) =
-    if dep_option & (dependent c (pf_concl gl)) then 
-      applist(elim_predicate,largs@[c]),case_then_using 
+    if status <> NoDep & (dependent c (pf_concl gl)) then 
+      applist(elim_predicate,realargs@[c]),case_then_using 
     else 
-      applist(elim_predicate,largs),case_nodep_then_using 
+      applist(elim_predicate,realargs),case_nodep_then_using 
   in
   let case_trailer_tac =
     if gene then case_trailer_gene thin neqns else case_trailer thin neqns
@@ -431,8 +416,8 @@ let wrap_inv_error id = function
   | Not_found  ->  errorlabstrm "Inv" (not_found_message [id]) 
   | e -> raise e
 
-let inv gene com dflt_concl dep_option id =
-  let inv_tac = res_case_then gene com [] (VAR id) dflt_concl dep_option in
+let inv gene com status id =
+  let inv_tac = res_case_then gene com [] id status in
   let tac =
     if com = Some true (* if Inversion_clear, clear the hypothesis *) then 
       tclTHEN inv_tac (tclTRY (clear_clause (Some id)))
@@ -455,7 +440,7 @@ let (half_inv_tac, inv_tac, inv_clear_tac) =
   let gentac =
     hide_tactic "Inv"
       (function
-	 | [ic; Identifier id] -> inv false (com_of_id ic) None false id
+	 | [ic; Identifier id] -> inv false (com_of_id ic) NoDep id
 	 | _ -> anomaly "Inv called with bad args")
   in
   ((fun id -> gentac [hinv_kind; Identifier id]),
@@ -467,7 +452,7 @@ let named_inv =
   let gentac =
     hide_tactic "NamedInv"
       (function
-	 | [ic; Identifier id] -> inv true (com_of_id ic) None false id
+	 | [ic; Identifier id] -> inv true (com_of_id ic) NoDep id
 	 | _ -> anomaly "NamedInv called with bad args")
   in 
   (fun ic id -> gentac [ic; Identifier id])
@@ -477,7 +462,7 @@ let (half_dinv_tac, dinv_tac, dinv_clear_tac) =
   let gentac =
     hide_tactic "DInv"
       (function
-	 | [ic; Identifier id] -> inv false (com_of_id ic) None true id
+	 | [ic; Identifier id] -> inv false (com_of_id ic) (Dep None) id
 	 | _ -> anomaly "DInv called with bad args")
   in
   ((fun id -> gentac [hinv_kind; Identifier id]),
@@ -492,7 +477,7 @@ let (half_dinv_with, dinv_with, dinv_clear_with) =
 	 | [ic; Identifier id; Command com] ->
              fun gls -> 
 	       inv false (com_of_id ic)
-		 (Some (pf_interp_constr gls com)) true id gls
+		 (Dep (Some (pf_interp_constr gls com))) id gls
 	 | _ -> anomaly "DInvWith called with bad args")
   in
   ((fun id com -> gentac [hinv_kind; Identifier id; Command com]),
@@ -516,7 +501,7 @@ let invIn com id ids gls =
   in
   try 
     (tclTHEN (bring_hyps (List.map in_some ids))
-       (tclTHEN (inv false com None false id)
+       (tclTHEN (inv false com NoDep id)
           (intros_replace_ids)))
     gls
   with e -> wrap_inv_error id e

@@ -449,25 +449,25 @@ let discriminable env sigma t1 t2 =
 
 let descend_then sigma env head dirn =
   let headj = unsafe_machine env sigma head in
-  let indspec =
+  let IndType (indf,_) as indt =
     try find_inductive env sigma headj.uj_type
     with Not_found -> assert false in
+  let mispec,params = dest_ind_family indf in
   let construct =
-    mkMutConstruct (ith_constructor_of_inductive indspec.mind dirn) in
-  let mispec = lookup_mind_specif indspec.mind env in
+    mkMutConstruct (ith_constructor_of_inductive(mis_inductive mispec) dirn) in
   let dirn_cty = 
     strong (fun _ _ -> whd_castapp) env sigma
-      (type_of env sigma (applist(construct,indspec.Inductive.params))) in
+      (type_of env sigma (applist(construct,params))) in
   let dirn_nlams = nb_prod dirn_cty in
   let (_,dirn_env) = add_prods_rel sigma (dirn_cty,env) in
   (dirn_nlams,
    dirn_env,
    (fun dirnval (dfltval,resty) ->
-      let aritysign,_ = get_arity env sigma indspec in
-      let p = lam_it (lift indspec.nrealargs resty) aritysign in
+      let aritysign,_ = get_arity env sigma indf in
+      let p = lam_it (lift (mis_nrealargs mispec) resty) aritysign in
       let nb_prodP = nb_prod p in
       let bty,_ =
-	type_case_branches env sigma indspec (type_of env sigma p) p head in
+	type_case_branches env sigma indt (type_of env sigma p) p head in
       let build_branch i =
 	let result = if i = dirn then dirnval else dfltval in
 	let nlams = nb_prod bty.(i-1) in
@@ -478,7 +478,7 @@ let descend_then sigma env head dirn =
 	branchval 
       in
       mkMutCase (make_default_case_info mispec) p head 
-	(List.map build_branch (interval 1 indspec.nconstr))))
+	(List.map build_branch (interval 1 (mis_nconstr mispec)))))
   
 (* Now we need to construct the discriminator, given a discriminable
    position.  This boils down to:
@@ -498,7 +498,7 @@ let descend_then sigma env head dirn =
    giving [True], and all the rest giving False. *)
 
 let construct_discriminator sigma env dirn c sort =
-  let indspec =
+  let (IndType(IndFamily (mispec,_) as indf,_) as indt) =
     try find_inductive env sigma (type_of env sigma c)
     with Not_found ->
        (* one can find Rel(k) in case of dependent constructors 
@@ -509,8 +509,7 @@ let construct_discriminator sigma env dirn c sort =
       errorlabstrm "Equality.construct_discriminator"
 	[< 'sTR "Cannot discriminate on inductive constructors with 
 		 dependent types" >] in
-  let mispec = lookup_mind_specif indspec.mind env in
-  let arsign,arsort = get_arity env sigma indspec in
+  let arsign,arsort = get_arity env sigma indf in
   let (true_0,false_0,sort_0) = 
     match necessary_elimination arsort (destSort sort) with
       | Type_Type ->
@@ -520,7 +519,7 @@ let construct_discriminator sigma env dirn c sort =
 	  build_True (), build_False (), (DOP0(Sort (Prop Null))) 
   in
   let p = lam_it sort_0 arsign in
-  let bty,_ = type_case_branches env sigma indspec (type_of env sigma p) p c in
+  let bty,_ = type_case_branches env sigma indt (type_of env sigma p) p c in
   let build_branch i =
     let nlams = nb_prod bty.(i-1) in
     let endpt = if i = dirn then true_0 else false_0 in
@@ -528,7 +527,7 @@ let construct_discriminator sigma env dirn c sort =
   in
   let build_match () =
     mkMutCase (make_default_case_info mispec) p c 
-      (List.map build_branch (interval 1 indspec.nconstr)) 
+      (List.map build_branch (interval 1 (mis_nconstr mispec)))
   in
   build_match()
     
@@ -536,19 +535,17 @@ let rec build_discriminator sigma env dirn c sort = function
   | [] -> construct_discriminator sigma env dirn c sort
   | (MutConstruct(sp,cnum),argnum)::l ->
       let cty = type_of env sigma c in
-      let indspec =
+      let IndType (indf,_) =
 	try find_inductive env sigma cty with Not_found -> assert false in
-      let _,arsort = get_arity env sigma indspec in
-      let nparams = indspec.Inductive.nparams in
+      let _,arsort = get_arity env sigma indf in
+      let nparams = mis_nparams (fst (dest_ind_family indf)) in
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
       let newc = Rel(cnum_nlams-(argnum-nparams)) in
       let subval = build_discriminator sigma cnum_env dirn newc sort l  in
       (match necessary_elimination arsort (destSort sort) with
          | Type_Type ->
 	     kont subval (build_EmptyT (),DOP0(Sort(Type(dummy_univ))))
-	 | _ -> kont subval (build_False ()
-
-,DOP0(Sort(Prop Null))))
+	 | _ -> kont subval (build_False (),DOP0(Sort(Prop Null))))
   | _ -> assert false
 
 let find_eq_data_decompose eqn =
@@ -685,28 +682,7 @@ let h_discrConcl = hide_atomic_tactic "DiscrConcl" discrConcl
 let h_discrHyp   = hide_ident_tactic  "DiscrHyp"   discrHyp
 (**)
 
-(* [bind_ith na i T]
- *  will verify that T has no binders below [Rel i], and produce the
- *  term [na]T, binding [Rel i] in T.  The resulting term should be
- *  valid in the same environment as T, which means that we have to
- *  re-lift it. *)
-
-let bind_ith na i t = lift i (DLAM(na,lift (-(i-1)) t))
-(*
-let existS_term = put_squel mmk "existS"
-let sigS_term = put_squel mmk "sigS"
-let projS1_term = put_squel mmk "projS1"
-let projS2_term = put_squel mmk "projS2"
-let sigS_rec_term = put_squel mmk "sigS_rec"
-*)
 let existS_pattern = put_pat mmk "(existS ? ? ? ?)"
-(*
-let existT_term = put_squel mmk "existT"
-let sigT_term = put_squel mmk "sigT"
-let projT1_term = put_squel mmk "projT1"
-let projT2_term = put_squel mmk "projT2"
-let sigT_rect_term = put_squel mmk "sigT_rect"
-*)
 let existT_pattern = put_pat mmk "(existT ? ? ? ?)"
 
 let build_sigma_set () =
@@ -732,29 +708,27 @@ let find_sigma_data s =
     | Type _    -> build_sigma_type ()                   (* Type *)
     | Prop Null -> error "find_sigma_data"
 
-(* [make_tuple env na lind rterm rty]
+(* [make_tuple env sigma lind rterm rty]
 
-   If [rty] depends on lind, then we will fabricate the term
+   If [rty] depends on lind, then we will build the term
 
-          (existS A==[type_of(Rel lind)] P==(Lambda(type_of(Rel lind),
-                                            [bind_ith na lind rty]))
-                  [(Rel lind)] [rterm])
-
-   [The term (Lambda(type_of(Rel lind),[bind_ith na lind rty])) is
-    valid in [env] because [bind_ith] produces a term which does not
-    "change" environments.]
+     (existS A==[type_of(Rel lind)] P==(Lambda(na:type_of(Rel lind),
+                                        [rty{1/lind}]))
+              [(Rel lind)] [rterm])
 
    which should have type (sigS A P) - we can verify it by
    typechecking at the end.
  *)
 
-let make_tuple sigma env na lind rterm rty =
+let make_tuple env sigma (rterm,rty) lind =
   if dependent (Rel lind) rty then
     let {intro = exist_term; ex = sig_term} =
       find_sigma_data (get_sort_of env sigma rty) in
     let a = type_of env sigma (Rel lind) in
-    let p = DOP2(Lambda,a,
-                 bind_ith (fst(lookup_rel lind env)) lind rty) in
+    (* We replace (Rel lind) by (Rel 1) in rty then abstract on (na:a) *)
+    let rty' = substn_many [|make_substituend (Rel 1)|] lind rty in
+    let na = fst (lookup_rel lind env) in
+    let p = mkLambda na a rty' in
     (applist(exist_term,[a;p;(Rel lind);rterm]),
      applist(sig_term,[a;p]))
   else
@@ -858,18 +832,14 @@ let sig_clausale_forme env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
 
  *)
 
-let make_iterated_tuple sigma env (dFLT,dFLTty) (c,cty) =
+let make_iterated_tuple env sigma (dFLT,dFLTty) (c,cty) =
   let (cty,rels) = minimal_free_rels env sigma (c,cty) in
   let sort_of_cty = get_sort_of env sigma cty in
   let sorted_rels = Sort.list (>=) (Intset.elements rels) in
   let (tuple,tuplety) =
-    List.fold_left (fun (rterm,rty) lind ->
-                      let na = fst(lookup_rel lind env) in 
-		      make_tuple sigma env na lind rterm rty)
-      (c,cty)
-      sorted_rels 
+    List.fold_left (make_tuple env sigma) (c,cty) sorted_rels 
   in
-  if not(closed0 tuplety) then failwith "make_iterated_tuple";
+  assert (closed0 tuplety);
   let dfltval = 
     sig_clausale_forme env sigma sort_of_cty (List.length sorted_rels) 
       tuplety (dFLT,dFLTty)
@@ -878,7 +848,7 @@ let make_iterated_tuple sigma env (dFLT,dFLTty) (c,cty) =
 
 let rec build_injrec sigma env (t1,t2) c = function
   | [] ->
-      make_iterated_tuple sigma env (t1,type_of env sigma t1)
+      make_iterated_tuple env sigma (t1,type_of env sigma t1)
         (c,type_of env sigma c)
   | (MutConstruct(sp,cnum),argnum)::l ->
       let cty = type_of env sigma c in

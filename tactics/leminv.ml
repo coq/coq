@@ -144,19 +144,18 @@ let rec add_prods_sign env sigma t =
 *)
 
 let compute_first_inversion_scheme env sigma ind sort dep_option =
+  let indf,realargs = dest_ind_type ind in
   let allvars = ids_of_sign (var_context env) in
   let p = next_ident_away (id_of_string "P") allvars in
   let pty,goal =
     if dep_option  then
-      let arity = Instantiate.mis_arity (lookup_mind_specif ind.mind env) in
-      let arprods,_ = splay_prod env sigma arity in
-      let h = next_ident_away (id_of_string "H") allvars in
-      let i = applist (mkMutInd ind.mind,rel_list 0 (List.length arprods)) in
-      let pty = it_prod_name env (mkProd (Name h) i (mkSort sort)) arprods in
-      let goal = mkProd (Name h) i (applist(VAR p, ind.realargs@[Rel 1])) in
+      let pty = make_arity env sigma true indf sort in
+      let goal = 
+	mkProd Anonymous (mkAppliedInd ind) (applist(VAR p,realargs@[Rel 1]))
+      in
       pty,goal
     else
-      let i = applist (mkMutInd ind.mind,ind.Inductive.params@ind.realargs) in
+      let i = mkAppliedInd ind in
       let ivars = global_vars i in
       let revargs,ownsign =
 	sign_it
