@@ -67,12 +67,20 @@ GEXTEND Gram
     [[ p = astlist; "->"; a = action -> Node(loc,"CASE",[p;a]) ]]
   ;
   entry_type:
-    [[ ":"; IDENT "AstList" -> 
+    [[ ":"; IDENT "ast"; IDENT "list" -> 
 	 let _ = set_default_action_parser astlist in Id(loc,"LIST")
      | ":"; IDENT "List" -> (* For compatibility *)
 	 let _ = set_default_action_parser astlist in Id(loc,"LIST")
-     | ":"; IDENT "Ast" ->
+     | ":"; IDENT "list" -> (* For compatibility *)
+	 let _ = set_default_action_parser astlist in Id(loc,"LIST")
+     | ":"; IDENT "ast" ->
 	 let _ = set_default_action_parser ast in Id(loc,"AST")
+     | ":"; IDENT "constr" ->
+	 let _ = set_default_action_parser Constr.constr in Id(loc,"AST")
+     | ":"; IDENT "tactic" ->
+	 let _ = set_default_action_parser Tactic.tactic in Id(loc,"AST")
+     | ":"; IDENT "vernac" ->
+	 let _ = set_default_action_parser Vernac.vernac in Id(loc,"AST")
      | -> Id(loc,"AST") ]]
   ;
 END

@@ -35,9 +35,11 @@ commandes)
 motifs des règles d'affichage est maintenant celui associé au nom de
 la grammaire (vernac, tactic ou constr). Donc plus de piquants
 <:vernac:<...>> etc. Pour retourner de l'ast, il faut typer
-explicitement la grammaire avec Ast ou List (renommé d'ailleurs
-AstList), ou, si c'est dans une règle Syntax, utiliser la quotation
-<< ... >> qui replace dans ast.
+explicitement la grammaire avec "ast" ou "List" (renommé d'ailleurs
+"ast list"), ou, si c'est dans une règle Syntax, utiliser la quotation
+<< ... >> qui replace dans ast. Pour les nouvelles grammaires (autre
+que les 3 primitives), on peut typer avec "constr", "tactic", ou
+"vernac" pour utiliser le parseur correspondant.
 
 - AddPath -> Add Path;
   Print LoadPath -> Print Path;

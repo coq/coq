@@ -9,14 +9,14 @@ Require Export Ring_abstract.
 
 Declare ML Module "ring".
 
-Grammar tactic simple_tactic : Ast :=
+Grammar tactic simple_tactic : ast :=
   ring [ "Ring" constrarg_list($arg) ] -> [(Ring ($LIST $arg))].
 
 Syntax tactic level 0:
   ring [ << (Ring ($LIST $lc)) >> ] -> [ "Ring" [1 1] (LISTSPC ($LIST $lc)) ] 
 | ring_e [ << (Ring) >> ] -> ["Ring"].
  
-Grammar vernac vernac : Ast := 
+Grammar vernac vernac : ast := 
   addring [ "Add" "Ring" 
       	     constrarg($a) constrarg($aplus) constrarg($amult) constrarg($aone)
       	     constrarg($azero) constrarg($aopp) constrarg($aeq) constrarg($t)

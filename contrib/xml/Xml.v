@@ -10,7 +10,7 @@
 
 Declare ML Module "xml" "xmlcommand" "xmlentries".
 
-Grammar vernac vernac : Ast :=
+Grammar vernac vernac : ast :=
   xml_print [ "Print" "XML" identarg($id) "." ] ->
                [(Print $id)]
 

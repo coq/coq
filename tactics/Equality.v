@@ -3,41 +3,41 @@
 
 Declare ML Module "equality".
 
-Grammar vernac orient_rule: Ast :=
+Grammar vernac orient_rule: ast :=
    lr ["LR"] -> [ "LR" ]
   |rl ["RL"] -> [ "RL" ]
-with rule_list: AstList :=
+with rule_list: ast list :=
    single_rlt [ constrarg($com) orient_rule($ort) ] ->
      [ (VERNACARGLIST $com $ort) ]
   |recursive_rlt [ constrarg($com) orient_rule($ort) rule_list($tail)] ->
     [ (VERNACARGLIST $com $ort) ($LIST $tail) ]
-with base_list: AstList :=
+with base_list: ast list :=
    single_blt [identarg($rbase) "[" rule_list($rlt) "]"] ->
      [ (VERNACARGLIST $rbase ($LIST $rlt)) ]
   |recursive_blt [identarg($rbase) "[" rule_list($rlt) "]"
     base_list($blt)] ->
     [ (VERNACARGLIST $rbase ($LIST $rlt)) ($LIST $blt) ]
-with vernac: Ast :=
+with vernac: ast :=
    addrule ["HintRewrite" base_list($blt) "."] ->
      [ (HintRewrite ($LIST $blt)) ].
 
-Grammar tactic list_tactics: AstList :=
+Grammar tactic list_tactics: ast list :=
    single_lt [tactic($tac)] -> [$tac]
   |recursive_lt [tactic($tac) "|" list_tactics($tail)] ->
     [ $tac ($LIST $tail) ]
 
-with step_largs: AstList :=
+with step_largs: ast list :=
    nil_step [] -> []
   |solve_step ["with" "Solve"] -> [(REDEXP (SolveStep))]
   |use_step ["with" "Use"] -> [(REDEXP (Use))]
   |all_step ["with" "All"] -> [(REDEXP (All))]
 
-with rest_largs: AstList :=
+with rest_largs: ast list :=
    nil_rest [] -> []
   |solve_rest ["with" "Solve"] -> [(REDEXP (SolveRest))]
   |cond_rest ["with" "Cond"] -> [(REDEXP (Cond))]
 
-with autorew_largs: AstList :=
+with autorew_largs: ast list :=
    step_arg ["Step" "=" "[" list_tactics($ltac) "]" step_largs($slargs)] ->
     [(REDEXP (Step ($LIST $ltac))) ($LIST $slargs)]
   |rest_arg ["Rest" "=" "[" list_tactics($ltac) "]" rest_largs($llargs)] ->
@@ -45,30 +45,30 @@ with autorew_largs: AstList :=
   |depth_arg ["Depth" "=" numarg($dth)] ->
     [(REDEXP (Depth $dth))]
 
-with list_args_autorew: AstList :=
+with list_args_autorew: ast list :=
    nil_laa [] -> []
   |recursive_laa [autorew_largs($largs) list_args_autorew($laa)] ->
     [($LIST $largs) ($LIST $laa)]
 
-with hintbase_list: AstList :=
+with hintbase_list: ast list :=
   nil_hintbase [] -> []
 | base_by_name [identarg($id) hintbase_list($tail)] -> 
        [ (REDEXP (ByName $id)) ($LIST $tail)]
 | explicit_base ["[" hintbase($b) "]" hintbase_list($tail)] -> 
        [(REDEXP (Explicit ($LIST $b))) ($LIST $tail) ]
 
-with hintbase: AstList := 
+with hintbase: ast list := 
   onehint_lr [ constrarg($c) "LR" ] -> [(REDEXP (LR $c))]
 | onehint_rl  [ constrarg($c) "RL" ] -> [(REDEXP (RL $c))]
 | conshint_lr [ constrarg($c) "LR" hintbase($tail)] -> [(REDEXP (LR $c)) ($LIST $tail)]
 | conshint_rl [ constrarg($c) "RL" hintbase($tail)] -> [(REDEXP (RL $c)) ($LIST $tail)]
 
-with simple_tactic: Ast := 
+with simple_tactic: ast := 
  AutoRewrite [ "AutoRewrite" "[" hintbase_list($lbase) "]"
   list_args_autorew($laa)] ->
   [(AutoRewrite (REDEXP (BaseList ($LIST $lbase))) ($LIST $laa))].
 
-Grammar tactic simple_tactic: Ast :=
+Grammar tactic simple_tactic: ast :=
   replace [ "Replace" constrarg($c1) "with" constrarg($c2) ] -> [(Replace $c1 $c2)]
 
 | deqhyp   [ "Simplify_eq" identarg($id) ] -> [(DEqHyp $id)]

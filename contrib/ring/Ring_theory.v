@@ -5,34 +5,35 @@ Require Export Bool.
 
 Implicit Arguments On.
 
-Grammar ring formula :=
+Grammar ring formula : constr :=
   formula_expr [ expr($p) ] -> [$p]
-| formula_eq [ expr($p) "==" expr($c) ] -> [<<(eqT A $p $c)>>]
-with expr :=
+| formula_eq [ expr($p) "==" expr($c) ] -> [ (eqT A $p $c) ]
+
+with expr : constr :=
   RIGHTA
-    expr_plus [ expr($p) "+" expr($c) ] -> [<<(Aplus $p $c)>>]
+    expr_plus [ expr($p) "+" expr($c) ] -> [ (Aplus $p $c) ]
   | expr_expr1 [ expr1($p) ] -> [$p]
 
-with expr1 :=
+with expr1 : constr :=
   RIGHTA
-    expr1_plus [ expr1($p) "*" expr1($c) ] -> [<<(Amult $p $c)>>]
+    expr1_plus [ expr1($p) "*" expr1($c) ] -> [ (Amult $p $c) ]
   | expr1_final [ final($p) ] -> [$p]
 
-with final :=
-  final_var [ prim:var($id) ] -> [$id]
-| final_command [ "[" command:command($c) "]" ] -> [$c]
-| final_app [ "(" application($r) ")" ] -> [$r]
-| final_0 [ "0" ] -> [<<Azero>>]
-| final_1 [ "1" ] -> [<<Aone>>]
-| final_uminus [ "-" expr($c) ] -> [<<(Aopp $c)>>]
+with final : constr :=
+  final_var [ prim:var($id) ] -> [ $id ]
+| final_constr [ "[" constr:constr($c) "]" ] -> [ $c ]
+| final_app [ "(" application($r) ")" ] -> [ $r ]
+| final_0 [ "0" ] -> [ Azero ]
+| final_1 [ "1" ] -> [ Aone ]
+| final_uminus [ "-" expr($c) ] -> [ (Aopp $c) ]
 
-with application :=
+with application : constr :=
   LEFTA
-    app_cons [ application($p) application($c1) ] -> [<<($p $c1)>>]
-  | app_tail [ expr($c1) ] -> [$c1].
+    app_cons [ application($p) application($c1) ] -> [ ($p $c1) ]
+  | app_tail [ expr($c1) ] -> [ $c1 ].
 
-Grammar command command0 :=
-  formula_in_command [ "[" "|" ring:formula($c) "|" "]" ] -> [$c].
+Grammar constr constr0 :=
+  formula_in_constr [ "[" "|" ring:formula($c) "|" "]" ] -> [ $c ].
 
 Section Theory_of_semi_rings.
 

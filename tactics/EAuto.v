@@ -13,7 +13,7 @@
 (*                                 Prolog.v                                 *)
 (****************************************************************************)
 
-Grammar tactic simple_tactic: Ast :=
+Grammar tactic simple_tactic: ast :=
   eapply [ "EApply" constrarg_binding_list($cl) ]
       -> [(EApplyWithBindings ($LIST $cl))]
 | eexact [ "EExact" constrarg($c) ] -> [(EExact $c)]

@@ -26,7 +26,7 @@ Syntax tactic level 0:
 | inversion_clear  [<<(INVCOM InversionClear)>>] -> [ "Inversion_clear" ].
 
 
-Grammar tactic simple_tactic: Ast :=
+Grammar tactic simple_tactic: ast :=
   inversion    [ inversion_com($ic) identarg($id) ] -> [(Inv $ic $id)]
 | inversion_in [ inversion_com($ic) identarg($id) "in" ne_identarg_list($l) ]
       -> [(InvIn $ic $id ($LIST $l))]
@@ -48,13 +48,13 @@ Grammar tactic simple_tactic: Ast :=
           Inversion -> [(UseInversionLemmaIn $id $c ($LIST $l))]
         esac
 
-with inversion_com: Ast :=
+with inversion_com: ast :=
   simple_inv    [ "Simple" "Inversion" ] -> [ HalfInversion ]
 | inversion_com [ "Inversion" ] -> [ Inversion ]
 | inv_clear     [ "Inversion_clear" ] -> [ InversionClear ].
 
 
-Grammar vernac vernac: Ast :=
+Grammar vernac vernac: ast :=
   der_inv_clr [ "Derive" "Inversion_clear"  identarg($na) identarg($id) "." ]
                -> [(MakeInversionLemmaFromHyp 1 $na $id)]
 
