@@ -218,7 +218,7 @@ let process_object oldenv dir sec_sp
 	if clinfo.cL_STRE = (DischargeAt sec_sp) then 
 	  (ops,ids_to_discard,work_alist)
 	else
-	  let (y1,y2) = process_class sec_sp x in
+	  let (y1,y2) = process_class sec_sp ids_to_discard x in
           ((Class (y1,y2))::ops, ids_to_discard, work_alist)
 	  
     | "COERCION" -> 
