@@ -1,11 +1,8 @@
 
- 5. Tester Haskell Syntax
-
  7. Eta expansion for resolving message: "variables cannot be generalized"
 
  9. Doc!! (examples)
-
- 11. test contribs
 	
- 12.  Ocaml typing => magic + cast.
+ 12. Ocaml typing => magic + cast.
 
+ 13. Managing huge extraction (constructive FTA).

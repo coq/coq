@@ -1,3 +1,68 @@
+7.2 -> 7.X  (* TODO put exact value *) 
+
+* Improved documentation. (* TODO *)
+
+* Theoretical bad news: 
+- a naughty example (see the end of test_extraction.v)
+forced me to stop eliminating lambdas and arguments corresponding to 
+so-called "arity" in the general case. 
+
+- The dummy constant used in extraction ( let prop = () in ocaml ) 
+may in some cases be applied to arguments.  (* TODO say more *)
+
+
+* Theoretical good news: 
+- there is now a mechanism that remove useless prop/arity lambdas at the 
+top of function declarations. If your function had signature 
+nat -> prop -> nat in the previous extraction, it will now be nat -> nat. 
+So the extractions of common terms should look very much like the old 
+V6.2 one, except in some particular cases (functions as parameters, partial 
+applications, etc). In particular the first bad news above has nearly no 
+impact...
+
+* Syntax changes, see Documentation for details: 
+
+Extraction Language Ocaml.
+Extraction Language Haskell. 
+Extraction Language Toplevel.
+
+That fixes the target language of extraction. Default is Ocaml, even in the 
+coq toplevel: you can now do copy-paste from the coq toplevel without 
+renaming problems. Toplevel language is the ocaml pseudo-language used 
+previously used inside the coq toplevel: coq names are printed with the coq 
+way, i.e. with no renaming. 
+
+So there is no more particular commands for Haskell, like 
+Haskell Extraction "file" id. Just set your favourite language and go... 
+
+
+* Haskell extraction has been tested at last (and corrected...). 
+See specificities in Documentation. 
+
+
+* Extraction of CoInductive in Ocaml language is now correct: it uses the 
+Lazy.force and lazy features of Ocaml. 
+
+
+* Modular extraction in Ocaml is now far more readable: 
+instead of qualifying everywhere (A.foo), there are now some "open" at the 
+beginning of files. Possible clashes are dealt with. 
+
+
+* A few constants are explicitely declared to be inlined in extracted code. 
+For the moment there are: 
+	Specif.sigS_rect
+	Specif.sigS_rec 	
+	Datatypes.prod_rect 
+	Datatypes.prod_rec
+	Wf.Acc_rec
+	Wf.Acc_rect
+	Wf.well_founded_induction
+	Wf.well_founded_induction_type
+Those constants does not match the auto-inlining criterion based on strictness.
+Of course, you can still overide this behaviour via some Extraction NoInline. 
+
+
 7.1 -> 7.2 :
 
 * Syntax changes, see Documentation for more details: 

@@ -1,5 +1,5 @@
 
-Status of Extraction in Coq V7.0 final.
+Status of Extraction in Coq version 7.x
 ======================================
 
 J.C. Filliâtre
@@ -47,7 +47,7 @@ The last feature (not yet implemented) is to ensure that the extracted
 code will typecheck. This will be done soon by adding some "Obj.magic"
 calls in the code. 
 
-2) Differences with previous extraction
+2) Differences with previous extraction (V6.3 and before)
 
 2.a) The pros 
 
@@ -67,10 +67,6 @@ V6.3 and V7, and in particular the mechanism of automatic expansion.
 
 2.b) The cons 
 
-The only language currently available is Ocaml. Haskell extraction 
-will be added as soon as possible. At the opposite, Caml Light is 
-definitely dead.
-
 The presence of some parasite "unit" or "prop" as dummy arguments
 in functions. This denotes the rests of a proof part. The previous 
 extraction was able to remove them totally, but this is no more possible
@@ -85,11 +81,7 @@ There is no more "ML import" feature. You can compensate by using
 Axioms, and then "Extract Constant ..." 
 
 Still no assurance of typechecking, since there is still no "Obj.magic"
-yet. Coming really soon ...
-
-Absolutely no benchmarking nor profiling nor optimizing has been 
-done on the new extraction code. 
-
+yet. Coming soon ...
 
 3) Examples 
 
@@ -99,7 +91,6 @@ In the subdirectory "test", you can test extraction on the Coq theories.
 Go there.
 "make tree" to make a local copy of the "theories" tree
 "make" to extract & compile most of the theories file 
-"make reals" to extract & compile a realization of the Reals axioms
 
 
 (*):
