@@ -178,7 +178,7 @@ to be done. Here is an example.
 
 \begin{coq_example*}
 Notation "'EX' x | p"     := (ex ? [x]p) (at level 10).
-Notation "'EX' x | p & q" := (ex2 t [x]p [x]q) (at level 10).
+Notation "'EX' x | p & q" := (ex2 ? [x]p [x]q) (at level 10).
 \end{coq_example*}
 
 In order to factorise the left part of the rules, the subexpression
@@ -191,7 +191,7 @@ as follows.
 
 \begin{coq_example*}
 Notation "'EX' x | p"     := (ex ? [x]p) (at level 10, p at level 9).
-Notation "'EX' x | p & q" := (ex2 t [x]p [x]q)
+Notation "'EX' x | p & q" := (ex2 ? [x]p [x]q)
   (at level 10, p at level 9).
 \end{coq_example*}
 
@@ -200,7 +200,7 @@ to put q at the same level as p, hence the final version of the rules
 
 \begin{coq_example*}
 Notation "'EX' x | p"     := (ex ? [x]p) (at level 10, p at level 9).
-Notation "'EX' x | p & q" := (ex2 t [x]p [x]q)
+Notation "'EX' x | p & q" := (ex2 ? [x]p [x]q)
   (at level 10, p, q at level 9).
 \end{coq_example*}
 
