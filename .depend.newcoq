@@ -74,6 +74,7 @@ newtheories/Logic/Eqdep.vo: newtheories/Logic/Eqdep.v
 newtheories/Logic/Classical_Pred_Type.vo: newtheories/Logic/Classical_Pred_Type.v newtheories/Logic/Classical_Prop.vo
 newtheories/Logic/Classical_Prop.vo: newtheories/Logic/Classical_Prop.v newtheories/Logic/ProofIrrelevance.vo
 newtheories/Logic/ClassicalFacts.vo: newtheories/Logic/ClassicalFacts.v
+newtheories/Logic/ChoiceFacts.vo: newtheories/Logic/ChoiceFacts.v
 newtheories/Logic/Berardi.vo: newtheories/Logic/Berardi.v
 newtheories/Logic/Eqdep_dec.vo: newtheories/Logic/Eqdep_dec.v
 newtheories/Logic/Decidable.vo: newtheories/Logic/Decidable.v

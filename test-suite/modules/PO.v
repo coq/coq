@@ -15,7 +15,7 @@ Module Type PO.
 End PO.
 
 
-Module Pair[X:PO][Y:PO].
+Module Pair[X:PO][Y:PO]<:PO.
   Definition T:=X.T*Y.T.
   Definition le:=[p1,p2]
     (X.le (fst p1) (fst p2)) /\ (Y.le (snd p1) (snd p2)).
@@ -23,12 +23,12 @@ Module Pair[X:PO][Y:PO].
   Hints Unfold le.
 
   Lemma le_refl : (p:T)(le p p).
-  Auto.
+  Info Auto.
   Save.
 
   Lemma le_trans : (p1,p2,p3:T)(le p1 p2) -> (le p2 p3) -> (le p1 p3).
     Unfold le.
-    Intuition; EAuto.
+    Intuition; Info EAuto.
   Save.    
 
   Lemma le_antis : (p1,p2:T)(le p1 p2) -> (le p2 p1) -> (p1=p2).
@@ -59,7 +59,6 @@ Module Type Fmono.
   
   Axiom f_mono : (x1,x2:X.T)(X.le x1 x2) -> (Y.le (f x1) (f x2)).
 End Fmono.
-
 
 Read Module Nat.
 

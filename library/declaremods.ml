@@ -588,8 +588,8 @@ let start_library dir =
 
 
 let export_library dir = 
-  let cenv = Global.export dir in
   let prefix, lib_stack = Lib.end_compilation dir in
+  let cenv = Global.export dir in
   let msid = msid_of_prefix prefix in
   let substitute, keep, _ = Lib.classify_segment lib_stack in
     cenv,(msid,substitute,keep)
