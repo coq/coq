@@ -383,8 +383,11 @@ let vernac_declare_module id bl mty_ast_o mexpr_ast_o =
     Astmod.interp_module_decl evd env bl mty_ast_o mexpr_ast_o 
   in
   let argids, args = List.split arglist 
-  in (* We check the state of the system (in module, in module type)
-	and what parts are supplied *)
+  in (* We check the state of the system (in section, in module type)
+	and what module information is supplied *)
+    if Lib.sections_are_opened () then
+      error "Modules and Module Types are not allowed inside sections";
+
     match Lib.is_specification (), base_mty_o, base_mexpr_o with
       | _, None, None 
       | false, _, None ->
@@ -393,6 +396,7 @@ let vernac_declare_module id bl mty_ast_o mexpr_ast_o =
 	    ("Interactive Module "^ string_of_id id ^" started")
 	  
       | true, Some _, None
+      | true, _, Some (MEident _)
       | false, _, Some _ ->
 	  let mexpr_o = 
 	    option_app
@@ -416,7 +420,7 @@ let vernac_declare_module id bl mty_ast_o mexpr_ast_o =
 	    if_verbose message 
 	      ("Module "^ string_of_id id ^" is defined")
 
-      | true, _, Some _ ->
+      | true, _, Some (MEfunctor _ | MEapply _ | MEstruct _) ->
 	  error "Module definition not allowed in a Module Type"
 
 
@@ -434,15 +438,17 @@ let vernac_declare_module_type id bl mty_ast_o =
     Astmod.interp_module_decl evd env bl mty_ast_o None
   in
   let argids, args = List.split arglist 
-  in (* We check the state of the system (in module, in module type)
-	and what parts are supplied *)
-    match Lib.is_specification (), base_mty_o with
-      | _, None ->
+  in 
+    if Lib.sections_are_opened () then
+      error "Modules and Module Types are not allowed inside sections";
+
+    match base_mty_o with
+      | None ->
 	  Declaremods.start_modtype id argids args;
 	  if_verbose message 
 	    ("Interactive Module Type "^ string_of_id id ^" started")
 
-      | _, Some base_mty ->
+      | Some base_mty ->
 	  let mty = 
 	    List.fold_right 
 	      (fun (arg_id,arg_t) mte -> MTEfunsig(arg_id,arg_t,mte))

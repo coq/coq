@@ -103,8 +103,6 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
       let cst = check_conv cst conv env p1.mind_nf_arity p2.mind_nf_arity in
 	cst
   in
-    (* this function uses mis_something and the others do not.
-       Perhaps we should uniformize it at some point... *)
   let check_cons_types i cst p1 p2 =
     array_fold_left2 
       (fun cst t1 t2 -> check_conv cst conv env t1 t2)
@@ -113,28 +111,41 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
       (arities_of_specif kn (mib2,p2))
   in
   let check f = if f mib1 <> f mib2 then error () in
-    check (fun mib -> mib.mind_finite);
-    check (fun mib -> mib.mind_ntypes);
-    assert (mib1.mind_hyps=[] && mib2.mind_hyps=[]);
-    assert (Array.length mib1.mind_packets >= 1 
+  check (fun mib -> mib.mind_finite);
+  check (fun mib -> mib.mind_ntypes);
+  assert (mib1.mind_hyps=[] && mib2.mind_hyps=[]);
+  assert (Array.length mib1.mind_packets >= 1 
 	    && Array.length mib2.mind_packets >= 1);
-    check (fun mib -> mib.mind_packets.(0).mind_nparams);
-    check (fun mib -> mib.mind_packets.(0).mind_params_ctxt); 
-         (* TODO: we should allow renaming of parameters at least ! *)
-    let cst = match mib1.mind_singl, mib2.mind_singl with
-	None, None -> cst
-      | Some c1, Some c2 -> check_conv cst conv env c1 c2
-      | _ -> error ()
-    in
-    (* we first check simple things *)
-    let cst = 
-      array_fold_left2 check_packet cst mib1.mind_packets mib2.mind_packets
-    in
-    (* and constructor types in the end *)
-    let cst = 
-      array_fold_left2_i check_cons_types cst mib1.mind_packets mib2.mind_packets
-    in
-      cst
+
+       (* TODO: we should allow renaming of parameters at least ! *)
+  check (fun mib -> mib.mind_packets.(0).mind_nparams);
+  check (fun mib -> mib.mind_packets.(0).mind_params_ctxt); 
+
+  begin 
+    match mib2.mind_equiv with
+      | None -> ()
+      | Some kn2' -> 
+	  let kn2 = scrape_mind env kn2' in
+	  let kn1 = match mib1.mind_equiv with
+	      None -> kn
+	    | Some kn1' -> scrape_mind env kn1'
+	  in
+	    if kn1 <> kn2 then error ()
+  end;
+  let cst = match mib1.mind_singl, mib2.mind_singl with
+    | None, None -> cst
+    | Some c1, Some c2 -> check_conv cst conv env c1 c2
+    | _ -> error ()
+  in
+  (* we first check simple things *)
+  let cst = 
+    array_fold_left2 check_packet cst mib1.mind_packets mib2.mind_packets
+  in
+  (* and constructor types in the end *)
+  let cst = 
+    array_fold_left2_i check_cons_types cst mib1.mind_packets mib2.mind_packets
+  in
+    cst
     
 let check_constant cst env msid1 l info1 cb2 spec2 = 
   let error () = error_not_match l spec2 in
@@ -172,12 +183,14 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
 *)
 
 let rec check_modules cst env msid1 l msb1 msb2 =
-  let cst = check_modtypes cst env (fst msb1) (fst msb2) false in
+  let mp = (MPdot(MPself msid1,l)) in
+  let mty1 = strengthen env (fst msb1) mp in
+  let cst = check_modtypes cst env mty1 (fst msb2) false in
   begin
     match (snd msb1), (snd msb2) with
       | _, None -> ()
       | None, Some mp2 -> 
-	  check_modpath_equiv env (MPdot(MPself msid1,l)) mp2
+	  check_modpath_equiv env mp mp2
       | Some mp1, Some mp2 ->
 	  check_modpath_equiv env mp1 mp2
   end;

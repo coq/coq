@@ -44,8 +44,8 @@ val type_of_constructor  : env -> constructor -> types
 val arities_of_constructors : env -> inductive -> types array
 
 (* Transforms inductive specification into types (in nf) *)
-val arities_of_specif : 
-  kernel_name -> mutual_inductive_body * one_inductive_body -> types array 
+val arities_of_specif : mutual_inductive -> 
+  mutual_inductive_body * one_inductive_body -> types array 
 
 (* [type_case_branches env (I,args) (p:A) c] computes useful types
    about the following Cases expression:
@@ -61,6 +61,10 @@ val type_case_branches :
 (* Check a [case_info] actually correspond to a Case expression on the
    given inductive type. *)
 val check_case_info : env -> inductive -> case_info -> unit
+
+(* Find the ultimate inductive in the mind_equiv chain *)
+
+val scrape_mind : env -> mutual_inductive -> mutual_inductive
 
 (*s Guard conditions for fix and cofix-points. *)
 val check_fix : env -> fixpoint -> unit

@@ -697,6 +697,14 @@ let check_fix env fix = Profile.profile3 cfkey check_fix env fix;;
 *)
 
 (***********************************************************************)
+(* Scrape *)
+
+let rec scrape_mind env kn = 
+  match (Environ.lookup_mind kn env).mind_equiv with
+    | None -> kn
+    | Some kn' -> scrape_mind env kn'
+
+(***********************************************************************)
 (* Co-fixpoints. *)
 
 exception CoFixGuardError of guard_error

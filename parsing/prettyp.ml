@@ -293,9 +293,15 @@ let print_constant with_values sep sp =
 let print_inductive sp = (print_mutual sp ++ fnl ())
 
 let print_syntactic_def sep kn =
-  let _,_,l = repr_kn kn in
+  let l = label kn in
   let c = Syntax_def.search_syntactic_definition kn in 
   (str" Syntactic Definition " ++ pr_lab l ++ str sep ++ pr_rawterm c ++ fnl ())
+
+let print_module with_values kn = 
+  str "Module " ++ pr_id (id_of_label (label kn)) ++ fnl () ++ fnl ()
+
+let print_modtype kn =
+  str "Module Type " ++ pr_id (id_of_label (label kn)) ++ fnl () ++ fnl ()
 
 let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
   let tag = object_tag lobj in
@@ -306,6 +312,10 @@ let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
 	print_constant with_values sep kn
     | (_,"INDUCTIVE") ->
 	print_inductive kn
+    | (_,"MODULE") ->
+	print_module with_values kn
+    | (_,"MODULE TYPE") ->
+	print_modtype kn
     | (_,"AUTOHINT") -> 
 (*	(str" Hint Marker" ++ fnl ())*)
 	(mt ())

@@ -403,7 +403,8 @@ let start_module id argids args res_o =
   let fs = Summary.freeze_summaries () in
     process_module_bindings argids args;
     openmod_info:=(mbids,res_o);
-    Lib.start_module id mp fs;
+    let prefix = Lib.start_module id mp fs in
+    Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModule prefix);
     Lib.add_frozen_state ()
 
 
@@ -515,7 +516,8 @@ let start_modtype id argids args =
   let fs= Summary.freeze_summaries () in
     process_module_bindings argids args;
     openmodtype_info := (List.map fst args);
-    Lib.start_modtype id mp fs;
+    let prefix = Lib.start_modtype id mp fs in
+    Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModtype prefix);
     Lib.add_frozen_state ()
 
 

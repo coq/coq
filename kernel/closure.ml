@@ -12,6 +12,7 @@ open Util
 open Pp
 open Term
 open Names
+open Declarations
 open Environ
 open Esubst
 
@@ -384,6 +385,15 @@ let defined_rels flags env =
 	   | Some body -> (i+1, (i,body) :: subs))
       env ~init:(0,[])
 (*  else (0,[])*)
+
+
+let rec mind_equiv info kn1 kn2 = 
+  kn1 = kn2 ||
+	match (lookup_mind kn1 info.i_env).mind_equiv with
+	    Some kn1' -> mind_equiv info kn2 kn1'
+	  | None -> match (lookup_mind kn2 info.i_env).mind_equiv with
+		Some kn2' -> mind_equiv info kn2' kn1
+	      | None -> false
 
 let create mk_cl flgs env =
   { i_flags = flgs;

@@ -51,6 +51,8 @@ val add_module :
 
 val check_modpath_equiv : env -> module_path -> module_path -> unit
 
+val strengthen : env -> module_type_body -> module_path -> module_type_body
+
 val error_existing_label : label -> 'a
 
 val error_declaration_not_path : module_expr -> 'a
@@ -61,6 +63,8 @@ val error_not_a_functor : module_expr -> 'a
 
 val error_incompatible_modtypes : 
   module_type_body -> module_type_body -> 'a
+
+val error_not_equal : module_path -> module_path -> 'a
 
 val error_not_match : label -> specification_body -> 'a
   

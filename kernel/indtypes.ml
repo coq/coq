@@ -525,7 +525,9 @@ let build_inductive env env_ar finite inds recargs cst =
     mind_hyps = hyps;
     mind_packets = packets;
     mind_constraints = cst;
-    mind_singl = None }
+    mind_singl = None;
+    mind_equiv = None;
+  }
 
 (***********************************************************************)
 (***********************************************************************)

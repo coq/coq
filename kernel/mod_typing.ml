@@ -32,6 +32,8 @@ let rec list_fold_map2 f e = function
        let e'',t1',t2' = list_fold_map2 f e' t in
 	 e'',h1'::t1',h2'::t2'
 
+let type_modpath env mp = 
+  strengthen env (lookup_module mp env).mod_type mp
 
 let rec translate_modtype env mte =
   match mte with
@@ -100,7 +102,7 @@ and translate_module env is_definition me =
 	      with 
 		| Not_path -> error_declaration_not_path mexpr
 	    in
-	      MEBident mp, (lookup_module mp env).mod_type
+	      MEBident mp, type_modpath env mp
 	in
 	let mtb,mod_user_type =
 	  match me.mod_entry_type with
@@ -118,7 +120,7 @@ and translate_module env is_definition me =
 and translate_mexpr env mexpr = match mexpr with
   | MEident mp -> 
       MEBident mp,
-      (lookup_module mp env).mod_type
+      type_modpath env mp
   | MEfunctor (arg_id, arg_e, body_expr) ->
       let arg_b = translate_modtype env arg_e in
       let env' = add_module (MPbound arg_id) (module_body_of_type arg_b) env in

@@ -106,7 +106,7 @@ let push_many vis tab dir o =
 	      | Absolute _ -> 
             (* This is an absolute name, we must keep it otherwise it may
                become unaccessible forever *)
-		  warning "Trying to zaslonic an absolute name!"; current
+		  warning "Trying to mask an absolute name!"; current
 	      | Nothing
 	      | Relative _ -> Relative o
           else current 
@@ -118,7 +118,7 @@ let push_many vis tab dir o =
               (* This is an absolute name, we must keep it otherwise it may
 		 become unaccessible forever *)
 	      (* But ours is also absolute! This is an error! *)
-	      error "Trying to zaslonic an absolute name!"
+	      error "Trying to mask an absolute name!"
 	  | Nothing
 	  | Relative _ -> Absolute o, dirmap
   in
@@ -137,7 +137,7 @@ let push_one vis tab dir o =
 		| Absolute _ -> 
 	(* This is an absolute name, we must keep it otherwise it may
            become unaccessible forever *)
-		    error "Trying to zaslonic an absolute name!"
+		    error "Trying to mask an absolute name!"
 		| Nothing
 		| Relative _ -> Relative o
 	    in

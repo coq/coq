@@ -268,7 +268,8 @@ let start_module id mp nametab =
   if Nametab.exists_module dir then
     errorlabstrm "open_module" (pr_id id ++ str " already exists") ;
   add_entry oname (OpenedModule (prefix,nametab));
-  path_prefix := prefix
+  path_prefix := prefix;
+  prefix
 (*  add_frozen_state () must be called in declaremods *)
  
 let end_module id = 
@@ -303,7 +304,8 @@ let start_modtype id mp nametab =
   if Nametab.exists_cci sp then
     errorlabstrm "open_modtype" (pr_id id ++ str " already exists") ;
   add_entry name (OpenedModtype (prefix,nametab));
-  path_prefix := prefix
+  path_prefix := prefix;
+  prefix
 
 let end_modtype id = 
   let sp,nametab = 

@@ -244,14 +244,15 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
         let u3 = convert_vect infos el1 el2 cl1 cl2 u2 in
 	convert_stacks infos lft1 lft2 v1 v2 u3
 *)
-     | (FInd op1, FInd op2) ->
-         if op1 = op2 then
+     | (FInd (kn1,i1), FInd (kn2,i2)) ->
+         if i1 = i2 && mind_equiv infos kn1 kn2
+	 then
            convert_stacks infos lft1 lft2 v1 v2 cuniv
          else raise NotConvertible
 
-     | (FConstruct op1, FConstruct op2) ->
-         if op1 = op2
-         then
+     | (FConstruct ((kn1,i1),j1), FConstruct ((kn2,i2),j2)) ->
+	 if i1 = i2 && j1 = j2 && mind_equiv infos kn1 kn2
+	 then
            convert_stacks infos lft1 lft2 v1 v2 cuniv
          else raise NotConvertible
 

@@ -123,11 +123,13 @@ val module_dp : unit -> dir_path
 
 (*s Modules and module types *)
 
-val start_module : module_ident -> module_path -> Summary.frozen -> unit
+val start_module : 
+  module_ident -> module_path -> Summary.frozen -> object_prefix
 val end_module : module_ident 
   -> object_name * object_prefix * Summary.frozen * library_segment
 
-val start_modtype : module_ident -> module_path -> Summary.frozen -> unit
+val start_modtype : 
+  module_ident -> module_path -> Summary.frozen -> object_prefix
 val end_modtype : module_ident 
   -> object_name * object_prefix * Summary.frozen * library_segment
 

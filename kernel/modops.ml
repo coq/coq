@@ -55,7 +55,7 @@ let error_not_a_module s =
 
 
 let rec scrape_modtype env = function
-  | MTBident ln -> scrape_modtype env (lookup_modtype ln env)
+  | MTBident kn -> scrape_modtype env (lookup_modtype kn env)
   | mtb -> mtb
 
 
@@ -79,7 +79,7 @@ let destr_functor = function
  
 
 let rec check_modpath_equiv env mp1 mp2 = 
-  if mp1=mp2 then ();
+  if mp1=mp2 then () else
   let mb1 = lookup_module mp1 env in
     match mb1.mod_equiv with
       | None ->
@@ -149,3 +149,52 @@ and add_module mp mb env =
       | MTBfunsig _ -> env
 
 
+let strengthen_const env mp l cb = match cb.const_body with
+  | Some _ -> cb
+  | None -> {cb with const_body = Some (mkConst (make_kn mp empty_dirpath l))}
+
+let strengthen_mind env mp l mib = match mib.mind_equiv with
+  | Some _ -> mib
+  | None -> {mib with mind_equiv = Some (make_kn mp empty_dirpath l)}
+    
+let rec strengthen_mtb env mp mtb = match scrape_modtype env mtb with
+  | MTBident _ -> anomaly "scrape_modtype does not work!"
+  | MTBfunsig _ -> mtb
+  | MTBsig (msid,sign) -> MTBsig (msid,strengthen_sig env msid sign mp)
+and strengthen_mod env mp (mtb,mpo) = 
+  let mtb' = strengthen_mtb env mp mtb in
+  let mpo' = match mpo with
+    | Some _ -> mpo
+    | None -> Some mp
+  in
+    (mtb',mpo')
+and strengthen_sig env msid sign mp = match sign with
+  | [] -> []
+  | (l,SPBconst cb) :: rest ->
+      let item' = l,SPBconst (strengthen_const env mp l cb) in
+      let rest' = strengthen_sig env msid rest mp in
+	item'::rest'
+  | (l,SPBmind mib) :: rest ->
+      let item' = l,SPBmind (strengthen_mind env mp l mib) in
+      let rest' = strengthen_sig env msid rest mp in
+	item'::rest'
+  | (l,SPBmodule mb) :: rest ->
+      let mp' = MPdot (mp,l) in
+      let item' = l,SPBmodule (strengthen_mod env mp' mb) in
+      let env' = add_module 
+		   (MPdot (MPself msid,l)) 
+		   (module_body_of_spec mb) 
+		   env 
+      in
+      let rest' = strengthen_sig env' msid rest mp in
+	item'::rest'
+  | (l,SPBmodtype mty as item) :: rest -> 
+      let env' = add_modtype 
+		   (make_kn (MPself msid) empty_dirpath l) 
+		   mty
+		   env
+      in
+      let rest' = strengthen_sig env' msid rest mp in
+	item::rest'
+
+let strengthen env mtb mp = strengthen_mtb env mp mtb
