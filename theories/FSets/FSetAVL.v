@@ -253,7 +253,7 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
       (avl Leaf)
   | RBNode : (x:elt)(l,r:tree)
       (avl l) -> (avl r) ->
-      `| (height l) - (height r) | <= 2` ->
+      `-2 <= (height l) - (height r) <= 2` ->
       (avl (Node l x r ((max (height l) (height r)) + 1))).
 
   Hint avl := Constructors avl.
@@ -262,14 +262,14 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
 
   Lemma avl_left : 
     (x:elt)(l,r:tree)(h:Z)
-    (avl (Node l x r h)) ->(avl l).
+    (avl (Node l x r h)) -> (avl l).
   Proof.
     Intros x l r h H; Inversion_clear H; Intuition.
   Save.
 
   Lemma avl_right : 
     (x:elt)(l,r:tree)(h:Z)
-    (avl (Node l x r h)) ->(avl l).
+    (avl (Node l x r h)) -> (avl l).
   Proof.
     Intros x l r c H; Inversion_clear H; Intuition.
   Save.
@@ -297,9 +297,22 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Inversion 1; Trivial.
   Save.
 
+  (* variant without [max] to ease the use of Omega *)
+  Lemma height_equation_2 : 
+    (l,r:tree)(x:elt)(h:Z)
+    (avl (Node l x r h)) -> 
+    ((height l) >= (height r) /\ h = (height l) + 1) \/
+    ((height r) >= (height l) /\ h = (height r) + 1).
+  Proof.
+    Inversion 1.
+    Generalize H4; Clear H4.
+    MaxCase '(height l) '(height r); Intuition.
+  Save.
+
   Implicits height_non_negative. 
   Implicits height_equation.
-  
+  Implicits height_equation_2.
+
   (** * Sets as AVL trees *)
 
   (** A set is implement as a record [t], containing a tree, 
@@ -441,31 +454,26 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     (l:tree)(x:elt)(r:tree)
     (bst l) -> (avl l) -> (bst r) -> (avl r) ->
     (lt_tree x l) -> (gt_tree x r) ->
-    `| (height l) - (height r) | <= 2` ->
+    `-2 <= (height l) - (height r) <= 2` ->
     { s:tree | 
         (bst s) /\
         (avl s) /\
+        (((height l) >= (height r) /\ (height s) = (height l) + 1) \/
+         ((height r) >= (height l) /\ (height s) = (height r) + 1)) /\
         (y:elt)(In_tree y s) <-> 
             ((X.eq y x) \/ (In_tree y l) \/ (In_tree y r)) }.
   Proof.
     Intros.
     Exists (Node l x r ((max (height l) (height r)) + 1)).
     Intuition.
-    Inversion_clear H6; Intuition.
+    MaxCase '(height l) '(height r); Intuition.
+    Inversion_clear H5; Intuition.
   Defined.
 
-  Lemma Zabs_ind : 
-    (P:Z->Prop)
-    (x:Z)(x >= 0 -> (P x)) -> (x <= 0 -> (P (-x))) ->
-    (P (Zabs x)).
-  Proof.
-    Intros; Case (Z_le_gt_dec x 0); Intro.
-    Rewrite Zabs_non_eq; Intuition.
-    Rewrite Zabs_eq; Intuition.
-  Save.
-
-  Tactic Definition ZAbs x :=
-    Pattern (Zabs x); Apply Zabs_ind; Intros.
+  (* [h] is a proof of [avl (Node l x r h)] *)
+  Tactic Definition AVL h :=
+    (Generalize (height_non_negative h); Try Simpl);
+    (Try Generalize (height_equation_2 h)); Intros.
 
   (** [bal l x r] acts as [create], but performs one step of
       rebalancing if necessary. *)
@@ -473,7 +481,7 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
   Definition bal :
     (l:t)(x:elt)(r:t)
     (lt_tree x l) -> (gt_tree x r) ->
-    `| (height l) - (height r) | <= 3` ->
+    `-3 <= (height l) - (height r) <= 3` ->
     { s:t | (y:elt)(In y s) <-> 
             ((X.eq y x) \/ (In y l) \/ (In y r)) }.
   Proof.
@@ -495,15 +503,27 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Case (create t2 x r); Auto.
     Inversion_clear bst_l; Trivial. 
     Inversion_clear avl_l; Trivial.
-    Simpl in hl.
-    Generalize Hh z; Clear Hh z.
-    Generalize (height_non_negative avl_l); Simpl.
-    Unfold hl hr; Rewrite (height_equation avl_l).
-    MaxCase '(height t0) '(height t2); Intros; Try Omega.
-    Generalize (height_non_negative avl_r).
-    Generalize Hh; Clear Hh;
-     ZAbs '((height t2)-(height r));
-     ZAbs '((height t0)+1-(height r)); Try Omega.
+    Generalize Hh z; Clear Hh z; Simpl in hl; Unfold hl hr.
+    AVL avl_l; AVL avl_r; Intuition Try Omega.
+    Inversion_clear avl_l; AVL H4; Omega.
+    Intro t2xr; Intros.
+    Case (create t0 t1 t2xr).
+    Inversion_clear bst_l; Trivial. 
+    Inversion_clear avl_l; Trivial.
+    Intuition.
+    Intuition.
+    Inversion_clear bst_l; Trivial.     
+    Inversion_clear bst_l; Trivial. 
+    Intro; Intro; Intuition; Generalize (H10 y); Intuition.
+    Apply ME.lt_eq with x; Auto. 
+    Apply E.lt_trans with x; Auto.
+    Apply Hl; Auto.
+    Apply Hr; Auto.
+    Apply ME.lt_eq with x; Auto. 
+    Apply E.lt_trans with x; Auto.
+    Apply Hl; Auto.
+    Apply Hr; Auto.
+
 
   Defined.
 
