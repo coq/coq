@@ -123,6 +123,13 @@ let raw_string_of_ref = function
 
 (* v7->v8 translation *)
 
+let name_app f = function
+  | Name id -> Name (f id)
+  | Anonymous -> Anonymous
+
+let avoid_wildcard id =
+  if id = id_of_string "_" then id_of_string "x_" else id
+
 let translate_keyword = function
   | ("forall" | "fun" | "match" | "fix" | "cofix" | "for" | "let"
     | "if"  | "then" | "else" | "return" | "mod" as s) ->
@@ -202,8 +209,8 @@ let translate_v7_string = function
   (* Default *)
   | "_" -> 
       msgerrnl (str 
-	"Warning: '_' is no longer an ident; it has been translated to 'xx'");
-      "xx"
+	"Warning: '_' is no longer an ident; it has been translated to 'x_'");
+      "x_"
   | x -> x
 
 let id_of_v7_string s =
@@ -218,7 +225,7 @@ let v7_to_v8_dir_id dir id =
     id_of_string (translate_keyword s)
   else id
 
-let v7_to_v8_id = v7_to_v8_dir_id empty_dirpath
+let v7_to_v8_id id = avoid_wildcard (v7_to_v8_dir_id empty_dirpath id)
 
 let shortest_qualid_of_v7_global ctx ref =
   let fulldir,_ = repr_path (sp_of_global ref) in
@@ -476,6 +483,7 @@ let rec extern inctx scopes vars r =
       CArrow (loc,extern_type scopes vars t, extern_type scopes vars c)
 
   | RLetIn (loc,na,t,c) ->
+      let na = name_app avoid_wildcard na in
       CLetIn (loc,(loc,na),sub_extern false scopes vars t,
               extern inctx scopes (add_vname vars na) c)
 
@@ -562,7 +570,8 @@ and factorize_prod scopes vars aty = function
   | RProd (loc,(Name id as na),ty,c)
       when same aty (extern_type scopes vars (anonymize_if_reserved na ty))
 	& not (occur_var_constr_expr id aty) (* avoid na in ty escapes scope *)
-	-> let (nal,c) = factorize_prod scopes (Idset.add id vars) aty c in
+	-> let id = avoid_wildcard id in
+           let (nal,c) = factorize_prod scopes (Idset.add id vars) aty c in
            ((loc,Name id)::nal,c)
   | c -> ([],extern true scopes vars c)
 
@@ -570,7 +579,8 @@ and factorize_lambda inctx scopes vars aty = function
   | RLambda (loc,na,ty,c)
       when same aty (extern_type scopes vars (anonymize_if_reserved na ty))
 	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)
-	-> let (nal,c) =
+	-> let na = name_app avoid_wildcard na in
+           let (nal,c) =
 	     factorize_lambda inctx scopes (add_vname vars na) aty c in
            ((loc,na)::nal,c)
   | c -> ([],sub_extern inctx scopes vars c)

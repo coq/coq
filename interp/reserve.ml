@@ -67,6 +67,7 @@ let rec unloc = function
 
 let anonymize_if_reserved na t = match na with
   | Name id as na ->
+      if !Options.v7 & id = id_of_string "_" then t else
       (try 
 	if unloc t = find_reserved_type id
 	then RHole (dummy_loc,BinderType na)
