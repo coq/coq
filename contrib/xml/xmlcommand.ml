@@ -15,7 +15,7 @@
 (* CONFIGURATION PARAMETERS *)
 
 let dtdname = "http://localhost:8081/getdtd?url=cic.dtd";;
-let verbose = ref false;; (* always set to true during a "Print XML All" *)
+let verbose = ref true;; (* always set to true during a "Print XML All" *)
 
 
 
@@ -62,7 +62,7 @@ let print_if_verbose s = if !verbose then print_string s;;
 let ext_of_tag =
  function
     "CONSTANT"        -> "con"
-  | "MUTUALINDUCTIVE" -> "ind"
+  | "INDUCTIVE"       -> "ind"
   | "VARIABLE"        -> "var"
   | _                 -> "err" (* uninteresting thing that won't be printed *)
 ;;
@@ -75,7 +75,7 @@ let tag_of_sp sp =
   with
    Not_found ->
     try
-     let _ = G.lookup_mind sp in "MUTUALINDUCTIVE"
+     let _ = G.lookup_mind sp in "INDUCTIVE"
     with
      Not_found ->
       (* We could only hope it is a variable *)
@@ -88,6 +88,7 @@ let tag_of_sp sp =
 let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
  let module D = Declare in
   let tag = Libobject.object_tag o in
+   print_if_verbose ("Object tag: " ^ tag ^ "\n") ;
    match tag with
       "CONSTANT" ->
         (match D.constant_strength sp with
@@ -95,7 +96,7 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
           | D.NeverDischarge -> true  (* a non-local one    *)
         )
     | "VARIABLE"        -> false  (* variables are local, so no namesakes     *)
-    | "MUTUALINDUCTIVE" -> true   (* mutual inductive types are never local   *)
+    | "INDUCTIVE"       -> true   (* mutual inductive types are never local   *)
     | _                 -> false  (* uninteresting thing that won't be printed*)
 ;;
 
@@ -622,14 +623,13 @@ let print_object o id sp dn fv =
                   D.Cooked c -> print_definition id c typ fv
                 | D.Recipe _ -> Util.anomaly "trying to print a recipe"
           end
-    | "MUTUALINDUCTIVE" ->
+    | "INDUCTIVE" ->
          (*CSC: QUI CI SONO ANCHE LE VARIABILI, CREDO, CHIAMATE mind_hyps *)
          let {D.mind_packets=packs ; D.mind_nparams=nparams} =
           G.lookup_mind sp
          in
            print_mutual_inductive packs fv nparams
     | "VARIABLE" ->
-        (*CHE COSA E' IL PRIMO ARGOMENTO?*)
         let (_,typ) = G.lookup_named id in
          add_to_pvars (N.string_of_id id) ;
          print_variable id (T.body_of_type typ)

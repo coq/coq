@@ -57,32 +57,31 @@ let get_params_from_type vl t =
  in
   let pl = List.rev (rget t []) in
    string_of_vars_list pl
-   (*List.fold_right
-   (fun x i -> x ^ match i with "" -> "" | i' -> " " ^ i') pl ""*)
 ;;
 
 (* add_cooking_information csp vl                               *)
 (*  when  csp is the section path of the most cooked object co  *)
 (*  and   vl  is the list of variables possibly occuring in co  *)
 (* returns the list of variables actually occurring in co       *)
-let add_cooking_information csp vl =
-(*
- let module CT = Constrtypes in
+let add_cooking_information sp vl =
+ let module D = Declarations in
+ let module G = Global in
  let module N = Names in
-  let clobj = Lib.map_leaf (N.objsp_of csp) in
-  let ctag = Libobject.object_tag clobj in
-   match ctag with
-      "CONSTANT" ->
-         let (ccmap, _, _) = Environ.outConstant clobj in
-          let {CT.cONSTBODY=cval0 ;
-               CT.cONSTTYPE=ctyp} = Listmap.map ccmap N.CCI
-          in
-           get_params_from_type vl ctyp
-    | "MUTUALINDUCTIVE" ->
-         let (cmap, _) = Environ.outMutualInductive clobj in
-          let {CT.mINDPACKETS=packs} = Listmap.map cmap N.CCI in
-           let {CT.mINDARITY=arity} = packs.(0) in
-            get_params_from_type vl arity
-    | _ -> Std.anomaly "Cooking of an uncoockable term required"
-*) ""
+ let module T = Term in
+ let module X = Xml in
+  try
+   let {D.const_body=val0 ; D.const_type = typ} = G.lookup_constant sp in
+   let typ = T.body_of_type typ in
+    get_params_from_type vl typ
+  with
+   Not_found ->
+    try
+     let {D.mind_packets=packs ; D.mind_nparams=nparams} =
+      G.lookup_mind sp
+     in
+      let {D.mind_nf_arity=arity} = packs.(0) in
+      let arity = T.body_of_type arity in
+       get_params_from_type vl arity
+    with
+     Not_found -> Util.anomaly "Cooking of an uncoockable term required"
 ;;
