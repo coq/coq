@@ -2129,8 +2129,8 @@ let main files =
 	      ~callback
 	      ())
   in
-  add_to_menu_toolbar "_Interrupt computations"
-    ~tooltip:"Interrupt computations"    
+  add_to_menu_toolbar "_Interrupt"
+    ~tooltip:"Interrupt"    
     ~key:GdkKeysyms._Break 
     ~callback:break
     `STOP
@@ -2852,12 +2852,13 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
        b#insert ~iter:b#start_iter "\t\t";
      with _ -> ());
     b#insert 
-      "\n\tCoqIDE: a Gtk2 interface for Coq.\n\n\
+      "\n\tCoqIDE: a Gtk2 interface for Coq\n\n\
       Main author   : Benjamin Monate\n\
       Contributions : Pierre Letouzey, Claude Marché\n\n\
-      Feature wish or bug report: use Web interface\n\
+      Feature wish or bug report: use Web interface\n\n\
       \thttp://coq.inria.fr/bin/coq-bugs\n\n\
-      Version information\n--------\n";
+      Version information\n\
+      -------------------\n";
     b#insert ((Coq.version ()))
       
   in
