@@ -130,6 +130,12 @@ let translate_v7_ltac = function
   | "SimplAllMonoms" -> "simpl_all_monomials"
   | "AssocDistrib" -> "assoc_distrib"
   | "NowShow" -> "now_show"
+  | ("subst"|"simpl"|"elim"|"destruct"|"apply"|"intro" (* ... *)) as x ->
+      let x' = x^"_" in
+      msgerrnl
+      (str ("Warning: '"^
+         x^"' is now a primitive tactic; it has been translated to '"^x'^"'"));
+      x'
   | x -> x
 
 let id_of_ltac_v7_id id = 
