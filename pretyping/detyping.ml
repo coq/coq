@@ -277,10 +277,10 @@ let detype_case computable detype detype_eqn testdep
       let rec decomp_lam_force n avoid l p =
 	if n = 0 then (List.rev l,p) else
           match p with
-            | RLambda (_,(Name id as na),_,c) -> 
-		decomp_lam_force (n-1) (id::avoid) (na::l) c
-            | RLambda (_,(Anonymous as na),_,c) -> 
-		decomp_lam_force (n-1) avoid (na::l) c
+            | RLambda (_,na,_,c) -> 
+		decomp_lam_force (n-1) (name_cons na avoid) (na::l) c
+            | RLetIn (_,na,_,c) -> 
+		decomp_lam_force (n-1) (name_cons na avoid) (na::l) c
             | _ ->
 		let x = Nameops.next_ident_away (id_of_string "x") avoid in
 		decomp_lam_force (n-1) (x::avoid) (Name x :: l) 
