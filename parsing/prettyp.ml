@@ -339,9 +339,13 @@ let print_leaf_entry with_values sep (sp,lobj) =
 	[< >]
     | (_,"END-SECTION") -> [< >]
     | (_,"STRUCTURE") -> [< >]
+(* To deal with forgotten cases... *)
+    | (_,s) -> [< >]
+(*
     | (_,s) -> 
 	[< 'sTR(string_of_path sp); 'sTR" : ";
            'sTR"Unrecognized object "; 'sTR s; 'fNL >]
+*)
 
 let rec print_library_entry with_values ent = 
   let sep = if with_values then " = " else " : " in 
