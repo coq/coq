@@ -10,24 +10,25 @@
 
 (* ML part of the Ring tactic *)
 
-open Pp;;
-open Util;;
-open Term;;
-open Names;;
-open Reduction;;
-open Tacmach;;
-open Proof_type;;
-open Proof_trees;;
-open Printer;;
-open Equality;;
-open Vernacinterp;;
-open Libobject;;
-open Closure;;
-open Tacred;;
-open Tactics;;
-open Pattern ;;
-open Hiddentac;;
-open Quote;;
+open Pp
+open Util
+open Options
+open Term
+open Names
+open Reduction
+open Tacmach
+open Proof_type
+open Proof_trees
+open Printer
+open Equality
+open Vernacinterp
+open Libobject
+open Closure
+open Tacred
+open Tactics
+open Pattern 
+open Hiddentac
+open Quote
 
 let mt_evd = Evd.empty
 let constr_of com = Astterm.interp_constr mt_evd (Global.env()) com
@@ -551,6 +552,12 @@ let polynom_unfold_tac =
   let flags = (UNIFORM, red_add betaiota_red (CONST constants_to_unfold)) in
   reduct_in_concl (cbv_norm_flags flags)
       
+let polynom_unfold_tac_in_term gl =
+  let flags = 
+    (UNIFORM, red_add betaiotazeta_red (CONST constants_to_unfold)) 
+  in
+  cbv_norm_flags flags (pf_env gl) (project gl)
+
 (* lc : constr list *)
 (* th : theory associated to t *)
 (* op : clause (None for conclusion or Some id for hypothesis id) *)
@@ -575,23 +582,24 @@ let raw_polynom th op lc gl =
   let polynom_tac = 
     List.fold_right2
       (fun ci (c'i, c''i, c'i_eq_c''i) tac ->
-        let c'''i = pf_nf gl c''i in
-          if pf_conv_x gl c'''i ci then tac (* convertible terms *)
-          else
+         let c'''i = 
+	   if !term_quality then polynom_unfold_tac_in_term gl c''i else c''i 
+	 in
+         if !term_quality && pf_conv_x gl c'''i ci then 
+	   tac (* convertible terms *)
+         else
            (tclORELSE
-             (tclORELSE
-               (h_exact c'i_eq_c''i)
-               (h_exact (mkAppA
-                 [| build_coq_sym_eqT (); th.th_a; c''i; ci; c'i_eq_c''i |]))
-             ) 
-	     (tclTHENS 
-	       (elim_type (mkAppA [| build_coq_eqT (); th.th_a; c''i; ci |]))
-               [ tac ;
-                 h_exact c'i_eq_c''i
-               ]
-             )
-           )
-      ) lc ltriplets polynom_unfold_tac 
+              (tclORELSE
+		 (h_exact c'i_eq_c''i)
+		 (h_exact (mkAppA
+			     [| build_coq_sym_eqT (); 
+				th.th_a; c'''i; ci; c'i_eq_c''i |]))) 
+	      (tclTHENS 
+		 (elim_type 
+		    (mkAppA [| build_coq_eqT (); th.th_a; c'''i; ci |]))
+		 [ tac;
+                   h_exact c'i_eq_c''i ]))) 
+      lc ltriplets polynom_unfold_tac 
   in
   polynom_tac gl
 
