@@ -14,3 +14,4 @@ contrib-*
 patch-*
 deb_build
 coq.spec
+sun4u
