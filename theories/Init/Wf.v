@@ -74,19 +74,19 @@ Chapter Well_founded.
         (P:A->Type)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
  Proof.
   Intros; Apply (Acc_iter P); Auto.
- Qed.
+ Defined.
 
  Theorem well_founded_induction :
         (P:A->Set)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
  Proof.
   Exact [P:A->Set](well_founded_induction_type P).
- Qed.
+ Defined.
 
  Theorem well_founded_ind : 
          (P:A->Prop)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
  Proof.
   Exact [P:A->Prop](well_founded_induction_type P).
- Qed.
+ Defined.
 
 (** Building fixpoints  *) 
 
@@ -152,7 +152,7 @@ Chapter Well_founded_2.
      ((x:A)(x':B)((y:A)(y':B)(R (y,y') (x,x'))->(P y y'))->(P x x'))->(a:A)(b:B)(P a b).
   Proof.
    Intros; Apply Acc_iter_2; Auto.
-  Qed.
+  Defined.
 
 End Well_founded_2.
 
