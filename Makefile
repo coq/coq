@@ -377,7 +377,7 @@ COQIDECMO=ide/utils/okey.cmo ide/utils/uoptions.cmo \
 	  ide/coq_tactics.cmo  ide/command_windows.cmo ide/coqide.cmo
 
 COQIDECMX=$(COQIDECMO:.cmo=.cmx)
-COQIDEFLAGS=-I +lablgtk2
+COQIDEFLAGS=-thread -I +lablgtk2
 beforedepend:: ide/config_lexer.ml ide/find_phrase.ml ide/highlight.ml
 
 FULLIDELIB=$(FULLCOQLIB)/ide

@@ -183,7 +183,13 @@ object('self)
 
 let (input_views:analyzed_views viewable_script Vector.t) = Vector.create ()
 
+
+let signals_to_crash = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup; 
+			  Sys.sigill; Sys.sigpipe; Sys.sigquit; 
+			  (* Sys.sigsegv;*)  Sys.sigterm; Sys.sigusr2] 
+
 let crash_save i =
+  ignore (Unix.sigprocmask Unix.SIG_BLOCK signals_to_crash);
   Pervasives.prerr_endline "Trying to save all buffers in .crashcoqide files";
   let count = ref 0 in 
   Vector.iter 
@@ -205,26 +211,54 @@ let crash_save i =
   Pervasives.prerr_endline "Done. Please report.";
   exit i
 
-let _ = 
-  let signals_to_crash = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup; 
-			  Sys.sigill; Sys.sigpipe; Sys.sigquit; 
-			  (* Sys.sigsegv;*)  Sys.sigterm; Sys.sigusr2] 
-  in List.iter 
-       (fun i -> Sys.set_signal i (Sys.Signal_handle crash_save)) 
-       signals_to_crash
+let ignore_break () = 
+  List.iter 
+    (fun i -> 
+       try Sys.set_signal i (Sys.Signal_handle crash_save) 
+       with _ -> prerr_endline "Signal ignored (normal if Win32)") 
+    signals_to_crash;
+  Sys.set_signal Sys.sigint Sys.Signal_ignore
+
+(* Locking machinery for Coq kernel *)
+
+let coq_computing = Mutex.create ()
+
+let full_do_if_not_computing f x = 
+if Mutex.try_lock coq_computing then 
+  ignore (Thread.create 
+	    (fun () ->
+	       prerr_endline "Launching thread";
+	       begin
+		   prerr_endline "Getting lock";
+		 try
+		   f x;
+		   prerr_endline "Releasing lock";
+		   Mutex.unlock coq_computing;
+		 with e -> 
+		   prerr_endline "Releasing lock (on error)";
+		   Mutex.unlock coq_computing;
+		   raise e
+	       end)
+	    ())
+else prerr_endline "Discarded order (computations are ongoing)"
+
+let do_if_not_computing f x = 
+  ignore (full_do_if_not_computing f x)
+
+let break () = 
+  if not (Mutex.try_lock coq_computing) then 
+    begin
+      prerr_endline "Break received";
+      Util.interrupt := true;
+    end
+  else begin
+    Mutex.unlock coq_computing;
+    prerr_endline "Break received and discarded (not computing)"
+  end
 
 
-let set_break () = 
-  Sys.set_signal Sys.sigusr1 (Sys.Signal_handle (fun _ -> raise Sys.Break))
-let unset_break () = 
-  Sys.set_signal Sys.sigusr1 Sys.Signal_ignore
-
-(* Signal sigusr1 is used to stop coq computation *)
-let pid = Unix.getpid ()
-let break () = Unix.kill pid Sys.sigusr1 
-
-let can_break () = set_break () 
-let cant_break () = unset_break () 
+let can_break () = () 
+let cant_break () = () 
 
 
 let add_input_view tv = 
@@ -259,15 +293,59 @@ let remove_current_view_page () =
   kill_input_view c;
   ((notebook ())#get_nth_page c)#misc#hide ()
 
+let underscore = Glib.Utf8.to_unichar "_" (ref 0)
 
+let rec find_word_end it =
+  prerr_endline "Find word end";
+  if 
+    (it#ends_word && 
+    it#char <> underscore)
+    || it#forward_char#is_end
+  then it 
+  else find_word_end it#forward_word_end
+      
+let rec find_word_start it =
+  prerr_endline "Find word start";
+  if 
+    (it#starts_word && 
+    it#backward_char#char <> underscore)
+    || it#backward_char#is_start
+  then it 
+  else find_word_start it#backward_word_start
+
+let get_last_word_limits it = 
+  let start = find_word_start it in
+  let nw = start#backward_word_start in
+  (find_word_start nw,find_word_end nw)
+
+let rec complete_backward w (it:GText.iter) = 
+  prerr_endline "Complete backward...";
+  match it#backward_search w with 
+    | None -> None
+    | Some (start,stop) -> let ne = find_word_end stop in
+      if ((find_word_start start)#compare start <> 0) ||
+	(ne#compare stop = 0)
+      then complete_backward w start
+      else Some (stop,ne)
+
+let rec complete_forward w (it:GText.iter) = 
+  prerr_endline "Complete forward...";
+  match it#forward_search w with 
+    | None -> None
+    | Some (start,stop) -> let ne = find_word_end stop in
+      if ((find_word_start start)#compare start <> 0) || 
+	ne#compare stop = 0 then complete_forward w stop
+      else Some (stop,ne)
+  
+  
 let get_current_word () =
   let av = out_some ((get_current_view ()).analyzed_view) in 
   match GtkBase.Clipboard.wait_for_text (cb ()) with
     | None -> 
 	prerr_endline "None selected";
 	let it = av#get_insert in
-	let start = it#backward_word_start in
-	let stop = start#forward_word_end in
+	let start = find_word_start it in
+	let stop = find_word_end start in
 	av#view#buffer#get_text ~slice:true ~start ~stop ()
     | Some t ->
  	prerr_endline "Some selected";
@@ -303,21 +381,6 @@ let pop () = try Stack.pop processed_stack with Stack.Empty -> raise (Size 0)
 let top () = try Stack.top processed_stack with Stack.Empty -> raise (Size 0)
 let is_empty () = Stack.is_empty processed_stack
 
-let coq_computing = ref false
-let id () = ()
-let do_if_not_computing f x = 
-  if not !coq_computing then 
-    begin
-      try
-	coq_computing := true;
-	f x;
-	coq_computing := false;
-      with e -> 
-	coq_computing := false; 
-	raise e
-    end
-  else 
-    id x
   
 (* push a new Coq phrase *)
 
@@ -480,7 +543,7 @@ object(self)
       match (GToolbox.question_box ~title:"File exists on disk"
 	       ~buttons:["Overwrite";
 			 "Cancel";] 
-	       ~default:small_size
+	       ~default:1
 	       ~icon:
 	       (let img = GMisc.image () in
 		img#set_stock warning_icon ~size:dialog_size;
@@ -556,103 +619,105 @@ object(self)
 	
 
   method show_goals_full = 
-    try
-      proof_view#buffer#set_text "";
-      let s = Coq.get_current_goals () in
-      let last_shown_area = proof_buffer#create_tag [`BACKGROUND "light green"]
-      in
-      match s with 
-	| [] -> proof_buffer#insert (Coq.print_no_goal ())
-	| (hyps,concl)::r -> 
-	    let goal_nb = List.length s in
-	    proof_buffer#insert (Printf.sprintf "%d subgoal%s\n" 
-				   goal_nb
-				   (if goal_nb<=1 then "" else "s"));
-	    let coq_menu commands = 
-	      let tag = proof_buffer#create_tag []
-	      in 
-	      ignore
-		(tag#connect#event ~callback:
-		   (fun ~origin ev it ->
-		      match GdkEvent.get_type ev with 
-			| `BUTTON_PRESS -> 
-			    let ev = (GdkEvent.Button.cast ev) in
-			    if (GdkEvent.Button.button ev) = 3
-			    then begin 
-			      let loc_menu = GMenu.menu () in
-			      let factory = new GMenu.factory loc_menu in
-			      let add_coq_command (cp,ip) = 
-				ignore (factory#add_item cp 
-					  ~callback:
-					  (fun () -> ignore
-					     (self#insert_this_phrase_on_success 
-						true
-						true 
-						false 
-						(ip^"\n") 
-						(ip^"\n"))
-					  )
-				       )
-			      in
-			      List.iter add_coq_command commands;
-			      loc_menu#popup 
-				~button:3
-				~time:(GdkEvent.Button.time ev);
-			    end
-			| `MOTION_NOTIFY -> 
-			    proof_buffer#remove_tag
-			    ~start:proof_buffer#start_iter
-			    ~stop:proof_buffer#end_iter
-			    last_shown_area;
-			    prerr_endline "Before find_tag_limits";
-			    
-			    let s,e = find_tag_limits tag 
-					(new GText.iter it) 
-			    in
-			    prerr_endline "After find_tag_limits";
-			    proof_buffer#apply_tag 
-			      ~start:s 
-			      ~stop:e 
-			      last_shown_area;
-			    
-			    prerr_endline "Applied tag";
-			    ()
-			| _ -> ())
-		);
-	      tag
-	    in
-	    List.iter
-	      (fun ((_,_,_,(s,_)) as hyp) -> 
-		 let tag = coq_menu (hyp_menu hyp) in
-		 proof_buffer#insert ~tags:[tag] (s^"\n"))
-	      hyps;
-	    proof_buffer#insert ("---------------------------------------(1/"^
-				 (string_of_int goal_nb)^
-				 ")\n") 
-	    ;
-	    let tag = coq_menu (concl_menu concl) in
-	    let _,_,_,sconcl = concl in
-	    proof_buffer#insert ~tags:[tag] sconcl;
-	    proof_buffer#insert "\n";
-	    let my_mark = `NAME "end_of_conclusion" in
-	    proof_buffer#move_mark
-	      ~where:((proof_buffer#get_iter_at_mark `INSERT)) my_mark;
-	    proof_buffer#insert "\n\n";
-	    let i = ref 1 in
-	    List.iter 
-	      (function (_,(_,_,_,concl)) -> 
-		 incr i;
-		 proof_buffer#insert ("--------------------------------------("^
-				      (string_of_int !i)^
-				      "/"^
-				      (string_of_int goal_nb)^
-				      ")\n");
-		 proof_buffer#insert concl;
-		 proof_buffer#insert "\n\n";
-	      )
-	      r;
-	    ignore (proof_view#scroll_to_mark my_mark) 
-      with e -> prerr_endline (Printexc.to_string e)
+      begin
+	try
+	  proof_view#buffer#set_text "";
+	  let s = Coq.get_current_goals () in
+	  let last_shown_area = proof_buffer#create_tag [`BACKGROUND "light green"]
+	  in
+	  match s with 
+	    | [] -> proof_buffer#insert (Coq.print_no_goal ())
+	    | (hyps,concl)::r -> 
+		let goal_nb = List.length s in
+		proof_buffer#insert (Printf.sprintf "%d subgoal%s\n" 
+				       goal_nb
+				       (if goal_nb<=1 then "" else "s"));
+		let coq_menu commands = 
+		  let tag = proof_buffer#create_tag []
+		  in 
+		  ignore
+		    (tag#connect#event ~callback:
+		       (fun ~origin ev it ->
+			  match GdkEvent.get_type ev with 
+			    | `BUTTON_PRESS -> 
+				let ev = (GdkEvent.Button.cast ev) in
+				if (GdkEvent.Button.button ev) = 3
+				then begin 
+				  let loc_menu = GMenu.menu () in
+				  let factory = new GMenu.factory loc_menu in
+				  let add_coq_command (cp,ip) = 
+				    ignore (factory#add_item cp 
+					      ~callback:
+					      (fun () -> ignore
+						 (self#insert_this_phrase_on_success 
+						    true
+						    true 
+						    false 
+						    (ip^"\n") 
+						    (ip^"\n"))
+					      )
+					   )
+				  in
+				  List.iter add_coq_command commands;
+				  loc_menu#popup 
+				    ~button:3
+				    ~time:(GdkEvent.Button.time ev);
+				end
+			    | `MOTION_NOTIFY -> 
+				proof_buffer#remove_tag
+				~start:proof_buffer#start_iter
+				~stop:proof_buffer#end_iter
+				last_shown_area;
+				prerr_endline "Before find_tag_limits";
+				
+				let s,e = find_tag_limits tag 
+					    (new GText.iter it) 
+				in
+				prerr_endline "After find_tag_limits";
+				proof_buffer#apply_tag 
+				  ~start:s 
+				  ~stop:e 
+				  last_shown_area;
+				
+				prerr_endline "Applied tag";
+				()
+			    | _ -> ())
+		    );
+		  tag
+		in
+		List.iter
+		  (fun ((_,_,_,(s,_)) as hyp) -> 
+		     let tag = coq_menu (hyp_menu hyp) in
+		     proof_buffer#insert ~tags:[tag] (s^"\n"))
+		  hyps;
+		proof_buffer#insert ("---------------------------------------(1/"^
+				     (string_of_int goal_nb)^
+				     ")\n") 
+		;
+		let tag = coq_menu (concl_menu concl) in
+		let _,_,_,sconcl = concl in
+		proof_buffer#insert ~tags:[tag] sconcl;
+		proof_buffer#insert "\n";
+		let my_mark = `NAME "end_of_conclusion" in
+		proof_buffer#move_mark
+		  ~where:((proof_buffer#get_iter_at_mark `INSERT)) my_mark;
+		proof_buffer#insert "\n\n";
+		let i = ref 1 in
+		List.iter 
+		  (function (_,(_,_,_,concl)) -> 
+		     incr i;
+		     proof_buffer#insert ("--------------------------------------("^
+					  (string_of_int !i)^
+					  "/"^
+					  (string_of_int goal_nb)^
+					  ")\n");
+		     proof_buffer#insert concl;
+		     proof_buffer#insert "\n\n";
+		  )
+		  r;
+		ignore (proof_view#scroll_to_mark my_mark) ;
+	  with e -> prerr_endline (Printexc.to_string e)
+      end
 
   method send_to_coq phrase show_output show_error localize =
     try 
@@ -726,57 +791,79 @@ object(self)
       Some (start,end_iter)
     with _ -> None
 
-  method complete_at_offset (offset:int) = ()
-					     
-
+  method complete_at_offset (offset:int) = 
+    let it () = input_buffer#get_iter (`OFFSET offset) in
+    let iit = it () in
+    if (iit#ends_word || iit#inside_word) then 
+      let w = input_buffer#get_text 
+		~start:iit
+		~stop:(find_word_start iit) 
+		()
+      in
+      match complete_backward w iit with 
+	| None -> () 
+	| Some (start,stop) -> 
+	    let completion = input_buffer#get_text ~start ~stop () in
+	    input_buffer#insert completion;
+	    input_buffer#move_mark `INSERT (it());
+	    ()
+	    
   method process_next_phrase display_goals do_highlight = 
-    self#clear_message;
-    prerr_endline "process_next_phrase starting now";
-    if do_highlight then begin
-      !push_info "Coq is computing";
-      input_view#set_editable false;
-    end;
-    match (self#find_phrase_starting_at self#get_start_of_input)
-    with None -> 	  
-      if do_highlight then begin
-	input_view#set_editable true;
-	!pop_info ();
-      end; false
-      | Some(start,stop) ->
-	  prerr_endline "process_next_phrase : to_process highlight";
-	  let b = input_buffer in
-	  if do_highlight then begin
-	    input_buffer#apply_tag_by_name ~start ~stop "to_process";
-	    process_pending ()
-	  end;
-	  prerr_endline "process_next_phrase : getting phrase";
-	  let phrase = start#get_slice ~stop in
-	  let r = 
-	    match self#send_to_coq phrase true true true with
-	      | Some ast ->
-		  begin
-		    b#move_mark ~where:stop (`NAME "start_of_input");
-		    b#apply_tag_by_name "processed" ~start ~stop;
-		    if (self#get_insert#compare) stop <= 0 then 
+    begin
+      try self#clear_message;
+	prerr_endline "process_next_phrase starting now";
+	if do_highlight then begin
+	  !push_info "Coq is computing";
+	  input_view#set_editable false;
+	end;
+	begin match (self#find_phrase_starting_at self#get_start_of_input)
+	with 
+	  | None -> 	  
+	      if do_highlight then begin
+		input_view#set_editable true;
+		!pop_info ();
+	      end; false
+	  | Some(start,stop) ->
+	      prerr_endline "process_next_phrase : to_process highlight";
+	      let b = input_buffer in
+	      if do_highlight then begin
+		input_buffer#apply_tag_by_name ~start ~stop "to_process";
+		process_pending ()
+	      end;
+	      prerr_endline "process_next_phrase : getting phrase";
+	      let phrase = start#get_slice ~stop in
+	      let r = 
+		match self#send_to_coq phrase true true true with
+		  | Some ast ->
 		      begin
-			b#place_cursor stop;
-			self#recenter_insert
-		      end;
-		    let start_of_phrase_mark = `MARK (b#create_mark start) in
-		    let end_of_phrase_mark = `MARK (b#create_mark stop) in
-		    push_phrase start_of_phrase_mark end_of_phrase_mark ast;
-		    if display_goals then self#show_goals;
-		    true
-		  end
-	      | None -> false
-	  in
-	  if do_highlight then begin
-	    b#remove_tag_by_name ~start ~stop "to_process" ;
-	    input_view#set_editable true;
-	    !pop_info ();
-	  end;
-	  r
-
+			b#move_mark ~where:stop (`NAME "start_of_input");
+			b#apply_tag_by_name "processed" ~start ~stop;
+			if (self#get_insert#compare) stop <= 0 then 
+			  begin
+			    b#place_cursor stop;
+			    self#recenter_insert
+			  end;
+			let start_of_phrase_mark = `MARK (b#create_mark start)
+			in
+			let end_of_phrase_mark = `MARK (b#create_mark stop) in
+			push_phrase 
+			  start_of_phrase_mark 
+			  end_of_phrase_mark ast;
+			if display_goals then self#show_goals;
+			true
+		      end
+		  | None -> false
+	      in
+	      if do_highlight then begin
+		b#remove_tag_by_name ~start ~stop "to_process" ;
+		input_view#set_editable true;
+		!pop_info ();
+	      end;
+	      r;
+	end
+      with e -> raise e
+    end
+      
   method insert_this_phrase_on_success 
     show_output show_msg localize coqphrase insertphrase = 
     match self#send_to_coq coqphrase show_output show_msg localize with
@@ -791,11 +878,13 @@ object(self)
 	    input_buffer#apply_tag_by_name "processed" ~start ~stop;
 	    if (self#get_insert#compare) stop <= 0 then 
 	      input_buffer#place_cursor stop;
-	    let start_of_phrase_mark = `MARK (input_buffer#create_mark start) in
+	    let start_of_phrase_mark = `MARK (input_buffer#create_mark start) 
+	    in
 	    let end_of_phrase_mark = `MARK (input_buffer#create_mark stop) in
 	    push_phrase start_of_phrase_mark end_of_phrase_mark ast;
 	    self#show_goals;
-	    (*try (match Coq.get_current_goals () with 
+	    (*Auto insert save on success...
+	      try (match Coq.get_current_goals () with 
 	      | [] ->  
 	      (match self#send_to_coq "Save.\n" true true true with
 	      | Some ast -> 
@@ -830,9 +919,12 @@ object(self)
     input_view#set_editable false;
     !flash_info "Coq is computing";
     process_pending ();
-    while ((stop#compare self#get_start_of_input>=0) 
-	   && (self#process_next_phrase false false))
-    do () done;
+    (try 
+      while ((stop#compare self#get_start_of_input>=0) 
+	     && (self#process_next_phrase false false))
+      do Util.check_for_interrupt () done
+    with Sys.Break -> 
+      prerr_endline "Interrupted during process_until_iter_or_error");
     self#show_goals;
     input_buffer#remove_tag_by_name ~start ~stop "to_process" ;
     input_view#set_editable true;
@@ -987,28 +1079,27 @@ Restart and report if you never tried to interrupt an Undo.";
 		 self#insert_this_phrase_on_success true false false cp ip) l)
 
   method active_keypress_handler k = 
-    if !coq_computing then true else 
-      let state = GdkEvent.Key.state k in
-      begin
-	match  state with
-	  | l when List.mem `MOD1 l ->
-	      let k = GdkEvent.Key.keyval k in
-	      if GdkKeysyms._Return=k
-	      then ignore(
-		if (input_buffer#insert_interactive "\n") then
-		  begin
-		    let i= self#get_insert#backward_word_start in
-		    input_buffer#place_cursor i;
-		    self#process_until_insert_or_error
-		  end);
-	      true
-	  | l when List.mem `CONTROL l -> 
-	      let k = GdkEvent.Key.keyval k in
-	      if GdkKeysyms._c=k
-	      then break ();
-	      false
-	  | l -> false
-      end
+    let state = GdkEvent.Key.state k in
+    begin
+      match  state with
+	| l when List.mem `MOD1 l ->
+	    let k = GdkEvent.Key.keyval k in
+	    if GdkKeysyms._Return=k
+	    then ignore(
+	      if (input_buffer#insert_interactive "\n") then
+		begin
+		  let i= self#get_insert#backward_word_start in
+		  input_buffer#place_cursor i;
+		  self#process_until_insert_or_error
+		end);
+	    true
+	| l when List.mem `CONTROL l -> 
+	    let k = GdkEvent.Key.keyval k in
+	    if GdkKeysyms._m=k
+	    then break ();
+	    false
+	| l -> false
+    end
   method disconnected_keypress_handler k = 
     match GdkEvent.Key.state k with
       | l when List.mem `CONTROL l -> 
@@ -1146,9 +1237,6 @@ Restart and report if you never tried to interrupt an Undo.";
 		)
 	    else set_tab_image index yes_icon;
 	 ));
-    ignore (input_view#connect#after#paste_clipboard
-	      ~callback:(fun () -> 
-			   prerr_endline "Paste occured"));
     ignore (input_buffer#connect#changed
 	      ~callback:(fun () -> 
 			   let r = input_view#visible_rect in
@@ -1196,6 +1284,7 @@ let create_input_tab filename =
 	      ~packing:fr1#add () 
   in
   let tv1 = Undo.undoable_view ~buffer:b ~packing:(sw1#add) () in
+  prerr_endline ("Language: "^ b#start_iter#language);
   tv1#misc#set_name "ScriptWindow";
   let _ = tv1#set_editable true in
   let _ = tv1#set_wrap_mode `NONE in
@@ -1251,7 +1340,7 @@ let main files =
 	    ~width:window_width ~height:window_height 
 	    ~title:"CoqIde" ()
   in
-(*  let accel_group = GtkData.AccelGroup.create () in *)
+  (*  let accel_group = GtkData.AccelGroup.create () in *)
   let vbox = GPack.vbox ~homogeneous:false ~packing:w#add () in
   let menubar = GMenu.menu_bar ~packing:vbox#pack () in
   let factory = new GMenu.factory menubar in
@@ -1268,8 +1357,8 @@ let main files =
 	(function 
 	   | {analyzed_view=Some av} -> 
 	       (match av#filename with 
-		 | None -> false 
-		 | Some fn -> f=fn)
+		  | None -> false 
+		  | Some fn -> f=fn)
 	   | _ -> false) 
 	!input_views;
       let b = Buffer.create 1024 in
@@ -1390,7 +1479,7 @@ let main files =
     Vector.exists
       (function 
 	 | {view=view} -> view#buffer#modified        
-	 )
+      )
       input_views
   in
   ignore (saveall_m#connect#activate saveall_f);
@@ -1519,8 +1608,8 @@ let main files =
   let edit_menu = factory#add_submenu "_Edit" in
   let edit_f = new GMenu.factory edit_menu ~accel_group in
   ignore(edit_f#add_item "_Undo" ~key:GdkKeysyms._u ~callback:
-	   (fun () -> 
-	      ignore (get_current_view()).view#undo));
+	   (do_if_not_computing 
+	      (fun () -> ignore (get_current_view()).view#undo)));
   ignore(edit_f#add_item "_Clear Undo Stack" ~key:GdkKeysyms._exclam ~callback:
 	   (fun () -> 
 	      ignore (get_current_view()).view#clear_undo));
@@ -1535,11 +1624,12 @@ let main files =
 		 (get_current_view()).view#as_view 
 		 GtkText.View.Signals.cut_clipboard)));
   ignore(edit_f#add_item "Paste" ~key:GdkKeysyms._V ~callback:
-	   (fun () -> 
-	      try GtkSignal.emit_unit
-		(get_current_view()).view#as_view 
-		GtkText.View.Signals.paste_clipboard
-	      with _ -> prerr_endline "EMIT PASTE FAILED"));
+	   (do_if_not_computing
+	      (fun () -> 
+		 try GtkSignal.emit_unit
+		   (get_current_view()).view#as_view 
+		   GtkText.View.Signals.paste_clipboard
+		 with _ -> prerr_endline "EMIT PASTE FAILED")));
   ignore (edit_f#add_separator ());
   let read_only_i = edit_f#add_check_item "Read only" ~active:false
 		      ~callback:(fun b -> 
@@ -1557,14 +1647,15 @@ let main files =
 			     ) 
   in
   let complete_i = edit_f#add_item "Complete"
-		   ~key:GdkKeysyms._comma
-		   ~callback:(fun b -> 
-				let v =out_some (get_current_view ()).analyzed_view in 
-				v#complete_at_offset (v#get_insert#offset);
-				!flash_info "Complete Unsupported"
-			     ) 
+		     ~key:GdkKeysyms._comma
+		     ~callback:
+		     (do_if_not_computing 
+			(fun b -> 
+			   let v =out_some (get_current_view ()).analyzed_view in 
+			   v#complete_at_offset (v#get_insert#offset);
+			   !flash_info "Complete Unsupported"
+			))
   in
-(*  search_i#misc#set_state `INSENSITIVE;*)
 
   to_do_on_page_switch := 
   (fun i -> 
@@ -1589,6 +1680,9 @@ let main files =
       activate_input (notebook ())#current_page
   in
   let do_or_activate f = do_if_not_computing (do_or_activate f) in
+  ignore (navigation_factory#add_item "_Break computations" 
+	    ~key:GdkKeysyms._Break 
+	    ~callback:(fun () -> break ()));
   ignore (navigation_factory#add_item "_Forward" 
 	    ~key:GdkKeysyms._Down 
 	    ~callback:(do_or_activate (fun a -> 
@@ -1681,17 +1775,18 @@ let main files =
 			    ~accel_modi:!current.modifier_for_templates
   in
   let add_complex_template (menu_text, text, offset, len, key) =
-  (* Templates/Lemma *)
-    let callback () = 
-      let {view = view } = get_current_view () in
-      if view#buffer#insert_interactive text then begin
-	let iter = view#buffer#get_iter_at_mark `INSERT in
-	ignore (iter#nocopy#backward_chars offset);
-	view#buffer#move_mark `INSERT iter;
-	ignore (iter#nocopy#backward_chars len);
-	view#buffer#move_mark `SEL_BOUND iter;
-	Highlight.highlight_all view#buffer
-      end
+    (* Templates/Lemma *)
+    let callback = do_if_not_computing 
+		     (fun () ->
+			let {view = view } = get_current_view () in
+			if view#buffer#insert_interactive text then begin
+			  let iter = view#buffer#get_iter_at_mark `INSERT in
+			  ignore (iter#nocopy#backward_chars offset);
+			  view#buffer#move_mark `INSERT iter;
+			  ignore (iter#nocopy#backward_chars len);
+			  view#buffer#move_mark `SEL_BOUND iter;
+			  Highlight.highlight_all view#buffer
+			end)
     in
     ignore (templates_factory#add_item menu_text ~callback ?key)
   in
@@ -1708,11 +1803,12 @@ let main files =
     ("_Inductive __", "Inductive ident : :=\n  | : .\n",
      14, 5, Some GdkKeysyms._I);
   let add_simple_template (factory: GMenu.menu GMenu.factory) 
-(menu_text, text) =
+    (menu_text, text) =
     ignore (factory#add_item menu_text
-	    ~callback:(fun () -> 
-			 let {view = view } = get_current_view () in
-			 ignore (view#buffer#insert_interactive text)))
+	      ~callback:
+	      (do_if_not_computing 
+		 (fun () -> let {view = view } = get_current_view () in
+		  ignore (view#buffer#insert_interactive text))))
   in
   ignore (templates_factory#add_separator ());
   List.iter (add_simple_template templates_factory)
@@ -1744,7 +1840,7 @@ let main files =
 		  ((String.sub x 0 1)^
 		   "_"^
 		   (String.sub x 1 (String.length x - 1)),
-		     x^" "))
+		   x^" "))
 	       l
     ) 
     Coq_commands.commands;
@@ -1832,7 +1928,10 @@ let main files =
     if !current.global_auto_revert then 
       revert_timer := Some
 	(GMain.Timeout.add ~ms:!current.global_auto_revert_delay 
-	   ~callback:(fun () -> revert_f ();true))
+	   ~callback:
+	   (fun () -> 
+	      do_if_not_computing (fun () -> revert_f ()) ();
+	      true))
   in reset_revert_timer (); (* to enable statup preferences timer *)
 
   let configuration_menu = factory#add_submenu "Confi_guration" in
@@ -1866,18 +1965,20 @@ let main files =
   let detach_menu = configuration_factory#add_item 
 		      "_Detach Scripting Window"
 		      ~callback:
-		      (fun () -> 
-			 let nb = notebook () in
-			 if nb#misc#toplevel#get_oid = w#coerce#get_oid then 
-			   begin  
-			     let nw = GWindow.window ~show:true () in
-			     let parent = out_some nb#misc#parent in
-			     ignore (nw#connect#destroy 
-				       ~callback:
-				       (fun () -> nb#misc#reparent parent));
-			     nw#add_accel_group accel_group;
-			     nb#misc#reparent nw#coerce
-			   end	      )
+		      (do_if_not_computing
+			 (fun () -> 
+			    let nb = notebook () in
+			    if nb#misc#toplevel#get_oid=w#coerce#get_oid then 
+			      begin  
+				let nw = GWindow.window ~show:true () in
+				let parent = out_some nb#misc#parent in
+				ignore (nw#connect#destroy 
+					  ~callback:
+					  (fun () -> nb#misc#reparent parent));
+				nw#add_accel_group accel_group;
+				nb#misc#reparent nw#coerce
+			      end	      
+			 ))
   in
   (* Help Menu *)
 
@@ -1892,8 +1993,8 @@ let main files =
   let _ = 
     help_factory#add_item "Help for _keyword" ~key:GdkKeysyms._F1
       ~callback:(fun () -> 
-  let av = out_some ((get_current_view ()).analyzed_view) in 
-		 av#help_for_keyword ())
+		   let av = out_some ((get_current_view ()).analyzed_view) in 
+		   av#help_for_keyword ())
   in
   let _ = help_factory#add_separator () in
   let about_m = help_factory#add_item "_About" in
@@ -1931,30 +2032,35 @@ let main files =
   let _ = tv2#set_wrap_mode `CHAR in
   let _ = tv3#set_wrap_mode `WORD in
   let _ = tv3#set_editable false in
-  let _ = GtkBase.Widget.add_events tv2#as_widget [`ENTER_NOTIFY;`POINTER_MOTION] in
+  let _ = GtkBase.Widget.add_events tv2#as_widget
+	    [`ENTER_NOTIFY;`POINTER_MOTION] in
   let _ = tv2#event#connect#motion_notify
-	    ~callback:(fun e -> 
-			 let win = match tv2#get_window `WIDGET with
-			   | None -> assert false
-			   | Some w -> w
-			 in
-			 let x,y = Gdk.Window.get_pointer_location win in
-			 let b_x,b_y = tv2#window_to_buffer_coords 
-					 ~tag:`WIDGET 
-					 ~x 
-					 ~y 
-			 in
-			 let it = tv2#get_iter_at_location ~x:b_x ~y:b_y in
-			 let tags = it#tags in
-			 List.iter 
-			   ( fun t ->
-			       ignore (GtkText.Tag.event 
-					 t#as_tag
-					 tv2#as_widget
-					 e 
-					 it#as_textiter))
-			   tags;
-			 false)
+	    ~callback:
+	    (fun e -> 
+	       (do_if_not_computing
+		  (fun e -> 
+		     let win = match tv2#get_window `WIDGET with
+		       | None -> assert false
+		       | Some w -> w
+		     in
+		     let x,y = Gdk.Window.get_pointer_location win in
+		     let b_x,b_y = tv2#window_to_buffer_coords 
+				  ~tag:`WIDGET 
+				     ~x 
+				     ~y 
+		     in
+		     let it = tv2#get_iter_at_location ~x:b_x ~y:b_y in
+		     let tags = it#tags in
+		     List.iter 
+		       ( fun t ->
+			   ignore (GtkText.Tag.event 
+				     t#as_tag
+				     tv2#as_widget
+				     e 
+				     it#as_textiter))
+		       tags;
+		     false)) e;
+	       false)
   in
   ignore (font_selector#cancel_button#connect#released 
 	    ~callback:font_selector#misc#hide);
@@ -2044,7 +2150,7 @@ let main files =
 
 let start () = 
   let files = Coq.init () in
-  Sys.catch_break true;
+  ignore_break ();
   cant_break ();
   GtkMain.Rc.add_default_file (Filename.concat lib_ide ".coqiderc");
   (try 
@@ -2063,8 +2169,8 @@ let start () =
   main files;
   while true do 
     try 
-      GMain.Main.main ()
-    with 
+      GtkThread.main ()
+    with
       | Sys.Break -> prerr_endline "Interrupted." ; flush stderr
       | e -> 
 	  Pervasives.prerr_endline ("CoqIde unexpected error:" ^ (Printexc.to_string e));

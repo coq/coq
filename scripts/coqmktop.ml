@@ -76,7 +76,7 @@ let includes () =
     (fun d l -> "-I" :: List.fold_left Filename.concat !src_coqtop d :: l)
     (src_dirs ())
     (["-I"; Coq_config.camlp4lib] @ 
-     (if !coqide then ["-I"; "+lablgtk2"] else []))
+     (if !coqide then ["-thread"; "-I"; "+lablgtk2"] else []))
 
 (* Transform bytecode object file names in native object file names *)
 let native_suffix f =
@@ -100,7 +100,10 @@ let files_to_link userfiles =
   let command_objs = if !searchisos then coqsearch else [] in
   let toplevel_objs =
     if !top then topobjs else if !opt then notopobjs else [] in
-  let ide_objs = if !coqide then "lablgtk.cma" :: ide else [] in
+  let ide_objs = if !coqide then 
+    "threads.cma"::"lablgtk.cma"::"gtkThread.cmo"::ide 
+  else [] 
+  in
   let parsobjs = if !newsyntax then highparsingnew else highparsing in
   let objs = 
     core_objs @ dyn_objs @ toplevel @ parsobjs @ 
