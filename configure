@@ -25,7 +25,7 @@ bytecamlc=ocamlc
 nativecamlc=ocamlopt
 coq_debug_flag=
 coq_profile_flag=
-byte_opt_tools=opt
+best_compiler=opt
 
 local=false
 bindir_spec=no
@@ -81,8 +81,7 @@ while : ; do
 		  shift;;
     -opt|--opt) bytecamlc=ocamlc.opt
                 nativecamlc=ocamlopt.opt;;
-    -opt-tools|-opttools|--opttools|--opt-tools) byte_opt_tools=opt;;
-    -byte-tools|-bytetools|--bytetools|--byte-tools) byte_opt_tools=byte;;
+    -byte-only|-byteonly|--byteonly|--byte-only) best_compiler=byte;;
     -debug|--debug) coq_debug_flag=-g;;
     -profile|--profile) coq_profile_flag=-p;;
      *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
@@ -266,9 +265,9 @@ CAMLBIN=`dirname $CAMLC`
 CAMLVERSION=`$CAMLC -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
 
 case $CAMLVERSION in
-  1.*|2.00)
+  1.*|2.*)
 	echo "Your version of Objective-Caml is $CAMLVERSION."
-	echo "You need Objective-Caml 2.01 or later !"
+	echo "You need Objective-Caml 3.00 or later !"
 	echo "Configuration script failed!"
 	exit 1;;
   ?*)	echo "You have Objective-Caml $CAMLVERSION. Good!";;
@@ -278,12 +277,19 @@ case $CAMLVERSION in
      exit 1;;
 esac
 
-# do we have a native compiler: test of ocamlopt
+# do we have a native compiler: test of ocamlopt and its version
 
-CAMLOPT=`which ocamlopt`
-case $CAMLOPT in
-	"") byte_opt_tools=byte;;
-esac
+if [ $best_compiler = "opt" ] ; then
+  CAMLOPT=`which $nativecamlc`
+  case $CAMLOPT in
+    "") best_compiler=byte
+        echo "You have only bytecode compilation.";;
+    *) CAMLOPTVERSION=`$CAMLOPT -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
+       if [ $CAMLOPTVERSION != $CAMLVERSION ] ; then \
+         echo "native and bytecode compilers do not have the same version!"; fi
+       echo "You have native-code compilation. Good!"
+  esac
+fi
 
 # For Dynlink
 
@@ -293,7 +299,7 @@ CAMLLIB=`ocamlc -v | sed -n -e 's|.*directory:* *\(.*\)$|\1|p' `
 
 CAMLP4=`which camlp4`
 case $CAMLP4 in
-	"") echo "camlp4 is not present in your path !"
+	"") echo "camlp4 is not present in your path!"
 	echo "Give me manually the path to the camlp4 executable [/usr/local/bin by default]: "
 	read CAMLP4
 	
@@ -387,7 +393,7 @@ case $ARCH in
 	    -e "s|OSKIND|$OSTYPE|" \
 	    -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
 	    -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
-	    -e "s|COQTOOLSFLAG|$byte_opt_tools|" \
+	    -e "s|BESTCOMPILER|$best_compiler|" \
 	    -e "s|EXECUTEEXTENSION|$EXE|" \
 	    -e "s|BYTECAMLC|$bytecamlc|" \
 	    -e "s|NATIVECAMLC|$nativecamlc|" \
@@ -412,7 +418,7 @@ case $ARCH in
 	    -e "s|OSKIND|$OSTYPE|" \
 	    -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
 	    -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
-	    -e "s|COQTOOLSFLAG|$byte_opt_tools|" \
+	    -e "s|BESTCOMPILER|$best_compiler|" \
 	    -e "s|EXECUTEEXTENSION|$EXE|" \
 	    -e "s|BYTECAMLC|$bytecamlc|" \
 	    -e "s|NATIVECAMLC|$nativecamlc|" \

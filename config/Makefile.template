@@ -59,8 +59,8 @@ CAMLDEBUG=COQDEBUGFLAG
 # Compilation profile flag
 CAMLTIMEPROF=COQPROFILEFLAG
 
-# Compilation of tools: bytecode (=byte) or native (=opt)
-COQTOOLS=COQTOOLSFLAG
+# The best compiler: native (=opt) or bytecode (=byte) if no native compiler
+BEST=BESTCOMPILER
 
 # For Camlp4 use
 P4=$(COQTOP)/bin/$(ARCH)/call_camlp4 -I $(COQTOP)/src/parsing

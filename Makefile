@@ -129,10 +129,14 @@ CMX=$(CMO:.cmo=.cmx) $(ARITHSYNTAX:.cmo=.cmx)
 COQMKTOP=scripts/coqmktop
 COQC=scripts/coqc
 
-world: $(COQMKTOP) $(COQC) coqtop.byte coqtop.opt states theories contrib tools
+BESTCOQTOP=coqtop.$(BEST)
+COQBINARIES= $(COQMKTOP) $(COQC) coqtop.byte $(BESTCOQTOP) 
+
+world: $(COQBINARIES) states theories contrib tools
 
 coqtop.opt: $(COQMKTOP) $(CMX)
-	$(COQMKTOP) -opt -notactics $(OPTFLAGS) -o coqtop.opt
+	$(COQMKTOP) -opt $(OPTFLAGS) -o coqtop.opt
+	strip ./coqtop.opt
 
 coqtop.byte: $(COQMKTOP) $(CMO) Makefile
 	$(COQMKTOP) -top $(BYTEFLAGS) -o coqtop.byte
@@ -155,6 +159,7 @@ scripts/tolink.ml: Makefile
 	echo "let tactics = \""$(TACTICS)"\"" >> $@
 	echo "let toplevel = \""$(TOPLEVEL)"\"" >> $@
 	echo "let hightactics = \""$(HIGHTACTICS)"\"" >> $@
+	echo "let contrib = \""$(CONTRIB)"\"" >> $@
 
 beforedepend:: scripts/tolink.ml
 
@@ -162,7 +167,7 @@ beforedepend:: scripts/tolink.ml
 
 COQCCMO=$(CONFIG) toplevel/usage.cmo scripts/coqc.cmo
 
-$(COQC): $(COQCCMO)
+$(COQC): $(COQCCMO) coqtop.byte coqtop.$(BEST)
 	$(OCAMLC) $(BYTEFLAGS) -o $(COQC) -custom unix.cma $(COQCCMO) \
 	  $(OSDEPLIBS)
 
@@ -191,8 +196,8 @@ states: states/barestate.coq states/initial.coq
 
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v syntax/PPTactic.v
 
-states/barestate.coq: $(SYNTAXPP) coqtop.byte
-	./coqtop.byte -q -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
+states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
+	./$(BESTCOQTOP) -q -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
 
 INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/DatatypesSyntax.vo   theories/Init/Prelude.vo       \
@@ -201,16 +206,20 @@ INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/Logic_Type.vo        theories/Init/Wf.vo            \
        theories/Init/Logic_TypeSyntax.vo
 
+theories/Init/%.vo: $(COQC)
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq
 	$(COQC) -q -I theories/Init -is states/barestate.coq $<
 
+init: $(INITVO)
+
 TACTICSVO=tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo
 
+tactics/%.vo: $(COQC)
 tactics/%.vo: tactics/%.v states/barestate.coq
 	$(COQC) -q -I tactics -is states/barestate.coq $<
 
-states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO)
-	./coqtop.byte -q -batch -silent -is states/barestate.coq -I tactics -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO) $(BESTCOQTOP)
+	./$(BESTCOQTOP) -q -batch -silent -is states/barestate.coq -I tactics -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 clean::
 	rm -f states/barestate.coq states/initial.coq
@@ -224,8 +233,8 @@ ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
 	theories/Arith/Between.vo       theories/Arith/Le.vo          \
 	theories/Arith/Compare.vo       theories/Arith/Lt.vo          \
 	theories/Arith/Compare_dec.vo   theories/Arith/Min.vo         \
-	theories/Arith/Div2.vo           theories/Arith/Minus.vo       \
-	theories/Arith/Mult.vo          theories/Arith/Even.vo \
+	theories/Arith/Div2.vo          theories/Arith/Minus.vo       \
+	theories/Arith/Mult.vo          theories/Arith/Even.vo        \
 	theories/Arith/EqNat.vo         theories/Arith/Peano_dec.vo   \
 	theories/Arith/Euclid_def.vo    theories/Arith/Plus.vo        \
 	theories/Arith/Euclid_proof.vo  theories/Arith/Wf_nat.vo      \
@@ -245,7 +254,6 @@ $(THEORIESVO): states/initial.coq
 
 theories: $(THEORIESVO)
 
-init: $(INITVO)
 logic: $(LOGICVO)
 arith: $(ARITHVO)
 bool: $(BOOLVO)
@@ -471,7 +479,7 @@ toplevel/mltop.cmx: toplevel/mltop.ml4
 	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
 
 .v.vo:
-	$(COQC) $(COQINCLUDES) -q $<
+	$(COQC) -q -$(BEST) $(COQINCLUDES) $<
 
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile

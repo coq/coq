@@ -18,6 +18,7 @@
 let environment = Unix.environment ()
 
 let bindir = ref Coq_config.bindir
+let binary = ref "coqtop.byte"
 
 (* the $COQBIN environment variable has priority over the Coq_config value *)
 let _ = 
@@ -114,6 +115,8 @@ let parse_args () =
 	bindir := d ; parse (cfiles,args) rem
     | "-bindir" :: []       ->
 	usage ()
+    | "-opt" :: rem ->
+	binary := "coqtop.opt"; parse (cfiles,args) rem
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
     | ("-image"|"-libdir"|"-I"|"-R"|"-include"|"-outputstate"|"-inputstate"
       |"-is"|"-load-vernac-source"|"-load-vernac-object"|"-load-ml-source"
@@ -125,7 +128,7 @@ let parse_args () =
 	    | []        -> usage ()
 	end
     | ("-notactics"|"-debug"|"-db"|"-debugger"|"-nolib"|"-batch"|"-nois"
-      |"-q"|"-opt"|"-full"|"-profile"|"-just-parsing"|"-echo" as o) :: rem ->
+      |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" as o) :: rem ->
 	parse (cfiles,o::args) rem
     | f :: rem -> 
 	if Sys.file_exists f then
@@ -150,7 +153,7 @@ let main () =
     prerr_endline "coqc: too few arguments" ;
     usage ()
   end;
-  let coqtopname = Filename.concat !bindir "coqtop.byte" in
+  let coqtopname = Filename.concat !bindir !binary in
   List.iter (compile coqtopname args) cfiles
     
 let _ = Printexc.print main (); exit 0

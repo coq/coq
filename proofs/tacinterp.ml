@@ -32,27 +32,27 @@ type value=
   |VArg of tactic_arg
   |VFun of (string*value) list*string option list*Coqast.t
   |VVoid
-  |VRec of value ref;;
+  |VRec of value ref
 
 (*Gives the identifier corresponding to an Identifier tactic_arg*)
 let id_of_Identifier=function
    Identifier id -> id
   |_ ->
-    anomalylabstrm "id_of_IDENTIFIER" [<'sTR "Not an IDENTIFIER tactic_arg">];;
+    anomalylabstrm "id_of_IDENTIFIER" [<'sTR "Not an IDENTIFIER tactic_arg">]
 
 (*Gives the constr corresponding to a Constr tactic_arg*)
 let constr_of_Constr=function
    Constr c -> c
-  |_ -> anomalylabstrm "constr_of_Constr" [<'sTR "Not a CONSTR tactic_arg">];;
+  |_ -> anomalylabstrm "constr_of_Constr" [<'sTR "Not a CONSTR tactic_arg">]
 
 (*Signature for interpretation: val_interp and interpretation functions*)
 type interp_sign=
   evar_declarations*Environ.env*(string*value) list*(int*constr) list*
-    goal sigma option;;
+    goal sigma option
 
 (*Table of interpretation functions*)
 let interp_tab=
-  (Hashtbl.create 17:(string,interp_sign->Coqast.t->value) Hashtbl.t);;
+  (Hashtbl.create 17:(string,interp_sign->Coqast.t->value) Hashtbl.t)
 
 (*Adds an interpretation function*)
 let interp_add (ast_typ,interp_fun)=
@@ -62,37 +62,38 @@ let interp_add (ast_typ,interp_fun)=
      Failure _ ->
        errorlabstrm "interp_add" [<'sTR
          "Cannot add the interpretation function for "; 'sTR ast_typ; 'sTR
-         " twice">];;
+         " twice">]
 
 (*Adds a possible existing interpretation function*)
 let overwriting_interp_add (ast_typ,interp_fun)=
   if Hashtbl.mem interp_tab ast_typ then
     (Hashtbl.remove interp_tab ast_typ;
     warning ("Overwriting definition of tactic interpreter command "^ast_typ));
-  Hashtbl.add interp_tab ast_typ interp_fun;;
+  Hashtbl.add interp_tab ast_typ interp_fun
 
 (*Finds the interpretation function corresponding to a given ast type*)
-let look_for_interp=Hashtbl.find interp_tab;;
+let look_for_interp=Hashtbl.find interp_tab
 
 (*Globalizes the identifier*)
 let glob_nvar id=
   try
     Nametab.sp_of_id CCI id
   with
-     Not_found -> error ("unbound variable "^(string_of_id id));;
+     Not_found -> error ("unbound variable "^(string_of_id id))
 
 (*Summary and Object declaration*)
-let mactab=ref Gmap.empty;;
+let mactab=ref Gmap.empty
 
-let lookup id=Gmap.find id !mactab;;
+let lookup id=Gmap.find id !mactab
 
-let init ()=mactab:=Gmap.empty in
-let freeze ()= !mactab in
-let unfreeze fs=mactab:=fs in
-   Summary.declare_summary "tactic-definition"
-        {Summary.freeze_function   = freeze;
-         Summary.unfreeze_function = unfreeze;
-         Summary.init_function     = init};;
+let _ = 
+  let init () = mactab := Gmap.empty in
+  let freeze () = !mactab in
+  let unfreeze fs = mactab := fs in
+  Summary.declare_summary "tactic-definition"
+    { Summary.freeze_function   = freeze;
+      Summary.unfreeze_function = unfreeze;
+      Summary.init_function     = init }
 
 let (inMD,outMD)=
   let add (na,td)=mactab:=Gmap.add na td !mactab in
@@ -101,32 +102,30 @@ let (inMD,outMD)=
        {cache_function=cache_md;
         load_function=(fun _ -> ());
         open_function=(fun _ -> ());
-        specification_function=(fun x -> x)});;
+        specification_function=(fun x -> x)})
 
 (*Adds a Tactic Definition in the table*)
-let add_tacdef na vbody=
+let add_tacdef na vbody =
   if Gmap.mem na !mactab then
-    errorlabstrm "Tacdef.add_tacdef" [<'sTR
-      "There is already a Tactic Definition named "; 'sTR na>]
-  else
-    let _=Lib.add_leaf (id_of_string na) OBJ (inMD (na,vbody))
-    in
-      mSGNL [<'sTR (na^" is defined")>];;
+    errorlabstrm "Tacdef.add_tacdef" 
+      [< 'sTR "There is already a Tactic Definition named "; 'sTR na >];
+  let _ = Lib.add_leaf (id_of_string na) OBJ (inMD (na,vbody)) in
+  if Options.is_verbose() then mSGNL [< 'sTR (na^" is defined") >]
 
 (*Unboxes the tactic_arg*)
 let unvarg=function
    VArg a -> a
-  |_ -> errorlabstrm "unvarg" [<'sTR "Not a tactic argument">];;
+  |_ -> errorlabstrm "unvarg" [<'sTR "Not a tactic argument">]
 
 (*Unboxes VRec*)
 let unrec=function
    VRec v -> !v
-  |a -> a;;
+  |a -> a
 
 (*Unboxes REDEXP*)
 let unredexp=function
    Redexp c -> c
-  |_ ->  errorlabstrm "unredexp" [<'sTR "Not a REDEXP tactic_arg">];;
+  |_ ->  errorlabstrm "unredexp" [<'sTR "Not a REDEXP tactic_arg">]
 
 (*Reads the head of Fun*)
 let read_fun ast=
@@ -140,7 +139,7 @@ let read_fun ast=
     match ast with
        Node(_,"FUNVAR",l) -> read_fun_rec l
       |_ ->
-        anomalylabstrm "Tacinterp.read_fun" [<'sTR "Fun not well formed">];;
+        anomalylabstrm "Tacinterp.read_fun" [<'sTR "Fun not well formed">]
 
 (*Reads the clauses of a Rec*)
 let rec read_rec_clauses=function
@@ -149,7 +148,7 @@ let rec read_rec_clauses=function
     (name,it,body)::(read_rec_clauses tl)
   |_ ->
     anomalylabstrm "Tacinterp.read_rec_clauses" [<'sTR
-      "Rec not well formed">];;
+      "Rec not well formed">]
 
 (*Associates variables with values and gives the remaining variables and
   values*)
@@ -163,24 +162,24 @@ let head_with_value (lvar,lval)=
     |(vr,[]) -> (lacc,vr,[])
     |([],ve) -> (lacc,[],ve)
   in
-    head_with_value_rec [] (lvar,lval);;
+    head_with_value_rec [] (lvar,lval)
 
 (*Type of hypotheses for a Match Context rule*)
 type match_context_hyps=
    NoHypId of constr_pattern
-  |Hyp of string*constr_pattern;;
+  |Hyp of string*constr_pattern
 
 (*Type of a Match rule for Match Context and Match*)
 type match_rule=
    Pat of match_context_hyps list*constr_pattern*Coqast.t
-  |All of Coqast.t;;
+  |All of Coqast.t
 
 (*Gives the ast of a COMMAND ast node*)
 let ast_of_command=function
    Node(_,"COMMAND",[c]) -> c
   |ast ->
     anomaly_loc (Ast.loc ast, "Tacinterp.ast_of_command",[<'sTR
-      "Not a COMMAND ast node: ";print_ast ast>]);;
+      "Not a COMMAND ast node: ";print_ast ast>])
 
 (*Reads the hypotheses of a Match Context rule*)
 let rec read_match_context_hyps evc env=function
@@ -193,7 +192,7 @@ let rec read_match_context_hyps evc env=function
   |ast::tl ->
     anomaly_loc (Ast.loc ast, "Tacinterp.read_match_context_hyp",[<'sTR
       "Not a MATCHCONTEXTHYP ast node: ";print_ast ast>])
-  |[] -> [];;
+  |[] -> []
 
 (*Reads the rules of a Match Context*)
 let rec read_match_context_rule evc env=function
@@ -208,7 +207,7 @@ let rec read_match_context_rule evc env=function
   |ast::tl ->
     anomaly_loc (Ast.loc ast, "Tacinterp.read_match_context_rule",[<'sTR
       "Not a MATCHCONTEXTRULE ast node: ";print_ast ast>])
-  |[] -> [];;
+  |[] -> []
 
 (*Reads the rules of a Match*)
 let rec read_match_rule evc env=function
@@ -220,18 +219,18 @@ let rec read_match_rule evc env=function
   |ast::tl ->
     anomaly_loc (Ast.loc ast, "Tacinterp.read_match_context_rule",[<'sTR
       "Not a MATCHRULE ast node: ";print_ast ast>])
-  |[] -> [];;
+  |[] -> []
 
 (*Transforms a type_judgment signature into a (string*constr) list*)
 let make_hyps hyps=
   let lid=List.map string_of_id (ids_of_sign hyps)
   and lhyp=List.map body_of_type (vals_of_sign hyps)
   in
-    List.combine lid lhyp;;
+    List.combine lid lhyp
 
 (*For Match Context and Match*)
-exception No_match;;
-exception Not_coherent_metas;;
+exception No_match
+exception Not_coherent_metas
 
 (*Verifies if the matched list is coherent with respect to lcm*)
 let rec verify_metas_coherence lcm=function
@@ -245,14 +244,14 @@ let rec verify_metas_coherence lcm=function
        (num,csr)::(verify_metas_coherence lcm tl)
      else
        raise Not_coherent_metas
-  |[] -> [];;
+  |[] -> []
 
 (*Tries to match a pattern and a constr*)
 let apply_matching pat csr=
   try
     (Pattern.matches pat csr)
   with
-     PatternMatchingFailure -> raise No_match;;
+     PatternMatchingFailure -> raise No_match
 
 (*Tries to match one hypothesis with a list of hypothesis patterns*)
 let apply_one_hyp_context lmatch mhyps (idhyp,hyp)=
@@ -276,7 +275,7 @@ let apply_one_hyp_context lmatch mhyps (idhyp,hyp)=
                tl)
     |[] -> raise No_match
   in
-    apply_one_hyp_context_rec (idhyp,hyp) [] mhyps;;
+    apply_one_hyp_context_rec (idhyp,hyp) [] mhyps
 
 (*Prepares the lfun list for constr substitutions*)
 let rec make_subs_list=function
@@ -285,7 +284,7 @@ let rec make_subs_list=function
   |(id,VArg (Constr c))::tl ->
     (id_of_string id,c)::(make_subs_list tl)
   |e::tl -> make_subs_list tl
-  |[] -> [];;
+  |[] -> []
 
 (*Interprets any expression*)
 let rec val_interp (evc,env,lfun,lmatch,goalopt) ast=
@@ -690,13 +689,13 @@ and cvt_letpattern (evc,env,lfun,lmatch,goalopt) (o,l)=function
       error "\"Goal\" occurs twice"
     else
       (Some (List.map num_of_ast nums), l)
-  |arg -> invalid_arg_loc (Ast.loc arg,"cvt_hyppattern");;
+  |arg -> invalid_arg_loc (Ast.loc arg,"cvt_hyppattern")
 
 (*Interprets tactic arguments*)
-let interp_tacarg sign ast=unvarg (val_interp sign ast);;
+let interp_tacarg sign ast=unvarg (val_interp sign ast)
 
 (*Initial call for interpretation*)
-let interp=tac_interp [] [];;
+let interp=tac_interp [] []
 
 let is_just_undef_macro ast =
   match ast with

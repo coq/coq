@@ -49,15 +49,11 @@ let notopobjs = gramobjs
 
 (* 5. High-level tactics objects *)
 let hightactics = split_cmo Tolink.hightactics
-let cmotacsobjs = [
-  "prolog.cmo"; "equality.cmo"; "inv.cmo"; "leminv.cmo"; 
-  "point.cmo"; "progmach.cmo"; "program.cmo"; "propre.cmo";
-  "tauto.cmo"; "gelim.cmo"; "eqdecide.cmo"]
 
 (* environment *)
 let src_coqtop = ref Coq_config.coqtop
-let notactics  = ref false
 let opt        = ref false
+let full       = ref false
 let top        = ref false
 let searchisos = ref false
 let echo       = ref false
@@ -98,10 +94,9 @@ let module_of_file name =
 let files_to_link userfiles =
   let dyn_objs = if not !opt then dynobjs else [] in
   let command_objs = if !searchisos then coqsearch else [] in
-  let tactic_objs = if !notactics then [] else hightactics in
   let toplevel_objs = if !top then topobjs else if !opt then notopobjs else []
   in
-  let objs = core_objs @ dyn_objs @ toplevel @ command_objs @ tactic_objs @
+  let objs = core_objs @ dyn_objs @ toplevel @ command_objs @ hightactics @
     toplevel_objs in
   let tolink =
     if !opt then 
@@ -142,11 +137,11 @@ let usage () =
   prerr_endline "Usage: coqmktop <options> <ocaml options> files
 Options are:
   -srcdir dir   Specify where the Coq source files are
-  -notactics    Do not link high level tactics
   -o exec-file  Specify the name of the resulting toplevel
   -opt          Compile in native code
+  -full         Link high level tactics
   -top          Build Coq on a ocaml toplevel (incompatible with -opt)
-  -searchisos   Build a toplevel for SearchIsos (implies -notactics)
+  -searchisos   Build a toplevel for SearchIsos
   -R dir        Specify recursively directories for Ocaml\n";
   exit 1
 
@@ -156,11 +151,11 @@ let parse_args () =
     | [] -> List.rev op, List.rev fl
     | "-srcdir" :: d :: rem -> src_coqtop := d ; parse (op,fl) rem
     | "-srcdir" :: _        -> usage ()
-    | "-notactics" :: rem -> notactics := true ; parse (op,fl) rem
     | "-opt" :: rem -> opt := true ; parse (op,fl) rem
+    | "-full" :: rem -> full := true ; parse (op,fl) rem
     | "-top" :: rem -> top := true ; parse (op,fl) rem
     | "-searchisos" :: rem ->
-        searchisos := true; notactics := true; parse (op,fl) rem
+        searchisos := true; parse (op,fl) rem
     | "-echo" :: rem -> echo := true ; parse (op,fl) rem
     | ("-cclib"|"-ccopt"|"-I"|"-o" as o) :: rem' ->
 	begin
