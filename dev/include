@@ -25,3 +25,5 @@
 #install_printer  (* walking_constraints *)  prwc;;
 #install_printer  (* clenv *) prclenv;;
 #install_printer  (* env *) ppenv;;
+
+#install_printer  (* tactic *) pptac;;

@@ -23,7 +23,7 @@ type value =
   | VTactic of tactic
   | VFTactic of tactic_arg list * (tactic_arg list -> tactic)
   | VRTactic of (goal list sigma * validation)
-  | VContext of (goal sigma -> value)
+  | VContext of (interp_sign -> goal sigma -> value)
   | VArg of tactic_arg
   | VFun of (identifier * value) list * identifier option list * Coqast.t
   | VVoid
@@ -43,16 +43,7 @@ val constr_of_Constr : tactic_arg -> constr
 
 (* To provide the tactic expressions *)
 val loc : Coqast.loc
-val tacticIn : (unit -> Coqast.t) -> Coqast.t
-
-(* References for dynamic interpretation of user tactics. They are all
-   initialized with dummy values *)
-val r_evc     : enamed_declarations ref
-val r_env     : Environ.env ref
-val r_lfun    : (identifier * value) list ref
-val r_lmatch  : (int * constr) list ref
-val r_goalopt : goal sigma option ref
-val r_debug   : debug_info ref
+val tacticIn : (interp_sign -> Coqast.t) -> Coqast.t
 
 (* Sets the debugger mode *)
 val set_debug : debug_info -> unit

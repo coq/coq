@@ -79,6 +79,8 @@ let pp_universes u = pP [< 'sTR"[" ; pr_universes u ; 'sTR"]" >]
 
 let ppenv e = pP (pr_rel_context e (rel_context e))
 
+let pptac = (fun x -> pP(gentacpr x))
+
 let cnt = ref 0
 
 let constr_display csr =

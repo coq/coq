@@ -21,41 +21,41 @@ open Tacinterp
 open Tactics
 open Util
 
-let is_empty () =
-  if (is_empty_type (List.assoc 1 !r_lmatch)) then
+let is_empty ist =
+  if (is_empty_type (List.assoc 1 ist.lmatch)) then
     <:tactic<ElimType ?1;Assumption>>
   else
     failwith "is_empty"
 
-let is_unit () =
-  if (is_unit_type (List.assoc 1 !r_lmatch)) then
+let is_unit ist =
+  if (is_unit_type (List.assoc 1 ist.lmatch)) then
     <:tactic<Idtac>>
   else
     failwith "is_unit"
 
-let is_conj () =
-  if (is_conjunction (List.assoc 1 !r_lmatch)) then
+let is_conj ist =
+  if (is_conjunction (List.assoc 1 ist.lmatch)) then
      <:tactic<Idtac>>
   else
     failwith "is_conj"
 
-let is_disj () =
-  if (is_disjunction (List.assoc 1 !r_lmatch)) then
+let is_disj ist =
+  if (is_disjunction (List.assoc 1 ist.lmatch)) then
      <:tactic<Idtac>>
   else
     failwith "is_disj"
 
-let not_dep_intros () =
+let not_dep_intros ist =
   <:tactic<
     Repeat
       Match Context With
       | [|- ?1 -> ?2 ] -> Intro>>
 
-let init_intros () =
-  (tclORELSE (tclTHEN (intros_until_n_wored 1) (interp (not_dep_intros ())))
-    intros)
+let init_intros =
+  (tclORELSE (tclTHEN (intros_until_n_wored 1)
+                      (interp (tacticIn not_dep_intros))) intros)
 
-let axioms () =
+let axioms ist =
   let t_is_unit = tacticIn is_unit
   and t_is_empty = tacticIn is_empty in
   <:tactic<
@@ -64,7 +64,7 @@ let axioms () =
     |[ _:?1 |- ?] -> $t_is_empty
     |[ _:?1 |- ?1] -> Assumption>>
 
-let simplif () =
+let simplif ist =
   let t_is_unit = tacticIn is_unit
   and t_is_conj = tacticIn is_conj
   and t_is_disj = tacticIn is_disj
@@ -86,7 +86,7 @@ let simplif () =
           $t_is_unit;Cut ?2;[Intro;Clear id|Intros;Apply id;Constructor;Fail]
         | [|- (?1 ? ?)] -> $t_is_conj;Split);$t_not_dep_intros)>>
 
-let rec tauto_main () =
+let rec tauto_main ist =
   let t_axioms = tacticIn axioms
   and t_simplif = tacticIn simplif
   and t_is_disj = tacticIn is_disj
@@ -104,7 +104,7 @@ let rec tauto_main () =
     Orelse
       (Intro;$t_tauto_main)>>
 
-let rec intuition_main () =
+let rec intuition_main ist =
   let t_axioms = tacticIn axioms
   and t_simplif = tacticIn simplif
   and t_intuition_main = tacticIn intuition_main in
@@ -133,17 +133,17 @@ let reduction = Tacticals.onAllClauses (fun ido -> compute ido)
 
 let tauto g =
   try
-    (tclTHEN (init_intros ())
+    (tclTHEN init_intros
       (tclORELSE
-        (tclTHEN reduction_not_iff (interp (tauto_main ())))
-        (tclTHEN reduction (interp (tauto_main ()))))) g
+        (tclTHEN reduction_not_iff (interp (tacticIn tauto_main)))
+        (tclTHEN reduction (interp (tacticIn tauto_main))))) g
   with UserError _ -> errorlabstrm "tauto" [< 'sTR "Tauto failed" >]
 
 let intuition =
-  tclTHEN (init_intros ())
+  tclTHEN init_intros
     (tclORELSE
-      (tclTHEN reduction_not_iff (interp (intuition_main ())))
-      (tclTHEN reduction (interp (intuition_main ()))))
+      (tclTHEN reduction_not_iff (interp (tacticIn intuition_main)))
+      (tclTHEN reduction (interp (tacticIn intuition_main))))
 
 let _ = hide_atomic_tactic "Tauto" tauto
 let _ = hide_atomic_tactic "Intuition" intuition

@@ -41,7 +41,7 @@ type value =
   | VTactic of tactic
   | VFTactic of tactic_arg list * (tactic_arg list->tactic)
   | VRTactic of (goal list sigma * validation)
-  | VContext of (goal sigma -> value)
+  | VContext of (interp_sign -> goal sigma -> value)
   | VArg of tactic_arg
   | VFun of (identifier * value) list * identifier option list * Coqast.t
   | VVoid
@@ -146,30 +146,15 @@ let interp_openconstr ist c ocl =
     (constr_list ist.goalopt ist.lfun) ist.lmatch c ocl
 
 (* For user tactics *)
-let ((ocamlIn : (unit -> Coqast.t) -> Dyn.t),
-     (ocamlOut : Dyn.t -> (unit -> Coqast.t))) = create "ocaml"
+(*let ((ocamlIn : (unit -> Coqast.t) -> Dyn.t),
+     (ocamlOut : Dyn.t -> (unit -> Coqast.t))) = create "ocaml"*)
+
+let ((ocamlIn : (interp_sign -> Coqast.t) -> Dyn.t),
+     (ocamlOut : Dyn.t -> (interp_sign -> Coqast.t))) = create "ocaml"
 
 (* To provide the tactic expressions *)
 let loc = (0,0)
 let tacticIn t = Dynamic (loc,ocamlIn t)
-
-(* References for dynamic interpretation of user tactics. They are all
-   initialized with dummy values *)
-let r_evc     = ref Evd.empty
-let r_env     = ref Environ.empty_env
-let r_lfun    = ref []
-let r_lmatch  = ref []
-let r_goalopt = ref None
-let r_debug   = ref DebugOn
-
-(* Updates the references with the current environment *)
-let env_update ist =
-  r_evc     := ist.evc;
-  r_env     := ist.env;
-  r_lfun    := ist.lfun;
-  r_lmatch  := ist.lmatch;
-  r_goalopt := ist.goalopt;
-  r_debug   := ist.debug
 
 (* Table of interpretation functions *)
 let interp_tab =
@@ -510,7 +495,7 @@ let rec val_interp ist ast =
     | Nvar(_,s) ->
         (try (unrec (List.assoc s ist.lfun))
         with | Not_found ->
-                 (try (vcontext_interp ist.goalopt (lookup s))
+                 (try (vcontext_interp ist (lookup s))
                  with | Not_found -> VArg (Identifier s)))
     | Node(_,"QUALIDARG",[Nvar(_,s)]) ->
         (try (make_qid (unrec (List.assoc s ist.lfun)))
@@ -547,13 +532,15 @@ let rec val_interp ist ast =
         with
            Not_found ->
              val_interp ist (Node(dummy_loc,"APPTACTIC",[ast])))
-    | Dynamic(_,t) -> 
-        env_update ist;
-        let f = (ocamlOut t) in
-        Obj.magic (val_interp ist (f ()))
+    | Dynamic(_,t) ->
+      if (tag t) = "ocaml" then
+        let f = (ocamlOut t) in val_interp ist (f ist)
+      else
+        anomaly_loc (Ast.loc ast, "Tacinterp.val_interp",
+          [<'sTR "Unknown dynamic ast: "; print_ast ast>])
     | _ ->
         anomaly_loc (Ast.loc ast, "Tacinterp.val_interp",
-                     [<'sTR "Unrecognizable ast: "; print_ast ast>]) in
+          [<'sTR "Unrecognizable ast: "; print_ast ast>]) in
   if ist.debug = DebugOn then
     match debug_prompt ist.goalopt ast with
     | Exit -> VTactic tclIDTAC
@@ -772,12 +759,17 @@ and match_context_interp ist ast lmr =
       errorlabstrm "Tacinterp.apply_match_context" [<'sTR
         "No matching clauses for Match Context">] in
   let app_wo_goal = 
-    (fun goal ->
+    (fun ist goal ->
+       apply_match_context ist goal
+         (read_match_context_rule ist.evc ist.env
+           (constr_list ist.goalopt ist.lfun) lmr)) in
+
+(*    (fun goal ->
        let evc = project goal
        and env = pf_env goal in
        apply_match_context ist goal
          (read_match_context_rule ist.evc ist.env
-           (constr_list ist.goalopt ist.lfun) lmr)) in
+           (constr_list ist.goalopt ist.lfun) lmr)) in*)
 
 (*    (fun ist goal ->
      apply_match_context ist goal
@@ -785,7 +777,7 @@ and match_context_interp ist ast lmr =
 
  (match ist.goalopt with
     | None -> VContext app_wo_goal
-    | Some g -> app_wo_goal g)
+    | Some g -> app_wo_goal ist g)
 
 (*  apply_match_context evc env lfun lmatch goal (read_match_context_rule evc env
     (constr_list goalopt lfun) lmr)*)
@@ -831,11 +823,11 @@ and apply_hyps_context ist mt lgmatch mhyps hyps =
   apply_hyps_context_rec ist mt [] lgmatch mhyps hyps hyps None
 
 (* Interprets a VContext value *)
-and vcontext_interp goalopt = function
+and vcontext_interp ist = function
   | (VContext f) as v ->
-    (match goalopt with
+    (match ist.goalopt with
     | None -> v
-    | Some g -> f g)
+    | Some g -> f ist g)
   | v -> v
 
 (* Interprets the Match expressions *)
