@@ -18,7 +18,7 @@ type 'a t = (constr_label,constr_pattern,'a) Dn.t
 
 let decomp = 
   let rec decrec acc c = match kind_of_term c with
-    | IsAppL (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
+    | IsApp (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
     | IsCast (c1,_) -> decrec acc c1
     | _ -> (c,acc)
   in 

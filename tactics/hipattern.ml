@@ -96,7 +96,7 @@ let op2bool = function Some _ -> true | None -> false
 
 let match_with_non_recursive_type t = 
   match kind_of_term t with 
-    | IsAppL _ -> 
+    | IsApp _ -> 
         let (hdapp,args) = decomp_app t in
         (match kind_of_term hdapp with
            | IsMutInd ind -> 

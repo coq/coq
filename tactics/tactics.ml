@@ -59,7 +59,7 @@ let rec head_constr_bound t l =
   let t = strip_outer_cast(collapse_appl t) in
   match kind_of_term t with
     | IsProd (_,_,c2)  -> head_constr_bound c2 l 
-    | IsAppL (f,args)  -> 
+    | IsApp (f,args)  -> 
 	head_constr_bound f (Array.fold_right (fun a l -> a::l) args l)
     | IsConst _        -> t::l
     | IsMutInd _       -> t::l
@@ -930,7 +930,7 @@ let dyn_split  = function
 *)
 
 let last_arg c = match kind_of_term c with
-  | IsAppL (f,cl) ->  array_last cl
+  | IsApp (f,cl) ->  array_last cl
   | _ -> anomaly "last_arg"
 	
 let elimination_clause_scheme kONT wc elimclause indclause gl = 
@@ -1572,8 +1572,8 @@ let symmetry gl =
 	    (apply (pf_parse_const gl ("sym_"^hdcncls)) gl)
           with  _ ->
             let symc = match args with 
-              | [typ;c1;c2] -> mkAppL (hdcncl, [| typ; c2; c1 |])
-              | [c1;c2]     -> mkAppL (hdcncl, [| c2; c1 |])
+              | [typ;c1;c2] -> mkApp (hdcncl, [| typ; c2; c1 |])
+              | [c1;c2]     -> mkApp (hdcncl, [| c2; c1 |])
 	      | _ -> assert false 
 	    in 
 	    (tclTHENS (cut symc)
@@ -1611,13 +1611,13 @@ let transitivity t gl =
 	    apply_list [(pf_parse_const gl ("trans_"^hdcncls));t] gl 
           with  _ -> 
             let eq1 = match args with 
-              | [typ;c1;c2] -> mkAppL (hdcncl, [| typ; c1; t |])
-	      | [c1;c2]     -> mkAppL (hdcncl, [| c1; t|])
+              | [typ;c1;c2] -> mkApp (hdcncl, [| typ; c1; t |])
+	      | [c1;c2]     -> mkApp (hdcncl, [| c1; t|])
 	      | _ -> assert false 
 	    in
             let eq2 = match args with 
-              | [typ;c1;c2] -> mkAppL (hdcncl, [| typ; t; c2 |])
-	      | [c1;c2]     -> mkAppL (hdcncl, [| t; c2 |])
+              | [typ;c1;c2] -> mkApp (hdcncl, [| typ; t; c2 |])
+	      | [c1;c2]     -> mkApp (hdcncl, [| t; c2 |])
 	      |  _ -> assert false 
 	    in
             (tclTHENS (cut eq2)

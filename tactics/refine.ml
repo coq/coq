@@ -95,7 +95,7 @@ let replace_by_meta env = function
 	    mkNamedProd id c1 (snd (destCast c2))
 	| IsLambda (Anonymous,c1,c2) when isCast c2 ->
 	    mkArrow c1 (snd (destCast c2))
-	| (IsAppL _ | IsMutCase _) ->
+	| (IsApp _ | IsMutCase _) ->
 	    (** let j = ise_resolve true empty_evd mm (gLOB sign) c in **)
 	    Retyping.get_type_of_with_meta env Evd.empty mm c
 	| IsFix ((_,j),(v,_,_)) ->
@@ -153,7 +153,7 @@ let rec compute_metamap env c = match kind_of_term c with
       compute_metamap env (subst1 c1 c2)
 
   (* 4. Application *)
-  | IsAppL (f,v) ->
+  | IsApp (f,v) ->
       let a = Array.map (compute_metamap env) (Array.append [|f|] v) in
       begin
 	try
@@ -260,7 +260,7 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 	  gl
 
     (* sinon on fait refine du terme puis appels rec. sur les sous-buts.
-     * c'est le cas pour AppL et MutCase. *)
+     * c'est le cas pour App et MutCase. *)
     | _ ->
 	tclTHENS
 	  (refine c)

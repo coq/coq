@@ -337,14 +337,14 @@ let has_undefined_isevars isevars c =
 let head_is_exist isevars = 
   let rec hrec k = match kind_of_term k with
     | IsEvar _     -> ise_undefined isevars k
-    | IsAppL (f,_) -> hrec f
+    | IsApp (f,_) -> hrec f
     | IsCast (c,_) -> hrec c
     | _ -> false
   in 
   hrec 
 
 let rec is_eliminator c = match kind_of_term c with
-  | IsAppL _    -> true
+  | IsApp _    -> true
   | IsMutCase _ -> true
   | IsCast (c,_) -> is_eliminator c
   | _ -> false
@@ -356,7 +356,7 @@ let head_evar =
   let rec hrec c = match kind_of_term c with
     | IsEvar (ev,_)       -> ev
     | IsMutCase (_,_,c,_) -> hrec c
-    | IsAppL (c,_)        -> hrec c
+    | IsApp (c,_)        -> hrec c
     | IsCast (c,_)        -> hrec c
     | _                   -> failwith "headconstant"
   in 

@@ -67,7 +67,7 @@ type kind_of_term =
   | IsProd         of name * constr * constr
   | IsLambda       of name * constr * constr
   | IsLetIn        of name * constr * constr * constr
-  | IsAppL         of constr * constr array
+  | IsApp         of constr * constr array
   | IsEvar         of existential
   | IsConst        of constant
   | IsMutInd       of inductive
@@ -85,7 +85,7 @@ val mkCast : constr * constr -> constr
 val mkProd : name * constr * constr -> constr
 val mkLambda : name * constr * constr -> constr
 val mkLetIn : name * constr * constr * constr -> constr
-val mkAppL : constr * constr array -> constr
+val mkApp : constr * constr array -> constr
 val mkEvar : existential -> constr
 val mkConst : constant -> constr
 val mkMutInd : inductive -> constr
@@ -129,7 +129,7 @@ and kind_of_term =
   | IsProd         of name * constr * constr
   | IsLambda       of name * constr * constr
   | IsLetIn        of name * constr * constr * constr
-  | IsAppL         of constr * constr array
+  | IsApp         of constr * constr array
   | IsEvar         of existential
   | IsConst        of constant
   | IsMutInd       of inductive
@@ -154,7 +154,7 @@ let comp_term t1 t2 =
   | IsLambda (n1,t1,c1), IsLambda (n2,t2,c2) -> n1 == n2 & t1 == t2 & c1 == c2
   | IsLetIn (n1,b1,t1,c1), IsLetIn (n2,b2,t2,c2) ->
       n1 == n2 & b1 == b2 & t1 == t2 & c1 == c2
-  | IsAppL (c1,l1), IsAppL (c2,l2) -> c1 == c2 & array_for_all2 (==) l1 l2
+  | IsApp (c1,l1), IsApp (c2,l2) -> c1 == c2 & array_for_all2 (==) l1 l2
   | IsEvar (e1,l1), IsEvar (e2,l2) -> e1 = e2 & array_for_all2 (==) l1 l2
   | IsConst (c1,l1), IsConst (c2,l2) -> c1 == c2 & array_for_all2 (==) l1 l2
   | IsMutInd (c1,l1), IsMutInd (c2,l2) -> c1 == c2 & array_for_all2 (==) l1 l2
@@ -180,7 +180,7 @@ let hash_term (sh_rec,(sh_sort,sh_sp,sh_na,sh_id,sh_str)) t =
   | IsProd (na,t,c) -> IsProd (sh_na na, sh_rec t, sh_rec c)
   | IsLambda (na,t,c) -> IsLambda (sh_na na, sh_rec t, sh_rec c)
   | IsLetIn (na,b,t,c) -> IsLetIn (sh_na na, sh_rec b, sh_rec t, sh_rec c)
-  | IsAppL (c,l) -> IsAppL (sh_rec c, Array.map sh_rec l)
+  | IsApp (c,l) -> IsApp (sh_rec c, Array.map sh_rec l)
   | IsEvar (e,l) -> IsEvar (e, Array.map sh_rec l)
   | IsConst (c,l) -> IsConst (sh_sp c, Array.map sh_rec l)
   | IsMutInd ((sp,i),l) -> IsMutInd ((sh_sp sp,i), Array.map sh_rec l)
@@ -242,11 +242,11 @@ let mkLetIn (x,c1,t,c2) = IsLetIn (x,c1,t,c2)
 (* If lt = [t1; ...; tn], constructs the application (t1 ... tn) *)
 (* We ensure applicative terms have at most one arguments and the
    function is not itself an applicative term *)
-let mkAppL (f, a) = 
+let mkApp (f, a) = 
   if a=[||] then f else
     match f with
-      | IsAppL (g, cl) -> IsAppL (g, Array.append cl a)
-      | _ -> IsAppL (f, a)
+      | IsApp (g, cl) -> IsApp (g, Array.append cl a)
+      | _ -> IsApp (f, a)
 
 
 (* Constructs a constant *) 
@@ -297,7 +297,7 @@ open Internal
 
 END of expected re-export of Internal module *)
 
-(* User view of [constr]. For [IsAppL], it is ensured there is at
+(* User view of [constr]. For [IsApp], it is ensured there is at
    least one argument and the function is not itself an applicative
    term *)
 
@@ -420,10 +420,10 @@ let destLetIn c = match kind_of_term c with
 
 (* Destructs an application *)
 let destApplication c = match kind_of_term c with
-  | IsAppL (f,a) -> (f, a)
+  | IsApp (f,a) -> (f, a)
   | _ -> invalid_arg "destApplication"
 
-let isAppL c = match kind_of_term c with IsAppL _ -> true | _ -> false
+let isApp c = match kind_of_term c with IsApp _ -> true | _ -> false
 
 (* Destructs a constant *)
 let destConst c = match kind_of_term c with
@@ -505,7 +505,7 @@ let fold_constr f acc c = match kind_of_term c with
   | IsProd (_,t,c) -> f (f acc t) c
   | IsLambda (_,t,c) -> f (f acc t) c
   | IsLetIn (_,b,t,c) -> f (f (f acc b) t) c
-  | IsAppL (c,l) -> Array.fold_left f (f acc c) l
+  | IsApp (c,l) -> Array.fold_left f (f acc c) l
   | IsEvar (_,l) -> Array.fold_left f acc l
   | IsConst (_,l) -> Array.fold_left f acc l
   | IsMutInd (_,l) -> Array.fold_left f acc l
@@ -529,7 +529,7 @@ let fold_constr_with_binders g f n acc c = match kind_of_term c with
   | IsProd (_,t,c) -> f (g n) (f n acc t) c
   | IsLambda (_,t,c) -> f (g n) (f n acc t) c
   | IsLetIn (_,b,t,c) -> f (g n) (f n (f n acc b) t) c
-  | IsAppL (c,l) -> Array.fold_left (f n) (f n acc c) l
+  | IsApp (c,l) -> Array.fold_left (f n) (f n acc c) l
   | IsEvar (_,l) -> Array.fold_left (f n) acc l
   | IsConst (_,l) -> Array.fold_left (f n) acc l
   | IsMutInd (_,l) -> Array.fold_left (f n) acc l
@@ -552,7 +552,7 @@ let iter_constr f c = match kind_of_term c with
   | IsProd (_,t,c) -> f t; f c
   | IsLambda (_,t,c) -> f t; f c
   | IsLetIn (_,b,t,c) -> f b; f t; f c
-  | IsAppL (c,l) -> f c; Array.iter f l
+  | IsApp (c,l) -> f c; Array.iter f l
   | IsEvar (_,l) -> Array.iter f l
   | IsConst (_,l) -> Array.iter f l
   | IsMutInd (_,l) -> Array.iter f l
@@ -573,7 +573,7 @@ let iter_constr_with_binders g f n c = match kind_of_term c with
   | IsProd (_,t,c) -> f n t; f (g n) c
   | IsLambda (_,t,c) -> f n t; f (g n) c
   | IsLetIn (_,b,t,c) -> f n b; f n t; f (g n) c
-  | IsAppL (c,l) -> f n c; Array.iter (f n) l
+  | IsApp (c,l) -> f n c; Array.iter (f n) l
   | IsEvar (_,l) -> Array.iter (f n) l
   | IsConst (_,l) -> Array.iter (f n) l
   | IsMutInd (_,l) -> Array.iter (f n) l
@@ -594,7 +594,7 @@ let map_constr f c = match kind_of_term c with
   | IsProd (na,t,c) -> mkProd (na, f t, f c)
   | IsLambda (na,t,c) -> mkLambda (na, f t, f c)
   | IsLetIn (na,b,t,c) -> mkLetIn (na, f b, f t, f c)
-  | IsAppL (c,l) -> mkAppL (f c, Array.map f l)
+  | IsApp (c,l) -> mkApp (f c, Array.map f l)
   | IsEvar (e,l) -> mkEvar (e, Array.map f l)
   | IsConst (c,l) -> mkConst (c, Array.map f l)
   | IsMutInd (c,l) -> mkMutInd (c, Array.map f l)
@@ -615,7 +615,7 @@ let map_constr_with_binders g f l c = match kind_of_term c with
   | IsProd (na,t,c) -> mkProd (na, f l t, f (g l) c)
   | IsLambda (na,t,c) -> mkLambda (na, f l t, f (g l) c)
   | IsLetIn (na,b,t,c) -> mkLetIn (na, f l b, f l t, f (g l) c)
-  | IsAppL (c,al) -> mkAppL (f l c, Array.map (f l) al)
+  | IsApp (c,al) -> mkApp (f l c, Array.map (f l) al)
   | IsEvar (e,al) -> mkEvar (e, Array.map (f l) al)
   | IsConst (c,al) -> mkConst (c, Array.map (f l) al)
   | IsMutInd (c,al) -> mkMutInd (c, Array.map (f l) al)
@@ -640,7 +640,7 @@ let map_constr_with_named_binders g f l c = match kind_of_term c with
   | IsProd (na,t,c) -> mkProd (na, f l t, f (g na l) c)
   | IsLambda (na,t,c) -> mkLambda (na, f l t, f (g na l) c)
   | IsLetIn (na,b,t,c) -> mkLetIn (na, f l b, f l t, f (g na l) c)
-  | IsAppL (c,al) -> mkAppL (f l c, Array.map (f l) al)
+  | IsApp (c,al) -> mkApp (f l c, Array.map (f l) al)
   | IsEvar (e,al) -> mkEvar (e, Array.map (f l) al)
   | IsConst (c,al) -> mkConst (c, Array.map (f l) al)
   | IsMutInd (c,al) -> mkMutInd (c, Array.map (f l) al)
@@ -693,8 +693,8 @@ let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
   | IsLambda (na,t,c) -> let t' = f l t in mkLambda (na, t', f (g l) c)
   | IsLetIn (na,b,t,c) ->
       let b' = f l b in let t' = f l t in mkLetIn (na, b', t', f (g l) c)
-  | IsAppL (c,al) -> 
-      let c' = f l c in mkAppL (c', array_map_left (f l) al)
+  | IsApp (c,al) -> 
+      let c' = f l c in mkApp (c', array_map_left (f l) al)
   | IsEvar (e,al) -> mkEvar (e, array_map_left (f l) al)
   | IsConst (c,al) -> mkConst (c, array_map_left (f l) al)
   | IsMutInd (c,al) -> mkMutInd (c, array_map_left (f l) al)
@@ -727,7 +727,7 @@ let compare_constr f c1 c2 =
   | IsProd (_,t1,c1), IsProd (_,t2,c2) -> f t1 t2 & f c1 c2
   | IsLambda (_,t1,c1), IsLambda (_,t2,c2) -> f t1 t2 & f c1 c2
   | IsLetIn (_,b1,t1,c1), IsLetIn (_,b2,t2,c2) -> f b1 b2 & f t1 t2 & f c1 c2
-  | IsAppL (c1,l1), IsAppL (c2,l2) -> f c1 c2 & array_for_all2 f l1 l2
+  | IsApp (c1,l1), IsApp (c2,l2) -> f c1 c2 & array_for_all2 f l1 l2
   | IsEvar (e1,l1), IsEvar (e2,l2) -> e1 = e2 & array_for_all2 f l1 l2
   | IsConst (c1,l1), IsConst (c2,l2) -> c1 = c2 & array_for_all2 f l1 l2
   | IsMutInd (c1,l1), IsMutInd (c2,l2) -> c1 = c2 & array_for_all2 f l1 l2
@@ -850,7 +850,7 @@ let noccur_between n m term =
 let noccur_with_meta n m term = 
   let rec occur_rec n c = match kind_of_term c with
     | IsRel p -> if n<=p & p<n+m then raise Occur
-    | IsAppL(f,cl) ->
+    | IsApp(f,cl) ->
 	(match kind_of_term f with
            | IsCast (c,_) when isMeta c -> ()
            | IsMeta _ -> ()
@@ -1072,16 +1072,12 @@ let mkArrow t1 t2 = mkProd (Anonymous, t1, t2)
 (* If lt = [t1; ...; tn], constructs the application (t1 ... tn) *)
 (* We ensure applicative terms have at most one arguments and the
    function is not itself an applicative term *)
-let mkAppL = mkAppL
-
-let mkAppList = function
-  | f::l -> mkAppL (f, Array.of_list l)
-  | _ -> anomaly "mkAppList received an empty list"
+let mkApp = mkApp
 
 let mkAppA v =
   let l = Array.length v in
   if l=0 then anomaly "mkAppA received an empty array"
-  else mkAppL (v.(0), Array.sub v 1 (Array.length v -1))
+  else mkApp (v.(0), Array.sub v 1 (Array.length v -1))
 
 (* Constructs a constant *) 
 (* The array of terms correspond to the variables introduced in the section *)
@@ -1190,13 +1186,13 @@ let lamn n env b =
   in 
   lamrec (n,env,b)
 
-let applist (f,l) = mkAppL (f, Array.of_list l)
+let applist (f,l) = mkApp (f, Array.of_list l)
 
-let applistc f l = mkAppL (f, Array.of_list l)
+let applistc f l = mkApp (f, Array.of_list l)
 
-let appvect = mkAppL
+let appvect = mkApp
 	    
-let appvectc f l = mkAppL (f,l)
+let appvectc f l = mkApp (f,l)
 		     
 (* to_lambda n (x1:T1)...(xn:Tn)(xn+1:Tn+1)...(xn+j:Tn+j)T =
  * [x1:T1]...[xn:Tn](xn+1:Tn+1)...(xn+j:Tn+j)T *)
@@ -1350,28 +1346,28 @@ let le_kind_implicit k1 k2 =
 
 (* flattens application lists *)
 let rec collapse_appl c = match kind_of_term c with
-  | IsAppL (f,cl) -> 
+  | IsApp (f,cl) -> 
       let rec collapse_rec f cl2 = match kind_of_term f with
-	| IsAppL (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
-	| IsCast (c,_) when isAppL c -> collapse_rec c cl2
-	| _ -> if cl2 = [||] then f else mkAppL (f,cl2)
+	| IsApp (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
+	| IsCast (c,_) when isApp c -> collapse_rec c cl2
+	| _ -> if cl2 = [||] then f else mkApp (f,cl2)
       in 
       collapse_rec f cl
   | _ -> c
 
 let rec decomp_app c =
   match kind_of_term (collapse_appl c) with
-    | IsAppL (f,cl) -> (f, Array.to_list cl)
+    | IsApp (f,cl) -> (f, Array.to_list cl)
     | IsCast (c,t) -> decomp_app c
     | _ -> (c,[])
 
 (* strips head casts and flattens head applications *)
 let rec strip_head_cast c = match kind_of_term c with
-  | IsAppL (f,cl) -> 
+  | IsApp (f,cl) -> 
       let rec collapse_rec f cl2 = match kind_of_term f with
-	| IsAppL (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
+	| IsApp (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
 	| IsCast (c,_) -> collapse_rec c cl2
-	| _ -> if cl2 = [||] then f else mkAppL (f,cl2)
+	| _ -> if cl2 = [||] then f else mkApp (f,cl2)
       in 
       collapse_rec f cl
   | IsCast (c,t) -> strip_head_cast c
@@ -1458,7 +1454,7 @@ let rec eta_reduce_head c =
   match kind_of_term c with
     | IsLambda (_,c1,c') ->
 	(match kind_of_term (eta_reduce_head c') with
-           | IsAppL (f,cl) ->
+           | IsApp (f,cl) ->
                let lastn = (Array.length cl) - 1 in 
                if lastn < 1 then anomaly "application without arguments"
                else
@@ -1466,7 +1462,7 @@ let rec eta_reduce_head c =
                     | IsRel 1 ->
 			let c' =
                           if lastn = 1 then f
-			  else mkAppL (f, Array.sub cl 0 lastn)
+			  else mkApp (f, Array.sub cl 0 lastn)
 			in
 			if not (dependent (mkRel 1) c')
                         then lift (-1) c'
@@ -1510,12 +1506,12 @@ let rec rename_bound_var l c =
 let prefix_application (k,c) (t : constr) = 
   let c' = strip_head_cast c and t' = strip_head_cast t in
   match kind_of_term c', kind_of_term t' with
-    | IsAppL (f1,cl1), IsAppL (f2,cl2) ->
+    | IsApp (f1,cl1), IsApp (f2,cl2) ->
 	let l1 = Array.length cl1
 	and l2 = Array.length cl2 in
 	if l1 <= l2
-	   && eq_constr c' (mkAppL (f2, Array.sub cl2 0 l1)) then
-	  Some (mkAppL (mkRel k, Array.sub cl2 l1 (l2 - l1)))
+	   && eq_constr c' (mkApp (f2, Array.sub cl2 0 l1)) then
+	  Some (mkApp (mkRel k, Array.sub cl2 l1 (l2 - l1)))
 	else 
 	  None
     | _ -> None
@@ -1523,12 +1519,12 @@ let prefix_application (k,c) (t : constr) =
 let prefix_application_eta (k,c) (t : constr) =
   let c' = strip_head_cast c and t' = strip_head_cast t in
   match kind_of_term c', kind_of_term t' with
-    | IsAppL (f1,cl1), IsAppL (f2,cl2) ->
+    | IsApp (f1,cl1), IsApp (f2,cl2) ->
 	let l1 = Array.length cl1
 	and l2 = Array.length cl2 in
 	if l1 <= l2 &&
-           eta_eq_constr  c' (mkAppL (f2, Array.sub cl2 0 l1)) then
-	  Some (mkAppL (mkRel k, Array.sub cl2 l1 (l2 - l1)))
+           eta_eq_constr  c' (mkApp (f2, Array.sub cl2 0 l1)) then
+	  Some (mkApp (mkRel k, Array.sub cl2 l1 (l2 - l1)))
 	else 
 	  None
   | (_,_) -> None
@@ -1700,7 +1696,7 @@ type constr_operator =
   | OpSort of sorts
   | OpRel of int | OpVar of identifier
   | OpCast | OpProd of name | OpLambda of name | OpLetIn of name
-  | OpAppL | OpConst of section_path
+  | OpApp | OpConst of section_path
   | OpEvar of existential_key
   | OpMutInd of inductive_path
   | OpMutConstruct of constructor_path
@@ -1717,7 +1713,7 @@ let splay_constr c = match kind_of_term c with
   | IsProd (x, t1, t2)         -> OpProd x, [|t1;t2|]
   | IsLambda (x, t1, t2)       -> OpLambda x, [|t1;t2|]
   | IsLetIn (x, b, t1, t2)     -> OpLetIn x, [|b;t1;t2|]
-  | IsAppL (f,a)               -> OpAppL, Array.append [|f|] a
+  | IsApp (f,a)               -> OpApp, Array.append [|f|] a
   | IsConst (sp, a)            -> OpConst sp, a
   | IsEvar (sp, a)             -> OpEvar sp, a
   | IsMutInd (ind_sp, l)       -> OpMutInd ind_sp, l
@@ -1736,7 +1732,7 @@ let gather_constr = function
   | OpProd x, [|t1;t2|]   -> mkProd (x, t1, t2)
   | OpLambda x, [|t1;t2|] -> mkLambda (x, t1, t2)
   | OpLetIn x, [|b;t1;t2|] -> mkLetIn (x, b, t1, t2)
-  | OpAppL, v     -> let f = v.(0) and a = array_tl v in mkAppL (f, a)
+  | OpApp, v     -> let f = v.(0) and a = array_tl v in mkApp (f, a)
   | OpConst sp, a -> mkConst (sp, a)
   | OpEvar sp, a  -> mkEvar (sp, a) 
   | OpMutInd ind_sp, l        -> mkMutInd (ind_sp, l) 
@@ -1772,7 +1768,7 @@ let splay_constr_with_binders c = match kind_of_term c with
   | IsProd (x, t1, t2)         -> OpProd x, [x,None,t1], [|t2|]
   | IsLambda (x, t1, t2)       -> OpLambda x, [x,None,t1], [|t2|]
   | IsLetIn (x, b, t1, t2)     -> OpLetIn x, [x,Some b,t1], [|t2|]
-  | IsAppL (f,v)               -> OpAppL, [], Array.append [|f|] v
+  | IsApp (f,v)               -> OpApp, [], Array.append [|f|] v
   | IsConst (sp, a)            -> OpConst sp, [], a
   | IsEvar (sp, a)             -> OpEvar sp, [], a
   | IsMutInd (ind_sp, l)       -> OpMutInd ind_sp, [], l
@@ -1802,7 +1798,7 @@ let gather_constr_with_binders = function
   | OpProd _, [x,None,t1], [|t2|]   -> mkProd (x, t1, t2)
   | OpLambda _, [x,None,t1], [|t2|] -> mkLambda (x, t1, t2)
   | OpLetIn _, [x,Some b,t1], [|t2|] -> mkLetIn (x, b, t1, t2)
-  | OpAppL, [], v     -> let f = v.(0) and a = array_tl v in mkAppL (f, a)
+  | OpApp, [], v     -> let f = v.(0) and a = array_tl v in mkApp (f, a)
   | OpConst sp, [], a -> mkConst (sp, a)
   | OpEvar sp, [], a  -> mkEvar (sp, a) 
   | OpMutInd ind_sp, [], l        -> mkMutInd (ind_sp, l) 

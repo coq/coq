@@ -196,7 +196,7 @@ let constructor_at_head t =
     | IsLetIn (_,_,_,c) -> aux c
     | IsSort _ -> CL_SORT,0
     | IsCast (c,_) -> aux (collapse_appl c)
-    | IsAppL (f,args) -> let c,_ = aux f in c, Array.length args
+    | IsApp (f,args) -> let c,_ = aux f in c, Array.length args
     |  _ -> raise Not_found
   in 
   aux (collapse_appl t)

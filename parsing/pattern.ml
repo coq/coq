@@ -161,7 +161,7 @@ let matches_core convert pat c =
 
       | PSort RType, IsSort (Type _) -> sigma
 
-      | PApp (c1,arg1), IsAppL (c2,arg2) ->
+      | PApp (c1,arg1), IsApp (c2,arg2) ->
 	  array_fold_left2 (sorec stk) (sorec stk sigma c1 c2) arg1 arg2
 
       | PBinder(BProd,na1,c1,d1), IsProd(na2,c2,d2) ->
@@ -247,14 +247,14 @@ let rec sub_match nocc pat c =
     | NextOccurrence nocc ->
       let (lm,lc) = try_sub_match (nocc - 1) pat [c1;t2;c2] in
       (lm,mkLetIn (x,List.hd lc,List.nth lc 1,List.nth lc 2)))
-  | IsAppL (c1,lc) ->
+  | IsApp (c1,lc) ->
     (try authorized_occ nocc ((matches pat c), mkMeta (-1)) with
     | PatternMatchingFailure ->
       let (lm,le) = try_sub_match nocc pat (c1::(Array.to_list lc)) in
-      (lm,mkAppList le)
+      (lm,mkApp (List.hd le, Array.of_list (List.tl le)))
     | NextOccurrence nocc ->
       let (lm,le) = try_sub_match (nocc - 1) pat (c1::(Array.to_list lc)) in
-      (lm,mkAppList le))
+      (lm,mkApp (List.hd le, Array.of_list (List.tl le))))
   | IsMutCase (ci,hd,c1,lc) ->
     (try authorized_occ nocc ((matches pat c), mkMeta (-1)) with
     | PatternMatchingFailure ->
@@ -305,7 +305,7 @@ let rec pattern_of_constr t =
 	PBinder (BProd,na,pattern_of_constr c,pattern_of_constr b)
     | IsLambda (na,c,b) ->
 	PBinder (BLambda,na,pattern_of_constr c,pattern_of_constr b)
-    | IsAppL (f,args)   ->
+    | IsApp (f,args)   ->
 	PApp (pattern_of_constr f, Array.map pattern_of_constr args)
     | IsConst (cst_sp,ctxt)         ->
 	PRef (RConst (cst_sp, ctxt))

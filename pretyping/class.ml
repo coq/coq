@@ -110,7 +110,7 @@ let check_class id v cl p =
 
 (* decomposition de constr vers coe_typ *)
 
-(* t provient de global_reference donc pas de Cast, pas de AppL *)
+(* t provient de global_reference donc pas de Cast, pas de App *)
 let coe_of_reference t = 
   match kind_of_term t with
     | IsConst (sp,l) -> (Array.to_list l),NAM_Constant sp
@@ -126,7 +126,7 @@ let constructor_at_head1 t =
       | IsMutInd (ind_sp,l) -> t',[],(Array.to_list l),CL_IND ind_sp,0
       | IsVar id -> t',[],[],CL_Var id,0
       | IsCast (c,_) -> aux c
-      | IsAppL(f,args) -> 
+      | IsApp(f,args) -> 
 	  let t',_,l,c,_ = aux f in t',Array.to_list args,l,c,Array.length args
       | IsProd (_,_,_) -> t',[],[],CL_FUN,0
       | IsLetIn (_,_,_,c) -> aux c

@@ -617,7 +617,7 @@ let discr id gls =
 	 in
 	 tclCOMPLETE((tclTHENS (cut_intro absurd_term)
 			([onLastHyp (compose gen_absurdity out_some);
-			  refine (mkAppL (pf, [| mkVar id |]))]))) gls)
+			  refine (mkApp (pf, [| mkVar id |]))]))) gls)
 
 
 let not_found_message id =
@@ -856,7 +856,7 @@ let try_delta_expand env sigma t =
   let rec hd_rec c  =
     match kind_of_term c with
       | IsMutConstruct _ -> whdt
-      | IsAppL (f,_)  -> hd_rec f
+      | IsApp (f,_)  -> hd_rec f
       | IsCast (c,_) -> hd_rec c
       | _  -> t
   in 
@@ -959,7 +959,7 @@ let decompEqThen ntac id gls =
 	 tclCOMPLETE
 	   ((tclTHENS (cut_intro absurd_term)
 	       ([onLastHyp (compose gen_absurdity out_some);
-		 refine (mkAppL (pf, [| mkVar id |]))]))) gls
+		 refine (mkApp (pf, [| mkVar id |]))]))) gls
      | Inr posns ->
 	 (let e = pf_get_new_id (id_of_string "e") gls in
 	  let e_env =
@@ -1179,7 +1179,7 @@ let whd_const_state namelist env sigma =
           else 
 	    error "whd_const_stack"
       | IsCast (c,_) -> whrec (c, l)
-      | IsAppL (f,cl) -> whrec (f, append_stack cl l)
+      | IsApp (f,cl) -> whrec (f, append_stack cl l)
       | _ -> s
   in 
   whrec
@@ -1310,7 +1310,7 @@ let rec eq_mod_rel l_meta t0 t1 =
 (* Verifies if the constr has an head constant *)
 
 let is_hd_const c = match kind_of_term c with
-  | IsAppL (f,args) ->
+  | IsApp (f,args) ->
       (match kind_of_term f with
          | IsConst (c,_) -> Some (c, args)
          |_ -> None)
@@ -1335,7 +1335,7 @@ let nb_occ_term t u =
 *)
 let sub_term_with_unif cref ceq =
   let rec find_match l_meta nb_occ hdsp t_args u = match splay_constr u with
-    | OpAppL, cl -> begin
+    | OpApp, cl -> begin
 	let f, args = destApplication u in
 	match kind_of_term f with
           | IsConst (sp,_) when sp = hdsp -> begin

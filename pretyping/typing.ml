@@ -77,7 +77,7 @@ let rec execute mf env sigma cstr =
     | IsSort (Type u) ->
 	let (j,_) = judge_of_type u in j
 	  
-    | IsAppL (f,args) ->
+    | IsApp (f,args) ->
 	let j = execute mf env sigma f in
         let jl = execute_list mf env sigma (Array.to_list args) in
 	let (j,_) = apply_rel_list env sigma mf.nocheck jl j in

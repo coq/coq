@@ -388,7 +388,7 @@ let contract_cofixp env (i,(_,_,bds as bodies)) =
   subst_bodies_from_i 0 env, bds.(i)
 
 
-(* type of terms with a hole. This hole can appear only under AppL or Case.
+(* type of terms with a hole. This hole can appear only under App or Case.
  *   TOP means the term is considered without context
  *   APP(l,stk) means the term is applied to l, and then we have the context st
  *      this corresponds to the application stack of the KAM.
@@ -499,7 +499,7 @@ let rec norm_head info env t stack =
   (* no reduction under binders *)
   match kind_of_term t with
   (* stack grows (remove casts) *)
-  | IsAppL (head,args) -> (* Applied terms are normalized immediately;
+  | IsApp (head,args) -> (* Applied terms are normalized immediately;
                         they could be computed when getting out of the stack *)
       let nargs = Array.map (cbv_stack_term info TOP env) args in
       norm_head info env head (stack_app (Array.to_list nargs) stack)
@@ -810,7 +810,7 @@ let rec traverse_term env t =
     | IsCast (a,b) ->
         { norm = false;
           term = FCast (traverse_term env a, traverse_term env b)}
-    | IsAppL (f,v) ->
+    | IsApp (f,v) ->
         { norm = false;
 	  term = FApp (traverse_term env f, Array.map (traverse_term env) v) }
     | IsMutInd (sp,v) ->
@@ -889,7 +889,7 @@ let rec lift_term_of_freeze lfts v =
 	mkCoFix (op, (Array.map (lift_term_of_freeze lfts) tys, lna,
 		      Array.map (lift_term_of_freeze lfts') bds))
     | FApp (f,ve) ->
-	mkAppL (lift_term_of_freeze lfts f,
+	mkApp (lift_term_of_freeze lfts f,
 		Array.map (lift_term_of_freeze lfts) ve)
     | FLambda (n,t,c,_,_)   ->
 	mkLambda (n, lift_term_of_freeze lfts t, 
@@ -945,7 +945,7 @@ let rec fstrong unfreeze_fun lfts v =
 	mkCoFix (op, (Array.map (fstrong unfreeze_fun lfts) tys, lna,
 		      Array.map (fstrong unfreeze_fun lfts') bds))
     | FApp (f,ve) ->
-	mkAppL (fstrong unfreeze_fun lfts f,
+	mkApp (fstrong unfreeze_fun lfts f,
 		Array.map (fstrong unfreeze_fun lfts) ve)
     | FLambda (n,t,c,_,_)   ->
 	mkLambda (n, fstrong unfreeze_fun lfts t,
@@ -1172,7 +1172,7 @@ and whnf_term info env t =
     | IsSort _ | IsXtra _ | IsMeta _ -> {norm = true; term = FAtom t }
     | IsCast (c,_) -> whnf_term info env c    (* remove outer casts *)
 
-    | IsAppL (f,ve) ->
+    | IsApp (f,ve) ->
       	whnf_frterm info
 	  { norm = false; term = FApp (freeze env f, freeze_vect env ve)}
     | IsConst (op,ve) ->

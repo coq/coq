@@ -616,7 +616,7 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 	    (array_for_all (check_rec_call n lst) la) &&
             (List.for_all (check_rec_call n lst) l)
 
-	| IsAppL (f,la) -> 
+	| IsApp (f,la) -> 
 	    (check_rec_call n lst f) &&
 	    (array_for_all (check_rec_call n lst) la) &&
             (List.for_all (check_rec_call n lst) l)
@@ -831,7 +831,7 @@ let control_only_guard env sigma =
     | IsMutConstruct (_,cl) -> Array.iter control_rec cl
     | IsConst (_,cl)        -> Array.iter control_rec cl
     | IsEvar (_,cl)         -> Array.iter control_rec cl
-    | IsAppL (_,cl)         -> Array.iter control_rec cl
+    | IsApp (_,cl)         -> Array.iter control_rec cl
     | IsCast (c1,c2)       -> control_rec c1; control_rec c2
     | IsProd (_,c1,c2)     -> control_rec c1; control_rec c2
     | IsLambda (_,c1,c2)   -> control_rec c1; control_rec c2

@@ -91,7 +91,7 @@ let unify_0 mc wc m n =
 	| IsProd (_,t1,c1), IsProd (_,t2,c2) ->
 	    unirec_rec (unirec_rec substn t1 t2) c1 c2
 
-	| IsAppL (f1,l1), IsAppL (f2,l2) ->
+	| IsApp (f1,l1), IsApp (f2,l2) ->
 	    let len1 = Array.length l1
 	    and len2 = Array.length l2 in
 	    if len1 = len2 then
@@ -161,7 +161,7 @@ let whd_castappevar_stack sigma c =
       | IsEvar (ev,args) when is_defined sigma ev -> 
 	  whrec (existential_value sigma (ev,args), l)
       | IsCast (c,_) -> whrec (c, l)
-      | IsAppL (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
+      | IsApp (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
       | _ -> s
   in 
   whrec (c, [])
@@ -244,7 +244,7 @@ and w_resrec metas evars wc =
 		 w_resrec metas t (w_Define evn rhs wc)
                with ex when catchable_exception ex ->
 		 (match krhs with
-             	    | IsAppL (f,cl) when isConst f ->
+             	    | IsApp (f,cl) when isConst f ->
 			let wc' = mimick_evar f (Array.length cl) evn wc in
 			w_resrec metas evars wc'
 		    | _ -> error "w_Unify"))
@@ -430,7 +430,7 @@ let clenv_instance_term clenv c =
 let clenv_cast_meta clenv = 
   let rec crec u =
     match kind_of_term u with
-      | IsAppL _ | IsMutCase _ -> crec_hd u
+      | IsApp _ | IsMutCase _ -> crec_hd u
       | IsCast (c,_) when isMeta c -> u
       | _  -> map_constr crec u
 	    
@@ -445,7 +445,7 @@ let clenv_cast_meta clenv =
 	       | Clval(_) -> u
 	   with Not_found -> 
 	     u)
-      | IsAppL(f,args) -> mkAppL (crec_hd f, Array.map crec args)
+      | IsApp(f,args) -> mkApp (crec_hd f, Array.map crec args)
       | IsMutCase(ci,p,c,br) ->
 	  mkMutCase (ci, crec_hd p, crec_hd c, Array.map crec br)
       | _ -> u
@@ -546,7 +546,7 @@ let clenv_merge with_types =
 		     (clenv_wtactic (w_Define evn rhs) clenv)
 		 with ex when catchable_exception ex ->
 		   (match krhs with
-		      | IsAppL (f,cl) when isConst f or isMutConstruct f ->
+		      | IsApp (f,cl) when isConst f or isMutConstruct f ->
 			  clenv_resrec metas evars 
 			    (clenv_wtactic
 			       (mimick_evar f (Array.length cl) evn)
@@ -677,10 +677,10 @@ let constrain_clenv_to_subterm clause (op,cl) =
        else error "Bound 1"
      with ex when catchable_exception ex ->
        (match kind_of_term cl with 
-	  | IsAppL (f,args) ->
+	  | IsApp (f,args) ->
 	      let n = Array.length args in
 	      assert (n>0);
-	      let c1 = mkAppL (f,Array.sub args 0 (n-1)) in
+	      let c1 = mkApp (f,Array.sub args 0 (n-1)) in
 	      let c2 = args.(n-1) in
 	      (try 
 		 matchrec c1

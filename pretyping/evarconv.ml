@@ -300,8 +300,8 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
     | (IsMutInd _ | IsMutConstruct _ | IsSort _ | IsProd _), _ -> false
     | _, (IsMutInd _ | IsMutConstruct _ | IsSort _ | IsProd _) -> false
 
-    | (IsAppL _ | IsMutCase _ | IsFix _ | IsCoFix _), 
-      (IsAppL _ | IsMutCase _ | IsFix _ | IsCoFix _) -> false
+    | (IsApp _ | IsMutCase _ | IsFix _ | IsCoFix _), 
+      (IsApp _ | IsMutCase _ | IsFix _ | IsCoFix _) -> false
 
 
 

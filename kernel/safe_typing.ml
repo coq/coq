@@ -92,7 +92,7 @@ let rec execute mf env cstr =
     | IsSort (Type u) ->
 	judge_of_type u
 	  
-    | IsAppL (f,args) ->
+    | IsApp (f,args) ->
 	let (j,cst1) = execute mf env f in
         let (jl,cst2) = execute_array mf env args in
 	let (j,cst3) =

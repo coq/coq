@@ -290,7 +290,7 @@ let sort_of_goal gl =
 (* c should be of type A1->.. An->B with B an inductive definition *)
 
 let last_arg c = match kind_of_term c with
-  | IsAppL (f,cl) -> array_last cl
+  | IsApp (f,cl) -> array_last cl
   | _ -> anomaly "last_arg"
 
 let general_elim_then_using 

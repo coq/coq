@@ -282,7 +282,7 @@ let rec detype avoid env t =
     | IsProd (na,ty,c) -> detype_binder BProd avoid env na ty c
     | IsLambda (na,ty,c) -> detype_binder BLambda avoid env na ty c
     | IsLetIn (na,b,_,c) -> detype_binder BLetIn avoid env na b c
-    | IsAppL (f,args) ->
+    | IsApp (f,args) ->
 	RApp (dummy_loc,detype avoid env f,array_map_to_list (detype avoid env) args)
     | IsConst (sp,cl) ->
 	RRef(dummy_loc,RConst(sp,Array.map (detype avoid env) cl))

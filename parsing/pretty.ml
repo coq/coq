@@ -301,7 +301,7 @@ let print_full_context_typ () = print_context false (Lib.contents_after None)
 let rec head_const c = match kind_of_term c with
   | IsProd (_,_,d) -> head_const d
   | IsLetIn (_,_,_,d) -> head_const d
-  | IsAppL (f,_)   -> head_const f
+  | IsApp (f,_)   -> head_const f
   | IsCast (d,_)   -> head_const d
   | _            -> c
 
@@ -492,7 +492,7 @@ let unfold_head_fconst =
   let rec unfrec k = match kind_of_term k with
     | IsConst cst -> constant_value (Global.env ()) cst 
     | IsLambda (na,t,b) -> mkLambda (na,t,unfrec b)
-    | IsAppL (f,v) -> appvect (unfrec f,v)
+    | IsApp (f,v) -> appvect (unfrec f,v)
     | _ -> k
   in 
   unfrec

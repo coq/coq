@@ -29,7 +29,7 @@ let print_arguments = ref false
 let print_evar_arguments = ref false
 
 (* This forces printing of cast nodes *)
-let print_casts = ref false
+let print_casts = ref true
 
 (* This governs printing of implicit arguments.  When
    [print_implicits] is on then [print_implicits_explicit_args] tells

@@ -100,7 +100,7 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
 	    let (_,realargs) = list_chop nparams largs in 
 	    let base = applist (lift i pk,realargs) in       
             if depK then 
-	      mkAppL (base, [|appvect (mkRel (i+1),rel_vect 0 i)|])
+	      mkApp (base, [|appvect (mkRel (i+1),rel_vect 0 i)|])
             else 
 	      base
       	| _ -> assert false 
@@ -124,13 +124,13 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
           (match optionpos with 
 	     | None -> 
 		 make_prod env (n,t,process_constr (i+1) c_0 rest 
-				  (mkAppL (lift 1 co, [|mkRel 1|])))
+				  (mkApp (lift 1 co, [|mkRel 1|])))
              | Some(dep',p) -> 
 		 let nP = lift (i+1+decP) p in
 		 let t_0 = process_pos dep' nP (lift 1 t) in 
 		 make_prod_dep (dep or dep') env
                    (n,t,mkArrow t_0 (process_constr (i+2) (lift 1 c_0) rest
-				       (mkAppL (lift 2 co, [|mkRel 2|])))))
+				       (mkApp (lift 2 co, [|mkRel 2|])))))
       | IsLetIn (n,b,t,c_0) ->
 	  assert (largs = []);
 	  mkLetIn (n,b,t,process_constr (i+1) c_0 recargs (lift 1 co))
@@ -141,7 +141,7 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
 	    | _ -> assert false in
       	  let (_,realargs) = list_chop nparams largs in
       	  let base = applist (nP,realargs) in
-          if dep then mkAppL (base, [|co|]) else base
+          if dep then mkApp (base, [|co|]) else base
       | _ -> assert false
   in 
   process_constr 0 st recargs (appvect(co,vargs))

@@ -216,7 +216,7 @@ let hdchar env c =
     | IsLambda (_,_,c)     -> hdrec (k+1) c
     | IsLetIn (_,_,_,c)    -> hdrec (k+1) c
     | IsCast (c,_)         -> hdrec k c
-    | IsAppL (f,l)         -> hdrec k f
+    | IsApp (f,l)         -> hdrec k f
     | IsConst (sp,_)       ->
 	let c = lowercase_first_char (basename sp) in
 	if c = "?" then "y" else c

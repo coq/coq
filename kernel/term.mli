@@ -116,7 +116,7 @@ type kind_of_term =
   | IsProd         of name * constr * constr
   | IsLambda       of name * constr * constr
   | IsLetIn        of name * constr * constr * constr
-  | IsAppL         of constr * constr array
+  | IsApp         of constr * constr array
   | IsEvar         of existential
   | IsConst        of constant
   | IsMutInd       of inductive
@@ -125,7 +125,7 @@ type kind_of_term =
   | IsFix          of fixpoint
   | IsCoFix        of cofixpoint
 
-(* User view of [constr]. For [IsAppL], it is ensured there is at
+(* User view of [constr]. For [IsApp], it is ensured there is at
    least one argument and the function is not itself an applicative
    term *)
 
@@ -197,10 +197,9 @@ val mkNamedLambda : identifier -> constr -> constr -> constr
 (* [mkLambda_string s t c] constructs $[s:t]c$ *)
 val mkLambda_string : string -> constr -> constr -> constr
 
-(* [mkAppL (f,[| t_1; ...; t_n |]] constructs the application
+(* [mkApp (f,[| t_1; ...; t_n |]] constructs the application
    $(f~t_1~\dots~t_n)$. *)
-val mkAppL : constr * constr array -> constr
-val mkAppList : constr list  -> constr
+val mkApp : constr * constr array -> constr
 val mkAppA : constr array -> constr
 
 (* Constructs a constant *) 
@@ -317,7 +316,7 @@ val destLambda : constr -> name * constr * constr
 val destLetIn : constr -> name * constr * constr * constr
 
 (* Destructs an application *)
-val isAppL : constr -> bool
+val isApp : constr -> bool
 (*i
 val hd_app : constr -> constr 
 val args_app : constr -> constr array
@@ -365,8 +364,7 @@ val abs_implicit : constr -> constr
 val lambda_implicit : constr -> constr
 val lambda_implicit_lift : int -> constr -> constr
 
-(* [applist (f,args)] and co build [mkAppL (f,args)] if [args] non
-   empty and build [f] otherwise *)
+(* [applist (f,args)] and co work as [mkApp] *)
 
 val applist : constr * constr list -> constr
 val applistc : constr -> constr list -> constr
@@ -561,7 +559,7 @@ type constr_operator =
   | OpSort of sorts
   | OpRel of int | OpVar of identifier
   | OpCast | OpProd of name | OpLambda of name | OpLetIn of name
-  | OpAppL | OpConst of section_path
+  | OpApp | OpConst of section_path
   | OpEvar of existential_key
   | OpMutInd of inductive_path
   | OpMutConstruct of constructor_path

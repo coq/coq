@@ -98,7 +98,7 @@ let append_stack v s = v@s
 
 let rec whd_state (x, stack as s) =
   match kind_of_term x with
-    | IsAppL (f,cl) -> whd_state (f, append_stack cl stack)
+    | IsApp (f,cl) -> whd_state (f, append_stack cl stack)
     | IsCast (c,_)  -> whd_state (c, stack)
     | _             -> s
 
@@ -278,13 +278,13 @@ let whd_state_gen flags env sigma =
 	     | None -> s)
       | IsLetIn (_,b,_,c) when red_letin flags -> stacklam whrec [b] c stack
       | IsCast (c,_) -> whrec (c, stack)
-      | IsAppL (f,cl)  -> whrec (f, append_stack cl stack)
+      | IsApp (f,cl)  -> whrec (f, append_stack cl stack)
       | IsLambda (_,_,c) ->
           (match decomp_stack stack with
              | Some (a,m) when red_beta flags -> stacklam whrec [a] c m
              | None when red_eta flags ->
                  (match kind_of_term (app_stack (whrec (c, empty_stack))) with 
-                    | IsAppL (f,cl) ->
+                    | IsApp (f,cl) ->
 			let napp = Array.length cl in
 			if napp > 0 then
 			  let x', l' = whrec (array_last cl, empty_stack) in
@@ -321,13 +321,13 @@ let local_whd_state_gen flags =
     match kind_of_term x with
       | IsLetIn (_,b,_,c) when red_delta flags -> stacklam whrec [b] c stack
       | IsCast (c,_) -> whrec (c, stack)
-      | IsAppL (f,cl)  -> whrec (f, append_stack cl stack)
+      | IsApp (f,cl)  -> whrec (f, append_stack cl stack)
       | IsLambda (_,_,c) ->
           (match decomp_stack stack with
              | Some (a,m) when red_beta flags -> stacklam whrec [a] c m
              | None when red_eta flags ->
                  (match kind_of_term (app_stack (whrec (c, empty_stack))) with 
-                    | IsAppL (f,cl) ->
+                    | IsApp (f,cl) ->
 			let napp = Array.length cl in
 			if napp > 0 then
 			  let x', l' = whrec (array_last cl, empty_stack) in
@@ -370,7 +370,7 @@ let whd_beta_state =
 	     | Some (a1,rest) -> stacklam whrec [a1] c2 rest)
 
       | IsCast (c,_) -> whrec (c, stack)
-      | IsAppL (f,cl) -> whrec (f, append_stack cl stack)
+      | IsApp (f,cl) -> whrec (f, append_stack cl stack)
       | x -> s
   in
   whrec
@@ -392,7 +392,7 @@ let whd_delta_state env sigma =
           whrec (existential_value sigma (ev,args), l)
       | IsLetIn (_,b,_,c) -> stacklam whrec [b] c l
       | IsCast (c,_) -> whrec (c, l)
-      | IsAppL (f,cl) -> whrec (f, append_stack cl l)
+      | IsApp (f,cl) -> whrec (f, append_stack cl l)
       | x -> s
   in 
   whrec
@@ -420,7 +420,7 @@ let whd_betadelta_state env sigma =
 	    s
       | IsLetIn (_,b,_,c) -> stacklam whrec [b] c l
       | IsCast (c,_) -> whrec (c, l)
-      | IsAppL (f,cl)  -> whrec (f, append_stack cl l)
+      | IsApp (f,cl)  -> whrec (f, append_stack cl l)
       | IsLambda (_,_,c) ->
           (match decomp_stack l with
              | None -> s
@@ -447,7 +447,7 @@ let whd_betaevar_stack env sigma =
           else 
 	    s
       | IsCast (c,_) -> whrec (c, l)
-      | IsAppL (f,cl)  -> whrec (f, append_stack cl l)
+      | IsApp (f,cl)  -> whrec (f, append_stack cl l)
       | IsLambda (_,_,c) ->
           (match decomp_stack l with
              | None -> s
@@ -473,12 +473,12 @@ let whd_betadeltaeta_state env sigma =
 	  whrec (existential_value sigma (ev,args), l)
       | IsLetIn (_,b,_,c) -> stacklam whrec [b] c l
       | IsCast (c,_) -> whrec (c, l)
-      | IsAppL (f,cl)  -> whrec (f, append_stack cl l)
+      | IsApp (f,cl)  -> whrec (f, append_stack cl l)
       | IsLambda (_,_,c) ->
           (match decomp_stack l with
              | None ->
                  (match kind_of_term (app_stack (whrec (c, empty_stack))) with 
-                    | IsAppL (f,cl) ->
+                    | IsApp (f,cl) ->
 			let napp = Array.length cl in
 			if napp > 0 then
 			  let x',l' = whrec (array_last cl, empty_stack) in
@@ -514,7 +514,7 @@ let whd_betaiota_state =
   let rec whrec (x,stack as s) =
     match kind_of_term x with
       | IsCast (c,_)     -> whrec (c, stack)
-      | IsAppL (f,cl)    -> whrec (f, append_stack cl stack)
+      | IsApp (f,cl)    -> whrec (f, append_stack cl stack)
       | IsLambda (_,_,c) ->
           (match decomp_stack stack with
              | None -> s
@@ -553,7 +553,7 @@ let whd_betaiotaevar_state env sigma =
           else 
 	    s
       | IsCast (c,_) -> whrec (c, stack)
-      | IsAppL (f,cl)    -> whrec (f, append_stack cl stack)
+      | IsApp (f,cl)    -> whrec (f, append_stack cl stack)
       | IsLambda (_,_,c) ->
           (match decomp_stack stack with
              | None -> s
@@ -591,7 +591,7 @@ let whd_betadeltaiota_state env sigma =
 	  whrec (existential_value sigma (ev,args), stack)
       | IsLetIn (_,b,_,c) -> stacklam whrec [b] c stack
       | IsCast (c,_) -> whrec (c, stack)
-      | IsAppL (f,cl)    -> whrec (f, append_stack cl stack)
+      | IsApp (f,cl)    -> whrec (f, append_stack cl stack)
       | IsLambda (_,_,c) ->
           (match decomp_stack stack with
              | None -> s
@@ -629,12 +629,12 @@ let whd_betadeltaiotaeta_state env sigma =
 	  whrec (existential_value sigma (ev,args), stack)
       | IsLetIn (_,b,_,c) -> stacklam whrec [b] c stack
       | IsCast (c,_) -> whrec (c, stack)
-      | IsAppL (f,cl)    -> whrec (f, append_stack cl stack)
+      | IsApp (f,cl)    -> whrec (f, append_stack cl stack)
       | IsLambda (_,_,c) ->
           (match decomp_stack stack with
              | None ->
                  (match kind_of_term (app_stack (whrec (c, empty_stack))) with 
-                    | IsAppL (f,cl) ->
+                    | IsApp (f,cl) ->
 			let napp = Array.length cl in
 			if napp > 0 then
 			  let x', l' = whrec (array_last cl, empty_stack) in
@@ -1062,7 +1062,7 @@ let hnf env sigma c = apprec env sigma (c, empty_stack)
 let whd_programs_stack env sigma = 
   let rec whrec (x, stack as s) =
     match kind_of_term x with
-      | IsAppL (f,([|c|] as cl)) ->
+      | IsApp (f,([|c|] as cl)) ->
 	  if occur_meta c then s else whrec (f, append_stack cl stack)
       | IsLambda (_,_,c) ->
           (match decomp_stack stack with

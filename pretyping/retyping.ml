@@ -70,7 +70,7 @@ let rec type_of env cstr=
          subst1 b (type_of (push_rel_def (name,b,var) env) c2)
     | IsFix ((vn,i),(lar,lfi,vdef)) -> lar.(i)
     | IsCoFix (i,(lar,lfi,vdef)) -> lar.(i)
-    | IsAppL(f,args)->
+    | IsApp(f,args)->
       strip_outer_cast (subst_type env sigma (type_of env f) 
 			  (Array.to_list args))
     | IsCast (c,t) -> t
@@ -87,7 +87,7 @@ and sort_of env t =
         (match (sort_of (push_rel_decl (name,var) env) c2) with
 	  | Prop _ as s -> s
 	  | Type u2 -> Type Univ.dummy_univ)
-    | IsAppL(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
+    | IsApp(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
     | IsLambda _ | IsFix _ | IsMutConstruct _ ->
         anomaly "sort_of: Not a type (1)"
     | _ -> outsort env sigma (type_of env t)

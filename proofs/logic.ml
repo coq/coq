@@ -69,7 +69,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	conv_leq_goal env sigma trm ty conclty;
 	mk_refgoals sigma goal goalacc ty t
 
-    | IsAppL (f,l) ->
+    | IsApp (f,l) ->
 	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
 	let (acc'',conclty') =
 	  mk_arggoals sigma goal acc' hdty (Array.to_list l) in
@@ -103,7 +103,7 @@ and mk_hdgoals sigma goal goalacc trm =
 	let ctxt = out_some goal.evar_info in  
 	(mk_goal ctxt env (nf_betaiota env sigma ty))::goalacc,ty
 
-    | IsAppL (f,l) ->
+    | IsApp (f,l) ->
 	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
 	mk_arggoals sigma goal acc' hdty (Array.to_list l)
 
@@ -148,7 +148,7 @@ let collect_meta_variables c =
   let rec collrec acc c = match splay_constr c with
     | OpMeta mv, _ -> mv::acc
     | OpCast, [|c;_|] -> collrec acc c
-    | (OpAppL | OpMutCase _), cl -> Array.fold_left collrec acc cl
+    | (OpApp | OpMutCase _), cl -> Array.fold_left collrec acc cl
     | _ -> acc
   in 
   List.rev(collrec [] c)
@@ -157,7 +157,7 @@ let new_meta_variables =
   let rec newrec x = match kind_of_term x with
     | IsMeta _ -> mkMeta (new_meta())
     | IsCast (c,t) -> mkCast (newrec c, t)
-    | IsAppL (f,cl) -> appvect (newrec f, Array.map newrec cl)
+    | IsApp (f,cl) -> appvect (newrec f, Array.map newrec cl)
     | IsMutCase (ci,p,c,lf) ->
 	mkMutCase (ci, newrec p, newrec c, Array.map newrec lf)
     | _ -> x

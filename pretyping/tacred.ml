@@ -250,7 +250,7 @@ and construct_const env sigma =
 		| None ->
 		    raise Redelimination))
       | IsCast (c,_) -> hnfstack (c, stack)
-      | IsAppL (f,cl) -> hnfstack (f, append_stack cl stack)
+      | IsApp (f,cl) -> hnfstack (f, append_stack cl stack)
       | IsLambda (_,_,c) ->
           (match decomp_stack stack with 
              | None -> assert false
@@ -276,7 +276,7 @@ and construct_const env sigma =
 let internal_red_product env sigma c = 
   let rec redrec x =
     match kind_of_term x with
-      | IsAppL (f,l) -> appvect (redrec f, l)
+      | IsApp (f,l) -> appvect (redrec f, l)
       | IsConst cst -> constant_value env cst
       | IsEvar ev -> existential_value sigma ev
       | IsCast (c,_) -> redrec c
@@ -302,7 +302,7 @@ let hnf_constr env sigma c =
              | None      -> app_stack s
              | Some (a,rest) -> stacklam redrec [a] c rest)
       | IsLetIn (n,b,_,c) -> stacklam redrec [b] c largs
-      | IsAppL (f,cl)   -> redrec (f, append_stack cl largs)
+      | IsApp (f,cl)   -> redrec (f, append_stack cl largs)
       | IsConst cst ->
           (try
              let (c',lrest) = red_elim_const env sigma x largs in 
@@ -341,7 +341,7 @@ let whd_nf env sigma c =
              | None -> (c,empty_stack)
              | Some (a1,rest) -> stacklam nf_app [a1] c2 rest)
       | IsLetIn (n,b,_,c) -> stacklam nf_app [b] c stack
-      | IsAppL (f,cl) -> nf_app (f, append_stack cl stack)
+      | IsApp (f,cl) -> nf_app (f, append_stack cl stack)
       | IsCast (c,_) -> nf_app (c, stack)
       | IsConst _ ->
           (try
@@ -381,7 +381,7 @@ let rec substlin env name n ol c =
 	  ((n+1),ol,c)
 
     (* INEFFICIENT: OPTIMIZE *)
-    | IsAppL (c1,cl) ->
+    | IsApp (c1,cl) ->
         Array.fold_left 
 	  (fun (n1,ol1,c1') c2 ->
 	     (match ol1 with 
@@ -547,7 +547,7 @@ let one_step_reduce env sigma c =
           (match decomp_stack largs with
              | None      -> error "Not reducible 1"
              | Some (a,rest) -> (subst1 a c, rest))
-      | IsAppL (f,cl) -> redrec (f, append_stack cl largs)
+      | IsApp (f,cl) -> redrec (f, append_stack cl largs)
       | IsConst cst ->
           (try
              red_elim_const env sigma x largs
