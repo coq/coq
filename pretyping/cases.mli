@@ -21,5 +21,5 @@ val compile_cases :
   (trad_constraint -> env -> rawconstr -> unsafe_judgment)
   * 'a evar_defs -> trad_constraint -> env ->
     rawconstr option * rawconstr list *
-    (identifier list * pattern list * rawconstr) list ->
+    (identifier list * cases_pattern list * rawconstr) list ->
     unsafe_judgment
