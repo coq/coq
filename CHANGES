@@ -142,6 +142,14 @@ Tactics
   longer an immediate hint), resulting in shorter proofs and subgoals
   proved more easily
 
+Extraction (See details in contrib/extraction/CHANGES)
+
+- The old commands: 	(Recursive) Extraction Module M.
+  are now:              (Recursive) Extraction Library M. 
+  To use these commands, M should come from a library M.v 
+- The other syntax Extraction & Recursive Extraction now accept 
+  module names as arguments. 
+
 Bugs
 
 - Rename bug fixed (#244)
