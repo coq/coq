@@ -161,13 +161,19 @@ let pretype_id loc env lvar id =
 (*************************************************************************)
 (* Main pretyping function                                               *)
 
-let pretype_ref pretype loc isevars env lvar = function
-| RVar id -> pretype_id loc env lvar id
+let pretype_ref isevars env lvar ref = 
+  let c = Declare.constr_of_reference !isevars env ref in
+  make_judge c (Retyping.get_type_of env Evd.empty c)
+
+(*
+let pretype_ref _ isevars env lvar ref =
+...
 
 | RConst (sp,ctxt) ->
     let cst = (sp,Array.map pretype ctxt) in
     make_judge (mkConst cst) (type_of_constant env !isevars cst)
-
+*)
+(* A traiter mais les tables globales nécessaires à cela pour l'instant
 | REVar (sp,ctxt) ->
     let ev = (sp,Array.map pretype ctxt) in
     let body = 
@@ -187,7 +193,7 @@ let pretype_ref pretype loc isevars env lvar = function
     let cstr = (cstr_sp,Array.map pretype ctxt) in
     let typ = type_of_constructor env !isevars cstr in
     { uj_val=mkMutConstruct cstr; uj_type=typ }
-
+*)
 let pretype_sort = function
   | RProp c -> judge_of_prop_contents c
   | RType ->
@@ -203,9 +209,12 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 
 | RRef (loc,ref) ->
     inh_conv_coerce_to_tycon loc env isevars
-      (pretype_ref
-	 (fun c -> (pretype empty_tycon env isevars lvar lmeta c).uj_val)
-	 loc isevars env lvar ref)
+      (pretype_ref isevars env lvar ref)
+      tycon
+
+| RVar (loc, id) ->
+    inh_conv_coerce_to_tycon loc env isevars
+      (pretype_id loc env lvar id)
       tycon
 
 | RMeta (loc,n) ->
