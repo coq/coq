@@ -24,13 +24,15 @@ Tactics
   better applies congruence laws of plus (slight source of incompatibilities).
 - Intuition does no longer unfold constants except "<->" and "~". It
   can be parameterized by a tactic. It also can introduce dependent
-  product if needed.
+  product if needed
+- "Match Context" now matching more recent hypotheses first
+- "Match Context" now failing only on user errors and Fail tactic
+- Tactic Definition's without arguments now allowed in Coq states
 
 Bugs
 
 - "Intros H" now working like "Intro H" trying first to reduce if not a product
 - Forward dependencies in Cases now taken into account
-
 - Known bugs related to Inversion and let-in's fixed
 - Bug unexpected Delta with let-in now fixed
 
