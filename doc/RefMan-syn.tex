@@ -135,15 +135,45 @@ Notation "x = y" := (@eq ? x y) (at level 70, no associativity).
 One can define {\em closed} notations whose both sides are symbols. In
 this case, the default precedence level for inner subexpression is 200.
 
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is correct but produces **********)
+(**** an incompatibility with the reserved notation ********)
+\end{coq_eval}
 \begin{coq_example*}
 Notation "{ A } + { B }" := (sumbool A B) (at level 0).
 \end{coq_example*}
 
 One can also define notations for binders.
 
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is correct but produces **********)
+(**** an incompatibility with the reserved notation ********)
+\end{coq_eval}
 \begin{coq_example*}
 Notation "{ x : A  |  P }" := (sig A (fun x => P)) (at level 0).
 \end{coq_example*}
+
+In the last case though, there is a conflict with the notation for
+type casts. This notation, as shown by the command {\tt Print Grammar
+constr} is at level 100. To avoid $x:A$ being parsed at a type cast,
+it is necessary to put {\tt x} at a level below 100, typically 99. Hence, a
+correct definition is 
+
+\begin{coq_example*}
+Notation "{ x : A  |  P }" := (sig A (fun x => P)) (at level 0, x at level 99).
+\end{coq_example*}
+
+This change has retrospectively an effect on the notation for notation
+{\tt "{ A } + { B }"}. For the sake of factorisation, {\tt A} must be
+put at level 99 too, which gives
+
+\begin{coq_example*}
+Notation "{ A } + { B }" := (sumbool A B) (at level 0, A at level 99).
+\end{coq_example*}
+
+See the next section for more about factorisation.
 
 \subsection{Simple factorisation rules}
 
@@ -527,6 +557,7 @@ interpreted in the scope stack extended with the scope bound to
 {\nterm{key}}.
 
 To bind a delimiting key to a scope, use the command
+
 \begin{quote}
 \texttt{Delimit Scope} {\scope} \texttt{with} {\ident} 
 \end{quote}

@@ -381,7 +381,8 @@ subclass of the syntactic class {\term}.
 \index{specif@{\specif}}
 \item {\Type} is the type of {\Set} and {\Prop}
 \end{itemize}
-More on sorts can be found in section \ref{Sorts}.
+More on sorts can be found in section~\ref{Sorts}.
+\noindent More on sorts can be found in section \ref{Sorts}.
 
 \subsection{Binders
 \label{Binders}
@@ -737,7 +738,6 @@ environment}\index{Environment}.
 A formal presentation of constants and environments is given in
 Section~\ref{Typed-terms}.
 
-
 \subsubsection{\tt Definition {\ident} := {\term}.
 \comindex{Definition}}
 
@@ -770,22 +770,22 @@ environment, provided that {\term} is well-typed.
 
 \SeeAlso Sections \ref{Opaque}, \ref{Transparent}, \ref{unfold}
 
-\subsubsection{\tt Local {\ident} := {\term}.
-\comindex{Local}}
+\subsubsection{\tt Let {\ident} := {\term}.
+\comindex{Let}}
 
 This command binds the value {\term} to the name {\ident} in the
-environment of the current section. The name {\ident} will be unknown
-when the current section will be closed and all occurrences of
-{\ident} in persistent objects (such as theorems) defined within the
-section will be replaced by \term.  One can say that the {\tt Local}
-definition is a kind of {\em macro}.
+environment of the current section. The name {\ident} disappears
+when the current section is eventually closed, and, all
+persistent objects (such as theorems) defined within the
+section and depending on {\ident} are prefixed by the local definition
+{\tt let {\ident} := {\term} in}.
 
 \begin{ErrMsgs}
 \item \errindex{Clash with previous constant {\ident}}
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Local {\ident} : {\term$_1$} := {\term$_2$}.}
+\item {\tt Let {\ident} : {\term$_1$} := {\term$_2$}.}
 \end{Variants}
 
 \SeeAlso Sections \ref{Section} (section mechanism), \ref{Opaque},
@@ -831,7 +831,7 @@ for {\ident}.  This condition ensures the soundness of the inductive
 definition.  If this is the case, the constants {\ident},
 {\ident$_1$}, {\ldots}, {\ident$_n$} are added to the environment with
 their respective types.  Accordingly to the universe where
-the inductive type lives({\it e.g.} its type {\sort}), {\Coq} provides a
+the inductive type lives ({\it e.g.} its type {\sort}), {\Coq} provides a
 number of destructors for {\ident}.  Destructors are named
 {\ident}{\tt\_ind}, {\ident}{\tt \_rec} or {\ident}{\tt \_rect} which
 respectively correspond to elimination principles on {\tt Prop}, {\tt
@@ -919,9 +919,9 @@ induction principle we got for {\tt nat}.
 
 \begin{ErrMsgs}
 \item \errindex{Non strictly positive occurrence of {\ident} in {\type}}
-\item \errindex{Type of Constructor not well-formed}
+\item \errindex{The conclusion of {\type} is not valid; it must be
+built from {\ident}}
 \end{ErrMsgs}
-
 
 \subsubsection{Parameterized inductive types}
 
@@ -939,21 +939,21 @@ The general scheme is:
 
 A typical example is the definition of polymorphic lists:
 \begin{coq_example*}
-Inductive list (X:Set) : Set :=
-  | Nil : list X
-  | Cons : X -> list X -> list X.
+Inductive list (A:Set) : Set :=
+  | nil : list A
+  | cons : A -> list A -> list A.
 \end{coq_example*}
 
-Note that in the type of {\tt Nil} and {\tt Cons}, we write {\tt
-  (list X)} and not just {\tt list}.\\ The constants {\tt Nil} and
-{\tt Cons} will have respectively types:
+Note that in the type of {\tt nil} and {\tt cons}, we write {\tt
+  (list A)} and not just {\tt list}.\\ The constants {\tt nil} and
+{\tt cons} will have respectively types:
 
 \begin{coq_example}
-Check Nil.
-Check Cons.
+Check nil.
+Check cons.
 \end{coq_example}
 
-Types of destructors will be also quantified with {\tt (X:Set)}.
+Types of destructors are also quantified with {\tt (A:Set)}.
 
 \begin{coq_eval}
 Reset Initial.
@@ -961,11 +961,15 @@ Reset Initial.
 \begin{Variants}
 \item
 \begin{coq_example*}
-Inductive list (X:Set) : Set := Nil | Cons (_:X) (_:list X).
+Inductive list (A:Set) : Set := nil | cons (_:X) (_:list X).
 \end{coq_example*}
 This is an alternative definition of lists where we specify the
 arguments of the constructors rather than their full type.
 \end{Variants}
+
+\begin{ErrMsgs}
+\item \errindex{The {\num}th argument of {\ident} must be {\ident'} in {\type}}
+\end{ErrMsgs}
 
 \SeeAlso Sections~\ref{Cic-inductive-definitions} and~\ref{elim}.
 
