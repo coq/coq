@@ -23,7 +23,12 @@ val add_keyword : string -> unit
 val is_keyword : string -> bool
 
 val func : char Stream.t -> (string * string) Stream.t * (int -> int * int)
-val current_location_function : (int -> int  * int) ref
+val location_function : int -> int  * int
+
+(* for coqdoc *)
+type location_table
+val location_table : unit -> location_table
+val restore_location_table : location_table -> unit
 
 val check_ident : string -> unit
 val check_special_token : string -> unit

@@ -487,8 +487,10 @@ let loct_add loct i loc =
   end;
   !loct.(i) <- Some loc
 
-let current_location_function =
-  ref (fun _ -> failwith "No location function is set")
+let current_location_table = ref (ref [||])
+
+let location_function n =
+  loct_func !current_location_table n
 
 let func cs =
   let loct = loct_create () in
@@ -498,8 +500,12 @@ let func cs =
          let (tok, loc) = next_token cs in
 	 loct_add loct i loc; Some tok)
   in
-  current_location_function := loct_func loct;
+  current_location_table := loct;
   (ts, loct_func loct)
+
+type location_table = (int * int) option array ref
+let location_table () = !current_location_table
+let restore_location_table t = current_location_table := t
 
 (* Names of tokens, for this lexer, used in Grammar error messages *)
 

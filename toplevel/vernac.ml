@@ -170,6 +170,7 @@ let rec vernac_com interpfun (loc,com) =
     | VernacLoad (verbosely, fname) ->
         let ch = !chan_translate in
         let cs = Lexer.com_state() in
+        let lt = Lexer.location_table() in
         let cl = !Pp.comments in
         if !Options.translate_file then begin
           let _,f = find_file_in_path (Library.get_load_path ())
@@ -182,11 +183,13 @@ let rec vernac_com interpfun (loc,com) =
           if !Options.translate_file then close_out !chan_translate;
           chan_translate := ch;
           Lexer.restore_com_state cs;
+          Lexer.restore_location_table lt;
           Pp.comments := cl
         with e ->
           if !Options.translate_file then close_out !chan_translate;
           chan_translate := ch;
           Lexer.restore_com_state cs;
+          Lexer.restore_location_table lt;
           Pp.comments := cl;
           raise e end;
 
