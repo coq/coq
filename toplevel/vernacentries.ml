@@ -828,12 +828,12 @@ let vernac_check_may_eval redexp glopt rc =
   match redexp with
     | None ->
 	if !pcoq <> None then (out_some !pcoq).print_check j
-	else Options.if_verbose msg (print_judgment env j)
+	else msg (print_judgment env j)
     | Some r ->
 	let redfun = Tacred.reduction_of_redexp (interp_redexp env evmap r) in
 	if !pcoq <> None
 	then (out_some !pcoq).print_eval (redfun env evmap) env rc j
-	else Options.if_verbose msg (print_eval redfun env j)
+	else msg (print_eval redfun env j)
 
   (* The same but avoiding the current goal context if any *)
 let vernac_global_check c =
