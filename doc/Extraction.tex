@@ -11,8 +11,8 @@ to build certified and relatively
 efficient functional programs, extracting them from the proofs of their
 specifications. 
 The functional languages available as output are currently 
-\ocaml\ and {\sf Haskell}. In the following, ``ML'' will be 
-used (abusively) to refer to any of the two.
+\ocaml\ and {\sf Haskell} and {\sf Scheme}. In the following, ``ML'' will be 
+used (abusively) to refer to any of the three.
 
 \paragraph{Differences with old versions.}
 The current extraction mechanism is new for version 7.0 of {\Coq}.
@@ -33,7 +33,7 @@ The next two commands are meant to be used for rapid preview of
 extraction. They both display extracted term(s) inside \Coq.
 
 \begin{description}
-\item {\tt Extraction \term.} ~\par
+\item {\tt Extraction \qualid.} ~\par
   Extracts one term in the \Coq\ toplevel.
 
 \item {\tt Recursive Extraction  \qualid$_1$ \dots\ \qualid$_n$.} ~\par
@@ -82,13 +82,14 @@ non-terminating extracted terms.
 \comindex{Extraction Language}
 
 The ability to fix target language is the first and more important
-of the extraction options. Default is Ocaml. Besides Haskell, another
-language called Toplevel is provided. It is a pseudo-Ocaml,
+of the extraction options. Default is Ocaml. Besides Haskell and
+Scheme, another language called Toplevel is provided. It is a pseudo-Ocaml,
 with no renaming on global names: so names are printed as in \Coq.
 This third language is available only at the \Coq\ Toplevel.
 \begin{description}
 \item {\tt Extraction Language Ocaml}.
 \item {\tt Extraction Language Haskell}.
+\item {\tt Extraction Language Scheme}.
 \item {\tt Extraction Language Toplevel}.
 \end{description}
 
@@ -243,7 +244,11 @@ Extract Inductive sumbool => bool [ true false ].
 
 
 Due to differences between \Coq\ and ML type systems, 
-some extracted programs are not typable in ML. 
+some extracted programs are not directly typable in ML. 
+We now solve this problem (at least in Ocaml) by adding 
+when needed some unsafe casting {\tt Obj.magic}, which give
+a generic type {\tt 'a} to any term.
+
 For example, Here are two kinds of problem that can occur: 
 
 \begin{itemize}
@@ -255,12 +260,17 @@ For example, Here are two kinds of problem that can occur:
 $$\mbox{\tt
 Definition dp := [A,B:Set][x:A][y:B][f:(C:Set)C->C](f A x,f B y).
 }$$
-In Ocaml, for instance, the extracted term is 
-\verb!let dp x y f = pair((f () x),(f () y))!  and has type
+In Ocaml, for instance, the direct extracted term would be 
+\verb!let dp x y f = Pair((f () x),(f () y))!  and would have type
 $$\mbox{\tt
 dp : 'a -> 'a -> (unit -> 'a -> 'b) -> ('b,'b) prod
 }$$
 which is not its original type, but a restriction.
+
+We now produce the following correct version:
+$$\mbox{\tt
+let dp x y f = Pair ((Obj.magic f () x), (Obj.magic f () y))
+}$$
 
   \item Some definitions of \Coq\ may have no counterpart in ML. This
     happens when there is a quantification over types inside the type
@@ -268,21 +278,23 @@ which is not its original type, but a restriction.
 $$\mbox{\tt
 Inductive anything : Set := dummy : (A:Set)A->anything.
 }$$
-which corresponds to the definition of ML dynamics.
+which corresponds to the definition of an ML dynamic type.
+In Ocaml, we must cast any argument of the constructor dummy.
+
 \end{itemize}
 
-It is still possible to run the
-programs by switching off the type-checker during compilation. Unless
-you misused the semantical attachment facilities you should never get
-any message like ``segmentation fault'' for which the extracted code
-would be to blame. For example, to bypass the Ocaml type-checker, 
-we can use the
-function {\tt Obj.magic} which gives the type {\tt 'a} to any
-object. Work is underway to generate those {\tt Obj.magic} automatically.
+Even with those unsafe castings, you should never get error like
+``segmentation fault''. In fact even if your program may seem
+ill-typed to the Ocaml type-checker, it can't go wrong: it comes 
+from a Coq well-typed terms, so for example inductives will always 
+have the correct number of arguments, etc. 
+
+More details about the correctness of the extracted programs can be 
+found in \cite{Let02}.
 
 We have to say, though, that in most ``realistic'' programs, these
-problems do not occur. For example all the programs of the library are
-accepted by Caml type-checker (see examples below).
+problems do not occur. For example all the programs of Coq library are
+accepted by Caml type-checker without {\tt Obj.magic} any (see examples below).
 
 
 
@@ -497,11 +509,11 @@ at the address:\\
 
 \verb!http://www.lri.fr/~letouzey/extraction!\\
 
-Reals theory is normally not extracted, since it is an axiomatic 
-development. We propose nonetheless a dummy realization of those
-axioms, to test, run: \\
-
-\mbox{\tt make reals}\\
+%Reals theory is normally not extracted, since it is an axiomatic 
+%development. We propose nonetheless a dummy realization of those
+%axioms, to test, run: \\
+%
+%\mbox{\tt make reals}\\
 
 This test works also with Haskell. In the same directory, run: \\
 
@@ -540,10 +552,10 @@ to work.
  \item Suresnes/BDD
  \end{itemize}
 
- Rocq/HIGMAN is a bit particular. The extracted code is normally not typable
- in ML due to an heavy use of impredicativity. So we realize one
- inductive type using an \verb|Obj.magic| that artificially gives it
- the good type. After compilation this example runs nonetheless,
- thanks to the correction of the extraction (proof underway). 
+ Rocq/HIGMAN and Lyon/CIRCUITS are a bit particular. They are 
+ the only examples of developments where {\tt Obj.magic} are needed.
+ This is probably due to an heavy use of impredicativity.
+ After compilation those two examples run nonetheless,
+ thanks to the correction of the extraction (see \cite{Let02}). 
 
 % $Id$ 
