@@ -643,6 +643,9 @@ let prim_extractor subfun vl pft =
      (* No need to make ids Anonymous in vl: subst_vars take the more recent *)
 	subfun vl pf
 	
+    | {ref=Some(Prim{name=ThinBody;hypspecs=ids},[pf])} ->
+	subfun vl pf
+	
     | {ref=Some(Prim{name=Move _;hypspecs=ids},[pf])} ->
 	subfun vl pf
 	  
@@ -714,6 +717,9 @@ let pr_prim_rule = function
       
   | {name=Thin;hypspecs=ids} ->
       [< 'sTR"Clear " ; prlist_with_sep pr_spc pr_id ids >]
+      
+  | {name=ThinBody;hypspecs=ids} ->
+      [< 'sTR"ClearBody " ; prlist_with_sep pr_spc pr_id ids >]
       
   | {name=Move withdep;hypspecs=[id1;id2]} ->
       [< 'sTR (if withdep then "Dependent " else "");
