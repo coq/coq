@@ -280,17 +280,10 @@ let implicits_of_extended_reference = function
 
 let create_meta n = "$e"^(string_of_int n)
 
-(*
-let rec find_symbols c_first c_next c_last new_var = function
-  | []    -> []
-  | ["_"] -> [NonTerminal (c_last, create_meta new_var)]
-  | ("_"::sl) ->
-      let symb = NonTerminal (c_first, create_meta new_var) in
-      symb :: find_symbols c_next c_next c_last (new_var+1) sl
-  | s :: sl ->
-      let symb = Terminal s in
-      symb :: find_symbols c_next c_next c_last new_var sl
-*)
+let strip s =
+  let n = String.length s in
+  if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' then String.sub s 1 (n-2) else s
+
 let rec find_symbols c_first c_next c_last vars new_var = function
   | []    -> (vars, [])
   | x::sl when is_letter x.[0] ->
@@ -309,7 +302,7 @@ let rec find_symbols c_first c_next c_last vars new_var = function
       (vars, NonTerminal (prec, meta) :: l)
   | s :: sl ->
       let (vars,l) = find_symbols c_next c_next c_last vars new_var sl in
-      (vars, Terminal s :: l)
+      (vars, Terminal (strip s) :: l)
 
 let make_grammar_pattern symbols ntn =
   Pnode("NOTATION",Pcons(Pquote (Str (dummy_loc,ntn)), collect_metas symbols))
@@ -391,6 +384,9 @@ let add_notation assoc n df ast sc =
 
 let inject_var x = ope ("QUALID", [nvar (id_of_string x)])
 
+(* To protect alphabetic tokens from being seen as variables *)
+let quote x = "\'"^x^"\'"
+
 let rec rename x vars n = function
   | [] ->
       (vars,[])
@@ -399,7 +395,7 @@ let rec rename x vars n = function
       let xn = x^(string_of_int n) in
       ((inject_var xn)::vars,xn::l)
   | y::l ->
-      let (vars,l) = rename x vars n l in (vars,y::l)
+      let (vars,l) = rename x vars n l in (vars,(quote y)::l)
 
 let add_distfix assoc n df astf sc =
   (* "x" cannot clash since ast is globalized (included section vars) *)
@@ -421,7 +417,7 @@ let add_infix assoc n inf qid sc =
   *)
   let metas = [inject_var "x"; inject_var "y"] in 
   let ast = ope("APPLIST",pr::metas) in
-  add_notation assoc n ("x "^inf^" y") ast sc
+  add_notation assoc n ("x "^(quote inf)^" y") ast sc
 
 (* Delimiters *)
 let load_delimiters _ (_,(gram_rule,scope,dlm)) =
