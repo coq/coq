@@ -187,19 +187,23 @@ let pr_bindings prlc prc = pr_bindings_gen false prlc prc
 
 let pr_with_bindings prlc prc (c,bl) = prc c ++ pr_bindings prlc prc bl
 
+let pr_with_constr prc = function
+  | None -> mt ()
+  | Some c -> spc () ++ hov 1 (str "with" ++ spc () ++ prc c)
+
 let rec pr_intro_pattern = function
-  | IntroOrAndPattern pll ->
-      str "[" ++
-      hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
-      ++ str "]"
+  | IntroOrAndPattern pll -> pr_case_intro_pattern pll
   | IntroWildcard -> str "_"
   | IntroIdentifier id -> pr_id id
 
+and pr_case_intro_pattern pll =
+  str "[" ++
+  hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
+  ++ str "]"
+
 let pr_with_names = function
   | [] -> mt ()
-  | ids -> spc () ++ str "as [" ++
-      hv 0 (prlist_with_sep (fun () -> spc () ++ str "| ")
-              (prlist_with_sep spc pr_intro_pattern) ids ++ str "]")
+  | ids -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_case_intro_pattern ids)
 
 let pr_hyp_location pr_id = function
   | InHyp id -> spc () ++ pr_id id
@@ -208,6 +212,10 @@ let pr_hyp_location pr_id = function
 let pr_clause pr_id = function
   | [] -> mt ()
   | l -> spc () ++ hov 0 (str "in" ++ prlist (pr_hyp_location pr_id) l)
+
+let pr_simple_clause pr_id = function
+  | [] -> mt ()
+  | l -> spc () ++ hov 0 (str "in" ++ spc () ++ prlist_with_sep spc pr_id l)
 
 let pr_clause_pattern pr_id = function
   | (None, []) -> mt ()
@@ -222,6 +230,11 @@ let pr_induction_arg prc = function
   | ElimOnConstr c -> prc c
   | ElimOnIdent (loc,id) -> pr_with_comments loc (pr_id id)
   | ElimOnAnonHyp n -> int n
+
+let pr_induction_kind = function
+  | SimpleInversion -> str "simple inversion"
+  | FullInversion -> str "inversion"
+  | FullInversionClear -> str "inversion_clear"
 
 let pr_match_pattern pr_pat = function
   | Term a -> pr_pat a
@@ -267,6 +280,11 @@ let pr_rec_clause pr (id,(l,t)) =
 
 let pr_rec_clauses pr l = 
   prlist_with_sep (fun () -> fnl () ++ str "with ") (pr_rec_clause pr) l
+
+let pr_seq_body pr tl =
+  hv 0 (str "[ " ++
+        prlist_with_sep (fun () -> spc () ++ str "| ") pr tl ++
+        str " ]")
 
 let pr_hintbases = function
   | None -> spc () ++ str "with *"
@@ -433,7 +451,7 @@ and pr_atom1 env = function
       hov 1 (str "lettac" ++ spc () ++ str"(" ++ pr_id id ++ str " :=" ++
         pr_lconstrarg env c ++ str")" ++ pr_clause_pattern pr_ident cl)
   | TacInstantiate (n,c) ->
-      hov 1 (str "instantiate" ++ pr_arg int n ++ str":=" ++
+      hov 1 (str "instantiate" ++ str"(" ++ pr_arg int n ++ str":=" ++
              pr_lconstrarg env c ++ str")")
 
   (* Derived basic tactics *)
@@ -534,7 +552,23 @@ and pr_atom1 env = function
   (* Equivalence relations *)
   | (TacReflexivity | TacSymmetry None) as x -> pr_atom0 env x
   | TacSymmetry (Some id) -> str "symmetry in " ++ pr_ident id
-  | TacTransitivity c -> str "transitivity" ++ pr_constrarg env c in
+  | TacTransitivity c -> str "transitivity" ++ pr_constrarg env c
+
+  (* Equality and inversion *)
+  | TacInversion (DepInversion (k,c,ids),hyp) ->
+      hov 1 (str "dependent " ++ pr_induction_kind k ++ 
+      pr_quantified_hypothesis hyp ++
+      pr_with_names ids ++ pr_with_constr (pr_constr env) c)
+  | TacInversion (NonDepInversion (k,cl,ids),hyp) ->
+      hov 1 (pr_induction_kind k ++ spc () ++
+      pr_quantified_hypothesis hyp ++
+      pr_with_names ids ++ pr_simple_clause pr_ident cl)
+  | TacInversion (InversionUsing (c,cl),hyp) ->
+      hov 1 (str "inversion" ++ spc() ++ pr_quantified_hypothesis hyp ++ 
+      str "using" ++ spc () ++ pr_constr env c ++ 
+      pr_simple_clause pr_ident cl)
+
+in
 
 let ltop = (5,E) in
 let lseq = 5 in
@@ -548,11 +582,6 @@ let latom = 0 in
 let lcall = 1 in
 let leval = 1 in
 let ltatom = 1 in
-
-let pr_seq_body pr tl =
-  hv 0 (str "[ " ++
-        prlist_with_sep (fun () -> spc () ++ str "| ") (pr ltop) tl ++
-        str " ]") in
 
 let rec pr_tac env inherited tac =
   let (strm,prec) = match tac with
@@ -601,7 +630,7 @@ let rec pr_tac env inherited tac =
       lfun
   | TacThens (t,tl) -> 
       hov 1 (pr_tac env (lseq,E) t ++ pr_then () ++ spc () ++
-             pr_seq_body (pr_tac env) tl),
+             pr_seq_body (pr_tac env ltop) tl),
       lseq
   | TacThen (t1,t2) ->
       hov 1 (pr_tac env (lseq,E) t1 ++ pr_then () ++ spc () ++
@@ -631,9 +660,9 @@ let rec pr_tac env inherited tac =
       str "fail" ++ (if n=0 then mt () else pr_arg int n) ++
       (if s="" then mt() else qsnew s), latom
   | TacFirst tl ->
-      str "first" ++ spc () ++ pr_seq_body (pr_tac env) tl, llet
+      str "first" ++ spc () ++ pr_seq_body (pr_tac env ltop) tl, llet
   | TacSolve tl ->
-      str "solve" ++ spc () ++ pr_seq_body (pr_tac env) tl, llet
+      str "solve" ++ spc () ++ pr_seq_body (pr_tac env ltop) tl, llet
   | TacId -> str "idtac", latom
   | TacAtom (loc,t) ->
       pr_with_comments loc (hov 1 (pr_atom1 env t)), ltatom
@@ -721,7 +750,7 @@ let rec glob_printers =
      pr_glob_tactic0,
      (fun env -> pr_and_constr_expr (Ppconstrnew.pr_rawconstr_env_no_translate env)),
      (fun env -> pr_and_constr_expr (Ppconstrnew.pr_lrawconstr_env_no_translate env)),
-     (fun c -> Ppconstrnew.pr_pattern_env_no_translate (Global.env()) c),
+     (fun c -> Ppconstrnew.pr_constr_pattern_env (Global.env()) c),
      (fun env -> pr_or_var (pr_and_short_name (pr_evaluable_reference_env env))),
      (fun vars -> pr_or_var (pr_inductive vars)),
      pr_ltac_or_var (pr_located pr_ltac_constant),
@@ -742,12 +771,13 @@ let (pr_tactic,_,_) =
   make_pr_tac
     (pr_glob_tactic,
      pr_glob_tactic0,
-     Printer.prterm_env,
-     Printer.prterm_env,
-     Printer.pr_pattern,
+     pr_term_env,
+     pr_lterm_env,
+     Ppconstrnew.pr_constr_pattern,
      pr_evaluable_reference_env,
      pr_inductive,
      pr_ltac_constant,
      pr_id,
      Pptactic.pr_extend,
      strip_prod_binders_constr)
+
