@@ -210,9 +210,10 @@ let find_tag_stop (tag :GText.tag) (it:GText.iter) =
 let find_tag_limits (tag :GText.tag) (it:GText.iter) = 
  (find_tag_start tag it , find_tag_stop tag it)
 
-let async = 
+let async =
+(* 
   if Sys.os_type <> "Unix" then GtkThread.async else (fun x -> x)
-
+*) fun x -> x
 
 let stock_to_widget ?(size=`DIALOG) s = 
   let img = GMisc.image () 

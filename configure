@@ -389,12 +389,14 @@ echo ""
 
 rm -f $COQTOP/config/Makefile
 
-#case $ARCH in
-#    win32)
-#	BINDIR=`echo $BINDIR |sed -e 's|\\\|/|g'`
-#	LIBDIR=`echo $LIBDIR |sed -e 's|\\\|/|g'`
-#	MANDIR=`echo $MANDIR |sed -e 's|\\\|/|g'`;;
-#esac
+case $ARCH in
+    win32)
+	BINDIR=`echo $BINDIR |sed -e 's|\\\|/|g'`
+	LIBDIR=`echo $LIBDIR |sed -e 's|\\\|/|g'`
+  	MANDIR=`echo $MANDIR |sed -e 's|\\\|/|g'`
+   	EMACSLIB=`echo $EMACSLIB |sed -e 's|\\\|/|g'`
+	;;
+esac
 
 sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|COQTOPDIRECTORY|$COQTOP|" \
