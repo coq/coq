@@ -1091,7 +1091,8 @@ Fixpoint plus (n m:nat) {struct m} : nat :=
 The ordinary match operation on natural numbers can be mimicked in the
 following way.
 \begin{coq_example*}
-Fixpoint nat_match (C:Set) (f0:C) (fS:nat -> C -> C) (n:nat) {struct n} : C :=
+Fixpoint nat_match 
+  (C:Set) (f0:C) (fS:nat -> C -> C) (n:nat) {struct n} : C :=
   match n with
   | O => f0
   | S p => fS p (nat_match C f0 fS p)

@@ -83,6 +83,7 @@ Finally, notice that these navigation buttons are also available in
 the menu, where their keyboard shortcuts are given.
 
 \section{Try tactics automatically}
+\label{sec:trytactics}
 
 The menu \texttt{Try Tactics} provides some features for automatically
 trying to solve the current goal using simple tactics. If such a
@@ -93,6 +94,13 @@ turn. This wizard is also available as a tool button, with a light
 bulb shape.  The set of tactics tried by the wizard is customizable in
 the preferences.
 
+These tactics are general ones, in particular they do not refer to
+particular hypotheses. You may also try specific tactics related to
+the goal or one of the hypotheses, by clicking with the right mouse
+button one the goal or the considered hypothesis. This is the
+``contextual menu on goals'' feature, that may be disabled in the
+preferences if undesirable.
+ 
 \section{Vernacular commands, templates}
 
 The \texttt{Templates} menu allows to use shortcuts to insert
@@ -148,10 +156,32 @@ TODO: \verb|Next error| !
 
 \section{Customizations}
 
-Menu \texttt{Edit/Preferences}.
+You may customize your environment using menu
+\texttt{Edit/Preferences}. A new window will be displayed, with
+several customization sections presented as a notebook. 
 
-auto save, auto revert, delays
+The first section is the select the text font used for scripts, goal
+and message windows. 
 
+The second section is devoted to file management: you may
+configure automatic saving of files, by periodically saving the
+contents into files named \verb|#f#| for each opened file
+\verb|f|. You may also activate the \emph{revert} feature: in case a
+opened file is modified on the disk by a third party, \coqide{} may read
+it again for you. Note that in the case you edited that same file, you
+will be prompt to choose to either discard your changes or not.
+
+The \verb|Externals| section allows to customize the external commands
+for compilation, printing, web browsing. In the browser command, you
+may use \verb|%s| to denote the URL to open, for example: %
+\verb|mozilla -remote "OpenURL(%s)"|. 
+
+The \verb|Tactics Wizard| section allows to defined the set of tactics
+that should be tried, in sequence, to solve the current goal.
+
+The last section is for miscellaneous boolean settings, such as the
+``contextual menu on goals'' feature presented in
+Section~\ref{sec:trytactics}. 
 
 % $Id$ 
 

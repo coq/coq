@@ -280,8 +280,8 @@ demos-programs:
 
 Recursive-Definition.v.tex: ./title.tex Recursive-Definition.tex
 
-Tutorial.v.dvi: ./title.tex Tutorial.v.tex
-Tutorial.v.pdf: ./title.tex Tutorial.v.tex
+Tutorial.v.dvi: ./version.tex ./title.tex Tutorial.v.tex
+Tutorial.v.pdf: ./version.tex ./title.tex Tutorial.v.tex
 
 # RefMan-ppr.v.tex: ../tactics/eqdecide.cmo
 

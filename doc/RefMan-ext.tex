@@ -160,7 +160,8 @@ Reset Initial.
 \end{coq_eval}
 
 \begin{Warnings}
-\item {\tt Warning: {\ident$_i$} cannot be defined.}\\
+\item {\tt Warning: {\ident$_i$} cannot be defined.}
+
   It can happen that the definition of a projection is impossible.
   This message is followed by an explanation of this impossibility.
   There may be three reasons:
@@ -170,7 +171,7 @@ Reset Initial.
    \item The body of {\ident$_i$} uses an incorrect elimination for
      {\ident} (see sections \ref{Fixpoint} and \ref{Caseexpr}).
    \item The type of the projections {\ident$_i$} depends on previous
-   projections which themselves couldn't be defined.\\
+   projections which themselves couldn't be defined.
    \end{enumerate}  
 \end{Warnings}     
 
@@ -830,7 +831,9 @@ contextual implicit arguments must be considered or not (see sections
 Reset Initial.
 \end{coq_eval}
 \begin{coq_example*}
-Inductive list (A:Set) : Set := nil : list A | cons : A -> list A -> list A.
+Inductive list (A:Set) : Set := 
+  | nil : list A 
+  | cons : A -> list A -> list A.
 \end{coq_example*}
 \begin{coq_example}
 Implicit Arguments cons.

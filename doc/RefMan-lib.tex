@@ -386,7 +386,8 @@ provided.
 
 \begin{coq_example*}
 Inductive sig (A:Set) (P:A -> Prop) : Set := exist (x:A) (_:P x).
-Inductive sig2 (A:Set) (P Q:A -> Prop) : Set := exist2 : (x:A) (_:P x) (_:Q x).
+Inductive sig2 (A:Set) (P Q:A -> Prop) : Set := 
+  exist2 : (x:A) (_:P x) (_:Q x).
 \end{coq_example*}
 
 A ``strong (dependent) sum'' \verb+{x:A & (P x)}+ may be also defined,
