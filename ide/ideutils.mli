@@ -48,7 +48,10 @@ val print_list : (formatter -> 'a -> unit) -> formatter -> 'a list -> unit
 
 val run_command : (string -> unit) -> string -> Unix.process_status*string
 
+
+val prime : Glib.unichar
 val underscore : Glib.unichar
+val arobase : Glib.unichar
 val bn : Glib.unichar
 val space : Glib.unichar
 val tab : Glib.unichar

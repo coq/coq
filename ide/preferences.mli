@@ -46,6 +46,7 @@ type pref =
       mutable window_width : int;
       mutable window_height : int;
       mutable use_utf8_notation : bool;
+      mutable auto_complete : bool;
     }
 
 val save_pref : unit -> unit
@@ -57,4 +58,5 @@ val configure : unit -> unit
 
 val change_font : ( Pango.font_description -> unit) ref
 val show_toolbar : (bool -> unit) ref
+val auto_complete : (bool -> unit) ref
 val resize_window : (unit -> unit) ref

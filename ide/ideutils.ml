@@ -275,6 +275,9 @@ let run_command f c =
   (Unix.close_process_full (cin,cout,cerr),  Buffer.contents result)
 
 let underscore = Glib.Utf8.to_unichar "_" (ref 0)
+
+let arobase = Glib.Utf8.to_unichar "@" (ref 0)
+let prime = Glib.Utf8.to_unichar "'" (ref 0)
 let bn = Glib.Utf8.to_unichar "\n" (ref 0)
 let space = Glib.Utf8.to_unichar " " (ref 0)
 let tab = Glib.Utf8.to_unichar "\t" (ref 0)

@@ -58,7 +58,8 @@ let set_tab_label i n =
   let _,_,lbl = decompose_tab (nb#get_tab_label(nb#get_nth_page i))#as_widget 
   in
   lbl#set_use_markup true;
-  lbl#set_text n (* lbl#set_label n *)
+  (* lbl#set_text n *) lbl#set_label n
+
 
 let set_tab_image i s = 
   let nb = notebook () in
@@ -185,7 +186,7 @@ object('self)
     method recenter_insert : unit
     method reset_initial : unit
     method send_to_coq :
-      string ->
+      bool -> string ->
       bool -> bool -> bool -> (Util.loc * Vernacexpr.vernac_expr) option
     method set_message : string -> unit
     method show_goals : unit
@@ -202,7 +203,7 @@ let (input_views:analyzed_views viewable_script Vector.t) = Vector.create ()
 
 let signals_to_crash = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup; 
 			  Sys.sigill; Sys.sigpipe; Sys.sigquit; 
-			  (* Sys.sigsegv; Sys.sigterm;*) Sys.sigusr2] 
+			  (* Sys.sigsegv; Sys.sigterm;*) Sys.sigusr2]
 
 let crash_save i =
 (*  ignore (Unix.sigprocmask Unix.SIG_BLOCK signals_to_crash);*)
@@ -227,11 +228,11 @@ let crash_save i =
   Pervasives.prerr_endline "Done. Please report.";
   if i <> 127 then exit i
 
-let ignore_break () = 
-  List.iter 
-    (fun i -> 
-       try Sys.set_signal i (Sys.Signal_handle crash_save) 
-       with _ -> prerr_endline "Signal ignored (normal if Win32)") 
+let ignore_break () =
+  List.iter
+    (fun i ->
+       try Sys.set_signal i (Sys.Signal_handle crash_save)
+       with _ -> prerr_endline "Signal ignored (normal if Win32)")
     signals_to_crash;
   Sys.set_signal Sys.sigint Sys.Signal_ignore
 
@@ -331,22 +332,48 @@ let remove_current_view_page () =
   ((notebook ())#get_nth_page c)#misc#hide ()
 
 
-let starts_word it = it#starts_word && it#backward_char#char <> underscore
-let ends_word it = it#ends_line || (it#ends_word && it#char <> underscore)
-let inside_word it = it#inside_word || it#char = underscore || it#backward_char#char = underscore
+let is_word_char c = 
+  Glib.Unichar.isalnum c || c = underscore || c = prime || c = arobase
+  
+let starts_word it = 
+  prerr_endline ("Starts word ? '"^(Glib.Utf8.from_unichar it#char)^"'");
+  (not it#copy#nocopy#backward_char ||
+    (let c = it#backward_char#char in
+     not (is_word_char c)))
+
+let ends_word it = 
+  (not it#copy#nocopy#forward_char ||
+  let c = it#forward_char#char in
+    not (Glib.Unichar.isalnum c || c = underscore || c = prime || c = arobase)
+  )
+
+let inside_word it = 
+  let c = it#char in
+  not (starts_word it) &&
+  not (ends_word it) &&
+  (Glib.Unichar.isalnum c || c = underscore || c = prime || c = arobase)
+
 let is_on_word_limit it = inside_word it || ends_word it 
 
 let rec find_word_start it =
   prerr_endline "Find word start";
-  if starts_word it
-  then it
-  else find_word_start it#backward_char
+  if not it#nocopy#backward_char then 
+    (prerr_endline "find_word_start: cannot backward"; it)
+  else if is_word_char it#char
+  then find_word_start it
+  else (it#nocopy#forward_char; 
+	prerr_endline ("Word start at: "^(string_of_int it#offset));it)
+let find_word_start (it:GText.iter) = find_word_start it#copy
 
 let rec find_word_end it =
   prerr_endline "Find word end";
-  if ends_word it
-  then it
-  else find_word_end it#forward_char
+  if let c = it#char in c<>0 && is_word_char c
+  then begin 
+    ignore (it#nocopy#forward_char);
+    find_word_end it
+  end else (prerr_endline ("Word end at: "^(string_of_int it#offset));it)
+let find_word_end it = find_word_end it#copy
+
 
 let get_word_around it = 
   let start = find_word_start it in
@@ -357,8 +384,9 @@ let get_word_around it =
 let rec complete_backward w (it:GText.iter) = 
   prerr_endline "Complete backward...";
 	  match it#backward_search w with 
-	    | None -> None
+	    | None -> (prerr_endline "backward_search failed";None)
 	    | Some (start,stop) -> 
+		prerr_endline ("complete_backward got a match:"^(string_of_int start#offset)^(string_of_int stop#offset));
 		if starts_word start then 
 		  let ne = find_word_end stop in
 		  if ne#compare stop = 0
@@ -395,7 +423,8 @@ let rec complete input_buffer w (offset:int) =
 	      | None -> 
 		  last_completion := 
 		Some (lw,loffset,
-		      (find_word_end (input_buffer#get_iter (`OFFSET loffset)))#offset ,
+		      (find_word_end 
+			 (input_buffer#get_iter (`OFFSET loffset)))#offset ,
 		      false); 
 		  None
 	      | Some (ss,start,stop) as result -> 
@@ -416,7 +445,8 @@ let rec complete input_buffer w (offset:int) =
 	match complete_backward w (input_buffer#get_iter (`OFFSET offset)) with
 	  | None -> 
 	      last_completion := 
-	    Some (w,offset,(find_word_end (input_buffer#get_iter (`OFFSET offset)))#offset,false);
+	    Some (w,offset,(find_word_end (input_buffer#get_iter
+					     (`OFFSET offset)))#offset,false);
 	      complete input_buffer w offset
 	  | Some (ss,start,stop) as result -> 
 	      last_completion := Some (w,offset,ss#offset,true);
@@ -906,14 +936,23 @@ object(self)
 	  with e -> prerr_endline (Printexc.to_string e)
       end
       
-  method send_to_coq phrase show_output show_error localize =
+  method send_to_coq replace phrase show_output show_error localize =
     try 
       full_goal_done <- false;
       prerr_endline "Send_to_coq starting now";
-      let r = Some (Coq.interp phrase) in
-      let msg = read_stdout () in 
-      self#insert_message (if show_output then msg else "");
-      r
+      if replace then begin
+	let r,info = Coq.interp_and_replace ("Info " ^ phrase) in
+	let msg = read_stdout () in 
+	self#insert_message (if show_output then msg else "");
+
+	Some r
+	
+      end else begin
+	let r = Some (Coq.interp phrase) in
+	let msg = read_stdout () in 
+	self#insert_message (if show_output then msg else "");
+	r
+      end
     with e ->
       (if show_error then
 	 let (s,loc) = Coq.process_exn e in
@@ -992,13 +1031,14 @@ object(self)
     let it () = input_buffer#get_iter (`OFFSET offset) in
     let iit = it () in
     let start = find_word_start iit in
-    if is_on_word_limit iit then 
+    if ends_word iit then 
       let w = input_buffer#get_text 
 		~start
 		~stop:iit
 		()
       in
-      prerr_endline ("Completion of prefix : " ^ w);
+      if String.length w <> 0 then begin
+      prerr_endline ("Completion of prefix : '" ^ w^"'");
       match complete input_buffer w start#offset with 
       | None -> false
       | Some (ss,start,stop) -> 
@@ -1007,7 +1047,9 @@ object(self)
 	  ignore (input_buffer#insert_interactive completion);
 	  input_buffer#move_mark `SEL_BOUND (it())#backward_char;
 	  true
+      end else false
     else false
+
 	  
   method process_next_phrase display_goals do_highlight = 
     begin
@@ -1020,7 +1062,7 @@ object(self)
 	end;
 	begin match (self#find_phrase_starting_at self#get_start_of_input) 
 	with 
-	| None -> 	  
+	| None ->
 	    if do_highlight then begin
 	      input_view#set_editable true;
 	      !pop_info ();
@@ -1031,12 +1073,11 @@ object(self)
 	    if do_highlight then begin
 	      input_buffer#apply_tag_by_name ~start ~stop "to_process";
 	      prerr_endline "process_next_phrase : to_process applied";
-	      process_pending ()
 	    end;
 	    prerr_endline "process_next_phrase : getting phrase";
 	    let phrase = start#get_slice ~stop in
 	    let r = 
-	      match self#send_to_coq phrase true true true with
+	      match self#send_to_coq false phrase true true true with
 	      | Some ast ->
 		  begin
 		    b#move_mark ~where:stop (`NAME "start_of_input");
@@ -1046,8 +1087,7 @@ object(self)
 			b#place_cursor stop;
 			self#recenter_insert
 		      end;
-		    let start_of_phrase_mark = `MARK (b#create_mark start)
-		    in
+		    let start_of_phrase_mark = `MARK (b#create_mark start) in
 		    let end_of_phrase_mark = `MARK (b#create_mark stop) in
 		    push_phrase 
 		      start_of_phrase_mark 
@@ -1069,7 +1109,7 @@ object(self)
     
   method insert_this_phrase_on_success 
     show_output show_msg localize coqphrase insertphrase = 
-    match self#send_to_coq coqphrase show_output show_msg localize with
+    match self#send_to_coq false coqphrase show_output show_msg localize with
     | Some ast ->
 	begin
 	  let stop = self#get_start_of_input in
@@ -1697,6 +1737,7 @@ let main files =
   (* File/Load Menu *)
   let load f =
     try
+      prerr_endline "Loading file starts";
       Vector.find_or_fail 
 	(function 
 	   | {analyzed_view=Some av} -> 
@@ -1705,32 +1746,46 @@ let main files =
 		| Some fn -> f=fn)
 	   | _ -> false) 
 	!input_views;
+      prerr_endline "Loading: must open";
       let b = Buffer.create 1024 in
+      prerr_endline "Loading: get raw content";
       with_file f ~f:(input_channel b);
+      prerr_endline "Loading: convert content";
       let s = do_convert (Buffer.contents b) in
+      prerr_endline "Loading: create view";
       let view = create_input_tab (Glib.Convert.filename_to_utf8 
 				     (Filename.basename f)) 
       in
+      prerr_endline "Loading: change font";
       view#misc#modify_font !current.text_font;
+      prerr_endline "Loading: adding view";
       let index = add_input_view {view = view;
 				  analyzed_view = None;
 				 }
       in
       let av = (new analyzed_view index) in 
+      prerr_endline "Loading: register view";
       (get_input_view index).analyzed_view <- Some av;
+      prerr_endline "Loading: set filename";
       av#set_filename 
 	(Some (if Filename.is_relative f then 
 		 Filename.concat initial_cwd f
 	       else f
 	      ));
+      prerr_endline "Loading: stats";
       av#update_stats;
       let input_buffer = view#buffer in
+      prerr_endline "Loading: fill buffer";
       input_buffer#set_text s;
       input_buffer#place_cursor input_buffer#start_iter;
+      prerr_endline ("Loading: switch to view "^ string_of_int index);
       set_current_view index;
+      prerr_endline "Loading: highlight";
       Highlight.highlight_all input_buffer;
       input_buffer#set_modified false;
-      av#view#clear_undo
+      prerr_endline "Loading: clear undo";
+      av#view#clear_undo;
+      prerr_endline "Loading: success"
     with       
     | Vector.Found i -> set_current_view i
     | e -> !flash_info ("Load failed: "^(Printexc.to_string e))
@@ -1988,16 +2043,16 @@ let main files =
 		 with _ -> prerr_endline "EMIT PASTE FAILED")));
   ignore (edit_f#add_separator ());
 
-  let toggle_auto_complete_i = 
-    edit_f#add_check_item "_Auto Completion" 
-      ~active:false
-      ~key:GdkKeysyms._B
-      ~callback:(fun b -> match (get_current_view()).analyzed_view with
-		 | Some av -> av#set_auto_complete b
-		 | None -> ())
-  in
 
-  let read_only_i = edit_f#add_check_item "Expert" ~active:false
+   let toggle_auto_complete_i = 
+    edit_f#add_check_item "_Auto Completion" 
+      ~active:!current.auto_complete
+      ~callback:(fun b -> match (get_current_view()).analyzed_view with
+   | Some av -> av#set_auto_complete b
+   | None -> ())
+   in
+   auto_complete := toggle_auto_complete_i#set_active ;
+   let read_only_i = edit_f#add_check_item "Expert" ~active:false
 		      ~key:GdkKeysyms._B
 		      ~callback:(fun b -> ()
 				)
@@ -2786,7 +2841,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 	 ~pixbuf:startup_image;
        b#insert ~iter:b#start_iter "\t\t";
      with _ -> ());
-    b#insert "\nCoqIde: an experimental Gtk2 interface for Coq.\n\nVersion infomation\n--------\n";
+    b#insert "\nCoqIde: an experimental Gtk2 interface for Coq.\n\nVersion information\n--------\n";
     b#insert ((Coq.version ()));
     b#insert "\nAuthor: Benjamin Monate\nDo not hesitate to report bugs or missing features." in
   about  tv2#buffer;
@@ -2843,9 +2898,12 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 		   !current.window_width <- w;
 		 end
 	    ));
-  ignore(nb#connect#change_current_page
+  ignore(nb#connect#switch_page
 	   ~callback:
-	   (fun i -> List.iter (function f -> f i) !to_do_on_page_switch)
+	   (fun i -> 
+	      prerr_endline ("switch_page: starts " ^ string_of_int i);
+	      List.iter (function f -> f i) !to_do_on_page_switch;
+	      prerr_endline "switch_page: success")
 	);
   ignore(tv2#event#connect#enter_notify
 	   (fun _ -> 
@@ -2860,7 +2918,12 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 		end;
 	      false;
 	   ));
-  List.iter load files;
+  List.iter (fun f -> 
+	       if Sys.file_exists f then load f else 
+		 if (let l = String.length f in 
+		     l >= 3 && String.sub f (l-3) 2 = ".v") 
+		 then load f 
+		 else load (f^".v")) files;
   if List.length files >=1 then activate_input 1
 ;;
 

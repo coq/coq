@@ -92,6 +92,7 @@ type pref =
       mutable window_height :int;
       mutable use_utf8_notation : bool;
 
+      mutable auto_complete : bool;
     }
 
 let (current:pref ref) = 
@@ -139,12 +140,15 @@ let (current:pref ref) =
     window_width = 800;
     window_height = 600; 
     use_utf8_notation = true;
+    auto_complete = true
   }
 
 
 let change_font = ref (fun f -> ())
 
 let show_toolbar = ref (fun x -> ())
+
+let auto_complete = ref (fun x -> ())
 
 let contextual_menus_on_goal = ref (fun x -> ())
 
@@ -195,6 +199,7 @@ let save_pref () =
       [string_of_bool p.contextual_menus_on_goal] ++
     add "window_height" [string_of_int p.window_height] ++
     add "window_width" [string_of_int p.window_width] ++
+    add "auto_complete" [string_of_bool p.auto_complete] ++
     Config_lexer.print_file pref_file
   with _ -> prerr_endline "Could not save preferences."
   
@@ -249,7 +254,7 @@ let load_pref () =
       (fun v -> np.contextual_menus_on_goal <- v);
     set_int "window_width" (fun v -> np.window_width <- v);
     set_int "window_height" (fun v -> np.window_height <- v);
-
+    set_bool "auto_complete" (fun v -> np.auto_complete <- v);
     current := np
   with e -> 
     prerr_endline ("Could not load preferences ("^
@@ -309,6 +314,13 @@ let configure () =
       "Window width" 
       (string_of_int !current.window_width)
   in  
+  let auto_complete = 
+    bool 
+      ~f:(fun s -> 
+	    !current.auto_complete <- s; 
+	    !auto_complete s) 
+      "Auto Complete" !current.auto_complete
+  in
 
 (*  let use_utf8_notation = 
     bool 
@@ -445,7 +457,7 @@ let configure () =
       "Contextual menus on goal" !current.contextual_menus_on_goal
   in 
 
-  let misc = [contextual_menus_on_goal] in
+  let misc = [contextual_menus_on_goal;auto_complete] in
    
   let cmds =
     [Section("Fonts",
@@ -457,7 +469,7 @@ let configure () =
      Section("Files",
 	     [global_auto_revert;global_auto_revert_delay;
 	     auto_save; auto_save_delay; (* auto_save_name*)
-	     encodings
+	     encodings;
 	     ]);
      Section("Browser",
 	     [cmd_browse;doc_url;library_url]);

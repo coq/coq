@@ -115,6 +115,11 @@ let interp s =
 	      last
 	  | None -> assert false
 
+let interp_and_replace s = 
+  let result = interp s in
+  let msg = read_stdout () in
+  result,msg
+
 let nb_subgoals pf =
   List.length (fst (Refiner.frontier (Tacmach.proof_of_pftreestate pf)))
 

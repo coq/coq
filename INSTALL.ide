@@ -16,7 +16,7 @@ REQUIREMENT:
 	  You may still compile CoqIde with older 2.0.x versions and 
           use all features.
 	  Run 
-		"pkg-config --modversion gtk+-2.0 gthread-2.0"
+		"pkg-config --modversion gtk+-2.0"
 	  to check your version.
 	 All recent distributions have precompiled packages.
 	 Do not forget to install the developement headers packages.
@@ -36,21 +36,21 @@ INSTALLATION
 
  1) You need to install the OCaml stub library lablgtk2. See 
        		http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html
-	  The latest CVS snapshot version is needed.
+	  The latest CVS snapshot version is not enough.
 	  Use this one :
-	http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk2-20030707.tar.gz
+	http://www.lri.fr/~monate/download/lablgtk2-20030919.tar.gz
     If you are in a hurry just run :
     
     cd /tmp && \
-    wget http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk2-20030707.tar.gz && \
-    tar zxvf lablgtk2-20030707.tar.gz && \
-    cd lablgtk2 && \
+    wget 	http://www.lri.fr/~monate/download/lablgtk2-20030919.tar.gz && \
+    tar zxvf lablgtk2-200919.tar.gz && \
+    cd lablgtk2-20030919 && \
     ./configure && \
     make world && \
     make install
 
    You must have write access to the OCaml standard library path.
-   If this fails read lablgtk2/README.
+   If this fails read lablgtk2-20030919/README.
 
 2) Go into your Coq source directory and, as usual, configure with:
 
