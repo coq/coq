@@ -221,7 +221,8 @@ let decompose_lam_assum =
 (* Given a positive integer n, transforms a product term (x1:T1)..(xn:Tn)T 
    into the pair ([(xn,Tn);...;(x1,T1)],T) *)
 let decompose_prod_n_assum n =
-  if n < 0 then error "decompose_prod_n: integer parameter must be positive";
+  if n < 0 then
+    error "decompose_prod_n_assum: integer parameter must be positive";
   let rec prodec_rec l n c = 
     if n=0 then l,c 
     else match kind_of_term c with 
@@ -229,14 +230,15 @@ let decompose_prod_n_assum n =
     | IsLetIn (x,b,t,c) ->
 	prodec_rec (add_rel_def (x,b,t) l) (n-1) c
     | IsCast (c,_)   -> prodec_rec l n c
-    | c -> error "decompose_prod_n: not enough products"
+    | c -> error "decompose_prod_n_assum: not enough assumptions"
   in 
   prodec_rec empty_rel_context n 
 
 (* Given a positive integer n, transforms a lambda term [x1:T1]..[xn:Tn]T 
    into the pair ([(xn,Tn);...;(x1,T1)],T) *)
 let decompose_lam_n_assum n =
-  if n < 0 then error "decompose_lam_n: integer parameter must be positive";
+  if n < 0 then
+    error "decompose_lam_n_assum: integer parameter must be positive";
   let rec lamdec_rec l n c = 
     if n=0 then l,c 
     else match kind_of_term c with 
@@ -244,6 +246,6 @@ let decompose_lam_n_assum n =
     | IsLetIn (x,b,t,c) ->
 	lamdec_rec (add_rel_def (x,b,t) l) (n-1) c
     | IsCast (c,_)     -> lamdec_rec l n c
-    | c -> error "decompose_lam_n: not enough abstractions"
+    | c -> error "decompose_lam_n_assum: not enough abstractions"
   in 
   lamdec_rec empty_rel_context n 
