@@ -607,7 +607,7 @@ Lemma permut_app_app : (m1,m2,n1,n2 :list)
      (permut m1 n1)->(permut m2 n2)->(permut (app m1 m2) (app n1 n2)).
         Intros m1 m2 n1 n2 h1 h2.
         Elim h1 ; Intros.
-        Exact h2.
+        exact h2.
         Apply permut_tran with (app m n2) ; Auto.
         Apply permut_tran with (app m m2) ; Auto.
         Auto.
@@ -692,7 +692,7 @@ Inductive sort : list->Prop :=
 Hints Resolve sort_nil sort_mil.
 Lemma permutapp : (a0:A)(y,l1,l2:list)(permut y (app l1 l2))->(permut (cons a0 y) (app l1 (cons a0 l2))).
 Intros.
-Exact (permut_cmil a0 y l1 l2 H).
+exact (permut_cmil a0 y l1 l2 H).
 Save.
 Hints Resolve permutapp.
 Lemma sortmil : (a:A)(x,x0,l1,l2:list)(sup_list a l1)->(inf_list a l2)->(sort x)->(sort x0)->(permut l1 x)->(permut l2 x0)->(sort (mil a x x0)).

@@ -87,10 +87,10 @@ Restore State Initial.
 \begin{coq_example}
 Theorem Ack : nat -> nat -> nat.
 Intro n; Elim n.
-Intro m; Exact (S m).
+Intro m; exact (S m).
 Intros p Ack_n m; Elim m.
-Exact (Ack_n (S O)).
-Intros q Ack_Sn_m; Exact (Ack_n Ack_Sn_m).
+exact (Ack_n (S O)).
+Intros q Ack_Sn_m; exact (Ack_n Ack_Sn_m).
 Save.
 \end{coq_example}
 One can check that the term {\tt Ack} ({\it eg} : the above

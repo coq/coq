@@ -315,7 +315,7 @@ Now $H'$ applies:
 apply H'.
 \end{coq_example}
 
-And we may now conclude the proof as before, with \verb:Exact HA.:
+And we may now conclude the proof as before, with \verb:exact HA.:
 Actually, we may not bother with the name \verb:HA:, and just state that
 the current goal is solvable from the current local assumptions:
 \begin{coq_example}
@@ -331,7 +331,7 @@ Save trivial_lemma.
 \end{coq_example}
 
 As a comment, the system shows the proof script listing all tactic
-commands used in the proof. % ligne blanche apres Exact HA??
+commands used in the proof. % ligne blanche apres exact HA??
 
 Let us redo the same proof with a few variations. First of all we may name
 the initial goal as a conjectured lemma:
@@ -535,7 +535,7 @@ It is not easy to understand the notation for proof terms without a few
 explanations. The square brackets, such as \verb+[H:A\/B]+, correspond
 to \verb:Intro H:, whereas a subterm such as 
 \verb:(or_intror: \verb:B A H0):
-corresponds to the sequence \verb:Apply or_intror; Exact H0:. The extra
+corresponds to the sequence \verb:Apply or_intror; exact H0:. The extra
 arguments \verb:B: and \verb:A: correspond to instantiations to the generic
 combinator \verb:or_intror:, which are effected automatically by the tactic
 \verb:Apply: when pattern-matching a goal. The specialist will of course
