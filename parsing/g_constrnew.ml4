@@ -26,6 +26,9 @@ let constr_kw =
 let _ = List.iter (fun s -> Lexer.add_token("",s)) constr_kw
 let _ = Options.v7 := false
 
+(* For Correctness syntax; doesn't work if in psyntax (freeze pb?)  *)
+let _ = Lexer.add_token ("","!")
+
 let pair loc =
   Qualid (loc, Libnames.qualid_of_string "Coq.Init.Datatypes.pair")
 
