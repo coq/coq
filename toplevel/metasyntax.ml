@@ -42,13 +42,16 @@ let constr_parser_with_glob = Pcoq.map_entry constr_to_ast Constr.constr
 
 let globalize_ref vars ref =
   match Constrintern.interp_reference (vars,[]) ref with
-  | RRef (loc,a) -> Constrextern.extern_reference loc a
+  | RRef (loc,VarRef id) -> Ident (loc,id)
+  | RRef (loc,a) -> Qualid (loc,qualid_of_sp (Nametab.sp_of_global None a))
   | RVar (loc,x) -> Ident (loc,x)
   | _ -> anomaly "globalize_ref: not a reference"
 
 let globalize_ref_term vars ref =
   match Constrintern.interp_reference (vars,[]) ref with
-  | RRef (loc,a) -> CRef (Constrextern.extern_reference loc a)
+  | RRef (loc,VarRef id) -> CRef (Ident (loc,id))
+  | RRef (loc,a) -> 
+      CRef (Qualid (loc,qualid_of_sp (Nametab.sp_of_global None a)))
   | RVar (loc,x) -> CRef (Ident (loc,x))
   | c -> Constrextern.extern_rawconstr c 
 
