@@ -140,13 +140,72 @@ Defined.
 
 (* THE iff RELATION CLASS *)
 
-Add Relation Prop iff reflexivity proved by iff_refl symmetry proved by iff_sym as iff_relation.
-
 Definition Iff_Relation_Class : Relation_Class.
  eapply (@SymmetricReflexive unit _ iff).
  exact iff_sym.
  exact iff_refl.
 Defined.
+
+(* THE impl RELATION CLASS *)
+
+Definition impl (A B: Prop) := A -> B.
+
+Theorem impl_refl: reflexive _ impl.
+ hnf; unfold impl; tauto.
+Qed.
+
+Definition Impl_Relation_Class : Relation_Class.
+ eapply (@AsymmetricReflexive unit tt _ impl).
+ exact impl_refl.
+Defined.
+
+(* UTILITY FUNCTIONS TO PROVE THAT EVERY TRANSITIVE RELATION IS A MORPHISM *)
+
+Definition equality_morphism_of_symmetric_areflexive_transitive_relation:
+ forall (A: Type)(Aeq: relation A)(sym: symmetric _ Aeq)(trans: transitive _ Aeq),
+  let ASetoidClass := SymmetricAreflexive _ sym in
+   (Morphism_Theory (cons ASetoidClass (singl ASetoidClass)) Iff_Relation_Class).
+ intros.
+ exists Aeq.
+ unfold make_compatibility_goal; simpl; split; eauto.
+Defined.
+
+Definition equality_morphism_of_symmetric_reflexive_transitive_relation:
+ forall (A: Type)(Aeq: relation A)(refl: reflexive _ Aeq)(sym: symmetric _ Aeq)
+  (trans: transitive _ Aeq), let ASetoidClass := SymmetricReflexive _ sym refl in
+   (Morphism_Theory (cons ASetoidClass (singl ASetoidClass)) Iff_Relation_Class).
+ intros.
+ exists Aeq.
+ unfold make_compatibility_goal; simpl; split; eauto.
+Defined.
+
+Definition equality_morphism_of_asymmetric_areflexive_transitive_relation:
+ forall (A: Type)(Aeq: relation A)(trans: transitive _ Aeq),
+  let ASetoidClass1 := AsymmetricAreflexive Contravariant Aeq in
+  let ASetoidClass2 := AsymmetricAreflexive Covariant Aeq in
+   (Morphism_Theory (cons ASetoidClass1 (singl ASetoidClass2)) Impl_Relation_Class).
+ intros.
+ exists Aeq.
+ unfold make_compatibility_goal; simpl; unfold impl; eauto.
+Defined.
+
+Definition equality_morphism_of_asymmetric_reflexive_transitive_relation:
+ forall (A: Type)(Aeq: relation A)(refl: reflexive _ Aeq)(trans: transitive _ Aeq),
+  let ASetoidClass1 := AsymmetricReflexive Contravariant refl in
+  let ASetoidClass2 := AsymmetricReflexive Covariant refl in
+   (Morphism_Theory (cons ASetoidClass1 (singl ASetoidClass2)) Impl_Relation_Class).
+ intros.
+ exists Aeq.
+ unfold make_compatibility_goal; simpl; unfold impl; eauto.
+Defined.
+
+(* iff AS A RELATION *)
+
+Add Relation Prop iff
+ reflexivity proved by iff_refl
+ symmetry proved by iff_sym
+ transitivity proved by iff_trans
+ as iff_relation.
 
 (* every predicate is  morphism from Leibniz+ to Iff_Relation_Class *)
 Definition morphism_theory_of_predicate :
@@ -161,24 +220,16 @@ Definition morphism_theory_of_predicate :
     intro; apply (IHIn (X x)).
 Defined.
 
-(* THE impl RELATION CLASS *)
-
-Definition impl (A B: Prop) := A -> B.
-
-Theorem impl_refl: reflexive _ impl.
- hnf; unfold impl; tauto.
-Qed.
+(* impl AS A RELATION *)
 
 Theorem impl_trans: transitive _ impl.
  hnf; unfold impl; tauto.
 Qed.
 
-Add Relation Prop impl reflexivity proved by impl_refl as impl_relation.
-
-Definition Impl_Relation_Class : Relation_Class.
- eapply (@AsymmetricReflexive unit tt _ impl).
- exact impl_refl.
-Defined.
+Add Relation Prop impl
+ reflexivity proved by impl_refl
+ transitivity proved by impl_trans
+ as impl_relation.
 
 (* THE CIC PART OF THE REFLEXIVE TACTIC (SETOID REWRITE) *)
 
@@ -593,51 +644,9 @@ Definition equality_morphism_of_setoid_theory:
  unfold make_compatibility_goal; simpl; split; eauto.
 Defined.
 
-Definition equality_morphism_of_symmetric_areflexive_transitive_relation:
- forall (A: Type)(Aeq: relation A)(sym: symmetric _ Aeq)(trans: transitive _ Aeq),
-  let ASetoidClass := SymmetricAreflexive _ sym in
-   (Morphism_Theory (cons ASetoidClass (singl ASetoidClass)) Iff_Relation_Class).
- intros.
- exists Aeq.
- unfold make_compatibility_goal; simpl; split; eauto.
-Defined.
-
-Definition equality_morphism_of_symmetric_reflexive_transitive_relation:
- forall (A: Type)(Aeq: relation A)(refl: reflexive _ Aeq)(sym: symmetric _ Aeq)
-  (trans: transitive _ Aeq), let ASetoidClass := SymmetricReflexive _ sym refl in
-   (Morphism_Theory (cons ASetoidClass (singl ASetoidClass)) Iff_Relation_Class).
- intros.
- exists Aeq.
- unfold make_compatibility_goal; simpl; split; eauto.
-Defined.
-
-Definition equality_morphism_of_asymmetric_areflexive_transitive_relation:
- forall (A: Type)(Aeq: relation A)(trans: transitive _ Aeq),
-  let ASetoidClass1 := AsymmetricAreflexive Contravariant Aeq in
-  let ASetoidClass2 := AsymmetricAreflexive Covariant Aeq in
-   (Morphism_Theory (cons ASetoidClass1 (singl ASetoidClass2)) Impl_Relation_Class).
- intros.
- exists Aeq.
- unfold make_compatibility_goal; simpl; unfold impl; eauto.
-Defined.
-
-Definition equality_morphism_of_asymmetric_reflexive_transitive_relation:
- forall (A: Type)(Aeq: relation A)(refl: reflexive _ Aeq)(trans: transitive _ Aeq),
-  let ASetoidClass1 := AsymmetricReflexive Contravariant refl in
-  let ASetoidClass2 := AsymmetricReflexive Covariant refl in
-   (Morphism_Theory (cons ASetoidClass1 (singl ASetoidClass2)) Impl_Relation_Class).
- intros.
- exists Aeq.
- unfold make_compatibility_goal; simpl; unfold impl; eauto.
-Defined.
-
 (* END OF UTILITY/BACKWARD COMPATIBILITY PART *)
 
 (* A FEW EXAMPLES ON iff *)
-
-Add Morphism iff with signature iff ==> iff ==> iff as Iff_Morphism.
- tauto.
-Qed.
 
 (* impl IS A MORPHISM *)
 
@@ -664,10 +673,6 @@ Add Morphism not with signature iff ==> iff as Not_Morphism.
 Qed.
 
 (* THE SAME EXAMPLES ON impl *)
-
-Add Morphism impl with signature impl --> impl ++> impl as Impl_Morphism2.
- unfold impl; tauto.
-Qed.
 
 Add Morphism and with signature impl ++> impl ++> impl as And_Morphism2.
  unfold impl; tauto.
