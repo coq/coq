@@ -182,7 +182,7 @@ Tactic Definition Multiply mul :=
      Let AmultT = Eval Compute in (Amult ?1)
      And AoneT = Eval Compute in (Aone ?1) In
      (Match Context With
-      | [|-[(AmultT ? AoneT)]] -> Rewrite (AmultT_1r ?1))].
+      | [|-[(AmultT ? AoneT)]] -> Rewrite (AmultT_1r ?1));Clear ?1 ?2].
 
 Tactic Definition ApplyMultiply FT lvar trm :=
   Cut (interp_ExprA FT lvar (multiply trm))==(interp_ExprA FT lvar trm);
@@ -246,14 +246,14 @@ Tactic Definition Field_Gen FT :=
   Let AplusT = Eval Compute in (Aplus FT) In
   Unfolds FT;
   Match Context With
-  | [|-?1== ?2] ->
+  | [|- ?1==?2] ->
     Let lvar = (BuildVarList FT '(AplusT ?1 ?2)) In
     Let trm1 = (interp_A FT lvar ?1)
     And trm2 = (interp_A FT lvar ?2) In
     Let mul = (GiveMult '(EAplus trm1 trm2)) In
-    Cut (interp_ExprA FT lvar trm1)==(interp_ExprA FT lvar trm2);
+    Cut [ft:=FT][vm:=lvar](interp_ExprA ft vm trm1)==(interp_ExprA ft vm trm2);
     [Compute;Auto
-    |(ApplySimplif ApplyDistrib);(ApplySimplif ApplyAssoc);
+    |Intros;(ApplySimplif ApplyDistrib);(ApplySimplif ApplyAssoc);
      (Multiply mul);[(ApplySimplif ApplyMultiply);
        (ApplySimplif (ApplyInverse mul));
        (Let id = GrepMult In Clear id);Compute;
