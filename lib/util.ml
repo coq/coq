@@ -62,6 +62,13 @@ let stringmap_dom m = Stringmap.fold (fun s _ l -> s::l) m []
 let list_intersect l1 l2 = 
   List.filter (fun x -> List.mem x l2) l1
 
+let list_union l1 l2 = 
+  let rec urec = function
+    | [] -> l2
+    | a::l -> if List.mem a l2 then urec l else a::urec l
+  in 
+  urec l1
+
 let list_unionq l1 l2 = 
   let rec urec = function
     | [] -> l2

@@ -23,6 +23,11 @@ let auto_implicits ty =
   else
     No_impl
 
+let list_of_implicits = function 
+  | Impl_auto l -> l
+  | Impl_manual l -> l
+  | No_impl -> []
+
 (* Constants. *)
 
 let constants_table = ref Spmap.empty
@@ -63,6 +68,17 @@ let constructor_implicits ((sp,i),j) =
   let imps = Spmap.find sp !inductives_table in
   (snd imps.(i)).(pred j)
 
+let mconstr_implicits mc = 
+  let (sp, i, j, _) = destMutConstruct mc in
+  list_of_implicits (constructor_implicits ((sp,i),j))
+
+let mind_implicits m =
+  let (sp,i,_) = destMutInd m in
+  list_of_implicits (inductive_implicits (sp,i))
+
+let implicits_of_var kind id =
+  failwith "TODO: implicits of vars"
+
 (* Registration as global tables and roolback. *)
 
 type frozen = implicits Spmap.t
@@ -85,3 +101,4 @@ let _ =
 let rollback f x =
   let fs = freeze () in
   try f x with e -> begin unfreeze fs; raise e end
+

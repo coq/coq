@@ -41,6 +41,10 @@ let rec set_loc loc = function
   | Path(_,sl,s) -> Path(loc,sl,s)
   | Dynamic(_,d) -> Dynamic(loc,d)
 
+let path_section loc sp =
+  let (sl,bn,pk) = repr_path sp in
+  Coqast.Path(loc,List.rev(string_of_id bn :: sl), string_of_kind pk)
+
 (* raising located exceptions *)
 let anomaly_loc (loc,s,strm) = Stdpp.raise_with_loc loc (Anomaly (s,strm))
 let user_err_loc (loc,s,strm) = Stdpp.raise_with_loc loc (UserError (s,strm))

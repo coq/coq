@@ -3,10 +3,14 @@
 
 open Pp
 open Util
+open Univ
 open Names
 open Generic
 open Term
-open Environ
+open Inductive
+open Sign
+open Declare
+open Impargs
 open Coqast
 open Ast
 
@@ -58,20 +62,22 @@ module StrongRenamingStrategy = struct
   let occur_id env id0 c =
     let rec occur n = function
       | VAR id             -> id=id0
-      | DOPN (Const sp,cl) -> (basename sp = id0) or (exists_vect (occur n) cl)
-      | DOPN (Abst sp,cl)  -> (basename sp = id0) or (exists_vect (occur n) cl)
+      | DOPN (Const sp,cl) -> 
+	  (basename sp = id0) or (array_exists (occur n) cl)
+      | DOPN (Abst sp,cl)  -> 
+	  (basename sp = id0) or (array_exists (occur n) cl)
       | DOPN (MutInd _, cl) as t       -> 
-	  (basename (mind_path t) = id0) or (exists_vect (occur n) cl)
+	  (basename (mind_path t) = id0) or (array_exists (occur n) cl)
       | DOPN (MutConstruct _, cl) as t -> 
-	  (basename (mind_path t) = id0) or (exists_vect (occur n) cl)
-      | DOPN(_,cl)         -> exists_vect (occur n) cl
+	  (basename (mind_path t) = id0) or (array_exists (occur n) cl)
+      | DOPN(_,cl)         -> array_exists (occur n) cl
       | DOP1(_,c)          -> occur n c
       | DOP2(_,c1,c2)      -> (occur n c1) or (occur n c2)
       | DOPL(_,cl)         -> List.exists (occur n) cl
       | DLAM(_,c)          -> occur (n+1) c
-      | DLAMV(_,v)         -> exists_vect (occur (n+1)) v
+      | DLAMV(_,v)         -> array_exists (occur (n+1)) v
       | Rel p              ->
-	  p>n &
+	  p > n &
 	  (try (fst (lookup_rel (p-n) env) = Name id0)
 	   with Not_found -> false) (* Unbound indice : may happen in debug *)
       | DOP0 _             -> false
@@ -98,24 +104,24 @@ module StrongRenamingStrategy = struct
   let global_vars_and_consts t =
     let rec collect acc = function
       | VAR id             -> id::acc
-      | DOPN (Const sp,cl) -> (basename sp)::(it_vect collect acc cl)
-      | DOPN (Abst sp,cl)  -> (basename sp)::(it_vect collect acc cl)
+      | DOPN (Const sp,cl) -> (basename sp)::(Array.fold_left collect acc cl)
+      | DOPN (Abst sp,cl)  -> (basename sp)::(Array.fold_left collect acc cl)
       | DOPN (MutInd _, cl) as t       -> 
-	  (basename (mind_path t))::(it_vect collect acc cl)
+	  (basename (mind_path t))::(Array.fold_left collect acc cl)
       | DOPN (MutConstruct _, cl) as t -> 
-	  (basename (mind_path t))::(it_vect collect acc cl)
-      | DOPN(_,cl)         -> it_vect collect acc cl
+	  (basename (mind_path t))::(Array.fold_left collect acc cl)
+      | DOPN(_,cl)         -> Array.fold_left collect acc cl
       | DOP1(_,c)          -> collect acc c
       | DOP2(_,c1,c2)      -> collect (collect acc c1) c2
       | DOPL(_,cl)         -> List.fold_left collect acc cl
       | DLAM(_,c)          -> collect acc c
-      | DLAMV(_,v)         -> it_vect collect acc v
+      | DLAMV(_,v)         -> Array.fold_left collect acc v
       | _                  -> acc
     in 
-    uniquize (collect [] t)
+    list_uniquize (collect [] t)
 	 
   let used_of = global_vars_and_consts
-  let ids_of_env = Names.ids_of_env
+  let ids_of_env = Sign.ids_of_env
 end
 
 
@@ -134,8 +140,8 @@ let indsp_of_id id  =
 	  [< 'sTR ((string_of_id id)^" is not an inductive type") >]
 
 let mind_specif_of_mind_light (sp,tyi) =
-  let (_,mib) = mind_of_path sp in
-  (mib,Constrtypes.mind_nth_type_packet mib tyi)
+  let mib = Global.lookup_mind sp in
+  (mib,mind_nth_type_packet mib tyi)
 
 let rec remove_indtypes = function
   | (1, DLAMV(_,cl)) -> cl
@@ -155,13 +161,13 @@ let rec get_params = function
   | _                      -> []
 
 let lc_of_lmis (mib,mip) =
-  let lc = remove_indtypes (mib.mINDNTYPES,mip.mINDLC) in
-  Array.map (remove_params mib.mINDNPARAMS) lc
+  let lc = remove_indtypes (mib.mind_ntypes,mip.mind_lc) in
+  Array.map (remove_params mib.mind_nparams) lc
 
 let sp_of_spi ((sp,_) as spi) =
   let (_,mip) = mind_specif_of_mind_light spi in
   let (pa,_,k) = repr_path sp in 
-  make_path pa (mip.mINDTYPENAME) k
+  make_path pa (mip.mind_typename) k
 
 
 (* Parameterization of the translation from constr to ast      *)
@@ -190,7 +196,7 @@ module PrintingCasesMake =
       if not (Test.test (lc_of_lmis (mind_specif_of_mind_light indsp)))
       then errorlabstrm "check_encode" [< 'sTR Test.error_message >]
     let decode = sp_of_spi
-    let key = Options.SecondaryTable ("Printing",Test.field)
+    let key = Goptions.SecondaryTable ("Printing",Test.field)
     let title = Test.title
     let member_message = Test.member_message
     let synchronous = true
@@ -227,12 +233,12 @@ module PrintingCasesLet =
 	  ^ " are not printed using a `let' form"
   end)
 
-module PrintingIf  = Options.MakeTable(PrintingCasesIf)
-module PrintingLet = Options.MakeTable(PrintingCasesLet)
+module PrintingIf  = Goptions.MakeTable(PrintingCasesIf)
+module PrintingLet = Goptions.MakeTable(PrintingCasesLet)
 
 (* Options for printing or not wildcard and synthetisable types *)
 
-open Options
+open Goptions
 
 let wildcard_value = ref true
 let force_wildcard () = !wildcard_value
@@ -240,7 +246,7 @@ let force_wildcard () = !wildcard_value
 let _ = 			  
   declare_async_bool_option 
     { optasyncname  = "the forced wildcard option";
-      optasynckey   = Options.SecondaryTable ("Printing","Wildcard");
+      optasynckey   = SecondaryTable ("Printing","Wildcard");
       optasyncread  = force_wildcard;
       optasyncwrite = (fun v -> wildcard_value := v) }
 
@@ -250,7 +256,7 @@ let synthetize_type () = !synth_type_value
 let _ = 
   declare_async_bool_option 
     { optasyncname = "the synthesisablity";
-      optasynckey   = Options.SecondaryTable ("Printing","Synth");
+      optasynckey   = SecondaryTable ("Printing","Synth");
       optasyncread = synthetize_type;
       optasyncwrite = (fun v -> synth_type_value := v) }
 
@@ -291,7 +297,7 @@ module MakeTermAst = functor (Strategy : RenamingStrategy) -> struct
       match c with
         | DOPN(MutConstruct _,_) -> mconstr_implicits c
 	| DOPN(MutInd _,_) -> mind_implicits c
-	| DOPN(Const _,_) -> constant_implicits c
+	| DOPN(Const sp,_) -> list_of_implicits (constant_implicits sp)
 	| VAR id -> (try (implicits_of_var CCI id) with _ -> []) (* et FW? *)
 	| _ -> []
     in
@@ -326,7 +332,7 @@ module MakeTermAst = functor (Strategy : RenamingStrategy) -> struct
     let rec combine_rec = function
       | [] -> [],[]
       | NODE ((a,b),_)::l -> 
-	  let a',b' = combine_rec l in (union a a',union b b')
+	  let a',b' = combine_rec l in (list_union a a',list_union b b')
     in 
     NODE (combine_rec l,l)
 
@@ -384,13 +390,13 @@ module MakeTermAst = functor (Strategy : RenamingStrategy) -> struct
 			bdrec avoid' (add_rel (Name id,()) env) c)
                | (None,avoid') -> slam(None,bdrec avoid' env (pop c)))
 	| DLAMV(na,cl) ->
-	    if not(exists_vect (dependent (Rel 1)) cl) then
-	      slam(None,ope("V$", map_vect_list 
+	    if not(array_exists (dependent (Rel 1)) cl) then
+	      slam(None,ope("V$", array_map_to_list 
 			      (fun c -> bdrec avoid env (pop c)) cl))
 	    else
 	      let id = next_name_away na avoid in 
 	      slam(Some (string_of_id id),
-		   ope("V$", map_vect_list 
+		   ope("V$", array_map_to_list 
 			 (bdrec (id::avoid) (add_rel (Name id,()) env)) cl))
 
         (* Well-formed constructions *)
@@ -404,14 +410,14 @@ module MakeTermAst = functor (Strategy : RenamingStrategy) -> struct
                (* TODO: Change this to subtract the current depth *)
 	       | IsMeta n -> ope("META",[num n])
 	       | IsVar id -> nvar (string_of_id id)
-	       | IsXtra (s,pl,cl) -> 
-		   ope("XTRA",((str s):: pl@(List.map (bdrec avoid env) cl)))
+	       | IsXtra s -> 
+		   ope("XTRA",[str s])
 	       | IsSort s ->
 		   (match s with
 		      | Prop c -> ope("PROP",[ide (str_of_contents c)])
 		      | Type u -> ope("TYPE",[path_section dummy_loc u.u_sp; 
 					      num u.u_num]))
-	       | IsImplicit -> ope("IMPLICIT",[])     
+	       (* TODO??? | IsImplicit -> ope("IMPLICIT",[]) *)
 	       | IsCast (c1,c2) ->
 		   if opcast = WithoutCast then 
 		     bdrec avoid env c1 
@@ -438,17 +444,19 @@ module MakeTermAst = functor (Strategy : RenamingStrategy) -> struct
 
 	       | IsConst (sp,cl) ->
 		   ope("CONST",((path_section dummy_loc sp)::
-				(map_vect_list (bdrec avoid env) cl)))
+				(array_map_to_list (bdrec avoid env) cl)))
+	       | IsEvar (_,cl) ->
+		   ope("ISEVAR",(array_map_to_list (bdrec avoid env) cl))
 	       | IsAbst (sp,cl) ->
 		   ope("ABST",((path_section dummy_loc sp)::
-			       (map_vect_list (bdrec avoid env) cl)))
+			       (array_map_to_list (bdrec avoid env) cl)))
 	       | IsMutInd (sp,tyi,cl) ->
 		   ope("MUTIND",((path_section dummy_loc sp)::(num tyi)::
-				 (map_vect_list (bdrec avoid env) cl)))
+				 (array_map_to_list (bdrec avoid env) cl)))
 	       | IsMutConstruct (sp,tyi,n,cl) ->
 		   ope("MUTCONSTRUCT",
 		       ((path_section dummy_loc sp)::(num tyi)::(num n)::
-			(map_vect_list (bdrec avoid env) cl)))
+			(array_map_to_list (bdrec avoid env) cl)))
 	       | IsMutCase (annot,p,c,bl) ->
 		   let synth_type = synthetize_type () in
 		   let tomatch = bdrec avoid env c in
@@ -456,7 +464,7 @@ module MakeTermAst = functor (Strategy : RenamingStrategy) -> struct
 		     | None -> 
 			 (* Pas d'annotation --> affichage avec vieux Case *)
 			 let pred = bdrec avoid env p in
-			 let bl' = map_vect_list (bdrec avoid env) bl in
+			 let bl' = array_map_to_list (bdrec avoid env) bl in
 			 ope("MUTCASE",pred::tomatch::bl')
 		     | Some indsp ->
 			 let (mib,mip as lmis) = 
@@ -464,7 +472,7 @@ module MakeTermAst = functor (Strategy : RenamingStrategy) -> struct
 			 let lc = lc_of_lmis lmis in
 			 let lcparams = Array.map get_params lc in
 			 let k = 
-			   (nb_prod mip.mINDARITY.body) - mib.mINDNPARAMS in
+			   (nb_prod mip.mind_arity.body) - mib.mind_nparams in
 			 let pred = 
 			   if synth_type & computable p k & lcparams <> [||]
 			   then ope("XTRA", [str "SYNTH"])
@@ -475,11 +483,11 @@ module MakeTermAst = functor (Strategy : RenamingStrategy) -> struct
 					    bdrec avoid env bl.(0); 
 					    bdrec avoid env bl.(1) ])
 			 else
-			   let idconstructs = mip.mINDCONSNAMES in
+			   let idconstructs = mip.mind_consnames in
 			   let asttomatch = 
 			     ope("XTRA",[str "TOMATCH"; tomatch]) in
 			   let eqnv = 
-			     map3_vect (bdize_eqn avoid env) idconstructs 
+			     array_map3 (bdize_eqn avoid env) idconstructs 
 			       lcparams bl in
 			   let eqnl = Array.to_list eqnv in
 			   let tag =
@@ -525,7 +533,7 @@ module MakeTermAst = functor (Strategy : RenamingStrategy) -> struct
 		     | _ -> error "split_product" 
 		   in
 		   let listdecl = 
-		     map_i
+		     list_map_i
 		       (fun i fi ->
 			  let (lparams,ast_of_def) =
 			    split_lambda [] def_env def_avoid 
@@ -536,7 +544,7 @@ module MakeTermAst = functor (Strategy : RenamingStrategy) -> struct
 			      [ nvar (string_of_id fi); 
 				ope ("BINDERS",List.rev lparams);
 				ast_of_typ; ast_of_def ]))
-		       0 lfi 
+		       0 lfi
 		   in 
 		   ope("FIX", (nvar (string_of_id f))::listdecl)
 
@@ -549,7 +557,7 @@ module MakeTermAst = functor (Strategy : RenamingStrategy) -> struct
 		   let def_avoid = lfi@avoid in
 		   let f = List.nth lfi n in
 		   let listdecl =
-		     map_i (fun i fi -> ope("CFDECL",
+		     list_map_i (fun i fi -> ope("CFDECL",
 					    [nvar (string_of_id fi);
 					     bdrec avoid env cl.(i);
 					     bdrec def_avoid def_env vt.(i)]))

@@ -36,6 +36,7 @@ val stringmap_dom : 'a Stringmap.t -> string list
 (*s Lists. *)
 
 val list_intersect : 'a list -> 'a list -> 'a list
+val list_union : 'a list -> 'a list -> 'a list
 val list_unionq : 'a list -> 'a list -> 'a list
 val list_subtract : 'a list -> 'a list -> 'a list
 val list_subtractq : 'a list -> 'a list -> 'a list
@@ -49,7 +50,6 @@ val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
 val list_for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
 val list_except : 'a -> 'a list -> 'a list
 val list_for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
-val list_map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
 val list_sep_last : 'a list -> 'a * 'a list
 val list_try_find_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b
 val list_uniquize : 'a list -> 'a list

@@ -3,6 +3,7 @@
 
 (*i*)
 open Pp
+open Names
 open Pcoq
 (*i*)
 
@@ -27,6 +28,8 @@ val path : string list -> string -> Coqast.t
 val dynamic : Dyn.t -> Coqast.t
 
 val set_loc : Coqast.loc -> Coqast.t -> Coqast.t
+
+val path_section : Coqast.loc -> section_path -> Coqast.t
 
 (* ast destructors *)
 val num_of_ast : Coqast.t -> int
