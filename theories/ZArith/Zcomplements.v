@@ -249,3 +249,20 @@ Rewrite Zopp_Zopp;Intros.
 Elim (H `|m|`);Intros;Auto with zarith.
 Elim (Zabs_dec m);Intro eq;Rewrite eq;Trivial.
 Qed.
+
+(** To do case analysis over the sign of [z] *) 
+
+Unset Implicit Arguments.
+
+Lemma Zcases : (x:Z)(P:Prop)
+ (`x=0`->P)->
+ (`x>0`->P)->
+ (`x<0`->P)->P.
+Proof.
+Intros x P Hzero Hpos Hneg.
+Induction x.
+Apply Hzero; Trivial.
+Apply Hpos; Apply POS_gt_ZERO.
+Apply Hneg; Apply NEG_lt_ZERO.
+Save.
+
