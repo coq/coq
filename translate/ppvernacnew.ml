@@ -321,26 +321,8 @@ let pr_binder pr_c ty na =
 let pr_vbinders l =
   hv 0 (pr_binders l)
 
-let length_of_valdecls n = function
-  | LocalRawAssum (nal,c) -> List.length nal + n
-  | LocalRawDef (_,c) -> n+1
-
-let length_of_vbinders =
-  List.fold_left length_of_valdecls 0
-
-let vars_of_binder l (nal,_) = 
-  List.fold_right (function (_,Name id) -> fun l -> id::l | (_,Anonymous) -> fun l -> l) nal l
-
-let vars_of_binders =
-  List.fold_left vars_of_binder []
-
-let anonymize_binder na c =
-  if Options.do_translate() then
-    Constrextern.extern_rawconstr (Termops.vars_of_env (Global.env()))
-      (Reserve.anonymize_if_reserved na
-      (Constrintern.for_grammar
-        (Constrintern.interp_rawconstr Evd.empty (Global.env())) c))
-  else c
+let pr_binders_arg bl =
+  if bl = [] then mt () else spc () ++ pr_binders bl
 
 let pr_sbinders sbl =
   if sbl = [] then mt () else
@@ -621,12 +603,11 @@ let rec pr_vernac = function
                   let bl2,body,ty' = extract_def_binders c ty in
                   (bl2,body, spc() ++ str":" ++ spc () ++
                     pr_lconstr_env_n (Global.env())
-                    (length_of_vbinders bl + length_of_vbinders bl2)
+                    (local_binders_length bl + local_binders_length bl2)
                     false (prod_rawconstr ty bl)) in
             let bindings =
-              pr_ne_sep spc pr_vbinders bl ++
-              if bl2 = [] then mt() else (spc() ++ pr_binders bl2) in
-	    let n = length_of_vbinders bl + length_of_vbinders bl2 in
+	      pr_ne_sep spc pr_vbinders bl ++ pr_binders_arg bl2 in
+	    let n = local_binders_length bl + local_binders_length bl2 in
 	    let c',iscast = match d with None -> c, false
 	      | Some d -> CCast (dummy_loc,c,d), true in
             let ppred =
@@ -670,23 +651,28 @@ pr_vbinders bl ++ spc())
       (* Copie simplifiée de command.ml pour recalculer les implicites, *)
       (* les notations, et le contexte d'evaluation *)
       let lparams = match l with [] -> assert false | (_,_,la,_,_)::_ -> la in
-      let nparams = List.length lparams
+      let nparams = local_binders_length lparams
       and sigma = Evd.empty 
       and env0 = Global.env() in
       let (env_params,params) =
 	List.fold_left
-	  (fun (env,params) (id,t) ->
-	    let p = Constrintern.interp_binder sigma env (Name id) t in
-	    (Termops.push_rel_assum (Name id,p) env,
-	    (Name id,None,p)::params))
+	  (fun (env,params) d -> match d with
+	    | LocalRawAssum (nal,t) ->
+		let t = Constrintern.interp_type sigma env t in
+		let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal
+		in let ctx = List.rev ctx in
+		(Environ.push_rel_context ctx env, ctx@params)
+	    | LocalRawDef ((_,na),c) ->
+		let c = Constrintern.judgment_of_rawconstr sigma env c in
+		let d = (na, Some c.Environ.uj_val, c.Environ.uj_type) in
+		(Environ.push_rel d env,d::params))
 	  (env0,[]) lparams in
 
       let (ind_env,ind_impls,arityl) =
         List.fold_left
           (fun (env, ind_impls, arl) (recname, _, _, arityc, _) ->
             let arity = Constrintern.interp_type sigma env_params arityc in
-	    let fullarity =
-              Termops.prod_it arity (List.map (fun (id,_,ty) -> (id,ty)) params) in
+	    let fullarity = Termops.it_mkProd_or_LetIn arity params in
 	    let env' = Termops.push_rel_assum (Name recname,fullarity) env in
 	    let impls = 
 	      if Impargs.is_implicit_args()
@@ -747,7 +733,7 @@ pr_vbinders bl ++ spc())
       let pr_oneind key (id,ntn,indpar,s,lc) =
 	hov 0 (
           str key ++ spc() ++
-          pr_id id ++ spc() ++ pr_sbinders indpar ++ str":" ++ spc() ++
+          pr_id id ++ pr_binders_arg indpar ++ spc() ++ str":" ++ spc() ++
           pr_lconstr s ++ 
 	  pr_decl_notation ntn ++ str" :=") ++ pr_constructor_list lc in
 
@@ -822,7 +808,7 @@ pr_vbinders bl ++ spc())
             pr_id id ++ str" " ++ pr_binders bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_lconstr c) type_
             ++ pr_decl_notation ntn ++ str" :=" ++ brk(1,1) ++
-            pr_lconstr_env_n rec_sign (length_of_vbinders bl)
+            pr_lconstr_env_n rec_sign (local_binders_length bl)
 	      true (CCast (dummy_loc,def0,type_0))
       in
       hov 1 (str"Fixpoint" ++ spc() ++

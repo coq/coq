@@ -488,7 +488,7 @@ let build_inductive env env_ar finite inds recargs cst =
   (* Check one inductive *)
   let build_one_packet (params,id,ar,cnames,issmall,isunit,lc) recarg =
     (* Arity in normal form *)
-    let nparams = rel_context_length params in
+    let nparamargs = rel_context_nhyps params in
     let (ar_sign,ar_sort) = dest_arity env ar in
     let nf_ar =
       if isArity (body_of_type ar) then ar
@@ -498,19 +498,16 @@ let build_inductive env env_ar finite inds recargs cst =
     let nf_lc =
       array_map2 (fun (d,b) c -> it_mkProd_or_LetIn b d) splayed_lc lc in
     let nf_lc = if nf_lc = lc then lc else nf_lc in
-    let carities =
-      Array.map
-        (fun (args,_) -> rel_context_length args - nparams) splayed_lc in
     (* Elimination sorts *)
     let isunit = isunit && ntypes = 1 && (not (is_recursive recargs.(0))) in
     let kelim = allowed_sorts issmall isunit ar_sort in
     (* Build the inductive packet *)
     { mind_typename = id;
-      mind_nparams = rel_context_nhyps params;
+      mind_nparams = nparamargs;
       mind_params_ctxt = params;
       mind_user_arity  = ar;
       mind_nf_arity = nf_ar;
-      mind_nrealargs = rel_context_length ar_sign - nparams;
+      mind_nrealargs = rel_context_nhyps ar_sign - nparamargs;
       mind_sort = ar_sort;
       mind_kelim = kelim;
       mind_consnames = Array.of_list cnames;

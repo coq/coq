@@ -150,10 +150,16 @@ let get_constructors env (ind,params) =
   Array.init (Array.length mip.mind_consnames)
     (fun j -> get_constructor (ind,mib,mip,params) (j+1))
 
+let rec instantiate args c = match kind_of_term c, args with
+  | Prod (_,_,c), a::args -> instantiate args (subst1 a c)
+  | LetIn (_,b,_,c), args -> instantiate args (subst1 b c)
+  | _, [] -> c
+  | _ -> anomaly "too short arity"
+
 let get_arity env (ind,params) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let arity = body_of_type mip.mind_nf_arity in
-  destArity (prod_applist arity params)
+  let arity = mip.mind_nf_arity in
+  destArity (instantiate params arity)
 
 (* Functions to build standard types related to inductive *)
 let build_dependent_constructor cs =

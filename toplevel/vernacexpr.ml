@@ -127,7 +127,7 @@ type simple_binder = identifier * constr_expr
 type 'a with_coercion = coercion_flag * 'a
 type constructor_expr = simple_binder with_coercion
 type inductive_expr =
-     identifier * decl_notation * simple_binder list * constr_expr
+     identifier * decl_notation * local_binder list * constr_expr
     * constructor_expr list
 type definition_expr =
   | ProveBody of local_binder list * constr_expr

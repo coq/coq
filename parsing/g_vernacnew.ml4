@@ -184,7 +184,7 @@ GEXTEND Gram
     ;
   (* Inductives and records *)
   inductive_definition:
-    [ [ id = base_ident; indpar = LIST0 simple_binder; ":"; c = lconstr; 
+    [ [ id = base_ident; indpar = LIST0 binder_let; ":"; c = lconstr; 
         ntn = decl_notation; ":="; lc = constructor_list ->
 	  (id,ntn,indpar,c,lc) ] ]
   ;

@@ -202,7 +202,7 @@ let detype_case computable detype detype_eqn tenv avoid env indsp st p k c bl =
   let (mib,mip) = Inductive.lookup_mind_specif tenv indsp in
   let get_consnarg j = 
     let typi = mis_nf_constructor_type (indsp,mib,mip) (j+1) in
-    let _,t = decompose_prod_n_assum mip.mind_nparams typi in
+    let _,t = decompose_prod_n_assum (List.length mip.mind_params_ctxt) typi in
     List.rev (fst (decompose_prod_assum t)) in
   let consnargs = Array.init (Array.length mip.mind_consnames) get_consnarg in
   let consnargsl = Array.map List.length consnargs in

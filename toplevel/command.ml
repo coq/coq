@@ -72,7 +72,7 @@ let rec adjust_conclusion a cs = function
 	user_err_loc (loc,"",
 	  str "Cannot infer the non constant arguments of the conclusion of "
 	  ++ pr_id cs);
-      let args = List.map (fun (id,_) -> CRef(Ident(loc,id))) params in
+      let args = List.map (fun id -> CRef(Ident(loc,id))) params in
       CAppExpl (loc,(None,Ident(loc,name)),List.rev args)
   | c -> c
 
@@ -197,30 +197,38 @@ let interp_mutual lparams lnamearconstrs finite =
       (fun acc (id,_,_,l) -> id::(List.map fst l)@acc) [] lnamearconstrs in
   if not (list_distinct allnames) then
     error "Two inductive objects have the same name";
-  let nparams = List.length lparams
+  let nparams = local_binders_length lparams
   and sigma = Evd.empty 
   and env0 = Global.env() in
   let env_params, params =
     List.fold_left
-      (fun (env, params) (id,t) ->
-	 let p = interp_binder sigma env (Name id) t in
-	 (Termops.push_rel_assum (Name id,p) env, (Name id,None,p)::params))
+      (fun (env, params) d -> match d with
+	| LocalRawAssum (nal,t) ->
+	    let t = interp_type sigma env t in
+	    let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
+	    let ctx = List.rev ctx in
+	    (push_rel_context ctx env, ctx@params)
+	| LocalRawDef ((_,na),c) ->
+	    let c = judgment_of_rawconstr sigma env c in
+	    let d = (na, Some c.uj_val, c.uj_type) in
+	    (push_rel d env,d::params))
       (env0,[]) lparams
   in
-  (* Pour permettre à terme les let-in dans les params *)
+  (* Builds the params of the inductive entry *)
   let params' =
-    List.map (fun (na,_,p) ->
+    List.map (fun (na,b,t) ->
 		let id = match na with
 		  | Name id -> id
-		  | Anonymous -> anomaly "Unnamed inductive variable"
-		in (id, LocalAssum p)) params
+		  | Anonymous -> anomaly "Unnamed inductive variable" in 
+		match b with
+		  | None -> (id, LocalAssum t)
+		  | Some b -> (id, LocalDef b)) params
   in
   let (ind_env,ind_impls,arityl) =
     List.fold_left
       (fun (env, ind_impls, arl) (recname, _, arityc, _) ->
          let arity = interp_type sigma env_params arityc in
-	 let fullarity =
-           prod_it arity (List.map (fun (id,_,ty) -> (id,ty)) params) in
+	 let fullarity = it_mkProd_or_LetIn arity params in
 	 let env' = Termops.push_rel_assum (Name recname,fullarity) env in
 	 let impls = 
 	   if Impargs.is_implicit_args()
@@ -229,12 +237,15 @@ let interp_mutual lparams lnamearconstrs finite =
 	 (env', (recname,impls)::ind_impls, (arity::arl)))
       (env0, [], []) lnamearconstrs
   in
-  let lparnames = List.map (fun (na,_,_) -> na) params in
+  (* Names of parameters as arguments of the inductive type (defs removed) *)
+  let lparargs = 
+    List.flatten
+      (List.map (function (id,LocalAssum _) -> [id] | _ -> []) params') in
   let notations = 
     List.map2 (fun (recname,ntnopt,_,_) ar ->
       option_app (fun df ->
         let larnames =
-	  List.rev_append lparnames 
+	  List.rev_append (List.map (fun id -> Name id) lparargs)
 	    (List.rev (List.map fst (fst (decompose_prod ar)))) in
 	(recname,larnames,df)) ntnopt)
       lnamearconstrs arityl in
@@ -257,7 +268,8 @@ let interp_mutual lparams lnamearconstrs finite =
 	   List.length (fst (Reductionops.splay_arity env_params Evd.empty ar))
 	 in
 	 let bodies =
-	   List.map2 (adjust_conclusion (nar,name,params')) constrnames bodies
+	   List.map2 (adjust_conclusion (nar,name,lparargs))
+	     constrnames bodies
 	 in
 
          (* Interpret the constructor types *)
@@ -286,7 +298,14 @@ let declare_mutual_with_eliminations mie =
   Indrec.declare_eliminations kn;
   kn
 
-let eq_la (id,ast) (id',ast') = id = id' & (* alpha_eq(ast,ast') *) (warning "check paramaters convertibility"; true)
+(* Very syntactical equality *)
+let eq_la d1 d2 = match d1,d2 with
+  | LocalRawAssum (nal,ast), LocalRawAssum (nal',ast') ->
+      List.for_all2 (fun (_,na) (_,na') -> na = na') nal nal'
+      & (try let _ = Constrextern.check_same_type ast ast' in true with _ -> false)
+  | LocalRawDef ((_,id),ast), LocalRawDef ((_,id'),ast') ->
+      id=id' & (try let _ = Constrextern.check_same_type ast ast' in true with _ -> false)
+  | _ -> false
 
 let extract_coe lc =
   List.fold_right
@@ -539,11 +558,6 @@ let rec generalize_rawconstr c = function
   | LocalRawAssum (idl,t)::bl ->
       List.fold_right (fun x b -> mkProdC([x],t,b)) idl
         (generalize_rawconstr c bl)
-
-let rec binders_length = function
-  | [] -> 0
-  | LocalRawDef _::bl -> 1 + binders_length bl
-  | LocalRawAssum (idl,_)::bl -> List.length idl + binders_length bl
 
 let start_proof id kind c hook =
   let sign = Global.named_context () in

@@ -222,6 +222,9 @@ GEXTEND Gram
   oneind:
     [ [ id = base_ident; indpar = simple_binders_list; ":"; c = constr; 
         ntn = OPT decl_notation ; ":="; lc = constructor_list ->
+	  let indpar = 
+	    List.map (fun (id,t) -> LocalRawAssum ([dummy_loc,Name id],t))
+	      indpar in
 	  (id,ntn,indpar,c,lc) ] ]
   ;
   simple_binders_list:
@@ -303,6 +306,9 @@ GEXTEND Gram
   gallina_ext:
     [ [ IDENT "Mutual"; bl = ne_simple_binders_list ; f = finite_token;
         indl = block_old_style ->
+	  let bl = 
+	    List.map (fun (id,t) -> LocalRawAssum ([dummy_loc,Name id],t)) bl
+	  in
 	  let indl' = List.map (fun (id,ar,c) -> (id,None,bl,ar,c)) indl in
 	  VernacInductive (f,indl')
       | b = record_token; oc = opt_coercion; name = base_ident;
@@ -321,6 +327,9 @@ GEXTEND Gram
       | IDENT "Scheme"; l = schemes -> VernacScheme l
       | f = finite_token; s = csort; id = base_ident;
 	indpar = simple_binders_list; ":="; lc = constructor_list -> 
+	  let indpar =
+	    List.map (fun (id,t) -> LocalRawAssum ([dummy_loc,Name id],t))
+	      indpar in
           VernacInductive (f,[id,None,indpar,s,lc]) ] ]
   ;
   csort:
