@@ -25,7 +25,7 @@ let push id sp =
     
 let init () =
   cci_tab := Idmap.empty;
-  cci_tab := Idmap.empty
+  fw_tab := Idmap.empty
 
 type frozen = section_path Idmap.t * section_path Idmap.t
 
