@@ -44,6 +44,8 @@ val red_set : reds -> red_kind -> bool
 (* Adds a reduction kind to a set *)
 val red_add : reds -> red_kind -> reds
 
+(* Gives the constant list *)
+val red_get_const : reds -> bool * (section_path list)
 
 (*s Reduction function specification. *)
 

@@ -131,6 +131,13 @@ let red_set red = function
   (* Not for internal use *)
   | CONST _ | CONSTBUT _ -> failwith "not implemented"
 
+(* Gives the constant list *)
+let red_get_const red =
+  if (fst red.r_const) then
+    (true,snd red.r_const)
+  else
+    (false,snd red.r_const)
+
 (* specification of the reduction function *)
 
 type red_mode = UNIFORM | SIMPL | WITHBACK
