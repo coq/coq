@@ -8,21 +8,19 @@ Commands
   if-then-else, notations, projections)
 - "Functional Scheme" and "Functional Induction" extended to polymorphic types
   and dependent types
-
-Syntax
-
+- Notation now allows recursive patterns, hence recovering parts of V7 Grammar
+  fonctionalities
 - Command "Print." discontinued.
-- "assert" semantics now consistent with reference manual
 - Redundant syntax "Implicit Arguments On/Off" discontinued
-- Delimiting key %bool for bool_scope added
 
 Interpretation scopes
 
-- Add scope %bool
+- Delimiting key %bool for bool_scope added
 - Import no more needed to activate argument scopes from a module
 
 Tactics
 
+- "assert" semantics now consistent with reference manual
 - New tactics stepl and stepr for chaining transitivity steps
 - Tactic "replace ... with ... in" added
 
