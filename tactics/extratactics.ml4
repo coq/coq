@@ -202,21 +202,21 @@ open Rawterm
 
 VERNAC COMMAND EXTEND DeriveInversion
 | [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort(s) ]
-  -> [ add_inversion_lemma_exn na c s false half_inv_tac ]
+  -> [ add_inversion_lemma_exn na c s false inv_tac ]
 
 | [ "Derive" "Inversion" ident(na) "with" constr(c) ]
-  -> [ add_inversion_lemma_exn na c (RProp Null) false half_inv_tac ]
+  -> [ add_inversion_lemma_exn na c (RProp Null) false inv_tac ]
 
 | [ "Derive" "Inversion" ident(na) hyp(id) ]
-  -> [ inversion_lemma_from_goal 1 na id Term.mk_Prop false half_inv_tac ]
+  -> [ inversion_lemma_from_goal 1 na id Term.mk_Prop false inv_tac ]
 
 | [ "Derive" "Inversion" natural(n) ident(na) hyp(id) ]
-  -> [ inversion_lemma_from_goal n na id Term.mk_Prop false half_inv_tac ]
+  -> [ inversion_lemma_from_goal n na id Term.mk_Prop false inv_tac ]
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversion
 | [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort(s) ]
-  -> [ add_inversion_lemma_exn na c s true half_dinv_tac ]
+  -> [ add_inversion_lemma_exn na c s true dinv_tac ]
     END
 
 VERNAC COMMAND EXTEND DeriveDependentInversionClear
