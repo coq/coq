@@ -23,7 +23,7 @@ Inductive False : Prop := .
 (** [not A], written [~A], is the negation of [A] *)
 Definition not := [A:Prop]A->False.
 
-Notation "~ x" := (not x).
+Notation "~ x" := (not x) : type_scope.
 
 Hints Unfold not : core.
 
@@ -66,7 +66,7 @@ Inductive or [A,B:Prop] : Prop as "A \/ B":=
 
 Definition iff := [A,B:Prop] (and (A->B) (B->A)).
 
-Notation "A <-> B" := (iff A B).
+Notation "A <-> B" := (iff A B) : type_scope.
 
 Section Equivalence.
 
@@ -92,7 +92,7 @@ End Equivalence.
 Definition IF := [P,Q,R:Prop] (or (and P Q) (and (not P) R)).
 
 Notation "'IF' c1 'then' c2 'else' c3" := (IF c1 c2 c3)
-  (at level 1, c1, c2, c3 at level 8)
+  (at level 1, c1, c2, c3 at level 8) : type_scope
   V8only (at level 200).
 
 (** First-order quantifiers *)
@@ -121,24 +121,28 @@ Definition all := [A:Type][P:A->Prop](x:A)(P x).
 (*Rule order is important to give printing priority to fully typed ALL and EX*)
 
 V7only [ Notation Ex  := (ex ?). ].
-Notation "'EX' x | p"      := (ex ? [x]p)    (at level 10, p at level 8)
+Notation "'EX' x | p"      := (ex ? [x]p)
+  (at level 10, p at level 8) : type_scope
   V8only (at level 200, x ident, p at level 80).
-Notation "'EX' x : t | p"  := (ex ? [x:t]p)  (at level 10, p at level 8)
+Notation "'EX' x : t | p"  := (ex ? [x:t]p)
+  (at level 10, p at level 8) : type_scope
   V8only (at level 200, x ident, p at level 80).
 
 V7only [ Notation Ex2 := (ex2 ?). ].
 Notation "'EX' x | p & q"       := (ex2 ? [x]p [x]q)
-  (at level 10, p, q at level 8)
+  (at level 10, p, q at level 8) : type_scope
   V8only "'EX2' x | p & q" (at level 200, x ident, p, q at level 80).
 Notation "'EX' x : t | p & q"   := (ex2 ? [x:t]p [x:t]q)
-  (at level 10, p, q at level 8)
+  (at level 10, p, q at level 8) : type_scope
   V8only "'EX2' x : t | p & q"
     (at level 200, x ident, t at level 200, p, q at level 80).
 
 V7only [Notation All := (all ?).].
-Notation "'ALL' x | p"     := (all ? [x]p)   (at level 10, p at level 8)
+Notation "'ALL' x | p"     := (all ? [x]p)
+  (at level 10, p at level 8) : type_scope
   V8only (at level 200, x ident, p at level 200).
-Notation "'ALL' x : t | p" := (all ? [x:t]p) (at level 10, p at level 8)
+Notation "'ALL' x : t | p" := (all ? [x:t]p)
+  (at level 10, p at level 8) : type_scope
   V8only (at level 200, x ident, t, p at level 200).
 
 
@@ -169,12 +173,12 @@ Section universal_quantification.
     The others properties (symmetry, transitivity, replacement of 
     equals) are proved below *)
 
-Inductive eq [A:Type;x:A] : (y:A)Prop as "x = y :> A"
+Inductive eq [A:Type;x:A] : (y:A)Prop as "x = y :> A" : type_scope
        := refl_equal : x = x :> A.
 
-Notation "x = y" := (eq ? x y).
-Notation "x <> y  :> T" := ~ (!eq T x y).
-Notation "x <> y" := ~ x=y.
+Notation "x = y" := (eq ? x y) : type_scope.
+Notation "x <> y  :> T" := ~ (!eq T x y) : type_scope.
+Notation "x <> y" := ~ x=y : type_scope.
 
 Hints Resolve I conj or_introl or_intror refl_equal : core v62.
 Hints Resolve ex_intro ex_intro2 : core v62.
