@@ -22,6 +22,11 @@ Inductive list : Set := nil : list | cons : A -> list -> list.
 
 Unset Contextual Implicits.
 
+Infix "::" cons (at level 7, right associativity) : list_scope
+  V8only (at level 45, right associativity).
+
+Open Scope list_scope.
+
 (*************************)
 (** Discrimination       *)
 (*************************)
@@ -41,8 +46,8 @@ Fixpoint app [l:list] : list -> list
                  | (cons a l1) => (cons a (app l1 m))
                  end.
 
-Infix RIGHTA 7 "^" app
-  V8only 30.
+Infix RIGHTA 7 "^" app : list_scope
+  V8only 45.
 
 Lemma app_nil_end : (l:list)l=(l^nil).
 Proof. 

@@ -12,5 +12,8 @@
 
 Require PolyList.
 
-Infix RIGHTA 7 "^" app
-  V8only 30.
+Infix "::" cons (at level 7, right associativity) : list_scope
+  V8only (at level 45).
+
+Infix RIGHTA 7 "^" app (* : list_scope *)
+  V8only 45.
