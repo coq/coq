@@ -179,4 +179,6 @@ let compile verbosely f =
   let ldir,long_f_dot_v = Library.start_library f in
   if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
   let _ = load_vernac verbosely long_f_dot_v in
-  Library.save_library_to ldir (long_f_dot_v^"o")
+  if Pfedit.get_all_proof_names () <> [] then
+    (message "Error: There are pending proofs"; exit 1);
+  Library.save_library_to ldir (long_f_dot_v ^ "o")
