@@ -10,15 +10,15 @@ INSTALLATION PROCEDURE FOR THE COQ V7.2 SYSTEM UNDER MACOS X
 
 4) Type the command
 
-   sudo tar -C / -xzf coq-7.2-Darwin-MacOS-X.tar.gz
+     sudo tar -C / -xzf coq-7.2-Darwin-MacOS-X.tar.gz
 
 5) Type the command
 
-    rehash
+     rehash
 
 6) To launch Coq, just type
 
-    coqtop
+     coqtop
 
 You're done
 
