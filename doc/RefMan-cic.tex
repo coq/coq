@@ -7,6 +7,8 @@ The underlying formal language of {\Coq} is the {\em Calculus of
 (Co)Inductive Constructions}\index{Calculus of (Co)Inductive Constructions}
 (\CIC\ in short). It is presented in this chapter.
 
+% Changement de la predicativite de Set
+
 In \CIC\, all objects have a {\em type}. There are types for functions (or
 programs), there are atomic types (especially datatypes)... but also
 types for proofs and types for the types themselves.
@@ -25,17 +27,17 @@ says {\em convertible}). Convertibility is presented in section
 The remaining sections are concerned with the type-checking of terms.
 The beginner can skip them.
 
-The reader seeking a background on the {\CIC} may read several
-papers.  Giménez~\cite{Gim98}
-provides an introduction to inductive and coinductive
-definitions in Coq, Werner~\cite{Wer94} and Paulin-Mohring~\cite{Moh97} are the
-most recent theses on the
+The reader seeking a background on the {\CIC} may read several papers.
+Giménez~\cite{Gim98} provides an introduction to inductive and
+coinductive definitions in Coq. In their book~\cite{CoqArt}, Bertot
+and Castéran give a precise description of the \CIC{} based on
+numerous practical examples.  Barras~\cite{Bar99}, Werner~\cite{Wer94}
+and Paulin-Mohring~\cite{Moh97} are the most recent theses on the
 {\CIC}. Coquand-Huet~\cite{CoHu85a,CoHu85b,CoHu86} introduces the
 Calculus of Constructions. Coquand-Paulin~\cite{CoPa89} introduces
 inductive definitions. The {\CIC} is a formulation of type theory
-including the possibility of inductive
-constructions. Barendregt~\cite{Bar91} studies the modern form of type
-theory.
+including the possibility of inductive constructions.
+Barendregt~\cite{Bar91} studies the modern form of type theory.
 
 \section{The terms}\label{Terms}
 
@@ -52,11 +54,12 @@ type of natural numbers. Then $\ra$ is used both to denote
 $\nat\ra\nat$ which is the type of functions from \nat\ to \nat, and
 to denote $\nat \ra \Prop$ which is the type of unary predicates over
 the natural numbers. Consider abstraction which builds functions. It
-serves to build ``ordinary'' functions as $[x:\nat]({\tt mult} ~x~x)$ (assuming {\tt mult} is already defined) but may build also 
-predicates over the natural numbers. For instance $[x:\nat](x=x)$ will
+serves to build ``ordinary'' functions as $\kw{fun}~x:\nat \Ra ({\tt mult} ~x~x)$ (assuming {\tt mult} is already defined) but may build also 
+predicates over the natural numbers. For instance $\kw{fun}~x:\nat \Ra
+(x=x)$ will
 represent a predicate $P$, informally written in mathematics
 $P(x)\equiv x=x$. If $P$ has type $\nat \ra \Prop$, $(P~x)$ is a
-proposition, furthermore $(x:\nat)(P~x)$ will represent the type of
+proposition, furthermore $\kw{forall}~x:\nat,(P~x)$ will represent the type of
 functions which associate to each natural number $n$ an object of
 type $(P~n)$ and consequently represent proofs of the formula
 ``$\forall x.P(x)$''.
@@ -64,7 +67,7 @@ type $(P~n)$ and consequently represent proofs of the formula
 \subsection{Sorts}\label{Sorts}
 \index{Sorts}
 Types are seen as terms of the language and then should belong to
-another type. The type of a type is a always a constant of the language
+another type. The type of a type is always a constant of the language
 called a {\em sort}.
 
 The two basic sorts in the language of \CIC\ are \Set\ and \Prop.
@@ -145,20 +148,22 @@ More precisely the language of the {\em Calculus of Inductive
 \item the sorts {\sf Set, Prop, Type} are terms.
 \item names for global constant of the environment are terms.
 \item variables are terms.
-\item if $x$ is a variable and $T$, $U$ are terms then $(x:T)U$ is a
-  term. If $x$ occurs in $U$, $(x:T)U$ reads as {\it ``for all x of
-    type T, U''}. As $U$ depends on $x$, one says that $(x:T)U$ is a
-  {\em dependent product}. If $x$ doesn't occurs in $U$ then $(x:T)U$
+\item if $x$ is a variable and $T$, $U$ are terms then $\kw{forall}~x:T,U$ is a
+  term. If $x$ occurs in $U$, $\kw{forall}~x:T,U$ reads as {\it ``for all x of
+    type T, U''}. As $U$ depends on $x$, one says that $\kw{forall}~x:T,U$ is a
+  {\em dependent product}. If $x$ doesn't occurs in $U$ then
+  $\kw{forall}~x:T,U$ 
   reads as {\it ``if T then U''}. A non dependent product can be
   written: $T \rightarrow U$.
-\item if $x$ is a variable and $T$, $U$ are terms then $[x:T]U$ is a
-  term. This is a notation for the $\lambda$-abstraction of
-  $\lambda$-calculus\index{lambda-calculus@$\lambda$-calculus}
-  \cite{Bar81}. The term $[x:T]U$ is a function which maps elements of
-  $T$ to $U$.
+\item if $x$ is a variable and $T$, $U$ are terms then $\kw{fun}~x:T
+  \Ra U$ is a term. This is a notation for the $\lambda$-abstraction
+  of $\lambda$-calculus\index{lambda-calculus@$\lambda$-calculus}
+  \cite{Bar81}. The term $\kw{fun}~x:T \Ra U$ is a function which maps
+  elements of $T$ to $U$.
 \item if $T$ and $U$ are terms then $(T\ U)$ is a term.  The term $(T\ 
   U)$ reads as {\it ``T applied to U''}.
-\item if $x$ is a variable, and $T$, $U$ are terms then $[x:=T]U$ is a
+\item if $x$ is a variable, and $T$, $U$ are terms then
+  $\kw{let}~x:=T~\kw{in}~U$ is a
   term which denotes the term $U$ where the variable $x$ is locally
   bound to $T$. This stands for the common ``let-in'' construction of
   functional programs such as ML or Scheme.
@@ -166,17 +171,18 @@ More precisely the language of the {\em Calculus of Inductive
 
 \paragraph{Notations.} Application associates to the left such that
 $(t~t_1\ldots t_n)$ represents $(\ldots (t~t_1)\ldots t_n)$. The
-products and arrows associate to the right such that $(x:A)B\ra C\ra
-D$ represents $(x:A)(B\ra (C\ra D))$.  One uses sometimes $(x,y:A)B$ or
-$[x,y:A]B$ to denote the abstraction or product of several variables
-of the same type. The equivalent formulation is $(x:A)(y:A)B$ or
-$[x:A][y:A]B$
+products and arrows associate to the right such that $\kw{forall}~x:A,B\ra C\ra
+D$ represents $\kw{forall}~x:A,(B\ra (C\ra D))$.  One uses sometimes
+$\kw{forall}~x~y:A,B$ or
+$\kw{fun}~x~y:A\Ra B$ to denote the abstraction or product of several variables
+of the same type. The equivalent formulation is $\kw{forall}~(x:A)(y:A),B$ or
+$\kw{fun}~(x:A)(y:A) \Ra B$
 
 \paragraph{Free variables.}
 The notion of free variables is defined as usual.  In the expressions
-$[x:T]U$ and $(x:T)U$ the occurrences of $x$ in $U$ are bound.  They
-are represented by de Bruijn indexes in the internal structure of
-terms.
+$\kw{fun}~x:T\Ra U$ and $\forall x:T, U$ the occurrences of $x$ in $U$
+are bound.  They are represented by de Bruijn indexes in the internal
+structure of terms.
 
 \paragraph{Substitution.} \index{Substitution}
 The notion of substituting a term $t$ to free occurrences of a
@@ -207,11 +213,14 @@ $\Gamma$ enriched with the declaration $y:T$ (resp $y:=t:T$). The
 notation $[]$ denotes the empty context.  \index{Context}
 
 % Does not seem to be used further...
-% 
-% We define the inclusion of two contexts $\Gamma$ and $\Delta$ (written
-% as $\Gamma \subset \Delta$) as the property, for all variable $x$,
-% type $T$ and term $t$, if $(x:T) \in \Gamma$ then $(x:T)\in \Delta$
-% and if $(x:=t:T) \in \Gamma$ then $(x:=t:T)\in \Delta$.  We write
+% Si dans l'explication WF(E)[Gamma] concernant les constantes
+% definies ds un contexte
+
+We define the inclusion of two contexts $\Gamma$ and $\Delta$ (written
+as $\Gamma \subset \Delta$) as the property, for all variable $x$,
+type $T$ and term $t$, if $(x:T) \in \Gamma$ then $(x:T)\in \Delta$
+and if $(x:=t:T) \in \Gamma$ then $(x:=t:T)\in \Delta$.  
+%We write
 % $|\Delta|$ for the length of the context $\Delta$, that is for the number
 % of declarations (assumptions or definitions) in $\Delta$.
 
@@ -283,26 +292,29 @@ be derived from the following rules.
 \inference{\frac{\WFE{\Gamma}~~~~(c:T) \in E}{\WTEG{c}{T}}}
 \item [Prod]  \index{Typing rules!Prod}
 \inference{\frac{\WTEG{T}{s_1}~~~~
-    \WTE{\Gamma::(x:T)}{U}{s_2}~~~s_1\in\{\Prop, \Set\}~\mbox{or}~
-    s_2\in\{\Prop, \Set\}}
-      { \WTEG{(x:T)U}{s_2}}} 
+    \WTE{\Gamma::(x:T)}{U}{\Prop}}
+      { \WTEG{\kw{forall}~x:T,U}{\Prop}}} 
+\inference{\frac{\WTEG{T}{s_1}~~~~
+    \WTE{\Gamma::(x:T)}{U}{\Set}~~~s_1\in\{\Prop, \Set\}}
+      { \WTEG{\kw{forall}~x:T,U}{\Set}}} 
 \inference{\frac{\WTEG{T}{\Type(i)}~~~~
     \WTE{\Gamma::(x:T)}{U}{\Type(j)}~~~i\leq
-    k~~~j \leq k}{ \WTEG{(x:T)U}{\Type(k)}}}
+    k~~~j \leq k}{ \WTEG{\kw{forall}~x:T,U}{\Type(k)}}}
 \item [Lam]\index{Typing rules!Lam} 
-\inference{\frac{\WTEG{(x:T)U}{s}~~~~ \WTE{\Gamma::(x:T)}{t}{U}}
-        {\WTEG{[x:T]t}{(x:T)U}}}
+\inference{\frac{\WTEG{\kw{forall}~x:T,U}{s}~~~~ \WTE{\Gamma::(x:T)}{t}{U}}
+        {\WTEG{\kw{fun}~x:T\Ra t}{(x:T)U}}}
 \item [App]\index{Typing rules!App}
- \inference{\frac{\WTEG{t}{(x:U)T}~~~~\WTEG{u}{U}}
+ \inference{\frac{\WTEG{t}{\kw{forall}~x:U,T}~~~~\WTEG{u}{U}}
                  {\WTEG{(t\ u)}{\subst{T}{x}{u}}}}
 \item [Let]\index{Typing rules!Let} 
 \inference{\frac{\WTEG{t}{T}~~~~ \WTE{\Gamma::(x:=t:T)}{u}{U}}
-        {\WTEG{[x:=t]u}{\subst{U}{x}{t}}}}
+        {\WTEG{\kw{let}~x:=t~\kw{in}~u}{\subst{U}{x}{t}}}}
 \end{itemize}
 
-\noindent {\bf Remark. } We may have $[x:=t]u$ well-typed without
-having $([x:T]u~t)$ well-typed (where $T$ is a type of $t$). This is because 
-the value $t$ associated to $x$ may be used in a conversion rule (see section \ref{conv-rules}).
+\noindent {\bf Remark. } We may have $\kw{let}~x:=t~\kw{in}~u$
+well-typed without having $(\kw{fun}~x:T\Ra u)~t$ well-typed (where
+$T$ is a type of $t$). This is because the value $t$ associated to $x$
+may be used in a conversion rule (see section \ref{conv-rules}).
 
 \section{Conversion rules}
 \index{Conversion rules}
@@ -313,14 +325,14 @@ the value $t$ associated to $x$ may be used in a conversion rule (see section \r
 We want to be able to identify some terms as we can identify the
 application of a function to a given argument with its result. For
 instance the identity function over a given type $T$ can be written
-$[x:T]x$. In any environment $E$ and context $\Gamma$, we want to identify any object $a$ (of type $T$) with the
-application $([x:T]x~a)$. We define for this a {\em reduction} (or a
+$\kw{fun}~x:T\Ra x$. In any environment $E$ and context $\Gamma$, we want to identify any object $a$ (of type $T$) with the
+application $(\kw{fun}~x:T\Ra x)~a$. We define for this a {\em reduction} (or a
 {\em conversion}) rule we call $\beta$:
-\[ \WTEGRED{([x:T]t~u)}{\triangleright_{\beta}}{\subst{t}{x}{u}} \]
-
+\[ \WTEGRED{((\kw{fun}~x:T\Ra
+  t)~u)}{\triangleright_{\beta}}{\subst{t}{x}{u}} \] 
 We say that $\subst{t}{x}{u}$ is the {\em $\beta$-contraction} of
-$([x:T]t~u)$ and, conversely, that $([x:T]t~u)$ is the {\em
-  $\beta$-expansion} of $\subst{t}{x}{u}$.
+$(\kw{fun}~x:T\Ra t)~u$ and, conversely, that $(\kw{fun}~x:T\Ra t)~u$
+is the {\em $\beta$-expansion} of $\subst{t}{x}{u}$.
 
 According to $\beta$-reduction, terms of the {\em Calculus of
   Inductive Constructions} enjoy some fundamental properties such as
@@ -357,7 +369,7 @@ replacing the defined variable by its value. The declaration being
 destroyed, this reduction differs from $\delta$-reduction. It is
 called $\zeta$-reduction and shows as follows.
 
-$$\WTEGRED{[x:=u]t}{\triangleright_{\zeta}}{\subst{t}{x}{u}}$$
+$$\WTEGRED{\kw{let}~x:=u~\kw{in}~t}{\triangleright_{\zeta}}{\subst{t}{x}{u}}$$
 
 \paragraph{Convertibility.}
 \label{convertibility}
@@ -384,7 +396,7 @@ convertibility into an order inductively defined by:
 \item if $i \leq j$ then $\WTEGLECONV{\Type(i)}{\Type(j)}$,
 \item for any $i$, $\WTEGLECONV{\Prop}{\Type(i)}$,
 \item for any $i$, $\WTEGLECONV{\Set}{\Type(i)}$,
-\item if $\WTEGCONV{T}{U}$ and $\WTELECONV{\Gamma::(x:T)}{T'}{U'}$ then $\WTEGLECONV{(x:T)T'}{(x:U)U'}$.
+\item if $\WTEGCONV{T}{U}$ and $\WTELECONV{\Gamma::(x:T)}{T'}{U'}$ then $\WTEGLECONV{\kw{forall}~x:T,T'}{\kw{forall}~x:U,U'}$.
 \end{enumerate}
 
 The conversion rule is now exactly:
@@ -401,10 +413,10 @@ An other important rule is the $\eta$-conversion. It is to identify
 terms over a dummy abstraction of a variable followed by an
 application of this variable. Let $T$ be a type, $t$ be a term in
 which the variable $x$ doesn't occurs free. We have
-\[ \WTEGRED{[x:T](t\ x)}{\triangleright}{t} \]
+\[ \WTEGRED{\kw{fun}~x:T\Ra (t\ x)}{\triangleright}{t} \]
 Indeed, as $x$ doesn't occur free in $t$, for any $u$ one
-applies to $[x:T](t\ x)$, it $\beta$-reduces to $(t\ u)$. So
-$[x:T](t\ x)$ and $t$ can be identified.
+applies to $\kw{fun}~x:T\Ra (t\ x)$, it $\beta$-reduces to $(t\ u)$. So
+$\kw{fun}~x:T\Ra (t\ x)$ and $t$ can be identified.
 
 \Rem The $\eta$-reduction is not taken into account in the
 convertibility rule of \Coq.
@@ -414,16 +426,19 @@ A term which cannot be any more reduced is said to be in {\em normal
   form}. There are several ways (or strategies) to apply the reduction
 rule. Among them, we have to mention the {\em head reduction} which
 will play an important role (see chapter \ref{Tactics}). Any term can
-be written as $[x_1:T_1]\ldots[x_k:T_k](t_0\ t_1\ldots t_n)$ where
+be written as $\kw{fun}~(x_1:T_1)\ldots (x_k:T_k) \Ra 
+(t_0\ t_1\ldots t_n)$ where
 $t_0$ is not an application. We say then that $t_0$ is the {\em head
-  of $t$}. If we assume that $t_0$ is $[x:T]u_0$ then one step of
+  of $t$}. If we assume that $t_0$ is $\kw{fun}~x:T\Ra u_0$ then one step of
 $\beta$-head reduction of $t$ is:
-\[[x_1:T_1]\ldots[x_k:T_k]([x:T]u_0\ t_1\ldots t_n) 
-~\triangleright ~ [x_1:T_1]\ldots[x_k:T_k](\subst{u_0}{x}{t_1}\ t_2 \ldots t_n)\]
+\[\kw{fun}~(x_1:T_1)\ldots(x_k:T_k)\Ra (\kw{fun}~x:T\Ra u_0\ t_1\ldots t_n) 
+~\triangleright ~ \kw{fun}~(x_1:T_1)\ldots(x_k:T_k)\Ra 
+(\subst{u_0}{x}{t_1}\ t_2 \ldots t_n)\]
 Iterating the process of head reduction until the head of the reduced
 term is no more an abstraction leads to the {\em $\beta$-head normal
   form} of $t$:
-\[ t \triangleright \ldots \triangleright [x_1:T_1]\ldots[x_k:T_k](v\ u_1
+\[ t \triangleright \ldots \triangleright
+\kw{fun}~(x_1:T_1)\ldots(x_k:T_k)\Ra (v\ u_1
 \ldots u_m)\]
 where $v$ is not an abstraction (nor an application).  Note that the
 head normal form must not be confused with the normal form since some
@@ -467,7 +482,7 @@ variable $x$ is available at each stage where $c$ is mentioned.
 \paragraph{Abstracting property:} 
  \inference{\frac{\WF{E; \Def{\Gamma::(x:U)}{c}{t}{T};
        F}{\Delta}~~~~\WFE{\Gamma}}
-           {\WF{E;\Def{\Gamma}{c}{[x:U]t}{(x:U)T};
+           {\WF{E;\Def{\Gamma}{c}{\kw{fun}~x:U\Ra t}{\kw{forall}~x:U,T};
   \subst{F}{c}{(c~x)}}{\subst{\Delta}{c}{(c~x)}}}}
 
 \paragraph{Pruning the context.} 
@@ -643,18 +658,18 @@ contains an inductive declaration.
   $[c_1:C_1;\ldots;c_n:C_n]$,
    
 \inference{\frac{\Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C} \in E
-    ~~j=1\ldots k}{(I_j:(p_1:P_1)\ldots(p_r:P_r)A_j) \in E}}
+    ~~j=1\ldots k}{(I_j:\kw{forall}~(p_1:P_1)\ldots(p_r:P_r),A_j) \in E}}
 
 \inference{\frac{\Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C} \in E
     ~~~~i=1.. n}
-   {(c_i:(p_1:P_1)\ldots(p_r:P_r)\subst{C_i}{I_j}{(I_j~p_1\ldots
+   {(c_i:\kw{forall}~(p_1:P_1)\ldots(p_r:P_r),\subst{C_i}{I_j}{(I_j~p_1\ldots
        p_r)}_{j=1\ldots k})\in E}}
 \end{description}
 
 \paragraph{Example.}
-We have $(\List:\Set \ra \Set), (\cons:(A:\Set)A\ra(\List~A)\ra
+We have $(\List:\Set \ra \Set), (\cons:\kw{forall}~A:\Set,A\ra(\List~A)\ra
 (\List~A))$, \\ 
-$(\Length:(A:\Set)(\List~A)\ra\nat\ra\Prop)$, $\tree:\Set$ and $\forest:\Set$.
+$(\Length:\kw{forall}~A:\Set, (\List~A)\ra\nat\ra\Prop)$, $\tree:\Set$ and $\forest:\Set$.
 
 From now on, we write $\ListA$ instead of $(\List~A)$ and $\LengthA$
 for $(\Length~A)$.
@@ -681,14 +696,13 @@ rules, we need a few definitions:
 
 \paragraph{Definitions}\index{Positivity}\label{Positivity}
 
-A type $T$ is an {\em arity of sort $s$}\index{Arity}
-if it converts to the sort $s$ or to a
-product $(x:T)U$ with $U$ an arity of sort $s$. (For instance $A\ra
-\Set$ or $(A:\Prop)A\ra \Prop$ are arities of sort respectively \Set\ 
-and \Prop).
-A {\em type of constructor of $I$}\index{Type of constructor}
- is either a term $(I~t_1\ldots ~t_n)$ or
-$(x:T)C$ with $C$ a {\em type of constructor of $I$}.
+A type $T$ is an {\em arity of sort $s$}\index{Arity} if it converts
+to the sort $s$ or to a product $\kw{forall}~x:T,U$ with $U$ an arity
+of sort $s$. (For instance $A\ra \Set$ or $\kw{forall}~A:\Prop,A\ra
+\Prop$ are arities of sort respectively \Set\ and \Prop).  A {\em type
+  of constructor of $I$}\index{Type of constructor} is either a term
+$(I~t_1\ldots ~t_n)$ or $(x:T)C$ with $C$ a {\em type of constructor
+  of $I$}.
 
 \smallskip
 
@@ -698,7 +712,7 @@ condition} for a constant $X$ in the following cases:
 \begin{itemize}
 \item $T=(X~t_1\ldots ~t_n)$ and $X$ does not occur free in
 any $t_i$
-\item $T=(x:T)U$ and $X$ occurs only strictly positively in $T$ and
+\item $T=\kw{forall}~x:T,U$ and $X$ occurs only strictly positively in $T$ and
 the type $U$ satisfies the positivity condition for $X$
 \end{itemize}
 
@@ -707,15 +721,17 @@ following cases:
 
 \begin{itemize}
 \item $X$ does not occur in $T$
-\item $T$ converts to $(X~t_1 \ldots ~t_n)$ and $X$ does not occur in any of $t_i$
-\item $T$ converts to $(x:U)V$ and $X$ does not occur in type $U$ but occurs strictly
-positively in type $V$
-\item $T$ converts to $(I~a_1 \ldots ~a_m ~ t_1 \ldots ~t_p)$ where $I$ is the name of an
-inductive declaration of the form $\Ind{\Gamma}{[p_1:P_1;\ldots;p_m:P_m]}{[I:A]}{[c_1:C_1;\ldots;c_n:C_n]}$
-(in particular, it is not mutually defined and it has $m$ parameters)
-and $X$ does not occur in any of the $t_i$, and
-the types of constructor $C_i\{p_j/a_j\}_{j=1\ldots m}$ of $I$
-satisfy the imbricated positivity condition for $X$
+\item $T$ converts to $(X~t_1 \ldots ~t_n)$ and $X$ does not occur in
+  any of $t_i$
+\item $T$ converts to $\kw{forall}~x:U,V$ and $X$ does not occur in
+  type $U$ but occurs strictly positively in type $V$
+\item $T$ converts to $(I~a_1 \ldots ~a_m ~ t_1 \ldots ~t_p)$ where
+  $I$ is the name of an inductive declaration of the form
+  $\Ind{\Gamma}{[p_1:P_1;\ldots;p_m:P_m]}{[I:A]}{[c_1:C_1;\ldots;c_n:C_n]}$
+  (in particular, it is not mutually defined and it has $m$
+  parameters) and $X$ does not occur in any of the $t_i$, and the
+  types of constructor $C_i\{p_j/a_j\}_{j=1\ldots m}$ of $I$ satisfy
+  the imbricated positivity condition for $X$
 %\item more generally, when $T$ is not a type, $X$ occurs strictly
 %positively in $T[x:U]u$ if $X$ does not occur in $U$ but occurs
 %strictly positively in $u$
@@ -728,7 +744,7 @@ cases:
 \begin{itemize}
 \item $T=(I~t_1\ldots ~t_n)$ and $X$ does not occur in
 any $t_i$
-\item $T=(x:T)U$ and $X$ occurs only strictly positively in $T$ and
+\item $T=\kw{forall}~x:T,U$ and $X$ occurs only strictly positively in $T$ and
 the type $U$ satisfies the imbricated positivity condition for $X$
 \end{itemize}
 
@@ -736,9 +752,9 @@ the type $U$ satisfies the imbricated positivity condition for $X$
 $X$ occurs strictly positively in $A\ra X$ or $X*A$ or $({\tt list}
 X)$ but not in $X \ra A$ or $(X \ra A)\ra A$ assuming the notion of
 product and lists were already defined. Assuming $X$ has arity ${\tt
-nat \ra Prop}$ and {\tt ex} is inductively defined existential
-quantifier, the occurrence of $X$ in ${\tt (ex~ nat~ [n:nat](X~ n))}$ is
-also strictly positive.
+  nat \ra Prop}$ and {\tt ex} is the inductively defined existential
+quantifier, the occurrence of $X$ in ${\tt (ex~ nat~ \kw{fun}~n:nat\ra
+  (X~ n))}$ is also strictly positive.
 
 \paragraph{Correctness rules.}
 We shall now describe the rules allowing the introduction of a new
@@ -844,9 +860,9 @@ into two more primitive operations as was first suggested by Th. Coquand
 in~\cite{Coq92}.  One is the definition by case
 analysis. The second one is a definition by guarded fixpoints. 
 
-\subsubsection{The {\tt Cases\ldots of \ldots end} construction.}
+\subsubsection{The {\tt match\ldots with \ldots end} construction.}
 \label{Caseexpr}
-\index{Cases@{\tt Cases\ldots of\ldots end}}
+\index{match@{\tt match\ldots with\ldots end}}
 
 The basic idea of this destructor operation is that we have an object
 $m$ in an inductive type $I$ and we want to prove a property $(P~m)$
@@ -854,8 +870,8 @@ which in general depends on $m$. For this, it is enough to prove the
 property for $m = (c_i~u_1\ldots  u_{p_i})$ for each constructor of $I$.
 
 This proof will be denoted by a generic term:
-\[\Case{P}{m}{(c_1~x_{11}~...~x_{1p_1}) \mbox{\tt =>} f_1 ~|~\ldots~|~
-  (c_n~x_{n1}...x_{np_n}) \mbox{\tt =>} f_n }\] In this expression, if
+\[\Case{P~x}{m~\kw{as}~x}{(c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
+  (c_n~x_{n1}...x_{np_n}) \Ra f_n }\] In this expression, if
 $m$ is a term built from a constructor $(c_i~u_1\ldots u_{p_i})$ then
 the expression will behave as it is specified with $i$-th branch and
 will reduce to $f_i$ where the $x_{i1}$\ldots $x_{ip_i}$ are replaced
@@ -877,17 +893,19 @@ For instance, a function testing whether a list is empty
 can be
 defined as:
 
-\[[l:\ListA]\Case{[H:\ListA]\bool}{l}{\Nil~ \mbox{\tt =>}~\true~ |~ (\cons~a~m)~ \mbox{\tt =>}~\false}\]
-\noindent {\bf Remark. } In the system \Coq\ the expression above, can be
-written without mentioning
-the dummy abstraction:
-\Case{\bool}{l}{\Nil~ \mbox{\tt =>}~\true~ |~ (\cons~a~m)~
- \mbox{\tt =>}~ \false}
+\[\kw{fun}~l:\ListA \Ra\Case{\bool}{l}{\Nil~ \Ra~\true~ |~ (\cons~a~m)~ \Ra~\false}\]
+\noindent {\bf Remark. } 
+
+% In the system \Coq\ the expression above, can be
+% written without mentioning
+% the dummy abstraction:
+% \Case{\bool}{l}{\Nil~ \mbox{\tt =>}~\true~ |~ (\cons~a~m)~
+%  \mbox{\tt =>}~ \false}
 
 \paragraph{Allowed elimination sorts.}
 \index{Elimination sorts}
 
-An important question for building the typing rule for {\tt Case} is
+An important question for building the typing rule for \kw{match} is
 what can be the type of $P$ with respect to the type of the inductive
 definitions.
 
@@ -908,7 +926,7 @@ general allow an elimination over a bigger sort such as \Type.
 But this operation is safe whenever $I$ is a {\em small
   inductive} type, which means that all the types of constructors of
 $I$ are small with the following definition:\\ 
-$(I~t_1\ldots  t_s)$ is a {\em small type of constructor} and $(x:T)C$ is a
+$(I~t_1\ldots  t_s)$ is a {\em small type of constructor} and $\kw{forall}~x:T,C$ is a
 small type of constructor if $C$ is and if $T$ has type \Prop\ or
 \Set.
 \index{Small inductive type}
@@ -993,7 +1011,7 @@ branch corresponding to the $c:C$ constructor.
 \[
 \begin{array}{ll}
 \CI{c:(I_i~p_1\ldots p_r\ t_1 \ldots t_p)}{P} &\equiv (P~t_1\ldots ~t_p~c) \\[2mm]
-\CI{c:(x: T)C}{P} &\equiv (x:T)\CI{(c~x):C}{P} 
+\CI{c:\kw{forall}~x:T,C}{P} &\equiv \kw{forall}~x:T,\CI{(c~x):C}{P} 
 \end{array}
 \]
 We write \CI{c}{P} for \CI{c:C}{P} with $C$ the type of $c$.
@@ -1027,7 +1045,7 @@ for
 \]
 
 \begin{description}
-\item[Cases] \label{elimdep} \index{Typing rules!Cases}
+\item[match] \label{elimdep} \index{Typing rules!match}
 \inference{
 \frac{\WTEG{c}{(I~q_1\ldots  q_r~t_1\ldots  t_s)}~~
   \WTEG{P}{B}~~\compat{(I~q_1\ldots  q_r)}{B}
@@ -1221,7 +1239,7 @@ The following is not a conversion but can be proved after a case analysis.
 Goal forall t:tree, sizet t = S (sizef (sont t)).
 
 (** this one fails **)reflexivity.
-olddestruct t.
+destruct t.
 reflexivity.
 \end{coq_example}
 \begin{coq_eval}
