@@ -3,6 +3,335 @@
 
 In this chapter, we introduce advanced commands to modify the way
 {\Coq} parses and prints objects, i.e. the translations between the
+concrete and internal representations of terms and commands. The main
+commands are {\tt Notation} and {\tt Infix}.
+It also happens that the same symbolic notation is expected in
+different contexts. To achieve this form of overloading, Coq offers a
+notion of interpretation scope described in section \label{scopes}.
+
+\Rem: Commands {\tt Grammar}, {\tt Syntax}, {\tt Syntactic Definition}
+and {\tt Distfix} which were present for a while in Coq are no longer
+available from Coq version 8. The underlying AST structure is also no
+longer available.
+
+\section{Basic notations}
+\label{Notation}
+\comindex{Notation}
+
+A {\em notation} is a symbolic abbreviation denoting some term
+or term pattern.
+
+A typical notation is the use of the infix symbol \verb=/\= to denote
+the logical and connective (\texttt{and}). Such a notation is declared
+by
+
+\begin{coq_example*}
+Notation "A /\ B" := (and A B).
+\end{coq_example*}
+
+The expression \texttt{(and A B)} is the abbreviated term and the
+string \verb="A /\ B"= (called a {\em notation}) tells how it is 
+symbolically written.
+
+A notation is always surrounded by quotes (excepted when the
+abbreviation is a single ident, see \label{Abbreviations}). The
+notation is composed of {\em tokens} separated by spaces.  Identifiers
+in the string (such as \texttt{A} and \texttt{B}) are the {\em
+parameters} of the notation. They must occur at least once each in the
+denoted term. The other elements of the string (such as \verb=/\=) are
+the {\em symbols}.
+
+An identifier can be used as a symbol but it must be surrounded by
+simple quotes to avoid the confusion with a parameter. Here is an example.
+
+\begin{coq_example*}
+Notation "'IF' c1 'then' c2 'else' c3" := (IF c1 c2 c3).
+\end{coq_example*}
+
+%TODO quote the identifier when not in front, not a keyword, as in "x 'U' y" ?
+
+\section{Precedences and associativity}
+\index{Precedences}
+\index{Associativity}
+
+Mixing different symbolic notations in a same text may cause serious
+parsing ambiguity. To deal with the ambiguity of notations, Coq uses
+precedence levels ranging from 0 to 100 and associativity rules.
+
+Consider for example the new notation
+
+\begin{coq_example*}
+Notation "A \/ B" := (or A B).
+\end{coq_example*}
+
+Clearly, an expression such as {\tt (A:Prop)True \verb=/\= A
+\verb=\/= A \verb=\/= False} is ambiguous. To tell the Coq parser how
+to interpret the expression, a priority between the symbols \verb=/\=
+and \verb=\/=, and an associativity for each of the symbols has to be
+given. The convention is that conjunction binds more than
+disjunction. This is expressed in Coq by assigning a precedence level
+to each notation, knowing that a lower level binds more than a higher
+level. Hence the level for disjunction must be higher than the level
+for conjunction.
+
+Since connectives are the less tight articulation points of a text, it
+is reasonable to choose levels not so far from the higher level which
+is 100, for example 90 for disjunction and 80 for
+conjunction\footnote{which are the levels effectively chosen in the
+current implementation of Coq}.
+
+An associativity is also needed to tells if {\tt True \verb=/\=
+False \verb=/\= False} defaults to {\tt True \verb=/\= (False
+\verb=/\= False)} (this is right associativity) or to {\tt (True
+\verb=/\= False) \verb=/\= False} (this is left associativity). We may
+even consider that the expression is not well-formed and that
+parentheses are mandatory (this is a ``no associativity'')\footnote{
+Coq accepts notations declared as no associative but the parser on
+which Coq is built, namely Camlp4, currently does not implement the
+no-associativity and replace it by a right associativity; hence it is
+the same for Coq: no-associativity is in fact right associativity}.
+We don't know of a special convention of the associativity of
+disjunction and conjunction, let's apply for instance a right
+associativity (which is the choice of Coq).
+
+Precedence levels and associativity rules of notations have to be
+given between parentheses in a list of modifiers that the
+\texttt{Notation} command understands. Here is how the previous
+examples refine.
+
+\begin{coq_example*}
+Notation "A /\ B" (and A B) (at level 6, right associativity).
+Notation "A \/ B" (or A B)  (at level 7, right associativity).
+\end{coq_example*}
+
+By default, no associativity is assigned to the notation and the
+precedence level is 1. The list of level already assigned
+is on figure~\ref{coq-symbols}.
+
+\begin{figure}
+\label{coq-symbols}
+\begin{tabular}{|l|l}
+notation & precedence/associativity \\
+\hline
+\verb$"_ <-> _"$ & 100 \\
+\verb$"_ /\ _"$ & 80\, R \\
+\verb$"_ + _"$  & 80\, R \\
+\verb$"_ \/ _"$ & 70\, R \\
+\verb$"_ * _"$  & 70\, R \\
+\verb$"~ _"$    & 60\, R \\
+\verb$"_ = _"$  & 50 \\
+\verb$"_ == _"$ & 50 \\
+\verb$"_ === _"$ & 50 \\
+\verb$"_ <= _"$ & 50 \\
+\verb$"_ < _"$  & 50 \\
+\verb$"_ > _"$  & 50 \\
+\verb$"_ >= _"$ & 50 \\
+\verb$"_ + _"$  & 40\, L \\
+\verb$"_ - _"$  & 40\, L \\
+\verb$"_ * _"$  & 30\, L \\
+\verb$"_ / _"$  & 30\, L \\
+\verb$"{ _ } + { _ }"$ & 0 \\
+\verb$"_ + { _ }"$  & 0 \\
+\verb$"{ _ : _ | _ }"$ & 0 \\
+\verb$"{ _ : _ | _ & _ }"$ & 0 \\
+\verb$"{ _ : _ & _ }"$ & 0 \\
+\verb$"{ _ : _ & _ & _ }"$ & 0 \\
+\hline
+\end{tabular}
+\end{figure}
+
+\section{Complex notations}
+
+Notation can be made from arbitraly complex symbols. One can for
+instance define prefix notations.
+
+\begin{coq_example*}
+Notation "~ x" := (not x) (at level 5, right associativity).
+\end{coq_example*}
+
+One can also define notations for incomplete terms, with the hole
+expected to be inferred at typing time.
+
+\begin{coq_example*}
+Notation "x = y" := (eq ? x y) (at level 5, no associativity).
+\end{coq_example*}
+
+One can define notations with parameters surrounded by symbols. In
+this case, the default precedence level for inner subexpression is 10.
+
+\begin{coq_example*}
+Notation "{ A } + { B }" := (sumbool A B) (at level 1).
+\end{coq_example*}
+
+One can also define notations for binders.
+
+\begin{coq_example*}
+Notation "{ x : A  |  P }" := (sig A [x:A]P) (at level 1).
+\end{coq_example*}
+
+\section{Simple factorisation rules}
+
+Coq extensible parsing is performed by Camlp4 which is essentially a
+LL1 parser. Hence, some care has to be made not to hide already
+existing rules by new rules. Some simple left factorisation work has
+to be done. Here is an example.
+
+\begin{coq_example*}
+Notation "'EX' x | p"     := (ex ? [x]p) (at level 10).
+Notation "'EX' x | p & q" := (ex2 t [x]p [x]q) (at level 10).
+\end{coq_example*}
+
+In order to factorise the left part of the rules, the subexpression
+referred by {\tt p} has to be at the same level in both rules. However
+the default behaviour puts {\tt p} at the next existing level below 10
+in the first rule (no associativity is the default), and at the level
+10 in the second rule (level 10 is the default when not on the border
+of a notation). To fix this, we need to force the parsing level of p,
+as follows.
+
+\begin{coq_example*}
+Notation "'EX' x | p"     := (ex ? [x]p) (at level 10, p at level 9).
+Notation "'EX' x | p & q" := (ex2 t [x]p [x]q)
+  (at level 10, p at level 9).
+\end{coq_example*}
+
+Actually, for a better homogeneity between p and q, it is reasonable
+to put q at the same level as p, hence the final version of the rules
+
+\begin{coq_example*}
+Notation "'EX' x | p"     := (ex ? [x]p) (at level 10, p at level 9).
+Notation "'EX' x | p & q" := (ex2 t [x]p [x]q)
+  (at level 10, p, q at level 9).
+\end{coq_example*}
+
+For the sake of factorisation with Coq predefined rules, simple rules
+have to be observed for notations starting with a symbol: e.g. rules
+starting with ``{'' or ``<'' should be put at level 1 and rules
+starting with ``('' at level 0. The list of Coq predefined notations
+are given on figure~\ref{coq-symbols}.
+
+\section{Abbreviations}
+\label{Abbreviations}
+
+An {\em abbreviation} is a name denoting a (presumably) more complex
+expression. An abbreviation is a special form of notation with no
+parameter and only one symbol which is an identifier. This identifier
+is given with no quotes around. Example:
+
+\begin{coq_example*}
+Notation All := (all ?).
+\end{coq_example*}
+
+An abbreviation expects also no modifiers, since such a notation can
+always be put at the lower level of atomic expressions, and
+associativity is irrelevant.
+
+Abbreviations are bound to an absolute name like for an ordinary
+definition, and can be referred by partially qualified names too.
+
+Abbreviations do not survive the end of sections. No typing of the denoted
+expression is performed at definition time. Type-checking is done only
+at the time of use of the abbreviation.
+
+\section{Displaying symbolic notations}
+
+The command \texttt{Notation} has an effect both on the Coq parser and
+on the Coq printer. For example:
+
+\begin{coq_example}
+Check (and True True).
+\end{coq_example}
+
+However, printing, especially when we expect it to be pretty, requires
+more care than parsing. We may want well-chosen indentation,
+line-break, alignment if on several lines, etc. 
+
+Printing notation is very rudimentary. When printed, each notation
+opens a {\em formatting box} in such a way that if a line-break is
+needed to print a large expression, all components of the notation are
+at the same indentation of the different lines required for the
+printing.  Line breaks are done by default just before the symbols of
+the notation.
+
+The only control a user has on the printing of a notation is on the
+insertion of spaces at some places of the notation. This is performed
+by adding extra spaces between the symbols and parameters: each extra
+space (more that the single spaces needed to split the components) is
+interpreted as a space to be inserted by the printer. Here is an
+example showing how to add spaces around the bar of the notation.
+
+\begin{coq_example}
+Notation "{ x : A  |  P }" := (sig A [x:A]P)
+  (at level 1, x at level 10).
+Check (sig nat [x]x=x).
+\end{coq_example}
+
+\Rem
+Sometimes, a notation is expected only for the parser (e.g. because
+the underlying parser of Coq, namely Camlp4, is LR1 and some extra
+rules are needed to circumvent the absence of factorisation).
+To do so, the option {\em only parsing} is allowed in the list of modifiers of
+\texttt{Notation}.
+
+\section{Summary of the options of \texttt{Notation}}
+
+The different syntactic variants of the command \texttt{Notation} are
+the following
+
+\begin{itemize}
+
+\item \texttt{Notation} {\str} \texttt{:=} {\term}.
+
+\item \texttt{Notation} {\ident} \texttt{:=} {\term}.
+
+\item \texttt{Notation} {\str} \texttt{:=} {\term} {\tt (} \nelist{\em modifier}{,} {\tt )}.
+
+\end{itemize}
+
+where a {\em modifier} is one of \texttt{at level $n$},
+\texttt{ no associativity}, \texttt{ right
+associativity}, \texttt{ left associativity}, \texttt{ only parsing} or
+\texttt{ \nelist{\ident}{,} at level $n$, }
+
+Notations do not survive the end of sections. No typing of the denoted
+expression is performed at definition time. Type-checking is done only
+at the time of use of the notation.
+
+\section{The \texttt{Infix} command}
+
+The \texttt{Infix} command is a shortening for declaring notations of
+infix symbols. Its syntax is 
+
+\medskip
+
+\noindent\texttt{Infix} "{\em symbol}" {\qualid} {\tt (} \nelist{\em modifier}{,} {\tt )}.
+
+\medskip
+
+and it is equivalent to
+
+\medskip
+
+\noindent\texttt{Notation "x {\em symbol} y" := {\qualid} x y  ( \nelist{\em modifier}{,} )}.
+
+\medskip
+
+where {\tt x} and {\tt y} are fresh names distinct from {\qualid}. Here is an example.
+
+\begin{coq_example*}
+Infix "/\" and (at level 6, right associativity).
+\end{coq_example*}
+
+\section{Symbolic interpretation scopes}
+
+TODO
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Syntax extensions (old)}
+\label{Addoc-syntax}
+
+In this chapter, we introduce advanced commands to modify the way
+{\Coq} parses and prints objects, i.e. the translations between the
 concrete and internal representations of terms and commands. As in
 most compilers, there is an intermediate structure called {\em Abstract
 Syntax Tree} (AST). Parsing a term is done in two steps\footnote{
