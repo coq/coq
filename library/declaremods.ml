@@ -783,22 +783,6 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
 
 (*s Iterators. *)
 
-let fold_all_segments insec f x =
-  let acc' = 
-    MPmap.fold 
-      (fun _ (prefix,objects) acc -> 
-	 let apply_obj acc (id,obj) = f acc (make_oname prefix id) obj in
-	   List.fold_left apply_obj acc objects)
-      !modtab_objects x
-  in
-  let rec apply_node acc = function
-    | sp, Leaf o -> f acc sp o
-    | _, ClosedSection (_,_,seg) -> 
-	if insec then List.fold_left apply_node acc seg else acc
-    | _ -> acc
-  in
-    List.fold_left apply_node acc' (Lib.contents_after None)
-
 let iter_all_segments insec f =
   let _ = 
     MPmap.iter 

@@ -96,13 +96,12 @@ val really_import_module : module_path -> unit
 val import_module : bool -> module_path -> unit
 
 
-(*s [fold_all_segments] and [iter_all_segments] iterate over all
-    segments, the modules' segments first and then the current
-    segment. Modules are presented in an arbitrary order. The given
-    function is applied to all leaves (together with their section
-    path). The boolean indicates if we must enter closed sections. *)
+(*s [iter_all_segments] iterate over all segments, the modules'
+    segments first and then the current segment. Modules are presented
+    in an arbitrary order. The given function is applied to all leaves
+    (together with their section path). The boolean indicates if we
+    must enter closed sections. *)
 
-val fold_all_segments : bool -> ('a -> object_name -> obj -> 'a) -> 'a -> 'a
 val iter_all_segments : bool -> (object_name -> obj -> unit) -> unit
 
 
