@@ -47,11 +47,28 @@ be used with Helm's publishing and rendering tools (see section
 \end{itemize}
 
 Incompatibilities are described in section
-\ref{Incompatibilities}. Please notice that extraction and the
-{\tt Program/Realizer} and {\tt Correctness} tactics are not yet available in {\Coq} V7.
+\ref{Incompatibilities}. Please notice that 
+{\tt Program/Realizer} is no more available in {\Coq} V7.
 Developers of tactics in ML are invited to read section
 \ref{Developers}.
 
+The main changes between \Coq{} V7beta and \Coq{} V7 are~:
+\begin{itemize}
+\item \texttt{Correctness} is now supported in \Coq V7.
+\item A new mechanism for extraction has been introduced.
+\item Some functionalities of \Coq{} V6 has been restored~:
+  \begin{itemize}
+  \item Syntax for user-defined tactics calls does not require extra
+    parenthesis.
+  \item \texttt{Elim} can be called even for non-inductive objects
+    when the apropriate elimination lemma exists.
+  \item User defined tokens with arbitrary combination of letters and
+    symbols have been reintroduced.
+  \item Local definitions can be unfolded in goals using \texttt{Unfold}.
+  \item Local definition can be used in \texttt{Record} definitions
+    (as suggested by Randy Pollack).
+  \end{itemize}
+\end{itemize}
 \section{Language}
 
 \label{Language}
@@ -85,6 +102,16 @@ kind of expression remain to be provided.
 
 Remark: A less symbolic but equivalent syntax is available as {\tt let
 two = `1 + 1` in `two + two`}.
+
+{\tt Local} definitions can be used inside record definitions as
+suggested by Randy Pollack~:
+\begin{coq_example}
+Record local_record : Set := {x:nat; y:=O; H:x=y}.
+Print local_record.
+Print x.
+Print y.
+Check H.
+\end{coq_example}
 
 \subsection{Libraries and qualified names}
 \label{Names}
@@ -223,8 +250,6 @@ Exceptions have been coded in the lexer to separate tokens we do not want to
 separate (for example \verb:A->~B:), but this is not exhaustive and some spaces
 may have to be inserted in some cases which have not been treated
 (e.g. \verb:~<nat>O=O: should now be written \verb:~ <nat>O=O:).
-Also, tokens mixing specials characters and letters or digits
-are currently forbidden (e.g. token \verb:=_S: cannot be used).
 
 %should now be separated (e.g. by a
 %space). Typically, the string \verb:A->~<nat>O=O: is no longer
@@ -274,6 +299,14 @@ available to group several commands into a single one (useful for
 \paragraph{Pattern aliases} of dependent type in \verb=Cases=
 expressions are currently not supported.
 
+\subsection{Libraries}
+The names of directories in \texttt{theories} has been changed. The
+directory \texttt{theories/Zarith} has been renamed
+\texttt{theories/ZArith} between \Coq{} V7.0beta and V7.0.
+
+Some definitions, lemmas and theorems have been added or reorganised, see the Library
+documentation for more information.
+
 \section{Tactics}
 \label{Tactics}
 \def\oc{{\sf Objective~Caml}}
@@ -293,6 +326,13 @@ Reference Manual. Regarding the foundations of this language, the author page
 can be visited at the following URL:\\
 
 {\sf http://logical.inria.fr/\~{}delahaye/}
+
+\subsection{Tactic debuger}
+
+  \paragraph{{\tt Debug $($ On $|$ Off $)$}} turns on/off the tactic
+  debuger for $\ltac$.
+  This is still very experimental and no documentation are provided yet.
+
 
 \subsection{New tactics}
 \label{NewTactics}
@@ -363,12 +403,6 @@ For more details, see the Reference Manual.
   \paragraph{Tactic {\tt Let}} has been renamed into {\tt LetTac}
   and it now relies on the primitive {\tt let-in} constructions
 
-  \paragraph{{\tt Elim}} was looking for elimination schemes named
-  from the name of the eliminated type and a suffix such as
-  \verb:_rec: or \verb:_ind:. When these elimination schemes are
-  redefined by the user, it does not work any longer by just calling
-  {\tt Elim}. Use {\tt Elim ... with ...} instead.
-
   \paragraph{{\tt Apply ... with ...}} when instantiations are
   redundant or incompatible now behaves smoothly.
 
@@ -376,10 +410,9 @@ For more details, see the Reference Manual.
   are now numbered in order.
 
   \paragraph{{\tt Linear}} seems to be very rarely used. It has not
-  been ported.
+  been ported in {\Coq} V7.
 
-  \paragraph{{\tt Program/Realizer}} and {\tt Correctness} are not yet
-  available in {\Coq} V7.
+  \paragraph{{\tt Program/Realizer}} has not been ported in {\Coq} V7.
 
 \section{Toplevel commands}
 
@@ -460,14 +493,16 @@ http://www.cs.unibo.it/helm).
         allows to explicitly give what arguments
         have to be considered as implicit in {\ident}.
 
-\subsection{Tactic debuger}
-
-  \paragraph{{\tt Debug $($ On $|$ Off $)$}} turns on/off the tactic debuger.
-  This is still very experimental and no documentation are provided yet.
-
+\begin{coq_example}
+Parameter exists : (A:Set)(P:A->Prop)(x:A)(P x)->(EX x:A |(P x)).
+Implicits exists.
+Print exists.
+Implicits exists [1].
+Print exists.
+\end{coq_example}
 \subsection{Syntax standardisation}
 
-The commands on the left are now equivalent for (old) commands on
+The commands on the left are now equivalent to (old) commands on
 the right.
 
 \medskip
@@ -487,7 +522,7 @@ Print Coercion Paths & Print Path\\
 
 \medskip
 
-For compatibility, commands on the right remains available (except for
+Commands on the right remains available for compatibility reasons (except for
 {\tt Begin Silent} and {\tt End Silent} which interfere with
 section closing, and for the misunderstandable {\tt Print Path}).
 
@@ -525,28 +560,26 @@ new name for {\tt do\_Makefile}.
 located in the source file.
 
 \section{Extraction}\label{Extraction}
-Extraction code has been completely rewritten since version V6.3. 
+Extraction code has been completely rewritten by J.-C. Filliâtre and
+P. Letouzey since version V6.3. 
 This work is still not finished, but most parts of it are already
-usable. It was successfully tested on the {\Coq} theories.
+usable. It was successfully tested on the \Coq{} theories.
 
-The new mechanism is able to extract programs from any {\Coq} term
+The new mechanism is able to extract programs from any \Coq{} term
 (including terms at the Type level). 
-
-However, the resulting ML term is not guaranteed to be typable in ML
-(the next version should incorporate appropriate conversions).
-
-Only extraction towards Ocaml programs is currently available. More
-information can be found in \verb!$COQTOP/contrib/extraction/README!. 
-
 A new mechanism to extract Ocaml modules from Coq files has been
 added. 
 
-The \verb!ML import! command is not available anymore, use the command
-\verb!Extract Constant! to realize a {\Coq} axiom by an ML program.
+However, the resulting ML term is not guaranteed to be typable in ML
+(the next version should incorporate automatically appropriate conversions).
 
+Only extraction towards Ocaml programs is currently available. More
+information can be found in \verb=$COQTOP/contrib/extraction/README=. 
 The syntax of commands is described in the Reference Manual.
 
-\subsection{Principles}
+The \verb=ML import= command is not available anymore, the command
+\verb=Extract Constant=  can be used to realize a \Coq{} axiom by 
+an ML program.
 
 \section{Developers}
 \label{Developers}
@@ -626,8 +659,8 @@ at:
 %\end{tabular}
 %\bigskip
 
-A rpm package is available for i386 Linux users. No other binary
-package is available for this beta release.
+%A rpm package is available for i386 Linux users. No other binary
+%package is available for this beta release.
 
 %\bigskip
 %
@@ -645,7 +678,7 @@ package is available for this beta release.
 
 \section*{Appendix}
 \label{Appendix}
-We detail the differences between {\Coq} V6.3.1 and V7.0beta for the {\tt
+We detail the differences between {\Coq} V6.3.1 and V7.0 for the {\tt
 Syntax} and {\tt Grammar} default parsers.
 
 \medskip
