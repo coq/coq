@@ -60,6 +60,8 @@ fi
 /usr/bin/coqdep
 /usr/bin/gallina
 /usr/bin/coq_makefile
+/usr/bin/coq-interface
+/usr/bin/parser
 #/usr/bin/coq_searchisos.out
 /usr/bin/coqmktop
 #/usr/bin/coq2html
