@@ -433,7 +433,7 @@ val nb_lam : constr -> int
 (* similar to [nb_lam], but gives the number of products instead *)
 val nb_prod : constr -> int
 
-(* Trop compliqué
+(*i*)(* Trop compliqué 
 (*s Various utility functions for implementing terms with bindings. *)
 
 val extract_lifted : int * constr -> constr
@@ -507,7 +507,7 @@ val lam_and_popl_named :
    properly lifted, and then push back the products, but as lambda-
    abstractions *)
 val lambda_ize : int ->'a oper term -> 'a oper term -> 'a oper term
-*)
+*)(*i*)
 
 (*s Flattening and unflattening of embedded applications and casts. *)
 
