@@ -93,7 +93,7 @@ let make_act (f : loc -> constr_expr action_env -> constr_expr) pil =
         Gramext.action (fun (v:identifier) ->
 	  make ((p,CRef (Ident (dummy_loc,v))) :: env) tl)
     | Some (p, ETBigint) :: tl -> (* non-terminal *)
-        Gramext.action (fun (v:Bignat.bigint) ->
+        Gramext.action (fun (v:Bigint.bigint) ->
 	  make ((p,CNumeral (dummy_loc,v)) :: env) tl)
     | Some (p, ETConstrList _) :: tl ->
         Gramext.action (fun (v:constr_expr list) ->
@@ -119,7 +119,7 @@ let make_act_in_cases_pattern (* For Notations *)
         Gramext.action (fun (v:identifier) ->
 	  make ((p,CPatAtom (dummy_loc,Some (Ident (dummy_loc,v)))) :: env) tl)
     | Some (p, ETBigint) :: tl -> (* non-terminal *)
-        Gramext.action (fun (v:Bignat.bigint) ->
+        Gramext.action (fun (v:Bigint.bigint) ->
 	  make ((p,CPatNumeral (dummy_loc,v)) :: env) tl)
     | Some (p, ETConstrList _) :: tl ->
         Gramext.action (fun (v:cases_pattern_expr list) ->

@@ -222,7 +222,7 @@ let rec pr_cases_pattern _inh = function
   | CPatNotation (_,"( _ )",[p]) ->
       str"("++ pr_cases_pattern _inh p ++ str")"
   | CPatNotation (_,s,env) -> fst (pr_patnotation pr_cases_pattern s env)
-  | CPatNumeral (_,n) -> Bignat.pr_bigint n
+  | CPatNumeral (_,n) -> Bigint.pr_bigint n
   | CPatDelimiters (_,key,p) -> pr_delimiters key (pr_cases_pattern _inh p)
 
 let pr_cases_pattern = pr_cases_pattern (0,E) (* level unused *)
@@ -320,7 +320,7 @@ let rec pr inherited a =
   | CNotation (_,"( _ )",[t]) ->
       str"("++ pr (max_int,E) t ++ str")", latom
   | CNotation (_,s,env) -> pr_notation pr s env
-  | CNumeral (_,p) -> Bignat.pr_bigint p, latom
+  | CNumeral (_,p) -> Bigint.pr_bigint p, latom
   | CDelimiters (_,sc,a) -> pr_delimiters sc (pr ltop a), latom
   | CDynamic _ -> str "<dynamic>", latom
   in

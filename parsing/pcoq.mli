@@ -113,7 +113,7 @@ module Prim :
     val identref : identifier located Gram.Entry.e
     val base_ident : identifier Gram.Entry.e
     val natural : int Gram.Entry.e
-    val bigint : Bignat.bigint Gram.Entry.e
+    val bigint : Bigint.bigint Gram.Entry.e
     val integer : int Gram.Entry.e
     val string : string Gram.Entry.e
     val qualid : qualid located Gram.Entry.e

@@ -483,7 +483,7 @@ type cases_pattern_expr =
   | CPatAtom of loc * reference option
   | CPatOr of loc * cases_pattern_expr list
   | CPatNotation of loc * notation * cases_pattern_expr list
-  | CPatNumeral of loc * Bignat.bigint
+  | CPatNumeral of loc * Bigint.bigint
   | CPatDelimiters of loc * string * cases_pattern_expr
 
 type constr_expr =
@@ -512,7 +512,7 @@ type constr_expr =
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr
   | CNotation of loc * notation * constr_expr list
-  | CNumeral of loc * Bignat.bigint
+  | CNumeral of loc * Bigint.bigint
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
 

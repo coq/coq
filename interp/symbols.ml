@@ -11,7 +11,7 @@
 (*i*)
 open Util
 open Pp
-open Bignat
+open Bigint
 open Names
 open Nametab
 open Libnames
