@@ -34,3 +34,14 @@ Fixpoint build [nl : (list nat)] :
    | (S m) => [a](build rest (False_ind ? a))
    end
   end.
+
+
+(* Checks that disjoint contexts are correctly set by restrict_hyp *)
+(* Bug de 1999 corrigé en déc 2004 *)
+
+Check
+  let p = [m:nat;f;n:nat]Cases (f m n) of
+                         (exist a b) => (exist ? ? a b)
+                         end
+  in 
+  (p:: (x:nat)((y:nat)(n:nat){q:nat | y = (mult q n)}) -> (n:nat){q:nat | x = (mult q n)}).
