@@ -169,8 +169,10 @@ let _ =
       Summary.survive_section = false }
 
 let find_library s =
-  try
-    CompilingLibraryMap.find s !libraries_table
+  CompilingLibraryMap.find s !libraries_table
+
+let try_find_library s =
+  try find_library s
   with Not_found ->
     error ("Unknown library " ^ (string_of_dirpath s))
 
@@ -250,7 +252,7 @@ let open_libraries export modl =
       (fun l m ->
          let subimport =
            List.fold_left
-             (fun l m -> remember_last_of_each l (find_library m))
+             (fun l m -> remember_last_of_each l (try_find_library m))
              l m.library_imports
          in remember_last_of_each subimport m)
       [] modl in
@@ -261,7 +263,7 @@ let open_libraries export modl =
 (* import and export  -  synchronous operations*)
 
 let cache_import (_,(dir,export)) = 
-  open_libraries export [find_library dir]
+  open_libraries export [try_find_library dir]
 
 let open_import i (_,(dir,_) as obj) =
   if i=1 then
@@ -698,7 +700,7 @@ let check_required_library d =
 open Printf
 
 let mem s =
-  let m = find_library s in
+  let m = try_find_library s in
   h 0 (str (sprintf "%dk (cenv = %dk / seg = %dk)"
 		 (size_kb m) (size_kb m.library_compiled) 
 		 (size_kb m.library_objects)))
