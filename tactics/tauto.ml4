@@ -189,7 +189,7 @@ let lfo_wrap n gl=
       errorlabstrm "LinearIntuition" [< str "LinearIntuition failed." >]
 
 TACTIC EXTEND Tauto
-| [ "OldTauto" ] -> [ tauto ]
+| [ "Tauto" ] -> [ tauto ]
 END
 
 TACTIC EXTEND TSimplif

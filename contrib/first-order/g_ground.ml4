@@ -95,7 +95,7 @@ TACTIC EXTEND Ground
 END
 
 TACTIC EXTEND GTauto   
-  [ "Tauto" ] ->
+  [ "GTauto" ] ->
      [ gen_ground_tac false (Some fail_solver) Void ]   
 END
 
