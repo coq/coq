@@ -26,7 +26,8 @@ kernel/safe_typing.cmi: kernel/cooking.cmi kernel/declarations.cmi \
     kernel/entries.cmi kernel/environ.cmi kernel/names.cmi kernel/term.cmi \
     kernel/univ.cmi 
 kernel/sign.cmi: kernel/names.cmi kernel/term.cmi 
-kernel/subtyping.cmi: kernel/declarations.cmi kernel/environ.cmi 
+kernel/subtyping.cmi: kernel/declarations.cmi kernel/environ.cmi \
+    kernel/univ.cmi 
 kernel/term.cmi: kernel/names.cmi kernel/univ.cmi 
 kernel/term_typing.cmi: kernel/cooking.cmi kernel/declarations.cmi \
     kernel/entries.cmi kernel/environ.cmi kernel/inductive.cmi \
@@ -79,11 +80,12 @@ parsing/coqast.cmi: lib/dyn.cmi library/libnames.cmi kernel/names.cmi
 parsing/coqlib.cmi: library/libnames.cmi kernel/names.cmi library/nametab.cmi \
     pretyping/pattern.cmi kernel/term.cmi 
 parsing/egrammar.cmi: parsing/ast.cmi parsing/coqast.cmi parsing/extend.cmi \
-    parsing/genarg.cmi proofs/tacexpr.cmo toplevel/vernacexpr.cmo 
+    parsing/genarg.cmi kernel/names.cmi proofs/tacexpr.cmo \
+    toplevel/vernacexpr.cmo 
 parsing/esyntax.cmi: parsing/ast.cmi parsing/coqast.cmi parsing/extend.cmi \
     library/libnames.cmi lib/pp.cmi toplevel/vernacexpr.cmo 
 parsing/extend.cmi: parsing/ast.cmi parsing/coqast.cmi library/libnames.cmi \
-    lib/pp.cmi 
+    kernel/names.cmi lib/pp.cmi 
 parsing/genarg.cmi: kernel/closure.cmi parsing/coqast.cmi pretyping/evd.cmi \
     library/libnames.cmi kernel/names.cmi pretyping/rawterm.cmi \
     kernel/term.cmi lib/util.cmi 
@@ -488,10 +490,12 @@ kernel/sign.cmx: kernel/names.cmx kernel/term.cmx lib/util.cmx \
     kernel/sign.cmi 
 kernel/subtyping.cmo: kernel/declarations.cmi kernel/environ.cmi \
     kernel/inductive.cmi kernel/modops.cmi kernel/names.cmi \
-    kernel/reduction.cmi kernel/term.cmi lib/util.cmi kernel/subtyping.cmi 
+    kernel/reduction.cmi kernel/term.cmi kernel/univ.cmi lib/util.cmi \
+    kernel/subtyping.cmi 
 kernel/subtyping.cmx: kernel/declarations.cmx kernel/environ.cmx \
     kernel/inductive.cmx kernel/modops.cmx kernel/names.cmx \
-    kernel/reduction.cmx kernel/term.cmx lib/util.cmx kernel/subtyping.cmi 
+    kernel/reduction.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
+    kernel/subtyping.cmi 
 kernel/term.cmo: kernel/esubst.cmi lib/hashcons.cmi kernel/names.cmi \
     lib/pp.cmi kernel/univ.cmi lib/util.cmi kernel/term.cmi 
 kernel/term.cmx: kernel/esubst.cmx lib/hashcons.cmx kernel/names.cmx \
@@ -689,9 +693,9 @@ parsing/astterm.cmx: parsing/ast.cmx parsing/coqast.cmx library/declare.cmx \
     kernel/term.cmx parsing/termast.cmx pretyping/termops.cmx \
     pretyping/typing.cmx lib/util.cmx parsing/astterm.cmi 
 parsing/coqast.cmo: lib/dyn.cmi lib/hashcons.cmi library/libnames.cmi \
-    kernel/names.cmi parsing/coqast.cmi 
+    kernel/names.cmi lib/util.cmi parsing/coqast.cmi 
 parsing/coqast.cmx: lib/dyn.cmx lib/hashcons.cmx library/libnames.cmx \
-    kernel/names.cmx parsing/coqast.cmi 
+    kernel/names.cmx lib/util.cmx parsing/coqast.cmi 
 parsing/coqlib.cmo: library/declare.cmi library/libnames.cmi kernel/names.cmi \
     library/nametab.cmi pretyping/pattern.cmi kernel/term.cmi lib/util.cmi \
     parsing/coqlib.cmi 
@@ -1644,6 +1648,12 @@ tactics/wcclausenv.cmx: proofs/clenv.cmx kernel/environ.cmx \
     lib/util.cmx tactics/wcclausenv.cmi 
 tmp/probj.cmo: library/declaremods.cmi library/libobject.cmi 
 tmp/probj.cmx: library/declaremods.cmx library/libobject.cmx 
+tmp/vernacentries.cmo: parsing/ast.cmi toplevel/class.cmi \
+    toplevel/command.cmi library/declare.cmi library/libnames.cmi \
+    tactics/tactics.cmi 
+tmp/vernacentries.cmx: parsing/ast.cmx toplevel/class.cmx \
+    toplevel/command.cmx library/declare.cmx library/libnames.cmx \
+    tactics/tactics.cmx 
 tools/coqdep_lexer.cmo: config/coq_config.cmi 
 tools/coqdep_lexer.cmx: config/coq_config.cmx 
 tools/coqdep.cmo: config/coq_config.cmi tools/coqdep_lexer.cmo 
