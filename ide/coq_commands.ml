@@ -214,6 +214,9 @@ let state_preserving = [
 
   "Pwd";
 
+  "Recursive Extraction";
+  "Recursive Extraction Module";
+
   "Search";
   "SearchAbout";
   "SearchPattern";
