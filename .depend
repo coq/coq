@@ -6,9 +6,11 @@ kernel/environ.cmi: kernel/constant.cmi kernel/evd.cmi kernel/inductive.cmi \
     kernel/names.cmi kernel/sign.cmi kernel/term.cmi kernel/univ.cmi 
 kernel/evd.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi 
 kernel/generic.cmi: kernel/names.cmi lib/util.cmi 
-kernel/indtypes.cmi: kernel/environ.cmi kernel/inductive.cmi 
+kernel/indtypes.cmi: kernel/environ.cmi kernel/inductive.cmi kernel/names.cmi \
+    kernel/term.cmi 
 kernel/inductive.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi 
-kernel/instantiate.cmi: kernel/environ.cmi kernel/names.cmi kernel/term.cmi 
+kernel/instantiate.cmi: kernel/environ.cmi kernel/inductive.cmi \
+    kernel/names.cmi kernel/term.cmi 
 kernel/names.cmi: lib/pp.cmi 
 kernel/reduction.cmi: kernel/closure.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/generic.cmi kernel/names.cmi kernel/term.cmi kernel/univ.cmi 
@@ -56,20 +58,22 @@ kernel/generic.cmo: kernel/names.cmi lib/pp.cmi lib/util.cmi \
     kernel/generic.cmi 
 kernel/generic.cmx: kernel/names.cmx lib/pp.cmx lib/util.cmx \
     kernel/generic.cmi 
-kernel/indtypes.cmo: kernel/environ.cmi kernel/inductive.cmi \
-    kernel/reduction.cmi kernel/indtypes.cmi 
-kernel/indtypes.cmx: kernel/environ.cmx kernel/inductive.cmx \
-    kernel/reduction.cmx kernel/indtypes.cmi 
+kernel/indtypes.cmo: kernel/environ.cmi kernel/generic.cmi \
+    kernel/inductive.cmi kernel/instantiate.cmi kernel/reduction.cmi \
+    kernel/sign.cmi kernel/term.cmi lib/util.cmi kernel/indtypes.cmi 
+kernel/indtypes.cmx: kernel/environ.cmx kernel/generic.cmx \
+    kernel/inductive.cmx kernel/instantiate.cmx kernel/reduction.cmx \
+    kernel/sign.cmx kernel/term.cmx lib/util.cmx kernel/indtypes.cmi 
 kernel/inductive.cmo: kernel/generic.cmi kernel/names.cmi kernel/sign.cmi \
     kernel/term.cmi lib/util.cmi kernel/inductive.cmi 
 kernel/inductive.cmx: kernel/generic.cmx kernel/names.cmx kernel/sign.cmx \
     kernel/term.cmx lib/util.cmx kernel/inductive.cmi 
 kernel/instantiate.cmo: kernel/constant.cmi kernel/environ.cmi kernel/evd.cmi \
-    kernel/generic.cmi kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
-    kernel/term.cmi lib/util.cmi kernel/instantiate.cmi 
+    kernel/generic.cmi kernel/inductive.cmi kernel/names.cmi lib/pp.cmi \
+    kernel/sign.cmi kernel/term.cmi lib/util.cmi kernel/instantiate.cmi 
 kernel/instantiate.cmx: kernel/constant.cmx kernel/environ.cmx kernel/evd.cmx \
-    kernel/generic.cmx kernel/names.cmx lib/pp.cmx kernel/sign.cmx \
-    kernel/term.cmx lib/util.cmx kernel/instantiate.cmi 
+    kernel/generic.cmx kernel/inductive.cmx kernel/names.cmx lib/pp.cmx \
+    kernel/sign.cmx kernel/term.cmx lib/util.cmx kernel/instantiate.cmi 
 kernel/names.cmo: lib/hashcons.cmi lib/pp.cmi lib/util.cmi kernel/names.cmi 
 kernel/names.cmx: lib/hashcons.cmx lib/pp.cmx lib/util.cmx kernel/names.cmi 
 kernel/reduction.cmo: kernel/closure.cmi kernel/constant.cmi \
