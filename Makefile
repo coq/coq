@@ -1306,14 +1306,15 @@ GRAMMARNEEDEDCMO=\
   library/nameops.cmo library/libnames.cmo library/summary.cmo \
   library/nametab.cmo library/libobject.cmo library/lib.cmo \
   library/goptions.cmo library/decl_kinds.cmo \
-  library/global.cmo pretyping/termops.cmo \
-  pretyping/rawterm.cmo pretyping/pattern.cmo pretyping/evd.cmo \
-  interp/topconstr.cmo interp/genarg.cmo \
-  interp/ppextend.cmo parsing/coqast.cmo parsing/ast.cmo \
-  proofs/tacexpr.cmo parsing/ast.cmo \
-  parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
+  library/global.cmo \
+  pretyping/termops.cmo pretyping/evd.cmo \
+  pretyping/rawterm.cmo pretyping/pattern.cmo \
+  interp/topconstr.cmo interp/genarg.cmo interp/ppextend.cmo \
+  parsing/coqast.cmo parsing/ast.cmo \
+  parsing/ast.cmo parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
   toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_coqast.cmo \
-  parsing/egrammar.cmo
+  parsing/egrammar.cmo \
+  proofs/tacexpr.cmo
 
 CAMLP4EXTENSIONSCMO=\
   parsing/argextend.cmo parsing/tacextend.cmo parsing/vernacextend.cmo 
