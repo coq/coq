@@ -494,8 +494,17 @@ and pr_atom1 env = function
              hov 1 (str"(" ++ pr_name na ++ str " :=" ++
                     pr_lconstrarg env c ++ str")"))
   | TacForward (true,Anonymous,c) ->
-      hov 1 (str "pose" ++ pr_constrarg env c)
+      if Options.do_translate () then
+        (* Pose was buggy and was wrongly substituting in conclusion in v7 *)
+        hov 1 (str "set" ++ pr_constrarg env c)
+      else
+        hov 1 (str "pose" ++ pr_constrarg env c)
   | TacForward (true,Name id,c) ->
+      if Options.do_translate () then
+      hov 1 (str "set" ++ spc() ++
+             hov 1 (str"(" ++ pr_id id ++ str " :=" ++
+                    pr_lconstrarg env c ++ str")"))
+      else
       hov 1 (str "pose" ++ spc() ++
              hov 1 (str"(" ++ pr_id id ++ str " :=" ++
                     pr_lconstrarg env c ++ str")"))
