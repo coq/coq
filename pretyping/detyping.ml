@@ -306,15 +306,29 @@ and detype_fix tenv avoid env (vn,_ as nvn) (names,tys,bodies) =
     if n = 0 then
       let c = detype tenv avoid env c in
       let t = detype tenv avoid env t in
-      List.fold_left (fun c (na,t) -> RLambda (dummy_loc,na,t,c)) c l,
-      List.fold_left (fun c (na,t) -> RProd (dummy_loc,na,t,c)) t l
+      List.fold_left (fun (c,typ) (na,body,t) -> match body with
+	| None -> (RLambda (dummy_loc,na,t,c),RProd (dummy_loc,na,t,typ))
+	| Some b -> (RLetIn (dummy_loc,na,b,c),RLetIn (dummy_loc,na,b,typ)))
+	(c,t) l
     else match kind_of_term c, kind_of_term t with
       | Lambda (na,t,c), Prod (_,t',c') ->
           let t = detype tenv avoid env t in
 	  let id = next_name_away na avoid in 
           let avoid = id::avoid and env = add_name (Name id) env in
-          share_names (n-1) ((na,t)::l) avoid env c c'
-      | _ -> anomaly "Detype: wrong fix" in
+          share_names (n-1) ((na,None,t)::l) avoid env c c'
+      (* May occur for fix built interactively *)
+      | LetIn (na,b,t',c), _ ->
+          let t' = detype tenv avoid env t' in
+          let b = detype tenv avoid env b in
+	  let id = next_name_away na avoid in 
+          let avoid = id::avoid and env = add_name (Name id) env in
+          share_names n ((na,Some b,t')::l) avoid env c t
+      (* Only if built with the f/n notation or w/o let-expansion in types *)
+      | _, LetIn (_,b,_,t) ->
+	  share_names n l avoid env c (subst1 b t)
+      (* If built with the f/n notation or in an open proof: we renounce to *)
+      (* share names *)
+      | _ -> share_names 0 l avoid env c t in
   let n = Array.length tys in
   let v = array_map3
     (fun c t i -> share_names (i+1) [] def_avoid def_env c (lift n t))

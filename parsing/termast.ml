@@ -256,12 +256,16 @@ let rec ast_of_raw = function
 	 | RFix (nv,n) ->
              let rec split_lambda binds = function
 	       | (0, t) -> (binds,ast_of_raw t)
+	       | (n, RLetIn (_,na,b,c)) ->
+		   let bind = ope("LETBINDER",[ast_of_raw b;ast_of_name na]) in
+		   split_lambda (bind::binds) (n,c)
 	       | (n, RLambda (_,na,t,b)) ->
 		   let bind = ope("BINDER",[ast_of_raw t;ast_of_name na]) in
 		   split_lambda (bind::binds) (n-1,b)
 	       | _ -> anomaly "ast_of_rawconst: ill-formed fixpoint body" in
 	     let rec split_product = function
 	       | (0, t) -> ast_of_raw t
+	       | (n, RLetIn (_,na,_,c)) -> split_product (n,c)
 	       | (n, RProd (_,na,t,b)) -> split_product (n-1,b)
 	       | _ -> anomaly "ast_of_rawconst: ill-formed fixpoint type" in
 	     let listdecl = 

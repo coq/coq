@@ -33,7 +33,9 @@ Syntax constr
   | bindersone  [ << (BINDERS (BINDER $c ($LIST $id))) >> ] -> 
        [ [<hov 0> (IDBINDER ($LIST $id))] ":" $c:E ]
 
-  | letbinder  [ << (BINDERS (LETBINDER $c $id)) >> ] -> 
+  | letbindercons [ << (BINDERS (LETBINDER $c $id) ($LIST $b)) >> ] ->
+       [ [<hov 0> id ":=" [0 1] $c:E ";" [1 0] (BINDERS ($LIST $b)) ] ]
+  | letbinderone  [ << (BINDERS (LETBINDER $c $id)) >> ] -> 
        [ [<hov 0> id ":=" [0 1] $c:E ] ]
   ;
 
