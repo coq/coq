@@ -190,6 +190,7 @@ Tactics
 - Field now works on types in Set
 - Auto with reals now try to replace le by ge (Rge_le is no longer an
   immediate hint), resulting in shorter proofs
+- Some new tactics : EConstructor, ELeft, Eright, ESplit, EExists
 
 Extraction (See details in contrib/extraction/CHANGES)
 

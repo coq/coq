@@ -128,7 +128,7 @@ let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
 if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis
- with_bindings red_expr int_or_var castedopenconstr;
+  bindings red_expr int_or_var castedopenconstr;
 
   int_or_var:
     [ [ n = integer  -> Genarg.ArgArg n
@@ -205,7 +205,7 @@ GEXTEND Gram
     [ [ "("; id = base_ident; ":="; c = lconstr; ")" -> (loc, NamedHyp id, c)
       | "("; n = natural; ":="; c = lconstr; ")" -> (loc, AnonHyp n, c) ] ]
   ;
-  binding_list:
+  bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->
           ExplicitBindings bl
       | bl = LIST1 constr -> ImplicitBindings bl ] ]
@@ -214,7 +214,7 @@ GEXTEND Gram
     [ [ c = constr; l = with_bindings -> (c, l) ] ]
   ;
   with_bindings:
-    [ [ "with"; bl = binding_list -> bl | -> NoBindings ] ]
+    [ [ "with"; bl = bindings -> bl | -> NoBindings ] ]
   ;
   red_flag:
     [ [ IDENT "beta" -> FBeta
@@ -390,7 +390,7 @@ GEXTEND Gram
       | IDENT "left"; bl = with_bindings -> TacLeft bl
       | IDENT "right"; bl = with_bindings -> TacRight bl
       | IDENT "split"; bl = with_bindings -> TacSplit (false,bl)
-      | "exists"; bl = binding_list -> TacSplit (true,bl)
+      | "exists"; bl = bindings -> TacSplit (true,bl)
       | "exists" -> TacSplit (true,NoBindings)
       | IDENT "constructor"; n = num_or_meta; l = with_bindings ->
 	  TacConstructor (n,l)

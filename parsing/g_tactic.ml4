@@ -62,7 +62,7 @@ let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
 
 if !Options.v7 then
 GEXTEND Gram
-  GLOBAL: simple_tactic constrarg with_bindings constr_with_bindings 
+  GLOBAL: simple_tactic constrarg bindings constr_with_bindings 
   quantified_hypothesis red_expr int_or_var castedopenconstr;
 
   int_or_var:
@@ -151,7 +151,7 @@ GEXTEND Gram
     [ [ id = base_ident; ":="; c = constr -> (loc, NamedHyp id, c)
       | n = natural; ":="; c = constr -> (loc, AnonHyp n, c) ] ]
   ;
-  binding_list:
+  bindings:
     [ [ c1 = constr; ":="; c2 = constr; bl = LIST0 simple_binding ->
           ExplicitBindings
             ((join_to_constr loc c2,NamedHyp (coerce_to_id c1), c2) :: bl)
@@ -164,7 +164,7 @@ GEXTEND Gram
     [ [ c = constr; l = with_bindings -> (c, l) ] ]
   ;
   with_bindings:
-    [ [ "with"; bl = binding_list -> bl | -> NoBindings ] ]
+    [ [ "with"; bl = bindings -> bl | -> NoBindings ] ]
   ;
   unfold_occ:
     [ [ nl = LIST0 integer; c = global_or_ltac_ref -> (nl,c) ] ]
@@ -346,7 +346,7 @@ GEXTEND Gram
       | IDENT "Left"; bl = with_bindings -> TacLeft bl
       | IDENT "Right"; bl = with_bindings -> TacRight bl
       | IDENT "Split"; bl = with_bindings -> TacSplit (false,bl)
-      | IDENT "Exists"; bl = binding_list -> TacSplit (true,bl)
+      | IDENT "Exists"; bl = bindings -> TacSplit (true,bl)
       | IDENT "Exists" -> TacSplit (true,NoBindings)
       | IDENT "Constructor"; n = num_or_meta; l = with_bindings ->
 	  TacConstructor (n,l)

@@ -1102,7 +1102,7 @@ and coerce_genarg_to_TARG x =
 						 (out_gen
 						    rawwit_casted_open_constr x)))
   | ConstrWithBindingsArgType -> xlate_error "TODO: constr with bindings"
-  | WithBindingsArgType -> xlate_error "TODO: with bindings"
+  | BindingsArgType -> xlate_error "TODO: with bindings"
   | RedExprArgType -> xlate_error "TODO: red expr as generic argument"
   | List0ArgType l -> xlate_error "TODO: lists of generic arguments"
   | List1ArgType l -> xlate_error "TODO: non empty lists of generic arguments"
@@ -1184,7 +1184,7 @@ let coerce_genarg_to_VARG x =
       CT_coerce_TACTIC_OPT_to_VARG (CT_coerce_TACTIC_COM_to_TACTIC_OPT t)
   | CastedOpenConstrArgType -> xlate_error "TODO: open constr"
   | ConstrWithBindingsArgType -> xlate_error "TODO: constr with bindings"
-  | WithBindingsArgType -> xlate_error "TODO: with bindings"
+  | BindingsArgType -> xlate_error "TODO: with bindings"
   | RedExprArgType -> xlate_error "TODO: red expr as generic argument"
   | List0ArgType l -> xlate_error "TODO: lists of generic arguments"
   | List1ArgType l -> xlate_error "TODO: non empty lists of generic arguments"

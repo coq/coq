@@ -255,7 +255,7 @@ let rec mlexpr_of_argtype loc = function
   | Genarg.QuantHypArgType -> <:expr< Genarg.QuantHypArgType >>
   | Genarg.CastedOpenConstrArgType -> <:expr< Genarg.CastedOpenConstrArgType >>
   | Genarg.ConstrWithBindingsArgType -> <:expr< Genarg.ConstrWithBindingsArgType >>
-  | Genarg.WithBindingsArgType -> <:expr< Genarg.WithBindingsArgType >>
+  | Genarg.BindingsArgType -> <:expr< Genarg.BindingsArgType >>
   | Genarg.RedExprArgType -> <:expr< Genarg.RedExprArgType >>
   | Genarg.TacticArgType -> <:expr< Genarg.TacticArgType >>
   | Genarg.SortArgType -> <:expr< Genarg.SortArgType >>

@@ -114,6 +114,20 @@ let pr_bindings prc prlc = function
         l
   | NoBindings -> mt ()
 
+let pr_bindings_no_with prc prlc = function
+  | ImplicitBindings l ->
+      brk (1,1) ++
+      prlist_with_sep spc prc l
+  | ExplicitBindings l ->
+      brk (1,1) ++ 
+        prlist_with_sep spc
+          (fun b -> if Options.do_translate () or not !Options.v7 then
+	    str"(" ++ pr_binding prlc b ++ str")" 
+	   else
+	    pr_binding prc b)
+        l
+  | NoBindings -> mt ()
+
 let pr_with_bindings prc prlc (c,bl) =
   if Options.do_translate () then
     (* translator calls pr_with_bindings on rawconstr: we cast it! *)
@@ -268,8 +282,8 @@ let rec pr_raw_generic prc prlc prtac prref x =
       pr_arg prc (out_gen rawwit_casted_open_constr x)
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen rawwit_constr_with_bindings x)
-  | WithBindingsArgType -> 
-      pr_arg (pr_bindings prc prlc) (out_gen rawwit_with_bindings x)
+  | BindingsArgType -> 
+      pr_arg (pr_bindings_no_with prc prlc) (out_gen rawwit_bindings x)
   | List0ArgType _ -> 
       hov 0 (fold_list0 (fun x a -> pr_raw_generic prc prlc prtac prref x ++ a) x (mt()))
   | List1ArgType _ ->
@@ -313,8 +327,8 @@ let rec pr_glob_generic prc prlc prtac x =
       pr_arg prc (out_gen globwit_casted_open_constr x)
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen globwit_constr_with_bindings x)
-  | WithBindingsArgType -> 
-      pr_arg (pr_bindings prc prlc) (out_gen globwit_with_bindings x)
+  | BindingsArgType -> 
+      pr_arg (pr_bindings_no_with prc prlc) (out_gen globwit_bindings x)
   | List0ArgType _ -> 
       hov 0 (fold_list0 (fun x a -> pr_glob_generic prc prlc prtac x ++ a) x (mt()))
   | List1ArgType _ ->
@@ -357,8 +371,8 @@ let rec pr_generic prc prlc prtac x =
       pr_arg prc (snd (out_gen wit_casted_open_constr x))
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen wit_constr_with_bindings x)
-  | WithBindingsArgType -> 
-      pr_arg (pr_bindings prc prlc) (out_gen wit_with_bindings x)
+  | BindingsArgType -> 
+      pr_arg (pr_bindings_no_with prc prlc) (out_gen wit_bindings x)
   | List0ArgType _ -> 
       hov 0 (fold_list0 (fun x a -> pr_generic prc prlc prtac x ++ a) x (mt()))
   | List1ArgType _ ->
@@ -398,6 +412,7 @@ let pr_extend_gen prgen s l =
 let make_pr_tac (pr_tac,pr_tac0,pr_constr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend) =
 
 let pr_bindings = pr_bindings pr_constr pr_constr in
+let pr_bindings_no_with = pr_bindings_no_with pr_constr pr_constr in
 let pr_with_bindings = pr_with_bindings pr_constr pr_constr in
 let pr_eliminator cb = str "using" ++ pr_arg (pr_with_bindings) cb in
 let pr_constrarg c = spc () ++ pr_constr c in

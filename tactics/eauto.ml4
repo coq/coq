@@ -111,27 +111,31 @@ let e_split = e_constructor_tac (Some 1) 1
   [ "econstructor" integer(n) with_bindings(c) ] -> [ e_constructor_tac None n c ]
 END*)
 TACTIC EXTEND econstructor
-  [ "EConstructor" integer(n) with_bindings(c) ] -> [ e_constructor_tac None n c ]
+  [ "EConstructor" integer(n) "with" bindings(c) ] -> [ e_constructor_tac None n c ]
+  | [ "EConstructor" integer(n) ] -> [ e_constructor_tac None n NoBindings ]
   | [ "EConstructor" tactic_opt(t) ] -> [ e_any_constructor (option_app Tacinterp.eval_tactic t) ] 
-END
+      END
 
 TACTIC EXTEND eleft
-  [ "ELeft" with_bindings(l) ] -> [e_left l]
+  [ "ELeft" "with" bindings(l) ] -> [e_left l]
+  | [ "ELeft"] -> [e_left NoBindings]
 END
 
 TACTIC EXTEND eright
-  [ "ERight" with_bindings(l) ] -> [e_right l]
+  [ "ERight" "with" bindings(l) ] -> [e_right l]
+  | [ "ERight" ] -> [e_right NoBindings]
 END
 
 TACTIC EXTEND esplit
-  [ "ESplit" with_bindings(l) ] -> [e_split l]
+  [ "ESplit" "with" bindings(l) ] -> [e_split l]
+  | [ "ESplit"] -> [e_split NoBindings]
 END
 
-(*
+
 TACTIC EXTEND eexists
-  [ "EExists" with_bindings(l) ] -> [e_split l]
+  [ "EExists" bindings(l) ] -> [e_split l]
 END
-*)
+
 
 (************************************************************************)
 (*   PROLOG tactic                                                      *)
