@@ -720,8 +720,8 @@ let rec replace_vars_constr_expr l = function
 (* Concrete syntax for modules and modules types *)
 
 type with_declaration_ast = 
-  | CWith_Module of identifier located * qualid located
-  | CWith_Definition of identifier located * constr_expr
+  | CWith_Module of identifier list located * qualid located
+  | CWith_Definition of identifier list located * constr_expr
 
 type module_type_ast = 
   | CMTEident of qualid located

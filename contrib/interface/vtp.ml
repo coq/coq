@@ -1157,12 +1157,12 @@ and fMODULE_TYPE = function
 | CT_coerce_ID_to_MODULE_TYPE x -> fID x
 | CT_module_type_with_def(x1, x2, x3) ->
    fMODULE_TYPE x1;
-   fID x2;
+   fID_LIST x2;
    fFORMULA x3;
    fNODE "module_type_with_def" 3
 | CT_module_type_with_mod(x1, x2, x3) ->
    fMODULE_TYPE x1;
-   fID x2;
+   fID_LIST x2;
    fID x3;
    fNODE "module_type_with_mod" 3
 and fMODULE_TYPE_CHECK = function

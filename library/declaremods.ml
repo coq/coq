@@ -373,19 +373,25 @@ let (in_modtype,out_modtype) =
 
 
 
-let replace_module_object id (subst, mbids, msid, lib_stack) modobjs =
+let rec replace_module_object idl (subst, mbids, msid, lib_stack) modobjs =
   if mbids<>[] then 
     error "Unexpected functor objects"
   else
-    let rec replace_id = function 
-      | [] -> [] 
-      | (id',obj)::tail when id = id' ->
+    let rec replace_idl = function 
+      | _,[] -> [] 
+      | id::idl,(id',obj)::tail when id = id' ->
 	  if object_tag obj = "MODULE" then
-	    (id, in_module (None,modobjs,None))::tail
+           (match idl with
+               [] -> (id, in_module (None,modobjs,None))::tail
+             | _ ->
+               let (_,substobjs,_) = out_module obj in
+                let substobjs' = replace_module_object idl substobjs modobjs in
+                 (id, in_module (None,substobjs',None))::tail
+           )
 	  else error "MODULE expected!"
-      | lobj::tail -> lobj::replace_id tail
+      | idl,lobj::tail -> lobj::replace_idl (idl,tail)
     in
-      (subst, mbids, msid, replace_id lib_stack)
+      (subst, mbids, msid, replace_idl (idl,lib_stack))
 
 let abstract_substobjs mbids1 (subst, mbids2, msid, lib_stack) =
   (subst, mbids1@mbids2, msid, lib_stack)
@@ -397,10 +403,10 @@ let rec get_modtype_substobjs = function
       let (subst, mbids, msid, objs) = get_modtype_substobjs mte in
 	(subst, mbid::mbids, msid, objs)
   | MTEwith (mty, With_Definition _) -> get_modtype_substobjs mty
-  | MTEwith (mty, With_Module (id,mp)) -> 
+  | MTEwith (mty, With_Module (idl,mp)) -> 
       let substobjs = get_modtype_substobjs mty in
       let modobjs = MPmap.find mp !modtab_substobjs in
-	replace_module_object id substobjs modobjs
+	replace_module_object idl substobjs modobjs
   | MTEsig (msid,_) -> 
       todo "Anonymous module types"; (empty_subst, [], msid, [])
 

@@ -49,13 +49,18 @@ let local_append l id = l@[id]
 
 if not !Options.v7 then
 GEXTEND Gram
-  GLOBAL: bigint qualid reference ne_string;
+  GLOBAL: bigint fullyqualid qualid reference ne_string;
   field:
     [ [ s = FIELD -> local_id_of_string s ] ]
   ;
   fields:
     [ [ id = field; (l,id') = fields -> (local_append l id,id')
       | id = field -> ([],id)
+      ] ]
+  ;
+  fullyqualid:
+    [ [ id = base_ident; (l,id')=fields -> loc,id::List.rev (id'::l)
+      | id = base_ident -> loc,[id]
       ] ]
   ;
   basequalid:

@@ -66,8 +66,9 @@ and merge_with env mtb with_decl =
     | MTBsig(msid,sig_b) -> msid,sig_b 
     | _ -> error_signature_expected mtb
   in
-  let id = match with_decl with 
-    | With_Definition (id,_) | With_Module (id,_) -> id
+  let id,idl = match with_decl with 
+    | With_Definition (id::idl,_) | With_Module (id::idl,_) -> id,idl
+    | With_Definition ([],_) | With_Module ([],_) -> assert false
   in
   let l = label_of_id id in
     try
@@ -75,7 +76,9 @@ and merge_with env mtb with_decl =
       let before = List.rev rev_before in
       let env' = Modops.add_signature (MPself msid) before env in
       let new_spec = match with_decl with
-	| With_Definition (id,c) -> 
+        | With_Definition ([],_)
+        | With_Module ([],_) -> assert false
+	| With_Definition ([id],c) -> 
 	    let cb = match spec with
 		SPBconst cb -> cb
 	      | _ -> error_not_a_constant l
@@ -107,7 +110,7 @@ and merge_with env mtb with_decl =
                                     const_constraints = cst}
 	      end	
 (* and what about msid's ????? Don't they clash ? *)
-	| With_Module (id, mp) ->
+	| With_Module ([id], mp) ->
 	    let old = match spec with
 		SPBmodule msb -> msb
 	      | _ -> error_not_a_module (string_of_label l)
@@ -138,6 +141,29 @@ and merge_with env mtb with_decl =
 	       msb_constraints = Constraint.union old.msb_constraints cst }
 	    in
 	      SPBmodule msb
+	| With_Definition (_::_,_)
+        | With_Module (_::_,_) -> 
+	    let old = match spec with
+		SPBmodule msb -> msb
+	      | _ -> error_not_a_module (string_of_label l)
+	    in
+	      begin
+		match old.msb_equiv with
+                   None ->
+                    let new_with_decl = match with_decl with
+                       With_Definition (_,c) -> With_Definition (idl,c)
+                     | With_Module (_,c) -> With_Module (idl,c) in
+                    let modtype = 
+                     merge_with env' old.msb_modtype new_with_decl in
+                    let msb =
+	              {msb_modtype = modtype; 
+	               msb_equiv = None; 
+	               msb_constraints = old.msb_constraints }
+	            in
+	             SPBmodule msb
+                 | Some mp ->
+                    error_a_generative_module_expected l
+              end
       in
 	MTBsig(msid,  before@(l,new_spec)::after)
     with

@@ -34,7 +34,8 @@ let local_append l id = l@[id]
 
 GEXTEND Gram
   GLOBAL: bigint ident natural integer string preident ast
-    astlist qualid reference dirpath identref name base_ident var hyp;
+    astlist qualid reference dirpath identref name base_ident var
+    hyp;
 
  (* Compatibility: Prim.var is a synonym of Prim.ident *)
   var:

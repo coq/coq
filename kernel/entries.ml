@@ -85,8 +85,8 @@ and module_type_entry =
 and module_signature_entry = (label * specification_entry) list
 
 and with_declaration = 
-    With_Module of identifier * module_path
-  | With_Definition of identifier * constr
+    With_Module of identifier list * module_path
+  | With_Definition of identifier list * constr
 
 and module_expr = 
     MEident of module_path

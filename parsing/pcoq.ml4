@@ -323,6 +323,7 @@ module Prim =
     let base_ident = Gram.Entry.create "Prim.base_ident"
 
     let qualid = Gram.Entry.create "Prim.qualid"
+    let fullyqualid = Gram.Entry.create "Prim.fullyqualid"
     let dirpath = Gram.Entry.create "Prim.dirpath"
 
     let ne_string = Gram.Entry.create "Prim.ne_string"

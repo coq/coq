@@ -1507,12 +1507,13 @@ let rec xlate_module_type = function
   | CMTEwith(mty, decl) ->
       let mty1 = xlate_module_type mty in
 	(match decl with
-	     CWith_Definition((_, id), c) ->
+	     CWith_Definition((_, idl), c) ->
 	       CT_module_type_with_def(xlate_module_type mty, 
-				       xlate_ident id, xlate_formula c)
-	   | CWith_Module((_, id), (_, qid)) ->
+				       CT_id_list (List.map xlate_ident idl),
+                                       xlate_formula c)
+	   | CWith_Module((_, idl), (_, qid)) ->
 	       CT_module_type_with_mod(xlate_module_type mty,
-				       xlate_ident id, 
+				       CT_id_list (List.map xlate_ident idl), 
 				       CT_ident (xlate_qualid qid)));;
 
 let xlate_module_binder_list (l:module_binder list) =

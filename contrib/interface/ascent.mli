@@ -467,8 +467,8 @@ and ct_MODULE_EXPR =
   | CT_module_app of ct_MODULE_EXPR * ct_MODULE_EXPR
 and ct_MODULE_TYPE =
     CT_coerce_ID_to_MODULE_TYPE of ct_ID
-  | CT_module_type_with_def of ct_MODULE_TYPE * ct_ID * ct_FORMULA
-  | CT_module_type_with_mod of ct_MODULE_TYPE * ct_ID * ct_ID
+  | CT_module_type_with_def of ct_MODULE_TYPE * ct_ID_LIST * ct_FORMULA
+  | CT_module_type_with_mod of ct_MODULE_TYPE * ct_ID_LIST * ct_ID
 and ct_MODULE_TYPE_CHECK =
     CT_coerce_MODULE_TYPE_OPT_to_MODULE_TYPE_CHECK of ct_MODULE_TYPE_OPT
   | CT_only_check of ct_MODULE_TYPE

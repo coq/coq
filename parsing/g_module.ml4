@@ -31,10 +31,10 @@ GEXTEND Gram
   ;
 
   with_declaration:
-    [ [ "Definition"; id = identref; ":="; c = Constr.constr ->
-          CWith_Definition (id,c)
-      | IDENT "Module"; id = identref; ":="; qid = qualid ->
-	  CWith_Module (id,qid)
+    [ [ "Definition"; fqid = fullyqualid; ":="; c = Constr.constr ->
+          CWith_Definition (fqid,c)
+      | IDENT "Module"; fqid = fullyqualid; ":="; qid = qualid ->
+	  CWith_Module (fqid,qid)
       ] ]
   ;
   

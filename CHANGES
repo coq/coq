@@ -35,6 +35,8 @@ Modules
 - Added syntactic sugar "Module M(Export/Import X Y: T)" and
   "Module Type M(Export/Import X Y: T)"
   (only for interactive definitions) (doc TODO)
+- Construct "with" generalized to module paths:
+   T with (Definition|Module) M1.M2....Mn.l := l'.  (doc TODO)
 
 Notations
 

@@ -36,6 +36,18 @@ let pr_lident (b,_ as loc,id) =
     pr_located pr_id (make_loc (b,b+String.length(string_of_id id)),id)
   else pr_id id
 
+let string_of_fqid fqid =
+ String.concat "." (List.map string_of_id fqid)
+
+let pr_fqid fqid = str (string_of_fqid fqid)
+
+let pr_lfqid (_,_ as loc,fqid) =
+  if loc <> dummy_loc then
+   let (b,_) = unloc loc in
+    pr_located pr_fqid (make_loc (b,b+String.length(string_of_fqid fqid)),fqid)
+  else
+   pr_fqid fqid
+
 let pr_lname = function
     (loc,Name id) -> pr_lident (loc,id)
   | lna -> pr_located pr_name lna
@@ -229,9 +241,9 @@ let pr_hints local db h pr_c pr_pat =
 let pr_with_declaration pr_c = function
   | CWith_Definition (id,c) ->
       let p = pr_c c in
-      str"Definition" ++ spc() ++ pr_lident id ++ str" := " ++ p
+      str"Definition" ++ spc() ++ pr_lfqid id ++ str" := " ++ p
   | CWith_Module (id,qid) ->
-      str"Module" ++ spc() ++ pr_lident id ++ str" := " ++
+      str"Module" ++ spc() ++ pr_lfqid id ++ str" := " ++
       pr_located pr_qualid qid
 
 let rec pr_module_type pr_c = function
