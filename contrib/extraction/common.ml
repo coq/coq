@@ -35,15 +35,15 @@ end
 
 type updown = { mutable up : Orefset.t ; mutable down : Orefset.t }
 
-let add_down r o = o.down <- Orefset.add r o.down
-let add_up r o = o.up <- Orefset.add r o.up
-let lang_add_type r o = if lang () = Haskell then add_up r o else add_down r o
+let add_down o r = o.down <- Orefset.add r o.down
+let add_up o r = o.up <- Orefset.add r o.up
+let lang_add_type o r = if lang () = Haskell then add_up o r else add_down o r
 
 (*s Get all references used in one [ml_decl] list. *)
 
 let mltype_get_references o t = 
   let rec get_rec = function 
-    | Tglob (r,l) -> lang_add_type r o; List.iter get_rec l 
+    | Tglob (r,l) -> lang_add_type o r; List.iter get_rec l 
     | Tarr (a,b) -> get_rec a; get_rec b 
     | _ -> () 
   in get_rec t
@@ -52,31 +52,38 @@ let ast_get_references o a =
   let rec get_rec a =
     ast_iter get_rec a;
     match a with 
-      | MLglob r -> add_down r o
-      | MLcons (r,_) -> add_up r o
-      | MLcase (_,v) as a -> Array.iter (fun (r,_,_) -> add_up r o) v
+      | MLglob r -> add_down o r
+      | MLcons (r,_) -> add_up o r
+      | MLcase (_,v) as a -> Array.iter (fun (r,_,_) -> add_up o r) v
       | MLcast (_,t) -> mltype_get_references o t 
       | _ -> ()
   in get_rec a
+
+let ip_of_indref = function 
+  | IndRef ip -> ip 
+  | _ -> assert false
 
 let decl_get_references ld = 
   let o = { up = Orefset.empty ; down = Orefset.empty } in 
   let one_decl = function 
     | Dind (l,_) -> 
 	List.iter (fun (_,r,l) -> 
-		     lang_add_type r o; 
+		     lang_add_type o r; 
+		     (try 
+			List.iter (add_down o) (find_proj (ip_of_indref r))
+		      with Not_found -> ()); 
 		     List.iter (fun (r,l) -> 
-				  add_up r o; 
+				  add_up o r; 
 				  List.iter (mltype_get_references o) l) l) l
-    | Dtype (r,_,t) -> lang_add_type r o; mltype_get_references o t 
+    | Dtype (r,_,t) -> lang_add_type o r; mltype_get_references o t 
     | Dterm (r,a,t) -> 
-	add_down r o; ast_get_references o a; mltype_get_references o t
+	add_down o r; ast_get_references o a; mltype_get_references o t
     | Dfix(rv,c,t) -> 
-	Array.iter (fun r -> add_down r o) rv; 
+	Array.iter (add_down o) rv; 
 	Array.iter (ast_get_references o) c; 
 	Array.iter (mltype_get_references o) t
-    | DcustomTerm (r,_) -> add_down r o
-    | DcustomType (r,_) -> lang_add_type r o
+    | DcustomTerm (r,_) -> add_down o r
+    | DcustomType (r,_) -> lang_add_type o r
   in 
   List.iter one_decl ld; 
   o

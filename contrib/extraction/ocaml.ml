@@ -214,7 +214,7 @@ let rec pp_expr par env args =
     | MLcons (r,args') -> 
 	(try 
 	   let projs = find_proj (kn_of_r r, 0) in 
-	   pp_record (projs, List.map (pp_expr true env []) args')
+	   pp_record_pat (projs, List.map (pp_expr true env []) args')
 	 with Not_found ->
 	   assert (args=[]);
 	   let tuple = pp_tuple (pp_expr true env []) args' in 
@@ -260,7 +260,7 @@ let rec pp_expr par env args =
     | MLmagic a ->
 	pp_apply (str "Obj.magic") par (pp_expr true env [] a :: args) 
 	  
-and pp_record (projs, args) =
+and pp_record_pat (projs, args) =
    str "{ " ++
    prlist_with_sep (fun () -> str ";" ++ spc ()) 
      (fun (r,a) -> pp_global r ++ str " =" ++ spc () ++ a)
@@ -272,7 +272,7 @@ and pp_one_pat env (r,ids,t) =
   let expr = pp_expr (expr_needs_par t) env' [] t in 
   try 
     let projs = find_proj (kn_of_r r,0) in 
-    pp_record (projs, List.rev_map pr_id ids), expr
+    pp_record_pat (projs, List.rev_map pr_id ids), expr
   with Not_found -> 
     let args = 
       if ids = [] then (mt ()) 

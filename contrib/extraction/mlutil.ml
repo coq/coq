@@ -1199,7 +1199,7 @@ and optimize_Dfix prm (r,t,typ) b l =
 		 with Not_found -> Tunknown) v 
 	    in 
 	    let c = 
-	      let gv = Array.map (fun r -> MLglob r) v in 
+	      let gv = Array.init len (fun i -> MLglob v.(len-i-1)) in 
 	      Array.map (gen_subst gv (-len)) c in 
 	    Dfix (v, c, typs) :: (optimize prm l)
 	  else optimize prm l 
