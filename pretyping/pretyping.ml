@@ -327,33 +327,37 @@ let rec pretype tycon env isevars lvar lmeta = function
       let pj = match po with
 	| Some p -> pretype empty_tycon env isevars lvar lmeta p
 	| None -> 
-	    try match tycon with
-		Some pred ->
-                  Retyping.get_judgment_of env (evars_of isevars) pred
-	      | None -> error "notype"
-	    with UserError _ -> (* get type information from type of branches*)
-	      let expbr = Cases.branch_scheme env isevars isrec indf in
-	      let rec findtype i =
-		if i >= Array.length lf
-		then
-                  let sigma = evars_of isevars in
-                  error_cant_find_case_type_loc loc env sigma cj.uj_val
-		else
-		  try
-		    let expti = expbr.(i) in
-		    let fj =
-		      pretype (mk_tycon expti) env isevars lvar lmeta lf.(i) in
-		    let pred = 
-		      Cases.pred_case_ml_onebranch
-                        loc env (evars_of isevars) isrec indt (i,fj) in
-		    if has_undefined_isevars isevars pred then findtype (i+1)
-		    else 
-		      let pty =
-                        Retyping.get_type_of env (evars_of isevars) pred in
-		      { uj_val = pred; 
-			uj_type = pty }
-		  with UserError _ -> findtype (i+1) in
-	      findtype 0 in
+            (* get type information from type of branches *)
+	    let expbr = Cases.branch_scheme env isevars isrec indf in
+	    let rec findtype i =
+	      if i >= Array.length lf
+	      then
+                (* get type information from constraint *)
+                (* warning: if the constraint comes from an evar type, it *)
+                (* may be Type while Prop or Set would be expected *)
+	        match tycon with
+		  | Some pred ->
+                      Retyping.get_judgment_of env (evars_of isevars) pred
+	          | None ->
+                      let sigma = evars_of isevars in
+                      error_cant_find_case_type_loc loc env sigma cj.uj_val
+	      else
+		try
+		  let expti = expbr.(i) in
+		  let fj =
+		    pretype (mk_tycon expti) env isevars lvar lmeta lf.(i) in
+		  let pred = 
+		    Cases.pred_case_ml_onebranch
+                      loc env (evars_of isevars) isrec indt (i,fj) in
+		  if has_undefined_isevars isevars pred then findtype (i+1)
+		  else 
+		    let pty =
+                      Retyping.get_type_of env (evars_of isevars) pred in
+		    let pj = { uj_val = pred; uj_type = pty } in
+                    option_app (the_conv_x_leq env isevars pred) tycon;
+                    pj
+		with UserError _ -> findtype (i+1) in
+	    findtype 0 in
       let pj = j_nf_evar (evars_of isevars) pj in
 
       let (dep,_) = find_case_dep_nparams env (cj.uj_val,pj) indf in
