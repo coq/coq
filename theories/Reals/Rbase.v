@@ -492,11 +492,21 @@ Intro;Ring.
 Save.
 Hints Resolve minus_R0 : real.
 
+Lemma Rminus_Ropp:(r:R)``0-r==-r``.
+Intro;Ring.
+Save.
+Hints Resolve Rminus_Ropp : real.
+
 (**********)
 Lemma Ropp_distr2:(r1,r2:R)``-(r1-r2)==r2-r1``.
   Intros; Ring.
 Save.
 Hints Resolve Ropp_distr2 : real.
+
+Lemma Ropp_distr3:(r1,r2:R)``-(r2-r1)==r1-r2``.
+Intros; Ring.
+Save.
+Hints Resolve Ropp_distr3 : real. 
 
 (**********)
 Lemma eq_Rminus:(r1,r2:R)(r1==r2)->``r1-r2==0``.
@@ -511,12 +521,27 @@ Lemma Rminus_eq:(r1,r2:R)``r1-r2==0`` -> r1==r2.
 Save.
 Hints Immediate Rminus_eq : real.
 
+Lemma Rminus_eq_right:(r1,r2:R)``r2-r1==0`` -> r1==r2.
+Intros;Generalize (Rminus_eq r2 r1 H);Clear H;Intro H;Rewrite H;Ring.
+Save.
+Hints Immediate Rminus_eq_right : real.
+
 (**********)
 Lemma Rminus_eq_contra:(r1,r2:R)``r1<>r2``->``r1-r2<>0``.
 Red; Intros r1 r2 H H0.
 Apply H; Auto with real.
 Save.
 Hints Resolve Rminus_eq_contra : real.
+
+Lemma Rminus_not_eq:(r1,r2:R)``r1-r2<>0``->``r1<>r2``.
+Red; Intros; Elim H; Apply eq_Rminus; Auto.
+Save.
+Hints Resolve Rminus_not_eq : real.
+
+Lemma Rminus_not_eq_right:(r1,r2:R)``r2-r1<>0`` -> ``r1<>r2``.
+Red; Intros;Elim H;Rewrite H0; Ring.
+Save.
+Hints Resolve Rminus_not_eq_right : real. 
 
 (**********)
 Lemma Rminus_distr:  (x,y,z:R) ``x*(y-z)==(x*y) - (x*z)``.
@@ -751,7 +776,6 @@ Lemma Rmult_lt:(r1,r2,r3,r4:R)``r3>0`` -> ``r2>0`` ->
   `` r1 < r2`` -> ``r3 < r4`` -> ``r1*r3 < r2*r4``.
 Intros; Apply Rlt_trans with ``r2*r3``; Auto with real.
 Save.
-
 
 (*s Order and Substractions *)
 Lemma Rlt_minus:(r1,r2:R)``r1 < r2`` -> ``r1-r2 < 0``.
