@@ -10,15 +10,12 @@ open Environ
 open Global
 open Declare
 open Coqast
+open Ast
 open Termast
 
 let emacs_str s = if !Options.print_emacs then s else "" 
 
-let dfltpr ast = [< 'sTR"#GENTERM " ; Ast.print_ast ast >];;
-
-let section_path sl s =
-  let sl = List.rev sl in
-  make_path (List.tl sl) (id_of_string (List.hd sl)) (kind_of_string s)
+let dfltpr ast = [< 'sTR"#GENTERM " ; print_ast ast >];;
 
 let pr_global ref =
   [< 'sTR (string_of_qualid (Global.qualid_of_global ref)) >]
