@@ -8,6 +8,16 @@
 
 (*i $Id$ i*)
 
+(* Modified by Lionel Elie Mamane <lionel@mamane.lu> on 9 & 10 Mar 2004:
+ *  - handling of absolute filenames (function coq_module)
+ *  - coq_module: chop ./// (arbitrary amount of slashes), not only "./"
+ *  - function chop_prefix not useful anymore. Deleted.
+ *  - correct typo in usage message: "-R" -> "--R"
+ *  - shorten the definition of make_path
+ * This notice is made to comply with section 2.a of the GPLv2.
+ * It may be removed or abbreviated as far as I am concerned.
+ *)
+
 open Filename
 open Printf
 open Output
@@ -44,7 +54,7 @@ let usage () =
   prerr_endline "  --no-externals  no links to Coq standard library";
   prerr_endline "  --coqlib <url>  set URL for Coq standard library";
   prerr_endline "                  (default is http://coq.inria.fr/library/)";
-  prerr_endline "  --R dir coqdir  map physical dir to Coq dir";
+  prerr_endline "  -R dir coqdir   map physical dir to Coq dir";
   prerr_endline "  --latin1        set ISO-8859-1 input language";
   prerr_endline "  --utf8          set UTF-8 input language";
   prerr_endline "  --charset       set HTML charset";
@@ -103,32 +113,56 @@ let add_rec_path f l =
   if exists_dir f then traverse f l
 
 (* turn A/B/C into A.B.C *)
-let make_path s =
-  let s = String.copy s in
-  for i = 0 to String.length s - 1 do
-    if s.[i] = '/' then s.[i] <- '.'
-  done;
-  s
-
-let chop_prefix p s =
-  let np = String.length p in
-  let ns = String.length s in
-  if ns >= np && String.sub s 0 np = p then String.sub s np (ns - np) else s
+let make_path = Str.global_replace (Str.regexp "/") ".";;
 
 let coq_module file = 
+(* TODO
+ * LEM:
+ * We should also remove things like "/./" in the middle of the filename,
+ * rewrite "/foo/../bar" to "/bar", recognise different paths that lead
+ * to the same file / directory (via symlinks), etc. The best way to do
+ * all this would be to use the libc function realpath() on _both_ p and
+ * file / f before comparing them.
+ *
+ * The semantics of realpath() on file symlinks might not be what we
+ * want... (But it is what we want on directory symlinks.) So, we would
+ * have to cook up our own version of realpath()?
+ *
+ * Do all target platforms have realpath()?
+ *)
   let f = chop_extension file in
-  let f = chop_prefix "./" f in (* remove leading ./ *)
-  let rec trypath = function
-    | [] -> 
-	make_path f
-    | (p,lg) :: r ->
-	let p_file = Filename.concat p file in
-	if Sys.file_exists p_file then
-	  make_path (Filename.concat lg f)
-	else
-	  trypath r
-  in
-  trypath !paths
+  (* remove leading ./ and any number of slashes after *)
+  let f = Str.replace_first (Str.regexp "^\\./+") "" f in
+  if (Str.string_before f 1) = "/" then
+    (* f is an absolute path. Prefixes must be matched with the beginning of f,
+     * not prepended
+     *)
+    let rec trypath = function
+     | [] -> make_path f
+     | (p, lg) :: r ->
+         (* make sure p ends with a single '/'
+          * This guarantees that we don't match a file whose name is
+          * of the form p ^ "foo". It means we may miss p itself,
+          * but this does not matter: coqdoc doesn't do anything
+          * of a directory anyway. *)
+         let p = (Str.replace_first (Str.regexp "/*$") "/" p) in
+         let p_quoted = (Str.quote p) in
+         if (Str.string_match (Str.regexp p_quoted) f 0) then
+           make_path (Filename.concat lg (Str.replace_first (Str.regexp (p_quoted ^ "/*")) "" f))
+        else
+           trypath r
+    in trypath !paths
+  else (* f is a relative path *)
+    let rec trypath = function
+      | [] -> 
+	  make_path f
+      | (p,lg) :: r ->
+	  let p_file = Filename.concat p file in
+	  if Sys.file_exists p_file then
+	    make_path (Filename.concat lg f)
+	  else
+	    trypath r
+    in trypath !paths;;
 
 let what_file f =
   check_if_file_exists f;
