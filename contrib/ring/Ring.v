@@ -9,35 +9,38 @@ Require Export Ring_abstract.
 
 Declare ML Module "ring".
 
-Grammar tactic simple_tactic :=
-  ring [ "Ring" comarg_list($arg) ] -> [(Ring ($LIST $arg))].
+Grammar tactic simple_tactic : Ast :=
+  ring [ "Ring" constrarg_list($arg) ] -> [(Ring ($LIST $arg))].
 
 Syntax tactic level 0:
-  ring [ (Ring ($LIST $lc)) ] -> [ "Ring" [1 1] (LISTSPC ($LIST $lc)) ] 
-| ring_e [ (Ring) ] -> ["Ring"].
+  ring [ << (Ring ($LIST $lc)) >> ] -> [ "Ring" [1 1] (LISTSPC ($LIST $lc)) ] 
+| ring_e [ << (Ring) >> ] -> ["Ring"].
  
-Grammar vernac vernac := 
+Grammar vernac vernac : Ast := 
   addring [ "Add" "Ring" 
-      	     comarg($a) comarg($aplus) comarg($amult) comarg($aone) 
-      	     comarg($azero) comarg($aopp) comarg($aeq) comarg($t)
-      	     "[" ne_comarg_list($l) "]" "." ] 
+      	     constrarg($a) constrarg($aplus) constrarg($amult) constrarg($aone)
+      	     constrarg($azero) constrarg($aopp) constrarg($aeq) constrarg($t)
+      	     "[" ne_constrarg_list($l) "]" "." ] 
   -> [(AddRing $a $aplus $amult $aone $azero $aopp $aeq $t
       	 ($LIST $l))]
 
 | addsemiring [ "Add" "Semi" "Ring" 
-      	       	 comarg($a) comarg($aplus) comarg($amult) comarg($aone)
-      	       	 comarg($azero) comarg($aeq) comarg($t) 
-      	       	 "[" ne_comarg_list($l) "]" "." ] 
+      	       	 constrarg($a) constrarg($aplus) constrarg($amult) 
+                 constrarg($aone) constrarg($azero) constrarg($aeq) 
+                 constrarg($t) 
+      	       	 "[" ne_constrarg_list($l) "]" "." ] 
   -> [(AddSemiRing $a $aplus $amult $aone $azero $aeq $t
       	   ($LIST $l))]
 | addabstractring [ "Add" "Abstract" "Ring" 
-      	     comarg($a) comarg($aplus) comarg($amult) comarg($aone) 
-      	     comarg($azero) comarg($aopp) comarg($aeq) comarg($t) "." ] 
+      	     constrarg($a) constrarg($aplus) constrarg($amult)
+             constrarg($aone) constrarg($azero) constrarg($aopp)
+             constrarg($aeq) constrarg($t) "." ] 
   -> [(AddAbstractRing $a $aplus $amult $aone $azero $aopp $aeq $t)]
 
 | addabstractsemiring [ "Add" "Abstract" "Semi" "Ring" 
-      	       	 comarg($a) comarg($aplus) comarg($amult) comarg($aone)
-      	       	 comarg($azero) comarg($aeq) comarg($t) "." ] 
+      	       	 constrarg($a) constrarg($aplus) constrarg($amult) 
+                 constrarg($aone) constrarg($azero) constrarg($aeq) 
+                 constrarg($t) "." ] 
   -> [(AddAbstractSemiRing $a $aplus $amult $aone $azero $aeq $t )]
 .
 
