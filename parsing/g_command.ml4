@@ -26,7 +26,7 @@ GEXTEND Gram
     [ [ "?" -> <:ast< (XTRA "ISEVAR") >>
       | "?"; n = Prim.number -> <:ast< (META $n) >>
       | "["; id1 = IDENT; ":"; c = command; c2 = abstraction_tail ->
-          <:ast< (LAMBDA $c [$id1]$c2) >>
+          <:ast< (LAMBDALIST $c [$id1]$c2) >>
       | "["; id1 = IDENT; ","; idl = ne_ident_comma_list;
         ":"; c = command; c2 = abstraction_tail ->
           <:ast< (LAMBDALIST $c [$id1]($SLAM $idl $c2)) >>
@@ -34,7 +34,7 @@ GEXTEND Gram
              c = abstraction_tail ->
           <:ast< (LAMBDALIST (XTRA "ISEVAR") [$id1]($SLAM $idl $c)) >>
       | "["; id1 = IDENT; c = abstraction_tail ->
-          <:ast< (LAMBDA (XTRA "ISEVAR") [$id1]$c) >>
+          <:ast< (LAMBDALIST (XTRA "ISEVAR") [$id1]$c) >>
       | "["; id1 = IDENT; "="; c = command; "]"; c2 = command ->
           <:ast< (ABST #Core#let.cci $c [$id1]$c2) >> 
       | "<<"; id1 = IDENT; ">>"; c = command -> <:ast< [$id1]$c >>
