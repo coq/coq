@@ -40,7 +40,7 @@ with constr10 :=
 | ex2implicit [ "EX" ident($v) "|" constr($c1) "&" 
            constr($c2) ] -> [ (ex2 ? [$v]$c1 [$v]$c2) ].
 
-Distfix RIGHTA 2 "~ _" not.
+Distfix RIGHTA 5 "~ _" not.
 
 Infix RIGHTA 6 "/\\" and.
 

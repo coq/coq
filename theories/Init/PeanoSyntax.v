@@ -33,12 +33,12 @@ Delimiters "'N:" nat_scope "'". (* "[N", "[N:", "]]" are conflicting *)
 (* For parsing/printing based on scopes *)
 Module nat_scope.
 
-Infix 3 "+" plus : nat_scope.
-Infix 2 "*" mult : nat_scope.
-Infix NONA 4 "<=" le : nat_scope.
-Infix NONA 4 "<" lt : nat_scope.
-Infix NONA 4 ">=" ge : nat_scope.
-(* Infix 4 ">" gt : nat_scope. (* Conflicts with "<..>Cases ... " *) *)
+Infix 4 "+" plus : nat_scope.
+Infix 3 "*" mult : nat_scope.
+Infix NONA 5 "<=" le : nat_scope.
+Infix NONA 5 "<" lt : nat_scope.
+Infix NONA 5 ">=" ge : nat_scope.
+(* Infix 5 ">" gt : nat_scope. (* Conflicts with "<..>Cases ... " *) *)
 
 (* Warning: this hides sum and prod and breaks sumor symbolic notation *)
 Open Scope nat_scope.
