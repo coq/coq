@@ -569,6 +569,34 @@ let pcoq_search s l =
   end;
   search_output_results()
 
+(* Check sequentially whether the pattern is one of the premises *)
+let rec hyp_pattern_filter pat name a c =
+  let c1 = strip_outer_cast c in
+    match kind_of_term c with
+      | Prod(_, hyp, c2) -> 
+	  (try
+(*	     let _ = msgnl ((str "WHOLE ") ++ (Printer.prterm c)) in
+             let _ = msgnl ((str "PAT ") ++ (Printer.pr_pattern pat)) in *)
+             if Matching.is_matching pat hyp then
+	       (msgnl (str "ok"); true)
+	     else
+	       false
+           with UserError _ -> false) or
+	  hyp_pattern_filter pat name a c2
+      | _ -> false;;
+
+let hyp_search_pattern c l =
+  let _, pat = interp_constrpattern Evd.empty (Global.env()) c in
+    ctv_SEARCH_LIST := [];
+    gen_filtered_search
+      (fun s a c -> (filter_by_module_from_list l s a c &&
+		     (if hyp_pattern_filter pat s a c then
+		   	(msgnl (str "ok2"); true) else false)))
+      (fun s a c -> (msgnl (str "ok3"); add_search s a c));
+    output_results
+      (ctf_SearchResults !global_request_id)
+      (Some
+	 (P_pl (CT_premises_list (List.rev !ctv_SEARCH_LIST))));;
 let pcoq_print_name ref =
   let results = xlate_vernac_list (name_to_ast ref) in
   output_results 
@@ -654,6 +682,10 @@ let start_pcoq_debug () =
   set_start_marker "--->";
   set_end_marker "<---";
   raise Vernacexpr.ProtectedLoop;;
+
+VERNAC COMMAND EXTEND HypSearchPattern
+  [ "HypSearchPattern" constr(pat) ] -> [ hyp_search_pattern pat ([], false) ]
+END
 
 VERNAC COMMAND EXTEND StartPcoq
   [ "Start" "Pcoq" "Mode" ] -> [ start_pcoq () ]
