@@ -1078,17 +1078,17 @@ parsing/g_vernacnew.cmo: parsing/ast.cmi toplevel/class.cmi \
     interp/constrintern.cmi parsing/coqast.cmi library/decl_kinds.cmo \
     parsing/egrammar.cmi pretyping/evd.cmi parsing/extend.cmi \
     parsing/g_constrnew.cmo interp/genarg.cmi library/global.cmi \
-    library/goptions.cmi parsing/lexer.cmi toplevel/metasyntax.cmi \
-    library/nameops.cmi kernel/names.cmi lib/options.cmi parsing/pcoq.cmi \
-    lib/pp.cmi interp/ppextend.cmi toplevel/recordobj.cmi parsing/termast.cmi \
+    library/goptions.cmi parsing/lexer.cmi library/nameops.cmi \
+    kernel/names.cmi lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
+    interp/ppextend.cmi toplevel/recordobj.cmi parsing/termast.cmi \
     interp/topconstr.cmi lib/util.cmi toplevel/vernacexpr.cmo 
 parsing/g_vernacnew.cmx: parsing/ast.cmx toplevel/class.cmx \
     interp/constrintern.cmx parsing/coqast.cmx library/decl_kinds.cmx \
     parsing/egrammar.cmx pretyping/evd.cmx parsing/extend.cmx \
     parsing/g_constrnew.cmx interp/genarg.cmx library/global.cmx \
-    library/goptions.cmx parsing/lexer.cmx toplevel/metasyntax.cmx \
-    library/nameops.cmx kernel/names.cmx lib/options.cmx parsing/pcoq.cmx \
-    lib/pp.cmx interp/ppextend.cmx toplevel/recordobj.cmx parsing/termast.cmx \
+    library/goptions.cmx parsing/lexer.cmx library/nameops.cmx \
+    kernel/names.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
+    interp/ppextend.cmx toplevel/recordobj.cmx parsing/termast.cmx \
     interp/topconstr.cmx lib/util.cmx toplevel/vernacexpr.cmx 
 parsing/g_zsyntax.cmo: parsing/ast.cmi lib/bignat.cmi parsing/coqast.cmi \
     parsing/esyntax.cmi parsing/extend.cmi library/libnames.cmi \
@@ -3105,17 +3105,17 @@ contrib/interface/vtp.cmx: contrib/interface/ascent.cmi \
 contrib/interface/xlate.cmo: contrib/interface/ascent.cmi parsing/ast.cmi \
     lib/bignat.cmi library/decl_kinds.cmo tactics/eauto.cmi \
     tactics/extraargs.cmi interp/genarg.cmi library/goptions.cmi \
-    library/libnames.cmi kernel/names.cmi lib/options.cmi \
-    parsing/ppconstr.cmi pretyping/rawterm.cmi proofs/tacexpr.cmo \
-    kernel/term.cmi interp/topconstr.cmi lib/util.cmi toplevel/vernacexpr.cmo \
-    contrib/interface/xlate.cmi 
+    library/libnames.cmi toplevel/metasyntax.cmi kernel/names.cmi \
+    lib/options.cmi parsing/ppconstr.cmi pretyping/rawterm.cmi \
+    proofs/tacexpr.cmo kernel/term.cmi interp/topconstr.cmi lib/util.cmi \
+    toplevel/vernacexpr.cmo contrib/interface/xlate.cmi 
 contrib/interface/xlate.cmx: contrib/interface/ascent.cmi parsing/ast.cmx \
     lib/bignat.cmx library/decl_kinds.cmx tactics/eauto.cmx \
     tactics/extraargs.cmx interp/genarg.cmx library/goptions.cmx \
-    library/libnames.cmx kernel/names.cmx lib/options.cmx \
-    parsing/ppconstr.cmx pretyping/rawterm.cmx proofs/tacexpr.cmx \
-    kernel/term.cmx interp/topconstr.cmx lib/util.cmx toplevel/vernacexpr.cmx \
-    contrib/interface/xlate.cmi 
+    library/libnames.cmx toplevel/metasyntax.cmx kernel/names.cmx \
+    lib/options.cmx parsing/ppconstr.cmx pretyping/rawterm.cmx \
+    proofs/tacexpr.cmx kernel/term.cmx interp/topconstr.cmx lib/util.cmx \
+    toplevel/vernacexpr.cmx contrib/interface/xlate.cmi 
 contrib/jprover/jall.cmo: contrib/jprover/jlogic.cmi \
     contrib/jprover/jterm.cmi contrib/jprover/jtunify.cmi \
     contrib/jprover/opname.cmi contrib/jprover/jall.cmi 
