@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-Load Extraction.
-
 Extraction nat.
 
 Extraction [x:nat]x.

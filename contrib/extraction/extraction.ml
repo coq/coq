@@ -200,9 +200,6 @@ let renum_db ctx n =
 
 (*s Environment for the bodies of some mutual fixpoints. *)
 
-let push_many_rels env binders =  
-    List.fold_left (fun e (f,t) -> push_rel (f,None,t) e) env binders
-
 let rec push_many_rels_ctx keep_prop env ctx = function
   | (fi,ti) :: l -> 
       let v = v_of_arity env ti in
@@ -399,9 +396,10 @@ let rec extract_type env c =
       List.fold_right 
 	(fun (v,a) ((args,fl) as acc) -> match v with
 	   | (_, NotArity), _ -> acc
-	   | (_, Arity), _ -> match extract_rec env fl a [] with
+	   | (Logic, Arity), _ -> acc (* TO JUSTIFY *)
+	   | (Info, Arity), _ -> match extract_rec env fl a [] with
 	       | Tarity -> (Miniml.Tarity :: args, fl) 
-  	         (* we pass a dummy type [arity] as argument *)
+  	             (* we pass a dummy type [arity] as argument *)
 	       | Tprop -> (Miniml.Tprop :: args, fl)
 	       | Tmltype (mla,_,fl') -> (mla :: args, fl' @ fl))
 	(List.combine sign_args args) 
@@ -461,14 +459,16 @@ and extract_term_info_with_type env ctx c t =
 	  MLglob (ConstRef sp)
       | IsMutConstruct (cp,_) ->
 	  let (s,n) = signature_of_constructor cp in
-	  let ns = List.length s + 1 in
 	  let rec abstract rels i = function
 	    | [] -> 
-		MLcons (ConstructRef cp, List.length rels, List.rev rels)
+		let rels = List.rev_map (fun x -> MLrel (i-x)) rels in
+		MLcons (ConstructRef cp, List.length rels, rels)
 	    | ((Info,NotArity),id) :: l -> 
-		MLlam (id, abstract (MLrel (ns - i) :: rels) (succ i) l)
-	    | (_,id) :: l ->
+		MLlam (id, abstract (i :: rels) (succ i) l)
+	    | ((Logic,NotArity),id) :: l ->
 		MLlam (id, abstract rels (succ i) l)
+	    | ((_,Arity),_) :: l -> 
+		abstract rels i l
 	  in
 	  abstract_n n (abstract [] 1 s)
       | IsMutCase ((ni,(ip,cnames,_,_,_)),p,c,br) ->
@@ -656,9 +656,8 @@ and extract_mib sp =
 		  let t = mis_constructor_type (succ j) mis in
 		  let nparams = mis_nparams mis in 
 		  let (binders, t) = decompose_prod_n nparams t in
-		  let binders = List.rev binders in
-		  let nparams' = nb_params_to_keep genv binders in
-		  let env = push_many_rels genv binders in
+		  let env = push_rels_assum binders genv in
+		  let nparams' = nb_params_to_keep genv (List.rev binders) in
 		  match extract_type env t with
 		    | Tarity | Tprop -> assert false
 		    | Tmltype (mlt, s, f) -> 
