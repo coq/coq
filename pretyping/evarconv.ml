@@ -32,6 +32,7 @@ let flex_kind_of_term c l =
     | Rel n -> MaybeFlexible c
     | Var id -> MaybeFlexible c
     | Lambda _ when l<>[] -> MaybeFlexible c
+    | LetIn _  -> MaybeFlexible c
     | Evar ev -> Flexible ev
     | _ -> Rigid c
 
@@ -40,6 +41,7 @@ let eval_flexible_term env c =
   | Const c -> constant_opt_value env c
   | Rel n -> let (_,v,_) = lookup_rel n env in option_app (lift n) v
   | Var id -> let (_,v,_) = lookup_named id env in v
+  | LetIn (_,b,_,c) -> Some (subst1 b c)
   | Lambda _ -> Some c
   | _ -> assert false
 (*
