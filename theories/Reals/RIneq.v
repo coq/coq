@@ -109,19 +109,21 @@ Lemma Rle_ge : (r1,r2:R)``r1<=r2`` -> ``r2>=r1``.
 NewDestruct 1; Red; Auto with real.
 Qed.
 
-Hints Resolve Rle_ge : real.
+Hints Immediate Rle_ge : real.
 
 (**********)
 Lemma Rge_le : (r1,r2:R)``r1>=r2`` -> ``r2<=r1``.
 NewDestruct 1; Red; Auto with real.
 Qed.
 
+Hints Resolve Rge_le : real.
+
 (**********)
 Lemma not_Rle:(r1,r2:R)~``r1<=r2`` -> ``r2<r1``.
 Intros r1 r2 ; Generalize (total_order r1 r2) ; Unfold Rle; Tauto.
 Qed.
 
-Hints Immediate Rge_le not_Rle : real.
+Hints Immediate not_Rle : real.
 
 Lemma not_Rge:(r1,r2:R)~``r1>=r2`` -> ``r1<r2``.
 Intros; Apply not_Rle; Auto with real.
@@ -726,7 +728,6 @@ Hints Immediate Ropp_Rle : real.
 
 Lemma Rle_Ropp1:(r1,r2:R) ``r2 <= r1`` -> ``-r1 <= -r2``.
 Intros r1 r2 H;Elim H;Auto with real.
-Intro H1;Rewrite H1;Auto with real.
 Qed.
 Hints Resolve Rle_Ropp1 : real.
 
@@ -777,6 +778,10 @@ Generalize (Rlt_monotony z y x H Eq0);Intro;ElimType False;
  Apply (Rlt_antirefl ``z*x``);Auto.
 Qed.
 
+V7only [
+Notation Rlt_monotony_rev := [r,r1,r2:R](Rlt_monotony_contra r1 r2 r).
+].
+
 Lemma Rlt_anti_monotony:(r,r1,r2:R)``r < 0`` -> ``r1 < r2`` -> ``r*r1 > r*r2``.
 Intros; Replace r with ``-(-r)``; Auto with real.
 Rewrite (Ropp_mul1 ``-r``); Rewrite (Ropp_mul1 ``-r``).
@@ -820,7 +825,7 @@ Hints Resolve Rle_anti_monotony1 : real.
 
 Lemma Rle_anti_monotony
 	:(r,r1,r2:R)``r <= 0`` -> ``r1 <= r2`` -> ``r*r1 >= r*r2``.
-Auto with real.
+Intros; Apply Rle_ge; Auto with real.
 Qed.
 Hints Resolve Rle_anti_monotony : real.
 
@@ -838,6 +843,12 @@ Hints Resolve Rle_Rmult_comp :real.
 Lemma Rmult_lt:(r1,r2,r3,r4:R)``r3>0`` -> ``r2>0`` ->
   `` r1 < r2`` -> ``r3 < r4`` -> ``r1*r3 < r2*r4``.
 Intros; Apply Rlt_trans with ``r2*r3``; Auto with real.
+Qed.
+
+(*********)
+Lemma Rmult_lt_0
+  :(r1,r2,r3,r4:R)``r3>=0``->``r2>0``->``r1<r2``->``r3<r4``->``r1*r3<r2*r4``.
+Intros; Apply Rle_lt_trans with ``r2*r3``; Auto with real.
 Qed.
 
 (** Order and Substractions *)
@@ -922,17 +933,6 @@ Replace ``0`` with ``r*0``; Auto with real.
 Qed.
 Hints Resolve Rlt_Rinv2 : real.
 
-(**********)
-Lemma Rlt_monotony_rev:
-  (r,r1,r2:R)``0<r`` -> ``r*r1 < r*r2`` -> ``r1 < r2``.
-Intros; Replace r1 with ``/r*(r*r1)``.
-Replace r2 with ``/r*(r*r2)``; Auto with real.
-Transitivity ``r*/r*r2``; Auto with real.
-Ring.
-Transitivity ``r*/r*r1``; Auto with real.
-Ring.
-Qed.
-
 (*********)
 Lemma Rinv_lt:(r1,r2:R)``0 < r1*r2`` -> ``r1 < r2`` -> ``/r2 < /r1``.
 Intros; Apply Rlt_monotony_rev with ``r1*r2``; Auto with real.
@@ -997,11 +997,9 @@ Qed.
 Lemma Rle_sym1:(r1,r2:R)``r1<=r2``->``r2>=r1``.
 Proof Rle_ge.
 
-V7only [
 Notation "'Rle_sym2' a b c" := (Rge_le b a c)
   (at level 10, a,b,c at level 9, only parsing).
 Notation Rle_sym2 := Rge_le (only parsing).
-].
 (*
 (**********)
 Lemma Rle_sym2:(r1,r2:R)``r2>=r1`` -> ``r1<=r2``.
@@ -1125,12 +1123,6 @@ Qed.
 Lemma Rmult_gt:(r1,r2:R)``r1>0`` -> ``r2>0`` -> ``r1*r2>0``.
 Unfold Rgt;Intros.
 Replace ``0`` with ``0*r2``; Auto with real.
-Qed.
-
-(*********)
-Lemma Rmult_lt_0
-  :(r1,r2,r3,r4:R)``r3>=0``->``r2>0``->``r1<r2``->``r3<r4``->``r1*r3<r2*r4``.
-Intros; Apply Rle_lt_trans with ``r2*r3``; Auto with real.
 Qed.
 
 (*********)
