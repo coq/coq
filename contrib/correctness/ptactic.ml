@@ -244,7 +244,7 @@ let correctness s p opttac =
   let id = id_of_string s in 
   start_proof id (IsGlobal (Proof Lemma)) sign cty correctness_hook;
   Penv.new_edited id (v,p);
-  if !debug then show_open_subgoals();
+  if !debug then msg (Pfedit.pr_open_subgoals());
   deb_mess (str"Pred.red_cci: Reduction..." ++ fnl ());
   let oc = reduce_open_constr oc in
   deb_mess (str"AFTER REDUCTION:" ++ fnl ());
@@ -255,4 +255,4 @@ let correctness s p opttac =
     | Some t -> tclTHEN tac t
   in
   solve_nth 1 tac;
-  if_verbose show_open_subgoals ()
+  if_verbose msg (pr_open_subgoals ())
