@@ -42,7 +42,7 @@ with constr10 :=
 | eximplicit [ "EX" ident($v) "|" constr($c1) ] 
                           -> [<<(ex ? [$v]$c1)>>]
 | ex2explicit [ "EX" ident($v) ":" constr($t) "|" constr($c1) "&"
-           constr($c2) ] -> [<<(ex2 $t [$v : $t]$c1 [$v : t]$c2)>>]
+           constr($c2) ] -> [<<(ex2 $t [$v : $t]$c1 [$v : $t]$c2)>>]
 | ex2implicit [ "EX" ident($v) "|" constr($c1) "&" 
            constr($c2) ] -> [<<(ex2 ? [$v]$c1 [$v]$c2)>>].
 
