@@ -132,6 +132,21 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
 	  in
 	    if kn1 <> kn2 then error ()
   end;
+  (* we check that records and their field names are preserved. *)
+  check (fun mib -> mib.mind_record);
+  if mib1.mind_record then begin 
+    let rec names_prod_letin t = match kind_of_term t with 
+      | Prod(n,_,t) -> n::(names_prod_letin t)
+      | LetIn(n,_,_,t) -> n::(names_prod_letin t)
+      | Cast(t,_) -> names_prod_letin t
+      | _ -> []
+    in 
+    assert (Array.length mib1.mind_packets = 1);
+    assert (Array.length mib2.mind_packets = 1);
+    assert (Array.length mib1.mind_packets.(0).mind_user_lc = 1); 
+    assert (Array.length mib2.mind_packets.(0).mind_user_lc = 1); 
+    check (fun mib -> names_prod_letin mib.mind_packets.(0).mind_user_lc.(0));
+  end;
   (* we first check simple things *)
   let cst = 
     array_fold_left2 check_packet cst mib1.mind_packets mib2.mind_packets

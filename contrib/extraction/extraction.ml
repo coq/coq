@@ -351,6 +351,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	in 
 	let n = nb_default_params env mip0.mind_nf_arity in
 	let projs = try List.map out_some projs with _ -> raise (I Standard) in
+	(* avoid constant projections (records fields defined with [:=]) *)
 	let is_true_proj kn = 
           let (_,body) = Sign.decompose_lam_assum (constant_value env kn) in
           match kind_of_term body with
@@ -366,6 +367,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
               if type_eq (mlt_env env) Tdummy typ then l1,l2 
               else 
                 let r = ConstRef kn in 
+		(* avoid dummy arguments for projectors *)
                 if List.mem false (type_to_sign (mlt_env env) typ) 
                 then r :: l1, l2 
                 else r :: l1, r :: l2

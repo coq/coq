@@ -238,7 +238,6 @@ let rec pretype tycon env isevars lvar = function
       anomaly "Found a pattern variable in a rawterm to type"
 	   
   | RHole (loc,k) ->
-      if !compter then nbimpl:=!nbimpl+1;
       (match tycon with
 	 | Some ty ->
 	     { uj_val = new_isevar isevars env (loc,k) ty; uj_type = ty }
@@ -892,7 +891,6 @@ let rec pretype tycon env isevars lvar = function
 (* [pretype_type valcon env isevars lvar c] coerces [c] into a type *)
 and pretype_type valcon env isevars lvar = function
   | RHole loc ->
-      if !compter then nbimpl:=!nbimpl+1;
       (match valcon with
 	 | Some v ->
              let s =

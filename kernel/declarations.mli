@@ -77,6 +77,7 @@ type one_inductive_body = {
  }
 
 type mutual_inductive_body = {
+  mind_record : bool;
   mind_finite : bool;
   mind_ntypes : int;
   mind_hyps : section_context;

@@ -271,6 +271,7 @@ let dummy_one_inductive_entry mie = {
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_inductive_entry m = {
+  mind_entry_record = false;
   mind_entry_finite = true;
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds }
 

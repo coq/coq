@@ -421,8 +421,8 @@ let pp_singleton kn packet =
 		     pr_id packet.ip_consnames.(0)))
 
 let pp_record kn packet = 
-  let l = List.combine (find_projections kn) packet.ip_types.(0) in 
   let projs = find_projections kn in
+  let l = List.combine projs packet.ip_types.(0) in 
   let pl = rename_tvars keywords packet.ip_vars in 
   str "type " ++ pp_parameters pl ++ pp_global (IndRef (kn,0)) ++ str " = { "++
   hov 0 (prlist_with_sep (fun () -> str ";" ++ spc ()) 
