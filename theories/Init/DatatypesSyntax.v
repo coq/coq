@@ -12,8 +12,8 @@ Require Export Datatypes.
 
 (** Symbolic notations for things in [Datatypes.v] *)
 
-Infix LEFTA 4 "+" sum.
-Infix RIGHTA 3 "*" prod.
+Infix LEFTA 4 "+" sum : type_scope.
+Infix RIGHTA 3 "*" prod : type_scope.
 Notation "( x , y )" := (pair ? ? x y) (at level 0).
 Notation Fst := (fst ? ?).
 Notation Snd := (snd ? ?).

@@ -17,3 +17,5 @@ Require Export SpecifSyntax.
 Require Export Peano.
 Require Export PeanoSyntax.
 Require Export Wf.
+
+Delimits Scope type_scope with T.
