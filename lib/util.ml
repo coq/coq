@@ -63,11 +63,21 @@ let parse_section_path s =
 
 (* Lists *)
 
-let intersect l1 l2 = 
+let list_intersect l1 l2 = 
   List.filter (fun x -> List.mem x l2) l1
 
-let subtract l1 l2 =
+let list_unionq l1 l2 = 
+  let rec urec = function
+    | [] -> l2
+    | a::l -> if List.memq a l2 then urec l else a::urec l
+  in 
+  urec l1
+
+let list_subtract l1 l2 =
   if l2 = [] then l1 else List.filter (fun x -> not (List.mem x l2)) l1
+
+let list_subtractq l1 l2 = 
+  if l2 = [] then l1 else List.filter (fun x -> not (List.memq x l2)) l1
 
 let list_chop n l = 
   let rec chop_aux acc = function

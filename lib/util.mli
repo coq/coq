@@ -24,8 +24,10 @@ val parse_section_path : string -> string list * string * string
 
 (* Lists *)
 
-val intersect : 'a list -> 'a list -> 'a list
-val subtract : 'a list -> 'a list -> 'a list
+val list_intersect : 'a list -> 'a list -> 'a list
+val list_unionq : 'a list -> 'a list -> 'a list
+val list_subtract : 'a list -> 'a list -> 'a list
+val list_subtractq : 'a list -> 'a list -> 'a list
 val list_chop : int -> 'a list -> 'a list * 'a list
 val list_tabulate : (int -> 'a) -> int -> 'a list
 val list_assign : 'a list -> int -> 'a -> 'a list
