@@ -127,8 +127,8 @@ USERTACCMX=$(USERTAC:.ml4=.cmx)
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
         contrib/ring/quote.cmo contrib/ring/ring.cmo \
-#	contrib/xml/xml.cmo \
-#	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
+	contrib/xml/xml.cmo \
+	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -338,8 +338,7 @@ RINGVO = contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
          contrib/ring/ZArithRing.vo     contrib/ring/Ring_abstract.vo \
          contrib/ring/Quote.vo
 
-#XMLVO = contrib/xml/Xml.vo
-XMLVO=
+XMLVO = contrib/xml/Xml.vo
 
 CONTRIBVO = $(OMEGAVO) $(RINGVO) $(XMLVO)
 
