@@ -1000,8 +1000,6 @@ let int_add_relation id a aeq refl sym trans =
            const_entry_opaque = false},
           IsDefinition)
       in
-       (*CSCXX: bug here; if there is a LetIn this code is completely brain
-         damaged*)
        let a_quantifiers_rev =
         List.map (fun (n,b,t) -> assert (b = None); n,t) a_quantifiers_rev in
        add_morphism None mor_name
@@ -1061,8 +1059,9 @@ let add_setoid id a aeq th =
         const_entry_type = None;
         const_entry_opaque = false},
        IsDefinition) in
-   (*CSCXX: bug here; if there is a LetIn this code is completely brain damaged*)
-   let a_quantifiers_rev = List.map (fun (n,b,t) -> assert (b = None); n,t) a_quantifiers_rev in
+   let a_quantifiers_rev =
+    List.map (fun (n,b,t) -> assert (b = None); n,t) a_quantifiers_rev
+   in
     add_morphism None mor_name
      (aeq,a_quantifiers_rev,[aeq_rel_class_and_var ; aeq_rel_class_and_var],
        Lazy.force coq_iff_relation)
