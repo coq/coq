@@ -1875,10 +1875,11 @@ tactics/tacinterp.cmo: parsing/ast.cmi tactics/auto.cmi kernel/closure.cmi \
     pretyping/pretype_errors.cmi pretyping/pretyping.cmi parsing/printer.cmi \
     proofs/proof_type.cmi pretyping/rawterm.cmi proofs/refiner.cmi \
     pretyping/retyping.cmi kernel/safe_typing.cmi kernel/sign.cmi \
-    library/summary.cmi proofs/tacexpr.cmo proofs/tacmach.cmi \
-    pretyping/tacred.cmi proofs/tactic_debug.cmi tactics/tactics.cmi \
-    kernel/term.cmi pretyping/termops.cmi interp/topconstr.cmi \
-    pretyping/typing.cmi lib/util.cmi tactics/tacinterp.cmi 
+    library/summary.cmi interp/syntax_def.cmi proofs/tacexpr.cmo \
+    proofs/tacmach.cmi pretyping/tacred.cmi proofs/tactic_debug.cmi \
+    tactics/tactics.cmi kernel/term.cmi pretyping/termops.cmi \
+    interp/topconstr.cmi pretyping/typing.cmi lib/util.cmi \
+    tactics/tacinterp.cmi 
 tactics/tacinterp.cmx: parsing/ast.cmx tactics/auto.cmx kernel/closure.cmx \
     interp/constrintern.cmx parsing/coqast.cmx library/decl_kinds.cmx \
     kernel/declarations.cmx tactics/dhyp.cmx lib/dyn.cmx tactics/elim.cmx \
@@ -1891,10 +1892,11 @@ tactics/tacinterp.cmx: parsing/ast.cmx tactics/auto.cmx kernel/closure.cmx \
     pretyping/pretype_errors.cmx pretyping/pretyping.cmx parsing/printer.cmx \
     proofs/proof_type.cmx pretyping/rawterm.cmx proofs/refiner.cmx \
     pretyping/retyping.cmx kernel/safe_typing.cmx kernel/sign.cmx \
-    library/summary.cmx proofs/tacexpr.cmx proofs/tacmach.cmx \
-    pretyping/tacred.cmx proofs/tactic_debug.cmx tactics/tactics.cmx \
-    kernel/term.cmx pretyping/termops.cmx interp/topconstr.cmx \
-    pretyping/typing.cmx lib/util.cmx tactics/tacinterp.cmi 
+    library/summary.cmx interp/syntax_def.cmx proofs/tacexpr.cmx \
+    proofs/tacmach.cmx pretyping/tacred.cmx proofs/tactic_debug.cmx \
+    tactics/tactics.cmx kernel/term.cmx pretyping/termops.cmx \
+    interp/topconstr.cmx pretyping/typing.cmx lib/util.cmx \
+    tactics/tacinterp.cmi 
 tactics/tacticals.cmo: proofs/clenv.cmi kernel/declarations.cmi \
     kernel/environ.cmi proofs/evar_refiner.cmi library/global.cmi \
     pretyping/indrec.cmi kernel/inductive.cmi library/libnames.cmi \
