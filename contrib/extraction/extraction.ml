@@ -251,12 +251,6 @@ let axiom_message sp =
     [< 'sTR "You must specify an extraction for axiom"; 'sPC; 
        pr_sp sp; 'sPC; 'sTR "first" >]
 
-let unrealizable_axiom sp =
-  errorlabstrm "axiom_message"
-    [< 'sTR "Axiom"; 'sPC; pr_sp sp; 'sPC; 
-       'sTR "does not correspond to an ML type" >]
-
-
 (*s Tables to keep the extraction of inductive types and constructors. *)
 
 type inductive_extraction_result = 
@@ -330,10 +324,13 @@ let rec extract_type env c =
 	    | IsRel n -> 
 		(match lookup_rel_value n env with
 		   | Some t -> 
-		       extract_rec env fl t args  
+		       extract_rec env fl (lift n t) args  
 		   | None ->
 		       let id = id_of_name (fst (lookup_rel_type n env)) in 
 		       Tmltype (Tvar id, [], fl))
+	    | IsConst (sp,a) when is_axiom sp -> 
+		let id = basename sp in 
+		Tmltype (Tvar id, [], id :: fl)
 	    | IsConst (sp,a) ->
 		let cty = constant_type env Evd.empty (sp,a) in 
 		if is_arity env Evd.empty cty then
@@ -342,7 +339,6 @@ let rec extract_type env c =
 		else begin
 		  (* We can't keep as ML type abbreviation a CIC constant 
 		     which type is not an arity: we reduce this constant. *)
-		  if is_axiom sp then unrealizable_axiom sp;
 		  let cvalue = constant_value env (sp,a) in
 		  extract_rec env fl (applist (cvalue, args)) []
 		end
@@ -558,7 +554,7 @@ and extract_app env ctx (f,tyf,sf) args =
   MLapp (f', mlargs)
 
 
-and signature_of_application env f t a = 
+and signature_of_application env f t a =
   let nargs = Array.length a in	 	
   let t = 
     if nb_prod t >= nargs then 
