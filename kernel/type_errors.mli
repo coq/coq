@@ -21,7 +21,7 @@ open Environ
 type guard_error =
   (* Fixpoints *)
   | NotEnoughAbstractionInFixBody
-  | RecursionNotOnInductiveType
+  | RecursionNotOnInductiveType of constr
   | RecursionOnIllegalTerm of int * constr * int list * int list
   | NotEnoughArgumentsForFixCall of int
   (* CoFixpoints *)

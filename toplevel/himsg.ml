@@ -222,8 +222,9 @@ let explain_ill_formed_rec_body ctx err names i =
   (* Fixpoint guard errors *)
   | NotEnoughAbstractionInFixBody ->
       str "Not enough abstractions in the definition"
-  | RecursionNotOnInductiveType ->
-      str "Recursive definition on a non inductive type"
+  | RecursionNotOnInductiveType c ->
+      str "Recursive definition on" ++ spc() ++ prterm_env ctx c ++ spc() ++
+      str "which should be an inductive type"
   | RecursionOnIllegalTerm(j,arg,le,lt) ->
       let called =
         match names.(j) with

@@ -668,8 +668,8 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
     or bodynum >= nbfix
   then anomaly "Ill-formed fix term";
   let fixenv = push_rec_types recdef env in
-  let raise_err i err =
-    error_ill_formed_rec_body fixenv err names i in
+  let raise_err env i err =
+    error_ill_formed_rec_body env err names i in
   (* Check the i-th definition with recarg k *)
   let find_ind i k def = 
     if k < 0 then anomaly "negative recarg position";
@@ -684,11 +684,12 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
                 (* get the inductive type of the fixpoint *)
                 let (mind, _) = 
                   try find_inductive env a 
-                  with Not_found -> raise_err i RecursionNotOnInductiveType in
+                  with Not_found ->
+		    raise_err env i (RecursionNotOnInductiveType a) in
                 (mind, (env', b))
 	      else check_occur env' (n+1) b
             else anomaly "check_one_fix: Bad occurrence of recursive call"
-        | _ -> raise_err i NotEnoughAbstractionInFixBody in
+        | _ -> raise_err env i NotEnoughAbstractionInFixBody in
     check_occur fixenv 1 def in
   (* Do it on every fixpoint *)
   let rv = array_map2_i find_ind nvect bodies in
