@@ -646,30 +646,30 @@ Recursive Tactic Definition loop t := (
        (Case ?1; [ Intro; Intro | Intro; Intro | Idtac | Idtac 
                  | Intro | Intro; Intro | Intro; Intro | Intro; Intro
                  | Intro; Intro ]);
-        Auto; (Simplify ())
+        Auto; Simplify
   | [(Case ?1 of ? ? ? ? ? ? end)] -> 
        (Case ?1; [ Intro | Intro; Intro | Intro; Intro | Intro; Intro | 
-                   Intro | Intro ]); Auto; (Simplify ())
+                   Intro | Intro ]); Auto; Simplify
   | [(Case (Zcompare ?1 ?2) of ? ? ? end)] -> 
-       (Elim_Zcompare ?1 ?2) ; Intro ; Auto; (Simplify ())
+       (Elim_Zcompare ?1 ?2) ; Intro ; Auto; Simplify
   | [(Case ?1 of ? ? ? end)] -> 
-       (Case ?1; [ Idtac | Intro | Intro ]); Auto; (Simplify ())
+       (Case ?1; [ Idtac | Intro | Intro ]); Auto; Simplify
   | [(Case (eq_Z ?1 ?2) of ? ? end)] -> 
        ((Elim_eq_Z ?1 ?2); Intro H; [Rewrite H; Clear H | Clear H]);
-       Simpl; Auto; (Simplify ())
+       Simpl; Auto; Simplify
   | [(Case (eq_term ?1 ?2) of ? ? end)] -> 
        ((Elim_eq_term ?1 ?2); Intro H; [Rewrite H; Clear H | Clear H]); 
-       Simpl; Auto; (Simplify ())
+       Simpl; Auto; Simplify
   | [(Case (eq_pos ?1 ?2) of ? ? end)] -> 
        ((Elim_eq_pos ?1 ?2); Intro H; [Rewrite H; Clear H | Clear H]);
-       Simpl; Auto; (Simplify ())
+       Simpl; Auto; Simplify
   | _ -> Fail)
-And Simplify () := (
+And Simplify := (
   Match Context With [|- ?1 ] -> Try (loop ?1) | _ -> Idtac).
 
 (* L'utilisation de Match n'est qu'un hack pour contourner un bug de la 7.0 *)
 Tactic Definition ProveStable x th :=
-  (Match x With [?1] -> Unfold term_stable ?1; Intros; (Simplify ()); Simpl; Apply th).
+  (Match x With [?1] -> Unfold term_stable ?1; Intros; Simplify; Simpl; Apply th).
 
 (* \subsubsection{Les règles elle mêmes} *)
 Definition Tplus_assoc_l [t: term] :=
@@ -805,7 +805,7 @@ Definition T_OMEGA13 [t: term] :=
 
 Theorem  T_OMEGA13_stable : (term_stable  T_OMEGA13).
 
-Unfold term_stable T_OMEGA13; Intros; (Simplify ()); Simpl; 
+Unfold term_stable T_OMEGA13; Intros; Simplify; Simpl; 
   [ Apply OMEGA13 | Apply OMEGA14 ].
 Save.
 
@@ -1314,7 +1314,7 @@ Theorem constant_not_nul_valid :
   (i:nat) (valid_hyps (constant_not_nul i)).
 
 Unfold valid_hyps constant_not_nul; Intros;
-Generalize (nth_valid e i lp); (Simplify ()); Simpl; (Elim_eq_Z z0 ZERO); Auto;
+Generalize (nth_valid e i lp); Simplify; Simpl; (Elim_eq_Z z0 ZERO); Auto;
 Simpl; Intros H1 H2; Elim H1; Symmetry; Auto.
 Save.   
 
@@ -1329,7 +1329,7 @@ Definition constant_neg [i:nat; h: hyps] :=
 Theorem constant_neg_valid : (i:nat) (valid_hyps (constant_neg i)).
 
 Unfold valid_hyps constant_neg; Intros;
-Generalize (nth_valid e i lp); (Simplify ()); Simpl; Unfold Zle; Simpl;
+Generalize (nth_valid e i lp); Simplify; Simpl; Unfold Zle; Simpl;
 Intros H1; Elim H1; [ Assumption | Trivial ].
 Save.   
 
@@ -1356,10 +1356,10 @@ Theorem not_exact_divide_valid : (k1,k2:Z; body:term; t:nat; i:nat)
 	(valid_hyps (not_exact_divide k1 k2 body t i)).
 
 Unfold valid_hyps not_exact_divide; Intros; Generalize (nth_valid e i lp);
-(Simplify ());
+Simplify;
 (Elim_eq_term '(scalar_norm_add t (Tplus (Tmult body (Tint k1)) (Tint k2)))
 	     't1); Auto; 
-(Simplify ()); 
+Simplify; 
 Intro H2; Elim H2; Simpl; Elim (scalar_norm_add_stable t e); Simpl;
 Intro H4; Absurd `(interp_term e body)*k1+k2 = 0`; [
    Apply OMEGA4; Assumption | Symmetry; Auto ].
@@ -1590,7 +1590,7 @@ Save.
 
 Theorem sum_valid : (k1,k2:Z; t:(list t_fusion)) (valid2 (sum k1 k2 t)).
 
-Unfold valid2; Intros k1 k2 t e p1 p2; Unfold sum; (Simplify ()); Simpl; Auto;
+Unfold valid2; Intros k1 k2 t e p1 p2; Unfold sum; Simplify; Simpl; Auto;
 Try (Elim (fusion_stable t)); Simpl; Intros; [
   Apply sum1; Assumption
 | Apply sum2; Try Assumption; Apply sum4; Assumption
@@ -1620,7 +1620,7 @@ Theorem exact_divide_valid :
   (k:Z) (t:term) (n:nat) (valid1 (exact_divide k t n)).
 
 
-Unfold valid1 exact_divide; Intros k1 k2 t e p1; (Simplify ());Simpl; Auto;
+Unfold valid1 exact_divide; Intros k1 k2 t e p1; Simplify;Simpl; Auto;
 (Elim_eq_term  '(scalar_norm t (Tmult k2 (Tint k1))) 't1); Simpl; Auto;
 (Elim_eq_Z 'k1 '(ZERO)); Simpl; Auto;  Intros H1 H2; Elim H2; 
 Elim scalar_norm_stable; Simpl; Generalize H1; Case (interp_term e k2);
@@ -1658,8 +1658,8 @@ Definition divide_and_approx [k1,k2:Z; body:term; t:nat; prop:proposition] :=
 Theorem divide_and_approx_valid : (k1,k2:Z; body:term; t:nat) 
 	(valid1 (divide_and_approx k1 k2 body t)).
 
-Unfold valid1 divide_and_approx; Intros k1 k2 body t e p1;(Simplify ());
-(Elim_eq_term '(scalar_norm_add t (Tplus (Tmult body (Tint k1)) (Tint k2))) 't1); (Simplify ()); Auto;  Intro E; Elim E; Simpl; 
+Unfold valid1 divide_and_approx; Intros k1 k2 body t e p1;Simplify;
+(Elim_eq_term '(scalar_norm_add t (Tplus (Tmult body (Tint k1)) (Tint k2))) 't1); Simplify; Auto;  Intro E; Elim E; Simpl; 
 Elim (scalar_norm_add_stable t e); Simpl; Intro H1; 
 Apply Zmult_le_approx with 3 := H1; Assumption.
 Save.
@@ -1682,7 +1682,7 @@ Definition merge_eq [t: nat; prop1, prop2: proposition] :=
 
 Theorem merge_eq_valid : (n:nat) (valid2 (merge_eq n)).
 
-Unfold valid2 merge_eq; Intros n e p1 p2; (Simplify ()); Simpl; Auto;
+Unfold valid2 merge_eq; Intros n e p1 p2; Simplify; Simpl; Auto;
 Elim (scalar_norm_stable n e); Simpl; Intros; Symmetry; 
 Apply OMEGA8 with 2 := H0; [ Assumption | Elim Zopp_one; Trivial ].
 Save.
@@ -1701,7 +1701,7 @@ Theorem constant_nul_valid :
   (i:nat) (valid_hyps (constant_nul i)).
 
 Unfold valid_hyps constant_nul; Intros; Generalize (nth_valid e i lp);
-(Simplify ()); Simpl; Unfold Zne; Intro H1; Absurd `0=0`; Auto.
+Simplify; Simpl; Unfold Zne; Intro H1; Absurd `0=0`; Auto.
 Save.
 
 (* \paragraph{[O_STATE]} *)
@@ -1719,7 +1719,7 @@ Definition state [m:Z;s:step; prop1,prop2:proposition] :=
 
 Theorem state_valid : (m:Z; s:step) (valid2 (state m s)).
 
-Unfold valid2; Intros m s e p1 p2; Unfold state; (Simplify ()); Simpl;Auto;
+Unfold valid2; Intros m s e p1 p2; Unfold state; Simplify; Simpl;Auto;
 Elim (rewrite_stable s e); Simpl; Intros H1 H2; Elim H1;
 Rewrite (Zplus_sym `-(interp_term e t5)` `(interp_term e t3)`);
 Elim H2; Simpl; Reflexivity.
@@ -1873,7 +1873,7 @@ Save.
 
 Theorem move_right_valid : (s: step) (valid1 (move_right s)).
 
-Unfold valid1 move_right; Intros s e p; (Simplify ()); Simpl;
+Unfold valid1 move_right; Intros s e p; Simplify; Simpl;
 Elim (rewrite_stable s e); Simpl; [
   Symmetry; Apply Zegal_left; Assumption
 | Intro; Apply Zle_left; Assumption 
