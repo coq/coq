@@ -56,6 +56,16 @@ let pr_reference r =
 
 let quote str = "\""^str^"\""
 
+let sep_end () = str"."
+
+let start_theorem = ref false
+
+let insert_proof_keyword () =
+  if !start_theorem then 
+    (start_theorem := false; str "Proof" ++ sep_end () ++ fnl())
+  else
+    mt ()
+
 (* Warning: [pr_raw_tactic] globalises and fails if globalisation fails *)
 (*
 let pr_raw_tactic_env l env t = 
@@ -337,15 +347,19 @@ let pr_onescheme (id,dep,ind,s) =
   hov 0 (str"Sort" ++ spc() ++ pr_sort s)
 
 let pr_class_rawexpr = function
-  | FunClass -> str"FUNCLASS"
-  | SortClass -> str"SORTCLASS"
+  | FunClass -> str"Funclass"
+  | SortClass -> str"Sortclass"
   | RefClass qid -> pr_reference qid
 
-let pr_assumption_token = function
-  | (Decl_kinds.Local,Decl_kinds.Logical) -> str"Hypothesis"
-  | (Decl_kinds.Local,Decl_kinds.Definitional) -> str"Variable"
-  | (Decl_kinds.Global,Decl_kinds.Logical) -> str"Axiom"
-  | (Decl_kinds.Global,Decl_kinds.Definitional) -> str"Parameter"
+let pr_assumption_token many = function
+  | (Decl_kinds.Local,Decl_kinds.Logical) ->
+      str (if many then "Hypotheses" else "Hypothesis")
+  | (Decl_kinds.Local,Decl_kinds.Definitional) ->
+      str (if many then "Variables" else "Variable")
+  | (Decl_kinds.Global,Decl_kinds.Logical) ->
+      str (if many then "Axioms" else "Axiom")
+  | (Decl_kinds.Global,Decl_kinds.Definitional) -> 
+      str (if many then "Parameters" else "Parameter")
 
 let pr_params pr_c (xl,(c,t)) =
   hov 2 (prlist_with_sep sep pr_id xl ++ spc() ++
@@ -360,11 +374,13 @@ let rec factorize = function
 	| l' -> ([x],(c,t))::l'
 
 let pr_ne_params_list pr_c l =
-  prlist_with_sep spc (fun p -> str "(" ++ pr_params pr_c p ++ str ")")
+  match factorize l with
+    | [p] -> pr_params pr_c p
+    | l ->
+	prlist_with_sep spc (fun p -> str "(" ++ pr_params pr_c p ++ str ")") l
 (*
   prlist_with_sep pr_semicolon (pr_params pr_c)
 *)
-    (factorize l)
 
 let pr_thm_token = function
   | Decl_kinds.Theorem -> str"Theorem"
@@ -432,8 +448,6 @@ let pr_syntax_rule (nm,s,u) = str nm ++ spc() ++ str"[" ++ pr_astpat s ++ str"]"
 let pr_syntax_entry (p,rl) =
   str"level" ++ spc() ++ int p ++ str" :" ++ fnl() ++
   prlist_with_sep (fun _ -> fnl() ++ str"| ") pr_syntax_rule rl
-
-let sep_end () = str"."
 
 (**************************************)
 (* Pretty printer for vernac commands *)
@@ -620,6 +634,7 @@ let rec pr_vernac = function
         | Some cc -> str" :=" ++ spc() ++ cc))
 
   | VernacStartTheoremProof (ki,id,(bl,c),b,d) ->
+      start_theorem := true;
       hov 1 (pr_thm_token ki ++ spc() ++ pr_id id ++ spc() ++
       (match bl with
         | [] -> mt()
@@ -627,16 +642,19 @@ let rec pr_vernac = function
 (*
 pr_vbinders bl ++ spc())
 *)
-      ++ str":" ++ spc() ++ pr_lconstr c) ++ sep_end () ++ fnl() ++ str "Proof"
+      ++ str":" ++ spc() ++ pr_lconstr c)
   | VernacEndProof (opac,o) -> (match o with
     | None -> if opac then str"Qed" else str"Defined"
     | Some (id,th) -> (match th with
       |	None -> (if opac then str"Save" else str"Defined") ++ spc() ++ pr_id id
       |	Some tok -> str"Save" ++ spc() ++ pr_thm_token tok ++ spc() ++ pr_id id)) 
-  | VernacExactProof c -> hov 2 (str"Proof" ++ pr_lconstrarg c)
+  | VernacExactProof c ->
+      start_theorem := false;
+      hov 2 (str"Proof" ++ pr_lconstrarg c)
   | VernacAssumption (stre,l) ->
       hov 2
-        (pr_assumption_token stre ++ spc() ++ pr_ne_params_list pr_lconstr l)
+        (pr_assumption_token (List.length l > 1) stre ++ spc() ++ 
+	 pr_ne_params_list pr_lconstr l)
   | VernacInductive (f,l) ->
 
       (* Copie simplifiée de command.ml pour recalculer les implicites, *)
@@ -881,11 +899,13 @@ pr_vbinders bl ++ spc())
 
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
+      insert_proof_keyword () ++
       (if i = 1 then mt() else int i ++ str ": ") ++
 (*      str "By " ++*)
       (if deftac then mt() else str "!! ") ++
       Options.with_option Options.translate_syntax (pr_raw_tactic_goal i) tac
   | VernacSolveExistential (i,c) ->
+      insert_proof_keyword () ++
       str"Existential " ++ int i ++ pr_lconstrarg c
 
   (* Auxiliary file and library management *)
@@ -1059,6 +1079,11 @@ in pr_vernac
 let pr_vernac = make_pr_vernac Ppconstrnew.pr_constr Ppconstrnew.pr_lconstr
 
 let pr_vernac = function
+  | VernacRequire (_,_,[Ident(_,r)]) when
+      (* Obsolete modules *)
+      List.mem (string_of_id r)
+	["Refine"; "Inv"; "Equality"; "EAuto"; "AutoRewrite"; "EqDecide"; 
+         "Xml"; "Extraction"; "Tauto"; "Setoid_replace";"Elimdep"] -> mt()
   | VernacSyntax _  | VernacGrammar _ as x -> pr_vernac x
   | x -> pr_vernac x ++ sep_end ()
 

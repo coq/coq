@@ -233,16 +233,20 @@ and pr_atom1 env = function
   | TacFix (ido,n) -> hov 1 (str "fix" ++ pr_opt pr_id ido ++ pr_intarg n)
   | TacMutualFix (id,n,l) ->
       hov 1 (str "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc () ++
-        hov 0 (str "with" ++ brk (1,1) ++
-          prlist_with_sep spc
+        hv 0 (str "with" ++ brk (1,1) ++
+          prlist
 	    (fun (id,n,c) ->
-	      spc () ++ pr_id id ++ pr_intarg n ++ pr_constrarg env c)
+	      spc() ++
+	      hov 0 (pr_id id ++ pr_intarg n ++ str":" ++ pr_constrarg env c))
 	  l))
   | TacCofix ido -> hov 1 (str "cofix" ++ pr_opt pr_id ido)
   | TacMutualCofix (id,l) ->
       hov 1 (str "cofix" ++ spc () ++ pr_id id ++ spc () ++
-        hov 0 (str "with" ++ brk (1,1) ++
-          prlist (fun (id,c) -> spc () ++ pr_id id ++ pr_constrarg env c)
+        hv 0 (str "with" ++ brk (1,1) ++
+          prlist
+	    (fun (id,c) ->
+	      spc() ++ 
+	      hov 0 (pr_id id ++ str":" ++ pr_constrarg env c))
 	  l))
   | TacCut c -> hov 1 (str "cut" ++ pr_lconstrarg env c)
   | TacTrueCut (None,c) -> 
