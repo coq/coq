@@ -23,6 +23,8 @@ open Declare
 
 let current_module = ref None
 
+let used_modules = ref Idset.empty
+
 let is_construct = function ConstructRef _ -> true | _ -> false 
 
 let sp_of_r r = match r with 
@@ -55,7 +57,10 @@ let short_module r =
 let module_option r = 
   let m = short_module r in
   if Some m = !current_module then ""
-  else (String.capitalize (string_of_id m)) ^ "."
+  else begin 
+    used_modules := Idset.add m !used_modules;
+    (String.capitalize (string_of_id m)) ^ "."
+  end
 
 let check_ml r d = 
   if to_inline r then 
@@ -165,7 +170,8 @@ let init_global_ids lang =
      | "ocaml" -> Ocaml.keywords
      | "haskell" -> Haskell.keywords
      | _ -> assert false);
-  global_ids := !keywords
+  global_ids := !keywords;
+  used_modules := Idset.empty
 
 let extract_to_file f prm decls =
   cons_cofix := Refset.empty;
@@ -178,10 +184,17 @@ let extract_to_file f prm decls =
     | "haskell", _ -> Haskell.preamble, HaskellModularPp.pp_decl
     | _ -> assert false
   in
+  let pp = prlist_with_sep fnl pp_decl decls in 
   let cout = open_out f in
   let ft = Pp_control.with_output_to cout in
   if decls <> [] || prm.lang = "haskell" 
-  then pp_with ft (hv 0 (preamble prm));
+  then msgnl_with ft (hv 0 (preamble prm));
+  Idset.iter (fun m -> msgnl_with ft (str "open " ++ pr_id m)) !used_modules; 
+  msgnl_with ft pp;
+  pp_flush_with ft ();
+  close_out cout  
+
+(*
   begin 
     try
       List.iter (fun d -> msgnl_with ft (pp_decl d)) decls
@@ -190,6 +203,4 @@ let extract_to_file f prm decls =
   end;
   pp_flush_with ft ();
   close_out cout
-
-
-
+*)
