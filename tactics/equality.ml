@@ -1336,6 +1336,7 @@ let substConcl_RL_tac =
       (function 
 	 | [Command eqn] -> 
 	     (fun gls ->  substConcl_RL (pf_interp_constr gls eqn)  gls)
+         | [Constr c] -> substConcl_RL c
 	 | _ -> assert false)
   in 
   fun eqn  -> gentac [Command eqn] 
