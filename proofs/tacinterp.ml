@@ -1063,7 +1063,7 @@ and flag_of_ast (evc,env,lfun,lmatch,goalopt,debug) lf =
 		      match glob_const_nvar loc env (qid_interp v) with
 			| EvalVarRef id -> red_add red (VAR id)
 			| EvalConstRef sp -> red_add red (CONST [sp])) l red
-	       in add_flag red lf
+	       in add_flag idl lf
 (*
 (id_of_Identifier (unvarg
 		   (val_interp (evc,env,lfun,lmatch,goalopt,debug) v)))) l
@@ -1076,7 +1076,7 @@ and flag_of_ast (evc,env,lfun,lmatch,goalopt,debug) lf =
 		      match glob_const_nvar loc env (qid_interp v) with
 			| EvalVarRef id -> red_add red (VARBUT id)
 			| EvalConstRef sp -> red_add red (CONSTBUT [sp])) l red
-	       in add_flag red lf
+	       in add_flag idl lf
 
 (*
 		 List.map
