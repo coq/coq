@@ -402,14 +402,19 @@ let make_app env ren args ren' (tf,cf) ((bl,cb),s,capp) c =
  *)
 
 let make_if_case ren env ty (b,qb) (br1,br2) =
-  let ty',id_b = match qb with
+  let id_b,ty',ty1,ty2 = match qb with
     | Some q ->  
   	let q = apply_post ren env (current_date ren) q in
     	let (name,t1,t2) = Term.destLambda q.a_value in
-    	Term.mkLambda (name, t1, (mkArrow t2 ty)), q.a_name
+	q.a_name,
+    	Term.mkLambda (name, t1, mkArrow t2 ty),
+	Term.mkApp (q.a_value, [| coq_true |]),
+	Term.mkApp (q.a_value, [| coq_false |])
     | None -> assert false
   in
-  CC_app (CC_case (ty', b, [br1;br2]),
+  let n = test_name Anonymous in
+  CC_app (CC_case (ty', b, [CC_lam ([n,CC_typed_binder ty1], br1);
+			    CC_lam ([n,CC_typed_binder ty2], br2)]),
 	  [CC_var (post_name id_b)])
 
 let make_if ren env (tb,cb) ren' (t1,c1) (t2,c2) c =
@@ -436,17 +441,10 @@ let make_if ren env (tb,cb) ren' (t1,c1) (t2,c2) c =
   in
   let t1,ty1 = branch c1 t1 in
   let t2,ty2 = branch c2 t2 in
-  let t1,t2 =
-    let n = test_name Anonymous in
-    CC_lam ([n,CC_untyped_binder],t1),
-    CC_lam ([n,CC_untyped_binder],t2) in
   let ty = ty1 in
   let qb = force_bool_name qb in
   let t = make_if_case ren env ty (CC_var resb,qb) (t1,t2) in
-  let t = 
-    make_let_in ren env tb pb (current_vars ren' wb,qb) (resb,tyb) (t,ty)
-  in
-  t
+  make_let_in ren env tb pb (current_vars ren' wb,qb) (resb,tyb) (t,ty)
 
 
 (* [make_while ren env (cphi,r,a) (tb,cb) (te,ce) c]
@@ -509,10 +507,6 @@ let make_body_while ren env phi_of a r id_phi0 id_w (tb,cb) tbl (i,c) =
       (CC_expr (constant "tt"),constant "unit") (ef,is)
   in
 
-  let t1,t2 =
-    let n = test_name Anonymous in
-    CC_lam ([n,CC_untyped_binder],t1),
-    CC_lam ([n,CC_untyped_binder],t2) in
   let b_al = current_vars ren' (get_reads eb) in
   let qb = force_bool_name qb in
   let t = make_if_case ren' env ty (CC_var resb,qb) (t1,t2) in

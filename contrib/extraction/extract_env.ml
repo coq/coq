@@ -161,13 +161,13 @@ let _ =
 
 let interp_options keep modular = function
   | [VARG_STRING "noopt"] ->
-      { no_opt = true; modular = modular; 
+      { optimization = false; modular = modular; 
 	to_keep = refs_set_of_list keep; to_expand = Refset.empty }
   | [VARG_STRING "nooption"] ->
-      { no_opt = false; modular = modular;
+      { optimization = not modular; modular = modular;
 	to_keep = refs_set_of_list keep; to_expand = Refset.empty }
   | VARG_STRING "expand" :: l ->
-      { no_opt = false; modular = modular;
+      { optimization = not modular; modular = modular;
 	to_keep = refs_set_of_list keep; 
 	to_expand = refs_set_of_list (refs_of_vargl l) }
   | _ -> 

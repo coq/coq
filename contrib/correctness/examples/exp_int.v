@@ -27,7 +27,7 @@
 Require Zpower.
 Require Zcomplements.
 
-Require Programs.
+Require Correctness.
 Require ZArithRing.
 Require Omega.
 
@@ -52,12 +52,12 @@ Intro. Absurd `0 > 0`; [ Omega | Assumption ].
 Destruct p; Auto with zarith.
 
 Simpl.
-Intro p.
+Intro p0.
 Replace (POS (xI p0)) with `2*(POS p0)+1`.
 Omega.
 Simpl. Auto with zarith.
 
-Intro p.
+Intro p0.
 Simpl.
 Replace (POS (xO p0)) with `2*(POS p0)`.
 Omega.
@@ -120,7 +120,7 @@ Correctness i_exp
     let e = ref n in
     begin
       while !e > 0 do
-        { invariant (Zpower x n)=(Zmult y (Zpower m e)) /\ `e>=0` as I
+        { invariant (Zpower x n)=(Zmult y (Zpower m e)) /\ `e>=0` as Inv
           variant e }
         (if not (Zeven_odd_bool !e) then y := (Zmult !y !m))
           { (Zpower x n) = (Zmult y (Zpower m (Zdouble (Zdiv2 e)))) as Q };

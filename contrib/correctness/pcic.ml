@@ -185,10 +185,11 @@ let rawconstr_of_prog p =
       	let args = tyl @ cl in
 	RApp (dummy_loc, RRef (dummy_loc, tuple), args)
 
-    | CC_case (_,b,el) ->
+    | CC_case (ty,b,el) ->
 	let c = trad avoid nenv b in
 	let cl = List.map (trad avoid nenv) el in
-	ROldCase (dummy_loc, false, None, c, Array.of_list cl)
+	let ty = Detyping.detype avoid nenv ty in
+	ROldCase (dummy_loc, false, Some ty, c, Array.of_list cl)
 
     | CC_expr c -> 
 	Detyping.detype avoid nenv c

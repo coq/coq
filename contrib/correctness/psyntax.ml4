@@ -94,7 +94,7 @@ let ast_of_int n =
 let constr_of_int n =
   Astterm.interp_constr Evd.empty (Global.env ()) (ast_of_int n)
 
-let ast_constant loc s = <:ast< ($VAR $s) >>
+let ast_constant loc s = <:ast< (QUALID ($VAR $s)) >>
 
 let conj_assert {a_name=n;a_value=a} {a_value=b} = 
   let loc = Ast.loc a in

@@ -207,12 +207,68 @@ toplevel/vernacentries.cmi: parsing/coqast.cmi kernel/environ.cmi \
     kernel/term.cmi toplevel/vernacinterp.cmi 
 toplevel/vernacinterp.cmi: parsing/coqast.cmi lib/dyn.cmi kernel/names.cmi \
     library/nametab.cmi proofs/proof_type.cmi 
+contrib/correctness/past.cmi: parsing/coqast.cmi kernel/names.cmi \
+    contrib/correctness/ptype.cmi kernel/term.cmi 
+contrib/correctness/pcic.cmi: contrib/correctness/past.cmi \
+    pretyping/rawterm.cmi 
+contrib/correctness/pcicenv.cmi: kernel/names.cmi \
+    contrib/correctness/penv.cmi contrib/correctness/prename.cmi \
+    kernel/sign.cmi kernel/term.cmi 
+contrib/correctness/pdb.cmi: kernel/names.cmi contrib/correctness/past.cmi \
+    contrib/correctness/ptype.cmi 
+contrib/correctness/peffect.cmi: kernel/names.cmi lib/pp.cmi 
+contrib/correctness/penv.cmi: kernel/names.cmi contrib/correctness/past.cmi \
+    contrib/correctness/ptype.cmi kernel/term.cmi 
+contrib/correctness/perror.cmi: parsing/coqast.cmi kernel/names.cmi \
+    contrib/correctness/past.cmi contrib/correctness/peffect.cmi lib/pp.cmi \
+    contrib/correctness/ptype.cmi 
+contrib/correctness/pextract.cmi: kernel/names.cmi 
+contrib/correctness/pmisc.cmi: parsing/coqast.cmi kernel/names.cmi lib/pp.cmi \
+    kernel/term.cmi 
+contrib/correctness/pmlize.cmi: kernel/names.cmi contrib/correctness/past.cmi \
+    contrib/correctness/penv.cmi contrib/correctness/prename.cmi 
+contrib/correctness/pmonad.cmi: kernel/names.cmi contrib/correctness/past.cmi \
+    contrib/correctness/peffect.cmi contrib/correctness/penv.cmi \
+    contrib/correctness/prename.cmi contrib/correctness/ptype.cmi \
+    kernel/term.cmi 
+contrib/correctness/pred.cmi: contrib/correctness/past.cmi kernel/term.cmi 
+contrib/correctness/prename.cmi: kernel/names.cmi lib/pp.cmi 
+contrib/correctness/psyntax.cmi: parsing/coqast.cmi \
+    contrib/correctness/past.cmi parsing/pcoq.cmi \
+    contrib/correctness/ptype.cmi 
+contrib/correctness/ptactic.cmi: contrib/correctness/past.cmi \
+    proofs/tacmach.cmi 
+contrib/correctness/ptype.cmi: kernel/names.cmi \
+    contrib/correctness/peffect.cmi kernel/term.cmi 
+contrib/correctness/ptyping.cmi: parsing/coqast.cmi kernel/names.cmi \
+    contrib/correctness/past.cmi contrib/correctness/penv.cmi \
+    contrib/correctness/prename.cmi contrib/correctness/ptype.cmi \
+    kernel/term.cmi 
+contrib/correctness/putil.cmi: kernel/names.cmi contrib/correctness/past.cmi \
+    contrib/correctness/penv.cmi contrib/correctness/pmisc.cmi lib/pp.cmi \
+    contrib/correctness/prename.cmi contrib/correctness/ptype.cmi \
+    kernel/term.cmi 
+contrib/correctness/pwp.cmi: contrib/correctness/peffect.cmi \
+    contrib/correctness/penv.cmi contrib/correctness/prename.cmi \
+    kernel/term.cmi 
 contrib/extraction/extraction.cmi: kernel/environ.cmi \
     contrib/extraction/miniml.cmi kernel/names.cmi kernel/term.cmi 
 contrib/extraction/miniml.cmi: kernel/names.cmi lib/pp.cmi kernel/term.cmi 
 contrib/extraction/mlutil.cmi: contrib/extraction/miniml.cmi kernel/names.cmi \
     kernel/term.cmi 
-contrib/extraction/ocaml.cmi: contrib/extraction/miniml.cmi 
+contrib/extraction/ocaml.cmi: contrib/extraction/miniml.cmi \
+    contrib/extraction/mlutil.cmi 
+contrib/interface/dad.cmi: parsing/coqast.cmi proofs/proof_type.cmi \
+    proofs/tacmach.cmi 
+contrib/interface/debug_tac.cmi: parsing/coqast.cmi proofs/proof_type.cmi \
+    proofs/tacmach.cmi 
+contrib/interface/name_to_ast.cmi: parsing/coqast.cmi library/nametab.cmi 
+contrib/interface/pbp.cmi: parsing/coqast.cmi proofs/proof_type.cmi \
+    proofs/tacmach.cmi 
+contrib/interface/translate.cmi: contrib/interface/ascent.cmi \
+    kernel/environ.cmi kernel/evd.cmi proofs/proof_type.cmi kernel/term.cmi 
+contrib/interface/vtp.cmi: contrib/interface/ascent.cmi 
+contrib/interface/xlate.cmi: contrib/interface/ascent.cmi parsing/coqast.cmi 
 contrib/xml/xmlcommand.cmi: kernel/names.cmi library/nametab.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
 config/coq_config.cmx: config/coq_config.cmi 
@@ -1288,6 +1344,232 @@ toplevel/vernacinterp.cmx: parsing/ast.cmx parsing/astterm.cmx \
     kernel/names.cmx library/nametab.cmx lib/options.cmx lib/pp.cmx \
     proofs/proof_type.cmx proofs/tacinterp.cmx lib/util.cmx \
     toplevel/vernacinterp.cmi 
+contrib/correctness/pcic.cmo: parsing/ast.cmi kernel/declarations.cmi \
+    library/declare.cmi pretyping/detyping.cmi kernel/names.cmi \
+    library/nametab.cmi contrib/correctness/past.cmi \
+    contrib/correctness/pmisc.cmi pretyping/rawterm.cmi toplevel/record.cmi \
+    kernel/sign.cmi kernel/term.cmi lib/util.cmi contrib/correctness/pcic.cmi 
+contrib/correctness/pcic.cmx: parsing/ast.cmx kernel/declarations.cmx \
+    library/declare.cmx pretyping/detyping.cmx kernel/names.cmx \
+    library/nametab.cmx contrib/correctness/past.cmi \
+    contrib/correctness/pmisc.cmx pretyping/rawterm.cmx toplevel/record.cmx \
+    kernel/sign.cmx kernel/term.cmx lib/util.cmx contrib/correctness/pcic.cmi 
+contrib/correctness/pcicenv.cmo: library/global.cmi kernel/names.cmi \
+    contrib/correctness/past.cmi contrib/correctness/penv.cmi \
+    contrib/correctness/pmisc.cmi contrib/correctness/pmonad.cmi \
+    contrib/correctness/prename.cmi contrib/correctness/ptype.cmi \
+    contrib/correctness/putil.cmi kernel/sign.cmi kernel/term.cmi \
+    kernel/univ.cmi contrib/correctness/pcicenv.cmi 
+contrib/correctness/pcicenv.cmx: library/global.cmx kernel/names.cmx \
+    contrib/correctness/past.cmi contrib/correctness/penv.cmx \
+    contrib/correctness/pmisc.cmx contrib/correctness/pmonad.cmx \
+    contrib/correctness/prename.cmx contrib/correctness/ptype.cmi \
+    contrib/correctness/putil.cmx kernel/sign.cmx kernel/term.cmx \
+    kernel/univ.cmx contrib/correctness/pcicenv.cmi 
+contrib/correctness/pdb.cmo: library/declare.cmi library/global.cmi \
+    kernel/names.cmi library/nametab.cmi contrib/correctness/past.cmi \
+    contrib/correctness/penv.cmi contrib/correctness/perror.cmi \
+    contrib/correctness/ptype.cmi kernel/sign.cmi kernel/term.cmi \
+    contrib/correctness/pdb.cmi 
+contrib/correctness/pdb.cmx: library/declare.cmx library/global.cmx \
+    kernel/names.cmx library/nametab.cmx contrib/correctness/past.cmi \
+    contrib/correctness/penv.cmx contrib/correctness/perror.cmx \
+    contrib/correctness/ptype.cmi kernel/sign.cmx kernel/term.cmx \
+    contrib/correctness/pdb.cmi 
+contrib/correctness/peffect.cmo: toplevel/himsg.cmi kernel/names.cmi \
+    contrib/correctness/pmisc.cmi lib/pp.cmi lib/util.cmi \
+    contrib/correctness/peffect.cmi 
+contrib/correctness/peffect.cmx: toplevel/himsg.cmx kernel/names.cmx \
+    contrib/correctness/pmisc.cmx lib/pp.cmx lib/util.cmx \
+    contrib/correctness/peffect.cmi 
+contrib/correctness/penv.cmo: toplevel/himsg.cmi library/lib.cmi \
+    library/libobject.cmi library/library.cmi kernel/names.cmi \
+    contrib/correctness/past.cmi contrib/correctness/perror.cmi \
+    contrib/correctness/pmisc.cmi lib/pp.cmi contrib/correctness/ptype.cmi \
+    library/summary.cmi kernel/term.cmi contrib/correctness/penv.cmi 
+contrib/correctness/penv.cmx: toplevel/himsg.cmx library/lib.cmx \
+    library/libobject.cmx library/library.cmx kernel/names.cmx \
+    contrib/correctness/past.cmi contrib/correctness/perror.cmx \
+    contrib/correctness/pmisc.cmx lib/pp.cmx contrib/correctness/ptype.cmi \
+    library/summary.cmx kernel/term.cmx contrib/correctness/penv.cmi 
+contrib/correctness/perror.cmo: library/declare.cmi kernel/evd.cmi \
+    library/global.cmi toplevel/himsg.cmi kernel/names.cmi \
+    contrib/correctness/past.cmi contrib/correctness/peffect.cmi lib/pp.cmi \
+    contrib/correctness/ptype.cmi kernel/reduction.cmi kernel/term.cmi \
+    lib/util.cmi contrib/correctness/perror.cmi 
+contrib/correctness/perror.cmx: library/declare.cmx kernel/evd.cmx \
+    library/global.cmx toplevel/himsg.cmx kernel/names.cmx \
+    contrib/correctness/past.cmi contrib/correctness/peffect.cmx lib/pp.cmx \
+    contrib/correctness/ptype.cmi kernel/reduction.cmx kernel/term.cmx \
+    lib/util.cmx contrib/correctness/perror.cmi 
+contrib/correctness/pextract.cmo: parsing/ast.cmi kernel/evd.cmi \
+    toplevel/himsg.cmi library/library.cmi kernel/names.cmi \
+    library/nametab.cmi contrib/extraction/ocaml.cmi \
+    contrib/correctness/past.cmi contrib/correctness/pcicenv.cmi \
+    contrib/correctness/penv.cmi lib/pp.cmi lib/pp_control.cmi \
+    contrib/correctness/ptype.cmi contrib/correctness/putil.cmi \
+    kernel/reduction.cmi lib/system.cmi kernel/term.cmi lib/util.cmi \
+    toplevel/vernacinterp.cmi contrib/correctness/pextract.cmi 
+contrib/correctness/pextract.cmx: parsing/ast.cmx kernel/evd.cmx \
+    toplevel/himsg.cmx library/library.cmx kernel/names.cmx \
+    library/nametab.cmx contrib/extraction/ocaml.cmx \
+    contrib/correctness/past.cmi contrib/correctness/pcicenv.cmx \
+    contrib/correctness/penv.cmx lib/pp.cmx lib/pp_control.cmx \
+    contrib/correctness/ptype.cmi contrib/correctness/putil.cmx \
+    kernel/reduction.cmx lib/system.cmx kernel/term.cmx lib/util.cmx \
+    toplevel/vernacinterp.cmx contrib/correctness/pextract.cmi 
+contrib/correctness/pmisc.cmo: parsing/coqast.cmi library/declare.cmi \
+    pretyping/evarutil.cmi library/global.cmi kernel/names.cmi lib/pp.cmi \
+    kernel/term.cmi lib/util.cmi contrib/correctness/pmisc.cmi 
+contrib/correctness/pmisc.cmx: parsing/coqast.cmx library/declare.cmx \
+    pretyping/evarutil.cmx library/global.cmx kernel/names.cmx lib/pp.cmx \
+    kernel/term.cmx lib/util.cmx contrib/correctness/pmisc.cmi 
+contrib/correctness/pmlize.cmo: parsing/coqlib.cmi kernel/evd.cmi \
+    library/global.cmi kernel/names.cmi contrib/correctness/past.cmi \
+    pretyping/pattern.cmi contrib/correctness/pcicenv.cmi \
+    contrib/correctness/peffect.cmi contrib/correctness/penv.cmi \
+    contrib/correctness/pmisc.cmi contrib/correctness/pmonad.cmi \
+    contrib/correctness/prename.cmi contrib/correctness/ptype.cmi \
+    contrib/correctness/ptyping.cmi contrib/correctness/putil.cmi \
+    kernel/term.cmi parsing/termast.cmi pretyping/typing.cmi lib/util.cmi \
+    contrib/correctness/pmlize.cmi 
+contrib/correctness/pmlize.cmx: parsing/coqlib.cmx kernel/evd.cmx \
+    library/global.cmx kernel/names.cmx contrib/correctness/past.cmi \
+    pretyping/pattern.cmx contrib/correctness/pcicenv.cmx \
+    contrib/correctness/peffect.cmx contrib/correctness/penv.cmx \
+    contrib/correctness/pmisc.cmx contrib/correctness/pmonad.cmx \
+    contrib/correctness/prename.cmx contrib/correctness/ptype.cmi \
+    contrib/correctness/ptyping.cmx contrib/correctness/putil.cmx \
+    kernel/term.cmx parsing/termast.cmx pretyping/typing.cmx lib/util.cmx \
+    contrib/correctness/pmlize.cmi 
+contrib/correctness/pmonad.cmo: kernel/names.cmi contrib/correctness/past.cmi \
+    contrib/correctness/pcic.cmi contrib/correctness/peffect.cmi \
+    contrib/correctness/penv.cmi contrib/correctness/pmisc.cmi \
+    contrib/correctness/prename.cmi contrib/correctness/ptype.cmi \
+    contrib/correctness/putil.cmi kernel/term.cmi parsing/termast.cmi \
+    lib/util.cmi contrib/correctness/pmonad.cmi 
+contrib/correctness/pmonad.cmx: kernel/names.cmx contrib/correctness/past.cmi \
+    contrib/correctness/pcic.cmx contrib/correctness/peffect.cmx \
+    contrib/correctness/penv.cmx contrib/correctness/pmisc.cmx \
+    contrib/correctness/prename.cmx contrib/correctness/ptype.cmi \
+    contrib/correctness/putil.cmx kernel/term.cmx parsing/termast.cmx \
+    lib/util.cmx contrib/correctness/pmonad.cmi 
+contrib/correctness/pred.cmo: kernel/evd.cmi library/global.cmi \
+    contrib/correctness/past.cmi lib/pp.cmi kernel/reduction.cmi \
+    kernel/term.cmi contrib/correctness/pred.cmi 
+contrib/correctness/pred.cmx: kernel/evd.cmx library/global.cmx \
+    contrib/correctness/past.cmi lib/pp.cmx kernel/reduction.cmx \
+    kernel/term.cmx contrib/correctness/pred.cmi 
+contrib/correctness/prename.cmo: toplevel/himsg.cmi kernel/names.cmi \
+    contrib/correctness/pmisc.cmi lib/pp.cmi lib/util.cmi \
+    contrib/correctness/prename.cmi 
+contrib/correctness/prename.cmx: toplevel/himsg.cmx kernel/names.cmx \
+    contrib/correctness/pmisc.cmx lib/pp.cmx lib/util.cmx \
+    contrib/correctness/prename.cmi 
+contrib/correctness/psyntax.cmo: parsing/ast.cmi parsing/astterm.cmi \
+    parsing/coqast.cmi library/declare.cmi lib/dyn.cmi kernel/evd.cmi \
+    parsing/g_zsyntax.cmi library/global.cmi toplevel/himsg.cmi \
+    kernel/names.cmi contrib/correctness/past.cmi parsing/pcoq.cmi \
+    contrib/correctness/pdb.cmi contrib/correctness/peffect.cmi \
+    contrib/correctness/penv.cmi contrib/correctness/pmisc.cmi \
+    contrib/correctness/pmonad.cmi lib/pp.cmi contrib/correctness/prename.cmi \
+    contrib/correctness/ptactic.cmi contrib/correctness/ptype.cmi \
+    contrib/correctness/ptyping.cmi contrib/correctness/putil.cmi \
+    kernel/reduction.cmi proofs/tacinterp.cmi kernel/term.cmi \
+    parsing/termast.cmi lib/util.cmi toplevel/vernac.cmi \
+    toplevel/vernacentries.cmi toplevel/vernacinterp.cmi \
+    contrib/correctness/psyntax.cmi 
+contrib/correctness/psyntax.cmx: parsing/ast.cmx parsing/astterm.cmx \
+    parsing/coqast.cmx library/declare.cmx lib/dyn.cmx kernel/evd.cmx \
+    parsing/g_zsyntax.cmx library/global.cmx toplevel/himsg.cmx \
+    kernel/names.cmx contrib/correctness/past.cmi parsing/pcoq.cmx \
+    contrib/correctness/pdb.cmx contrib/correctness/peffect.cmx \
+    contrib/correctness/penv.cmx contrib/correctness/pmisc.cmx \
+    contrib/correctness/pmonad.cmx lib/pp.cmx contrib/correctness/prename.cmx \
+    contrib/correctness/ptactic.cmx contrib/correctness/ptype.cmi \
+    contrib/correctness/ptyping.cmx contrib/correctness/putil.cmx \
+    kernel/reduction.cmx proofs/tacinterp.cmx kernel/term.cmx \
+    parsing/termast.cmx lib/util.cmx toplevel/vernac.cmx \
+    toplevel/vernacentries.cmx toplevel/vernacinterp.cmx \
+    contrib/correctness/psyntax.cmi 
+contrib/correctness/ptactic.cmo: toplevel/command.cmi library/declare.cmi \
+    tactics/equality.cmi kernel/evd.cmi library/global.cmi kernel/names.cmi \
+    lib/options.cmi contrib/correctness/past.cmi pretyping/pattern.cmi \
+    contrib/correctness/pcic.cmi contrib/correctness/pdb.cmi \
+    contrib/correctness/peffect.cmi contrib/correctness/penv.cmi \
+    contrib/correctness/perror.cmi proofs/pfedit.cmi \
+    contrib/correctness/pmisc.cmi contrib/correctness/pmlize.cmi \
+    contrib/correctness/pmonad.cmi lib/pp.cmi contrib/correctness/pred.cmi \
+    contrib/correctness/prename.cmi pretyping/pretyping.cmi \
+    parsing/printer.cmi contrib/correctness/ptyping.cmi \
+    contrib/correctness/putil.cmi contrib/correctness/pwp.cmi \
+    kernel/reduction.cmi tactics/refine.cmi proofs/tacmach.cmi \
+    tactics/tacticals.cmi tactics/tactics.cmi kernel/term.cmi lib/util.cmi \
+    toplevel/vernacentries.cmi toplevel/vernacinterp.cmi \
+    contrib/correctness/ptactic.cmi 
+contrib/correctness/ptactic.cmx: toplevel/command.cmx library/declare.cmx \
+    tactics/equality.cmx kernel/evd.cmx library/global.cmx kernel/names.cmx \
+    lib/options.cmx contrib/correctness/past.cmi pretyping/pattern.cmx \
+    contrib/correctness/pcic.cmx contrib/correctness/pdb.cmx \
+    contrib/correctness/peffect.cmx contrib/correctness/penv.cmx \
+    contrib/correctness/perror.cmx proofs/pfedit.cmx \
+    contrib/correctness/pmisc.cmx contrib/correctness/pmlize.cmx \
+    contrib/correctness/pmonad.cmx lib/pp.cmx contrib/correctness/pred.cmx \
+    contrib/correctness/prename.cmx pretyping/pretyping.cmx \
+    parsing/printer.cmx contrib/correctness/ptyping.cmx \
+    contrib/correctness/putil.cmx contrib/correctness/pwp.cmx \
+    kernel/reduction.cmx tactics/refine.cmx proofs/tacmach.cmx \
+    tactics/tacticals.cmx tactics/tactics.cmx kernel/term.cmx lib/util.cmx \
+    toplevel/vernacentries.cmx toplevel/vernacinterp.cmx \
+    contrib/correctness/ptactic.cmi 
+contrib/correctness/ptyping.cmo: parsing/ast.cmi parsing/astterm.cmi \
+    kernel/environ.cmi kernel/evd.cmi library/global.cmi toplevel/himsg.cmi \
+    kernel/names.cmi contrib/correctness/past.cmi \
+    contrib/correctness/pcicenv.cmi contrib/correctness/peffect.cmi \
+    contrib/correctness/penv.cmi contrib/correctness/perror.cmi \
+    contrib/correctness/pmisc.cmi contrib/correctness/pmonad.cmi lib/pp.cmi \
+    contrib/correctness/prename.cmi proofs/proof_trees.cmi \
+    contrib/correctness/ptype.cmi contrib/correctness/putil.cmi \
+    kernel/reduction.cmi kernel/term.cmi pretyping/typing.cmi lib/util.cmi \
+    contrib/correctness/ptyping.cmi 
+contrib/correctness/ptyping.cmx: parsing/ast.cmx parsing/astterm.cmx \
+    kernel/environ.cmx kernel/evd.cmx library/global.cmx toplevel/himsg.cmx \
+    kernel/names.cmx contrib/correctness/past.cmi \
+    contrib/correctness/pcicenv.cmx contrib/correctness/peffect.cmx \
+    contrib/correctness/penv.cmx contrib/correctness/perror.cmx \
+    contrib/correctness/pmisc.cmx contrib/correctness/pmonad.cmx lib/pp.cmx \
+    contrib/correctness/prename.cmx proofs/proof_trees.cmx \
+    contrib/correctness/ptype.cmi contrib/correctness/putil.cmx \
+    kernel/reduction.cmx kernel/term.cmx pretyping/typing.cmx lib/util.cmx \
+    contrib/correctness/ptyping.cmi 
+contrib/correctness/putil.cmo: parsing/coqlib.cmi kernel/names.cmi \
+    contrib/correctness/past.cmi pretyping/pattern.cmi \
+    contrib/correctness/peffect.cmi contrib/correctness/penv.cmi \
+    contrib/correctness/pmisc.cmi lib/pp.cmi contrib/correctness/prename.cmi \
+    parsing/printer.cmi contrib/correctness/ptype.cmi kernel/term.cmi \
+    lib/util.cmi contrib/correctness/putil.cmi 
+contrib/correctness/putil.cmx: parsing/coqlib.cmx kernel/names.cmx \
+    contrib/correctness/past.cmi pretyping/pattern.cmx \
+    contrib/correctness/peffect.cmx contrib/correctness/penv.cmx \
+    contrib/correctness/pmisc.cmx lib/pp.cmx contrib/correctness/prename.cmx \
+    parsing/printer.cmx contrib/correctness/ptype.cmi kernel/term.cmx \
+    lib/util.cmx contrib/correctness/putil.cmi 
+contrib/correctness/pwp.cmo: kernel/evd.cmi library/global.cmi \
+    kernel/names.cmi contrib/correctness/past.cmi \
+    contrib/correctness/peffect.cmi contrib/correctness/penv.cmi \
+    contrib/correctness/perror.cmi contrib/correctness/pmisc.cmi \
+    contrib/correctness/pmonad.cmi contrib/correctness/prename.cmi \
+    contrib/correctness/ptype.cmi contrib/correctness/ptyping.cmi \
+    contrib/correctness/putil.cmi kernel/reduction.cmi kernel/term.cmi \
+    lib/util.cmi contrib/correctness/pwp.cmi 
+contrib/correctness/pwp.cmx: kernel/evd.cmx library/global.cmx \
+    kernel/names.cmx contrib/correctness/past.cmi \
+    contrib/correctness/peffect.cmx contrib/correctness/penv.cmx \
+    contrib/correctness/perror.cmx contrib/correctness/pmisc.cmx \
+    contrib/correctness/pmonad.cmx contrib/correctness/prename.cmx \
+    contrib/correctness/ptype.cmi contrib/correctness/ptyping.cmx \
+    contrib/correctness/putil.cmx kernel/reduction.cmx kernel/term.cmx \
+    lib/util.cmx contrib/correctness/pwp.cmi 
 contrib/extraction/extract_env.cmo: parsing/astterm.cmi kernel/evd.cmi \
     contrib/extraction/extraction.cmi library/global.cmi library/lib.cmi \
     library/libobject.cmi library/library.cmi contrib/extraction/miniml.cmi \
@@ -1332,6 +1614,144 @@ contrib/extraction/ocaml.cmx: kernel/environ.cmx library/global.cmx \
     contrib/extraction/miniml.cmi contrib/extraction/mlutil.cmx \
     kernel/names.cmx lib/pp.cmx lib/pp_control.cmx kernel/term.cmx \
     lib/util.cmx contrib/extraction/ocaml.cmi 
+contrib/interface/centaur.cmo: contrib/interface/ascent.cmi parsing/ast.cmi \
+    parsing/astterm.cmi pretyping/classops.cmi toplevel/command.cmi \
+    parsing/coqast.cmi contrib/interface/dad.cmi \
+    contrib/interface/debug_tac.cmi kernel/declarations.cmi \
+    library/declare.cmi kernel/environ.cmi toplevel/errors.cmi kernel/evd.cmi \
+    library/global.cmi contrib/interface/history.cmi library/lib.cmi \
+    library/libobject.cmi library/library.cmi \
+    toplevel/line_oriented_parser.cmi toplevel/mltop.cmi \
+    contrib/interface/name_to_ast.cmi kernel/names.cmi library/nametab.cmi \
+    contrib/interface/pbp.cmi proofs/pfedit.cmi lib/pp.cmi \
+    pretyping/pretyping.cmi parsing/printer.cmi proofs/proof_trees.cmi \
+    proofs/proof_type.cmi toplevel/protectedtoplevel.cmi \
+    pretyping/rawterm.cmi kernel/reduction.cmi parsing/search.cmi \
+    proofs/tacinterp.cmi proofs/tacmach.cmi pretyping/tacred.cmi \
+    kernel/term.cmi parsing/termast.cmi contrib/interface/translate.cmi \
+    lib/util.cmi toplevel/vernac.cmi toplevel/vernacentries.cmi \
+    toplevel/vernacinterp.cmi contrib/interface/vtp.cmi \
+    contrib/interface/xlate.cmi 
+contrib/interface/centaur.cmx: contrib/interface/ascent.cmi parsing/ast.cmx \
+    parsing/astterm.cmx pretyping/classops.cmx toplevel/command.cmx \
+    parsing/coqast.cmx contrib/interface/dad.cmx \
+    contrib/interface/debug_tac.cmx kernel/declarations.cmx \
+    library/declare.cmx kernel/environ.cmx toplevel/errors.cmx kernel/evd.cmx \
+    library/global.cmx contrib/interface/history.cmx library/lib.cmx \
+    library/libobject.cmx library/library.cmx \
+    toplevel/line_oriented_parser.cmx toplevel/mltop.cmx \
+    contrib/interface/name_to_ast.cmx kernel/names.cmx library/nametab.cmx \
+    contrib/interface/pbp.cmx proofs/pfedit.cmx lib/pp.cmx \
+    pretyping/pretyping.cmx parsing/printer.cmx proofs/proof_trees.cmx \
+    proofs/proof_type.cmx toplevel/protectedtoplevel.cmx \
+    pretyping/rawterm.cmx kernel/reduction.cmx parsing/search.cmx \
+    proofs/tacinterp.cmx proofs/tacmach.cmx pretyping/tacred.cmx \
+    kernel/term.cmx parsing/termast.cmx contrib/interface/translate.cmx \
+    lib/util.cmx toplevel/vernac.cmx toplevel/vernacentries.cmx \
+    toplevel/vernacinterp.cmx contrib/interface/vtp.cmx \
+    contrib/interface/xlate.cmx 
+contrib/interface/dad.cmo: parsing/astterm.cmi parsing/coqast.cmi \
+    kernel/environ.cmi kernel/evd.cmi library/global.cmi kernel/names.cmi \
+    contrib/interface/paths.cmi pretyping/pattern.cmi lib/pp.cmi \
+    proofs/proof_trees.cmi proofs/proof_type.cmi pretyping/rawterm.cmi \
+    kernel/reduction.cmi proofs/tacmach.cmi tactics/tacticals.cmi \
+    tactics/tactics.cmi kernel/term.cmi parsing/termast.cmi \
+    pretyping/typing.cmi lib/util.cmi toplevel/vernacinterp.cmi \
+    contrib/interface/dad.cmi 
+contrib/interface/dad.cmx: parsing/astterm.cmx parsing/coqast.cmx \
+    kernel/environ.cmx kernel/evd.cmx library/global.cmx kernel/names.cmx \
+    contrib/interface/paths.cmx pretyping/pattern.cmx lib/pp.cmx \
+    proofs/proof_trees.cmx proofs/proof_type.cmx pretyping/rawterm.cmx \
+    kernel/reduction.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
+    tactics/tactics.cmx kernel/term.cmx parsing/termast.cmx \
+    pretyping/typing.cmx lib/util.cmx toplevel/vernacinterp.cmx \
+    contrib/interface/dad.cmi 
+contrib/interface/debug_tac.cmo: parsing/ast.cmi parsing/coqast.cmi \
+    toplevel/errors.cmi lib/pp.cmi parsing/printer.cmi proofs/proof_trees.cmi \
+    proofs/proof_type.cmi proofs/tacinterp.cmi proofs/tacmach.cmi \
+    lib/util.cmi contrib/interface/debug_tac.cmi 
+contrib/interface/debug_tac.cmx: parsing/ast.cmx parsing/coqast.cmx \
+    toplevel/errors.cmx lib/pp.cmx parsing/printer.cmx proofs/proof_trees.cmx \
+    proofs/proof_type.cmx proofs/tacinterp.cmx proofs/tacmach.cmx \
+    lib/util.cmx contrib/interface/debug_tac.cmi 
+contrib/interface/history.cmo: contrib/interface/paths.cmi \
+    contrib/interface/history.cmi 
+contrib/interface/history.cmx: contrib/interface/paths.cmx \
+    contrib/interface/history.cmi 
+contrib/interface/line_parser.cmo: contrib/interface/line_parser.cmi 
+contrib/interface/line_parser.cmx: contrib/interface/line_parser.cmi 
+contrib/interface/name_to_ast.cmo: parsing/ast.cmi pretyping/classops.cmi \
+    parsing/coqast.cmi kernel/declarations.cmi library/declare.cmi \
+    kernel/environ.cmi library/global.cmi library/impargs.cmi \
+    kernel/inductive.cmi library/lib.cmi library/libobject.cmi \
+    kernel/names.cmi library/nametab.cmi lib/pp.cmi parsing/pretty.cmi \
+    kernel/reduction.cmi kernel/sign.cmi pretyping/syntax_def.cmi \
+    kernel/term.cmi parsing/termast.cmi lib/util.cmi \
+    contrib/interface/name_to_ast.cmi 
+contrib/interface/name_to_ast.cmx: parsing/ast.cmx pretyping/classops.cmx \
+    parsing/coqast.cmx kernel/declarations.cmx library/declare.cmx \
+    kernel/environ.cmx library/global.cmx library/impargs.cmx \
+    kernel/inductive.cmx library/lib.cmx library/libobject.cmx \
+    kernel/names.cmx library/nametab.cmx lib/pp.cmx parsing/pretty.cmx \
+    kernel/reduction.cmx kernel/sign.cmx pretyping/syntax_def.cmx \
+    kernel/term.cmx parsing/termast.cmx lib/util.cmx \
+    contrib/interface/name_to_ast.cmi 
+contrib/interface/parse.cmo: contrib/interface/ascent.cmi parsing/ast.cmi \
+    config/coq_config.cmi parsing/coqast.cmi toplevel/errors.cmi \
+    parsing/esyntax.cmi library/libobject.cmi library/library.cmi \
+    contrib/interface/line_parser.cmi toplevel/metasyntax.cmi \
+    library/nametab.cmi parsing/pcoq.cmi lib/pp.cmi lib/system.cmi \
+    lib/util.cmi contrib/interface/vtp.cmi contrib/interface/xlate.cmi 
+contrib/interface/parse.cmx: contrib/interface/ascent.cmi parsing/ast.cmx \
+    config/coq_config.cmx parsing/coqast.cmx toplevel/errors.cmx \
+    parsing/esyntax.cmx library/libobject.cmx library/library.cmx \
+    contrib/interface/line_parser.cmx toplevel/metasyntax.cmx \
+    library/nametab.cmx parsing/pcoq.cmx lib/pp.cmx lib/system.cmx \
+    lib/util.cmx contrib/interface/vtp.cmx contrib/interface/xlate.cmx 
+contrib/interface/paths.cmo: contrib/interface/paths.cmi 
+contrib/interface/paths.cmx: contrib/interface/paths.cmi 
+contrib/interface/pbp.cmo: parsing/coqast.cmi parsing/coqlib.cmi \
+    library/declare.cmi kernel/environ.cmi kernel/evd.cmi library/global.cmi \
+    tactics/hipattern.cmi proofs/logic.cmi kernel/names.cmi \
+    library/nametab.cmi pretyping/pattern.cmi lib/pp.cmi \
+    pretyping/pretyping.cmi proofs/proof_trees.cmi proofs/proof_type.cmi \
+    pretyping/rawterm.cmi kernel/reduction.cmi proofs/tacinterp.cmi \
+    proofs/tacmach.cmi tactics/tacticals.cmi tactics/tactics.cmi \
+    kernel/term.cmi pretyping/typing.cmi lib/util.cmi \
+    contrib/interface/pbp.cmi 
+contrib/interface/pbp.cmx: parsing/coqast.cmx parsing/coqlib.cmx \
+    library/declare.cmx kernel/environ.cmx kernel/evd.cmx library/global.cmx \
+    tactics/hipattern.cmx proofs/logic.cmx kernel/names.cmx \
+    library/nametab.cmx pretyping/pattern.cmx lib/pp.cmx \
+    pretyping/pretyping.cmx proofs/proof_trees.cmx proofs/proof_type.cmx \
+    pretyping/rawterm.cmx kernel/reduction.cmx proofs/tacinterp.cmx \
+    proofs/tacmach.cmx tactics/tacticals.cmx tactics/tactics.cmx \
+    kernel/term.cmx pretyping/typing.cmx lib/util.cmx \
+    contrib/interface/pbp.cmi 
+contrib/interface/translate.cmo: contrib/interface/ascent.cmi parsing/ast.cmi \
+    parsing/coqast.cmi kernel/environ.cmi pretyping/evarutil.cmi \
+    kernel/evd.cmi library/libobject.cmi library/library.cmi kernel/names.cmi \
+    proofs/pfedit.cmi lib/pp.cmi proofs/proof_type.cmi kernel/sign.cmi \
+    proofs/tacmach.cmi kernel/term.cmi parsing/termast.cmi lib/util.cmi \
+    toplevel/vernacinterp.cmi contrib/interface/vtp.cmi \
+    contrib/interface/xlate.cmi contrib/interface/translate.cmi 
+contrib/interface/translate.cmx: contrib/interface/ascent.cmi parsing/ast.cmx \
+    parsing/coqast.cmx kernel/environ.cmx pretyping/evarutil.cmx \
+    kernel/evd.cmx library/libobject.cmx library/library.cmx kernel/names.cmx \
+    proofs/pfedit.cmx lib/pp.cmx proofs/proof_type.cmx kernel/sign.cmx \
+    proofs/tacmach.cmx kernel/term.cmx parsing/termast.cmx lib/util.cmx \
+    toplevel/vernacinterp.cmx contrib/interface/vtp.cmx \
+    contrib/interface/xlate.cmx contrib/interface/translate.cmi 
+contrib/interface/vtp.cmo: contrib/interface/ascent.cmi \
+    contrib/interface/vtp.cmi 
+contrib/interface/vtp.cmx: contrib/interface/ascent.cmi \
+    contrib/interface/vtp.cmi 
+contrib/interface/xlate.cmo: contrib/interface/ascent.cmi parsing/ast.cmi \
+    parsing/coqast.cmi kernel/names.cmi lib/util.cmi \
+    contrib/interface/xlate.cmi 
+contrib/interface/xlate.cmx: contrib/interface/ascent.cmi parsing/ast.cmx \
+    parsing/coqast.cmx kernel/names.cmx lib/util.cmx \
+    contrib/interface/xlate.cmi 
 contrib/omega/coq_omega.cmo: parsing/ast.cmi proofs/clenv.cmi \
     kernel/closure.cmi parsing/coqlib.cmi library/declare.cmi \
     kernel/environ.cmi tactics/equality.cmi proofs/evar_refiner.cmi \
@@ -1401,7 +1821,7 @@ contrib/xml/xmlentries.cmo: lib/util.cmi toplevel/vernacinterp.cmi \
 contrib/xml/xmlentries.cmx: lib/util.cmx toplevel/vernacinterp.cmx \
     contrib/xml/xmlcommand.cmx 
 tactics/tauto.cmo: parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_constr.cmo
-contrib/correctness/psyntax.cmo: 
+contrib/correctness/psyntax.cmo: parsing/grammar.cma
 parsing/lexer.cmo: 
 parsing/q_coqast.cmo: 
 parsing/g_prim.cmo: 

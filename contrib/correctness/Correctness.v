@@ -22,13 +22,4 @@ Require Export ProgWf.
 
 Require Export Arrays.
 
-Declare ML Module
-    "pmisc" "peffect" "prename" 
-    "perror" "penv" "putil" "pdb" "pcic" "pmonad" "pcicenv"
-    "pred" "ptyping" "pwp" "pmlize" "ptactic" "psyntax".
-
 Token "'".
-
-
-
-

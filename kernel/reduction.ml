@@ -1008,15 +1008,19 @@ let hnf env sigma c = apprec env sigma (c, empty_stack)
 
 (* A reduction function like whd_betaiota but which keeps casts
  * and does not reduce redexes containing meta-variables.
- * ASSUMES THAT APPLICATIONS ARE BINARY ONES.
- * Used in Programs.
+ * Used in Correctness.
  * Added by JCF, 29/1/98. *)
 
 let whd_programs_stack env sigma = 
   let rec whrec (x, stack as s) =
     match kind_of_term x with
-      | IsApp (f,([|c|] as cl)) ->
-	  if occur_meta c then s else whrec (f, append_stack cl stack)
+      | IsApp (f,cl) ->
+	  let n = Array.length cl - 1 in
+	  let c = cl.(n) in
+	  if occur_meta c then 
+	    s 
+	  else 
+	    whrec (mkApp (f, Array.sub cl 0 n), append_stack [|c|] stack)
       | IsLambda (_,_,c) ->
           (match decomp_stack stack with
              | None -> s

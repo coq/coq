@@ -98,7 +98,7 @@ open Equality
 let nat = IndRef (coq_constant ["Init";"Datatypes"] "nat", 0)
 let lt = ConstRef (coq_constant ["Init";"Peano"] "lt")
 let well_founded = ConstRef (coq_constant ["Init";"Wf"] "well_founded")
-let z = IndRef (coq_constant ["Init";"fast_integer"] "Z", 0)
+let z = IndRef (coq_constant ["Zarith";"fast_integer"] "Z", 0)
 let and_ = IndRef (coq_constant ["Init";"Logic"] "and", 0)
 let eq = IndRef (coq_constant ["Init";"Logic"] "eq", 0)
 
@@ -107,7 +107,7 @@ let wf_nat_pattern =
   PApp (PRef well_founded, [| PRef nat; PRef lt |])
 (* ["((well_founded Z (Zwf ?1))"] *)
 let wf_z_pattern = 
-  let zwf = ConstRef (coq_constant ["correctness";"Zwf"] "Zwf") in
+  let zwf = ConstRef (coq_constant ["correctness";"ProgWf"] "Zwf") in
   PApp (PRef well_founded, [| PRef z; PApp (PRef zwf, [| PMeta (Some 1) |]) |])
 (* ["(and ?1 ?2)"] *)
 let and_pattern = 
@@ -252,14 +252,9 @@ let wrap_save_named b =
   Command.save_named b;
   register pf_id None
 
-let wrap_save_anonymous_thm b id =
+let wrap_save_anonymous b id =
   let pf_id = Pfedit.get_current_proof_name () in
-  Command.save_anonymous_thm b (string_of_id id);
-  register pf_id (Some id)
-
-let wrap_save_anonymous_remark b id =
-  let pf_id = Pfedit.get_current_proof_name () in
-  Command.save_anonymous_remark b (string_of_id id);
+  Command.save_anonymous b (string_of_id id);
   register pf_id (Some id)
 
 let _ = add "SaveNamed"
@@ -272,14 +267,9 @@ let _ = add "DefinedNamed"
 		              wrap_save_named false)
     |   _  -> assert false)
 
-let _ = add "SaveAnonymousThm"
+let _ = add "SaveAnonymous"
     (function [VARG_IDENTIFIER id] -> 
        (fun () -> if not(Options.is_silent()) then show_script();
-	          wrap_save_anonymous_thm true id)
+	          wrap_save_anonymous true id)
     |   _  -> assert false)
 
-let _ = add "SaveAnonymousRmk"
-    (function [VARG_IDENTIFIER id] -> 
-        (fun () -> if not(Options.is_silent()) then show_script();
-	            wrap_save_anonymous_remark true id)
-    |   _  -> assert false)

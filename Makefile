@@ -201,7 +201,7 @@ CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
         contrib/ring/quote.cmo contrib/ring/ring.cmo \
 	contrib/xml/xml.cmo \
 	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo \
-	$(EXTRACTIONCMO)
+	$(EXTRACTIONCMO) $(CORRECTNESSCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -447,9 +447,6 @@ CORRECTNESSVO=contrib/correctness/Arrays.vo				\
 	contrib/correctness/Tuples.vo
 #	contrib/correctness/ProgramsExtraction.vo			
 
-contrib/correctness/%.vo: contrib/correctness/%.v
-	$(COQC) -q -byte -bindir bin $(COQINCLUDES) $<
-
 OMEGAVO = contrib/omega/Omega.vo       contrib/omega/Zlogarithm.vo \
           contrib/omega/OmegaSyntax.vo contrib/omega/Zpower.vo \
           contrib/omega/Zcomplements.vo
@@ -468,7 +465,7 @@ contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE)
 	$(COQC) -q -byte -bindir bin $(COQINCLUDES) $<
 
-CONTRIBVO = $(OMEGAVO) $(RINGVO) $(XMLVO)
+CONTRIBVO = $(OMEGAVO) $(RINGVO) $(XMLVO) $(CORRECTNESSVO)
 
 $(CONTRIBVO): states/initial.coq
 

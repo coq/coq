@@ -45,7 +45,7 @@ module Refset : Set.S with type elt = global_reference
 
 type extraction_params = {
   modular : bool;       (* modular extraction *)
-  no_opt : bool;        (* no optimization at all *)
+  optimization : bool;  (* we need optimization *)
   to_keep : Refset.t;   (* globals to keep *)
   to_expand : Refset.t; (* globals to expand *)
 }

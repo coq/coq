@@ -17,8 +17,6 @@ open Term
 
 module SpSet = Set.Make(struct type t = section_path let compare = sp_ord end)
 
-let coq_constant d s = make_path ("Coq" :: d) (id_of_string s) CCI
-
 (* debug *)
 
 let debug = ref false
@@ -147,6 +145,12 @@ let subst_ast_in_ast alist ast =
 let real_subst_in_constr = replace_vars
 
 (* Coq constants *)
+
+let coq_constant d s = make_path ("Coq" :: d) (id_of_string s) CCI
+
+let bool_sp = coq_constant ["Init"; "Datatypes"] "bool"
+let coq_true = mkMutConstruct (((bool_sp,0),1), [||])
+let coq_false = mkMutConstruct (((bool_sp,0),2), [||])
 
 let constant s =
   let id = id_of_string s in

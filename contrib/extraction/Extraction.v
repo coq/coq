@@ -12,10 +12,10 @@ Grammar vernac vernac : ast :=
 | extr_list   [ "Recursive" "Extraction" ne_qualidarg_list($l) "." ] ->
               [ (ExtractionRec ($LIST $l)) ]
 | extr_list   
-     [ "Extraction" options($o) stringarg($f) ne_qualidarg_list($l) "." ] 
+     [ "Extraction" stringarg($f) options($o) ne_qualidarg_list($l) "." ] 
   -> [ (ExtractionFile $o $f ($LIST $l)) ]
 | extr_module 
-     [ "Extraction" options($o) "Module" identarg($m) "." ]
+     [ "Extraction" "Module" options($o) identarg($m) "." ]
   -> [ (ExtractionModule $o $m) ]
 
 | extract_constant 
@@ -39,7 +39,7 @@ with idorstring : ast :=
 | ids_string [ stringarg($s) ] -> [ $s ]
 
 with options : ast :=
-| ext_opt_noopt [ "noopt" ] -> [ (VERNACARGLIST "noopt") ]
-| ext_op_expand [ "expand" "[" ne_qualidarg_list($l) "]" ] -> 
+| ext_opt_noopt [ "[" "noopt" "]" ] -> [ (VERNACARGLIST "noopt") ]
+| ext_op_expand [ "[" "expand" ne_qualidarg_list($l) "]" ] -> 
                 [ (VERNACARGLIST "expand" ($LIST $l)) ]
 | ext_opt_none  [ ] -> [ (VERNACARGLIST "nooption") ].

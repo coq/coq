@@ -202,26 +202,29 @@ module Refset =
 
 type extraction_params = {
   modular : bool;       (* modular extraction *)
-  no_opt : bool;        (* no optimization at all *)
+  optimization : bool;  (* we need optimization *)
   to_keep : Refset.t;   (* globals to keep *)
   to_expand : Refset.t; (* globals to expand *)
 }
 
-let ml_subst_glob r m = 
+let subst_glob_ast r m = 
   let rec substrec = function
     | MLglob r' as t -> if r = r' then m else t
     | t -> ast_map substrec t
   in
   substrec
 
-let expand r m = function
-  | Dglob(r',t') -> Dglob(r', ml_subst_glob r m t')
+let subst_glob_decl r m = function
+  | Dglob(r',t') -> Dglob(r', subst_glob_ast r m t')
   | d -> d
 
 let normalize = betared_ast
 
-let keep prm r t' = true
-  (* prm.no_opt || Refset.mem r prm.to_keep *)
+let expansion_test r t = false
+
+let expand prm r t = 
+  (not (Refset.mem r prm.to_keep)) &&
+  (Refset.mem r prm.to_expand || (prm.optimization && expansion_test r t))
 
 let warning_expansion r = 
   wARN (hOV 0 [< 'sTR "The constant"; 'sPC;
@@ -240,13 +243,12 @@ let rec optimize prm = function
       let t' = normalize t in [ Dglob(r,t') ]
   | Dglob(r,t) as d :: l ->
       let t' = normalize t in
-      if keep prm r t' then
-	(Dglob(r,t')) :: (optimize prm l)
-      else begin
+      if expand prm r t' then begin
 	warning_expansion r;
-	let l' = List.map (expand r t') l in
+	let l' = List.map (subst_glob_decl r t') l in
         optimize prm l'
-      end
+      end else 
+	(Dglob(r,t')) :: (optimize prm l)
 
 (*s Table for direct ML extractions. *)
 

@@ -15,8 +15,6 @@ open Term
 
 module SpSet : Set.S with type elt = section_path
 
-val coq_constant : string list -> string -> section_path
-
 (* Some misc. functions *)
 
 val reraise_with_loc : Coqast.loc -> ('a -> 'b) -> 'a -> 'b
@@ -57,7 +55,11 @@ val subst_ast_in_ast : (identifier * Coqast.t) list -> Coqast.t -> Coqast.t
 val real_subst_in_constr : (identifier * constr) list -> constr -> constr
 
 val constant : string -> constr
+val coq_constant : string list -> string -> section_path
 val conj : constr -> constr -> constr
+
+val coq_true : constr
+val coq_false : constr
 
 val connective_and : identifier
 val connective_or  : identifier

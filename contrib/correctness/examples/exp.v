@@ -149,7 +149,7 @@ Correctness i_exp
     let e = ref n in
     begin
       while (notzerop_bool !e) do
-        { invariant (power x n)=(mult y (power m e)) as I
+        { invariant (power x n)=(mult y (power m e)) as Inv
           variant e for lt }
         (if not (even_odd_bool !e) then y := (mult !y !m))
           { (power x n) = (mult y (power m (double (div2 e)))) as Q };
@@ -161,11 +161,10 @@ Correctness i_exp
     { result=(power x n) }
 .
 Proof.
-Rewrite (odd_double e0 Test1) in I. Rewrite I. Simpl. Auto with arith.
+stop.
+Rewrite (odd_double e0 Test1) in Inv. Rewrite Inv. Simpl. Auto with arith.
 
-Rewrite (even_double e0 Test1) in I. Rewrite I. Reflexivity.
-
-Split.
+Rewrite (even_double e0 Test1) in Inv. Rewrite Inv. Reflexivity.
 
 Exact (lt_div2 e0 Test2).
 
@@ -177,8 +176,8 @@ Rewrite (power_2n m0 (div2 e0)). Reflexivity.
 
 Auto with arith.
 
-Decompose [and] I.
-Rewrite H0. Rewrite H1.
+Decompose [and] Inv.
+Rewrite H. Rewrite H0.
 Auto with arith.
 Save.
 
