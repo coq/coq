@@ -32,6 +32,7 @@ noarguments:
 	@echo "make arch-rpm     to prepare a rpm for the current arch from the src.rpm"
 	@echo "make ide-rpm      to build a src.rpm and a rpm for coqide on this arch"
 	@echo "make ide-arch-rpm to build a rpm for coqide on this arch from the src.rpm"
+	@echo "make pcoq-rpm     to build a src.rpm and a rpm for pcoq on this arch"
 	@echo "make deb          to build a debian package"
 	@echo "make win          to build a windows package"
 	@echo "make macosx       to build a MacOS-X package on a disk image"
@@ -150,7 +151,7 @@ arch-image: $(TARGZ)
 	 cd $(COQPACKAGE);\
 	 ./configure -bindir /usr/local/bin -libdir /usr/local/lib/coq -mandir /usr/local/man -emacs emacs -emacslib /usr/local/lib/emacs/site-lisp -opt -reals all -coqide no;\
 	 $(MAKECOQ) coq check;\
-	 $(MAKECOQ) -e COQINSTALLPREFIX=$(ARCHINSTALL) install-coq) > arch-image.log 2>&1
+	 $(MAKECOQ) -e COQINSTALLPREFIX=$(ARCHINSTALL) BASETEXDIR=$(ARCHINSTALL) install-coq) > arch-image.log 2>&1
 	@echo " .... done"
 
 arch-tar-gz-final:
@@ -171,6 +172,7 @@ cleanall::
 
 rpm: src-rpm arch-rpm
 ide-rpm: ide-src-rpm ide-arch-rpm
+pcoq-rpm: pcoq-src-rpm pcoq-arch-rpm
 
 RPMTOPDIR=$(DISTRIBDIR)/RH/src
 RPMTMPPATHDIR=$(RPMTOPDIR)/admin
@@ -186,10 +188,13 @@ RPM=$(RAWRPM) --buildroot $(RPMBUILDROOT) --target $(ARCH) --rcfile RH/rpmrc
 # rpm files
 COQRPMPACKAGE=coq-$(VERSION)-$(RELEASENUM)
 COQIDERPMPACKAGE=coqide-$(VERSION)-$(RELEASENUM)
+PCOQRPMPACKAGE=coq_ext_for_pcoq-$(VERSION)-$(RELEASENUM)
 COQSRCRPM=$(COQRPMPACKAGE).src.rpm
 COQRPM=$(COQRPMPACKAGE).$(ARCH).rpm
 COQIDESRCRPM=$(COQIDERPMPACKAGE).src.rpm
 COQIDERPM=$(COQIDERPMPACKAGE).$(ARCH).rpm
+PCOQSRCRPM=$(PCOQRPMPACKAGE).src.rpm
+PCOQRPM=$(PCOQRPMPACKAGE).$(ARCH).rpm
 
 RPMLOG=$(DISTRIBDIR)/RH/rpm.log
 RPMFILESLOG=$(DISTRIBDIR)/RH/coqfiles.log
@@ -199,6 +204,9 @@ arch-rpm: $(COQRPM)
 
 ide-src-rpm: $(COQIDESRCRPM)
 ide-arch-rpm: $(COQIDERPM)
+
+pcoq-src-rpm: $(PCOQSRCRPM)
+pcoq-arch-rpm: $(PCOQRPM)
 
 $(RPMTOPDIR):
 	@mkdir -p $(RPMTOPDIR)/BUILD
@@ -256,16 +264,47 @@ $(COQIDERPM): $(COQIDESRCRPM)
 	mv $(RPMTOPDIR)/RPMS/$(ARCH)/$(COQIDERPM) .
 	chmod g+w $(COQIDERPM)
 
+$(PCOQSRCRPM): $(RPMTOPDIR) RH/coq_ext_for_pcoq.spec RH/coq-pcoq.list $(TARGZ) RH/rpmrc
+	cp -f petit-coq.gif $(RPMTOPDIR)/SOURCES
+	cp -f $(TARGZ) $(RPMTOPDIR)/SOURCES
+	cp -f RH/coq-pcoq.list $(RPMTOPDIR)
+	$(RPM) -bs RH/coq_ext_for_pcoq.spec
+	mv $(RPMTOPDIR)/SRPMS/$(PCOQSRCRPM) .
+	chmod g+w $(PCOQSRCRPM)
+	rm -fr $(RPMTOPDIR)/SOURCES/* $(RPMTOPDIR)/coq-pcoq.list
+
+$(PCOQRPM): $(PCOQSRCRPM)
+	@-rm -fr $(RPMBUILDROOT)
+	@mkdir -p $(RPMBUILDROOT)
+	@echo "Building the $(ARCH) rpms... (see RH/rpm.log)"
+	cp -f RH/coq-pcoq.list $(RPMTOPDIR)
+	$(RPM) --rebuild $(PCOQSRCRPM)
+	mv $(RPMTOPDIR)/RPMS/$(ARCH)/$(PCOQRPM) .
+	chmod g+w $(PCOQRPM)
+	rm -f $(RPMTOPDIR)/coq-pcoq.list
+
 RH/coq.list: $(TARGZ) config.distrib
 	rm -rf RH/$(COQPACKAGE) RH/build
 	cd RH ; tar xzf ../$(TARGZ)
 	@echo "Building coq files list... (see RH/coqfiles.log)"
 	cd RH/$(COQPACKAGE) ; sh ../do_build > $(RPMFILESLOG)
-	cd RH/$(COQPACKAGE) ; $(MAKECOQ) COQINSTALLPREFIX=$(DISTRIBDIR)/RH/build install-coq >> $(RPMFILESLOG)
+	cd RH/$(COQPACKAGE) ; $(MAKECOQ) COQINSTALLPREFIX=$(DISTRIBDIR)/RH/build BASETEXDIR=$(DISTRIBDIR)/RH/build install-coq >> $(RPMFILESLOG)
 	@echo " ... done"
 	echo "# This file has been generated" > RH/coq.list
 	echo "# Do not edit" >>RH/coq.list
 	cd RH/build ; find . '!' -type d | sed -e 's|^\./|/|g' >> ../coq.list
+	rm -rf RH/$(COQPACKAGE) RH/build
+
+RH/coq-pcoq.list: $(TARGZ) config.distrib
+	rm -rf RH/$(COQPACKAGE) RH/build
+	cd RH ; tar xzf ../$(TARGZ)
+	@echo "Building pcoq files list... (see RH/coqfiles.log)"
+	cd RH/$(COQPACKAGE) ; sh ../do_build_pcoq > $(RPMFILESLOG)
+	cd RH/$(COQPACKAGE) ; $(MAKECOQ) COQINSTALLPREFIX=$(DISTRIBDIR)/RH/build BASETEXDIR=$(DISTRIBDIR)/RH/build install-pcoq >> $(RPMFILESLOG)
+	@echo " ... done"
+	echo "# This file has been generated" > RH/coq-pcoq.list
+	echo "# Do not edit" >>RH/coq-pcoq.list
+	cd RH/build ; find . '!' -type d | sed -e 's|^\./|/|g' >> ../coq-pcoq.list
 	rm -rf RH/$(COQPACKAGE) RH/build
 
 clean::
@@ -296,7 +335,7 @@ $(COQWINZIP): $(TARGZ)
 	 cd $(COQPACKAGE);\
 	 ./configure -bindir /coq/bin -libdir /coq/lib -mandir /coq/man -emacslib /coq/emacs -reals all -coqide no;\
 	 $(MAKECOQ) coq;\
-	 $(MAKECOQ) -e COQINSTALLPREFIX=$(WININSTALL) install-coq) > win.log
+	 $(MAKECOQ) -e COQINSTALLPREFIX=$(WININSTALL) BASETEXDIR=$(WININSTALL) install-coq) > win.log
 	mv $(WINBUILDROOT)/$(COQPACKAGE)/INSTALL.win $(WININSTALL)
 	cd $(WININSTALL); zip -A -r $(DISTRIBDIR)/$(COQWINZIP) *
 

@@ -1,31 +1,31 @@
 Name: coqide
-Version: 8.0beta
+Version: 8.0cdrom
 Release: 1
 Summary: The Coq Integrated Development Interface
 Copyright: freely redistributable
 Group: Applications/Math
 Vendor: INRIA & LRI
 URL: http://coq.inria.fr
-Source: ftp://ftp.inria.fr/INRIA/coq/V8.0beta/coq-8.0beta.tar.gz
+Source: ftp://ftp.inria.fr/INRIA/coq/V8.0beta/coq-8.0cdrom.tar.gz
 Icon: petit-coq.gif
-Requires: coq = 8.0beta
+Requires: coq = 8.0cdrom
 
 %description
 The Coq Integrated Development Interface is a graphical interface for the 
 Coq proof assistant 
 
 %prep
-%setup -n coq-8.0beta
+%setup -n coq-8.0cdrom
 
 %build
-./configure -bindir /usr/bin -libdir /usr/lib/coq -mandir /usr/man -emacs emacs -emacslib /usr/share/emacs/site-lisp -opt -reals all # Need ocamlc.opt and ocamlopt.opt
+./configure -prefix /usr -emacs emacs -emacslib /usr/share/emacs/site-lisp -opt -reals all   # Need ocamlc.opt and ocamlopt.opt
 make coqide  # Use native coq to compile theories
 
 %clean
 make clean
 
 %install
-make -e COQINSTALLPREFIX=$RPM_BUILD_ROOT/ install-coqide
+make -e COQINSTALLPREFIX=$RPM_BUILD_ROOT/ BASETEXDIR=$RPM_BUILD_ROOT install-coqide
 # To install only locally the binaries compiled with absolute paths
 
 %post

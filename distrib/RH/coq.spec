@@ -6,7 +6,7 @@ Copyright: freely redistributable
 Group: Applications/Math
 Vendor: INRIA & LRI
 URL: http://coq.inria.fr
-Source: ftp://ftp.inria.fr/INRIA/coq/V8.0/coq-8.0.tar.gz
+Source: ftp://ftp.inria.fr/INRIA/coq/V8.0/coq-8.0cdrom.tar.gz
 Icon: petit-coq.gif
 
 %description
@@ -26,15 +26,15 @@ Coq is a proof assistant which:
 %setup
 
 %build
-./configure -bindir /usr/bin -libdir /usr/lib/coq -mandir /usr/man -emacs emacs -emacslib /usr/share/emacs/site-lisp -opt -reals all -coqide no       # Need ocamlc.opt and ocamlopt.opt
-make coq      # Use native coq to compile theories
+./configure -prefix /usr -emacs emacs -emacslib /usr/share/emacs/site-lisp -opt -reals all -coqide no       # Need ocamlc.opt and ocamlopt.opt
+make coq                    # Use native coq to compile theories
 
 
 %clean
 make clean
 
 %install
-make -e COQINSTALLPREFIX=$RPM_BUILD_ROOT/ install-coq
+make -e COQINSTALLPREFIX=$RPM_BUILD_ROOT/ BASETEXDIR=$RPM_BUILD_ROOT/ install-coq
 # To install only locally the binaries compiled with absolute paths
 
 %post
@@ -52,7 +52,7 @@ if [ -L /usr/local/lib/ocaml ]; then
   rm /usr/local/lib/ocaml
 fi
 
-# the spec file is moved to distrib/RH/src/coqX.Y but coq.list is in distrib/RH
+# the spec file is moved to distrib/RH/src/SPECS but coq.list is in distrib/RH
 %files -f ../../coq.list
 %defattr(-,root,root)
 

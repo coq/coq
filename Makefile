@@ -696,7 +696,9 @@ clean::
 	rm -f bin/parser$(EXE) bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE)
 
 # install targets
-install-pcoq::
+install-pcoq:: install-pcoq-binaries install-pcoq-manpages
+
+install-pcoq-binaries::
 	$(MKDIR) $(FULLBINDIR)
 	cp  $(COQINTERFACE) $(FULLBINDIR)
 

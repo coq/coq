@@ -1,2 +1,2 @@
 ./configure -prefix /usr -emacs emacs -emacslib /usr/share/emacs/site-lisp -opt -reals all -coqide no       # Need ocamlc.opt and ocamlopt.opt
-make coq                    # Use native coq to compile theories
+make pcoq                   # Use native coq to compile theories
