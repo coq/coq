@@ -18,6 +18,18 @@ Open Local Scope nat_scope.
 
 Implicit Variables Type m,n,p:nat.
 
+(** Zero property *)
+
+Lemma mult_0_r : (n:nat) (mult n O)=O.
+Proof.
+Intro; Symmetry; Apply mult_n_O.
+Qed.
+
+Lemma mult_0_l : (n:nat) (mult O n)=O.
+Proof.
+Reflexivity.
+Qed.
+
 (** Distributivity *)
 
 Lemma mult_plus_distr : 
@@ -89,13 +101,17 @@ NewInduction m; Simpl; Auto with arith.
 Qed.
 Hints Resolve mult_O_le : arith v62.
 
-Lemma mult_le : (m,n,p:nat) (le n p) -> (le (mult m n) (mult m p)).
+Lemma mult_le_compat_l : (n,m,p:nat) (le n m) -> (le (mult p n) (mult p m)).
 Proof.
-  Intro m; NewInduction m. Intros. Simpl. Apply le_n.
+  NewInduction p as [|p IHp]. Intros. Simpl. Apply le_n.
   Intros. Simpl. Apply le_plus_plus. Assumption.
-  Apply IHm. Assumption.
+  Apply IHp. Assumption.
 Qed.
-Hints Resolve mult_le : arith.
+Hints Resolve mult_le_compat_l : arith.
+V7only [
+Notation mult_le := [m,n,p:nat](mult_le_compat_l p n m).
+].
+
 
 Lemma le_mult_right : (m,n,p:nat)(le m n)->(le (mult m p) (mult n p)).
 Intros m n p H.

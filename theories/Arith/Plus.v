@@ -18,6 +18,18 @@ Open Local Scope nat_scope.
 
 Implicit Variables Type m,n,p,q:nat.
 
+(** Zero is neutral *)
+
+Lemma plus_0_l : (n:nat) (O+n)=n.
+Proof.
+Reflexivity.
+Qed.
+
+Lemma plus_0_r : (n:nat) (n+O)=n.
+Proof.
+Intro; Symmetry; Apply plus_n_O.
+Qed.
+
 (** Commutativity *)
 
 Lemma plus_sym : (n,m:nat)(n+m)=(m+n).
@@ -56,15 +68,21 @@ Hints Resolve plus_assoc_r : arith v62.
 
 (** Simplification *)
 
-Lemma simpl_plus_l : (n,m,p:nat)((n+m)=(n+p))->(m=p).
+Lemma plus_reg_l : (n,m,p:nat)((p+n)=(p+m))->(n=m).
 Proof.
-NewInduction n ; Simpl ; Auto with arith.
+Intros m p n; NewInduction n ; Simpl ; Auto with arith.
 Qed.
+V7only [
+Notation simpl_plus_l := [n,m,p:nat](plus_reg_l m p n).
+].
 
-Lemma simpl_le_plus_l : (p,n,m:nat) (p+n)<=(p+m) -> n<=m.
+Lemma plus_le_reg_l : (n,m,p:nat) (p+n)<=(p+m) -> n<=m.
 Proof.
-Intro p; NewInduction p; Simpl; Auto with arith.
+NewInduction p; Simpl; Auto with arith.
 Qed.
+V7only [
+Notation simpl_le_plus_l := [p,n,m:nat](plus_le_reg_l n m p).
+].
 
 Lemma simpl_lt_plus_l : (n,m,p:nat) (p+n)<(p+m) -> n<m.
 Proof.
