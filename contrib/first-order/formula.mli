@@ -22,6 +22,8 @@ val (==?) : ('a -> 'a -> 'b ->'b -> int) -> ('c -> 'c -> int) ->
 
 type ('a,'b) sum = Left of 'a | Right of 'b
 
+val defined_connectives: (int list * evaluable_global_reference) list lazy_t
+
 type kind_of_formula=
    Arrow of constr*constr
   |And of inductive*constr list

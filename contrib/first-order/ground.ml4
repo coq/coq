@@ -185,8 +185,10 @@ END
 
 TACTIC EXTEND GIntuition
    ["GIntuition" tactic(t)] ->
-     [ gen_ground_tac false (Some(snd t)) [] ]
+     [ gen_ground_tac false 
+	 (Some(tclTHEN normalize_evaluables (snd t))) [] ]
 |  [ "GIntuition" ] ->
-     [ gen_ground_tac false None [] ] 
+     [ gen_ground_tac false 
+	 (Some (tclTHEN normalize_evaluables default_solver)) [] ] 
 END
 

@@ -49,6 +49,10 @@ let op2bool = function Some _->true | None->false
 let id_not=constant "Logic" "not"
 let id_iff=constant "Logic" "iff"
 
+let defined_connectives=lazy
+  [[],EvalConstRef (destConst (id_not ()));
+   [],EvalConstRef (destConst (id_iff ()))]
+
 let match_with_evaluable t=
   match kind_of_term t with
       App (hd,b)-> 

@@ -27,6 +27,8 @@ val evaluable_tac : evaluable_global_reference -> seqtac
 
 val left_evaluable_tac : evaluable_global_reference -> lseqtac
 
+val normalize_evaluables : tactic
+
 val and_tac : seqtac
 
 val left_and_tac : inductive -> lseqtac

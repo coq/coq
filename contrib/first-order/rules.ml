@@ -69,6 +69,14 @@ let left_evaluable_tac ec id tacrec seq gl=
 	let nid=(Tacmach.pf_nth_hyp_id gls 1) in
 	  unfold_in_hyp [[1],ec] (Tacexpr.InHypType nid) gls);
      wrap 1 false tacrec seq] gl
+
+let normalize_evaluables=
+  onAllClauses
+    (function 
+	 None->unfold_in_concl (Lazy.force defined_connectives)
+       | Some id-> 
+	   unfold_in_hyp (Lazy.force defined_connectives) 
+	   (Tacexpr.InHypType id))
     
 let and_tac tacrec seq=
   tclTHEN simplest_split (wrap 0 true tacrec seq)
