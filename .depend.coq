@@ -141,7 +141,7 @@ theories/ZArith/Zwf.vo: theories/ZArith/Zwf.v theories/ZArith/ZArith_base.vo the
 theories/ZArith/ZArith_base.vo: theories/ZArith/ZArith_base.v theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/NArith/BinPos.vo theories/NArith/BinNat.vo theories/ZArith/BinInt.vo theories/ZArith/Zcompare.vo theories/ZArith/Zorder.vo theories/ZArith/Zeven.vo theories/ZArith/Zmin.vo theories/ZArith/Zabs.vo theories/ZArith/Znat.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/ZArith/ZArith_dec.vo theories/ZArith/Zbool.vo theories/ZArith/Zmisc.vo theories/ZArith/Wf_Z.vo theories/ZArith/Zhints.vo
 theories/ZArith/Zbool.vo: theories/ZArith/Zbool.v theories/ZArith/BinInt.vo theories/ZArith/Zeven.vo theories/ZArith/Zorder.vo theories/ZArith/Zcompare.vo theories/ZArith/ZArith_dec.vo theories/ZArith/Zsyntax.vo theories/Bool/Sumbool.vo
 theories/ZArith/Zbinary.vo: theories/ZArith/Zbinary.v theories/Bool/Bvector.vo theories/ZArith/ZArith.vo theories/ZArith/Zpower.vo contrib/omega/Omega.vo
-theories/ZArith/Znumtheory.vo: theories/ZArith/Znumtheory.v theories/ZArith/ZArith.vo contrib/ring/ZArithRing.vo theories/ZArith/Zcomplements.vo theories/ZArith/Zdiv.vo
+theories/ZArith/Znumtheory.vo: theories/ZArith/Znumtheory.v theories/ZArith/ZArith_base.vo contrib/ring/ZArithRing.vo theories/ZArith/Zcomplements.vo theories/ZArith/Zdiv.vo
 theories/Lists/MonoList.vo: theories/Lists/MonoList.v theories/Arith/Le.vo
 theories/Lists/PolyListSyntax.vo: theories/Lists/PolyListSyntax.v
 theories/Lists/ListSet.vo: theories/Lists/ListSet.v theories/Lists/PolyList.vo

@@ -951,11 +951,11 @@ parsing/g_basevernac.cmx: parsing/ast.cmx interp/constrintern.cmx \
     lib/pp.cmx interp/ppextend.cmx parsing/termast.cmx lib/util.cmx \
     toplevel/vernacexpr.cmx 
 parsing/g_cases.cmo: parsing/g_constr.cmo library/libnames.cmi \
-    kernel/names.cmi lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
-    kernel/term.cmi interp/topconstr.cmi lib/util.cmi 
+    lib/options.cmi parsing/pcoq.cmi lib/pp.cmi kernel/term.cmi \
+    interp/topconstr.cmi lib/util.cmi 
 parsing/g_cases.cmx: parsing/g_constr.cmx library/libnames.cmx \
-    kernel/names.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
-    kernel/term.cmx interp/topconstr.cmx lib/util.cmx 
+    lib/options.cmx parsing/pcoq.cmx lib/pp.cmx kernel/term.cmx \
+    interp/topconstr.cmx lib/util.cmx 
 parsing/g_constr.cmo: parsing/lexer.cmi library/libnames.cmi kernel/names.cmi \
     lib/options.cmi pretyping/pattern.cmi parsing/pcoq.cmi lib/pp.cmi \
     pretyping/rawterm.cmi kernel/term.cmi interp/topconstr.cmi lib/util.cmi 
