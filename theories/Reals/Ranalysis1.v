@@ -34,7 +34,8 @@ V8Infix "*" mult_fct : Rfun_scope.
 V8Infix "-" minus_fct : Rfun_scope.
 V8Infix "/" div_fct : Rfun_scope.
 Notation Local "f1 'o' f2" := (comp f1 f2) (at level 2, right associativity)
-  : Rfun_scope.
+  : Rfun_scope 
+  V8only (at level 15, right associativity).
 V8Notation "/ x" := (inv_fct x) : Rfun_scope.
 
 Delimits Scope Rfun_scope with F.
