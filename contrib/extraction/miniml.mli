@@ -5,9 +5,7 @@ open Names
 
 (* identifiers of type are either parameters or type names. *)
 
-type ml_typeid = 
-  | Tparam of identifier
-  | Tname  of identifier
+type ml_typeid = identifier
 
 (* ML type expressions. *)
 
