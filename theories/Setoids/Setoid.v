@@ -336,9 +336,6 @@ with Morphism_Context_List Hole dir :
 Scheme Morphism_Context_rect2 := Induction for Morphism_Context  Sort Type
 with Morphism_Context_List_rect2 := Induction for Morphism_Context_List Sort Type.
 
-Inductive prodT (A B: Type) : Type :=
- pairT : A -> B -> prodT A B.
-
 Definition product_of_arguments : Arguments -> Type.
  induction 1.
    exact (carrier_of_relation_class a).
