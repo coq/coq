@@ -59,8 +59,8 @@ let rec head_pattern_bound t =
     | PCase (p,c,br)        -> head_pattern_bound c
     | PRef r                -> label_of_ref r
     | PVar id               -> VarNode id
-    | PRel _ | PMeta _ | PSoApp _  | PSort _ -> raise BoundPattern
-    | PBinder(BLambda,_,_,_) | PFix _ | PCoFix _ ->
+    | PRel _ | PMeta _ | PSoApp _  | PSort _ | PFix _ -> raise BoundPattern
+    | PBinder(BLambda,_,_,_) | PCoFix _ ->
       anomaly "head_pattern_bound: not a type"
 
 let head_of_constr_reference c = match kind_of_term c with
