@@ -178,6 +178,7 @@ let instantiate_pf_com n com pfts =
       List.nth (Evd.non_instantiated sigma) (n-1) 
     with Failure _ -> 
       error "not so many uninstantiated existential variables"
+      | Invalid_argument _ -> error "incorrect existential variable index"
   in 
   let c = Constrintern.interp_constr sigma (Evarutil.evar_env evd) com in     
   let wc' = w_Define sp c wc in
