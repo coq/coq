@@ -22,15 +22,14 @@ and library_segment = (section_path * node) list
 type library_entry = section_path * node
 
 
-(*s Adding operations, and getting the current list of operations (most 
-  recent ones coming first). *)
+(*s Adding operations (which calls the [cache] method, and getting the
+  current list of operations (most recent ones coming first). *)
 
 val add_leaf : identifier -> path_kind -> obj -> section_path
-val add_anonymous_leaf : obj -> section_path
+val add_anonymous_leaf : obj -> unit
 
 val contents_after : section_path option -> library_segment
 
-val map_leaf : section_path -> obj
 
 (*s Opening and closing a section. *)
 
@@ -48,6 +47,7 @@ val export_module : unit -> library_segment
 (*s Backtracking (undo). *)
 
 val reset_to : section_path -> unit
+val reset_name : identifier -> unit
 
 
 (*s We can get and set the state of the operations (used in [States]). *)

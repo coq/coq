@@ -81,8 +81,8 @@ module MakeTable =
 		Libobject.open_function = open_options;
 		Libobject.cache_function = cache_options;
 		Libobject.specification_function = specification_options}) in
-        ((fun c -> let _ = Lib.add_anonymous_leaf (inGo (GOadd, c)) in ()),
-         (fun c -> let _ = Lib.add_anonymous_leaf (inGo (GOrmv, c)) in ()))
+        ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
+         (fun c -> Lib.add_anonymous_leaf (inGo (GOrmv, c))))
       else
         ((fun c -> t := MySet.add c !t),
          (fun c -> t := MySet.remove c !t))
@@ -244,8 +244,8 @@ let set_option_value check_and_cast key v =
   in
   match info with
     | Sync  current  ->
-      	let _ = Lib.add_anonymous_leaf
-		  (inOptVal (key,(name,check_and_cast v current))) in ()
+      	Lib.add_anonymous_leaf
+	  (inOptVal (key,(name,check_and_cast v current)))
     | Async (read,write) -> write (check_and_cast v (read ()))
 
 let bad_type_error () = error "Bad type of value for this option"

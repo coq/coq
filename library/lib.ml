@@ -26,8 +26,6 @@ type library_entry = section_path * node
 
 let lib_stk = ref ([] : (section_path * node) list)
 
-let lib_tab = Hashtbl.create 353
-
 let module_name = ref None
 let path_prefix = ref ([] : string list)
 
@@ -71,8 +69,7 @@ let split_lib sp =
 (* Adding operations. *)
 
 let add_entry sp node =
-  lib_stk := (sp,node) :: !lib_stk;
-  Hashtbl.add lib_tab sp node
+  lib_stk := (sp,node) :: !lib_stk
 
 let anonymous_id = 
   let n = ref 0 in
@@ -86,10 +83,12 @@ let add_anonymous_entry node =
 let add_leaf id kind obj =
   let sp = make_path id kind in
   add_entry sp (Leaf obj);
+  cache_object (sp,obj);
   sp
 
 let add_anonymous_leaf obj =
-  add_anonymous_entry (Leaf obj)
+  let sp = add_anonymous_entry (Leaf obj) in
+  cache_object (sp,obj)
 
 let add_frozen_state () =
   let _ = add_anonymous_entry (FrozenState (freeze_summaries())) in ()
@@ -97,11 +96,6 @@ let add_frozen_state () =
 let contents_after = function
   | None -> !lib_stk
   | Some sp -> let (after,_,_) = split_lib sp in after
-
-let map_leaf sp = 
-  match Hashtbl.find lib_tab sp with
-    | Leaf obj -> obj
-    | _ -> anomaly "Lib.map_leaf: not a leaf"
 
 (* Sections. *)
 
@@ -177,6 +171,10 @@ let reset_to sp =
   unfreeze_summaries frozen;
   let (after,_,_) = split_lib spf in
   recache_context (List.rev after)
+
+let reset_name id =
+  let (sp,_) = find_entry_p (fun (sp,_) -> id = basename sp) in
+  reset_to sp
 
 let is_section_p sp = list_prefix_of (wd_of_sp sp) !path_prefix
 

@@ -52,11 +52,9 @@ let cache_variable (sp,(id,(ty,_,_) as vd)) =
   declare_var_implicits id;
   vartab := Spmap.add sp vd !vartab
 
-let load_variable _ = 
-  anomaly "we shouldn't load a variable"
+let load_variable _ = anomaly "we shouldn't load a variable"
 
-let open_variable _ = 
-  anomaly "we shouldn't open a variable"
+let open_variable _ = anomaly "we shouldn't open a variable"
 
 let specification_variable _ = 
   anomaly "we shouldn't extract the specification of a variable"
@@ -70,10 +68,8 @@ let (in_variable, out_variable) =
   declare_object ("VARIABLE", od)
 
 let declare_variable id ((ty,_,_) as obj) =
-  Global.push_var (id,ty);
-  let sp = add_leaf id CCI (in_variable (id,obj)) in
-  Nametab.push id sp;
-  declare_var_implicits id
+  let _ = add_leaf id CCI (in_variable (id,obj)) in
+  ()
 
 (* Parameters. *)
 
@@ -93,14 +89,12 @@ let (in_parameter, out_parameter) =
     cache_function = cache_parameter;
     load_function = (fun _ -> ());
     open_function = open_parameter;
-    specification_function = specification_parameter } in
+    specification_function = specification_parameter } 
+  in
   declare_object ("PARAMETER", od)
 
 let declare_parameter id c =
-  let sp = add_leaf id CCI (in_parameter c) in
-  Global.add_parameter sp c;
-  Nametab.push (basename sp) sp;
-  declare_constant_implicits sp
+  let _ = add_leaf id CCI (in_parameter c) in ()
  
 (* Constants. *)
 
@@ -113,30 +107,33 @@ let _ = Summary.declare_summary "CONSTANT"
 	    Summary.unfreeze_function = (fun ft -> vartab := ft);
 	    Summary.init_function = (fun () -> vartab := Spmap.empty) }
 
-let cache_constant (sp,ce) =
+let cache_constant (sp,((ce,_,_) as cd)) =
   Global.add_constant sp ce;
   Nametab.push (basename sp) sp;
-  declare_constant_implicits sp
+  declare_constant_implicits sp;
+  csttab := Spmap.add sp cd !csttab
+
+let load_constant (sp,((ce,_,_) as cd)) =
+  declare_constant_implicits sp;
+  csttab := Spmap.add sp cd !csttab
 
 let open_constant (sp,_) =
-  Nametab.push (basename sp) sp;
-  declare_constant_implicits sp
+  Nametab.push (basename sp) sp
 
 let specification_constant obj = obj
 
 let (in_constant, out_constant) =
   let od = {
     cache_function = cache_constant;
-    load_function = (fun _ -> ());
+    load_function = load_constant;
     open_function = open_constant;
-    specification_function = specification_constant } in
+    specification_function = specification_constant } 
+  in
   declare_object ("CONSTANT", od)
 
-let declare_constant id ((ce,_,_) as cd) =
-  let sp = add_leaf id CCI (in_constant ce) in
-  Global.add_constant sp ce;
-  Nametab.push (basename sp) sp;
-  declare_constant_implicits sp
+let declare_constant id cd =
+  let _ = add_leaf id CCI (in_constant cd) in ()
+
  
 (* Inductives. *)
 
@@ -152,9 +149,11 @@ let cache_inductive (sp,mie) =
   push_inductive_names sp mie;
   declare_inductive_implicits sp
 
-let open_inductive (sp,mie) =
-  push_inductive_names sp mie;
+let load_inductive (sp,_) =
   declare_inductive_implicits sp
+
+let open_inductive (sp,mie) =
+  push_inductive_names sp mie
 
 let specification_inductive obj = obj
 
@@ -163,7 +162,8 @@ let (in_inductive, out_inductive) =
     cache_function = cache_inductive;
     load_function = (fun _ -> ());
     open_function = open_inductive;
-    specification_function = specification_inductive } in
+    specification_function = specification_inductive } 
+  in
   declare_object ("INDUCTIVE", od)
 
 let declare_mind mie =
@@ -171,17 +171,16 @@ let declare_mind mie =
     | (id,_,_,_)::_ -> id
     | [] -> anomaly "cannot declare an empty list of inductives"
   in
-  let sp = add_leaf id CCI (in_inductive mie) in
-  Global.add_mind sp mie;
-  push_inductive_names sp mie;
-  declare_inductive_implicits sp
+  let _ = add_leaf id CCI (in_inductive mie) in ()
+
 
 (* Test and access functions. *)
 
 let is_constant sp = 
   try let _ = Global.lookup_constant sp in true with Not_found -> false
 
-let constant_strength sp = failwith "TODO"
+let constant_strength sp = 
+  let (_,stre,_) = Spmap.find sp !csttab in stre
 
 let is_variable id = 
   let sp = Nametab.sp_of_id CCI id in Spmap.mem sp !vartab
@@ -291,7 +290,7 @@ let declare_eliminations sp =
   let declare na c =
     declare_constant (id_of_string na)
       ({ const_entry_body = c; const_entry_type = None },
-       false, NeverDischarge)
+       NeverDischarge,false)
   in
   let mispec = Global.lookup_mind_specif redmind in 
   let elim_scheme = 
