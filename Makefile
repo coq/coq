@@ -596,7 +596,8 @@ install-library:
 	$(MKDIR) $(FULLEMACSLIB)
 	cp tools/coq.el $(FULLEMACSLIB)
 
-MANPAGES=tools/coq-tex.1 tools/coqdep.1 tools/gallina.1
+MANPAGES=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
+	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1
 
 install-manpages:
 	$(MKDIR) $(FULLMANDIR)/man1

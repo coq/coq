@@ -12,7 +12,7 @@ configure: configure-stamp
 configure-stamp:
 	dh_testdir
 	# Add here commands to configure the package.
-	./configure --prefix /usr --mandir /usr/share/man --emacslib /usr/share/emacs/site-lisp
+	./configure --prefix /usr --mandir /usr/share/man --emacslib /usr/share/emacs/site-lisp/coq
 
 	touch configure-stamp
 
