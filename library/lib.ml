@@ -378,6 +378,13 @@ let is_module () =
 (* Returns the most recent OpenedThing node *)
 let what_is_opened () = find_entry_p is_something_opened
 
+(* XML output hooks *)
+let xml_open_section = ref (fun id -> ())
+let xml_close_section = ref (fun id -> ())
+
+let set_xml_open_section f = xml_open_section := f
+let set_xml_close_section f = xml_close_section := f
+
 (* Sections. *)
 
 let open_section id =
@@ -392,6 +399,7 @@ let open_section id =
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
   Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
   path_prefix := prefix;
+  if !Options.xml_export then !xml_open_section id;
   prefix
 
 
@@ -417,6 +425,7 @@ let close_section ~export id =
   in
   let name = make_path id, make_kn id in
   add_entry name closed_sec;
+  if !Options.xml_export then !xml_close_section id;
   (prefix, after, fs)
 
 (* Backtracking. *)

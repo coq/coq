@@ -149,3 +149,8 @@ val init : unit -> unit
 
 val declare_initial_state : unit -> unit
 val reset_initial : unit -> unit
+
+
+(* XML output hooks *)
+val set_xml_open_section : (identifier -> unit) -> unit
+val set_xml_close_section : (identifier -> unit) -> unit
