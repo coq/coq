@@ -43,7 +43,7 @@ INSTALLATION
     
     cd /tmp && \
     wget 	http://www.lri.fr/~monate/download/lablgtk2-20030919.tar.gz && \
-    tar zxvf lablgtk2-200919.tar.gz && \
+    tar zxvf lablgtk2-20030919.tar.gz && \
     cd lablgtk2-20030919 && \
     ./configure && \
     make world && \
