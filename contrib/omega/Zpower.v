@@ -126,12 +126,8 @@ Theorem shift_nat_correct :
 
 Unfold shift_nat; Induction n; 
 [ Simpl; Trivial with zarith
-| Intros; Simpl;
-Replace (Zpower_nat `2` (S n0)) with `2 * (Zpower_nat 2 n0)`;
-[ Replace (POS (xO (iter_nat n0 positive xO x))) 
-  with `2 * (POS (iter_nat n0 positive xO x))`; 
-  [ Rewrite -> (H x); Apply Zmult_assoc    
-  | Auto with zarith ]
+| Intros; Replace (Zpower_nat `2` (S n0)) with `2 * (Zpower_nat 2 n0)`;
+[ Rewrite <- Zmult_assoc; Rewrite <- (H x); Simpl; Reflexivity
 | Auto with zarith ]
 ].
 Save.
