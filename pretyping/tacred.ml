@@ -925,11 +925,16 @@ let reduce_to_ind_gen allow_product env sigma t =
 let reduce_to_quantified_ind x = reduce_to_ind_gen true x
 let reduce_to_atomic_ind x = reduce_to_ind_gen false x
 
-let reduce_to_quantified_ref env sigma ref t = 
+let reduce_to_ref_gen allow_product env sigma ref t = 
   let rec elimrec env t l = 
     let c, _ = Reductionops.whd_stack t in
     match kind_of_term c with
-      | Prod (n,ty,t') -> elimrec (push_rel (n,None,t) env) t' ((n,None,ty)::l)
+      | Prod (n,ty,t') ->
+	  if allow_product then
+	    elimrec (push_rel (n,None,t) env) t' ((n,None,ty)::l)
+	  else 
+	     errorlabstrm "Tactics.reduce_to_ref_gen"
+	       (str"Not an induction object of atomic type")
       | _ ->
 	  try 
 	    if reference_of_constr c = ref 
@@ -942,3 +947,6 @@ let reduce_to_quantified_ref env sigma ref t =
           with NotStepReducible -> raise Not_found
   in
   elimrec env t []
+
+let reduce_to_quantified_ref = reduce_to_ref_gen true
+let reduce_to_atomic_ref = reduce_to_ref_gen false

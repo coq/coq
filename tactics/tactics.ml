@@ -1235,7 +1235,7 @@ let atomize_param_of_ind (indref,nparams) hyp0 gl =
       let tmptyp0 = pf_get_hyp_typ gl hyp0 in
       (* If argl <> [], we expect typ0 not to be quantified, in order to
          avoid bound parameters... then we call pf_reduce_to_atomic_ind *)
-      let indtyp = pf_apply reduce_to_quantified_ref gl indref tmptyp0 in
+      let indtyp = pf_apply reduce_to_atomic_ref gl indref tmptyp0 in
       let argl = snd (decompose_app indtyp) in
       let c = List.nth argl (i-1) in
       match kind_of_term c with

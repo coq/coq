@@ -66,6 +66,9 @@ val reduce_to_quantified_ind : env ->  evar_map -> types -> inductive * types
 val reduce_to_quantified_ref :
   env ->  evar_map -> Libnames.global_reference -> types -> types
 
+val reduce_to_atomic_ref :
+  env ->  evar_map -> Libnames.global_reference -> types -> types
+
 type red_expr = (constr, evaluable_global_reference) red_expr_gen
 
 val contextually : bool -> constr occurrences -> reduction_function
