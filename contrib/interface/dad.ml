@@ -49,7 +49,7 @@ type dad_rule =
 
 (* This value will be used systematically when constructing objects *)
 
-let zz = (0,0);;
+let zz = Util.dummy_loc;;
 
 (* This function receives a length n, a path p, and a term and returns a
    couple whose first component is the subterm designated by the prefix

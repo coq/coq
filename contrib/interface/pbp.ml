@@ -22,7 +22,7 @@ open Genarg;;
 open Topconstr;;
 open Termops;;
 
-let zz = (0,0);;
+let zz = Util.dummy_loc;;
 
 let hyp_radix = id_of_string "H";;
 
