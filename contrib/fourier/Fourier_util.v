@@ -10,11 +10,12 @@
 
 Require Export Rbase.
 Comments "Lemmas used by the tactic Fourier".
+
+Open Scope R_scope.
  
 Lemma Rfourier_lt:
  (x1, y1, a : R) (Rlt x1 y1) -> (Rlt R0 a) ->  (Rlt (Rmult a x1) (Rmult a y1)).
-Intros x1 y1 a H H0; Try Assumption.
-Apply Rlt_monotony; Auto with real.
+Intros; Apply Rlt_monotony; Assumption.
 Qed.
  
 Lemma Rfourier_le:
@@ -208,54 +209,33 @@ Rewrite H1; Ring.
 Qed.
  
 Lemma Rfourier_gt_to_lt: (x, y : R) (Rgt y x) ->  (Rlt x y).
-Unfold Rgt; Auto with *.
+Unfold Rgt; Intros; Assumption.
 Qed.
  
 Lemma Rfourier_ge_to_le: (x, y : R) (Rge y x) ->  (Rle x y).
-Unfold Rge Rle; Intuition.
+Intros x y; Exact (Rge_le y x).
 Qed.
  
 Lemma Rfourier_eqLR_to_le: (x, y : R) x == y ->  (Rle x y).
-Intros.
-Rewrite H; Red.
-Right; Auto with *.
+Exact eq_Rle.
 Qed.
  
 Lemma Rfourier_eqRL_to_le: (x, y : R) y == x ->  (Rle x y).
-Intros.
-Rewrite H; Red.
-Right; Auto with *.
+Exact eq_Rle_sym.
 Qed.
  
 Lemma Rfourier_not_ge_lt: (x, y : R) ((Rge x y) ->  False) ->  (Rlt x y).
-Intros.
-Unfold Rge in H.
-Elim (total_order x y); Intros.
-Try Exact H0.
-Intuition.
+Exact not_Rge.
 Qed.
  
 Lemma Rfourier_not_gt_le: (x, y : R) ((Rgt x y) ->  False) ->  (Rle x y).
-Intros.
-Red.
-Elim (total_order x y); Intros.
-Intuition.
-Intuition.
+Exact Rgt_not_le.
 Qed.
  
 Lemma Rfourier_not_le_gt: (x, y : R) ((Rle x y) ->  False) ->  (Rgt x y).
-Unfold Rle.
-Intros.
-Red.
-Elim (total_order x y); Intros.
-Intuition.
-Intuition.
+Exact not_Rle.
 Qed.
  
 Lemma Rfourier_not_lt_ge: (x, y : R) ((Rlt x y) ->  False) ->  (Rge x y).
-Intros.
-Red.
-Elim (total_order x y); Intros.
-Intuition.
-Intuition.
+Exact Rlt_not_ge.
 Qed.
