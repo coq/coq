@@ -115,6 +115,8 @@ let parse_args () =
 	bindir := d ; parse (cfiles,args) rem
     | "-bindir" :: []       ->
 	usage ()
+    | "-byte" :: rem ->
+	binary := "coqtop.byte"; parse (cfiles,args) rem
     | "-opt" :: rem ->
 	binary := "coqtop.opt"; parse (cfiles,args) rem
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
