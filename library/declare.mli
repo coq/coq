@@ -53,7 +53,7 @@ val declare_constant : identifier -> constant_declaration -> constant_path
 
 val declare_parameter : identifier -> constr -> constant_path
 
-(* [declare_constant id cd] declares a block of inductive types with
+(* [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of
    the whole block *)
 val declare_mind : mutual_inductive_entry -> mutual_inductive_path
