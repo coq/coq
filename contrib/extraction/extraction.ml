@@ -339,17 +339,23 @@ and extract_term c =
 	     | Tarity -> assert false (* Cf. precondition *)
 	     | Tprop -> Eprop)
       | IsConst (sp,_) ->
-	  Emlterm (MLglob (ConstRef sp)) (* TODO eta-expansion *)
+	  Emlterm (MLglob (ConstRef sp))
       | IsMutConstruct (cp,_) ->
-	  Emlterm (MLglob (ConstructRef cp))
+	  Emlterm (MLglob (ConstructRef cp)) (* TODO eta-expansion *)
       | IsMutCase _ ->
 	  failwith "todo"
       | IsFix _ ->
 	  failwith "todo"
       | IsLetIn (n, c1, t1, c2) ->
-	  failwith "todo"
-	    (*i	  (match get_arity env t1 with
-	      | Some (Prop Null) -> *)
+	  let id = id_of_name n in
+	  let env' = push_rel (n,Some c1,t1) env in
+	  (match get_arity env t1 with
+	     | Some (Prop Null) -> 
+		 extract_rec env' ((Tprop,id)::ctx) c2
+	     | Some _ ->
+		 failwith "todo" (* extract_rec env' *)
+	     | _ ->
+		 failwith "todo")
       | IsCast (c, _) ->
 	  extract_rec env ctx c
       | IsMutInd _ | IsProd _ | IsSort _ | IsVar _ 
@@ -390,7 +396,7 @@ and extract_constr_with_type c t =
     | Some _ -> 
 	(match extract_type genv [] c with
 	   | Tprop -> Eprop
-	   | Tarity -> Emltype(Miniml.Tarity, [], []) (* any other arity *)
+	   | Tarity -> Emltype (Miniml.Tarity, [], []) (* any other arity *)
 	   | Tmltype (t, sign, fl) -> Emltype (t, sign, fl))
     | None -> 
 	extract_term c
