@@ -210,7 +210,7 @@ Theorem not_or : (A,B:Prop) ~(A\/B) -> ~A /\ ~B.
 Tauto. Save.
 
 Theorem not_and : (A,B:Prop) (decidable A) -> ~(A/\B) -> ~A \/ ~B.
-Tauto. Save.
+Unfold decidable; Tauto. Save.
 
 Theorem not_imp : (A,B:Prop) (decidable A) -> ~(A -> B) -> A /\ ~B.
 Unfold decidable;Tauto.

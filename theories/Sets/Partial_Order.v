@@ -87,6 +87,7 @@ Qed.
 Lemma Strict_Rel_Transitive: (Transitive U (Strict_Rel_of U D)).
 Red.
 Intros x y z H' H'0.
-Apply Strict_Rel_Transitive_with_Rel with y := y; Intuition.
+Apply Strict_Rel_Transitive_with_Rel with y := y; 
+  [ Intuition | Unfold Strict_Rel_of in H' H'0; Intuition ].
 Qed.
 End Partial_order_facts.

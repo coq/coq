@@ -19,6 +19,7 @@ let environment = Unix.environment ()
 
 let bindir = ref Coq_config.bindir
 let binary = ref ("coqtop." ^ Coq_config.best)
+let image = ref ""
 
 (* the $COQBIN environment variable has priority over the Coq_config value *)
 let _ = 
@@ -122,8 +123,12 @@ let parse_args () =
 	binary := "coqtop.byte"; parse (cfiles,args) rem
     | "-opt" :: rem ->
 	binary := "coqtop.opt"; parse (cfiles,args) rem
+    | "-image" :: f :: rem ->
+	image := f; parse (cfiles,args) rem
+    | "-image" :: [] ->
+	usage ()
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
-    | ("-image"|"-libdir"|"-I"|"-include"|"-outputstate"
+    | ("-libdir"|"-I"|"-include"|"-outputstate"
       |"-inputstate"|"-is"|"-load-vernac-source"|"-load-vernac-object"
       |"-load-ml-source"|"-require"|"-load-ml-object"|"-user"
       |"-init-file" as o) :: rem ->
@@ -164,7 +169,9 @@ let main () =
     prerr_endline "coqc: too few arguments" ;
     usage ()
   end;
-  let coqtopname = Filename.concat !bindir !binary in
+  let coqtopname = 
+    if !image <> "" then !image else Filename.concat !bindir !binary 
+  in
   List.iter (compile coqtopname args) cfiles
     
 let _ = Printexc.print main (); exit 0

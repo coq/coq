@@ -72,7 +72,7 @@ Theorem cong_reflexive_same_relation:
   (U:Type) (R, R':(Relation U)) (same_relation U R R') -> (Reflexive U R) ->
   (Reflexive U R').
 Proof.
-Intuition.
+Unfold same_relation; Intuition.
 Qed.
 
 Theorem cong_symmetric_same_relation:

@@ -326,7 +326,7 @@ Hints Resolve andb_true_intro : bool v62.
 Lemma andb_true_intro2 : 
   (b1,b2:bool)(Is_true b1)->(Is_true b2)->(Is_true (andb b1 b2)).
 Proof.
-  Destruct b1; Destruct b2; Tauto.
+  Destruct b1; Destruct b2; Simpl; Tauto.
 Save.
 Hints Resolve andb_true_intro2 : bool v62.
 

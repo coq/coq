@@ -88,7 +88,12 @@ let check_fix_reversibility labs args ((lv,i),(tys,_,bds)) =
 	     raise Elimconst) args
   in
   if list_distinct (List.map fst li) then 
-    EliminationFix (n-nargs+lv.(i)+1,(nbfix,li,n))
+    let k = lv.(i) in
+    if k < nargs then
+      let p = destRel (List.nth args k) in 
+      EliminationFix (n-p+1,(nbfix,li,n))
+    else
+      EliminationFix (n-nargs+lv.(i)+1,(nbfix,li,n))
   else 
     raise Elimconst
 

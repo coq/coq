@@ -58,20 +58,12 @@ let top        = ref false
 let searchisos = ref false
 let echo       = ref false
 
+let src_dirs = [ []; [ "config" ]; [ "toplevel" ] ]
+
 let includes () = 
   List.fold_right
     (fun d l -> "-I" :: List.fold_left Filename.concat !src_coqtop d :: l)
-    [ [ "config" ] ;
-      [ "scripts" ] ;
-      [ "lib" ] ;
-      [ "kernel" ] ;
-      [ "library" ] ;
-      [ "pretyping" ] ;
-      [ "parsing" ] ;
-      [ "proofs" ] ;
-      [ "tactics" ] ;
-      [ "toplevel" ]
-    ]
+    src_dirs
     ["-I"; Coq_config.camlp4lib]
 
 (* Transform bytecode object file names in native object file names *)
@@ -113,7 +105,6 @@ let all_subdirs dir =
   let l = ref [] in
   let add f = l := f :: !l in
   let rec traverse dir =
-    Printf.printf "%s\n" dir;
     let dirh = 
       try opendir dir with Unix_error _ -> invalid_arg "all_subdirs" 
     in

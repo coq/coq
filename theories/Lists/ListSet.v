@@ -189,7 +189,7 @@ Section first_definitions.
     Simpl; Intros [H1|H2]; Auto with datatypes.
     Simpl; Do 3 Intro.
     Elim (Aeq_dec b a0).
-    Tauto.
+    Simpl; Tauto.
     Simpl; Intros; Elim H0.
     Trivial with datatypes.
     Tauto.
@@ -271,7 +271,7 @@ Section first_definitions.
     (set_In a (set_inter x y)) -> (set_In a y).
   Proof.
     Induction x.
-    Tauto.
+    Simpl; Tauto.
     Simpl; Intros a0 l Hrec y.
     Generalize (!set_mem_correct1 a0 y).
     Elim (set_mem a0 y); Simpl; Intros.
@@ -291,7 +291,7 @@ Section first_definitions.
     (set_In a x) -> ~(set_In a y) -> (set_In a (set_diff x y)).
   Proof.
     Induction x.
-    Tauto.
+    Simpl; Tauto.
     Simpl; Intros a0 l Hrec y [Ha0a | Hal] Hay.
     Rewrite Ha0a; Generalize (set_mem_complete2 Hay).
     Elim (set_mem a y); [ Intro Habs; Discriminate Habs | Auto with datatypes ].
@@ -302,7 +302,7 @@ Section first_definitions.
     (set_In a (set_diff x y)) -> (set_In a x).
   Proof.
     Induction x.
-    Tauto.
+    Simpl; Tauto.
     Simpl; Intros a0 l Hrec y; Elim (set_mem a0 y).
     EAuto with datatypes.
     Intro; Generalize (set_add_elim  H).

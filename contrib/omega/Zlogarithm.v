@@ -140,10 +140,10 @@ Induction p; Simpl; Intros;
 [Elim p0; Auto with zarith | Elim p0; Auto with zarith | Trivial with zarith ].
 Intros; Apply Zle_le_S.
 Generalize H0; Elim p1; Intros; Simpl;
-    [ Tauto | Tauto | Apply ZERO_le_POS ].
+    [ Assumption | Assumption | Apply ZERO_le_POS ].
 Intros; Apply Zle_le_S.
 Generalize H0; Elim p1; Intros; Simpl;
-    [ Tauto | Tauto | Apply ZERO_le_POS ].
+    [ Assumption | Assumption | Apply ZERO_le_POS ].
 Save.
 
 Theorem log_near_correct2: (p:positive)

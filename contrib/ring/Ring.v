@@ -58,7 +58,7 @@ Destruct n; Reflexivity.
 Destruct n; Reflexivity.
 Destruct n; Reflexivity.
 Destruct n; Destruct m; Destruct p; Reflexivity.
-Destruct x; Destruct y; Reflexivity Orelse Tauto.
+Destruct x; Destruct y; Reflexivity Orelse Simpl; Tauto.
 Defined.
 
 Add Ring bool xorb andb true false [b:bool]b eqb BoolTheory [ true false ].
