@@ -45,9 +45,10 @@ val refine          : constr -> tactic
 val convert_concl   : constr -> tactic
 val convert_hyp     : named_declaration -> tactic
 val thin            : identifier list -> tactic
-val mutual_fix      : identifier list -> int list -> constr list -> tactic
+val mutual_fix      :
+  identifier -> int -> (identifier * int * constr) list -> tactic
 val fix             : identifier -> int -> tactic
-val mutual_cofix    : identifier list -> constr list -> tactic
+val mutual_cofix    : identifier -> (identifier * constr) list -> tactic
 val cofix           : identifier -> tactic
 
 val dyn_mutual_fix   : tactic_arg list -> tactic

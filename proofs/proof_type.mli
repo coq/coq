@@ -34,27 +34,19 @@ type hyp_location = (* To distinguish body and type of local defs *)
   | InHyp of identifier
   | InHypType of identifier
 
-type prim_rule_name = 
-  | Intro
-  | Intro_after
-  | Intro_replacing
-  | Cut of bool
-  | FixRule
-  | Cofix
-  | Refine 
-  | Convert_concl
-  | Convert_hyp
-  | Thin
-  | ThinBody
-  | Move of bool
-  | Rename
-
-type prim_rule = {
-  name : prim_rule_name;
-  hypspecs : identifier list;
-  newids : identifier list;
-  params : Coqast.t list;
-  terms : constr list }
+type prim_rule =
+  | Intro of identifier
+  | Intro_replacing of identifier
+  | Cut of bool * identifier * types
+  | FixRule of identifier * int * (identifier * int * constr) list
+  | Cofix of identifier * (identifier * constr) list
+  | Refine of constr
+  | Convert_concl of types
+  | Convert_hyp of named_declaration
+  | Thin of identifier list
+  | ThinBody of identifier list
+  | Move of bool * identifier * identifier
+  | Rename of identifier * identifier
 
 (* The type [goal sigma] is the type of subgoal. It has the following form
 \begin{verbatim}

@@ -105,7 +105,7 @@ let move_hyp        = Tacmach.move_hyp
 let rename_hyp      = Tacmach.rename_hyp
 
 let mutual_fix   = Tacmach.mutual_fix
-let fix f n      = mutual_fix [f] [n] []
+let fix f n      = mutual_fix f n []
 
 let fix_noname n =  
   let id = Pfedit.get_current_proof_name () in
@@ -116,18 +116,18 @@ let dyn_mutual_fix argsl gl =
     | [Integer n]                          -> fix_noname n gl
     | [Identifier id;Integer n]            -> fix id n gl
     | ((Identifier id)::(Integer n)::lfix) -> 
-	let rec decomp lid ln lar = function
+	let rec decomp lar = function
           | (Fixexp (id,n,ar)::rest) -> 
-	      decomp (id::lid) (n::ln) (ar::lar) rest
-          | [] -> (List.rev lid,List.rev ln,List.rev lar)
+	      decomp ((id,n,pf_interp_constr gl ar)::lar) rest
+          | [] -> (List.rev lar)
 	  | _  -> bad_tactic_args "mutual_fix" argsl
 	in
-	let (lid,ln,lar) = decomp [] [] [] lfix in
-	mutual_fix (id::lid) (n::ln) (List.map (pf_interp_constr gl) lar) gl
+	let lar = decomp [] lfix in
+	mutual_fix id n lar gl
     | l -> bad_tactic_args "mutual_fix" l 
 
 let mutual_cofix = Tacmach.mutual_cofix
-let cofix f      =  mutual_cofix [f] []
+let cofix f      =  mutual_cofix f []
 
 let cofix_noname n =  
   let id = Pfedit.get_current_proof_name () in
@@ -138,14 +138,14 @@ let dyn_mutual_cofix argsl gl =
     | []                       -> cofix_noname gl
     | [(Identifier id)]        -> cofix id gl
     | ((Identifier id)::lcofix) -> 
-	let rec decomp lid lar = function 
+	let rec decomp lar = function 
           | (Cofixexp (id,ar)::rest) -> 
-              decomp (id::lid) (ar::lar) rest
-          | [] -> (List.rev lid,List.rev lar)
+              decomp ((id,pf_interp_constr gl ar)::lar) rest
+          | [] -> List.rev lar
 	  |  _ -> bad_tactic_args "mutual_cofix" argsl
 	in
-	let (lid,lar) = decomp [] [] lcofix in
-        mutual_cofix (id::lid) (List.map (pf_interp_constr gl) lar) gl
+	let lar = decomp [] lcofix in
+        mutual_cofix id lar gl
    | l -> bad_tactic_args "mutual_cofix" l 
 
 

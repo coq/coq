@@ -406,7 +406,7 @@ let prim_refiner r sigma goal =
   let cl = goal.evar_concl in
   match r with
     (* Logical rules *)
-    | { name = Intro; newids = [id] } ->
+    | Intro id ->
     	if !check && mem_named_context id sign then
 	  error "New variable is already declared";
         (match kind_of_term (strip_outer_cast cl) with
@@ -425,25 +425,7 @@ let prim_refiner r sigma goal =
 	       if !check then raise (RefinerError IntroNeedsProduct)
 	       else anomaly "Intro: expects a product")
 	
-    | { name = Intro_after; newids = [id]; hypspecs = [whereid] } ->
-    	if !check && mem_named_context id sign then
-	  error "New variable is already declared";
-        (match kind_of_term (strip_outer_cast cl) with
-	   | Prod (_,c1,b) ->
-	       if occur_meta c1 then error_use_instantiate();
-	       let sign' = insert_after_hyp sign whereid (id,None,c1) in
-	       let sg = mk_goal sign' (subst1 (mkVar id) b) in 
-	       [sg]
-	   | LetIn (_,c1,t1,b) ->
-	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
-	       let sign' = insert_after_hyp sign whereid (id,Some c1,t1) in
-	       let sg = mk_goal sign' (subst1 (mkVar id) b) in 
-	       [sg]
-	   | _ ->
-	       if !check then error "Introduction needs a product"
-	       else anomaly "Intro_after: expects a product")
-	
-    | { name = Intro_replacing; newids = []; hypspecs = [id] } ->
+    | Intro_replacing id ->
 	(match kind_of_term (strip_outer_cast cl) with
            | Prod (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
@@ -459,33 +441,13 @@ let prim_refiner r sigma goal =
 	       if !check then error "Introduction needs a product"
 	       else anomaly "Intro_replacing: expects a product")
 	
-    | { name = Cut b; terms = [t]; newids = [id] } ->
+    | Cut (b,id,t) ->
         if occur_meta t then error_use_instantiate();
         let sg1 = mk_goal sign (nf_betaiota t) in
         let sg2 = mk_goal (add_named_decl (id,None,t) sign) cl in
         if b then [sg1;sg2] else [sg2;sg1]  
 
-    | { name = FixRule; hypspecs = []; terms = []; 
-	newids = [f]; params = [Num(_,n)] } ->
-     	let rec check_ind k cl = 
-          match kind_of_term (strip_outer_cast cl) with 
-            | Prod (_,c1,b) -> 
-            	if k = 1 then 
-		  try 
-		    let _ = find_inductive env sigma c1 in ()
-		  with Not_found -> 
-		    error "cannot do a fixpoint on a non inductive type"
-            	else 
-		  check_ind (k-1) b
-            | _ -> error "not enough products"
-	in
-     	check_ind n cl;
-	if !check && mem_named_context f sign then
-	  error ("The name "^(string_of_id f)^" is already used");
-        let sg = mk_goal (add_named_decl (f,None,cl) sign) cl in
-        [sg]
-    
-    | { name = FixRule; hypspecs = []; terms = lar; newids = lf; params = ln } ->
+    | FixRule (f,n,rest) ->
      	let rec check_ind k cl = 
           match kind_of_term (strip_outer_cast cl) with 
             | Prod (_,c1,b) -> 
@@ -498,24 +460,23 @@ let prim_refiner r sigma goal =
 		  check_ind (k-1) b
             | _ -> error "not enough products"
 	in
-	let n = (match ln with (Num(_,n))::_ -> n | _ -> assert false) in
 	let (sp,_) = check_ind n cl in
+	let all = (f,n,cl)::rest in
      	let rec mk_sign sign = function 
-	  | (ar::lar'),(f::lf'),((Num(_,n))::ln')->
+	  | (f,n,ar)::oth ->
 	      let (sp',_)  = check_ind n ar in 
 	      if not (sp=sp') then 
 		error ("fixpoints should be on the same " ^ 
 		       "mutual inductive declaration");
-	      if mem_named_context f sign then 
+	      if !check && mem_named_context f sign then 
 		error "name already used in the environment";
-	      mk_sign (add_named_decl (f,None,ar) sign) (lar',lf',ln')
-	  | ([],[],[]) -> 
-	      List.map (mk_goal sign) (cl::lar)
-	  | _ -> error "not the right number of arguments"
+	      mk_sign (add_named_decl (f,None,ar) sign) oth
+	  | [] -> 
+	      List.map (fun (_,_,c) -> mk_goal sign c) all
 	in 
-	mk_sign sign (cl::lar,lf,ln)
-
-    | { name = Cofix; hypspecs = []; terms = lar; newids = lf; params = [] } ->
+	mk_sign sign all
+	
+    | Cofix (f,others) ->
      	let rec check_is_coind cl = 
 	  let b = whd_betadeltaiota env sigma cl in
           match kind_of_term b with
@@ -527,21 +488,21 @@ let prim_refiner r sigma goal =
 		  error ("All methods must construct elements " ^
 			  "in coinductive types")
 	in
-     	List.iter check_is_coind (cl::lar);
+	let all = (f,cl)::others in
+     	List.iter (fun (_,c) -> check_is_coind c) all;
         let rec mk_sign sign = function 
-          | (ar::lar'),(f::lf') ->
+          | (f,ar)::oth ->
 	      (try
                 (let _ = Sign.lookup_named f sign in
                 error "name already used in the environment")
               with
               |	Not_found ->
-                  mk_sign (add_named_decl (f,None,ar) sign) (lar',lf'))
-	  | ([],[]) -> List.map (mk_goal sign) (cl::lar)
-	  | _ -> error "not the right number of arguments"
+                  mk_sign (add_named_decl (f,None,ar) sign) oth)
+	  | [] -> List.map (fun (_,c) -> mk_goal sign c) all
      	in 
-	mk_sign sign (cl::lar,lf)
+	mk_sign sign all
 
-    | { name = Refine; terms = [c] } ->
+    | Refine c ->
         if not (list_distinct (collect_meta_variables c)) then
           raise (RefinerError (NonLinearProof c));
 	let (sgl,cl') = mk_refgoals sigma goal [] cl c in
@@ -549,7 +510,7 @@ let prim_refiner r sigma goal =
 	sgl
 
     (* Conversion rules *)
-    | { name = Convert_concl; terms = [cl'] } ->
+    | Convert_concl cl' ->
     	let cl'ty = type_of env sigma cl' in
 	if is_conv_leq env sigma cl' cl then
           let sg = mk_goal sign cl' in
@@ -557,20 +518,13 @@ let prim_refiner r sigma goal =
 	else 
 	  error "convert-concl rule passed non-converting term"
 
-(*
-    | { name = Convert_hyp; hypspecs = [id]; terms = [ty] } ->
-	[mk_goal (convert_hyp sign sigma id ty) cl]
-*)
-    | { name = Convert_hyp; hypspecs = [id]; terms = [c;ty] } ->
-	[mk_goal (convert_hyp sign sigma (id,Some c,ty)) cl]
-
-    | { name = Convert_hyp; hypspecs = [id]; terms = [ty] } ->
-	[mk_goal (convert_hyp sign sigma (id,None,ty)) cl]
+    | Convert_hyp (id,copt,ty) ->
+	[mk_goal (convert_hyp sign sigma (id,copt,ty)) cl]
 
     (* And now the structural rules *)
-    | { name = Thin; hypspecs = ids } -> [clear_hyps ids goal]
+    | Thin ids -> [clear_hyps ids goal]
 
-    | { name = ThinBody; hypspecs = ids } ->
+    | ThinBody ids ->
 	let clear_aux env id =
           let env' = remove_hyp_body env sigma id in
           if !check then recheck_typability (None,id) env' sigma cl;
@@ -580,22 +534,18 @@ let prim_refiner r sigma goal =
      	let sg = mk_goal sign' cl in
      	[sg]
 
-    | { name = Move withdep; hypspecs = ids } ->
-	let (hfrom,hto) =
-	  match ids with [h1;h2] ->(h1,h2)| _ -> anomaly "prim_refiner:MOVE" in
+    | Move (withdep, hfrom, hto) ->
   	let (left,right,declfrom,toleft) = split_sign hfrom hto sign in
   	let hyps' = 
 	  move_after withdep toleft (left,declfrom,right) hto in
   	[mk_goal hyps' cl]
 
-    | { name = Rename; hypspecs = [id1]; newids = [id2] } ->
+    | Rename (id1,id2) ->
         if id1 <> id2 & List.mem id2 (ids_of_named_context sign) then
           error ((string_of_id id2)^" is already used");
         let sign' = rename_hyp id1 id2 sign in
         let cl' = replace_vars [id1,mkVar id2] cl in
         [mk_goal sign' cl']
-
-    | _ -> anomaly "prim_refiner: Unrecognized primitive rule"
 
 (***********************************************************************)
 (***********************************************************************)
@@ -608,8 +558,8 @@ let rec rebind id1 id2 = function
 
 let prim_extractor subfun vl pft =
   let cl = pft.goal.evar_concl in
-  match pft with
-    | { ref = Some (Prim { name = Intro; newids = [id] }, [spf]) } ->
+  match pft.ref with
+    | Some (Prim (Intro id), [spf]) ->
 	(match kind_of_term (strip_outer_cast cl) with
 	   | Prod (_,ty,_) ->
 	       let cty = subst_vars vl ty in
@@ -620,18 +570,7 @@ let prim_extractor subfun vl pft =
 	       mkLetIn (Name id, cb, cty, subfun (id::vl) spf)
 	   | _ -> error "incomplete proof!")
 	
-    | { ref = Some (Prim { name = Intro_after; newids = [id]}, [spf]) } -> 
-	(match kind_of_term (strip_outer_cast cl) with
-	   | Prod (_,ty,_) ->
-	       let cty = subst_vars vl ty in
-	       mkLambda (Name id, cty, subfun (id::vl) spf)
-	   | LetIn (_,b,ty,_) ->
-	       let cb = subst_vars vl b in
-	       let cty = subst_vars vl ty in
-	       mkLetIn (Name id, cb, cty, subfun (id::vl) spf)
-	   | _ -> error "incomplete proof!")
-	
-    | {ref=Some(Prim{name=Intro_replacing;hypspecs=[id]},[spf]) } ->
+    | Some (Prim (Intro_replacing id),[spf]) ->
 	(match kind_of_term (strip_outer_cast cl) with
 	   | Prod (_,ty,_) ->
 	       let cty = subst_vars vl ty in
@@ -642,67 +581,57 @@ let prim_extractor subfun vl pft =
 	       mkLetIn (Name id, cb, cty, subfun (id::vl) spf)
 	   | _ -> error "incomplete proof!")
 
-    | {ref=Some(Prim{name=Cut b;terms=[t];newids=[id]},[spf1;spf2]) } ->
+    | Some (Prim (Cut (b,id,t)),[spf1;spf2]) ->
         let spf1, spf2 = if b then spf1, spf2 else spf2, spf1 in
 	mkLetIn (Name id,subfun vl spf1,subst_vars vl t,subfun (id::vl) spf2)
 
-    | {ref=Some(Prim{name=FixRule;newids=[f];params=[Num(_,n)]},[spf]) } -> 
-	let cty = subst_vars vl cl in 
-	let na = Name f in 
-	mkFix (([|n-1|],0),([|na|], [|cty|], [|subfun (f::vl) spf|]))
+    | Some (Prim (FixRule (f,n,others)),spfl) ->
+	let all = Array.of_list ((f,n,cl)::others) in
+	let lcty = Array.map (fun (_,_,ar) -> subst_vars vl ar) all in
+	let names = Array.map (fun (f,_,_) -> Name f) all in
+	let vn = Array.map (fun (_,n,_) -> n-1) all in
+	let newvl = List.fold_left (fun vl (id,_,_)->(id::vl)) (f::vl)others in
+	let lfix = Array.map (subfun newvl) (Array.of_list spfl) in
+	mkFix ((vn,0),(names,lcty,lfix))	
 
-    | {ref=Some(Prim{name=FixRule;newids=lf;terms=lar;params=ln},spfl) } ->
-	let lcty = List.map (subst_vars vl) (cl::lar) in 
-	let vn = 
-	  Array.of_list (List.map (function Num(_,n) -> n-1
-				     | _ -> anomaly "mutual_fix_refiner")
-			   ln) 
-	in 
-	let names = Array.map (fun f -> Name f) (Array.of_list lf) in
-	let newvl = List.fold_left (fun vl id -> (id::vl)) vl lf  in 
-	let lfix =Array.map (subfun newvl) (Array.of_list spfl) in
-	mkFix ((vn,0),(names,Array.of_list lcty,lfix))	
-
-    | {ref=Some(Prim{name=Cofix;newids=lf;terms=lar},spfl) } ->
-	let lcty = List.map (subst_vars vl) (cl::lar) in 
-	let names  = Array.map (fun f -> Name f) (Array.of_list lf) in
-	let newvl = List.fold_left (fun vl id -> (id::vl)) vl lf in 
-	let lfix =Array.map (subfun newvl) (Array.of_list spfl) in
-	mkCoFix (0,(names,Array.of_list lcty,lfix))
+    | Some (Prim (Cofix (f,others)),spfl) ->
+	let all = Array.of_list ((f,cl)::others) in
+	let lcty = Array.map (fun (_,ar) -> subst_vars vl ar) all in
+	let names  = Array.map (fun (f,_) -> Name f) all in
+	let newvl = List.fold_left (fun vl (id,_)->(id::vl)) (f::vl) others in 
+	let lfix = Array.map (subfun newvl) (Array.of_list spfl) in
+	mkCoFix (0,(names,lcty,lfix))
 	  
-    | {ref=Some(Prim{name=Refine;terms=[c]},spfl) } ->
+    | Some (Prim (Refine c),spfl) ->
 	let mvl = collect_meta_variables c in
 	let metamap = List.combine mvl (List.map (subfun vl) spfl) in
 	let cc = subst_vars vl c in 
 	plain_instance metamap cc
 
     (* Structural and conversion rules do not produce any proof *)
-    | {ref=Some(Prim{name=Convert_concl;terms=[c]},[pf])} ->
+    | Some (Prim (Convert_concl _),[pf]) ->
 	subfun vl pf
 	
-    | {ref=Some(Prim{name=Convert_hyp;hypspecs=[id];terms=_},[pf])} ->
+    | Some (Prim (Convert_hyp _),[pf]) ->
 	subfun vl pf
 
-    | {ref=Some(Prim{name=Thin;hypspecs=ids},[pf])} ->
+    | Some (Prim (Thin _),[pf]) ->
      (* No need to make ids Anonymous in vl: subst_vars take the more recent *)
 	subfun vl pf
 	
-    | {ref=Some(Prim{name=ThinBody;hypspecs=ids},[pf])} ->
+    | Some (Prim (ThinBody _),[pf]) ->
 	subfun vl pf
 	
-    | {ref=Some(Prim{name=Move _;hypspecs=ids},[pf])} ->
+    | Some (Prim (Move _),[pf]) ->
 	subfun vl pf
 
-    | {ref=Some(Prim{name=Rename;hypspecs=[id1];newids=[id2];},[pf])} ->
+    | Some (Prim (Rename (id1,id2)),[pf]) ->
 	subfun (rebind id1 id2 vl) pf
 
-    | {ref=Some(Prim _,_)} ->
-	error "prim_extractor handed unrecognizable primitive proof"
+    | Some _ -> anomaly "prim_extractor"
+
+    | None-> error "prim_extractor handed incomplete proof"
 	  
-    | {ref=None} -> error "prim_extractor handed incomplete proof"
-	  
-    | _ -> anomaly "prim_extractor"
-	
 (* Pretty-printer *)
 
 open Printer
@@ -710,68 +639,61 @@ open Printer
 let prterm x = prterm_env (Global.env()) x
 
 let pr_prim_rule = function
-  | {name=Intro;newids=[id]} -> 
+  | Intro id -> 
       str"Intro " ++ pr_id id
 	
-  | {name=Intro_after;newids=[id]} -> 
-      str"intro after "  ++ pr_id id
-	
-  | {name=Intro_replacing;hypspecs=[id]} -> 
+  | Intro_replacing id -> 
       (str"intro replacing "  ++ pr_id id)
 	
-  | {name=Cut b;terms=[t];newids=[id]} ->
+  | Cut (b,id,t) ->
       if b then
         (str"TrueCut " ++ prterm t)
       else
         (str"Cut " ++ prterm t ++ str ";[Intro " ++ pr_id id ++ str "|Idtac]")
 	
-  | {name=FixRule;newids=[f];params=[Num(_,n)]} -> 
+  | FixRule (f,n,[]) ->
       (str"Fix " ++ pr_id f ++ str"/" ++ int n)
       
-  | {name=FixRule;newids=(f::lf);params=(Num(_,n))::ln;terms=lar} -> 
-      let rec print_mut = 
-        function (f::lf),((Num(_,n))::ln),(ar::lar) -> 
-          pr_id f ++ str"/" ++ int n ++ str" : " ++ prterm ar ++
-          print_mut (lf,ln,lar)
-          | _ -> (mt ()) in
+  | FixRule (f,n,others) -> 
+      let rec print_mut = function
+	| (f,n,ar)::oth -> 
+           pr_id f ++ str"/" ++ int n ++ str" : " ++ prterm ar ++ print_mut oth
+        | [] -> mt () in
       (str"Fix " ++ pr_id f ++ str"/" ++ int n ++
-         str" with " ++ print_mut (lf,ln,lar))
-      
-  | {name=Cofix;newids=[f];terms=[]} -> 
-      (str"Cofix " ++ pr_id f)
-      
-  | {name=Cofix;newids=(f::lf);terms=lar} -> 
-      let rec print_mut = 
-        function (f::lf),(ar::lar) -> 
-	  (pr_id f ++ str" : " ++ prterm ar ++ print_mut (lf,lar))
-          | _ -> (mt ()) 
-      in
-      (str"Cofix " ++ pr_id f ++  str" with " ++ print_mut (lf,lar))
+         str" with " ++ print_mut others)
 
-  | {name=Refine;terms=[c]} -> 
+  | Cofix (f,[]) ->
+      (str"Cofix " ++ pr_id f)
+
+  | Cofix (f,others) ->
+      let rec print_mut = function
+	| (f,ar)::oth ->
+	  (pr_id f ++ str" : " ++ prterm ar ++ print_mut oth)
+        | [] -> mt () in
+      (str"Cofix " ++ pr_id f ++  str" with " ++ print_mut others)
+
+  | Refine c -> 
       (str(if occur_meta c then "Refine " else "Exact ")  ++ prterm c)
       
-  | {name=Convert_concl;terms=[c]} ->
+  | Convert_concl c ->
       (str"Change "  ++ prterm c)
       
-  | {name=Convert_hyp;hypspecs=[id];terms=[c]} ->
-      (str"Change "  ++ prterm c  ++ spc ()  ++ str"in "  ++ pr_id id)
+  | Convert_hyp (id,None,t) ->
+      (str"Change "  ++ prterm t  ++ spc ()  ++ str"in "  ++ pr_id id)
 
-  | {name=Convert_hyp;hypspecs=[id];terms=[c;t]} ->
+  | Convert_hyp (id,Some c,t) ->
       (str"Change "  ++ prterm c  ++ spc ()  ++ str"in "
        ++ pr_id id ++ str" (Type of "  ++ pr_id id ++ str ")")
       
-  | {name=Thin;hypspecs=ids} ->
+  | Thin ids ->
       (str"Clear "  ++ prlist_with_sep pr_spc pr_id ids)
       
-  | {name=ThinBody;hypspecs=ids} ->
+  | ThinBody ids ->
       (str"ClearBody "  ++ prlist_with_sep pr_spc pr_id ids)
       
-  | {name=Move withdep;hypspecs=[id1;id2]} ->
+  | Move (withdep,id1,id2) ->
       (str (if withdep then "Dependent " else "") ++
 	 str"Move "  ++ pr_id id1 ++ str " after " ++ pr_id id2)
 
-  | {name=Rename;hypspecs=[id1];newids=[id2]} ->
+  | Rename (id1,id2) ->
       (str "Rename " ++ pr_id id1 ++ str " into " ++ pr_id id2)
-      
-  | _ -> anomaly "pr_prim_rule: Unrecognized primitive rule"

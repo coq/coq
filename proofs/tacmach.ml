@@ -207,68 +207,46 @@ let refiner = refiner
 
 (* This does not check that the variable name is not here *)
 let unsafe_introduction id =
-  without_check
-    (refiner (Prim { name = Intro; newids = [id];
-                     hypspecs = []; terms = []; params = [] }))
+  without_check (refiner (Prim (Intro id)))
 
-let introduction id pf =
-  refiner (Prim { name = Intro; newids = [id];
-                  hypspecs = []; terms = []; params = [] }) pf
+let introduction id gl =
+  refiner (Prim (Intro id)) gl
 
-let intro_replacing whereid pf = 
-  refiner (Prim { name = Intro_replacing; newids = [];
-                  hypspecs = [whereid]; terms = []; params = [] }) pf
+let intro_replacing whereid gl = 
+  refiner (Prim (Intro_replacing whereid)) gl
 
-let internal_cut id t pf = 
-  refiner (Prim { name = Cut true; newids = [id];
-                  hypspecs = []; terms = [t]; params = [] }) pf
+let internal_cut id t gl = 
+  refiner (Prim (Cut (true,id,t))) gl
 
-let internal_cut_rev id t pf = 
-  refiner (Prim { name = Cut false; newids = [id];
-                  hypspecs = []; terms = [t]; params = [] }) pf
+let internal_cut_rev id t gl = 
+  refiner (Prim (Cut (false,id,t))) gl
 
-let refine c pf = 
-  refiner (Prim { name = Refine; terms = [c];
-		  hypspecs = []; newids = []; params = [] }) pf
+let refine c gl = 
+  refiner (Prim (Refine c)) gl
 
-let convert_concl c pf = 
-  refiner (Prim { name = Convert_concl; terms = [c];
-                  hypspecs = []; newids = []; params = [] }) pf
+let convert_concl c gl = 
+  refiner (Prim (Convert_concl c)) gl
 
-let convert_hyp (id,b,t) pf =
-  let lt = match b with
-    | None -> [t]
-    | Some c -> [c;t] in
-  refiner (Prim { name = Convert_hyp; hypspecs = [id];
-                  terms = lt; newids = []; params = []}) pf
+let convert_hyp d gl =
+  refiner (Prim (Convert_hyp d)) gl
 
 let thin ids gl = 
-  refiner (Prim { name = Thin; hypspecs = ids;
-                  terms = []; newids = []; params = []}) gl
+  refiner (Prim (Thin ids)) gl
 
 let thin_body ids gl = 
-  refiner (Prim { name = ThinBody; hypspecs = ids;
-                  terms = []; newids = []; params = []}) gl
+  refiner (Prim (ThinBody ids)) gl
 
 let move_hyp with_dep id1 id2 gl = 
-  refiner (Prim { name = Move with_dep;
-                  hypspecs = [id1;id2]; terms = [];
-		  newids = []; params = []}) gl
+  refiner (Prim (Move (with_dep,id1,id2))) gl
 
 let rename_hyp id1 id2 gl = 
-  refiner (Prim { name = Rename;
-                  hypspecs = [id1]; terms = [];
-		  newids = [id2]; params = []}) gl
+  refiner (Prim (Rename (id1,id2))) gl
 
-let mutual_fix lf ln lar pf = 
-  refiner (Prim { name = FixRule; newids = lf;
-                  hypspecs = []; terms = lar;
-                  params = List.map Ast.num ln}) pf
+let mutual_fix f n others gl = 
+  refiner (Prim (FixRule (f,n,others))) gl
 
-let mutual_cofix lf lar pf = 
-  refiner (Prim { name     = Cofix;
-                  newids   = lf; hypspecs = [];
-                  terms    = lar; params   = []}) pf
+let mutual_cofix f others gl = 
+  refiner (Prim (Cofix (f,others))) gl
     
 let rename_bound_var_goal gls =
   let { evar_hyps = sign; evar_concl = cl } as gl = sig_it gls in 

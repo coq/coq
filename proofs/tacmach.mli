@@ -162,8 +162,9 @@ val thin            : identifier list -> tactic
 val thin_body       : identifier list -> tactic
 val move_hyp        : bool -> identifier -> identifier -> tactic
 val rename_hyp      : identifier -> identifier -> tactic
-val mutual_fix      : identifier list -> int list -> constr list -> tactic
-val mutual_cofix    : identifier list -> constr list -> tactic
+val mutual_fix      :
+  identifier -> int -> (identifier * int * constr) list -> tactic
+val mutual_cofix    : identifier -> (identifier * constr) list -> tactic
 val rename_bound_var_goal : tactic
 
 

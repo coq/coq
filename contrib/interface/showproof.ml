@@ -167,7 +167,7 @@ let rule_to_ntactic r =
      (match r with
        Tactic (s,l) ->
 	 Ast.ope (s,(List.map ast_of_cvt_arg l))
-     | Prim {name=Refine;hypspecs=_; newids=_; params=_; terms=[h]} ->
+     | Prim (Refine h) ->
 	 Ast.ope ("Exact",
 		  [Node ((0,0), "COMMAND", [ast_of_constr h])])
      | _ -> Ast.ope ("Intros",[])) in
