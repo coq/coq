@@ -11,7 +11,7 @@
 (*i*)
 open Pp
 open Extend
-open Symbols
+open Notation
 open Ppextend
 open Topconstr
 (*i*)

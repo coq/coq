@@ -111,7 +111,7 @@ open Rawterm
 open Libnames
 open Bigint
 open Coqlib
-open Symbols
+open Notation
 open Pp
 open Util
 open Names
@@ -187,7 +187,7 @@ let uninterp_nat_pattern p =
 (* Declare the primitive parsers and printers *)
 
 let _ =
-  Symbols.declare_numeral_interpreter "nat_scope"
+  Notation.declare_numeral_interpreter "nat_scope"
     (glob_nat,["Coq";"Init";"Datatypes"])
     (nat_of_int,Some pat_nat_of_int)
     ([RRef (dummy_loc,glob_S); RRef (dummy_loc,glob_O)], uninterp_nat, None)

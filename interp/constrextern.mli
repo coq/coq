@@ -20,7 +20,7 @@ open Nametab
 open Rawterm
 open Pattern
 open Topconstr
-open Symbols
+open Notation
 (*i*)
 
 (* v7->v8 translation *)

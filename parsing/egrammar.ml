@@ -24,7 +24,7 @@ type notation_grammar =
     int * Gramext.g_assoc option * notation * prod_item list * int list option
 
 type all_grammar_command =
-  | Notation of Symbols.level * notation_grammar
+  | Notation of Notation.level * notation_grammar
   | Grammar of grammar_command
   | TacticGrammar of
       (string * (string * grammar_production list) * 

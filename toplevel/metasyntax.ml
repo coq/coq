@@ -333,7 +333,7 @@ let parse_format (loc,str) =
 (***********************)
 (* Analysing notations *)
 
-open Symbols
+open Notation
 
 type symbol_token = WhiteSpace of int | String of string
 
@@ -807,7 +807,7 @@ let pr_level ntn (from,args) =
 
 let cache_syntax_extension (_,(_,((prec,prec8),ntn,gr,se))) =
   try 
-    let oldprec, oldprec8 = Symbols.level_of_notation ntn in
+    let oldprec, oldprec8 = Notation.level_of_notation ntn in
     if prec8 <> oldprec8 & (Options.do_translate () or not !Options.v7) then
       errorlabstrm ""
 	(str ((if Options.do_translate () then "For new syntax, notation "
@@ -831,12 +831,12 @@ let cache_syntax_extension (_,(_,((prec,prec8),ntn,gr,se))) =
     end
   with Not_found ->
     (* Reserve the notation level *)
-    Symbols.declare_notation_level ntn (prec,prec8);
+    Notation.declare_notation_level ntn (prec,prec8);
     (* Declare the parsing rule *)
     option_iter (fun gr ->
       Egrammar.extend_grammar (Egrammar.Notation (out_some prec,gr))) gr;
     (* Declare the printing rule *)
-    Symbols.declare_notation_printing_rule ntn (se,fst prec8)
+    Notation.declare_notation_printing_rule ntn (se,fst prec8)
 
 let subst_notation_grammar subst x = x
 
@@ -974,7 +974,7 @@ let find_precedence lev etyps symbols =
       out_some lev
 
 let check_curly_brackets_notation_exists () =
-  try let _ = Symbols.level_of_notation "{ _ }" in ()
+  try let _ = Notation.level_of_notation "{ _ }" in ()
   with Not_found -> 
     error "Notations involving patterns of the form \"{ _ }\" are treated \n\
 specially and require that the notation \"{ _ }\" is already reserved"
@@ -1051,22 +1051,22 @@ let add_syntax_extension local mv mv8 =
 (* A notation comes with a grammar rule, a pretty-printing rule, an
    identifiying pattern called notation and an associated scope *)
 let load_notation _ (_,(_,_,ntn,scope,pat,onlyparse,_,_)) =
-  option_iter Symbols.declare_scope scope
+  option_iter Notation.declare_scope scope
 
 let open_notation i (_,(_,oldse,ntn,scope,pat,onlyparse,pp8only,df)) =
   if i=1 then begin
-    let b,oldpp8only = Symbols.exists_notation_in_scope scope ntn pat in
+    let b,oldpp8only = Notation.exists_notation_in_scope scope ntn pat in
     (* Declare the old printer rule and its interpretation *)
     if (not b or oldpp8only) & oldse <> None then
       Esyntax.add_ppobject {sc_univ="constr";sc_entries=out_some oldse};
     (* Declare the interpretation *)
     if not b then
-      Symbols.declare_notation_interpretation ntn scope pat df pp8only;
+      Notation.declare_notation_interpretation ntn scope pat df pp8only;
     if oldpp8only & not pp8only then
       Options.silently 
-	(Symbols.declare_notation_interpretation ntn scope pat df) pp8only;
+	(Notation.declare_notation_interpretation ntn scope pat df) pp8only;
     if not b & not onlyparse then
-      Symbols.declare_uninterpretation (NotationRule (scope,ntn)) pat
+      Notation.declare_uninterpretation (NotationRule (scope,ntn)) pat
   end
 
 let cache_notation o =
@@ -1163,8 +1163,8 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
         (* occurs only with V8only flag alone *)
 	try 
           let ntn = contract_notation notation in
-	  let _, oldprec8 = Symbols.level_of_notation ntn in
-	  let rule,_ = Symbols.find_notation_printing_rule ntn in
+	  let _, oldprec8 = Notation.level_of_notation ntn in
+	  let rule,_ = Notation.find_notation_printing_rule ntn in
 	  notation,ntn,recs,vars,oldprec8,rule
 	with Not_found -> error "No known parsing rule for this notation in V8"
   in
@@ -1191,9 +1191,9 @@ let level_rule (n,p) = if p = E then n else max (n-1) 0
 
 let recover_syntax ntn = 
   try 
-    match Symbols.level_of_notation ntn with
+    match Notation.level_of_notation ntn with
       | (Some prec,_ as pprec) -> 
-	  let rule,_ = Symbols.find_notation_printing_rule ntn in
+	  let rule,_ = Notation.find_notation_printing_rule ntn in
 	  let gr = Egrammar.recover_notation_grammar ntn prec in
 	  Some (pprec,ntn,Some gr,rule)
       | None,_ -> None
@@ -1213,7 +1213,7 @@ let set_data_for_v7_pp recs a vars =
 let build_old_pp_rule notation scope symbs (r,vars) =
   let prec = 
     try
-      let a,_ = Symbols.level_of_notation (contract_notation notation) in
+      let a,_ = Notation.level_of_notation (contract_notation notation) in
       if a = None then raise Not_found else out_some a
     with Not_found ->
       error "Parsing rule for this notation has to be previously declared" in
@@ -1447,13 +1447,13 @@ let standardise_locatable_notation ntn =
 type scope_command = ScopeDelim of string | ScopeClasses of Classops.cl_typ
 
 let load_scope_command _ (_,(scope,dlm)) =
-  Symbols.declare_scope scope
+  Notation.declare_scope scope
 
 let open_scope_command i (_,(scope,o)) =
   if i=1 then
     match o with
-    | ScopeDelim dlm -> Symbols.declare_delimiters scope dlm
-    | ScopeClasses cl -> Symbols.declare_class_scope scope cl
+    | ScopeDelim dlm -> Notation.declare_delimiters scope dlm
+    | ScopeClasses cl -> Notation.declare_class_scope scope cl
 
 let cache_scope_command o =
   load_scope_command 1 o;

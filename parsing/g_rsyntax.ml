@@ -278,7 +278,7 @@ let uninterp_r p =
   with Non_closed_number ->
     None
 
-let _ = Symbols.declare_numeral_interpreter "R_scope"
+let _ = Notation.declare_numeral_interpreter "R_scope"
   (glob_R,["Coq";"Reals";"Rdefinitions"])
   ((if !Options.v7 then r_of_int2 else r_of_int),None)
   ([RRef(dummy_loc,glob_Ropp);RRef(dummy_loc,glob_R0);

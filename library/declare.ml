@@ -105,7 +105,7 @@ let (in_variable, out_variable) =
 let declare_variable_common id obj =
   let oname = add_leaf id (in_variable (id,obj)) in
   declare_var_implicits id;
-  Symbols.declare_ref_arguments_scope (VarRef id);
+  Notation.declare_ref_arguments_scope (VarRef id);
   oname
 
 (* for initial declaration *)
@@ -192,7 +192,7 @@ let declare_constant_common id discharged_hyps (cd,kind) =
   let (sp,kn as oname) = add_leaf id (in_constant (cd,kind)) in
   let kn = constant_of_kn kn in
   declare_constant_implicits kn;
-  Symbols.declare_ref_arguments_scope (ConstRef kn);
+  Notation.declare_ref_arguments_scope (ConstRef kn);
   Dischargedhypsmap.set_discharged_hyps sp discharged_hyps;
   kn
 
@@ -290,9 +290,9 @@ let (in_inductive, out_inductive) =
 
 let declare_inductive_argument_scopes kn mie =
   list_iter_i (fun i {mind_entry_consnames=lc} ->
-    Symbols.declare_ref_arguments_scope (IndRef (kn,i));
+    Notation.declare_ref_arguments_scope (IndRef (kn,i));
     for j=1 to List.length lc do
-      Symbols.declare_ref_arguments_scope (ConstructRef ((kn,i),j));
+      Notation.declare_ref_arguments_scope (ConstructRef ((kn,i),j));
     done) mie.mind_entry_inds
 
 let declare_inductive_common mie =

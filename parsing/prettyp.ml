@@ -113,7 +113,7 @@ let print_opacity ref =
     
 let print_name_infos ref =
   let impl = implicits_of_global ref in
-  let scopes = Symbols.find_arguments_scope ref in
+  let scopes = Notation.find_arguments_scope ref in
   let type_for_implicit = 
     if need_expansion impl ref then
       (* Need to reduce since implicits are computed with products flattened *)
@@ -149,7 +149,7 @@ let print_inductive_implicit_args =
 
 let print_inductive_argument_scopes =
   print_args_data_of_inductive_ids 
-    Symbols.find_arguments_scope ((<>) None) print_argument_scopes
+    Notation.find_arguments_scope ((<>) None) print_argument_scopes
 
 (*********************)
 (* "Locate" commands *)

@@ -39,7 +39,7 @@ let load_syntax_constant i ((sp,kn),(local,c,onlyparse)) =
   add_syntax_constant kn c;
   Nametab.push_syntactic_definition (Nametab.Until i) sp kn;
   if not onlyparse then
-    Symbols.declare_uninterpretation (Symbols.SynDefRule kn) ([],c)
+    Notation.declare_uninterpretation (Notation.SynDefRule kn) ([],c)
 
 let open_syntax_constant i ((sp,kn),c) =
   Nametab.push_syntactic_definition (Nametab.Exactly i) sp kn

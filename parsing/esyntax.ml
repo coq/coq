@@ -19,7 +19,7 @@ open Ppextend
 open Names
 open Nametab
 open Topconstr
-open Symbols
+open Notation
  
 (*** Syntax keys ***)
 
@@ -228,7 +228,7 @@ let call_primitive_parser rec_pr otherwise inherited scopes (se,env) =
 	  (* Test for a primitive printer; may raise Not_found *)
 	  let sc,pr = lookup_primitive_printer c in
 	  (* Look if scope [sc] associated to this printer is OK *)
-	  (match Symbols.availability_of_numeral sc scopes with
+	  (match Notation.availability_of_numeral sc scopes with
 	    | None -> otherwise ()
 	    | Some key ->
 	        (* We can use this printer *)
@@ -237,12 +237,12 @@ let call_primitive_parser rec_pr otherwise inherited scopes (se,env) =
 		  | Some strm -> print_delimiters inherited se strm key
 		  | None -> otherwise ())
     | [UNP_SYMBOLIC (sc,pat,sub)] ->
-	(match Symbols.availability_of_notation (sc,pat) scopes with
+	(match Notation.availability_of_notation (sc,pat) scopes with
 	  | None -> otherwise ()
 	  | Some (scopt,key) ->
 	      print_delimiters inherited se
 		(print_syntax_entry rec_pr
-		  (option_fold_right Symbols.push_scope scopt scopes) env 
+		  (option_fold_right Notation.push_scope scopt scopes) env 
 		  {se with syn_hunks = [sub]}) key)
     | _ ->
 	pr_parenthesis inherited se (print_syntax_entry rec_pr scopes env se)
@@ -270,7 +270,7 @@ let genprint dflt whatfor inhprec ast =
     in test_rule entries
   in
   try 
-    rec_pr (Symbols.current_scopes ()) inhprec ast
+    rec_pr (Notation.current_scopes ()) inhprec ast
   with
     | Failure _ -> (str"<PP failure: " ++ dflt ast ++ str">")
     | Not_found -> (str"<PP search failure: " ++ dflt ast ++ str">")

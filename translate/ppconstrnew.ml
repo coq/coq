@@ -71,7 +71,7 @@ let decode_patlist_value = function
   | CPatCstr (_,_,l) -> l
   | _ -> anomaly "Ill-formed list argument of notation"
 
-open Symbols
+open Notation
 
 let rec print_hunk n decode pr env = function
   | UnpMetaVar (e,prec) -> pr (n,prec) (env_assoc_value e env)

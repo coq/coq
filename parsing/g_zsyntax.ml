@@ -223,7 +223,7 @@ let uninterp_positive p =
 (* Declaring interpreters and uninterpreters for positive *)
 (************************************************************************)
 
-let _ = Symbols.declare_numeral_interpreter "positive_scope"
+let _ = Notation.declare_numeral_interpreter "positive_scope"
   (glob_positive,positive_module)
   (interp_positive,Some pat_interp_positive)
   ([RRef (dummy_loc, glob_xI); 
@@ -284,7 +284,7 @@ let uninterp_n p =
 (************************************************************************)
 (* Declaring interpreters and uninterpreters for N *)
 
-let _ = Symbols.declare_numeral_interpreter "N_scope"
+let _ = Notation.declare_numeral_interpreter "N_scope"
   (glob_n,binnat_module)
   (n_of_int,Some pat_n_of_int)
   ([RRef (dummy_loc, glob_N0); 
@@ -340,7 +340,7 @@ let uninterp_z p =
 (************************************************************************)
 (* Declaring interpreters and uninterpreters for Z *)
 
-let _ = Symbols.declare_numeral_interpreter "Z_scope"
+let _ = Notation.declare_numeral_interpreter "Z_scope"
   (glob_z,fast_integer_module)
   (z_of_int,Some pat_z_of_int)
   ([RRef (dummy_loc, glob_ZERO); 

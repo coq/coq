@@ -25,7 +25,7 @@ open Topconstr
 open Rawterm
 open Pattern
 open Nametab
-open Symbols
+open Notation
 open Reserve
 (*i*)
 
@@ -1281,8 +1281,8 @@ let match_aconstr_cases_pattern c (metas_scl,pat) =
 let rec extern_cases_pattern_in_scope scopes vars pat =
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
-    let (sc,n) = Symbols.uninterp_cases_numeral pat in
-    match Symbols.availability_of_numeral sc (make_current_scopes scopes) with
+    let (sc,n) = Notation.uninterp_cases_numeral pat in
+    match Notation.availability_of_numeral sc (make_current_scopes scopes) with
     | None -> raise No_match
     | Some key ->
         let loc = pattern_loc pat in
@@ -1291,7 +1291,7 @@ let rec extern_cases_pattern_in_scope scopes vars pat =
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
     extern_symbol_pattern scopes vars pat
-      (Symbols.uninterp_cases_pattern_notations pat)
+      (Notation.uninterp_cases_pattern_notations pat)
   with No_match ->
   match pat with
   | PatVar (loc,Name id) -> CPatAtom (loc,Some (Ident (loc,v7_to_v8_id id)))
@@ -1320,7 +1320,7 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
         match keyrule with
           | NotationRule (sc,ntn) ->
 	      let scopes' = make_current_scopes (tmp_scope, scopes) in
-	      (match Symbols.availability_of_notation (sc,ntn) scopes' with
+	      (match Notation.availability_of_notation (sc,ntn) scopes' with
                   (* Uninterpretation is not allowed in current context *)
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
@@ -1500,14 +1500,14 @@ let rec extern inctx scopes vars r =
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
     extern_numeral (Rawterm.loc_of_rawconstr r)
-      scopes (Symbols.uninterp_numeral r)
+      scopes (Notation.uninterp_numeral r)
   with No_match ->
 
   let r = remove_coercions inctx r in
 
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
-    extern_symbol scopes vars r (Symbols.uninterp_notations r)
+    extern_symbol scopes vars r (Notation.uninterp_notations r)
   with No_match -> match r with
   | RRef (loc,ref) ->
       extern_global loc (implicits_of_global_out ref)
@@ -1522,7 +1522,7 @@ let rec extern inctx scopes vars r =
   | RApp (loc,f,args) ->
       (match f with
 	 | RRef (rloc,ref) ->
-	     let subscopes = Symbols.find_arguments_scope ref in
+	     let subscopes = Notation.find_arguments_scope ref in
 	     let args =
 	       extern_args (extern true) (snd scopes) vars args subscopes in
 	     extern_app loc inctx (implicits_of_global_out ref)
@@ -1659,7 +1659,7 @@ let rec extern inctx scopes vars r =
 
   | RDynamic (loc,d) -> CDynamic (loc,d)
 
-and extern_typ (_,scopes) = extern true (Some Symbols.type_scope,scopes)
+and extern_typ (_,scopes) = extern true (Some Notation.type_scope,scopes)
 
 and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 
@@ -1710,7 +1710,7 @@ and extern_eqn inctx scopes vars (loc,ids,pl,c) =
    extern inctx scopes vars c)
 
 and extern_numeral loc scopes (sc,n) =
-  match Symbols.availability_of_numeral sc (make_current_scopes scopes) with
+  match Notation.availability_of_numeral sc (make_current_scopes scopes) with
     | None -> raise No_match
     | Some key -> insert_delimiters (CNumeral (loc,n)) key
 
@@ -1732,7 +1732,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
           match keyrule with
           | NotationRule (sc,ntn) ->
 	      let scopes' = make_current_scopes (tmp_scope, scopes) in
-	      (match Symbols.availability_of_notation (sc,ntn) scopes' with
+	      (match Notation.availability_of_notation (sc,ntn) scopes' with
                   (* Uninterpretation is not allowed in current context *)
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
@@ -1755,13 +1755,13 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 	  No_match -> extern_symbol allscopes vars t rules
 
 let extern_rawconstr vars c = 
-  extern false (None,Symbols.current_scopes()) vars c
+  extern false (None,Notation.current_scopes()) vars c
 
 let extern_rawtype vars c =
-  extern_typ (None,Symbols.current_scopes()) vars c
+  extern_typ (None,Notation.current_scopes()) vars c
 
 let extern_cases_pattern vars p = 
-  extern_cases_pattern_in_scope (None,Symbols.current_scopes()) vars p
+  extern_cases_pattern_in_scope (None,Notation.current_scopes()) vars p
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
@@ -1772,7 +1772,7 @@ let extern_constr_gen at_top scopt env t =
   let avoid = if at_top then ids_of_context env else [] in
   let r = Detyping.detype (at_top,env) avoid (names_of_rel_context env) t in
   let vars = vars_of_env env in
-  extern (not at_top) (scopt,Symbols.current_scopes()) vars r
+  extern (not at_top) (scopt,Notation.current_scopes()) vars r
 
 let extern_constr_in_scope at_top scope env t =
   extern_constr_gen at_top (Some scope) env t
@@ -1856,5 +1856,5 @@ and raw_of_eqn tenv env constr construct_nargs branch =
   buildrec [] [] env construct_nargs branch
 
 let extern_pattern tenv env pat =
-  extern true (None,Symbols.current_scopes()) Idset.empty
+  extern true (None,Notation.current_scopes()) Idset.empty
     (raw_of_pat tenv env pat)

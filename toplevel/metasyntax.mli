@@ -15,7 +15,7 @@ open Ppextend
 open Extend
 open Tacexpr
 open Vernacexpr
-open Symbols
+open Notation
 open Topconstr
 (*i*)
 

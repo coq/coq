@@ -20,7 +20,7 @@ open Pattern
 open Pretyping
 open Topconstr
 open Nametab
-open Symbols
+open Notation
 
 (* To interpret implicits and arg scopes of recursive variables in
    inductive types and recursive definitions *)
@@ -573,21 +573,21 @@ let rec intern_cases_pattern scopes (ids,subst as aliases) tmp_scope = function
   | CPatNotation (loc,"- _",[CPatNumeral(_,p)]) when Bigint.is_strictly_pos p->
       let scopes = option_cons tmp_scope scopes in
       (ids,
-      [subst, Symbols.interp_numeral_as_pattern loc (Bigint.neg p)
+      [subst, Notation.interp_numeral_as_pattern loc (Bigint.neg p)
         (alias_of aliases) scopes])
   | CPatNotation (_,"( _ )",[a]) ->
       intern_cases_pattern scopes aliases tmp_scope a
   | CPatNotation (loc, ntn, args) ->
       let ntn,args = contract_pat_notation ntn args in
       let scopes = option_cons tmp_scope scopes in
-      let ((ids,c),df) = Symbols.interp_notation loc ntn scopes in
+      let ((ids,c),df) = Notation.interp_notation loc ntn scopes in
       if !dump then dump_notation_location (patntn_loc loc args ntn) ntn df;
       let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
       subst_cases_pattern loc aliases intern_cases_pattern subst scopes c
   | CPatNumeral (loc, n) ->
       let scopes = option_cons tmp_scope scopes in
       (ids,[subst,
-       Symbols.interp_numeral_as_pattern loc n (alias_of aliases) scopes])
+       Notation.interp_numeral_as_pattern loc n (alias_of aliases) scopes])
   | CPatDelimiters (loc, key, e) ->
       intern_cases_pattern (find_delimiters_scope loc key::scopes)
         aliases None e
@@ -771,13 +771,13 @@ let rec subst_aconstr_in_rawconstr loc interp subst (ids,_,scopes as env) =
 let intern_notation intern (_,tmp_scope,scopes as env) loc ntn args =
   let ntn,args = contract_notation ntn args in
   let scopes = option_cons tmp_scope scopes in
-  let ((ids,c),df) = Symbols.interp_notation loc ntn scopes in
+  let ((ids,c),df) = Notation.interp_notation loc ntn scopes in
   if !dump then dump_notation_location (ntn_loc loc args ntn) ntn df;
   let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
   subst_aconstr_in_rawconstr loc intern subst env c
 
 let set_type_scope (ids,tmp_scope,scopes) =
-  (ids,Some Symbols.type_scope,scopes)
+  (ids,Some Notation.type_scope,scopes)
 
 let reset_tmp_scope (ids,tmp_scope,scopes) =
   (ids,None,scopes)
@@ -853,13 +853,13 @@ let internalise sigma env allow_soapp lvar c =
           intern (push_name_env lvar env na) c2)
     | CNotation (loc,"- _",[CNumeral(_,p)]) when Bigint.is_strictly_pos p ->
         let scopes = option_cons tmp_scope scopes in
-        Symbols.interp_numeral loc (Bigint.neg p) scopes
+        Notation.interp_numeral loc (Bigint.neg p) scopes
     | CNotation (_,"( _ )",[a]) -> intern env a
     | CNotation (loc,ntn,args) ->
         intern_notation intern env loc ntn args
     | CNumeral (loc, n) ->
 	let scopes = option_cons tmp_scope scopes in
-	Symbols.interp_numeral loc n scopes
+	Notation.interp_numeral loc n scopes
     | CDelimiters (loc, key, e) ->
 	intern (ids,None,find_delimiters_scope loc key::scopes) e
     | CAppExpl (loc, (isproj,ref), args) ->
@@ -936,7 +936,7 @@ let internalise sigma env allow_soapp lvar c =
     | CDynamic (loc,d) -> RDynamic (loc,d)
 
   and intern_type (ids,_,scopes) =
-    intern (ids,Some Symbols.type_scope,scopes)
+    intern (ids,Some Notation.type_scope,scopes)
 
   and intern_local_binder ((ids,ts,sc as env),bl) = function
     | LocalRawAssum(nal,ty) ->
@@ -1065,7 +1065,7 @@ let extract_ids env =
     Idset.empty
 
 let interp_rawconstr_gen_with_implicits isarity sigma env (indpars,impls) allow_soapp ltacvar c =
-  let tmp_scope = if isarity then Some Symbols.type_scope else None in
+  let tmp_scope = if isarity then Some Notation.type_scope else None in
   internalise sigma (extract_ids env, tmp_scope,[])
     allow_soapp (ltacvar,Environ.named_context env, [], indpars, impls) c
 
