@@ -82,7 +82,7 @@ let coq_fleche = lazy(constant ["Setoid"] "fleche")
 
 (* Coq constants *)
 
-let coqeq = lazy(global_constant ["Logic"] "eqT")
+let coqeq = lazy(global_constant ["Logic_Type"] "eqT")
 
 let coqconj = lazy(global_constant ["Logic"] "conj")
 let coqand = lazy(global_constant ["Logic"] "and")
