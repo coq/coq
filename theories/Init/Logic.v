@@ -12,7 +12,6 @@ Set Implicit Arguments.
 V7only [Unset Implicit Arguments.].
 
 Require Notations.
-Require Datatypes.
 
 (** [True] is the always true proposition *)
 Inductive True : Prop := I : True. 
