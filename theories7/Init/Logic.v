@@ -131,7 +131,7 @@ Notation "'EX' x | p"      := (ex ? [x]p)
 Notation "'EX' x : t | p"  := (ex ? [x:t]p)
   (at level 10, p at level 8) : type_scope
   V8only "'exists' x : t , p" (at level 200, x ident, p at level 99, format
-  "'exists'  '/  ' x : t ,  '/  ' p").
+  "'exists'  '/  ' x  :  t ,  '/  ' p").
 
 V7only [ Notation Ex2 := (ex2 ?). ].
 Notation "'EX' x | p & q"       := (ex2 ? [x]p [x]q)
@@ -141,7 +141,7 @@ Notation "'EX' x : t | p & q"   := (ex2 ? [x:t]p [x:t]q)
   (at level 10, p, q at level 8) : type_scope
   V8only "'exists2' x : t , p & q"
     (at level 200, x ident, t at level 200, p, q at level 99, format
-    "'exists2'  '/  ' x : t ,  '/  ' '[' p  &  '/' q ']'").
+    "'exists2'  '/  ' x  :  t ,  '/  ' '[' p  &  '/' q ']'").
 
 V7only [Notation All := (all ?).
 Notation "'ALL' x | p"     := (all ? [x]p)

@@ -121,14 +121,14 @@ Definition all (A:Type) (P:A -> Prop) := forall x:A, P x.
 Notation "'exists' x , p" := (ex (fun x => p))
   (at level 200, x ident) : type_scope.
 Notation "'exists' x : t , p" := (ex (fun x:t => p))
-  (at level 200, x ident, format "'exists'  '/  ' x : t ,  '/  ' p")
+  (at level 200, x ident, format "'exists'  '/  ' x  :  t ,  '/  ' p")
   : type_scope.
 
 Notation "'exists2' x , p & q" := (ex2 (fun x => p) (fun x => q))
   (at level 200, x ident, p at level 200) : type_scope.
 Notation "'exists2' x : t , p & q" := (ex2 (fun x:t => p) (fun x:t => q))
   (at level 200, x ident, t at level 200, p at level 200,
-   format "'exists2'  '/  ' x : t ,  '/  ' '[' p  &  '/' q ']'")
+   format "'exists2'  '/  ' x  :  t ,  '/  ' '[' p  &  '/' q ']'")
   : type_scope.
 
 

@@ -151,7 +151,7 @@ let pr_binder many pr (nal,t) =
   match t with
   | CHole _ -> prlist_with_sep sep (pr_located pr_name) nal
   | _ ->
-    let s = prlist_with_sep sep (pr_located pr_name) nal ++ str ":" ++ pr t in
+    let s = prlist_with_sep sep (pr_located pr_name) nal ++ str" : " ++ pr t in
     hov 1 (if many then surround s else s)
 
 let pr_binder_among_many pr_c = function
