@@ -136,10 +136,14 @@ This command applies in proof editing mode. It is equivalent to {\tt
 one gulp, as a proof term (see section \ref{exact}).
 
 \begin{Variants}
-\item{\tt Proof.} is a noop which is useful to delimit the sequence of
+\item{\tt Proof.}\\
+Is a noop which is useful to delimit the sequence of
 tactic commands which start a proof, after a {\tt Theorem} command.
 It is a good practice to use {\tt Proof.} as an opening parenthesis,
 closed in the script with a closing {\tt Qed.}
+\item{\tt Proof with {\tac}.}\\
+This command may be used to start a proof. It defines a default tactic to be used each time a tactic command is ended by ``\verb#...#''. In this case the tactic command typed by the user is equivalent to \emph{command};{\tac}.  
+
 \end{Variants}
 
 \subsection{\tt Abort.}\comindex{Abort}
