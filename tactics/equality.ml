@@ -1251,7 +1251,7 @@ let sub_term_with_unif cref ceq =
           else
             Some (ceq,nb_occ)
     |Some (head,t_args) ->
-        let (l,nb)=find_match [] 0 head t_args cref in
+        let (l,nb) = find_match [] 0 head t_args cref in
         if nb = 0 then
           None
         else
@@ -1278,9 +1278,7 @@ let general_rewrite_in lft2rgt id (c,lb) gls =
           else
             List.hd (List.rev l)
         in
-        (match (sub_term_with_unif 
-		  (collapse_appl (strip_outer_cast typ_id))
-		  (collapse_appl mbr_eq)) with
+        (match sub_term_with_unif typ_id mbr_eq with
            | None ->
                errorlabstrm "general_rewrite_in" 
 		 [<'sTR "Nothing to rewrite in: "; pr_id id>]
