@@ -126,7 +126,7 @@ let id_of_name = function
 
 let rec list_of_ml_arrows = function
   | Tarr (Miniml.Tarity, b) -> assert false
-  | Tarr (Miniml.Tprop, b) -> assert false
+  | Tarr (Miniml.Tprop, b) -> list_of_ml_arrows b
   | Tarr (a, b) -> a :: list_of_ml_arrows b
   | t -> []
 
@@ -401,6 +401,12 @@ and extract_prod_lam env (n,t,d) vl flag =
 	let id' = next_ident_away (id_of_name n) vl in 
 	let env' = push_rel_assum (Name id', t) env in
 	extract_type_rec_info env' d (id'::vl) []
+    | (Logic, Arity), _ | _, Lam ->
+      extract_type_rec_info  env' d vl []
+    | (Logic, NotArity), Product ->
+      (match extract_type_rec_info env' d vl [] with 
+         | Tmltype (mld, vl') -> Tmltype (Tarr (Miniml.Tprop, mld), vl')
+         | et -> et)
     | (Info, NotArity), Product ->
 	(* It is important to treat [d] first and [t] in second. *)
 	(* This ensures that the end of [vl] correspond to external binders. *)
@@ -411,7 +417,6 @@ and extract_prod_lam env (n,t,d) vl flag =
 			(* Cf. relation between [extract_type] and [v_of_t] *)
 		  | Tmltype (mlt,vl'') -> Tmltype (Tarr(mlt,mld), vl''))
 	   | et -> et)
-    | _ -> extract_type_rec_info  env' d vl []
 	
  (* Auxiliary function dealing with type application. 
     Precondition: [r] is of type an arity. *)
@@ -538,12 +543,13 @@ and extract_term_info_wt env ctx c t =
      | Lambda (n, t, d) ->
 	 let v = v_of_t env t in 
 	 let env' = push_rel_assum (n,t) env in
-	 let ctx' = (v = default) :: ctx in
+	 let ctx' = (snd v = NotArity) :: ctx in
 	 let d' = extract_term_info env' ctx' d in
 	 (* If [d] was of type an arity, [c] too would be so *)
 	 (match v with
-	    | Info,NotArity -> MLlam (id_of_name n, d')
-	    | _ -> d')
+	    | _,Arity -> d'
+            | Logic,NotArity -> MLlam (prop_name, d')
+            | Info,NotArity -> MLlam (id_of_name n, d'))
      | LetIn (n, c1, t1, c2) ->
 	 let v = v_of_t env t1 in
 	 let env' = push_rel (n,Some c1,t1) env in
@@ -599,7 +605,9 @@ and abstract_constructor cp  =
 	MLcons (ConstructRef cp, rels)
     | (Info,NotArity) :: l -> 
 	MLlam (id_of_name Anonymous, abstract (i :: rels) (succ i) l)
-    | _ :: l ->
+    | (Logic,NotArity) :: l ->
+      MLlam (id_of_name Anonymous, abstract rels (succ i) l)
+    | (_,Arity) :: l -> 
 	abstract rels i l
   in
   anonym_lams (ml_lift n (abstract [] 1 s)) n
@@ -653,7 +661,7 @@ and extract_fix env ctx i (fi,ti,ci as recd) =
   let lb = Array.to_list (array_map2 (fun a b -> (a,b)) fi ti') in
   let env' = push_rels_assum (List.rev lb) env in
   let ctx' = 
-    (List.rev_map (fun a -> a = default) (sign_of_lbinders env lb)) @ ctx
+    (List.rev_map (fun (_,a) -> a = NotArity) (sign_of_lbinders env lb)) @ ctx
   in
   let extract_fix_body c t = 
     extract_constr_to_term_wt env' ctx' c (lift n t) in
@@ -673,10 +681,11 @@ and extract_app env ctx f args =
   let mlargs = 
     List.fold_right 
       (fun (v,a) args -> match v with
+	 | (_,Arity) -> args
+	 | (Logic,NotArity) -> MLprop :: args
 	 | (Info,NotArity) -> 
 	     (* We can't trust tag [default], so we use [extract_constr]. *)
-	     (extract_constr_to_term env ctx a) :: args
-	 | _ -> args)
+	     (extract_constr_to_term env ctx a) :: args)
       (List.combine (list_firstn nargs sf) args)
       []
   in
@@ -895,7 +904,7 @@ and extract_inductive_declaration sp =
 (*s Extraction of a global reference i.e. a constant or an inductive. *)
 
 let false_rec_sp = path_of_string "Coq.Init.Specif.False_rec"
-let false_rec_e = MLexn "False_rec"
+let false_rec_e = MLlam (prop_name, MLexn "False_rec")
 
 let extract_declaration r = match r with
   | ConstRef sp when sp = false_rec_sp -> Dglob (r, false_rec_e)
