@@ -174,12 +174,9 @@ let check_required_module loc sc d =
     ^(list_last d)))
 
 let lookup_numeral_interpreter loc sc =
-  try
-    let (dir,interpreter) = Hashtbl.find numeral_interpreter_tab sc in
-    check_required_module loc sc dir;
-    interpreter
-  with Not_found -> 
-    error ("No interpretation for numerals in scope "^sc)
+  let (dir,interpreter) = Hashtbl.find numeral_interpreter_tab sc in
+  check_required_module loc sc dir;
+  interpreter
 
 (* Look if some notation or numeral printer in [scope] can be used in
    the scope stack [scopes], and if yes, using delimiters or not *)
