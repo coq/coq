@@ -546,3 +546,22 @@ Apply Rmult_1r.
 Apply (Dmult_const [x : ?]  True [x : ?]  x [x : ?]  R1); Apply Dx.
 Assert H0 := (derivable_pt_lim_D_in exp exp ``z*(ln y)``); Elim H0; Clear H0; Intros _ H0; Apply H0; Apply derivable_pt_lim_exp.
 Qed.
+
+Theorem derivable_pt_lim_power: (x, y : R) (Rlt R0 x) -> (derivable_pt_lim [x : ?]  (Rpower x y) x (Rmult y (Rpower x (Rminus y R1)))).
+Intros x y H.
+Unfold Rminus; Rewrite Rpower_plus.
+Rewrite Rpower_Ropp.
+Rewrite Rpower_1; Auto.
+Rewrite <- Rmult_assoc.
+Unfold Rpower.
+Apply derivable_pt_lim_comp with f1 := ln f2 := [x : ?]  (exp (Rmult y x)).
+Apply derivable_pt_lim_ln; Assumption.
+Rewrite (Rmult_sym y).
+Apply derivable_pt_lim_comp with f1 := [x : ?]  (Rmult y x) f2 := exp.
+Pattern 2 y; Replace y with (Rplus (Rmult R0 (ln x)) (Rmult y R1)).
+Apply derivable_pt_lim_mult with f1 := [x : R]  y f2 := [x : R]  x.
+Apply derivable_pt_lim_const with a := y.
+Apply derivable_pt_lim_id.
+Ring.
+Apply derivable_pt_lim_exp.
+Qed.
