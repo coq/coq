@@ -136,7 +136,7 @@ let declare_definition ident local bl red_option c typopt hook =
   hook local r
 
 let syntax_definition ident c =
-  let c = snd (interp_aconstr [] c) in 
+  let c = snd (interp_aconstr [] [] c) in 
   let onlyparse = !Options.v7_only in
   Syntax_def.declare_syntactic_definition false ident onlyparse c;
   if_verbose message ((string_of_id ident) ^ " is now a syntax macro")
@@ -288,6 +288,7 @@ let interp_mutual lparams lnamearconstrs finite =
   let paramassums = 
     List.fold_right (fun d l -> match d with
 	(id,LocalAssum _) -> id::l | (_,LocalDef _) -> l) params' [] in
+  let indnames = List.map (fun (id,_,_,_)-> id) lnamearconstrs @ paramassums in
   let nparamassums = List.length paramassums in
   let (ind_env,ind_impls,arityl) =
     List.fold_left
@@ -304,7 +305,7 @@ let interp_mutual lparams lnamearconstrs finite =
 		 Impargs.name_of_implicit imp::l else l) paramimpl [] in
 	     (recname,(l,impl))::ind_impls
 	   else
-	     ind_impls in
+	     (recname,([],[]))::ind_impls in
 	 (env', ind_impls', (arity::arl)))
       (env0, [], []) lnamearconstrs
   in
@@ -313,19 +314,13 @@ let interp_mutual lparams lnamearconstrs finite =
     List.flatten
       (List.map (function (id,LocalAssum _) -> [id] | _ -> []) params') in
   let notations = 
-    List.map2 (fun (recname,ntnopt,_,_) ar ->
-      option_app (fun df ->
-        let larnames =
-	  List.rev_append (List.map (fun id -> Name id) lparargs)
-	    (List.rev (List.map fst (fst (decompose_prod ar)))) in
-	(recname,larnames,df)) ntnopt)
-      lnamearconstrs arityl in
+    List.fold_right (fun (_,ntnopt,_,_) l -> option_cons ntnopt l) 
+      lnamearconstrs [] in
   let fs = States.freeze() in
   (* Declare the notations for the inductive types pushed in local context*)
   try
-  List.iter (option_iter (fun (recname,larnames,(df,scope)) ->
-    Metasyntax.add_notation_interpretation df
-      (AVar recname,larnames) (* no scope for tmp ntn *) scope)) notations;
+  List.iter (fun (df,c,scope) -> (* No scope for tmp notation *)
+    Metasyntax.add_notation_interpretation df ind_impls c None) notations;
   let ind_env_params = push_rel_context params ind_env in
 
   let mispecvec = 
@@ -410,10 +405,8 @@ let build_mutual lind finite =
   let notations,mie = interp_mutual lparams lnamearconstructs finite in
   let kn = declare_mutual_with_eliminations mie in
   (* Declare the notations now bound to the inductive types *)
-  list_iter_i (fun i ->
-    option_iter (fun (_,names,(df,scope)) ->
-      Metasyntax.add_notation_interpretation df
-        (ARef (IndRef (kn,i)),names) scope)) notations;
+  List.iter (fun (df,c,scope) ->
+    Metasyntax.add_notation_interpretation df [] c scope) notations;
   List.iter
     (fun id -> 
       Class.try_add_new_coercion (locate (make_short_qualid id)) Global) coes
@@ -468,11 +461,8 @@ let build_recursive lnameargsardef =
       (env0,[]) lnameargsardef in
   let arityl = List.rev arityl in
   let notations = 
-    List.map2 (fun ((recname,_,_,_),ntnopt) arityl ->
-      option_app (fun ntn ->
-        let larnames = List.map fst (fst (decompose_prod arityl)) in
-	(recname,List.rev larnames,ntn)) ntnopt)
-      lnameargsardef arityl in
+    List.fold_right (fun (_,ntnopt) l -> option_cons ntnopt l) 
+      lnameargsardef [] in
 
   let recdef =
 
@@ -480,9 +470,8 @@ let build_recursive lnameargsardef =
     let fs = States.freeze() in
     let def = 
       try
-	List.iter (option_iter (fun (recname,larnames,(df,scope)) ->
-	  Metasyntax.add_notation_interpretation df
-	  (AVar recname,larnames) (* no scope for tmp ntn *) None)) notations;
+	List.iter (fun (df,c,scope) -> (* No scope for tmp notation *)
+	  Metasyntax.add_notation_interpretation df [] c None) notations;
 	List.iter2
 	  (fun recname arity -> 
             let _ = declare_variable recname
@@ -527,9 +516,8 @@ let build_recursive lnameargsardef =
       (List.map var_subst (Array.to_list namerec))
       lnonrec 
   in
-  List.iter (option_iter (fun (recname,names,(df,scope)) ->
-    Metasyntax.add_notation_interpretation df
-      (ARef (ConstRef (Lib.make_kn recname)),names) scope)) notations
+  List.iter (fun (df,c,scope) ->
+    Metasyntax.add_notation_interpretation df [] c scope) notations
 
 let build_corecursive lnameardef = 
   let lrecnames = List.map (fun (f,_,_) -> f) lnameardef
