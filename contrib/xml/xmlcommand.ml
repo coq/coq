@@ -43,16 +43,6 @@ let print_if_verbose s = if !verbose then print_string s;;
 (* Next exception is used only inside print_coq_object and tag_of_string_tag *)
 exception Uninteresting;;
 
-(*CSC: CODE USEFUL ONLY FOR THE CODE COMMENTED OUT
-let tag_of_string_tag =
- function
-    "CONSTANT"        -> Constant
-  | "INDUCTIVE"       -> Inductive
-  | "VARIABLE"        -> Variable
-  | _                 -> raise Uninteresting
-;;
-*)
-
 (* Internally, for Coq V7, params of inductive types are associated     *)
 (* not to the whole block of mutual inductive (as it was in V6) but to  *)
 (* each member of the block; but externally, all params are required    *)
@@ -882,8 +872,9 @@ let _ =
      theory_channel :=
        Util.option_app (fun fn -> open_out (fn^".v"))
 	 (theory_filename xml_library_root);
-     theory_output_string "<?xml version=\"1.0\"?>\n";
-     theory_output_string "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:ht=\"http://www.cs.unibo.it/helm/namespaces/helm-theory\">\n")
+     theory_output_string "<?xml version=\"1.0\" encoding=\"latin1\"?>\n";
+     theory_output_string "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:ht=\"http://www.cs.unibo.it/helm/namespaces/helm-theory\">\n";
+     theory_output_string "<head>\n<style> A { text-decoration: none } </style>\n</head>\n")
 ;;
 
 let _ =
@@ -894,12 +885,16 @@ let _ =
       Util.option_iter 
 	(fun fn ->
 	  let coqdoc = Coq_config.bindir^"/coqdoc" in
-	  let options = " --html -s --body-only --no-index -utf8 --raw-comments" in
+	  let options = " --html -s --body-only --no-index --latin1 --raw-comments" in
 	  let dir = Util.out_some xml_library_root in
-          ignore (Sys.command (coqdoc^options^" -d "^dir^" "^fn^".v"));
-          ignore (Sys.command ("mv "^dir^"/*.html "^fn^".xml "));
-          ignore (Sys.command ("rm "^fn^".v"));
-          print_string("\nWriting on file \"" ^ fn ^ ".xml\" was succesful\n"))
+          let command cmd =
+           if Sys.command cmd <> 0 then
+            Util.anomaly ("Error executing \"" ^ cmd ^ "\"")
+          in
+           command (coqdoc^options^" -d "^dir^" "^fn^".v");
+           command ("mv "^dir^"/.*.html "^fn^".xml ");
+           (*command ("rm "^fn^".v");*)
+           print_string("\nWriting on file \"" ^ fn ^ ".xml\" was succesful\n"))
        (theory_filename xml_library_root))
 ;;
 
