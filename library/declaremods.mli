@@ -12,12 +12,14 @@
 open Names
 open Entries
 open Libnames
+open Libobject
 (*i*)
 
-(* This modules provides official fucntions to declare modules and
+(*s This modules provides official fucntions to declare modules and
    module types *)
 
-(* experimental for now *)
+
+(*s Modules *)
 
 val declare_module : identifier -> module_entry -> unit
 
@@ -27,30 +29,19 @@ val start_module :
 val end_module : identifier -> unit
 
 
-(*type module_disk = { 
-  md_name : compilation_unit_name;
-  md_compiled_env : compiled_module;
-  md_declarations : library_segment;
-  md_deps : (compilation_unit_name * Digest.t * bool) list }
 
-val declare_disk_module : dir_path -> module_disk -> unit
-*)
+(*s Module types *)
+
+val declare_modtype : identifier -> module_type_entry -> unit
 
 val start_modtype : 
   identifier -> identifier list -> (mod_bound_id * module_type_entry) list 
     -> unit
 val end_modtype : identifier -> unit
 
-(* [push_module_components dir mp short] adds components to Nametab
-   if short=true adds short names as well *)
-
-(*val push_module_with_components : 
-  section_path -> module_path -> bool -> unit
-*)
 
 
-(*s Modules on disk contain the following informations (after the magic 
-    number, and before dependencies and the digest). *)
+(*s Libraries i.e. modules on disk *)
 
 type library_name = dir_path
 
@@ -61,21 +52,9 @@ val register_library :
     Safe_typing.compiled_library -> library_objects -> Digest.t -> unit
 
 val start_library : library_name -> unit
+
 val export_library :
   library_name -> Safe_typing.compiled_library * library_objects
-
-(*
-It will be that nice after we put dependency traversal in the preparation phase 
-
-type comp_unit_objects
-
-val calculate_objects : comp_unit -> comp_unit_objects
-
-(* the bool says if the module should be added to the environment as well *)
-
-val register_comp_unit : 
-  bool -> comp_unit -> comp_unit_objects -> Digest.t -> unit
-*)
 
 
 (* [import_module mp] opens the module [mp] (in a Caml sense). 
@@ -83,6 +62,16 @@ val register_comp_unit :
    for every object of the module. *)
 
 val import_module : module_path -> unit
+
+
+(*s [fold_all_segments] and [iter_all_segments] iterate over all
+    segments, the modules' segments first and then the current
+    segment. Modules are presented in an arbitrary order. The given
+    function is applied to all leaves (together with their section
+    path). The boolean indicates if we must enter closed sections. *)
+
+val fold_all_segments : bool -> ('a -> object_name -> obj -> 'a) -> 'a -> 'a
+val iter_all_segments : bool -> (object_name -> obj -> unit) -> unit
 
 
 val debug_print_modtab : unit -> Pp.std_ppcmds

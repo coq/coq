@@ -327,7 +327,7 @@ let subst_autohint (_,subst,((name,l_hintlist) as obj)) =
 let classify_autohint (_,((name,l_hintlist) as obj)) =
   match Lazy.force l_hintlist with
       [] -> Dispose   
-    | (_,{code=Extern _})::_ -> Dispose (* TODO! should be changed *)
+    | (_,{code=Extern _})::_ -> Keep obj (* TODO! should be changed *)
     | _ -> Substitute obj
 
 let export_autohint x = Some x

@@ -108,6 +108,7 @@ module MakeRefTable :
     (A : sig
            type t
            val encode : qualid located -> t
+	   val subst : substitution -> t -> t
            val printer : t -> std_ppcmds
            val key : option_name
            val title : string

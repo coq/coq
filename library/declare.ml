@@ -142,7 +142,7 @@ let cache_constant ((sp,kn),(cdt,stre)) =
     | DischargeAt (dp,n) when not (is_dirpath_prefix_of dp (Lib.cwd ())) ->
         (* Only qualifications including the sections segment from the current
            section to the discharge section is available for Remark & Fact *)
-        Nametab.push (Nametab.Until (n-Lib.sections_depth()+1)) sp (ConstRef kn)
+        Nametab.push (Nametab.Until ((*n-Lib.sections_depth()+*)1)) sp (ConstRef kn)
     | (NeverDischarge| DischargeAt _) -> 
         (* All qualifications of Theorem, Lemma & Definition are visible *)
         Nametab.push (Nametab.Until 1) sp (ConstRef kn)
@@ -156,13 +156,12 @@ let load_constant i ((sp,kn),(ce,stre)) =
     let (_,id) = repr_path sp in
     errorlabstrm "cache_constant" (pr_id id ++ str " already exists"));
   csttab := Spmap.add sp stre !csttab;
-  Nametab.push (Nametab.Until (depth_of_strength stre + 1 + i)) sp (ConstRef kn)
+  Nametab.push (Nametab.Until ((*depth_of_strength stre + *)i)) sp (ConstRef kn)
 
 (* Opening means making the name without its module qualification available *)
 let open_constant i ((sp,kn),(_,stre)) =
   let n = depth_of_strength stre in
-(*  Nametab.push n (restrict_path n sp) (ConstRef kn) *)
-  Nametab.push (Nametab.Exactly (i+n)) sp (ConstRef kn)
+  Nametab.push (Nametab.Exactly (i(*+n*))) sp (ConstRef kn)
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = ConstantEntry (ParameterEntry mkProp)

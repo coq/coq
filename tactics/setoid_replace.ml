@@ -99,6 +99,21 @@ let setoid_table_add (s,th) = setoid_table := Gmap.add s th !setoid_table
 let setoid_table_find s = Gmap.find s !setoid_table
 let setoid_table_mem s = Gmap.mem s !setoid_table
 
+let subst_setoid subst setoid = 
+  let set_a' = subst_mps subst setoid.set_a in
+  let set_aeq' = subst_mps subst setoid.set_aeq in
+  let set_th' = subst_mps subst setoid.set_th in
+    if set_a' == setoid.set_a
+      && set_aeq' == setoid.set_aeq
+      && set_th' == setoid.set_th
+    then
+      setoid
+    else
+      { set_a = set_a' ;
+	set_aeq = set_aeq' ;
+	set_th = set_th' ;
+      }
+      
 let equiv_list () = List.map (fun x -> x.set_aeq) (Gmap.rng !setoid_table)
 
 let _ = 
@@ -112,11 +127,18 @@ let _ =
 
 let (setoid_to_obj, obj_to_setoid)=
   let cache_set (_,(s, th)) = setoid_table_add (s,th)
+  and subst_set (_,subst,(s,th as obj)) =
+    let s' = subst_mps subst s in
+    let th' = subst_setoid subst th in
+      if s' == s && th' == th then obj else
+	(s',th')
   and export_set x = Some x 
   in 
     declare_object {(default_object "setoid-theory") with
 		      cache_function = cache_set;
 		      open_function = (fun i o -> if i=1 then cache_set o);
+		      subst_function = subst_set;
+		      classify_function = (fun (_,x) -> Substitute x);
 		      export_function = export_set}
 
 (******************************* Table of declared morphisms ********************)
@@ -129,6 +151,23 @@ let morphism_table_add (m,c) = morphism_table := Gmap.add m c !morphism_table
 let morphism_table_find m = Gmap.find m !morphism_table
 let morphism_table_mem m = Gmap.mem m !morphism_table
 
+let subst_morph subst morph = 
+  let lem' = subst_mps subst morph.lem in
+  let arg_types' = list_smartmap (subst_mps subst) morph.arg_types in
+  let lem2' = option_smartmap (subst_mps subst) morph.lem2 in
+    if lem' == morph.lem
+      && arg_types' == morph.arg_types
+      && lem2' == morph.lem2
+    then
+      morph
+    else
+      { lem = lem' ;
+	profil = morph.profil ;
+	arg_types = arg_types' ;
+	lem2 = lem2' ;
+      }
+
+
 let _ = 
   Summary.declare_summary "morphism-table"
     { Summary.freeze_function = (fun () -> !morphism_table);
@@ -140,11 +179,18 @@ let _ =
 
 let (morphism_to_obj, obj_to_morphism)=
   let cache_set (_,(m, c)) = morphism_table_add (m, c)
+  and subst_set (_,subst,(m,c as obj)) = 
+    let m' = subst_mps subst m in
+    let c' = subst_morph subst c in
+      if m' == m && c' == c then obj else
+	(m',c')
   and export_set x = Some x 
   in 
     declare_object {(default_object "morphism-definition") with
 		      cache_function = cache_set;
 		      open_function = (fun i o -> if i=1 then cache_set o);
+		      subst_function = subst_set;
+		      classify_function = (fun (_,x) -> Substitute x);
 		      export_function = export_set}
 
 (************************** Adding a setoid to the database *********************)

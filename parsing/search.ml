@@ -52,7 +52,7 @@ let crible (fn : global_reference -> env -> constr -> unit) ref =
   let env = Global.env () in
   let imported = Library.opened_libraries() in
   let const = constr_of_reference ref in 
-  let crible_rec sp lobj =
+  let crible_rec (sp,_) lobj =
     match object_tag lobj with
       | "VARIABLE" ->
 	  (try 
@@ -79,10 +79,10 @@ let crible (fn : global_reference -> env -> constr -> unit) ref =
 	     | _ -> ())
       | _ -> ()
   in 
-(*  try 
-  with Not_found -> *)
-    todo "Library.iter_all_segments false crible_rec";
-    errorlabstrm "search"
+    try 
+      Declaremods.iter_all_segments false crible_rec
+    with Not_found -> 
+      errorlabstrm "search"
       (pr_global ref ++ spc () ++ str "not declared")
 
 (* Fine Search. By Yves Bertot. *)

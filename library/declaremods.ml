@@ -231,7 +231,7 @@ let (in_module,out_module) =
 let modtypetab =
   ref (KNmap.empty : substitutive_objects KNmap.t)
 
-(* currently begun interactive module type. We remember its arguments
+(* currently started interactive module type. We remember its arguments
    if it is a functor type *)
 let openmodtype_info =
   ref ([] : mod_bound_id list)
@@ -317,27 +317,9 @@ let (in_modtype,out_modtype) =
 
 
 
-(*
-let get_subst_libstack (subst,domlist,libstack) mplist =
-  let one_mp subst dom mp = match dom with
-  | MPbid mbid -> add_mbid mbid mp subst
-  | MPsid msid -> add_msid msid mp subst
-  | _ -> anomaly "Not ident on the substitution list..."
-  in
-  List.fold_left2 domlist mplist, libstack
-*)
-
-
 let abstract_substobjs mbids1 (subst, mbids2, msid, lib_stack) =
   (subst, mbids1@mbids2, msid, lib_stack)
 
-(* To chyba powinno byc wywolanie do_module !!!!!*)
-(*let process_module sp mp short substobjs =
-  push_module_with_components sp mp short;
-  let substituted = subst_substobjs mp substobjs in
-    modtab := MPmap.add mp (substobjs,substituted,[]) !modtab;
-    load_segment substituted
-*)
 
 let rec get_modtype_substobjs = function
     MTEident ln -> KNmap.find ln !modtypetab
@@ -345,7 +327,7 @@ let rec get_modtype_substobjs = function
       let (subst, mbids, msid, objs) = get_modtype_substobjs mte in
 	(subst, mbid::mbids, msid, objs)
   | MTEsig (msid,_) -> (empty_subst, [], msid, [])
-
+        (* this is plainly wrong, but it is hard to do otherwise... *)
 
 (* push names of bound modules (and their components) to Nametab *)
 (* add objects associated to them *)
@@ -357,17 +339,11 @@ let process_module_bindings argids args =
     let substituted = subst_substobjs dir mp substobjs in
     let modobjs = substobjs, substituted, [] in
       do_module false "begin" load_segment 1 dir mp modobjs
-(*
-      if exists_dir dir then
-	errorlabstrm "begin_module"
-	  (pr_id (basename sp) ++ str " already exists");
-      let mp =  in
-	do_module 
-	process_module sp mp false *)
   in
-  List.iter2 process_arg argids args
+    List.iter2 process_arg argids args
 
 
+(* this function removes keep objects from submodules *) 
 let rec kill_keep objs =
   let kill = function
     | (sp,Leaf obj) as node ->
@@ -387,6 +363,7 @@ let rec kill_keep objs =
 	    objs
 	  else
 	    h'::tl'
+
 
 let start_module id argids args res_o =
   let mp = Global.start_module (Lib.module_dp()) id args res_o in
@@ -449,20 +426,21 @@ let end_module id =
     Lib.add_frozen_state () (* to prevent recaching *)
 
 
+
+
+
+
 type library_name = dir_path
 
 (* The first two will form a substitutive_objects, the last one is keep *)
 type library_objects = 
     Names.mod_self_id * Lib.library_segment * Lib.library_segment
-(*
-
-The comp_unit_cache here is needed to avoid recalculations of
-substituted modules object during "reloading" of compilation_units.
-
-*)
 
 
+(* The library_cache here is needed to avoid recalculations of
+   substituted modules object during "reloading" of libraries *)
 let library_cache = Hashtbl.create 17
+
 
 let register_library dir cenv objs digest =
   let mp = MPfile dir in
@@ -486,7 +464,7 @@ let register_library dir cenv objs digest =
 	    Hashtbl.add library_cache dir modobjs;
 	    modobjs
   in
-    do_module false "register_compilation" load_segment 2 dir mp modobjs
+    do_module false "register_compilation" load_segment 1 dir mp modobjs
 
 let start_library dir = 
   let mp = Global.start_library dir in
@@ -543,6 +521,12 @@ let end_modtype id =
   Lib.add_frozen_state ()(* to prevent recaching *)
 
 
+let declare_modtype id mte = 
+  let substobjs = get_modtype_substobjs mte in
+    ignore (add_leaf id (in_modtype (Some mte, substobjs)))
+			       
+
+
 let rec get_module_substobjs = function
     MEident mp -> let (substobjs,_,_) = MPmap.find mp !modtab in substobjs
   | MEfunctor (mbid,_,mexpr) ->
@@ -572,6 +556,39 @@ let declare_module id me =
     ignore (add_leaf
 	      id
 	      (in_module (Some me, (substobjs, substituted, []))))
+
+
+(*s Iterators. *)
+
+let fold_all_segments insec f x =
+  let rec apply acc = function
+    | sp, Leaf o -> f acc sp o
+    | _, ClosedSection (_,_,seg) -> 
+	if insec then List.fold_left apply acc seg else acc
+    | _ -> acc
+  in
+  let acc' = 
+    MPmap.fold 
+      (fun _ (_,substituted,keep) acc -> 
+	 let acc' = List.fold_left apply acc substituted in
+	   List.fold_left apply acc' keep)
+      !modtab x
+  in
+    List.fold_left apply acc' (Lib.contents_after None)
+
+let iter_all_segments insec f =
+  let rec apply = function
+    | sp, Leaf o -> f sp o
+    | _, ClosedSection (_,_,seg) -> if insec then List.iter apply seg
+    | _ -> ()
+  in
+    MPmap.iter 
+      (fun _ (_,substituted,keep) -> 
+	 List.iter apply substituted;
+	 List.iter apply keep) 
+      !modtab;
+    List.iter apply (Lib.contents_after None)
+
 
 
 let debug_print_modtab _ =

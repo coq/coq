@@ -56,6 +56,7 @@ module MakeTable =
 	  type key
 	  val table : (string * key table_of_A) list ref
 	  val encode : key -> t
+	  val subst : substitution -> t -> t
           val printer : t -> std_ppcmds
           val key : option_name
           val title : string
@@ -67,10 +68,10 @@ module MakeTable =
       | GOadd
       | GOrmv
 
-    let kn = nickname A.key
+    let nick = nickname A.key
 
     let _ =
-      if List.mem_assoc kn !A.table then
+      if List.mem_assoc nick !A.table then
 	error "Sorry, this table name is already used"
 
     module MyType = struct type t = A.t let compare = Pervasives.compare end
@@ -83,7 +84,7 @@ module MakeTable =
 	let freeze () = !t in
 	let unfreeze c = t := c in
 	let init () = t := MySet.empty in
-	Summary.declare_summary kn
+	Summary.declare_summary nick
           { Summary.freeze_function = freeze;
             Summary.unfreeze_function = unfreeze;
             Summary.init_function = init;
@@ -95,12 +96,19 @@ module MakeTable =
           | GOadd -> t := MySet.add p !t
           | GOrmv -> t := MySet.remove p !t in
         let load_options i o = if i=1 then cache_options o in
-        let export_options fp = Some fp in
+	let subst_options (_,subst,(f,p as obj)) = 
+	  let p' = A.subst subst p in
+	    if p' == p then obj else
+	      (f,p')
+	in
+	let export_options fp = Some fp in
         let (inGo,outGo) =
-          Libobject.declare_object {(Libobject.default_object kn) with
+          Libobject.declare_object {(Libobject.default_object nick) with
                 Libobject.load_function = load_options;
 		Libobject.open_function = load_options;
 		Libobject.cache_function = cache_options;
+		Libobject.subst_function = subst_options;
+		Libobject.classify_function = (fun (_,x) -> Substitute x);
 		Libobject.export_function = export_options} 
 	in
         ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
@@ -128,7 +136,7 @@ module MakeTable =
       method print = print_table A.title A.printer !t 
     end
 
-    let _ = A.table := (kn,new table_of_A ())::!A.table
+    let _ = A.table := (nick,new table_of_A ())::!A.table
     let active c = MySet.mem c !t
     let elements () = MySet.elements !t
   end
@@ -151,6 +159,7 @@ struct
   type key = string
   let table = string_table
   let encode x = x
+  let subst _ x = x
   let printer = str
   let key = A.key
   let title = A.title
@@ -169,6 +178,7 @@ module type RefConvertArg =
 sig
   type t
   val encode : qualid located -> t
+  val subst : substitution -> t -> t
   val printer : t -> std_ppcmds
   val key : option_name
   val title : string
@@ -182,6 +192,7 @@ struct
   type key = qualid located
   let table = ref_table
   let encode = A.encode
+  let subst = A.subst
   let printer = A.printer
   let key = A.key
   let title = A.title

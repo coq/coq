@@ -594,33 +594,6 @@ let save_library_to s f =
     close_out ch
   with e -> (warning ("Removed file "^f');close_out ch; Sys.remove f'; raise e)
 
-(*s Iterators. *)
-
-(*let fold_all_segments insec f x =
-  let rec apply acc = function
-    | sp, Leaf o -> f acc sp o
-    | _, ClosedSection (_,_,seg) -> 
-	if insec then List.fold_left apply acc seg else acc
-    | _ -> acc
-  in
-  let acc' = 
-    CompilingModulemap.fold 
-      (fun _ m acc -> List.fold_left apply acc m.library_objects) 
-      !libraries_table x
-  in
-  List.fold_left apply acc' (Lib.contents_after None)
-
-let iter_all_segments insec f =
-  let rec apply = function
-    | sp, Leaf o -> f sp o
-    | _, ClosedSection (_,_,seg) -> if insec then List.iter apply seg
-    | _ -> ()
-  in
-  CompilingModulemap.iter 
-    (fun _ m -> List.iter apply m.library_objects) !libraries_table;
-  List.iter apply (Lib.contents_after None)
-*)
-
 (*s Pretty-printing of libraries state. *)
  
 let fmt_libraries_state () =

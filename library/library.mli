@@ -64,16 +64,6 @@ val save_library_to : dir_path -> string -> unit
 
 val library_full_filename : dir_path -> string
 
-(*
-(*s [fold_all_segments] and [iter_all_segments] iterate over all
-    segments, the libraries' segments first and then the current
-    segment. Modules are presented in an arbitrary order. The given
-    function is applied to all leaves (together with their section
-    path). The boolean indicates if we must enter closed sections. *)
-
-val fold_all_segments : bool -> ('a -> section_path -> obj -> 'a) -> 'a -> 'a
-val iter_all_segments : bool -> (section_path -> obj -> unit) -> unit
-*)
 
 (*s Global load path *)
 type logical_path = dir_path

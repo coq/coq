@@ -24,3 +24,6 @@ include $(TOPDIR)/dev/Makefile.common
 
 # this file is better described in dev/Makefile.dir
 include .depend.devel
+
+total:
+	ledit ./bin/coqtop.byte $(foreach th,$(THEORIESVO),-require $(notdir $(basename $(th))))

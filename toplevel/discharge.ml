@@ -232,9 +232,9 @@ let process_object oldenv dir sec_sp
 	let lab = label kn in
 	let cb = Environ.lookup_constant kn oldenv in
 	let imp = is_implicit_constant kn in
-	let newkn = match stre with
+	let newkn = (*match stre with (* this did not work anyway...*)
 	  | DischargeAt (d,_) when not (is_dirpath_prefix_of d dir) -> kn
-	  | _ -> recalc_kn dir kn in
+	  | _ -> *)recalc_kn dir kn in
         let mods = 
 	  let abs_vars = build_abstract_list cb.const_hyps ids_to_discard in
 	  [ (kn, DO_ABSTRACT(newkn,abs_vars)) ]

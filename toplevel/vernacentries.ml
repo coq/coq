@@ -592,9 +592,9 @@ let vernac_mem_option key lv =
 
 let vernac_print_option key =
   try (get_ref_table key)#print
-  with not_found ->
+  with Not_found ->
   try (get_string_table key)#print
-  with not_found ->
+  with Not_found ->
   try print_option_value key
   with Not_found -> error_undeclared_key key
 
