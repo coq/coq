@@ -823,11 +823,11 @@ let clenv_unify allow_K cv_pb ty1 ty2 clenv =
 	   clenv_unify2 allow_K cv_pb ty1 ty2 clenv
          with ex when catchable_exception ex -> 
            try 
-	     clenv_typed_unify CONV ty1 ty2 clenv
+	     clenv_typed_unify cv_pb ty1 ty2 clenv
            with ex when catchable_exception ex -> 
              error "Cannot solve a second-order unification problem")
 
-     | _ -> clenv_unify_0 CONV ty1 ty2 clenv
+     | _ -> clenv_unify_0 cv_pb ty1 ty2 clenv
 
 
 (* [clenv_bchain mv clenv' clenv]
