@@ -109,7 +109,7 @@ let print_highlight_location ib (bp,ep) =
   let highlight_lines =
     match get_bols_of_loc ib (bp,ep) with
       | ([],(bl,el)) ->  
-	  [< 'sTR"> "; 'sTR(String.sub ib.str bl (el-bl)); 'fNL;
+	  [< 'sTR"> "; 'sTR(String.sub ib.str bl (el-bl-1)); 'fNL;
              'sTR"> "; 'sTR(String.make (bp-bl) ' ');
              'sTR(String.make (ep-bp) '^') >]
       | ((b1,e1)::ml,(bn,en)) ->
