@@ -267,15 +267,12 @@ let projectAndApply thin id depids gls =
           (tclTHEN (subst_hyp_RL id) (clear [id])) depids id2 gls
     | (false, _ , Var id2) ->
         generalizeRewriteIntros (subst_hyp_RL id) depids id2 gls
-    | (true, _, _) ->
+    | _ ->
+        let trailer =
+          if thin then onLastHyp (fun id -> clear [id]) else tclIDTAC in
         let deq_trailer neqns =
           tclDO neqns
-            (tclTHENSEQ
-              [intro; subst_hyp; onLastHyp (fun id -> clear [id])])
-        in 
-	(tclTHEN (tclTRY (dEqThen deq_trailer (Some id))) (clear [id])) gls
-    | (false, _, _) -> 
-        let deq_trailer neqns = tclDO neqns (tclTHEN intro subst_hyp) in 
+            (tclTHENSEQ [intro; tclTRY subst_hyp; trailer]) in 
 	(tclTHEN (dEqThen deq_trailer (Some id)) (clear [id])) gls
 
 (* Inversion qui n'introduit pas les hypotheses, afin de pouvoir les nommer
