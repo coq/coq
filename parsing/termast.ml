@@ -184,14 +184,6 @@ let rec ast_of_raw = function
       (match f with 
 	 | REvar (_,ev) -> ast_of_existential_ref ev (* we drop args *)
 	 | RRef (_,ref) -> ast_of_app (implicits_of_global ref) astf astargs
-
-	 | RVar (_,id) ->
-	     let imp =
-	       try 
-		 let ref = Nametab.locate (make_qualid [] id) in
-		 implicits_of_global ref
-	       with Not_found -> [] in
-	     ast_of_app imp astf astargs
 	 | _       -> ast_of_app [] astf astargs)
 
   | RProd (_,Anonymous,t,c) ->
