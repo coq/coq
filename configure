@@ -1,0 +1,474 @@
+#!/bin/sh
+
+##################################
+#
+#  Configuration script for Coq
+# 
+##################################
+
+VERSION=7.0
+VERSIONSI=1.0
+DATE="August 1999"
+
+# a local which command for sh
+which () {
+for i in `echo $PATH | tr ':' ' '` ; do 
+  if test -z "$i"; then $i=.; fi 
+  if [ -f $i/$1 ] ; then
+	echo $i/$1
+	break
+  fi
+done
+}
+
+bytecamlc=ocamlc
+nativecamlc=ocamlopt
+coq_debug_flag=
+coq_profile_flag=
+byte_opt_tools=opt
+
+bindir_spec=no
+libdir_spec=no
+mandir_spec=no
+emacslib_spec=no
+emacs_spec=no
+arch_spec=no
+caml_warnings=""
+
+COQTOP=`pwd`
+
+
+# Parse command-line arguments
+
+while : ; do
+  case "$1" in
+    "") break;;
+    -prefix|--prefix) bindir_spec=yes
+                      bindir=$2/bin
+                      libdir_spec=yes
+		      libdir=$2/lib/coq
+                      mandir_spec=yes
+		      mandir=$2/man
+		      shift;;
+    -local|--local) bindir_spec=yes
+                    bindir=$COQTOP/bin/${arch-`arch`}
+                    libdir_spec=yes
+		    libdir=$COQTOP
+                    mandir_spec=yes
+		    mandir=$COQTOP/man
+                    emacslib_spec=yes
+		    emacslib=$COQTOP/tools/emacs;;
+    -src|--src) COQTOP=$2
+	        shift;;
+    -bindir|--bindir) bindir_spec=yes
+                      bindir=$2
+		      shift;;
+    -libdir|--libdir) libdir_spec=yes
+                      libdir=$2
+		      shift;;
+    -mandir|--mandir) mandir_spec=yes
+                      mandir=$2
+		      shift;;
+    -emacslib|--emacslib) emacslib_spec=yes
+                          emacslib=$2
+			  shift;;
+    -emacs |--emacs) emacs_spec=yes
+		     emacs=$2
+		     shift;;
+    -arch|--arch) arch_spec=yes
+                  arch=$2
+		  shift;;
+    -opt|--opt) bytecamlc=ocamlc.opt
+                nativecamlc=ocamlopt.opt;;
+    -opt-tools|-opttools|--opttools|--opt-tools) byte_opt_tools=opt;;
+    -byte-tools|-bytetools|--bytetools|--byte-tools) byte_opt_tools=byte;;
+    -debug|--debug) coq_debug_flag=-g;;
+    -profile|--profile) coq_profile_flag=-p;;
+    -nowarnings) caml_warnings=" -w a ";;
+     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
+  esac
+  shift
+done
+
+
+# compile date
+DATEPGM=`which date`
+case $DATEPGM in
+    "") echo "I can't find the program \"date\" in your path."
+        echo "Please give me the current date"
+	read COMPILEDATE;;
+    *)  COMPILEDATE=`date +"%h %d %Y %H:%M:%S"`;;
+esac
+
+# Architecture
+
+case $arch_spec in
+    no) if test -f /bin/arch ; then
+	    ARCH=`/bin/arch`
+	elif test -f /usr/bin/arch ; then
+	    ARCH=`/usr/bin/arch`
+	elif test -f /usr/ucb/arch ; then
+	    ARCH=`/usr/ucb/arch`
+	elif test -f /bin/uname ; then
+	    ARCH=`/bin/uname -m`
+	else
+	    echo "I can not automatically find the name of your architecture"
+	    echo -n\
+              "Give me a name, please [win32 for Win95, Win98 or WinNT]: "
+	    read ARCH
+	    
+	fi;;
+    yes) ARCH=$arch
+esac
+
+# bindir, libdir, mandir, etc.
+
+case $ARCH in
+  win32)
+	 bindir_def=\\coq\\bin
+	 libdir_def=\\coq\\lib
+	 mandir_def=\\coq\\man
+	 emacslib_def=\\coq\\emacs;;
+  *)
+	 bindir_def=/usr/local/bin
+	 libdir_def=/usr/local/lib/coq
+	 mandir_def=/usr/local/man
+	 emacslib_def=/usr/share/emacs/site-lisp;;
+esac
+
+emacs_def=emacs
+
+case $bindir_spec in
+    no) echo "Where should I install the Coq binaries [$bindir_def] ?"
+        read BINDIR
+	
+	case $BINDIR in
+	    "") BINDIR=$bindir_def;;
+	    *) true;;
+	esac;;
+    yes) BINDIR=$bindir;;
+esac
+
+case $libdir_spec in
+    no) echo "Where should I install the Coq library [$libdir_def] ?"
+        read LIBDIR
+	
+	case $LIBDIR in
+	    "") LIBDIR=$libdir_def;;
+	    *) true;;
+	esac;;
+    yes) LIBDIR=$libdir;;
+esac
+
+case $mandir_spec in
+    no) echo "Where should I install the Coq man pages [$mandir_def] ?"
+        read MANDIR
+	
+	case $MANDIR in
+	    "") MANDIR=$mandir_def;;
+	    *) true;;
+	esac;;
+    yes) MANDIR=$mandir;;
+esac
+
+case $emacslib_spec in
+    no) echo "Where should I install the Coq Emacs mode [$emacslib_def] ?"
+        read EMACSLIB
+	
+	case $EMACSLIB in
+	    "") EMACSLIB=$emacslib_def;;
+	    *) true;;
+	esac;;
+    yes) EMACSLIB=$emacslib;;
+esac
+
+case $emacs_spec in
+    no) echo "Which Emacs command should I use to compile coq.el [$emacs_def] ?"
+        read EMACS
+	
+	case $EMACS in
+	    "") EMACS=$emacs_def;;
+	    *) true;;
+	esac;;
+    yes) EMACS=$emacs;;
+esac
+
+# OS dependent libraries
+
+case $ARCH in
+  sun4*) OS=`uname -r`
+	case $OS in
+	   5*) OS="Sun Solaris $OS"
+	       OSDEPLIBS="-cclib -lunix -cclib -lnsl -cclib -lsocket";;
+	   *) OS="Sun OS $OS"
+	      OSDEPLIBS="-cclib -lunix"
+        esac;;
+  alpha) OSDEPLIBS="-cclib -lunix";;
+  win32) OS="Win32" 
+	 OSDEPLIBS="-cclib \\\\\\\\ocaml/lib/libunix.lib -cclib wsock32.lib";;
+  *) OSDEPLIBS="-cclib -lunix"
+esac
+
+# OS dependent camlp4 options for native compilation
+
+case $ARCH in
+  ppc) OSDEPP4OPTFLAGS="-split_gext";;
+  *) OSDEPP4OPTFLAGS=""
+esac
+
+#the caml str library
+
+case $ARCH in
+    win32) WITH_STR="-cclib \\\\\\\\ocaml/lib/libstr.lib";;
+    *) WITH_STR="-cclib -lstr"
+esac
+
+# executable extension
+
+case $ARCH in
+    win32) EXE=".exe";;
+    *) EXE=""
+esac
+
+# ostype unix versus win32
+
+case $ARCH in
+    win32) OSTYPE="Win32";;
+    *) OSTYPE="Unix"
+esac
+
+# Objective Caml programs
+
+CAMLC=`which ocamlc`
+case $CAMLC in
+	"") echo "ocamlc is not present in your path !"
+	echo "Give me manually the path to the ocamlc executable [/usr/local/bin by default]: "
+	read CAMLC
+	
+	case $CAMLC in
+		"") CAMLC=/usr/local/bin/ocamlc;;
+		*/ocamlc) true;;
+		*/) CAMLC=${CAMLC}ocamlc;;
+		*) CAMLC=${CAMLC}/ocamlc;;
+	esac;;
+esac
+
+if test ! -f $CAMLC ; then
+	echo "I can not find the executable '$CAMLC'! (Have you installed it?)"
+	echo "Configuration script failed!"
+	exit 1
+fi
+
+CAMLBIN=`dirname $CAMLC`
+CAMLVERSION=`$CAMLC -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
+
+case $CAMLVERSION in
+  1.*|2.00)
+	echo "Your version of Objective-Caml is $CAMLVERSION."
+	echo "You need Objective-Caml 2.01 or later !"
+	echo "Configuration script failed!"
+	exit 1;;
+  ?*)	echo "You have Objective-Caml $CAMLVERSION. Good!";;
+  *) echo "I found the Objective-Caml compiler but cannot find its version number!"
+     echo "Is it installed properly ?"
+     echo "Configuration script failed!"
+     exit 1;;
+esac
+
+# do we have a native compiler: test of ocamlopt
+
+CAMLOPT=`which ocamlopt`
+case $CAMLOPT in
+	"") byte_opt_tools=byte;;
+esac
+
+# For Dynlink
+
+CAMLLIB=`ocamlc -v | sed -n -e 's|.*directory:* *\(.*\)$|\1|p' `
+
+# Camlp4
+
+CAMLP4=`which camlp4`
+case $CAMLP4 in
+	"") echo "camlp4 is not present in your path !"
+	echo "Give me manually the path to the camlp4 executable [/usr/local/bin by default]: "
+	read CAMLP4
+	
+	case $CAMLP4 in
+		"") CAMLP4=/usr/local/bin/camlp4;;
+		*/camlp4) true;;
+		*/) CAMLP4=${CAMLP4}camlp4;;
+		*) CAMLP4=${CAMLP4}/camlp4;;
+	esac;;
+esac
+
+if test ! -f $CAMLP4 ; then
+	echo "I can not find the executable '$CAMLP4'! (Have you installed it?)"
+	echo "Configuration script failed!"
+	exit 1
+fi
+
+CAMLP4BIN=`dirname $CAMLP4`
+CAMLP4VERSION=`$CAMLP4 -v 2>&1 | sed -n -e 's|.*version *\(.*\)$|\1|p'`
+case $CAMLP4VERSION in
+  0.*|1.*|2.00*)
+        echo "Your version of Camlp4 is $CAMLP4VERSION."
+	echo "You need Camlp4 2.01 or later !"
+	echo "Configuration script failed!"
+	exit 1;;
+  ?*)	echo "You have Camlp4 $CAMLP4VERSION. Good!";;
+  *) echo "I found Camlp4 but cannot find its version number!"
+     echo "Is it installed properly ?"
+     echo "Configuration script failed!"
+     exit 1;;
+esac
+case $ARCH in
+    win32)
+	CAMLP4LIB=`$CAMLP4 -where |sed -e 's|\\\|/|g'`;;
+    *)
+	CAMLP4LIB=`$CAMLP4 -where`;;
+esac
+
+case $ARCH in
+    win32)
+	STRIPCOMMAND="true";;
+    *)
+	STRIPCOMMAND="strip";;
+esac
+
+# Summary of the configuration
+
+echo ""
+echo "  Coq top directory              : $COQTOP"
+echo "  Architecture                   : $ARCH"
+if test ! -z "$OS" ; then
+  echo "  Operating system               : $OS"
+fi
+echo "  OS dependant libraries         : $OSDEPLIBS"
+echo "  Objective-Caml version         : $CAMLVERSION"
+echo "  Objective-Caml binaries in     : $CAMLBIN"
+echo "  Objective-Caml library in      : $CAMLLIB"
+echo "  Camlp4 version                 : $CAMLP4VERSION"
+echo "  Camlp4 binaries in             : $CAMLP4BIN"
+echo "  Camlp4 library in              : $CAMLP4LIB"
+echo ""
+
+echo "  Paths for true installation:"
+echo "    binaries   will be copied in $BINDIR"
+echo "    library    will be copied in $LIBDIR"
+echo "    man pages  will be copied in $MANDIR"
+echo "    emacs mode will be copied in $EMACSLIB"
+echo ""
+
+# Building the $COQTOP/config/Makefile file
+
+rm -f $COQTOP/config/Makefile
+
+case $ARCH in
+    win32)
+	sed -e "s|COQTOPDIRECTORY|$COQTOP|" \
+	    -e "s|COQVERSION|$VERSION|" \
+	    -e "s|BINDIRDIRECTORY|`echo $BINDIR |sed -e 's|\\\|/|g'`|" \
+	    -e "s|COQLIBDIRECTORY|`echo $LIBDIR |sed -e 's|\\\|/|g'`|" \
+	    -e "s|MANDIRDIRECTORY|`echo $MANDIR |sed -e 's|\\\|/|g'`|" \
+	    -e "s|EMACSLIBDIRECTORY|`echo $EMACSLIB |sed -e 's|\\\|/|g'`|" \
+	    -e "s|EMACSCOMMAND|$EMACS|" \
+	    -e "s|ARCHITECTURE|$ARCH|" \
+	    -e "s|OSDEPENDANTLIBS|$OSDEPLIBS|" \
+	    -e "s|OSDEPENDANTP4OPTFLAGS|$OSDEPP4OPTFLAGS|" \
+	    -e "s|STRLIBRARY|$WITH_STR|" \
+	    -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
+	    -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
+	    -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
+	    -e "s|OSKIND|$OSTYPE|" \
+	    -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
+	    -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
+	    -e "s|COQTOOLSFLAG|$byte_opt_tools|" \
+	    -e "s|EXECUTEEXTENSION|$EXE|" \
+	    -e "s|BYTECAMLC|$bytecamlc$caml_warnings $coq_debug_flag|" \
+	    -e "s|NATIVECAMLC|$nativecamlc$caml_warnings|" \
+	    -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
+	    $COQTOP/config/Makefile.template > $COQTOP/config/Makefile;;
+    *)
+	sed -e "s|COQTOPDIRECTORY|$COQTOP|" \
+	    -e "s|COQVERSION|$VERSION|" \
+	    -e "s|BINDIRDIRECTORY|$BINDIR|" \
+	    -e "s|COQLIBDIRECTORY|$LIBDIR|" \
+	    -e "s|MANDIRDIRECTORY|$MANDIR|" \
+	    -e "s|EMACSLIBDIRECTORY|$EMACSLIB|" \
+	    -e "s|EMACSCOMMAND|$EMACS|" \
+	    -e "s|ARCHITECTURE|$ARCH|" \
+	    -e "s|OSDEPENDANTLIBS|$OSDEPLIBS|" \
+	    -e "s|OSDEPENDANTP4OPTFLAGS|$OSDEPP4OPTFLAGS|" \
+	    -e "s|STRLIBRARY|$WITH_STR|" \
+	    -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
+	    -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
+	    -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
+	    -e "s|OSKIND|$OSTYPE|" \
+	    -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
+	    -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
+	    -e "s|COQTOOLSFLAG|$byte_opt_tools|" \
+	    -e "s|EXECUTEEXTENSION|$EXE|" \
+	    -e "s|BYTECAMLC|$bytecamlc$caml_warnings $coq_debug_flag|" \
+	    -e "s|NATIVECAMLC|$nativecamlc$caml_warnings|" \
+	    -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
+	    $COQTOP/config/Makefile.template > $COQTOP/config/Makefile;;
+esac
+
+chmod a-w $COQTOP/config/Makefile
+
+# Building the $COQTOP/config/coq_config.ml file
+
+mlconfig_file=$COQTOP/config/coq_config.ml
+rm -f $mlconfig_file
+cat << END_OF_COQ_CONFIG > $mlconfig_file
+(* DO NOT EDIT THIS FILE: automatically generated by ../configure *)
+
+let bindir = "$BINDIR" 
+let coqlib = "$LIBDIR"
+let coqtop = "$COQTOP"
+let camllib = "$CAMLLIB"
+let camlp4lib = "$CAMLP4LIB"
+let arch = "$ARCH"
+let osdeplibs = "$OSDEPLIBS"
+let defined = [ "$OSTYPE" ]
+let version = "$VERSION"
+let versionsi = "$VERSIONSI"
+let date = "$DATE"
+let compile_date = "$COMPILEDATE"
+
+END_OF_COQ_CONFIG
+
+# Subdirectories of theories/ added in coq_config.ml
+subdirs () {
+    (cd $1; find . -type d ! -name CVS ! -name . -exec printf "\"%s\";\n" {} \; >> $mlconfig_file)
+}
+
+echo_e () {
+    case "`uname -s`" in
+	OSF1|SunOS )
+	echo $*;;
+    *)
+	echo -e $*;;
+  esac
+}
+
+echo_e "\nlet theories_dirs = [" >> $mlconfig_file
+subdirs theories
+echo_e "]\n" >> $mlconfig_file
+
+
+if test $ARCH = "win32" ; then
+# We change: / -> \\ and \ -> \\ (dos paths)
+# This is a bit tricky
+sed -e "s|\\\\\\\\\\\\\\\|\\\|" -e "s|/|\\\|g"  -e "s|\\\|\\\\\\\|g" $mlconfig_file > $mlconfig_file.win
+mv $mlconfig_file.win $mlconfig_file
+fi
+chmod a-w $mlconfig_file
+
+echo "If anything in the above is wrong, please restart './configure'"
+echo
+echo "*Warning* To compile the system for a new architecture"
+echo "          don't forget to do a 'make archclean' before './configure'."
+
+# $Id$
