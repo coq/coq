@@ -173,12 +173,22 @@ GEXTEND Gram
           <:ast< (TEST_IMPLICIT_ARGS) >>
 
       (* Set printing of coercions *)
+      | "Set"; IDENT "Printing"; IDENT "Coercion"; 
+	qidl = ne_qualidarg_list ->
+	  <:ast< (PRINTING_COERCIONS_ON ($LIST qidl)) >>
       | "Set"; IDENT "Printing"; IDENT "Coercions" ->
           <:ast< (PRINTING_COERCIONS_ON) >>
+      | IDENT "Unset"; IDENT "Printing"; IDENT "Coercion"; 
+	qidl = ne_qualidarg_list ->
+          <:ast< (PRINTING_COERCIONS_OFF ($LIST qidl)) >>
       | IDENT "Unset"; IDENT "Printing"; IDENT "Coercions" ->
           <:ast< (PRINTING_COERCIONS_OFF) >>
+      | IDENT "Test"; IDENT "Printing"; IDENT "Coercion";
+	qidl = ne_qualidarg_list ->
+          <:ast< (TEST_PRINTING_COERCIONS ($LIST qidl)) >>
       | IDENT "Test"; IDENT "Printing"; IDENT "Coercions" ->
           <:ast< (TEST_PRINTING_COERCIONS) >>
+
 
       (* Pour intervenir sur les tables de paramètres *)
       | "Set"; table = identarg; field = identarg;
