@@ -421,11 +421,11 @@ and pr_atom1 env = function
   | TacCaseType c -> hov 1 (str "casetype" ++ pr_constrarg env c)
   | TacFix (ido,n) -> hov 1 (str "fix" ++ pr_opt pr_id ido ++ pr_intarg n)
   | TacMutualFix (id,n,l) ->
-      hov 1 (str "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ cut() ++
+      hov 1 (str "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc() ++
              str"with " ++ prlist_with_sep spc (pr_fix_tac env) l)
   | TacCofix ido -> hov 1 (str "cofix" ++ pr_opt pr_id ido)
   | TacMutualCofix (id,l) ->
-      hov 1 (str "cofix" ++ spc () ++ pr_id id ++ cut () ++
+      hov 1 (str "cofix" ++ spc () ++ pr_id id ++ spc() ++
              str"with " ++ prlist_with_sep spc (pr_cofix_tac env) l)
   | TacCut c -> hov 1 (str "cut" ++ pr_constrarg env c)
   | TacTrueCut (None,c) -> 
@@ -562,7 +562,7 @@ and pr_atom1 env = function
 
   (* Equality and inversion *)
   | TacInversion (DepInversion (k,c,ids),hyp) ->
-      hov 1 (str "dependent " ++ pr_induction_kind k ++ 
+      hov 1 (str "dependent " ++ pr_induction_kind k ++ spc () ++
       pr_quantified_hypothesis hyp ++
       pr_with_names ids ++ pr_with_constr (pr_constr env) c)
   | TacInversion (NonDepInversion (k,cl,ids),hyp) ->
@@ -571,7 +571,7 @@ and pr_atom1 env = function
       pr_with_names ids ++ pr_simple_clause pr_ident cl)
   | TacInversion (InversionUsing (c,cl),hyp) ->
       hov 1 (str "inversion" ++ spc() ++ pr_quantified_hypothesis hyp ++ 
-      str "using" ++ spc () ++ pr_constr env c ++ 
+      spc () ++ str "using" ++ spc () ++ pr_constr env c ++ 
       pr_simple_clause pr_ident cl)
 
 in
