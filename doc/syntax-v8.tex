@@ -189,7 +189,7 @@ $\NTL{constr}{9}$ is also used as entry point.
 \nlsep \KWD{let}~\NT{ident}~\STAR{\NT{binder-let}}~\NT{type-cstr}
        ~\KWD{:=}~\NTL{constr}{200}
        ~\KWD{in}~\NTL{constr}{200}  &&\RNAME{let}
-\nlsep \KWD{let}~\NT{fix-expr} ~\KWD{in}~\NTL{constr}{200}
+\nlsep \KWD{let}~\NT{single-fix} ~\KWD{in}~\NTL{constr}{200}
           &&\RNAME{rec-let}
 \nlsep \KWD{let}~\KWD{(}~\OPT{\NT{let-pattern}}~\KWD{)}~\OPT{\NT{return-type}}
        ~\KWD{:=}~\NTL{constr}{200}~\KWD{in}~\NTL{constr}{200}
@@ -478,7 +478,7 @@ $$
 \nlsep \TERM{pattern}~\NT{pattern-occ}~\STARGR{\KWD{,}~\NT{pattern-occ}}
 \SEPDEF
 \DEFNT{conversion}
-       \tacconstr~\TERM{at}~\PLUS{\NT{int}}~\KWD{with}~\tacconstr
+       \tacconstr~\KWD{at}~\PLUS{\NT{int}}~\KWD{with}~\tacconstr
 \nlsep \tacconstr~\KWD{with}~\tacconstr
 \nlsep \tacconstr
 \SEPDEF
@@ -723,6 +723,29 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \TERM{simplif}
 \nlsep \TERM{intuition}~\OPT{\NTL{tactic}{0}}
 \nlsep \TERM{linearintuition}~\OPT{\NT{int}}
+%% contrib/cc
+\nlsep \TERM{cc}
+%% contrib/field
+\nlsep \TERM{field}~\STAR{\tacconstr}
+%% contrib/first-order
+\nlsep \TERM{ground}~\OPT{\NTL{tactic}{0}}
+\nlsep \TERM{ground}~\OPT{\NTL{tactic}{0}}~\KWD{with}~\PLUS{\NT{reference}}
+\nlsep \TERM{ground}~\OPT{\NTL{tactic}{0}}~\KWD{using}~\PLUS{\NT{ident}}
+\nlsep \TERM{gtauto}
+\nlsep \TERM{gintuition}~\OPT{\NTL{tactic}{0}}
+%% contrib/fourier
+\nlsep \TERM{fourierZ}
+%% contrib/funind
+\nlsep \TERM{functional}~\TERM{induction}~\tacconstr~\PLUS{\tacconstr}
+%% contrib/jprover
+\nlsep \TERM{jp}~\OPT{\NT{int}}
+%% contrib/omega
+\nlsep \TERM{omega}
+%% contrib/ring
+\nlsep \TERM{quote}~\NT{ident}~\OPTGR{\KWD{[}~\PLUS{\NT{ident}}~\KWD{]}}
+\nlsep \TERM{ring}~\STAR{\tacconstr}
+%% contrib/romega
+\nlsep \TERM{romega}
 \SEPDEF
 \DEFNT{orient}
        \KWD{$\rightarrow$}~\mid~\KWD{$\leftarrow$}
@@ -1000,7 +1023,7 @@ $$
 
 \subsection{Switches}
 \begin{rules}
-\DEFNT{command}
+\EXTNT{command}
        \KWD{Set}~\NT{ident}~\OPT{\NT{opt-value}}
 \nlsep \TERM{Unset}~\NT{ident}
 \nlsep \KWD{Set}~\NT{ident}~\NT{ident}~\OPT{\NT{opt-value}}
@@ -1018,32 +1041,75 @@ $$
 
 \subsection{Other commands}
 
-
+%% TODO: min/maj pas a jour
 \begin{rules}
-\DEFNT{command}
+\EXTNT{command}
        \TERM{Ltac}~\NT{ident}~\STAR{\NT{name}}~\KWD{:=}~\NT{tactic}
 \nlsep \TERM{Debug}~\TERM{On}
 \nlsep \TERM{Debug}~\TERM{Off}
 %% TODO: vernac
-\nlsep \TERM{add}~\TERM{setoid}~\tacconstr~\tacconstr~\tacconstr
-\nlsep \TERM{add}~\TERM{morphism}~\tacconstr~\KWD{:}~\NT{ident}
-\nlsep \TERM{derive}~\TERM{inversion_clear}
+\nlsep \TERM{Add}~\TERM{setoid}~\tacconstr~\tacconstr~\tacconstr
+\nlsep \TERM{Add}~\TERM{morphism}~\tacconstr~\KWD{:}~\NT{ident}
+\nlsep \TERM{Derive}~\TERM{inversion_clear}
          ~\OPT{\NT{int}}~\NT{ident}~\NT{ident}
-\nlsep \TERM{derive}~\TERM{inversion_clear}
+\nlsep \TERM{Derive}~\TERM{inversion_clear}
          ~\NT{ident}~\KWD{with}~\tacconstr~\OPTGR{\TERM{Sort}~\NT{sort}}
-\nlsep \TERM{derive}~\TERM{inversion}
+\nlsep \TERM{Derive}~\TERM{inversion}
          ~\OPT{\NT{int}}~\NT{ident}~\NT{ident}
-\nlsep \TERM{derive}~\TERM{inversion}
+\nlsep \TERM{Derive}~\TERM{inversion}
          ~\NT{ident}~\KWD{with}~\tacconstr~\OPTGR{\TERM{Sort}~\NT{sort}}
-\nlsep \TERM{derive}~\TERM{dependent}~\TERM{inversion_clear}
+\nlsep \TERM{Derive}~\TERM{dependent}~\TERM{inversion_clear}
          ~\NT{ident}~\KWD{with}~\tacconstr~\OPTGR{\TERM{Sort}~\NT{sort}}
-\nlsep \TERM{derive}~\TERM{dependent}~\TERM{inversion}
+\nlsep \TERM{Derive}~\TERM{dependent}~\TERM{inversion}
          ~\NT{ident}~\KWD{with}~\tacconstr~\OPTGR{\TERM{Sort}~\NT{sort}}
+%% Correctness: obsolete ?
+%\nlsep Correctness
+%\nlsep Global Variable
+%% extraction
+\nlsep Extraction ...
+%% field
+\nlsep \TERM{Add}~\TERM{Field}~\tacconstr~\tacconstr~\tacconstr
+         ~\tacconstr~\tacconstr~\tacconstr
+\nlcont~~~~\tacconstr~\tacconstr~\OPT{\NT{minus-div}}
+%% funind
+\nlsep \TERM{Functional}~\TERM{Scheme}~\NT{ident}~\KWD{:=}
+         ~\TERM{Induction}~\KWD{for}~\tacconstr
+         ~\OPTGR{\KWD{with}~\PLUS{\tacconstr}}
+%% ring
+\nlsep \TERM{Add}~\TERM{Ring}~\tacconstr~\tacconstr~\tacconstr
+         ~\tacconstr~\tacconstr~\tacconstr
+\nlcont~~~~\tacconstr~\tacconstr~\KWD{[}~\PLUS{\tacconstr}~\KWD{]}
+\nlsep \TERM{Add}~\TERM{Semi}~\TERM{Ring}~\tacconstr~\tacconstr~\tacconstr
+         ~\tacconstr~\tacconstr~\tacconstr
+\nlcont~~~~\tacconstr~\KWD{[}~\PLUS{\tacconstr}~\KWD{]}
+\nlsep \TERM{Add}~\TERM{Abstract}~\TERM{Ring}~\tacconstr~\tacconstr~\tacconstr
+         ~\tacconstr~\tacconstr~\tacconstr
+\nlcont~~~~\tacconstr~\tacconstr
+\nlsep \TERM{Add}~\TERM{Abstract}~\TERM{Semi}~\TERM{Ring}~\tacconstr
+         ~\tacconstr~\tacconstr~\tacconstr~\tacconstr~\tacconstr
+\nlcont~~~~\tacconstr
+\nlsep \TERM{Add}~\TERM{Setoid}~\TERM{Ring}~\tacconstr~\tacconstr~\tacconstr
+         ~\tacconstr~\tacconstr~\tacconstr
+\nlcont~~~~\tacconstr~\tacconstr~\tacconstr~\tacconstr~\tacconstr~\tacconstr
+         ~\tacconstr~\KWD{[}~\PLUS{\tacconstr}~\KWD{]}
+\nlsep \TERM{Add}~\TERM{Setoid}~\TERM{Semi}~\TERM{Ring}~\tacconstr~\tacconstr
+         ~\tacconstr~\tacconstr~\tacconstr~\tacconstr
+\nlcont~~~~\tacconstr~\tacconstr~\tacconstr~\tacconstr~\tacconstr
+         ~\KWD{[}~\PLUS{tacconstr}~\KWD{]}
+\SEPDEF
+\DEFNT{minus-div}
+       \KWD{with}~\NT{minus-arg}~\NT{div-arg}
+\nlsep \KWD{with}~\NT{div-arg}~\NT{minus-arg}
+\SEPDEF
+\DEFNT{minus-arg}
+       \TERM{minus}~\KWD{:=}~\tacconstr
+\SEPDEF
+\DEFNT{div-arg}
+       \TERM{div}~\KWD{:=}~\tacconstr
 \end{rules}
 
-
 \begin{rules}
-\DEFNT{command}
+\EXTNT{command}
        \TERM{Write}~\TERM{State}~\NT{ident}
 \nlsep \TERM{Write}~\TERM{State}~\NT{string}
 \nlsep \TERM{Restore}~\TERM{State}~\NT{ident}
@@ -1056,7 +1122,7 @@ $$
 \subsection{Proof-editing commands}
 
 \begin{rules}
-\DEFNT{command}
+\EXTNT{command}
        \TERM{Goal}~\NT{constr}
 \nlsep \TERM{Proof}~\OPT{\NT{constr}}
 \nlsep \TERM{Proof}~\KWD{with}~\NT{tactic}
@@ -1082,6 +1148,8 @@ $$
 \nlsep \TERM{Show}~\TERM{Proof}
 \nlsep \TERM{Show}~\TERM{Intro}
 \nlsep \TERM{Show}~\TERM{Intros}
+%% Correctness: obsolete ?
+%%\nlsep \TERM{Show}~\TERM{Programs}
 \nlsep \TERM{Explain}~\TERM{Proof}~\OPT{\TERM{Tree}}~\STAR{\NT{int}}
 %% Go not documented
 \nlsep \TERM{Hint}~\TERM{Destruct}~\NT{destruct-loc}~\NT{int}
@@ -1140,9 +1208,9 @@ $$
 \nlsep \NT{modifier}~\KWD{,}~\NT{mod-list}
 \SEPDEF
 \DEFNT{modifier}
-       \NT{ident}~\TERM{at}~\NT{int}
-\nlsep \NT{ident}~\STARGR{\KWD{,}~\NT{ident}}~\TERM{at}~\NT{int}
-\nlsep \TERM{at}~\TERM{level}~\NT{int}
+       \NT{ident}~\KWD{at}~\NT{int}
+\nlsep \NT{ident}~\STARGR{\KWD{,}~\NT{ident}}~\KWD{at}~\NT{int}
+\nlsep \KWD{at}~\TERM{level}~\NT{int}
 \nlsep \TERM{left}~\TERM{associativity}
 \nlsep \TERM{right}~\TERM{associativity}
 \nlsep \TERM{no}~\TERM{associativity}
