@@ -34,6 +34,7 @@ Library
   ProjS1, ProjS2, Error, Value and Except are turned to
   notations. They now must be applied (incompatibilities only in
   unrealistic cases).
+- More efficient versions of Zmult and times (30% faster)
 
 Language
 
