@@ -5,12 +5,15 @@
 % yay les symboles
 \usepackage{stmaryrd}
 \usepackage{amssymb}
+\usepackage{url}
 
 % version et date
 \def\faqversion{0.1}
 
 % les macros d'amour
 \def\Coq{\textsc{Coq }}
+\def\Why{\textsc{Why }}
+\def\Krakatoa{\textsc{Krakatoa }}
 \def\Ltac{\textsc{Ltac }}
 \def\CoqIde{\textsc{CoqIde }}
 
@@ -87,7 +90,7 @@ to \Coq by the way they interact with the user. More distant relatives of
 This is any logic which does not assume that ``A or not A''.
 
 
-\Question[theory]{Where can I find informations about the theory behind \Coq ?}
+\Question[theory]{Where can I find information about the theory behind \Coq ?}
 
 \begin{description}
 \item[Type theory]
@@ -107,34 +110,60 @@ Pierre Letouzey
 \end{description}
 
 
+\Question[provingprograms]{How can I use \Coq to prove programs ?}
+
+You can either extract a program from a proof use the extraction mechanism or use dedicated tools to prove annotated programs writen in another langage such as \Why and \Krakatoa.
+\Question[nbusers]{How many \Coq users are there ?}
+
+That's a good question.
+
+\Question[howold]{How old is \Coq ?}
+The first official release of \Coq (v. 4.1.0) was distributed in 1989.
+
+\Question[relatedtools]{What are the \Coq-related tools ?}
+
+\begin{description}
+\item[Coqide] A GTK based gui for \Coq.
+\item[Pcoq] A gui for \Coq with proof by pointing and pretty printing.
+\item[Why] A back-end generator of verification conditions.
+\item[Krakatoa] A Java code certification tool that uses both \Coq and \Why to verify the soundness of implementations with regards to the specifications.
+\item[coqwc] A tool similar to {\tt wc} to count lines in \Coq files.
+\item[coq-tex] A tool to insert \Coq examples within .tex files. 
+\item[coqdoc] A documentation tool for \Coq.
+\item[Proof General] A emacs mode for \Coq and many other proof assistants.
+\item[Foc] The Foc project aims at building an environment to develop certified computer algebra libraries. 
+\end{description}
+
+\Question[industrial]{What are industrial application for \Coq ?}
+
+Coq is used by Trusted Logic to prove properties of the JavaCard system.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Documentation}
 
 \Question[coqdocumentation]{Where can I find documentation about \Coq ?} 
-All the documentation about \Coq, from the reference manual \cite{coqmanual} to
-friendly tutorials \cite{Coq:Tutorial} and documentation of the standard library, is
-available online at 
-\mbox{\tt http://pauillac.inria.fr/coq/doc-eng.html}.
+All the documentation about \Coq, from the reference manual \cite{Coq:manual} to
+friendly tutorials \cite{Coq:Tutorial} and documentation of the standard library, is available online at 
+\url{http://pauillac.inria.fr/coq/doc-eng.html}.
 All these documents are viewable either in browsable html, or as
 downloadable postscripts.
 
-\Question[coqfaq]{Where can I find this faq on the web ?} 
-Errr\ldots
+\Question[coqfaq]{Where can I find this faq on the web ?}
 
+This faq is available online at \url{http://coq.inria.fr/faq.html}.
 
-\Question[faqimprov]{How can I submit suggestions/improvements/additions for this FAQ?}
+\Question[faqimprov]{How can I submit suggestions / improvements / additions for this FAQ?}
 
 This FAQ is unfinished (in the sense that there are some obvious sections it needs, some included below). Please send contributions to the authors. 
 
 
 \Question[coqmailinglist]{Is there any mailing list about \Coq ?} 
-The main \Coq mailing list is {\tt coq-club@pauillac.inria.fr}, which
+The main \Coq mailing list is \url{coq-club@pauillac.inria.fr}, which
 broadcasts questions and suggestions about the implementation, the
 logical formalism or proof developments. See
-\mbox{\tt http://pauillac.inria.fr/mailman/listinfo/coq-club} for
-subsription. Bugs reports should be sent at the {\tt
-coq-bugs@pauillac.inria.fr} mailing-list.
+\url{http://pauillac.inria.fr/mailman/listinfo/coq-club} for
+subsription. Bugs reports should be sent at the \url{coq-bugs@pauillac.inria.fr} mailing-list.
 
 \Question[coqmailinglistarchive]{Where can I find an archive of the list?}
 
@@ -149,34 +178,15 @@ students, and engineers interested in formal methods and the
 development of zero-default software.''
 \end{quote}
 
+
+\Question[coqexamples]{Where can I find some \Coq examples ?} 
+
+There are examples in the manual \cite{Coq:manual} and in the CoqArt \cite{Coq:coqart}. You can also find large developments using \Coq in the \Coq user contributions : \url{http://coq.inria.fr/distrib-eng.html}
+
 \Question[coqbug]{How can I report a bug ?}
 
+You can use the web interface at \url{http://coq.inria.fr/bin/coq-bugs}.
 
-
-\Question[nbusers]{How many \Coq users are there ?}
-
-
-\Question[howold]{How old is \Coq ?}
-The first official release of \Coq (v. 4.1.0) was distributed in 1989.
-
-
-\Question[relatedtools]{What are the \Coq-related tools ?}
-
-\begin{description}
-\item[Coqide] A GTK based gui for \Coq.
-\item[Pcoq] A gui for \Coq with proof by pointing and pretty printing.
-\item[Why] A back-end generator of verification conditions.
-\item[Krakatoa] A Java code certification tool that uses both Coq and Why to verify the soundness of implementations with regards to the specifications.
-\item[coqwc] A tool similar to {\tt wc} to count lines in \Coq files.
-\item[coq-tex] A tool to insert \Coq examples within .tex files. 
-\item[coqdoc] A documentation tool for \Coq.
-\item[Proof General] A emacs mode for \Coq and many other proof assistants.
-\item[Foc] The Foc project aims at building an environment to develop certified computer algebra libraries. 
-\end{description}
-
-\Question[industrial]{What are industrial application for \Coq ?}
-
-Trusted Logic ...
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -188,35 +198,23 @@ It is distributed under the GNU Lesser General Licence (LGPL).
 
 \Question[coqsources]{Where can I find the sources of \Coq ?}
 The sources of \Coq can be found online in the tar.gz'ed packages
-({\tt http://coq.inria.fr/distrib-eng.html}). Most recent sources can
-be accessed via anonymous CVS: {\tt
-http://coqcvs.inria.fr/cvsserver-eng.html}
+(\url{http://coq.inria.fr/distrib-eng.html}). Most recent sources can
+be accessed via anonymous CVS: \url{http://coqcvs.inria.fr/cvsserver-eng.html}
 
 \Question[platform]{On which platform \Coq is available ?}
 Compiled binaries are available for Linux, MacOs X, Solaris, and
-Windows. The sources can be easily adapted to all platform supporting Objective Caml.
-
-
+Windows. The sources can be easily adapted to all platforms supporting Objective Caml.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Talkin' with the Rooster}
 
-\Question[coqexamples]{Where can I find some \Coq examples ?} 
-
-There are examples in the manual and in the CoqArt. You can find large developments using \Coq in the \Coq contributions : {\tt http://coq.inria.fr/distrib-eng.html}
 
 
-\Question[goal]{What is a goal ?}
 
-The goal is the statement to be proved.
+\section{My goal is ...,  how can I prove it ?}
 
-\Question[metavariable]{What is a meta variable ?}
-
-\Question[type]{What is Type(i) ?}
-
-\Question[dependanttype]{What is a dependent type ?}
 
 \Question[conjonction]{My goal is a conjunction, how can I prove it ?}
 
@@ -298,12 +296,7 @@ You need to use the {\tt solve} tactic.
 
 \Question[patternmatchingsyntax]{What is the syntax for pattern matching ?}
 
-\Question[reflection]{What is a proof by reflection ?}
 
-This is a proof generated by some computation which is done using the internal reduction of Coq (not using the tactic language of \Coq (\Ltac) nor the implementation language for \Coq).
-An example of tactic using the reflection mechanism is the {\tt ring} tactic. 
-The reflection method consist in reflecting a subset of Coq language (for example the arithmetical expressions) into an object of the Coq language itself (in our case an inductive type denoting arithmetical expressions).
-For more information see  \cite{howe,harrison,boutin} and the last chapter of the CoqArt.
 
 \section{\Ltac}
 
@@ -334,13 +327,34 @@ You can use the following syntax :
 \Question[statdyn]{How can I define static and dynamic code ?}
 
 
+\section{Glossary}
+
+\Question[goal]{What is a goal ?}
+
+The goal is the statement to be proved.
+
+\Question[metavariable]{What is a meta variable ?}
+
+\Question[type]{What is Type(i) ?}
+
+\Question[dependanttype]{What is a dependent type ?}
+
+
+\Question[reflection]{What is a proof by reflection ?}
+
+This is a proof generated by some computation which is done using the internal reduction of Coq (not using the tactic language of \Coq (\Ltac) nor the implementation language for \Coq).
+An example of tactic using the reflection mechanism is the {\tt ring} tactic. 
+The reflection method consist in reflecting a subset of Coq language (for example the arithmetical expressions) into an object of the Coq language itself (in our case an inductive type denoting arithmetical expressions).
+For more information see  \cite{howe,harrison,boutin} and the last chapter of the CoqArt.
+
+
 \section{Conclusion and Farewell.}
 \label{ccl}
 
 \Question[NoAns]{What if my question isn't answered here ?} 
 \label{lastquestion}
 
-Don't panic. You can try the \Coq manual~\cite{Coq:e} for a technical
+Don't panic. You can try the \Coq manual~\cite{Coq:manual} for a technical
 description of the prover. The Coq'Art~\cite{Coq:coqart} is the first
 book written on \Coq and provides a comprehensive review of the
 theorem prover as well as a number of example and exercises. Finally,
