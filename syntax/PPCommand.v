@@ -31,7 +31,7 @@ Syntax constr
 (* Things parsed in command0 *)
   level 0:
     prop [(PROP)] -> ["Prop"]
-  | set [(SET)] -> ["Set"]
+  | set  [(SET)]  -> ["Set"]
   | type [(TYPE)] -> ["Type"]
   | type_sp [(TYPE ($PATH $sp) ($NUM $n))] -> ["Type"]
 (* Note: Atomic constants (Nvar, CONST, MUTIND, MUTCONSTRUCT) are printed in
@@ -40,6 +40,7 @@ Syntax constr
   | evar [<< ? >>] -> ["?"]
   | meta [(META ($NUM $n))] -> [ "?" $n ]
   | implicit [(IMPLICIT)] -> ["<Implicit>"]
+  | indice [(REL ($NUM $n))] -> ["<Unbound ref: " $n ">"]
   ;
 
 (* Things parsed in command1 *)
@@ -103,7 +104,7 @@ Syntax constr
 
   | prod_cons [(PRODBOX (BINDERS ($LIST $acc)) <<($x : $Dom)$body>>)]
       -> [(PRODBOX (BINDERS ($LIST $acc) (BINDER $Dom $x)) $body)]
-  | prodl_start [(PRODBOX $pbi (PRODLIST $Dom $Body))]
+  | prodl_start_cons [(PRODBOX $pbi (PRODLIST $Dom $Body))]
       -> [(PRODLBOX $pbi $Dom (IDS) $Body)]
 
   | prodl_end [(PRODLBOX (BINDERS ($LIST $acc)) $c (IDS ($LIST $ids)) $t)]
@@ -116,7 +117,7 @@ Syntax constr
 
   | arrow [<< $A -> $B >>] -> [ [<hv 0> $A:L [0 0] "->" (ARROWBOX $B) ] ]
   | arrow_stop [(ARROWBOX $c)] -> [ $c:E ]
-  | arrow_again [(ARROWBOX << $A -> $B >>)] -> [ $A:L [0 0] "->" (ARROWBOX $B)]
+  | arrow_again [(ARROWBOX << $A -> $B >>)] -> [ $A:L [0 0] "->" (ARROWBOX $B) ]
   ;
 
 (* Things parsed in command9 *)
@@ -126,13 +127,13 @@ Syntax constr
     app_cons [(APPLIST $H ($LIST $T))]
                  -> [ [<hov 0>  $H:E  (APPTAIL ($LIST $T)):E ] ]
 
-  | app_imp  [(APPLIST (XTRA "!" $H) ($LIST $T))]
+  | app_imp  [(APPLISTEXPL $H ($LIST $T))]
                  -> [ (APPLISTIMPL (ACC $H) ($LIST $T)):E ]
 
   | app_imp_arg  [(APPLISTIMPL (ACC ($LIST $AC)) $a ($LIST $T))]
         -> [ (APPLISTIMPL (ACC ($LIST $AC) $a) ($LIST $T)):E ]
 
-  | app_imp_imp_arg  [ (APPLISTIMPL $AC (XTRA "!" $_ $_) ($LIST $T)) ]
+  | app_imp_imp_arg  [ (APPLISTIMPL $AC (EXPL $_ $_) ($LIST $T)) ]
        -> [ (APPLISTIMPL $AC ($LIST $T)):E ]
 
   | app_imp_last [(APPLISTIMPL (ACC ($LIST $A)) $T)]
@@ -142,15 +143,15 @@ Syntax constr
   | apptailcons
        [ (APPTAIL $H ($LIST $T))] -> [ [1 1] $H:L  (APPTAIL ($LIST $T)):E ]
   | apptailnil [(APPTAIL)] -> [ ]
-  | apptailcons1  [(APPTAIL (XTRA "!" $n $c1) ($LIST $T))]
-         -> [ [1 1] (XTRA "!" $n $c1):L  (APPTAIL ($LIST $T)):E ]
+  | apptailcons1  [(APPTAIL (EXPL "!" $n $c1) ($LIST $T))]
+         -> [ [1 1] (EXPL $n $c1):L  (APPTAIL ($LIST $T)):E ]
   ;
 
 (* Implicits *)
   level 8:
-    arg_implicit [(XTRA "!" ($NUM $n) $c1)] -> [ $n "!" $c1:L ]
-  | arg_implicit1 [(XTRA "!" "EX" ($NUM $n) $c1)] -> [ $n "!" $c1:L ]
-  | fun_explicit [(XTRA "!" $f)] -> [ $f ]
+    arg_implicit [(EXPL ($NUM $n) $c1)] -> [ $n "!" $c1:L ]
+  | arg_implicit1 [(EXPL "EX" ($NUM $n) $c1)] -> [ $n "!" $c1:L ]
+  | fun_explicit [(EXPL $f)] -> [ $f ]
   ;
 
 
