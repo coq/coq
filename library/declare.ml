@@ -303,10 +303,10 @@ let declare_inductive_common mie =
   oname
 
 (* for initial declaration *)
-let declare_mind mie =
+let declare_mind isrecord mie =
   let (sp,kn as oname) = declare_inductive_common mie in
   Dischargedhypsmap.set_discharged_hyps sp [] ;
-  !xml_declare_inductive oname;
+  !xml_declare_inductive (isrecord,oname);
   oname
 
 (* when coming from discharge: no xml output *)

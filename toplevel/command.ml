@@ -361,10 +361,10 @@ let interp_mutual lparams lnamearconstrs finite =
   notations, { mind_entry_finite = finite; mind_entry_inds = mispecvec }
   with e -> States.unfreeze fs; raise e
 
-let declare_mutual_with_eliminations mie =
+let declare_mutual_with_eliminations isrecord mie =
   let lrecnames =
     List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let (_,kn) = declare_mind mie in
+  let (_,kn) = declare_mind isrecord mie in
   if_verbose ppnl (minductive_message lrecnames);
   declare_eliminations kn;
   kn
@@ -406,7 +406,7 @@ let extract_coe_la_lc = function
 let build_mutual lind finite =
   let ((coes:identifier list),lparams,lnamearconstructs) = extract_coe_la_lc lind in
   let notations,mie = interp_mutual lparams lnamearconstructs finite in
-  let kn = declare_mutual_with_eliminations mie in
+  let kn = declare_mutual_with_eliminations false mie in
   (* Declare the notations now bound to the inductive types *)
   List.iter (fun (df,c,scope) ->
     Metasyntax.add_notation_interpretation df [] c scope) notations;

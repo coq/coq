@@ -41,7 +41,7 @@ val declare_assumption : identifier located list ->
 val build_mutual : inductive_expr list -> bool -> unit
 
 val declare_mutual_with_eliminations :
-  Entries.mutual_inductive_entry -> mutual_inductive
+  bool -> Entries.mutual_inductive_entry -> mutual_inductive
 
 val build_recursive : (fixpoint_expr * decl_notation) list -> unit
 

@@ -63,8 +63,8 @@ val redeclare_constant :
 
 (* [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of
-   the whole block *)
-val declare_mind : mutual_inductive_entry -> object_name
+   the whole block (boolean must be true iff it is a record) *)
+val declare_mind : bool -> mutual_inductive_entry -> object_name
 
 (* Declaration from Discharge *)
 val redeclare_inductive :
@@ -99,4 +99,4 @@ val strength_of_global : global_reference -> strength
 (* hooks for XML output *)
 val set_xml_declare_variable : (object_name -> unit) -> unit
 val set_xml_declare_constant : (bool * object_name -> unit) -> unit
-val set_xml_declare_inductive : (object_name -> unit) -> unit
+val set_xml_declare_inductive : (bool * object_name -> unit) -> unit
