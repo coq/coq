@@ -6,6 +6,9 @@
 \usepackage{stmaryrd}
 \usepackage{amssymb}
 \usepackage{url}
+\usepackage{fullpage}
+%\usepackage{hevea}
+\input{../macros.tex}
 
 % version et date
 \def\faqversion{0.1}
@@ -274,6 +277,13 @@ Use a base of Hints.
 
 Use the {\tt assumption} tactic.
 
+\begin{coq_example}
+Goal 1=1 -> 1=1.
+intro.
+assumption.
+Qed.
+\end{coq_example}
+
 \Question[trivial]{My goal is ???, how can I prove it ?}
 
 \Question[proofwith]{I want to automatize the use of some tactic how can I do it ?}
@@ -295,6 +305,10 @@ You need to use the {\tt solve} tactic.
 \Question[letsyntax]{What is the syntax for let ?}
 
 \Question[patternmatchingsyntax]{What is the syntax for pattern matching ?}
+
+\Question[abstract]{What can I do when {\tt Qed.} is slow ?}
+
+Sometime you can use the {\tt abstract} tactic, which makes as if you had stated intermediated lemmas, this speeds up the typing process.  
 
 
 %%%%%%%
