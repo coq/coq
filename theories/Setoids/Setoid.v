@@ -8,8 +8,6 @@
 
 (*i $Id$: i*)
 
-Require Export Setoid_replace.
-
 Section Setoid.
 
 Variable A : Type.
