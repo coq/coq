@@ -147,10 +147,15 @@ object(self)
     result#misc#set_can_focus true; (* false causes problems for selection *)
     result#set_editable false;
     let callback () =
-      let phrase = combo#entry#text ^ " " ^ entry#text ^" . " in
+      let com = combo#entry#text in
+      let phrase = 
+	if String.get com (String.length com - 1) = '.'
+	then com ^ " " else com ^ " " ^ entry#text ^" . " 
+      in
       try
 	ignore(Coq.interp phrase);
-	result#buffer#set_text (Ideutils.read_stdout ())
+	result#buffer#set_text 
+	  ("Result for command " ^ phrase ^ ":\n" ^ Ideutils.read_stdout ())
       with e ->
 	let (s,loc) = Coq.process_exn e in
 	assert (Glib.Utf8.validate s);

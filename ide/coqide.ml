@@ -2429,6 +2429,12 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   
   let add_simple_template (factory: GMenu.menu GMenu.factory) 
     (menu_text, text) =
+    let text = 
+      let l = String.length text - 1 in
+      if String.get text l = '.'
+      then text ^"\n"
+      else text ^" "
+    in
     ignore (factory#add_item menu_text
 	      ~callback:
 	      (do_if_not_computing 
@@ -2453,9 +2459,9 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   List.iter 
     (fun l -> 
        match l with 
-       |[s] -> add_simple_template templates_factory ("_"^s, s^" ") 
        | [] -> ()
-       | s::r -> 
+       | [s] -> add_simple_template templates_factory ("_"^s, s) 
+       | s::_ -> 
 	   let a = "_@..." in
 	   a.[1] <- s.[0];
 	   let f = templates_factory#add_submenu a in 
@@ -2467,7 +2473,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 		((String.sub x 0 1)^
 		 "_"^
 		 (String.sub x 1 (String.length x - 1)),
-		 x^" "))
+		 x))
 	     l
     ) 
     Coq_commands.commands;

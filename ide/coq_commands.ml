@@ -10,8 +10,8 @@
 
 let commands = [
   [(* "Abort"; *)
-   "Add Abstract Ring";
-   "Add Abstract Semi Ring";
+   "Add Abstract Ring A Aplus Amult Aone Azero Ainv Aeq T.";
+   "Add Abstract Semi Ring A Aplus Amult Aone Azero Aeq T.";
    "Add Field";
    "Add LoadPath";
    "Add ML Path";
@@ -20,15 +20,13 @@ let commands = [
    "Add Printing Let";
    "Add Rec LoadPath";
    "Add Rec ML Path";
-   "Add Ring";
-   "Add Semi Ring";
-   "Add Semi Ring";
+   "Add Ring A Aplus Amult Aone Azero Ainv Aeq T [ c1 ... cn ]. ";
+   "Add Semi Ring A Aplus Amult Aone Azero Aeq T [ c1 ... cn ].";
    "Add Setoid";
    "Axiom";];
-  ["Back";
-   "Begin Silent";];
+  [(* "Back"; *) ];
   ["Canonical Structure";
-   "Cd";
+   (* "Cd"; *)
    "Chapter";
    (* "Check"; *)
    "Coercion";
@@ -37,7 +35,7 @@ let commands = [
    "CoInductive";
    (* "Correctness"; *)];
   ["Declare ML Module";
-   "Defined";
+   "Defined.";
    "Definition";
    "Derive Dependent Inversion";
    "Derive Dependent Inversion_clear";
@@ -45,9 +43,8 @@ let commands = [
    "Derive Inversion_clear";
    (* "Drop"; *)];
   ["End";
-   "End Silent";
+   "End Silent.";
    "Eval"; 
-   "Explicitation of implicit arguments";
    "Extract Constant";
    "Extract Inductive";
    "Extraction";
@@ -64,29 +61,27 @@ let commands = [
   ["Hint";
    "Hint Constructors";
    "Hint Unfold";
-   "Hint";
    "Hint Rewrite";
    "Hints Extern";
-   "Hints Immediate";
-   "Hints Resolve";
    "Hints Immediate";
    "Hints Resolve";
    "Hints Unfold";
    "Hypothesis";];
   ["Identity Coercion";
-   "Implicit Arguments Off";
-   "Implicit Arguments On";
+   "Implicit Arguments Off.";
+   "Implicit Arguments On.";
    "Implicits";
    "Inductive";
    "Infix";
-   "Inspect";];
+   (* "Inspect"; *)];
   ["Lemma";
    "Load";
    "Load Verbose";
    "Local";
-   "Locate";
+   (*
+    "Locate";
    "Locate File";
-   "Locate Library";];
+   "Locate Library"; *)];
   ["Module";
    "Module Type";
    "Mutual Inductive";];
@@ -112,9 +107,9 @@ let commands = [
    "Print Section";
    "Print Table Printing If";
    "Print Table Printing Let";*)
-   "Proof";
+   "Proof.";
    (*"Pwd";*)];
-  ["Qed";
+  ["Qed.";
    (* "Quit";*)];
   ["Read Module";
    "Record";
@@ -130,9 +125,9 @@ let commands = [
    "Reset Extraction Inline";
    (* "Reset Initial"; *)
    (* "Restart"; *)
-   "Restore State";
-   "Resume";];
-  [  "Save";
+   "Restore State"; 
+   (* "Resume"; *)];
+  [  "Save.";
      "Scheme";
      (*"Search";
      "Search ... inside ...";
@@ -153,6 +148,7 @@ let commands = [
      "Set Printing Coercions";
      "Set Printing Synth";
      "Set Printing Wildcard";
+     "Set Silent.";
      "Set Undo";
      (*"Show";
      "Show Conjectures";
@@ -185,6 +181,7 @@ let commands = [
    "Unset Printing Coercions";
    "Unset Printing Synth";
    "Unset Printing Wildcard";
+   "Unset Silent.";
    "Unset Undo";];
   ["Variable";
    "Variables";];
@@ -194,13 +191,14 @@ let commands = [
 let state_preserving = [
   "Check";
   "Eval";
+  "Eval compute in";
   "Extraction";
   "Extraction Library";
   "Extraction Module";
   "Inspect";
   "Locate";
   "Print";
-  "Print All";
+  "Print All.";
   "Print Classes";
   "Print Coercion Paths";
   "Print Coercions";
@@ -219,7 +217,7 @@ let state_preserving = [
   "Print Table Printing If";
   "Print Table Printing Let";
 
-  "Pwd";
+  "Pwd.";
 
   "Recursive Extraction";
   "Recursive Extraction Library";
@@ -242,6 +240,4 @@ let state_preserving = [
   "Test Printing Let";
   "Test Printing Synth";
   "Test Printing Wildcard";
-    
-  "Recursive Extraction"; 
 ]
