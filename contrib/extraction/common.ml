@@ -369,6 +369,10 @@ let print_one_decl struc mp decl =
 
 (*S Extraction to a file. *)
 
+let info f = 
+  Options.if_verbose msgnl 
+    (str ("The file "^f^" has been created by extraction."))
+
 let print_structure_to_file f prm struc =
   cons_cofix := Refset.empty;
   Hashtbl.clear renamings;
@@ -399,6 +403,7 @@ let print_structure_to_file f prm struc =
   with e -> 
     option_iter close_out cout; raise e
   end;
+  option_iter (fun (f,_) -> info f) f;
   (* print the signature *)
   match f with 
     | Some (_,f) when lang () = Ocaml -> 
@@ -410,8 +415,10 @@ let print_structure_to_file f prm struc =
 	  close_out cout;
 	with e -> 
 	  close_out cout; raise e 
-	end
-    | _ -> () 
+	end; 
+	info f 
+    | _ -> ()
+	  
 
 (*i 
   (* DO NOT REMOVE: used when making names resolution *)
