@@ -58,14 +58,25 @@ let make_elim_fun f largs =
 (* F is convertible to DOPN(Fix(recindices,bodynum),bodyvect) make 
    the reduction using this extra information *)
 
+let rebuild_global_name id =
+  let sp = Nametab.sp_of_id CCI id in
+  let (oper,hyps) = Declare.global_operator sp id in
+  DOPN(oper,Array.of_list(List.map (fun id -> VAR id) (Sign.ids_of_sign hyps)))
+
+let mydestFix = function 
+  | DOPN (Fix (recindxs,i),a) ->
+      let (types,funnames,bodies) = destGralFix a in 
+	(recindxs,i,funnames,bodies)
+  | _ -> invalid_arg "destFix"
+
 let contract_fix_use_function f fix =
-  match fix with 
-    | DOPN(Fix(recindices,bodynum),bodyvect) ->
-  	let nbodies = Array.length recindices in
-  	let make_Fi j = DOPN(Fix(recindices,j),bodyvect) in
-  	let lbodies = list_assign (list_tabulate make_Fi nbodies) bodynum f in
-	  sAPPViList bodynum (array_last bodyvect) lbodies
-    | _ -> assert false
+  let (recindices,bodynum,names,bodies) = mydestFix fix in
+  let nbodies = Array.length recindices in
+  let make_Fi j =
+    let id = match List.nth names j with Name id -> id | _ -> assert false in
+    rebuild_global_name id in
+  let lbodies = list_assign (list_tabulate make_Fi nbodies) bodynum f in
+    substl (List.rev lbodies) bodies.(bodynum)
 
 let reduce_fix_use_function f whfun fix stack =
   match fix with 
