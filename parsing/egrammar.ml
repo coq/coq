@@ -120,7 +120,7 @@ let find_position other assoc lev =
 	    Some (Gramext.Level (constr_level (n,a))), None, None
 
 let remove_levels n =
-  level_stack := snd (list_chop n !level_stack)
+  level_stack := list_skipn n !level_stack
 
 (* Interpretation of the right hand side of grammar rules *)
 

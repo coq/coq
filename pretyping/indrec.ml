@@ -118,7 +118,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
 	    let d = (n,Some b,t) in
 	    mkLetIn (n,b,t,prec (push_rel d env) (i+1) (d::sign) c)
      	| Ind (_,_) ->
-	    let (_,realargs) = list_chop nparams largs in
+	    let realargs = list_skipn nparams largs in
 	    let base = applist (lift i pk,realargs) in
             if depK then 
 	      Reduction.beta_appvect
@@ -193,7 +193,7 @@ let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs =
 	    let d = (n,Some b,t) in
 	    mkLetIn (n,b,t,prec (push_rel d env) (i+1) (d::hyps) c)
      	| Ind _ -> 
-            let (_,realargs) = list_chop nparams largs
+            let realargs = list_skipn nparams largs
             and arg = appvect (mkRel (i+1),extended_rel_vect 0 hyps) in 
             applist(lift i fk,realargs@[arg])
      	| _ -> assert false

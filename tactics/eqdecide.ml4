@@ -131,7 +131,7 @@ let solveLeftBranch rectype g =
     | _ :: lhs :: rhs :: _ -> 
         let (mib,mip) = Global.lookup_inductive rectype in
 	let nparams   = mip.mind_nparams in
-	let getargs l = snd (list_chop nparams (snd (decompose_app l))) in
+	let getargs l = list_skipn nparams (snd (decompose_app l)) in
 	let rargs   = getargs (snd rhs)
 	and largs   = getargs (snd lhs) in 
 	List.fold_right2 

@@ -763,7 +763,7 @@ let check_one_cofix env nbfix def deftype =
             let lra =vlra.(i-1) in 
             let mI = inductive_of_constructor cstr_kn in
 	    let (mib,mip) = lookup_mind_specif env mI in
-            let _,realargs = list_chop mip.mind_nparams args in
+            let realargs = list_skipn mip.mind_nparams args in
             let rec process_args_of_constr = function
               | (t::lr), (rar::lrar) -> 
                   if rar = mk_norec then

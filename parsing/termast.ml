@@ -173,7 +173,7 @@ let rec skip_coercion dest_ref (f,args as app) =
 	       | Some n ->
 		   if n >= List.length args then app
 		   else (* We skip a coercion *)
-		     let _,fargs = list_chop n args in
+		     let fargs = list_skipn n args in
 	       	     skip_coercion dest_ref (List.hd fargs,List.tl fargs)
 	       | None -> app)
 	| None -> app

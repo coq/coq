@@ -139,7 +139,7 @@ let get_constructor (ind,mib,mip,params) j =
   let typi = instantiate_params typi params mip.mind_params_ctxt in
   let (args,ccl) = decompose_prod_assum typi in
   let (_,allargs) = decompose_app ccl in
-  let (_,vargs) = list_chop mip.mind_nparams allargs in
+  let vargs = list_skipn mip.mind_nparams allargs in
   { cs_cstr = ith_constructor_of_inductive ind j;
     cs_params = params;
     cs_nargs = rel_context_length args;
@@ -277,7 +277,7 @@ let type_case_branches_with_names env indspec pj c =
   let (ind,args) = indspec in
   let (lbrty,conclty,_) = Inductive.type_case_branches env indspec pj c in
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let params = fst (list_chop mip.mind_nparams args) in
+  let params = list_firstn mip.mind_nparams args in
   if is_dependent_elimination env pj.uj_type (ind,params) then
     (set_pattern_names env ind lbrty, conclty)
   else (lbrty, conclty)

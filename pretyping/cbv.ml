@@ -273,7 +273,7 @@ and cbv_stack_term info stack env t =
     (* constructor in a Case -> IOTA *)
     | (CONSTR((sp,n),_), APP(args,CASE(_,br,ci,env,stk)))
             when red_set (info_flags info) fIOTA ->
-	let real_args = snd (list_chop ci.ci_npar args) in
+	let real_args = list_skipn ci.ci_npar args in
         cbv_stack_term info (stack_app real_args stk) env br.(n-1)
          
     (* constructor of arity 0 in a Case -> IOTA *)

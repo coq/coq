@@ -779,7 +779,7 @@ let push_rels_eqn sign eqn =
   {eqn with rhs = {eqn.rhs with rhs_env = push_rels sign eqn.rhs.rhs_env} }
 
 let push_rels_eqn_with_names sign eqn =
-  let pats = List.rev (fst (list_chop (List.length sign) eqn.patterns)) in
+  let pats = List.rev (list_firstn (List.length sign) eqn.patterns) in
   let sign = recover_alias_names alias_of_pat pats sign in
   push_rels_eqn sign eqn
 

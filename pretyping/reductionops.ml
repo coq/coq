@@ -190,7 +190,7 @@ let reduce_mind_case mia =
   match kind_of_term mia.mconstr with
     | Construct (ind_sp,i as cstr_sp) ->
 (*	let ncargs = (fst mia.mci).(i-1) in*)
-	let real_cargs = snd (list_chop mia.mci.ci_npar mia.mcargs) in
+	let real_cargs = list_skipn mia.mci.ci_npar mia.mcargs in
         applist (mia.mlf.(i-1),real_cargs)
     | CoFix cofix ->
 	let cofix_def = contract_cofix cofix in

@@ -62,8 +62,7 @@ let pr_dirpath sl = (str (string_of_dirpath sl))
 
 (* Pop the last n module idents *)
 let extract_dirpath_prefix n dir =
-  let (_,dir') = list_chop n (repr_dirpath dir) in
-  make_dirpath dir'
+  make_dirpath (list_skipn n (repr_dirpath dir))
 
 let dirpath_prefix p = match repr_dirpath p with
   | [] -> anomaly "dirpath_prefix: empty dirpath"
@@ -164,7 +163,7 @@ let pr_sp sp = str (string_of_path sp)
 
 let restrict_path n sp =
   let dir, s = repr_path sp in
-  let (dir',_) = list_chop n (repr_dirpath dir) in
+  let dir' = list_firstn n (repr_dirpath dir) in
   make_path (make_dirpath dir') s
 
 type extended_global_reference =

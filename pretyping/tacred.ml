@@ -299,7 +299,7 @@ let rev_firstn_liftn fn ln =
    To check ... *)
 
 let make_elim_fun (names,(nbfix,lv,n)) largs =
-  let labs,_ = list_chop n (list_of_stack largs) in
+  let labs = list_firstn n (list_of_stack largs) in
   let p = List.length lv in
   let ylv = List.map fst lv in
   let la' = list_map_i 
@@ -370,7 +370,7 @@ let contract_cofix_use_function f (bodynum,(_,names,bodies as typedbodies)) =
 let reduce_mind_case_use_function func env mia =
   match kind_of_term mia.mconstr with 
     | Construct(ind_sp,i as cstr_sp) ->
-	let real_cargs = snd (list_chop mia.mci.ci_npar mia.mcargs) in
+	let real_cargs = list_skipn mia.mci.ci_npar mia.mcargs in
 	applist (mia.mlf.(i-1), real_cargs)
     | CoFix (_,(names,_,_) as cofix) ->
 	let build_fix_name i =

@@ -474,9 +474,7 @@ let rec stack_tail p s =
       | Zapp args :: s ->
 	  let q = List.length args in
 	  if p >= q then stack_tail (p-q) s
-	  else
-            let (_,aft) = list_chop p args in
-            Zapp aft :: s
+	  else Zapp (list_skipn p args) :: s
       | _ -> failwith "stack_tail"
 let rec stack_nth s p = match s with
   | Zapp args :: s ->
@@ -823,7 +821,7 @@ let rec drop_parameters depth n stk =
         if n > q then drop_parameters depth (n-q) s
         else if n = q then reloc_rargs depth s
         else
-          let (_,aft) = list_chop n args in
+          let aft = list_skipn n args in
           reloc_rargs depth (append_stack_list (aft,s))
     | Zshift(k)::s -> drop_parameters (depth-k) n s
     | [] -> assert (n=0); []
