@@ -137,10 +137,10 @@ Syntax constr
 
 
   | arrow [ << (ARROW $A [<>]$B) >> ] ->
-       [ [<hv 0> $A:L [0 0] "->" (ARROWBOX $B) ] ]
+       [ [<hv 0> $A:L " ->" [0 0] (ARROWBOX $B) ] ]
   | arrow_stop [ << (ARROWBOX $c) >> ] -> [ $c:E ]
   | arrow_again [ << (ARROWBOX (PROD $A [<>]$B)) >> ] ->
-	 [ $A:L [0 0] "->" (ARROWBOX $B) ]
+	 [ $A:L " ->" [0 0] (ARROWBOX $B) ]
 
 (* These are synonymous *)
 (* redundant

@@ -1233,3 +1233,57 @@ let subst_all gl =
   let ids = map_succeed test (pf_hyps_types gl) in
   let ids = list_uniquize ids in
   subst ids gl
+
+(* Rewrite the first assumption for which the condition faildir does not fail 
+   and gives the direction of the rewrite *)
+
+let rewrite_assumption_cond faildir gl =
+   let rec arec = function
+      | [] -> error "No such assumption"
+      | (id,_,t)::rest -> 
+	  (try let dir = faildir t gl in 
+	       general_rewrite dir (mkVar id) gl
+	   with Failure _ | UserError _  ->  arec rest)
+   in arec (pf_hyps gl)
+
+
+let rewrite_assumption_cond_in faildir hyp gl =
+   let rec arec = function
+      | [] -> error "No such assumption"
+      | (id,_,t)::rest -> 
+	  (try let dir = faildir t gl in 
+	       general_rewrite_in dir hyp ((mkVar id),NoBindings) gl
+	   with Failure _ | UserError _ ->  arec rest)
+   in arec (pf_hyps gl)
+
+let cond_eq_term_left c t gl = 
+ let eqpat = build_coq_eq_pattern ()
+ in if not (is_matching eqpat t) then failwith "not an equality";
+    let (_,x,_) = match_eq eqpat t in
+    if pf_conv_x gl c x then true else failwith "not convertible"
+
+let cond_eq_term_right c t gl = 
+ let eqpat = build_coq_eq_pattern ()
+ in if not (is_matching eqpat t) then failwith "not an equality";
+    let (_,_,x) = match_eq eqpat t in
+    if pf_conv_x gl c x then false else failwith "not convertible"
+
+let cond_eq_term c t gl = 
+ let eqpat = build_coq_eq_pattern ()
+ in if not (is_matching eqpat t) then failwith "not an equality";
+    let (_,x,y) = match_eq eqpat t in
+    if pf_conv_x gl c x then true 
+    else if pf_conv_x gl c y then false
+    else failwith "not convertible"
+
+let replace_term_left t = rewrite_assumption_cond (cond_eq_term_left t)
+
+let replace_term_right t = rewrite_assumption_cond (cond_eq_term_right t)
+   
+let replace_term t = rewrite_assumption_cond (cond_eq_term t)
+   
+let replace_term_in_left t = rewrite_assumption_cond_in (cond_eq_term_left t)
+
+let replace_term_in_right t = rewrite_assumption_cond_in (cond_eq_term_right t)
+   
+let replace_term_in t = rewrite_assumption_cond_in (cond_eq_term t)

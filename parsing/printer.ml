@@ -148,7 +148,7 @@ let pr_var_decl env (id,c,typ) =
     | Some c ->
 	(* Force evaluation *) 
 	let pb = prterm_env env c in
-	(str" := " ++ pb) in
+	(str" := " ++ pb ++ cut () ) in
   let pt = prtype_env env typ in
   let ptyp = (str" : " ++ pt) in
   (pr_id id ++ hov 0 (pbody ++ ptyp))

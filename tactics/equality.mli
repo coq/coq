@@ -96,3 +96,10 @@ val unfold_body : identifier -> tactic
 val subst : identifier list -> tactic
 val subst_all : tactic
 
+(* Replace term *)
+val replace_term_left : constr -> tactic
+val replace_term_right : constr -> tactic
+val replace_term : constr -> tactic
+val replace_term_in_left : constr -> identifier -> tactic
+val replace_term_in_right : constr -> identifier -> tactic
+val replace_term_in : constr -> identifier -> tactic

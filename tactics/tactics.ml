@@ -753,13 +753,23 @@ let exact_proof c gl =
 
 let (assumption : tactic) = fun gl ->
   let concl =  pf_concl gl in 
-  let rec arec = function
-    | [] -> error "No such assumption"
-    | (id,c,t)::rest -> 
-	if pf_conv_x_leq gl t concl then refine_no_check (mkVar id) gl
-	else arec rest
-  in
-  arec (pf_hyps gl)
+  if occur_existential concl then 
+    let rec arec = function
+      | [] -> error "No such assumption"
+      | (id,_,t)::rest -> 
+	  (try tclTHEN (unify t) (exact_check (mkVar id)) gl
+	   with UserError _ | Logic.RefinerError _ ->  arec rest)
+    in
+      arec (pf_hyps gl)
+  else
+    let rec arec = function
+      | [] -> error "No such assumption"
+      | (id,_,t)::rest -> 
+	  if pf_conv_x_leq gl t concl then refine_no_check (mkVar id) gl
+	  else arec rest
+    in
+      arec (pf_hyps gl)
+
 
 (*****************************************************************)
 (*          Modification of a local context                      *)

@@ -41,6 +41,33 @@ TACTIC EXTEND ReplaceIn
   -> [ failwith "Replace in: TODO" ]
 END
 
+TACTIC EXTEND Replacetermleft
+  [ "Replace" "->" constr(c)  ] -> [ replace_term_left c ]
+END
+
+TACTIC EXTEND Replacetermright
+  [ "Replace" "<-" constr(c)  ] -> [ replace_term_right c ]
+END
+
+TACTIC EXTEND Replaceterm
+  [ "Replace" constr(c)  ] -> [ replace_term c ]
+END
+
+TACTIC EXTEND ReplacetermInleft
+  [ "Replace"  "->" constr(c) "in" ident(h) ]
+  -> [ replace_term_in_left c h ]
+END
+
+TACTIC EXTEND ReplacetermInright
+  [ "Replace"  "<-" constr(c) "in" ident(h) ]
+  -> [ replace_term_in_right c h ]
+END
+
+TACTIC EXTEND ReplacetermIn
+  [ "Replace" constr(c) "in" ident(h) ]
+  -> [ replace_term_in c h ]
+END
+
 TACTIC EXTEND DEq
   [ "Simplify_eq" quantified_hypothesis_opt(h) ] -> [ dEq h ]
 END
