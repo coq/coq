@@ -15,6 +15,7 @@ correctness. The rules implemented by the typing algorithm are described in
 chapter \ref{Cic}.
 
 \subsection*{About the grammars in the manual}
+\label{BNF-syntax}\index{BNF metasyntax}
 
 Grammars are presented in Backus-Naur form (BNF). Terminal symbols are
 set in {\tt typewriter font}.  In addition, there are special
@@ -56,9 +57,8 @@ are treated as blanks.
 \paragraph{Identifiers and access identifiers}
 
 Identifiers, written {\ident}, are sequences of letters, digits,
-\verb!_! %, \verb!$!
-and \verb!'!, that do not start with a digit or \verb!'!.  That is,
-they are recognized by the following lexical class:
+\verb!_! and \verb!'!, that do not start with a digit or \verb!'!.
+That is, they are recognized by the following lexical class:
 
 \index{ident@\ident}
 \begin{center}
@@ -136,28 +136,34 @@ employed otherwise:
 \begin{tabular}{llllll}
 \verb!_!          &
 \verb!as!         &
+\verb!at!         &
 \verb!cofix!      &
 \verb!else!       &
 \verb!end!        \\
+%
 \verb!exists!     &
 \verb!exists2!    &
 \verb!fix!        &
-\verb!for!        \\
+\verb!for!        &
 \verb!forall!     &
-\verb!fun!        &
-\verb!if!         \\
+\verb!fun!        \\
+%
+\verb!if!         &
+\verb!IF!         &
 \verb!in!         &
 \verb!let!        &
 \verb!match!      &
-\verb!mod!        &
-\verb!return!     &
-\verb!then!       \\
-\verb!using!      &
-\verb!with!       &
-\verb!IF!         &
+\verb!mod!        \\
+%
 \verb!Prop!       &
+\verb!return!     &
 \verb!Set!        &
-\verb!Type!       \\
+\verb!then!       &
+\verb!Type!       &
+\verb!using!      \\
+%
+\verb!where!      &
+\verb!with!       &
 \end{tabular}
 \end{center}
 
@@ -243,31 +249,61 @@ employed otherwise:
 The following sequences of characters are special tokens:
 \begin{center}
 \begin{tabular}{lllllll}
-\verb!(!  &
-\verb!)!  &
-\verb!{!  &
-\verb!}!  &
-\verb!:!  &
-\verb!,!  &
-\verb!|!  \\
-\verb!=>! &
-\verb!->! &
-\verb!:=! &
-\verb!@!  &
-\verb!\%! &
-\verb!.(! &
-\verb!+!  \\
-\verb!-!  &
-\verb!*!  &
-\verb!/!  &
-\verb!=!  &
-\verb!<>! &
-\verb!>!  &
-\verb!<!  \\
-\verb!.!  &
-\verb!;!  &
-\verb!<-! &
-\end{tabular}
+\verb/!/   &
+\verb!%!  &
+\verb!&!   &
+\verb!&&!  &
+\verb!(!   &
+\verb!()!  &
+\verb!)!   \\
+%
+\verb!*!   &
+\verb!+!   &
+\verb!++!  &
+\verb!,!   &
+\verb!-!   &
+\verb!->!  &
+\verb!.!   \\
+%
+\verb!.(!  &
+\verb!..!  &
+\verb!/!   &
+\verb!/\!  &
+\verb!:!   &
+\verb!::!  &
+\verb!:<!  \\
+%
+\verb!:=!  &
+\verb!:>!  &
+\verb!;!   &
+\verb!<!   &
+\verb!<-!  &
+\verb!<->! &
+\verb!<:!  \\
+%
+\verb!<=!  &
+\verb!<>!  &
+\verb!=!   &
+\verb!=>!  &
+\verb!=_D! &
+\verb!>!   &
+\verb!>->! \\
+%
+\verb!>=!  &
+\verb!?!   &
+\verb!?=!  &
+\verb!@!   &
+\verb![!   &
+\verb!\/!  &
+\verb!]!   \\
+%
+\verb!^!   &
+\verb!{!   &
+\verb!|!   &
+\verb!|-!  &
+\verb!||!  &
+\verb!}!   &
+\verb!~!   \\\end{tabular}
 \end{center}
 
 Lexical ambiguities are resolved according to the ``longest match''
@@ -278,51 +314,63 @@ possible one (among all tokens defined at this moment), and so on.
 \section{Terms}\label{term}\index{Terms}
 \subsection{Syntax of terms}
 
-Figure \ref{term-syntax} describes the basic set of terms which form
-the {\em Calculus
-of Inductive Constructions} (also called \CIC). The formal
-presentation of {\CIC} is given in chapter \ref{Cic}. Extensions of
-this syntax are given in chapter
+Figures \ref{term-syntax} and \ref{term-syntax-aux} describe the basic
+set of terms which form the {\em Calculus of Inductive Constructions}
+(also called \CIC). The formal presentation of {\CIC} is given in
+chapter \ref{Cic}. Extensions of this syntax are given in chapter
 \ref{Gallina-extension}. How to customize the syntax is described in
 chapter \ref{Addoc-syntax}.
 
+\begin{center}
 \begin{figure}[htb]
-\begin{tabular}{|lcl|}
+\begin{tabular}{|lcl@{~~~~~}r|}
 \hline
-{\term} & ::= & {\qualid} \\
-  & $|$ & {\sort} \\
- & $|$ & {\term} {\tt ->} {\term} \\
- & $|$ & {\tt (} {\nelist{\typedidents}{;}} {\tt )} {\term}\\
- & $|$ & {\tt [} {\nelist{\localdecls}{;}} {\tt ]} {\term}\\
- & $|$ & {\tt (} \nelist{\term}{} {\tt )}\\
- & $|$ & {\tt \zeroone{\annotation}} {\tt Cases} {\term} {\tt of}
-        \sequence{\eqn}{|} {\tt end}\\
- & $|$ & {\tt Fix} {\ident} \verb.{. \nelist{\fixpointbody}{with} \verb.}.\\
- & $|$ & {\tt CoFix} {\ident} \verb.{. \nelist{\cofixpointbody}{with} \verb.}.\\
- & & \\
-{\qualid} & ::= & {\ident} \\
- & $|$ & {\qualid} {\accessident} \\
- & & \\
-{\sort} & ::= & {\tt Prop} \\
- & $|$ & {\tt Set} \\
- & $|$ & {\tt Type} \\
- & & \\
-{\annotation} & ::= & \verb!<! {\term} \verb!>!\\
- & & \\
-{\typedidents} & ::= &   \nelist{\ident}{,} {\tt :} {\term}\\
-{\localassums} & ::= &   \nelist{\ident}{,} \zeroone{{\tt :} {\term}}\\
-{\localdef} & ::= & {\ident} {\tt :=} {\term} \zeroone{{\tt :} {\term}}\\
-{\localdecls} & ::= &   \localassums \\
- & $|$ & {\localdef} \\
- & & \\
-{\fixpointbody} & ::= & {\ident} {\tt [} \nelist{\typedidents}{;}  {\tt ]}\verb.:. 
-    {\term} \verb.:=. {\term} \\
-{\cofixpointbody} & ::= & {\ident} \verb.:. 
-    {\term} \verb.:=. {\term} \\
-  & &\\
-{\simplepattern}  & ::= & {\ident} \\
- & $|$ & \verb!(! \nelist{\ident}{} \verb!)! \\
-{\eqn} & ::= &  {\simplepattern} ~\verb!=>! ~\term \\
+{\term} & ::= &
+         {\tt forall} {\binderlist} {\tt ,} {\term}  &(\ref{products})\\
+ & $|$ & {\tt fun} {\binderlist} {\tt =>} {\term} &(\ref{abstractions})\\
+ & $|$ & {\tt fix} {\fixpointbodies} &(\ref{fixpoints})\\
+ & $|$ & {\tt cofix} {\cofixpointbodies} &(\ref{fixpoints})\\
+ & $|$ & {\tt let} {\letclauses} {\tt in} {\term} &(\ref{let-in})\\
+ & $|$ & {\tt let fix} {\fixpointbody} {\tt in} {\term} &(\ref{fixpoints})\\
+ & $|$ & {\tt let cofix} {\cofixpointbody}
+         {\tt in} {\term} &(\ref{fixpoints})\\
+ & $|$ & {\tt let} {\tt (} \sequence{\name}{,} {\tt) :=} {\term}
+         {\tt in} {\term}  &(\ref{caseanalysis})\\
+ & $|$ & {\tt if} {\term} \zeroone{\returntype} {\tt then} {\term}
+         {\tt else} {\term} &(\ref{caseanalysis})\\
+ & $|$ & {\term} {\tt :} {\term} &(\ref{typecast})\\
+ & $|$ & {\term} {\tt ->} {\term} &(\ref{products})\\
+ & $|$ & {\term} \nelist{\termarg}{}&(\ref{applications})\\
+ & $|$ & {\tt @} {\qualid} \sequence{\term}{} &(\ref{applications})\\
+ & $|$ & {\term} {\tt \%} {\ident} &(\ref{scopechange})\\
+ & $|$ & {\tt match} {\caseitems} \zeroone{\casetype} {\tt with} &\\
+    &&   ~~~\zeroone{\zeroone{\tt |} \nelist{\eqn}{|}} {\tt end}
+    &(\ref{caseanalysis})\\
+ & $|$ & {\qualid} &(\ref{qualid})\\
+ & $|$ & {\sort} &(\ref{Gallina-sorts})\\
+ & $|$ & {\num} &(\ref{numerals})\\
+ & $|$ & {\_} &(\ref{applications})\\
+ & & &\\
+{\termarg} & ::= & {\term} &\\
+ & $|$ & {\tt (} {\ident} {\tt :=} {\term} {\tt )} &\\
+ & $|$ & {\tt (} {\num} {\tt :=} {\term} {\tt )} &\\
+&&&\\
+{\binderlist} & ::= & \nelist{\name}{} {\typecstr} &\\
+ & $|$ & {\binder} \nelist{\binderlet}{} &\\
+{\binder} & ::= &   {\name} &\\
+ & $|$ & {\tt (} \nelist{\name}{} {\tt :} {\term} {\tt )} &\\  
+{\binderlet} & ::= & {\binder} &\\
+ & $|$ & {\tt (} {\name} {\typecstr} {\tt :=} {\term} {\tt )} &\\
+& & &\\
+{\qualid} & ::= & {\ident} &\\
+ & $|$ & {\qualid} {\accessident} &\\
+ & & &\\
+{\name} & \cn{}::= & {\ident} &\\
+ & $|$ & {\tt \_} &\\
+&&&\\
+{\sort} & ::= & {\tt Prop} &\\
+ & $|$ & {\tt Set} &\\
+ & $|$ & {\tt Type} &\\
 \hline
 \end{tabular}
 \caption{Syntax of terms}
@@ -330,10 +378,52 @@ chapter \ref{Addoc-syntax}.
 \index{term@{\term}}
 \index{sort@{\sort}}
 \end{figure}
+\end{center}
+
+
+
+\begin{center}
+\begin{figure}[htb]
+\begin{tabular}{|lcl|}
+\hline
+{\fixpointbodies} & ::= &
+         {\fixpointbody} \\
+ & $|$ & {\fixpointbody} {\tt with} \nelist{\fixpointbody}{{\tt with}}
+         {\tt for} {\ident} \\
+{\cofixpointbodies} & ::= &
+         {\cofixpointbody} \\
+ & $|$ & {\cofixpointbody} {\tt with} \nelist{\cofixpointbody}{{\tt with}}
+         {\tt for} {\ident} \\
+&&\\
+{\fixpointbody} & ::= &
+    {\ident} \nelist{\binderlet}{} \zeroone{\annotation} {\typecstr}
+    {\tt :=} {\term} \\
+{\cofixpointbody} & ::= &
+    {\ident} \sequence{\binderlet}{} {\typecstr} {\tt :=} {\term} \\
+  & &\\
+{\annotation} & ::= & {\tt \{ struct} {\ident} {\tt \}} \\ 
+&&\\
+{\caseitems} & ::= & \nelist{\caseitem}{\tt ,} \\
+&&\\
+{\caseitem} & ::= & {\term} \zeroone{{\tt as} \name}
+     \zeroone{{\tt in} \term} \\
+&&\\
+{\casetype} & ::= & {\tt return} {\term} \\
+&&\\
+{\returntype} & ::= & \zeroone{{\tt as} {\name}} {\casetype} \\
+&&\\
+{\eqn} & ::= & \nelist{\pattern}{\tt ,} {\tt =>} {\term}\\
+\hline
+\end{tabular}
+\caption{Syntax of terms (continued)}
+\label{term-syntax-aux}
+\end{figure}
+\end{center}
 
 %%%%%%%
 \subsection{Qualified identifiers and simple identifiers}
-\label{qualid}\label{ident}
+\label{qualid}
+\label{ident}
 
 {\em Qualified identifiers} ({\qualid}) denote {\em global constants}
 (definitions, lemmas, theorems, remarks or facts), {\em global
@@ -342,6 +432,11 @@ types} or {\em constructors of inductive types}.
 {\em Simple identifiers} (or shortly {\em identifiers}) are a
 syntactic subset of qualified identifiers.  Identifiers may also
 denote local {\em variables}, what qualified identifiers do not.
+
+\subsection{Numerals}
+\label{numerals}
+
+%% TODO
 
 \subsection{Sorts}\index{Sorts}
 \index{Type@{\Type}}
@@ -377,48 +472,54 @@ of types inside the syntactic class {\term}.
 \index{type@{\type}}
 
 \subsection{Abstractions}
+\label{abstractions}
 \index{abstractions}
 
-The expression ``{\tt [} {\ident} {\tt :} \type {\tt ]}
-{\term}'' denotes the {\em abstraction} of the variable {\ident}
-of type {\type}, over the term {\term}.
+The expression ``{\tt fun} {\ident} {\tt :} \type {\tt =>} {\term}''
+denotes the {\em abstraction} of the variable {\ident} of type
+{\type}, over the term {\term}.
 
-One can abstract several variables successively:
-the notation {\tt [} {\ident$_{1}$} {\tt ,} {\ldots} {\tt ,} 
-{\ident$_{n}$} {\tt :} \type {\tt ]} {\term} stands for 
-{\tt [} {\ident$_{1}$} {\tt :} \type {\tt ](} {\ldots} 
-{\tt ([} {\ident$_{n}$} {\tt :} \type {\tt ]} {\term} {\tt )} 
-\ldots {\tt )} and the notation {\tt [} {\localassums$_{1}$} {\tt ;}
-{\ldots} {\tt ;} {\localassums$_{m}$} {\tt ]} {\term} is a shorthand
-for {\tt [}~{\localassums$_{1}$} {\tt ](} {\ldots} {\tt ([}
-{\localassums$_{m}$} {\tt ]} {\term} {\tt )}.
+One can abstract several variables successively: the notation {\tt
+fun}~{\ident$_{1}$}~{\ldots}~{\ident$_{n}$}~{\tt :}~\type~{\tt
+=>}~{\term} stands for {\tt fun}~{\ident$_{1}$}~{\tt :}~\type~{\tt
+=>}~{\ldots}~{\tt fun}~{\ident$_{n}$}~{\tt :}~\type~{\tt =>}~{\term}
+and the notation {\tt fun (}~{\localassums$_{1}$}~{\tt
+)}~{\ldots}~{\tt (}~{\localassums$_{m}$}~{\tt ) =>}~{\term} is a
+shorthand for {\tt fun}~{\localassums$_{1}$}~{\tt =>}~{\ldots}~{\tt
+fun}~{\localassums$_{m}$}~{\tt =>}~{\term}.
 
 \medskip
-\Rem The types of variables may be omitted in an
+\Rem The types of variables (and the {\tt :}) may be omitted in an
 abstraction when they can be synthesized by the system.
 
-\Rem Local definitions may appear inside brackets mixed with
-assumptions. Obviously, this is expanded into unary abstractions
-separated by let-in's.
+\Rem Local definitions may appear inside parentheses. Obviously, this
+is expanded into a let-in.
 
 
 \subsection{Products}
+\label{products}
 \index{products}
 
-The expression ``{\tt (}~{\ident} {\tt :} \type {\tt )}
-{\term}'' denotes the {\em product} of the variable {\ident}
-of type {\type}, over the term {\term}.
+The expression ``{\tt forall}~{\ident}~{\tt :}~\type~{\tt ,}~{\term}''
+denotes the {\em product} of the variable {\ident} of type {\type},
+over the term {\term}.
 
-Similarly, the expression {\tt (} {\ident$_{1}$} {\tt ,} {\ldots} {\tt
-,} {\ident$_{n}$} {\tt :} \type {\tt )} {\term} is equivalent to {\tt
-(} {\ident$_{1}$} {\tt :} \type {\tt )(} {\ldots} {\tt ((}
-{\ident$_{n}$} {\tt :} \type {\tt )} {\term} {\tt )} \ldots {\tt )}
-and the expression {\tt (} {\typedidents$_{1}$} {\tt ;} {\ldots} {\tt
-;} {\typedidents$_{m}$} {\tt )} {\term} is a equivalent to {\tt
-(}~{\typedidents$_{1}$} {\tt )(} {\ldots} {\tt ((}
-{\typedidents$_{m}$} {\tt )} {\term} {\tt )} \ldots {\tt )}
+Similarly, the expression {\tt forall} {\ident$_{1}$} {\ldots}
+{\ident$_{n}$} {\tt :} \type {\tt ,} {\term} is equivalent to {\tt
+forall} {\ident$_{1}$} {\tt :} \type {\tt ,} {\ldots} {\tt forall}
+{\ident$_{n}$} {\tt :} \type {\tt ,} {\term} and the expression {\tt
+forall (} {\typedidents$_{1}$} {\tt )} {\ldots} {\tt (}
+{\typedidents$_{m}$} {\tt ),} {\term} is a equivalent to {\tt
+forall}~{\typedidents$_{1}$} {\tt ,} {\ldots} {\tt forall}
+{\typedidents$_{m}$} {\tt ,} {\term}
+
+
+Non dependent product types have a special notation ``$A$ {\tt ->}
+$B$'' stands for ``{\tt forall \_:}$A${\tt ,}~$B$''. This is to stress
+on the fact that non dependent produt types are usual functional types.
 
 \subsection{Applications}
+\label{applications}
 \index{applications}
 
 {\tt (}\term$_0$ \term$_1${\tt)} denotes the application of
@@ -430,59 +531,80 @@ denotes the application of the term \term$_0$ to the arguments
 {\tt (} {\term$_0$} {\term$_1$} {\tt )} {\ldots} {\term$_n$} {\tt )}:
 associativity is to the left.
 
+%% explicit application
+%% \_
+
+
 \subsection{Local definitions (let-in)}
+\label{let-in}
 \index{Local definitions}
 \index{let-in}
 
-{\tt [}{\ident}{\tt :=}{\term$_1$}{\tt ]}{\term$_2$} denotes the local
+
+{\tt let}{\ident}{\tt :=}{\term$_1$}{\tt in}~{\term$_2$} denotes the local
 binding of \term$_1$ to the variable $\ident$ in \term$_2$.
 
-\medskip
-\Rem The expression {\tt [}{\ident}{\tt :=}{\term$_1$}{\tt
-:}{\type}{\tt ]}{\term$_2$} is an alternative form for the expression {\tt [}{\ident}{\tt
-:=(}{\term$_1$}{\tt ::}{\type}{\tt )]}{\term$_2$}.
-
-\Rem An alternative equivalent syntax for let-in is {\tt let} {\ident}
-{\tt =} {\term} {\tt in} {\term}.  For historical reasons, the syntax
-{\tt [} {\ident} {\tt =} {\term} {\tt ]} {\term} is also available but
-is not recommended.
 
 \subsection{Definition by case analysis}
-\index{Cases@{\tt Cases\ldots of\ldots end}}
+\label{caseanalysis}
+\index{match@{\tt match\ldots with\ldots end}}
 
 In a simple pattern \verb!(! \nelist{\ident}{} \verb!)!, the first {\ident}
 is intended to be a constructor.
 
-The expression {\tt \zeroone{\annotation}} {\tt Cases} {\term$_0$} {\tt of}
+The expression {\tt match} {\term$_0$} {\tt with}
 {\pattern$_1$} {\tt =>} {\term$_1$} {\tt $|$} {\ldots} {\tt $|$}
 {\pattern$_n$} {\tt =>} {\term$_n$} {\tt end}, denotes a
 {\em pattern-matching} over the term {\term$_0$} (expected to be of an
 inductive type). 
 
-The {\annotation} is the resulting type of the whole {\tt Cases}
+The ... is the resulting type of the whole {\tt match}
 expression. Most of the time, when this type is the same as the
 types of all the {\term$_i$}, the annotation is not needed\footnote{except
 if no equation is given, to match the term in an empty type, e.g. the
 type \texttt{False}}. The annotation has to be given when the 
-resulting type of the whole {\tt Cases} depends on the actual {\term$_0$}
+resulting type of the whole {\tt match} depends on the actual {\term$_0$}
 matched.
 
+%% TODO: variants let (,,) and if/then/else
 
 \subsection{Recursive functions}
-\index{Fix@{Fix \ident$_i$\{\dots\}}}
+\label{fixpoints}
+\index{fix@{fix \ident$_i$\{\dots\}}}
 
-The expression {\tt Fix} {\ident$_i$} \verb.{. \ident$_1$ {\tt [}
-\binders$_1$ {\tt ] :} {\type$_1$} \texttt{:=} \term$_1$ 
-{\tt with} {\ldots} 
-{\tt with} \ident$_n$ {\tt [} \binders$_n$~{\tt{]} :} {\type$_n$}
-\texttt{:=} \term$_n$ \verb.}. denotes
-the $i$th component of a block of functions defined by mutual
-well-founded recursion.
+The expression ``{\tt fix} \ident$_1$ \binders$_1$ {\tt :} {\type$_1$}
+\texttt{:=} \term$_1$ {\tt with} {\ldots} {\tt with} \ident$_n$
+\binders$_n$~{\tt :} {\type$_n$} \texttt{:=} \term$_n$ {\tt for}
+{\ident$_i$}'' denotes the $i$th component of a block of functions
+defined by mutual well-founded recursion.
 
-The expression {\tt CoFix} {\ident$_i$} \verb.{. \ident$_1$
-{\tt :} {\type$_1$} {\tt with} {\ldots} {\tt with}
-\ident$_n$ {\tt [} \binders$_n$ {\tt ] :} {\type$_n$}~\verb.}. denotes
-the $i$th component of a block of terms defined by a mutual guarded recursion. 
+The expression ``{\tt cofix} \ident$_1$~\binders$_1$ {\tt :}
+{\type$_1$} {\tt with} {\ldots} {\tt with} \ident$_n$ \binders$_n$
+{\tt :} {\type$_n$}~{\tt for} {\ident$_i$}'' denotes the $i$th
+component of a block of terms defined by a mutual guarded recursion.
+
+The association of a single fixpoint and a local
+definition have a special syntax: ``{\tt let fix}~$f$~{\ldots}~{\tt
+  :=}~{\ldots}~{\tt in}~{\ldots}'' stands for ``{\tt let}~$f$~{\tt :=
+  fix}~$f$~\ldots~{\tt :=}~{\ldots}~{\tt in}~{\ldots}''. The same
+  applies for co-fixpoints.
+
+
+\subsection{Type cast}
+\label{typecast}
+\index{Cast}
+
+The expression ``{\term}~{\tt :}~{\type}'' is a type cast
+expression. It forces checking that {\term} has type {\type}. It is
+identified to {\term}.
+
+%% TODO
+
+\subsection{Scopes}
+\label{scopechange}
+\index{Scopes}
+
+%% TODO
 
 \section{The Vernacular}
 \label{Vernacular}
@@ -520,10 +642,10 @@ and ends with a dot.
            & & \\
 
 {\inductive} & ::= & 
- \zeroone{\texttt{Mutual}} {\tt Inductive} \nelist{\inductivebody}{with} 
+ {\tt Inductive} \nelist{\inductivebody}{with} 
     \verb:.: \\
  & $|$ & 
- \zeroone{\texttt{Mutual}} {\tt CoInductive} \nelist{\inductivebody}{with}
+ {\tt CoInductive} \nelist{\inductivebody}{with}
     \verb:.: \\
            & & \\
 {\inductivebody} & ::= & 
@@ -868,13 +990,10 @@ with {\ident$_m$} : {\type$_m$} := \\
 }
 \medskip
 
-\noindent {\bf Remark: } The word {\tt Mutual} can be optionally
-inserted in front of {\tt Inductive}.
-
-It has the same semantics as the above {\tt Inductive} definition for
-each \ident$_1$, {\ldots}, \ident$_m$. All names \ident$_1$, {\ldots},
-\ident$_m$ and \ident$_1^1$, \dots, \ident$_{n_m}^m$ are
-simultaneously added to the environment. Then
+\noindent It has the same semantics as the above {\tt Inductive}
+definition for each \ident$_1$, {\ldots}, \ident$_m$. All names
+\ident$_1$, {\ldots}, \ident$_m$ and \ident$_1^1$, \dots,
+\ident$_{n_m}^m$ are simultaneously added to the environment. Then
 well-typing of constructors can be checked. Each one of the
 \ident$_1$, {\ldots}, \ident$_m$ can be used on its own.
 

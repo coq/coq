@@ -85,19 +85,30 @@
 % \rm\sl series %
 %%%%%%%%%%%%%%%%%
 
+\newcommand{\nterm}[1]{\textrm{\textsl{#1}}}
+
+%% New syntax specific entries
+\newcommand{\termarg}{\nterm{arg}}
+\newcommand{\caseitems}{\nterm{caseitems}}
+\newcommand{\caseitem}{\nterm{case\_item}}
+\newcommand{\casetype}{\nterm{casetype}}
+\newcommand{\letclauses}{\nterm{letclauses}}
+\newcommand{\annotation}{\nterm{annotation}}
+\newcommand{\returntype}{\nterm{return\_type}}
+
+\newcommand{\typecstr}{\zeroone{{\tt :} {\term}}}
+
 \newcommand{\Fwterm}{\textrm{\textsl{Fwterm}}}
 \newcommand{\Index}{\textrm{\textsl{index}}}
 \newcommand{\abbrev}{\textrm{\textsl{abbreviation}}}
-\newcommand{\annotation}{\textrm{\textsl{annotation}}}
-\newcommand{\returntype}{\textrm{\textsl{return\_type}}}
-\newcommand{\caseitem}{\textrm{\textsl{case\_item}}}
 \newcommand{\atomictac}{\textrm{\textsl{atomic\_tactic}}}
 \newcommand{\binders}{\textrm{\textsl{bindings}}}
 \newcommand{\binder}{\textrm{\textsl{binding}}}
+\newcommand{\binderlist}{\nterm{binderlist}}
 \newcommand{\bindinglist}{\textrm{\textsl{bindings\_list}}}
 \newcommand{\cast}{\textrm{\textsl{cast}}}
+\newcommand{\cofixpointbodies}{\textrm{\textsl{cofix\_bodies}}}
 \newcommand{\cofixpointbody}{\textrm{\textsl{cofix\_body}}}
-\newcommand{\coinductivebody}{\textrm{\textsl{coind\_body}}}
 \newcommand{\commandtac}{\textrm{\textsl{tactic\_invocation}}}
 \newcommand{\constructor}{\textrm{\textsl{constructor}}}
 \newcommand{\convtactic}{\textrm{\textsl{conv\_tactic}}}
@@ -110,6 +121,7 @@
 \newcommand{\field}{\textrm{\textsl{field}}}
 \newcommand{\firstletter}{\textrm{\textsl{first\_letter}}}
 \newcommand{\fixpg}{\textrm{\textsl{fix\_pgm}}}
+\newcommand{\fixpointbodies}{\textrm{\textsl{fix\_bodies}}}
 \newcommand{\fixpointbody}{\textrm{\textsl{fix\_body}}}
 \newcommand{\fixpoint}{\textrm{\textsl{fixpoint}}}
 \newcommand{\flag}{\textrm{\textsl{flag}}}
@@ -129,6 +141,7 @@
 \newcommand{\mutualcoinductive}{\textrm{\textsl{mutual\_coinductive}}}
 \newcommand{\mutualinductive}{\textrm{\textsl{mutual\_inductive}}}
 \newcommand{\nestedpattern}{\textrm{\textsl{nested\_pattern}}}
+\newcommand{\name}{\textrm{\textsl{name}}}
 \newcommand{\num}{\textrm{\textsl{num}}}
 \newcommand{\params}{\textrm{\textsl{params}}}
 \newcommand{\binderlet}{\textrm{\textsl{binder\_let}}}

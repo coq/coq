@@ -12,8 +12,6 @@ you can refer to~\cite{Del00}.
 
 \section{Syntax}
 
-\def\nterm#1{\textrm{\textsl{#1}}}
-
 \def\tacexpr{\textrm{\textsl{expr}}}
 \def\tacexprlow{\textrm{\textsl{tacexpr$_1$}}}
 \def\tacexprinf{\textrm{\textsl{tacexpr$_2$}}}
@@ -27,16 +25,17 @@ you can refer to~\cite{Del00}.
 \def\primitivetactic{\textrm{\textsl{primitive\_tactic}}}
 \def\tacarg{\textrm{\textsl{arg}}}
 \def\qstring{\textrm{\textsl{string}}}
-\def\name{\textrm{\textsl{name}}}
+\def\cpattern{\nterm{cpattern}}
 
 The syntax of the tactic language is given in tables~\ref{ltac}
 and~\ref{ltac_aux}. See section~\ref{BNF-syntax} for a description of
 the BNF metasyntax used in these tables. Various already defined
 entries will be used in this chapter: entries {\naturalnumber},
-{\integer}, {\ident}, {\qualid}, {\term}, {\pattern} and
+{\integer}, {\ident}, {\qualid}, {\term}, {\cpattern} and
 {\primitivetactic} represent respectively the natural and integer
 numbers, the authorized identificators and qualified names, {\Coq}'s
-terms and patterns and all the basic tactics. In {\pattern}, there can
+terms and patterns and all the basic tactics. The syntax of
+{\cpattern} is the same as that of terms, but there can
 be specific variables like {\tt ?id} where {\tt id} is a {\ident} or
 {\tt \_}, which are metavariables for pattern matching. {\tt ?id} allows
 us to keep instantiations and to make constraints whereas {\tt \_}
@@ -127,20 +126,17 @@ table~\ref{ltactop}.
 \\
 \contextrule & \cn{}::= &
   \nelist{\contexthyps}{\tt ,} {\tt |-}
-{\pattern} {\tt =>} {\tacexpr}\\
-& \cn{}| & {\tt |-} {\pattern} {\tt =>} {\tacexpr}\\
+{\cpattern} {\tt =>} {\tacexpr}\\
+& \cn{}| & {\tt |-} {\cpattern} {\tt =>} {\tacexpr}\\
 & \cn{}| & {\tt \_ =>} {\tacexpr}\\
 \\
 \contexthyps & \cn{}::= &
-           {\name} {\tt :} {\pattern}\\
+           {\name} {\tt :} {\cpattern}\\
 \\
 \matchrule & \cn{}::= &
-           {\pattern} {\tt =>} {\tacexpr}\\
-& \cn{}| & {\tt context} {\zeroone{\ident}} {\tt [} {\pattern} {\tt ]} {\tt =>} {\tacexpr}\\
+           {\cpattern} {\tt =>} {\tacexpr}\\
+& \cn{}| & {\tt context} {\zeroone{\ident}} {\tt [} {\cpattern} {\tt ]} {\tt =>} {\tacexpr}\\
 & \cn{}| & {\tt \_ =>} {\tacexpr}\\
-\\
-\name & \cn{}::= & {\ident} \\
-& \cn{}| & \_
 \end{tabular}
 \end{center}}}
 \caption{Syntax of the tactic language (continued)}
@@ -428,19 +424,19 @@ We can carry out pattern matching on terms with:
 
 \begin{tabular}{l}
 {\tt match} {\tacexpr} {\tt with}\\
-~~~{\pattern}$_1$ {\tt =>} {\tacexpr}$_1$\\
-~{\tt |} {\pattern}$_2$ {\tt =>} {\tacexpr}$_2$\\
+~~~{\cpattern}$_1$ {\tt =>} {\tacexpr}$_1$\\
+~{\tt |} {\cpattern}$_2$ {\tt =>} {\tacexpr}$_2$\\
 ~...\\
-~{\tt |} {\pattern}$_n$ {\tt =>} {\tacexpr}$_n$\\
+~{\tt |} {\cpattern}$_n$ {\tt =>} {\tacexpr}$_n$\\
 ~{\tt |} {\tt \_} {\tt =>} {\tacexpr}$_{n+1}$\\
 {\tt end}
 \end{tabular}
 
 The {\tacexpr} is evaluated and should yield a term which is matched
-(non-linear first order unification) against {\pattern}$_1$ then
+(non-linear first order unification) against {\cpattern}$_1$ then
 {\tacexpr}$_1$ is evaluated into some value by substituting the
 pattern matching instantiations to the metavariables. If the matching
-with {\pattern}$_1$ fails, {\pattern}$_2$ is used and so on.  The
+with {\cpattern}$_1$ fails, {\cpattern}$_2$ is used and so on.  The
 pattern {\_} matches any term and shunts all remaining patterns if
 any. If {\tacexpr}$_1$ evaluates to a tactic, this tactic is not
 immediately applied to the current goal (in contrast with {\tt match
@@ -461,9 +457,9 @@ then a no-matching error is raised. \\
 There is a special form of patterns to match a subterm against the
 pattern:\\
 
-{\tt context} {\ident} {\tt [} {\pattern} {\tt ]}\\
+{\tt context} {\ident} {\tt [} {\cpattern} {\tt ]}\\
 
-It matches any term which one subterm matches {\pattern}. If there is
+It matches any term which one subterm matches {\cpattern}. If there is
 a match, the optional {\ident} is assign the ``matched context'', that
 is the initial term where the matched subterm is replaced by a
 hole. The definition of {\tt context} in expressions below will show
@@ -484,12 +480,12 @@ We can make pattern matching on goals using the following expression:
 \begin{tabular}{l}
 {\tt match goal with}\\
 ~~~$hyp_{1,1}${\tt ,}...{\tt ,}$hyp_{1,m_1}$
-   ~~{\tt |-}{\pattern}$_1${\tt =>} {\tacexpr}$_1$\\
+   ~~{\tt |-}{\cpattern}$_1${\tt =>} {\tacexpr}$_1$\\
 ~~{\tt |}$hyps_{2,1}${\tt ,}...{\tt ,}$hyp_{2,m_2}$
-   ~~{\tt |-}{\pattern}$_2${\tt =>} {\tacexpr}$_2$\\
+   ~~{\tt |-}{\cpattern}$_2${\tt =>} {\tacexpr}$_2$\\
 ~~...\\
 ~~{\tt |}$hyp_{n,1}${\tt ,}...{\tt ,}$hyp_{n,m_n}$
-   ~~{\tt |-}{\pattern}$_n${\tt =>} {\tacexpr}$_n$\\
+   ~~{\tt |-}{\cpattern}$_n${\tt =>} {\tacexpr}$_n$\\
 ~~{\tt |\_}~~~~{\tt =>} {\tacexpr}$_{n+1}$\\
 {\tt end}
 \end{tabular}
@@ -498,7 +494,7 @@ We can make pattern matching on goals using the following expression:
 
 If each hypothesis pattern $hyp_{1,i}$, with $i=1,...,m_1$
 is matched (non-linear first order unification) by an hypothesis of
-the goal and if {\pattern}$_1$ is matched by the conclusion of the
+the goal and if {\cpattern}$_1$ is matched by the conclusion of the
 goal, then {\tacexpr}$_1$ is evaluated to $v_1$ by substituting the
 pattern matching to the metavariables and the real hypothesis names
 bound to the possible hypothesis names occurring in the hypothesis

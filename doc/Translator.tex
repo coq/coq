@@ -8,6 +8,10 @@
 \usepackage{pslatex}
 \usepackage{url}
 \usepackage{verbatim}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{fullpage}
 
 \title{Translation from Coq V7 to V8}
 \author{The Coq Development Team}
@@ -99,7 +103,7 @@ replaced by the general notion of scope.
 \begin{tabular}{l|l|l}
 type & scope name & delimiter \\
 \hline
-types & type_scope & \TERM{T} \\
+types & type_scope & \TERM{type} \\
 \TERM{bool} & bool_scope & \\
 \TERM{nat} & nat_scope & \TERM{nat} \\
 \TERM{Z} & Z_scope & \TERM{Z} \\
@@ -137,17 +141,19 @@ bool_scope & $\TERM{\&\&} ~\TERM{$||$} ~\TERM{-}$ \\
 list_scope & $\TERM{::} ~\TERM{++}$
 \end{tabular}
 \end{center}
-(Note: $\leq$ is written \TERM{$<=$})
+(Note: $\leq$ stands for \TERM{$<=$})
 
 
 
 \subsubsection{Notation for implicit arguments}
 
 The explicitation of arguments is closer to the \emph{bindings} notation in
-tactics. Argument positions follow the argument names of the head constant.
-
+tactics. Argument positions follow the argument names of the head
+constant. The example below assumes \verb+f+ is a function with 2
+dependent arguments named \verb+x+ and \verb+y+, and a third
+non-dependent argument.
 \begin{transbox}
-\TRANS{f 1!t1 2!t2}{f (x:=t1) (y:=t2)}
+\TRANS{f 1!t1 2!t2 3!t3}{f (x:=t1) (y:=t2) (1:=t3)}
 \TRANS{!f t1 t2}{@f t1 t2}
 \end{transbox}
 
@@ -224,8 +230,8 @@ one variable. The type of the result can be omitted if inferable.
 ~~match n with \\~~~~0 => 1 \\~~| (S k) => n * fact k end}
 \end{transbox}
 
-There is a syntactic sugar for mutual fixpoints associated to a local
-definition:
+There is a syntactic sugar for single fixpoints (defining one
+variable) associated to a local definition:
 
 \begin{transbox}
 \TRANS{let f := Fix f \{f [x:A] : T := M\} in\\(g (f y))}{let fix f (x:A) : T := M in\\g (f x)}
@@ -239,7 +245,7 @@ The same applies to cofixpoints, annotations are not allowed in that case.
 \TRANS{O :: nat}{0 : nat}
 \end{transbox}
 
-\section{Main changes in tactics w.r.t. V7}
+\subsection{Main changes in tactics w.r.t. V7}
 
 The main change is that all tactic names are lowercase. This also holds for
 Ltac keywords.
@@ -259,7 +265,7 @@ became \TERM{context}. Syntax is unified with subterm matching.
 \TRANS{match t with [C[x=y]] => inst C[y=x]}{match t with context C[x=y] => context C[y=x]}
 \end{transbox}
 
-\subsubsection{Named arguments of theorems}
+\subsubsection{Named arguments of theorems ({\em bindings})}
 
 \begin{transbox}
 \TRANS{Apply thm with x:=t 1:=u}{apply thm with (x:=t) (1:=u)}
@@ -270,7 +276,8 @@ became \TERM{context}. Syntax is unified with subterm matching.
 
 To avoid ambiguity between a numeric literal and the optionnal
 occurence numbers of this term, the occurence numbers are put after
-the term itself. This applies to tactic \TERM{pattern} and also
+the term itself and after keyword \TERM{as}. This applies to tactic
+\TERM{pattern} and also
 \TERM{unfold}
 \begin{transbox}
 \TRANS{Pattern 1 2 (f x) 3 4 d y z}{pattern (f x at 1 2) (d at 3 4) y z}
@@ -317,7 +324,7 @@ and every command is printed using the new syntax. Many efforts were
 made to preserve as much as possible the quality of the presentation:
 it avoids expansion of syntax extensions, comments are not discarded
 and placed at the same place.
-\item {\tt tools/check-v8} will help translate developments that
+\item {\tt tools/translate-v8} will help translate developments that
 compile with a Makefile with minimum requirements.
 \end{itemize}
 
@@ -335,10 +342,10 @@ by {\tt coq\_makefile}, you probably just have to do
 When the development compiles successfully, there are several changes
 that might be necessary for the translation. Essentially, this is
 about syntax extensions (see section below dedicated to porting syntax
-extensions). If you do not use such features, then you can try and
-make the translation.
+extensions). If you do not use such features, then you are ready to
+try and make the translation.
 
-The preferred way is to use script {\tt check-v8} if your development
+The preferred way is to use script {\tt translate-v8} if your development
 is compiled by a Makfile with the following constraints:
 \begin{itemize}
 \item compilation is achievd by invoke make without arguments
