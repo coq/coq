@@ -48,7 +48,7 @@ let prj j = pP (genprj prjudge j)
 
 let prsp sp = pP[< 'sTR(string_of_path sp) >]
 
-let prqualid qid = pP[< pr_qualid qid >]
+let prqualid qid = pP[< Nametab.pr_qualid qid >]
 
 let prgoal g = pP(prgl g)
 
