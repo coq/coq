@@ -26,6 +26,8 @@ Changements dans les fonctions :
 	  for_all2eq_vect  ->  Util.array_for_all2
 	  tabulate_vect    ->  Array.init
 	  hd_vect          ->  Util.array_hd
+	  tl_vect          ->  Util.array_tl
+	  last_vect        ->  Util.array_last
 	  it_vect_from     ->  array_fold_left_from
 	  vect_it_from     ->  array_fold_right_from
 	  app_tl_vect	   ->  array_app_tl

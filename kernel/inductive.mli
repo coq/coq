@@ -1,0 +1,4 @@
+
+(* $Id$ *)
+
+type mind

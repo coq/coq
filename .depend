@@ -1,7 +1,11 @@
-kernel/environ.cmi: kernel/names.cmi kernel/term.cmi 
+kernel/closure.cmi: kernel/environ.cmi kernel/evd.cmi kernel/generic.cmi \
+    kernel/names.cmi lib/pp.cmi kernel/term.cmi 
+kernel/environ.cmi: kernel/constant.cmi kernel/inductive.cmi kernel/names.cmi \
+    kernel/term.cmi 
 kernel/evd.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi 
 kernel/generic.cmi: kernel/names.cmi lib/util.cmi 
 kernel/names.cmi: lib/pp.cmi 
+kernel/printer.cmi: lib/pp.cmi kernel/term.cmi 
 kernel/sign.cmi: kernel/generic.cmi kernel/names.cmi kernel/term.cmi 
 kernel/term.cmi: lib/coqast.cmi kernel/generic.cmi kernel/names.cmi \
     kernel/univ.cmi 
@@ -11,6 +15,14 @@ lib/pp.cmi: lib/pp_control.cmi
 lib/util.cmi: lib/pp.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
 config/coq_config.cmx: config/coq_config.cmi 
+kernel/closure.cmo: kernel/environ.cmi kernel/evd.cmi kernel/generic.cmi \
+    kernel/names.cmi lib/pp.cmi kernel/printer.cmi kernel/term.cmi \
+    kernel/univ.cmi lib/util.cmi kernel/closure.cmi 
+kernel/closure.cmx: kernel/environ.cmx kernel/evd.cmx kernel/generic.cmx \
+    kernel/names.cmx lib/pp.cmx kernel/printer.cmi kernel/term.cmx \
+    kernel/univ.cmi lib/util.cmx kernel/closure.cmi 
+kernel/environ.cmo: kernel/names.cmi kernel/sign.cmi kernel/environ.cmi 
+kernel/environ.cmx: kernel/names.cmx kernel/sign.cmx kernel/environ.cmi 
 kernel/evd.cmo: kernel/names.cmi kernel/sign.cmi kernel/term.cmi lib/util.cmi \
     kernel/evd.cmi 
 kernel/evd.cmx: kernel/names.cmx kernel/sign.cmx kernel/term.cmx lib/util.cmx \
