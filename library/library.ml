@@ -20,11 +20,11 @@ let add_load_path_entry lpe = load_path := lpe :: !load_path
 let add_path dir coq_dirpath = 
   if coq_dirpath = [] then anomaly "add_path: empty path in library";
   Nametab.push_library_root (List.hd coq_dirpath);
-  if (Unix.stat dir).Unix.st_kind = Unix.S_DIR then
-   add_load_path_entry
-     { directory = dir; coq_dirpath = coq_dirpath }
+  if exists_dir dir then
+    add_load_path_entry { directory = dir; coq_dirpath = coq_dirpath }
   else
-   error (dir ^ " is not an existant directory")
+    wARNING [< 'sTR ("Cannot open " ^ dir) >]
+
 
 let remove_path dir =
   load_path := List.filter (fun lpe -> lpe.directory <> dir) !load_path
@@ -32,7 +32,9 @@ let remove_path dir =
 let rec_add_path dir coq_dirpath =
   if coq_dirpath = [] then anomaly "add_path: empty path in library";
   Nametab.push_library_root (List.hd coq_dirpath);
-  load_path := (all_subdirs dir (Some coq_dirpath)) @ !load_path
+  let dirs = all_subdirs dir (Some coq_dirpath) in
+  if dirs = [] then wARNING [< 'sTR ("Cannot open " ^ dir) >];
+  load_path := dirs @ !load_path
 
 (*s Modules on disk contain the following informations (after the magic 
     number, and before the digest). *)
