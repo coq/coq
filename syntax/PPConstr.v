@@ -82,12 +82,10 @@ Syntax constr
 
 (* Things parsed in command5 *)
 
-  level 5:
-    cast [ << (CAST $C $T) >> ] -> [ [<hv 0> $C:L [0 0] "::" $T:E] ]
-  ;
 (* Things parsed in command6 *)
 
 (* Things parsed in command7 *)
+
 (* Things parsed in command8 *)
   level 8:
     lambda [ << (LAMBDA $Dom [$x]$Body) >> ]
@@ -138,7 +136,7 @@ Syntax constr
       -> [(PRODLBOX $pbi $c (IDS ($LIST $ids) $id) $body)]
 
 
-  | arrow [ << (PROD $A [<>]$B) >> ] ->
+  | arrow [ << (ARROW $A [<>]$B) >> ] ->
        [ [<hv 0> $A:L [0 0] "->" (ARROWBOX $B) ] ]
   | arrow_stop [ << (ARROWBOX $c) >> ] -> [ $c:E ]
   | arrow_again [ << (ARROWBOX (PROD $A [<>]$B)) >> ] ->
@@ -153,6 +151,9 @@ Syntax constr
   ;
 
 (* Things parsed in command9 *)
+  level 9:
+    cast [ << (CAST $C $T) >> ] -> [ [<hv 0> $C:L [0 0] "::" $T:E] ]
+  ;
 
 (* Things parsed in command10 *)
   level 10:
@@ -175,10 +176,7 @@ Syntax constr
   | app_imp_last [ << (APPLISTIMPL (ACC ($LIST $A)) $T) >> ]
          -> [ (APPLIST ($LIST $A) $T):E ]
 *)
-  ;
 
-  (* To force parenthesis on arguments *)
-  level 0:
   | apptailcons [ << (APPTAIL $H ($LIST $T)) >> ]
 	 -> [ [1 1] $H:L  (APPTAIL ($LIST $T)):E ]
   | apptailnil [ << (APPTAIL) >> ] -> [ ]

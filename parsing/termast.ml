@@ -198,7 +198,7 @@ let rec ast_of_raw = function
 
   | RProd (_,Anonymous,t,c) ->
       (* Anonymous product are never factorized *)
-      ope("PROD",[ast_of_raw t; slam(None,ast_of_raw c)])
+      ope("ARROW",[ast_of_raw t; slam(None,ast_of_raw c)])
 
   | RLetIn (_,na,t,c) ->
       ope("LETIN",[ast_of_raw t; slam(idopt_of_name na,ast_of_raw c)])
