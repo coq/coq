@@ -571,7 +571,7 @@ let rec check_subterm_rec_meta env sigma vectn k def =
        | IsLambda (x,a,b) -> 
 	   if noccur_with_meta n nfi a then
 	     let env' = push_rel_assum (x, a) env in
-             if n = k+1 then (env',a,b)
+             if n = k+1 then (env', lift 1 a, b)
 	     else check_occur env' (n+1) b
            else 
 	     anomaly "check_subterm_rec_meta: Bad occurrence of recursive call"
