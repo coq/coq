@@ -777,42 +777,6 @@ library/nametab.cmx: library/nametab.ml
 
 # files compiled with camlp4 because of streams syntax
 
-#lib/pp.cmo: lib/pp.ml
-#	$(OCAMLC) $(BYTEFLAGS) -c $<
-
-#lib/pp.cmx: lib/pp.ml
-#	$(OCAMLOPT_P4O) -c $<
-
-#contrib/xml/xml.cmo: contrib/xml/xml.ml4
-#	$(OCAMLC_P4O) -c $<
-
-#contrib/xml/xml.cmx: contrib/xml/xml.ml4
-#	$(OCAMLOPT_P4O) -c $<
-
-#contrib/xml/xmlcommand.cmo: contrib/xml/xmlcommand.ml4
-#	$(OCAMLC_P4O) -c $<
-
-#contrib/xml/xmlcommand.cmx: contrib/xml/xmlcommand.ml4
-#	$(OCAMLOPT_P4O) -c $<
-
-#contrib/interface/line_parser.cmo: contrib/interface/line_parser.ml4
-#	$(OCAMLC_P4O) -c $<
-
-#contrib/interface/line_parser.cmx: contrib/interface/line_parser.ml4
-#	$(OCAMLOPT_P4O) -c $<
-
-#tools/coq_makefile.cmo: tools/coq_makefile.ml4
-#	$(OCAMLC_P4O) -c $<
-
-#tools/coq_makefile.cmx: tools/coq_makefile.ml4
-#	$(OCAMLOPT_P4O) -c $<
-
-#tools/coq-tex.cmo: tools/coq-tex.ml4
-#	$(OCAMLC_P4O) -c $<
-
-#tools/coq-tex.cmx: tools/coq-tex.ml4
-#	$(OCAMLOPT_P4O) -c $<
-
 ML4FILES += lib/pp.ml4 			\
 	 contrib/xml/xml.ml4		\
 	 contrib/xml/xmlcommand.ml4	\
