@@ -135,21 +135,21 @@ let hypothesis_def_var is_refining ident n c =
 (* 3| Mutual Inductive definitions *)
 
 let minductive_message = function 
-  | []  -> anomaly "no inductive definition"
+  | []  -> error "no inductive definition"
   | [x] -> [< pr_id x; 'sTR " is defined">]
   | l   -> hOV 0  [< prlist_with_sep pr_coma pr_id l;
 		     'sPC; 'sTR "are defined">]
 
 let recursive_message v =
   match Array.length v with
-    | 0 -> anomaly "no recursive definition"
+    | 0 -> error "no recursive definition"
     | 1 -> [< Printer.pr_global v.(0); 'sTR " is recursively defined">]
     | _ -> hOV 0 [< prvect_with_sep pr_coma Printer.pr_global v;
 		    'sPC; 'sTR "are recursively defined">]
 
 let corecursive_message v =
   match Array.length v with
-    | 0 -> anomaly "no corecursive definition"
+    | 0 -> error "no corecursive definition"
     | 1 -> [< Printer.pr_global v.(0); 'sTR " is corecursively defined">]
     | _ -> hOV 0 [< prvect_with_sep pr_coma Printer.pr_global v;
                     'sPC; 'sTR "are corecursively defined">]
