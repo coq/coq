@@ -1291,8 +1291,14 @@ let xlate_thm x = CT_thm (match x with
 
 
 let xlate_defn x = CT_defn (match x with
- | Local -> "Local"
- | Global -> "Definition")
+ | (Local, Definition) -> "Local"
+ | (Global, Definition) -> "Definition"
+ | (Global, Coercion) -> "SubClass"
+ | (Local, Coercion) -> "Local SubClass"
+ | (Global,CanonicalStructure) -> "Canonical Structure"
+ | (Local, CanonicalStructure) -> 
+     xlate_error "Local CanonicalStructure not parsed"
+ | (_, SubClass) -> xlate_error "Obsolete SubClass not supported")
 
 let xlate_var x = CT_var (match x with
  | (Global,Definitional) -> "Parameter"
@@ -1355,8 +1361,9 @@ let build_record_field_list l =
 let get_require_flags impexp spec =
  let ct_impexp =
   match impexp with
-  | false -> CT_import
-  | true -> CT_export in
+  | None -> CT_coerce_NONE_to_IMPEXP CT_none
+  | Some false -> CT_import
+  | Some true -> CT_export in
  let ct_spec =
   match spec with
   | None -> ctv_SPEC_OPT_NONE
@@ -1374,13 +1381,17 @@ let cvt_optional_eval_for_definition c1 optional_eval =
 	      xlate_formula c1))
 
 let cvt_vernac_binder = function
-  | (id::idl,c) ->
-     CT_binder(
-       CT_id_opt_ne_list 
-         (xlate_ident_opt (Some (snd id)),
-          List.map (fun id -> xlate_ident_opt (Some (snd id))) idl),
-         xlate_formula c)
-  | ([],_) -> xlate_error "Empty list of vernac binder"
+  | b,(id::idl,c) ->
+      let l,t = 
+	CT_id_opt_ne_list 
+          (xlate_ident_opt (Some (snd id)),
+           List.map (fun id -> xlate_ident_opt (Some (snd id))) idl),
+          xlate_formula c in
+	if b then
+	  CT_binder(l,t)
+	else
+	  CT_binder_coercion(l,t)
+  | _, _ -> xlate_error "binder with no left part, rejected";;
 
 let cvt_vernac_binders = function
     a::args -> CT_binder_ne_list(cvt_vernac_binder a, List.map cvt_vernac_binder args)
@@ -1404,7 +1415,32 @@ let translate_opt_notation_decl = function
 	   | Some id -> CT_coerce_ID_to_ID_OPT (CT_ident id) in
        CT_decl_notation(CT_string s, xlate_formula f, tr_sc);;
 
-let xlate_vernac =
+let xlate_level = function
+    Extend.NumLevel n -> CT_coerce_INT_to_INT_OR_NEXT(CT_int n)
+  | Extend.NextLevel -> CT_next_level;;
+
+let xlate_syntax_modifier = function
+    Extend.SetItemLevel((s::sl), level) ->
+      CT_set_item_level
+	(CT_id_ne_list(CT_ident s, List.map (fun s -> CT_ident s) sl),
+	 xlate_level level)
+  | Extend.SetItemLevel([], _) -> assert false
+  | Extend.SetLevel level -> CT_set_level (CT_int level)
+  | Extend.SetAssoc Gramext.LeftA -> CT_lefta
+  | Extend.SetAssoc Gramext.RightA -> CT_righta
+  | Extend.SetAssoc Gramext.NonA -> CT_nona
+  | Extend.SetEntryType(x,typ) ->
+      CT_entry_type(CT_ident x,
+		 match typ with
+		     Extend.ETIdent -> CT_ident "ident"
+		   | Extend.ETReference -> CT_ident "global"
+		   | Extend.ETBigint -> CT_ident "bigint"
+		   | _ -> xlate_error "syntax_type not parsed")
+  | Extend.SetOnlyParsing -> CT_only_parsing
+  | Extend.SetFormat(_,s) -> CT_format(CT_string s);;
+
+
+let rec xlate_vernac =
  function
    | VernacDeclareTacticDefinition (false,[(_,id),TacFun (largs,tac)]) ->
        let fst, rest = xlate_largs_to_id_unit largs in
@@ -1480,7 +1516,6 @@ let xlate_vernac =
 	| _ -> assert false in
       CT_hintrewrite(ct_orient, f_ne_list, CT_ident base, xlate_tactic t)
   | VernacHints (local,dbnames,h) ->
-      (* TODO: locality flag *)
       let dblist = CT_id_list(List.map (fun x -> CT_ident x) dbnames) in
       (match h with
 	| HintsConstructors (None, l) ->
@@ -1562,7 +1597,8 @@ let xlate_vernac =
   | VernacEndProof (Proved (b,Some ((_,s),None))) ->
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Theorem"),
        ctf_ID_OPT_SOME (xlate_ident s))
-  | VernacEndProof Admitted -> xlate_error "TODO: Admitted"
+  | VernacEndProof Admitted ->
+      CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Admitted"), ctv_ID_OPT_NONE)
   | VernacSetOpacity (false, id :: idl) ->
             CT_transparent(CT_id_ne_list(loc_qualid_to_ct_ID id,
                    List.map loc_qualid_to_ct_ID idl))
@@ -1576,8 +1612,12 @@ let xlate_vernac =
   | VernacShow ShowProof -> CT_show_proof
   | VernacShow ShowTree -> CT_show_tree
   | VernacShow ShowProofNames -> CT_show_proofs
-  | VernacShow (ShowIntros _|ShowGoalImplicitly _|ShowExistentials|ShowScript)
-      -> xlate_error "TODO: Show Intro/Intros/Implicits/Existentials/Script"
+  | VernacShow (ShowIntros true) -> CT_show_intros
+  | VernacShow (ShowIntros false) -> CT_show_intro
+  | VernacShow (ShowGoalImplicitly None) -> CT_show_implicit (CT_int 1)
+  | VernacShow (ShowGoalImplicitly (Some n)) -> CT_show_implicit (CT_int n)
+  | VernacShow ShowExistentials -> CT_show_existentials
+  | VernacShow ShowScript -> CT_show_script
   | VernacGo arg -> CT_go (xlate_locn arg)
   | VernacShow ExplainProof l -> CT_explain_proof (nums_to_int_list l)
   | VernacShow ExplainTree l ->
@@ -1591,10 +1631,12 @@ let xlate_vernac =
 	| PrintSectionContext id -> CT_print_section (loc_qualid_to_ct_ID id)
 	| PrintModules -> CT_print_modules
 	| PrintGrammar (phylum, name) -> CT_print_grammar CT_grammar_none
-	| PrintHintDb -> CT_print_hint (CT_coerce_NONE_to_ID_OPT CT_none)
-	| PrintHintDbName id -> CT_print_hintdb (CT_ident id)
+	| PrintHintDb -> CT_print_hintdb (CT_coerce_STAR_to_ID_OR_STAR CT_star)
+	| PrintHintDbName id -> 
+	    CT_print_hintdb (CT_coerce_ID_to_ID_OR_STAR (CT_ident id))
 	| PrintHint id ->
 	    CT_print_hint (CT_coerce_ID_to_ID_OPT (loc_qualid_to_ct_ID id))
+	| PrintHintGoal -> CT_print_hint ctv_ID_OPT_NONE
 	| PrintLoadPath -> CT_print_loadpath
 	| PrintMLLoadPath -> CT_ml_print_path
 	| PrintMLModules -> CT_ml_print_modules
@@ -1604,49 +1646,66 @@ let xlate_vernac =
 	| PrintCoercionPaths (id1, id2) -> 
 	    CT_print_path (xlate_class id1, xlate_class id2)
 	| PrintInspect n -> CT_inspect (CT_int n)
-	| PrintUniverses _ -> xlate_error "TODO: Dump Universes"
-	| PrintHintGoal -> xlate_error "TODO: Print Hint"
-	| PrintLocalContext -> xlate_error "TODO: Print"
-	| PrintTables -> xlate_error "TODO: Print Tables"
-        | PrintModuleType _ -> xlate_error "TODO: Print Module Type"
-        | PrintModule _ -> xlate_error "TODO: Print Module"
-        | PrintScopes -> xlate_error "TODO: Print Scopes"
-        | PrintScope _ -> xlate_error "TODO: Print Scope"
-	| PrintVisibility _ -> xlate_error "TODO: Print Visibility"
-        | PrintAbout _ -> xlate_error "TODO: Print About"
-	| _ -> xlate_error "TODO: Print")
+        | PrintUniverses None -> CT_print_universes ctf_STRING_OPT_NONE
+	| PrintUniverses (Some s) ->
+	    CT_print_universes (ctf_STRING_OPT_SOME (CT_string s))
+	| PrintLocalContext -> CT_print
+	| PrintTables -> CT_print_tables
+        | PrintModuleType a -> CT_print_module_type (loc_qualid_to_ct_ID a)
+        | PrintModule a -> CT_print_module (loc_qualid_to_ct_ID a)
+        | PrintScopes -> CT_print_scopes
+        | PrintScope id -> CT_print_scope (CT_ident id)
+	| PrintVisibility id_opt ->
+	    CT_print_visibility 
+	      (match id_opt with
+		   Some id -> CT_coerce_ID_to_ID_OPT(CT_ident id)
+		 | None -> ctv_ID_OPT_NONE)
+        | PrintAbout qid -> CT_print_about(loc_qualid_to_ct_ID qid)
+	| PrintImplicit qid -> CT_print_implicit(loc_qualid_to_ct_ID qid))
   | VernacBeginSection (_,id) ->
       CT_coerce_SECTION_BEGIN_to_COMMAND (CT_section (xlate_ident id))
   | VernacEndSegment (_,id) -> CT_section_end (xlate_ident id)
-  | VernacStartTheoremProof (k, (_,s), ([],c), _, _) ->
+  | VernacStartTheoremProof (k, (_,s), (bl,c), _, _) ->
       CT_coerce_THEOREM_GOAL_to_COMMAND(
-	CT_theorem_goal (CT_coerce_THM_to_DEFN_OR_THM (xlate_thm k), xlate_ident s,xlate_formula c))
-  | VernacStartTheoremProof (k, s, (bl,c), _, _) -> 
-      xlate_error "TODO: VernacStartTheoremProof"
+	CT_theorem_goal (CT_coerce_THM_to_DEFN_OR_THM (xlate_thm k), xlate_ident s,
+           xlate_binder_list bl, xlate_formula c))
   | VernacSuspend -> CT_suspend
   | VernacResume idopt -> CT_resume (xlate_ident_opt (option_app snd idopt))
-  | VernacDefinition ((k,_),(_,s),ProveBody (bl,typ),_) ->
-      if bl <> [] then xlate_error "TODO: Def bindings";
-      CT_coerce_THEOREM_GOAL_to_COMMAND(
-	CT_theorem_goal (CT_coerce_DEFN_to_DEFN_OR_THM (xlate_defn k), xlate_ident s,xlate_formula typ))
-  | VernacDefinition ((kind,_),(_,s),DefineBody(bl,red_option,c,typ_opt),_) ->
+  | VernacDefinition (k,(_,s),ProveBody (bl,typ),_) ->
+      CT_coerce_THEOREM_GOAL_to_COMMAND
+	(CT_theorem_goal
+	   (CT_coerce_DEFN_to_DEFN_OR_THM (xlate_defn k),
+	    xlate_ident s, xlate_binder_list bl, xlate_formula typ))
+  | VernacDefinition (kind,(_,s),DefineBody(bl,red_option,c,typ_opt),_) ->
       CT_definition
 	(xlate_defn kind, xlate_ident s, xlate_binder_list bl,
 	   cvt_optional_eval_for_definition c red_option,
            xlate_formula_opt typ_opt)
   | VernacAssumption (kind, b) ->
-      let b = List.map snd b in (* TODO: handle possible coercions *)
       CT_variable (xlate_var kind, cvt_vernac_binders b)
   | VernacCheckMayEval (None, numopt, c) ->
       CT_check (xlate_formula c)
   | VernacSearch (s,x) ->
+      let translated_restriction = xlate_search_restr x in
       (match s with
 	| SearchPattern c ->
-	    CT_search_pattern(xlate_formula c, xlate_search_restr x)
+	    CT_search_pattern(xlate_formula c, translated_restriction)
 	| SearchHead id ->
-	    CT_search(loc_qualid_to_ct_ID id, xlate_search_restr x)
-	| SearchRewrite c -> xlate_error "TODO: SearchRewrite"
-	| SearchAbout id -> xlate_error "TODO: SearchAbout")
+	    CT_search(loc_qualid_to_ct_ID id, translated_restriction)
+	| SearchRewrite c ->
+	    CT_search_rewrite(xlate_formula c, translated_restriction)
+	| SearchAbout (a::l) ->
+	    let xlate_search_about_item it =
+	      match it with
+		  SearchRef x -> 
+		    CT_coerce_ID_to_ID_OR_STRING(loc_qualid_to_ct_ID x)
+		| SearchString s -> 
+		    CT_coerce_STRING_to_ID_OR_STRING(CT_string s) in
+	    CT_search_about
+	      (CT_id_or_string_ne_list(xlate_search_about_item a,
+				       List.map xlate_search_about_item l),
+	       translated_restriction)
+  	| SearchAbout [] -> assert false)
 
   | (*Record from tactics/Record.v *)
     VernacRecord 
@@ -1660,36 +1719,6 @@ let xlate_vernac =
         xlate_ident s, xlate_binder_list binders, 
 	xlate_formula c1, record_constructor,
          build_record_field_list field_list)
-
-(* TODO
-     | (*Inversions from tactics/Inv.v *)
-       "MakeSemiInversionLemmaFromHyp",
-         ((Varg_int n) :: ((Varg_ident id1) :: ((Varg_ident id2) :: []))) ->
-      CT_derive_inversion
-       (CT_inv_regular, CT_coerce_INT_to_INT_OPT n, id1, id2)
-     | "MakeInversionLemmaFromHyp",
-         ((Varg_int n) :: ((Varg_ident id1) :: ((Varg_ident id2) :: []))) ->
-      CT_derive_inversion
-       (CT_inv_clear,
-       CT_coerce_INT_to_INT_OPT n, id1, id2)
-     | "MakeSemiInversionLemma",
-         ((Varg_ident id) :: (c :: ((Varg_sorttype sort) :: []))) ->
-      CT_derive_inversion_with
-       (CT_inv_regular, id, coerce_iVARG_to_FORMULA c, sort)
-     | "MakeInversionLemma",
-         ((Varg_ident id) :: (c :: ((Varg_sorttype sort) :: []))) ->
-      CT_derive_inversion_with
-       (CT_inv_clear, id,
-       coerce_iVARG_to_FORMULA c, sort)
-     | "MakeDependentSemiInversionLemma",
-         ((Varg_ident id) :: (c :: ((Varg_sorttype sort) :: []))) ->
-      CT_derive_depinversion
-       (CT_inv_regular, id, coerce_iVARG_to_FORMULA c, sort)
-     | "MakeDependentInversionLemma",
-         ((Varg_ident id) :: (c :: ((Varg_sorttype sort) :: []))) ->
-      CT_derive_depinversion
-       (CT_inv_clear, id, coerce_iVARG_to_FORMULA c, sort)
-*)
    | VernacInductive (isind, lmi) ->
       let co_or_ind = if isind then "Inductive" else "CoInductive" in
       let strip_mutind ((_,s), notopt, parameters, c, constructors) =
@@ -1734,54 +1763,70 @@ let xlate_vernac =
 	  (CT_scheme_spec_list (strip_ind lm, List.map strip_ind lmi))
    | VernacSyntacticDefinition ((_,id), c, nopt) ->
          CT_syntax_macro (xlate_ident id, xlate_formula c, xlate_int_opt nopt)
-   | VernacRequire (None, spec, lid) -> xlate_error "TODO: Read Module"
-   | VernacRequire (Some impexp, spec, [id]) ->
+   | VernacRequire (impexp, spec, id::idl) ->
       let ct_impexp, ct_spec = get_require_flags impexp spec in
-      CT_require (ct_impexp, ct_spec, loc_qualid_to_ct_ID id,
-        CT_coerce_NONE_to_STRING_OPT CT_none)
-   | VernacRequire (_,_,([]|_::_::_)) ->
-       xlate_error "TODO: general form of future Require"
-   | VernacRequireFrom (Some impexp, spec, filename) ->
-      let ct_impexp, ct_spec = get_require_flags impexp spec 
-      and id = id_of_string (Filename.basename filename)
-      in
-      CT_require
-       (ct_impexp, ct_spec, xlate_ident id, 
-         CT_coerce_STRING_to_STRING_OPT (CT_string filename))
-   | VernacRequireFrom (None, _, _) -> xlate_error "TODO: Read Module"
+      CT_require (ct_impexp, ct_spec, 
+		  CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STRING(
+		  CT_id_ne_list(loc_qualid_to_ct_ID id,
+				List.map loc_qualid_to_ct_ID idl)))
+   | VernacRequire (_,_,[]) ->
+       xlate_error "Require should have at least one id argument"
+   | VernacRequireFrom (impexp, spec, filename) ->
+      let ct_impexp, ct_spec = get_require_flags impexp spec in
+      CT_require(ct_impexp, ct_spec, 
+		 CT_coerce_STRING_to_ID_NE_LIST_OR_STRING(CT_string filename))
 
    | VernacSyntax (phylum, l) -> xlate_error "SYNTAX not implemented"
-       (*Two versions of the syntax node with and without the binder list. *)
-       (*Need to update the metal file and ascent.mli first! 
-         	| ("SYNTAX", [Varg_ident phy; Varg_ident s; spatarg; unparg; blist]) ->
-         	        (syntaxop phy s spatarg unparg blist)
-         	| ("SYNTAX", [Varg_ident phy; Varg_ident s; spatarg; unparg]) ->
-         	        (syntaxop phy s spatarg unparg 
-         coerce_ID_OPT_to_FORMULA_OPT(CT_coerce_NONE_to_ID_OPT(CT_none)))*)
-   | VernacOpenCloseScope sc -> xlate_error "TODO: open/close scope"
 
-   | VernacArgumentsScope _ -> xlate_error "TODO: Arguments Scope"
-
-   | VernacDelimiters _ -> xlate_error "TODO: Delimiters"
-
-   | VernacBindScope _ -> xlate_error "TODO: Bind Scope"
-
-   | VernacNotation _ -> xlate_error "TODO: Notation"
-
+   | VernacOpenCloseScope(true, true, s) -> CT_local_open_scope(CT_ident s)
+   | VernacOpenCloseScope(false, true, s) -> CT_open_scope(CT_ident s)
+   | VernacOpenCloseScope(true, false, s) -> CT_local_close_scope(CT_ident s)
+   | VernacOpenCloseScope(false, false, s) -> CT_close_scope(CT_ident s)
+   | VernacArgumentsScope(qid, l) -> 
+       CT_arguments_scope(loc_qualid_to_ct_ID qid,
+		       CT_id_opt_list
+		       (List.map
+			  (fun x ->
+				  match x with
+				      None -> ctv_ID_OPT_NONE
+				    | Some x -> ctf_ID_OPT_SOME(CT_ident x)) l))
+   | VernacDelimiters(s1,s2) -> CT_delim_scope(CT_ident s1, CT_ident s2)
+   | VernacBindScope(id, a::l) -> 
+       let xlate_class_rawexpr = function
+	   FunClass -> CT_ident "Funclass" | SortClass -> CT_ident "Sortclass"
+	 | RefClass qid -> loc_qualid_to_ct_ID qid in
+       CT_bind_scope(CT_ident id,
+		     CT_id_ne_list(xlate_class_rawexpr a,
+				   List.map xlate_class_rawexpr l))
+   | VernacBindScope(id, []) -> assert false
+   | VernacNotation(b, c, None, _, _) -> assert false
+   | VernacNotation(b, c, Some(s,modif_list), _, opt_scope) -> 
+       let translated_s = CT_string s in
+       let formula = xlate_formula c in
+       let translated_modif_list = 
+	 CT_modifier_list(List.map xlate_syntax_modifier modif_list) in
+       let translated_scope = match opt_scope with
+	   None -> ctv_ID_OPT_NONE
+	 | Some x -> ctf_ID_OPT_SOME(CT_ident x) in
+       if b then
+       CT_local_define_notation
+	 (translated_s, formula, translated_modif_list, translated_scope)
+       else
+	 CT_define_notation(translated_s, formula, 
+			    translated_modif_list, translated_scope)
    | VernacSyntaxExtension _ -> xlate_error "Syntax Extension not implemented"
 
-   | VernacInfix (false,(str,modl),id,_,None) ->
-       (match Metasyntax.interp_infix_modifiers modl with
-	 | (str_assoc,Some n,false,None) ->
-      CT_infix (
-       (match str_assoc with
-        | Some Gramext.LeftA -> CT_lefta
-        | Some Gramext.RightA -> CT_righta
-        | Some Gramext.NonA -> CT_nona
-        | None -> CT_coerce_NONE_to_ASSOC CT_none),
-       CT_int n, CT_string str, loc_qualid_to_ct_ID id)
-	 | _ -> xlate_error "TODO: handle onlyparse and format")
-   | VernacInfix _ -> xlate_error "TODO: handle scopes and locality"
+   | VernacInfix (b,(str,modl),id,_, opt_scope) ->
+       let id1 = loc_qualid_to_ct_ID id in
+       let modl1 = CT_modifier_list(List.map xlate_syntax_modifier modl) in
+       let s = CT_string str in
+       let translated_scope = match opt_scope with
+	   None -> ctv_ID_OPT_NONE
+	 | Some x -> ctf_ID_OPT_SOME(CT_ident x) in
+	 if b then
+	   CT_local_infix(s, id1,modl1, translated_scope)
+	 else
+	   CT_infix(s, id1,modl1, translated_scope)
    | VernacGrammar _ -> xlate_error "GRAMMAR not implemented"
    | VernacCoercion (s, id1, id2, id3) ->
       let id_opt = CT_coerce_NONE_to_IDENTITY_OPT CT_none in
@@ -1807,9 +1852,13 @@ let xlate_vernac =
   | VernacExtend (s, l) ->
       CT_user_vernac
        (CT_ident s, CT_varg_list (List.map coerce_genarg_to_VARG l))
-  | VernacDebug b -> xlate_error "TODO: Debug On/Off"
-
-  | (VernacList _ | VernacV7only _ | VernacV8only _) ->
+  | VernacDebug b -> xlate_error "Debug On/Off not supported"
+  | VernacList((_, a)::l) -> 
+      CT_coerce_COMMAND_LIST_to_COMMAND
+	(CT_command_list(xlate_vernac a, 
+			 List.map (fun (_, x) -> xlate_vernac x) l))
+  | VernacList([]) -> assert false
+  | (VernacV7only _ | VernacV8only _) ->
       xlate_error "Not treated here"
   | VernacNop -> CT_proof_no_op
   | VernacComments l -> 
@@ -1818,16 +1867,24 @@ let xlate_vernac =
       CT_implicits
 	(reference_to_ct_ID id,
 	 match opt_positions with
-	     None -> CT_int_list[]
+	     None -> CT_id_list[]
 	   | Some l -> 
-	       CT_int_list
-	       (List.map (function ExplByPos x -> CT_int x | ExplByName _ ->
-		 xlate_error "TODO: explicit argument by name") l))
-  | VernacReserve _ -> xlate_error "TODO: Default Variable Type"
+	       CT_id_list
+	       (List.map
+		  (function ExplByPos x
+		       -> xlate_error
+			   "explication argument by rank is obsolete"
+		     | ExplByName id -> CT_ident (string_of_id id)) l))
+  | VernacReserve((_,a)::l, f) ->
+      CT_reserve(CT_id_ne_list(xlate_ident a, 
+			       List.map (fun (_,x) -> xlate_ident x) l),
+		 xlate_formula f)
+  | VernacReserve([], _) -> assert false
   | VernacLocate(LocateTerm id) -> CT_locate(reference_to_ct_ID id)
   | VernacLocate(LocateLibrary id) -> CT_locate_lib(reference_to_ct_ID id)
   | VernacLocate(LocateFile s) -> CT_locate_file(CT_string s)
-  | VernacLocate(LocateNotation _) -> xlate_error "TODO: Locate Notation"
+  | VernacLocate(LocateNotation s) -> CT_locate_notation(CT_string s)
+  | VernacTime(v) -> CT_time(xlate_vernac v)
   | VernacSetOption (Goptions.SecondaryTable ("Implicit", "Arguments"), BoolValue true)->CT_user_vernac (CT_ident "IMPLICIT_ARGS_ON", CT_varg_list[])
   | (VernacGlobalCheck _|VernacPrintOption _|
      VernacMemOption (_, _)|VernacRemoveOption (_, _)|VernacAddOption (_, _)|
@@ -1835,7 +1892,7 @@ let xlate_vernac =
      VernacBack _|VernacRestoreState _|
      VernacWriteState _|VernacSolveExistential (_, _)|VernacCanonical _|
      VernacImport (_, _)|VernacExactProof _|VernacDistfix _|
-     VernacTacticGrammar _|VernacVar _|VernacTime _|VernacProof _)
+     VernacTacticGrammar _|VernacVar _|VernacProof _)
     -> xlate_error "TODO: vernac"
 
   (* Modules and Module Types *)

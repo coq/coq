@@ -14,12 +14,7 @@ let fATOM s1 =
 
 let f_atom_string = print_string;;
 let f_atom_int = print_int;;
-let rec fASSOC = function
-| CT_coerce_NONE_to_ASSOC x -> fNONE x
-| CT_lefta -> fNODE "lefta" 0
-| CT_nona -> fNODE "nona" 0
-| CT_righta -> fNODE "righta" 0
-and fAST = function
+let rec fAST = function
 | CT_coerce_ID_OR_INT_to_AST x -> fID_OR_INT x
 | CT_coerce_ID_OR_STRING_to_AST x -> fID_OR_STRING x
 | CT_astnode(x1, x2) ->
@@ -46,6 +41,10 @@ and fBINARY = function
    fID_OPT_NE_LIST x1;
    fFORMULA x2;
    fNODE "binder" 2
+| CT_binder_coercion(x1, x2) ->
+   fID_OPT_NE_LIST x1;
+   fFORMULA x2;
+   fNODE "binder_coercion" 2
 and fBINDER_LIST = function
 | CT_binder_list l ->
    (List.iter fBINDER l);
@@ -101,7 +100,6 @@ and fCOFIX_TAC_LIST = function
 and fCOMMAND = function
 | CT_coerce_COMMAND_LIST_to_COMMAND x -> fCOMMAND_LIST x
 | CT_coerce_EVAL_CMD_to_COMMAND x -> fEVAL_CMD x
-| CT_coerce_IMPEXP_to_COMMAND x -> fIMPEXP x
 | CT_coerce_SECTION_BEGIN_to_COMMAND x -> fSECTION_BEGIN x
 | CT_coerce_THEOREM_GOAL_to_COMMAND x -> fTHEOREM_GOAL x
 | CT_abort(x1) ->
@@ -120,6 +118,14 @@ and fCOMMAND = function
    fSTRING x1;
    fID_OPT x2;
    fNODE "addpath" 2
+| CT_arguments_scope(x1, x2) ->
+   fID x1;
+   fID_OPT_LIST x2;
+   fNODE "arguments_scope" 2
+| CT_bind_scope(x1, x2) ->
+   fID x1;
+   fID_NE_LIST x2;
+   fNODE "bind_scope" 2
 | CT_cd(x1) ->
    fSTRING_OPT x1;
    fNODE "cd" 1
@@ -129,6 +135,9 @@ and fCOMMAND = function
 | CT_class(x1) ->
    fID x1;
    fNODE "class" 1
+| CT_close_scope(x1) ->
+   fID x1;
+   fNODE "close_scope" 1
 | CT_coercion(x1, x2, x3, x4, x5) ->
    fLOCAL_OPT x1;
    fIDENTITY_OPT x2;
@@ -144,6 +153,12 @@ and fCOMMAND = function
    fID x2;
    fSTRING_OPT x3;
    fNODE "compile_module" 3
+| CT_define_notation(x1, x2, x3, x4) ->
+   fSTRING x1;
+   fFORMULA x2;
+   fMODIFIER_LIST x3;
+   fID_OPT x4;
+   fNODE "define_notation" 4
 | CT_definition(x1, x2, x3, x4, x5) ->
    fDEFN x1;
    fID x2;
@@ -151,6 +166,10 @@ and fCOMMAND = function
    fDEF_BODY x4;
    fFORMULA_OPT x5;
    fNODE "definition" 5
+| CT_delim_scope(x1, x2) ->
+   fID x1;
+   fID x2;
+   fNODE "delim_scope" 2
 | CT_delpath(x1) ->
    fSTRING x1;
    fNODE "delpath" 1
@@ -178,6 +197,9 @@ and fCOMMAND = function
 | CT_explain_prooftree(x1) ->
    fINT_LIST x1;
    fNODE "explain_prooftree" 1
+| CT_export_id(x1) ->
+   fID_NE_LIST x1;
+   fNODE "export_id" 1
 | CT_fix_decl(x1) ->
    fFIX_REC_LIST x1;
    fNODE "fix_decl" 1
@@ -215,16 +237,19 @@ and fCOMMAND = function
    fNODE "hints" 3
 | CT_implicits(x1, x2) ->
    fID x1;
-   fINT_LIST x2;
+   fID_LIST x2;
    fNODE "implicits" 2
+| CT_import_id(x1) ->
+   fID_NE_LIST x1;
+   fNODE "import_id" 1
 | CT_ind_scheme(x1) ->
    fSCHEME_SPEC_LIST x1;
    fNODE "ind_scheme" 1
 | CT_infix(x1, x2, x3, x4) ->
-   fASSOC x1;
-   fINT x2;
-   fSTRING x3;
-   fID x4;
+   fSTRING x1;
+   fID x2;
+   fMODIFIER_LIST x3;
+   fID_OPT x4;
    fNODE "infix" 4
 | CT_inspect(x1) ->
    fINT x1;
@@ -236,6 +261,15 @@ and fCOMMAND = function
    fVERBOSE_OPT x1;
    fID_OR_STRING x2;
    fNODE "load" 2
+| CT_local_close_scope(x1) ->
+   fID x1;
+   fNODE "local_close_scope" 1
+| CT_local_define_notation(x1, x2, x3, x4) ->
+   fSTRING x1;
+   fFORMULA x2;
+   fMODIFIER_LIST x3;
+   fID_OPT x4;
+   fNODE "local_define_notation" 4
 | CT_local_hint_destruct(x1, x2, x3, x4, x5, x6) ->
    fID x1;
    fINT x2;
@@ -255,6 +289,15 @@ and fCOMMAND = function
    fID_NE_LIST x2;
    fID_LIST x3;
    fNODE "local_hints" 3
+| CT_local_infix(x1, x2, x3, x4) ->
+   fSTRING x1;
+   fID x2;
+   fMODIFIER_LIST x3;
+   fID_OPT x4;
+   fNODE "local_infix" 4
+| CT_local_open_scope(x1) ->
+   fID x1;
+   fNODE "local_open_scope" 1
 | CT_locate(x1) ->
    fID x1;
    fNODE "locate" 1
@@ -264,6 +307,9 @@ and fCOMMAND = function
 | CT_locate_lib(x1) ->
    fID x1;
    fNODE "locate_lib" 1
+| CT_locate_notation(x1) ->
+   fSTRING x1;
+   fNODE "locate_notation" 1
 | CT_mind_decl(x1, x2) ->
    fCO_IND x1;
    fIND_SPEC_LIST x2;
@@ -286,9 +332,13 @@ and fCOMMAND = function
 | CT_opaque(x1) ->
    fID_NE_LIST x1;
    fNODE "opaque" 1
-| CT_parameter(x1) ->
-   fBINDER x1;
-   fNODE "parameter" 1
+| CT_open_scope(x1) ->
+   fID x1;
+   fNODE "open_scope" 1
+| CT_print -> fNODE "print" 0
+| CT_print_about(x1) ->
+   fID x1;
+   fNODE "print_about" 1
 | CT_print_all -> fNODE "print_all" 0
 | CT_print_classes -> fNODE "print_classes" 0
 | CT_print_coercions -> fNODE "print_coercions" 0
@@ -300,12 +350,21 @@ and fCOMMAND = function
    fID_OPT x1;
    fNODE "print_hint" 1
 | CT_print_hintdb(x1) ->
-   fID x1;
+   fID_OR_STAR x1;
    fNODE "print_hintdb" 1
 | CT_print_id(x1) ->
    fID x1;
    fNODE "print_id" 1
+| CT_print_implicit(x1) ->
+   fID x1;
+   fNODE "print_implicit" 1
 | CT_print_loadpath -> fNODE "print_loadpath" 0
+| CT_print_module(x1) ->
+   fID x1;
+   fNODE "print_module" 1
+| CT_print_module_type(x1) ->
+   fID x1;
+   fNODE "print_module_type" 1
 | CT_print_modules -> fNODE "print_modules" 0
 | CT_print_natural(x1) ->
    fID x1;
@@ -323,10 +382,21 @@ and fCOMMAND = function
 | CT_print_proof(x1) ->
    fID x1;
    fNODE "print_proof" 1
+| CT_print_scope(x1) ->
+   fID x1;
+   fNODE "print_scope" 1
+| CT_print_scopes -> fNODE "print_scopes" 0
 | CT_print_section(x1) ->
    fID x1;
    fNODE "print_section" 1
 | CT_print_states -> fNODE "print_states" 0
+| CT_print_tables -> fNODE "print_tables" 0
+| CT_print_universes(x1) ->
+   fSTRING_OPT x1;
+   fNODE "print_universes" 1
+| CT_print_visibility(x1) ->
+   fID_OPT x1;
+   fNODE "print_visibility" 1
 | CT_proof(x1) ->
    fFORMULA x1;
    fNODE "proof" 1
@@ -358,12 +428,15 @@ and fCOMMAND = function
    fNATURAL_FEATURE x1;
    fID x2;
    fNODE "remove_natural_feature" 2
-| CT_require(x1, x2, x3, x4) ->
+| CT_require(x1, x2, x3) ->
    fIMPEXP x1;
    fSPEC_OPT x2;
-   fID x3;
-   fSTRING_OPT x4;
-   fNODE "require" 4
+   fID_NE_LIST_OR_STRING x3;
+   fNODE "require" 3
+| CT_reserve(x1, x2) ->
+   fID_NE_LIST x1;
+   fFORMULA x2;
+   fNODE "reserve" 2
 | CT_reset(x1) ->
    fID x1;
    fNODE "reset" 1
@@ -388,6 +461,10 @@ and fCOMMAND = function
    fID x1;
    fIN_OR_OUT_MODULES x2;
    fNODE "search" 2
+| CT_search_about(x1, x2) ->
+   fID_OR_STRING_NE_LIST x1;
+   fIN_OR_OUT_MODULES x2;
+   fNODE "search_about" 2
 | CT_search_pattern(x1, x2) ->
    fFORMULA x1;
    fIN_OR_OUT_MODULES x2;
@@ -414,10 +491,15 @@ and fCOMMAND = function
 | CT_setundo(x1) ->
    fINT x1;
    fNODE "setundo" 1
+| CT_show_existentials -> fNODE "show_existentials" 0
 | CT_show_goal(x1) ->
    fINT_OPT x1;
    fNODE "show_goal" 1
-| CT_show_implicits -> fNODE "show_implicits" 0
+| CT_show_implicit(x1) ->
+   fINT x1;
+   fNODE "show_implicit" 1
+| CT_show_intro -> fNODE "show_intro" 0
+| CT_show_intros -> fNODE "show_intros" 0
 | CT_show_node -> fNODE "show_node" 0
 | CT_show_proof -> fNODE "show_proof" 0
 | CT_show_proofs -> fNODE "show_proofs" 0
@@ -446,9 +528,9 @@ and fCOMMAND = function
    fTHEOREM_GOAL x1;
    fPROOF_SCRIPT x2;
    fNODE "theorem_struct" 2
-| CT_token(x1) ->
-   fSTRING x1;
-   fNODE "token" 1
+| CT_time(x1) ->
+   fCOMMAND x1;
+   fNODE "time" 1
 | CT_transparent(x1) ->
    fID_NE_LIST x1;
    fNODE "transparent" 1
@@ -766,9 +848,16 @@ and fID_NE_LIST = function
 and fID_NE_LIST_OR_STAR = function
 | CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STAR x -> fID_NE_LIST x
 | CT_coerce_STAR_to_ID_NE_LIST_OR_STAR x -> fSTAR x
+and fID_NE_LIST_OR_STRING = function
+| CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STRING x -> fID_NE_LIST x
+| CT_coerce_STRING_to_ID_NE_LIST_OR_STRING x -> fSTRING x
 and fID_OPT = function
 | CT_coerce_ID_to_ID_OPT x -> fID x
 | CT_coerce_NONE_to_ID_OPT x -> fNONE x
+and fID_OPT_LIST = function
+| CT_id_opt_list l ->
+   (List.iter fID_OPT l);
+   fNODE "id_opt_list" (List.length l)
 and fID_OPT_NE_LIST = function
 | CT_id_opt_ne_list(x,l) ->
    fID_OPT x;
@@ -784,9 +873,17 @@ and fID_OR_INT_OPT = function
 | CT_coerce_ID_OPT_to_ID_OR_INT_OPT x -> fID_OPT x
 | CT_coerce_ID_OR_INT_to_ID_OR_INT_OPT x -> fID_OR_INT x
 | CT_coerce_INT_OPT_to_ID_OR_INT_OPT x -> fINT_OPT x
+and fID_OR_STAR = function
+| CT_coerce_ID_to_ID_OR_STAR x -> fID x
+| CT_coerce_STAR_to_ID_OR_STAR x -> fSTAR x
 and fID_OR_STRING = function
 | CT_coerce_ID_to_ID_OR_STRING x -> fID x
 | CT_coerce_STRING_to_ID_OR_STRING x -> fSTRING x
+and fID_OR_STRING_NE_LIST = function
+| CT_id_or_string_ne_list(x,l) ->
+   fID_OR_STRING x;
+   (List.iter fID_OR_STRING l);
+   fNODE "id_or_string_ne_list" (1 + (List.length l))
 and fID_UNIT = function
 | CT_coerce_ID_to_ID_UNIT x -> fID x
 | CT_unit -> fNODE "unit" 0
@@ -800,6 +897,7 @@ and fID_UNIT_NE_LIST = function
    (List.iter fID_UNIT l);
    fNODE "id_unit_ne_list" (1 + (List.length l))
 and fIMPEXP = function
+| CT_coerce_NONE_to_IMPEXP x -> fNONE x
 | CT_export -> fNODE "export" 0
 | CT_import -> fNODE "import" 0
 and fIND_SPEC = function
@@ -844,6 +942,9 @@ and fINT_OPT = function
 and fINT_OR_LOCN = function
 | CT_coerce_INT_to_INT_OR_LOCN x -> fINT x
 | CT_coerce_LOCN_to_INT_OR_LOCN x -> fLOCN x
+and fINT_OR_NEXT = function
+| CT_coerce_INT_to_INT_OR_NEXT x -> fINT x
+| CT_next_level -> fNODE "next_level" 0
 and fINV_TYPE = function
 | CT_inv_clear -> fNODE "inv_clear" 0
 | CT_inv_regular -> fNODE "inv_regular" 0
@@ -934,6 +1035,29 @@ and fMATCH_TAC_RULES = function
    fMATCH_TAC_RULE x;
    (List.iter fMATCH_TAC_RULE l);
    fNODE "match_tac_rules" (1 + (List.length l))
+and fMODIFIER = function
+| CT_entry_type(x1, x2) ->
+   fID x1;
+   fID x2;
+   fNODE "entry_type" 2
+| CT_format(x1) ->
+   fSTRING x1;
+   fNODE "format" 1
+| CT_lefta -> fNODE "lefta" 0
+| CT_nona -> fNODE "nona" 0
+| CT_only_parsing -> fNODE "only_parsing" 0
+| CT_righta -> fNODE "righta" 0
+| CT_set_item_level(x1, x2) ->
+   fID_NE_LIST x1;
+   fINT_OR_NEXT x2;
+   fNODE "set_item_level" 2
+| CT_set_level(x1) ->
+   fINT x1;
+   fNODE "set_level" 1
+and fMODIFIER_LIST = function
+| CT_modifier_list l ->
+   (List.iter fMODIFIER l);
+   fNODE "modifier_list" (List.length l)
 and fNATURAL_FEATURE = function
 | CT_contractible -> fNODE "contractible" 0
 | CT_implicit -> fNODE "implicit" 0
@@ -1560,11 +1684,12 @@ and fTHEOREM_GOAL = function
 | CT_goal(x1) ->
    fFORMULA x1;
    fNODE "goal" 1
-| CT_theorem_goal(x1, x2, x3) ->
+| CT_theorem_goal(x1, x2, x3, x4) ->
    fDEFN_OR_THM x1;
    fID x2;
-   fFORMULA x3;
-   fNODE "theorem_goal" 3
+   fBINDER_LIST x3;
+   fFORMULA x4;
+   fNODE "theorem_goal" 4
 and fTHM = function
 | CT_thm x -> fATOM "thm";
    (f_atom_string x);

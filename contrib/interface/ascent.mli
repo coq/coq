@@ -1,9 +1,4 @@
-type ct_ASSOC =
-    CT_coerce_NONE_to_ASSOC of ct_NONE
-  | CT_lefta
-  | CT_nona
-  | CT_righta
-and ct_AST =
+type ct_AST =
     CT_coerce_ID_OR_INT_to_AST of ct_ID_OR_INT
   | CT_coerce_ID_OR_STRING_to_AST of ct_ID_OR_STRING
   | CT_astnode of ct_ID * ct_AST_LIST
@@ -16,6 +11,7 @@ and ct_BINARY =
 and ct_BINDER =
     CT_coerce_DEF_to_BINDER of ct_DEF
   | CT_binder of ct_ID_OPT_NE_LIST * ct_FORMULA
+  | CT_binder_coercion of ct_ID_OPT_NE_LIST * ct_FORMULA
 and ct_BINDER_LIST =
     CT_binder_list of ct_BINDER list
 and ct_BINDER_NE_LIST =
@@ -45,26 +41,31 @@ and ct_COFIX_TAC_LIST =
 and ct_COMMAND =
     CT_coerce_COMMAND_LIST_to_COMMAND of ct_COMMAND_LIST
   | CT_coerce_EVAL_CMD_to_COMMAND of ct_EVAL_CMD
-  | CT_coerce_IMPEXP_to_COMMAND of ct_IMPEXP
   | CT_coerce_SECTION_BEGIN_to_COMMAND of ct_SECTION_BEGIN
   | CT_coerce_THEOREM_GOAL_to_COMMAND of ct_THEOREM_GOAL
   | CT_abort of ct_ID_OPT_OR_ALL
   | CT_abstraction of ct_ID * ct_FORMULA * ct_INT_LIST
   | CT_add_natural_feature of ct_NATURAL_FEATURE * ct_ID
   | CT_addpath of ct_STRING * ct_ID_OPT
+  | CT_arguments_scope of ct_ID * ct_ID_OPT_LIST
+  | CT_bind_scope of ct_ID * ct_ID_NE_LIST
   | CT_cd of ct_STRING_OPT
   | CT_check of ct_FORMULA
   | CT_class of ct_ID
+  | CT_close_scope of ct_ID
   | CT_coercion of ct_LOCAL_OPT * ct_IDENTITY_OPT * ct_ID * ct_ID * ct_ID
   | CT_cofix_decl of ct_COFIX_REC_LIST
   | CT_compile_module of ct_VERBOSE_OPT * ct_ID * ct_STRING_OPT
+  | CT_define_notation of ct_STRING * ct_FORMULA * ct_MODIFIER_LIST * ct_ID_OPT
   | CT_definition of ct_DEFN * ct_ID * ct_BINDER_LIST * ct_DEF_BODY * ct_FORMULA_OPT
+  | CT_delim_scope of ct_ID * ct_ID
   | CT_delpath of ct_STRING
   | CT_derive_depinversion of ct_INV_TYPE * ct_ID * ct_FORMULA * ct_SORT_TYPE
   | CT_derive_inversion of ct_INV_TYPE * ct_INT_OPT * ct_ID * ct_ID
   | CT_derive_inversion_with of ct_INV_TYPE * ct_ID * ct_FORMULA * ct_SORT_TYPE
   | CT_explain_proof of ct_INT_LIST
   | CT_explain_prooftree of ct_INT_LIST
+  | CT_export_id of ct_ID_NE_LIST
   | CT_fix_decl of ct_FIX_REC_LIST
   | CT_focus of ct_INT_OPT
   | CT_go of ct_INT_OR_LOCN
@@ -73,18 +74,24 @@ and ct_COMMAND =
   | CT_hint_extern of ct_INT * ct_FORMULA * ct_TACTIC_COM * ct_ID_LIST
   | CT_hintrewrite of ct_ORIENTATION * ct_FORMULA_NE_LIST * ct_ID * ct_TACTIC_COM
   | CT_hints of ct_ID * ct_ID_NE_LIST * ct_ID_LIST
-  | CT_implicits of ct_ID * ct_INT_LIST
+  | CT_implicits of ct_ID * ct_ID_LIST
+  | CT_import_id of ct_ID_NE_LIST
   | CT_ind_scheme of ct_SCHEME_SPEC_LIST
-  | CT_infix of ct_ASSOC * ct_INT * ct_STRING * ct_ID
+  | CT_infix of ct_STRING * ct_ID * ct_MODIFIER_LIST * ct_ID_OPT
   | CT_inspect of ct_INT
   | CT_kill_node of ct_INT
   | CT_load of ct_VERBOSE_OPT * ct_ID_OR_STRING
+  | CT_local_close_scope of ct_ID
+  | CT_local_define_notation of ct_STRING * ct_FORMULA * ct_MODIFIER_LIST * ct_ID_OPT
   | CT_local_hint_destruct of ct_ID * ct_INT * ct_DESTRUCT_LOCATION * ct_FORMULA * ct_TACTIC_COM * ct_ID_LIST
   | CT_local_hint_extern of ct_INT * ct_FORMULA * ct_TACTIC_COM * ct_ID_LIST
   | CT_local_hints of ct_ID * ct_ID_NE_LIST * ct_ID_LIST
+  | CT_local_infix of ct_STRING * ct_ID * ct_MODIFIER_LIST * ct_ID_OPT
+  | CT_local_open_scope of ct_ID
   | CT_locate of ct_ID
   | CT_locate_file of ct_STRING
   | CT_locate_lib of ct_ID
+  | CT_locate_notation of ct_STRING
   | CT_mind_decl of ct_CO_IND * ct_IND_SPEC_LIST
   | CT_ml_add_path of ct_STRING
   | CT_ml_declare_modules of ct_STRING_NE_LIST
@@ -93,24 +100,34 @@ and ct_COMMAND =
   | CT_module of ct_ID
   | CT_omega_flag of ct_OMEGA_MODE * ct_OMEGA_FEATURE
   | CT_opaque of ct_ID_NE_LIST
-  | CT_parameter of ct_BINDER
+  | CT_open_scope of ct_ID
+  | CT_print
+  | CT_print_about of ct_ID
   | CT_print_all
   | CT_print_classes
   | CT_print_coercions
   | CT_print_grammar of ct_GRAMMAR
   | CT_print_graph
   | CT_print_hint of ct_ID_OPT
-  | CT_print_hintdb of ct_ID
+  | CT_print_hintdb of ct_ID_OR_STAR
   | CT_print_id of ct_ID
+  | CT_print_implicit of ct_ID
   | CT_print_loadpath
+  | CT_print_module of ct_ID
+  | CT_print_module_type of ct_ID
   | CT_print_modules
   | CT_print_natural of ct_ID
   | CT_print_natural_feature of ct_NATURAL_FEATURE
   | CT_print_opaqueid of ct_ID
   | CT_print_path of ct_ID * ct_ID
   | CT_print_proof of ct_ID
+  | CT_print_scope of ct_ID
+  | CT_print_scopes
   | CT_print_section of ct_ID
   | CT_print_states
+  | CT_print_tables
+  | CT_print_universes of ct_STRING_OPT
+  | CT_print_visibility of ct_ID_OPT
   | CT_proof of ct_FORMULA
   | CT_proof_no_op
   | CT_pwd
@@ -121,7 +138,8 @@ and ct_COMMAND =
   | CT_recaddpath of ct_STRING * ct_ID_OPT
   | CT_record of ct_COERCION_OPT * ct_ID * ct_BINDER_LIST * ct_FORMULA * ct_ID_OPT * ct_RECCONSTR_LIST
   | CT_remove_natural_feature of ct_NATURAL_FEATURE * ct_ID
-  | CT_require of ct_IMPEXP * ct_SPEC_OPT * ct_ID * ct_STRING_OPT
+  | CT_require of ct_IMPEXP * ct_SPEC_OPT * ct_ID_NE_LIST_OR_STRING
+  | CT_reserve of ct_ID_NE_LIST * ct_FORMULA
   | CT_reset of ct_ID
   | CT_reset_section of ct_ID
   | CT_restart
@@ -130,6 +148,7 @@ and ct_COMMAND =
   | CT_save of ct_THM_OPT * ct_ID_OPT
   | CT_scomments of ct_SCOMMENT_CONTENT_LIST
   | CT_search of ct_ID * ct_IN_OR_OUT_MODULES
+  | CT_search_about of ct_ID_OR_STRING_NE_LIST * ct_IN_OR_OUT_MODULES
   | CT_search_pattern of ct_FORMULA * ct_IN_OR_OUT_MODULES
   | CT_search_rewrite of ct_FORMULA * ct_IN_OR_OUT_MODULES
   | CT_section_end of ct_ID
@@ -138,8 +157,11 @@ and ct_COMMAND =
   | CT_set_natural_default
   | CT_sethyp of ct_INT
   | CT_setundo of ct_INT
+  | CT_show_existentials
   | CT_show_goal of ct_INT_OPT
-  | CT_show_implicits
+  | CT_show_implicit of ct_INT
+  | CT_show_intro
+  | CT_show_intros
   | CT_show_node
   | CT_show_proof
   | CT_show_proofs
@@ -151,7 +173,7 @@ and ct_COMMAND =
   | CT_tactic_definition of ct_ID * ct_ID_UNIT_LIST * ct_TACTIC_COM
   | CT_test_natural_feature of ct_NATURAL_FEATURE * ct_ID
   | CT_theorem_struct of ct_THEOREM_GOAL * ct_PROOF_SCRIPT
-  | CT_token of ct_STRING
+  | CT_time of ct_COMMAND
   | CT_transparent of ct_ID_NE_LIST
   | CT_undo of ct_INT_OPT
   | CT_unfocus
@@ -296,9 +318,14 @@ and ct_ID_NE_LIST =
 and ct_ID_NE_LIST_OR_STAR =
     CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STAR of ct_ID_NE_LIST
   | CT_coerce_STAR_to_ID_NE_LIST_OR_STAR of ct_STAR
+and ct_ID_NE_LIST_OR_STRING =
+    CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STRING of ct_ID_NE_LIST
+  | CT_coerce_STRING_to_ID_NE_LIST_OR_STRING of ct_STRING
 and ct_ID_OPT =
     CT_coerce_ID_to_ID_OPT of ct_ID
   | CT_coerce_NONE_to_ID_OPT of ct_NONE
+and ct_ID_OPT_LIST =
+    CT_id_opt_list of ct_ID_OPT list
 and ct_ID_OPT_NE_LIST =
     CT_id_opt_ne_list of ct_ID_OPT * ct_ID_OPT list
 and ct_ID_OPT_OR_ALL =
@@ -311,9 +338,14 @@ and ct_ID_OR_INT_OPT =
     CT_coerce_ID_OPT_to_ID_OR_INT_OPT of ct_ID_OPT
   | CT_coerce_ID_OR_INT_to_ID_OR_INT_OPT of ct_ID_OR_INT
   | CT_coerce_INT_OPT_to_ID_OR_INT_OPT of ct_INT_OPT
+and ct_ID_OR_STAR =
+    CT_coerce_ID_to_ID_OR_STAR of ct_ID
+  | CT_coerce_STAR_to_ID_OR_STAR of ct_STAR
 and ct_ID_OR_STRING =
     CT_coerce_ID_to_ID_OR_STRING of ct_ID
   | CT_coerce_STRING_to_ID_OR_STRING of ct_STRING
+and ct_ID_OR_STRING_NE_LIST =
+    CT_id_or_string_ne_list of ct_ID_OR_STRING * ct_ID_OR_STRING list
 and ct_ID_UNIT =
     CT_coerce_ID_to_ID_UNIT of ct_ID
   | CT_unit
@@ -322,7 +354,8 @@ and ct_ID_UNIT_LIST =
 and ct_ID_UNIT_NE_LIST =
     CT_id_unit_ne_list of ct_ID_UNIT * ct_ID_UNIT list
 and ct_IMPEXP =
-    CT_export
+    CT_coerce_NONE_to_IMPEXP of ct_NONE
+  | CT_export
   | CT_import
 and ct_IND_SPEC =
     CT_ind_spec of ct_ID * ct_BINDER_LIST * ct_FORMULA * ct_CONSTR_LIST * ct_DECL_NOTATION_OPT
@@ -346,6 +379,9 @@ and ct_INT_OPT =
 and ct_INT_OR_LOCN =
     CT_coerce_INT_to_INT_OR_LOCN of ct_INT
   | CT_coerce_LOCN_to_INT_OR_LOCN of ct_LOCN
+and ct_INT_OR_NEXT =
+    CT_coerce_INT_to_INT_OR_NEXT of ct_INT
+  | CT_next_level
 and ct_INV_TYPE =
     CT_inv_clear
   | CT_inv_regular
@@ -388,6 +424,17 @@ and ct_MATCH_TAC_RULE =
     CT_match_tac_rule of ct_CONTEXT_PATTERN * ct_LET_VALUE
 and ct_MATCH_TAC_RULES =
     CT_match_tac_rules of ct_MATCH_TAC_RULE * ct_MATCH_TAC_RULE list
+and ct_MODIFIER =
+    CT_entry_type of ct_ID * ct_ID
+  | CT_format of ct_STRING
+  | CT_lefta
+  | CT_nona
+  | CT_only_parsing
+  | CT_righta
+  | CT_set_item_level of ct_ID_NE_LIST * ct_INT_OR_NEXT
+  | CT_set_level of ct_INT
+and ct_MODIFIER_LIST =
+    CT_modifier_list of ct_MODIFIER list
 and ct_NATURAL_FEATURE =
     CT_contractible
   | CT_implicit
@@ -631,7 +678,7 @@ and ct_TEXT =
   | CT_text_v of ct_TEXT list
 and ct_THEOREM_GOAL =
     CT_goal of ct_FORMULA
-  | CT_theorem_goal of ct_DEFN_OR_THM * ct_ID * ct_FORMULA
+  | CT_theorem_goal of ct_DEFN_OR_THM * ct_ID * ct_BINDER_LIST * ct_FORMULA
 and ct_THM =
     CT_thm of string
 and ct_THM_OPT =
