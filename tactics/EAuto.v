@@ -23,16 +23,17 @@ Grammar tactic simple_tactic: ast :=
       -> [(Instantiate $n $c)]
 | normevars [ "NormEvars" ] -> [(NormEvars)]
 | etrivial [ "ETrivial" ] -> [(ETrivial)]
-| eauto [ "EAuto" ] -> [(EAuto)]
-| eauto_n [ "EAuto" numarg($n) ] -> [(EAuto $n)]
-| eauto_with [ "EAuto" "with" ne_identarg_list($lid) ] 
-	-> [(EAuto ($LIST $lid))]
-| eauto_n_with [ "EAuto" numarg($n) "with" ne_identarg_list($lid) ]
-	-> [(EAuto $n ($LIST $lid))]
-| eauto_with_star [ "EAuto" "with" "*" ] 
-	-> [(EAuto "*")]
-| eauto_n_with_star [ "EAuto" numarg($n) "with" "*" ]
-	-> [(EAuto $n "*")].
+| eauto [ "EAuto" eautoarg($np) ] -> [(EAuto ($LIST $np))]
+| eauto_with [ "EAuto" eautoarg($np) "with" ne_identarg_list($lid) ] 
+	-> [(EAuto ($LIST $np) ($LIST $lid))]
+| eauto_with_star [ "EAuto" eautoarg($np) "with" "*" ] 
+	-> [(EAuto ($LIST $np) "*")]
+
+with eautoarg : List :=
+| eautoarg_mt [ ] -> [ ]
+| eautoarg_n  [ numarg($n) ] -> [ $n ] 
+| eautoarg_np [ numarg($n) numarg($p) ] -> [ $n $p ] 
+.
 
 Syntax tactic level 0:
   eauto_with [<<(EAuto ($LIST $lid))>>] -> 
