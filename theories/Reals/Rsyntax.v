@@ -200,24 +200,24 @@ Syntax constr
 Module R_scope.
 
 Delimits Scope R_scope with R.
-Infix NONA 5 "<=" Rle : R_scope.
-Infix NONA 5 "<"  Rlt : R_scope.
-Infix NONA 5 ">=" Rge : R_scope.
-(*Infix NONA 5 ">"  Rgt : R_scope. (* Conflicts with "<..>Cases ... " *) *)
-Infix 4 "+" Rplus : R_scope.
-Infix 4 "-" Rminus : R_scope.
-Infix 3 "*" Rmult : R_scope.
-Infix LEFTA 3 "/" Rdiv : R_scope.
+Infix "<=" Rle (at level 5, no associativity) : R_scope.
+Infix "<"  Rlt (at level 5, no associativity) : R_scope.
+Infix ">=" Rge (at level 5, no associativity) : R_scope.
+Infix ">" Rgt (at level 5, no associativity) : R_scope.
+Infix "+" Rplus (at level 4) : R_scope.
+Infix "-" Rminus (at level 4) : R_scope.
+Infix "*" Rmult (at level 3) : R_scope.
+Infix "/" Rdiv (at level 3) : R_scope.
 Distfix 0 "- _" Ropp : R_scope.
 Notation "x == y == z" := (eqT R x y)/\(eqT R y z)
   (at level 5, y at level 4): R_scope.
-Notation "x <= y <= z" := (Rle x y)/\(Rle y z)
+Notation "x  <=  y  <=  z" := (Rle x y)/\(Rle y z)
   (at level 5, y at level 4) : R_scope.
-Notation "x <= y < z"  := (Rle x y)/\(Rlt y z)
+Notation "x  <=  y  <  z"  := (Rle x y)/\(Rlt y z)
   (at level 5, y at level 4) : R_scope.
-Notation  "x < y < z"  := (Rlt x y)/\(Rlt y z)
+Notation  "x  <  y  <  z"  := (Rlt x y)/\(Rlt y z)
   (at level 5, y at level 4) : R_scope.
-Notation  "x < y <= z" := (Rlt x y)/\(Rle y z)
+Notation  "x  <  y  <=  z" := (Rlt x y)/\(Rle y z)
   (at level 5, y at level 4) : R_scope.
 Notation "x <> y" := ~(eqT R x y) (at level 5) : R_scope.
 Distfix 0 "/ _" Rinv : R_scope.
@@ -225,12 +225,13 @@ Distfix 0 "/ _" Rinv : R_scope.
 (* Warning: this hides sum and prod and breaks sumor symbolic notation *)
 Open Scope R_scope.
 
+(*
 Syntax constr
   level 0:
     Rzero' [ R0 ] -> [ _:"r_printer_R0" ]
   | Rone' [ R1 ] -> [ _:"r_printer_R1" ]
   | Rconst' [(Rplus R1 $r)] -> [$r:"r_printer_Rplus1"]
   | Ropp' [(Ropp $n)] -> [ $n:"r_printer_Ropp" ]
-.
+*)
 
 End R_scope.
