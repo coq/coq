@@ -148,9 +148,11 @@ let small_unit constrsinfos =
 
 (* [smax] is the max of the sorts of the products of the constructor type *)
 
-let enforce_type_constructor arsort smax cst =
+let enforce_type_constructor env arsort smax cst =
   match smax, arsort with
     | Type uc, Type ua -> enforce_geq ua uc cst
+    | Type uc, Prop Pos when engagement env <> Some StronglyConstructive ->
+        error "Large inductive types in Set need option -strongly-constructive"
     | _,_ -> cst
 
 let type_one_constructor env_ar_par params arsort c =
@@ -163,7 +165,7 @@ let type_one_constructor env_ar_par params arsort c =
   (* If the arity is at some level Type arsort, then the sort of the
      constructor must be below arsort; here we consider constructors with the
      global parameters (which add a priori more constraints on their sort) *)
-  let cst2 = enforce_type_constructor arsort j.utj_type cst in
+  let cst2 = enforce_type_constructor env_ar_par arsort j.utj_type cst in
 
   (infos, full_cstr_type, cst2)
 

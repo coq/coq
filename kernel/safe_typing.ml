@@ -406,12 +406,35 @@ let current_msid senv = senv.modinfo.msid
 let add_constraints cst senv = 
   {senv with env = Environ.add_constraints cst senv.env}
 
+(* Check that the engagement expected by a library matches the initial one *)
+let check_engagement env c =
+  match Environ.engagement env, c with
+    | Some StronglyClassical, Some StronglyClassical -> ()
+    | Some StronglyConstructive, Some StronglyConstructive -> ()
+    | _, None -> ()
+    | _, Some StronglyClassical ->
+        error "Needs option -strongly-classical"
+    | _, Some StronglyConstructive ->
+        error "Needs option -strongly-classical"
+
+(* Check the initial engagement (possibly after a state input) *)
+let check_initial_engagement env c =
+  match Environ.engagement env, c with
+    | Some StronglyConstructive, StronglyClassical ->
+        error "Already engaged for a strongly constructive logic"
+    | Some StronglyClassical, StronglyConstructive ->
+        error "Already engaged for a strongly classical logic"
+    | _ -> ()
+
+let set_engagement c senv =
+  check_initial_engagement senv.env c;
+  {senv with env = Environ.set_engagement c senv.env}
 
 
 (* Libraries = Compiled modules *)
 
 type compiled_library = 
-    dir_path * module_body * library_info list
+    dir_path * module_body * library_info list * engagement option
 
 
 (* We check that only initial state Require's were performed before 
@@ -466,7 +489,7 @@ let export senv dir =
       mod_equiv = None;
       mod_constraints = Constraint.empty }
   in
-    modinfo.msid, (dir,mb,senv.imports)
+    modinfo.msid, (dir,mb,senv.imports,engagement senv.env)
 
 
 let check_imports senv needed =
@@ -494,8 +517,9 @@ loaded by side-effect once and for all (like it is done in OCaml).
 Would this be correct with respect to undo's and stuff ?
 *)
  
-let import (dp,mb,depends) digest senv = 
+let import (dp,mb,depends,engmt) digest senv = 
   check_imports senv depends;
+  check_engagement senv.env engmt;
   let mp = MPfile dp in
   let env = senv.env in
   mp, { senv with 
@@ -548,7 +572,7 @@ and lighten_modexpr = function
   | MEBapply (mexpr,marg,u) ->
       MEBapply (lighten_modexpr mexpr,lighten_modexpr marg,u)
 
-let lighten_library (dp,mb,depends) = (dp,lighten_module mb,depends)
+let lighten_library (dp,mb,depends,s) = (dp,lighten_module mb,depends,s)
 
 
 type judgment = unsafe_judgment

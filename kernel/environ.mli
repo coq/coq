@@ -25,7 +25,8 @@ open Sign
    - a context for section variables and goal assumptions
    - a context for global constants and axioms
    - a context for inductive definitions
-   - a set of universe constraints *)
+   - a set of universe constraints
+   - a flag telling if Set is, can be, or cannot be set impredicative *)
 
 type env
 
@@ -34,6 +35,10 @@ val empty_env : env
 val universes     : env -> Univ.universes
 val rel_context   : env -> rel_context
 val named_context : env -> named_context
+
+type engagement = StronglyConstructive | StronglyClassical
+
+val engagement    : env -> engagement option
 
 (* is the local context empty *)
 val empty_context : env -> bool
@@ -117,6 +122,8 @@ val lookup_modtype : kernel_name -> env -> module_type_body
 (*s Universe constraints *)
 val set_universes   :   Univ.universes -> env -> env
 val add_constraints : Univ.constraints -> env -> env
+
+val set_engagement : engagement -> env -> env
 
 (***********************************************************************)
 (* Sets of referred section variables *)

@@ -188,19 +188,22 @@ let judge_of_apply env funj argjv =
     Constraint.empty
     (Array.to_list argjv)
 
-(*
-let applykey = Profile.declare_profile "judge_of_apply";;
-let judge_of_apply env nocheck funj argjl
-  = Profile.profile5 applykey judge_of_apply env nocheck funj argjl;;
-*)
-
-
 (* Type of product *)
 
-let sort_of_product domsort rangsort =
+let sort_of_product env domsort rangsort =
   match (domsort, rangsort) with
     (* Product rule (s,Prop,Prop) *) 
-    | (_,       Prop _)  -> rangsort
+    | (_,       Prop Null)  -> rangsort
+    (* Product rule (Prop/Set,Set,Set) *)
+    | (Prop _,  Prop Pos) -> rangsort
+    (* Product rule (Type,Set,?) *)
+    | (Type u1, Prop Pos) ->
+        if engagement env = Some StronglyConstructive then
+          (* Rule is (Type,Set,Set) in the Set-impredicative calculus *)
+          rangsort
+        else
+          (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
+          domsort
     (* Product rule (Prop,Type_i,Type_i) *)
     | (Prop _,  Type _)  -> rangsort
     (* Product rule (Type_i,Type_i,Type_i) *) 
@@ -215,7 +218,7 @@ let sort_of_product domsort rangsort =
   where j.uj_type is convertible to a sort s2
 *)
 let judge_of_product env name t1 t2 =
-  let s = sort_of_product t1.utj_type t2.utj_type in
+  let s = sort_of_product env t1.utj_type t2.utj_type in
   { uj_val = mkProd (name, t1.utj_val, t2.utj_val);
     uj_type = mkSort s }
 

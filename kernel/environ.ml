@@ -23,18 +23,25 @@ type compilation_unit_name = dir_path * checksum
 
 type global = Constant | Inductive
 
+type engagement = StronglyConstructive | StronglyClassical
+
 type globals = {
   env_constants : constant_body KNmap.t;
   env_inductives : mutual_inductive_body KNmap.t;
   env_modules : module_body MPmap.t;
   env_modtypes : module_type_body KNmap.t }
 
+type stratification = {
+  env_universes : universes;
+  env_engagement : engagement option
+}
+
 type env = {
-  env_globals       : globals;
-  env_named_context : named_context;
-  env_rel_context   : rel_context;
-  env_universes     : universes }
-  
+  env_globals        : globals;
+  env_named_context  : named_context;
+  env_rel_context    : rel_context;
+  env_stratification : stratification }
+
 let empty_env = { 
   env_globals = {
     env_constants = KNmap.empty;
@@ -43,9 +50,12 @@ let empty_env = {
     env_modtypes = KNmap.empty };
   env_named_context = empty_named_context;
   env_rel_context = empty_rel_context;
-  env_universes = initial_universes }
+  env_stratification = {
+    env_universes = initial_universes;
+    env_engagement = None } }
 
-let universes env = env.env_universes
+let engagement env = env.env_stratification.env_engagement
+let universes env = env.env_stratification.env_universes
 let named_context env = env.env_named_context
 let rel_context env = env.env_rel_context
 
@@ -170,13 +180,22 @@ let add_mind kn mib env =
 
 (* Universe constraints *)
 let set_universes g env =
-  if env.env_universes == g then env else { env with env_universes = g }
+  if env.env_stratification.env_universes == g then env
+  else
+    { env with env_stratification = 
+      { env.env_stratification with env_universes = g } }
 
 let add_constraints c env =
   if c == Constraint.empty then 
     env 
-  else 
-    { env with env_universes = merge_constraints c env.env_universes }
+  else
+    let s = env.env_stratification in
+    { env with env_stratification = 
+      { s with env_universes = merge_constraints c s.env_universes } }
+
+let set_engagement c env = (* Unsafe *)
+  { env with env_stratification =
+    { env.env_stratification with env_engagement = Some c } }
 
 (* Lookup of section variables *)
 let lookup_constant_variables c env =
