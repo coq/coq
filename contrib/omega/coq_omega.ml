@@ -56,16 +56,6 @@ let write f x = f:=x
 
 open Goptions
 
-(* Obsolete, subsumed by Time Omega
-let _ =
-  declare_bool_option 
-    { optsync  = false;
-      optname  = "Omega time displaying flag";
-      optkey   = SecondaryTable ("Omega","Time");
-      optread  = read display_time_flag;
-      optwrite = write display_time_flag }
-*)
-
 let _ =
   declare_bool_option 
     { optsync  = false;
@@ -110,6 +100,31 @@ let new_identifier_var =
   let cpt = ref 0 in 
   (fun () -> let s = "Zvar" ^ string_of_int !cpt in incr cpt; id_of_string s)
 
+let new_id =
+  let cpt = ref 0 in fun () -> incr cpt; !cpt
+
+let new_var_num =
+  let cpt = ref 1000 in (fun () -> incr cpt; !cpt)
+
+let new_var =
+  let cpt = ref 0 in fun () -> incr cpt; Nameops.make_ident "WW" (Some !cpt)
+
+let display_var i = Printf.sprintf "O%d" i
+
+let intern_id,unintern_id =
+  let cpt = ref 0 in
+  let table = Hashtbl.create 7 and co_table = Hashtbl.create 7 in
+  (fun (name : identifier) -> 
+     try Hashtbl.find table name with Not_found -> 
+       let idx = !cpt in
+       Hashtbl.add table name idx; 
+       Hashtbl.add co_table idx name;
+       incr cpt; idx),
+  (fun idx -> 
+     try Hashtbl.find co_table idx with Not_found -> 
+       let v = new_var () in
+       Hashtbl.add table v idx; Hashtbl.add co_table idx v; v)
+    
 let mk_then = tclTHENLIST
 
 let exists_tac c = constructor_tac (Some 1) 1 (Rawterm.ImplicitBindings [c])
@@ -848,14 +863,14 @@ let rec negate p = function
   | Oufo c -> [], Oufo (mkApp (Lazy.force coq_Zopp, [| c |]))
       
 let rec transform p t = 
-  let default () =
+  let default isnat t' =
     try 
-      let v,th,_ = find_constr t in
+      let v,th,_ = find_constr t' in
       [clever_rewrite_base p (mkVar v) (mkVar th)], Oatom v
     with _ -> 
       let v = new_identifier_var ()
       and th = new_identifier () in
-      hide_constr t v th false;
+      hide_constr t' v th isnat;
       [clever_rewrite_base p (mkVar v) (mkVar th)], Oatom v
   in
   try match destructurate_term t with
@@ -884,26 +899,18 @@ let rec transform p t =
 	       clever_rewrite p [[P_APP 1];[P_APP 2]] 
 		 (Lazy.force coq_fast_Zmult_sym) in
              let tac,t' = scalar p n t2' in tac1 @ tac2 @ (sym :: tac),t'
-         | _ -> default ()
+         | _ -> default false t
        end
    | Kapp((POS|NEG|ZERO),_) -> 
-       (try ([],Oz(recognize_number t)) with _ -> default ())
+       (try ([],Oz(recognize_number t)) with _ -> default false t)
    | Kvar s -> [],Oatom s
    | Kapp(Zopp,[t]) ->
        let tac,t' = transform (P_APP 1 :: p) t in
        let tac',t'' = negate p t' in
        tac @ tac', t''
-   | Kapp(Inject_nat,[t']) ->
-       begin try 
-         let v,th,_ = find_constr t' in 
-         [clever_rewrite_base p (mkVar v) (mkVar th)],Oatom v
-       with _ -> 
-         let v = new_identifier_var () and th = new_identifier () in
-         hide_constr t' v th true;
-         [clever_rewrite_base p (mkVar v) (mkVar th)], Oatom v
-       end
-   | _ -> default ()
-  with e when catchable_exception e -> default ()
+   | Kapp(Inject_nat,[t']) -> default true t'
+   | _ -> default false t
+  with e when catchable_exception e -> default false t
       
 let shrink_pair p f1 f2 =
   match f1,f2 with
@@ -1184,13 +1191,13 @@ let replay_history tactic_normalisation =
 	      (loop l) ];
             tclTHEN (mk_then tac) reflexivity]
 	    
-      | STATE(new_eq,def,orig,m,sigma) :: l ->
+      | STATE {st_new_eq=e;st_def=def;st_orig=orig;st_coef=m;st_var=v} :: l ->
 	  let id = new_identifier () 
 	  and id2 = hyp_of_tag orig.id in
-	  tag_hypothesis id new_eq.id;
+	  tag_hypothesis id e.id;
 	  let eq1 = val_of(decompile def) 
 	  and eq2 = val_of(decompile orig) in
-	  let vid = unintern_id sigma in
+	  let vid = unintern_id v in
 	  let theorem =
             mkApp (build_coq_ex (), [| 
 		      Lazy.force coq_Z;
@@ -1206,7 +1213,7 @@ let replay_history tactic_normalisation =
             clever_rewrite (P_APP 1 :: P_APP 1 :: P_APP 2 :: p_initial) 
               [[P_APP 1]] (Lazy.force coq_fast_Zopp_one) ::
             shuffle_mult_right p_initial
-              orig.body m ({c= -1;v=sigma}::def.body) in
+              orig.body m ({c= -1;v= v}::def.body) in
 	  tclTHENS 
 	    (cut theorem)  
 	    [tclTHENLIST [
@@ -1362,7 +1369,7 @@ let destructure_omega gl tac_def (id,c) =
 let reintroduce id =
   (* [id] cannot be cleared if dependent: protect it by a try *)
   tclTHEN (tclTRY (clear [id])) (intro_using id)
-      
+
 let coq_omega gl =
   clear_tables ();
   let tactic_normalisation, system = 
@@ -1393,17 +1400,19 @@ let coq_omega gl =
       (tclIDTAC,[]) (dump_tables ())
   in
   let system = system @ sys in
-  if !display_system_flag then display_system system;
+  if !display_system_flag then display_system display_var system;
   if !old_style_flag then begin
-    try let _ = simplify false system in tclIDTAC gl
+    try 
+      let _ = simplify (new_id,new_var_num,display_var) false system in
+      tclIDTAC gl
     with UNSOLVABLE -> 
       let _,path = depend [] [] (history ()) in
-      if !display_action_flag then display_action path;
+      if !display_action_flag then display_action display_var path;
       (tclTHEN prelude (replay_history tactic_normalisation path)) gl 
   end else begin 
     try
-      let path = simplify_strong system in
-      if !display_action_flag then display_action path; 
+      let path = simplify_strong (new_id,new_var_num,display_var) system in
+      if !display_action_flag then display_action display_var path; 
       (tclTHEN prelude (replay_history tactic_normalisation path)) gl
     with NO_CONTRADICTION -> error "Omega can't solve this system"
   end

@@ -11,12 +11,12 @@
 (*                                                                        *)
 (* Pierre Crégut (CNET, Lannion, France)                                  *)
 (*                                                                        *)
+(* 13/10/2002 : modified to cope with an external numbering of equations  *)
+(*   and hypothesis. Its use for Omega is not more complex and it makes   *)
+(*   things much simpler for the reflexive version where we should limit  *)
+(*   the number of source of numbering.                                   *)
 (**************************************************************************)
 
-(* $Id$ *) 
-
-open Util
-open Hashtbl
 open Names
 
 let flat_map f =
@@ -47,15 +47,6 @@ let floor_div a b =
     | true, false -> (a-1) / b - 1
     | false,true  -> (a+1) / b - 1
 
-let new_id =
-  let cpt = ref 0 in fun () -> incr cpt; ! cpt
-
-let new_var =
-  let cpt = ref 0 in fun () -> incr cpt; Nameops.make_ident "WW" (Some !cpt)
-    
-let new_var_num =
-  let cpt = ref 1000 in (fun () -> incr cpt; !cpt)
-					  
 type coeff = {c: int ; v: int}
 
 type linear = coeff list
@@ -72,13 +63,20 @@ type afine = {
   (* a constant *)
   constant: int }
 
+type state_action = {
+  st_new_eq : afine;
+  st_def    :  afine;
+  st_orig   : afine;
+  st_coef   : int;
+  st_var    : int }
+
 type action =
   | DIVIDE_AND_APPROX of afine * afine * int * int
   | NOT_EXACT_DIVIDE of afine * int
   | FORGET_C of int
   | EXACT_DIVIDE of afine * int
   | SUM of int * (int * afine) * (int * afine)
-  | STATE of afine * afine * afine * int * int
+  | STATE of state_action 
   | HYP of afine
   | FORGET   of int * int
   | FORGET_I of int * int
@@ -95,18 +93,7 @@ exception UNSOLVABLE
 
 exception NO_CONTRADICTION
 
-let intern_id,unintern_id =
-  let cpt = ref 0 in
-  let table = create 7 and co_table = create 7 in
-  (fun (name : identifier) -> 
-     try find table name with Not_found -> 
-       let idx = !cpt in
-       add table name idx; add co_table idx name; incr cpt; idx),
-  (fun idx -> 
-     try find co_table idx with Not_found -> 
-       let v = new_var () in add table v idx; add co_table idx v; v)
-
-let display_eq (l,e) =
+let display_eq print_var (l,e) =
   let _ = 
     List.fold_left 
       (fun not_first f ->
@@ -114,9 +101,9 @@ let display_eq (l,e) =
 	   (if f.c < 0 then "- " else if not_first then "+ " else "");
 	 let c = abs f.c in
 	 if c = 1 then 
-	   Printf.printf "%s " (string_of_id (unintern_id f.v))
+	   Printf.printf "%s " (print_var f.v)
 	 else 
-	   Printf.printf "%d %s " c (string_of_id (unintern_id f.v)); 
+	   Printf.printf "%d %s " c (print_var f.v); 
 	 true)
       false l
   in
@@ -125,26 +112,33 @@ let display_eq (l,e) =
   else if e < 0 then 
     Printf.printf "- %d " (abs e)
 
+let rec trace_length l =
+  let action_length accu = function
+    | SPLIT_INEQ (_,(_,l1),(_,l2)) ->
+	accu + 1 + trace_length l1 + trace_length l2
+    | _ -> accu + 1 in
+  List.fold_left action_length 0 l
+
 let operator_of_eq = function 
   | EQUA -> "=" | DISE -> "!=" | INEQ -> ">="
 
 let kind_of = function
   | EQUA -> "equation" | DISE -> "disequation" | INEQ -> "inequation"
 
-let display_system l = 
+let display_system print_var l = 
   List.iter 
     (fun { kind=b; body=e; constant=c; id=id} -> 
        print_int id; print_string ": ";
-       display_eq (e,c); print_string (operator_of_eq b);
+       display_eq print_var (e,c); print_string (operator_of_eq b);
        print_string "0\n") 
     l;
   print_string "------------------------\n\n"
 
-let display_inequations l = 
-  List.iter (fun e -> display_eq e;print_string ">= 0\n") l;
+let display_inequations print_var l = 
+  List.iter (fun e -> display_eq print_var e;print_string ">= 0\n") l;
   print_string "------------------------\n\n"
 
-let rec display_action = function
+let rec display_action print_var = function
   | act :: l -> begin match act with
       | DIVIDE_AND_APPROX (e1,e2,k,d) ->
           Printf.printf 
@@ -167,13 +161,13 @@ let rec display_action = function
             "We state %s E%d = %d %s E%d + %d %s E%d.\n" 
             (kind_of e1.kind) e c1 (kind_of e1.kind) e1.id c2 
             (kind_of e2.kind) e2.id
-      | STATE (e,_,_,x,_) ->
+      | STATE { st_new_eq = e; st_coef = x} ->
           Printf.printf "We define a new equation %d :" e.id; 
-          display_eq (e.body,e.constant); 
+          display_eq print_var (e.body,e.constant); 
           print_string (operator_of_eq e.kind); print_string " 0\n"
       | HYP e ->   
           Printf.printf "We define %d :" e.id; 
-          display_eq (e.body,e.constant); 
+          display_eq print_var (e.body,e.constant); 
           print_string (operator_of_eq e.kind); print_string " 0\n"
       | FORGET_C e ->  Printf.printf "E%d is trivially satisfiable.\n" e
       | FORGET (e1,e2) -> Printf.printf "E%d subsumes E%d.\n" e1 e2
@@ -196,19 +190,20 @@ let rec display_action = function
           Printf.printf "inequation E%d states 0 != 0.\n" e
       | SPLIT_INEQ (e,(e1,l1),(e2,l2)) -> 
           Printf.printf "equation E%d is split in E%d and E%d\n\n" e.id e1 e2;
-          display_action l1;
+          display_action print_var l1;
           print_newline ();
-          display_action l2;
+          display_action print_var l2;
           print_newline ()
-    end; display_action l
+    end; display_action print_var l
   | [] -> 
       flush stdout
 
 (*""*)
+let default_print_var v = Printf.sprintf "XX%d" v
 
 let add_event, history, clear_history =
   let accu = ref [] in
-  (fun (v : action) -> if !debug then display_action [v]; push v accu), 
+  (fun (v:action) -> if !debug then display_action default_print_var [v]; push v accu),
   (fun () -> !accu),
   (fun () -> accu := [])
 
@@ -240,8 +235,8 @@ let rec sum p0 p1 = match (p0,p1) with
       else 
 	x2 :: sum l1' l2
 
-let sum_afine eq1 eq2 = 
-  { kind = eq1.kind; id = new_id ();
+let sum_afine new_eq_id eq1 eq2 = 
+  { kind = eq1.kind; id = new_eq_id ();
     body = sum eq1.body eq2.body; constant = eq1.constant + eq2.constant }
 
 exception FACTOR1
@@ -288,81 +283,87 @@ let normalize ({id=id; kind=eq_flag; body=e; constant =x} as eq) =
       [new_eq]
     end else [eq]
 
-let eliminate_with_in {v=v;c=c_unite} eq2
+let eliminate_with_in new_eq_id {v=v;c=c_unite} eq2
                         ({body=e1; constant=c1} as eq1) =
   try
     let (f,_) = chop_var v e1 in 
     let coeff = if c_unite=1 then -f.c else if c_unite= -1 then f.c 
                 else failwith "eliminate_with_in" in
-    let res = sum_afine eq1 (map_eq_afine (fun c -> c * coeff) eq2) in
+    let res = sum_afine new_eq_id eq1 (map_eq_afine (fun c -> c * coeff) eq2) in
     add_event (SUM (res.id,(1,eq1),(coeff,eq2))); res
   with CHOPVAR -> eq1
 
 let omega_mod a b = a - b * floor_div (2 * a + b) (2 * b)
-let banerjee_step original l1 l2 = 
+let banerjee_step (new_eq_id,new_var_id,print_var) original l1 l2 = 
   let e = original.body in
-  let sigma = new_var_num () in
+  let sigma = new_var_id () in
   let smallest,var =
     try
       List.fold_left (fun (v,p) c ->  if v > (abs c.c) then abs c.c,c.v else (v,p))
               (abs (List.hd e).c, (List.hd e).v) (List.tl e)
-    with Failure "tl" -> display_system [original] ; failwith "TL" in
+    with Failure "tl" -> display_system print_var [original] ; failwith "TL" in
   let m = smallest + 1 in
   let new_eq =
     { constant = omega_mod original.constant m;
       body = {c= -m;v=sigma} :: 
              map_eq_linear (fun a -> omega_mod a m) original.body;
-      id = new_id (); kind = EQUA } in
+      id = new_eq_id (); kind = EQUA } in
   let definition =
     { constant = - floor_div (2 * original.constant + m) (2 * m);
       body = map_eq_linear (fun a -> - floor_div (2 * a + m) (2 * m))
                              original.body;
-      id = new_id (); kind = EQUA } in
-  add_event (STATE (new_eq,definition,original,m,sigma));
+      id = new_eq_id (); kind = EQUA } in
+  add_event (STATE {st_new_eq = new_eq; st_def = definition;
+		    st_orig =original; st_coef = m; st_var = sigma});
   let new_eq = List.hd (normalize new_eq) in
   let eliminated_var, def = chop_var var new_eq.body in
   let other_equations = 
-    flat_map (fun e -> normalize (eliminate_with_in eliminated_var new_eq e))
+    flat_map (fun e -> normalize (eliminate_with_in new_eq_id eliminated_var new_eq e))
              l1 in
   let inequations = 
-    flat_map (fun e -> normalize (eliminate_with_in eliminated_var new_eq e))
+    flat_map (fun e -> normalize (eliminate_with_in new_eq_id eliminated_var new_eq e))
              l2 in
-  let original' = eliminate_with_in eliminated_var new_eq original in
+  let original' = eliminate_with_in new_eq_id eliminated_var new_eq original in
   let mod_original = map_eq_afine (fun c -> c / m) original' in
   add_event (EXACT_DIVIDE (original',m));
   List.hd (normalize mod_original),other_equations,inequations
 
-let rec eliminate_one_equation (e,other,ineqs) = 
-  if !debug then display_system (e::other);
+let rec eliminate_one_equation ((new_eq_id,new_var_id,print_var) as new_ids) (e,other,ineqs) = 
+  if !debug then display_system print_var (e::other);
   try
     let v,def = chop_factor_1 e.body in
-    (flat_map (fun e' -> normalize (eliminate_with_in v e e')) other,
-     flat_map (fun e' -> normalize (eliminate_with_in v e e')) ineqs)
-  with FACTOR1 -> eliminate_one_equation (banerjee_step e other ineqs)
+    (flat_map (fun e' -> normalize (eliminate_with_in new_eq_id v e e')) other,
+     flat_map (fun e' -> normalize (eliminate_with_in new_eq_id v e e')) ineqs)
+  with FACTOR1 -> 
+    eliminate_one_equation new_ids (banerjee_step new_ids e other ineqs)
 
-let rec banerjee (sys_eq,sys_ineq) =
+let rec banerjee ((_,_,print_var) as new_ids) (sys_eq,sys_ineq) =
   let rec fst_eq_1 = function
      (eq::l) -> 
         if List.exists (fun x -> abs x.c = 1) eq.body then eq,l
         else let (eq',l') = fst_eq_1 l in (eq',eq::l')
    | [] -> raise Not_found in
   match sys_eq with
-     [] -> if !debug then display_system sys_ineq; sys_ineq
+     [] -> if !debug then display_system print_var sys_ineq; sys_ineq
    | (e1::rest) -> 
        let eq,other = try fst_eq_1 sys_eq with Not_found -> (e1,rest) in
        if eq.body = [] then 
          if eq.constant = 0 then begin
-           add_event (FORGET_C eq.id); banerjee (other,sys_ineq)
+           add_event (FORGET_C eq.id); banerjee new_ids (other,sys_ineq)
          end else begin
            add_event (CONSTANT_NOT_NUL(eq.id,eq.constant)); raise UNSOLVABLE
          end
-       else banerjee (eliminate_one_equation (eq,other,sys_ineq))
+       else
+	 banerjee new_ids 
+	   (eliminate_one_equation new_ids (eq,other,sys_ineq))
+
 type kind = INVERTED | NORMAL
-let redundancy_elimination system =
+
+let redundancy_elimination new_eq_id system =
   let normal = function
      ({body=f::_} as e) when f.c < 0 ->  negate_eq e, INVERTED
    | e -> e,NORMAL in
-  let table = create 7 in
+  let table = Hashtbl.create 7 in
   List.iter
     (fun e -> 
        let ({body=ne} as nx) ,kind = normal e in
@@ -372,7 +373,7 @@ let redundancy_elimination system =
          end else add_event (FORGET_C nx.id)
        else
        try 
-         let (optnormal,optinvert) = find table ne in
+         let (optnormal,optinvert) = Hashtbl.find table ne in
          let final =
            if kind = NORMAL then begin
              match optnormal with 
@@ -400,18 +401,18 @@ let redundancy_elimination system =
                 raise UNSOLVABLE
               end
           | _ -> () end;
-         remove table ne;
-         add table ne final
+         Hashtbl.remove table ne;
+         Hashtbl.add table ne final
        with Not_found ->
-         add table ne 
+         Hashtbl.add table ne 
            (if kind = NORMAL then (Some nx,None) else (None,Some nx)))
     system;
   let accu_eq = ref [] in
   let accu_ineq = ref [] in
-  iter
+  Hashtbl.iter
     (fun p0 p1 -> match (p0,p1) with 
-       | (e, (Some x, Some y)) when x.constant = y.constant ->
-           let id=new_id () in
+       | (e, (Some x, Some y)) when x.constant = y.constant -> 
+           let id=new_eq_id () in
            add_event (MERGE_EQ(id,x,y.id));
            push {id=id; kind=EQUA; body=x.body; constant=x.constant} accu_eq
        | (e, (optnorm,optinvert)) ->
@@ -425,14 +426,14 @@ let redundancy_elimination system =
 exception SOLVED_SYSTEM
 
 let select_variable system =
-  let table = create 7 in
+  let table = Hashtbl.create 7 in
   let push v c= 
-    try let r = find table v in r := max !r (abs c)
-    with Not_found -> add table v (ref (abs c)) in
+    try let r = Hashtbl.find table v in r := max !r (abs c)
+    with Not_found -> Hashtbl.add table v (ref (abs c)) in
   List.iter (fun {body=l} -> List.iter (fun f -> push f.v f.c) l) system;
   let vmin,cmin = ref (-1), ref 0 in
   let var_cpt = ref 0 in
-  iter
+  Hashtbl.iter
     (fun v ({contents =  c}) ->
        incr var_cpt;
        if c < !cmin or !vmin = (-1) then begin vmin := v; cmin := c end)
@@ -449,13 +450,13 @@ let classify v system =
        with CHOPVAR -> (eq::not_occ,below,over))
     ([],[],[]) system
 
-let product dark_shadow low high =
+let product new_eq_id dark_shadow low high =
   List.fold_left
     (fun accu (a,eq1) ->
        List.fold_left
          (fun accu (b,eq2) ->
             let eq = 
-              sum_afine (map_eq_afine (fun c -> c * b) eq1)
+              sum_afine new_eq_id (map_eq_afine (fun c -> c * b) eq1)
                 (map_eq_afine (fun c -> c * a) eq2) in
             add_event(SUM(eq.id,(b,eq1),(a,eq2)));
             match normalize eq with
@@ -473,33 +474,34 @@ let product dark_shadow low high =
          accu high)
     [] low
 
-let fourier_motzkin dark_shadow system =
+let fourier_motzkin (_,new_eq_id,print_var) dark_shadow system =
   let v = select_variable system in
   let (ineq_out, ineq_low,ineq_high) = classify v system in
-  let expanded = ineq_out @ product dark_shadow ineq_low ineq_high in
-  if !debug then display_system expanded; expanded
+  let expanded = ineq_out @ product new_eq_id dark_shadow ineq_low ineq_high in
+  if !debug then display_system print_var expanded; expanded
 
-let simplify dark_shadow system =
+let simplify ((new_eq_id,new_var_id,print_var) as new_ids) dark_shadow system =
   if List.exists (fun e -> e.kind = DISE) system then 
     failwith "disequation in simplify";
   clear_history ();
   List.iter (fun e -> add_event (HYP e)) system;
   let system = flat_map normalize system in
   let eqs,ineqs = filter (fun e -> e.kind=EQUA) system in
-  let simp_eq,simp_ineq = redundancy_elimination ineqs in
+  let simp_eq,simp_ineq = redundancy_elimination new_eq_id ineqs in
   let system = (eqs @ simp_eq,simp_ineq) in
   let rec loop1a system =
-    let sys_ineq = banerjee system in 
+    let sys_ineq = banerjee new_ids system in 
     loop1b sys_ineq 
   and loop1b sys_ineq =
-    let simp_eq,simp_ineq = redundancy_elimination sys_ineq in
+    let simp_eq,simp_ineq = redundancy_elimination new_eq_id sys_ineq in
     if simp_eq = [] then simp_ineq else loop1a (simp_eq,simp_ineq) 
   in
   let rec loop2 system =
     try
-      let expanded = fourier_motzkin dark_shadow system in
+      let expanded = fourier_motzkin new_ids dark_shadow system in
       loop2 (loop1b expanded)
-    with SOLVED_SYSTEM -> if !debug then display_system system; system 
+    with SOLVED_SYSTEM ->
+      if !debug then display_system print_var system; system 
   in
   loop2 (loop1a system)
 
@@ -520,7 +522,7 @@ let rec depend relie_on accu = function
 	      depend (e1.id::e2.id::relie_on) (act::accu) l
             else 
 	      depend relie_on accu l
-	| STATE (e,_,_,_,_) ->
+	| STATE {st_new_eq=e} ->
             if List.mem e.id relie_on then depend relie_on (act::accu) l
             else depend relie_on accu l
 	| HYP e ->   
@@ -546,54 +548,63 @@ let rec depend relie_on accu = function
       end
   | [] -> relie_on, accu
 
-let solve system =
-  try let _ = simplify false system in failwith "no contradiction"
-  with UNSOLVABLE -> display_action (snd (depend [] [] (history ())))
+(*
+let depend relie_on accu trace = 
+  Printf.printf "Longueur de la trace initiale : %d\n" 
+    (trace_length trace + trace_length accu);
+  let rel',trace' = depend relie_on accu trace in
+  Printf.printf "Longueur de la trace simplifiée : %d\n" (trace_length trace');
+  rel',trace'
+*)
+
+let solve (new_eq_id,new_eq_var,print_var) system =
+  try let _ = simplify new_eq_id false system in failwith "no contradiction"
+  with UNSOLVABLE -> display_action print_var (snd (depend [] [] (history ())))
       
 let negation (eqs,ineqs) =
   let diseq,_ = filter (fun e -> e.kind = DISE) ineqs in
   let normal = function
     | ({body=f::_} as e) when f.c < 0 ->  negate_eq e, INVERTED
     | e -> e,NORMAL in
-  let table = create 7 in
+  let table = Hashtbl.create 7 in
   List.iter (fun e -> 
                let {body=ne;constant=c} ,kind = normal e in
-               add table (ne,c) (kind,e)) diseq;
+               Hashtbl.add table (ne,c) (kind,e)) diseq;
   List.iter (fun e ->
-               if e.kind <> EQUA then pp 9999;
+               assert (e.kind <> EQUA);
                let {body=ne;constant=c},kind = normal e in
                try 
-		 let (kind',e') = find table (ne,c) in
+		 let (kind',e') = Hashtbl.find table (ne,c) in
 		 add_event (NEGATE_CONTRADICT (e,e',kind=kind'));
 		 raise UNSOLVABLE
                with Not_found -> ()) eqs
 
 exception FULL_SOLUTION of action list * int list
 
-let simplify_strong system =
+let simplify_strong ((new_eq_id,new_var_id,print_var) as new_ids) system =
   clear_history ();
   List.iter (fun e -> add_event (HYP e)) system;
   (* Initial simplification phase *)
   let rec loop1a system =
     negation system;
-    let sys_ineq = banerjee system in 
+    let sys_ineq = banerjee new_ids system in 
     loop1b sys_ineq 
   and loop1b sys_ineq =
     let dise,ine = filter (fun e -> e.kind = DISE) sys_ineq in
-    let simp_eq,simp_ineq = redundancy_elimination ine in
+    let simp_eq,simp_ineq = redundancy_elimination new_eq_id ine in
     if simp_eq = [] then dise @ simp_ineq
     else loop1a (simp_eq,dise @ simp_ineq) 
   in
   let rec loop2 system =
     try
-      let expanded = fourier_motzkin false system in
+      let expanded = fourier_motzkin new_ids false system in
       loop2 (loop1b expanded)
-    with SOLVED_SYSTEM -> if !debug then display_system system; system 
+    with SOLVED_SYSTEM -> if !debug then display_system print_var system; system 
   in
   let rec explode_diseq = function 
     | (de::diseq,ineqs,expl_map) ->
-	let id1 = new_id () 
-	and id2 = new_id () in
+	let id1 = new_eq_id () 
+	and id2 = new_eq_id () in
 	let e1 = 
 	  {id = id1; kind=INEQ; body = de.body; constant = de.constant - 1} in
 	let e2 = 
@@ -612,7 +623,7 @@ let simplify_strong system =
     let system = flat_map normalize system in
     let eqs,ineqs = filter (fun e -> e.kind=EQUA) system in
     let dise,ine = filter (fun e -> e.kind = DISE) ineqs in
-    let simp_eq,simp_ineq = redundancy_elimination ine in
+    let simp_eq,simp_ineq = redundancy_elimination new_eq_id ine in
     let system = (eqs @ simp_eq,simp_ineq @ dise) in
     let system' = loop1a system in
     let diseq,ineq = filter (fun e -> e.kind = DISE) system' in
@@ -631,14 +642,15 @@ let simplify_strong system =
         sys_exploded 
     in
     let max_count sys = 
-      let tbl = create 7 in
+      let tbl = Hashtbl.create 7 in
       let augment x = 
-        try incr (find tbl x) with Not_found -> add tbl x (ref 1) in
+        try incr (Hashtbl.find tbl x) 
+	with Not_found -> Hashtbl.add tbl x (ref 1) in
       let eq = ref (-1) and c = ref 0 in
       List.iter (function 
 		   | ([],r_on,_,path) -> raise (FULL_SOLUTION (path,r_on))
                    | (l,_,_,_) -> List.iter augment l) sys;
-      iter (fun x v -> if !v > !c then begin eq := x; c := !v end) tbl;
+      Hashtbl.iter (fun x v -> if !v > !c then begin eq := x; c := !v end) tbl;
       !eq 
     in
     let rec solve systems = 
@@ -649,13 +661,13 @@ let simplify_strong system =
           | [] -> failwith "solve" in
         let s1,s2 = filter (fun (_,_,decomp,_) -> sign decomp) systems in
         let s1' = 
-	  List.map (fun (dep,ro,dc,pa) -> (list_except id dep,ro,dc,pa)) s1 in
+	  List.map (fun (dep,ro,dc,pa) -> (Util.list_except id dep,ro,dc,pa)) s1 in
         let s2' = 
-	  List.map (fun (dep,ro,dc,pa) -> (list_except id dep,ro,dc,pa)) s2 in
+	  List.map (fun (dep,ro,dc,pa) -> (Util.list_except id dep,ro,dc,pa)) s2 in
         let (r1,relie1) = solve s1' 
 	and (r2,relie2) = solve s2' in
 	let (eq,id1,id2) = List.assoc id explode_map in
-	[SPLIT_INEQ(eq,(id1,r1),(id2, r2))], eq.id :: list_union relie1 relie2
+	[SPLIT_INEQ(eq,(id1,r1),(id2, r2))], eq.id :: Util.list_union relie1 relie2
       with FULL_SOLUTION (x0,x1) -> (x0,x1) 
     in
     let act,relie_on = solve all_solutions in
