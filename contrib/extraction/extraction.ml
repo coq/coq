@@ -99,7 +99,7 @@ type extraction_result =
 
 let none = Evd.empty
 
-let type_of env c = Typing.type_of env Evd.empty c
+let type_of env c = Typing.type_of env Evd.empty (strip_outer_cast c)
 
 let whd_betaiotalet = clos_norm_flags (UNIFORM, red_add betaiota_red ZETA)
 

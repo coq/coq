@@ -139,6 +139,10 @@ Inductive tp1bis : Set :=
   Tbis : tp2bis -> tp1bis 
 with tp2bis : Set  := T'bis : (C:Set)(c:C)tp1bis->tp2bis.
 
+(* casts *)
+
+Extraction (True :: Type).
+
 (* example needing Obj.magic *)
 
 (* hybrids *)
