@@ -35,12 +35,21 @@ let prast c = pp(print_ast c)
 let prastpat c = pp(print_astpat c)
 let prastpatl c = pp(print_astlpat c)
 let ppterm x = pp(prterm x)
+let ppsterm x = ppterm (Declarations.force x)
 let ppterm_univ x = Constrextern.with_universes ppterm x
 let pprawterm = (fun x -> pp(pr_rawterm x))
 let pppattern = (fun x -> pp(pr_pattern x))
 let pptype = (fun x -> pp(prtype x))
 
-let prglobal = (fun x -> pp(pr_global x))
+let safe_prglobal = function 
+  | ConstRef kn -> pp (str "CONSTREF(" ++ pr_kn kn ++ str ")")
+  | IndRef (kn,i) -> pp (str "INDREF(" ++ pr_kn kn ++ str "," ++ 
+			  int i ++ str ")")
+  | ConstructRef ((kn,i),j) -> pp (str "INDREF(" ++ pr_kn kn ++ str "," ++ 
+				      int i ++ str "," ++ int j ++ str ")")
+  | VarRef id -> pp (str "VARREF(" ++ pr_id id ++ str ")")
+
+let prglobal x = try pp(pr_global x) with _ -> safe_prglobal x
 
 let prid id = pp (pr_id id)
 let prlab l = pp (pr_lab l)
