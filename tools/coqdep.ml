@@ -12,8 +12,14 @@ open Printf
 open Coqdep_lexer
 open Unix
 
+let file_concat l =
+  if l=[] then "<empty>" else
+    List.fold_left Filename.concat (List.hd l) (List.tl l)
+
 let stderr = Pervasives.stderr
 let stdout = Pervasives.stdout
+
+let coqlib = ref Coq_config.coqlib
 
 let option_c = ref false
 let option_D = ref false
@@ -23,6 +29,76 @@ let option_sort = ref false
 
 let suffixe = ref ".vo"
 let suffixe_spec = ref ".vi"
+
+type dir = string option
+
+(* Mapping from logical path to directory name *)
+let rec_path = ref ([] : (string * string) list)
+
+let path_to_file = function
+  | [f] -> f
+  | lpath::relpath as l ->
+      (try String.concat "/" (List.assoc lpath !rec_path :: relpath)
+      with Not_found -> String.concat "/" l)
+  | _ -> assert false
+
+(* Files specified on the command line *)
+let mlAccu  = ref ([] : (string * string * dir) list) 
+and mliAccu = ref ([] : (string * string * dir) list) 
+and vAccu   = ref ([] : string list)
+
+(* Queue operations *)
+let addQueue q v = q := v :: !q
+
+let safe_addQueue clq q (k,v) =
+  try
+    let v2 = List.assoc k !q in
+    if v<>v2 then 
+      let rec add_clash = function
+          (k1,l1)::cltl when k=k1 -> (k1,v::l1)::cltl
+        | cl::cltl -> cl::add_clash cltl
+        | [] -> [(k,[v;v2])] in
+      clq := add_clash !clq
+  with Not_found -> addQueue q (k,v)
+
+(* Files found in the loadpaths *)
+let mlKnown     = ref ([] : (string * dir) list) 
+and mliKnown    = ref ([] : (string * dir) list) 
+and vKnown      = ref ([] : (string list * string) list) 
+and coqlibKnown = ref ([] : (string list * string) list)
+
+let clash_v = ref ([]: (string list * string list) list)
+
+
+let warning_notfound f s =
+  eprintf "*** Warning : in file %s, the file " f;
+  eprintf "%s.v is required and has not been found !\n" s;
+  flush stderr
+
+let warning_clash file dir =
+  match List.assoc dir !clash_v with
+    (f1::f2::fl) ->
+      let f = Filename.basename f1 in
+      let d1 = Filename.dirname f1 in
+      let d2 = Filename.dirname f2 in
+      let dl = List.map Filename.dirname (List.rev fl) in
+      eprintf
+        "*** Warning : in file %s, \n    required module %s is ambiguous!\n    (found %s.v in "
+        file (String.concat "." dir) f;
+      List.iter (fun s -> eprintf "%s, " s) dl;
+      eprintf "%s and %s)\n" d2 d1
+  | _ -> assert false
+
+let safe_assoc verbose file k =
+  if verbose && List.mem_assoc k !clash_v then warning_clash file k;
+  List.assoc k !vKnown
+
+
+     
+let file_name = function
+  | (s,None)     -> file_concat s 
+  | (s,Some ".") -> file_concat s
+  | (s,Some d)   -> Filename.concat d (file_concat s)
 
 let traite_fichier_ML md ext =
   try 
@@ -37,26 +113,26 @@ let traite_fichier_ML md ext =
 	if List.mem str !deja_vu then 
 	  ()
 	else begin
-	  deja_vu := str :: !deja_vu;
+	  addQueue deja_vu str;
           begin try
             let mlidir = List.assoc str !mliKnown in
-            let filename = file_name (str,mlidir) in
+            let filename = file_name ([str],mlidir) in
       	    a_faire := !a_faire ^ " " ^ filename ^ ".cmi"; 
           with Not_found ->
             try
               let mldir = List.assoc str !mlKnown in
-              let filename = file_name (str,mldir) in
+              let filename = file_name ([str],mldir) in
               a_faire := !a_faire ^ " " ^ filename ^ ".cmo";
             with Not_found -> ()
           end;
           begin try
             let mldir = List.assoc str !mlKnown in
-            let filename = file_name (str,mldir) in
+            let filename = file_name ([str],mldir) in
     	    a_faire_opt := !a_faire_opt ^ " " ^ filename ^ ".cmx"
           with Not_found ->
             try
               let mlidir = List.assoc str !mliKnown in
-              let filename = file_name (str,mlidir) in
+              let filename = file_name ([str],mlidir) in
               a_faire_opt := !a_faire_opt ^ " " ^ filename ^ ".cmi"
             with Not_found -> ()
           end
@@ -71,7 +147,6 @@ let traite_fichier_ML md ext =
 let sort () = 
   let seen = Hashtbl.create 97 in
   let rec loop file =
-    let file = file_name file in
     if not (Hashtbl.mem seen file) then begin
       Hashtbl.add seen file ();
       let cin = open_in (file ^ ".v") in
@@ -80,12 +155,9 @@ let sort () =
 	while true do
 	  match coq_action lb with
 	    | Require (_, s) ->
-		(try loop (s, List.assoc s !vAccu) with Not_found -> ())
-	    | RequireString (_, s) -> 
-		let s = Filename.basename s in
-		(try loop (s, List.assoc s !vAccu) with Not_found -> ())
-	    | _ -> 
-		()
+		(try loop (List.assoc s !vKnown) with Not_found -> ())
+	    | RequireString (_, s) -> loop s
+	    | _ -> ()
 	done
       with Fin_fichier ->
 	close_in cin;
@@ -94,65 +166,57 @@ let sort () =
   in
   List.iter loop !vAccu
 
-let warning_notfound f s =
-  eprintf "*** Warning : in file %s, the file " f;
-  eprintf "%s.v is required and has not been found !\n" s;
-  flush stderr
-
-let traite_fichier_Coq f = 
+let traite_fichier_Coq verbose f = 
   try 
     let chan = open_in f in 
     let buf = Lexing.from_channel chan in 
-    let deja_vu_v = ref ([]: string list)
+    let deja_vu_v = ref ([]: string list list)
     and deja_vu_ml = ref ([] : string list) in
     try 
       while true do
       	let tok = coq_action buf in
 	match tok with
-	  | Require (spec,str) -> 
+	  | Require (spec,str) ->
 	      if not (List.mem str !deja_vu_v) then begin
-	        deja_vu_v := str :: !deja_vu_v;
+	        addQueue deja_vu_v str;
                 try
-                  let vdir = List.assoc str !vKnown in
-                  printf " %s%s" 
-		    (file_name (str,vdir))
+                  let file_str = safe_assoc verbose f str in
+                  printf " %s%s" file_str
                     (if spec then !suffixe_spec else !suffixe)
                 with Not_found -> 
-                  begin 
-		    try let _ = List.assoc str !coqlibKnown in ()
-                    with Not_found -> warning_notfound f str end
+		  if verbose && not (List.mem_assoc str !coqlibKnown) then
+                    warning_notfound f (path_to_file str)
        	      end
 	  | RequireString (spec,s) -> 
 	      let str = Filename.basename s in
-	      if not (List.mem str !deja_vu_v) then begin
-	        deja_vu_v := str :: !deja_vu_v;
+	      if not (List.mem [str] !deja_vu_v) then begin
+	        addQueue deja_vu_v [str];
                 try
-                  let vdir = List.assoc str !vKnown in
-                  printf " %s%s"
-                    (file_name (str,vdir))
+                  let file_str = List.assoc [str] !vKnown in
+                  printf " %s%s" file_str
                     (if spec then !suffixe_spec else !suffixe)
                 with Not_found -> 
-                  begin try  let _ = List.assoc s !coqlibKnown in ()
+                  begin try  let _ = List.assoc [str] !coqlibKnown in ()
                   with Not_found -> warning_notfound f s end
        	      end
 	  | Declare sl -> 
 	      List.iter 
 		(fun str ->
 		   if not (List.mem str !deja_vu_ml) then begin
-		     deja_vu_ml := str :: !deja_vu_ml;
+		     addQueue deja_vu_ml str;
                	     try
               	       let mldir = List.assoc str !mlKnown in
-              	       printf " %s.cmo" (file_name (str,mldir))
+              	       printf " %s.cmo" (file_name ([str],mldir))
               	     with Not_found -> () 
 		   end)
 		sl
 	  | Load str -> 
 	      let str = Filename.basename str in
-	      if not (List.mem str !deja_vu_v) then begin
-	        deja_vu_v := str :: !deja_vu_v;
+	      if not (List.mem [str] !deja_vu_v) then begin
+	        addQueue deja_vu_v [str];
                 try
-                  let vdir = List.assoc str !vKnown in
-                  printf " %s.v" (file_name (str,vdir))
+                  let file_str = List.assoc [str] !vKnown in
+                  printf " %s.v" file_str
                 with Not_found -> ()
        	      end
       done
@@ -160,6 +224,9 @@ let traite_fichier_Coq f =
       close_in chan
   with Sys_error _ -> () 
 
+
+let (dep_tab : (string,string list) Hashtbl.t) = Hashtbl.create 151
+						     
 let mL_dep_list b f = 
   try 
     Hashtbl.find dep_tab f
@@ -173,12 +240,10 @@ let mL_dep_list b f =
 	  let (Use_module str) = caml_action buf in
 	  if str = b then begin
 	    eprintf "*** Warning : in file %s the" f;
-	    eprintf " notation %s__ is useless !\n" b;
+	    eprintf " notation %s. is useless !\n" b;
 	    flush stderr
-	  end else if List.mem str !deja_vu then 
-	    ()
-	  else 
-	    deja_vu := str :: !deja_vu
+	  end else
+            if not (List.mem str !deja_vu) then addQueue deja_vu str
       	done; []
       with Fin_fichier -> begin
 	close_in chan; 
@@ -209,7 +274,7 @@ let traite_Declare f =
     | s :: ll -> 
 	if (List.mem_assoc s !mlKnown) & not (List.mem s !decl_list) then begin
        	  let mldir = List.assoc s !mlKnown in
-	  let fullname = file_name (s,mldir) in
+	  let fullname = file_name ([s],mldir) in
 	  let depl = mL_dep_list s (fullname ^ ".ml") in
 	  treat depl;
 	  decl_list := s :: !decl_list
@@ -248,7 +313,7 @@ let file_mem (f,_,d) =
 let mL_dependencies () =
   List.iter 
     (fun ((name,ext,dirname) as pairname) ->
-       let fullname = file_name (name,dirname) in
+       let fullname = file_name ([name],dirname) in
        let (dep,dep_opt) = traite_fichier_ML fullname ext in
        printf "%s.cmo: %s%s" fullname fullname ext;
        if file_mem pairname !mliAccu then printf " %s.cmi" fullname;
@@ -257,38 +322,36 @@ let mL_dependencies () =
        if file_mem pairname !mliAccu then printf " %s.cmi" fullname;
        printf "%s\n" dep_opt;
        flush stdout)
-    !mlAccu;
+    (List.rev !mlAccu);
   List.iter
     (fun ((name,ext,dirname) as pairname) ->
-       let fullname = file_name (name,dirname) in
+       let fullname = file_name ([name],dirname) in
        let (dep,_) = traite_fichier_ML fullname ext in
        printf "%s.cmi: %s%s" fullname fullname ext;
        printf "%s\n" dep;
        flush stdout)
-    !mliAccu
+    (List.rev !mliAccu)
 
 let coq_dependencies () =
   List.iter
-    (fun ((name,dirname) as pairname) ->
-       let fullname = file_name pairname in
-       printf "%s%s: %s.v" fullname !suffixe fullname;
-       traite_fichier_Coq (fullname ^ ".v");
+    (fun name ->
+       printf "%s%s: %s.v" name !suffixe name;
+       traite_fichier_Coq true (name ^ ".v");
        printf "\n";
        if !option_i then begin
-	 printf "%s%s: %s.v" fullname !suffixe_spec fullname;
-	 traite_fichier_Coq (fullname ^ ".v");
+	 printf "%s%s: %s.v" name !suffixe_spec name;
+	 traite_fichier_Coq false (name ^ ".v");
 	 printf "\n";
        end;
        flush stdout)
-    !vAccu
+    (List.rev !vAccu)
 
 let declare_dependencies () =
   List.iter
-    (fun ((name,dirname) as pairname) ->
-       let fullname = file_name pairname in
-       traite_Declare (fullname^".v");      
+    (fun name ->
+       traite_Declare (name^".v");      
        flush stdout)
-    !vAccu
+    (List.rev !vAccu)
 
 let rec warning_mult suf l = 
   let tab = Hashtbl.create 151 in
@@ -296,8 +359,8 @@ let rec warning_mult suf l =
     (fun (f,d) -> 
        begin try 
 	 let d' = Hashtbl.find tab f in
-	 if (Filename.dirname (file_name (f,d)))
-      	   <> (Filename.dirname (file_name (f,d'))) then begin
+	 if (Filename.dirname (file_name ([f],d)))
+      	   <> (Filename.dirname (file_name ([f],d'))) then begin
 	     eprintf "*** Warning : the file %s is defined twice!\n" (f ^ suf);
 	     flush stderr
 	   end
@@ -306,27 +369,29 @@ let rec warning_mult suf l =
     l
 
 (* Gives the list of all the directories under [dir], including [dir] *)
-let all_subdirs dir =
-  let l = ref [dir] in
+let all_subdirs root_dir log_dir =
+  let l = ref [(root_dir,[log_dir])] in
   let add f = l := f :: !l in
-  let rec traverse dir =
+  let rec traverse phys_dir dir =
     let dirh = 
-      try opendir dir with Unix_error _ -> invalid_arg "all_subdirs" 
+      try opendir phys_dir
+      with Unix_error _ -> invalid_arg "all_subdirs" 
     in
     try
       while true do
 	let f = readdir dirh in
 	if f <> "." && f <> ".." then
-	  let file = Filename.concat dir f in
-	  if (stat file).st_kind = S_DIR then begin
-	    add file;
-	    traverse file
+	  let file = dir@[f] in
+          let filename = Filename.concat phys_dir f in
+	  if (stat filename).st_kind = S_DIR then begin
+	    add (filename,file);
+	    traverse filename file
 	  end
       done
     with End_of_file ->
       closedir dirh
   in
-  traverse dir; List.rev !l
+  traverse root_dir [log_dir]; List.rev !l
 
 let usage () =
   eprintf
@@ -336,11 +401,13 @@ let usage () =
 
 let add_coqlib_known dir_name f =
   let complete_name = Filename.concat dir_name f in
+  let lib_name = Filename.basename dir_name in
   match try (stat complete_name).st_kind with _ -> S_BLK with 
     | S_REG -> 
 	if Filename.check_suffix f ".vo" then
 	  let basename = Filename.chop_suffix f ".vo" in
-	  addQueue coqlibKnown (basename,Some dir_name)
+	  addQueue coqlibKnown ([basename],complete_name);
+	  addQueue coqlibKnown (["Coq";lib_name;basename],complete_name)
     | _ -> ()
 
 let add_coqlib_directory dir_name = 
@@ -364,8 +431,8 @@ let coqdep () =
 	| (None,d) -> Some d
 	| (Some d1,d2) -> Some (Filename.concat d1 d2) 
     in
-    let complete_name = file_name (name,dirname) in
-    match try (stat (file_name (name,dirname))).st_kind with _ -> S_BLK with 
+    let complete_name = file_name ([name],dirname) in
+    match try (stat complete_name).st_kind with _ -> S_BLK with 
       | S_DIR ->
 	  (if name <> "." & name <> ".." then
 	     let dir=opendir complete_name in
@@ -389,48 +456,53 @@ let coqdep () =
 	    addQueue mliAccu (basename,".mli",dirname)
 	  else if Filename.check_suffix name ".v" then
 	    let basename = Filename.chop_suffix name ".v" in
-	    addQueue vAccu (basename,dirname)
+	    addQueue vAccu (file_name ([basename], dirname))
       | _ -> ()
-    in 
-    let add_known dir_name f =
-      let complete_name = Filename.concat dir_name f in
-      match try (stat complete_name).st_kind with _ -> S_BLK with 
+  in 
+  let add_known phys_dir log_dir f =
+    let complete_name = Filename.concat phys_dir f in
+    match try (stat complete_name).st_kind with _ -> S_BLK with 
 	| S_REG ->
 	    if Filename.check_suffix f ".ml" then
 	      let basename = Filename.chop_suffix f ".ml" in
-	      addQueue mlKnown (basename,Some dir_name)
+	      addQueue mlKnown (basename,Some phys_dir)
 	    else if Filename.check_suffix f ".ml4" then
 	      let basename = Filename.chop_suffix f ".ml4" in
-	      addQueue mlKnown (basename,Some dir_name)
+	      addQueue mlKnown (basename,Some phys_dir)
 	    else if Filename.check_suffix f ".mli" then
 	      let basename = Filename.chop_suffix f ".mli" in
-	      addQueue mliKnown (basename,Some dir_name)
+	      addQueue mliKnown (basename,Some phys_dir)
 	    else if Filename.check_suffix f ".v" then
 	      let basename = Filename.chop_suffix f ".v" in
-	      addQueue vKnown (basename,Some dir_name)
-        | _ -> ()
-    in
-    let add_directory dir_name = 
-      match try (stat dir_name).st_kind with _ -> S_BLK with 
+              let name = log_dir@[basename] in
+              let file = Filename.concat phys_dir basename in
+              let paths = [name;[basename]] in
+	      List.iter
+                (fun n -> safe_addQueue clash_v vKnown (n,file)) paths
+        | _ -> () in
+  let add_directory (phys_dir, log_dir) = 
+      match try (stat phys_dir).st_kind with _ -> S_BLK with 
 	| S_DIR -> 
-	    (let dir = opendir dir_name in
+	    (let dir = opendir phys_dir in
       	     try
-	       while true do add_known dir_name (readdir dir) done
+	       while true do
+                 add_known phys_dir log_dir (readdir dir) done
 	     with End_of_file -> closedir dir)
         | _ -> ()
-    in
-    let add_rec_directory dir_name =
-      List.iter add_directory (all_subdirs dir_name)
-    in
-    let rec parse = function
+  in
+  let add_rec_directory dir_name log_name =
+    addQueue rec_path (log_name, dir_name);
+    List.iter add_directory (all_subdirs dir_name log_name)
+  in
+  let rec parse = function
       | "-c" :: ll -> option_c := true; parse ll
       | "-D" :: ll -> option_D := true; parse ll
       | "-w" :: ll -> option_w := true; parse ll
       | "-i" :: ll -> option_i := true; parse ll
       | "-sort" :: ll -> option_sort := true; parse ll
-      | "-I" :: r :: ll -> add_directory r; parse ll
+      | "-I" :: r :: ll -> add_directory (r, []); parse ll
       | "-I" :: [] -> usage ()
-      | "-R" :: r :: _ :: ll -> add_rec_directory r; parse ll
+      | "-R" :: r :: ln :: ll -> add_rec_directory r ln; parse ll
       | "-R" :: ([] | [_]) -> usage ()
       | "-coqlib" :: (r :: ll) -> coqlib := r; parse ll
       | "-coqlib" :: [] -> usage ()
@@ -438,28 +510,28 @@ let coqdep () =
       | "-suffix" :: [] -> usage ()
       | f :: ll -> treat None f; parse ll
       | [] -> ()
-    in
-    parse (List.tl (Array.to_list Sys.argv));
-    let theories = Filename.concat !coqlib "theories" in
-    List.iter
-      (fun s -> add_coqlib_directory (Filename.concat theories s))
-      Coq_config.theories_dirs;
-    let tactics = Filename.concat !coqlib "tactics" in
-    add_coqlib_directory tactics;
-    let contrib = Filename.concat !coqlib "contrib" in
-    List.iter 
-      (fun s -> add_coqlib_directory (Filename.concat contrib s))
-      Coq_config.contrib_dirs;
-    mliKnown := !mliKnown @ (List.map (fun (f,_,d) -> (f,d)) !mliAccu);
-    mlKnown  := !mlKnown @ (List.map (fun (f,_,d) -> (f,d)) !mlAccu);
-    vKnown   := !vKnown @ !vAccu;
-    warning_mult ".mli" !mliKnown;
-    warning_mult ".ml" !mlKnown;
-    warning_mult ".v" !vKnown;
-    if !option_sort then begin sort (); exit 0 end;
-    if !option_c && not !option_D then mL_dependencies ();
-    if not !option_D then coq_dependencies ();
-    if !option_w || !option_D then declare_dependencies ()
-      
-let _ = Printexc.catch coqdep ()
+  in
+  add_directory (".", []);
+  parse (List.tl (Array.to_list Sys.argv));
+  let theories = Filename.concat !coqlib "theories" in
+  List.iter
+    (fun s -> add_coqlib_directory (Filename.concat theories s))
+    Coq_config.theories_dirs;
+  let tactics = Filename.concat !coqlib "tactics" in
+  add_coqlib_directory tactics;
+  let contrib = Filename.concat !coqlib "contrib" in
+  List.iter 
+    (fun s -> add_coqlib_directory (Filename.concat contrib s))
+    Coq_config.contrib_dirs;
+  mliKnown := !mliKnown @ (List.map (fun (f,_,d) -> (f,d)) !mliAccu);
+  mlKnown  := !mlKnown @ (List.map (fun (f,_,d) -> (f,d)) !mlAccu);
+  warning_mult ".mli" !mliKnown;
+  warning_mult ".ml" !mlKnown;
+(*  warning_mult ".v" (List.map (fun (s,d) -> (file_concat s, d))
+  !vKnown);*)
+  if !option_sort then begin sort (); exit 0 end;
+  if !option_c && not !option_D then mL_dependencies ();
+  if not !option_D then coq_dependencies ();
+  if !option_w || !option_D then declare_dependencies ()
 
+let _ = Printexc.catch coqdep ()

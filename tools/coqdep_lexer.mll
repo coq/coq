@@ -18,40 +18,23 @@
   type spec = bool
 		
   type coq_token = 
-    | Require of spec * string
+    | Require of spec * string list
     | RequireString of spec * string
     | Declare of string list
     | Load of string
-
-  let mlAccu  = ref ([] : (string * string * string option) list) 
-  and mliAccu = ref ([] : (string * string * string option) list) 
-  and vAccu   = ref ([] : (string * string option) list)
-
-  let mlKnown     = ref ([] : (string * string option) list) 
-  and mliKnown    = ref ([] : (string * string option) list) 
-  and vKnown      = ref ([] : (string * string option) list) 
-  and coqlibKnown = ref ([] : (string * string option) list)
-
-  let coqlib = ref Coq_config.coqlib
-		 
-  let (dep_tab : (string,string list) Hashtbl.t) = Hashtbl.create 151
-						     
-  let addQueue q v = q := v :: !q
-		       
-  let file_name = function
-    | (s,None)     -> s 
-    | (s,Some ".") -> s
-    | (s,Some d)   -> Filename.concat d s
 
   let comment_depth = ref 0
  
   exception Fin_fichier
     
-  let module_name = ref ""
+  let module_name = ref []
+  let ml_module_name = ref ""
 		      
   let specif = ref false
 		 
   let mllist = ref ([] : string list)
+
+  let field_name s = String.sub s 1 (String.length s - 1)
 }
 
 let space = [' ' '\t' '\n']
@@ -60,6 +43,8 @@ let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
 let identchar = 
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let coq_ident = ['a'-'z' '_' '0'-'9' 'A'-'Z']+
+let coq_field = '.'['a'-'z' '_' '0'-'9' 'A'-'Z']+
+let dot = '.' ( space+ | eof)
 
 rule coq_action = parse
   | "Require" space+
@@ -76,7 +61,7 @@ rule coq_action = parse
       { load_file lexbuf }
   | "\""
       { string lexbuf; coq_action lexbuf}
-  | "(*"
+  | "(*" (* "*)" *)
       { comment_depth := 1; comment lexbuf; coq_action lexbuf }  
   | eof 
       { raise Fin_fichier} 
@@ -91,7 +76,7 @@ and caml_action = parse
   | lowercase identchar*
       { caml_action lexbuf }
   | uppercase identchar*
-      { module_name := Lexing.lexeme lexbuf;
+      { ml_module_name := Lexing.lexeme lexbuf;
         qual_id lexbuf }
   | ['0'-'9']+
     | '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
@@ -108,7 +93,7 @@ and caml_action = parse
       { caml_action lexbuf }
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { caml_action lexbuf }
-  | "(*"
+  | "(*" (* "*)" *)
       { comment_depth := 1; comment lexbuf; caml_action lexbuf }
   | "#" | "&"  | "&&" | "'" | "(" | ")" | "*" | "," | "?" | "->" | "." | ".."
    | ".(" | ".[" | ":" | "::" | ":=" | ";" | ";;" | "<-" | "=" | "[" | "[|"
@@ -134,7 +119,7 @@ and caml_action = parse
   | _ { caml_action lexbuf }
 
 and comment = parse
-  | "(*"
+  | "(*" (* "*)" *)
       { comment_depth := succ !comment_depth; comment lexbuf }
   | "*)"
       { comment_depth := pred !comment_depth;
@@ -150,11 +135,11 @@ and comment = parse
   | _ { comment lexbuf }
 
 and string = parse
-  | '"'
+  | '"' (* '"' *)
       { () }
   | '\\' ("\010" | "\013" | "\010\013") [' ' '\009'] *
       { string lexbuf }
-  | '\\' ['\\' '"' 'n' 't' 'b' 'r']
+  | '\\' ['\\' '"' 'n' 't' 'b' 'r'] (*'"'*)
       { string lexbuf }
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']
       { string lexbuf }
@@ -164,7 +149,7 @@ and string = parse
       { string lexbuf }
 
 and load_file = parse
-  | '"' [^ '"']* '"'
+  | '"' [^ '"']* '"' (*'"'*)
       { let s = lexeme lexbuf in
 	let f = String.sub s 1 (String.length s - 2) in
 	skip_to_dot lexbuf;
@@ -177,12 +162,12 @@ and load_file = parse
       { load_file lexbuf }
 
 and skip_to_dot = parse
-  | '.' { () }
+  | dot { () }
   | eof { () }
   | _   { skip_to_dot lexbuf }
 
 and opened_file = parse
-  | "(*"  	{ comment_depth := 1; comment lexbuf; opened_file lexbuf }
+  | "(*" (* "*)" *) { comment_depth := 1; comment lexbuf; opened_file lexbuf }
   | space+
       	       	{ opened_file lexbuf }
   | "Implementation"
@@ -190,23 +175,38 @@ and opened_file = parse
   | "Specification"
                 { specif := true; opened_file lexbuf }
   | coq_ident
-       	       	{ module_name := (Lexing.lexeme lexbuf);
-                  opened_file_end lexbuf }
+       	       	{ module_name := [Lexing.lexeme lexbuf];
+                  opened_file_fields lexbuf }
 
-and opened_file_end = parse
-  | '.'               { Require (!specif, !module_name) }
-  | space+            { opened_file_end lexbuf }
-  | "(*"              { comment_depth := 1; comment lexbuf;
-      	       	       	opened_file_end lexbuf }
-  | '"' [^'"']* '"'   { let lex = Lexing.lexeme lexbuf in
+  | '"' [^'"']* '"'   { (*'"'*)
+                        let lex = Lexing.lexeme lexbuf in
       	       	       	let str = String.sub lex 1 (String.length lex - 2) in
+                        let str =
+                          if Filename.check_suffix str ".v" then
+                            Filename.chop_suffix str ".v"
+                          else str in
 			RequireString (!specif, str) }
   | eof		      { raise Fin_fichier }
-  | _		      { opened_file_end lexbuf }
+  | _		      { opened_file lexbuf }
+
+and opened_file_fields = parse
+  | "(*" (* "*)" *)
+                { comment_depth := 1; comment lexbuf;
+                  opened_file_fields lexbuf }
+  | space+
+      	       	{ opened_file_fields lexbuf }
+  | coq_field
+       	       	{ module_name :=
+                    field_name (Lexing.lexeme lexbuf) :: !module_name;
+                  opened_file_fields lexbuf }
+  | dot               { Require (!specif, List.rev !module_name) }
+  | eof		      { raise Fin_fichier }
+  | _		      { opened_file_fields lexbuf }
+
 
 and modules = parse
   | space+              { modules lexbuf }
-  | "(*"		{ comment_depth := 1; comment lexbuf;
+  | "(*" (* "*)" *)	{ comment_depth := 1; comment lexbuf;
       	       	       	  modules lexbuf }
   | '"' [^'"']* '"'
         { let lex = (Lexing.lexeme lexbuf) in 
@@ -215,7 +215,7 @@ and modules = parse
   | _   { (Declare (List.rev !mllist)) }   
 
 and qual_id = parse
-  | '.' [^ '.' '(' '['] { Use_module (String.uncapitalize !module_name) }
+  | '.' [^ '.' '(' '['] { Use_module (String.uncapitalize !ml_module_name) }
   | eof { raise Fin_fichier }
   | _ { caml_action lexbuf }
 
