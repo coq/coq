@@ -753,7 +753,7 @@ let letin_abstract id c (occ_ccl,occ_hyps) gl =
       (d,List.exists (fun((id,_,_),dep) -> dep && occur_var_in_decl env id d) ctxt)
     in d'::ctxt
   in 
-  let ctxt' = fold_named_context compute_dependency ~init:[] env in
+  let ctxt' = fold_named_context compute_dependency env ~init:[] in
   let compute_marks ((depdecls,marks as accu),lhyp) ((hyp,_,_) as d,b) =
     if b then ((d::depdecls,(hyp,lhyp)::marks), lhyp)
     else (accu, Some hyp) in
