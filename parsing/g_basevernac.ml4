@@ -358,6 +358,7 @@ GEXTEND Gram
     [[ IDENT "ast"; IDENT "list" -> AstListParser
      | IDENT "ast" -> AstParser
      | IDENT "constr" -> ConstrParser
+     | IDENT "cases_pattern" -> CasesPatternParser
      | IDENT "tactic" -> TacticParser
      | IDENT "vernac" -> VernacParser ]]
   ;
