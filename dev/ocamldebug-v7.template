@@ -27,7 +27,7 @@ case $coqdebug in
 	-I $COQTOP/config \
 	-I $COQTOP/lib -I $COQTOP/kernel \
 	-I $COQTOP/library -I $COQTOP/pretyping -I $COQTOP/parsing \
-        -I $COQTOP/proofs -I $COQTOP/tactics \
+        -I $COQTOP/interp -I $COQTOP/proofs -I $COQTOP/tactics \
 	-I $COQTOP/toplevel -I $COQTOP/dev -I $COQTOP/config \
         -I $COQTOP/contrib/correctness \
         -I $COQTOP/contrib/extraction -I $COQTOP/contrib/field \
