@@ -79,19 +79,19 @@ let print_impl_args = function
    the pretty-print of a proposition (P:(nat->nat)->Prop)(P [u]u)
    synthesizes the type nat of the abstraction on u *)
 
-let print_var_def name body typ =
+let print_named_def name body typ =
   [< 'sTR "*** [" ; 'sTR name ; 'sPC; 
      hOV 0 [< 'sTR "="; prterm body; 'sPC; 'sTR ": "; prtype typ >] ;
      'sTR "]"; 'fNL >]
 
-let print_var_decl name typ =
+let print_named_assum name typ =
   [< 'sTR "*** [" ; 'sTR name ; 'sTR " : "; prtype typ; 'sTR "]"; 'fNL >]
 
-let print_var (id,c,typ) =
+let print_named_decl (id,c,typ) =
   let s = string_of_id id in
   match c with
-    | Some body -> print_var_def s body typ
-    | None -> print_var_decl s typ
+    | Some body -> print_named_def s body typ
+    | None -> print_named_assum s typ
 
 let assumptions_for_print lna =
   List.fold_right (fun na env -> add_name na env) lna empty_names_context
@@ -210,7 +210,7 @@ let print_extracted_mutual sp =
 let print_section_variable sp =
   let ((id,_,_) as d,_,_) = out_variable sp in
   let l = implicits_of_var id in
-  [< print_var d; print_impl_args l; 'fNL >]
+  [< print_named_decl d; print_impl_args l; 'fNL >]
 
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
@@ -432,7 +432,7 @@ let print_name name =
   with Not_found -> 
   try
     let (c,typ) = Global.lookup_named name in 
-    [< print_var (name,c,typ);
+    [< print_named_decl (name,c,typ);
        try print_impl_args (implicits_of_var name)
        with _ -> [<>] >]
   with Not_found -> error (str ^ " not a defined object")
@@ -458,7 +458,7 @@ let print_opaque_name name =
 	  print_typed_value (x, ty)
       | IsVar id ->
           let (c,ty) = lookup_named id env in 
-	  print_var (id,c,ty)
+	  print_named_decl (id,c,ty)
       | _ -> failwith "print_name"
   with Not_found -> 
     error ((string_of_id name) ^ " not declared")
@@ -471,7 +471,7 @@ let print_local_context () =
 	if "VARIABLE" = object_tag lobj then
           let (d,_,_) = out_variable sp in 
 	  [< print_var_rec rest;
-             print_var d >]
+             print_named_decl d >]
 	else 
 	  print_var_rec rest
     | _::rest -> print_var_rec rest
