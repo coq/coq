@@ -84,6 +84,10 @@ let rec replicate_msid meb mtb = match meb,mtb with
 
 (*S More functions concerning [module_path]. *)
 
+let rec mp_length = function
+  | MPdot (mp, _) -> 1 + (mp_length mp)
+  | _ -> 1
+
 let rec prefixes_mp mp = match mp with 
   | MPdot (mp',_) -> MPset.add mp (prefixes_mp mp')
   | _ -> MPset.singleton mp 
@@ -106,11 +110,6 @@ let rec modfile_of_mp mp = match mp with
   | MPdot (mp,_) -> modfile_of_mp mp 
   | _ -> raise Not_found
 
-let rec fst_level_module_of_mp mp = match mp with 
-  | MPdot (mp, l) when at_toplevel mp -> mp,l 
-  | MPdot (mp, l) -> fst_level_module_of_mp mp
-  | _ -> raise Not_found
-
 let rec parse_labels ll = function 
   | MPdot (mp,l) -> parse_labels (l::ll) mp 
   | mp -> mp,ll
@@ -119,13 +118,6 @@ let labels_of_mp mp = parse_labels [] mp
 
 let labels_of_kn kn = 
   let mp,_,l = repr_kn kn in parse_labels [l] mp
-
-let labels_after_prefix mp0 mp = 
-  let n0 = List.length (snd (labels_of_mp mp0)) 
-  and l = snd (labels_of_mp mp)
-  in 
-  assert (n0 <= List.length l);
-  list_skipn n0 l
 
 let rec add_labels_mp mp = function 
   | [] -> mp 

@@ -534,20 +534,20 @@ let rec pp_specif mpl = function
   | (l,Smodule mt) -> 
       hov 1 
 	(str "module " ++ 
-	 P.pp_short_module (id_of_label l) ++
+	 P.pp_module mpl (MPdot (List.hd mpl, l)) ++
 	 str " : " ++ fnl () ++ pp_module_type mpl None (* (Some l) *) mt)
   | (l,Smodtype mt) -> 
       hov 1
 	(str "module type " ++
-	 P.pp_short_module (id_of_label l) ++
+	 P.pp_module mpl (MPdot (List.hd mpl, l)) ++
 	 str " = " ++ fnl () ++ pp_module_type mpl None mt)
 
 and pp_module_type mpl ol = function 
   | MTident kn -> 
-      let mp,_,l = repr_kn kn in P.pp_long_module mpl (MPdot (mp,l)) 
+      let mp,_,l = repr_kn kn in P.pp_module mpl (MPdot (mp,l)) 
   | MTfunsig (mbid, mt, mt') -> 
       str "functor (" ++ 
-      P.pp_short_module (id_of_mbid mbid) ++
+      P.pp_module mpl (MPbound mbid) ++
       str ":" ++
       pp_module_type mpl None mt ++
       str ") ->" ++ fnl () ++
@@ -569,7 +569,7 @@ let rec pp_structure_elem mpl = function
   | (_,SEdecl d) -> pp_decl mpl d
   | (l,SEmodule m) ->
       hov 1 
-	(str "module " ++ P.pp_short_module (id_of_label l) ++ 
+	(str "module " ++ P.pp_module mpl (MPdot (List.hd mpl, l)) ++ 
 	 (* if you want signatures everywhere: *)
 	 (*i str " :" ++ fnl () ++ i*)
 	 (*i pp_module_type mpl None m.ml_mod_type ++ fnl () ++ i*)
@@ -578,14 +578,14 @@ let rec pp_structure_elem mpl = function
 	 pp_module_expr mpl (Some l) m.ml_mod_expr)
   | (l,SEmodtype m) -> 
       hov 1 
-	(str "module type " ++ P.pp_short_module (id_of_label l) ++
+	(str "module type " ++ P.pp_module mpl (MPdot (List.hd mpl, l)) ++
 	 str " = " ++ fnl () ++ pp_module_type mpl None m)
 
 and pp_module_expr mpl ol = function 
-  | MEident mp' -> P.pp_long_module mpl mp'
+  | MEident mp' -> P.pp_module mpl mp'
   | MEfunctor (mbid, mt, me) -> 
       str "functor (" ++ 
-      P.pp_short_module (id_of_mbid mbid) ++
+      P.pp_module mpl (MPbound mbid) ++
       str ":" ++
       pp_module_type mpl None mt ++
       str ") ->" ++ fnl () ++

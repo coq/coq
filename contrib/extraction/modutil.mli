@@ -34,12 +34,10 @@ val replicate_msid : module_expr_body -> module_type_body -> module_type_body
 
 (*s More utilities concerning [module_path]. *)
 
-val modfile_of_mp : module_path -> module_path
-val fst_level_module_of_mp : module_path -> module_path * label
+val mp_length : module_path -> int
 val prefixes_mp : module_path -> MPset.t
+val modfile_of_mp : module_path -> module_path
 val common_prefix_from_list : module_path -> module_path list -> module_path
-val labels_after_prefix : module_path -> module_path -> label list 
-val labels_of_mp : module_path -> module_path * label list
 val add_labels_mp : module_path -> label list -> module_path
 
 (*s Functions upon ML modules. *)

@@ -143,8 +143,7 @@ type ml_signature = (module_path * ml_module_sig) list
 module type Mlpp_param = sig
   val globals : unit -> Idset.t
   val pp_global : module_path list -> global_reference -> std_ppcmds
-  val pp_long_module : module_path list -> module_path -> std_ppcmds
-  val pp_short_module : identifier -> std_ppcmds
+  val pp_module : module_path list -> module_path -> std_ppcmds
 end
 
 module type Mlpp = sig

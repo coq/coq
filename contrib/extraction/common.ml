@@ -28,9 +28,16 @@ let keywords = ref Idset.empty
 let global_ids = ref Idset.empty
 let modular = ref false
 
+(* For each [global_reference], this table will contain the different parts 
+   of its renamings, in [string list] form. *)
 let renamings = Hashtbl.create 97
-let rename r s = Hashtbl.add renamings r s
+let rename r l = Hashtbl.add renamings r l
 let get_renamings r = Hashtbl.find renamings r 
+
+(* Idem for [module_path]. *)
+let mp_renamings = Hashtbl.create 97
+let mp_rename mp l = Hashtbl.add mp_renamings mp l
+let mp_get_renamings mp = Hashtbl.find mp_renamings mp 
 
 let modvisited = ref MPset.empty
 let modcontents = ref Gset.empty
@@ -39,11 +46,18 @@ let module_contents mp s = Gset.mem (mp,s) !modcontents
 
 let to_qualify = ref Refset.empty
 
+let mod_1st_level = ref Idmap.empty
+
 (*s Uppercase/lowercase renamings. *) 
 
 let is_upper s = match s.[0] with 'A' .. 'Z' -> true | _ -> false
 
 let is_lower s = match s.[0] with 'a' .. 'z' | '_' -> true | _ -> false
+
+(* This function creates from [id] a correct uppercase/lowercase identifier. 
+   This is done by adding a [Coq_] or [coq_] prefix. To avoid potential clashes 
+   with previous [Coq_id] variable, these prefixes are duplicated if already 
+   existing. *)
 
 let modular_rename up id = 
   let s = string_of_id id in
@@ -56,28 +70,6 @@ let modular_rename up id =
   else s
 
 let rename_module = modular_rename true 
-
-let print_labels = List.map (fun l -> rename_module (id_of_label l))
-
-let print_base_mp = function 
-  | MPfile d -> String.capitalize (string_of_id (List.hd (repr_dirpath d)))
-  | MPself msid -> rename_module (id_of_msid msid)
-  | MPbound mbid -> rename_module (id_of_mbid mbid)
-  | _ -> assert false
-
-(*s From a [module_path] to a list of [identifier]. *)
-
-let mp2l mp = 
-  let base_mp,l = labels_of_mp mp in 
-  if !modular || not (at_toplevel base_mp)
-  then (print_base_mp base_mp) :: (print_labels l)
-  else print_labels l 
-
-let string_of_modlist l = 
-  List.fold_right (fun s s' -> if s' = "" then s else s ^ "." ^ s') l ""
-
-let string_of_ren l s = 
-  if l = [] then s else (string_of_modlist l)^"."^s
 
 (* [clash mp0 l s mpl] checks if [mp0-l-s] can be printed as [l-s] when 
    [mpl] is the context of visible modules. More precisely, we check if 
@@ -132,6 +124,18 @@ let contents_first_level mp =
 
 (*s Initial renamings creation, for modular extraction. *) 
 
+let rec mp_create_modular_renamings mp = 
+  try mp_get_renamings mp 
+  with Not_found -> 
+    let ren = match mp with 
+      | MPdot (mp,l) -> 
+	  (rename_module (id_of_label l)) :: (mp_create_modular_renamings mp)
+      | MPself msid -> [rename_module (id_of_msid msid)]
+      | MPbound mbid -> [rename_module (id_of_mbid mbid)]
+      | MPfile f -> [String.capitalize (string_of_id (List.hd (repr_dirpath f)))]
+    in mp_rename mp ren; ren
+
+
 let create_modular_renamings struc = 
   let current_module = fst (List.hd struc) in 
   let modfiles = ref MPset.empty in 
@@ -140,14 +144,15 @@ let create_modular_renamings struc =
   (* 1) creates renamings of objects *)
   let add upper r = 
     let mp = modpath (kn_of_r r) in 
+    let l = mp_create_modular_renamings mp in 
+    let s = modular_rename upper (id_of_global r) in 
+    global_ids := Idset.add (id_of_string s) !global_ids;    
+    rename r (s::l); 
     begin try 
       let mp = modfile_of_mp mp in 
       if mp <> current_module then modfiles := MPset.add mp !modfiles
     with Not_found -> () 
     end; 
-    let s = modular_rename upper (id_of_global r) in 
-    global_ids := Idset.add (id_of_string s) !global_ids;    
-    Hashtbl.add renamings r s
   in
   Refset.iter (add true) u; 
   Refset.iter (add false) d; 
@@ -181,7 +186,7 @@ let create_modular_renamings struc =
   let needs_qualify r = 
     let mp = modpath (kn_of_r r) in 
     if (is_modfile mp) && mp <> current_module && 
-      (clash mp [] (get_renamings r) used_modules')
+      (clash mp [] (List.hd (get_renamings r)) used_modules')
     then to_qualify := Refset.add r !to_qualify
   in
   Refset.iter needs_qualify u;
@@ -190,29 +195,60 @@ let create_modular_renamings struc =
 
 (*s Initial renamings creation, for monolithic extraction. *)
 
+let begins_with_CoqXX s = 
+  (String.length s >= 4) && 
+  (String.sub s 0 3 = "Coq") &&
+  (try 
+     for i = 4 to (String.index s '_')-1 do 
+       match s.[i] with 
+	 | '0'..'9' -> () 
+	 | _ -> raise Not_found
+     done; 
+     true
+   with Not_found -> false)
+
+let mod_1st_level_rename l =
+  let coqid = id_of_string "Coq" in 
+  let id = id_of_label l in 
+  try 
+    let coqset = Idmap.find id !mod_1st_level in 
+    let nextcoq = next_ident_away coqid coqset in 
+    mod_1st_level := Idmap.add id (nextcoq::coqset) !mod_1st_level; 
+    (string_of_id nextcoq)^"_"^(string_of_id id) 
+  with Not_found -> 
+    let s = string_of_id id in 
+    if is_lower s || begins_with_CoqXX s then
+      (mod_1st_level := Idmap.add id [coqid] !mod_1st_level; "Coq_"^s)
+    else
+      (mod_1st_level := Idmap.add id [] !mod_1st_level; s)
+
+let rec mp_create_mono_renamings mp = 
+  try mp_get_renamings mp 
+  with Not_found -> 
+    let ren = match mp with 
+       | _ when (at_toplevel mp) -> [""]
+       | MPdot (mp,l) -> 
+	   let lmp = mp_create_mono_renamings mp in
+	   if lmp = [""] then (mod_1st_level_rename l)::lmp
+	   else (rename_module (id_of_label l))::lmp
+       | MPself msid -> [rename_module (id_of_msid msid)]
+       | MPbound mbid -> [rename_module (id_of_mbid mbid)]
+       | _ -> assert false
+    in mp_rename mp ren; ren
+
 let create_mono_renamings struc = 
-  let fst_level_modules = ref Idmap.empty in 
-  let { up = u ; down = d } = struct_get_references_list struc 
-  in 
-  (* 1) create renamings of objects *)
+  let { up = u ; down = d } = struct_get_references_list struc in 
   let add upper r = 
     let mp = modpath (kn_of_r r) in 
-    begin try 
-      let mp,l = fst_level_module_of_mp mp in
-      let id = id_of_label l in 
-      if Idmap.find id !fst_level_modules <> mp then 
-	error_module_clash (string_of_id id) 
-      else fst_level_modules := Idmap.add id mp !fst_level_modules
-    with Not_found -> ()
-    end;
-    let my_id = if upper then uppercase_id else lowercase_id in
+    let l = mp_create_mono_renamings mp in
+    let mycase = if upper then uppercase_id else lowercase_id in 
     let id = 
-      if at_toplevel (modpath (kn_of_r r)) then 
-	next_ident_away (my_id (id_of_global r)) (Idset.elements !global_ids)
-      else id_of_string (modular_rename upper (id_of_global r)) 
+      if l = [""] then 
+	next_ident_away (mycase (id_of_global r)) (Idset.elements !global_ids)
+      else id_of_string (modular_rename upper (id_of_global r))
     in 
     global_ids := Idset.add id !global_ids;    
-    Hashtbl.add renamings r (string_of_id id) 
+    rename r ((string_of_id id)::l) 
   in
   List.iter (add true) (List.rev u); 
   List.iter (add false) (List.rev d)
@@ -222,8 +258,7 @@ let create_mono_renamings struc =
 module TopParams = struct
   let globals () = Idset.empty
   let pp_global _ r = pr_id (id_of_global r)
-  let pp_long_module _ mp = str (string_of_mp mp)
-  let pp_short_module id = pr_id id
+  let pp_module _ mp = str (string_of_mp mp)
 end
 
 (*s Renaming issues for a monolithic or modular extraction. *)
@@ -234,62 +269,53 @@ module StdParams = struct
 
   (* TODO: remettre des conditions [lang () = Haskell] disant de qualifier. *)
 
+  let rec dottify = function 
+    | [] -> assert false 
+    | [s] -> s 
+    | s::[""] -> s 
+    | s::l -> (dottify l)^"."^s
+
   let pp_global mpl r = 
-    let s = get_renamings r in 
+    let ls = get_renamings r in 
+    let s = List.hd ls in 
     let mp = modpath (kn_of_r r) in 
-    let final = 
-      if mp = List.hd mpl then s (* simpliest situation *)
+    let ls = 
+      if mp = List.hd mpl then [s] (* simpliest situation *)
       else 
 	try (* has [mp] something in common with one of those in [mpl] ? *)
 	  let pref = common_prefix_from_list mp mpl in 
-	  let l = labels_after_prefix pref mp in 
-(*i TODO:  traiter proprement.
-          if clash pref l s mpl 
-	  then error_unqualified_name (string_of_ren (print_labels l) s) 
-	    (string_of_modlist (mp2l (List.hd mpl)))
-	  else i*) 
-	  string_of_ren (print_labels l) s
+	  (*i TODO: possibilité de clash i*)
+	  list_firstn ((mp_length mp)-(mp_length pref)+1) ls
 	with Not_found -> (* [mp] is othogonal with every element of [mp]. *)
-	  let base, l = labels_of_mp mp in 
-	  let short = string_of_ren (print_labels l) s in
-	  if !modular then 
-	    if (at_toplevel mp) && 
-	      not (Refset.mem r !to_qualify) && 
-	      not (clash base [] s mpl) 
-	    then short
-	    else (print_base_mp base)^"."^short
-	  else 
-	    if (at_toplevel base) 
-	    then short 
-	    else (print_base_mp base)^"."^short 
+	  let base = base_mp mp in 
+	  if !modular &&  
+	    (at_toplevel mp) && 
+	    not (Refset.mem r !to_qualify) && 
+	    not (clash base [] s mpl) 
+	  then snd (list_sep_last ls)
+	  else ls
     in 
     add_module_contents mp s; (* update the visible environment *)
-    str final
+    str (dottify ls)
 
-  let pp_long_module mpl mp = 
-    try (* has [mp] something in common with one of those in [mpl] ? *)
-      let pref = common_prefix_from_list mp mpl in 
-      let l = labels_after_prefix pref mp in 
-(*i   TODO: comment adapter cela ??   
-      if clash pref l s mpl 
-      then error_unqualified_name (string_of_ren (print_labels l) s) 
-	(string_of_modlist (mp2l (List.hd mpl))) 
-      else 
-i*)	
-      str (string_of_modlist (print_labels l))
-    with Not_found -> (* [mp] is othogonal with every element of [mp]. *)
-      let base, l = labels_of_mp mp in 
-      let short = string_of_modlist (print_labels l) in
-      if !modular then 
-	if (at_toplevel mp) 
-	then str short
-	else str ((print_base_mp base)^(if short = "" then "" else "."^short))
-      else 
-	if (at_toplevel base) 
-	then str short
-	else str ((print_base_mp base)^(if short = "" then "" else "."^short))
+  let pp_module mpl mp = 
+    let ls = 
+      if !modular 
+      then mp_create_modular_renamings mp 
+      else mp_create_mono_renamings mp 
+    in 
+    let ls = 
+      try (* has [mp] something in common with one of those in [mpl] ? *)
+	let pref = common_prefix_from_list mp mpl in 
+	(*i TODO: clash possible i*)
+	list_firstn ((mp_length mp)-(mp_length pref)) ls
+      with Not_found -> (* [mp] is othogonal with every element of [mp]. *)
+	let base = base_mp mp in 
+	if !modular && (at_toplevel mp) 
+	then snd (list_sep_last ls)
+	else ls
+    in str (dottify ls) 
 
-  let pp_short_module id = str (rename_module id)
 end
 
 module ToplevelPp = Ocaml.Make(TopParams)
@@ -346,6 +372,7 @@ let print_one_decl struc mp decl =
 let print_structure_to_file f prm struc =
   cons_cofix := Refset.empty;
   Hashtbl.clear renamings;
+  mod_1st_level := Idmap.empty; 
   modcontents := Gset.empty;
   modvisited := MPset.empty; 
   set_keywords ();
