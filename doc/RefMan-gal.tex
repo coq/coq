@@ -391,7 +391,7 @@ for {\tt [}~{\localassums$_{1}$} {\tt ](} {\ldots} {\tt ([}
 
 \medskip
 \Rem The types of variables may be omitted in an
-abstraction when they can be synthetized by the system.
+abstraction when they can be synthesized by the system.
 
 \Rem Local definitions may appear inside brackets mixed with
 assumptions. Obviously, this is expanded into unary abstractions
@@ -554,7 +554,7 @@ that the terms occurring in the sentences are well-typed.
 The declaration mechanism allows the user to specify his own basic
 objects. Declared objects play the role of axioms or parameters in
 mathematics. A declared object is an {\ident} associated to a \term. A
-declaration is accepted by {\Coq} iff this {\term} is a correct type 
+declaration is accepted by {\Coq} if and only if this {\term} is a correct type 
 in the current context of the declaration and \ident\ was
 not previously defined in the same module. This {\term}
 is considered to be the type, or specification, of the \ident.
@@ -601,7 +601,7 @@ equivalent to {\tt Axiom}.
   names comprising the list \nelist{\nelist{\ident}{,}:{\term}}{;}
 \item {\tt Hypothesis \nelist{\nelist{\ident}{,} $\;$:$\;$ {\term}}{;} {\tt
  .}} \comindex{Hypothesis}\\  % Ligne trop longue
-  \texttt{Hypothsis} is a synonymous of \texttt{Variable}
+  \texttt{Hypothesis} is a synonymous of \texttt{Variable}
 \end{Variants}
 
 \noindent {\bf Remark: } It is possible to replace {\tt Variable} by
@@ -620,7 +620,7 @@ to a term whereas declarations were just giving a type to a name. That
 is to say that the name of a defined object can be replaced at any
 time by its definition.  This replacement is called
 $\delta$-conversion\index{delta-reduction@$\delta$-reduction} (see section
-\ref{delta}).  A defined object is accepted by the system iff the
+\ref{delta}).  A defined object is accepted by the system if and only if the
 defining term is well-typed in the current context of the definition.
 Then the type of the name is the type of term. The defined name is
 called a {\em constant}\index{Constant} and one says that {\it the
@@ -679,7 +679,7 @@ definition is a kind of {\em macro}.
 %\comindex{Let}
 
 %This command makes definition that are stronger than \texttt{Local},
-%and weaker than \texttt{Definition}. The name {\ident} will be kown in the
+%and weaker than \texttt{Definition}. The name {\ident} will be known in the
 %current section and after having closed the current section, but will
 %be unknown after closing the section above the current section.
 
@@ -1189,10 +1189,15 @@ After a statement, Coq needs a proof.
 It is a synonymous of \texttt{Theorem}
 \item {\tt Remark {\ident} : {\type}.}\comindex{Remark}\\ 
 Same as {\tt Theorem} except
-that if this statement is in a section then the name {\ident} will be unknown
-when the current section (see \ref{Section}) will be closed. All
-proofs of  persistent objects (such as theorems) referring to {\ident}
-within the section will be replaced by the proof of  {\ident}.
+that if this statement is in one or more levels of sections then the
+name {\ident} will be accessible only prefixed by the sections names
+when the sections (see \ref{Section} and \ref{LongNames}) will be
+closed.
+%All proofs of  persistent objects (such as theorems) referring to {\ident}
+%within the section will be replaced by the proof of  {\ident}.
+\item {\tt Fact {\ident} : {\type}.}\comindex{Fact}\\ 
+Same as {\tt Remark} except
+that the innermost section name is dropped from the full name.
 \item {\tt Definition {\ident} : {\type}.} \\
 Allow to define a term of type {\type} using the proof editing mode. It
 behaves as {\tt Theorem} except the defined term will be transparent (see

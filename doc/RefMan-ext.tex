@@ -462,20 +462,6 @@ Definition id := (([X][x]x) :: ID).
 Check id.
 \end{coq_example}
 
-\section{Local definitions}
-\index{let in@{\tt let ... in}}
-In addition to the destructuring {\tt let} (see section
-\ref{Letin}), there is a possibility to define local terms inside a
-bigger term.
-There are currently two equivalent syntaxes for that:
-
-\medskip
-\begin{tabular}{lcl}
-{\term} & ::= & {\tt let} {\ident} {\tt =} {\term} {\tt in} {\term}\\
-  & $|$ & {\tt [} {\ident} {\tt =} {\term} {\tt ]} {\term}
-\end{tabular}
-\medskip
-
 \section{Section mechanism}\index{Sections}\label{Section}
 The sectioning mechanism allows to organize a proof in structured
 sections. Then local declarations become available (see section
@@ -522,14 +508,18 @@ Note the difference between the value of {\tt x'} inside section {\tt
 \item Most commands, like {\tt Hint \ident} or {\tt Syntactic
   Definition} which appear inside a section are cancelled when the
 section is closed.
-\item Usually, all identifiers must be distinct. 
-However, a name already used in a closed section (see \ref{Section})
-can be reused. In this case, the old name is no longer accessible.
-\item A module implicitly open a section. Be careful not to name a
-module with an identifier already used in the module (see \ref{compiled}).
+% See \ref{LongNames}
+%\item Usually all identifiers must be distinct. 
+%However, a name already used in a closed section (see \ref{Section})
+%can be reused. In this case, the old name is no longer accessible.
+
+% Obsolète
+%\item A module implicitly open a section. Be careful not to name a
+%module with an identifier already used in the module (see \ref{compiled}).
 \end{Remarks}
 
 \section{Libraries and long names}
+\label{LongNames}
 
 \paragraph{Libraries}
 
@@ -595,13 +585,24 @@ standard library of \Coq.
 \paragraph{Absolute and short names}
 
 The full name of a library, module, section, definition, theorem,
-... is called {\it absolute}. 
+... is called {\it absolute name}. 
 The final identifier (in the example
 above, it is {\tt eq}) is called {\it short name} (or sometimes {\it
 base name}.  {\Coq} maintains a {\it names table} mapping short names
 to absolute names. This greatly simplifies the notations.  {\Coq}
 cannot accept two constructions (definition, theorem, ...) with the
 same absolute name.
+
+\paragraph{The special case of remarks and facts}
+
+In contrast with definitions, lemmas, theorems, axioms and parameters,
+the absolute name of remarks includes the segment of sections in which
+it is defined. Concretely, if a remark {\tt R} is defined in
+subsection {\tt S2} of section {\tt S1} in module {\tt M}, then its
+absolute name is {\tt M.S1.S2.R}. The same for facts, except that the
+name of the innermost section is dropped from the full name. Then, if
+a fact {\tt F} is defined in subsection {\tt S2} of section {\tt S1}
+in module {\tt M}, then its absolute name is {\tt M.S1.F}.
 
 \paragraph{Visibility and qualified names}
 An absolute path is called {\it visible} when its base name suffices
