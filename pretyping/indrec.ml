@@ -169,51 +169,6 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) tyi cs recargs =
         let co = applist (mkConstruct cs.cs_cstr,params@realargs) in
 	mkApp (c, [|co|])
       else c
-(*
-    let c', largs = whd_stack c in
-    match kind_of_term c' with 
-      | Prod (n,t,c_0) ->
-          let (optionpos,rest) = 
-	    match recargs with 
-	      | [] -> None,[] 
-	      | Param _ :: rest -> (None,rest)
-	      | Norec :: rest   -> (None,rest)
-	      | Imbr _ :: rest  -> 
-		  warning "Ignoring recursive call"; (None,rest) 
-	      | Mrec j :: rest -> (depPvect.(j),rest)
-	  in 
-          (match optionpos with 
-	     | None -> 
-		 make_prod env
-		   (n,t,
-		    process_constr (push_rel (n,None,t) env) (i+1) c_0 rest 
-		      (mkApp (lift 1 co, [|mkRel 1|])))
-             | Some(dep',p) -> 
-		 let nP = lift (i+1+decP) p in
-		 let t_0 = process_pos env dep' nP (lift 1 t) in 
-		 make_prod_dep (dep or dep') env
-                   (n,t,
-		    mkArrow t_0
-		      (process_constr
-			 (push_rel (n,None,t)
-			    (push_rel (Anonymous,None,t_0) env))
-			 (i+2) (lift 1 c_0) rest
-			 (mkApp (lift 2 co, [|mkRel 2|])))))
-      | LetIn (n,b,t,c_0) ->
-	  mkLetIn (n,b,t,
-		   process_constr
-		     (push_rel (n,Some b,t) env)
-		     (i+1) c_0 recargs (lift 1 co))
-
-      | Ind ((_,tyi),_) -> 
-      	  let nP = match depPvect.(tyi) with 
-	    | Some(_,p) -> lift (i+decP) p
-	    | _ -> assert false in
-      	  let (_,realargs) = list_chop nparams largs in
-      	  let base = applist (nP,realargs) in
-          if dep then mkApp (base, [|co|]) else base
-      | _ -> assert false
-*)
   in
   let nhyps = List.length cs.cs_args in
   let nP = match depPvect.(tyi) with 
