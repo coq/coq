@@ -813,11 +813,11 @@ let rec optimize prm = function
   | Dglob (r,t) :: l ->
       let t = normalize t in
       let b,l = inline_glob r t l in 
+      let b = b || prm.modular || List.mem r prm.to_appear in 
       let t' = optimize_fix t in
       (try optimize_Dfix prm r t' b l 
       with Impossible -> 
-	if (b || prm.modular || List.mem r prm.to_appear) then 
-	  Dglob (r,t') :: (optimize prm l)
+	if b then Dglob (r,t') :: (optimize prm l)
 	else optimize prm l)
   | d :: l -> d :: (optimize prm l)
 
@@ -825,8 +825,7 @@ and optimize_Dfix prm r t b l =
   match t with 
     | MLfix (_, f, c) -> 
 	if Array.length f = 1 then 
-	  if b then 
-	    Dfix ([|r|], c) :: (optimize prm l)
+	  if b then Dfix ([|r|], c) :: (optimize prm l)
 	  else optimize prm l
 	else 
 	  let v = try 
@@ -834,7 +833,7 @@ and optimize_Dfix prm r t b l =
 	    Array.map (fun id -> locate (make_qualid d id)) f 
 	  with Not_found -> raise Impossible 
 	  in 
-	  let b,l = expunge_fix_decls prm v c (prm.modular || b) l in 
+	  let b,l = expunge_fix_decls prm v c b l in 
 	  if b then Dfix (v, c) :: (optimize prm l)
 	  else optimize prm l 
     | _ -> raise Impossible
