@@ -348,23 +348,25 @@ GEXTEND Gram
       | IDENT "Coercion"; qid = qualidarg; ":="; c = def_body ->
           let s = Ast.coerce_to_var "qid" qid in
           <:ast< (DEFINITION "COERCION" ($VAR $s) $c) >>
-      | IDENT "Coercion"; IDENT "Local"; s = identarg; ":="; 
+      | IDENT "Coercion"; IDENT "Local"; qid = qualidarg; ":="; 
 	 c = constrarg ->
-          <:ast< (DEFINITION "LCOERCION" $s $c) >>
-      | IDENT "Coercion"; IDENT "Local"; s = identarg; ":="; 
+          let s = Ast.coerce_to_var "qid" qid in
+	    <:ast< (DEFINITION "LCOERCION" ($VAR $s) $c) >>
+      | IDENT "Coercion"; IDENT "Local"; qid = qualidarg; ":="; 
 	 c1 = Constr.constr; ":"; c2 = Constr.constr ->
-          <:ast< (DEFINITION "LCOERCION" $s (CONSTR (CAST $c1 $c2))) >>
+          let s = Ast.coerce_to_var "qid" qid in
+          <:ast< (DEFINITION "LCOERCION" ($VAR $s) (CONSTR (CAST $c1 $c2))) >>
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = qualidarg;
          ":"; c = qualidarg; ">->"; d = qualidarg ->
           <:ast< (COERCION "LOCAL" "IDENTITY" $f $c $d) >>
       | IDENT "Identity"; IDENT "Coercion"; f = qualidarg; ":";
          c = qualidarg; ">->"; d = qualidarg ->
           <:ast< (COERCION "" "IDENTITY" $f $c $d) >>
-      | IDENT "Coercion"; IDENT "Local"; f = qualidarg; ":"; c = qualidarg;
+      | IDENT "Coercion"; IDENT "Local"; qid = qualidarg; ":"; c = qualidarg;
         ">->"; d = qualidarg ->
-          <:ast< (COERCION "LOCAL" "" $f $c $d) >>
-      | IDENT "Coercion"; f = qualidarg; ":"; c = qualidarg; ">->";
-         d = qualidarg -> <:ast< (COERCION "" "" $f $c $d) >>
+          <:ast< (COERCION "LOCAL" "" $qid $c $d) >>
+      | IDENT "Coercion"; qid = qualidarg; ":"; c = qualidarg; ">->";
+         d = qualidarg -> <:ast< (COERCION "" "" $qid $c $d) >>
       | IDENT "Class"; IDENT "Local"; c = qualidarg ->
           <:ast< (CLASS "LOCAL" $c) >>
       | IDENT "Class"; c = qualidarg -> <:ast< (CLASS "" $c) >>
