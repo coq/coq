@@ -63,6 +63,10 @@ Tactic Definition Number lvar := (NumberAux lvar O).
 Tactic Definition BuildVarList FT trm :=
   Let lvar = (SeekVar FT trm) In
   (Number lvar).
+V7only [
+(*Used by contrib Maple *)
+Tactic Definition build_var_list := BuildVarList.
+].
 
 Recursive Tactic Definition Assoc elt lst :=
   Match lst With
@@ -282,6 +286,10 @@ Meta Definition InitExp FT trm :=
   Match Eval Cbv Beta Delta [Adiv] Iota in (Adiv FT) With
   | [(Some ? ?1)] -> Eval Cbv Beta Delta [?1] in e
   | _ -> e.
+V7only [
+(*Used by contrib Maple *)
+Tactic Definition init_exp := InitExp.
+].
 
 (**** Inverses simplification ****)
 
