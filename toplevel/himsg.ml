@@ -361,6 +361,8 @@ let explain_type_error k ctx = function
   | NotProduct c ->
       explain_not_product k ctx c
   (* Pattern-matching errors *)
+  | BadPattern (c,t) ->
+      explain_bad_pattern k ctx c t
   | BadConstructor (c,ind) ->
       explain_bad_constructor k ctx c ind
   | WrongNumargConstructor (c,n) ->
