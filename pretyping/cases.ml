@@ -328,7 +328,7 @@ let check_number_of_regular_eqns eqns =
   let n =
     List.fold_left(fun i eqn ->if is_regular eqn then i+1 else i) 0 eqns in
   match n with
-    | 0 -> warning "Found several default clauses, kept the first one"
+    | 0 -> (* warning "Found several default clauses, kept the first one" *) ()
     | 1 -> ()
     | n -> errorlabstrm "build_leaf" [<'sTR "Some clauses are redondant" >]
 
