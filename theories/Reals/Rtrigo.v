@@ -19,10 +19,7 @@ Require Rsigma.
 Require Rlimit.
 Require Binome.
 Require Export Rtrigo_def.
-
-Lemma Ropp_mul3 : (r1,r2:R) ``r1*(-r2) == -(r1*r2)``.
-Intros; Rewrite <- Ropp_mul1; Ring.
-Qed.
+Require Export Rtrigo_alt.
 
 (* Here, we have the euclidian division *)
 (* This lemma is used in the proof of sin_eq_0 : (sin x)=0<->x=kPI *)
@@ -288,32 +285,10 @@ Qed.
 (* Using series definitions of cos and sin                       *)
 (*****************************************************************)
 
-Definition sin_term [a:R] : nat->R := [i:nat] ``(pow (-1) i)*(pow a (plus (mult (S (S O)) i) (S O)))/(INR (fact (plus (mult (S (S O)) i) (S O))))``.
-
-Definition cos_term [a:R] : nat->R := [i:nat] ``(pow (-1) i)*(pow a (mult (S (S O)) i))/(INR (fact (mult (S (S O)) i)))``.
-
-Definition sin_approx [a:R;n:nat] : R := (sum_f_R0 (sin_term a) n).
-
-Definition cos_approx [a:R;n:nat] : R := (sum_f_R0 (cos_term a) n).
-
-Axiom sin_bound : (a:R)(n:nat) ``0<=a``->``a<=PI``->``(sin_approx a (plus (mult (S (S O)) n) (S O)))<=(sin a)<=(sin_approx a (mult (S (S O)) (plus n (S O))))``.
-
-Axiom cos_bound : (a:R)(n:nat) ``-PI/2<=a``->``a<=PI/2``->``(cos_approx a (plus (mult (S (S O)) n) (S O)))<=(cos a)<=(cos_approx a (mult ((S (S O))) (plus n (S O))))``.
-
 Definition sin_lb [a:R] : R := (sin_approx a (3)).
 Definition sin_ub [a:R] : R := (sin_approx a (4)).
 Definition cos_lb [a:R] : R := (cos_approx a (3)).
 Definition cos_ub [a:R] : R := (cos_approx a (4)).
-
-Lemma PI_4 : ``PI<=4``.
-Assert H0 := (PI_ineq O).
-Elim H0; Clear H0; Intros _ H0.
-Unfold tg_alt PI_tg in H0; Simpl in H0.
-Rewrite Rinv_R1 in H0; Rewrite Rmult_1r in H0; Unfold Rdiv in H0.
-Apply Rle_monotony_contra with ``/4``.
-Apply Rlt_Rinv; Sup0.
-Rewrite <- Rinv_l_sym; [Rewrite Rmult_sym; Assumption | DiscrR].
-Qed.
 
 Lemma sin_lb_gt_0 : (a:R) ``0<a``->``a<=PI/2``->``0<(sin_lb a)``.
 Intros.
