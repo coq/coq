@@ -75,6 +75,7 @@ OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
 CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo pa_ifdef.cmo q_MLast.cmo
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
+LOGICDEP=sed -n -e 's|^(\*.*logic: "\(.*\)".*\*)$$|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
 GLOB=           # is "-dump-glob file" when making the doc
@@ -531,7 +532,9 @@ LOGICVO=\
  theories/Logic/Classical_Pred_Type.vo  theories/Logic/Classical_Prop.vo \
  theories/Logic/ClassicalFacts.vo       theories/Logic/ChoiceFacts.vo \
  theories/Logic/Berardi.vo       	theories/Logic/Eqdep_dec.vo \
- theories/Logic/Decidable.vo            theories/Logic/JMeq.vo
+ theories/Logic/Decidable.vo            theories/Logic/JMeq.vo \
+ theories/Logic/ClassicalDescription.vo theories/Logic/ClassicalChoice.vo \
+ theories/Logic/RelationalChoice.vo
 
 ARITHVO=\
  theories/Arith/Arith.vo        theories/Arith/Gt.vo          \
@@ -793,7 +796,7 @@ newtheories/%.v: theories/%.vo
 	@cp -f theories/$*.v8  newtheories/$*.v
 
 theories/%.vo: theories/%.v states/initial.coq
-	$(BOOTCOQTOP) $(TRANSLATE) -compile theories/$*
+	$(BOOTCOQTOP) $(TRANSLATE) `$(LOGICDEP) $<` -compile theories/$*
 
 newcontrib/%.v: contrib/%.vo
 	@$(MKDIR) newcontrib/`dirname $*`
@@ -806,7 +809,7 @@ newtheories/Init/%.vo: $(BESTCOQTOP) newtheories/Init/%.v
 	$(BOOTCOQTOP) -nois -compile $*
 
 newtheories/%.vo: newtheories/%.v states/initialnew.coq
-	$(BOOTCOQTOP) -compile newtheories/$*
+	$(BOOTCOQTOP) `$(LOGICDEP) $<` -compile newtheories/$*
 
 newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
 	$(BOOTCOQTOP) -compile newcontrib/$*
