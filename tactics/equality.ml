@@ -445,35 +445,28 @@ let discriminable env sigma t1 t2 =
 
    the continuation then constructs the case-split.
  *)
+let push_rel_type sigma (na,t) env =
+  push_rel (na,make_typed t (get_sort_of env sigma t)) env
+
+let push_rels vars env =
+  List.fold_right (fun nvar env -> push_rel_type Evd.empty nvar env) vars env
 
 let descend_then sigma env head dirn =
   let IndType (indf,_) as indt =
     try find_inductive env sigma (get_type_of env sigma head)
     with Not_found -> assert false in
-  let mispec,params = dest_ind_family indf in
-  let construct =
-    mkMutConstruct (ith_constructor_of_inductive(mis_inductive mispec) dirn) in
-  let dirn_cty = 
-    strong (fun _ _ -> whd_castapp) env sigma
-      (type_of env sigma (applist(construct,params))) in
-  let dirn_nlams = nb_prod dirn_cty in
-  let (_,dirn_env) = add_prods_rel sigma (dirn_cty,env) in
+  let mispec,_ = dest_ind_family indf in
+  let cstr = get_constructors indf in
+  let dirn_nlams = cstr.(dirn-1).cs_nargs in
+  let dirn_env = push_rels cstr.(dirn-1).cs_args env in
   (dirn_nlams,
    dirn_env,
    (fun dirnval (dfltval,resty) ->
       let aritysign,_ = get_arity env sigma indf in
       let p = lam_it (lift (mis_nrealargs mispec) resty) aritysign in
-      let nb_prodP = nb_prod p in
-      let bty,_ =
-	type_case_branches env sigma indt (type_of env sigma p) p head in
       let build_branch i =
 	let result = if i = dirn then dirnval else dfltval in
-	let nlams = nb_prod bty.(i-1) in
-	let typstack,_,_ =
-	  push_and_liftl (nlams-nb_prodP) [] bty.(i-1) [] in
-	let _,branchval,_ =
-	  lam_and_popl_named (nlams-nb_prodP) typstack result [] in
-	branchval 
+	it_lambda_name env result cstr.(i-1).cs_args
       in
       mkMutCase (make_default_case_info mispec) p head 
 	(List.map build_branch (interval 1 (mis_nconstr mispec)))))
@@ -510,24 +503,20 @@ let construct_discriminator sigma env dirn c sort =
   let arsign,arsort = get_arity env sigma indf in
   let (true_0,false_0,sort_0) = 
     match necessary_elimination arsort (destSort sort) with
-      | Type_Type ->
-	  build_UnitT (), build_EmptyT (),
-	  (DOP0(Sort (Type(dummy_univ))))
-      | _ ->
-	  build_True (), build_False (), (DOP0(Sort (Prop Null))) 
+      | Type_Type -> build_UnitT (), build_EmptyT (), (Type dummy_univ)
+      | _         -> build_True (),  build_False (),  (Prop Null)
   in
-  let p = lam_it sort_0 arsign in
-  let bty,_ = type_case_branches env sigma indt (type_of env sigma p) p c in
+  let p = lam_it (mkSort sort_0) arsign in
+  let cstrs = get_constructors indf in
   let build_branch i =
-    let nlams = nb_prod bty.(i-1) in
     let endpt = if i = dirn then true_0 else false_0 in
-    lambda_ize nlams bty.(i-1) endpt 
+    lam_it endpt cstrs.(i).cs_args 
   in
-  let build_match () =
+  let build_match =
     mkMutCase (make_default_case_info mispec) p c 
-      (List.map build_branch (interval 1 (mis_nconstr mispec)))
+      (List.map build_branch (interval 0 (mis_nconstr mispec)))
   in
-  build_match()
+  build_match
     
 let rec build_discriminator sigma env dirn c sort = function
   | [] -> construct_discriminator sigma env dirn c sort

@@ -51,26 +51,6 @@ open Pattern
 
  *)
 
-let named_push_and_liftl env n hyps t l =
-  let rec pushrec = function
-    | (0, t, (hyps,l)) -> (hyps,t,l)
-    | (n, (DOP2(Prod,t,DLAM(na,b))), (hyps,l)) -> 
-       pushrec (n-1, b, (push_and_lift (Environ.named_hd env t na,t) hyps l))
-    | (n, (DOP2(Cast,t,_)), (hyps,l)) -> pushrec (n,t,(hyps,l))
-    | _ -> error "push_and_liftl"
-  in 
-  pushrec (n,t,(hyps,l))
-
-let named_push_lambda_and_liftl env n hyps t l = 
-  let rec pushrec = function
-    | (0, t, (hyps,l)) -> (hyps,t,l)
-    | (n, (DOP2(Lambda,t,DLAM(na,b))), (hyps,l)) ->
-       pushrec (n-1, b, (push_and_lift (Environ.named_hd env t na,t) hyps l))
-    | (n, (DOP2(Cast,t,_)), (hyps,l)) -> pushrec (n,t,(hyps,l))
-    | _ -> error "push_and_liftl"
-  in 
-  pushrec (n,t,(hyps,l))
-
 let dest_match_eq gls eqn =
   try 
     pf_matches gls (eq_pattern ()) eqn
