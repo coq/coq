@@ -243,6 +243,7 @@ GEXTEND Gram
 	  (* Delimiter "N" implicitly moved to "nat" in V7 *)
 	  let key = if key = "N" then "nat" else key in
 	  let key = if key = "P" then "positive" else key in
+	  let key = if key = "T" then "type" else key in
 	  CDelimiters (loc,key,c) ] ]
   ;
   constr91:
