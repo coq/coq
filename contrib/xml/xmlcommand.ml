@@ -930,6 +930,6 @@ let uri_of_dirpath dir =
 let _ =
   Library.set_xml_require
     (fun d -> theory_output_string 
-      (Printf.sprintf "Require <a href=\"theory:%s.theory\">%s</a>"
+      (Printf.sprintf "Require <a href=\"theory:%s.theory\">%s</a>.<br/>"
        (uri_of_dirpath d) (Names.string_of_dirpath d)))
 ;;
