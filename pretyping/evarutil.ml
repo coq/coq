@@ -203,7 +203,7 @@ let make_instance_with_rel env =
       env [] in
   snd (fold_rel_context
     (fun env (_,b,_) (i,l) -> (i-1, if b=None then mkRel i :: l else l))
-    env (n+1,vars))
+    env (n,vars))
 
 let make_subst env args =
   snd (fold_named_context
