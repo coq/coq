@@ -78,6 +78,16 @@ let constr_of_Constr_context = function
     anomalylabstrm "constr_of_Constr_context" [<'sTR
       "Not a Constr_context tactic_arg">]
 
+(* Gives identifiers and makes the possible injection constr -> ident *)
+let make_ids ast = function
+  | Identifier id -> id
+  | Constr c ->
+    (try destVar c with
+    | Invalid_argument "destVar" ->
+      anomalylabstrm "make_ids"
+      [<'sTR "This term cannot be reduced to an identifier"; 'fNL; print_ast ast>])
+  | _ -> anomalylabstrm "make_ids" [< 'sTR "Not an identifier" >]
+
 (* Transforms a named_context into a (string * constr) list *)
 let make_hyps = List.map (fun (id,_,typ) -> (string_of_id id,body_of_type typ))
 
@@ -514,11 +524,11 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
        with | Not_found ->
          (try (vcontext_interp (evc,env,lfun,lmatch,goalopt,debug) (lookup s))
           with | Not_found -> VArg (Identifier (id_of_string s))))
-    | Node(loc,"METAID",[Num(_,n)]) ->
+(*    | Node(loc,"METAID",[Num(_,n)]) ->
       (try VArg (Identifier (destVar (List.assoc n lmatch))) with
        | Invalid_argument "destVar" ->
          user_err_loc (loc, "Tacinterp.val_interp",[<'sTR
-          "Metavariable "; 'iNT n; 'sTR " must be an identifier" >]))
+          "Metavariable "; 'iNT n; 'sTR " must be an identifier" >]))*)
     | Str(_,s) -> VArg (Quoted_string s)
     | Num(_,n) -> VArg (Integer n)
     | Node(_,"COMMAND",[c]) ->
@@ -534,7 +544,7 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
       VArg (Redexp (redexp_of_ast (evc,env,lfun,lmatch,goalopt,debug)
         (redname,args)))
     | Node(_,"CLAUSE",cl) ->
-      VArg (Clause (List.map (fun ast -> id_of_Identifier (unvarg (val_interp
+      VArg (Clause (List.map (fun ast -> make_ids ast (unvarg (val_interp
         (evc,env,lfun,lmatch,goalopt,debug) ast))) cl))
     | Node(_,"TACTIC",[ast]) ->
       VArg (Tac ((tac_interp lfun lmatch debug ast),ast))
@@ -964,9 +974,8 @@ and com_interp (evc,env,lfun,lmatch,goalopt,debug) = function
       errorlabstrm "com_interp" [<'sTR "Unbound context identifier";
         print_ast ast>])
   | c ->
-      VArg (Constr
-	      (interp_constr_gen evc env (constr_list goalopt lfun) lmatch
-		 c None))
+    VArg (Constr
+      (interp_constr_gen evc env (constr_list goalopt lfun) lmatch c None))
 
 (* Interprets a CASTEDCOMMAND expression *)
 and cast_com_interp (evc,env,lfun,lmatch,goalopt,debug) com =

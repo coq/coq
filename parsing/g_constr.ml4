@@ -42,9 +42,7 @@ GEXTEND Gram
     [ [ c = Prim.ast -> c ] ]
   ;
   constr:
-    [ [ c = constr8 -> c 
-      (*| IDENT "Context"; id = ident; IDENT "With"; c = constr8 ->
-        <:ast< (CONTEXT $id $c) >>*)
+    [ [ c = constr8 -> c
       | IDENT "Inst"; id = ident; "["; c = constr8; "]" ->
         <:ast< (CONTEXT $id $c) >>
       | IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = constr8 ->

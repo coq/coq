@@ -52,7 +52,7 @@ GEXTEND Gram
   ;
   idmeta_arg:
     [ [ id = Constr.ident -> id
-      | "?"; n = Prim.number -> <:ast< (METAID $n) >> ] ]
+      | "?"; n = Prim.number -> <:ast< (COMMAND (META $n)) >> ] ]
   ;
   qualidarg:
     [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST l)) >>
@@ -364,7 +364,7 @@ GEXTEND Gram
       |	IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = Constr.constr ->
         <:ast< (COMMAND (EVAL $c (REDEXP $rtc))) >>
       | IDENT "Inst"; id = identarg; "["; c = Constr.constr; "]" ->
-        <:ast< (CONTEXT $id $c) >>
+        <:ast< (COMMAND (CONTEXT $id $c)) >>
       |	"'"; c = constrarg -> c ] ]
   ;
   simple_tactic:
