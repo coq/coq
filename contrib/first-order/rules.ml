@@ -27,6 +27,7 @@ type seqtac= (Sequent.t -> tactic) -> Sequent.t -> tactic
 type lseqtac= global_reference -> seqtac
 
 let wrap n b tacrec seq gls=
+  check_for_interrupt ();
   let nc=pf_hyps gls in
   let rec aux i nc=
     if i<=0 then seq else 
