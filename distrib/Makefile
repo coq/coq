@@ -47,6 +47,7 @@ noarguments:
 	@echo "make contrib-ftp-install	       |prepared"
 	@echo "make deb		 to build a debian package"
 	@echo "make win		 to build a windows package"
+	@echo "make macosx	 to build a MacOS-X package on a disk image"
 
 ################## Main targets
 
@@ -58,7 +59,7 @@ tag:
 	echo -n "Tagging the archive with version number $(DASHEDVERSION)...";\
 	cvs rtag -F $(DASHEDVERSION) $(MAJORVERSION)
 
-tar-gz:
+tar-gz: 
 	@echo -n Exporting a fresh copy of the archive...
 	@- rm -rf ${COQPACKAGE}
 	@cvs export -d $(COQPACKAGE) -r $(DASHEDVERSION) $(MAJORVERSION)
@@ -118,7 +119,11 @@ arch-tar-gz-final:
 	tar -cvf ${DISTRIBDIR}/$(COQPACKAGE)-$(SYSTEM)-$(ARCH).tar *)
 	gzip --best $(COQPACKAGE)-$(SYSTEM)-$(ARCH).tar
 
-arch-tar-gz: ${COQPACKAGE}.tar.gz
+arch-tar-gz:
+	$(MAKE) arch-image
+	$(MAKE) arch-tar-gz-final
+
+arch-image: ${COQPACKAGE}.tar.gz
 	@echo "Building $(COQPACKAGE)-$(SYSTEM)-$(ARCH).tar.gz to be installed in /usr/local/"
 	@echo "Warning: leading / is removed"
 	- mkdir -p ${ARCHBUILDROOT}
@@ -126,11 +131,10 @@ arch-tar-gz: ${COQPACKAGE}.tar.gz
 	rm -rf ${COQPACKAGE} || true;\
 	gunzip -c $(DISTRIBDIR)/${COQPACKAGE}.tar.gz | tar xf -;\
 	cd ${COQPACKAGE};\
-	./configure -bindir /usr/local/bin -libdir /usr/local/lib/coq -mandir /usr/local/man -emacs emacs -emacslib /usr/local/lib/emacs/site-lisp -opt;\
+	./configure -bindir /usr/local/bin -libdir /usr/local/lib/coq -mandir /usr/local/man -emacs emacs -emacslib /usr/local/lib/emacs/site-lisp -opt -reals all;\
 	make world check;\
 	rm -rf ${ARCHBUILDROOT}/buildroot/* || true;\
 	make -e COQINSTALLPREFIX=${ARCHBUILDROOT}/buildroot/ install)
-	$(MAKE) arch-tar-gz-final
 
 win: ${COQPACKAGE}.tar.gz
 	@echo "Building $(COQPACKAGE)-Win.zip to be installed in \coq\bin"
@@ -323,3 +327,39 @@ deb: prep-deb
 deb-sign: prep-deb
 	cd deb_build/${COQPACKAGE} ; dpkg-buildpackage -rfakeroot 2>&1 | tee ../../deb.log
 	(lintian deb_build/${COQDEBCHANGES} | tee lintian.log) || true
+
+macosx:
+	# Builds the /usr/local/bin image
+	$(MAKE) arch-image
+	# Builds the pkg file
+	$(MAKE) macosx-pkg
+	$(MAKE) macosx-dmg
+
+macosx-pkg:
+	# Builds the info file
+	sed -e "s/VERSION/${VERSION}/g" MacOS-X/coq.info.template > MacOS-X/coq-${VERSION}.info
+	# Builds the resources files
+	rm -rf MacOS-X/Resources
+	mkdir MacOS-X/Resources
+	sed -e "s/VERSION/${VERSION}/g" MacOS-X/Licence.rtf.template > MacOS-X/Resources/License.rtf
+	sed -e "s/VERSION/${VERSION}/g" MacOS-X/Welcome.rtf.template > MacOS-X/Resources/Welcome.rtf
+	cp MacOS-X/ReadMe.rtf.template MacOS-X/Resources/ReadMe.rtf
+	# Builds the pkg file
+	package MacOS-X/buildroot MacOS-X/coq-${VERSION}.info -r MacOS-X/Resources
+
+macosx-dmg:
+	rm -f coq-${VERSION}-macosx.dmg
+	# We successively :
+	# - create the dmg file
+	# - bind it to a device /dev/diskXs2 (name)
+	# - create the file system and name it "Coq X.X"
+	# - unbind the device to mount the image on /Volumes
+	# - copy the package
+	(export size=`du -s coq-${VERSION}.pkg | cut -dc -f 1`;\
+	hdiutil create -sectors `expr $$size + 1000` coq-${VERSION}-macosx.dmg;\
+	export name=`hdid -nomount coq-${VERSION}-macosx.dmg | tail -1 | cut -d" " -f 1`;\
+	newfs_hfs -v "Coq ${VERSION}" $$name;\
+	hdiutil eject $$name; hdid coq-${VERSION}-macosx.dmg;\
+	mkdir "/Volumes/Coq ${VERSION}/coq-${VERSION}.pkg";\
+	ditto -rsrcFork -v coq-${VERSION}.pkg "/Volumes/Coq ${VERSION}/coq-${VERSION}.pkg")
+
