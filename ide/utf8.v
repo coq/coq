@@ -3,8 +3,8 @@ Notation "∀ x : t , P" := (x:t)P (at level 1, x,t,P at level 10).
 Notation "∃ x : t , P" := (EXT x:t|P) (at level 1, x,t,P at level 10).
 Notation "x ∨ y" := (x \/ y) (at level 1, y at level 10).
 Notation "x ∧ y" := (x /\ y) (at level 1, y at level 10).
-Notation "x ⇒ y" := (x -> y) (at level 1, y at level 10).
-Notation "x ⇔ y" := (x <-> y) (at level 1, y at level 10).
+Notation "x → y" := (x -> y) (at level 1, y at level 10).
+Notation "x ↔ y" := (x <-> y) (at level 1, y at level 10).
 Notation "⌉ x" := (~x) (at level 1, x at level 10).
 
 (* Abstraction *)
