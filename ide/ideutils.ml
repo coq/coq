@@ -22,7 +22,7 @@ let process_pending () =
     ignore (Glib.Main.iteration false) 
   done
 
-let debug = ref false
+let debug = ref true
 
 let prerr_endline s =
   if !debug then  prerr_endline s else ()
@@ -49,7 +49,7 @@ let try_export file_name s =
   with e -> prerr_endline (Printexc.to_string e)
 
 let browse url =
-  let l,r = Preferences.current.cmd_browse in
+  let l,r = current.cmd_browse in
   ignore (Sys.command (l ^ url ^ r))
 
 let url_for_keyword =

@@ -5,7 +5,8 @@ open Ideutils
 
 let out_some s = match s with | None -> assert false | Some f -> f
 
-let cb = GtkBase.Clipboard.get Gdk.Atom.clipboard
+let cb_ = ref None
+let cb () = out_some !cb_
 let last_cb_content = ref ""
 
 let yes_icon = "gtk-yes"
@@ -79,6 +80,8 @@ let get_current_tab_label () = get_tab_label (notebook())#current_page
 
 let reset_tab_label i = set_tab_label i (get_tab_label i)
 
+let to_do_on_page_switch = ref []
+  
 module Vector = struct 
   type 'a t = 'a array ref
   let create () = ref [||]
@@ -835,11 +838,7 @@ object(self)
 			   ~stop:input_buffer#end_iter
 			   "error";
 			   Highlight.highlight_current_line input_buffer));
-(*    ignore (input_buffer#add_selection_clipboard cb);*)
-(*    ignore (input_view#connect#paste_clipboard
-              (fun () ->  match GtkBase.Clipboard.wait_for_text cb with
-		 | None -> prerr_endline "None selected";
-		 | Some t -> prerr_endline "Some selected"))*)
+    ignore (input_buffer#add_selection_clipboard (cb()))
 end
 
 let create_input_tab filename =
@@ -903,13 +902,13 @@ let main () =
   let accel_group = factory#accel_group in
 
   (* File Menu *)
-  let file_menu = factory#add_submenu "File" in
+  let file_menu = factory#add_submenu "_File" in
   let file_factory = new GMenu.factory file_menu ~accel_group in
 
   (* File/Load Menu *)
-  let load_m = file_factory#add_item "Open/Create" ~key:GdkKeysyms._O in
+  let load_m = file_factory#add_item "_Open/Create" ~key:GdkKeysyms._O in
   let load_f () = 	  
-    match GToolbox.select_file ~title:"Load file" () with 
+    match GToolbox.select_file ~title:"_Load file" () with 
       | None -> ()
       | Some f -> 
 	  try
@@ -937,7 +936,7 @@ let main () =
   ignore (load_m#connect#activate load_f);
 
   (* File/Save Menu *)
-  let save_m = file_factory#add_item "Save" ~key:GdkKeysyms._S in
+  let save_m = file_factory#add_item "_Save" ~key:GdkKeysyms._S in
   let save_f () = 
     let current = get_current_view () in
     try (match current.filename with 
@@ -960,7 +959,7 @@ let main () =
   ignore (save_m#connect#activate save_f);
 
   (* File/Save As Menu *)
-  let saveas_m = file_factory#add_item "Save as" in
+  let saveas_m = file_factory#add_item "S_ave as" in
   let saveas_f () = 
     let current = get_current_view () in
     try (match current.filename with 
@@ -994,7 +993,7 @@ let main () =
   
   
   (* File/Save All Menu *)
-  let saveall_m = file_factory#add_item "Save All" in
+  let saveall_m = file_factory#add_item "Sa_ve All" in
   let saveall_f () = 
     Vector.iter 
       (fun {view = view ; filename = filename} -> 
@@ -1013,7 +1012,7 @@ let main () =
   ignore (saveall_m#connect#activate saveall_f);
 
   (* File/Revert Menu *)
-  let revert_m = file_factory#add_item "Revert" in
+  let revert_m = file_factory#add_item "_Revert" in
   revert_m#misc#set_state `INSENSITIVE;
 
   (* File/Print Menu *)
@@ -1032,7 +1031,7 @@ let main () =
 	  let c = Sys.command cmd in
 	  !flash_info (cmd ^ if c = 0 then " succeeded" else " failed")
   in
-  let print_m = file_factory#add_item "Print" ~callback:print_f in
+  let print_m = file_factory#add_item "_Print" ~callback:print_f in
 
   (* File/Export to Menu *)
   let export_f kind () =
@@ -1057,24 +1056,24 @@ let main () =
 	  let c = Sys.command cmd in
 	  !flash_info (cmd ^ if c = 0 then " succeeded" else " failed")
   in
-  let file_export_m =  file_factory#add_submenu "Export to" in
+  let file_export_m =  file_factory#add_submenu "E_xport to" in
 
   let file_export_factory = new GMenu.factory file_export_m ~accel_group in
   let export_html_m = 
-    file_export_factory#add_item "Html" ~callback:(export_f "html") 
+    file_export_factory#add_item "_Html" ~callback:(export_f "html") 
   in
   let export_latex_m = 
-    file_export_factory#add_item "LaTeX" ~callback:(export_f "latex")
+    file_export_factory#add_item "_LaTeX" ~callback:(export_f "latex")
   in
   let export_dvi_m = 
-    file_export_factory#add_item "Dvi" ~callback:(export_f "dvi") 
+    file_export_factory#add_item "_Dvi" ~callback:(export_f "dvi") 
   in
   let export_ps_m = 
-    file_export_factory#add_item "Ps" ~callback:(export_f "ps") 
+    file_export_factory#add_item "_Ps" ~callback:(export_f "ps") 
   in
 
   (* File/Rehighlight Menu *)
-  let rehighlight_m = file_factory#add_item "Rehighlight" ~key:GdkKeysyms._L in
+  let rehighlight_m = file_factory#add_item "Reh_ighlight" ~key:GdkKeysyms._L in
   ignore (rehighlight_m#connect#activate 
 	    (fun () -> Highlight.highlight_all 
 	       (get_current_view()).view#buffer));
@@ -1102,10 +1101,36 @@ let main () =
 	| _ -> ()
     else exit 0
   in
-  let quit_m = file_factory#add_item "Quit" ~key:GdkKeysyms._Q ~callback:quit_f
+  let quit_m = file_factory#add_item "_Quit" ~key:GdkKeysyms._Q ~callback:quit_f
   in
   ignore (w#event#connect#delete (fun _ -> quit_f (); true));
 
+  (* Edit Menu *)
+  let edit_menu = factory#add_submenu "_Edit" in
+  let edit_f = new GMenu.factory edit_menu ~accel_group in
+  ignore(edit_f#add_item "Copy" ~key:GdkKeysyms._C ~callback:
+	    (fun () -> GtkSignal.emit_unit
+	       (get_current_view()).view#as_view 
+	       GtkText.View.Signals.copy_clipboard));
+  ignore(edit_f#add_item "Cut" ~key:GdkKeysyms._X ~callback:
+	      (fun () -> GtkSignal.emit_unit
+		 (get_current_view()).view#as_view 
+		 GtkText.View.Signals.cut_clipboard));
+  ignore(edit_f#add_item "Paste" ~key:GdkKeysyms._V ~callback:
+    (fun () -> GtkSignal.emit_unit
+       (get_current_view()).view#as_view GtkText.View.Signals.paste_clipboard));
+  ignore (edit_f#add_separator ());
+  let read_only_i = edit_f#add_check_item "Read only" ~active:false
+		      ~callback:(fun b -> 
+				   (get_current_view()).view#set_editable 
+				   (not b)) 
+  in
+  to_do_on_page_switch := 
+  (fun i -> 
+     let v = (get_input_view i).view in
+     read_only_i#set_active (not v#editable)
+  )::!to_do_on_page_switch;
+  
   (* Navigation Menu *)
   let navigation_menu =  factory#add_submenu "Navigation" in
   let navigation_factory = new GMenu.factory navigation_menu ~accel_group ~accel_modi:[`CONTROL ; `MOD1] in
@@ -1307,14 +1332,14 @@ let main () =
     help_factory#add_item "Help for keyword" ~key:GdkKeysyms._F1
     ~callback:(fun () ->
 		 let av = out_some ((get_current_view ()).analyzed_view) in 
-		 match GtkBase.Clipboard.wait_for_text cb with
-		   | _ -> 
+		 match GtkBase.Clipboard.wait_for_text (cb ()) with
+		   | None -> 
 		       prerr_endline "None selected";
 		       av#help_for_keyword ()
-		   (* | Some t ->
+		   | Some t ->
  		       prerr_endline "Some selected";
 		       prerr_endline t;
-		       browse_keyword t*))
+		       browse_keyword t)
   in
   let _ = help_factory#add_separator () in
   let about_m = help_factory#add_item "About" in
@@ -1443,8 +1468,12 @@ let main () =
 		   hb#set_position (w/2);
 		   hb2#set_position (h*4/5)
 		 end
-	    ))
-    
+	    ));
+  ignore(nb#connect#switch_page 
+	   ~callback:
+	   (fun i -> List.iter (function f -> f i) !to_do_on_page_switch)
+	)
+
 let start () = 
   cant_break ();
   Coq.init ();
@@ -1453,6 +1482,7 @@ let start () =
      GtkMain.Rc.add_default_file (Filename.concat (Sys.getenv "HOME") ".coqiderc");
   with Not_found -> ());
   ignore (GtkMain.Main.init ());
+  cb_ := Some (GtkBase.Clipboard.get Gdk.Atom.primary);
   Glib.Message.set_log_handler ~domain:"Gtk" ~levels:[`ERROR;`FLAG_FATAL;
 						      `WARNING;`CRITICAL]
     (fun ~level msg ->
