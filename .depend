@@ -6,6 +6,7 @@ kernel/environ.cmi: kernel/constant.cmi kernel/evd.cmi kernel/inductive.cmi \
     kernel/names.cmi kernel/sign.cmi kernel/term.cmi kernel/univ.cmi 
 kernel/evd.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi 
 kernel/generic.cmi: kernel/names.cmi lib/util.cmi 
+kernel/indtypes.cmi: kernel/environ.cmi kernel/inductive.cmi 
 kernel/inductive.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi 
 kernel/instantiate.cmi: kernel/environ.cmi kernel/names.cmi kernel/term.cmi 
 kernel/names.cmi: lib/pp.cmi 
@@ -13,8 +14,7 @@ kernel/reduction.cmi: kernel/closure.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/generic.cmi kernel/names.cmi kernel/term.cmi kernel/univ.cmi 
 kernel/sign.cmi: kernel/generic.cmi kernel/names.cmi kernel/term.cmi 
 kernel/sosub.cmi: kernel/term.cmi 
-kernel/term.cmi: lib/coqast.cmi kernel/generic.cmi kernel/names.cmi \
-    kernel/univ.cmi 
+kernel/term.cmi: kernel/generic.cmi kernel/names.cmi kernel/univ.cmi 
 kernel/type_errors.cmi: kernel/environ.cmi kernel/names.cmi lib/pp.cmi \
     kernel/sign.cmi kernel/term.cmi 
 kernel/typeops.cmi: kernel/environ.cmi kernel/names.cmi kernel/term.cmi \
@@ -56,10 +56,14 @@ kernel/generic.cmo: kernel/names.cmi lib/pp.cmi lib/util.cmi \
     kernel/generic.cmi 
 kernel/generic.cmx: kernel/names.cmx lib/pp.cmx lib/util.cmx \
     kernel/generic.cmi 
-kernel/inductive.cmo: kernel/names.cmi kernel/sign.cmi kernel/term.cmi \
-    kernel/inductive.cmi 
-kernel/inductive.cmx: kernel/names.cmx kernel/sign.cmx kernel/term.cmx \
-    kernel/inductive.cmi 
+kernel/indtypes.cmo: kernel/environ.cmi kernel/inductive.cmi \
+    kernel/reduction.cmi kernel/indtypes.cmi 
+kernel/indtypes.cmx: kernel/environ.cmx kernel/inductive.cmx \
+    kernel/reduction.cmx kernel/indtypes.cmi 
+kernel/inductive.cmo: kernel/generic.cmi kernel/names.cmi kernel/sign.cmi \
+    kernel/term.cmi lib/util.cmi kernel/inductive.cmi 
+kernel/inductive.cmx: kernel/generic.cmx kernel/names.cmx kernel/sign.cmx \
+    kernel/term.cmx lib/util.cmx kernel/inductive.cmi 
 kernel/instantiate.cmo: kernel/constant.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/generic.cmi kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
     kernel/term.cmi lib/util.cmi kernel/instantiate.cmi 
@@ -84,10 +88,10 @@ kernel/sosub.cmo: kernel/generic.cmi kernel/names.cmi kernel/term.cmi \
     lib/util.cmi kernel/sosub.cmi 
 kernel/sosub.cmx: kernel/generic.cmx kernel/names.cmx kernel/term.cmx \
     lib/util.cmx kernel/sosub.cmi 
-kernel/term.cmo: lib/coqast.cmi kernel/generic.cmi lib/hashcons.cmi \
-    kernel/names.cmi lib/pp.cmi kernel/univ.cmi lib/util.cmi kernel/term.cmi 
-kernel/term.cmx: lib/coqast.cmx kernel/generic.cmx lib/hashcons.cmx \
-    kernel/names.cmx lib/pp.cmx kernel/univ.cmx lib/util.cmx kernel/term.cmi 
+kernel/term.cmo: kernel/generic.cmi lib/hashcons.cmi kernel/names.cmi \
+    lib/pp.cmi kernel/univ.cmi lib/util.cmi kernel/term.cmi 
+kernel/term.cmx: kernel/generic.cmx lib/hashcons.cmx kernel/names.cmx \
+    lib/pp.cmx kernel/univ.cmx lib/util.cmx kernel/term.cmi 
 kernel/type_errors.cmo: kernel/environ.cmi kernel/names.cmi lib/pp.cmi \
     kernel/sign.cmi kernel/term.cmi kernel/type_errors.cmi 
 kernel/type_errors.cmx: kernel/environ.cmx kernel/names.cmx lib/pp.cmx \
@@ -103,13 +107,15 @@ kernel/typeops.cmx: kernel/constant.cmx kernel/environ.cmx kernel/evd.cmx \
     kernel/term.cmx kernel/type_errors.cmx kernel/univ.cmx lib/util.cmx \
     kernel/typeops.cmi 
 kernel/typing.cmo: kernel/constant.cmi kernel/environ.cmi kernel/generic.cmi \
-    kernel/inductive.cmi kernel/names.cmi lib/pp.cmi kernel/reduction.cmi \
-    kernel/sign.cmi kernel/term.cmi kernel/type_errors.cmi kernel/typeops.cmi \
-    kernel/univ.cmi lib/util.cmi kernel/typing.cmi 
+    kernel/indtypes.cmi kernel/inductive.cmi kernel/names.cmi lib/pp.cmi \
+    kernel/reduction.cmi kernel/sign.cmi kernel/term.cmi \
+    kernel/type_errors.cmi kernel/typeops.cmi kernel/univ.cmi lib/util.cmi \
+    kernel/typing.cmi 
 kernel/typing.cmx: kernel/constant.cmx kernel/environ.cmx kernel/generic.cmx \
-    kernel/inductive.cmx kernel/names.cmx lib/pp.cmx kernel/reduction.cmx \
-    kernel/sign.cmx kernel/term.cmx kernel/type_errors.cmx kernel/typeops.cmx \
-    kernel/univ.cmx lib/util.cmx kernel/typing.cmi 
+    kernel/indtypes.cmx kernel/inductive.cmx kernel/names.cmx lib/pp.cmx \
+    kernel/reduction.cmx kernel/sign.cmx kernel/term.cmx \
+    kernel/type_errors.cmx kernel/typeops.cmx kernel/univ.cmx lib/util.cmx \
+    kernel/typing.cmi 
 kernel/univ.cmo: kernel/names.cmi lib/pp.cmi lib/util.cmi kernel/univ.cmi 
 kernel/univ.cmx: kernel/names.cmx lib/pp.cmx lib/util.cmx kernel/univ.cmi 
 lib/coqast.cmo: lib/dyn.cmi lib/hashcons.cmi lib/coqast.cmi 

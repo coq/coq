@@ -23,14 +23,15 @@ INCLUDES=-I config -I lib -I kernel
 CONFIG=config/coq_config.cmo
 
 LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/hashcons.cmo \
-    lib/dyn.cmo lib/coqast.cmo
+    lib/dyn.cmo
 
 KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/sign.cmo kernel/evd.cmo kernel/constant.cmo \
        kernel/inductive.cmo kernel/sosub.cmo kernel/abstraction.cmo \
        kernel/environ.cmo kernel/instantiate.cmo \
        kernel/closure.cmo kernel/reduction.cmo \
-       kernel/type_errors.cmo kernel/typeops.cmo kernel/typing.cmo
+       kernel/type_errors.cmo kernel/typeops.cmo kernel/indtypes.cmo \
+       kernel/typing.cmo
 
 OBJS=$(CONFIG) $(LIB) $(KERNEL)
 
