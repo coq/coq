@@ -1,0 +1,25 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+(******************************************************************************)
+(*                                                                            *)
+(*                               PROJECT MoWGLI                               *)
+(*                                                                            *)
+(*                     Unsharing of 100% pure ocaml terms.                    *)
+(*                                                                            *)
+(*                Claudio Sacerdoti Coen <sacerdot@cs.unibo.it>               *)
+(*                                 11/04/2002                                 *)
+(*                                                                            *)
+(******************************************************************************)
+
+exception CanNotUnshare;;
+
+(* [unshare t] gives back a copy of t where all sharing has been removed   *)
+(* Physical equality becomes meaningful on unshared terms. Hashtables that *)
+(* use physical equality can now be used to associate information to evey  *)
+(* node of the term.                                                       *)
+val unshare: ?already_unshared:('a -> bool) -> 'a -> 'a

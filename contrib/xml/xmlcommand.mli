@@ -35,6 +35,7 @@ val print : Libnames.qualid Util.located -> string option -> unit
 (* pretty prints via Xml.pp the proof in progress on dest     *)
 val show : string option -> unit
 
+(*CSC: untested, no more working or semantics unclear
 (* print All () prints what is the structure of the current environment of *)
 (* Coq. No terms are printed. Useful only for debugging                    *)
 val printAll : unit -> unit
@@ -56,3 +57,4 @@ val printLibrary : Libnames.qualid Util.located -> string option -> unit
 (* Note: the terms are printed in their uncooked form plus the informations  *)
 (* on the parameters of their most cooked form                               *)
 val printSection : Names.identifier -> string option -> unit
+*)
