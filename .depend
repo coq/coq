@@ -1781,8 +1781,8 @@ tactics/newtauto.cmo: parsing/ast.cmi toplevel/cerrors.cmi parsing/coqast.cmi \
     parsing/printer.cmi proofs/proof_type.cmi pretyping/rawterm.cmi \
     pretyping/reductionops.cmi proofs/refiner.cmi kernel/sign.cmi \
     proofs/tacexpr.cmo tactics/tacinterp.cmi proofs/tacmach.cmi \
-    tactics/tacticals.cmi tactics/tactics.cmi kernel/term.cmi \
-    pretyping/termops.cmi interp/topconstr.cmi lib/util.cmi 
+    tactics/tacticals.cmi tactics/tactics.cmi tactics/tauto.cmo \
+    kernel/term.cmi pretyping/termops.cmi interp/topconstr.cmi lib/util.cmi 
 tactics/newtauto.cmx: parsing/ast.cmx toplevel/cerrors.cmx parsing/coqast.cmx \
     kernel/declarations.cmx parsing/egrammar.cmx kernel/environ.cmx \
     pretyping/evd.cmx interp/genarg.cmx library/global.cmx \
@@ -1791,8 +1791,8 @@ tactics/newtauto.cmx: parsing/ast.cmx toplevel/cerrors.cmx parsing/coqast.cmx \
     parsing/printer.cmx proofs/proof_type.cmx pretyping/rawterm.cmx \
     pretyping/reductionops.cmx proofs/refiner.cmx kernel/sign.cmx \
     proofs/tacexpr.cmx tactics/tacinterp.cmx proofs/tacmach.cmx \
-    tactics/tacticals.cmx tactics/tactics.cmx kernel/term.cmx \
-    pretyping/termops.cmx interp/topconstr.cmx lib/util.cmx 
+    tactics/tacticals.cmx tactics/tactics.cmx tactics/tauto.cmx \
+    kernel/term.cmx pretyping/termops.cmx interp/topconstr.cmx lib/util.cmx 
 tactics/refine.cmo: proofs/clenv.cmi kernel/environ.cmi pretyping/evd.cmi \
     kernel/names.cmi lib/pp.cmi parsing/printer.cmi kernel/reduction.cmi \
     pretyping/retyping.cmi kernel/sign.cmi proofs/tacmach.cmi \
