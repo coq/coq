@@ -427,6 +427,7 @@ GEXTEND Gram
 	     | None -> c in
 	   VernacNotation (false,c,Some("'"^id^"'",[]),None,None)
       | IDENT "Implicits"; qid = global; "["; l = LIST0 natural; "]" ->
+	  let l = List.map (fun n -> ExplByPos n) l in
 	  VernacDeclareImplicits (qid,Some l)
       | IDENT "Implicits"; qid = global -> VernacDeclareImplicits (qid,None)
 
