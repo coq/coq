@@ -147,10 +147,6 @@ let type_of env c = Retyping.get_type_of env none (strip_outer_cast c)
 
 let sort_of env c = Retyping.get_sort_family_of env none (strip_outer_cast c)
 
-open RedFlags
-let betaiotazeta = clos_norm_flags (mkflags [fBETA;fIOTA;fZETA])
-(* TODO: verifier si c'est bien de la réduction de tete... *)
-
 let is_axiom sp = (Global.lookup_constant sp).const_body = None
 
 type lamprod = Lam | Product
@@ -174,7 +170,6 @@ let rec list_of_ml_arrows = function
 let rec get_arity env c =
   match kind_of_term (whd_betadeltaiota env none c) with
     | Prod (x,t,c0) -> get_arity (push_rel (x,None,t) env) c0
-    | Cast (t,_) -> get_arity env t
     | Sort s -> Some (family_of_sort s)
     | _ -> None
 
@@ -319,7 +314,7 @@ and extract_type_rec env c vl args =
     | Some _ -> extract_type_rec_info env c vl args
 	  
 and extract_type_rec_info env c vl args = 
-  match (kind_of_term (betaiotazeta env none c)) with
+  match (kind_of_term (whd_betaiotazeta c)) with
     | Sort _ ->
 	assert (args = []); (* A sort can't be applied. *)
 	Tdum 
@@ -334,10 +329,8 @@ and extract_type_rec_info env c vl args =
 	extract_type_rec_info env d vl (Array.to_list args' @ args)
     | Rel n -> 
 	(match lookup_rel n env with
-	   | (_,Some t,_) -> 
-	       extract_type_rec_info env (lift n t) vl args  
-	   | (id,_,_) ->
-	       Tmltype (Tvar (id_of_name id), vl))
+	   | (_,Some t,_) -> extract_type_rec_info env (lift n t) vl args  
+	   | (id,_,_) -> Tmltype (Tvar (id_of_name id), vl))
     | Const sp when args = [] && is_ml_extraction (ConstRef sp) ->
 	Tmltype (Tglob (ConstRef sp), vl)
     | Const sp when is_axiom sp -> 
@@ -358,19 +351,15 @@ and extract_type_rec_info env c vl args =
 	  extract_type_rec_info env (applist (cvalue, args)) vl []
     | Ind spi ->
 	(match extract_inductive spi with 
-	   |Iml (si,vli) -> 
-	       extract_type_app env (IndRef spi,si,vli) vl args 
+	   |Iml (si,vli) -> extract_type_app env (IndRef spi,si,vli) vl args 
 	   |Iprop -> assert false (* Cf. initial tests *))
     | Case _ | Fix _ | CoFix _ ->
 	let id = next_ident_away flex_name (dummy_name::vl) in
 	Tmltype (Tvar id,  id :: vl)
 	  (* Type without counterpart in ML: we generate a 
 	     new flexible type variable. *) 
-    | Cast (c, _) ->
-	extract_type_rec_info env c vl args
     | Var _ -> section_message ()
-    | _ -> 
-	assert false
+    | _ -> assert false
 
 (*s Auxiliary function used to factor code in lambda and product cases *)
 
@@ -455,10 +444,10 @@ and extract_type_app env (r,sc,vlc) vl args =
    This function is built on the [extract_type] model. *)
 
 and signature env c =
-  signature_rec env (betaiotazeta env none c) []
+  signature_rec env c []
 
 and signature_rec env c args = 
-  match kind_of_term c with
+  match kind_of_term (whd_betadeltaiota env none c) with
     | Prod (n,t,d) 
     | Lambda (n,t,d) -> 
 	let env' = push_rel_assum (n,t) env in
@@ -467,25 +456,8 @@ and signature_rec env c args =
 	signature_rec env d (Array.to_list args' @ args)
     | Rel n -> 
 	(match lookup_rel n env with
-	   | (_,Some t,_) -> 
-	       let c' = betaiotazeta env none (lift n t) in 
-	       signature_rec env c' args
+	   | (_,Some t,_) -> signature_rec env (lift n t) args
 	   | _ -> [])
-    | Const sp when args = [] && is_ml_extraction (ConstRef sp) -> []
-    | Const sp when is_axiom sp -> []
-    | Const sp ->
-        let t = constant_type env sp in
-        if is_arity env none t then
-          (match extract_constant sp with
-             | Emltype (Tdummy,_,_) -> []
-             | Emltype (_,sc,_) ->
-                 let d = List.length sc - List.length args in
-                 if d <= 0 then [] else list_lastn d sc
-             | Emlterm _ -> assert false)
-        else
-          let cvalue = constant_value env sp in
-          let c' = betaiotazeta env none (applist (cvalue, args)) in
-          signature_rec env c' []
     | Ind spi ->
 	(match extract_inductive spi with 
 	   |Iml (si,_) -> 
@@ -493,7 +465,7 @@ and signature_rec env c args =
 	       if d <= 0 then [] else list_lastn d si
 	   |Iprop -> [])
     | Sort _ | Case _ | Fix _ | CoFix _ -> []
-    | Cast (c, _) -> signature_rec env c args
+    | Const sp -> assert (is_axiom sp); [] 
     | Var _ -> section_message ()
     | _ -> assert false
 
@@ -659,17 +631,14 @@ and extract_app env f args =
    Postcondition: the output signature is at least as long as the arguments. *)
     
 and signature_of_application env f t a =
-  let nargs = Array.length a in	 	
-  let t = if nb_prod t >= nargs then t else whd_betadeltaiota env none t in 
-  (* It does not really ensure that [t] start by [n] products, *)
-  (* but it reduces as much as possible *)
-  let nbp = nb_prod t in
   let s = signature env t in
-  if nbp >= nargs then s
+  let nargs = Array.length a in	
+  let ns = List.length s in 
+  if ns >= nargs then s
   else 
     (* This case can really occur. Cf [test_extraction.v]. *)
-    let f' = mkApp (f, Array.sub a 0 nbp) in 
-    let a' = Array.sub a nbp (nargs-nbp) in 
+    let f' = mkApp (f, Array.sub a 0 ns) in 
+    let a' = Array.sub a ns (nargs-ns) in 
     let t' = type_of env f' in
     s @ signature_of_application env f' t' a'
 
