@@ -15,19 +15,26 @@ open Mlimport
 
 (*s Extraction results. *)
 
-type type_var = Varity | Vskip
+type type_var = Varity | Vprop | Vdefault
 
 type signature = (type_var * identifier) list
 
 type type_extraction_result =
   | Tmltype of ml_type * signature * identifier list
   | Tarity
+  | Tprop
 
 type extraction_result =
   | Emltype of ml_type * signature * identifier list
   | Emlterm of ml_ast
+  | Eprop
 
 (*s Utility functions. *)
+
+let v_of_t = function
+  | Tprop -> Vprop
+  | Tarity -> Varity
+  | Tmltype _ -> Vdefault
 
 let array_foldi f a =
   let n = Array.length a in
@@ -41,7 +48,14 @@ let id_of_name = function
   | Name id   -> id
 
 let params_of_sign = 
-  List.fold_left (fun l v -> match v with Vskip,_ -> l | _,id -> id :: l) []
+  List.fold_left (fun l v -> match v with Varity,id -> id :: l | _ -> l) []
+
+let rec get_arity env c =
+  match kind_of_term (whd_betadeltaiota env Evd.empty c) with
+    | IsProd (x,t,c0) -> get_arity (push_rel_assum (x,t) env) c0
+    | IsCast (t,_) -> get_arity env t
+    | IsSort s -> Some s
+    | _ -> None
 
 let signature_of_arity = 
   let rec sign_of acc env c = match kind_of_term c with
@@ -49,7 +63,10 @@ let signature_of_arity =
 	let env' = push_rel (n,None,t) env in
 	let id = id_of_name n in
 	sign_of 
-	  (((if is_arity env Evd.empty t then Varity else Vskip), id) :: acc)
+	  (((match get_arity env t with
+	       | Some (Prop Null) -> Vprop
+	       | Some _ -> Varity 
+	       | _ -> Vdefault), id) :: acc)
 	  env' c'
     | IsSort _ -> 
 	acc
@@ -58,8 +75,8 @@ let signature_of_arity =
   in
   sign_of []
 
-(* [list_of_ml_arrows] applied to the ML type [a->b->...->z->t]
-   returns the list [[a;b;...:z]]. *)
+(* [list_of_ml_arrows] applied to the ML type [a->b->]\dots[z->t]
+   returns the list [[a;b;...;z]]. *)
 let rec list_of_ml_arrows = function
   | Tarr (a, b) -> a :: list_of_ml_arrows b
   | t -> []
@@ -101,7 +118,7 @@ let rec extract_type env c =
   let rec extract_rec env sign fl c args = 
     let ty = Typing.type_of env Evd.empty c in
     if is_Prop (whd_betadeltaiota env Evd.empty ty) then
-      Tmltype (Tprop, [], fl)
+      Tprop
     else
       match kind_of_term (whd_betaiota c) with
 	| IsProd (n, t, d) ->
@@ -109,25 +126,25 @@ let rec extract_type env c =
 	    let id = id_of_name n in (* FIXME: capture problem *)
 	    let env' = push_rel (n,None,t) env in
 	    (match extract_rec env sign fl t [] with
-	       | Tarity ->
-		   extract_rec env' ((Varity,id) :: sign) fl d []
+	       | Tarity | Tprop as et ->
+		   extract_rec env' ((v_of_t et,id) :: sign) fl d []
 	       | Tmltype (t', _, fl') ->
-		   (match extract_rec env' ((Vskip,id) :: sign) fl' d [] with
-		      | Tarity -> Tarity
+		   (match extract_rec env' ((Vdefault,id)::sign) fl' d [] with
 		      | Tmltype (d', sign', fl'') -> 
-			  Tmltype (Tarr (t', d'), sign', fl'')))
+			  Tmltype (Tarr (t', d'), sign', fl'')
+		      | et -> et))
 	| IsLambda (n, t, d) ->
 	    assert (args = []);
 	    let id = id_of_name n in (* FIXME: capture problem *)
 	    let env' = push_rel (n,None,t) env in
 	    (match extract_rec env sign fl t [] with
-	       | Tarity ->
-		   extract_rec env' ((Varity,id) :: sign) fl d []
+	       | Tarity | Tprop as et ->
+		   extract_rec env' ((v_of_t et,id) :: sign) fl d []
 	       | Tmltype (t', _, fl') ->
-		   extract_rec env' ((Vskip,id) :: sign) fl' d [])
+		   extract_rec env' ((Vdefault,id) :: sign) fl' d [])
 	| IsSort (Prop Null) ->
 	    assert (args = []);
-	    Tmltype (Tprop, [], [])
+	    Tprop
 	| IsSort _ ->
 	    assert (args = []);
 	    Tarity
@@ -135,7 +152,8 @@ let rec extract_type env c =
 	    extract_rec env sign fl d (Array.to_list args' @ args)
 	| IsRel n ->
 	    (match List.nth sign (pred n) with
-	       | Vskip, id -> Tmltype (Tvar id, sign, id :: fl)
+	       | Vprop, _ -> assert false
+	       | Vdefault, id -> Tmltype (Tvar id, sign, id :: fl)
 	       | Varity, id -> Tmltype (Tvar id, sign, fl))
 	| IsConst (sp,a) ->
 	    let cty = constant_type genv Evd.empty (sp,a) in
@@ -143,6 +161,7 @@ let rec extract_type env c =
 	      (match extract_constant sp with
 		 | Emltype (_, sc, flc) -> 
 		     extract_type_app env sign fl (ConstRef sp,sc,flc) args
+		 | Eprop -> Tprop
 		 | Emlterm _ -> assert false)
 	    else
 	      let cvalue = constant_value env (sp,a) in
@@ -164,9 +183,10 @@ let rec extract_type env c =
     let (mlargs,fl') = 
       List.fold_right 
 	(fun (v,a) ((args,fl) as acc) -> match v with
-	   | Vskip,_ -> acc
+	   | (Vdefault | Vprop), _ -> acc
 	   | Varity,_ -> match extract_rec env sign fl a [] with
 	       | Tarity -> assert false
+	       | Tprop -> (Miniml.Tprop :: args, fl)
 	       | Tmltype (mla,_,fl') -> (mla :: args, fl'))
 	(List.combine (list_firstn nargs (List.rev sc)) args)
 	([],fl)
@@ -180,7 +200,6 @@ let rec extract_type env c =
 (*s Extraction of a term. *)
 
 and extract_term c =
-  failwith "todo"
     (*i
       let rec extract_rec env c = match kind_of_term (whd_beta c) with
       | _ -> 
@@ -190,18 +209,22 @@ and extract_term c =
       in
       extract_rec (Global.env()) c
       i*)
+  failwith "todo"
 
 (*s Extraction of a constr. *)
 
 and extract_constr_with_type c t =
   let genv = Global.env () in
-  if is_arity genv Evd.empty t then begin
-    match extract_type genv c with
-      | Tarity -> error "not an ML type"
-      | Tmltype (t, sign, fl) -> Emltype (t, sign, fl)
-  end else 
-    let t = extract_term c in
-    Emlterm t
+  match get_arity genv t with
+    | Some (Prop Null) -> 
+	Eprop
+    | Some _ -> 
+	(match extract_type genv c with
+	   | Tprop -> Eprop
+	   | Tarity -> error "not an ML type"
+	   | Tmltype (t, sign, fl) -> Emltype (t, sign, fl))
+    | None -> 
+	let t = extract_term c in Emlterm t
 
 and extract_constr c = 
   extract_constr_with_type c (Typing.type_of (Global.env()) Evd.empty c)
@@ -243,7 +266,7 @@ and extract_mib sp =
 	     (fun j _ fl -> 
 		let t = mis_constructor_type (succ j) mis in
 		match extract_type genv t with
-		  | Tarity -> assert false
+		  | Tarity | Tprop -> assert false
 		  | Tmltype (mlt, s, f) -> 
 		      let l = list_of_ml_arrows mlt in
 		      add_constructor_extraction ((sp,i),succ j) (l,s);
@@ -280,7 +303,8 @@ let extract_declaration = function
       let id = basename sp in (* FIXME *)
       (match extract_constant sp with
 	 | Emltype (mlt, s, fl) -> Dabbrev (id, params_of_sign s @ fl, mlt)
-	 | Emlterm t -> Dglob (id, t))
+	 | Emlterm t -> Dglob (id, t)
+	 | Eprop -> Dglob (id, MLprop))
   | IndRef (sp,_) -> extract_inductive_declaration sp
   | ConstructRef ((sp,_),_) -> extract_inductive_declaration sp
   | VarRef _ -> assert false
@@ -309,6 +333,7 @@ let _ =
 		| _ ->
 		    match extract_constr c with
 		      | Emltype (t,_,_) -> mSGNL (Pp.pp_type t)
-		      | Emlterm a -> mSGNL (Pp.pp_ast a))
+		      | Emlterm a -> mSGNL (Pp.pp_ast a)
+		      | Eprop -> message "prop")
        | _ -> assert false)
 

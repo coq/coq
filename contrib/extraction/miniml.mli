@@ -35,6 +35,7 @@ type ml_ast =
   | MLcase  of ml_ast * (identifier * identifier list * ml_ast) array
   | MLfix   of int * bool * (identifier list) * (ml_ast list)
   | MLexn   of identifier
+  | MLprop
   | MLcast  of ml_ast * ml_type
   | MLmagic of ml_ast
 

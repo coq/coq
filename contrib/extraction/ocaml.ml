@@ -107,6 +107,8 @@ let rec pp_expr par env args =
     | MLexn id -> 
 	[< open_par par; 'sTR "failwith"; 'sPC; 
 	   'qS (string_of_id id); close_par par >]
+    | MLprop ->
+	string "Prop"
     | MLcast (a,t) ->
 	[< open_par true; pp_expr false env args a; 'sPC; 'sTR ":"; 'sPC; 
 	   pp_type t; close_par true >]

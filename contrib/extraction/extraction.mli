@@ -7,13 +7,14 @@ open Miniml
 
 (*s Result of an extraction. *)
 
-type type_var = Varity | Vskip
+type type_var = Varity | Vprop | Vdefault
 
 type signature = (type_var * identifier) list
 
 type extraction_result =
   | Emltype of ml_type * signature * identifier list
   | Emlterm of ml_ast
+  | Eprop
 
 (*s Extraction functions. *)
 
