@@ -525,7 +525,10 @@ let rec pr_vernac = function
   | VernacRestoreState s -> str"Restore State" ++ spc() ++ qsnew s
 
   (* Control *)
-  | VernacList l -> hov 2 (str"[" ++ spc() ++ prlist_with_sep (fun _ -> sep_end () ++ fnl() ) (pr_located pr_vernac) l ++ spc() ++ str"]") 
+  | VernacList l ->
+      hov 2 (str"[" ++ spc() ++
+             prlist (fun v -> pr_located pr_vernac v ++ sep_end () ++ fnl()) l
+             ++ spc() ++ str"]") 
   | VernacLoad (f,s) -> str"Load" ++ if f then (spc() ++ str"Verbose"
   ++ spc()) else spc()  ++ qsnew s
   | VernacTime v -> str"Time" ++ spc() ++ pr_vernac v

@@ -27,28 +27,46 @@ let _ =
 let lpar_id_coloneq =
   Gram.Entry.of_parser "lpar_id_coloneq"
     (fun strm ->
-      match Stream.npeek 3 strm with
-	| [("","("); ("IDENT",s); ("", ":=")] ->
-            Stream.junk strm; Stream.junk strm; Stream.junk strm;
-            Names.id_of_string s
+      match Stream.npeek 1 strm with
+        | [("","(")] ->
+            (match Stream.npeek 2 strm with
+              | [_; ("IDENT",s)] ->
+                  (match Stream.npeek 3 strm with
+	            | [_; _; ("", ":=")] ->
+                        Stream.junk strm; Stream.junk strm; Stream.junk strm;
+                        Names.id_of_string s
+	            | _ -> raise Stream.Failure)
+	      | _ -> raise Stream.Failure)
 	| _ -> raise Stream.Failure)
 
 (* idem for (x:=t) and (1:=t) *)
 let test_lpar_idnum_coloneq =
   Gram.Entry.of_parser "test_lpar_idnum_coloneq"
     (fun strm ->
-      match Stream.npeek 3 strm with
-        | [("","("); (("IDENT"|"INT"),_); ("", ":=")] -> ()
+      match Stream.npeek 1 strm with
+        | [("","(")] ->
+            (match Stream.npeek 2 strm with
+              | [_; (("IDENT"|"INT"),_)] ->
+                  (match Stream.npeek 3 strm with
+                    | [_; _; ("", ":=")] -> ()
+                    | _ -> raise Stream.Failure)
+              | _ -> raise Stream.Failure)
         | _ -> raise Stream.Failure)
 
 (* idem for (x:t) *)
 let lpar_id_colon =
   Gram.Entry.of_parser "test_lpar_id_colon"
     (fun strm ->
-      match Stream.npeek 3 strm with
-        | [("","("); ("IDENT",id); ("", ":")] ->
-            Stream.junk strm; Stream.junk strm; Stream.junk strm;
-            Names.id_of_string id
+      match Stream.npeek 1 strm with
+        | [("","(")] ->
+            (match Stream.npeek 2 strm with
+              | [_; ("IDENT",id)] ->
+                  (match Stream.npeek 3 strm with
+                    | [_; _; ("", ":")] ->
+                        Stream.junk strm; Stream.junk strm; Stream.junk strm;
+                        Names.id_of_string id
+                    | _ -> raise Stream.Failure)
+              | _ -> raise Stream.Failure)
         | _ -> raise Stream.Failure)
 
 (* open grammar entries, possibly in quotified form *)

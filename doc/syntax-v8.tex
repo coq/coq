@@ -313,6 +313,7 @@ $$
 \text{Symbol} & \text{precedence} \\
 \hline
 \infx{,}             & 250L \\
+\KWD{IF}~\notv~\KWD{then}~\notv~\KWD{else}~\notv & 200 \\
 \infx{:}             & 100R \\
 \infx{\rightarrow}\quad \infx{\leftrightarrow}  & 80R \\
 \infx{\vee}          & 70R \\
@@ -355,8 +356,7 @@ $$
 \end{array}
 $$
 
-
-%% ``IF then else'' is missing
+%% Strange: nat + {x:nat|x=x} * nat  == ( + ) *
 
 \section{Grammar of tactics}
 

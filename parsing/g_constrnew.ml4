@@ -109,11 +109,17 @@ let rec mkCLambdaN loc bll c =
 let lpar_id_coloneq =
   Gram.Entry.of_parser "test_lpar_id_coloneq"
     (fun strm ->
-      match Stream.npeek 3 strm with
-	| [("","("); ("IDENT",s); ("", ":=")] ->
-            Stream.junk strm; Stream.junk strm; Stream.junk strm;
-            Names.id_of_string s
-	| _ -> raise Stream.Failure);;
+      match Stream.npeek 1 strm with
+        | [("","(")] ->
+            (match Stream.npeek 2 strm with
+	      | [_; ("IDENT",s)] ->
+                  (match Stream.npeek 3 strm with
+                    | [_; _; ("", ":=")] ->
+                        Stream.junk strm; Stream.junk strm; Stream.junk strm;
+                        Names.id_of_string s
+	            | _ -> raise Stream.Failure)
+              | _ -> raise Stream.Failure)
+        | _ -> raise Stream.Failure)
 
 
 if not !Options.v7 then
