@@ -218,7 +218,14 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	      with Not_found -> check_conv_record appr2 appr1)
            with _ -> false)
 	and f4 () =
-	  match eval_flexible_term env flex2 with
+          (* heuristic: unfold second argument first, exception made
+             if the first argument is a beta-redex (expand a constant
+             only if necessary) *)
+          let val2 =
+            match kind_of_term flex1 with
+                Lambda _ -> None
+              | _ -> eval_flexible_term env flex2 in
+	  match val2 with
 	    | Some v2 ->
 		evar_eqappr_x env isevars pbty
 		  appr1 (evar_apprec env isevars l2 v2)
