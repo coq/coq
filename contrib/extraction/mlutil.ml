@@ -1066,7 +1066,7 @@ let is_not_strict t =
    Futhermore we don't expand fixpoints. *)
 
 let inline_test t = 
-  not (is_fix t) && (ml_size t < 12 && is_not_strict t)
+  not (is_fix (eta_red t)) && (ml_size t < 12 && is_not_strict t)
 
 let manual_inline_list = 
   let mp = MPfile (dirpath_of_string "Coq.Init.Wf") in 
