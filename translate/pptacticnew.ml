@@ -112,6 +112,7 @@ let translate_v7_ltac = function
   | "SimplMonom" -> "simpl_monom"
   | "SimplAllMonoms" -> "simpl_all_monomials"
   | "AssocDistrib" -> "assoc_distrib"
+  | "NowShow" -> "now_show"
   | x -> x
 
 let id_of_ltac_v7_id id = 
