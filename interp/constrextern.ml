@@ -485,7 +485,10 @@ let explicit_code imp q =
   if !Options.v7 & not (Options.do_translate()) then ExplByPos q
   else ExplByName (name_of_implicit imp)
 
-let is_not_hole = function CHole _ -> false | _ -> true
+let is_hole = function CHole _ -> true | _ -> false
+
+let is_middle_hole a args =
+  is_hole a && not (List.for_all is_hole args)
 
 (* Implicit args indexes are in ascending order *)
 (* inctx is useful only if there is a last argument to be deduced from ctxt *)
@@ -496,7 +499,7 @@ let explicitize loc inctx impl (cf,f) args =
         let tail = exprec (q+1) (args,impl) in
         let visible =
           (!print_implicits & !print_implicits_explicit_args) or 
-	  (is_not_hole a &
+	  (not (is_middle_hole a args) &
 	  (not (is_inferable_implicit inctx n imp) or
 	    (Options.do_translate() & not (stdlib cf))))
 	in
