@@ -28,18 +28,17 @@ kernel/typing.cmi: kernel/constant.cmi kernel/environ.cmi kernel/evd.cmi \
 kernel/univ.cmi: kernel/names.cmi lib/pp.cmi 
 lib/pp.cmi: lib/pp_control.cmi 
 lib/util.cmi: lib/pp.cmi 
-library/global.cmi: kernel/constant.cmi kernel/evd.cmi kernel/inductive.cmi \
-    kernel/names.cmi kernel/sign.cmi kernel/term.cmi kernel/univ.cmi 
+library/global.cmi: kernel/constant.cmi kernel/environ.cmi kernel/evd.cmi \
+    kernel/inductive.cmi kernel/names.cmi kernel/sign.cmi kernel/term.cmi \
+    kernel/univ.cmi 
 library/lib.cmi: library/libobject.cmi kernel/names.cmi library/summary.cmi 
 library/libobject.cmi: kernel/names.cmi 
 library/summary.cmi: kernel/names.cmi 
 parsing/ast.cmi: parsing/coqast.cmi lib/dyn.cmi parsing/pcoq.cmi lib/pp.cmi 
 parsing/coqast.cmi: lib/dyn.cmi 
-parsing/g_minicoq.cmi: /usr/local/lib/camlp4/grammar.cmi kernel/names.cmi \
-    lib/pp.cmi kernel/term.cmi 
-parsing/lexer.cmi: /usr/local/lib/camlp4/token.cmi 
-parsing/pcoq.cmi: parsing/coqast.cmi /usr/local/lib/camlp4/gramext.cmi \
-    /usr/local/lib/camlp4/grammar.cmi /usr/local/lib/camlp4/token.cmi 
+parsing/g_minicoq.cmi: kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
+    kernel/term.cmi 
+parsing/pcoq.cmi: parsing/coqast.cmi 
 toplevel/himsg.cmi: kernel/environ.cmi kernel/names.cmi lib/pp.cmi \
     kernel/sign.cmi kernel/term.cmi kernel/type_errors.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
@@ -162,6 +161,10 @@ library/libobject.cmo: lib/dyn.cmi kernel/names.cmi lib/util.cmi \
     library/libobject.cmi 
 library/libobject.cmx: lib/dyn.cmx kernel/names.cmx lib/util.cmx \
     library/libobject.cmi 
+library/library.cmo: kernel/environ.cmi library/lib.cmi library/libobject.cmi \
+    kernel/names.cmi lib/system.cmi lib/util.cmi library/library.cmi 
+library/library.cmx: kernel/environ.cmx library/lib.cmx library/libobject.cmx \
+    kernel/names.cmx lib/system.cmx lib/util.cmx library/library.cmi 
 library/states.cmo: library/lib.cmi library/summary.cmi lib/system.cmi \
     library/states.cmi 
 library/states.cmx: library/lib.cmx library/summary.cmx lib/system.cmx \
@@ -171,11 +174,9 @@ library/summary.cmo: lib/dyn.cmi kernel/names.cmi lib/pp.cmi lib/util.cmi \
 library/summary.cmx: lib/dyn.cmx kernel/names.cmx lib/pp.cmx lib/util.cmx \
     library/summary.cmi 
 parsing/ast.cmo: parsing/coqast.cmi lib/dyn.cmi lib/hashcons.cmi \
-    parsing/pcoq.cmi lib/pp.cmi /usr/local/lib/camlp4/stdpp.cmi lib/util.cmi \
-    parsing/ast.cmi 
+    parsing/pcoq.cmi lib/pp.cmi lib/util.cmi parsing/ast.cmi 
 parsing/ast.cmx: parsing/coqast.cmx lib/dyn.cmx lib/hashcons.cmx \
-    parsing/pcoq.cmi lib/pp.cmx /usr/local/lib/camlp4/stdpp.cmi lib/util.cmx \
-    parsing/ast.cmi 
+    parsing/pcoq.cmi lib/pp.cmx lib/util.cmx parsing/ast.cmi 
 parsing/coqast.cmo: lib/dyn.cmi lib/hashcons.cmi parsing/coqast.cmi 
 parsing/coqast.cmx: lib/dyn.cmx lib/hashcons.cmx parsing/coqast.cmi 
 parsing/lexer.cmo: lib/util.cmi parsing/lexer.cmi 
@@ -187,54 +188,38 @@ toplevel/himsg.cmx: kernel/environ.cmx kernel/generic.cmx kernel/names.cmx \
     lib/pp.cmx kernel/reduction.cmx kernel/sign.cmx kernel/term.cmx \
     kernel/type_errors.cmx lib/util.cmx toplevel/himsg.cmi 
 toplevel/minicoq.cmo: kernel/constant.cmi parsing/g_minicoq.cmi \
-    kernel/generic.cmi /usr/local/lib/camlp4/grammar.cmi toplevel/himsg.cmi \
-    kernel/inductive.cmi kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
-    /usr/local/lib/camlp4/stdpp.cmi kernel/term.cmi kernel/type_errors.cmi \
-    kernel/typing.cmi lib/util.cmi 
+    kernel/generic.cmi toplevel/himsg.cmi kernel/inductive.cmi \
+    kernel/names.cmi lib/pp.cmi kernel/sign.cmi kernel/term.cmi \
+    kernel/type_errors.cmi kernel/typing.cmi lib/util.cmi 
 toplevel/minicoq.cmx: kernel/constant.cmx parsing/g_minicoq.cmi \
-    kernel/generic.cmx /usr/local/lib/camlp4/grammar.cmi toplevel/himsg.cmx \
-    kernel/inductive.cmx kernel/names.cmx lib/pp.cmx kernel/sign.cmx \
-    /usr/local/lib/camlp4/stdpp.cmi kernel/term.cmx kernel/type_errors.cmx \
-    kernel/typing.cmx lib/util.cmx 
-parsing/g_basevernac.cmo: parsing/ast.cmi parsing/coqast.cmi \
-    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi 
-parsing/g_basevernac.cmx: parsing/ast.cmx parsing/coqast.cmx \
-    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi 
-parsing/g_command.cmo: parsing/ast.cmi parsing/coqast.cmi \
-    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi 
-parsing/g_command.cmx: parsing/ast.cmx parsing/coqast.cmx \
-    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi 
-parsing/g_minicoq.cmo: kernel/generic.cmi /usr/local/lib/camlp4/gramext.cmi \
-    /usr/local/lib/camlp4/grammar.cmi parsing/lexer.cmi kernel/names.cmi \
-    lib/pp.cmi kernel/term.cmi kernel/univ.cmi lib/util.cmi \
+    kernel/generic.cmx toplevel/himsg.cmx kernel/inductive.cmx \
+    kernel/names.cmx lib/pp.cmx kernel/sign.cmx kernel/term.cmx \
+    kernel/type_errors.cmx kernel/typing.cmx lib/util.cmx 
+parsing/g_basevernac.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi 
+parsing/g_basevernac.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmi 
+parsing/g_command.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi 
+parsing/g_command.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmi 
+parsing/g_minicoq.cmo: kernel/generic.cmi parsing/lexer.cmi kernel/names.cmi \
+    lib/pp.cmi kernel/sign.cmi kernel/term.cmi kernel/univ.cmi lib/util.cmi \
     parsing/g_minicoq.cmi 
-parsing/g_minicoq.cmx: kernel/generic.cmx /usr/local/lib/camlp4/gramext.cmi \
-    /usr/local/lib/camlp4/grammar.cmi parsing/lexer.cmx kernel/names.cmx \
-    lib/pp.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
+parsing/g_minicoq.cmx: kernel/generic.cmx parsing/lexer.cmx kernel/names.cmx \
+    lib/pp.cmx kernel/sign.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
     parsing/g_minicoq.cmi 
 parsing/g_multiple_case.cmo: parsing/ast.cmi parsing/coqast.cmi \
-    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi 
+    parsing/pcoq.cmi 
 parsing/g_multiple_case.cmx: parsing/ast.cmx parsing/coqast.cmx \
-    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi 
-parsing/g_prim.cmo: parsing/coqast.cmi /usr/local/lib/camlp4/gramext.cmi \
     parsing/pcoq.cmi 
-parsing/g_prim.cmx: parsing/coqast.cmx /usr/local/lib/camlp4/gramext.cmi \
-    parsing/pcoq.cmi 
-parsing/g_tactic.cmo: parsing/ast.cmi parsing/coqast.cmi \
-    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi lib/pp.cmi 
-parsing/g_tactic.cmx: parsing/ast.cmx parsing/coqast.cmx \
-    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi lib/pp.cmx 
-parsing/g_vernac.cmo: parsing/coqast.cmi /usr/local/lib/camlp4/gramext.cmi \
-    parsing/pcoq.cmi 
-parsing/g_vernac.cmx: parsing/coqast.cmx /usr/local/lib/camlp4/gramext.cmi \
-    parsing/pcoq.cmi 
-parsing/pcoq.cmo: parsing/coqast.cmi /usr/local/lib/camlp4/gramext.cmi \
-    /usr/local/lib/camlp4/grammar.cmi parsing/lexer.cmi lib/pp.cmi \
+parsing/g_prim.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
+parsing/g_prim.cmx: parsing/coqast.cmx parsing/pcoq.cmi 
+parsing/g_tactic.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi \
+    lib/pp.cmi 
+parsing/g_tactic.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmi \
+    lib/pp.cmx 
+parsing/g_vernac.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
+parsing/g_vernac.cmx: parsing/coqast.cmx parsing/pcoq.cmi 
+parsing/pcoq.cmo: parsing/coqast.cmi parsing/lexer.cmi lib/pp.cmi \
     lib/util.cmi parsing/pcoq.cmi 
-parsing/pcoq.cmx: parsing/coqast.cmx /usr/local/lib/camlp4/gramext.cmi \
-    /usr/local/lib/camlp4/grammar.cmi parsing/lexer.cmx lib/pp.cmx \
+parsing/pcoq.cmx: parsing/coqast.cmx parsing/lexer.cmx lib/pp.cmx \
     lib/util.cmx parsing/pcoq.cmi 
-parsing/q_coqast.cmo: parsing/coqast.cmi /usr/local/lib/camlp4/mLast.cmi \
-    parsing/pcoq.cmi /usr/local/lib/camlp4/quotation.cmi 
-parsing/q_coqast.cmx: parsing/coqast.cmx /usr/local/lib/camlp4/mLast.cmi \
-    parsing/pcoq.cmi /usr/local/lib/camlp4/quotation.cmi 
+parsing/q_coqast.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
+parsing/q_coqast.cmx: parsing/coqast.cmx parsing/pcoq.cmi 

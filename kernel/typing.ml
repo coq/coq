@@ -421,6 +421,8 @@ let add_mind sp mie env =
   in
   add_mind sp mib (set_universes (universes env_arities') env)
 
+let export = export
+let import = import
 
 (*s Machines with information. *)
 

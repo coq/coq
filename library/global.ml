@@ -35,3 +35,5 @@ let lookup_mind sp = lookup_mind sp !global_env
 let lookup_mind_specif c = lookup_mind_specif c !global_env
 let lookup_meta n = lookup_meta n !global_env
 
+let export s = export !global_env s
+let import cenv = global_env := import cenv !global_env

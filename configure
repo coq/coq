@@ -237,15 +237,15 @@ esac
 
 # Objective Caml programs
 
-CAMLC=`which ocamlc`
+CAMLC=`which $bytecamlc`
 case $CAMLC in
-	"") echo "ocamlc is not present in your path !"
+	"") echo "$bytecamlc is not present in your path !"
 	echo "Give me manually the path to the ocamlc executable [/usr/local/bin by default]: "
 	read CAMLC
 	
 	case $CAMLC in
 		"") CAMLC=/usr/local/bin/ocamlc;;
-		*/ocamlc) true;;
+		*/ocamlc|*/ocamlc.opt) true;;
 		*/) CAMLC=${CAMLC}ocamlc;;
 		*) CAMLC=${CAMLC}/ocamlc;;
 	esac;;

@@ -20,7 +20,11 @@ type library_entry = section_path * node
 
 
 (* We keep trace of operations in a stack [lib_stk]. 
-   [path_prefix] is the current path of sections (in correct order). *)
+   [path_prefix] is the current path of sections. Sections are stored in 
+   ``correct'' order, the oldest coming first in the list. It may seems 
+   costly, but in practice there is not so many openings and closings of
+   sections, but on the contrary there are many constructions of section
+   paths. *) 
 
 let lib_stk = ref ([] : (section_path * node) list)
 
@@ -122,7 +126,7 @@ let close_section s =
   in
   let (after,_,before) = split_lib sp in
   lib_stk := before;
-  add_entry sp (ClosedSection (s,modp,after));
+  add_entry sp (ClosedSection (s,modp,List.rev after));
   add_frozen_state ();
   pop_path_prefix ()
 

@@ -41,6 +41,9 @@ val lookup_mind : section_path -> 'a environment -> mutual_inductive_body
 val lookup_mind_specif : constr -> 'a environment -> mind_specif
 val lookup_meta : int -> 'a environment -> constr
 
+val export : 'a environment -> string -> compiled_env
+val import : compiled_env -> 'a environment -> 'a environment
+
 (*s Typing without information. *)
 
 type judgment

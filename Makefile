@@ -10,13 +10,13 @@ noargument:
 	@echo "   make cleanall"
 	@echo or make archclean
 
-INCLUDES=-I config -I lib -I kernel -I library -I parsing -I toplevel \
-	 -I $(CAMLP4LIB)
+LOCALINCLUDES=-I config -I lib -I kernel -I library -I parsing -I toplevel
+INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
 BYTEFLAGS=$(INCLUDES) $(CAMLDEBUG)
 OPTFLAGS=$(INCLUDES) $(CAMLTIMEPROF)
 OCAMLDEP=ocamldep
-DEPFLAGS=$(INCLUDES)
+DEPFLAGS=$(LOCALINCLUDES)
 
 CAMLP4EXTEND=camlp4o $(INCLUDES) pa_extend.cmo
 OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
@@ -42,7 +42,7 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/typing.cmo
 
 LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
-	library/global.cmo library/states.cmo
+	library/global.cmo library/states.cmo library/library.cmo
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \

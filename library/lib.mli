@@ -25,7 +25,7 @@ type library_entry = section_path * node
 
 
 (*s Adding operations, and getting the current list of operations (most 
-  recent ones come first). *)
+  recent ones coming first). *)
 
 val add_leaf : identifier -> obj -> section_path
 val add_anonymous_leaf : obj -> unit
@@ -33,7 +33,8 @@ val add_anonymous_leaf : obj -> unit
 val contents_after : section_path option -> library_segment
 
 
-(*s Opening and closing a section. *)
+(*s Opening and closing a section. The boolean in [open_section] indicates
+  a module. *)
 
 val open_section : string -> bool -> section_path
 val close_section : string -> unit

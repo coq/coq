@@ -46,33 +46,51 @@ let open_trapping_failure open_fun name suffix =
   let rname = make_suffix name suffix in
   try open_fun rname with _ -> error ("Can't open " ^ rname)
 
-let (extern_intern :
-      int -> string -> ((string -> 'a -> unit) * (string -> 'a)))
+let try_remove f =
+  try Sys.remove f
+  with _ -> mSGNL [< 'sTR"Warning: " ; 'sTR"Could not remove file " ;
+                     'sTR f ; 'sTR" which is corrupted !!" >]
+
+exception Bad_magic_number of string
+
+let (raw_extern_intern :
+     int -> string -> 
+       (string -> string * out_channel) * (string -> string * in_channel))
   = fun magic suffix ->
 
-  let extern_state name val_0 = 
-    try
-      let (expname,channel) =
-        open_trapping_failure (fun n -> n,open_out_bin n) name suffix in
-      try
-        output_binary_int channel magic;
-        output_value channel val_0;
-        close_out channel
-      with e -> begin
-        (try Sys.remove expname
-         with _ -> mSGNL [< 'sTR"Warning: " ; 'sTR"Could not remove file " ;
-                            'sTR expname ; 'sTR" which is corrupted !!" >]);
-        raise e
-      end
-    with Sys_error s -> error ("System error: " ^ s)
-
-  and intern_state name = 
-    try
+    let extern_state name = 
+      let (_,channel) as filec =
+	open_trapping_failure (fun n -> n,open_out_bin n) name suffix in
+      output_binary_int channel magic;
+      filec
+    and intern_state name = 
       let fname = find_file_in_path (make_suffix name suffix) in
       let channel = open_in_bin fname in
       if input_binary_int channel <> magic then
-        error (fname^" not compiled with the current version of Coq");
-      let v = input_value(channel) in
+        raise (Bad_magic_number fname);
+      (fname,channel)
+    in 
+    (extern_state,intern_state)
+
+let (extern_intern :
+     int -> string -> (string -> 'a -> unit) * (string -> 'a))
+  = fun magic suffix ->
+
+    let (raw_extern,raw_intern) = raw_extern_intern magic suffix in
+    let extern_state name val_0 = 
+      try
+	let (fname,channel) = raw_extern name in
+      	try
+          output_value channel val_0;
+          close_out channel
+      	with e -> 
+	  begin try_remove fname; raise e end
+      with Sys_error s -> error ("System error: " ^ s)
+
+  and intern_state name = 
+    try
+      let (fname,channel) = raw_intern name in
+      let v = input_value channel in
       close_in channel; 
       v
     with Sys_error s -> error("System error: " ^ s)

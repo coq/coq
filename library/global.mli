@@ -9,6 +9,7 @@ open Sign
 open Evd
 open Constant
 open Inductive
+open Environ
 (*i*)
 
 (* This module defines the global environment of Coq. 
@@ -33,3 +34,5 @@ val lookup_mind : section_path -> mutual_inductive_body
 val lookup_mind_specif : constr -> mind_specif
 val lookup_meta : int -> constr
 
+val export : string -> compiled_env
+val import : compiled_env -> unit
