@@ -169,7 +169,8 @@ let intern_var (env,_,_) ((vars1,unbndltacvars),vars2,_,_,impls) loc id =
       let l,impl = List.assoc id impls in
       let l = List.map 
 	(fun id -> CRef (Ident (loc,id)), Some (loc,ExplByName id)) l in
-      RVar (loc,id), impl, [], l
+      RVar (loc,id), impl, [],
+      (if !Options.v7 & !interning_grammar then [] else l)
     with Not_found ->
       RVar (loc,id), [], [], []
   else
@@ -414,7 +415,7 @@ let locate_if_isevar loc na = function
 let check_hidden_implicit_parameters id (_,_,_,indparams,_) =
   if List.mem id indparams then
     errorlabstrm "" (str "A parameter of inductive type " ++ pr_id id
-      ++ spc () ++ str "must not be used as a bound variable in the type \
+      ++ str " must not be used as a bound variable in the type \
 of its constructor")
 
 let push_name_env lvar (ids,tmpsc,scopes as env) = function
@@ -425,6 +426,14 @@ let push_name_env lvar (ids,tmpsc,scopes as env) = function
 
 (**********************************************************************)
 (* Utilities for application                                          *)
+
+let merge_impargs l args =
+  List.fold_right (fun a l ->
+    match a with 
+      | (_,Some (_,(ExplByName id as x))) when 
+	  List.exists (function (_,Some (_,y)) -> x=y | _ -> false) args -> l
+      | _ -> a::l)
+    l args 
 
 let check_projection isproj nargs r = 
   match (r,isproj) with
@@ -498,13 +507,16 @@ type ameta_scope =
 
 let rec subst_rawconstr loc interp subst (ids,_,scopes as env) = function
   | AVar id ->
-      let (a,(scopt,subscopes)) =
+      begin
 	(* subst remembers the delimiters stack in the interpretation *)
 	(* of the notations *)
-	try List.assoc id subst
-	with Not_found -> (CRef (Ident (loc,id)),(None,[])) in
-      let env = (ids,scopt,subscopes@scopes) in
-      interp env a
+	try 
+	  let (a,(scopt,subscopes)) = List.assoc id subst in
+	  interp (ids,scopt,subscopes@scopes) a
+	with Not_found -> 
+	  (* Happens for local notation joint with inductive/fixpoint defs *)
+	  RVar (loc,id)
+      end
 (*
   | AApp (ARef ref,args) ->
       let argscopes = find_arguments_scope ref in
@@ -600,7 +612,7 @@ let internalise sigma env allow_soapp lvar c =
 	    | CRef ref -> intern_reference env lvar ref
 	    | _ -> (intern env f, [], [], [])
         in
-	let args = intern_impargs c env impargs args_scopes (l@args) in
+	let args = intern_impargs c env impargs args_scopes (merge_impargs l args) in
 	check_projection isproj (List.length args) c;
 	(match c with 
           (* Now compact "(f args') args" *)
