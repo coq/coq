@@ -48,7 +48,7 @@ val rev_mutate : ('a,'b,'c) t -> ('c -> 'b -> 'b) -> unit
   managed for each range element. *)
 val undo : ('a,'b,'c) t -> int -> unit
 
-val create : ('a,'b,'c) t -> 'a * 'b * 'c * int option -> unit
+val create : ('a,'b,'c) t -> 'a * 'b * 'c * int -> unit
 val delete : ('a,'b,'c) t -> 'a -> unit
 
 val dom : ('a,'b,'c) t -> 'a list

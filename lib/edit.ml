@@ -59,9 +59,7 @@ let read e =
     | None -> None
     | Some d ->
 	let (bs,c) = Hashtbl.find e.buf d in
-	(match Bstack.top bs with
-           | None -> anomaly "Edit.read"
-	   | Some v -> Some(d,v,c))
+	Some(d,Bstack.top bs,c)
 
 let mutate e f =
   match e.focus with
@@ -82,16 +80,15 @@ let undo e n =
     | None -> invalid_arg "Edit.undo"
     | Some d ->
 	let (bs,_) = Hashtbl.find e.buf d in
-	if Bstack.depth bs <= n then
-          errorlabstrm "Edit.undo" (str"Undo stack would be exhausted");
-        repeat n (fun () -> let _ = Bstack.pop bs in ()) ()
+        repeat n Bstack.pop bs;
+	if Bstack.depth bs = 1 then
+          errorlabstrm "Edit.undo" (str"Undo stack exhausted")
 
 let create e (d,b,c,udepth) =
   if Hashtbl.mem e.buf d then
     errorlabstrm "Edit.create" 
       (str"Already editing something of that name");
-  let bs = Bstack.create udepth in
-  Bstack.push bs b;
+  let bs = Bstack.create udepth b in
   Hashtbl.add e.buf d (bs,c)
 
 let delete e d =
