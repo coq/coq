@@ -301,12 +301,14 @@ let subst_scope (_,subst,sc) = sc
 
 open Libobject
 
+let classify_scope (_,(exp,_ as o)) = if exp then Substitute o else Dispose
+
 let (inScope,outScope) = 
   declare_object {(default_object "SCOPE") with
       cache_function = cache_scope;
       open_function = (fun i o -> if i=1 then cache_scope o);
       subst_function = subst_scope;
-      classify_function = (fun (_,o) -> Substitute o);
+      classify_function = classify_scope;
       export_function = (fun (exp,_ as x) -> if exp then Some x else None) }
 
 let open_scope sc = Lib.add_anonymous_leaf (inScope sc)
