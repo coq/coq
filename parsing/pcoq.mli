@@ -144,7 +144,7 @@ module Vernac :
     val gallina : Coqast.t Gram.Entry.e
     val gallina_ext : Coqast.t Gram.Entry.e
     val command : Coqast.t Gram.Entry.e
-    val syntax_command : Coqast.t Gram.Entry.e
+    val syntax : Coqast.t Gram.Entry.e
     val vernac : Coqast.t Gram.Entry.e
     val vernac_eoi : Coqast.t Gram.Entry.e
   end

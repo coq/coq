@@ -341,7 +341,7 @@ module Vernac =
     let gallina = gec "gallina"
     let gallina_ext = gec "gallina_ext"
     let command = gec "command"
-    let syntax_command = gec "syntax_command"
+    let syntax = gec "syntax_command"
     let vernac = gec "vernac"
     let vernac_eoi = eoi_entry vernac
   end

@@ -173,9 +173,9 @@ END;
 (* Grammar extensions *)
 	  
 GEXTEND Gram
-  GLOBAL: syntax_command Prim.syntax_entry Prim.grammar_entry;
+  GLOBAL: syntax Prim.syntax_entry Prim.grammar_entry;
 
-  syntax_command:
+  syntax:
    [ [ "Token"; s = STRING; "." -> <:ast< (TOKEN ($STR $s)) >>
 
      | "Grammar"; univ=IDENT; tl=LIST1 Prim.grammar_entry SEP "with"; "." ->

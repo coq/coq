@@ -10,7 +10,7 @@ GEXTEND Gram
     [ [ g = gallina -> g 
       | g = gallina_ext -> g
       | c = command -> c 
-      | c = syntax_command -> c ] ]
+      | c = syntax -> c ] ]
   ;
   vernac: LAST
     [ [ tac = tacarg; "." -> <:ast< (SOLVE 1 (TACTIC $tac)) >> ] ]
