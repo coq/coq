@@ -31,7 +31,7 @@ noargument:
 
 LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
               -I proofs -I tactics -I pretyping -I parsing -I toplevel  \
-              -I contrib/omega -I contrib/ring
+              -I contrib/omega -I contrib/ring -I contrib/xml
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
 BYTEFLAGS=$(INCLUDES) $(CAMLDEBUG)
@@ -44,7 +44,7 @@ OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
 CAMLP4IFDEF=camlp4o pa_ifdef.cmo -D$(OSTYPE)
 
-COQINCLUDES=-I parsing -I contrib/omega -I contrib/ring \
+COQINCLUDES=-I parsing -I contrib/omega -I contrib/ring -I contrib/xml \
             -I theories/Init -I theories/Logic -I theories/Arith \
             -I theories/Bool -I theories/Zarith -I theories/Lists \
 	    -I theories/Sets -I theories/Relations -I theories/Reals
@@ -119,7 +119,9 @@ HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
             tactics/eauto.cmo tactics/refine.cmo
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
-        contrib/ring/quote.cmo contrib/ring/ring.cmo 
+        contrib/ring/quote.cmo contrib/ring/ring.cmo \
+        contrib/xml/xml.cmo contrib/xml/cooking.cmo contrib/xml/xmlcommand.cmo \
+        contrib/xml/xmlentries.cmo contrib/xml/ntrefiner.cmo
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -318,13 +320,16 @@ RINGVO = contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
          contrib/ring/ZArithRing.vo     contrib/ring/Ring_abstract.vo \
          contrib/ring/Quote.vo
 
-CONTRIBVO = $(OMEGAVO) $(RINGVO)
+XMLVO = contrib/xml/Xml.vo
+
+CONTRIBVO = $(OMEGAVO) $(RINGVO) $(XMLVO)
 
 $(CONTRIBVO): states/initial.coq
 
 contrib: $(CONTRIBVO)
 omega: $(OMEGAVO)
 ring: $(RINGVO)
+xml: $(XMLVO)
 
 clean::
 	rm -f contrib/*/*~ contrib/*/*.cm[io] contrib/*/*.vo

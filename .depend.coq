@@ -94,6 +94,7 @@ theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Le.vo theories/Ar
 test-suite/tactics/TestRefine.vo: test-suite/tactics/TestRefine.v tactics/Refine.vo theories/Init/Wf.vo theories/Arith/Wf_nat.vo theories/Arith/Compare_dec.vo theories/Arith/Lt.vo
 test-suite/bench/lists_100.vo: test-suite/bench/lists_100.v
 test-suite/bench/lists-100.vo: test-suite/bench/lists-100.v
+contrib/xml/Xml.vo: contrib/xml/Xml.v contrib/xml/ntrefiner.cmo contrib/xml/xml.cmo contrib/xml/cooking.cmo contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
 contrib/ring/ZArithRing.vo: contrib/ring/ZArithRing.v contrib/ring/ArithRing.vo theories/Zarith/ZArith.vo theories/Logic/Eqdep_dec.vo
 contrib/ring/Ring_theory.vo: contrib/ring/Ring_theory.v theories/Bool/Bool.vo
 contrib/ring/Ring_normalize.vo: contrib/ring/Ring_normalize.v contrib/ring/Ring_theory.vo contrib/ring/Quote.vo
