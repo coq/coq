@@ -390,6 +390,16 @@ let rec prlist_with_sep sep elem l = match l with
       let e = elem h and s = sep() and r = prlist_with_sep sep elem t in
       [< e; s; r >]
       
+let prvecti elem v =
+  let n = Array.length v in
+  let rec pr i =
+    if i = 0 then 
+      elem 0 v.(0)
+    else
+      let r = pr (i-1) and e = elem i v.(i) in [< r; e >]
+  in
+  pr (n-1)
+
 let prvect_with_sep sep elem v =
   let rec pr n =
     if n = 0 then 
@@ -397,5 +407,6 @@ let prvect_with_sep sep elem v =
     else 
       let r = pr (n-1) and s = sep() and e = elem v.(n) in 
       [< r; s; e >]
-  in
-  if Array.length v = 0 then [< >] else pr (Array.length v - 1)
+      in
+  let n = Array.length v in
+  if n = 0 then [< >] else pr (n - 1)

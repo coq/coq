@@ -38,7 +38,7 @@ let (in_variable, out_variable) =
     load_function = load_variable;
     open_function = open_variable;
     specification_function = specification_variable } in
-  declare_object ("Variable", od)
+  declare_object ("VARIABLE", od)
 
 let declare_variable id c =
   let obj = (id,c) in
@@ -63,7 +63,7 @@ let (in_parameter, out_parameter) =
     load_function = (fun _ -> ());
     open_function = open_parameter;
     specification_function = specification_parameter } in
-  declare_object ("Parameter", od)
+  declare_object ("PARAMETER", od)
 
 let declare_parameter id c =
   let sp = add_leaf id CCI (in_parameter c) in
@@ -89,7 +89,7 @@ let (in_constant, out_constant) =
     load_function = (fun _ -> ());
     open_function = open_constant;
     specification_function = specification_constant } in
-  declare_object ("Constant", od)
+  declare_object ("CONSTANT", od)
 
 let declare_constant id ce =
   let sp = add_leaf id CCI (in_constant ce) in
@@ -123,7 +123,7 @@ let (in_inductive, out_inductive) =
     load_function = (fun _ -> ());
     open_function = open_inductive;
     specification_function = specification_inductive } in
-  declare_object ("Inductive", od)
+  declare_object ("INDUCTIVE", od)
 
 let declare_mind mie =
   let id = match mie.mind_entry_inds with
