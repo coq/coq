@@ -470,12 +470,12 @@ ide/coq.cmx: toplevel/cerrors.cmx config/coq_config.cmx toplevel/coqtop.cmx \
     proofs/refiner.cmx library/states.cmx proofs/tacmach.cmx kernel/term.cmx \
     lib/util.cmx toplevel/vernac.cmx toplevel/vernacentries.cmx \
     toplevel/vernacexpr.cmx ide/coq.cmi 
-ide/coqide.cmo: ide/coq.cmi ide/find_phrase.cmo ide/highlight.cmo \
-    ide/ideutils.cmo proofs/pfedit.cmi lib/pp_control.cmi ide/preferences.cmo \
-    lib/util.cmi toplevel/vernacexpr.cmo 
-ide/coqide.cmx: ide/coq.cmx ide/find_phrase.cmx ide/highlight.cmx \
-    ide/ideutils.cmx proofs/pfedit.cmx lib/pp_control.cmx ide/preferences.cmx \
-    lib/util.cmx toplevel/vernacexpr.cmx 
+ide/coqide.cmo: ide/coq.cmi ide/coq_commands.cmo ide/find_phrase.cmo \
+    ide/highlight.cmo ide/ideutils.cmo proofs/pfedit.cmi lib/pp_control.cmi \
+    ide/preferences.cmo lib/util.cmi toplevel/vernacexpr.cmo 
+ide/coqide.cmx: ide/coq.cmx ide/coq_commands.cmx ide/find_phrase.cmx \
+    ide/highlight.cmx ide/ideutils.cmx proofs/pfedit.cmx lib/pp_control.cmx \
+    ide/preferences.cmx lib/util.cmx toplevel/vernacexpr.cmx 
 ide/find_phrase.cmo: ide/ideutils.cmo 
 ide/find_phrase.cmx: ide/ideutils.cmx 
 ide/highlight.cmo: ide/ideutils.cmo 
