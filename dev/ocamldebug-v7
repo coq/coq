@@ -2,10 +2,10 @@
 
 # wrap around ocamldebug for Coq
 
-export COQTOP=/home/herbelin/coq/V7trad
-export COQLIB=/home/herbelin/coq/V7trad
+export COQTOP=/home/herbelin/coq/V8
+export COQLIB=/home/herbelin/coq/V8
 export COQTH=$COQLIB/theories
-CAMLBIN=/usr/local/bin
+CAMLBIN=/usr/bin
 OCAMLDEBUG=$CAMLBIN/ocamldebug
 export CAMLP4LIB=`$CAMLBIN/camlp4 -where`
 
