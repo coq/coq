@@ -17,6 +17,8 @@
 
 \def\bfbar{\ensuremath{|\hskip -0.22em{}|\hskip -0.24em{}|}}
 \def\TERMbar{\bfbar}
+\def\notv{\text{_}}
+\def\infx#1{\notv#1\notv}
 
 
 %% Macros pour les grammaires
@@ -57,7 +59,6 @@
 \maketitle
 
 \section{Meta notations used in this document}
-$\xi$
 
 Non-terminals are printed between angle brackets (e.g. $\NT{non-terminal}$) and
 terminal symbols are printed in bold font (e.g. $\ETERM{terminal}$). Lexemes
@@ -105,10 +106,10 @@ Lexical categories are:
 \DEFNT{digit}       \CHAR{0}-\CHAR{9}
 \SEPDEF
 \DEFNT{letter}      \CHAR{a}-\CHAR{z}\mid\CHAR{A}-\CHAR{Z}
-                    \mid\NT{unicode-letter}\mid\NT{iso-latin-letter}
+                    \mid\NT{unicode-letter}
 
 \SEPDEF
-\DEFNT{string}      \CHAR{"}~\STARGR{\CHAR{$\backslash$"}\mid\CHAR{$\backslash\backslash$}\mid\NT{unicode-char}\mid\NT{iso-latin-char}}~\CHAR{"}
+\DEFNT{string}      \CHAR{"}~\STARGR{\CHAR{""}\mid\NT{unicode-char-but-"}}~\CHAR{"}
 \end{rules}
 
 Reserved identifiers for the core syntax are:
@@ -147,6 +148,7 @@ $$ \KWD{(}
 ~~ \TERMbar
 ~~ \KWD{@}
 ~~ \KWD{\%}
+~~ \KWD{.(}
 $$
 
 Note that \TERM{struct} is not a reserved identifier.
@@ -155,6 +157,9 @@ Note that \TERM{struct} is not a reserved identifier.
 
 \subsection{Core syntax}
 
+The main entry point of the term grammar is $\NTL{constr}{200}$. In
+order to avoid conflicts in grammars of tactics and vernac,
+$\NTL{constr}{9}$ is also used as entry point.
 
 \begin{rules}
 \DEFNT{constr}
@@ -164,9 +169,15 @@ Note that \TERM{struct} is not a reserved identifier.
 \nlsep \NT{constr}~\KWD{$\rightarrow$}~\NT{constr}    &80R  &\RNAME{arrow}
 \nlsep \NT{constr}~\KWD{$\rightarrow$}~\NT{binder-constr} &80R &\RNAME{arrow'}
 \nlsep \NT{constr}~\PLUS{\NT{appl-arg}}               &10L  &\RNAME{apply}
-\nlsep \KWD{@}~\NT{reference}~\STAR{\NT{constr}}      &10L  &\RNAME{expl-apply}
+\nlsep \KWD{@}~\NT{reference}~\STAR{\NTL{constr}{9}}  &10L  &\RNAME{expl-apply}
+\nlsep \NT{constr}~\KWD{.(}
+       ~\NT{reference}~\STAR{\NT{appl-arg}}~\TERM{)}  &1L & \RNAME{proj}
+\nlsep \NT{constr}~\KWD{.(}~\TERM{@}
+       ~\NT{reference}~\STAR{\NTL{constr}{9}}~\TERM{)} &1L & \RNAME{expl-proj}
 \nlsep \NT{constr} ~ \KWD{\%} ~ \NT{ident}            &1L   &\RNAME{scope-chg}
 \nlsep \NT{atomic-constr}                             &0
+\nlsep \NT{match-expr}                                &0
+\nlsep \KWD{(}~\NT{constr}~\KWD{)}                    &0
 \SEPDEF
 \DEFNT{binder-constr}
        \KWD{forall}~\NT{binder-list}~\KWD{,}~\NTL{constr}{200} 
@@ -174,21 +185,20 @@ Note that \TERM{struct} is not a reserved identifier.
 \nlsep \KWD{fun} ~\NT{binder-list} ~\KWD{$\Rightarrow$}~\NTL{constr}{200}
           &&\RNAME{lambda}
 \nlsep \NT{fix-expr}
-\nlsep \KWD{let}~\NT{ident}~\STAR{\NT{binder}}~\NT{type-cstr}
-       ~\KWD{:=}~\NT{constr}
+\nlsep \KWD{let}~\NT{ident}~\STAR{\NT{binder-let}}~\NT{type-cstr}
+       ~\KWD{:=}~\NTL{constr}{200}
        ~\KWD{in}~\NTL{constr}{200}  &&\RNAME{let}
-\nlsep \KWD{let}~\NT{single-fix} ~\KWD{in}~\NTL{constr}{200}
+\nlsep \KWD{let}~\NT{fix-expr} ~\KWD{in}~\NTL{constr}{200}
           &&\RNAME{rec-let}
-\nlsep \KWD{let}~\KWD{(}~\OPT{\NT{let-patt}}~\KWD{)}~\OPT{\NT{return-type}}
-       ~\KWD{:=}~\NT{constr}~\KWD{in}~\NTL{constr}{200}
+\nlsep \KWD{let}~\KWD{(}~\OPT{\NT{let-pattern}}~\KWD{)}~\OPT{\NT{return-type}}
+       ~\KWD{:=}~\NTL{constr}{200}~\KWD{in}~\NTL{constr}{200}
           &&\RNAME{let-case}
 \nlsep \KWD{if}~\NT{constr}~\OPT{\NT{return-type}}
        ~\KWD{then}~\NTL{constr}{200}~\KWD{else}~\NTL{constr}{200}
           &&\RNAME{if-case}
 \SEPDEF
 \DEFNT{appl-arg}
-%       \KWD{@}~\NT{int}~\!\KWD{:=}~\NTL{constr}{9}  &&\RNAME{impl-arg}
-       \KWD{(}~\NT{ident}~\!\KWD{:=}~\NTL{constr}~\KWD{)}  &&\RNAME{impl-arg}
+       \KWD{(}~\NT{ident}~\!\KWD{:=}~\NTL{constr}{200}~\KWD{)}  &&\RNAME{impl-arg}
 \nlsep \NTL{constr}{9}
 \SEPDEF
 \DEFNT{atomic-constr}
@@ -197,12 +207,6 @@ Note that \TERM{struct} is not a reserved identifier.
 \nlsep \NT{int}           && \RNAME{number}
 \nlsep \KWD{_}            && \RNAME{hole}
 \nlsep \NT{meta-ident}    && \RNAME{meta/evar}
-\nlsep \KWD{(}~\NT{tuple}~\KWD{)}
-\nlsep \NT{match-expr}
-\SEPDEF
-\DEFNT{tuple}
-       \NT{constr}
-\nlsep \NT{tuple}~\KWD{,}~\NT{constr}               &&\RNAME{pair}
 \end{rules}
 
 
@@ -221,9 +225,9 @@ Note that \TERM{struct} is not a reserved identifier.
        \NT{binder}
 \nlsep \KWD{(}~\NT{name}~\NT{type-cstr}~\KWD{:=}~\NT{constr}~\KWD{)}
 \SEPDEF
-\DEFNT{let-patt}
+\DEFNT{let-pattern}
        \NT{name}
-\nlsep \NT{name} ~\KWD{,} ~\NT{let-patt}
+\nlsep \NT{name} ~\KWD{,} ~\NT{let-pattern}
 \SEPDEF
 \DEFNT{type-cstr}
        \OPTGR{\KWD{:}~\NT{constr}}
@@ -302,111 +306,112 @@ Note that \TERM{struct} is not a reserved identifier.
 
 \subsection{Notations of the prelude (logic and basic arithmetic)}
 
+Reserved notations:
+
 $$
 \begin{array}{l|c}
 \text{Symbol} & \text{precedence} \\
 \hline
-\rightarrow, \leftrightarrow  & 80R \\
-\vee             & 70R \\
-\wedge           & 60R \\
-\tilde{}         & 55R \\
-=,\neq,<,>,\leq,\geq   & 50N \\
-+,-,\text{unary minus} & 40L \\
-*,/,\text{inverse}     & 30L \\
-{\text{_}}^2     & 20L
+\infx{,}             & 250L \\
+\infx{:}             & 100R \\
+\infx{\rightarrow}\quad \infx{\leftrightarrow}  & 80R \\
+\infx{\vee}          & 70R \\
+\infx{\wedge}        & 60R \\
+\tilde{}\notv        & 55R \\
+\begin{array}[c]{@{}l@{}}
+ \infx{=}\quad \infx{=}\KWD{$:>$}\notv \quad \infx{=}=\notv
+ \quad \infx{\neq} \quad  \infx{\neq}\KWD{$:>$}\notv \\
+ \infx{<}\quad\infx{>} \quad \infx{\leq}\quad\infx{\geq}
+ \quad \infx{<}<\notv \quad \infx{<}\leq\notv
+ \quad \infx{\leq}<\notv \quad \infx{\leq}\leq\notv
+\end{array}          & 50N \\
+\infx{+}\quad\infx{-}\quad -\notv   & 40L \\
+\infx{*}\quad\infx{/}\quad /\notv   & 30L \\
 \end{array}
 $$
 
-Existential quantifier follows the \KWD{forall} notation (with same
-precedence 200), producing an iterated application to constant \TERM{Ex}.
+Existential quantifiers follows the \KWD{forall} notation (with same
+precedence 200), but only one quantified variable is allowed.
 
 \begin{rules}
 \EXTNT{binder-constr}
-       \NT{quantifier-kwd}~\NT{binder-list}~\KWD{,}~\NTL{constr}{200} \\
+       \NT{quantifier-kwd}~\NT{name}~\NT{type-cstr}~\KWD{,}~\NTL{constr}{200} \\
 \SEPDEF
 \DEFNT{quantifier-kwd}
-       \TERM{ex} && \RNAME{Ex}
-\nlsep \TERM{ex_S} && \RNAME{sig}
-\nlsep \TERM{ex_T} && \RNAME{exT}
+       \TERM{exists} && \RNAME{ex}
+\nlsep \TERM{exists2} && \RNAME{ex2}
 \end{rules}
 
-\TERM{Ex2} \TERM{ExT2},, \TERM{sigS}, \TERM{sigT}, \TERM{sigS2},
-\TERM{sumor} and \TERM{sumbool} have no particular syntax.
+$$
+\begin{array}{l|c|l}
+\text{Symbol} & \text{precedence} \\
+\hline
+\notv+\{\notv\}                            & 40 & \RNAME{sumor} \\
+\{\notv:\notv~|~\notv\}                    & 10 & \RNAME{sig} \\
+\{\notv:\notv~|~\notv \& \notv \}          & 10 & \RNAME{sig2} \\
+\{\notv:\notv~\&~\notv \}                  & 10 & \RNAME{sigS} \\
+\{\notv:\notv~\&~\notv \& \notv \}         & 10 & \RNAME{sigS2} \\
+\{\notv\}+\{\notv\}                        & 10 & \RNAME{sumbool} \\
+\end{array}
+$$
 
 
-\subsection{Notations for records}
-
-Of these notations, only the dot notation for field acces is implemented.
-
-\begin{rules}
-\EXTNT{constr}
-       \NT{constr}~\TERM{.(}~\NT{constr}~\PLUS{\NT{appl-arg}}~\KWD{)} &9L~~ & \RNAME{proj}
-\nlsep \NT{constr}~\TERM{.(}~\KWD{@}~\NT{reference}~\STAR{\NT{constr}}~\KWD{)} &9L~~ & \RNAME{proj-expl}
-\nlsep \KWD{\{}~\NT{rfield}~\STARGR{\KWD{;}~\NT{rfield}}~\KWD{\}} &0
-    &\RNAME{constructor}
-\SEPDEF
-\EXTNT{pattern}
-       \KWD{\{}~\NT{field-patt}~\STARGR{\KWD{;}~\NT{field-patt}}~\KWD{\}}
-\SEPDEF
-\DEFNT{rfield}
-       \GR{\NT{reference}~\mid~\KWD{_}}~\KWD{:=}~\NT{constr}
-\SEPDEF
-\DEFNT{field-patt}
-       \GR{\NT{reference}~\mid~\KWD{_}}~\KWD{:=}~\NT{pattern}
-\end{rules}
-
-Note that $\NT{reference}~\NT{field}$ may also denote a record projection.
-The conflict with module access can be resolved at globalization time,
-depending whether the $\NT{reference}$ is a module or not.
-
+%% ``IF then else'' is missing
 
 \section{Grammar of tactics}
 
 \subsection{Basic tactics}
 
+\def\tacconstr{\NTL{constr}{9}}
+\def\taclconstr{\NTL{constr}{200}}
+
 \begin{rules}
 \DEFNT{simple-tactic}
        \TERM{intros}~\TERM{until}~\NT{quantified-hyp}
 \nlsep \TERM{intros}~\NT{intro-patterns}
-\nlsep \TERM{intro}~\OPT{\NT{name}}~\OPTGR{\TERM{after}~\NT{ident}}
+\nlsep \TERM{intro}~\OPT{\NT{ident}}~\OPTGR{\TERM{after}~\NT{ident}}
 %%
 \nlsep \TERM{assumption}
-\nlsep \TERM{exact}~\NT{constr}
+\nlsep \TERM{exact}~\tacconstr
 %%
 \nlsep \TERM{apply}~\NT{constr-with-bindings}
 \nlsep \TERM{elim}~\NT{constr-with-bindings}~\OPT{\NT{eliminator}}
-\nlsep \TERM{elimtype}~\NT{constr}
+\nlsep \TERM{elimtype}~\tacconstr
 \nlsep \TERM{case}~\NT{constr-with-bindings}
-\nlsep \TERM{casetype}~\NT{constr}
+\nlsep \TERM{casetype}~\tacconstr
 \nlsep \KWD{fix}~\OPT{\NT{ident}}~\NT{int}
-\nlsep \KWD{fix}~\NT{ident}~\NT{int}~\PLUS{\NT{fixdecl}}
+\nlsep \KWD{fix}~\NT{ident}~\NT{int}~\PLUS{\NT{fix-spec}}
 \nlsep \KWD{cofix}~\OPT{\NT{ident}}
-\nlsep \KWD{cofix}~\NT{ident}~\PLUS{\NT{fixdecl}}
+\nlsep \KWD{cofix}~\NT{ident}~\PLUS{\NT{fix-spec}}
 %%
-\nlsep \TERM{cut}~\NT{constr}
-\nlsep \TERM{assert}~\NT{constr}
-\nlsep \TERM{assert}~\NT{constr}~\KWD{:=}~\NT{constr}
-\nlsep \TERM{pose}~\NT{constr}
-\nlsep \TERM{pose}~\NT{constr}~\KWD{:=}~\NT{constr}
-\nlsep \TERM{generalize}~\NT{constr}~\STARGR{\KWD{,}~\NT{constr}}
-\nlsep \TERM{generalize}~\TERM{dependent}~\NT{constr}
-\nlsep \TERM{lettac}~\NT{ident}~\KWD{:=}~\NT{constr}~\NT{clause-pattern}
-\nlsep \TERM{instantiate}~\NT{int}~\NT{constr}
+\nlsep \TERM{cut}~\tacconstr
+\nlsep \TERM{assert}~\tacconstr
+\nlsep \TERM{assert}~
+  \TERM{(}~\NT{ident}~\KWD{:=}~\taclconstr~\TERM{)}
+\nlsep \TERM{pose}~\tacconstr
+\nlsep \TERM{pose}~
+  \TERM{(}~\NT{ident}~\KWD{:=}~\taclconstr~\TERM{)}
+\nlsep \TERM{generalize}~\tacconstr~\STARGR{\KWD{,}~\tacconstr}
+\nlsep \TERM{generalize}~\TERM{dependent}~\tacconstr
+\nlsep \TERM{lettac}~
+  \TERM{(}~\NT{ident}~\KWD{:=}~\taclconstr~\TERM{)}~\NT{clause-pattern}
+\nlsep \TERM{instantiate}~
+  \TERM{(}~\NT{int}~\TERM{:=}~\taclconstr~\TERM{)}
 %%
 \nlsep \TERM{specialize}~\OPT{\NT{int}}~\NT{constr-with-bindings}
-\nlsep \TERM{lapply}~\NT{constr}
+\nlsep \TERM{lapply}~\tacconstr
 %%
-\nlsep \TERM{oldinduction}~\NT{quantified-hyp}
+\nlsep \TERM{simple_induction}~\NT{quantified-hyp}
 \nlsep \TERM{induction}~\NT{induction-arg}~\OPT{\NT{eliminator}}
        ~\OPT{\NT{with-names}}
 \nlsep \TERM{double}~\TERM{induction}~\NT{quantified-hyp}~\NT{quantified-hyp}
-\nlsep \TERM{olddestruct}~\NT{quantified-hyp}
+\nlsep \TERM{simple_destruct}~\NT{quantified-hyp}
 \nlsep \TERM{destruct}~\NT{induction-arg}~\OPT{\NT{eliminator}}
        ~\OPT{\NT{with-names}}
-\nlsep \TERM{decompose}~\TERM{record}~\NT{constr}
-\nlsep \TERM{decompose}~\TERM{sum}~\NT{constr}
-\nlsep \TERM{decompose}~\TERM{[}~\PLUS{\NT{ltac-ref}}~\TERM{]}
-       ~\NT{constr}
+\nlsep \TERM{decompose}~\TERM{record}~\tacconstr
+\nlsep \TERM{decompose}~\TERM{sum}~\tacconstr
+\nlsep \TERM{decompose}~\TERM{[}~\PLUS{\NT{reference}}~\TERM{]}
+       ~\tacconstr
 %%
 \nlsep ...
 \end{rules}
@@ -423,8 +428,8 @@ depending whether the $\NT{reference}$ is a module or not.
 \nlsep \TERM{superauto}~\NT{auto-args}
 \nlsep \TERM{auto}~\OPT{\NT{int}}~\TERM{decomp}~\OPT{\NT{int}}
 %%
-\nlsep \TERM{clear}~\PLUS{\NT{ltac-id}}
-\nlsep \TERM{clearbody}~\PLUS{\NT{ltac-id}}
+\nlsep \TERM{clear}~\PLUS{\NT{ident}}
+\nlsep \TERM{clearbody}~\PLUS{\NT{ident}}
 \nlsep \TERM{move}~\NT{ident}~\TERM{after}~\NT{ident}
 \nlsep \TERM{rename}~\NT{ident}~\TERM{into}~\NT{ident}
 %%
@@ -437,7 +442,7 @@ depending whether the $\NT{reference}$ is a module or not.
 %%
 \nlsep \TERM{reflexivity}
 \nlsep \TERM{symmetry}
-\nlsep \TERM{transitivity}~\NT{constr}
+\nlsep \TERM{transitivity}~\tacconstr
 %%
 \nlsep \NT{red-expr}~\NT{clause}
 \nlsep \TERM{change}~\NT{conversion}~\NT{clause}
@@ -448,32 +453,28 @@ depending whether the $\NT{reference}$ is a module or not.
 \nlsep \TERM{cbv}~\PLUS{\NT{red-flag}}
 \nlsep \TERM{lazy}~\PLUS{\NT{red-flag}}
 \nlsep \TERM{unfold}~\NT{unfold-occ}~\STARGR{\KWD{,}~\NT{unfold-occ}}
-\nlsep \TERM{fold}~\NT{constr}~\STARGR{\KWD{,}~\NT{constr}}
+\nlsep \TERM{fold}~\tacconstr~\STARGR{\KWD{,}~\tacconstr}
 \nlsep \TERM{pattern}~\NT{pattern-occ}~\STARGR{\KWD{,}~\NT{pattern-occ}}
 \SEPDEF
 \DEFNT{conversion}
-       \STAR{\NT{int}}~\NT{constr}~\KWD{with}~\NT{constr}
-\nlsep \NT{constr}
+       \tacconstr~\TERM{at}~\PLUS{\NT{int}}~\KWD{with}~\tacconstr
+       \tacconstr~\KWD{with}~\tacconstr
+\nlsep \tacconstr
 \end{rules}
 
 Conflicts exists between integers and constrs.
 
 \begin{rules}
-\DEFNT{ltac-id}
-       \NT{ident} ~\mid~ \NT{meta-ident}
-\SEPDEF
-\DEFNT{ltac-ref}
-      \NT{reference} ~\mid~ \NT{meta-ident}
-\SEPDEF
 \DEFNT{quantified-hyp}
        \NT{int}~\mid~\NT{ident}
 \SEPDEF
 \DEFNT{induction-arg}
-       \NT{int}~\mid~\NT{constr}
+       \NT{int}~\mid~\tacconstr
 \SEPDEF
-\DEFNT{fixdecl}
+%% TODO: lconstr not followed by a keyword
+\DEFNT{fix-spec}
        \KWD{with}~\NT{ident}~\STAR{\NT{binder}}~\OPT{\NT{annot}}
-       ~\KWD{:}~\NTL{constr}{100}
+       ~\KWD{:}~\taclconstr
 \SEPDEF
 \DEFNT{intro-patterns}
        \STAR{\NT{intro-pattern}}
@@ -494,28 +495,28 @@ Conflicts exists between integers and constrs.
 \SEPDEF
 \DEFNT{constr-with-bindings}
        % dangling ``with'' of ``fix'' can conflict with ``with''
-       \NTL{constr}{100}~\OPT{\NT{with-binding-list}}
+       \tacconstr~\OPT{\NT{with-binding-list}}
 \SEPDEF
 \DEFNT{with-binding-list}
        \KWD{with}~\NT{binding-list}
 \SEPDEF
 \DEFNT{binding-list}
-       \PLUS{\NTL{constr}{9}}
+       \PLUS{\tacconstr}
 \nlsep \PLUS{\NT{simple-binding}}
 \SEPDEF
 \DEFNT{simple-binding}
        \KWD{(}~\NT{quantified-hyp}~\KWD{:=}~\NT{constr}~\KWD{)}
 \SEPDEF
 \DEFNT{pattern-occ}
-       \NTL{constr}{9}~\STAR{\NT{int}}
+       \tacconstr~\STAR{\NT{int}}
 \SEPDEF
 \DEFNT{unfold-occ}
-       \NT{ltac-ref}~\STAR{\NT{int}}
+       \NT{reference}~\STAR{\NT{int}}
 \SEPDEF
 \DEFNT{red-flag}
        \TERM{beta} ~\mid~ \TERM{iota} ~\mid~ \TERM{zeta}
        ~\mid~ \TERM{delta} ~\mid~
-       \TERM{delta}~\OPT{\TERM{-}}~\TERM{[}~\PLUS{\NT{ltac-ref}}~\TERM{]}
+       \TERM{delta}~\OPT{\TERM{-}}~\TERM{[}~\PLUS{\NT{reference}}~\TERM{]}
 \SEPDEF
 \DEFNT{clause}
        \OPTGR{\KWD{in}~\NT{hyp-ident}}
@@ -590,8 +591,8 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \TERM{fresh} ~\OPT{\NT{string}}
 \nlsep \TERM{context} ~\NT{ident} ~\TERM{[} ~\NT{constr} ~\TERM{]}
 \nlsep \TERM{eval} ~\NT{red-expr} ~\KWD{in} ~\NT{constr}
-\nlsep \TERM{check} ~\NT{constr}
-\nlsep \TERM{'} ~\NT{constr}
+\nlsep \TERM{check} ~\tacconstr
+\nlsep \TERM{'} ~\tacconstr
 \nlsep \NT{reference}~\STAR{\NT{tactic-arg}}  &&\RNAME{call-tactic}
 \nlsep \NT{simple-tactic}
 %%
@@ -601,7 +602,7 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \DEFNT{tactic-arg}
        \TERM{\bf '} ~\NTL{tactic}{0}
 \nlsep \NT{tactic-atom}
-\nlsep \NTL{constr}{9}
+\nlsep \tacconstr
 \SEPDEF
 \DEFNT{tactic-atom}
        \NT{reference}
@@ -658,7 +659,7 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \NT{constr-pattern}
 \SEPDEF
 \DEFNT{constr-pattern}
-       \NT{constr}
+       \tacconstr
 \end{rules}
 
 \section{Grammar of commands}

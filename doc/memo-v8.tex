@@ -39,7 +39,7 @@ syntax, but this document should also be useful for the eager user who wants
 to start with the new syntax quickly.
 
 
-\section{Main changes in terms w.r.t. V7}
+\section{Changes in lexical conventions w.r.t. V7}
 
 \subsection{Identifiers}
 
@@ -47,11 +47,24 @@ The lexical conventions changed: \TERM{_} is not a regular identifier
 anymore. It is used in terms as a placeholder for subterms to be inferred
 at type-checking, and in patterns as a non-binding variable.
 
+Furthermore, only letters, digits, single quotes and _ are allowed
+after the first character.
+
+\subsection{Quoted string}
+
+Quoted strings are used typically to give a filename (which may not
+be a regular identifier). As before they are written between double
+quotes ("). Unlike for V7, there is no escape character: characters
+are written normaly but the double quote which is doubled.
+
+\section{Main changes in terms w.r.t. V7}
+
+
 \subsection{Precedence of application}
 
 In the new syntax, parentheses are not really part of the syntax of
 application. The precedence of application (10) is tighter than all
-prefix and infix notations. It makes ot possible to remove the parentheses
+prefix and infix notations. It makes it possible to remove parentheses
 in many contexts.
 
 \begin{transbox}
@@ -87,12 +100,12 @@ has been opened.
 \TRANSCOM{(0)}{0}{\textrm{nat_scope}}
 \end{transbox}
 
-Below is a table that tells which notation is available in which. The
-relative precedences and associativity of operators is the same as in
-usual mathematics. See the reference manual for more details. However,
-it is important to remember that unlike V7, the type operators for
-product and sum are left associative, in order not to clash with
-arithmetic operators.
+Below is a table that tells which notation is available in which
+scope. The relative precedences and associativity of operators is the
+same as in usual mathematics. See the reference manual for more
+details. However, it is important to remember that unlike V7, the type
+operators for product and sum are left associative, in order not to
+clash with arithmetic operators.
 
 \begin{center}
 \begin{tabular}{l|l}
@@ -157,12 +170,12 @@ and $\Rightarrow$ (\verb+=>+ in ascii).
 Beside the usage of the keyword pair \TERM{match}/\TERM{with} instead of
 \TERM{Cases}/\TERM{of}, the main change is the notation for the type of
 branches and return type. It is no longer written between \TERM{$<$ $>$} before
-the \TERM{Cases} keyword, but interleaved with the destructured object.
+the \TERM{Cases} keyword, but interleaved with the destructured objects.
 
 The idea is that for each destructured object, one may specify a variable
-name to tell how the branches type depend on this destructured object (case
+name to tell how the branches types depend on this destructured objects (case
 of a dependent elimination), and also how they depend on the value of the
-arguments of the inductive type of the destructured object. The type of
+arguments of the inductive type of the destructured objects. The type of
 branches is then given after the keyword \TERM{return}, unless it can be
 inferred.
 
@@ -188,12 +201,12 @@ one variable. The type of the result can be omitted if inferable.
 \begin{transbox}
 \TRANS{Fix plus\{plus [n:nat] : nat -> nat :=\\~~ [m]...\}}{fix plus (n m:nat) \{struct n\}: nat := ...}
 \TRANS{Fix fact\{fact [n:nat]: nat :=\\
-~~Cases n of\\~~~~ O -> (1) \\~~| (S k) => (mult n (fact k)) end\}}{fix fact
+~~Cases n of\\~~~~ O => (1) \\~~| (S k) => (mult n (fact k)) end\}}{fix fact
   (n:nat) :=\\
 ~~match n with \\~~~~0 => 1 \\~~| (S k) => n * fact k end}
 \end{transbox}
 
-There is a syntactic sugar for non-mutual fixpoints associated to a local
+There is a syntactic sugar for mutual fixpoints associated to a local
 definition:
 
 \begin{transbox}
@@ -268,7 +281,7 @@ fixpoints. This also holds for parameters of inductive definitions.
 The syntax of \emph{extern} hints changed: the pattern and the tactic
 to be applied are separated by a \TERM{$\Rightarrow$}.
 \begin{transbox}
-\TRANS{Extern 4 (toto ?) Apply lemma}{Extern 4 toto _ => Apply lemma}
+\TRANS{Hint Extern 4 (toto ?) Apply lemma}{Hint Extern 4 (toto _) => apply lemma}
 \end{transbox}
 
 \end{document}
