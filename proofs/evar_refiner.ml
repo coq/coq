@@ -24,6 +24,8 @@ open Proof_type
 open Logic
 open Refiner
 open Tacexpr
+open Nameops
+
 
 type wc = named_context sigma (* for a better reading of the following *)
 
@@ -106,8 +108,12 @@ let w_Define sp c wc =
   let cty = 
     try 
       w_type_of (w_Focus sp wc) (mkCast (c,spdecl.evar_concl))
-    with Not_found | (Type_errors.TypeError (_, Type_errors.UnboundVar _))-> 
-      error "Instantiation contains unlegal variables"
+    with 
+	Not_found -> error "Instantiation contains unlegal variables"
+      | (Type_errors.TypeError (e, Type_errors.UnboundVar v))-> 
+      errorlabstrm "w_Define"
+      (str "Cannot use variable " ++ pr_id v ++ str " to define " ++ 
+       str (string_of_existential sp))
   in 
   match spdecl.evar_body with
     | Evar_empty ->
