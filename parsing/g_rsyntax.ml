@@ -57,7 +57,7 @@ open Bigint
 let rec int_decomp m = 
   if equal m zero then [0] else
   if equal m one then [1] else
-  let (b,r) = euclid m two in (if equal b zero then 0 else 1) :: int_decomp r
+  let (m',b) = euclid m two in (if equal b zero then 0 else 1) :: int_decomp m'
 
 let _ = if !Options.v7 then
 let r_of_int n dloc =
