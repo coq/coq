@@ -92,18 +92,18 @@ type existential = existential_key * constr array
 val mkEvar : existential -> constr
 
 (* Construct a sort *)
-val mkSort : sorts -> constr
-val mkProp : constr
-val mkSet  : constr 
-val mkType : Univ.universe -> constr
+val mkSort : sorts -> types
+val mkProp : types
+val mkSet  : types
+val mkType : Univ.universe -> types
 
 (* Constructs the term [t1::t2], i.e. the term $t_1$ casted with the 
    type $t_2$ (that means t2 is declared as the type of t1). *)
 val mkCast : constr * types -> constr
 
 (* Constructs the product [(x:t1)t2] *)
-val mkProd : name * types * types -> constr
-val mkNamedProd : identifier -> types -> types -> constr
+val mkProd : name * types * types -> types
+val mkNamedProd : identifier -> types -> types -> types
 (* non-dependant product $t_1 \rightarrow t_2$, an alias for
    [(_:t1)t2]. Beware $t_2$ is NOT lifted.
    Eg: A |- A->A is built by [(mkArrow (mkRel 0) (mkRel 1))] *)
@@ -190,7 +190,7 @@ type ('constr, 'types) kind_of_term =
   | Meta      of int
   | Evar      of 'constr pexistential
   | Sort      of sorts
-  | Cast      of 'constr * 'constr
+  | Cast      of 'constr * 'types
   | Prod      of name * 'types * 'types
   | Lambda    of name * 'types * 'constr
   | LetIn     of name * 'constr * 'types * 'constr
@@ -207,6 +207,16 @@ type ('constr, 'types) kind_of_term =
    term *)
 
 val kind_of_term : constr -> (constr, types) kind_of_term
+
+(* Experimental *)
+type ('constr, 'types) kind_of_type =
+  | SortType   of sorts
+  | CastType   of 'types * 'types
+  | ProdType   of name * 'types * 'types
+  | LetInType  of name * 'constr * 'types * 'types
+  | AtomicType of 'constr * 'constr array
+
+val kind_of_type : types -> (constr, types) kind_of_type
 
 (*s Simple term case analysis. *)
 
@@ -299,11 +309,13 @@ type rel_declaration = name * constr option * types
 
 val map_named_declaration :
   (constr -> constr) -> named_declaration -> named_declaration
+val map_rel_declaration :
+  (constr -> constr) -> rel_declaration -> rel_declaration
 
 (* Constructs either [(x:t)c] or [[x=b:t]c] *)
-val mkProd_or_LetIn : rel_declaration -> types -> constr
-val mkNamedProd_or_LetIn : named_declaration -> types -> constr
-val mkNamedProd_wo_LetIn : named_declaration -> types -> constr
+val mkProd_or_LetIn : rel_declaration -> types -> types
+val mkNamedProd_or_LetIn : named_declaration -> types -> types
+val mkNamedProd_wo_LetIn : named_declaration -> types -> types
 
 (* Constructs either [[x:t]c] or [[x=b:t]c] *)
 val mkLambda_or_LetIn : rel_declaration -> constr -> constr
@@ -424,7 +436,6 @@ val subst_var : identifier -> constr -> constr
 (* [subst_vars [id1;...;idn] t] substitute [VAR idj] by [Rel j] in [t]
    if two names are identical, the one of least indice is keeped *)
 val subst_vars : identifier list -> constr -> constr
-
 (* [substn_vars n [id1;...;idn] t] substitute [VAR idj] by [Rel j+n-1] in [t]
    if two names are identical, the one of least indice is keeped *)
 val substn_vars : int -> identifier list -> constr -> constr

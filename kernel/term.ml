@@ -56,71 +56,6 @@ let family_of_sort = function
 (*       Constructions as implemented                               *)
 (********************************************************************)
 
-(* I would like the internal representation of constr hidden in a
-module but ocaml does not allow then to export Internal.kind_of_term
-as kind_of_term with the same constructors as Internal.kind_of_term !! *)
-
-(* What is intended ...
-
-module type InternalSig = sig
-
-type constr
-type existential = existential_key * constr array
-type rec_declaration = name array * constr array * constr array
-type fixpoint = (int array * int) * rec_declaration
-type cofixpoint = int * rec_declaration
-
-type kind_of_term =
-  | Rel          of int
-  | Meta         of int
-  | Var          of identifier
-  | Sort         of sorts
-  | Cast         of constr * constr
-  | Prod         of name * constr * constr
-  | Lambda       of name * constr * constr
-  | LetIn        of name * constr * constr * constr
-  | App          of constr * constr array
-  | Evar         of existential
-  | Const        of constant
-  | Ind          of inductive
-  | Construct    of constructor
-  | Case         of case_info * constr * constr * constr array
-  | Fix          of fixpoint
-  | CoFix        of cofixpoint
-
-val mkRel : int -> constr
-val mkMeta : int -> constr
-val mkVar : identifier -> constr
-val mkSort : sorts -> constr
-val mkCast : constr * constr -> constr
-val mkProd : name * constr * constr -> constr
-val mkLambda : name * constr * constr -> constr
-val mkLetIn : name * constr * constr * constr -> constr
-val mkApp : constr * constr array -> constr
-val mkEvar : existential -> constr
-val mkConst : constant -> constr
-val mkMutInd : inductive -> constr
-val mkMutConstruct : constructor -> constr
-val mkMutCase : case_info * constr * constr * constr array -> constr
-val mkFix : fixpoint -> constr
-val mkCoFix : cofixpoint -> constr
-
-val kind_of_term : constr -> kind_of_term
-
-val hcons_term : 
-  (sorts -> sorts) * (section_path -> section_path) *
-  (name -> name) * (identifier -> identifier) * (string -> string)
-  -> constr -> constr
-end
-
-END of intended signature of internal constr 
-*)
-
-(*
-module Internal : InternalSig =
-struct
-*)
-
 (* [constr array] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
 type 'constr pexistential = existential_key * 'constr array
@@ -139,7 +74,7 @@ type ('constr, 'types) kind_of_term =
   | Meta      of int
   | Evar      of 'constr pexistential
   | Sort      of sorts
-  | Cast      of 'constr * 'constr
+  | Cast      of 'constr * 'types
   | Prod      of name * 'types * 'types
   | Lambda    of name * 'types * 'constr
   | LetIn     of name * 'constr * 'types * 'constr
@@ -150,6 +85,24 @@ type ('constr, 'types) kind_of_term =
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
+
+(* Experimental *)
+type ('constr, 'types) kind_of_type =
+  | SortType   of sorts
+  | CastType   of 'types * 'types
+  | ProdType   of name * 'types * 'types
+  | LetInType  of name * 'constr * 'types * 'types
+  | AtomicType of 'constr * 'constr array
+
+let kind_of_type = function
+  | Sort s -> SortType s
+  | Cast (c,t) -> CastType (c, t)
+  | Prod (na,t,c) -> ProdType (na, t, c)
+  | LetIn (na,b,t,c) -> LetInType (na, b, t, c)
+  | App (c,l) -> AtomicType (c, l)
+  | (Rel _ | Meta _ | Var _ | Evar _ | Const _ | Case _ | Fix _ | CoFix _ | Ind _ as c)
+    -> AtomicType (c,[||])
+  | (Lambda _ | Construct _) -> failwith "Not a type"
 
 (* constr is the fixpoint of the previous type. Requires option
    -rectypes of the Caml compiler to be set *)
@@ -301,29 +254,9 @@ let mkCoFix cofix = CoFix cofix
 
 let kind_of_term c = c
 
-(*
-end
-END of expected but not allowed module (second variant) *)
-
 (***********************************************************************)
 (*    kind_of_term = constructions as seen by the user                 *)
 (***********************************************************************)
-
-(*
-type constr = Internal.constr
-type existential = Internal.existential
-type constant = Internal.constant
-type constructor = Internal.constructor
-type inductive = Internal.inductive
-type rec_declaration = Internal.rec_declaration
-type fixpoint = Internal.fixpoint
-type cofixpoint = Internal.cofixpoint
-
-type kind_of_term = Internal.kindOfTerm
-
-open Internal
-
-END of expected re-export of Internal module *)
 
 (* User view of [constr]. For [App], it is ensured there is at
    least one argument and the function is not itself an applicative
@@ -697,9 +630,8 @@ let body_of_type ty = ty
 type named_declaration = identifier * constr option * types
 type rel_declaration = name * constr option * types
 
-let map_named_declaration f = function
-    (id, Some v, ty) -> (id, Some (f v), f ty)
-  | (id, None, ty) -> (id, None, f ty)
+let map_named_declaration f (id, v, ty) = (id, option_app f v, f ty)
+let map_rel_declaration = map_named_declaration
 
 (****************************************************************************)
 (*              Functions for dealing with constr terms                     *)
