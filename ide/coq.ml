@@ -37,8 +37,12 @@ let msgnl m =
   (msg m)^"\n"
 
 let init () = 
+  (* To hide goal in lower window. 
+     Problem: should not hide "xx is assumed"
+     messages *)
   Options.make_silent true;
   Coqtop.init_ide ()
+
 
 let i = ref 0
 
