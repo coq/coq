@@ -3,8 +3,6 @@ tactics/eqdecide.ml: parsing/grammar.cma
 tactics/extraargs.ml: parsing/grammar.cma
 tactics/extratactics.ml: parsing/grammar.cma
 tactics/eauto.ml: parsing/grammar.cma
-contrib/interface/debug_tac.ml: parsing/grammar.cma
-contrib/interface/centaur.ml: parsing/grammar.cma
 contrib/omega/g_omega.ml: parsing/grammar.cma
 contrib/romega/g_romega.ml: parsing/grammar.cma
 contrib/ring/g_quote.ml: parsing/grammar.cma
@@ -17,6 +15,8 @@ contrib/jprover/jprover.ml: parsing/grammar.cma
 contrib/cc/cctac.ml: parsing/grammar.cma
 contrib/funind/tacinv.ml: parsing/grammar.cma
 contrib/first-order/g_ground.ml: parsing/grammar.cma
+contrib/interface/debug_tac.ml: parsing/grammar.cma
+contrib/interface/centaur.ml: parsing/grammar.cma
 parsing/lexer.ml: 
 parsing/q_util.ml: 
 parsing/q_coqast.ml: 

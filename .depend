@@ -3231,10 +3231,6 @@ tactics/extratactics.cmo: parsing/grammar.cma
 tactics/extratactics.cmx: parsing/grammar.cma
 tactics/eauto.cmo: parsing/grammar.cma
 tactics/eauto.cmx: parsing/grammar.cma
-contrib/interface/debug_tac.cmo: parsing/grammar.cma
-contrib/interface/debug_tac.cmx: parsing/grammar.cma
-contrib/interface/centaur.cmo: parsing/grammar.cma
-contrib/interface/centaur.cmx: parsing/grammar.cma
 contrib/omega/g_omega.cmo: parsing/grammar.cma
 contrib/omega/g_omega.cmx: parsing/grammar.cma
 contrib/romega/g_romega.cmo: parsing/grammar.cma
@@ -3259,6 +3255,10 @@ contrib/funind/tacinv.cmo: parsing/grammar.cma
 contrib/funind/tacinv.cmx: parsing/grammar.cma
 contrib/first-order/g_ground.cmo: parsing/grammar.cma
 contrib/first-order/g_ground.cmx: parsing/grammar.cma
+contrib/interface/debug_tac.cmo: parsing/grammar.cma
+contrib/interface/debug_tac.cmx: parsing/grammar.cma
+contrib/interface/centaur.cmo: parsing/grammar.cma
+contrib/interface/centaur.cmx: parsing/grammar.cma
 parsing/lexer.cmo: 
 parsing/lexer.cmx: 
 parsing/q_util.cmo: 
