@@ -165,7 +165,7 @@ GEXTEND Gram
 	  VernacRemoveOption (PrimaryTable table, v) ] ]
   ;
   printable:
-    [ [ IDENT "Term"; qid = global -> PrintName qid
+    [ [ IDENT "Term"; qid = global -> PrintOpaqueName qid
       | IDENT "All" -> PrintFullContext
       | IDENT "Section"; s = global -> PrintSectionContext s
       | IDENT "Grammar"; uni = IDENT; ent = IDENT ->
@@ -286,22 +286,26 @@ GEXTEND Gram
               [IDENT "V8only";
                a8=entry_prec;
                n8=OPT natural;
+	       op8=OPT STRING;
                mv8=OPT["("; l = LIST1 syntax_modifier SEP ","; ")" -> l] ->
-		 (match (a8,n8,mv8) with
-		   | None,None,None -> None
-		   | _,_,Some mv8 ->
+		 (match (a8,n8,mv8,op8) with
+		   | None,None,None,None -> None
+		   | _,_,Some mv8,_ ->
 		   let (a8,n8,_) = Metasyntax.interp_infix_modifiers a8 n8 mv8
-		   in Some(a8,n8)
-		   | _,_,None -> Some (a8,n8))
+		   in Some(a8,n8,op8)
+		   | _,_,None,_ -> Some (a8,n8,op8))
               | -> (* Means: rules are based on V7 rules *)
-		  Some (None,None) ] ->
+		  Some (None,None,None) ] ->
 		let v8 = Util.option_app (function
-		  | None, None ->
+		  | None, None, op8 ->
+		      let op8 = match op8 with None -> op | Some op -> op in
 		      let nv8 = Util.option_app adapt_level n in
 		      let mv8 = List.map map_modl modl in
 		      let (a8,n8,_) = Metasyntax.interp_infix_modifiers a nv8
-			mv8 in (a8,n8,op)
-		  | a8,n8 -> (a8,n8,op)) mv8 in
+			mv8 in (a8,n8,op8)
+		  | a8,n8,op8 ->
+		      let op8 = match op8 with None -> op | Some op -> op in
+		      (a8,n8,op8)) mv8 in
            let (ai,ni,b) = Metasyntax.interp_infix_modifiers a n modl in
            VernacInfix (local,ai,ni,op,p,b,v8,sc)
      | IDENT "Distfix"; local = locality; a = entry_prec; n = natural; 
