@@ -53,7 +53,7 @@ let rec type_of env cstr=
         let (typ,kind) = destCast (type_of_constructor env sigma cstr) in typ
     | IsMutCase (_,p,c,lf) ->
         let ind_data =
-          try try_mutind_of env sigma (type_of env c)
+          try find_inductive env sigma (type_of env c)
           with Induc -> anomaly "type_of: Bad inductive" in
 	let (aritysign,_) = get_arity env sigma ind_data in
 	let (psign,_) = splay_prod env sigma (type_of env p) in

@@ -190,7 +190,7 @@ type 'a pattern_matching_problem =
 (* Utils *)
 
 let to_mutind env sigma t =
-  try IsInd (t,try_mutind_of env sigma t)
+  try IsInd (t,find_inductive env sigma t)
   with Induc -> NotInd t
 
 let type_of_tomatch_type = function
@@ -831,18 +831,18 @@ let coerce_row typing_fun isevars env row tomatch =
 	  (let tyi = inductive_of_rawconstructor c in
 	   try 
 	     let indtyp = inh_coerce_to_ind isevars env j.uj_type tyi in
-	     IsInd (j.uj_type,try_mutind_of env !isevars j.uj_type)
+	     IsInd (j.uj_type,find_inductive env !isevars j.uj_type)
 	 with NotCoercible ->
 	   (* 2 cas : pas le bon inductive ou pas un inductif du tout *)
 	   try
-	     let ind_data = try_mutind_of env !isevars j.uj_type in
+	     let ind_data = find_inductive env !isevars j.uj_type in
 	     error_bad_constructor_loc cloc CCI
 	       (constructor_of_rawconstructor c) ind_data.mind
 	   with Induc ->
 	     error_case_not_inductive_loc
 	       (loc_of_rawconstr tomatch) CCI env j.uj_val j.uj_type)
       | None -> 
-	  try IsInd (j.uj_type,try_mutind_of env !isevars j.uj_type)
+	  try IsInd (j.uj_type,find_inductive env !isevars j.uj_type)
 	  with Induc -> NotInd (j.uj_type)
   in (j.uj_val,t)
 

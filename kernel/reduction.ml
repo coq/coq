@@ -1152,8 +1152,8 @@ let find_mcoinductype env sigma c =
     | _ -> raise Induc
 
 (* raise Induc if not an inductive type *)
-let try_mutind_of env sigma ty =
-  let (mind,largs) = find_mrectype env sigma ty in
+let find_inductive env sigma ty =
+  let (mind,largs) = find_minductype env sigma ty in
   let mispec = lookup_mind_specif mind env in 
   let nparams = mis_nparams mispec in
   let (params,realargs) = list_chop nparams largs in

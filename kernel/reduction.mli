@@ -210,10 +210,10 @@ val find_mrectype     : env -> 'a evar_map -> constr -> inductive * constr list
 val find_minductype   : env -> 'a evar_map -> constr -> inductive * constr list
 val find_mcoinductype : env -> 'a evar_map -> constr -> inductive * constr list
 
-(* [try_mutind_of env sigma t] raises [Induc] if [t] is not an inductive type*)
+(* [find_inductive env sigma t] raises [Induc] if [t] is not an inductive type*)
 (* The resulting summary is relative to the current env *)
 open Inductive
-val try_mutind_of : env -> 'a evar_map -> constr -> inductive_summary
+val find_inductive : env -> 'a evar_map -> constr -> inductive_summary
 
 val get_constructors : env -> 'a evar_map -> inductive_summary
       -> constructor_summary array

@@ -438,7 +438,7 @@ let type_mutind_rec env sigma indspec pt p c =
 
 let type_rec_branches recursive env sigma ct pt p c =
   try
-    let indspec = try_mutind_of env sigma ct in
+    let indspec = find_inductive env sigma ct in
     if recursive then 
       type_mutind_rec env sigma indspec  pt p c
     else 

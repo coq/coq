@@ -397,7 +397,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 | ROldCase (loc,isrec,po,c,lf) ->
   let cj = pretype empty_tycon env isevars lvar lmeta c in
   let {mind=mind;params=params;realargs=realargs} =
-    try try_mutind_of env !isevars cj.uj_type
+    try find_inductive env !isevars cj.uj_type
     with Induc -> error_case_not_inductive CCI env
 	(nf_ise1 !isevars cj.uj_val) (nf_ise1 !isevars cj.uj_type) in
   let pj = match po with

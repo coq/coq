@@ -450,7 +450,7 @@ let discriminable env sigma t1 t2 =
 let descend_then sigma env head dirn =
   let headj = unsafe_machine env sigma head in
   let indspec =
-    try try_mutind_of env sigma headj.uj_type
+    try find_inductive env sigma headj.uj_type
     with Not_found -> assert false in
   let construct =
     mkMutConstruct (ith_constructor_of_inductive indspec.mind dirn) in
@@ -499,7 +499,7 @@ let descend_then sigma env head dirn =
 
 let construct_discriminator sigma env dirn c sort =
   let indspec =
-    try try_mutind_of env sigma (type_of env sigma c)
+    try find_inductive env sigma (type_of env sigma c)
     with Not_found ->
        (* one can find Rel(k) in case of dependent constructors 
           like T := c : (A:Set)A->T and a discrimination 
@@ -537,7 +537,7 @@ let rec build_discriminator sigma env dirn c sort = function
   | (MutConstruct(sp,cnum),argnum)::l ->
       let cty = type_of env sigma c in
       let indspec =
-	try try_mutind_of env sigma cty with Not_found -> assert false in
+	try find_inductive env sigma cty with Not_found -> assert false in
       let _,arsort = get_arity env sigma indspec in
       let nparams = indspec.Inductive.nparams in
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in

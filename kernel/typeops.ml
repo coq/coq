@@ -319,7 +319,7 @@ let check_branches_message env sigma (c,ct) (explft,lft) =
 let type_of_case env sigma ci pj cj lfj =
   let lft = Array.map (fun j -> j.uj_type) lfj in
   let indspec =
-    try try_mutind_of env sigma cj.uj_type
+    try find_inductive env sigma cj.uj_type
     with Induc -> error_case_not_inductive CCI env cj.uj_val cj.uj_type in
   let (bty,rslty) =
     type_case_branches env sigma indspec pj.uj_type pj.uj_val cj.uj_val in
