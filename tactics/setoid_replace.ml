@@ -152,6 +152,18 @@ let coq_MSContravariant = lazy(constant ["Setoid"] "MSContravariant")
 let coq_singl = lazy(constant ["Setoid"] "singl")
 let coq_cons = lazy(constant ["Setoid"] "cons")
 
+let coq_equality_morphism_of_asymmetric_areflexive_transitive_relation =
+ lazy(constant ["Setoid"]
+  "equality_morphism_of_asymmetric_areflexive_transitive_relation")
+let coq_equality_morphism_of_symmetric_areflexive_transitive_relation =
+ lazy(constant ["Setoid"]
+  "equality_morphism_of_symmetric_areflexive_transitive_relation")
+let coq_equality_morphism_of_asymmetric_reflexive_transitive_relation =
+ lazy(constant ["Setoid"]
+  "equality_morphism_of_asymmetric_reflexive_transitive_relation")
+let coq_equality_morphism_of_symmetric_reflexive_transitive_relation =
+ lazy(constant ["Setoid"]
+  "equality_morphism_of_symmetric_reflexive_transitive_relation")
 let coq_equality_morphism_of_setoid_theory =
  lazy(constant ["Setoid"] "equality_morphism_of_setoid_theory")
 let coq_make_compatibility_goal =
@@ -189,7 +201,7 @@ let coq_Morphism_Context_rect2 =
 let coq_iff = lazy(eval_init_reference ["Logic"] "iff")
 
 let coq_impl = lazy(constant ["Setoid"] "impl")
-let coq_prop_relation =
+let coq_iff_relation =
  lazy (
   Relation {
      rel_a = mkProp ;
@@ -200,7 +212,7 @@ let coq_prop_relation =
      rel_quantifiers_no = 0
    })
 
-let coq_prop_relation2 =
+let coq_impl_relation =
  lazy (
   Relation {
      rel_a = mkProp;
@@ -479,6 +491,7 @@ let print_setoids () =
    (fun k relation ->
      assert (k=relation.rel_aeq) ;
      (*CSC: still "Setoid" in the error message *)
+(*CSCXX: aggiungere transitivity granted by e ridenominare granted in proved*)
      ppnl (str"Setoid " ++ prrelation relation ++ str";" ++
       (match relation.rel_refl with
           None -> str ""
@@ -496,98 +509,6 @@ let print_setoids () =
         prterm lem ++ str "."))
       l) !morphism_table
 ;;
-
-(************************** Adding a relation to the database *********************)
-
-let check_a env a =
- let typ = Typing.type_of env Evd.empty a in
- let a_quantifiers_rev,_ = Reduction.dest_arity env typ in
-  a_quantifiers_rev
-
-(* apply_to_rels c [l1 ; ... ; ln] returns (c Rel1 ... reln) *)
-let apply_to_rels c l =
- applistc c (Util.list_map_i (fun i _ -> mkRel i) 1 l)
-
-let check_eq env a_quantifiers_rev a aeq =
- let typ =
-  Sign.it_mkProd_or_LetIn
-   (mkApp ((Lazy.force coq_relation),[| apply_to_rels a a_quantifiers_rev |]))
-   a_quantifiers_rev in
- if
-  not
-   (is_conv env Evd.empty (Typing.type_of env Evd.empty aeq) typ)
- then
-  errorlabstrm "Add Relation Class"
-   (prterm aeq ++ str " should have type (" ++ prterm typ ++ str ")")
-
-let check_refl env a_quantifiers_rev a aeq refl =
- if
-  not
-   (is_conv env Evd.empty (Typing.type_of env Evd.empty refl)
-    (Sign.it_mkProd_or_LetIn
-     (mkApp ((Lazy.force coq_reflexive),
-       [| apply_to_rels a   a_quantifiers_rev ;
-          apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
- then
-  errorlabstrm "Add Relation Class"
-   (str "Not a valid proof of reflexivity")
-
-let check_sym env a_quantifiers_rev a aeq sym =
- if
-  not
-   (is_conv env Evd.empty (Typing.type_of env Evd.empty sym)
-    (Sign.it_mkProd_or_LetIn
-     (mkApp ((Lazy.force coq_symmetric),
-       [| apply_to_rels a   a_quantifiers_rev ;
-          apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
- then
-  errorlabstrm "Add Relation Class"
-   (str "Not a valid proof of symmetry")
-
-let check_trans env a_quantifiers_rev a aeq trans =
- if
-  not
-   (is_conv env Evd.empty (Typing.type_of env Evd.empty trans)
-    (Sign.it_mkProd_or_LetIn
-     (mkApp ((Lazy.force coq_transitive),
-       [| apply_to_rels a   a_quantifiers_rev ;
-          apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
- then
-  errorlabstrm "Add Relation Class"
-   (str "Not a valid proof of transitivity")
-
-let check_setoid_theory env a_quantifiers_rev a aeq th =
- if
-  not
-   (is_conv env Evd.empty (Typing.type_of env Evd.empty th)
-    (Sign.it_mkProd_or_LetIn
-     (mkApp ((Lazy.force coq_Setoid_Theory),
-       [| apply_to_rels a   a_quantifiers_rev ;
-          apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
- then
-  errorlabstrm "Add Relation Class"
-   (str "Not a valid proof of symmetry")
-
-let int_add_relation a aeq refl sym trans =
- let env = Global.env () in
- let a_quantifiers_rev = check_a env a in
-  check_eq env a_quantifiers_rev a aeq  ;
-  option_iter (check_refl env a_quantifiers_rev a aeq) refl ;
-  option_iter (check_sym env a_quantifiers_rev a aeq) sym ;
-  option_iter (check_trans env a_quantifiers_rev a aeq) trans ;
-  Lib.add_anonymous_leaf 
-   (relation_to_obj 
-    (aeq, { rel_a = a;
-            rel_aeq = aeq;
-            rel_refl = refl;
-            rel_sym = sym;
-            rel_trans = trans;
-            rel_quantifiers_no = List.length a_quantifiers_rev }))
-
-(* The vernac command "Add Relation ..." *)
-let add_relation a aeq refl sym =
- int_add_relation (constr_of a) (constr_of aeq) (option_app constr_of refl)
-  (option_app constr_of sym) None
 
 (***************** Adding a morphism to the database ****************************)
 
@@ -711,6 +632,10 @@ let gen_compat_lemma_statement quantifiers_rev output args m =
 
 let morphism_theory_id_of_morphism_proof_id id =
  id_of_string (string_of_id id ^ "_morphism_theory")
+
+(* apply_to_rels c [l1 ; ... ; ln] returns (c Rel1 ... reln) *)
+let apply_to_rels c l =
+ applistc c (Util.list_map_i (fun i _ -> mkRel i) 1 l)
 
 let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
  let env = Global.env() in
@@ -950,6 +875,156 @@ let new_named_morphism id m sign =
  in
   new_morphism (constr_of m) sign id morphism_hook
 
+(************************** Adding a relation to the database *********************)
+
+let check_a env a =
+ let typ = Typing.type_of env Evd.empty a in
+ let a_quantifiers_rev,_ = Reduction.dest_arity env typ in
+  a_quantifiers_rev
+
+let check_eq env a_quantifiers_rev a aeq =
+ let typ =
+  Sign.it_mkProd_or_LetIn
+   (mkApp ((Lazy.force coq_relation),[| apply_to_rels a a_quantifiers_rev |]))
+   a_quantifiers_rev in
+ if
+  not
+   (is_conv env Evd.empty (Typing.type_of env Evd.empty aeq) typ)
+ then
+  errorlabstrm "Add Relation Class"
+   (prterm aeq ++ str " should have type (" ++ prterm typ ++ str ")")
+
+let check_refl env a_quantifiers_rev a aeq refl =
+ if
+  not
+   (is_conv env Evd.empty (Typing.type_of env Evd.empty refl)
+    (Sign.it_mkProd_or_LetIn
+     (mkApp ((Lazy.force coq_reflexive),
+       [| apply_to_rels a   a_quantifiers_rev ;
+          apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
+ then
+  errorlabstrm "Add Relation Class"
+   (str "Not a valid proof of reflexivity")
+
+let check_sym env a_quantifiers_rev a aeq sym =
+ if
+  not
+   (is_conv env Evd.empty (Typing.type_of env Evd.empty sym)
+    (Sign.it_mkProd_or_LetIn
+     (mkApp ((Lazy.force coq_symmetric),
+       [| apply_to_rels a   a_quantifiers_rev ;
+          apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
+ then
+  errorlabstrm "Add Relation Class"
+   (str "Not a valid proof of symmetry")
+
+let check_trans env a_quantifiers_rev a aeq trans =
+ if
+  not
+   (is_conv env Evd.empty (Typing.type_of env Evd.empty trans)
+    (Sign.it_mkProd_or_LetIn
+     (mkApp ((Lazy.force coq_transitive),
+       [| apply_to_rels a   a_quantifiers_rev ;
+          apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
+ then
+  errorlabstrm "Add Relation Class"
+   (str "Not a valid proof of transitivity")
+
+let check_setoid_theory env a_quantifiers_rev a aeq th =
+ if
+  not
+   (is_conv env Evd.empty (Typing.type_of env Evd.empty th)
+    (Sign.it_mkProd_or_LetIn
+     (mkApp ((Lazy.force coq_Setoid_Theory),
+       [| apply_to_rels a   a_quantifiers_rev ;
+          apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
+ then
+  errorlabstrm "Add Relation Class"
+   (str "Not a valid proof of symmetry")
+
+let int_add_relation id a aeq refl sym trans =
+ let env = Global.env () in
+ let a_quantifiers_rev = check_a env a in
+  check_eq env a_quantifiers_rev a aeq  ;
+  option_iter (check_refl env a_quantifiers_rev a aeq) refl ;
+  option_iter (check_sym env a_quantifiers_rev a aeq) sym ;
+  option_iter (check_trans env a_quantifiers_rev a aeq) trans ;
+  let aeq_rel =
+   { rel_a = a;
+     rel_aeq = aeq;
+     rel_refl = refl;
+     rel_sym = sym;
+     rel_trans = trans;
+     rel_quantifiers_no = List.length a_quantifiers_rev } in
+  Lib.add_anonymous_leaf (relation_to_obj (aeq, aeq_rel)) ;
+  Options.if_verbose ppnl (prterm aeq ++ str " is registered as a relation");
+  match trans with
+     None -> ()
+   | Some trans ->
+      let mor_name = id_of_string (string_of_id id ^ "_morphism") in
+      let a_instance = apply_to_rels a a_quantifiers_rev in
+      let aeq_instance = apply_to_rels aeq a_quantifiers_rev in
+      let sym_instance =
+       option_app (fun x -> apply_to_rels x a_quantifiers_rev) sym in
+      let refl_instance =
+       option_app (fun x -> apply_to_rels x a_quantifiers_rev) refl in
+      let trans_instance = apply_to_rels trans a_quantifiers_rev in
+      let aeq_rel_class_and_var1, aeq_rel_class_and_var2, lemma, output =
+       match sym_instance, refl_instance with
+          None, None ->
+           (Some false, Relation aeq_rel),
+           (Some true, Relation aeq_rel),
+            mkApp
+             ((Lazy.force
+                coq_equality_morphism_of_asymmetric_areflexive_transitive_relation),
+              [| a_instance ; aeq_instance ; trans_instance |]),
+            Lazy.force coq_impl_relation
+        | None, Some refl_instance ->
+           (Some false, Relation aeq_rel),
+           (Some true, Relation aeq_rel),
+            mkApp
+             ((Lazy.force
+                coq_equality_morphism_of_asymmetric_reflexive_transitive_relation),
+              [| a_instance ; aeq_instance ; refl_instance ; trans_instance |]),
+            Lazy.force coq_impl_relation
+        | Some sym_instance, None ->
+           (None, Relation aeq_rel),
+           (None, Relation aeq_rel),
+            mkApp
+             ((Lazy.force
+                coq_equality_morphism_of_symmetric_areflexive_transitive_relation),
+              [| a_instance ; aeq_instance ; sym_instance ; trans_instance |]),
+            Lazy.force coq_iff_relation
+        | Some sym_instance, Some refl_instance ->
+           (None, Relation aeq_rel),
+           (None, Relation aeq_rel),
+            mkApp
+             ((Lazy.force
+                coq_equality_morphism_of_symmetric_reflexive_transitive_relation),
+              [| a_instance ; aeq_instance ; refl_instance ; sym_instance ;
+                 trans_instance |]),
+            Lazy.force coq_iff_relation in
+      let _ =
+       Declare.declare_internal_constant mor_name
+        (DefinitionEntry
+          {const_entry_body = Sign.it_mkLambda_or_LetIn lemma a_quantifiers_rev;
+           const_entry_type = None;
+           const_entry_opaque = false},
+          IsDefinition)
+      in
+       (*CSCXX: bug here; if there is a LetIn this code is completely brain
+         damaged*)
+       let a_quantifiers_rev =
+        List.map (fun (n,b,t) -> assert (b = None); n,t) a_quantifiers_rev in
+       add_morphism None mor_name
+        (aeq,a_quantifiers_rev,[aeq_rel_class_and_var1; aeq_rel_class_and_var2],
+          output)
+
+(* The vernac command "Add Relation ..." *)
+let add_relation id a aeq refl sym trans =
+ int_add_relation id (constr_of a) (constr_of aeq) (option_app constr_of refl)
+  (option_app constr_of sym) (option_app constr_of trans)
+
 (************************ Add Setoid ******************************************)
 
 (* The vernac command "Add Setoid" *)
@@ -985,6 +1060,7 @@ let add_setoid id a aeq th =
       rel_quantifiers_no = List.length a_quantifiers_rev } in
    let aeq_rel_class_and_var = None, Relation aeq_rel in
    Lib.add_anonymous_leaf (relation_to_obj (aeq, aeq_rel)) ;
+   Options.if_verbose ppnl (prterm aeq ++ str" is registered as a relation");
    let mor_name = id_of_string (string_of_id id ^ "_morphism") in
    let _ =
     Declare.declare_internal_constant mor_name
@@ -997,10 +1073,11 @@ let add_setoid id a aeq th =
         const_entry_type = None;
         const_entry_opaque = false},
        IsDefinition) in
-   let a_quantifiers_rev = List.map (fun (n,_,t) -> n,t) a_quantifiers_rev in
+   (*CSCXX: bug here; if there is a LetIn this code is completely brain damaged*)
+   let a_quantifiers_rev = List.map (fun (n,b,t) -> assert (b = None); n,t) a_quantifiers_rev in
     add_morphism None mor_name
      (aeq,a_quantifiers_rev,[aeq_rel_class_and_var ; aeq_rel_class_and_var],
-       Lazy.force coq_prop_relation)
+       Lazy.force coq_iff_relation)
 
 
 (****************************** The tactic itself *******************************)
@@ -1287,7 +1364,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
                            Leibniz (Some typ') when pf_conv_x gl typ typ' ->
                             false
                          | Leibniz None -> assert false
-                         | _ when output_relation = Lazy.force coq_prop_relation
+                         | _ when output_relation = Lazy.force coq_iff_relation
                              -> false
                          | _ -> true
                        in
@@ -1377,10 +1454,10 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
     (fun res -> output_relation,output_direction,res)
      (aux output_relation output_direction in_c) in
   let res =
-   (aux2 (Lazy.force coq_prop_relation) Right2Left) @
+   (aux2 (Lazy.force coq_iff_relation) Right2Left) @
    (* This is the case of a proposition of signature A ++> iff or B --> iff *)
-   (aux2 (Lazy.force coq_prop_relation) Left2Right) @
-   (aux2 (Lazy.force coq_prop_relation2) Right2Left) in
+   (aux2 (Lazy.force coq_iff_relation) Left2Right) @
+   (aux2 (Lazy.force coq_impl_relation) Right2Left) in
   let res = elim_duplicates gl (function (_,_,t) -> t) res in
   let res' = filter_superset_of_new_goals gl new_goals res in
   match res' with
@@ -1466,7 +1543,7 @@ let syntactic_but_representation_of_marked_but hole_relation hole_direction =
         | ACFunction { f_args = f_args ; f_output = f_output } ->
            let mt =
             if eq_constr out (cic_relation_class_of_relation_class
-              (Lazy.force coq_prop_relation))
+              (Lazy.force coq_iff_relation))
             then
               mkApp ((Lazy.force coq_morphism_theory_of_predicate),
                [| cic_type_nelist_of_list f_args; f|])
@@ -1578,7 +1655,7 @@ let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
       Tactics.refine
        (mkApp (th, [| mkCast (Evarutil.mk_new_meta(), new_but) |])) gl
    in
-    if output_relation = (Lazy.force coq_prop_relation) then
+    if output_relation = (Lazy.force coq_iff_relation) then
      if_output_relation_is_iff gl
     else
      if_output_relation_is_if gl

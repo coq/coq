@@ -59,7 +59,8 @@ val general_s_rewrite_in :
  identifier -> bool -> constr -> new_goals:constr list -> tactic
 
 val add_relation :
- constr_expr -> constr_expr -> constr_expr option -> constr_expr option -> unit
+ Names.identifier -> constr_expr -> constr_expr -> constr_expr option ->
+  constr_expr option -> constr_expr option -> unit
 
 val add_setoid :
  Names.identifier -> constr_expr -> constr_expr -> constr_expr -> unit

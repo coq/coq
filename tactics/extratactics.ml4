@@ -204,17 +204,28 @@ VERNAC COMMAND EXTEND AddSetoid1
 END
 
 VERNAC COMMAND EXTEND AddRelation1
-  [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t) "symmetry" "proved" "by" constr(t')] ->
-   [ add_relation a aeq (Some t) (Some t') ]
-| [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t) ] ->
-   [ add_relation a aeq (Some t) None ]
-| [ "Add" "Relation" constr(a) constr(aeq) ] ->
-   [ add_relation a aeq None None ]
+  [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t) "symmetry" "proved" "by" constr(t') "as" ident(n) ] ->
+   [ add_relation n a aeq (Some t) (Some t') None ]
+| [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t)  "as" ident(n) ] ->
+   [ add_relation n a aeq (Some t) None None ]
+| [ "Add" "Relation" constr(a) constr(aeq)  "as" ident(n) ] ->
+   [ add_relation n a aeq None None None ]
 END
 
 VERNAC COMMAND EXTEND AddRelation2
-  [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(t')] ->
-   [ add_relation a aeq None (Some t') ]
+  [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(t') "as" ident(n) ] ->
+   [ add_relation n a aeq None (Some t') None ]
+| [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(t') "transitivity" "proved" "by" constr(t'')  "as" ident(n) ] ->
+   [ add_relation n a aeq None (Some t') (Some t'') ]
+END
+
+VERNAC COMMAND EXTEND AddRelation3
+  [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t) "transitivity" "proved" "by" constr(t') "as" ident(n) ] ->
+   [ add_relation n a aeq (Some t) None (Some t') ]
+| [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t) "symmetry" "proved" "by" constr(t') "transitivity" "proved" "by" constr(t'') "as" ident(n) ] ->
+   [ add_relation n a aeq (Some t) (Some t') (Some t'') ]
+| [ "Add" "Relation" constr(a) constr(aeq) "transitivity" "proved" "by" constr(t) "as" ident(n) ] ->
+   [ add_relation n a aeq None None (Some t) ]
 END
 
 (* Inversion lemmas (Leminv) *)
