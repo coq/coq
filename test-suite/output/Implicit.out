@@ -1,5 +1,10 @@
+(compose 3!nat S)
+     : (nat ->nat) ->nat ->nat
+(ex_intro 2![_:nat]True 3!(0) I)
+     : (ex [_:nat]True)
 d2 = [x:nat](d1 1!x)
      : (x,x0:nat)x0=x ->x0=x
+
 
 Positions [1; 2] are implicit
 Argument scopes are [nat_scope nat_scope _]

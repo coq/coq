@@ -1,4 +1,4 @@
-nat+nat+{True}
+'type:nat+nat '+{True}
      : Set
 {True}+{True}+{True}
      : Set

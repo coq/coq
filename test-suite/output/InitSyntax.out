@@ -1,6 +1,8 @@
-Inductive sig2 [A : Set; P : A->Prop; Q : A->Prop] : Set :=
-    exist2 : (x:A)(P x)->(Q x)->(sig2 A P Q)
+Inductive sig2 [A : Set; P : A ->Prop; Q : A ->Prop] : Set :=
+    exist2 : (x:A)(P x) ->(Q x) ->(sig2 A P Q)
+For sig2: Argument scopes are [type_scope type_scope type_scope]
+For exist2: Argument scopes are [type_scope _ _ _ _ _]
 (EX x:nat|x=x)
      : Prop
 [b:bool](if b then b else b)
-     : bool->bool
+     : bool ->bool

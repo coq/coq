@@ -1,21 +1,21 @@
 `32`
      : Z
-[f:(nat->Z)]`(f O)+0`
-     : (nat->Z)->Z
+[f:(nat ->Z)]`(f O)+0`
+     : (nat ->Z) ->Z
 [x:positive](POS (xO x))
-     : positive->Z
+     : positive ->Z
 [x:positive]`(POS x)+1`
-     : positive->Z
+     : positive ->Z
 [x:positive](POS x)
-     : positive->Z
+     : positive ->Z
 [x:positive](NEG (xO x))
-     : positive->Z
+     : positive ->Z
 [x:positive]`(POS (xO x))+0`
-     : positive->Z
+     : positive ->Z
 [x:positive]`(Zopp (POS (xO x)))`
-     : positive->Z
+     : positive ->Z
 [x:positive]`(Zopp (POS (xO x)))+0`
-     : positive->Z
+     : positive ->Z
 `(inject_nat (0))+1`
      : Z
 `0+(inject_nat (plus (0) (0)))`
