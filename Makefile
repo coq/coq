@@ -450,7 +450,8 @@ REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Rlimit.vo       theories/Reals/Rderiv.vo \
 	theories/Reals/Rseries.vo      theories/Reals/Rtrigo_fun.vo \
 	theories/Reals/R_sqr.vo	       theories/Reals/Rsigma.vo \
-	theories/Reals/Rtrigo.vo       theories/Reals/Reals.vo 
+	theories/Reals/Rtrigo.vo       theories/Reals/Rgeom.vo \
+	theories/Reals/Reals.vo 
 
 SETOIDSVO=theories/Setoids/Setoid.vo
 
