@@ -153,14 +153,14 @@ let pr_clause pr_id = function
   | [] -> mt ()
   | l -> spc () ++ hov 0 (str "in" ++ prlist (pr_hyp_location pr_id) l)
 
-let pr_clause_pattern pr_id = function (* To check *)
+let pr_clause_pattern pr_id = function
   | (None, []) -> mt ()
   | (glopt,l) ->
-      str "in" ++
+      str " in" ++
       prlist
-        (fun (id,nl) -> spc () ++ prlist_with_sep spc int nl 
+        (fun (id,nl) -> prlist (pr_arg int) nl 
 	  ++ spc () ++ pr_id id) l ++
-        pr_opt (prlist_with_sep spc int) glopt
+        pr_opt (fun nl -> prlist_with_sep spc int nl ++ str " Goal") glopt
 
 let pr_subterms pr occl =
   hov 0 (pr_occurrences pr occl ++ spc () ++ str "with")
