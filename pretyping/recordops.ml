@@ -21,17 +21,19 @@ open Library
 open Classops
 open Mod_subst
 
-(*s Une structure S est un type inductif non récursif à un seul
-   constructeur (de nom par défaut Build_S) *)
+(*s A structure S is a non recursive inductive type with a single
+   constructor (the name of which defaults to Build_S) *)
 
 (* Table des structures: le nom de la structure (un [inductive]) donne
    le nom du constructeur, le nombre de paramètres et pour chaque
-   argument réels du constructeur, le noms de la projection
-   correspondante, si valide *)
+   argument réel du constructeur, le nom de la projection
+   correspondante, si valide, et un booléen disant si c'est une vraie
+   projection ou bien une fonction constante (associée à un LetIn) *)
 
 type struc_typ = {
   s_CONST : identifier; 
   s_PARAM : int;
+  s_PROJKIND : bool list;
   s_PROJ : constant option list }
 
 let structure_table = ref (Indmap.empty : struc_typ Indmap.t)
@@ -39,121 +41,177 @@ let projection_table = ref Cmap.empty
 
 let option_fold_right f p e = match p with Some a -> f a e | None -> e
 
-let cache_structure (_,(ind,struc)) =
+let load_structure i (_,(ind,id,kl,projs)) =
+  let n = (snd (Global.lookup_inductive ind)).Declarations.mind_nparams in
+  let struc =
+    { s_CONST = id; s_PARAM = n; s_PROJ = projs; s_PROJKIND = kl } in
   structure_table := Indmap.add ind struc !structure_table;
   projection_table := 
     List.fold_right (option_fold_right (fun proj -> Cmap.add proj struc))
-      struc.s_PROJ !projection_table
+      projs !projection_table
 
-let subst_structure (_,subst,((kn,i),struc as obj)) = 
+let cache_structure o =
+  load_structure 1 o
+
+let subst_structure (_,subst,((kn,i),id,kl,projs as obj)) = 
   let kn' = subst_kn subst kn in
-  let proj' =
+  let projs' =
    (* invariant: struc.s_PROJ is an evaluable reference. Thus we can take *)
    (* the first component of subst_con.                                   *)
    list_smartmap 
-    (option_smartmap (fun kn -> fst (subst_con subst kn)))
-    struc.s_PROJ
+     (option_smartmap (fun kn -> fst (subst_con subst kn)))
+    projs
   in
-    if proj' == struc.s_PROJ && kn' == kn then obj else
-      (kn',i),{struc with s_PROJ = proj'}
+    if projs' == projs && kn' == kn then obj else
+      ((kn',i),id,kl,projs')
+
+let discharge_structure (_,(ind,id,kl,projs)) =
+  Some (Lib.discharge_inductive ind, id, kl,
+        List.map (option_app Lib.discharge_con) projs)
 
 let (inStruc,outStruc) =
   declare_object {(default_object "STRUCTURE") with 
-                    cache_function = cache_structure;
-		    load_function = (fun _ o -> cache_structure o);
-                    subst_function = subst_structure;
-		    classify_function = (fun (_,x) -> Substitute x);
-		    export_function = (function x -> Some x)  }
+    cache_function = cache_structure;
+    load_function = load_structure;
+    subst_function = subst_structure;
+    classify_function = (fun (_,x) -> Substitute x);
+    discharge_function = discharge_structure;
+    export_function = (function x -> Some x) }
 
-let add_new_struc (s,c,n,l) = 
-  Lib.add_anonymous_leaf (inStruc (s,{s_CONST=c;s_PARAM=n;s_PROJ=l}))
+let declare_structure (s,c,_,kl,pl) = 
+  Lib.add_anonymous_leaf (inStruc (s,c,kl,pl))
 
-let find_structure indsp = Indmap.find indsp !structure_table
+let lookup_structure indsp = Indmap.find indsp !structure_table
 
 let find_projection_nparams = function
   | ConstRef cst -> (Cmap.find cst !projection_table).s_PARAM
   | _ -> raise Not_found
 
-(*s Un "object" est une fonction construisant une instance d'une structure *)
+
+(************************************************************************)
+(*s A canonical structure declares "canonical" conversion hints between *)
+(*  the effective components of a structure and the projections of the  *)
+(*  structure *)
 
 (* Table des definitions "object" : pour chaque object c,
 
   c := [x1:B1]...[xk:Bk](Build_R a1...am t1...t_n)
 
-  avec ti = (ci ui1...uir)
+  If ti has the form (ci ui1...uir) where ci is a global reference and
+if the corresponding projection Li of the structure R is defined, one
+declare a "conversion" between ci and Li
 
-  Pour tout ci, et Li, la ième projection de la structure R (si
-  définie), on déclare une "coercion"
+    x1:B1..xk:Bk |- (Li a1..am (c x1..xk)) =_conv (ci ui1...uir)
+
+that maps the pair (Li,ci) to the following data
 
     o_DEF = c
     o_TABS = B1...Bk
     o_PARAMS = a1...am
     o_TCOMP = ui1...uir
+
 *)
 
 type obj_typ = {
   o_DEF : constr;
-  o_TABS : constr list;    (* dans l'ordre *)
-  o_TPARAMS : constr list; (* dans l'ordre *)
-  o_TCOMPS : constr list } (* dans l'ordre *)
-
-let subst_obj subst obj =
-  let o_DEF' = subst_mps subst obj.o_DEF in
-  let o_TABS' = list_smartmap (subst_mps subst) obj.o_TABS in    
-  let o_TPARAMS' = list_smartmap (subst_mps subst) obj.o_TPARAMS in 
-  let o_TCOMPS' = list_smartmap (subst_mps subst) obj.o_TCOMPS in 
-    if o_DEF' == obj.o_DEF
-      && o_TABS' == obj.o_TABS    
-      && o_TPARAMS' == obj.o_TPARAMS 
-      && o_TCOMPS' == obj.o_TCOMPS 
-    then 
-      obj
-    else
-      { o_DEF = o_DEF' ;
-	o_TABS = o_TABS' ;    
-	o_TPARAMS = o_TPARAMS' ; 
-	o_TCOMPS = o_TCOMPS' }
+  o_TABS : constr list;    (* ordered *)
+  o_TPARAMS : constr list; (* ordered *)
+  o_TCOMPS : constr list } (* ordered *)
 
 let object_table =
   (ref [] : ((global_reference * global_reference) * obj_typ) list ref)
 
-let canonical_structures () = !object_table
+let canonical_projections () = !object_table
 
-let cache_canonical_structure (_,(cst,lo)) =
-  List.iter (fun (o,_ as x) ->
-    if not (List.mem_assoc o !object_table) then
-      object_table := x :: (!object_table)) lo
+let keep_true_projections projs kinds =
+  map_succeed (function (p,true) -> p | _ -> failwith "")
+    (List.combine projs kinds)
 
-let subst_object subst ((r1,r2),o as obj) = 
-  (* invariant: r1 and r2 are evaluable references. Thus subst_global   *)
-  (* cannot instantiate them. Hence we can use just the first component *)
-  (* of the answer.                                                     *)
-  let r1',_ = subst_global subst r1 in
-  let r2',_ = subst_global subst r2 in
-  let o' = subst_obj subst o in
-  if r1' == r1 && r2' == r2 && o' == o then obj
-  else (r1',r2'),o'
+(* Intended to always success *)
+let compute_canonical_projections (con,ind) =
+  let v = mkConst con in
+  let c = Environ.constant_value (Global.env()) con in
+  let lt,t = Reductionops.splay_lambda (Global.env()) Evd.empty c in
+  let lt = List.rev (List.map snd lt) in
+  let args = snd (decompose_app t) in
+  let { s_PARAM = p; s_PROJ = lpj; s_PROJKIND = kl } = lookup_structure ind in
+  let params, projs = list_chop p args in
+  let lpj = keep_true_projections lpj kl in
+  let lps = List.combine lpj projs in
+  let comp =
+    List.fold_left
+      (fun l (spopt,t) -> (* comp=components *)
+	 match spopt with
+           | Some proji_sp ->
+	       let c, args = decompose_app t in
+	       (try (ConstRef proji_sp, reference_of_constr c, args) :: l
+                with Not_found -> l)
+	   | _ -> l)
+      [] lps in
+  List.map (fun (refi,c,argj) ->
+    (refi,c),{o_DEF=v; o_TABS=lt; o_TPARAMS=params; o_TCOMPS=argj})
+    comp
 
-let subst_canonical_structure (_,subst,(cst,lo as obj)) =
+let open_canonical_structure i (_,o) =
+  if i=1 then
+    let lo = compute_canonical_projections o in
+    List.iter (fun (o,_ as x) ->
+      if not (List.mem_assoc o !object_table) then
+	object_table := x :: (!object_table)) lo
+
+let cache_canonical_structure o =
+  open_canonical_structure 1 o
+
+let subst_canonical_structure (_,subst,(cst,ind as obj)) =
   (* invariant: cst is an evaluable reference. Thus we can take *)
   (* the first component of subst_con.                                   *)
   let cst' = fst (subst_con subst cst) in
-  let lo' = list_smartmap (subst_object subst) lo in
-  if cst' == cst & lo' == lo then obj else (cst',lo')
+  let ind' = Inductiveops.subst_inductive subst ind in
+  if cst' == cst & ind' == ind then obj else (cst',ind')
+
+let discharge_canonical_structure (_,(cst,ind)) =
+  Some (Lib.discharge_con cst,Lib.discharge_inductive ind)
 
 let (inCanonStruc,outCanonStruct) =
   declare_object {(default_object "CANONICAL-STRUCTURE") with 
-    open_function = (fun i o -> if i=1 then cache_canonical_structure o);
+    open_function = open_canonical_structure;
     cache_function = cache_canonical_structure;
     subst_function = subst_canonical_structure;
     classify_function = (fun (_,x) -> Substitute x);
+    discharge_function = discharge_canonical_structure;
     export_function = (function x -> Some x) }
 
 let add_canonical_structure x = Lib.add_anonymous_leaf (inCanonStruc x)
 
+(*s High-level declaration of a canonical structure *)
+
+let error_not_structure ref =
+  errorlabstrm "object_declare"
+    (Nameops.pr_id (id_of_global ref) ++ str" is not a structure object")
+
+let check_and_decompose_canonical_structure ref =
+  let sp = match ref with ConstRef sp -> sp | _ -> error_not_structure ref in
+  let env = Global.env () in
+  let vc = match Environ.constant_opt_value env sp with
+    | Some vc -> vc
+    | None -> error_not_structure ref in
+  let f,args = match kind_of_term (snd (decompose_lam vc)) with
+    | App (f,args) -> f,args
+    | _ -> error_not_structure ref in
+  let indsp = match kind_of_term f with
+    | Construct (indsp,1) -> indsp
+    | _ -> error_not_structure ref in
+  let s = try lookup_structure indsp with Not_found -> error_not_structure ref in
+  if s.s_PARAM + List.length s.s_PROJ > Array.length args then
+    error_not_structure ref;
+  (sp,indsp)
+
+let declare_canonical_structure ref =
+  add_canonical_structure (check_and_decompose_canonical_structure ref)
+
 let outCanonicalStructure x = fst (outCanonStruct x)
 
-let canonical_structure_info o = List.assoc o !object_table
+let lookup_canonical_conversion o = List.assoc o !object_table
 
 let freeze () =
   !structure_table, !projection_table, !object_table

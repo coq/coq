@@ -161,7 +161,7 @@ INTERP=\
   interp/genarg.cmo interp/syntax_def.cmo interp/reserve.cmo \
   library/impargs.cmo interp/constrintern.cmo \
   interp/modintern.cmo interp/constrextern.cmo interp/coqlib.cmo \
-  library/declare.cmo
+  toplevel/discharge.cmo library/declare.cmo
 
 PROOFS=\
   proofs/tacexpr.cmo proofs/proof_type.cmo proofs/redexpr.cmo \
@@ -206,9 +206,8 @@ TACTICS=\
 TOPLEVEL=\
   toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
   toplevel/vernacexpr.cmo  toplevel/metasyntax.cmo \
-  toplevel/command.cmo \
-  toplevel/record.cmo toplevel/recordobj.cmo \
-  toplevel/discharge.cmo translate/ppvernacnew.cmo \
+  toplevel/command.cmo toplevel/record.cmo \
+  translate/ppvernacnew.cmo \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
   toplevel/vernacentries.cmo toplevel/vernac.cmo \
   toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \

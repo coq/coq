@@ -18,36 +18,36 @@ open Libobject
 open Library
 (*i*)
 
+(*s A structure S is a non recursive inductive type with a single
+   constructor (the name of which defaults to Build_S) *)
+
 type struc_typ = {
   s_CONST : identifier; 
   s_PARAM : int;
+  s_PROJKIND : bool list;
   s_PROJ : constant option list }
 
-val add_new_struc : 
-  inductive * identifier * int * constant option list -> unit
+val declare_structure : 
+  inductive * identifier * int * bool list * constant option list -> unit
 
-(* [find_structure isp] returns the infos associated to inductive path
+(* [lookup_structure isp] returns the infos associated to inductive path
    [isp] if it corresponds to a structure, otherwise fails with [Not_found] *)
-val find_structure : inductive -> struc_typ
+val lookup_structure : inductive -> struc_typ
 
 (* raise [Not_found] if not a projection *)
 val find_projection_nparams : global_reference -> int
 
+(*s A canonical structure declares "canonical" conversion hints between *)
+(*  the effective components of a structure and the projections of the  *)
+(*  structure *)
+
 type obj_typ = {
   o_DEF : constr;
-  o_TABS : constr list; (* dans l'ordre *)
-  o_TPARAMS : constr list; (* dans l'ordre *)
-  o_TCOMPS : constr list } (* dans l'ordre *)
+  o_TABS : constr list;    (* ordered *)
+  o_TPARAMS : constr list; (* ordered *)
+  o_TCOMPS : constr list } (* ordered *)
                
-val canonical_structure_info : 
-  (global_reference * global_reference) -> obj_typ
-val add_canonical_structure : 
-  constant * ((global_reference * global_reference) * obj_typ) list -> unit
-
-val inStruc : inductive * struc_typ -> obj
-val outStruc : obj -> inductive * struc_typ
-
-val outCanonicalStructure : obj -> constant
-
-val canonical_structures : unit -> 
+val lookup_canonical_conversion : (global_reference * global_reference) -> obj_typ
+val declare_canonical_structure : global_reference -> unit
+val canonical_projections : unit -> 
   ((global_reference * global_reference) * obj_typ) list

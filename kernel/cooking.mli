@@ -16,19 +16,11 @@ open Univ
 
 (*s Cooking the constants. *)
 
-type 'a modification =
-  | NOT_OCCUR
-  | DO_ABSTRACT of 'a * constr array
-  | DO_REPLACE of constant_body
-
-type work_list =
-    (constant * constant modification) list
-    * (inductive * inductive modification) list
-    * (constructor * constructor modification) list
+type work_list = identifier array Cmap.t * identifier array KNmap.t
 
 type recipe = {
   d_from : constant_body;
-  d_abstract : identifier list;
+  d_abstract : Sign.named_context;
   d_modlist : work_list }
 
 val cook_constant :
@@ -38,6 +30,8 @@ val cook_constant :
 (*s Utility functions used in module [Discharge]. *)
 
 val expmod_constr : work_list -> constr -> constr
-val expmod_type : work_list -> types -> types
+
+val clear_cooking_sharing : unit -> unit
+
 
 

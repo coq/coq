@@ -70,6 +70,7 @@ type 'a object_declaration = {
   open_function : int -> object_name * 'a -> unit;
   classify_function : object_name * 'a -> 'a substitutivity;
   subst_function : object_name * substitution * 'a -> 'a;
+  discharge_function : object_name * 'a -> 'a option;
   export_function : 'a -> 'a option }
 
 (* The default object is a "Keep" object with empty methods. 
@@ -103,4 +104,5 @@ val open_object : int -> object_name * obj -> unit
 val subst_object : object_name * substitution * obj -> obj
 val classify_object : object_name * obj -> obj substitutivity
 val export_object : obj -> obj option
+val discharge_object : object_name * obj -> obj option
 val relax : bool -> unit

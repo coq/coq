@@ -554,11 +554,14 @@ let load_require  _ (_,(modl,_)) =
      OS dependent fields from .vo files for cross-platform compatibility *)
 let export_require (l,e) = Some (l,e)
 
+let discharge_require (_,o) = Some o
+
 let (in_require, out_require) =
   declare_object {(default_object "REQUIRE") with
        cache_function = cache_require;
        load_function = load_require;
        export_function = export_require;
+       discharge_function = discharge_require;
        classify_function = (fun (_,o) -> Anticipate o) }
 
 (* Require libraries, import them if [export <> None], mark them for export

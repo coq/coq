@@ -36,14 +36,14 @@ type cl_typ =
   | CL_IND of inductive
 
 type cl_info_typ = {
-  cl_strength : strength;
   cl_param : int
 }
 
 type coe_typ = global_reference
 
 type coe_info_typ = {
-  coe_value : unsafe_judgment;
+  coe_value : constr;
+  coe_type : types;
   coe_strength : strength;
   coe_is_identity : bool;
   coe_param : int }
@@ -92,11 +92,7 @@ let unfreeze (fcl,fco,fig) =
 (* ajout de nouveaux "objets" *)
 
 let add_new_class cl s =
-  try
-    let n,s' = Bijint.revmap cl !class_tab in
-    if s.cl_strength = Global & s'.cl_strength <> Global then
-      class_tab := Bijint.replace n cl s !class_tab
-  with Not_found ->
+  if not (Bijint.mem cl !class_tab) then
     class_tab := Bijint.add cl s !class_tab
 
 let add_new_coercion coe s = 
@@ -107,10 +103,18 @@ let add_new_path x y =
 
 let init () =
   class_tab:= Bijint.empty; 
-  add_new_class CL_FUN  { cl_param = 0; cl_strength = Global };
-  add_new_class CL_SORT { cl_param = 0; cl_strength = Global };
+  add_new_class CL_FUN  { cl_param = 0 };
+  add_new_class CL_SORT { cl_param = 0 };
   coercion_tab:= Gmap.empty;
   inheritance_graph:= Gmap.empty
+
+let _ = 
+  Summary.declare_summary "inh_graph"
+    { Summary.freeze_function = freeze;
+      Summary.unfreeze_function = unfreeze;
+      Summary.init_function = init;
+      Summary.survive_module = false;
+      Summary.survive_section = false }
 
 let _ = init()
 
@@ -147,7 +151,7 @@ let lookup_pattern_path_between (s,t) =
     (fun coe ->
        let c, _ =
 	 Reductionops.whd_betadeltaiota_stack (Global.env()) Evd.empty 
-	   coe.coe_value.uj_val
+	   coe.coe_value
        in 
        match kind_of_term c with
 	 | Construct sp -> (sp, coe.coe_param)
@@ -182,44 +186,6 @@ let subst_cl_typ subst ct = match ct with
 (*CSC: here we should change the datatype for coercions: it should be possible
        to declare any term as a coercion *)
 let subst_coe_typ subst t = fst (subst_global subst t)
-
-let subst_coe_info subst info = 
-  let jud = info.coe_value in
-  let val' = subst_mps subst (j_val jud) in
-  let type' = subst_mps subst (j_type jud) in
-    if val' == j_val jud && type' == j_type jud then info else
-      {info with coe_value = make_judge val' type'}
-
-(* library, summary *)
-
-(*val inClass : (cl_typ * cl_info_typ) -> Libobject.object = <fun>
- val outClass : Libobject.object -> (cl_typ * cl_info_typ) = <fun> *)
-
-let cache_class (_,(x,y)) = add_new_class x y
-
-let subst_class (_,subst,(ct,ci as obj)) = 
-  let ct' = subst_cl_typ subst ct in
-    if ct' == ct then obj else
-      (ct',ci)
-
-let (inClass,outClass) =
-  declare_object {(default_object "CLASS") with 
-		    load_function = (fun _ o -> cache_class o);
-                    cache_function = cache_class;
-		    subst_function = subst_class;
-		    classify_function = (fun (_,x) -> Substitute x); 
-		    export_function = (function x -> Some x)  }
-
-let declare_class (cl,stre,p) = 
-  Lib.add_anonymous_leaf (inClass ((cl,{ cl_strength = stre; cl_param = p })))
-   
-let _ = 
-  Summary.declare_summary "inh_graph"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init;
-      Summary.survive_module = false;
-      Summary.survive_section = false }
 
 (* classe d'un terme *)
 
@@ -257,7 +223,8 @@ let pr_class x = str (string_of_class x)
 
 (* coercion_value : coe_index -> unsafe_judgment * bool *)
 
-let coercion_value { coe_value = j; coe_is_identity = b } = (j,b)
+let coercion_value { coe_value = c; coe_type = t; coe_is_identity = b } =
+  (make_judge c t, b)
 
 (* pretty-print functions are now in Pretty *)
 (* rajouter une coercion dans le graphe *)
@@ -322,49 +289,81 @@ let add_coercion_in_graph (ic,source,target) =
   if (!ambig_paths <> []) && is_verbose () then 
     ppnl (message_ambig !ambig_paths)
 
-type coercion = coe_typ * coe_info_typ * cl_typ * cl_typ
+type coercion = coe_typ * strength * bool * cl_typ * cl_typ * int
 
-let cache_coercion (_,(coe,xf,cls,clt)) =
+(* Calcul de l'arité d'une classe *)
+
+let reference_arity_length ref =
+  let t = Global.type_of_global ref in
+  List.length (fst (Reductionops.splay_arity (Global.env()) Evd.empty t))
+
+let class_params = function
+  | CL_FUN | CL_SORT -> 0
+  | CL_CONST sp -> reference_arity_length (ConstRef sp)
+  | CL_SECVAR sp -> reference_arity_length (VarRef sp)
+  | CL_IND sp  -> reference_arity_length (IndRef sp)
+
+(* add_class : cl_typ -> strength option -> bool -> unit *)
+
+let add_class cl =
+  add_new_class cl { cl_param = class_params cl }
+
+let load_coercion i (_,(coe,stre,isid,cls,clt,ps)) =
+  add_class cls;
+  add_class clt;
   let is,_ = class_info cls in
   let it,_ = class_info clt in
+  let xf = 
+    { coe_value = constr_of_global coe;
+      coe_type = Global.type_of_global coe;
+      coe_strength = stre;
+      coe_is_identity = isid;
+      coe_param = ps } in
   add_new_coercion coe xf;
   add_coercion_in_graph (xf,is,it)
 
-let subst_coercion (_,subst,(coe,xf,cls,clt as obj)) =
+let cache_coercion o =
+  load_coercion 1 o
+
+let subst_coercion (_,subst,(coe,stre,isid,cls,clt,ps as obj)) =
   let coe' = subst_coe_typ subst coe in
-  let xf' = subst_coe_info subst xf in
   let cls' = subst_cl_typ subst cls in
   let clt' = subst_cl_typ subst clt in
-    if coe' == coe && xf' == xf && cls' == cls & clt' == clt then obj else
-      (coe',xf',cls',clt')
-      
-    
-(* val inCoercion : coercion -> Libobject.object 
-   val outCoercion : Libobject.object -> coercion *)
+    if coe' == coe && cls' == cls & clt' == clt then obj else
+      (coe',stre,isid,cls',clt',ps)
+
+let discharge_cl = function
+  | CL_CONST kn -> CL_CONST (Lib.discharge_con kn)
+  | CL_IND ind -> CL_IND (Lib.discharge_inductive ind)
+  | cl -> cl
+
+let discharge_coercion (_,(coe,stre,isid,cls,clt,ps)) =
+  if stre = Local then None else 
+    let n = try Array.length (Lib.section_instance coe) with Not_found -> 0 in
+    Some (Lib.discharge_global coe,
+          stre,
+	  isid,
+          discharge_cl cls,
+	  discharge_cl clt,
+          n + ps)
 
 let (inCoercion,outCoercion) =
   declare_object {(default_object "COERCION") with 
-		    load_function = (fun _ o -> cache_coercion o);
-                    cache_function = cache_coercion;
-		    subst_function = subst_coercion;
-		    classify_function = (fun (_,x) -> Substitute x); 
-                    export_function = (function x -> Some x)  }
+    load_function = load_coercion;
+    cache_function = cache_coercion;
+    subst_function = subst_coercion;
+    classify_function = (fun (_,x) -> Substitute x);
+    discharge_function = discharge_coercion;
+    export_function = (function x -> Some x)  }
 
-let declare_coercion coef v stre ~isid ~src:cls ~target:clt ~params:ps =
-  Lib.add_anonymous_leaf
-    (inCoercion
-       (coef,
-	 { coe_value = v;
-	   coe_strength = stre;
-	   coe_is_identity = isid;
-	   coe_param = ps },
-	cls, clt))
+let declare_coercion coef stre ~isid ~src:cls ~target:clt ~params:ps =
+  Lib.add_anonymous_leaf (inCoercion (coef,stre,isid,cls,clt,ps))
 
 let coercion_strength v = v.coe_strength
 let coercion_identity v = v.coe_is_identity
 
 (* For printing purpose *)
-let get_coercion_value v = v.coe_value.uj_val
+let get_coercion_value v = v.coe_value
 
 let classes () = Bijint.dom !class_tab
 let coercions () = Gmap.rng !coercion_tab

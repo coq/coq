@@ -50,19 +50,4 @@ val add_coercion_hook : Tacexpr.declaration_hook
 
 val add_subclass_hook : Tacexpr.declaration_hook
 
-(* [try_add_new_class ref] declares [ref] as a new class; usually,
-   this is done implicitely by [try_add_new_coercion]'s functions *)
-val try_add_new_class : global_reference -> strength -> unit
-
-(*s This is used for the discharge *)
-type coercion_entry
-
-val add_new_coercion : coercion_entry -> unit
-
-val process_class :
-  dir_path -> identifier list -> 
-    (cl_typ * cl_info_typ) -> (cl_typ * cl_info_typ)
-val process_coercion :
-  dir_path -> identifier list -> coercion -> coercion_entry
-
-val class_of_ref : global_reference -> cl_typ
+val class_of_global : global_reference -> cl_typ

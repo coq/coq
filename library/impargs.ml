@@ -55,6 +55,14 @@ let is_contextual_implicit_args () = !contextual_implicit_args
 
 type implicits_flags = (bool * bool * bool) * (bool * bool * bool)
 
+let implicits_flags () = 
+  (!implicit_args,
+  !strict_implicit_args,
+  !contextual_implicit_args),
+  (!implicit_args_out,
+  !strict_implicit_args_out,
+  !contextual_implicit_args_out)
+
 let with_implicits ((a,b,c),(d,e,g)) f x =
   let oa = !implicit_args in
   let ob = !strict_implicit_args in
@@ -342,6 +350,16 @@ let compute_var_implicits id =
 let var_implicits id = 
   try Idmap.find id !var_table with Not_found -> No_impl,No_impl
 
+(* Implicits of a global reference. *)
+
+let compute_global_implicits = function
+  | VarRef id -> compute_var_implicits id
+  | ConstRef kn -> compute_constant_implicits kn
+  | IndRef (kn,i) -> 
+      let ((_,imps),_) = (compute_mib_implicits kn).(i) in imps
+  | ConstructRef ((kn,i),j) -> 
+      let (_,cimps) = (compute_mib_implicits kn).(i) in snd cimps.(j-1)
+
 (* Caching implicits *)
 
 let cache_implicits_decl (r,imps) =
@@ -355,7 +373,15 @@ let cache_implicits_decl (r,imps) =
   | ConstructRef consp -> 
       constructors_table := Constrmap.add consp imps !constructors_table
 
-let cache_implicits (_,l) = List.iter cache_implicits_decl l
+let load_implicits _ (_,l) = List.iter cache_implicits_decl l
+
+let cache_implicits o =
+  load_implicits 1 o
+
+(*
+let discharge_implicits (_,(r,imps)) =
+  match r with VarRef _ -> None | _ -> Some (r,compute_global_implicits r)
+*)
 
 let subst_implicits_decl subst (r,imps as o) =
   let r' = fst (subst_global subst r) in if r==r' then o else (r',imps)
@@ -366,20 +392,10 @@ let subst_implicits (_,subst,l) =
 let (in_implicits, _) =
   declare_object {(default_object "IMPLICITS") with 
     cache_function = cache_implicits;
-    load_function = (fun _ -> cache_implicits);
+    load_function = load_implicits;
     subst_function = subst_implicits;
     classify_function = (fun (_,x) -> Substitute x);
     export_function = (fun x -> Some x) }
-
-(* Implicits of a global reference. *)
-
-let compute_global_implicits = function
-  | VarRef id -> compute_var_implicits id
-  | ConstRef kn -> compute_constant_implicits kn
-  | IndRef (kn,i) -> 
-      let ((_,imps),_) = (compute_mib_implicits kn).(i) in imps
-  | ConstructRef ((kn,i),j) -> 
-      let (_,cimps) = (compute_mib_implicits kn).(i) in snd cimps.(j-1)
 
 let declare_implicits_gen r = 
   add_anonymous_leaf (in_implicits [r,compute_global_implicits r])

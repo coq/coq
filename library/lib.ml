@@ -215,6 +215,7 @@ let is_something_opened = function
   | (_,OpenedModtype _) -> true
   | _ -> false
 
+(*
 let export_segment seg =
   let rec clean acc = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
@@ -229,7 +230,7 @@ let export_segment seg =
     | (_,FrozenState _) :: stk -> clean acc stk
   in
     clean [] seg
-
+*)
 
 let start_module export id mp nametab = 
   let dir = extend_dirpath (fst !path_prefix) id in
@@ -383,14 +384,76 @@ let is_module () =
 (* Returns the most recent OpenedThing node *)
 let what_is_opened () = find_entry_p is_something_opened
 
+(* Discharge tables *)
+
+let sectab =
+  ref ([] : (identifier list *
+             (identifier array Cmap.t * identifier array KNmap.t) *
+             (Sign.named_context Cmap.t * Sign.named_context KNmap.t)) list)
+
+let add_section () =
+  sectab := ([],(Cmap.empty,KNmap.empty),(Cmap.empty,KNmap.empty)) :: !sectab
+
+let add_section_variable id =
+  match !sectab with
+    | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
+    | (vars,repl,abs)::sl -> sectab := (id::vars,repl,abs)::sl
+
+let rec extract_hyps = function
+  | (id::idl,(id',_,_ as d)::hyps) when id=id' -> d :: extract_hyps (idl,hyps)
+  | (id::idl,hyps) -> extract_hyps (idl,hyps)
+  | [], _ -> []
+
+let add_section_replacement f g hyps =
+  match !sectab with
+  | [] -> ()
+  | (vars,exps,abs)::sl ->
+    let sechyps = extract_hyps (vars,hyps) in
+    let args = Sign.instance_from_named_context (List.rev sechyps) in
+    sectab := (vars,f (Array.map Term.destVar args) exps,g sechyps abs)::sl
+	
+let add_section_kn kn =
+  let f = (fun x (l1,l2) -> (l1,KNmap.add kn x l2)) in
+  add_section_replacement f f
+
+let add_section_constant kn =
+  let f = (fun x (l1,l2) -> (Cmap.add kn x l1,l2)) in
+  add_section_replacement f f
+
+let replacement_context () = pi2 (List.hd !sectab)
+
+let section_segment = function
+  | VarRef id ->
+      []
+  | ConstRef con -> 
+      Cmap.find con (fst (pi3 (List.hd !sectab)))
+  | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
+      KNmap.find kn (snd (pi3 (List.hd !sectab)))
+
+let section_instance r =
+  Sign.instance_from_named_context (List.rev (section_segment r))
+
+let init () = sectab := []
+let freeze () = !sectab
+let unfreeze s = sectab := s
+
+let _ = 
+  Summary.declare_summary "section-context"
+    { Summary.freeze_function = freeze;
+      Summary.unfreeze_function = unfreeze;
+      Summary.init_function = init;
+      Summary.survive_module = false;
+      Summary.survive_section = false }
+
+(*************)
+(* Sections. *)
+
 (* XML output hooks *)
 let xml_open_section = ref (fun id -> ())
 let xml_close_section = ref (fun id -> ())
 
 let set_xml_open_section f = xml_open_section := f
 let set_xml_close_section f = xml_close_section := f
-
-(* Sections. *)
 
 let open_section id =
   let olddir,(mp,oldsec) = !path_prefix in
@@ -405,11 +468,19 @@ let open_section id =
   Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
   path_prefix := prefix;
   if !Options.xml_export then !xml_open_section id;
+  add_section ();
   prefix
 
 
 (* Restore lib_stk and summaries as before the section opening, and
    add a ClosedSection object. *)
+
+let discharge_item = function
+  | ((sp,_ as oname),Leaf lobj) ->
+      option_app (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
+  | _ ->
+      None
+
 let close_section ~export id =
   let oname,fs = 
     try match find_entry_p is_something_opened with
@@ -421,24 +492,30 @@ let close_section ~export id =
     with Not_found ->
       error "no opened section"
   in
-  let (after,_,before) = split_lib oname in
+  let (secdecls,_,before) = split_lib oname in
   lib_stk := before;
-  let prefix = !path_prefix in
+  let full_olddir = fst !path_prefix in
   pop_path_prefix ();
+(*
   let closed_sec = 
-    ClosedSection (export, (fst prefix), export_segment after)
-  in
+    ClosedSection (export, full_olddir, export_segment secdecls) in
   let name = make_path id, make_kn id in
   add_entry name closed_sec;
+*)
   if !Options.xml_export then !xml_close_section id;
-  (prefix, after, fs)
+  let newdecls = List.map discharge_item secdecls in
+  Summary.section_unfreeze_summaries fs;
+  List.iter (option_iter (fun (id,o) -> ignore (add_leaf id o))) newdecls;
+  Cooking.clear_cooking_sharing ();
+  Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)
 
+(*****************)
 (* Backtracking. *)
 
 let recache_decl = function
   | (sp, Leaf o) -> cache_object (sp,o)
+  | (_,OpenedSection _) -> add_section ()
   | _ -> ()
-
 
 let recache_context ctx =
   List.iter recache_decl ctx
@@ -475,7 +552,7 @@ let is_mod_node = function
    the same name *) 
 
 let reset_mod (loc,id) =
-  let (ent,before) = 
+  let (_,before) = 
     try
       find_split_p (fun (sp,node) -> 
                     let (_,spi) = repr_path (fst sp) in id = spi 
@@ -583,3 +660,40 @@ let library_part ref =
       else
 	(* Theorem/Lemma outside its outer section of definition *)
 	dir
+
+(************************)
+(* Discharging names *)
+
+let pop_kn kn =
+  let (mp,dir,l) = Names.repr_kn kn in
+  Names.make_kn mp (dirpath_prefix dir) l
+
+let pop_con con = 
+  let (mp,dir,l) = Names.repr_con con in
+  Names.make_con mp (dirpath_prefix dir) l
+
+let con_defined_in_sec kn = 
+  let _,dir,_ = repr_con kn in
+  dir <> empty_dirpath && fst (split_dirpath dir) = snd (current_prefix ())
+
+let defined_in_sec kn = 
+  let _,dir,_ = repr_kn kn in
+  dir <> empty_dirpath && fst (split_dirpath dir) = snd (current_prefix ())
+
+let discharge_global = function
+  | ConstRef kn when con_defined_in_sec kn ->
+      ConstRef (pop_con kn)
+  | IndRef (kn,i) when defined_in_sec kn ->
+      IndRef (pop_kn kn,i)
+  | ConstructRef ((kn,i),j) when defined_in_sec kn ->
+      ConstructRef ((pop_kn kn,i),j)
+  | r -> r
+
+let discharge_kn kn = 
+  if defined_in_sec kn then pop_kn kn else kn
+
+let discharge_con cst = 
+  if con_defined_in_sec cst then pop_con cst else cst
+
+let discharge_inductive (kn,i) =
+  (discharge_kn kn,i)

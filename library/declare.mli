@@ -40,10 +40,6 @@ type variable_declaration = dir_path * section_variable_entry * local_kind
 
 val declare_variable : variable -> variable_declaration -> object_name
 
-(* Declaration from Discharge *)
-val redeclare_variable :
- variable -> Dischargedhypsmap.discharged_hyps -> variable_declaration -> unit
-
 (* Declaration of global constructions *)
 (* i.e. Definition/Theorem/Axiom/Parameter/... *)
 
@@ -58,20 +54,10 @@ val declare_constant :
 val declare_internal_constant :
   identifier -> constant_declaration -> constant
 
-val redeclare_constant :
- identifier -> Dischargedhypsmap.discharged_hyps -> 
-      Cooking.recipe * global_kind -> unit
-
 (* [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of
    the whole block (boolean must be true iff it is a record) *)
 val declare_mind : bool -> mutual_inductive_entry -> object_name
-
-(* Declaration from Discharge *)
-val redeclare_inductive :
- Dischargedhypsmap.discharged_hyps -> mutual_inductive_entry -> object_name
-
-val out_inductive : Libobject.obj -> mutual_inductive_entry 
 
 val strength_min : strength * strength -> strength
 val string_of_strength : strength -> string
@@ -82,10 +68,7 @@ val is_constant : section_path -> bool
 val constant_strength : section_path -> strength
 val constant_kind : section_path -> global_kind
 
-val out_variable : Libobject.obj -> identifier * variable_declaration
 val get_variable : variable -> named_declaration
-val get_variable_with_constraints : 
-  variable -> named_declaration * Univ.constraints
 val variable_strength : variable -> strength 
 val variable_kind : variable -> local_kind
 val find_section_variable : variable -> section_path
@@ -94,7 +77,6 @@ val clear_proofs : named_context -> named_context
 
 (*s Global references *)
 
-val context_of_global_reference : global_reference -> section_context
 val strength_of_global : global_reference -> strength
 
 (* hooks for XML output *)

@@ -128,8 +128,7 @@ val library_part : global_reference -> dir_path
 
 val open_section : identifier -> object_prefix
 
-val close_section : export:bool -> identifier -> 
-  object_prefix * library_segment * Summary.frozen
+val close_section : export:bool -> identifier -> unit
 
 (*s Backtracking (undo). *)
 
@@ -157,3 +156,24 @@ val reset_initial : unit -> unit
 (* XML output hooks *)
 val set_xml_open_section : (identifier -> unit) -> unit
 val set_xml_close_section : (identifier -> unit) -> unit
+
+
+(*s Section management for discharge *)
+
+val section_segment : global_reference -> Sign.named_context
+val section_instance : global_reference -> Term.constr array
+
+val add_section_variable : identifier -> unit
+val add_section_constant : constant -> Sign.named_context -> unit
+val add_section_kn : kernel_name -> Sign.named_context -> unit
+val replacement_context : unit ->
+  (identifier array Cmap.t * identifier array KNmap.t)
+
+(*s Discharge: decrease the section level if in the current section *)
+
+val discharge_kn :  kernel_name -> kernel_name
+val discharge_con : constant -> constant
+val discharge_global : global_reference -> global_reference
+val discharge_inductive : inductive -> inductive
+
+

@@ -8,5 +8,3 @@
 
 (*i $Id$ i*)
 
-val objdef_declare : Libnames.global_reference -> unit
-val add_object_hook : Tacexpr.declaration_hook

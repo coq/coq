@@ -13,6 +13,7 @@ open Util
 open Pp
 open Bigint
 open Names
+open Term
 open Nametab
 open Libnames
 open Summary
@@ -93,9 +94,14 @@ let current_scopes () = !scope_stack
 (* TODO: push nat_scope, z_scope, ... in scopes summary *)
 
 (* Exportation of scopes *)
-let cache_scope (_,(local,op,sc)) =
+let open_scope i (_,(local,op,sc)) =
+  if i=1 then begin
   (match sc with Scope sc -> check_scope sc | _ -> ());
   scope_stack := if op then sc :: !scope_stack else list_except sc !scope_stack
+  end
+
+let cache_scope o =
+  open_scope 1 o
 
 let subst_scope (_,subst,sc) = sc
 
@@ -109,7 +115,7 @@ let export_scope (local,_,_ as x) = if local then None else Some x
 let (inScope,outScope) = 
   declare_object {(default_object "SCOPE") with
       cache_function = cache_scope;
-      open_function = (fun i o -> if i=1 then cache_scope o);
+      open_function = open_scope;
       subst_function = subst_scope;
       classify_function = classify_scope;
       export_function = export_scope }
@@ -361,31 +367,6 @@ let exists_notation_in_scope scopt ntn r =
     r' = r, pp8only
   with Not_found -> false, false
 
-(* Special scopes associated to arguments of a global reference *)
-
-let arguments_scope = ref Refmap.empty
-
-let cache_arguments_scope (_,(r,scl)) =
-  List.iter (option_iter check_scope) scl;
-  arguments_scope := Refmap.add r scl !arguments_scope
-
-let subst_arguments_scope (_,subst,(r,scl)) = (fst (subst_global subst r),scl)
-
-let (inArgumentsScope,outArgumentsScope) = 
-  declare_object {(default_object "ARGUMENTS-SCOPE") with
-      cache_function = cache_arguments_scope;
-      load_function = (fun _ o -> cache_arguments_scope o);
-      subst_function = subst_arguments_scope;
-      classify_function = (fun (_,o) -> Substitute o);
-      export_function = (fun x -> Some x) }
-
-let declare_arguments_scope r scl =
-  Lib.add_anonymous_leaf (inArgumentsScope (r,scl))
-
-let find_arguments_scope r =
-  try Refmap.find r !arguments_scope
-  with Not_found -> []
-
 (**********************************************************************)
 (* Mapping classes to scopes *)
 
@@ -401,8 +382,6 @@ let declare_class_scope sc cl =
 let find_class_scope cl =
   Gmap.find cl !class_scope_map
 
-open Term
-
 let find_class t =
   let t, _ = decompose_app (Reductionops.whd_betaiotazeta t) in
   match kind_of_term t with
@@ -413,6 +392,9 @@ let find_class t =
     | Sort _ -> CL_SORT
     |  _ -> raise Not_found
 
+(**********************************************************************)
+(* Special scopes associated to arguments of a global reference *)
+
 let rec compute_arguments_scope t =
   match kind_of_term (Reductionops.whd_betaiotazeta t) with
     | Prod (_,t,u) ->
@@ -420,6 +402,37 @@ let rec compute_arguments_scope t =
 	  try Some (find_class_scope (find_class t)) with Not_found -> None in
 	sc :: compute_arguments_scope u
     | _ -> []
+
+let arguments_scope = ref Refmap.empty
+
+let load_arguments_scope _ (_,(r,scl)) =
+  List.iter (option_iter check_scope) scl;
+  arguments_scope := Refmap.add r scl !arguments_scope
+
+let cache_arguments_scope o =
+  load_arguments_scope 1 o
+
+let subst_arguments_scope (_,subst,(r,scl)) = (fst (subst_global subst r),scl)
+
+let discharge_arguments_scope (r,_) =
+  match r with
+    | VarRef _ -> None
+    | _ -> Some (r,compute_arguments_scope (Global.type_of_global r))
+
+let (inArgumentsScope,outArgumentsScope) = 
+  declare_object {(default_object "ARGUMENTS-SCOPE") with
+      cache_function = cache_arguments_scope;
+      load_function = load_arguments_scope;
+      subst_function = subst_arguments_scope;
+      classify_function = (fun (_,o) -> Substitute o);
+      export_function = (fun x -> Some x) }
+
+let declare_arguments_scope r scl =
+  Lib.add_anonymous_leaf (inArgumentsScope (r,scl))
+
+let find_arguments_scope r =
+  try Refmap.find r !arguments_scope
+  with Not_found -> []
 
 let declare_ref_arguments_scope ref =
   let t = Global.type_of_global ref in

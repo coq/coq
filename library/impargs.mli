@@ -64,6 +64,8 @@ val is_implicit_var : variable -> implicits_flags
 
 val implicits_of_global : global_reference -> implicits_list
 
+val implicits_flags : unit -> implicits_flags
+
 (* For translator *)
 val implicits_of_global_out : global_reference -> implicits_list
 val is_implicit_args_out : unit -> bool

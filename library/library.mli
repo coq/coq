@@ -76,9 +76,3 @@ val locate_qualified_library :
 
 (*s Statistics: display the memory use of a library. *)
 val mem : dir_path -> Pp.std_ppcmds
-
-(*s For discharge *)
-type library_reference
-
-val out_require : Libobject.obj -> library_reference
-val reload_library : library_reference -> unit

@@ -30,7 +30,6 @@ val subst_cl_typ : substitution -> cl_typ -> cl_typ
 
 (* This is the type of infos for declared classes *)
 type cl_info_typ = {
-  cl_strength : strength;
   cl_param : int }
 
 (* This is the type of coercion kinds *)
@@ -47,9 +46,6 @@ type coe_index
 
 (* This is the type of paths from a class to another *)
 type inheritance_path = coe_index list
-
-(*s [declare_class] adds a class to the set of declared classes *)
-val declare_class : cl_typ * strength * int -> unit
 
 (*s Access to classes infos *)
 val class_info : cl_typ -> (cl_index * cl_info_typ)
@@ -70,7 +66,7 @@ val class_args_of : constr -> constr list
 
 (*s [declare_coercion] adds a coercion in the graph of coercion paths *)
 val declare_coercion : 
-  coe_typ -> unsafe_judgment -> strength -> isid:bool ->
+  coe_typ -> strength -> isid:bool ->
       src:cl_typ -> target:cl_typ -> params:int -> unit
 
 (*s Access to coercions infos *)
@@ -84,19 +80,6 @@ val lookup_path_to_fun_from : cl_index -> inheritance_path
 val lookup_path_to_sort_from : cl_index -> inheritance_path
 val lookup_pattern_path_between :
   cl_index * cl_index -> (constructor * int) list
-
-(*i Pour le discharge *)
-type coercion = coe_typ * coe_info_typ * cl_typ * cl_typ
-
-open Libobject
-val inClass : (cl_typ * cl_info_typ) -> Libobject.obj
-val outClass : Libobject.obj -> (cl_typ * cl_info_typ)
-val inCoercion : coercion -> Libobject.obj
-val outCoercion : Libobject.obj -> coercion
-val coercion_strength : coe_info_typ -> strength
-val coercion_identity : coe_info_typ -> bool
-val coercion_params : coe_info_typ -> int
-(*i*)
 
 (*i Crade *)
 open Pp

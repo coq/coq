@@ -92,41 +92,15 @@ let explain_coercion_error g = function
 
 (* Verifications pour l'ajout d'une classe *)
 
-let rec arity_sort (ctx,a) = match kind_of_term a with
-  | Sort (Prop _ | Type _) -> List.length ctx
-  | _ -> raise Not_found
-
 let check_reference_arity ref =
-  let t = Global.type_of_global ref in
-  try arity_sort (Reductionops.splay_prod (Global.env()) Evd.empty t)
-  with Not_found -> raise (CoercionError (NotAClass ref))
+  if not (Reductionops.is_arity (Global.env()) Evd.empty (Global.type_of_global ref)) then
+    raise (CoercionError (NotAClass ref))
 
 let check_arity = function
-  | CL_FUN | CL_SORT -> 0
+  | CL_FUN | CL_SORT -> ()
   | CL_CONST sp -> check_reference_arity (ConstRef sp)
   | CL_SECVAR sp -> check_reference_arity (VarRef sp)
   | CL_IND sp  -> check_reference_arity (IndRef sp)
-
-(* try_add_class : cl_typ -> strength option -> bool -> unit *)
-
-let strength_of_cl = function 
-  | CL_CONST kn -> constant_strength (sp_of_global (ConstRef kn))
-  | CL_SECVAR sp -> variable_strength sp
-  | _ -> Global
-
-let try_add_class cl streopt fail_if_exists =
-  if not (class_exists cl) then
-    let p = check_arity cl in
-    let stre' = strength_of_cl cl in 
-    let stre = match streopt with
-      | Some stre -> strength_min (stre,stre')
-      | None -> stre'
-    in
-    declare_class (cl,stre,p)
-  else
-    if fail_if_exists then errorlabstrm "try_add_new_class" 
-      (pr_class cl ++ str " is already a class")
-
 
 (* Coercions *)
 
@@ -154,12 +128,12 @@ let id_of_cl  = function
       mip.mind_typename
   | CL_SECVAR id -> id
 
-let class_of_ref = function
+let class_of_global = function
   | ConstRef sp -> CL_CONST sp
   | IndRef sp -> CL_IND sp
   | VarRef id -> CL_SECVAR id
   | ConstructRef _ as c -> 
-      errorlabstrm "class_of_ref"
+      errorlabstrm "class_of_global"
 	(str "Constructors, such as " ++ Printer.pr_global c ++ 
 	   str " cannot be used as class")
 
@@ -209,9 +183,14 @@ let prods_of t =
   in 
   aux [] t
 
+let strength_of_cl = function 
+  | CL_CONST kn -> constant_strength (sp_of_global (ConstRef kn))
+  | CL_SECVAR sp -> variable_strength sp
+  | _ -> Global
+
 let get_strength stre ref cls clt =
-  let stres = (snd (class_info cls)).cl_strength in
-  let stret = (snd (class_info clt)).cl_strength in
+  let stres = strength_of_cl cls in
+  let stret = strength_of_cl clt in
   let stref = strength_of_global ref in
 (* 01/00: Supprimé la prise en compte de la force des variables locales. Sens ?
   let streunif = stre_unif_cond (s_vardep,f_vardep) in
@@ -290,10 +269,10 @@ lorque source est None alors target est None aussi.
 let add_new_coercion_core coef stre source target isid =
   check_source source;
   let env = Global.env () in
-  let v = constr_of_reference coef in
-  let vj = Retyping.get_judgment_of env Evd.empty v in
+  let v = constr_of_global coef in
+  let t = Global.type_of_global coef in
   if coercion_exists coef then raise (CoercionError AlreadyExists);
-  let tg,lp = prods_of (vj.uj_type) in
+  let tg,lp = prods_of t in
   let llp = List.length lp in
   if llp = 0 then raise (CoercionError NotAFunction);
   let (cls,lvs,ind) =
@@ -312,10 +291,10 @@ let add_new_coercion_core coef stre source target isid =
       raise (CoercionError NoTarget)
   in
   check_target clt target;
-  try_add_class cls None false;
-  try_add_class clt None false;
+  check_arity cls;
+  check_arity clt;
   let stre' = get_strength stre coef cls clt in
-  declare_coercion coef vj stre' isid cls clt (List.length lvs)
+  declare_coercion coef stre' isid cls clt (List.length lvs)
 
 let try_add_new_coercion_core ref b c d e =
   try add_new_coercion_core ref b c d e
@@ -346,118 +325,5 @@ let add_coercion_hook stre ref =
     ^ " is now a coercion")
 
 let add_subclass_hook stre ref =
-  let cl = class_of_ref ref in
+  let cl = class_of_global ref in
   try_add_new_coercion_subclass cl stre
-
-(* try_add_new_class : global_reference -> strength -> unit *)
-
-let class_of_global = function
-  | VarRef sp -> CL_SECVAR sp
-  | ConstRef sp -> CL_CONST sp
-  | IndRef sp -> CL_IND sp
-  | ConstructRef _ as ref -> raise (CoercionError (NotAClass ref))
-
-let try_add_new_class ref stre =
-  try try_add_class (class_of_global ref) (Some stre) true
-  with CoercionError e ->
-    errorlabstrm "try_add_new_class" (explain_coercion_error ref e)
-
-(* fonctions pour le discharge: encore un peu sale mais ça s'améliore *)
-
-type coercion_entry = 
-    global_reference * strength * bool * cl_typ * cl_typ * int
-
-let add_new_coercion (ref,stre,isid,cls,clt,n) =
-  (* Un peu lourd, tout cela pour trouver l'instance *)
-  let env = Global.env () in
-  let v = constr_of_reference ref in
-  let vj = Retyping.get_judgment_of env Evd.empty v in
-  declare_coercion ref vj stre isid cls clt n
-
-let count_extra_abstractions hyps ids_to_discard =
-  let _,n =
-    List.fold_left
-      (fun (hyps,n as sofar) id -> 
-	 match hyps with
-	   | (hyp,None,_)::rest when id = hyp ->(rest, n+1)
-	   | _ -> sofar)
-      (hyps,0) ids_to_discard
-  in n
-
-let defined_in_sec kn olddir = 
-  let _,dir,_ = repr_kn kn in
-    dir = olddir
-
-let con_defined_in_sec kn olddir = 
-  let _,dir,_ = repr_con kn in
-    dir = olddir
-
-(* This moves the global path one step below *)
-let process_global olddir = function
-  | VarRef _ ->
-      anomaly "process_global only processes global surviving the section"
-  | ConstRef kn as x ->
-      if con_defined_in_sec kn olddir then
-        let newkn = Lib.make_con (id_of_label (con_label kn)) in
-        ConstRef newkn
-      else x
-  | IndRef (kn,i) as x -> 
-      if defined_in_sec kn olddir then
-        let newkn = Lib.make_kn (id_of_label (label kn)) in
-        IndRef (newkn,i)
-      else x
-  | ConstructRef ((kn,i),j) as x -> 
-      if defined_in_sec kn olddir then
-        let newkn = Lib.make_kn (id_of_label (label kn)) in
-        ConstructRef ((newkn,i),j)
-      else x
-
-let process_class olddir ids_to_discard x =
-  let (cl,{cl_strength=stre; cl_param=p}) = x in
-(*  let env = Global.env () in*)
-  match cl with 
-    | CL_SECVAR _ -> x
-    | CL_CONST kn -> 
-       if con_defined_in_sec kn olddir then
-         let newkn = Lib.make_con (id_of_label (con_label kn)) in
-	 let hyps = (Global.lookup_constant kn).const_hyps in
-	 let n = count_extra_abstractions hyps ids_to_discard in
-           (CL_CONST newkn,{cl_strength=stre;cl_param=p+n})
-       else 
-	 x
-    | CL_IND (kn,i) ->
-	if defined_in_sec kn olddir then
-          let newkn = Lib.make_kn (id_of_label (label kn)) in
-	  let hyps = (Global.lookup_mind kn).mind_hyps in
-	  let n = count_extra_abstractions hyps ids_to_discard in
-          (CL_IND (newkn,i),{cl_strength=stre;cl_param=p+n})
-        else 
-	  x
-    | _ -> anomaly "process_class" 
-
-let process_cl sec_sp cl =
-  match cl with
-    | CL_SECVAR id -> cl
-    | CL_CONST kn ->
-	if con_defined_in_sec kn sec_sp then
-          let newkn = Lib.make_con (id_of_label (con_label kn)) in
-          CL_CONST newkn
-        else 
-	  cl
-    | CL_IND (kn,i) ->
-	if defined_in_sec kn sec_sp then
-          let newkn = Lib.make_kn (id_of_label (label kn)) in
-          CL_IND (newkn,i)
-        else 
-	  cl
-    | _ -> cl
-
-let process_coercion olddir ids_to_discard (coe,coeinfo,cls,clt) =
-  let hyps = context_of_global_reference coe in
-  let nargs = count_extra_abstractions hyps ids_to_discard in
-  (process_global olddir coe,
-   coercion_strength coeinfo,
-   coercion_identity coeinfo,
-   process_cl olddir cls,
-   process_cl olddir clt,
-   nargs + coercion_params coeinfo)
