@@ -79,18 +79,22 @@ let _ =
 (**********************************************************************)
 (* Old v7 ast printing *)
 
+open Coqlib
+
 exception Non_closed_number
 
 let get_z_sign_ast loc =
   let ast_of_id id = 
-    Termast.ast_of_ref (Nametab.locate (Libnames.make_short_qualid id))
+    Termast.ast_of_ref
+      (reference_of_constr
+	(gen_constant_in_modules "Z-printer" zarith_base_modules id))
   in
-  ((ast_of_id (id_of_string "xI"),
-    ast_of_id (id_of_string "xO"),
-    ast_of_id (id_of_string "xH")),
-   (ast_of_id (id_of_string "ZERO"), 
-    ast_of_id (id_of_string "POS"),
-    ast_of_id (id_of_string "NEG")))
+  ((ast_of_id "xI",
+    ast_of_id "xO",
+    ast_of_id "xH"),
+   (ast_of_id "ZERO", 
+    ast_of_id "POS",
+    ast_of_id "NEG"))
 
 let _ = if !Options.v7 then
 let rec bignat_of_pos c1 c2 c3 p =
@@ -158,6 +162,7 @@ let make_path dir id = Libnames.encode_kn dir id
 
 let positive_path = 
   make_path (make_dir positive_module) (id_of_string "positive")
+let glob_positive = IndRef (positive_path,0)
 let path_of_xI = ((positive_path,0),1)
 let path_of_xO = ((positive_path,0),2)
 let path_of_xH = ((positive_path,0),3)
@@ -219,7 +224,7 @@ let uninterp_positive p =
 (***********************************************************************)
 
 let _ = Symbols.declare_numeral_interpreter "positive_scope"
-  positive_module
+  (glob_positive,positive_module)
   (interp_positive,Some pat_interp_positive)
   ([RRef (dummy_loc, glob_xI); 
     RRef (dummy_loc, glob_xO); 
@@ -283,7 +288,7 @@ let uninterp_n p =
 (* Declaring interpreters and uninterpreters for N *)
 
 let _ = Symbols.declare_numeral_interpreter "N_scope"
-  binnat_module
+  (glob_n,binnat_module)
   (n_of_int,Some pat_n_of_int)
   ([RRef (dummy_loc, glob_N0); 
     RRef (dummy_loc, glob_Npos)],
@@ -294,7 +299,7 @@ let _ = Symbols.declare_numeral_interpreter "N_scope"
 (* Parsing Z via scopes                                               *)
 (**********************************************************************)
 
-let fast_integer_module = ["Coq";"ZArith";"fast_integer"]
+let fast_integer_module = ["Coq";"ZArith";"BinInt"]
 let z_path = make_path (make_dir fast_integer_module) (id_of_string "Z")
 let glob_z = IndRef (z_path,0)
 let path_of_ZERO = ((z_path,0),1)
@@ -347,7 +352,7 @@ let uninterp_z p =
 (* Declaring interpreters and uninterpreters for Z *)
 
 let _ = Symbols.declare_numeral_interpreter "Z_scope"
-  fast_integer_module
+  (glob_z,fast_integer_module)
   (z_of_int,Some pat_z_of_int)
   ([RRef (dummy_loc, glob_ZERO); 
     RRef (dummy_loc, glob_POS); 

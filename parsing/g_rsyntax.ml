@@ -167,6 +167,7 @@ let rdefinitions = make_dir ["Coq";"Reals";"Rdefinitions"]
 (* TODO: temporary hack *)
 let make_path dir id = Libnames.encode_kn dir (id_of_string id)
 
+let glob_R = ConstRef (make_path rdefinitions "R")
 let glob_R1 = ConstRef (make_path rdefinitions "R1")
 let glob_R0 = ConstRef (make_path rdefinitions "R0")
 let glob_Ropp = ConstRef (make_path rdefinitions "Ropp")
@@ -282,7 +283,7 @@ let uninterp_r p =
     None
 
 let _ = Symbols.declare_numeral_interpreter "R_scope"
-  ["Coq";"Reals";"Rdefinitions"]
+  (glob_R,["Coq";"Reals";"Rdefinitions"])
   ((if !Options.v7 then r_of_int2 else r_of_int),None)
   ([RRef(dummy_loc,glob_Ropp);RRef(dummy_loc,glob_R0);
     RRef(dummy_loc,glob_Rplus);RRef(dummy_loc,glob_Rmult);RRef(dummy_loc,glob_R1)],
