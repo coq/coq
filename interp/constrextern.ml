@@ -131,10 +131,6 @@ let translate_keyword = function
       (str ("Warning: '"^
           s^"' is now a keyword; it has been translated to '"^s'^"'"));
       s'
-  | "_" -> 
-      msgerrnl (str 
-	"Warning: '_' is no longer a keyword; it has been translated to 'xx'");
-      "xx"
   | s -> s
 
 let is_coq_root d =
@@ -204,6 +200,10 @@ let translate_v7_string = function
       (s' = "unicite" or s' = "unicity") ->
       "uniqueness"^(String.sub s 7 (String.length s - 7))
   (* Default *)
+  | "_" -> 
+      msgerrnl (str 
+	"Warning: '_' is no longer an ident; it has been translated to 'xx'");
+      "xx"
   | x -> x
 
 let id_of_v7_string s =
@@ -431,7 +431,8 @@ let rec extern_args extern scopes env args subscopes =
 let rec extern inctx scopes vars r =
   try 
     if !print_no_symbol then raise No_match;
-    extern_numeral (Rawterm.loc r) scopes (Symbols.uninterp_numeral r)
+    extern_numeral (Rawterm.loc_of_rawconstr r)
+      scopes (Symbols.uninterp_numeral r)
   with No_match ->
 
   try 
@@ -516,6 +517,11 @@ let rec extern inctx scopes vars r =
         sub_extern false scopes vars tm,
         extern false scopes (List.fold_left add_vname vars nal) b)
 
+  | RIf (loc,c,(na,typopt),b1,b2) ->
+      CIf (loc,sub_extern false scopes vars c,
+        (na,option_app (extern_type scopes (add_vname vars na)) typopt),
+        sub_extern false scopes vars b1, sub_extern false scopes vars b2)
+
   | RRec (loc,fk,idv,tyv,bv) ->
       let vars' = Array.fold_right Idset.add idv vars in
       (match fk with
@@ -581,7 +587,7 @@ and extern_numeral loc scopes (sc,n) =
 and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as rule)::rules ->
-      let loc = Rawterm.loc t in
+      let loc = Rawterm.loc_of_rawconstr t in
       try
 	(* Adjusts to the number of arguments expected by the notation *)
 	let (t,args) = match t,n with
