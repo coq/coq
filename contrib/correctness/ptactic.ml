@@ -248,6 +248,7 @@ let register id n =
   let id' = match n with None -> id | Some id' -> id' in
   Penv.register id id'
 
+(*
 let wrap_save_named b =
   let pf_id = Pfedit.get_current_proof_name () in
   Command.save_named b;
@@ -257,11 +258,36 @@ let wrap_save_anonymous b id =
   let pf_id = Pfedit.get_current_proof_name () in
   Command.save_anonymous b (string_of_id id);
   register pf_id (Some id)
+*)
 
-let _ = add "SaveNamed"
-    (function [] -> (fun () -> if_verbose show_script ();
-		              wrap_save_named true)
+let _ = 
+  let current_save = Vernacinterp.vinterp_map "SaveNamed" in
+    add "SaveNamed"
+      (function [] -> (fun () -> let pf_id =  Pfedit.get_current_proof_name () in
+			 current_save [] ();
+			 register pf_id None)
+	 |   _  -> assert false)
+
+let _ = 
+  let current_defined = Vernacinterp.vinterp_map "DefinedNamed" in
+    add "DefinedNamed"
+      (function [] -> (fun () -> let pf_id = Pfedit.get_current_proof_name () in
+			 current_defined [] ();
+			 register pf_id None)
+	 | _ -> assert false)
+
+let _ =
+  let current_saveanonymous = Vernacinterp.vinterp_map "SaveAnonymous" in
+    add "SaveAnonymous"
+      (function [VARG_IDENTIFIER id] -> 
+	 (fun () -> let pf_id = Pfedit.get_current_proof_name () in
+	    current_saveanonymous [VARG_IDENTIFIER id] ();
+	    register pf_id (Some id))
     |   _  -> assert false)
+
+(* Old version that does not allow multiple modifications of the "Save" command *)
+(*
+let _ = 
 
 let _ = add "DefinedNamed"
     (function [] -> (fun () -> if_verbose show_script ();
@@ -273,4 +299,4 @@ let _ = add "SaveAnonymous"
        (fun () -> if_verbose show_script ();
 	          wrap_save_anonymous true id)
     |   _  -> assert false)
-
+*)
