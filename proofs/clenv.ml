@@ -547,8 +547,6 @@ let clenv_wtactic wt clenv =
     hook = wt clenv.hook }
 
 let clenv_type_of ce c =
-  Typing.type_of (w_env ce.hook) (w_Underlying ce.hook) c
-  (***
   let metamap =
     List.map 
       (function
@@ -556,6 +554,9 @@ let clenv_type_of ce c =
          | (n,Cltyp typ)    -> (n,typ.rebus))
       (intmap_to_list ce.env)
   in
+    Retyping.get_type_of_with_meta (w_env ce.hook) (w_Underlying ce.hook) metamap c
+(*  Typing.type_of (w_env ce.hook) (w_Underlying ce.hook) c *)
+  (***
   (Pretyping.ise_resolve true (w_Underlying ce.hook) metamap
      (gLOB(w_hyps ce.hook)) c).uj_type
   ***)
