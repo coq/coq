@@ -350,6 +350,7 @@ let end_compilation dir =
 	     " and not " ^ (string_of_dirpath m));
   in
   let (after,_,before) = split_lib oname in
+  comp_name := None;
   !path_prefix,after
 
 (* Returns true if we are inside an opened module type *)
