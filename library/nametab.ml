@@ -2,6 +2,7 @@
 (* $Id$ *)
 
 open Util
+open Pp
 open Names
 open Libobject
 open Declarations
@@ -9,76 +10,136 @@ open Term
 
 type cci_table = global_reference Stringmap.t
 type obj_table = (section_path * obj) Stringmap.t
-type mod_table = module_contents Stringmap.t
+type mod_table = (section_path * module_contents) Stringmap.t
 and module_contents = Closed of cci_table * obj_table * mod_table
 
-let mod_tab = ref (Stringmap.empty : mod_table)
-let cci_tab = ref (Stringmap.empty : cci_table)
-let obj_tab = ref (Stringmap.empty : obj_table)
+let empty =
+  Closed (Stringmap.empty, Stringmap.empty, Stringmap.empty)
+ 
+let nametabs = ref (empty : module_contents)
 
-let sp_of_id _ id = Stringmap.find (string_of_id id) !cci_tab
+let push_cci (Closed (ccitab, objtab, modtab)) s ref =
+  Closed (Stringmap.add s ref ccitab, objtab, modtab)
 
-let constant_sp_of_id id =
-  match Stringmap.find (string_of_id id) !cci_tab with
-    | ConstRef sp -> sp
-    | _ -> raise Not_found
+let push_obj (Closed (ccitab, objtab, modtab)) s obj =
+  Closed (ccitab, Stringmap.add s obj objtab, modtab)
 
-let push_cci s sp = cci_tab := Stringmap.add s sp !cci_tab
-let push_obj s sp = obj_tab := Stringmap.add s sp !obj_tab
-let push_module s mc = mod_tab := Stringmap.add s mc !mod_tab
+let push_mod (Closed (ccitab, objtab, modtab)) s mc =
+  (* devrait pas mais ca plante en décommentant la ligne ci-dessous *)
+ (* assert (not (Stringmap.mem s modtab)); *)
+  Closed (ccitab, objtab, Stringmap.add s mc modtab)
 
-let push_object id = push_obj (string_of_id id)
-let push id = push_cci (string_of_id id) 
+let push_tree push dir id o =
+  let rec search (Closed (ccitab, objtab, modtab) as tabs) pref = function
+    | id :: dir' ->
+	let sp, mc = 
+	  try Stringmap.find id modtab
+	  with Not_found ->
+	    let pref = List.rev pref in
+	    let dir = if pref@[id] = coq_root then [] else pref in
+	    (make_path dir (id_of_string id) CCI, empty)
+	in
+	Closed (ccitab, objtab,
+		Stringmap.add id (sp,search mc (id::pref) dir') modtab)
+    | [] ->
+	push tabs id o
+  in nametabs := search !nametabs [] dir
 
+(* This pushes a name at the current level (for relative qualified use) *)
+let push_cci_current = push_tree push_cci []
+let push_obj_current = push_tree push_obj []
+let push_mod_current = push_tree push_mod []
+
+(* This pushes a name at the root level (for absolute access) *)
+let push_cci_absolute = push_tree push_cci
+let push_obj_absolute = push_tree push_obj
+let push_mod_absolute = push_tree push_mod
+
+(* These are entry points for new declarations at toplevel *)
+(* Do not use with "open" since it pushes an absolute name too *)
+let push sp ref =
+  let dir, s = repr_qualid (qualid_of_sp sp) in
+  push_cci_absolute dir s ref;
+  push_cci_current s ref
+
+let push_object sp obj =
+  let dir, s = repr_qualid (qualid_of_sp sp) in
+  push_obj_absolute dir s (sp,obj);
+  push_obj_current s (sp,obj)
+
+let push_module sp mc =
+  let dir, s = repr_qualid (qualid_of_sp sp) in
+  push_mod_absolute dir s (sp,mc);
+  if s = List.hd coq_root then 
+    warning ("Cannot allow access to "^s^" by relative paths: it conflicts with the \nroot of Coq library")
+  else push_mod_current s (sp,mc)
+
+(* These are entry points to locate names *)
+(* If the name starts with the coq_root name, then it is an absolute name *)
 let locate qid =
   let (dir,id) = repr_qualid qid in
-  let rec search (ccitab,modtab) = function
-    | id :: dir' ->
-	let (Closed (ccitab, _, modtab)) = Stringmap.find id modtab in
-	search (ccitab,modtab) dir'
+  let rec search (Closed (ccitab,_,modtab)) = function
+    | id :: dir' -> search (snd (Stringmap.find id modtab)) dir'
     | [] -> Stringmap.find id ccitab
-  in search (!cci_tab,!mod_tab) dir
+  in search !nametabs dir
 
 let locate_obj qid =
   let (dir,id) = repr_qualid qid in
-  let rec search (objtab,modtab) = function
-    | id :: dir' ->
-	let (Closed (_, objtab, modtab)) = Stringmap.find id modtab in
-	search (objtab,modtab) dir'
+  let rec search (Closed (_,objtab,modtab)) = function
+    | id :: dir' -> search (snd (Stringmap.find id modtab)) dir'
     | [] -> Stringmap.find id objtab
-  in search (!obj_tab,!mod_tab) dir
+  in search !nametabs dir
+
+let locate_module qid =
+  let (dir,id) = repr_qualid qid in
+  let rec search (Closed (_,_,modtab)) = function
+    | id :: dir' -> search (snd (Stringmap.find id modtab)) dir'
+    | [] -> Stringmap.find id modtab
+  in search !nametabs dir
 
 let locate_constant qid =
   match locate qid with
     | ConstRef sp -> sp
     | _ -> raise Not_found
 
-let open_module_contents s =
-  let (Closed (ccitab,objtab,modtab)) = Stringmap.find s !mod_tab in
-  Stringmap.iter push_cci ccitab;
-(*  Stringmap.iter (fun _ -> Libobject.open_object) objtab;*)
-  Stringmap.iter push_module modtab
+let sp_of_id _ id = locate (make_qualid [] (string_of_id id))
 
-let rec rec_open_module_contents id =
-  let (Closed (ccitab,objtab,modtab)) = Stringmap.find id !mod_tab in
-  Stringmap.iter push_cci ccitab;
+let constant_sp_of_id id =
+  match locate (make_qualid [] (string_of_id id)) with
+    | ConstRef sp -> sp
+    | _ -> raise Not_found
+
+(* These are entry points to make the contents of a module/section visible *)
+(* in the current env (does not affect the absolute name space `coq_root') *)
+let open_module_contents qid =
+  let _, (Closed (ccitab,objtab,modtab)) = locate_module qid in
+  Stringmap.iter push_cci_current ccitab;
+(*  Stringmap.iter (fun _ -> Libobject.open_object) objtab;*)
+  Stringmap.iter push_mod_current modtab
+
+let rec rec_open_module_contents qid =
+  let _, (Closed (ccitab,objtab,modtab)) = locate_module qid in
+  Stringmap.iter push_cci_current ccitab;
 (*  Stringmap.iter (fun _ -> Libobject.open_object) objtab;*)
   Stringmap.iter 
-    (fun m mt -> push_module m mt; rec_open_module_contents m) modtab
+    (fun m (sp,_ as mt) -> 
+       push_mod_current m mt;
+       rec_open_module_contents (qualid_of_sp sp))
+    modtab
 
-(* Registration as a global table and rollback. *)
+let exists_cci sp =
+  try let _ = locate (qualid_of_sp sp) in true with Not_found -> false
+
+(***********************************************)
+(* Registration as a global table and rollback *)
     
-let init () =
-  cci_tab := Stringmap.empty;
-  obj_tab := Stringmap.empty;
-  mod_tab := Stringmap.empty;
+let init () = nametabs := empty
 
-type frozen = cci_table Stringmap.t * obj_table Stringmap.t * mod_table Stringmap.t
+type frozen = module_contents
 
-let freeze () = (!cci_tab, !obj_tab, !mod_tab)
+let freeze () = !nametabs
 		  
-let unfreeze (ccitab,objtab,modtab) =
-  cci_tab := ccitab; obj_tab := objtab; mod_tab := modtab
+let unfreeze mc = nametabs := mc
 
 let _ = 
   Summary.declare_summary "names"

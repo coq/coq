@@ -123,7 +123,7 @@ let rec open_module s =
   if not m.module_opened then begin
     List.iter (fun (m,_,exp) -> if exp then open_module m) m.module_deps;
     open_objects m.module_declarations;
-    Nametab.open_module_contents s; 
+    Nametab.open_module_contents (make_qualid [] s); 
     m.module_opened <- true
   end
 
@@ -157,7 +157,8 @@ let rec load_module_from s f =
     List.iter (load_mandatory_module s) m.module_deps;
     Global.import m.module_compiled_env;
     load_objects m.module_declarations;
-    Nametab.push_module s m.module_nametab;
+    let sp = Names.make_path [] (id_of_string s) CCI in
+    Nametab.push_module sp m.module_nametab;
     modules_table := Stringmap.add s m !modules_table
   end
 

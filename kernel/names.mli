@@ -46,21 +46,21 @@ val kind_of_string : string -> path_kind
 (*s Directory paths = section names paths *)
 type dir_path = string list
 
-(* Printing of directory paths as ["#module#submodule"] *)
+val coq_root : dir_path
+
+(* Printing of directory paths as ["coq_root.module.submodule"] *)
 val string_of_dirpath : dir_path -> string
 
-
-(*s Section paths *)
-
+(*s Qualified idents are names relative to the current visilibity of names *)
 type qualid
 
-val make_qualid : string list -> string -> qualid
-val repr_qualid : qualid -> string list * string
+val make_qualid : dir_path -> string -> qualid
+val repr_qualid : qualid -> dir_path * string
 
 val string_of_qualid : qualid -> string
 val pr_qualid : qualid -> std_ppcmds
 
-(*s Section paths *)
+(*s Section paths are {\em absolute} names *)
 type section_path
 
 (* Constructors of [section_path] *)
@@ -75,7 +75,10 @@ val kind_of_path : section_path -> path_kind
 val sp_of_wd : string list -> section_path
 val wd_of_sp : section_path -> string list
 
-(* Parsing and printing of section path as ["#module#id#kind"] *)
+(* Turns an absolute name into a qualified name denoting the same name *)
+val qualid_of_sp : section_path -> qualid
+
+(* Parsing and printing of section path as ["coq_root.module.id"] *)
 val path_of_string : string -> section_path
 val string_of_path : section_path -> string
 val pr_sp : section_path -> std_ppcmds

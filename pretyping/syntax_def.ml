@@ -36,7 +36,7 @@ let (in_syntax_constant, out_syntax_constant) =
 let _ =
   cache_syntax_constant := fun (sp,c) ->
     add_syntax_constant sp c;
-    Nametab.push_object (basename sp) (sp, in_syntax_constant c)
+    Nametab.push_object sp (in_syntax_constant c)
 
 let declare_syntactic_definition id c =
   let _ = add_leaf id CCI (in_syntax_constant c) in ()

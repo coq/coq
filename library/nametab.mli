@@ -12,12 +12,12 @@ open Term
 
 type cci_table = global_reference Stringmap.t
 type obj_table = (section_path * Libobject.obj) Stringmap.t
-type mod_table = module_contents Stringmap.t
+type mod_table = (section_path * module_contents) Stringmap.t
 and module_contents = Closed of cci_table * obj_table * mod_table
 
-val push : identifier -> global_reference -> unit
-val push_object : identifier -> (section_path * Libobject.obj) -> unit
-val push_module : string -> module_contents -> unit
+val push : section_path -> global_reference -> unit
+val push_object : section_path -> Libobject.obj -> unit
+val push_module : section_path -> module_contents -> unit
 
 val sp_of_id : path_kind -> identifier -> global_reference
 
@@ -27,9 +27,13 @@ val constant_sp_of_id : identifier -> section_path
 val locate : qualid -> global_reference
 val locate_obj : qualid -> (section_path * Libobject.obj)
 val locate_constant : qualid -> constant_path
+val locate_module : qualid -> section_path * module_contents
 
-val open_module_contents : string -> unit
-val rec_open_module_contents : string -> unit
+(* [exists sp] tells if [sp] is already bound to a cci term *)
+val exists_cci : section_path -> bool
+
+val open_module_contents : qualid -> unit
+val rec_open_module_contents : qualid -> unit
 
 
 
