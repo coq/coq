@@ -149,14 +149,9 @@ Replace R0 with (Ropp (Ropp R0)).
 Replace (Ropp (Rmult n (Rinv d))) with (Rmult (Ropp n) (Rinv d)).
 Replace (Ropp R0) with R0.
 Red.
-Try Exact H0.
 Apply Rgt_Ropp.
-Replace (Ropp (Rmult n (Rinv d))) with (Rmult (Ropp n) (Rinv d)).
-Replace (Ropp R0) with R0.
 Red.
-Try Exact H0.
-Ring.
-Ring.
+Exact H0.
 Ring.
 Ring.
 Ring.
