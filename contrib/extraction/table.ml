@@ -17,32 +17,48 @@ open Goptions
 open Libnames
 open Util
 open Pp
+open Miniml
 
+(*S Warning and Error messages. *)
 
-(*s Warning and Error messages. *)
-
-let error_axiom_scheme kn = 
-  errorlabstrm "axiom_scheme_message" 
+let error_axiom_scheme r = 
+  errorlabstrm "Extraction" 
     (str "Extraction cannot accept the type scheme axiom " ++ spc () ++
-     Printer.pr_global (ConstRef kn) ++ spc () ++ str ".") 
+     Printer.pr_global r ++ spc () ++ str ".") 
 
-let error_axiom kn =
-  errorlabstrm "axiom_message"
+let error_axiom r =
+  errorlabstrm "Extraction"
     (str "You must specify an extraction for axiom" ++ spc () ++ 
-     Printer.pr_global (ConstRef kn) ++ spc () ++ str "first.")
+     Printer.pr_global r ++ spc () ++ str "first.")
 
-let warning_axiom kn = 
+let warning_axiom r = 
   Options.if_verbose warn 
     (str "This extraction depends on logical axiom" ++ spc () ++ 
-     Printer.pr_global (ConstRef kn) ++ str "." ++ spc() ++ 
+     Printer.pr_global r ++ str "." ++ spc() ++ 
      str "Having false logical axiom in the environment when extracting" ++ 
      spc () ++ str "may lead to incorrect or non-terminating ML terms.")
     
 let error_section () = 
-  errorlabstrm "section_message"
+  errorlabstrm "Extraction"
     (str "You can't do that within a section. Close it and try again.")
 
-(*s AutoInline parameter *)
+let error_constant r = 
+  errorlabstrm "Extraction"
+    (Printer.pr_global r ++ spc () ++ str "is not a constant.") 
+
+let error_type_scheme r = 
+  errorlabstrm "Extraction"
+    (Printer.pr_global r ++ spc () ++ str "is a type scheme, not a type.")
+
+let error_inductive r = 
+  errorlabstrm "Extraction"
+    (Printer.pr_global r ++ spc () ++ str "is not an inductive type.")
+
+let error_nb_cons () = 
+  errorlabstrm "Extraction" (str "Not the right number of constructors.")
+
+
+(*S Extraction AutoInline *)
 
 let auto_inline_ref = ref true
 
@@ -55,7 +71,8 @@ let _ = declare_bool_option
 	   optread = auto_inline; 
 	   optwrite = (:=) auto_inline_ref}
 
-(*s Optimize parameter *)
+
+(*S Extraction Optimize *)
 
 let optim_ref = ref true
 
@@ -68,18 +85,8 @@ let _ = declare_bool_option
 	   optread = optim; 
 	   optwrite = (:=) optim_ref}
 
-(*s Auxiliary functions *) 
 
-let is_constant r = match r with 
-  | ConstRef _ -> true
-  | _ -> false
-
-let check_constant r = 
-  if (is_constant r) then r 
-  else errorlabstrm "extract_constant"
-	(Printer.pr_global r ++ spc () ++ str "is not a constant.") 
-
-(*s Target Language *)
+(*S Extraction Lang *)
 
 type lang = Ocaml | Haskell | Scheme | Toplevel
 
@@ -102,7 +109,8 @@ let _ = declare_summary "Extraction Lang"
 
 let extraction_language x = Lib.add_anonymous_leaf (extr_lang x)
 
-(*s Table for custom inlining *)
+
+(*S Extraction Inline/NoInline *)
 
 let empty_inline_table = (Refset.empty,Refset.empty)
 
@@ -138,14 +146,15 @@ let _ = declare_summary "Extraction Inline"
 
 let extraction_inline b l =
   if Lib.sections_are_opened () then error_section (); 
-  let refs = List.map (fun x -> check_constant (Nametab.global x)) l in 
+  let refs = List.map Nametab.global l in 
+  List.iter (function  ConstRef _ -> () | r -> error_constant r) refs; 
   Lib.add_anonymous_leaf (inline_extraction (b,refs))
 
 (*s Printing part *)
 
 let print_extraction_inline () = 
   let (i,n)= !inline_table in 
-  let i'= Refset.filter is_constant i in 
+  let i'= Refset.filter (function ConstRef _ -> true | _ -> false) i in 
   msg 
     (str "Extraction Inline:" ++ fnl () ++ 
      Refset.fold
@@ -167,7 +176,8 @@ let (reset_inline,_) =
 
 let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
 
-(*s Table for direct ML extractions. *)
+
+(*S Extract Constant/Inductive. *)
 
 type kind = Term | Type | Ind | Construct 
 
@@ -176,15 +186,11 @@ let check_term_or_type r = match r with
       let env = Global.env () in 
       let typ = Environ.constant_type env sp in 
       let typ = Reduction.whd_betadeltaiota env typ in
-      (match kind_of_term typ with 
-	 | Sort _ -> (r,Type)
-	 | _ -> if not (Reduction.is_arity env typ) then (r,Term)
-	   else errorlabstrm "extract_constant"
-	     (Printer.pr_global r ++ spc () ++ 
-	      str "is a type scheme, not a type."))
-  | _ -> errorlabstrm "extract_constant"
-	(Printer.pr_global r ++ spc () ++ str "is not a constant.") 
-
+      if isSort typ then (r,Type) 
+      else if Reduction.is_arity env typ then error_type_scheme r
+      else (r,Term)
+  | _ -> error_constant r
+	
 let empty_extractions = (Refmap.empty, Refset.empty)
 
 let extractions = ref empty_extractions
@@ -222,7 +228,6 @@ let _ = declare_summary "ML extractions"
 	    init_function = (fun () -> extractions := empty_extractions);
 	    survive_section = true }
 
-
 (*s Grammar entries. *)
 
 let extract_constant_inline inline r s =
@@ -237,8 +242,7 @@ let extract_inductive r (s,l) =
   | IndRef ((kn,i) as ip) ->
       let mib = Global.lookup_mind kn in
       let n = Array.length mib.mind_packets.(i).mind_consnames in
-      if n <> List.length l then
-	error "Not the right number of constructors.";
+      if n <> List.length l then error_nb_cons (); 
       Lib.add_anonymous_leaf (inline_extraction (true,[g]));
       Lib.add_anonymous_leaf (in_ml_extraction (g,Ind,s));
       list_iter_i
@@ -246,31 +250,26 @@ let extract_inductive r (s,l) =
 	   let g = ConstructRef (ip,succ j) in 
 	   Lib.add_anonymous_leaf (inline_extraction (true,[g]));
 	   Lib.add_anonymous_leaf (in_ml_extraction (g,Construct,s))) l
-  | _ -> 
-      errorlabstrm "extract_inductive"
-	(Printer.pr_global g ++ spc () ++ str "is not an inductive type.")
+  | _ -> error_inductive g 
 
-(*s Record Inductive tables. *)
 
-let record_type_table = 
-  ref (Gmap.empty : (inductive, global_reference list) Gmap.t)
+(*S The other tables: constants, inductives, records, ... *)
 
-let record_proj_table = ref Refset.empty
+(*s Constants tables. *) 
 
-let add_record i l = 
-  record_type_table := Gmap.add i l !record_type_table; 
-  record_proj_table := List.fold_right Refset.add l !record_proj_table
+let terms = ref (KNmap.empty : ml_decl KNmap.t)
+let add_term kn d = terms := KNmap.add kn d !terms
+let lookup_term kn = KNmap.find kn !terms
 
-let find_proj i = Gmap.find i !record_type_table
+let types = ref (KNmap.empty : ml_schema KNmap.t)
+let add_type kn s = types := KNmap.add kn s !types
+let lookup_type kn = KNmap.find kn !types 
 
-let is_proj r = Refset.mem r !record_proj_table 
+(*s Inductives table. *)
 
-let _ = declare_summary "Extraction Record tables"
-	  { freeze_function = (fun () -> !record_type_table,!record_proj_table); 
-	    unfreeze_function = 
-	      (fun (x,y) -> record_type_table := x; record_proj_table := y); 
-	    init_function = (fun () -> ()); 
-	    survive_section = true }
+let inductives = ref (KNmap.empty : ml_ind KNmap.t)
+let add_ind kn m = inductives := KNmap.add kn m !inductives
+let lookup_ind kn = KNmap.find kn !inductives
 
 (*s Recursors table. *)
 
@@ -291,9 +290,32 @@ let is_recursor = function
   | ConstRef kn -> KNset.mem kn !recursors
   | _ -> false
 
-let _ = declare_summary "Extraction Recursors table"
-	  { freeze_function = (fun () -> !recursors); 
-	    unfreeze_function = (fun x -> recursors := x);
-	    init_function = (fun () -> ()); 
+(*s Record tables. *)
+
+let records = ref (KNmap.empty : global_reference list KNmap.t)
+let projs = ref Refset.empty
+
+let add_record kn l = 
+  records := KNmap.add kn l !records; 
+  projs := List.fold_right Refset.add l !projs
+
+let find_projections kn = KNmap.find kn !records
+let is_projection r = Refset.mem r !projs
+
+(*s Tables synchronization. *)
+
+let freeze () = !terms, !types, !inductives, !recursors, !records, !projs
+
+let unfreeze (te,ty,id,re,rd,pr) = 
+  terms:=te; types:=ty; inductives:=id; recursors:=re; records:=rd; projs:=pr
+
+let _ = declare_summary "Extraction tables"
+	  { freeze_function = freeze;
+	    unfreeze_function = unfreeze;
+	    init_function = (fun () -> ());
 	    survive_section = true }
+
+
+
+
 

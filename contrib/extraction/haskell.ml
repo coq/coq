@@ -14,6 +14,7 @@ open Pp
 open Util
 open Names
 open Nameops
+open Libnames
 open Miniml
 open Mlutil
 open Ocaml
@@ -176,7 +177,25 @@ and pp_function env f t =
 	
 (*s Pretty-printing of inductive types declaration. *)
 
-let pp_one_inductive (pl,name,cl) =
+let pp_comment s = str "-- " ++ s ++ fnl ()
+
+let pp_logical_ind ip packet = 
+  pp_comment (Printer.pr_global (IndRef ip) ++ str " : logical inductive") ++
+  pp_comment (str "with constructors : " ++ 
+	      prvect_with_sep spc Printer.pr_global 
+		(Array.mapi (fun i _ -> ConstructRef (ip,i+1)) packet.ip_types)) 
+
+let pp_singleton kn packet = 
+  let l = rename_tvars keywords packet.ip_vars in 
+  let l' = List.rev l in 
+  hov 0 (str "type " ++ pp_global (IndRef (kn,0)) ++ spc () ++ 
+	 prlist_with_sep spc pr_id l ++
+	 (if l <> [] then str " " else mt ()) ++ str "=" ++ spc () ++
+	 pp_type false l' (List.hd packet.ip_types.(0)) ++ fnl () ++
+	 pp_comment (str "singleton inductive, whose constructor was " ++ 
+		     Printer.pr_global (ConstructRef ((kn,0),1))))
+
+let pp_one_ind ip pl cv =
   let pl = rename_tvars keywords pl in
   let pp_constructor (r,l) =
     (pp_global r ++
@@ -186,25 +205,32 @@ let pp_one_inductive (pl,name,cl) =
       	       	prlist_with_sep 
 		  (fun () -> (str " ")) (pp_type true (List.rev pl)) l))
   in
-  (str (if cl = [] then "type " else "data ") ++ 
-   pp_global name ++ str " " ++
-   prlist_with_sep (fun () -> (str " ")) pr_lower_id pl ++
-   (if pl = [] then (mt ()) else (str " ")) ++
-   if cl = [] then str "= () -- empty inductive"
-   else 
-      (v 0 (str "= " ++
-	    prlist_with_sep (fun () -> (fnl () ++ str "  | "))
-              pp_constructor cl)))
+  str (if cv = [||] then "type " else "data ") ++ 
+  pp_global (IndRef ip) ++ str " " ++
+  prlist_with_sep (fun () -> str " ") pr_lower_id pl ++
+  (if pl = [] then mt () else str " ") ++
+  if cv = [||] then str "= () -- empty inductive"
+  else 
+    (v 0 (str "= " ++
+	  prvect_with_sep (fun () -> fnl () ++ str "  | ") pp_constructor 
+	    (Array.mapi (fun i c -> ConstructRef (ip,i+1),c) cv)))
   
-let pp_inductive il =
-  (prlist_with_sep (fun () -> (fnl ())) pp_one_inductive il ++ fnl ())
+let rec pp_ind kn i ind =
+  if i >= Array.length ind.ind_packets then mt ()
+  else 
+    let ip = (kn,i) in 
+    let p = ind.ind_packets.(i) in 
+    if p.ip_logical then  
+      pp_logical_ind ip p ++ pp_ind kn (i+1) ind
+    else 
+      pp_one_ind ip p.ip_vars p.ip_types ++ fnl () ++ pp_ind kn (i+1) ind
+
 
 (*s Pretty-printing of a declaration. *)
 
 let pp_decl = function
-  | Dind ([], _) -> mt ()
-  | Dind (i, _) -> 
-      hov 0 (pp_inductive i)
+  | Dind (kn,i) when i.ind_info = Singleton -> pp_singleton kn i.ind_packets.(0)
+  | Dind (kn,i) -> hov 0 (pp_ind kn 0 i)
   | Dtype (r, l, t) ->
       let l = rename_tvars keywords l in
       let l' = List.rev l in 

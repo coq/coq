@@ -15,6 +15,15 @@ open Util
 open Names
 open Libnames
 
+(* The [signature] type is used to know how many arguments a CIC
+   object expects, and what these arguments will become in the ML
+   object. *)
+   
+(* Convention: outmost lambda/product gives the head of the list, 
+   and [true] means that the argument is to be kept. *)
+
+type signature = bool list
+
 (*s ML type expressions. *)
 
 type ml_type = 
@@ -27,7 +36,7 @@ type ml_type =
   | Tunknown
   | Tcustom of string
 
-and ml_meta = { id : int; mutable contents : ml_type option}
+and ml_meta = { id : int; mutable contents : ml_type option }
 
 (* ML type schema. 
    The integer is the number of variable in the schema. *)
@@ -36,11 +45,28 @@ type ml_schema = int * ml_type
 
 (*s ML inductive types. *)
 
-type ml_one_ind = 
-  identifier list * global_reference * (global_reference * ml_type list) list
+type inductive_info = Record | Singleton | Coinductive | Standard
 
-type ml_ind = 
-  ml_one_ind list * bool (* cofix *)  
+(* A [ml_ind_packet] is the miniml counterpart of a [one_inductive_body]. 
+   If the inductive is logical ([ip_logical = false]), then all other fields
+   are unused. Otherwise, 
+   [ip_sign] is a signature concerning the arguments of the inductive, 
+   [ip_vars] contains the names of the type variables surviving in ML, 
+   [ip_types] contains the ML types of all constructors.    
+*)
+
+type ml_ind_packet = { 
+  ip_logical : bool;
+  ip_sign : signature; 
+  ip_vars : identifier list; 
+  ip_types : (ml_type list) array }  
+
+(* [ip_nparams] contains the number of parameters. *)
+
+type ml_ind = {
+  ind_info : inductive_info;
+  ind_nparams : int; 	       
+  ind_packets : ml_ind_packet array }
 
 (*s ML terms. *)
 
@@ -59,11 +85,10 @@ type ml_ast =
   | MLmagic  of ml_ast
   | MLcustom of string
 
-
 (*s ML declarations. *)
 
 type ml_decl = 
-  | Dind  of ml_ind
+  | Dind  of kernel_name * ml_ind
   | Dtype of global_reference * identifier list * ml_type
   | Dterm   of global_reference * ml_ast * ml_type
   | DcustomTerm of global_reference * string

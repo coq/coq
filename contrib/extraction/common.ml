@@ -19,6 +19,8 @@ open Miniml
 open Mlutil
 open Ocaml
 
+(*s Get all references used in one [ml_decl list]. *)
+
 module Orefset = struct 
   type t = { set : Refset.t ; list : global_reference list }
   let empty = { set = Refset.empty ; list = [] }
@@ -31,58 +33,12 @@ end
 
 type updown = { mutable up : Orefset.t ; mutable down : Orefset.t }
 
-let add_down o r = o.down <- Orefset.add r o.down
-let add_up o r = o.up <- Orefset.add r o.up
-let lang_add_type o r = if lang () = Haskell then add_up o r else add_down o r
-
-(*s Get all references used in one [ml_decl] list. *)
-
-let mltype_get_references o t = 
-  let rec get_rec = function 
-    | Tglob (r,l) -> lang_add_type o r; List.iter get_rec l 
-    | Tarr (a,b) -> get_rec a; get_rec b 
-    | _ -> () 
-  in get_rec t
-
-let ast_get_references o a = 
-  let rec get_rec a =
-    ast_iter get_rec a;
-    match a with 
-      | MLglob r -> add_down o r
-      | MLcons (r,_) -> add_up o r
-      | MLcase (_,v) as a -> Array.iter (fun (r,_,_) -> add_up o r) v
-      | MLcast (_,t) -> mltype_get_references o t 
-      | _ -> ()
-  in get_rec a
-
-let ip_of_indref = function 
-  | IndRef ip -> ip 
-  | _ -> assert false
-
 let decl_get_references ld = 
   let o = { up = Orefset.empty ; down = Orefset.empty } in 
-  let one_decl = function 
-    | Dind (l,_) -> 
-	List.iter (fun (_,r,l) -> 
-		     lang_add_type o r; 
-		     (try 
-			List.iter (add_down o) (find_proj (ip_of_indref r))
-		      with Not_found -> ()); 
-		     List.iter (fun (r,l) -> 
-				  add_up o r; 
-				  List.iter (mltype_get_references o) l) l) l
-    | Dtype (r,_,t) -> lang_add_type o r; mltype_get_references o t 
-    | Dterm (r,a,t) -> 
-	add_down o r; ast_get_references o a; mltype_get_references o t
-    | Dfix(rv,c,t) -> 
-	Array.iter (add_down o) rv; 
-	Array.iter (ast_get_references o) c; 
-	Array.iter (mltype_get_references o) t
-    | DcustomTerm (r,_) -> add_down o r
-    | DcustomType (r,_) -> lang_add_type o r
-  in 
-  List.iter one_decl ld; 
-  o
+  let do_term r = o.down <- Orefset.add r o.down in
+  let do_cons r = o.up <- Orefset.add r o.up in 
+  let do_type = if lang () = Haskell then do_cons else do_term in 
+  List.iter (decl_iter_references do_term do_cons do_type) ld; o
 
 (*S Modules considerations. *)
 
@@ -229,17 +185,6 @@ let preamble prm = match lang () with
   | Haskell -> Haskell.preamble prm
   | Scheme -> Scheme.preamble prm
   | Toplevel -> (fun _ _ -> mt ())
-	
-let pp_comment s = match lang () with 
-  | Haskell -> str "-- " ++ s ++ fnl () 
-  | Scheme -> str ";" ++ s ++ fnl () 
-  | Ocaml | Toplevel -> str "(* " ++ s ++ str " *)" ++ fnl ()
-
-let pp_logical_ind r = 
-  pp_comment (Printer.pr_global r ++ str " : logical inductive")
-
-let pp_singleton_ind r = 
-  pp_comment (Printer.pr_global r ++ str " : singleton inductive constructor")
 
 (*S Extraction to a file. *)
 
@@ -263,12 +208,6 @@ let extract_to_file f prm decls =
      decl_type_search Tdummy decls, 
      decl_type_search Tunknown decls) in 
   pp_with ft (preamble prm used_modules print_dummys);
-  if not prm.modular then begin 
-    List.iter (fun r -> pp_with ft (pp_logical_ind r)) 
-      (List.filter Extraction.decl_is_logical_ind prm.to_appear); 
-    List.iter (fun r -> pp_with ft (pp_singleton_ind r)) 
-      (List.filter Extraction.decl_is_singleton prm.to_appear); 
-  end;
   begin try
     List.iter (fun d -> msgnl_with ft (pp_decl d)) decls
   with e ->

@@ -198,7 +198,7 @@ let rec pp_expr par env args =
 		(hov 2 (str "let " ++ pp_id ++ str " =" ++ spc () ++ pp_a1) ++ 
 		 spc () ++ str "in") ++ 
 	      spc () ++ hov 0 pp_a2))
-    | MLglob r when is_proj r && args <> [] ->
+    | MLglob r when is_projection r && args <> [] ->
 	let record = List.hd args in 
 	pp_apply (record ++ str "." ++ pp_global r) par (List.tl args)
     | MLglob r -> 
@@ -210,13 +210,13 @@ let rec pp_expr par env args =
 	else pp_global r
     | MLcons (r,args') -> 
 	(try 
-	   let projs = find_proj (kn_of_r r, 0) in 
+	   let projs = find_projections (kn_of_r r) in 
 	   pp_record_pat (projs, List.map (pp_expr true env []) args')
 	 with Not_found ->
 	   assert (args=[]);
 	   let tuple = pp_tuple (pp_expr true env []) args' in 
 	   if Refset.mem r !cons_cofix then 
-	     pp_par par (str "lazy (" ++ pp_global r ++ spc() ++ tuple ++ str ")")
+	     pp_par par (str "lazy (" ++ pp_global r ++ spc() ++ tuple ++str ")")
 	   else pp_par par (pp_global r ++ spc () ++ tuple))
     | MLcase (t, pv) ->
 	let r,_,_ = pv.(0) in 
@@ -226,7 +226,7 @@ let rec pp_expr par env args =
 	  (pp_expr false env [] t) 
 	in 
 	let record = 
-	  try ignore (find_proj (kn_of_r r, 0)); true with Not_found -> false
+	  try ignore (find_projections (kn_of_r r)); true with Not_found -> false
 	in 
 	if Array.length pv = 1 && not record then 
 	  let s1,s2 = pp_one_pat env pv.(0) in 
@@ -269,7 +269,7 @@ and pp_one_pat env (r,ids,t) =
   let ids,env' = push_vars (List.rev ids) env in
   let expr = pp_expr (expr_needs_par t) env' [] t in 
   try 
-    let projs = find_proj (kn_of_r r,0) in 
+    let projs = find_projections (kn_of_r r) in 
     pp_record_pat (projs, List.rev_map pr_id ids), expr
   with Not_found -> 
     let args = 
@@ -340,64 +340,79 @@ let pp_Dfix env (p,c,t) =
 let pp_parameters l = 
   (pp_boxed_tuple pp_tvar l ++ space_if (l<>[]))
 
-let pp_one_ind prefix (pl,name,cl) =
+let pp_one_ind prefix ip pl cv =
   let pl = rename_tvars keywords pl in
   let pp_constructor (r,l) =
-    (pp_global r ++
-     match l with
-       | [] -> (mt ()) 
-       | _  -> (str " of " ++
-      		prlist_with_sep 
-		  (fun () -> (spc () ++ str "* ")) 
-		  (pp_type true pl) l))
+    hov 2 (str "  | " ++ pp_global r ++
+	   match l with
+	     | [] -> mt () 
+	     | _  -> (str " of " ++ 
+		      prlist_with_sep 
+			(fun () -> spc () ++ str "* ") (pp_type true pl) l))
   in
-  (pp_parameters pl ++ str prefix ++ pp_global name ++ str " =" ++ 
-   if cl = [] then str " unit (* empty inductive *)" 
-   else (fnl () ++
-	 v 0 (str "  | " ++
-	      prlist_with_sep (fun () -> (fnl () ++ str "  | "))
-                (fun c -> hov 2 (pp_constructor c)) cl)))
+  pp_parameters pl ++ str prefix ++ pp_global (IndRef ip) ++ str " =" ++ 
+  if cv = [||] then str " unit (* empty inductive *)" 
+  else fnl () ++ v 0 (prvect_with_sep fnl pp_constructor
+			(Array.mapi (fun i c -> ConstructRef (ip,i+1), c) cv))
 
-let pp_ind il =
-  str "type " ++
-  prlist_with_sep (fun () -> fnl () ++ str "and ") (pp_one_ind "") il
-  ++ fnl ()
+let pp_comment s = str "(* " ++ s ++ str " *)" ++ fnl ()
 
-let pp_record ip pl l = 
-  let pl = rename_tvars keywords pl in 
-  str "type " ++ pp_parameters pl ++ pp_global (IndRef ip) ++ str " = { "++
+let pp_logical_ind ip packet = 
+  pp_comment (Printer.pr_global (IndRef ip) ++ str " : logical inductive") ++
+  pp_comment (str "with constructors : " ++ 
+	      prvect_with_sep spc Printer.pr_global 
+		(Array.mapi (fun i _ -> ConstructRef (ip,i+1)) packet.ip_types)) 
+    
+let pp_singleton kn packet = 
+  let l = rename_tvars keywords packet.ip_vars in 
+  hov 0 (str "type " ++ spc () ++ pp_parameters l ++
+	 pp_global (IndRef (kn,0)) ++ spc () ++ str "=" ++ spc () ++
+	 pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
+	 pp_comment (str "singleton inductive, whose constructor was " ++ 
+		     Printer.pr_global (ConstructRef ((kn,0),1))))
+
+let pp_record kn packet = 
+  let l = List.combine (find_projections kn) packet.ip_types.(0) in 
+  let projs = find_projections kn in
+  let pl = rename_tvars keywords packet.ip_vars in 
+  str "type " ++ pp_parameters pl ++ pp_global (IndRef (kn,0)) ++ str " = { "++
   hov 0 (prlist_with_sep (fun () -> str ";" ++ spc ()) 
-	   (fun (r,t) -> pp_global r ++ str " : " ++ pp_type true pl t) l)
+	   (fun (r,t) -> pp_global r ++ str " : " ++ pp_type true pl t) l) 
   ++ str " }" ++ fnl () 
 
-let pp_coind_preamble (pl,name,_) = 
+let pp_coind ip pl = 
+  let r = IndRef ip in 
   let pl = rename_tvars keywords pl in
-  pp_parameters pl ++ pp_global name ++ str " = " ++ 
-  pp_parameters pl ++ str "__" ++ pp_global name ++ str " Lazy.t"
+  pp_parameters pl ++ pp_global r ++ str " = " ++ 
+  pp_parameters pl ++ str "__" ++ pp_global r ++ str " Lazy.t"
 
-let pp_coind il = 
-  str "type " ++ 
-  prlist_with_sep (fun () -> fnl () ++ str "and ") pp_coind_preamble il ++
-  fnl () ++ str "and " ++ 
-  prlist_with_sep (fun () -> fnl () ++ str "and ") (pp_one_ind "__") il ++
-  fnl ()
+let rec pp_ind co first kn i ind =
+  if i >= Array.length ind.ind_packets then mt () 
+  else 
+    let ip = (kn,i) in 
+    let p = ind.ind_packets.(i) in 
+    if p.ip_logical then  
+      pp_logical_ind ip p ++ pp_ind co first kn (i+1) ind
+    else 
+      str (if first then "type " else "and ") ++
+      (if co then pp_coind ip p.ip_vars ++ fnl () ++ str "and " else mt ()) ++ 
+      pp_one_ind (if co then "__" else "") ip p.ip_vars p.ip_types ++
+      fnl () ++ pp_ind co false kn (i+1) ind
 
 (*s Pretty-printing of a declaration. *)
 
 let pp_decl = function
-  | Dind ([], _) -> mt ()
-  | Dind (i, true) -> 
-      List.iter   
-	(fun (_,_,l) -> 
-	   List.iter (fun (r,_) -> 
-			cons_cofix := Refset.add r !cons_cofix)  l) i; 
-      hov 0 (pp_coind i)
-  | Dind ([vl, IndRef ip, [_,l]] as i, _) -> 
-      (try 
-	 let projs = find_proj ip in 
-	 hov 0 (pp_record ip vl (List.combine projs l))
-       with Not_found -> hov 0 (pp_ind i)) 
-  | Dind (i,_) -> hov 0 (pp_ind i)
+  | Dind (kn,i) as d -> 
+      (match i.ind_info with 
+	 | Singleton -> pp_singleton kn i.ind_packets.(0) 
+	 | Record -> pp_record kn i.ind_packets.(0)
+	 | Coinductive -> 
+	     let nop _ = () 
+	     and add r = cons_cofix := Refset.add r !cons_cofix in 
+	     decl_iter_references nop add nop d; 
+	     hov 0 (pp_ind true true kn 0 i)
+	 | Standard -> 
+	     hov 0 (pp_ind false true kn 0 i))
   | Dtype (r, l, t) ->
       let l = rename_tvars keywords l in 
       hov 0 (str "type" ++ spc () ++ pp_parameters l ++ 
@@ -407,7 +422,7 @@ let pp_decl = function
       (* We compute renamings of [rv] before asking [empty_env ()]... *)
       let ppv = Array.map pp_global rv in 
       hov 0 (pp_Dfix (empty_env ()) (ppv,defs,typs))
-  | Dterm (r, a, t) when is_proj r -> 
+  | Dterm (r, a, t) when is_projection r -> 
       let e = pp_global r in 
       (pp_val e t ++ 
        hov 0 (str "let " ++ e ++ str " x = x." ++ e ++ fnl())) 

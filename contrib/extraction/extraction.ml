@@ -29,7 +29,17 @@ open Table
 open Mlutil
 (*i*)
 
-(*S Extraction results. *)
+exception I of inductive_info
+
+let none = Evd.empty
+
+let type_of env c = Retyping.get_type_of env none (strip_outer_cast c)
+
+let sort_of env c = Retyping.get_sort_family_of env none (strip_outer_cast c)
+
+let is_axiom kn = (Global.lookup_constant kn).const_body = None
+
+(*S Generation of flags and signatures. *)
 
 (* The type [flag] gives us information about any Coq term: 
    \begin{itemize}
@@ -50,77 +60,6 @@ type info = Logic | Info
 type scheme = TypeScheme | Default
 
 type flag = info * scheme
-
-(* The [signature] type is used to know how many arguments a CIC
-   object expects, and what these arguments will become in the ML
-   object. *)
-   
-(* Convention: outmost lambda/product gives the head of the list, 
-   and [true] means that the argument is to be kept. *)
-
-type signature = bool list
-
-(* The [ind_extraction_result] is used to save the extraction of 
-   an inductive type. In the informative case, it stores a signature 
-   and a type variable list. *)
-
-type ind_extraction_result = signature * identifier list 
-
-(* For an informative constructor, the [cons_extraction_result] 
-   contains the list of the types of its arguments and the number of 
-   parameters to discard. *)
-
-type cons_extraction_result = ml_type list * int  
-
-(*S Tables to keep the extraction results. *)
-
-let visited_inductive = ref KNset.empty
-let visit_inductive k = visited_inductive := KNset.add k !visited_inductive
-let already_visited_inductive k = KNset.mem k !visited_inductive
-
-let inductive_table = 
-  ref (Gmap.empty : (inductive, ind_extraction_result) Gmap.t)
-let add_inductive i e = inductive_table := Gmap.add i e !inductive_table
-let lookup_inductive i = Gmap.find i !inductive_table
-
-let constructor_table = 
-  ref (Gmap.empty : (constructor, cons_extraction_result) Gmap.t)
-let add_constructor c e = constructor_table := Gmap.add c e !constructor_table
-let lookup_constructor c = Gmap.find c !constructor_table
-
-let cst_term_table = ref (KNmap.empty : ml_decl KNmap.t)
-let add_cst_term kn d = cst_term_table := KNmap.add kn d !cst_term_table
-let lookup_cst_term kn = KNmap.find kn !cst_term_table
-
-let cst_type_table = ref (KNmap.empty : ml_schema KNmap.t)
-let add_cst_type kn s = cst_type_table := KNmap.add kn s !cst_type_table
-let lookup_cst_type kn = KNmap.find kn !cst_type_table 
-
-(* Tables synchronization. *)
-
-let freeze () =
-  !visited_inductive, !inductive_table, 
-  !constructor_table, !cst_term_table, !cst_type_table
-
-let unfreeze (vi,it,ct,te,ty) =
-  visited_inductive := vi; inductive_table := it; constructor_table := ct;
-  cst_term_table := te; cst_type_table := ty
-
-let _ = declare_summary "Extraction tables"
-	  { freeze_function = freeze;
-	    unfreeze_function = unfreeze;
-	    init_function = (fun () -> ());
-	    survive_section = true }
-
-(*S Generation of flags and signatures. *)
-
-let none = Evd.empty
-
-let type_of env c = Retyping.get_type_of env none (strip_outer_cast c)
-
-let sort_of env c = Retyping.get_sort_family_of env none (strip_outer_cast c)
-
-let is_axiom kn = (Global.lookup_constant kn).const_body = None
 
 (*s [flag_of_type] transforms a type [t] into a [flag]. 
   Really important function. *)
@@ -251,8 +190,8 @@ let rec extract_type env db j c args =
 	(* There are two kinds of informative axioms here, *)
 	(* - the types that should be realized via [Extract Constant] *)
 	(* - the type schemes that are not realizable (yet). *) 
-	if args = [] then error_axiom kn
-	else error_axiom_scheme kn 
+	if args = [] then error_axiom (ConstRef kn)
+	else error_axiom_scheme (ConstRef kn) 
     | Const kn ->
 	let body = constant_value env kn in 
 	let mlt1 = extract_type env db j (applist (body, args)) [] in 
@@ -266,9 +205,9 @@ let rec extract_type env db j c args =
 		 (* reduction. Try to find the shortest correct answer. *) 
 		 if type_eq mlt_env mlt1 mlt2 then mlt2 else mlt1
 	   | None -> mlt1)
-    | Ind kni ->
-	let si = fst (extract_inductive kni) in 
-	extract_type_app env db (IndRef kni,si) args
+    | Ind ((kn,i) as ip) ->
+	let s = (extract_inductive kn).ind_packets.(i).ip_sign in  
+	extract_type_app env db (IndRef ip,s) args
     | Case _ | Fix _ | CoFix _ -> Tunknown
     | _ -> assert false
 
@@ -320,78 +259,71 @@ and extract_type_scheme env db c p =
 
 (*S Extraction of an inductive type. *)
 
-(* [extract_inductive] answers a [ind_extraction_result] in
-   case of an informative inductive, and raises [Not_found] otherwise *)
-
-and extract_inductive ((kn,_) as i) =
-  if not (already_visited_inductive kn) then extract_mib kn; 
-  lookup_inductive i
-			     
-(* [extract_constructor] answers a [cons_extraction_result] in
-   case of an informative constructor, and raises [Not_found] otherwise *)
-
-and extract_constructor (((kn,_),_) as c) =
-  if not (already_visited_inductive kn) then extract_mib kn; 
-  lookup_constructor c
-
-(* The real job: *)
-
-and extract_mib kn =
-  visit_inductive kn; 
-  add_recursors kn; 
-  let env = Global.env () in 
-  let (mib,mip) = Global.lookup_inductive (kn,0) in
-  (* Everything concerning parameters. *)
-  (* We do that first, since they are common to all the [mib]. *)
-  let params_nb = mip.mind_nparams in
-  let params_env = push_rel_context mip.mind_params_ctxt env in
-  (* First pass: we store inductive signatures together with *)
-  (* their type var list. *)
-  for i = 0 to mib.mind_ntypes - 1 do
-    let mip = snd (Global.lookup_inductive (kn,i)) in 
-    if mip.mind_sort <> (Prop Null) then 
-      let ip = (kn,i) in 
-      let s,vl = type_sign_vl env mip.mind_nf_arity in 
-      add_inductive ip (s,vl); 
-  done;
-  (* Second pass: we extract constructors *)
-  for i = 0 to mib.mind_ntypes - 1 do
-    let ip = (kn,i) in 
-    let mip = snd (Global.lookup_inductive ip) in
-    if mip.mind_sort <> (Prop Null) then
-      let s = fst (lookup_inductive ip) in 
-      let types = arities_of_constructors env ip in
-      for j = 0 to Array.length types - 1 do 
-	let t = snd (decompose_prod_n params_nb types.(j)) in
-	let args = match kind_of_term (snd (decompose_prod t)) with
-	  | App (f,args) -> args (* [kind_of_term f = Ind ip] *)
-	  | _ -> [||]
+and extract_inductive kn =
+  try lookup_ind kn with Not_found -> 
+    add_recursors kn; 
+    let env = Global.env () in 
+    let (mib,mip) = Global.lookup_inductive (kn,0) in
+    (* Everything concerning parameters. *)
+    (* We do that first, since they are common to all the [mib]. *)
+    let npar = mip.mind_nparams in
+    let epar = push_rel_context mip.mind_params_ctxt env in
+    (* First pass: we store inductive signatures together with *)
+    (* their type var list. *)
+    let packets = 
+      Array.map 
+	(fun mip -> 
+	   let b = mip.mind_sort <> (Prop Null) in 
+	   let s,v = if b then type_sign_vl env mip.mind_nf_arity else [],[] in
+	   let t = Array.make (Array.length mip.mind_nf_lc) [] in 
+	   { ip_logical = (not b); ip_sign = s; ip_vars = v; ip_types = t }) 
+	mib.mind_packets 
+    in 
+    add_ind kn {ind_info = Standard; ind_nparams = npar; ind_packets = packets};
+    (* Second pass: we extract constructors *)
+    for i = 0 to mib.mind_ntypes - 1 do
+      let p = packets.(i) in 
+      if not p.ip_logical then
+	let types = arities_of_constructors env (kn,i) in 
+	for j = 0 to Array.length types - 1 do 
+	  let t = snd (decompose_prod_n npar types.(j)) in
+	  let args = match kind_of_term (snd (decompose_prod t)) with
+	    | App (f,args) -> args (* [kind_of_term f = Ind ip] *)
+	    | _ -> [||]
+	  in 
+	  let dbmap = parse_ind_args p.ip_sign args (nb_prod t + npar) in 
+	  let db = db_from_ind dbmap npar in 
+	  p.ip_types.(j) <- extract_type_cons epar db dbmap t (npar+1)
+	done
+    done;
+    (* Third pass: we determine special cases. *)
+    let ind_info = 
+      try 
+	if not mib.mind_finite then raise (I Coinductive); 
+	if mib.mind_ntypes <> 1 then raise (I Standard); 
+	let p = packets.(0) in 
+	if p.ip_logical then raise (I Standard);
+	if Array.length p.ip_types <> 1 then raise (I Standard);
+	let typ = p.ip_types.(0) in 
+	let l = List.filter (type_neq mlt_env Tdummy) typ in 
+	if List.length l = 1 && not (type_mem_kn kn (List.hd l)) 
+	then raise (I Singleton); 
+	if l = [] then raise (I Standard); 
+	let projs = 
+	  try (find_structure (kn,0)).s_PROJ 
+	  with Not_found -> raise (I Standard);
 	in 
-	let dbmap = parse_ind_args s args (nb_prod t + params_nb) in 
-	let db = db_from_ind dbmap params_nb in 
-	let l = extract_type_cons params_env db dbmap t (params_nb+1) in 
-	add_constructor (ip,j+1) (l,params_nb)
-      done
-  done;
-  (* Record tables: *)
-  if mib.mind_ntypes = 1 then 
-    let ip = (kn,0) in 
-    let mip = snd (Global.lookup_inductive ip) in
-    if (mip.mind_sort <> (Prop Null))
-      && (Array.length mip.mind_consnames = 1)
-      && not (is_singleton_inductive ip) 
-    then try
-      let typs = fst (lookup_constructor (ip,1)) in 
-      let s = List.map (type_neq mlt_env Tdummy) typs in
-      if not (List.mem true s) then raise Not_found; 
-      let projs = (find_structure ip).s_PROJ in 
-      assert (List.length s = List.length projs); 
-      let check (_,o) = match o with 
-	| None -> raise Not_found 
-	| Some kn -> ConstRef kn 
-      in 
-      add_record ip (List.map check (List.filter fst (List.combine s projs)))
-    with Not_found  -> () 
+	let s = List.map (type_neq mlt_env Tdummy) l in
+	let check (_,o) = match o with 
+	  | None -> raise (I Standard)
+	  | Some kn -> ConstRef kn 
+	in  
+	add_record kn (List.map check (List.filter fst (List.combine s projs))); 
+	raise (I Record)
+      with (I info) -> info
+    in
+    let i = {ind_info = ind_info; ind_nparams = npar; ind_packets = packets} in 
+    add_ind kn i; i
 
 (*s [extract_type_cons] extracts the type of an inductive 
   constructor toward the corresponding list of ML types. *)
@@ -411,29 +343,11 @@ and extract_type_cons env db dbmap c i =
 	(extract_type env db 0 t []) :: l 
     | _ -> [] 
 
-(*s Looking for informative singleton case, i.e. an inductive with one 
-   constructor which has one informative argument. This dummy case will 
-   be simplified. *)
-
-and is_singleton_inductive ip = 
-  let (mib,mip) = Global.lookup_inductive ip in 
-  mib.mind_finite &&
-  (mib.mind_ntypes = 1) &&
-  (Array.length mip.mind_consnames = 1) && 
-  try 
-    let l = 
-      List.filter (type_neq mlt_env Tdummy) (fst (extract_constructor (ip,1)))
-    in List.length l = 1 && not (type_mem_kn (fst ip) (List.hd l))
-  with Not_found -> false
-          
-and is_singleton_constructor ((kn,i),_) = 
-  is_singleton_inductive (kn,i) 
-
 (*s Recording the ML type abbreviation of a Coq type scheme constant. *)
 
 and mlt_env r = match r with 
   | ConstRef kn -> 
-      (try match lookup_cst_term kn with 
+      (try match lookup_term kn with 
 	 | Dtype (_,vl,mlt) -> Some mlt
 	 | _ -> None
        with Not_found -> 
@@ -449,7 +363,7 @@ and mlt_env r = match r with
 		      let s,vl = type_sign_vl env typ in 
 		      let db = db_from_sign s in 
 		      let t = extract_type_scheme env db body (List.length s) 
-		      in add_cst_term kn (Dtype (r, vl, t)); Some t
+		      in add_term kn (Dtype (r, vl, t)); Some t
 		  | _ -> None))
   | _ -> None
 
@@ -461,12 +375,12 @@ let type_expunge = type_expunge mlt_env
 (*s Extraction of the type of a constant. *)
 
 let record_constant_type kn = 
-  try lookup_cst_type kn
+  try lookup_type kn
   with Not_found -> 
     let env = Global.env () in 
     let mlt = extract_type env [] 1 (constant_type env kn) [] in 
     let schema = (type_maxvar mlt, mlt)
-    in add_cst_type kn schema; schema
+    in add_type kn schema; schema
 
 (*S Extraction of a term. *)
 
@@ -603,14 +517,16 @@ and extract_cst_app env mle mlt kn args =
    they are fixed, and thus are not used for the computation.
    \end{itemize} *)
 
-and extract_cons_app env mle mlt ((ip,_) as cp) args =
+and extract_cons_app env mle mlt (((kn,i) as ip,j) as cp) args =
   (* First, we build the type of the constructor, stored in small pieces. *)
-  let types, params_nb = extract_constructor cp in
-  let types = List.map type_expand types in
-  let nb_tvar = List.length (snd (extract_inductive ip)) in 
-  let list_tvar = List.map (fun i -> Tvar i) (interval 1 nb_tvar) in 
+  let mi = extract_inductive kn in 
+  let params_nb = mi.ind_nparams in 
+  let oi = mi.ind_packets.(i) in 
+  let nb_tvars = List.length oi.ip_vars
+  and types = List.map type_expand oi.ip_types.(j-1) in
+  let list_tvar = List.map (fun i -> Tvar i) (interval 1 nb_tvars) in 
   let type_cons = type_recomp (types, Tglob (IndRef ip, list_tvar)) in
-  let type_cons = instantiation (nb_tvar, type_cons) in 
+  let type_cons = instantiation (nb_tvars, type_cons) in 
   (* Then, the usual variables [s], [ls], [la], ... *)
   let s = List.map ((<>) Tdummy) types in
   let ls = List.length s in 
@@ -624,7 +540,7 @@ and extract_cons_app env mle mlt ((ip,_) as cp) args =
   (* If stored and expected types differ, then magic! *)
   let magic = needs_magic (type_cons, type_head) in 
   let head mla = 
-    if is_singleton_constructor cp then 
+    if mi.ind_info = Singleton then 
       put_magic_if magic (List.hd mla) (* assert (List.length mla = 1) *)
     else put_magic_if magic (MLcons (ConstructRef cp, mla))
   in 
@@ -643,7 +559,7 @@ and extract_cons_app env mle mlt ((ip,_) as cp) args =
 
 (*S Extraction of a case. *)
 
-and extract_case env mle (ip,c,br) mlt = 
+and extract_case env mle ((kn,i) as ip,c,br) mlt = 
   (* [br]: bodies of each branch (in functional form) *)
   (* [ni]: number of arguments without parameters in each branch *)
   let ni = mis_constr_nargs ip in
@@ -665,8 +581,10 @@ and extract_case env mle (ip,c,br) mlt =
 	snd (case_expunge s e)
       end 
     else 
-      let nb_tvar = List.length (snd (extract_inductive ip)) in 
-      let metas = Array.init nb_tvar new_meta in 
+      let mi = extract_inductive kn in 
+      let params_nb = mi.ind_nparams in 
+      let oi = mi.ind_packets.(i) in 
+      let metas = Array.init (List.length oi.ip_vars) new_meta in 
       (* The extraction of the head. *)
       let type_head = Tglob (IndRef ip, Array.to_list metas) in
       let a = extract_term env mle type_head c [] in 
@@ -674,14 +592,14 @@ and extract_case env mle (ip,c,br) mlt =
       let extract_branch i = 
 	(* The types of the arguments of the corresponding constructor. *)
 	let f t = type_subst_vect metas (type_expand t) in 
-	let l = List.map f (fst (extract_constructor (ip,i+1))) in
+	let l = List.map f oi.ip_types.(i) in
 	(* Extraction of the branch (in functional form). *)
 	let e = extract_maybe_term env mle (type_recomp (l,mlt)) br.(i) in 
 	(* We suppress dummy arguments according to signature. *)
 	let ids,e = case_expunge (List.map ((<>) Tdummy) l) e in
 	(ConstructRef (ip,i+1), List.rev ids, e)
       in
-      if is_singleton_inductive ip then 
+      if mi.ind_info = Singleton then 
 	begin 
 	  (* Informative singleton case: *)
 	  (* [match c with C i -> t] becomes [let i = c' in t'] *)
@@ -733,11 +651,11 @@ let extract_constant kn r =
     | None -> (* A logical axiom is risky, an informative one is fatal. *) 
         (match flag_of_type env typ with
 	   | (Info,TypeScheme) -> 
-	       if isSort typ then error_axiom kn 
-	       else error_axiom_scheme kn
-           | (Info,Default) -> error_axiom kn 
-           | (Logic,TypeScheme) -> warning_axiom kn; Dtype (r, [], Tdummy)
-	   | (Logic,Default) -> warning_axiom kn; Dterm (r, MLdummy, Tdummy))
+	       if isSort typ then error_axiom r
+	       else error_axiom_scheme r
+           | (Info,Default) -> error_axiom r 
+           | (Logic,TypeScheme) -> warning_axiom r; Dtype (r, [], Tdummy)
+	   | (Logic,Default) -> warning_axiom r; Dterm (r, MLdummy, Tdummy))
     | Some l_body ->
 	(match flag_of_type env typ with
 	   | (Logic, Default) -> Dterm (r, MLdummy, Tdummy)
@@ -774,42 +692,18 @@ let extract_constant kn r =
                Dtype (r, vl, t))
 
 let extract_constant_cache kn r = 
-  try lookup_cst_term kn 
+  try lookup_term kn 
   with Not_found ->
     let d = extract_constant kn r
-    in add_cst_term kn d; d
+    in add_term kn d; d
 
-(*s From an inductive to a ML declaration. *)
-
-let extract_inductive_declaration kn =
-  if not (already_visited_inductive kn) then extract_mib kn; 
-  let ip = (kn,0) in 
-  if is_singleton_inductive ip then
-    let t = 
-      List.hd (List.filter (type_neq Tdummy) (fst (lookup_constructor (ip,1))))
-    and vl = snd (lookup_inductive ip) in 
-    Dtype (IndRef ip,vl,t)
-  else
-    let mib = Global.lookup_mind kn in
-    let one_ind ip n = 
-      iterate_for (-n) (-1)
-	(fun j l -> 
-	   let cp = (ip,-j) in 
-	   let mlt = fst (lookup_constructor cp) in 
-	   (ConstructRef cp, List.filter (type_neq Tdummy) mlt)::l) []
-    in
-    let l = 
-      iterate_for (1 - mib.mind_ntypes) 0
-	(fun i acc -> 
-	   let ip = (kn,-i) in
-	   let nc = Array.length mib.mind_packets.(-i).mind_consnames in 
-	   try 
-	     let vl = snd (lookup_inductive ip) in 
-	     (vl, IndRef ip, one_ind ip nc) :: acc
-	   with Not_found -> acc)
-	[] 
-    in
-    Dind (l, not mib.mind_finite)
+let extract_inductive_declaration kn = 
+  let ind = extract_inductive kn in 
+  let f l = List.filter (type_neq Tdummy) l in 
+  let packets = 
+    Array.map (fun p -> { p with ip_types = Array.map f p.ip_types }) 
+      ind.ind_packets
+  in Dind (kn,{ ind with ind_packets = packets })
 
 (*s From a global reference to a ML declaration. *)
 
@@ -818,20 +712,5 @@ let extract_declaration r = match r with
   | IndRef (kn,_) -> extract_inductive_declaration kn
   | ConstructRef ((kn,_),_) -> extract_inductive_declaration kn
   | VarRef kn -> error_section ()
-
-(*s Check if a global reference corresponds to a logical inductive. *)
-
-let decl_is_logical_ind = function 
-  | IndRef ip -> (try ignore (extract_inductive ip); false with _ -> true)
-  | ConstructRef cp -> 
-      (try ignore (extract_constructor cp); false with _ -> true)
-  | _ -> false
-
-(*s Check if a global reference corresponds to the constructor of 
-  a singleton inductive. *)
-
-let decl_is_singleton = function 
-  | ConstructRef cp -> is_singleton_constructor cp 
-  | _ -> false 
 
 

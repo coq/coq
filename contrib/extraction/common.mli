@@ -19,10 +19,6 @@ val long_module : global_reference -> dir_path
 val create_mono_renamings : ml_decl list -> unit
 val set_keywords : unit -> unit
 
-val pp_logical_ind : global_reference -> std_ppcmds
-
-val pp_singleton_ind : global_reference -> std_ppcmds
-
 val pp_decl : unit -> ml_decl -> std_ppcmds
 
 val segment_contents : Lib.library_segment -> global_reference list

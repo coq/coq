@@ -409,10 +409,9 @@ let rec type_search t = function
 
 let decl_type_search t l = 
   let one_decl = function 
-    | Dind(l,_) -> 
-	List.iter (fun (_,_,l) -> 
-		    (List.iter (fun (_,l) -> 
-				  List.iter (type_search t) l) l)) l
+    | Dind (_,{ind_packets=p})  -> 
+	Array.iter 
+	  (fun {ip_types=v} -> Array.iter (List.iter (type_search t)) v) p
     | Dterm (_,_,u) -> type_search t u
     | Dfix (_,_,v) -> Array.iter (type_search t) v
     | Dtype (_,_,u) -> type_search t u
@@ -1205,19 +1204,19 @@ let ast_iter_references do_term do_cons do_type a =
       | MLcast (_,t) -> type_iter_references do_type t 
       | _ -> ()
   in iter a
-
+  
 let decl_iter_references do_term do_cons do_type = 
   let type_iter = type_iter_references do_type 
   and ast_iter = ast_iter_references do_term do_cons do_type in 
-  let cons_iter (r,l) = do_cons r; List.iter type_iter l in 
-  let ind_iter (_,r,l) = 
-    do_type r; 
-    (try List.iter do_term (find_proj ((kn_of_r r),0)) 
-     with Not_found -> ()); 
-    List.iter cons_iter l 
+  let cons_iter cp l = do_cons (ConstructRef cp); List.iter type_iter l in 
+  let packet_iter ip p = 
+    do_type (IndRef ip); Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types in
+  let ind_iter kn ind =
+    if ind.ind_info = Record then List.iter do_term (find_projections kn); 
+    Array.iteri (fun i -> packet_iter (kn,i)) ind.ind_packets
   in 
   function 
-    | Dind (l,_) -> List.iter ind_iter l 
+    | Dind (kn,ind) -> ind_iter kn ind 
     | Dtype (r,_,t) -> do_type r; type_iter t 
     | Dterm (r,a,t) -> do_term r; ast_iter a; type_iter t
     | Dfix(rv,c,t) -> 	

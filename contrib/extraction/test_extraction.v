@@ -293,7 +293,7 @@ type 'x truc =
 
 Definition test24:= (sigT Set [a:Set](option a)).
 Extraction test24.
-(* type test24 = (unit, Obj.t option) sigT *)
+(* type test24 = (__, __ option) sigT *)
 
 
 (** Coq term non strongly-normalizable after extraction *)

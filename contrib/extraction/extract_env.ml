@@ -179,8 +179,7 @@ let check_r m sm r =
 let check_decl m sm = function 
   | Dterm (r,_,_) -> check_r m sm r 
   | Dtype (r,_,_) -> check_r m sm r
-  | Dind ((_,r,_)::_, _) -> check_r m sm r 
-  | Dind ([],_) -> ()
+  | Dind (kn,_) -> check_r m sm (IndRef (kn,0))
   | DcustomTerm (r,_) ->  check_r m sm r
   | DcustomType (r,_) ->  check_r m sm r	
   | Dfix(rv,_,_) -> Array.iter (check_r m sm) rv 
@@ -280,13 +279,13 @@ and visit_ast m eenv a =
   in
   visit a
 
-and visit_inductive m eenv inds =
-  let visit_constructor (_,tl) = List.iter (visit_type m eenv) tl in
-  let visit_ind (_,_,cl) = List.iter visit_constructor cl in
-  List.iter visit_ind inds
+and visit_inductive m eenv ind =
+  let visit_constructor tl = List.iter (visit_type m eenv) tl in
+  let visit_packet p = Array.iter visit_constructor p.ip_types in
+  Array.iter visit_packet ind.ind_packets
 
 and visit_decl m eenv = function
-  | Dind (inds,_) -> visit_inductive m eenv inds
+  | Dind (_,ind) -> visit_inductive m eenv ind
   | Dtype (_,_,t) -> visit_type m eenv t
   | Dterm (_,a,t) -> visit_ast m eenv a; visit_type m eenv t
   | Dfix (_,c,t) -> 
@@ -333,8 +332,7 @@ let print_user_extract r =
 let decl_in_r r0 = function 
   | Dterm (r,_,_) -> r = r0
   | Dtype (r,_,_) -> r = r0
-  | Dind ((_,r,_)::_, _) -> kn_of_r r = kn_of_r r0
-  | Dind ([],_) -> false
+  | Dind (kn, _) -> kn = kn_of_r r0
   | DcustomTerm (r,_) ->  r = r0 
   | DcustomType (r,_) ->  r = r0 
   | Dfix (rv,_,_) -> array_exists ((=) r0) rv
@@ -343,10 +341,6 @@ let extraction qid =
   let r = Nametab.global qid in 
   if is_ml_extraction r then
     print_user_extract r 
-  else if decl_is_logical_ind r then 
-    msgnl (pp_logical_ind r) 
-  else if decl_is_singleton r then 
-    msgnl (pp_singleton_ind r) 
   else 
     let prm = 
       { modular = false; mod_name = id_of_string "Main"; to_appear = [r]} in 
@@ -404,8 +398,7 @@ let extraction_file f vl =
 let decl_in_m m = function 
   | Dterm (r,_,_) -> m = long_module r
   | Dtype (r,_,_) -> m = long_module r
-  | Dind ((_,r,_)::_, _) -> m = long_module r 
-  | Dind ([],_) -> false
+  | Dind (kn,_) -> m = long_module (IndRef (kn,0))
   | DcustomTerm (r,_) ->  m = long_module r
   | DcustomType (r,_) ->  m = long_module r
   | Dfix (rv,_,_) -> m = long_module rv.(0)
