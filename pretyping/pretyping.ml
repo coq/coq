@@ -641,7 +641,7 @@ let rec pretype tycon env isevars lvar = function
       let pred,p = match po with
 	| Some p ->
 	    let env_p = push_rels psign env in
-            let pj = pretype_type empty_valcon env isevars lvar p in
+            let pj = pretype_type empty_valcon env_p isevars lvar p in
             let ccl = nf_evar (evars_of isevars) pj.utj_val in
 	    let pred = it_mkLambda_or_LetIn ccl psign in
 	    pred, lift (- nar) (beta_applist (pred,[cj.uj_val]))
