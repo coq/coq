@@ -136,20 +136,17 @@ let make_inv_predicate env sigma ind id status concl =
 	    whd_beta env sigma
 	      (applist (pred,rel_list nrealargs (nrealargs +1))) 
 	  in
-
-
-		(hyps,c3)
+	  (hyps,c3)
   in
-  let n = List.length hyps in
-  let env' = push_rels hyps env in
-  let realargs' = List.map (lift n) realargs in
-  let pairs = list_map_i (compute_eqn env' sigma n) 0 realargs' in
   let nhyps = List.length hyps in
+  let env' = push_rels hyps env in
+  let realargs' = List.map (lift nhyps) realargs in
+  let pairs = list_map_i (compute_eqn env' sigma nhyps) 0 realargs' in
   (* Now the arity is pushed, and we need to construct the pairs
    * ai,Rel(n-i+1) *)
   (* Now, we can recurse down this list, for each ai,(Rel k) whether to
      push <Ai>(Rel k)=ai (when   Ai is closed).
-   In any case, we carry along the rest of larg_var_list *)
+   In any case, we carry along the rest of pairs *)
   let rec build_concl eqns n = function
     | [] -> (prod_it concl eqns,n)
     | ((ai,ati),(xi,ti))::restlist ->
@@ -163,9 +160,9 @@ let make_inv_predicate env sigma ind id status concl =
         let sort = get_sort_of env sigma concl in 
         let eq_term = find_eq_pattern type_type_rhs sort in
         let eqn = applist (eq_term ,[eqnty;lhs;rhs]) in 
-	build_concl ((Anonymous,lift n eqn)::hyps) (n+1) restlist
+	build_concl ((Anonymous,lift n eqn)::eqns) (n+1) restlist
   in
-  let (newconcl,neqns) = build_concl hyps 0 pairs in
+  let (newconcl,neqns) = build_concl [] 0 pairs in
   let predicate = it_lambda_name env newconcl hyps in
   (* OK - this predicate should now be usable by res_elimination_then to
      do elimination on the conclusion. *)

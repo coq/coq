@@ -1200,7 +1200,7 @@ let subst_tuple_term env sigma dep_pair b =
   strong (fun _ _ -> 
 	    compose (whd_betaiota env sigma)
 	      (whd_const [proj1_sp;proj2_sp;sig_elim_sp] env sigma)) 
-    env sigma*) app_B
+    env sigma*) whd_betaiota env sigma app_B
     
 (* |- (P e2)
      BY RevSubstInConcl (eq T e1 e2)
@@ -1210,7 +1210,7 @@ let subst_tuple_term env sigma dep_pair b =
 let revSubstInConcl eqn gls =
   let (lbeq,(t,e1,e2)) = find_eq_data_decompose eqn in
   let body = subst_tuple_term (pf_env gls) (project gls) e2 (pf_concl gls) in
-  assert (not (dependent (Rel 1) body));
+  assert (dependent (Rel 1) body);
   bareRevSubstInConcl lbeq body (t,e1,e2) gls
 
 (* |- (P e1)
