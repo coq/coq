@@ -145,11 +145,16 @@ let patntn_loc = loc_of_notation cases_pattern_loc
 
 let dump_notation_location =
   let token_number = ref 0 in
+  let last_pos = ref 0 in
   fun pos ntn ((path,df),sc) ->
-    let rec next () =
-      let (bp,_ as loc) = !Lexer.current_location_function !token_number in
-      if bp >= pos then loc else (incr token_number; next ()) in
-    let loc = next () in
+    let rec next growing =
+      let (bp,_ as loc) = Lexer.location_function !token_number in
+      if growing then if bp >= pos then loc else (incr token_number;next true)
+      else if bp = pos then loc
+      else if bp > pos then (decr token_number;next false)
+      else (incr token_number;next true) in
+    let loc = next (pos >= !last_pos) in
+    last_pos := pos;
     let path = string_of_dirpath path in
     let sc = match sc with Some sc -> " "^sc | None -> "" in
     dump_string (Printf.sprintf "R%d %s \"%s\"%s\n" (fst loc) path df sc)
