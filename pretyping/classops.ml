@@ -63,12 +63,13 @@ module Bijint = struct
   let map x b = if 0 <= x & x < b.s then b.v.(x) else raise Not_found
   let revmap y b = let n = Gmap.find y b.inv in (n, snd (b.v.(n)))
   let add x y b =
-    if mem x b then failwith "Bijint.add";
     let v =
       if b.s = Array.length b.v then
 	(let v = Array.make (b.s + 8) (x,y) in Array.blit b.v 0 v 0 b.s; v)
       else b.v in
     v.(b.s) <- (x,y); { v = v; s = b.s+1; inv = Gmap.add x b.s b.inv }
+  let replace n x y b =
+    let v = Array.copy b.v in v.(n) <- (x,y); { b with v = v }
   let dom b = Gmap.dom b.inv
 end
 
@@ -90,8 +91,13 @@ let unfreeze (fcl,fco,fig) =
 
 (* ajout de nouveaux "objets" *)
 
-let add_new_class cl s = 
-  class_tab := Bijint.add cl s !class_tab
+let add_new_class cl s =
+  try
+    let n,s' = Bijint.revmap cl !class_tab in
+    if s.cl_strength = Global & s'.cl_strength <> Global then
+      class_tab := Bijint.replace n cl s !class_tab
+  with Not_found ->
+    class_tab := Bijint.add cl s !class_tab
 
 let add_new_coercion coe s = 
   coercion_tab := Gmap.add coe s !coercion_tab
