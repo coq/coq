@@ -148,7 +148,7 @@ let push_rel_type sigma (na,t) env =
   push_rel (na,make_typed t (get_sort_of env sigma t)) env
 
 let push_rels vars env =
-  List.fold_left (fun env nvar -> push_rel_type Evd.empty nvar env) env vars
+  List.fold_right (fun nvar env -> push_rel_type Evd.empty nvar env) vars env
 
 (**********************************************************************)
 (* Structures used in compiling pattern-matching *)
@@ -489,7 +489,8 @@ let rec recover_pat_names = function
   | _,[] -> anomaly "Cases.recover_pat_names: Not enough patterns"
 
 let push_rels_eqn sign eqn =
-  let sign' = recover_pat_names (sign, eqn.patterns) in
+  let pats = List.rev (fst (list_chop (List.length sign) eqn.patterns)) in
+  let sign' = recover_pat_names (sign, pats) in
   {eqn with
      rhs = {eqn.rhs with
 	      rhs_env = push_rels sign' eqn.rhs.rhs_env} }
@@ -567,8 +568,8 @@ let lift_predicate n pred =
 
 let subst_predicate (args,copt) pred =
   let sigma = match copt with
-    | None -> args
-    | Some c -> args@[c] in
+    | None -> List.rev args
+    | Some c -> c::(List.rev args) in
   let rec substrec k = function
     | PrCcl ccl -> PrCcl (substnl sigma k ccl)
     | PrProd ((dep,na,t),pred) ->
@@ -600,8 +601,8 @@ let rec weaken_predicate n pred =
 let rec extract_predicate = function
   | PrProd ((_,na,t),pred) ->
       mkProd na (type_of_tomatch_type t) (extract_predicate pred)
-  | PrLetIn ((args,Some c),pred) -> substl (args@[c]) (extract_predicate pred)
-  | PrLetIn ((args,None),pred) -> substl args (extract_predicate pred)
+  | PrLetIn ((args,Some c),pred) -> substl (c::(List.rev args)) (extract_predicate pred)
+  | PrLetIn ((args,None),pred) -> substl (List.rev args) (extract_predicate pred)
   | PrCcl ccl -> ccl
 
 let abstract_predicate env sigma indf = function
@@ -677,7 +678,7 @@ let build_leaf pb =
       | [] -> errorlabstrm "build_leaf" (mssg_may_need_inversion())
       | (eqn::_::_ as eqns) ->
 	  check_number_of_regular_eqns eqns;
-	  assert (eqn.tag = RegularPat); eqn.rhs
+	  eqn.rhs
       | [eqn] -> eqn.rhs in
 (*
       if List.length rhs.user_ids <> List.length rhs.subst then 
@@ -712,7 +713,7 @@ let build_branch pb defaults current eqns const_info =
   let submatdef = List.map (expand_defaults newpats current) defaults in
   let submat = List.map (fun (tms,eqn) -> prepend_pattern tms eqn) eqns in
   if submat = [] & submatdef = [] then error "Non exhaustive";
-  let typs = List.map2 (fun (_,t) na -> (na,t)) const_info.cs_args names in
+  let typs = List.map2 (fun (_,t) na -> (na,t)) const_info.cs_args (List.rev names) in
   let tomatchs =
     List.fold_left2
       (fun l (na,t) dep_in_rhs ->
@@ -791,17 +792,16 @@ and compile_further pb firstnext rest =
   (* the next pattern to match is at the end of [nexts], it has ref (Rel n)
      where n is the length of nexts *)
   let sign = List.map (fun ((na,t),_) -> (na,type_of_tomatch_type t)) nexts in
-  let revsign = List.rev sign in
   let currents =
     list_map_i
       (fun i ((na,t),(_,rhsdep)) ->
 	 Pushed (insert_lifted ((Rel i, lift_tomatch_type i t), rhsdep)))
       1 nexts in
   let pb' = { pb with
-		env = push_rels revsign pb.env;
+		env = push_rels sign pb.env;
 		tomatch = List.rev_append currents future;
                 pred= option_app (weaken_predicate (List.length sign)) pb.pred;
-		mat = List.map (push_rels_eqn revsign) pb.mat } in
+		mat = List.map (push_rels_eqn sign) pb.mat } in
   let j = compile pb' in
   { uj_val = lam_it j.uj_val sign;
     uj_type =  (* Pas d'univers ici: imprédicatif si Prop/Set, dummy si Type *)
