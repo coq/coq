@@ -29,8 +29,8 @@ let cut_ident skip_quote s =
   (* [n'] is the position of the first non nullary digit *)
   let rec numpart n n' =
     if n = 0 then 
-      error
-	("The string " ^ s ^ " is not an identifier: it contains only digits or _")
+      (* ident made of _ and digits only [and ' if skip_quote]: don't cut it *)
+      slen
     else 
       let c = Char.code (String.get s (n-1)) in
       if c = code_of_0 && n <> slen then 
