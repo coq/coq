@@ -391,7 +391,7 @@ Intros n l d; Generalize n; NewInduction l; Intro n0.
 Right; Case n0; Trivial.
 Case n0; Simpl.
 Auto.
-Intro n1; Elim (Hrecl n1); Auto.     
+Intro n1; Elim (IHl n1); Auto.     
 Save.
 
 Lemma nth_S_cons :

@@ -1053,17 +1053,23 @@ let rec recargs indpath env sigma t =
 	::(recargs indpath (push_rel_assum (na,t) env) sigma c2)
     | _ -> []
 
+let oldstyle = ref false
+
 let induct_discharge indpath statuslists cname destopt avoid ra gl =
   let (lstatus,rstatus) = statuslists in
   let tophyp = ref None in
   let n = List.fold_left (fun n b -> if b then n+1 else n) 0 ra in
-  let recvarname =
+  let recvarname, avoid =
     if n=1 then 
-      cname
+      cname, avoid
     else (* To force renumbering if there is only one *)
-      make_ident (string_of_id cname) (Some 1)
+      make_ident (string_of_id cname) (Some 1),
+      if !oldstyle then avoid
+      else (* Forbid to use cname0 *)
+	(make_ident (string_of_id cname) (Some 0)) :: avoid
   in
-  let hyprecname = id_of_string ("Hrec"^(string_of_id recvarname)) in
+  let indhyp = if !oldstyle then "Hrec" else "IH" in
+  let hyprecname = id_of_string (indhyp^(string_of_id recvarname)) in
   let rec peel_tac = function
     | true :: ra' ->
 		 (* For lstatus but _buggy_: if intro_gen renames
@@ -1082,7 +1088,7 @@ let induct_discharge indpath statuslists cname destopt avoid ra gl =
     | [] -> tclIDTAC
   in
   let evaluated_peel_tac = peel_tac ra in (* because side effect on tophyp *)
-  let newlstatus = (* if some Hrec has taken place at the top of hyps *)
+  let newlstatus = (* if some IH has taken place at the top of hyps *)
     List.map (function (hyp,None) -> (hyp,!tophyp) | x -> x) lstatus
   in 
   tclTHENLIST [ evaluated_peel_tac;
@@ -1309,7 +1315,7 @@ let compute_elim_signature_and_roughly_check elimt mind =
     | _ -> error "Not an eliminator: some constructor case is lacking" in
   let _,elimt2 = decompose_prod_n (mis_nparams mis + 1) elimt in
   check_elim elimt2 0
-      
+
 let induction_from_context hyp0 gl =
    (*test suivant sans doute inutile car protégé par le letin_tac avant appel*)
   if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
@@ -1375,24 +1381,33 @@ let dyn_elim = function
   | l -> bad_tactic_args "elim" l
 	
 (* Induction tactics *)
-let raw_induct s = tclTHEN (intros_until s) (tclLAST_HYP simplest_elim)
 
+(* This was Induction before 6.3 (induction only in quantified premisses) *)
+let raw_induct s = tclTHEN (intros_until s) (tclLAST_HYP simplest_elim)
 let raw_induct_nodep n = tclTHEN (intros_do n) (tclLAST_HYP simplest_elim)
 
-(* This is an hybrid of raw and new induction... seems source of confusion
-let induct s =
-  tclORELSE (tclTHEN (intros_until s) (tclLAST_HYP simplest_elim))
-    (induction_from_context s)
-*)
+(* This was Induction in 6.3 (hybrid form) *)
+let old_induct s = tclORELSE (raw_induct s) (induction_from_context s)
+let old_induct_nodep = raw_induct_nodep
 
+(* This is Induction since V7 ("natural" induction both in quantified
+   premisses and introduced ones) *)
 let dyn_new_induct = function
   | [(Command c)] -> tactic_com new_induct c
   | [(Constr x)]  -> new_induct x
   | [(Integer n)] -> error "Not implemented"
   | l             -> bad_tactic_args "induct" l
 
+(* This was Induction before 6.3 (induction only in quantified premisses)
 let dyn_raw_induct = function 
   | [Identifier x] -> raw_induct x
+  | [Integer n]    -> raw_induct_nodep n
+  | l              -> bad_tactic_args "raw_induct" l
+*)
+
+(* This was Induction in 6.3 (hybrid form) *)
+let dyn_old_induct = function
+  | [(Identifier n)]  -> old_induct n
   | [Integer n]    -> raw_induct_nodep n
   | l              -> bad_tactic_args "raw_induct" l
 

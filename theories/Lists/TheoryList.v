@@ -160,7 +160,7 @@ NewInduction l.
 Auto.
 Elim (eqA_dec a a0).
 Auto.
-Simpl. Elim Hrecl; Auto.
+Simpl. Elim IHl; Auto.
 (*
 Realizer mem.
 Program_all.
