@@ -157,14 +157,14 @@ PRETYPING=\
   pretyping/cases.cmo pretyping/pretyping.cmo pretyping/matching.cmo
 
 INTERP=\
-  parsing/lexer.cmo interp/topconstr.cmo interp/ppextend.cmo interp/symbols.cmo \
+  parsing/lexer.cmo interp/topconstr.cmo interp/ppextend.cmo interp/notation.cmo \
   interp/genarg.cmo interp/syntax_def.cmo interp/reserve.cmo \
   library/impargs.cmo interp/constrintern.cmo \
   interp/modintern.cmo interp/constrextern.cmo interp/coqlib.cmo \
   library/declare.cmo
 
 PROOFS=\
-  proofs/tacexpr.cmo proofs/proof_type.cmo \
+  proofs/tacexpr.cmo proofs/proof_type.cmo proofs/redexpr.cmo \
   proofs/proof_trees.cmo proofs/logic.cmo \
   proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
   proofs/pfedit.cmo proofs/tactic_debug.cmo \
@@ -1111,7 +1111,11 @@ COQDOC=bin/coqdoc$(EXE)
 TOOLS=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) \
       $(COQWC) $(COQDOC)
 
-tools:: $(TOOLS) dev/top_printers.cmo
+DEBUGPRINTERS=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
+
+printers: $(DEBUGPRINTERS)
+
+tools:: $(TOOLS) $(DEBUGPRINTERS)
 
 COQDEPCMO=config/coq_config.cmo tools/coqdep_lexer.cmo tools/coqdep.cmo
 
@@ -1385,6 +1389,47 @@ GRAMMARSCMO=\
   parsing/g_ltacnew.cmo parsing/g_constrnew.cmo 
 
 GRAMMARCMO=$(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
+
+PRINTERSCMO=\
+  config/coq_config.cmo lib/lib.cma \
+  kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo	\
+  kernel/mod_subst.cmo kernel/copcodes.cmo kernel/cemitcodes.cmo	\
+  kernel/sign.cmo kernel/declarations.cmo kernel/environ.cmo		\
+  kernel/conv_oracle.cmo kernel/closure.cmo kernel/reduction.cmo	\
+  kernel/cooking.cmo kernel/cbytecodes.cmo kernel/cbytegen.cmo		\
+  kernel/modops.cmo kernel/type_errors.cmo kernel/inductive.cmo		\
+  kernel/subtyping.cmo kernel/typeops.cmo kernel/indtypes.cmo		\
+  kernel/term_typing.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo	\
+  library/summary.cmo library/global.cmo library/nameops.cmo		\
+  library/libnames.cmo library/nametab.cmo library/libobject.cmo	\
+  library/lib.cmo library/goptions.cmo \
+  pretyping/termops.cmo pretyping/evd.cmo				    \
+  pretyping/rawterm.cmo pretyping/termops.cmo pretyping/evd.cmo		    \
+  pretyping/reductionops.cmo pretyping/inductiveops.cmo			    \
+  pretyping/retyping.cmo pretyping/cbv.cmo				    \
+  pretyping/pretype_errors.cmo pretyping/recordops.cmo pretyping/typing.cmo \
+  pretyping/evarutil.cmo pretyping/unification.cmo pretyping/evarconv.cmo   \
+  pretyping/tacred.cmo pretyping/classops.cmo pretyping/detyping.cmo	    \
+  pretyping/indrec.cmo pretyping/coercion.cmo pretyping/cases.cmo	    \
+  pretyping/pretyping.cmo pretyping/clenv.cmo pretyping/pattern.cmo \
+  parsing/lexer.cmo interp/ppextend.cmo interp/genarg.cmo \
+  interp/topconstr.cmo interp/notation.cmo interp/reserve.cmo		\
+  library/impargs.cmo\
+  interp/constrextern.cmo interp/syntax_def.cmo interp/constrintern.cmo	\
+  proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo		\
+  proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo	\
+  parsing/ppconstr.cmo parsing/coqast.cmo parsing/ast.cmo		\
+  parsing/termast.cmo parsing/extend.cmo parsing/esyntax.cmo		\
+  translate/ppconstrnew.cmo parsing/printer.cmo parsing/pptactic.cmo 	\
+  translate/pptacticnew.cmo parsing/tactic_printer.cmo \
+  dev/top_printers.cmo
+
+dev/printers.cma: $(PRINTERSCMO)
+	$(SHOW)'Testing $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) gramlib.cma $(PRINTERSCMO) -o test-printer
+	@rm -f test-printer
+	$(SHOW)'OCAMLC -a $@'   
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(PRINTERSCMO) -linkall -a -o $@
 
 parsing/grammar.cma: $(GRAMMARCMO)
 	$(SHOW)'Testing $@'
@@ -1673,7 +1718,7 @@ clean::
 devel:	
 	touch .depend.devel
 	$(MAKE) -f dev/Makefile.devel setup-devel
-	$(MAKE) dev/top_printers.cmo
+	$(MAKE) $(DEBUGPRINTERS)
 
 include .depend
 include .depend.coq
