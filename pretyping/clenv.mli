@@ -14,7 +14,6 @@ open Names
 open Term
 open Sign
 open Evd
-open Proof_type
 (*i*)
 
 (* [new_meta] is a generator of unique meta variables *)
@@ -59,7 +58,7 @@ val subst_clenv : (substitution -> 'a -> 'a) ->
 val clenv_wtactic :
   (evar_map * meta_map -> evar_map * meta_map) -> wc clausenv -> wc clausenv
 
-val connect_clenv : goal sigma -> 'a clausenv -> wc clausenv
+val connect_clenv : evar_info sigma -> 'a clausenv -> wc clausenv
 val clenv_assign : metavariable -> constr -> 'a clausenv -> 'a clausenv
 val clenv_instance_term : wc clausenv -> constr -> constr
 val clenv_pose : name * metavariable * constr -> 'a clausenv -> 'a clausenv
@@ -93,7 +92,8 @@ val clenv_constrain_missing_args : (* Used in user contrib Lannion *)
 val clenv_constrain_dep_args : constr list -> wc clausenv -> wc clausenv
 *)
 val clenv_lookup_name : 'a clausenv -> identifier -> metavariable
-val clenv_unique_resolver : bool -> wc clausenv -> goal sigma -> wc clausenv
+val clenv_unique_resolver :
+  bool -> wc clausenv -> evar_info sigma -> wc clausenv
 
 val make_clenv_binding_apply :
   wc -> int -> constr * constr -> types Rawterm.bindings -> wc clausenv

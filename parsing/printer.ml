@@ -124,6 +124,8 @@ let prterm t = prterm_env (Global.env()) t
 let prtype t = prtype_env (Global.env()) t
 let prjudge j = prjudge_env (Global.env()) j
 
+let _ = Termops.set_print_constr prterm
+
 let pr_constant env cst = prterm_env env (mkConst cst)
 let pr_existential env ev = prterm_env env (mkEvar ev)
 let pr_inductive env ind = prterm_env env (mkInd ind)
@@ -247,3 +249,4 @@ let pr_context_limit n env =
 let pr_context_of env = match Options.print_hyps_limit () with 
   | None -> hv 0 (pr_context_unlimited env)
   | Some n -> hv 0 (pr_context_limit n env)
+

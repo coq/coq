@@ -21,7 +21,6 @@ open Type_errors
 open Proof_trees
 open Proof_type
 open Logic
-open Printer
 
 type transformation_tactic = proof_tree -> (goal list * validation)
 
@@ -952,7 +951,7 @@ let rec print_proof sigma osign pf =
 )
 	  
 let pr_change gl = 
-  (str"Change " ++ prterm_env (Global.env()) gl.evar_concl ++ str".")
+  (str"Change " ++ Printer.prterm_env (Global.env()) gl.evar_concl ++ str".")
 
 let rec print_script nochange sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in
@@ -969,6 +968,7 @@ let rec print_script nochange sigma osign pf =
            prlist_with_sep pr_fnl
              (print_script nochange sigma sign) spfl)
 
+(* printed by Show Script command *)
 let print_treescript nochange sigma _osign pf =
   let rec aux top pf =
     let {evar_hyps=sign; evar_concl=cl} = pf.goal in

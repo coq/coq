@@ -19,7 +19,7 @@ open Evd
 
 type maps = evar_map * meta_map
 
-val w_Define : Evarutil.evar_defs -> evar -> constr -> unit
+val w_Define : evar -> constr -> Evarutil.evar_defs -> unit
 
 (* The "unique" unification fonction *)
 val w_unify :

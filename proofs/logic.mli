@@ -54,7 +54,6 @@ type refiner_error =
   | NonLinearProof of constr
 
   (*i Errors raised by the tactics i*)
-  | CannotUnifyBindingType of constr * constr
   | IntroNeedsProduct
   | DoesNotOccurIn of constr * identifier
 

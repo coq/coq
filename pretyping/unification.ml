@@ -57,7 +57,7 @@ type maps = evar_map * meta_map
  * [c] is typed in the context of [sp] and evar context [evd] with
  * [sp] removed to avoid circular definitions.
  *)
-let w_Define evd sp c =
+let w_Define sp c evd =
   let sigma = evars_of evd in
   if Evd.is_defined sigma sp then
     error "Unify.w_Define: cannot define evar twice";
@@ -213,17 +213,17 @@ let is_mimick_head f =
       (Const _|Var _|Rel _|Construct _|Ind _) -> true
     | _ -> false
 
-let mimick_evar env evd hdc nargs sp =
+let mimick_evar env hdc nargs sp evd =
   let (sigma',c) = applyHead env (evars_of evd) nargs hdc in
   evars_reset_evd sigma' evd;
-  w_Define evd sp c
+  w_Define sp c evd
   
 
 (* [w_merge env sigma b metas evars] merges common instances in metas
    or in evars, possibly generating new unification problems; if [b]
    is true, unification of types of metas is required *)
 
-let w_merge env (sigma,metamap) with_types metas evars =
+let w_merge env with_types metas evars (sigma,metamap) =
   let evd = create_evar_defs sigma in
   let mmap = ref metamap in
   let ty_metas = ref [] in
@@ -254,14 +254,14 @@ let w_merge env (sigma,metamap) with_types metas evars =
                 match krhs with
 		  | App (f,cl) when is_mimick_head f ->
 		      (try 
-                        w_Define evd evn rhs'; 
+                        w_Define evn rhs' evd; 
 		        w_merge_rec metas t
 		      with ex when precatchable_exception ex ->
-                        mimick_evar env evd f (Array.length cl) evn;
+                        mimick_evar env f (Array.length cl) evn evd;
 			w_merge_rec metas evars)
                   | _ ->
                       (* ensure tail recursion in non-mimickable case! *)
-                      w_Define evd evn rhs'; 
+                      w_Define evn rhs' evd; 
 		      w_merge_rec metas t
 	      end
 
@@ -306,12 +306,12 @@ let w_merge env (sigma,metamap) with_types metas evars =
    [clenv_typed_unify M N clenv] expects in addition that expected
    types of metavars are unifiable with the types of their instances    *)
 
-let w_unify_core_0 env evd with_types cv_pb m n =
+let w_unify_core_0 env with_types cv_pb m n evd =
   let (mc,ec) = unify_0 env (fst evd) cv_pb m n in 
-  w_merge env evd with_types mc ec
+  w_merge env with_types mc ec evd
 
-let w_unify_0 env evd = w_unify_core_0 env evd false
-let w_typed_unify env evd = w_unify_core_0 env evd true
+let w_unify_0 env = w_unify_core_0 env false
+let w_typed_unify env = w_unify_core_0 env true
 
 
 (* takes a substitution s, an open term op and a closed term cl
@@ -335,7 +335,7 @@ let w_unify_to_subterm env (op,cl) evd =
     let cl = strip_outer_cast cl in
     (try 
        if closed0 cl 
-       then w_unify_0 env evd CONV op cl,cl
+       then w_unify_0 env CONV op cl evd,cl
        else error "Bound 1"
      with ex when precatchable_exception ex ->
        (match kind_of_term cl with 
@@ -409,30 +409,30 @@ let w_unify_to_subterm_list env allow_K oplist t evd =
     oplist 
     (evd,[])
 
-let secondOrderAbstraction env evd allow_K typ (p, oplist) =
+let secondOrderAbstraction env allow_K typ (p, oplist) evd =
   let sigma = fst evd in
   let (evd',cllist) =
     w_unify_to_subterm_list env allow_K oplist typ evd in
   let typp = meta_type (snd evd') p in
   let pred = abstract_list_all env sigma typp typ cllist in
-  w_unify_0 env evd' CONV (mkMeta p) pred
+  w_unify_0 env CONV (mkMeta p) pred evd'
 
-let w_unify2 env evd allow_K cv_pb ty1 ty2 =
+let w_unify2 env allow_K cv_pb ty1 ty2 evd =
   let c1, oplist1 = whd_stack ty1 in
   let c2, oplist2 = whd_stack ty2 in
   match kind_of_term c1, kind_of_term c2 with
     | Meta p1, _ ->
         (* Find the predicate *)
 	let evd' =
-          secondOrderAbstraction env evd allow_K ty2 (p1,oplist1) in 
+          secondOrderAbstraction env allow_K ty2 (p1,oplist1) evd in 
         (* Resume first order unification *)
-	w_unify_0 env evd' cv_pb (nf_meta (snd evd') ty1) ty2
+	w_unify_0 env cv_pb (nf_meta (snd evd') ty1) ty2 evd'
     | _, Meta p2 ->
         (* Find the predicate *)
 	let evd' =
-          secondOrderAbstraction env evd allow_K ty1 (p2, oplist2) in 
+          secondOrderAbstraction env allow_K ty1 (p2, oplist2) evd in 
         (* Resume first order unification *)
-	w_unify_0 env evd' cv_pb ty1 (nf_meta (snd evd') ty2)
+	w_unify_0 env cv_pb ty1 (nf_meta (snd evd') ty2) evd'
     | _ -> error "w_unify2"
 
 
@@ -464,10 +464,10 @@ let w_unify allow_K env cv_pb ty1 ty2 evd =
     | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)
       when List.length l1 = List.length l2 ->
 	(try 
-	   w_typed_unify env evd cv_pb ty1 ty2
+	   w_typed_unify env cv_pb ty1 ty2 evd
 	 with ex when precatchable_exception ex -> 
 	   try 
-	     w_unify2 env evd allow_K cv_pb ty1 ty2
+	     w_unify2 env allow_K cv_pb ty1 ty2 evd
 	   with PretypeError (env,NoOccurrenceFound c) as e -> raise e
 	     | ex when precatchable_exception ex -> 
 	     error "Cannot solve a second-order unification problem")
@@ -475,14 +475,14 @@ let w_unify allow_K env cv_pb ty1 ty2 evd =
      (* Second order case *)
      | (Meta _, true, _, _ | _, _, Meta _, true) -> 
 	(try 
-	   w_unify2 env evd allow_K cv_pb ty1 ty2
+	   w_unify2 env allow_K cv_pb ty1 ty2 evd
 	with PretypeError (env,NoOccurrenceFound c) as e -> raise e
 	  | ex when precatchable_exception ex -> 
           try 
-	     w_typed_unify env evd cv_pb ty1 ty2
+	     w_typed_unify env cv_pb ty1 ty2 evd
           with ex when precatchable_exception ex -> 
              error "Cannot solve a second-order unification problem")
 
      (* General case: try first order *)
-     | _ -> w_unify_0 env evd cv_pb ty1 ty2
+     | _ -> w_unify_0 env cv_pb ty1 ty2 evd
 

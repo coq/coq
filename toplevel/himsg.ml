@@ -384,6 +384,12 @@ let explain_refiner_cannot_generalize ty =
 let explain_no_occurrence_found c =
   str "Found no subterm matching " ++ prterm c ++ str " in the current goal"
 
+let explain_cannot_unify_binding_type m n =
+  let pm = prterm m in 
+  let pn = prterm n in
+  str "This binding has type" ++ brk(1,1) ++ pm ++ spc () ++ 
+  str "which should be unifiable with" ++ brk(1,1) ++ pn
+
 let explain_type_error ctx err =
   let ctx = make_all_name_different ctx in
   match err with
@@ -443,6 +449,7 @@ let explain_pretype_error ctx err =
   | CannotUnify (m,n) -> explain_cannot_unify m n
   | CannotGeneralize ty -> explain_refiner_cannot_generalize ty
   | NoOccurrenceFound c -> explain_no_occurrence_found c
+  | CannotUnifyBindingType (m,n) -> explain_cannot_unify_binding_type m n
 
 (* Refiner errors *)
 
@@ -466,12 +473,6 @@ let explain_refiner_cannot_apply t harg =
   prterm t ++ spc () ++ str"could not be applied to" ++ brk(1,1) ++
   prterm harg
 
-let explain_cannot_unify_binding_type m n =
-  let pm = prterm m in 
-  let pn = prterm n in
-  str "This binding has type" ++ brk(1,1) ++ pm ++ spc () ++ 
-  str "which should be unifiable with" ++ brk(1,1) ++ pn
-
 let explain_refiner_not_well_typed c =
   str"The term "  ++ prterm c  ++ str" is not well-typed"
 
@@ -491,7 +492,6 @@ let explain_refiner_error = function
   | OccurMeta t -> explain_refiner_occur_meta t
   | OccurMetaGoal t -> explain_refiner_occur_meta_goal t
   | CannotApply (t,harg) -> explain_refiner_cannot_apply t harg
-  | CannotUnifyBindingType (m,n) -> explain_cannot_unify_binding_type m n
   | NotWellTyped c -> explain_refiner_not_well_typed c
   | IntroNeedsProduct -> explain_intro_needs_product ()
   | DoesNotOccurIn (c,hyp) -> explain_does_not_occur_in c hyp

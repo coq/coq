@@ -25,7 +25,6 @@ open Proof_trees
 open Proof_type
 open Typeops
 open Type_errors
-open Coqast
 open Retyping
 open Evarutil
  
@@ -40,7 +39,6 @@ type refiner_error =
   | NonLinearProof of constr
 
   (* Errors raised by the tactics *)
-  | CannotUnifyBindingType of constr * constr
   | IntroNeedsProduct
   | DoesNotOccurIn of constr * identifier
 
@@ -51,8 +49,10 @@ open Pretype_errors
 let catchable_exception = function
   | Util.UserError _ | TypeError _ | RefinerError _
   (* unification errors *)
-  | PretypeError(_,(CannotUnify _|CannotGeneralize _|NoOccurrenceFound _))
-  | Stdpp.Exc_located(_,PretypeError(_,(CannotUnify _|CannotGeneralize _|NoOccurrenceFound _)))
+  | PretypeError(_,(CannotUnify _|CannotGeneralize _|NoOccurrenceFound _|
+      CannotUnifyBindingType _))
+  | Stdpp.Exc_located(_,PretypeError(_,(CannotUnify _|CannotGeneralize _|
+          NoOccurrenceFound _ | CannotUnifyBindingType _)))
   | Stdpp.Exc_located(_,(Util.UserError _ | TypeError _ | RefinerError _ |
     Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _))) -> true
   | _ -> false

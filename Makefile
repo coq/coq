@@ -140,8 +140,8 @@ PRETYPING=\
   pretyping/classops.cmo pretyping/recordops.cmo pretyping/indrec.cmo \
   pretyping/evarutil.cmo pretyping/typing.cmo \
   pretyping/unification.cmo pretyping/evarconv.cmo \
-  pretyping/coercion.cmo pretyping/cases.cmo pretyping/pretyping.cmo \
-  pretyping/matching.cmo
+  pretyping/coercion.cmo pretyping/clenv.cmo pretyping/cases.cmo \
+  pretyping/pretyping.cmo pretyping/matching.cmo
 
 INTERP=\
   parsing/lexer.cmo interp/topconstr.cmo interp/ppextend.cmo interp/symbols.cmo \
@@ -176,7 +176,7 @@ PROOFS=\
   proofs/tacexpr.cmo proofs/proof_type.cmo \
   proofs/proof_trees.cmo proofs/logic.cmo \
   proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
-  proofs/clenv.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo \
+  proofs/pfedit.cmo proofs/tactic_debug.cmo \
   proofs/clenvtac.cmo
 
 TACTICS=\

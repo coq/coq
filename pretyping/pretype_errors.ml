@@ -27,6 +27,7 @@ type pretype_error =
   | NotClean of existential_key * constr * hole_kind
   | UnsolvableImplicit of hole_kind
   | CannotUnify of constr * constr
+  | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
   | NoOccurrenceFound of constr
   (* Pretyping *)

@@ -238,7 +238,6 @@ let rename_hyp id id'  = with_check (rename_hyp_no_check id id')
 (* Pretty-printers *)
 
 open Pp
-open Printer
 open Tacexpr
 open Rawterm
 

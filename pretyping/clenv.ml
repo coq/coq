@@ -17,16 +17,19 @@ open Termops
 open Sign
 open Environ
 open Evd
-open Proof_type
-open Refiner
-open Proof_trees
-open Logic
 open Reductionops
-open Tacmach
-open Evar_refiner
 open Rawterm
 open Pattern
 open Tacexpr
+open Tacred
+open Pretype_errors
+
+(* *)
+let get_env   evc = Global.env_of_context evc.it
+let w_type_of wc c  =
+  Typing.type_of (get_env wc) wc.sigma c
+let w_hnf_constr wc c        = hnf_constr (get_env wc) wc.sigma c
+let get_concl gl = gl.it.evar_concl
 
 (* Generator of metavariables *)
 let new_meta =
@@ -161,17 +164,17 @@ let mk_clenv_hnf_constr_type_of wc t =
   mk_clenv_from wc (t,w_hnf_constr wc (w_type_of wc t))
 
 let mk_clenv_rename_from wc (c,t) = 
-  mk_clenv_from wc (c,rename_bound_var (w_env wc) [] t)
+  mk_clenv_from wc (c,rename_bound_var (get_env wc) [] t)
 
 let mk_clenv_rename_from_n wc n (c,t) = 
-  mk_clenv_from_n wc n (c,rename_bound_var (w_env wc) [] t)
+  mk_clenv_from_n wc n (c,rename_bound_var (get_env wc) [] t)
     
 let mk_clenv_rename_type_of wc t =
-  mk_clenv_from wc (t,rename_bound_var (w_env wc) [] (w_type_of wc t))
+  mk_clenv_from wc (t,rename_bound_var (get_env wc) [] (w_type_of wc t))
     
 let mk_clenv_rename_hnf_constr_type_of wc t =
   mk_clenv_from wc
-    (t,rename_bound_var (w_env wc) [] (w_hnf_constr wc (w_type_of wc t)))
+    (t,rename_bound_var (get_env wc) [] (w_hnf_constr wc (w_type_of wc t)))
 
 let mk_clenv_type_of wc t = mk_clenv_from wc (t,w_type_of wc t)
 			      
@@ -279,18 +282,18 @@ let clenv_type_of ce c =
          | (n,Cltyp typ)    -> (n,typ.rebus))
       (metamap_to_list ce.env)
   in
-    Retyping.get_type_of_with_meta (w_env ce.hook) (w_Underlying ce.hook) metamap c
+    Retyping.get_type_of_with_meta (get_env ce.hook) ce.hook.sigma metamap c
 
 let clenv_instance_type_of ce c =
   clenv_instance ce (mk_freelisted (clenv_type_of ce c))
 
 let clenv_unify allow_K cv_pb t1 t2 clenv =
-  let env = w_env clenv.hook in
+  let env = get_env clenv.hook in
   clenv_wtactic (Unification.w_unify allow_K env cv_pb t1 t2) clenv
 
 let clenv_unique_resolver allow_K clause gl =
   clenv_unify allow_K CUMUL
-    (clenv_instance_template_type clause) (pf_concl gl) clause 
+    (clenv_instance_template_type clause) (get_concl gl) clause 
 
 (* [clenv_bchain mv clenv' clenv]
  *
@@ -407,8 +410,8 @@ let clenv_independent clenv =
 
 let w_coerce wc c ctyp target =
   let j = make_judge c ctyp in
-  let env = w_env wc in
-  let isevars = Evarutil.create_evar_defs (w_Underlying wc) in
+  let env = get_env wc in
+  let isevars = Evarutil.create_evar_defs wc.sigma in
   let j' = Coercion.inh_conv_coerce_to dummy_loc env isevars j target in
   (* faire quelque chose avec isevars ? *)
   j'.uj_val
@@ -484,10 +487,9 @@ let clenv_match_args s clause =
 	     previous case because Coercion does not handle Meta *)
           let c' = w_coerce clause.hook c c_typ k_typ in
 	  try clenv_unify true CONV (mkMeta k) c' clause
-	  with Pretype_errors.PretypeError
-              (_,Pretype_errors.CannotUnify (m,n)) ->
+	  with PretypeError (env,CannotUnify (m,n)) ->
 	    Stdpp.raise_with_loc loc
- 	      (RefinerError (CannotUnifyBindingType (m,n)))
+ 	      (PretypeError (env,CannotUnifyBindingType (m,n)))
 	in matchrec cl t
   in 
   matchrec clause s
@@ -540,8 +542,6 @@ let make_clenv_binding_gen n wc (c,t) = function
 let make_clenv_binding_apply wc n = make_clenv_binding_gen (Some n) wc
 let make_clenv_binding = make_clenv_binding_gen None
 
-open Printer
-
 let pr_clenv clenv =
   let pr_name mv =
     try 
@@ -552,11 +552,11 @@ let pr_clenv clenv =
   let pr_meta_binding = function
     | (mv,Cltyp b) ->
       	hov 0 
-	  (pr_meta mv ++ pr_name mv ++ str " : " ++ prterm b.rebus ++ fnl ())
+	  (pr_meta mv ++ pr_name mv ++ str " : " ++ print_constr b.rebus ++ fnl ())
     | (mv,Clval(b,_)) ->
       	hov 0 
-	  (pr_meta mv ++ pr_name mv ++ str " := " ++ prterm b.rebus ++ fnl ())
+	  (pr_meta mv ++ pr_name mv ++ str " := " ++ print_constr b.rebus ++ fnl ())
   in
-  (str"TEMPL: " ++ prterm clenv.templval.rebus ++
-     str" : " ++ prterm clenv.templtyp.rebus ++ fnl () ++
+  (str"TEMPL: " ++ print_constr clenv.templval.rebus ++
+     str" : " ++ print_constr clenv.templtyp.rebus ++ fnl () ++
      (prlist pr_meta_binding (metamap_to_list clenv.env)))
