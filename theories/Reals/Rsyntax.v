@@ -163,9 +163,6 @@ Syntax constr
     Rmult_inside
       [<<(REXPR <<(Rmult $n1 $n2)>>)>>]
       	 -> [ (REXPR $n1):E "*" [0 0] (REXPR $n2):L ]
-(*    |Rdiv_inside
-      [<<(REXPR <<(Rdiv $n1 $n2)>>)>>]
-      	 -> [ (REXPR $n1):E "/" [0 0] (REXPR $n2):L ]*)
   ;
 
   level 5:
@@ -179,7 +176,7 @@ Syntax constr
   level 0:
     Rzero_inside [<<(REXPR <<R0>>)>>] -> ["0"]
   | Rone_inside [<<(REXPR <<R1>>)>>] -> ["1"]
-  | Rconst_inside [<<(REXPR <<(Rplus $r R1)>>)>>] -> [$r:"r_printer"].
+  | Rconst_inside [<<(REXPR <<(Rplus R1 $r)>>)>>] -> [$r:"r_printer"].
 
 
 
