@@ -287,8 +287,7 @@ let contract_cofix_use_function f (bodynum,(_,names,bodies as typedbodies)) =
 let reduce_mind_case_use_function (sp,args) env mia =
   match kind_of_term mia.mconstr with 
     | IsMutConstruct(ind_sp,i as cstr_sp, args) ->
-	let ncargs = (fst mia.mci).(i-1) in
-	let real_cargs = list_lastn ncargs mia.mcargs in
+	let real_cargs = snd (list_chop (fst mia.mci) mia.mcargs) in
 	applist (mia.mlf.(i-1), real_cargs)
     | IsCoFix (_,(names,_,_) as cofix) ->
 	let build_fix_name i =
