@@ -1,6 +1,4 @@
 
- 15. Finish extraction of modules (bugs with functors) 
-
  16. Haskell : 
      - equivalent of Obj.magic (unsafeCoerce ?) 
      - look again at the syntax (make it independant of layout ...)  

@@ -3,8 +3,7 @@
 * The two main new features: 
   - Automatic generation of Obj.magic when the extracted code 
   in Ocaml is not directly typable.
-  - A very limited and buggish extraction of Coq's new modules 
-  to Ocaml modules. 
+  - An experimental extraction of Coq's new modules to Ocaml modules. 
 
 * Concerning those Obj.magic: 
   - The extraction now computes the expected type of any terms. Then 
@@ -35,31 +34,20 @@
   - Taking in account the new Coq's modules system has implied a *huge*
   rewrite of most of the extraction code.
 
-  - the work is not complete, even if most of it is done. Today's 
-  status (22 jan 2003) is that we can extract *very* simple modules 
-  like 
-     
-    Module M. 
-    Definition t := O.
-    End M. 
+  - The extraction core (translation from Coq to an abstract mini-ML) 
+  is now complete and fairly stable, and supports modules, modules type 
+  and functors and all that stuff.
 
-  which gives by Recursive Extraction t the following ocaml code: 
+  - The ocaml pretty-print part, especially the renaming issue, is 
+  clearly weaker, and certainly still contains bugs. 
 
-    module M: 
-    sig 
-      val t : nat
-    end = 
-    struct 
-      (** val t : nat **)
-      let t = O
-    end
+  - Nothing done for translating these Coq Modules to Haskell.
 
-  - unfortunately anything more complex (in particular functors)
-  tends to produce various bugs, the most common of them been 
-  "Anomaly: Search error. Please report."
-  Patches for those bugs will follow ... (I hope). Please be patient.
+  - A temporary drawback of this module extraction implementation is that 
+  efficiency (especially extraction speed) has been somehow neglected.
+  To improve ...
 
-  - As an interesting side-effect, definitions are now printed following
+  - As an interesting side-effect, definitions are now printed according to 
   the user's original order. No more of this "dependency-correct but weird"
   order. In particular realized axioms via Extract Constant are now at their 
   right place, and not at the beginning. 
