@@ -196,7 +196,7 @@ let rec ml_subst e =
   in subst 0
 
 (*s Generalized substitution. 
-   [gensubst v m d t] applies to [t] the substitution coded in the 
+   [gen_subst v m d t] applies to [t] the substitution coded in the 
    [v] array: [(Rel i)] becomes [(Rel v.(i))]. [d] is the correction applies 
    to [Rel] greater than [m]. *)
 
@@ -205,7 +205,9 @@ let gen_subst v d t =
     | MLrel i as a -> 
 	let i'= i-n in 
 	if i' < 1 then a 
-	else if i' < Array.length v then MLrel (v.(i')+n) 
+	else if i' < Array.length v then 
+	  if v.(i') = 0 then MLdummy
+	  else MLrel (v.(i')+n) 
 	else MLrel (i+d) 
     | a -> ast_map_lift subst n a
   in subst 0 t
