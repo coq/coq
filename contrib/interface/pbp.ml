@@ -177,7 +177,7 @@ let make_pbp_atomic_tactic = function
       TacAtom
 	(zz, TacElim ((make_var hyp_name,ExplicitBindings bind),None))
   | PbpTryClear l -> 
-      TacTry (TacAtom (zz, TacClear (List.map (fun s -> AI (zz,s)) l)))
+      TacTry (TacAtom (zz, TacClear (false,List.map (fun s -> AI (zz,s)) l)))
   | PbpSplit -> TacAtom (zz, TacSplit (false,NoBindings));;
 
 let rec make_pbp_tactic = function

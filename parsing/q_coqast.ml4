@@ -423,9 +423,9 @@ let rec mlexpr_of_atomic_tactic = function
       <:expr< Tacexpr.TacNewDestruct $mlexpr_of_induction_arg c$ $cbo$ ($ids$,ref []) >>
 
   (* Context management *)
-  | Tacexpr.TacClear l ->
+  | Tacexpr.TacClear (b,l) ->
       let l = mlexpr_of_list (mlexpr_of_hyp) l in
-      <:expr< Tacexpr.TacClear $l$ >>
+      <:expr< Tacexpr.TacClear $mlexpr_of_bool b$ $l$ >>
   | Tacexpr.TacClearBody l ->
       let l = mlexpr_of_list (mlexpr_of_hyp) l in
       <:expr< Tacexpr.TacClearBody $l$ >>

@@ -1125,11 +1125,12 @@ and xlate_tac =
         CT_decompose_list(CT_id_ne_list(id',l'),xlate_formula c)
     | TacDecomposeAnd c -> CT_decompose_record (xlate_formula c)
     | TacDecomposeOr c -> CT_decompose_sum(xlate_formula c)
-    | TacClear [] ->
+    | TacClear (false,[]) ->
 	xlate_error "Clear expects a non empty list of identifiers"
-    | TacClear (id::idl) ->
+    | TacClear (false,id::idl) ->
        let idl' = List.map xlate_hyp idl in
        CT_clear (CT_id_ne_list (xlate_hyp id, idl'))
+    | TacClear (true,_) -> xlate_error "TODO: 'clear - idl' and 'clear'"
     | (*For translating tactics/Inv.v *)
       TacInversion (NonDepInversion (k,idl,l),quant_hyp) ->
 	CT_inversion(compute_INV_TYPE k, xlate_quantified_hypothesis quant_hyp,

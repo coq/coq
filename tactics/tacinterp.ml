@@ -726,7 +726,7 @@ let rec intern_atomic lf ist x =
   | TacLApply c -> TacLApply (intern_constr ist c)
 
   (* Context management *)
-  | TacClear l -> TacClear (List.map (intern_hyp_or_metaid ist) l)
+  | TacClear (b,l) -> TacClear (b,List.map (intern_hyp_or_metaid ist) l)
   | TacClearBody l -> TacClearBody (List.map (intern_hyp_or_metaid ist) l)
   | TacMove (dep,id1,id2) ->
     TacMove (dep,intern_hyp_or_metaid ist id1,intern_hyp_or_metaid ist id2)
@@ -1755,7 +1755,7 @@ and interp_atomic ist gl = function
   | TacLApply c -> h_lapply (pf_interp_constr ist gl c)
 
   (* Context management *)
-  | TacClear l -> h_clear (List.map (interp_hyp ist gl) l)
+  | TacClear (b,l) -> h_clear b (List.map (interp_hyp ist gl) l)
   | TacClearBody l -> h_clear_body (List.map (interp_hyp ist gl) l)
   | TacMove (dep,id1,id2) ->
       h_move dep (interp_hyp ist gl id1) (interp_hyp ist gl id2)
@@ -2004,7 +2004,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacLApply c -> TacLApply (subst_rawconstr subst c)
 
   (* Context management *)
-  | TacClear l as x -> x
+  | TacClear _ as x -> x
   | TacClearBody l as x -> x
   | TacMove (dep,id1,id2) as x -> x
   | TacRename (id1,id2) as x -> x

@@ -840,6 +840,21 @@ let new_hyp mopt (c,lbind) g =
                (cut (pf_type_of g cut_pf)))
      ((tclORELSE (apply cut_pf) (exact_no_check cut_pf)))) g
 
+(* Keeping only a few hypotheses *)
+
+let keep hyps gl =
+  let env = Global.env() in
+  let ccl = pf_concl gl in
+  let cl,_ =
+    fold_named_context_reverse (fun (clear,keep) (hyp,_,_ as decl) ->
+      if List.mem hyp hyps
+	or List.exists (occur_var_in_decl env hyp) keep
+	or occur_var env hyp ccl
+      then (clear,decl::keep)
+      else (hyp::clear,keep))
+      ~init:([],[]) (pf_env gl)
+  in thin cl gl
+
 (************************)
 (* Introduction tactics *)
 (************************)

@@ -359,7 +359,8 @@ GEXTEND Gram
 	  TacDAuto (n, p)
 
       (* Context management *)
-      | IDENT "clear"; l = LIST1 id_or_meta -> TacClear l
+      | IDENT "clear"; "-"; l = LIST1 id_or_meta -> TacClear (true, l)
+      | IDENT "clear"; l = LIST0 id_or_meta -> TacClear (l=[], l)
       | IDENT "clearbody"; l = LIST1 id_or_meta -> TacClearBody l
       | IDENT "move"; id1 = id_or_meta; IDENT "after"; id2 = id_or_meta -> 
 	  TacMove (true,id1,id2)

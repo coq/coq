@@ -144,6 +144,7 @@ val pattern_option  : (int list * constr) list -> simple_clause -> tactic
 
 val clear         : identifier list -> tactic
 val clear_body    : identifier list -> tactic
+val keep          : identifier list -> tactic
 
 val new_hyp       : int option -> constr with_bindings -> tactic
 

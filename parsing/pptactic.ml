@@ -547,8 +547,9 @@ and pr_atom1 = function
       hov 1 (str "Auto" ++ pr_opt int n ++ str "Decomp" ++ pr_opt int p)
 
   (* Context management *)
-  | TacClear l ->
-      hov 1 (str "Clear" ++ spc () ++ prlist_with_sep spc pr_ident l)
+  | TacClear (keep,l) ->
+      hov 1 (str "Clear" ++ spc () ++ (if keep then str "- " else mt ()) ++
+             prlist_with_sep spc pr_ident l)
   | TacClearBody l ->
       hov 1 (str "ClearBody" ++ spc () ++ prlist_with_sep spc pr_ident l)
   | TacMove (b,id1,id2) ->

@@ -156,7 +156,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacDAuto of int option * int option
 
   (* Context management *)
-  | TacClear of 'id list
+  | TacClear of bool * 'id list
   | TacClearBody of 'id list
   | TacMove of bool * 'id * 'id
   | TacRename of 'id * 'id
