@@ -174,20 +174,6 @@ Definition identityT_rect_r :
  Intros A x P H y H0; Case sym_idT with 1:= H0; Trivial.
 Defined.
 
-Inductive sigT [A:Set; P:A->Prop] : Type := existT : (x:A)(P x)->(sigT A P).
-
-Section sigT_proj.
-
-  Variable A : Set.
-  Variable P : A->Prop.
-
-  Definition projT1 := [H:(sigT A P)]
-    let (x, _) = H in x.
-  Definition projT2 := [H:(sigT A P)]<[H:(sigT A P)](P (projT1 H))>
-    let (_, h) = H in h.
-
-End sigT_proj.
-
 Inductive prodT [A,B:Type] : Type := pairT : A -> B -> (prodT A B).
 
 Section prodT_proj.

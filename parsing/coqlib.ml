@@ -70,11 +70,11 @@ let build_sigma_set () =
     typ = constant "Specif" "sigS" }
 
 let build_sigma_type () =
-  { proj1 = constant "Logic_Type" "projT1";
-    proj2 = constant "Logic_Type" "projT2";
-    elim = constant "Logic_Type" "sigT_rec";
-    intro = constant "Logic_Type" "existT";
-    typ = constant "Logic_Type" "sigT" }
+  { proj1 = constant "Specif" "projT1";
+    proj2 = constant "Specif" "projT2";
+    elim = constant "Specif" "sigT_rec";
+    intro = constant "Specif" "existT";
+    typ = constant "Specif" "sigT" }
 
 (* Equalities *)
 type coq_leibniz_eq_data = {
@@ -200,7 +200,7 @@ let coq_idT_pattern =
 let coq_existS_pattern =
   lazy (snd (parse_pattern "(Coq.Init.Specif.existS ?1 ?2 ?3 ?4)"))
 let coq_existT_pattern = 
-  lazy (snd (parse_pattern "(Coq.Init.Logic_Type.existT ?1 ?2 ?3 ?4)"))
+  lazy (snd (parse_pattern "(Coq.Init.Specif.existT ?1 ?2 ?3 ?4)"))
 let coq_not_pattern =
   lazy (snd (parse_pattern "(Coq.Init.Logic.not ?)"))
 let coq_imp_False_pattern =
@@ -218,7 +218,7 @@ let coq_eq_ref      = lazy (reference "Logic" "eq")
 let coq_eqT_ref     = lazy (reference "Logic_Type" "eqT")
 let coq_idT_ref     = lazy (reference "Logic_Type" "identityT")
 let coq_existS_ref  = lazy (reference "Specif" "existS")
-let coq_existT_ref  = lazy (reference "Logic_Type" "existT")
+let coq_existT_ref  = lazy (reference "Specif" "existT")
 let coq_not_ref     = lazy (reference "Logic" "not")
 let coq_False_ref   = lazy (reference "Logic" "False")
 let coq_sumbool_ref = lazy (reference "Specif" "sumbool")
