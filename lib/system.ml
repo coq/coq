@@ -30,7 +30,8 @@ let all_subdirs root =
     try
       while true do
 	let f = readdir dirh in
-	if f <> "." && f <> ".." && (not Coq_config.local or (f <> "CVS")) then
+	if f <> "" && f.[0] <> '.' && (not Coq_config.local or (f <> "CVS"))
+        then
 	  let file = Filename.concat dir f in
 	  try 
 	    if (stat file).st_kind = S_DIR then begin
