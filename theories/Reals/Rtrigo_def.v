@@ -1,31 +1,36 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+ 
+(*i $Id$ i*)
+
 Require Max.
 Require Raxioms.
 Require DiscrR.
 Require Rbase.
 Require Rseries.
 Require Rtrigo_fun.
-Require Specif.
-
-Section Pserie.
-
-Variable An:nat->R.
-
-Definition SigT := Specif.sigT.
-
-Axiom Alembert:(x,k:R) (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) k) -> ``(Rabsolu k) <1 `` -> (SigT R [l:R] (Pser An x l)).
-
-End Pserie.
+Require Export Alembert.
 
 (*****************************)
 (* Definition of exponential *)
 (*****************************)
 Definition exp_in:R->R->Prop := [x,l:R](infinit_sum [i:nat]``/(INR (fact i))*(pow x i)`` l).
 
+Lemma exp_cof_no_R0 : (n:nat) ``/(INR (fact n))<>0``.
+Intro.
+Apply Rinv_neq_R0.
+Apply INR_fact_neq_0.
+Qed.
+
 Lemma exist_exp : (x:R)(SigT R [l:R](exp_in x l)).
-Intro; Generalize (Alembert [n:nat](Rinv (INR (fact n))) x ``0`` Alembert_exp).
-Intros; Cut ``(Rabsolu 0)<1``.
-Intros; Exact (X H).
-Rewrite Rabsolu_R0; Apply Rlt_R0_R1.
+Intro; Generalize (Alembert [n:nat](Rinv (INR (fact n))) x exp_cof_no_R0 Alembert_exp).
+Unfold Pser exp_in.
+Trivial.
 Defined.
 
 Definition exp : R -> R := [x:R](projT1 ? ? (exist_exp x)).
@@ -34,9 +39,6 @@ Lemma pow_i : (i:nat) (lt O i) -> (pow R0 i)==R0.
 Intros; Apply pow_ne_zero.
 Red; Intro; Rewrite H0 in H; Elim (lt_n_n ? H).
 Qed.
-
-(* Axiome d'extensionnalité *)
-Axiom fct_eq : (A:Type)(f1,f2:A->R) ((x:A)(f1 x)==(f2 x)) -> f1 == f2.
 
 (* Unicité de la limite d'une série convergente *)
 Lemma unicite_sum : (An:nat->R;l1,l2:R) (infinit_sum An l1) -> (infinit_sum An l2) -> l1 == l2.
@@ -236,12 +238,20 @@ Apply INR_eq.
 Repeat Rewrite S_INR; Rewrite plus_INR; Repeat Rewrite mult_INR; Rewrite plus_INR; Rewrite mult_INR; Repeat Rewrite S_INR; Replace (INR O) with R0; [Ring | Reflexivity].
 Qed.
 
+Lemma cosn_no_R0 : (n:nat)``(cos_n n)<>0``.
+Intro; Unfold cos_n; Unfold Rdiv; Apply prod_neq_R0.
+Apply pow_nonzero; DiscrR.
+Apply Rinv_neq_R0.
+Apply INR_fact_neq_0.
+Qed.
+
 (**********)
 Definition cos_in:R->R->Prop := [x,l:R](infinit_sum [i:nat]``(cos_n i)*(pow x i)`` l).
 
 (**********)
 Lemma exist_cos : (x:R)(SigT R [l:R](cos_in x l)).
-Intro; Generalize (Alembert cos_n x R0 Alembert_cos); Unfold Pser cos_in; Rewrite Rabsolu_R0; Intros; Apply (X Rlt_R0_R1).
+Intro; Generalize (Alembert cos_n x cosn_no_R0 Alembert_cos).
+Unfold Pser cos_in; Trivial.
 Qed.
 
 (* Définition du cosinus *)
@@ -327,12 +337,19 @@ Apply lt_O_Sn.
 Apply INR_eq; Repeat Rewrite S_INR; Rewrite plus_INR; Repeat Rewrite mult_INR; Rewrite plus_INR; Rewrite mult_INR; Repeat Rewrite S_INR; Replace (INR O) with R0; [Ring | Reflexivity].
 Qed.
 
+Lemma sin_no_R0 : (n:nat)``(sin_n n)<>0``.
+Intro; Unfold sin_n; Unfold Rdiv; Apply prod_neq_R0.
+Apply pow_nonzero; DiscrR.
+Apply Rinv_neq_R0; Apply INR_fact_neq_0.
+Qed.
+
 (**********)
 Definition sin_in:R->R->Prop := [x,l:R](infinit_sum [i:nat]``(sin_n i)*(pow x i)`` l).
 
 (**********)
 Lemma exist_sin : (x:R)(SigT R [l:R](sin_in x l)).
-Intro; Generalize (Alembert sin_n x R0 Alembert_sin); Rewrite Rabsolu_R0; Intros; Apply (X Rlt_R0_R1).
+Intro; Generalize (Alembert sin_n x sin_no_R0 Alembert_sin).
+Unfold Pser sin_n; Trivial.
 Qed.
 
 (***********************)

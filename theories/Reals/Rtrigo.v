@@ -15,6 +15,7 @@ Require Rbase.
 Require R_sqr.
 Require Rfunctions.
 Require Rsigma.
+Require Rlimit.
 Require Export Rtrigo_def.
 
 Lemma PI_neq0 : ~``PI==0``.
@@ -74,17 +75,8 @@ Lemma pythagorean : (x,y,z:R) ``(Rsqr x)+(Rsqr y)==(Rsqr z)`` -> ``0<=x`` -> ``0
 Intros x y z H1 H2 H3 H4; Generalize (arc_sin_cos x y z H2 H3 H4); Intro H5; Elim H5; [ Intros x0 H6; Elim H6; Intros H7 H8; Exists x0; Rewrite H7; Rewrite H8; Replace ``z*(cos x0)*(cos x0)+z*(sin x0)*(sin x0)`` with ``z*((Rsqr (sin x0))+(Rsqr (cos x0)))``; [ Rewrite sin2_cos2; Ring | Unfold Rsqr; Ring] | Assumption].
 Qed.
 
-Lemma double : (x:R) ``2*x==x+x``.
-Intro; Ring.
-Qed.
-
 Lemma aze : ``2<>0``.
 DiscrR.
-Qed.
-
-Lemma double_var : (x:R) ``x == x/2 + x/2``.
-Intro; Rewrite <- double; Unfold Rdiv; Rewrite <- Rmult_assoc; Symmetry; Apply Rinv_r_simpl_m.
-Apply aze.
 Qed.
 
 Lemma sin_2a : (x:R) ``(sin (2*x))==2*(sin x)*(cos x)``.
@@ -313,10 +305,6 @@ Lemma PI2_RGT_0 : ``0<PI/2``.
 Cut ~(O=(2)); [Intro H; Generalize (lt_INR_0 (2) (neq_O_lt (2) H)); Rewrite INR_eq_INR2; Unfold INR2; Intro H1; Generalize (Rmult_lt_pos PI (Rinv ``2``) PI_RGT_0 (Rlt_Rinv ``2`` H1)); Intro H2; Assumption | Discriminate].
 Qed. 
 
-Lemma Rgt_2_0 : ``0<2``.
-Cut ~(O=(2)); [Intro H0; Generalize (lt_INR_0 (2) (neq_O_lt (2) H0)); Unfold INR; Intro H; Assumption | Discriminate].
-Qed.
-
 Lemma cos_eq_0_2PI_0 : (x:R) ``R0<=x`` -> ``x<=2*PI`` -> ``(cos x)==0`` -> ``x==(PI/2)``\/``x==3*(PI/2)``.
 Intros; Case (total_order x ``3*(PI/2)``); Intro.
 Rewrite cos_sin in H1.
@@ -508,10 +496,6 @@ Lemma PI6_RLT_PI2 : ``PI/6<PI/2``.
 Cut ~(O=(4)); [ Intro H; Cut ~(O=(1)); [Intro H0; Generalize (lt_INR_0 (4) (neq_O_lt (4) H)); Rewrite INR_eq_INR2; Unfold INR2; Intro H1; Generalize (Rlt_compatibility ``2`` ``0`` ``4`` H1); Rewrite Rplus_sym; Rewrite Rplus_Ol; Replace ``2+4`` with ``6``; [Intro H2; Generalize (lt_INR_0 (1) (neq_O_lt (1) H0)); Rewrite INR_eq_INR2; Unfold INR2; Intro H3; Generalize (Rlt_compatibility ``1`` ``0`` ``1`` H3); Rewrite Rplus_sym; Rewrite Rplus_Ol; Clear H3; Intro H3; Generalize (Rlt_Rinv_R1 ``2`` ``6`` (Rlt_le ``1`` ``2`` H3) H2); Intro H4; Generalize (Rlt_monotony PI (Rinv ``6``) (Rinv ``2``) PI_RGT_0 H4); Intro H5; Assumption | Ring] | Discriminate] | Discriminate ].
 Qed.
 
-Lemma Rgt_3_0 : ``0<3``.
-Cut ~(O=(3)); [Intro H0; Generalize (lt_INR_0 (3) (neq_O_lt (3) H0)); Rewrite INR_eq_INR2; Unfold INR2; Intro H; Assumption | Discriminate].
-Qed.
-
 Lemma sqrt2_neq_0 : ~``(sqrt 2)==0``.
 Generalize (Rlt_le ``0`` ``2`` Rgt_2_0); Intro H1; Red; Intro H2; Generalize (sqrt_eq_0 ``2`` H1 H2); Intro H; Absurd ``2==0``; [ DiscrR | Assumption].
 Qed.
@@ -522,10 +506,6 @@ Qed.
 
 Lemma sqrt3_2_neq_0 : ~``2*(sqrt 3)==0``.
 Apply prod_neq_R0; [DiscrR | Generalize (Rlt_le ``0`` ``3`` Rgt_3_0); Intro H1; Red; Intro H2; Generalize (sqrt_eq_0 ``3`` H1 H2); Intro H; Absurd ``3==0``; [ DiscrR | Assumption]].
-Qed.
-
-Lemma not_sym : (r1,r2:R) ``r1<>r2`` -> ``r2<>r1``.
-Intros; Red; Intro H0; Rewrite H0 in H; Elim H; Reflexivity.
 Qed.
 
 Lemma Rlt_sqrt2_0 : ``0<(sqrt 2)``.

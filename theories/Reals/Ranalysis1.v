@@ -15,7 +15,6 @@ Require Rlimit.
 Require Rderiv.
 Require DiscrR.
 Require Rtrigo.
-Require Specif.
 
 (****************************************************)
 (**           Basic operations on functions         *)
@@ -175,7 +174,6 @@ Definition derivable_pt_lim [f:R->R;x,l:R] : Prop := ((eps:R) ``0<eps``->(EXT de
 
 Definition derivable_pt_abs [f:R->R;x:R] : R -> Prop := [l:R](derivable_pt_lim f x l).
 
-Definition SigT := Specif.sigT.
 Definition derivable_pt [f:R->R;x:R] := (SigT R (derivable_pt_abs f x)).
 Definition derivable [f:R->R] := (x:R)(derivable_pt f x).
 

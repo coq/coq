@@ -147,5 +147,5 @@ Definition is_lub:=[E:R->Prop][m:R]
 (**********)
 Axiom complet:(E:R->Prop)(bound E)->
               (ExT [x:R] (E x))->
-              (ExT [m:R](is_lub E m)).
+              (sigTT R [m:R](is_lub E m)).
 

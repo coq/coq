@@ -88,7 +88,7 @@ Qed.
 (*********)
 Lemma Un_cv_crit:Un_growing->(bound EUn)->(ExT [l:R] (Un_cv l)).
 Unfold Un_growing Un_cv;Intros;
- Generalize (complet EUn H0 EUn_noempty);Intro;
+ Generalize (complet_weak EUn H0 EUn_noempty);Intro;
  Elim H1;Clear H1;Intros;Split with x;Intros;
  Unfold is_lub in H1;Unfold bound in H0;Unfold is_upper_bound in H0 H1;
  Elim H0;Clear H0;Intros;Elim H1;Clear H1;Intros;

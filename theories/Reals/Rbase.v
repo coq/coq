@@ -1577,3 +1577,7 @@ Lemma add_auto : (p,q:nat) ``(INR2 (S p))+(INR2 q)==(INR2 p)+(INR2 (S q))``.
 Intros; Repeat Rewrite <- INR_eq_INR2; Repeat Rewrite S_INR; Ring.
 Qed.
 
+(**********)
+Lemma complet_weak : (E:R->Prop) (bound E) -> (ExT [x:R] (E x)) -> (ExT [m:R] (is_lub E m)).
+Intros; Elim (complet E H H0); Intros; Split with x; Assumption.
+Qed.
