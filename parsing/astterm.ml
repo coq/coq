@@ -277,7 +277,7 @@ let rawconstr_of_var env vars loc s =
   try
     ast_to_var env vars loc s
   with Not_found ->
-    Pretype_errors.error_var_not_found_loc loc CCI (id_of_string s)
+    Pretype_errors.error_var_not_found_loc loc (id_of_string s)
 
 let rawconstr_of_qualid env vars loc qid =
   (* Is it a bound variable? *)
@@ -510,7 +510,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	let rhs = replace_vars_ast subst rhs in
 	List.iter message_redondant_alias subst;
 	let env_ids = List.fold_right Idset.add eqn_ids ids in
-	(eqn_ids,pl,dbrec (env_ids,impls) rhs)
+	(loc, eqn_ids,pl,dbrec (env_ids,impls) rhs)
     | _ -> anomaly "ast_to_rawconstr: badly-formed ast for Cases equation"
 
   and iterated_binder oper n ty (ids,impls as env) = function

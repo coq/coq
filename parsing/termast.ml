@@ -266,7 +266,7 @@ let rec ast_of_raw = function
   | RHole _ -> ope("ISEVAR",[])
   | RCast (_,c,t) -> ope("CAST",[ast_of_raw c;ast_of_raw t])
 	
-and ast_of_eqn (ids,pl,c) =
+and ast_of_eqn (_,ids,pl,c) =
   ope("EQN", (ast_of_raw c)::(List.map ast_of_cases_pattern pl))
 
 and ast_of_rawopt = function

@@ -362,7 +362,8 @@ and detype_eqn avoid env constr_id construct_nargs branch =
   in
   let rec buildrec ids patlist avoid env n b =
     if n=0 then
-      (ids, [PatCstr(dummy_loc, constr_id, List.rev patlist,Anonymous)],
+      (dummy_loc, ids, 
+       [PatCstr(dummy_loc, constr_id, List.rev patlist,Anonymous)],
        detype avoid env b)
     else
       match kind_of_term b with
