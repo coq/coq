@@ -113,8 +113,8 @@ let rec pp_expr par env args =
 	and pp_a1 = pp_expr false env [] a1
 	and pp_a2 = pp_expr (not par && expr_needs_par a2) env' [] a2 in
 	hv 0 
-	  (hv 0 
-	     (pp_par par 
+	  (pp_par par 
+	     (hv 0 
 		(hov 2 (str "let" ++ pp_id ++ str " = " ++ pp_a1) ++ 
 		 spc () ++ str "in") ++
 	      spc () ++ hov 0 pp_a2))

@@ -384,6 +384,7 @@ and extract_mib kn =
     then try
       let typs = fst (lookup_constructor (ip,1)) in 
       let s = List.map (type_neq mlt_env Tdummy) typs in
+      if not (List.mem true s) then raise Not_found; 
       let projs = (find_structure ip).s_PROJ in 
       assert (List.length s = List.length projs); 
       let check (_,o) = match o with 
