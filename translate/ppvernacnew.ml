@@ -1020,6 +1020,7 @@ let rec pr_vernac = function
 	| PrintScope s -> str"Print Scope" ++ spc() ++ str s 
 	| PrintVisibility s -> str"Print Visibility" ++ pr_opt str s 
 	| PrintAbout qid -> str"About" ++ spc()  ++ pr_reference qid
+	| PrintImplicit qid -> str"Print Implicit" ++ spc()  ++ pr_reference qid
       in pr_printable p
   | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_pattern
   | VernacLocate loc -> 

@@ -879,6 +879,7 @@ let vernac_print = function
   | PrintVisibility s ->
       pp (Symbols.pr_visibility (Constrextern.without_symbols pr_rawterm) s)
   | PrintAbout qid -> msgnl (print_about qid)
+  | PrintImplicit qid -> msg (print_impargs qid)
 
 let global_module r =
   let (loc,qid) = qualid_of_reference r in

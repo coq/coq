@@ -76,7 +76,10 @@ let print_argument_scopes = function
 let print_name_infos ref =
   let impl = implicits_of_global ref in
   let scopes = Symbols.find_arguments_scope ref in
-  (if impl<>[] or not (List.for_all ((=) None) scopes) then fnl() else mt())
+  (if (List.filter is_status_implicit impl<>[])
+      or not (List.for_all ((=) None) scopes) 
+  then fnl()
+  else mt())
   ++ print_impl_args impl ++ print_argument_scopes scopes
 
 let print_id_args_data test pr id l =
@@ -295,8 +298,10 @@ let print_constant with_values sep sp =
     | _ -> 
 	print_basename sp ++ str sep ++ cut () ++
 	(if with_values then print_typed_body (val_0,typ) else prtype typ) ++
-	fnl ()) ++ 
-  print_name_infos (ConstRef sp)
+	fnl ())
+
+let print_constant_with_infos sp =
+  print_constant true " = " sp ++ print_name_infos (ConstRef sp)
 
 let print_inductive sp = (print_mutual sp)
 
@@ -410,7 +415,7 @@ let print_eval red_fun env {uj_val=trm;uj_type=typ} =
 
 let print_name ref = 
   match locate_any_name ref with
-  | Term (ConstRef sp) -> print_constant true " = " sp
+  | Term (ConstRef sp) -> print_constant_with_infos sp
   | Term (IndRef (sp,_)) -> print_inductive sp
   | Term (ConstructRef ((sp,_),_)) -> print_inductive sp
   | Term (VarRef sp) -> print_section_variable sp
@@ -450,7 +455,7 @@ let print_opaque_name qid =
     | ConstRef cst ->
 	let cb = Global.lookup_constant cst in
         if cb.const_body <> None then
-	  print_constant true " = " cst
+	  print_constant_with_infos cst
         else 
 	  error "not a defined constant"
     | IndRef (sp,_) ->
@@ -462,29 +467,33 @@ let print_opaque_name qid =
         let (_,c,ty) = lookup_named id env in 
 	print_named_decl (id,c,ty)
 
+let print_ref reduce ref =
+  let typ = Global.type_of_global ref in
+  let typ = 
+    if reduce then
+      let ctx,ccl = Reductionops.splay_prod_assum (Global.env()) Evd.empty typ
+      in it_mkProd_or_LetIn ccl ctx 
+    else typ in
+  hov 0 (pr_global ref ++ str " :" ++ spc () ++ prtype typ) ++ fnl ()
+
 let print_about ref = 
   let sigma = Evd.empty in
-  let env = Global.env () in
   let k = locate_any_name ref in
   begin match k with
-  | Term (ConstRef sp as ref) -> 
-      print_constant false " : " sp
-  | Term (IndRef ind as ref) ->
-      let ty = Inductive.type_of_inductive env ind in
-      print_typed_value (mkInd ind, ty) ++ 
-      print_name_infos ref
-  | Term (ConstructRef cstr as ref) ->
-      let ty = Inductive.type_of_constructor env cstr in
-      print_typed_value (mkConstruct cstr, ty) ++ 
-      print_name_infos ref
-  | Term (VarRef sp as ref) ->
-      print_named_decl (get_variable sp) ++ 
-      print_name_infos ref
-  | Syntactic kn ->
-      print_syntactic_def " = " kn
+  | Term ref -> print_ref false ref ++ print_name_infos ref
+  | Syntactic kn -> print_syntactic_def " = " kn
   | Dir _ | ModuleType _ | Undefined _ -> mt () end
   ++
   hov 0 (str "Expands to: " ++ pr_located_qualid k)
+
+let print_impargs ref =
+  let ref = Nametab.global ref in
+  let impl = implicits_of_global ref in
+  let has_impl = List.filter is_status_implicit impl <> [] in
+  (* Need to reduce since implicits are computed with products flattened *)
+  print_ref true ref ++ fnl() ++
+  (if has_impl then print_impl_args impl 
+   else (str "No implicit arguments" ++ fnl ()))
 
 let print_local_context () =
   let env = Lib.contents_after None in

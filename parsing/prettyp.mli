@@ -44,6 +44,7 @@ val print_name : reference -> std_ppcmds
 val print_opaque_name : reference -> std_ppcmds
 val print_local_context : unit -> std_ppcmds
 val print_about : reference -> std_ppcmds
+val print_impargs : reference -> std_ppcmds
 
 (*i
 val print_extracted_name : identifier -> std_ppcmds

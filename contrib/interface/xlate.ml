@@ -1474,7 +1474,8 @@ let xlate_vernac =
         | PrintScopes -> xlate_error "TODO: Print Scopes"
         | PrintScope _ -> xlate_error "TODO: Print Scope"
 	| PrintVisibility _ -> xlate_error "TODO: Print Visibility"
-        | PrintAbout _ -> xlate_error "TODO: Print About")
+        | PrintAbout _ -> xlate_error "TODO: Print About"
+	| _ -> xlate_error "TODO: Print")
   | VernacBeginSection id ->
       CT_coerce_SECTION_BEGIN_to_COMMAND (CT_section (xlate_ident id))
   | VernacEndSegment id -> CT_section_end (xlate_ident id)
