@@ -23,7 +23,7 @@ let make_prod_dep dep env = if dep then prod_name env else mkProd
 (**********************************************************************)
 (* Building case analysis schemes *)
 (* Nouvelle version, plus concise mais plus coûteuse à cause de
-   lift_constructor et lift_inductive_family qui ne se contente pas de 
+   lift_constructor et lift_inductive_family qui ne se contentent pas de 
    lifter les paramètres globaux *)
 
 let mis_make_case_com depopt env sigma mispec kind =
@@ -196,7 +196,7 @@ let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs =
 let mis_make_indrec env sigma listdepkind mispec =
   let nparams = mis_nparams mispec in
   let lnamespar = mis_params_ctxt mispec in
-  let env' = (* push_rels lnamespar *) env in
+  let env' =  (* push_rels lnamespar *) env in
   let nrec = List.length listdepkind in
   let depPvec =
     Array.create (mis_ntypes mispec) (None : (bool * constr) option) in 

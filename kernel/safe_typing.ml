@@ -447,9 +447,9 @@ let add_mind sp mie env =
 	 let (ind',cst') = 
 	   type_one_inductive i env_arities env_params nparams ninds ind 
 	 in
-	 (succ i,ind'::inds, Constraint.union cst cst'))
+	 (i-1,ind'::inds, Constraint.union cst cst'))
       mie.mind_entry_inds
-      (1,[],Constraint.empty) 
+      (ninds,[],Constraint.empty) 
   in
   let kind = kind_of_path sp in
   let mib = 
