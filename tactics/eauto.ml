@@ -153,10 +153,9 @@ and e_my_find_search db_list local_db hdc concl =
   let hdc = head_of_constr_reference hdc in
   let hintl =
     if occur_existential concl then 
-      list_map_append (fun db -> Hint_db.map_all hdc db) (local_db::db_list)
+      list_map_append (Hint_db.map_all hdc) (local_db::db_list)
     else 
-      list_map_append (fun db -> Hint_db.map_auto (hdc,concl) db)
-	(local_db::db_list)
+      list_map_append (Hint_db.map_auto (hdc,concl)) (local_db::db_list)
   in 
   let tac_of_hint = 
     fun ({pri=b; pat = p; code=t} as patac) -> 
