@@ -94,11 +94,8 @@ Rocq/SUBST
 File "./TS.v", line 69, characters 0-6
 Error: Attempt to save an incomplete proof
 
-Rocq/DEMOS/Demo_AutoRewrite
-Anomaly: Invalid argument "output_value: functional value".
-
 Montevideo/CtlTctl OK
-Montevideo/RailroadCrossing OK
+Montevideo/RailroadCrossing OK (TemporalOperators.v ne doit pas etre compile)
 
 Nijmegen OK
 Utrecht/Ramsey OK
