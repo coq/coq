@@ -18,6 +18,30 @@
 
   let comment_start = ref 0
 
+  let is_keyword =
+    let h = Hashtbl.create 97 in
+    List.iter (fun s -> Hashtbl.add h s ())
+      [  "Add" ; "CoInductive" ; "Defined" ; 
+	 "End" ; "Export" ; "Extraction" ; "Hint" ; "Hints" ;
+	 "Implicits" ; "Import" ; 
+	 "Infix" ; "Load" ; "match" ; "Module" ;
+	 "Proof" ; "Qed" ;
+	 "Record" ; "Require" ; "Save" ; "Scheme" ;
+	 "Section" ; "Unset" ;
+	 "Set" ; "Notation"
+      ];
+    Hashtbl.mem h
+
+  let is_declaration =
+    let h = Hashtbl.create 97 in
+    List.iter (fun s -> Hashtbl.add h s ())
+      [ "Lemma" ; "Axiom" ; "CoFixpoint" ; "Definition"  ;
+	"Fixpoint" ; "Hypothesis" ; 
+	"Inductive" ; "Parameter" ; "Theorem" ; 
+	"Variable" ; "Variables" 
+      ];
+    Hashtbl.mem h
+
 }
 
 let space = 
@@ -28,25 +52,22 @@ let identchar =
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let ident = firstchar identchar*
 
-let keyword = 
-  "Add" | "CoInductive" | "Defined" | 
-  "End" | "Export" | "Extraction" | "Hint" |
-  "Implicits" | "Import" | 
-  "Infix" | "Load" | "match" | "Module" | "Module Type" |
-  "Proof" | "Qed" |
-  "Record" | "Require" | "Save" | "Scheme" |
-  "Section" | "Unset" |
-  "Set"  
-
 let declaration = 
   "Lemma" | "Axiom" | "CoFixpoint" | "Definition"  |
   "Fixpoint" | "Hypothesis" | 
   "Inductive" | "Parameter" | "Theorem" | 
-  "Variable" | "Variables" 
+  "Variable" | "Variables" | "Declare" space+ "Module"
 
 rule next_order = parse
-  | "(*" { comment_start := lexeme_start lexbuf; comment lexbuf }
-  | keyword { lexeme_start lexbuf,lexeme_end lexbuf, "kwd" }
+  | "(*" 
+      { comment_start := lexeme_start lexbuf; comment lexbuf }
+  | "Module Type"
+      { lexeme_start lexbuf,lexeme_end lexbuf, "kwd" }
+  | ident as id 
+      { if is_keyword id then 
+	  lexeme_start lexbuf,lexeme_end lexbuf, "kwd" 
+	else
+	  next_order lexbuf }
   | declaration space+ ident (space* ',' space* ident)* 
             { lexeme_start lexbuf, lexeme_end lexbuf, "decl" } 
   | _    { next_order lexbuf}
