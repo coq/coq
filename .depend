@@ -765,10 +765,12 @@ parsing/g_basevernac.cmo: parsing/ast.cmi parsing/coqast.cmi \
 parsing/g_basevernac.cmx: parsing/ast.cmx parsing/coqast.cmx \
     parsing/extend.cmx library/goptions.cmx parsing/pcoq.cmx lib/pp.cmx \
     toplevel/vernacexpr.cmx 
-parsing/g_cases.cmo: parsing/coqast.cmi library/libnames.cmi kernel/names.cmi \
-    parsing/pcoq.cmi lib/pp.cmi lib/util.cmi 
-parsing/g_cases.cmx: parsing/coqast.cmx library/libnames.cmx kernel/names.cmx \
-    parsing/pcoq.cmx lib/pp.cmx lib/util.cmx 
+parsing/g_cases.cmo: parsing/coqast.cmi parsing/g_constr.cmo \
+    library/libnames.cmi kernel/names.cmi parsing/pcoq.cmi lib/pp.cmi \
+    lib/util.cmi 
+parsing/g_cases.cmx: parsing/coqast.cmx parsing/g_constr.cmx \
+    library/libnames.cmx kernel/names.cmx parsing/pcoq.cmx lib/pp.cmx \
+    lib/util.cmx 
 parsing/g_constr.cmo: parsing/ast.cmi parsing/coqast.cmi kernel/names.cmi \
     parsing/pcoq.cmi 
 parsing/g_constr.cmx: parsing/ast.cmx parsing/coqast.cmx kernel/names.cmx \
