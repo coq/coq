@@ -43,6 +43,7 @@ with rexpr2 :=
 
 with rexpr0 :=
   expr_id [ constr:global($c) ] -> [$c]
+| expr_hole [ "?" ] -> [<< ? >>]
 | expr_com [ "[" constr:constr($c) "]" ] -> [$c]
 | expr_appl [ "(" rapplication($a) ")" ] -> [$a]
 | expr_num [ rnumber($s) ] -> [$s ]
