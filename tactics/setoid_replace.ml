@@ -1342,12 +1342,23 @@ let general_s_rewrite lft2rgt c ~new_goals gl =
 exception Use_replace
 
 (*CSC: still setoid in the name *)
-let setoid_replace c1 c2 ~new_goals gl =
+let setoid_replace relation c1 c2 ~new_goals gl =
  try
   let relation =
-   match default_relation_for_carrier (pf_type_of gl c1) with
-      Relation sa -> sa
-    | Leibniz _ -> raise Use_replace
+   match relation with
+      Some rel ->
+       (try
+         match find_relation_class rel with
+            Relation sa -> sa
+          | Leibniz _ -> raise Use_replace
+        with
+         Not_found ->
+          errorlabstrm "Setoid_rewrite"
+           (prterm rel ++ str " is not a setoid equality."))
+    | None ->
+       match default_relation_for_carrier (pf_type_of gl c1) with
+          Relation sa -> sa
+        | Leibniz _ -> raise Use_replace
   in
    let eq_left_to_right = mkApp (relation.rel_aeq, [| c1 ; c2 |]) in
    let eq_right_to_left = mkApp (relation.rel_aeq, [| c2 ; c1 |]) in

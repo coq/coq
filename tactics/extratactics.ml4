@@ -166,9 +166,13 @@ open Setoid_replace
 
 TACTIC EXTEND SetoidReplace
    [ "Setoid_replace" constr(c1) "with" constr(c2) ] ->
-     [ setoid_replace c1 c2 ~new_goals:[] ]
+     [ setoid_replace None c1 c2 ~new_goals:[] ]
+ | [ "Setoid_replace" constr(c1) "with" constr(c2) "using" "relation" constr(rel)] ->
+     [ setoid_replace (Some rel) c1 c2 ~new_goals:[] ]
  | [ "Setoid_replace" constr(c1) "with" constr(c2) "generate" "side" "conditions" constr_list(l) ] ->
-     [ setoid_replace c1 c2 ~new_goals:l ]
+     [ setoid_replace None c1 c2 ~new_goals:l ]
+ | [ "Setoid_replace" constr(c1) "with" constr(c2) "using" "relation" constr(rel) "generate" "side" "conditions" constr_list(l) ] ->
+     [ setoid_replace (Some rel) c1 c2 ~new_goals:l ]
 END
 
 TACTIC EXTEND SetoidRewrite
