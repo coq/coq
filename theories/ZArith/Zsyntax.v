@@ -64,6 +64,7 @@ with expr0 : constr :=
 
 with application : constr :=
   apply [ application($p) expr($c1) ] -> [ ($p $c1) ]
+| apply_inject_nat [ "inject_nat" constr:constr($c1) ] -> [ (inject_nat $c1) ]
 | pair [ expr($p) "," expr($c) ] -> [ ($p, $c) ]
 | appl0 [ expr($a) ] -> [$a]
 .
@@ -155,6 +156,8 @@ Syntax constr
   level 4:
     Zappl_inside [ << (ZEXPR (APPLIST $h ($LIST $t))) >> ]
       -> [ [<hov 0> "("(ZEXPR $h):E [1 0] (APPLINSIDETAIL ($LIST $t)):E ")"] ]
+  | Zappl_inject_nat [ << (ZEXPR (APPLIST <<inject_nat>> $n)) >> ]
+      -> [ (APPLIST <<inject_nat>> $n) ]
   | Zappl_inside_tail [ << (APPLINSIDETAIL $h ($LIST $t)) >> ]
       -> [(ZEXPR $h):E [1 0] (APPLINSIDETAIL ($LIST $t)):E] 
   | Zappl_inside_one [ << (APPLINSIDETAIL $e) >> ] ->[(ZEXPR $e):E]
@@ -169,9 +172,10 @@ Syntax constr
       -> [(MUTIND $i $n)]
   | mutconstruct_inside [ << (ZEXPR (MUTCONSTRUCT $c1 $c2 $c3)) >> ]
       -> [ (MUTCONSTRUCT $c1 $c2 $c3) ]
-  (* Added by JCF, 9/3/98 *)
-  | implicit_head_inside [ << (ZEXPR (XTRA "!" $c)) >> ] -> [ $c ]
-  | implicit_arg_inside  [ << (ZEXPR (XTRA "!" $n $c)) >> ] -> [ ]
+  (* Added by JCF, 9/3/98; updated HH, 11/9/01 *)
+  | implicit_head_inside [ << (ZEXPR (APPLISTEXPL ($LIST $c))) >> ]
+      -> [ (APPLIST ($LIST $c)) ]
+  | implicit_arg_inside  [ << (ZEXPR (EXPL "!" $n $c)) >> ] -> [ ]
 
   ;
 
