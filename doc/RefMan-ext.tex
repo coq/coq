@@ -134,7 +134,8 @@ Check half.
 The macro generates also, when it is possible, the projection
 functions for destructuring an object of type {\ident}.
 These projection functions have the same name that the corresponding
-fields. In our example:
+fields. If a field is named ``\verb=_='' then no projection is built for
+this (anonymous) field. In our example:
 
 \begin{coq_example}
 Eval Compute in (top half).
