@@ -156,11 +156,10 @@ let id_of_global env = function
       assert false
 
 let hdchar env c = 
-  let rec hdrec = function
-    | DOP2(Prod,_,DLAM(_,c))     -> hdrec c
-    | DOP2(Cast,c,_)             -> hdrec c
-    | DOPN(AppL,cl)              -> hdrec (array_hd cl)
-    | DOP2(Lambda,_,DLAM(_,c))   -> hdrec c
+  let rec hdrec k = function
+    | DOP2((Prod|Lambda),_,DLAM(_,c))     -> hdrec (k+1) c
+    | DOP2(Cast,c,_)             -> hdrec k c
+    | DOPN(AppL,cl)              -> hdrec k (array_hd cl)
     | DOPN(Const _,_) as x ->
 	let c = lowercase_first_char (basename (path_of_const x)) in
 	if c = "?" then "y" else c
@@ -175,9 +174,16 @@ let hdchar env c =
 	let na = id_of_global env x in String.lowercase(List.hd(explode_id na))
     | VAR id  -> lowercase_first_char id
     | DOP0(Sort s) -> sort_hdchar s
+    | Rel n ->
+	if n<=k then "p" (* the initial term is flexible product/function *)
+	else
+	  try match lookup_rel (n-k) env with
+	    | Name id,_ -> lowercase_first_char id
+	    | Anonymous,t -> hdrec 0 (lift (n-k) (body_of_type t))
+	  with Not_found -> "y"
     | _ -> "y"
   in 
-  hdrec c
+  hdrec 0 c
 
 let id_of_name_using_hdchar env a = function
   | Anonymous -> id_of_string (hdchar env a) 
