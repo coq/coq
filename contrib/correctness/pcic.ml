@@ -125,7 +125,7 @@ let tuple_ref dep n =
 	Nametab.locate (make_short_qualid id)
       end
     else begin
-      let id = make_ident "Build_tuple_%d" (Some n) in
+      let id = make_ident "Build_tuple_" (Some n) in
       if not (tuple_exists id) then tuple_n n;
       Nametab.locate (make_short_qualid id)
     end
