@@ -17,3 +17,5 @@ Require Export Rbasic_fun.
 Require Export Rlimit.
 Require Export Rfunctions.
 Require Export Rderiv.
+Require Export Rseries.
+Require Export Rtrigo_fun.

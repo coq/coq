@@ -44,14 +44,17 @@ theories/Relations/Relation_Definitions.vo: theories/Relations/Relation_Definiti
 theories/Relations/Operators_Properties.vo: theories/Relations/Operators_Properties.v theories/Relations/Relation_Definitions.vo theories/Relations/Relation_Operators.vo
 theories/Relations/Newman.vo: theories/Relations/Newman.v theories/Relations/Rstar.vo
 theories/Reals/TypeSyntax.vo: theories/Reals/TypeSyntax.v
+theories/Reals/SplitRmult.vo: theories/Reals/SplitRmult.v theories/Reals/Rbase.vo
 theories/Reals/SplitAbsolu.vo: theories/Reals/SplitAbsolu.v theories/Reals/Rbasic_fun.vo
+theories/Reals/Rtrigo_fun.vo: theories/Reals/Rtrigo_fun.v theories/Reals/Rseries.vo
 theories/Reals/Rsyntax.vo: theories/Reals/Rsyntax.v theories/Reals/Rdefinitions.vo
+theories/Reals/Rseries.vo: theories/Reals/Rseries.v theories/Reals/Rderiv.vo theories/Logic/Classical.vo theories/Arith/Compare.vo
 theories/Reals/Rlimit.vo: theories/Reals/Rlimit.v theories/Reals/Rbasic_fun.vo theories/Logic/Classical_Prop.vo theories/Reals/DiscrR.vo contrib/fourier/Fourier.vo theories/Reals/SplitAbsolu.vo
-theories/Reals/Rfunctions.vo: theories/Reals/Rfunctions.v theories/Reals/Rlimit.vo
-theories/Reals/Reals.vo: theories/Reals/Reals.v theories/Reals/Rdefinitions.vo theories/Reals/TypeSyntax.vo theories/Reals/Raxioms.vo theories/Reals/Rbase.vo theories/Reals/R_Ifp.vo theories/Reals/Rbasic_fun.vo theories/Reals/Rlimit.vo theories/Reals/Rfunctions.vo theories/Reals/Rderiv.vo
+theories/Reals/Rfunctions.vo: theories/Reals/Rfunctions.v theories/Reals/Rlimit.vo contrib/omega/Omega.vo
+theories/Reals/Reals.vo: theories/Reals/Reals.v theories/Reals/Rdefinitions.vo theories/Reals/TypeSyntax.vo theories/Reals/Raxioms.vo theories/Reals/Rbase.vo theories/Reals/R_Ifp.vo theories/Reals/Rbasic_fun.vo theories/Reals/Rlimit.vo theories/Reals/Rfunctions.vo theories/Reals/Rderiv.vo theories/Reals/Rseries.vo theories/Reals/Rtrigo_fun.vo
 theories/Reals/Rderiv.vo: theories/Reals/Rderiv.v theories/Reals/Rfunctions.vo theories/Logic/Classical_Pred_Type.vo contrib/omega/Omega.vo
 theories/Reals/Rdefinitions.vo: theories/Reals/Rdefinitions.v theories/ZArith/ZArith.vo theories/Reals/TypeSyntax.vo
-theories/Reals/Rbasic_fun.vo: theories/Reals/Rbasic_fun.v theories/Reals/R_Ifp.vo
+theories/Reals/Rbasic_fun.vo: theories/Reals/Rbasic_fun.v theories/Reals/R_Ifp.vo contrib/fourier/Fourier.vo
 theories/Reals/Rbase.vo: theories/Reals/Rbase.v theories/Reals/Raxioms.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo contrib/field/Field.vo
 theories/Reals/Raxioms.vo: theories/Reals/Raxioms.v theories/ZArith/ZArith.vo theories/Reals/Rsyntax.vo theories/Reals/TypeSyntax.vo
 theories/Reals/R_Ifp.vo: theories/Reals/R_Ifp.v theories/Reals/Rbase.vo contrib/omega/Omega.vo
@@ -218,7 +221,7 @@ contrib/field/Field_Compl.vo: contrib/field/Field_Compl.v
 contrib/field/Field.vo: contrib/field/Field.v contrib/field/Field_Compl.vo contrib/field/Field_Theory.vo contrib/field/Field_Tactic.vo contrib/field/field.cmo
 contrib/extraction/test_extraction.vo: contrib/extraction/test_extraction.v
 contrib/extraction/Extraction.vo: contrib/extraction/Extraction.v
-contrib/correctness/preuves.vo: contrib/correctness/preuves.v contrib/correctness/Correctness.vo contrib/omega/Omega.vo
+contrib/correctness/preuves.vo: contrib/correctness/preuves.v contrib/correctness/Correctness.vo contrib/omega/Omega.vo contrib/correctness/Exchange.vo contrib/correctness/ArrayPermut.vo
 contrib/correctness/Tuples.vo: contrib/correctness/Tuples.v
 contrib/correctness/Sorted.vo: contrib/correctness/Sorted.v contrib/correctness/Arrays.vo contrib/correctness/ArrayPermut.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo
 contrib/correctness/Programs_stuff.vo: contrib/correctness/Programs_stuff.v contrib/correctness/Arrays_stuff.vo

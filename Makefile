@@ -416,9 +416,10 @@ REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Raxioms.vo      theories/Reals/Rbase.vo \
 	theories/Reals/DiscrR.vo       theories/Reals/R_Ifp.vo \
 	theories/Reals/Rbasic_fun.vo   theories/Reals/SplitAbsolu.vo \
-	theories/Reals/SplitRmult.vo \
-	theories/Reals/Rfunctions.vo   theories/Reals/Rlimit.vo \
-	theories/Reals/Rderiv.vo       theories/Reals/Reals.vo 
+	theories/Reals/SplitRmult.vo   theories/Reals/Rfunctions.vo \
+	theories/Reals/Rlimit.vo       theories/Reals/Rderiv.vo \
+	theories/Reals/Rseries.vo      theories/Reals/Rtrigo_fun.vo \
+	theories/Reals/Reals.vo 
 
 THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
              $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)

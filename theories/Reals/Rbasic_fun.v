@@ -14,6 +14,7 @@
 (*********************************************************)
 
 Require Export R_Ifp.
+Require Fourier.
 
 (*******************************)
 (*           Rmin              *)
@@ -134,6 +135,11 @@ Generalize (Rlt_Ropp x R0 r);Intro;Unfold Rgt in H;
 Apply Rle_sym2;Assumption.
 Save.
 
+Lemma Rle_Rabsolu:
+ (x:R) (Rle x (Rabsolu x)).
+Intro; Unfold Rabsolu;Case (case_Rabsolu x);Intros;Fourier.
+Save.
+
 (*********)
 Lemma Rabsolu_pos_eq:(x:R)(Rle R0 x)->(Rabsolu x)==x.
 Intros;Unfold Rabsolu;Case (case_Rabsolu x);Intro;
@@ -236,6 +242,26 @@ Unfold Rgt in H0;Generalize (Rlt_antisym R0 (Rinv r)
      (Rlt_Rinv r H0));Intro;ElimType False;Auto.
 ElimType False;Auto.
 Save. 
+
+Lemma Rabsolu_Ropp:
+  (x:R) (Rabsolu (Ropp x))==(Rabsolu x).
+Intro;Cut (Ropp x)==(Rmult (Ropp R1) x).
+Intros; Rewrite H.
+Rewrite Rabsolu_mult.
+Cut (Rabsolu (Ropp R1))==R1.
+Intros; Rewrite H0.
+Ring.
+Unfold Rabsolu; Case (case_Rabsolu (Ropp R1)).
+Intro; Ring.
+Intro H0;Generalize (Rle_sym2 R0 (Ropp R1) H0);Intros.
+Generalize (Rle_Ropp R0 (Ropp R1) H1).
+Rewrite Ropp_Ropp; Rewrite Ropp_O.
+Intro;Generalize (Rle_not R1 R0 Rlt_R0_R1);Intro;
+ Generalize (Rle_sym2 R1 R0 H2);Intro;
+ ElimType False;Auto.  
+Ring.
+Save.
+
 
 (*********)
 Lemma Rabsolu_triang:(a,b:R)(Rle (Rabsolu (Rplus a b)) 

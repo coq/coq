@@ -203,6 +203,10 @@ Apply (Rminus_eq x y H).
 Apply (eq_Rminus x y H). 
 Save.
 
+Lemma R_dist_eq:(x:R)(R_dist x x)==R0.
+Unfold R_dist;Intros;SplitAbsolu;Intros;Ring.
+Save.
+
 (***********)
 Lemma R_dist_tri:(x,y,z:R)(Rle (R_dist x y) 
                    (Rplus (R_dist x z) (R_dist z y))).
