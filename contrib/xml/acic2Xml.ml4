@@ -30,8 +30,7 @@ exception NotImplemented;;
 let dtdname = "http://localhost:8081/getdtd?url=cic.dtd";;
 let typesdtdname = "http://localhost:8081/getdtd?url=cictypes.dtd";;
 
-(*CSC ottimizzazione: al posto di curi cdepth (vedi codice) *)
-let print_term curi ids_to_inner_sorts =
+let print_term ids_to_inner_sorts =
  let rec aux =
   let module A = Acic in
   let module N = Names in
@@ -168,16 +167,14 @@ let print_term curi ids_to_inner_sorts =
 
 let param_attribute_of_params params =
  List.fold_right
-  (fun (_,x) i ->
+  (fun (path,l) i ->
     List.fold_right
-     (fun x i ->
-       x ^ match i with "" -> "" | i' -> " " ^ i'
-     ) x "" ^ match i with "" -> "" | i' -> " " ^ i'
+     (fun x i ->path ^ "/" ^ x ^ ".var" ^ match i with "" -> "" | i' -> " " ^ i'
+     ) l "" ^ match i with "" -> "" | i' -> " " ^ i'
   ) params ""
 ;;
 
-(*CSC ottimizzazione: al posto di curi cdepth (vedi codice) *)
-let print_object curi ids_to_inner_sorts =
+let print_object ids_to_inner_sorts =
  let rec aux =
   let module A = Acic in
   let module X = Xml in
@@ -197,22 +194,22 @@ let print_object curi ids_to_inner_sorts =
                                 n,A.Decl t ->
                                  X.xml_nempty "Decl"
                                   ["id",hid;"name",Names.string_of_id n]
-                                  (print_term curi ids_to_inner_sorts t)
+                                  (print_term ids_to_inner_sorts t)
                               | n,A.Def t ->
                                  X.xml_nempty "Def"
                                   ["id",hid;"name",Names.string_of_id n]
-                                  (print_term curi ids_to_inner_sorts t)
+                                  (print_term ids_to_inner_sorts t)
                              ) ;
                              i
                           >]
                         ) [< >] canonical_context ;
                        X.xml_nempty "Goal" []
-                        (print_term curi ids_to_inner_sorts t)
+                        (print_term ids_to_inner_sorts t)
                     >]
                 >])
               [<>] conjectures ;
-             X.xml_nempty "body" [] (print_term curi ids_to_inner_sorts bo) ;
-             X.xml_nempty "type" [] (print_term curi ids_to_inner_sorts ty)  >]
+             X.xml_nempty "body" [] (print_term ids_to_inner_sorts bo) ;
+             X.xml_nempty "type" [] (print_term ids_to_inner_sorts ty)  >]
         in
          [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
             X.xml_cdata ("<!DOCTYPE CurrentProof SYSTEM \""^dtdname ^"\">\n\n");
@@ -223,8 +220,8 @@ let print_object curi ids_to_inner_sorts =
          [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
             X.xml_cdata ("<!DOCTYPE Definition SYSTEM \"" ^ dtdname ^"\">\n\n");
              X.xml_nempty "Definition" ["name",n ; "params",params' ; "id", id]
-              [< X.xml_nempty "body" [] (print_term curi ids_to_inner_sorts bo);
-                 X.xml_nempty "type" [] (print_term curi ids_to_inner_sorts ty)
+              [< X.xml_nempty "body" [] (print_term ids_to_inner_sorts bo);
+                 X.xml_nempty "type" [] (print_term ids_to_inner_sorts ty)
                >]
          >]
      | A.AAxiom (id,n,ty,params) ->
@@ -233,7 +230,7 @@ let print_object curi ids_to_inner_sorts =
             X.xml_cdata ("<!DOCTYPE Axiom SYSTEM \"" ^ dtdname ^ "\">\n\n") ;
             X.xml_nempty "Axiom"
              ["name",n ; "id",id ; "params",params']
-             (X.xml_nempty "type" [] (print_term curi ids_to_inner_sorts ty))
+             (X.xml_nempty "type" [] (print_term ids_to_inner_sorts ty))
          >]
      | A.AVariable (id,n,bo,ty) ->
         [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
@@ -243,9 +240,9 @@ let print_object curi ids_to_inner_sorts =
                    None -> [<>]
                  | Some bo ->
                     X.xml_nempty "body" []
-                     (print_term curi ids_to_inner_sorts bo)
+                     (print_term ids_to_inner_sorts bo)
                ) ;
-               X.xml_nempty "type" [] (print_term curi ids_to_inner_sorts ty)
+               X.xml_nempty "type" [] (print_term ids_to_inner_sorts ty)
             >]
         >]
      | A.AInductiveDefinition (id,tys,params,nparams) ->
@@ -265,13 +262,13 @@ let print_object curi ids_to_inner_sorts =
                          "inductive",(string_of_bool finite)
                         ]
                         [< X.xml_nempty "arity" []
-                            (print_term curi ids_to_inner_sorts arity) ;
+                            (print_term ids_to_inner_sorts arity) ;
                            (List.fold_left
                             (fun i (name,lc) ->
                               [< i ;
                                  X.xml_nempty "Constructor"
                                   ["name",Names.string_of_id name]
-                                  (print_term curi ids_to_inner_sorts lc)
+                                  (print_term ids_to_inner_sorts lc)
                               >]) [<>] cons
                            )
                         >]
@@ -294,10 +291,10 @@ let print_inner_types curi ids_to_inner_sorts ids_to_inner_types =
          (fun id {C2A.annsynthesized = synty ; C2A.annexpected = expty} x ->
            [< x ;
               X.xml_nempty "TYPE" ["of",id]
-               [< print_term curi ids_to_inner_sorts synty ;
+               [< print_term ids_to_inner_sorts synty ;
                   match expty with
                      None -> [<>]
-                   | Some expty' -> print_term curi ids_to_inner_sorts expty'
+                   | Some expty' -> print_term ids_to_inner_sorts expty'
                >]
            >]
          ) ids_to_inner_types [<>]

@@ -23,12 +23,15 @@ type context = constr hypothesis list
 type conjecture = int * context * constr
 type metasenv = conjecture list
 
+(* list of couples section path -- variables defined in that section *)
+type params = (string * uri list) list
+
 type obj =
    Definition of string *                          (* id,           *)
     constr * constr *                              (*  value, type, *)
-    (int * uri list) list                          (*  parameters   *)
+    params                                         (*  parameters   *)
  | Axiom of string * constr *                      (* id, type    *)
-    (int * uri list) list                          (*  parameters *)
+    params                                         (*  parameters *)
  | Variable of
     string * constr option * constr                (* name, body, type *)
  | CurrentProof of
@@ -36,7 +39,7 @@ type obj =
     constr * constr                                (*  value, type        *)
  | InductiveDefinition of
     inductiveType list *                           (* inductive types ,      *)
-    (int * uri list) list * int                    (*  parameters,n ind. pars*)
+    params * int                                   (*  parameters,n ind. pars*)
 and inductiveType = 
  identifier * bool * constr *                 (* typename, inductive, arity *)
   constructor list                            (*  constructors              *)
@@ -71,9 +74,9 @@ type ametasenv = aconjecture list
 type aobj =
    ADefinition of id * string *                    (* id,           *)
     aconstr * aconstr *                            (*  value, type, *)
-    (int * uri list) list                          (*  parameters   *)
+    params                                         (*  parameters   *)
  | AAxiom of id * string * aconstr *               (* id, type    *)
-    (int * uri list) list                          (*  parameters *)
+    params                                         (*  parameters *)
  | AVariable of id *
     string * aconstr option * aconstr              (* name, body, type *)
  | ACurrentProof of id *
@@ -81,7 +84,7 @@ type aobj =
     aconstr * aconstr                              (*  value, type        *)
  | AInductiveDefinition of id *
     anninductiveType list *                        (* inductive types ,      *)
-    (int * uri list) list * int                    (*  parameters,n ind. pars*)
+    params * int                                   (*  parameters,n ind. pars*)
 and anninductiveType = 
  identifier * bool * aconstr *                (* typename, inductive, arity *)
   annconstructor list                         (*  constructors              *)

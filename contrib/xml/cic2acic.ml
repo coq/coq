@@ -1,28 +1,75 @@
 (* Utility Functions *)
 
+(*CSC: Problem: here we are using the wrong (???) hypothesis that there do *)
+(*CSC: not exist two modules whose dir_paths are one a prefix of the other *)
+let remove_sections_from_dirpath dir =
+ let module No = Nameops in
+  let current_module_dir = Lib.module_sp () in
+   if No.is_dirpath_prefix_of current_module_dir dir then
+    let (_,id) = No.split_dirpath dir in
+     No.extend_dirpath current_module_dir id
+   else dir
+;;
+
+(*CSC: Problem: here we are using the wrong (???) hypothesis that there do *)
+(*CSC: not exist two modules whose dir_paths are one a prefix of the other *)
+let remove_module_dirpath_from_dirpath dir =
+ let module No = Nameops in
+  let current_module_dir = Lib.module_sp () in
+   if No.is_dirpath_prefix_of current_module_dir dir then
+    let ids = Names.repr_dirpath dir in
+    let rec remove_firsts n l =
+     match n,l with
+        (0,l) -> l
+      | (n,he::tl) -> remove_firsts (n-1) tl
+      | _ -> assert false
+    in
+     let ids' =
+      List.rev
+       (remove_firsts
+         (List.length (Names.repr_dirpath current_module_dir))
+         (List.rev ids))
+     in
+      Names.make_dirpath ids'
+   else dir
+;;
+
+
 (* get_depth_of_var is used to find the depth when we are printing *)
 (* an object in a closed section. Otherwise it returns None and we *)
 (* use Nametab to find its path.                                   *)
-let get_depth_of_var v pvars =
+let get_relative_uri_of_var v pvars =
  let module D = Declare in
  let module N = Names in
-  let rec search_in_pvars n =
+  let rec search_in_pvars names =
    function
       [] -> None
-    | (he::tl) -> if List.mem v he then Some n else search_in_pvars (n + 1) tl
+    | ((name,l)::tl) ->
+       let names' = name::names in
+        if List.mem v l then
+         Some names'
+        else
+         search_in_pvars names' tl
   in
-  let rec search_in_open_sections n =
+  let rec search_in_open_sections =
    function
       [] -> Util.error "Variable not found"
     | he::tl as modules ->
        let dirpath = N.make_dirpath modules in
-        if List.mem (N.id_of_string v) (D.last_section_hyps dirpath) then n
+        if List.mem (N.id_of_string v) (D.last_section_hyps dirpath) then
+         modules
         else
-         search_in_open_sections (n+1) tl
+         search_in_open_sections tl
   in
-   match search_in_pvars 0 pvars with
-      None -> search_in_open_sections 0 (N.repr_dirpath (Lib.cwd ()))
-    | Some n -> n
+   let path =
+    match search_in_pvars [] pvars with
+       None -> search_in_open_sections (N.repr_dirpath (Lib.cwd ()))
+     | Some path -> path
+   in
+    let path' =
+     N.repr_dirpath (remove_module_dirpath_from_dirpath (N.make_dirpath path))
+    in
+     String.concat "/" (List.map N.string_of_id (List.rev path'))
 ;;
 
 type tag =
@@ -36,17 +83,6 @@ let ext_of_tag =
     Constant  -> "con"
   | Inductive -> "ind"
   | Variable  -> "var"
-;;
-
-(*CSC: Problem: here we are using the wrong (???) hypothesis that there do *)
-(*CSC: not exist two modules whose dir_paths are one a prefix of the other *)
-let remove_sections_from_dirpath dir =
- let module No = Nameops in
-  let current_module_dir = Lib.module_sp () in
-   if No.is_dirpath_prefix_of current_module_dir dir then
-    let (_,id) = No.split_dirpath dir in
-     No.extend_dirpath current_module_dir id
-   else dir
 ;;
 
 let uri_of_path sp tag =
@@ -168,13 +204,11 @@ print_endline "PASSATO" ; flush stdout ;
                add_inner_type fresh_id'' ;
               A.ARel (fresh_id'', n, id)
           | T.Var id ->
-             let depth =
-              string_of_int (get_depth_of_var (N.string_of_id id) pvars)
-             in
+             let path = get_relative_uri_of_var (N.string_of_id id) pvars in
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
               if innersort = "Prop"  && expected_available then
                add_inner_type fresh_id'' ;
-              A.AVar (fresh_id'', depth ^ "," ^ (N.string_of_id id))
+              A.AVar (fresh_id'', path ^ "/" ^ (N.string_of_id id) ^ ".var")
           | T.Evar (n,l) ->
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
              if innersort = "Prop"  && expected_available then

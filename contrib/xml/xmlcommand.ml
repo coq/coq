@@ -95,39 +95,50 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
 ;;
 
 
-let uri_of_path sp tag =
+let uri_of_path ?(keep_sections=false) sp tag =
  let module N = Names in
  let module No = Nameops in
   let ext_of_sp sp = ext_of_tag tag in
   let dir0 = No.extend_dirpath (No.dirpath sp) (No.basename sp) in
-  let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir0)) in
+  let dir1 =
+   if not keep_sections then
+    Cic2acic.remove_sections_from_dirpath dir0
+   else
+    dir0
+  in
+  let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir1)) in
    "cic:/" ^ (String.concat "/" dir) ^ "." ^ (ext_of_sp sp)
 ;;
 
 (* A SIMPLE DATA STRUCTURE AND SOME FUNCTIONS TO MANAGE THE CURRENT *)
-(* ENVIRONMENT (= [l1, ..., ln] WHERE li IS THE LIST OF VARIABLES   *)
-(* DECLARED IN THE i-th SUPER-SECTION OF THE CURRENT SECTION        *)
+(* ENVIRONMENT (= [(name1,l1); ...;(namen,ln)] WHERE li IS THE LIST *)
+(* OF VARIABLES DECLARED IN THE i-th SUPER-SECTION OF THE CURRENT   *)
+(* SECTION, WHOSE PATH IS namei                                     *)
 
-let pvars = ref ([[]] : string list list);;
+let pvars =
+ ref ([Names.id_of_string "",[]] : (Names.identifier * string list) list);;
 let cumenv = ref Environ.empty_env;;
 
 (* filter_params pvars hyps *)
 (* filters out from pvars (which is a list of lists) all the variables *)
 (* that does not belong to hyps (which is a simple list)               *)
-(* It returns a list of couples level of depth -- list of variable     *)
-(* names.                                                              *)
+(* It returns a list of couples relative section path -- list of       *)
+(* variable names.                                                     *)
 let filter_params pvars hyps =
- let rec aux n =
+ let rec aux ids =
   function
      [] -> []
-   | he::tl ->
-      let he' = n, List.filter (function x -> List.mem x hyps) he in
-      let tl' = aux (n+1) tl in
+   | (id,he)::tl ->
+      let ids' = id::ids in
+      let ids'' =
+       String.concat "/" (List.rev (List.map Names.string_of_id ids')) in
+      let he' = ids'', List.filter (function x -> List.mem x hyps) he in
+      let tl' = aux ids' tl in
        match he' with
           _,[] -> tl'
         | _,_  -> he'::tl'
  in
-  aux 0 pvars
+  aux [] (List.rev pvars)
 ;;
 
 type variables_type = 
@@ -150,7 +161,7 @@ let add_to_pvars x =
   in
    match !pvars with
       []       -> assert false
-    | (he::tl) -> pvars := (v::he)::tl
+    | ((name,l)::tl) -> pvars := (name,v::l)::tl
 ;;
 
 (* The computation is very inefficient, but we can't do anything *)
@@ -165,7 +176,7 @@ let rec search_variables =
        let dirpath = N.make_dirpath modules in
         match List.map N.string_of_id (Declare.last_section_hyps dirpath) with
           [] -> []
-        | t -> [t]
+        | t -> [he,t]
        in
         one_section_variables @ search_variables tl
 ;;
@@ -183,7 +194,7 @@ let print_object uri obj sigma proof_tree_infos filename typesfilename prooftree
  in
   let (annobj,_,constr_to_ids,_,ids_to_inner_sorts,ids_to_inner_types,_,_) =
    Cic2acic.acic_object_of_cic_object !pvars sigma obj in
-  let xml = Acic2Xml.print_object uri ids_to_inner_sorts annobj in
+  let xml = Acic2Xml.print_object ids_to_inner_sorts annobj in
   let xmltypes =
    Acic2Xml.print_inner_types uri ids_to_inner_sorts ids_to_inner_types in
   pp xml filename ;
@@ -325,25 +336,25 @@ let print (_,qid as locqid) fn =
   in
   (* Variables are the identifiers of the variables in scope *)
   let variables = search_variables (Names.repr_dirpath (Lib.cwd ())) in
-  let sp,tag,obj =
+  let keep_sections,sp,tag,obj =
    match glob_ref with
       Nt.VarRef id ->
        let sp = Declare.find_section_variable id in
        let (_,body,typ) = G.lookup_named id in
-        sp,Variable,mk_variable_obj id body typ
+        true,sp,Variable,mk_variable_obj id body typ
     | Nt.ConstRef sp ->
        let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
         G.lookup_constant sp in
-        sp,Constant,mk_constant_obj id val0 typ variables hyps
+        false,sp,Constant,mk_constant_obj id val0 typ variables hyps
     | Nt.IndRef (sp,_) ->
        let {D.mind_packets=packs ;
             D.mind_hyps=hyps;
             D.mind_finite=finite} = G.lookup_mind sp in
-          sp,Inductive,mk_inductive_obj packs variables hyps finite
+          false,sp,Inductive,mk_inductive_obj packs variables hyps finite
     | Nt.ConstructRef _ ->
        Util.anomaly ("print: this should not happen")
   in
-   print_object (uri_of_path sp tag) obj Evd.empty None fn
+   print_object (uri_of_path ~keep_sections sp tag) obj Evd.empty None fn
     (types_filename_of_filename fn) (prooftree_filename_of_filename fn)
 ;;
 
@@ -540,12 +551,13 @@ with _ -> print_if_verbose ("EXCEPTION RAISED!!!\n");
       if bprintleaf then
        begin
         (* open a new scope *)
-        pvars := []::!pvars ;
-        print_library_segment state bprintleaf dn ;
-        (* close the scope *)
-        match !pvars with
-           [] -> assert false
-         | he::tl -> pvars := tl
+        let (_,section_name) = Nameops.split_dirpath dir in
+         pvars := (section_name,[])::!pvars ;
+         print_library_segment state bprintleaf dn ;
+         (* close the scope *)
+         match !pvars with
+            [] -> assert false
+          | he::tl -> pvars := tl
        end ;
       print_if_verbose "/ClosedDir\n"
    | L.Module s ->
@@ -563,7 +575,7 @@ with _ -> print_if_verbose ("EXCEPTION RAISED!!!\n");
 let print_closed_section s ls dn =
  let module L = Lib in
   printed := [] ;
-  pvars := [[]] ;
+  pvars := [Names.id_of_string "",[]] ;
   cumenv := Safe_typing.env_of_safe_env (Global.safe_env ()) ;
   print_if_verbose ("Module " ^ s ^ ":\n") ;
   print_library_segment ls true dn ;
