@@ -735,7 +735,9 @@ two examples of the use of the {\tt Inductive} definitions.
 
 The set of natural numbers is defined as:
 \begin{coq_example}
-Inductive nat : Set := O : nat | S : nat -> nat.
+Inductive nat : Set :=
+  | O : nat
+  | S : nat -> nat.
 \end{coq_example}
 
 The type {\tt nat} is defined as the least \verb:Set: containing {\tt
@@ -772,9 +774,9 @@ As an example of annotated inductive types, let us define the
 $even$ predicate:
 
 \begin{coq_example}
-Inductive even : nat->Prop :=
- | even_0  : (even O)
- | even_SS : (n:nat)(even n)->(even (S (S n))).
+Inductive even : nat -> Prop :=
+  | even_0 : even O
+  | even_SS : forall n:nat, even n -> even (S (S n)).
 \end{coq_example}
 
 The type {\tt nat->Prop} means that {\tt even} is a unary predicate
@@ -807,8 +809,9 @@ induction principle we got for {\tt nat}.
   For instance, one can define
   parameterized lists as:
 \begin{coq_example*}
-Inductive list [X:Set] : Set :=
- Nil : (list X) | Cons : X->(list X)->(list X).
+Inductive list (X:Set) : Set :=
+  | Nil : list X
+  | Cons : X -> list X -> list X.
 \end{coq_example*}
 Notice that, in the type of {\tt Nil} and {\tt Cons}, we write {\tt
   (list X)} and not just {\tt list}.\\ The constants {\tt Nil} and
@@ -899,11 +902,12 @@ trees and forests. We assume given two types $A$ and $B$ as variables.
 It can be declared the following way.
 
 \begin{coq_example*}
-Variables A,B:Set.
-Inductive tree : Set :=  node : A -> forest -> tree
-with forest : Set := 
-   | leaf : B -> forest 
-   | cons : tree -> forest -> forest.
+Variables A B : Set.
+Inductive tree : Set :=
+    node : A -> forest -> tree
+with forest : Set :=
+  | leaf : B -> forest
+  | cons : tree -> forest -> forest.
 \end{coq_example*}
 
 This declaration generates automatically six induction
@@ -930,10 +934,11 @@ following way:
 Reset tree.
 \end{coq_eval}
 \begin{coq_example*}
-Inductive
-     tree   [A,B:Set] : Set := node : A -> (forest A B) -> (tree A B)
-with forest [A,B:Set] : Set := leaf : B -> (forest A B)
-                   | cons : (tree A B) -> (forest A B) -> (forest A B).
+Inductive tree (A B:Set) : Set :=
+    node : A -> forest A B -> tree A B
+with forest (A B:Set) : Set :=
+  | leaf : B -> forest A B
+  | cons : tree A B -> forest A B -> forest A B.
 \end{coq_example*}
 
 Assume we define an inductive definition inside a section.  When the
@@ -958,7 +963,8 @@ An example of a co-inductive type is the type of infinite sequences of
 natural numbers, usually called streams. It can be introduced in \Coq\
 using the \texttt{CoInductive} command:
 \begin{coq_example}
-CoInductive Set Stream  := Seq : nat->Stream->Stream.
+CoInductive Stream : Set :=
+    Seq : nat -> Stream -> Stream.
 \end{coq_example}
 
 The syntax of this command is the same as the command \texttt{Inductive}
@@ -970,8 +976,12 @@ analysis. For example, the usual destructors on streams
 \texttt{hd:Stream->nat} and \texttt{tl:Str->Str} can be defined as
 follows:
 \begin{coq_example}
-Definition hd  := [x:Stream]Cases x of (Seq a s) => a  end.
-Definition tl  := [x:Stream]Cases x of (Seq a s) => s  end.
+Definition hd (x:Stream) := match x with
+                            | Seq a s => a
+                            end.
+Definition tl (x:Stream) := match x with
+                            | Seq a s => s
+                            end.
 \end{coq_example}
 
 Definition of co-inductive predicates and blocks of mutually
@@ -979,10 +989,10 @@ co-inductive definitions are also allowed. An example of a
 co-inductive predicate is the extensional equality on streams:
 
 \begin{coq_example}
-CoInductive EqSt  : Stream->Stream->Prop := 
-            eqst : (s1,s2:Stream)
-                    (hd s1)=(hd s2)->
-                     (EqSt (tl s1) (tl s2))->(EqSt s1 s2).
+CoInductive EqSt : Stream -> Stream -> Prop :=
+    eqst :
+      forall s1 s2:Stream,
+        hd s1 = hd s2 -> EqSt (tl s1) (tl s2) -> EqSt s1 s2.
 \end{coq_example}
 
 In order to prove the extensionally equality of two streams $s_1$ and
@@ -1012,8 +1022,11 @@ ensure that the {\tt Fixpoint} definition always terminates. For
 instance, one can define the addition function as :
 
 \begin{coq_example}
-Fixpoint add [n:nat] : nat->nat 
-   := [m:nat]Cases n of O => m | (S p) => (S (add p m)) end.
+Fixpoint add (n m:nat) {struct n} : nat :=
+  match n with
+  | O => m
+  | S p => S (add p m)
+  end.
 \end{coq_example}
 
 The {\tt Cases} operator matches a value (here \verb:n:) with the
@@ -1048,13 +1061,19 @@ decreases because it is a {\em pattern variable} coming from {\tt Cases
 error message:
 
 \begin{coq_eval}
-(********** The following is not correct and should produce **********)
-(********* Error: Recursive call applied to an illegal term **********)
-(* Just to adjust the prompt: *) Set Printing Depth 50.
+Set Printing Depth 50.
 \end{coq_eval}
 \begin{coq_example}
-Fixpoint wrongplus [n:nat] : nat->nat 
-   := [m:nat]Cases m of O => n | (S p) => (S (wrongplus n p)) end.
+Fixpoint wrongplus
+ (n
+  
+  (********** The following is not correct and should produce **********)
+  (********* Error: Recursive call applied to an illegal term **********)
+  (* Just to adjust the prompt: *) m:nat) {struct n} : nat :=
+  match m with
+  | O => n
+  | S p => S (wrongplus n p)
+  end.
 \end{coq_example}
 
 because the declared decreasing argument {\tt n} actually does not
@@ -1062,26 +1081,35 @@ decrease in the recursive call.  The function computing the addition
 over the second argument should rather be written:
 
 \begin{coq_example*}
-Fixpoint plus [n,m:nat] : nat 
-   := Cases m of O => n | (S p) => (S (plus n p)) end.
+Fixpoint plus (n m:nat) {struct m} : nat :=
+  match m with
+  | O => n
+  | S p => S (plus n p)
+  end.
 \end{coq_example*}
 
 The ordinary match operation on natural numbers can be mimicked in the
 following way.
 \begin{coq_example*}
-Fixpoint nat_match [C:Set;f0:C;fS:nat->C->C;n:nat] : C 
-   := Cases n of O => f0 | (S p) => (fS p (nat_match C f0 fS p)) end.
+Fixpoint nat_match (C:Set) (f0:C) (fS:nat -> C -> C) (n:nat) {struct n}
+ : C := match n with
+        | O => f0
+        | S p => fS p (nat_match C f0 fS p)
+        end.
 \end{coq_example*}
 The recursive call may not only be on direct subterms of the recursive
 variable {\tt n} but also on a deeper subterm and we can directly
 write the function {\tt mod2} which gives the remainder modulo 2 of a
 natural number.
 \begin{coq_example*}
-Fixpoint mod2 [n:nat] : nat
-   := Cases n of
-         O    => O
-      | (S p) => Cases p of O => (S O) | (S q) => (mod2 q) end
-      end.
+Fixpoint mod2 (n:nat) : nat :=
+  match n with
+  | O => O
+  | S p => match p with
+           | O => S O
+           | S q => mod2 q
+           end
+  end.
 \end{coq_example*}
 In order to keep the strong normalisation property, the fixed point
 reduction will only be performed when the argument in position of the
@@ -1096,18 +1124,23 @@ generally any mutually recursive definitions.
 The size of trees and forests can be defined the following way: 
 \begin{coq_eval}
 Reset Initial.
-Variables A,B:Set.
-Inductive tree : Set :=  node : A -> forest -> tree
-with forest : Set := leaf : B -> forest 
-                   | cons : tree -> forest -> forest.
+Variables A B : Set.
+Inductive tree : Set :=
+    node : A -> forest -> tree
+with forest : Set :=
+  | leaf : B -> forest
+  | cons : tree -> forest -> forest.
 \end{coq_eval}
 \begin{coq_example*}
-Fixpoint tree_size [t:tree] : nat :=
-    Cases t of (node a f) => (S (forest_size f)) end
-with forest_size [f:forest] : nat := 
-    Cases f of (leaf b) => (S O)
-          | (cons t f') => (plus (tree_size t) (forest_size f')) 
-         end.
+Fixpoint tree_size (t:tree) : nat :=
+  match t with
+  | node a f => S (forest_size f)
+  end
+ with forest_size (f:forest) : nat :=
+  match f with
+  | leaf b => 1%N
+  | cons t f' => (tree_size t + forest_size f')%N
+  end.
 \end{coq_example*}
 A generic command {\tt Scheme} is useful to build automatically various
 mutual induction principles. It is described in section \ref{Scheme}.
@@ -1121,12 +1154,17 @@ containing all natural numbers can be introduced applying the
 following method to the number \texttt{O}:
 
 \begin{coq_example*}
-CoInductive Set Stream  := Seq : nat->Stream->Stream.
-Definition hd  := [x:Stream]Cases x of (Seq a s) => a  end.
-Definition tl  := [x:Stream]Cases x of (Seq a s) => s  end.
+CoInductive Stream : Set :=
+    Seq : nat -> Stream -> Stream.
+Definition hd (x:Stream) := match x with
+                            | Seq a s => a
+                            end.
+Definition tl (x:Stream) := match x with
+                            | Seq a s => s
+                            end.
 \end{coq_example*}
 \begin{coq_example}
-CoFixpoint from  : nat->Stream := [n:nat](Seq n (from (S n))).
+CoFixpoint from (n:nat) : Stream := Seq n (from (S n)).
 \end{coq_example}
 
 Oppositely to recursive ones, there is no decreasing argument in a
@@ -1141,16 +1179,16 @@ application of \texttt{Seq}. On the contrary, the following recursive
 function does not satisfy the guard condition:
 
 \begin{coq_eval}
-(********** The following is not correct and should produce **********)
-(***************** Error: Unguarded recursive call *******************)
-(* Just to adjust the prompt: *) Set Printing Depth 50.
+Set Printing Depth 50.
 \end{coq_eval}
 \begin{coq_example*}
-CoFixpoint filter  : (nat->bool)->Stream->Stream := 
-   [p:nat->bool]
-     [s:Stream]
-       if (p (hd s)) then (Seq (hd s) (filter p (tl s)))
-       else (filter p (tl s)).
+CoFixpoint filter
+ (
+  (********** The following is not correct and should produce **********)
+  (***************** Error: Unguarded recursive call *******************)
+  (* Just to adjust the prompt: *) p:nat -> bool) (s:Stream) :
+ Stream :=
+  if p (hd s) then Seq (hd s) (filter p (tl s)) else filter p (tl s).
 \end{coq_example*}
 
 \noindent Notice that the definition contains an unguarded recursive
@@ -1164,9 +1202,9 @@ evaluated. We can test this using the command \texttt{Eval},
 which computes the normal forms of a term:
 
 \begin{coq_example}
-Eval Compute in (from O).
-Eval Compute in (hd (from O)).
-Eval Compute in (tl (from O)).  
+Eval compute in (from 0).
+Eval compute in (hd (from 0)).
+Eval compute in (tl (from 0)).
 \end{coq_example}
 
 As in the \texttt{Fixpoint} command (cf. section~\ref{Fixpoint}), it

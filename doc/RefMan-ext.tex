@@ -66,12 +66,13 @@ The set of rational numbers may be defined as:
 Reset Initial.
 \end{coq_eval}
 \begin{coq_example}
-Record Rat : Set := mkRat {
- sign     : bool;
- top      : nat;
- bottom   : nat;
- Rat_bottom_cond : ~O=bottom;
- Rat_irred_cond:(x,y,z:nat)(mult x y)=top/\(mult x z)=bottom->x=(S O)}.
+Record Rat : Set := mkRat
+  {sign : bool;
+   top : nat;
+   bottom : nat;
+   Rat_bottom_cond : 0%N <> bottom;
+   Rat_irred_cond :
+    forall x y z:nat, (x * y)%N = top /\ (x * z)%N = bottom -> x = 1%N}.
 \end{coq_example}
 
 Remark here that the field
@@ -95,37 +96,39 @@ the record.
 Let us define the rational $1/2$.
 
 \begin{coq_example*}
-Require Arith.
-Theorem one_two_irred: (x,y,z:nat)(mult x y)=(1)/\(mult x z)=(2)->x=(1).
+Require Import Arith.
+Theorem one_two_irred :
+ forall x y z:nat, (x * y)%N = 1%N /\ (x * z)%N = 2%N -> x = 1%N.
 \end{coq_example*}
 \begin{coq_eval}
-Lemma plus_m_n_eq_n_O : (m,n:nat)(plus m n)=O -> n=O.
-Destruct m; Trivial.
-Intros; Discriminate.
+Lemma plus_m_n_eq_n_O : forall m n:nat, (m + n)%N = 0%N -> n = 0%N.
+olddestruct m; trivial.
+intros; discriminate.
+Qed.
+Lemma mult_m_n_eq_m_1 : 
+ forall m n:nat, (m * n)%N = 1%N -> m = 1%N.
+olddestruct m; trivial.
+intros; apply f_equal with (f := S).
+generalize H.
+case n; trivial.
+simpl.
+case n0; simpl.
+intro; rewrite <- mult_n_O; intro; discriminate.
+intros n1 n2 H0; injection H0.
+intro H1.
+lettac H2 := (plus_m_n_eq_n_O n1 (S (n1 + n2 * S n1)) H1).
+discriminate.
 Qed.
 
-Lemma mult_m_n_eq_m_1: (m,n:nat)(mult m n)=((S O))->m=(S O).
-Destruct m;Trivial.
-Intros; Apply f_equal with f:=S.
-Generalize H.
-Case n; Trivial.
-Simpl.
-Case n0;Simpl.
-Intro; Rewrite <- mult_n_O; Intro; Discriminate.
-Intros n1 n2 H0; Injection H0.
-Intro H1.
-LetTac H2:=(plus_m_n_eq_n_O n1 (S (plus n1 (mult n2 (S n1)))) H1).
-Discriminate.
-Qed.
-
-Intros x y z (H1,H2). Apply mult_m_n_eq_m_1 with n:=y; Trivial.
+intros x y z [H1 H2].
+ apply mult_m_n_eq_m_1 with (n := y); trivial.
 \end{coq_eval}
 \ldots
 \begin{coq_example*}
 Qed.
 \end{coq_example*}
 \begin{coq_example}
-Definition half := (mkRat true (1) (2) (O_S (1)) one_two_irred).
+Definition half := mkRat true 1 2 (O_S 1) one_two_irred.
 \end{coq_example}
 \begin{coq_example}
 Check half.
@@ -138,9 +141,9 @@ fields. If a field is named ``\verb=_='' then no projection is built for
 this (anonymous) field. In our example:
 
 \begin{coq_example}
-Eval Compute in (top half).
-Eval Compute in (bottom half).
-Eval Compute in (Rat_bottom_cond half).
+Eval compute in half.(top).
+Eval compute in half.(bottom).
+Eval compute in half.(Rat_bottom_cond).
 \end{coq_example}
 \begin{coq_eval}
 Reset Initial.
@@ -241,7 +244,11 @@ term & ::= & \zeroone{\annotation} {\tt if} {\term} {\tt then} {\term} {\tt else
 For instance, the definition
 
 \begin{coq_example}
-Definition not := [b:bool] Cases b of true => false | false => true end.
+Definition not (b:bool) :=
+  match b with
+  | true => false
+  | false => true
+  end.
 \end{coq_example}
 
 can be alternatively written
@@ -250,7 +257,7 @@ can be alternatively written
 Reset not.
 \end{coq_eval}
 \begin{coq_example}
-Definition not := [b:bool] if b then false else true.
+Definition not (b:bool) := if b then false else true.
 \end{coq_example}
 
 \subsection{Irrefutable patterns: the destructuring {\tt let}}
@@ -271,7 +278,9 @@ This enriches the syntax of terms as follows:
 For instance, the definition
 
 \begin{coq_example}
-Definition fst := [A,B:Set][H:A*B] Cases H of (pair x y) => x end.
+Definition fst (A B:Set) (H:A * B) := match H with
+                                      | pair x y => x
+                                      end.
 \end{coq_example}
 
 can be alternatively written 
@@ -280,7 +289,7 @@ can be alternatively written
 Reset fst.
 \end{coq_eval}
 \begin{coq_example}
-Definition fst := [A,B:Set][p:A*B] let (x,_) = p in x.
+Definition fst (A B:Set) (p:A * B) := let (x, _) := p in x.
 \end{coq_example}
 
 The pretty-printing of a definition by cases on a irrefutable pattern
@@ -458,8 +467,8 @@ the variables involved in the term.
 Example:
 
 \begin{coq_example}
-Definition ID := (X:Set) X -> X.
-Definition id := (([X][x]x) :: ID).
+Definition ID := forall X:Set, X -> X.
+Definition id := (fun X x => x):ID.
 Check id.
 \end{coq_example}
 
@@ -490,9 +499,9 @@ substituted in the other definitions.
 Here is an example :
 \begin{coq_example}
 Section s1.
-Variables x,y : nat.
+Variables x y : nat.
 Local y' := y.
-Definition x' := (S x).
+Definition x' := S x.
 Print x'.
 End s1.
 Print x'.
@@ -636,9 +645,9 @@ Reset Initial.
 \end{coq_eval}
 
 \begin{coq_example}
-Check O.
+Check 0%N.
 Definition nat := bool.
-Check O.
+Check 0%N.
 Check Datatypes.nat.
 \end{coq_example}
 
@@ -709,15 +718,15 @@ correspond respectively to the positions {\tt 1}, {\tt 2} and {\tt 4}.
 Set Implicit Arguments.
 Variable X : Type.
 Definition Relation := X -> X -> Prop.
-Definition Transitivity := [R:Relation]
-           (x,y:X)(R x y) -> (z:X)(R y z) -> (R x z).
-Variables R:Relation; p:(Transitivity R).
+Definition Transitivity (R:Relation) :=
+  forall x y:X, R x y -> forall z:X, R y z -> R x z.
+Variables (R : Relation) (p : Transitivity R).
 \end{coq_example*}
 \begin{coq_example}
 Print p.
 \end{coq_example}
 \begin{coq_example*}
-Variables a,b,c:X;  r1:(R a b); r2:(R b c).
+Variables (a b c : X) (r1 : R a b) (r2 : R b c).
 \end{coq_example*}
 \begin{coq_example}
 Check (p r1 r2).
@@ -743,8 +752,8 @@ also give all the arguments of an application, we have then to write
 \Example
 
 \begin{coq_example}
-Check (p r1 4!c).
-Check (!p a b r1 c r2).
+Check (p r1 (z:=c)).
+Check (p (x:=a) (y:=b) r1 (z:=c) r2).
 \end{coq_example}
 
 \subsubsection{Implicit Arguments and Pretty-Printing}
@@ -774,18 +783,18 @@ Let us extend our functional language with the definition of the
 identity function:
 
 \begin{coq_eval}
-Unset Implicit Arguments.
+Set Strict Implicit.
 Reset Initial.
 \end{coq_eval}
 \begin{coq_example}
-Definition explicit_id := [A:Set][a:A]a.
+Definition explicit_id (A:Set) (a:A) := a.
 \end{coq_example}
 
 \index{questionmark@{\texttt{?}}}
 We declare also a syntactic definition {\tt id}:
 
 \begin{coq_example}
-Syntactic Definition id := (explicit_id ?).
+Notation id := (explicit_id _).
 \end{coq_example}
 
 The term {\tt (explicit\_id ?)} is untyped since the implicit
@@ -794,7 +803,7 @@ definition.  Let us see what happens when we use a syntactic constant
 in an expression like in the following example.
 
 \begin{coq_example}
-Check (id O).
+Check (id 0%N).
 \end{coq_example}
 
 \noindent First the syntactic constant {\tt id} is replaced by its
@@ -818,14 +827,14 @@ We can define a new syntactic definition {\tt id1} for {\tt
 syntactic constant in order to avoid a name conflict with {\tt id}.
 
 \begin{coq_example}
-Syntactic Definition id1 := explicit_id | 1.
+Notation id1 := id.
 \end{coq_example}
 
 The new syntactic constant {\tt id1} has the same behavior as {\tt
   id}:
 
 \begin{coq_example}
-Check (id1 O).
+Check (id1 0%N).
 \end{coq_example}
 
 
@@ -860,17 +869,17 @@ Canonical structures are particularly useful when mixed with
 coercions and implicit arguments. Here is an example.
 
 \begin{coq_example*}
-Require Relations.
-Require EqNat.
+Require Import Relations.
+Require Import EqNat.
 Set Implicit Arguments.
-Structure Setoid : Type :=
- {Carrier   :> Set;
-  Equal     : (relation Carrier);
-  Prf_equiv : (equivalence Carrier Equal)}.
-Definition is_law := [A,B:Setoid][f:A->B]
-  (x,y:A) (Equal x y) -> (Equal (f x) (f y)).
-Axiom eq_nat_equiv : (equivalence nat eq_nat).
-Definition nat_setoid : Setoid := (Build_Setoid eq_nat_equiv).
+Structure Setoid : Type := 
+  {Carrier :> Set;
+   Equal : relation Carrier;
+   Prf_equiv : equivalence Carrier Equal}.
+Definition is_law (A B:Setoid) (f:A -> B) :=
+  forall x y:A, _.(@Equal) x y -> _.(@Equal) (f x) (f y).
+Axiom eq_nat_equiv : equivalence nat eq_nat.
+Definition nat_setoid : Setoid := Build_Setoid eq_nat_equiv.
 Canonical Structure nat_setoid.
 \end{coq_example*}
 
@@ -878,7 +887,7 @@ Thanks to \texttt{nat\_setoid} declared as canonical, the implicit
 arguments {\tt A} and {\tt B} can be synthesized in the next statement.
 
 \begin{coq_example}
-Lemma is_law_S : (is_law S).
+Lemma is_law_S : is_law (A:=_) (B:=_) S.
 \end{coq_example}
 
 \Rem If a same field occurs in several canonical structure, then

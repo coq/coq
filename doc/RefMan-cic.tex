@@ -594,17 +594,24 @@ The declaration for a mutual inductive definition of forests and trees is:
 These representations are the ones obtained as the result of the \Coq\ 
 declaration:
 \begin{coq_example*}
-Inductive Set nat := O : nat | S : nat -> nat.
-Inductive list [A : Set] : Set := 
-     nil : (list A) | cons : A -> (list A) -> (list A).
+Inductive nat : Set :=
+  | O : nat
+  | S : nat -> nat.
+Inductive list (A:Set) : Set :=
+  | nil : list A
+  | cons : A -> list A -> list A.
 \end{coq_example*}
 \begin{coq_example*}
-Inductive Length [A:Set] : (list A) -> nat -> Prop :=
-    Lnil : (Length A (nil A) O)
- | Lcons : (a:A)(l:(list A))(n:nat)
-           (Length A l n)->(Length A (cons A a l) (S n)).
-Mutual Inductive tree : Set := node : forest -> tree
-with forest : Set := emptyf : forest | consf : tree -> forest -> forest.
+Inductive Length (A:Set) : list A -> nat -> Prop :=
+  | Lnil : Length A (nil A) O
+  | Lcons :
+      forall (a:A) (l:list A) (n:nat),
+        Length A l n -> Length A (cons A a l) (S n).
+Inductive tree : Set :=
+    node : forest -> tree
+with forest : Set :=
+  | emptyf : forest
+  | consf : tree -> forest -> forest.
 \end{coq_example*}
 The inductive declaration in \Coq\ is slightly different from the one
 we described theoretically. The difference is that in the type of
@@ -614,14 +621,16 @@ parameters are applied in the correct manner in each recursive call.
 In particular, the following definition will not be accepted because 
 there is an occurrence of \List\ which is not applied to the parameter
 variable:
+% (********** The following is not correct and should produce **********)
+% (********* Error: The 1st argument of list' must be A in ... *********)
+% (* Just to adjust the prompt: *) 
 \begin{coq_eval}
-(********** The following is not correct and should produce **********)
-(********* Error: The 1st argument of list' must be A in ... *********)
-(* Just to adjust the prompt: *) Set Printing Depth 50.
+Set Printing Depth 50.
 \end{coq_eval}
 \begin{coq_example}
-Inductive list' [A : Set] : Set := 
-     nil' : (list' A) | cons' : A -> (list' A->A) -> (list' A).
+Inductive list' (A:Set) : Set :=
+  | nil' : list' A
+  | cons' : A -> list' (A -> A) -> list' A.
 \end{coq_example}
 
 \subsection{Types of inductive objects}
@@ -1153,16 +1162,24 @@ The following definitions are correct, we enter them using the
 {\tt Fixpoint} command as described in section~\ref{Fixpoint} and show
 the internal representation.
 \begin{coq_example}
-Fixpoint plus [n:nat] : nat -> nat :=
- [m:nat]Case n of m [p:nat](S (plus p m)) end.
+Fixpoint plus (n m:nat) {struct n} : nat :=
+  match n with
+  | O => m
+  | S p => S (plus p m)
+  end.
 Print plus.
-Fixpoint lgth [A:Set;l:(list A)] : nat :=
-  Case l of O [a:A][l':(list A)](S (lgth A l')) end.
+Fixpoint lgth (A:Set) (l:list A) {struct l} : nat :=
+  match l with
+  | nil => O
+  | cons a l' => S (lgth A l')
+  end.
 Print lgth.
-Fixpoint sizet [t:tree] : nat 
-  := Case t of [f:forest](S (sizef f)) end
-with     sizef [f:forest] : nat 
-  := Case f of O [t:tree][f:forest](plus (sizet t) (sizef f)) end.
+Fixpoint sizet (t:tree) : nat := let (f) := t in S (sizef f)
+ with sizef (f:forest) : nat :=
+  match f with
+  | emptyf => O
+  | consf t f => plus (sizet t) (sizef f)
+  end.
 Print sizet.
 \end{coq_example}
 
@@ -1180,24 +1197,25 @@ and corresponds to the reduction for primitive recursive operators.
 
 We can illustrate this behavior on examples.
 \begin{coq_example}
-Goal (n,m:nat)(plus (S n) m)=(S (plus n m)).
-Reflexivity.
+Goal forall n m:nat, plus (S n) m = S (plus n m).
+reflexivity.
 Abort.
-Goal (f:forest)(sizet (node f))=(S (sizef f)).
-Reflexivity.
+Goal forall f:forest, sizet (node f) = S (sizef f).
+reflexivity.
 Abort.
 \end{coq_example}
 But assuming the definition of a son function from \tree\ to \forest:
 \begin{coq_example}
-  Definition sont : tree -> forest := [t]Case t of [f]f end.
+Definition sont (t:
+                   tree) : forest := let (f) := t in f.
 \end{coq_example}
 The following is not a conversion but can be proved after a case analysis.
 \begin{coq_example}
-Goal (t:tree)(sizet t)=(S (sizef (sont t))).
-(** this one fails **)
-Reflexivity.
-Destruct t.
-Reflexivity.
+Goal forall t:tree, sizet t = S (sizef (sont t)).
+
+(** this one fails **)reflexivity.
+olddestruct t.
+reflexivity.
 \end{coq_example}
 \begin{coq_eval}
 Abort.
