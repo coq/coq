@@ -582,14 +582,16 @@ These parameterized reduction tactics apply to any goal and perform
 the normalization of the goal according to the specified flags. Since
 the reduction considered in \Coq\ include $\beta$ (reduction of
 functional application), $\delta$ (unfolding
-of transparent constants, see \ref{Transparent}) 
-and $\iota$ (reduction of {\tt Cases}, {\tt Fix} and {\tt
-CoFix} expressions), every flag is one of {\tt Beta}, {\tt Delta},
-{\tt Iota}, {\tt [\ident$_1$\ldots\ident$_k$]} and 
-{\tt -[\ident$_1$\ldots\ident$_k$]}. 
+of transparent constants, see \ref{Transparent}),
+$\iota$ (reduction of {\tt Cases}, {\tt Fix} and {\tt
+CoFix} expressions) and $\zeta$ (removal of local definitions), every flag is one of {\tt Beta}, {\tt Delta},
+{\tt Iota}, {\tt Zeta}, {\tt [\qualid$_1$\ldots\qualid$_k$]} and 
+{\tt -[\qualid$_1$\ldots\qualid$_k$]}.
 The last two flags give the list of
 constants to unfold, or the list of constants not to unfold. These two
-flags can occur only after the {\tt Delta} flag. The goal may be
+flags can occur only after the {\tt Delta} flag. 
+In addition, there is a flag {\tt Evar} to perform instantiation of exitential variables (``?'') when an instantiation actually exists.
+The goal may be
 normalized with two strategies: {\em lazy} ({\tt Lazy} tactic), or
 {\em call-by-value} ({\tt Cbv} tactic).
 
@@ -613,7 +615,7 @@ computational expressions (i.e. with few dead code).
 \begin{Variants}
 \item {\tt Compute}\\
   \tacindex{Compute}
-  This tactic is an alias for {\tt Cbv Beta Delta Iota}.
+  This tactic is an alias for {\tt Cbv Beta Delta Evar Iota Zeta}.
 \end{Variants}
 
 \begin{ErrMsgs}
@@ -657,35 +659,35 @@ $\beta\iota$ rules. But when the $\iota$ rule is not applicable then
 possible $\delta$-reductions are not applied.  For instance trying to
 use {\tt Simpl} on {\tt (plus n O)=n} will change nothing.
 
-\subsection{\tt Unfold \ident}
+\subsection{\tt Unfold \qualid}
 \tacindex{Unfold}\label{Unfold}
-This tactic applies to any goal. The argument {\ident} must be the
-name of a defined transparent constant or local definition (see section
+This tactic applies to any goal. The argument {\qualid} must denote
+a defined transparent constant or local definition (see section
 \ref{Simpl-definitions} and \ref{Transparent}). 
 The tactic {\tt Unfold} applies the
-$\delta$ rule to each occurrence of {\ident} in the current goal and
+$\delta$ rule to each occurrence of the constant to which {\qualid} refers
+ in the current goal and
 then replaces it with its $\beta\iota$-normal form.
 
-\Warning If the constant is opaque, nothing will happen and no warning
+\begin{ErrMsgs}
+\item {\qualid} \errindex{does not denote an evaluable constant}
 is printed.
 
-\begin{ErrMsgs}
-\item {\ident} \errindex{does not denote an evaluable constant}
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Unfold {\ident}$_1$ \dots\ \ident$_n$}\\ 
+\item {\tt Unfold {\qualid}$_1$ \dots\ \qualid$_n$}\\ 
   \tacindex{Unfold \dots\ in}
-  Replaces {\em simultaneously} {\ident}$_1$, \dots, {\ident}$_n$ with
+  Replaces {\em simultaneously} {\qualid}$_1$, \dots, {\qualid}$_n$ with
   their definitions and replaces the current goal with its
   $\beta\iota$ normal form.
-\item {\tt Unfold \num$_1^1$ \dots\ \num$_i^1$ {\ident}$_1$ \dots\  \num$_1^n$
-    \dots\ \num$_j^n$ \ident$_n$}\\ 
+\item {\tt Unfold \num$_1^1$ \dots\ \num$_i^1$ {\qualid}$_1$ \dots\  \num$_1^n$
+    \dots\ \num$_j^n$ \qualid$_n$}\\ 
   The lists \num$_1^1$, \dots, \num$_i^1$ and \num$_1^n$, \dots, \num$_j^n$
-  are to specify the occurrences of {\ident}$_1$, \dots, \ident$_n$ to be
+  are to specify the occurrences of {\qualid}$_1$, \dots, \qualid$_n$ to be
   unfolded. Occurrences are located from left to right in the linear
   notation of terms.\\ 
-  \ErrMsg {\tt bad occurrence numbers of {\ident}$_i$}
+  \ErrMsg {\tt bad occurrence numbers of {\qualid}$_i$}
 \end{Variants}
 
 \subsection{{\tt Fold} \term}
@@ -1923,8 +1925,8 @@ a hint to a database is:
     \item {\ident} \errindex{not declared}
   \end{ErrMsgs}
 
-\item \texttt{Unfold} {\ident}\index[command]{Hint!Unfold}\\
-  This adds the tactic {\tt Unfold {\ident}} to the hint list
+\item \texttt{Unfold} {\qualid}\index[command]{Hint!Unfold}\\
+  This adds the tactic {\tt Unfold {\qualid}} to the hint list
   that will only be used when the head constant of the goal is \ident.
   Its cost is 4.
 
@@ -2003,7 +2005,7 @@ There are shortcuts that allow to define several goal at once:
   Notice that the hint name is the same that the theorem given as
   hint.
 \item \comindex{Hints Immediate}\texttt{Hints Immediate \ident$_1$ \dots\ \ident$_n$ : \ident.}\\
-\item \comindex{Hints Unfold}\texttt{Hints Unfold \ident$_1$ \dots\ \ident$_n$ : \ident.}\\
+\item \comindex{Hints Unfold}\texttt{Hints Unfold \qualid$_1$ \dots\ \qualid$_n$ : \ident.}\\
 \end{itemize}
 
 %\begin{Warnings}

@@ -4,19 +4,19 @@
 
 \section{Displaying}
 
-\subsection{\tt Print {\ident}.}\comindex{Print}
+\subsection{\tt Print {\qualid}.}\comindex{Print}
 This command displays on the screen informations about the declared or
-defined object {\ident}.
+defined object referred by {\qualid}.
 
 \begin{ErrMsgs}
-\item {\ident} \errindex{not a defined object}
+\item {\qualid} \errindex{not a defined object}
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Print Proof {\ident}.}\comindex{Print Proof}\\
-In case \ident\ corresponds to an opaque theorem defined in a section,
+\item {\tt Print Proof {\qualid}.}\comindex{Print Proof}\\
+In case \qualid\ denotes an opaque theorem defined in a section,
 it is stored on a special unprintable form and displayed as 
-{\tt <recipe>}. {\tt Print Proof} forces the printable form of \ident\
+{\tt <recipe>}. {\tt Print Proof} forces the printable form of \qualid\
 to be computed and displays it.
 \end{Variants}
 
@@ -28,9 +28,9 @@ environment, including sections and modules.
 \item {\tt Inspect \num.}\comindex{Inspect}\\
 This command displays the {\num} last objects of the current
 environment, including sections and modules.
-% \item {\tt Print Section {\ident}.}\comindex{Print Section}\\
-% should correspond to a currently open section, this command
-% displays the objects defined since the beginning of this section.
+\item {\tt Print Section {\ident}.}\comindex{Print Section}\\
+should correspond to a currently open section, this command
+displays the objects defined since the beginning of this section.
 \item {\tt Print.}\comindex{Print}\\
 This command displays the axioms and variables declarations in the
 environment as well as the constants defined since the last variable
@@ -79,15 +79,15 @@ displayed as in \Coq\ terms.
 \begin{Variants}
 \item \texttt{Recursive Extraction {\qualid$_1$} ... {\qualid$_n$}.}\\
   Recursively extracts all the material needed for the extraction of 
-  globals \qualid$_1$ ... \qualid$_n$.
+  globals {\qualid$_1$} ... {\qualid$_n$}.
 \end{Variants}
 
 \SeeAlso chapter~\ref{Extraction}.
 
-\subsection{\tt Opaque \ident$_1$ \dots \ident$_n$.}
+\subsection{\tt Opaque \qualid$_1$ \dots \qualid$_n$.}
 \comindex{Opaque}\label{Opaque}
-This command forbids the unfolding of the constants \ident$_1$ \dots
-\ident$_n$  by tactics using $\delta$-conversion. Unfolding a constant
+This command forbids the unfolding of the constants {\qualid$_1$} \dots
+{\qualid$_n$} by tactics using $\delta$-conversion. Unfolding a constant
 is replacing it by its definition.
 
 By default, {\tt Theorem} and its alternatives are stamped as {\tt
@@ -101,14 +101,14 @@ values are of course relevant in general.
 \ref{Theorem}
 
 \begin{ErrMsgs}
-\item \errindex{The reference \ident\ was not found in the current
+\item \errindex{The reference \qualid\ was not found in the current
 environment}\\
-    There is no constant in the environment named
-    \ident. Nevertheless, if you asked \texttt{Opaque foo bar}
+    There is no constant referred by {\qualid} in the environment.
+    Nevertheless, if you asked \texttt{Opaque foo bar}
     and if \texttt{bar} does not exist, \texttt{foo} is set opaque.
 \end{ErrMsgs}
 
-\subsection{\tt Transparent \ident$_1$ \dots \ident$_n$.}
+\subsection{\tt Transparent \qualid$_1$ \dots \qualid$_n$.}
 \comindex{Transparent}\label{Transparent}
 This command is the converse of {\tt Opaque}. By default, {\tt
   Definition} and {\tt Local} declare objects as {\tt Transparent}.
@@ -125,10 +125,10 @@ can cause changes in tactic scripts behavior.
 \begin{ErrMsgs}
 % \item \errindex{Can not set transparent.}\\
 %     It is a constant from a required module or a parameter.
-\item \errindex{The reference \ident\ was not found in the current
+\item \errindex{The reference \qualid\ was not found in the current
 environment}\\
-    There is no constant in the environment named
-    \ident. Nevertheless, if you give the command \verb|Transparent foo bar.|
+    There is no constant referred by {\qualid} in the environment.
+    Nevertheless, if you give the command \verb|Transparent foo bar.|
     and if \texttt{bar} does not exist, \texttt{foo} is set opaque.
 \end{ErrMsgs}
 
@@ -144,7 +144,7 @@ library lemmas.
 \item \errindex{The reference \qualid\ was not found in the current
 environment}\\
     There is no constant in the environment named
-    \ident.
+    \qualid.
 \end{ErrMsgs}
 
 \subsection{\tt SearchPattern {\term}.}\comindex{SearchPattern}
@@ -336,47 +336,53 @@ its contents is invisible to the user.
 % ({\ident}{\tt.vo}) is searched first, then the specification file
 % ({\ident}{\tt.vi}) in case of failure.
 
-\subsection{\tt Require {\ident}.}
+\subsection{\tt Require {\dirpath}.}
 \label{Require}
 \comindex{Require}
-This command loads and opens (imports) the module stored in the file
-{\ident}{\tt .vo}.
+
+This command looks in the loadpath for a file containing module
+{\dirpath}, then loads and opens (imports) its contents.
+More precisely, if {\dirpath} splits into a library dirpath {\dirpath'} and a module name {\textsl{ident}}, then the file {\ident}{\tt .vo} is searched in a physical path mapped to the logical path {\dirpath'}.
+
 % The implementation file ({\ident}{\tt .vo}) is searched first,
 % then the specification file ({\ident}{\tt .vi}) in case of failure.
 If the module required has already been loaded, \Coq\ 
-simply opens it (as {\tt Import {\ident}} would do it).
-If the module required is already loaded and open, \Coq\ 
-displays the following warning: {\tt {\ident} already imported}.
+simply opens it (as {\tt Import {\dirpath}} would do it).
+%If the module required is already loaded and open, \Coq\ 
+%displays the following warning: {\tt {\ident} already imported}.
 
 If a module {\it A} contains a command {\tt Require} {\it B} then the
 command {\tt Require} {\it A} loads the module {\it B} but does not
 open it (See the {\tt Require Export} variant below).
 
 \begin{Variants}
-\item {\tt Require Export {\ident}.}\\
+\item {\tt Require Export {\qualid}.}\\
   \comindex{Require Export}
-  This command acts as {\tt Require} {\ident}.  But if a module {\it
+  This command acts as {\tt Require} {\qualid}.  But if a module {\it
     A} contains a command {\tt Require Export} {\it B}, then the
   command {\tt Require} {\it A} opens the module {\it B} as if the
   user would have typed {\tt Require}{\it B}.
-% \item {\tt Require $[$ Implementation $|$ Specification $]$ {\ident}.}\\
+% \item {\tt Require $[$ Implementation $|$ Specification $]$ {\qualid}.}\\
 %   \comindex{Require Implementation}
 %   \comindex{Require Specification}
 %   Is the same as {\tt Require}, but specifying explicitly the
 %   implementation ({\tt.vo} file) or the specification ({\tt.vi}
 %   file).
-\item {\tt Require {\ident} {\str}.}\\ 
-  Specifies the file to load as being {\str}, instead of
-  {\ident}. The opened module is still {\ident} and therefore
-  must have been loaded.
-\item {\tt Require {\ident} {\str}.}\\ 
-  Specifies the file to load as being {\str}, instead of
-  {\ident}. The opened module is still {\ident}.
+
+% Redundant ?
+% \item {\tt Require {\qualid} {\str}.}\\ 
+%   Specifies the file to load as being {\str} but containing module
+%  {\qualid}. 
+% The opened module is still {\ident} and therefore must have been loaded.
+\item {\tt Require {\qualid} {\str}.}\\ 
+  Specifies the file to load as being {\str} but containing module
+  {\qualid} which is then opened.
 \end{Variants}
 
 These different variants can be combined.
 
 \begin{ErrMsgs}
+\item \errindex{Cannot load {\ident}: no physical path bound to {\dirpath}}\\
 \item \errindex{Can't find module toto on loadpath}\\
   The command did not find the file {\tt toto.vo}. Either {\tt
     toto.v} exists but is not compiled or {\tt toto.vo} is in a directory
@@ -438,14 +444,27 @@ which can be any valid path.
   Is equivalent to {\tt Pwd.}
 \end{Variants}
 
-\subsection{\tt AddPath {\str}.}\comindex{AddPath}
-This command adds the path {\str} to the current \Coq\ loadpath.
+\subsection{\tt Add LoadPath {\str} as {\dirpath}.}\comindex{Add LoadPath}
+This command adds the path {\str} to the current \Coq\ loadpath and
+maps it to the logical directory {\dirpath}, which means that every
+file {\tt M.v} physically lying in directory {\str} will be considered
+as a module of logical name ``{\dirpath}{\tt{.M}}''.
 
-\subsection{\tt AddRecPath {\str}.}\comindex{AddRecPath}
+\begin{Variants}
+\item {\tt Add LoadPath {\str}.}\\
+Performs as {\tt Add LoadPath {\str} as {\dirpath}.} but for an empty directory path.
+\end{Variants}
+
+\subsection{\tt Add Rec LoadPath {\str} as {\dirpath}.}\comindex{Add Rec LoadPath}
 This command adds the directory {\str} and all its subdirectories 
-to the current \Coq\ loadpath.
+to the current \Coq\ loadpath. The top directory {\str} is mapped to the logical directory {\dirpath}, any subdirectory {\textsl{pdir}} will be mapped to logical directory {\dirpath}{\tt{.pdir}} and so on.
 
-\subsection{\tt DelPath {\str}.}\comindex{DelPath}
+\begin{Variants}
+\item {\tt Add Rec LoadPath {\str}.}\\
+Works as {\tt Add Rec LoadPath {\str} as {\dirpath}.} but for the empty logical directory path.
+\end{Variants}
+
+\subsection{\tt Remove LoadPath {\str}.}\comindex{Remove LoadPath}
 This command removes the path {\str} from the current \Coq\ loadpath.
 
 \subsection{\tt Print LoadPath.}\comindex{Print LoadPath}
@@ -455,10 +474,14 @@ This command displays the current \Coq\ loadpath.
 This command adds the path {\str} to the current Objective Caml loadpath (see
 the command {\tt Declare ML Module} in the section \ref{compiled}).
 
+\Rem This command is implied by {\tt Add LoadPath {\str} as {\dirpath}}.
+
 \subsection{\tt Add Rec ML Path {\str}.}\comindex{Add Rec ML Path}
 This command adds the directory {\str} and all its subdirectories 
 to the current Objective Caml loadpath (see
 the command {\tt Declare ML Module} in the section \ref{compiled}).
+
+\Rem This command is implied by {\tt Add Rec LoadPath {\str} as {\dirpath}}.
 
 \subsection{\tt Print ML Path {\str}.}\comindex{Print ML Path}
 This command displays the current Objective Caml loadpath.
@@ -472,14 +495,21 @@ command {\tt Declare ML Module} in the section
 This command displays the location of file {\str} in the current loadpath.
 Typically, {\str} is a \texttt{.cmo} or \texttt{.vo} or \texttt{.v} file.
 
-\subsection{\tt Locate Library {\ident}.}
+\subsection{\tt Locate Library {\dirpath}.}
 \comindex{Locate Library}
-This command displays the location of the \Coq\ module {\ident} in the current
-loadpath. Is is equivalent to {\tt Locate File "}{\ident}{\tt .vo".}
+This command gives the status of the \Coq\ module {\dirpath}. If the module is loaded, then it is told. Otherwise, a file containing a module of this logical name is searched in the loadpath.
 
-\subsection{\tt Locate {\ident}.}\comindex{Locate}
-This command displays the full name of the identifier {\ident}
+\subsection{\tt Locate {\qualid}.}\comindex{Locate}
+This command displays the full name of the qualified identifier {\qualid}
 and consequently the \Coq\ module in which it is defined.
+
+\begin{coq_example}
+Locate nat.
+Locate Datatypes.O.
+Locate Init.Datatypes.O.
+Locate Coq.Init.Datatypes.O.
+Locate I.Dont.Exist.
+\end{coq_example}
 
 \section{States and Reset}
 
@@ -570,17 +600,17 @@ who programs his own tactics.
 
 \SeeAlso chapters \ref{Addoc-syntax}
 
-\subsection{\tt{Infix} {\num} {\str} {\ident}.}\comindex{Infix}
+\subsection{\tt{Infix} {\num} {\str} {\qualid}.}\comindex{Infix}
 
-This command declares a prefix operator {\ident} as infix, with the
+This command declares the prefix operator denoted by {\qualid} as infix, with the
 syntax {\term} {\str} {\term}. {\num} is the precedence associated to
 the operator; it must lie between 1 and 10.  The infix operator \str\
 associates to the left. {\str} must be a legal token. Both grammar
 and pretty-print rules are automatically generated for {\str}.
 
 \begin{Variants}
-\item \texttt{Infix {\rm\sl assoc} {\num} {\str} {\ident}.} \\
-  Declares {\ident} as an infix operator with an alternate
+\item \texttt{Infix {\rm\sl assoc} {\num} {\str} {\qualid}.} \\
+  Declares the full names denoted by {\qualid} as an infix operator with an alternate
   associativity. {\rm\sl assoc} may be one of {\tt LEFTA}, {\tt
   RIGHTA} and {\tt NONA}. The default is {\tt LEFTA}. When an
   associativity is given, the precedence level must lie between 6 and
@@ -611,7 +641,7 @@ Objective Caml toplevel. The Objective Caml command:
 all abstract types of \Coq - section\_path, identfifiers, terms, judgements,
 \dots. You can also use the file \texttt{base\_include} instead,
 that loads only the pretty-printers for section\_paths and
-identfifiers.
+identifiers.
 % See section \ref{test-and-debug} more information on the
 % usage of the toplevel.
 You can return back to \Coq{} with the command: 

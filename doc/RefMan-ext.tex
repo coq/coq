@@ -19,7 +19,7 @@ construction allows to define ``signatures''.
 \hline
 {\sentence} & ::= & {\record}\\
   & & \\
-{\record} & ::= &  {\tt Record} {\ident} {\tt [} {\params} {\tt ] :} {\sort}
+{\record} & ::= &  {\tt Record} {\ident} \zeroone{{\tt [} {\params} {\tt ]}} {\tt :} {\sort}
     \verb.:=. \zeroone{\ident} \verb!{! 
     \zeroone{\nelist{\field}{;}}
     \verb!}! \verb:.:\\
@@ -33,24 +33,31 @@ construction allows to define ``signatures''.
 \label{record-syntax}
 \end{figure}
 
-\noindent In the simple case, the command
-``{\tt Record} {\ident} {\tt [} {\params} {\tt ]} \texttt{:} 
+\noindent In the expression
+
+\smallskip
+{\tt Record} {\ident} {\tt [} {\params} {\tt ]} \texttt{:} 
    {\sort} := {\ident$_0$} \verb+{+
  {\ident$_1$} \texttt{:} {\term$_1$}; 
               \dots
-  {\ident$_n$} \texttt{:} {\term$_n$} \verb+}+.'', 
+  {\ident$_n$} \texttt{:} {\term$_n$} \verb+}+.
+\smallskip
+ 
 the identifier {\ident} is the name of the defined record and {\sort}
 is its type. The identifier {\ident$_0$} is the name of its
-constructor. If {\ident$_0$} is omitted, the default name {\tt Build\_{\ident}} is used. The identifiers {\ident$_1$}, .., {\ident$_n$} are the
-names of its fields and {\term$_1$}, .., {\term$_n$} their respective
-types.  Records can have parameters.
+constructor. If {\ident$_0$} is omitted, the default name {\tt
+Build\_{\ident}} is used. The identifiers {\ident$_1$}, ..,
+{\ident$_n$} are the names of fields and {\term$_1$}, .., {\term$_n$}
+their respective types. Remark that the type of {\ident$_i$} may
+depend on the previous {\ident$_j$} (for $j<i$). Thus the order of the
+fields is important. Finally, {\params} are the parameters of the
+record.
 
-In the more general case, a record may have explicitly defined (aka
+More generally, a record may have explicitly defined (a.k.a.
 manifest) fields. For instance, {\tt Record} {\ident} {\tt [}
 {\params} {\tt ]} \texttt{:} {\sort} := \verb+{+ {\ident$_1$}
 \texttt{:} {\type$_1$} \verb+;+ {\ident$_2$} \texttt{:=} {\term$_2$} \verb+;+.
-{\ident$_3$} \texttt{:} {\type$_3$} \verb+}+. But this is not yet
-documented.
+{\ident$_3$} \texttt{:} {\type$_3$} \verb+}+ in which case the correctness of {\type$_3$} may rely on the instance {\term$_2$}  of  {\ident$_2$ and  {\term$_2$}  in turn may depend on {\ident$_1$}.
 
 
 \Example
@@ -67,10 +74,8 @@ Record Rat : Set := mkRat {
  Rat_irred_cond:(x,y,z:nat)(mult x y)=top/\(mult x z)=bottom->x=(S O)}.
 \end{coq_example}
 
-A field may depend on other fields appearing before it. 
-For instance in the above example, the field
-\verb+Rat_cond+ depends on the field \verb+bottom+. Thus the order of
-the fields is important.
+Remark here that the field
+\verb+Rat_cond+ depends on the field \verb+bottom+. 
 
 Let us now see the work done by the {\tt Record} macro.
 First the macro generates a inductive definition
@@ -129,7 +134,7 @@ Check half.
 The macro generates also, when it is possible, the projection
 functions for destructuring an object of type {\ident}.
 These projection functions have the same name that the corresponding
-field. In our example:
+fields. In our example:
 
 \begin{coq_example}
 Eval Compute in (top half).
@@ -524,6 +529,105 @@ can be reused. In this case, the old name is no longer accessible.
 module with an identifier already used in the module (see \ref{compiled}).
 \end{Remarks}
 
+\section{Libraries and long names}
+
+\paragraph{Libraries}
+
+The theories developed in {\Coq} are stored in {\em libraries}.  A
+library is characterized by a name called {\it root} of the
+library. The standard library of {\Coq} has root name {\tt Coq} and is
+known by default when a {\Coq} session starts.
+
+Libraries have a tree structure. Typically, the {\tt Coq} library
+contains the sub-libraries {\tt Init}, {\tt Logic}, {\tt Arith}, {\tt
+Lists}, ... The ``dot notation'' is used to separate the different
+component of a library name. Typically, the {\tt Arith} library of
+{\Coq} standard library is written ``{\tt Coq.Arith}''.
+
+\medskip
+\Rem no space is allowed between the dot and the following
+identifier, otherwise the dot is interpreted as the final dot of the
+command!
+\medskip
+
+Libraries and sub-libraries can be mapped to physical directories of the
+operating system using the command (see \ref{AddLoadPath})
+
+\begin{quote}
+{\tt Add LoadPath {\it physical\_dir} as {\it (sub-)library}}.
+\end{quote}
+
+A library can inherit the tree structure of a physical directory by
+using the command  (see \ref{AddRecLoadPath})
+
+\begin{quote}
+{\tt Add Rec LoadPath {\it physical\_dir} as {\it (sub-)library}}.
+\end{quote}
+
+At some point, (sub-)libraries contain {\it modules} which coincide
+with files at the physical level. Modules themselves contain
+axioms, parameters, definitions, lemmas and theorems.
+
+As for sublibraries, the dot notation is used to denote a specific
+module, axiom, parameter, definition, lemma or theorem of a
+library. Typically, {\tt Coq.Init.Logic.eq} denotes Leibniz' equality
+defined in the module {\tt Logic} in the sublibrary {\tt Init} of the
+standard library of \Coq.
+
+\paragraph{Absolute and short names}
+
+The full name of a library, module, section, definition, theorem,
+... is called {\it absolute}. 
+The final identifier (in the example
+above, it is {\tt eq}) is called {\it short name} (or sometimes {\it
+base name}.  {\Coq} maintains a {\it names table} mapping short names
+to absolute names. This greatly simplifies the notations.  {\Coq}
+cannot accept two constructions (definition, theorem, ...) with the
+same absolute name.
+
+As a special case, the logical name of a library, module or section is
+called a {\em logical directory path} (written {\dirpath}).
+
+\paragraph{Visibility and qualified names}
+An absolute path is called {\it visible} when its base name suffices
+to denote it. This means the base name is mapped to the absolute name
+in {\Coq} name table.
+
+All the base names of sublibraries, modules, sections, definitions and
+theorems are automatically put in the {\Coq} name table. But sometimes,
+the short name of a construction defined in a module may hide the short name of another construction defined in another module.
+Instead of just distinguishing the clashing names by using the
+absolute names, it is enough to prefix the base name just by the name
+of the module in which the definition, theorem, ... is defined.
+% Remark: when modules will be available, longer qualification may be needed
+Such a name built from single identifiers separated by dots is called
+a {\em partially qualified name} (or shortly a {\em qualified name},
+written {\qualid}). Especially, both absolute names and short names
+are qualified names. To ensure that a construction always remains
+accessible, absolute names can never be hidden.
+
+Examples:
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{coq_example}
+Check O.
+Definition nat := bool.
+Check O.
+Check Datatypes.nat.
+\end{coq_example}
+
+\paragraph{Requiring a file}
+
+A module compiled in a ``.vo'' file comes with a logical names (e.g. 
+physical file \verb!theories/Init/Datatypes.vo! in {\Coq} installation directory contains logical module {\tt Coq.Init.Datatypes}). 
+When requiring the file, the mapping between physical directories and logical library should be consistent with the mapping used to compile the file (for modules of the standard library, this is automatic -- check it by typing {\tt Print LoadPath}).
+
+The command {\tt Add Rec LoadPath} is also available from {\tt coqtop}
+and {\tt coqc} by using option~\verb=-R= (see section \ref{Tools}).
+
 \section{Implicit arguments}\index{implicit arguments}
 
 The {\Coq} system allows to skip during a function application certain
@@ -561,13 +665,13 @@ arguments, one can omit the implicit ones. They are then automatically
 replaced by symbols ``?'', to be inferred by the mechanism of
 synthesis of implicit arguments.
 
-\subsubsection{\tt Implicit Arguments {\switch}.}
-\comindex{Implicit Arguments}
+\subsubsection{\tt Set Implicit Arguments.}
+\comindex{Set Implicit Arguments}
 \label{Implicit Arguments}
 
-If {\switch} is {\tt On} then the command switches on the automatic
-mode. If {\switch} is {\tt Off} then the command switches off the
-automatic mode. The mode {\tt Off} is the default mode.
+This command switches the automatic implicit arguments
+mode on. To switch it off, use {\tt Unset Implicit Arguments.}.
+The mode is off by default.
 
 The computation of implicit arguments takes account of the
 unfolding of constants.  For instance, the variable {\tt p} below has
@@ -577,7 +681,7 @@ y) -> (z:U)(R y z) -> (R x z)}. As the variables {\tt x}, {\tt y} and
 correspond respectively to the positions {\tt 1}, {\tt 2} and {\tt 4}.
 
 \begin{coq_example*}
-Implicit Arguments On.
+Set Implicit Arguments.
 Variable X : Type.
 Definition Relation := X -> X -> Prop.
 Definition Transitivity := [R:Relation]
@@ -643,7 +747,7 @@ Let us extend our functional language with the definition of the
 identity function:
 
 \begin{coq_eval}
-Implicit Arguments Off.
+Unset Implicit Arguments.
 Reset Initial.
 \end{coq_eval}
 \begin{coq_example}
@@ -773,6 +877,17 @@ Print the list of declared coercions in the current context.
 
 \subsubsection{\tt Print Graph.}\comindex{Print Graph}
 Print the list of valid path coercions in the current context.
+
+\subsection{Activating the printing of coercions}
+
+\subsubsection{\tt Set Printing Coercions.}
+\comindex{Set Printing Coercions}
+\comindex{Unset Printing Coercions}
+
+This command forces the coercions to be printed.
+To skip the printing of coercions, use
+ {\tt Unset Printing Coercions.}.
+By default, coercions are not printed.
 
 %%% Local Variables: 
 %%% mode: latex

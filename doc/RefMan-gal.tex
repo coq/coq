@@ -52,23 +52,27 @@ Comments in {\Coq} are enclosed between {\tt (*} and {\tt
   *)}\index{Comments}, and can be nested. Comments are treated as
 blanks.
 
-\paragraph{Identifiers}
+\paragraph{Identifiers and access identifiers}
 
 Identifiers, written {\ident}, are sequences of letters, digits,
-\verb!_!, \verb!$! %$
+\verb!_! %, \verb!$!
 and \verb!'!, that do not start with a digit or \verb!'!.  That is,
 they are recognized by the following lexical class:
 
 \index{ident@\ident}
 \begin{center}
 \begin{tabular}{rcl} 
-{\firstletter} & ::= & \ml{a..z}\op\ml{A..Z}\op\ml{\_}\op\ml{\$} \\
-{\subsequentletter} & ::= & \ml{a..z}\op\ml{A..Z}\op\ml{0..9}\op\ml{\_}\op\ml{\$}\op\ml{'} \\
+{\firstletter} & ::= & \ml{a..z}\op\ml{A..Z}\op\ml{\_}%\op\ml{\$}
+ \\
+{\subsequentletter} & ::= & \ml{a..z}\op\ml{A..Z}\op\ml{0..9}\op\ml{\_}%\op\ml{\$}
+\op\ml{'} \\
 {\ident} & ::= & {\firstletter} \sequencewithoutblank{\subsequentletter}{}\\
 \end{tabular}
 \end{center}
 Identifiers can contain at most 80 characters, and all characters are
 meaningful. In particular, identifiers are case-sensitive.
+
+Access identifiers, written {\accessident}, are identifiers prefixed by \verb!.! (dot).
 
 \paragraph{Natural numbers and integers}
 Numerals are sequences of digits. Integers are numerals optionally preceded by a minus sign.
@@ -107,7 +111,7 @@ the end of each line, just before the newline. For instance,
 \begin{flushleft}
 \begin{small}
 \begin{verbatim}
-AddPath "/usr/local/coq/\
+Add LoadPath "/usr/local/coq/\
 contrib/Rocq/LAMBDA".
 \end{verbatim}
 \end{small}
@@ -115,9 +119,13 @@ contrib/Rocq/LAMBDA".
       
 is correctly parsed, and equivalent to
 
-\begin{coq_example*}
-AddPath "$COQLIB/contrib/Rocq/LAMBDA".
-\end{coq_example*}
+\begin{flushleft}
+\begin{small}
+\begin{verbatim}
+Add LoadPath "/usr/local/coq/contrib/Rocq/LAMBDA".
+\end{verbatim}
+\end{small}
+\end{flushleft}
 
 \paragraph{Keywords}
 The following identifiers are reserved keywords, and cannot be
@@ -277,8 +285,8 @@ chapter \ref{Addoc-syntax}.
 \begin{figure}[htb]
 \begin{tabular}{|lcl|}
 \hline
-{\term} & ::= & \ident\\
-  & $|$ & \sort \\
+{\term} & ::= & {\qualid} \\
+  & $|$ & {\sort} \\
  & $|$ & {\term} {\tt ->} {\term} \\
  & $|$ & {\tt (} {\nelist{\typedidents}{;}} {\tt )} {\term}\\
  & $|$ & {\tt [} {\nelist{\localdecls}{;}} {\tt ]} {\term}\\
@@ -287,6 +295,9 @@ chapter \ref{Addoc-syntax}.
         \sequence{\eqn}{|} {\tt end}\\
  & $|$ & {\tt Fix} {\ident} \verb.{. \nelist{\fixpointbody}{with} \verb.}.\\
  & $|$ & {\tt CoFix} {\ident} \verb.{. \nelist{\cofixpointbody}{with} \verb.}.\\
+ & & \\
+{\qualid} & ::= & {\ident} \\
+ & $|$ & {\qualid} {\accessident} \\
  & & \\
 {\sort} & ::= & {\tt Prop} \\
  & $|$ & {\tt Set} \\
@@ -317,10 +328,13 @@ chapter \ref{Addoc-syntax}.
 \end{figure}
 
 %%%%%%%
-\subsection{Identifiers}
+\subsection{Qualified identifiers and simple identifiers}
 
-Identifiers denotes either {\em variables}, {\em constants},
-{\em inductive types} or {\em constructors of inductive types}.
+{\em Qualified identifiers} ({\qualid}) denote {\em constants}, {\em inductive
+types} or {\em constructors of inductive types}.
+{\em Simple identifiers} (or shortly {\em identifiers}) are a
+syntactic subset of qualified identifiers.  Identifiers may also
+denote {\em variables}, what qualified identifiers do not.
 
 \subsection{Sorts}\index{Sorts}
 \index{Type@{\Type}}
@@ -418,7 +432,7 @@ binding of \term$_1$ to the variable $\ident$ in \term$_2$.
 
 \medskip
 \Rem The expression {\tt [}{\ident}{\tt :=}{\term$_1$}{\tt
-:}{\type}{\tt ]}{\term$_2$} is equivalent to {\tt [}{\ident}{\tt
+:}{\type}{\tt ]}{\term$_2$} is an alternative form for the expression {\tt [}{\ident}{\tt
 :=(}{\term$_1$}{\tt ::}{\type}{\tt )]}{\term$_2$}.
 
 \Rem An alternative equivalent syntax for let-in is {\tt let} {\ident}
@@ -460,7 +474,7 @@ well-founded recursion.
 
 The expression {\tt CoFix} {\ident$_i$} \verb.{. \ident$_1$
 {\tt :} {\type$_1$} {\tt with} {\ldots} {\tt with}
-\ident$_n$ {\tt [} \binders$_n$ {\tt ] :} {\type$_n$} \verb.}. denotes
+\ident$_n$ {\tt [} \binders$_n$ {\tt ] :} {\type$_n$}~\verb.}. denotes
 the $i$th component of a block of terms defined by a mutual guarded recursion. 
 
 \section{\em The Vernacular}
@@ -1092,7 +1106,7 @@ with forest_size [f:forest] : nat :=
 A generic command {\tt Scheme} is useful to build automatically various
 mutual induction principles. It is described in section \ref{Scheme}.
 
-\subsubsection{{\tt CoFixpoint} {\ident} :
+\subsubsection{\tt CoFixpoint {\ident} :
 \type$_0$ := \term$_0$.}\comindex{CoFixpoint}\label{CoFixpoint}
 
 The {\tt CoFixpoint} command introduces a method for constructing an
