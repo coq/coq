@@ -145,7 +145,8 @@ module Hsp = Hashcons.Make(
         basename = hident sp.basename }
     let equal sp1 sp2 =
       (List.length sp1.dirpath = List.length sp2.dirpath) &&
-      (List.for_all2 (==) sp1.dirpath sp2.dirpath)
+      (List.for_all2 (==) sp1.dirpath sp2.dirpath) &&
+      sp1.basename == sp2.basename
     let hash = Hashtbl.hash
   end)
 
