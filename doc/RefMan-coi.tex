@@ -52,7 +52,8 @@ An example of a co-inductive type is the type of infinite sequences formed with
 elements of type $A$, or streams for shorter. In Coq, 
 it can be introduced using the \verb!CoInductive! command~:
 \begin{coq_example}
-CoInductive Set Stream [A:Set] := cons : A->(Stream A)->(Stream A).
+CoInductive Stream (A:Set) : Set :=
+    cons : A -> Stream A -> Stream A.
 \end{coq_example}
 
 The syntax of this command is the same as the 
@@ -70,8 +71,12 @@ and $\tl: (\Str\;A)\rightarrow (\Str\;A)$  :
 \begin{coq_example}
 Section Destructors.
 Variable A : Set.
-Definition hd  := [x:(Stream A)]Cases x of (cons a s) => a end.
-Definition tl  := [x:(Stream A)]Cases x of (cons a s) => s end.
+Definition hd (x:Stream A) := match x with
+                              | cons a s => a
+                              end.
+Definition tl (x:Stream A) := match x with
+                              | cons a s => s
+                              end.
 \end{coq_example}
 \begin{coq_example*}
 End Destructors.
@@ -147,9 +152,9 @@ introduce the definitions above, $\from$ and $\alter$ will be accepted,
 while $\zeros$ and $\filter$ will be rejected giving some explanation 
 about why.
 \begin{coq_example}
-CoFixpoint zeros : (Stream nat) := (cons nat O (tl nat zeros)).
-CoFixpoint zeros : (Stream nat) := (cons nat O zeros).
-CoFixpoint from  : nat->(Stream nat) := [n:nat](cons nat n (from (S n))).
+CoFixpoint zeros  : Stream nat := cons nat 0%N (tl nat zeros).
+CoFixpoint zeros  : Stream nat := cons nat 0%N zeros.
+CoFixpoint from (n:nat) : Stream nat := cons nat n (from (S n)).
 \end{coq_example}
 
 As in the \verb!Fixpoint! command (cf. section~\ref{Fixpoint}), it is possible 
@@ -171,9 +176,9 @@ Isolately it is considered as a canonical expression which
 is completely evaluated. We can test this using the command \verb!Compute! 
 to calculate the normal forms of some terms~:
 \begin{coq_example}
-Eval Compute in (from O).
-Eval Compute in (hd nat (from O)).
-Eval Compute in (tl nat (from O)).  
+Eval compute in (from 0).
+Eval compute in (hd nat (from 0)).
+Eval compute in (tl nat (from 0)).
 \end{coq_example}
 \noindent Thus, the equality 
 $(\from\;n)\equiv(\cons\;\nat\;n\;(\from \; (\S\;n)))$
@@ -184,7 +189,9 @@ a general lemma stating that eliminating and then re-introducing a stream
 yields the same stream.
 \begin{coq_example}
 Lemma unfold_Stream :
-        (x:(Stream nat))(x=(Cases x of (cons a s) => (cons nat a s) end)).
+   forall x:Stream nat, x = match x with
+                            | cons a s => cons nat a s
+                            end.
 \end{coq_example}
  
 \noindent The proof is immediate from the analysis of 
@@ -192,11 +199,11 @@ the possible cases for $x$, which transforms
 the equality in a trivial one.
 
 \begin{coq_example}
-Destruct x.
-Trivial.
+olddestruct x.
+trivial.
 \end{coq_example}
 \begin{coq_eval}
-Save.
+Qed.
 \end{coq_eval}
 The application of this lemma to  $(\from\;n)$ puts this
 constant at the head of an application which is an  argument 
@@ -204,7 +211,7 @@ of a case analysis, forcing its expansion.
 We can test the type of this application using Coq's command \verb!Check!,
 which infers the type of a given term. 
 \begin{coq_example}
-Check [n:nat](unfold_Stream  (from n)).
+Check (fun n:nat => unfold_Stream (from n)).
 \end{coq_example}
  \noindent  Actually, The elimination of $(\from\;n)$ has actually 
 no effect, because it is followed by a re-introduction, 
@@ -214,7 +221,7 @@ desired proposition. We can test this computing
 the normal form of the application above to see its type.  
 \begin{coq_example}
 Transparent unfold_Stream.
-Eval Compute in [n:nat](unfold_Stream  (from n)).
+Eval compute in (fun n:nat => unfold_Stream (from n)).
 \end{coq_example}
 
 
@@ -229,9 +236,9 @@ of construction a finite number of times, which is not always
 enough. Consider for example the following method for appending 
 two streams~:
 \begin{coq_example}
-Variable A:Set.
-CoFixpoint conc :  (Stream A)->(Stream A)->(Stream A) 
-        := [s1,s2:(Stream A)](cons A (hd A s1) (conc (tl A s1) s2)).
+Variable A : Set.
+CoFixpoint conc (s1 s2:Stream A) : Stream A :=
+  cons A (hd A s1) (conc (tl A s1) s2).
 \end{coq_example}
 
 Informally speaking, we expect that for all pair of streams $s_1$ and $s_2$, 
@@ -258,10 +265,10 @@ heads of the streams, and an (infinite) proof of the equality
 of their tails. 
 
 \begin{coq_example}
-CoInductive EqSt  : (Stream A)->(Stream A)->Prop := 
-            eqst : (s1,s2:(Stream A))
-                   (hd A s1)=(hd A s2)->
-                   (EqSt (tl A s1) (tl A s2))->(EqSt s1 s2).
+CoInductive EqSt : Stream A -> Stream A -> Prop :=
+    eqst :
+      forall s1 s2:Stream A,
+        hd A s1 = hd A s2 -> EqSt (tl A s1) (tl A s2) -> EqSt s1 s2.
 \end{coq_example}
 \noindent Now the equality of both streams can be proved introducing
 an infinite object of type 
@@ -269,10 +276,9 @@ an infinite object of type
 \noindent $(\EqSt\;s_1\;(\conc\;s_1\;s_2))$ by a \verb!CoFixpoint!
 definition.
 \begin{coq_example}
-CoFixpoint eqproof : (s1,s2:(Stream A))(EqSt s1 (conc s1 s2))
-   := [s1,s2:(Stream A)]
-        (eqst s1 (conc s1 s2)
-            (refl_equal A (hd A (conc s1 s2))) (eqproof (tl A s1) s2)).
+CoFixpoint eqproof (s1 s2:Stream A) : EqSt s1 (conc s1 s2) :=
+  eqst s1 (conc s1 s2) (refl_equal (hd A (conc s1 s2)))
+    (eqproof (tl A s1) s2).
 \end{coq_example}
 \begin{coq_eval}
 Reset eqproof.
@@ -290,23 +296,23 @@ default.
 %\pagebreak 
 
 \begin{coq_example}
-Lemma eqproof : (s1,s2:(Stream A))(EqSt s1 (conc s1 s2)).
-Cofix.
+Lemma eqproof : forall s1 s2:Stream A, EqSt s1 (conc s1 s2).
+cofix.
 \end{coq_example}
 
 \noindent An easy (and wrong!) way of finishing the proof is just to apply the
 variable \verb!eqproof!, which has the same type as the goal. 
 
 \begin{coq_example}
-Intros.
-Apply eqproof.
+intros.
+apply eqproof.
 \end{coq_example}
 
 \noindent The ``proof'' constructed in this way 
 would correspond to the \verb!CoFixpoint! definition
 \begin{coq_example*}
-CoFixpoint eqproof : (s1:(Stream A))(s2:(Stream A))(EqSt s1 (conc s1 s2))
-                   := eqproof.
+CoFixpoint eqproof  : forall s1 s2:Stream A, EqSt s1 (conc s1 s2) :=
+  eqproof.
 \end{coq_example*}
 
 \noindent which is obviously non-guarded. This means that 
@@ -334,8 +340,8 @@ applied even if the proof term is not complete.
 
 \begin{coq_example}
 Restart.
-Cofix.
-Auto. 
+cofix.
+auto.
 Guarded.
 Undo.
 Guarded.
@@ -346,17 +352,17 @@ beginning and show how to construct an admissible proof~:
 
 \begin{coq_example} 
 Restart.
-Cofix.
+ cofix.
 \end{coq_example}
 
 %\pagebreak
 
 \begin{coq_example}
-Intros.
-Apply eqst.
-Trivial.
-Simpl.
-Apply eqproof.
+intros.
+apply eqst.
+trivial.
+simpl.
+apply eqproof.
 Qed.
 \end{coq_example}
 

@@ -460,9 +460,9 @@ proof of such a lemma can be done as shown in table~\ref{cnatltac}.
 
 \begin{coq_eval}
 Reset Initial.
-Require Arith.
-Require PolyList.
-Require PolyListSyntax.
+Require Import Arith.
+Require Import PolyList.
+Require Import PolyListSyntax.
 \end{coq_eval}
 
 \begin{table}[ht]
@@ -470,15 +470,17 @@ Require PolyListSyntax.
 {\parbox{6in}
 {
 \begin{coq_example*}
-Lemma card_nat: ~(EX x:nat|(EX y:nat|(z:nat)(x=z)/\(y=z))).
+Lemma card_nat :
+ ~ ( EX x : nat | ( EX y : nat | (forall z:nat, x = z /\ y = z))).
 Proof.
-Red;Intro H.
-Elim H;Intros a Ha.
-Elim Ha;Intros b Hb.
-Elim (Hb (0));Elim (Hb (1));Elim (Hb (2));Intros;
-  Match Context With
-    [_:?1=?2;_:?1=?3|-?] ->
-      Cut ?2=?3;[Discriminate|Apply trans_equal with ?1;Auto].
+red; intro H.
+elim H; intros a Ha.
+elim Ha; intros b Hb.
+elim (Hb 0%N); elim (Hb 1%N); elim (Hb 2%N); intros;
+ match context with
+ | [_:(?X1 = ?X2),_:(?X1 = ?X3) |- _ ] =>
+     cut (X2 = X3); [ discriminate | apply trans_equal with X1; auto ]
+ end.
 Qed.
 \end{coq_example*}
 }}
@@ -504,18 +506,18 @@ First, we define the permutation predicate as shown in table~\ref{permutpred}.
 {
 \begin{coq_example*}
 Section Sort.
-Variable A:Set.
-
-Inductive permut:(list A)->(list A)->Prop:=
-  permut_refl:(l:(list A))(permut l l)
- |permut_cons:
-    (a:A)(l0,l1:(list A))(permut l0 l1)->
-      (permut (cons a l0) (cons a l1))
- |permut_append:
-    (a:A)(l:(list A))(permut (cons a l) (l^(cons a (nil A))))
- |permut_trans:
-    (l0,l1,l2:(list A))(permut l0 l1)->(permut l1 l2)->
-      (permut l0 l2).
+Variable A : Set.
+Inductive permut : 
+list A -> list A -> Prop :=
+  | permut_refl : forall l:list A, permut l l
+  | permut_cons :
+      forall (a:A) (l0 l1:list A),
+        permut l0 l1 -> permut (a :: l0) (a :: l1)
+  | permut_append :
+      forall (a:A) (l:list A), permut (a :: l) (l ^ a :: nil)
+  | permut_trans :
+      forall l0 l1 l2:list A,
+        permut l0 l1 -> permut l1 l2 -> permut l0 l2.
 End Sort.
 \end{coq_example*}
 }}
@@ -550,26 +552,29 @@ Compute in} and we can get the terms back by {\tt Match}.
 {\parbox{6in}
 {
 \begin{coq_example}
-Recursive Tactic Definition Permut n:=
- Match Context With
-   [|-(permut ? ?1 ?1)] -> Apply permut_refl
-  |[|-(permut ? (cons ?1 ?2) (cons ?1 ?3))] ->
-     Let newn=Eval Compute in (length ?2) In
-     Apply permut_cons;(Permut newn)
-  |[|-(permut ?1 (cons ?2 ?3) ?4)] ->
-     (Match Eval Compute in n With
-        [(1)] -> Fail
-       |_ ->
-         Let l0'='(?3^(cons ?2 (nil ?1))) In
-         Apply (permut_trans ?1 (cons ?2 ?3) l0' ?4);
-         [Apply permut_append|
-          Compute;(Permut '(pred n))]).
-
-Tactic Definition PermutProve:=
- Match Context With
-   [|-(permut ? ?1 ?2)] ->
-     (Match Eval Compute in ((length ?1)=(length ?2)) With
-        [?1=?1] -> (Permut ?1)).
+Ltac Permut n :=
+  match context with
+  | [ |- (permut _ ?X1 ?X1) ] => apply permut_refl
+  | [ |- (permut _ (?X1 :: ?X2) (?X1 :: ?X3)) ] =>
+      let newn := eval compute in (length X2) in
+      (apply permut_cons; Permut newn)
+  | [ |- (permut ?X1 (?X2 :: ?X3) ?X4) ] =>
+      match eval compute in n with
+      | [1%N] => fail
+      | _ =>
+          let l0' := '(X3 ^ X2 :: nil) in
+          (apply (permut_trans X1 (X2 :: X3) l0' X4);
+            [ apply permut_append | compute; Permut (pred n) ])
+      end
+  end.
+Ltac PermutProve :=
+  match context with
+  | [ |- (permut _ ?X1 ?X2) ] =>
+      match eval compute in 
+            (length X1 = length X2) with
+      | [(?X1 = ?X1)] => Permut X1
+      end
+  end.
 \end{coq_example}
 }}
 \caption{Permutation tactic}
@@ -584,22 +589,23 @@ table~\ref{permutlem}.
 {\parbox{6in}
 {
 \begin{coq_example*}
-Lemma permut_ex1:
-  (permut nat (cons (1) (cons (2) (cons (3) (nil nat))))
-     (cons (3) (cons (2) (cons (1) (nil nat))))).
+Lemma permut_ex1 :
+ permut nat (1%N :: 2%N :: 3%N :: nil) (3%N :: 2%N :: 1%N :: nil).
 Proof.
 PermutProve.
-Save.
-
-Lemma permut_ex2:
- (permut nat
-   (cons (0) (cons (1) (cons (2) (cons (3) (cons (4) (cons (5)
-     (cons (6) (cons (7) (cons (8) (cons (9) (nil nat)))))))))))
-   (cons (0) (cons (2) (cons (4) (cons (6) (cons (8) (cons (9)
-     (cons (7) (cons (5) (cons (3) (cons (1) (nil nat)))))))))))).
+Qed.
+Lemma permut_ex2 :
+ 
+ permut nat
+   (0%N
+    :: 1%N
+       :: 2%N :: 3%N :: 4%N :: 5%N :: 6%N :: 7%N :: 8%N :: 9%N :: nil)
+   (0%N
+    :: 2%N
+       :: 4%N :: 6%N :: 8%N :: 9%N :: 7%N :: 5%N :: 3%N :: 1%N :: nil).
 Proof.
 PermutProve.
-Save.
+Qed.
 \end{coq_example*}
 }}
 \caption{Examples of {\tt PermutProve} use}
@@ -625,46 +631,56 @@ for the left implication to get rid of the contraction and the right or).
 {\parbox{6in}
 {
 \begin{coq_example}
-Tactic Definition Axioms:=
-  Match Context With
-   [|-True] -> Trivial
-  |[_:False|- ?] -> ElimType False;Assumption
-  |[_:?1|-?1] -> Auto.
-
-Tactic Definition DSimplif:=
- Repeat
-  (Intros;
-   (Match Context With
-     [id:~?|-?] -> Red in id
-    |[id:?/\?|-?] -> Elim id;Do 2 Intro;Clear id
-    |[id:?\/?|-?] -> Elim id;Intro;Clear id
-    |[id:?1/\?2->?3|-?] ->
-       Cut ?1->?2->?3;[Intro|Intros;Apply id;Split;Assumption]
-    |[id:?1\/?2->?3|-?] ->
-       Cut ?2->?3;[Cut ?1->?3;[Intros|
-                               Intro;Apply id;Left;Assumption]|
-                   Intro;Apply id;Right;Assumption]
-    |[id0:?1->?2;id1:?1|-?] ->
-       Cut ?2;[Intro;Clear id0|Apply id0;Assumption]
-    |[|-?/\?] -> Split
-    |[|-~?] -> Red)).
-
-Recursive Tactic Definition TautoProp:=
+Ltac Axioms :=
+  match context with
+  | [ |- True ] => trivial
+  | [_:False |- _ ] => elimtype False; assumption
+  | [_:?X1 |- ?X1 ] => auto
+  end.
+Ltac DSimplif :=
+  repeat
+   (
+     intros;
+     match context with
+     | [id:(~ _) |- _ ] => red in id
+     | [id:(_ /\ _) |- _ ] =>
+         elim id; do 2 intro; clear id
+     | [id:(_ \/ _) |- _ ] =>
+         elim id; intro; clear id
+     | [id:(?X1 /\ ?X2 -> ?X3) |- _ ] =>
+         cut (X1 -> X2 -> X3);
+          [ intro | intros; apply id; split; assumption ]
+     | [id:(?X1 \/ ?X2 -> ?X3) |- _ ] =>
+         cut (X2 -> X3);
+          [ cut (X1 -> X3);
+             [ intros | intro; apply id; left; assumption ]
+          | intro; apply id; right; assumption ]
+     | [id0:(?X1 -> ?X2),id1:?X1 |- _ ] =>
+         cut X2; [ intro; clear id0 | apply id0; assumption ]
+     | [ |- (_ /\ _) ] => split
+     | [ |- (~ _) ] => red
+     end).
+Ltac TautoProp :=
   DSimplif;
-   Axioms
-   Orelse
-   Match Context With
-    [id:(?1->?2)->?3|-?] ->
-      Cut ?2->?3;[Intro;Cut ?1->?2;[Intro;Cut ?3;[Intro;Clear id|
-                              Apply id;Assumption]|Clear id]|
-                  Intro;Apply id;Intro;Assumption];TautoProp
-   |[id:~?1->?2|-?]->
-      Cut False->?2;
-      [Intro;Cut ?1->False;[Intro;Cut ?2;[Intro;Clear id|
-                               Apply id;Assumption]|Clear id]|
-       Intro;Apply id;Red;Intro;Assumption];TautoProp
-   |[|-?\/?] ->
-      (Left;TautoProp) Orelse (Right;TautoProp).
+   Axioms ||
+     match context with
+     | [id:((?X1 -> ?X2) -> ?X3) |- _ ] =>
+         
+          cut (X2 -> X3);
+          [ intro; cut (X1 -> X2);
+             [ intro; cut X3;
+                [ intro; clear id | apply id; assumption ]
+             | clear id ]
+          | intro; apply id; intro; assumption ]; TautoProp
+     | [id:(~ ?X1 -> ?X2) |- _ ] =>
+         cut (False -> X2);
+          [ intro; cut (X1 -> False);
+             [ intro; cut X2;
+                [ intro; clear id | apply id; assumption ]
+             | clear id ]
+          | intro; apply id; red; intro; assumption ]; TautoProp
+     | [ |- (_ \/ _) ] => (left; TautoProp) || (right; TautoProp)
+     end.
 \end{coq_example}
 }}
 \caption{Deciding intuitionistic propositions}
@@ -679,15 +695,16 @@ table~\ref{tautolem}.
 {\parbox{6in}
 {
 \begin{coq_example*}
-Lemma tauto_ex1:(A,B:Prop)A/\B->A\/B.
+Lemma tauto_ex1 : forall A B:Prop, A /\ B -> A \/ B.
 Proof.
 TautoProp.
-Save.
-
-Lemma tauto_ex2:(A,B:Prop)(~~B->B)->(A->B)->~~A->B.
+Qed.
+Lemma tauto_ex2 :
+ 
+ forall A B:Prop, (~ ~ B -> B) -> (A -> B) -> ~ ~ A -> B.
 Proof.
 TautoProp.
-Save.
+Qed.
 \end{coq_example*}
 }}
 \caption{Proofs of tautologies with {\tt TautoProp}}
@@ -708,26 +725,25 @@ table~\ref{isosax}.
 {
 \begin{coq_eval}
 Reset Initial.
-Require Arith.
+Require Import Arith.
 \end{coq_eval}
 \begin{coq_example*}
 Section Iso_axioms.
-
-Variable A,B,C:Set.
-
-Axiom Com:(A*B)==(B*A).
-Axiom Ass:(A*(B*C))==((A*B)*C).
-Axiom Cur:((A*B)->C)==(A->B->C).
-Axiom Dis:(A->(B*C))==((A->B)*(A->C)).
-Axiom P_unit:(A*unit)==A.
-Axiom AR_unit:(A->unit)==unit.
-Axiom AL_unit:(unit->A)==A.
-
-Lemma Cons:B==C->(A*B)==(A*C).
+Variables A B C : 
+            Set.
+Axiom Com : 
+        A * B = B * A.
+Axiom Ass : A * (B * C) = A * B * C.
+Axiom Cur : (A * B -> C) = (A -> B -> C).
+Axiom Dis : (A -> B * C) = (A -> B) * (A -> C).
+Axiom P_unit : A * unit = A.
+Axiom AR_unit : (A -> unit) = unit.
+Axiom AL_unit : (unit -> A) = A.
+Lemma Cons : 
+ B = C -> A * B = A * C.
 Proof.
-Intro Heq;Rewrite Heq;Apply refl_eqT.
-Save.
-
+intro Heq; rewrite Heq; apply refl_equal.
+Qed.
 End Iso_axioms.
 \end{coq_example*}
 }}
@@ -749,33 +765,41 @@ CompareStruct}). The main tactic to be called and realizing this algorithm is
 {\parbox{6in}
 {
 \begin{coq_example}
-Recursive Tactic Definition DSimplif trm:=
-  Match trm With
-   [(?1*?2)*?3] -> Rewrite <- (Ass ?1 ?2 ?3);Try MainSimplif
-  |[(?1*?2)->?3] -> Rewrite (Cur ?1 ?2 ?3);Try MainSimplif
-  |[?1->(?2*?3)] -> Rewrite (Dis ?1 ?2 ?3);Try MainSimplif
-  |[?1*unit] -> Rewrite (P_unit ?1);Try MainSimplif
-  |[unit*?1] -> Rewrite (Com unit ?1);Try MainSimplif
-  |[?1->unit] -> Rewrite (AR_unit ?1);Try MainSimplif
-  |[unit-> ?1] -> Rewrite (AL_unit ?1);Try MainSimplif
-  |[?1*?2] ->
-     ((DSimplif ?1);Try MainSimplif) Orelse
-     ((DSimplif ?2);Try MainSimplif)
-  |[?1-> ?2] ->
-     ((DSimplif ?1);Try MainSimplif) Orelse
-     ((DSimplif ?2);Try MainSimplif)
-And MainSimplif:=
-  Match Context With
-   [|- ?1== ?2] -> Try (DSimplif ?1);Try (DSimplif ?2).
-
-Recursive Tactic Definition Length trm:=
-  Match trm With
-   [?*?1] ->
-     Let succ=(Length ?1) In
-     '(S succ)
-  |_ -> '(1).
-
-Tactic Definition Assoc:= Repeat Rewrite <- Ass.
+Ltac DSimplif trm :=
+  match 
+  trm with
+  | [(?X1 * ?X2 * ?X3)] =>
+      rewrite <- (Ass X1 X2 X3); try MainSimplif
+  | [(?X1 * ?X2 -> ?X3)] =>
+      rewrite (Cur X1 X2 X3); try MainSimplif
+  | [(?X1 -> ?X2 * ?X3)] =>
+      rewrite (Dis X1 X2 X3); try MainSimplif
+  | [(?X1 * unit)] =>
+      rewrite (P_unit X1); try MainSimplif
+  | [(unit * ?X1)] =>
+      rewrite (Com unit X1); try MainSimplif
+  | [(?X1 -> unit)] =>
+      rewrite (AR_unit X1); try MainSimplif
+  | [(unit -> ?X1)] =>
+      rewrite (AL_unit X1); try MainSimplif
+  | [(?X1 * ?X2)] =>
+      (DSimplif X1; try MainSimplif) || (DSimplif X2; try MainSimplif)
+  | [(?X1 -> ?X2)] =>
+      (DSimplif X1; try MainSimplif) || (DSimplif X2; try MainSimplif)
+  end
+ with MainSimplif :=
+  match context with
+  | [ |- (?X1 = ?X2) ] => try DSimplif X1; try DSimplif X2
+  end.
+Ltac Length trm :=
+  match 
+  trm with
+  | [(_ * ?X1)] => let succ := Length X1 in
+                   '(S succ)
+  | _ => '1%N
+  end.
+Ltac assoc := repeat 
+               rewrite <- Ass.
 \end{coq_example}
 }}
 \caption{Type isomorphism tactic (1)}
@@ -787,29 +811,29 @@ Tactic Definition Assoc:= Repeat Rewrite <- Ass.
 {\parbox{6in}
 {
 \begin{coq_example}
-Recursive Tactic Definition DoCompare n:=
-  Match Context With
-   [|-?1==?1] -> Apply refl_eqT
-  |[|-(?1*?2)==(?1*?3)] ->
-     Apply Cons;
-     Let newn=(Length ?2) In
-     (DoCompare newn)
-  |[|-(?1*?2)==?3] ->
-     (Match Eval Compute in n With
-       [(1)] -> Fail
-      |_ -> 
-        Pattern 1 (?1*?2);Rewrite Com;Assoc;
-        (DoCompare '(pred n))).
-
-Tactic Definition CompareStruct:=
-  Match Context With
-   [|-?1==?2] ->
-     Let l1=(Length ?1)
-     And l2=(Length ?2) In
-     (Match Eval Compute in l1=l2 With
-        [?1=?1] -> (DoCompare ?1)).
-
-Tactic Definition IsoProve:=MainSimplif;CompareStruct.
+Ltac DoCompare n :=
+  match context with
+  | [ |- (?X1 = ?X1) ] => apply refl_equal
+  | [ |- (?X1 * ?X2 = ?X1 * ?X3) ] =>
+      apply Cons; let newn := Length X2 in
+                  DoCompare newn
+  | [ |- (?X1 * ?X2 = ?X3) ] =>
+      match eval compute in n with
+      | [1%N] => fail
+      | _ =>
+          pattern (X1 * X2) 1; rewrite Com; assoc; DoCompare (pred n)
+      end
+  end.
+Ltac CompareStruct :=
+  match context with
+  | [ |- (?X1 = ?X2) ] =>
+      let l1 := 
+      Length X1 with l2 := Length X2 in
+      match eval compute in (l1 = l2) with
+      | [(?X1 = ?X1)] => DoCompare X1
+      end
+  end.
+Ltac IsoProve := MainSimplif; CompareStruct.
 \end{coq_example}
 }}
 \caption{Type isomorphism tactic (2)}
@@ -823,17 +847,19 @@ Table~\ref{isoslem} gives examples of what can be solved by {\tt IsoProve}.
 {\parbox{6in}
 {
 \begin{coq_example*}
-Lemma isos_ex1:(A,B:Set)((A*unit)*B)==(B*(unit*A)).
+Lemma isos_ex1 : 
+ forall A B:Set, A * unit * B = B * (unit * A).
 Proof.
-Intros;IsoProve.
-Save.
-
-Lemma isos_ex2:(A,B,C:Set)
-  ((A*unit)->(B*C*unit))==
-  (((A*unit)->((C->unit)*C))*(unit->(A->B))).
+intros; IsoProve.
+Qed.
+Lemma isos_ex2 :
+ 
+ forall A B C:Set,
+   (A * unit -> B * (C * unit)) =
+   (A * unit -> (C -> unit) * C) * (unit -> A -> B).
 Proof.
-Intros;IsoProve.
-Save.
+intros; IsoProve.
+Qed.
 \end{coq_example*}
 }}
 \caption{Type equalities solved by {\tt IsoProve}}

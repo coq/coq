@@ -72,14 +72,15 @@ Let's consider the relation \texttt{Le} over natural numbers and the
 following variables:
 
 \begin{coq_eval}
-Restore State Initial.
+Restore State "Initial".
 \end{coq_eval}
 
 \begin{coq_example*}
-Inductive Le : nat->nat->Set :=
-  LeO : (n:nat)(Le O n)  |  LeS : (n,m:nat) (Le n m)-> (Le (S n) (S m)).
-Variable P:nat->nat->Prop.
-Variable Q:(n,m:nat)(Le n m)->Prop.
+Inductive Le : nat -> nat -> Set :=
+  | LeO : forall n:nat, Le 0%N n
+  | LeS : forall n m:nat, Le n m -> Le (S n) (S m).
+Variable P : nat -> nat -> Prop.
+Variable Q : forall n m:nat, Le n m -> Prop.
 \end{coq_example*}
 
 For example purposes we defined  \verb+Le: nat->nat->Set+
@@ -105,8 +106,8 @@ it \texttt{Le} of type \verb+nat->nat->Prop+ or \verb+nat->nat->Type+.
 
 For example, consider the goal:
 \begin{coq_eval}
-Lemma ex : (n,m:nat)(Le (S n) m)->(P n m).
-Intros.
+Lemma ex : forall n m:nat, Le (S n) m -> P n m.
+intros.
 \end{coq_eval}
 
 \begin{coq_example}
@@ -125,7 +126,7 @@ the constructors \texttt{LeO} and \texttt{LeS}.
 
 
 \begin{coq_example}
-Inversion_clear  H.
+inversion_clear H.
 \end{coq_example}
 
 Note that \texttt{m} has been substituted in the goal for \texttt{(S m0)}
@@ -149,7 +150,7 @@ does not clear the equalities:
 Undo.
 \end{coq_example*}
 \begin{coq_example}
-Inversion H.
+inversion H.
 \end{coq_example}
 
 \begin{coq_eval}
@@ -203,8 +204,8 @@ Note that the hypothesis \texttt{(S m0)=m} has been deduced and
 
 For example, consider the  goal:
 \begin{coq_eval}
-Lemma ex_dep : (n,m:nat)(H:(Le (S n) m))(Q (S n) m H).
-Intros.
+Lemma ex_dep : forall (n m:nat) (H:Le (S n) m), Q (S n) m H.
+intros.
 \end{coq_eval}
 
 \begin{coq_example}
@@ -218,7 +219,7 @@ Neither \texttt{Inversion} nor  {\tt Inversion\_clear} make such a
 substitution. To have such a behavior we use the dependent inversion tactics:
 
 \begin{coq_example}
-Dependent Inversion_clear H.
+dependent inversion_clear H.
 \end{coq_example}
 
 Note that \texttt{H} has been substituted by \texttt{(LeS n m0 l)} and
@@ -288,7 +289,8 @@ goal with a specified inversion lemma.
   For example, to generate the inversion lemma for the instance
  \texttt{(Le (S n) m)} and the sort \texttt{Prop} we do:
 \begin{coq_example}
-Derive Inversion_clear leminv with (n,m:nat)(Le (S n) m) Sort Prop.
+Derive Inversion_clear leminv with (forall n m:nat, Le (S n) m) Sort
+ Prop.
 \end{coq_example}
 
 Let us  inspect the type of the generated lemma:
@@ -355,8 +357,8 @@ expect a predicate of type $(\vec{x}:\vec{T})s$ as first argument. \\
 \end{itemize}
 
 \begin{coq_example}
-Derive Dependent Inversion_clear leminv_dep 
-  with (n,m:nat)(Le (S n) m) Sort Prop.
+Derive Dependent Inversion_clear leminv_dep with
+ (forall n m:nat, Le (S n) m) Sort Prop.
 \end{coq_example}
 
 \begin{coq_example}
@@ -392,7 +394,7 @@ Abort.
 Show.
 \end{coq_example}
 \begin{coq_example}
-Inversion H using leminv.
+inversion H using leminv.
 \end{coq_example}
 
 
@@ -427,15 +429,18 @@ of mutual induction for objects in type {\term$_i$}.
 The definition of principle of mutual induction for {\tt tree} and
 {\tt forest} over the sort {\tt Set} is defined by the command:
 \begin{coq_eval}
-Restore State Initial.
-Variables A,B:Set.
-Mutual Inductive tree : Set :=  node : A -> forest -> tree
-with forest : Set := leaf : B -> forest 
-                   | cons : tree -> forest -> forest.
+Restore State "Initial".
+Variables A B : Set.
+Inductive tree : Set :=
+    node : A -> forest -> tree
+with forest : Set :=
+  | leaf : B -> forest
+  | cons : tree -> forest -> forest.
 \end{coq_eval}
 \begin{coq_example*}
-Scheme tree_forest_rec := Induction for tree Sort Set 
-with forest_tree_rec := Induction for forest Sort Set.
+Scheme tree_forest_rec := Induction for tree
+  Sort Set
+  with forest_tree_rec := Induction for forest Sort Set.
 \end{coq_example*}
 You may now look at the type of {\tt tree\_forest\_rec} :
 \begin{coq_example}
@@ -464,20 +469,20 @@ natural in case of inductively defined relations.
 \Example
 With the predicates {\tt odd} and {\tt even} inductively defined as:
 \begin{coq_eval}
-Restore State Initial.
+Restore State "Initial".
 \end{coq_eval}
 \begin{coq_example*}
-Mutual Inductive odd : nat->Prop := 
-    oddS : (n:nat)(even n)->(odd (S n))
-with even : nat -> Prop := 
-    evenO : (even O) 
-  | evenS : (n:nat)(odd n)->(even (S n)).  
+Inductive odd : nat -> Prop :=
+    oddS : forall n:nat, even n -> odd (S n)
+with even : nat -> Prop :=
+  | evenO : even 0%N
+  | evenS : forall n:nat, odd n -> even (S n).
 \end{coq_example*}
 The following command generates a powerful elimination
 principle:
 \begin{coq_example*}
-Scheme odd_even := Minimality for odd Sort Prop
-with   even_odd := Minimality for even Sort Prop.
+Scheme odd_even := Minimality for   odd Sort Prop
+  with even_odd := Minimality for even Sort Prop.
 \end{coq_example*}
 The type of {\tt odd\_even} for instance will be:
 \begin{coq_example}
