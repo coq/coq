@@ -84,7 +84,7 @@ let destEvalRef c = match kind_of_term c with
   | Var id  -> EvalVar id
   | Rel n -> EvalRel n
   | Evar ev -> EvalEvar ev
-  | _ -> anomaly "Not an evaluable reference"
+  | _ -> anomaly "Not an unfoldable reference"
 
 let reference_opt_value sigma env = function
   | EvalConst cst -> constant_opt_value env cst

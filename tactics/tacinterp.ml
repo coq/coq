@@ -213,7 +213,7 @@ let coerce_to_reference env = function
 let error_not_evaluable s =
   errorlabstrm "evalref_of_ref" 
     (str "Cannot coerce" ++ spc ()  ++ s ++ spc () ++
-     str "to an evaluable reference")
+     str "to an unfoldable reference")
 
 let coerce_to_evaluable_ref env c =
   let ev = match c with
