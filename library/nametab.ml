@@ -71,6 +71,7 @@ module type NAMETREE = sig
   val exists : user_name -> 'a t -> bool
   val user_name : qualid -> 'a t -> user_name
   val shortest_qualid : Idset.t -> user_name -> 'a t -> qualid
+  val find_prefixes : qualid -> 'a t -> 'a list
 end
 
 module Make(U:UserName) : NAMETREE with type user_name = U.t 
@@ -212,7 +213,7 @@ let shortest_qualid ctx uname tab =
   let hidden = Idset.mem id ctx in
   let rec find_uname pos dir (path,tab) = match path with
     | Absolute (u,_) | Relative (u,_)
-          when u=uname && not(pos=[] && hidden) -> List.rev pos 
+          when u=uname && not(pos=[] && hidden) -> List.rev pos
     | _ -> 
 	match dir with 
 	    [] -> raise Not_found
@@ -221,7 +222,25 @@ let shortest_qualid ctx uname tab =
   let ptab = Idmap.find id tab in
   let found_dir = find_uname [] dir ptab in
     make_qualid (make_dirpath found_dir) id
-    
+
+let push_node node l =
+  match node with
+  | Absolute (_,o) | Relative (_,o) when not (List.mem o l) -> o::l
+  | _ -> l
+
+let rec flatten_idmap tab l =
+  ModIdmap.fold (fun _ (current,idtab) l ->
+    flatten_idmap idtab (push_node current l)) tab l
+
+let rec search_prefixes (current,modidtab) = function
+  | modid :: path -> search_prefixes (ModIdmap.find modid modidtab) path
+  | [] -> List.rev (flatten_idmap  modidtab (push_node current []))
+      
+let find_prefixes qid tab =
+  try
+    let (dir,id) = repr_qualid qid in
+    search_prefixes (Idmap.find id tab) (repr_dirpath dir)
+  with Not_found -> []
 
 end
 
@@ -372,6 +391,12 @@ let locate_section qid =
     | DirOpenSection (dir, _) 
     | DirClosedSection dir -> dir
     | _ -> raise Not_found
+
+let locate_all qid = 
+  List.fold_right (fun a l -> match a with TrueGlobal a -> a::l | _ -> l)
+    (SpTab.find_prefixes qid !the_ccitab) []
+
+let extended_locate_all qid = SpTab.find_prefixes qid !the_ccitab
 
 (* Derived functions *)
 
