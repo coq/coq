@@ -500,7 +500,7 @@ let substnl_tomatch v depth = function
   | IsInd (t,indt) -> IsInd (substnl v depth t,substnl_ind_type v depth indt)
   | NotInd (c,t) -> NotInd (option_app (substnl v depth) c, substnl v depth t)
 
-let subst_tomatch (depth,c) = substnl_tomatch [c] depth
+let subst_tomatch (depth,c) = substnl_tomatch [c] 0
 
 (**********************************************************************)
 (* Utilities on patterns *)
@@ -705,8 +705,9 @@ let rec lift_subst_tomatch n (depth,ci as binder) = function
   (* By definition Pushed terms do not depend on previous terms to match *)
   (* and are already pushed in the environment; *)
   (* if all is correct, [c] has no variables < depth *)
+  (* +n-1 and not +n to simulate the substitution we don't apply *)
   | Pushed (lift,tm)::rest ->
-      Pushed (n+lift, tm)::(lift_subst_tomatch n binder rest)
+      Pushed (lift+n-1, tm)::(lift_subst_tomatch n binder rest)
 
 let rec liftn_tomatch_stack n depth = function
   | [] -> []
@@ -1210,7 +1211,7 @@ let shift_problem (current,t) pb =
      mat = List.map remove_current_pattern pb.mat }
 
 (* Building the sub-pattern-matching problem for a given branch *)
-let build_branch current typ pb eqns const_info =
+let build_branch current _ pb eqns const_info =
   (* We remember that we descend through a constructor *)
   let alias_type =
     if Array.length const_info.cs_concl_realargs = 0
@@ -1245,7 +1246,8 @@ let build_branch current typ pb eqns const_info =
   let tomatchs =
     List.fold_left2
       (fun l (d,t) dep_in_rhs -> (d,find_dependencies t l dep_in_rhs)::l)
-      [] typs' (dependencies_in_rhs const_info.cs_nargs eqns) in
+      [] (List.rev typs') (dependencies_in_rhs const_info.cs_nargs eqns) in
+  let tomatchs = List.rev tomatchs in
   let topushs = List.map (fun x -> ToPush x) tomatchs in
   (* The dependent term to subst in the types of the remaining UnPushed 
      terms is relative to the current context enriched by topushs *)
@@ -1256,8 +1258,13 @@ let build_branch current typ pb eqns const_info =
        @(extended_rel_list 0 const_info.cs_args)) in
 
   (* We replace [(mkRel 1)] by its expansion [ci] *)
+  (* and context "Gamma; current" by "Gamma; current; tomatchs" *)
+  (* This is done in two steps : first from "Gamma; current |- oldtm : T(1)" *)
+  (* into  "Gamma; current; tomatchs; current |- ... : liftn 1 (n+1) T(1)" *)
+  (* then into "Gamma; current; tomatchs |- updated_old_tomatch : U" where *)
+  (* U = subst ci (lift (n+1) T(1)) *)
   let updated_old_tomatch =
-    lift_subst_tomatch (const_info.cs_nargs) (1,ci) pb.tomatch in
+    lift_subst_tomatch (const_info.cs_nargs + 1) (1,ci) pb.tomatch in
 
   { pb with
       tomatch = topushs@updated_old_tomatch;
