@@ -221,10 +221,11 @@ let load_object mname fname=
 
 (* Summary of declared ML Modules *)
 
-(* List and not Strinset because order is important *)
+(* List and not Stringset because order is important *)
 let loaded_modules = ref []
 let get_loaded_modules () = !loaded_modules
-let add_loaded_module md = loaded_modules := md :: !loaded_modules
+let add_loaded_module md = 
+  loaded_modules := md :: list_except md !loaded_modules
 
 let orig_loaded_modules = ref !loaded_modules
 let init_ml_modules () = loaded_modules := !orig_loaded_modules
