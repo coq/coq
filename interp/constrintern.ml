@@ -821,11 +821,11 @@ let internalise sigma env allow_soapp lvar c =
 
   and intern_local_binder ((ids,ts,sc as env),bl) = function
       LocalRawAssum(nal,ty) ->
-        let ids' = List.fold_left
-          (fun ids (_,na) -> name_fold Idset.add na ids) ids nal in
-        ((ids',ts,sc),
-         List.map (fun (_,na) ->
-           (na,None,intern_type env ty)) nal @bl)
+        let ty = intern_type env ty in
+        List.fold_left
+          (fun ((ids,ts,sc),bl) (_,na) ->
+            ((name_fold Idset.add na ids,ts,sc), (na,None,ty)::bl))
+          (env,bl) nal
     | LocalRawDef((loc,na),def) ->
         ((name_fold Idset.add na ids,ts,sc),
          (na,Some(intern env def),RHole(loc,BinderType na))::bl)
