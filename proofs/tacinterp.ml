@@ -1120,6 +1120,7 @@ and redexp_of_ast (evc,env,lfun,lmatch,goalopt,debug) = function
 
 (* Interprets the patterns of Intro *)
 and cvt_intro_pattern (evc,env,lfun,lmatch,goalopt,debug) = function
+  | Node(_,"WILDCAR", []) -> WildPat
   | Node(_,"IDENTIFIER", [Nvar(loc,s)]) ->
     IdPat (id_of_Identifier (unvarg (val_interp
       (evc,env,lfun,lmatch,goalopt,debug) (Nvar (loc,s)))))

@@ -348,6 +348,7 @@ let ast_of_cvt_bind f = function
   | (Com,c)     -> ope ("BINDING", [ope ("COMMAND",[(f c)])])
 
 let rec ast_of_cvt_intro_pattern = function
+  | WildPat   -> ope ("WILDCAR",[])
   | IdPat id  -> nvar (string_of_id id) 
   | DisjPat l -> ope ("DISJPATTERN",  (List.map ast_of_cvt_intro_pattern l))
   | ConjPat l -> ope ("CONJPATTERN",  (List.map ast_of_cvt_intro_pattern l))

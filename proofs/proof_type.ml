@@ -110,6 +110,7 @@ and tactic_arg =
   | Intropattern   of intro_pattern
 
 and intro_pattern =
+  | WildPat
   | IdPat   of identifier
   | DisjPat of intro_pattern list
   | ConjPat of intro_pattern list

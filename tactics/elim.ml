@@ -192,6 +192,7 @@ let rec intro_pattern p =
   let clear_last = (tclLAST_HYP (fun c -> (clear_one (destVar c))))
   and case_last  = (tclLAST_HYP h_simplest_case) in  
   match p with
+    | WildPat    -> (tclTHEN intro clear_last)
     | IdPat  id  -> intro_using_warning id
     | DisjPat l  -> (tclTHEN introf
                        (tclTHENS 

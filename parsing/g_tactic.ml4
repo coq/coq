@@ -127,8 +127,11 @@ GEXTEND Gram
          <:ast< (DISJPATTERN ($LIST $tc)) >>
       | "("; tc = LIST1 intropattern SEP "," ; ")" -> 
          <:ast< (CONJPATTERN ($LIST $tc)) >>
+      | IDENT "_" -> 
+	 <:ast< (WILDCAR) >>
       | id = identarg                   -> 
-         <:ast< (IDENTIFIER $id) >> ] ]
+         <:ast< (IDENTIFIER $id) >> 
+      ] ]
   ;
   intropattern:
     [ [   tc = LIST1 simple_intropattern -> 
