@@ -258,7 +258,7 @@ let next_global_ident_away id avoid =
     next_global_ident_from (lift_ident id) avoid
 
 let fresh_id avoid id gl =
-  next_ident_away id (avoid@(pf_ids_of_hyps gl))
+  next_global_ident_away id (avoid@(pf_ids_of_hyps gl))
 
 let id_of_name_with_default s = function
   | Anonymous -> id_of_string s
