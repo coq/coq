@@ -131,6 +131,6 @@ let _ =
     (function
        | [VARG_CONSTR c] -> 
 	   (fun () ->
-              let (evmap,sign) = Pfedit.get_evmap_sign None in
+              let (evmap,sign) = Command.get_current_context () in
   	      constr_display (Astterm.interp_constr evmap sign c))
        | _ -> bad_vernac_args "PrintConstr")

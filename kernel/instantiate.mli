@@ -4,7 +4,6 @@
 (*i*)
 open Names
 open Term
-open Inductive
 open Evd
 open Environ
 (*i*)
