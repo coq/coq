@@ -26,14 +26,12 @@ let commands = [
    "Axiom";];
   [(* "Back"; *) ];
   ["Canonical Structure";
-   (* "Cd"; *)
    "Chapter";
-   (* "Check"; *)
    "Coercion";
    "Coercion Local";
    "CoFixpoint";
    "CoInductive";
-   (* "Correctness"; *)];
+  ];
   ["Declare ML Module";
    "Defined.";
    "Definition";
@@ -41,16 +39,14 @@ let commands = [
    "Derive Dependent Inversion__clear";
    "Derive Inversion";
    "Derive Inversion__clear";
-   (* "Drop"; *)];
+  ];
   ["End";
    "End Silent.";
    "Eval"; 
    "Extract Constant";
    "Extract Inductive";
-   "Extraction";
    "Extraction Inline";
    "Extraction Language";
-   "Extraction Module";
    "Extraction NoInline";];
   ["Fact";
    "Fixpoint";
@@ -70,48 +66,24 @@ let commands = [
    "Implicits";
    "Inductive";
    "Infix";
-   (* "Inspect"; *)];
+   ];
   ["Lemma";
    "Load";
    "Load Verbose";
    "Local";
-   (*
-    "Locate";
-   "Locate File";
-   "Locate Library"; *)];
+   "Ltac";
+  ];
   ["Module";
    "Module Type";
    "Mutual Inductive";];
   ["Notation";];
   ["Opaque";];
   ["Parameter";
-   (*"Print";
-   "Print All";
-   "Print Classes";
-   "Print Coercion Paths";
-   "Print Coercions";
-   "Print Extraction Inline";
-   "Print Graph";
-   "Print Hint";
-   "Print HintDb";
-   "Print LoadPath";
-   "Print ML Modules";
-   "Print ML Path";
-   "Print Module";
-   "Print Module Type";
-   "Print Modules";
-   "Print Proof";
-   "Print Section";
-   "Print Table Printing If";
-   "Print Table Printing Let";*)
-   "Proof.";
-   (*"Pwd";*)];
+   "Proof."];
   ["Qed.";
-   (* "Quit";*)];
+   ];
   ["Read Module";
    "Record";
-   "Recursive Extraction";
-   "Recursive Extraction Module";
    "Remark";
    "Remove LoadPath";
    "Remove Printing If";
@@ -119,24 +91,11 @@ let commands = [
    "Require";
    "Require Export";
    "Require Import";
-   (* "Reset"; *)
    "Reset Extraction Inline";
-   (* "Reset Initial"; *)
-   (* "Restart"; *)
    "Restore State"; 
-   (* "Resume"; *)];
+   ];
   [  "Save.";
      "Scheme";
-     (*"Search";
-     "Search ... inside ...";
-     "Search ... outside ...";
-     "SearchAbout";
-     "SearchPattern";
-     "SearchPattern ... inside ...";
-     "SearchPattern ... outside ...";
-     "SearchRewrite";
-     "SearchRewrite ... inside ...";
-     "SearchRewrite ... outside ..."; *)
      "Section";
      "Set Extraction AutoInline";
      "Set Extraction Optimize";
@@ -161,7 +120,7 @@ let commands = [
      (* "Suspend"; *)
      "Syntactic Definition";
      "Syntax";];
-  ["Tactic Definition";
+  [
    "Test Printing If";
    "Test Printing Let";
    "Test Printing Synth";
@@ -201,9 +160,12 @@ let state_preserving = [
   "Print Coercion Paths";
   "Print Coercions";
   "Print Extraction Inline";
+  "Print Grammar";
   "Print Graph";
   "Print Hint";
+  "Print Hint *";
   "Print HintDb";
+  "Print Implicit";
   "Print LoadPath";
   "Print ML Modules";
   "Print ML Path";
@@ -215,8 +177,10 @@ let state_preserving = [
   "Print Scopes.";
   "Print Section";
   
-  "Print Table Printing If";
-  "Print Table Printing Let";
+  "Print Table Printing If.";
+  "Print Table Printing Let.";
+  "Print Tables.";
+  "Print Term";
 
   "Print Visibility";
 
@@ -254,8 +218,10 @@ let tactics =
       "apply";
       "apply __ with";
       "assert";
-      "assumption.";
-      "auto.";
+      "assert (__:__)";
+      "assert (__:=__)";
+      "assumption";
+      "auto";
       "auto with";
       "autorewrite";
     ];
@@ -263,23 +229,27 @@ let tactics =
    [
      "case";
      "case __ with";
+     "casetype";
      "cbv";
+     "cbv in";
      "change";
      "change __ in";
      "clear";
      "clearbody";
+     "cofix";
      "compare";
      "compute";
+     "compute in";
      "congruence";
      "constructor";
      "constructor __ with";
-     "contradiction.";
+     "contradiction";
      "cut";
      "cutrewrite";
    ];
 
    [
-     "decide equality.";
+     "decide equality";
      "decompose";
      "decompose record";
      "decompose sum";
@@ -290,17 +260,16 @@ let tactics =
      "dependent rewrite ->";
      "dependent rewrite <-";
      "destruct";
-     "discriminate.";
      "discriminate";
-     "discrR.";
      "do";
      "double induction";
    ];
 
    [
      "eapply";
-     "eauto.";
+     "eauto";
      "eauto with";
+     "eexact";
      "elim";
      "elim __ using";
      "elim __ with";
@@ -310,15 +279,17 @@ let tactics =
    ];
 
    [
-     "fail.";
-     "field.";
+     "fail";
+     "field";
      "first";
-     "firstorder.";
      "firstorder";
      "firstorder using";
      "firstorder with";
+     "fix";
+     "fix __ with";
      "fold";
-     "fourier.";
+     "fold __ in";
+     "fourier";
      "functional induction";
    ];
 
@@ -332,19 +303,16 @@ let tactics =
    ];
 
    [
-     "idtac.";
+     "idtac";
      "induction";
      "info";
      "injection";
+     "instantiate (__:=__)";
      "intro";
      "intro after";
      "intro __ after";
      "intros";
-     "intros.";
-     "intros";
-     "intros <pattern> ";
      "intros until";
-     "intuition.";
      "intuition";
      "inversion";
      "inversion __ in";
@@ -356,12 +324,13 @@ let tactics =
 
    [
      "jp <n>";
-     "jp.";
+     "jp";
    ];
 
    [
      "lapply";
      "lazy";
+     "lazy in";
      "left";
    ];
 
@@ -376,6 +345,7 @@ let tactics =
    [
      "pattern";
      "pose";
+     "pose __:=__)";
      "progress";
    ];
 
@@ -384,45 +354,46 @@ let tactics =
    ];
 
    [
-     "red.";
+     "red";
      "red in";
      "refine";
-     "reflexivity.";
+     "reflexivity";
      "rename __ into";
      "repeat";
      "replace __ with";
      "rewrite";
      "rewrite __ in";
-     "rewrite ->";
-     "rewrite -> __ in";
      "rewrite <-";
      "rewrite <- __ in";
-     "right.";
-     "ring.";
+     "right";
+     "ring";
    ];
 
    [
      "set";
+     "set (__:=__)";
      "setoid__replace";
      "setoid__rewrite";
-     "simpl.";
+     "simpl";
      "simpl __ in";
      "simple destruct";
      "simple induction";
      "simple inversion";
      "simplify__eq";
      "solve";
-     "split.";
-     "split__Rabs.";
-     "split__Rmult.";
+     "split";
+(*     "split__Rabs";
+     "split__Rmult";
+*)
      "subst";
-     "symmetry.";
+     "symmetry";
+     "symmetry in";
    ];
 
    [
-     "tauto.";
+     "tauto";
      "transitivity";
-     "trivial.";
+     "trivial";
      "try";
    ];
    
