@@ -8,17 +8,14 @@
 
 (* $Id$ *)
 
-open Libnames
 open Term
 
+exception UFAIL of constr*constr
+
+val unif : constr -> constr -> (int*constr) list
+
 type instance=
-    Real of (constr*int) (* instance*valeur heuristique*)
-  | Phantom of constr (* domaine de quantification *)
+    Real of (int*constr)*int (* nb trous*terme*valeur heuristique *)
+  | Phantom of constr        (* domaine de quantification *)
 
 val unif_atoms : metavariable -> constr -> constr -> constr -> instance option
-  
-val give_right_instances : metavariable -> constr -> bool -> Formula.atoms -> 
-  Sequent.t -> (constr*int) list option
-
-val give_left_instances : Formula.left_formula list-> Sequent.t -> 
-  (instance*global_reference) list

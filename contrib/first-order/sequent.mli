@@ -23,7 +23,9 @@ module OrderedConstr: Set.OrderedType with type t=constr
 
 module CM: Map.S with type key=constr
 
-module History: Set.S with type elt = global_reference * constr option
+type h_item = global_reference * (int*constr) option
+
+module History: Set.S with type elt = h_item
 
 val cm_add : constr -> global_reference -> global_reference list CM.t ->
   global_reference list CM.t
@@ -43,9 +45,9 @@ type t = {redexes:HP.t;
 
 val deepen: t -> t
 
-val record: global_reference -> constr option -> t -> t
+val record: h_item -> t -> t
 
-val lookup: global_reference -> constr option -> t -> bool
+val lookup: h_item -> t -> bool
 
 val add_left : global_reference * constr -> t -> bool -> 
   Proof_type.goal sigma -> t

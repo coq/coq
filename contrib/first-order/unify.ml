@@ -10,17 +10,22 @@
 
 open Util
 open Formula 
-open Sequent
 open Tacmach
 open Term
 open Names
 open Termops
-open Pattern
 open Reductionops
 
 exception UFAIL of constr*constr
 
-let unif t1 t2= (* Martelli-Montanari style *)
+(* 
+   RIGID-only Martelli-Montanari style unification for CLOSED terms 
+   I repeat : t1 and t2 must NOT have ANY free deBruijn                        
+   sigma is kept normal with respect to itself but is lazily applied 
+   to the equation set. Raises UFAIL with a pair of  terms 
+*)
+
+let unif t1 t2= 
   let bige=Queue.create () 
   and sigma=ref [] in
   let bind i t=
@@ -83,9 +88,6 @@ let unif t1 t2= (* Martelli-Montanari style *)
 	(* this place is unreachable but needed for the sake of typing *)
     with Queue.Empty-> !sigma
 
-(* collect tries finds ground instantiations for Meta i*)
-let is_ground t=(Clenv.collect_metas t)=[]
-
 let is_head_meta t=match kind_of_term t with Meta _->true | _ ->false
 
 let value i t=
@@ -100,7 +102,7 @@ let value i t=
     vaux t
 	  
 type instance=
-    Real of (constr*int) (* instance*valeur heuristique*)
+    Real of (int*constr)*int (* nb trous*terme*valeur heuristique *)
   | Phantom of constr (* domaine de quantification *)
 
 let mk_rel_inst t=
@@ -118,97 +120,15 @@ let mk_rel_inst t=
 	       mkRel (m+d))
       | _ -> map_constr_with_binders succ renum_rec d t
   in 
-  let nt=renum_rec 0 t in
-    (!new_rel - 1,nt)
- 	  
+  let nt=renum_rec 0 t in (!new_rel - 1,nt)
+
 let unif_atoms i dom t1 t2=
-  if is_head_meta t1 || is_head_meta t2  then None else
+  if is_head_meta t1 || is_head_meta t2 then None else
     try 
       let t=List.assoc i (unif t1 t2) in 
-	if is_ground t then Some (Real(t,value i t1))
-	else if is_head_meta t then Some (Phantom dom)
-	else None
+	if is_head_meta t then Some (Phantom dom)
+	else Some (Real(mk_rel_inst t,value i t1))
     with
 	UFAIL(_,_) ->None
       | Not_found ->Some (Phantom dom)
-
-(* ordre lexico:
-   nombre de metas dans terme;
-   profondeur de matching;
-   le reste
-*)
-
-      
-let compare_instance inst1 inst2=
-	match inst1,inst2 with
-	    Phantom(d1),Phantom(d2)->
-	      (OrderedConstr.compare d1 d2)
-	  | Real(c1,n1),Real(c2,n2)->
-	      ((-) =? OrderedConstr.compare) n2 n1 c1 c2
-	  | Phantom(_),_-> 1
-	  | _,_-> -1
-
-module OrderedRightInstance=
-struct 
-  type t = constr*int
-  let compare (c1,n1) (c2,n2) = ((-) =? OrderedConstr.compare) n2 n1 c1 c2
-end
-
-module OrderedLeftInstance=
-struct
-  type t=instance * Libnames.global_reference
-  let compare (inst1,id1) (inst2,id2)=
-    (compare_instance =? Pervasives.compare) inst1 inst2 id1 id2
-    (* we want a __decreasing__ total order *)
-end
-  
-module RIS=Set.Make(OrderedRightInstance)
-module LIS=Set.Make(OrderedLeftInstance)
-
-let make_goal_atoms seq=
-  match seq.gl with
-      Atomic t->{negative=[];positive=[t]}
-    | Complex (_,_,l)->l 
-
-let make_left_atoms seq=
-    {negative=seq.latoms;positive=[]}
-
-let do_sequent setref triv add mkelt seq i dom atoms=
-  let flag=ref true in
-  let phref=ref triv in
-  let do_atoms a1 a2 =
-    let do_pair t1 t2 = 
-      match unif_atoms i dom t1 t2 with
-	  None->()
-	| Some (Phantom _) ->phref:=true
-	| Some c ->flag:=false;setref:=add (mkelt c) !setref in
-      List.iter (fun t->List.iter (do_pair t) a2.negative) a1.positive;
-      List.iter (fun t->List.iter (do_pair t) a2.positive) a1.negative in
-    HP.iter (fun lf->do_atoms atoms lf.atoms) seq.redexes;
-    do_atoms atoms (make_left_atoms seq);
-    do_atoms atoms (make_goal_atoms seq);
-    !flag && !phref 
- 
-let give_right_instances i dom triv atoms seq=
-  let setref=ref RIS.empty in
-  let inj=function
-       Real c->c
-     | _->anomaly "can't happen" in
-  if do_sequent setref triv RIS.add inj seq i dom atoms then
-    None
-  else
-    Some (RIS.elements !setref)
-
-let match_one_forall_hyp setref seq lf=
-  match lf.pat with 
-      Lforall(i,dom,triv)->
-	let inj x=(x,lf.id) in
-	  if do_sequent setref triv LIS.add inj seq i dom lf.atoms then
-	    setref:=LIS.add ((Phantom dom),lf.id) !setref 
-    | _ ->anomaly "can't happen" 
-
-let give_left_instances lfh seq=
-  let setref=ref LIS.empty in
-    List.iter (match_one_forall_hyp setref seq) lfh;
-    LIS.elements !setref
-
+	  

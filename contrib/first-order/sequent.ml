@@ -11,6 +11,7 @@
 open Term
 open Util
 open Formula
+open Unify
 open Tacmach
 open Names
 open Libnames
@@ -120,14 +121,17 @@ struct
   let compare=compare_constr
 end
 
+type h_item = global_reference * (int*constr) option
+
 module Hitem=
 struct 
-  type t=(global_reference * constr option)
+  type t = h_item
   let compare (id1,co1) (id2,co2)=
     (Pervasives.compare 
      =? (fun oc1 oc2 ->
 	   match oc1,oc2 with 
-	       Some c1,Some c2 -> OrderedConstr.compare c1 c2
+	       Some (m1,c1),Some (m2,c2) -> 
+		 ((-) =? OrderedConstr.compare) m1 m2 c1 c2
 	     | _,_->Pervasives.compare oc1 oc2)) id1 id2 co1 co2
 end
 
@@ -163,9 +167,9 @@ type t=
 
 let deepen seq={seq with depth=seq.depth-1}
  
-let record id topt seq={seq with history=History.add (id,topt) seq.history}
+let record item seq={seq with history=History.add item seq.history}
 
-let lookup id topt seq=History.mem (id,topt) seq.history
+let lookup item seq=History.mem item seq.history
 
 let add_left (nam,t) seq internal gl=
   match build_left_entry nam t internal gl seq.cnt with

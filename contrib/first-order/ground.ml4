@@ -13,6 +13,7 @@
 open Formula
 open Sequent
 open Rules
+open Instances
 open Term
 open Tacmach
 open Tactics
@@ -79,7 +80,8 @@ let ground_tac solver startseq gl=
 		       cont_tac gl
 		     else 
 		       (match 
-			  Unify.give_right_instances i dom triv atoms seq with
+			  Instances.give_right_instances i dom triv atoms seq 
+			with
 			      Some l -> tclORELSE
 				(exists_tac l toptac (re_add seq)) cont_tac gl
 			    | None ->
