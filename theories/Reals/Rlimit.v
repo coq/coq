@@ -581,3 +581,52 @@ Unfold limit1_in;Unfold limit_in;Simpl;Intros;
  Intro;Exact (H2 (f x2) (conj (Dg (f x2)) (Rlt (R_dist (f x2) l) x)
             H6 H7)).
 Save.
+
+(*********)
+Lemma limit_inv : (f:R->R)(D:R->Prop)(l:R)(x0:R) (limit1_in f D l x0)->~(l==R0)->(limit1_in [x:R](Rinv (f x)) D (Rinv l) x0).
+Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Elim (H ``(Rabsolu l)/2``).
+Intros delta1 H2; Elim (H ``eps*((Rsqr l)/2)``).
+Intros delta2 H3; Elim H2; Elim H3; Intros; Exists (Rmin delta1 delta2); Split.
+Unfold Rmin; Case (total_order_Rle delta1 delta2); Intro; Assumption.
+Intro; Generalize (H5 x); Clear H5; Intro H5; Generalize (H7 x); Clear H7; Intro H7; Intro H10; Elim H10; Intros; Cut (D x)/\``(Rabsolu (x-x0))<delta1``.
+Cut (D x)/\``(Rabsolu (x-x0))<delta2``.
+Intros; Generalize (H5 H11); Clear H5; Intro H5; Generalize (H7 H12); Clear H7; Intro H7; Generalize (Rabsolu_triang_inv l (f x)); Intro; Rewrite Rabsolu_minus_sym in H7; Generalize (Rle_lt_trans ``(Rabsolu l)-(Rabsolu (f x))`` ``(Rabsolu (l-(f x)))`` ``(Rabsolu l)/2`` H13 H7); Intro; Generalize (Rlt_compatibility ``(Rabsolu (f x))-(Rabsolu l)/2`` ``(Rabsolu l)-(Rabsolu (f x))`` ``(Rabsolu l)/2`` H14); Replace ``(Rabsolu (f x))-(Rabsolu l)/2+((Rabsolu l)-(Rabsolu (f x)))`` with ``(Rabsolu l)/2``.
+Unfold Rminus; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or; Intro; Cut ~``(f x)==0``.
+Intro; Replace ``/(f x)+ -/l`` with ``(l-(f x))*/(l*(f x))``.
+Rewrite Rabsolu_mult; Rewrite Rabsolu_Rinv.
+Cut ``/(Rabsolu (l*(f x)))<2/(Rsqr l)``.
+Intro; Rewrite Rabsolu_minus_sym in H5; Cut ``0<=/(Rabsolu (l*(f x)))``.
+Intro; Generalize (Rmult_lt2 ``(Rabsolu (l-(f x)))`` ``eps*(Rsqr l)/2`` ``/(Rabsolu (l*(f x)))`` ``2/(Rsqr l)`` (Rabsolu_pos ``l-(f x)``) H18 H5 H17); Replace ``eps*(Rsqr l)/2*2/(Rsqr l)`` with ``eps``.
+Intro; Assumption.
+Unfold Rdiv; Unfold Rsqr; Rewrite Rinv_Rmult.
+Field.
+Repeat Apply prod_neq_R0; [DiscrR | Assumption | Assumption].
+Assumption.
+Assumption.
+Left; Apply Rlt_Rinv; Apply Rabsolu_pos_lt; Apply prod_neq_R0; Assumption.
+Rewrite Rmult_sym; Rewrite Rabsolu_mult; Rewrite Rinv_Rmult.
+Rewrite (Rsqr_abs l); Unfold Rsqr; Unfold Rdiv; Rewrite Rinv_Rmult.
+Repeat Rewrite <- Rmult_assoc; Apply Rlt_monotony_r.
+Apply Rlt_Rinv; Apply Rabsolu_pos_lt; Assumption.
+Apply Rlt_monotony_contra with ``(Rabsolu (f x))*(Rabsolu l)*/2``.
+Repeat Apply Rmult_lt_pos; [Apply Rabsolu_pos_lt; Assumption | Apply Rabsolu_pos_lt; Assumption | Apply Rlt_Rinv; Apply Rgt_2_0].
+Replace ``(Rabsolu (f x))*(Rabsolu l)*/2*/(Rabsolu (f x))`` with ``(Rabsolu l)/2``.
+Replace ``(Rabsolu (f x))*(Rabsolu l)*/2*(2*/(Rabsolu l))`` with ``(Rabsolu (f x))``.
+Assumption.
+Field; Apply prod_neq_R0; [DiscrR | Case (case_Rabsolu l); Intro; [Apply Ropp_neq; Assumption | Assumption]].
+Unfold Rdiv; Field; Apply prod_neq_R0; [DiscrR | Case (case_Rabsolu (f x)); Intro; [Apply Ropp_neq; Assumption | Assumption]].
+Apply Rabsolu_no_R0; Assumption.
+Apply Rabsolu_no_R0; Assumption.
+Apply Rabsolu_no_R0; Assumption.
+Apply Rabsolu_no_R0; Assumption.
+Apply prod_neq_R0; Assumption.
+Field; Repeat Apply prod_neq_R0; Assumption.
+Red; Intro; Rewrite H16 in H15; Rewrite Rabsolu_R0 in H15; Cut ``0<(Rabsolu l)/2``.
+Intro; Elim (Rlt_antirefl ``0`` (Rlt_trans ``0`` ``(Rabsolu l)/2`` ``0`` H17 H15)).
+Unfold Rdiv; Apply Rmult_lt_pos; [Apply Rabsolu_pos_lt; Assumption | Apply Rlt_Rinv; Apply Rgt_2_0].
+Unfold Rdiv; Field; DiscrR.
+Split; [Assumption | Apply Rlt_le_trans with (Rmin delta1 delta2); [Assumption | Apply Rmin_r]].
+Split; [Assumption | Apply Rlt_le_trans with (Rmin delta1 delta2); [Assumption | Apply Rmin_l]].
+Change ``0<eps*(Rsqr l)/2``; Unfold Rdiv; Repeat Rewrite Rmult_assoc; Repeat Apply Rmult_lt_pos; [Assumption | Apply Rsqr_pos_lt; Assumption | Apply Rlt_Rinv; Apply Rgt_2_0].
+Change ``0<(Rabsolu l)/2``; Unfold Rdiv; Apply Rmult_lt_pos; [Apply Rabsolu_pos_lt; Assumption | Apply Rlt_Rinv; Apply Rgt_2_0].
+Save.

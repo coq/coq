@@ -37,6 +37,10 @@ Lemma Rsqr_gt_0_0 : (x:R) ``0<(Rsqr x)`` -> ~``x==0``.
 Intros; Red; Intro; Rewrite H0 in H; Rewrite Rsqr_O in H; Elim (Rlt_antirefl ``0`` H).
 Save.
 
+Lemma Rsqr_pos_lt : (x:R) ~(x==R0)->``0<(Rsqr x)``.
+Intros; Case (total_order R0 x); Intro; [Unfold Rsqr; Apply Rmult_lt_pos; Assumption | Elim H0; Intro; [Elim H; Symmetry; Exact H1 | Rewrite Rsqr_neg; Generalize (Rlt_Ropp x ``0`` H1); Rewrite Ropp_O; Intro; Unfold Rsqr; Apply Rmult_lt_pos; Assumption]].
+Save.
+
 Lemma Rsqr_div : (x,y:R) ~``y==0`` -> ``(Rsqr (x/y))==(Rsqr x)/(Rsqr y)``.
 Intros; Unfold Rsqr; Field; Repeat Apply prod_neq_R0; Assumption.
 Save.
