@@ -1,0 +1,330 @@
+%!PS-Adobe-2.0
+%%Creator: dot version uwin98 (01-26-98)
+%%For: Bill Gates
+%%Title: G
+%%Pages: (atend)
+%%BoundingBox: 36 36 577 213
+%%EndComments
+%%BeginProlog
+save
+/DotDict 200 dict def
+DotDict begin
+
+%%BeginResource: procset
+/coord-font-family /Times-Roman def
+/default-font-family /Times-Roman def
+/coordfont coord-font-family findfont 8 scalefont def
+
+/InvScaleFactor 1.0 def
+/set_scale {
+	dup 1 exch div /InvScaleFactor exch def
+	dup scale
+} bind def
+
+% styles
+/solid { } bind def
+/dashed { [9 InvScaleFactor mul dup ] 0 setdash } bind def
+/dotted { [1 InvScaleFactor mul 6 InvScaleFactor mul] 0 setdash } bind def
+/invis {/fill {newpath} def /stroke {newpath} def /show {pop newpath} def} bind def
+/bold { 2 setlinewidth } bind def
+/filled { } bind def
+/unfilled { } bind def
+/rounded { } bind def
+/diagonals { } bind def
+
+% hooks for setting color 
+/nodecolor { sethsbcolor } bind def
+/edgecolor { sethsbcolor } bind def
+/graphcolor { sethsbcolor } bind def
+/nopcolor {pop pop pop} bind def
+
+/beginpage {	% i j npages
+	/npages exch def
+	/j exch def
+	/i exch def
+	/str 10 string def
+	npages 1 gt {
+		gsave
+			coordfont setfont
+			0 0 moveto
+			(() show i str cvs show (,) show j str cvs show ()) show
+		grestore
+	} if
+} bind def
+
+/set_font {
+	findfont exch
+	scalefont setfont
+} def
+
+% draw aligned label in bounding box aligned to current point
+% alignfactor tells what fraction to place on the left.
+% -.5 is centered.
+/alignedtext {			% text labelwidth fontsz alignfactor
+	/alignfactor exch def
+	/fontsz exch def
+	/width exch def
+	/text exch def
+	gsave
+		% even if node or edge is dashed, don't paint text with dashes
+		[] 0 setdash
+		currentpoint newpath moveto
+		text stringwidth pop
+		alignfactor mul fontsz -.3 mul rmoveto
+		text show
+	grestore
+} def
+
+/boxprim {				% xcorner ycorner xsize ysize
+		4 2 roll
+		moveto
+		2 copy
+		exch 0 rlineto
+		0 exch rlineto
+		pop neg 0 rlineto
+		closepath
+} bind def
+
+/ellipse_path {
+	/ry exch def
+	/rx exch def
+	/y exch def
+	/x exch def
+	matrix currentmatrix
+	newpath
+	x y translate
+	rx ry scale
+	0 0 1 0 360 arc
+	setmatrix
+} bind def
+
+/endpage { showpage } bind def
+
+/layercolorseq
+	[	% layer color sequence - darkest to lightest
+		[0 0 0]
+		[.2 .8 .8]
+		[.4 .8 .8]
+		[.6 .8 .8]
+		[.8 .8 .8]
+	]
+def
+
+/setlayer {/maxlayer exch def /curlayer exch def
+	layercolorseq curlayer get
+	aload pop sethsbcolor
+	/nodecolor {nopcolor} def
+	/edgecolor {nopcolor} def
+	/graphcolor {nopcolor} def
+} bind def
+
+/onlayer { curlayer ne {invis} if } def
+
+/onlayers {
+	/myupper exch def
+	/mylower exch def
+	curlayer mylower lt
+	curlayer myupper gt
+	or
+	{invis} if
+} def
+
+/curlayer 0 def
+
+%%EndResource
+%%EndProlog
+%%BeginSetup
+14 default-font-family set_font
+% /arrowlength 10 def
+% /arrowwidth 5 def
+%%EndSetup
+%%Page: 1 1
+%%PageBoundingBox: 36 36 577 213
+gsave
+35 35 542 178 boxprim clip newpath
+36 36 translate
+0 0 1 beginpage
+0.9278 set_scale
+0 0 translate 0 rotate
+0.000 0.000 0.000 graphcolor
+14.00 /Times-Roman set_font
+
+%	Vernacinterp
+gsave 10 dict begin
+441 118 46 18 ellipse_path
+stroke
+gsave 10 dict begin
+441 119 moveto (Vernacinterp) 72 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Himsg
+gsave 10 dict begin
+553 145 29 18 ellipse_path
+stroke
+gsave 10 dict begin
+553 146 moveto (Himsg) 37 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Vernacinterp -> Himsg
+newpath 480 128 moveto
+492 130 505 133 517 136 curveto
+stroke
+newpath 517 133 moveto
+526 138 lineto
+516 138 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Vernacentries
+gsave 10 dict begin
+309 164 49 18 ellipse_path
+stroke
+gsave 10 dict begin
+309 165 moveto (Vernacentries) 77 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Vernacentries -> Vernacinterp
+newpath 345 152 moveto
+361 146 380 139 397 133 curveto
+stroke
+newpath 396 131 moveto
+406 130 lineto
+397 136 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Vernac
+gsave 10 dict begin
+309 72 30 18 ellipse_path
+stroke
+gsave 10 dict begin
+309 73 moveto (Vernac) 40 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Vernac -> Vernacinterp
+newpath 335 81 moveto
+353 87 377 95 397 103 curveto
+stroke
+newpath 397 100 moveto
+406 106 lineto
+396 105 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Toplevel
+gsave 10 dict begin
+35 91 35 18 ellipse_path
+stroke
+gsave 10 dict begin
+35 92 moveto (Toplevel) 49 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Mltop
+gsave 10 dict begin
+165 118 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+165 119 moveto (Mltop) 34 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Toplevel -> Mltop
+newpath 67 98 moveto
+86 102 110 107 130 111 curveto
+stroke
+newpath 130 108 moveto
+139 113 lineto
+129 113 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Protectedtoplevel
+gsave 10 dict begin
+165 64 59 18 ellipse_path
+stroke
+gsave 10 dict begin
+165 65 moveto (Protectedtoplevel) 97 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Toplevel -> Protectedtoplevel
+newpath 67 84 moveto
+79 82 93 79 106 76 curveto
+stroke
+newpath 106 74 moveto
+116 74 lineto
+107 78 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Mltop -> Vernacinterp
+newpath 193 118 moveto
+238 118 328 118 386 118 curveto
+stroke
+newpath 384 116 moveto
+394 118 lineto
+384 121 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Protectedtoplevel -> Vernac
+newpath 223 67 moveto
+239 68 255 69 270 69 curveto
+stroke
+newpath 269 66 moveto
+279 70 lineto
+269 71 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Errors
+gsave 10 dict begin
+309 18 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+309 19 moveto (Errors) 34 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Protectedtoplevel -> Errors
+newpath 206 51 moveto
+228 44 255 35 276 29 curveto
+stroke
+newpath 274 27 moveto
+284 26 lineto
+276 32 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Minicoq
+gsave 10 dict begin
+441 172 34 18 ellipse_path
+stroke
+gsave 10 dict begin
+441 173 moveto (Minicoq) 47 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Minicoq -> Himsg
+newpath 472 164 moveto
+486 161 502 157 517 153 curveto
+stroke
+newpath 516 151 moveto
+526 151 lineto
+517 156 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+endpage
+grestore
+%%PageTrailer
+%%EndPage: 1
+%%Trailer
+%%Pages: 1
+end
+restore
+%%EOF

@@ -1,0 +1,350 @@
+%!PS-Adobe-2.0
+%%Creator: dot version uwin98 (01-26-98)
+%%For: Bill Gates
+%%Title: G
+%%Pages: (atend)
+%%BoundingBox: 36 36 576 153
+%%EndComments
+%%BeginProlog
+save
+/DotDict 200 dict def
+DotDict begin
+
+%%BeginResource: procset
+/coord-font-family /Times-Roman def
+/default-font-family /Times-Roman def
+/coordfont coord-font-family findfont 8 scalefont def
+
+/InvScaleFactor 1.0 def
+/set_scale {
+	dup 1 exch div /InvScaleFactor exch def
+	dup scale
+} bind def
+
+% styles
+/solid { } bind def
+/dashed { [9 InvScaleFactor mul dup ] 0 setdash } bind def
+/dotted { [1 InvScaleFactor mul 6 InvScaleFactor mul] 0 setdash } bind def
+/invis {/fill {newpath} def /stroke {newpath} def /show {pop newpath} def} bind def
+/bold { 2 setlinewidth } bind def
+/filled { } bind def
+/unfilled { } bind def
+/rounded { } bind def
+/diagonals { } bind def
+
+% hooks for setting color 
+/nodecolor { sethsbcolor } bind def
+/edgecolor { sethsbcolor } bind def
+/graphcolor { sethsbcolor } bind def
+/nopcolor {pop pop pop} bind def
+
+/beginpage {	% i j npages
+	/npages exch def
+	/j exch def
+	/i exch def
+	/str 10 string def
+	npages 1 gt {
+		gsave
+			coordfont setfont
+			0 0 moveto
+			(() show i str cvs show (,) show j str cvs show ()) show
+		grestore
+	} if
+} bind def
+
+/set_font {
+	findfont exch
+	scalefont setfont
+} def
+
+% draw aligned label in bounding box aligned to current point
+% alignfactor tells what fraction to place on the left.
+% -.5 is centered.
+/alignedtext {			% text labelwidth fontsz alignfactor
+	/alignfactor exch def
+	/fontsz exch def
+	/width exch def
+	/text exch def
+	gsave
+		% even if node or edge is dashed, don't paint text with dashes
+		[] 0 setdash
+		currentpoint newpath moveto
+		text stringwidth pop
+		alignfactor mul fontsz -.3 mul rmoveto
+		text show
+	grestore
+} def
+
+/boxprim {				% xcorner ycorner xsize ysize
+		4 2 roll
+		moveto
+		2 copy
+		exch 0 rlineto
+		0 exch rlineto
+		pop neg 0 rlineto
+		closepath
+} bind def
+
+/ellipse_path {
+	/ry exch def
+	/rx exch def
+	/y exch def
+	/x exch def
+	matrix currentmatrix
+	newpath
+	x y translate
+	rx ry scale
+	0 0 1 0 360 arc
+	setmatrix
+} bind def
+
+/endpage { showpage } bind def
+
+/layercolorseq
+	[	% layer color sequence - darkest to lightest
+		[0 0 0]
+		[.2 .8 .8]
+		[.4 .8 .8]
+		[.6 .8 .8]
+		[.8 .8 .8]
+	]
+def
+
+/setlayer {/maxlayer exch def /curlayer exch def
+	layercolorseq curlayer get
+	aload pop sethsbcolor
+	/nodecolor {nopcolor} def
+	/edgecolor {nopcolor} def
+	/graphcolor {nopcolor} def
+} bind def
+
+/onlayer { curlayer ne {invis} if } def
+
+/onlayers {
+	/myupper exch def
+	/mylower exch def
+	curlayer mylower lt
+	curlayer myupper gt
+	or
+	{invis} if
+} def
+
+/curlayer 0 def
+
+%%EndResource
+%%EndProlog
+%%BeginSetup
+14 default-font-family set_font
+% /arrowlength 10 def
+% /arrowwidth 5 def
+%%EndSetup
+%%Page: 1 1
+%%PageBoundingBox: 36 36 576 153
+gsave
+35 35 541 118 boxprim clip newpath
+36 36 translate
+0 0 1 beginpage
+0.8207 set_scale
+0 0 translate 0 rotate
+0.000 0.000 0.000 graphcolor
+14.00 /Times-Roman set_font
+
+%	Multcase
+gsave 10 dict begin
+257 124 36 18 ellipse_path
+stroke
+gsave 10 dict begin
+257 125 moveto (Multcase) 51 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Evarutil
+gsave 10 dict begin
+370 124 33 18 ellipse_path
+stroke
+gsave 10 dict begin
+370 125 moveto (Evarutil) 45 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Multcase -> Evarutil
+newpath 293 124 moveto
+304 124 316 124 327 124 curveto
+stroke
+newpath 327 122 moveto
+337 124 lineto
+327 127 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Pretype_errors
+gsave 10 dict begin
+498 124 51 18 ellipse_path
+stroke
+gsave 10 dict begin
+498 125 moveto (Pretype_errors) 82 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Evarutil -> Pretype_errors
+newpath 403 124 moveto
+413 124 425 124 436 124 curveto
+stroke
+newpath 436 122 moveto
+446 124 lineto
+436 127 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Recordops
+gsave 10 dict begin
+370 70 40 18 ellipse_path
+stroke
+gsave 10 dict begin
+370 71 moveto (Recordops) 59 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Classops
+gsave 10 dict begin
+498 70 35 18 ellipse_path
+stroke
+gsave 10 dict begin
+498 71 moveto (Classops) 49 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Recordops -> Classops
+newpath 410 70 moveto
+424 70 440 70 454 70 curveto
+stroke
+newpath 453 68 moveto
+463 70 lineto
+453 73 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Pretyping
+gsave 10 dict begin
+38 72 37 18 ellipse_path
+stroke
+gsave 10 dict begin
+38 73 moveto (Pretyping) 54 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Pretyping -> Multcase
+newpath 65 85 moveto
+81 91 99 99 112 102 curveto
+139 109 183 115 215 119 curveto
+stroke
+newpath 212 116 moveto
+222 120 lineto
+212 121 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Coercion
+gsave 10 dict begin
+148 72 36 18 ellipse_path
+stroke
+gsave 10 dict begin
+148 73 moveto (Coercion) 51 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Pretyping -> Coercion
+newpath 76 72 moveto
+84 72 93 72 102 72 curveto
+stroke
+newpath 102 70 moveto
+112 72 lineto
+102 75 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Retyping
+gsave 10 dict begin
+148 18 36 18 ellipse_path
+stroke
+gsave 10 dict begin
+148 19 moveto (Retyping) 51 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Pretyping -> Retyping
+newpath 64 59 moveto
+79 51 98 42 114 35 curveto
+stroke
+newpath 112 33 moveto
+122 31 lineto
+114 38 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Evarconv
+gsave 10 dict begin
+257 70 37 18 ellipse_path
+stroke
+gsave 10 dict begin
+257 71 moveto (Evarconv) 53 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Coercion -> Evarconv
+newpath 184 71 moveto
+192 71 201 71 210 71 curveto
+stroke
+newpath 210 69 moveto
+220 71 lineto
+210 74 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Rawterm
+gsave 10 dict begin
+622 124 36 18 ellipse_path
+stroke
+gsave 10 dict begin
+622 125 moveto (Rawterm) 51 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Pretype_errors -> Rawterm
+newpath 550 124 moveto
+559 124 568 124 576 124 curveto
+stroke
+newpath 576 122 moveto
+586 124 lineto
+576 127 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Evarconv -> Evarutil
+newpath 283 83 moveto
+299 91 320 101 337 108 curveto
+stroke
+newpath 337 105 moveto
+345 112 lineto
+335 110 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Evarconv -> Recordops
+newpath 294 70 moveto
+302 70 311 70 320 70 curveto
+stroke
+newpath 320 68 moveto
+330 70 lineto
+320 73 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+endpage
+grestore
+%%PageTrailer
+%%EndPage: 1
+%%Trailer
+%%Pages: 1
+end
+restore
+%%EOF
