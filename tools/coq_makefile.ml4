@@ -98,7 +98,7 @@ let standard sds =
   print "\n";
   print "install:\n";
   print "\tmkdir -p `$(COQC) -where`/user-contrib\n";
-  if !some_vfile then print "\tcp -f *.vo `$(COQC) -where`/user-contrib\n";
+  if !some_vfile then print "\tcp -f $(VOFILES) `$(COQC) -where`/user-contrib\n";
   if !some_mlfile then print "\tcp -f *.cmo `$(COQC) -where`/user-contrib\n";
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) install)\n")
@@ -115,7 +115,7 @@ let standard sds =
     print "\n";
   end;
   print "clean:\n";
-  print "\trm -f *.cmo *.cmi *.cmx *.o *.vo *.vi *.g *~\n";
+  print "\trm -f *.cmo *.cmi *.cmx *.o $(VOFILES) $(VIFILES) $(GFILES) *~\n";
   print "\trm -f all.ps all-gal.ps $(HTMLFILES) $(GHTMLFILES)\n";
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) clean)\n")
