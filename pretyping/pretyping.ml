@@ -132,6 +132,23 @@ let evar_type_fixpoint loc env isevars lna lar vdefj =
             i lna vdefj lar
       done
 
+let error_unsolvable_implicit (loc,kind) =
+  let message = match kind with
+    | QuestionMark -> str "Cannot infer a term for this placeholder"
+    | CasesType ->
+	str "Cannot infer the type of this pattern-matching problem"
+    | AbstractionType (Name id) ->
+	str "Cannot infer a type for " ++ Nameops.pr_id id
+    | AbstractionType Anonymous ->
+	str "Cannot infer a type of this anonymous abstraction"
+    | ImplicitArg (c,n) ->
+	str "Cannot infer the " ++ pr_ord n ++
+	str " implicit argument of " ++ Nametab.pr_global_env None c
+    | InternalHole ->
+        str "Cannot infer a term for an internal placeholder"
+  in
+    user_err_loc (loc,"pretype",message)
+
 let check_branches_message loc env isevars c (explft,lft) = 
   for i = 0 to Array.length explft - 1 do
     if not (the_conv_x_leq env isevars lft.(i) explft.(i)) then 
@@ -213,14 +230,9 @@ let rec pretype tycon env isevars lvar lmeta = function
   | RHole loc ->
       if !compter then nbimpl:=!nbimpl+1;
       (match tycon with
-	 | Some ty -> { uj_val = new_isevar isevars env ty; uj_type = ty }
-	 | None ->
-	     (match loc with
-		  None -> error "There is an implicit argument I cannot solve"
-		| Some loc -> 
-		    user_err_loc
-		      (loc,"pretype",
-		       (str "Cannot infer a term for this placeholder"))))
+	 | Some ty ->
+	     { uj_val = new_isevar isevars env loc ty; uj_type = ty }
+	 | None -> error_unsolvable_implicit loc)
 
   | RRec (loc,fixkind,names,lar,vdef) ->
       let larj =
@@ -323,7 +335,8 @@ let rec pretype tycon env isevars lvar lmeta = function
       let (IndType (indf,realargs) as indt) = 
 	try find_rectype env (evars_of isevars) cj.uj_type
 	with Not_found ->
-          error_case_not_inductive_loc loc env (evars_of isevars) cj in
+	  let cloc = loc_of_rawconstr c in
+	  error_case_not_inductive_loc cloc env (evars_of isevars) cj in
       let (dep,pj) = match po with
 	| Some p ->
             let pj = pretype empty_tycon env isevars lvar lmeta p in
@@ -441,7 +454,8 @@ and pretype_type valcon env isevars lvar lmeta = function
 	       utj_type = Retyping.get_sort_of env (evars_of isevars) v }
 	 | None ->
 	     let s = new_Type_sort () in
-	     { utj_val = new_isevar isevars env (mkSort s); utj_type = s})
+	     { utj_val = new_isevar isevars env loc (mkSort s);
+	       utj_type = s})
   | c ->
       let j = pretype empty_tycon env isevars lvar lmeta c in
       let tj = inh_coerce_to_sort env isevars j in
@@ -471,15 +485,15 @@ let unsafe_infer_type valcon isevars env lvar lmeta constr =
  *)
 (* assumes the defined existentials have been replaced in c (should be
    done in unsafe_infer and unsafe_infer_type) *)
-let check_evars fail_evar initial_sigma sigma c =
+let check_evars fail_evar initial_sigma isevars c =
+  let sigma = evars_of isevars in
   let rec proc_rec c =
     match kind_of_term c with
       | Evar (ev,args as k) ->
           assert (Evd.in_dom sigma ev);
 	  if not (Evd.in_dom initial_sigma ev) then
 	    (if fail_evar then
-	      errorlabstrm "whd_ise"
-		(str"There is an unknown subterm I cannot solve"))
+	       error_unsolvable_implicit (evar_source ev isevars))
       | _ -> iter_constr proc_rec c      
   in
   proc_rec c
@@ -495,9 +509,8 @@ type open_constr = evar_map * constr
 let ise_resolve_casted_gen fail_evar sigma env lvar lmeta typ c =
   let isevars = create_evar_defs sigma in
   let j = unsafe_infer (mk_tycon typ) isevars env lvar lmeta c in
-  let new_sigma = evars_of isevars in
-  check_evars fail_evar sigma new_sigma (mkCast(j.uj_val,j.uj_type));
-  (new_sigma, j)
+  check_evars fail_evar sigma isevars (mkCast(j.uj_val,j.uj_type));
+  (evars_of isevars, j)
 
 let ise_resolve_casted sigma env typ c =
   ise_resolve_casted_gen true sigma env [] [] typ c
@@ -509,16 +522,14 @@ let ise_infer_gen fail_evar sigma env lvar lmeta exptyp c =
   let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
   let isevars = create_evar_defs sigma in
   let j = unsafe_infer tycon isevars env lvar lmeta c in
-  let new_sigma = evars_of isevars in
-  check_evars fail_evar sigma new_sigma (mkCast(j.uj_val,j.uj_type));
-  (new_sigma, j)
+  check_evars fail_evar sigma isevars (mkCast(j.uj_val,j.uj_type));
+  (evars_of isevars, j)
 
 let ise_infer_type_gen fail_evar sigma env lvar lmeta c =
   let isevars = create_evar_defs sigma in
   let tj = unsafe_infer_type empty_valcon isevars env lvar lmeta c in
-  let new_sigma = evars_of isevars in
-  check_evars fail_evar sigma new_sigma tj.utj_val;
-  (new_sigma, tj)
+  check_evars fail_evar sigma isevars tj.utj_val;
+  (evars_of isevars, tj)
 
 type meta_map = (int * unsafe_judgment) list
 type var_map = (identifier * unsafe_judgment) list

@@ -437,21 +437,18 @@ Definition nth_default : A -> list -> nat -> A :=
 Lemma nth_In :
   (n:nat)(l:list)(d:A)(lt n (length l))->(In (nth n l d) l).
 
-Proof. 
-  Intros n l d.
-  Generalize n; Clear n.
-  NewInduction l.
-    Inversion 1.
-  Simpl.
-  NewInduction n.
-    Auto.
-  Right;Auto with arith.
+Proof.
+Unfold lt; Induction n ; Simpl.
+Induction l ; Simpl ;  [ Inversion 2 | Auto].
+Clear n ; Intros n hn ; Induction l ; Simpl.
+Inversion 2.
+Clear l ; Intros a l hl d ie ; Right ; Apply hn ; Auto with arith.
 Qed.
-
 
 (********************************)
 (** Decidable equality on lists *)
 (********************************)
+
 
 Lemma list_eq_dec : ((x,y:A){x=y}+{~x=y})->(x,y:list){x=y}+{~x=y}.
 Proof.

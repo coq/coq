@@ -27,7 +27,7 @@ Hypothesis  def_sigma : (low,high:nat) (le low high) -> (sigma low high)==(sigma
 
 Lemma sigma_aux_inv : (diff,low,high,high2:nat) (sigma_aux low high diff)==(sigma_aux low high2 diff).
 Unfold sigma_aux; Induction diff; [Intros; Reflexivity | Intros; Rewrite (H (S low) high high2); Reflexivity].
-Save.
+Qed.
 
 Theorem sigma_split : (low,high,k:nat) (le low k)->(lt k high)->``(sigma low high)==(sigma low k)+(sigma (S k) high)``.
 Intros.
@@ -57,26 +57,26 @@ Apply INR_eq; Repeat Rewrite plus_INR Orelse Rewrite S_INR; Try Ring.
 Apply lt_le_S; Assumption.
 Assumption.
 Apply lt_le_weak; Apply le_lt_trans with k; Assumption.
-Save.
+Qed.
 
 Theorem sigma_diff : (low,high,k:nat) (le low k) -> (lt k high )->``(sigma low high)-(sigma low k)==(sigma (S k) high)``.
 Intros low high k H1 H2; Symmetry; Rewrite -> (sigma_split H1 H2); Ring.
-Save.
+Qed.
 
 Theorem sigma_diff_neg : (low,high,k:nat) (le low k) -> (lt k high)-> ``(sigma low k)-(sigma low high)==-(sigma (S k) high)``.
 Intros low high k H1 H2; Rewrite -> (sigma_split H1 H2); Ring.
-Save.
+Qed.
 
 Theorem sigma_first : (low,high:nat) (lt low high) -> ``(sigma low high)==(f low)+(sigma (S low) high)``.
 Intros low high H1; Generalize (lt_le_S low high H1); Intro H2; Generalize (lt_le_weak low high H1); Intro H3; Replace ``(f low)`` with ``(sigma low low)``; [Apply sigma_split; Trivial | Rewrite def_sigma; [Replace (minus low low) with O; Ring; Apply minus_n_n | Trivial]].
-Save.
+Qed.
 
 Theorem sigma_last : (low,high:nat) (lt low high) -> ``(sigma low high)==(f high)+(sigma low (pred high))``.
 Intros low high H1; Generalize (lt_le_S low high H1); Intro H2; Generalize (lt_le_weak low high H1); Intro H3; Replace ``(f high)`` with ``(sigma high high)``; [Rewrite Rplus_sym; Pattern 3 high; Rewrite (S_pred high low H1); Apply sigma_split; [Apply gt_S_le; Rewrite <- (S_pred high low H1); Assumption | Pattern 2 high; Rewrite (S_pred high low H1); Apply lt_n_Sn] | Rewrite def_sigma; [ Rewrite <- (minus_n_n high) | Trivial ]; Trivial].
-Save.
+Qed.
 
 Theorem sigma_eq_arg : (low:nat) (sigma low low)==(f low).
 Intro low; Rewrite def_sigma; [Rewrite <- (minus_n_n low); Trivial | Trivial].
-Save.
+Qed.
 
 End Sigma.

@@ -25,31 +25,8 @@ open Libnames
 open Nametab
 open Safe_typing
 
-(* manipulations concernant les strength *)
-
-(* gt dans le sens de "longueur du sp" (donc le moins persistant) *)
-
-(* strength * strength -> bool *)
-
-let stre_gt = function
-(*  | (x,y) when (x = NeverDischarge || x = NotDeclare)
-            && (y = NeverDischarge || y = NotDeclare) -> false
-  | (x,_) when x = NeverDischarge || x = NotDeclare -> false
-  | (_,x) when x = NeverDischarge || x = NotDeclare -> true*)
-
-  | (NeverDischarge,_) -> false
-  | (NotDeclare,_) -> false
-  | (_,NeverDischarge) -> true
-  | (_,NotDeclare) -> true
-  | (DischargeAt (sp1,_),DischargeAt (sp2,_)) ->
-      is_dirpath_prefix_of sp1 sp2
-	(* was sp_gt but don't understand why - HH *)
-
-let stre_max (stre1,stre2) =
-  if stre_gt (stre1,stre2) then stre1 else stre2
-
-let stre_max4 stre1 stre2 stre3 stre4 =
-  stre_max ((stre_max (stre1,stre2)),(stre_max (stre3,stre4)))
+let strength_min4 stre1 stre2 stre3 stre4 =
+  strength_min ((strength_min (stre1,stre2)),(strength_min (stre3,stre4)))
 
 let id_of_varid c = match kind_of_term c with
   | Var id -> id
@@ -68,7 +45,7 @@ let rec stre_unif_cond = function
       else
 	let stre1 = (variable_strength v1)
 	and stre2 = (variable_strength v2) in 
-	stre_max (stre1,stre2)
+	strength_min (stre1,stre2)
 
 (* Errors *)
 
@@ -138,7 +115,7 @@ let try_add_class cl streopt fail_if_exists =
     let p = check_arity cl in
     let stre' = strength_of_cl cl in 
     let stre = match streopt with
-      | Some stre -> stre_max (stre,stre')
+      | Some stre -> strength_min (stre,stre')
       | None -> stre'
     in
     declare_class (cl,stre,p)
@@ -236,8 +213,8 @@ let get_strength stre ref cls clt =
   let streunif = stre_unif_cond (s_vardep,f_vardep) in
  *)
   let streunif = NeverDischarge in
-  let stre' = stre_max4 stres stret stref streunif in
-  stre_max (stre,stre')
+  let stre' = strength_min4 stres stret stref streunif in
+  strength_min (stre,stre')
 
 (* coercion identité *)
 

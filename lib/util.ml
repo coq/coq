@@ -549,6 +549,10 @@ let pr_coma () = str "," ++ spc ()
 let pr_semicolon () = str ";" ++ spc ()
 let pr_bar () = str "|" ++ spc ()
 
+let pr_ord n =
+  let suff = match n mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
+  int n ++ str suff
+
 let rec prlist elem l = match l with 
   | []   -> mt ()
   | h::t -> Stream.lapp (fun () -> elem h) (prlist elem t)

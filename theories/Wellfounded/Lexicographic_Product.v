@@ -74,7 +74,7 @@ Proof.
  Apply acc_A_B_lexprod;Auto with sets;Intros.
  Red in wfB.
  Auto with sets.
-Save.
+Qed.
 
 
 End WfLexicographic_Product.
@@ -104,7 +104,7 @@ Proof.
  (Apply left_lex;Auto with sets).
 
  (Apply right_lex;Auto with sets).
-Save.
+Qed.
 i*)
 
   Lemma Acc_symprod: (x:A)(Acc A leA x)->(y:B)(Acc B leB y)
@@ -116,7 +116,7 @@ Proof.
  Inversion_clear H5;Auto with sets.
  Apply H1;Auto with sets.
  Apply Acc_intro;Auto with sets.
-Save.
+Qed.
 
 
 Lemma wf_symprod: (well_founded A leA)->(well_founded B leB)
@@ -125,7 +125,7 @@ Proof.
  Red.
  Induction a;Intros.
  Apply Acc_symprod;Auto with sets.
-Save.
+Qed.
 
 End Wf_Symmetric_Product.
 
@@ -156,7 +156,7 @@ Proof.
 
  Apply sp_noswap.
  Apply left_sym;Auto with sets.
-Save.
+Qed.
 
 
   Lemma Acc_swapprod: (x,y:A)(Acc A R x)->(Acc A R y)
@@ -184,7 +184,7 @@ Proof.
  Apply right_sym;Auto with sets.
 
  Auto with sets.
-Save.
+Qed.
 
 
   Lemma wf_swapprod: (well_founded A R)->(well_founded A*A SwapProd).
@@ -192,6 +192,6 @@ Proof.
  Red.
  Induction a;Intros.
  Apply Acc_swapprod;Auto with sets.
-Save.
+Qed.
 
 End Swap.

@@ -1,7 +1,9 @@
 ;; coq.el --- Coq mode editing commands for Emacs
-
+;;
 ;; Jean-Christophe Filliatre, march 1995
 ;; Honteusement pompé de caml.el, Xavier Leroy, july 1993.
+;;
+;; modified by Marco Maggesi <maggesi@math.unifi.it> for coq-inferior
 
 (defvar coq-mode-map nil
   "Keymap used in Coq mode.")
@@ -10,6 +12,7 @@
   (setq coq-mode-map (make-sparse-keymap))
   (define-key coq-mode-map "\t"      'coq-indent-command)
   (define-key coq-mode-map "\M-\t"   'coq-unindent-command)
+  (define-key coq-mode-map "\C-c\C-c"   'compile)
 )
 
 (defvar coq-mode-syntax-table nil
@@ -33,20 +36,7 @@
 (defvar coq-mode-indentation 2
   "*Indentation for each extra tab in Coq mode.")
 
-;;; The major mode
-
-(defun coq-mode ()
-  "Major mode for editing Coq code.
-Tab at the beginning of a line indents this line like the line above.
-Extra tabs increase the indentation level.
-\\{coq-mode-map}
-The variable coq-mode-indentation indicates how many spaces are
-inserted for each indentation level."
-  (interactive)
-  (kill-all-local-variables)
-  (setq major-mode 'coq-mode)
-  (setq mode-name "coq")
-  (use-local-map coq-mode-map)
+(defun coq-mode-variables ()
   (set-syntax-table coq-mode-syntax-table)
   (make-local-variable 'paragraph-start)
   (setq paragraph-start (concat "^$\\|" page-delimiter))
@@ -67,7 +57,23 @@ inserted for each indentation level."
   (make-local-variable 'parse-sexp-ignore-comments)
   (setq parse-sexp-ignore-comments nil)
   (make-local-variable 'indent-line-function)
-  (setq indent-line-function 'coq-indent-command)
+  (setq indent-line-function 'coq-indent-command))
+
+;;; The major mode
+
+(defun coq-mode ()
+  "Major mode for editing Coq code.
+Tab at the beginning of a line indents this line like the line above.
+Extra tabs increase the indentation level.
+\\{coq-mode-map}
+The variable coq-mode-indentation indicates how many spaces are
+inserted for each indentation level."
+  (interactive)
+  (kill-all-local-variables)
+  (setq major-mode 'coq-mode)
+  (setq mode-name "coq")
+  (use-local-map coq-mode-map)
+  (coq-mode-variables)
   (run-hooks 'coq-mode-hook))
 
 ;;; Indentation stuff

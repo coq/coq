@@ -157,7 +157,7 @@ and visit_ast m eenv a =
     | MLfix (_,_,l) -> Array.iter visit l
     | MLcast (a,t) -> visit a; visit_type m eenv t
     | MLmagic a -> visit a
-    | MLrel _ | MLdummy | MLexn _ -> ()
+    | MLrel _ | MLdummy | MLdummy' | MLexn _ -> ()
   in
   visit a
 
@@ -246,6 +246,7 @@ let _ =
     (function 
        | [VARG_CONSTR ast] ->
 	   (fun () -> 
+	      set_globals ();
 	      let c = Astterm.interp_constr Evd.empty (Global.env()) ast in
 	      match kind_of_term c with
 		(* If it is a global reference, then output the declaration *)
@@ -280,14 +281,15 @@ let _ =
     We just call [extract_to_file] on the saturated environment. *)
 
 let lang_suffix () = match lang () with 
-  | Ocaml -> "ml"
-  | Haskell -> "hs"
+  | Ocaml -> ".ml"
+  | Haskell -> ".hs"
   | Toplevel -> assert false
 
 let filename f = 
   let s = lang_suffix () in 
-  if Filename.check_suffix f s then Some f,id_of_string (Filename.chop_suffix f s) 
-  else Some (f^"."^s),id_of_string f
+  if Filename.check_suffix f s then 
+    Some f,id_of_string (Filename.chop_suffix f s) 
+  else Some (f^s),id_of_string f
 
 let lang_error () = 
   errorlabstrm "extraction_language"

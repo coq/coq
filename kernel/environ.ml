@@ -61,11 +61,10 @@ let evaluable_rel n env =
   with Not_found -> 
     false
 
-let rel_context_app f env =
+let push_rel d env =
   { env with
-      env_rel_context = f env.env_rel_context }
+      env_rel_context = add_rel_decl d env.env_rel_context }
 
-let push_rel d   = rel_context_app (add_rel_decl d)
 let push_rel_context ctxt x = Sign.fold_rel_context push_rel ctxt ~init:x
 let push_rec_types (lna,typarray,_) env =
   let ctxt =
@@ -96,11 +95,9 @@ let evaluable_named id env =
   with Not_found -> 
     false
 
-let named_context_app f env =
+let push_named d env =
   { env with
-      env_named_context = f env.env_named_context }
-
-let push_named d   = named_context_app (Sign.add_named_decl d)
+      env_named_context = Sign.add_named_decl d env.env_named_context }
 
 let reset_context env =
   { env with
@@ -125,10 +122,6 @@ let lookup_constant kn env =
   KNmap.find kn env.env_globals.env_constants
 
 let add_constant kn cb env =
-  let _ =
-    try
-      let _ = lookup_constant kn env in failwith "already declared constant"
-    with Not_found -> () in
   let new_constants = KNmap.add kn cb env.env_globals.env_constants in
   let new_locals = (Constant,kn)::env.env_globals.env_locals in
   let new_globals = 
@@ -167,10 +160,6 @@ let lookup_mind kn env =
   KNmap.find kn env.env_globals.env_inductives
 
 let add_mind kn mib env =
-  let _ =
-    try 
-      let _ = lookup_mind kn env in failwith "already defined inductive"
-    with Not_found -> () in
   let new_inds = KNmap.add kn mib env.env_globals.env_inductives in
   let new_locals = (Inductive,kn)::env.env_globals.env_locals in
   let new_globals = 

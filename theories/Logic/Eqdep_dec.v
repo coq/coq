@@ -34,12 +34,12 @@ Set Implicit Arguments.
   Lemma eq_eqT_bij: (A:Set)(x,y:A)(p:x=y)p==(eqT2eq (eq2eqT p)).
 Intros.
 Case p; Reflexivity.
-Save.
+Qed.
 
   Lemma eqT_eq_bij: (A:Set)(x,y:A)(p:x==y)p==(eq2eqT (eqT2eq p)).
 Intros.
 Case p; Reflexivity.
-Save.
+Qed.
 
 
 Section DecidableEqDep.
@@ -52,7 +52,7 @@ Section DecidableEqDep.
   Remark trans_sym_eqT: (x,y:A)(u:x==y)(comp u u)==(refl_eqT ? y).
 Intros.
 Case u; Trivial.
-Save.
+Qed.
 
 
 
@@ -74,7 +74,7 @@ Case (eq_dec x y); Intros.
 Reflexivity.
 
 Case n; Trivial.
-Save.
+Qed.
 
 
   Local nu_inv [y:A]: x==y->x==y := [v](comp (nu (refl_eqT ? x)) v).
@@ -84,7 +84,7 @@ Save.
 Intros.
 Case u; Unfold nu_inv.
 Apply trans_sym_eqT.
-Save.
+Qed.
 
 
   Theorem eq_proofs_unicity: (y:A)(p1,p2:x==y) p1==p2.
@@ -93,13 +93,13 @@ Elim nu_left_inv with u:=p1.
 Elim nu_left_inv with u:=p2.
 Elim nu_constant with y p1 p2.
 Reflexivity.
-Save.
+Qed.
 
   Theorem K_dec: (P:x==x->Prop)(P (refl_eqT ? x)) -> (p:x==x)(P p).
 Intros.
 Elim eq_proofs_unicity with x (refl_eqT ? x) p.
 Trivial.
-Save.
+Qed.
 
 
   (** The corollary *)
@@ -128,7 +128,7 @@ Case n; Trivial.
 
 Case H.
 Reflexivity.
-Save.
+Qed.
 
 End DecidableEqDep.
 
@@ -146,4 +146,4 @@ Elim e; Left ; Reflexivity.
 Right ; Red; Intro neq; Apply n; Elim neq; Reflexivity.
 
 Trivial.
-Save.
+Qed.

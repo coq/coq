@@ -15,5 +15,5 @@ Require Export LtProps.
 
 Lemma lt_le_Sx_y : (x,y:N)(x<y) -> ((S x)<=y).
 EAuto with num.
-Save.
+Qed.
 Hints Resolve lt_le_Sx_y : num.

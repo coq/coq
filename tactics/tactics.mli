@@ -230,7 +230,7 @@ val dorE : bool -> clause ->tactic
 
 (*s Introduction tactics. *)
 
-val constructor_checking_bound : int option -> int -> 
+val constructor_tac            : int option -> int -> 
                                  constr substitution  -> tactic
 val one_constructor            : int -> constr substitution  -> tactic
 val any_constructor            : tactic

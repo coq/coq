@@ -15,7 +15,7 @@
 
 Require Bool.
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Section defs.
 
@@ -209,4 +209,4 @@ i*)
 
 End defs.
 
-Implicit Arguments Off.
+Unset Implicit Arguments.

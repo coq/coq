@@ -11,7 +11,7 @@
 Require Setoid_ring_theory.
 Require Quote.
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Lemma index_eq_prop: (n,m:index)(Is_true (index_eq n m)) -> n=m.
 Proof.
@@ -348,7 +348,7 @@ Fixpoint interp_setsp [p:setspolynomial] : A :=
 
 (* End interpretation. *)
 
-Implicit Arguments Off.
+Unset Implicit Arguments.
 
 (* Section properties. *)
 
@@ -1014,7 +1014,7 @@ Implicits SetSPmult.
 
 Section setoid_rings.
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Variable vm : (varmap A).
 Variable T : (Setoid_Ring_Theory A Aequiv Aplus Amult Aone Azero Aopp Aeq).
@@ -1098,7 +1098,7 @@ Fixpoint interp_setp [p:setpolynomial] : A :=
 
 (*** Properties *)
 
-Implicit Arguments Off.
+Unset Implicit Arguments.
 
 Lemma setspolynomial_of_ok : (p:setpolynomial)
  (Aequiv (interp_setp p) (interp_setsp vm (setspolynomial_of p))).

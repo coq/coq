@@ -37,7 +37,7 @@ Generalize (Rle_compatibility r (Rplus (IZR (up r))
  Rewrite <-(Rplus_assoc r (Ropp r) (IZR (up r))) in H1;
  Rewrite (Rplus_Ropp_r r) in H1;Elim (Rplus_ne (IZR (up r)));Intros a b;
  Rewrite b in H1;Clear a b;Apply (single_z_r_R1 r z (up r));Auto with zarith real.
-Save.
+Qed.
 
 (**********)
 Lemma up_tech:(r:R)(z:Z)(Rle (IZR z) r)->(Rlt r (IZR `z+1`))->
@@ -47,7 +47,7 @@ Intros;Generalize (Rle_compatibility R1 (IZR z) r H);Intro;Clear H;
  Cut (R1==(IZR `1`));Auto with zarith real.
 Intro;Generalize H1;Pattern 1 R1;Rewrite H;Intro;Clear H H1;
  Rewrite <-(plus_IZR z `1`) in H2;Apply (tech_up r `z+1`);Auto with zarith real.
-Save.
+Qed.
 
 (**********)
 Lemma fp_R0:(frac_part R0)==R0.
@@ -62,7 +62,7 @@ Elim (archimed R0);Intros;Clear H2;Unfold Rgt in H1;
  Rewrite (minus_R0 (IZR (up R0))) in H0;
  Generalize (lt_O_IZR (up R0) H1);Intro;Clear H1;
  Generalize (le_IZR_R1 (up R0) H0);Intro;Clear H H0;Omega.
-Save.
+Qed.
 
 (**********)
 Lemma for_base_fp:(r:R)(Rgt (Rminus (IZR (up r)) r) R0)/\ 
@@ -75,7 +75,7 @@ Apply archimed.
 Intro; Elim H; Intros.
 Exact H1.
 Apply archimed.
-Save.
+Qed.
 
 (**********)
 Lemma base_fp:(r:R)(Rge (frac_part r) R0)/\(Rlt (frac_part r) R1).
@@ -98,7 +98,7 @@ Rewrite <- Z_R_minus; Simpl;Intro; Unfold Rminus;
  Apply Rlt_compatibility;Auto with zarith real.
 Elim (for_base_fp r);Intros;Rewrite <-Ropp_O;
  Rewrite<-Ropp_distr2;Apply Rgt_Ropp;Auto with zarith real.
-Save.
+Qed.
 
 (*********************************************************)
 (**      Properties                                      *)
@@ -129,7 +129,7 @@ Generalize (Rgt_plus_plus_r (Ropp R1) (IZR (up r)) r H);Intro;
  Rewrite (Rplus_assoc (Ropp R1) r (Ropp r)) in H2;
  Rewrite (Rplus_Ropp_r r) in H2;Elim (Rplus_ne (Ropp R1));Intros a b;
  Rewrite a in H2;Clear a b;Auto with zarith real.  
-Save.
+Qed.
 
 (**********)
 Lemma Int_part_INR:(n : nat)  (Int_part (INR n)) = (inject_nat n).
@@ -143,17 +143,17 @@ Apply lt_INR; Auto.
 Rewrite Zplus_sym; Rewrite <- inj_plus; Simpl; Auto.
 Rewrite plus_IZR; Simpl; Auto with real.
 Repeat Rewrite <- INR_IZR_INZ; Auto with real.
-Save.
+Qed.
 
 (**********)
 Lemma fp_nat:(r:R)(frac_part r)==R0->(Ex [c:Z](r==(IZR c))).
 Unfold frac_part;Intros;Split with (Int_part r);Apply Rminus_eq; Auto with zarith real.
-Save.
+Qed.
 
 (**********)
 Lemma R0_fp_O:(r:R)~R0==(frac_part r)->~R0==r.
 Red;Intros;Rewrite <- H0 in H;Generalize fp_R0;Intro;Auto with zarith real.
-Save.
+Qed.
 
 (**********)
 Lemma Rminus_Int_part1:(r1,r2:R)(Rge (frac_part r1) (frac_part r2))->
@@ -236,7 +236,7 @@ Intro;Rewrite H1 in H;Clear H1;
  Rewrite <-(plus_IZR `(Int_part r1)-(Int_part r2)` `1`) in H;
  Generalize (up_tech  (Rminus r1 r2) `(Int_part r1)-(Int_part r2)`
   H0 H);Intros;Clear H H0;Unfold 1 Int_part;Omega.
-Save.
+Qed.
 
 (**********)
 Lemma Rminus_Int_part2:(r1,r2:R)(Rlt (frac_part r1) (frac_part r2))->
@@ -325,7 +325,7 @@ Intro;Rewrite H1 in H;Rewrite H1 in H0;Clear H1;
  Intro;Clear H;
  Generalize (up_tech  (Rminus r1 r2) `(Int_part r1)-(Int_part r2)-1`
   H1 H0);Intros;Clear H0 H1;Unfold 1 Int_part;Omega.
-Save.
+Qed.
 
 (**********)
 Lemma Rminus_fp1:(r1,r2:R)(Rge (frac_part r1) (frac_part r2))->
@@ -345,7 +345,7 @@ Intros;Unfold frac_part;
  Rewrite <- (Rplus_assoc (Ropp (IZR (Int_part r1))) (Ropp r2)
              (IZR (Int_part r2)));
  Rewrite -> (Rplus_sym (Ropp r2) (Ropp (IZR (Int_part r1))));Auto with zarith real.
-Save.
+Qed.
 
 (**********)
 Lemma Rminus_fp2:(r1,r2:R)(Rlt (frac_part r1) (frac_part r2))->
@@ -373,7 +373,7 @@ Intros;Unfold frac_part;Generalize (Rminus_Int_part2 r1 r2 H);Intro;
  Rewrite <- (Rplus_assoc (Ropp (IZR (Int_part r1))) (Ropp r2)
              (IZR (Int_part r2)));
  Rewrite -> (Rplus_sym (Ropp r2) (Ropp (IZR (Int_part r1))));Auto with zarith real.
-Save.
+Qed.
 
 (**********)
 Lemma plus_Int_part1:(r1,r2:R)(Rge (Rplus (frac_part r1) (frac_part r2)) R1)->
@@ -439,7 +439,7 @@ Intro;Rewrite H1 in H0;Rewrite H1 in H;Clear H1;
  Rewrite <-(plus_IZR `(Int_part r1)+(Int_part r2)+1` `1`) in H0;
  Generalize (up_tech (Rplus r1 r2) `(Int_part r1)+(Int_part r2)+1` H H0);Intro;
  Clear H H0;Unfold 1 Int_part;Omega.
-Save.
+Qed.
 
 (**********)
 Lemma plus_Int_part2:(r1,r2:R)(Rlt (Rplus (frac_part r1) (frac_part r2)) R1)->
@@ -500,7 +500,7 @@ Intro;Rewrite H in H1;Clear H;
  Rewrite <-(plus_IZR `(Int_part r1)+(Int_part r2)` `1`) in H1;
  Generalize (up_tech (Rplus r1 r2) `(Int_part r1)+(Int_part r2)` H0 H1);Intro;
  Clear H0 H1;Unfold 1 Int_part;Omega.
-Save.
+Qed.
 
 (**********)
 Lemma plus_frac_part1:(r1,r2:R)
@@ -527,7 +527,7 @@ Intros;Unfold frac_part;
   (Ropp R1));
  Rewrite <-(Ropp_distr1 (Rplus (IZR (Int_part r1)) (IZR (Int_part r2))) R1);
  Trivial with zarith real.
-Save.
+Qed.
 
 (**********)
 Lemma plus_frac_part2:(r1,r2:R)
@@ -547,4 +547,4 @@ Intros;Unfold frac_part;
   (Rplus (Ropp (IZR (Int_part r1))) (Ropp (IZR (Int_part r2)))));
  Rewrite <-(Ropp_distr1 (IZR (Int_part r1)) (IZR (Int_part r2)));Unfold Rminus;
  Trivial with zarith real.
-Save.
+Qed.

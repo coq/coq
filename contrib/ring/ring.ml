@@ -894,18 +894,26 @@ let raw_polynom th op lc gl =
   in
   polynom_tac gl
 
-let guess_eq_tac th = 
+let guess_eq_tac th =
   (tclORELSE reflexivity
-     (tclTHEN 
+     (tclTHEN
 	polynom_unfold_tac
-	(tclREPEAT 
-	   (tclORELSE 
-	      (apply (mkApp(build_coq_f_equal2 (),
-		            [| th.th_a; th.th_a; th.th_a;
-			       th.th_plus |])))
-	      (apply (mkApp(build_coq_f_equal2 (),
-		            [| th.th_a; th.th_a; th.th_a; 
-			       th.th_mult |])))))))
+        (tclTHEN
+	   (* Normalized sums associate on the right *)
+	   (tclREPEAT
+	      (tclTHENST
+		 (apply (mkApp(build_coq_f_equal2 (),
+		               [| th.th_a; th.th_a; th.th_a;
+				  th.th_plus |])))
+		 [reflexivity]
+		 tclIDTAC))
+	   (tclTRY
+	      (tclTHENL
+		 (apply (mkApp(build_coq_f_equal2 (),
+			       [| th.th_a; th.th_a; th.th_a;
+				  th.th_plus |])))
+		 reflexivity)))))
+
 let guess_equiv_tac th = 
   (tclORELSE (apply (mkLApp(coq_seq_refl,
 			    [| th.th_a; (unbox th.th_equiv);
@@ -973,4 +981,3 @@ let dyn_polynom ltacargs gl =
 	     ltacargs) gl
 
 let v_polynom = add_tactic "Ring" dyn_polynom
-

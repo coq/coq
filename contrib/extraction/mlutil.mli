@@ -18,7 +18,6 @@ open Nametab
 
 val anonymous : identifier
 val dummy_name : identifier
-val flex_name : identifier
 val id_of_name : name -> identifier
 
 (*s [collect_lambda MLlam(id1,...MLlam(idn,t)...)] returns
@@ -45,8 +44,6 @@ val sp_of_r : global_reference -> section_path
 
 val type_mem_sp : section_path -> ml_type -> bool
 
-(*TODO val get_tvars : ml_type -> identifier list *)
-
 (*s Utility functions over ML terms. [occurs n t] checks whether [Rel
     n] occurs (freely) in [t]. [ml_lift] is de Bruijn
     lifting. [ml_subst e t] substitutes [e] for [Rel 1] in [t]. *)
@@ -58,6 +55,8 @@ val occurs : int -> ml_ast -> bool
 val ml_lift : int -> ml_ast -> ml_ast
 
 val ml_subst : ml_ast -> ml_ast -> ml_ast
+
+val decl_search : ml_ast -> ml_decl list -> bool
 
 (*s Some transformations of ML terms. [normalize] simplify
     all beta redexes (when the argument does not occur, it is just
@@ -77,3 +76,8 @@ val optimize :
 
 val kill_some_lams : 
   bool list -> identifier list * ml_ast -> identifier list * ml_ast
+
+
+
+
+

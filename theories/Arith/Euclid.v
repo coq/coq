@@ -28,7 +28,7 @@ Elim plus_assoc_l.
 Elim e; Auto with arith.
 Intros gtbn.
 Apply divex with O n; Simpl; Auto with arith.
-Save.
+Qed.
 
 Lemma quotient : (b:nat)(gt b O)->
      (a:nat){q:nat|(EX r:nat | (a=(plus (mult q b) r))/\(gt b r))}.
@@ -43,7 +43,7 @@ Elim plus_assoc_l.
 Elim H1; Auto with arith.
 Intros gtbn.
 Exists O; Exists n; Simpl; Auto with arith.
-Save.
+Qed.
 
 Lemma modulo : (b:nat)(gt b O)->
      (a:nat){r:nat|(EX q:nat | (a=(plus (mult q b) r))/\(gt b r))}.
@@ -58,4 +58,4 @@ Elim plus_assoc_l.
 Elim H1; Auto with arith.
 Intros gtbn.
 Exists n; Exists O; Simpl; Auto with arith.
-Save.
+Qed.

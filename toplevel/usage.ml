@@ -40,8 +40,7 @@ let print_usage_channel co command =
   -compile-verbose f     verbosely compile Coq file f.v (implies -batch)
 
   -opt                   run the native-code version of Coq or Coq_SearchIsos
-  -bindir dir            specify an alternative directory for the binaries
-  -libdir dir            specify an alternative directory for the library
+  -byte                  run the bytecode version of Coq or Coq_SearchIsos
 
   -where                 print Coq's standard library location and exit
   -v                     print Coq version and exit

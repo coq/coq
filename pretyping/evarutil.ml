@@ -151,8 +151,7 @@ let refresh_universes t =
    cumulativity now includes Prop and Set in Type. *)
 let new_type_var env sigma =
   let instance = make_evar_instance env in
-  let (sigma',c) = new_isevar_sign env sigma (new_Type ()) instance in
-  (sigma', c)
+  new_isevar_sign env sigma (new_Type ()) instance
 
 let split_evar_to_arrow sigma (ev,args) =
   let evd = Evd.map sigma ev in
@@ -169,16 +168,7 @@ let split_evar_to_arrow sigma (ev,args) =
   let evrng =
     fst (destEvar rng), array_cons (mkRel 1) (Array.map (lift 1) args) in
   let prod' = mkProd (x, mkEvar evdom, mkEvar evrng) in
-  (sigma3, prod', evdom, evrng)
-
-let define_evar_as_arrow sigma ev =
-  let (sigma, prod, _, _) = split_evar_to_arrow sigma ev in
-  (sigma, prod)
-
-let define_evar_as_sort sigma (ev,args) =
-  let s = new_Type () in
-  let sigma = Evd.define sigma ev s in
-  (sigma, destSort s)
+  (sigma3,prod', evdom, evrng)
 
 (* Redefines an evar with a smaller context (i.e. it may depend on less
  * variables) such that c becomes closed.
@@ -221,12 +211,16 @@ let do_restrict_hyps sigma ev args =
 type evar_constraint = conv_pb * constr * constr
 type evar_defs =
     { mutable evars : Evd.evar_map;
-      mutable conv_pbs : evar_constraint list }
+      mutable conv_pbs : evar_constraint list;
+      mutable history : (int * (loc * Rawterm.hole_kind)) list }
 
-let create_evar_defs evd = { evars=evd; conv_pbs=[] }
+let create_evar_defs evd = { evars=evd; conv_pbs=[]; history=[] }
 let evars_of d = d.evars
 let evars_reset_evd evd d = d.evars <- evd
 let add_conv_pb d pb = d.conv_pbs <- pb::d.conv_pbs
+let evar_source ev d =
+  try List.assoc ev d.history
+  with Failure _ -> (Rawterm.dummy_loc, Rawterm.InternalHole)
 
 (* ise_try [f1;...;fn] tries fi() for i=1..n, restoring the evar constraints
  * when fi returns false or an exception. Returns true if one of the fi
@@ -288,7 +282,8 @@ let real_clean isevars ev args rhs =
 	    else begin
 	      let (sigma,rc) = do_restrict_hyps isevars.evars ev args' in
 	      isevars.evars <- sigma;
-
+              isevars.history <- 
+                (fst (destEvar rc),evar_source ev isevars)::isevars.history;
 	      rc
 	    end
 	  else
@@ -339,12 +334,13 @@ let push_rel_context_to_named_context env =
     (rel_context env) ~init:([],ids_of_named_context sign0,sign0)
   in (subst, reset_with_named_context sign env)
 
-let new_isevar isevars env typ =
+let new_isevar isevars env src typ =
   let subst,env' = push_rel_context_to_named_context env in
   let typ' = substl subst typ in
   let instance = make_evar_instance_with_rel env in
   let (sigma',evar) = new_isevar_sign env' isevars.evars typ' instance in
   isevars.evars <- sigma';
+  isevars.history <- (fst (destEvar evar),src)::isevars.history;
   evar
 
 (* [evar_define] solves the problem lhs = rhs when lhs is an uninstantiated
@@ -484,6 +480,7 @@ let solve_refl conv_algo env isevars ev argsv1 argsv2 =
 	       evar_body = Evar_empty } in
   isevars.evars <-
     Evd.define (Evd.add isevars.evars newev info) ev (mkEvar (newev,nargs));
+  isevars.history <- (newev,evar_source ev isevars)::isevars.history;
   [ev]
 
 
@@ -541,6 +538,26 @@ let empty_valcon = None
 (* Builds a value constraint *)
 let mk_valcon c = Some c
 
+(* Refining an evar to a product or a sort *)
+
+let refine_evar_as_arrow isevars ev =
+  let (sigma,prod,evdom,evrng) = split_evar_to_arrow isevars.evars ev in
+  evars_reset_evd sigma isevars;
+  let hst = evar_source (fst ev) isevars in
+  isevars.history <- (fst evrng,hst)::(fst evdom, hst)::isevars.history;
+  (prod,evdom,evrng)
+
+let define_evar_as_arrow isevars ev =
+  let (prod,_,_) = refine_evar_as_arrow isevars ev in
+  prod
+
+let define_evar_as_sort isevars (ev,args) =
+  let s = new_Type () in
+  let sigma' = Evd.define isevars.evars ev s in
+  evars_reset_evd sigma' isevars;
+  destSort s
+
+
 (* Propagation of constraints through application and abstraction:
    Given a type constraint on a functional term, returns the type
    constraint on its domain and codomain. If the input constraint is
@@ -554,8 +571,7 @@ let split_tycon loc env isevars = function
       match kind_of_term t with
         | Prod (na,dom,rng) -> Some dom, Some rng
 	| Evar (n,_ as ev) when not (Evd.is_defined isevars.evars n) ->
-	    let (sigma',_,evdom,evrng) = split_evar_to_arrow sigma ev in
-	    evars_reset_evd sigma' isevars;
+	    let (_,evdom,evrng) = refine_evar_as_arrow isevars ev in
 	    Some (mkEvar evdom), Some (mkEvar evrng)
 	| _ -> error_not_product_loc loc env sigma c
 

@@ -131,8 +131,8 @@ let parse_string f x =
 
 let slam_ast (_,fin) id ast =
   match id with
-    | Coqast.Nvar ((deb,_), s) -> Coqast.Slam ((deb,fin), Some s, ast)
-    | Coqast.Nmeta ((deb,_), s) -> Coqast.Smetalam ((deb,fin), s, ast)
+    | Coqast.Nvar (loc, s) -> Coqast.Slam (loc, Some s, ast)
+    | Coqast.Nmeta (loc, s) -> Coqast.Smetalam (loc, s, ast)
     | _ -> invalid_arg "Ast.slam_ast"
 
 (* This is to interpret the macro $ABSTRACT used in binders        *)

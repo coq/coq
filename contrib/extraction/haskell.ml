@@ -27,19 +27,23 @@ let keywords =
   List.fold_right (fun s -> Idset.add (id_of_string s))
   [ "case"; "class"; "data"; "default"; "deriving"; "do"; "else";
     "if"; "import"; "in"; "infix"; "infixl"; "infixr"; "instance"; 
-    "let"; "module"; "newtype"; "of"; "then"; "type"; "where"; "_";
+    "let"; "module"; "newtype"; "of"; "then"; "type"; "where"; "_"; "__";
     "as"; "qualified"; "hiding" ; "unit" ]
   Idset.empty
 
-let preamble prm used_modules =
+let preamble prm used_modules print_dummy =
   let m = String.capitalize (string_of_id prm.mod_name)   in 
   str "module " ++ str m ++ str " where" ++ fnl () ++ fnl() ++ 
-  str "import Unit" ++ fnl() ++ 
   str "import qualified Prelude" ++ fnl() ++
   Idset.fold 
     (fun m s -> 
        s ++ str "import qualified " ++ pr_id (uppercase_id m) ++ fnl())
     used_modules (mt ()) ++ fnl()
+  ++
+  (if print_dummy then 
+     str "__ = Prelude.error \"Logical or arity value used\"" 
+     ++ fnl () ++ fnl()
+   else mt())
 
 let pp_abst = function
   | [] -> (mt ())
@@ -152,14 +156,10 @@ let rec pp_expr par env args =
 	(* An [MLexn] may be applied, but I don't really care. *)
 	(open_par par ++ str "Prelude.error" ++ spc () ++ 
 	 qs s ++ close_par par)
-    | MLdummy ->
-	str "unit" (* An [MLdummy] may be applied, but I don't really care. *)
-    | MLcast (a,t) ->
-	(open_par true ++ pp_expr false env args a ++ spc () ++ str "::" ++ 
-	 spc () ++ pp_type false [] t ++ close_par true)
-    | MLmagic a ->
-	(open_par true ++ str "Obj.magic" ++ spc () ++ 
-	 pp_expr false env args a ++ close_par true)
+    | MLdummy | MLdummy' ->
+	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
+    | MLcast (a,t) -> pp_expr par env args a
+    | MLmagic a ->  pp_expr par env args a
 
 and pp_pat env pv = 
   let pp_one_pat (name,ids,t) =

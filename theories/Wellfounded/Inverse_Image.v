@@ -23,15 +23,15 @@ Section Inverse_Image.
     Apply Acc_intro; Intros.
     Apply (H1 (f y0)); Try Trivial.
     Rewrite H2; Trivial.
-  Save.
+  Qed.
 
   Lemma Acc_inverse_image : (x:A)(Acc B R (f x)) -> (Acc A Rof x).
     Intros; Apply (Acc_lemma (f x)); Trivial.
-  Save.
+  Qed.
 
   Theorem wf_inverse_image: (well_founded B R)->(well_founded A Rof).
     Red; Intros; Apply Acc_inverse_image; Auto.
-  Save.
+  Qed.
 
 End Inverse_Image.
 

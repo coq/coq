@@ -100,7 +100,7 @@ Lemma convert_add_un :
 Proof.
 Induction x; Simpl; Auto with arith; Intros x' H0 m; Rewrite H0;
 Rewrite plus_assoc_l; Trivial with arith.
-Save.
+Qed.
 
 Theorem convert_add_carry :
   (x,y:positive)(m:nat)
@@ -112,13 +112,13 @@ Induction x; Induction y; Simpl; Auto with arith; [
 | Intros y' H1 m; Rewrite H; Rewrite plus_assoc_l; Trivial with arith
 | Intros m; Rewrite convert_add_un; Rewrite plus_assoc_l; Trivial with arith
 | Intros y' H m; Rewrite convert_add_un; Apply plus_assoc_r ].
-Save.
+Qed.
 
 Theorem cvt_carry :
   (x,y:positive)(convert (add_carry x y)) = (S (convert (add x y))).
 Proof.
 Intros;Unfold convert; Rewrite convert_add_carry; Simpl; Trivial with arith.
-Save.
+Qed.
 
 Theorem add_verif :
   (x,y:positive)(m:nat)
@@ -135,13 +135,13 @@ Induction x;Induction y;Simpl;Auto with arith; [
   Apply plus_assoc_r
 | Intros y' H1 m; Rewrite H; Apply plus_permute
 | Intros y' H1 m; Rewrite convert_add_un; Apply plus_assoc_r ].
-Save.
+Qed.
 
 Theorem convert_add:
   (x,y:positive) (convert (add x y)) = (plus (convert x) (convert y)).
 Proof.
 Intros x y; Exact (add_verif x y (S O)).
-Save.
+Qed.
 
 (** Correctness of conversion *)
 Theorem bij1 : (m:nat) (convert (anti_convert m)) = (S m).
@@ -149,18 +149,18 @@ Proof.
 Induction m; [
   Unfold convert; Simpl; Trivial with arith
 | Unfold convert; Intros n H; Simpl; Rewrite convert_add_un; Rewrite H; Auto with arith].
-Save.
+Qed.
 
 Theorem compare_positive_to_nat_O : 
 	(p:positive)(m:nat)(le m  (positive_to_nat p m)).
 Induction p; Simpl; Auto with arith.
 Intros; Apply le_trans with (plus m m);  Auto with arith.
-Save.
+Qed.
 
 Theorem compare_convert_O : (p:positive)(lt O (convert p)).
 Intro; Unfold convert; Apply lt_le_trans with (S O); Auto with arith.
 Apply compare_positive_to_nat_O.
-Save.
+Qed.
 
 Hints Resolve compare_convert_O.
 
@@ -184,12 +184,12 @@ Proof.
 (Induction x; [Idtac | Idtac | Simpl;Auto with arith ]);
 (Intros p; Elim p; [Idtac | Idtac | Simpl;Auto with arith]);
 Simpl; Intros q H1 H2; Case H2; Simpl; Trivial with arith.
-Save.
+Qed.
 
 Lemma is_double_moins_un : (x:positive) (add_un (double_moins_un x)) = (xO x).
 Proof.
 (Induction x;Simpl;Auto with arith); Intros m H;Rewrite H;Trivial with arith.
-Save.
+Qed.
 
 Lemma add_sub_one : (x:positive) (x=xH) \/ (add_un (sub_un x)) = x.
 Proof.
@@ -197,15 +197,15 @@ Induction x; [
   Simpl; Auto with arith
 | Simpl; Intros;Right;Apply is_double_moins_un
 | Auto with arith ].
-Save.
+Qed.
 
 Lemma ZL0 : (S (S O))=(plus (S O) (S O)).
-Proof. Auto with arith. Save.
+Proof. Auto with arith. Qed.
 
 Lemma ZL1: (y:positive)(xO (add_un y)) = (add_un (add_un (xO y))).
 Proof.
 Induction y; Simpl; Auto with arith.
-Save.
+Qed.
 
 Lemma ZL2:
   (y:positive)(m:nat)
@@ -218,14 +218,14 @@ Induction y; [
   Rewrite plus_assoc_r; Auto with arith
 | Intros p H m; Simpl; Rewrite H; Auto with arith
 | Intro;Simpl; Trivial with arith ].
-Save.
+Qed.
 
 Lemma ZL3: (x:nat) (add_un (anti_convert (plus x x))) =  (xO (anti_convert x)).
 Proof.
 Induction x; [
   Simpl; Auto with arith
 | Intros y H; Simpl; Rewrite  plus_sym; Simpl; Rewrite  H; Rewrite  ZL1;Auto with arith].
-Save.
+Qed.
 
 Lemma ZL4: (y:positive) (EX h:nat |(convert y)=(S h)).
 Proof.
@@ -236,14 +236,14 @@ Induction y; [
 | Intros p H1;Elim H1;Intros x H2; Exists (plus x (S x)); Unfold convert;
   Simpl; Rewrite ZL0; Rewrite ZL2;Unfold convert in H2; Rewrite H2; Auto with arith
 | Exists O ;Auto with arith ].
-Save.
+Qed.
 
 Lemma ZL5: (x:nat) (anti_convert (plus (S x) (S x))) =  (xI (anti_convert x)).
 Proof.
 Induction x;Simpl; [
   Auto with arith
 | Intros y H; Rewrite <- plus_n_Sm; Simpl; Rewrite H; Auto with arith].
-Save.
+Qed.
 
 Lemma bij2 : (x:positive) (anti_convert (convert x)) = (add_un x).
 Proof.
@@ -259,7 +259,7 @@ Induction x; [
   Simpl;Rewrite <- H;Elim (ZL4 p); Unfold convert ;Intros n H1;Rewrite H1;
   Rewrite ZL5; Simpl; Trivial with arith
 | Unfold convert; Simpl; Auto with arith ].
-Save.
+Qed.
 
 (** Comparison of positive *)
 Fixpoint compare [x,y:positive]: relation -> relation :=
@@ -287,7 +287,7 @@ Theorem compare_convert1 :
 Proof.
 Induction x;Induction y;Split;Simpl;Auto with arith;
   Discriminate Orelse (Elim (H p0); Auto with arith).
-Save.
+Qed.
 
 Theorem compare_convert_EGAL : (x,y:positive) (compare x y EGAL) = EGAL -> x=y.
 Proof.
@@ -302,13 +302,13 @@ Induction x;Induction y;Simpl;Auto with arith; [
 | Intros H1;Discriminate H1
 | Intros p H H1;Discriminate H1
 | Intros p H H1;Discriminate H1 ].
-Save.
+Qed.
 
 Lemma ZL6:
   (p:positive) (positive_to_nat p (S(S O))) = (plus (convert p) (convert p)).
 Proof.
 Intros p;Rewrite ZL0; Rewrite ZL2; Trivial with arith.
-Save.
+Qed.
  
 Lemma ZL7:
   (m,n:nat) (lt m n) -> (lt (plus m m) (plus n n)).
@@ -316,7 +316,7 @@ Proof.
 Intros m n H; Apply lt_trans with m:=(plus m n); [
   Apply lt_reg_l with 1:=H
 | Rewrite (plus_sym m n); Apply lt_reg_l with 1:=H ].
-Save.
+Qed.
 
 Lemma ZL8:
   (m,n:nat) (lt m n) -> (lt (S (plus m m)) (plus n n)).
@@ -324,7 +324,7 @@ Proof.
 Intros m n H; Apply le_lt_trans with m:=(plus m n); [
   Change (lt (plus m m) (plus m n)) ; Apply lt_reg_l with 1:=H
 | Rewrite (plus_sym m n); Apply lt_reg_l with 1:=H ].
-Save.
+Qed.
 
 Lemma ZLSI:
  (x,y:positive) (compare x y SUPERIEUR) = INFERIEUR -> 
@@ -332,7 +332,7 @@ Lemma ZLSI:
 Proof.
 Induction x;Induction y;Simpl;Auto with arith; 
   Discriminate Orelse Intros H;Discriminate H.
-Save.
+Qed.
 
 Lemma ZLIS:
  (x,y:positive) (compare x y INFERIEUR) = SUPERIEUR -> 
@@ -340,7 +340,7 @@ Lemma ZLIS:
 Proof.
 Induction x;Induction y;Simpl;Auto with arith; 
   Discriminate Orelse Intros H;Discriminate H.
-Save.
+Qed.
 
 Lemma ZLII:
  (x,y:positive) (compare x y INFERIEUR) = INFERIEUR ->
@@ -349,7 +349,7 @@ Proof.
 (Induction x;Induction y;Simpl;Auto with arith;Try Discriminate);
  Intros z H1 H2; Elim (H z H2);Auto with arith; Intros E;Rewrite E;
  Auto with arith.
-Save.
+Qed.
 
 Lemma ZLSS:
  (x,y:positive) (compare x y SUPERIEUR) = SUPERIEUR ->
@@ -358,7 +358,7 @@ Proof.
 (Induction x;Induction y;Simpl;Auto with arith;Try Discriminate);
  Intros z H1 H2; Elim (H z H2);Auto with arith; Intros E;Rewrite E;
  Auto with arith.
-Save.
+Qed.
 
 Theorem compare_convert_INFERIEUR : 
   (x,y:positive) (compare x y EGAL) = INFERIEUR -> 
@@ -382,7 +382,7 @@ Induction x;Induction y; [
 | Intros q H1 H2; Unfold convert ;Simpl; Rewrite ZL6; Elim (ZL4 q);Intros h H3;
   Rewrite H3; Simpl; Rewrite <- plus_n_Sm; Apply lt_n_S; Apply lt_O_Sn
 | Simpl; Intros H;Discriminate H ].
-Save.
+Qed.
 
 Theorem compare_convert_SUPERIEUR : 
   (x,y:positive) (compare x y EGAL)=SUPERIEUR -> (gt (convert x) (convert y)).
@@ -406,12 +406,12 @@ Unfold gt; Induction x;Induction y; [
 | Simpl; Intros q H1 H2;Discriminate H2
 | Simpl; Intros q H1 H2;Discriminate H2
 | Simpl;Intros H;Discriminate H ].
-Save.
+Qed.
 
 Lemma Dcompare : (r:relation) r=EGAL \/ r = INFERIEUR \/ r = SUPERIEUR.
 Proof.
 Induction r; Auto with arith. 
-Save.
+Qed.
 
 Theorem convert_compare_INFERIEUR : 
   (x,y:positive)(lt (convert x) (convert y)) -> (compare x y EGAL) = INFERIEUR.
@@ -425,7 +425,7 @@ Intros x y; Unfold gt; Elim (Dcompare (compare x y EGAL)); [
       Apply lt_not_sym; Change (gt (convert x) (convert y)); 
       Apply compare_convert_SUPERIEUR; Assumption
     | Assumption ]]].
-Save.
+Qed.
 
 Theorem convert_compare_SUPERIEUR : 
   (x,y:positive)(gt (convert x) (convert y)) -> (compare x y EGAL) = SUPERIEUR.
@@ -438,11 +438,11 @@ Intros x y; Unfold gt; Elim (Dcompare (compare x y EGAL)); [
       Apply lt_not_sym; Apply compare_convert_INFERIEUR; Assumption
     | Assumption ]
   | Auto with arith]].
-Save.
+Qed.
 
 Theorem convert_compare_EGAL: (x:positive)(compare x x EGAL)=EGAL.
 Induction x; Auto with arith.
-Save.
+Qed.
 
 (** Natural numbers coded with positive *)
 
@@ -463,22 +463,22 @@ Definition double_moins_deux :=
 Lemma ZS: (p:entier) (Zero_suivi_de p) = Nul -> p = Nul.
 Proof.
 Induction p;Simpl; [ Trivial with arith | Intros q H;Discriminate H ].
-Save.
+Qed.
 
 Lemma US: (p:entier) ~(Un_suivi_de p)=Nul.
 Proof.
 Induction p; Intros; Discriminate.
-Save.
+Qed.
 
 Lemma USH: (p:entier) (Un_suivi_de p) = (Pos xH) -> p = Nul.
 Proof.
 Induction p;Simpl; [ Trivial with arith | Intros q H;Discriminate H ].
-Save.
+Qed.
 
 Lemma ZSH: (p:entier) ~(Zero_suivi_de p)= (Pos xH).
 Proof.
 Induction p; Intros; Discriminate.
-Save.
+Qed.
 
 Fixpoint sub_pos[x,y:positive]:entier :=
   <entier>Cases x of
@@ -523,7 +523,7 @@ Induction x; [
   Simpl; Intros p H;Rewrite H;Simpl; Trivial with arith
 | Intros p H;Simpl;Rewrite H;Auto with arith
 | Auto with arith ].
-Save.
+Qed.
 
 Theorem ZL10: (x,y:positive)
  (compare x y EGAL) = SUPERIEUR ->
@@ -549,29 +549,29 @@ Induction x;Induction y; [
 | Simpl; Intros q H1 H2 H3;Discriminate H2
 | Simpl; Intros q H1 H2 H3;Discriminate H2 
 | Simpl; Intros H;Discriminate H ].
-Save.
+Qed.
 
 Lemma ZL11: (x:positive) (x=xH) \/ ~(x=xH).
 Proof.
 Intros x;Case x;Intros; (Left;Reflexivity) Orelse (Right;Discriminate).
-Save.
+Qed.
 
 Lemma ZL12: (q:positive) (add_un q) = (add q xH).
 Proof.
 Induction q; Intros; Simpl; Trivial with arith.
-Save.
+Qed.
 
 Lemma ZL12bis: (q:positive) (add_un q) = (add xH q).
 Proof.
 Induction q; Intros; Simpl; Trivial with arith.
-Save.
+Qed.
 
 Theorem ZL13:
   (x,y:positive)(add_carry x y) = (add_un (add x y)).
 Proof.
 (Induction x;Induction y;Simpl;Auto with arith); Intros q H1;Rewrite H;
  Auto with arith.
-Save.
+Qed.
 
 Theorem ZL14:
   (x,y:positive)(add x (add_un y)) = (add_un (add x y)).
@@ -582,7 +582,7 @@ Induction x;Induction y;Simpl;Auto with arith; [
 | Elim p;Simpl;Auto with arith
 | Intros q H1;Rewrite H;Auto with arith
 | Elim p;Simpl;Auto with arith ].
-Save.
+Qed.
 
 Theorem ZL15:
   (q,z:positive) ~z=xH -> (add_carry q (sub_un z)) = (add q z).
@@ -590,7 +590,7 @@ Proof.
 Intros q z H; Elim (add_sub_one z); [
   Intro;Absurd z=xH;Auto with arith
 | Intros E;Pattern 2 z ;Rewrite <- E; Rewrite ZL14; Rewrite ZL13; Trivial with arith ].
-Save. 
+Qed. 
 
 Theorem sub_pos_SUPERIEUR:
   (x,y:positive)(compare x y EGAL)=SUPERIEUR -> 
@@ -670,7 +670,7 @@ Induction x;Induction y; [
 | Intros p H1 H2;Simpl in H2; Discriminate H2
 | Intros p H1 H2;Simpl in H2;Discriminate H2
 | Intros H1;Simpl in H1;Discriminate H1 ].
-Save.
+Qed.
 
 Lemma ZC1:
   (x,y:positive)(compare x y EGAL)=SUPERIEUR -> (compare y x EGAL)=INFERIEUR.
@@ -678,20 +678,20 @@ Proof.
 Intros x y H;Apply convert_compare_INFERIEUR; 
 Change (gt (convert x) (convert y));Apply compare_convert_SUPERIEUR;
 Assumption.
-Save.
+Qed.
 
 Lemma ZC2:
   (x,y:positive)(compare x y EGAL)=INFERIEUR -> (compare y x EGAL)=SUPERIEUR.
 Proof.
 Intros x y H;Apply convert_compare_SUPERIEUR;Unfold gt;
 Apply compare_convert_INFERIEUR;Assumption.
-Save.
+Qed.
 
 Lemma ZC3: (x,y:positive)(compare x y EGAL)=EGAL -> (compare y x EGAL)=EGAL.
 Proof.
 Intros x y H; Rewrite (compare_convert_EGAL x y H);
 Apply convert_compare_EGAL.
-Save.
+Qed.
 
 Definition Op := [r:relation]
  <relation>Cases r of
@@ -704,44 +704,44 @@ Lemma ZC4: (x,y:positive) (compare x y EGAL) = (Op (compare y x EGAL)).
 Proof.
 (((Intros x y;Elim (Dcompare (compare y x EGAL));[Idtac | Intros H;Elim H]);
 Intros E;Rewrite E;Simpl); [Apply ZC3 | Apply ZC2 | Apply ZC1 ]); Assumption.
-Save.
+Qed.
 
 Theorem add_sym : (x,y:positive) (add x y) = (add y x).
 Proof.
 Induction x;Induction y;Simpl;Auto with arith; Intros q H1; [
   Clear  H1; Do 2 Rewrite ZL13; Rewrite H;Auto with arith
 | Rewrite H;Auto with arith | Rewrite H;Auto with arith | Rewrite H;Auto with arith ].
-Save. 
+Qed. 
 
 Lemma bij3: (x:positive)(sub_un (anti_convert (convert x))) = x.
 Proof.
 Intros x; Rewrite bij2; Rewrite sub_add_one; Trivial with arith.
-Save.
+Qed.
 
 Lemma convert_intro : (x,y:positive)(convert x)=(convert y) -> x=y.
 Proof.
 Intros x y H;Rewrite <- (bij3 x);Rewrite <- (bij3 y); Rewrite H; Trivial with arith.
-Save.
+Qed.
 
 Lemma simpl_add_r : (x,y,z:positive) (add x z)=(add y z) -> x=y.
 Proof.
 Intros x y z H;Apply convert_intro;
 Apply (simpl_plus_l (convert z)); Do 2 Rewrite (plus_sym (convert z)); 
 Do 2 Rewrite <- convert_add; Rewrite H; Trivial with arith.
-Save.
+Qed.
 
 Lemma simpl_add_l : (x,y,z:positive) (add x y)=(add x z) -> y=z.
 Proof.
 Intros x y z H;Apply convert_intro;
 Apply (simpl_plus_l (convert x)); Do 2 Rewrite <- convert_add; 
 Rewrite H; Trivial with arith.
-Save.
+Qed.
 
 Theorem add_assoc: (x,y,z:positive)(add x (add y z)) = (add (add x y) z).
 Proof.
 Intros x y z; Apply convert_intro; Do 4 Rewrite convert_add; 
 Apply plus_assoc_l.
-Save.
+Qed.
 
 Local true_sub := [x,y:positive] 
   <positive> Cases (sub_pos x y) of Nul => xH | (Pos z) => z end.
@@ -752,7 +752,7 @@ Theorem sub_add:
 Intros x y H;Elim sub_pos_SUPERIEUR with 1:=H;
 Intros z H1;Elim H1;Intros H2 H3; Elim H3;Intros H4 H5; 
 Unfold true_sub ;Rewrite H2; Exact H4.
-Save.
+Qed.
  
 Theorem true_sub_convert:
   (x,y:positive) (compare x y EGAL) = SUPERIEUR -> 
@@ -762,7 +762,7 @@ Intros x y H; Apply (simpl_plus_l (convert y));
 Rewrite le_plus_minus_r; [
   Rewrite <- convert_add; Rewrite sub_add; Auto with arith
 | Apply lt_le_weak; Exact (compare_convert_SUPERIEUR x y H)].
-Save.
+Qed.
 
 (** Addition on integers *)
 Definition Zplus := [x,y:Z]
@@ -804,18 +804,18 @@ Definition Zopp := [x:Z]
 Theorem Zero_left: (x:Z) (Zplus ZERO x) = x.
 Proof.
 Induction x; Auto with arith.
-Save.
+Qed.
 
 Theorem Zopp_Zopp: (x:Z) (Zopp (Zopp x)) = x.
 Proof.
 Induction x; Auto with arith.
-Save.
+Qed.
 
 (** Addition and opposite *)
 Theorem Zero_right: (x:Z) (Zplus x ZERO) = x.
 Proof.
 Induction x; Auto with arith.
-Save.
+Qed.
 
 Theorem Zplus_inverse_r: (x:Z) (Zplus x (Zopp x)) = ZERO.
 Proof.
@@ -823,14 +823,14 @@ Induction x; [
   Simpl;Auto with arith
 | Simpl; Intros p;Rewrite (convert_compare_EGAL p); Auto with arith
 | Simpl; Intros p;Rewrite (convert_compare_EGAL p); Auto with arith ].
-Save.
+Qed.
 
 Theorem Zopp_Zplus: 
   (x,y:Z) (Zopp (Zplus x y)) = (Zplus (Zopp x) (Zopp y)).
 Proof.
 (Intros x y;Case x;Case y;Auto with arith);
 Intros p q;Simpl;Case (compare q p EGAL);Auto with arith.
-Save.
+Qed.
 
 Theorem Zplus_sym: (x,y:Z) (Zplus x y) = (Zplus y x).
 Proof.
@@ -843,12 +843,12 @@ Induction x;Induction y;Simpl;Auto with arith; [
   (Elim (Dcompare (compare p q EGAL));[Idtac|Intros H;Elim H]);
   Intros E;Rewrite E;Auto with arith
 | Intros q;Rewrite add_sym;Auto with arith ].
-Save.
+Qed.
 
 Theorem Zplus_inverse_l: (x:Z) (Zplus (Zopp x) x) = ZERO.
 Proof.
 Intro; Rewrite Zplus_sym; Apply Zplus_inverse_r.
-Save.
+Qed.
 
 Theorem Zopp_intro : (x,y:Z) (Zopp x) = (Zopp y) -> x = y.
 Proof.
@@ -857,12 +857,12 @@ Intros x y;Case x;Case y;Simpl;Intros; [
 | Simplify_eq H; Intro E; Rewrite E; Trivial with arith
 | Discriminate H | Discriminate H | Discriminate H
 | Simplify_eq H; Intro E; Rewrite E; Trivial with arith ].
-Save.
+Qed.
 
 Theorem Zopp_NEG : (x:positive) (Zopp (NEG x)) = (POS x).
 Proof.
 Induction x; Auto with arith.
-Save.
+Qed.
 
 Hints Resolve Zero_left Zero_right.
 
@@ -968,7 +968,7 @@ Intros x y z';Case z'; [
     | Apply (simpl_add_l z);Rewrite (add_sym x k);
       Rewrite add_assoc; Rewrite H5;Rewrite H9;
       Rewrite add_sym; Trivial with arith ]]].
-Save.
+Qed.
 
 Hints Resolve weak_assoc.
 
@@ -999,12 +999,12 @@ Intros x y z;Case x;Case y;Case z;Auto with arith; Intros; [
 | Apply Zopp_intro; Do 4 Rewrite Zopp_Zplus; Do 2 Rewrite Zopp_NEG;
    Apply weak_assoc]
 .
-Save.
+Qed.
 
 Lemma Zplus_simpl : (n,m,p,q:Z) n=m -> p=q -> (Zplus n p)=(Zplus m q).
 Proof.
 Intros; Elim H; Elim H0; Auto with arith.
-Save.
+Qed.
 
 (** Addition on positive numbers *)
 Fixpoint times1 [x:positive] : (positive -> positive) -> positive -> positive:=
@@ -1030,14 +1030,14 @@ Induction x; [
   Do 2 Rewrite ZL6; Rewrite (mult_sym (convert x')); 
   Do 2 Rewrite mult_plus_distr; Rewrite (mult_sym (convert x')); Auto with arith
 | Simpl; Intros;Rewrite <- plus_n_O; Trivial with arith ].
-Save.
+Qed.
 
 (** Correctness of multiplication on positive *)
 Theorem times_convert :
   (x,y:positive) (convert (times x y)) = (mult (convert x) (convert y)).
 Proof.
 Intros x y;Unfold times; Rewrite times1_convert; Trivial with arith.
-Save.
+Qed.
 
 (** Multiplication on integers *)
 Definition Zmult := [x,y:Z]
@@ -1062,30 +1062,30 @@ Theorem times_assoc :
 Proof.
 Intros x y z;Apply convert_intro; Do 4 Rewrite times_convert;
 Apply mult_assoc_l.
-Save.
+Qed.
 
 Theorem times_sym : (x,y:positive) (times x y) = (times y x).
 Proof.
 Intros x y; Apply convert_intro; Do 2 Rewrite times_convert; Apply mult_sym.
-Save.
+Qed.
 
 Theorem Zmult_sym : (x,y:Z) (Zmult x y) = (Zmult y x).
 Proof.
 Induction x; Induction y; Simpl; Auto with arith; Intro q; Rewrite (times_sym p q); Auto with arith.
-Save.
+Qed.
 
 Theorem Zmult_assoc :
   (x,y,z:Z) (Zmult x (Zmult y z))= (Zmult (Zmult x y) z).
 Proof.
 Induction x; Induction y; Induction z; Simpl; Auto with arith; Intro p1; 
 Rewrite times_assoc; Auto with arith.
-Save.
+Qed.
 
 Theorem Zmult_one:
   (x:Z) (Zmult (POS xH) x) = x.
 Proof.
 Induction x; Simpl; Unfold times; Auto with arith.
-Save.
+Qed.
 
 Theorem times_add_distr:
   (x,y,z:positive) (times x (add y z)) = (add (times x y) (times x z)).
@@ -1093,7 +1093,7 @@ Proof.
 Intros x y z;Apply convert_intro;Rewrite times_convert;
 Do 2 Rewrite convert_add; Do 2 Rewrite times_convert;
 Do 3 Rewrite (mult_sym (convert x)); Apply mult_plus_distr.
-Save.
+Qed.
 
 Theorem lt_mult_left :
  (x,y,z:nat) (lt x y) -> (lt (mult (S z) x) (mult (S z) y)).
@@ -1104,7 +1104,7 @@ Intros x y z H;Elim z; [
     Rewrite (plus_sym x (plus x (mult n x)));
     Rewrite (plus_sym y (plus x (mult n x))); Apply lt_reg_l; Assumption
   | Apply lt_reg_l;Assumption ]].
-Save.
+Qed.
 
 Theorem times_true_sub_distr:
   (x,y,z:positive) (compare y z EGAL) = SUPERIEUR -> 
@@ -1119,17 +1119,17 @@ Rewrite times_convert; Rewrite true_sub_convert; [
     Unfold gt; Elim (ZL4 x);Intros h H1;Rewrite H1; Apply lt_mult_left;
     Exact (compare_convert_SUPERIEUR y z H) ]
 | Assumption ].
-Save.
+Qed.
 
 Theorem Zero_mult_left: (x:Z) (Zmult ZERO x) = ZERO.
 Proof.
 Induction x; Auto with arith.
-Save.
+Qed.
 
 Theorem Zero_mult_right: (x:Z) (Zmult x ZERO) = ZERO.
 Proof.
 Induction x; Auto with arith.
-Save.
+Qed.
 
 Hints Resolve Zero_mult_left Zero_mult_right.
 
@@ -1138,13 +1138,13 @@ Theorem Zopp_Zmult:
   (x,y:Z) (Zmult (Zopp x) y) = (Zopp (Zmult x y)).
 Proof.
 Intros x y; Case x; Case y; Simpl; Auto with arith.
-Save.
+Qed.
 
 Theorem Zmult_Zopp_Zopp:
   (x,y:Z) (Zmult (Zopp x) (Zopp y)) = (Zmult x y).
 Proof.
 NewDestruct x; NewDestruct y; Reflexivity.
-Save.
+Qed.
 
 Theorem weak_Zmult_plus_distr_r:
   (x:positive)(y,z:Z)
@@ -1169,7 +1169,7 @@ Orelse
     | Apply convert_compare_SUPERIEUR; Unfold gt; Do 2 Rewrite times_convert;
       Elim (ZL4 x);Intros h H1;Rewrite H1;Apply lt_mult_left;
       Exact (compare_convert_SUPERIEUR z y E0) ]]).
-Save.
+Qed.
 
 Theorem Zmult_plus_distr_r:
   (x,y,z:Z) (Zmult x (Zplus y z)) = (Zplus (Zmult x y) (Zmult x z)).
@@ -1180,7 +1180,7 @@ Intros x y z; Case x; [
 | Intros p; Apply Zopp_intro; Rewrite Zopp_Zplus; 
   Do 3 Rewrite <- Zopp_Zmult; Rewrite Zopp_NEG; 
   Apply weak_Zmult_plus_distr_r ].
-Save.
+Qed.
 
 (** Comparison on integers *)
 Definition Zcompare := [x,y:Z]
@@ -1215,7 +1215,7 @@ Intros x y;Split; [
     Trivial with arith
   | Simpl;Exact convert_compare_EGAL
   | Simpl; Intros p;Rewrite convert_compare_EGAL;Auto with arith ]].
-Save.
+Qed.
 
 Theorem Zcompare_ANTISYM : 
   (x,y:Z) (Zcompare x y) = SUPERIEUR <->  (Zcompare y x) = INFERIEUR.
@@ -1233,7 +1233,7 @@ Intros x y;Split; [
        Intros H1;Rewrite H1;Auto with arith
      | Apply ZC1; Generalize H ; Case (compare p p0 EGAL);
        Trivial with arith Orelse (Intros H2;Discriminate H2)]))].
-Save.
+Qed.
 
 Theorem le_minus: (i,h:nat) (le (minus i h) i).
 Proof.
@@ -1241,26 +1241,26 @@ Intros i h;Pattern i h; Apply nat_double_ind; [
   Auto with arith
 | Auto with arith
 | Intros m n H; Simpl; Apply le_trans with m:=m; Auto with arith ].
-Save.
+Qed.
 
 Lemma ZL16: (p,q:positive)(lt (minus (convert p) (convert q)) (convert p)).
 Proof.
 Intros p q; Elim (ZL4 p);Elim (ZL4 q); Intros h H1 i H2; 
 Rewrite H1;Rewrite H2; Simpl;Unfold lt; Apply le_n_S; Apply le_minus.
-Save.
+Qed.
  
 Lemma ZL17: (p,q:positive)(lt (convert p) (convert (add p q))).
 Proof.
 Intros p q; Rewrite convert_add;Unfold lt;Elim (ZL4 q); Intros k H;Rewrite H;
 Rewrite plus_sym;Simpl; Apply le_n_S; Apply le_plus_r.
-Save.
+Qed.
 
 Theorem Zcompare_Zopp :
   (x,y:Z) (Zcompare x y) = (Zcompare (Zopp y) (Zopp x)).
 Proof.
 (Intros x y;Case x;Case y;Simpl;Auto with arith);
 Intros;Rewrite <- ZC4;Trivial with arith.
-Save.
+Qed.
 
 Hints Resolve convert_compare_EGAL.
 
@@ -1273,7 +1273,7 @@ Proof.
 Try (Intros; Rewrite Zcompare_Zopp; Do 2 Rewrite Zopp_Zplus;
      Rewrite Zopp_NEG; Rewrite H; Simpl; Auto with arith));
 Try (Intros; Simpl; Rewrite <- ZC4; Auto with arith).
-Save.
+Qed.
 
 Hints Resolve ZC4.
 
@@ -1438,13 +1438,13 @@ Intros x y z;Case x;Case y;Simpl;Auto with arith; [
         | Apply lt_le_weak;Apply compare_convert_INFERIEUR;Apply ZC1;Assumption]
       | Assumption]
     | Assumption]]].
-Save.
+Qed.
 
 Theorem Zcompare_Zplus_compatible : 
    (x,y,z:Z) (Zcompare (Zplus z x) (Zplus z y)) = (Zcompare x y).
 Proof.
 Exact (weaken_Zcompare_Zplus_compatible weak_Zcompare_Zplus_compatible).
-Save.
+Qed.
 
 Theorem Zcompare_trans_SUPERIEUR : 
   (x,y,z:Z) (Zcompare x y) = SUPERIEUR ->  
@@ -1460,7 +1460,7 @@ Auto with arith; [
 | Intros p q r; Do 3 Rewrite <- ZC4; Intros H H0;
   Apply convert_compare_SUPERIEUR;Unfold gt;Apply lt_trans with m:=(convert q);
   Apply compare_convert_INFERIEUR;Apply ZC1;Assumption ].
-Save.
+Qed.
 
 Lemma SUPERIEUR_POS :
   (x,y:Z) (Zcompare x y) = SUPERIEUR ->
@@ -1478,5 +1478,5 @@ Intros x y;Case x;Case y; [
 | Simpl; Intros q p H; Discriminate H
 | Unfold Zcompare; Intros q p; Rewrite <- ZC4; Intros H; Exists (true_sub q p);
   Simpl; Rewrite (ZC1 q p H); Trivial with arith].
-Save.
+Qed.
 End fast_integers.

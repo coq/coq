@@ -61,7 +61,7 @@ Hints Immediate lt_pred : arith v62.
 
 Lemma lt_pred_n_n : (n:nat)(lt O n)->(lt (pred n) n).
 NewDestruct 1; Simpl; Auto with arith.
-Save.
+Qed.
 Hints Resolve lt_pred_n_n : arith v62.
 
 (** Relationship between [le] and [lt] *) 

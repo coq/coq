@@ -36,7 +36,7 @@ Proof.
  Apply Acc_intro;Intros.
  Inversion_clear H3;Auto with sets.
  Apply acc_A_sum;Auto with sets.
-Save.
+Qed.
 
 
 Lemma wf_disjoint_sum:

@@ -41,12 +41,12 @@ Intro;Apply H;Assumption.
 Replace (plus n0 (1)) with (S n0);[Auto|Ring].
 Intros;Ring.
 Double Induction 1 2;Simpl;Auto.
-Save.
+Qed.
 
 (*********)
 Lemma INR_fact_neq_0:(n:nat)~(INR (fact n))==R0.
 Intro;Red;Intro;Apply (not_O_INR (fact n) (fact_neq_0 n));Assumption.
-Save.    
+Qed.    
 
 (*********)
 Lemma simpl_fact:(n:nat)(Rmult (Rinv (INR (fact (S n)))) 
@@ -61,7 +61,7 @@ Rewrite (Rmult_assoc (Rinv (INR (S n))) (Rinv (INR (fact n)))
  Apply (let (H1,H2)=(Rmult_ne (Rinv (INR (S n)))) in H1).
 Apply not_O_INR;Auto.
 Apply INR_fact_neq_0.
-Save.
+Qed.
 
 (*******************************)
 (*          Power              *)
@@ -75,17 +75,17 @@ Fixpoint pow [r:R;n:nat]:R:=
 
 Lemma pow_O: (e : R)  (pow e O) == R1.
 Simpl; Auto with real.
-Save.
+Qed.
  
 Lemma pow_1: (e : R)  (pow e (1)) == e.
 Simpl; Auto with real.
-Save.
+Qed.
  
 Lemma pow_add:
  (e : R) (n, m : nat)  (pow e (plus n m)) == (Rmult (pow e n) (pow e m)).
 Intros e n; Elim n; Simpl; Auto with real.
 Intros n0 H' m; Rewrite H'; Auto with real.
-Save.
+Qed.
 
 Lemma pow_nonzero:
   (x:R) (n:nat) ~(x==R0) -> ~((pow x n)==R0).
@@ -94,7 +94,7 @@ Intro; Red;Intro;Apply R1_neq_R0;Assumption.
 Intros;Red; Intro;Elim (without_div_Od x (pow x n0) H1).
 Intro; Auto.
 Apply H;Assumption.
-Save.
+Qed.
 
 Hints Resolve pow_O pow_1 pow_add pow_nonzero:real.
  
@@ -105,12 +105,12 @@ Lemma pow_RN_plus:
 Intros e n; Elim n; Simpl; Auto with real.
 Intros n0 H' m H'0.
 Rewrite Rmult_assoc; Rewrite <- H'; Auto.
-Save.
+Qed.
 
 Lemma pow_lt: (e : R) (n : nat) (Rlt R0 e) ->  (Rlt R0 (pow e n)).
 Intros e n; Elim n; Simpl; Auto with real.
 Intros n0 H' H'0; Replace R0 with (Rmult e R0); Auto with real.
-Save.
+Qed.
 Hints Resolve pow_lt :real.
 
 Lemma Rlt_pow_R1:
@@ -125,7 +125,7 @@ Apply Rlt_trans with r2 := (Rmult e R1); Auto with real.
 Apply Rlt_monotony; Auto with real.
 Apply Rlt_trans with r2 := R1; Auto with real.
 Apply H'; Auto with arith.
-Save.
+Qed.
 Hints Resolve Rlt_pow_R1 :real.
 
 Lemma Rlt_pow:
@@ -145,13 +145,13 @@ Apply Rlt_pow_R1; Auto with arith.
 Apply simpl_lt_plus_l with p := n; Auto with arith.
 Rewrite le_plus_minus_r; Auto with arith; Rewrite <- plus_n_O; Auto.
 Rewrite plus_sym; Auto with arith.
-Save.
+Qed.
 Hints Resolve Rlt_pow :real.
 
 (*********)
 Lemma tech_pow_Rmult:(x:R)(n:nat)(Rmult x (pow x n))==(pow x (S n)).
 Induction n; Simpl; Trivial.
-Save.
+Qed.
 
 (*********)
 Lemma tech_pow_Rplus:(x:R)(a,n:nat)
@@ -163,7 +163,7 @@ Intros; Pattern 1 (pow x a);
  Rewrite <- (Rmult_Rplus_distr (pow x a) R1 (INR n));
  Rewrite (Rplus_sym R1 (INR n)); Rewrite <-(S_INR n);
  Apply Rmult_sym.
-Save.
+Qed.
 
 Lemma poly: (n:nat)(e:R)(Rlt R0 e)->
  (Rle (Rplus R1 (Rmult (INR n) e)) (pow  (Rplus R1 e) n)).
@@ -195,7 +195,7 @@ Rewrite Rplus_sym;
  Apply (Rlt_r_plus_R1 e (Rlt_le R0 e H)).
 Assumption.
 Rewrite H1;Unfold Rle;Right;Trivial.
-Save.
+Qed.
 
 Lemma Power_monotonic:
  (x:R) (m,n:nat) (Rgt (Rabsolu x) R1) 
@@ -216,14 +216,14 @@ Apply Rle_monotony.
 Apply Rabsolu_pos.
 Unfold Rgt in H.
 Apply Rlt_le; Assumption.
-Save.
+Qed.
 
 Lemma Pow_Rabsolu: (x:R) (n:nat)
      (pow (Rabsolu x) n)==(Rabsolu (pow x n)).
 Intro;Induction n;Simpl.
 Apply sym_eqT;Apply Rabsolu_pos_eq;Apply Rlt_le;Apply Rlt_R0_R1.
 Intros; Rewrite H;Apply sym_eqT;Apply Rabsolu_mult.
-Save.
+Qed.
 
 
 Lemma Pow_x_infinity:
@@ -281,7 +281,7 @@ Exists O;Apply (Rge_trans (INR (0))
 Rewrite INR_IZR_INZ;Apply IZR_ge;Simpl;Omega.
 Unfold Rge; Left; Assumption.
 Omega.
-Save.
+Qed.
 
 Lemma pow_ne_zero:
   (n:nat) ~(n=(0))-> (pow R0 n) == R0.
@@ -289,7 +289,7 @@ Induction n.
 Simpl;Auto.
 Intros;Elim H;Reflexivity.
 Intros; Simpl;Apply Rmult_Ol.
-Save.
+Qed.
 
 Lemma Rinv_pow:
   (x:R) (n:nat) ~(x==R0) -> (Rinv (pow x n))==(pow (Rinv x) n).
@@ -299,7 +299,7 @@ Intro m;Intro;Rewrite Rinv_Rmult.
 Rewrite H0; Reflexivity;Assumption.
 Assumption.
 Apply pow_nonzero;Assumption.
-Save.
+Qed.
 
 Lemma pow_lt_1_zero:
   (x:R) (Rlt (Rabsolu x) R1)
@@ -353,7 +353,7 @@ Rewrite Rinv_R1; Apply Rlt_R0_R1.
 Rewrite Rinv_R1; Assumption.
 Assumption.
 Red;Intro; Apply R1_neq_R0;Assumption.
-Save.
+Qed.
 
 Lemma pow_R1:
  (r : R) (n : nat) (pow r n) == R1 ->  (Rabsolu r) == R1 \/ n = O.
@@ -389,7 +389,7 @@ Absurd (Rlt (pow (Rabsolu r) O) (pow (Rabsolu r) (S n0)));
 Repeat Rewrite Pow_Rabsolu; Rewrite H'0; Simpl; Auto with real.
 Red;Intro;Absurd ``(pow r (S n0)) == 1``;Auto.
 Simpl; Rewrite H; Rewrite Rmult_Ol; Auto with real.
-Save.
+Qed.
 
 (*******************************)
 (**         PowerRZ            *)
@@ -409,19 +409,19 @@ Definition powerRZ :=
 Lemma Zpower_NR0:
  (e : Z) (n : nat) (Zle ZERO e) ->  (Zle ZERO (Zpower_nat e n)).
 Intros e n; Elim n; Unfold Zpower_nat; Simpl; Auto with zarith.
-Save.
+Qed.
 
 Lemma powerRZ_O: (e : R)  (powerRZ e ZERO) == R1.
 Simpl; Auto.
-Save.
+Qed.
  
 Lemma powerRZ_1: (e : R)  (powerRZ e (Zs ZERO)) == e.
 Simpl; Auto with real.
-Save.
+Qed.
  
 Lemma powerRZ_NOR: (e : R) (z : Z) ~ e == R0 ->  ~ (powerRZ e z) == R0.
 Intros e z; Case z; Simpl; Auto with real.
-Save.
+Qed.
  
 Lemma powerRZ_add:
  (e : R)
@@ -469,7 +469,7 @@ Intros H'; Rewrite pow_add; Auto with real.
 Apply Rinv_Rmult; Auto.
 Apply pow_nonzero; Auto.
 Apply pow_nonzero; Auto.
-Save.
+Qed.
 Hints Resolve powerRZ_O powerRZ_1 powerRZ_NOR powerRZ_add :real.
  
 Lemma Zpower_nat_powerRZ:
@@ -485,16 +485,16 @@ Rewrite H'; Simpl.
 Case m1; Simpl; Auto with real.
 Intros m2; Rewrite bij1; Auto.
 Unfold Zpower_nat; Auto.
-Save.
+Qed.
  
 Lemma powerRZ_lt: (e : R) (z : Z) (Rlt R0 e) ->  (Rlt R0 (powerRZ e z)).
 Intros e z; Case z; Simpl; Auto with real.
-Save.
+Qed.
 Hints Resolve powerRZ_lt :real.
  
 Lemma powerRZ_le: (e : R) (z : Z) (Rlt R0 e) ->  (Rle R0 (powerRZ e z)).
 Intros e z H'; Apply Rlt_le; Auto with real.
-Save.
+Qed.
 Hints Resolve powerRZ_le :real.
  
 Lemma Zpower_nat_powerRZ_absolu:
@@ -505,7 +505,7 @@ Intros p H'; Elim (convert p); Simpl; Auto with zarith.
 Intros n0 H'0; Rewrite <- H'0; Simpl; Auto with zarith.
 Rewrite <- mult_IZR; Auto.
 Intros p H'; Absurd `0 <= (NEG p)`;Auto with zarith.
-Save.
+Qed.
 
 Lemma powerRZ_R1: (n : Z)  (powerRZ R1 n) == R1.
 Intros n; Case n; Simpl; Auto.
@@ -514,7 +514,7 @@ Intros p; Elim (convert p); Simpl.
 Exact Rinv_R1.
 Intros n1 H'; Rewrite Rinv_Rmult; Try Rewrite Rinv_R1; Try Rewrite H';
  Auto with real.
-Save.
+Qed.
 
 (*******************************)
 (** Sum of n first naturals    *)
@@ -561,7 +561,7 @@ Ring.
 Rewrite Rmult_Rplus_distrl;Rewrite Hrecn;Cut (plus n (1))=(S n).
 Intro H;Rewrite H;Simpl;Ring.
 Omega.
-Save.
+Qed.
 
 Lemma sum_f_R0_triangle:
   (x:nat->R)(n:nat) (Rle (Rabsolu (sum_f_R0 x n))
@@ -578,7 +578,7 @@ Apply Rabsolu_triang.
 Rewrite Rplus_sym;Rewrite (Rplus_sym 
   (sum_f_R0 [i:nat](Rabsolu (x i)) m) (Rabsolu (x (S m))));
   Apply Rle_compatibility;Assumption.
-Save.
+Qed.
 
 
 (*******************************)

@@ -266,7 +266,7 @@ coqbinaries:: ${COQBINARIES}
 world: coqbinaries states theories contrib tools
 
 $(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
-	$(COQMKTOP) -opt $(MLINCLUDES) -o $@
+	$(COQMKTOP) -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
 $(COQTOPBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO)
@@ -325,7 +325,7 @@ toplevel: $(TOPLEVEL)
 # special binaries for debugging
 
 bin/coq-interface$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
-	$(COQMKTOP) -top $(MLINCLUDES) $(CAMLDEBUG) -o $@ $(INTERFACE)
+	$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
 
 bin/parser$(EXE): contrib/interface/ctast.cmo contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
 	$(OCAMLC) -cclib -lunix -custom $(MLINCLUDES) -o $@ $(CMA) \
@@ -414,7 +414,8 @@ ZARITHVO=theories/ZArith/Wf_Z.vo        theories/ZArith/Zsyntax.vo \
 	 theories/ZArith/ZArith_dec.vo  theories/ZArith/fast_integer.vo \
 	 theories/ZArith/Zmisc.vo       theories/ZArith/zarith_aux.vo \
 	 theories/ZArith/Zhints.vo	theories/ZArith/Zlogarithm.vo \
-	 theories/ZArith/Zpower.vo 	theories/ZArith/Zcomplements.vo
+	 theories/ZArith/Zpower.vo 	theories/ZArith/Zcomplements.vo \
+	 theories/ZArith/Zdiv.vo
 
 LISTSVO=theories/Lists/List.vo      theories/Lists/PolyListSyntax.vo \
         theories/Lists/ListSet.vo   theories/Lists/Streams.vo \
@@ -626,7 +627,7 @@ MINICOQCMO=$(CONFIG) $(LIBREP) $(KERNEL) \
 MINICOQ=bin/minicoq$(EXE)
 
 $(MINICOQ): $(MINICOQCMO)
-	$(OCAMLC) $(CAMLDEBUG) $(MLINCLUDES) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
+	$(OCAMLC) $(BYTEFLAGS) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
 
 archclean::
 	rm -f $(MINICOQ)
@@ -683,7 +684,7 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)/states
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLEMACSLIB)
-	cp tools/coq.el $(FULLEMACSLIB)
+	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
 
 MANPAGES=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1 \

@@ -33,6 +33,13 @@ type fix_kind = RFix of (int array * int) | RCoFix of int
 
 type binder_kind = BProd | BLambda | BLetIn
 
+type hole_kind =
+  | ImplicitArg of global_reference * int
+  | AbstractionType of name
+  | QuestionMark
+  | CasesType
+  | InternalHole
+
 type 'ctxt reference =
   | RConst of constant * 'ctxt
   | RInd of inductive * 'ctxt
@@ -57,7 +64,7 @@ type rawconstr =
   | RRec of loc * fix_kind * identifier array * 
       rawconstr array * rawconstr array
   | RSort of loc * rawsort
-  | RHole of loc option
+  | RHole of (loc * hole_kind)
   | RCast of loc * rawconstr * rawconstr
   | RDynamic of loc * Dyn.t
 
@@ -70,7 +77,6 @@ type rawconstr =
    dans le contexte servant à typer les body ???]
 
    - boolean in POldCase means it is recursive
-   - option in PHole tell if the "?" was apparent or has been implicitely added
 i*)
 
 let dummy_loc = (0,0)
@@ -88,8 +94,7 @@ let loc_of_rawconstr = function
   | ROldCase (loc,_,_,_,_) -> loc
   | RRec (loc,_,_,_,_) -> loc
   | RSort (loc,_) -> loc
-  | RHole (Some loc) -> loc
-  | RHole (None) -> dummy_loc
+  | RHole (loc,_) -> loc
   | RCast (loc,_,_) -> loc
   | RDynamic (loc,_) -> loc
 
@@ -106,7 +111,7 @@ let set_loc_of_rawconstr loc = function
   | ROldCase (_,a,b,c,d) -> ROldCase (loc,a,b,c,d) 
   | RRec (_,a,b,c,d) -> RRec (loc,a,b,c,d) 
   | RSort (_,a)      -> RSort (loc,a) 
-  | RHole _          -> RHole (Some loc)
+  | RHole (_,a)      -> RHole (loc,a)
   | RCast (_,a,b)    -> RCast (loc,a,b) 
   | RDynamic (_,d)   -> RDynamic (loc,d)
 

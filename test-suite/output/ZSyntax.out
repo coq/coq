@@ -2,3 +2,25 @@
      : Z
 [f:(nat->Z)]`(f O)+0`
      : (nat->Z)->Z
+[x:positive](POS (xO x))
+     : positive->Z
+[x:positive]`(POS x)+1`
+     : positive->Z
+[x:positive](POS x)
+     : positive->Z
+[x:positive](NEG (xO x))
+     : positive->Z
+[x:positive]`(POS (xO x))+0`
+     : positive->Z
+[x:positive]`(Zopp (POS (xO x)))`
+     : positive->Z
+[x:positive]`(Zopp (POS (xO x)))+0`
+     : positive->Z
+`(inject_nat (0))+1`
+     : Z
+`0+(inject_nat (plus (0) (0)))`
+     : Z
+`(inject_nat (0)) = 0`
+     : Prop
+`0+(inject_nat (789))`
+     : Z

@@ -325,7 +325,9 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 and conv_record env isevars (c,bs,(params,params1),(us,us2),(ts,ts1),c1) = 
   let ks =
     List.fold_left
-      (fun ks b -> (new_isevar isevars env (substl ks b)) :: ks)
+      (fun ks b ->
+	 let dloc = (Rawterm.dummy_loc,Rawterm.InternalHole) in
+	 (new_isevar isevars env dloc (substl ks b)) :: ks)
       [] bs
   in
   if (list_for_all2eq 

@@ -11,7 +11,7 @@
 Require Ring_theory.
 Require Quote.
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Lemma index_eq_prop: (n,m:index)(Is_true (index_eq n m)) -> n=m.
 Proof.
@@ -332,7 +332,7 @@ Fixpoint interp_sp [p:spolynomial] : A :=
 
 (* End interpretation. *)
 
-Implicit Arguments Off.
+Unset Implicit Arguments.
 
 (* Section properties. *)
 
@@ -758,7 +758,7 @@ Section rings.
 
 (* Here the coercion between Ring and Semi-Ring will be useful *)
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Variable A : Type.
 Variable Aplus : A -> A -> A.
@@ -849,7 +849,7 @@ Fixpoint interp_p [p:polynomial] : A :=
 
 (*** Properties *)
 
-Implicit Arguments Off.
+Unset Implicit Arguments.
 
 Lemma spolynomial_of_ok : (p:polynomial)
   (interp_p p)==(interp_sp Aplus Amult Azero vm (spolynomial_of p)).

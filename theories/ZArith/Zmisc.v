@@ -31,7 +31,7 @@ Section logic.
 
 Lemma rename : (A:Set)(P:A->Prop)(x:A) ((y:A)(x=y)->(P y)) -> (P x).
 Auto with arith. 
-Save.
+Qed.
 
 End logic.
 
@@ -44,32 +44,63 @@ Definition Z_of_entier := [x:entier]Case x of ZERO POS end.
 
 Lemma POS_xI : (p:positive) (POS (xI p))=`2*(POS p) + 1`.
 Intro; Apply refl_equal.
-Save.
+Qed.
 Lemma POS_xO : (p:positive) (POS (xO p))=`2*(POS p)`.
 Intro; Apply refl_equal.
-Save.
+Qed.
 Lemma NEG_xI : (p:positive) (NEG (xI p))=`2*(NEG p) - 1`.
 Intro; Apply refl_equal.
-Save.
+Qed.
 Lemma NEG_xO : (p:positive) (NEG (xO p))=`2*(NEG p)`.
 Intro; Apply refl_equal.
-Save.
+Qed.
 
 Lemma POS_add : (p,p':positive)`(POS (add p p'))=(POS p)+(POS p')`.
 Induction p; Induction p'; Simpl; Auto with arith.
-Save.
+Qed.
 
 Lemma NEG_add : (p,p':positive)`(NEG (add p p'))=(NEG p)+(NEG p')`.
 Induction p; Induction p'; Simpl; Auto with arith.
-Save.
+Qed.
 
-Definition Zle_bool := [x,y:Z]Case `x ?= y` of true true false end.
-Definition Zge_bool := [x,y:Z]Case `x ?= y` of true false true end.
-Definition Zlt_bool := [x,y:Z]Case `x ?= y` of false true false end.
-Definition Zgt_bool := [x,y:Z]Case ` x ?= y` of false false true end.
-Definition Zeq_bool := [x,y:Z]Cases `x ?= y` of EGAL => true | _ => false end.
-Definition Zneq_bool := [x,y:Z]Cases `x ?= y` of EGAL =>false | _ => true end.
+(** Boolean comparisons *)
 
+Definition Zle_bool := 
+  [x,y:Z]Cases `x ?= y` of SUPERIEUR => false | _ => true end.
+Definition Zge_bool := 
+  [x,y:Z]Cases `x ?= y` of INFERIEUR => false | _ => true end.
+Definition Zlt_bool := 
+  [x,y:Z]Cases `x ?= y` of INFERIEUR => true | _ => false end.
+Definition Zgt_bool := 
+  [x,y:Z]Cases ` x ?= y` of SUPERIEUR => true | _ => false end.
+Definition Zeq_bool := 
+  [x,y:Z]Cases `x ?= y` of EGAL => true | _ => false end.
+Definition Zneq_bool := 
+  [x,y:Z]Cases `x ?= y` of EGAL => false | _ => true end.
+
+Lemma Zle_cases : (x,y:Z)if (Zle_bool x y) then `x<=y` else `x>y`.
+Proof.
+Intros x y; Unfold Zle_bool Zle Zgt.
+Case (Zcompare x y); Auto; Discriminate.
+Qed.
+
+Lemma Zlt_cases : (x,y:Z)if (Zlt_bool x y) then `x<y` else `x>=y`.
+Proof.
+Intros x y; Unfold Zlt_bool Zlt Zge.
+Case (Zcompare x y); Auto; Discriminate.
+Qed.
+
+Lemma Zge_cases : (x,y:Z)if (Zge_bool x y) then `x>=y` else `x<y`.
+Proof.
+Intros x y; Unfold Zge_bool Zge Zlt.
+Case (Zcompare x y); Auto; Discriminate.
+Qed.
+
+Lemma Zgt_cases : (x,y:Z)if (Zgt_bool x y) then `x>y` else `x<=y`.
+Proof.
+Intros x y; Unfold Zgt_bool Zgt Zle.
+Case (Zcompare x y); Auto; Discriminate.
+Qed.
 
 End numbers.
 
@@ -106,7 +137,7 @@ Induction n;
 [ Simpl; Auto with arith
 | Intros; Simpl; Apply f_equal with f:=f; Apply H
 ].  
-Save.
+Qed.
 
 Theorem iter_convert : (n:positive)(A:Set)(f:A->A)(x:A)
   (iter_pos n A f x) = (iter_nat (convert n) A f x).
@@ -122,7 +153,7 @@ Induction n;
   Apply iter_nat_plus
 | Simpl; Auto with arith
 ].
-Save.
+Qed.
 
 Theorem iter_pos_add :
   (n,m:positive)(A:Set)(f:A->A)(x:A)
@@ -134,7 +165,7 @@ Rewrite -> (iter_convert n A f (iter_nat (convert m) A f x)).
 Rewrite -> (iter_convert (add n m) A f x).
 Rewrite -> (convert_add n m).
 Apply iter_nat_plus.
-Save.
+Qed.
 
 (** Preservation of invariants : if [f : A->A] preserves the invariant [Inv], 
     then the iterates of [f] also preserve it. *)
@@ -145,26 +176,27 @@ Theorem iter_nat_invariant :
 Induction n; Intros;
 [ Trivial with arith
 | Simpl; Apply H0 with x:=(iter_nat n0 A f x); Apply H; Trivial with arith].
-Save.
+Qed.
 
 Theorem iter_pos_invariant :
   (n:positive)(A:Set)(f:A->A)(Inv:A->Prop)
   ((x:A)(Inv x)->(Inv (f x)))->(x:A)(Inv x)->(Inv (iter_pos n A f x)).
 Intros; Rewrite iter_convert; Apply iter_nat_invariant; Trivial with arith.
-Save.
+Qed.
 
 End iterate.
 
 
 Section arith.
 
+Lemma POS_gt_ZERO : (p:positive) `(POS p) > 0`.
+Unfold Zgt; Trivial.
+Qed.
+
+(* weaker but useful (in [Zpower] for instance) *)
 Lemma ZERO_le_POS : (p:positive) `0 <= (POS p)`.
 Intro; Unfold Zle; Unfold Zcompare; Discriminate.
-Save.
-
-Lemma POS_gt_ZERO : (p:positive) `(POS p) > 0`.
-Intro; Unfold Zgt; Simpl; Trivial with arith.
-Save.
+Qed.
 
 Lemma Zlt_ZERO_pred_le_ZERO : (x:Z) `0 < x` -> `0 <= (Zpred x)`.
 Intros.
@@ -172,7 +204,12 @@ Rewrite (Zs_pred x) in H.
 Apply Zgt_S_le.
 Apply Zlt_gt.
 Assumption.
-Save.
+Qed.
+
+Lemma NEG_lt_ZERO : (p:positive)`(NEG p) < 0`.
+Unfold Zlt; Trivial.
+Qed.
+
 
 (** [Zeven], [Zodd], [Zdiv2] and their related properties *)
 
@@ -217,7 +254,7 @@ Proof.
   Realizer Zeven_bool.
   Repeat Program; Compute; Trivial.
   i*)
-Save.
+Qed.
 
 Lemma Zeven_dec : (z:Z) { (Zeven z) }+{ ~(Zeven z) }.
 Proof.
@@ -231,7 +268,7 @@ Proof.
   Realizer Zeven_bool.
   Repeat Program; Compute; Trivial.
   i*)
-Save.
+Qed.
 
 Lemma Zodd_dec : (z:Z) { (Zodd z) }+{ ~(Zodd z) }.
 Proof.
@@ -245,17 +282,17 @@ Proof.
   Realizer Zodd_bool.
   Repeat Program; Compute; Trivial.
   i*)
-Save.
+Qed.
 
 Lemma Zeven_not_Zodd : (z:Z)(Zeven z) -> ~(Zodd z).
 Proof.
   NewDestruct z; [ Idtac | NewDestruct p | NewDestruct p  ]; Compute; Trivial.
-Save.
+Qed.
 
 Lemma Zodd_not_Zeven : (z:Z)(Zodd z) -> ~(Zeven z).
 Proof.
   NewDestruct z; [ Idtac | NewDestruct p | NewDestruct p  ]; Compute; Trivial.
-Save.
+Qed.
 
 Hints Unfold Zeven Zodd : zarith.
 
@@ -286,7 +323,7 @@ Intros. Absurd (Zeven `1`); Red; Auto with arith.
 NewDestruct p; Auto with arith.
 Intros. Absurd (Zeven (NEG (xI p))); Red; Auto with arith.
 Intros. Absurd (Zeven `-1`); Red; Auto with arith.
-Save.
+Qed.
 
 Lemma Zodd_div2 : (x:Z) `x >= 0` -> (Zodd x) -> `x = 2*(Zdiv2 x)+1`.
 Proof.
@@ -295,7 +332,7 @@ Intros. Absurd (Zodd `0`); Red; Auto with arith.
 NewDestruct p; Auto with arith.
 Intros. Absurd (Zodd (POS (xO p))); Red; Auto with arith.
 Intros. Absurd `(NEG p) >= 0`; Red; Auto with arith.
-Save.
+Qed.
 
 Lemma Z_modulo_2 : (x:Z) `x >= 0` -> { y:Z | `x=2*y` }+{ y:Z | `x=2*y+1` }.
 Proof.
@@ -303,7 +340,7 @@ Intros x Hx.
 Elim (Zeven_odd_dec x); Intro.
 Left. Split with (Zdiv2 x). Exact (Zeven_div2 x a).
 Right. Split with (Zdiv2 x). Exact (Zodd_div2 x Hx b).
-Save.
+Qed.
 
 (* Very simple *)
 Lemma Zminus_Zplus_compatible :
@@ -317,7 +354,7 @@ Rewrite <- (Zplus_assoc x n (Zopp n)).
 Rewrite -> (Zplus_inverse_r n).
 Rewrite <- Zplus_n_O.
 Reflexivity.
-Save.
+Qed.
 
 (** Decompose an egality between two [?=] relations into 3 implications *)
 Theorem Zcompare_egal_dec :
@@ -328,7 +365,7 @@ Theorem Zcompare_egal_dec :
 Intros x1 y1 x2 y2.
 Unfold Zgt; Unfold Zlt;
 Case `x1 ?= y1`; Case `x2 ?= y2`; Auto with arith; Symmetry; Auto with arith.
-Save.
+Qed.
 
 Theorem Zcompare_elim :
   (c1,c2,c3:Prop)(x,y:Z)
@@ -340,12 +377,12 @@ Apply rename with x:=`x ?= y`; Intro r; Elim r;
 [ Intro; Apply H; Apply (let (h1, h2)=(Zcompare_EGAL x y) in h1); Assumption
 | Unfold Zlt in H0; Assumption
 | Unfold Zgt in H1; Assumption ].
-Save.
+Qed.
 
 Lemma Zcompare_x_x : (x:Z) `x ?= x` = EGAL.
 Intro; Apply Case (Zcompare_EGAL x x) of [h1,h2: ?]h2 end.
 Apply refl_equal.
-Save.
+Qed.
 
 Lemma Zlt_not_eq : (x,y:Z)`x < y` -> ~x=y.
 Proof.
@@ -357,35 +394,35 @@ Generalize (proj2 ? ? (Zcompare_EGAL x y) H0).
 Intro.
 Rewrite H1 in H.
 Discriminate H.
-Save.
+Qed.
 
 Lemma Zcompare_eq_case : 
   (c1,c2,c3:Prop)(x,y:Z) c1 -> x=y -> (Case `x ?= y` of c1 c2 c3 end).
 Intros.
 Rewrite -> (Case (Zcompare_EGAL x y) of [h1,h2: ?]h2 end H0).
 Assumption.
-Save.
+Qed.
 
 (** Four very basic lemmas about [Zle], [Zlt], [Zge], [Zgt] *)
 Lemma Zle_Zcompare :
   (x,y:Z)`x <= y` -> Case `x ?= y` of True True False end.
 Intros x y; Unfold Zle; Elim `x ?=y`; Auto with arith.
-Save.
+Qed.
 
 Lemma Zlt_Zcompare :
   (x,y:Z)`x < y`  -> Case `x ?= y` of False True False end.
 Intros x y; Unfold Zlt; Elim `x ?=y`; Intros; Discriminate Orelse Trivial with arith.
-Save.
+Qed.
 
 Lemma Zge_Zcompare :
   (x,y:Z)` x >= y`-> Case `x ?= y` of True False True end.
 Intros x y; Unfold Zge; Elim `x ?=y`; Auto with arith. 
-Save.
+Qed.
 
 Lemma Zgt_Zcompare :
   (x,y:Z)`x > y` -> Case `x ?= y` of False False True end.
 Intros x y; Unfold Zgt; Elim `x ?= y`; Intros; Discriminate Orelse Trivial with arith.
-Save.
+Qed.
 
 (** Lemmas about [Zmin] *)
 
@@ -395,7 +432,7 @@ Rewrite (Zplus_sym x n);
 Rewrite (Zplus_sym y n);
 Rewrite (Zcompare_Zplus_compatible x y n).
 Case `x ?= y`; Apply Zplus_sym.
-Save.
+Qed.
 
 (** Lemmas about [absolu] *)
 
@@ -417,15 +454,14 @@ Intros. Absurd `(POS p0) < (NEG p)`.
 Compute. Intro H0. Discriminate H0. Intuition.
 
 Intros. Absurd `0 <= (NEG p)`. Compute. Auto with arith. Intuition.
-Save.
+Qed.
 
 (** Lemmas on [Zle_bool] used in contrib/graphs *)
 
 Lemma Zle_bool_imp_le : (x,y:Z) (Zle_bool x y)=true -> (Zle x y).
 Proof.
-  Unfold Zle_bool Zle. Intros x y. Unfold not. Case (Zcompare x y). Intros. Discriminate H0.
-  Intros. Discriminate H0.
-  Intro. Discriminate H.
+  Unfold Zle_bool Zle. Intros x y. Unfold not. 
+  Case (Zcompare x y); Intros; Discriminate.
 Qed.
 
 Lemma Zle_imp_le_bool : (x,y:Z) (Zle x y) -> (Zle_bool x y)=true.

@@ -46,6 +46,10 @@ contrib/ring
 	          and Patrick Loiseleur (LRI, 1997-1999)
 contrib/xml
 	developed by Claudio Sacerdotti (Univ. Bologna, 2000-2001)
+contrib/jprover
+	The author of JProver is Stephan Schmitt <schmitts@spmail.slu.edu>,
+	and is integrated into MetaPRL by Aleksey Nogin <nogin@cs.cornell.edu>
+	and then into Coq by HUANG Guan-Shieng (LRI, 2001-2002)
 parsing/search.ml
 	developed by Yves Bertot (INRIA-Lemme, 2000)
 

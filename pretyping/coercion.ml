@@ -83,8 +83,7 @@ let inh_app_fun env isevars j =
   match kind_of_term t with
     | Prod (_,_,_) -> j
     | Evar ev when not (is_defined_evar isevars ev) ->
-	let (sigma',t) = define_evar_as_arrow (evars_of isevars) ev in
-	evars_reset_evd sigma' isevars;
+	let t = define_evar_as_arrow isevars ev in
 	{ uj_val = j.uj_val; uj_type = t }
     | _ ->
        	(try
@@ -106,8 +105,7 @@ let inh_coerce_to_sort env isevars j =
   match kind_of_term typ with
     | Sort s -> { utj_val = j.uj_val; utj_type = s }
     | Evar ev when not (is_defined_evar isevars ev) ->
-	let (sigma', s) = define_evar_as_sort (evars_of isevars) ev in
-	evars_reset_evd sigma' isevars;
+	let s = define_evar_as_sort isevars ev in
 	{ utj_val = j.uj_val; utj_type = s }
     | _ ->
         let j1 = inh_tosort_force env isevars j in 

@@ -59,13 +59,13 @@ Chapter Well_founded.
         (P:A->Type)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
  Proof.
   Intros; Apply (Acc_rect P); Auto.
- Save.
+ Qed.
 
  Theorem well_founded_induction :
         (P:A->Set)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
  Proof.
   Exact [P:A->Set](well_founded_induction_type P).
- Save.
+ Qed.
 
  Theorem well_founded_ind : 
          (P:A->Prop)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
@@ -98,13 +98,13 @@ Lemma Fix_F_eq
   : (x:A)(r:(Acc x))
     (F x [y:A][p:(R y x)](Fix_F y (Acc_inv x r y p)))=(Fix_F x r).
 Intros x r; Elim r using  Acc_inv_dep; Auto.
-Save.
+Qed.
 
 Lemma Fix_F_inv : (x:A)(r,s:(Acc x))(Fix_F x r)=(Fix_F x s).
 Intro x; Elim (Rwf x); Intros.
 Case (Fix_F_eq x0 r); Case (Fix_F_eq x0 s); Intros.
 Apply F_ext; Auto.
-Save.
+Qed.
 
 
 Lemma fix_eq : (x:A)(fix x)=(F x [y:A][p:(R y x)](fix y)).
@@ -112,7 +112,7 @@ Intro; Unfold fix.
 Case (Fix_F_eq x).
 Apply F_ext; Intros.
 Apply Fix_F_inv.
-Save.
+Qed.
 
 End FixPoint.
 

@@ -30,7 +30,6 @@ exception Impossible
 
 let anonymous = id_of_string "x"
 let dummy_name = id_of_string "_"
-let flex_name = id_of_string "flex"
 
 let id_of_name = function
   | Anonymous -> anonymous
@@ -70,7 +69,7 @@ let ast_iter_rel f =
     | MLcons (_,l) ->  List.iter (iter n) l
     | MLcast (a,_) -> iter n a
     | MLmagic a -> iter n a
-    | MLglob _ | MLexn _ | MLdummy -> ()
+    | MLglob _ | MLexn _ | MLdummy | MLdummy' -> ()
   in iter 0 
 
 (*s Map over asts. *)
@@ -86,7 +85,7 @@ let ast_map f = function
   | MLcons (c,l) -> MLcons (c, List.map f l)
   | MLcast (a,t) -> MLcast (f a, t)
   | MLmagic a -> MLmagic (f a)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> a
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLdummy' as a -> a
 
 (*s Map over asts, with binding depth as parameter. *)
 
@@ -102,7 +101,7 @@ let ast_map_lift f n = function
   | MLcons (c,l) -> MLcons (c, List.map (f n) l)
   | MLcast (a,t) -> MLcast (f n a, t)
   | MLmagic a -> MLmagic (f n a)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> a	
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLdummy' as a -> a	
 
 (*s Iter over asts. *) 
 
@@ -117,7 +116,20 @@ let ast_iter f = function
   | MLcons (c,l) -> List.iter f l
   | MLcast (a,t) -> f a
   | MLmagic a -> f a
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> ()
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLdummy' as a -> ()
+
+(*S Searching occurrences of a particular term (no lifting done). *)
+
+let rec ast_search t a = 
+  if t = a then raise Found else ast_iter (ast_search t) a
+
+let decl_search t l = 
+  let one_decl = function 
+    | Dglob (_,a) -> ast_search t a
+    | Dfix (_,c) -> Array.iter (ast_search t) c
+    | _ -> () 
+  in 
+  try List.iter one_decl l; false with Found -> true
 
 (*S Operations concerning De Bruijn indices. *)
 
@@ -249,7 +261,7 @@ let rec anonym_lams a = function
 
 let rec dummy_lams a = function 
   | 0 -> a 
-  | n -> anonym_lams (MLlam (dummy_name,a)) (pred n)
+  | n -> dummy_lams (MLlam (dummy_name,a)) (pred n)
 
 (*S Operations concerning eta. *)
 
@@ -379,7 +391,7 @@ let iota_gen br =
   in iota 0 
 
 let is_atomic = function 
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy -> true
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLdummy' -> true
   | _ -> false
 
 (*S The main simplification function. *)
@@ -427,7 +439,7 @@ and simpl_app o a = function
 	     let a' = List.map (ml_lift k) a in
       	     (n, l, simpl o (MLapp (t,a')))) br 
       in simpl o (MLcase (e,br')) 
-  | (MLdummy | MLexn _) as e -> e 
+  | (MLdummy | MLdummy' | MLexn _) as e -> e 
 	(* We just discard arguments in those cases. *)
   | f -> MLapp (f,a)
 

@@ -17,6 +17,11 @@ Vernac:
 - Print / Print Proof en fait identiques ; Print ne devrait pas afficher
   les constantes opaques (devrait afficher qqchose comme <opaque>)
 
+Theories:
+- Rendre transparent tous les theoremes prouvant {A}+{B}
+- Faire demarrer PolyList.nth a` l'indice 0 
+Renommer l'actuel nth en nth1 ??
+
 Grammaires:
 
 - revoir numarg/pure_numarg dans g_tactic.ml4 (regles a factoriser)

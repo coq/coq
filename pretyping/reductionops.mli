@@ -134,6 +134,7 @@ type 'a miota_args = {
 val reducible_mind_case : constr -> bool
 val reduce_mind_case : constr miota_args -> constr
 
+val find_conclusion : env -> evar_map -> constr -> (constr,constr) kind_of_term
 val is_arity : env ->  evar_map -> constr -> bool
 val is_info_type : env ->  evar_map -> unsafe_type_judgment -> bool
 val is_info_arity : env ->  evar_map -> constr -> bool

@@ -1,30 +1,56 @@
 Changes from V7.2 to ????
 =========================
 
+Language
+
+- Slightly improved compilation of pattern-matching (slight source of
+  incompatibilities)
+
+Tactics
+
+- New tactic "Rename x into y" for renaming hypotheses
+- New tactics "Pose x:=u" and "Pose u" to add definitions to local context
+- Pattern now working on partially applied subterms
+- Ring no longer applies irreversible congruence laws of mult but
+  better applies congruence laws of plus (slight source of incompatibilities).
+- Intuition does no longer unfold constants except "<->" and "~". It
+  can be parameterized by a tactic. It also can introduce dependent
+  product if needed.
+
 Bugs
 
 - "Intros H" now working like "Intro H" trying first to reduce if not a product
 - Forward dependencies in Cases now taken into account
 
+- Known bugs related to Inversion and let-in's fixed
+- Bug unexpected Delta with let-in now fixed
+
 Extraction (details in contrib/extraction/CHANGES or documentation)
 
-- Signatures of extracted terms are now mostly expunged from dummy arguments. 	
+- Signatures of extracted terms are now mostly expunged from dummy arguments.
 - Haskell extraction is now operational (tested & debugged).  
 
 Standard library
 
-- Some additions in [ZArith]: three files (Zcomplements.v, Zpower.v and Zlogarithms.v)
-  moved from contrib/omega in order to be more visible, one Zsgn function, 
-  more induction principles (Wf_Z.v and tail of Zcomplements.v), 
-  one more general Euclid theorem. 
+- Some additions in [ZArith]: three files (Zcomplements.v, Zpower.v
+  and Zlogarithms.v) moved from contrib/omega in order to be more
+  visible, one Zsgn function, more induction principles (Wf_Z.v and
+  tail of Zcomplements.v), one more general Euclid theorem.
 
 User Contributions
 
 - Chinese has been rewritten using Z from ZArith as datatype. 
   ZChinese is the new version, Chinese the obsolete one.   
 
+Incompatibilities
 
-
+- Ring: exceptional incompatibilities (1 above 650 in submitted user
+  contribs, leading to a simplification)
+- Intuition: does not unfold any definition except "<->" and "~".
+- Cases: removal of some extra Cases in configurations of the form
+  "Cases ... of C _ => ... | _ D => ..."  (effects on 2 definitions of
+  submitted user contributions necessitating the removal of now superflous
+  proof steps in 3 different proofs)
 
 Changes from V7.1 to V7.2
 =========================

@@ -63,6 +63,16 @@ let make_strength_2 () =
   if depth > 2 then DischargeAt (extract_dirpath_prefix 2 cwd, depth-2)
   else NeverDischarge
 
+let is_less_persistent_strength = function
+  | (NeverDischarge,_) -> false
+  | (NotDeclare,_) -> false
+  | (_,NeverDischarge) -> true
+  | (_,NotDeclare) -> true
+  | (DischargeAt (sp1,_),DischargeAt (sp2,_)) ->
+      is_dirpath_prefix_of sp1 sp2
+
+let strength_min (stre1,stre2) =
+  if is_less_persistent_strength (stre1,stre2) then stre1 else stre2
 
 (* Section variables. *)
 
@@ -124,6 +134,9 @@ let _ = Summary.declare_summary "CONSTANT"
 	    Summary.survive_section = false }
 
 let cache_constant (sp,(cdt,stre,kn)) =
+  (if Idmap.mem (basename sp) !vartab then
+    errorlabstrm "cache_constant" 
+      (pr_id (basename sp) ++ str " already exists"));
   (if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
     errorlabstrm "cache_constant" (pr_id id ++ str " already exists"));
@@ -211,6 +224,9 @@ let inductive_names sp kn mie =
 
 
 let check_exists_inductive (sp,_) =
+  (if Idmap.mem (basename sp) !vartab then
+    errorlabstrm "cache_inductive" 
+      (pr_id (basename sp) ++ str " already exists"));
   if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
     errorlabstrm "cache_inductive" (pr_id id ++ str " already exists")

@@ -23,16 +23,16 @@ Require SplitAbsolu.
 (** Modif **)
 Lemma double : (x:R) ``2*x==x+x``.
 Intro; Ring.
-Save.
+Qed.
 
 Lemma aze : ``2<>0``.
 DiscrR.
-Save.
+Qed.
 
 Lemma double_var : (x:R) ``x == x/2 + x/2``.
 Intro; Rewrite <- double; Unfold Rdiv; Rewrite <- Rmult_assoc; Symmetry; Apply Rinv_r_simpl_m.
 Apply aze.
-Save.
+Qed.
 
 (*******************************)
 (*      Calculus               *)
@@ -41,7 +41,7 @@ Save.
 Lemma eps2_Rgt_R0:(eps:R)(Rgt eps R0)->
       (Rgt (Rmult eps (Rinv (Rplus R1 R1))) R0).
 Intros;Fourier.
-Save.
+Qed.
 
 (*********)
 Lemma eps2:(eps:R)(Rplus (Rmult eps (Rinv (Rplus R1 R1)))
@@ -50,7 +50,7 @@ Intro esp.
 Assert H := (double_var esp).
 Unfold Rdiv in H.
 Symmetry; Exact H.
-Save.
+Qed.
 
 (*********)
 Lemma eps4:(eps:R)
@@ -68,7 +68,7 @@ Reflexivity.
 Apply aze.
 Apply aze.
 Ring.
-Save.
+Qed.
 
 (*********)
 Lemma Rlt_eps2_eps:(eps:R)(Rgt eps R0)->
@@ -83,7 +83,7 @@ Fourier.
 Rewrite Rmult_1r; Rewrite <- Rinv_r_sym.
 Fourier.
 DiscrR.
-Save.
+Qed.
 
 (*********)
 Lemma Rlt_eps4_eps:(eps:R)(Rgt eps R0)->
@@ -102,7 +102,7 @@ Rewrite Rmult_1r; Rewrite <- Rinv_r_sym.
 Fourier.
 DiscrR.
 Ring.
-Save. 
+Qed. 
 
 (*********)
 Lemma prop_eps:(r:R)((eps:R)(Rgt eps R0)->(Rlt r eps))->(Rle r R0).
@@ -112,7 +112,7 @@ Elim H0; Intro.
 Apply eq_Rle; Assumption.
 Clear H0;Generalize (H r H1); Intro;Generalize (Rlt_antirefl r);
  Intro;ElimType False; Auto.
-Save.
+Qed.
 
 (*********)
 Definition mul_factor := [l,l':R](Rinv (Rplus R1 (Rplus (Rabsolu l) 
@@ -129,7 +129,7 @@ Exact (Rle_trans ? ? ?).
 Exact (Rabsolu_pos (Rplus l l')).
 Exact (Rabsolu_triang ? ?).
 Exact Rlt_R0_R1.
-Save.
+Qed.
 
 (*********)
 Lemma mul_factor_gt:(eps:R)(l,l':R)(Rgt eps R0)->
@@ -150,7 +150,7 @@ Exact (Rle_trans ? ? ?).
 Exact (Rabsolu_pos ?).
 Exact (Rabsolu_triang ? ?).
 Rewrite (proj1 ? ? (Rplus_ne R1));Trivial.
-Save.
+Qed.
 
 (*********)
 Lemma mul_factor_gt_f:(eps:R)(l,l':R)(Rgt eps R0)->
@@ -158,7 +158,7 @@ Lemma mul_factor_gt_f:(eps:R)(l,l':R)(Rgt eps R0)->
 Intros;Apply Rmin_Rgt_r;Split.
 Exact Rlt_R0_R1.
 Exact (mul_factor_gt eps l l' H).
-Save.
+Qed.
 
 
 (*******************************)
@@ -200,7 +200,7 @@ Lemma R_dist_pos:(x,y:R)(Rge (R_dist x y) R0).
 Intros;Unfold R_dist;Unfold Rabsolu;Case (case_Rabsolu (Rminus x y));Intro l.
 Unfold Rge;Left;Apply (Rlt_RoppO (Rminus x y) l).
 Trivial.
-Save.
+Qed.
 
 (*********)
 Lemma R_dist_sym:(x,y:R)(R_dist x y)==(R_dist y x).
@@ -212,7 +212,7 @@ Generalize (Rlt_RoppO (Rminus y x) r); Intro;
 Generalize (minus_Rge y x r); Intro;
  Generalize (minus_Rge x y r0); Intro;
  Generalize (Rge_ge_eq x y H0 H); Intro;Rewrite H1;Ring.
-Save.
+Qed.
 
 (*********)
 Lemma R_dist_refl:(x,y:R)((R_dist x y)==R0<->x==y).
@@ -223,11 +223,11 @@ Rewrite (Ropp_distr2 x y);Generalize (sym_eqT R x y H);Intro;
  Apply (eq_Rminus y x H0).
 Apply (Rminus_eq x y H).
 Apply (eq_Rminus x y H). 
-Save.
+Qed.
 
 Lemma R_dist_eq:(x:R)(R_dist x x)==R0.
 Unfold R_dist;Intros;SplitAbsolu;Intros;Ring.
-Save.
+Qed.
 
 (***********)
 Lemma R_dist_tri:(x,y,z:R)(Rle (R_dist x y) 
@@ -353,7 +353,7 @@ Unfold 2 3 Rminus;
  Rewrite (Rplus_Ropp_l z);Elim (Rplus_ne (Ropp y));Intros a b;Rewrite b;
  Clear a b;Fold (Rminus x y);
  Apply (eq_Rle (Rminus x y) (Rminus x y) (refl_eqT R (Rminus x y))).
-Save.
+Qed.
 
 (*********)
 Lemma R_dist_plus: (a,b,c,d:R)(Rle (R_dist (Rplus a c) (Rplus b d))
@@ -363,7 +363,7 @@ Intros;Unfold R_dist;
   with (Rplus (Rminus a b) (Rminus c d)).
 Exact (Rabsolu_triang (Rminus a b) (Rminus c d)).
 Ring.
-Save.
+Qed.
 
 (*******************************)
 (*    R is a metric space      *)
@@ -396,19 +396,19 @@ Elim (H0 (R_dist (f x0) l) H3);Intros;Elim H2;Clear H2 H0;
  Clear H2;Generalize (Rlt_antirefl (R_dist (f x0) l));Intro;Auto.
 Elim (R_dist_refl (f x0) l);Intros a b;Clear b;Generalize (a H3);Intro;
 Generalize (sym_eqT R (f x0) l H2);Intro;Auto.
-Save. 
+Qed. 
 
 (*********)
 Lemma tech_limit_contr:(f:R->R)(D:R->Prop)(l:R)(x0:R)(D x0)->~l==(f x0)
    ->~(limit1_in f D l x0).
 Intros;Generalize (tech_limit f D l x0);Tauto.
-Save.
+Qed.
 
 (*********)
 Lemma lim_x:(D:R->Prop)(x0:R)(limit1_in [x:R]x D x0 x0).
 Unfold limit1_in; Unfold limit_in; Simpl; Intros;Split with eps;
  Split; Auto;Intros;Elim H0; Intros; Auto.
-Save.
+Qed.
 
 (*********)
 Lemma limit_plus:(f,g:R->R)(D:R->Prop)(l,l':R)(x0:R)
@@ -435,7 +435,7 @@ Generalize (H3 x2 (conj (D x2) (Rlt (R_dist x2 x0) x) H4 H6));
         (Rmult eps (Rinv (Rplus R1 R1)))).
 Exact (Rplus_lt ? ? ? ? H7 H8).
 Exact (eps2 eps).
-Save.
+Qed.
 
 (*********)
 Lemma limit_Ropp:(f:R->R)(D:R->Prop)(l:R)(x0:R)
@@ -446,7 +446,7 @@ Unfold limit1_in;Unfold limit_in;Simpl;Intros;Elim (H eps H0);Clear H;
  Rewrite (Ropp_Ropp l);Rewrite (Rplus_sym (Ropp (f x1)) l);
  Fold (Rminus l (f x1));Fold (R_dist l (f x1));Rewrite R_dist_sym;
  Assumption.
-Save.
+Qed.
 
 (*********)
 Lemma limit_minus:(f,g:R->R)(D:R->Prop)(l,l':R)(x0:R)
@@ -454,7 +454,7 @@ Lemma limit_minus:(f,g:R->R)(D:R->Prop)(l,l':R)(x0:R)
    (limit1_in [x:R](Rminus (f x) (g x)) D (Rminus l l') x0).
 Intros;Unfold Rminus;Generalize (limit_Ropp g D l' x0 H0);Intro;
  Exact (limit_plus f [x:R](Ropp (g x)) D l (Ropp l') x0 H H1).
-Save.
+Qed.
 
 (*********)
 Lemma limit_free:(f:R->R)(D:R->Prop)(x:R)(x0:R)
@@ -462,7 +462,7 @@ Lemma limit_free:(f:R->R)(D:R->Prop)(x:R)(x0:R)
 Unfold limit1_in;Unfold limit_in;Simpl;Intros;Split with eps;Split;
  Auto;Intros;Elim (R_dist_refl (f x) (f x));Intros a b;
  Rewrite (b (refl_eqT R (f x)));Unfold Rgt in H;Assumption.
-Save.
+Qed.
 
 (*********)
 Lemma limit_mul:(f,g:R->R)(D:R->Prop)(l,l':R)(x0:R)
@@ -533,7 +533,7 @@ Rewrite (Rmult_sym (Rplus R1 (Rabsolu l)) (Rmult eps (mul_factor l l')));
   (mul_factor_wd l l'));
  Rewrite (proj1 ? ? (Rmult_ne eps));Apply eq_Rle;Trivial.
 Ring.
-Save.
+Qed.
 
 (*********)
 Definition adhDa:(R->Prop)->R->Prop:=[D:R->Prop][a:R]
@@ -616,7 +616,7 @@ Intros;Unfold adhDa in H;Elim (H0 eps H2);Intros;Elim (H1 eps H2);
  Apply (Rle_lt_trans (Rabsolu (Rminus l l')) 
   (Rplus (Rabsolu (Rminus l (f x2))) (Rabsolu (Rminus (f x2) l')))
   (Rplus eps eps) H3 H1).
-Save.
+Qed.
 
 (*********)
 Lemma limit_comp:(f,g:R->R)(Df,Dg:R->Prop)(l,l':R)(x0:R)
@@ -630,7 +630,7 @@ Unfold limit1_in;Unfold limit_in;Simpl;Intros;
  Generalize (H3 x2 (conj (Df x2) (Rlt (R_dist x2 x0) x1) H4 H5));
  Intro;Exact (H2 (f x2) (conj (Dg (f x2)) (Rlt (R_dist (f x2) l) x)
             H6 H7)).
-Save.
+Qed.
 
 (*********)
 
@@ -729,4 +729,4 @@ Assumption.
 Apply Rsqr_pos_lt; Assumption.
 Apply Rlt_Rinv; Cut ~(O=(2)); [Intro H3; Generalize (lt_INR_0 (2) (neq_O_lt (2) H3)); Unfold INR; Intro; Assumption | Discriminate].
 Change ``0<(Rabsolu l)/2``; Unfold Rdiv; Apply Rmult_lt_pos; [Apply Rabsolu_pos_lt; Assumption | Apply Rlt_Rinv; Cut ~(O=(2)); [Intro H3; Generalize (lt_INR_0 (2) (neq_O_lt (2) H3)); Unfold INR; Intro; Assumption | Discriminate]].
-Save.
+Qed.

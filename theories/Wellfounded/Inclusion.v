@@ -20,7 +20,7 @@ Section WfInclusion.
   Proof.
     Induction 2;Intros.
     Apply Acc_intro;Auto with sets.
-  Save.
+  Qed.
 
   Hints Resolve Acc_incl.
 
@@ -28,6 +28,6 @@ Section WfInclusion.
          (inclusion A R1 R2)->(well_founded A R2)->(well_founded A R1).
   Proof.
     Unfold well_founded ;Auto with sets.
-  Save.
+  Qed.
 
 End WfInclusion.

@@ -18,7 +18,7 @@ Require Zsyntax.
 Lemma Dcompare_inf : (r:relation) {r=EGAL} + {r=INFERIEUR} + {r=SUPERIEUR}.
 Proof.
 Induction r; Auto with arith. 
-Save.
+Qed.
 
 Lemma Zcompare_rec :
   (P:Set)(x,y:Z)
@@ -30,7 +30,7 @@ Proof.
 Intros P x y H1 H2 H3.
 Elim (Dcompare_inf (Zcompare x y)).
 Intro H. Elim H; Auto with arith. Auto with arith.
-Save.
+Qed.
 
 
 Section decidability.
@@ -49,7 +49,7 @@ Intro H3. Right. Elim (Zcompare_EGAL x y). Intros H1 H2. Unfold not. Intro H4.
   Rewrite (H2 H4) in H3. Discriminate H3.
 Intro H3. Right. Elim (Zcompare_EGAL x y). Intros H1 H2. Unfold not. Intro H4.
   Rewrite (H2 H4) in H3. Discriminate H3.
-Save. 
+Qed. 
 
 Theorem Z_lt_dec : (inf_decidable (Zlt x y)).
 Proof.
@@ -58,7 +58,7 @@ Apply Zcompare_rec with x:=x y:=y; Intro H.
 Right. Rewrite H. Discriminate.
 Left; Assumption.
 Right. Rewrite H. Discriminate.
-Save.
+Qed.
 
 Theorem Z_le_dec : (inf_decidable (Zle x y)).
 Proof.
@@ -67,7 +67,7 @@ Apply Zcompare_rec with x:=x y:=y; Intro H.
 Left. Rewrite H. Discriminate.
 Left. Rewrite H. Discriminate.
 Right. Tauto.
-Save.
+Qed.
 
 Theorem Z_gt_dec : (inf_decidable (Zgt x y)).
 Proof.
@@ -76,7 +76,7 @@ Apply Zcompare_rec with x:=x y:=y; Intro H.
 Right. Rewrite H. Discriminate.
 Right. Rewrite H. Discriminate.
 Left; Assumption.
-Save.
+Qed.
 
 Theorem Z_ge_dec : (inf_decidable (Zge x y)).
 Proof.
@@ -85,7 +85,7 @@ Apply Zcompare_rec with x:=x y:=y; Intro H.
 Left. Rewrite H. Discriminate.
 Right. Tauto.
 Left. Rewrite H. Discriminate.
-Save.
+Qed.
 
 Theorem Z_lt_ge_dec : {`x < y`}+{`x >= y`}.
 Proof Z_lt_dec.
@@ -94,7 +94,7 @@ Theorem Z_le_gt_dec : {`x <= y`}+{`x > y`}.
 Proof.
 Elim Z_le_dec; Auto with arith.
 Intro. Right. Apply not_Zle; Auto with arith.
-Save.
+Qed.
 
 Theorem Z_gt_le_dec : {`x > y`}+{`x <= y`}.
 Proof Z_gt_dec.
@@ -103,7 +103,7 @@ Theorem Z_ge_lt_dec : {`x >= y`}+{`x < y`}.
 Proof.
 Elim Z_ge_dec; Auto with arith.
 Intro. Right. Apply not_Zge; Auto with arith.
-Save.
+Qed.
 
 
 Theorem Z_le_lt_eq_dec : `x <= y` -> {`x < y`}+{x=y}.
@@ -113,7 +113,7 @@ Apply Zcompare_rec with x:=x y:=y.
 Intro. Right. Elim (Zcompare_EGAL x y); Auto with arith.
 Intro. Left. Elim (Zcompare_EGAL x y); Auto with arith.
 Intro H1. Absurd `x > y`; Auto with arith.
-Save.
+Qed.
 
 
 End decidability.

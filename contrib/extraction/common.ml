@@ -197,12 +197,22 @@ let pp_logical_ind r =
 let pp_singleton_ind r = 
   pp_comment (Printer.pr_global r ++ str " : singleton inductive constructor")
 
+let set_globals () = match lang () with 
+  | Ocaml -> 
+      keywords := Ocaml.keywords; 
+      global_ids := Ocaml.keywords
+  | Haskell -> 
+      keywords := Haskell.keywords;
+      global_ids := Haskell.keywords
+  | _ -> ()
+
 (*s Extraction to a file. *)
 
 let extract_to_file f prm decls =
-  let preamble,keyw = match lang () with 
-    | Ocaml -> Ocaml.preamble,Ocaml.keywords
-    | Haskell -> Haskell.preamble,Haskell.keywords
+  set_globals ();
+  let preamble = match lang () with 
+    | Ocaml -> Ocaml.preamble    
+    | Haskell -> Haskell.preamble
     | _ -> assert false 
   in 
   let pp_decl = match lang (),prm.modular with 
@@ -216,11 +226,14 @@ let extract_to_file f prm decls =
     Idset.remove prm.mod_name (decl_get_modules decls)
   else Idset.empty
   in 
+  let print_dummy = match lang() with 
+    | Ocaml -> decl_search MLdummy' decls
+    | Haskell -> (decl_search MLdummy decls) || (decl_search MLdummy' decls)
+    | _ -> assert false 
+  in 
   cons_cofix := Refset.empty;
   current_module := prm.mod_name;
   Hashtbl.clear renamings;
-  keywords := keyw;
-  global_ids := keyw; 
   let cout = match f with 
     | None -> stdout
     | Some f -> open_out f in
@@ -231,7 +244,7 @@ let extract_to_file f prm decls =
   if not prm.modular then 
     List.iter (fun r -> pp_with ft (pp_singleton_ind r)) 
       (List.filter decl_is_singleton prm.to_appear); 
-  pp_with ft (preamble prm used_modules);
+  pp_with ft (preamble prm used_modules print_dummy);
   begin 
     try
       List.iter (fun d -> msgnl_with ft (pp_decl d)) decls

@@ -10,7 +10,7 @@
 
 Require Export Bool.
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Grammar ring formula : constr :=
   formula_expr [ expr($p) ] -> [$p]
@@ -379,7 +379,7 @@ End Theory_of_rings.
 
 Hints Resolve Th_mult_zero_left Th_plus_reg_left : core.
 
-Implicit Arguments Off.
+Unset Implicit Arguments.
 
 Definition Semi_Ring_Theory_of :
   (A:Type)(Aplus : A -> A -> A)(Amult : A -> A -> A)(Aone : A)

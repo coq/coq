@@ -134,14 +134,14 @@ let tuple_ref dep n =
 
 (* Binders. *)
 
-let trad_binder avoid nenv = function
-  | CC_untyped_binder -> RHole None
+let trad_binder avoid nenv id = function
+  | CC_untyped_binder -> RHole (dummy_loc,AbstractionType (Name id))
   | CC_typed_binder ty -> Detyping.detype (Global.env()) avoid nenv ty
 
 let rec push_vars avoid nenv = function
   | [] -> ([],avoid,nenv)
   | (id,b) :: bl -> 
-      let b' = trad_binder avoid nenv b in
+      let b' = trad_binder avoid nenv id b in
       let bl',avoid',nenv' = 
 	push_vars (id :: avoid) (add_name (Name id) nenv) bl 
       in
@@ -200,7 +200,9 @@ let rawconstr_of_prog p =
     | CC_tuple (false,_,[e1;e2]) ->
 	let c1 = trad avoid nenv e1 
 	and c2 = trad avoid nenv e2 in
-	RApp (dummy_loc, RRef (dummy_loc,pair), [RHole None;RHole None;c1;c2])
+	RApp (dummy_loc, RRef (dummy_loc,pair),
+	      [RHole (dummy_loc,ImplicitArg (pair,1));
+	       RHole (dummy_loc,ImplicitArg (pair,2));c1;c2])
 
     | CC_tuple (dep,tyl,l) ->
       	let n = List.length l in
@@ -220,7 +222,7 @@ let rawconstr_of_prog p =
 	Detyping.detype (Global.env()) avoid nenv c
 
     | CC_hole c -> 
-	RCast (dummy_loc, RHole None,
+	RCast (dummy_loc, RHole (dummy_loc, QuestionMark),
                Detyping.detype (Global.env()) avoid nenv c)
 
   in

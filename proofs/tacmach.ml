@@ -230,11 +230,11 @@ let convert_concl c gl =
 let convert_hyp d gl =
   refiner (Prim (Convert_hyp d)) gl
 
-let thin ids gl = 
-  refiner (Prim (Thin ids)) gl
+let thin ids gl =
+  if ids = [] then tclIDTAC gl else refiner (Prim (Thin ids)) gl
 
-let thin_body ids gl = 
-  refiner (Prim (ThinBody ids)) gl
+let thin_body ids gl =
+  if ids = [] then tclIDTAC gl else refiner (Prim (ThinBody ids)) gl
 
 let move_hyp with_dep id1 id2 gl = 
   refiner (Prim (Move (with_dep,id1,id2))) gl

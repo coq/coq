@@ -1,8 +1,6 @@
 
- 7. Eta expansion for resolving message: "variables cannot be generalized"
-
- 9. Doc!! (examples)
-	
  12. Ocaml typing => magic + cast.
 
  13. Managing huge extraction (constructive FTA).
+
+ 14. Extract Constant do not work under a section.

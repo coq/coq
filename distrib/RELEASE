@@ -375,7 +375,9 @@ D) LE SERVEUR WEB
 D1) PRÉPARATION
 
    Cela se fait sous CVS : faire un check-out ou update du module
-"www" quelque part chez soi en dehors de l'archive V6, puis
+"www" quelque part chez soi en dehors de l'archive V6
+
+   - se placer dans le sous-répertoire "coq" de l'archive "www"
 
    - mettre à jour les fichiers suivants du répertoire coq (numéro de
      version, version nécessaires de ocaml et camlp4, date de mise à

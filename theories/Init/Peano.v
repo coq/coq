@@ -90,11 +90,21 @@ Proof.
 Qed.
 Hints Resolve plus_n_O : core v62.
 
+Lemma plus_O_n : (n:nat) (plus O n)=n.
+Proof.
+  Auto.
+Qed.
+
 Lemma plus_n_Sm : (n,m:nat) (S (plus n m))=(plus n (S m)).
 Proof.
   Intros m n; Elim m; Simpl; Auto.
 Qed.
 Hints Resolve plus_n_Sm : core v62.
+
+Lemma plus_Sn_m : (n,m:nat)(plus (S n) m)=(S (plus n m)).
+Proof.
+  Auto.
+Qed.
 
 (** Multiplication *)
 

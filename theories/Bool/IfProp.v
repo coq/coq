@@ -19,31 +19,31 @@ Hints Resolve Iftrue Iffalse : bool v62.
 Lemma Iftrue_inv : (A,B:Prop)(b:bool) (IfProp A B b) -> b=true -> A.
 NewDestruct 1; Intros; Auto with bool.
 Case diff_true_false; Auto with bool.
-Save.
+Qed.
 
 Lemma Iffalse_inv : (A,B:Prop)(b:bool) (IfProp A B b) -> b=false -> B.
 NewDestruct 1; Intros; Auto with bool.
 Case diff_true_false; Trivial with bool.
-Save.
+Qed.
 
 Lemma IfProp_true : (A,B:Prop)(IfProp A B true) -> A.
 Intros.
 Inversion H.
 Assumption.
-Save.
+Qed.
 
 Lemma IfProp_false : (A,B:Prop)(IfProp A B false) -> B.
 Intros.
 Inversion H.
 Assumption.
-Save.
+Qed.
 
 Lemma IfProp_or : (A,B:Prop)(b:bool)(IfProp A B b) -> A\/B.
 NewDestruct 1; Auto with bool.
-Save.
+Qed.
 
 Lemma IfProp_sum : (A,B:Prop)(b:bool)(IfProp A B b) -> {A}+{B}.
 NewDestruct b; Intro H.
 Left; Inversion H; Auto with bool.
 Right; Inversion H; Auto with bool.
-Save.
+Qed.

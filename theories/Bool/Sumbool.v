@@ -18,19 +18,19 @@
 Lemma sumbool_of_bool : (b:bool) {b=true}+{b=false}.
 Proof.
   Induction b; Auto.
-Save.
+Qed.
 
 Hints Resolve sumbool_of_bool : bool.
 
 Lemma bool_eq_rec : (b:bool)(P:bool->Set)
                     ((b=true)->(P true))->((b=false)->(P false))->(P b).
 Induction b; Auto.
-Save.
+Qed.
 
 Lemma bool_eq_ind : (b:bool)(P:bool->Prop)
                     ((b=true)->(P true))->((b=false)->(P false))->(P b).
 Induction b; Auto.
-Save.
+Qed.
 
 
 (*i pourquoi ce machin-la est dans BOOL et pas dans LOGIC ?  Papageno i*)
@@ -47,17 +47,17 @@ Hypothesis H2 : {C}+{D}.
 Lemma sumbool_and : {A/\C}+{B\/D}.
 Proof.
 Case H1; Case H2; Auto.
-Save.
+Qed.
 
 Lemma sumbool_or : {A\/C}+{B/\D}.
 Proof.
 Case H1; Case H2; Auto.
-Save.
+Qed.
 
 Lemma sumbool_not : {B}+{A}.
 Proof.
 Case H1; Auto.
-Save.
+Qed.
 
 End connectives.
 

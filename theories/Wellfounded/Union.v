@@ -34,7 +34,7 @@ Proof.
  Elim H4 with x1 ;Auto with sets;Intros.
  Exists x2;Auto with sets.
  Apply t_trans with x1 ;Auto with sets.
-Save.
+Qed.
 
 
   Lemma Acc_union:  (commut A R1 R2)->((x:A)(Acc A R2 x)->(Acc A R1 x))
@@ -61,7 +61,7 @@ Proof.
  Apply Acc_inv with x ;Auto with sets.
  Apply H0.
  Apply Acc_intro;Auto with sets.
-Save.
+Qed.
 
 
   Theorem wf_union:  (commut A R1 R2)->(well_founded A R1)->(well_founded A R2)
@@ -70,6 +70,6 @@ Proof.
  Unfold well_founded .
  Intros.
  Apply Acc_union;Auto with sets.
-Save.
+Qed.
 
 End WfUnion.
