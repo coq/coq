@@ -570,7 +570,8 @@ let declare_eliminations sp =
 
 (* Look up function for the default elimination constant *)
 
-let lookup_eliminator env path s =
+let lookup_eliminator env (ind_sp,_) s =
+  let path = path_of_inductive_path ind_sp in
   let dir, base,k = repr_path path in
   let id = add_suffix base (elimination_suffix s) in
   (* Try first to get an eliminator defined in the same section as the *)
