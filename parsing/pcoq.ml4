@@ -354,7 +354,7 @@ module Constr =
     let annot = Gram.Entry.create "constr:annot"
     let constr_pattern = gec_constr "constr_pattern"
     let binder_let = Gram.Entry.create "constr:binder_list"
-    let tuple_constr = Gram.Entry.create "constr:tuple_constr"
+    let tuple_constr = gec_constr "tuple_constr"
   end
 
 module Module =
@@ -622,7 +622,7 @@ let get_constr_entry en =
         false
     | ETConstr(250,()) when not !Options.v7 ->
         weaken_entry Constr.tuple_constr,
-(*        snd (get_entry (get_univ "constr") "tuple_construple"),*)
+(*        snd (get_entry (get_univ "constr") "tuple_constr"),*)
         None,
         false
     | _ -> compute_entry true (fun (n,()) -> Some n) en
