@@ -805,13 +805,13 @@ let raw_polynom th op lc gl =
 				  [| th.th_a; (unbox th.th_equiv);
                                      (unbox th.th_setoid_th);
 				     c'''i; ci; c'i_eq_c''i |]))))
-	      (tclTHEN 
+	      (tclTHENS
 		 (tclORELSE
-                   (Setoid_replace.setoid_replace None ci c'''i ~new_goals:[])
-                   (Setoid_replace.setoid_replace None c'''i ci ~new_goals:[]))
-		 (tclTHEN 
-		    (tclTRY (h_exact c'i_eq_c''i))
-		    tac)))
+                   (Setoid_replace.general_s_rewrite true c'i_eq_c''i
+                     ~new_goals:[])
+                   (Setoid_replace.general_s_rewrite false c'i_eq_c''i
+                     ~new_goals:[]))
+                 [tac]))
 	 else
            (tclORELSE
               (tclORELSE
