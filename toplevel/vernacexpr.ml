@@ -199,7 +199,7 @@ type vernac_expr =
       module_binder list * module_type_ast option
 
   (* Solving *)
-  | VernacSolve of int * raw_tactic_expr
+  | VernacSolve of int * raw_tactic_expr * bool
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)
@@ -256,7 +256,7 @@ type vernac_expr =
   | VernacShow of showable
   | VernacCheckGuard
   | VernacDebug of bool
-
+  | VernacProof of raw_tactic_expr
   (* Toplevel control *)
   | VernacToplevelControl of exn
 

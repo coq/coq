@@ -1695,7 +1695,10 @@ let interp_tacarg sign ast = (*unvarg*) (val_interp sign ast)
 let interp = fun ast -> tac_interp [] [] !debug ast
 
 (* Hides interpretation for pretty-print *)
-let hide_interp t = abstract_tactic_expr (TacArg (Tacexp t)) (interp t)
+let hide_interp t ot =  
+  match ot with 
+  | None -> abstract_tactic_expr (TacArg (Tacexp t)) (interp t)
+  | Some t' -> abstract_tactic_expr (TacArg (Tacexp t)) (tclTHEN (interp t) t')
 
 (* For bad tactic calls *)
 let bad_tactic_args s =

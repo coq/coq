@@ -470,7 +470,7 @@ let logical_kill n =
 
 let simulate_solve n tac =
   let path = History.get_nth_open_path (current_proof_name()) n in
-  solve_nth n (Tacinterp.hide_interp tac);
+  solve_nth n (Tacinterp.hide_interp tac (get_end_tac()));
   traverse_to path;
   Pfedit.mutate weak_undo_pftreestate;
   traverse_to []

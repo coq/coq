@@ -39,7 +39,9 @@ GEXTEND Gram
       | g = gallina_ext; "." -> g
       | c = command; "." -> c 
       | c = syntax; "." -> c
-      | n = natural; ":"; v = goal_vernac; "." -> v n
+      | n = natural; ":"; tac = Tactic.tactic; "." -> VernacSolve (n,tac,true) 
+      | n = natural; ":"; tac = Tactic.tactic; "!!" -> VernacSolve (n,tac,false)
+      | n = natural; ":"; v = check_command; "." -> v (Some n)
       | "["; l = vernac_list_tail -> VernacList l
 
       (* For translation from V7 to V8 *)
@@ -52,10 +54,7 @@ GEXTEND Gram
 *)
     ] ]
   ;
-  goal_vernac:
-    [ [ tac = Tactic.tactic -> fun n -> VernacSolve (n,tac)
-      | v = check_command -> fun n -> v (Some n) ] ]
-  ;
+    
   check_command:
     [ [ IDENT "Eval"; r = Tactic.red_expr; "in"; c = constr ->
           fun g -> VernacCheckMayEval (Some r, g, c)
@@ -66,13 +65,8 @@ GEXTEND Gram
     [ [ IDENT "Time"; v = vernac  -> VernacTime v ] ]
   ;
   vernac: LAST
-    [ [ tac = Tactic.tactic; "." ->
-        (match tac with
-(* Horrible hack pour LETTOP !
-	| VernacSolve (Coqast.Node(_,kind,_))
-          when kind = "StartProof" || kind = "TheoremProof" -> ??
-*)
-	| _ -> VernacSolve (1,tac))
+    [ [ tac = Tactic.tactic; "." -> VernacSolve (1,tac,true)
+      | tac = Tactic.tactic; "!!" -> VernacSolve (1,tac,false)
       | IDENT "Existential"; n = natural; c = constr_body ->
 	  VernacSolveExistential (n,c)
     ] ]

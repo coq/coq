@@ -103,7 +103,8 @@ val constr_interp : interp_sign -> constr_expr -> constr
 val interp : raw_tactic_expr -> tactic
 
 (* Hides interpretation for pretty-print *)
-val hide_interp : raw_tactic_expr -> tactic
+
+val hide_interp : raw_tactic_expr -> tactic option -> tactic
 
 (* Adds an interpretation function *)
 val interp_add : string * (interp_sign -> Coqast.t -> value) -> unit

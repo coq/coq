@@ -534,11 +534,14 @@ let vernac_identity_coercion stre id qids qidt =
 
 (***********)
 (* Solving *)
-
-let vernac_solve n tcom =
+let vernac_solve n tcom b =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode";
-  solve_nth n (Tacinterp.hide_interp tcom);
+  begin
+    if b then 
+      solve_nth n (Tacinterp.hide_interp tcom (get_end_tac ()))
+    else solve_nth n (Tacinterp.hide_interp tcom None)
+  end;
   print_subgoals();
   (* in case a strict subtree was completed, 
      go back to the top of the prooftree *) 
@@ -551,10 +554,16 @@ let vernac_solve n tcom =
      machine, and enables to instantiate existential variables when
      there are no more goals to solve. It cannot be a tactic since 
      all tactics fail if there are no further goals to prove. *)
-
+  
 let vernac_solve_existential = instantiate_nth_evar_com
 
+let vernac_set_end_tac tac =
+  if not (refining ()) then
+    error "Unknown command of the non proof-editing mode";
+  set_end_tac (Tacinterp.interp tac)
 
+ 
+   
 (*****************************)
 (* Auxiliary file management *)
 
@@ -1074,7 +1083,7 @@ let interp c = match c with
   | VernacIdentityCoercion (str,id,s,t) -> vernac_identity_coercion str id s t
 
   (* Solving *)
-  | VernacSolve (n,tac) -> vernac_solve n tac
+  | VernacSolve (n,tac,b) -> vernac_solve n tac b
   | VernacSolveExistential (n,c) -> vernac_solve_existential n c
 
   (* Auxiliary file and library management *)
@@ -1129,7 +1138,7 @@ let interp c = match c with
   | VernacShow s -> vernac_show s
   | VernacCheckGuard -> vernac_check_guard ()
   | VernacDebug b -> vernac_debug b
-
+  | VernacProof tac -> vernac_set_end_tac tac
   (* Toplevel control *)
   | VernacToplevelControl e -> raise e
 

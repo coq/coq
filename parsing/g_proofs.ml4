@@ -36,6 +36,7 @@ GEXTEND Gram
 (*VernacGoal c*)
 (*      | IDENT "Goal" -> VernacGoal None*)
       | "Proof" -> VernacNop
+      | "Proof"; "with"; ta = tactic -> VernacProof ta
 (* Used ?? 
       |	IDENT "Begin" -> VernacNop
 *)

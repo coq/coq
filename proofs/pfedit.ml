@@ -33,6 +33,7 @@ open Safe_typing
 (*********************************************************************)
 
 type proof_topstate = {
+  mutable top_end_tac : tactic option;
   top_hyps : named_context * named_context;
   top_goal : goal;
   top_strength : Decl_kinds.goal_kind;
@@ -68,6 +69,8 @@ let get_state () =
 
 let get_topstate ()    = snd(get_state())
 let get_pftreestate () = fst(get_state())
+
+let get_end_tac () = let ts = get_topstate () in ts.top_end_tac
 
 let get_goal_context n =
   let pftree = get_pftreestate () in
@@ -208,7 +211,14 @@ let check_no_pending_proofs () =
 let delete_current_proof () = delete_proof_gen (get_current_proof_name ())
 
 let delete_all_proofs = init_proofs
-   
+
+(*********************************************************************)
+(*   Modifying the end tactic of the current profftree               *)
+(*********************************************************************)
+let set_end_tac tac =
+  let top = get_topstate () in
+  top.top_end_tac <- Some tac
+
 (*********************************************************************)
 (*              Modifying the current prooftree                      *)
 (*********************************************************************)
@@ -216,6 +226,7 @@ let delete_all_proofs = init_proofs
 let start_proof na str sign concl hook =
   let top_goal = mk_goal sign concl in
   let ts = { 
+    top_end_tac = None;
     top_hyps = (sign,empty_named_context);
     top_goal = top_goal;
     top_strength = str;
@@ -224,9 +235,10 @@ let start_proof na str sign concl hook =
   start(na,ts);
   set_current_proof na
 
+
 let solve_nth k tac =
-  let pft = get_pftreestate() in
-  if not (List.mem (-1) (cursor_of_pftreestate pft)) then 
+  let pft = get_pftreestate () in
+  if not (List.mem (-1) (cursor_of_pftreestate pft)) then
     mutate (solve_nth_pftreestate k tac)
   else 
     error "cannot apply a tactic when we are descended behind a tactic-node"

@@ -106,6 +106,9 @@ val set_xml_cook_proof : (pftreestate -> unit) -> unit
 
 val get_pftreestate : unit -> pftreestate
 
+(* [get_end_tac ()] returns the current tactic to apply to all new subgoal *)
+val get_end_tac : unit -> tactic option
+
 (* [get_goal_context n] returns the context of the [n]th subgoal of
    the current focused proof or raises a [UserError] if there is no
    focused proof or if there is no more subgoals *)
@@ -124,6 +127,11 @@ val get_current_proof_name : unit -> identifier
 (* [get_all_proof_names ()] returns the list of all pending proof names *)
 
 val get_all_proof_names : unit -> identifier list
+
+(*s [set_end_tac tac] applies tactic [tac] to all subgoal generate
+    by [solve_nth] *)
+
+val set_end_tac : tactic -> unit
 
 (*s [solve_nth n tac] applies tactic [tac] to the [n]th subgoal of the
    current focused proof or raises a UserError if no proof is focused or

@@ -1223,7 +1223,7 @@ let xlate_vernac =
     | VernacAbort None -> CT_abort ctv_ID_OPT_OR_ALL_NONE
     | VernacAbortAll -> CT_abort ctv_ID_OPT_OR_ALL_ALL
     | VernacRestart -> CT_restart
-    | VernacSolve (n, tac) -> CT_solve (CT_int n, xlate_tactic tac)
+    | VernacSolve (n, tac, b) -> CT_solve (CT_int n, xlate_tactic tac)
     | VernacFocus nopt -> CT_focus (xlate_int_opt nopt)
     | VernacUnfocus -> CT_unfocus
   | VernacExtend ("HintRewrite", orient :: formula_list :: base :: t) ->
