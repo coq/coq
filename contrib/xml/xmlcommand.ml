@@ -639,11 +639,16 @@ let _ =
       output_string (match !theory_channel with Some ch -> ch | _ -> stdout) s)
 ;;
 
+let uri_of_dirpath dir =
+  "/" ^ String.concat "/" 
+    (List.map Names.string_of_id (List.rev (Names.repr_dirpath dir)))
+;;
+
 let _ =
   Lib.set_xml_open_section
-    (fun id ->
-      let s = Names.string_of_id id in
-      theory_output_string ("<ht:SECTION name=\""^s^"\">"))
+    (fun _ ->
+      let s = "cic:" ^ uri_of_dirpath (Lib.cwd ()) in
+      theory_output_string ("<ht:SECTION uri=\""^s^"\">"))
 ;;
 
 let _ =
@@ -651,14 +656,9 @@ let _ =
     (fun _ -> theory_output_string "</ht:SECTION>")
 ;;
 
-let uri_of_dirpath dir =
-  "/" ^ String.concat "/" 
-    (List.map Names.string_of_id (List.rev (Names.repr_dirpath dir)))
-;;
-
 let _ =
   Library.set_xml_require
     (fun d -> theory_output_string 
-      (Printf.sprintf "Require <a href=\"theory:%s.theory\">%s</a>.<br/>"
+      (Printf.sprintf "<b>Require</b> <a href=\"theory:%s.theory\">%s</a>.<br/>"
        (uri_of_dirpath d) (Names.string_of_dirpath d)))
 ;;
