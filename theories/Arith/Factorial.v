@@ -37,15 +37,15 @@ Apply lt_O_neq.
 Apply lt_O_fact.
 Qed.
 
-Lemma fact_growing : (m,n:nat) (le m n) -> (le (fact m) (fact n)).
+Lemma fact_growing : (n,m:nat) (le n m) -> (le (fact n) (fact m)).
 Proof.
 NewInduction 1.
 Apply le_n.
-Assert (le (mult (S O) (fact m)) (mult (S m0) (fact m0))).
+Assert (le (mult (S O) (fact n)) (mult (S m) (fact m))).
 Apply le_mult_mult.
 Apply lt_le_S; Apply lt_O_Sn.
 Assumption.
-Simpl (mult (S O) (fact m)) in H0.
+Simpl (mult (S O) (fact n)) in H0.
 Rewrite <- plus_n_O in H0.
 Assumption.
 Qed.
