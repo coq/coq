@@ -13,7 +13,6 @@ open Printer
 open Refiner
 open Tacmach
 open Term
-open Vernacinterp
 open Clenv
 open Errors
 

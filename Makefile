@@ -65,7 +65,7 @@ CONFIG=config/coq_config.cmo
 LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
     lib/bstack.cmo lib/edit.cmo lib/stamps.cmo lib/gset.cmo lib/gmap.cmo \
-    lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo
+    lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo
 
 KERNEL=kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo \
        kernel/sign.cmo kernel/declarations.cmo \

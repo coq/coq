@@ -556,18 +556,23 @@ let clenv_merge with_types =
     	      if w_defined_evar clenv.hook evn then
 		let (metas',evars') = unify_0 [] clenv.hook rhs lhs in
 		clenv_resrec (metas'@metas) (evars'@t) clenv
-    	      else
-		(try let rhs' = if occur_meta rhs then subst_meta metas rhs else rhs in
-		   clenv_resrec metas t
-		     (clenv_wtactic (w_Define evn rhs') clenv)
-		 with ex when catchable_exception ex ->
-		   (match krhs with
-		      | IsApp (f,cl) when isConst f or isMutConstruct f ->
-			  clenv_resrec metas evars 
-			    (clenv_wtactic
-			       (mimick_evar f (Array.length cl) evn)
-			       clenv)
-           	      | _ -> error "w_Unify"))
+    	      else begin
+		let rhs' = 
+		  if occur_meta rhs then subst_meta metas rhs else rhs 
+		in
+		if occur_evar evn rhs' then error "w_Unify";
+		try 
+		  clenv_resrec metas t 
+		    (clenv_wtactic (w_Define evn rhs') clenv)
+		with ex when catchable_exception ex ->
+		  (match krhs with
+		     | IsApp (f,cl) when isConst f or isMutConstruct f ->
+			 clenv_resrec metas evars 
+			   (clenv_wtactic
+			      (mimick_evar f (Array.length cl) evn)
+			      clenv)
+           	     | _ -> error "w_Unify")
+	      end
 
 	  | _ -> anomaly "clenv_resrec"))
 
