@@ -311,6 +311,23 @@ let case_trailer othin neqns ba gl =
 	   rewrite_eqns)))
   gl
 
+let collect_meta_variables c = 
+  let rec collrec acc c = match kind_of_term c with
+    | IsMeta mv -> mv::acc
+    | _ -> fold_constr collrec acc c
+  in 
+  collrec [] c
+
+let check_no_metas clenv ccl =
+  if occur_meta ccl then
+    let metas = List.map (fun n -> Intmap.find n clenv.namenv)
+		  (collect_meta_variables ccl) in
+    errorlabstrm "res_case_then" 
+      [< 'sTR ("Cannot find an instantiation for variable"^
+	       (if List.length metas = 1 then " " else "s "));
+	 prlist_with_sep pr_coma pr_id metas
+	 (* ajouter "in "; prterm ccl mais il faut le bon contexte *) >]
+
 let res_case_then gene thin indbinding id status gl =
   let env = pf_env gl and sigma = project gl in
   let c = mkVar id in
@@ -319,8 +336,10 @@ let res_case_then gene thin indbinding id status gl =
   let indclause = mk_clenv_from wc (c,t) in
   let indclause' = clenv_constrain_with_bindings indbinding indclause in
   let newc = clenv_instance_template indclause' in
+  let ccl = clenv_instance_template_type indclause' in
+  check_no_metas indclause' ccl;
   let (IndType (indf,realargs) as indt) =
-    try find_rectype env sigma (clenv_instance_template_type indclause')
+    try find_rectype env sigma ccl
     with Induc ->
       errorlabstrm "res_case_then"
 	[< 'sTR ("The type of "^(string_of_id id)^" is not inductive") >] in
