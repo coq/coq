@@ -21,8 +21,12 @@ let purge_str s =
 
 let anti loc x =
   let e =
-    let loc = unloc loc in
-    let loc = make_loc (1, snd loc - fst loc) in <:expr< $lid:purge_str x$ >>
+    let loc = 
+      ifdef OCAML_308 then
+        loc
+      else
+        (1, snd loc - fst loc)
+    in <:expr< $lid:purge_str x$ >>
   in
   <:expr< $anti:e$ >>
 
