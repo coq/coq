@@ -11,6 +11,8 @@ open Univ
 
 (* Coq abstract syntax with deBruijn variables; 'a is the type of sorts *)
 
+type existential_key = int
+
 type 'a oper = 
   (* DOP0 *)
   | Meta of int
@@ -19,7 +21,7 @@ type 'a oper =
   | Cast | Prod | Lambda
   (* DOPN *)
   | AppL | Const of section_path | Abst of section_path
-  | Evar of int
+  | Evar of existential_key
   | MutInd of inductive_path
   | MutConstruct of constructor_path
   | MutCase of case_info

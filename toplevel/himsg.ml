@@ -201,6 +201,34 @@ let explain_not_clean k ctx ev t =
      'sTR" with a term using variable "; var; 'sPC;
      'sTR"which is not in its scope." >]
 
+(* Pattern-matching errors *)
+let explain_bad_constructor k ctx cstr ind =
+  let pi = pr_inductive ind in
+  let pc = pr_constructor cstr in
+  let pt = pr_inductive (inductive_of_constructor cstr) in
+  [< 'sTR "Expecting a constructor in inductive type "; pi; 'bRK(1,1) ;
+     'sTR " but found the constructor " ; pc; 'bRK(1,1) ;
+     'sTR " in inductive type "; pt >]
+
+let explain_wrong_numarg_of_constructor k ctx cstr n =
+  let pc = pr_constructor cstr in
+  [<'sTR "The constructor "; pc;
+    'sTR " expects " ; 'iNT n ; 'sTR " arguments. ">]
+
+let explain_wrong_predicate_arity k ctx pred nondep_arity dep_arity=
+  let pp = gentermpr k ctx pred in
+  [<'sTR "The elimination predicate " ; pp; 'cUT;
+    'sTR "should be of arity " ;
+    'iNT nondep_arity ; 'sTR " (for non dependent case)  or " ;
+    'iNT dep_arity ; 'sTR " (for dependent case).">]
+
+let explain_needs_inversion k ctx x t =
+  let px = gentermpr k ctx x in
+  let pt = gentermpr k ctx t in
+  [< 'sTR "Sorry, I need inversion to compile pattern matching of term ";
+     px ; 'sTR " of type: "; pt>]
+
+
 let explain_type_error k ctx = function
   | UnboundRel n -> 
       explain_unbound_rel k ctx n
@@ -240,6 +268,15 @@ let explain_type_error k ctx = function
       explain_occur_check k ctx n c
   | NotClean (n,c) ->
       explain_not_clean k ctx n c
+  (* Pattern-matching errors *)
+  | BadConstructor (c,ind) ->
+      explain_bad_constructor k ctx c ind
+  | WrongNumargConstructor (c,n) ->
+      explain_wrong_numarg_of_constructor k ctx c n
+  | WrongPredicateArity (pred,n,dep) ->
+      explain_wrong_predicate_arity k ctx pred n dep
+  | NeedsInversion (x,t) ->
+      explain_needs_inversion k ctx x t
 
 let explain_refiner_bad_type k ctx arg ty conclty =
   [< 'sTR"refiner was given an argument"; 'bRK(1,1); 

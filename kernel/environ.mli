@@ -48,6 +48,7 @@ val lookup_mind : section_path -> env -> mutual_inductive_body
 val lookup_mind_specif : constr -> env -> mind_specif
 
 val id_of_global : env -> sorts oper -> identifier
+
 val id_of_name_using_hdchar : env -> constr -> name -> identifier
 val named_hd : env -> constr -> name -> name
 val prod_name : env -> name * constr * constr -> constr

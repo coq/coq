@@ -71,7 +71,7 @@ Syntax constr
 (* Things parsed in command7 *)
 (* Things parsed in command8 *)
   level 8:
-
+(*
     lambda [(LAMBDA $Dom $Body)]
      -> [(LAMBOX (BINDERS) (LAMBDA $Dom $Body))]
   | lambdalist  [(LAMBDALIST $c $body)]
@@ -81,6 +81,32 @@ Syntax constr
      -> [ [<hov 0> "[" [<hv 0> $pbi] "]" [0 1] $t:E ] ]
 
   | lambda_cons [(LAMBOX (BINDERS ($LIST $acc)) <<[$x : $Dom]$body>>)]
+      -> [(LAMBOX (BINDERS ($LIST $acc) (BINDER $Dom $x)) $body)]
+  | lambda_cons_anon [(LAMBOX (BINDERS ($LIST $acc)) (LAMBDA $Dom [<>]$body))]
+      -> [(LAMBOX (BINDERS ($LIST $acc) (BINDER $Dom _)) $body)]
+  | lambdal_start [(LAMBOX $pbi (LAMBDALIST $Dom $Body))]
+      -> [(LAMLBOX $pbi $Dom (IDS) $Body)]
+
+  | lambdal_end [(LAMLBOX (BINDERS ($LIST $acc)) $c (IDS ($LIST $ids)) $t)]
+      -> [(LAMBOX (BINDERS ($LIST $acc) (BINDER $c ($LIST $ids))) $t)]
+  | lambdal_cons_anon [(LAMLBOX $pbi $c (IDS ($LIST $ids)) [<>]$body)]
+      -> [(LAMLBOX $pbi $c (IDS ($LIST $ids) _) $body)]
+  | lambdal_cons [(LAMLBOX $pbi $c (IDS ($LIST $ids)) [$id]$body)]
+      -> [(LAMLBOX $pbi $c (IDS ($LIST $ids) $id) $body)]
+*)
+    lambda [(LAMBDA $Dom [$x]$Body)]
+     -> [(LAMBOX (BINDERS (BINDER $Dom $x)) $Body)]
+  | lambda_anon [(LAMBDA $Dom [<>]$Body)]
+     -> [(LAMBOX (BINDERS (BINDER $Dom _)) $Body)]
+  | lambdalist  [(LAMBDALIST $c [$x]$body)]
+     -> [(LAMLBOX (BINDERS) $c (IDS $x) $body)]
+  | lambdalist_anon  [(LAMBDALIST $c [<>]$body)]
+     -> [(LAMLBOX (BINDERS) $c (IDS _) $body)]
+
+  | formated_lambda [(LAMBOX $pbi $t)]
+     -> [ [<hov 0> "[" [<hv 0> $pbi] "]" [0 1] $t:E ] ]
+
+  | lambda_cons [(LAMBOX (BINDERS ($LIST $acc)) (LAMBDA $Dom [$x]$body))]
       -> [(LAMBOX (BINDERS ($LIST $acc) (BINDER $Dom $x)) $body)]
   | lambda_cons_anon [(LAMBOX (BINDERS ($LIST $acc)) (LAMBDA $Dom [<>]$body))]
       -> [(LAMBOX (BINDERS ($LIST $acc) (BINDER $Dom _)) $body)]

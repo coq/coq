@@ -108,7 +108,7 @@ let dbize_ctxt =
 let dbize_global loc = function
   | ("CONST", sp::ctxt) -> 
       RRef (loc,RConst (dbize_sp sp,dbize_ctxt ctxt))
-  | ("EVAR", (Num (_,ev))::ctxt) -> 
+  | ("EVAR", (Num (_,ev))::ctxt) ->
       RRef (loc,REVar (ev,dbize_ctxt ctxt))
   | ("MUTIND", sp::Num(_,tyi)::ctxt) -> 
       RRef (loc,RInd ((dbize_sp sp, tyi),dbize_ctxt ctxt))

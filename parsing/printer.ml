@@ -6,6 +6,7 @@ open Util
 open Names
 open Term
 open Sign
+open Environ
 open Global
 open Declare
 open Coqast
@@ -31,42 +32,45 @@ let with_implicits f x =
   with e -> 
     Termast.print_implicits := oimpl; raise e
 
-let pr_global dflt k oper =
-  try 
-    let id = id_of_global oper in
-    if is_existential_oper oper then
-      [< 'sTR (string_of_id id) >]
-    else 
-      let (oper',_) = global_operator (Nametab.sp_of_id k id) id in 
-      if oper = oper' then
-        [< 'sTR(string_of_id id) >]
-      else 
-	dflt
-  with 
-    | Failure _ | Not_found ->
-	[< 'sTR"[Error printing " ; dflt ; 'sTR"]" >]
-    | _ -> 
-	[< 'sTR"Error [Nasty error printing " ; dflt ; 'sTR"]" >]
+let pr_qualified sp id = 
+  if Nametab.sp_of_id (kind_of_path sp) id = sp
+  then [< 'sTR(string_of_id id) >]
+  else [< 'sTR(string_of_path sp) >]
+
+let pr_constant sp = pr_qualified sp (basename sp)
+
+let pr_existential ev = [< 'sTR ("?" ^ string_of_int ev) >]
+
+let pr_inductive (sp,tyi as ind_sp) =
+  let id = id_of_global (MutInd ind_sp) in
+  pr_qualified sp id
+
+let pr_constructor ((sp,tyi),i as cstr_sp) =
+  let id = id_of_global (MutConstruct cstr_sp) in
+  pr_qualified sp id
+
+(*
+let pr_global k oper =
+  let id = id_of_global oper in
+  [< 'sTR (string_of_id id) >]
+*)
 
 let dfltpr ast = [< 'sTR"#GENTERM " ; Ast.print_ast ast >]
 
 let globpr k gt = match gt with
   | Nvar(_,s) -> [< 'sTR s >]
+  | Node(_,"EVAR", (Num (_,ev))::_) ->
+      if !print_arguments then dfltpr gt
+      else pr_existential ev
   | Node(_,"CONST",(Path(_,sl,s))::_) ->
-      if !print_arguments then 
-	dfltpr gt
-      else 
-	pr_global (dfltpr gt) k (Const (section_path sl s))
+      if !print_arguments then dfltpr gt
+      else pr_constant (section_path sl s)
   | Node(_,"MUTIND",(Path(_,sl,s))::(Num(_,tyi))::_) ->
-      if !print_arguments then 
-	(dfltpr gt)
-      else 
-	pr_global (dfltpr gt) k (MutInd(section_path sl s,tyi))
+      if !print_arguments then (dfltpr gt)
+      else pr_inductive (section_path sl s,tyi)
   | Node(_,"MUTCONSTRUCT",(Path(_,sl,s))::(Num(_,tyi))::(Num(_,i))::_) ->
-      if !print_arguments then 
-	(dfltpr gt)
-      else 
-	pr_global (dfltpr gt) k (MutConstruct((section_path sl s,tyi),i))
+      if !print_arguments then (dfltpr gt)
+      else pr_constructor ((section_path sl s,tyi),i)
   | gt -> dfltpr gt
 
 let apply_prec = Some (("Term",(9,0,0)),Extend.L)

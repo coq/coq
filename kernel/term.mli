@@ -11,12 +11,14 @@ open Generic
   ['a] is the type of sorts. ([XTRA] is an extra slot, for putting in 
   whatever sort of operator we need for whatever sort of application.) *)
 
+type existential_key = int
+
 type 'a oper = 
   | Meta of int
   | Sort of 'a
   | Cast | Prod | Lambda
   | AppL | Const of section_path | Abst of section_path
-  | Evar of int
+  | Evar of existential_key
   | MutInd of inductive_path
   | MutConstruct of constructor_path
   | MutCase of case_info

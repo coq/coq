@@ -157,3 +157,5 @@ let mind_check_lc params mie =
     if not (List.length lna = ntypes) then raise (InductiveError BadEntry)
   in
   List.iter check_lc mie.mind_entry_inds
+
+let inductive_of_constructor (ind_sp,i) = ind_sp

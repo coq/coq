@@ -18,6 +18,7 @@ type mutind =
     {fullmind : constr;
      mind : mutind_id;
      nparams : int;
+     nrealargs : int;
      nconstr : int;
      params : constr list;
      realargs : constr list;
@@ -28,13 +29,14 @@ let try_mutind_of env sigma ty =
   let (mind,largs) = find_mrectype env sigma ty in
   let mispec = lookup_mind_specif mind env in 
   let nparams = mis_nparams mispec in
-  let (params,proper_args) = list_chop nparams largs in 
+  let (params,realargs) = list_chop nparams largs in 
   {fullmind = ty;
    mind     = (let (sp,i,cv) = destMutInd mind in (sp,i),cv);
    nparams  = nparams;
+   nrealargs = List.length realargs;
    nconstr  = mis_nconstr mispec;
    params   = params;
-   realargs = proper_args;
+   realargs = realargs;
    arity    = Instantiate.mis_arity mispec}
 
 

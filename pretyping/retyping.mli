@@ -33,6 +33,7 @@ type mutind = {
   fullmind : constr;
   mind : mutind_id;
   nparams : int;
+  nrealargs : int;
   nconstr : int;
   params : constr list;
   realargs : constr list;

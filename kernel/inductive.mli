@@ -106,3 +106,5 @@ val mind_extract_and_check_params :
 val mind_extract_params : int -> constr -> (name * constr) list * constr
 
 val mind_check_lc : (name * constr) list -> mutual_inductive_entry -> unit
+
+val inductive_of_constructor : constructor_path -> inductive_path
