@@ -256,6 +256,8 @@ let parse_args is_ide =
     | "-v7" :: rem -> (* Options.v7 := true; *) parse rem
     | "-v8" :: rem -> (* Options.v7 := false; *) parse rem
 
+    | "-no-hash-consing" :: rem -> Options.hash_cons_proofs := false; parse rem
+
     (* Translator options *)
     | "-strict-implicit" :: rem -> 
 	Options.translate_strict_impargs := false; parse rem

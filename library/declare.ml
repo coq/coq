@@ -179,7 +179,7 @@ let (in_constant, out_constant) =
     export_function = export_constant } 
 
 let hcons_constant_declaration = function
-  | DefinitionEntry ce ->
+  | DefinitionEntry ce when !Options.hash_cons_proofs ->
       let (hcons1_constr,_) = hcons_constr (hcons_names()) in
       DefinitionEntry
        { const_entry_body = hcons1_constr ce.const_entry_body;

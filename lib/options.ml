@@ -73,6 +73,8 @@ let silently f x =
 let if_silent f x = if !silent then f x
 let if_verbose f x = if not !silent then f x
 
+let hash_cons_proofs = ref true
+
 (* The number of printed hypothesis in a goal *)
 
 let print_hyps_limit = ref (None : int option)

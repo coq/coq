@@ -44,6 +44,8 @@ val silently : ('a -> 'b) -> 'a -> 'b
 val if_silent : ('a -> unit) -> 'a -> unit
 val if_verbose : ('a -> unit) -> 'a -> unit
 
+val hash_cons_proofs : bool ref
+
 (* Temporary activate an option ('c must be an atomic type) *)
 val with_option : bool ref -> ('a -> 'b) -> 'a -> 'b
 
