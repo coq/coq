@@ -7,8 +7,10 @@
 - Numérotation dans l'ordre des hypothèses créées par Decompose
 - Correction de bugs (quand le type ne commence pas par un inductif)
 
-- Simpl ne déplie plus les appels récursifs d'un Fix mutuel réduit
-  Il réduit un peu plus aussi (source d'incompatibilité).
+- Simpl ne déplie plus les appels récursifs d'un Fix mutuel réduit. En
+revanche, si une constante n'est qu'indirectement un Fix, on ne garde
+en général plus son nom (sauf dans les cas "simples"). Rem : c'est une
+source d'incompatibilité.
 
 - Davantage d'inférence automatique de "?".
 
@@ -34,3 +36,5 @@ l'ast, il faut typer explicitement la grammaire avec Ast ou List
 - Ajout d'un Let primitif
 
 - Ajout (officiel) d'une tactique LetTac et d'un Induction "convivial"
+
+- Langage de tactique
