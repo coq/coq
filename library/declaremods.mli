@@ -107,3 +107,7 @@ val iter_all_segments : bool -> (object_name -> obj -> unit) -> unit
 val debug_print_modtab : unit -> Pp.std_ppcmds
 
 (*val debug_print_modtypetab : unit -> Pp.std_ppcmds*)
+
+(* For translator *)
+val process_module_bindings : module_ident list ->
+  (mod_bound_id * module_type_entry) list -> unit
