@@ -401,10 +401,13 @@ let xlate_hyp = function
 
 let xlate_hyp_location =
  function
-  | InHyp (AI (_,id)) -> CT_coerce_ID_to_ID_OR_INTYPE (xlate_ident id)
-  | InHyp (MetaId _) -> xlate_error "MetaId should occur only in quotations"
-  | InHypType(AI (_, id)) -> CT_intype(xlate_ident id)
-  | InHypType _ -> xlate_error "MetaId not supported in xlate_hyp_location"
+  | AI (_,id), (InHypTypeOnly,_) -> CT_intype(xlate_ident id)
+  | AI (_,id), (InHyp,_) when !Options.v7 ->
+      CT_coerce_ID_to_ID_OR_INTYPE (xlate_ident id)
+  | AI (_,id), ((InHypValueOnly|InHyp),_) ->
+      xlate_error "TODO in v8: InHyp now means InHyp if variable but InHypValueOnly if a local definition"
+  | MetaId _, _ -> 
+      xlate_error "MetaId not supported in xlate_hyp_location (should occur only in quotations)"
 
 let xlate_clause l = CT_id_or_intype_list (List.map xlate_hyp_location l)
 
