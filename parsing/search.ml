@@ -93,7 +93,8 @@ let plain_display ref a c =
   let pr = pr_global ref in
   mSG [< hOV 2 [< pr; 'sTR":"; 'sPC; pc >]; 'fNL>]
 
-let filter_by_module module_list accept ref env _ =
+let filter_by_module (module_list:dir_path list) (accept:bool) 
+  (ref:global_reference) (env:env) _ =
   try
     let sp = sp_of_global env ref in
     let sl = dirpath sp in
@@ -135,13 +136,13 @@ let rec id_from_pattern = function
   | PApp (p,_) -> id_from_pattern p
   | _ -> error "the pattern is not simple enough"
 	
-let pattern_search extra_filter display_function pat =
+let raw_pattern_search extra_filter display_function pat =
   let name = id_from_pattern pat in
   filtered_search 
     (fun s a c -> (pattern_filter pat s a c) & extra_filter s a c) 
     display_function name
 
-let search_rewrite extra_filter display_function pattern =
+let raw_search_rewrite extra_filter display_function pattern =
   filtered_search
     (fun s a c ->
        ((pattern_filter (mk_rewrite_pattern1 gref_eq pattern) s a c) ||
@@ -156,10 +157,10 @@ let search_rewrite extra_filter display_function pattern =
     display_function gref_eqT
 
 let text_pattern_search extra_filter =
-  pattern_search extra_filter plain_display
+  raw_pattern_search extra_filter plain_display
     
 let text_search_rewrite extra_filter =
-  search_rewrite extra_filter plain_display
+  raw_search_rewrite extra_filter plain_display
 
 let filter_by_module_from_list = function
   | [], _ -> (fun _ _ _ -> true)
