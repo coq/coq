@@ -63,159 +63,159 @@ GEXTEND Gram
   GLOBAL: command;
 
   command:
-    [ [ IDENT "Pwd"; "." -> <:ast< (PWD) >>
-      | IDENT "Cd"; "." -> <:ast< (CD) >>
-      | IDENT "Cd"; dir = stringarg; "." -> <:ast< (CD $dir) >>
+    [ [ IDENT "Pwd" -> <:ast< (PWD) >>
+      | IDENT "Cd" -> <:ast< (CD) >>
+      | IDENT "Cd"; dir = stringarg -> <:ast< (CD $dir) >>
 
-      | IDENT "Drop"; "." -> <:ast< (DROP) >>
-      | IDENT "ProtectedLoop"; "." -> <:ast< (PROTECTEDLOOP)>>
-      | "Quit"; "." -> <:ast< (QUIT) >>
+      | IDENT "Drop" -> <:ast< (DROP) >>
+      | IDENT "ProtectedLoop" -> <:ast< (PROTECTEDLOOP)>>
+      | "Quit" -> <:ast< (QUIT) >>
 
-      | IDENT "Print"; IDENT "All"; "." -> <:ast< (PrintAll) >>
-      | IDENT "Print"; "." -> <:ast< (PRINT) >>
-      | IDENT "Print"; IDENT "Hint"; "*"; "." 
+      | IDENT "Print"; IDENT "All" -> <:ast< (PrintAll) >>
+      | IDENT "Print" -> <:ast< (PRINT) >>
+      | IDENT "Print"; IDENT "Hint"; "*" 
 	                    -> <:ast< (PrintHint) >>
-      | IDENT "Print"; IDENT "Hint"; s = identarg; "." ->
+      | IDENT "Print"; IDENT "Hint"; s = identarg ->
           <:ast< (PrintHintId $s) >>
-      | IDENT "Print"; IDENT "Hint"; "." ->
+      | IDENT "Print"; IDENT "Hint" ->
           <:ast< (PrintHintGoal) >>
-      | IDENT "Print"; IDENT "HintDb"; s = identarg ; "." ->
+      | IDENT "Print"; IDENT "HintDb"; s = identarg  ->
 	  <:ast< (PrintHintDb $s) >>
-      | IDENT "Print"; IDENT "Section"; s = identarg; "." ->
+      | IDENT "Print"; IDENT "Section"; s = identarg ->
           <:ast< (PrintSec $s) >>
-      | IDENT "Print"; IDENT "States"; "." -> <:ast< (PrintStates) >>
+      | IDENT "Print"; IDENT "States" -> <:ast< (PrintStates) >>
       (* This should be in "syntax" section but is here for factorization *)
-      | IDENT "Print"; "Grammar"; uni = identarg; ent = identarg; "." ->
+      | IDENT "Print"; "Grammar"; uni = identarg; ent = identarg ->
           <:ast< (PrintGrammar $uni $ent) >>
 
-      | IDENT "Locate"; IDENT "File"; f = stringarg; "." ->
+      | IDENT "Locate"; IDENT "File"; f = stringarg ->
 	  <:ast< (LocateFile $f) >>
-      | IDENT "Locate"; IDENT "Library"; id = identarg; "." ->
+      | IDENT "Locate"; IDENT "Library"; id = identarg ->
 	  <:ast< (LocateLibrary $id) >>
-      | IDENT "Locate"; id = qualidarg; "." ->
+      | IDENT "Locate"; id = qualidarg ->
 	  <:ast< (Locate $id) >>
 
       (* Managing load paths *)
       | IDENT "Add"; IDENT "LoadPath"; dir = stringarg; 
-	"as"; alias = qualidarg; "." -> <:ast< (ADDPATH $dir $alias) >>
-      | IDENT "Add"; IDENT "LoadPath"; dir = stringarg; "." ->
+	"as"; alias = qualidarg -> <:ast< (ADDPATH $dir $alias) >>
+      | IDENT "Add"; IDENT "LoadPath"; dir = stringarg ->
 	  <:ast< (ADDPATH $dir) >>
       | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; dir = stringarg;
-	"as"; alias=qualidarg; "." -> <:ast< (RECADDPATH $dir $alias) >>
-      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; dir = stringarg; "." ->
+	"as"; alias=qualidarg -> <:ast< (RECADDPATH $dir $alias) >>
+      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; dir = stringarg ->
          <:ast< (RECADDPATH $dir) >>
-      | IDENT "Remove"; IDENT "LoadPath"; dir = stringarg; "." ->
+      | IDENT "Remove"; IDENT "LoadPath"; dir = stringarg ->
 	  <:ast< (DELPATH $dir) >>
-      | IDENT "Print"; IDENT "LoadPath"; "." -> <:ast< (PrintPath) >>
+      | IDENT "Print"; IDENT "LoadPath" -> <:ast< (PrintPath) >>
 
        (* For compatibility *)
-      | IDENT "AddPath"; dir = stringarg; "as"; alias = qualidarg; "." ->
+      | IDENT "AddPath"; dir = stringarg; "as"; alias = qualidarg ->
          <:ast< (ADDPATH $dir $alias) >>
-      | IDENT "AddPath"; dir = stringarg; "." -> <:ast< (ADDPATH $dir) >>
-      | IDENT "AddRecPath"; dir = stringarg; "as"; alias=qualidarg; "." ->
+      | IDENT "AddPath"; dir = stringarg -> <:ast< (ADDPATH $dir) >>
+      | IDENT "AddRecPath"; dir = stringarg; "as"; alias=qualidarg ->
          <:ast< (RECADDPATH $dir $alias) >>
-      | IDENT "AddRecPath"; dir = stringarg; "." ->
+      | IDENT "AddRecPath"; dir = stringarg ->
          <:ast< (RECADDPATH $dir) >>
-      | IDENT "DelPath"; dir = stringarg; "." -> <:ast< (DELPATH $dir) >>
+      | IDENT "DelPath"; dir = stringarg -> <:ast< (DELPATH $dir) >>
 
-      | IDENT "Print"; IDENT "Modules"; "." -> <:ast< (PrintModules) >>
-      | IDENT "Print"; "Proof"; id = identarg; "." ->
+      | IDENT "Print"; IDENT "Modules" -> <:ast< (PrintModules) >>
+      | IDENT "Print"; "Proof"; id = identarg ->
           <:ast< (PrintOpaqueId $id) >>
 (* Pris en compte dans PrintOption ci-dessous (CADUC) *)
-      | IDENT "Print"; id = qualidarg; "." -> <:ast< (PrintId $id) >>
-      | IDENT "Search"; id = qualidarg; l = in_or_out_modules; "." ->
+      | IDENT "Print"; id = qualidarg -> <:ast< (PrintId $id) >>
+      | IDENT "Search"; id = qualidarg; l = in_or_out_modules ->
 	  <:ast< (SEARCH $id ($LIST $l)) >>
-      | IDENT "Inspect"; n = numarg; "." -> <:ast< (INSPECT $n) >>
-      | IDENT "SearchPattern"; c = constrarg; l = in_or_out_modules; "." ->
+      | IDENT "Inspect"; n = numarg -> <:ast< (INSPECT $n) >>
+      | IDENT "SearchPattern"; c = constrarg; l = in_or_out_modules ->
 	  <:ast< (SearchPattern $c ($LIST $l)) >>
-      | IDENT "SearchRewrite"; c = constrarg; l = in_or_out_modules; "." ->
+      | IDENT "SearchRewrite"; c = constrarg; l = in_or_out_modules ->
 	  <:ast< (SearchRewrite $c ($LIST $l)) >>
       (* TODO: rapprocher Eval et Check *)
-      | IDENT "Eval"; r = Tactic.red_tactic; "in"; c = constrarg; "." ->
+      | IDENT "Eval"; r = Tactic.red_tactic; "in"; c = constrarg ->
           <:ast< (Eval (TACTIC_ARG (REDEXP $r)) $c) >>
       | IDENT "Eval"; g = numarg; r = Tactic.red_tactic;
-        "in"; c = constrarg; "." ->
+        "in"; c = constrarg ->
           <:ast< (Eval (TACTIC_ARG (REDEXP $r)) $c $g) >>
-      | check = check_tok; c = constrarg; "." -> <:ast< (Check $check $c) >>
-      | check = check_tok; g = numarg; c = constrarg; "." ->
+      | check = check_tok; c = constrarg -> <:ast< (Check $check $c) >>
+      | check = check_tok; g = numarg; c = constrarg ->
           <:ast< (Check $check $c $g) >>
-      | IDENT "Print"; IDENT "ML"; IDENT "Path"; "." ->
+      | IDENT "Print"; IDENT "ML"; IDENT "Path" ->
           <:ast< (PrintMLPath) >>
-      | IDENT "Print"; IDENT "ML"; IDENT "Modules"; "." ->
+      | IDENT "Print"; IDENT "ML"; IDENT "Modules" ->
           <:ast< (PrintMLModules) >>
-      | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = stringarg; "." ->
+      | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = stringarg ->
           <:ast< (AddMLPath $dir) >>
       | IDENT "Add"; IDENT "Rec"; IDENT "ML"; IDENT "Path";
-        dir = stringarg; "." ->
+        dir = stringarg ->
           <:ast< (RecAddMLPath $dir) >>
-      | IDENT "Print"; IDENT "Graph"; "." -> <:ast< (PrintGRAPH) >>
-      | IDENT "Print"; IDENT "Classes"; "." -> <:ast< (PrintCLASSES) >>
-      | IDENT "Print"; IDENT "Coercions"; "." -> <:ast< (PrintCOERCIONS) >>
-      | IDENT "Print"; IDENT "Coercion"; IDENT "Paths"; c = identarg; d = identarg; "." ->
+      | IDENT "Print"; IDENT "Graph" -> <:ast< (PrintGRAPH) >>
+      | IDENT "Print"; IDENT "Classes" -> <:ast< (PrintCLASSES) >>
+      | IDENT "Print"; IDENT "Coercions" -> <:ast< (PrintCOERCIONS) >>
+      | IDENT "Print"; IDENT "Coercion"; IDENT "Paths"; c = identarg; d = identarg ->
           <:ast< (PrintPATH $c $d) >>
 
       | IDENT "Time"; v = vernac -> <:ast< (Time $v)>>
-      | IDENT "SearchIsos"; com = constrarg; "." ->
+      | IDENT "SearchIsos"; com = constrarg ->
           <:ast< (Searchisos $com) >>
-      | "Set"; IDENT "Undo"; n = numarg; "." ->
+      | "Set"; IDENT "Undo"; n = numarg ->
           <:ast< (SETUNDO $n) >>
-      | IDENT "Unset"; IDENT "Undo"; "." -> <:ast< (UNSETUNDO) >>
-      | "Set"; IDENT "Hyps_limit"; n = numarg; "." ->
+      | IDENT "Unset"; IDENT "Undo" -> <:ast< (UNSETUNDO) >>
+      | "Set"; IDENT "Hyps_limit"; n = numarg ->
           <:ast< (SETHYPSLIMIT $n) >>
-      | IDENT "Unset"; IDENT "Hyps_limit"; "." ->
+      | IDENT "Unset"; IDENT "Hyps_limit" ->
           <:ast< (UNSETHYPSLIMIT) >>
 
       (* Standardized syntax for Implicit Arguments *)
-      | "Set"; IDENT "Implicit"; IDENT "Arguments"; "." ->
+      | "Set"; IDENT "Implicit"; IDENT "Arguments" ->
           <:ast< (IMPLICIT_ARGS_ON) >>
-      | IDENT "Unset"; IDENT "Implicit"; IDENT "Arguments"; "." ->
+      | IDENT "Unset"; IDENT "Implicit"; IDENT "Arguments" ->
           <:ast< (IMPLICIT_ARGS_OFF) >>
-      | IDENT "Test"; IDENT "Implicit"; IDENT "Arguments"; "." ->
+      | IDENT "Test"; IDENT "Implicit"; IDENT "Arguments" ->
           <:ast< (TEST_IMPLICIT_ARGS) >>
 
       (* Pour intervenir sur les tables de paramètres *)
       | "Set"; table = identarg; field = identarg;
-                      value = option_value; "." ->
+                      value = option_value ->
           <:ast< (SetTableField $table $field $value) >>
-      | "Set"; table = identarg; field = identarg; "." ->
+      | "Set"; table = identarg; field = identarg ->
           <:ast< (SetTableField $table $field) >>
-      | IDENT "Unset"; table = identarg; field = identarg; "." ->
+      | IDENT "Unset"; table = identarg; field = identarg ->
           <:ast< (UnsetTableField $table $field) >>
-      | "Set"; table = identarg; value = option_value; "." ->
+      | "Set"; table = identarg; value = option_value ->
           <:ast< (SetTableField $table $value) >>
-      | "Set"; table = identarg; "." ->
+      | "Set"; table = identarg ->
           <:ast< (SetTableField $table) >>
-      | IDENT "Unset"; table = identarg; "." ->
+      | IDENT "Unset"; table = identarg ->
           <:ast< (UnsetTableField $table) >>
       | IDENT "Print"; IDENT "Table";
-		      table = identarg; field = identarg; "." ->
+		      table = identarg; field = identarg ->
           <:ast< (PrintOption $table $field) >>
       (* Le cas suivant inclut aussi le "Print id" standard *)
-      | IDENT "Print"; IDENT "Table"; table = identarg; "." ->
+      | IDENT "Print"; IDENT "Table"; table = identarg ->
           <:ast< (PrintOption $table) >>
-      | IDENT "Add"; table = identarg; field = identarg; id = identarg; "."
+      | IDENT "Add"; table = identarg; field = identarg; id = identarg
         -> <:ast< (AddTableField $table $field $id) >>
-      | IDENT "Add"; table = identarg; field = identarg; id = stringarg; "."
+      | IDENT "Add"; table = identarg; field = identarg; id = stringarg
         -> <:ast< (AddTableField $table $field $id) >>
-      | IDENT "Add"; table = identarg; id = identarg; "."
+      | IDENT "Add"; table = identarg; id = identarg
         -> <:ast< (AddTableField $table $id) >>
-      | IDENT "Add"; table = identarg; id = stringarg; "."
+      | IDENT "Add"; table = identarg; id = stringarg
         -> <:ast< (AddTableField $table $id) >>
-      | IDENT "Test"; table = identarg; field = identarg; id = identarg; "."
+      | IDENT "Test"; table = identarg; field = identarg; id = identarg
         -> <:ast< (MemTableField $table $field $id) >>
-      | IDENT "Test"; table = identarg; field = identarg; id = stringarg; "."
+      | IDENT "Test"; table = identarg; field = identarg; id = stringarg
         -> <:ast< (MemTableField $table $field $id) >>
-      | IDENT "Test"; table = identarg; id = identarg; "."
+      | IDENT "Test"; table = identarg; id = identarg
         -> <:ast< (MemTableField $table $id) >>
-      | IDENT "Test"; table = identarg; id = stringarg; "."
+      | IDENT "Test"; table = identarg; id = stringarg
         -> <:ast< (MemTableField $table $id) >>
-      | IDENT "Remove"; table = identarg; field = identarg; id = identarg; "." ->
+      | IDENT "Remove"; table = identarg; field = identarg; id = identarg ->
           <:ast< (RemoveTableField $table $field $id) >>
-      | IDENT "Remove"; table = identarg; field = identarg; id = stringarg; "." ->
+      | IDENT "Remove"; table = identarg; field = identarg; id = stringarg ->
           <:ast< (RemoveTableField $table $field $id) >>
-      | IDENT "Remove"; table = identarg; id = identarg; "." ->
+      | IDENT "Remove"; table = identarg; id = identarg ->
           <:ast< (RemoveTableField $table $id) >>
-      | IDENT "Remove"; table = identarg; id = stringarg; "." ->
+      | IDENT "Remove"; table = identarg; id = stringarg ->
           <:ast< (RemoveTableField $table $id) >> ] ]
   ;
   option_value:
@@ -244,20 +244,20 @@ GEXTEND Gram
 	let _ = set_default_action_parser_by_name univ in univ ] ]
   ;
   syntax:
-   [ [ IDENT "Token"; s = STRING; "." -> <:ast< (TOKEN ($STR $s)) >>
+   [ [ IDENT "Token"; s = STRING -> <:ast< (TOKEN ($STR $s)) >>
 
      | "Grammar"; univ = univ;
-       tl = LIST1 Prim.grammar_entry SEP "with"; "." ->
+       tl = LIST1 Prim.grammar_entry SEP "with" ->
          <:ast< (GRAMMAR ($VAR univ) (ASTLIST ($LIST tl))) >>
 
-     | "Syntax"; univ = univ; el=LIST1 Prim.syntax_entry SEP ";"; "." ->
+     | "Syntax"; univ = univ; el=LIST1 Prim.syntax_entry SEP ";" ->
          <:ast< (SYNTAX ($VAR univ) (ASTLIST ($LIST el))) >>
 
      (* Faudrait une version de qualidarg dans Prim pour respecter l'ordre *)
      | IDENT "Infix"; as_ = entry_prec; n = numarg; op = Prim.string;
-       p = qualidarg; "." -> <:ast< (INFIX (AST $as_) $n $op $p) >>
+       p = qualidarg -> <:ast< (INFIX (AST $as_) $n $op $p) >>
      | IDENT "Distfix"; as_ = entry_prec; n = numarg; s = Prim.string;
-       p = qualidarg; "." -> <:ast< (DISTFIX (AST $as_) $n $s $p) >>
+       p = qualidarg -> <:ast< (DISTFIX (AST $as_) $n $s $p) >>
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
   ] ]
