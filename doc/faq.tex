@@ -6,8 +6,8 @@
 \input{./macros.tex}
 
 \newcommand{\coqtt}[1]{{\tt #1}}
-\newcommand{\coqimp}{{$->$}}
-\newcommand{\coqequiv}{{$<->$}}
+\newcommand{\coqimp}{{\mbox{\tt ->}}}
+\newcommand{\coqequiv}{{\mbox{\tt <->}}}
 
 \newcommand{\question}[1]{
   \subsection*{\aname{no:number}{Question:~\sf{#1}}}
@@ -51,10 +51,21 @@ Frequently Asked Questions
 
 \question{What is {\Coq}?}
 
-\answer {\Coq} is a proof assistant with two main
-application fields: proving program correctness and formalizing mathematical
-theories. {\Coq} offers also automatic extraction of zero-defect programs
-from a proof of their specification.
+\answer {\Coq} is a proof assistant with two main application fields:
+proving program correctness and formalising mathematical
+theories. {\Coq} offers also automatic extraction of zero-defect
+programs from a proof of their specification.
+
+\question{How to use {\Coq}?}
+
+\answer{{\Coq} offers an development environment in which you can
+alternatively define predicates, functions or sets and state claims to
+be interactively proved. {\Coq} comes with a large library of
+predefined notions both from the standard mathematical background
+(natural, integer and real numbers, sets and relations, ...) and from
+the standard computer science background (lists, binary numbers,
+finite sets, dictionaries, ...). {\Coq} is basically used in text mode
+but graphical interfaces are also available.
 
 \question{What are the main applications done in {\Coq}?}
 
@@ -70,10 +81,12 @@ and Coquand--Paulin-Mohring \cite{CoPa89}). It includes higher-order
 functions and predicates, inductive and co-inductive datatypes and
 predicates and a stratified hierarchy of sets.
 
-\question{Is {\Coq}'s logic constructive?}
+\question{Is {\Coq}'s logic intuitionistic or classical?}
 
-\answer {\Coq} theory is constructive, but classical
-reasoning on proposition can be loaded as an external module.
+\answer {\Coq} theory is basically intuitionistic
+(i.e. excluded-middle $A\lor\neg A$ is not granted by default) with
+the opportunity to reason classically on demand by requiring an
+optional module stating $A\lor\neg A$.
 
 \question{Is {\Coq} about proofs or provability?}
 
@@ -93,16 +106,21 @@ must come with an evidence of their termination.
 
 \answer {\Coq} comes with a few decision procedures (on propositional
 calculus, Presburger arithmetic, ring and field simplification,
-resolution, ...) but the main style for proving theorems is by using
-LCF-style tactics.
+resolution, ...) but the main style for proving theorems is
+interactively by using LCF-style tactics.
 
 \question{How is equational reasoning working in {\Coq}?}
 
-\answer {\Coq} is reasoning modulo sequential evaluation of
-(not necessarily closed) programs (it is decidable because {\Coq}
-programs are terminating). This equality is called {\em conversion}.
-Besides conversion, equations are to be treated by hand or using
-specialized tactics (e.g. simplifications on fields).
+\answer {\Coq} comes with an internal notion of computation called
+{\em conversion} (e.g. $(x+1)+y$ is internally equivalent to
+$(x+y)+1$; similarly applying argument $a$ to a function mapping $x$
+to some expression $t$ converts to the expression $t$ where $x$ is
+replaced by $a$). This notion of conversion (which is decidable
+because {\Coq} programs are terminating) covers a certain part of
+equational reasoning but is limited to sequential evaluation of
+expressions.  (not necessarily closed) programs. Besides conversion,
+equations are to be treated by hand or using specialised tactics
+(e.g. simplifications on fields).
 
 \section{Equality}
 
@@ -455,7 +473,7 @@ branching at each node {\tt x} in {\tt A} along all the nodes {\tt x'}
 less than {\tt x} along {\tt R}. Any sequence of elements of {\tt A}
 decreasing along the order {\tt R} are branches in the accessibility
 tree. Hence any decreasing along {\tt R} is mapped into a structural
-decreasing in the accessibility tree of {\tt R}. This is emphasized in the definition of {\tt fix} which recurs not on its argument {\tt x:A} but on the accessibility of this argument along {\tt R}.
+decreasing in the accessibility tree of {\tt R}. This is emphasised in the definition of {\tt fix} which recurs not on its argument {\tt x:A} but on the accessibility of this argument along {\tt R}.
 
 See file \vfile{\InitWf}{Wf}.
 
@@ -600,7 +618,7 @@ well-typed.}
 
 \answer This is probably due to invisible implicit information (implicit
 arguments, coercions and Cases annotations) in the printed term, which
-is not re-synthetized from the copied-pasted term in the same way as
+is not re-synthetised from the copied-pasted term in the same way as
 it is in the original term.
 
   Consider for instance {\tt (eqT Type True True)}. This term is
