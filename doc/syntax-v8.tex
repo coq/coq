@@ -255,7 +255,7 @@ conflict can appear, $\NTL{constr}{200}$ is also used as entry point.
 \DEFNT{fix-kw} \KWD{fix} ~\mid~ \KWD{cofix}
 \SEPDEF
 \DEFNT{fix-decl}
-       \NT{ident}~\STAR{\NT{binder}}~\OPT{\NT{annot}}~\NT{type-cstr}
+       \NT{ident}~\STAR{\NT{binder-let}}~\OPT{\NT{annot}}~\NT{type-cstr}
        ~\KWD{:=}~\NTL{constr}{200}
 \SEPDEF
 \DEFNT{annot}
@@ -876,7 +876,7 @@ $$
        \NT{rec-definition}~\STARGR{\KWD{with}~\NT{rec-definition}}
 \SEPDEF
 \DEFNT{rec-definition}
-       \NT{ident}~\STAR{\NT{binder}}~\OPT{\NT{annot}}~\NT{type-cstr}
+       \NT{ident}~\STAR{\NT{binder-let}}~\OPT{\NT{annot}}~\NT{type-cstr}
        ~\KWD{:=}~\NT{constr}
 \SEPDEF
 \DEFNT{scheme}
@@ -1018,13 +1018,14 @@ $$
 \nlsep \TERM{Coercions}
 \nlsep \TERM{Coercion}~\TERM{Paths}~\NT{class-rawexpr}~\NT{class-rawexpr}
 \nlsep \TERM{Tables}
-\nlsep \TERM{Proof}~\NT{reference}
+% \nlsep \TERM{Proof}~\NT{reference}  % Obsolete, useful in V6.3 ??
 \nlsep \TERM{Hint}~\OPT{\NT{reference}}
 \nlsep \TERM{Hint}~\TERM{*}
 \nlsep \TERM{HintDb}~\NT{ident}
 \nlsep \TERM{Scopes}
 \nlsep \TERM{Scope}~\NT{ident}
 \nlsep \TERM{Visibility}~\OPT{\NT{ident}}
+\nlsep \TERM{Implicit}~\NT{qualid}
 \SEPDEF
 \DEFNT{class-rawexpr}
        \TERM{Funclass}~\mid~\TERM{Sortclass}~\mid~\NT{reference}
