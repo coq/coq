@@ -182,6 +182,9 @@ GEXTEND Gram
   constrarg_list:
     [ [ c = constrarg; l = constrarg_list -> c :: l | -> [] ] ]
   ;
+  ne_constrarg_list:
+    [ [ c = constrarg; l = constrarg_list -> c :: l ] ]
+  ;
   unfold_occ:
     [ [ nl = LIST1 pure_numarg; c = qualidarg ->
          <:ast< (UNFOLD $c ($LIST $nl)) >>

@@ -113,6 +113,7 @@ module Tactic :
     val constrarg : Coqast.t Gram.Entry.e
     val constrarg_binding_list : Coqast.t list Gram.Entry.e
     val constrarg_list : Coqast.t list Gram.Entry.e
+    val ne_constrarg_list : Coqast.t list Gram.Entry.e
     val fixdecl : Coqast.t list Gram.Entry.e
     val ident_or_numarg : Coqast.t Gram.Entry.e
     val ident_or_constrarg : Coqast.t Gram.Entry.e
