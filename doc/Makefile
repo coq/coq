@@ -69,8 +69,8 @@ FTPHTMLDOCS=doc-html.tar.gz
 all: check-env all-dvi all-pdf
 
 check-env:
-	if $(TEST) "$(COQBIN)" = ""; then echo "COQBIN undefined"; exit 1; fi
-	if $(TEST) "$(COQTOP)" = ""; then echo "COQTOP undefined"; exit 1; fi
+	@if $(TEST) "$(COQBIN)" = ""; then echo "COQBIN undefined"; exit 1; fi
+	@if $(TEST) "$(COQTOP)" = ""; then echo "COQTOP undefined"; exit 1; fi
 
 coq-part: $(REFMANCOQTEXFILES) $(COQTEXFILES) demos-programs library/libdoc.tex
 
