@@ -19,21 +19,7 @@ Require Ranalysis1.
 Require R_sqrt.
 Require Ranalysis2.
 Require Ranalysis3.
-
-(* sqrt *)
-Axiom derivable_pt_lim_sqrt : (x:R) ``0<x`` -> (derivable_pt_lim sqrt x ``/(2*(sqrt x))``).
-
-Lemma derivable_pt_sqrt : (x:R) ``0<x`` -> (derivable_pt sqrt x).
-Unfold derivable_pt; Intros.
-Apply Specif.existT with ``/(2*(sqrt x))``.
-Apply derivable_pt_lim_sqrt; Assumption.
-Qed.
-
-Lemma derive_pt_sqrt : (x:R;pr:``0<x``) ``(derive_pt sqrt x (derivable_pt_sqrt ? pr)) == /(2*(sqrt x))``. 
-Intros.
-Apply derive_pt_eq_0.
-Apply derivable_pt_lim_sqrt; Assumption.
-Qed.
+Require Export Sqrt_reg.
 
 (**********)
 Lemma derivable_pt_inv : (f:R->R;x:R) ``(f x)<>0`` -> (derivable_pt f x) -> (derivable_pt (inv_fct f) x).
