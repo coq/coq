@@ -703,7 +703,7 @@ let fconstr_of_com_sort sigma sign com  =
   fconstr_of_com1 true sigma sign com
 
 (* Note: typ is retyped *)
-(***
+
 let constr_of_com_casted sigma env com typ = 
   let sign = context env in
   let c = raw_constr_of_com sigma sign com in
@@ -742,4 +742,3 @@ let fconstruct_with_univ sigma sign com =
   let (_,j) = with_universes (Mach.fexecute sigma sign)
 		(univ_sp, Constraintab.current_constraints(), c) in 
   j
-***)
