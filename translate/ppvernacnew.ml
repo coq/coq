@@ -468,9 +468,9 @@ let rec pr_vernac = function
         ++ spc() ++ qs s ++ spc() ++ pr_reference q ++ (match sn with
     | None -> mt()
     | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
-  | VernacNotation (local,s,c,l,mv8,opt) ->
+  | VernacNotation (local,c,sl,mv8,opt) ->
       let (s,l) = match mv8 with
-          None -> (s,l)
+          None -> out_some sl
         | Some ml -> ml in
       let ps =
 	let n = String.length s in
@@ -486,9 +486,9 @@ let rec pr_vernac = function
       (match opt with
         | None -> mt()
         | Some sc -> str" :" ++ spc() ++ str sc))
-  | VernacSyntaxExtension (local,s,l,mv8) ->
+  | VernacSyntaxExtension (local,sl,mv8) ->
       let (s,l) = match mv8 with
-          None -> (s,l)
+          None -> out_some sl
         | Some ml -> ml in
       str"Uninterpreted Notation" ++ spc() ++ pr_locality local ++ qs s ++
       (match l with | [] -> mt() | _ as l -> 
