@@ -86,12 +86,13 @@ end
     
 module UF = struct
 
-module PacSet=Set.Make(struct type t=int*int let compare=compare end) 
+module IndMap=Map.Make(struct type t=inductive let compare=compare end) 
 
   type representative=
       {mutable nfathers:int;
        mutable fathers:int list;
-       mutable constructors:pa_constructor PacMap.t}
+       mutable constructors:pa_constructor PacMap.t;
+       mutable inductives:(int * int) IndMap.t}
 
   type cl = Rep of representative| Eqto of int*equality
 
@@ -124,6 +125,12 @@ module PacSet=Set.Make(struct type t=int*int let compare=compare end)
 	  Rep r ->r
 	| _ -> anomaly "get_representative: not a representative"
 
+  let get_constructor uf i=
+    match (Hashtbl.find uf.map i).term with
+	Constructor (cstr,_,_)->cstr
+      | _ -> anomaly "get_constructor: not a constructor"
+
+
   let fathers uf i=
     (get_representative uf i).fathers
 	  
@@ -149,6 +156,8 @@ module PacSet=Set.Make(struct type t=int*int let compare=compare end)
   let mem_node_pac uf i sg= 
     PacMap.find sg (Hashtbl.find uf.map i).node_constr
   
+  exception Discriminable of int * int * int * int * t 
+
   let add_pacs uf i pacs =
     let rep=get_representative uf i in
     let pending=ref [] and combine=ref [] in 
@@ -161,17 +170,26 @@ module PacSet=Set.Make(struct type t=int*int let compare=compare end)
 	    let rec f n lk ll q=
 	      if n > 0 then match (lk,ll) with
 		  k::qk,l::ql->
-		    let qq=
-		      {lhs=k;rhs=l;rule=Injection(tk,tl,pac.head_constr,n)}::q 
-		    in
-		      f (n-1) qk ql qq 
-		| _->anomaly 
+		    let eq=
+		      {lhs=k;rhs=l;rule=Injection(tk,tl,pac.head_constr,n)} 
+		    in f (n-1) qk ql (eq::q) 
+		| _-> anomaly 
 		    "add_pacs : weird error in injection subterms merge"
 	      else q in
  	      combine:=f pac.nhyps pac.args opac.args !combine
-      with Not_found ->
+      with Not_found -> (* Still Unknown Constructor *)
 	rep.constructors <- PacMap.add sg pac rep.constructors;
-	pending:=(fathers uf (find uf pac.term_head))@rep.fathers@ !pending in
+	pending:=
+	    (fathers uf (find uf pac.term_head)) @rep.fathers@ !pending;
+	let (c,a)=sg in
+	  if a=0 then
+	    let (ind,_)=get_constructor uf c in  
+	      try
+		let th2,hc2=IndMap.find ind rep.inductives in
+		  raise (Discriminable (pac.term_head,c,th2,hc2,uf)) 
+	      with Not_found ->
+		rep.inductives<-
+		IndMap.add ind (pac.term_head,c) rep.inductives in
       PacMap.iter add_pac pacs;
       !pending,!combine
 	
@@ -195,7 +213,11 @@ module PacSet=Set.Make(struct type t=int*int let compare=compare end)
   let next uf=
     let n=uf.size in uf.size<-n+1; n
 	
-  let new_representative l={nfathers=0;fathers=[];constructors=l}
+  let new_representative pm im=
+    {nfathers=0;
+     fathers=[];
+     constructors=pm;
+     inductives=im}
 
   let rec add uf t= 
     try Hashtbl.find uf.syms t with 
@@ -204,20 +226,25 @@ module PacSet=Set.Make(struct type t=int*int let compare=compare end)
 	  let new_node=
 	    match t with
 		Symb s -> 
-		  {clas=Rep (new_representative PacMap.empty);
+		  {clas=Rep (new_representative PacMap.empty IndMap.empty);
 		   vertex=Leaf;term=t;node_constr=PacMap.empty}
 	      | Appli (t1,t2) -> 
 		  let i1=add uf t1 and i2=add uf t2 in
 		    add_father uf (find uf i1) b;
 		    add_father uf (find uf i2) b;
-		    {clas=Rep (new_representative PacMap.empty);
+		    {clas=Rep (new_representative PacMap.empty IndMap.empty);
 		     vertex=Node(i1,i2);term=t;node_constr=PacMap.empty}
 	      | Constructor (c,a,n) ->
 		  let pacs=
 		    PacMap.add (b,a) 
 		      {head_constr=b;arity=a;nhyps=n;args=[];term_head=b} 
 		      PacMap.empty in
-		    {clas=Rep (new_representative pacs);
+		  let inds=
+		    if a=0 then
+		      let (ind,_)=c in
+			IndMap.add ind (b,b) IndMap.empty 
+		    else IndMap.empty in
+		    {clas=Rep (new_representative pacs inds);
 		     vertex=Leaf;term=t;node_constr=PacMap.empty}
 	  in
 	    Hashtbl.add uf.map b new_node;

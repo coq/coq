@@ -179,7 +179,7 @@ Apply Hrec; Intros.
 Assert H2: `0<0`.
   Apply Zle_lt_trans with y; Intuition.
 Inversion H2.
-Ground.
+Firstorder.
 Unfold Zle Zcompare in H; Elim H; Auto.
 Defined.
 

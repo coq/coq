@@ -2,14 +2,14 @@
 Theorem t1: (A:Set)(a:A)(f:A->A)
 	(f a)=a->(f (f a))=a.
 Intros.
-CC.
+Congruence.
 Save.
 
 Theorem t2: (A:Set)(a,b:A)(f:A->A)(g:A->A->A)
 	a=(f a)->(g b (f a))=(f (f a))->(g a b)=(f (g b a))->
 	(g a b)=a.
 Intros.
-CC.
+Congruence.
 Save.
 
 (* 15=0 /\ 10=0 /\ 6=0 -> 0=1 *)
@@ -20,7 +20,7 @@ Theorem t3: (N:Set)(o:N)(s:N->N)(d:N->N)
 	(s (s (s (s (s (s o))))))=o->
 	o=(s o).
 Intros.
-CC.
+Congruence.
 Save.
 
 (* Examples that fail due to dependencies *) 
@@ -40,29 +40,41 @@ Intros;Rewrite e;Reflexivity.
 Save.
 
 
-(* example that CC can solve 	
+(* example that Congruence. can solve 	
 	(dependent function applied to the same argument)*) 
 
-Theorem dep3:(A:Set)(P:(A->Set))(f,g:(x:A)(P x))f=g->(x:A)(f x)=(g x).		
-Intros.	
-CC.
+Theorem dep3:(A:Set)(P:(A->Set))(f,g:(x:A)(P x))f=g->(x:A)(f x)=(g x).		Intros.	
+Congruence.
 Save.
 
 (* Examples with injection rule *)
 
-Theorem t5 : (A:Set;a,b,c,d:A)(a,c)=(b,d)->a=b/\c=d.
+Theorem inj1 : (A:Set;a,b,c,d:A)(a,c)=(b,d)->a=b/\c=d.
 Intros.
-Split;CC.
+Split;Congruence.
 Save.
 
-Theorem t6 : (A:Set;a,c,d:A;f:A->A*A) (f=(pair A A a))->(f c)=(f d)->c=d.
+Theorem inj2 : (A:Set;a,c,d:A;f:A->A*A) (f=(pair A A a))->
+  (Some ? (f c))=(Some ? (f d))->c=d.                             
 Intros.
-CC.
+Congruence.
 Save.
 
-(* example with CCSolve (requires CC)*)
+(* Examples with discrimination rule *)
 
-Require CC.
+Theorem discr1 : true=false->False.
+Intros.
+Congruence.
+Save.
+
+Theorem discr2 : (Some ? true)=(Some ? false)->False.
+Intros.
+Congruence.
+Save.
+
+(* example with Congruence.Solve (requires CCSolve.v)*)
+
+Require CCSolve.
 
 Theorem t4 :  (A:Set; P:(A->Prop); a,b,c,d:A)a=b->c=d->
                  (P a)->((P b)->(P c))->(P d).

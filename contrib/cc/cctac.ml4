@@ -37,8 +37,6 @@ let fail()=raise Not_an_eq
 let constant dir s = lazy (Coqlib.gen_constant "CC" dir s)
 
 let f_equal_theo = constant ["Init";"Logic"] "f_equal"
-let congr_theo = constant ["cc";"CC"] "Congr_nodep"
-let congr_dep_theo = constant ["cc";"CC"] "Congr_dep"
 
 (* decompose member of equality in an applicative format *)
 
@@ -96,7 +94,10 @@ let rec read_hyps env=function
 	
 let make_prb gl=
   let env=pf_env gl in
-  (read_hyps env gl.it.evar_hyps,read_eq env gl.it.evar_concl)
+  let hyps=read_hyps env gl.it.evar_hyps in
+    try (hyps,Some (read_eq env gl.it.evar_concl)) with 
+	Not_an_eq -> (hyps,None)
+
 
 (* indhyps builds the array of arrays of constructor hyps for (ind largs) *)
 
@@ -126,13 +127,13 @@ let build_projection (cstr:constructor) nargs argind ttype default atype gls=
 
 (* generate an adhoc tactic following the proof tree  *)
 
-let rec proof_tac uf axioms=function
+let rec proof_tac axioms=function
     Ax id->exact_check (mkVar id)
   | SymAx id->tclTHEN symmetry (exact_check (mkVar id))
   | Refl t->reflexivity
   | Trans (p1,p2)->let t=(make_term (snd (type_proof axioms p1))) in
       (tclTHENS (transitivity t) 
-	 [(proof_tac uf axioms p1);(proof_tac uf axioms p2)])
+	 [(proof_tac axioms p1);(proof_tac axioms p2)])
   | Congr (p1,p2)->
       fun gls->
 	let (f1,f2)=(type_proof axioms p1) 
@@ -148,9 +149,9 @@ let rec proof_tac uf axioms=function
 	and lemma2=
 	  mkApp(Lazy.force f_equal_theo,[|typx;typfx;tf2;tx1;tx2|]) in
 	  (tclTHENS (transitivity (mkApp(tf2,[|tx1|])))
-	     [tclTHEN (apply lemma1) (proof_tac uf axioms p1);
+	     [tclTHEN (apply lemma1) (proof_tac axioms p1);
   	      tclFIRST
-		[tclTHEN (apply lemma2) (proof_tac uf axioms p2);
+		[tclTHEN (apply lemma2) (proof_tac axioms p2);
 		 reflexivity;
 		 fun gls ->
 		   errorlabstrm  "CC" 
@@ -169,7 +170,7 @@ let rec proof_tac uf axioms=function
 	 let proj=build_projection cstr nargs argind ttype cai atype gls in
 	 let injt=
 	   mkApp (Lazy.force f_equal_theo,[|ttype;atype;proj;cti;ctj|]) in   
-	   tclTHEN (apply injt) (proof_tac uf axioms prf) gls)
+	   tclTHEN (apply injt) (proof_tac axioms prf) gls)
 
 (* wrap everything *)
 	
@@ -180,13 +181,20 @@ let cc_tactic gls=
 	Not_an_eq ->
 	  errorlabstrm  "CC" (str "Goal is not an equality") in
     match (cc_proof prb) with
-	None->errorlabstrm  "CC" (str "CC couldn't solve goal") 
-      | Some (p,uf,axioms)->proof_tac uf axioms p gls
-	
+        Prove (p,axioms)-> proof_tac axioms p gls
+      | Refute (t1,t2,p,axioms) ->
+	  let tt1=make_term t1 and tt2=make_term t2 in
+	  let typ=pf_type_of gls tt1 in
+	  let id=pf_get_new_id (id_of_string "Heq") gls in     
+	  let neweq=
+	    mkApp(constr_of_reference Coqlib.glob_eq,[|typ;tt1;tt2|]) in
+	    tclTHENS (true_cut (Some id) neweq)
+	      [proof_tac axioms p;Equality.discr id] gls
+
 (* Tactic registration *)
       
 TACTIC EXTEND CC
- [ "CC" ] -> [ cc_tactic ]
+ [ "Congruence" ] -> [ cc_tactic ]
 END
 
 

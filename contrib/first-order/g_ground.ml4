@@ -29,8 +29,8 @@ let ground_depth=ref 5
 let _=
   let gdopt=
     { optsync=true;
-      optname="Ground Depth";
-      optkey=SecondaryTable("Ground","Depth"); 
+      optname="Firstorder Depth";
+      optkey=SecondaryTable("Firstorder","Depth"); 
       optread=(fun ()->Some !ground_depth); 
       optwrite=
    (function 
@@ -65,7 +65,7 @@ let gen_ground_tac flag taco ext gl=
 	qflag:=backup;result
     with e ->qflag:=backup;raise e
       
-(* special for compatibility with old Intuition 
+(* special for compatibility with Intuition 
 
 let constant str = Coqlib.gen_constant "User" ["Init";"Logic"] str
 
@@ -81,12 +81,12 @@ let normalize_evaluables=
 	   unfold_in_hyp (Lazy.force defined_connectives) 
 	   (Tacexpr.InHypType id)) *)
 
-TACTIC EXTEND Ground
-    [ "Ground" tactic_opt(t) "with" ne_reference_list(l) ] -> 
+TACTIC EXTEND Firstorder
+    [ "Firstorder" tactic_opt(t) "with" ne_reference_list(l) ] -> 
       [ gen_ground_tac true (option_app eval_tactic t) (Ids l) ]
-|   [ "Ground" tactic_opt(t) "using" ne_preident_list(l) ] -> 
+|   [ "Firstorder" tactic_opt(t) "using" ne_preident_list(l) ] -> 
       [ gen_ground_tac true (option_app eval_tactic t) (Bases l) ]
-|   [ "Ground" tactic_opt(t) ] -> 
+|   [ "Firstorder" tactic_opt(t) ] -> 
       [ gen_ground_tac true (option_app eval_tactic t) Void ]
 END
 

@@ -762,7 +762,7 @@ FUNINDVO=
 JPROVERVO= 
 
 CCVO=\
- contrib/cc/CC.vo
+ contrib/cc/CCSolve.vo
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(CORRECTNESSVO) $(FOURIERVO) \

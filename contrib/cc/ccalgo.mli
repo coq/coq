@@ -41,11 +41,14 @@ end
 module UF :
 sig
   type t 
+  exception Discriminable of int * int * int * int * t 
   val empty : unit -> t
   val find : t -> int -> int
   val size : t -> int -> int
   val pac_arity : t -> int -> int * int -> int
   val mem_node_pac : t -> int -> int * int -> int 
+  val add_pacs : t -> int -> pa_constructor PacMap.t -> 
+    int list * equality list
   val term : t -> int -> term    
   val subterms : t -> int -> int * int
   val add : t -> term -> int

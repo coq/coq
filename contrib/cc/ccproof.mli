@@ -23,16 +23,17 @@ val ptrans : proof * proof -> proof
 val psym : proof -> proof
 val pcongr : proof * proof -> proof
 
-val pid : string -> proof -> proof
+type ('a,'b) mission=
+    Prove of 'a
+  | Refute of 'b
 
-val build_proof : UF.t -> int -> int -> proof
-
-exception Wrong_proof of proof
+val build_proof : UF.t -> (int * int, int * int * int * int) mission -> proof
 
 val type_proof :
   (Names.identifier * (term * term)) list -> proof -> term * term
 
 val cc_proof :
-  (Names.identifier * (term * term)) list * (term * term) ->
-  (proof * UF.t * (Names.identifier * (term * term)) list) option
+  (Names.identifier * (term * term)) list * (term * term) option ->
+  (proof * (Names.identifier * (term * term)) list, 
+   term * term * proof * (Names.identifier * (term * term)) list ) mission
 

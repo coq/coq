@@ -48,9 +48,11 @@ let pcongr=function
     Refl t1, Refl t2 ->Refl (Appli (t1,t2))
   | p1, p2 -> Congr (p1,p2)
 
-let pid (s:string) (p:proof)=p
-	
-let build_proof uf i j=
+type ('a,'b) mission=
+    Prove of 'a
+  | Refute of 'b
+
+let build_proof uf=
   
   let rec equal_proof i j=
     if i=j then Refl (UF.term uf i) else 
@@ -66,35 +68,41 @@ let build_proof uf i j=
 	| Congruence ->congr_proof eq.lhs eq.rhs
 	| Injection (ti,tj,c,a) ->
 	    let p=equal_proof ti tj in
-	    let arity=UF.pac_arity uf (UF.find uf ti) (c,0) in
-	    let p1=constr_proof ti ti c 0 arity
-	    and p2=constr_proof tj tj c 0 arity  in
+	    let p1=constr_proof ti ti c 0
+	    and p2=constr_proof tj tj c 0 in
 	      match UF.term uf c with
 		  Constructor (cstr,nargs,nhyps) -> 
 		    Inject(ptrans(psym p1,ptrans(p,p2)),cstr,nhyps,a)
 		| _ -> anomaly "injection on non-constructor terms" 
     in  ptrans(ptrans (pi,pij),pj)
 
-  and constr_proof i j c n a=
-       if n<a then 
-	 let nj=UF.mem_node_pac uf j (c,n) in
-	 let (ni,arg)=UF.subterms uf j in 
-	 let p=constr_proof ni nj c (n+1) a in
-	 let targ=UF.term uf arg in 
-	   ptrans (equal_proof i j, pcongr (p,Refl targ))
-       else equal_proof i j
+  and constr_proof i j c n=
+    try
+      let nj=UF.mem_node_pac uf j (c,n) in
+      let (ni,arg)=UF.subterms uf j in 
+      let p=constr_proof ni nj c (n+1) in
+      let targ=UF.term uf arg in 
+	ptrans (equal_proof i j, pcongr (p,Refl targ))
+    with Not_found->equal_proof i j
 
   and path_proof i=function
       [] -> Refl (UF.term uf i)
-    | x::q->ptrans (path_proof j q,edge_proof x)
+    | x::q->ptrans (path_proof (snd (fst x)) q,edge_proof x)
   
   and congr_proof i j=
     let (i1,i2) = UF.subterms uf i
     and (j1,j2) = UF.subterms uf j in   
       pcongr (equal_proof i1 j1, equal_proof i2 j2)
-  
+	
+  and discr_proof i ci j cj=
+    let p=equal_proof i j 
+    and p1=constr_proof i i ci 0 
+    and p2=constr_proof j j cj 0 in
+      ptrans(psym p1,ptrans(p,p2))
   in
-    equal_proof i j
+    function
+	Prove(i,j)-> equal_proof i j
+      | Refute(i,ci,j,cj)-> discr_proof i ci j cj
 
 let rec nth_arg t n=
   match t with 
@@ -121,21 +129,27 @@ let rec type_proof axioms p=
 	let (ti,tj)=type_proof axioms p in
 	  nth_arg ti (n-a),nth_arg tj (n-a)
 
-exception Wrong_proof of proof
-
-let cc_proof (axioms,(v,w))=
-  let uf=make_uf axioms in
-  let i1=UF.add uf v in
-  let i2=UF.add uf w in
-  cc uf;
-  if UF.find uf i1=UF.find uf i2 then 
-    let prf=build_proof uf i1 i2 in
-      if (v,w)=type_proof axioms prf then Some (prf,uf,axioms) 
-      else anomaly "Oops !! Wrong equality proof generated"
-  else
-    None
-
-    
-
+let cc_proof (axioms,m)=
+  try
+    let uf=make_uf axioms in
+      match m with 
+	  Some (v,w) ->
+	    let i1=UF.add uf v in
+	    let i2=UF.add uf w in
+	      cc uf;
+	      if UF.find uf i1=UF.find uf i2 then 
+		let prf=build_proof uf (Prove(i1,i2)) in
+		  if (v,w)=type_proof axioms prf then
+		    Prove (prf,axioms)
+		  else anomaly "wrong proof generated"
+	      else
+		errorlabstrm  "CC" (Pp.str "CC couldn't solve goal")
+	| None ->
+	    cc uf;
+	    errorlabstrm  "CC" (Pp.str "CC couldn't solve goal")
+    with UF.Discriminable (i,ci,j,cj,uf) ->
+      let prf=build_proof uf (Refute(i,ci,j,cj)) in 
+      let (t1,t2)=type_proof axioms prf in 
+	Refute (t1,t2,prf,axioms) 
 
 
