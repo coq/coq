@@ -701,16 +701,24 @@ let sig_clausale_forme env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
       let headpat = nf_betadeltaiota env sigma ty in
       let nf_ty = nf_betadeltaiota env sigma dFLTty in
       let bindings =
-	list_try_find
-	  (fun ty -> 
-             try 
-            (* Test inutile car somatch ne prend pas en compte les univers *) 
-	       if is_Type headpat & is_Type ty then
-		 []
-	       else
-		 matches (pattern_of_constr headpat) ty 
-             with PatternMatchingFailure -> failwith "caught")
-	  [dFLTty; nf_ty]
+        (* Test inutile car somatch ne prend pas en compte les univers *)
+        if is_Type headpat & is_Type nf_ty then
+          []
+        else
+          let headpat = pattern_of_constr headpat in
+          let weakpat = pattern_of_constr (nf_betaiota ty) in
+          list_try_find
+            (fun ty ->
+              try
+                matches headpat ty
+              with PatternMatchingFailure ->
+              try
+                (* Needed in cases such as pat=([x]T ?) and ty=(T C)
+                   with T reducible against constructor C *)
+                matches weakpat ty
+              with PatternMatchingFailure ->
+                failwith "caught")
+          [dFLTty; nf_ty]
       in
       (bindings,dFLT)
     else
