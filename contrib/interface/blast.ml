@@ -465,7 +465,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 	(List.map 
 	   (fun id -> tclTHEN (decomp_unary_term (mkVar id)) 
 		(tclTHEN 
-		   (clear_one id)
+		   (clear [id])
 		   (free_try (search_gen decomp p db_list local_db []))))
 	   (pf_ids_of_hyps goal)) 
   in

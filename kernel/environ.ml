@@ -49,26 +49,59 @@ let universes env = env.env_universes
 let named_context env = env.env_named_context
 let rel_context env = env.env_rel_context
 
-(* Access functions. *)
-
+(* Rel context *)
 let lookup_rel n env =
   Sign.lookup_rel n env.env_rel_context
 
-let lookup_named id env =
-  Sign.lookup_named id env.env_named_context
+let evaluable_rel n env =
+  try
+    match lookup_rel n env with
+        (_,Some _,_) -> true
+      | _ -> false
+  with Not_found -> 
+    false
 
-let lookup_constant sp env =
-  Spmap.find sp env.env_globals.env_constants
-
-let lookup_mind sp env =
-  Spmap.find sp env.env_globals.env_inductives
-
-(* Construction functions. *)
-
-(* Rel context *)
 let rel_context_app f env =
   { env with
       env_rel_context = f env.env_rel_context }
+
+let push_rel d   = rel_context_app (add_rel_decl d)
+let push_rel_context ctxt x = Sign.fold_rel_context push_rel ctxt ~init:x
+let push_rec_types (lna,typarray,_) env =
+  let ctxt =
+    array_map2_i
+      (fun i na t -> (na, None, type_app (lift i) t)) lna typarray in
+  Array.fold_left (fun e assum -> push_rel assum e) env ctxt
+
+let reset_rel_context env =
+  { env with
+      env_rel_context = empty_rel_context }
+
+let fold_rel_context f env ~init =
+  snd (Sign.fold_rel_context
+	 (fun d (env,e) -> (push_rel d env, f env d e))
+         (rel_context env) ~init:(reset_rel_context env,init))
+
+
+(* Named context *)
+let lookup_named id env =
+  Sign.lookup_named id env.env_named_context
+
+(* A local const is evaluable if it is defined and not opaque *)
+let evaluable_named id env =
+  try 
+    match lookup_named id env with
+        (_,Some _,_) -> true
+      | _ -> false
+  with Not_found -> 
+    false
+
+let named_context_app f env =
+  { env with
+      env_named_context = f env.env_named_context }
+
+let push_named d   = named_context_app (Sign.add_named_decl d)
+let pop_named id         = named_context_app (Sign.pop_named_decl id)
 
 let reset_context env =
   { env with
@@ -80,53 +113,18 @@ let reset_with_named_context ctxt env =
       env_named_context = ctxt;
       env_rel_context = empty_rel_context }
 
-let reset_rel_context env =
-  { env with
-      env_rel_context = empty_rel_context }
-
-let push_rel d   = rel_context_app (add_rel_decl d)
-let push_rel_context ctxt x = fold_rel_context push_rel ctxt ~init:x
-let push_rel_assum (id,ty) = push_rel (id,None,ty)
-
-let push_rec_types (lna,typarray,_) env =
-  let ctxt =
-    array_map2_i (fun i na t -> (na, type_app (lift i) t)) lna typarray in
-  Array.fold_left
-    (fun e assum -> push_rel_assum assum e) env ctxt
-
-let fold_rel_context f env ~init =
-  snd (fold_rel_context
-	 (fun d (env,e) -> (push_rel d env, f env d e))
-         (rel_context env) ~init:(reset_rel_context env,init))
-
-(* Named context *)
-let named_context_app f env =
-  { env with
-      env_named_context = f env.env_named_context }
-
-let push_named_decl d   = named_context_app (add_named_decl d)
-let push_named_assum (id,ty) = push_named_decl (id,None,ty)
-let pop_named_decl id         = named_context_app (pop_named_decl id)
-
 let fold_named_context f env ~init =
   snd (Sign.fold_named_context
-	 (fun d (env,e) -> (push_named_decl d env, f env d e))
+	 (fun d (env,e) -> (push_named d env, f env d e))
          (named_context env) ~init:(reset_context env,init))
 
 let fold_named_context_reverse f ~init env =
   Sign.fold_named_context_reverse f ~init:init (named_context env) 
 
-(* Universe constraints *)
-let set_universes g env =
-  if env.env_universes == g then env else { env with env_universes = g }
-
-let add_constraints c env =
-  if c == Constraint.empty then 
-    env 
-  else 
-    { env with env_universes = merge_constraints c env.env_universes }
-
 (* Global constants *)
+let lookup_constant sp env =
+  Spmap.find sp env.env_globals.env_constants
+
 let add_constant sp cb env =
   let _ =
     try
@@ -140,7 +138,35 @@ let add_constant sp cb env =
 	env_locals = new_locals } in
   { env with env_globals = new_globals }
 
+(* constant_type gives the type of a constant *)
+let constant_type env sp =
+  let cb = lookup_constant sp env in
+  cb.const_type  
+
+type const_evaluation_result = NoBody | Opaque
+
+exception NotEvaluableConst of const_evaluation_result
+
+let constant_value env sp =
+  let cb = lookup_constant sp env in
+  if cb.const_opaque then raise (NotEvaluableConst Opaque);
+  match cb.const_body with
+    | Some body -> body
+    | None -> raise (NotEvaluableConst NoBody)
+
+let constant_opt_value env cst =
+  try Some (constant_value env cst)
+  with NotEvaluableConst _ -> None
+
+(* A global const is evaluable if it is defined and not opaque *)
+let evaluable_constant cst env =
+  try let _  = constant_value env cst in true
+  with Not_found | NotEvaluableConst _ -> false
+
 (* Mutual Inductives *)
+let lookup_mind sp env =
+  Spmap.find sp env.env_globals.env_inductives
+
 let add_mind sp mib env =
   let _ =
     try 
@@ -153,6 +179,16 @@ let add_mind sp mib env =
 	env_inductives = new_inds;
 	env_locals = new_locals } in
   { env with env_globals = new_globals }
+
+(* Universe constraints *)
+let set_universes g env =
+  if env.env_universes == g then env else { env with env_universes = g }
+
+let add_constraints c env =
+  if c == Constraint.empty then 
+    env 
+  else 
+    { env with env_universes = merge_constraints c env.env_universes }
 
 (* Lookup of section variables *)
 let lookup_constant_variables c env =
@@ -218,50 +254,6 @@ let keep_hyps env needed =
 
 
 (* Constants *)
-
-let opaque_constant env sp = (lookup_constant sp env).const_opaque
-
-(* constant_type gives the type of a constant *)
-let constant_type env sp =
-  let cb = lookup_constant sp env in
-  cb.const_type  
-
-type const_evaluation_result = NoBody | Opaque
-
-exception NotEvaluableConst of const_evaluation_result
-
-let constant_value env sp =
-  let cb = lookup_constant sp env in
-  if cb.const_opaque then raise (NotEvaluableConst Opaque);
-  match cb.const_body with
-    | Some body -> body
-    | None -> raise (NotEvaluableConst NoBody)
-
-let constant_opt_value env cst =
-  try Some (constant_value env cst)
-  with NotEvaluableConst _ -> None
-
-(* A global const is evaluable if it is defined and not opaque *)
-let evaluable_constant env cst =
-  try let _  = constant_value env cst in true
-  with Not_found | NotEvaluableConst _ -> false
-
-(* A local const is evaluable if it is defined and not opaque *)
-let evaluable_named_decl env id =
-  try 
-    match lookup_named id env with
-        (_,Some _,_) -> true
-      | _ -> false
-  with Not_found -> 
-    false
-
-let evaluable_rel_decl env n =
-  try
-    match lookup_rel n env with
-        (_,Some _,_) -> true
-      | _ -> false
-  with Not_found -> 
-    false
 
 (*s Modules (i.e. compiled environments). *)
 

@@ -541,7 +541,7 @@ let discr id gls =
 	 errorlabstrm "discr" (str" Not a discriminable equality")
      | Inl (cpath, (_,dirn), _) ->
 	 let e = pf_get_new_id (id_of_string "ee") gls in
-	 let e_env = push_named_decl (e,None,t) env in
+	 let e_env = push_named (e,None,t) env in
 	 let discriminator =
 	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
 	 let (indt,_) = find_mrectype env sigma t in 
@@ -790,7 +790,7 @@ let inj id gls =
 	   (str"Nothing to do, it is an equality between convertible terms")
     | Inr posns ->
 	let e = pf_get_new_id (id_of_string "e") gls in
-	let e_env = push_named_decl (e,None,t) env in
+	let e_env = push_named (e,None,t) env in
 	let injectors =
 	  map_succeed
 	    (fun (cpath,t1_0,t2_0) ->
@@ -844,7 +844,7 @@ let decompEqThen ntac id gls =
   (match find_positions env sigma t1 t2 with
      | Inl (cpath, (_,dirn), _) ->
 	 let e = pf_get_new_id (id_of_string "e") gls in
-	 let e_env = push_named_decl (e,None,t) env in
+	 let e_env = push_named (e,None,t) env in
 	 let discriminator =
 	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
 	 let (pf, absurd_term) =
@@ -858,7 +858,7 @@ let decompEqThen ntac id gls =
 	   (str"Nothing to do, it is an equality between convertible terms")
      | Inr posns ->
 	 (let e = pf_get_new_id (id_of_string "e") gls in
-	  let e_env = push_named_decl (e,None,t) env in
+	  let e_env = push_named (e,None,t) env in
 	  let injectors =
 	    map_succeed
 	      (fun (cpath,t1_0,t2_0) ->
@@ -873,7 +873,7 @@ let decompEqThen ntac id gls =
 	  if injectors = [] then
 	    errorlabstrm "Equality.decompEqThen" 
               (str "Discriminate failed to decompose the equality");
-	  ((tclTHEN
+	  (tclTHEN
 	      (tclMAP (fun (injfun,resty) ->
 			 let pf = applist(lbeq.congr (),
 					  [t;resty;injfun;t1;t2;
@@ -882,7 +882,7 @@ let decompEqThen ntac id gls =
 			 ((tclTHENS (cut ty) 
 			     ([tclIDTAC;refine pf]))))
 		 (List.rev injectors))
-	      (ntac (List.length injectors))))
+	      (ntac (List.length injectors)))
 	  gls))
 
 let decompEq = decompEqThen (fun x -> tclIDTAC)
@@ -1212,7 +1212,7 @@ let general_rewrite_in lft2rgt id (c,lb) gls =
 			(reduce (Pattern [(list_int nb_occ 1 [],l2,
 					   pf_type_of gls l2)]) []))
 		     (general_rewrite_bindings lft2rgt (c,lb))) 
-		  [(tclTHEN (clear_one id) (introduction id))]) gls)
+		  [(tclTHEN (clear [id]) (introduction id))]) gls)
 
 let dyn_rewrite_in lft2rgt = function
   | [Identifier id;(Command com);(Bindings binds)] -> 
@@ -1699,89 +1699,3 @@ let autorewrite lbases ltacstp opt_step ltacrest opt_rest depth_step gls =
         (fun l -> validation_gen nlvalid l)
     in
     (repackage sigr gl,validation_fun)
-
-(*Collects the arguments of AutoRewrite ast node*)
-(*let dyn_autorewrite largs=
-  let rec explicit_base largs =
-    let tacargs = List.map cvt_arg largs in 
-    List.map 
-      (function
-	 | Redexp ("LR", [Coqast.Node(_,"Command", [ast])]) -> ast, true
-	 | Redexp ("RL", [Coqast.Node(_,"Command", [ast])]) -> ast, false
-	 | _ -> anomaly "Equality.explicit_base") 
-      tacargs
-  and list_bases largs =
-    let tacargs = List.map cvt_arg largs in 
-    List.map 
-      (function 
-	 | Redexp ("ByName", [Coqast.Nvar(_,s)]) -> 
-	     By_name (id_of_string s)
-	 | Redexp ("Explicit", l) ->
-	     Explicit (explicit_base l)
-	 | _ -> anomaly "Equality.list_bases") 
-      tacargs
-  and int_arg=function
-    | [(Integer n)] -> n
-    | _ -> anomalylabstrm "dyn_autorewrite" 
-	  (str "Bad call of int_arg (not an INTEGER)")
-  and list_args_rest (lstep,evstep) (ostep,evostep) (lrest,evrest)
-    (orest,evorest) (depth,evdepth) = function
-      | [] -> (lstep,ostep,lrest,orest,depth)
-      | (Redexp (s,l))::tail ->
-	  if s="Step" & not evstep then
-            list_args_rest ((List.map Tacinterp.interp l),true) (ostep,evostep)
-              (lrest,evrest) (orest,evorest) (depth,evdepth) tail
-	  else if s="SolveStep" & not evostep then
-            list_args_rest (lstep,evstep) (Solve,true) (lrest,evrest)
-              (orest,evorest) (depth,evdepth) tail
-	  else if s="Use" & not evostep then
-            list_args_rest (lstep,evstep) (Use,true) (lrest,evrest) 
-	      (orest,evorest) (depth,evdepth) tail
-	  else if s="All" & not evostep then
-            list_args_rest (lstep,evstep) (All,true) (lrest,evrest) 
-	      (orest,evorest) (depth,evdepth) tail
-	  else if s="Rest" & not evrest then
-            list_args_rest (lstep,evstep) (ostep,evostep) 
-	      ((List.map Tacinterp.interp l),true) (orest,evorest) 
-	      (depth,evdepth) tail
-	  else if s="SolveRest" & not evorest then
-            list_args_rest (lstep,evstep) (ostep,evostep) (lrest,evrest)
-              (false,true) (depth,evdepth) tail
-	  else if s="Cond" & not evorest then
-            list_args_rest (lstep,evstep) (ostep,evostep) (lrest,evrest)
-              (true,true) (depth,evdepth) tail
-	  else if s="Depth" & not evdepth then
-            (let dth = int_arg (List.map cvt_arg l) in
-             if dth > 0 then
-               list_args_rest (lstep,evstep) (ostep,evostep) (lrest,evrest)
-		 (orest,evorest) (dth,true) tail
-             else
-               errorlabstrm "dyn_autorewrite" 
-		 (str "Depth value lower or equal to 0"))
-	  else
-            anomalylabstrm "dyn_autorewrite" 
-	      (str "Bad call of list_args_rest")
-      | _ -> 
-	  anomalylabstrm "dyn_autorewrite" 
-	    (str "Bad call of list_args_rest")
-  and list_args = function
-    | (Redexp (s,lbases))::tail ->
-	if s = "BaseList" then
-          (let (lstep,ostep,lrest,orest,depth) = 
-	     list_args_rest ([],false) (Solve,false) ([],false) (false,false) 
-	       (100,false) tail
-           in
-           autorewrite (list_bases lbases) 
-	     (if lstep = [] then None else Some lstep) 
-	     ostep (if lrest=[] then None else Some lrest) orest depth)
-	else
-          anomalylabstrm "dyn_autorewrite" 
-	    (str "Bad call of list_args (not a BaseList tagged REDEXP)")
-    | _ ->
-	anomalylabstrm "dyn_autorewrite" 
-	  (str "Bad call of list_args (not a REDEXP)")
-  in
-  list_args largs*)
-
-(*Adds and hides the AutoRewrite tactic*)
-(*let h_autorewrite = hide_tactic "AutoRewrite" dyn_autorewrite*)

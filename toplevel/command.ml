@@ -276,7 +276,7 @@ let build_recursive lnameargsardef =
            let arity = interp_type sigma env0 raw_arity in
            let _ = declare_variable recname
 	     (Lib.cwd(),SectionLocalAssum arity, NeverDischarge) in
-           (Environ.push_named_decl (recname,None,arity) env, (arity::arl)))
+           (Environ.push_named (recname,None,arity) env, (arity::arl)))
         (env0,[]) lnameargsardef
     with e ->
       States.unfreeze fs; raise e in
@@ -340,7 +340,7 @@ let build_corecursive lnameardef =
 	   let arity = arj.utj_val in
            let _ = declare_variable recname
 	     (Lib.cwd(),SectionLocalAssum arj.utj_val,NeverDischarge) in
-           (Environ.push_named_decl (recname,None,arity) env, (arity::arl)))
+           (Environ.push_named (recname,None,arity) env, (arity::arl)))
         (env0,[]) lnameardef
     with e -> 
       States.unfreeze fs; raise e in 

@@ -47,16 +47,17 @@ open Coqlib
    Eduardo Gimenez (30/3/98).
 *)
 
-let clear_last = (tclLAST_HYP (fun c -> (clear_one (destVar c))))
+let clear_last = (tclLAST_HYP (fun c -> (clear [destVar c])))
 
 let mkBranches = 
-        (tclTHEN  intro 
-        (tclTHEN (tclLAST_HYP h_simplest_elim)
-        (tclTHEN  clear_last
-        (tclTHEN  intros 
-        (tclTHEN (tclLAST_HYP h_simplest_case)
-        (tclTHEN  clear_last
-                  intros))))))
+  tclTHENSEQ
+    [intro; 
+     tclLAST_HYP h_simplest_elim;
+     clear_last;
+     intros ;
+     tclLAST_HYP h_simplest_case;
+     clear_last;
+     intros]
 
 let solveRightBranch  = (tclTHEN h_simplest_right h_discrConcl)
 

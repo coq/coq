@@ -56,14 +56,14 @@ let typecheck_params_and_field ps fs =
     List.fold_left
       (fun (env,newps) (id,t) -> 
          let decl = interp_decl Evd.empty env (id,true,t) in
-         (push_named_decl decl env,decl::newps))
+         (push_named decl env,decl::newps))
       (env0,[]) ps
   in
   let env2,newfs =
     List.fold_left
       (fun (env,newfs) d ->
          let decl = interp_decl Evd.empty env d in
-         (push_named_decl decl env, decl::newfs))
+         (push_named decl env, decl::newfs))
       (env1,[]) fs
   in
   newps, newfs

@@ -749,7 +749,7 @@ let abstract_scheme env (locc,a,ta) t =
   if occur_meta a then 
     mkLambda (na,ta,t)
   else 
-    mkLambda (na, ta,subst_term_occ locc a t)
+    mkLambda (na, ta,subst_term_occ env locc a t)
 
 
 let pattern_occs loccs_trm_typ env sigma c =

@@ -71,7 +71,7 @@ and general_decompose recognizer id =
   elimHypThen
     (introElimAssumsThen
        (fun bas ->
-	  tclTHEN (clear_one id)
+	  tclTHEN (clear [id])
 	    (tclMAP (general_decompose_on_hyp recognizer)
                (ids_of_named_context bas.assums))))
     id
@@ -86,10 +86,11 @@ let up_to_delta = ref false (* true *)
 let general_decompose recognizer c gl = 
   let typc = pf_type_of gl c in  
   (tclTHENS (cut typc) 
-     [(tclTHEN (intro_using tmphyp_name)
-         (onLastHyp
-	    (ifOnHyp recognizer (general_decompose recognizer) clear_one)));
-      (exact_no_check c)]) gl
+    [tclTHEN (intro_using tmphyp_name)
+      (onLastHyp
+	(ifOnHyp recognizer (general_decompose recognizer)
+          (fun id -> clear [id])));
+     exact_no_check c]) gl
 
 let head_in gls indl t =
   try
@@ -176,8 +177,9 @@ let induction_trailer abs_i abs_j bargs =
 	      ([],fvty) possible_bring_hyps
 	  in
           let ids = List.rev (ids_of_named_context hyps) in
-	  (tclTHEN (tclTHEN (bring_hyps hyps) (clear_clauses ids))
-             (simple_elimination (mkVar id))) gls))
+	  (tclTHENSEQ
+            [bring_hyps hyps; clear ids; simple_elimination (mkVar id)])
+          gls))
 
 let double_ind abs_i abs_j gls =
   let cl = pf_concl gls in 
@@ -200,18 +202,17 @@ let _ = add_tactic "DoubleInd" dyn_double_ind
 (*****************************)
 
 let rec intro_pattern p = 
-  let clear_last = (tclLAST_HYP (fun c -> (clear_one (destVar c))))
-  and case_last  = (tclLAST_HYP h_simplest_case) in  
+  let clear_last = tclLAST_HYP (fun c -> (clear [destVar c]))
+  and case_last  = tclLAST_HYP h_simplest_case in  
   match p with
-    | WildPat    -> (tclTHEN intro clear_last)
+    | WildPat    -> tclTHEN intro clear_last
     | IdPat  id  -> intro_mustbe_force id
-    | DisjPat l  -> (tclTHEN introf
+    | DisjPat l  -> tclTHEN introf
                        (tclTHENS 
 			  (tclTHEN case_last clear_last)
-			  (List.map intro_pattern l)))
-    | ConjPat l  -> (tclTHEN introf
-                       (tclTHEN (tclTHEN  case_last clear_last)
-                          (intros_pattern l)))
+			  (List.map intro_pattern l))
+    | ConjPat l  ->
+        tclTHENSEQ [introf; case_last; clear_last; intros_pattern l]
     | ListPat l  ->  intros_pattern l
 
 and intros_pattern l = tclMAP intro_pattern l

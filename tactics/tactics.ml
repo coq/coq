@@ -739,7 +739,7 @@ let letin_abstract id c (occ_ccl,occ_hyps) gl =
   let abstract ((depdecls,marks as accu),lhyp) (hyp,_,_ as d) =
     try
       let occ = if everywhere then [] else List.assoc hyp occ_hyps in
-      let newdecl = subst_term_occ_decl occ c d in
+      let newdecl = subst_term_occ_decl env occ c d in
       if d = newdecl then
 	if not everywhere then raise (RefinerError (DoesNotOccurIn (c,hyp)))
 	else (accu, Some hyp)
@@ -754,7 +754,7 @@ let letin_abstract id c (occ_ccl,occ_hyps) gl =
   let occ_ccl = if everywhere then Some [] else occ_ccl in
   let ccl = match occ_ccl with
     | None -> pf_concl gl
-    | Some occ -> subst1 (mkVar id) (subst_term_occ occ c (pf_concl gl))
+    | Some occ -> subst1 (mkVar id) (subst_term_occ env occ c (pf_concl gl))
   in
   (depdecls,marks,ccl)
 
@@ -874,7 +874,6 @@ let dyn_assumption = function
  * goal. *)                                                               
 
 let clear ids gl    = thin ids gl
-let clear_one id gl = clear [id] gl
 let dyn_clear = function
   | [Clause ids] ->
       let out = function InHyp id -> id | _ -> assert false in
@@ -888,20 +887,6 @@ let dyn_clear_body = function
       clear_body (List.map out ids)
   | l -> bad_tactic_args "clear_body" l
 
-(* Clears a list of identifiers clauses form the context *)
-(*
-let clear_clauses clsl =
-  clear (List.map 
-           (function 
-	      | Some id -> id
-              | None    -> error "ThinClauses") clsl)
-*)
-let clear_clauses = clear
-
-(* Clears one identifier clause from the context *)
-
-let clear_clause cls = clear_clauses [cls]
-
 
 (*   Takes a list of booleans, and introduces all the variables 
  *  quantified in the goal which are associated with a value
@@ -911,7 +896,8 @@ let rec intros_clearing = function
   | []          -> tclIDTAC
   | (false::tl) -> tclTHEN intro (intros_clearing tl)
   | (true::tl)  ->
-      tclTHENLIST [ intro; onLastHyp clear_clause; intros_clearing tl]
+      tclTHENLIST
+        [ intro; onLastHyp (fun id -> clear [id]); intros_clearing tl]
 
 (* Adding new hypotheses  *)
 

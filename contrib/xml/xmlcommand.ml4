@@ -5,16 +5,16 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
-(******************************************************************************)
-(*                                                                            *)
-(*                               PROJECT HELM                                 *)
-(*                                                                            *)
-(*                     A module to print Coq objects in XML                   *)
-(*                                                                            *)
-(*                Claudio Sacerdoti Coen <sacerdot@cs.unibo.it>               *)
-(*                                 06/12/2000                                 *)
-(*                                                                            *)
-(******************************************************************************)
+(*****************************************************************************)
+(*                                                                           *)
+(*                              PROJECT HELM                                 *)
+(*                                                                           *)
+(*                    A module to print Coq objects in XML                   *)
+(*                                                                           *)
+(*               Claudio Sacerdoti Coen <sacerdot@cs.unibo.it>               *)
+(*                                06/12/2000                                 *)
+(*                                                                           *)
+(*****************************************************************************)
 
 
 (* CONFIGURATION PARAMETERS *)
@@ -195,11 +195,11 @@ let add_to_pvars x =
    match x with
       Definition (v, bod, typ) ->
        cumenv :=
-         E.push_named_decl (Names.id_of_string v, Some bod, typ) !cumenv ;
+         E.push_named (Names.id_of_string v, Some bod, typ) !cumenv ;
        v
     | Assumption (v, typ) ->
        cumenv :=
-         E.push_named_decl (Names.id_of_string v, None, typ) !cumenv ;
+         E.push_named (Names.id_of_string v, None, typ) !cumenv ;
        v
   in
    match !pvars with

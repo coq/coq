@@ -2,6 +2,7 @@
 (* File to include to get some Coq facilities under the ocaml toplevel.
    This file is loaded by include *)
 
+#cd".";;
 #use "top_printers.ml";;
 
 #install_printer  (* identifier *) prid;;

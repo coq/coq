@@ -48,6 +48,9 @@ let tclDO            = Tacmach.tclDO
 let tclPROGRESS      = Tacmach.tclPROGRESS
 let tclWEAK_PROGRESS = Tacmach.tclWEAK_PROGRESS
 
+(* [rclTHENSEQ [t1;..;tn] is equivalent to t1;..;tn *)
+let tclTHENSEQ = List.fold_left tclTHEN tclIDTAC
+
 (* map_tactical f [x1..xn] = (f x1);(f x2);...(f xn) *)
 (* tclMAP f [x1..xn] = (f x1);(f x2);...(f xn) *)
 let tclMAP tacfun l = 

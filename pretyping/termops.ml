@@ -13,9 +13,9 @@ open Util
 open Names
 open Nameops
 open Term
+open Sign
 open Environ
 open Nametab
-open Sign
 
 let print_sort = function
   | Prop Pos -> (str "Set")
@@ -86,7 +86,7 @@ let push_named_rec_types (lna,typarray,_) env =
 	   | Anonymous -> anomaly "Fix declarations must be named")
       lna typarray in
   Array.fold_left
-    (fun e assum -> push_named_decl assum e) env ctxt
+    (fun e assum -> push_named assum e) env ctxt
 
 let rec lookup_rel_id id sign = 
   let rec lookrec = function
@@ -335,25 +335,34 @@ let dependent m t =
 (*  substitution functions *)                         
 (***************************)
 
+let rec subst_meta bl c = 
+  match kind_of_term c with
+    | Meta i -> (try List.assoc i bl with Not_found -> c)
+    | _ -> map_constr (subst_meta bl) c
+
 (* Equality modulo let reduction *)
-let rec whd_rel hyps c =
+let rec whd_locals env c =
   match kind_of_term c with
       Rel i ->
         (try
-          (match Sign.lookup_rel i hyps with
-              (_,Some v,_) -> whd_rel hyps (lift i v)
+          (match lookup_rel i env with
+              (_,Some v,_) -> whd_locals env (lift i v)
+            | _ -> c)
+         with Not_found -> c)
+    | Var id ->
+        (try
+          (match lookup_named id env with
+              (_,Some v,_) -> whd_locals env v
             | _ -> c)
          with Not_found -> c)
     | _ -> c
 
 (* Expand de Bruijn indices bound to a value *)
-let rec nf_rel hyps c =
-  map_constr_with_full_binders Sign.add_rel_decl nf_rel hyps (whd_rel hyps c)
+let rec nf_locals env c =
+  map_constr_with_full_binders push_rel nf_locals env (whd_locals env c)
 
-(* [m] is not evaluated because it is called only with terms for [m] which
-   have been lifted of the length of [hyps], hence [nf_rel] would have no
-   effect. *)
-let compare_zeta hyps m n = zeta_eq_constr m (nf_rel hyps n)
+(* compare terms modulo expansion of let and local variables *)
+let compare_zeta env m n = zeta_eq_constr m (nf_locals env n)
 
 (* First utilities for avoiding telescope computation for subst_term *)
 
@@ -388,7 +397,7 @@ let my_prefix_application eq_fun (e,k,c) (by_c : constr) (t : constr) =
    term [c] in a term [t] *)
 (*i Bizarre : si on cherche un sous terme clos, pourquoi le lifter ? i*)
 
-let subst_term_gen eq_fun c t = 
+let subst_term_gen eq_fun env c t = 
   let rec substrec (e,k,c as kc) t =
     match prefix_application eq_fun kc t with
       | Some x -> x
@@ -396,43 +405,38 @@ let subst_term_gen eq_fun c t =
     (if eq_fun e c t then mkRel k
      else
        map_constr_with_full_binders
-         (fun d (e,k,c) -> (Sign.add_rel_decl d e,k+1,lift 1 c))
+         (fun d (e,k,c) -> (push_rel d e,k+1,lift 1 c))
          substrec kc t)
   in 
-  substrec (empty_rel_context,1,c) t
+  substrec (env,1,nf_locals env c) t
 
 (* Recognizing occurrences of a given (closed) subterm in a term :
    [replace_term c1 c2 t] substitutes [c2] for all occurrences of (closed)
    term [c1] in a term [t] *)
 (*i Meme remarque : a priori [c] n'est pas forcement clos i*)
 
-let replace_term_gen eq_fun c by_c in_t = 
+let replace_term_gen eq_fun env c by_c in_t = 
   let rec substrec (e,k,c as kc) t =
     match my_prefix_application eq_fun kc by_c t with
       | Some x -> x
       | None ->
     (if eq_fun e c t then (lift k by_c) else
       map_constr_with_full_binders
-	(fun d (e,k,c) -> (Sign.add_rel_decl d e,k+1,lift 1 c))
+	(fun d (e,k,c) -> (push_rel d e,k+1,lift 1 c))
 	substrec kc t)
   in 
-  substrec (empty_rel_context,0,c) in_t
+  substrec (env,0,nf_locals env c) in_t
 
-let subst_term = subst_term_gen (fun _ -> eq_constr)
+let subst_term = subst_term_gen (fun _ -> eq_constr) empty_env
 
-let replace_term = replace_term_gen (fun _ -> eq_constr)
-
-let rec subst_meta bl c = 
-  match kind_of_term c with
-    | Meta i -> (try List.assoc i bl with Not_found -> c)
-    | _ -> map_constr (subst_meta bl) c
+let replace_term = replace_term_gen (fun _ -> eq_constr) empty_env
 
 (* Substitute only a list of locations locs, the empty list is
    interpreted as substitute all, if 0 is in the list then no
    substitution is done. The list may contain only negative occurrences
    that will not be substituted. *)
 
-let subst_term_occ_gen locs occ c t =
+let subst_term_occ_gen env locs occ c t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref occ in
   let check = ref true in
@@ -452,34 +456,34 @@ let subst_term_occ_gen locs occ c t =
       in incr pos; r
     else
       map_constr_with_binders_left_to_right
-	(fun d (e,k,c) -> (Sign.add_rel_decl d e,k+1,lift 1 c))
+	(fun d (e,k,c) -> (push_rel d e,k+1,lift 1 c))
         substrec kc t
   in
-  let t' = substrec (empty_rel_context,1,c) t in
+  let t' = substrec (env,1,nf_locals env c) t in
   (!pos, t')
 
-let subst_term_occ locs c t = 
+let subst_term_occ env locs c t = 
   if locs = [] then
-    subst_term_gen compare_zeta c t
+    subst_term_gen compare_zeta env c t
   else if List.mem 0 locs then 
     t
   else 
-    let (nbocc,t') = subst_term_occ_gen locs 1 c t in
+    let (nbocc,t') = subst_term_occ_gen env locs 1 c t in
     if List.exists (fun o -> o >= nbocc or o <= -nbocc) locs then
       errorlabstrm "subst_term_occ" (str "Too few occurences");
     t'
 
-let subst_term_occ_decl locs c (id,bodyopt,typ as d) =
+let subst_term_occ_decl env locs c (id,bodyopt,typ as d) =
   match bodyopt with
-    | None -> (id,None,subst_term_occ locs c typ)
+    | None -> (id,None,subst_term_occ env locs c typ)
     | Some body -> 
 	if locs = [] then
 	  (id,Some (subst_term c body),type_app (subst_term c) typ)
 	else if List.mem 0 locs then 
 	  d
 	else 
-	  let (nbocc,body') = subst_term_occ_gen locs 1 c body in
-	  let (nbocc',t') = subst_term_occ_gen locs nbocc c typ in
+	  let (nbocc,body') = subst_term_occ_gen env locs 1 c body in
+	  let (nbocc',t') = subst_term_occ_gen env locs nbocc c typ in
 	  if List.exists (fun o -> o >= nbocc' or o <= -nbocc') locs then
 	    errorlabstrm "subst_term_occ_decl" (str "Too few occurences");
 	  (id,Some body',t')
@@ -685,37 +689,6 @@ let eta_eq_constr =
   in aux
 
 
-(* Remark: Anonymous var may be dependent in Evar's contexts *)
-let concrete_name env l env_names n c =
-  if n = Anonymous & noccurn 1 c then
-    (None,l)
-  else
-    let fresh_id = next_name_not_occuring env n l env_names c in
-    let idopt = if noccurn 1 c then None else (Some fresh_id) in
-    (idopt, fresh_id::l)
-
-let concrete_let_name env l env_names n c =
-  let fresh_id = next_name_not_occuring env n l env_names c in
-  (Name fresh_id, fresh_id::l)
-
-let global_vars env ids = Idset.elements (global_vars_set env ids)
-
-let rec rename_bound_var env l c =
-  match kind_of_term c with
-  | Prod (Name s,c1,c2)  ->
-      if noccurn 1 c2 then
-        let env' = push_rel (Name s,None,c1) env in
-	mkProd (Name s, c1, rename_bound_var env' l c2)
-      else 
-        let s' = next_ident_away s (global_vars env c2@l) in
-        let env' = push_rel (Name s',None,c1) env in
-        mkProd (Name s', c1, rename_bound_var env' (s'::l) c2)
-  | Prod (Anonymous,c1,c2) ->
-        let env' = push_rel (Anonymous,None,c1) env in
-        mkProd (Anonymous, c1, rename_bound_var env' l c2)
-  | Cast (c,t) -> mkCast (rename_bound_var env l c, t)
-  | x -> c
-
 (* iterator on rel context *)
 let process_rel_context f env =
   let sign = named_context env in
@@ -755,3 +728,40 @@ let make_all_name_different env =
        avoid := id::!avoid;
        push_rel (Name id,c,t) newenv)
     env
+
+let global_vars env ids = Idset.elements (global_vars_set env ids)
+
+let global_vars_set_of_decl env = function
+  | (_,None,t) -> global_vars_set env (body_of_type t)
+  | (_,Some c,t) ->
+      Idset.union (global_vars_set env (body_of_type t))
+        (global_vars_set env c)
+
+(* Remark: Anonymous var may be dependent in Evar's contexts *)
+let concrete_name env l env_names n c =
+  if n = Anonymous & noccurn 1 c then
+    (None,l)
+  else
+    let fresh_id = next_name_not_occuring env n l env_names c in
+    let idopt = if noccurn 1 c then None else (Some fresh_id) in
+    (idopt, fresh_id::l)
+
+let concrete_let_name env l env_names n c =
+  let fresh_id = next_name_not_occuring env n l env_names c in
+  (Name fresh_id, fresh_id::l)
+
+let rec rename_bound_var env l c =
+  match kind_of_term c with
+  | Prod (Name s,c1,c2)  ->
+      if noccurn 1 c2 then
+        let env' = push_rel (Name s,None,c1) env in
+	mkProd (Name s, c1, rename_bound_var env' l c2)
+      else 
+        let s' = next_ident_away s (global_vars env c2@l) in
+        let env' = push_rel (Name s',None,c1) env in
+        mkProd (Name s', c1, rename_bound_var env' (s'::l) c2)
+  | Prod (Anonymous,c1,c2) ->
+        let env' = push_rel (Anonymous,None,c1) env in
+        mkProd (Anonymous, c1, rename_bound_var env' l c2)
+  | Cast (c,t) -> mkCast (rename_bound_var env l c, t)
+  | x -> c

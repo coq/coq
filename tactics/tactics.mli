@@ -152,14 +152,10 @@ val pattern_option    :
 (*s Modification of the local context. *)
 
 val clear         : identifier list -> tactic
-val clear_one     : identifier -> tactic
 val dyn_clear     : tactic_arg list -> tactic
 
 val clear_body    : identifier list -> tactic
 val dyn_clear_body : tactic_arg list -> tactic
-
-val clear_clauses : identifier list -> tactic
-val clear_clause  : identifier -> tactic
 
 val new_hyp       : int option ->constr -> constr substitution -> tactic
 val dyn_new_hyp   : tactic_arg list -> tactic

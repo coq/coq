@@ -752,10 +752,10 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 	(tclTRY_sign decomp_empty_term extra_sign)
 	::
 	(List.map 
-	   (fun id -> tclTHEN (decomp_unary_term (mkVar id)) 
-		(tclTHEN 
-		   (clear_one id)
-		   (search_gen decomp p db_list local_db [])))
+	   (fun id -> tclTHENSEQ
+               [decomp_unary_term (mkVar id);
+                clear [id];
+		search_gen decomp p db_list local_db []])
 	   (pf_ids_of_hyps goal)) 
   in
   let intro_tac = 
@@ -881,12 +881,9 @@ let compileAutoArg contac = function
            (List.map 
               (fun (id,_,typ) -> 
                 let cl = snd (decompose_prod (body_of_type typ)) in
-                 if (Hipattern.is_conjunction cl)
+                 if Hipattern.is_conjunction cl
 		 then 
-		   (tclTHEN
-                      (tclTHEN (simplest_elim (mkVar id)) 
-                         (clear_one id))
-                      contac) 
+		   tclTHENSEQ [simplest_elim (mkVar id); clear [id]; contac] 
                  else 
 		   tclFAIL 0) ctx) g)
   | UsingTDB ->  

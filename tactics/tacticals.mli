@@ -29,6 +29,7 @@ val tclTHEN_i        : tactic -> (int -> tactic) -> tactic
 val tclTHENL         : tactic -> tactic -> tactic
 val tclTHENS         : tactic -> tactic list -> tactic
 val tclTHENSi        : tactic -> tactic list -> (int -> tactic) -> tactic
+val tclTHENSEQ       : tactic list -> tactic
 val tclREPEAT        : tactic -> tactic
 val tclFIRST         : tactic list -> tactic
 val tclTRY           : tactic -> tactic

@@ -150,7 +150,7 @@ let rec compute_metamap env gmm c = match kind_of_term c with
    *    où x est une variable FRAICHE *)
   | Lambda (name,c1,c2) ->
       let v = fresh env name in
-      let env' = push_named_decl (v,None,c1) env in
+      let env' = push_named (v,None,c1) env in
       begin match compute_metamap env' gmm (subst1 (mkVar v) c2) with
 	(* terme de preuve complet *)
 	| TH (_,_,[]) -> TH (c,[],[])
@@ -164,7 +164,7 @@ let rec compute_metamap env gmm c = match kind_of_term c with
       if occur_meta c1 then 
 	error "Refine: body of let-in cannot contain existentials";
       let v = fresh env name in
-      let env' = push_named_decl (v,Some c1,t1) env in
+      let env' = push_named (v,Some c1,t1) env in
       begin match compute_metamap env' gmm (subst1 (mkVar v) c2) with
 	(* terme de preuve complet *)
 	| TH (_,_,[]) -> TH (c,[],[])

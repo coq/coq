@@ -572,7 +572,7 @@ let check_one_fix renv recpos def =
       | Const sp as c -> 
           (try List.for_all (check_rec_call renv) l
            with (FixGuardError _ ) as e ->
-             if evaluable_constant renv.env sp then 
+             if evaluable_constant sp renv.env then 
 	       check_rec_call renv
                  (applist(constant_value renv.env sp, l))
 	     else raise e)

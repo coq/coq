@@ -69,21 +69,28 @@ val occur_var_in_decl :
   identifier -> 'a * types option * types -> bool
 val free_rels : constr -> Intset.t
 
+(* Substitution of metavariables *)
+val subst_meta : (int * constr) list -> constr -> constr
+
+(* Expansion of local definitions *)
+val whd_locals : env -> constr -> constr
+val nf_locals  : env -> constr -> constr
+
 (* substitution of an arbitrary large term. Uses equality modulo
    reduction of let *)
 val dependent : constr -> constr -> bool
 val subst_term_gen :
-  (rel_context -> constr -> constr -> bool) -> constr -> constr -> constr
+  (env -> constr -> constr -> bool) -> env -> constr -> constr -> constr
 val replace_term_gen :
-  (rel_context -> constr -> constr -> bool) -> constr -> constr -> constr -> constr
+  (env -> constr -> constr -> bool) ->
+    env -> constr -> constr -> constr -> constr
 val subst_term : constr -> constr -> constr
 val replace_term : constr -> constr -> constr -> constr
-val subst_meta : (int * constr) list -> constr -> constr
 val subst_term_occ_gen :
-  int list -> int -> constr -> types -> int * types
-val subst_term_occ : int list -> constr -> types -> types
+  env -> int list -> int -> constr -> types -> int * types
+val subst_term_occ : env -> int list -> constr -> types -> types
 val subst_term_occ_decl :
-  int list -> constr -> named_declaration -> named_declaration
+  env -> int list -> constr -> named_declaration -> named_declaration
 
 (* Alternative term equalities *)
 val zeta_eq_constr : constr -> constr -> bool
@@ -136,7 +143,6 @@ val concrete_name :
 val concrete_let_name :
   env -> identifier list -> name list ->
   name -> constr -> name * identifier list
-val global_vars : env -> constr -> identifier list
 val rename_bound_var : env -> identifier list -> types -> types
 
 (* other signature iterators *)
@@ -144,7 +150,10 @@ val process_rel_context : (rel_declaration -> env -> env) -> env -> env
 val assums_of_rel_context : rel_context -> (name * constr) list
 val lift_rel_context : int -> rel_context -> rel_context
 val fold_named_context_both_sides :
-  ('a -> named_declaration -> named_context -> 'a) ->
+  ('a -> named_declaration -> named_declaration list -> 'a) ->
     named_context -> init:'a -> 'a
 val mem_named_context : identifier -> named_context -> bool
 val make_all_name_different : env -> env
+
+val global_vars : env -> constr -> identifier list
+val global_vars_set_of_decl : env -> named_declaration -> Idset.t

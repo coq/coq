@@ -54,7 +54,7 @@ let push_rel_or_named_def push (id,b,topt) env =
   let env'' = push (id,Some j.uj_val,typ) env' in
   (cst,env'')
 
-let push_named_def = push_rel_or_named_def push_named_decl
+let push_named_def = push_rel_or_named_def push_named
 let push_rel_def = push_rel_or_named_def push_rel
 
 let push_rel_or_named_assum push (id,t) env =
@@ -64,7 +64,7 @@ let push_rel_or_named_assum push (id,t) env =
   let env'' = push (id,None,t) env' in
   (cst,env'')
 
-let push_named_assum = push_rel_or_named_assum push_named_decl
+let push_named_assum = push_rel_or_named_assum push_named
 let push_rel_assum d env = snd (push_rel_or_named_assum push_rel d env)
 
 let push_rels_with_univ vars env =
@@ -126,7 +126,7 @@ let add_constraints = Environ.add_constraints
 let rec pop_named_decls idl env =
   match idl with 
     | [] -> env
-    | id::l -> pop_named_decls l (Environ.pop_named_decl id env)
+    | id::l -> pop_named_decls l (Environ.pop_named id env)
 
 let export = export
 let import = import

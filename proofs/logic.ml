@@ -29,19 +29,7 @@ open Coqast
 open Declare
 open Retyping
 open Evarutil
-
-(* Will only be used on terms given to the Refine rule which have meta 
-variables only in Application and Case *)
-
-let collect_meta_variables c = 
-  let rec collrec acc c = match kind_of_term c with
-    | Meta mv -> mv::acc
-    | Cast(c,_) -> collrec acc c
-    | (App _| Case _) -> fold_constr collrec acc c
-    | _ -> acc
-  in 
-  List.rev(collrec [] c)
-
+ 
 type refiner_error =
 
   (* Errors raised by the refiner *)
@@ -70,6 +58,8 @@ let catchable_exception = function
 let error_cannot_unify (m,n) =
   raise (RefinerError (CannotUnify (m,n)))
 
+(* Tells if the refiner should check that the submitted rules do not
+   produce invalid subgoals *)
 let check = ref true
 
 let without_check tac gl =
@@ -78,6 +68,223 @@ let without_check tac gl =
   let r = tac gl in
   check := c;
   r
+   
+(***********************************************************************)
+(***********************************************************************)
+(* Implementation of the structural rules (moving and deleting
+   hypotheses around) *)
+
+let check_clear_forward cleared_ids used_ids whatfor =
+  if !check && cleared_ids<>[] then
+    Idset.iter
+      (fun id' ->
+        if List.mem id' cleared_ids then
+          error (string_of_id id'^" is used in "^whatfor))
+      used_ids
+
+(* The Clear tactic: it scans the context for hypotheses to be removed
+   (instead of iterating on the list of identifier to be removed, which
+   forces the user to give them in order). *)
+let clear_hyps ids gl =
+  let env = Global.env() in
+  let (nhyps,subst,rmv) =
+    Sign.fold_named_context
+      (fun (id,c,ty as d) (hyps,subst,rmv) ->
+        if List.mem id ids then
+          match c with
+            | Some def -> (hyps,(id,def)::subst,rmv)
+            | None -> (hyps,subst,id::rmv)
+        else begin
+          let d' =
+            (id, option_app (replace_vars subst) c, replace_vars subst ty) in
+          check_clear_forward rmv (global_vars_set_of_decl env d')
+            ("hypothesis "^string_of_id id);
+          (add_named_decl d' hyps, subst, rmv)
+        end)
+      gl.evar_hyps
+      ~init:(empty_named_context,[],[]) in
+  let ncl = replace_vars subst gl.evar_concl in
+  check_clear_forward rmv (global_vars_set env ncl) "conclusion";
+  mk_goal nhyps ncl
+
+(* The ClearBody tactic *)
+
+(* [apply_to_hyp sign id f] splits [sign] into [tail::[id,_,_]::head] and
+   returns [tail::(f head (id,_,_) tail)] *)
+let apply_to_hyp sign id f =
+  let found = ref false in
+  let sign' =
+    fold_named_context_both_sides
+      (fun head (idc,c,ct as d) tail ->
+	 if idc = id then begin
+	   found := true; f head d tail
+	 end else 
+	   add_named_decl d head)
+      sign ~init:empty_named_context
+  in
+  if (not !check) || !found then sign' else error "No such assumption"
+
+(* Same but with whole environment *)
+let apply_to_hyp2 env id f =
+  let found = ref false in
+  let env' =
+    fold_named_context_both_sides
+      (fun env (idc,c,ct as d) tail ->
+	 if idc = id then begin
+	   found := true; f env d tail
+	 end else 
+	   push_named d env)
+      (named_context env) ~init:(reset_context env)
+  in
+  if (not !check) || !found then env' else error "No such assumption"
+
+let apply_to_hyp_and_dependent_on sign id f g =
+  let found = ref false in
+  let sign =
+    Sign.fold_named_context
+      (fun (idc,_,_ as d) oldest ->
+         if idc = id then (found := true; add_named_decl (f d) oldest)
+         else if !found then add_named_decl (g d) oldest
+         else add_named_decl d oldest)
+      sign ~init:empty_named_context
+  in
+  if (not !check) || !found then sign else error "No such assumption"
+
+let recheck_typability (what,id) env sigma t =
+  try let _ = type_of env sigma t in ()
+  with _ ->
+    let s = match what with
+      | None -> "the conclusion"
+      | Some id -> "hypothesis "^(string_of_id id) in
+    error
+      ("The correctness of "^s^" relies on the body of "^(string_of_id id))
+  
+let remove_hyp_body env sigma id =
+  apply_to_hyp2 env id
+    (fun env (_,c,t) tail ->
+       match c with
+         | None -> error ((string_of_id id)^" is not a local definition")
+         | Some c ->
+             let env' = push_named (id,None,t) env in
+             if !check then 
+               ignore
+                 (Sign.fold_named_context 
+                    (fun (id',c,t as d) env'' ->
+                       (match c with
+                          | None -> 
+                              recheck_typability (Some id',id) env'' sigma t
+                          | Some b ->
+                              let b' = mkCast (b,t) in
+                              recheck_typability (Some id',id) env'' sigma b');
+                       push_named d env'')
+                    (List.rev tail) ~init:env');
+             env')
+
+
+(* Auxiliary functions for primitive MOVE tactic
+ *
+ * [move_after with_dep toleft (left,(hfrom,typfrom),right) hto] moves
+ * hyp [hfrom] just after the hyp [hto] which belongs to the hyps on the 
+ * left side [left] of the full signature if [toleft=true] or to the hyps 
+ * on the right side [right] if [toleft=false].
+ * If [with_dep] then dependent hypotheses are moved accordingly. *)
+
+let split_sign hfrom hto l =
+  let rec splitrec left toleft = function
+    | [] -> error ("No such hypothesis : " ^ (string_of_id hfrom))
+    | (hyp,c,typ) as d :: right ->
+      	if hyp = hfrom then 
+	  (left,right,d,toleft) 
+      	else 
+	  splitrec (d::left) (toleft or (hyp = hto)) right
+  in 
+  splitrec [] false l
+
+let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
+  let env = Global.env() in
+  let test_dep (hyp,c,typ as d) (hyp2,c,typ2 as d2) =
+    if toleft
+    then occur_var_in_decl env hyp2 d
+    else occur_var_in_decl env hyp d2
+  in
+  let rec moverec first middle = function
+    | [] -> error ("No such hypothesis : " ^ (string_of_id hto))
+    | (hyp,_,_) as d :: right ->
+	let (first',middle') =
+      	  if List.exists (test_dep d) middle then 
+	    if with_dep & (hyp <> hto) then 
+	      (first, d::middle)
+            else 
+	      error 
+		("Cannot move "^(string_of_id idfrom)^" after "
+		 ^(string_of_id hto)
+		 ^(if toleft then ": it occurs in " else ": it depends on ")
+		 ^(string_of_id hyp))
+          else 
+	    (d::first, middle)
+	in
+      	if hyp = hto then 
+	  (List.rev first')@(List.rev middle')@right
+      	else 
+	  moverec first' middle' right
+  in
+  if toleft then 
+    List.rev_append (moverec [] [declfrom] left) right
+  else 
+    List.rev_append left (moverec [] [declfrom] right)
+
+let check_backward_dependencies sign d =
+  if not (Idset.for_all
+	    (fun id -> mem_named_context id sign)
+	    (global_vars_set_of_decl (Global.env()) d))
+  then
+    error "Can't introduce at that location: free variable conflict"
+
+
+let check_forward_dependencies id tail =
+  let env = Global.env() in
+  List.iter
+    (function (id',_,_ as decl) ->
+       if occur_var_in_decl env id decl then
+	 error ((string_of_id id) ^ " is used in hypothesis " 
+		^ (string_of_id id')))
+    tail
+
+
+let rename_hyp id1 id2 sign =
+  apply_to_hyp_and_dependent_on sign id1
+    (fun (_,b,t) -> (id2,b,t))
+    (map_named_declaration (replace_vars [id1,mkVar id2]))
+
+let replace_hyp sign id d =
+  apply_to_hyp sign id
+    (fun sign _ tail ->
+       if !check then
+	 (check_backward_dependencies sign d;
+	  check_forward_dependencies id tail);
+       add_named_decl d sign)
+
+let insert_after_hyp sign id d =
+  apply_to_hyp sign id
+    (fun sign d' _ ->
+       if !check then check_backward_dependencies sign d;
+       add_named_decl d (add_named_decl d' sign))
+
+(***********************************************************************)
+(***********************************************************************)
+(* Implementation of the logical rules *)
+
+(* Will only be used on terms given to the Refine rule which have meta 
+variables only in Application and Case *)
+
+let collect_meta_variables c = 
+  let rec collrec acc c = match kind_of_term c with
+    | Meta mv -> mv::acc
+    | Cast(c,_) -> collrec acc c
+    | (App _| Case _) -> fold_constr collrec acc c
+    | _ -> acc
+  in 
+  List.rev(collrec [] c)
 
 let conv_leq_goal env sigma arg ty conclty =
   if not (is_conv_leq env sigma ty conclty) then 
@@ -182,124 +389,6 @@ let error_use_instantiate () =
   errorlabstrm "Logic.prim_refiner"
     (str"cannot intro when there are open metavars in the domain type" ++
        spc () ++ str"- use Instantiate")
-    
-(* Auxiliary functions for primitive MOVE tactic
- *
- * [move_after with_dep toleft (left,(hfrom,typfrom),right) hto] moves
- * hyp [hfrom] just after the hyp [hto] which belongs to the hyps on the 
- * left side [left] of the full signature if [toleft=true] or to the hyps 
- * on the right side [right] if [toleft=false].
- * If [with_dep] then dependent hypotheses are moved accordingly. *)
-
-let split_sign hfrom hto l =
-  let rec splitrec left toleft = function
-    | [] -> error ("No such hypothesis : " ^ (string_of_id hfrom))
-    | (hyp,c,typ) as d :: right ->
-      	if hyp = hfrom then 
-	  (left,right,d,toleft) 
-      	else 
-	  splitrec (d::left) (toleft or (hyp = hto)) right
-  in 
-  splitrec [] false l
-
-let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
-  let env = Global.env() in
-  let test_dep (hyp,c,typ as d) (hyp2,c,typ2 as d2) =
-    if toleft
-    then occur_var_in_decl env hyp2 d
-    else occur_var_in_decl env hyp d2
-  in
-  let rec moverec first middle = function
-    | [] -> error ("No such hypothesis : " ^ (string_of_id hto))
-    | (hyp,_,_) as d :: right ->
-	let (first',middle') =
-      	  if List.exists (test_dep d) middle then 
-	    if with_dep & (hyp <> hto) then 
-	      (first, d::middle)
-            else 
-	      error 
-		("Cannot move "^(string_of_id idfrom)^" after "
-		 ^(string_of_id hto)
-		 ^(if toleft then ": it occurs in " else ": it depends on ")
-		 ^(string_of_id hyp))
-          else 
-	    (d::first, middle)
-	in
-      	if hyp = hto then 
-	  (List.rev first')@(List.rev middle')@right
-      	else 
-	  moverec first' middle' right
-  in
-  if toleft then 
-    List.rev_append (moverec [] [declfrom] left) right
-  else 
-    List.rev_append left (moverec [] [declfrom] right)
-
-(* [apply_to_hyp sign id f] splits [sign] into [tail::[id,_,_]::head] and
-   returns [tail::(f head (id,_,_) tail)] *)
-let apply_to_hyp sign id f =
-  let found = ref false in
-  let sign' =
-    fold_named_context_both_sides
-      (fun head (idc,c,ct as d) tail ->
-	 if idc = id then begin
-	   found := true; f head d tail
-	 end else 
-	   add_named_decl d head)
-      sign ~init:empty_named_context
-  in
-  if (not !check) || !found then sign' else error "No such assumption"
-
-(* Same but with whole environment *)
-let apply_to_hyp2 env id f =
-  let found = ref false in
-  let env' =
-    fold_named_context_both_sides
-      (fun env (idc,c,ct as d) tail ->
-	 if idc = id then begin
-	   found := true; f env d tail
-	 end else 
-	   push_named_decl d env)
-      (named_context env) ~init:(reset_context env)
-  in
-  if (not !check) || !found then env' else error "No such assumption"
-
-exception Found of int
-
-let apply_to_hyp_and_dependent_on sign id f g =
-  let found = ref false in
-  let sign =
-    Sign.fold_named_context
-      (fun (idc,_,_ as d) oldest ->
-         if idc = id then (found := true; add_named_decl (f d) oldest)
-         else if !found then add_named_decl (g d) oldest
-         else add_named_decl d oldest)
-      sign ~init:empty_named_context
-  in
-  if (not !check) || !found then sign else error "No such assumption"
-
-let global_vars_set_of_var = function
-  | (_,None,t) -> global_vars_set (Global.env()) (body_of_type t)
-  | (_,Some c,t) ->
-      let env =Global.env() in
-      Idset.union (global_vars_set env (body_of_type t))
-        (global_vars_set env c)
-
-let check_backward_dependencies sign d =
-  if not (Idset.for_all
-	    (fun id -> mem_named_context id sign)
-	    (global_vars_set_of_var d))
-  then
-    error "Can't introduce at that location: free variable conflict"
-
-let check_forward_dependencies id tail =
-  let env = Global.env() in
-  List.iter
-    (function (id',_,_ as decl) ->
-       if occur_var_in_decl env id decl then
-	 error ((string_of_id id) ^ " is used in hypothesis " 
-		^ (string_of_id id')))
-    tail
 
 let convert_hyp sign sigma id b =
   apply_to_hyp sign id
@@ -334,61 +423,8 @@ let convert_def inbody sign sigma id c =
 	     add_named_decl (idc,Some b,t) sign)
 
 
-let rename_hyp id1 id2 sign =
-  apply_to_hyp_and_dependent_on sign id1
-    (fun (_,b,t) -> (id2,b,t))
-    (map_named_declaration (replace_vars [id1,mkVar id2]))
-
-let replace_hyp sign id d =
-  apply_to_hyp sign id
-    (fun sign _ tail ->
-       if !check then
-	 (check_backward_dependencies sign d;
-	  check_forward_dependencies id tail);
-       add_named_decl d sign)
-
-let insert_after_hyp sign id d =
-  apply_to_hyp sign id
-    (fun sign d' _ ->
-       if !check then check_backward_dependencies sign d;
-       add_named_decl d (add_named_decl d' sign))
-
-let remove_hyp env id =
-  apply_to_hyp env id
-    (fun env _ tail ->
-       if !check then check_forward_dependencies id tail;
-       env)
-
-let recheck_typability (what,id) env sigma t =
-  try let _ = type_of env sigma t in ()
-  with _ ->
-    let s = match what with
-      | None -> "the conclusion"
-      | Some id -> "hypothesis "^(string_of_id id) in
-    error
-      ("The correctness of "^s^" relies on the body of "^(string_of_id id))
-  
-let remove_hyp_body env sigma id =
-  apply_to_hyp2 env id
-    (fun env (_,c,t) tail ->
-       match c with
-         | None -> error ((string_of_id id)^" is not a local definition")
-         | Some c ->
-             let env' = push_named_decl (id,None,t) env in
-             if !check then 
-               ignore
-                 (Sign.fold_named_context 
-                    (fun (id',c,t as d) env'' ->
-                       (match c with
-                          | None -> 
-                              recheck_typability (Some id',id) env'' sigma t
-                          | Some b ->
-                              let b' = mkCast (b,t) in
-                              recheck_typability (Some id',id) env'' sigma b');
-                       push_named_decl d env'')
-                    tail ~init:env');
-             env')
-
+(***********************************************************************)
+(***********************************************************************)
 (* Primitive tactics are handled here *)
 
 let prim_refiner r sigma goal =
@@ -396,6 +432,7 @@ let prim_refiner r sigma goal =
   let sign = goal.evar_hyps in
   let cl = goal.evar_concl in
   match r with
+    (* Logical rules *)
     | { name = Intro; newids = [id] } ->
     	if !check && mem_named_context id sign then
 	  error "New variable is already declared";
@@ -538,6 +575,7 @@ let prim_refiner r sigma goal =
 	let sgl = List.rev sgl in
 	sgl
 
+    (* Conversion rules *)
     | { name = Convert_concl; terms = [cl'] } ->
     	let cl'ty = type_of env sigma cl' in
 	if is_conv_leq env sigma cl' cl then
@@ -555,15 +593,8 @@ let prim_refiner r sigma goal =
     | { name = Convert_deftype; hypspecs = [id]; terms = [ty] } ->
 	[mk_goal (convert_def false sign sigma id ty) cl]
 
-    | { name = Thin; hypspecs = ids } ->
-	let clear_aux sign id =
-          if !check && occur_var env id cl then
-            error ((string_of_id id) ^ " is used in the conclusion.");
-          remove_hyp sign id 
-	in
-	let sign' = List.fold_left clear_aux sign ids in
-     	let sg = mk_goal sign' cl in
-     	[sg]
+    (* And now the structural rules *)
+    | { name = Thin; hypspecs = ids } -> [clear_hyps ids goal]
 
     | { name = ThinBody; hypspecs = ids } ->
 	let clear_aux env id =
@@ -591,6 +622,10 @@ let prim_refiner r sigma goal =
         [mk_goal sign' cl']
 
     | _ -> anomaly "prim_refiner: Unrecognized primitive rule"
+
+(***********************************************************************)
+(***********************************************************************)
+(* Extracting a proof term from the proof tree *)
 
 (* Util *)
 let rec rebind id1 id2 = function
@@ -666,7 +701,8 @@ let prim_extractor subfun vl pft =
 	let metamap = List.combine mvl (List.map (subfun vl) spfl) in
 	let cc = subst_vars vl c in 
 	plain_instance metamap cc
-	  
+
+    (* Structural and conversion rules do not produce any proof *)
     | {ref=Some(Prim{name=Convert_concl;terms=[c]},[pf])} ->
 	subfun vl pf
 	

@@ -137,11 +137,11 @@ let rec add_prods_sign env sigma t =
     | Prod (na,c1,b) ->
 	let id = id_of_name_using_hdchar env t na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (push_named_decl (id,None,c1) env) sigma b'
+        add_prods_sign (push_named (id,None,c1) env) sigma b'
     | LetIn (na,c1,t1,b) ->
 	let id = id_of_name_using_hdchar env t na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (push_named_decl (id,Some c1,t1) env) sigma b'
+        add_prods_sign (push_named (id,Some c1,t1) env) sigma b'
     | _ -> (env,t)
 
 (* [dep_option] indicates wether the inversion lemma is dependent or not.
@@ -186,7 +186,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       (pty,goal)
   in
   let npty = nf_betadeltaiota env sigma pty in
-  let extenv = push_named_decl (p,None,npty) env in
+  let extenv = push_named (p,None,npty) env in
   extenv, goal
 
 (* [inversion_scheme sign I]
