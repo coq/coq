@@ -130,7 +130,7 @@ let (current:pref ref) =
     cmd_browse = "netscape -remote \"OpenURL(", ")\"";
     cmd_editor = "emacs ", "";
     
-    text_font = Pango.Font.from_string "Monospace 12";
+    text_font = Pango.Font.from_string "sans 12";
 
     doc_url = "http://coq.inria.fr/doc/";
     library_url = "http://coq.inria.fr/library/";
@@ -294,7 +294,7 @@ let configure () =
     let box = GPack.hbox () in
     let w = GMisc.font_selection () in
     w#set_preview_text
-      "Lemma Truth: ∀ p:Prover, `p < Coq`. Proof. Auto with *. Save."; 
+      "Goal (∃n : nat, n ≤ 0)∧(∀x,y,z, x∈y⋃z↔x∈y∨x∈z).";
     box#pack w#coerce;
     ignore (w#misc#connect#realize 
 	      ~callback:(fun () -> w#set_font_name 

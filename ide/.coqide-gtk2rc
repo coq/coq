@@ -17,8 +17,8 @@ binding "text" {
   bind "<ctrl>w" { "cut-clipboard" () }
 
 # For UTF-8 inputs !
-  bind "F11" {"insert-at-cursor" ("∀")}
-  bind "F12" {"insert-at-cursor" ("∃")}
+#  bind "F11" {"insert-at-cursor" ("∀")}
+#  bind "F12" {"insert-at-cursor" ("∃")}
 }
 class "GtkTextView" binding "text"
 
@@ -36,7 +36,7 @@ widget "*.*.*.*.MessageWindow" style "views"
 gtk-font-name = "Sans 12"
 
 style "location" {
-font_name = "Monospace 10"
+font_name = "Sans 10"
 }
 widget "*location*" style "location"
 

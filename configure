@@ -302,32 +302,39 @@ fi
 
 # For coqmktop
 
-CAMLLIB=`"$CAMLC" -v | sed -n -e 's|.*directory:* *\(.*\)$|\1|p' `
+#CAMLLIB=`"$CAMLC" -v | sed -n -e 's|.*directory:* *\(.*\)$|\1|p' `
+CAMLLIB=`"$CAMLC" -where`
 
 # Camlp4 (greatly simplified since merged with ocaml)
 
 CAMLP4BIN=${CAMLBIN}
 
-case $OS in
-  Win32)
-    CAMLP4LIB=+camlp4;;
-  *)
-    CAMLP4LIB=${CAMLLIB}/camlp4
-esac
+#case $OS in
+#  Win32)
+    CAMLP4LIB=+camlp4
+# ;;
+#  *)
+#    CAMLP4LIB=${CAMLLIB}/camlp4
+#esac
 
 # lablgtk2 and CoqIDE
 
 if [ "$coqide_spec" = "no" ] ; then
-if test -x ${CAMLLIB}/lablgtk2; then
-    if grep -q -w convert_with_fallback ${CAMLLIB}/lablgtk2/glib.mli; then
-	COQIDE=byte
-	# native threads
-	if test -f ${CAMLLIB}/threads/threads.cmxa; then
+if test -x "${CAMLLIB}/lablgtk2" ; then
+    if grep -q -w convert_with_fallback "${CAMLLIB}/lablgtk2/glib.mli" ; then
+	if test -f "${CAMLLIB}/threads/threads.cmxa" ; then
+            echo "LablGtk2 found, native threads: native CoqIde will be available"
 	    COQIDE=opt;
+        else
+            echo "LablGtk2 found, no native threads: bytecode CoqIde will be available"
+	    COQIDE=byte
 	fi;
-    else COQIDE=no;
+    else
+        echo "LablGtk2 found but too old: CoqIde will not be available"
+        COQIDE=no;
     fi
 else
+    echo "LablGtk2 not found: CoqIde will not be available"
     COQIDE=no
 fi
 fi
@@ -340,7 +347,8 @@ rm config/giveostype
 
 case $ARCH in
     win32)
-	STRIPCOMMAND="true";;
+	# true -> strip : it exists under cygwin !
+	STRIPCOMMAND="strip";; 
     *)
     if [ "$coq_profile_flag" = "-p" ] ; then
 	STRIPCOMMAND="true"
@@ -381,12 +389,12 @@ echo ""
 
 rm -f $COQTOP/config/Makefile
 
-case $ARCH in
-    win32)
-	BINDIR=`echo $BINDIR |sed -e 's|\\\|/|g'`
-	LIBDIR=`echo $LIBDIR |sed -e 's|\\\|/|g'`
-	MANDIR=`echo $MANDIR |sed -e 's|\\\|/|g'`;;
-esac
+#case $ARCH in
+#    win32)
+#	BINDIR=`echo $BINDIR |sed -e 's|\\\|/|g'`
+#	LIBDIR=`echo $LIBDIR |sed -e 's|\\\|/|g'`
+#	MANDIR=`echo $MANDIR |sed -e 's|\\\|/|g'`;;
+#esac
 
 sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|COQTOPDIRECTORY|$COQTOP|" \
@@ -462,7 +470,7 @@ PRINTF=`which printf`
 
 # Subdirectories of theories/ added in coq_config.ml
 subdirs () {
-    (cd $1; find * -type d ! -name CVS -exec $PRINTF "\"%s\";\n" {} \; | grep -v extraction/test >> $mlconfig_file)
+    (cd $1; find * -type d ! -name CVS -exec $PRINTF "\"%s\";\n" {} \; | grep -v extraction/test | grep -v correctness >> $mlconfig_file)
 }
 
 echo "let theories_dirs = [" >> $mlconfig_file

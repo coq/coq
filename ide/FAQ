@@ -17,8 +17,8 @@ Q4) How to use those Forall and Exists pretty symbols?
 R4) Thanks to the Notation features in Coq, you just need to insert these
 	lines in your Coq Buffer :
 ======================================================================
-Notation "∀ x : t | P" := (x:t)P (at level 1, x,t,P at level 10).
-Notation "∃ x : t | P" := (EXT x:t|P) (at level 1, x,t,P at level 10).
+Notation "∀ x : t, P" := (forall x:t, P) (at level 200, x ident).
+Notation "∃ x : t, P" := (exists x:t, P) (at level 200, x ident).
 ======================================================================
 Copy/Paste of these lines from this file will not work outside of CoqIde.
 You need to load a file containing these lines or to enter the "∀" 
@@ -58,9 +58,9 @@ R6) Use
 Q7) How to customize the shortcuts for menus?
 R7) Two solutions are offered:
   - Edit $HOME/.coqide.keys by hand or
-  - Add "gtk-can-change-accels = 1" in your .coqiderc.gtk2 file. Then
+  - Add "gtk-can-change-accels = 1" in your .coqide-gtk2rc file. Then
     from CoqIde, you may select a menu entry and press the desired 
-    shortcut. Do not forget to save your preferences.
+    shortcut. 
 
 Q8) What encoding should I use? What is this \x{iiii} in my file?
 R8) The encoding option is related to the way files are saved. 

@@ -409,12 +409,12 @@ beforedepend:: ide/utf8_convert.ml
 
 FULLIDELIB=$(FULLCOQLIB)/ide
 
-OLDCOQIDEVO=ide/utf8.vo
+COQIDEVO=ide/utf8.vo
 
-$(OLDCOQIDEVO): states/initial.coq states7/initial.coq
-	$(BOOTCOQTOP) $(TRANSLATE) -compile $*
+$(COQIDEVO): states/initial.coq 
+	$(BOOTCOQTOP) -compile $*
 
-IDEFILES=$(OLDCOQIDEVO) ide/coq.png ide/.coqide-gtk2rc ide/FAQ
+IDEFILES=$(COQIDEVO) ide/utf8.v ide/coq.png ide/.coqide-gtk2rc
 
 coqide: $(IDEFILES) coqide-$(HASCOQIDE)
 coqide-no:
@@ -424,7 +424,7 @@ coqide-opt:  $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
 ide: coqide-$(HASCOQIDE) states
 
 clean-ide: 
-	rm -f $(OLDCOQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT)
+	rm -f $(COQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT)
 
 $(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) ide.cmxa
 	$(SHOW)'COQMKTOP -o $@'	
@@ -466,7 +466,7 @@ clean::
 	rm -f ide/extract_index.ml ide/find_phrase.ml ide/highlight.ml
 	rm -f ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
 	rm -f ide/utf8_convert.ml
-	rm -f $(OLDCOQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi)
+	rm -f $(COQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi)
 	rm -f $(COQIDEBYTE) $(COQIDEOPT)
 
 # coqc
