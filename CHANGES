@@ -72,11 +72,13 @@ ML tactic and vernacular commands
 
 Tactic definitions
 
-- static globalisation of identifiers and global references (source of
+- Static globalisation of identifiers and global references (source of
   incompatibilities, especially, Recursive keyword is required for
   mutually recursive definitions).
-- Fresh names for Assert and Pose now based on collision-avoiding
-  Intro naming strategy (exceptional source of incompatibilities)
+- New evaluation semantics: no more partial evaluation at definition time;
+  evaluation of all Tactic/Meta Definition, even producing terms, expect
+  a proof context to be evaluated (especially "()" is no longer needed).
+- Debugger now shows the nesting level and the reasons of failure
 
 Tactics
 
@@ -94,7 +96,10 @@ Tactics
 - Coercions now handled in "with" bindings
 - "Subst x" replaces all ocurrences of x by t in the goal and hypotheses 
    when an hypothesis x=t or x:=t or t=x exists
+- Fresh names for Assert and Pose now based on collision-avoiding
+  Intro naming strategy (exceptional source of incompatibilities)
 - LinearIntuition (* no documentation *)
+- Unfold expects a correct evaluable argument
 
 Miscellaneous
 
