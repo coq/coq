@@ -605,7 +605,25 @@ let gen_compat_lemma_statement output args m =
    args, output,
     mkApp ((Lazy.force coq_make_compatibility_goal), [| args ; output ; m |])
 
+let check_if_signature_is_well_typed c typ args output =
+ let carrier_of_relation =
+  function
+     Leibniz t -> t
+   | Relation {rel_a = a} -> a in
+ let rev_args' =
+  List.rev_map (fun (_,t) -> Anonymous,carrier_of_relation t) args  in
+ let output' = carrier_of_relation output in
+ let typ' = compose_prod rev_args' output' in
+ let env = Global.env () in
+  if not (is_conv env Evd.empty typ typ') then
+   errorlabstrm "New Morphism"
+    (str "The signature provided is for a function of type " ++ prterm typ' ++
+     str ". The function " ++ prterm c ++ str " has type " ++ prterm typ)
+
 let new_morphism m signature id hook =
+ if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
+  errorlabstrm "New Morphism" (pr_id id ++ str " already exists")
+ else
   let env = Global.env() in
   let typeofm = (Typing.type_of env Evd.empty m) in
   let typ = (nf_betaiota typeofm) in
@@ -649,7 +667,10 @@ let new_morphism m signature id hook =
                   (str "You cannot specify the variance of an argument " ++
                    str "whose relation is symmetric.")
            in
-            List.map find_relation_class_v args, find_relation_class output
+            let args = List.map find_relation_class_v args in
+            let output = find_relation_class output in
+             check_if_signature_is_well_typed m typ args output ;
+             args, output
       in
       let argsconstr,outputconstr,lem =
        gen_compat_lemma_statement output args m
