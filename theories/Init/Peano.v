@@ -89,12 +89,13 @@ Hint Resolve n_Sn: core v62.
 Fixpoint plus (n m:nat) {struct n} : nat :=
   match n with
   | O => m
-  | S p => S (plus p m)
-  end.
+  | S p => S (p + m)
+  end
+
+where "n + m" := (plus n m) : nat_scope.
+
 Hint Resolve (f_equal2 plus): v62.
 Hint Resolve (f_equal2 (A1:=nat) (A2:=nat)): core.
-
-Infix "+" := plus : nat_scope.
 
 Lemma plus_n_O : forall n:nat, n = n + 0.
 Proof.
@@ -123,11 +124,12 @@ Qed.
 Fixpoint mult (n m:nat) {struct n} : nat :=
   match n with
   | O => 0
-  | S p => m + mult p m
-  end.
-Hint Resolve (f_equal2 mult): core v62.
+  | S p => m + p * m
+  end
 
-Infix "*" := mult : nat_scope.
+where "n * m" := (mult n m) : nat_scope.
+
+Hint Resolve (f_equal2 mult): core v62.
 
 Lemma mult_n_O : forall n:nat, 0 = n * 0.
 Proof.
@@ -149,10 +151,10 @@ Fixpoint minus (n m:nat) {struct n} : nat :=
   match n, m with
   | O, _ => 0
   | S k, O => S k
-  | S k, S l => minus k l
-  end. 
+  | S k, S l => k - l
+  end
 
-Infix "-" := minus : nat_scope.
+where "n - m" := (minus n m) : nat_scope.
 
 (** Definition of the usual orders, the basic properties of [le] and [lt] 
     can be found in files Le and Lt *)
