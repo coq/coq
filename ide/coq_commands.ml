@@ -63,7 +63,7 @@ let commands = [
    "Hint Unfold";
    "Hypothesis";];
   ["Identity Coercion";
-   "Implicits";
+   "Implicit Arguments";
    "Inductive";
    "Infix";
    ];
@@ -196,6 +196,7 @@ let state_preserving = [
 
   "Show";
   "Show Conjectures";
+  "Show Existentials";
   "Show Implicits";
   "Show Intro";
   "Show Intros";
