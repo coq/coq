@@ -104,8 +104,9 @@ let it_mkLambda_or_LetIn = List.fold_left (fun c d -> mkLambda_or_LetIn d c)
 
 type arity = rel_context * sorts
 
-(* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
-   ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
+(* Decompose an arity (i.e. a product of the form (x1:T1)..(xn:Tn)s
+   with s a sort) into the pair ([(xn,Tn);...;(x1,T1)],s) *)
+
 let destArity = 
   let rec prodec_rec l c =
     match kind_of_term c with
@@ -116,6 +117,8 @@ let destArity =
     | _               -> anomaly "destArity: not an arity"
   in 
   prodec_rec []
+
+let mkArity (sign,s) = it_mkProd_or_LetIn (mkSort s) sign
 
 let rec isArity c =
   match kind_of_term c with

@@ -69,6 +69,7 @@ val it_mkProd_or_LetIn : types -> rel_context -> types
 (* Destructs a term of the form $(x_1:T_1)..(x_n:T_n)s$ into the pair *)
 type arity = rel_context * sorts
 val destArity : types -> arity
+val mkArity : arity -> types
 val isArity : types -> bool
 
 (* Transforms a product term $(x_1:T_1)..(x_n:T_n)T$ including letins
