@@ -788,6 +788,8 @@ Qed.
 
 V7only [
 Notation Rlt_monotony_rev := Rlt_monotony_contra.
+Notation "'Rlt_monotony_contra' a b c" := (Rlt_monotony_contra c a b)
+  (at level 10, a,b,c at level 9, only parsing).
 ].
 
 Lemma Rlt_anti_monotony:(r,r1,r2:R)``r < 0`` -> ``r1 < r2`` -> ``r*r1 > r*r2``.
@@ -811,7 +813,7 @@ Rewrite (Rmult_sym r1 r); Rewrite (Rmult_sym r2 r); Auto with real.
 Qed.
 Hints Resolve Rle_monotony_r : real.
 
-Lemma Rle_monotony_contra:
+Lemma Rmult_le_reg_l:
   (z, x, y:R) ``0<z`` ->``z*x<=z*y`` ->``x<=y``.
 Intros z x y H H0;Case H0; Auto with real.
 Intros H1; Apply Rlt_le.
@@ -822,6 +824,13 @@ Replace y with (Rmult (Rinv z) (Rmult z y)).
 Rewrite <- Rmult_assoc; Rewrite Rinv_l; Auto with real.
 Rewrite <- Rmult_assoc; Rewrite Rinv_l; Auto with real.
 Qed.
+
+V7only [
+Notation "'Rle_monotony_contra' a b c" := (Rmult_le_reg_l c a b)
+  (at level 10, a,b,c at level 9, only parsing).
+Notation Rle_monotony_contra := Rmult_le_reg_l.
+].
+
 
 Lemma Rle_anti_monotony1
 	:(r,r1,r2:R)``r <= 0`` -> ``r1 <= r2`` -> ``r*r2 <= r*r1``.
@@ -1010,9 +1019,11 @@ Qed.
 Lemma Rle_sym1:(r1,r2:R)``r1<=r2``->``r2>=r1``.
 Proof Rle_ge.
 
-Notation "'Rle_sym2' a b c" := (Rge_le b a c)
-  (at level 10, a,b,c at level 9, only parsing).
-Notation Rle_sym2 := Rge_le (only parsing).
+Notation "'Rle_sym2' a b" := (Rge_le b a)
+  (at level 10, a,b at next level).
+Notation "'Rle_sym2' a" := [b:R](Rge_le b a)
+  (at level 10, a at next level).
+Notation Rle_sym2 := Rge_le.
 (*
 (**********)
 Lemma Rle_sym2:(r1,r2:R)``r2>=r1`` -> ``r1<=r2``.
@@ -1090,10 +1101,16 @@ Intros; Apply Rle_ge; Apply Rle_anti_compatibility with r; Auto with real.
 Qed.
 
 (***********)
-Lemma Rge_monotony:
- (x,y,z:R) ``z>=0`` -> ``x>=y`` -> ``x*z >= y*z``.
-Intros x y z; Intros; Apply Rle_ge; Apply Rle_monotony_r; Apply Rge_le; Assumption.
+Lemma Rmult_ge_compat_r:
+ (z,x,y:R) ``z>=0`` -> ``x>=y`` -> ``x*z >= y*z``.
+Intros z x y; Intros; Apply Rle_ge; Apply Rle_monotony_r; Apply Rge_le; Assumption.
 Qed.
+
+V7only [
+Notation "'Rge_monotony' a b c" := (Rmult_ge_compat_r c a b)
+  (at level 10, a,b,c at level 9, only parsing).
+Notation Rge_monotony := Rmult_ge_compat_r.
+].
 
 (***********)
 Lemma Rgt_minus:(r1,r2:R)``r1>r2`` -> ``r1-r2 > 0``.

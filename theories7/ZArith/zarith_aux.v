@@ -112,7 +112,19 @@ Notation Zplus_assoc_l := Zplus_assoc_l.
 Notation Zplus_assoc_r := Zplus_assoc_r.
 Notation Zplus_permute := Zplus_permute.
 Notation Zsimpl_le_plus_l := Zsimpl_le_plus_l.
+Notation "'Zsimpl_le_plus_l' c" := [a,b:Z](Zsimpl_le_plus_l a b c)
+  (at level 10, c at next level).
+Notation "'Zsimpl_le_plus_l' c a" := [b:Z](Zsimpl_le_plus_l a b c)
+  (at level 10, a, c at next level).
+Notation "'Zsimpl_le_plus_l' c a b" := (Zsimpl_le_plus_l a b c)
+  (at level 10, a, b, c at next level).
 Notation Zsimpl_le_plus_r := Zsimpl_le_plus_r.
+Notation "'Zsimpl_le_plus_r' c" := [a,b:Z](Zsimpl_le_plus_r a b c)
+  (at level 10, c at next level).
+Notation "'Zsimpl_le_plus_r' c a" := [b:Z](Zsimpl_le_plus_r a b c)
+  (at level 10, a, c at next level).
+Notation "'Zsimpl_le_plus_r' c a b" := (Zsimpl_le_plus_r a b c)
+  (at level 10, a, b, c at next level).
 Notation Zle_reg_l := Zle_reg_l.
 Notation Zle_reg_r := Zle_reg_r.
 Notation Zle_plus_plus := Zle_plus_plus.
