@@ -412,8 +412,8 @@ argument).
 \label{gram-fix}
 \end{figure}
 
-La construction $\TERM{case}$ peut-être considérée comme
-obsolète. Quant au $\TERM{Match}$ de la V6, il disparait purement et
+La construction $\TERM{Case}$ peut-être considérée comme
+obsolète. Quant au $\TERM{Match}$ de la V6, il disparaît purement et
 simplement.
 
 \begin{figure}
@@ -478,7 +478,7 @@ Le problème de savoir si la liste des symboles pouvant apparaître en
 infixe est fixée ou extensible par l'utilisateur reste à voir.
 
 Notons que la solution où les symboles infixes sont des
-identificateurs que l'on peut définir paraît difficlement praticable:
+identificateurs que l'on peut définir paraît difficilement praticable:
 par exemple $\texttt{Logic.eq}$ n'est pas un opérateur binaire, mais
 ternaire. Il semble plus simple de garder des déclarations infixes qui
 relient un symbole infixe à un terme avec deux ``trous''. Par exemple:
@@ -547,7 +547,7 @@ présence de cet infixe se transforme en \texttt{ex2}.
 
 \subsubsection{Nouveaux infixes}
 
-Précédences des opérateurs infixes (les plus grand associent moins fort):
+Précédences des opérateurs infixes (les plus grands associent moins fort):
 $$
 \begin{array}{l|l|c|l}
 $identificateur$      & $module$     & $infixe/préfixe$ & $précédence$ \\
@@ -630,5 +630,50 @@ Noter que l'on aurait pu écrire:
 Check !A x B y. P A (x:A:Set) B (y:B:Set);
 \end{verbatim}
 
+\section{Syntaxe des tactiques}
+
+\subsection{Questions diverses}
+
+Changer ``Pattern nl c ... nl c'' en ``Pattern [ nl ] c ... [ nl ] c''
+pour permettre des chiffres seuls dans la catégorie syntaxique des
+termes.
+
+Par uniformité remplacer ``Unfold nl c'' par ``Unfold [ nl ] c'' ?
+
+Même problème pour l'entier de Specialize (ou virer Specialize ?) ?
+
+\subsection{Questions en suspens}
+
+\verb=EAuto= : deux syntaxes différentes pour la recherche en largeur
+et en profondeur ? Quelle recherche par défaut ?
+
+\section*{Remarques p\^ele-m\^ele (HH)}
+
+Renommer Variable/Hypothesis hors section en Parameter/Axiom.
+
+Renommer les \verb=command0=, \verb=command1=, ... \verb=lcommand= etc en
+\verb=constr0=, \verb=constr1=, ... \verb=lconstr=.
+
+Autoriser la syntaxe
+
+\begin{verbatim}
+Variable R (a : A) (b : B) : Prop.
+Hypotheses H (a : A) (b : B) : Prop; Y (u : U) : V.
+Variables H (a : A) (b : B), J (k : K) : nat; Z (v : V) : Set.
+\end{verbatim}
+
+Renommer eqT, refl_eqT, eqT_ind, eqT_rect, eqT_rec en eq, refl_equal, etc.
+Remplacer == en =.
+
+Enlever le Export de Bool, Arith et ZARith de Ring quand inapproprié et
+l'ajouter à côté des Require Ring.
+
+Remplacer les noms Coq.omega.Omega par Coq.Omega ...
+
+Remplacer AddPath par Add LoadPath (ou + court)
+
+Remplacer Save. par Qed.
+
+Remplacer Implicit Arguments On/Off par Set/Unset Implicit Arguments.
 
 \end{document}
