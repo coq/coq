@@ -1742,14 +1742,28 @@ let general_s_rewrite lft2rgt c ~new_goals gl =
 let general_s_rewrite_in id lft2rgt c ~new_goals gl =
  let _,_,c1,c2 = analyse_hypothesis gl c in
  let hyp = pf_type_of gl (mkVar id) in
- let new_hyp =
+ (* since we will actually rewrite in the opposite direction, we also need
+    to replace every occurrence of c2 (resp. c1) in hyp with something that
+    is convertible but not syntactically equal. To this aim we introduce a
+    let-in and then we will use the intro tactic to get rid of it *)
+ let let_in_abstract t in_t =
+  let t' = lift 1 t in
+  let in_t' = lift 1 in_t in
+   mkLetIn (Anonymous,t,pf_type_of gl t,subst_term t' in_t') in
+ let mangled_new_hyp,new_hyp =
   if lft2rgt then
+   Termops.replace_term c1 c2 (let_in_abstract c2 hyp),
    Termops.replace_term c1 c2 hyp
   else
+   Termops.replace_term c2 c1 (let_in_abstract c1 hyp),
    Termops.replace_term c2 c1 hyp
  in
- cut_replacing id new_hyp
-   (tclTHENLAST (general_s_rewrite (not lft2rgt) c ~new_goals)) gl
+  cut_replacing id new_hyp
+   (tclTHENLAST
+     (tclTHEN (change_in_concl None mangled_new_hyp)
+              (tclTHEN intro
+                       (general_s_rewrite (not lft2rgt) c ~new_goals))))
+   gl
 
 let setoid_replace relation c1 c2 ~new_goals gl =
  try
