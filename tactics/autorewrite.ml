@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* $Id$ *)
+
 open Ast
 open Coqast
 open Equality
@@ -89,13 +91,12 @@ let cache_hintrewrite (_,(rbase,lrl)) =
         (fun (c,dummy,b,t) ->
           (* here we substitute the dummy value with the right one *)
           c,Typing.type_of (Global.env ()) Evd.empty c,b,t) lrl in
-       List.rev_append
-        (List.filter
+      (List.filter
           (fun (_,typ,_,_) ->
             not (List.exists (fun (_,typ',_,_) -> Term.eq_constr typ typ') oldl)
-          ) lrl) oldl
+          ) lrl) @ oldl
     with
-      | Not_found -> List.rev lrl
+      | Not_found -> lrl
   in
     rewtab:=Stringmap.add rbase l !rewtab
 
