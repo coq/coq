@@ -22,10 +22,13 @@ type 'a mach_flags = {
 
 let rec execute mf env sigma cstr =
   match kind_of_term cstr with
-    | IsMeta _ ->
-	anomaly "the kernel does not understand metas"
+    | IsMeta n ->
+	error "execute: found a non-instanciated goal"
+
     | IsEvar _ ->
-	anomaly "the kernel does not understand existential variables"
+	let ty = type_of_existential env sigma cstr in
+	let jty = execute mf env sigma ty in
+	{ uj_val = cstr; uj_type = ty; uj_kind = jty.uj_type }
 	
     | IsRel n -> 
 	relative env n

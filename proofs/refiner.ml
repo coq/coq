@@ -159,7 +159,7 @@ let refiner = function
               subproof = Some hidden_proof;
               ref = Some(r,spfl) }))
       
-  | ((Context ctxt) as r) ->
+  | (Context ctxt) as r ->
       (fun goal_sigma ->
          let gl = goal_sigma.it in
          let sg = mk_goal ctxt gl.evar_env gl.evar_concl in
@@ -174,7 +174,7 @@ let refiner = function
       
    (* [Local_constraints lc] makes the local constraints be [lc] *)
 
-  | ((Local_constraints lc) as r) ->
+  | (Local_constraints lc) as r ->
       (fun goal_sigma ->
          let gl = goal_sigma.it  in
          let ctxt = gl.evar_info in 

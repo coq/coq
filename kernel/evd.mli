@@ -48,6 +48,4 @@ val is_evar : 'a evar_map -> evar -> bool
 
 val is_defined : 'a evar_map -> evar -> bool
 
-val metamap : 'a evar_map -> (int * constr) list
-
 val evar_hyps : 'a evar_info -> typed_type signature

@@ -19,6 +19,8 @@ open Clenv
    write to Eduardo.Gimenez@inria.fr and ask for the prize :-)
    -- Eduardo (11/8/97) *)
 
+type wc = walking_constraints
+
 let pf_get_new_id id gls = 
   next_ident_away id (ids_of_sign (pf_untyped_hyps gls))
 

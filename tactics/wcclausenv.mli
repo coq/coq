@@ -46,7 +46,7 @@ val res_pf_THEN_i :
   (wc -> tactic) -> wc clausenv -> (wc clausenv -> int -> tactic) -> 
     int -> tactic
 
-val elim_res_pf_THEN_id : 
+val elim_res_pf_THEN_i : 
   (wc -> tactic) -> wc clausenv -> (wc clausenv -> int -> tactic) -> 
     int -> tactic
 

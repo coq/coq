@@ -43,7 +43,6 @@ let empty_env = {
 
 let universes env = env.env_universes
 let context env = env.env_context
-let metamap env = failwith "Environ.metamap: TODO: unifier metas et VE"
 
 (* Construction functions. *)
 

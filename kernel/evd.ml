@@ -65,6 +65,4 @@ let is_defined sigma ev =
   let info = map sigma ev in 
   not (info.evar_body = Evar_empty)
 
-let metamap sigma = failwith "metamap : NOT YET IMPLEMENTED"
-
 let evar_hyps ev = get_globals (context ev.evar_env)
