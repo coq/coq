@@ -39,7 +39,12 @@ let all_subdirs root =
     with End_of_file ->
       closedir dirh
   in
-  if exists_dir root then traverse root ""; 
+  if exists_dir root then
+   begin
+    let root_base_name = Filename.basename root in
+     add root root_base_name ;
+     traverse root root_base_name
+   end ;
   List.rev !l
 
 let safe_getenv_def var def =

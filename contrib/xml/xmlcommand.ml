@@ -15,7 +15,7 @@
 (* CONFIGURATION PARAMETERS *)
 
 let dtdname = "http://localhost:8081/getdtd?url=cic.dtd";;
-let verbose = ref false;; (* always set to true during a "Print XML All" *)
+let verbose = ref true;; (* always set to true during a "Print XML All" *)
 
 (* UTILITY FUNCTIONS *)
 
@@ -66,7 +66,8 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
 
 (*V7*)
 exception Not_match
-let trim_wrong_uri_prefix pref =
+let trim_wrong_uri_prefix pref {System.relative_subdir=rs ; System.directory=d} =
+(*
  let map =
   [(".","/prove");
    ("/home/pauillac/coq3/sacerdot/V7/theories/Arith","/coq/Arith");
@@ -97,6 +98,8 @@ let trim_wrong_uri_prefix pref =
        _ -> trim tl
  in
   trim map
+*)
+  "/" ^ rs
 ;;
 
 
@@ -110,8 +113,8 @@ let uri_of_path sp =
      match sl with
         []             -> assert false (*V7 WHAT NOW? *)
       | module_name::_ ->
-	  let _,file = Library.module_filename module_name in
-          trim_wrong_uri_prefix file
+	  let (prefix,file) = Library.module_filename module_name in
+          trim_wrong_uri_prefix file prefix
    in
     "cic:" ^ module_path ^ "/" ^ (String.concat "/" sl) ^ "/" ^
      (N.string_of_id id) ^ "." ^ (ext_of_sp sp)
@@ -176,6 +179,14 @@ let string_of_pvars pvars hyps =
   let rec aux n =
    function
       [] -> assert false
+(*print_string "\nPVARS:" ;
+List.iter (List.iter print_string) pvars ;
+print_string "\nHYPS:" ;
+List.iter print_string hyps ;
+print_string "\n" ;
+flush stdout ;
+(-1,"?")
+*)
     | l::_ when List.mem v l -> (n,v)
     | _::tl -> aux (n+1) tl
   in
@@ -590,6 +601,17 @@ let toprint = ref [];;
 
 (* makes a filename from a directory name, a section path and an extension *)
 let mkfilename dn sp ext =
+ let dir_list_of_dirpath s =
+  let rec aux n =
+   try
+    let pos = String.index_from s n '/' in
+    let head = String.sub s n (pos - n) in
+     head::(aux (pos + 1))
+   with
+    Not_found -> [String.sub s n (String.length s - n)]
+  in
+   aux 0
+ in
  let rec join_dirs cwd =
    function
       [] -> ""
@@ -601,13 +623,22 @@ let mkfilename dn sp ext =
         ) ;
         he ^ "/" ^ join_dirs newcwd tail
  in
+  let module L = Library in
+  let module S = System in
   let module N = Names in
    match dn with
       None         -> None
     | Some basedir ->
-       let (dirs, filename, _) = N.repr_path sp in
-        Some (basedir ^ "/" ^ join_dirs basedir dirs ^
-              N.string_of_id filename ^ "." ^ ext ^ ".xml")
+       match N.repr_path sp with
+          (module_name::_ as dirs, filename, _) ->
+           let dirs = 
+             (dir_list_of_dirpath
+              (fst (L.module_filename module_name)).S.relative_subdir
+             ) @ dirs
+           in
+            Some (basedir ^ "/" ^ join_dirs basedir dirs ^
+                  N.string_of_id filename ^ "." ^ ext ^ ".xml")
+        | _ -> assert false
 ;;
 
 (* Next exception is used only inside print_object *)
@@ -657,13 +688,16 @@ let print_object lobj id sp dn fv =
            print_mutual_inductive packs fv hyps nparams
     | "VARIABLE" ->
         let (_,(varentry,_,_)) = Declare.out_variable lobj in
-         let typ =
+         add_to_pvars (N.string_of_id id) ;
+         begin
           match varentry with
-             Declare.SectionLocalDef _ -> assert false
-           | Declare.SectionLocalAssum typ -> typ
-         in
-          add_to_pvars (N.string_of_id id) ;
-          print_variable id (T.body_of_type typ)
+             Declare.SectionLocalDef body ->
+              print_string "************** UNIMPLEMENTED ***********\n" ;
+              flush stdout ;
+              [<>]
+           | Declare.SectionLocalAssum typ ->
+              print_variable id (T.body_of_type typ)
+         end
     | "CLASS"
     | "COERCION"
     | _ -> raise Uninteresting
@@ -687,7 +721,7 @@ let rec print_library_segment state bprintleaf dn =
      print_if_verbose (Names.string_of_path sp ^ "\n") ;
      print_node node (Names.basename sp) sp bprintleaf dn ;
      print_if_verbose "\n"
-   ) state
+   ) (List.rev state)
 (* print_node node id section_path bprintleaf directory_name             *)
 (* prints a single node (and all it's subnodes via print_library_segment *)
 and print_node n id sp bprintleaf dn =
@@ -709,21 +743,29 @@ and print_node n id sp bprintleaf dn =
           (* this is an uncooked term or a local (with no namesakes) term *)
           begin
            if could_have_namesakes o sp then
-            (* this is an uncooked term *)
-            toprint := (id,sp,sp,o,!pvars,dn)::!toprint
+            begin
+             (* this is an uncooked term *)
+             print_if_verbose ("Rimando " ^ Names.string_of_id id ^ "\n") ;
+             toprint := (id,sp,sp,o,!pvars,dn)::!toprint
+            end
            else
-            (* this is a local term *)
-            print_object o id sp dn !pvars ;
-            print_if_verbose ("OK, stampo " ^ Names.string_of_id id ^ "\n")
+            begin
+             (* this is a local term *)
+             print_if_verbose ("OK, stampo " ^ Names.string_of_id id ^ "\n") ;
+             print_object o id sp dn !pvars
+            end
           end
          else
-          (* update the least cooked sp *)
-          toprint :=
-           List.map
-            (function
-               (id',usp,_,uo,pv,dn) when id' = id -> (id,usp,sp,uo,pv,dn)
-             | t -> t
-            ) !toprint
+          begin
+           (* update the least cooked sp *)
+           print_if_verbose ("Suppongo gia' stampato " ^ Names.string_of_id id ^ "\n") ;
+           toprint :=
+            List.map
+             (function
+                (id',usp,_,uo,pv,dn) when id' = id -> (id,usp,sp,uo,pv,dn)
+              | t -> t
+             ) !toprint
+          end
        end
    | L.OpenedSection s -> print_if_verbose ("OpenDir " ^ s ^ "\n")
    | L.ClosedSection (s,state) ->
@@ -788,7 +830,7 @@ let printModule id dn =
   let ls = L.module_segment (Some str) in
    print_if_verbose ("MODULE_BEGIN " ^ str ^ " " ^ N.string_of_path sp ^ " " ^
     (snd (L.module_filename str)) ^ "\n") ;
-   print_closed_section str ls dn ;
+   print_closed_section str (List.rev ls) dn ;
    print_if_verbose ("MODULE_END " ^ str ^ " " ^ N.string_of_path sp ^ " " ^
     (snd (L.module_filename str)) ^ "\n")
 ;;
