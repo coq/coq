@@ -577,7 +577,7 @@ let top_goal_of_pftreestate pts =
 let nth_goal_of_pftreestate n pts =
   let goals = fst (frontier pts.tpf) in
   try {it = List.nth goals (n-1); sigma = pts.tpfsigma }
-  with Failure "nth" -> non_existent_goal n
+  with Invalid_argument _ | Failure _ -> non_existent_goal n
 
 let descend n p =
   match p.ref with
