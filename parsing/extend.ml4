@@ -107,7 +107,7 @@ let nterm univ ast =
 let prod_item univ env ast =
   match ast with
     | Str (_, s) -> env, Term (terminal s)
-    | Node (_, "NT", [nt; Id (locp, p)]) ->
+    | Node (_, "NT", [nt; Nvar (locp, p)]) ->
 	let (nont, etyp) = nterm univ nt in
         if isMeta p then 
 	  ((p, etyp) :: env, NonTerm (nont, etyp, Some p))
