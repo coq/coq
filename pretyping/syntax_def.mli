@@ -18,6 +18,6 @@ open Rawterm
 
 val declare_syntactic_definition : identifier -> rawconstr -> unit
 
-val search_syntactic_definition : kernel_name -> rawconstr
+val search_syntactic_definition : loc -> kernel_name -> rawconstr
 
 

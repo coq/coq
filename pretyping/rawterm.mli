@@ -92,7 +92,6 @@ i*)
 
 val dummy_loc : loc
 val loc_of_rawconstr : rawconstr -> loc
-val set_loc_of_rawconstr : loc -> rawconstr -> rawconstr
 val join_loc : loc -> loc -> loc
 
 val subst_raw : Names.substitution -> rawconstr -> rawconstr

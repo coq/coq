@@ -193,23 +193,6 @@ let loc_of_rawconstr = function
   | RCast (loc,_,_) -> loc
   | RDynamic (loc,_) -> loc
 
-let set_loc_of_rawconstr loc = function
-  | RRef (_,a)      -> RRef (loc,a)
-  | RVar (_,a)      -> RVar (loc,a)
-  | REvar (_,a)      -> REvar (loc,a)
-  | RMeta (_,a)     -> RMeta (loc,a) 
-  | RApp (_,a,b)    -> RApp (loc,a,b)
-  | RLambda (_,a,b,c) -> RLambda (loc,a,b,c)
-  | RProd (_,a,b,c)   -> RProd (loc,a,b,c)
-  | RLetIn (_,a,b,c)  -> RLetIn (loc,a,b,c)
-  | RCases (_,a,b,c,d) -> RCases (loc,a,b,c,d) 
-  | ROldCase (_,a,b,c,d) -> ROldCase (loc,a,b,c,d) 
-  | RRec (_,a,b,c,d) -> RRec (loc,a,b,c,d) 
-  | RSort (_,a)      -> RSort (loc,a) 
-  | RHole (_,a)      -> RHole (loc,a)
-  | RCast (_,a,b)    -> RCast (loc,a,b) 
-  | RDynamic (_,d)   -> RDynamic (loc,d)
-
 let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
 
 type 'a raw_red_flag = {

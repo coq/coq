@@ -295,7 +295,7 @@ let print_inductive sp = (print_mutual sp)
 
 let print_syntactic_def sep kn =
   let l = label kn in
-  let c = Syntax_def.search_syntactic_definition kn in 
+  let c = Syntax_def.search_syntactic_definition dummy_loc kn in 
   (str" Syntactic Definition " ++ pr_lab l ++ str sep ++ pr_rawterm c ++ fnl ())
 (*let print_module with_values kn = 
   str "Module " ++ pr_id (id_of_label (label kn)) ++ fnl () ++ fnl ()
@@ -517,7 +517,7 @@ let fprint_var name typ =
   (str ("*** [" ^ name ^ " :") ++ fprtype typ ++ str "]" ++ fnl ())
 
 let fprint_judge {uj_val=trm;uj_type=typ} = 
-  (fprterm trm ++ str" : " ++ fprterm (body_of_type typ))
+  (fprterm trm ++ str" : " ++ fprterm typ)
 
 let unfold_head_fconst = 
   let rec unfrec k = match kind_of_term k with

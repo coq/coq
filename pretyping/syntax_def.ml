@@ -65,4 +65,13 @@ let (in_syntax_constant, out_syntax_constant) =
 let declare_syntactic_definition id c =
   let _ = add_leaf id (in_syntax_constant c) in ()
 
-let search_syntactic_definition kn = KNmap.find kn !syntax_table
+let rec set_loc loc = function
+  | RRef (_,a)      -> RRef (loc,a)
+  | RVar (_,a)      -> RVar (loc,a)
+  | RApp (_,a,b)    -> RApp (loc,set_loc loc a,List.map (set_loc loc) b)
+  | RSort (_,a)      -> RSort (loc,a) 
+  | RHole (_,a)      -> RHole (loc,a)
+  | a -> warning "Unrelocatated syntactic definition"; a
+
+let search_syntactic_definition loc kn =
+  set_loc loc (KNmap.find kn !syntax_table)
