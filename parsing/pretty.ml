@@ -71,12 +71,12 @@ let implicit_args_id id l =
 let implicit_args_msg sp mipv = 
   [< prvecti
        (fun i mip -> 
-	  let imps = inductive_implicits (sp,i) in
-          [< (implicit_args_id mip.mind_typename (list_of_implicits imps));
+	  let imps = inductive_implicits_list (sp,i) in
+          [< (implicit_args_id mip.mind_typename imps);
              prvecti 
 	       (fun j idc ->
-		  let imps = constructor_implicits ((sp,i),succ j) in
-                  (implicit_args_id idc (list_of_implicits imps)))
+		  let imps = constructor_implicits_list ((sp,i),succ j) in
+                  (implicit_args_id idc imps))
                mip.mind_consnames 
           >])
        mipv >]
@@ -183,7 +183,7 @@ let print_constant with_values sep sp =
   if kind_of_path sp = CCI then
     let val_0 = cb.const_body in
     let typ = cb.const_type in
-    let l = constant_implicits sp in
+    let impls = constant_implicits_list sp in
     hOV 0 [< (match val_0 with 
 		| None -> 
 		    [< 'sTR"*** [ "; 
@@ -196,7 +196,7 @@ let print_constant with_values sep sp =
 			 print_typed_body (val_0,typ) 
 		       else 
 			 [< prtype typ ; 'fNL >] >]); 
-	     print_impl_args (list_of_implicits l); 'fNL >]
+	     print_impl_args impls; 'fNL >]
   else
     hOV 0 [< 'sTR"Fw constant " ; 
 	     print_basename sp ; 'fNL>]
