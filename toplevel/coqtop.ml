@@ -244,7 +244,11 @@ let start () =
       msgnl (Toplevel.print_toplevel_error e);
       exit 1
   end;
-  if !batch_mode then (flush_all(); Profile.print_profile ();exit 0);
+  if !batch_mode then 
+    if Pfedit.get_all_proof_names () = [] then
+      (flush_all(); Profile.print_profile ();exit 0)
+    else
+      (message "Error: There are pending proofs"; exit 1);
   Toplevel.loop();
 (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();
