@@ -75,6 +75,12 @@ case $ANSWER in
  *) RELEASENUM=$ANSWER;;
 esac
 
+LOCALARCH=`uname -m`
+# i.86 standardized to i386
+# MacOS X returns "Power Macintosh" - changed to "MacOS-X"
+ARCH=`uname -m | sed -e 's/i.86/i386/' -e 's/Power Macintosh/MacOS-X/'`
+SYSTEM=`uname -s`
+
 echo VERSION=$VERSION > config.distrib
 echo VERSIONSI=$VERSIONSI >> config.distrib
 echo PREVIOUSVERSION=$PREVIOUSVERSION >> config.distrib
@@ -82,6 +88,9 @@ echo DISTRIBDIR=$DISTRIBDIR >> config.distrib
 echo DASHEDVERSION=$DASHEDVERSION >> config.distrib
 echo MAJORVERSION=$MAJORVERSION >> config.distrib
 echo RELEASENUM=$RELEASENUM >> config.distrib
+echo LOCALARCH=$LOCALARCH >> config.distrib
+echo ARCH=$ARCH >> config.distrib
+echo SYSTEM=$SYSTEM >> config.distrib
 chmod +x config.distrib
 
 # $Id$
