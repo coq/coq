@@ -131,6 +131,17 @@ let push_rec_types (lna,typarray,_) env =
   Array.fold_left
     (fun e assum -> push_rel_assum assum e) env ctxt
 
+let push_named_rec_types (lna,typarray,_) env =
+  let ctxt =
+    array_map2_i
+      (fun i na t ->
+	 match na with
+	   | Name id -> (id, type_app (lift i) t)
+	   | Anonymous -> anomaly "Fix declarations must be named")
+      lna typarray in
+  Array.fold_left
+    (fun e assum -> push_named_assum assum e) env ctxt
+
 let reset_rel_context env =
   { env with
       env_context = { env_named_context = env.env_context.env_named_context;

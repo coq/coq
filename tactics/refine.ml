@@ -191,7 +191,7 @@ let rec compute_metamap env c = match kind_of_term c with
       (* TODO: use a fold *)
       let vi = Array.map (fresh env) fi in
       let fi' = Array.map (fun id -> Name id) vi in
-      let env' = push_rec_types (fi',ai,v) env in
+      let env' = push_named_rec_types (fi',ai,v) env in
       let a = Array.map
 		(compute_metamap env')
 		(Array.map (substl (List.map mkVar (Array.to_list vi))) v) 

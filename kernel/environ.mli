@@ -54,8 +54,11 @@ val names_of_rel_context : env -> names_context
 (*s Returns also the substitution to be applied to rel's *)
 val push_rel_context_to_named_context : env -> constr list * env
 
-(*s Push the types of a (co-)fixpoint *)
+(*s Push the types of a (co-)fixpoint to [rel_context] *)
 val push_rec_types : rec_declaration -> env -> env
+
+(*s Push the types of a (co-)fixpoint to [named_context] *)
+val push_named_rec_types : rec_declaration -> env -> env
 
 (* Gives identifiers in [named_context] and [rel_context] *)
 val ids_of_context : env -> identifier list
