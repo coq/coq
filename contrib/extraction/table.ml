@@ -22,21 +22,29 @@ open Declarations
 
 (*s AutoInline parameter *)
 
-let auto_inline_params = 
-  {optsyncname = "Extraction AutoInline";
-   optsynckey = SecondaryTable ("Extraction", "AutoInline");
-   optsyncdefault = true }
+let auto_inline_ref = ref true
 
-let auto_inline = declare_sync_bool_option auto_inline_params
+let auto_inline () = !auto_inline_ref
+
+let _ = declare_bool_option 
+	  {optsync = true;
+	   optname = "Extraction AutoInline";
+	   optkey = SecondaryTable ("Extraction", "AutoInline");
+	   optread = auto_inline; 
+	   optwrite = (:=) auto_inline_ref}
 
 (*s Optimize parameter *)
 
-let optim_params = 
-  {optsyncname = "Extraction Optimize";
-   optsynckey = SecondaryTable ("Extraction", "Optimize");
-   optsyncdefault = true }
+let optim_ref = ref true
 
-let optim = declare_sync_bool_option optim_params
+let optim () = !optim_ref 
+
+let _ = declare_bool_option 
+	  {optsync = true; 
+	   optname = "Extraction Optimize";
+	   optkey = SecondaryTable ("Extraction", "Optimize");
+	   optread = optim; 
+	   optwrite = (:=) optim_ref}
 
 
 (*s Set and Map over global reference *)

@@ -13,7 +13,7 @@
 (* Two kinds of things are managed : tables and options value
    - Tables are created by applying the [MakeTable] functor.
    - Variables storing options value are created by applying one of the
-   [declare_sync_int_option], [declare_async_bool_option], ... functions.
+   [declare_int_option], [declare_bool_option], ... functions.
 
    Each table/option is uniquely identified by a key of type [option_name].
    There are two kinds of table/option idenfiers: the primary ones
@@ -127,36 +127,26 @@ module MakeIdentTable :
 
 (*s Options. *)
 
-(*s a. Synchronous options. *)
-
 (* These types and function are for declaring a new option of name [key]
-   and default value [default]; the parameter [name] is the option name 
+   and access functions [read] and [write]; the parameter [name] is the option name 
    used when printing the option value (command "Print Toto Titi." *)
 
-type 'a sync_option_sig = {
-  optsyncname    : string;
-  optsynckey     : option_name;
-  optsyncdefault : 'a
+type 'a option_sig = {
+  optsync    : bool; 
+  optname    : string;
+  optkey     : option_name;
+  optread    : unit -> 'a;
+  optwrite   : 'a -> unit
 }
 
-type 'a value_function = unit -> 'a
+(* When an option is declared synchronous ([optsync] is [true]), the output is 
+   a synchronous write function. Otherwise it is [optwrite] *)
 
-val declare_sync_int_option   : int sync_option_sig    -> int value_function
-val declare_sync_bool_option  : bool sync_option_sig   -> bool value_function
-val declare_sync_string_option: string sync_option_sig -> string value_function
+type 'a write_function = 'a -> unit
 
-
-(*s b. Asynchronous options. *)
-
-type 'a async_option_sig = {
-  optasyncname  : string;
-  optasynckey   : option_name;
-  optasyncread  : unit -> 'a;
-  optasyncwrite : 'a -> unit }
-
-val declare_async_int_option    : int async_option_sig    -> unit
-val declare_async_bool_option   : bool async_option_sig   -> unit
-val declare_async_string_option : string async_option_sig -> unit
+val declare_int_option   : int option_sig    -> int write_function
+val declare_bool_option  : bool option_sig   -> bool write_function
+val declare_string_option: string option_sig -> string write_function
 
 
 (*s Special functions supposed to be used only in vernacentries.ml *)

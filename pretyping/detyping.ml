@@ -195,22 +195,22 @@ open Goptions
 let wildcard_value = ref true
 let force_wildcard () = !wildcard_value
 
-let _ =                           
-  declare_async_bool_option 
-    { optasyncname  = "forced wildcard";
-      optasynckey   = SecondaryTable ("Printing","Wildcard");
-      optasyncread  = force_wildcard;
-      optasyncwrite = (fun v -> wildcard_value := v) }
+let _ = declare_bool_option 
+	  { optsync  = true;
+	    optname  = "forced wildcard";
+	    optkey   = SecondaryTable ("Printing","Wildcard");
+	    optread  = force_wildcard;
+	    optwrite = (:=) wildcard_value }
 
 let synth_type_value = ref true
 let synthetize_type () = !synth_type_value
 
-let _ = 
-  declare_async_bool_option 
-    { optasyncname = "synthesizability";
-      optasynckey   = SecondaryTable ("Printing","Synth");
-      optasyncread = synthetize_type;
-      optasyncwrite = (fun v -> synth_type_value := v) }
+let _ = declare_bool_option 
+	  { optsync  = true;
+	    optname  = "synthesizability";
+	    optkey   = SecondaryTable ("Printing","Synth");
+	    optread  = synthetize_type;
+	    optwrite = (:=) synth_type_value }
 
 (* Auxiliary function for MutCase printing *)
 (* [computable] tries to tell if the predicate typing the result is inferable*)

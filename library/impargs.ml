@@ -318,8 +318,7 @@ let implicits_of_global = function
 
 (*s Registration as global tables and rollback. *)
 
-type frozen_t = bool
-              * implicits Spmap.t 
+type frozen_t = implicits Spmap.t 
               * implicits Indmap.t 
 	      * implicits Constrmap.t
               * implicits Spmap.t
@@ -331,11 +330,10 @@ let init () =
   var_table := Spmap.empty
 
 let freeze () =
-  (!implicit_args, !constants_table, !inductives_table, 
+  (!constants_table, !inductives_table, 
    !constructors_table, !var_table)
 
-let unfreeze (imps,ct,it,const,vt) =
-  implicit_args := imps;
+let unfreeze (ct,it,const,vt) =
   constants_table := ct;
   inductives_table := it;
   constructors_table := const;

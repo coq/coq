@@ -469,22 +469,25 @@ let _ =
 	      make_focus 0; reset_top_of_tree (); show_open_subgoals ())
        | _  -> bad_vernac_args "UNFOCUS")
 
-let _ = declare_async_bool_option 
-	  {optasyncname  = "implicit arguments";
-	   optasynckey   = (SecondaryTable ("Implicit","Arguments"));
-	   optasyncread  = Impargs.is_implicit_args;
-	   optasyncwrite = Impargs.make_implicit_args }
+let _ = declare_bool_option 
+	  {optsync  = true;
+	   optname  = "implicit arguments";
+	   optkey   = (SecondaryTable ("Implicit","Arguments"));
+	   optread  = Impargs.is_implicit_args;
+	   optwrite = Impargs.make_implicit_args }
 
 let _ =          
   add "IMPLICIT_ARGS_ON"
     (function 
-       | [] -> (fun () -> Impargs.make_implicit_args true)
+       | [] -> (fun () -> set_bool_option_value 
+		    (SecondaryTable ("Implicit","Arguments")) true)
        | _  -> bad_vernac_args "IMPLICIT_ARGS_ON")
 
 let _ =
   add "IMPLICIT_ARGS_OFF"
     (function 
-       | [] -> (fun () -> Impargs.make_implicit_args false)
+       | [] -> (fun () -> set_bool_option_value 
+		    (SecondaryTable ("Implicit","Arguments")) false)
        | _  -> bad_vernac_args "IMPLICIT_ARGS_OFF")
 
 let _ =
@@ -506,11 +509,12 @@ let coercion_of_qualid loc qid =
       [< Printer.pr_global ref; 'sTR" is not a coercion" >];
   coe
 
-let _ = declare_async_bool_option 
-	  {optasyncname  = "coercion printing";
-	   optasynckey   = (SecondaryTable ("Printing","Coercions"));
-	   optasyncread  = (fun () -> !Termast.print_coercions);
-	   optasyncwrite = (fun b ->  Termast.print_coercions := b) }
+let _ = declare_bool_option 
+	  {optsync  = true;
+	   optname  = "coercion printing";
+	   optkey   = (SecondaryTable ("Printing","Coercions"));
+	   optread  = (fun () -> !Termast.print_coercions);
+	   optwrite = (fun b ->  Termast.print_coercions := b) }
 
 let number_list = 
   List.map (function VARG_NUMBER n -> n | _ -> bad_vernac_args "Number list") 
@@ -771,22 +775,23 @@ let _ =
        | [VARG_QUALID qid] -> (fun () -> mSG(print_sec_context_typ qid))
        | _ -> bad_vernac_args "PrintSec")
 
-let _ = declare_async_bool_option 
-	  {optasyncname  = "silent";
-	   optasynckey   = (PrimaryTable "Silent");
-	   optasyncread  = is_silent;
-	   optasyncwrite = make_silent }
+let _ = declare_bool_option 
+	  {optsync  = true;
+	   optname  = "silent";
+	   optkey   = (PrimaryTable "Silent");
+	   optread  = is_silent;
+	   optwrite = make_silent }
 
 let _ =
   add "BeginSilent"
     (function 
-       | [] -> (fun () -> make_silent true)
+       | [] -> (fun () -> set_bool_option_value (PrimaryTable "Silent") true)
        | _  -> bad_vernac_args "BeginSilent")
 
 let _ =
   add "EndSilent"
     (function 
-       | [] -> (fun () -> make_silent false)
+       | [] -> (fun () -> set_bool_option_value (PrimaryTable "Silent") false)
        | _  -> bad_vernac_args "EndSilent")
 
 let _ =
@@ -1426,12 +1431,12 @@ let _ =
 
 open Goptions
 
-let _ = 
-  declare_async_int_option
-    { optasynckey=SecondaryTable("Printing","Depth");
-      optasyncname="the printing depth";
-      optasyncread=Pp_control.get_depth_boxes;
-      optasyncwrite=Pp_control.set_depth_boxes }
+let _ = declare_int_option
+	  { optsync=true;
+	    optkey=SecondaryTable("Printing","Depth");
+	    optname="the printing depth";
+	    optread=Pp_control.get_depth_boxes;
+	    optwrite=Pp_control.set_depth_boxes }
 
 let _ =
   add "SetTableField"

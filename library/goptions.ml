@@ -197,120 +197,73 @@ module MakeIdentTable =
 (****************************************************************************)
 (* 2- Options                                                               *)
 
-type option_value_ref =
-  | OptionBoolRef   of bool   ref
-  | OptionIntRef    of int    ref
-  | OptionStringRef of string ref
+type 'a option_sig = {
+  optsync  : bool;
+  optname  : string;
+  optkey   : option_name;
+  optread  : unit -> 'a;
+  optwrite : 'a -> unit }
+
+type option_type = bool * (unit -> value) -> (value -> unit) 
 
 module Key = struct type t = option_name let compare = Pervasives.compare end
 module OptionMap = Map.Make(Key)
 
-let sync_value_init_tab = ref OptionMap.empty
-let sync_value_tab = ref OptionMap.empty
-let async_value_tab = ref OptionMap.empty
-
-
-(* Tools for synchronous options *)
-
-let load_sync_value _ = ()
-let cache_sync_value (_,(k,v)) =
-  sync_value_tab := OptionMap.add k v !sync_value_tab
-let export_sync_value fp = Some fp
-let (inOptVal,_) =
-  Libobject.declare_object ("Sync_option_value",
-    { Libobject.load_function = load_sync_value;
-      Libobject.open_function = cache_sync_value;
-      Libobject.cache_function = cache_sync_value;
-      Libobject.export_function = export_sync_value })
-
-let freeze_sync_table () = !sync_value_tab
-let unfreeze_sync_table l = sync_value_tab := l
-let init_sync_table () = sync_value_tab := !sync_value_init_tab
-let _ = 
-  Summary.declare_summary "Sync_option"
-    { Summary.freeze_function = freeze_sync_table;
-      Summary.unfreeze_function = unfreeze_sync_table;
-      Summary.init_function = init_sync_table;
-      Summary.survive_section = true }
-
-(* Tools for handling options *)
-
-type option_type =
-  | Sync of  value
-  | Async of (unit -> value) * (value -> unit)
+let value_tab = ref OptionMap.empty
 
 (* This raises Not_found if option of key [key] is unknown *)
-let get_option key =
-  try 
-    let (name,(r,w)) = OptionMap.find key !async_value_tab in 
-    (name,Async (r,w))
-  with Not_found ->
-    let (name,i) = OptionMap.find key !sync_value_tab in (name, Sync i)
 
+let get_option key = OptionMap.find key !value_tab
 
-(* 2-a. Declaring synchronous options *)
-type 'a sync_option_sig = {
-  optsyncname    : string;
-  optsynckey     : option_name;
-  optsyncdefault : 'a }
+let check_key key = try 
+  let _ = get_option key in
+  error "Sorry, this option name is already used"
+with Not_found ->
+  if List.mem_assoc (nickname key) !string_table
+    or List.mem_assoc (nickname key) !ident_table
+  then error "Sorry, this option name is already used"
 
-let declare_sync_option (cast,uncast) 
-  { optsyncname=name; optsynckey=key; optsyncdefault=default } =
-  try 
-    let _ = get_option key in
-    error "Sorry, this option name is already used"
-  with Not_found ->
-    if List.mem_assoc (nickname key) !string_table
-      or List.mem_assoc (nickname key) !ident_table
-    then error "Sorry, this option name is already used";
-    sync_value_tab := OptionMap.add key (name,(cast default)) !sync_value_tab;
-    sync_value_init_tab := 
-    OptionMap.add key (name,(cast default)) !sync_value_init_tab;
-    fun () -> uncast (snd (OptionMap.find key !sync_value_tab))
+open Summary
+open Libobject
+open Lib
 
-type 'a value_function = unit -> 'a
+let declare_option cast uncast 
+  { optsync=sync; optname=name; optkey=key; optread=read; optwrite=write } =
+  check_key key; 
+  let write = if sync then 
+    let (decl_obj,_) = 
+      declare_object ((nickname key),
+		      {load_function = (fun _ -> ());
+		       open_function = (fun _ -> ());
+		       cache_function = (fun (_,v) -> write v);
+		       export_function = (fun x -> None)})
+    in 
+    let _ = declare_summary (nickname key) 
+	      {freeze_function = read;
+	       unfreeze_function = write;
+	       init_function = (let default = read() in fun () -> write default);
+	       survive_section = true}
+    in 
+    fun v -> add_anonymous_leaf (decl_obj v)
+  else write
+  in 
+  let cread () = cast (read ()) in
+  let cwrite v = write (uncast v) in 
+  value_tab := OptionMap.add key (name,(sync,cread,cwrite)) !value_tab; 
+  write
 
-let declare_sync_int_option = declare_sync_option
-  ((function vr -> IntValue vr),
-   function IntValue x -> x | _ -> anomaly "MakeOption")
-let declare_sync_bool_option = declare_sync_option
-  ((function vr -> BoolValue vr),
-   function BoolValue x -> x | _ -> anomaly "MakeOption")
-let declare_sync_string_option = declare_sync_option
-  ((function vr -> StringValue vr),
-   function StringValue x -> x | _ -> anomaly "MakeOption")
+type 'a write_function = 'a -> unit
 
-(* 2-b. Declaring synchronous options *)
-
-type 'a async_option_sig = {
-  optasyncname  : string;
-  optasynckey   : option_name;
-  optasyncread  : unit -> 'a;
-  optasyncwrite : 'a -> unit }
-
-let declare_async_option cast uncast
-  {optasyncname=name;optasynckey=key;optasyncread=read;optasyncwrite=write} =
-  try 
-    let _ = get_option key in
-    error "Sorry, this option name is already used"
-  with Not_found ->
-    if List.mem_assoc (nickname key) !string_table
-      or List.mem_assoc (nickname key) !ident_table then 
-      error "Sorry, this option name is already used";
-    let cread () = cast (read ()) in
-    let cwrite v = write (uncast v) in
-    async_value_tab := OptionMap.add key (name,(cread,cwrite)) !async_value_tab
-
-let declare_async_int_option =
-  declare_async_option 
+let declare_int_option =
+  declare_option 
     (fun v -> IntValue v)
     (function IntValue v -> v | _ -> anomaly "async_option")
-let declare_async_bool_option =
-  declare_async_option
+let declare_bool_option =
+  declare_option
     (fun v -> BoolValue v)
     (function BoolValue v -> v | _ -> anomaly "async_option")
-let declare_async_string_option =
-  declare_async_option
+let declare_string_option =
+  declare_option
     (fun v -> StringValue v)
     (function StringValue v -> v | _ -> anomaly "async_option")
 
@@ -319,15 +272,11 @@ let declare_async_string_option =
 (* Setting values of options *)
 
 let set_option_value check_and_cast key v =
-  let (name,info) =
+  let (name,(_,read,write)) =
     try get_option key
     with Not_found -> error ("There is no option "^(nickname key)^".")
   in
-  match info with
-    | Sync  current  ->
-      	Lib.add_anonymous_leaf
-	  (inOptVal (key,(name,check_and_cast v current)))
-    | Async (read,write) -> write (check_and_cast v (read ()))
+  write (check_and_cast v (read ()))
 
 let bad_type_error () = error "Bad type of value for this option"
 
@@ -346,7 +295,7 @@ let set_string_option_value = set_option_value
 
 (* Printing options/tables *)
 
-let msg_sync_option_value (name,v) =
+let msg_option_value (name,v) =
   match v with
     | BoolValue true  -> [< 'sTR "true" >]
     | BoolValue false -> [< 'sTR "false" >]
@@ -354,36 +303,33 @@ let msg_sync_option_value (name,v) =
     | StringValue s   -> [< 'sTR s >]
     | IdentValue id    -> [< 'sTR (Global.string_of_global id) >]
 
-let msg_async_option_value (name,vref) =
-  match vref with
-    | OptionBoolRef {contents=true}  -> [< 'sTR "true" >]
-    | OptionBoolRef {contents=false} -> [< 'sTR "false" >]
-    | OptionIntRef  r     -> [< 'iNT !r >]
-    | OptionStringRef r   -> [< 'sTR !r >]
-
 let print_option_value key =
-  let (name,info) = get_option key in
-  let s = match info with Sync v -> v | Async (read,write) -> read () in
+  let (name,(_,read,_)) = get_option key in
+  let s = read () in 
   match s with
     | BoolValue b -> 
 	mSG [< 'sTR("The "^name^" mode is "^(if b then "on" else "off"));'fNL>]
     | _ ->
 	mSG [< 'sTR ("Current value of "^name^" is "); 
-	       msg_sync_option_value (name,s); 'fNL >]
+	       msg_option_value (name,s); 'fNL >]
 
 
 let print_tables () =
   mSG
   [< 'sTR "Synchronous options:"; 'fNL; 
      OptionMap.fold 
-       (fun key (name,v) p -> [< p; 'sTR ("  "^(nickname key)^": ");
-				 msg_sync_option_value (name,v); 'fNL >])
-       !sync_value_tab [<>];
+       (fun key (name,(sync,read,write)) p -> 
+	  if sync then [< p; 'sTR ("  "^(nickname key)^": ");
+			  msg_option_value (name,read()); 'fNL >]
+	  else [< p >])
+       !value_tab [<>];
      'sTR "Asynchronous options:"; 'fNL;
      OptionMap.fold 
-       (fun key (name,(read,write)) p -> [< p; 'sTR ("  "^(nickname key)^": ");
-                                  msg_sync_option_value (name,read()); 'fNL >])
-	    !async_value_tab [<>];
+       (fun key (name,(sync,read,write)) p -> 
+	  if sync then [< p >] 
+	  else [< p; 'sTR ("  "^(nickname key)^": ");
+                  msg_option_value (name,read()); 'fNL >])
+       !value_tab [<>];
      'sTR "Tables:"; 'fNL;
      List.fold_right
        (fun (nickkey,_) p -> [< p; 'sTR ("  "^nickkey); 'fNL >])
