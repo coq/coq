@@ -32,6 +32,7 @@ let translate = ref false
 let make_translate f = translate := f; v7 := f; ()
 let do_translate () = !translate
 let translate_file = ref false
+let p1 = ref true
 
 (* Silent / Verbose *)
 let silent = ref false
