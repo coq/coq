@@ -20,9 +20,11 @@ Require Export Setoid.
 
   Incompatibilita':
     1. full_trivial in setoid_replace
-    2. ipotesi permutate in lemma di "Add Morphism"
-    3. iff invece di if in "Add Morphism" nel caso di predicati
-    4. setoid_replace poteva riscrivere sia c1 in c2 che c2 in c1
+    2. "as ..." per "Add Setoid"
+    3. ipotesi permutate in lemma di "Add Morphism"
+    4. iff invece di if in "Add Morphism" nel caso di predicati
+    5. setoid_replace poteva riscrivere sia c1 in c2 che c2 in c1
+       (???? o poteva farlo da destra a sinitra o viceversa? ????)
 
 ### Come evitare di dover fare "Require Setoid" prima di usare la
     tattica?
@@ -45,6 +47,8 @@ Require Export Setoid.
     zucchero sintattico per le transitive.
 ### Nota: il parsing e pretty printing delle relazioni non e' in synch!
     eq contro (ty,eq). Uniformare
+
+### diminuire la taglia dei proof term
 
 ### il messaggio di errore non e' assolutamente significativo quando
     nessuna marcatura viene trovata
@@ -91,23 +95,25 @@ Require Export Setoid.
        [setoid_]reflexivity???
        [setoid_]transitivity???
        [setoid_]symmetry???
+   11. permette di dichiarare dei setoidi/relazioni/morfismi in un module
+       type
 *)
 
 Axiom S1: Set.
 Axiom eqS1: S1 -> S1 -> Prop.
 Axiom SetoidS1 : Setoid_Theory S1 eqS1.
-Add Setoid S1 eqS1 SetoidS1.
+Add Setoid S1 eqS1 SetoidS1 as S1setoid.
 
 Axiom eqS1': S1 -> S1 -> Prop.
 Axiom SetoidS1' : Setoid_Theory S1 eqS1'.
 Axiom SetoidS1'_bis : Setoid_Theory S1 eqS1'.
-Add Setoid S1 eqS1' SetoidS1'.
-Add Setoid S1 eqS1' SetoidS1'_bis.
+Add Setoid S1 eqS1' SetoidS1' as S1setoid'.
+Add Setoid S1 eqS1' SetoidS1'_bis as S1setoid''.
 
 Axiom S2: Set.
 Axiom eqS2: S2 -> S2 -> Prop.
 Axiom SetoidS2 : Setoid_Theory S2 eqS2.
-Add Setoid S2 eqS2 SetoidS2.
+Add Setoid S2 eqS2 SetoidS2 as S2setoid.
 
 Axiom f : S1 -> nat -> S2.
 Add Morphism f : f_compat. Admitted.
@@ -194,14 +200,14 @@ Qed.
 Axiom S1_test8: Set.
 Axiom eqS1_test8: S1_test8 -> S1_test8 -> Prop.
 Axiom SetoidS1_test8 : Setoid_Theory S1_test8 eqS1_test8.
-Add Setoid S1_test8 eqS1_test8 SetoidS1_test8.
+Add Setoid S1_test8 eqS1_test8 SetoidS1_test8 as S1_test8setoid.
 
 Axiom f_test8 : S2 -> S1_test8.
 Add Morphism f_test8 : f_compat_test8. Admitted.
 
 Axiom eqS1_test8': S1_test8 -> S1_test8 -> Prop.
 Axiom SetoidS1_test8' : Setoid_Theory S1_test8 eqS1_test8'.
-Add Setoid S1_test8 eqS1_test8' SetoidS1_test8'.
+Add Setoid S1_test8 eqS1_test8' SetoidS1_test8' as S1_test8setoid'.
     
 (*CSC: for test8 to be significant I want to choose the setoid
   (S1_test8, eqS1_test8'). However this does not happen and
