@@ -12,8 +12,7 @@ open Lib
 
 let loadpath_name = "LoadPath"
 
-module LoadPath =
-struct
+module LoadPath = struct
   let check s = if not (System.exists_dir s) then warning (s^" was not found")
   let key = Goptions.PrimaryTable loadpath_name
   let title = "Load Paths for Coq files"

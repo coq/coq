@@ -186,7 +186,7 @@ let print_mutual sp mib =
              implicit_args_msg sp mipv >])
 
 let print_section_variable sp =
-  let ((id,_,_) as d,_,_) = out_variable sp in
+  let ((id,_,_) as d,_,_) = get_variable sp in
   let l = implicits_of_var id in
   [< print_named_decl d; print_impl_args l; 'fNL >]
 
@@ -329,7 +329,7 @@ let crible (fn : string -> env -> constr -> unit) name =
     | (spopt,Lib.Leaf lobj)::rest ->
 	(match (spopt,object_tag lobj) with
 	   | (_,"VARIABLE") ->
-	       let ((idc,_,typ),_,_) = out_variable spopt in 
+	       let ((idc,_,typ),_,_) = get_variable spopt in 
                if (head_const (body_of_type typ)) = const then  
                  fn (string_of_id idc) env (body_of_type typ);
                crible_rec rest
@@ -454,7 +454,7 @@ let print_local_context () =
     | [] -> [< >]
     | (sp,Lib.Leaf lobj)::rest ->
 	if "VARIABLE" = object_tag lobj then
-          let (d,_,_) = out_variable sp in 
+          let (d,_,_) = get_variable sp in 
 	  [< print_var_rec rest;
              print_named_decl d >]
 	else 

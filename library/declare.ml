@@ -69,13 +69,15 @@ let open_variable _ = ()
 
 let specification_variable x = x
 
-let (in_variable, _ (* out_variable *) ) =
+let (in_variable, out_variable) =
   let od = {
     cache_function = cache_variable;
     load_function = load_variable;
     open_function = open_variable;
     specification_function = specification_variable } in
   declare_object ("VARIABLE", od)
+
+let out_variable sp = fst (out_variable sp)
 
 let declare_variable id obj =
   let _ = add_leaf id CCI (in_variable ((id,obj),is_implicit_args())) in
@@ -207,7 +209,7 @@ let constant_or_parameter_strength sp =
 let is_variable id = 
   let sp = Nametab.sp_of_id CCI id in Spmap.mem sp !vartab
   
-let out_variable sp = 
+let get_variable sp = 
   let (id,(_,str,sticky)) = Spmap.find sp !vartab in
   let (c,ty) = Global.lookup_named id in
   ((id,c,ty),str,sticky)

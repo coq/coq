@@ -131,7 +131,7 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
   let tag = object_tag lobj in 
   match tag with
     | "VARIABLE" ->
-	let ((id,c,t),stre,sticky) = out_variable sp in
+	let ((id,c,t),stre,sticky) = get_variable sp in
 	if stre = (DischargeAt sec_sp) or ids_to_discard <> [] then
 	  (ops,id::ids_to_discard,work_alist)
 	else
