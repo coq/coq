@@ -121,7 +121,7 @@ Syntax constr
   ;
 
 (** Pretty-printing of [sumbool] and [sumor] *)
-  level 4:
+  level 7:
     sumbool [ (sumbool $t1 $t2) ]
        -> [ [<hov 0> "{" $t1:E "}" [0 1] "+" "{" $t2:L "}"] ]
   | sumor [ (sumor $t1 $t2) ]
