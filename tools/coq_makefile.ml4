@@ -20,6 +20,8 @@ type target =
   | RInclude of string * string (* -R physicalpath logicalpath *)
 
 let output_channel = ref stdout
+let makefile_name = ref "Makefile"
+let make_name = ref "Make"
 
 let some_file = ref false
 let some_vfile = ref false
@@ -28,6 +30,7 @@ let some_mlfile = ref false
 let opt = ref "-opt"
 
 let print x = output_string !output_channel x
+let printf x = Printf.fprintf !output_channel x
 
 let rec print_list sep = function
   | [ x ] -> print x
@@ -104,9 +107,9 @@ let standard sds =
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) install)\n")
     sds;
   print "\n";
-  print "Makefile: Make\n";
-  print "\tmv -f Makefile Makefile.bak\n";
-  print "\t$(COQBIN)coq_makefile -f Make -o Makefile\n";
+  printf "%s: %s\n" !makefile_name !make_name;
+  printf "\tmv -f %s %s.bak\n" !makefile_name !makefile_name;
+  printf "\t$(COQBIN)coq_makefile -f %s -o %s\n" !make_name !makefile_name;
   print "\n";
   print "clean:\n";
   print "\trm -f *.cmo *.cmi *.cmx *.o *.vo *.vi *.g *~\n";
@@ -332,11 +335,13 @@ let rec process_cmd_line = function
       RInclude (p,l) :: (process_cmd_line r)
   | ("-I" | "-h" | "--help" | "-custom") :: _ -> 
       usage ()
-  | "-f"::file::r -> 
+  | "-f" :: file :: r -> 
+      make_name := file;
       process_cmd_line ((parse file)@r)
   | ["-f"] -> 
       usage ()
   | "-o" :: file :: r -> 
+      makefile_name := file;
       output_channel := (open_out file);
       (process_cmd_line r)
   | v :: "=" :: def :: r -> 
