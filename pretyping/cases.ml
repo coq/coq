@@ -504,7 +504,7 @@ let substnl_tomatch v depth = function
   | IsInd (t,indt) -> IsInd (substnl v depth t,substnl_ind_type v depth indt)
   | NotInd (c,t) -> NotInd (option_app (substnl v depth) c, substnl v depth t)
 
-let subst_tomatch (depth,c) = substnl_tomatch [c] 0
+let subst_tomatch (depth,c) = substnl_tomatch [c] depth
 
 (**********************************************************************)
 (* Utilities on patterns *)
@@ -655,14 +655,16 @@ let occur_in_rhs na rhs =
     | Anonymous -> false
     | Name id -> occur_rawconstr id rhs.it
 
-let is_dep_patt eqn pat = occur_in_rhs (alias_of_pat pat) eqn.rhs
+let is_dep_patt eqn = function
+  | PatVar (_,name) -> occur_in_rhs name eqn.rhs
+  | _ -> false
 
 let dependencies_in_rhs nargs eqns =
   if eqns = [] then list_tabulate (fun _ -> false) nargs (* Only "_" patts *)
   else
   let deps = List.map (fun (tms,eqn) -> List.map (is_dep_patt eqn) tms) eqns in
   let columns = matrix_transpose deps in
-  List.map (List.for_all ((=) true)) columns
+  List.map (List.exists ((=) true)) columns
 
 (* Introduction of an argument of the current constructor must be
    delayed (flag DepOnPrevious) if it depends in the rhs and depends
@@ -671,7 +673,7 @@ let dependencies_in_rhs nargs eqns =
 
 let rec is_dep_on_previous n t = function
   | ((_,IsInd _),_)::_ when dependent (mkRel n) t -> DepOnPrevious
-  | ((_,NotInd _),(DepOnPrevious,DepInRhs))::_ 
+  | ((_,NotInd _),_(*DepOnPrevious,DepInRhs*))::_ 
       when dependent (mkRel n) t -> DepOnPrevious
   | _::rest -> is_dep_on_previous (n+1) t rest
   | [] -> NotDepOnPrevious
@@ -703,15 +705,15 @@ let rec lift_subst_tomatch n (depth,ci as binder) = function
   (* and they contribute to the environment (hence [depth+1]) *)
   | ToPush ((na,t),info)::rest ->
       let t' = liftn_tomatch_type n (depth+1) t in
-      let t'' = subst_tomatch binder t' in
+      let t'' = substnl_tomatch [ci] (depth-1) t' in
       ToPush ((na,t''), info)::(lift_subst_tomatch n (depth+1,ci) rest)
 
   (* By definition Pushed terms do not depend on previous terms to match *)
   (* and are already pushed in the environment; *)
-  (* if all is correct, [c] has no variables < depth *)
+  (* if all is correct, [tm] has no variables < depth *)
   (* +n-1 and not +n to simulate the substitution we don't apply *)
   | Pushed (lift,tm)::rest ->
-      Pushed (lift+n-1, tm)::(lift_subst_tomatch n binder rest)
+      Pushed (lift+n-1, tm)::(lift_subst_tomatch n (depth,ci) rest)
 
 let rec liftn_tomatch_stack n depth = function
   | [] -> []
@@ -1177,7 +1179,21 @@ let solve_constraints constr_info indt =
   (* TODO *)
   Constraints []
 
-let group_equations mind current cstrs mat =
+let rec irrefutable env = function
+  | PatVar (_,name) -> true
+  | PatCstr (_,cstr,args,_) ->
+      let ind = inductive_of_constructor cstr in
+      let (_,mip) = Inductive.lookup_mind_specif env ind in
+      let one_constr = Array.length mip.mind_user_lc = 1 in
+      one_constr & List.for_all (irrefutable env) args
+
+let first_clause_irrefutable env = function
+  | eqn::mat -> List.for_all (irrefutable env) eqn.patterns
+  | _ -> false
+
+let group_equations pb mind current cstrs mat =
+  let mat =
+    if first_clause_irrefutable pb.env mat then [List.hd mat] else mat in
   let brs = Array.create (Array.length cstrs) [] in
   let only_default = ref true in
   let _ =
@@ -1312,7 +1328,7 @@ and match_current pb (n,tm) =
     | IsInd (_,(IndType(indf,realargs) as indt)) ->
 	let mind,_ = dest_ind_family indf in
 	let cstrs = get_constructors pb.env indf in
-	let eqns,onlydflt = group_equations mind current cstrs pb.mat in
+	let eqns,onlydflt = group_equations pb mind current cstrs pb.mat in
 	if (cstrs <> [||] or not (initial_history pb.history)) & onlydflt then
 	  compile_aliases (shift_problem ct pb)
 	else
