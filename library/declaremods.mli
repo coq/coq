@@ -11,6 +11,7 @@
 (*i*)
 open Names
 open Entries
+open Environ
 open Libnames
 open Libobject
 open Lib
@@ -22,22 +23,32 @@ open Lib
 
 (*s Modules *)
 
-val declare_module : identifier -> module_entry -> unit
+val declare_module : 
+  (env -> 'modtype -> module_type_entry) -> (env -> 'modexpr -> module_expr) ->
+  identifier -> 
+  (identifier list * 'modtype) list -> 'modtype option -> 'modexpr option -> unit
+
+val start_module : (env -> 'modtype -> module_type_entry) ->
+  identifier -> (identifier list * 'modtype) list -> 'modtype option -> unit
+
+(*val declare_module : identifier -> module_entry -> unit
 
 val start_module : 
   identifier -> identifier list -> (mod_bound_id * module_type_entry) list 
     -> module_type_entry option -> unit
+*)
 val end_module : identifier -> unit
 
 
 
 (*s Module types *)
 
-val declare_modtype : identifier -> module_type_entry -> unit
+val declare_modtype : (env -> 'modtype -> module_type_entry) -> 
+  identifier -> (identifier list * 'modtype) list -> 'modtype -> unit
 
-val start_modtype : 
-  identifier -> identifier list -> (mod_bound_id * module_type_entry) list 
-    -> unit
+val start_modtype : (env -> 'modtype -> module_type_entry) -> 
+  identifier -> (identifier list * 'modtype) list -> unit
+
 val end_modtype : identifier -> unit
 
 

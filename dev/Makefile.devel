@@ -43,4 +43,4 @@ total:
 
 #runs coqtop storing using the history file
 run:	$(TOPDIR)/coqtop
-	ledit -h $(TOPDIR)/dev/debug_history -x $(TOPDIR)/coqtop
+	ledit -h $(TOPDIR)/dev/debug_history -x $(TOPDIR)/coqtop $(ARG) $(ARGS)

@@ -19,12 +19,7 @@ open Evd
 (* Module expressions and module types are interpreted relatively to 
    eventual functor or funsig arguments. *)
 
-val interp_module_decl : evar_map -> env -> 
-  (identifier list * Coqast.t) list -> 
-  Coqast.t option ->
-  Coqast.t option
-    ->
-      (identifier * (mod_bound_id * module_type_entry)) list * 
-      module_type_entry option *
-      module_expr option
+val interp_modtype : env -> Coqast.t -> module_type_entry
+
+val interp_modexpr : env -> Coqast.t -> module_expr
 

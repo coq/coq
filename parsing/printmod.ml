@@ -13,44 +13,66 @@ open Declarations
 open Nameops
 open Libnames
 
-let print_modpath env mp = 
-  try (* must be with let because streams are lazy! *)
-    let qid = Nametab.shortest_qualid_of_module mp in pr_qualid qid
-  with
-    | Not_found as e -> 
-	match mp with 
-	  | MPbound mbid -> Nameops.pr_id (id_of_mbid mbid)
-	  | _ -> raise e
+let get_new_id locals id = 
+  let rec get_id l id = 
+    let dir = make_dirpath [id] in
+      if not (Nametab.exists_module dir) then
+	id
+      else
+	get_id (id::l) (Nameops.next_ident_away id l)
+  in
+    get_id (List.map snd locals) id
 
-let print_kn env kn = 
-  let qid = Nametab.shortest_qualid_of_modtype kn in 
-    pr_qualid qid
+let rec print_local_modpath locals = function
+  | MPbound mbid -> pr_id (List.assoc mbid locals)
+  | MPdot(mp,l) ->
+      print_local_modpath locals mp ++ str "." ++ pr_lab l
+  | MPself _ | MPfile _ -> raise Not_found
+
+let print_modpath locals mp = 
+  try (* must be with let because streams are lazy! *)
+    let qid = Nametab.shortest_qualid_of_module mp in 
+      pr_qualid qid
+  with
+    | Not_found -> print_local_modpath locals mp
+
+let print_kn locals kn = 
+  try
+    let qid = Nametab.shortest_qualid_of_modtype kn in 
+      pr_qualid qid
+  with
+      Not_found -> 
+	let (mp,_,l) = repr_kn kn in
+	  print_local_modpath locals mp ++ str"." ++ pr_lab l
 
 let rec flatten_app mexpr l = match mexpr with
   | MEBapply (mexpr,marg,_) -> flatten_app mexpr (marg::l)
   | mexpr -> mexpr::l
 
-let rec print_module name env with_body mb =
+let rec print_module name locals with_body mb =
   let body = match mb.mod_equiv, with_body, mb.mod_expr with 
     | None, false, _ 
     | None, true, None -> mt()
-    | None, true, Some mexpr -> str " := " ++ print_modexpr env mexpr
-    | Some mp, _, _ -> str " == " ++ print_modpath env mp
+    | None, true, Some mexpr -> 
+	spc () ++ str ":= " ++ print_modexpr locals mexpr
+    | Some mp, _, _ -> str " == " ++ print_modpath locals mp
   in
-  str "Module " ++ name ++ str" : " ++ print_modtype env mb.mod_type ++ body
+  hv 2 (str "Module " ++ name ++ spc () ++ str": " ++ 
+	print_modtype locals mb.mod_type ++ body)
 
-and print_modtype env mty = match mty with
-  | MTBident kn -> print_kn env kn
+and print_modtype locals mty = match mty with
+  | MTBident kn -> print_kn locals kn
   | MTBfunsig (mbid,mtb1,mtb2) ->
-(*      let env' = Modops.add_module (MPbid mbid) (Modops.body_of_type mtb) env 
-      in *)
+(*    let env' = Modops.add_module (MPbid mbid) (Modops.body_of_type mtb) env 
+      in *) 
+      let locals' = (mbid, get_new_id locals (id_of_mbid mbid))::locals in
       hov 2 (str "Funsig" ++ spc () ++ str "(" ++ 
-        pr_id (id_of_mbid mbid) ++ str " : " ++ print_modtype env mtb1 ++ 
-      str ")" ++ spc() ++ print_modtype env mtb2)
+        pr_id (id_of_mbid mbid) ++ str " : " ++ print_modtype locals mtb1 ++ 
+      str ")" ++ spc() ++ print_modtype locals' mtb2)
   | MTBsig (msid,sign) -> 
-      hv 2 (str "Sig" ++ spc () ++ print_sig env msid sign ++ brk (1,-2) ++ str "End")
+      hv 2 (str "Sig" ++ spc () ++ print_sig locals msid sign ++ brk (1,-2) ++ str "End")
 
-and print_sig env msid sign = 
+and print_sig locals msid sign = 
   let print_spec (l,spec) = (match spec with
     | SPBconst _ -> str "Definition "
     | SPBmind _ -> str "Inductive "
@@ -59,7 +81,7 @@ and print_sig env msid sign =
   in
     prlist_with_sep spc print_spec sign
 
-and print_struct env msid struc = 
+and print_struct locals msid struc = 
   let print_body (l,body) = (match body with
     | SEBconst _ -> str "Definition "
     | SEBmind _ -> str "Inductive "
@@ -68,29 +90,28 @@ and print_struct env msid struc =
   in
     prlist_with_sep spc print_body struc
 
-and print_modexpr env mexpr = match mexpr with 
-  | MEBident mp -> print_modpath env mp
+and print_modexpr locals mexpr = match mexpr with 
+  | MEBident mp -> print_modpath locals mp
   | MEBfunctor (mbid,mty,mexpr) ->
-(*      let env' = Modops.add_module (MPbid mbid) (Modops.body_of_type mtb) env 
+(*    let env' = Modops.add_module (MPbid mbid) (Modops.body_of_type mtb) env 
       in *)
+      let locals' = (mbid, get_new_id locals (id_of_mbid mbid))::locals in
       hov 2 (str "Functor" ++ spc() ++ str"[" ++ pr_id(id_of_mbid mbid) ++ 
-	     str ":" ++ print_modtype env mty ++ 
-      str "]" ++ spc () ++ print_modexpr env mexpr)
+	     str ":" ++ print_modtype locals mty ++ 
+      str "]" ++ spc () ++ print_modexpr locals' mexpr)
   | MEBstruct (msid, struc) -> 
-      hv 2 (str "Struct" ++ spc () ++ print_struct env msid struc ++ brk (1,-2) ++ str "End")
+      hv 2 (str "Struct" ++ spc () ++ print_struct locals msid struc ++ brk (1,-2) ++ str "End")
   | MEBapply (mexpr,marg,_) -> 
       let lapp = flatten_app mexpr [marg] in
-	hov 3 (str"(" ++ prlist_with_sep spc (print_modexpr env) lapp ++ str")")
+	hov 3 (str"(" ++ prlist_with_sep spc (print_modexpr locals) lapp ++ str")")
 
 
 
 let print_module with_body mp = 
-  let env = Global.env() in
-  let name = print_modpath env mp in
-    print_module name env with_body (Environ.lookup_module mp env) ++ fnl ()
+  let name = print_modpath [] mp in
+    print_module name [] with_body (Global.lookup_module mp) ++ fnl ()
 
 let print_modtype kn = 
-  let env = Global.env() in
-  let name = print_kn env kn in
-    str "Module Type " ++ name ++ str " = " ++
-    print_modtype env (Environ.lookup_modtype kn env) ++ fnl ()
+  let name = print_kn [] kn in
+    str "Module Type " ++ name ++ str " = " ++ 
+      print_modtype [] (Global.lookup_modtype kn) ++ fnl ()

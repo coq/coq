@@ -162,7 +162,9 @@ and translate_module env is_definition me =
     | Some mexpr, _ -> 
 	let meq_o = (* do we have a transparent module ? *)
 	  try       (* TODO: transparent field in module_entry *)
-	    Some (path_of_mexpr mexpr)
+	    match me.mod_entry_type with
+	      | None -> Some (path_of_mexpr mexpr)
+	      | Some _ -> None
 	  with 
 	    | Not_path -> None
 	in

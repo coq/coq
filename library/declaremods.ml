@@ -155,7 +155,8 @@ let do_module exists what iter_objects i dir mp substobjs objects =
       | None ->  ()
 
     
-let conv_names_do_module exists what iter_objects i (sp,kn) substobjs substituted =
+let conv_names_do_module exists what iter_objects i 
+      (sp,kn) substobjs substituted =
   let dir,mp = dir_of_sp sp, mp_of_kn kn in
   do_module exists what iter_objects i dir mp substobjs substituted
 
@@ -389,42 +390,60 @@ let process_module_bindings argids args =
     let mp = MPbound mbid in
     let substobjs = get_modtype_substobjs mty in
     let substituted = subst_substobjs dir mp substobjs in
-      do_module false "begin" load_objects 1 dir mp substobjs substituted
+      do_module false "start" load_objects 1 dir mp substobjs substituted
   in
     List.iter2 process_arg argids args
 
-(*
-(* this function removes keep objects from submodules *) 
-let rec kill_keep objs =
-  let kill = function
-    | (oname,Leaf obj) as node ->
-	if object_tag obj = "MODULE" then
-	  let (entry,substobjs,substitute) = out_module obj in
-	    match substitute,keep with
-	      | [],[] -> node
-	      | _ -> oname, Leaf (in_module (entry,(substobjs,[],[])))
-	else
-	  node
-    | _ -> anomaly "kill_keep expects Leafs only!"
-  in
-    match objs with
-      | [] -> objs
-      | h::tl -> let h'=kill h and tl'=kill_keep tl in
-	  if h==h' && tl==tl' then
-	    objs
-	  else
-	    h'::tl'
-*)
 
-let start_module id argids args res_o =
-  let mp = Global.start_module (Lib.module_dp()) id args res_o in
-  let mbids = List.map fst args in
+let replace_module mtb id mb = todo "replace module after with"; mtb 
+
+let rec get_some_body mty env = match mty with
+    MTEident kn -> Environ.lookup_modtype kn env 
+  | MTEfunsig _ 
+  | MTEsig _ -> anomaly "anonymous module types not supported"
+  | MTEwith (mty,With_Definition _) -> get_some_body mty env 
+  | MTEwith (mty,With_Module (id,mp)) -> 
+      replace_module (get_some_body mty env) id (Environ.lookup_module mp env)
+
+
+let intern_args interp_modtype (env,oldargs) (idl,arg) = 
+  let lib_dir = Lib.module_dp() in
+  let mbids = List.map (fun id -> make_mbid lib_dir (string_of_id id)) idl in
+  let mty = interp_modtype env arg in
+  let dirs = List.map (fun id -> make_dirpath [id]) idl in
+  let mps = List.map (fun mbid -> MPbound mbid) mbids in
+  let substobjs = get_modtype_substobjs mty in
+  let substituted's = 
+    List.map2 
+      (fun dir mp -> dir, mp, subst_substobjs dir mp substobjs) 
+      dirs mps  
+  in
+    List.iter 
+      (fun (dir, mp, substituted) -> 
+	 do_module false "interp" load_objects 1 dir mp substobjs substituted)
+      substituted's;
+    let body = Modops.module_body_of_type (get_some_body mty env) in
+    let env = 
+      List.fold_left (fun env mp -> Modops.add_module mp body env) env mps
+    in
+    env, List.map (fun mbid -> mbid,mty) mbids :: oldargs
+      
+let start_module interp_modtype id args res_o =
   let fs = Summary.freeze_summaries () in
-    process_module_bindings argids args;
-    openmod_info:=(mbids,res_o);
-    let prefix = Lib.start_module id mp fs in
-    Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModule prefix);
-    Lib.add_frozen_state ()
+  let env = Global.env () in
+  let env,arg_entries_revlist = 
+    List.fold_left (intern_args interp_modtype) (env,[]) args 
+  in
+  let arg_entries = List.concat (List.rev arg_entries_revlist) in
+  let res_entry_o = option_app (interp_modtype env) res_o in
+
+  let mp = Global.start_module (Lib.module_dp()) id arg_entries res_entry_o in
+
+  let mbids = List.map fst arg_entries in
+  openmod_info:=(mbids,res_entry_o);
+  let prefix = Lib.start_module id mp fs in
+  Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModule prefix);
+  Lib.add_frozen_state ()
 
 
 let end_module id =
@@ -478,7 +497,7 @@ let module_objects mp =
 
 type library_name = dir_path
 
-(* The first two will form a substitutive_objects, the last one is keep *)
+(* The first two will form substitutive_objects, the last one is keep *)
 type library_objects = 
     mod_self_id * lib_objects * lib_objects
 
@@ -532,14 +551,21 @@ let import_module mp =
     open_objects 1 prefix objects
 
 
-let start_modtype id argids args =
-  let mp = Global.start_modtype (Lib.module_dp()) id args in
-  let fs= Summary.freeze_summaries () in
-    process_module_bindings argids args;
-    openmodtype_info := (List.map fst args);
-    let prefix = Lib.start_modtype id mp fs in
-    Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModtype prefix);
-    Lib.add_frozen_state ()
+let start_modtype interp_modtype id args =
+  let fs = Summary.freeze_summaries () in
+  let env = Global.env () in
+  let env,arg_entries_revlist = 
+    List.fold_left (intern_args interp_modtype) (env,[]) args 
+  in
+  let arg_entries = List.concat (List.rev arg_entries_revlist) in
+
+  let mp = Global.start_modtype (Lib.module_dp()) id arg_entries in
+
+  let mbids = List.map fst arg_entries in
+  openmodtype_info := mbids;
+  let prefix = Lib.start_modtype id mp fs in
+  Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModtype prefix);
+  Lib.add_frozen_state ()
 
 
 let end_modtype id =
@@ -566,31 +592,38 @@ let end_modtype id =
   Lib.add_frozen_state ()(* to prevent recaching *)
 
 
-let declare_modtype id mte = 
-  let substobjs = get_modtype_substobjs mte in
-    ignore (add_leaf id (in_modtype (Some mte, substobjs)))
+let declare_modtype interp_modtype id args mty = 
+  let fs = Summary.freeze_summaries () in
+  let env = Global.env () in
+  let env,arg_entries_revlist = 
+    List.fold_left (intern_args interp_modtype) (env,[]) args 
+  in
+  let arg_entries = List.concat (List.rev arg_entries_revlist) in
+  let base_mty = interp_modtype env mty in
+  let entry = 
+    List.fold_right 
+      (fun (arg_id,arg_t) mte -> MTEfunsig(arg_id,arg_t,mte))
+      arg_entries
+      base_mty
+  in
+  let substobjs = get_modtype_substobjs entry in
+  Summary.unfreeze_summaries fs;
+    
+  ignore (add_leaf id (in_modtype (Some entry, substobjs)))
 			       
 
 
-let rec get_module_substobjs locals = function
-    MEident (MPbound mbid as mp) -> 
-      begin
-	try 
-	  let mty = List.assoc mbid locals in
-	    get_modtype_substobjs mty
-	with
-	    Not_found -> MPmap.find mp !modtab_substobjs 
-      end
+let rec get_module_substobjs = function
   | MEident mp -> MPmap.find mp !modtab_substobjs 
   | MEfunctor (mbid,mty,mexpr) ->
       let (subst, mbids, msid, objs) = 
-	get_module_substobjs ((mbid,mty)::locals) mexpr 
+	get_module_substobjs mexpr 
       in
 	(subst, mbid::mbids, msid, objs)
   | MEstruct (msid,_) ->
       (empty_subst, [], msid, [])
   | MEapply (mexpr, MEident mp) ->
-      let (subst, mbids, msid, objs) = get_module_substobjs locals mexpr in
+      let (subst, mbids, msid, objs) = get_module_substobjs mexpr in
 	(match mbids with
 	   | mbid::mbids ->
 	       (add_mbid mbid mp subst, mbids, msid, objs)
@@ -599,18 +632,44 @@ let rec get_module_substobjs locals = function
       Modops.error_application_to_not_path mexpr
 
 
-let declare_module id me =
+let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
+
+  let fs = Summary.freeze_summaries () in
+  let env = Global.env () in
+  let env,arg_entries_revlist = 
+    List.fold_left (intern_args interp_modtype) (env,[]) args 
+  in
+  let arg_entries = List.concat (List.rev arg_entries_revlist) in
+  let mty_entry_o = option_app (interp_modtype env) mty_o in
+  let mexpr_entry_o = option_app (interp_modexpr env) mexpr_o in
+  let entry = 
+    {mod_entry_type = 	    
+       option_app
+	 (List.fold_right 
+	    (fun (arg_id,arg_t) mte -> MTEfunsig(arg_id,arg_t,mte))
+	    arg_entries)
+	 mty_entry_o;
+     mod_entry_expr = 
+       option_app
+	 (List.fold_right 
+	    (fun (mbid,mte) me -> MEfunctor(mbid,mte,me))
+	    arg_entries)
+	 mexpr_entry_o }
+  in
   let substobjs =
-    match me with
+    match entry with
       | {mod_entry_type = Some mte} -> get_modtype_substobjs mte
-      | {mod_entry_expr = Some mexpr} -> get_module_substobjs [] mexpr
+      | {mod_entry_expr = Some mexpr} -> get_module_substobjs mexpr
       | _ -> anomaly "declare_module: No type, no body ..."
   in
+  Summary.unfreeze_summaries fs;
+
   let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
   let substituted = subst_substobjs dir mp substobjs in
-    ignore (add_leaf
-	      id
-	      (in_module (Some me, substobjs, substituted)))
+
+  ignore (add_leaf
+	    id
+	    (in_module (Some entry, substobjs, substituted)))
 
 
 (*s Iterators. *)
