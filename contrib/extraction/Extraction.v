@@ -29,15 +29,9 @@ Grammar vernac vernac : ast :=
 
 (* Target Language *)
 
-| extraction_ocaml 
-     [ "Extraction" "Language" "Ocaml" "." ] 
-  -> [ (ExtractionLangOcaml) ]
-| extraction_haskell 
-     [ "Extraction" "Language" "Haskell" "." ] 
-  -> [ (ExtractionLangHaskell) ]
-| extraction_toplevel
-     [ "Extraction" "Language" "Toplevel" "." ] 
-  -> [ (ExtractionLangToplevel) ]
+| extr_language 
+     [ "Extraction" "Language" extraction_language($l) "." ] 
+  -> [ (ExtractionLang $l) ]
 
 (* Custom inlining directives *)
 | inline_constant
@@ -82,5 +76,11 @@ with idorstring_list: ast list :=
 with idorstring : ast :=
   ids_ident  [ identarg($id) ] -> [ $id ]
 | ids_string [ stringarg($s) ] -> [ $s ]
+
+with extraction_language : ast := 
+  ocaml [ "Ocaml" ] -> [ "Ocaml" ]
+| haskell [ "Haskell" ] -> [ "Haskell" ]
+| toplevel [ "Toplevel" ] -> [ "Toplevel" ]
+
 .
 

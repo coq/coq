@@ -90,7 +90,7 @@ let lang_ref = ref Ocaml
 
 let lang () = !lang_ref
 
-let (extraction_language,_) = 
+let (extr_lang,_) = 
   declare_object ("Extraction Lang", 
 		  {cache_function = (fun (_,l) -> lang_ref := l);
 		   load_function = (fun (_,l) -> lang_ref := l);
@@ -103,17 +103,18 @@ let _ = declare_summary "Extraction Lang"
 	    init_function = (fun () -> lang_ref := Ocaml);
 	    survive_section = true }  
 
-let _ = 
-  vinterp_add "ExtractionLangOcaml" 
-     (fun _ () -> add_anonymous_leaf (extraction_language Ocaml))
-    
-let _ = 
-  vinterp_add "ExtractionLangHaskell" 
-     (fun _ () -> add_anonymous_leaf (extraction_language Haskell))
+let lang_to_lang = function 
+    "Ocaml" -> Ocaml 
+  | "Haskell" -> Haskell 
+  | "Toplevel" -> Toplevel
+  | _ -> assert false
 
 let _ = 
-  vinterp_add "ExtractionLangToplevel" 
-     (fun _ () -> add_anonymous_leaf (extraction_language Toplevel))
+  vinterp_add "ExtractionLang" 
+     (function 
+	  [VARG_STRING l] -> 
+	    (fun () -> add_anonymous_leaf (extr_lang (lang_to_lang l)))
+	| _ -> assert false)
 
 (*s Table for custom inlining *)
 
