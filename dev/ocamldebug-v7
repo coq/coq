@@ -2,18 +2,33 @@
 
 # wrap around ocamldebug for Coq
 
-export COQTOP=$constr/V7
+# export COQTOP=`coqtop -where`
+export COQTOP=/users/homepc89/jcf/coq/V7
+export COQLIB=$COQTOP
+export COQTH=$COQLIB/theories
 export CAMLP4LIB=`camlp4 -where`
 CAMLBIN=`which ocamlc`
 OCAMLDEBUG=`dirname $CAMLBIN`/ocamldebug
 
-exec $OCAMLDEBUG \
+args=""
+coqdebug="no"
+for op in $*
+    do case `basename $op` in
+	coq-debug-programs.out) 
+	    coqdebug="yes"
+	    args="-is programs.coq";;
+	coq*) coqdebug="yes";;
+       esac
+done
+
+case $coqdebug in
+    yes)
+	exec $OCAMLDEBUG \
 	-I $CAMLP4LIB \
-	-I $COQTOP/lib \
-	-I $COQTOP/dev \
-	-I $COQTOP/kernel \
-	-I $COQTOP/parsing \
-        -I $COQTOP/toplevel \
-	$*
-
-
+	-I $COQTOP/lib -I $COQTOP/kernel \
+	-I $COQTOP/library -I $COQTOP/pretyping -I $COQTOP/parsing \
+        -I $COQTOP/proofs -I $COQTOP/tactics \
+	-I $COQTOP/toplevel -I $COQTOP/dev \
+	$* $args;;
+    *) exec $OCAMLDEBUG $*;;
+esac

@@ -78,10 +78,10 @@ Changements divers
    directement le résultat du link du code
    => debuggage et profiling directs
 
- . il n'y a plus d'installation locale dans bin/
+ . il n'y a plus d'installation locale dans bin/$ARCH
  
  . #use "include.ml"  =>  #use "include"
    go()               =>  loop()
 
- . il y "make depend" et "make dependcamlp4" car ce dernier prend beaucoup
+ . il y a "make depend" et "make dependcamlp4" car ce dernier prend beaucoup
    de temps

@@ -1,0 +1,30 @@
+
+Debuggage
+=========
+
+   dans Emacs. nécessite le mode tuareg.
+   Coq doit être configuré avec -debug et -local (./configure -debug -local)
+
+   1. M-x camldebug
+   2. spécifier le binaire coqtop.byte
+   3. spécifier dev/ocamldebug-v7
+   4. source db  (pour avoir les pretty-printers)
+   5. poser ses points d'arrêts avec C-x C-a C-b (penser "add breakpoint")
+      directement dans le source ocaml
+   6. ensuite voir le man d'ocamldebug
+         run
+	 step
+	 next
+	 last
+	 print x
+	 ...
+
+
+Profiling
+=========
+
+   Coq doit être configuré avec -profile
+
+   1. Lancer Coq en natif, qui doit terminer normalement (utiliser Quit
+      ou l'option -batch)
+   2. gprof ./coqtop gmon.out
