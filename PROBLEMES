@@ -1,16 +1,25 @@
 Declaration de Local a l'interieur d'un but ...
+Certains Clear deviennent impossible car la variable apparait dans 
+un lemme local, c'est plutot sain ...
+
+La syntaxe <A>x=y est parfois refusee
 
 Les arguments des Tactic Definition sont interpretes avant 
 l'application de la tactique, ils ne peuvent pas contenir des variables 
 qui seront introduites dans la tactique ....
 MUTUAL-EXCLUSION/binary/version1/Soundness.v
 
+l'entree numarg de g_tactic.ml4 accepte aussi des id... (pour les binding je pense) 
+d'ou des erreurs de syntaxe ...
+pure_numarg est plus sur
+
+Associativite Repeat Orelse changee
+	Repeat A Orelse B se lit (Repeat A) Orelse B 
+ce n'est pas malin car Repeat A n'echoue jamais
+
 CONTRIBS
 ---------
-BellLabs/lazyPCF/OpSem/
-File "./utils.v", line 231, characters 14-18
-Syntax error: [Tactic.constrarg_binding_list] expected after [Tactic.numarg] (in [Tactic.simple_tactic])
-Specialize A2 with ...
+BellLabs/lazyPCF : OK
 
 Bordeaux/TREES :
 File "./ABR.v", line 131, characters 0-88
@@ -24,6 +33,13 @@ Bordeaux/Additions :
 	echecs sur Realizer
 
 Bordeaux/GROUPS : OK
+
+Dyade/Otway-Rees : OK
+Dyade/BDD : Require Rocq/GRAPHS
+
+Lyon/AUTOMATA : OK
+Lyon/IEEE754 : OK
+Lyon/COINDUCTIVES : OK
 
 Rocq/GRAPHS
 File "./lsort.v", line 82, characters 4-17
