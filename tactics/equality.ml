@@ -137,12 +137,15 @@ let general_rewrite_in lft2rgt id (c,l) gl =
         let hdcncls = string_of_inductive hdcncl in 
 	let suffix =
           Indrec.elimination_suffix (elimination_sort_of_hyp id gl) in
+        let hdcncls = string_of_inductive hdcncl in 
+	let suffix =
+          Indrec.elimination_suffix (elimination_sort_of_hyp id gl) in
+        let rwr_thm =
+          if lft2rgt then hdcncls^suffix else hdcncls^suffix^"_r" in
         let elim =
-	  if lft2rgt then
-            pf_global gl (id_of_string (hdcncls^suffix))
-          else
-	    pf_global gl (id_of_string (hdcncls^suffix^"_r"))
-        in 
+	  try pf_global gl (id_of_string rwr_thm)
+          with Not_found ->
+            error ("Cannot find rewrite principle "^rwr_thm) in 
 	general_elim_in id (c,l) (elim,[]) gl
 
 let conditional_rewrite_in lft2rgt id tac (c,bl) = 
