@@ -350,8 +350,6 @@ module Constr =
     let lconstr_pattern = gec_constr "lconstr_pattern"
     let binder = Gram.Entry.create "constr:binder"
     let binder_let = Gram.Entry.create "constr:binder_let"
-    let tuple_constr = gec_constr "tuple_constr"
-    let tuple_pattern = Gram.Entry.create "tuple_pattern"
   end
 
 module Module =
@@ -544,7 +542,8 @@ let default_levels_v7 =
    0,Gramext.RightA]
 
 let default_levels_v8 =
-  [200,Gramext.RightA;
+  [250,Gramext.LeftA;
+   200,Gramext.RightA;
    100,Gramext.RightA;
    99,Gramext.RightA;
    90,Gramext.RightA;
@@ -719,12 +718,6 @@ let get_constr_entry forpat en =
   match en with
       ETConstr(200,()) when not !Options.v7 & not forpat ->
 	snd (get_entry (get_univ "constr") "binder_constr"),
-        None,
-        false
-    | ETConstr(250,()) when not !Options.v7 ->
-        (if forpat then weaken_entry Constr.tuple_pattern
-	else weaken_entry Constr.tuple_constr),
-(*        snd (get_entry (get_univ "constr") "tuple_constr"),*)
         None,
         false
     | _ -> compute_entry true (fun (n,()) -> Some n) forpat en

@@ -141,8 +141,6 @@ module Constr :
     val lconstr_pattern : constr_expr Gram.Entry.e
     val binder : (name located list * constr_expr) Gram.Entry.e
     val binder_let : local_binder Gram.Entry.e
-    val tuple_constr : constr_expr Gram.Entry.e
-    val tuple_pattern : cases_pattern_expr Gram.Entry.e
   end
 
 module Module : 

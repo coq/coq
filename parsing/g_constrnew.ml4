@@ -121,8 +121,7 @@ let lpar_id_coloneq =
 if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
-  constr_pattern lconstr_pattern Constr.ident binder binder_let pattern
-  tuple_constr tuple_pattern;
+  constr_pattern lconstr_pattern Constr.ident binder binder_let pattern;
   Constr.ident:
     [ [ id = Prim.ident -> id
 
@@ -158,19 +157,17 @@ GEXTEND Gram
   constr:
     [ [ c = operconstr LEVEL "9" -> c ] ]
   ;
-  tuple_constr:
-    [ [ c = operconstr -> c ] ]
-  ;
   operconstr:
-    [ "200" RIGHTA
+    [ "250" LEFTA [ ]
+    | "200" RIGHTA
       [ c = binder_constr -> c ]
     | "100" RIGHTA
       [ c1 = operconstr; ":"; c2 = binder_constr -> CCast(loc,c1,c2)
-      | c1 = operconstr; ":"; c2 = operconstr    -> CCast(loc,c1,c2) ]
+      | c1 = operconstr; ":"; c2 = operconstr LEVEL "200" -> CCast(loc,c1,c2) ]
     | "99" RIGHTA [ ]
     | "90" RIGHTA
       [ c1 = operconstr; "->"; c2 = binder_constr -> CArrow(loc,c1,c2)
-      | c1 = operconstr; "->"; c2 = operconstr    -> CArrow(loc,c1,c2) ]
+      | c1 = operconstr; "->"; c2 = operconstr LEVEL"200" -> CArrow(loc,c1,c2)]
     | "10"
       [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(None,f),args)
       | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args)
@@ -186,7 +183,7 @@ GEXTEND Gram
     | "0"
       [ c=atomic_constr -> c
       | c=match_constr -> c
-      | "("; c=tuple_constr; ")" -> c ] ]
+      | "("; c = operconstr LEVEL "250"; ")" -> c ] ]
   ;
   binder_constr:
     [ [ "forall"; bl = binder_list; ","; c = operconstr LEVEL "200" ->
@@ -211,7 +208,7 @@ GEXTEND Gram
 	  ":="; c1 = operconstr LEVEL "200"; "in";
           c2 = operconstr LEVEL "200" ->
           CLetTuple (loc,List.map snd lb,po,c1,c2)
-      | "if"; c=operconstr; po = return_type;
+      | "if"; c=operconstr LEVEL "200"; po = return_type;
 	"then"; b1=operconstr LEVEL "200";
         "else"; b2=operconstr LEVEL "200" ->
           CIf (loc, c, po, b1, b2)
@@ -279,13 +276,11 @@ GEXTEND Gram
     [ [ OPT"|"; br=LIST0 eqn SEP "|" -> br ] ]
   ;
   eqn:
-    [ [ pl = LIST1 pattern SEP ","; "=>"; rhs = lconstr -> (loc,pl,rhs) ] ]
-  ;
-  tuple_pattern:
-    [ [ c = pattern -> c ] ]
+    [ [ pl = LIST1 pattern LEVEL "200" SEP ","; "=>"; rhs = lconstr -> (loc,pl,rhs) ] ]
   ;
   pattern:
-    [ "200" RIGHTA [ ]
+    [ "250" LEFTA [ ]
+    | "200" RIGHTA [ ]
     | "99" RIGHTA [ ]
     | "90" RIGHTA [ ]
     | "10" LEFTA
@@ -304,7 +299,7 @@ GEXTEND Gram
     | "0"
       [ r = Prim.reference -> CPatAtom (loc,Some r)
       | "_" -> CPatAtom (loc,None)
-      | "("; p = tuple_pattern; ")" -> p
+      | "("; p = pattern LEVEL "250"; ")" -> p
       | n = bigint -> CPatNumeral (loc,n) ] ]
   ;
 (*

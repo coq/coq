@@ -213,9 +213,7 @@ let print_grammar univ entry =
     let te = 
       match entry with
 	| "constr" | "operconstr" -> weaken_entry Pcoq.Constr.operconstr
-	| "tuple_constr" -> weaken_entry Pcoq.Constr.tuple_constr
 	| "pattern" -> weaken_entry Pcoq.Constr.pattern
-	| "tuple_pattern" -> weaken_entry Pcoq.Constr.tuple_pattern
 	| "tactic" -> weaken_entry Pcoq.Tactic.simple_tactic
 	| _ -> error "Unknown or unprintable grammar entry" in
     Gram.Entry.print te
