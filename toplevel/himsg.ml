@@ -73,12 +73,16 @@ let explain_reference_variables c =
   str "the constant" ++ spc () ++ pc ++ spc () ++ 
   str "refers to variables which are not in the context"
 
+let rec pr_disjunction pr = function
+  | [a] -> pr  a
+  | [a;b] -> pr a ++ str " or" ++ spc () ++ pr b
+  | a::l -> pr a ++ str "," ++ spc () ++ pr_disjunction pr l
+  | [] -> assert false
+
 let explain_elim_arity ctx ind aritylst c pj okinds = 
   let ctx = make_all_name_different ctx in
   let pi = pr_inductive ctx ind in
-  let ppar = prlist_with_sep pr_coma (prterm_env ctx) aritylst in
   let pc = prterm_env ctx c in
-  let pp = prterm_env ctx pj.uj_val in
   let ppt = prterm_env ctx pj.uj_type in
   let msg = match okinds with
   | Some(kp,ki,explanation) ->
@@ -86,26 +90,41 @@ let explain_elim_arity ctx ind aritylst c pj okinds =
       let pkp = prterm_env ctx kp in
       let explanation =	match explanation with
 	| NonInformativeToInformative ->
-	  "non-informative objects may not construct informative ones."
+          "proofs can be eliminated only to build proofs"
 	| StrongEliminationOnNonSmallType ->
           "strong elimination on non-small inductive types leads to paradoxes."
 	| WrongArity ->
 	  "wrong arity" in
 	(hov 0 
-           (fnl () ++ str "Elimination of an inductive object of sort : " ++
+           (fnl () ++ str "Elimination of an inductive object of sort " ++
             pki ++ brk(1,0) ++
-            str "is not allowed on a predicate in sort : " ++ pkp  ++fnl () ++
+            str "is not allowed on a predicate in sort " ++ pkp  ++fnl () ++
             str "because" ++ spc () ++ str explanation))
   | None -> 
       mt ()
   in
-  str "Incorrect elimination of" ++ brk(1,1) ++ pc ++ spc () ++
-  str "in the inductive type" ++ brk(1,1) ++ pi ++ fnl () ++
-  str "The elimination predicate" ++ brk(1,1) ++ pp ++ spc () ++
-  str "has type" ++ brk(1,1) ++ ppt ++ fnl () ++
-  str "It should be one of :" ++ brk(1,1)  ++ hov 0 ppar ++ fnl () ++
-  msg
-
+  hov 0 (
+  str "Incorrect elimination of" ++ spc() ++ pc ++ spc () ++
+  str "in the inductive type " ++ spc() ++ quote pi ++ 
+  (if !Options.v7 then 
+    let pp = prterm_env ctx pj.uj_val in
+    let ppar = pr_disjunction (prterm_env ctx) aritylst in
+    let ppt = prterm_env ctx pj.uj_type in
+    fnl () ++
+    str "The elimination predicate"  ++ brk(1,1) ++ pp ++ spc () ++
+    str "has arity" ++ brk(1,1) ++ ppt ++ fnl () ++
+    str "It should be " ++ brk(1,1)  ++ ppar
+  else
+    let sorts = List.map (fun x -> mkSort (new_sort_in_family x))
+      (list_uniquize (List.map (fun ar ->
+      family_of_sort (destSort (snd (decompose_prod_assum ar)))) aritylst)) in
+    let ppar = pr_disjunction (prterm_env ctx) sorts in
+    let ppt = prterm_env ctx (snd (decompose_prod_assum pj.uj_type)) in
+    str "," ++ spc() ++ str "the return type has sort" ++ spc() ++ ppt ++ 
+    spc () ++ str "while it should be " ++ ppar))
+  ++ fnl () ++ msg
+    
+    
 let explain_case_not_inductive ctx cj =
   let ctx = make_all_name_different ctx in
   let pc = prterm_env ctx cj.uj_val in
