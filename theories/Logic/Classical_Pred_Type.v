@@ -17,24 +17,25 @@ Variable U : Type.
 
 (** de Morgan laws for quantifiers *)
 
-Lemma not_all_ex_not :
- forall P:U -> Prop, ~ (forall n:U, P n) ->  exists n : U, ~ P n.
-Proof.
-unfold not in |- *; intros P notall.
-apply NNPP; unfold not in |- *.
-intro abs.
-cut (forall n:U, P n); auto.
-intro n; apply NNPP.
-unfold not in |- *; intros.
-apply abs; exists n; trivial.
-Qed.
-
 Lemma not_all_not_ex :
  forall P:U -> Prop, ~ (forall n:U, ~ P n) ->  exists n : U, P n.
 Proof.
-intros P H.
-elim (not_all_ex_not (fun n:U => ~ P n) H); intros n Pn; exists n.
-apply NNPP; trivial.
+intros P notall.
+apply NNPP.
+intro abs.
+apply notall.
+intros n H.
+apply abs; exists n; exact H.
+Qed.
+
+Lemma not_all_ex_not :
+ forall P:U -> Prop, ~ (forall n:U, P n) ->  exists n : U, ~ P n.
+Proof.
+intros P notall.
+apply not_all_not_ex with (P:=fun x => ~ P x).
+intro all; apply notall.
+intro n; apply NNPP.
+apply all.
 Qed.
 
 Lemma not_ex_all_not :
