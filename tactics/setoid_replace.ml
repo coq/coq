@@ -219,7 +219,9 @@ let prmorphism_argument_gen prrelation (variance,rel) =
 
 let prargument_class = prmorphism_argument_gen prrelation_class
 
-let pr_morphism_argument = prmorphism_argument_gen Ppconstrnew.pr_constr
+let pr_morphism_signature (l,c) =
+ prlist (prmorphism_argument_gen Ppconstrnew.pr_constr) l ++
+  Ppconstrnew.pr_constr c
 
 let prmorphism k m =
   prterm k ++ str ": " ++
@@ -698,7 +700,8 @@ let morphism_hook stre ref =
     add_morphism (Some (pf_id,argsconstr,outputconstr)) mor_id
      (m,args,output); no_more_edited pf_id
 
-type morphism_argument = bool option * Topconstr.constr_expr
+type morphism_signature =
+ (bool option * Topconstr.constr_expr) list * Topconstr.constr_expr
 
 let new_named_morphism id m sign =
  let sign =

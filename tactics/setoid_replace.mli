@@ -13,9 +13,9 @@ open Proof_type
 open Topconstr
 
 
-type morphism_argument = bool option * constr_expr
+type morphism_signature = (bool option * constr_expr) list * constr_expr
 
-val pr_morphism_argument : morphism_argument -> Pp.std_ppcmds
+val pr_morphism_signature : morphism_signature -> Pp.std_ppcmds
 
 val register_replace : (constr -> constr -> tactic) -> unit
 
@@ -37,5 +37,4 @@ val add_relation :
 val add_setoid : constr_expr -> constr_expr -> constr_expr -> unit
 
 val new_named_morphism :
- Names.identifier -> constr_expr ->
-  (morphism_argument list * constr_expr) option -> unit
+ Names.identifier -> constr_expr -> morphism_signature option -> unit

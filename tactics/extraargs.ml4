@@ -34,14 +34,18 @@ ARGUMENT EXTEND orient TYPED AS bool PRINTED BY pr_orient
 END
 
 (* For Setoid rewrite *)
-let pr_morphism_argument _ _ = Setoid_replace.pr_morphism_argument
+let pr_morphism_signature _ _ = Setoid_replace.pr_morphism_signature
 
-ARGUMENT EXTEND morphism_argument
- TYPED AS morphism_argument
- PRINTED BY pr_morphism_argument
-  | [ constr(c) "++>" ] -> [ Some true,c ]
-  | [ constr(c) "-->" ] -> [ Some false,c ]
-  | [ constr(c) "==>"  ] -> [ None,c ]
+ARGUMENT EXTEND morphism_signature
+ TYPED AS morphism_signature
+ PRINTED BY pr_morphism_signature
+  | [ constr(out) ] -> [ [],out ]
+  | [ constr(c) "++>" morphism_signature(s) ] ->
+       [ let l,out = s in (Some true,c)::l,out ]
+  | [ constr(c) "-->" morphism_signature(s) ] ->
+       [ let l,out = s in (Some false,c)::l,out ]
+  | [ constr(c) "==>" morphism_signature(s) ] ->
+       [ let l,out = s in (None,c)::l,out ]
 END
 
 let pr_gen prc _ c = prc c
