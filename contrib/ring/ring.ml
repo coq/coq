@@ -520,12 +520,12 @@ module SectionPathSet =
    SectionPathSet; peut-être faudra-t-il la déplacer dans Closure *)
 let constants_to_unfold = 
 (*  List.fold_right SectionPathSet.add *)
-    [ path_of_string "#Ring_normalize#interp_cs.cci";
-      path_of_string "#Ring_normalize#interp_var.cci";
-      path_of_string "#Ring_normalize#interp_vl.cci";
-      path_of_string "#Ring_abstract#interp_acs.cci";
-      path_of_string "#Ring_abstract#interp_sacs.cci";
-      path_of_string "#Quote#varmap_find.cci" ]
+    [ path_of_string "Coq.ring.Ring_normalize.interp_cs";
+      path_of_string "Coq.ring.Ring_normalize.interp_var";
+      path_of_string "Coq.ring.Ring_normalize.interp_vl";
+      path_of_string "Coq.ring.Ring_abstract.interp_acs";
+      path_of_string "Coq.ring.Ring_abstract.interp_sacs";
+      path_of_string "Coq.ring.Quote.varmap_find" ]
 (*    SectionPathSet.empty *)
 
 (* Unfolds the functions interp and find_btree in the term c of goal gl *)
@@ -557,6 +557,7 @@ let raw_polynom th op lc gl =
   let polynom_tac = 
     List.fold_right2
       (fun ci (c'i, c''i, c'i_eq_c''i) tac ->
+(***
         let c'''i = pf_nf gl c''i in
           if pf_conv_x gl c'''i ci then tac (* convertible terms *)
           else
@@ -574,6 +575,16 @@ let raw_polynom th op lc gl =
              )
            )
       ) lc ltriplets polynom_unfold_tac 
+***)
+       tclTHENS 
+         (elim_type (mkAppA [| Lazy.force coq_eqT; th.th_a; c'i; ci |]))
+         [ tclTHENS 
+             (elim_type 
+                (mkAppA [| Lazy.force coq_eqT; th.th_a; c''i; c'i |]))
+             [ tac;
+               h_exact c'i_eq_c''i ];
+           h_reflexivity])
+      lc ltriplets polynom_unfold_tac 
   in
   polynom_tac gl
 
