@@ -86,7 +86,6 @@ newtheories/Logic/ClassicalDescription.vo: newtheories/Logic/ClassicalDescriptio
 newtheories/Logic/ClassicalChoice.vo: newtheories/Logic/ClassicalChoice.v newtheories/Logic/ClassicalDescription.vo newtheories/Logic/RelationalChoice.vo newtheories/Logic/ChoiceFacts.vo
 newtheories/Logic/RelationalChoice.vo: newtheories/Logic/RelationalChoice.v
 newtheories/Logic/Diaconescu.vo: newtheories/Logic/Diaconescu.v newtheories/Logic/ClassicalFacts.vo newtheories/Logic/ChoiceFacts.vo newtheories/Bool/Bool.vo
-newtheories/Logic/Hurkens_Set.vo: newtheories/Logic/Hurkens_Set.v
 newtheories/Arith/Arith.vo: newtheories/Arith/Arith.v newtheories/Arith/Le.vo newtheories/Arith/Lt.vo newtheories/Arith/Plus.vo newtheories/Arith/Gt.vo newtheories/Arith/Minus.vo newtheories/Arith/Mult.vo newtheories/Arith/Between.vo newtheories/Arith/Peano_dec.vo newtheories/Arith/Compare_dec.vo newtheories/Arith/Factorial.vo
 newtheories/Arith/Gt.vo: newtheories/Arith/Gt.v newtheories/Arith/Le.vo newtheories/Arith/Lt.vo newtheories/Arith/Plus.vo
 newtheories/Arith/Between.vo: newtheories/Arith/Between.v newtheories/Arith/Le.vo newtheories/Arith/Lt.vo
@@ -122,7 +121,7 @@ newtheories/ZArith/Zsyntax.vo: newtheories/ZArith/Zsyntax.v newtheories/ZArith/f
 newtheories/ZArith/ZArith.vo: newtheories/ZArith/ZArith.v newtheories/ZArith/ZArith_base.vo newtheories/ZArith/Zcomplements.vo newtheories/ZArith/Zsqrt.vo newtheories/ZArith/Zpower.vo newtheories/ZArith/Zdiv.vo newtheories/ZArith/Zlogarithm.vo newtheories/ZArith/Zbool.vo
 newtheories/ZArith/auxiliary.vo: newtheories/ZArith/auxiliary.v newtheories/Arith/Arith.vo newtheories/ZArith/fast_integer.vo newtheories/ZArith/Zorder.vo newtheories/ZArith/zarith_aux.vo newtheories/Logic/Decidable.vo newtheories/Arith/Peano_dec.vo newtheories/Arith/Compare_dec.vo
 newtheories/ZArith/ZArith_dec.vo: newtheories/ZArith/ZArith_dec.v newtheories/Bool/Sumbool.vo newtheories/ZArith/fast_integer.vo newtheories/ZArith/Zorder.vo newtheories/ZArith/zarith_aux.vo newtheories/ZArith/auxiliary.vo newtheories/ZArith/Zsyntax.vo
-newtheories/ZArith/fast_integer.vo: newtheories/ZArith/fast_integer.v newtheories/NArith/BinPos.vo newtheories/Arith/Le.vo newtheories/Arith/Lt.vo newtheories/Arith/Gt.vo newtheories/Arith/Plus.vo newtheories/Arith/Mult.vo newtheories/NArith/BinNat.vo
+newtheories/ZArith/fast_integer.vo: newtheories/ZArith/fast_integer.v newtheories/NArith/BinPos.vo newtheories/NArith/BinNat.vo newtheories/Arith/Le.vo newtheories/Arith/Lt.vo newtheories/Arith/Gt.vo newtheories/Arith/Plus.vo newtheories/Arith/Mult.vo
 newtheories/ZArith/Zmisc.vo: newtheories/ZArith/Zmisc.v newtheories/ZArith/fast_integer.vo newtheories/ZArith/zarith_aux.vo newtheories/ZArith/auxiliary.vo newtheories/ZArith/Zsyntax.vo newtheories/Bool/Bool.vo
 newtheories/ZArith/zarith_aux.vo: newtheories/ZArith/zarith_aux.v newtheories/ZArith/fast_integer.vo newtheories/ZArith/Zorder.vo newtheories/ZArith/Zmin.vo newtheories/ZArith/Zabs.vo
 newtheories/ZArith/Zorder.vo: newtheories/ZArith/Zorder.v newtheories/ZArith/fast_integer.vo newtheories/Arith/Arith.vo newtheories/Logic/Decidable.vo newtheories/ZArith/Zsyntax.vo
@@ -265,7 +264,7 @@ newcontrib/ring/ArithRing.vo: newcontrib/ring/ArithRing.v newcontrib/ring/Ring.v
 newcontrib/ring/Ring_normalize.vo: newcontrib/ring/Ring_normalize.v newcontrib/ring/Ring_theory.vo newcontrib/ring/Quote.vo
 newcontrib/ring/Ring_theory.vo: newcontrib/ring/Ring_theory.v newtheories/Bool/Bool.vo
 newcontrib/ring/Ring.vo: newcontrib/ring/Ring.v newtheories/Bool/Bool.vo newcontrib/ring/Ring_theory.vo newcontrib/ring/Quote.vo newcontrib/ring/Ring_normalize.vo newcontrib/ring/Ring_abstract.vo
-newcontrib/ring/NArithRing.vo: newcontrib/ring/NArithRing.v newcontrib/ring/ArithRing.vo newtheories/ZArith/ZArith_base.vo newtheories/Logic/Eqdep_dec.vo
+newcontrib/ring/NArithRing.vo: newcontrib/ring/NArithRing.v newcontrib/ring/Ring.vo newtheories/ZArith/ZArith_base.vo newtheories/NArith/NArith.vo newtheories/Logic/Eqdep_dec.vo
 newcontrib/ring/ZArithRing.vo: newcontrib/ring/ZArithRing.v newcontrib/ring/ArithRing.vo newtheories/ZArith/ZArith_base.vo newtheories/Logic/Eqdep_dec.vo
 newcontrib/ring/Ring_abstract.vo: newcontrib/ring/Ring_abstract.v newcontrib/ring/Ring_theory.vo newcontrib/ring/Quote.vo newcontrib/ring/Ring_normalize.vo
 newcontrib/ring/Quote.vo: newcontrib/ring/Quote.v

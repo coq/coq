@@ -43,14 +43,16 @@ noargument:
 # Compilation options
 ###########################################################################
 
-# The QUIET variable control whether make will echo complete commands 
+# The SHOW and HIDE variables control whether make will echo complete commands 
 # or only abbreviated versions. 
 # Quiet mode is ON by default except if VERBOSE=1 option is given to make
 
 ifeq ($(VERBOSE),1)
- QUIET = 
-else	
- QUIET = yes
+ SHOW = @true ""
+ HIDE = 
+else 
+ SHOW = @echo ""
+ HIDE = @
 endif
 
 LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
@@ -196,13 +198,16 @@ QUOTIFY=\
   parsing/qast.cmo parsing/q_prim.cmo parsing/q_tactic.cmo
 
 parsing/q_prim.ml4: parsing/g_prim.ml4
-	camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_prim.ml4 -impl parsing/g_prim.ml4
+	$(SHOW)'CAMLP4O -o $@'
+	$(HIDE)camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_prim.ml4 -impl parsing/g_prim.ml4
 
 parsing/q_tactic.ml4: parsing/g_tactic.ml4
-	camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_tactic.ml4 -impl parsing/g_tactic.ml4
+	$(SHOW)'CAMLP4O -o $@'
+	$(HIDE)camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_tactic.ml4 -impl parsing/g_tactic.ml4
 
 parsing/q_ltac.ml4: parsing/g_ltac.ml4
-	camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_ltac.ml4 -impl parsing/g_ltac.ml4
+	$(SHOW)'CAMLP4O -o $@'
+	$(HIDE)camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_ltac.ml4 -impl parsing/g_ltac.ml4
 
 SPECTAC= tactics/tauto.ml4 tactics/eqdecide.ml4
 USERTAC = $(SPECTAC)
@@ -348,11 +353,13 @@ states7:: states/initial.coq
 states:: states/initial.coq states/initialnew.coq
 
 $(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
-	$(COQMKTOP) -opt $(OPTFLAGS) -o $@
+	$(SHOW)'COQMKTOP -o $@'	
+	$(HIDE)$(COQMKTOP) -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
 $(COQTOPBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO)
-	$(COQMKTOP) -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
+	$(SHOW)'COQMKTOP -o $@'	
+	$(HIDE)$(COQMKTOP) -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
 
 $(COQTOP):
 	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)
@@ -362,24 +369,26 @@ $(COQTOP):
 COQMKTOPCMO=$(CONFIG) scripts/tolink.cmo scripts/coqmktop.cmo 
 
 $(COQMKTOP): $(COQMKTOPCMO)
-	$(OCAMLC) $(BYTEFLAGS) -o $@ -custom str.cma unix.cma \
+	$(SHOW)'OCAMLC -o $@'	
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom str.cma unix.cma \
           $(COQMKTOPCMO) $(OSDEPLIBS)
 
 scripts/tolink.ml: Makefile
-	echo "let lib = \""$(LIBREP)"\"" > $@
-	echo "let kernel = \""$(KERNEL)"\"" >> $@
-	echo "let library = \""$(LIBRARY)"\"" >> $@
-	echo "let pretyping = \""$(PRETYPING)"\"" >> $@
-	echo "let proofs = \""$(PROOFS)"\"" >> $@
-	echo "let tactics = \""$(TACTICS)"\"" >> $@
-	echo "let interp = \""$(INTERP)"\"" >> $@
-	echo "let parsing = \""$(PARSING)"\"" >> $@
-	echo "let toplevel = \""$(TOPLEVEL)"\"" >> $@
-	echo "let highparsing = \""$(HIGHPARSING)"\"" >> $@
-	echo "let highparsingnew = \""$(HIGHPARSINGNEW)"\"" >> $@
-	echo "let hightactics = \""$(HIGHTACTICS)" "$(USERTACCMO)"\"" >> $@
-	echo "let contrib = \""$(CONTRIB)"\"" >> $@
-	echo "let ide = \""$(COQIDECMO)"\"" >> $@
+	$(SHOW)"ECHO... >" $@
+	$(HIDE)echo "let lib = \""$(LIBREP)"\"" > $@
+	$(HIDE)echo "let kernel = \""$(KERNEL)"\"" >> $@
+	$(HIDE)echo "let library = \""$(LIBRARY)"\"" >> $@
+	$(HIDE)echo "let pretyping = \""$(PRETYPING)"\"" >> $@
+	$(HIDE)echo "let proofs = \""$(PROOFS)"\"" >> $@
+	$(HIDE)echo "let tactics = \""$(TACTICS)"\"" >> $@
+	$(HIDE)echo "let interp = \""$(INTERP)"\"" >> $@
+	$(HIDE)echo "let parsing = \""$(PARSING)"\"" >> $@
+	$(HIDE)echo "let toplevel = \""$(TOPLEVEL)"\"" >> $@
+	$(HIDE)echo "let highparsing = \""$(HIGHPARSING)"\"" >> $@
+	$(HIDE)echo "let highparsingnew = \""$(HIGHPARSINGNEW)"\"" >> $@
+	$(HIDE)echo "let hightactics = \""$(HIGHTACTICS)" "$(USERTACCMO)"\"" >> $@
+	$(HIDE)echo "let contrib = \""$(CONTRIB)"\"" >> $@
+	$(HIDE)echo "let ide = \""$(COQIDECMO)"\"" >> $@
 
 beforedepend:: scripts/tolink.ml
 
@@ -426,32 +435,41 @@ clean-ide:
 	rm -f ide/utf8.vo $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT)
 
 $(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) $(COQIDECMX)
-	$(COQMKTOP) -ide -opt $(OPTFLAGS) -o $@
+	$(SHOW)'COQMKTOP -o $@'	
+	$(HIDE)$(COQMKTOP) -ide -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
 $(COQIDEBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(COQIDECMO)
-	$(COQMKTOP) -g -ide -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
+	$(SHOW)'COQMKTOP -o $@'	
+	$(HIDE)$(COQMKTOP) -g -ide -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
 
 $(COQIDE):
 	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)
 
 ide/%.cmo: ide/%.ml
-	$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(SHOW)'OCAMLC    $<'	
+	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
 ide/%.cmi: ide/%.mli
-	$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(SHOW)'OCAMLC    $<'	
+	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
 ide/%.cmx: ide/%.ml
-	$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
+	$(SHOW)'OCAMLOPT  $<'	
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
 
 ide/utils/%.cmo: ide/%.ml
-	$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(SHOW)'OCAMLC    $<'	
+	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
 ide/utils/%.cmi: ide/%.mli
-	$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(SHOW)'OCAMLC    $<'	
+	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
 ide/utils/%.cmx: ide/%.ml
-	$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
+	$(SHOW)'OCAMLOPT  $<'	
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
+
 clean::
 	rm -f ide/extract_index.ml ide/find_phrase.ml ide/highlight.ml
 	rm -f ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
@@ -463,7 +481,8 @@ clean::
 COQCCMO=$(CONFIG) toplevel/usage.cmo scripts/coqc.cmo
 
 $(COQC): $(COQCCMO) $(COQTOPBYTE) $(BESTCOQTOP)
-	$(OCAMLC) $(BYTEFLAGS) -o $@ -custom unix.cma $(COQCCMO) $(OSDEPLIBS)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom unix.cma $(COQCCMO) $(OSDEPLIBS)
 
 clean::
 	rm -f scripts/tolink.ml
@@ -490,15 +509,17 @@ hightactics: $(HIGHTACTICS)
 # special binaries for debugging
 
 bin/coq-interface$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
-	$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
+	$(SHOW)'COQMKTOP -o $@'
+	$(HIDE)$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
 
 bin/coq-interface.opt$(EXE): $(COQMKTOP) $(CMX) $(USERTACCMX) $(INTERFACECMX)
-	$(COQMKTOP) -opt $(OPTFLAGS) -o $@ $(INTERFACECMX)
+	$(SHOW)'COQMKTOP -o $@'
+	$(HIDE)$(COQMKTOP) -opt $(OPTFLAGS) -o $@ $(INTERFACECMX)
 
 bin/parser$(EXE): contrib/interface/parse.cmx contrib/interface/line_parser.cmx $(PARSERREQUIRESCMX) contrib/interface/xlate.cmx contrib/interface/vtp.cmx
-	$(OCAMLOPT) -cclib -lunix $(OPTFLAGS) -o $@ $(CMXA) \
-	$(PARSERREQUIRESCMX) \
-	line_parser.cmx vtp.cmx xlate.cmx parse.cmx
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) -cclib -lunix $(OPTFLAGS) -o $@ $(CMXA) \
+	$(PARSERREQUIRESCMX) line_parser.cmx vtp.cmx xlate.cmx parse.cmx
 
 clean::
 	rm -f bin/parser$(EXE) bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE)
@@ -882,32 +903,38 @@ tools:: $(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQVO2XML) $(COQWC) dev/
 COQDEPCMO=config/coq_config.cmo tools/coqdep_lexer.cmo tools/coqdep.cmo
 
 $(COQDEP): $(COQDEPCMO)
-	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ unix.cma $(COQDEPCMO) $(OSDEPLIBS)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ unix.cma $(COQDEPCMO) $(OSDEPLIBS)
 
 beforedepend:: tools/coqdep_lexer.ml $(COQDEP)
 
 GALLINACMO=tools/gallina_lexer.cmo tools/gallina.cmo
 
 $(GALLINA): $(GALLINACMO)
-	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ $(GALLINACMO)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ $(GALLINACMO)
 
 beforedepend:: tools/gallina_lexer.ml
 
 $(COQMAKEFILE): tools/coq_makefile.cmo
-	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coq_makefile.cmo
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coq_makefile.cmo
 
 $(COQTEX): tools/coq-tex.cmo
-	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma tools/coq-tex.cmo
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma tools/coq-tex.cmo
 
 beforedepend:: tools/coqwc.ml
 
 $(COQWC): tools/coqwc.cmo
-	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coqwc.cmo
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coqwc.cmo
 
 COQVO2XMLCMO=$(CONFIG) toplevel/usage.cmo tools/coq_vo2xml.cmo
 
 $(COQVO2XML): $(COQVO2XMLCMO)
-	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ unix.cma $(COQVO2XMLCMO)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ unix.cma $(COQVO2XMLCMO)
 
 clean::
 	rm -f tools/coqdep_lexer.ml tools/gallina_lexer.ml
@@ -927,7 +954,8 @@ MINICOQCMO=$(CONFIG) $(LIBREP) $(KERNEL) \
 MINICOQ=bin/minicoq$(EXE)
 
 $(MINICOQ): $(MINICOQCMO)
-	$(OCAMLC) $(BYTEFLAGS) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
 
 archclean::
 	rm -f $(MINICOQ)
@@ -1135,7 +1163,8 @@ GRAMMARSCMO=\
 GRAMMARCMO=$(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
 
 parsing/grammar.cma: $(GRAMMARCMO)
-	$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
+	$(SHOW)'OCAMLC -a $@'   
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
 
 clean::
 	rm -f parsing/grammar.cma
@@ -1159,19 +1188,24 @@ ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
 # toplevel/mltop.ml4 (ifdef Byte)
 
 toplevel/mltop.cmo: toplevel/mltop.byteml
-	$(OCAMLC) $(BYTEFLAGS) -c -impl toplevel/mltop.byteml -o $@
+	$(SHOW)'OCAMLC    $<'	
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -c -impl $< -o $@
 
 toplevel/mltop.cmx: toplevel/mltop.optml
-	$(OCAMLOPT) $(OPTFLAGS) -c -impl toplevel/mltop.optml -o $@
+	$(SHOW)'OCAMLOPT  $<'	
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -c -impl $< -o $@
 
 toplevel/mltop.byteml: toplevel/mltop.ml4
-	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
+	$(SHOW)'CAMLP4O   $<'	
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -DByte -impl $< > $@ || rm -f $@
 
 toplevel/mltop.optml: toplevel/mltop.ml4
-	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -impl toplevel/mltop.ml4 > $@ || rm -f $@
+	$(SHOW)'CAMLP4O   $<'	
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -impl $< > $@ || rm -f $@
 
 toplevel/mltop.ml: toplevel/mltop.ml4
-	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
+	$(SHOW)'CAMLP4O  $<'	
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -DByte -impl $< > $@ || rm -f $@
 
 ML4FILES += toplevel/mltop.ml4
 
@@ -1181,22 +1215,28 @@ clean::
 # files compiled with -rectypes
 
 kernel/term.cmo: kernel/term.ml
-	$(if $(QUIET),@echo 'OCAMLC    -rectypes $<' &&) $(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
+	$(SHOW)'OCAMLC    -rectypes $<' 
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
 
 kernel/term.cmx: kernel/term.ml
-	$(if $(QUIET),@echo 'OCAMLOPT  -rectypes $<' &&) $(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
+	$(SHOW)'OCAMLOPT  -rectypes $<'
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
 
 library/nametab.cmo: library/nametab.ml
-	$(if $(QUIET),@echo 'OCAMLC    -rectypes $<' &&) $(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
+	$(SHOW)'OCAMLC    -rectypes $<'
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
 
 library/nametab.cmx: library/nametab.ml
-	$(if $(QUIET),@echo 'OCAMLOPT  -rectypes $<' &&) $(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
+	$(SHOW)'OCAMLOPT  -rectypes $<'
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
 
 proofs/tacexpr.cmo: proofs/tacexpr.ml
-	$(if $(QUIET),@echo 'OCAMLC    -rectypes $<' &&) $(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
+	$(SHOW)'OCAMLC    -rectypes $<'
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
 
 proofs/tacexpr.cmx: proofs/tacexpr.ml
-	$(if $(QUIET),@echo 'OCAMLOPT  -rectypes $<' &&) $(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
+	$(SHOW)'OCAMLOPT  -rectypes $<'
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
 
 # files compiled with camlp4 because of streams syntax
 
@@ -1212,10 +1252,12 @@ ML4FILES += lib/pp.ml4 			\
 # ast-based camlp4
 
 parsing/lexer.cmx: parsing/lexer.ml4
-	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` pr_o.cmo -impl" -c -impl $<
+	$(SHOW)'OCAMLOPT4 $<'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` pr_o.cmo -impl" -c -impl $<
 
 parsing/lexer.cmo: parsing/lexer.ml4
-	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` pr_o.cmo -impl" -c -impl $<
+	$(SHOW)'OCAMLC4   $<'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` pr_o.cmo -impl" -c -impl $<
 
 
 
@@ -1226,28 +1268,36 @@ parsing/lexer.cmo: parsing/lexer.ml4
 .SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .mly .ml4 .v .vo .el .elc
 
 .ml.cmo:
-	$(if $(QUIET),@echo 'OCAMLC    $<' &&) $(OCAMLC) $(BYTEFLAGS) -c $<
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -c $<
 
 .mli.cmi:
-	$(if $(QUIET),@echo 'OCAMLC    $<' &&) $(OCAMLC) $(BYTEFLAGS) -c $<
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -c $<
 
 .ml.cmx:
-	$(if $(QUIET),@echo 'OCAMLOPT  $<' &&) $(OCAMLOPT) $(OPTFLAGS) -c $<
+	$(SHOW)'OCAMLOPT  $<'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -c $<
 
 .mll.ml:
-	$(if $(QUIET),@echo 'OCAMLOPT  $<' &&) ocamllex $<
+	$(SHOW)'OCAMLLEX  $<'
+	$(HIDE)ocamllex $<
 
 .mly.ml:
-	$(if $(QUIET),@echo 'OCAMLOPT  $<' &&) ocamlyacc $<
+	$(SHOW)'OCAMLYACC $<'
+	$(HIDE)ocamlyacc $<
 
 .mly.mli:
-	$(if $(QUIET),@echo 'OCAMLOPT  $<' &&) ocamlyacc $<
+	$(SHOW)'OCAMLYACC $<'
+	$(HIDE)ocamlyacc $<
 
 .ml4.cmx:
-	$(if $(QUIET),@echo 'OCAMLOPT4 $<' &&) $(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
+	$(SHOW)'OCAMLOPT4 $<'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 .ml4.cmo:
-	$(if $(QUIET),@echo 'OCAMLC4   $<' &&) $(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
+	$(SHOW)'OCAMLC4   $<'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 #.v.vo:
 #	$(BOOTCOQTOP) -compile $*
