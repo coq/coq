@@ -251,8 +251,7 @@ Notation  "x < y < z"  := (Zlt x y)/\(Zlt y z)
 Notation  "x < y <= z" := (Zlt x y)/\(Zle y z)
   (at level 5, y at level 4):Z_scope
   V8only (at level 50, y at next level).
-Notation  "x = y = z" := x=y/\y=z
-  (at level 5, y at level 4) : Z_scope
+Notation  "x = y = z" := x=y/\y=z : Z_scope
   V8only (at level 50, y at next level).
 
 (* Now a polymorphic notation
