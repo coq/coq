@@ -14,7 +14,7 @@ Require Export ArithRing.
 Require Export ZArith_base.
 Require Import Eqdep_dec.
 
-Definition Zeq (x y:Z) :=
+Unboxed Definition Zeq (x y:Z) :=
   match (x ?= y)%Z with
   | Datatypes.Eq => true
   | _ => false

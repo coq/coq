@@ -58,3 +58,4 @@ type fv_elem = FVnamed of identifier | FVrel of int
 
 type fv = fv_elem array
 
+val draw_instr : bytecodes -> unit

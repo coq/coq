@@ -36,7 +36,7 @@ Open Local Scope Z_scope.
   
 *)
 
-Fixpoint Zdiv_eucl_POS (a:positive) (b:Z) {struct a} : 
+Unboxed Fixpoint Zdiv_eucl_POS (a:positive) (b:Z) {struct a} : 
  Z * Z :=
   match a with
   | xH => if Zge_bool b 2 then (0, 1) else (1, 0)

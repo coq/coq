@@ -753,6 +753,14 @@ let _ =
 let _ =
   declare_bool_option 
     { optsync  = false;
+      optname  = "print the bytecode of global definitions";
+      optkey   = (SecondaryTable ("Print","Bytecode"));
+      optread  = Options.print_bytecodes;
+      optwrite = (fun b -> Options.set_print_bytecodes b) } 
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
       optname  = "use of virtual machine inside the kernel";
       optkey   = (SecondaryTable ("Virtual","Machine"));
       optread  = (fun () -> !Reduction.use_vm);
@@ -760,11 +768,19 @@ let _ =
 
 let _ =
   declare_bool_option 
-    { optsync  = false;
-      optname  = "transparent values for virtual machine";
+    { optsync  = true;
+      optname  = "use of boxed definitions";
+      optkey   = (SecondaryTable ("Boxed","Definitions"));
+      optread  = Options.boxed_definitions;
+      optwrite = (fun b -> Options.set_boxed_definitions b) } 
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
+      optname  = "use of boxed values";
       optkey   = (SecondaryTable ("Boxed","Values"));
       optread  = Vm.transp_values;
-      optwrite = (fun b -> Vm.set_transp_values b) }
+      optwrite = (fun b -> Vm.set_transp_values (not b)) } 
 
 let _ =
   declare_int_option

@@ -24,9 +24,14 @@
 #install_printer  (* section_path *)  prsp;;
 #install_printer  (* qualid *)  prqualid;;
 #install_printer  (* kernel_name *) prkn;;
-#install_printer  (* constr *)  print_pure_constr;;
+#install_printer  (* constr *)  print_pure_constr;; 
 #install_printer  (* patch *) ppripos;;
-(* parsing of names *)
+#install_printer  (* values *) ppvalues;;
+#install_printer ppzipper;;
+#install_printer ppstack;;
+#install_printer ppatom;;
+#install_printer ppwhd;;
+#install_printer ppvblock;;
 
 let qid = Libnames.qualid_of_string;;
 

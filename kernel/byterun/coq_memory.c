@@ -25,11 +25,11 @@ asize_t coq_max_stack_size = Coq_max_stack_size;
 
 
 value coq_global_data;
-value coq_global_transp;
 value coq_global_boxed;
-int default_transp;
+int coq_all_transp;
 value coq_atom_tbl;
 
+int drawinstr;
 /* interp state */
 
 long coq_saved_sp_offset;
@@ -68,7 +68,6 @@ static void coq_scan_roots(scanning_action action)
   register value * i;
   /* Scan the global variables */
   (*action)(coq_global_data, &coq_global_data);
-  (*action)(coq_global_transp, &coq_global_transp);
   (*action)(coq_global_boxed, &coq_global_boxed);
   (*action)(coq_atom_tbl, &coq_atom_tbl);
   /* Scan the stack */
@@ -92,20 +91,17 @@ void init_coq_stack()
 void init_coq_global_data(long requested_size)
 {
   int i;
-  
   coq_global_data = alloc_shr(requested_size, 0);
   for (i = 0; i < requested_size; i++) 
     Field (coq_global_data, i) = Val_unit;
-  
-  default_transp = BOXED;
+}
 
-  coq_global_transp = alloc_shr(requested_size, 0);
-  for (i = 0; i < requested_size; i++) 
-    Field (coq_global_transp, i) = Val_unit;
-  
+void init_coq_global_boxed(long requested_size)
+{
+  int i;
   coq_global_boxed = alloc_shr(requested_size, 0);
   for (i = 0; i < requested_size; i++) 
-    Field (coq_global_boxed, i) = Val_unit;
+    Field (coq_global_boxed, i) = Val_true;
 }
 
 void init_coq_atom_tbl(long requested_size){
@@ -130,11 +126,14 @@ value init_coq_vm(value unit) /* ML */
   else {
 
     /* Allocate the table of global and the stack */
+    drawinstr=0;
     init_coq_stack();
     init_coq_global_data(Coq_global_data_Size);
+    init_coq_global_boxed(40);
     init_coq_atom_tbl(40);
     /* Initialing the interpreter */
-    forcable = Val_true;
+    coq_all_transp = 0;
+    forcable = Val_false;
     init_coq_interpreter();
     
     /* Some predefined pointer code */
@@ -189,11 +188,6 @@ value get_coq_atom_tbl(value unit)                  /* ML */
   return coq_atom_tbl;
 }
 
-value get_coq_global_transp(value unit)             /* ML */
-{
-  return coq_global_transp;
-}
-
 value get_coq_global_boxed(value unit)        /* ML */
 {
   return coq_global_boxed;
@@ -221,23 +215,16 @@ value realloc_coq_global_data(value size)           /* ML */
 value realloc_coq_global_boxed(value size)           /* ML */
 {
   mlsize_t requested_size, actual_size, i;
-  value new_global_transp, new_global_boxed;
+  value new_global_boxed;
   requested_size = Long_val(size);
-  actual_size = Wosize_val(coq_global_transp);
+  actual_size = Wosize_val(coq_global_boxed);
   if (requested_size >= actual_size) {
     requested_size = (requested_size + 0x100) & 0xFFFFFF00;
-    new_global_transp = alloc_shr(requested_size, 0);
     new_global_boxed = alloc_shr(requested_size, 0);
-    for (i = 0; i < actual_size; i++){
-      initialize(&Field(new_global_transp, i), Field(coq_global_transp, i));
-      initialize(&Field(new_global_boxed, i), 
-		 Field(coq_global_boxed, i));
-    }
-    for (i = actual_size; i < requested_size; i++){
-      Field (new_global_transp, i) = Val_long (0);
+    for (i = 0; i < actual_size; i++)
+      initialize(&Field(new_global_boxed, i), Field(coq_global_boxed, i));
+    for (i = actual_size; i < requested_size; i++)
       Field (new_global_boxed, i) = Val_long (0);
-    }
-    coq_global_transp = new_global_transp;
     coq_global_boxed = new_global_boxed;
   }
   return Val_unit;
@@ -254,17 +241,33 @@ value realloc_coq_atom_tbl(value size)            /* ML */
     new_atom_tbl = alloc_shr(requested_size, 0);
     for (i = 0; i < actual_size; i++)
       initialize(&Field(new_atom_tbl, i), Field(coq_atom_tbl, i));
-    for (i = actual_size; i < requested_size; i++){
+    for (i = actual_size; i < requested_size; i++)
       Field (new_atom_tbl, i) = Val_long (0);
-    }
     coq_atom_tbl = new_atom_tbl;
   }
   return Val_unit;
 }
 
-value swap_coq_global_transp (value unit){
-  if (default_transp==BOXED) default_transp = TRANSP;
-  else default_transp = BOXED;
+
+value coq_set_transp_value(value transp)
+{
+  coq_all_transp = (transp == Val_true);
   return Val_unit;
 }
 
+value get_coq_transp_value(value unit)
+{
+  return Val_bool(coq_all_transp);
+}
+
+value coq_set_drawinstr(value unit)
+{
+  drawinstr = 1;
+  return Val_unit;
+}
+
+value coq_set_forcable (value unit)
+{
+  forcable = Val_true;
+  return Val_unit;
+}

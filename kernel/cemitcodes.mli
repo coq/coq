@@ -15,7 +15,6 @@ type emitcodes
 val length : emitcodes -> int 
 
 val patch_int : emitcodes -> (*pos*)int -> int -> unit
-val patch_getglobal : emitcodes -> (*pos*)int -> (bool*int) -> unit
 
 type to_patch = emitcodes * (patch list) * fv
 

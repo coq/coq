@@ -48,7 +48,6 @@ let push_local sz r =
     nb_stack = r.nb_stack + 1;
     in_stack = (sz + 1) :: r.in_stack }
 
-
 (* Table de relocation initiale *)
 let empty () = 
   { nb_stack = 0; in_stack = [];
@@ -128,7 +127,7 @@ let label_code = function
 
 let make_branch cont =
   match cont with
-  | (Kreturn _ as return) :: _ -> return, cont
+  | (Kreturn _ as return) :: cont' -> return, cont'
   | Klabel lbl as b :: _ -> b, cont
   | _ -> let b = Klabel(Label.create()) in b,b::cont
 
@@ -467,7 +466,10 @@ let compile env c =
   let reloc = empty () in
   let init_code = compile_constr reloc c 0 [Kstop] in
   let fv = List.rev (!(reloc.in_env).fv_rev) in
+  if Options.print_bytecodes() then 
+    (draw_instr init_code; draw_instr !fun_code);
   init_code,!fun_code, Array.of_list fv
+
 
 let compile_constant_body env kn body opaque boxed =
   if opaque then BCconstant
@@ -477,7 +479,16 @@ let compile_constant_body env kn body opaque boxed =
       let body = Declarations.force sb in
       match kind_of_term body with
       | Const kn' -> BCallias (get_allias env kn')
+      | Construct _ ->
+	  let res = compile env body in
+	  let to_patch = to_memory res in
+	  BCdefined (false,to_patch)
+
       | _ -> 
-	  let to_patch = to_memory (compile env body) in
-	  BCdefined (boxed,to_patch)
+	  let res = compile env body in
+	  let to_patch = to_memory res in
+	  (*if Options.print_bytecodes() then 
+	    (let init,fun_code,_= res in
+	    draw_instr init; draw_instr fun_code);*)
+	  BCdefined (boxed && Options.boxed_definitions (),to_patch)
 

@@ -111,8 +111,13 @@ GEXTEND Gram
   def_token:
     [ [ IDENT "Boxed";"Definition" ->
 	 (fun _ _ -> ()), (Global, Definition true)
-      | "Definition" -> (fun _ _ -> ()), (Global, Definition false)
-      | IDENT "Local" -> (fun _ _ -> ()), (Local, Definition true)
+      | IDENT "Unboxed";"Definition" ->
+	 (fun _ _ -> ()), (Global, Definition false)
+      | "Definition" -> 
+	(fun _ _ -> ()), (Global, Definition false)
+              (*(Options.boxed_definitions())) *)
+      | IDENT "Local" -> 
+	(fun _ _ -> ()), (Local, Definition (Options.boxed_definitions()))
       | IDENT "SubClass"  -> Class.add_subclass_hook, (Global, SubClass)
       | IDENT "Local"; IDENT "SubClass"  ->
 	  Class.add_subclass_hook, (Local, SubClass) ] ] 
@@ -319,10 +324,16 @@ GEXTEND Gram
           VernacInductive (f,indl)
       | IDENT "Boxed"; "Fixpoint"; recs = specifrec ->
 	 VernacFixpoint (recs,true)
-      | "Fixpoint"; recs = specifrec -> VernacFixpoint (recs,false)
-      | IDENT "Boxed"; "CoFixpoint"; corecs = specifcorec -> 
+      | IDENT "Unboxed"; "Fixpoint"; recs = specifrec ->
+	 VernacFixpoint (recs,false)
+      | "Fixpoint"; recs = specifrec -> 
+	 VernacFixpoint (recs,Options.boxed_definitions())
+(*      | IDENT "Boxed"; "CoFixpoint"; corecs = specifcorec -> 
 	 VernacCoFixpoint (corecs,true)
-      | "CoFixpoint"; corecs = specifcorec -> VernacCoFixpoint (corecs,false)
+      | IDENT "Unboxed"; "CoFixpoint"; corecs = specifcorec -> 
+	 VernacCoFixpoint (corecs,false) *)
+      | "CoFixpoint"; corecs = specifcorec -> 
+	 VernacCoFixpoint (corecs,false (*Options.boxed_definitions()*))
       | IDENT "Scheme"; l = schemes -> VernacScheme l
       | f = finite_token; s = csort; id = identref;
 	indpar = simple_binders_list; ":="; lc = constructor_list -> 

@@ -39,6 +39,26 @@ value coq_makeaccu (value i) {
   return (value)res;
 }
 
+value coq_accucond (value i) {
+  code_t q;
+  code_t res = coq_stat_alloc(8);
+  q = res;
+  *q++ = (opcode_t)(coq_instr_table[ACCUMULATECOND] - coq_instr_base);
+  *q = (opcode_t)Int_val(i);
+  return (value)res;
+}
+
+value coq_is_accumulate_code(value code){
+  code_t q;
+  int res;
+  q = (code_t)code;
+  res = 
+    (*q == (opcode_t)(coq_instr_table[ACCUMULATECOND] - coq_instr_base))
+    || 
+    (*q == (opcode_t)(coq_instr_table[ACCUMULATE] - coq_instr_base));
+  return Val_bool(res);
+}
+
 value coq_pushpop (value i) {
   code_t res;
   int n;
@@ -91,9 +111,10 @@ code_t coq_thread_code (code_t code, asize_t len){
     case GRAB: case COGRAB: 
     case OFFSETCLOSURE: case PUSHOFFSETCLOSURE: 
     case GETGLOBAL: case PUSHGETGLOBAL: 
-    case GETGLOBALBOXED: case PUSHGETGLOBALBOXED: 
+      /*    case GETGLOBALBOXED: case PUSHGETGLOBALBOXED: */
     case MAKEBLOCK1: case MAKEBLOCK2: case MAKEBLOCK3: case MAKEACCU:
     case CONSTINT: case PUSHCONSTINT: case GRABREC: case PUSHFIELD:
+    case ACCUMULATECOND:
     *q++ = *p++;
     break;
     
@@ -146,6 +167,25 @@ value coq_makeaccu (value i) {
   *q++ = (opcode_t)MAKEACCU;
   *q = (opcode_t)Int_val(i);
   return (value)res;
+}
+
+value coq_accucond (value i) {
+  code_t q;
+  code_t res = coq_stat_alloc(8);
+  q = res;
+  *q++ = (opcode_t)ACCUMULATECOND;
+  *q = (opcode_t)Int_val(i);
+  return (value)res;
+}
+
+value coq_is_accumulate_code(value code){
+  code_t q;
+  int res;
+  q = (code_t)code;
+  res = 
+    (*q == ACCUMULATECOND) || 
+    (*q == ACCUMULATE);
+  return Val_bool(res);
 }
 
 value coq_pushpop (value i) {

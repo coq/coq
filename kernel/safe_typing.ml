@@ -514,7 +514,7 @@ let import (dp,mb,depends,engmt) digest senv =
 	  loads = (mp,mb)::senv.loads }
 
 
-(** Remove the body of opaque constants in modules *)
+(* Remove the body of opaque constants in modules *)
  
 let rec lighten_module mb =
   { mb with

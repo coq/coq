@@ -23,7 +23,7 @@ type compilation_unit_name = dir_path * checksum
 
 type global = Constant | Inductive
 
-type key = (bool*int) option ref 
+type key = int option ref 
 type constant_key = constant_body * key
  
 type engagement = ImpredicativeSet

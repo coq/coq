@@ -43,8 +43,7 @@ let set_global v =
    [global_transp] contient la version transparente.
    [global_boxed] contient la version gelees. *)
 
-external global_transp : unit -> values array = "get_coq_global_transp"
-external global_boxed : unit -> values array = "get_coq_global_boxed"
+external global_boxed : unit -> bool array = "get_coq_global_boxed"
 
 (* [realloc_global_data n] augmente de n la taille de [global_data] *)
 external realloc_global_boxed : int -> unit = "realloc_coq_global_boxed"
@@ -54,14 +53,19 @@ let check_global_boxed n =
   
 let num_boxed = ref 0
 
-let set_boxed kn v = 
+let boxed_tbl = Hashtbl.create 53
+
+let cst_opaque = ref KNpred.full
+
+let is_opaque kn = KNpred.mem kn !cst_opaque
+
+let set_global_boxed kn v = 
   let n = !num_boxed in
   check_global_boxed n;
-  (global_transp()).(n) <- v;
-  let vb = val_of_constant_def kn v in
-  (global_boxed()).(n) <- vb;
+  (global_boxed()).(n) <- (is_opaque kn);
+  Hashtbl.add boxed_tbl kn n ;
   incr num_boxed;
-  n
+  set_global (val_of_constant_def n kn v)
 
 (* table pour les structured_constant et les annotations des switchs *)
 
@@ -99,21 +103,19 @@ let rec slot_for_getglobal env kn =
     | BCdefined(boxed,(code,pl,fv)) -> 
 	let v = eval_to_patch env (code,pl,fv) in
    	let pos = 
-	  if boxed then set_boxed kn v 
+	  if boxed then set_global_boxed kn v 
 	  else set_global v in
-	let bpos = boxed,pos in
-	set_pos_constant ck bpos;
-	bpos
+	set_pos_constant ck pos;
+	pos
     | BCallias kn' ->
-	let bpos = slot_for_getglobal env kn' in
-	set_pos_constant ck bpos;
-	bpos
+	let pos = slot_for_getglobal env kn' in
+	set_pos_constant ck pos;
+	pos
     | BCconstant -> 
 	let v = val_of_constant kn in
 	let pos = set_global v in
-	let bpos = false,pos in
-	set_pos_constant ck bpos;
-	bpos  
+	set_pos_constant ck pos;
+	pos  
 
 and slot_for_fv env fv=
   match fv with
@@ -148,7 +150,7 @@ and eval_to_patch env (buff,pl,fv) =
     | Reloc_annot a, pos -> patch_int buff pos (slot_for_annot a)
     | Reloc_const sc, pos -> patch_int buff pos (slot_for_str_cst sc)
     | Reloc_getglobal kn, pos -> 
-	patch_getglobal buff pos (slot_for_getglobal env kn)
+	patch_int buff pos (slot_for_getglobal env kn)
   in 
   List.iter patch pl;
   let nfv = Array.length fv in
@@ -160,4 +162,14 @@ and val_of_constr env c =
   let (_,fun_code,_ as ccfv) = compile env c in
   eval_to_patch env (to_memory ccfv)
  
-  
+let set_transparent_const kn =
+  cst_opaque := KNpred.remove kn !cst_opaque;
+  List.iter (fun n -> (global_boxed()).(n) <- false) 
+    (Hashtbl.find_all boxed_tbl kn)
+
+let set_opaque_const kn =
+  cst_opaque := KNpred.add kn !cst_opaque;
+  List.iter (fun n -> (global_boxed()).(n) <- true) 
+    (Hashtbl.find_all boxed_tbl kn)
+
+

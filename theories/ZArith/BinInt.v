@@ -17,6 +17,8 @@ Require Export Pnat.
 Require Import BinNat.
 Require Import Plus.
 Require Import Mult.
+
+Unset Boxed Definitions.
 (**********************************************************************)
 (** Binary integer numbers *)
 

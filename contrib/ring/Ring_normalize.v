@@ -12,6 +12,7 @@ Require Import Ring_theory.
 Require Import Quote.
 
 Set Implicit Arguments.
+Unset Boxed Definitions.
 
 Lemma index_eq_prop : forall n m:index, Is_true (index_eq n m) -> n = m.
 Proof.

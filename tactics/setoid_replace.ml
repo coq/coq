@@ -687,8 +687,8 @@ let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
                   apply_to_rels mext quantifiers_rev |]));
           const_entry_type = None;
           const_entry_opaque = false;
-          const_entry_boxed = false},
-           IsDefinition)) ;
+          const_entry_boxed = Options.boxed_definitions()},
+	IsDefinition)) ;
      mext 
  in
   let mmor = current_constant mor_name in
@@ -994,7 +994,7 @@ let int_add_relation id a aeq refl sym trans =
             a_quantifiers_rev);
        const_entry_type = None;
        const_entry_opaque = false;
-       const_entry_boxed = false},
+       const_entry_boxed = Options.boxed_definitions()},
       IsDefinition) in
   let id_precise = id_of_string (string_of_id id ^ "_precise_relation_class") in
   let xreflexive_relation_class =
@@ -1011,7 +1011,7 @@ let int_add_relation id a aeq refl sym trans =
         Sign.it_mkLambda_or_LetIn xreflexive_relation_class a_quantifiers_rev;
        const_entry_type = None;
        const_entry_opaque = false;
-       const_entry_boxed = false },
+       const_entry_boxed = Options.boxed_definitions() },
       IsDefinition) in
   let aeq_rel =
    { aeq_rel with
@@ -1071,7 +1071,7 @@ let int_add_relation id a aeq refl sym trans =
           {const_entry_body = Sign.it_mkLambda_or_LetIn lemma a_quantifiers_rev;
            const_entry_type = None;
            const_entry_opaque = false;
-          const_entry_boxed = false},
+          const_entry_boxed = Options.boxed_definitions()},
           IsDefinition)
       in
        let a_quantifiers_rev =

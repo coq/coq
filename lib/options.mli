@@ -62,3 +62,13 @@ val dump : bool ref
 val dump_into_file : string -> unit
 val dump_string : string -> unit
 
+(* Options for the virtual machine *)
+
+
+val set_print_bytecodes : bool -> unit
+val print_bytecodes : unit -> bool
+
+val set_boxed_definitions : bool -> unit
+val boxed_definitions : unit -> bool
+
+ 

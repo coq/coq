@@ -12,7 +12,7 @@ open Univ
 open Cbytecodes
 
 
-(**** Test la structure des piles ****)
+(* Test la structure des piles *)
 
 let compare_zipper z1 z2 =
   match z1, z2 with
@@ -29,7 +29,7 @@ let rec compare_stack stk1 stk2 =
       else false
   | _, _ -> false 
 
-(**** Conversion ****)
+(* Conversion *)
 let conv_vect fconv vect1 vect2 cu =
   let n = Array.length vect1 in
   if n = Array.length vect2 then
@@ -247,7 +247,7 @@ let vconv pb env t1 t2 =
 let _ = Reduction.set_vm_conv_cmp vconv
 
 (*******************************************)
-(**** Calcul de la forme normal d'un terme *)
+(* Calcul de la forme normal d'un terme    *)
 (*******************************************)
 
 let crazy_type = mkSet 
@@ -271,7 +271,7 @@ let invert_tag cst tag reloc_tbl =
       else ()
     done;raise Not_found 
   with Find_at j -> (j+1)   
-             (*** Argggg, ces constructeurs de ... qui commencent a 1*)
+             (* Argggg, ces constructeurs de ... qui commencent a 1*)
 
 (* Build the substitution that replaces Rels by the appropriate 
   inductives *)
@@ -289,7 +289,7 @@ let constructor_instantiate mind mib params ctyp =
   if nparams = 0 then ctyp1
   else
     let _,ctyp2 = decompose_prod_n nparams ctyp1 in
-    let sp = Array.to_list params in substl sp ctyp2
+    let sp = List.rev (Array.to_list params) in substl sp ctyp2
   
 let destApplication t =
   try destApplication t 
@@ -358,7 +358,7 @@ let build_branches_type (mind,_ as ind) mib mip params dep p rtbl =
     decl, codom
   in Array.mapi build_one_branch mip.mind_nf_lc
 
-(** La fonction de normalisation *)
+(* La fonction de normalisation *)
 
 let rec nf_val env v t = nf_whd env (whd_val v) t 
 
@@ -398,9 +398,8 @@ and nf_whd env whd typ =
   | Vatom_stk(Aid idkey, stk) ->
       let c,typ = constr_type_of_idkey env idkey in
       nf_stk env c typ stk
-  | Vatom_stk(Aiddef(idkey,_), stk) ->
-      let c,typ = constr_type_of_idkey env idkey in
-      nf_stk env c typ stk
+  | Vatom_stk(Aiddef(idkey,v), stk) ->
+      nf_whd env (whd_stack v stk) typ
   | Vatom_stk(Aind ind, stk) ->
       nf_stk env (mkInd ind) (type_of_ind env ind) stk 
   | Vatom_stk(_,stk) -> assert false
@@ -421,7 +420,6 @@ and nf_stk env c t stk  =
       let _,_,codom = decompose_prod env typ in
       nf_stk env (mkApp(mkApp(fd,args),[|c|])) (subst1 c codom) stk
   | Zswitch sw :: stk -> 
-    
       let (mind,_ as ind),allargs = find_rectype (whd_betadeltaiota env t) in
       let (mib,mip) = Inductive.lookup_mind_specif env ind in
       let nparams = mip.mind_nparams in
@@ -489,11 +487,19 @@ and nf_args env vargs t =
 and nf_bargs env b t =
   let t = ref t in
   let len = bsize b in
-  Array.init len 
+  let args = Array.create len crazy_type in
+  for i = 0 to len - 1 do
+    let _,dom,codom = decompose_prod env !t in
+    let c = nf_val env (bfield b i) dom in
+    args.(i) <- c;
+    t := subst1 c codom
+  done;
+  args
+(*  Array.init len 
     (fun i ->
       let _,dom,codom = decompose_prod env !t in
       let c = nf_val env (bfield b i) dom in
-      t := subst1 c codom; c) 
+      t := subst1 c codom; c) *) 
 
 and nf_fun env f typ =
   let k = nb_rel env in
@@ -527,11 +533,14 @@ and nf_cofix env cf =
   let cfb = Util.array_map2 (fun v t -> nf_val env v t) vb cft in
   mkCoFix (init,(name,cft,cfb))
   
+
+
 let cbv_vm env c t  =
-  if not (transp_values ()) then swap_global_transp ();
+  let transp = transp_values () in
+  if not transp then set_transp_values true; 
   let v = val_of_constr env c in
   let c = nf_val env v t in
-  if not (transp_values ()) then swap_global_transp ();
+  if not transp then set_transp_values false; 
   c
   
 

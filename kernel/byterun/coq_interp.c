@@ -51,9 +51,19 @@ sp is a local copy of the global variable extern_sp. */
 #    endif
 #  endif
 #else 
-#  define Instruct(name) case name: print_instr(name);
+#  define Instruct(name) case name:
 #  define Next break
 #endif 
+
+/*#define _COQ_DEBUG_*/
+
+#ifdef _COQ_DEBUG_ 
+#   define print_instr(s) if (drawinstr) printf("%s\n",s)
+#   define print_int(i)   if (drawinstr) printf("%d\n",i)
+# else 
+#   define print_instr(s) 
+#   define print_int(i) 
+#endif
 
 /* GC interface */
 #define Setup_for_gc { sp -= 2; sp[0] = accu; sp[1] = coq_env; coq_sp = sp; }
@@ -154,8 +164,6 @@ value coq_interprete
 #else 
   opcode_t curr_instr;
 #endif
-  value * global_transp;
-
   if (coq_pc == NULL) {           /* Interpreter is initializing */
 #ifdef THREADED_CODE
     coq_instr_table = (char **) coq_jumptable;
@@ -168,8 +176,6 @@ value coq_interprete
 #endif
 
   /* Initialisation */
-  if (default_transp == BOXED) global_transp = &coq_global_boxed;
-  else global_transp = &coq_global_transp;
   sp = coq_sp;
   pc = coq_pc;
   accu = coq_accu;
@@ -183,107 +189,138 @@ value coq_interprete
 /* Basic stack operations */
       
       Instruct(ACC0){
+	print_instr("ACC0");
 	accu = sp[0]; Next;
       }
       Instruct(ACC1){
+	print_instr("ACC1");
 	accu = sp[1]; Next;
       }
       Instruct(ACC2){
+	print_instr("ACC2");
 	accu = sp[2]; Next;
       }
       Instruct(ACC3){
+	print_instr("ACC3");
 	accu = sp[3]; Next;
       }
       Instruct(ACC4){
+	print_instr("ACC4");
 	accu = sp[4]; Next;
       }
       Instruct(ACC5){
+	print_instr("ACC5");
 	accu = sp[5]; Next;
       }
       Instruct(ACC6){
+	print_instr("ACC6");
 	accu = sp[6]; Next;
       }
       Instruct(ACC7){
+	print_instr("ACC7");
         accu = sp[7]; Next;
       }      
       Instruct(PUSH){
+	print_instr("PUSH");
 	*--sp = accu; Next;
       }
       Instruct(PUSHACC0) {
+	print_instr("PUSHACC0");
         *--sp = accu; Next;
       }
       Instruct(PUSHACC1){
+	print_instr("PUSHACC1");
         *--sp = accu; accu = sp[1]; Next;
       }
       Instruct(PUSHACC2){
+	print_instr("PUSHACC2");
         *--sp = accu; accu = sp[2]; Next;
       }
       Instruct(PUSHACC3){
+	print_instr("PUSHACC3");
 	*--sp = accu; accu = sp[3]; Next;
       }
       Instruct(PUSHACC4){
+	print_instr("PUSHACC4");
 	*--sp = accu; accu = sp[4]; Next;
       }
       Instruct(PUSHACC5){
+	print_instr("PUSHACC5");
 	*--sp = accu; accu = sp[5]; Next;
       }
       Instruct(PUSHACC6){
+	print_instr("PUSHACC5");
 	*--sp = accu; accu = sp[6]; Next;
       }
       Instruct(PUSHACC7){
+	print_instr("PUSHACC7");
 	*--sp = accu; accu = sp[7]; Next;
       }
       Instruct(PUSHACC){
+	print_instr("PUSHACC");
 	*--sp = accu;
       }
       /* Fallthrough */
       
       Instruct(ACC){
+	print_instr("ACC");
 	accu = sp[*pc++];
         Next;
       }
       
       Instruct(POP){
+	print_instr("POP");
 	sp += *pc++;
 	Next;
       }
       /* Access in heap-allocated environment */
       
       Instruct(ENVACC1){
+	print_instr("ENVACC1");
 	accu = Field(coq_env, 1); Next;
       }
       Instruct(ENVACC2){
+	print_instr("ENVACC2");
 	accu = Field(coq_env, 2); Next;
       }
       Instruct(ENVACC3){
+	print_instr("ENVACC3");
 	accu = Field(coq_env, 3); Next;
       }
       Instruct(ENVACC4){
+	print_instr("ENVACC4");
 	accu = Field(coq_env, 4); Next;
       }
       Instruct(PUSHENVACC1){
+	print_instr("PUSHENVACC1");
 	*--sp = accu; accu = Field(coq_env, 1); Next;
       }
       Instruct(PUSHENVACC2){
+	print_instr("PUSHENVACC2");
 	*--sp = accu; accu = Field(coq_env, 2); Next;
       }
       Instruct(PUSHENVACC3){
+	print_instr("PUSHENVACC3");
 	*--sp = accu; accu = Field(coq_env, 3); Next;
       }
       Instruct(PUSHENVACC4){
+	print_instr("PUSHENVACC4");
 	*--sp = accu; accu = Field(coq_env, 4); Next;
       }
       Instruct(PUSHENVACC){
+	print_instr("PUSHENVACC");
 	*--sp = accu;
       }
       /* Fallthrough */
       Instruct(ENVACC){
+	print_instr("ENVACC");
 	accu = Field(coq_env, *pc++);
         Next;
       }
       /* Function application */
       
       Instruct(PUSH_RETADDR) {
+	print_instr("PUSH_RETADDR");
 	sp -= 3;
 	sp[0] = (value) (pc + *pc);
 	sp[1] = coq_env;
@@ -293,6 +330,7 @@ value coq_interprete
 	Next;
       }
       Instruct(APPLY) {
+	print_instr("APPLY");
 	coq_extra_args = *pc - 1;
 	pc = Code_val(accu);
 	coq_env = accu;
@@ -300,6 +338,7 @@ value coq_interprete
       }
       Instruct(APPLY1) {
 	value arg1 = sp[0];
+	print_instr("APPLY1");
 	sp -= 3;
 	sp[0] = arg1;
 	sp[1] = (value)pc;
@@ -313,6 +352,7 @@ value coq_interprete
       Instruct(APPLY2) {
 	value arg1 = sp[0];
 	value arg2 = sp[1];
+	print_instr("APPLY2");
 	sp -= 3;
 	sp[0] = arg1;
 	sp[1] = arg2;
@@ -328,6 +368,7 @@ value coq_interprete
 	value arg1 = sp[0];
 	value arg2 = sp[1];
 	value arg3 = sp[2];
+	print_instr("APPLY3");
 	sp -= 3;
 	sp[0] = arg1;
 	sp[1] = arg2;
@@ -346,6 +387,7 @@ value coq_interprete
 	int slotsize = *pc;
 	value * newsp;
 	int i;
+	print_instr("APPTERM");
 	/* Slide the nargs bottom words of the current frame to the top
 	   of the frame, and discard the remainder of the frame */
 	newsp = sp + slotsize - nargs;
@@ -358,6 +400,7 @@ value coq_interprete
       }
       Instruct(APPTERM1) {
 	value arg1 = sp[0];
+	print_instr("APPTERM1");
 	sp = sp + *pc - 1;
 	sp[0] = arg1;
 	pc = Code_val(accu);
@@ -367,6 +410,7 @@ value coq_interprete
       Instruct(APPTERM2) {
 	value arg1 = sp[0];
 	value arg2 = sp[1];
+	print_instr("APPTERM2");
 	sp = sp + *pc - 2;
 	sp[0] = arg1;
 	sp[1] = arg2;
@@ -379,6 +423,7 @@ value coq_interprete
 	value arg1 = sp[0];
 	value arg2 = sp[1];
 	value arg3 = sp[2];
+	print_instr("APPTERM3");
 	sp = sp + *pc - 3;
 	sp[0] = arg1;
 	sp[1] = arg2;
@@ -390,6 +435,7 @@ value coq_interprete
       }
       
       Instruct(RETURN) {
+	print_instr("RETURN");
 	sp += *pc++;
 	if (coq_extra_args > 0) {
 	  coq_extra_args--;
@@ -407,6 +453,7 @@ value coq_interprete
       Instruct(RESTART) {
 	int num_args = Wosize_val(coq_env) - 2;
 	int i;
+	print_instr("RESTART");
 	sp -= num_args;
 	for (i = 0; i < num_args; i++) sp[i] = Field(coq_env, i + 2);
 	coq_env = Field(coq_env, 1);
@@ -416,6 +463,8 @@ value coq_interprete
       
       Instruct(GRAB) {
 	int required = *pc++;
+	print_instr("GRAB");
+	/*	printf("GRAB %d\n",required); */
 	if (coq_extra_args >= required) {
 	  coq_extra_args -= required;
 	} else {
@@ -436,10 +485,13 @@ value coq_interprete
 
       Instruct(COGRAB){
 	int required = *pc++;
+	print_instr("COGRAB");
 	if(forcable == Val_true) {
+	  print_instr("true");
 	  /* L'instruction précédante est FORCE */
 	  if (coq_extra_args > 0) coq_extra_args--;
 	  pc++;
+	  forcable = Val_false;
 	} else { /* L'instruction précédante est APPLY */
 	  mlsize_t num_args, i;
 	  num_args = 1 + coq_extra_args; /* arg1 + extra args */
@@ -457,6 +509,7 @@ value coq_interprete
       }
       Instruct(GRABREC) { 
 	int rec_pos = *pc++; /* commence a zero */
+	print_instr("GRABREC");
 	if (rec_pos <= coq_extra_args && !Is_accu(sp[rec_pos])) {
 	  pc++;/* On saute le Restart */
 	} else {
@@ -506,6 +559,8 @@ value coq_interprete
       Instruct(CLOSURE) {
 	int nvars = *pc++;
 	int i;
+	print_instr("CLOSURE");
+	print_int(nvars);
 	if (nvars > 0) *--sp = accu;
 	Alloc_small(accu, 1 + nvars, Closure_tag);
 	Code_val(accu) = pc + *pc;
@@ -521,6 +576,7 @@ value coq_interprete
 	int start = *pc++;
 	int i;
 	value * p;
+	print_instr("CLOSUREREC");
 	if (nvars > 0) *--sp = accu;
 	/* construction du vecteur de type */
 	Alloc_small(accu, nfuncs, 0);
@@ -551,51 +607,52 @@ value coq_interprete
       }
      
       Instruct(PUSHOFFSETCLOSURE) {
+	print_instr("PUSHOFFSETCLOSURE");
 	*--sp = accu;
       } /* fallthrough */
       Instruct(OFFSETCLOSURE) {
+	print_instr("OFFSETCLOSURE");
 	accu = coq_env + *pc++ * sizeof(value); Next;
       }
       Instruct(PUSHOFFSETCLOSUREM2) {
+	print_instr("PUSHOFFSETCLOSUREM2");
 	*--sp = accu;
       } /* fallthrough */
       Instruct(OFFSETCLOSUREM2) {
+	print_instr("OFFSETCLOSUREM2");
 	accu = coq_env - 2 * sizeof(value); Next;
       }
       Instruct(PUSHOFFSETCLOSURE0) {
+	print_instr("PUSHOFFSETCLOSURE0");
 	*--sp = accu; 
       }/* fallthrough */
       Instruct(OFFSETCLOSURE0) {
+	print_instr("OFFSETCLOSURE0");
 	accu = coq_env; Next;
       }
       Instruct(PUSHOFFSETCLOSURE2){
+	print_instr("PUSHOFFSETCLOSURE2");
 	*--sp = accu; /* fallthrough */
       }
       Instruct(OFFSETCLOSURE2) {
+	print_instr("OFFSETCLOSURE2");
 	accu = coq_env + 2 * sizeof(value); Next;
       }
 
 /* Access to global variables */
 
       Instruct(PUSHGETGLOBAL) {
+	print_instr("PUSHGETGLOBAL");
 	*--sp = accu;
       }
       /* Fallthrough */
       Instruct(GETGLOBAL){
+	print_instr("GETGLOBAL");
 	accu = Field(coq_global_data, *pc);
         pc++;
         Next;
       }    
-      Instruct(PUSHGETGLOBALBOXED) {
-	*--sp = accu;
-      }
-      /* Fallthrough */
-      Instruct(GETGLOBALBOXED){
 
-	accu = Field(*global_transp, *pc);
-        pc++;
-        Next;
-      }
 /* Allocation of blocks */
 
       Instruct(MAKEBLOCK) {
@@ -603,6 +660,7 @@ value coq_interprete
 	tag_t tag = *pc++;
 	mlsize_t i;
 	value block;
+	print_instr("MAKEBLOCK");
 	Alloc_small(block, wosize, tag);
 	Field(block, 0) = accu;
 	for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
@@ -613,6 +671,7 @@ value coq_interprete
 	
 	tag_t tag = *pc++;
 	value block;
+	print_instr("MAKEBLOCK1");
 	Alloc_small(block, 1, tag);
 	Field(block, 0) = accu;
 	accu = block;
@@ -622,6 +681,7 @@ value coq_interprete
 	
 	tag_t tag = *pc++;
 	value block;
+	print_instr("MAKEBLOCK2");
 	Alloc_small(block, 2, tag);
 	Field(block, 0) = accu;
 	Field(block, 1) = sp[0];
@@ -632,6 +692,7 @@ value coq_interprete
       Instruct(MAKEBLOCK3) {
 	tag_t tag = *pc++;
 	value block;
+	print_instr("MAKEBLOCK3");
 	Alloc_small(block, 3, tag);
 	Field(block, 0) = accu;
 	Field(block, 1) = sp[0];
@@ -647,7 +708,9 @@ value coq_interprete
 	
 /* Branches and conditional branches */
       Instruct(FORCE) {
+	print_instr("FORCE");
 	if (Is_block(accu) && Tag_val(accu) == Closure_tag) {
+	  forcable = Val_true;
 	  /* On pousse l'addresse de retour et l'argument */
 	  sp -= 3;
 	  sp[0] = (value) (pc);
@@ -658,6 +721,9 @@ value coq_interprete
 	  pc = Code_val(accu);
 	  coq_env = accu;
 	  goto check_stacks;
+	} else {
+	  if (Is_block(accu)) print_int(Tag_val(accu));
+	  else print_instr("Not a block");
 	}
 	Next;
       }
@@ -665,11 +731,17 @@ value coq_interprete
     
       Instruct(SWITCH) {
 	uint32 sizes = *pc++;
+	print_instr("SWITCH");
+	print_int(sizes);
 	if (Is_block(accu)) {
 	  long index = Tag_val(accu);
+	  print_instr("block");
+	  print_int(index);
 	  pc += pc[(sizes & 0xFFFF) + index];
 	} else {
 	  long index = Long_val(accu);
+	  print_instr("constant");
+	  print_int(index);
 	  pc += pc[index];
 	}
 	  Next;
@@ -677,6 +749,7 @@ value coq_interprete
       Instruct(PUSHFIELD){
 	int i;
 	int size = *pc++;
+	print_instr("PUSHFIELD");
 	sp -= size;
 	for(i=0;i<size;i++)sp[i] = Field(accu,i);
 	Next;
@@ -686,6 +759,7 @@ value coq_interprete
 	mlsize_t sz;
 	int i, annot;
 	code_t typlbl,swlbl;
+	print_instr("MAKESWITCHBLOCK");
 	typlbl = (code_t)pc + *pc; 
 	pc++;
 	swlbl = (code_t)pc + *pc; 
@@ -725,6 +799,7 @@ value coq_interprete
       /* Stack checks */
       
     check_stacks:
+      print_instr("check_stacks");
       if (sp < coq_stack_threshold) {
 	coq_sp = sp;
 	realloc_coq_stack(Coq_stack_threshold);
@@ -736,32 +811,42 @@ value coq_interprete
 /* Integer constants */
 
       Instruct(CONST0){
+	print_instr("CONST0");
 	accu = Val_int(0); Next;}
       Instruct(CONST1){
+	print_instr("CONST1");
 	accu = Val_int(1); Next;}
       Instruct(CONST2){
+	print_instr("CONST2");
 	accu = Val_int(2); Next;}
       Instruct(CONST3){
+	print_instr("CONST3");
 	accu = Val_int(3); Next;}
       
       Instruct(PUSHCONST0){
+	print_instr("PUSHCONST0");
 	*--sp = accu; accu = Val_int(0); Next;
       }
       Instruct(PUSHCONST1){
+	print_instr("PUSHCONST1");
 	*--sp = accu; accu = Val_int(1); Next;
       }
       Instruct(PUSHCONST2){
+	print_instr("PUSHCONST2");
 	*--sp = accu; accu = Val_int(2); Next;
       }
       Instruct(PUSHCONST3){
+	print_instr("PUSHCONST3");
 	*--sp = accu; accu = Val_int(3); Next;
       }
 
       Instruct(PUSHCONSTINT){
+	print_instr("PUSHCONSTINT");
 	*--sp = accu;
       }
       /* Fallthrough */
       Instruct(CONSTINT) {
+	print_instr("CONSTINT");
 	accu = Val_int(*pc);
 	pc++;
 	Next;
@@ -770,12 +855,34 @@ value coq_interprete
 /* Debugging and machine control */
 
       Instruct(STOP){
+	print_instr("STOP");
 	coq_sp = sp;
 	return accu;
       }
       
+      Instruct(ACCUMULATECOND) {
+	int i, num;
+	print_instr("ACCUMULATECOND");
+	num = *pc;
+	pc++;
+	if (Field(coq_global_boxed, num) == Val_false || coq_all_transp) {
+	  /*	  printf ("false\n");
+	    printf ("tag = %d", Tag_val(Field(accu,1))); */
+	  num = Wosize_val(coq_env);
+	  for(i = 2; i < num; i++) *--sp = Field(accu,i);
+	  coq_extra_args = coq_extra_args + (num - 2);
+	  coq_env = Field(Field(accu,1),1);
+	  pc = Code_val(coq_env);
+	  accu = coq_env;
+	  /*	  printf ("end\n"); */
+	  Next;
+	};
+	/*	printf ("true\n"); */
+      }
+
       Instruct(ACCUMULATE) {
 	mlsize_t i, size;
+	print_instr("ACCUMULATE");
 	size = Wosize_val(coq_env);
 	Alloc_small(accu, size + coq_extra_args + 1, Accu_tag);
 	for(i = 0; i < size; i++) Field(accu, i) = Field(coq_env, i);
@@ -786,10 +893,11 @@ value coq_interprete
 	coq_extra_args = Long_val(sp[2]);
 	sp += 3;
 	Next;
-      }
-      
+      }  
+            
       Instruct(MAKEACCU) {
 	int i;
+	print_instr("MAKEACCU");
 	Alloc_small(accu, coq_extra_args + 3, Accu_tag);
 	Code_val(accu) = accumulate;
 	Field(accu,1) = Field(coq_atom_tbl, *pc);
@@ -802,6 +910,7 @@ value coq_interprete
       }
      
       Instruct(MAKEPROD) {
+	print_instr("MAKEPROD");
 	*--sp=accu;
 	Alloc_small(accu,2,0);
 	Field(accu, 0) = sp[0];
@@ -820,6 +929,7 @@ value coq_interprete
 }
 
 value coq_push_ra(value tcode) { 
+  print_instr("push_ra");
   coq_sp -= 3;
   coq_sp[0] = (value) tcode;
   coq_sp[1] = Val_unit;
@@ -828,6 +938,7 @@ value coq_push_ra(value tcode) {
 }
 
 value coq_push_val(value v) {
+  print_instr("push_val");
   *--coq_sp = v;
   return Val_unit;
 }
@@ -836,6 +947,7 @@ value coq_push_arguments(value args) {
   int nargs,i;
   nargs = Wosize_val(args) - 2;
   coq_sp -= nargs;
+  print_instr("push_args");print_int(nargs);
   for(i = 0; i < nargs; i++) coq_sp[i] = Field(args, i+2);
   return Val_unit;
 }
@@ -844,11 +956,13 @@ value coq_push_vstack(value stk) {
   int len,i;
   len = Wosize_val(stk);
   coq_sp -= len;
-  for(i = 0; i < len; i++) coq_sp[i] = Field(stk,i);
+  print_instr("push_vstack");print_int(len);
+   for(i = 0; i < len; i++) coq_sp[i] = Field(stk,i);
   return Val_unit;
 }
 
 value  coq_interprete_ml(value tcode, value a, value e, value ea) {
+  print_instr("coq_interprete");
   return coq_interprete((code_t)tcode, a, e, Long_val(ea));
 }
 

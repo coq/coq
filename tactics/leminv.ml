@@ -245,10 +245,11 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
   let invProof = inversion_scheme env sigma t sort dep inv_op in
   let _ = 
     declare_constant name
-    (DefinitionEntry { const_entry_body = invProof;
-                       const_entry_type = None;
-                       const_entry_opaque = false;
-		       const_entry_boxed = true}, 
+    (DefinitionEntry 
+       { const_entry_body = invProof;
+         const_entry_type = None;
+         const_entry_opaque = false;
+	 const_entry_boxed = true && (Options.boxed_definitions())}, 
      IsProof Lemma)
   in ()
 

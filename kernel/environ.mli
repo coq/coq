@@ -112,9 +112,9 @@ type constant_key
 exception NotEvaluated
 exception AllReadyEvaluated
 
-val constant_key_pos : constant_key -> bool*int  
+val constant_key_pos : constant_key -> int  
 val constant_key_body : constant_key -> constant_body
-val set_pos_constant : constant_key -> (bool*int) -> unit
+val set_pos_constant : constant_key -> int -> unit
 
 val lookup_constant_key : constant -> env -> constant_key
 val lookup_constant    : constant -> env -> constant_body

@@ -17,7 +17,7 @@ Require Import Binomial.
 Open Local Scope R_scope.
 
 (* TT Ak; 1<=k<=N *)
-Boxed Fixpoint prod_f_SO (An:nat -> R) (N:nat) {struct N} : R :=
+Fixpoint prod_f_SO (An:nat -> R) (N:nat) {struct N} : R :=
   match N with
   | O => 1
   | S p => prod_f_SO An p * An (S p)

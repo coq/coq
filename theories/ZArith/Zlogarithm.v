@@ -36,6 +36,7 @@ Fixpoint log_inf (p:positive) : Z :=
   | xO q => Zsucc (log_inf q)	(* 2n *)
   | xI q => Zsucc (log_inf q)	(* 2n+1 *)
   end.
+
 Fixpoint log_sup (p:positive) : Z :=
   match p with
   | xH => 0	(* 1 *)

@@ -26,7 +26,10 @@ open Rawterm
 exception Elimconst
 exception Redelimination
 
-let set_opaque_const = Conv_oracle.set_opaque_const
+let set_opaque_const sp = 
+  Conv_oracle.set_opaque_const sp;
+  Csymtable.set_opaque_const sp
+
 let set_transparent_const sp =
   let cb = Global.lookup_constant sp in
   if cb.const_body <> None & cb.const_opaque then
@@ -34,7 +37,8 @@ let set_transparent_const sp =
       (str "Cannot make" ++ spc () ++ 
          Nametab.pr_global_env Idset.empty (ConstRef sp) ++
          spc () ++ str "transparent because it was declared opaque.");
-  Conv_oracle.set_transparent_const sp
+  Conv_oracle.set_transparent_const sp;
+  Csymtable.set_transparent_const sp
 
 let set_opaque_var      = Conv_oracle.set_opaque_var
 let set_transparent_var = Conv_oracle.set_transparent_var

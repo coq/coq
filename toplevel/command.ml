@@ -198,7 +198,7 @@ let declare_one_elimination ind =
         { const_entry_body = c;
           const_entry_type = t;
           const_entry_opaque = false;
-	  const_entry_boxed = true }, 
+	  const_entry_boxed = Options.boxed_definitions() }, 
        Decl_kinds.IsDefinition) in
     definition_message id;
     kn
@@ -620,7 +620,7 @@ let build_scheme lnamedepindsort =
     let ce = { const_entry_body = decl;
                const_entry_type = Some decltype;
                const_entry_opaque = false;
-	       const_entry_boxed = true } in
+	       const_entry_boxed = Options.boxed_definitions() } in
     let _,kn = declare_constant fi (DefinitionEntry ce, IsDefinition) in
     ConstRef kn :: lrecref
   in 

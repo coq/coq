@@ -35,7 +35,7 @@ unfold Pser, exp_in in |- *.
 trivial.
 Defined.
 
-Boxed Definition exp (x:R) : R := projT1 (exist_exp x).
+Definition exp (x:R) : R := projT1 (exist_exp x).
 
 Lemma pow_i : forall i:nat, (0 < i)%nat -> 0 ^ i = 0.
 intros; apply pow_ne_zero.
@@ -235,7 +235,7 @@ Qed.
 
 (* Definition of cosinus *)
 (*************************)
-Boxed Definition cos (x:R) : R :=
+Definition cos (x:R) : R :=
   match exist_cos (Rsqr x) with
   | existT a b => a
   end.
@@ -356,7 +356,7 @@ Qed.
 
 (***********************)
 (* Definition of sinus *)
-Boxed Definition sin (x:R) : R :=
+Definition sin (x:R) : R :=
   match exist_sin (Rsqr x) with
   | existT a b => x * a
   end.

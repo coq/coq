@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 Require Import BinPos.
+Unset Boxed Definitions.
 
 (**********************************************************************)
 (** Binary natural numbers *)

@@ -224,11 +224,12 @@ let print_pure_constr csr =
       print_string "end"; 
       close_box()
   | Fix ((t,i),(lna,tl,bl)) ->
-      print_string "Fix("; print_int i; print_string ")"; 
+      print_string "Fix"
+(* "("; print_int i; print_string ")"; 
       print_cut();
       open_vbox 0;
       let rec print_fix () =
-        for k = 0 to Array.length tl do
+        for k = 0 to (Array.length tl) - 1 do
 	  open_vbox 0;
 	  name_display lna.(k); print_string "/"; 
 	  print_int t.(k); print_cut(); print_string ":";
@@ -236,13 +237,13 @@ let print_pure_constr csr =
 	  box_display bl.(k); close_box ();
 	  print_cut()
         done
-      in print_string"{"; print_fix(); print_string"}"
+      in print_string"{"; print_fix(); print_string"}" *)
   | CoFix(i,(lna,tl,bl)) ->
       print_string "CoFix("; print_int i; print_string ")"; 
       print_cut();
       open_vbox 0;
       let rec print_fix () =
-        for k = 0 to Array.length tl do
+        for k = 0 to (Array.length tl) - 1 do
           open_vbox 1;
 	  name_display lna.(k);  print_cut(); print_string ":";
 	  box_display tl.(k) ; print_cut(); print_string ":=";
@@ -274,7 +275,12 @@ let print_pure_constr csr =
       print_string (string_of_kn sp)
 
   in
+    try 
      box_display csr; print_flush()
+    with e ->
+	print_string (Printexc.to_string e);print_flush ();
+	raise e
+
 (*
 let _ =
   Vernacentries.add "PrintConstr"
@@ -297,8 +303,11 @@ let _ =
 
 let ppfconstr c = ppterm (Closure.term_of_fconstr c)
 
+open Names
 open Cbytecodes
 open Cemitcodes
+open Vm
+
 let ppripos (ri,pos) =
   (match ri with
   | Reloc_annot a -> 
@@ -310,3 +319,85 @@ let ppripos (ri,pos) =
   | Reloc_getglobal kn ->
       print_string ("getglob "^(string_of_kn kn)^"\n"));
    print_flush ()
+
+let print_vfix () = print_string "vfix"
+let print_vfix_app () = print_string "vfix_app"
+let print_vswith () = print_string "switch"
+
+let ppsort = function
+  | Prop(Pos) -> print_string "Set"
+  | Prop(Null) -> print_string "Prop"
+  | Type u -> print_string "Type"
+
+
+
+let print_idkey idk =
+  match idk with 
+  | ConstKey sp -> 
+      print_string "Cons(";
+      print_string (string_of_kn sp);
+      print_string ")"
+  | VarKey id -> print_string (string_of_id id)
+  | RelKey i -> print_string "~";print_int i
+
+let rec ppzipper z =
+  match z with 
+  | Zapp args -> 
+      let n = nargs args in
+      open_hbox ();
+      for i = 0 to n-2 do
+	ppvalues (arg args i);print_string ";";print_space()
+      done;
+      if n-1 >= 0 then ppvalues (arg args (n-1));
+      close_box()
+  | Zfix _ -> print_string "Zfix"
+  | Zswitch _ -> print_string "Zswitch"
+
+and ppstack s = 
+  open_hovbox 0;
+  print_string "[";
+  List.iter (fun z -> ppzipper z;print_string " | ") s;
+  print_string "]";
+  close_box()
+
+and ppatom a =
+  match a with
+  | Aid idk -> print_idkey idk
+  | Aiddef(idk,_) -> print_string "&";print_idkey idk
+  | Aind(sp,i) ->  print_string "Ind(";
+      print_string (string_of_kn sp);
+      print_string ","; print_int i;
+      print_string ")"
+  | Afix_app _ -> print_vfix_app ()
+  | Aswitch _ -> print_vswith()
+
+and ppwhd whd =
+  match whd with 
+  | Vsort s -> ppsort s
+  | Vprod _ -> print_string "product"
+  | Vfun _ -> print_string "function"
+  | Vfix _ -> print_vfix()
+  | Vfix_app _ -> print_vfix_app()
+  | Vcofix _ -> print_string "cofix"
+  | Vcofix_app _ -> print_string "cofix_app"
+  | Vconstr_const i -> print_string "C(";print_int i;print_string")"
+  | Vconstr_block b -> ppvblock b      
+  | Vatom_stk(a,s) ->
+      open_hbox();ppatom a;close_box();
+      print_string"@";ppstack s
+
+and ppvblock b =
+  open_hbox();
+  print_string "Cb(";print_int (btag b);
+  let n = bsize b in
+  for i = 0 to n -1 do
+    print_string ",";ppvalues (bfield b i)
+  done;
+  print_string")";
+  close_box()
+
+and ppvalues v =
+  open_hovbox 0;ppwhd (whd_val v);close_box();
+  print_flush()
+
+

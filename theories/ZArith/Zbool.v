@@ -15,6 +15,8 @@ Require Import Zcompare.
 Require Import ZArith_dec.
 Require Import Sumbool.
 
+Unset Boxed Definitions.
+
 (** The decidability of equality and order relations over
     type [Z] give some boolean functions with the adequate specification. *)
 

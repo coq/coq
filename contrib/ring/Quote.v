@@ -26,6 +26,7 @@
 ***********************************************************************)
 
 Set Implicit Arguments.
+Unset Boxed Definitions.
 
 Section variables_map.
 

@@ -3,10 +3,11 @@ open Term
 open Cbytecodes
 open Cemitcodes
 
-(* option for virtual machine *)
+
+val set_drawinstr : unit -> unit
+
 val transp_values : unit -> bool
 val set_transp_values : bool -> unit
-val swap_global_transp : unit -> unit
 (* le code machine *)
 type tcode 
 
@@ -60,7 +61,7 @@ val val_of_named : identifier -> values
 val val_of_named_def : identifier -> values -> values
 
 val val_of_constant : constant -> values 
-val val_of_constant_def : constant -> values -> values
+val val_of_constant_def : int -> constant -> values -> values
 
 (* Destructors *)
 val whd_val : values -> whd

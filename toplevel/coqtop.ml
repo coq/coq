@@ -142,6 +142,14 @@ let re_exec is_ide =
     Unix.handle_unix_error (Unix.execvp newprog) Sys.argv
   end
 
+(*s options for the virtual machine *)
+let unb_val = ref (fun _ -> ())
+let unb_def = ref (fun _ -> ())
+let no_vm = ref (fun _ -> ())
+
+let set_vm_opt () =
+  !unb_val true;!unb_def false;!no_vm false
+
 (*s Parsing of the command line.
     We no longer use [Arg.parse], in order to use share [Usage.print_usage]
     between coqtop and coqc. *)
@@ -227,8 +235,13 @@ let parse_args is_ide =
     | "-unsafe" :: []       -> usage ()
 
     | "-debug" :: rem -> set_debug (); parse rem
-    | "-unboxed-values" :: rem -> Vm.set_transp_values true; parse rem
-    | "-no-vm" :: rem -> Reduction.use_vm := false;parse rem
+
+    | "-unboxed-values" :: rem -> 
+	unb_val := Vm.set_transp_values ; parse rem
+    | "-unboxed-definitions" :: rem ->
+	unb_def := Options.set_boxed_definitions; parse rem
+    | "-no-vm" :: rem -> no_vm := (fun b -> Reduction.use_vm := b);parse rem
+    | "-draw-vm-instr" :: rem -> Vm.set_drawinstr ();parse rem
     | "-emacs" :: rem -> Options.print_emacs := true; parse rem
 	  
     | "-where" :: _ -> print_endline Coq_config.coqlib; exit 0
@@ -297,6 +310,7 @@ let init is_ide =
       if_verbose print_header ();
       init_load_path ();
       inputstate ();
+      set_vm_opt ();
       engage ();
       if not !batch_mode then Declaremods.start_library !toplevel_name;
       init_library_roots ();

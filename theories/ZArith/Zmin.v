@@ -19,7 +19,7 @@ Open Local Scope Z_scope.
 (**********************************************************************)
 (** Minimum on binary integer numbers *)
 
-Definition Zmin (n m:Z) :=
+Unboxed Definition Zmin (n m:Z) :=
   match n ?= m return Z with
   | Eq => n
   | Lt => n

@@ -12,7 +12,8 @@ Require Import Setoid_ring_theory.
 Require Import Quote.
 
 Set Implicit Arguments.
-
+Unset Boxed Definitions.
+ 
 Lemma index_eq_prop : forall n m:index, Is_true (index_eq n m) -> n = m.
 Proof.
   simple induction n; simple induction m; simpl in |- *;

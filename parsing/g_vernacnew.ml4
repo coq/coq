@@ -103,6 +103,8 @@ GEXTEND Gram
 	  VernacAssumption (stre, bl)
       | IDENT "Boxed";"Definition";id = identref; b = def_body -> 
 	  VernacDefinition ((Global,Definition true), id, b, (fun _ _ -> ()))
+      | IDENT "Unboxed";"Definition";id = identref; b = def_body -> 
+	  VernacDefinition ((Global,Definition false), id, b, (fun _ _ -> ()))
       | (f,d) = def_token; id = identref; b = def_body -> 
           VernacDefinition (d, id, b, f)
       (* Gallina inductive declarations *)
@@ -111,13 +113,18 @@ GEXTEND Gram
           VernacInductive (f,indl)
       | IDENT "Boxed";"Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           VernacFixpoint (recs,true)
-      | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
+      | IDENT "Unboxed";"Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           VernacFixpoint (recs,false)
-      | IDENT "Boxed"; "CoFixpoint"; 
+       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
+          VernacFixpoint (recs,Options.boxed_definitions())
+     (* | IDENT "Boxed"; "CoFixpoint"; 
 	   corecs = LIST1 corec_definition SEP "with" ->
           VernacCoFixpoint (corecs,true)
+      | IDENT "Unboxed"; "CoFixpoint"; 
+	   corecs = LIST1 corec_definition SEP "with" ->
+          VernacCoFixpoint (corecs,false) *)
       | "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
-          VernacCoFixpoint (corecs,false)
+          VernacCoFixpoint (corecs,false (*Options.boxed_definitions()*))
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l ] ]
   ;
   gallina_ext:
@@ -140,8 +147,10 @@ GEXTEND Gram
       | IDENT "Remark" -> Remark ] ]
   ;
   def_token:
-    [ [ "Definition" -> (fun _ _ -> ()), (Global, Definition false)
-      | IDENT "Let" -> (fun _ _ -> ()), (Local, Definition false)
+    [ [ "Definition" -> 
+	(fun _ _ -> ()), (Global, Definition (Options.boxed_definitions()))
+      | IDENT "Let" -> 
+	(fun _ _ -> ()), (Local, Definition (Options.boxed_definitions()))
       | IDENT "SubClass"  -> Class.add_subclass_hook, (Global, SubClass)
       | IDENT "Local"; IDENT "SubClass"  ->
           Class.add_subclass_hook, (Local, SubClass) ] ] 

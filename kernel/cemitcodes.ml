@@ -17,26 +17,7 @@ let patch_int buff pos n =
   String.unsafe_set buff (pos + 2) (Char.unsafe_chr (n asr 16));
   String.unsafe_set buff (pos + 3) (Char.unsafe_chr (n asr 24))
 
-let cGETGLOBALBOXED = Char.unsafe_chr opGETGLOBALBOXED
-let cGETGLOBAL = Char.unsafe_chr opGETGLOBAL
 
-let cPUSHGETGLOBALBOXED = Char.unsafe_chr opPUSHGETGLOBALBOXED
-let cPUSHGETGLOBAL = Char.unsafe_chr opPUSHGETGLOBAL
-
-let is_PUSHGET c =
- c = cPUSHGETGLOBAL || c = cPUSHGETGLOBALBOXED
-
-let patch_getglobal buff pos (boxed,n) =
- let posinstr = pos - 4 in
- let c = String.unsafe_get buff posinstr in
- begin match is_PUSHGET c, boxed with
- | true, true -> String.unsafe_set buff posinstr cPUSHGETGLOBALBOXED
- | true, false -> String.unsafe_set buff posinstr cPUSHGETGLOBAL
- | false, true -> String.unsafe_set buff posinstr cGETGLOBALBOXED
- | false,false -> String.unsafe_set buff posinstr cGETGLOBAL
- end;
- patch_int buff pos n
- 
 (* Buffering of bytecode *)
 
 let out_buffer = ref(String.create 1024)

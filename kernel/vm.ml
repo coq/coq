@@ -4,27 +4,12 @@ open Term
 open Conv_oracle
 open Cbytecodes
 
-(* use transparant constant or not *)
 
-external swap_global_transp : unit -> unit = "swap_coq_global_transp"
-
-let transp_values = ref false
-
-let set_transp_values b =
-  if b = !transp_values then ()
-  else (
-    transp_values := not !(transp_values);
-    swap_global_transp ())
- 
-let transp_values _ = !transp_values
-
-
+external set_drawinstr : unit -> unit = "coq_set_drawinstr"
 
 (******************************************)
 (* Fonctions en plus du module Obj ********)
 (******************************************)
-
-
 
 external offset_closure : t -> int -> t = "coq_offset_closure"
 external offset : t -> int = "coq_offset"
@@ -41,6 +26,9 @@ external init_vm : unit -> unit = "init_coq_vm"
 
 let _ = init_vm ()
 
+external transp_values : unit -> bool = "get_coq_transp_value"
+external set_transp_values : bool -> unit = "coq_set_transp_value"
+
 (*******************************************)
 (* Le code machine  ************************)
 (*******************************************)
@@ -51,12 +39,15 @@ let fun_code v = tcode_of_obj (field (repr v) 0)
 
 external mkAccuCode : int -> tcode = "coq_makeaccu"
 external mkPopStopCode : int -> tcode = "coq_pushpop"
+external mkAccuCond : int -> tcode = "coq_accucond"
 
 external offset_tcode : tcode -> int -> tcode = "coq_offset_tcode"
 external int_tcode : tcode -> int -> int = "coq_int_tcode"
 
 external accumulate : unit -> tcode = "accumulate_code"
 let accumulate = accumulate ()
+
+external is_accumulate : tcode -> bool = "coq_is_accumulate_code"
 
 let popstop_tbl =  ref (Array.init 30 mkPopStopCode) 
 
@@ -313,7 +304,12 @@ let val_of_named id = val_of_idkey (VarKey id)
 let val_of_named_def id v = val_of_atom(Aiddef(VarKey id, v))
   
 let val_of_constant c = val_of_idkey (ConstKey c)
-let val_of_constant_def c v = val_of_atom(Aiddef(ConstKey c, v))
+let val_of_constant_def n c v = 
+  let res = Obj.new_block accu_tag 2 in
+  set_field res 0 (repr (mkAccuCond n));
+  set_field res 1 (repr (Aiddef(ConstKey c, v)));
+  val_of_obj res 
+
 
 
 (*************************************************)
@@ -326,15 +322,13 @@ let rec whd_accu a stk =
   let stk = 
     if nargs_of_accu a = 0 then stk
     else Zapp (args_of_accu a) :: stk in
-  
-  let at = atom_of_accu a in
+  let at = atom_of_accu a in 
   match at with
   | Aid _ | Aiddef _ | Aind _ -> Vatom_stk(at, stk)
   | Afix_app(a,fa) -> whd_accu a (Zfix fa :: stk)
   | Aswitch(a,sw) -> whd_accu a (Zswitch sw :: stk)
 
 external kind_of_closure : t -> int = "coq_kind_of_closure"
-
 
 let whd_val : values -> whd =
   fun v -> 
@@ -343,7 +337,7 @@ let whd_val : values -> whd =
     else 
       let tag = tag o in
       if tag = accu_tag then
-	if fun_code o == accumulate then whd_accu (obj o) []
+	if is_accumulate (fun_code o) then whd_accu (obj o) []
 	else 
 	  if size o = 1 then Vsort(obj (field o 0))
 	  else Vprod(obj o)
@@ -405,8 +399,17 @@ let apply_fix_app vfa arg =
   push_arguments vargs;
   interprete (fun_code vf) (magic vf) (magic vf) (nargs vargs)
 
-let apply_switch sw arg =
+external set_forcable : unit -> unit = "coq_set_forcable"
+let force_cofix v =
+  match whd_val v with
+  | Vcofix _    | Vcofix_app _ ->
+      push_ra stop;
+      set_forcable ();
+      interprete (fun_code v) (magic v) (magic v) 0
+  | _ -> v
   
+let apply_switch sw arg =
+  let arg = force_cofix arg in
   let tc = sw.sw_annot.tailcall in
   if tc then 
     (push_ra stop;push_vstack sw.sw_stk)
