@@ -53,6 +53,8 @@ Bug fixes
 - Fix "Tactic Notation" translation bugs and improve file location of errors
 - Fix an "omega" bug (may cause "auto with zarith" to succeed more often)
 - Fix ltac "context" bug on right-hand-side of match clauses
+- Fix a printing bug with fixpoints when a notation for products or lambdas
+  is redefined
 - Fix "abstract" tactical bug within sections
 
 Changes from V8.0beta old syntax to V8.0beta

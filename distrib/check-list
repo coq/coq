@@ -16,7 +16,7 @@ coqdate=`grep "^DATE=" $CONFIGFILE | sed -e 's/^DATE=\(.*\)/\1/'`
 
 echo "According to the configure file of the archive to be released"
 echo "  The release version is V$version"
-echo "  The SearchIsos release version is V$versionsi"
+#echo "  The SearchIsos release version is V$versionsi"
 echo "  The date is $coqdate"
 echo
 echo "Comparing datas with expected ones"

@@ -308,7 +308,6 @@ and xlate_return_info = function
    CT_coerce_NONE_to_RETURN_INFO CT_none
 | (None, Some t) -> CT_return(xlate_formula t)
 | (Some x, Some t) -> CT_as_and_return(xlate_id_opt_aux x, xlate_formula t)
-| (Some Anonymous, None) -> CT_coerce_NONE_to_RETURN_INFO CT_none
 | (Some _, None) -> assert false
 and xlate_formula_opt =
   function

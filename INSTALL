@@ -35,8 +35,8 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    in your $PATH environment variable. 
 
    To get Coq in native-code, (it runs 4 to 10 times faster than
-   bytecode, but it takes more time to compile, uses more space),
-   you will also need the "ocamlopt" (or its native code version
+   bytecode, but it takes more time to get compiled and the binary is
+   bigger), you will also need the "ocamlopt" (or its native code version
    "ocamlopt.opt") command.
 
 2- Check that you have Camlp4 installed on your 

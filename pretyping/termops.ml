@@ -30,6 +30,65 @@ let print_sort_family = function
   | InProp -> (str "Prop")
   | InType -> (str "Type")
 
+let pr_name = function
+  | Name id -> pr_id id
+  | Anonymous -> str "_"
+
+let pr_sp sp = str(string_of_kn sp)
+
+let rec print_constr c = match kind_of_term c with
+  | Rel n -> str "#"++int n
+  | Meta n -> str "Meta(" ++ int n ++ str ")"
+  | Var id -> pr_id id
+  | Sort s -> print_sort s
+  | Cast (c,t) -> hov 1 
+      (str"(" ++ print_constr c ++ cut() ++
+       str":" ++ print_constr t ++ str")")
+  | Prod (Name(id),t,c) -> hov 1
+      (str"forall " ++ pr_id id ++ str":" ++ print_constr t ++ str"," ++
+       spc() ++ print_constr c)
+  | Prod (Anonymous,t,c) -> hov 0
+      (str"(" ++ print_constr t ++ str " ->" ++ spc() ++
+       print_constr c ++ str")")
+  | Lambda (na,t,c) -> hov 1
+      (str"fun " ++ pr_name na ++ str":" ++
+       print_constr t ++ str" =>" ++ spc() ++ print_constr c)
+  | LetIn (na,b,t,c) -> hov 0
+      (str"let " ++ pr_name na ++ str":=" ++ print_constr b ++
+       str":" ++ brk(1,2) ++ print_constr t ++ cut() ++
+       print_constr c)
+  | App (c,l) ->  hov 1
+      (str"(" ++ print_constr c ++ spc() ++
+       prlist_with_sep spc print_constr (Array.to_list l) ++ str")")
+  | Evar (e,l) -> hov 1
+      (str"Evar#" ++ int e ++ str"{" ++
+       prlist_with_sep spc print_constr (Array.to_list l) ++str"}")
+  | Const c -> str"Cst(" ++ pr_sp c ++ str")"
+  | Ind (sp,i) -> str"Ind(" ++ pr_sp sp ++ str"," ++ int i ++ str")"
+  | Construct ((sp,i),j) ->
+      str"Constr(" ++ pr_sp sp ++ str"," ++ int i ++ str"," ++ int j ++ str")"
+  | Case (ci,p,c,bl) -> v 0
+      (hv 0 (str"<"++print_constr p++str">"++ cut() ++ str"Case " ++
+             print_constr c ++ str"of") ++ cut() ++
+       prlist_with_sep (fun _ -> brk(1,2)) print_constr (Array.to_list bl) ++
+      cut() ++ str"end")
+  | Fix ((t,i),(lna,tl,bl)) ->
+      let fixl = Array.mapi (fun i na -> (na,t.(i),tl.(i),bl.(i))) lna in
+      hov 1
+        (str"fix " ++ int i ++ spc() ++  str"{" ++
+         v 0 (prlist_with_sep spc (fun (na,i,ty,bd) ->
+           pr_name na ++ str"/" ++ int i ++ str":" ++ print_constr ty ++
+           cut() ++ str":=" ++ print_constr bd) (Array.to_list fixl)) ++
+         str"}")
+  | CoFix(i,(lna,tl,bl)) ->
+      let fixl = Array.mapi (fun i na -> (na,tl.(i),bl.(i))) lna in
+      hov 1
+        (str"cofix " ++ int i ++ spc() ++  str"{" ++
+         v 0 (prlist_with_sep spc (fun (na,ty,bd) ->
+           pr_name na ++ str":" ++ print_constr ty ++
+           cut() ++ str":=" ++ print_constr bd) (Array.to_list fixl)) ++
+         str"}")
+
 (*let current_module = ref empty_dirpath
 
 let set_module m = current_module := m*)

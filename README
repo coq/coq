@@ -66,17 +66,13 @@ THE COQ CLUB.
 BUGS REPORT.
 ============
 
-   Send your bug reports by E-mail to
+   Send your bug reports by filling a form at
+
+        http://coq.inria.fr/bin/coq-bugs
+
+   or by E-mail to
 
 	coq-bugs@pauillac.inria.fr
-
-   or by snail mail to
-
-	Projet Coq
-	INRIA Rocquencourt
-	B.P. 105
-	78153 Le Chesnay
-	France
 
    To be effective, bug reports should mention the Caml version used
    to compile and run Coq, the Coq version (coqtop -v), the configuration
