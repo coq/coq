@@ -10,7 +10,7 @@ GEXTEND Gram
   GLOBAL: constr1 pattern;
 
   pattern:
-    [ [ id = ident -> id
+    [ [ qid = global -> qid
       | "("; p = compound_pattern; ")" -> p ] ]
   ;
   compound_pattern:
@@ -19,7 +19,7 @@ GEXTEND Gram
       | p = pattern; "as"; id = ident ->
 	  <:ast< (PATTAS $id $p)>>
       | p1 = pattern; ","; p2 = pattern ->
-          <:ast< (PATTCONSTRUCT pair $p1 $p2) >>
+          <:ast< (PATTCONSTRUCT (QUALID Datatypes pair) $p1 $p2) >>
       | p = pattern -> p ] ]
   ;
   ne_pattern_list:
