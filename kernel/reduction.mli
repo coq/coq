@@ -44,7 +44,11 @@ type 'a contextual_state_reduction_function =
 type 'a state_reduction_function = 'a contextual_state_reduction_function
 type local_state_reduction_function = state -> state
 
+(* Removes cast and put into applicative form *)
 val whd_stack : local_stack_reduction_function
+
+(* For compatibility: alias for whd_stack *)
+val whd_castapp_stack : local_stack_reduction_function
 
 (*s Reduction Function Operators *)
 
