@@ -30,10 +30,7 @@ Grammar constr pattern :=
   natural_pat [ nat:pat_number($c) ] -> [$c].
 
 Syntax constr
-  level  0:
-    myspecialvariable [ My_special_variable ] -> ["S"];
-
   level 10:
-  S [ (S $p) ] -> [$p:"nat_printer"]
+  S [ (S $p) ] -> [$p:"nat_printer":9]
 | O [ O ] -> [ "0" ]
 .
