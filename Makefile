@@ -71,16 +71,15 @@ KERNEL=kernel/names.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/type_errors.cmo kernel/typeops.cmo kernel/indtypes.cmo \
        kernel/cooking.cmo kernel/safe_typing.cmo
 
-LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
-	library/goptions.cmo library/nametab.cmo \
+LIBRARY=library/libobject.cmo library/summary.cmo library/nametab.cmo \
+	library/lib.cmo library/goptions.cmo \
 	library/global.cmo library/library.cmo library/states.cmo \
-	library/impargs.cmo \
-        library/indrec.cmo library/declare.cmo 
+	library/impargs.cmo library/indrec.cmo library/declare.cmo 
 
 PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
 	  pretyping/retyping.cmo pretyping/tacred.cmo \
 	  pretyping/pretype_errors.cmo pretyping/typing.cmo \
-	  pretyping/classops.cmo pretyping/class.cmo pretyping/recordops.cmo \
+	  pretyping/classops.cmo pretyping/recordops.cmo \
 	  pretyping/evarutil.cmo pretyping/evarconv.cmo \
           pretyping/coercion.cmo pretyping/cases.cmo pretyping/pretyping.cmo \
 	  pretyping/syntax_def.cmo
@@ -107,8 +106,8 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/hiddentac.cmo tactics/elim.cmo
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo \
-         toplevel/metasyntax.cmo toplevel/command.cmo toplevel/record.cmo \
-         toplevel/discharge.cmo toplevel/vernacinterp.cmo \
+         toplevel/metasyntax.cmo toplevel/command.cmo toplevel/class.cmo \
+         toplevel/record.cmo toplevel/discharge.cmo toplevel/vernacinterp.cmo \
          toplevel/vernacentries.cmo toplevel/vernac.cmo toplevel/mltop.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo \
          toplevel/usage.cmo toplevel/coqinit.cmo toplevel/coqtop.cmo
@@ -125,8 +124,8 @@ USERTACCMX=$(USERTAC:.ml4=.cmx)
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
         contrib/ring/quote.cmo contrib/ring/ring.cmo \
-        contrib/xml/xml.cmo \
-	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
+#	contrib/xml/xml.cmo \
+#	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
