@@ -304,14 +304,12 @@ let coq_Zne = lazy (zarith_constant ["auxiliary"] "Zne")
 (* Peano *)
 let coq_le = lazy (constant ["Init";"Peano"] "le")
 let coq_gt = lazy (constant ["Init";"Peano"] "gt")
+let coq_minus = lazy (constant ["Init";"Peano"] "minus")
 
 (* Datatypes *)
 let coq_nat = lazy (constant ["Init";"Datatypes"] "nat")
 let coq_S = lazy (constant ["Init";"Datatypes"] "S")
 let coq_O = lazy (constant ["Init";"Datatypes"] "O")
-
-(* Minus *)
-let coq_minus = lazy (constant ["Init";"Peano"] "minus")
 
 (* Compare_dec *)
 let coq_le_gt_dec = lazy (constant ["Arith";"Compare_dec"] "le_gt_dec")
