@@ -932,6 +932,9 @@ let clenv_constrain_dep_args hyps_only clause = function
 	error ("Not the right number of missing arguments (expected "
 	       ^(string_of_int (List.length occlist))^")")
 
+let clenv_constrain_missing_args mlist clause =
+  clenv_constrain_dep_args true clause mlist
+
 let clenv_lookup_name clenv id =
   match intmap_inv clenv.namenv id with
     | []  -> 
