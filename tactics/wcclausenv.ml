@@ -144,7 +144,7 @@ and build_term ce p_0 p_1 =
   let env = Global.env() in
   match p_0,p_1 with 
     | ((na,Some t), (DOP0(Meta mv))) -> 
-    	let mv = new_meta() in 
+(*    	let mv = new_meta() in *)
 	(DOP0(Meta mv),
          clenv_pose (na,mv,t) ce)
     | ((na,_), (DOP2(Cast,c,t))) -> build_term ce (na,Some t) c
