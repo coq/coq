@@ -181,7 +181,7 @@ let more_general_pat pat1 pat2 =
 
       | PSort (RProp c1), PSort (RProp c2) when c1 = c2 -> sigma
 
-      | PSort RType, PSort RType -> sigma
+      | PSort (RType _), PSort (RType _) -> sigma
 
       | PApp (c1,arg1), PApp (c2,arg2) ->
         (try array_fold_left2 match_rec (match_rec sigma c1 c2) arg1 arg2

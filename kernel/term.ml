@@ -42,7 +42,8 @@ let mk_Prop = Prop Null
 let print_sort = function
   | Prop Pos -> [< 'sTR "Set" >]
   | Prop Null -> [< 'sTR "Prop" >]
-  | Type _ -> [< 'sTR "Type" >]
+(*  | Type _ -> [< 'sTR "Type" >] *)
+  | Type u -> [< 'sTR "Type("; pr_uni u; 'sTR ")" >]
 
 (********************************************************************)
 (* type of global reference *)

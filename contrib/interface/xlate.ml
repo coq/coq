@@ -1564,7 +1564,7 @@ let rec cvt_varg =
      | _ -> xlate_error "cvt_varg : PROP : Failed match ")
     | Node (_, "CONSTR", ((Node (_, "PROP", [])) :: [])) ->
      Varg_sorttype (CT_sortc "Prop")
-    | Node (_, "CONSTR", ((Node (_, "TYPE", [])) :: [])) ->
+    | Node (_, "CONSTR", ((Node (_, "TYPE", _)) :: [])) ->
      Varg_sorttype (CT_sortc "Type")
     | Node (_, "CONSTR", [c]) -> Varg_constr (xlate_formula c)
     | Node (_, "CONSTRLIST", cs) -> Varg_constrlist (List.map xlate_formula cs)

@@ -1755,3 +1755,18 @@ let _ = vinterp_add "PrintMLModules"
 	  (function 
 	     | [] -> (fun () -> Mltop.print_ml_modules ())
 	     | _ -> anomaly "PrintMLModules : does not expect an argument")
+
+let _ = vinterp_add "DumpUniverses"
+	  (function
+	     | [] -> (fun () -> pP (Univ.pr_universes (Global.universes ())))
+	     | [VARG_STRING s] ->
+		 (fun () -> let output = open_out s in
+		    try
+		      Univ.dump_universes output (Global.universes ());
+		      close_out output;
+		      mSG [<'sTR ("Universes written to file \""^s^"\"."); 'fNL >] 
+		    with
+			e -> close_out output; raise e
+		 )
+	     | _ -> 
+		 anomaly "DumpUniverses : expects a filename or nothing as argument") 

@@ -65,3 +65,9 @@ val merge_constraints : constraints -> universes -> universes
 
 val pr_uni : universe -> Pp.std_ppcmds
 val pr_universes : universes -> Pp.std_ppcmds
+
+val string_of_univ : universe -> string
+
+(*s Dumping to a file *)
+
+val dump_universes : out_channel -> universes -> unit

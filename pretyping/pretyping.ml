@@ -194,7 +194,7 @@ let pretype_ref _ isevars env lvar ref =
 *)
 let pretype_sort = function
   | RProp c -> judge_of_prop_contents c
-  | RType ->
+  | RType _ ->
       { uj_val = dummy_sort;
 	uj_type = dummy_sort }
 

@@ -291,7 +291,7 @@ let rec detype avoid env t =
     | IsMeta n -> RMeta (dummy_loc, n)
     | IsVar id -> RVar (dummy_loc, id)
     | IsSort (Prop c) -> RSort (dummy_loc,RProp c)
-    | IsSort (Type _) -> RSort (dummy_loc,RType)
+    | IsSort (Type u) -> RSort (dummy_loc,RType (Some u))
     | IsCast (c1,c2) ->
 	RCast(dummy_loc,detype avoid env c1,detype avoid env c2)
     | IsProd (na,ty,c) -> detype_binder BProd avoid env na ty c

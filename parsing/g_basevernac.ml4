@@ -106,6 +106,12 @@ GEXTEND Gram
       | IDENT "Print"; "Grammar"; uni = identarg; ent = identarg ->
           <:ast< (PrintGrammar $uni $ent) >>
 
+      (* Dump of the universe graph - to file or to stdout *) 
+      | IDENT "Dump"; IDENT "Universes"; f = stringarg ->
+	  <:ast< (DumpUniverses $f) >>
+      | IDENT "Dump"; IDENT "Universes" ->
+	  <:ast< (DumpUniverses) >>
+
       | IDENT "Locate"; IDENT "File"; f = stringarg ->
 	  <:ast< (LocateFile $f) >>
       | IDENT "Locate"; IDENT "Library"; id = identarg ->

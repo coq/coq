@@ -49,6 +49,10 @@ let print_implicits_explicit_args = ref false
 (* This forces printing of coercions *)
 let print_coercions = ref false
 
+(* This forces printing universe names of Type{.} *)
+let print_universes = ref false
+
+
 let with_option o f x =
   let old = !o in o:=true;
   try let r = f x in o := old; r
@@ -58,6 +62,7 @@ let with_arguments f = with_option print_arguments f
 let with_casts f = with_option print_casts f
 let with_implicits f = with_option print_implicits f
 let with_coercions f = with_option print_coercions f
+let with_universes f = with_option print_universes f
 
 (**********************************************************************)
 (* conversion of references                                           *)
@@ -261,7 +266,8 @@ let rec ast_of_raw = function
       (match s with
 	 | RProp Null -> ope("PROP",[])
 	 | RProp Pos -> ope("SET",[])
-	 | RType -> ope("TYPE",[]))
+	 | RType (Some u) when !print_universes -> ope("TYPE",[ide(Univ.string_of_univ u)])
+	 | RType _ -> ope("TYPE",[]))
   | RHole _ -> ope("ISEVAR",[])
   | RCast (_,c,t) -> ope("CAST",[ast_of_raw c;ast_of_raw t])
 	
@@ -389,7 +395,7 @@ let rec ast_of_pattern env = function
       (match s with
 	 | RProp Null -> ope("PROP",[])
 	 | RProp Pos -> ope("SET",[])
-	 | RType -> ope("TYPE",[]))
+	 | RType _ -> ope("TYPE",[]))
 
   | PMeta (Some n) -> ope("META",[num n])
   | PMeta None -> ope("ISEVAR",[])

@@ -43,7 +43,7 @@ Syntax constr
     prop [ Prop ] -> ["Prop"]
   | set  [ Set ]  -> ["Set"]
   | type [ Type ] -> ["Type"]
-  | type_sp [ << (TYPE ($PATH $sp) ($NUM $n)) >> ] -> ["Type"]
+  | type_sp [ << (TYPE $id) >> ] -> ["Type" $id]
 (* Note: Atomic constants (Nvar, CONST, MUTIND, MUTCONSTRUCT) are printed in
    Printer to know if they must be qualified or not (and previously to
    deal with the duality CCI/FW) *)

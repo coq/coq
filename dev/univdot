@@ -1,0 +1,49 @@
+#!/bin/sh
+
+usage() {
+    echo ""
+    echo "usage: univdot [INPUT] [OUTPUT]"
+    echo ""
+    echo "takes the output of Dump Universes \"file\" command"
+    echo "and transforms it to the dot format"
+    echo ""
+    echo "Coq> Dump Universes \"univ.raw\"."
+    echo ""
+    echo "user@host> univdot univ.raw | dot -Tps > univ.ps" 
+    echo ""
+}
+    
+
+# these are dot edge attributes to draw arrows corresponding 
+# to > >= and = edges of the universe graph
+
+GT="[color=red]"
+GE="[color=blue]"
+EQ="[color=black]"
+
+
+# input/output redirection
+case $# in
+  0) ;;
+  1) case $1 in
+       -h|-help|--help) usage
+               exit 0 ;;
+       *) exec < $1 ;;
+     esac ;;
+  2) exec < $1 > $2 ;;
+  *) usage
+     exit 0;;
+esac
+
+
+# dot header
+echo 'digraph G {\
+  size="7.5,10" ;\
+  rankdir = TB ;'
+
+sed -e "s/^\([^ =>]\+\) > \([^ =>]\+\)/\1 -> \2 $GT/" \
+      -e "s/^\([^ =>]\+\) >= \([^ =>]\+\)/\1 -> \2 $GE/" \
+      -e "s/^\([^ =>]\+\) = \([^ =>]\+\)/\1 -> \2 $EQ/" \
+| sed -e "s/\./_/g" 
+
+echo "}"

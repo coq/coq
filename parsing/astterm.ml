@@ -483,7 +483,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 
     | Node(loc,"PROP", []) -> RSort(loc,RProp Null)
     | Node(loc,"SET", [])  -> RSort(loc,RProp Pos)
-    | Node(loc,"TYPE", []) -> RSort(loc,RType)
+    | Node(loc,"TYPE", _) -> RSort(loc,RType None)
 	  
     (* This case mainly parses things build in a quotation *)
     | Node(loc,("CONST"|"EVAR"|"MUTIND"|"MUTCONSTRUCT"|"SYNCONST" as key),l) ->
@@ -706,7 +706,7 @@ let interp_type_with_implicits sigma env impls c =
 let interp_sort = function
   | Node(loc,"PROP", []) -> Prop Null
   | Node(loc,"SET", [])  -> Prop Pos
-  | Node(loc,"TYPE", []) -> Type Univ.dummy_univ
+  | Node(loc,"TYPE", _) -> Type Univ.dummy_univ
   | a -> user_err_loc (Ast.loc a,"interp_sort", [< 'sTR "Not a sort" >])
 
 let judgment_of_rawconstr sigma env c =

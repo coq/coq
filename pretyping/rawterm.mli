@@ -25,7 +25,7 @@ type cases_pattern =
   | PatCstr of
       loc * (constructor_path * identifier list) * cases_pattern list * name
 
-type rawsort = RProp of Term.contents | RType
+type rawsort = RProp of Term.contents | RType of Univ.universe option
 
 type binder_kind = BProd | BLambda | BLetIn
 

@@ -42,8 +42,10 @@ val print_casts : bool ref
 val print_arguments : bool ref
 val print_evar_arguments : bool ref
 val print_coercions : bool ref
+val print_universes : bool ref
 
 val with_casts : ('a -> 'b) -> 'a -> 'b
 val with_implicits : ('a -> 'b) -> 'a -> 'b
 val with_arguments : ('a -> 'b) -> 'a -> 'b
 val with_coercions : ('a -> 'b) -> 'a -> 'b
+val with_universes : ('a -> 'b) -> 'a -> 'b

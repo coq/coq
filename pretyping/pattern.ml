@@ -171,7 +171,7 @@ let matches_core convert pat c =
 
       | PSort (RProp c1), IsSort (Prop c2) when c1 = c2 -> sigma
 
-      | PSort RType, IsSort (Type _) -> sigma
+      | PSort (RType _), IsSort (Type _) -> sigma
 
       | PApp (c1,arg1), IsApp (c2,arg2) ->
         (try array_fold_left2 (sorec stk) (sorec stk sigma c1 c2) arg1 arg2
@@ -309,7 +309,7 @@ let rec pattern_of_constr t =
     | IsMeta n -> PMeta (Some n)
     | IsVar id -> PVar id
     | IsSort (Prop c) -> PSort (RProp c)
-    | IsSort (Type _) -> PSort RType
+    | IsSort (Type _) -> PSort (RType None)
     | IsCast (c,_)      -> pattern_of_constr c
     | IsLetIn (na,c,_,b) -> PLetIn (na,pattern_of_constr c,pattern_of_constr b)
     | IsProd (na,c,b)   -> PProd (na,pattern_of_constr c,pattern_of_constr b)

@@ -34,8 +34,12 @@ module UniverseOrdered = struct
   let compare = universe_ord
 end
 
+let string_of_univ u = 
+  (Names.string_of_dirpath u.u_mod)^"."^(string_of_int u.u_num)
+
 let pr_uni u =
   [< 'sTR (Names.string_of_dirpath u.u_mod) ; 'sTR"." ; 'iNT u.u_num >]
+
 
 let dummy_univ = { u_mod = ["dummy univ"]; u_num = 0 } (* for prover terms *)
 let implicit_univ = { u_mod = ["implicit univ"]; u_num = 0 }
@@ -94,7 +98,7 @@ let repr g u =
   let rec repr_rec u =
     let a =
       try UniverseMap.find u g
-      with Not_found -> anomalylabstrm "Impuniv.repr"
+      with Not_found -> anomalylabstrm "Univ.repr"
 	  [< 'sTR"Universe "; pr_uni u; 'sTR" undefined" >] 
     in
     match a with 
@@ -140,21 +144,35 @@ let reprgeq g arcu =
   in 
   searchrec [] arcu.ge
 
+
 (* between : universe -> canonical_arc -> canonical_arc list *)
 (* between u v = {w|u>=w>=v, w canonical}          *)     
 (* between is the most costly operation *)
-let between g u arcv = 
-  let rec explore (memo,l) arcu = 
-    try 
-      memo,list_unionq (List.assq arcu memo) l (* when memq arcu memo *)
-    with Not_found ->
-      let w = reprgeq g arcu in
-      let (memo',sols) = List.fold_left explore (memo,[]) w in
-      let sols' = if sols=[] then [] else arcu::sols in
-      ((arcu,sols')::memo', list_unionq sols' l) 
-  in
-  snd (explore ([(arcv,[arcv])],[]) (repr g u))
 
+let between g u arcv = 
+  (* good are all w | u >= w >= v  *)
+  (* bad are all w | u >= w ~>= v *)
+    (* find good and bad nodes in {w | u >= w} *)
+    (* explore b u = (b or "u is good") *)
+  let rec explore ((good, bad, b) as input) arcu =
+    if List.memq arcu good then
+      (good, bad, true) (* b or true *)
+    else if List.memq arcu bad then
+      input    (* (good, bad, b or false) *)
+    else 
+      let childs = reprgeq g arcu in 
+	(* are any children of u good ? *)
+      let good, bad, b_childs = 
+	List.fold_left explore (good, bad, false) childs 
+      in
+	if b_childs then
+	  arcu::good, bad, true (* b or true *)
+	else 
+	  good, arcu::bad, b    (* b or false *)
+  in
+  let good,_,_ = explore ([arcv],[],false) (repr g u) in
+    good
+      
 (* We assume  compare(u,v) = GE with v canonical (see compare below).
    In this case List.hd(between g u v) = repr u
    Otherwise, between g u v = [] 
@@ -226,7 +244,7 @@ let merge g u v =
 	let g'' = List.fold_left (fun g -> setgt_if g arcu.univ) g' w in
 	let g''' = List.fold_left (fun g -> setgeq_if g arcu.univ) g'' w' in
 	g'''
-    | [] -> anomaly "between"
+    | [] -> anomaly "Univ.between"
 
 (* merge_disc : universe -> universe -> unit *)
 (* we assume  compare(u,v) = compare(v,u) = NGE *)
@@ -257,7 +275,7 @@ let enforce_univ_geq u v g =
            | GT -> error_inconsistency()
            | GE -> merge g v u
            | NGE -> setgeq g u v
-           | EQ -> anomaly "compare")
+           | EQ -> anomaly "Univ.compare")
     | _ -> g
 
 (* enforceq : universe -> universe -> unit *)
@@ -274,7 +292,7 @@ let enforce_univ_eq u v g =
            | GT -> error_inconsistency()
            | GE -> merge g v u
            | NGE -> merge_disc g u v
-           | EQ -> anomaly "compare")
+           | EQ -> anomaly "Univ.compare")
 
 (* enforcegt u v will force u>v if possible, will fail otherwise *)
 let enforce_univ_gt u v g =
@@ -361,7 +379,9 @@ let sup u v g =
            | _ -> v, Constraint.empty)
     | _ -> u, Constraint.empty
 
+
 (* Pretty-printing *)
+
 let num_universes g =
   UniverseMap.fold (fun _ _ -> succ) g 0
 
@@ -387,4 +407,22 @@ let pr_universes g =
   prlist_with_sep pr_fnl (function (_,a) -> pr_arc a) graph
     
 
+(* Dumping constrains to a file *)
+
+let dump_universes output g = 
+  let dump_arc _ = function
+    | Canonical {univ=u; gt=gt; ge=ge} -> 
+	let u_str = string_of_univ u in
+	  List.iter 
+	    (fun v -> 
+	       Printf.fprintf output "%s > %s ;\n" u_str (string_of_univ v)) 
+	    gt;
+	  List.iter 
+	    (fun v -> 
+	       Printf.fprintf output "%s >= %s ;\n" u_str (string_of_univ v)) 
+	    ge
+    | Equiv (u,v) ->
+	Printf.fprintf output "%s = %s ;\n" (string_of_univ u) (string_of_univ v)
+  in
+    UniverseMap.iter dump_arc g 
 
