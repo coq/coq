@@ -180,7 +180,7 @@ GEXTEND Gram
       | IDENT "Unfold"; ul = LIST1 unfold_occ -> Unfold ul
       | IDENT "Fold"; cl = LIST1 constr -> Fold cl
       | IDENT "Pattern"; pl = LIST1 pattern_occ -> Pattern pl
-      | s = IDENT; c = constr -> ExtraRedExpr (s,c) ] ]
+      | s = IDENT -> ExtraRedExpr s ] ]
   ;
   hypident:
     [ [ id = id_or_meta -> id,[],(InHyp,ref None)
