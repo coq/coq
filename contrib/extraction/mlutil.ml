@@ -576,6 +576,32 @@ let eta_red e =
 	  else e 
     | _ -> e
 
+(*s Computes all head linear beta-reductions possible in [(t a)].
+  Non-linear head beta-redex become let-in. *)
+
+let rec linear_beta_red a t = match a,t with  
+  | [], _ -> t 
+  | a0::a, MLlam (id,t) ->
+      (match nb_occur_match t with
+	 | 0 -> linear_beta_red a (ast_pop t)
+	 | 1 -> linear_beta_red a (ast_subst a0 t)
+	 | _ -> 
+	     let a = List.map (ast_lift 1) a in 
+	     MLletin (id, a0, linear_beta_red a t))
+  | _ -> MLapp (t, a)
+
+(*s Applies a substitution [s] of constants by their body, plus 
+  linear beta reductions at modified positions. *)  
+
+let rec ast_glob_subst s t = match t with 
+  | MLapp ((MLglob (ConstRef kn)) as f, a) -> 
+      let a = List.map (ast_glob_subst s) a in 
+      (try linear_beta_red a (KNmap.find kn s) 
+       with Not_found -> MLapp (f, a))
+  | MLglob (ConstRef kn) -> (try KNmap.find kn s with Not_found -> t)
+  | _ -> ast_map (ast_glob_subst s) t
+
+
 (*S Auxiliary functions used in simplification of ML cases. *)
 
 (*s [check_and_generalize (r0,l,c)] transforms any [MLcons(r0,l)] in [MLrel 1]
@@ -602,13 +628,22 @@ let check_and_generalize (r0,l,c) =
 (* CAVEAT: this optimization breaks typing in some special case. example: 
    [type 'x a = A]. Then [let f = function A -> A] has type ['x a -> 'y a],
    which is incompatible with the type of [let f x = x].
-   We brutally disable this optim for all inductive types with variables. *)
+   By default, we brutally disable this optim except for some known types: 
+   [bool], [sumbool], [sumor] *)
 
+let generalizable_list = 
+  let datatypes = MPfile (dirpath_of_string "Coq.Init.Datatypes")
+  and specif = MPfile (dirpath_of_string "Coq.Init.Specif")
+  in 
+  [ make_kn datatypes empty_dirpath (mk_label "bool"); 
+    make_kn specif empty_dirpath (mk_label "sumbool");
+    make_kn specif empty_dirpath (mk_label "sumor") ]
 
-let check_generalizable_case br = 
-  (match br.(0) with 
-     | ConstructRef ((kn,i),_), _, _ ->
-	 if (lookup_ind kn).ind_packets.(i).ip_vars <> [] then raise Impossible
+let check_generalizable_case unsafe br = 
+  if not unsafe then 
+    (match br.(0) with 
+     | ConstructRef ((kn,_),_), _, _ ->
+	 if not (List.mem kn generalizable_list) then raise Impossible
      | _ -> assert false); 
   let f = check_and_generalize br.(0) in 
   for i = 1 to Array.length br - 1 do 
@@ -710,9 +745,10 @@ let rec simpl o = function
       let br = Array.map (fun (n,l,t) -> (n,l,simpl o t)) br in 
       simpl_case o br (simpl o e) 
   | MLletin(id,c,e) when 
-      (id = dummy_name) || (is_atomic c) || (o && (nb_occur_match e <= 1)) -> 
+      (id = dummy_name) || (is_atomic c) || (is_atomic e) ||
+      (let n = nb_occur_match e in n = 0 || (n=1 && o.opt_lin_let)) -> 
 	simpl o (ast_subst c e)
-  | MLfix(i,ids,c) as t when o -> 
+  | MLfix(i,ids,c) -> 
       let n = Array.length ids in 
       if ast_occurs_itvl 1 n c.(i) then 
 	MLfix (i, ids, Array.map (simpl o) c)
@@ -726,15 +762,16 @@ and simpl_app o a = function
   | MLlam (id,t) -> (* Beta redex *)
       (match nb_occur_match t with
 	 | 0 -> simpl o (MLapp (ast_pop t, List.tl a))
-	 | 1 when o -> 
+	 | 1 when o.opt_lin_beta -> 
 	     simpl o (MLapp (ast_subst (List.hd a) t, List.tl a))
 	 | _ -> 
 	     let a' = List.map (ast_lift 1) (List.tl a) in
 	     simpl o (MLletin (id, List.hd a, MLapp (t, a'))))
-  | MLletin (id,e1,e2) -> 
+  | MLletin (id,e1,e2) when o.opt_let_app -> 
       (* Application of a letin: we push arguments inside *)
       MLletin (id, e1, simpl o (MLapp (e2, List.map (ast_lift 1) a)))
-  | MLcase (e,br) -> (* Application of a case: we push arguments inside *)
+  | MLcase (e,br) when o.opt_case_app -> 
+      (* Application of a case: we push arguments inside *)
       let br' = 
 	Array.map 
       	  (fun (n,l,t) -> 
@@ -747,23 +784,26 @@ and simpl_app o a = function
   | f -> MLapp (f,a)
 
 and simpl_case o br e = 
-  if (not o) then MLcase (e,br)
+  if o.opt_case_iot && (is_iota_gen e) then (* Generalized iota-redex *)
+    simpl o (iota_gen br e)
   else 
-    if (is_iota_gen e) then (* Generalized iota-redex *)
-      simpl o (iota_gen br e)
-    else 
-      try (* Does a term [f] exist such as each branch is [(f e)] ? *)
-	let f = check_generalizable_case br in 
-	simpl o (MLapp (MLlam (anonymous,f),[e]))
-      with Impossible -> 
-	try (* Is each branch independant of [e] ? *) 
-	  check_constant_case br 
-	with Impossible ->
-	  (* Swap the case and the lam if possible *)
+    try (* Does a term [f] exist such as each branch is [(f e)] ? *)
+      if not o.opt_case_idr then raise Impossible;
+      let f = check_generalizable_case o.opt_case_idg br in 
+      simpl o (MLapp (MLlam (anonymous,f),[e]))
+    with Impossible -> 
+      try (* Is each branch independant of [e] ? *) 
+	if not o.opt_case_cst then raise Impossible;
+	check_constant_case br 
+      with Impossible ->
+	(* Swap the case and the lam if possible *)
+	if o.opt_case_fun 
+	then 
 	  let ids,br = permut_case_fun br [] in 
 	  let n = List.length ids in 
-	  if n = 0 then MLcase (e, br) 
-	  else named_lams ids (MLcase (ast_lift n e, br))
+	  if n <> 0 then named_lams ids (MLcase (ast_lift n e, br))
+	  else MLcase (e, br) 
+	else MLcase (e,br)
 
 let rec post_simpl = function 
   | MLletin(_,c,e) when (is_atomic (eta_red c)) -> 
@@ -917,7 +957,9 @@ and kill_dummy_fix i fi c =
 (*s Putting things together. *)
 
 let normalize a = 
-  if optim () then post_simpl (kill_dummy (simpl true a)) else simpl false a
+  let o = optims () in 
+  let a = simpl o a in 
+  if o.opt_kill_dum then post_simpl (kill_dummy a) else a
 
 (*S Special treatment of fixpoint for pretty-printing purpose. *)
 
@@ -934,7 +976,7 @@ let general_optimize_fix f ids n args m c =
   MLfix(0,[|f|],[|new_c|])
 
 let optimize_fix a = 
-  if not (optim()) then a 
+  if not (optims()).opt_fix_fun then a 
   else
     let ids,a' = collect_lams a in 
     let n = List.length ids in 

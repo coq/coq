@@ -72,7 +72,20 @@ val auto_inline : unit -> bool
 
 (*s Optimize parameter *) 
 
-val optim :  unit -> bool
+type opt_flag = 
+    { opt_kill_dum : bool; (* 1 *) 
+      opt_fix_fun : bool;   (* 2 *)
+      opt_case_iot : bool;  (* 4 *)
+      opt_case_idr : bool;  (* 8 *)
+      opt_case_idg : bool;  (* 16 *)
+      opt_case_cst : bool;  (* 32 *)
+      opt_case_fun : bool;  (* 64 *)
+      opt_case_app : bool;  (* 128 *)
+      opt_let_app : bool;   (* 256 *)
+      opt_lin_let : bool;   (* 512 *)
+      opt_lin_beta : bool } (* 1024 *)
+
+val optims :  unit -> opt_flag
 
 (*s Target language. *)
 

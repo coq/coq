@@ -101,8 +101,11 @@ val ast_lift : int -> ml_ast -> ml_ast
 val ast_pop : ml_ast -> ml_ast
 val ast_subst : ml_ast -> ml_ast -> ml_ast
 
+val ast_glob_subst : ml_ast KNmap.t -> ml_ast -> ml_ast
+
 val normalize : ml_ast -> ml_ast 
 val optimize_fix : ml_ast -> ml_ast
 val inline : global_reference -> ml_ast -> bool
+
 
 

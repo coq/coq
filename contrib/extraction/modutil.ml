@@ -325,10 +325,6 @@ let get_decl_in_structure r struc =
    a let-in redex is created for clarity) and iota redexes, plus some other
    optimizations. *)
 
-let rec subst_glob_ast s t = match t with 
-  | MLglob (ConstRef kn) -> (try KNmap.find kn s with Not_found -> t)
-  | _ -> ast_map (subst_glob_ast s) t
-
 let dfix_to_mlfix rv av i = 
   let rec make_subst n s = 
     if n < 0 then s 
@@ -350,7 +346,7 @@ let rec optim prm s = function
   | (Dtype (r,_,Tdummy) | Dterm(r,MLdummy,_)) as d :: l ->
       if List.mem r prm.to_appear then d :: (optim prm s l) else optim prm s l
   | Dterm (r,t,typ) :: l ->
-      let t = normalize (subst_glob_ast !s t) in 
+      let t = normalize (ast_glob_subst !s t) in 
       let i = inline r t in 
       if i then s := KNmap.add (kn_of_r r) t !s; 
       if not i || prm.modular || List.mem r prm.to_appear 
@@ -367,7 +363,7 @@ let rec optim_se top prm s = function
   | [] -> [] 
   | (l,SEdecl (Dterm (r,a,t))) :: lse -> 
       let kn = kn_of_r r in 
-      let a = normalize (subst_glob_ast !s a) in 
+      let a = normalize (ast_glob_subst !s a) in 
       let i = inline r a in 
       if i then s := KNmap.add kn a !s; 
       if top && i && not prm.modular && not (List.mem r prm.to_appear)
@@ -379,7 +375,7 @@ let rec optim_se top prm s = function
 	  | a -> Dterm (r, a, t)
 	in (l,SEdecl d) :: (optim_se top prm s lse)
   | (l,SEdecl (Dfix (rv,av,tv))) :: lse -> 
-      let av = Array.map (fun a -> normalize (subst_glob_ast !s a)) av in 
+      let av = Array.map (fun a -> normalize (ast_glob_subst !s a)) av in 
       let all = ref true in 
       (* This fake body ensures that no fixpoint will be auto-inlined. *)
       let fake_body = MLfix (0,[||],[||]) in 

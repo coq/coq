@@ -214,16 +214,61 @@ let _ = declare_bool_option
 
 (*s Extraction Optimize *)
 
-let optim_ref = ref true
+type opt_flag = 
+    { opt_kill_dum : bool; (* 1 *) 
+      opt_fix_fun : bool;   (* 2 *)
+      opt_case_iot : bool;  (* 4 *)
+      opt_case_idr : bool;  (* 8 *)
+      opt_case_idg : bool;  (* 16 *)
+      opt_case_cst : bool;  (* 32 *)
+      opt_case_fun : bool;  (* 64 *)
+      opt_case_app : bool;  (* 128 *)
+      opt_let_app : bool;   (* 256 *)
+      opt_lin_let : bool;   (* 512 *)
+      opt_lin_beta : bool } (* 1024 *)
 
-let optim () = !optim_ref 
+let kth_digit n k = (n land (1 lsl k) <> 0)
+
+let flag_of_int n = 
+    { opt_kill_dum = kth_digit n 0;
+      opt_fix_fun = kth_digit n 1;
+      opt_case_iot = kth_digit n 2;
+      opt_case_idr = kth_digit n 3;
+      opt_case_idg = kth_digit n 4; 
+      opt_case_cst = kth_digit n 5;
+      opt_case_fun = kth_digit n 6;
+      opt_case_app = kth_digit n 7;
+      opt_let_app = kth_digit n 8;
+      opt_lin_let = kth_digit n 9;
+      opt_lin_beta = kth_digit n 10 }
+
+(* For the moment, we allow by default everything except the type-unsafe 
+   optimization [opt_case_idg]. *)
+
+let int_flag_init = 1 + 2 + 4 + 8 + 32 + 64 + 128 + 256 + 512 + 1024
+
+let int_flag_ref = ref int_flag_init
+let opt_flag_ref = ref (flag_of_int int_flag_init)
+
+let chg_flag n = int_flag_ref := n; opt_flag_ref := flag_of_int n
+
+let optims () = !opt_flag_ref
 
 let _ = declare_bool_option 
 	  {optsync = true; 
 	   optname = "Extraction Optimize";
 	   optkey = SecondaryTable ("Extraction", "Optimize");
-	   optread = optim; 
-	   optwrite = (:=) optim_ref}
+	   optread = (fun () -> !int_flag_ref = 0); 
+	   optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
+
+let _ = declare_int_option
+          { optsync = true;
+            optname = "Extraction Flag";
+            optkey = SecondaryTable("Extraction","Flag"); 
+            optread = (fun _ -> Some !int_flag_ref); 
+            optwrite = (function 
+                          | None -> chg_flag 0
+                          | Some i -> chg_flag (max i 0))}
 
 
 (*s Extraction Lang *)
