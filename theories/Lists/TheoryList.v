@@ -28,7 +28,7 @@ Qed.
 Hints Resolve Isnil_nil not_Isnil_cons.
 
 Lemma Isnil_dec : (l:(list A)){(Isnil l)}+{~(Isnil l)}.
-Induction l;Auto.
+Intro l; Case l;Auto.
 (*
 Realizer [l:(list A)]Cases l of
   | nil => true
@@ -43,7 +43,7 @@ Qed.
 (***********************)
 
 Lemma Uncons : (l:(list A)){a : A & { m: (list A) | (cons a m)=l}}+{Isnil l}.
-Induction l.
+Intro l; Case l.
 Auto.
 Intros a m; Intros; Left; Exists a; Exists m; Reflexivity.
 (*
@@ -60,7 +60,7 @@ Qed.
 (********************************)
 
 Lemma Hd : (l:(list A)){a : A | (EX m:(list A) |(cons a m)=l)}+{Isnil l}.
-Induction l.
+Intro l; Case l.
 Auto.
 Intros a m; Intros; Left; Exists a; Exists m; Reflexivity.
 (*
@@ -75,7 +75,7 @@ Qed.
 
 Lemma Tl : (l:(list A)){m:(list A)| (EX a:A |(cons a m)=l)
                          \/ ((Isnil l) /\ (Isnil m)) }.
-Induction l.
+Intro l; Case l.
 Exists (nil A); Auto.
 Intros a m; Intros; Exists m; Left; Exists a; Reflexivity.
 (*
@@ -101,12 +101,10 @@ Fixpoint Length_l [l:(list A)] : nat -> nat
 
 (* A tail recursive version *)
 Lemma Length_l_pf : (l:(list A))(n:nat){m:nat|(plus n (length l))=m}.
-Intros l n; Exists (Length_l l n).
-Generalize n.
 Induction l.
-Auto.
-Intro n0. Simpl. Rewrite <- (Hrecl (S n0)).
-Simpl. Auto.
+Intro n; Exists n; Simpl; Auto.
+Intros a m lrec n; Elim (lrec (S n)); Simpl; Intros.
+Exists x; Transitivity (S (plus n (length m))); Auto.
 (*
 Realizer Length_l.
 Program_all.
@@ -210,12 +208,17 @@ Fixpoint Nth_func [l:(list A)] : nat -> (Exc A)
 
 Lemma Nth : (l:(list A))(n:nat)
             {a:A|(nth_spec l n a)}+{(n=O)\/(lt (length l) n)}.
-Intros l n. Induction l; Induction n.
-Auto.
+Induction l.
+Intro n; Case n; Simpl; Auto with arith.
+Intros; Case n; Simpl; Auto.
+Intro n0; Case n0.
+Left; Exists a; Auto.
+Intro n1; Case (H (S n1)); Intro.
+Case s; Intros b p; Left; Exists b; Auto.
+Right; Case o; Intro.
+Absurd (S n1)=O; Auto.
 Auto with arith.
-Auto with arith.
-Elim Hrecl.
-...
+
 (*
 Realizer Nth_func.
 Program_all.
@@ -225,9 +228,11 @@ Simpl; Elim n; Auto with arith.
 Save.
 
 Lemma Item : (l:(list A))(n:nat){a:A|(nth_spec l (S n) a)}+{(le (length l) n)}.
-Realizer [l:(list A)][n:nat](Nth l (S n)).
-Program_all.
-Elim o; Intro; [Absurd ((S n)=O); Auto with arith | Auto with arith].
+Intros l n; Case (Nth l (S n)); Intro.
+Case s; Intro a; Left; Exists a; Auto.
+Right; Case o; Intro.
+Absurd (S n)=O; Auto.
+Auto with arith.
 Save.
 
 Require Minus.
@@ -240,18 +245,35 @@ Fixpoint index_p [a:A;l:(list A)] : nat -> (Exc nat) :=
 
 Lemma Index_p : (a:A)(l:(list A))(p:nat)
      {n:nat|(fst_nth_spec l (minus (S n) p) a)}+{(AllS [b:A]~a=b l)}.
-Realizer index_p.
-Program_all.
-Elim e; Elim minus_Sn_m; Trivial; Elim minus_n_n; Auto with arith.
+Induction l.
+Auto.
+Intros b m irec p.
+Case  (eqA_dec a b); Intro e.
+Left; Exists p.
+Case e; Elim minus_Sn_m; Trivial; Elim minus_n_n; Auto with arith.
+Case (irec (S p)); Intro.
+Case s; Intros n H; Left; Exists n; Auto with arith.
 Elim minus_Sn_m; Auto with arith.
 Apply lt_le_weak; Apply lt_O_minus_lt; Apply nth_lt_O with m a; Auto with arith.
+Auto.
 Save.
 
 Lemma Index : (a:A)(l:(list A))
      {n:nat|(fst_nth_spec l n a)}+{(AllS [b:A]~a=b l)}.
+
+(*
+Refine [a,l]if (Index_p a l (S O)) then [n,p](left ? ? (exists ? ? n ?)) 
+            else (right ? ? ?).
+*)
+
+Intros a l; Case (Index_p a l (S O)); Auto.
+Intros (n,P); Left; Exists n; Auto.
+Rewrite (minus_n_O n); Trivial.
+
+(*
 Realizer [a:A][l:(list A)](Index_p a l (S O)).
 Program_all.
-Rewrite (minus_n_O n0); Auto with arith.
+*)
 Save.
 
 Section Find_sec.
@@ -296,8 +318,17 @@ Fixpoint find [l:(list A)] : (Exc A) :=
         end.
 
 Lemma Find : (l:(list A)){a:A | (In a l) & (R a)}+{(AllS P l)}.
+Induction l; Auto.
+Intros a m H.
+Case H.
+Intros (b,H1,H2); Left; Exists b; Auto.
+Intro; Case (RS_dec a); Intro.
+Left; Exists a; Auto.
+Auto.
+(*
 Realizer find.
 Program_all.
+*)
 Save.
 
 Variable B : Set.
@@ -316,11 +347,22 @@ Fixpoint try_find [l:(list A)] : (Exc B) :=
    end.
 
 Lemma Try_find : (l:(list A)){c:B|(EX a:A |(In a l) & (T a c))}+{(AllS P l)}.
+Induction l.
+Auto.
+Intros a m H.
+Case H.
+Intros (b,H1); Left; Exists b.
+Case H1; Intros a' H2 H3; Exists a'; Auto.
+Intro; Case (TS_dec a); Intro.
+Case s; Intros c H1; Left; Exists c.
+Exists a; Auto.
+Auto.
+
+(* 
 Realizer try_find.
 Program_all.
-Exists a; Auto.
-Elim e; Intros a1 H1 H2.
-Exists a1; Auto.
+*)
+
 Save.
 
 End Find_sec.
@@ -341,8 +383,17 @@ Inductive AllS_assoc [P:A -> Prop]: (list A*B) -> Prop :=
 Hints Resolve allS_assoc_nil allS_assoc_cons.
 
 Lemma Assoc : (a:A)(l:(list A*B))(B+{(AllS_assoc [a':A]~(a=a') l)}).
+Induction l; Auto.
+Intros (a',b) m assrec.
+Case (eqA_dec a a'); Intro.
+Left; Exact b.
+Case assrec.
+Intro b'; Left; Exact b'.
+Auto.
+(*
 Realizer assoc.
 Program_all.
+*)
 Save.
 
 End Assoc_sec.
@@ -352,3 +403,4 @@ End Lists.
 Hints Resolve Isnil_nil not_Isnil_cons in_hd in_tl in_cons allS_nil allS_cons 
  : datatypes.
 Hints Immediate fst_nth_nth : datatypes.
+
