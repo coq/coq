@@ -12,15 +12,12 @@ Check [x]Cases x of (C2 n) => O | O => O | (S n) => n end.
 (* Coercion not at the root of pattern *)
 Check [x]Cases x of (C2 O) => O | _ => O end.
 
-(* TODO: insert unification inside patterns to get these examples working
-
+(* Unification and coercions inside patterns *)
 Check [x:(option nat)]Cases x of None => O | (Some O) => O | _ => O end.
 
-(* Coercion up to delta-conversion *)
+(* Coercion up to delta-conversion, and unification *)
 Coercion somenat := (Some nat).
 Check [x]Cases x of None => O | O => O | (S n) => n end.
-
-*)
 
 (* Coercions with parameters *)
 Inductive listn : nat-> Set := 
