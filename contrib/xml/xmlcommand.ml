@@ -131,14 +131,18 @@ let filter_params pvars hyps =
    | (id,he)::tl ->
       let ids' = id::ids in
       let ids'' =
-       String.concat "/" (List.rev (List.map Names.string_of_id ids')) in
+       "cic:/" ^
+        String.concat "/" (List.rev (List.map Names.string_of_id ids')) in
       let he' = ids'', List.filter (function x -> List.mem x hyps) he in
       let tl' = aux ids' tl in
        match he' with
           _,[] -> tl'
         | _,_  -> he'::tl'
  in
-  aux [] (List.rev pvars)
+  let cwd = Lib.cwd () in
+  let cwdsp = Names.make_path cwd (Names.id_of_string "dummy") in
+  let modulepath = Cic2acic.get_module_path_of_section_path cwdsp in
+   aux (Names.repr_dirpath modulepath) (List.rev pvars)
 ;;
 
 type variables_type = 
@@ -256,17 +260,68 @@ let string_list_of_named_context_list =
   (function (n,_,_) -> Names.string_of_id n)
 ;;
 
+(* Function to collect the variables that occur in a term. *)
+(* Used only for variables (since for constants and mutual *)
+(* inductive types this information is already available.  *)
+let find_hyps t =
+ let module T = Term in
+  let rec aux l t =
+   match T.kind_of_term t with
+      T.Var id when not (List.mem id l) ->
+       let (_,bo,ty) = Global.lookup_named id in
+        let boids = 
+         match bo with
+            Some bo' -> aux l bo'
+          | None -> l
+        in
+         id::(aux boids ty)
+    | T.Var _
+    | T.Rel _
+    | T.Meta _
+    | T.Evar _
+    | T.Sort _ -> l
+    | T.Cast (te,ty) -> aux (aux l te) ty
+    | T.Prod (_,s,t) -> aux (aux l s) t
+    | T.Lambda (_,s,t) -> aux (aux l s) t
+    | T.LetIn (_,s,_,t) -> aux (aux l s) t
+    | T.App (he,tl) -> Array.fold_left (fun i x -> aux i x) (aux l he) tl
+    | T.Const con ->
+       let hyps = (Global.lookup_constant con).Declarations.const_hyps in
+        map_and_filter l hyps @ l
+    | T.Ind ind
+    | T.Construct (ind,_) ->
+       let hyps = (fst (Global.lookup_inductive ind)).Declarations.mind_hyps in
+        map_and_filter l hyps @ l
+    | T.Case (_,t1,t2,b) ->
+       Array.fold_left (fun i x -> aux i x) (aux (aux l t1) t2) b
+    | T.Fix (_,(_,tys,bodies))
+    | T.CoFix (_,(_,tys,bodies)) ->
+       let r = Array.fold_left (fun i x -> aux i x) l tys in
+        Array.fold_left (fun i x -> aux i x) r bodies
+  and map_and_filter l =
+   function
+      [] -> []
+    | (n,_,_)::tl when not (List.mem n l) -> n::(map_and_filter l tl)
+    | _::tl -> map_and_filter l tl
+  in
+   aux [] t
+;;
+
 (* Functions to construct an object *)
 
 let mk_variable_obj id body typ =
- let unsharedbody =
+ let hyps,unsharedbody =
   match body with
-     None -> None
-   | Some bo -> Some (Term.unshare bo)
+     None -> [],None
+   | Some bo -> find_hyps bo, Some (Term.unshare bo)
  in
-  Acic.Variable
-   (Names.string_of_id id,unsharedbody,
-    (Term.unshare (Term.body_of_type typ)))
+  let hyps' = find_hyps typ @ hyps in
+  let hyps'' = List.map Names.string_of_id hyps' in
+  let variables = search_variables () in
+  let params = filter_params variables hyps'' in
+   Acic.Variable
+    (Names.string_of_id id, unsharedbody,
+     (Term.unshare (Term.body_of_type typ)), params)
 ;;
 
 (* Unsharing is not performed on the body, that must be already unshared. *)

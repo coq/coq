@@ -296,19 +296,20 @@ let print_object uri ids_to_inner_sorts =
          >]
         in
          xmlty, xmlbo
-     | A.AVariable (id,n,bo,ty) ->
-        [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
-           X.xml_cdata ("<!DOCTYPE Variable SYSTEM \"" ^ dtdname ^ "\">\n") ;
-           X.xml_nempty "Variable" ["name",n ; "id", id]
-            [< (match bo with
-                   None -> [<>]
-                 | Some bo ->
-                    X.xml_nempty "body" []
-                     (print_term ids_to_inner_sorts bo)
-               ) ;
-               X.xml_nempty "type" [] (print_term ids_to_inner_sorts ty)
-            >]
-        >], None
+     | A.AVariable (id,n,bo,ty,params) ->
+        let params' = param_attribute_of_params params in
+         [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
+            X.xml_cdata ("<!DOCTYPE Variable SYSTEM \"" ^ dtdname ^ "\">\n") ;
+            X.xml_nempty "Variable" ["name",n ; "params",params' ; "id", id]
+             [< (match bo with
+                    None -> [<>]
+                  | Some bo ->
+                     X.xml_nempty "body" []
+                      (print_term ids_to_inner_sorts bo)
+                ) ;
+                X.xml_nempty "type" [] (print_term ids_to_inner_sorts ty)
+             >]
+         >], None
      | A.AInductiveDefinition (id,tys,params,nparams) ->
         let params' = param_attribute_of_params params in
          [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;

@@ -34,7 +34,8 @@ type obj =
     constr option * constr *                       (*  value, type, *)
     params                                         (*  parameters   *)
  | Variable of
-    string * constr option * constr                (* name, body, type *)
+    string * constr option * constr *              (* name, body, type *)
+    params                                         (*  parameters   *)
  | CurrentProof of
     string * metasenv *                            (*  name, conjectures, *)
     constr * constr                                (*  value, type        *)
@@ -78,7 +79,8 @@ type aobj =
     aconstr option * aconstr *                     (*  value, type, *)
     params                                         (*  parameters   *)
  | AVariable of id *
-    string * aconstr option * aconstr              (* name, body, type *)
+    string * aconstr option * aconstr *            (* name, body, type *)
+    params                                         (*  parameters   *)
  | ACurrentProof of id *
     string * ametasenv *                           (*  name, conjectures, *)
     aconstr * aconstr                              (*  value, type        *)

@@ -608,14 +608,14 @@ let acic_object_of_cic_object pvars sigma obj =
        in
        let aty = acic_term_of_cic_term' ty None in
         A.AConstant (fresh_id (),id,abo,aty,params)
-    | A.Variable (id,bo,ty) ->
+    | A.Variable (id,bo,ty,params) ->
        let abo =
         match bo with
            Some bo -> Some (acic_term_of_cic_term' bo (Some ty))
          | None -> None
        in
        let aty = acic_term_of_cic_term' ty None in
-        A.AVariable (fresh_id (),id,abo,aty)
+        A.AVariable (fresh_id (),id,abo,aty,params)
     | A.CurrentProof (id,conjectures,bo,ty) ->
        let aconjectures =
         List.map
