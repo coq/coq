@@ -403,7 +403,7 @@ let discriminable env sigma t1 t2 =
 
 let descend_then sigma env head dirn =
   let headj = unsafe_machine env sigma head in
-  let (construct,largs,nparams,arityind,mind,
+  let (construct,largs,nparams,arityind,mispec,
        consnamev,case_fun,type_branch_fun) = 
     (match whd_betadeltaiota_stack env sigma headj.uj_type [] with
        | (DOPN(MutInd (x_0,x_1),cl) as ity,largs) ->
@@ -412,7 +412,7 @@ let descend_then sigma env head dirn =
 	   and consnamev = mis_consnames mispec
 	   and arity = mis_arity mispec in 
 	   (DOPN(MutConstruct((x_0,x_1),dirn),cl),largs,nparams,
-	    mis_arity mispec,ity,consnamev,mkMutCase,
+	    mis_arity mispec,mispec,consnamev,mkMutCase,
 	    type_case_branches env sigma)
 	   | _ -> assert false)
   in
@@ -442,7 +442,7 @@ let descend_then sigma env head dirn =
 	  lam_and_popl_named (nlams-nb_prodP) typstack result [] in
 	branchval 
       in
-      case_fun (ci_of_mind mind) p head 
+      case_fun (make_default_case_info mispec) p head 
 	(List.map build_branch (interval 1 nconstructors))))
   
 (* Now we need to construct the discriminator, given a discriminable
@@ -485,14 +485,14 @@ let necessary_elimination arity sort =
 
 let construct_discriminator sigma env dirn c sort=
   let t = type_of env sigma c in
-  let (largs,nparams,arityind,mind,consnamev,case_fun,type_branch_fun) = 
+  let (largs,nparams,arityind,mispec,consnamev,case_fun,type_branch_fun) = 
     (match whd_betadeltaiota_stack env sigma t [] with
        | (DOPN(MutInd (x_0,x_1),cl) as ity,largs) ->
     	   let mispec = Global.lookup_mind_specif ((x_0,x_1),cl) in 
     	   let nparams = mis_nparams mispec
 	   and consnamev = mis_consnames mispec
 	   and arity = mis_arity mispec in 
-	   (largs,nparams,mis_arity mispec,ity,consnamev,mkMutCase,
+	   (largs,nparams,mis_arity mispec,mispec,consnamev,mkMutCase,
 	    type_case_branches env sigma)
        | _ -> (* one can find Rel(k) in case of dependent constructors 
                  like T := c : (A:Set)A->T and a discrimination 
@@ -525,7 +525,7 @@ let construct_discriminator sigma env dirn c sort=
     lambda_ize nlams bty.(i-1) endpt 
   in
   let build_match () =
-    case_fun (ci_of_mind mind) p c 
+    case_fun (make_default_case_info mispec) p c 
       (List.map build_branch (interval 1 nconstructors)) 
   in
   build_match()
@@ -846,7 +846,7 @@ let make_iterated_tuple sigma env (dFLT,dFLTty) (c,cty) =
 	     else
 	       somatch None headpat ty 
 	   in
-           instance ((headmv,dFLT)::binding) env sigma tuplepat
+           instance ((headmv,dFLT)::binding) tuplepat
          with e when catchable_exception e -> failwith "caught")
       [dFLTty; nf_ty] 
   in
