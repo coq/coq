@@ -52,8 +52,8 @@ that goal.
     Prop or Type}
 %\item \errindex{Proof objects can only be abstracted}
 %\item \errindex{A goal should be a type}
-\item \errindex{repeated goal not permitted in refining mode}
-the command {\tt Goal} cannot be used while a proof is already being edited.
+%\item \errindex{repeated goal not permitted in refining mode}
+%the command {\tt Goal} cannot be used while a proof is already being edited.
 \end{ErrMsgs}
 
 \SeeAlso section \ref{Theorem}
@@ -67,9 +67,9 @@ name is added to the environment as an {\tt Opaque} constant.
 
 \begin{ErrMsgs}
 \item \errindex{Attempt to save an incomplete proof}
-\item \ident\ \errindex{already exists}\\ 
-  The implicit name is already defined. You have then to provide
-  explicitly a new name (see variant 2 below).
+%\item \ident\ \errindex{already exists}\\ 
+%  The implicit name is already defined. You have then to provide
+%  explicitly a new name (see variant 3 below).
 \item Sometimes an error occurs when building the proof term,
 because tactics do not enforce completely the term construction
 constraints.
@@ -105,7 +105,15 @@ This command switches to interactive editing proof mode and declares
 as a {\tt Theorem}, the name {\ident} is known at all section levels:
 {\tt Theorem} is a {\sl global} lemma.
 
-\ErrMsg (see section \ref{Goal})
+%\ErrMsg (see section \ref{Goal})
+\begin{ErrMsgs}
+\item \errindex{the term \form\ has type \ldots{} which should be Set,
+    Prop or Type}
+\item \ident\ \errindex{already exists}\\ 
+  The name you provided already defined. You have then to choose
+  another name.
+\end{ErrMsgs}
+
 
 \begin{Variants}
 \item {\tt Lemma {\ident} : {\form}.}\comindex{Lemma}\\
