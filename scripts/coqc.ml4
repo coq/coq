@@ -88,6 +88,9 @@ let compile command args file =
     if not !keep then Sys.remove tmpfile ;
     match status with
       | _, Unix.WEXITED 0 -> ()
+      | _, Unix.WEXITED 127 -> 
+	  Printf.printf "Cannot execute %s\n" command;
+	  exit 1
       | _, Unix.WEXITED c -> exit c
       | _                 -> exit 1
   with _ -> 
