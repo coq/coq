@@ -187,15 +187,15 @@ let get_source lp source =
         in 
 	(cl1,lv1,1)
     | Some cl ->
-	let rec aux n = function
+	let rec aux = function
 	  | [] -> raise Not_found
 	  | t1::lt ->
 	      try 
 		let cl1,lv1 = find_class_type t1 in
-		if cl = cl1 then cl1,lv1,n
+		if cl = cl1 then cl1,lv1,(List.length lt+1)
 		else raise Not_found
-              with Not_found -> aux (n+1) lt
-	in aux 1 lp
+              with Not_found -> aux lt
+	in aux (List.rev lp)
 
 let get_target t ind =
   if (ind > 1) then 
