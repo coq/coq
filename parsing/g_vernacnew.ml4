@@ -97,11 +97,11 @@ GEXTEND Gram
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = base_ident; (* bl = LIST0 binder; *) ":";
+    [ [ thm = thm_token; id = identref; (* bl = LIST0 binder; *) ":";
         c = lconstr ->
           let bl = [] in
           VernacStartTheoremProof (thm, id, (bl, c), false, (fun _ _ -> ()))
-      | (f,d) = def_token; id = base_ident; b = def_body -> 
+      | (f,d) = def_token; id = identref; b = def_body -> 
           VernacDefinition (d, id, b, f)
       | stre = assumption_token; bl = assum_list -> 
 	  VernacAssumption (stre, flatten_assum bl)
@@ -120,13 +120,13 @@ GEXTEND Gram
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l ] ]
   ;
   gallina_ext:
-    [ [ b = record_token; oc = opt_coercion; name = base_ident;
+    [ [ b = record_token; oc = opt_coercion; name = identref;
         ps = LIST0 binder_let; ":";
-	s = lconstr; ":="; cstr = OPT base_ident; "{";
+	s = lconstr; ":="; cstr = OPT identref; "{";
         fs = LIST0 record_field SEP ";"; "}" ->
 	  VernacRecord (b,(oc,name),ps,s,cstr,fs)
 (* Non porté ?
-      | f = finite_token; s = csort; id = base_ident;
+      | f = finite_token; s = csort; id = identref;
         indpar = LIST0 simple_binder; ":="; lc = constructor_list -> 
           VernacInductive (f,[id,None,indpar,s,lc])
 *)
@@ -186,7 +186,7 @@ GEXTEND Gram
     ;
   (* Inductives and records *)
   inductive_definition:
-    [ [ id = base_ident; indpar = LIST0 binder_let; ":"; c = lconstr; 
+    [ [ id = identref; indpar = LIST0 binder_let; ":"; c = lconstr; 
         ":="; lc = constructor_list; ntn = decl_notation ->
 	  (id,ntn,indpar,c,lc) ] ]
   ;
@@ -244,7 +244,7 @@ GEXTEND Gram
   ;
   (* Inductive schemes *)
   scheme:
-    [ [ id = base_ident; ":="; dep = dep_scheme; "for"; ind = global;
+    [ [ id = identref; ":="; dep = dep_scheme; "for"; ind = global;
         IDENT "Sort"; s = sort ->
           (id,dep,ind,s) ] ]
   ;
@@ -266,12 +266,12 @@ GEXTEND Gram
 *)
   (* ... with coercions *)
   record_field:
-    [ [ id = base_ident -> (false,AssumExpr(id,CHole loc))
-      | id = base_ident; oc = of_type_with_opt_coercion; t = lconstr ->
+    [ [ id = identref -> (false,AssumExpr(id,CHole loc))
+      | id = identref; oc = of_type_with_opt_coercion; t = lconstr ->
          (oc,AssumExpr (id,t))
-      | id = base_ident; oc = of_type_with_opt_coercion;
+      | id = identref; oc = of_type_with_opt_coercion;
              t = lconstr; ":="; b = lconstr -> (oc,DefExpr (id,b,Some t))
-      | id = base_ident; ":="; b = lconstr ->
+      | id = identref; ":="; b = lconstr ->
          match b with
              CCast(_,b,t) -> (false,DefExpr(id,b,Some t))
            | _ -> (false,DefExpr(id,b,None)) ] ]
@@ -283,14 +283,14 @@ GEXTEND Gram
     [ [ "("; a = simple_assum_coe; ")" -> a ] ]
   ;
   simple_assum_coe:
-    [ [ idl = LIST1 base_ident; oc = of_type_with_opt_coercion; c = lconstr -> 
+    [ [ idl = LIST1 identref; oc = of_type_with_opt_coercion; c = lconstr -> 
         (oc,(idl,c)) ] ]
   ;
   constructor:
-    [ [ id = base_ident; l = LIST0 binder_let; 
+    [ [ id = identref; l = LIST0 binder_let; 
         coe = of_type_with_opt_coercion; c = lconstr ->
 	  (coe,(id,G_constrnew.mkCProdN loc l c))
-      | id = base_ident; l = LIST0 binder_let ->
+      | id = identref; l = LIST0 binder_let ->
 	  (false,(id,G_constrnew.mkCProdN loc l (CHole loc))) ] ]
   ;
   of_type_with_opt_coercion:
@@ -308,25 +308,25 @@ GEXTEND Gram
 
   gallina_ext:
     [ [ (* Interactive module declaration *)
-	IDENT "Module"; id = base_ident; 
+	IDENT "Module"; id = identref; 
 	bl = LIST0 module_binder; mty_o = OPT of_module_type; 
 	mexpr_o = OPT is_module_expr ->
 	  VernacDefineModule (id, bl, mty_o, mexpr_o)
 	  
-      | IDENT "Module"; "Type"; id = base_ident; 
+      | IDENT "Module"; "Type"; id = identref; 
 	bl = LIST0 module_binder; mty_o = OPT is_module_type ->
 	  VernacDeclareModuleType (id, bl, mty_o)
 	  
-      | IDENT "Declare"; IDENT "Module"; id = base_ident; 
+      | IDENT "Declare"; IDENT "Module"; id = identref; 
 	bl = LIST0 module_binder; mty_o = OPT of_module_type; 
 	mexpr_o = OPT is_module_expr ->
 	  VernacDeclareModule (id, bl, mty_o, mexpr_o)
       (* Section beginning *)
-      | IDENT "Section"; id = base_ident -> VernacBeginSection id
-      | IDENT "Chapter"; id = base_ident -> VernacBeginSection id
+      | IDENT "Section"; id = identref -> VernacBeginSection id
+      | IDENT "Chapter"; id = identref -> VernacBeginSection id
 
       (* This end a Section a Module or a Module Type *)
-      | IDENT "End"; id = base_ident -> VernacEndSegment id
+      | IDENT "End"; id = identref -> VernacEndSegment id
 
       (* Requiring an already compiled module *)
       | IDENT "Require"; export = export_token; specif = specif_token;
@@ -361,7 +361,7 @@ GEXTEND Gram
 
   (* Module binder  *)
   module_binder:
-    [ [ "("; idl = LIST1 base_ident; ":"; mty = module_type; ")" ->
+    [ [ "("; idl = LIST1 identref; ":"; mty = module_type; ")" ->
           (idl,mty) ] ]
   ;
 
@@ -374,9 +374,9 @@ GEXTEND Gram
       ] ]
   ;
   with_declaration:
-    [ [ "Definition"; id = base_ident; ":="; c = Constr.lconstr ->
+    [ [ "Definition"; id = identref; ":="; c = Constr.lconstr ->
           CWith_Definition (id,c)
-      | IDENT "Module"; id = base_ident; ":="; qid = qualid ->
+      | IDENT "Module"; id = identref; ":="; qid = qualid ->
 	  CWith_Module (id,qid)
       ] ]
   ;
@@ -404,19 +404,19 @@ GEXTEND Gram
       | IDENT "Canonical"; IDENT "Structure"; qid = global; d = def_body ->
           let s = Ast.coerce_global_to_id qid in
 	  VernacDefinition 
-	    ((Global,CanonicalStructure),s,d,Recordobj.add_object_hook)
+	    ((Global,CanonicalStructure),(dummy_loc,s),d,Recordobj.add_object_hook)
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
           let s = Ast.coerce_global_to_id qid in
-	  VernacDefinition ((Global,Coercion),s,d,Class.add_coercion_hook)
+	  VernacDefinition ((Global,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
       | IDENT "Coercion"; IDENT "Local"; qid = global; d = def_body ->
            let s = Ast.coerce_global_to_id qid in
-	  VernacDefinition ((Local,Coercion),s,d,Class.add_coercion_hook)
-      | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = base_ident;
+	  VernacDefinition ((Local,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
+      | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identref;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr -> 
 	   VernacIdentityCoercion (Local, f, s, t)
-      | IDENT "Identity"; IDENT "Coercion"; f = base_ident; ":";
+      | IDENT "Identity"; IDENT "Coercion"; f = identref; ":";
          s = class_rawexpr; ">->"; t = class_rawexpr -> 
 	   VernacIdentityCoercion (Global, f, s, t)
       | IDENT "Coercion"; IDENT "Local"; qid = global; ":";
@@ -433,7 +433,7 @@ GEXTEND Gram
 	   VernacDeclareImplicits (qid,pos)
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
-	   idl = LIST1 ident; ":"; c = lconstr -> VernacReserve (idl,c)
+	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c)
 
       (* For compatibility *)
       | IDENT "Implicit"; IDENT "Arguments"; IDENT "On" ->

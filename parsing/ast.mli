@@ -86,7 +86,7 @@ type grammar_action =
 
 type env = (string * typed_ast) list
 
-val coerce_to_id : constr_expr -> identifier
+val coerce_to_id : constr_expr -> identifier located
 
 val coerce_global_to_id : reference -> identifier
 val coerce_reference_to_id : reference -> identifier

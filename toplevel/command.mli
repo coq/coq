@@ -47,7 +47,7 @@ val build_recursive : (fixpoint_expr * decl_notation) list -> unit
 
 val build_corecursive : cofixpoint_expr list -> unit
 
-val build_scheme : (identifier * bool * reference * rawsort) list -> unit
+val build_scheme : (identifier located * bool * reference * rawsort) list -> unit
 
 val generalize_rawconstr : constr_expr -> local_binder list -> constr_expr
 

@@ -149,8 +149,8 @@ val local_binders_length : local_binder list -> int
 (* Concrete syntax for modules and modules types *)
 
 type with_declaration_ast = 
-  | CWith_Module of identifier * qualid located
-  | CWith_Definition of identifier * constr_expr
+  | CWith_Module of identifier located * qualid located
+  | CWith_Definition of identifier located * constr_expr
 
 type module_type_ast = 
   | CMTEident of qualid located

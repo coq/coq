@@ -105,7 +105,7 @@ let convert_constructors envpar names types =
     array_map2 
       (fun n t -> 
 	let coercion_flag = false (* arbitrary *) in
-	(coercion_flag, (n, extern_constr true envpar t)))
+	(coercion_flag, ((dummy_loc,n), extern_constr true envpar t)))
       names types in
   Array.to_list array_idC;;
   
@@ -117,7 +117,7 @@ let convert_one_inductive sp tyi =
   let env = Global.env () in
   let envpar = push_rel_context params env in
   let sp = sp_of_global (IndRef (sp, tyi)) in
-  (basename sp, None,
+  ((dummy_loc,basename sp), None,
    convert_env(List.rev params),
    (extern_constr true envpar arity),
    convert_constructors envpar cstrnames cstrtypes);;
@@ -154,12 +154,13 @@ let make_variable_ast name typ implicits =
 *)
 let make_variable_ast name typ implicits =
   (VernacAssumption
-    ((Local,Definitional), [false,(name, constr_to_ast (body_of_type typ))]))
+    ((Local,Definitional),
+     [false,((dummy_loc,name), constr_to_ast (body_of_type typ))]))
   ::(implicits_to_ast_list implicits);;
     
 
 let make_definition_ast name c typ implicits =
-  VernacDefinition ((Global,Definition), name, DefineBody ([], None,
+  VernacDefinition ((Global,Definition), (dummy_loc,name), DefineBody ([], None,
     (constr_to_ast c), Some (constr_to_ast (body_of_type typ))),
     (fun _ _ -> ()))
   ::(implicits_to_ast_list implicits);;

@@ -24,5 +24,5 @@ val declare_projections :
   inductive -> bool list -> rel_context -> constant option list
 
 val definition_structure :
-  identifier with_coercion * local_binder list *
+  lident with_coercion * local_binder list *
   (local_decl_expr with_coercion) list * identifier * sorts -> unit

@@ -92,7 +92,7 @@ GEXTEND Gram
   ;
   match_pattern:
     [ [ id = Constr.constr_pattern; "["; pc = Constr.constr_pattern; "]" ->
-        let s = coerce_to_id id in Subterm (Some s, pc)
+        let (_,s) = coerce_to_id id in Subterm (Some s, pc)
       | "["; pc = Constr.constr_pattern; "]" -> Subterm (None,pc)
       | pc = Constr.constr_pattern -> Term pc ] ]
   ;

@@ -35,8 +35,8 @@ open Topconstr
 let name_of id = if id = wildcard then Anonymous else Name id
 
 let interp_decl sigma env = function
-  | Vernacexpr.AssumExpr(id,t) -> (name_of id,None,interp_type Evd.empty env t)
-  | Vernacexpr.DefExpr(id,c,t) ->
+  | Vernacexpr.AssumExpr((_,id),t) -> (name_of id,None,interp_type Evd.empty env t)
+  | Vernacexpr.DefExpr((_,id),c,t) ->
       let c = match t with
 	| None -> c
 	| Some t -> mkCastC (c,t)
@@ -207,10 +207,12 @@ let declare_projections indsp coers fields =
 
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a boolean 
    list telling if the corresponding fields must me declared as coercion *)
-let definition_structure ((is_coe,idstruc),ps,cfs,idbuild,s) =
+let definition_structure ((is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
   let coers,fs = List.split cfs in
   let nparams = local_binders_length ps in
-  let extract_name = function Vernacexpr.AssumExpr(id,_) -> id | Vernacexpr.DefExpr (id,_,_) -> id in
+  let extract_name = function
+      Vernacexpr.AssumExpr((_,id),_) -> id
+    | Vernacexpr.DefExpr ((_,id),_,_) -> id in
   let allnames =  idstruc::(List.map extract_name fs) in
   if not (list_distinct allnames) then error "Two objects have the same name";
   (* Now, younger decl in params and fields is on top *)

@@ -96,7 +96,7 @@ let mk_cofix_tac (loc,id,bl,ann,ty) =
 
 (* Functions overloaded by quotifier *)
 let induction_arg_of_constr c =
-  try ElimOnIdent (Topconstr.constr_loc c,coerce_to_id c)
+  try ElimOnIdent (Topconstr.constr_loc c,snd(coerce_to_id c))
   with _ -> ElimOnConstr c
 
 let local_compute = [FBeta;FIota;FDeltaBut [];FZeta]

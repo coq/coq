@@ -32,7 +32,8 @@ let _ =
 (* Functions overloaded by quotifier *)
 
 let induction_arg_of_constr c =
-  try ElimOnIdent (Topconstr.constr_loc c,coerce_to_id c) with _ -> ElimOnConstr c
+  try ElimOnIdent (Topconstr.constr_loc c,snd (coerce_to_id c))
+  with _ -> ElimOnConstr c
 
 let local_compute = [FBeta;FIota;FDeltaBut [];FZeta]
 
@@ -154,7 +155,7 @@ GEXTEND Gram
   bindings:
     [ [ c1 = constr; ":="; c2 = constr; bl = LIST0 simple_binding ->
           ExplicitBindings
-            ((join_to_constr loc c2,NamedHyp (coerce_to_id c1), c2) :: bl)
+            ((join_to_constr loc c2,NamedHyp (snd(coerce_to_id c1)), c2) :: bl)
       | n = natural; ":="; c = constr; bl = LIST0 simple_binding ->
 	  ExplicitBindings ((join_to_constr loc c,AnonHyp n, c) :: bl)
       | c1 = constr; bl = LIST0 constr ->
@@ -292,11 +293,11 @@ GEXTEND Gram
       | IDENT "Cut"; c = constr -> TacCut c
       | IDENT "Assert"; c = constr -> TacTrueCut (None,c)
       | IDENT "Assert"; c = constr; ":"; t = constr ->
-          TacTrueCut (Some (coerce_to_id c),t)
+          TacTrueCut (Some (snd(coerce_to_id c)),t)
       | IDENT "Assert"; c = constr; ":="; b = constr ->
-          TacForward (false,Names.Name (coerce_to_id c),b)
+          TacForward (false,Names.Name (snd (coerce_to_id c)),b)
       | IDENT "Pose"; c = constr; ":="; b = constr ->
-	  TacForward (true,Names.Name (coerce_to_id c),b)
+	  TacForward (true,Names.Name (snd(coerce_to_id c)),b)
       | IDENT "Pose"; b = constr -> TacForward (true,Names.Anonymous,b)
       | IDENT "Generalize"; lc = LIST1 constr -> TacGeneralize lc
       | IDENT "Generalize"; IDENT "Dependent"; c = constr -> TacGeneralizeDep c

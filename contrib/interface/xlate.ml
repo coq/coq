@@ -1243,19 +1243,19 @@ let xlate_check =
     | _ -> xlate_error "xlate_check";;
 
 let build_constructors l =
- let f (coe,(id,c)) =
+ let f (coe,((_,id),c)) =
    if coe then xlate_error "TODO: coercions in constructors"
    else CT_constr (xlate_ident id, xlate_formula c) in
  CT_constr_list (List.map f l)
 
 let build_record_field_list l =
  let build_record_field (coe,d) = match d with
-  | AssumExpr (id,c) ->
+  | AssumExpr ((_,id),c) ->
       if coe then CT_constr_coercion (xlate_ident id, xlate_formula c)
       else
 	CT_coerce_CONSTR_to_RECCONSTR
 	  (CT_constr (xlate_ident id, xlate_formula c))
-  | DefExpr (id,c,topt) ->
+  | DefExpr ((_,id),c,topt) ->
       xlate_error "TODO: manifest fields in Record" in
  CT_recconstr_list (List.map build_record_field l);;
 
@@ -1281,7 +1281,7 @@ let cvt_optional_eval_for_definition c1 optional_eval =
 	      xlate_formula c1))
 
 let cvt_vernac_binder = function
-  | (id,c) ->
+  | ((_,id),c) ->
      CT_binder(CT_id_opt_ne_list (xlate_ident_opt (Some id),[]),xlate_formula c)
 
 let cvt_vernac_binders args =
@@ -1418,10 +1418,10 @@ let xlate_vernac =
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Theorem"), ctv_ID_OPT_NONE)
   | VernacEndProof (Proved (false,None)) ->
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Definition"), ctv_ID_OPT_NONE)
-  | VernacEndProof (Proved (b,Some (s, Some kind))) ->
+  | VernacEndProof (Proved (b,Some ((_,s), Some kind))) ->
       CT_save (CT_coerce_THM_to_THM_OPT (xlate_thm kind),
        ctf_ID_OPT_SOME (xlate_ident s))
-  | VernacEndProof (Proved (b,Some (s,None))) ->
+  | VernacEndProof (Proved (b,Some ((_,s),None))) ->
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Theorem"),
        ctf_ID_OPT_SOME (xlate_ident s))
   | VernacEndProof Admitted -> xlate_error "TODO: Admitted"
@@ -1478,21 +1478,21 @@ let xlate_vernac =
 	| PrintVisibility _ -> xlate_error "TODO: Print Visibility"
         | PrintAbout _ -> xlate_error "TODO: Print About"
 	| _ -> xlate_error "TODO: Print")
-  | VernacBeginSection id ->
+  | VernacBeginSection (_,id) ->
       CT_coerce_SECTION_BEGIN_to_COMMAND (CT_section (xlate_ident id))
-  | VernacEndSegment id -> CT_section_end (xlate_ident id)
-  | VernacStartTheoremProof (k, s, ([],c), _, _) ->
+  | VernacEndSegment (_,id) -> CT_section_end (xlate_ident id)
+  | VernacStartTheoremProof (k, (_,s), ([],c), _, _) ->
       CT_coerce_THEOREM_GOAL_to_COMMAND(
 	CT_theorem_goal (CT_coerce_THM_to_DEFN_OR_THM (xlate_thm k), xlate_ident s,xlate_formula c))
   | VernacStartTheoremProof (k, s, (bl,c), _, _) -> 
       xlate_error "TODO: VernacStartTheoremProof"
   | VernacSuspend -> CT_suspend
   | VernacResume idopt -> CT_resume (xlate_ident_opt (option_app snd idopt))
-  | VernacDefinition ((k,_),s,ProveBody (bl,typ),_) ->
+  | VernacDefinition ((k,_),(_,s),ProveBody (bl,typ),_) ->
       if bl <> [] then xlate_error "TODO: Def bindings";
       CT_coerce_THEOREM_GOAL_to_COMMAND(
 	CT_theorem_goal (CT_coerce_DEFN_to_DEFN_OR_THM (xlate_defn k), xlate_ident s,xlate_formula typ))
-  | VernacDefinition ((kind,_),s,DefineBody(bl,red_option,c,typ_opt),_) ->
+  | VernacDefinition ((kind,_),(_,s),DefineBody(bl,red_option,c,typ_opt),_) ->
       CT_definition
 	(xlate_defn kind, xlate_ident s, xlate_binder_list bl,
 	   cvt_optional_eval_for_definition c red_option,
@@ -1513,8 +1513,9 @@ let xlate_vernac =
 
   | (*Record from tactics/Record.v *)
     VernacRecord 
-      (_, (add_coercion, s), binders, CSort (_,c1), rec_constructor_or_none, field_list) ->
-      let record_constructor = xlate_ident_opt rec_constructor_or_none in
+      (_, (add_coercion, (_,s)), binders, CSort (_,c1), rec_constructor_or_none, field_list) ->
+      let record_constructor =
+        xlate_ident_opt (option_app snd rec_constructor_or_none) in
       CT_record
        ((if add_coercion then CT_coercion_atm else
           CT_coerce_NONE_to_COERCION_OPT(CT_none)),
@@ -1555,7 +1556,7 @@ let xlate_vernac =
 *)
    | VernacInductive (isind, lmi) ->
       let co_or_ind = if isind then "Inductive" else "CoInductive" in
-      let strip_mutind (s, notopt, parameters, c, constructors) =
+      let strip_mutind ((_,s), notopt, parameters, c, constructors) =
         if notopt = None then
            CT_ind_spec
             (xlate_ident s, xlate_binder_list parameters, xlate_formula c,
@@ -1585,14 +1586,14 @@ let xlate_vernac =
 	  (CT_cofix_rec_list (strip_mutcorec lm, List.map strip_mutcorec lmi))
    | VernacScheme [] -> xlate_error "induction scheme"
    | VernacScheme (lm :: lmi) ->
-      let strip_ind (id, depstr, inde, sort) =
+      let strip_ind ((_,id), depstr, inde, sort) =
            CT_scheme_spec
             (xlate_ident id, xlate_dep depstr, 
 	    CT_coerce_ID_to_FORMULA (loc_qualid_to_ct_ID inde),
 	     xlate_sort sort) in
         CT_ind_scheme
 	  (CT_scheme_spec_list (strip_ind lm, List.map strip_ind lmi))
-   | VernacSyntacticDefinition (id, c, nopt) ->
+   | VernacSyntacticDefinition ((_,id), c, nopt) ->
          CT_syntax_macro (xlate_ident id, xlate_formula c, xlate_int_opt nopt)
    | VernacRequire (None, spec, lid) -> xlate_error "TODO: Read Module"
    | VernacRequire (Some impexp, spec, [id]) ->
@@ -1653,7 +1654,7 @@ let xlate_vernac =
       CT_coercion (local_opt, id_opt, loc_qualid_to_ct_ID id1,
         xlate_class id2, xlate_class id3)
 
-   | VernacIdentityCoercion (s, id1, id2, id3) ->
+   | VernacIdentityCoercion (s, (_,id1), id2, id3) ->
       let id_opt = CT_identity in
       let local_opt =
        match s with

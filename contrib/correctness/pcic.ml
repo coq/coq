@@ -56,11 +56,12 @@ let tuple_n n =
       (fun i -> 
 	 let id = make_ident ("proj_" ^ string_of_int n ^ "_") (Some i) in
 	 let id' = make_ident "T" (Some i) in
-	 (false, Vernacexpr.AssumExpr (id, mkIdentC id')))
+	 (false, Vernacexpr.AssumExpr ((dummy_loc,id), mkIdentC id')))
       l1n 
   in
   let cons = make_ident "Build_tuple_" (Some n) in
-  Record.definition_structure ((false, id), params, fields, cons, mk_Set)
+  Record.definition_structure
+    ((false, (dummy_loc,id)), params, fields, cons, mk_Set)
 
 (*s [(sig_n n)] generates the inductive
     \begin{verbatim}

@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Names
 open Entries
 open Environ
@@ -38,12 +39,12 @@ open Lib
 val declare_module : 
   (env -> 'modtype -> module_type_entry) -> (env -> 'modexpr -> module_expr) ->
   identifier -> 
-  (identifier list * 'modtype) list -> ('modtype * bool) option -> 
+  (identifier located list * 'modtype) list -> ('modtype * bool) option -> 
   'modexpr option -> unit
  
 val start_module : (env -> 'modtype -> module_type_entry) -> 
   identifier -> 
-  (identifier list * 'modtype) list -> ('modtype * bool) option -> 
+  (identifier located list * 'modtype) list -> ('modtype * bool) option -> 
   unit
 
 val end_module : identifier -> unit
@@ -53,10 +54,10 @@ val end_module : identifier -> unit
 (*s Module types *)
 
 val declare_modtype : (env -> 'modtype -> module_type_entry) -> 
-  identifier -> (identifier list * 'modtype) list -> 'modtype -> unit
+  identifier -> (identifier located list * 'modtype) list -> 'modtype -> unit
 
 val start_modtype : (env -> 'modtype -> module_type_entry) -> 
-  identifier -> (identifier list * 'modtype) list -> unit
+  identifier -> (identifier located list * 'modtype) list -> unit
 
 val end_modtype : identifier -> unit
 

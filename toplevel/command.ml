@@ -250,8 +250,8 @@ let corecursive_message v =
 
 let interp_mutual lparams lnamearconstrs finite = 
   let allnames = 
-    List.fold_left 
-      (fun acc (id,_,_,l) -> id::(List.map fst l)@acc) [] lnamearconstrs in
+    List.fold_left (fun acc (id,_,_,l) -> id::(List.map fst l)@acc)
+      [] lnamearconstrs in
   if not (list_distinct allnames) then
     error "Two inductive objects have the same name";
   let nparams = local_binders_length lparams
@@ -288,7 +288,8 @@ let interp_mutual lparams lnamearconstrs finite =
   let paramassums = 
     List.fold_right (fun d l -> match d with
 	(id,LocalAssum _) -> id::l | (_,LocalDef _) -> l) params' [] in
-  let indnames = List.map (fun (id,_,_,_)-> id) lnamearconstrs @ paramassums in
+  let indnames =
+    List.map (fun (id,_,_,_)-> id) lnamearconstrs @ paramassums in
   let nparamassums = List.length paramassums in
   let (ind_env,ind_impls,arityl) =
     List.fold_left
@@ -327,7 +328,6 @@ let interp_mutual lparams lnamearconstrs finite =
     List.map2
       (fun ar (name,_,_,lname_constr) ->
 	 let constrnames, bodies = List.split lname_constr in
-
          (* Compute the conclusions of constructor types *)
 	 (* for inductive given in ML syntax *)
 	 let nar = 
@@ -377,15 +377,15 @@ let eq_la d1 d2 = match d1,d2 with
 
 let extract_coe lc =
   List.fold_right
-    (fun (addcoe,(id,t)) (l1,l2) ->
+    (fun (addcoe,((_,(id:identifier)),t)) (l1,l2) ->
       ((if addcoe then id::l1 else l1), (id,t)::l2)) lc ([],[])
 
 let extract_coe_la_lc = function
   | []            -> anomaly "Vernacentries: empty list of inductive types"
-  | (id,ntn,la,ar,lc)::rest ->
+  | ((_,id),ntn,la,ar,lc)::rest ->
       let rec check = function 
 	| []             -> [],[]
-  	| (id,ntn,la',ar,lc)::rest ->
+  	| ((_,id),ntn,la',ar,lc)::rest ->
             if (List.length la = List.length la') && 
                (List.for_all2 eq_la la la')
 	    then
@@ -401,7 +401,7 @@ let extract_coe_la_lc = function
       (coes,la,(id,ntn,ar,lc'):: mspec)
 
 let build_mutual lind finite =
-  let (coes,lparams,lnamearconstructs) = extract_coe_la_lc lind in
+  let ((coes:identifier list),lparams,lnamearconstructs) = extract_coe_la_lc lind in
   let notations,mie = interp_mutual lparams lnamearconstructs finite in
   let kn = declare_mutual_with_eliminations mie in
   (* Declare the notations now bound to the inductive types *)
@@ -578,7 +578,7 @@ let build_corecursive lnameardef =
   in ()
 
 let build_scheme lnamedepindsort = 
-  let lrecnames = List.map (fun (f,_,_,_) -> f) lnamedepindsort
+  let lrecnames = List.map (fun ((_,f),_,_,_) -> f) lnamedepindsort
   and sigma = Evd.empty
   and env0 = Global.env() in
   let lrecspec =

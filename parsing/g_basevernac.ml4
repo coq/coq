@@ -28,6 +28,8 @@ let _ =
     List.iter (fun s -> Lexer.add_token ("",s)) vernac_kw
 
 let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
+let lstring = Gram.Entry.create "lstring"
+
 
 if !Options.v7 then
 GEXTEND Gram
@@ -42,8 +44,11 @@ END;
 
 if !Options.v7 then
 GEXTEND Gram
-  GLOBAL: command;
+  GLOBAL: command lstring;
 
+  lstring:
+    [ [ s = STRING -> s ] ]
+  ;
   comment:
     [ [ c = constr -> CommentConstr c
       | s = STRING -> CommentString s
@@ -55,7 +60,7 @@ GEXTEND Gram
       (* System directory *)
       | IDENT "Pwd" -> VernacChdir None
       | IDENT "Cd" -> VernacChdir None
-      | IDENT "Cd"; dir = STRING -> VernacChdir (Some dir)
+      | IDENT "Cd"; dir = lstring -> VernacChdir (Some dir)
 
       (* Toplevel control *)
       | IDENT "Drop" -> VernacToplevelControl Drop
@@ -63,25 +68,25 @@ GEXTEND Gram
       | "Quit" -> VernacToplevelControl Quit
 
       (* Dump of the universe graph - to file or to stdout *) 
-      | IDENT "Dump"; IDENT "Universes"; fopt = OPT STRING ->
+      | IDENT "Dump"; IDENT "Universes"; fopt = OPT lstring ->
 	  VernacPrint (PrintUniverses fopt)
 
       | IDENT "Locate"; l = locatable -> VernacLocate l
 
       (* Managing load paths *)
-      | IDENT "Add"; IDENT "LoadPath"; dir = STRING; alias = as_dirpath ->
+      | IDENT "Add"; IDENT "LoadPath"; dir = lstring; alias = as_dirpath ->
 	  VernacAddLoadPath (false, dir, alias)
-      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; dir = STRING; 
+      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; dir = lstring; 
 	  alias = as_dirpath -> VernacAddLoadPath (true, dir, alias)
-      | IDENT "Remove"; IDENT "LoadPath"; dir = STRING ->
+      | IDENT "Remove"; IDENT "LoadPath"; dir = lstring ->
 	  VernacRemoveLoadPath dir
 
        (* For compatibility *)
-      | IDENT "AddPath"; dir = STRING; "as"; alias = as_dirpath ->
+      | IDENT "AddPath"; dir = lstring; "as"; alias = as_dirpath ->
 	  VernacAddLoadPath (false, dir, alias)
-      | IDENT "AddRecPath"; dir = STRING; "as"; alias = as_dirpath ->
+      | IDENT "AddRecPath"; dir = lstring; "as"; alias = as_dirpath ->
 	  VernacAddLoadPath (true, dir, alias)
-      | IDENT "DelPath"; dir = STRING ->
+      | IDENT "DelPath"; dir = lstring ->
 	  VernacRemoveLoadPath dir
 
       (* Printing (careful factorization of entries) *)
@@ -104,7 +109,7 @@ GEXTEND Gram
 	  VernacSearch (SearchRewrite c, l)
       | IDENT "SearchAbout"; 
 	  sl = [ "["; l = LIST1 [ r = global -> SearchRef r
-                                  | s = STRING -> SearchString s ]; "]" -> l 
+                                  | s = lstring -> SearchString s ]; "]" -> l 
    		 | qid = global -> [SearchRef qid] ];
 	  l = in_or_out_modules -> 
 	  VernacSearch (SearchAbout sl, l)
@@ -116,9 +121,9 @@ GEXTEND Gram
 	  VernacCheckMayEval (None, None, c)
       | "Type"; c = constr -> VernacGlobalCheck c      (* pas dans le RefMan *)
 
-      | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = STRING ->
+      | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = lstring ->
 	  VernacAddMLPath (false, dir)
-      | IDENT "Add"; IDENT "Rec"; IDENT "ML"; IDENT "Path"; dir = STRING ->
+      | IDENT "Add"; IDENT "Rec"; IDENT "ML"; IDENT "Path"; dir = lstring ->
 	  VernacAddMLPath (true, dir)
 (*
       | IDENT "SearchIsos"; c = constr -> VernacSearch (SearchIsos c)
@@ -199,17 +204,17 @@ GEXTEND Gram
   ;
   locatable:
     [ [ qid = global -> LocateTerm qid
-      | IDENT "File"; f = STRING -> LocateFile f
+      | IDENT "File"; f = lstring -> LocateFile f
       | IDENT "Library"; qid = global -> LocateLibrary  qid
-      | s = STRING -> LocateNotation s ] ]
+      | s = lstring -> LocateNotation s ] ]
   ;
   option_value:
     [ [ n  = integer   -> IntValue n
-      | s  = STRING    -> StringValue s ] ]
+      | s  = lstring    -> StringValue s ] ]
   ;
   option_ref_value:
     [ [ id = global   -> QualidRefValue id
-      | s  = STRING   -> StringRefValue s ] ]
+      | s  = lstring   -> StringRefValue s ] ]
   ;
   as_dirpath:
     [ [ d = OPT [ "as"; d = dirpath -> d ] -> d ] ]
@@ -242,7 +247,7 @@ GEXTEND Gram
         set_default_action_parser (parser_type_from_name univ); univ ] ]
   ;
   syntax:
-   [ [ IDENT "Token"; s = STRING ->
+   [ [ IDENT "Token"; s = lstring ->
        Pp.warning "Token declarations are now useless"; VernacNop
 
      | IDENT "Grammar"; IDENT "tactic"; IDENT "simple_tactic";
@@ -257,11 +262,11 @@ GEXTEND Gram
      | IDENT "Syntax"; u = univ; el = LIST1 syntax_entry SEP ";" ->
          VernacSyntax (u,el)
 
-     | IDENT "Uninterpreted"; IDENT "Notation"; local = locality; s = STRING; 
+     | IDENT "Uninterpreted"; IDENT "Notation"; local = locality; s = lstring; 
 	 modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
          (s8,mv8) =
              [IDENT "V8only";
-              s8=OPT STRING;
+              s8=OPT lstring;
               mv8=OPT["(";mv8=LIST1 syntax_modifier SEP ","; ")" -> mv8] ->
                 (s8,mv8)
              | -> (None,None)] ->
@@ -271,7 +276,7 @@ GEXTEND Gram
                  | _ -> List.map map_modl modl in
 	       VernacSyntaxExtension (local,Some (s,modl),Some(s8,mv8))
 
-     | IDENT "Uninterpreted"; IDENT "V8Notation"; local = locality; s = STRING; 
+     | IDENT "Uninterpreted"; IDENT "V8Notation"; local = locality; s = lstring; 
 	 modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ] ->
 	   VernacSyntaxExtension (local,None,Some(s,modl))
 
@@ -291,7 +296,7 @@ GEXTEND Gram
          "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
 
      | IDENT "Infix"; local = locality; a = entry_prec; n = OPT natural;
-         op = STRING; 
+         op = lstring; 
          p = global;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc];
@@ -299,7 +304,7 @@ GEXTEND Gram
               [IDENT "V8only";
                a8=entry_prec;
                n8=OPT natural;
-	       op8=OPT STRING;
+	       op8=OPT lstring;
                mv8=["("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> []]
 		->
 		 (match (a8,n8,mv8,op8) with
@@ -325,7 +330,7 @@ GEXTEND Gram
 		  (op8,mv8)) mv8 in
 		VernacInfix (local,(op,mv),p,v8,sc)
      | IDENT "Distfix"; local = locality; a = entry_prec; n = natural; 
-	   s = STRING; p = global; sc = OPT [ ":"; sc = IDENT -> sc ] ->
+	   s = lstring; p = global; sc = OPT [ ":"; sc = IDENT -> sc ] ->
              let (a,s,c) = Metasyntax.translate_distfix a s p in
 	     let mv = Some(s,[SetLevel n;SetAssoc a]) in
              VernacNotation (local,c,mv,mv,sc)
@@ -336,12 +341,12 @@ GEXTEND Gram
 	   l = [ "("; IDENT "only"; IDENT "parsing"; ")" -> [SetOnlyParsing]
 	       | -> [] ] ->
 	 VernacNotation (local,c,Some("'"^s^"'",l),None,None)
-     | IDENT "Notation"; local = locality; s = STRING; ":="; c = constr;
+     | IDENT "Notation"; local = locality; s = lstring; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ];
          (s8,mv8) =
              [IDENT "V8only";
-              s8=OPT STRING;
+              s8=OPT lstring;
               mv8=OPT["(";mv8=LIST1 syntax_modifier SEP ","; ")" -> mv8] ->
 		(s8,mv8)
              | -> (* Means: rules are based on V7 rules *)
@@ -353,12 +358,12 @@ GEXTEND Gram
 		 | None, Some mv8 -> Some (s,mv8) (* s like v7 *)
 		 | Some s8, Some mv8 -> Some (s8,mv8) in
                VernacNotation (local,c,Some(s,modl),smv8,sc)
-     | IDENT "V8Notation"; local = locality; s = STRING; ":="; c = constr;
+     | IDENT "V8Notation"; local = locality; s = lstring; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
          VernacNotation (local,c,None,Some(s,modl),sc)
 
-     | IDENT "V8Infix"; local = locality; op8 = STRING; p = global;
+     | IDENT "V8Infix"; local = locality; op8 = lstring; p = global;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc] ->
            let mv8 = Metasyntax.merge_modifiers None None modl in
@@ -385,7 +390,7 @@ GEXTEND Gram
       | IDENT "no"; IDENT "associativity" -> SetAssoc Gramext.NonA
       | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ)
       | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
-      | IDENT "format"; s = [s = STRING -> (loc,s)] -> SetFormat s ] ]
+      | IDENT "format"; s = [s = lstring -> (loc,s)] -> SetFormat s ] ]
   ;
   syntax_extension_type:
     [ [ IDENT "ident" -> ETIdent | IDENT "global" -> ETReference
@@ -409,7 +414,7 @@ GEXTEND Gram
      | -> None ]]
   ;
   grammar_tactic_rule:
-    [[ name = rule_name; "["; s = STRING; pil = LIST0 production_item; "]";
+    [[ name = rule_name; "["; s = lstring; pil = LIST0 production_item; "]";
        "->"; "["; t = Tactic.tactic; "]"  -> (name, (s,pil), t) ]]
   ;
   grammar_rule:
@@ -420,7 +425,7 @@ GEXTEND Gram
     [[ name = IDENT -> name ]]
   ;
   production_item:
-    [[ s = STRING -> VTerm s
+    [[ s = lstring -> VTerm s
      | nt = non_terminal; po = OPT [ "("; p = METAIDENT; ")" -> p ] ->
          match po with
            | Some p -> VNonTerm (loc,nt,Some (Names.id_of_string p))
@@ -452,7 +457,7 @@ GEXTEND Gram
   next_hunks:
     [ [ IDENT "FNL" -> UNP_FNL
       | IDENT "TAB" -> UNP_TAB
-      | c = STRING -> RO c
+      | c = lstring -> RO c
       | "[";
         x =
           [ b = box; ll = LIST0 next_hunks -> UNP_BOX (b,ll)
@@ -478,7 +483,7 @@ GEXTEND Gram
   paren_reln_or_extern:
     [ [ IDENT "L" -> None, L
       | IDENT "E" -> None, E
-      | pprim = STRING; precrec = OPT [ ":"; p = precedence -> p ] ->
+      | pprim = lstring; precrec = OPT [ ":"; p = precedence -> p ] ->
 	  match precrec with
 	    | Some p -> Some pprim, Prec p
             | None -> Some pprim, Any ] ]

@@ -286,8 +286,8 @@ let vernac_end_proof = function
     if_verbose show_script ();
     match idopt with
     | None -> save_named is_opaque
-    | Some (id,None) -> save_anonymous is_opaque id
-    | Some (id,Some kind) -> save_anonymous_with_strength kind is_opaque id
+    | Some ((_,id),None) -> save_anonymous is_opaque id
+    | Some ((_,id),Some kind) -> save_anonymous_with_strength kind is_opaque id
 
   (* A stupid macro that should be replaced by ``Exact c. Save.'' all along
      the theories [??] *)
@@ -297,7 +297,8 @@ let vernac_exact_proof c =
   save_named true
 
 let vernac_assumption kind l =
-  List.iter (fun (is_coe,(id,c)) -> declare_assumption id is_coe kind [] c) l
+  List.iter (fun (is_coe,((_,id),c)) ->
+              declare_assumption id is_coe kind [] c) l
 
 let vernac_inductive f indl = build_mutual indl f
 
@@ -441,8 +442,8 @@ let vernac_end_modtype id =
 
 let vernac_record struc binders sort nameopt cfs =
   let const = match nameopt with 
-    | None -> add_prefix "Build_" (snd struc)
-    | Some id -> id in
+    | None -> add_prefix "Build_" (snd (snd struc))
+    | Some (_,id) -> id in
   let sigma = Evd.empty in
   let env = Global.env() in
   let s = interp_constr sigma env sort in
@@ -1142,8 +1143,8 @@ let interp c = match c with
       vernac_notation local c infpl mv8 sc
 
   (* Gallina *)
-  | VernacDefinition (k,id,d,f) -> vernac_definition k id d f
-  | VernacStartTheoremProof (k,id,t,top,f) ->
+  | VernacDefinition (k,(_,id),d,f) -> vernac_definition k id d f
+  | VernacStartTheoremProof (k,(_,id),t,top,f) ->
       vernac_start_proof k (Some id) t top f
   | VernacEndProof e -> vernac_end_proof e
   | VernacExactProof c -> vernac_exact_proof c
@@ -1154,24 +1155,24 @@ let interp c = match c with
   | VernacScheme l -> vernac_scheme l
 
   (* Modules *)
-  | VernacDeclareModule (id,bl,mtyo,mexpro) -> 
+  | VernacDeclareModule ((_,id),bl,mtyo,mexpro) -> 
       vernac_declare_module id bl mtyo mexpro
-  | VernacDefineModule (id,bl,mtyo,mexpro) -> 
+  | VernacDefineModule ((_,id),bl,mtyo,mexpro) -> 
       vernac_define_module id bl mtyo mexpro
-  | VernacDeclareModuleType (id,bl,mtyo) -> 
+  | VernacDeclareModuleType ((_,id),bl,mtyo) -> 
       vernac_declare_module_type id bl mtyo
 
   (* Gallina extensions *)
-  | VernacBeginSection id -> vernac_begin_section id
+  | VernacBeginSection (_,id) -> vernac_begin_section id
 
-  | VernacEndSegment id -> vernac_end_segment id
+  | VernacEndSegment (_,id) -> vernac_end_segment id
 
   | VernacRecord (_,id,bl,s,idopt,fs) -> vernac_record id bl s idopt fs
   | VernacRequire (export,spec,qidl) -> vernac_require export spec qidl
   | VernacImport (export,qidl) -> vernac_import export qidl
   | VernacCanonical qid -> vernac_canonical qid
   | VernacCoercion (str,r,s,t) -> vernac_coercion str r s t
-  | VernacIdentityCoercion (str,id,s,t) -> vernac_identity_coercion str id s t
+  | VernacIdentityCoercion (str,(_,id),s,t) -> vernac_identity_coercion str id s t
 
   (* Solving *)
   | VernacSolve (n,tac,b) -> vernac_solve n tac b
@@ -1197,7 +1198,7 @@ let interp c = match c with
   (* Commands *)
   | VernacDeclareTacticDefinition (x,l) -> vernac_declare_tactic_definition x l
   | VernacHints (local,dbnames,hints) -> vernac_hints local dbnames hints
-  | VernacSyntacticDefinition (id,c,n) -> vernac_syntactic_definition id c n
+  | VernacSyntacticDefinition ((_,id),c,n) -> vernac_syntactic_definition id c n
   | VernacDeclareImplicits (qid,l) -> vernac_declare_implicits qid l
   | VernacReserve (idl,c) -> vernac_reserve idl c
   | VernacSetOpacity (opaq, qidl) -> List.iter (vernac_set_opacity opaq) qidl

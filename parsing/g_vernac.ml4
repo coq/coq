@@ -135,7 +135,7 @@ GEXTEND Gram
       | ":" -> false ] ]
   ;
   params:
-    [ [ idl = LIST1 base_ident SEP ","; coe = of_type_with_opt_coercion; c = constr
+    [ [ idl = LIST1 identref SEP ","; coe = of_type_with_opt_coercion; c = constr
       -> List.map (fun c -> (coe,c)) (join_binders (idl,c))
     ] ]
   ;
@@ -146,7 +146,7 @@ GEXTEND Gram
     [ [ ","; nal = LIST1 name SEP "," -> nal | -> [] ] ]
   ;
   ident_comma_list_tail:
-    [ [ ","; nal = LIST1 base_ident SEP "," -> nal | -> [] ] ]
+    [ [ ","; nal = LIST1 identref SEP "," -> nal | -> [] ] ]
   ;
   decl_notation:
     [ [ "where"; ntn = STRING; ":="; c = constr; 
@@ -191,9 +191,9 @@ GEXTEND Gram
   ;
   gallina:
     (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = base_ident; ":"; c = constr ->
+    [ [ thm = thm_token; id = identref; ":"; c = constr ->
          VernacStartTheoremProof (thm, id, ([], c), false, (fun _ _ -> ()))
-      | (f,d) = def_token; id = base_ident; b = def_body -> 
+      | (f,d) = def_token; id = identref; b = def_body -> 
           VernacDefinition (d, id, b, f)
       | stre = assumption_token; bl = ne_params_list -> 
 	  VernacAssumption (stre, bl)
@@ -211,7 +211,7 @@ GEXTEND Gram
     [ [ IDENT "Record" -> true | IDENT "Structure" -> false ] ]
   ;
   constructor:
-    [ [ idl = LIST1 base_ident SEP ","; coe = of_type_with_opt_coercion;
+    [ [ idl = LIST1 identref SEP ","; coe = of_type_with_opt_coercion;
         c = constr -> List.map (fun id -> (coe,(id,c))) idl ] ]
   ;
   constructor_list:
@@ -224,11 +224,11 @@ GEXTEND Gram
       | ind = oneind_old_style -> [ind] ] ]
   ;
   oneind_old_style:
-    [ [ id = base_ident; ":"; c = constr; ":="; lc = constructor_list ->
+    [ [ id = identref; ":"; c = constr; ":="; lc = constructor_list ->
           (id,c,lc) ] ]
   ;
   oneind:
-    [ [ id = base_ident; indpar = simple_binders_list; ":"; c = constr; 
+    [ [ id = identref; indpar = simple_binders_list; ":"; c = constr; 
         ":="; lc = constructor_list; ntn = OPT decl_notation ->
 	  (id,ntn,indpar,c,lc) ] ]
   ;
@@ -241,7 +241,7 @@ GEXTEND Gram
       |  -> false ] ]
   ;
   onescheme:
-    [ [ id = base_ident; ":="; dep = dep; ind = global; IDENT "Sort";
+    [ [ id = identref; ":="; dep = dep; ind = global; IDENT "Sort";
         s = sort -> (id,dep,ind,s) ] ]
   ;
   schemes:
@@ -271,12 +271,12 @@ GEXTEND Gram
     [ [ l = LIST1 onecorec SEP "with" -> l ] ]
   ;
   record_field:
-    [ [ id = base_ident; oc = of_type_with_opt_coercion; t = constr ->
+    [ [ id = identref; oc = of_type_with_opt_coercion; t = constr ->
           (oc,AssumExpr (id,t))
-      | id = base_ident; oc = of_type_with_opt_coercion; t = constr;
+      | id = identref; oc = of_type_with_opt_coercion; t = constr;
 	":="; b = constr ->
 	  (oc,DefExpr (id,b,Some t))
-      | id = base_ident; ":="; b = constr ->
+      | id = identref; ":="; b = constr ->
 	  (false,DefExpr (id,b,None)) ] ]
   ;
   fields:
@@ -300,7 +300,7 @@ GEXTEND Gram
     [ [ bll = LIST1 fix_binders -> List.flatten bll ] ]
   ;
   rec_constructor:
-    [ [ c = base_ident -> Some c
+    [ [ c = identref -> Some c
       |  -> None ] ]
   ;
   gallina_ext:
@@ -308,7 +308,7 @@ GEXTEND Gram
         indl = block_old_style ->
 	  let indl' = List.map (fun (id,ar,c) -> (id,None,bl,ar,c)) indl in
 	  VernacInductive (f,indl')
-      | b = record_token; oc = opt_coercion; name = base_ident;
+      | b = record_token; oc = opt_coercion; name = identref;
 	ps = simple_binders_list; ":";
 	s = constr; ":="; c = rec_constructor; "{"; fs = fields; "}" ->
 	  VernacRecord (b,(oc,name),ps,s,c,fs)
@@ -322,7 +322,7 @@ GEXTEND Gram
       | "Fixpoint"; recs = specifrec -> VernacFixpoint recs
       | "CoFixpoint"; corecs = specifcorec -> VernacCoFixpoint corecs
       | IDENT "Scheme"; l = schemes -> VernacScheme l
-      | f = finite_token; s = csort; id = base_ident;
+      | f = finite_token; s = csort; id = identref;
 	indpar = simple_binders_list; ":="; lc = constructor_list -> 
           VernacInductive (f,[id,None,indpar,s,lc]) ] ]
   ;
@@ -332,11 +332,11 @@ GEXTEND Gram
   gallina_ext:
     [ [ 
 (* Sections *)
-	IDENT "Section"; id = base_ident -> VernacBeginSection id
-      | IDENT "Chapter"; id = base_ident -> VernacBeginSection id ] ]
+	IDENT "Section"; id = identref -> VernacBeginSection id
+      | IDENT "Chapter"; id = identref -> VernacBeginSection id ] ]
   ;
   module_vardecls:
-    [ [ id = base_ident; idl = ident_comma_list_tail; ":";
+    [ [ id = identref; idl = ident_comma_list_tail; ":";
         mty = Module.module_type -> (id::idl,mty) ] ]
   ;
   module_binders:
@@ -358,23 +358,23 @@ GEXTEND Gram
   gallina_ext:
     [ [ 
 	  (* Interactive module declaration *)
-	IDENT "Module"; id = base_ident; 
+	IDENT "Module"; id = identref; 
 	bl = module_binders_list; mty_o = OPT of_module_type; 
 	mexpr_o = OPT is_module_expr ->
 	  VernacDefineModule (id, bl, mty_o, mexpr_o)
 	  
-      | IDENT "Module"; "Type"; id = base_ident; 
+      | IDENT "Module"; "Type"; id = identref; 
 	bl = module_binders_list; mty_o = OPT is_module_type ->
 	  VernacDeclareModuleType (id, bl, mty_o)
 	  
-      | IDENT "Declare"; IDENT "Module"; id = base_ident; 
+      | IDENT "Declare"; IDENT "Module"; id = identref; 
 	bl = module_binders_list; mty_o = OPT of_module_type; 
 	mexpr_o = OPT is_module_expr ->
 	  VernacDeclareModule (id, bl, mty_o, mexpr_o)
 
 	  (* This end a Section a Module or a Module Type *)
 
-      | IDENT "End"; id = base_ident -> VernacEndSegment id
+      | IDENT "End"; id = identref -> VernacEndSegment id
 
 
 (* Transparent and Opaque *)
@@ -387,21 +387,21 @@ GEXTEND Gram
       | IDENT "Canonical"; IDENT "Structure"; qid = global; d = def_body ->
           let s = Ast.coerce_global_to_id qid in
 	  VernacDefinition 
-	    ((Global,CanonicalStructure),s,d,Recordobj.add_object_hook)
+	    ((Global,CanonicalStructure),(dummy_loc,s),d,Recordobj.add_object_hook)
       (* Rem: LOBJECT, OBJCOERCION, LOBJCOERCION have been removed
          (they were unused and undocumented) *)
 
 (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
           let s = Ast.coerce_global_to_id qid in
-	  VernacDefinition ((Global,Coercion),s,d,Class.add_coercion_hook)
+	  VernacDefinition ((Global,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
       | IDENT "Coercion"; IDENT "Local"; qid = global; d = def_body ->
            let s = Ast.coerce_global_to_id qid in
-	  VernacDefinition ((Local,Coercion),s,d,Class.add_coercion_hook)
-      | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = base_ident;
+	  VernacDefinition ((Local,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
+      | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identref;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr -> 
 	   VernacIdentityCoercion (Local, f, s, t)
-      | IDENT "Identity"; IDENT "Coercion"; f = base_ident; ":";
+      | IDENT "Identity"; IDENT "Coercion"; f = identref; ":";
          s = class_rawexpr; ">->"; t = class_rawexpr -> 
 	   VernacIdentityCoercion (Global, f, s, t)
       | IDENT "Coercion"; IDENT "Local"; qid = global; ":";
@@ -417,7 +417,7 @@ GEXTEND Gram
 
 (* Implicit *)
 (*
-      | IDENT "Syntactic"; "Definition"; id = base_ident; ":="; c = constr;
+      | IDENT "Syntactic"; "Definition"; id = identref; ":="; c = constr;
          n = OPT [ "|"; n = natural -> n ] ->
 	   VernacSyntacticDefinition (id,c,n)
 *)
@@ -435,7 +435,7 @@ GEXTEND Gram
       | IDENT "Implicits"; qid = global -> VernacDeclareImplicits (qid,None)
 
       | IDENT "Implicit"; ["Variable"; "Type" | IDENT "Variables"; "Type"];
-	   idl = LIST1 ident SEP ","; ":"; c = constr -> VernacReserve (idl,c)
+	   idl = LIST1 identref SEP ","; ":"; c = constr -> VernacReserve (idl,c)
 
       (* For compatibility *)
       | IDENT "Implicit"; IDENT "Arguments"; IDENT "On" ->
@@ -486,7 +486,7 @@ GEXTEND Gram
       | IDENT "Require"; export = export_token; specif = specif_token;
         qidl = LIST1 global -> VernacRequire (Some export, specif, qidl)
 (*      | IDENT "Require"; export = export_token; specif = specif_token;
-        id = base_ident; filename = STRING -> 
+        id = identref; filename = STRING -> 
 	  VernacRequireFrom (export, specif, id, filename) *)
       | IDENT "Require"; export = export_token; specif = specif_token;
         filename = STRING -> 

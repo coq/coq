@@ -1,6 +1,17 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(*i $Id$ i*)
+
 (* Reserved names *)
 
 open Util
+open Pp
 open Names
 open Nameops
 open Summary
@@ -24,13 +35,15 @@ let _ =
       Summary.survive_module = false;
       Summary.survive_section = false }
 
-let declare_reserved_type id t = 
+let declare_reserved_type (loc,id) t = 
   if id <> root_of_id id then
-    error ((string_of_id id)^
-    " is not reservable: it must have no trailing digits, quote, or _");
+    user_err_loc(loc,"declare_reserved_type",
+    (pr_id id ++ str
+      " is not reservable: it must have no trailing digits, quote, or _"));
   begin try
     let _ = Idmap.find id !reserve_table in 
-    error ((string_of_id id)^" is already bound to a type")
+    user_err_loc(loc,"declare_reserved_type",
+    (pr_id id++str" is already bound to a type"))
   with Not_found -> () end;
   add_anonymous_leaf (in_reserved (id,t))
 

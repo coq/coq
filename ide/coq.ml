@@ -312,16 +312,16 @@ let word_class s =
 type reset_info = NoReset | Reset of Names.identifier * bool ref
 
 let compute_reset_info = function 
-  | VernacDefinition (_, id, DefineBody _, _) 
-  | VernacBeginSection id 
-  | VernacDefineModule (id, _, _, _) 
-  | VernacDeclareModule (id, _, _, _)
-  | VernacDeclareModuleType (id, _, _)
-  | VernacAssumption (_, (_,(id,_))::_)
-  | VernacInductive (_, (id,_,_,_,_) :: _) ->
+  | VernacDefinition (_, (_,id), DefineBody _, _) 
+  | VernacBeginSection (_,id) 
+  | VernacDefineModule ((_,id), _, _, _) 
+  | VernacDeclareModule ((_,id), _, _, _)
+  | VernacDeclareModuleType ((_,id), _, _)
+  | VernacAssumption (_, (_,((_,id),_))::_)
+  | VernacInductive (_, ((_,id),_,_,_,_) :: _) ->
       Reset (id, ref true)
-  | VernacDefinition (_, id, ProveBody _, _)
-  | VernacStartTheoremProof (_, id, _, _, _) ->
+  | VernacDefinition (_, (_,id), ProveBody _, _)
+  | VernacStartTheoremProof (_, (_,id), _, _, _) ->
       Reset (id, ref false)
   | _ -> NoReset
 

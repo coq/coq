@@ -229,7 +229,7 @@ let coerce_to_id_ast a = match coerce_to_var a with
          str"This expression should be a simple identifier")
 
 let coerce_to_id = function
-  | CRef (Ident (_,id)) -> id
+  | CRef (Ident (loc,id)) -> (loc,id)
   | a -> user_err_loc
         (constr_loc a,"Ast.coerce_to_id",
          str"This expression should be a simple identifier")

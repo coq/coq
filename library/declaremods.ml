@@ -429,9 +429,9 @@ let rec get_some_body mty env = match mty with
 
 let intern_args interp_modtype (env,oldargs) (idl,arg) = 
   let lib_dir = Lib.library_dp() in
-  let mbids = List.map (fun id -> make_mbid lib_dir (string_of_id id)) idl in
+  let mbids = List.map (fun (_,id) -> make_mbid lib_dir (string_of_id id)) idl in
   let mty = interp_modtype env arg in
-  let dirs = List.map (fun id -> make_dirpath [id]) idl in
+  let dirs = List.map (fun (_,id) -> make_dirpath [id]) idl in
   let mps = List.map (fun mbid -> MPbound mbid) mbids in
   let substobjs = get_modtype_substobjs mty in
   let substituted's = 

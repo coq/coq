@@ -79,9 +79,9 @@ let lookup_modtype (loc,qid) =
 	Modops.error_not_a_modtype_loc loc (string_of_qualid qid)
 
 let transl_with_decl env = function 
-  | CWith_Module (id,qid) ->
+  | CWith_Module ((_,id),qid) ->
       With_Module (id,lookup_module qid)
-  | CWith_Definition (id,c) ->
+  | CWith_Definition ((_,id),c) ->
       With_Definition (id,interp_constr Evd.empty env c)
 
 let rec interp_modtype env = function 

@@ -40,10 +40,6 @@ let strip_prod_binders_expr n ty =
       | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 
-let is_ident_expr = function
-    Topconstr.CRef(Ident _) -> true
-  | _ -> false
-
 
 (* In v8 syntax only double quote char is escaped by repeating it *)
 let rec escape_string_v8 s =
@@ -290,7 +286,7 @@ let pr_match_pattern pr_pat = function
       str "context " ++ pr_id id ++ str "[" ++ pr_pat a ++ str "]"
 
 let pr_match_hyps pr_pat = function
-  | Hyp (nal,mp) -> pr_located pr_name nal ++ str ":" ++ pr_match_pattern pr_pat mp
+  | Hyp (nal,mp) -> pr_lname nal ++ str ":" ++ pr_match_pattern pr_pat mp
 
 let pr_match_rule m pr pr_pat = function
   | Pat ([],mp,t) when m ->
@@ -308,10 +304,10 @@ let pr_funvar = function
 
 let pr_let_clause k pr = function
   | (id,None,t) ->
-      hov 0 (str k ++ pr_located pr_id id ++ str " :=" ++ brk (1,1) ++
+      hov 0 (str k ++ pr_lident id ++ str " :=" ++ brk (1,1) ++
              pr (TacArg t))
   | (id,Some c,t) ->
-      hv 0 (str k ++ pr_located pr_id id ++ str" :" ++ brk(1,2) ++
+      hv 0 (str k ++ pr_lident id ++ str" :" ++ brk(1,2) ++
       pr c ++
       str " :=" ++ brk (1,1) ++ pr (TacArg t))
 
@@ -324,7 +320,7 @@ let pr_let_clauses pr = function
 
 let pr_rec_clause pr (id,(l,t)) =
   hov 0
-    (pr_located pr_id id ++ prlist pr_funvar l ++ str " :=") ++ spc () ++ pr t
+    (pr_lident id ++ prlist pr_funvar l ++ str " :=") ++ spc () ++ pr t
 
 let pr_rec_clauses pr l = 
   prlist_with_sep (fun () -> fnl () ++ str "with ") (pr_rec_clause pr) l
@@ -374,7 +370,7 @@ let pr_then () = str ";"
 
 open Closure
 
-let make_pr_tac (pr_tac,pr_tac0,pr_constr,pr_lconstr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,strip_prod_binders,is_ident) =
+let make_pr_tac (pr_tac,pr_tac0,pr_constr,pr_lconstr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,strip_prod_binders) =
 
 let pr_bindings env = pr_bindings (pr_lconstr env) (pr_constr env) in
 let pr_ex_bindings env = pr_bindings_gen true (pr_lconstr env) (pr_constr env) in
@@ -387,10 +383,10 @@ let pr_intarg n = spc () ++ int n in
 
 let pr_binder_fix env (nal,t) =
 (*  match t with
-  | CHole _ -> spc() ++ prlist_with_sep spc (pr_located pr_name) nal
+  | CHole _ -> spc() ++ prlist_with_sep spc (pr_lname) nal
   | _ ->*)
     let s =
-      prlist_with_sep spc (pr_located pr_name) nal ++ str ":" ++
+      prlist_with_sep spc (pr_lname) nal ++ str ":" ++
       pr_lconstr env t in
     spc() ++ hov 1 (str"(" ++ s ++ str")") in
 
@@ -469,7 +465,7 @@ and pr_atom1 env = function
   | TacIntroMove (ido1,Some id2) ->
       hov 1
       (str "intro" ++ pr_opt pr_id ido1 ++ spc () ++ str "after " ++
-       pr_located pr_id id2)
+       pr_lident id2)
   | TacAssumption as t -> pr_atom0 env t
   | TacExact c -> hov 1 (str "exact" ++ pr_constrarg env c)
   | TacApply cb -> hov 1 (str "apply" ++ spc () ++ pr_with_bindings env cb)
@@ -578,9 +574,9 @@ and pr_atom1 env = function
 (*  | TacAutoTDB None as x -> pr_atom0 env x
   | TacAutoTDB (Some n) -> hov 0 (str "autotdb" ++ spc () ++ int n)
   | TacDestructHyp (true,id) ->
-      hov 0 (str "cdhyp" ++ spc () ++ pr_located pr_id id)
+      hov 0 (str "cdhyp" ++ spc () ++ pr_lident id)
   | TacDestructHyp (false,id) ->
-      hov 0 (str "dhyp" ++ spc () ++ pr_located pr_id id)
+      hov 0 (str "dhyp" ++ spc () ++ pr_lident id)
   | TacDestructConcl as x -> pr_atom0 env x
   | TacSuperAuto (n,l,b1,b2) ->
       hov 1 (str "superauto" ++ pr_opt int n ++ pr_autoarg_adding l ++ 
@@ -749,8 +745,7 @@ let rec pr_tac env inherited tac =
       pr_with_comments loc (hov 1 (pr_atom1 env t)), ltatom
   | TacArg(Tacexp e) -> pr_tac0 env e, latom
   | TacArg(ConstrMayEval (ConstrTerm c)) ->
-      if is_ident c then pr_constr env c, latom
-      else str "constr:" ++ pr_constr env c, latom
+      str "constr:" ++ pr_constr env c, latom
   | TacArg(ConstrMayEval c) ->
       pr_may_eval (pr_constr env) (pr_lconstr env) (pr_cst env) c, leval
   | TacArg(TacFreshId sopt) -> str "fresh" ++ pr_opt qsnew sopt, latom
@@ -795,10 +790,6 @@ let strip_prod_binders_rawterm n (ty,_) =
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 
-let is_ident_rawterm = function
-    (Rawterm.RRef(_,VarRef _),_) -> true
-  | _ -> false
-
 let strip_prod_binders_constr n ty =
   let rec strip_ty acc n ty =
     if n=0 then (List.rev acc, ty) else
@@ -818,9 +809,9 @@ let rec raw_printers =
      (fun _ -> pr_reference),
      (fun _ -> pr_reference),
      pr_reference,
-     pr_or_metaid (pr_located pr_id),
+     pr_or_metaid pr_lident,
      Pptactic.pr_raw_extend,
-     strip_prod_binders_expr, is_ident_expr)
+     strip_prod_binders_expr)
 
 and pr_raw_tactic env (t:raw_tactic_expr) =
   pi1 (make_pr_tac raw_printers) env t
@@ -843,9 +834,9 @@ let rec glob_printers =
      (fun env -> pr_or_var (pr_and_short_name (pr_evaluable_reference_env env))),
      (fun vars -> pr_or_var (pr_inductive vars)),
      pr_ltac_or_var (pr_located pr_ltac_constant),
-     pr_located pr_id,
+     pr_lident,
      Pptactic.pr_glob_extend,
-     strip_prod_binders_rawterm, is_ident_rawterm)
+     strip_prod_binders_rawterm)
 
 and pr_glob_tactic env (t:glob_tactic_expr) =
   pi1 (make_pr_tac glob_printers) env t
@@ -868,5 +859,5 @@ let (pr_tactic,_,_) =
      pr_ltac_constant,
      pr_id,
      Pptactic.pr_extend,
-     strip_prod_binders_constr,Term.isVar)
+     strip_prod_binders_constr)
 

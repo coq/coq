@@ -40,7 +40,15 @@ val pr_global : Idset.t -> global_reference -> std_ppcmds
 val pr_tight_coma : unit -> std_ppcmds
 val pr_located :
   ('a -> std_ppcmds) -> 'a located -> std_ppcmds
+val pr_lident : identifier located -> std_ppcmds
+val pr_lname : name located -> std_ppcmds
+
 val pr_with_comments : loc -> std_ppcmds -> std_ppcmds
+val pr_com_at : int -> std_ppcmds
+val pr_sep_com :
+  (unit -> std_ppcmds) ->
+  (constr_expr -> std_ppcmds) ->
+  constr_expr -> std_ppcmds
 val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
 val pr_name : name -> std_ppcmds
 val pr_qualid : qualid -> std_ppcmds

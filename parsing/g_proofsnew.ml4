@@ -46,12 +46,12 @@ GEXTEND Gram
       | IDENT "Admitted" -> VernacEndProof Admitted
       | IDENT "Qed" -> VernacEndProof (Proved (true,None))
       | IDENT "Save" -> VernacEndProof (Proved (true,None))
-      | IDENT "Save"; tok = thm_token; id = base_ident ->
+      | IDENT "Save"; tok = thm_token; id = identref ->
 	  VernacEndProof (Proved (true,Some (id,Some tok)))
-      | IDENT "Save"; id = base_ident ->
+      | IDENT "Save"; id = identref ->
 	  VernacEndProof (Proved (true,Some (id,None)))
       | IDENT "Defined" -> VernacEndProof (Proved (false,None))
-      |	IDENT "Defined"; id=base_ident -> 
+      |	IDENT "Defined"; id=identref -> 
 	  VernacEndProof (Proved (false,Some (id,None)))
       | IDENT "Suspend" -> VernacSuspend
       | IDENT "Resume" -> VernacResume None

@@ -25,6 +25,10 @@ exception Quit
 open Libnames
 open Nametab
 
+type lident = identifier located
+type lstring = string
+type lreference = reference
+
 type class_rawexpr = FunClass | SortClass | RefClass of reference
   
 type printable =
@@ -131,11 +135,11 @@ type inductive_flag = bool (* true = Inductive;     false = CoInductive    *)
 type sort_expr = Rawterm.rawsort
 
 type decl_notation = (string * constr_expr * scope_name option) option
-type simple_binder = identifier * constr_expr
+type simple_binder = lident * constr_expr
 type 'a with_coercion = coercion_flag * 'a
 type constructor_expr = simple_binder with_coercion
 type inductive_expr =
-     identifier * decl_notation * local_binder list * constr_expr
+     lident * decl_notation * local_binder list * constr_expr
     * constructor_expr list
 type definition_expr =
   | ProveBody of local_binder list * constr_expr
@@ -143,47 +147,47 @@ type definition_expr =
       * constr_expr option
 
 type local_decl_expr =
-  | AssumExpr of identifier * constr_expr
-  | DefExpr of identifier * constr_expr * constr_expr option
+  | AssumExpr of lident * constr_expr
+  | DefExpr of lident * constr_expr * constr_expr option
 
-type module_binder = identifier list * module_type_ast
+type module_binder = lident list * module_type_ast
 
 type proof_end =
   | Admitted
-  | Proved of opacity_flag * (identifier * theorem_kind option) option
+  | Proved of opacity_flag * (lident * theorem_kind option) option
 
 type vernac_expr =
   (* Control *)
   | VernacList of located_vernac_expr list
-  | VernacLoad of verbose_flag * string
+  | VernacLoad of verbose_flag * lstring
   | VernacTime of vernac_expr
-  | VernacVar of identifier
+  | VernacVar of lident
 
   (* Syntax *) 
-  | VernacGrammar of string * raw_grammar_entry list
+  | VernacGrammar of lstring * raw_grammar_entry list
   | VernacTacticGrammar of
-      (string * (string * grammar_production list) * raw_tactic_expr) list
-  | VernacSyntax of string * raw_syntax_entry list
+      (lstring * (lstring * grammar_production list) * raw_tactic_expr) list
+  | VernacSyntax of lstring * raw_syntax_entry list
   | VernacSyntaxExtension of locality_flag *
-      (string * syntax_modifier list) option 
-      * (string * syntax_modifier list) option
+      (lstring * syntax_modifier list) option 
+      * (lstring * syntax_modifier list) option
   | VernacDistfix of locality_flag *
-      grammar_associativity * precedence * string * reference *
+      grammar_associativity * precedence * lstring * lreference *
       scope_name option
   | VernacOpenCloseScope of (locality_flag * bool * scope_name)
-  | VernacDelimiters of scope_name * string
+  | VernacDelimiters of scope_name * lstring
   | VernacBindScope of scope_name * class_rawexpr list
-  | VernacArgumentsScope of reference * scope_name option list
-  | VernacInfix of locality_flag * (string * syntax_modifier list) *
-      reference * (string * syntax_modifier list) option * scope_name option
+  | VernacArgumentsScope of lreference * scope_name option list
+  | VernacInfix of locality_flag * (lstring * syntax_modifier list) *
+      lreference * (lstring * syntax_modifier list) option * scope_name option
   | VernacNotation of
-      locality_flag * constr_expr * (string * syntax_modifier list) option *
-      (string * syntax_modifier list) option * scope_name option
+      locality_flag * constr_expr * (lstring * syntax_modifier list) option *
+      (lstring * syntax_modifier list) option * scope_name option
 
   (* Gallina *)
-  | VernacDefinition of definition_kind * identifier * definition_expr * 
+  | VernacDefinition of definition_kind * lident * definition_expr * 
       declaration_hook
-  | VernacStartTheoremProof of theorem_kind * identifier *
+  | VernacStartTheoremProof of theorem_kind * lident *
       (local_binder list * constr_expr) * bool * declaration_hook
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
@@ -191,28 +195,28 @@ type vernac_expr =
   | VernacInductive of inductive_flag * inductive_expr list
   | VernacFixpoint of (fixpoint_expr * decl_notation) list
   | VernacCoFixpoint of cofixpoint_expr list
-  | VernacScheme of (identifier * bool * reference * sort_expr) list
+  | VernacScheme of (lident * bool * lreference * sort_expr) list
 
   (* Gallina extensions *)
   | VernacRecord of bool (* = Record or Structure *)
-      * identifier with_coercion * local_binder list
-      * constr_expr * identifier option * local_decl_expr with_coercion list
-  | VernacBeginSection of identifier
-  | VernacEndSegment of identifier
+      * lident with_coercion * local_binder list
+      * constr_expr * lident option * local_decl_expr with_coercion list
+  | VernacBeginSection of lident
+  | VernacEndSegment of lident
   | VernacRequire of
-      export_flag option * specif_flag option * reference list
-  | VernacImport of export_flag * reference list
-  | VernacCanonical of reference
-  | VernacCoercion of strength * reference * class_rawexpr * class_rawexpr
-  | VernacIdentityCoercion of strength * identifier * 
+      export_flag option * specif_flag option * lreference list
+  | VernacImport of export_flag * lreference list
+  | VernacCanonical of lreference
+  | VernacCoercion of strength * lreference * class_rawexpr * class_rawexpr
+  | VernacIdentityCoercion of strength * lident * 
       class_rawexpr * class_rawexpr
 
   (* Modules and Module Types *)
-  | VernacDeclareModule of identifier * 
+  | VernacDeclareModule of lident * 
       module_binder list * (module_type_ast * bool) option * module_ast option
-  | VernacDefineModule of identifier * 
+  | VernacDefineModule of lident * 
       module_binder list * (module_type_ast * bool) option * module_ast option
-  | VernacDeclareModuleType of identifier * 
+  | VernacDeclareModuleType of lident * 
       module_binder list * module_type_ast option
 
   (* Solving *)
@@ -220,30 +224,30 @@ type vernac_expr =
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)
-  | VernacRequireFrom of export_flag option * specif_flag option * string
-  | VernacAddLoadPath of rec_flag * string * dir_path option
-  | VernacRemoveLoadPath of string
-  | VernacAddMLPath of rec_flag * string
-  | VernacDeclareMLModule of string list
-  | VernacChdir of string option
+  | VernacRequireFrom of export_flag option * specif_flag option * lstring
+  | VernacAddLoadPath of rec_flag * lstring * dir_path option
+  | VernacRemoveLoadPath of lstring
+  | VernacAddMLPath of rec_flag * lstring
+  | VernacDeclareMLModule of lstring list
+  | VernacChdir of lstring option
 
   (* State management *)
-  | VernacWriteState of string
-  | VernacRestoreState of string
+  | VernacWriteState of lstring
+  | VernacRestoreState of lstring
 
   (* Resetting *)
-  | VernacResetName of identifier located
+  | VernacResetName of lident
   | VernacResetInitial
   | VernacBack of int
 
   (* Commands *)
   | VernacDeclareTacticDefinition of
-      rec_flag * (identifier located * raw_tactic_expr) list
-  | VernacHints of locality_flag * string list * hints
-  | VernacSyntacticDefinition of identifier * constr_expr * int option
-  | VernacDeclareImplicits of reference * explicitation list option
-  | VernacReserve of identifier list * constr_expr
-  | VernacSetOpacity of opacity_flag * reference list
+      rec_flag * (lident * raw_tactic_expr) list
+  | VernacHints of locality_flag * lstring list * hints
+  | VernacSyntacticDefinition of lident * constr_expr * int option
+  | VernacDeclareImplicits of lreference * explicitation list option
+  | VernacReserve of lident list * constr_expr
+  | VernacSetOpacity of opacity_flag * lreference list
   | VernacUnsetOption of Goptions.option_name
   | VernacSetOption of Goptions.option_name * option_value
   | VernacAddOption of Goptions.option_name * option_ref_value list
@@ -260,11 +264,11 @@ type vernac_expr =
 
   (* Proof management *)
   | VernacGoal of constr_expr
-  | VernacAbort of identifier located option
+  | VernacAbort of lident option
   | VernacAbortAll
   | VernacRestart
   | VernacSuspend
-  | VernacResume of identifier located option
+  | VernacResume of lident option
   | VernacUndo of int
   | VernacFocus of int option
   | VernacUnfocus
