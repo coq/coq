@@ -98,6 +98,8 @@ val interp_notation : notation -> scope_name list -> interpretation
 (* Returns the possible notations for a given term *)
 val uninterp_notations : rawconstr ->
       (interp_rule * interpretation * int option) list
+val uninterp_cases_pattern_notations : cases_pattern ->
+      (interp_rule * interpretation * int option) list
 
 (* Test if a notation is available in the scopes *)
 (* context [scopes] if available, the result is not None; the first *)

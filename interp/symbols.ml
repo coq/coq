@@ -169,6 +169,10 @@ let rawconstr_key = function
   | RRef (_,ref) -> RefKey ref
   | _ -> Oth
 
+let cases_pattern_key = function
+  | PatCstr (_,ref,_,_) -> RefKey (ConstructRef ref)
+  | _ -> Oth
+
 let aconstr_key = function
   | AApp (ARef ref,args) -> RefKey ref, Some (List.length args)
   | ARef ref -> RefKey ref, Some 0
@@ -293,6 +297,9 @@ let rec interp_notation ntn scopes =
 
 let uninterp_notations c =
   Gmapl.find (rawconstr_key c) !notations_key_table
+
+let uninterp_cases_pattern_notations c =
+  Gmapl.find (cases_pattern_key c) !notations_key_table
 
 let availability_of_notation (ntn_scope,ntn) scopes =
   let f scope =
@@ -461,7 +468,7 @@ let pr_scope_classes sc =
       spc() ++ prlist_with_sep spc pr_class l) ++ fnl()
 
 let rec rawconstr_of_aconstr () x =
-  map_aconstr_with_binders_loc dummy_loc (fun id () -> (id,())) 
+  rawconstr_of_aconstr_with_binders dummy_loc (fun id () -> (id,())) 
     rawconstr_of_aconstr () x
 
 let pr_notation_info prraw ntn c =
