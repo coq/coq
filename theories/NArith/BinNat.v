@@ -196,6 +196,8 @@ Qed.
 
 (** Properties of comparison *)
 
+Require Pcompare.
+
 Theorem Ncompare_Eq_eq : (n,m:entier) (Ncompare n m) = EGAL -> n = m.
 Proof.
 NewDestruct n as [|n]; NewDestruct m as [|m]; Simpl; Intro H;

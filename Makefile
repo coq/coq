@@ -582,8 +582,8 @@ BOOLVO=\
  theories/Bool/Bvector.vo
 
 NARITHVO=\
- theories/NArith/BinPos.vo       theories/NArith/BinNat.vo \
- theories/NArith/NArith.vo
+ theories/NArith/BinPos.vo	theories/NArith/Pnat.vo \
+ theories/NArith/BinNat.vo	theories/NArith/NArith.vo
 
 ZARITHVO=\
  theories/ZArith/BinInt.vo \
