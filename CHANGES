@@ -14,6 +14,10 @@ Ltac
 - New modifier "lazy" for "match t with" and "match goal with" telling
   to delay the evaluation of tactic expression.
 
+Notations
+
+- "format" option aware of recursive notations
+
 Changes from V8.0beta to V8.0
 =============================
 
