@@ -1266,21 +1266,21 @@ pretyping/typing.cmx: kernel/environ.cmx kernel/inductive.cmx \
     pretyping/instantiate.cmx kernel/names.cmx pretyping/pretype_errors.cmx \
     pretyping/reductionops.cmx kernel/term.cmx kernel/type_errors.cmx \
     kernel/typeops.cmx lib/util.cmx pretyping/typing.cmi 
-proofs/clenv.cmo: kernel/environ.cmi proofs/evar_refiner.cmi \
-    pretyping/evarutil.cmi pretyping/evd.cmi library/global.cmi \
-    pretyping/instantiate.cmi proofs/logic.cmi library/nameops.cmi \
-    kernel/names.cmi lib/pp.cmi parsing/printer.cmi proofs/proof_trees.cmi \
-    proofs/proof_type.cmi pretyping/rawterm.cmi pretyping/reductionops.cmi \
-    proofs/refiner.cmi pretyping/retyping.cmi kernel/sign.cmi \
-    proofs/tacexpr.cmo proofs/tacmach.cmi kernel/term.cmi \
+proofs/clenv.cmo: pretyping/coercion.cmi kernel/environ.cmi \
+    proofs/evar_refiner.cmi pretyping/evarutil.cmi pretyping/evd.cmi \
+    library/global.cmi pretyping/instantiate.cmi proofs/logic.cmi \
+    library/nameops.cmi kernel/names.cmi lib/pp.cmi parsing/printer.cmi \
+    proofs/proof_trees.cmi proofs/proof_type.cmi pretyping/rawterm.cmi \
+    pretyping/reductionops.cmi proofs/refiner.cmi pretyping/retyping.cmi \
+    kernel/sign.cmi proofs/tacexpr.cmo proofs/tacmach.cmi kernel/term.cmi \
     pretyping/termops.cmi pretyping/typing.cmi lib/util.cmi proofs/clenv.cmi 
-proofs/clenv.cmx: kernel/environ.cmx proofs/evar_refiner.cmx \
-    pretyping/evarutil.cmx pretyping/evd.cmx library/global.cmx \
-    pretyping/instantiate.cmx proofs/logic.cmx library/nameops.cmx \
-    kernel/names.cmx lib/pp.cmx parsing/printer.cmx proofs/proof_trees.cmx \
-    proofs/proof_type.cmx pretyping/rawterm.cmx pretyping/reductionops.cmx \
-    proofs/refiner.cmx pretyping/retyping.cmx kernel/sign.cmx \
-    proofs/tacexpr.cmx proofs/tacmach.cmx kernel/term.cmx \
+proofs/clenv.cmx: pretyping/coercion.cmx kernel/environ.cmx \
+    proofs/evar_refiner.cmx pretyping/evarutil.cmx pretyping/evd.cmx \
+    library/global.cmx pretyping/instantiate.cmx proofs/logic.cmx \
+    library/nameops.cmx kernel/names.cmx lib/pp.cmx parsing/printer.cmx \
+    proofs/proof_trees.cmx proofs/proof_type.cmx pretyping/rawterm.cmx \
+    pretyping/reductionops.cmx proofs/refiner.cmx pretyping/retyping.cmx \
+    kernel/sign.cmx proofs/tacexpr.cmx proofs/tacmach.cmx kernel/term.cmx \
     pretyping/termops.cmx pretyping/typing.cmx lib/util.cmx proofs/clenv.cmi 
 proofs/evar_refiner.cmo: interp/constrintern.cmi kernel/environ.cmi \
     pretyping/evarutil.cmi pretyping/evd.cmi library/global.cmi \
