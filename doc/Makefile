@@ -46,7 +46,7 @@ coq.tex::
 	make -C .. doc/coq.tex
 
 depend:: kernel.dep.ps library.dep.ps pretyping.dep.ps parsing.dep.ps \
-         proofs.dep.ps tactics.dep.ps toplevel.dep.ps
+         proofs.dep.ps tactics.dep.ps toplevel.dep.ps interp.dep.ps
 
 %.dot: ../%
 	(cd ../$*; ocamldep *.ml *.mli) | ocamldot -lr > $@
