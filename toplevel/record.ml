@@ -63,8 +63,8 @@ let all_vars t =
   in 
   aux(t,[]) 
    
-let print_id_list l =
-  [< 'sTR "[" ; prlist (fun id -> [< 'sTR (string_of_id id) >]) l; 'sTR "]" >]
+let print_id_list l = 
+  [< 'sTR "[" ; prlist_with_sep pr_coma print_id l; 'sTR "]" >]
 
 let typecheck_params_and_field ps fs =
   let env0 = Global.env () in
@@ -89,7 +89,7 @@ let mk_LambdaCit = List.fold_right (fun (x,a) b -> mkNamedLambda x a b)
 
 let warning_or_error coe st = 
   if coe then errorlabstrm "structure" st;
-  pPNL [< 'sTR"Warning: "; st >] 
+  pPNL (hOV 0 [< 'sTR"Warning: "; st >])
 
 (* Fields have names [idfs] and types [tyfs]; [coers] is a boolean list 
    telling if the corresponding field must me a coercion *)
@@ -120,11 +120,14 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
       (fun (sp_projs,ids_not_ok,subst) coe (fi,ti) -> 
 	 let fv_ti = global_vars ti in
 	 let bad_projs = (list_intersect ids_not_ok fv_ti) in
-	 if bad_projs <> [] then begin 
+	 if bad_projs <> [] then begin
+	   let s,have =
+	     if List.length bad_projs > 1 then "s","have" else "","has" in
 	   (warning_or_error coe
-              [< 'sTR(string_of_id fi); 
-		 'sTR" cannot be defined. The projections ";
-                 print_id_list bad_projs; 'sTR " were not defined" >]);
+              [< 'sTR(string_of_id fi);
+		 'sTR" cannot be defined because the projection"; 'sTR s; 'sPC;
+                 prlist_with_sep pr_coma print_id bad_projs;
+		 'sPC; 'sTR have; 'sTR "n't." >]);
            (None::sp_projs,fi::ids_not_ok,subst)
          end else 
 	   let p = mkLambda (x, rp2, replace_vars subst ti) in
@@ -141,10 +144,13 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
 		 { const_entry_body = Cooked proj;
 		   const_entry_type = None } in
 	       (declare_constant fi (cie,NeverDischarge); true)
-             with UserError(s,pps) ->
+             with Type_errors.TypeError (k,ctx,te) ->
                ((warning_or_error coe 
                    [<'sTR (string_of_id fi); 
-                     'sTR" cannot be defined. "; pps >]);false) in
+                     'sTR" cannot be defined for the following reason:";
+		     'fNL; 'sTR "  ";
+		     hOV 2 (Himsg.explain_type_error k ctx te) >]);
+		false) in
 	   if not ok then 
 	     (None::sp_projs,fi::ids_not_ok,subst)
 	   else begin
