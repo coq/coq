@@ -116,7 +116,7 @@ theories/ZArith/zarith_aux.vo: theories/ZArith/zarith_aux.v theories/Arith/Arith
 theories/ZArith/Zhints.vo: theories/ZArith/Zhints.v theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/ZArith/Zmisc.vo theories/ZArith/Wf_Z.vo
 theories/ZArith/Zlogarithm.vo: theories/ZArith/Zlogarithm.v theories/ZArith/ZArith_base.vo contrib/omega/Omega.vo theories/ZArith/Zcomplements.vo theories/ZArith/Zpower.vo
 theories/ZArith/Zpower.vo: theories/ZArith/Zpower.v theories/ZArith/ZArith_base.vo contrib/omega/Omega.vo theories/ZArith/Zcomplements.vo
-theories/ZArith/Zcomplements.vo: theories/ZArith/Zcomplements.v theories/ZArith/ZArith_base.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo theories/Arith/Wf_nat.vo theories/Lists/PolyList.vo
+theories/ZArith/Zcomplements.vo: theories/ZArith/Zcomplements.v contrib/ring/ZArithRing.vo theories/ZArith/ZArith_base.vo contrib/omega/Omega.vo theories/Arith/Wf_nat.vo theories/Lists/PolyList.vo
 theories/ZArith/Zdiv.vo: theories/ZArith/Zdiv.v theories/ZArith/ZArith_base.vo contrib/omega/Omega.vo contrib/ring/ZArithRing.vo theories/ZArith/Zcomplements.vo
 theories/ZArith/Zsqrt.vo: theories/ZArith/Zsqrt.v theories/ZArith/ZArith_base.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo
 theories/ZArith/Zwf.vo: theories/ZArith/Zwf.v theories/ZArith/ZArith_base.vo theories/Arith/Wf_nat.vo contrib/omega/Omega.vo
