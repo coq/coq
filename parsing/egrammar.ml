@@ -411,23 +411,26 @@ let factorize_grams l1 l2 =
 
 let number_of_entries gcl =
   List.fold_left
-    (fun n -> function
-      | Notation _ -> n + 1
-      | Grammar gc -> n + (List.length gc.gc_entries)
-      | TacticGrammar l -> n + 1)
-    0 gcl
+    (fun (n,l) -> function
+      | Notation _ -> 
+          (if !Options.v7 then n + 1
+          else n + 2 (* 1 for operconstr, 1 for pattern *)), l + 1
+      | Grammar gc ->
+          n + (List.length gc.gc_entries), l + (List.length gc.gc_entries)
+      | TacticGrammar _ -> n + 1, l + 1)
+    (0,0) gcl
 
 let unfreeze (grams, lex) =
   let (undo, redo, common) = factorize_grams !grammar_state grams in
-  let n = number_of_entries undo in
+  let n,l = number_of_entries undo in
   remove_grammars n;
-  remove_levels n;
+  remove_levels l;
   grammar_state := common;
   Lexer.unfreeze lex;
   List.iter extend_grammar (List.rev redo)
  
 let init_grammar () =
-  remove_grammars (number_of_entries !grammar_state);
+  remove_grammars (fst (number_of_entries !grammar_state));
   grammar_state := []
 
 let init () =
