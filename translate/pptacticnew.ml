@@ -318,6 +318,15 @@ let pr_seq_body pr tl =
         prlist_with_sep (fun () -> spc () ++ str "| ") pr tl ++
         str " ]")
 
+let duplicate force pr = function
+  | [] -> pr (ref false,[])
+  | [x] -> pr x
+  | l ->
+      if List.exists (fun (b,ids) -> !b) l & (force or
+	 List.exists (fun (_,ids) -> ids <> (snd (List.hd l))) (List.tl l))
+      then pr_seq_body pr (List.rev l)
+      else pr (ref false,[])
+
 let pr_hintbases = function
   | None -> spc () ++ str "with *"
   | Some [] -> mt ()
@@ -491,18 +500,28 @@ and pr_atom1 env = function
                     pr_lconstrarg env c ++ str ")" ++ 
 		    pr_clauses pr_ident cls))
   (* Derived basic tactics *)
-  | TacSimpleInduction h ->
+  | TacSimpleInduction (h,l) ->
+      if List.exists (fun (pp,_) -> !pp) !l then
+      duplicate true (fun (_,ids) ->
+      hov 1 (str "induction" ++ spc () ++ pr_arg pr_quantified_hypothesis h ++ 
+      pr_with_names (List.map (fun x -> !x) ids))) !l
+      else
       hov 1 (str "simple induction" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewInduction (h,e,ids) ->
+  | TacNewInduction (h,e,(ids,l))
+  | TacNewDestruct (h,(Some _ as e),(ids,l)) ->
+      duplicate false (fun (pp,ids') ->
       hov 1 (str "induction" ++ spc () ++
-             pr_induction_arg (pr_constr env) h ++ pr_with_names ids ++
-             pr_opt (pr_eliminator env) e)
+             pr_induction_arg (pr_constr env) h ++ 
+      pr_with_names (if !pp then List.map (fun x -> !x) ids' else ids) ++
+             pr_opt (pr_eliminator env) e)) !l
   | TacSimpleDestruct h ->
       hov 1 (str "simple destruct" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewDestruct (h,e,ids) ->
+  | TacNewDestruct (h,None,(ids,l)) ->
+      duplicate false (fun (pp,ids') ->
       hov 1 (str "destruct" ++ spc () ++
-             pr_induction_arg (pr_constr env) h ++ pr_with_names ids ++
-             pr_opt (pr_eliminator env) e)
+             pr_induction_arg (pr_constr env) h ++ 
+      pr_with_names (if !pp then List.map (fun x -> !x) ids' else ids)
+(*      ++ pr_opt (pr_eliminator env) e*) )) !l
   | TacDoubleInduction (h1,h2) ->
       hov 1
         (str "double induction" ++ 

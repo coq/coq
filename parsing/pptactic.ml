@@ -477,14 +477,14 @@ and pr_atom1 = function
       hov 1 (str "Instantiate" ++ pr_arg int n ++ pr_arg pr_constr c ++ 
 	     pr_clauses pr_ident cls)
   (* Derived basic tactics *)
-  | TacSimpleInduction h ->
+  | TacSimpleInduction (h,_) ->
       hov 1 (str "Induction" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewInduction (h,e,ids) ->
+  | TacNewInduction (h,e,(ids,_)) ->
       hov 1 (str "NewInduction" ++ spc () ++ pr_induction_arg pr_constr h ++
         pr_opt pr_eliminator e ++ pr_with_names ids)
   | TacSimpleDestruct h ->
       hov 1 (str "Destruct" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewDestruct (h,e,ids) ->
+  | TacNewDestruct (h,e,(ids,_)) ->
       hov 1 (str "NewDestruct" ++ spc () ++ pr_induction_arg pr_constr h ++
         pr_opt pr_eliminator e ++ pr_with_names ids)
   | TacDoubleInduction (h1,h2) ->

@@ -971,7 +971,7 @@ and xlate_tac =
      CT_elim (xlate_formula c1, xlate_bindings sl, xlate_using u)
     | TacCase (c1,sl) ->
      CT_casetac (xlate_formula c1, xlate_bindings sl)
-    | TacSimpleInduction h -> CT_induction (xlate_quantified_hypothesis h)
+    | TacSimpleInduction (h,_) -> CT_induction (xlate_quantified_hypothesis h)
     | TacSimpleDestruct h -> CT_destruct (xlate_quantified_hypothesis h)
     | TacCut c -> CT_cut (xlate_formula c)
     | TacLApply c -> CT_use (xlate_formula c)
@@ -1009,12 +1009,12 @@ and xlate_tac =
     | TacClearBody(a::l) -> 
 	CT_clear_body (CT_id_ne_list (xlate_hyp a, List.map xlate_hyp l))
     | TacDAuto (a, b) -> CT_dauto(xlate_int_opt a, xlate_int_opt b)
-    | TacNewDestruct(a,b,c) ->
+    | TacNewDestruct(a,b,(c,_)) ->
 	CT_new_destruct
 	  (xlate_int_or_constr a, xlate_using b, 
 	   CT_id_list_list
 	     (List.map (fun l -> CT_id_list(List.map xlate_newind_names l)) c))
-    | TacNewInduction(a,b,c) ->
+    | TacNewInduction(a,b,(c,_)) ->
 	CT_new_induction
 	  (xlate_int_or_constr a, xlate_using b, 
 	   CT_id_list_list

@@ -625,18 +625,18 @@ let rec intern_atomic lf ist x =
   | TacDAuto (n,p) -> TacDAuto (n,p)
 
   (* Derived basic tactics *)
-  | TacSimpleInduction h ->
-      TacSimpleInduction (intern_quantified_hypothesis ist h)
-  | TacNewInduction (c,cbo,ids) ->
+  | TacSimpleInduction (h,ids) ->
+      TacSimpleInduction (intern_quantified_hypothesis ist h,ids)
+  | TacNewInduction (c,cbo,(ids,ids')) ->
       TacNewInduction (intern_induction_arg ist c,
                option_app (intern_constr_with_bindings ist) cbo,
-               intern_case_intro_pattern lf ist ids)
+               (intern_case_intro_pattern lf ist ids,ids'))
   | TacSimpleDestruct h ->
       TacSimpleDestruct (intern_quantified_hypothesis ist h)
-  | TacNewDestruct (c,cbo,ids) ->
+  | TacNewDestruct (c,cbo,(ids,ids')) ->
       TacNewDestruct (intern_induction_arg ist c,
                option_app (intern_constr_with_bindings ist) cbo,
-	       intern_case_intro_pattern lf ist ids)
+	       (intern_case_intro_pattern lf ist ids,ids'))
   | TacDoubleInduction (h1,h2) ->
       let h1 = intern_quantified_hypothesis ist h1 in
       let h2 = intern_quantified_hypothesis ist h2 in
@@ -1633,18 +1633,18 @@ and interp_atomic ist gl = function
   | TacDAuto (n,p) -> Auto.h_dauto (n,p)
 
   (* Derived basic tactics *)
-  | TacSimpleInduction h ->
-      h_simple_induction (interp_quantified_hypothesis ist gl h)
-  | TacNewInduction (c,cbo,ids) ->
+  | TacSimpleInduction (h,ids) ->
+      h_simple_induction (interp_quantified_hypothesis ist gl h,ids)
+  | TacNewInduction (c,cbo,(ids,ids')) ->
       h_new_induction (interp_induction_arg ist gl c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
-        (interp_case_intro_pattern ist ids)
+        (interp_case_intro_pattern ist ids,ids')
   | TacSimpleDestruct h ->
       h_simple_destruct (interp_quantified_hypothesis ist gl h)
-  | TacNewDestruct (c,cbo,ids) -> 
+  | TacNewDestruct (c,cbo,(ids,ids')) -> 
       h_new_destruct (interp_induction_arg ist gl c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
-        (interp_case_intro_pattern ist ids)
+        (interp_case_intro_pattern ist ids,ids')
   | TacDoubleInduction (h1,h2) ->
       let h1 = interp_quantified_hypothesis ist gl h1 in
       let h2 = interp_quantified_hypothesis ist gl h2 in

@@ -352,15 +352,15 @@ GEXTEND Gram
 
       (* Derived basic tactics *)
       | IDENT "simple"; IDENT"induction"; h = quantified_hypothesis ->
-          TacSimpleInduction h
+          TacSimpleInduction (h,ref [])
       | IDENT "induction"; c = induction_arg; ids = with_names; 
-	  el = OPT eliminator -> TacNewInduction (c,el,ids)
+	  el = OPT eliminator -> TacNewInduction (c,el,(ids,ref []))
       | IDENT "double"; IDENT "induction"; h1 = quantified_hypothesis;
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
       | IDENT "simple"; IDENT"destruct"; h = quantified_hypothesis ->
           TacSimpleDestruct h
-      | IDENT "destruct"; c = induction_arg; ids = with_names;
-	  el = OPT eliminator -> TacNewDestruct (c,el,ids)
+      | IDENT "destruct"; c = induction_arg; ids = with_names; 
+	  el = OPT eliminator -> TacNewDestruct (c,el,(ids,ref []))
       | IDENT "decompose"; IDENT "record" ; c = constr -> TacDecomposeAnd c
       | IDENT "decompose"; IDENT "sum"; c = constr -> TacDecomposeOr c
       | IDENT "decompose"; "["; l = LIST1 global; "]"; c = constr

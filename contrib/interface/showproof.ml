@@ -1285,7 +1285,7 @@ let rec natural_ntree ig ntree =
 	  | TacAssumption -> natural_trivial ig lh g gs ltree
 	  | TacClear _ -> natural_clear ig lh g gs ltree
 (* Besoin de l'argument de la tactique *)
-	  | TacSimpleInduction (NamedHyp id) -> 
+	  | TacSimpleInduction (NamedHyp id,_) -> 
               natural_induction ig lh g gs ge id ltree false
 	  | TacExtend (_,"InductionIntro",[a]) -> 
               let id=(out_gen wit_ident a) in

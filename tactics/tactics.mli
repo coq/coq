@@ -171,12 +171,13 @@ val elim          : constr with_bindings -> constr with_bindings option -> tacti
 val general_elim_in : identifier -> constr * constr bindings ->
                       constr * constr bindings -> tactic
 
-val simple_induct     : quantified_hypothesis -> tactic
+val simple_induct     : quantified_hypothesis * (bool ref * intro_pattern_expr list ref list) list ref -> tactic
 val general_elim_in : identifier -> constr * constr bindings ->
                       constr * constr bindings -> tactic
 
 val new_induct : constr induction_arg -> constr with_bindings option ->
-  intro_pattern_expr list list -> tactic
+  case_intro_pattern_expr * (bool ref * intro_pattern_expr list ref list) list ref
+  -> tactic
 
 (*s Case analysis tactics. *)
 
@@ -185,7 +186,8 @@ val simplest_case         : constr -> tactic
 
 val simple_destruct          : quantified_hypothesis -> tactic
 val new_destruct : constr induction_arg -> constr with_bindings option ->
-  intro_pattern_expr list list -> tactic
+  case_intro_pattern_expr * (bool ref * intro_pattern_expr list ref list) list ref
+  -> tactic
 
 (*s Eliminations giving the type instead of the proof. *)
 

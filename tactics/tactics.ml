@@ -956,11 +956,16 @@ let find_eliminator c gl =
 let default_elim (c,lbindc) gl = 
   general_elim (c,lbindc) (find_eliminator c gl,NoBindings) gl
 
-let elim (c,lbindc) elim gl =
+let elim_in_context (c,_ as cx) elim gl =
   match elim with
-  | Some (elimc,lbindelimc) -> general_elim (c,lbindc) (elimc,lbindelimc) gl
-  | None -> general_elim (c,lbindc) (find_eliminator c gl,NoBindings) gl 
+  | Some (elimc,lbindelimc) -> general_elim cx (elimc,lbindelimc) gl
+  | None -> general_elim cx (find_eliminator c gl,NoBindings) gl 
 
+let elim (c,lbindc as cx) elim =
+  match kind_of_term c with
+    | Var id when lbindc = NoBindings ->
+	tclTHEN (tclTRY (intros_until_id id)) (elim_in_context cx elim)
+    | _ -> elim_in_context cx elim
 
 (* The simplest elimination tactic, with no substitutions at all. *)
 
@@ -1005,7 +1010,7 @@ let general_elim_in id (c,lbindc) (elimc,lbindelimc) gl =
 
 (* Case analysis tactics *)
 
-let general_case_analysis (c,lbindc) gl =
+let general_case_analysis_in_context (c,lbindc) gl =
   let env = pf_env gl in
   let (mind,_) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   let sigma    = project gl in 
@@ -1014,7 +1019,15 @@ let general_case_analysis (c,lbindc) gl =
   else Indrec.make_case_gen in
   let elim     = case env sigma mind sort in 
   general_elim (c,lbindc) (elim,NoBindings) gl
-    
+
+let general_case_analysis (c,lbindc as cx) =
+  match kind_of_term c with
+    | Var id when lbindc = NoBindings ->
+	tclTHEN (tclTRY (intros_until_id id))
+	(general_case_analysis_in_context cx)
+    | _ ->
+	general_case_analysis_in_context cx
+
 let simplest_case c = general_case_analysis (c,NoBindings)
 
 (*****************************)
@@ -1095,12 +1108,14 @@ let rec first_name_buggy = function
   | IntroWildcard -> None
   | IntroIdentifier id -> Some id
 
-let induct_discharge statuslists destopt avoid' (avoid,ra) names gl =
+type elim_arg_kind = RecArg | IndArg | OtherArg
+
+let induct_discharge statuslists destopt avoid' (avoid,ra) (names,force,rnames) gl =
   let avoid = avoid @ avoid' in
   let (lstatus,rstatus) = statuslists in
   let tophyp = ref None in
   let rec peel_tac ra names gl = match ra with
-    | (false,recvarname) :: (true,hyprecname) :: ra' ->
+    | (RecArg,recvarname) :: (IndArg,hyprecname) :: ra' ->
         let recpat,hyprec,names = match names with
           | [] ->
               (IntroIdentifier (fresh_id avoid recvarname gl), 
@@ -1114,15 +1129,53 @@ let induct_discharge statuslists destopt avoid' (avoid,ra) names gl =
           | pat1::pat2::names -> (pat1,pat2,names) in
 	(* This is buggy for intro-or-patterns with different first hypnames *)
 	if !tophyp=None then tophyp := first_name_buggy hyprec;
+	rnames := !rnames @ [recpat; hyprec];
         tclTHENLIST
 	  [ intros_pattern destopt [recpat];
 	    intros_pattern None [hyprec];
 	    peel_tac ra' names ] gl
-    | (true,_) :: _ -> anomaly "TODO: non canonical inductive schema"
-    | (false,_) :: ra' ->
+    | (IndArg,hyprecname) :: ra' ->
+	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
+        let pat,names = match names with
+          | [] -> IntroIdentifier (fresh_id avoid hyprecname gl), []
+	  | pat::names -> pat,names in
+	rnames := !rnames @ [pat];
+	tclTHEN (intros_pattern destopt [pat]) (peel_tac ra' names) gl
+    | (RecArg,recvarname) :: ra' ->
         let introtac,names = match names with
-          | [] -> intro_gen (IntroAvoid avoid) destopt false, []
-          | pat::names -> intros_pattern destopt [pat],names in
+          | [] -> 
+	      let i = 
+		if !Options.v7 then IntroAvoid avoid 
+		else IntroMustBe (fresh_id avoid recvarname gl)
+	      in
+	      (* For translator *)
+	      let id = fresh_id avoid (default_id gl
+		(match kind_of_term (pf_concl gl) with
+		  | Prod (name,t,_) -> (name,None,t)
+		  | LetIn (name,b,t,_) -> (name,Some b,t) 
+		  | _ -> assert false)) gl in
+	      if Options.do_translate() & id <> fresh_id avoid recvarname gl 
+	      then force := true;
+	      rnames := !rnames @ [IntroIdentifier id];
+	      intro_gen i destopt false, []
+          | pat::names ->
+	      rnames := !rnames @ [pat];
+	      intros_pattern destopt [pat],names in
+	tclTHEN introtac (peel_tac ra' names) gl
+    | (OtherArg,_) :: ra' ->
+        let introtac,names = match names with
+          | [] -> 
+	      (* For translator *)
+	      let id = fresh_id avoid (default_id gl
+		(match kind_of_term (pf_concl gl) with
+		  | Prod (name,t,_) -> (name,None,t)
+		  | LetIn (name,b,t,_) -> (name,Some b,t) 
+		  | _ -> assert false)) gl in
+	      rnames := !rnames @ [IntroIdentifier id];
+	      intro_gen (IntroAvoid avoid) destopt false, []
+          | pat::names ->
+	      rnames := !rnames @ [pat];
+	      intros_pattern destopt [pat],names in
 	tclTHEN introtac (peel_tac ra' names) gl
     | [] ->
         check_unused_names names;
@@ -1345,42 +1398,6 @@ let is_indhyp p n t =
     | Rel k when p < k & k <= p + n -> true
     | _ -> false
 
-(*
-(* We check that the eliminator has been build by Coq (usual *)
-(* eliminator _ind, _rec or _rect, or eliminator built by Scheme) *)
-let compute_elim_signature_and_roughly_check elimt mind names_info =
-  let (mib,mip) = Global.lookup_inductive mind in
-  let lra = dest_subterms mip.mind_recargs in
-  let nconstr = Array.length mip.mind_consnames in
-  let _,elimt2 = decompose_prod_n mip.mind_nparams elimt in
-  let n = nb_prod elimt2 in
-  let npred = n - nconstr - mip.mind_nrealargs - 1 in
-  let rec check_branch p c ra = match kind_of_term c, ra with
-    | Prod (_,_,c), r :: ra' ->
-	(match dest_recarg r, kind_of_term c with
-	   | Mrec i, Prod (_,t,c) when is_indhyp (p+1) npred t ->
-	       false::true::(check_branch (p+2) c ra')
-	   | _ -> false::(check_branch (p+1) c ra'))
-    | LetIn (_,_,_,c), ra' -> false::(check_branch (p+1) c ra)
-    | _, [] -> []
-    | _ ->
-	error"Not a recursive eliminator: some constructor argument is lacking"
-  in
-  let rec check_elim c n =
-    if n = nconstr then []
-    else match kind_of_term c with
-    | Prod (_,t,c) ->
-	let l = check_branch n t lra.(n) in
-	let p = List.fold_left (fun n b -> if b then n+1 else n) 0 l in
-	let recvarname, hyprecname, avoid = 
-	  make_up_names p (IndRef mind) names_info in
-	let namesign = List.map (fun b -> (b,if b then hyprecname else recvarname)) l in
-	(avoid,namesign) :: (check_elim c (n+1))
-    | _ -> error "Not an eliminator: some constructor case is lacking" in
-  let _,elimt3 = decompose_prod_n npred elimt2 in
-  mip.mind_nparams, IndRef mind, Array.of_list (check_elim elimt3 0)
-*)
-
 let chop_context n l = 
   let rec chop_aux acc = function
     | n, (_,Some _,_ as h :: t) -> chop_aux (h::acc) (n, t)
@@ -1394,6 +1411,8 @@ let error_ind_scheme s =
   let s = if s <> "" then s^" " else s in
   error ("Cannot recognise "^s^"an induction schema")
 
+(* Check that the elimination scheme has a form similar to the 
+   elimination schemes built by Coq *)
 let compute_elim_signature elimt names_info =
   let nparams = ref 0 in
   let hyps,ccl = decompose_prod_assum elimt in
@@ -1419,29 +1438,33 @@ let compute_elim_signature elimt names_info =
   | (na,None,t)::l when isSort (snd (decompose_prod_assum t)) ->
       check_elim (npred+1) l
   | l ->
-    let is_pred n c = match kind_of_term (fst (decompose_app c)) with
-    | Rel q when n < q & q <= n+npred -> true
-    | _ -> false in
+    let is_pred n c = 
+      let hd = fst (decompose_app c) in match kind_of_term hd with
+    | Rel q when n < q & q <= n+npred -> IndArg
+    | _ when hd = indhd -> RecArg
+    | _ -> OtherArg in
     let rec check_branch p c = match kind_of_term c with
     | Prod (_,t,c) -> is_pred p t :: check_branch (p+1) c
-    | LetIn (_,_,_,c) -> false :: check_branch (p+1) c
-    | App (f,_) when is_pred p f -> []
-    | _ when is_pred p c -> []
+    | LetIn (_,_,_,c) -> OtherArg :: check_branch (p+1) c
+(*    | App (f,_) when is_pred p f = IndArg -> []*)
+    | _ when is_pred p c = IndArg -> []
     | _ -> raise Exit in 
     let rec find_branches p = function
     | (_,None,t)::brs ->
 	(match try Some (check_branch p t) with Exit -> None with
 	 | Some l ->
-	     let n = List.fold_left (fun n b -> if b then n+1 else n) 0 l in
+	     let n = List.fold_left
+	       (fun n b -> if (!Options.v7 & b=IndArg) or
+		 (not !Options.v7 & b=RecArg) then n+1 else n) 0 l in
              let recvarname, hyprecname, avoid = make_up_names n indt names_info in
 	     let namesign = List.map
-	       (fun b -> (b,if b then hyprecname else recvarname)) l in
+	       (fun b -> (b,if b=IndArg then hyprecname else recvarname)) l in
 	     (avoid,namesign) :: find_branches (p+1) brs
 	 | None -> error_ind_scheme "the branches of")
     | (_,Some _,_)::_ -> error_ind_scheme "the branches of"
     | [] ->
 	(* Check again conclusion *)
-	let ccl_arg_ok = (is_pred (p + List.length realargs + 1) f) in
+	let ccl_arg_ok = is_pred (p + List.length realargs + 1) f = IndArg in
 	let ind_is_ok = 
 	  list_lastn nrealargs indargs = extended_rel_list 0 realargs in
 	if not (ccl_arg_ok & ind_is_ok) then
@@ -1467,7 +1490,7 @@ let find_elim_signature isrec style elim hyp0 gl =
   let nparams,indref,indsign = compute_elim_signature elimt name_info in
   (elimc,elimt,nparams,indref,indsign)
 
-let induction_from_context isrec elim_info hyp0 names gl =
+let induction_from_context isrec elim_info hyp0 (names,b_rnames) gl =
   (*test suivant sans doute inutile car refait par le letin_tac*)
   if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
     errorlabstrm "induction" 
@@ -1480,6 +1503,12 @@ let induction_from_context isrec elim_info hyp0 names gl =
   let (statlists,lhyp0,indhyps,deps) = cook_sign hyp0 indvars env in
   let tmpcl = it_mkNamedProd_or_LetIn (pf_concl gl) deps in
   let names = compute_induction_names (Array.length indsign) names in
+  (* For translator *)
+  let names' = Array.map ref (Array.make (Array.length indsign) []) in
+  let b = ref false in
+  b_rnames := (b,Array.to_list names')::!b_rnames;
+  let names = array_map2 (fun n n' -> (n,b,n')) names names' in
+  (* End translator *)
   let dephyps = List.map (fun (id,_,_) -> id) deps in
   let args =
     List.fold_left
@@ -1549,16 +1578,22 @@ let raw_induct s = tclTHEN (intros_until_id s) (tclLAST_HYP simplest_elim)
 let raw_induct_nodep n = tclTHEN (intros_until_n n) (tclLAST_HYP simplest_elim)
 
 (* This was Induction in 6.3 (hybrid form) *)
-let induction_from_context_old_style hyp gl =
+let induction_from_context_old_style hyp b_ids gl =
   let elim_info = find_elim_signature true true None hyp gl in
-  (induction_from_context true elim_info hyp []) gl
-let simple_induct_id hyp =
-  tclORELSE (raw_induct hyp) (induction_from_context_old_style hyp)
+  let x = induction_from_context true elim_info hyp ([],b_ids) gl in
+  (* For translator *) fst (List.hd !b_ids) := true;
+  x
+
+let simple_induct_id hyp b_ids =
+  if !Options.v7 then
+    tclORELSE (raw_induct hyp) (induction_from_context_old_style hyp b_ids)
+  else
+    raw_induct hyp
 let simple_induct_nodep = raw_induct_nodep
 
 let simple_induct = function
-  | NamedHyp id -> simple_induct_id id
-  | AnonHyp n -> simple_induct_nodep n
+  | NamedHyp id,b_ids -> simple_induct_id id b_ids
+  | AnonHyp n,_ -> simple_induct_nodep n
 
 (* Destruction tactics *)
 
