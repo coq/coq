@@ -265,7 +265,7 @@ let build_id_coercion idf_opt ids =
 	(Typing.type_of env Evd.empty val_f) typ_f
     with _ -> 
       error ("cannot be defined as coercion - "^
-	     "may be a bad number of arguments") 
+	     "maybe a bad number of arguments") 
   in
   let idf =
     match idf_opt with
@@ -274,8 +274,10 @@ let build_id_coercion idf_opt ids =
 	  id_of_string ("Id_"^(string_of_id ids)^"_"^
                         (string_of_class (fst (constructor_at_head t)))) 
   in
-  let constr_entry = 
-    { const_entry_body = val_f; const_entry_type = None } in
+  let constr_entry = (* Cast is necessary to express [val_f] is identity *)
+
+    { const_entry_body = mkCast (val_f, typ_f);
+      const_entry_type = None } in
   declare_constant idf (ConstantEntry constr_entry,NeverDischarge,false);
   idf
 
