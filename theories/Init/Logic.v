@@ -220,9 +220,3 @@ Proof.
 Qed.
 
 Hints Immediate sym_eq sym_not_eq : core v62.
-
-
-
-Syntactic Definition Ex := ex | 1.
-Syntactic Definition Ex2 := ex2 | 1.
-Syntactic Definition All := all | 1.

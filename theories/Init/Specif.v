@@ -82,9 +82,6 @@ Section Projections.
 
 End Projections.
 
-Syntactic Definition ProjS1 := (projS1 ? ?).
-Syntactic Definition ProjS2 := (projS2 ? ?).
-
 
 Section Extended_booleans.
 
@@ -150,12 +147,7 @@ Definition Exc := option.
 Definition value := Some.
 Definition error := None.
 
-Syntactic Definition Error := (error ?).
-Syntactic Definition Value := (value ?).
-
 Definition except := False_rec. (* for compatibility with previous versions *)
-
-Syntactic Definition Except := (except ?).
 
 Theorem absurd_set : (A:Prop)(C:Set)A->(~A)->C.
 Proof.

@@ -10,37 +10,13 @@
 
 Require Export Logic.
 
-(** Parsing of things in Logic.v *)
+(** Symbolic notations for things in [Logic.v] *)
 
-Grammar constr constr1 :=
-  conj [ "<" lconstr($l1) "," lconstr($c2) ">" "{" constr($c3) ","
-        constr($c4) "}" ] -> [ (conj $l1 $c2 $c3 $c4) ]
-| proj1 [ "<" lconstr($l1) "," lconstr($c2) ">" "Fst" "{"
-        lconstr($l) "}" ] -> [ (proj1 $l1 $c2 $l) ]
-| proj2 [ "<" lconstr($l1) "," lconstr($c2) ">" "Snd" "{"
-        lconstr($l) "}" ] -> [ (proj2 $l1 $c2 $l) ]
-| all [ "<" lconstr($l1) ">" "All" "(" lconstr($l2) ")" ] ->
-      [ (all $l1 $l2) ]
-| eq_expl [ "<" lconstr($l1) ">" constr0($c1) "=" constr0($c2) ] ->
-          [ (eq $l1 $c1 $c2) ]
-| eq_impl [ constr0($c) "=" constr0($c2) ] -> [ (eq ? $c $c2) ]
-| IF [ "IF" constr($c1) "then" constr($c2) "else" constr($c3)] ->
-     [ (IF $c1 $c2 $c3) ]
-with constr10 :=
-  allexplicit [ "ALL" ident($x) ":" constr($t) "|" constr($p) ]
-                          -> [ (all $t [$x : $t]$p) ]
-| allimplicit [ "ALL" ident($x) "|" constr($p) ]
-                          -> [ (all ? [$x]$p) ]
-| exexplicit [ "EX" ident($v) ":" constr($t) "|" constr($c1) ]
-                          -> [ (ex $t [$v : $t]$c1) ]
-| eximplicit [ "EX" ident($v) "|" constr($c1) ] 
-                          -> [ (ex ? [$v]$c1) ]
-| ex2explicit [ "EX" ident($v) ":" constr($t) "|" constr($c1) "&"
-           constr($c2) ] -> [ (ex2 $t [$v : $t]$c1 [$v : $t]$c2) ]
-| ex2implicit [ "EX" ident($v) "|" constr($c1) "&" 
-           constr($c2) ] -> [ (ex2 ? [$v]$c1 [$v]$c2) ].
+Notation "< P , Q > { p , q }" := (conj P Q p q) (at level 1).
 
 Distfix RIGHTA 5 "~ _" not.
+
+Notation "x = y" := (eq ? x y) (at level 5).
 
 Infix RIGHTA 6 "/\\" and.
 
@@ -48,32 +24,36 @@ Infix RIGHTA 7 "\\/" or.
 
 Infix RIGHTA 8 "<->" iff.
 
-(** Pretty-printing of things in Logic.v *)
+Notation "'IF' c1 'then' c2 'else' c3" := (IF c1 c2 c3)
+  (at level 1, c1, c2, c3 at level 8).
+
+(* Order is important to give printing priority to fully typed ALL and EX *)
+
+Notation All := (all ?).
+Notation "'ALL' x | p"     := (all ? [x]p)   (at level 10, p at level 8).
+Notation "'ALL' x : t | p" := (all t [x:t]p) (at level 10, p at level 8).
+
+Notation Ex  := (ex ?).
+Notation "'EX' x | p"      := (ex ? [x]p)    (at level 10, p at level 8).
+Notation "'EX' x : t | p"  := (ex t [x:t]p)  (at level 10, p at level 8).
+
+Notation Ex2 := (ex2 ?).
+Notation "'EX' x | p & q"       := (ex2 ? [x]p [x]q)
+  (at level 10, p, q at level 8).
+Notation "'EX' x : t | p & q"   := (ex2 t [x:t]p [x:t]q)
+  (at level 10, p, q at level 8).
+
+
+(** Parsing only of things in [Logic.v] *)
+
+Notation "< A > 'All' ( P )" := (all A P) (at level 1, only parsing).
+Notation "< A > x = y" := (eq A x y) (at level 1, x at level 0, only parsing).
+
+(** Pretty-printing only of things in [Logic.v] *)
 
 Syntax constr
   level 1:
     equal [ (eq $a  $t1  $t2) ] ->
 	 [ [<hov 0> (ANNOT $a) $t1:E [0 1]  "=" $t2:E ] ]
   | annotskip [ << (ANNOT $_) >> ] -> [ ]
-  | annotmeta [ << (ANNOT (META ($NUM $n))) >> ] -> [ "<" "?" $n ">" ]
-  | conj [ (conj $t1 $t2 $t3 $t4) ]
-      -> [ [<hov 1> [<hov 1> "<" $t1:L "," [0 0] $t2:L ">" ] [0 0]
-                    [<hov 1> "{" $t3:L "," [0 0] $t4:L "}"] ] ]
-  | IF [(IF $c1 then $c2 else $c3)] ->
-       [ [<hov 0> "IF " $c1:E [1 0]
-                  "then " $c2:E [1 0]
-                  "else " $c3:E ] ]
-  ;
-  level 10:
-    all_pred [ (all $_ $p) ] -> [ [<hov 4> "All " $p:L ] ]
-  | all_imp [ (all $_ [$x : $T]$t) ]
-       -> [ [<hov 3> "ALL " $x ":" $T:L " |" [1 0] $t:L ] ]
-
-  | ex_pred [ (ex $_ $p) ] -> [ [<hov 0> "Ex " $p:L ] ]
-  | ex [ (ex $_ [$x : $T]$P) ] 
-       -> [ [<hov 2> "EX " $x ":" $T:L " |" [1 0] $P:L ] ]
-
-  | ex2_pred [ (ex2 $_ $p1 $p2) ]
-       -> [ [<hov 3> "Ex2 " $p1:L [1 0] $p2:L ] ]
-  | ex2 [ (ex2 $_ [$x : $T]$P1 [$x : $T]$P2) ] 
-       -> [ [<hov 2> "EX " $x ":" $T:L " |" [1 2] $P1:L [1 0] "& " $P2:L] ].
+  | annotmeta [ << (ANNOT (META ($NUM $n))) >> ] -> [ "<" "?" $n ">" ].

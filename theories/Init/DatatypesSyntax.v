@@ -10,29 +10,16 @@
 
 Require Export Datatypes.
 
-(** Parsing of things in Datatypes.v *)
+(** Symbolic notations for things in [Datatypes.v] *)
 
-Grammar constr constr1 :=
-  pair_expl [ "<" lconstr($l1) "," lconstr($c2) ">" "(" lconstr($c3) ","
-    lconstr($c4) ")" ] -> [ (pair $l1 $c2 $c3 $c4) ]
-| fst_expl [ "<" lconstr($l1) "," lconstr($c2) ">" "Fst" "("
-    lconstr($l) ")" ] -> [ (fst $l1 $c2 $l) ]
-| snd_expl [ "<" lconstr($l1) "," lconstr($c2) ">" "Snd" "("
-    lconstr($l) ")" ] -> [ (snd $l1 $c2 $l) ]
+Infix LEFTA 4 "+" sum.
+Infix LEFTA 3 "*" prod.
+Notation "( x , y )" := (pair ? ? x y) (at level 0, x, y at level 10).
+Notation Fst := (fst ? ?).
+Notation Snd := (snd ? ?).
 
-with constr0 :=
-  pair [ "(" lconstr($lc1) "," lconstr($lc2) ")" ] ->
-         [ (pair ? ? $lc1 $lc2) ]
-.
+(** Parsing only of things in [Datatypes.v] *)
 
-Infix 4 "+" sum.
-Infix RIGHTA 3 "*" prod.
+Notation "< A , B > 'Fst' ( p )" := (fst A B p) (at level 1, only parsing).
+Notation "< A , B > 'Snd' ( p )" := (snd A B p) (at level 1, only parsing).
 
-(** Pretty-printing of things in Datatypes.v *)
-
-Syntax constr
-  level 1:
-    pair
-      [ (pair $_ $_ $t3 $t4) ] -> [ [<hov 0> "(" $t3:E ","[0 1] $t4:E ")" ] ]
-  | fst_imp [ (fst $_ $_ $t2) ] -> [ [<hov 0> "(Fst " $t2:E ")"] ]
-  | snd_imp [ (snd $_ $_ $t2) ] -> [ [<hov 0> "(Snd " $t2:E ")"] ].

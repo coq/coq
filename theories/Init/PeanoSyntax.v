@@ -16,7 +16,7 @@ Syntax constr
   | O [ O ]      -> ["(0)"].
 
 (* Outside the module to be able to parse the grammar for 0,1,2... !! *)
-Delimiters "'N:" nat_scope "'". (* "[N", "[N:", "]]" are conflicting *)
+Delimits Scope nat_scope with N.
 
 (* For parsing/printing based on scopes *)
 Module nat_scope.
