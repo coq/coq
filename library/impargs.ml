@@ -20,6 +20,7 @@ open Libobject
 open Lib
 open Nametab
 open Pp
+open Topconstr
 
 (*s Flags governing the computation of implicit arguments *)
 
@@ -208,13 +209,20 @@ let add_free_rels_until strict bound env m pos acc =
 
 (* calcule la liste des arguments implicites *)
 
+let my_concrete_name avoid names t = function
+  | Anonymous -> Anonymous, avoid, Anonymous::names
+  | na -> 
+      let id = Termops.next_name_not_occuring false na avoid names t in
+      Name id, id::avoid, Name id::names
+  
 let compute_implicits_gen strict contextual env t =
-  let rec aux env n names t =
+  let rec aux env avoid n names t =
     let t = whd_betadeltaiota env t in
     match kind_of_term t with
-      | Prod (x,a,b) ->
+      | Prod (na,a,b) ->
+	  let na',avoid' = Termops.concrete_name false avoid names na b in
 	  add_free_rels_until strict n env a (Hyp (n+1))
-            (aux (push_rel (x,None,a) env) (n+1) (x::names) b)
+            (aux (push_rel (na',None,a) env) avoid' (n+1) (na'::names) b)
       | _ -> 
 	  let names = List.rev names in
 	  let v = Array.map (fun na -> na,None) (Array.of_list names) in
@@ -222,8 +230,9 @@ let compute_implicits_gen strict contextual env t =
 	  else v
   in 
   match kind_of_term (whd_betadeltaiota env t) with 
-    | Prod (x,a,b) ->
-	let v = aux (push_rel (x,None,a) env) 1 [x] b in
+    | Prod (na,a,b) ->
+	let na',avoid = Termops.concrete_name false [] [] na b in
+	let v = aux (push_rel (na',None,a) env) avoid 1 [na'] b in
 	Array.to_list v
     | _ -> []
 
@@ -435,31 +444,55 @@ let implicits_of_global_out r =
 
 (* Declare manual implicits *)
 
-let check_range n i =
-  if i<1 or i>n then error ("Bad argument number: "^(string_of_int i))
+(*
+let check_range n = function
+  | loc,ExplByPos i ->
+      if i<1 or i>n then error ("Bad argument number: "^(string_of_int i))
+  | loc,ExplByName id ->
+()
+*)
 
+let rec list_remove a = function
+  | b::l when a = b -> l
+  | b::l -> b::list_remove a l
+  | [] -> raise Not_found
+
+let set_implicit id imp =
+  Some (id,match imp with None -> Manual | Some imp -> imp)
 
 let declare_manual_implicits r l =
   let t = Global.type_of_global r in
   let autoimps = compute_implicits_gen false true (Global.env()) t in
   let n = List.length autoimps in
-  if not (list_distinct l) then error ("Some numbers occur several time");
-  List.iter (check_range n) l;
-  let l = List.sort (-) l in
+  if not (list_distinct l) then 
+    error ("Some parameters are referred more than once");
+(*  List.iter (check_range n) l;*)
+(*  let l = List.sort (-) l in*)
   (* Compare with automatic implicits to recover printing data and names *)
-  let rec merge k = function
-    | [], [] -> []
-    | ((na,imp)::imps, p::l) when k=p ->
-	let id = match na with
-	  | Name id -> id
-	  | _ -> errorlabstrm ""
-	      (str "Cannot set implicit argument number " ++ int p ++
-	      str ": it has no name") in
-	let imp = match imp with None -> (id,Manual) | Some imp -> (id,imp) in
-	Some imp :: merge (k+1) (imps,l)
-    | _::imps, l' -> None :: merge (k+1) (imps,l')
-    | [], _ -> assert false in
-  let l = Impl_manual (merge 1 (autoimps,l)) in
+  let rec merge k l = function
+    | (Name id,imp)::imps ->
+	let l',imp =
+	  try list_remove (ExplByPos k) l, set_implicit id imp
+	  with Not_found ->
+	  try list_remove (ExplByName id) l, set_implicit id imp
+	  with Not_found ->
+	  l, None in
+	imp :: merge (k+1) l' imps
+    | (Anonymous,imp)::imps -> 
+	None :: merge (k+1) l imps
+    | [] when l = [] -> []
+    | _ ->
+	match List.hd l with
+	| ExplByName id ->
+	    error ("Wrong or not dependent implicit argument name: "^(string_of_id id))
+	| ExplByPos i ->
+	    if i<1 or i>n then 
+	      error ("Bad implicit argument number: "^(string_of_int i))
+	    else
+	      errorlabstrm ""
+		(str "Cannot set implicit argument number " ++ int i ++
+		 str ": it has no name") in
+  let l = Impl_manual (merge 1 l autoimps) in
   let (_,oimp_out) = implicits_of_global_gen r in
   let l = l, if !Options.v7_only then oimp_out else l in
   add_anonymous_leaf (in_implicits [r,l])

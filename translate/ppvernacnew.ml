@@ -169,6 +169,10 @@ let pr_search a b pr_p = match a with
 
 let pr_locality local = if local then str "Local " else str ""
 
+let pr_explanation imps = function
+  | ExplByPos n -> pr_id (Impargs.name_of_implicit (List.nth imps (n-1)))
+  | ExplByName id -> pr_id id
+
 let pr_class_rawexpr = function
   | FunClass -> str"Funclass"
   | SortClass -> str"Sortclass"
@@ -555,7 +559,7 @@ let rec pr_vernac = function
 	    (match a with None -> [] | Some a -> [SetAssoc a]),s
         | None -> [],s in
       hov 0 (hov 0 (str"Infix " ++ pr_locality local
-      ++ qsnew s ++ spc() ++ pr_reference q) ++
+      ++ qsnew s ++ str " :=" ++ spc() ++ pr_reference q) ++
       pr_syntax_modifiers mv8 ++
       (match sn with
     | None -> mt()
@@ -971,8 +975,11 @@ pr_vbinders bl ++ spc())
   | VernacDeclareImplicits (q,None) ->
       hov 2 (str"Implicit Arguments" ++ spc() ++ pr_reference q)
   | VernacDeclareImplicits (q,Some l) ->
+      let r = Nametab.global q in
+      Impargs.declare_manual_implicits r l;
+      let imps = Impargs.implicits_of_global r in
       hov 1 (str"Implicit Arguments" ++ spc() ++ pr_reference q ++ spc() ++
-             str"[" ++ prlist_with_sep sep int l ++ str"]")
+             str"[" ++ prlist_with_sep sep (pr_explanation imps) l ++ str"]")
   | VernacReserve (idl,c) ->
       hov 1 (str"Implicit Type" ++
         str (if List.length idl > 1 then "s " else " ") ++
@@ -1100,7 +1107,11 @@ let pr_vernac = function
       (* Obsolete modules *)
       List.mem (string_of_id r)
 	["Refine"; "Inv"; "Equality"; "EAuto"; "AutoRewrite"; "EqDecide"; 
-         "Xml"; "Extraction"; "Tauto"; "Setoid_replace";"Elimdep"] -> mt()
+         "Xml"; "Extraction"; "Tauto"; "Setoid_replace";"Elimdep";
+	 "DatatypesSyntax"; "LogicSyntax"; "Logic_TypeSyntax";
+	 "SpecifSyntax"; "PeanoSyntax"; "TypeSyntax"] ->
+      warning ("Forgetting obsolete module "^(string_of_id r));
+      mt()
   | VernacSyntax _  | VernacGrammar _ as x -> pr_vernac x
   | x -> pr_vernac x ++ sep_end ()
 

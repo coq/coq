@@ -234,7 +234,7 @@ type vernac_expr =
   | VernacHintDestruct of locality_flag *
       identifier * (bool,unit) location * constr_expr * int * raw_tactic_expr
   | VernacSyntacticDefinition of identifier * constr_expr * int option
-  | VernacDeclareImplicits of reference * int list option
+  | VernacDeclareImplicits of reference * explicitation list option
   | VernacReserve of identifier list * constr_expr
   | VernacSetOpacity of opacity_flag * reference list
   | VernacUnsetOption of Goptions.option_name

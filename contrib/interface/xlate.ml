@@ -1674,7 +1674,10 @@ let xlate_vernac =
 	(reference_to_ct_ID id,
 	 match opt_positions with
 	     None -> CT_int_list[]
-	   | Some l -> CT_int_list(List.map (fun x -> CT_int x) l))
+	   | Some l ->
+	       CT_int_list
+	       (List.map (function ExplByPos x -> CT_int x | ExplByName _ ->
+		 xlate_error "TODO: explicit argument by name") l))
   | VernacReserve _ -> xlate_error "TODO: Default Variable Type"
   | VernacLocate(LocateTerm id) -> CT_locate(reference_to_ct_ID id)
   | VernacLocate(LocateLibrary id) -> CT_locate_lib(reference_to_ct_ID id)

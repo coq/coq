@@ -54,7 +54,8 @@ val declare_mib_implicits : mutual_inductive -> unit
 val declare_implicits : global_reference -> unit
 
 (* Manual declaration of which arguments are expected implicit *)
-val declare_manual_implicits : global_reference -> int list -> unit
+val declare_manual_implicits : global_reference -> 
+  Topconstr.explicitation list -> unit
 
 (* Get implicit arguments *)
 val is_implicit_constant : constant -> implicits_flags

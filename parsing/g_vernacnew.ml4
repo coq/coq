@@ -436,8 +436,9 @@ GEXTEND Gram
 	   VernacNotation (false,c,Some("'"^id^"'",[]),None,None)
 *)
       | IDENT "Implicit"; IDENT "Arguments"; qid = global; 
-           pos = OPT [ "["; l = LIST0 natural; "]" -> l ] ->
-	  VernacDeclareImplicits (qid,pos)
+         pos = OPT [ "["; l = LIST0 ident; "]" -> l ] ->
+	   let pos = option_app (List.map (fun id -> ExplByName id)) pos in
+	   VernacDeclareImplicits (qid,pos)
 
       | IDENT "Implicit"; ["Type" | "Types"];
 	   idl = LIST1 ident; ":"; c = lconstr -> VernacReserve (idl,c)
@@ -681,7 +682,7 @@ GEXTEND Gram
          "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
 
      | IDENT "Infix"; local = locality; (*a = entry_prec; n = OPT natural; *)
-	 op = STRING; p = global;
+	 op = STRING; ":="; p = global; 
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
          let (a,n,b) = Metasyntax.interp_infix_modifiers None None modl in
