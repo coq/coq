@@ -227,8 +227,8 @@ let theory_filename xml_library_root =
   | Some xml_library_root' ->
      let toks = List.map N.string_of_id (N.repr_dirpath (Lib.library_dp ())) in
      let hd = List.hd toks in
-     (* theory from A/B/C/F.v goes into A/B/C/F/F.theory *)
-     let alltoks = List.rev (hd :: toks) in
+     (* theory from A/B/C/F.v goes into A/B/C/F.theory *)
+     let alltoks = List.rev toks in
        Some (join_dirs xml_library_root' alltoks ^ ".theory")
 
 let print_object uri obj sigma proof_tree_infos filename =
