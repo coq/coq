@@ -91,8 +91,9 @@ let compile command args file =
   let oc = open_out tmpfile in
   Printf.fprintf oc "Module %s.\n" modulename;
   Printf.fprintf oc "Load %s\"%s\".\n" 
-    (if !verbose then "Verbose " else "") file;
-  Printf.fprintf oc "Write Module %s \"%s\".\n" modulename filevo;
+    (if !verbose then "Verbose " else "") (String.escaped file);
+  Printf.fprintf oc "Write Module %s \"%s\".\n" modulename
+    (String.escaped filevo);
   flush oc;
   close_out oc;
   try
