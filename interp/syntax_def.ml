@@ -69,7 +69,7 @@ let declare_syntactic_definition local id onlyparse c =
   let _ = add_leaf id (in_syntax_constant (local,c,onlyparse)) in ()
 
 let rec set_loc loc _ a =
-  map_aconstr_with_binders_loc loc (fun id e -> (id,e)) (set_loc loc) () a
+  rawconstr_of_aconstr_with_binders loc (fun id e -> (id,e)) (set_loc loc) () a
 
 let search_syntactic_definition loc kn =
   set_loc loc () (KNmap.find kn !syntax_table)
