@@ -195,7 +195,7 @@ let rec vernac_com interpfun (loc,com) =
 
     | VernacTime v ->
 	let tstart = System.get_time() in
-        if not !just_parsing then interpfun v;
+        if not !just_parsing then interp v;
 	let tend = System.get_time() in
         msgnl (str"Finished transaction in " ++
                  System.fmt_time_difference tstart tend)
