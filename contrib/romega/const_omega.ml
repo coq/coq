@@ -235,7 +235,7 @@ let coq_do_omega = lazy (constant  "do_omega")
 (**
 let constant dir s =
    try
-     Libnames.constr_of_reference 
+     Libnames.constr_of_global 
        (Nametab.absolute_reference
 	  (Libnames.make_path
              (Names.make_dirpath (List.map Names.id_of_string (List.rev dir)))

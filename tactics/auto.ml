@@ -933,7 +933,7 @@ let default_superauto g = superauto !default_search_depth [] [] g
 let interp_to_add gl locqid =
   let r = Nametab.global locqid in
   let id = id_of_global r in
-  (next_ident_away id (pf_ids_of_hyps gl), constr_of_reference r)
+  (next_ident_away id (pf_ids_of_hyps gl), constr_of_global r)
 
 let gen_superauto nopt l a b gl =
   let n = match nopt with Some n -> n | None -> !default_search_depth in

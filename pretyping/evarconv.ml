@@ -100,11 +100,11 @@ let apprec_nohdbeta env isevars c =
      (t2 us2) = (cstr us)
      extra_args1 = extra_args2
 
-   by finding a record R and an object c := [xs:bs](Build_R a1..am v1..vn)
+   by finding a record R and an object c := [xs:bs](Build_R params v1..vn)
    with vi = (cstr us), for which we know that the i-th projection proji
    satisfies
 
-      (proji params c) = (cstr us)
+      (proji params (c xs)) = (cstr us)
 
    Rem: such objects, usable for conversion, are defined in the objdef
    table; practically, it amounts to "canonically" equip t2 into a
@@ -116,7 +116,7 @@ let check_conv_record (t1,l1) (t2,l2) =
     let proji = reference_of_constr t1 in
     let cstr = reference_of_constr t2 in
     let { o_DEF = c; o_TABS = bs; o_TPARAMS = params; o_TCOMPS = us } = 
-      canonical_structure_info (proji, cstr) in
+      lookup_canonical_conversion (proji, cstr) in
     let params1, c1, extra_args1 =
       match list_chop (List.length params) l1 with 
 	| params1, c1::extra_args1 -> params1, c1, extra_args1

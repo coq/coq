@@ -54,7 +54,7 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
 	(try 
 	   let (idc,_,typ) = get_variable (basename sp) in 
            if refopt = None
-	     || head_const typ = constr_of_reference (out_some refopt)
+	     || head_const typ = constr_of_global (out_some refopt)
 	   then
 	     fn (VarRef idc) env typ
 	 with Not_found -> (* we are in a section *) ())
@@ -62,7 +62,7 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
 	let kn = locate_constant (qualid_of_sp sp) in
 	let {const_type=typ} = Global.lookup_constant kn in
         if refopt = None
-	  || head_const typ = constr_of_reference (out_some refopt)
+	  || head_const typ = constr_of_global (out_some refopt)
 	then
 	  fn (ConstRef kn) env typ
     | "INDUCTIVE" -> 
@@ -210,7 +210,7 @@ type glob_search_about_item =
   | GlobSearchString of string
 
 let search_about_item (itemref,typ) = function
-  | GlobSearchRef ref -> Termops.occur_term (constr_of_reference ref) typ
+  | GlobSearchRef ref -> Termops.occur_term (constr_of_global ref) typ
   | GlobSearchString s -> string_string_contains (name_of_reference itemref) s
 
 let raw_search_about filter_modules display_function l =

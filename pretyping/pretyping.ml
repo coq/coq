@@ -237,7 +237,7 @@ let make_dep_of_undep env (IndType (indf,realargs)) pj =
 (* Main pretyping function                                               *)
 
 let pretype_ref isevars env ref = 
-  let c = constr_of_reference ref in
+  let c = constr_of_global ref in
   make_judge c (Retyping.get_type_of env Evd.empty c)
 
 let pretype_sort = function

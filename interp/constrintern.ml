@@ -1198,7 +1198,7 @@ let is_global id =
     false
 
 let global_reference id = 
-  constr_of_reference (locate_reference (make_short_qualid id))
+  constr_of_global (locate_reference (make_short_qualid id))
 
 let construct_reference ctx id =
   try
@@ -1207,5 +1207,5 @@ let construct_reference ctx id =
     global_reference id
 
 let global_reference_in_absolute_module dir id = 
-  constr_of_reference (Nametab.absolute_reference (Libnames.make_path dir id))
+  constr_of_global (Nametab.absolute_reference (Libnames.make_path dir id))
 

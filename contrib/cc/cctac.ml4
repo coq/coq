@@ -200,7 +200,7 @@ let refute_tac axioms disaxioms id p gls =
   let tt1=make_term t1 and tt2=make_term t2 in
   let intype=pf_type_of gls tt1 in
   let neweq=
-    mkApp(constr_of_reference Coqlib.glob_eq,
+    mkApp(constr_of_global Coqlib.glob_eq,
 	  [|intype;tt1;tt2|]) in
   let hid=pf_get_new_id (id_of_string "Heq") gls in
   let false_t=mkApp (mkVar id,[|mkVar hid|]) in
@@ -225,7 +225,7 @@ let discriminate_tac axioms cstr p gls =
 		  [|intype;outtype;proj;tt1;tt2;mkVar hid|]) in   
   let endt=mkApp (Lazy.force eq_rect_theo,
 		  [|outtype;trivial;pred;identity;concl;injt|]) in
-  let neweq=mkApp(constr_of_reference Coqlib.glob_eq,[|intype;tt1;tt2|]) in
+  let neweq=mkApp(constr_of_global Coqlib.glob_eq,[|intype;tt1;tt2|]) in
     tclTHENS (true_cut (Name hid) neweq) 
       [proof_tac axioms p;exact_check endt] gls
       

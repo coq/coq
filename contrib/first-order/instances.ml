@@ -108,7 +108,7 @@ let mk_open_instance id gl m t=
   let evmap=Refiner.project gl in
   let var_id=
     if id==dummy_id then dummy_bvid else
-      let typ=pf_type_of gl (constr_of_reference id) in
+      let typ=pf_type_of gl (constr_of_global id) in
 	(* since we know we will get a product, 
 	   reduction is not too expensive *)
       let (nam,_,_)=destProd (whd_betadeltaiota env evmap typ) in
@@ -144,7 +144,7 @@ let left_instance_tac (inst,id) continue seq=
 	    [tclTHENLIST
 	       [introf;
 		(fun gls->generalize 
-		   [mkApp(constr_of_reference id,
+		   [mkApp(constr_of_global id,
 			  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])] gls);
 		introf;
 		tclSOLVE [wrap 1 false continue 
@@ -160,10 +160,10 @@ let left_instance_tac (inst,id) continue seq=
 		let (rc,ot)= mk_open_instance id gl m t in
 		let gt= 
 		  it_mkLambda_or_LetIn 
-		    (mkApp(constr_of_reference id,[|ot|])) rc in
+		    (mkApp(constr_of_global id,[|ot|])) rc in
 		  generalize [gt] gl
 	    else
-	      generalize [mkApp(constr_of_reference id,[|t|])]
+	      generalize [mkApp(constr_of_global id,[|t|])]
 	  in
 	    tclTHENLIST 
 	      [special_generalize;

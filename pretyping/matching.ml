@@ -101,7 +101,7 @@ let matches_core convert allow_partial_app pat c =
 
       | PVar v1, Var v2 when v1 = v2 -> sigma
 
-      | PRef ref, _ when constr_of_reference ref = cT -> sigma
+      | PRef ref, _ when constr_of_global ref = cT -> sigma
 
       | PRel n1, Rel n2 when n1 = n2 -> sigma
 
@@ -142,7 +142,7 @@ let matches_core convert allow_partial_app pat c =
 
       | PRef (ConstRef _ as ref), _ when convert <> None ->
 	  let (env,evars) = out_some convert in
-	  let c = constr_of_reference ref in
+	  let c = constr_of_global ref in
 	  if is_conv env evars c cT then sigma
 	  else raise PatternMatchingFailure
 

@@ -40,7 +40,7 @@ let get_hyp_by_name g name =
 (* je sais, c'est pas beau, mais je ne sais pas trop me servir de look_up...
    Loïc *)
   with _ -> (let c = Nametab.global (Ident (zz,name)) in
-             ("cste",type_of (Global.env()) Evd.empty (constr_of_reference c)))
+             ("cste",type_of (Global.env()) Evd.empty (constr_of_global c)))
 ;;
 
 type pbp_atom =

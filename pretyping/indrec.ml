@@ -521,11 +521,11 @@ let lookup_eliminator ind_sp s =
   let ref = ConstRef (make_con mp dp (label_of_id id)) in
   try 
     let _ = sp_of_global ref in
-    constr_of_reference ref
+    constr_of_global ref
   with Not_found ->
   (* Then try to get a user-defined eliminator in some other places *)
   (* using short name (e.g. for "eq_rec") *)
-  try constr_of_reference (Nametab.locate (make_short_qualid id))
+  try constr_of_global (Nametab.locate (make_short_qualid id))
   with Not_found ->
     errorlabstrm "default_elim"
       (str "Cannot find the elimination combinator " ++
@@ -546,7 +546,7 @@ let lookup_eliminator ind_sp s =
   with Not_found ->
   (* Then try to get a user-defined eliminator in some other places *)
   (* using short name (e.g. for "eq_rec") *)
-    try constr_of_reference (Nametab.locate (make_short_qualid id))
+    try constr_of_global (Nametab.locate (make_short_qualid id))
     with Not_found ->
       errorlabstrm "default_elim"
 	(str "Cannot find the elimination combinator " ++

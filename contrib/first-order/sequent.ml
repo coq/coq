@@ -255,7 +255,7 @@ let empty_seq depth=
 
 let create_with_ref_list l depth gl=
   let f gr seq=
-    let c=constr_of_reference gr in    
+    let c=constr_of_global gr in    
     let typ=(pf_type_of gl c) in
       add_formula Hyp gr typ seq gl in
     List.fold_right f l (empty_seq depth)

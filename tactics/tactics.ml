@@ -1882,7 +1882,7 @@ let abstract_subproof name tac gls =
     let cd = Entries.DefinitionEntry const in
     let con = Declare.declare_internal_constant na (cd,IsProof Lemma) in
     let newenv = Global.env() in
-    constr_of_reference (ConstRef con)
+    constr_of_global (ConstRef con)
   in
   exact_no_check 
     (applist (lemme, 

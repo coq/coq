@@ -385,7 +385,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	  List.iter 
 	    (option_iter 
 	       (fun kn -> if Cset.mem kn !projs then add_projection n kn))
-	    (find_structure ip).s_PROJ 
+	    (lookup_structure ip).s_PROJ 
 	with Not_found -> ()
 	end; 
 	Record field_glob

@@ -57,15 +57,15 @@ let clear_global=function
 (* connection rules *)
 
 let axiom_tac t seq=
-  try exact_no_check (constr_of_reference (find_left t seq)) 
+  try exact_no_check (constr_of_global (find_left t seq)) 
   with Not_found->tclFAIL 0 "No axiom link" 
 
 let ll_atom_tac a backtrack id continue seq= 
   tclIFTHENELSE
     (try 
       tclTHENLIST
-	[generalize [mkApp(constr_of_reference id,
-			   [|constr_of_reference (find_left a seq)|])];
+	[generalize [mkApp(constr_of_global id,
+			   [|constr_of_global (find_left a seq)|])];
 	 clear_global id;
 	 intro]
     with Not_found->tclFAIL 0 "No link") 
@@ -92,7 +92,7 @@ let left_and_tac ind backtrack id continue seq gls=
  let n=(construct_nhyps ind gls).(0) in  
    tclIFTHENELSE
      (tclTHENLIST 
-      [simplest_elim (constr_of_reference id);
+      [simplest_elim (constr_of_global id);
        clear_global id; 
        tclDO n intro])
      (wrap n false continue seq)
@@ -106,12 +106,12 @@ let left_or_tac ind backtrack id continue seq gls=
        tclDO n intro;
        wrap n false continue seq] in
     tclIFTHENSVELSE
-      (simplest_elim (constr_of_reference id))
+      (simplest_elim (constr_of_global id))
       (Array.map f v)
       backtrack gls
 
 let left_false_tac id=
-  simplest_elim (constr_of_reference id)
+  simplest_elim (constr_of_global id)
 
 (* left arrow connective rules *)
 
@@ -127,7 +127,7 @@ let ll_ind_tac ind largs backtrack id continue seq gl=
        let cstr=mkApp ((mkConstruct (ind,(i+1))),vargs) in
        let vars=Array.init p (fun j->mkRel (p-j)) in
        let capply=mkApp ((lift p cstr),vars) in
-       let head=mkApp ((lift p (constr_of_reference id)),[|capply|]) in
+       let head=mkApp ((lift p (constr_of_global id)),[|capply|]) in
 	 Sign.it_mkLambda_or_LetIn head rc in
        let lp=Array.length rcs in
        let newhyps=list_tabulate myterm lp in
@@ -141,7 +141,7 @@ let ll_ind_tac ind largs backtrack id continue seq gl=
 let ll_arrow_tac a b c backtrack id continue seq=
   let cc=mkProd(Anonymous,a,(lift 1 b)) in
   let d=mkLambda (Anonymous,b,
-		  mkApp ((constr_of_reference id),
+		  mkApp ((constr_of_global id),
 			 [|mkLambda (Anonymous,(lift 1 a),(mkRel 2))|])) in
     tclORELSE
       (tclTHENS (cut c)
@@ -150,7 +150,7 @@ let ll_arrow_tac a b c backtrack id continue seq=
 	     clear_global id;
 	     wrap 1 false continue seq];
 	  tclTHENS (cut cc) 
-            [exact_no_check (constr_of_reference id); 
+            [exact_no_check (constr_of_global id); 
 	     tclTHENLIST 
 	       [generalize [d];
 		clear_global id;
@@ -175,7 +175,7 @@ let forall_tac backtrack continue seq=
 let left_exists_tac ind backtrack id continue seq gls=
   let n=(construct_nhyps ind gls).(0) in  
     tclIFTHENELSE
-      (simplest_elim (constr_of_reference id))
+      (simplest_elim (constr_of_global id))
       (tclTHENLIST [clear_global id;
                     tclDO n intro;
                     (wrap (n-1) false continue seq)]) 
@@ -189,7 +189,7 @@ let ll_forall_tac prod backtrack id continue seq=
 	  [intro;
 	   (fun gls->
 	      let id0=pf_nth_hyp_id gls 1 in
-	      let term=mkApp((constr_of_reference id),[|mkVar(id0)|]) in
+	      let term=mkApp((constr_of_global id),[|mkVar(id0)|]) in
 		tclTHEN (generalize [term]) (clear [id0]) gls);  
 	   clear_global id;
 	   intro;

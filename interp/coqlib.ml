@@ -31,7 +31,7 @@ let gen_reference locstr dir s =
     anomaly (locstr^": cannot find "^(string_of_path sp))
     
 let gen_constant locstr dir s = 
-  constr_of_reference (gen_reference locstr dir s)
+  constr_of_global (gen_reference locstr dir s)
 
 let list_try_find f = 
   let rec try_find_f = function
@@ -50,7 +50,7 @@ let gen_constant_in_modules locstr dirs s =
   let all = Nametab.locate_all (make_short_qualid id) in
   let these = List.filter (has_suffix_in_dirs dirs) all in
   match these with
-    | [x] -> constr_of_reference x
+    | [x] -> constr_of_global x
     | [] ->
 	anomalylabstrm "" (str (locstr^": cannot find "^s^
 	" in module"^(if List.length dirs > 1 then "s " else " ")) ++
