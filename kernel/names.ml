@@ -362,6 +362,7 @@ module Spmap = Map.Make(SpOrdered)
 
 (* Special references for inductive objects *)
 
+type variable_path = section_path
 type constant_path = section_path
 type inductive_path = section_path * int
 type constructor_path = inductive_path * int

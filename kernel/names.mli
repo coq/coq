@@ -109,6 +109,7 @@ i*)
 module Spmap : Map.S with type key = section_path
 
 (*s Specific paths for declarations *)
+type variable_path = section_path
 type constant_path = section_path
 type inductive_path = section_path * int
 type constructor_path = inductive_path * int
