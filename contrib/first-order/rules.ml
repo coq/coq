@@ -29,19 +29,21 @@ type lseqtac= global_reference -> seqtac
 let wrap n b tacrec seq gls=
   check_for_interrupt ();
   let nc=pf_hyps gls in
-  let rec aux i nc=
+  let env=pf_env gls in
+  let rec aux i nc ctx=
     if i<=0 then seq else 
       match nc with
 	  []->anomaly "Not the expected number of hyps"
-	| (id,_,typ)::q-> 
-	    let gr=VarRef id in 
-	    (add_left (gr,typ) (aux (i-1) q) true gls) in
-  let seq1=
-    if b then
-      (change_right (pf_concl gls) (aux n nc) gls)
-    else
-      (aux n nc) in
-    tacrec seq1 gls
+	| ((id,_,typ) as nd)::q->  
+	    if occur_var env id (pf_concl gls) then
+	      seq
+	    else if List.exists (occur_var_in_decl env id) ctx then
+	      seq 
+	    else
+	      add_left (VarRef id,typ) (aux (i-1) q (nd::ctx)) true gls in
+  let seq1=aux n nc [] in
+  let seq2=if b then change_right (pf_concl gls) seq1 gls else seq1 in
+    tacrec seq2 gls
 
 let id_of_global=function
     VarRef id->id
@@ -70,14 +72,6 @@ let left_evaluable_tac ec id tacrec seq gl=
 	  unfold_in_hyp [[1],ec] (Tacexpr.InHypType nid) gls);
      wrap 1 false tacrec seq] gl
 
-let normalize_evaluables=
-  onAllClauses
-    (function 
-	 None->unfold_in_concl (Lazy.force defined_connectives)
-       | Some id-> 
-	   unfold_in_hyp (Lazy.force defined_connectives) 
-	   (Tacexpr.InHypType id))
-    
 let and_tac tacrec seq=
   tclTHEN simplest_split (wrap 0 true tacrec seq)
 
@@ -104,7 +98,7 @@ let left_or_tac ind id tacrec seq=
       (Array.map f v)
 
 let forall_tac tacrec seq=
-  tclTHEN intro (wrap 1 true tacrec seq)
+  tclTHEN intro (wrap 0 true tacrec seq)
 
 let rec collect_forall seq=
   if is_empty_left seq then ([],seq) 
@@ -150,7 +144,6 @@ let left_forall_tac lfp tacrec seq gl=
 let arrow_tac tacrec seq=
   tclTHEN intro (wrap 1 true tacrec seq)
    
-
 let dummy_exists_tac dom  tacrec seq=
 	tclTHENS (cut dom) 
 	[tclTHENLIST
@@ -169,12 +162,13 @@ let exists_tac insts tacrec seq gl=
     tclFIRST 
       (List.map (fun inst -> right_instance_tac inst tacrec seq) insts) gl
 
-let left_exists_tac id tacrec seq=
-  tclTHENLIST
-    [simplest_elim (constr_of_reference id);
-     clear_global id;
-     tclDO 2 intro;
-     (wrap 1 false tacrec seq)]
+let left_exists_tac ind id tacrec seq=
+  let n=(construct_nhyps ind).(0) in  
+    tclTHENLIST
+      [simplest_elim (constr_of_reference id);
+       clear_global id;
+       tclDO n intro;
+       (wrap (n-1) false tacrec seq)]
 
 let ll_arrow_tac a b c id tacrec seq=
   let cc=mkProd(Anonymous,a,(lift 1 b)) in
@@ -246,3 +240,17 @@ let ll_forall_tac prod id tacrec seq=
 	intro;
 	tclSOLVE [wrap 1 false tacrec (deepen seq)]];
      tclSOLVE [wrap 0 true tacrec (deepen seq)]]
+
+let constant str = Coqlib.gen_constant "User" ["Init";"Logic"] str
+
+let defined_connectives=lazy
+  [[],EvalConstRef (destConst (constant "not"));
+   [],EvalConstRef (destConst (constant "iff"))]
+
+let normalize_evaluables=
+  onAllClauses
+    (function 
+	 None->unfold_in_concl (Lazy.force defined_connectives)
+       | Some id-> 
+	   unfold_in_hyp (Lazy.force defined_connectives) 
+	   (Tacexpr.InHypType id))

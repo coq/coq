@@ -22,25 +22,27 @@ val (==?) : ('a -> 'a -> 'b ->'b -> int) -> ('c -> 'c -> int) ->
 
 type ('a,'b) sum = Left of 'a | Right of 'b
 
-val defined_connectives: (int list * evaluable_global_reference) list lazy_t
-
-type kind_of_formula=
-   Arrow of constr*constr
-  |And of inductive*constr list
-  |Or of inductive*constr list
-  |Exists of inductive*constr list
-  |Forall of constr*constr
-  |Atom of constr
-  |Evaluable of Names.evaluable_global_reference * Term.constr
-  |False
-
 type counter = bool -> metavariable
 
 val construct_nhyps : inductive -> int array
 
 val ind_hyps : int -> inductive -> constr list -> Sign.rel_context array
 
-val kind_of_formula : constr -> kind_of_formula
+val match_with_evaluable : Proof_type.goal Tacmach.sigma ->
+  constr -> (evaluable_global_reference * constr) option
+
+type kind_of_formula=
+    Arrow of constr*constr
+  | And of inductive*constr list
+  | Or of inductive*constr list
+  | Exists of inductive*constr list
+  | Forall of constr*constr
+  | Atom of constr
+  | Evaluable of Names.evaluable_global_reference * Term.constr
+  | False
+
+val kind_of_formula : Proof_type.goal Tacmach.sigma -> 
+  constr -> kind_of_formula
 			
 val build_atoms : Proof_type.goal Tacmach.sigma -> counter -> 
   bool -> constr -> (bool*constr) list
@@ -72,7 +74,7 @@ type left_pattern=
   | Land of inductive
   | Lor of inductive 
   | Lforall of metavariable*constr
-  | Lexists
+  | Lexists of inductive
   | Levaluable of Names.evaluable_global_reference
   | LA of constr*left_arrow_pattern
       

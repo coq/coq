@@ -27,8 +27,6 @@ val evaluable_tac : evaluable_global_reference -> seqtac
 
 val left_evaluable_tac : evaluable_global_reference -> lseqtac
 
-val normalize_evaluables : tactic
-
 val and_tac : seqtac
 
 val left_and_tac : inductive -> lseqtac
@@ -53,7 +51,7 @@ val right_instance_tac : constr * int -> seqtac
 
 val exists_tac : (constr * int) list -> seqtac
 	       
-val left_exists_tac : lseqtac
+val left_exists_tac : inductive -> lseqtac
 
 val ll_arrow_tac : constr -> constr -> constr -> lseqtac
 
@@ -66,3 +64,5 @@ val left_false_tac : global_reference -> tactic
 val ll_ind_tac : inductive -> constr list -> lseqtac
 
 val ll_forall_tac : types -> lseqtac
+
+val normalize_evaluables : tactic

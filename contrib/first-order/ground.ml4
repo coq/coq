@@ -21,6 +21,8 @@ open Libnames
 open Util
 open Goptions
 
+(* declaring search depth as a global option *)
+
 let ground_depth=ref 5
 		   
 let _=
@@ -36,12 +38,6 @@ let _=
   in
     declare_int_option gdopt
       
-
-(* 
-   1- keep track of the instantiations and of ninst in the Sequent.t structure 
-   2- ordered instantiations
-*)
-
 let ground_tac solver startseq gl=
   let rec toptac seq gl=
     if Tacinterp.get_debug()=Tactic_debug.DebugOn 
@@ -108,9 +104,9 @@ let ground_tac solver startseq gl=
 		   else 
 		     left_forall_tac lfp toptac (re_add seq))
 		  (left_tac seq2 (lfp@ctx)) gl
-	  | Lexists ->
+	  | Lexists ind ->
 	      if !qflag then
-		left_exists_tac hd.id toptac (re_add seq1) gl
+		left_exists_tac ind hd.id toptac (re_add seq1) gl
 	      else (left_tac seq1 (hd::ctx)) gl
 	  | Levaluable egr->
 	      left_evaluable_tac egr hd.id toptac (re_add seq1) gl
