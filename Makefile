@@ -320,7 +320,8 @@ RINGVO = contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
          contrib/ring/ZArithRing.vo     contrib/ring/Ring_abstract.vo \
          contrib/ring/Quote.vo
 
-XMLVO = contrib/xml/Xml.vo
+#XMLVO = contrib/xml/Xml.vo
+XMLVO=
 
 CONTRIBVO = $(OMEGAVO) $(RINGVO) $(XMLVO)
 
