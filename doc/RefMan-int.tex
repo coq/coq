@@ -4,6 +4,9 @@
 This document is the Reference Manual of version \coqversion{} of the \Coq\ 
 proof assistant. A companion volume, the \Coq\ Tutorial, is provided
 for the beginners. It is advised to read the Tutorial first.
+A new book~\cite{CoqArt} on practical uses of the \Coq{} system will
+be published in 2004 and is a good support for both the beginner and
+the advance user.
 
 The system \Coq\ is designed to write formal specifications,
 programs and to verify that programs are correct with respect to their
@@ -11,7 +14,7 @@ specification. It provides a specification language named \gallina. Terms of
 \gallina\ can represent programs as well as properties of these
 programs and proofs of these properties. Using the so-called
 \textit{Curry-Howard isomorphism}, programs, properties and proofs are
-formalized the same 
+formalized in the same 
 language called \textit{Calculus of Inductive Constructions}, that is
 a $\lambda$-calculus with a rich type system.
 All logical judgments in \Coq\ are typing judgments. The very heart of the Coq
@@ -26,9 +29,11 @@ interpretation of a command language called \textit{the vernacular}.
 \Coq\ has an interactive mode in which commands are interpreted as the
 user types them in from the keyboard and a compiled mode where
 commands are processed from a file.  Other modes of interaction with
-\Coq\ are possible, through an emacs shell window, or through a
-customized interface with the Centaur environment (CTCoq). These
-facilities are not documented here.
+\Coq\ are possible, through an emacs shell window, an emacs generic
+user-interface for proof assistant (ProofGeneral~\cite{ProofGeneral}) 
+or through a customized interface (PCoq~\cite{Pcoq}). 
+These facilities are not documented here.
+There is also a \Coq{} Integrated Development Environment described in chapter~\ref{Addoc-coqide}
 
 \begin{itemize}
 \item The interactive mode may be used as a debugging mode in which
@@ -40,9 +45,10 @@ facilities are not documented here.
   containing a whole development in order to ensure its correctness.
   Moreover, \Coq's compiler provides an output file containing a
   compact representation of its input. The compiled mode is run with
-  the {\tt coqc} command from the operating system. Its use is
-  documented in chapter \ref{Addoc-coqc}.
+  the {\tt coqc} command from the operating system. 
+
 \end{itemize}
+These two modes are documented in chapter \ref{Addoc-coqc}.
 
 \section*{How to read this book}
 
@@ -54,19 +60,21 @@ below.
 \item The first part describes the specification language,
   Gallina. The chapters \ref{Gallina} and \ref{Gallina-extension}
   describe the concrete syntax as well as the meaning of programs,
-  theorems and proofs in the Calculus of Inductive Construction. The
+  theorems and proofs in the Calculus of Inductive Constructions. The
   chapter \ref{Theories} describes the standard library of \Coq. The
-  chapter \ref{Cic} is a mathematical description of the formalism. 
+  chapter \ref{Cic} is a mathematical description of the
+  formalism. The chapter \ref{Modules} describes the module system.
 
 \item The second part describes the proof engine. It is divided in
-  three chapters. Chapter \ref{Vernacular-commands} presents
+  for chapters. Chapter \ref{Vernacular-commands} presents
   all commands (we call them \textit{vernacular commands}) that are not
   directly related to interactive proving: requests to the environment,
   complete or partial evaluation, loading and compiling files. How to
   start and stop proofs, do multiple proofs in parallel is explained
   in the chapter \ref{Proof-handling}. In chapter \ref{Tactics}, 
   all commands that realize one or more steps of the proof are
-  presented: we call them   \textit{tactics}. 
+  presented: we call them  \textit{tactics}. Examples of tactics are
+  described in chapter~\ref{Tactics-examples}.
 
 \item The third part describes how to extend the system in two ways:
   adding parsing and pretty-printing rules (chapter
