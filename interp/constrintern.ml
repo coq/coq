@@ -30,6 +30,8 @@ type full_implicits_env =
 
 let interning_grammar = ref false
 
+(* Historically for parsing grammar rules, but in fact used only for
+   translator, v7 parsing, and unstrict tactic internalisation *)
 let for_grammar f x =
   interning_grammar := true;
   let a = f x in
@@ -210,22 +212,15 @@ let contract_pat_notation ntn l =
 
 let make_current_scope (scopt,scopes) = option_cons scopt scopes
 
-let set_var_scope loc id (_,scopt,scopes) (_,_,varscopes,_,_) =
-  try 
-    let idscopes = List.assoc id varscopes in
-    if !idscopes <> None & 
-      make_current_scope (out_some !idscopes)
-      <> make_current_scope (scopt,scopes) then
+let set_var_scope loc id (_,scopt,scopes) varscopes =
+  let idscopes = List.assoc id varscopes in
+  if !idscopes <> None & 
+    make_current_scope (out_some !idscopes)
+    <> make_current_scope (scopt,scopes) then
       user_err_loc (loc,"set_var_scope",
-        pr_id id ++ str " already occurs in a different scope")
-    else
-      idscopes := Some (scopt,scopes)
-  with Not_found ->
-(*
-    if not (Options.do_translate ()) then
-      error ("Could not globalize " ^ (string_of_id id))
-*)
-    if_verbose warning ("Could not globalize " ^ (string_of_id id))
+      pr_id id ++ str " already occurs in a different scope")
+  else
+    idscopes := Some (scopt,scopes)
 
 (**********************************************************************)
 (* Discriminating between bound variables and global references       *)
@@ -234,7 +229,8 @@ let set_var_scope loc id (_,scopt,scopes) (_,_,varscopes,_,_) =
    [vars2] is the set of global variables, env is the set of variables
    abstracted until this point *)
 
-let intern_var (env,_,_) ((vars1,unbndltacvars),vars2,_,_,impls) loc id =
+let intern_var (env,_,_ as genv) (ltacvars,vars2,vars3,_,impls) loc id =
+  let (vars1,unbndltacvars) = ltacvars in
   (* Is [id] an inductive type potentially with implicit *)
   try
     let l,impl = List.assoc id impls in
@@ -243,11 +239,16 @@ let intern_var (env,_,_) ((vars1,unbndltacvars),vars2,_,_,impls) loc id =
     RVar (loc,id), impl, [],
     (if !Options.v7 & !interning_grammar then [] else l)
   with Not_found ->
-  (* Is [id] bound in current env or ltac vars bound to constr *)
+  (* Is [id] bound in current env or is an ltac var bound to constr *)
   if Idset.mem id env or List.mem id vars1
   then
       RVar (loc,id), [], [], []
+  (* Is [id] a notation variables *)
+  else if List.mem_assoc id vars3
+  then
+    (set_var_scope loc id genv vars3; RVar (loc,id), [], [], [])
   else
+
   (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
   try
     match List.assoc id unbndltacvars with
@@ -309,11 +310,8 @@ let intern_reference env lvar = function
       with Not_found -> 
       try find_appl_head_data lvar (intern_qualid loc (make_short_qualid id))
       with e ->
-	(* Extra allowance for grammars *)
-	if !interning_grammar then begin
-	  set_var_scope loc id env lvar;
-	  RVar (loc,id), [], [], []
-	end
+	(* Extra allowance for non globalizing functions *)
+	if !interning_grammar then RVar (loc,id), [], [], []
 	else raise e
 
 let interp_reference vars r =
@@ -1048,8 +1046,8 @@ let interp_aconstr impls vars a =
   let env = Global.env () in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let vl = List.map (fun id -> (id,ref None)) vars in
-  let c = for_grammar (internalise Evd.empty (extract_ids env, None, [])
-    false (([],[]),Environ.named_context env,vl,[],impls)) a in
+  let c = internalise Evd.empty (extract_ids env, None, [])
+    false (([],[]),Environ.named_context env,vl,[],impls) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a = aconstr_of_rawconstr vars c in
   (* Returns [a] and the ordered list of variables with their scopes *)
