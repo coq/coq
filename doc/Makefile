@@ -153,10 +153,8 @@ doc-html.tar.gz: all-html
 	- $(MKDIR) coq-docs-html
 	rm -rf coq-docs-html/*
 	cp Tutorial.v.html coq-docs-html/tutorial.html
-	cp Reference-Manual.html coq-docs-html 
-	(cd coq-docs-html;\
-	 htmlsplit -N -T "The Coq Proof Assistant Reference Manual"\
-	   ./Reference-Manual.html; rm ./Reference-Manual.html)
+	cp Reference-Manual.html coqide-queries.png coqide.png coq-docs-html 
+	(cd coq-docs-html; hacha ./Reference-Manual.html; rm ./Reference-Manual.html)
 	cp cover.html coq-docs-html
 	tar cf doc-html.tar coq-docs-html
 	gzip -f doc-html.tar
@@ -166,12 +164,8 @@ html-www: all-html
 	- $(MKDIR) www
 	rm -rf www/*
 	cp Tutorial.v.html www/tutorial.html
-	cp Reference-Manual.html www
-	(cd www;\
-	 htmlsplit -N -T "The Coq Proof Assistant Reference Manual"\
-	   -n ../icons/next.gif -p ../icons/prev.gif -r ../icons/root.gif\
-	   -s ../icons/sub.gif ./Reference-Manual.html;\
-	 rm ./Reference-Manual.html)
+	cp Reference-Manual.html  coqide-queries.png coqide.png www
+	(cd www; hacha ./Reference-Manual.html; rm ./Reference-Manual.html)
 	cp cover.html www
 
 
