@@ -10,7 +10,8 @@ type t = string * Obj.t
 let dyntab = ref ([] : string list)
 
 let create s =
-  if List.mem s !dyntab then anomaly "Dyn.create: already declared dynamic";
+  if List.mem s !dyntab then 
+    anomaly ("Dyn.create: already declared dynamic " ^ s);
   dyntab := s :: !dyntab;
   ((fun v -> (s,Obj.repr v)),
    (fun (s',rv) ->

@@ -72,6 +72,7 @@ type ('a,'b) union = Inl of 'a | Inr of 'b
 
 module Intset : Set.S with type elt = int
 
+val out_some : 'a option -> 'a
 val option_app : ('a -> 'b) -> 'a option -> 'b option
 
 (*s Pretty-printing. *)

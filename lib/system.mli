@@ -8,6 +8,8 @@ val del_path : string -> unit
 
 val find_file_in_path : string -> string
 
+val make_suffix : string -> string -> string
+
 (*s Generic input and output functions, parameterized by a magic number
   and a suffix. The intern functions raise the exception [Bad_magic_number]
   when the check fails, with the full file name. *)
