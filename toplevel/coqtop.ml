@@ -84,6 +84,8 @@ let parse_include d =
      Names.dirpath_of_string (String.sub d (pos+1) (String.length d - pos -1)))
   with Not_found ->
     let alias = Filename.basename d in
+    let alias =
+      if alias = "." then Filename.basename (Unix.getcwd ()) else alias in
     if not (Names.is_ident alias) then 
       error ("Cannot find a name to which "^d^" may map in Coq library");
     (d, [alias])
