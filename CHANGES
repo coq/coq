@@ -109,6 +109,11 @@ Extraction (See details in contrib/extraction/CHANGES and README):
   thanks to automatic inserting of Obj.magic.
 - Experimental extraction of Coq new modules to Ocaml modules.
 
+Proof rendering in natural language
+
+- Export of theories to XML for publishing and rendering purposes now
+  includes proof-trees (see http://www.cs.unibo.it/helm)
+
 Miscellaneous
 
 - Printing Coercion now used through the standard keywords Set/Add, Test, Print

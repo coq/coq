@@ -1,11 +1,16 @@
 The Coq development team is pleased to announce the release of Coq
 version 7.4. 
 
-  This is not a major release; the main purpose of this version is to offer
-novelties (including the module system) required by the Why
+  This version provides several novelties, including a new system of
+parametric modules and interfaces, and support for the Why
 (http://why.lri.fr) and Krakatoa (http://www.lri.fr/~marche/krakatoa)
-systems.  See file CHANGES for a detailed list of changes, novelties,
-bug-fixes and incompatibilities.
+systems. However, this version is still experimental and does not
+fully support the functionalities of the previous version 7.3.1
+(especially ast-based grammar extensions are off).
+
+  Please refer to the accompanying document CHANGES or the location
+ftp://ftp.inria.fr/INRIA/coq/V7.4/doc/Changes.html for a full list of
+changes including sources of incompatibilities.
 
   Coq V7.4 is available in several formats from http://coq.inria.fr/
 and ftp://ftp.inria.fr/INRIA/coq/V7.4/
@@ -13,19 +18,14 @@ and ftp://ftp.inria.fr/INRIA/coq/V7.4/
   The documentation is available in postscript, pdf and html format.
 
   Notice that you can browse the standard library at 
-http://coq.inria.fr/library-eng.html (this pages have been generated 
+http://coq.inria.fr/library-eng.html (these pages have been generated 
 by coqdoc).
-
-  Please refer to the accompanying document CHANGES or the location
-ftp://ftp.inria.fr/INRIA/coq/V7.4/doc/Changes.html for a full list of
-changes including sources of incompatibilities.
 
   Users are kindly invited to report bugs at http://coq.inria.fr/bin/coq-bugs
 and to mail Coq-Club@pauillac.inria.fr for general questions or remarks.
 Note that you can now choose your personal options at
 http://pauillac.inria.fr/mailman/listinfo/coq-club and consult the 
 mails archive at http://pauillac.inria.fr/pipermail/coq-club.
-  
 
   The Coq development team
 
