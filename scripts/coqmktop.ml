@@ -65,7 +65,6 @@ let top        = ref false
 let searchisos = ref false
 let coqide     = ref false
 let echo       = ref false
-let newsyntax  = ref false
 
 let src_dirs () = 
   [ []; [ "config" ]; [ "toplevel" ] ] @
@@ -104,9 +103,8 @@ let files_to_link userfiles =
     "threads.cma"::"lablgtk.cma"::"gtkThread.cmo"::ide 
   else [] 
   in
-  let parsobjs = if !newsyntax then highparsingnew else highparsing in
   let objs = 
-    core_objs @ dyn_objs @ toplevel @ parsobjs @ 
+    core_objs @ dyn_objs @ toplevel @ highparsing @ highparsingnew @ 
     command_objs @ hightactics @ toplevel_objs @ ide_objs
   in
   let tolink =
@@ -170,8 +168,7 @@ let parse_args () =
         searchisos := true; parse (op,fl) rem
     | "-ide" :: rem ->
         coqide := true; parse (op,fl) rem
-    | "-v8" :: rem ->
-        newsyntax := true; parse (op,fl) rem
+    | "-v8" :: rem -> parse (op,fl) rem
     | "-echo" :: rem -> echo := true ; parse (op,fl) rem
     | ("-cclib"|"-ccopt"|"-I"|"-o" as o) :: rem' ->
 	begin
