@@ -1047,11 +1047,8 @@ let interp_quantified_hypothesis ist = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id -> 
       match eval_ident ist id with
-	| VIdentifier id -> NamedHyp id
 	| VInteger n -> AnonHyp n
-	| _ -> invalid_arg_loc
-	    (loc, "Not a reference to an hypothesis: "^(string_of_id id))
-
+	| v -> NamedHyp (coerce_to_hypothesis ist v)
 
 let interp_induction_arg ist = function
   | ElimOnConstr c -> ElimOnConstr (constr_interp ist c)
@@ -1389,7 +1386,8 @@ and vcontext_interp ist = function
   | (VContext (ist',lr,lmr)) as v ->
     (match ist.goalopt with
     | None -> v
-    | Some g -> match_context_interp ist lr lmr g)
+    | Some g ->
+        match_context_interp ist lr lmr g)
 (* The closure system does not work yet. It must be better studied. *)
 (* (* Relaunch *) match_context_interp ist' lr lmr g)*)
   | v -> v
