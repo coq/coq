@@ -33,7 +33,7 @@ val and_tac : seqtac with_backtracking
 
 val or_tac : seqtac with_backtracking
 
-val arrow_tac : seqtac
+val arrow_tac : seqtac with_backtracking
 
 val left_and_tac : inductive -> lseqtac with_backtracking
 

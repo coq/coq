@@ -67,7 +67,7 @@ let ll_atom_tac a backtrack id continue seq=
 	[generalize [mkApp(constr_of_reference id,
 			   [|constr_of_reference (find_left a seq)|])];
 	 clear_global id;
-	 introf]
+	 intro]
     with Not_found->tclFAIL 0 "No link") 
     (wrap 1 false continue seq) backtrack 
 
@@ -78,12 +78,13 @@ let and_tac backtrack continue seq=
 
 let or_tac backtrack continue seq=
   tclORELSE 
-    (any_constructor (Some (tclSOLVE [wrap 0 true continue seq])))
+    (any_constructor (Some (tclCOMPLETE (wrap 0 true continue seq))))
     backtrack
 
-let arrow_tac continue seq=
-  tclTHEN introf (wrap 1 true continue seq)
-   
+let arrow_tac backtrack continue seq=
+  tclIFTHENELSE intro (wrap 1 true continue seq)
+    (tclTHEN introf 
+       (tclORELSE (tclCOMPLETE (wrap 1 true continue seq)) backtrack))
 (* left connectives rules *)
 
 let left_and_tac ind backtrack id continue seq=
@@ -92,7 +93,7 @@ let left_and_tac ind backtrack id continue seq=
      (tclTHENLIST 
       [simplest_elim (constr_of_reference id);
        clear_global id; 
-       tclDO n introf])
+       tclDO n intro])
      (wrap n false continue seq)
      backtrack
 
@@ -101,7 +102,7 @@ let left_or_tac ind backtrack id continue seq=
   let f n=
     tclTHENLIST
       [clear_global id;
-       tclDO n introf;
+       tclDO n intro;
        wrap n false continue seq] in
     tclIFTHENSVELSE
       (simplest_elim (constr_of_reference id))
@@ -133,7 +134,7 @@ let ll_ind_tac ind largs backtrack id continue seq gl=
 	   (tclTHENLIST 
 	      [generalize newhyps;
 	       clear_global id;
-	       tclDO lp introf])
+	       tclDO lp intro])
 	   (wrap lp false continue seq) backtrack gl
 
 let ll_arrow_tac a b c backtrack id continue seq=
@@ -153,14 +154,16 @@ let ll_arrow_tac a b c backtrack id continue seq=
 	       [generalize [d];
 		introf;
 		clear_global id;
-		tclSOLVE [wrap 1 true continue seq]]]])
+		tclCOMPLETE (wrap 1 true continue seq)]]])
       backtrack
 
 (* quantifier rules (easy side) *)
 
 let forall_tac backtrack continue seq=
   tclORELSE
-    (tclTHEN introf (wrap 0 true continue seq))
+    (tclIFTHENELSE intro (wrap 0 true continue seq)
+       (tclTHEN introf 
+	  (tclORELSE (tclCOMPLETE (wrap 1 true continue seq)) backtrack)))
     (if !qflag then 
        tclFAIL 0 "reversible in 1st order mode"
      else
@@ -171,22 +174,22 @@ let left_exists_tac ind id continue seq=
     tclTHENLIST
       [simplest_elim (constr_of_reference id);
        clear_global id;
-       tclDO n introf;
+       tclDO n intro;
        (wrap (n-1) false continue seq)]
 	
 let ll_forall_tac prod backtrack id continue seq=
   tclORELSE
     (tclTHENS (cut prod)
        [tclTHENLIST
-	  [introf;
+	  [intro;
 	   (fun gls->
 	      let id0=pf_nth_hyp_id gls 1 in
 	      let term=mkApp((constr_of_reference id),[|mkVar(id0)|]) in
 		tclTHEN (generalize [term]) (clear [id0]) gls);  
 	   clear_global id;
-	   introf;
-	   tclSOLVE [wrap 1 false continue (deepen seq)]];
-	tclSOLVE [wrap 0 true continue (deepen seq)]])
+	   intro;
+	   tclCOMPLETE (wrap 1 false continue (deepen seq))];
+	tclCOMPLETE (wrap 0 true continue (deepen seq))])
     backtrack
 
 (* rules for instantiation with unification moved to instances.ml *)

@@ -42,7 +42,7 @@ let ground_tac solver startseq gl=
 			      backtrack in
 			    forall_tac backtrack continue (re_add seq1)
 		      | Rarrow->
-			  arrow_tac continue (re_add seq1)
+			  arrow_tac backtrack continue (re_add seq1)
 		      | Ror->
 			  or_tac  backtrack continue (re_add seq1)
 		      | Rfalse->backtrack 
