@@ -59,10 +59,19 @@ let rec scrape_modtype env = function
   | mtb -> mtb
 
 
-let module_body mtb = 
-  { mod_type = mtb;
-    mod_eq = None }
+let module_body_of_spec spec = 
+  { mod_type = fst spec;
+    mod_equiv = snd spec;
+    mod_expr = None;
+    mod_user_type = None}
 
+let module_body_of_type mtb = 
+  { mod_type = mtb;
+    mod_equiv = None;
+    mod_expr = None;
+    mod_user_type = None}
+
+let module_spec_of_body mb = mb.mod_type, mb.mod_equiv
 
 let destr_functor = function
   | MTBfunsig (arg_id,arg_t,body_t) -> (arg_id,arg_t,body_t)
@@ -72,10 +81,10 @@ let destr_functor = function
 let rec check_modpath_equiv env mp1 mp2 = 
   if mp1=mp2 then ();
   let mb1 = lookup_module mp1 env in
-    match mb1.mod_eq with
+    match mb1.mod_equiv with
       | None ->
 	  let mb2 = lookup_module mp2 env in
-	    (match mb2.mod_eq with
+	    (match mb2.mod_equiv with
 	      | None -> error_not_equal mp1 mp2
 	      | Some mp2' -> check_modpath_equiv env mp2' mp1)
       | Some mp1' -> check_modpath_equiv env mp2 mp1'
@@ -196,9 +205,11 @@ and subst_signature sub sign =
   in
     List.map (fun (l,b) -> (l,subst_body b)) sign
 
-and subst_module sub mb =
-  { mod_type = subst_modtype sub mb.mod_type;
-    mod_eq = option_app (subst_mp sub) mb.mod_eq}
+and subst_module sub (mtb,mpo as mb) =
+  let mtb' = subst_modtype sub mtb in
+  let mpo' = option_smartmap (subst_mp sub) mpo in
+    if mtb'==mtb && mpo'==mpo then mb else
+      (mtb',mpo')
 
 let subst_signature_msid msid mp = 
   subst_signature (map_msid msid mp)
@@ -213,7 +224,8 @@ let rec add_signature mp sign env =
       match elem with
 	| SPBconst cb -> Environ.add_constant kn cb env
 	| SPBmind mib -> Environ.add_mind kn mib env
-	| SPBmodule mb -> add_module (MPdot (mp,l)) mb env 
+	| SPBmodule mb -> 
+	    add_module (MPdot (mp,l)) (module_body_of_spec mb) env 
 	    (* adds components as well *)
 	| SPBmodtype mtb -> Environ.add_modtype kn mtb env
   in

@@ -94,7 +94,8 @@ pretty:	depend.ps
 %.cmi:	*.mli
 	make -C $(TOPDIR) $(BASEDIR)/$@
 
-%.cmo:	*.ml *.ml4 *.mli
+SOURCES=$(wildcard *.mli) $(wildcard *.ml) $(wildcard *.ml4)
+%.cmo:	$(SOURCES)
 	make -C $(TOPDIR) $(BASEDIR)/$@
 
 coqtop:	

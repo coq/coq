@@ -31,7 +31,7 @@ type modvariant =
   | SIG of (* funsig params *) (mod_bound_id * module_type_body) list 
   | STRUCT of (* functor params *) (mod_bound_id * module_type_body) list
       * (* optional result type *) module_type_body option
-  | LIBRARY
+  | LIBRARY of dir_path
 
 type module_info = 
     { msid : mod_self_id;
@@ -50,6 +50,7 @@ type safe_environment =
       modinfo : module_info;
       labset : Labset.t;
       revsign : module_signature_body;
+      revstruct : module_structure_body;
       imports : library_info list;
       loads : (module_path * module_body) list }
 
@@ -75,6 +76,7 @@ let rec empty_environment =
       variant = NONE};
     labset = Labset.empty;
     revsign = [];
+    revstruct = [];
     imports = [];
     loads = [] }
 
@@ -130,6 +132,7 @@ let add_constant dir l decl senv =
 	modinfo = senv.modinfo;
 	labset = Labset.add l senv.labset;
 	revsign = (l,SPBconst cb)::senv.revsign;
+	revstruct = (l,SEBconst cb)::senv.revstruct;
 	imports = senv.imports;
 	loads = senv.loads }
     
@@ -156,6 +159,7 @@ let add_mind dir l mie senv =
 	modinfo = senv.modinfo;
 	labset = Labset.add l senv.labset;  (* TODO: the same as above *)
 	revsign = (l,SPBmind mib)::senv.revsign;
+	revstruct = (l,SEBmind mib)::senv.revstruct;
 	imports = senv.imports;
 	loads = senv.loads }
 
@@ -173,6 +177,7 @@ let add_modtype l mte senv =
 	modinfo = senv.modinfo;
 	labset = Labset.add l senv.labset;
 	revsign = (l,SPBmodtype mtb)::senv.revsign;
+	revstruct = (l,SEBmodtype mtb)::senv.revstruct;
 	imports = senv.imports;
 	loads = senv.loads }
 
@@ -182,6 +187,7 @@ let add_modtype l mte senv =
 let add_module l me senv = 
   check_label l senv.labset; 
   let mb = translate_module senv.env me in
+  let mspec = module_spec_of_body mb in
   let env' = add_module_constraints senv.env mb in
   let mp = MPdot(senv.modinfo.modpath, l) in
   let env'' = Modops.add_module mp mb env' in
@@ -189,7 +195,8 @@ let add_module l me senv =
 	env = env'';
 	modinfo = senv.modinfo;
 	labset = Labset.add l senv.labset;
-	revsign = (l,SPBmodule mb)::senv.revsign;
+	revsign = (l,SPBmodule mspec)::senv.revsign;
+	revstruct = (l,SEBmodule mb)::senv.revstruct;
 	imports = senv.imports;
 	loads = senv.loads }
 
@@ -203,7 +210,7 @@ let start_module dir l params result senv =
     | (mbid,mte)::rest -> 
 	let mtb = translate_modtype env mte in
 	let env = 
-	  Modops.add_module (MPbound mbid) (module_body mtb) env 
+	  Modops.add_module (MPbound mbid) (module_body_of_type mtb) env 
 	in
 	let env,transrest = trans_params env rest in
 	env, (mbid,mtb)::transrest
@@ -228,6 +235,7 @@ let start_module dir l params result senv =
 	modinfo = modinfo;
 	labset = Labset.empty;
 	revsign = [];
+	revstruct = [];
 	imports = senv.imports;
 	loads = [] }
 
@@ -238,23 +246,37 @@ let end_module l senv =
   let modinfo = senv.modinfo in
   let params, restype = 
     match modinfo.variant with
-      | NONE | LIBRARY | SIG _ -> error_no_module_to_end ()
+      | NONE | LIBRARY _ | SIG _ -> error_no_module_to_end ()
       | STRUCT(params,restype) -> (params,restype)
   in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
-  let auto_tb = MTBsig (modinfo.msid, List.rev senv.revsign) in
-  let res_tb = 
-    match restype with
-      | None -> auto_tb
-      | Some res_tb -> (check_subtypes senv.env auto_tb res_tb; res_tb)
-  in
-  let mtb = 
+  let functorize_type = 
     List.fold_right 
       (fun (arg_id,arg_b) mtb -> MTBfunsig (arg_id,arg_b,mtb))
       params
-      res_tb
   in
-  let mb = module_body mtb in
+  let auto_tb = MTBsig (modinfo.msid, List.rev senv.revsign) in
+  let mtb, mod_user_type = 
+    match restype with
+      | None -> functorize_type auto_tb, None
+      | Some res_tb -> 
+	  let cnstrs = check_subtypes senv.env auto_tb res_tb in
+	  let mtb = functorize_type res_tb in
+	    mtb, Some (mtb, (cnstrs; Constraint.empty))
+  in
+  let mexpr = 
+    List.fold_right
+      (fun (arg_id,arg_b) mtb -> MEBfunctor (arg_id,arg_b,mtb))
+      params
+      (MEBstruct (modinfo.msid, List.rev senv.revstruct)) 
+  in
+  let mb = 
+    { mod_expr = Some mexpr;
+      mod_user_type = mod_user_type;
+      mod_type = mtb;
+      mod_equiv = None }
+  in
+  let mspec = mtb , None in
   let mp = MPdot (oldsenv.modinfo.modpath, l) in
   let newenv = oldsenv.env in
   let newenv = 
@@ -270,7 +292,8 @@ let end_module l senv =
 	env = newenv;
 	modinfo = oldsenv.modinfo;
 	labset = Labset.add l oldsenv.labset;
-	revsign = (l,SPBmodule mb)::oldsenv.revsign;
+	revsign = (l,SPBmodule mspec)::oldsenv.revsign;
+	revstruct = (l,SEBmodule mb)::oldsenv.revstruct;
 	imports = senv.imports;
 	loads = senv.loads@oldsenv.loads }
 
@@ -284,7 +307,7 @@ let start_modtype dir l params senv =
     | (mbid,mte)::rest -> 
 	let mtb = translate_modtype env mte in
 	let env = 
-	  Modops.add_module (MPbound mbid) (module_body mtb) env 
+	  Modops.add_module (MPbound mbid) (module_body_of_type mtb) env 
 	in
 	let env,transrest = trans_params env rest in
 	env, (mbid,mtb)::transrest
@@ -302,6 +325,7 @@ let start_modtype dir l params senv =
 	modinfo = modinfo;
 	labset = Labset.empty;
 	revsign = [];
+	revstruct = [];
 	imports = senv.imports;
 	loads = [] }
 
@@ -310,7 +334,7 @@ let end_modtype l senv =
   let modinfo = senv.modinfo in
   let params = 
     match modinfo.variant with
-      | LIBRARY | NONE | STRUCT _ -> error_no_modtype_to_end ()
+      | LIBRARY _ | NONE | STRUCT _ -> error_no_modtype_to_end ()
       | SIG params -> params
   in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
@@ -337,6 +361,7 @@ let end_modtype l senv =
 	modinfo = oldsenv.modinfo;
 	labset = Labset.add l oldsenv.labset;
 	revsign = (l,SPBmodtype mtb)::oldsenv.revsign;
+	revstruct = (l,SEBmodtype mtb)::oldsenv.revstruct;
 	imports = senv.imports;
 	loads = senv.loads@oldsenv.loads }
   
@@ -353,7 +378,7 @@ let add_constraints cst senv =
 (* Libraries = Compiled modules *)
 
 type compiled_library = 
-    dir_path * module_type_body * library_info list
+    dir_path * module_body * library_info list
 
 
 (* We check that only initial state Require's were performed before 
@@ -376,25 +401,37 @@ let start_library dir senv =
   let modinfo = { msid = msid;
 		  modpath = mp;
 		  label = l;
-		  variant = LIBRARY }
+		  variant = LIBRARY dir }
   in
   mp, { old = senv;
 	env = senv.env;
 	modinfo = modinfo;
 	labset = Labset.empty;
 	revsign = [];
+	revstruct = [];
 	imports = senv.imports;
 	loads = [] }
 
 
-let export senv dp = 
+let export senv dir = 
   let modinfo = senv.modinfo in
-  if modinfo.variant <> LIBRARY then
-    anomaly "We are not exporting a library";
+  begin
+    match modinfo.variant with
+      | LIBRARY dp -> 
+	  if dir <> dp then
+	    anomaly "We are not exporting the right library!"
+      | _ ->
+	  anomaly "We are not exporting the library"
+  end;
   (*if senv.modinfo.params <> [] || senv.modinfo.restype <> None then
     (* error_export_simple *) (); *)
-  let mtb = MTBsig (modinfo.msid, List.rev senv.revsign) in
-    modinfo.msid, (dp,mtb,senv.imports)
+  let mb = 
+    { mod_expr = Some (MEBstruct (modinfo.msid, List.rev senv.revstruct));
+      mod_type = MTBsig (modinfo.msid, List.rev senv.revsign);
+      mod_user_type = None;
+      mod_equiv = None }
+  in
+    modinfo.msid, (dir,mb,senv.imports)
 
 
 let import_constraints g kn cst =
@@ -431,10 +468,9 @@ loaded by side-effect once and for all (like it is done in OCaml).
 Would this be correct with respect to undo's and stuff ?
 *)
  
-let import (dp,mtb,depends) digest senv = 
+let import (dp,mb,depends) digest senv = 
   check_imports senv depends;
   let mp = MPfile dp in
-  let mb = module_body mtb in
   let env = senv.env in
 (* <HACK> temporary -- only for libraries without module components *)
   let add_constraints env = function
@@ -443,7 +479,7 @@ let import (dp,mtb,depends) digest senv =
 	Environ.add_constraints constraints env
     | _ -> todo "We are not ready for module components yet!"; env
   in
-  let env = match mtb with
+  let env = match mb.mod_type with
     | MTBsig (_,sign) -> List.fold_left add_constraints env sign
     | _ -> todo "We are not ready for non-structure libraries"; env
   in

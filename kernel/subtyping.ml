@@ -28,7 +28,7 @@ type namedobject =
   | Mind of mutual_inductive_body
   | IndType of inductive * mutual_inductive_body
   | IndConstr of constructor * mutual_inductive_body
-  | Module of module_body
+  | Module of module_specification_body
   | Modtype of module_type_body
 
 (* adds above information about one mutual inductive: all types and
@@ -159,9 +159,9 @@ let check_constant env msid1 l info1 cb2 spec2 =
 	    c2; 
 	  ()
 
-let rec check_modules env msid1 l mb1 mb2 =
-  check_modtypes env mb1.mod_type mb2.mod_type false;
-  match mb1.mod_eq, mb2.mod_eq with
+let rec check_modules env msid1 l msb1 msb2 =
+  check_modtypes env (fst msb1) (fst msb2) false;
+  match (snd msb1), (snd msb2) with
     | _, None -> ()
     | None, Some mp2 -> 
 	check_modpath_equiv env (MPdot(MPself msid1,l)) mp2
@@ -185,13 +185,13 @@ and check_signatures env' (msid1,sig1) (msid2,sig2') =
 	    check_constant env msid1 l info1 cb2 spec2
 	| SPBmind mib2 -> 
 	    check_inductive env msid1 l info1 mib2 spec2
-	| SPBmodule mb2 -> 
-	    let mb1 = 
+	| SPBmodule msb2 -> 
+	    let msb1 = 
 	      match info1 with
-		| Module mb -> mb
+		| Module msb -> msb
 		| _ -> error_not_match l spec2
 	    in
-	      check_modules env msid1 l mb1 mb2
+	      check_modules env msid1 l msb1 msb2
 	| SPBmodtype mtb2 ->
 	    let mtb1 = 
 	      match info1 with
@@ -217,7 +217,7 @@ and check_modtypes env mtb1 mtb2 equiv =
 	MTBfunsig (arg_id2,arg_t2,body_t2) ->
 	  check_modtypes env arg_t2 arg_t1 equiv; (* contravariant *)
 	  let env' = 
-	    add_module (MPbound arg_id2) (module_body arg_t2) env 
+	    add_module (MPbound arg_id2) (module_body_of_type arg_t2) env 
 	  in
 	  let body_t1' = 
 	    subst_modtype 

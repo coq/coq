@@ -10,6 +10,7 @@
 
 open Util
 open Names
+open Univ
 open Declarations
 open Entries
 open Environ
@@ -24,18 +25,26 @@ let path_of_mexpr = function
   | _ -> raise Not_path
 
 
+let rec list_fold_map2 f e = function 
+  |  []  -> (e,[],[])
+  |  h::t -> 
+       let e',h1',h2' = f e h in
+       let e'',t1',t2' = list_fold_map2 f e' t in
+	 e'',h1'::t1',h2'::t2'
+
+
 let rec translate_modtype env mte =
   match mte with
     | MTEident ln -> MTBident ln
     | MTEfunsig (arg_id,arg_e,body_e) -> 
 	let arg_b = translate_modtype env arg_e in
-	let env' = add_module (MPbound arg_id) (module_body arg_b) env in
+	let env' = 
+	  add_module (MPbound arg_id) (module_body_of_type arg_b) env in
 	let body_b = translate_modtype env' body_e in
 	  MTBfunsig (arg_id,arg_b,body_b)
     | MTEsig (msid,sig_e) ->
-	let sig_b = translate_entry_list env msid false sig_e in
+	let str_b,sig_b = translate_entry_list env msid false sig_e in
 	  MTBsig (msid,sig_b)
-
 
 and translate_entry_list env msid is_definition sig_e = 
   let mp = MPself msid in
@@ -44,20 +53,22 @@ and translate_entry_list env msid is_definition sig_e =
     match e with
       | SPEconst ce ->
 	  let cb = translate_constant env ce in
-	    add_constant kn cb env, (l, SPBconst cb)
+	    add_constant kn cb env, (l, SEBconst cb), (l, SPBconst cb)
       | SPEmind mie -> 
 	  let mib = translate_mind env mie in
-	    add_mind kn mib env, (l, SPBmind mib)
+	    add_mind kn mib env, (l, SEBmind mib), (l, SPBmind mib)
       | SPEmodule me ->
 	  let mb = translate_module env is_definition me in
-	    add_module (MPdot (mp,l)) mb env, (l, SPBmodule mb)
+	  let mspec = mb.mod_type, mb.mod_equiv in
+	  let mp' = MPdot (mp,l) in
+	    add_module mp' mb env, (l, SEBmodule mb), (l, SPBmodule mspec)
       | SPEmodtype mte ->
 	  let mtb = translate_modtype env mte in
-	    add_modtype kn mtb env, (l, SPBmodtype mtb)
+	    add_modtype kn mtb env, (l, SEBmodtype mtb), (l, SPBmodtype mtb)
   in
-  let _,sig_b = list_fold_map do_entry env sig_e
+  let _,str_b,sig_b = list_fold_map2 do_entry env sig_e
   in
-    sig_b
+    str_b,sig_b
 
 (* if [is_definition=true], [mod_entry_expr] may be any expression.
    Otherwise it must be a path *)
@@ -66,7 +77,12 @@ and translate_module env is_definition me =
   match me.mod_entry_expr, me.mod_entry_type with
     | None, None -> 
 	anomaly "Mod_typing.translate_module: empty type and expr in module entry"
-    | None, Some mte -> module_body (translate_modtype env mte)
+    | None, Some mte -> 
+	let mtb = translate_modtype env mte in
+	{ mod_expr = None;
+	  mod_user_type = Some (mtb, Constraint.empty);
+	  mod_type = mtb;
+	  mod_equiv = None }
     | Some mexpr, _ -> 
 	let meq_o = (* do we have a transparent module ? *)
 	  try       (* TODO: transparent field in module_entry *)
@@ -74,9 +90,9 @@ and translate_module env is_definition me =
 	  with 
 	    | Not_path -> None
 	in
-	let mtb1 = 
+	let meb,mtb1 = 
 	  if is_definition then
-	    type_mexpr env mexpr
+	    translate_mexpr env mexpr
 	  else 
 	    let mp = 
 	      try 
@@ -84,41 +100,49 @@ and translate_module env is_definition me =
 	      with 
 		| Not_path -> error_declaration_not_path mexpr
 	    in
-	      (lookup_module mp env).mod_type
+	      MEBident mp, (lookup_module mp env).mod_type
 	in
-	let mtb =
+	let mtb,mod_user_type =
 	  match me.mod_entry_type with
-	    | None -> mtb1
+	    | None -> mtb1, None
 	    | Some mte -> 
 		let mtb2 = translate_modtype env mte in
-		  check_subtypes env mtb1 mtb2;
-		  mtb2
+		  mtb2, Some (mtb2,(check_subtypes env mtb1 mtb2; Constraint.empty))
 	in
 	  { mod_type = mtb;
-	    mod_eq = meq_o }
+	    mod_user_type = mod_user_type;
+	    mod_expr = Some meb;
+	    mod_equiv = meq_o }
 
-and type_mexpr env mexpr = match mexpr with
-  | MEident mp -> (lookup_module mp env).mod_type
+(* translate_mexpr : env -> module_expr -> module_expr_body * module_type_body *)
+and translate_mexpr env mexpr = match mexpr with
+  | MEident mp -> 
+      MEBident mp,
+      (lookup_module mp env).mod_type
   | MEfunctor (arg_id, arg_e, body_expr) ->
       let arg_b = translate_modtype env arg_e in
-      let env' = add_module (MPbound arg_id) (module_body arg_b) env in
-      let body_b = type_mexpr env' body_expr in
-	MTBfunsig (arg_id, arg_b, body_b)
+      let env' = add_module (MPbound arg_id) (module_body_of_type arg_b) env in
+      let (body_b,body_tb) = translate_mexpr env' body_expr in
+	MEBfunctor (arg_id, arg_b, body_b), 
+	MTBfunsig (arg_id, arg_b, body_tb)
   | MEapply (fexpr,mexpr) ->
-      let ftb = scrape_modtype env (type_mexpr env fexpr) in
+      let feb,ftb = translate_mexpr env fexpr in
+      let ftb = scrape_modtype env ftb in
       let farg_id, farg_b, fbody_b = destr_functor ftb in
-      let mtb = type_mexpr env mexpr in
-	check_subtypes env mtb farg_b;
-	let mp = 
-	  try
-	    path_of_mexpr mexpr 
-	  with
-	    | Not_path -> error_application_to_not_path mexpr
-		(* place for nondep_supertype *)
-	in
-	  subst_modtype (map_mbid farg_id mp) fbody_b
+      let meb,mtb = translate_mexpr env mexpr in
+      let cst = check_subtypes env mtb farg_b in
+      let mp = 
+	try
+	  path_of_mexpr mexpr 
+	with
+	  | Not_path -> error_application_to_not_path mexpr
+	      (* place for nondep_supertype *)
+      in
+	MEBapply(feb,meb,(cst;Constraint.empty)),
+	subst_modtype (map_mbid farg_id mp) fbody_b
   | MEstruct (msid,structure) ->
-      let signature = translate_entry_list env msid true structure in
+      let structure,signature = translate_entry_list env msid true structure in
+	MEBstruct (msid,structure),
 	MTBsig (msid,signature)
 
 

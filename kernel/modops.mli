@@ -10,16 +10,24 @@
 
 (*i*)
 open Names
+open Univ
 open Environ
 open Declarations
 open Entries
-(*i*)
+   (*i*)
 
 (* Various operations on modules and module types *)
 
+(* recursively unfold MTBdent module types *)
 val scrape_modtype : env -> module_type_body -> module_type_body
 
-val module_body : module_type_body -> module_body
+(* make the environment entry out of type *)
+val module_body_of_type : module_type_body -> module_body
+
+val module_body_of_spec : module_specification_body -> module_body 
+
+val module_spec_of_body : module_body -> module_specification_body
+
 
 val destr_functor : 
   module_type_body -> mod_bound_id * module_type_body * module_type_body
@@ -29,7 +37,7 @@ val subst_modtype : substitution -> module_type_body -> module_type_body
 
 val subst_signature_msid :
   mod_self_id -> module_path -> 
-    module_signature_body -> module_signature_body
+  module_signature_body -> module_signature_body
 
 (* [add_signature mp sign env] assumes that the substitution [msid]
    \mapsto [mp] has already been performed (or is not necessary, like
@@ -41,9 +49,9 @@ val add_module :
   module_path -> module_body -> env -> env
 
 (*
-val component_names : 
+  val component_names : 
   env -> ('dir -> label -> 'dir) -> ('dir -> label -> 'path) 
-    -> 'dir -> module_path -> ('path * global_reference) list
+  -> 'dir -> module_path -> ('path * global_reference) list
 *)
 
 val check_modpath_equiv : env -> module_path -> module_path -> unit

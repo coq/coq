@@ -127,7 +127,7 @@ let subst_mind sub mib =
 type specification_body = 
     SPBconst of constant_body
   | SPBmind of mutual_inductive_body
-  | SPBmodule of module_body
+  | SPBmodule of module_specification_body
   | SPBmodtype of module_type_body
 
 and module_signature_body = (label * specification_body) list
@@ -137,7 +137,25 @@ and module_type_body =
   | MTBfunsig of mod_bound_id * module_type_body * module_type_body
   | MTBsig of mod_self_id * module_signature_body
 
-and module_body = 
-    { mod_type : module_type_body;
-      mod_eq : module_path option }
+and module_expr_body =
+  | MEBident of module_path
+  | MEBfunctor of mod_bound_id * module_type_body * module_expr_body 
+  | MEBstruct of mod_self_id * module_structure_body
+  | MEBapply of module_expr_body * module_expr_body
+      * constraints
 
+and module_specification_body = module_type_body * module_path option
+
+and structure_elem_body = 
+    SEBconst of constant_body
+  | SEBmind of mutual_inductive_body
+  | SEBmodule of module_body
+  | SEBmodtype of module_type_body
+
+and module_structure_body = (label * structure_elem_body) list
+
+and module_body = 
+    { mod_expr : module_expr_body option;
+      mod_user_type : (module_type_body * constraints) option;
+      mod_type : module_type_body;
+      mod_equiv : module_path option }
