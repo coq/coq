@@ -386,12 +386,12 @@ let read_module qid =
 let read_module_from_file f =
   let _, f = System.find_file_in_path (get_load_path ()) (f^".vo") in
   ignore (load_module (locate_by_filename_only None f))
-
+(*
 let reload_module (modref, export) =
   let m = load_module modref in
   if export then m.module_exported <- true;
   open_module false m.module_name
-
+*)
 (*s [require_module] loads and opens a module. This is a synchronized
     operation. *)
 
@@ -408,7 +408,7 @@ let (in_require, out_require) =
      { cache_function = cache_require;
        load_function = (fun _ -> ());
        open_function = (fun _ -> ());
-       export_function = (fun _ -> None) })
+       export_function = (fun i -> Some i) })
   
 let require_module spec qid fileopt export =
 (* Trop contraignant
@@ -416,6 +416,10 @@ let require_module spec qid fileopt export =
     warning ("Objets of "^name^" not surviving sections (e.g. Grammar \nand Hints) will be removed at the end of the section");
 *)
   let modref = locate_module qid fileopt in
+  add_anonymous_leaf (in_require (modref,export));
+  add_frozen_state ()
+
+let reload_module (modref, export) =
   add_anonymous_leaf (in_require (modref,export));
   add_frozen_state ()
 
