@@ -465,6 +465,9 @@ let check_term env mind_recvec f =
                   (List.map (instantiate_recarg sp lrc)) sprecargs.(i)
                 in crec env' n' ((1,lc)::lst') (lr,b)
 	    | _ -> crec env' n' lst' (lr,b) end
+      | (_,IsLetIn (x,c,a,b)) ->
+          let env' = push_rel_def (x,c,a) env in
+          crec env' (n+1) (map_lift_fst lst) (lrec,(subst1 c b))
       | (_,_) -> f env n lst c'
   in crec env
 
