@@ -1082,8 +1082,8 @@ let shift_problem current pb =
 let build_branch current pb eqns const_info =
   (* We remember that we descend through a constructor *)
   let partialci =
-    if Array.length const_info.cs_concl_realargs = 0 &
-      not (known_dependent pb.pred)
+    if Array.length const_info.cs_concl_realargs = 0
+(*      & not (known_dependent pb.pred)*)
     then
       NonDepAlias current
     else
@@ -1406,35 +1406,57 @@ let build_expected_arity env isevars isdep tomatchl =
 	      in follow n env (List.rev aritysign)
   in buildrec 0 env tomatchl
 
+(* [nargs] is the length of the arity of [pred] *)
+let extract_predicate_conclusion isdep nargs tomatchl pred =
+  let decomp_lam_force p =
+    match kind_of_term p with
+      | Lambda (_,_,c) -> c
+      | _ -> (* eta-expansion *) applist (lift 1 p, [mkRel 1]) in
+  if isdep then
+    (* Remove all lambda's of [pred] (up to eta-expansion) *)
+    iterate decomp_lam_force nargs pred
+  else
+    (* Turn pred into a dependent predicate by (virtually) inserting *)
+    (* [ntomach] lambda, which means lifting [ntomatch] times the body *)
+    lift (List.length tomatchl) (iterate decomp_lam_force nargs pred)
+
+let prepare_predicate_from_tycon env isevars tomatchs c =
+  let cook (n, l, env) = function
+    | c,IsInd (_,IndType(indf,realargs)) ->
+	let indf' = lift_inductive_family n indf in
+	let sign = make_arity_signature env true indf' in
+	let p = List.length realargs in
+	(n + p + 1, c::(List.rev realargs)@l, push_rels sign env)
+    | c,NotInd _ ->
+	(n, l, env) in
+  let n, allargs, env = List.fold_left cook (0, [], env) tomatchs in
+  let allargs =
+    List.map (fun c -> lift n (nf_betadeltaiota env (evars_of isevars) c)) allargs in
+  let rec build_skeleton env c =
+    let c = whd_betadeltaiota env (evars_of isevars) c in
+    (* We turn all subterms possibly dependent into an evar with maximum ctxt*)
+    if isEvar c or List.exists (eq_constr c) allargs then
+      mkExistential isevars env
+    else
+      map_constr_with_full_binders push_rel build_skeleton env c in
+  build_skeleton env (lift n c)
+
+(* Here, [pred] is assumed to be in the context build from all *)
+(* realargs and terms to match *)
 let build_initial_predicate env sigma isdep pred tomatchl =
   let cook n = function
     | c,IsInd (_,IndType(ind_data,realargs)) ->
 	Some (List.map (lift n) realargs), Some (lift n c)
     | c,NotInd _ -> None, Some (lift n c) in
-  let decomp_lam_force p =
-    match kind_of_term p with
-      | Lambda (_,_,c) -> c
-      | _ -> (* eta-expansion *) applist (lift 1 p, [mkRel 1]) in
-  let rec strip_and_adjust nargs pred =
-    if nargs = 0 then
-      if isdep then
-	(* We remove an existing lambda (up to eta-expansion) *)
-	decomp_lam_force pred
-      else 
-	(* Turn pred into a dependent predicate --> [_:?](lift 1 pred) and *)
-	(* immediately remove the (virtually) inserted lambda *)
-	lift 1 pred
-    else strip_and_adjust (nargs-1) (decomp_lam_force pred) in
-  let rec buildrec n pred = function
-    | [] -> PrCcl pred
+  let rec buildrec n q = function
+    | [] -> PrCcl (lift q pred)
     | tm::ltm ->
 	match cook n tm with
-	  | None, cur -> PrNotInd (cur, buildrec (n+1) pred ltm)
+	  | None, cur -> PrNotInd (cur, buildrec (n+1) (q+1) ltm)
 	  | Some realargs, cur ->
 	      let nrealargs = List.length realargs in
-	      let predccl = strip_and_adjust nrealargs pred in
-	      PrLetIn ((realargs,cur),buildrec (n+nrealargs+1) predccl ltm)
-  in buildrec 0 pred tomatchl
+	      PrLetIn ((realargs,cur),buildrec (n+nrealargs+1) q ltm)
+  in buildrec 0 0 tomatchl
 
 (* determines wether the multiple case is dependent or not. For that
  * the predicate given by the user is eta-expanded. If the result
@@ -1447,23 +1469,29 @@ let build_initial_predicate env sigma isdep pred tomatchl =
  *        else error! (can not treat mixed dependent and non dependent case
  *)
 
-let prepare_predicate typing_fun isevars env tomatchs = function
-  | None -> None
+let prepare_predicate typing_fun isevars env tomatchs tycon = function
+  | None ->
+      (match tycon with
+       | None -> None
+       | Some t ->
+	 let pred = prepare_predicate_from_tycon env isevars tomatchs t in
+	 Some
+	   (build_initial_predicate env (evars_of isevars) true pred tomatchs))
   | Some pred ->
       let loc = loc_of_rawconstr pred in
-      let dep, predj =
+      let dep, n, predj =
 	let isevars_copy = evars_of isevars in
         (* We first assume the predicate is non dependent *)
 	let ndep_arity = build_expected_arity env isevars false tomatchs in
         try
-	  false, typing_fun (mk_tycon ndep_arity) env pred
+	  false, nb_prod ndep_arity, typing_fun (mk_tycon ndep_arity) env pred
 	with PretypeError _ | TypeError _ |
 	    Stdpp.Exc_located (_,(PretypeError _ | TypeError _)) ->
         evars_reset_evd isevars_copy isevars;
         (* We then assume the predicate is dependent *)
 	let dep_arity = build_expected_arity env isevars true tomatchs in
 	try
-	  true, typing_fun (mk_tycon dep_arity) env pred
+	  true, nb_prod dep_arity, typing_fun (mk_tycon dep_arity) env pred
 	with PretypeError _ | TypeError _ |
 	  Stdpp.Exc_located (_,(PretypeError _ | TypeError _)) ->
         evars_reset_evd isevars_copy isevars;
@@ -1474,10 +1502,11 @@ let prepare_predicate typing_fun isevars env tomatchs = function
 	error_wrong_predicate_arity_loc
 	  loc env predj.uj_val ndep_arity dep_arity
       in
+      let predccl = extract_predicate_conclusion dep n tomatchs predj.uj_val in
 (*
       let etapred,cdep = case_dependent env (evars_of isevars) loc predj tomatchs in
 *)
-      Some (build_initial_predicate env (evars_of isevars) dep predj.uj_val tomatchs)
+      Some(build_initial_predicate env (evars_of isevars) dep predccl tomatchs)
 
 
 (**************************************************************************)
@@ -1494,7 +1523,7 @@ let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
 
   (* We build the elimination predicate if any and check its consistency *)
   (* with the type of arguments to match *)
-  let pred = prepare_predicate typing_fun isevars env tomatchs predopt in
+  let pred = prepare_predicate typing_fun isevars env tomatchs tycon predopt in
 
   (* We deal with initial aliases *)
   let matx = prepare_initial_aliases (known_dependent pred) tomatchs matx in 
