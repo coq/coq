@@ -993,10 +993,10 @@ let is_ind = function
   | IndRef _ -> true 
   | _ -> false 
 
-let is_rec_principle = function 
-  | ConstRef c -> 
-      let m,d,l = repr_kn c in 
-      let s = string_of_label l in 
+let is_rec_principle r = match r with 
+  | ConstRef _ -> 
+      let d,i = repr_qualid (shortest_qualid_of_global None r) in 
+      let s = string_of_id i in 
       if Filename.check_suffix s "_rec" then 
 	let i' = id_of_string (Filename.chop_suffix s "_rec") in 
 	(try is_ind (locate (make_qualid d i'))
