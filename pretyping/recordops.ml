@@ -64,7 +64,7 @@ let subst_structure (_,subst,((kn,i),struc as obj)) =
 let (inStruc,outStruc) =
   declare_object {(default_object "STRUCTURE") with 
                     cache_function = cache_structure;
-		    open_function = (fun i o -> if i=1 then cache_structure o);
+		    load_function = (fun _ o -> cache_structure o);
                     subst_function = subst_structure;
 		    classify_function = (fun (_,x) -> Substitute x);
 		    export_function = (function x -> Some x)  }
