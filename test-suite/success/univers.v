@@ -36,3 +36,22 @@ Proof.
   Unfold transitive.
   Intros X f g h H1 H2.
   Inversion H1.
+Abort.
+
+
+(* Submitted by Bas Spitters (bug report #935) *)
+
+(* This is a problem with the status of the type in LetIn: is it a
+   user-provided one or an inferred one? At the current time, the
+   kernel type-check the type in LetIn, which means that it must be
+   considered as user-provided when calling the kernel. However, in
+   practice it is inferred so that a universe refresh is needed to set
+   its status as "user-provided".
+
+   Especially, universe refreshing was not done for "set/pose" *)
+
+Lemma ind_unsec:(Q:nat->Type)True. 
+Intro.
+Pose C:= (m:?)(Q m)->(Q m).
+Exact I.
+Qed.
