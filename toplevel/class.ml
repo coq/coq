@@ -112,6 +112,11 @@ let check_arity = function
 
 (* try_add_class : cl_typ -> strength option -> bool -> unit *)
 
+let strength_of_cl = function 
+  | CL_CONST kn -> constant_strength (sp_of_global (ConstRef kn))
+  | CL_SECVAR sp -> variable_strength sp
+  | _ -> Global
+
 let try_add_class cl streopt fail_if_exists =
   if not (class_exists cl) then
     let p = check_arity cl in
