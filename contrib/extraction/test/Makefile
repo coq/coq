@@ -11,8 +11,6 @@ theories/Arith/Arith.vo \
 theories/Lists/List.vo \
 theories/Reals/Rsyntax.vo \
 theories/Num/% \
-theories/Relations/Rstar.vo \
-theories/Sets/Integers.vo \
 theories/ZArith/Zsyntax.vo
 
 DIRS:= $(shell (cd $(TOPDIR);find theories -type d ! -name CVS))
