@@ -130,7 +130,6 @@ let declare_definition ident local bl red_option c typopt hook =
         VarRef ident
     | (Global|Local) ->
         declare_global_definition ident ce' local in
-  Symbols.declare_ref_arguments_scope r;
   hook local r
 
 let syntax_definition ident c =
@@ -166,10 +165,64 @@ let declare_assumption ident is_coe (local,kind) bl c =
           msg_warning (pr_id ident ++ str" is declared as a parameter" ++
           str" because it is at a global level");
         ConstRef kn in
-  if is_coe then Class.try_add_new_coercion r local;
-  Symbols.declare_ref_arguments_scope r
+  if is_coe then Class.try_add_new_coercion r local
 
-(* 3| Mutual Inductive definitions *)
+(* 3a| Elimination schemes for mutual inductive definitions *)
+
+open Indrec
+
+let non_type_eliminations = 
+  [ (InProp,elimination_suffix InProp);
+    (InSet,elimination_suffix InSet) ]
+
+let declare_one_elimination ind =
+  let (mib,mip) = Global.lookup_inductive ind in 
+  let mindstr = string_of_id mip.mind_typename in
+  let declare na c t =
+    let kn = Declare.declare_constant (id_of_string na)
+      (DefinitionEntry
+        { const_entry_body = c;
+          const_entry_type = t;
+          const_entry_opaque = false }, 
+       Decl_kinds.IsDefinition) in
+    Options.if_verbose ppnl (str na ++ str " is defined"); 
+    kn
+  in
+  let env = Global.env () in
+  let sigma = Evd.empty in
+  let elim_scheme = Indrec.build_indrec env sigma ind in
+  let npars = mip.mind_nparams in
+  let make_elim s = Indrec.instanciate_indrec_scheme s npars elim_scheme in
+  let kelim = mip.mind_kelim in
+  (* in case the inductive has a type elimination, generates only one
+     induction scheme, the other ones share the same code with the
+     apropriate type *)
+  if List.mem InType kelim then
+    let elim = make_elim (new_sort_in_family InType) in
+    let cte = declare (mindstr^(Indrec.elimination_suffix InType)) elim None in
+    let c = mkConst (snd cte) and t = constant_type (Global.env()) (snd cte) in
+    List.iter (fun (sort,suff) -> 
+      let (t',c') = 
+	Indrec.instanciate_type_indrec_scheme (new_sort_in_family sort)
+	  npars c t in
+      let _ = declare (mindstr^suff) c' (Some t') in ())
+      non_type_eliminations
+   else (* Impredicative or logical inductive definition *)
+     List.iter
+    (fun (sort,suff) -> 
+       if List.mem sort kelim then
+	 let elim = make_elim (new_sort_in_family sort) in
+	 let _ = declare (mindstr^suff) elim None in ())
+       non_type_eliminations
+
+let declare_eliminations sp =
+  let mib = Global.lookup_mind sp in
+  if mib.mind_finite then
+    for i = 0 to Array.length mib.mind_packets - 1 do
+      declare_one_elimination (sp,i)
+    done
+
+(* 3b| Mutual Inductive definitions *)
 
 let minductive_message = function 
   | []  -> error "no inductive definition"
@@ -295,7 +348,7 @@ let declare_mutual_with_eliminations mie =
     List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let (_,kn) = declare_mind mie in
   if_verbose ppnl (minductive_message lrecnames);
-  Indrec.declare_eliminations kn;
+  declare_eliminations kn;
   kn
 
 (* Very syntactical equality *)
@@ -334,7 +387,7 @@ let extract_coe_la_lc = function
 
 let build_mutual lind finite =
   let (coes,lparams,lnamearconstructs) = extract_coe_la_lc lind in
-  let notations,mie  =interp_mutual lparams lnamearconstructs finite in
+  let notations,mie = interp_mutual lparams lnamearconstructs finite in
   let kn = declare_mutual_with_eliminations mie in
   (* Declare the notations now bound to the inductive types *)
   list_iter_i (fun i ->
@@ -391,7 +444,7 @@ let build_recursive lnameargsardef =
   and env0 = Global.env()
   and nv = Array.of_list (List.map (fun ((_,n,_,_),_) -> n) lnameargsardef) in
   let fs = States.freeze() in
-  (* Declare the notations for the inductive types pushed in local context*)
+  (* Declare the notations for the recursive types pushed in local context*)
   let (rec_sign,arityl) = 
     List.fold_left 
       (fun (env,arl) ((recname,_,arityc,_),_) -> 
@@ -461,10 +514,7 @@ let build_recursive lnameargsardef =
   in
   List.iter (option_iter (fun (recname,names,(df,scope)) ->
     Metasyntax.add_notation_interpretation df
-      (ARef (ConstRef (Lib.make_kn recname)),names) scope)) notations;
-  List.iter (fun recname ->
-    Symbols.declare_ref_arguments_scope (ConstRef (Lib.make_kn recname)))
-    lrecnames
+      (ARef (ConstRef (Lib.make_kn recname)),names) scope)) notations
 
 let build_corecursive lnameardef = 
   let lrecnames = List.map (fun (f,_,_) -> f) lnameardef
@@ -522,10 +572,7 @@ let build_corecursive lnameardef =
       	 (var_subst f) :: subst)
       (List.map var_subst (Array.to_list namerec))
       lnonrec 
-  in
-  List.iter (fun recname ->
-    Symbols.declare_ref_arguments_scope (ConstRef (Lib.make_kn recname)))
-    lrecnames
+  in ()
 
 let build_scheme lnamedepindsort = 
   let lrecnames = List.map (fun (f,_,_,_) -> f) lnamedepindsort
@@ -608,7 +655,6 @@ let save id const kind hook =
         let _,kn = declare_constant id (DefinitionEntry const, k) in
 	(Global, ConstRef kn) in
   hook l r;
-  Symbols.declare_ref_arguments_scope r;
   Pfedit.delete_current_proof ();
   if_verbose message ((string_of_id id) ^ " is defined")
 
