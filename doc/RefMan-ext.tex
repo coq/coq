@@ -1011,6 +1011,24 @@ Conversely, to restore the hidding of implicit arguments, use command
 
 \SeeAlso {\tt Set Printing All} in section \ref{SetPrintingAll}.
 
+\subsection{Interaction with subtyping}
+
+When an implicit argument can be inferred from the type of more than
+one of the other arguments, then only the type of the first of these
+arguments is taken into account, and not an upper type of all of
+them.  As a consequence, the inference of the implicit argument of
+``='' fails in
+
+\begin{coq_example*}
+Check nat = Prop.
+\end{coq_example*}
+
+but succeeds in 
+
+\begin{coq_example*}
+Check Prop = nat.
+\end{coq_example*}
+
 \subsection{Canonical structures
 \comindex{Canonical Structure}}
 
