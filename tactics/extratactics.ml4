@@ -180,6 +180,10 @@ TACTIC EXTEND SetoidRewrite
    -> [ general_s_rewrite b c ~new_goals:[] ]
  | [ "Setoid_rewrite" orient(b) constr(c) "generate" "side" "conditions" constr_list(l) ]
    -> [ general_s_rewrite b c ~new_goals:l ]
+ | [ "Setoid_rewrite" orient(b) constr(c) "in" hyp(h) ] ->
+      [ general_s_rewrite_in h b c ~new_goals:[] ]
+ | [ "Setoid_rewrite" orient(b) constr(c) "in" hyp(h) "generate" "side" "conditions" constr_list(l) ] ->
+      [ general_s_rewrite_in h b c ~new_goals:l ]
 END
 
 VERNAC COMMAND EXTEND AddSetoid1

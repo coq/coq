@@ -1339,8 +1339,7 @@ let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
    Use_rewrite ->
     !general_rewrite (input_direction = Left2Right) (snd hyp) gl
 
-let general_s_rewrite lft2rgt c ~new_goals gl =
- let direction = if lft2rgt then Left2Right else Right2Left in
+let analyse_hypothesis gl c =
  let ctype = pf_type_of gl c in
  let eqclause  = Clenv.make_clenv_binding gl (c,ctype) Rawterm.NoBindings in
  let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
@@ -1348,10 +1347,33 @@ let general_s_rewrite lft2rgt c ~new_goals gl =
    | [c1;c2] -> (c1, c2)
    | x::y::z -> get_last_two (y::z)
    | _ -> error "The term provided is not an equivalence" in
- let (c1,c2) = get_last_two args in
+ let c1,c2 = get_last_two args in
+  eqclause,c1,c2
+
+let general_s_rewrite lft2rgt c ~new_goals gl =
+ let direction = if lft2rgt then Left2Right else Right2Left in
+ let eqclause,c1,c2 = analyse_hypothesis gl c in
   match direction with
      Left2Right -> relation_rewrite c1 c2 (direction,eqclause) ~new_goals gl
    | Right2Left -> relation_rewrite c2 c1 (direction,eqclause) ~new_goals gl
+
+let general_s_rewrite_in id lft2rgt c ~new_goals gl =
+ let eqclause,c1,c2 = analyse_hypothesis gl c in
+ let hyp = pf_type_of gl (mkVar id) in
+ let new_hyp =
+  if lft2rgt then
+   Termops.replace_term c1 c2 hyp
+  else
+   Termops.replace_term c2 c1 hyp
+ in
+  tclTHENS
+   (cut new_hyp)
+   [ (* Try to insert the new hyp at the same place *)
+     tclORELSE (intro_replacing id)
+       (tclTHEN (clear [id]) (introduction id));
+     tclTHENLAST
+      (general_s_rewrite (not lft2rgt) c ~new_goals)
+      (exact_check (mkVar id))] gl
 
 exception Use_replace
 

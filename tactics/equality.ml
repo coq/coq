@@ -97,7 +97,9 @@ let general_rewrite_in lft2rgt id (c,l) gl =
   let _,t = splay_prod env sigma ctype in
   match match_with_equation t with
     | None -> (* Do not deal with setoids yet *) 
-        error "The term provided does not end with an equation" 
+	if l = NoBindings
+	then general_s_rewrite_in id lft2rgt c [] gl
+	else error "The term provided does not end with an equation" 
     | Some (hdcncl,_) -> 
         let hdcncls = string_of_inductive hdcncl in 
 	let suffix =

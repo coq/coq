@@ -11,7 +11,7 @@
 open Term
 open Proof_type
 open Topconstr
-
+open Names
 
 type morphism_signature = (bool option * constr_expr) list * constr_expr
 
@@ -28,6 +28,8 @@ val setoid_replace :
  constr option -> constr -> constr -> new_goals:constr list -> tactic
 
 val general_s_rewrite : bool -> constr -> new_goals:constr list -> tactic
+val general_s_rewrite_in :
+ identifier -> bool -> constr -> new_goals:constr list -> tactic
 
 val add_relation :
  constr_expr -> constr_expr -> constr_expr option -> constr_expr option -> unit
