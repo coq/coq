@@ -19,17 +19,22 @@ let code_of_9 = Char.code '9'
 (* This checks that a string is acceptable as an ident, i.e. starts
    with a letter and contains only letters, digits or "'" *)
 
-let check_ident s =
-  let l = String.length s in
-  if l = 0 then error "The empty string is not an identifier"; 
-  let c = String.get s 0 in
-  if not (is_letter c) then error "An identifier starts with a letter";
+let check_ident_suffix i l s =
   for i=1 to l-1 do
     let c = String.get s i in
     if not (is_letter c or is_digit c or c = '\'') then
       error
 	("Character "^(String.sub s i 1)^" is not allowed in an identifier")
   done
+
+let check_ident s =
+  let l = String.length s in
+  if l = 0 then error "The empty string is not an identifier"; 
+  let c = String.get s 0 in
+  if not (is_letter c) then error "An identifier starts with a letter";
+  check_ident_suffix 1 l s
+
+let check_suffix s = check_ident_suffix 0 (String.length s) s
 
 let is_ident s = try check_ident s; true with _ -> false
 
@@ -136,6 +141,9 @@ let make_ident sa = function
       else sa ^ "_" ^ (string_of_int n)
   | None -> sa
 
+let add_suffix id s = check_suffix s; id^s
+let add_prefix s id = check_ident s; s^id
+
 let string_of_id id = id
 let id_of_string s = s
 
@@ -189,6 +197,8 @@ end (* End of module Ident *)
 type identifier = Ident.t
 let repr_ident = Ident.repr_ident
 let make_ident = Ident.make_ident
+let add_suffix id s = check_suffix s; id^s
+let add_prefix s id = check_ident s; s^id
 let string_of_id = Ident.string_of_id
 let id_of_string = Ident.id_of_string
 let id_ord = Ident.id_ord

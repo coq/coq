@@ -37,6 +37,10 @@ val pr_id : identifier -> std_ppcmds
 val check_ident : string -> unit
 val is_ident : string -> bool
 
+(* Deriving ident from other idents *)
+val add_suffix : identifier -> string -> identifier
+val add_prefix : string -> identifier -> identifier
+
 (* Identifiers sets and maps *)
 module Idset : Set.S with type elt = identifier
 module Idmap : Map.S with type key = identifier
