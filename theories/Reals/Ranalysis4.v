@@ -19,6 +19,7 @@ Require Ranalysis1.
 Require R_sqrt.
 Require Ranalysis2.
 Require Ranalysis3.
+Require Export Rtrigo_reg.
 Require Export Sqrt_reg.
 
 (**********)
@@ -148,69 +149,6 @@ Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Sim
 Apply H0.
 Intros; Rewrite H; Rewrite Rabsolu_R0; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Rewrite Rabsolu_Rabsolu; Elim H1; Intros; Rewrite H in H3; Unfold Rminus in H3; Rewrite Ropp_O in H3; Rewrite Rplus_Or in H3; Apply H3.
 Apply derivable_continuous_pt; Apply (derivable_pt_Rabsolu x H).
-Qed.
-
-(* Pow *)
-Lemma derivable_pt_lim_pow_pos : (x:R;n:nat) (lt O n) -> (derivable_pt_lim [y:R](pow y n) x ``(INR n)*(pow x (pred n))``).
-Intros.
-Induction n.
-Elim (lt_n_n ? H).
-Cut n=O\/(lt O n).
-Intro; Elim H0; Intro.
-Rewrite H1; Simpl.
-Replace [y:R]``y*1`` with (mult_fct id (fct_cte R1)).
-Replace ``1*1`` with ``1*(fct_cte R1 x)+(id x)*0``.
-Apply derivable_pt_lim_mult.
-Apply derivable_pt_lim_id.
-Apply derivable_pt_lim_const.
-Unfold fct_cte id; Ring.
-Reflexivity.
-Replace [y:R](pow y (S n)) with [y:R]``y*(pow y n)``.
-Replace (pred (S n)) with n; [Idtac | Reflexivity].
-Replace [y:R]``y*(pow y n)`` with (mult_fct id [y:R](pow y n)).
-Pose f := [y:R](pow y n).
-Replace ``(INR (S n))*(pow x n)`` with (Rplus (Rmult R1 (f x)) (Rmult (id x) (Rmult (INR n) (pow x (pred n))))).
-Apply derivable_pt_lim_mult.
-Apply derivable_pt_lim_id.
-Unfold f; Apply Hrecn; Assumption.
-Unfold f.
-Pattern 1 5 n; Replace n with (S (pred n)).
-Unfold id; Rewrite S_INR; Simpl.
-Ring.
-Symmetry; Apply S_pred with O; Assumption.
-Unfold mult_fct id; Reflexivity.
-Reflexivity.
-Inversion H.
-Left; Reflexivity.
-Right.
-Apply lt_le_trans with (1).
-Apply lt_O_Sn.
-Assumption.
-Qed.
-
-Lemma derivable_pt_lim_pow : (x:R; n:nat) (derivable_pt_lim [y:R](pow y n) x ``(INR n)*(pow x (pred n))``).
-Intros.
-Induction n.
-Simpl.
-Rewrite Rmult_Ol.
-Replace [_:R]``1`` with (fct_cte R1); [Apply derivable_pt_lim_const | Reflexivity].
-Apply derivable_pt_lim_pow_pos.
-Apply lt_O_Sn.
-Qed.
-
-Lemma derivable_pt_pow : (n:nat;x:R) (derivable_pt [y:R](pow y n) x).
-Intros; Unfold derivable_pt.
-Apply Specif.existT with ``(INR n)*(pow x (pred n))``.
-Apply derivable_pt_lim_pow.
-Qed.
-
-Lemma derivable_pow : (n:nat) (derivable [y:R](pow y n)).
-Intro; Unfold derivable; Intro; Apply derivable_pt_pow.
-Qed.
-
-Lemma derive_pt_pow : (n:nat;x:R) (derive_pt [y:R](pow y n) x (derivable_pt_pow n x))==``(INR n)*(pow x (pred n))``.
-Intros; Apply derive_pt_eq_0.
-Apply derivable_pt_lim_pow.
 Qed.
 
 (* Finite sums : Sum a_k x^k *)
@@ -381,8 +319,6 @@ Intro; Apply derive_pt_eq_0.
 Apply derivable_pt_lim_sinh.
 Qed.
 
-
-Definition pow_fct [n:nat] : R->R := [y:R](pow y n).
 
 (**********)
 Tactic Definition IntroHypG trm :=

@@ -47,8 +47,7 @@ let kn_of_r r = match r with
     | _ -> assert false
 
 let rec type_mem_kn kn = function 
-  | Tglob r when (kn_of_r r)=kn -> true
-  | Tapp l -> List.exists (type_mem_kn kn) l
+  | Tglob (r,l) -> (kn_of_r r) = kn || List.exists (type_mem_kn kn) l
   | Tarr (a,b) -> (type_mem_kn kn a) || (type_mem_kn kn b)
   | _ -> false
 

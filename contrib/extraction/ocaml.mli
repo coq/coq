@@ -20,8 +20,6 @@ open Table
 val current_module : identifier option ref
 val cons_cofix : Refset.t ref
 
-val collapse_type_app : ml_type list -> ml_type list
-
 val open_par : bool -> std_ppcmds
 val close_par : bool -> std_ppcmds
 val pp_abst : identifier list -> std_ppcmds

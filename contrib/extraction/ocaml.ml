@@ -27,10 +27,6 @@ let cons_cofix = ref Refset.empty
 
 (*s Some utility functions. *)
 
-let rec collapse_type_app = function
-  | (Tapp l1) :: l2 -> collapse_type_app (l1 @ l2)
-  | l -> l
-
 let open_par = function true -> str "(" | false -> (mt ())
 
 let close_par = function true -> str ")" | false -> (mt ())
@@ -151,17 +147,12 @@ let rec pp_type par vl t =
   let rec pp_rec par = function
     | Tvar i -> (try pp_tvar (List.nth vl (pred i)) 
 		 with _ -> (str "'a" ++ int i))
-    | Tapp l ->
-	(match collapse_type_app l with
-	   | [] -> assert false
-	   | [t] -> pp_rec par t
-	   | [t;u] -> pp_rec true u ++ spc () ++ pp_rec false t 
-	   | t::l -> (pp_tuple (pp_rec false) l ++ spc () ++  
-		      pp_rec false t))
+    | Tglob (r,[]) -> pp_type_global r
+    | Tglob (r,[u]) -> pp_rec true u ++ spc () ++ pp_type_global r
+    | Tglob (r,l) -> pp_tuple (pp_rec false) l ++ spc () ++ pp_type_global r
     | Tarr (t1,t2) ->
-	(open_par par ++ pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ 
-	   pp_rec false t2 ++ close_par par)
-    | Tglob r -> pp_type_global r
+	open_par par ++ pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ 
+	pp_rec false t2 ++ close_par par
     | Tdummy -> str "Obj.t"
     | Tunknown -> str "Obj.t"
   in 
