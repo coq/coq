@@ -53,16 +53,17 @@ val import : compiled_env -> safe_environment -> safe_environment
 
 val env_of_safe_env : safe_environment -> env
 
-(*i For debug
-(*s Typing without information. *)
+
+(*s Typing judgments (only used in minicoq). *)
+
 type judgment
 
 val j_val : judgment -> constr
 val j_type : judgment -> constr
 
 val safe_machine : safe_environment -> constr -> judgment * constraints
-val safe_machine_type : safe_environment -> constr -> typed_type * constraints
 
+(*i For debug
 val fix_machine : safe_environment -> constr -> judgment * constraints
 val fix_machine_type : safe_environment -> constr -> typed_type * constraints
 
@@ -71,14 +72,7 @@ val unsafe_machine_type : safe_environment -> constr -> typed_type * constraints
 
 val type_of : safe_environment -> constr -> constr
 
-(*i obsolète 
 val type_of_type : safe_environment -> constr -> constr
 val unsafe_type_of : safe_environment -> constr -> constr
-i*)
-
-
-(*s Typing with information (extraction). *)
-
-type information = Logic | Inf of judgment
 i*)
 

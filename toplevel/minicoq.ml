@@ -69,6 +69,11 @@ let variable id t =
   mSGNL (hOV 0 [< 'sTR"variable"; 'sPC; print_id id; 
 		  'sPC; 'sTR"is declared"; 'fNL >])
 
+let put_DLAMSV lna lc = 
+  match lna with 
+    | [] -> anomaly "put_DLAM"
+    | na::lrest -> List.fold_left (fun c na -> DLAM(na,c)) (DLAMV(na,lc)) lrest
+
 let inductive par inds =
   let nparams = List.length par in
   let bvpar = List.rev (List.map (fun (id,_) -> Name id) par) in
@@ -79,7 +84,7 @@ let inductive par inds =
     let cv = Array.of_list (List.map snd cl) in
     let cv = Array.map (fun c -> prod_it (globalize bv c) par) cv in
     let c = put_DLAMSV name_inds cv in
-    (id, prod_it (globalize bvpar ar) par, List.map fst cl, c)
+    (id, prod_it (globalize bvpar ar) par, List.map fst cl, [c])
   in
   let inds = List.map one_inductive inds in
   let mie = { 

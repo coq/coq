@@ -176,4 +176,5 @@ let rec pp bv = function
   | Rel n -> print_rel bv n
   | _ -> [< 'sTR"<???>" >]
 
-let pr_term _ ctx = pp (List.map fst (get_rels ctx))
+let pr_term _ ctx = pp (it_dbenv (fun l n _ -> n::l) [] ctx)
+

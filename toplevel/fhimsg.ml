@@ -10,6 +10,7 @@ open Sign
 open Environ
 open Type_errors
 open Reduction
+open G_minicoq
 
 module type Printer = sig
   val pr_term : path_kind -> context -> constr -> std_ppcmds
@@ -18,14 +19,14 @@ end
 module Make = functor (P : Printer) -> struct
 
   let print_decl k sign (s,typ) =
-    let ptyp = P.pr_term k (gLOB sign) typ.body in 
+    let ptyp = P.pr_term k (gLOB sign) (body_of_type typ) in 
     [< 'sPC; print_id s; 'sTR" : "; ptyp >]
   
   let print_binding k env = function
     | Anonymous,ty -> 
-	[< 'sPC; 'sTR"_" ; 'sTR" : " ; P.pr_term k env ty.body >]
+	[< 'sPC; 'sTR"_" ; 'sTR" : " ; P.pr_term k env (body_of_type ty) >]
     | Name id,ty -> 
-	[< 'sPC; print_id id ; 'sTR" : "; P.pr_term k env ty.body >]
+	[< 'sPC; print_id id ; 'sTR" : "; P.pr_term k env (body_of_type ty) >]
 
   let sign_it_with f sign e =
     snd (sign_it 
@@ -127,7 +128,7 @@ let explain_ill_formed_branch k ctx c i actty expty =
 
 let explain_generalization k ctx (name,var) c =
   let pe = pr_ne_ctx [< 'sTR"in environment" >] k ctx in
-  let pv = P.pr_term k ctx var.body in
+  let pv = P.pr_term k ctx (body_of_type var) in
   let pc = P.pr_term k (add_rel (name,var) ctx) c in
   [< 'sTR"Illegal generalization: "; pe; 'fNL;
      'sTR"Cannot generalize"; 'bRK(1,1); pv; 'sPC;
@@ -146,15 +147,15 @@ let explain_actual_type k ctx c ct pt =
 
 let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
-  let pr = prterm_env ctx rator.uj_val in
-  let prt = prterm_env ctx rator.uj_type in
+  let pe = pr_ne_ctx [< 'sTR"in environment" >] k ctx in
+  let pr = pr_term k ctx rator.uj_val in
+  let prt = pr_term k ctx (body_of_type rator.uj_type) in
   let term_string = if List.length randl > 1 then "terms" else "term" in
   let many = match n mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
   let appl = prlist_with_sep pr_fnl 
 	       (fun c ->
-		  let pc = prterm_env ctx c.uj_val in
-		  let pct = prterm_env ctx c.uj_type in
+		  let pc = pr_term k ctx c.uj_val in
+		  let pct = pr_term k ctx (body_of_type c.uj_type) in
 		  hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl
   in
   [< 'sTR"Illegal application (Type Error): "; pe; 'fNL;
@@ -163,19 +164,19 @@ let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
      'sTR("cannot be applied to the "^term_string); 'fNL; 
      'sTR" "; v 0 appl; 'fNL;
      'sTR"The ";'iNT n; 'sTR (many^" term of type ");
-     prterm_env ctx actualtyp;
-     'sTR" should be of type "; prterm_env ctx exptyp >]
+     pr_term k ctx actualtyp;
+     'sTR" should be of type "; pr_term k ctx exptyp >]
 
 let explain_cant_apply_not_functional k ctx rator randl =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
-  let pr = prterm_env ctx rator.uj_val in
-  let prt = prterm_env ctx rator.uj_type in
+  let pe = pr_ne_ctx [< 'sTR"in environment" >] k ctx in
+  let pr = pr_term k ctx rator.uj_val in
+  let prt = pr_term k ctx (body_of_type rator.uj_type) in
   let term_string = if List.length randl > 1 then "terms" else "term" in
   let appl = prlist_with_sep pr_fnl 
 	       (fun c ->
-		  let pc = prterm_env ctx c.uj_val in
-		  let pct = prterm_env ctx c.uj_type in
+		  let pc = pr_term k ctx c.uj_val in
+		  let pct = pr_term k ctx (body_of_type c.uj_type) in
 		  hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl
   in
   [< 'sTR"Illegal application (Non-functional construction): "; pe; 'fNL;
@@ -197,7 +198,7 @@ let explain_ill_formed_rec_body k ctx str lna i vdefs =
     
 let explain_ill_typed_rec_body k ctx i lna vdefj vargs =
   let pvd = P.pr_term k ctx (vdefj.(i)).uj_val in
-  let pvdt = P.pr_term k ctx (vdefj.(i)).uj_type in
+  let pvdt = P.pr_term k ctx (body_of_type (vdefj.(i)).uj_type) in
   let pv = P.pr_term k ctx (body_of_type vargs.(i)) in
   [< 'sTR"The " ;
      if Array.length vdefj = 1 then [<>] else [<'iNT (i+1); 'sTR "-th">];
@@ -242,13 +243,13 @@ let explain_type_error k ctx = function
   | UnboundRel n -> 
       explain_unbound_rel k ctx n
   | NotAType c -> 
-      explain_not_type k ctx c
+      explain_not_type k ctx c.uj_val
   | BadAssumption c -> 
       explain_bad_assumption k ctx c
   | ReferenceVariables id -> 
       explain_reference_variables id
   | ElimArity (ind, aritylst, c, p, pt, okinds) ->
-      explain_elim_arity k ctx ind aritylst c p pt okinds 
+      explain_elim_arity k ctx (mkMutInd ind) aritylst c p pt okinds 
   | CaseNotInductive (c, ct) -> 
       explain_case_not_inductive k ctx c ct
   | NumberBranches (c, ct, n) -> 
@@ -256,11 +257,11 @@ let explain_type_error k ctx = function
   | IllFormedBranch (c, i, actty, expty) -> 
       explain_ill_formed_branch k ctx c i actty expty 
   | Generalization (nvar, c) ->
-      explain_generalization k ctx nvar c
+      explain_generalization k ctx nvar c.uj_val
   | ActualType (c, ct, pt) -> 
       explain_actual_type k ctx c ct pt
   | CantApplyBadType (s, rator, randl) ->
-      explain_cant_apply_bad_type k ctx n rator randl
+      explain_cant_apply_bad_type k ctx s rator randl
   | CantApplyNonFunctional (rator, randl) ->
       explain_cant_apply_not_functional k ctx rator randl
   | IllFormedRecBody (i, lna, vdefj, vargs) ->
@@ -271,6 +272,8 @@ let explain_type_error k ctx = function
       explain_not_inductive k ctx c
   | MLCase (mes,c,ct,br,brt) ->
       explain_ml_case k ctx mes c ct br brt
+  | _ -> 
+      [< 'sTR "Unknown type error (TODO)" >]
 
 let explain_refiner_bad_type k ctx arg ty conclty =
   errorlabstrm "Logic.conv_leq_goal"

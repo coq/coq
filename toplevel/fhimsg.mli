@@ -31,8 +31,6 @@ val pr_ne_ctx : std_ppcmds -> path_kind -> context -> std_ppcmds
 
 val explain_unbound_rel : path_kind -> context -> int -> std_ppcmds
 
-val explain_cant_execute : path_kind -> context -> constr -> std_ppcmds
-
 val explain_not_type : path_kind -> context -> constr -> std_ppcmds
 
 val explain_bad_assumption : path_kind -> context -> constr -> std_ppcmds
@@ -57,10 +55,6 @@ val explain_generalization :
 
 val explain_actual_type :
   path_kind -> context -> constr -> constr -> constr -> std_ppcmds
-
-val explain_cant_apply : 
-  path_kind -> context -> string -> unsafe_judgment 
-    -> unsafe_judgment list -> std_ppcmds
 
 val explain_ill_formed_rec_body :
   path_kind -> context -> std_ppcmds -> 

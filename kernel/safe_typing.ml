@@ -463,6 +463,3 @@ let import = import
 
 let env_of_safe_env e = e
 
-(*s Machines with information. *)
-
-type information = Logic | Inf of unsafe_judgment
