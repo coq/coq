@@ -14,6 +14,7 @@ open Names
 open Term
 open Declarations
 open Environ
+open Reduction
 open Reductionops
 open Inductive
 open Termops
@@ -317,11 +318,13 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	let types = arities_of_constructors env (kn,i) in 
 	for j = 0 to Array.length types - 1 do 
 	  let t = snd (decompose_prod_n npar types.(j)) in
-	  let args = match kind_of_term (snd (decompose_prod t)) with
-	    | App (f,args) -> args (* [kind_of_term f = Ind ip] *)
-	    | _ -> [||]
-	  in 
-	  let dbmap = parse_ind_args p.ip_sign args (nb_prod t + npar) in 
+	  let prods,head = dest_prod epar t in 
+	  let nprods = List.length prods in 
+          let args = match kind_of_term head with
+            | App (f,args) -> args (* [kind_of_term f = Ind ip] *)
+            | _ -> [||]
+          in
+	  let dbmap = parse_ind_args p.ip_sign args (nprods + npar) in 
 	  let db = db_from_ind dbmap npar in 
 	  p.ip_types.(j) <- extract_type_cons epar db dbmap t (npar+1)
 	done
@@ -346,18 +349,24 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	  with Not_found -> raise (I Standard);
 	in 
 	let n = nb_default_params env mip0.mind_nf_arity in
-	let rec check = function 
+	let projs = try List.map out_some projs with _ -> raise (I Standard) in
+	let is_true_proj kn = 
+	  match kind_of_term (snd (decompose_lam (constant_value env kn))) with 
+	    | Rel _ -> false 
+	    | Case _ -> true
+	    | _ -> assert false
+	in 
+	let projs = List.filter is_true_proj projs in 
+ 	let rec check = function 
           | [] -> [],[]
-          | (typ, kno) :: l -> 
+          | (typ, kn) :: l -> 
               let l1,l2 = check l in 
               if type_eq (mlt_env env) Tdummy typ then l1,l2 
-              else match kno with 
-                | None -> raise (I Standard) 
-                | Some kn -> 
-                    let r = ConstRef kn in 
-                    if List.mem false (type_to_sign (mlt_env env) typ) 
-                    then r :: l1, l2 
-                    else r :: l1, r :: l2
+              else 
+                let r = ConstRef kn in 
+                if List.mem false (type_to_sign (mlt_env env) typ) 
+                then r :: l1, l2 
+                else r :: l1, r :: l2
 	in 
 	add_record kn n (check (List.combine typ projs)); 
 	raise (I Record)
