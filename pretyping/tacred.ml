@@ -37,7 +37,7 @@ let make_elim_fun f largs =
 	let la' = list_map_i 
 		    (fun q aq ->
 		       try (Rel (p+1-(list_index (n+1-q) (List.map fst lv)))) 
-		       with Failure _ -> aq) 1
+		       with Not_found -> aq) 1
                     (List.map (lift p) labs) 
 	in
 	list_fold_left_i 

@@ -290,7 +290,7 @@ let dbize k sigma env allow_soapp lvar =
 	let n =
 	  try 
 	    (list_index (ident_of_nvar locid iddef) lf) -1
-          with Failure _ ->
+          with Not_found ->
 	    error_fixname_unbound "dbize (FIX)" false locid iddef in
 	let ext_env =
 	  List.fold_left (fun env fid -> add_rel (Name fid,()) env) env lf in
@@ -303,7 +303,7 @@ let dbize k sigma env allow_soapp lvar =
 	let n =
           try 
 	    (list_index (ident_of_nvar locid iddef) lf) -1
-          with Failure _ ->
+          with Not_found ->
 	    error_fixname_unbound "dbize (COFIX)" true locid iddef in
 	let ext_env =
 	  List.fold_left (fun env fid -> add_rel (Name fid,()) env) env lf in
