@@ -774,7 +774,7 @@ let sig_clausale_forme env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
 		 []
 	       else
 		 matches (pattern_of_constr headpat) ty 
-             with e when catchable_exception e -> failwith "caught")
+             with PatternMatchingFailure -> failwith "caught")
 	  [dFLTty; nf_ty]
       in
       (bindings,dFLT)
