@@ -274,6 +274,8 @@ let translate_v7_string = function
   | "simpl_plus_r" -> "plus_simpl_r"
   | "fact_growing" -> "fact_le"
   | "lt_mult_left" -> "lt_mult_S_left"
+  | "exists" -> "exists_between"
+  | "IHexists" -> "IHexists_between"
   (* Lists *)
   | "idempot_rev" -> "involutive_rev"
   | "forall" -> "HereAndFurther"
@@ -310,6 +312,8 @@ let translate_v7_string = function
       (s' = "unicite" or s' = "unicity") ->
       "uniqueness"^(String.sub s 7 (String.length s - 7))
   (* Default *)
+  | s when String.length s > 1 && s.[0]='_' ->
+      String.sub s 1 (String.length s - 1)
   | "_" -> 
       msgerrnl (str 
 	"Warning: '_' is no longer an ident; it has been translated to 'x_'");

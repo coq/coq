@@ -348,7 +348,8 @@ module Constr =
     let annot = Gram.Entry.create "constr:annot"
     let constr_pattern = gec_constr "constr_pattern"
     let lconstr_pattern = gec_constr "lconstr_pattern"
-    let binder_let = Gram.Entry.create "constr:binder_list"
+    let binder = Gram.Entry.create "constr:binder"
+    let binder_let = Gram.Entry.create "constr:binder_let"
     let tuple_constr = gec_constr "tuple_constr"
   end
 

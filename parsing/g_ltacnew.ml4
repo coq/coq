@@ -142,7 +142,7 @@ GEXTEND Gram
       | "()" -> TacVoid ] ]
   ;
   input_fun:
-    [ [ IDENT "_" -> None 
+    [ [ "_" -> None 
       | l = base_ident -> Some l ] ]
   ;
   let_clause:
@@ -171,7 +171,7 @@ GEXTEND Gram
   match_context_rule:
     [ [ "["; largs = LIST0 match_hyps SEP ","; "|-"; mp = match_pattern; "]";
         "=>"; te = tactic_expr -> Pat (largs, mp, te)
-      | IDENT "_"; "=>"; te = tactic_expr -> All te ] ]
+      | "_"; "=>"; te = tactic_expr -> All te ] ]
   ;
   match_context_list:
     [ [ mrl = LIST1 match_context_rule SEP "|" -> mrl
@@ -179,7 +179,7 @@ GEXTEND Gram
   ;
   match_rule:
     [ [ "["; mp = match_pattern; "]"; "=>"; te = tactic_expr -> Pat ([],mp,te)
-      | IDENT "_"; "=>"; te = tactic_expr -> All te ] ]
+      | "_"; "=>"; te = tactic_expr -> All te ] ]
   ;
   match_list:
     [ [ mrl = LIST1 match_rule SEP "|" -> mrl

@@ -82,7 +82,7 @@ test_parser() {
         printf "    "$f"..."
         tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`
         foutput=`dirname $f`/`basename $f .v`.out
-        echo "parse_file 1 \"$f\"" | ../bin/parser > $tmpoutput 2>&1
+        echo "parse_file 1 \"$f\"" | ../bin/parser -v7 > $tmpoutput 2>&1
         perl -ne 'if(/Starting.*Parser Loop/){$printit = 1};print if $printit' \
             $tmpoutput | diff - $foutput > /dev/null
         if [ $? = 0 ] ; then

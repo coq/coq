@@ -88,7 +88,8 @@ GEXTEND Gram
     [ [ s = IDENT -> local_id_of_string s ] ]
   ;
   name:
-    [ [ IDENT "_" -> (loc, Anonymous) | id = base_ident -> (loc, Name id) ] ]
+    [ [ IDENT "_" -> (loc, Anonymous)
+      | id = base_ident -> (loc, Name id) ] ]
   ;
   identref:
     [ [ id = base_ident -> (loc,id) ] ]

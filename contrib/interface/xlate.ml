@@ -964,8 +964,8 @@ and xlate_tac =
      CT_elim (xlate_formula c1, xlate_bindings sl, xlate_using u)
     | TacCase (c1,sl) ->
      CT_casetac (xlate_formula c1, xlate_bindings sl)
-    | TacOldInduction h -> CT_induction (xlate_quantified_hypothesis h)
-    | TacOldDestruct h -> CT_destruct (xlate_quantified_hypothesis h)
+    | TacSimpleInduction h -> CT_induction (xlate_quantified_hypothesis h)
+    | TacSimpleDestruct h -> CT_destruct (xlate_quantified_hypothesis h)
     | TacCut c -> CT_cut (xlate_formula c)
     | TacLApply c -> CT_use (xlate_formula c)
     | TacDecompose ([],c) ->

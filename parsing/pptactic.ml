@@ -411,7 +411,7 @@ and pr_atom1 = function
   | TacCaseType c -> hov 1 (str "CaseType" ++ pr_arg pr_constr c)
   | TacFix (ido,n) -> hov 1 (str "Fix" ++ pr_opt pr_id ido ++ pr_intarg n)
   | TacMutualFix (id,n,l) ->
-      hov 1 (str "Cofix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc () ++
+      hov 1 (str "Fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc () ++
         hov 0 (str "with" ++ brk (1,1) ++
           prlist_with_sep spc
 	    (fun (id,n,c) ->
@@ -444,12 +444,12 @@ and pr_atom1 = function
       hov 1 (str "Instantiate" ++ pr_arg int n ++ pr_arg pr_constr c)
 
   (* Derived basic tactics *)
-  | TacOldInduction h ->
+  | TacSimpleInduction h ->
       hov 1 (str "Induction" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewInduction (h,e,ids) ->
       hov 1 (str "NewInduction" ++ spc () ++ pr_induction_arg pr_constr h ++
         pr_opt pr_eliminator e ++ pr_with_names ids)
-  | TacOldDestruct h ->
+  | TacSimpleDestruct h ->
       hov 1 (str "Destruct" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewDestruct (h,e,ids) ->
       hov 1 (str "NewDestruct" ++ spc () ++ pr_induction_arg pr_constr h ++

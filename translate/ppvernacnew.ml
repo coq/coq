@@ -579,7 +579,9 @@ let rec pr_vernac = function
       let ps =
 	let n = String.length s in
 	if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' 
-	then str (String.sub s 1 (n-2))
+	then
+          let s' = String.sub s 1 (n-2) in
+          if String.contains s' '\'' then qsnew s else str s'
 	else qsnew s in
       hov 2( str"Notation" ++ spc() ++ pr_locality local ++ ps ++
       str " :=" ++ pr_constrarg c ++ pr_syntax_modifiers l ++
@@ -619,10 +621,11 @@ let rec pr_vernac = function
                   (bl2,body,mt())
               | Some ty ->
                   let bl2,body,ty' = extract_def_binders c ty in
-                  (bl2,CCast (dummy_loc,body,ty'), spc() ++ str":" ++ spc () ++
-                    pr_type_env_n (Global.env())
-                    (local_binders_length bl + local_binders_length bl2)
-                    (prod_rawconstr ty bl)) in
+                  (bl2,CCast (dummy_loc,body,ty'),
+                   spc() ++ str":" ++ spc () ++
+                   pr_type_env_n (Global.env())
+                     (local_binders_length bl + local_binders_length bl2)
+                     (prod_rawconstr ty bl)) in
 	    let n = local_binders_length bl + local_binders_length bl2 in
 	    let iscast = d <> None in
             let bindings,ppred =

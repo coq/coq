@@ -22,17 +22,33 @@ let _ =
   if not !Options.v7 then
     List.iter (fun s -> Lexer.add_token("",s)) tactic_kw
 
-(* Hack to parse "with n := c ..." as a binder without conflicts with the *)
-(* admissible notation "with c1 c2..." *)
-let test_lparcoloneq2 =
-  Gram.Entry.of_parser "test_lparcoloneq2"
+(* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
+(* admissible notation "(x t)" *)
+let lpar_id_coloneq =
+  Gram.Entry.of_parser "lpar_id_coloneq"
     (fun strm ->
-      match Stream.npeek 1 strm with
-        | [("", "(")] ->
-            begin match Stream.npeek 3 strm with
-              | [_; _; ("", ":=")] -> ()
-              | _ -> raise Stream.Failure
-            end
+      match Stream.npeek 3 strm with
+	| [("","("); ("IDENT",s); ("", ":=")] ->
+            Stream.junk strm; Stream.junk strm; Stream.junk strm;
+            Names.id_of_string s
+	| _ -> raise Stream.Failure)
+
+(* idem for (x:=t) and (1:=t) *)
+let test_lpar_idnum_coloneq =
+  Gram.Entry.of_parser "test_lpar_idnum_coloneq"
+    (fun strm ->
+      match Stream.npeek 3 strm with
+        | [("","("); (("IDENT"|"INT"),_); ("", ":=")] -> ()
+        | _ -> raise Stream.Failure)
+
+(* idem for (x:t) *)
+let lpar_id_colon =
+  Gram.Entry.of_parser "test_lpar_id_colon"
+    (fun strm ->
+      match Stream.npeek 3 strm with
+        | [("","("); ("IDENT",id); ("", ":")] ->
+            Stream.junk strm; Stream.junk strm; Stream.junk strm;
+            Names.id_of_string id
         | _ -> raise Stream.Failure)
 
 (* open grammar entries, possibly in quotified form *)
@@ -42,10 +58,28 @@ open Constr
 open Prim
 open Tactic
 
-(* Functions overloaded by quotifier *)
+let mk_fix_tac (loc,id,bl,ann,ty) =
+  let n =
+    match bl,ann with
+        [([_],_)], None -> 0
+      | _, Some x ->
+          let ids = List.map snd (List.flatten (List.map fst bl)) in
+          (try list_index (snd x) ids
+          with Not_found -> error "no such fix variable")
+      | _ -> error "cannot guess decreasing argument of fix" in
+  (id,n,Topconstr.CProdN(loc,bl,ty))
 
+let mk_cofix_tac (loc,id,bl,ann,ty) =
+  let _ = option_app (fun (aloc,_) ->
+    Util.user_err_loc
+      (aloc,"Constr:mk_cofix_tac",
+       Pp.str"Annotation forbidden in cofix expression")) ann in
+  (id,Topconstr.CProdN(loc,bl,ty))
+
+(* Functions overloaded by quotifier *)
 let induction_arg_of_constr c =
-  try ElimOnIdent (Topconstr.constr_loc c,coerce_to_id c) with _ -> ElimOnConstr c
+  try ElimOnIdent (Topconstr.constr_loc c,coerce_to_id c)
+  with _ -> ElimOnConstr c
 
 let local_compute = [FBeta;FIota;FDeltaBut [];FZeta]
 
@@ -160,7 +194,7 @@ GEXTEND Gram
   simple_intropattern:
     [ [ "["; tc = LIST1 intropatterns SEP "|" ; "]" -> IntroOrAndPattern tc
       | "("; tc = LIST1 simple_intropattern SEP "," ; ")" -> IntroOrAndPattern [tc]
-      | IDENT "_" -> IntroWildcard
+      | "_" -> IntroWildcard
       | id = base_ident -> IntroIdentifier id
       ] ]
   ;
@@ -169,7 +203,8 @@ GEXTEND Gram
       | "("; n = natural; ":="; c = lconstr; ")" -> (loc, AnonHyp n, c) ] ]
   ;
   binding_list:
-    [ [ test_lparcoloneq2; bl = LIST1 simple_binding -> ExplicitBindings bl
+    [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->
+          ExplicitBindings bl
       | bl = LIST1 constr -> ImplicitBindings bl ] ]
   ;
   constr_with_bindings:
@@ -223,10 +258,12 @@ GEXTEND Gram
       | -> [] ] ]
   ;
   fixdecl:
-    [ [ id = base_ident; "/"; n = natural; ":"; c = constr -> (id,n,c) ] ]
+    [ [ id = base_ident; bl=LIST0 Constr.binder; ann=fixannot;
+        ":"; ty=lconstr -> (loc,id,bl,ann,ty) ] ]
   ;
-  cofixdecl:
-    [ [ id = base_ident; ":"; c = constr -> (id,c) ] ]
+  fixannot:
+    [ [ "{"; IDENT "struct"; id=name; "}" -> Some id
+      | -> None ] ]
   ;
   hintbases:
     [ [ "with"; "*" -> None
@@ -265,39 +302,42 @@ GEXTEND Gram
       | "fix"; n = natural -> TacFix (None,n)
       | "fix"; id = base_ident; n = natural -> TacFix (Some id,n)
       | "fix"; id = base_ident; n = natural; "with"; fd = LIST0 fixdecl ->
-	  TacMutualFix (id,n,fd)
+	  TacMutualFix (id,n,List.map mk_fix_tac fd)
       | "cofix" -> TacCofix None
       | "cofix"; id = base_ident -> TacCofix (Some id)
-      | "cofix"; id = base_ident; "with"; fd = LIST0 cofixdecl ->
-	  TacMutualCofix (id,fd)
+      | "cofix"; id = base_ident; "with"; fd = LIST0 fixdecl ->
+	  TacMutualCofix (id,List.map mk_cofix_tac fd)
 
       | IDENT "cut"; c = constr -> TacCut c
+      | IDENT "assert"; id = lpar_id_colon; t = lconstr; ")" ->
+          TacTrueCut (Some id,t)
+      | IDENT "assert"; id = lpar_id_coloneq; b = lconstr; ")" ->
+          TacForward (false,Names.Name id,b)
       | IDENT "assert"; c = constr -> TacTrueCut (None,c)
-      | IDENT "assert"; c = constr; ":"; t = lconstr ->
-          TacTrueCut (Some (coerce_to_id c),t)
-      | IDENT "assert"; c = constr; ":="; b = lconstr ->
-          TacForward (false,Names.Name (coerce_to_id c),b)
-      | IDENT "pose"; c = constr; ":="; b = lconstr ->
-	  TacForward (true,Names.Name (coerce_to_id c),b)
+      | IDENT "pose"; id = lpar_id_coloneq; b = lconstr; ")" ->
+	  TacForward (true,Names.Name id,b)
       | IDENT "pose"; b = constr -> TacForward (true,Names.Anonymous,b)
       | IDENT "generalize"; lc = LIST1 constr -> TacGeneralize lc
       | IDENT "generalize"; IDENT "dependent"; c = constr ->
           TacGeneralizeDep c
-      | IDENT "lettac"; id = base_ident; ":="; c = lconstr; p = clause_pattern
-        -> TacLetTac (id,c,p)
-      | IDENT "instantiate"; n = natural; c = constr -> TacInstantiate (n,c)
+      | IDENT "lettac"; "("; id = base_ident; ":="; c = lconstr; ")";
+          p = clause_pattern -> TacLetTac (id,c,p)
+      | IDENT "instantiate"; "("; n = natural; ":="; c = lconstr; ")" ->
+          TacInstantiate (n,c)
 
       | IDENT "specialize"; n = OPT natural; lcb = constr_with_bindings ->
 	  TacSpecialize (n,lcb)
       | IDENT "lapply"; c = constr -> TacLApply c
 
       (* Derived basic tactics *)
-      | IDENT "oldinduction"; h = quantified_hypothesis -> TacOldInduction h
+      | IDENT "simple_induction"; h = quantified_hypothesis ->
+          TacSimpleInduction h
       | IDENT "induction"; c = induction_arg; el = OPT eliminator;
           ids = with_names -> TacNewInduction (c,el,ids)
       | IDENT "double"; IDENT "induction"; h1 = quantified_hypothesis;
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
-      | IDENT "olddestruct"; h = quantified_hypothesis -> TacOldDestruct h
+      | IDENT "simple_destruct"; h = quantified_hypothesis ->
+          TacSimpleDestruct h
       | IDENT "destruct"; c = induction_arg; el = OPT eliminator; 
           ids = with_names -> TacNewDestruct (c,el,ids)
       | IDENT "decompose"; IDENT "record" ; c = constr -> TacDecomposeAnd c

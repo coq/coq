@@ -23,6 +23,21 @@ open Genarg
 open Libnames
 open Pptactic
 
+let strip_prod_binders_expr n ty =
+  let rec strip_ty acc n ty =
+    match ty with
+        Topconstr.CProdN(_,bll,a) ->
+          let nb =
+            List.fold_left (fun i (nal,_) -> i + List.length nal) 0 bll in
+          if nb >= n then (List.rev (bll@acc), a)
+          else strip_ty (bll@acc) (n-nb) a
+      | Topconstr.CArrow(_,a,b) ->
+          if n=1 then
+            (List.rev (([(dummy_loc,Anonymous)],a)::acc), b)
+          else strip_ty (([(dummy_loc,Anonymous)],a)::acc) (n-1) b
+      | _ -> error "Cannot translate fix tactic: not enough products" in
+  strip_ty [] n ty
+
 (* In v8 syntax only double quote char is escaped by repeating it *)
 let rec escape_string_v8 s =
   let rec escape_at s i =
@@ -281,9 +296,10 @@ let rec pr_tacarg_using_rule pr_gen = function
 
 let pr_then () = str ";"
 
+
 open Closure
 
-let make_pr_tac (pr_tac,pr_tac0,pr_constr,pr_lconstr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend) =
+let make_pr_tac (pr_tac,pr_tac0,pr_constr,pr_lconstr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,strip_prod_binders) =
 
 let pr_bindings env = pr_bindings (pr_lconstr env) (pr_constr env) in
 let pr_ex_bindings env = pr_bindings_gen true (pr_lconstr env) (pr_constr env) in
@@ -293,6 +309,52 @@ let pr_constrarg env c = spc () ++ pr_constr env c in
 let pr_lconstrarg env c = spc () ++ pr_lconstr env c in
 
 let pr_intarg n = spc () ++ int n in
+
+let pr_binder_fix env (nal,t) =
+(*  match t with
+  | CHole _ -> spc() ++ prlist_with_sep spc (pr_located pr_name) nal
+  | _ ->*)
+    let s =
+      prlist_with_sep spc (pr_located pr_name) nal ++ str ":" ++
+      pr_lconstr env t in
+    spc() ++ hov 1 (str"(" ++ s ++ str")") in
+
+let pr_fix_tac env (id,n,c) =
+  let rec set_nth_name avoid n = function
+      (nal,ty)::bll ->
+        if n <= List.length nal then
+          match list_chop (n-1) nal with
+              _, (_,Name id) :: _ -> id, (nal,ty)::bll
+            | bef, (loc,Anonymous) :: aft ->
+                let id = next_ident_away_from (id_of_string"y") avoid in
+                id, ((bef@(loc,Name id)::aft, ty)::bll)
+            | _ -> assert false
+        else
+          let (id,bll') = set_nth_name avoid (n-List.length nal) bll in
+          (id,(nal,ty)::bll')
+    | [] -> assert false in
+  let (bll,ty) = strip_prod_binders n c in
+  let names =
+    List.fold_left
+      (fun ln (nal,_) -> List.fold_left
+          (fun ln na -> match na with (_,Name id) -> id::ln | _ -> ln)
+          ln nal)
+      [] bll in
+  let idarg,bll = set_nth_name names n bll in
+  let annot =
+    if List.length names = 1 then mt()
+    else spc() ++ str"{struct " ++ pr_id idarg ++ str"}" in
+  spc() ++ str"with " ++
+  hov 0 (pr_id id ++ 
+        prlist (pr_binder_fix env) bll ++ annot ++ str" :" ++ spc() ++
+        pr_lconstr env ty) in
+(*  spc() ++
+  hov 0 (pr_id id ++ pr_intarg n ++ str":" ++ pr_constrarg
+    env c)
+*)
+let pr_cofix_tac env (id,c) =
+  spc() ++ str"with " ++ hov 0 (pr_id id ++ str":" ++ pr_constrarg env c) in
+
 
   (* Printing tactics as arguments *)
 let rec pr_atom0 env = function
@@ -311,7 +373,7 @@ let rec pr_atom0 env = function
   (* Main tactic printer *)
 and pr_atom1 env = function
   | TacExtend (loc,s,l) ->
-      pr_with_comments loc 
+      pr_with_comments loc
         (pr_extend (pr_constr env) (pr_lconstr env) (pr_tac env) s l)
   | TacAlias (loc,s,l,_) ->
       pr_with_comments loc
@@ -341,36 +403,26 @@ and pr_atom1 env = function
   | TacCaseType c -> hov 1 (str "casetype" ++ pr_constrarg env c)
   | TacFix (ido,n) -> hov 1 (str "fix" ++ pr_opt pr_id ido ++ pr_intarg n)
   | TacMutualFix (id,n,l) ->
-      hov 1 (str "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc () ++
-        hv 0 (str "with" ++ brk (1,1) ++
-          prlist
-	    (fun (id,n,c) ->
-	      spc() ++
-	      hov 0 (pr_id id ++ pr_intarg n ++ str":" ++ pr_constrarg env c))
-	  l))
+      hov 1 (str "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++
+             prlist (pr_fix_tac env) l)
   | TacCofix ido -> hov 1 (str "cofix" ++ pr_opt pr_id ido)
   | TacMutualCofix (id,l) ->
       hov 1 (str "cofix" ++ spc () ++ pr_id id ++ spc () ++
-        hv 0 (str "with" ++ brk (1,1) ++
-          prlist
-	    (fun (id,c) ->
-	      spc() ++ 
-	      hov 0 (pr_id id ++ str":" ++ pr_constrarg env c))
-	  l))
+             prlist (pr_cofix_tac env) l)
   | TacCut c -> hov 1 (str "cut" ++ pr_constrarg env c)
   | TacTrueCut (None,c) -> 
       hov 1 (str "assert" ++ pr_constrarg env c)
   | TacTrueCut (Some id,c) -> 
-      hov 1 (str "assert" ++ spc () ++ pr_id id ++ str ":" ++
-             pr_lconstrarg env c)
+      hov 1 (str "assert" ++ spc () ++ str"(" ++ pr_id id ++ str ":" ++
+             pr_lconstrarg env c ++ str")")
   | TacForward (false,na,c) ->
-      hov 1 (str "assert" ++ pr_arg pr_name na ++ str " :=" ++
-             pr_lconstrarg env c)
+      hov 1 (str "assert" ++ spc () ++ str"(" ++ pr_name na ++ str " :=" ++
+             pr_lconstrarg env c ++ str")")
   | TacForward (true,Anonymous,c) ->
       hov 1 (str "pose" ++ pr_constrarg env c)
   | TacForward (true,Name id,c) ->
-      hov 1 (str "pose" ++ pr_arg pr_id id ++ str " :=" ++
-             pr_lconstrarg env c)
+      hov 1 (str "pose" ++ spc() ++ str"(" ++ pr_id id ++ str " :=" ++
+             pr_lconstrarg env c ++ str")")
   | TacGeneralize l ->
       hov 1 (str "generalize" ++ spc () ++
              prlist_with_sep spc (pr_constr env) l)
@@ -378,20 +430,21 @@ and pr_atom1 env = function
       hov 1 (str "generalize" ++ spc () ++ str "dependent" ++
              pr_constrarg env c)
   | TacLetTac (id,c,cl) ->
-      hov 1 (str "lettac" ++ spc () ++ pr_id id ++ str " :=" ++
-        pr_constrarg env c ++ pr_clause_pattern pr_ident cl)
+      hov 1 (str "lettac" ++ spc () ++ str"(" ++ pr_id id ++ str " :=" ++
+        pr_lconstrarg env c ++ str")" ++ pr_clause_pattern pr_ident cl)
   | TacInstantiate (n,c) ->
-      hov 1 (str "instantiate" ++ pr_arg int n ++ pr_constrarg env c)
+      hov 1 (str "instantiate" ++ pr_arg int n ++ str":=" ++
+             pr_lconstrarg env c ++ str")")
 
   (* Derived basic tactics *)
-  | TacOldInduction h ->
-      hov 1 (str "oldinduction" ++ pr_arg pr_quantified_hypothesis h)
+  | TacSimpleInduction h ->
+      hov 1 (str "simple_induction" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewInduction (h,e,ids) ->
       hov 1 (str "induction" ++ spc () ++
              pr_induction_arg (pr_constr env) h ++
              pr_opt (pr_eliminator env) e ++ pr_with_names ids)
-  | TacOldDestruct h ->
-      hov 1 (str "olddestruct" ++ pr_arg pr_quantified_hypothesis h)
+  | TacSimpleDestruct h ->
+      hov 1 (str "simple_destruct" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewDestruct (h,e,ids) ->
       hov 1 (str "destruct" ++ spc () ++
              pr_induction_arg (pr_constr env) h ++
@@ -619,6 +672,25 @@ let pi1 (a,_,_) = a
 let pi2 (_,a,_) = a
 let pi3 (_,_,a) = a
 
+let strip_prod_binders_rawterm n (ty,_) =
+  let rec strip_ty acc n ty =
+    if n=0 then (List.rev acc, (ty,None)) else
+      match ty with
+          Rawterm.RProd(loc,na,a,b) ->
+            strip_ty (([dummy_loc,na],(a,None))::acc) (n-1) b
+        | _ -> error "Cannot translate fix tactic: not enough products" in
+  strip_ty [] n ty
+
+let strip_prod_binders_constr n ty =
+  let rec strip_ty acc n ty =
+    if n=0 then (List.rev acc, ty) else
+      match Term.kind_of_term ty with
+          Term.Prod(na,a,b) ->
+            strip_ty (([dummy_loc,na],a)::acc) (n-1) b
+        | _ -> error "Cannot translate fix tactic: not enough products" in
+  strip_ty [] n ty
+
+
 let rec raw_printers =
     (pr_raw_tactic, 
      pr_raw_tactic0,
@@ -629,7 +701,8 @@ let rec raw_printers =
      (fun _ -> pr_reference),
      pr_reference,
      pr_or_metaid (pr_located pr_id),
-     Pptactic.pr_raw_extend)
+     Pptactic.pr_raw_extend,
+     strip_prod_binders_expr)
 
 and pr_raw_tactic env (t:raw_tactic_expr) =
   pi1 (make_pr_tac raw_printers) env t
@@ -642,6 +715,7 @@ and pr_raw_match_rule env t =
 
 let pr_and_constr_expr pr (c,_) = pr c
 
+
 let rec glob_printers =
     (pr_glob_tactic, 
      pr_glob_tactic0,
@@ -652,7 +726,8 @@ let rec glob_printers =
      (fun vars -> pr_or_var (pr_inductive vars)),
      pr_ltac_or_var (pr_located pr_ltac_constant),
      pr_located pr_id,
-     Pptactic.pr_glob_extend)
+     Pptactic.pr_glob_extend,
+     strip_prod_binders_rawterm)
 
 and pr_glob_tactic env (t:glob_tactic_expr) =
   pi1 (make_pr_tac glob_printers) env t
@@ -674,4 +749,5 @@ let (pr_tactic,_,_) =
      pr_inductive,
      pr_ltac_constant,
      pr_id,
-     Pptactic.pr_extend)
+     Pptactic.pr_extend,
+     strip_prod_binders_constr)

@@ -389,32 +389,6 @@ let pr_app pr a l =
     pr (lapp,L) a  ++ 
     prlist (fun a -> spc () ++ pr_expl_args pr a) l)
 
-
-let cs = function
-  | CRef(Ident(_,i)) -> "ID"
-  | CRef(Qualid(_,q)) -> "Q"
-  | CFix(_,x,a) -> "FX"
-  | CCoFix(_,x,a) -> "CFX"
-  | CArrow(_,a,b) -> "->"
-  | CProdN(_,bl,a) -> "Pi"
-  | CLambdaN(_,bl,a) -> "L"
-  | CLetIn(_,x,a,b) -> "LET"
-  | CAppExpl(_,f,a) -> "@E"
-  | CApp(_,f,a) -> "@"
-  | CCases(_,p,a,br) -> "C"
-  | COrderedCase(_,s,p,a,br) -> "OC"
-  | CLetTuple(_,ids,p,a,b) -> "LC"
-  | CIf(_,e,p,a,b) -> "LI"
-  | CHole _ -> "?"
-  | CPatVar(_,v) -> "PV"
-  | CEvar(_,ev) -> "EV"
-  | CSort(_,s) -> "S"
-  | CCast(_,a,b) -> "::"
-  | CNotation(_,n,l) -> "NOT"
-  | CNumeral(_,i) -> "NUM"
-  | CDelimiters(_,s,e) -> "DEL"
-  | CDynamic(_,d) -> "DYN"
-
 let rec pr inherited a =
   let (strm,prec) = match a with
   | CRef r -> pr_reference r, latom
@@ -441,6 +415,12 @@ let rec pr inherited a =
 	str"fun" ++ spc() ++ pr_delimited_binders (pr ltop) bl ++
         str " =>" ++ spc() ++ pr ltop a),
       llambda
+  | CLetIn (_,(_,Name x),(CFix(_,(_,x'),_)|CCoFix(_,(_,x'),_) as fx), b)
+      when x=x' ->
+      hv 0 (
+        hov 2 (str "let " ++ pr ltop fx ++ str " in") ++
+        spc () ++ pr ltop b),
+      lletin
   | CLetIn (_,x,a,b) ->
       hv 0 (
         hov 2 (str "let " ++ pr_located pr_name x ++ str " :=" ++ spc() ++
@@ -559,7 +539,7 @@ let rec strip_context n iscast t =
 	let n' = List.length nal in
 	if n' > n then
 	  let nal1,nal2 = list_chop n nal in
-	  [LocalRawAssum (nal1,t)], CLambdaN (loc,(nal2,t)::bll,c)
+	  [LocalRawAssum (nal1,t)], CProdN (loc,(nal2,t)::bll,c)
 	else
 	let bl', c = strip_context (n-n') iscast
 	  (if bll=[] then c else CProdN (loc,bll,c)) in

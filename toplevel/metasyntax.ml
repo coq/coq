@@ -616,6 +616,9 @@ let make_syntax_rule n name symbols typs ast ntn sc =
     syn_hunks =
       [UNP_SYMBOLIC(sc,ntn,UNP_BOX (PpHOVB 1,make_hunks_ast symbols typs n))]}]
 
+let make_pp_rule (n,typs,symbols) =
+  [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
+
 let make_pp_rule (n,typs,symbols,fmt) =
   match fmt with
     | None -> [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
@@ -875,7 +878,6 @@ let make_old_pp_rule n symbols typs r ntn scope vars =
 let add_notation_in_scope local df c mods omodv8 scope toks =
   let ((onlyparse,vars,notation),prec,(n,typs,symbols,_ as ppdata)) =
     compute_syntax_data !Options.v7 (df,mods) in
-
   (* Declare the parsing and printing rules if not already done *)
     (* For both v7 and translate: parsing is as described for v7 in v7 file *)
     (* For v8: parsing is as described in v8 file *)
@@ -885,21 +887,23 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
     (* In short: parsing does not depend on omodv8 *)
     (* Printing depends on mv8 if defined, otherwise of mods (scaled by 10) *)
     (* if in v7, or of mods without scaling if in v8 *)
-  let ppprec,pp_rule =
+  let ppnot,ppprec,pp_rule =
     match omodv8 with
-    | Some mv8 -> let _,p,d = compute_syntax_data false mv8 in p,make_pp_rule d
+    | Some mv8 ->
+        let (_,_,ntn8),p,d = compute_syntax_data false mv8 in
+        ntn8,p,make_pp_rule d
     | _ -> 
 	(* means the rule already exists: recover it *)
 	try 
 	  let _, oldprec8 = Symbols.level_of_notation notation in
 	  let rule,_ = Symbols.find_notation_printing_rule notation in
-	  oldprec8,rule
+	  notation,oldprec8,rule
 	with Not_found -> error "No known parsing rule for this notation in V8"
   in
-  let gram_rule = make_grammar_rule n typs symbols notation in
+  let gram_rule = make_grammar_rule n typs symbols ppnot in
   Lib.add_anonymous_leaf
     (inSyntaxExtension
-      (local,(Some prec,ppprec),notation,Some gram_rule,pp_rule));
+      (local,(Some prec,ppprec),ppnot,Some gram_rule,pp_rule));
 
   (* Declare interpretation *)
   let a = interp_aconstr vars c in
@@ -912,7 +916,7 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
   let onlyparse = onlyparse or !Options.v7_only in
   let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
   Lib.add_anonymous_leaf
-    (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,false,df))
+    (inNotation(local,old_pp_rule,ppnot,scope,a,onlyparse,false,df))
 
 let level_rule (n,p) = if p = E then n else max (n-1) 0
 

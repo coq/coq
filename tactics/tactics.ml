@@ -1459,24 +1459,24 @@ let raw_induct s = tclTHEN (intros_until_id s) (tclLAST_HYP simplest_elim)
 let raw_induct_nodep n = tclTHEN (intros_until_n n) (tclLAST_HYP simplest_elim)
 
 (* This was Induction in 6.3 (hybrid form) *)
-let old_induct_id s =
+let simple_induct_id s =
   tclORELSE (raw_induct s) (induction_from_context true true None s [])
-let old_induct_nodep = raw_induct_nodep
+let simple_induct_nodep = raw_induct_nodep
 
-let old_induct = function
-  | NamedHyp id -> old_induct_id id
-  | AnonHyp n -> old_induct_nodep n
+let simple_induct = function
+  | NamedHyp id -> simple_induct_id id
+  | AnonHyp n -> simple_induct_nodep n
 
 (* Destruction tactics *)
 
-let old_destruct_id s    =
+let simple_destruct_id s    =
   (tclTHEN (intros_until_id s) (tclLAST_HYP simplest_case))
-let old_destruct_nodep n =
+let simple_destruct_nodep n =
   (tclTHEN (intros_until_n n)    (tclLAST_HYP simplest_case))
 
-let old_destruct = function
-  | NamedHyp id -> old_destruct_id id
-  | AnonHyp n -> old_destruct_nodep n
+let simple_destruct = function
+  | NamedHyp id -> simple_destruct_id id
+  | AnonHyp n -> simple_destruct_nodep n
 
 (*
  *  Eliminations giving the type instead of the proof.

@@ -15,7 +15,10 @@ open Pcoq
 open Genarg
 open Pp
 
-let pr_mlname _ _ s = spc () ++ str"\"" ++ str s ++ str"\""
+let pr_mlname _ _ s =
+  spc () ++
+  (if !Options.v7 && not (Options.do_translate()) then qs s
+  else Pptacticnew.qsnew s)
 
 ARGUMENT EXTEND mlname
   TYPED AS string

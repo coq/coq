@@ -100,10 +100,11 @@ let parse_phrase (po, verbch) =
 let just_parsing = ref false
 let chan_translate = ref stdout
 
-
 let pr_new_syntax loc ocom =
-  Format.set_formatter_out_channel !chan_translate;
-  Format.set_max_boxes max_int;
+  if !translate_file then begin
+    Format.set_formatter_out_channel !chan_translate;
+    Format.set_max_boxes max_int;
+  end;
   let fs = States.freeze () in
   let com = match ocom with
     | Some (VernacV7only _) ->
@@ -117,11 +118,7 @@ let pr_new_syntax loc ocom =
     | Some com -> pr_vernac com
     | None -> mt() in
   if !translate_file then
-    msg (hov 0 (
-(*str"{"++int (fst loc)++str"}"++List.fold_right (fun ((b,e),s) strm -> str"("++int b++str","++int
-  e++str":"++str s++str")"++strm)
-  !Pp.comments (mt()) ++*)
-comment (fst loc) ++ com ++ comment (snd loc - 1)))
+    msg (hov 0 (comment (fst loc) ++ com ++ comment (snd loc)))
   else
     msgnl (hov 4 (str"New Syntax:" ++ fnl() ++ com));
   States.unfreeze fs;
@@ -135,7 +132,7 @@ let rec vernac_com interpfun (loc,com) =
         let ch = !chan_translate in
         let cs = Lexer.com_state() in
         let cl = !Pp.comments in
-        if Options.do_translate() then begin
+        if !Options.translate_file then begin
           let _,f = find_file_in_path (Library.get_load_path ())
             (make_suffix fname ".v") in
           chan_translate := open_out (f^"8");
@@ -143,12 +140,12 @@ let rec vernac_com interpfun (loc,com) =
         end;
         begin try
           read_vernac_file verbosely (make_suffix fname ".v");
-          if Options.do_translate () then close_out !chan_translate;
+          if !Options.translate_file then close_out !chan_translate;
           chan_translate := ch;
           Lexer.restore_com_state cs;
           Pp.comments := cl
         with e ->
-          if Options.do_translate() then close_out !chan_translate;
+          if !Options.translate_file then close_out !chan_translate;
           chan_translate := ch;
           Lexer.restore_com_state cs;
           Pp.comments := cl;
@@ -221,12 +218,12 @@ let raw_do_vernac po =
 (* Load a vernac file. Errors are annotated with file and location *)
 let load_vernac verb file =
   chan_translate :=
-    if Options.do_translate () then open_out (file^"8") else stdout;
+    if !Options.translate_file then open_out (file^"8") else stdout;
   try 
     read_vernac_file verb file;
-    if Options.do_translate () then close_out !chan_translate;
+    if !Options.translate_file then close_out !chan_translate;
   with e -> 
-    if Options.do_translate () then close_out !chan_translate;
+    if !Options.translate_file then close_out !chan_translate;
     raise_with_file file e
 
 (* Compile a vernac file (f is assumed without .v suffix) *)

@@ -759,7 +759,7 @@ GEXTEND Gram
     ] ]
   ;
   opt_scope:
-    [ [ IDENT "_" -> None | sc = IDENT -> Some sc ] ]
+    [ [ "_" -> None | sc = IDENT -> Some sc ] ]
   ;
   (* Syntax entries for Grammar. Only grammar_entry is exported *)
   grammar_entry:

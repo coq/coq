@@ -587,12 +587,14 @@ let rec intern_atomic lf ist x =
   | TacDAuto (n,p) -> TacDAuto (n,p)
 
   (* Derived basic tactics *)
-  | TacOldInduction h -> TacOldInduction (intern_quantified_hypothesis ist h)
+  | TacSimpleInduction h ->
+      TacSimpleInduction (intern_quantified_hypothesis ist h)
   | TacNewInduction (c,cbo,ids) ->
       TacNewInduction (intern_induction_arg ist c,
                option_app (intern_constr_with_bindings ist) cbo,
                List.map (List.map (intern_intro_pattern lf ist)) ids)
-  | TacOldDestruct h -> TacOldDestruct (intern_quantified_hypothesis ist h)
+  | TacSimpleDestruct h ->
+      TacSimpleDestruct (intern_quantified_hypothesis ist h)
   | TacNewDestruct (c,cbo,ids) ->
       TacNewDestruct (intern_induction_arg ist c,
                option_app (intern_constr_with_bindings ist) cbo,
@@ -1602,13 +1604,14 @@ and interp_atomic ist gl = function
   | TacDAuto (n,p) -> Auto.h_dauto (n,p)
 
   (* Derived basic tactics *)
-  | TacOldInduction h ->
-      h_old_induction (interp_quantified_hypothesis ist gl h)
+  | TacSimpleInduction h ->
+      h_simple_induction (interp_quantified_hypothesis ist gl h)
   | TacNewInduction (c,cbo,ids) ->
       h_new_induction (interp_induction_arg ist gl c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
         (List.map (List.map (interp_intro_pattern ist)) ids)
-  | TacOldDestruct h -> h_old_destruct (interp_quantified_hypothesis ist gl h)
+  | TacSimpleDestruct h ->
+      h_simple_destruct (interp_quantified_hypothesis ist gl h)
   | TacNewDestruct (c,cbo,ids) -> 
       h_new_destruct (interp_induction_arg ist gl c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
@@ -1831,11 +1834,11 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacDAuto (n,p) -> TacDAuto (n,p)
 
   (* Derived basic tactics *)
-  | TacOldInduction h as x -> x
+  | TacSimpleInduction h as x -> x
   | TacNewInduction (c,cbo,ids) ->
       TacNewInduction (subst_induction_arg subst c,
                option_app (subst_raw_with_bindings subst) cbo, ids)
-  | TacOldDestruct h as x -> x
+  | TacSimpleDestruct h as x -> x
   | TacNewDestruct (c,cbo,ids) ->
       TacNewDestruct (subst_induction_arg subst c,
                option_app (subst_raw_with_bindings subst) cbo, ids)

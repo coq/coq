@@ -53,8 +53,8 @@ val h_instantiate     : int -> constr -> tactic
 
 (* Derived basic tactics *)
 
-val h_old_induction   : quantified_hypothesis -> tactic
-val h_old_destruct    : quantified_hypothesis -> tactic
+val h_simple_induction   : quantified_hypothesis -> tactic
+val h_simple_destruct    : quantified_hypothesis -> tactic
 val h_new_induction   :
   constr induction_arg -> constr with_bindings option ->
     intro_pattern_expr list list -> tactic

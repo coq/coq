@@ -109,10 +109,10 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacInstantiate of int * 'constr
 
   (* Derived basic tactics *)
-  | TacOldInduction of quantified_hypothesis
+  | TacSimpleInduction of quantified_hypothesis
   | TacNewInduction of 'constr induction_arg * 'constr with_bindings option
       * intro_pattern_expr list list
-  | TacOldDestruct of quantified_hypothesis
+  | TacSimpleDestruct of quantified_hypothesis
   | TacNewDestruct of 'constr induction_arg * 'constr with_bindings option
       * intro_pattern_expr list list
 

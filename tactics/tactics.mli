@@ -172,7 +172,7 @@ val elim          : constr with_bindings -> constr with_bindings option -> tacti
 val general_elim_in : identifier -> constr * constr bindings ->
                       constr * constr bindings -> tactic
 
-val old_induct     : quantified_hypothesis -> tactic
+val simple_induct     : quantified_hypothesis -> tactic
 val general_elim_in : identifier -> constr * constr bindings ->
                       constr * constr bindings -> tactic
 
@@ -184,7 +184,7 @@ val new_induct : constr induction_arg -> constr with_bindings option ->
 val general_case_analysis : constr with_bindings ->  tactic
 val simplest_case         : constr -> tactic
 
-val old_destruct          : quantified_hypothesis -> tactic
+val simple_destruct          : quantified_hypothesis -> tactic
 val new_destruct : constr induction_arg -> constr with_bindings option ->
   intro_pattern_expr list list -> tactic
 

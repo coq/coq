@@ -50,8 +50,10 @@ let h_instantiate n c =
   abstract_tactic (TacInstantiate (n,c)) (Evar_refiner.instantiate n c)
 
 (* Derived basic tactics *)
-let h_old_induction h = abstract_tactic (TacOldInduction h) (old_induct h)
-let h_old_destruct h  = abstract_tactic (TacOldDestruct h) (old_destruct h)
+let h_simple_induction h =
+  abstract_tactic (TacSimpleInduction h) (simple_induct h)
+let h_simple_destruct h  =
+  abstract_tactic (TacSimpleDestruct h) (simple_destruct h)
 let h_new_induction c e idl =
   abstract_tactic (TacNewInduction (c,e,idl)) (new_induct c e idl)
 let h_new_destruct c e idl =

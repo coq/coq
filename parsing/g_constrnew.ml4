@@ -22,7 +22,7 @@ open Util
 let constr_kw =
   [ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "in"; "for"; 
     "end"; "as"; "let"; "if"; "then"; "else"; "return";
-    "Prop"; "Set"; "Type"; ".(" ]
+    "Prop"; "Set"; "Type"; ".("; "_" ]
 
 let _ = 
   if not !Options.v7 then
@@ -46,47 +46,20 @@ let mk_lam = function
     ([],c) -> c
   | (bl,c) -> CLambdaN(constr_loc c, bl,c)
 
-let coerce_to_id c =
-  match c with
-      CRef(Ident(loc,id)) -> (loc,Name id)
-    | CHole loc -> (loc,Anonymous)
-    | _ -> error "ill-formed match type annotation"
-
-let match_bind_of_pat loc (oid,ty) =
-  let l2 =
-    match oid with
-        None -> []
-      | Some x -> [([x],CHole loc)] in
-  let l1 =
-    match ty with
-        None -> [] (* No: should lookup inductive arity! *)
-      | Some (CApp(_,_,args)) -> (* parameters do not appear *)
-          List.map (fun (c,_) -> ([coerce_to_id c],CHole loc)) args
-      | _ -> error "ill-formed match type annotation" in
-  l1@l2
-
 let mk_match (loc,cil,rty,br) =
-(*
-  let (lc,pargs) = List.split cil in
-  let pr =
-    match rty with
-        None -> None
-      | Some ty ->
-          let idargs = (* TODO: not forget the list lengths for PP! *)
-            List.flatten (List.map (match_bind_of_pat loc) pargs) in
-          Some (CLambdaN(loc,idargs,ty)) in
-*)
   CCases(loc,(None,rty),cil,br)
 
+let index_of_annot bl ann =
+  match bl,ann with
+      [([_],_)], None -> 0
+    | _, Some x ->
+        let ids = List.map snd (List.flatten (List.map fst bl)) in
+        (try list_index (snd x) ids - 1
+        with Not_found -> error "no such fix variable")
+    | _ -> error "cannot guess decreasing argument of fix"
+
 let mk_fixb (loc,id,bl,ann,body,(tloc,tyc)) =
-  let n =
-    match bl,ann with
-        [([_],_)], None -> 0
-      | _, Some x ->
-          let ids = List.map snd (List.flatten (List.map fst bl)) in
-          (try list_index (snd x) ids - 1
-          with Not_found -> error "no such fix variable")
-      | _ -> error "cannot find decreasing arg of fix" in
+  let n = index_of_annot bl ann in
   let ty = match tyc with
       None -> CHole tloc
     | Some t -> CProdN(loc,bl,t) in
@@ -113,7 +86,6 @@ let mk_fix(loc,kw,id,dcls) =
 let binder_constr =
   create_constr_entry (get_univ "constr") "binder_constr"
 
-
 let rec mkCProdN loc bll c =
   match bll with
   | LocalRawAssum ((loc1,_)::_ as idl,t) :: bll -> 
@@ -132,32 +104,34 @@ let rec mkCLambdaN loc bll c =
   | [] -> c
   | LocalRawAssum ([],_) :: bll -> mkCLambdaN loc bll c
 
-(* Hack to parse "(n)" as nat without conflicts with the (useless) *)
-(* admissible notation "(n)" *)
-let test_lpar_id_coloneq =
+(* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
+(* admissible notation "(x t)" *)
+let lpar_id_coloneq =
   Gram.Entry.of_parser "test_lpar_id_coloneq"
     (fun strm ->
-      match Stream.npeek 1 strm with
-        | [("", "(")] ->
-            begin match Stream.npeek 2 strm with
-              | [_; ("IDENT", _)] ->
-		  begin match Stream.npeek 3 strm with
-		    | [_; _; ("", ":=")] -> ()
-		    | _ -> raise Stream.Failure
-		  end
-	      | _ -> raise Stream.Failure
-            end
-        | _ -> raise Stream.Failure)
+      match Stream.npeek 3 strm with
+	| [("","("); ("IDENT",s); ("", ":=")] ->
+            Stream.junk strm; Stream.junk strm; Stream.junk strm;
+            Names.id_of_string s
+	| _ -> raise Stream.Failure);;
+
 
 if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
-  constr_pattern lconstr_pattern Constr.ident binder_let tuple_constr;
+  constr_pattern lconstr_pattern Constr.ident binder binder_let
+  tuple_constr;
   Constr.ident:
     [ [ id = Prim.ident -> id
 
       (* This is used in quotations and Syntax *)
       | id = METAIDENT -> id_of_string id ] ]
+  ;
+  Prim.name:
+    [ [ "_" -> (loc, Anonymous) ] ]
+  ;
+  Prim.ast:
+    [ [ "_" -> Coqast.Nvar(loc,id_of_string"_") ] ]
   ;
   global:
     [ [ r = Prim.reference -> r
@@ -177,7 +151,7 @@ GEXTEND Gram
       | "Type" -> RType None ] ]
   ;
   lconstr:
-    [ [ c = operconstr -> c ] ]
+    [ [ c = operconstr LEVEL "200" -> c ] ]
   ;
   constr:
     [ [ c = operconstr LEVEL "9" -> c ] ]
@@ -197,8 +171,6 @@ GEXTEND Gram
     | "80" RIGHTA
       [ c1 = operconstr; "->"; c2 = binder_constr -> CArrow(loc,c1,c2)
       | c1 = operconstr; "->"; c2 = operconstr    -> CArrow(loc,c1,c2) ]
-    | "40L" LEFTA
-      [ "-"; c = operconstr -> CNotation(loc,"- _",[c]) ]
     | "10L" LEFTA
       [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(None,f),args)
       | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args) ]
@@ -206,7 +178,8 @@ GEXTEND Gram
     | "1L" LEFTA
       [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
 	CApp(loc,(Some (List.length args+1),CRef f),args@[c,None])
-      | c=operconstr; ".("; "@"; f=global; args=LIST0 NEXT; ")" ->
+      | c=operconstr; ".("; "@"; f=global;
+        args=LIST0 (operconstr LEVEL "9"); ")" ->
         CAppExpl(loc,(Some (List.length args+1),f),args@[c]) 
       | c=operconstr; "%"; key=IDENT -> CDelimiters (loc,key,c) ]
     | "0"
@@ -217,19 +190,25 @@ GEXTEND Gram
   binder_constr:
     [ [ "forall"; bl = binder_list; ","; c = operconstr LEVEL "200" ->
           mkCProdN loc bl c
-      | "fun"; bl = binder_list; ty = type_cstr; "=>";
-        c = operconstr LEVEL "200" ->
-          mkCLambdaN loc bl (mk_cast(c,ty))
+      | "fun"; bl = binder_list; "=>"; c = operconstr LEVEL "200" ->
+          mkCLambdaN loc bl c
       | "let"; id=name; bl = LIST0 binder_let; ty = type_cstr; ":=";
-        c1 = operconstr; "in"; c2 = operconstr LEVEL "200" ->
+        c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->
           let loc1 = match bl with
             | LocalRawAssum ((loc,_)::_,_)::_ -> loc
             | LocalRawDef ((loc,_),_)::_ -> loc
             | _ -> dummy_loc in
           CLetIn(loc,id,mkCLambdaN loc1 bl (mk_cast(c1,ty)),c2)
+      | "let"; fx = fix_constr; "in"; c = operconstr LEVEL "200" ->
+          let (li,id) = match fx with
+              CFix(_,id,_) -> id
+            | CCoFix(_,id,_) -> id
+            | _ -> assert false in
+          CLetIn(loc,(li,Name id),fx,c)
       | "let"; lb = ["("; l=LIST0 name SEP ","; ")" -> l | "()" -> []];
 	  po = return_type;
-	  ":="; c1 = operconstr; "in"; c2 = operconstr LEVEL "200" ->
+	  ":="; c1 = operconstr LEVEL "200"; "in";
+          c2 = operconstr LEVEL "200" ->
           CLetTuple (loc,List.map snd lb,po,c1,c2)
       | "if"; c=operconstr; po = return_type;
 	"then"; b1=operconstr LEVEL "200";
@@ -238,21 +217,15 @@ GEXTEND Gram
       | c=fix_constr -> c ] ]
   ;
   appl_arg:
-    [ [ _ = test_lpar_id_coloneq; "("; id = ident; ":="; c=lconstr; ")" ->
+    [ [ id = lpar_id_coloneq; c=lconstr; ")" ->
 	  (c,Some (loc,ExplByName id))
-(*
-      | "@"; n=INT; ":="; c=constr -> (c,Some(loc,ExplByPos (int_of_string n)))
-*)
       | c=constr -> (c,None) ] ]
   ;
   atomic_constr:
     [ [ g=global -> CRef g
       | s=sort -> CSort(loc,s)
       | n=INT -> CNumeral (loc,Bignat.POS (Bignat.of_string n))
-      | IDENT "_" -> CHole loc
-(*
-      | "?"; n=Prim.natural -> CPatVar(loc,(false,Pattern.patvar_of_int n)) ] ]
-*)
+      | "_" -> CHole loc
       | "?"; id=ident -> CPatVar(loc,(false,id)) ] ]
   ;
   fix_constr:
@@ -282,12 +255,13 @@ GEXTEND Gram
   case_item:
     [ [ c=operconstr LEVEL "100"; p=pred_pattern -> 
       match c,p with
-        | CRef (Ident (_,id)), (Names.Anonymous,x) -> (c,(Name id,x))
-        | _ -> (c,p) ] ]
+        | CRef (Ident (_,id)), (None,indp) -> (c,(Name id,indp))
+        | _, (None,indp) -> (c,(Anonymous,indp))
+        | _, (Some na,indp) -> (c,(na,indp)) ] ]
   ;
   pred_pattern:
-    [ [ oid = ["as"; id=name -> snd id | -> Names.Anonymous];
-        ty = OPT ["in"; t=lconstr -> t] -> (oid,ty) ] ]
+    [ [ ona = OPT ["as"; id=name -> snd id];
+        ty = OPT ["in"; t=lconstr -> t] -> (ona,ty) ] ]
   ;
   case_type:
     [ [ ty = OPT [ "return"; c = operconstr LEVEL "100" -> c ] -> ty ] ]
@@ -302,24 +276,23 @@ GEXTEND Gram
   eqn:
     [ [ pl = LIST1 pattern SEP ","; "=>"; rhs = lconstr -> (loc,pl,rhs) ] ]
   ;
-  simple_pattern:
-    [ [ r = Prim.reference -> CPatAtom (loc,Some r)
-      | IDENT "_" -> CPatAtom (loc,None)
-      | "("; p = lpattern; ")" -> p
-      | n = bigint -> CPatNumeral (loc,n)
-    ] ]
-  ;
   pattern:
-    [ [ p = pattern ; lp = LIST1 simple_pattern ->
+    [ "1" LEFTA
+      [ p = pattern ; lp = LIST1 (pattern LEVEL "0") ->
         (match p with
           | CPatAtom (_, Some r) -> CPatCstr (loc, r, lp)
           | _ -> Util.user_err_loc 
-              (loc, "compound_pattern", Pp.str "Constructor expected"))
+              (cases_pattern_loc p, "compound_pattern",
+               Pp.str "Constructor expected"))
       | p = pattern; "as"; id = base_ident ->
 	  CPatAlias (loc, p, id)
       | c = pattern; "%"; key=IDENT -> 
-          CPatDelimiters (loc,key,c)
-      | p = simple_pattern -> p ] ]
+          CPatDelimiters (loc,key,c) ]
+    | "0"
+      [ r = Prim.reference -> CPatAtom (loc,Some r)
+      | "_" -> CPatAtom (loc,None)
+      | "("; p = lpattern; ")" -> p
+      | n = bigint -> CPatNumeral (loc,n) ] ]
   ;
   lpattern:
     [ [ c = pattern -> c

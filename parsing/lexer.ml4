@@ -110,7 +110,8 @@ let is_normal_token str =
   if String.length str > 0 then
     match str.[0] with
       | ' ' | '\n' | '\r' | '\t' | '"' -> bad_token str
-      | '_' | '$' | 'a'..'z' | 'A'..'Z' -> true
+      | '$' | 'a'..'z' | 'A'..'Z' -> true
+      | '_' -> !Options.v7
 	  (* utf-8 symbols of the form "E2 xx xx" [E2=226] *)
       | '\226' when String.length str > 2 ->
 	  (match str.[1], str.[2] with
@@ -122,9 +123,9 @@ let is_normal_token str =
 		false
 	    | _ ->
 		(* default to iso 8859-1 "â" *)
-		true)
+		!Options.v7)
 	  (* iso 8859-1 accentuated letters *)
-      | '\192'..'\214' | '\216'..'\246' | '\248'..'\255' -> true
+      | '\192'..'\214' | '\216'..'\246' | '\248'..'\255' -> !Options.v7
       | _ -> false
   else 
     bad_token str
@@ -347,7 +348,7 @@ let parse_226_tail tk = parser
 
 (* Parse what follows a dot *)
 let parse_after_dot bp c strm =
-  if (* !Options.v7 *) true then 
+  if !Options.v7 then 
     match strm with parser
 	 | [< ' ('_' | 'a'..'z' | 'A'..'Z' as c); len = ident (store 0 c) >] ->
 	     ("FIELD", get_buff len)
@@ -369,6 +370,19 @@ let parse_after_dot bp c strm =
 	 | [< (t,_) = process_chars bp c >] -> t
   else
     match strm with parser
+	 | [< ' ('a'..'z' | 'A'..'Z' as c); len = ident (store 0 c) >] ->
+	     ("FIELD", get_buff len)
+	 (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
+	 | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2); 
+	   len = ident (store (store 0 c1) c2) >] ->
+	     ("FIELD", get_buff len)
+         (* utf-8 mathematical symbols have format E2 xx xx [E2=226] *)
+	 | [< ''\226' as c1; t = parse_226_tail 
+	     (progress_special '.' (Some !token_tree)) >] ep ->
+	     (match t with
+	       | TokSymbol (Some t) -> ("", t)
+	       | TokSymbol None -> err (bp, ep) Undefined_token
+	       | TokIdent t -> ("FIELD", t))
 	 | [< (t,_) = process_chars bp c >] -> t
 
 
@@ -384,10 +398,20 @@ let rec next_token = parser bp
       comment_stop bp;
       if !Options.v7 & t=("",".") then between_com := true;
       (t, (bp,ep))
-  | [< ' ('_' | 'a'..'z' | 'A'..'Z' as c); len = ident (store 0 c) >] ep ->
+  | [< ' ('a'..'z' | 'A'..'Z' as c); len = ident (store 0 c) >] ep ->
       let id = get_buff len in 
       comment_stop bp;
       (try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
+  | [< ''_' as c; s >] ->
+      if !Options.v7 then 
+        (match s with parser [< len = ident (store 0 c) >] ep ->
+          let id = get_buff len in 
+          comment_stop bp;
+          (try ("", find_keyword id) with Not_found -> ("IDENT", id)),
+          (bp, ep))
+      else
+        (match s with parser [< t = process_chars bp c >] ->
+          comment_stop bp; t)
   (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
   | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2); 
 	   len = ident (store (store 0 c1) c2) >] ep ->
