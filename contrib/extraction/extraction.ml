@@ -247,17 +247,6 @@ let rec abstract_n n a =
   if n = 0 then a else MLlam (anonymous, ml_lift 1 (abstract_n (n-1) a))
 
 
-(*s Eta-expansion to bypass ML type inference limitations (due to possible
-    polymorphic references, the ML type system does not generalize all
-    type variables that could be generalized). *)
-
-let eta_expanse ec = function 
-  | Tmltype (Tarr _, _, _) ->
-      (match ec with
-	 | Emlterm (MLlam _) -> ec
-	 | Emlterm a -> Emlterm (MLlam (anonymous, MLapp (a, [MLrel 1])))
-	 | _ -> ec)
-  | _ -> ec
 
 (*s Error message when extraction ends on an axiom. *)
 
@@ -337,23 +326,17 @@ let rec extract_type env c =
 
 and extract_type_rec env c vl args = 
   (* We accumulate the context, arguments and generated variables list *)
-  try 
-    if sort_of env (applist (c, args)) = InProp 
-    then Tprop
-    else extract_type_rec_info env c vl args
-  with   
-      Anomaly _ -> 
-	let t = type_of env (applist (c, args)) in
-	(* Since [t] is an arity, there is two non-informative case: 
-	   [t] is an arity of sort [Prop], or 
-	   [c] has a non-informative head symbol *)
-	match get_arity env t with 
-	  | None -> 
-	      assert false (* Cf. precondition. *)
-	  | Some InProp ->
-	      Tprop 
-	  | Some _ -> extract_type_rec_info env c vl args
- 
+  let t = type_of env (applist (c, args)) in
+    (* Since [t] is an arity, there is two non-informative case: 
+       [t] is an arity of sort [Prop], or 
+       [c] has a non-informative head symbol *)
+    match get_arity env t with 
+      | None -> 
+	  assert false (* Cf. precondition. *)
+      | Some InProp ->
+	  Tprop 
+      | Some _ -> extract_type_rec_info env c vl args
+	    
 and extract_type_rec_info env c vl args = 
   match (kind_of_term (whd_betaiotalet env none c)) with
     | IsSort _ ->
@@ -739,9 +722,22 @@ and extract_constant sp =
              | (Logic,Arity) -> Emltype (Miniml.Tarity,[],[]))  (* Idem *)
       | Some body ->
           let e = extract_constr_with_type env [] body typ in
-          let e = eta_expanse e (extract_type env typ) in
+          let e = eta_expanse e typ in
           constant_table := Gmap.add sp e !constant_table;
           e
+
+(*s Eta-expansion to bypass ML type inference limitations (due to possible
+    polymorphic references, the ML type system does not generalize all
+    type variables that could be generalized). *)
+
+and eta_expanse ec typ = match ec with 
+  | Emlterm (MLlam _) -> ec
+  | Emlterm a -> 
+      (match extract_type (Global.env()) typ with 
+	 | Tmltype (Tarr _, _, _) -> 
+	     Emlterm (MLlam (anonymous, MLapp (a, [MLrel 1])))
+	 | _ -> ec)
+  | _ -> ec 
 
 (*s Extraction of an inductive. *)
     

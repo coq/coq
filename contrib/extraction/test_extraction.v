@@ -94,7 +94,7 @@ Extraction horibilis.
 
 Inductive predicate : Type := 
   | Atom : Prop -> predicate
-  | And  : predicate -> predicate -> predicate.
+  | EAnd  : predicate -> predicate -> predicate.
 
 Extraction predicate.
 
@@ -153,7 +153,7 @@ Extraction PropSet.
 Definition natbool := [b:bool]if b then nat else bool.
 Extraction natbool.
 
-Definition zerotrue := [b:bool]<natbool>if b then 0 else true.
+Definition zerotrue := [b:bool]<natbool>if b then O else true.
 Extraction zerotrue.
 
 Definition natProp := [b:bool]<[_:bool]Type>if b then nat else Prop.
@@ -163,7 +163,7 @@ Definition natTrue := [b:bool]<[_:bool]Type>if b then nat else True.
 Definition zeroTrue := [b:bool]<natProp>if b then O else True.
 Extraction zeroTrue.
 
-Definition natTrue := [b:bool]<[_:bool]Type>if b then nat else True.
+Definition natTrue2 := [b:bool]<[_:bool]Type>if b then nat else True.
 
 Definition zeroprop := [b:bool]<natTrue>if b then O else I.
 Extraction zeroprop.
@@ -181,7 +181,7 @@ Extraction
 
 (* still ok via optim beta -> let *)
 
-Extraction [id':(X:Type)X->X](pair ? ? (id' nat O) (id' bool true)
+Extraction [id':(X:Type)X->X](pair ? ? (id' nat O) (id' bool true)).
 
 (* problem: fun f -> (f 0, f true) not legal in ocaml *)
 (* solution: fun f -> (f 0, Obj.magic f true) *)
@@ -191,13 +191,13 @@ Extraction [id':(X:Type)X->X](pair ? ? (id' nat O) (id' bool true)
 Definition funPropSet:= 
  [b:bool]<[_:bool]Type>if b then (X:Prop)X->X else (X:Set)X->X.
 
-Definition funPropSet2:=
- [b:bool](X:if b then Prop else Set)X->X.
+(* Definition funPropSet2:=
+ [b:bool](X:if b then Prop else Set)X->X. *)
 
 Definition idpropset := 
  [b:bool]<funPropSet>if b then [X:Prop][x:X]x else [X:Set][x:X]x.
 
-Definition proprop := [b:bool]((idpropset b) (natTrue b) (zeroprop b)).
+(* Definition proprop := [b:bool]((idpropset b) (natTrue b) (zeroprop b)). *)
 
 Definition funProp := [b:bool][x:True]<natTrue>if b then O else x.
 
