@@ -67,12 +67,6 @@ let syntax_definition ident com =
   if is_verbose() then 
     message ((string_of_id ident) ^ " is now a syntax macro")
 
-(***TODO
-let abstraction_definition ident arity com =
-  let c = raw_interp_constrpattern Evd.empty (Global.env()) com in 
-  machine_abstraction ident arity c
-***)
-
 (* 2| Variable definitions *)
 
 let parameter_def_var ident c =
