@@ -331,7 +331,7 @@ $(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
 
 $(COQTOPBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO)
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
+	$(HIDE)$(COQMKTOP) -top $(BYTEFLAGS) -o $@
 
 $(COQTOP):
 	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)
@@ -555,7 +555,7 @@ $(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) ide/ide.cmxa
 
 $(COQIDEBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO) ide/ide.cma
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -g -ide -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
+	$(HIDE)$(COQMKTOP) -g -ide -top $(BYTEFLAGS) -o $@
 
 $(COQIDE):
 	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)
