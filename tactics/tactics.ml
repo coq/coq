@@ -238,23 +238,22 @@ let unfold_constr c =
 let next_global_ident_from id avoid = 
   let rec next_rec id =
     let id = next_ident_away_from id avoid in
-(*    if not (Declare.is_global id) then *)
+    if not (Declare.is_global id) then
       id
-(*    else  
+    else  
       next_rec (lift_ident id)
-*)  in 
+  in 
   next_rec id
 
 let next_global_ident_away id avoid =
   let id  = next_ident_away id avoid in
-(*  if not (Declare.is_global id) then *)
+  if not (Declare.is_global id) then
     id
-(*  else  
+  else  
     next_global_ident_from (lift_ident id) avoid
-*)
 
 let fresh_id avoid id gl =
-  next_global_ident_away id (avoid@(pf_ids_of_hyps gl))
+  next_ident_away id (avoid@(pf_ids_of_hyps gl))
 
 let id_of_name_with_default s = function
   | Anonymous -> id_of_string s
@@ -695,12 +694,12 @@ let letin_tac with_eq name c occs gl =
   let env = pf_env gl in
   let used_ids = ids_of_context env in
   let id =
-    if name = Anonymous then next_global_ident_away x used_ids else
+    if name = Anonymous then next_ident_away x used_ids else
       if not (mem_named_context x (named_context env)) then x else
 	error ("The variable "^(string_of_id x)^" is already declared") in
   let (depdecls,marks,ccl)= letin_abstract id c occs gl in 
   let t = pf_type_of gl c in
-  let heq = next_global_ident_away (id_of_string "Heq") used_ids in
+  let heq = next_ident_away (id_of_string "Heq") used_ids in
   let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
   let args = instance_from_named_context depdecls in
   let newcl =
@@ -1079,7 +1078,7 @@ let induct_discharge old_style indpath statuslists cname destopt avoid ra gl =
 		    in goal, then hypothesis associated to None in
 		    lstatus will be moved at a wrong place *)
 	if !tophyp=None then
-	  tophyp := Some (next_global_ident_away hyprecname avoid);
+	  tophyp := Some (next_ident_away hyprecname avoid);
         tclTHENLIST
 	  [ intro_gen (IntroBasedOn (recvarname,avoid)) destopt false;
 	    intro_gen (IntroBasedOn (hyprecname,avoid)) None false;
