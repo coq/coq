@@ -11,6 +11,7 @@
 Require Rbase.
 Require R_sqr.
 Require Rtrigo.
+Require R_sqrt.
 
 
 Definition dist_euc [x0,y0,x1,y1:R] : R := ``(sqrt ((Rsqr (x0-x1))+(Rsqr (y0-y1))))``.

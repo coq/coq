@@ -469,8 +469,6 @@ Elim H6; Intros; Unfold D_x in H10; Elim H10; Intros; Assumption.
 Elim H6; Intros; Assumption.
 Qed.
 
-Axiom derivable_pt_lim_sqrt : (x:R) ``0<x`` -> (derivable_pt_lim sqrt x ``/(2*(sqrt x))``).
-
 Axiom derivable_pt_lim_sin : (x:R) (derivable_pt_lim sin x (cos x)).
 
 Lemma derivable_pt_lim_cos : (x:R) (derivable_pt_lim cos x ``-(sin x)``).
@@ -553,12 +551,6 @@ Elim X; Intros.
 Elim X0 ;Intros.
 Apply Specif.existT with ``x1*x0``.
 Apply derivable_pt_lim_comp; Assumption.
-Qed.
-
-Lemma derivable_pt_sqrt : (x:R) ``0<x`` -> (derivable_pt sqrt x).
-Unfold derivable_pt; Intros.
-Apply Specif.existT with ``/(2*(sqrt x))``.
-Apply derivable_pt_lim_sqrt; Assumption.
 Qed.
 
 Lemma derivable_pt_sin : (x:R) (derivable_pt sin x).
@@ -728,12 +720,6 @@ Unfold derive_pt in H; Rewrite H in H3.
 Assert H4 := (projT2 ? ? pr2).
 Unfold derive_pt in H0; Rewrite H0 in H4.
 Apply derivable_pt_lim_comp; Assumption.
-Qed.
-
-Lemma derive_pt_sqrt : (x:R;pr:``0<x``) ``(derive_pt sqrt x (derivable_pt_sqrt ? pr)) == /(2*(sqrt x))``. 
-Intros.
-Apply derive_pt_eq_0.
-Apply derivable_pt_lim_sqrt; Assumption.
 Qed.
 
 Lemma derive_pt_sin : (x:R) ``(derive_pt sin x (derivable_pt_sin ?))==(cos x)``.

@@ -203,7 +203,8 @@ GEXTEND Gram
    [ [ IDENT "Token"; s = STRING ->
        Pp.warning "Token declarations are now useless"; VernacNop
 
-     | "Grammar"; IDENT "tactic"; IDENT "simple_tactic"; ":=";
+     | "Grammar"; IDENT "tactic"; IDENT "simple_tactic";
+        OPT [ ":"; IDENT "tactic" ]; ":=";
         OPT "|"; tl = LIST0 grammar_tactic_rule SEP "|" -> 
 	  VernacTacticGrammar tl
 

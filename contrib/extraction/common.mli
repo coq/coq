@@ -14,20 +14,17 @@ open Mlutil
 open Names
 open Libnames
 
-module ToplevelPp : Mlpp
-module OcamlMonoPp : Mlpp
-module HaskellMonoPp : Mlpp
-module SchemeMonoPp:Mlpp
-
 val is_long_module : dir_path -> global_reference -> bool
 
 val short_module : global_reference -> identifier
+
+val set_globals : unit -> unit
 
 val pp_logical_ind : global_reference -> std_ppcmds
 
 val pp_singleton_ind : global_reference -> std_ppcmds
 
-val set_globals : unit -> unit
+val pp_decl : bool -> ml_decl -> std_ppcmds
 
 val extract_to_file : 
   string option -> extraction_params -> ml_decl list -> unit

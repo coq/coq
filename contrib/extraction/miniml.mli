@@ -50,10 +50,12 @@ type ml_ast =
 (*s ML declarations. *)
 
 type ml_decl = 
-  | Dtype   of ml_ind list * bool (* cofix *)
-  | Dabbrev of global_reference * identifier list * ml_type
-  | Dglob   of global_reference * ml_ast
-  | Dcustom of global_reference * string
+  | Dind  of ml_ind list * bool (* cofix *)
+  | Dtype of global_reference * identifier list * ml_type
+  | Dterm   of global_reference * ml_ast
+  | DdummyType of global_reference
+  | DcustomTerm of global_reference * string
+  | DcustomType of global_reference * string
   | Dfix    of global_reference array * ml_ast array
 
 (*s Pretty-printing of MiniML in a given concrete syntax is parameterized
@@ -74,8 +76,6 @@ module type Mlpp_param = sig
 end
 
 module type Mlpp = sig
-  val pp_type : ml_type -> std_ppcmds
-  val pp_ast : ml_ast -> std_ppcmds
   val pp_decl : ml_decl -> std_ppcmds
 end
 

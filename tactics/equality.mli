@@ -124,3 +124,8 @@ val explicit_hint_base : goal sigma -> hint_base -> rewriting_rule list
 val autorewrite :
   hint_base list -> tactic list option -> option_step 
     -> tactic list option -> bool -> int -> tactic
+
+
+(* Subst *)
+
+val subst : identifier -> tactic

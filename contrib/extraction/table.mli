@@ -44,7 +44,11 @@ val find_ml_extraction : global_reference -> string
 
 val ml_extractions : unit -> Refset.t
 
-val sorted_ml_extractions : unit -> (global_reference * string) list
+val ml_type_extractions : unit -> (global_reference * string) list
+
+val ml_term_extractions : unit -> (global_reference * string) list
+
+
 
 (*s Extraction commands. *)
 

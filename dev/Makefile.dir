@@ -21,7 +21,7 @@ include $(TOPDIR)/dev/Makefile.common
 
 # make this directory
 dir:
-	$(MAKE) -C $(TOPDIR) $(BASEDIR)
+	$(MAKE) -C $(TOPDIR) $(notdir $(BASEDIR))
 
 # make all cmo's in this directory. Useful in case the main Makefile is not
 # up-to-date

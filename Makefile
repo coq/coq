@@ -391,7 +391,7 @@ clean::
 
 check:: world
 	cd test-suite; ./check -$(BEST) | tee check.log
-	grep -F 'Error!' test-suite/check.log
+	if grep -F 'Error!' test-suite/check.log ; then false; fi
 
 ###########################################################################
 # theories and states
@@ -529,11 +529,15 @@ REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Binome.vo       theories/Reals/Rsigma.vo \
 	theories/Reals/Rcomplet.vo     theories/Reals/Alembert_compl.vo \
 	theories/Reals/AltSeries.vo    theories/Reals/Rtrigo_def.vo \
-	theories/Reals/Rtrigo_alt.vo   theories/Reals/Rtrigo.vo  \
-	theories/Reals/Ranalysis1.vo   theories/Reals/Ranalysis2.vo \
-	theories/Reals/Ranalysis3.vo   theories/Reals/Ranalysis4.vo \
-	theories/Reals/Ranalysis.vo    theories/Reals/Rgeom.vo \
-	theories/Reals/Reals.vo 
+	theories/Reals/Rtrigo_alt.vo   theories/Reals/Rprod.vo \
+	theories/Reals/Cauchy_prod.vo  theories/Reals/Cv_prop.vo \
+	theories/Reals/Cos_rel.vo      theories/Reals/Cos_plus.vo \
+	theories/Reals/Rtrigo.vo       theories/Reals/Ranalysis1.vo \
+	theories/Reals/Rsqrt_def.vo    theories/Reals/R_sqrt.vo \
+	theories/Reals/Rtrigo_calc.vo  theories/Reals/Ranalysis2.vo \
+	theories/Reals/Ranalysis3.vo   theories/Reals/Sqrt_reg.vo \
+	theories/Reals/Ranalysis4.vo   theories/Reals/Ranalysis.vo \
+	theories/Reals/Rgeom.vo        theories/Reals/Reals.vo 
 
 SETOIDSVO=theories/Setoids/Setoid.vo
 
@@ -789,9 +793,25 @@ clean::
 # Emacs tags
 ###########################################################################
 
+# NB: the -maxdepth 3 is for excluding files from contrib/extraction/test
+
 tags:
-	find . -regex ".*\.ml[i4]?" | sort -r | xargs \
-	etags "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
+	find . -maxdepth 3 -regex ".*\.ml[i4]?" | sort -r | xargs \
+	etags --language=none\
+	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/and[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/type[ \t]+\([^ \t]+\)/\1/" \
+              "--regex=/exception[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
+
+otags: 
+	find . -maxdepth 3 -name "*.ml" -o -name "*.mli" \
+	| sort -r | xargs otags
+	find . -maxdepth 3 -name "*.ml4" | sort -r | xargs \
+	etags --append --language=none\
+	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/and[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/type[ \t]+\([^ \t]+\)/\1/" \

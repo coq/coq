@@ -58,9 +58,10 @@ let axioms ist =
   and t_is_empty = tacticIn is_empty in
   <:tactic<
     Match Reverse Context With
-    |[|- ?1] -> $t_is_unit;Constructor
+    |[|- ?1] -> $t_is_unit;Constructor 1
     |[_:?1 |- ?] -> $t_is_empty
     |[_:?1 |- ?1] -> Assumption>>
+
 
 let simplif t_reduce ist =
   let t_is_unit = tacticIn is_unit
@@ -76,14 +77,28 @@ let simplif t_reduce ist =
         | [id: (?1 ? ?) |- ?] -> $t_is_disj;Elim id;Intro;Clear id;$t_reduce
         | [id0: ?1-> ?2; id1: ?1|- ?] -> Generalize (id0 id1);Intro;Clear id0
         | [id: ?1 -> ?2|- ?] ->
-          $t_is_unit;Cut ?2;[Intro;Clear id|Intros;Apply id;Constructor;Fail]
+          $t_is_unit;Cut ?2;
+	    [Intro;Clear id
+	    | (* id : ?1 -> ?2 |- ?2 *)
+	      Cut ?1;[Exact id|Constructor 1;Fail]
+	    ]
         | [id: (?1 ?2 ?3) -> ?4|- ?] ->
-          $t_is_conj;Cut ?2-> ?3-> ?4;[Intro;Clear id;$t_reduce|
-            Intros;Apply id;Try Split;Assumption]
+          $t_is_conj;Cut ?2-> ?3-> ?4;
+	    [Intro;Clear id;$t_reduce
+	    | (* id: (?1 ?2 ?3) -> ?4 |- ?2 -> ?3 -> ?4 *)
+	      Intro;Intro; Cut (?1 ?2 ?3);[Exact id|Split;Assumption]
+	    ]
         | [id: (?1 ?2 ?3) -> ?4|- ?] ->
-          $t_is_disj;Cut ?3-> ?4;[Cut ?2-> ?4;[Intros;Clear id;$t_reduce|
-            Intros;Apply id;
-            Try Left;Assumption]|Intros;Apply id;Try Right;Assumption]
+          $t_is_disj;
+	    Cut ?3-> ?4;
+	      [Cut ?2-> ?4;
+	        [Intro;Intro;Clear id;$t_reduce
+		| (* id: (?1 ?2 ?3) -> ?4 |- ?2 -> ?4 *)
+		  Intro; Cut (?1 ?2 ?3);[Exact id|Left;Assumption]
+		]
+	      | (* id: (?1 ?2 ?3) -> ?4 |- ?3 -> ?4 *)
+		Intro; Cut (?1 ?2 ?3);[Exact id|Right;Assumption]
+	      ]
         | [|- (?1 ? ?)] -> $t_is_conj;Split;$t_reduce);
        $t_not_dep_intros)>>
 
@@ -98,9 +113,11 @@ let rec tauto_intuit t_reduce t_solver ist =
     Orelse
       (Match Reverse Context With
       | [id:(?1-> ?2)-> ?3|- ?] ->
-        Cut ?2-> ?3;[Intro;Cut ?1-> ?2;[Intro;Cut ?3;[Intro;Clear id|
-          Intros;Apply id;Assumption]|Clear id]|Intros;Apply id;Try Intro;
-          Assumption]; Solve [ $t_tauto_intuit ]
+	  Cut ?3;
+	    [Intro;Clear id
+	    | Cut ?1 -> ?2;
+	       [Exact id|Generalize [y:?2](id [x:?1]y);Intro;Clear id]
+	    ]; Solve [ $t_tauto_intuit ]
       | [|- (?1 ? ?)] ->
         $t_is_disj;Solve [Left;$t_tauto_intuit | Right;$t_tauto_intuit]
       )
@@ -123,14 +140,22 @@ let t_reduction_not_iff = Tacexpr.TacArg (valueIn (VTactic reduction_not_iff))
 let intuition_gen tac =
   interp (tacticIn (tauto_intuit t_reduction_not_iff tac))
 
+let simplif_gen = interp (tacticIn (simplif t_reduction_not_iff))
+
 let tauto g =
   try intuition_gen <:tactic<Fail>> g
-  with UserError _ -> errorlabstrm "tauto" [< str "Tauto failed" >]
+  with
+    Refiner.FailError _ | UserError _ ->
+      errorlabstrm "tauto" [< str "Tauto failed" >]
 
 let default_intuition_tac = <:tactic< Auto with * >>
 
 TACTIC EXTEND Tauto
 | [ "Tauto" ] -> [ tauto ]
+END
+
+TACTIC EXTEND TSimplif
+| [ "Simplif" ] -> [ simplif_gen ]
 END
 
 TACTIC EXTEND Intuition

@@ -232,127 +232,8 @@ Qed.
 (***********)
 Lemma R_dist_tri:(x,y,z:R)(Rle (R_dist x y) 
                    (Rplus (R_dist x z) (R_dist z y))).
-Intros;Unfold R_dist; Unfold Rabsolu;
- Case (case_Rabsolu (Rminus x y)); Case (case_Rabsolu (Rminus x z));
- Case (case_Rabsolu (Rminus z y));Intros.
-Rewrite (Ropp_distr2 x y); Rewrite (Ropp_distr2 x z);
- Rewrite (Ropp_distr2 z y);Unfold Rminus;
- Rewrite (Rplus_sym y (Ropp z));
- Rewrite (Rplus_sym z (Ropp x));
- Rewrite (Rplus_assoc (Ropp x) z (Rplus (Ropp z) y));
- Rewrite <-(Rplus_assoc z (Ropp z) y);Rewrite (Rplus_Ropp_r z);
- Elim (Rplus_ne y);Intros a b;Rewrite b;Clear a b;
- Rewrite (Rplus_sym y (Ropp x));
- Apply (eq_Rle (Rplus (Ropp x) y) (Rplus (Ropp x) y) 
-        (refl_eqT R (Rplus (Ropp x) y))).
-Rewrite (Ropp_distr2 x y);Rewrite (Ropp_distr2 x z);Unfold Rminus;
- Rewrite (Rplus_sym y (Ropp x));
- Rewrite (Rplus_sym z (Ropp x));
- Rewrite (Rplus_assoc (Ropp x) z (Rplus z (Ropp y)));
- Apply (Rle_compatibility (Ropp x) y 
-        (Rplus z (Rplus z (Ropp y))));
- Rewrite (Rplus_sym z (Rplus z (Ropp y)));
- Apply (Rle_anti_compatibility (Ropp y) y
-        (Rplus (Rplus z (Ropp y)) z));Rewrite (Rplus_Ropp_l y);
- Rewrite (Rplus_sym (Ropp y) (Rplus (Rplus z (Ropp y)) z));
- Rewrite (Rplus_assoc (Rplus z (Ropp y)) z (Ropp y));
- Fold (Rminus z y);Generalize (Rle_sym2 R0 (Rminus z y) r);Intro;
- Generalize (Rle_compatibility (Rminus z y) R0 (Rminus z y) H);Intro;
- Elim (Rplus_ne (Rminus z y)); Intros a b; Rewrite a in H0; Clear a b;
- Apply (Rle_trans R0 (Rminus z y) (Rplus (Rminus z y) (Rminus z y)) 
-        H H0).
-Rewrite (Ropp_distr2 x y);Rewrite (Ropp_distr2 z y);Unfold Rminus;
- Rewrite (Rplus_sym y (Ropp z));
- Rewrite <- (Rplus_assoc (Rplus x (Ropp z)) (Ropp z) y);
- Rewrite (Rplus_sym (Rplus (Rplus x (Ropp z)) (Ropp z)) y);
- Apply (Rle_compatibility y (Ropp x)
-        (Rplus (Rplus x (Ropp z)) (Ropp z)));
- Apply (Rle_anti_compatibility x (Ropp x)
-        (Rplus (Rplus x (Ropp z)) (Ropp z)));Rewrite (Rplus_Ropp_r x);
- Rewrite (Rplus_sym x (Rplus (Rplus x (Ropp z)) (Ropp z)));
- Rewrite (Rplus_assoc (Rplus x (Ropp z)) (Ropp z) x);
- Rewrite (Rplus_sym (Ropp z) x);Fold (Rminus x z);
- Generalize (Rle_sym2 R0 (Rminus x z) r0);Intro;
- Generalize (Rle_compatibility (Rminus x z) R0 (Rminus x z) H);Intro;
- Elim (Rplus_ne (Rminus x z));Intros a b;Rewrite a in H0;Clear a b;
- Apply (Rle_trans R0 (Rminus x z) (Rplus (Rminus x z) (Rminus x z)) 
-         H H0).
-Unfold 2 3 Rminus;
- Rewrite <-(Rplus_assoc (Rplus x (Ropp z)) z (Ropp y));
- Rewrite (Rplus_assoc x (Ropp z) z);Rewrite (Rplus_Ropp_l z);
- Elim (Rplus_ne x);Intros a b;Rewrite a;Clear a b; Fold (Rminus x y);
- Apply (Rle_anti_compatibility (Rminus x y) (Ropp (Rminus x y))
-        (Rminus x y));Rewrite (Rplus_Ropp_r (Rminus x y));
- Generalize (Rle_sym2 R0 (Rminus x z) r0);Intro;
- Generalize (Rle_sym2 R0 (Rminus z y) r);Intro;
- Generalize (Rle_compatibility (Rminus z y) R0 (Rminus x z) H);Intro;
- Elim (Rplus_ne (Rminus z y));Intros a b;Rewrite a in H1;Clear a b;
- Unfold 2 3 Rminus in H1;
- Rewrite (Rplus_assoc z (Ropp y) (Rplus x (Ropp z))) in H1;
- Rewrite (Rplus_sym z (Rplus (Ropp y) (Rplus x (Ropp z)))) 
-          in H1;
- Rewrite <-(Rplus_assoc (Ropp y) x (Ropp z)) in H1;
- Rewrite (Rplus_assoc (Rplus (Ropp y) x) (Ropp z) z) in H1;
- Rewrite (Rplus_Ropp_l z) in H1;
- Elim (Rplus_ne (Rplus (Ropp y) x));Intros a b;Rewrite a in H1;
- Clear a b;Rewrite (Rplus_sym (Ropp y) x) in H1;
- Fold (Rminus x y) in H1;
- Generalize (Rle_trans R0 (Rminus z y) (Rminus x y) H0 H1);Intro;
- Generalize (Rle_compatibility (Rminus x y) R0 (Rminus x y) H2);
- Intro;Elim (Rplus_ne (Rminus x y));Intros a b;Rewrite a in H3;
- Clear a b;
- Apply (Rle_trans R0 (Rminus x y) (Rplus (Rminus x y) (Rminus x y)) 
-         H2 H3). 
-Generalize (Rminus_lt z y r);Intro;Generalize (Rminus_lt x z r0);
- Intro;Generalize (Rlt_trans x z y H0 H);Intro;
- Generalize (Rlt_minus x y H1);Intro;
- Generalize (Rle_not R0 (Rminus x y) H2);Intro;
- Generalize (Rle_sym2 R0 (Rminus x y) r1);Intro;
- ElimType False;Auto.
-Rewrite (Ropp_distr2 x z);Unfold Rminus;
- Rewrite (Rplus_sym x (Ropp y));
- Rewrite <-(Rplus_assoc (Rplus z (Ropp x)) z (Ropp y));
- Rewrite (Rplus_sym (Rplus (Rplus z (Ropp x)) z) (Ropp y));
- Apply (Rle_compatibility (Ropp y) x 
-        (Rplus (Rplus z (Ropp x)) z));
- Apply (Rle_anti_compatibility (Ropp x) x 
-        (Rplus (Rplus z (Ropp x)) z));
- Rewrite (Rplus_Ropp_l x);
- Rewrite (Rplus_sym (Ropp x) (Rplus (Rplus z (Ropp x)) z));
- Rewrite (Rplus_assoc (Rplus z (Ropp x)) z (Ropp x));
- Fold (Rminus z x);Generalize (Rminus_lt x z r0);Intro;
- Generalize (Rlt_RoppO (Rminus x z) r0);Intro;
- Rewrite (Ropp_distr2 x z) in H0;
- Generalize (Rgt_ge (Rminus z x) R0 H0);Intro;
- Generalize (Rle_sym2 R0 (Rminus z x) H1);Intro;
- Generalize (Rle_compatibility (Rminus z x) R0 (Rminus z x) H2); 
- Intro;Elim (Rplus_ne (Rminus z x)); Intros a b; Rewrite a in H3; 
- Clear a b;
- Apply (Rle_trans R0 (Rminus z x) (Rplus (Rminus z x) (Rminus z x)) 
-        H2 H3).
-Rewrite (Ropp_distr2 z y);Unfold Rminus;
- Rewrite (Rplus_assoc x (Ropp z) (Rplus y (Ropp z)));
- Apply (Rle_compatibility x (Ropp y) 
-        (Rplus (Ropp z) (Rplus y (Ropp z))));
- Apply (Rle_anti_compatibility y (Ropp y) 
-        (Rplus (Ropp z) (Rplus y (Ropp z))));
- Rewrite (Rplus_Ropp_r y);
- Rewrite <-(Rplus_assoc y  (Ropp z) (Rplus y (Ropp z)));
- Fold (Rminus y z);Generalize (Rlt_Ropp (Rminus z y) R0 r);Intro;
- Rewrite Ropp_O in H;Rewrite (Ropp_distr2 z y) in H;
- Generalize (Rgt_ge (Rminus y z) R0 H);Intro;
- Generalize (Rle_sym2 R0 (Rminus y z) H0);Intro;
- Generalize (Rle_compatibility (Rminus y z) R0 (Rminus y z) H1);
- Intro;Elim (Rplus_ne (Rminus y z)); Intros a b; Rewrite a in H2;
- Clear a b;
- Apply (Rle_trans R0 (Rminus y z) (Rplus (Rminus y z) (Rminus y z)) 
-        H1 H2).
-Unfold 2 3 Rminus;
- Rewrite (Rplus_assoc  x (Ropp z) (Rplus z (Ropp y)));
- Rewrite <-(Rplus_assoc (Ropp z) z (Ropp y));
- Rewrite (Rplus_Ropp_l z);Elim (Rplus_ne (Ropp y));Intros a b;Rewrite b;
- Clear a b;Fold (Rminus x y);
- Apply (eq_Rle (Rminus x y) (Rminus x y) (refl_eqT R (Rminus x y))).
+Intros;Unfold R_dist; Replace ``x-y`` with ``(x-z)+(z-y)``;
+  [Apply (Rabsolu_triang ``x-z`` ``z-y``)|Ring].
 Qed.
 
 (*********)
@@ -386,17 +267,15 @@ Definition limit1_in:(R->R)->(R->Prop)->R->R->Prop:=
 (*********)
 Lemma tech_limit:(f:R->R)(D:R->Prop)(l:R)(x0:R)(D x0)->
    (limit1_in f D l x0)->l==(f x0).
-Unfold limit1_in;Unfold limit_in;Simpl;Intros;Apply NNPP;Red;Intro;
- Generalize (R_dist_pos (f x0) l);Intro;Unfold Rge in H2;Elim H2;Intro;
- Clear H2.
-Elim (H0 (R_dist (f x0) l) H3);Intros;Elim H2;Clear H2 H0;
- Intros;Generalize (H2 x0);Clear H2;Intro;Elim (R_dist_refl x0 x0);
- Intros a b;Clear a;Rewrite (b (refl_eqT R x0)) in H2;Clear b;
- Unfold Rgt in H0;Generalize (H2 (conj (D x0) (Rlt R0 x) H H0));Intro;
- Clear H2;Generalize (Rlt_antirefl (R_dist (f x0) l));Intro;Auto.
-Elim (R_dist_refl (f x0) l);Intros a b;Clear b;Generalize (a H3);Intro;
-Generalize (sym_eqT R (f x0) l H2);Intro;Auto.
-Qed. 
+Intros f D l x0 H H0.
+Case (Rabsolu_pos (Rminus (f x0) l)); Intros H1.
+Absurd (Rlt (dist R_met (f x0) l) (dist R_met (f x0) l)).
+Apply Rlt_antirefl.
+Case (H0 (dist R_met (f x0) l)); Auto.
+Intros alpha1 (H2, H3); Apply H3; Auto; Split; Auto.
+Case (dist_refl R_met x0 x0); Intros Hr1 Hr2; Rewrite Hr2; Auto.
+Case (dist_refl R_met (f x0) l); Intros Hr1 Hr2; Apply sym_eqT; Auto.
+Qed.
 
 (*********)
 Lemma tech_limit_contr:(f:R->R)(D:R->Prop)(l:R)(x0:R)(D x0)->~l==(f x0)

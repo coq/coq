@@ -1497,3 +1497,42 @@ let autorewrite lbases ltacstp opt_step ltacrest opt_rest depth_step gls =
         (fun l -> validation_gen nlvalid l)
     in
     (repackage sigr gl,validation_fun)
+
+
+(* Substitutions tactics (JCF) *)
+
+exception FoundHyp of identifier
+
+let is_eq_x x c =
+  let eqpat = build_coq_eq_pattern () in
+  (is_matching eqpat c) &&
+  (let (_,y,_) = match_eq eqpat c in
+   match kind_of_term y with Var y -> x = y | _ -> false)
+
+let subst x gl = 
+  let varx = mkVar x in
+  let hyps = pf_hyps_types gl in
+  let hyp = 
+    try
+      let test (id,c) = if is_eq_x x c then raise (FoundHyp id) in
+      List.iter test hyps;
+      errorlabstrm "subst" (str "cannot find any equality over " ++ pr_id x)
+    with FoundHyp id ->
+      id
+  in
+  let dephyps = 
+    let test (id,c) = 
+      if id <> hyp && occur_term varx c then id else failwith "caught" 
+    in
+    map_succeed test hyps
+  in
+  let dephyps = List.rev dephyps in
+  tclTHENLIST [
+    generalize (List.map mkVar dephyps);
+    thin dephyps;
+    rewriteLR (mkVar hyp);
+    intros_using dephyps;
+    clear [hyp];
+    tclTRY (clear [x])
+  ] gl
+

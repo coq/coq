@@ -51,9 +51,8 @@ type 'a sigma = {
   [ref] = [None] if the goal has still to be proved, 
   and [Some (r,l)] if the rule [r] was applied to the goal
   and gave [l] as subproofs to be completed. 
-  [subproof] = [(Some p)] if [ref = (Some(Tactic t,l))]; 
-  [p] is then the proof that the goal can be proven if the goals
-  in [l] are solved. *)
+  if [ref = (Some(Tactic (t,p),l))] then [p] is the proof 
+  that the goal can be proven if the goals in [l] are solved. *)
 type proof_tree = {
   status : pf_status;
   goal : goal;

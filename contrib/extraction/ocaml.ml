@@ -129,7 +129,7 @@ let preamble _ used_modules print_dummy =
   (if Idset.is_empty used_modules  then mt () else fnl ())
   ++
   (if print_dummy then 
-     str "let (__:unit) = let rec f _ = Obj.magic f in Obj.magic f" 
+     str "let __ = let rec f _ = Obj.repr f in Obj.repr f" 
      ++ fnl () ++ fnl()
    else mt ())
 
@@ -162,7 +162,7 @@ let rec pp_type par vl t =
 	(open_par par ++ pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ 
 	   pp_rec false t2 ++ close_par par)
     | Tglob r -> pp_type_global r
-    | Tdummy -> str "unit"
+    | Tdummy -> str "Obj.t"
     | Tunknown -> str "Obj.t"
   in 
   hov 0 (pp_rec par t)
@@ -336,8 +336,6 @@ and pp_function env f t =
 	      str " =" ++ fnl () ++ str "  " ++
 	      hov 2 (pp_expr false env' [] t'))
 	
-let pp_ast a = hov 0 (pp_expr false (empty_env ()) [] a)
-
 (*s Pretty-printing of inductive types declaration. *)
 
 let pp_parameters l = 
@@ -381,8 +379,8 @@ let pp_coind il =
 (*s Pretty-printing of a declaration. *)
 
 let pp_decl = function
-  | Dtype ([], _) -> mt ()
-  | Dtype (i, cofix) -> 
+  | Dind ([], _) -> mt ()
+  | Dind (i, cofix) -> 
       if cofix then begin
 	List.iter   
 	  (fun (_,_,l) -> 
@@ -391,7 +389,9 @@ let pp_decl = function
 	hov 0 (pp_coind i)
       end else 
 	hov 0 (pp_ind i)
-  | Dabbrev (r, l, t) ->
+  | DdummyType r -> 
+      hov 0 (str "type " ++ pp_type_global r ++ str " = Obj.t" ++ fnl ())
+  | Dtype (r, l, t) ->
       let l = rename_tvars keywords l in 
       hov 0 (str "type" ++ spc () ++ pp_parameters l ++ 
 	       pp_type_global r ++ spc () ++ str "=" ++ spc () ++ 
@@ -400,14 +400,14 @@ let pp_decl = function
       let ids = Array.map rename_global rv in 
       let env = List.rev (Array.to_list ids), P.globals() in
       (hov 2 (pp_fix false env None (ids,defs) []))
-  | Dglob (r, a) ->
+  | Dterm (r, a) ->
       hov 0 (str "let " ++ 
 	       pp_function (empty_env ()) (pp_global' r) a ++ fnl ())
-  | Dcustom (r,s) -> 
+  | DcustomTerm (r,s) -> 
       hov 0 (str "let " ++ pp_global' r ++ 
 	       str " =" ++ spc () ++ str s ++ fnl ())
-
-let pp_type = pp_type false []
+  | DcustomType (r,s) -> 
+      hov 0 (str "type " ++ pp_type_global r ++ str " = " ++ str s ++ fnl ())
 
 end
 
