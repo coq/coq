@@ -110,10 +110,10 @@ let listrec_mconstr env ntypes nparams i indlc =
 		 and largs = array_tl cl in
                  (match hd with 
                     | Rel k -> 
-			check_correct_par env nparams ntypes n (k-n+1) largs;
-                        if k >= n && k<n+ntypes then 
+                        if k >= n && k<n+ntypes then begin
+			  check_correct_par env nparams ntypes n (k-n+1) largs;
 			  Mrec(n+ntypes-k-1) 
-                        else if noccur_bet n ntypes x then 
+                        end else if noccur_bet n ntypes x then 
 			  if (n-nparams) <= k & k <= (n-1) 
 			  then Param(n-1-k)
                           else Norec
@@ -187,10 +187,10 @@ let listrec_mconstr env ntypes nparams i indlc =
 		 and largs = array_tl cl in 
 		 (match hd with 
                     | Rel k -> 
-                        check_correct_par env nparams ntypes n (k-n+1) largs;
-			if k >= n & k<n+ntypes then 
+			if k >= n & k<n+ntypes then begin
+                          check_correct_par env nparams ntypes n (k-n+1) largs;
 			  Mrec(n+ntypes-k-1) 
-                        else if noccur_bet n ntypes x then 
+                        end else if noccur_bet n ntypes x then 
 			  if (n-nparams) <= k & k <= (n-1)
                           then Param(n-1-k)
                           else Norec
@@ -221,10 +221,11 @@ let listrec_mconstr env ntypes nparams i indlc =
                    if check then 
                      (match hd with 
 			| Rel k -> 
-			    check_correct_par env nparams ntypes n (k-n+1) largs;
-                            if k = n+ntypes-i then 
+                            if k = n+ntypes-i then begin
+			      check_correct_par env nparams 
+				ntypes n (k-n+1) largs;
 			      List.rev lrec 
-                            else 
+                            end else 
 			      raise (IllFormedInd (NonPos n))
                         | _ -> raise (IllFormedInd (NonPos n)))
                    else 
