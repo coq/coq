@@ -1582,7 +1582,6 @@ let rules_of_base rbase = List.rev (Gmapl.find rbase !rew_tab)
 
 (*Functions necessary to the library object declaration*)
 let load_autorewrite_rule _ = ()
-let open_autorewrite_rule _ = ()
 let cache_autorewrite_rule (_,(rbase,lrl)) = add_list_rules rbase lrl
 let specification_autorewrite_rule x = x
 
@@ -1591,7 +1590,7 @@ let (in_autorewrite_rule,out_autorewrite_rule)=
   Libobject.declare_object
     ("AUTOREWRITE_RULE",
      { Libobject.load_function = load_autorewrite_rule;
-       Libobject.open_function = open_autorewrite_rule;
+       Libobject.open_function = cache_autorewrite_rule;
        Libobject.cache_function = cache_autorewrite_rule;
        Libobject.specification_function = specification_autorewrite_rule })
 

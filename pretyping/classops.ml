@@ -166,11 +166,13 @@ let lookup_path_to_sort_from s =
 (*val inClass : (cl_typ * cl_info_typ) -> Libobject.object = <fun>
  val outClass : Libobject.object -> (cl_typ * cl_info_typ) = <fun> *)
 
+let cache_class (_,x) = add_new_class1 x
+
 let (inClass,outClass) =
   declare_object ("CLASS",
-                  { load_function = (function  (_,x) -> add_new_class1 x);
-		    open_function = (fun _ -> ());
-                    cache_function = (function  (_,x) -> add_new_class1 x);
+                  { load_function = (fun _ -> ());
+		    open_function = cache_class;
+                    cache_function = cache_class;
                     specification_function = (function x -> x) })
 
 let add_new_class (cl,s,stre,p) = 
@@ -315,11 +317,11 @@ let add_new_coercion_in_graph ((coef,xf),cls,clt) =
    val outCoercion : Libobject.object -> (coe_typ * coe_info_typ) 
                          * cl_typ * cl_typ *)
 
+let cache_coercion (_,x) = add_new_coercion_in_graph x
+
 let (inCoercion,outCoercion) =
   declare_object ("COERCION",
                   { load_function = (fun _ -> ());
-		    open_function =
-                      (function  (_,x) -> add_new_coercion_in_graph x);
-                    cache_function =
-                      (function  (_,x) -> add_new_coercion_in_graph x);
+		    open_function = cache_coercion;
+                    cache_function = cache_coercion;
                     specification_function = (function x -> x) })

@@ -167,9 +167,9 @@ let specification_autohint x = x
 
 let (inAutoHint,outAutoHint) =
   declare_object ("AUTOHINT",
-                  { load_function = cache_autohint;
+                  { load_function = (fun _ -> ());
                     cache_function = cache_autohint;
-		    open_function = (fun _ -> ());
+		    open_function = cache_autohint;
                     specification_function = specification_autohint })
 
 (**************************************************************************)

@@ -147,8 +147,8 @@ let (theory_to_obj, obj_to_theory) =
   let cache_th (_,(c, th)) = theories_map_add (c,th)
   and spec_th x = x in
   declare_object ("tactic-ring-theory",
-		  { load_function = cache_th;
-		    open_function = (fun _ -> ());
+		  { load_function = (fun _ -> ());
+		    open_function = cache_th;
                     cache_function = cache_th;
 		    specification_function = spec_th })
 

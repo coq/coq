@@ -29,8 +29,8 @@ let open_syntax_constant (sp,_) =
 let (in_syntax_constant, out_syntax_constant) =
   let od = {
     cache_function = cache_syntax_constant;
-    load_function = cache_syntax_constant;
-    open_function = (fun _ -> ());
+    load_function = (fun _ -> ());
+    open_function = cache_syntax_constant;
     specification_function = (fun x -> x) } 
   in
   declare_object ("SYNTAXCONSTANT", od)

@@ -41,12 +41,14 @@ let _ =
       init_function = Esyntax.init }
 
 (* Pretty-printing objects = syntax_entry *)
+let cache_syntax (_,ppobj) = Esyntax.add_ppobject ppobj
+
 let (inPPSyntax,outPPSyntax) =
   declare_object
     ("PPSYNTAX",
-     { load_function = (fun (_,ppobj) -> Esyntax.add_ppobject ppobj);
-       open_function = (fun _ -> ());
-       cache_function = (fun (_,ppobj) -> Esyntax.add_ppobject ppobj);
+     { load_function = (fun _ -> ());
+       open_function = cache_syntax;
+       cache_function = cache_syntax;
        specification_function = (fun x -> x) })
 
 (* Syntax extension functions (registered in the environnement) *)
@@ -71,23 +73,27 @@ let _ =
 
 (* Tokens *)
 
+let cache_token (_,s) = Pcoq.lexer.Token.using ("", s)
+
 let (inToken, outToken) =
   declare_object
     ("TOKEN",
      { load_function = (fun _ -> ());
-       open_function = (fun _ -> ());
-       cache_function = (fun (_, s) -> Pcoq.lexer.Token.using ("", s));
+       open_function = cache_token;
+       cache_function = cache_token;
        specification_function = (fun x -> x)})
 
 let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 
 (* Grammar rules *)
+let cache_grammar (_,a) = Egrammar.extend_grammar a
+
 let (inGrammar, outGrammar) =
   declare_object
     ("GRAMMAR",
-     { load_function = (fun (_, a) -> Egrammar.extend_grammar a);
-       open_function = (fun _ -> ());
-       cache_function = (fun (_, a) -> Egrammar.extend_grammar a);
+     { load_function = (fun _ -> ());
+       open_function = cache_grammar;
+       cache_function = cache_grammar;
        specification_function = (fun x -> x)})
 
 let add_grammar_obj univ al =
@@ -130,8 +136,8 @@ let cache_infix (_,(gr,se)) =
 let (inInfix, outInfix) =
   declare_object
     ("INFIX",
-     { load_function = cache_infix;
-       open_function = (fun _ -> ());
+     { load_function = (fun _ -> ());
+       open_function = cache_infix;
        cache_function = cache_infix;
        specification_function = (fun x -> x)})
 

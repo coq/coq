@@ -31,11 +31,13 @@ let sTRUCS = (ref [] : (inductive_path * struc_typ) list ref)
 
 let add_new_struc1 x = sTRUCS:=x::(!sTRUCS)
 
+let cache_structure (_,x) = add_new_struc1 x
+
 let (inStruc,outStruc) =
   declare_object ("STRUCTURE",
                   { load_function = (fun _ -> ());
-                    cache_function = (function  (_,x) -> add_new_struc1 x);
-		    open_function = (fun _ -> ());
+                    cache_function = cache_structure;
+		    open_function = cache_structure;
                     specification_function = (function x -> x) })
 
 let add_new_struc (s,c,n,l) = 
@@ -63,11 +65,13 @@ let oBJDEFS = (ref [] : ((cte_typ * cte_typ) * obj_typ) list ref)
 
 let add_new_objdef1 x = oBJDEFS:=x::(!oBJDEFS)
 
+let cache_obj (_,x) = add_new_objdef1 x
+
 let (inObjDef,outObjDef) =
   declare_object ("OBJDEF",
                   { load_function = (fun _ -> ());
-		    open_function = (fun _ -> ());
-                    cache_function = (function  (_,x) -> add_new_objdef1 x);
+		    open_function = cache_obj;
+                    cache_function = cache_obj;
                     specification_function = (function x -> x)})
 
 let add_new_objdef (o,c,la,lp,l) =
@@ -77,11 +81,13 @@ let add_new_objdef (o,c,la,lp,l) =
     Lib.add_anonymous_leaf
       (inObjDef (o,{o_DEF=c;o_TABS=la;o_TPARAMS=lp;o_TCOMPS=l}))
 
+let cache_objdef1 (_,sp) = ()
+
 let ((inObjDef1 : section_path -> obj),(outObjDef1 : obj -> section_path)) =
   declare_object ("OBJDEF1",
                   { load_function = (fun _ -> ());
-		    open_function = (fun _ -> ());
-                    cache_function = (function  (_,sp) -> ());
+		    open_function = cache_objdef1;
+                    cache_function = cache_objdef1;
                     specification_function = (function x -> x)})
 
 let objdef_info o = List.assoc o !oBJDEFS

@@ -945,8 +945,8 @@ let (inMD,outMD) =
     in add (na,ve) in 
     declare_object ("TACTIC-DEFINITION",
        {cache_function         = cache_md;
-        load_function          = cache_md;
-        open_function          = (fun _ -> ());
+        load_function          = (fun _ -> ());
+        open_function          = cache_md;
         specification_function = (fun x -> x)})
 
 (* Adds a Tactic Definition in the table *)

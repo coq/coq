@@ -196,7 +196,7 @@ let ((inDD : destructor_data_object->obj),
   declare_object ("DESTRUCT-HYP-CONCL-DATA",
                   { load_function = (fun _ -> ());
                     cache_function = cache_dd;
-		    open_function = (fun _ -> ());
+		    open_function = cache_dd;
                     specification_function = specification_dd })
     
 let add_destructor_hint na pat pri code =

@@ -43,7 +43,7 @@ let (inMD,outMD) =
   declare_object ("TACTIC-MACRO-DATA",
                   { cache_function = cache_md;
 		    load_function = (fun _ -> ());
-                    open_function = (fun _ -> ());
+                    open_function = cache_md;
                     specification_function = specification_md })
 
 let add_macro_hint na (ids,body) =

@@ -82,7 +82,6 @@ module MakeTable =
     let (add_option,remove_option) =
       if A.synchronous then
         let load_options _ = () in
-	let open_options _ = () in
         let cache_options (_,(f,p)) = match f with
           | GOadd -> t := MySet.add p !t
           | GOrmv -> t := MySet.remove p !t in
@@ -90,7 +89,7 @@ module MakeTable =
         let (inGo,outGo) =
           Libobject.declare_object (kn,
               { Libobject.load_function = load_options;
-		Libobject.open_function = open_options;
+		Libobject.open_function = cache_options;
 		Libobject.cache_function = cache_options;
 		Libobject.specification_function = specification_options}) in
         ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
@@ -203,14 +202,13 @@ let async_value_tab = ref OptionMap.empty
 (* Tools for synchronous options *)
 
 let load_sync_value _ = ()
-let open_sync_value _ = ()
 let cache_sync_value (_,(k,v)) =
   sync_value_tab := OptionMap.add k v !sync_value_tab
 let spec_sync_value fp = fp
 let (inOptVal,_) =
    Libobject.declare_object ("Sync_option_value",
      {Libobject.load_function = load_sync_value;
-      Libobject.open_function = open_sync_value;
+      Libobject.open_function = cache_sync_value;
       Libobject.cache_function = cache_sync_value;
       Libobject.specification_function = spec_sync_value})
 
