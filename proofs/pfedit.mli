@@ -32,7 +32,7 @@ val check_no_pending_proofs : unit -> unit
 (*s [abort_proof name] aborts proof of name [name] or failed if no proof
 has this name *)
 
-val abort_proof : string -> unit
+val abort_proof : identifier -> unit
 
 (* [abort_current_proof ()] aborts current focused proof or failed if
     no proof is focused *)
@@ -60,7 +60,7 @@ val reset_undo : unit -> unit
 
 (*s [start_proof s str env t] starts a proof of name [s] and conclusion [t] *)
 
-val start_proof : string -> strength -> env -> constr -> unit
+val start_proof : identifier -> strength -> env -> constr -> unit
 
 (* [restart_proof ()] restarts the current focused proof from the beginning
    or fails if no proof is focused *)
@@ -75,12 +75,20 @@ val resume_last_proof : unit -> unit
 (* [resume_proof name] focuses on the proof of name [name] or
    raises [UserError] if no proof has name [name] *)
 
-val resume_proof : string -> unit
+val resume_proof : identifier -> unit
 
 (* [suspend_proof ()] unfocuses the current focused proof or
    failed with [UserError] if no proof is currently focused *)
 
 val suspend_proof : unit -> unit
+
+(*s [release_proof ()] turns the current proof into a constant with
+    its name and strength, then remove the proof from the set of
+    pending proofs; it fails if there is no current proof of if it is
+    not completed *)
+
+val release_proof : unit ->
+  identifier * (Declarations.constant_entry * strength)
 
 (*s [get_pftreestate ()] returns the current focused pending proof or
    raises [UserError "no focused proof"] *)
@@ -100,11 +108,11 @@ val get_current_goal_context : unit -> evar_declarations * env
 (*s [get_current_proof_name ()] return the name of the current focused
     proof or failed if no proof is focused *)
 
-val get_current_proof_name : unit -> string
+val get_current_proof_name : unit -> identifier
 
 (* [get_all_proof_names ()] returns the list of all pending proof names *)
 
-val get_all_proof_names : unit -> string list
+val get_all_proof_names : unit -> identifier list
 
 (*s [solve_nth n tac] applies tactic [tac] to the [n]th subgoal of the
    current focused proof or raises a UserError if no proof is focused or
@@ -124,22 +132,6 @@ val by : tactic -> unit
    existential variable *)
 
 val instantiate_nth_evar_com : int -> Coqast.t -> unit
-
-(*s [save_named b] saves the current completed proof under the name it
-was started; boolean [b] tells if the theorem is declared opaque; it
-fails if the proof is not completed *)
-
-val save_named : bool -> unit
-
-(* [save_anonymous_thm b name] behaves as [save_named] but declares the
-theorem under the name [name] and gives it the strength of a theorem *)
-
-val save_anonymous_thm : bool -> string -> unit
-
-(* [save_anonymous_remark b name] behaves as [save_named] but declares the
-theorem under the name [name] and gives it the strength of a remark *)
-
-val save_anonymous_remark : bool -> string -> unit
 
 (*s To deal with subgoal focus *)
 

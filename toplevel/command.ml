@@ -367,9 +367,34 @@ let build_scheme lnamedepindsort =
   List.iter2 declare listdecl lrecnames; 
   if is_verbose() then pPNL(recursive_message lrecnames)
 
-let start_proof_com s stre com =
+let start_proof_com sopt stre com =
   let env = Global.env () in
-  Pfedit.start_proof s stre env (interp_type Evd.empty env com)
+  let id = match sopt with
+    | Some id -> id
+    | None ->
+	next_ident_away (id_of_string "Unnamed_thm")
+	  (Pfedit.get_all_proof_names ())
+  in
+  Pfedit.start_proof id stre env (interp_type Evd.empty env com)
+
+let save_named opacity =
+  let id,(const,strength) = Pfedit.release_proof () in
+  declare_constant id (const,strength);
+  if Options.is_verbose() then message ((string_of_id id) ^ " is defined")
+
+let save_anonymous opacity save_ident strength =
+  let id,(const,_) = Pfedit.release_proof () in
+  if atompart_of_id id <> "Unnamed_thm" then
+    message("Overriding name "^(string_of_id id)^" and using "^save_ident);
+  declare_constant (id_of_string save_ident) (const,strength);
+  if Options.is_verbose() then message (save_ident ^ " is defined")
+
+let save_anonymous_thm opacity id =
+  save_anonymous opacity id NeverDischarge
+
+let save_anonymous_remark opacity id =
+  let path = try List.tl (List.tl (Lib.cwd())) with Failure _ -> [] in
+  save_anonymous opacity id (make_strength path)
 
 let get_current_context () =
   try Pfedit.get_current_goal_context ()

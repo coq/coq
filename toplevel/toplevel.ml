@@ -164,7 +164,7 @@ let valid_buffer_loc ib dloc (b,e) =
  * or after a Drop. *)
 let make_prompt () =
   if Pfedit.refining () then
-    (Pfedit.get_current_proof_name ())^" < "
+    (Names.string_of_id (Pfedit.get_current_proof_name ()))^" < "
   else "Coq < "
 
 let top_buffer =

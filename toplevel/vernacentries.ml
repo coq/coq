@@ -340,7 +340,7 @@ let _ =
        | [VARG_CONSTR com] ->
 	   (fun () ->
               if not (refining()) then begin
-              	start_proof_com "Unnamed_thm" NeverDischarge com;
+              	start_proof_com None NeverDischarge com;
 		if not (is_silent()) then show_open_subgoals ()
               end else 
 		error "repeated Goal not permitted in refining mode")
@@ -352,8 +352,8 @@ let _ =
     (function 
        | [VARG_IDENTIFIER id] -> 
 	   (fun () -> 
-	      let s = string_of_id id in
-	      abort_proof s; message ("Goal "^s^" aborted"))
+	      abort_proof id;
+	      message ("Goal "^(string_of_id id)^" aborted"))
        | [] -> (fun () -> 
 		  abort_current_proof ();
 		  message "Current goal aborted")
@@ -387,7 +387,7 @@ let _ =
   add "RESUME"
     (function 
        | [VARG_IDENTIFIER id] ->
-	   (fun () -> resume_proof (string_of_id id))
+	   (fun () -> resume_proof id)
        | [] -> (fun () -> resume_last_proof ())
        | _  -> bad_vernac_args "RESUME")
 
@@ -614,7 +614,7 @@ let _ =
     (function [] ->
        (fun () ->
 	  let l = Pfedit.get_all_proof_names() in 
-	  mSGNL (prlist_with_sep pr_spc pr_str l))
+	  mSGNL (print_idl l))
        | _  -> bad_vernac_args "ShowProofs")
 
 let _ =
@@ -678,7 +678,7 @@ let _ =
            in 
 	   fun () ->
              begin
-               start_proof_com (string_of_id s) stre com;
+               start_proof_com (Some s) stre com;
                if (not(is_silent())) then show_open_subgoals()
              end
        | _ -> bad_vernac_args "StartProof")
@@ -708,7 +708,7 @@ let _ =
               try
             	States.with_heavy_rollback
 		  (fun () ->
-                     start_proof_com (string_of_id s) stre com;
+                     start_proof_com (Some s) stre com;
                      if not (is_silent()) then show_open_subgoals();
                      List.iter Vernacinterp.call calls;
                      if not (is_silent()) then show_script();
@@ -719,7 +719,7 @@ let _ =
                   mSGNL [< 'sTR"Error: checking of theorem " ; print_id s ;
                            'sPC ; 'sTR"failed" ;
                            'sTR"... converting to Axiom" >];
-                  abort_proof (string_of_id s);
+                  abort_proof s;
                   parameter_def_var (string_of_id s) com
            	end else 
 		  errorlabstrm "vernacentries__TheoremProof"

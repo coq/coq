@@ -28,7 +28,8 @@ type proof_topstate = {
   top_goal : goal;
   top_strength : strength }
 
-let proof_edits = (Edit.empty() : (string,pftreestate,proof_topstate) Edit.t)
+let proof_edits =
+  (Edit.empty() : (identifier,pftreestate,proof_topstate) Edit.t)
 
 let get_all_proof_names () = Edit.dom proof_edits
 
@@ -36,8 +37,7 @@ let msg_proofs use_resume =
   match Edit.dom proof_edits with
     | [] -> [< 'sPC ; 'sTR"(No proof-editing in progress)." >]
     | l ->  [< 'sTR"." ; 'fNL ; 'sTR"Proofs currently edited:" ; 'sPC ;
-               (prlist_with_sep pr_spc pr_str (get_all_proof_names ())) ;
-	       'sTR"." ;
+               (print_idl (get_all_proof_names ())) ; 'sTR"." ;
                (if use_resume then [< 'fNL ; 'sTR"Use \"Resume\" first." >]
               	else [< >])
             >]
@@ -178,46 +178,19 @@ let undo n =
     errorlabstrm "Pfedit.undo" [< 'sTR"No focused proof"; msg_proofs true >]
 
 (*********************************************************************)
-(*              Saving  functions                                    *)
+(*                Proof releasing                                    *)
 (*********************************************************************)
 
-let save_named opacity =
+let release_proof () =
   let (pfs,ts) = get_state() 
   and ident = get_current_proof_name () in
   let {evar_concl=concl} = ts.top_goal 
   and strength = ts.top_strength in
-  let pfterm = extract_pftreestate pfs in 
-  declare_constant (id_of_string ident)
-    ({ const_entry_body = Cooked pfterm; const_entry_type = Some concl }, 
-     strength);
+  let pfterm = extract_pftreestate pfs in
   del_proof ident;
-  if Options.is_verbose() then message (ident ^ " is defined")
-    
-let save_anonymous opacity save_ident strength =
-  let (pfs,ts) = get_state() 
-  and ident = get_current_proof_name() in
-  let {evar_concl=concl} = ts.top_goal in
-  (* we do not consider default ts.top_strength *)
-  let pfterm = extract_pftreestate pfs in 
-  if ident = "Unnamed_thm" then
-    declare_constant (id_of_string save_ident)
-      ({ const_entry_body = Cooked pfterm; const_entry_type = Some concl }, 
-       strength)
-  else begin
-    message("Overriding name " ^ ident ^ " and using " ^ save_ident);
-    declare_constant (id_of_string save_ident)
-      ({ const_entry_body = Cooked pfterm; const_entry_type = Some concl }, 
-       strength)
-  end;
-  del_proof ident;
-  if Options.is_verbose() then message (save_ident ^ " is defined")
-    
-let save_anonymous_thm opacity id =
-  save_anonymous opacity id NeverDischarge
-
-let save_anonymous_remark opacity id =
-  let path = try List.tl (List.tl (Lib.cwd())) with Failure _ -> [] in
-  save_anonymous opacity id (make_strength path)
+  (ident,
+   ({ const_entry_body = Cooked pfterm; const_entry_type = Some concl },
+    strength))
 
 (*********************************************************************)
 (*              Abort   functions                                    *)

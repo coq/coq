@@ -98,7 +98,7 @@ let mutual_fix   = Tacmach.mutual_fix
 let fix f n      = mutual_fix [f] [n] []
 
 let fix_noname n =  
-  let id = id_of_string (Pfedit.get_current_proof_name ()) in
+  let id = Pfedit.get_current_proof_name () in
   fix id n
 
 let dyn_mutual_fix argsl gl = 
@@ -120,7 +120,7 @@ let mutual_cofix = Tacmach.mutual_cofix
 let cofix f      =  mutual_cofix [f] []
 
 let cofix_noname n =  
-  let id = id_of_string (Pfedit.get_current_proof_name ()) in
+  let id = Pfedit.get_current_proof_name () in
   cofix id n
 
 let dyn_mutual_cofix argsl gl = 
@@ -1634,27 +1634,31 @@ let abstract_subproof name tac gls =
   in
   let na = next_global_ident_away name
              (ids_of_sign global_sign)  in 
-  let nas = string_of_id na in
   let concl = Sign.it_sign (fun t id typ -> mkNamedProd id typ t)
                 (pf_concl gls) sign in
   let env' = change_hyps (fun _ -> current_sign) env in
-  start_proof nas Declare.NeverDischarge env' concl;
-  begin 
-    try
-      by (tclCOMPLETE (tclTHEN (tclDO (sign_length sign) intro) tac)); 
-      save_named true
-    with e when catchable_exception e -> 
-      (abort_current_proof(); raise e)
-  end;
-  exact (applist ((Declare.construct_reference env' CCI na),
-                  (List.map (fun id -> VAR(id)) 
-                     (List.rev (ids_of_sign sign)))))
+  let lemme =
+    start_proof na Declare.NeverDischarge env' concl;
+    let _,(const,strength) =
+      try
+	by (tclCOMPLETE (tclTHEN (tclDO (sign_length sign) intro) tac)); 
+	release_proof ()
+      with e when catchable_exception e -> 
+	(abort_current_proof(); raise e)
+    in   (* Faudrait un peu fonctionnaliser cela *)
+    Declare.declare_constant na (const,strength);
+    let newenv = Global.env() in
+    Declare.construct_reference newenv CCI na
+  in
+  exact (applist (lemme,
+		  List.map (fun id -> VAR id) (List.rev (ids_of_sign sign))))
     gls
 
 let tclABSTRACT name_op tac gls = 
   let s = match name_op with 
     | Some s -> s 
-    | None   -> id_of_string ((get_current_proof_name ())^"_subproof") 
+    | None   -> id_of_string
+	((string_of_id (get_current_proof_name ()))^"_subproof") 
   in  
   abstract_subproof s tac gls
 
