@@ -33,6 +33,7 @@ Require Export Ranalysis.
 Require Export Rtopology.
 Require Export TAF.
 Require Export NewtonInt.
+Require Export RiemannInt.
 Require Export DiscrR.
 Require Export SplitRmult.
 Require Export SplitAbsolu.

@@ -24,7 +24,7 @@ Require Ranalysis4.
 Require Exp_prop.
 Require Rtopology.
 Require NewtonInt.
-Require RiemannInt_SF.
+Require Export RiemannInt_SF.
 Require Classical_Pred_Type.
 Require Max.
 
