@@ -1547,7 +1547,7 @@ let xlate_vernac =
       let strip_mutind (s, notopt, parameters, c, constructors) =
         if notopt = None then
            CT_ind_spec
-            (xlate_ident s, cvt_vernac_binders parameters, xlate_formula c,
+            (xlate_ident s, xlate_binder_list parameters, xlate_formula c,
              build_constructors constructors)
         else xlate_error "TODO: Notation in Inductive" in
         CT_mind_decl

@@ -21,16 +21,17 @@ open Nametab
 open Vernacexpr;;
 open Decl_kinds;;
 open Constrextern;;
+open Topconstr;;
 
 (* This function converts the parameter binders of an inductive definition,
    in particular you have to be careful to handle each element in the
    context containing all previously defined variables.  This squeleton
    of this procedure is taken from the function print_env in pretty.ml *)
 let convert_env =
-    let convert_binder env (na, _, c) =
-      match na with 
-       | Name id -> (id, extern_constr true env c)
-       | Anonymous -> failwith "anomaly: Anonymous variables in inductives" in
+    let convert_binder env (na, b, c) =
+      match b with 
+       | Some b -> LocalRawDef ((dummy_loc,na), extern_constr true env b)
+       | None -> LocalRawAssum ([dummy_loc,na], extern_constr true env c) in
     let rec cvrec env = function
        [] -> []
      | b::rest -> (convert_binder env b)::(cvrec (push_rel b env) rest) in

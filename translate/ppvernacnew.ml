@@ -659,7 +659,7 @@ pr_vbinders bl ++ spc())
 	  (fun (env,params) d -> match d with
 	    | LocalRawAssum (nal,t) ->
 		let t = Constrintern.interp_type sigma env t in
-		let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal
+		let ctx = list_map_i (fun i (_,na) -> (na,None,Term.lift i t)) 0 nal
 		in let ctx = List.rev ctx in
 		(Environ.push_rel_context ctx env, ctx@params)
 	    | LocalRawDef ((_,na),c) ->
