@@ -150,10 +150,7 @@ Infix 4 "+" Aplus V8only 50 (left associativity).
 Infix 4 "*" Amult V8only 40 (left associativity).
 Notation "0" := Azero.
 Notation "1" := Aone.
-Notation "- 0" := (Aopp Azero) (at level 0) V8only (at level 10).
-Notation "- 1" := (Aopp Aone) (at level 0) V8only (at level 10).
-Notation "- x" := (Aopp x) (at level 0) 
-  V8only (at level 10, x at level 0).
+Notation "- x" := (Aopp x) (at level 0) V8only.
 
 Record Ring_Theory : Prop :=
 { Th_plus_sym  : (n,m:A) n + m == m + n;

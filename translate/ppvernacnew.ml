@@ -581,7 +581,7 @@ let rec pr_vernac = function
       let pr_def_token = function
         | Local, Coercion -> str"Coercion Local"
         | Global, Coercion -> str"Coercion"
-        | Local, Definition -> str"Local"
+        | Local, Definition -> str"Let"
         | Global, Definition -> str"Definition"
         | Local, SubClass -> str"Local SubClass"
         | Global, SubClass -> str"SubClass"

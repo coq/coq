@@ -140,7 +140,7 @@ GEXTEND Gram
   ;
   def_token:
     [ [ "Definition" -> (fun _ _ -> ()), (Global, Definition)
-      | IDENT "Local" -> (fun _ _ -> ()), (Local, Definition)
+      | IDENT "Let" -> (fun _ _ -> ()), (Local, Definition)
       | IDENT "SubClass"  -> Class.add_subclass_hook, (Global, Coercion)
       | IDENT "Local"; IDENT "SubClass"  ->
           Class.add_subclass_hook, (Local, Coercion) ] ] 

@@ -724,6 +724,20 @@ let same c d = try check_same_type c d; true with _ -> false
 let make_current_scopes (scopt,scopes) = 
   option_fold_right push_scope scopt scopes
 
+let make_notation loc ntn l =
+  match ntn,l with
+    (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
+    | "- _", [CNumeral(_,Bignat.POS p)] -> CNotation (loc,"- ( _ )",l)
+    | _ -> CNotation (loc,ntn,l)
+
+let make_pat_notation loc ntn l =
+  match ntn,l with
+    (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
+    | "- _", [CPatNumeral(_,Bignat.POS p)] ->
+        CPatNotation (loc,"- ( _ )",l)
+    | _ -> CPatNotation (loc,ntn,l)
+
+
 (*
 let rec cases_pattern_expr_of_constr_expr = function
   | CRef r -> CPatAtom (dummy_loc,Some r)
@@ -837,7 +851,7 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 		      extern_cases_pattern_in_scope 
 		        (scopt,List.fold_right push_scope scl scopes) vars c)
                       subst in
-		  insert_pat_delimiters (CPatNotation (loc,ntn,l)) key)
+		  insert_pat_delimiters (make_pat_notation loc ntn l) key)
           | SynDefRule kn ->
  	      CPatAtom (loc,Some (Qualid (loc, shortest_qualid_of_syndef kn)))
 	with
@@ -1154,7 +1168,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 		      extern (* assuming no overloading: *) true
 		        (scopt,List.fold_right push_scope scl scopes) vars c)
                       subst in
-	          insert_delimiters (CNotation (loc,ntn,l)) key)
+	          insert_delimiters (make_notation loc ntn l) key)
           | SynDefRule kn ->
               CRef (Qualid (loc, shortest_qualid_of_syndef kn)) in
  	if args = [] then e 

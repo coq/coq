@@ -420,11 +420,11 @@ $$
 \nlsep \TERM{specialize}~\OPT{\NT{int}}~\NT{constr-with-bindings}
 \nlsep \TERM{lapply}~\tacconstr
 %%
-\nlsep \TERM{simple_induction}~\NT{quantified-hyp}
+\nlsep \TERM{simple}~\TERM{induction}~\NT{quantified-hyp}
 \nlsep \TERM{induction}~\NT{induction-arg}~\OPT{\NT{with-names}}
        ~\OPT{\NT{eliminator}}
 \nlsep \TERM{double}~\TERM{induction}~\NT{quantified-hyp}~\NT{quantified-hyp}
-\nlsep \TERM{simple_destruct}~\NT{quantified-hyp}
+\nlsep \TERM{simple}~\TERM{destruct}~\NT{quantified-hyp}
 \nlsep \TERM{destruct}~\NT{induction-arg}~\OPT{\NT{with-names}}
        ~\OPT{\NT{eliminator}}
 \nlsep \TERM{decompose}~\TERM{record}~\tacconstr
@@ -816,7 +816,7 @@ $$
    \TERM{Theorem} ~\mid~ \TERM{Lemma} ~\mid~ \TERM{Fact} ~\mid~ \TERM{Remark}
 \SEPDEF
 \DEFNT{def-token}
-   \TERM{Definition} ~\mid~ \TERM{Local} ~\mid~
+   \TERM{Definition} ~\mid~ \TERM{Let} ~\mid~
    \OPT{\TERM{Local}}~\TERM{SubClass}
 \SEPDEF
 \DEFNT{assum-token}

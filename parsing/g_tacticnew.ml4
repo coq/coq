@@ -351,13 +351,13 @@ GEXTEND Gram
       | IDENT "lapply"; c = constr -> TacLApply c
 
       (* Derived basic tactics *)
-      | IDENT "simple_induction"; h = quantified_hypothesis ->
+      | IDENT "simple"; IDENT"induction"; h = quantified_hypothesis ->
           TacSimpleInduction h
       | IDENT "induction"; c = induction_arg; ids = with_names; 
 	  el = OPT eliminator -> TacNewInduction (c,el,ids)
       | IDENT "double"; IDENT "induction"; h1 = quantified_hypothesis;
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
-      | IDENT "simple_destruct"; h = quantified_hypothesis ->
+      | IDENT "simple"; IDENT"destruct"; h = quantified_hypothesis ->
           TacSimpleDestruct h
       | IDENT "destruct"; c = induction_arg; ids = with_names;
 	  el = OPT eliminator -> TacNewDestruct (c,el,ids)

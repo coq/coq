@@ -173,8 +173,7 @@ GEXTEND Gram
       | c1 = operconstr; "->"; c2 = operconstr LEVEL"200" -> CArrow(loc,c1,c2)]
     | "10"
       [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(None,f),args)
-      | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args)
-      | "-"; n=INT -> CNumeral (loc,Bignat.NEG (Bignat.of_string n)) ]
+      | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args) ]
     | "9" [ ]
     | "1" LEFTA
       [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
