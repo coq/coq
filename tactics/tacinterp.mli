@@ -60,6 +60,8 @@ val tacticIn : (interp_sign -> raw_tactic_expr) -> raw_tactic_expr
 val tacticOut : raw_tactic_expr -> (interp_sign -> raw_tactic_expr)
 val valueIn : value -> raw_tactic_arg
 val valueOut: raw_tactic_arg -> value
+val constrIn : constr -> constr_expr
+val constrOut : constr_expr -> constr
 
 (* Sets the debugger mode *)
 val set_debug : debug_info -> unit

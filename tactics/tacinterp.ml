@@ -162,9 +162,18 @@ let valueOut = function
     else
       anomalylabstrm "valueOut" (str "Dynamic tag should be value")
   | ast ->
-    anomalylabstrm "valueOut"
-      (str "Not a Dynamic ast: " (* ++ print_ast ast*) )
+    anomalylabstrm "valueOut" (str "Not a Dynamic ast: ")
 
+(* To embed constr in Coqast.t *)
+let constrIn t = CDynamic (dummy_loc,Pretyping.constr_in t)
+let constrOut = function
+  | CDynamic (_,d) ->
+    if (Dyn.tag d) = "constr" then
+      Pretyping.constr_out d
+    else
+      anomalylabstrm "constrOut" (str "Dynamic tag should be constr")
+  | ast ->
+    anomalylabstrm "constrOut" (str "Not a Dynamic ast")
 let loc = dummy_loc
 
 (* Table of interpretation functions *)
