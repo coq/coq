@@ -188,11 +188,13 @@ let reset_to sp =
   recache_context after
 
 let reset_name id =
-  try
-    let (sp,_) = find_entry_p (fun (sp,_) -> id = basename sp) in
-    reset_to sp
-  with Not_found ->
-    error (string_of_id id ^ ": no such entry")
+  let (sp,_) = 
+    try
+      find_entry_p (fun (sp,_) -> id = basename sp)
+    with Not_found ->
+      error (string_of_id id ^ ": no such entry")
+  in
+  reset_to sp
 
 let is_section_p sp = dirpath_prefix_of sp !path_prefix
 
