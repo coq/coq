@@ -297,12 +297,12 @@ let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
 		  if dep then (Anonymous,None,depind)::lnames' else lnames' in
 		it_mkLambda_or_LetIn_name env
 		  (appvect
-		    (mkRel ((if dep then nar+1 else nar) + dect + j),
+		    (mkRel ((if dep then 1 else 0) + dect + j),
 		    extended_rel_vect 0 arsign)) arsign
 	      in
 	      it_mkLambda_or_LetIn_name env
 		(lambda_create env
-		  (depind,mkCase (ci, lift 1 p, mkRel 1, branches)))
+		  (depind,mkCase (ci, lift (nar+1) p, mkRel 1, branches)))
 		lnames'
 	    in
 	    let typtyi = 
