@@ -125,11 +125,11 @@ Section Stream_Properties.
 
 Variable P : Stream->Prop.
 
-(*
+(*i
 Inductive   Exists :  Stream -> Prop :=
    Here    : (x:Stream)(P x) ->(Exists x) |
    Further : (x:Stream)~(P x)->(Exists (tl x))->(Exists x).
-*)
+i*)
 
 Inductive   Exists :  Stream -> Prop :=
    Here    : (x:Stream)(P x) ->(Exists x) |

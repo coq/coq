@@ -25,7 +25,8 @@ Parameter Ropp:R->R.
 Parameter Rinv:R->R. 
 Parameter Rlt:R->R->Prop.    
 Parameter up:R->Z.
-(*********************************************************)
+
+(*i*******************************************************i*)
 
 (**********)
 Definition Rgt:R->R->Prop:=[r1,r2:R](Rlt r2 r1).

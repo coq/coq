@@ -85,14 +85,14 @@ Proof     (* We draw the diagram ! *)
 Theorem caseRxy : (coherence y z).
 Proof (Rstar_Rstar' x z h2 
       ([v:A][w:A](coherence y w))
-      (coherence_sym x y (Rstar_coherence x y h1))  (* case x=z *)
-      Diagram).                                     (* case x->v->*z *)
+      (coherence_sym x y (Rstar_coherence x y h1))  (*i case x=z i*)
+      Diagram).                                     (*i case x->v->*z i*)
 End Newman_.
 
 Theorem Ind_proof : (coherence y z).
 Proof (Rstar_Rstar' x y h1 ([u:A][v:A](coherence v z))
-        (Rstar_coherence x z h2)                    (* case x=y*)
-        caseRxy).                                   (* case x->u->*z *)
+        (Rstar_coherence x z h2)                    (*i case x=y i*)
+        caseRxy).                                   (*i case x->u->*z i*)
 End Induct.
 
 Theorem Newman : (x:A)(confluence x).

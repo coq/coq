@@ -733,7 +733,7 @@ Save.
 
 
 (* 
-  Just for compatibility with previous versions 
+  Just for compatibility with previous versions. 
   Use [Zmult_plus_distr_r] and [Zmult_plus_distr_l] rather than
   their synomymous 
 *)

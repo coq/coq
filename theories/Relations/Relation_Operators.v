@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 (****************************************************************************)
-(*                      Bruno Barras Cristina Cornes                        *)
+(*                      Bruno Barras, Cristina Cornes                       *)
 (*                                                                          *)
 (*  Some of these definitons were taken from :                              *)
 (*     Constructing Recursion Operators in Type Theory                      *)

@@ -59,7 +59,8 @@ Proof.
 Qed.
 
 Lemma ad_plength_first_one : (a:ad) (n:nat)
-    ((k:nat) (lt k n) -> (ad_bit a k)=false) -> (ad_bit a n)=true -> (ad_plength a)=(ni n).
+    ((k:nat) (lt k n) -> (ad_bit a k)=false) -> (ad_bit a n)=true 
+     -> (ad_plength a)=(ni n).
 Proof.
   Induction a. Intros. Simpl in H0. Discriminate H0.
   Induction p. Intros. Generalize H0. Case n. Intros. Reflexivity.

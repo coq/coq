@@ -22,8 +22,7 @@ Intros y H ; Elim (plus_n_Sm m y) ; Auto with arith.
 Qed.
 Hints Immediate plus_sym : arith v62.
 
-Lemma plus_Snm_nSm : 
-  (n,m:nat)(plus (S n) m)=(plus n (S m)).
+Lemma plus_Snm_nSm : (n,m:nat)(plus (S n) m)=(plus n (S m)).
 Intros.
 Simpl.
 Rewrite -> (plus_sym n m).
@@ -143,7 +142,8 @@ Proof.
   Intros. Discriminate H.
 Qed.
 
-Lemma plus_is_one : (m,n:nat) (plus m n)=(S O) -> {m=O /\ n=(S O)}+{m=(S O) /\ n=O}.
+Lemma plus_is_one : 
+      (m,n:nat) (plus m n)=(S O) -> {m=O /\ n=(S O)}+{m=(S O) /\ n=O}.
 Proof.
   Destruct m; Auto.
   Destruct n; Auto.

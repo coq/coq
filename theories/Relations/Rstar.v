@@ -10,8 +10,8 @@
 
 (* Properties of a binary relation R on type A *)
 
-  Parameter A : Type.  
-  Parameter R : A->A->Prop.  
+Parameter A : Type.  
+Parameter R : A->A->Prop.  
 
 (* Definition of the reflexive-transitive closure R* of R *)
 (* Smallest reflexive P containing R o P *)

@@ -20,8 +20,8 @@ Require Zsyntax.
  (n:nat)(Q n)==(n:nat)(P (inject_nat n)) ===> (x:Z)`x > 0) -> (P x)
 
        	     /\
-	     ||
-	     ||
+             ||
+             ||
 
   (Q O) (n:nat)(Q n)->(Q (S n)) <=== (P 0) (x:Z) (P x) -> (P (Zs x))
 

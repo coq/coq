@@ -71,9 +71,9 @@ Grammar command command0 :=
 Grammar command atomic_pattern :=
   r_in_pattern [ "``" rnatural:rnumber($c) "``" ] -> [$c].   
 
-(** pp **)
+(*i* pp **)
 (* pb: on rajoute des () lorsque les constantes terminent par 1 lors de
-l'appel avec NRplus *)
+l'appel avec NRplus i*)
 
 
 

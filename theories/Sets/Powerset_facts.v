@@ -274,4 +274,3 @@ Hints Resolve Empty_set_zero Empty_set_zero' Union_associative Union_add
 	singlx incl_add : sets v62.
 
 
-(* $Id$ *)

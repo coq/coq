@@ -9,8 +9,7 @@
 (*i $Id$ i*)
 
 (* Here are collected some results about the type sumbool (see INIT/Specif.v)
- * 
- * (sumbool A B), which is written {A}+{B}, is the informative
+ * [sumbool A B], which is written [{A}+{B}], is the informative
  * disjunction "A or B", where A and B are logical propositions.
  * Its extraction is isomorphic to the type of booleans.
  *)
@@ -24,7 +23,7 @@ Save.
 
 Hints Resolve sumbool_of_bool : bool.
 
-(* pourquoi ce machin-la est dans BOOL et pas dans LOGIC ?  Papageno *)
+(*i pourquoi ce machin-la est dans BOOL et pas dans LOGIC ?  Papageno i*)
 
 (* Logic connectives on type sumbool *)
 

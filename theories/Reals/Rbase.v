@@ -286,13 +286,14 @@ Lemma Rplus_Ropp:(x,y:R)``x+y==0``->``y== -x``.
   | Ring ].
 Save.
 
-(* New *)
+(*i New i*)
 Hint eqT_R_congr : real := Resolve (congr_eqT R).
 
 Lemma Rplus_plus_r:(r,r1,r2:R)(r1==r2)->``r+r1==r+r2``.
   Auto with real.
 Save.
-(* Old *) Hints Resolve Rplus_plus_r : v62.
+
+(*i Old i*)Hints Resolve Rplus_plus_r : v62.
 
 (**********)
 Lemma r_Rplus_plus:(r,r1,r2:R)``r+r1==r+r2``->r1==r2.
@@ -358,7 +359,8 @@ Hints Resolve Rmult_1r : real.
 Lemma Rmult_mult_r:(r,r1,r2:R)r1==r2->``r*r1==r*r2``.
   Auto with real.
 Save.
-(* OLD *) Hints Resolve Rmult_mult_r : v62.
+
+(*i OLD i*)Hints Resolve Rmult_mult_r : v62.
 
 (**********)
 Lemma r_Rmult_mult:(r,r1,r2:R)(``r*r1==r*r2``)->``r<>0``->(r1==r2).

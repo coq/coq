@@ -32,7 +32,7 @@ Inversion H.
 Assumption.
 Save.
 
-Lemma Ifprop_false : (A,B:Prop)(IfProp A B false) -> B.
+Lemma IfProp_false : (A,B:Prop)(IfProp A B false) -> B.
 Intros.
 Inversion H.
 Assumption.

@@ -21,20 +21,24 @@ Require auxiliary.
 Require Zsyntax.
 Require Bool.
 
-(**********************************************************************
+(************************************************************************)
+(*
  Overview of the sections of this file :
-
- - logic : Logic complements.
- - numbers : a few very simple lemmas for manipulating the
+ \begin{itemize}
+ \item logic : Logic complements.
+ \item numbers : a few very simple lemmas for manipulating the
    constructors [POS], [NEG], [ZERO] and [xI], [xO], [xH]
- - registers : defining arrays of bits and their relation with integers.
- - iter : the n-th iterate of a function is defined for n:nat and n:positive.
+ \item registers : defining arrays of bits and their relation with integers.
+ \item iter : the n-th iterate of a function is defined for n:nat and 
+   n:positive.
+   
    The two notions are identified and an invariant conservation theorem
    is proved.
- - recursors : Here a nat-like recursor is built.
- - arith : lemmas about [< <= ?= + *] ...
-
-************************************************************************)
+ \item recursors : Here a nat-like recursor is built.
+ \item arith : lemmas about [< <= ?= + *] ...
+ \end{itemize}
+*)
+(************************************************************************)
 
 Section logic.
 
@@ -83,7 +87,7 @@ End numbers.
 
 Section iterate.
 
-(* l'itere n-ieme d'une fonction f*)
+(* [n]th iteration of the function [f] *)
 Fixpoint iter_nat[n:nat]  : (A:Set)(f:A->A)A->A :=
   [A:Set][f:A->A][x:A]
     Cases n of

@@ -43,10 +43,10 @@ Inductive Full_set : Ensemble :=
      Full_intro: (x: U) (In Full_set x).
 
 (* NB The following definition builds-in equality of elements in U as 
-   Leibniz equality.
+   Leibniz equality. \\
    This may have to be changed if we replace U by a Setoid on U with its own
-   equality eqs, with 
-      [In_singleton: (y: U)(eqs x y) -> (In (Singleton x) y)]. *)
+   equality eqs, with  
+     [In_singleton: (y: U)(eqs x y) -> (In (Singleton x) y)]. *)
 
 Inductive Singleton [x:U] : Ensemble :=
       In_singleton: (In (Singleton x) x).

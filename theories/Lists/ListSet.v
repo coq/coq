@@ -10,7 +10,7 @@
 
 (* A Library for finite sets, implemented as lists *)
 (* A Library with similar interface will soon be available under
-  the name TreeSet in the theories/TREES directory *)
+  the name TreeSet in the theories/Trees directory *)
 
 (* PolyList is loaded, but not exported *)
 (* This allow to "hide" the definitions, functions and theorems of PolyList

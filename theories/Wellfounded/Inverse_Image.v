@@ -38,15 +38,3 @@ Section Inverse_Image.
 End Inverse_Image.
 
 
-
-
-
-
-
-
-
-
-
-
-
-(* $Id$ *)

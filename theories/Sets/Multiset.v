@@ -170,12 +170,12 @@ Apply multiset_twist2.
 Qed.
 
 
-(* theory of minter to do similarly 
+(*i theory of minter to do similarly 
 Require Min.
 (* multiset intersection *)
 Definition minter := [m1,m2:multiset]
     (Bag [a:A](min (multiplicity m1 a)(multiplicity m2 a))).
-*)
+i*)
 
 End multiset_defs.
 

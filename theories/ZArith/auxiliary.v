@@ -558,7 +558,8 @@ Theorem OMEGA2 : (x,y:Z) (Zle ZERO x) -> (Zle ZERO y) -> (Zle ZERO (Zplus x y)).
 Intros x y H1 H2;Rewrite <- (Zero_left ZERO); Apply Zle_plus_plus; Assumption.
 Save. 
 
-Theorem OMEGA3 : (x,y,k:Z)(Zgt k ZERO)-> (x=(Zmult y k)) -> (x=ZERO) -> (y=ZERO).
+Theorem OMEGA3 : 
+  (x,y,k:Z)(Zgt k ZERO)-> (x=(Zmult y k)) -> (x=ZERO) -> (y=ZERO).
 
 Intros x y k H1 H2 H3; Apply (Zmult_eq k); [
   Unfold not ; Intros H4; Absurd (Zgt k ZERO); [
@@ -605,7 +606,8 @@ Intros x y z t H1 H2 H3 H4; Rewrite <- (Zero_left ZERO);
 Apply Zle_plus_plus; Apply Zle_mult; Assumption.
 Save.
 
-Theorem OMEGA8: (x,y:Z) (Zle ZERO x) -> (Zle ZERO y) -> x = (Zopp y) -> x = ZERO.
+Theorem OMEGA8: 
+  (x,y:Z) (Zle ZERO x) -> (Zle ZERO y) -> x = (Zopp y) -> x = ZERO.
 
 Intros x y H1 H2 H3; Elim (Zle_lt_or_eq ZERO x H1); [
   Intros H4; Absurd (Zlt ZERO x); [
@@ -694,7 +696,7 @@ Rewrite H2; Auto with arith.
 Save.
 
 Theorem OMEGA18:
-(x,y,k:Z) (x=(Zmult y k)) -> (Zne x ZERO) -> (Zne y ZERO).
+  (x,y,k:Z) (x=(Zmult y k)) -> (Zne x ZERO) -> (Zne y ZERO).
 
 Unfold Zne not; Intros x y k H1 H2 H3; Apply H2; Rewrite H1; Rewrite H3; Auto with arith.
 Save.

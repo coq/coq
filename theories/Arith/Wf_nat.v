@@ -55,7 +55,8 @@ the ML-like program for [induction_ltof2] is :
 \end{verbatim}
 *)
 
-Theorem induction_ltof1 : (P:A->Set)((x:A)((y:A)(ltof y x)->(P y))->(P x))->(a:A)(P a).
+Theorem induction_ltof1 
+  : (P:A->Set)((x:A)((y:A)(ltof y x)->(P y))->(P x))->(a:A)(P a).
 Proof.
 Intros P F; Cut (n:nat)(a:A)(lt (f a) n)->(P a).
 Intros H a;  Apply (H (S (f a))); Auto with arith.
@@ -68,14 +69,16 @@ Apply Hm.
 Apply lt_le_trans with (f a); Auto with arith.
 Qed. 
 
-Theorem induction_gtof1 : (P:A->Set)((x:A)((y:A)(gtof y x)->(P y))->(P x))->(a:A)(P a).
+Theorem induction_gtof1 
+  : (P:A->Set)((x:A)((y:A)(gtof y x)->(P y))->(P x))->(a:A)(P a).
 Proof induction_ltof1.
 
 Theorem induction_ltof2 
-   : (P:A->Set)((x:A)((y:A)(ltof y x)->(P y))->(P x))->(a:A)(P a).
+  : (P:A->Set)((x:A)((y:A)(ltof y x)->(P y))->(P x))->(a:A)(P a).
 Proof (well_founded_induction A ltof well_founded_ltof).
 
-Theorem induction_gtof2 : (P:A->Set)((x:A)((y:A)(gtof y x)->(P y))->(P x))->(a:A)(P a).
+Theorem induction_gtof2 
+  : (P:A->Set)((x:A)((y:A)(gtof y x)->(P y))->(P x))->(a:A)(P a).
 Proof induction_ltof2.
 
 

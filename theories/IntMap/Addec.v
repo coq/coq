@@ -73,7 +73,8 @@ Proof.
   Intros. Rewrite (ad_xor_eq a a' H). Apply ad_eq_correct.
 Qed.
 
-Lemma ad_xor_eq_false : (a,a':ad) (p:positive) (ad_xor a a')=(ad_x p) -> (ad_eq a a')=false.
+Lemma ad_xor_eq_false 
+  : (a,a':ad) (p:positive) (ad_xor a a')=(ad_x p) -> (ad_eq a a')=false.
 Proof.
   Intros. Elim (sumbool_of_bool (ad_eq a a')). Intro H0.
   Rewrite (ad_eq_complete a a' H0) in H. Rewrite (ad_xor_nilpotent a') in H. Discriminate H.
@@ -115,14 +116,16 @@ Proof.
   Intro H0. Rewrite ad_eq_comm. Assumption.
 Qed.
 
-Lemma ad_bit_0_neq : (a,a':ad) (ad_bit_0 a)=false -> (ad_bit_0 a')=true -> (ad_eq a a')=false.
+Lemma ad_bit_0_neq 
+  : (a,a':ad) (ad_bit_0 a)=false -> (ad_bit_0 a')=true -> (ad_eq a a')=false.
 Proof.
   Intros. Elim (sumbool_of_bool (ad_eq a a')). Intro H1. Rewrite (ad_eq_complete ? ? H1) in H.
   Rewrite H in H0. Discriminate H0.
   Trivial.
 Qed.
 
-Lemma ad_div_eq : (a,a':ad) (ad_eq a a')=true -> (ad_eq (ad_div_2 a) (ad_div_2 a'))=true.
+Lemma ad_div_eq 
+  : (a,a':ad) (ad_eq a a')=true -> (ad_eq (ad_div_2 a) (ad_div_2 a'))=true.
 Proof.
   Intros. Cut a=a'. Intros. Rewrite H0. Apply ad_eq_correct.
   Apply ad_eq_complete. Exact H.

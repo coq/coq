@@ -61,6 +61,3 @@ Hints Resolve definition_of_noetherian : sets v62.
 Hints Unfold  Noetherian : sets v62.
 
 
-
-
-(* $Id$ *)

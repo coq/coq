@@ -78,12 +78,14 @@ Section MapDefs.
     Unfold MapGet. Intros. Rewrite (ad_eq_correct a). Reflexivity.
   Qed.
 
-  Lemma M1_semantics_2 : (a,a':ad) (y:A) (ad_eq a a')=false -> (MapGet (M1 a y) a')=NONE.
+  Lemma M1_semantics_2 
+    : (a,a':ad) (y:A) (ad_eq a a')=false -> (MapGet (M1 a y) a')=NONE.
   Proof.
     Intros. Simpl. Rewrite H. Reflexivity.
   Qed.
 
-  Lemma Map2_semantics_1 : (m,m':Map) (eqm (MapGet m) [a:ad] (MapGet (M2 m m') (ad_double a))).
+  Lemma Map2_semantics_1 
+    : (m,m':Map) (eqm (MapGet m) [a:ad] (MapGet (M2 m m') (ad_double a))).
   Proof.
     Unfold eqm. Induction a; Trivial.
   Qed.
@@ -97,7 +99,8 @@ Section MapDefs.
     Exact (Map2_semantics_1 m m' a).
   Qed.
 
-  Lemma Map2_semantics_2 : (m,m':Map) (eqm (MapGet m') [a:ad] (MapGet (M2 m m') (ad_double_plus_un a))).
+  Lemma Map2_semantics_2 
+    : (m,m':Map) (eqm (MapGet m') [a:ad] (MapGet (M2 m m') (ad_double_plus_un a))).
   Proof.
     Unfold eqm. Induction a; Trivial.
   Qed.
@@ -646,7 +649,8 @@ Section MapDefs.
   Qed.
 
   Lemma MapDelta_semantics_1_1 : (a:ad) (y:A) (m':Map) (a0:ad)
-    (MapGet (M1 a y) a0)=NONE -> (MapGet m' a0)=NONE -> (MapGet (MapDelta (M1 a y) m') a0)=NONE.
+    (MapGet (M1 a y) a0)=NONE -> (MapGet m' a0)=NONE -> 
+      (MapGet (MapDelta (M1 a y) m') a0)=NONE.
   Proof.
     Intros. Unfold MapDelta. Elim (sumbool_of_bool (ad_eq a a0)). Intro H1.
     Rewrite (ad_eq_complete ? ? H1) in H. Rewrite (M1_semantics_1 a0 y) in H. Discriminate H.
@@ -692,7 +696,8 @@ Section MapDefs.
   Qed.
 
   Lemma MapDelta_semantics_2 : (m,m':Map) (a:ad) (y:A)
-    (MapGet m a)=NONE -> (MapGet m' a)=(SOME y) -> (MapGet (MapDelta m m') a)=(SOME y).
+    (MapGet m a)=NONE -> (MapGet m' a)=(SOME y) -> 
+      (MapGet (MapDelta m m') a)=(SOME y).
   Proof.
     Induction m. Trivial.
     Exact MapDelta_semantics_2_1.
@@ -718,7 +723,8 @@ Section MapDefs.
   Qed.
 
   Lemma MapDelta_semantics_3 : (m,m':Map) (a:ad) (y,y':A)
-    (MapGet m a)=(SOME y) -> (MapGet m' a)=(SOME y') -> (MapGet (MapDelta m m') a)=NONE.
+    (MapGet m a)=(SOME y) -> (MapGet m' a)=(SOME y') -> 
+      (MapGet (MapDelta m m') a)=NONE.
   Proof.
     Induction m. Intros. Discriminate H.
     Exact MapDelta_semantics_3_1.
