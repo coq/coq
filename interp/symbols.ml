@@ -193,7 +193,7 @@ type num_uninterpreter =
     rawconstr list * (rawconstr -> bigint option)
     * (cases_pattern -> bigint option) option
 
-type required_module = string list 
+type required_module = global_reference * string list 
 
 let numeral_interpreter_tab =
   (Hashtbl.create 7 : (scope_name,required_module*num_interpreter) Hashtbl.t)
@@ -206,10 +206,11 @@ let declare_numeral_interpreter sc dir interp (patl,uninterp,uninterpc) =
       (sc,uninterp,uninterpc))
     patl
 
-let check_required_module loc sc d =
+let check_required_module loc sc (ref,d) =
   let d' = List.map id_of_string d in
   let dir = make_dirpath (List.rev d') in
-  if not (Library.library_is_loaded dir) then
+  try let _ = sp_of_global ref in ()
+  with Not_found ->
     user_err_loc (loc,"numeral_interpreter",
     str ("Cannot interpret numbers in "^sc^" without requiring first module "
     ^(list_last d)))

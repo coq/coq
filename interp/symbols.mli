@@ -65,7 +65,7 @@ type num_uninterpreter =
     rawconstr list * (rawconstr -> bigint option)
     * (cases_pattern -> bigint option) option
 
-type required_module = string list 
+type required_module = global_reference * string list 
 val declare_numeral_interpreter : scope_name -> required_module ->
   num_interpreter -> num_uninterpreter -> unit
 
