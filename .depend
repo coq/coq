@@ -318,7 +318,6 @@ contrib/interface/xlate.cmi: contrib/interface/ascent.cmi \
 contrib/jprover/jall.cmi: contrib/jprover/jlogic.cmi \
     contrib/jprover/jterm.cmi contrib/jprover/opname.cmi 
 contrib/jprover/jlogic.cmi: contrib/jprover/jterm.cmi 
-contrib/jprover/jLogic.cmi: contrib/jprover/jterm.cmi 
 contrib/jprover/jterm.cmi: contrib/jprover/opname.cmi 
 contrib/xml/xmlcommand.cmi: kernel/names.cmi library/nametab.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
@@ -2160,19 +2159,19 @@ contrib/jprover/jlogic.cmo: contrib/jprover/jterm.cmi \
 contrib/jprover/jlogic.cmx: contrib/jprover/jterm.cmx \
     contrib/jprover/opname.cmx contrib/jprover/jlogic.cmi 
 contrib/jprover/jprover.cmo: proofs/clenv.cmi library/global.cmi \
-    tactics/hipattern.cmi contrib/jprover/jLogic.cmi contrib/jprover/jall.cmi \
-    contrib/jprover/jlogic.cmi contrib/jprover/jterm.cmi kernel/names.cmi \
-    pretyping/pattern.cmi lib/pp.cmi parsing/printer.cmi \
-    proofs/proof_type.cmi kernel/reduction.cmi pretyping/reductionops.cmi \
-    tactics/tacentries.cmi proofs/tacmach.cmi tactics/tacticals.cmi \
-    tactics/tactics.cmi kernel/term.cmi pretyping/termops.cmi lib/util.cmi 
+    tactics/hipattern.cmi contrib/jprover/jall.cmi contrib/jprover/jlogic.cmi \
+    contrib/jprover/jterm.cmi kernel/names.cmi pretyping/pattern.cmi \
+    lib/pp.cmi parsing/printer.cmi proofs/proof_type.cmi kernel/reduction.cmi \
+    pretyping/reductionops.cmi tactics/tacentries.cmi proofs/tacmach.cmi \
+    tactics/tacticals.cmi tactics/tactics.cmi kernel/term.cmi \
+    pretyping/termops.cmi lib/util.cmi 
 contrib/jprover/jprover.cmx: proofs/clenv.cmx library/global.cmx \
-    tactics/hipattern.cmx contrib/jprover/jLogic.cmi contrib/jprover/jall.cmx \
-    contrib/jprover/jlogic.cmx contrib/jprover/jterm.cmx kernel/names.cmx \
-    pretyping/pattern.cmx lib/pp.cmx parsing/printer.cmx \
-    proofs/proof_type.cmx kernel/reduction.cmx pretyping/reductionops.cmx \
-    tactics/tacentries.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
-    tactics/tactics.cmx kernel/term.cmx pretyping/termops.cmx lib/util.cmx 
+    tactics/hipattern.cmx contrib/jprover/jall.cmx contrib/jprover/jlogic.cmx \
+    contrib/jprover/jterm.cmx kernel/names.cmx pretyping/pattern.cmx \
+    lib/pp.cmx parsing/printer.cmx proofs/proof_type.cmx kernel/reduction.cmx \
+    pretyping/reductionops.cmx tactics/tacentries.cmx proofs/tacmach.cmx \
+    tactics/tacticals.cmx tactics/tactics.cmx kernel/term.cmx \
+    pretyping/termops.cmx lib/util.cmx 
 contrib/jprover/jterm.cmo: contrib/jprover/opname.cmi \
     contrib/jprover/jterm.cmi 
 contrib/jprover/jterm.cmx: contrib/jprover/opname.cmx \
