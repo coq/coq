@@ -19,7 +19,6 @@ open Inductive
 open Reduction
 open Environ
 open Libnames
-open Declare
 open Refiner
 open Tacmach
 open Clenv

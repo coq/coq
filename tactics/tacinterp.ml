@@ -35,7 +35,6 @@ open Topconstr
 open Ast
 open Term
 open Termops
-open Declare
 open Tacexpr
 open Safe_typing
 open Typing
@@ -122,7 +121,7 @@ let make_hyps = List.map (fun (id,_,typ) -> (id, typ))
 
 (* Transforms an id into a constr if possible, or fails *)
 let constr_of_id env id = 
-  construct_reference (Some (Environ.named_context env)) id
+  construct_reference (Environ.named_context env) id
 
 (* To embed several objects in Coqast.t *)
 let ((tactic_in : (interp_sign -> raw_tactic_expr) -> Dyn.t),

@@ -53,7 +53,7 @@ let global_constant dir s =Coqlib.gen_constant "Setoid_replace" ("Init"::dir) s
 
 let current_constant id =
   try
-    Declare.global_reference id
+    global_reference id
   with Not_found ->
     anomaly ("Setoid: cannot find "^(string_of_id id))
 
