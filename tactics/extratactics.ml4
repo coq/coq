@@ -242,6 +242,14 @@ TACTIC EXTEND Evar
     [ let_evar Names.Anonymous typ ]
 END
 
+open Tacexpr
+
+TACTIC EXTEND Instantiate
+  [ "Instantiate" "(" integer(i) ":=" raw(c) ")" hloc(hl) ] ->
+    [ instantiate i c hl  ]
+END
+
+
 (** Nijmegen "step" tactic for setoid rewriting *)
 
 open Tacticals

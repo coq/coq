@@ -25,6 +25,7 @@ let evars_of evc c =
     | _ -> fold_constr evrec acc c
   in 
     evrec [] c
+
 let instantiate n rawc ido gl = 
   let wc = Refiner.project_with_focus gl in
   let evl = 

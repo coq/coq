@@ -87,8 +87,17 @@ val interp_genarg :
 val intern_genarg :
   glob_sign -> raw_generic_argument -> glob_generic_argument
 
+val intern_constr :
+  glob_sign -> constr_expr -> rawconstr_and_expr
+
+val intern_hyp :
+  glob_sign -> identifier Util.located -> identifier Util.located
+
 val subst_genarg :
   Names.substitution -> glob_generic_argument -> glob_generic_argument
+
+val subst_rawconstr :
+  Names.substitution -> rawconstr_and_expr -> rawconstr_and_expr
 
 (* Interprets any expression *)
 val val_interp : interp_sign -> goal sigma -> glob_tactic_expr -> value
@@ -100,6 +109,9 @@ val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr
 (* Interprets tactic expressions *)
 val interp_tac_gen : (identifier * value) list -> 
                  debug_info -> raw_tactic_expr -> tactic
+
+val interp_hyp :  interp_sign -> goal sigma -> 
+  identifier Util.located -> identifier
 
 (* Initial call for interpretation *)
 val glob_tactic : raw_tactic_expr -> glob_tactic_expr
