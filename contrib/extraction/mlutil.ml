@@ -496,7 +496,7 @@ let gen_subst v d t =
     | MLrel i as a -> 
 	let i'= i-n in 
 	if i' < 1 then a 
-	else if i' <= Array.length v then 
+	else if i' < Array.length v then 
 	  ast_lift n v.(i') 
 	else MLrel (i+d) 
     | a -> ast_map_lift subst n a
