@@ -446,7 +446,8 @@ COQIDECMO=ide/utils/okey.cmo ide/utils/uoptions.cmo \
 	  ide/utils/configwin_messages.cmo ide/utils/configwin_ihm.cmo \
 	  ide/utils/configwin.cmo ide/config_lexer.cmo ide/preferences.cmo \
 	  ide/ideutils.cmo ide/find_phrase.cmo \
-          ide/highlight.cmo ide/coq.cmo ide/coqide.cmo
+          ide/highlight.cmo ide/coq.cmo ide/coq_commands.cmo \
+	  ide/coq_tactics.cmo ide/coqide.cmo
 
 COQIDECMX=$(COQIDECMO:.cmo=.cmx)
 COQIDEFLAGS=-I +lablgtk2
@@ -455,7 +456,7 @@ beforedepend:: ide/config_lexer.ml ide/find_phrase.ml ide/highlight.ml
 FULLIDELIB=$(FULLCOQLIB)/ide
 IDEFILES=ide/coq.png ide/.coqiderc
 
-ide: $(COQIDE) states
+ide: $(COQIDEBYTE) $(COQIDE) states
 
 $(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) $(COQIDECMX)
 	$(COQMKTOP) -ide -opt $(COQIDEFLAGS) lablgtk.cmxa $(OPTFLAGS) -o $@ $(COQIDECMX)
@@ -923,7 +924,16 @@ install-opt:
 
 install-binaries:
 	$(MKDIR) $(FULLBINDIR)
-	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(COQINTERFACE) $(COQVO2XML) $(COQIDE) $(FULLBINDIR)
+	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(COQINTERFACE) $(COQVO2XML) $(FULLBINDIR)
+
+install-ide: install-ide-$(BEST)
+	cd $(FULLBINDIR); ln -sf coqide.$(BEST)$(EXE) coqide$(EXE)
+
+install-ide-byte:
+	cp $(COQIDEBYTE) $(FULLBINDIR)
+
+install-ide-opt: install-ide-byte
+	cp $(COQIDEOPT) $(FULLBINDIR)
 
 LIBFILES=$(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO)
 LIBFILESLIGHT=$(INITVO) $(THEORIESLIGHTVO)

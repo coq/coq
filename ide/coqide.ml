@@ -1446,7 +1446,7 @@ let main files =
 	    ~callback:(do_if_active (fun a -> a#insert_command "Progress Simpl.\n" "Simpl.\n" ))
 	 );
   ignore (tactics_factory#add_item "Tauto"
-	    ~key:GdkKeysyms._t
+	    ~key:GdkKeysyms._p
 	    ~callback:(do_if_active (fun a -> a#insert_command "Tauto.\n" "Tauto.\n" ))
 	 );
   ignore (tactics_factory#add_item "Trivial"
@@ -1467,42 +1467,60 @@ let main files =
 	 );
   
   (* Templates Menu *)
-  let templates_menu =  factory#add_submenu "Templates" in
+  let templates_menu =  factory#add_submenu "_Templates" in
   let templates_factory = new GMenu.factory templates_menu 
 			    ~accel_group 
 			    ~accel_modi:current.modifier_for_templates
   in
-  let templates_tactics = templates_factory#add_submenu "Tactics" in
-  let templates_tactics_factory = new GMenu.factory templates_tactics ~accel_group in
-  ignore (templates_tactics_factory#add_item "Auto");
-  ignore (templates_tactics_factory#add_item "Auto with *");
-  ignore (templates_tactics_factory#add_item "EAuto");
-  ignore (templates_tactics_factory#add_item "EAuto with *");
-  ignore (templates_tactics_factory#add_item "Intuition");
-  ignore (templates_tactics_factory#add_item "Omega");
-  ignore (templates_tactics_factory#add_item "Simpl");
-  ignore (templates_tactics_factory#add_item "Tauto");
-  ignore (templates_tactics_factory#add_item "Trivial");
-  let templates_commands = templates_factory#add_submenu "Commands" in
-  let templates_commands_factory = new GMenu.factory templates_commands 
-				     ~accel_group 
-				     ~accel_modi:[`MOD1]
-  in
-  (* Templates/Commands/Lemma *)
-  let callback () = 
-    let {view = view } = get_current_view () in
-    if (view#buffer#insert_interactive "Lemma new_lemma : .\nProof.\n\nSave.\n") then
-      begin
+  let add_complex_template (menu_text, text, offset, len, key) =
+  (* Templates/Lemma *)
+    let callback () = 
+      let {view = view } = get_current_view () in
+      if view#buffer#insert_interactive text then begin
 	let iter = view#buffer#get_iter_at_mark `INSERT in
-	ignore (iter#nocopy#backward_chars 19);
+	ignore (iter#nocopy#backward_chars offset);
 	view#buffer#move_mark `INSERT iter;
-	ignore (iter#nocopy#backward_chars 9);
+	ignore (iter#nocopy#backward_chars len);
 	view#buffer#move_mark `SEL_BOUND iter;
 	Highlight.highlight_all view#buffer
       end
+    in
+    ignore (templates_factory#add_item menu_text ~callback ?key)
   in
-  ignore (templates_commands_factory#add_item "Lemma _" ~callback ~key:GdkKeysyms._L);
-
+  add_complex_template 
+    ("_Lemma __", "Lemma new_lemma : .\nProof.\n\nSave.\n", 
+     19, 9, Some GdkKeysyms._L);
+  add_complex_template 
+    ("_Theorem __", "Theorem new_theorem : .\nProof.\n\nSave.\n", 
+     19, 11, Some GdkKeysyms._L);
+  add_complex_template 
+    ("_Definition __", "Definition ident := .\n",
+     6, 5, Some GdkKeysyms._D);
+  add_complex_template 
+    ("_Inductive __", "Inductive ident : :=\n  | : .\n",
+     14, 5, Some GdkKeysyms._N);
+  let add_simple_template (menu_text, text) =
+    ignore (templates_factory#add_item menu_text
+	    ~callback:(fun () -> 
+			 let {view = view } = get_current_view () in
+			 ignore (view#buffer#insert_interactive text)))
+  in
+  ignore (templates_factory#add_separator ());
+  List.iter add_simple_template 
+    [ "_Auto", "Auto ";
+      "Auto with _*", "Auto with * ";
+      "_EAuto", "EAuto ";
+      "EA_uto with *", "EAuto with * ";
+      "_Intuition", "Intuition ";
+      "_Omega", "Omega ";
+      "_Simpl", "Simpl ";
+      "_Tauto", "Tauto ";
+      "Tri_vial", "Trivial ";
+    ];
+  ignore (templates_factory#add_separator ());
+  List.iter 
+    (fun s -> add_simple_template ("_"^s, s^" ")) 
+    Coq_commands.commands;
   
   (* Commands Menu *)
   let commands_menu =  factory#add_submenu "Commands" in
