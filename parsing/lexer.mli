@@ -1,6 +1,8 @@
 
 (* $Id$ *)
 
+exception BadToken of string
+
 val add_keyword : string -> unit
 val is_keyword : string -> bool
 val find_keyword : string -> string

@@ -66,3 +66,4 @@ val make_focus : int -> unit
 val focus : unit -> int
 val focused_goal : unit -> int
 
+val subtree_solved : unit -> bool

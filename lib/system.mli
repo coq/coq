@@ -8,8 +8,11 @@ val is_in_path : string list -> string -> bool
 val where_in_path : string list -> string -> string
 
 val make_suffix : string -> string -> string
+val file_readable_p : string -> bool
 
 val glob : string -> string
+
+val home : string
 
 (*s Global load path. *)
 
@@ -34,8 +37,11 @@ val extern_intern : int -> string -> (string -> 'a -> unit) * (string -> 'a)
 
 (*s Time stamps. *)
 
-type time_stamp
+type time
 
-val get_time_stamp : unit -> time_stamp
-val compare_time_stamps : time_stamp -> time_stamp -> int
+val process_time : unit -> float * float
+val get_time : unit -> time
+val time_difference : time -> time -> float (* in seconds *)
+val fmt_time_difference : time -> time -> Pp.std_ppcmds
+
 

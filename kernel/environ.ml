@@ -2,7 +2,6 @@
 (* $Id$ *)
 
 open Pp
-open System
 open Util
 open Names
 open Sign
@@ -15,7 +14,9 @@ open Abstraction
 
 (* The type of environments. *)
 
-type import = string * time_stamp
+type checksum = int
+
+type import = string * checksum
 
 type global = Constant | Inductive | Abstraction
 
@@ -217,7 +218,7 @@ let evaluable_constant env k =
 
 type compiled_env = {
   cenv_id : string;
-  cenv_stamp : time_stamp;
+  cenv_stamp : checksum;
   cenv_needed : import list;
   cenv_constants : (section_path * constant_body) list;
   cenv_inductives : (section_path * mutual_inductive_body) list;
@@ -235,7 +236,7 @@ let exported_objects env =
 let export env id = 
   let (cst,ind,abs) = exported_objects env in
   { cenv_id = id;
-    cenv_stamp = get_time_stamp ();
+    cenv_stamp = 0;
     cenv_needed = env.env_globals.env_imports;
     cenv_constants = cst;
     cenv_inductives = ind;
@@ -246,7 +247,7 @@ let check_imports env needed =
   let check (id,stamp) =
     try
       let actual_stamp = List.assoc id imports in
-      if compare_time_stamps stamp actual_stamp <> 0 then
+      if stamp <> actual_stamp then
 	error ("Inconsistent assumptions over module " ^ id)
     with Not_found -> 
       error ("Reference to unknown module " ^ id)

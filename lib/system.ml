@@ -44,7 +44,14 @@ let all_subdirs dir =
 
 let radd_path dir = List.iter add_path (all_subdirs dir)
 
+let safe_getenv_def var def =
+  try 
+    Sys.getenv var
+  with Not_found ->
+    warning ("Environnement variable "^var^" not found: using '"^def^"' .");
+    def
 
+let home = (safe_getenv_def "HOME" ".")
 
 (* TODO: rétablir glob (expansion ~user et $VAR) si on le juge nécessaire *)
 let glob s = s
@@ -81,6 +88,9 @@ let is_in_path lpath filename =
 
 let make_suffix name suffix =
   if Filename.check_suffix name suffix then name else (name ^ suffix)
+
+let file_readable_p na =
+  try access (glob na) [R_OK];true with Unix_error (_, _, _) -> false
 
 let open_trapping_failure open_fun name suffix =
   let rname = make_suffix name suffix in
@@ -141,11 +151,22 @@ let (extern_intern :
 
 (* Time stamps. *)
 
-type time_stamp = float
+type time = float * float * float
 
-let get_time_stamp () = Unix.time()
+let process_time () = 
+  let t = times ()  in
+  (t.tms_utime, t.tms_stime)
 
-let compare_time_stamps t1 t2 =
-  let dt = t2 -. t1 in
-  if dt < 0.0 then -1 else if dt = 0.0 then 0 else 1
+let get_time () = 
+  let t = times ()  in
+  (time(), t.tms_utime, t.tms_stime)
 
+let time_difference (t1,_,_) (t2,_,_) = t2 -. t1
+			      
+let fmt_time_difference (startreal,ustart,sstart) (stopreal,ustop,sstop) =
+  [< 'rEAL(stopreal -. startreal); 'sTR" secs ";
+     'sTR"(";
+     'rEAL((-.) ustop ustart); 'sTR"u";
+     'sTR",";
+     'rEAL((-.) sstop sstart); 'sTR"s";
+     'sTR")" >]

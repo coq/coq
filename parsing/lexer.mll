@@ -9,6 +9,8 @@ type error =
   | Unterminated_comment
   | Unterminated_string
 
+exception BadToken of string
+
 exception Error of error * int * int
 
 type frozen_t = string list

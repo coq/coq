@@ -34,7 +34,7 @@ CONFIG=config/coq_config.cmo
 LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
     lib/bstack.cmo lib/edit.cmo lib/stamps.cmo lib/gset.cmo lib/gmap.cmo \
-    lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo
+    lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo
 
 KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/sign.cmo kernel/constant.cmo \
@@ -77,7 +77,8 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
          toplevel/metasyntax.cmo toplevel/command.cmo toplevel/class.cmo \
          toplevel/vernacentries.cmo toplevel/vernac.cmo toplevel/mltop.cmo \
-	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo
+	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo \
+         toplevel/usage.cmo toplevel/coqinit.cmo toplevel/coqtop.cmo
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -118,7 +119,7 @@ coqtop.byte: $(CMO) Makefile
 
 MINICOQCMO=$(CONFIG) $(LIB) $(KERNEL) \
 	   parsing/lexer.cmo parsing/g_minicoq.cmo \
-	   toplevel/himsg.cmo toplevel/minicoq.cmo
+	   toplevel/fhimsg.cmo toplevel/minicoq.cmo
 
 minicoq: $(MINICOQCMO)
 	$(OCAMLC) $(INCLUDES) -o minicoq -custom $(CMA) $(MINICOQCMO) \

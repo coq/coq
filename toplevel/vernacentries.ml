@@ -1390,6 +1390,66 @@ let _ =
 		  mSG(print_name t))
      | _ -> bad_vernac_args "TableField")
 
+
+open Tactics
+open Pfedit
+
+(* 
+   The first one is a command that should be a tactic. It has been
+   added by Christine to patch an error in the design of the proof
+   machine, and enables to instantiate existential variables when
+   there are no more goals to solve. It cannot be a tactic since 
+   all tactics fail if there are no further goals to prove. *)
+
+let _ = 
+  vinterp_add "EXISTENTIAL"
+    (function 
+       | [VARG_NUMBER n; VARG_COMMAND c] -> 
+           (fun () -> mutate (instantiate_pf_com n c))
+       |  _  -> assert false)
+
+(* The second is a stupid macro that should be replaced by ``Exact
+   c. Save.'' all along the theories. *)
+
+let _ = 
+  vinterp_add "PROOF"
+    (function 
+       | [VARG_COMMAND c] ->
+           (fun () -> (* by (tactic_com exact c) *)
+              (* on experimente la synthese d'ise dans exact *)
+              by (dyn_exact [Command c]); 
+              save_named true)
+       |   _  -> assert false)
+
+let print_subgoals () = 
+  if not (is_silent()) then show_open_subgoals_focused()
+
+let _ = 
+  vinterp_add "SOLVE"
+    (function l -> 
+       let (n,tcom) = match l with 
+	 | [VARG_NUMBER n;VARG_TACTIC tcom] -> (n,tcom)
+	 |  _  -> invalid_arg "SOLVE"
+       in
+       (fun () -> 
+	  (match Tacinterp.is_just_undef_macro tcom with
+             | Some id -> 
+		 let msg =
+ 	     	   if Pfedit.refining () then 
+		     "undefined command or tactic"
+	     	   else 
+		     "undefined command"
+		 in 
+		 error msg
+	     | None -> ());
+	  solve_nth n (Tacinterp.vernac_interp tcom);
+	  print_subgoals();
+          (* in case a strict subtree was completed, 
+              go back to the top of the prooftree *) 
+	  if subtree_solved () then 
+	    (rev_mutate top_of_tree; print_subgoals()) 
+       ))
+
 (*Only for debug*)
 (***
 let _ =

@@ -119,14 +119,7 @@ let call (opn,converted_args) =
 	  mSGNL [< 'sTR"Vernac Interpreter " ; 'sTR !loc >];
         raise e
 
-let rec interp = function
-  (*** now done in vernac.ml
-  | Node(_,"Time",l) -> 
-      let tstart = System.timestamp() in
-      List.iter interp l;
-      mSGNL [< 'sTR"Finished transaction in " ;
-               System.fmt_time_difference tstart (System.timestamp()) >]
-  ***)
+let interp = function
   | Node(_,opn,argl) as cmd ->
       let converted_args =
       	try 

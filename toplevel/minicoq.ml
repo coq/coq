@@ -110,7 +110,7 @@ let parse_file f =
     | End_of_file | Stdpp.Exc_located (_, End_of_file) -> close_in c; exit 0
     | exn -> close_in c; raise exn
 
-module Explain = Himsg.Make(struct let pr_term = pr_term end)
+module Explain = Fhimsg.Make(struct let pr_term = pr_term end)
 
 let rec explain_exn = function
   | TypeError (k,ctx,te) -> 
