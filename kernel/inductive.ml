@@ -132,8 +132,6 @@ let error_elim_expln env kp ki =
       | Sort (Type _), Sort (Prop _) -> StrongEliminationOnNonSmallType
       | _ -> WrongArity
 
-exception Arity of (constr * constr * arity_error) option
-
 (* Type of case predicates *)
 
 let local_rels ctxt =
@@ -160,6 +158,9 @@ let build_dependent_inductive ind mip params =
     (mkInd ind, (List.map (lift nrealargs) params)@(local_rels arsign))
 
 
+(* This exception is local *)
+exception LocalArity of (constr * constr * arity_error) option
+
 let is_correct_arity env c pj ind mip params = 
   let kelim = mip.mind_kelim in
   let arsign,s = get_arity mip params in
@@ -171,34 +172,34 @@ let is_correct_arity env c pj ind mip params =
       | Prod (_,a1,a2), Prod (_,a1',a2') ->
           let univ =
             try conv env a1 a1'
-            with NotConvertible -> raise (Arity None) in
+            with NotConvertible -> raise (LocalArity None) in
           srec a2 a2' (Constraint.union u univ)
       | Prod (_,a1,a2), _ -> 
           let k = whd_betadeltaiota env a2 in 
           let ksort = match kind_of_term k with
             | Sort s -> family_of_sort s 
-	    | _ -> raise (Arity None) in
+	    | _ -> raise (LocalArity None) in
 	  let dep_ind = build_dependent_inductive ind mip params in
           let univ =
             try conv env a1 dep_ind
-            with NotConvertible -> raise (Arity None) in
+            with NotConvertible -> raise (LocalArity None) in
           if List.exists ((=) ksort) kelim then
 	    (true, Constraint.union u univ)
           else 
-	    raise (Arity (Some(k,t',error_elim_expln env k t')))
+	    raise (LocalArity (Some(k,t',error_elim_expln env k t')))
       | k, Prod (_,_,_) ->
-	  raise (Arity None)
+	  raise (LocalArity None)
       | k, ki -> 
 	  let ksort = match k with
             | Sort s -> family_of_sort s 
-            | _ ->  raise (Arity None) in
+            | _ ->  raise (LocalArity None) in
           if List.exists ((=) ksort) kelim then 
 	    (false, u)
           else 
-	    raise (Arity (Some(pt',t',error_elim_expln env pt' t')))
+	    raise (LocalArity (Some(pt',t',error_elim_expln env pt' t')))
   in 
   try srec pj.uj_type nodep_ar Constraint.empty
-  with Arity kinds ->
+  with LocalArity kinds ->
     let create_sort = function 
       | InProp -> mkProp
       | InSet -> mkSet
