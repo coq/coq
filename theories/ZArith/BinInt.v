@@ -13,10 +13,10 @@
 (***********************************************************)
 
 Require Export BinPos.
+Require Export Pnat.
 Require BinNat.
 Require Plus.
 Require Mult.
-
 (**********************************************************************)
 (** Binary integer numbers *)
 
@@ -255,8 +255,6 @@ Qed.
 
 (**********************************************************************)
 (** Other properties of binary integer numbers *)
-
-Hints Local Resolve compare_convert_O.
 
 Lemma ZL0 : (S (S O))=(plus (S O) (S O)).
 Proof.
