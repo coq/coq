@@ -22,7 +22,7 @@ type load_path = physical_path list
 let exists_dir dir =
   try let _ = opendir dir in true with Unix_error _ -> false
 
-let all_subdirs root =
+let all_subdirs ~unix_path:root =
   let l = ref [] in
   let add f rel = l := (f, rel) :: !l in
   let rec traverse dir rel =
@@ -30,7 +30,8 @@ let all_subdirs root =
     try
       while true do
 	let f = readdir dirh in
-	if f <> "." && f <> ".." && (not Coq_config.local or (f <> "CVS")) then
+	if f <> "" && f.[0] <> '.' && (not Coq_config.local or (f <> "CVS"))
+        then
 	  let file = Filename.concat dir f in
 	  try 
 	    if (stat file).st_kind = S_DIR then begin
@@ -55,6 +56,7 @@ let safe_getenv_def var def =
     Sys.getenv var
   with Not_found ->
     warning ("Environnement variable "^var^" not found: using '"^def^"' .");
+    flush Pervasives.stdout;
     def
 
 let home = (safe_getenv_def "HOME" ".")
@@ -84,8 +86,8 @@ let find_file_in_path paths name =
       search_in_path paths name
     with Not_found ->
       errorlabstrm "System.find_file_in_path"
-	(hOV 0 [< 'sTR"Can't find file" ; 'sPC ; 'sTR name ; 'sPC ; 
-		  'sTR"on loadpath" >])
+	(hov 0 (str "Can't find file" ++ spc () ++ str name ++ spc () ++ 
+		str "on loadpath"))
 
 let is_in_path lpath filename =
   try
@@ -105,8 +107,8 @@ let open_trapping_failure open_fun name suffix =
 
 let try_remove f =
   try Sys.remove f
-  with _ -> mSGNL [< 'sTR"Warning: " ; 'sTR"Could not remove file " ;
-                     'sTR f ; 'sTR" which is corrupted!" >]
+  with _ -> msgnl (str"Warning: " ++ str"Could not remove file " ++
+                   str f ++ str" which is corrupted!" )
 
 let marshal_out ch v = Marshal.to_channel ch v []
 let marshal_in ch =
@@ -168,9 +170,9 @@ let get_time () =
 let time_difference (t1,_,_) (t2,_,_) = t2 -. t1
 			      
 let fmt_time_difference (startreal,ustart,sstart) (stopreal,ustop,sstop) =
-  [< 'rEAL(stopreal -. startreal); 'sTR" secs ";
-     'sTR"(";
-     'rEAL((-.) ustop ustart); 'sTR"u";
-     'sTR",";
-     'rEAL((-.) sstop sstart); 'sTR"s";
-     'sTR")" >]
+  real (stopreal -. startreal) ++ str " secs " ++
+  str "(" ++
+  real ((-.) ustop ustart) ++ str "u" ++
+  str "," ++
+  real ((-.) sstop sstart) ++ str "s" ++
+  str ")"

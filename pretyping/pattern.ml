@@ -64,6 +64,21 @@ let label_of_ref = function
   | ConstructRef sp -> CstrNode sp
   | VarRef sp       -> SectionVarNode sp
 
+let ref_of_label = function
+  | ConstNode sp     -> ConstRef sp
+  | IndNode sp       -> IndRef sp
+  | CstrNode sp      -> ConstructRef sp
+  | SectionVarNode sp-> VarRef sp
+  | VarNode _        -> anomaly "VarNode in ref_of_label"
+
+let subst_label subst lab = 
+  try 
+    let ref = ref_of_label lab in
+    let ref' = subst_global_reference subst ref in
+      if ref==ref' then lab else (label_of_ref ref')
+  with
+      _ -> lab
+
 let rec head_pattern_bound t =
   match t with
     | PProd (_,_,b)  -> head_pattern_bound b 

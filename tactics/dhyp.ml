@@ -77,7 +77,7 @@ hypothesis" is defined in this way:
 
 Require DHyp.
 Hint Destruct Hypothesis less_than_zero (le (S ?) O) 1
-  [<:tactic:<Inversion $0>>].
+  (**)( :tactic:<Inversion $0> )(**).
 
 Then, the tactic is used like this:
 
@@ -91,7 +91,7 @@ hypothesis H.
 
 Similarly for the conclusion :
 
-Hint Destruct Conclusion equal_zero  (? = ?) 1 [<:tactic:<Reflexivity>>].
+Hint Destruct Conclusion equal_zero  (? = ?) 1 (**)( :tactic:<Reflexivity> )(**).
 
 Goal (plus O O)=O.
 DConcl.
@@ -101,7 +101,7 @@ The "Discardable" option clears the hypothesis after using it.
 
 Require DHyp.
 Hint Destruct  Discardable Hypothesis less_than_zero (le (S ?) O) 1
-  [<:tactic:<Inversion $0>>].
+  (**)( :tactic:<Inversion $0> )(**).
 
 Goal (n:nat)(le (S n) O) -> False.
 Intros n H.
@@ -174,8 +174,8 @@ let add (na,dd) =
     | Concl p -> p.d_typ
   in 
   if Nbtermdn.in_dn tactab na then begin
-    mSGNL [< 'sTR "Warning [Overriding Destructor Entry " ; 
-             'sTR (string_of_id na) ; 'sTR"]" >];
+    msgnl (**)(  str "Warning [Overriding Destructor Entry "  ++ 
+             str (string_of_id na)  ++ str"]"  )(**);
     Nbtermdn.remap tactab na (pat,dd)
   end else 
     Nbtermdn.add tactab (na,(pat,dd))
@@ -192,8 +192,8 @@ let cache_dd (_,(na,dd)) =
     add (na,dd)
   with _ -> 
     anomalylabstrm "Dhyp.add"
-      [< 'sTR"The code which adds destructor hints broke;"; 'sPC; 
-	 'sTR"this is not supposed to happen" >]
+      (**)(  str"The code which adds destructor hints broke ++" ++ spc () ++ 
+	 str"this is not supposed to happen"  )(**)
 
 let export_dd x = Some x
 
@@ -201,11 +201,11 @@ type destructor_data_object = identifier * destructor_data
 
 let ((inDD : destructor_data_object->obj),
      (outDD : obj->destructor_data_object)) =
-  declare_object ("DESTRUCT-HYP-CONCL-DATA",
-                  { load_function = (fun _ -> ());
+  declare_object {(default_object "DESTRUCT-HYP-CONCL-DATA") with 
+ load_function = (fun _ -> ());
                     cache_function = cache_dd;
 		    open_function = cache_dd;
-                    export_function = export_dd })
+                    export_function = export_dd  }
     
 let add_destructor_hint na pat pri code =
   Lib.add_anonymous_leaf

@@ -17,6 +17,7 @@ open Term
 open Inductive
 open Sign
 open Environ
+open Libnames
 open Declare
 open Impargs
 open Coqast
@@ -88,22 +89,34 @@ let idopt_of_name = function
   | Name id -> Some id
   | Anonymous -> None
 
-let ast_of_constant_ref sp =
-  ope("CONST", [path_section dummy_loc sp])
+exception LocalPath
+
+let sp_of_ln (mp,l) = match mp with
+    MPcomp dir -> make_path dir (ident_of_label l) CCI
+  | _ -> raise LocalPath
+
+let ind_path ln = 
+  try sp_of_ln ln with LocalPath -> Nametab.get_sp (IndRef (ln,0)) 
+
+let const_path ln = 
+  try sp_of_ln ln with LocalPath -> Nametab.get_sp (ConstRef ln)
+
+let ast_of_constant_ref ln =
+  ope("CONST", [path_section dummy_loc ln])
 
 let ast_of_existential_ref ev =
   ope("EVAR", [num ev])
 
-let ast_of_constructor_ref ((sp,tyi),n) =
-  ope("MUTCONSTRUCT",[path_section dummy_loc sp; num tyi; num n])
+let ast_of_constructor_ref ((ln,tyi),n) =
+  ope("MUTCONSTRUCT",[path_section dummy_loc (ind_path ln); num tyi; num n])
 
-let ast_of_inductive_ref (sp,tyi) =
-  ope("MUTIND", [path_section dummy_loc sp; num tyi])
+let ast_of_inductive_ref (ln,tyi) =
+  ope("MUTIND", [path_section dummy_loc (ind_path ln); num tyi])
 
-let ast_of_ref = function
-  | ConstRef sp -> ast_of_constant_ref sp
-  | IndRef sp -> ast_of_inductive_ref sp
-  | ConstructRef sp -> ast_of_constructor_ref sp
+let ast_of_ref ref = match ref with
+  | ConstRef ln -> ast_of_constant_ref (const_path ln)
+  | IndRef ind -> ast_of_inductive_ref ind
+  | ConstructRef cp -> ast_of_constructor_ref cp
   | VarRef id -> ast_of_ident id
 
 let ast_of_qualid p =
@@ -276,7 +289,7 @@ and ast_of_eqn (_,ids,pl,c) =
   ope("EQN", (ast_of_raw c)::(List.map ast_of_cases_pattern pl))
 
 and ast_of_rawopt = function
-  | None -> (str "SYNTH")
+  | None -> (string "SYNTH")
   | Some p -> ast_of_raw p
 
 and factorize_binder n oper na aty c =
@@ -303,8 +316,8 @@ let ast_of_constr at_top env t =
   ast_of_raw 
     (Detyping.detype avoid (names_of_rel_context env) t')
 
-let ast_of_constant env (sp,ids) =
-  let a = ast_of_constant_ref sp in
+let ast_of_constant env (ln,ids) =
+  let a = ast_of_constant_ref (const_path ln) in
   if !print_arguments then
     ope("INSTANCE",a::(array_map_to_list (ast_of_constr false env) ids))
   else a
@@ -403,7 +416,7 @@ let rec ast_of_pattern env = function
   | PCoFix c -> ast_of_raw (Detyping.detype [] env (mkCoFix c))
 	
 and ast_of_patopt env = function
-  | None -> (str "SYNTH")
+  | None -> (string "SYNTH")
   | Some p -> ast_of_pattern env p
 
 and factorize_binder_pattern env n oper na aty c =

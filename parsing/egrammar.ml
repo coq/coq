@@ -25,11 +25,11 @@ let (grammar_state : grammar_command list ref) = ref []
 let specify_name name e =
   match e with
     | UserError(lab,strm) ->
-        UserError(lab, [< 'sTR"during interpretation of grammar rule ";
-                          'sTR name; 'sTR","; 'sPC; strm >])
+        UserError(lab,  str"during interpretation of grammar rule " ++
+                          str name ++ str"," ++ spc () ++ strm )
     | Anomaly(lab,strm) ->
-        Anomaly(lab, [< 'sTR"during interpretation of grammar rule ";
-                        'sTR name; 'sTR","; 'sPC; strm >])
+        Anomaly(lab,  str"during interpretation of grammar rule " ++
+                        str name ++ str"," ++ spc () ++ strm )
     | Failure s ->
         Failure("during interpretation of grammar rule "^name^", "^s)
     | e -> e

@@ -71,6 +71,10 @@ val list_tabulate : (int -> 'a) -> int -> 'a list
 val list_assign : 'a list -> int -> 'a -> 'a list
 val list_distinct : 'a list -> bool
 val list_filter2 : ('a -> 'b -> bool) -> 'a list * 'b list -> 'a list * 'b list
+
+(* [list_smartmap f [a1...an] = List.map f [a1...an]] but if for all i
+   [ f ai == ai], then [list_smartmap f l==l] *)
+val list_smartmap : ('a -> 'a) -> 'a list -> 'a list
 val list_map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
 val list_map2_i : 
   (int -> 'a -> 'b -> 'c) -> int -> 'a list -> 'b list -> 'c list
@@ -117,6 +121,8 @@ val array_cons : 'a -> 'a array -> 'a array
 val array_fold_right_i : 
   (int -> 'b -> 'a -> 'a) -> 'b array -> 'a -> 'a
 val array_fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b array -> 'a
+val array_fold_right2 :
+  ('a -> 'b -> 'c -> 'c) -> 'a array -> 'b array -> 'c -> 'c
 val array_fold_left2 : 
   ('a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
 val array_fold_left2_i : 
@@ -176,12 +182,13 @@ val pr_int : int -> std_ppcmds
 val pr_str : string -> std_ppcmds
 val pr_coma : unit -> std_ppcmds
 
-val prlist : ('a -> 'b Stream.t) -> 'a list -> 'b Stream.t
-val prvecti : (int -> 'a -> 'b Stream.t) -> 'a array -> 'b Stream.t
+val prlist : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+val prvecti : (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
 val prlist_with_sep :
-   (unit -> 'a Stream.t) -> ('b -> 'a Stream.t) -> 'b list -> 'a Stream.t
+   (unit -> std_ppcmds) -> ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 val prvect_with_sep :
-   (unit -> 'a Stream.t) -> ('b -> 'a Stream.t) -> 'b array -> 'a Stream.t
+   (unit -> std_ppcmds) -> ('b -> std_ppcmds) -> 'b array -> std_ppcmds
+val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 
 (*s Size of an ocaml value (in words, bytes and kilobytes). *)
 

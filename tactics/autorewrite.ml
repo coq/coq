@@ -12,6 +12,7 @@ open Hipattern
 open Identifier
 open Names
 open Pp
+open Libobject
 open Proof_type
 open Tacmach
 open Tacinterp
@@ -45,7 +46,7 @@ let one_base tac_main bas =
   let lrul = Hashtbl.find_all !rewtab bas in
   if lrul = [] then
     errorlabstrm "AutoRewrite"
-      [<'sTR ("Rewriting base "^(bas)^" does not exist") >]
+      (**)( str ("Rewriting base "^(bas)^" does not exist")  )(**)
   else
     tclREPEAT_MAIN (tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
       tclTHEN tac
@@ -68,11 +69,11 @@ let export_hintrewrite x = Some x
 
 (* Declaration of the Hint Rewrite library object *)
 let (in_hintrewrite,out_hintrewrite)=
-  Libobject.declare_object ("HINT_REWRITE",
-     { Libobject.load_function = load_hintrewrite;
-       Libobject.open_function = cache_hintrewrite;
-       Libobject.cache_function = cache_hintrewrite;
-       Libobject.export_function = export_hintrewrite })
+  declare_object {(default_object "HINT_REWRITE") with 
+       load_function = load_hintrewrite;
+       open_function = cache_hintrewrite;
+       cache_function = cache_hintrewrite;
+       export_function = export_hintrewrite  }
 
 (* To add rewriting rules to a base *)
 let add_rew_rules base lrul =

@@ -15,6 +15,7 @@ open Names
 open Term
 open Sign
 open Environ
+open Libnames
 open Global
 open Declare
 open Coqast
@@ -23,34 +24,40 @@ open Termast
 
 let emacs_str s = if !Options.print_emacs then s else "" 
 
-let dfltpr ast = [< 'sTR"#GENTERM " ; print_ast ast >];;
+let dfltpr ast =  str"#GENTERM "  ++ print_ast ast ;;
 
 let pr_global ref =
   (* Il est important de laisser le let-in, car les streams s'évaluent
   paresseusement : il faut forcer l'évaluation pour capturer
   l'éventuelle levée d'une exception (le cas échoit dans le debugger) *)
-  let s = Libnames.string_of_qualid (Nametab.get_short_qualid ref) in
-  [< 'sTR s >]
+  let s = string_of_qualid (Nametab.get_short_qualid ref) in
+   str s 
 
 let global_const_name sp =
-  try pr_global (ConstRef sp)
+  try 
+    let ln = Nametab.locate_constant (qualid_of_sp sp) in
+      pr_global (ConstRef ln)
   with Not_found -> (* May happen in debug *)
-    [< 'sTR ("CONST("^(string_of_long_name sp)^")") >]
+     str ("CONST("^(string_of_path sp)^")") 
 
 let global_ind_name (sp,tyi) =
-  try pr_global (IndRef (sp,tyi))
+  try 
+    let ln = Nametab.locate_mind (qualid_of_sp sp) in
+      pr_global (IndRef (ln,tyi))
   with Not_found -> (* May happen in debug *)
-    [< 'sTR ("IND("^(string_of_long_name sp)^","^(string_of_int tyi)^")") >]
+     str ("IND("^(string_of_path sp)^","^(string_of_int tyi)^")") 
 
 let global_constr_name ((sp,tyi),i) =
-  try pr_global (ConstructRef ((sp,tyi),i))
+  try 
+    let ln = Nametab.locate_mind (qualid_of_sp sp) in
+      pr_global (ConstructRef ((ln,tyi),i))
   with Not_found -> (* May happen in debug *)
-    [< 'sTR ("CONSTRUCT("^(string_of_long_name sp)^","^(string_of_int tyi)
-		  ^","^(string_of_int i)^")") >]
+     str ("CONSTRUCT("^(string_of_path sp)^","^(string_of_int tyi)
+		  ^","^(string_of_int i)^")") 
 
 let globpr gt = match gt with
-  | Nvar(_,s) -> [< pr_id s >]
-  | Node(_,"EVAR", [Num (_,ev)]) -> [< 'sTR ("?" ^ (string_of_int ev)) >]
+  | Nvar(_,s) ->  pr_id s 
+  | Node(_,"EVAR", [Num (_,ev)]) ->  str ("?" ^ (string_of_int ev)) 
   | Node(_,"CONST",[Path(_,sl)]) ->
       global_const_name (section_path sl)
   | Node(_,"MUTIND",[Path(_,sl); Num(_,tyi)]) ->
@@ -61,10 +68,10 @@ let globpr gt = match gt with
 
 let wrap_exception = function
     Anomaly (s1,s2) ->
-      warning ("Anomaly ("^s1^")");pP s2;
-      [< 'sTR"<PP error: non-printable term>" >]
+      warning ("Anomaly ("^s1^")"); pp s2;
+      str"<PP error: non-printable term>" 
   | Failure _ | UserError _ | Not_found ->
-      [< 'sTR"<PP error: non-printable term>" >]
+      str"<PP error: non-printable term>" 
   | s -> raise s
 
 (* These are the names of the universes where the pp rules for constr and
@@ -136,48 +143,52 @@ let rec gentacpr gt =
   Esyntax.genprint default_tacpr tactic_syntax_universe tactic_initial_prec gt
 
 and default_tacpr = function
-    | Nvar(_,s) -> [< pr_id s >]
+    | Nvar(_,s) ->  pr_id s 
 
     (* constr's may occur inside tac expressions ! *)
-    | Node(_,"EVAR", [Num (_,ev)]) -> [< 'sTR ("?" ^ (string_of_int ev)) >]
+    | Node(_,"EVAR", [Num (_,ev)]) ->  str ("?" ^ (string_of_int ev)) 
     | Node(_,"CONST",[Path(_,sl)]) ->
 	let sp = section_path sl in
-	pr_global (ConstRef sp)
+	let ln = Nametab.locate_constant (qualid_of_sp sp) in
+	pr_global (ConstRef ln)
     | Node(_,"MUTIND",[Path(_,sl); Num(_,tyi)]) ->
 	let sp = section_path sl in
-	pr_global (IndRef (sp,tyi))
+	let ln = Nametab.locate_mind (qualid_of_sp sp) in
+	pr_global (IndRef (ln,tyi))
     | Node(_,"MUTCONSTRUCT",[Path(_,sl); Num(_,tyi); Num(_,i)]) ->
 	let sp = section_path sl in
-	pr_global (ConstructRef ((sp,tyi),i))
+	let ln = Nametab.locate_mind (qualid_of_sp sp) in
+	pr_global (ConstructRef ((ln,tyi),i))
 
     (* This should be tactics *)
-    | Node(_,s,[]) -> [< 'sTR s >]
+    | Node(_,s,[]) ->  str s 
     | Node(_,s,ta) ->
-	[< 'sTR s; 'bRK(1,2); hOV 0 (prlist_with_sep pr_spc gentacpr ta) >]
+	 str s ++ brk(1,2) ++ hov 0 (prlist_with_sep pr_spc gentacpr ta) 
     | gt -> dfltpr gt 
 
 let pr_var_decl env (id,c,typ) =
   let pbody = match c with
-    | None ->  [<  >]
+    | None ->  (mt ())
     | Some c ->
 	(* Force evaluation *) 
 	let pb = prterm_env env c in
-	[< 'sTR" := "; pb >] in
+	  str" := " ++ pb  
+  in
   let pt = prtype_env env typ in
-  let ptyp = [< 'sTR" : "; pt >] in
-  [< pr_id id ; hOV 0 [< pbody; ptyp >] >]
+  let ptyp =  str" : " ++ pt  in
+    pr_id id ++ hov 0 ( pbody ++ ptyp ) 
 
 let pr_rel_decl env (na,c,typ) =
   let pbody = match c with
-    | None ->  [<  >]
+    | None ->  (mt ())
     | Some c ->
 	(* Force evaluation *) 
 	let pb = prterm_env env c in
-	[< 'sTR":="; 'sPC; pb; 'sPC >] in
+	 str":=" ++ spc () ++ pb ++ spc ()  in
   let ptyp = prtype_env env typ in
   match na with
-    | Anonymous -> [< 'sTR"<>" ; 'sPC; pbody; 'sTR":"; 'sPC; ptyp >]
-    | Name id -> [< pr_id id ; 'sPC; pbody; 'sTR":"; 'sPC; ptyp >]
+    | Anonymous ->  str"<>"  ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp 
+    | Name id ->  pr_id id  ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp 
 
 
 (* Prints out an "env" in a nice format.  We print out the
@@ -186,18 +197,18 @@ let pr_rel_decl env (na,c,typ) =
 
 (* Prints a signature, all declarations on the same line if possible *)
 let pr_named_context_of env =
-  hV 0 [< (fold_named_context
-	     (fun env d pps -> [< pps; 'wS 2; pr_var_decl env d >])
-             env) [< >] >]
+  hv 0 ( (fold_named_context
+	     (fun env d pps ->  pps ++ ws 2 ++ pr_var_decl env d )
+             env) (mt ()) )
 
 let pr_rel_context env rel_context =
   let rec prec env = function
-    | [] -> [<>] 
+    | [] -> (mt ()) 
     | [b] -> pr_rel_decl env b
     | b::rest ->
         let pb = pr_rel_decl env b in
         let penvtl = prec (push_rel b env) rest in
-        [< pb; 'sTR";"; 'sPC; penvtl >]
+          pb ++ str";" ++ spc () ++ penvtl 
   in 
   prec env (List.rev rel_context)
 
@@ -206,21 +217,21 @@ let pr_context_unlimited env =
   let sign_env =
     fold_named_context
       (fun env d pps ->
-         let pidt =  pr_var_decl env d in [< pps; 'fNL; pidt >])
-      env [< >] 
+         let pidt =  pr_var_decl env d in  pps ++ fnl () ++ pidt )
+      env (mt ()) 
   in
   let db_env =
     fold_rel_context
       (fun env d pps ->
-         let pnat = pr_rel_decl env d in [< pps; 'fNL; pnat >])
-      env [< >]
+         let pnat = pr_rel_decl env d in  pps ++ fnl () ++ pnat )
+      env (mt ())
   in 
-  [< sign_env; db_env >]
+   sign_env ++ db_env 
 
 let pr_ne_context_of header env =
   if Environ.named_context env = [] 
-     && Environ.rel_context env = [] then [< >]
-  else let penv = pr_context_unlimited env in [< header; penv; 'fNL >]
+     && Environ.rel_context env = [] then (mt ())
+  else let penv = pr_context_unlimited env in  header ++ penv ++ fnl () 
 
 let pr_context_limit n env =
   let named_context = Environ.named_context env in
@@ -233,25 +244,25 @@ let pr_context_limit n env =
       fold_named_context
         (fun env d (i,pps) ->
            if i < k then 
-	     (i+1, [< pps ;'sTR "." >])
+	     (i+1,  pps  ++str "." )
 	   else
              let pidt = pr_var_decl env d in
-	     (i+1, [< pps ; 'fNL ;
-		      'sTR (emacs_str (String.make 1 (Char.chr 253)));
-		      pidt >]))
-        env (0,[< >]) 
+	     (i+1,  pps  ++ fnl ()  ++
+		      str (emacs_str (String.make 1 (Char.chr 253))) ++
+		      pidt ))
+        env (0,(mt ())) 
     in
     let db_env =
       fold_rel_context
         (fun env d pps ->
            let pnat = pr_rel_decl env d in
-	   [< pps; 'fNL;
-	      'sTR (emacs_str (String.make 1 (Char.chr 253)));
-	      pnat >])
-        env [< >]
+	    pps ++ fnl () ++
+	      str (emacs_str (String.make 1 (Char.chr 253))) ++
+	      pnat )
+        env (mt ())
     in 
-    [< sign_env; db_env >]
+     sign_env ++ db_env 
 
 let pr_context_of env = match Options.print_hyps_limit () with 
-  | None -> hV 0 (pr_context_unlimited env)
-  | Some n -> hV 0 (pr_context_limit n env)
+  | None -> hv 0 (pr_context_unlimited env)
+  | Some n -> hv 0 (pr_context_limit n env)

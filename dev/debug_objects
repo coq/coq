@@ -1,0 +1,7 @@
+#use "include";;
+#use "include";;
+
+#trace Libobject.load_object;;
+#trace Libobject.cache_object;;
+#trace Libobject.open_object;;
+#trace Libobject.subst_object;;

@@ -110,11 +110,11 @@ let cache_global (_,(id,v,p)) =
   env := Env.add id v !env; add_pgm id p
 
 let (inProg,outProg) =
-  declare_object ("programs-objects",
-                  { load_function = cache_global;
+  declare_object {(default_object "programs-objects") with 
+ load_function = cache_global;
                     cache_function = cache_global;
                     open_function = (fun _ -> ());
-		    export_function = (fun x -> Some x) })
+		    export_function = (fun x -> Some x)  }
 
 let is_mutable = function Ref _ | Array _ -> true | _ -> false
 
@@ -172,11 +172,11 @@ let cache_init (_,(id,c)) =
   init_table := Idmap.add id c !init_table
 
 let (inInit,outInit) =
-  declare_object ("programs-objects-init",
-                  { load_function = cache_init;
+  declare_object {(default_object "programs-objects-init") with 
+ load_function = cache_init;
 		    open_function = (fun _ -> ());
                     cache_function = cache_init;
-                    export_function = fun x -> Some x })
+                    export_function = fun x -> Some x  }
 
 let initialize id c = Lib.add_anonymous_leaf (inInit (id,c))
 

@@ -8,6 +8,7 @@
 
 (* $Id$ *)
 
+open Pp
 open Util
 open Identifier
 open Names
@@ -103,14 +104,18 @@ let compute_constant_implicits ln =
 let cache_constant_implicits (_,(ln,imps)) = 
   constants_table := LNmap.add ln imps !constants_table
 
+let subst_constant_implicits subst (ln,imps) = 
+  subst_long_name subst ln,imps
+
 let (in_constant_implicits, _) =
-  let od = {
+  declare_object {(default_object "CONSTANT-IMPLICITS") with
     cache_function = cache_constant_implicits;
     load_function = cache_constant_implicits;
-    open_function = (fun _ -> ());
+    subst_function = subst_constant_implicits;
+    classify_function = (fun (_,x) -> Substitute x);
     export_function = (fun x -> Some x) }
-  in
-  declare_object ("CONSTANT-IMPLICITS", od)
+
+
 
 let declare_constant_implicits ln =
   let imps = compute_constant_implicits ln in
@@ -153,25 +158,21 @@ let cache_inductive_implicits (_,(indp,imps)) =
   inductives_table := Indmap.add indp imps !inductives_table
 
 let (in_inductive_implicits, _) =
-  let od = {
-    cache_function = cache_inductive_implicits;
+  declare_object {(default_object "INDUCTIVE-IMPLICITS") with 
+cache_function = cache_inductive_implicits;
     load_function = cache_inductive_implicits;
-    open_function = (fun _ -> ());
-    export_function = (fun x -> Some x) }
-  in
-  declare_object ("INDUCTIVE-IMPLICITS", od)
+    export_function = (fun x -> Some x)  }
 
 let cache_constructor_implicits (_,(consp,imps)) =
   constructors_table := Constrmap.add consp imps !constructors_table
 
 let (in_constructor_implicits, _) =
-  let od = {
-    cache_function = cache_constructor_implicits;
+  declare_object {(default_object "CONSTRUCTOR-IMPLICITS") with 
+cache_function = cache_constructor_implicits;
     load_function = cache_constructor_implicits;
     open_function = (fun _ -> ());
-    export_function = (fun x -> Some x) }
-  in
-  declare_object ("CONSTRUCTOR-IMPLICITS", od)
+    export_function = (fun x -> Some x)  }
+
 
 let compute_mib_implicits sp =
   let env = Global.env () in
@@ -196,13 +197,12 @@ let cache_mib_implicits (_,(sp,mibimps)) =
     mibimps
 
 let (in_mib_implicits, _) =
-  let od = {
+  declare_object {(default_object "MIB-IMPLICITS") with 
+
     cache_function = cache_mib_implicits;
     load_function = cache_mib_implicits;
     open_function = (fun _ -> ());
-    export_function = (fun x -> Some x) }
-  in
-  declare_object ("MIB-IMPLICITS", od)
+    export_function = (fun x -> Some x)  }
  
 let declare_mib_implicits sp =
   let imps = compute_mib_implicits sp in
@@ -233,13 +233,13 @@ let cache_var_implicits (_,(id,imps)) =
   var_table := Idmap.add id imps !var_table
 
 let (in_var_implicits, _) =
-  let od = {
+  declare_object {(default_object "VARIABLE-IMPLICITS") with 
     cache_function = cache_var_implicits;
     load_function = cache_var_implicits;
     open_function = (fun _ -> ());
-    export_function = (fun x -> Some x) }
-  in
-  declare_object ("VARIABLE-IMPLICITS", od)
+    export_function = (fun x -> Some x)  }
+
+
 
 let declare_var_implicits id =
   let imps = compute_var_implicits id in
@@ -263,6 +263,7 @@ let declare_implicits = function
       let mib_imps = compute_mib_implicits sp in
       let imps = (snd mib_imps.(i)).(j-1) in
       add_anonymous_leaf (in_constructor_implicits (consp, imps))
+  | ModRef _ | ModTypeRef _ -> warning "Cannot declare implicits of modules or module types"
 
 let declare_manual_implicits r l = match r with
   | VarRef sp -> 
@@ -273,6 +274,7 @@ let declare_manual_implicits r l = match r with
       add_anonymous_leaf (in_inductive_implicits (indp,Impl_manual l))
   | ConstructRef consp -> 
       add_anonymous_leaf (in_constructor_implicits (consp,Impl_manual l))
+  | ModRef _ | ModTypeRef _ -> warning "Cannot declare implicits of modules or module types"
 
 (*s Tests if declared implicit *)
 
@@ -291,6 +293,7 @@ let implicits_of_global = function
   | ConstRef sp -> list_of_implicits (constant_implicits sp)
   | IndRef isp -> list_of_implicits (inductive_implicits isp)
   | ConstructRef csp ->	list_of_implicits (constructor_implicits csp)
+  | ModRef _ | ModTypeRef _ -> warning "Cannot declare implicits of modules or module types"; []
 
 (*s Registration as global tables and rollback. *)
 

@@ -180,8 +180,8 @@ and mk_casegoals sigma goal goalacc p c =
 
 let error_use_instantiate () =
   errorlabstrm "Logic.prim_refiner"
-    [< 'sTR"cannot intro when there are open metavars in the domain type";
-       'sPC; 'sTR"- use Instantiate" >]
+     (str"cannot intro when there are open metavars in the domain type" ++
+       spc () ++ str"- use Instantiate") 
     
 (* Auxiliary functions for primitive MOVE tactic
  *
@@ -607,64 +607,64 @@ open Printer
 
 let pr_prim_rule = function
   | {name=Intro;newids=[id]} -> 
-      [< 'sTR"Intro " ; pr_id id >]
+       str"Intro "  ++ pr_id id 
 	
   | {name=Intro_after;newids=[id]} -> 
-      [< 'sTR"intro after " ; pr_id id >]
+       str"intro after "  ++ pr_id id 
 	
   | {name=Intro_replacing;newids=[id]} -> 
-      [< 'sTR"intro replacing " ; pr_id id >]
+       str"intro replacing "  ++ pr_id id 
 	
   | {name=Cut b;terms=[t];newids=[id]} ->
       if b then
-        [< 'sTR"TrueCut "; prterm t >]
+         str"TrueCut " ++ prterm t 
       else
-        [< 'sTR"Cut "; prterm t; 'sTR ";[Intro "; pr_id id; 'sTR "|Idtac]" >]
+         str"Cut " ++ prterm t ++ str " ++[Intro " ++ pr_id id ++ str "|Idtac]" 
 	
   | {name=Fix;newids=[f];params=[Num(_,n)]} -> 
-      [< 'sTR"Fix "; pr_id f; 'sTR"/"; 'iNT n>]
+       str"Fix " ++ pr_id f ++ str"/" ++ int n
       
   | {name=Fix;newids=(f::lf);params=(Num(_,n))::ln;terms=lar} -> 
       let rec print_mut = 
         function (f::lf),((Num(_,n))::ln),(ar::lar) -> 
-          [< pr_id f; 'sTR"/"; 'iNT n; 'sTR" : "; prterm ar;
-             print_mut (lf,ln,lar)>]
-          | _ -> [<>] in
-      [< 'sTR"Fix "; pr_id f; 'sTR"/"; 'iNT n;
-         'sTR" with "; print_mut (lf,ln,lar) >]
+           pr_id f ++ str"/" ++ int n ++ str" : " ++ prterm ar ++
+             print_mut (lf,ln,lar)
+          | _ -> (mt ()) in
+       str"Fix " ++ pr_id f ++ str"/" ++ int n ++
+         str" with " ++ print_mut (lf,ln,lar) 
       
   | {name=Cofix;newids=[f];terms=[]} -> 
-      [< 'sTR"Cofix "; pr_id f >]
+       str"Cofix " ++ pr_id f 
       
   | {name=Cofix;newids=(f::lf);terms=lar} -> 
       let rec print_mut = 
         function (f::lf),(ar::lar) -> 
-	  [< pr_id f; 'sTR" : "; prterm ar; print_mut (lf,lar)>]
-          | _ -> [<>] 
+	   pr_id f ++ str" : " ++ prterm ar ++ print_mut (lf,lar)
+          | _ -> (mt ()) 
       in
-      [< 'sTR"Cofix "; pr_id f;  'sTR" with "; print_mut (lf,lar) >]
+       str"Cofix " ++ pr_id f ++  str" with " ++ print_mut (lf,lar) 
 
   | {name=Refine;terms=[c]} -> 
-      [< 'sTR(if occur_meta c then "Refine " else "Exact ") ; prterm c >]
+       str(if occur_meta c then "Refine " else "Exact ")  ++ prterm c 
       
   | {name=Convert_concl;terms=[c]} ->
-      [< 'sTR"Change " ; prterm c >]
+       str"Change "  ++ prterm c 
       
   | {name=Convert_hyp;hypspecs=[id];terms=[c]} ->
-      [< 'sTR"Change " ; prterm c ; 'sPC ; 'sTR"in " ; pr_id id >]
+       str"Change "  ++ prterm c  ++ spc ()  ++ str"in "  ++ pr_id id 
       
   | {name=Convert_defbody;hypspecs=[id];terms=[c]} ->
-      [< 'sTR"Change " ; prterm c ; 'sPC ; 'sTR"in " ; pr_id id >]
+       str"Change "  ++ prterm c  ++ spc ()  ++ str"in "  ++ pr_id id 
 
   | {name=Convert_deftype;hypspecs=[id];terms=[c]} ->
-      [< 'sTR"Change " ; prterm c ; 'sPC ;
-	 'sTR"in (Type of " ; pr_id id; 'sTR ")" >]
+       str"Change "  ++ prterm c  ++ spc ()  ++
+	 str"in (Type of "  ++ pr_id id ++ str ")" 
       
   | {name=Thin;hypspecs=ids} ->
-      [< 'sTR"Clear " ; prlist_with_sep pr_spc pr_id ids >]
+       str"Clear "  ++ prlist_with_sep pr_spc pr_id ids 
       
   | {name=Move withdep;hypspecs=[id1;id2]} ->
-      [< 'sTR (if withdep then "Dependent " else "");
-	 'sTR"Move " ; pr_id id1; 'sTR " after "; pr_id id2 >]
+       str (if withdep then "Dependent " else "") ++
+	 str"Move "  ++ pr_id id1 ++ str " after " ++ pr_id id2 
       
   | _ -> anomaly "pr_prim_rule: Unrecognized primitive rule"

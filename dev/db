@@ -1,5 +1,9 @@
 load_printer "gramlib.cma"
 load_printer "top_printers.cmo"
+install_printer Top_printers.prlabel
+install_printer Top_printers.prmp
+install_printer Top_printers.prsubst
+
 install_printer Top_printers.prid
 install_printer Top_printers.prsp
 install_printer Top_printers.prqualid
@@ -10,10 +14,10 @@ install_printer Top_printers.prastpatl
 install_printer Top_printers.pppattern
 install_printer Top_printers.pprawterm
 
-install_printer Top_printers.ppterm
+install_printer Top_printers.print_pure_constr
 install_printer Top_printers.print_uni
 install_printer Top_printers.pp_universes
-install_printer Top_printers.pptype
+install_printer Top_printers.print_pure_constr
 install_printer Top_printers.prj
 
 install_printer Top_printers.prgoal
@@ -24,5 +28,7 @@ install_printer Top_printers.prevd
 install_printer Top_printers.prevc
 install_printer Top_printers.prwc
 install_printer Top_printers.prclenv
+
+install_printer Top_printers.display_obj
 
 

@@ -112,7 +112,7 @@ GEXTEND Gram
          | Coqast.Node(_,"RECCLAUSE",nme::[bd]) ->
            <:ast<(TACDEF $nme (AST $bd))>>
          | _ ->
-             anomalylabstrm "Gram.vernac" [<'sTR "Not a correct RECCLAUSE">])
+             anomalylabstrm "Gram.vernac" (str "Not a correct RECCLAUSE"))
       | IDENT "Recursive"; deftok; "Definition"; vc=vrec_clause; "And";
         vcl=LIST1 vrec_clause SEP "And" ->
         let nvcl=
@@ -123,8 +123,8 @@ GEXTEND Gram
              | Coqast.Node(_,"RECCLAUSE",nme::[bd]) ->
                nme::<:ast<(AST $bd)>>::b
              | _ ->
-               anomalylabstrm "Gram.vernac" [<'sTR
-                 "Not a correct RECCLAUSE">]) (vc::vcl) [] in
+               anomalylabstrm "Gram.vernac" (str
+                 "Not a correct RECCLAUSE")) (vc::vcl) [] in
         <:ast<(TACDEF ($LIST $nvcl))>>
 
 (* Hints for Auto and EAuto *)

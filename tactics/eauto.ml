@@ -50,7 +50,7 @@ let e_resolve_with_bindings =
   tactic_com_bind_list e_resolve_with_bindings_tac
 
 let vernac_e_resolve_with_bindings = 
-  hide_cbindl_tactic  "EApplyWithBindings" e_resolve_with_bindings_tac
+  hide_cbindl_tactic  "EApplyWithbindings" e_resolve_with_bindings_tac
 
 let e_resolve_constr c gls = e_resolve_with_bindings_tac (c,[]) gls
 let resolve_constr c gls = Tactics.apply_with_bindings (c,[]) gls
@@ -77,7 +77,7 @@ let prolog_tac l n gl =
  (* let l = List.map (pf_interp_constr gl) lcom in *)
   try (prolog l n gl)
   with UserError ("Refiner.tclFIRST",_) ->
-    errorlabstrm "Prolog.prolog" [< 'sTR "Prolog failed" >]
+    errorlabstrm "Prolog.prolog" (**)(  str "Prolog failed"  )(**)
 
 let evars_of evc c = 
   let rec evrec acc c = match splay_constr c with
@@ -178,7 +178,7 @@ and e_my_find_search db_list local_db hdc concl =
        in 
        (tac,fmt_autotactic t))
        (*i
-	 fun gls -> pPNL (fmt_autotactic t); Format.print_flush (); 
+	 fun gls -> ppnl (fmt_autotactic t); Format.print_flush (); 
                      try tac gls
 		     with e when Logic.catchable_exception(e) -> 
                             (Format.print_string "Fail\n"; 
@@ -252,7 +252,7 @@ module SearchProblem = struct
 	  filter_tactics s.tacres
 	    (List.map 
 	       (fun id -> (e_give_exact_constr (mkVar id),
-			   [< 'sTR "Exact"; 'sPC; pr_id id>]))
+			   (**)(  str "Exact" ++ spc () ++ pr_id id )(**)))
 	       (pf_ids_of_hyps g))
 	in
 	List.map (fun (res,pp) -> { depth = s.depth; tacres = res;
@@ -270,7 +270,7 @@ module SearchProblem = struct
 	     { depth = s.depth; tacres = res; 
 	       last_tactic = pp; dblist = s.dblist;
 	       localdb = ldb :: List.tl s.localdb })
-	  (filter_tactics s.tacres [Tactics.intro,[< 'sTR "Intro" >]])
+	  (filter_tactics s.tacres [Tactics.intro,(**)(  str "Intro"  )(**)])
       in
       let rec_tacs = 
 	let l = 
@@ -293,8 +293,8 @@ module SearchProblem = struct
       List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
 
   let pp s = 
-    mSG (hOV 0 [< 'sTR " depth="; 'iNT s.depth; 'sPC; 
-		  s.last_tactic; 'sTR "\n" >])
+    msg (hov 0 (**)(  str " depth=" ++ int s.depth ++ spc () ++ 
+		  s.last_tactic ++ str "\n"  )(**))
 
 end
 
@@ -303,7 +303,7 @@ module Search = Explore.Make(SearchProblem)
 let make_initial_state n gl dblist localdb =
   { SearchProblem.depth = n;
     SearchProblem.tacres = tclIDTAC gl;
-    SearchProblem.last_tactic = [< >];
+    SearchProblem.last_tactic = (mt ());
     SearchProblem.dblist = dblist;
     SearchProblem.localdb = [localdb] }
 
@@ -334,16 +334,16 @@ let eauto debug np dbnames =
   let db_list =
     List.map
       (fun x -> 
-	 try Stringmap.find x !searchtable
+	 try Stringmap.find x !hinttable
 	 with Not_found -> error ("EAuto: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
   tclTRY (e_search_auto debug np db_list)
 
 let full_eauto debug n gl = 
-  let dbnames = stringmap_dom !searchtable in
+  let dbnames = stringmap_dom !hinttable in
   let dbnames =  list_subtract dbnames ["v62"] in
-  let db_list = List.map (fun x -> Stringmap.find x !searchtable) dbnames in
+  let db_list = List.map (fun x -> Stringmap.find x !hinttable) dbnames in
   let local_db = make_local_hint_db gl in
   tclTRY (e_search_auto debug n db_list) gl
 

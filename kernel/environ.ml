@@ -103,7 +103,7 @@ let process_named_context_both_sides f env =
 let push_rel d   = rel_context_app (add_rel_decl d)
 let push_rel_def def   = rel_context_app (add_rel_def def)
 let push_rel_assum decl = rel_context_app (add_rel_assum decl)
-let push_rels ctxt     = rel_context_app (concat_rel_context ctxt)
+let push_rels ctxt     = rel_context_app (fun older -> concat_rel_context ~newer:ctxt ~older)
 let push_rels_assum decl env =
   rel_context_app (List.fold_right add_rel_assum decl) env
 
@@ -225,16 +225,6 @@ let lookup_module mp env =
 
 let lookup_modtype ln env = 
   LNmap.find ln env.env_globals.env_modtypes
-
-(*s Global references *)
-
-type global_reference =
-  | VarRef of identifier
-  | ConstRef of constant_path
-  | IndRef of inductive_path
-  | ConstructRef of constructor_path
-  | ModRef of module_path
-  | ModTypeRef of long_name
 
 (* First character of a constr *)
 let lowercase_first_char l = String.lowercase (first_char l)
@@ -401,8 +391,8 @@ open Printf
 
 let mem env =
   let glb = env.env_globals in 
-  h 0 [< 'sTR (sprintf "%dk (cst = %dk / ind = %dk / unv = %dk)"
+  h 0 (str (sprintf "%dk (cst = %dk / ind = %dk / unv = %dk)"
 		 (size_kb env) (size_kb glb.env_constants) 
-		 (size_kb glb.env_inductives) (size_kb env.env_universes)) >]
+		 (size_kb glb.env_inductives) (size_kb env.env_universes)) )
 
 

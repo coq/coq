@@ -64,6 +64,3 @@ let without_mes_ambig f x =
 let unsafe_set = ref Stringset.empty
 let add_unsafe s = unsafe_set := Stringset.add s !unsafe_set
 let is_unsafe s = Stringset.mem s !unsafe_set
-
-(* To deal with two kinds of discharge *)
-let immediate_discharge = false

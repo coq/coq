@@ -96,11 +96,11 @@ module MakeTable =
           | GOrmv -> t := MySet.remove p !t in
         let export_options fp = Some fp in
         let (inGo,outGo) =
-          Libobject.declare_object (kn,
-              { Libobject.load_function = load_options;
+          Libobject.declare_object {(Libobject.default_object kn) with
+                Libobject.load_function = load_options;
 		Libobject.open_function = cache_options;
 		Libobject.cache_function = cache_options;
-		Libobject.export_function = export_options}) in
+		Libobject.export_function = export_options} in
         ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
          (fun c -> Lib.add_anonymous_leaf (inGo (GOrmv, c))))
       else
@@ -108,10 +108,10 @@ module MakeTable =
          (fun c -> t := MySet.remove c !t))
 
     let print_table table_name printer table =
-      mSG ([< 'sTR table_name ; (hOV 0 
-           (if MySet.is_empty table then [< 'sTR "None" ; 'fNL >]
+      msg (str table_name ++ (hov 0 
+           (if MySet.is_empty table then str "None" ++ fnl () 
             else MySet.fold
-	      (fun a b -> [< printer a; 'sPC; b >]) table [<>])) >])
+	      (fun a b -> printer a ++ spc () ++ b ) table (mt ()) )))
 
     class table_of_A () =
     object
@@ -122,7 +122,7 @@ module MakeTable =
       method remove x = remove_option (A.encode x)
       method mem x = 
         let answer = MySet.mem (A.encode x) !t in
-        mSG [< 'sTR (A.member_message x answer) >]
+        msg (str (A.member_message x answer)) 
       method print = print_table A.title A.printer !t 
     end
 
@@ -151,7 +151,7 @@ struct
   let table = string_table
   let encode x = x
   let check = A.check
-  let printer s = [< 'sTR s >]
+  let printer s = str s 
   let key = A.key
   let title = A.title
   let member_message = A.member_message
@@ -215,11 +215,11 @@ let cache_sync_value (_,(k,v)) =
   sync_value_tab := OptionMap.add k v !sync_value_tab
 let export_sync_value fp = Some fp
 let (inOptVal,_) =
-  Libobject.declare_object ("Sync_option_value",
-    { Libobject.load_function = load_sync_value;
+  Libobject.declare_object {(default_object "Sync_option_value") with 
+ Libobject.load_function = load_sync_value;
       Libobject.open_function = cache_sync_value;
       Libobject.cache_function = cache_sync_value;
-      Libobject.export_function = export_sync_value })
+      Libobject.export_function = export_sync_value  }
 
 let freeze_sync_table () = !sync_value_tab
 let unfreeze_sync_table l = sync_value_tab := l
@@ -346,45 +346,45 @@ let set_string_option_value = set_option_value
 
 let msg_sync_option_value (name,v) =
   match v with
-    | BoolValue true  -> [< 'sTR "true" >]
-    | BoolValue false -> [< 'sTR "false" >]
-    | IntValue n      -> [< 'iNT n >]
-    | StringValue s   -> [< 'sTR s >]
-    | IdentValue id    -> [< pr_id id >]
+    | BoolValue true  -> str "true" 
+    | BoolValue false -> str "false" 
+    | IntValue n      -> int n 
+    | StringValue s   -> str s 
+    | IdentValue id    -> pr_id id 
 
 let msg_async_option_value (name,vref) =
   match vref with
-    | OptionBoolRef {contents=true}  -> [< 'sTR "true" >]
-    | OptionBoolRef {contents=false} -> [< 'sTR "false" >]
-    | OptionIntRef  r     -> [< 'iNT !r >]
-    | OptionStringRef r   -> [< 'sTR !r >]
+    | OptionBoolRef {contents=true}  -> str "true" 
+    | OptionBoolRef {contents=false} -> str "false" 
+    | OptionIntRef  r     -> int !r 
+    | OptionStringRef r   -> str !r 
 
 let print_option_value key =
   let (name,info) = get_option key in
   let s = match info with
     | Sync v -> msg_sync_option_value (name,v)
       | Async (read,write) -> msg_sync_option_value (name,read ())
-  in mSG [< 'sTR ("Current value of "^name^" is "); s; 'fNL >]
+  in msg (str ("Current value of "^name^" is ") ++ s ++ fnl ()) 
 
 let print_tables () =
-  mSG
-  [< 'sTR "Synchronous options:"; 'fNL; 
+  msg
+  (str "Synchronous options:" ++ fnl () ++
      OptionMap.fold 
-       (fun key (name,v) p -> [< p; 'sTR ("  "^(nickname key)^": ");
-				 msg_sync_option_value (name,v); 'fNL >])
-       !sync_value_tab [<>];
-     'sTR "Asynchronous options:"; 'fNL;
+       (fun key (name,v) p -> p ++ str ("  "^(nickname key)^": ") ++
+				 msg_sync_option_value (name,v) ++ fnl () )
+       !sync_value_tab (mt ()) ++
+     str "Asynchronous options:" ++ fnl () ++
      OptionMap.fold 
-       (fun key (name,(read,write)) p -> [< p; 'sTR ("  "^(nickname key)^": ");
-                                  msg_sync_option_value (name,read()); 'fNL >])
-	    !async_value_tab [<>];
-     'sTR "Tables:"; 'fNL;
+       (fun key (name,(read,write)) p -> p ++ str ("  "^(nickname key)^": ") ++
+                                  msg_sync_option_value (name,read()) ++ fnl () )
+	    !async_value_tab (mt ()) ++
+     str "Tables:" ++ fnl () ++
      List.fold_right
-       (fun (nickkey,_) p -> [< p; 'sTR ("  "^nickkey); 'fNL >])
-       !string_table [<>];
+       (fun (nickkey,_) p -> p ++ str ("  "^nickkey) ++ fnl () )
+       !string_table (mt ()) ++
      List.fold_right
-       (fun (nickkey,_) p -> [< p; 'sTR ("  "^nickkey); 'fNL >])
-       !ident_table [<>];
-     'fNL;
- >]
+       (fun (nickkey,_) p -> p ++ str ("  "^nickkey) ++ fnl () )
+       !ident_table (mt ()) ++
+     fnl ())
+ 
 

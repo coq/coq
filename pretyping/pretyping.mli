@@ -38,7 +38,7 @@ type open_constr = (existential * types) list * constr
 *)
 val understand_gen :
   'a evar_map -> env -> var_map -> meta_map 
-    -> expected_type:(constr option) -> rawconstr -> constr
+    -> (*expected_type:*)(constr option) -> rawconstr -> constr
 
 
 (* Generic call to the interpreter from rawconstr to constr, turning

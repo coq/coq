@@ -27,7 +27,7 @@ open Errors
 
 let _ = Termast.print_evar_arguments := true
 
-let pP s = pP (hOV 0 s)
+let pP s = pp (hov 0 s)
 
 let prast c = pP(print_ast c)
 
@@ -38,22 +38,26 @@ let pprawterm = (fun x -> pP(pr_rawterm x))
 let pppattern = (fun x -> pP(pr_pattern x))
 let pptype = (fun x -> pP(prtype x))
 
-let prid id = pP [< pr_id id >]
+let prid id = pP (pr_id id )
+let prlabel l = pP (pr_label l)
+let prmp mp = pP (pr_modpath mp )
+
+let prsubst sub = pP (debug_pr_subst sub)
 
 let prconst (sp,j) =
-    pP [< 'sTR"#"; pr_sp sp; 'sTR"="; prterm j.uj_val >]
+    pP( str"#" ++ pr_sp sp ++ str"=" ++ prterm j.uj_val )
 
 let prvar ((id,a)) =
-    pP [< 'sTR"#" ; pr_id id ; 'sTR":" ; prterm a >]
+    pP( str"#"  ++ pr_id id  ++ str":"  ++ prterm a )
 
 let genprj f j =
-  let (c,t) = Termast.with_casts f j in [< c; 'sTR " : "; t >]
+  let (c,t) = Termast.with_casts f j in ( c ++ str " : " ++ t) 
 
 let prj j = pP (genprj prjudge j)
 
-let prsp sp = pP[< pr_sp sp >]
+let prsp sp = pP(pr_sp sp)
 
-let prqualid qid = pP[< pr_qualid qid >]
+let prqualid qid = pP(pr_qualid qid)
 
 let prgoal g = pP(prgl g)
 
@@ -77,7 +81,7 @@ let prclenv clenv = pP(pr_clenv clenv)
 
 let print_uni u = (pP (pr_uni u))
 
-let pp_universes u = pP [< 'sTR"[" ; pr_universes u ; 'sTR"]" >]
+let pp_universes u = pP (str"["  ++ pr_universes u  ++ str"]" )
 
 let ppenv e = pP (pr_rel_context e (rel_context e))
 
@@ -133,7 +137,7 @@ let constr_display csr =
     | Prop(Pos) -> "Prop(Pos)"
     | Prop(Null) -> "Prop(Null)"
     | Type u ->
-	incr cnt; pP [< 'sTR "with "; 'iNT !cnt; pr_uni u; 'fNL >];
+	incr cnt; pP (str "with " ++ int !cnt ++ pr_uni u ++ fnl ());
 	"Type("^(string_of_int !cnt)^")"
 
   and name_display = function
@@ -141,43 +145,43 @@ let constr_display csr =
     | Anonymous -> "Anonymous"
 
   in
-    mSG [<'sTR (term_display csr);'fNL>]
+    msg (str (term_display csr) ++ fnl ())
 
 open Format;;
 
 let print_pure_constr csr =
   let rec term_display c = match kind_of_term c with
   | IsRel n -> print_string "#"; print_int n
-  | IsMeta n -> print_string "Meta("; print_int n; print_string ")"
+  | IsMeta n -> print_string "Meta(" ; print_int n ; print_string ")"
   | IsVar id -> print_string (string_of_id id)
   | IsSort s -> sort_display s
   | IsCast (c,t) -> open_hovbox 1;
-      print_string "("; (term_display c); print_cut();
-      print_string "::"; (term_display t); print_string ")"; close_box()
+      print_string "("; (term_display c) ; print_cut();
+      print_string "::"; (term_display t) ; print_string ")"; close_box()
   | IsProd (Name(id),t,c) ->
       open_hovbox 1;
-      print_string"("; print_string (string_of_id id); 
+      print_string"(" ; print_string (string_of_id id); 
       print_string ":"; box_display t; 
-      print_string ")"; print_cut(); 
+      print_string ")" ; print_cut(); 
       box_display c; close_box()
   | IsProd (Anonymous,t,c) ->
-      print_string"("; box_display t; print_cut(); print_string "->";
-      box_display c; print_string ")"; 
+      print_string"("; box_display t ; print_cut() ; print_string "->";
+      box_display c ; print_string ")"; 
   | IsLambda (na,t,c) ->
       print_string "["; name_display na;
-      print_string ":"; box_display t; print_string "]";
+      print_string ":"; box_display t ; print_string "]";
       print_cut(); box_display c; 
   | IsLetIn (na,b,t,c) ->
-      print_string "["; name_display na; print_string "="; 
-      box_display b; print_cut();
-      print_string ":"; box_display t; print_string "]";
+      print_string "["; name_display na ; print_string "="; 
+      box_display b ; print_cut();
+      print_string ":"; box_display t ; print_string "]";
       print_cut(); box_display c; 
   | IsApp (c,l) -> 
       print_string "("; 
       box_display c; 
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string ")"
-  | IsEvar (e,l) -> print_string "Evar#"; print_int e; print_string "{";
+  | IsEvar (e,l) -> print_string "Evar#" ; print_int e ; print_string "{";
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string"}"
   | IsConst (c,l) -> print_string "Cons(";
@@ -188,7 +192,7 @@ let print_pure_constr csr =
   | IsMutInd ((sp,i),l) ->
       print_string "Ind(";
       sp_display sp;
-      print_string ","; print_int i;
+      print_string "," ; print_int i;
       print_string "){";
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string"}"
@@ -196,13 +200,13 @@ let print_pure_constr csr =
       print_string "Constr(";
       sp_display sp;
       print_string ",";
-      print_int i; print_string ","; print_int j; print_string ")";
+      print_int i ; print_string "," ; print_int j ; print_string ")";
       Array.iter (fun x -> print_space (); box_display x) l;
   | IsMutCase (ci,p,c,bl) ->
       open_vbox 0;
-      print_string "<"; box_display p; print_string ">";
-      print_cut(); print_string "Case";
-      print_space(); box_display c; print_space (); print_string "of";
+      print_string "<"; box_display p ; print_string ">";
+      print_cut() ; print_string "Case";
+      print_space(); box_display c ; print_space () ; print_string "of";
       open_vbox 0;
       Array.iter (fun x ->  print_cut();  box_display x) bl;
       close_box();
@@ -210,32 +214,32 @@ let print_pure_constr csr =
       print_string "end"; 
       close_box()
   | IsFix ((t,i),(lna,tl,bl)) ->
-      print_string "Fix("; print_int i; print_string ")"; 
+      print_string "Fix(" ; print_int i ; print_string ")"; 
       print_cut();
       open_vbox 0;
       let rec print_fix () =
         for k = 0 to Array.length tl do
 	  open_vbox 0;
-	  name_display lna.(k); print_string "/"; 
-	  print_int t.(k); print_cut(); print_string ":";
-	  box_display tl.(k) ; print_cut(); print_string ":=";
+	  name_display lna.(k) ; print_string "/"; 
+	  print_int t.(k) ; print_cut() ; print_string ":";
+	  box_display tl.(k)  ; print_cut() ; print_string ":=";
 	  box_display bl.(k); close_box ();
 	  print_cut()
         done
-      in print_string"{"; print_fix(); print_string"}"
+      in print_string"{" ; print_fix() ; print_string"}"
   | IsCoFix(i,(lna,tl,bl)) ->
-      print_string "CoFix("; print_int i; print_string ")"; 
+      print_string "CoFix(" ; print_int i ; print_string ")"; 
       print_cut();
       open_vbox 0;
       let rec print_fix () =
         for k = 0 to Array.length tl do
           open_vbox 1;
-	  name_display lna.(k);  print_cut(); print_string ":";
-	  box_display tl.(k) ; print_cut(); print_string ":=";
+	  name_display lna.(k) ; print_cut() ; print_string ":";
+	  box_display tl.(k)  ; print_cut() ; print_string ":=";
 	  box_display bl.(k); close_box ();
 	  print_cut();
         done
-      in print_string"{"; print_fix (); print_string"}"
+      in print_string"{" ; print_fix () ; print_string"}"
 
   and box_display c = open_hovbox 1; term_display c; close_box()
 
@@ -243,7 +247,7 @@ let print_pure_constr csr =
     | Prop(Pos) -> print_string "Set"
     | Prop(Null) -> print_string "Prop"
     | Type u -> open_hbox();
-	print_string "Type("; pP (pr_uni u); print_string ")"; close_box()
+	print_string "Type("; pP (pr_uni u) ; print_string ")"; close_box()
 
   and name_display = function
     | Name id -> print_string (string_of_id id)
@@ -256,11 +260,11 @@ let print_pure_constr csr =
         ("Scratch"::l)-> l
       | ("Coq"::_::l) -> l 
       | l             -> l
-  in  List.iter (fun x -> print_string x; print_string ".") ls;
+  in  List.iter (fun x -> print_string x ; print_string ".") ls;
       print_string (string_of_id  (basename sp))
 *)
   in
-     box_display csr; print_newline()
+     box_display csr ; print_newline()
 (*
 let _ =
   Vernacentries.add "PrintConstr"
@@ -280,3 +284,6 @@ let _ =
   	      print_pure_constr (Astterm.interp_constr evmap sign c))
        | _ -> bad_vernac_args "PrintPureConstr")
 *)
+
+
+let display_obj obj = print_string ("<."^(Libobject.object_tag obj)^".>")

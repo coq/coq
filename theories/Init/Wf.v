@@ -14,7 +14,6 @@
    from a well-founded ordering on a given set *)
 
 Require Export Logic.
-Require Export LogicHints.
 Require Export LogicSyntax.
 
 (* Well-founded induction principle on Prop *)

@@ -27,7 +27,7 @@ let safe_env () = !global_env
 let env () = env_of_safe_env !global_env
 
 let _ = 
-  declare_summary "Global environment"
+  declare_global_environment
     { freeze_function = (fun () -> !global_env);
       unfreeze_function = (fun fr -> global_env := fr);
       init_function = (fun () -> global_env := empty_environment);
@@ -43,14 +43,19 @@ let push_named_def idc = global_env := push_named_def idc !global_env
 let push_named_assum idc = global_env := push_named_assum idc !global_env
 
 let update_env f = 
-  let env',ln = f !global_env in
+  let env',res = f !global_env in
     global_env:=env';
-    ln
+    res
 
 let add_constant l ce = update_env (add_constant l ce)
 (*let add_discharged_constant sp r l = 
   global_env := add_discharged_constant sp r l !global_env *)
 let add_mind mie = update_env (add_mind mie)
+
+let add_module l me = update_env (add_module l me) 
+
+let add_modtype l mte = update_env (add_modtype l mte)
+
 (*let add_constraints c = global_env := add_constraints c !global_env*)
 
 (*let pop_named_decls ids = global_env := pop_named_decls ids !global_env*)
@@ -62,6 +67,15 @@ let lookup_mind_specif c = lookup_mind_specif c !global_env
 
 let lookup_module mp = lookup_module mp !global_env
 let lookup_modtype ln = lookup_modtype ln !global_env
+
+let begin_module l params result = 
+  global_env := begin_module l params result !global_env
+let end_module l = update_env (end_module l)
+let begin_modtype l params = 
+  global_env := begin_modtype l params !global_env
+let end_modtype l = update_env (end_modtype l)
+let current_modpath () = current_modpath !global_env
+let current_msid () = current_msid !global_env
 
 let set_opaque sp = set_opaque !global_env sp
 let set_transparent sp = set_transparent !global_env sp

@@ -140,7 +140,7 @@ module Idmap = Map.Make(IdOrdered)
 
 let atompart_of_id id = fst (repr_ident id)
 let index_of_id id = snd (repr_ident id)
-let pr_id id = [< 'sTR (string_of_id id) >]
+let pr_id id = str (string_of_id id)
 
 let first_char = Identifier.first_char
 
@@ -196,7 +196,7 @@ type label=string
 let string_of_label s = s
 let label_of_string s = s
 
-let pr_label l = [<'sTR (string_of_label l) >]
+let pr_label l = str (string_of_label l) 
 
 let ident_of_label l = l
 let label_of_ident l = l
@@ -215,6 +215,19 @@ let unique s = incr current_stamp; {name=s; stamp= !current_stamp}
 let rename uid = unique uid.name
 
 let string_of_uid uid = uid.name
-let pr_uid uid = [<'sTR (string_of_uid uid) >]
+let pr_uid uid = str (string_of_uid uid) 
 
-let debug_print_uid uid = uid.name^"_"^(string_of_int uid.stamp)
+let debug_string_of_uid uid = uid.name^"_"^(string_of_int uid.stamp)
+let debug_pr_uid uid = str (debug_string_of_uid uid) 
+
+let compare_uids {name=n1; stamp=s1} {name=n2; stamp=s2} = 
+  let c = compare s1 s2 in
+    if c = 0 then
+      compare n1 n2
+    else
+      c
+
+module Umap = Map.Make(struct 
+			 type t=uniq_ident 
+			 let compare=compare_uids 
+		       end)

@@ -1,6 +1,9 @@
 Inductive [] nat : Set := O : nat | S : nat -> nat.
 
-Module Type SIG := sig Definition A:Set Definition x:Const A end.
+Module Type SIG.
+  Definition A:Set.
+  Definition x:Const A. 
+EndT SIG.
 
 Module List(X:SIG).
   Inductive [] list : Set := nil : list 
@@ -11,7 +14,7 @@ Module List(X:SIG).
 
   Check head.
 
-End List.
+EndM List.
 
 Module Nat := struct Definition A:=nat Definition x:=O end.
 

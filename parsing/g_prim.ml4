@@ -36,7 +36,7 @@ GEXTEND Gram
   ;
   astpath:
     [ [ id = IDENT; (l,a) = astfields -> 
-          Path(loc, make_ln (MPcomp (make_dirpath (id_of_string id :: l))) (label_of_ident a))
+          Path(loc, make_path (make_dirpath (id_of_string id :: l)) a CCI)
       | id = IDENT -> Nvar(loc, id_of_string id)
       ] ]
   ;

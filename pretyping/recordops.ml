@@ -42,11 +42,11 @@ let add_new_struc1 x = sTRUCS:=x::(!sTRUCS)
 let cache_structure (_,x) = add_new_struc1 x
 
 let (inStruc,outStruc) =
-  declare_object ("STRUCTURE",
-                  { load_function = (fun _ -> ());
+  declare_object {(default_object "STRUCTURE") with 
+ load_function = (fun _ -> ());
                     cache_function = cache_structure;
 		    open_function = cache_structure;
-                    export_function = (function x -> Some x) })
+                    export_function = (function x -> Some x)  }
 
 let add_new_struc (s,c,n,l) = 
   Lib.add_anonymous_leaf (inStruc (s,{s_CONST=c;s_PARAM=n;s_PROJ=l}))
@@ -78,11 +78,11 @@ let add_new_objdef1 x = oBJDEFS:=x::(!oBJDEFS)
 let cache_obj (_,x) = add_new_objdef1 x
 
 let (inObjDef,outObjDef) =
-  declare_object ("OBJDEF",
-                  { load_function = (fun _ -> ());
+  declare_object {(default_object "OBJDEF") with 
+ load_function = (fun _ -> ());
 		    open_function = cache_obj;
                     cache_function = cache_obj;
-                    export_function = (function x -> Some x)})
+                    export_function = (function x -> Some x) }
 
 let add_new_objdef (o,c,la,lp,l) =
   try 
@@ -94,11 +94,11 @@ let add_new_objdef (o,c,la,lp,l) =
 let cache_objdef1 (_,sp) = ()
 
 let ((inObjDef1 : long_name -> obj),(outObjDef1 : obj -> long_name)) =
-  declare_object ("OBJDEF1",
-                  { load_function = (fun _ -> ());
+  declare_object {(default_object "OBJDEF1") with 
+ load_function = (fun _ -> ());
 		    open_function = cache_objdef1;
                     cache_function = cache_objdef1;
-                    export_function = (function x -> Some x)})
+                    export_function = (function x -> Some x) }
 
 let objdef_info o = List.assoc o !oBJDEFS
 

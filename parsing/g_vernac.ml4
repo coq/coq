@@ -338,6 +338,51 @@ GEXTEND Gram
       | IDENT "Module"; id = identarg -> <:ast< (BeginModule $id) >>
       | IDENT "End"; id = identarg -> <:ast< (EndSection $id) >>
 
+	  (* Interactive module declaration *)
+      | IDENT "Mod"; id = identarg ->
+	  <:ast< (BeginMod $id) >>
+      | IDENT "Mod"; id = identarg; bl = Module.ne_binders_list ->
+	  <:ast< (BeginMod $id (BINDERLIST ($LIST $bl))) >>
+      | IDENT "Mod"; id = identarg; 
+	":"; mty = Module.module_type -> 
+	  <:ast< (BeginMod $id (MODTYPE $mty)) >>
+      | IDENT "Mod"; id = identarg; bl = Module.ne_binders_list; 
+	":"; mty = Module.module_type -> 
+	  <:ast< (BeginMod $id (BINDERLIST ($LIST $bl)) (MODTYPE $mty)) >>
+
+	  (* Normal module declaration *)
+      | IDENT "Mod"; id = identarg; 
+	":="; me = Module.module_expr ->
+	  <:ast< (Module $id (MODEXPR $me)) >>
+      | IDENT "Mod"; id = identarg;
+	bl = Module.ne_binders_list; 
+	":="; me = Module.module_expr ->  
+	  <:ast< (Module $id (BINDERLIST ($LIST $bl)) (MODEXPR $me)) >>
+      | IDENT "Mod"; id = identarg; 
+	":"; mty = Module.module_type;
+	":="; me = Module.module_expr ->  
+	  <:ast< (Module $id (MODTYPE $mty) (MODEXPR $me)) >>
+      | IDENT "DMod"; id = identarg; 
+	":"; mty = Module.module_type ->
+	  <:ast< (Module $id (MODTYPE $mty)) >>
+      | IDENT "DMod"; id = identarg; 
+	bl = Module.ne_binders_list; 
+	":"; mty = Module.module_type ->
+	  <:ast< (Module $id (BINDERLIST ($LIST $bl)) (MODTYPE $mty))>>
+      | IDENT "Mod"; id = identarg; 
+	bl = Module.ne_binders_list; 
+	":"; mty = Module.module_type;
+	":="; me = Module.module_expr ->  
+	  <:ast< (Module $id (BINDERLIST ($LIST $bl)) (MODTYPE $mty) (MODEXPR $me)) >>
+
+      | IDENT "EndM"; id = identarg -> <:ast< (EndMod $id) >>
+      | IDENT "Modtype"; id = identarg; bl = Module.ne_binders_list -> 
+	  <:ast< (BeginModtype $id (BINDERLIST ($LIST $bl))) >>
+      | IDENT "Modtype"; id = identarg -> <:ast< (BeginModtype $id) >>
+      | IDENT "EndT"; id = identarg -> <:ast< (EndModtype $id) >>
+
+      | IDENT "Imp"; qid = qualidarg -> <:ast< (ImportMod $qid) >>
+
 (* Transparent and Opaque *)
       | IDENT "Transparent"; l = ne_qualidconstarg_list ->
           <:ast< (TRANSPARENT ($LIST $l)) >>

@@ -172,7 +172,7 @@ let pred_case_ml_onebranch loc env sigma isrec indt (i,fj) =
 open Pp
 
 let mssg_may_need_inversion () =
-  [< 'sTR "This pattern-matching is not exhaustive.">]
+   str "This pattern-matching is not exhaustive."
 
 let mssg_this_case_cannot_occur () =
   "This pattern-matching is not exhaustive."

@@ -114,7 +114,7 @@ and type_mexpr env mexpr = match mexpr with
 	    | Not_path -> error_application_to_not_path mexpr
 		(* place for nondep_supertype *)
 	in
-	  subst_modtype_mbid farg_id mp fbody_b
+	  subst_modtype (map_mbid farg_id mp) fbody_b
   | MEstruct (msid,structure) ->
       let signature = translate_entry_list env msid true structure in
 	MTBsig (msid,signature)

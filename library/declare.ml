@@ -79,7 +79,7 @@ let cache_variable (sp,(d,_,_ as vd)) =
   let id = basename sp in
   if List.mem id (current_section_context ()) then
     errorlabstrm "cache_variable"
-      [< pr_id (basename sp); 'sTR " already exists" >];
+      (pr_id (basename sp) ++ str " already exists") ;
   begin match d with (* Fails if not well-typed *)
     | SectionLocalAssum ty -> Global.push_named_assum (id,ty)
     | SectionLocalDef c -> Global.push_named_def (id,c)
@@ -88,13 +88,10 @@ let cache_variable (sp,(d,_,_ as vd)) =
   vartab := let (m,l) = !vartab in (Idmap.add id (sp,vd) m, id::l)
 
 let (in_variable, out_variable) =
-  let od = {
+  declare_object { (default_object "VARIABLE") with
     cache_function = cache_variable;
-    load_function = (fun _ -> ());
-    open_function = (fun _ -> ());
-    export_function = (fun x -> Some x) }
-  in
-  declare_object ("VARIABLE", od)
+    classify_function = (fun _ -> Dispose) }
+
 
 let declare_variable id vd =
   let sp = add_leaf id CCI (in_variable vd) in
@@ -106,7 +103,7 @@ let declare_variable id vd =
 let cache_parameter (sp,c) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_parameter"
-      [< pr_id (basename sp); 'sTR " already exists" >];
+      pr_id (basename sp) ++ str " already exists" ;
   Global.add_parameter sp c (current_section_context ());
   Nametab.push sp (ConstRef sp);
   Nametab.push_short_name (basename sp) (ConstRef sp)
@@ -114,7 +111,7 @@ let cache_parameter (sp,c) =
 let load_parameter (sp,_) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_parameter"
-      [< pr_id (basename sp); 'sTR " already exists" >];
+      pr_id (basename sp) ++ str " already exists" ;
   Nametab.push sp (ConstRef sp)
 
 let open_parameter (sp,_) =
@@ -157,7 +154,7 @@ let _ = Summary.declare_summary "CONSTANT"
 let cache_constant (sp,(cdt,stre,op)) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_constant"
-      [< pr_id (basename sp); 'sTR " already exists" >] ;
+      (pr_id (basename sp) ++ str " already exists");
   let sc = current_section_context() in
   match cdt with 
     | ConstantEntry ce -> 
@@ -168,13 +165,13 @@ let cache_constant (sp,(cdt,stre,op)) =
 	  csttab := LNmap.add ln stre !csttab
     | ConstantRecipe r -> 
 	errorlabstrm "cache_constant"
-	  [< 'sTR "I forgot sections... " >]
+	  (str "I forgot sections... ")
 	(* Global.add_discharged_constant sp r sc*)
 
 let load_constant (sp,(ce,stre,op)) = ()
 (*  if Nametab.exists_cci sp then
     errorlabstrm "cache_constant"
-      [< pr_id (basename sp); 'sTR " already exists" >] ;
+      pr_id (basename sp) ++ str " already exists"  ;
   csttab := Spmap.add sp stre !csttab;
   Nametab.push sp (ConstRef sp)
 *)
@@ -187,16 +184,15 @@ let dummy_constant_entry = ConstantEntry {
   const_entry_body = None;
   const_entry_type = None }
 
-let export_constant (ce,stre,op) = Some (dummy_constant_entry,stre,op)
+let export_constant (ce,stre,op) = None (*Some (dummy_constant_entry,stre,op)*)
 
 let (in_constant, out_constant) =
-  let od = {
+  declare_object {(default_object "CONSTANT") with
     cache_function = cache_constant;
-    load_function = load_constant;
-    open_function = open_constant;
+    classify_function = (fun _ -> Dispose);
     export_function = export_constant } 
-  in
-  declare_object ("CONSTANT", od)
+
+
 
 let hcons_constant_declaration = function
   | (ConstantEntry ce, stre) ->
@@ -242,7 +238,7 @@ let inductive_names_from_entry sp ln mie =
 let check_exists_inductive (sp,_) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_inductive"
-      [< pr_id (basename sp); 'sTR " already exists" >]
+      (pr_id (basename sp) ++ str " already exists")
 
 let cache_inductive (sp,mie) =
   let ln = Global.add_mind mie in
@@ -274,16 +270,14 @@ let dummy_inductive_entry m = {
   mind_entry_finite = true;
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds }
 
-let export_inductive x = Some (dummy_inductive_entry x)
+let export_inductive x = None (*Some (dummy_inductive_entry x)*)
 
 let (in_inductive, out_inductive) =
-  let od = {
+  declare_object {(default_object "INDUCTIVE") with 
     cache_function = cache_inductive;
-    load_function = (fun _ -> ());  (* *_module will do that *)
-    open_function = (fun _ -> ());
+    classify_function = (fun _ -> Dispose);
     export_function = export_inductive } 
-  in
-  declare_object ("INDUCTIVE", od)
+
 
 let declare_mind mie =
   let id = match mie.mind_entry_inds with
@@ -296,68 +290,6 @@ let declare_mind mie =
     ln
 
 
-(* modules and components *)
-
-let inductive_names_from_body sp ln mie =
-  let names, _ = 
-    Array.fold_left
-      (fun (names, n) ind ->
-	 let ind_p = (ln,n) in
-	 let names, _ =
-	   Array.fold_left
-	     (fun (names, p) l ->
-		let sp = 
-		  Libnames.make_path (dirpath sp) (ident_of_label l) CCI 
-		in
-		  ((sp, ConstructRef (ind_p,p)) :: names, p+1))
-	     (names, 1) ind.mind_consnames in
-	 let sp = 
-	   Libnames.make_path 
-	     (dirpath sp) 
-	     (ident_of_label ind.mind_typename) 
-	     CCI 
-	 in
-	   ((sp, IndRef ind_p) :: names, n+1))
-      ([], 0) mie.mind_packets
-  in names
-
-let rec add_signature dir mp signature =
-  let add_item (l,item) = 
-    let ln = make_ln mp l in
-    let id = (ident_of_label l) in
-    let sp = Libnames.make_path dir id CCI in
-      match item with
-	| SPBconst _ -> 
-	    if Nametab.exists_cci sp then
-	      errorlabstrm "cache_constant"
-		[< pr_id (basename sp); 'sTR " already exists" >] ;
-	    let ref = ConstRef ln in
-	    Nametab.push sp ref;
-	    Nametab.push_short_name id ref
-	| SPBmind mib -> 
-	    let names = inductive_names_from_body sp ln mib in
-	    List.iter check_exists_inductive names;
-	    List.iter 
-	      (fun (sp, ref) -> 
-		 Nametab.push sp ref; 
-		 Nametab.push_short_name (basename sp) ref) 
-	      names
-	| SPBmodule _ ->
-	    anomaly "No modules today... Too hot."
-	| SPBmodtype _ -> 
-	    anomaly "No modtypes today... Too hot."
-  in
-    List.iter add_item signature
-
-let declare_module_components dir mp = 
-  let modtype = Modops.scrape_modtype 
-		  (Global.env ())
-		  (Global.lookup_module mp).mod_type 
-  in
-    match modtype with
-      | MTBident _ -> assert false
-      | MTBfunsig _ -> ()
-      | MTBsig(_,signature) -> add_signature dir mp signature
 
 (*s Test and access functions. *)
 
@@ -367,7 +299,7 @@ let is_constant sp =
       | ConstRef _ -> true
       | _ -> false
   with Not_found -> false
-
+      
 let constant_strength sp = LNmap.find sp !csttab
 
 let constant_or_parameter_strength sp =
@@ -406,11 +338,11 @@ let mind_oper_of_id sp id mib =
     mib.mind_packets
 
 let context_of_global_reference = function
-  | VarRef sp -> []
+  | VarRef _ | ModTypeRef _ | ModRef _ -> []
   | ConstRef sp -> (Global.lookup_constant sp).const_hyps
   | IndRef (sp,_) -> (Global.lookup_mind sp).mind_hyps
   | ConstructRef ((sp,_),_) -> (Global.lookup_mind sp).mind_hyps
-
+      
 (*
 let global_sp_operator env sp id =
   try
@@ -456,7 +388,7 @@ let rec find_var id = function
   | sp::l -> if basename sp = id then sp else find_var id l
 
 let implicit_section_args ref =
-  if Options.immediate_discharge then
+(*  if Options.immediate_discharge then*)
     let hyps = context_of_global_reference ref in
     let hyps0 = section_variable_paths () in
     let rec keep acc = function
@@ -466,7 +398,7 @@ let implicit_section_args ref =
       | (_,Some _,_)::hyps -> keep acc hyps
       | [] -> acc
     in keep [] hyps
-  else []
+(*  else [] *)
 
 let section_hyps ref =
   let hyps = context_of_global_reference ref in
@@ -479,7 +411,8 @@ let section_hyps ref =
   in keep [] hyps
 
 let extract_instance ref args =
-  if Options.immediate_discharge then args
+  args
+(*  if Options.immediate_discharge then args
   else
   let hyps = context_of_global_reference ref in
   let hyps0 = current_section_context () in
@@ -491,15 +424,18 @@ let extract_instance ref args =
     | (_,Some _,_)::hyps -> peel n acc hyps
     | [] -> Array.of_list acc
   in peel (na-1) [] hyps
+*)
 
 let constr_of_reference _ _ ref =
-if Options.immediate_discharge then
+(*if Options.immediate_discharge then*)
   match ref with
     | VarRef id -> mkVar id
     | ConstRef ln -> mkConst (ln,[||])
     | ConstructRef cons_p -> mkMutConstruct (cons_p,[||])
     | IndRef ind_p -> mkMutInd (ind_p,[||])
-else
+    | ModTypeRef _ | ModRef _ -> 
+	anomaly "Cannot construct constr from a module or a module type"
+(*else
   let hyps = context_of_global_reference ref in
   let hyps0 = current_section_context () in
   let args = instance_from_section_context hyps in
@@ -508,8 +444,11 @@ else
     | ConstRef ln -> mkConst (ln,Array.of_list args)
     | ConstructRef cons_p -> mkMutConstruct (cons_p,Array.of_list args)
     | IndRef ind_p -> mkMutInd (ind_p,Array.of_list args)
+    | ModTypeRef _ | ModRef _ -> 
+	anomaly "Cannot construct constr from a module or a module type"
   in
   find_common_hyps_then_abstract body hyps0 hyps
+*)
 
 let construct_absolute_reference env sp =
   constr_of_reference Evd.empty env (Nametab.absolute_reference sp)
@@ -519,7 +458,10 @@ let construct_qualified_reference env qid =
   constr_of_reference Evd.empty env ref
 
 let construct_reference env id =
-  construct_qualified_reference env (make_qualid [] id)
+  try
+    mkVar (let _ = Environ.lookup_named id env in id)
+  with Not_found ->
+    construct_qualified_reference env (make_qualid [] id)
 
 let global_qualified_reference qid =
   construct_qualified_reference (Global.env()) qid
@@ -547,9 +489,11 @@ let is_imported_ref = function
   | VarRef _ -> false
   | ConstRef ln 
   | IndRef (ln,_)
-  | ConstructRef ((ln,_),_) -> 
+  | ConstructRef ((ln,_),_) 
+  | ModTypeRef ln -> 
       is_imported_modpath (modname ln)
-
+  | ModRef mp ->
+      is_imported_modpath mp
 
 let is_global id =
   try 
@@ -576,7 +520,7 @@ let path_of_inductive_path (sp,tyi) =
 *)
 (* Util *)
 let instantiate_inductive_section_params t ind =
-  if Options.immediate_discharge then 
+(*  if Options.immediate_discharge then *)
   let sign = section_hyps (IndRef ind) in
   let rec inst s ctxt t =
     let k = kind_of_term t in
@@ -588,7 +532,7 @@ let instantiate_inductive_section_params t ind =
     | [], _ -> substl s t
     | _ -> anomaly"instantiate_params: term and ctxt mismatch"
   in inst [] sign t
-  else t
+(*  else t *)
 (* Eliminations. *)
 
 let eliminations = [ (prop,"_ind") ; (spec,"_rec") ; (types,"_rect") ]
@@ -609,7 +553,7 @@ let declare_one_elimination mispec =
     let _ = declare_constant (id_of_string na)
       (ConstantEntry { const_entry_body = Some c; const_entry_type = None }, 
        NeverDischarge,false) in
-    Options.if_verbose pPNL [< 'sTR na; 'sTR " is defined" >]
+    Options.if_verbose ppnl (str na ++ str " is defined")
   in
   let env = Global.env () in
   let sigma = Evd.empty in

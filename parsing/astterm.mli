@@ -12,6 +12,7 @@
 open Identifier
 open Names
 open Term
+open Mod_declarations
 open Sign
 open Evd
 open Environ
@@ -26,6 +27,7 @@ val interp_constr        : 'a evar_map -> env -> Coqast.t -> constr
 val interp_casted_constr : 'a evar_map -> env -> Coqast.t -> constr -> constr
 val interp_type          : 'a evar_map -> env -> Coqast.t -> types
 val interp_sort          : Coqast.t -> sorts
+
 
 val interp_openconstr    :
   'a evar_map -> env -> Coqast.t -> (existential * constr) list * constr

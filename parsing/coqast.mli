@@ -26,7 +26,7 @@ type t =
   | Num of loc * int
   | Str of loc * string
   | Id of loc * string
-  | Path of loc * Names.long_name
+  | Path of loc * section_path
   | Dynamic of loc * Dyn.t
 
 (* returns the list of metas occuring in the ast *)
@@ -39,5 +39,5 @@ val subst_meta : (int * t) list -> t -> t
 (* hash-consing function *)
 val hcons_ast: 
   (string -> string) * (identifier -> identifier)
-  * (Names.long_name -> Names.long_name)
+  * (section_path -> section_path)
   -> (t -> t) * (loc -> loc)

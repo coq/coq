@@ -1,0 +1,1 @@
+for i in `find -name "*.ml[i4]" -or -name "*.ml"`; do sed "s|\<Ident\>|Identifier|g" $i > ../V7/$i; echo $i; done

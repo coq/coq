@@ -54,14 +54,17 @@ val locate_obj : qualid -> section_path
 val locate_constant : qualid -> constant_path
 val locate_mind : qualid -> mutual_inductive_path
 val locate_section : qualid -> dir_path
+val locate_module : qualid -> module_path
 
 (* [exists sp] tells if [sp] is already bound to a cci term *)
 val exists_cci : section_path -> bool
 val exists_section : dir_path -> bool
+val exists_module : dir_path -> bool
 
 (* lookup the other way around, gives names of constructors and
-inductive types *)
+inductive types. May raise Not_found *)
 
+val get_sp : global_reference -> section_path
 val get_full_qualid : global_reference -> qualid
 val get_short_qualid : global_reference -> qualid
 val get_ident : global_reference -> identifier
@@ -99,3 +102,9 @@ val locate_in_absolute_module : dir_path -> identifier -> global_reference
 val push_loaded_library : dir_path -> unit
 val locate_loaded_library : qualid -> dir_path
 
+
+
+type frozen
+
+val freeze : unit -> frozen
+val unfreeze : frozen -> unit

@@ -20,6 +20,7 @@ open Reduction
 open Instantiate
 open Typeops
 open Typing
+open Libobject
 open Retyping
 open Tacmach
 open Proof_type
@@ -221,7 +222,7 @@ let necessary_elimination sort_arity sort =
 	Type_Type
       else  
 	errorlabstrm "necessary_elimination" 
-	  [< 'sTR "no primitive equality on proofs" >]  
+	  (**)(  str "no primitive equality on proofs"  )(**)  
   else
     if is_Set sort_arity then
       Set_SetorProp
@@ -229,7 +230,7 @@ let necessary_elimination sort_arity sort =
       if is_Type sort_arity then
 	Type_SetorProp
       else  errorlabstrm "necessary_elimination" 
-        [< 'sTR "no primitive equality on proofs" >]
+        (**)(  str "no primitive equality on proofs"  )(**)
 
 let find_eq_pattern aritysort sort = 
   match necessary_elimination aritysort sort with
@@ -431,8 +432,8 @@ let construct_discriminator sigma env dirn c sort =
           CP : changed assert false in a more informative error
        *)
       errorlabstrm "Equality.construct_discriminator"
-	[< 'sTR "Cannot discriminate on inductive constructors with 
-		 dependent types" >] in
+	(**)(  str "Cannot discriminate on inductive constructors with 
+		 dependent types"  )(**) in
   let arsign,arsort = get_arity indf in
   let (true_0,false_0,sort_0) = 
     match necessary_elimination arsort (destSort sort) with
@@ -475,7 +476,7 @@ let find_eq_data_decompose eqn =
   else if (is_matching (build_coq_idT_pattern ()) eqn) then
     (build_coq_idT_data, match_eq (build_coq_idT_pattern ()) eqn)
   else
-    errorlabstrm  "find_eq_data_decompose" [< >]
+    errorlabstrm  "find_eq_data_decompose" (mt ())
 
 let gen_absurdity id gl =
 (*
@@ -487,7 +488,7 @@ let gen_absurdity id gl =
     simplest_elim (mkVar id) gl
   else
     errorlabstrm "Equality.gen_absurdity" 
-      [< 'sTR "Not the negation of an equality" >]
+      (**)(  str "Not the negation of an equality"  )(**)
 
 (* Precondition: eq is leibniz equality
  
@@ -557,19 +558,19 @@ let discr id gls =
 
 
 let not_found_message id =
-  [<'sTR "the variable"; 'sPC ; 'sTR (string_of_id id) ; 'sPC;
-    'sTR" was not found in the current environment" >]
+  (**)( str "the variable" ++ spc ()  ++ str (string_of_id id)  ++ spc () ++
+    str" was not found in the current environment"  )(**)
 
 let insatisfied_prec_message cls =
   match cls with
-    | None -> [< 'sTR"goal does not satify the expected preconditions">] 
-    |  Some id -> [< 'sTR(string_of_id id); 'sPC;
-		     'sTR"does not satify the expected preconditions" >]
+    | None -> (**)(  str"goal does not satify the expected preconditions" )(**) 
+    |  Some id -> (**)(  str(string_of_id id) ++ spc () ++
+		     str"does not satify the expected preconditions"  )(**)
 
 let discrOnLastHyp gls =
   try onLastHyp discr gls
   with NotDiscriminable ->
-    errorlabstrm "DiscrConcl" [< 'sTR" Not a discriminable equality" >]
+    errorlabstrm "DiscrConcl" (**)(  str" Not a discriminable equality"  )(**)
 
 let discrClause cls gls =
   match cls with
@@ -586,13 +587,13 @@ let discrClause cls gls =
 	  | Not_found -> errorlabstrm "DiscrClause" (not_found_message id)
 	  | NotDiscriminable ->
 	      errorlabstrm "DiscrHyp"
-		[< 'sTR(string_of_id id);'sTR" Not a discriminable equality" >]
+		(**)(  str(string_of_id id) ++str" Not a discriminable equality"  )(**)
 
 let discrEverywhere = 
   tclORELSE
     (Tacticals.tryAllClauses discrClause)
     (fun gls -> 
-       errorlabstrm "DiscrEverywhere" [< 'sTR" No discriminable equalities" >])
+       errorlabstrm "DiscrEverywhere" (**)(  str" No discriminable equalities"  )(**))
 
 let discrConcl gls  = discrClause None gls
 let discrHyp id gls = discrClause (Some id) gls
@@ -792,16 +793,16 @@ let inj id gls =
     try 
       find_eq_data_decompose eqn
     with e when catchable_exception e -> 
-      errorlabstrm "Inj"  [<'sTR(string_of_id id); 
-			    'sTR" Not a primitive  equality here " >] 
+      errorlabstrm "Inj"  (**)( str(string_of_id id) ++ 
+			    str" Not a primitive  equality here "  )(**) 
   in
   let tj = pf_execute gls t in
   let sigma = project gls in
   let env = pf_env gls in
   match find_positions env sigma t1 t2 with
     | Inl _ ->
-	errorlabstrm "Inj" [<'sTR (string_of_id id);
-			     'sTR" is not a projectable equality" >]
+	errorlabstrm "Inj" (**)( str (string_of_id id) ++
+			     str" is not a projectable equality"  )(**)
     | Inr posns ->
 	let e = pf_get_new_id (id_of_string "e") gls in
 	let e_env =
@@ -820,7 +821,7 @@ let inj id gls =
 	in
 	if injectors = [] then
 	  errorlabstrm "Equality.inj" 
-	    [<'sTR "Failed to decompose the equality">];
+	    (**)( str "Failed to decompose the equality" )(**);
 	tclMAP 
 	  (fun (injfun,resty) ->
 	     let pf = applist(eq.congr (),
@@ -848,7 +849,7 @@ let injClause cls gls =
         with
           | UserError("refiner__fail",_) -> 
               errorlabstrm "InjClause" 
-		[< 'sTR (string_of_id id); 'sTR" Not a projectable equality" >]
+		(**)(  str (string_of_id id) ++ str" Not a projectable equality"  )(**)
 
 let injConcl gls  = injClause None gls
 let injHyp id gls = injClause (Some id) gls
@@ -895,7 +896,7 @@ let decompEqThen ntac id gls =
 	  in
 	  if injectors = [] then
 	    errorlabstrm "Equality.decompEqThen" 
-              [<'sTR "Discriminate failed to decompose the equality">];
+              (**)( str "Discriminate failed to decompose the equality" )(**);
 	  ((tclTHEN
 	      (tclMAP (fun (injfun,resty) ->
 			 let pf = applist(lbeq.congr (),
@@ -940,9 +941,9 @@ let dEqHyp_tac = hide_ident_tactic "DEqHyp" dEqHyp
 
 let rewrite_msg = function 
   | None ->  
-      [<'sTR "passed term is not a primitive equality">] 
+      (**)( str "passed term is not a primitive equality" )(**) 
   | Some id ->
-      [<'sTR (string_of_id id); 'sTR "does not satisfy preconditions ">]
+      (**)( str (string_of_id id) ++ str "does not satisfy preconditions " )(**)
 
 let swap_equands gls eqn =
   let (lbeq,(t,e1,e2)) =
@@ -978,12 +979,12 @@ let find_elim  sort_of_gl  lbeq =
 	(match lbeq.rrec with
            | Some eq_rec -> (eq_rec (), false) 
 	   | None -> errorlabstrm "find_elim"
-		 [< 'sTR "this type of elimination is not allowed">])
+		 (**)(  str "this type of elimination is not allowed" )(**))
     | _ (* Type *) -> 
         (match lbeq.rect with
            | Some eq_rect -> (eq_rect (), true) 
            | None -> errorlabstrm "find_elim"
-		 [< 'sTR "this type of elimination is not allowed">])
+		 (**)(  str "this type of elimination is not allowed" )(**))
 
 (* builds a predicate [e:t][H:(lbeq t e t1)](body e)
    to be used as an argument for equality dependent elimination principle:
@@ -1010,7 +1011,7 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
       find_elim (pf_type_of gls (pf_concl gls)) lbeq  
     with e when catchable_exception e -> 
       errorlabstrm "RevSubstIncConcl"
-        [< 'sTR "this type of substitution is not allowed">]  
+        (**)(  str "this type of substitution is not allowed" )(**)  
   in 
   let p =
     if dep then
@@ -1063,7 +1064,7 @@ let find_sigma_data_decompose ex =
        let subst = match_sigma ex (build_coq_existT_pattern ()) in
        (build_sigma_type (),subst)
      with PatternMatchingFailure -> 
-       errorlabstrm "find_sigma_data_decompose" [< >])
+       errorlabstrm "find_sigma_data_decompose" (mt ()))
 
 let decomp_tuple_term env c t = 
   let rec decomprec inner_code ex exty =
@@ -1111,7 +1112,7 @@ let substInConcl eqn gls =
 let substInHyp eqn id gls =
   let (lbeq,(t,e1,e2)) = (find_eq_data_decompose eqn) in 
   let body = subst_term e1 (clause_type (Some id) gls) in
-  if not (dependent (mkRel 1) body) then errorlabstrm  "SubstInHyp" [<>];
+  if not (dependent (mkRel 1) body) then errorlabstrm  "SubstInHyp" (mt ());
   (tclTHENS (cut_replacing id (subst1 e2 body))
      ([tclIDTAC;
        (tclTHENS (bareRevSubstInConcl lbeq body (t,e1,e2))
@@ -1127,15 +1128,15 @@ let try_rewrite tac gls =
     tac gls
   with 
     | UserError ("find_eq_data_decompose",_) -> errorlabstrm 
-	  "try_rewrite" [< 'sTR "Not a primitive equality here">]
+	  "try_rewrite" (**)(  str "Not a primitive equality here" )(**)
     | UserError ("swap_equamds",_) -> errorlabstrm 
-          "try_rewrite" [< 'sTR "Not a primitive equality here">]
+          "try_rewrite" (**)(  str "Not a primitive equality here" )(**)
     | UserError("find_eq_elim",s) -> errorlabstrm "try_rew" 
-          [<'sTR "This type of elimination is not allowed ">]  
+          (**)( str "This type of elimination is not allowed " )(**)  
     | e when catchable_exception e -> 
 	errorlabstrm "try_rewrite"
-          [< 'sTR "Cannot find a well type generalisation of the goal that";
-             'sTR " makes progress the proof.">]
+          (**)(  str "Cannot find a well type generalisation of the goal that" ++
+             str " makes progress the proof." )(**)
 
 (* list_int n 0 [] gives the list [1;2;...;n] *)
 let rec list_int n cmr l =
@@ -1270,7 +1271,7 @@ let general_rewrite_in lft2rgt id (c,lb) gls =
        let (_,ty) = lookup_named id (pf_env gls) in ty
      with Not_found -> 
        errorlabstrm "general_rewrite_in" 
-	 [< 'sTR"No such hypothesis : "; pr_id id >])
+	 (**)(  str"No such hypothesis : " ++ pr_id id  )(**))
   in
   let (wc,_) = startWalk gls
   and (_,_,t) = reduce_to_mind (pf_env gls) (project gls) (pf_type_of gls c) in
@@ -1287,7 +1288,7 @@ let general_rewrite_in lft2rgt id (c,lb) gls =
         (match sub_term_with_unif typ_id mbr_eq with
            | None ->
                errorlabstrm "general_rewrite_in" 
-		 [<'sTR "Nothing to rewrite in: "; pr_id id>]
+		 (**)( str "Nothing to rewrite in: " ++ pr_id id )(**)
            | Some (l2,nb_occ) ->
                (tclTHENSI
 		  (tclTHEN
@@ -1333,7 +1334,7 @@ let rewrite_in lR com id gls =
   (try 
      let _ = lookup_named id (pf_env gls) in () 
    with Not_found -> 
-     errorlabstrm "rewrite_in" [< 'sTR"No such hypothesis : " ;pr_id id >]);
+     errorlabstrm "rewrite_in" (**)(  str"No such hypothesis : "  ++pr_id id  )(**));
   let c = pf_interp_constr gls com in
   let eqn = pf_type_of gls c in
   try
@@ -1344,7 +1345,7 @@ let rewrite_in lR com id gls =
           ([tclIDTAC ; exact_no_check c])) gls
      with UserError("SubstInHyp",_) -> tclIDTAC gls)
   with UserError ("find_eq_data_decompose",_)->  
-    errorlabstrm "rewrite_in" [< 'sTR"No equality here" >] 
+    errorlabstrm "rewrite_in" (**)(  str"No equality here"  )(**) 
       
 let subst eqn cls gls =
   match cls with
@@ -1498,12 +1499,11 @@ let export_autorewrite_rule x = Some x
 
 (*Declaration of the AUTOREWRITE_RULE library object*)
 let (in_autorewrite_rule,out_autorewrite_rule)=
-  Libobject.declare_object
-    ("AUTOREWRITE_RULE",
-     { Libobject.load_function = load_autorewrite_rule;
-       Libobject.open_function = cache_autorewrite_rule;
-       Libobject.cache_function = cache_autorewrite_rule;
-       Libobject.export_function = export_autorewrite_rule })
+  declare_object {(default_object "AUTOREWRITE_RULE") with 
+       load_function = load_autorewrite_rule;
+       open_function = cache_autorewrite_rule;
+       cache_function = cache_autorewrite_rule;
+       export_function = export_autorewrite_rule  }
 
 (* Semantic of the HintRewrite vernacular command *)
 let _ = 
@@ -1543,7 +1543,7 @@ let sub_list lref i_s i_e =
     else if (i>=i_s) & (i<i_e) then
       sub_list_rec (l@[List.nth lref i]) (i+1)
     else
-      anomalylabstrm "Equality.sub_list" [<'sTR "Out of range">]
+      anomalylabstrm "Equality.sub_list" (**)( str "Out of range" )(**)
   in
   sub_list_rec [] i_s
 
@@ -1598,8 +1598,8 @@ type hint_base =
 let explicit_hint_base gl = function 
   | By_name id -> 
       begin match rules_of_base id with
-	| [] -> errorlabstrm "autorewrite" [<'sTR ("Base "^(string_of_id id)^
-						   " does not exist")>]
+	| [] -> errorlabstrm "autorewrite" (**)( str ("Base "^(string_of_id id)^
+						   " does not exist") )(**)
 	| lbs -> lbs
       end 
   | Explicit lbs -> 
@@ -1653,7 +1653,7 @@ let autorewrite lbases ltacstp opt_step ltacrest opt_rest depth_step gls =
     let cmd = ref cmod
     and wrn = ref warn in
     if !cmd=depth_step then begin
-      wARNING [<'sTR ((string_of_int cglob)^" rewriting(s) carried out") >];
+      msg_warning (**)( str ((string_of_int cglob)^" rewriting(s) carried out")  )(**);
       cmd := 0;
       wrn := true
     end;
@@ -1770,7 +1770,7 @@ let autorewrite lbases ltacstp opt_step ltacrest opt_rest depth_step gls =
     in
     let (gl,lvalid)=
       let (gl_res,lvalid_res,warn)=iterative_rew 0 0 (0,0,false) [g] [] in
-      if warn then mSGNL [<>];
+      if warn then msgnl (mt ());
       (gl_res,lvalid_res)
     in
     let validation_fun=
@@ -1805,7 +1805,7 @@ let autorewrite lbases ltacstp opt_step ltacrest opt_rest depth_step gls =
   and int_arg=function
     | [(Integer n)] -> n
     | _ -> anomalylabstrm "dyn_autorewrite" 
-	  [<'sTR "Bad call of int_arg (not an INTEGER)">]
+	  (**)( str "Bad call of int_arg (not an INTEGER)" )(**)
   and list_args_rest (lstep,evstep) (ostep,evostep) (lrest,evrest)
     (orest,evorest) (depth,evdepth) = function
       | [] -> (lstep,ostep,lrest,orest,depth)
@@ -1839,13 +1839,13 @@ let autorewrite lbases ltacstp opt_step ltacrest opt_rest depth_step gls =
 		 (orest,evorest) (dth,true) tail
              else
                errorlabstrm "dyn_autorewrite" 
-		 [<'sTR "Depth value lower or equal to 0">])
+		 (**)( str "Depth value lower or equal to 0" )(**))
 	  else
             anomalylabstrm "dyn_autorewrite" 
-	      [<'sTR "Bad call of list_args_rest">]
+	      (**)( str "Bad call of list_args_rest" )(**)
       | _ -> 
 	  anomalylabstrm "dyn_autorewrite" 
-	    [<'sTR "Bad call of list_args_rest">]
+	    (**)( str "Bad call of list_args_rest" )(**)
   and list_args = function
     | (Redexp (s,lbases))::tail ->
 	if s = "BaseList" then
@@ -1858,10 +1858,10 @@ let autorewrite lbases ltacstp opt_step ltacrest opt_rest depth_step gls =
 	     ostep (if lrest=[] then None else Some lrest) orest depth)
 	else
           anomalylabstrm "dyn_autorewrite" 
-	    [<'sTR "Bad call of list_args (not a BaseList tagged REDEXP)">]
+	    (**)( str "Bad call of list_args (not a BaseList tagged REDEXP)" )(**)
     | _ ->
 	anomalylabstrm "dyn_autorewrite" 
-	  [<'sTR "Bad call of list_args (not a REDEXP)">]
+	  (**)( str "Bad call of list_args (not a REDEXP)" )(**)
   in
   list_args largs*)
 

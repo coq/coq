@@ -484,25 +484,25 @@ let pr_com sigma goal com =
             (Astterm.interp_constr sigma (Evarutil.evar_env goal) com))
 
 let pr_one_binding sigma goal = function
-  | (Dep id,com)  -> [< pr_id id ; 'sTR":=" ; pr_com sigma goal com >]
-  | (NoDep n,com) -> [< 'iNT n ; 'sTR":=" ; pr_com sigma goal com >]
-  | (Com,com)     -> [< pr_com sigma goal com >]
+  | (Dep id,com)  ->  pr_id id  ++ str":="  ++ pr_com sigma goal com 
+  | (NoDep n,com) ->  int n  ++ str":="  ++ pr_com sigma goal com 
+  | (Com,com)     ->  pr_com sigma goal com 
 
 let pr_bindings sigma goal lb =
   let prf = pr_one_binding sigma goal in
   match lb with 
-    | [] -> [< prlist_with_sep pr_spc prf lb >]
-    | _  -> [<'sTR"with";'sPC;prlist_with_sep pr_spc prf lb >]
+    | [] ->  prlist_with_sep pr_spc prf lb 
+    | _  -> str"with" ++spc () ++prlist_with_sep pr_spc prf lb 
 	  
 let rec pr_list f = function
-  | []   -> [<>] 
-  | a::l1 -> [< (f a) ; pr_list f l1>]
+  | []   -> (mt ()) 
+  | a::l1 ->  (f a)  ++ pr_list f l1
 
 let pr_gls gls =
-  hOV 0 [< pr_decls (sig_sig gls) ; 'fNL ; pr_seq (sig_it gls) >]
+  hov 0 ( pr_decls (sig_sig gls)  ++ fnl ()  ++ pr_seq (sig_it gls))
 
 let pr_glls glls =
-  hOV 0 [< pr_decls (sig_sig glls) ; 'fNL ;
-           prlist_with_sep pr_fnl pr_seq (sig_it glls) >]
+  hov 0 ( pr_decls (sig_sig glls)  ++ fnl ()  ++
+           prlist_with_sep pr_fnl pr_seq (sig_it glls) )
 
 let pr_tactic = Refiner.pr_tactic

@@ -34,13 +34,16 @@ type declaration =
       (label * constr * (label * constr) list) list
   | Module of label * (mod_bound_id * module_type_entry) list * 
       module_type_entry option * module_expr option
-  | ModuleType of label * module_type_entry
+  | ModuleType of label * (mod_bound_id * module_type_entry) list *
+      module_type_entry option
 
 type command =
   | Entry of (label * specification_entry)
   | BeginModule of label * (mod_bound_id * module_type_entry) list * 
       module_type_entry option
   | EndModule of label
+  | BeginModtype of label * (mod_bound_id * module_type_entry) list
+  | EndModtype of label
   | Check of constr
   | Abbrev of identifier * constr
   | Print of long_name
@@ -60,6 +63,8 @@ let module_type_decl = Grammar.Entry.create gram "module_type_decl"
 let module_arg = Grammar.Entry.create gram "module_arg"
 let module_expr = Grammar.Entry.create gram "module_expr"
 let module_body_decl = Grammar.Entry.create gram "module_body_decl"
+let module_type_body_decl = 
+  Grammar.Entry.create gram "module_type_body_decl"
 let declaration = Grammar.Entry.create gram "declaration"
 let type_decl = Grammar.Entry.create gram "type_decl"
 let body_decl = Grammar.Entry.create gram "body_decl"
@@ -111,8 +116,8 @@ let make_entry d =
 	    l,
 	    SPEmind { mind_entry_finite = true; 
 		      mind_entry_inds = inds' }
-      | ModuleType (l, mte) ->
-	  l, SPEmodtype mte
+      | ModuleType (l, args, Some mte) ->
+	  l, SPEmodtype (fold_functor_type args mte)
       | Module (l,args,mty_o,body_o) ->
 	  l, 
 	  SPEmodule 
@@ -213,8 +218,9 @@ EXTEND
       mt_o = OPT module_type_decl; body_o = OPT module_body_decl ->
 	Module (label_of_string id, args, mt_o, body_o)
     |
-      "Module"; "Type"; id = IDENT; ":="; mty = module_type ->
-	ModuleType (label_of_string id, mty)
+      "Module"; "Type"; id = IDENT; args = LIST0 module_arg; 
+      mty_o = OPT module_type_body_decl ->
+	ModuleType (label_of_string id, args, mty_o)
     ] ];
 
   module_arg:
@@ -233,6 +239,9 @@ EXTEND
 
   module_type_decl:
   [ [ ":"; mt = module_type -> mt ] ];
+
+  module_type_body_decl:
+  [ [ ":="; mt = module_type -> mt ] ];
 
   module_expr:
   [ [ "struct"; dl = LIST0 declaration; "end" ->
@@ -257,11 +266,15 @@ EXTEND
       d = declaration; "." ->
 	(match d with 
 	   | Module(l,args,mt_o,None) ->
-	       BeginModule (l,args,mt_o)
+	       BeginModule(l,args,mt_o)
+	   | ModuleType(l,args,None) ->
+	       BeginModtype(l,args)
 	   | _ -> Entry (make_entry d)
 	)
-    | "End"; id = IDENT; "." ->
+    | "EndM"; id = IDENT; "." ->
 	EndModule (label_of_string id)
+    | "EndT"; id = IDENT; "." ->
+	EndModtype (label_of_string id)
     | "Abbrev"; id = IDENT; ":="; c=term; "." ->
 	Abbrev (id_of_string id, c) 
     | "Check"; c = term; "." ->

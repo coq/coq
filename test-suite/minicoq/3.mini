@@ -14,37 +14,34 @@ Inductive [A:Prop;B:Prop] sumbool : Set :=
 Definition if:=[T:Set][A:Prop][B:Prop][s:(sumbool A B)][th:T][el:T]
         <T>Case s : [2]Ind sumbool 0 of [a:A]th [b:B]el end.
 
-Module Type ELEM := 
-sig 
-  Definition T : Set  
+Module Type ELEM.
+  Definition T : Set.
   Definition eq_dec : (a:Const T)(a':Const T)
-                        (sumbool (eq Const T a a') (not (eq Const T a a')))
-end.
+                        (sumbool (eq Const T a a') (not (eq Const T a a'))).
+EndT ELEM.
                                         
-Module Type SET :=
-  funsig(Elt : ELEM)
-  sig
-    Definition T : Set
-    Definition empty : Const T
-    Definition add : Const Elt.T -> Const T -> Const T 
-    Definition find : Const Elt.T -> Const T -> bool
+Module Type SET(Elt : ELEM).
+  Definition T : Set.
+  Definition empty : Const T.
+  Definition add : Const Elt.T -> Const T -> Const T.
+  Definition find : Const Elt.T -> Const T -> bool.
 
-    (* Axioms *)
+  (* Axioms *)
 
-    Definition find_empty_false : 
-        (e:Const Elt.T) (eq bool (Const find e Const empty) false)
+  Definition find_empty_false : 
+      (e:Const Elt.T) (eq bool (Const find e Const empty) false).
 
-(*    Definition find_add_true : 
+(*  Definition find_add_true : 
         (s:Const T) (e:Const Elt.T) 
-                (eq bool (Const find e (Const add e s)) true)
+                (eq bool (Const find e (Const add e s)) true).
 
-    Definition find_add_false :
+  Definition find_add_false :
         (s:Const T) (e:Const Elt.T) (e':Const Elt.T)
                 ((not (eq Const Elt.T e e')) 
                 -> (eq bool (Const find e (Const add e' s))
-                            (Const find e s)))
+                            (Const find e s))).
 *)
-  end.
+EndT SET.
 
 Module FuncDict(E : ELEM) :=
   struct

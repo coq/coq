@@ -7,7 +7,11 @@
 #install_printer  (* identifier *) prid;;
 #install_printer  (* section_path *)  prsp;;
 #install_printer  (* qualid *)  prqualid;;
+#install_printer  (* label *) prlabel;;
+#install_printer  (* module_path *) prmp;;
 #install_printer  (* constr *)  print_pure_constr;;
+
+#install_printer  (* obj *) display_obj;;
 
 (* parsing of terms *)
 
@@ -36,10 +40,10 @@ let constr_of_string s =
 
 open Declarations;;
 
-let constbody_of_string s =
+(*let constbody_of_string s =
   let b = Global.lookup_constant (path_of_string s) in
   Util.out_some b.const_body;;
-
+*)
 (* Get the current goal *)
 
 let getgoal x = top_goal_of_pftreestate (Pfedit.get_pftreestate x);;

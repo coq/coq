@@ -137,7 +137,7 @@ let tauto g =
       (tclORELSE
         (tclTHEN reduction_not_iff (interp (tauto_main ())))
         (tclTHEN reduction (interp (tauto_main ()))))) g
-  with UserError _ -> errorlabstrm "tauto" [< 'sTR "Tauto failed" >]
+  with UserError _ -> errorlabstrm "tauto" (str "Tauto failed")
 
 let intuition =
   tclTHEN (init_intros ())

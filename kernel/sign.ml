@@ -68,7 +68,7 @@ let rec instance_from_section_context = function
   | _ :: sign -> instance_from_section_context sign
   | [] -> []
 let instance_from_section_context x =
-  if Options.immediate_discharge then [] else instance_from_section_context x
+  [](*if Options.immediate_discharge then [] else instance_from_section_context x*)
 
 (*s Signatures of ordered optionally named variables, intended to be
    accessed by de Bruijn indices *)
@@ -119,7 +119,7 @@ let lift_rev_rel_context n sign =
     | [] -> []
   in
   liftrec 1 sign
-let concat_rel_context = (@)
+let concat_rel_context ~newer ~older = newer@older
 let ids_of_rel_context sign =
   List.fold_right
     (fun (na,_,_) l -> match na with Name id -> id::l | Anonymous -> l)

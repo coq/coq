@@ -12,7 +12,7 @@ Reduce Const LePremier1.NewSet.
 Module LePremier2.
   Definition id:=[x:Type]x.
   Definition NewSet:=(Const id Set).
-End LePremier2.
+EndM LePremier2.
 
 Check Const LePremier2.NewSet.
 

@@ -200,13 +200,13 @@ let change_hyp_and_check t env sigma c =
   if is_conv env sigma t c then 
     t
   else 
-    errorlabstrm "convert-check-hyp" [< 'sTR "Not convertible" >]
+    errorlabstrm "convert-check-hyp" (**)(  str "Not convertible"  )(**)
 
 let change_concl_and_check t env sigma c =
   if is_conv_leq env sigma t c then 
     t
   else 
-    errorlabstrm "convert-check-concl" [< 'sTR "Not convertible" >]
+    errorlabstrm "convert-check-concl" (**)(  str "Not convertible"  )(**)
 
 let change_in_concl t = reduct_in_concl (change_concl_and_check t)
 let change_in_hyp t   = reduct_in_hyp (change_hyp_and_check t)
@@ -255,7 +255,7 @@ let dyn_reduce = function
 let unfold_constr = function 
   | ConstRef sp -> unfold_in_concl [[],Closure.EvalConstRef sp]
   | VarRef id -> unfold_in_concl [[],Closure.EvalVarRef id]
-  | _ -> errorlabstrm "unfold_constr" [< 'sTR "Cannot unfold a non-constant.">]
+  | _ -> errorlabstrm "unfold_constr" (**)(  str "Cannot unfold a non-constant." )(**)
 
 (*******************************************)
 (*         Introduction tactics            *)
@@ -302,7 +302,7 @@ let default_id gl =
 type intro_name_flag =
   | IntroAvoid of identifier list
   | IntroBasedOn of identifier * identifier list
-  | IntroMustBe of identifier
+  | IntroMustbe of identifier
 
 let rec intro_gen name_flag move_flag force_flag gl =
   try
@@ -310,7 +310,7 @@ let rec intro_gen name_flag move_flag force_flag gl =
       match name_flag with
         | IntroAvoid idl        -> fresh_id idl (default_id gl) gl
         | IntroBasedOn (id,idl) -> fresh_id idl id gl
-        | IntroMustBe id        -> 
+        | IntroMustbe id        -> 
 	    let id' = fresh_id [] id gl in
   	    if id' <> id then error ((string_of_id id)^" is already used");
 	    id'
@@ -326,11 +326,11 @@ let rec intro_gen name_flag move_flag force_flag gl =
 	    (intro_gen name_flag move_flag force_flag)) gl)
       with Redelimination ->
         errorlabstrm "Intro" 
-	  [<'sTR "No product even after head-reduction">]
+	  (**)( str "No product even after head-reduction" )(**)
     else
       raise e
 
-let intro_mustbe id = intro_gen (IntroMustBe id) None false
+let intro_mustbe id = intro_gen (IntroMustbe id) None false
 let intro_using id = intro_gen (IntroBasedOn (id,[])) None false
 let intro_force force_flag = intro_gen (IntroAvoid []) None force_flag
 let intro = intro_force false
@@ -364,13 +364,13 @@ let intros_replacing ids gls =
 
 let dyn_intro = function
   | []              -> intro_gen (IntroAvoid []) None true
-  | [Identifier id] -> intro_gen (IntroMustBe id) None true
+  | [Identifier id] -> intro_gen (IntroMustbe id) None true
   |  l -> bad_tactic_args "intro" l
 
 let dyn_intro_move = function
   | [Identifier id2] -> intro_gen (IntroAvoid []) (Some id2) true
   | [Identifier id; Identifier id2] ->
-      intro_gen (IntroMustBe id) (Some id2) true
+      intro_gen (IntroMustbe id) (Some id2) true
   | l -> bad_tactic_args "intro_move" l
 
 let rec intros_until s g =
@@ -381,8 +381,8 @@ let rec intros_until s g =
 	  ((tclTHEN (reduce (Red true) []) (intros_until s)) g)
 	with Redelimination ->
           errorlabstrm "Intros" 
-	    [<'sTR ("No hypothesis "^(string_of_id s)^" in current goal");
-	      'sTR " even after head-reduction" >]
+	    (**)( str ("No hypothesis "^(string_of_id s)^" in current goal") ++
+	      str " even after head-reduction"  )(**)
 
 let rec intros_until_n_gen red n g =
   match pf_lookup_index_as_renamed (pf_concl g) n with
@@ -393,12 +393,12 @@ let rec intros_until_n_gen red n g =
           ((tclTHEN (reduce (Red true) []) (intros_until_n_gen red n)) g)
 	with Redelimination ->
           errorlabstrm "Intros" 
-	    [<'sTR ("No "^(string_of_int n));
-	      'sTR (match n with 1 -> "st" | 2 -> "nd" | _ -> "th");
-	      'sTR " non dependent hypothesis in current goal";
-	      'sTR " even after head-reduction" >]
+	    (**)( str ("No "^(string_of_int n)) ++
+	      str (match n with 1 -> "st" | 2 -> "nd" | _ -> "th") ++
+	      str " non dependent hypothesis in current goal" ++
+	      str " even after head-reduction"  )(**)
       else
-        errorlabstrm "Intros" [<'sTR "No such hypothesis in current goal" >]
+        errorlabstrm "Intros" (**)( str "No such hypothesis in current goal"  )(**)
 
 let intros_until_n = intros_until_n_gen true
 let intros_until_n_wored = intros_until_n_gen false
@@ -452,7 +452,7 @@ let intros_do n g =
 let rec intros_move = function
   | [] -> tclIDTAC
   | (hyp,destopt) :: rest ->
-      tclTHEN (intro_gen (IntroMustBe hyp) destopt false)
+      tclTHEN (intro_gen (IntroMustbe hyp) destopt false)
 	(intros_move rest)
 
 let dependent_in_decl a (_,c,t) =
@@ -784,7 +784,7 @@ let letin_tac with_eq name c occs gl =
   tclTHENLIST
     [ apply_type newcl args;
       thin (List.map (fun (id,_,_) -> id) depdecls);
-      intro_gen (IntroMustBe id) lastlhyp false;
+      intro_gen (IntroMustbe id) lastlhyp false;
       intros_move marks ] gl
 
 let check_hypotheses_occurrences_list env occl =
@@ -1026,7 +1026,7 @@ let elimination_clause_scheme kONT wc elimclause indclause gl =
     (match kind_of_term (last_arg (clenv_template elimclause).rebus) with
        | IsMeta mv -> mv
        | _  -> errorlabstrm "elimination_clause"
-             [< 'sTR "The type of elimination clause is not well-formed" >]) 
+             (**)(  str "The type of elimination clause is not well-formed"  )(**)) 
   in
   let elimclause' = clenv_fchain indmv elimclause indclause in 
   elim_res_pf kONT elimclause' gl
@@ -1069,11 +1069,11 @@ let default_elim (c,lbindc)  gl =
       let dir, base = Libnames.repr_qualid (Nametab.get_full_qualid (IndRef path)) in
       let id = make_elimination_ident base s in
       errorlabstrm "default_elim"
-	[< 'sTR "Cannot find the elimination combinator :";
-           pr_id id; 'sPC;
-	   'sTR "The elimination of the inductive definition :";
-           pr_id base; 'sPC; 'sTR "on sort "; 
-           'sPC; print_sort s ; 'sTR " is probably not allowed" >]
+	(**)(  str "Cannot find the elimination combinator :" ++
+           pr_id id ++ spc () ++
+	   str "The elimination of the inductive definition :" ++
+           pr_id base ++ spc () ++ str "on sort " ++ 
+           spc () ++ print_sort s  ++ str " is probably not allowed"  )(**)
   in  general_elim (c,lbindc) (elimc,[]) gl
 
 
@@ -1417,7 +1417,7 @@ let induction_from_context isrec style hyp0 gl =
   (*test suivant sans doute inutile car refait par le letin_tac*)
   if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
     errorlabstrm "induction" 
-      [< 'sTR "Cannot generalize a global variable" >];
+      (**)(  str "Cannot generalize a global variable"  )(**);
   let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
   let env = pf_env gl in
   let ((ind_sp,_) as mind,indtyp,typ0) = pf_reduce_to_mind gl tmptyp0 in
@@ -1633,7 +1633,7 @@ let andE id gl =
     (tclTHEN (simplest_elim (mkVar id)) (tclDO 2 intro)) gl
   else 
     errorlabstrm "andE" 
-      [< 'sTR("Tactic andE expects "^(string_of_id id)^" is a conjunction.")>]
+      (**)(  str("Tactic andE expects "^(string_of_id id)^" is a conjunction.") )(**)
 
 let dAnd cls gl =
   match cls with
@@ -1646,7 +1646,7 @@ let orE id gl =
     (tclTHEN (simplest_elim (mkVar id)) intro) gl
   else 
     errorlabstrm "orE" 
-      [< 'sTR("Tactic orE expects "^(string_of_id id)^" is a disjunction.")>]
+      (**)(  str("Tactic orE expects "^(string_of_id id)^" is a disjunction.") )(**)
 
 let dorE b cls gl =
   match cls with 
@@ -1661,8 +1661,8 @@ let impE id gl =
        [tclIDTAC;apply_term (mkVar id) [mkMeta (new_meta())]]) gl
   else 
     errorlabstrm "impE"
-      [< 'sTR("Tactic impE expects "^(string_of_id id)^
-	      " is a an implication.")>]
+      (**)(  str("Tactic impE expects "^(string_of_id id)^
+	      " is a an implication.") )(**)
                         
 let dImp cls gl =
   match cls with
@@ -1720,7 +1720,7 @@ let intros_reflexivity  = (tclTHEN intros reflexivity)
 let dyn_reflexivity = function
   | []  -> intros_reflexivity
   | _ -> errorlabstrm "Tactics.reflexivity" 
-                           [<'sTR "Tactic applied to bad arguments!">]
+                           (**)( str "Tactic applied to bad arguments!" )(**)
 
 (* Symmetry tactics *)
 

@@ -522,11 +522,10 @@ val replace_term : constr -> constr -> constr -> constr
 
 val subst_meta : (int * constr) list -> constr -> constr
 
-(* [subst_constr_*id id mp c] replaces all occurences of [id] in [c] 
-   with [mp] *)
+(* [subst_modpaths sub c] performs the substitution [sub] on all long
+   names appearing in [c] *)
 
-val subst_constr_msid : mod_str_id -> module_path -> constr -> constr
-val subst_constr_mbid : mod_bound_id -> module_path -> constr -> constr
+val subst_modpaths : substitution -> constr -> constr
 
 (*s Generic representation of constructions *)
 

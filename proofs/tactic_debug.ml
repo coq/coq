@@ -21,20 +21,20 @@ type debug_info =
 
 (* Prints the goal if it exists *)
 let db_pr_goal = function
-  | None -> mSGNL [< 'sTR "No goal" >]
+  | None -> msgnl ( str "No goal") 
   | Some g ->
-    mSGNL [<'sTR ("Goal:"); 'fNL; Proof_trees.pr_goal (Tacmach.sig_it g) >]
+    msgnl (str ("Goal:") ++ fnl () ++ Proof_trees.pr_goal (Tacmach.sig_it g))
 
 (* Prints the state and waits for an instruction *)
 let debug_prompt goalopt tac_ast =
   db_pr_goal goalopt;
-  mSG [< 'sTR "Going to execute:"; 'fNL; (gentacpr tac_ast); 'fNL; 'fNL;
-         'sTR "----<Enter>=Continue----s=Skip----x=Exit----" >];
+  msg (str "Going to execute:" ++ fnl () ++ (gentacpr tac_ast) ++ fnl () ++ fnl () ++
+         str "----<Enter>=Continue----s=Skip----x=Exit----") ;
   let rec prompt () =
-    mSG [<'fNL; 'sTR "TcDebug> " >];
+    msg (fnl () ++ str "TcDebug> ") ;
     flush stdout;
     let inst = read_line () in
-    mSGNL [<>];
+    msgnl (mt ());
     match inst with
     | ""  -> DebugOn
     | "s" -> DebugOff
@@ -45,10 +45,10 @@ let debug_prompt goalopt tac_ast =
 (* Prints a matched hypothesis *)
 let db_matched_hyp debug env (id,c) =
   if debug = DebugOn then
-    mSGNL [< 'sTR "Matched hypothesis --> "; 'sTR (id^": ");
-             prterm_env env c >]
+    msgnl (str "Matched hypothesis --> " ++ str (id^": ") ++
+             prterm_env env c )
 
 (* Prints the matched conclusion *)
 let db_matched_concl debug env c =
   if debug = DebugOn then
-    mSGNL [< 'sTR "Matched goal --> "; prterm_env env c >]
+    msgnl (str "Matched goal --> " ++ prterm_env env c)

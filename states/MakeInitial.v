@@ -5,14 +5,14 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
-Require Export Prelude.
-Require Export Logic_Type.
-Require Export Logic_TypeSyntax.
-Require Export Equality.
-Require Export Tauto.
-Require Export Inv.
-Require Export EAuto.
-Require Export AutoRewrite.
-Require Export Refine.
-Require Export EqDecide.
-Require Export Extraction.
+Require Prelude.
+Require Logic_Type.
+Require Logic_TypeSyntax.
+Require Equality.
+Require Tauto.
+Require Inv.
+Require EAuto.
+Require AutoRewrite.
+Require Refine.
+Require EqDecide.
+Require Extraction.

@@ -102,7 +102,7 @@ let usage () =
   flush stderr ;
   exit 1
 
-let warning s = wARNING [< 'sTR s >]
+let warning s = msg_warning (**)(  str s  )(**)
 
 let parse_args () =
   let rec parse = function
@@ -183,9 +183,9 @@ let parse_args () =
 	try
 	  Stream.empty s; exit 1
 	with Stream.Failure ->
-	  mSGNL (Errors.explain_exn e); exit 1
+	  msgnl (Errors.explain_exn e); exit 1
       end
-    | e -> begin mSGNL (Errors.explain_exn e); exit 1 end
+    | e -> begin msgnl (Errors.explain_exn e); exit 1 end
 
 
 (* To prevent from doing the initialization twice *)
@@ -211,7 +211,7 @@ let start () =
     with e ->
       flush_all();
       if not !batch_mode then message "Error during initialization :";
-      mSGNL (Toplevel.print_toplevel_error e);
+      msgnl (Toplevel.print_toplevel_error e);
       exit 1
   end;
   if !batch_mode then (flush_all(); Profile.print_profile ();exit 0);

@@ -9,13 +9,10 @@
 (* $Id$ *)
 
 Require Export Datatypes.
-Require Export DatatypesHints.
 Require Export DatatypesSyntax.
 Require Export Logic.
-Require Export LogicHints.
 Require Export LogicSyntax.
 Require Export Specif.
-Require Export SpecifHints.
 Require Export SpecifSyntax.
 Require Export Peano.
 Require Export Wf.

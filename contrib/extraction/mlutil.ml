@@ -429,11 +429,11 @@ let find_ml_extraction r = Refmap.find r (fst !extractions)
 (*s Registration of operations for rollback. *)
 
 let (in_ml_extraction,_) = 
-  declare_object ("ML extractions",
-		  { cache_function = (fun (_,(r,s)) -> add_ml_extraction r s);
+  declare_object {(default_object "ML extractions") with 
+ cache_function = (fun (_,(r,s)) -> add_ml_extraction r s);
 		    load_function = (fun (_,(r,s)) -> add_ml_extraction r s);
 		    open_function = (fun _ -> ());
-		    export_function = (fun x -> Some x) })
+		    export_function = (fun x -> Some x)  }
 
 (*s Registration of the table for rollback. *)
 

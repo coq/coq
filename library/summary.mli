@@ -18,12 +18,14 @@ type 'a summary_declaration = {
   survive_section : bool }
 
 val declare_summary : string -> 'a summary_declaration -> unit
+val declare_global_environment : 'a summary_declaration -> unit
 
 type frozen
 
 val freeze_summaries : unit -> frozen
 val unfreeze_summaries : frozen -> unit
 val unfreeze_lost_summaries : frozen -> unit
+val unfreeze_other_summaries : frozen -> unit
 val init_summaries : unit -> unit
 
 

@@ -41,6 +41,8 @@ type vernac_arg =
   | VARG_ASTLIST of Coqast.t list
   | VARG_UNIT
   | VARG_DYN of Dyn.t   (* to put whatever you want *)
+  | VARG_MODEXPR of Coqast.t
+  | VARG_MODTYPE of Coqast.t
 
 val vinterp_add : string -> (vernac_arg list -> unit -> unit) -> unit
 val overwriting_vinterp_add : 

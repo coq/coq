@@ -29,7 +29,7 @@ let typ_lams_of t =
 
 let objdef_err ref =
   errorlabstrm "object_declare"
-    [< Printer.pr_global ref; 'sTR" is not a structure object" >]
+    (**)(  Printer.pr_global ref ++ str" is not a structure object"  )(**)
 
 let trait t =
   match kind_of_term t with

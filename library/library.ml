@@ -18,6 +18,7 @@ open Libnames
 open Libobject
 open Lib
 open Nametab
+open Declaremods
 
 (*s Load path. *)
 
@@ -59,28 +60,17 @@ let load_path_of_logical_path dir =
 
 let get_full_load_path () = List.combine (fst !load_path) (snd !load_path)
 
-(*s Modules on disk contain the following informations (after the magic 
-    number, and before the digest). *)
-
-type compilation_unit_name = dir_path
-
-type module_disk = { 
-  md_name : compilation_unit_name;
-  md_compiled_env : compiled_module;
-  md_declarations : library_segment;
-  md_deps : (compilation_unit_name * Digest.t * bool) list }
-
 (*s Modules loaded in memory contain the following informations. They are
     kept in the global table [modules_table]. *)
 
 type module_t = {
-  module_name : compilation_unit_name;
+  module_name : comp_unit_name;
   module_filename : System.physical_path;
   module_compiled_env : compiled_module;
-  module_declarations : library_segment;
-  mutable module_opened : bool;
-  mutable module_exported : bool;
-  module_deps : (compilation_unit_name * Digest.t * bool) list;
+  module_objects : mod_str_id * library_segment * library_segment;
+  module_opened : bool;
+  module_exported : bool;
+  module_deps : (comp_unit_name * Digest.t * bool) list;
   module_digest : Digest.t }
 
 module CompUnitOrdered = 
@@ -122,9 +112,11 @@ let opened_modules () =
 
 let compunit_cache = ref Stringmap.empty
 
+(*
 let module_segment = function
   | None -> contents_after None
-  | Some m -> (find_module m).module_declarations
+  | Some m -> (find_module m).module_objects
+*)
 
 let module_full_filename m = (find_module m).module_filename
 
@@ -138,7 +130,7 @@ let segment_rec_iter f =
     | sp,Leaf obj -> f (sp,obj)
     | _,OpenedSection _ -> assert false
     | _,ClosedSection (_,_,seg) -> iter seg
-    | _,(FrozenState _ | Module _) -> ()
+    | _,(FrozenState _ | CompUnit _) -> ()
   and iter seg =
     List.iter apply seg
   in
@@ -151,7 +143,7 @@ let segment_iter f =
     | sp,ClosedSection (export,s,seg) ->
 	push_section (wd_of_sp sp);
 	if export then iter seg
-    | _,(FrozenState _ | Module _) -> ()
+    | _,(FrozenState _ | CompUnit _) -> ()
   and iter seg =
     List.iter apply seg
   in
@@ -168,8 +160,11 @@ let rec open_module force s =
   let m = find_module s in
   if force or not m.module_opened then begin
     List.iter (fun (m,_,exp) -> if exp then open_module force m) m.module_deps;
-    open_objects m.module_declarations;
-    m.module_opened <- true
+    Declaremods.import_module (MPcomp m.module_name);
+    (* this should be done above *)
+    (* open_objects m.module_declarations; *)
+    let m = {m with module_opened = true} in
+      modules_table := CompUnitmap.add m.module_name m !modules_table;
   end
 
 let import_module = open_module true
@@ -204,76 +199,83 @@ let locate_absolute_library dir =
     (LibInPath, dir, file)
   with Not_found ->  raise LibNotFound
 
+
+let check_locate_absolute_library dir =
+  try
+    locate_absolute_library dir
+  with
+  | LibUnmappedDir ->
+      let prefix, dir = fst (split_dirpath dir), string_of_dirpath dir in
+	errorlabstrm "load_module"
+	  (str ("Cannot load "^dir^":") ++ spc () ++
+	   str "no physical path bound to" ++ spc () ++ 
+	   pr_dirpath prefix ++ fnl ())
+  | LibNotFound ->
+      errorlabstrm "load_module"
+      (str"Cannot find module " ++ pr_dirpath dir ++ str" in loadpath")
+  | _ -> assert false
+
+
 let with_magic_number_check f a =
   try f a
   with System.Bad_magic_number fname ->
     errorlabstrm "load_module_from"
-    [< 'sTR"file "; 'sTR fname; 'sPC; 'sTR"has bad magic number.";
-    'sPC; 'sTR"It is corrupted"; 'sPC;
-    'sTR"or was compiled with another version of Coq." >]
+    (str"file " ++ str fname ++ spc () ++ str"has bad magic number." ++
+     spc () ++ str"It is corrupted" ++ spc () ++
+     str"or was compiled with another version of Coq." )
 
-let rec load_module = function
+let rec load_module really = function
   | (LibLoaded, dir, _) ->
       CompUnitmap.find dir !modules_table
   | (LibInPath, dir, f) ->
     (* [dir] is an absolute name which matches [f] *)
-    let md, digest =
+    let md, deps, digest =
       try Stringmap.find f !compunit_cache
       with Not_found ->
       let ch = with_magic_number_check raw_intern_module f in
       let md = System.marshal_in ch in
+      let deps = System.marshal_in ch in
       let digest = System.marshal_in ch in
       close_in ch;
       if dir <> md.md_name then
 	errorlabstrm "load_module"
-	  [< 'sTR ("The file " ^ f ^ " contains module"); 'sPC;
-	  pr_dirpath md.md_name; 'sPC; 'sTR "and not module"; 'sPC;
-	  pr_dirpath dir >];
+	  (str ("The file " ^ f ^ " contains module") ++ spc () ++
+	   pr_dirpath md.md_name ++ spc () ++ str "and not module" ++ spc () ++
+	   pr_dirpath dir) ;
       (match split_dirpath dir with
 	| [], id -> Nametab.push_library_root id
 	| _ -> ());
-      compunit_cache := Stringmap.add f (md, digest) !compunit_cache;
-      (md, digest) in
-    intern_module digest f md
+      compunit_cache := Stringmap.add f (md, deps, digest) !compunit_cache;
+      (md, deps, digest) in
+    intern_module really digest f md deps
 
-and intern_module digest fname md =
+and intern_module really digest fname md deps=
   let m = { module_name = md.md_name;
             module_filename = fname;
 	    module_compiled_env = md.md_compiled_env;
-	    module_declarations = md.md_declarations;
+	    module_objects = md.md_objects;
 	    module_opened = false;
 	    module_exported = false;
-	    module_deps = md.md_deps;
+	    module_deps = deps;
 	    module_digest = digest } in
-  List.iter (load_mandatory_module md.md_name) m.module_deps;
-  let mp = Global.import m.module_compiled_env digest in
-  load_objects m.module_declarations;
+
+  List.iter (load_mandatory_module really m.module_name) m.module_deps;
+    
+  if really then 
+    Declaremods.register_comp_unit md digest
+  else
+    Declaremods.re_register_comp_unit md.md_name;
+
   modules_table := CompUnitmap.add md.md_name m !modules_table;
-  Nametab.push_loaded_library md.md_name;
-(* TODO: revise this! *)
-  Declare.declare_module_components m.module_name mp;
   m
 
-and load_mandatory_module caller (dir,d,_) =
-  let m = load_absolute_module_from dir in
+and load_mandatory_module really caller (dir,d,_) =
+  let m = load_module really (check_locate_absolute_library dir) in
   if d <> m.module_digest then
     error ("compiled module "^(string_of_dirpath caller)^
 	   " makes inconsistent assumptions over module "
 	   ^(string_of_dirpath dir))
 
-and load_absolute_module_from dir =
-  try
-    load_module (locate_absolute_library dir)
-  with
-  | LibUnmappedDir ->
-      let prefix, dir = fst (split_dirpath dir), string_of_dirpath dir in
-      errorlabstrm "load_module"
-      [< 'sTR ("Cannot load "^dir^":"); 'sPC; 
-      'sTR "no physical path bound to"; 'sPC; pr_dirpath prefix; 'fNL >]
-  | LibNotFound ->
-      errorlabstrm "load_module"
-      [< 'sTR"Cannot find module "; pr_dirpath dir; 'sTR" in loadpath">]
-  | _ -> assert false
 
 let try_locate_qualified_library qid =
   (* Look if loaded *)
@@ -306,24 +308,26 @@ let locate_qualified_library qid =
   | LibUnmappedDir ->
       let prefix, id = repr_qualid qid in
       errorlabstrm "load_module"
-      [< 'sTR ("Cannot load "^(string_of_id id)^":"); 'sPC; 
-      'sTR "no physical path bound to"; 'sPC; pr_dirpath prefix; 'fNL >]
+	(str ("Cannot load "^(string_of_id id)^":") ++ spc () ++
+	 str "no physical path bound to" ++ spc () ++ 
+	 pr_dirpath prefix ++ fnl () )
   | LibNotFound ->
       errorlabstrm "load_module"
-      [< 'sTR"Cannot find module "; pr_qualid qid; 'sTR" in loadpath">]
+      (str"Cannot find module " ++ pr_qualid qid ++ str" in loadpath")
   | _ -> assert false
 
 let check_module_short_name f dir = function
   | Some id when id <> snd (split_dirpath dir) ->
       errorlabstrm "load_module"
-      [< 'sTR ("The file " ^ f ^ " contains module"); 'sPC;
-      pr_dirpath dir; 'sPC; 'sTR "and not module"; 'sPC;
-      pr_id id >]
+      (str ("The file " ^ f ^ " contains module") ++ spc () ++
+       pr_dirpath dir ++ spc () ++ str "and not module" ++ spc () ++
+       pr_id id)
   | _ -> ()
 
 let locate_by_filename_only id f =
   let ch = with_magic_number_check raw_intern_module f in
   let md = System.marshal_in ch in
+  let deps = System.marshal_in ch in
   let digest = System.marshal_in ch in
   close_in ch;
   (* Only the base name is expected to match *)
@@ -338,7 +342,7 @@ let locate_by_filename_only id f =
     (match split_dirpath md.md_name with
       | [], id -> Nametab.push_library_root id
       | _ -> ());
-    compunit_cache := Stringmap.add f (md, digest) !compunit_cache;
+    compunit_cache := Stringmap.add f (md, deps, digest) !compunit_cache;
     (LibInPath, md.md_name, f)
 
 let locate_module qid = function
@@ -352,17 +356,13 @@ let locate_module qid = function
       (* No name, we need to find the file name *)
       locate_qualified_library qid
 
-let read_module qid =
-  ignore (load_module (locate_qualified_library qid))
-
-let read_module_from_file f =
-  let _, f = System.find_file_in_path (get_load_path ()) (f^".vo") in
-  ignore (load_module (locate_by_filename_only None f))
 
 let reload_module (modref, export) =
-  let m = load_module modref in
-  if export then m.module_exported <- true;
+  let m = load_module true modref in
+  let m = {m with module_exported = true} in
+    modules_table := CompUnitmap.add m.module_name m !modules_table;
   open_module false m.module_name
+
 
 (*s [require_module] loads and opens a module. This is a synchronized
     operation. *)
@@ -370,18 +370,22 @@ let reload_module (modref, export) =
 type module_reference = (library_location * CompUnitmap.key * Util.Stringmap.key) * bool
 
 let cache_require (_,(modref,export)) =
-  let m = load_module modref in
-  if export then m.module_exported <- true;
+  let m = load_module true modref in
+  let m = {m with module_exported = export} in
+    modules_table := CompUnitmap.add m.module_name m !modules_table;
   open_module false m.module_name
 
+let load_require  (_,(modref,_)) =
+  ignore (load_module false modref)
+
 let (in_require, out_require) =
-  declare_object
-    ("REQUIRE",
-     { cache_function = cache_require;
-       load_function = (fun _ -> ());
-       open_function = (fun _ -> ());
-       export_function = (fun _ -> None) })
+  declare_object {(default_object "REQUIRE") with 
+       cache_function = cache_require;
+       load_function = load_require;
+       classify_function = (fun (_,o) -> Anticipate o) 
+     }
   
+
 let require_module spec qid fileopt export =
 (* Trop contraignant
   if sections_are_opened () then
@@ -391,6 +395,36 @@ let require_module spec qid fileopt export =
   add_anonymous_leaf (in_require (modref,export));
   add_frozen_state ()
 
+
+let cache_read (_,modref) = 
+  let m = load_module true modref in
+    modules_table := CompUnitmap.add m.module_name m !modules_table
+  
+let load_read (_,modref) = 
+  ignore (load_module false modref)
+  
+
+let (in_read, out_read) =
+  declare_object {(default_object "READ") with 
+       cache_function = cache_read;
+       load_function = load_read;
+       classify_function = (fun (_,o) -> Anticipate o) 
+     }
+
+
+let read_module qid =
+  let modref=locate_module qid None in
+  add_anonymous_leaf (in_read modref);
+  add_frozen_state ()
+
+let read_module_from_file f =
+  let _, f = System.find_file_in_path (get_load_path ()) (f^".vo") in
+  let modref = (locate_by_filename_only None f) in
+  add_anonymous_leaf (in_read modref);
+  add_frozen_state ()
+
+
+
 (*s [save_module s] saves the module [m] to the disk. *)
 
 let current_imports () =
@@ -399,15 +433,18 @@ let current_imports () =
     !modules_table []
 
 let save_module_to s f =
-  let seg = export_module s in
+  let subst, keep = Lib.export_comp_unit s in
+  let msid, cenv = Global.export s in
   let md = { 
     md_name = s;
-    md_compiled_env = Global.export s;
-    md_declarations = seg;
-    md_deps = current_imports () } in
+    md_compiled_env = cenv;
+    md_objects = msid, subst, keep}
+  in
+  let deps = current_imports ()  in
   let (f',ch) = raw_extern_module f in
   try
     System.marshal_out ch md;
+    System.marshal_out ch deps;
     flush ch;
     let di = Digest.file f' in
     System.marshal_out ch di;
@@ -416,7 +453,7 @@ let save_module_to s f =
 
 (*s Iterators. *)
 
-let fold_all_segments insec f x =
+(*let fold_all_segments insec f x =
   let rec apply acc = function
     | sp, Leaf o -> f acc sp o
     | _, ClosedSection (_,_,seg) -> 
@@ -425,7 +462,7 @@ let fold_all_segments insec f x =
   in
   let acc' = 
     CompUnitmap.fold 
-      (fun _ m acc -> List.fold_left apply acc m.module_declarations) 
+      (fun _ m acc -> List.fold_left apply acc m.module_objects) 
       !modules_table x
   in
   List.fold_left apply acc' (Lib.contents_after None)
@@ -439,16 +476,17 @@ let iter_all_segments insec f =
   CompUnitmap.iter 
     (fun _ m -> List.iter apply m.module_declarations) !modules_table;
   List.iter apply (Lib.contents_after None)
+*)
 
 (*s Pretty-printing of modules state. *)
 
 let fmt_modules_state () =
   let opened = opened_modules ()
   and loaded = loaded_modules () in
-  [< 'sTR "Imported (open) Modules: " ;
-     prlist_with_sep pr_spc pr_dirpath opened ; 'fNL ;
-     'sTR "Loaded Modules: ";
-     prlist_with_sep pr_spc pr_dirpath loaded ; 'fNL >]
+  str "Imported (open) Modules: " ++
+     prlist_with_sep pr_spc pr_dirpath opened  ++ fnl () ++
+     str "Loaded Modules: " ++
+     prlist_with_sep pr_spc pr_dirpath loaded  ++ fnl () 
 
 (*s Display the memory use of a module. *)
 
@@ -456,6 +494,6 @@ open Printf
 
 let mem s =
   let m = find_module s in
-  h 0 [< 'sTR (sprintf "%dk (cenv = %dk / seg = %dk)"
+  h 0 (str (sprintf "%dk (cenv = %dk / seg = %dk)"
 		 (size_kb m) (size_kb m.module_compiled_env) 
-		 (size_kb m.module_declarations)) >]
+		 (size_kb m.module_objects))) 

@@ -74,7 +74,7 @@ module Gram =
       G.extend e pos rls
     let delete_rule e pil =
       errorlabstrm "Pcoq.delete_rule"
-        [< 'sTR "GDELETE_RULE forbidden." >]
+        (str "GDELETE_RULE forbidden." )
   end
 
 
@@ -192,7 +192,7 @@ let get_entry (u, utab) s =
     Hashtbl.find utab s 
   with Not_found -> 
     errorlabstrm "Pcoq.get_entry"
-      [< 'sTR"unknown grammar entry "; 'sTR u; 'sTR":"; 'sTR s >]
+      (str "unknown grammar entry " ++ str u ++ str ":" ++ str s)
       
 let new_entry etyp (u, utab) s =
   let ename = u ^ ":" ^ s in
@@ -271,6 +271,24 @@ module Constr =
     let uconstr = snd (get_univ "constr")
   end
 
+
+module Module =
+  struct
+    let umodule = snd (get_univ "module")
+    let gec s =
+      let e = Gram.Entry.create ("Module." ^ s) in
+      Hashtbl.add umodule s (Ast e); e
+
+    let gec_list s =
+      let e = Gram.Entry.create ("Module." ^ s) in
+      Hashtbl.add umodule s (ListAst e); e
+
+    let identarg = gec "identarg"
+    let qualidarg = gec_list "qualidarg"
+    let ne_binders_list = gec_list "binding_list"
+    let module_expr = gec "module_expr"
+    let module_type = gec "module_type"
+  end
 
 module Tactic =
   struct

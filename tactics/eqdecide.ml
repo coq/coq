@@ -57,10 +57,10 @@ let mkBranches =
         (tclTHEN  clear_last
                   intros))))))
 
-let solveRightBranch  = (tclTHEN h_simplest_right h_discrConcl)
+let solveRightbranch  = (tclTHEN h_simplest_right h_discrConcl)
 
-let h_solveRightBranch =
-  hide_atomic_tactic "solveRightBranch" solveRightBranch
+let h_solveRightbranch =
+  hide_atomic_tactic "solveRightbranch" solveRightbranch
 
 
 (* Constructs the type {c1=c2}+{~c1=c2} *)
@@ -105,7 +105,7 @@ let solveArg a1 a2 tac  g =
      (h_elimType decide) 
      [(eqCase tac);diseqCase;default_auto]) g
 
-let solveLeftBranch rectype g =
+let solveLeftbranch rectype g =
   match
     try matches (Coqlib.build_coq_eqdec_partial_pattern ()) (pf_concl g)
     with Pattern.PatternMatchingFailure -> error "Unexpected conclusion!"
@@ -117,7 +117,7 @@ let solveLeftBranch rectype g =
 	and largs   = getargs (snd lhs) in 
 	List.fold_right2 
 	  solveArg largs rargs (tclTHEN h_simplest_left h_reflexivity) g
-    | _ -> anomaly "Unexpected pattern for solveLeftBranch"
+    | _ -> anomaly "Unexpected pattern for solveLeftbranch"
 
 
 (* The tactic Decide Equality *)
@@ -142,7 +142,7 @@ let decideGralEquality g =
 	in 
 	(tclTHEN
 	   mkBranches 
-           (tclORELSE h_solveRightBranch (solveLeftBranch rectype))) g
+           (tclORELSE h_solveRightbranch (solveLeftbranch rectype))) g
     | _ -> anomaly "Unexpected pattern for decideGralEquality"
 
 

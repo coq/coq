@@ -67,9 +67,12 @@ val class_args_of : constr -> constr list
 val strength_of_cl : cl_typ -> strength
 
 (*s [declare_coercion] adds a coercion in the graph of coercion paths *)
-val declare_coercion : 
+(*val declare_coercion : 
   coe_typ -> value:unsafe_judgment -> strength:strength -> isid:bool ->
-      src:cl_typ -> target:cl_typ -> params:int -> unit
+      src:cl_typ -> target:cl_typ -> params:int -> unit*)
+val declare_coercion : 
+  coe_typ -> unsafe_judgment -> strength -> bool ->
+      cl_typ -> cl_typ -> int -> unit
 
 (*s Access to coercions infos *)
 val coercion_exists : coe_typ -> bool

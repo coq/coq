@@ -83,20 +83,20 @@ let undo e n =
     | Some d ->
 	let (bs,_) = Hashtbl.find e.buf d in
 	if Bstack.depth bs <= n then
-          errorlabstrm "Edit.undo" [< 'sTR"Undo stack would be exhausted" >];
+          errorlabstrm "Edit.undo" (str"Undo stack would be exhausted");
         repeat n (fun () -> let _ = Bstack.pop bs in ()) ()
 
 let create e (d,b,c,udepth) =
   if Hashtbl.mem e.buf d then
     errorlabstrm "Edit.create" 
-      [< 'sTR"Already editing something of that name" >];
+      (str"Already editing something of that name");
   let bs = Bstack.create udepth in
   Bstack.push bs b;
   Hashtbl.add e.buf d (bs,c)
 
 let delete e d =
   if not(Hashtbl.mem e.buf d) then
-    errorlabstrm "Edit.delete" [< 'sTR"No such editor" >];
+    errorlabstrm "Edit.delete" (str"No such editor");
   Hashtbl.remove e.buf d;
   e.last_focused_stk <- (list_except d e.last_focused_stk);
   match e.focus with

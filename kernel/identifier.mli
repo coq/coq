@@ -38,7 +38,8 @@ val id_of_string : string -> identifier
 val pr_id : identifier -> std_ppcmds
 
 (* These checks the validity of an identifier; [check_ident] fails
-   with error if invalid. These functions may be used to check validity of    labels and uniq_idents as well*)
+   with error if invalid. These functions may be used to check validity of
+   labels and uniq_idents as well*)
 val check_ident : string -> unit
 val is_ident : string -> bool
 
@@ -98,4 +99,8 @@ val string_of_uid : uniq_ident -> string
 val pr_uid : uniq_ident -> std_ppcmds
 
 (* this function gives everything *)
-val debug_print_uid : uniq_ident -> string
+val debug_string_of_uid : uniq_ident -> string
+val debug_pr_uid : uniq_ident -> std_ppcmds
+
+module Umap : Map.S with type key=uniq_ident
+

@@ -41,10 +41,10 @@ let mk_Set  = Prop Pos
 let mk_Prop = Prop Null
 
 let print_sort = function
-  | Prop Pos -> [< 'sTR "Set" >]
-  | Prop Null -> [< 'sTR "Prop" >]
-(*  | Type _ -> [< 'sTR "Type" >] *)
-  | Type u -> [< 'sTR "Type("; pr_uni u; 'sTR ")" >]
+  | Prop Pos -> str "Set" 
+  | Prop Null -> str "Prop"
+(*  | Type _ -> str "Type" *)
+  | Type u -> (str "Type(") ++ (pr_uni u) ++ (str ")")
 
 
 (********************************************************************)
@@ -1225,7 +1225,7 @@ let rec to_lambda n prod =
     match kind_of_term prod with 
       | IsProd (na,ty,bd) -> mkLambda (na,ty,to_lambda (n-1) bd)
       | IsCast (c,_) -> to_lambda n c
-      | _   -> errorlabstrm "to_lambda" [<>]                      
+      | _   -> errorlabstrm "to_lambda" (mt ())                      
 
 let rec to_prod n lam =
   if n=0 then 
@@ -1234,7 +1234,7 @@ let rec to_prod n lam =
     match kind_of_term lam with 
       | IsLambda (na,ty,bd) -> mkProd (na,ty,to_prod (n-1) bd)
       | IsCast (c,_) -> to_prod n c
-      | _   -> errorlabstrm "to_prod" [<>]                      
+      | _   -> errorlabstrm "to_prod" (mt ())             
 	    
 (* pseudo-reduction rule:
  * [prod_app  s (Prod(_,B)) N --> B[N]
@@ -1245,7 +1245,7 @@ let prod_app t n =
     | IsProd (_,_,b) -> subst1 n b
     | _ ->
 	errorlabstrm "prod_app"
-	  [< 'sTR"Needed a product, but didn't find one" ; 'fNL >]
+	  (str"Needed a product, but didn't find one" ++ fnl ())
 
 
 (* prod_appvect T [| a1 ; ... ; an |] -> (T a1 ... an) *)
@@ -1598,7 +1598,7 @@ let replace_term_gen eq_fun c by_c in_t =
   in 
   substrec (0,c) in_t
 
-let subst_term = subst_term_gen eq_constr
+let subst_term ~what ~where = subst_term_gen eq_constr what where
 let subst_term_eta = subst_term_gen eta_eq_constr
 
 let replace_term = replace_term_gen eq_constr
@@ -1620,12 +1620,14 @@ let rec map_longnames f c =
 	  mkMutInd ((f ln,i), Array.map func l)
       | IsMutConstruct (((ln,i),j),l) -> 
 	  mkMutConstruct (((f ln,i),j), Array.map func l)
+      | IsMutCase (ci,p,c,l) ->
+	  let (n,((ln,i),ids,j,cs,ps)) = ci in
+	  let ci' = (n,((f ln,i),ids,j,cs,ps)) in
+	  mkMutCase (ci', func p, func c, Array.map func l) 
       | _ -> map_constr func c
 
-let subst_constr_msid msid mp = 
-  map_longnames (subst_longname_msid msid mp)
-let subst_constr_mbid mbid mp = 
-  map_longnames (subst_longname_mbid mbid mp)
+let subst_modpaths sub = 
+  map_longnames (subst_long_name sub)
 
 (* bl : (int,constr) Listmap.t = (int * constr) list *)
 (* c : constr *)
@@ -1672,7 +1674,7 @@ let subst_term_occ_gen locs occ c t =
   let t' = substrec (1,c) t in
   (!pos, t')
 
-let subst_term_occ locs c t = 
+let subst_term_occ ~occs:locs ~what:c ~where:t = 
   if locs = [] then
     subst_term c t
   else if List.mem 0 locs then 
@@ -1680,23 +1682,23 @@ let subst_term_occ locs c t =
   else 
     let (nbocc,t') = subst_term_occ_gen locs 1 c t in
     if List.exists (fun o -> o >= nbocc or o <= -nbocc) locs then
-      errorlabstrm "subst_term_occ" [< 'sTR "Too few occurences" >];
+      errorlabstrm "subst_term_occ" (str "Too few occurences");
     t'
 
-let subst_term_occ_decl locs c (id,bodyopt,typ as d) =
+let subst_term_occ_decl ~occs:locs ~what:c ~where:(id,bodyopt,typ as d) =
   match bodyopt with
     | None -> (id,None,subst_term_occ locs c typ)
     | Some body -> 
 	if locs = [] then
-	  (id,Some (subst_term c body),type_app (subst_term c) typ)
+	  (id,Some (subst_term c body),type_app (fun where -> subst_term ~what:c ~where) typ)
 	else if List.mem 0 locs then 
 	  d
 	else 
 	  let (nbocc,body') = subst_term_occ_gen locs 1 c body in
 	  let (nbocc',t') = type_app (subst_term_occ_gen locs nbocc c) typ in
-	  if List.exists (fun o -> o >= nbocc' or o <= -nbocc') locs then
-	    errorlabstrm "subst_term_occ_decl" [< 'sTR "Too few occurences" >];
-	  (id,Some body',t')
+	    if List.exists (fun o -> o >= nbocc' or o <= -nbocc') locs then
+	      errorlabstrm "subst_term_occ_decl" (str "Too few occurences") ;
+	    (id,Some body',t')
   
 (***************************)
 (* occurs check functions  *)                         
@@ -1828,7 +1830,7 @@ let gather_constr = function
   | OpRec (RCoFix i,na), a ->
       let n = Array.length a / 2 in
       mkCoFix (i,(na, Array.sub a 0 n, Array.sub a n n))
-  | _ -> errorlabstrm "Term.gather_term" [< 'sTR "ill-formed splayed constr">]
+  | _ -> errorlabstrm "Term.gather_term" (str "ill-formed splayed constr")
 
 let splay_constr_with_binders c = match kind_of_term c with
   | IsRel n                    -> OpRel n, [], [||]
@@ -1884,7 +1886,7 @@ let gather_constr_with_binders = function
       let tl = 
         Array.mapi (fun i (_,_,t) -> lift (-i) t) (Array.of_list ctxt) in
       mkCoFix (i,(na, tl, bl))
-  | _  -> errorlabstrm "Term.gather_term" [< 'sTR "ill-formed splayed constr">]
+  | _  -> errorlabstrm "Term.gather_term" (str "ill-formed splayed constr")
 
 let generic_fold_left f acc bl tl =
   let acc =

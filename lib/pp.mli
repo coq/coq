@@ -14,62 +14,67 @@ open Pp_control
 
 (* Pretty-printers. *)
 
-type 'a ppcmd_token
+type ppcmd
 
-type std_ppcmds = (int*string) ppcmd_token Stream.t
+type std_ppcmds = ppcmd Stream.t
 
 (*s Formatting commands. *)
 
-val sTR  : string -> (int*string) ppcmd_token
-val sTRas : int * string -> (int*string) ppcmd_token
-val bRK : int * int -> 'a ppcmd_token
-val tBRK : int * int -> 'a ppcmd_token
-val tAB : 'a ppcmd_token
-val fNL : 'a ppcmd_token
-val pifB : 'a ppcmd_token
-val wS : int -> 'a ppcmd_token
+val str  : string -> std_ppcmds
+val stras : int * string -> std_ppcmds
+val brk : int * int -> std_ppcmds
+val tbrk : int * int -> std_ppcmds
+val tab : unit -> std_ppcmds
+val fnl : unit -> std_ppcmds
+val pifb : unit -> std_ppcmds
+val ws : int -> std_ppcmds
+val mt : unit -> std_ppcmds
+
+(*s Concatenation. *)
+
+val (++) : std_ppcmds -> std_ppcmds -> std_ppcmds
 
 (*s Derived commands. *)
 
-val sPC : 'a ppcmd_token
-val cUT : 'a ppcmd_token
-val aLIGN : 'a ppcmd_token
-val iNT : int -> (int*string) ppcmd_token
-val rEAL : float -> (int * string) ppcmd_token
-val bOOL : bool -> (int * string) ppcmd_token
-val qSTRING : string -> (int * string) ppcmd_token
-val qS : string -> (int * string) ppcmd_token
+val spc : unit -> std_ppcmds
+val cut : unit -> std_ppcmds
+val align : unit -> std_ppcmds
+val int : int -> std_ppcmds
+val real : float -> std_ppcmds
+val bool : bool -> std_ppcmds
+val qstring : string -> std_ppcmds
+val qs : string -> std_ppcmds
 
 (*s Boxing commands. *)
 
 val h : int -> std_ppcmds -> std_ppcmds
 val v : int -> std_ppcmds -> std_ppcmds
-val hV : int -> std_ppcmds -> std_ppcmds
-val hOV : int -> std_ppcmds -> std_ppcmds
+val hv : int -> std_ppcmds -> std_ppcmds
+val hov : int -> std_ppcmds -> std_ppcmds
 val t : std_ppcmds -> std_ppcmds
 
 (*s Opening and closing of boxes. *)
 
-val hB : int -> 'a ppcmd_token
-val vB : int -> 'a ppcmd_token
-val hVB : int -> 'a ppcmd_token
-val hOVB : int -> 'a ppcmd_token
-val tB : 'a ppcmd_token
-val cLOSE : 'a ppcmd_token
-val tCLOSE : 'a ppcmd_token
+val hb : int -> std_ppcmds
+val vb : int -> std_ppcmds
+val hvb : int -> std_ppcmds
+val hovb : int -> std_ppcmds
+val tb : unit -> std_ppcmds
+val close : unit -> std_ppcmds
+val tclose : unit -> std_ppcmds
 
 (*s Pretty-printing functions \emph{without flush}. *)
 
-val pP_with : Format.formatter -> std_ppcmds -> unit
-val pPNL_with : Format.formatter -> std_ppcmds -> unit
+val pp_with : Format.formatter -> std_ppcmds -> unit
+val ppnl_with : Format.formatter -> std_ppcmds -> unit
 val warning_with : Format.formatter -> string -> unit
-val wARN_with : Format.formatter -> std_ppcmds -> unit
+val warn_with : Format.formatter -> std_ppcmds -> unit
 val pp_flush_with : Format.formatter -> unit -> unit
 
 (*s Pretty-printing functions \emph{with flush}. *)
 
-val mSG_with : Format.formatter -> std_ppcmds -> unit
-val mSGNL_with : Format.formatter -> std_ppcmds -> unit
+val msg_with : Format.formatter -> std_ppcmds -> unit
+val msgnl_with : Format.formatter -> std_ppcmds -> unit
 
 
 (*s The following functions are instances of the previous ones on
@@ -77,21 +82,20 @@ val mSGNL_with : Format.formatter -> std_ppcmds -> unit
 
 (*s Pretty-printing functions \emph{without flush} on [stdout] and [stderr]. *)
 
-val pP : std_ppcmds -> unit
-val pPNL : std_ppcmds -> unit
-val pPERR : std_ppcmds -> unit
-val pPERRNL : std_ppcmds -> unit
+val pp : std_ppcmds -> unit
+val ppnl : std_ppcmds -> unit
+val pperr : std_ppcmds -> unit
+val pperrnl : std_ppcmds -> unit
 val message : string -> unit       (* = pPNL *)
 val warning : string -> unit
-val wARN : std_ppcmds -> unit
+val warn : std_ppcmds -> unit
 val pp_flush : unit -> unit
 val flush_all: unit -> unit
 
 (*s Pretty-printing functions \emph{with flush} on [stdout] and [stderr]. *)
 
-val mSG : std_ppcmds -> unit
-val mSGNL : std_ppcmds -> unit
-val mSGERR : std_ppcmds -> unit
-val mSGERRNL : std_ppcmds -> unit
-val wARNING : std_ppcmds -> unit
-
+val msg : std_ppcmds -> unit
+val msgnl : std_ppcmds -> unit
+val msgerr : std_ppcmds -> unit
+val msgerrnl : std_ppcmds -> unit
+val msg_warning : std_ppcmds -> unit

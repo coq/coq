@@ -50,10 +50,10 @@ let instantiate_evar sign c args =
     replace_vars inst c
 
 let instantiate_constr sign c args =
-  if Options.immediate_discharge then
+  c(*if Options.immediate_discharge then
     c
   else
-    instantiate sign c args
+    instantiate sign c args*)
 
 let instantiate_type sign tty args =
   type_app (fun c -> instantiate_constr sign c args) tty

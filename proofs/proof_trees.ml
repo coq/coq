@@ -191,36 +191,36 @@ let pr_goal g =
   let env = evar_env g in
   let penv = pr_context_of env in
   let pc = prterm_env_at_top env g.evar_concl in
-  [< 'sTR"  "; hV 0 [< penv; 'fNL;
-		       'sTR (emacs_str (String.make 1 (Char.chr 253))) ;
-                       'sTR "============================"; 'fNL ;
-                       'sTR" " ; pc>]; 'fNL>]
+    str"  "++ hv 0 (penv ++ fnl () ++
+		       str (emacs_str (String.make 1 (Char.chr 253)))  ++
+                       str "============================" ++ fnl ()  ++
+                       str" "  ++ pc) ++ fnl ()
 
 let pr_concl n g =
   let env = evar_env g in
   let pc = prterm_env_at_top env g.evar_concl in
-  [< 'sTR (emacs_str (String.make 1 (Char.chr 253))) ;
-     'sTR "subgoal ";'iNT n;'sTR " is:";'cUT;'sTR" " ; pc >]
+   str (emacs_str (String.make 1 (Char.chr 253)))  ++
+     str "subgoal " ++int n ++str " is:" ++cut () ++str" "  ++ pc 
 
 (* print the subgoals but write Subtree proved! even in case some existential 
    variables remain unsolved, pr_subgoals_existential is a safer version 
    of pr_subgoals *)
 
 let pr_subgoals = function
-  | [] -> [< 'sTR"Subtree proved!" ; 'fNL >]
+  | [] ->  str"Subtree proved!"  ++ fnl () 
   | [g] ->
-      let pg = pr_goal g in v 0 [< 'sTR ("1 "^"subgoal");'cUT; pg >]
+      let pg = pr_goal g in v 0 ( str ("1 "^"subgoal") ++cut () ++ pg)
   | g1::rest ->
       let rec pr_rec n = function
-        | [] -> [< >]
+        | [] -> (mt ())
         | g::rest ->
             let pg = pr_concl n g in
             let prest = pr_rec (n+1) rest in
-            [< 'cUT; pg; prest >] 
+             cut () ++ pg ++ prest  
       in
       let pg1 = pr_goal g1 in
       let pgr = pr_rec 2 rest in
-      v 0 [< 'iNT(List.length rest+1) ; 'sTR" subgoals" ;'cUT; pg1; pgr >]
+      v 0 ( int(List.length rest+1)  ++ str" subgoals"  ++cut () ++ pg1 ++ pgr)
 
 let pr_subgoal n =
   let rec prrec p = function
@@ -228,18 +228,18 @@ let pr_subgoal n =
     | g::rest ->
        	if p = 1 then
           let pg = pr_goal g in
-          v 0 [< 'sTR "subgoal ";'iNT n;'sTR " is:"; 'cUT; pg >]
+          v 0 ( str "subgoal " ++int n ++str " is:" ++ cut () ++ pg )
        	else 
 	  prrec (p-1) rest
   in 
   prrec n
 
 let pr_pgm ctxt = match ctxt.pgm with
-  | None -> [< >]
-  | Some pgm -> let ppgm = fprterm pgm in [< 'sTR"Realizer " ; ppgm >]
+  | None -> (mt ())
+  | Some pgm -> let ppgm = fprterm pgm in  str"Realizer "  ++ ppgm 
 					    
 let pr_ctxt ctxt =
-  let pc = pr_pgm ctxt in [< 'sTR"[" ; pc; 'sTR"]" >]
+  let pc = pr_pgm ctxt in  str"["  ++ pc ++ str"]" 
 
 let pr_seq evd = 
   let env = evar_env evd
@@ -251,40 +251,40 @@ let pr_seq evd =
   let pc = pr_ctxt info in
   let pdcl = pr_named_context_of env in
   let pcl = prterm_env_at_top env cl in
-  hOV 0 [< pc; pdcl ; 'sPC ; hOV 0 [< 'sTR"|- " ; pcl >] >]
+  hov 0 ( pc ++ pdcl ++ spc () ++ hov 0 ( str"|- "  ++ pcl))
 
 let prgl gl =
   let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
   let pgl = pr_seq gl in
-  [< 'sTR"[[" ; plc; 'sTR"]" ; pgl ; 'sTR"]" ; 'sPC >]
+   str"[["  ++ plc ++ str"]"  ++ pgl  ++ str"]"  ++ spc () 
 
 let pr_evgl gl =
   let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
   let phyps = pr_idl (ids_of_named_context gl.evar_hyps) in
   let pc = prterm gl.evar_concl in
-  hOV 0 [< 'sTR"[[" ; plc; 'sTR"] " ; phyps; 'sPC; 'sTR"|- " ; pc; 'sTR"]" >]
+  hov 0 ( str"[["  ++ plc ++ str"] "  ++ phyps ++ spc () ++ str"|- "  ++ pc ++ str"]" )
 
 let pr_evgl_sign gl = 
   let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
   let ps = pr_named_context_of (evar_env gl) in
   let pc = prterm gl.evar_concl in
-  hOV 0 [< 'sTR"[[" ; plc ; 'sTR"] " ; ps; 'sPC; 'sTR"|- " ; pc; 'sTR"]" >]
+  hov 0 ( str"[["  ++ plc  ++ str"] "  ++ ps ++ spc () ++ str"|- "  ++ pc ++ str"]" )
 
 (*  evd.evgoal.lc seems to be printed twice *)
 let pr_decl evd =
   let pevgl = pr_evgl evd in
   let pb =
     match evd.evar_body with
-      | Evar_empty -> [< 'fNL >]
-      | Evar_defined c -> let pc = prterm c in [< 'sTR" => " ; pc;  'fNL  >]
+      | Evar_empty ->  fnl () 
+      | Evar_defined c -> let pc = prterm c in  str" => "  ++ pc ++  fnl ()  
   in
-  h 0 [< pevgl; pb >]
+  h 0  (pevgl ++ pb )
 
 let pr_evd evd = 
   prlist_with_sep pr_fnl
     (fun (ev,evd) ->
        let pe = pr_decl evd in 
-       h 0 [< pr_id (id_of_existential ev) ; 'sTR"==" ; pe >])
+       h 0 ( pr_id (id_of_existential ev)  ++ str"=="  ++ pe) )
     (Evd.to_list evd)
     
 let pr_decls decls = pr_evd (ts_it decls)
@@ -295,48 +295,48 @@ let pr_evc evc =
   let stamp = ts_stamp evc in
   let evc   = ts_it evc in
   let pe = pr_evd evc.decls in
-  [< 'sTR"#" ; 'iNT stamp ; 'sTR"[" ; pr_focus evc.focus ; 'sTR"]=" ; pe >]
+   str"#"  ++ int stamp  ++ str"["  ++ pr_focus evc.focus  ++ str"]="  ++ pe 
 
 let pr_evars = 
   prlist_with_sep pr_fnl
     (fun (ev,evd) ->
        let pegl = pr_evgl_sign evd in 
-       [< pr_id (id_of_existential ev); 'sTR " : "; pegl >])
+        pr_id (id_of_existential ev) ++ str " : " ++ pegl )
 
 (* Print an enumerated list of existential variables *)
 let rec pr_evars_int i = function
-  | [] -> [< >]
+  | [] -> (mt ())
   | (ev,evd)::rest ->
       let pegl = pr_evgl_sign evd in 
       let pei = pr_evars_int (i+1) rest in
-      [< (hOV 0 [< 'sTR "Existential "; 'iNT i; 'sTR " ="; 'sPC;
-                   pr_id (id_of_existential ev) ; 'sTR " : "; pegl >]); 
-	 'fNL ; pei >]
+       (hov 0 ( str "Existential " ++ int i ++ str " =" ++ spc () ++
+                   pr_id (id_of_existential ev)  ++ str " : " ++ pegl )) ++ 
+	 fnl () ++ pei 
 
 let pr_subgoals_existential sigma = function 
   | [] -> 
       let exl = Evd.non_instantiated sigma in 
       if exl = [] then 
-	[< 'sTR"Subtree proved!" ; 'fNL >]
+	 str"Subtree proved!"  ++ fnl () 
       else
         let pei = pr_evars_int 1 exl in
-        [< 'sTR "No more subgoals but non-instantiated existential ";
-           'sTR "variables :" ;'fNL; (hOV 0 pei) >]
+         str "No more subgoals but non-instantiated existential " ++
+           str "variables :"  ++fnl () ++ (hov 0 pei) 
   | [g] ->
       let pg = pr_goal g in
-      v 0 [< 'sTR ("1 "^"subgoal");'cUT; pg >]
+      v 0 (str ("1 "^"subgoal") ++cut () ++ pg)
   | g1::rest ->
       let rec pr_rec n = function
-        | [] -> [< >]
+        | [] -> (mt ())
         | g::rest ->
             let pc = pr_concl n g in
             let prest = pr_rec (n+1) rest in
-            [< 'cUT; pc; prest >] 
+             cut () ++ pc ++ prest  
       in
       let pg1 = pr_goal g1 in
       let prest = pr_rec 2 rest in
-      v 0 [< 'iNT(List.length rest+1) ; 'sTR" subgoals" ;'cUT; pg1; prest;
-             'fNL >]
+      v 0 ( int(List.length rest+1)  ++ str" subgoals"  ++cut () ++ pg1 ++ prest ++
+             fnl () )
 
 open Ast
 open Termast
@@ -399,7 +399,7 @@ let ast_of_cvt_redexp = function
 let ast_of_cvt_arg = function
   | Identifier id   -> nvar id
   | Qualid qid      -> ast_of_qualid qid
-  | Quoted_string s -> str s
+  | Quoted_string s -> string s
   | Integer n       -> num n 
   | Command c       -> ope ("COMMAND",[c])
   | Constr  c       -> 
@@ -407,8 +407,8 @@ let ast_of_cvt_arg = function
   | OpenConstr  (_,c)       -> 
     ope ("COMMAND",[ast_of_constr false (Global.env ()) c])
   | Constr_context _ ->
-    anomalylabstrm "ast_of_cvt_arg" [<'sTR
-      "Constr_context argument could not be used">]
+    anomalylabstrm "ast_of_cvt_arg" 
+      (str "Constr_context argument could not be used")
   | Clause idl      -> 
       let transl = function
 	| InHyp id -> ope ("INHYP", [nvar id])

@@ -23,9 +23,9 @@ open Extend
  * according to the key of the pattern. *)
 
 type key =
-  | Cst of Names.long_name (* keys for global constants rules *)
-  | Ind of Names.long_name * int 
-  | Cstr of (Names.long_name * int) * int
+  | Cst of Libnames.section_path (* keys for global constants rules *)
+  | Ind of Libnames.section_path * int 
+  | Cstr of (Libnames.section_path * int) * int
   | Nod of string      (* keys for other constructed asts rules *)
   | Oth                (* key for other syntax rules *)
   | All     (* key for catch-all rules (i.e. with a pattern such as $x .. *)
@@ -141,7 +141,7 @@ let _ = Ppprim.add ("token",token_printer)
 
 (* A primitive printer to do "print as" (to specify a length for a string) *)
 let print_as_printer stdpr = function
-  | Node (_, "AS", [Num(_,n); Str(_,s)]) -> [< 'sTRas (n,s) >]
+  | Node (_, "AS", [Num(_,n); Str(_,s)]) ->  stras (n,s) 
   | ast                                  -> stdpr ast
 
 let _ = Ppprim.add ("print_as",print_as_printer)
@@ -165,11 +165,11 @@ let print_syntax_entry whatfor sub_pr env se =
             | None -> token_printer (sub_pr whatfor (Some(rule_prec,reln)))
         in 
 	printer (Ast.pat_sub Ast.dummy_loc env e)
-    | RO s -> [< 'sTR s >]
-    | UNP_TAB -> [< 'tAB >]
-    | UNP_FNL -> [< 'fNL >]
-    | UNP_BRK(n1,n2) -> [< 'bRK(n1,n2) >]
-    | UNP_TBRK(n1,n2) -> [< 'tBRK(n1,n2) >]
+    | RO s ->  str s 
+    | UNP_TAB ->  tab ()
+    | UNP_FNL ->  fnl () 
+    | UNP_BRK(n1,n2) ->  brk(n1,n2) 
+    | UNP_TBRK(n1,n2) ->  tbrk(n1,n2) 
     | UNP_BOX (b,sub) -> ppcmd_of_box b (prlist print_hunk sub)
   in 
   prlist print_hunk se.syn_hunks
@@ -191,11 +191,11 @@ let genprint dflt whatfor inhprec ast =
 	  if no_paren then 
 	    printed_gt
 	  else 
-	    [< 'sTR"(" ; printed_gt; 'sTR")" >]
+	     str"("  ++ printed_gt ++ str")" 
       | None -> dflt gt (* No rule found *)
   in
   try 
     rec_pr whatfor inhprec ast
   with
-    | Failure _ -> [< 'sTR"<PP failure: "; dflt ast; 'sTR">" >]
-    | Not_found -> [< 'sTR"<PP search failure: "; dflt ast; 'sTR">" >]
+    | Failure _ ->  str"<PP failure: " ++ dflt ast ++ str">" 
+    | Not_found ->  str"<PP search failure: " ++ dflt ast ++ str">" 

@@ -90,8 +90,8 @@ let rec globalize scope bv c = match kind_of_term c with
 (*let variable id t =
   let t = globalize [] t in
   env := push_named_assum (id,t) !env;
-  mSGNL (hOV 0 [< 'sTR"variable"; 'sPC; pr_id id; 
-		  'sPC; 'sTR"is declared"; 'fNL >])
+  msgnl (hov 0 (**)(  str"variable" ++ spc () ++ pr_id id ++ 
+		  spc () ++ str"is declared" ++ fnl ()  )(**))
 *)
 
 let const scope ce =
@@ -189,7 +189,7 @@ let add_entry = function
 	        (ident_of_label l) 
 	        (mkConst (ln,[| |])) 
 	        !dict; 
-      mSGNL (hOV 0 [< 'sTR "Constant "; pr_label l; 'sPC; 'sTR"is defined"; 'fNL >])
+      msgnl (hov 0 (**)(  str "Constant " ++ pr_label l ++ spc () ++ str"is defined" ++ fnl ()  )(**))
   | newscope, (l,SPEmind mie) -> 
       let newenv,ln = add_mind mie !env in
       env := newenv;
@@ -213,17 +213,17 @@ let add_entry = function
             dict'
             p.mind_entry_consnames
       end;
-      mSGNL (hOV 0 [< 'sTR"inductive type(s) are declared"; 'fNL >])
+      msgnl (hov 0 (**)(  str"inductive type(s) are declared" ++ fnl ()  )(**))
   | newscope, (l,SPEmodule me) ->
       let newenv,_ = add_module l me !env in
       env := newenv;
       scope := newscope; 
-      mSGNL (hOV 0 [< 'sTR"Module ";pr_label l; 'sTR" declared"; 'fNL >])
+      msgnl (hov 0 (**)(  str"Module " ++pr_label l ++ str" declared" ++ fnl ()  )(**))
   | newscope, (l,SPEmodtype mt) ->
       let newenv,_ = add_modtype l mt !env in
       env := newenv;
       scope := newscope; 
-      mSGNL (hOV 0 [< 'sTR"Module type ";pr_label l;'sTR " declared"; 'fNL >])
+      msgnl (hov 0 (**)(  str"Module type " ++pr_label l ++str " declared" ++ fnl ()  )(**))
 
 let begin_module l args mty_o = 
   let mod_binding scope (mbid, mty) =
@@ -242,7 +242,7 @@ let begin_module l args mty_o =
     scopes := !scope::!scopes;
     scope := newscope;
     modpath := current_modpath (!env);
-    mSGNL (hOV 0 [< 'sTR"New module is opened"; 'fNL >])
+    msgnl (hov 0 (**)(  str"New module is opened" ++ fnl ()  )(**))
       
 
 let end_module l = 
@@ -257,7 +257,40 @@ let end_module l =
     in
       scope := newscope;
       scopes := List.tl !scopes;
-      mSGNL (hOV 0 [< 'sTR"Module declared"; 'fNL >])
+      msgnl (hov 0 (**)(  str"Module declared" ++ fnl ()  )(**))
+    
+
+let begin_modtype l args = 
+  let mod_binding scope (mbid, mty) =
+    let mty = modtype scope mty in
+    let scope = 
+      Stringmap.add 
+	(string_of_mbid mbid) 
+	(MPbid mbid) 
+	scope 
+    in
+      scope, (mbid, mty)
+  in
+  let newscope,args = list_fold_map mod_binding !scope args in
+    env := begin_modtype l args !env;
+    scopes := !scope::!scopes;
+    scope := newscope;
+    modpath := current_modpath (!env);
+    msgnl (hov 0 (**)(  str"New module type is opened" ++ fnl ()  )(**))
+  
+let end_modtype l = 
+  let newenv,ln = end_modtype l !env in
+    env := newenv;
+    modpath := current_modpath (!env);
+    let newscope = 
+      Stringmap.add 
+	(string_of_label l) 
+	(MPdot(!modpath,l))
+	(List.hd !scopes)
+    in
+      scope := newscope;
+      scopes := List.tl !scopes;
+      msgnl (hov 0 (**)(  str"Module type declared" ++ fnl ()  )(**))
     
 
 let check c = 
@@ -265,14 +298,14 @@ let check c =
   let (j,u) = safe_infer !env c in
   let ty = j_type j in
   let pty = pr_term (env_of_safe_env !env) ty in
-  mSGNL (hOV 0 [< 'sTR"  :"; 'sPC; hOV 0 pty; 'fNL >])
+  msgnl (hov 0 (**)(  str"  :" ++ spc () ++ hov 0 pty ++ fnl ()  )(**))
 
 let print ln = 
   let ln = scope_ln ln !scope in
   let cb = Safe_env.lookup_constant ln !env in
   let ty = out_some cb.const_body in
   let pty = pr_term (env_of_safe_env !env) ty in
-  mSGNL (hOV 0 [< 'sTR"  :="; 'sPC; hOV 0 pty; 'fNL >])
+  msgnl (hov 0 (**)(  str"  :=" ++ spc () ++ hov 0 pty ++ fnl ()  )(**))
 
 let reduce c = 
   let c = globalize !scope [] c in
@@ -282,18 +315,20 @@ let reduce c =
              c
   in
   let pty = pr_term (env_of_safe_env !env) ty in
-  mSGNL (hOV 0 [< 'sTR"  -->"; 'sPC; hOV 0 pty; 'fNL >])
+  msgnl (hov 0 (**)(  str"  -->" ++ spc () ++ hov 0 pty ++ fnl ()  )(**))
 
 let execute = function
   | Abbrev (s,c) -> 
       let c = globalize !scope [] c in
 	dict:=Idmap.add s c !dict;
-	mSGNL (hOV 0 [< 'sTR"Abbreviation added"; 'fNL >])
+	msgnl (hov 0 (**)(  str"Abbreviation added" ++ fnl ()  )(**))
   | Check c -> check c
   | Print ln -> print ln
   | Reduce c -> reduce c
   | BeginModule (l, args, mty_o) -> begin_module l args mty_o
   | EndModule l -> end_module l
+  | BeginModtype (l, args) -> begin_modtype l args
+  | EndModtype l -> end_modtype l
   | Entry e -> add_entry (lab_entry !modpath !scope e);;
 (*  | Definition (id, ty, c) -> definition id ty c 
   | Parameter (id, t) -> parameter id t 
@@ -316,16 +351,16 @@ module Explain = Fhimsg.Make(struct let pr_term = pr_term end)
 
 let rec explain_exn = function
   | TypeError (ctx,te) -> 
-      mSGNL (hOV 0 [< 'sTR "type error:"; 'sPC; 
-		      Explain.explain_type_error ctx te; 'fNL >])
+      msgnl (hov 0 (**)(  str "type error:" ++ spc () ++ 
+		      Explain.explain_type_error ctx te ++ fnl ()  )(**))
   | InductiveError err -> 
-      mSGNL (hOV 0 [< 'sTR "inductive error:"; 'sPC;
-		      Explain.explain_inductive_error err; 'fNL >])
+      msgnl (hov 0 (**)(  str "inductive error:" ++ spc () ++
+		      Explain.explain_inductive_error err ++ fnl ()  )(**))
   | Stdpp.Exc_located (_,exn) -> 
       explain_exn exn
   | Sys.Break -> raise Exit
   | exn -> 
-      mSGNL (hOV 0 [< 'sTR"error: "; 'sTR (Printexc.to_string exn); 'fNL >])
+      msgnl (hov 0 (**)(  str"error: " ++ str (Printexc.to_string exn) ++ fnl ()  )(**))
 
 let top () =
   let cs = Stream.of_channel stdin in
@@ -351,7 +386,7 @@ let main () =
 
 let print_id id = Format.print_string (Identifier.string_of_id id);;
 let print_lab lab = Format.print_string (Identifier.string_of_label lab);;
-let print_constr c = pP (G_minicoq.pr_term (Safe_env.env_of_safe_env !env) c);;
+let print_constr c = pp (G_minicoq.pr_term (Safe_env.env_of_safe_env !env) c);;
 (*let print_env env = Environ.fold_rel_context (fun _ (n,_,c) _ -> ((match n with Anonymous -> print_string "_" | Name id -> print_id id); print_string " : "; print_constr c; print_string ";")) env ();;*)
 
 let _ = Printexc.print main ()

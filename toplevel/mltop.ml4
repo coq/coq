@@ -89,7 +89,7 @@ let ocaml_toploop () =
     | _ -> ()
 (*
         errorlabstrm "Mltop.ocaml_toploop"
-          [< 'sTR"Cannot access the ML toplevel" >]
+          str"Cannot access the ML toplevel"
 *)
 
 (* Dynamic loading of .cmo *)
@@ -101,11 +101,11 @@ let dir_ml_load s =
           with
             | (UserError _ | Failure _ | Anomaly _ | Not_found as u) -> raise u
             | _ -> errorlabstrm "Mltop.load_object"
-                  [< 'sTR"Cannot link ml-object "; 'sTR s;
-		     'sTR" to Coq code." >]
+                  (**)(  str"Cannot link ml-object " ++ str s ++
+		     str" to Coq code."  )(**)
 	else 
 	  errorlabstrm "Mltop.load_object"
-            [< 'sTR"File not found on loadpath : "; 'sTR s >]
+            (**)(  str"File not found on loadpath : " ++ str s  )(**)
     | WithoutTop ->
       ifdef Byte then
 	(if is_in_path !coq_mlpath_copy s then
@@ -119,14 +119,14 @@ let dir_ml_load s =
 	  with
 	    | Dynlink.Error(a) ->
 		errorlabstrm "Mltop.load_object"
-                  [< 'sTR (Dynlink.error_message a) >]
+                  (**)(  str (Dynlink.error_message a)  )(**)
 	else errorlabstrm "Mltop.load_object"
-          [< 'sTR"File not found on loadpath : "; 'sTR s >])
+          (**)(  str"File not found on loadpath : " ++ str s  )(**))
       else
 	()
     | Native ->
 	errorlabstrm "Mltop.no_load_object"
-          [< 'sTR"Loading of ML object file forbidden in a native Coq" >]
+          (**)(  str"Loading of ML object file forbidden in a native Coq"  )(**)
 
 (* Dynamic interpretation of .ml *)
 let dir_ml_use s =
@@ -155,7 +155,7 @@ let add_path dir coq_dirpath =
       if coq_dirpath <> [] then Nametab.push_library_root (List.hd coq_dirpath)
     end
   else
-    wARNING [< 'sTR ("Cannot open " ^ dir) >]
+    msg_warning (**)(  str ("Cannot open " ^ dir)  )(**)
 
 let add_rec_path dir coq_dirpath =
   let dirs = all_subdirs dir in
@@ -169,7 +169,7 @@ let add_rec_path dir coq_dirpath =
       else List.iter (fun (_, cp) -> Nametab.push_library_root (List.hd cp)) dirs
     end
   else
-    wARNING [< 'sTR ("Cannot open " ^ dir) >]
+    msg_warning (**)(  str ("Cannot open " ^ dir)  )(**)
 
 (* convertit un nom quelconque en nom de fichier ou de module *) 
 let mod_of_name name =
@@ -236,7 +236,7 @@ let unfreeze_ml_modules x =
            load_object mname fname                
          else 
 	   errorlabstrm "Mltop.unfreeze_ml_modules"
-             [< 'sTR"Loading of ML object file forbidden in a native Coq" >];
+             (**)(  str"Loading of ML object file forbidden in a native Coq"  )(**);
        add_loaded_module mname)
     x
 
@@ -258,11 +258,11 @@ let cache_ml_module_object (_,{mnames=mnames}) =
          begin 
 	   try 
 	     if_verbose 
-	       mSG [< 'sTR"[Loading ML file "; 'sTR fname; 'sTR" ..." >];
+	       msg (**)(  str"[Loading ML file " ++ str fname ++ str" ..."  )(**);
              load_object mname fname;
-             if_verbose mSGNL [< 'sTR"done]" >]
+             if_verbose msgnl (**)(  str"done]"  )(**)
            with e -> 
-	     if_verbose mSGNL [< 'sTR"failed]" >]; 
+	     if_verbose msgnl (**)(  str"failed]"  )(**); 
 	     raise e
 	 end;
          add_loaded_module mname)
@@ -271,23 +271,22 @@ let cache_ml_module_object (_,{mnames=mnames}) =
 let export_ml_module_object x = Some x
 					 
 let (inMLModule,outMLModule) =
-  declare_object ("ML-MODULE",
-                  { load_function = cache_ml_module_object;
+  declare_object {(default_object "ML-MODULE") with 
+		    load_function = cache_ml_module_object;
                     cache_function = cache_ml_module_object;
-		    open_function = (fun _ -> ());
-                    export_function = export_ml_module_object })
+                    export_function = export_ml_module_object  }
 
 let declare_ml_modules l =
   Lib.add_anonymous_leaf (inMLModule {mnames=l})
     
 let print_ml_path () =
   let l = !coq_mlpath_copy in
-  pPNL [< 'sTR"ML Load Path:"; 'fNL; 'sTR"  ";
-          hV 0 (prlist_with_sep pr_fnl pr_str l) >]
+  ppnl (**)(  str"ML Load Path:" ++ fnl () ++ str"  " ++
+          hv 0 (prlist_with_sep pr_fnl pr_str l)  )(**)
 
 	  (* Printing of loaded ML modules *)
 	  
 let print_ml_modules () =
   let l = get_loaded_modules () in
-  pP [< 'sTR"Loaded ML Modules : " ;
-        hOV 0 (prlist_with_sep pr_fnl pr_str l); 'fNL >]
+  pp (**)(  str"Loaded ML Modules : "  ++
+        hov 0 (prlist_with_sep pr_fnl pr_str l) ++ fnl ()  )(**)

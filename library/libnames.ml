@@ -13,6 +13,8 @@ open Util
 open Identifier
 open Names
 
+type substitution = unit
+
 type path_kind = CCI | FW | OBJ
 
 let string_of_kind = function
@@ -79,7 +81,7 @@ let dirpath_of_string s =
   with
     | Invalid_argument _ -> invalid_arg "dirpath_of_string"
 
-let pr_sp sp = [< 'sTR (string_of_path sp) >]
+let pr_sp sp = str (string_of_path sp) 
 
 let sp_of_wd = function
   | [] -> invalid_arg "Names.sp_of_wd"

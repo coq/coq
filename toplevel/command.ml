@@ -70,7 +70,7 @@ let constr_of_constr_entry ce =
 let declare_global_definition ident ce n local =
   let sp = declare_constant ident (ConstantEntry ce,n,false) in
   if local then
-    wARNING [< pr_id ident; 'sTR" is declared as a global definition" >];
+    msg_warning (**)(  pr_id ident ++ str" is declared as a global definition"  )(**);
   if_verbose message ((string_of_id ident) ^ " is defined");
   ConstRef sp
 
@@ -85,15 +85,15 @@ let definition_body_red red_option ident (local,n) com comtypeopt =
           let sp = declare_variable ident (SectionLocalDef c,n,false) in
 	  if_verbose message ((string_of_id ident) ^ " is defined");
           if Pfedit.refining () then 
-            mSGERRNL [< 'sTR"Warning: Local definition "; pr_id ident; 
-                        'sTR" is not visible from current goals" >];
+            msgerrnl (**)(  str"Warning: Local definition " ++ pr_id ident ++ 
+                        str" is not visible from current goals"  )(**);
 	  VarRef sp
         end
 	else
 	  declare_global_definition ident ce' n true
     | NotDeclare ->
       anomalylabstrm "Command.definition_body_red"
-        [<'sTR "Strength NotDeclare not for Definition, only for Let" >]
+        (**)( str "Strength NotDeclare not for Definition, only for Let"  )(**)
 
 let definition_body = definition_body_red None
 
@@ -113,8 +113,8 @@ let parameter_def_var ident c =
 
 let declare_global_assumption ident c =
   let sp = parameter_def_var ident c in
-  wARNING [< pr_id ident; 'sTR" is declared as a parameter";
-             'sTR" because it is at a global level" >];
+  msg_warning (**)(  pr_id ident ++ str" is declared as a parameter" ++
+             str" because it is at a global level"  )(**);
   ConstRef sp
 
 let hypothesis_def_var is_refining ident n c =
@@ -126,37 +126,37 @@ let hypothesis_def_var is_refining ident n c =
           let sp = declare_variable ident (SectionLocalAssum t,n,false) in
 	  if_verbose message ((string_of_id ident) ^ " is assumed");
           if is_refining then 
-            mSGERRNL [< 'sTR"Warning: Variable "; pr_id ident; 
-                        'sTR" is not visible from current goals" >];
+            msgerrnl (**)(  str"Warning: Variable " ++ pr_id ident ++ 
+                        str" is not visible from current goals"  )(**);
 	  VarRef sp
         end
 	else
 	  declare_global_assumption ident c
     | NotDeclare ->
       anomalylabstrm "Command.hypothesis_def_var"
-        [<'sTR "Strength NotDeclare not for Variable, only for Let" >]
+        (**)( str "Strength NotDeclare not for Variable, only for Let"  )(**)
 
 (* 3| Mutual Inductive definitions *)
 
 let minductive_message = function 
   | []  -> error "no inductive definition"
-  | [x] -> [< pr_id x; 'sTR " is defined">]
-  | l   -> hOV 0  [< prlist_with_sep pr_coma pr_id l;
-		     'sPC; 'sTR "are defined">]
+  | [x] -> (**)(  pr_id x ++ str " is defined" )(**)
+  | l   -> hov 0  (**)(  prlist_with_sep pr_coma pr_id l ++
+		     spc () ++ str "are defined" )(**)
 
 let recursive_message v =
   match Array.length v with
     | 0 -> error "no recursive definition"
-    | 1 -> [< Printer.pr_global v.(0); 'sTR " is recursively defined">]
-    | _ -> hOV 0 [< prvect_with_sep pr_coma Printer.pr_global v;
-		    'sPC; 'sTR "are recursively defined">]
+    | 1 -> (**)(  Printer.pr_global v.(0) ++ str " is recursively defined" )(**)
+    | _ -> hov 0 (**)(  prvect_with_sep pr_coma Printer.pr_global v ++
+		    spc () ++ str "are recursively defined" )(**)
 
 let corecursive_message v =
   match Array.length v with
     | 0 -> error "no corecursive definition"
-    | 1 -> [< Printer.pr_global v.(0); 'sTR " is corecursively defined">]
-    | _ -> hOV 0 [< prvect_with_sep pr_coma Printer.pr_global v;
-                    'sPC; 'sTR "are corecursively defined">]
+    | 1 -> (**)(  Printer.pr_global v.(0) ++ str " is corecursively defined" )(**)
+    | _ -> hov 0 (**)(  prvect_with_sep pr_coma Printer.pr_global v ++
+                    spc () ++ str "are corecursively defined" )(**)
 
 let interp_mutual lparams lnamearconstrs finite = 
   let allnames = 
@@ -218,7 +218,7 @@ let declare_mutual_with_eliminations mie =
   let lrecnames =
     List.map (fun e -> ident_of_label e.mind_entry_typename) mie.mind_entry_inds in
   let sp = declare_mind mie in
-  if_verbose pPNL (minductive_message lrecnames);
+  if_verbose ppnl (minductive_message lrecnames);
   declare_eliminations sp;
   sp
 
@@ -310,7 +310,7 @@ let build_recursive lnameargsardef =
   in 
   (* declare the recursive definitions *)
   let lrefrec = Array.mapi declare namerec in
-  if_verbose pPNL (recursive_message lrefrec);
+  if_verbose ppnl (recursive_message lrefrec);
   (* The others are declared as normal definitions *)
   let var_subst id = (id, global_reference id) in
   let _ = 
@@ -371,7 +371,7 @@ let build_corecursive lnameardef =
     (ConstRef sp)
   in 
   let lrefrec = Array.mapi declare namerec in
-  if_verbose pPNL (corecursive_message lrefrec);
+  if_verbose ppnl (corecursive_message lrefrec);
   let var_subst id = (id, global_reference id) in
   let _ = 
     List.fold_left
@@ -391,12 +391,12 @@ let inductive_of_ident id =
     try global_reference id
     with Not_found ->
       errorlabstrm "inductive_of_ident"
-	[< 'sTR ((string_of_id id) ^ " not found") >]
+	(**)(  str ((string_of_id id) ^ " not found")  )(**)
   in
   match kind_of_term (global_reference id) with
     | IsMutInd ind -> ind
     | _ -> errorlabstrm "inductive_of_ident"
-	[< 'sTR (string_of_id id); 'sPC; 'sTR "is not an inductive type" >]
+	(**)(  str (string_of_id id) ++ spc () ++ str "is not an inductive type"  )(**)
 
 let build_scheme lnamedepindsort = 
   let lrecnames = List.map (fun (f,_,_,_) -> f) lnamedepindsort
@@ -415,7 +415,7 @@ let build_scheme lnamedepindsort =
     ConstRef sp :: lrecref
   in 
   let lrecref = List.fold_right2 declare listdecl lrecnames [] in
-  if_verbose pPNL (recursive_message (Array.of_list lrecref))
+  if_verbose ppnl (recursive_message (Array.of_list lrecref))
 
 let start_proof_com sopt stre com =
   let env = Global.env () in

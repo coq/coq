@@ -33,16 +33,23 @@ val pr_dirpath : dir_path -> std_ppcmds
 (* [is_dirpath_prefix p1 p2=true] if [p1] is a prefix of or is equal to [p2] *)
 val is_dirpath_prefix_of : dir_path -> dir_path -> bool
 
-(* This file implements long names *)
 
+
+
+(*s Kernel long names *)
+
+
+(* Invisible (magic) names for structures and signatures *)
 type mod_str_id
 
 val msid_of_string : string -> mod_str_id
 
+(* Names for bound modules *)
 type mod_bound_id
 
 (* These two functions are NOT bijections *)
 val mbid_of_string : string -> mod_bound_id
+val mbid_of_ident : identifier -> mod_bound_id
 val string_of_mbid : mod_bound_id -> string
 
 type module_path =
@@ -52,29 +59,50 @@ type module_path =
   | MPdot of module_path * label
 (*i  | MPapply of module_path * module_path    in the future (maybe) i*)
 
+
+type substitution
+
+val empty_subst : substitution
+
+val add_msid : 
+  mod_str_id -> module_path -> substitution -> substitution
+val add_mbid : 
+  mod_bound_id -> module_path -> substitution -> substitution
+
+val map_msid : mod_str_id -> module_path -> substitution
+val map_mbid : mod_bound_id -> module_path -> substitution
+
+val join : substitution -> substitution -> substitution
+
+(*i debugging *)
+val debug_string_of_subst : substitution -> string
+val debug_pr_subst : substitution -> std_ppcmds
+(*i*)
+
 (* [subst_modpath_*id id by_path in_path] replaces bound/structure ident 
    [id] with [by_path] in [in_path]. They quarantee that whenever 
    [id] does not occur in [in_path], the result is [==] equal to 
    [in_path] *)
 
-val subst_modpath_msid : 
-  mod_str_id -> module_path -> module_path -> module_path
-val subst_modpath_mbid : 
-  mod_bound_id -> module_path -> module_path -> module_path
+val subst_modpath : 
+  substitution -> module_path -> module_path
 
-(* [occur_*id id mp] returns true iff [id] occurs in [mp] *)
+(* [occur_*id id sub] returns true iff [id] occurs in [sub] 
+   on either side *)
 
-val occur_msid : mod_str_id -> module_path -> bool
-val occur_mbid : mod_bound_id -> module_path -> bool
+val occur_msid : mod_str_id -> substitution -> bool
+val occur_mbid : mod_bound_id -> substitution -> bool
 
-(* debugging *)
 val string_of_modpath : module_path -> string
 val pr_modpath : module_path -> std_ppcmds
 
-val top_msid : mod_str_id
-val top_path : module_path
-
 module MPmap : Map.S with type key = module_path
+
+
+(* Name of the toplevel structure *)
+val top_msid : mod_str_id 
+val top_path : module_path (* [ = MPsid top_msid ] *)
+
 
 (* Long names of constants,... *)
 
@@ -86,14 +114,8 @@ val modname : long_name -> module_path
 val label : long_name -> label
 val basename : long_name -> identifier
 
-(* substitutions *)
+val subst_long_name : substitution -> long_name -> long_name
 
-val subst_longname_msid : 
-  mod_str_id -> module_path -> long_name -> long_name
-val subst_longname_mbid : 
-  mod_bound_id -> module_path -> long_name -> long_name
-
-(* debugging *)
 val string_of_long_name : long_name -> string
 val pr_ln : long_name -> std_ppcmds
 
@@ -115,4 +137,8 @@ type global_reference =
   | ConstRef of constant_path
   | IndRef of inductive_path
   | ConstructRef of constructor_path
+  | ModRef of module_path
+  | ModTypeRef of long_name
 
+val subst_global_reference : 
+  substitution -> global_reference -> global_reference

@@ -21,8 +21,7 @@ open Lib
 
 let syntax_table = ref (Spmap.empty : rawconstr Spmap.t)
 
-let _ = Summary.declare_summary
-	  "SYNTAXCONSTANT"
+let _ = Summary.declare_summary "SYNTAXCONSTANT"
 	  { Summary.freeze_function = (fun () -> !syntax_table);
 	    Summary.unfreeze_function = (fun ft -> syntax_table := ft);
 	    Summary.init_function = (fun () -> syntax_table := Spmap.empty);
@@ -34,7 +33,7 @@ let add_syntax_constant sp c =
 let cache_syntax_constant (sp,c) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_syntax_constant"
-      [< pr_id (basename sp); 'sTR " already exists" >];
+       (pr_id (basename sp) ++ str " already exists") ;
   add_syntax_constant sp c;
   Nametab.push_syntactic_definition sp;
   Nametab.push_short_name_syntactic_definition sp
@@ -42,7 +41,7 @@ let cache_syntax_constant (sp,c) =
 let load_syntax_constant (sp,c) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_syntax_constant"
-      [< pr_id (basename sp); 'sTR " already exists" >];
+       (pr_id (basename sp) ++ str " already exists") ;
   add_syntax_constant sp c;
   Nametab.push_syntactic_definition sp
 
@@ -50,13 +49,12 @@ let open_syntax_constant (sp,c) =
   Nametab.push_short_name_syntactic_definition sp
 
 let (in_syntax_constant, out_syntax_constant) =
-  let od = {
+  declare_object {(default_object "SYNTAXCONSTANT") with
     cache_function = cache_syntax_constant;
     load_function = load_syntax_constant;
     open_function = open_syntax_constant;
     export_function = (fun x -> Some x) } 
-  in
-  declare_object ("SYNTAXCONSTANT", od)
+
 
 let declare_syntactic_definition id c =
   let _ = add_leaf id CCI (in_syntax_constant c) in ()

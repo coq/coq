@@ -53,7 +53,7 @@ let dirpath_of_string s =
 
 let string_of_dirpath sl = String.concat "." (List.map string_of_id sl)
 
-let pr_dirpath sl = [< 'sTR (string_of_dirpath sl) >]
+let pr_dirpath sl = str (string_of_dirpath sl)
 
 let is_dirpath_prefix_of = list_prefix_of
 
@@ -64,6 +64,7 @@ let msid_of_string = unique
 
 type mod_bound_id=uniq_ident
 let mbid_of_string = unique
+let mbid_of_ident id = unique (string_of_id id)
 let string_of_mbid = string_of_uid
 
 type module_path =
@@ -83,62 +84,74 @@ let rec string_of_modpath = function
 let rec pr_modpath = function
   | MPcomp sl -> pr_dirpath sl
   | MPbid uid -> pr_uid uid
-  | MPsid uid -> [< 'sTR "["; pr_uid uid; 'sTR "]" >]
-  | MPdot (mp,l) -> [< pr_modpath mp; 'sTR "."; pr_label l >]
+  | MPsid uid -> str "[" ++ pr_uid uid ++ str "]" 
+  | MPdot (mp,l) -> pr_modpath mp ++ str "." ++ pr_label l 
 
-let rec subst_modpath_msid sids mps mp = (* 's like subst *)
+
+(* this is correct under the condition that bound and struct
+   identifiers can never be identical (i.e. get the same stamp)! *) 
+
+type substitution = module_path Umap.t
+
+let empty_subst = Umap.empty
+
+let add_msid = Umap.add 
+let add_mbid = Umap.add
+
+let map_msid msid mp = add_msid msid mp empty_subst
+let map_mbid mbid mp = add_msid mbid mp empty_subst
+
+let join subst = 
+  Umap.fold Umap.add subst
+
+let list_contents sub = 
+  let one_pair uid mp l =
+    (debug_string_of_uid uid, string_of_modpath mp)::l
+  in
+    Umap.fold one_pair sub []
+
+let debug_string_of_subst sub = 
+  let l = List.map (fun (s1,s2) -> s1^"|->"^s2) (list_contents sub) in
+    "{" ^ String.concat "; " l ^ "}"
+
+let debug_pr_subst sub = 
+  let l = list_contents sub in
+  let f (s1,s2) = hov 2 (str s1 ++ spc () ++ str "|-> " ++ str s2) 
+  in
+    str "{" ++ hov 2 (prlist_with_sep pr_coma f l) ++ str "}" 
+
+let rec subst_modpath sub mp = (* 's like subst *)
   match mp with
-    | MPsid sid when sid = sids -> mps
+    | MPsid sid -> 
+	(try Umap.find sid sub with Not_found -> mp)
+    | MPbid bid ->
+	(try Umap.find bid sub with Not_found -> mp)
     | MPdot (mp1,l) -> 
-	let mp1' = subst_modpath_msid sids mps mp1 in
+	let mp1' = subst_modpath sub mp1 in
 	  if mp1==mp1' then 
 	    mp
 	  else
 	    MPdot (mp1',l)
     | _ -> mp
 
-let rec subst_modpath_mbid bids mps mp = (* 's like subst *)
-  match mp with
-    | MPbid bid when bid = bids -> mps
-    | MPdot (mp1,l) -> 
-	let mp1' = subst_modpath_mbid bids mps mp1 in
-	  if mp1==mp1' then 
-	    mp
-	  else
-	    MPdot (mp1',l)
-    | _ -> mp
 
-(* the same as above, more compact, but less effective 
-let rec subst_dot mp mp1 l subst = 
-  let mp1'=subst sids mps mp1 in
-    if mp1==mp1' then 
-      mp
-    else
-      MPdot (mp1',l)
-  
-let rec subst_modpath_msid sids mps mp = (* 's like subst *)
-  match mp with
-    | MPsid sid when sid = sids -> mps
-    | MPdot (mp1,l) -> subst_dot mp mp1 l (subst_modpath_msid sids mps)
-    | _ -> mp
-
-let rec subst_modpath_mbid bids mps mp = (* 's like subst *)
-  match mp with
-    | MPbid bid when bid = bids -> mps
-    | MPdot (mp1,l) -> subst_dot mp mp1 l (subst_modpath_mbid bids mps)
-    | _ -> mp
-*)
-
-let rec occur_msid sid = function
-  | MPsid sid' -> sid' = sid
-  | MPdot (mp1,_) -> occur_msid sid mp1
+let rec occur_in_path uid = function
+  | MPsid sid -> sid = uid
+  | MPbid bid -> bid = uid
+  | MPdot (mp1,_) -> occur_in_path uid mp1
   | _ -> false
     
-let rec occur_mbid bid = function
-  | MPbid bid' -> bid' = bid
-  | MPdot (mp1,_) -> occur_mbid bid mp1
-  |  _ -> false
-    
+let occur_uid uid sub = 
+  let check_one uid' mp =
+    if uid = uid' || occur_in_path uid mp then raise Exit
+  in
+    try 
+      Umap.iter check_one sub;
+      false
+    with Exit -> true
+
+let occur_msid = occur_uid
+let occur_mbid = occur_uid
 
 (* we compare labels first if two MPdot's *)
 let rec mp_ord mp1 mp2 = match (mp1,mp2) with
@@ -168,15 +181,8 @@ let label = snd
 let basename (_,l) = ident_of_label l
 
 
-let subst_longname_msid sid mp ((mp1,l) as ln) = 
-  let mp1'=subst_modpath_msid sid mp mp1 in
-    if mp1==mp1' then 
-      ln
-    else
-      (mp1',l)
-      
-let subst_longname_mbid bid mp ((mp1,l) as ln) = 
-  let mp1'=subst_modpath_mbid bid mp mp1 in
+let subst_long_name sub ((mp1,l) as ln) = 
+  let mp1'=subst_modpath sub mp1 in
     if mp1==mp1' then 
       ln
     else
@@ -208,3 +214,23 @@ type global_reference =
   | ConstRef of constant_path
   | IndRef of inductive_path
   | ConstructRef of constructor_path
+  | ModRef of module_path
+  | ModTypeRef of long_name
+
+let subst_global_reference subst ref = match ref with
+  | VarRef _ -> ref
+  | ConstRef ln ->  
+      let ln' = subst_long_name subst ln in if ln==ln' then ref else
+	  ConstRef ln'
+  | IndRef (ln,i) -> 
+      let ln' = subst_long_name subst ln in if ln==ln' then ref else
+	  IndRef(ln',i)
+  | ConstructRef ((ln,i),j) ->
+      let ln' = subst_long_name subst ln in if ln==ln' then ref else
+	  ConstructRef ((ln',i),j)
+  | ModRef mp ->
+      let mp' = subst_modpath subst mp in if mp==mp' then ref else
+	  ModRef mp'
+  | ModTypeRef ln ->
+      let ln' = subst_long_name subst ln in if ln==ln' then ref else
+	  ModTypeRef ln'

@@ -23,9 +23,7 @@
 
 Require Export Logic.
 Require Export LogicSyntax.
-Require Export LogicHints.
 Require Export Datatypes.
-Require Export DatatypesHints.
 
 Definition eq_S := (f_equal nat nat S).
 

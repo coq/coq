@@ -20,8 +20,6 @@ type target =
   | RInclude of string * string (* -R physicalpath logicalpath *)
 
 let output_channel = ref stdout
-let makefile_name = ref "Makefile"
-let make_name = ref "Make"
 
 let some_file = ref false
 let some_vfile = ref false
@@ -30,7 +28,6 @@ let some_mlfile = ref false
 let opt = ref "-opt"
 
 let print x = output_string !output_channel x
-let printf x = Printf.fprintf !output_channel x
 
 let rec print_list sep = function
   | [ x ] -> print x
@@ -100,16 +97,16 @@ let standard sds =
     sds;
   print "\n";
   print "install:\n";
-  print "\tmkdir -p `$(COQC) -where`/user-contrib\n";
-  if !some_vfile then print "\tcp -f *.vo `$(COQC) -where`/user-contrib\n";
-  if !some_mlfile then print "\tcp -f *.cmo `$(COQC) -where`/user-contrib\n";
+  print "\t@if test -z $(TARGETDIR); then echo \"You must set TARGETDIR (for instance with 'make TARGETDIR=foobla install')\"; exit 1; fi\n";
+  if !some_vfile then print "\tcp -f *.vo $(TARGETDIR)\n";
+  if !some_mlfile then print "\tcp -f *.cmo $(TARGETDIR)\n";
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) install)\n")
     sds;
   print "\n";
-  printf "%s: %s\n" !makefile_name !make_name;
-  printf "\tmv -f %s %s.bak\n" !makefile_name !makefile_name;
-  printf "\t$(COQBIN)coq_makefile -f %s -o %s\n" !make_name !makefile_name;
+  print "Makefile: Make\n";
+  print "\tmv -f Makefile Makefile.bak\n";
+  print "\t$(COQBIN)coq_makefile -f Make -o Makefile\n";
   print "\n";
   print "clean:\n";
   print "\trm -f *.cmo *.cmi *.cmx *.o *.vo *.vi *.g *~\n";
@@ -275,8 +272,7 @@ let all_target l =
   print "HTMLFILES=$(VFILES:.v=.html)\n";
   print "GHTMLFILES=$(VFILES:.v=.g.html)\n";
   print "\n";
-  print "all: "; print_list "\\\n  " (fnames l);
-  print "\n\n";
+  print "all: $(VOFILES)\n\n";
   if !some_vfile then begin
     print "spec: $(VIFILES)\n\n";
     print "gallina: $(GFILES)\n\n";
@@ -335,13 +331,11 @@ let rec process_cmd_line = function
       RInclude (p,l) :: (process_cmd_line r)
   | ("-I" | "-h" | "--help" | "-custom") :: _ -> 
       usage ()
-  | "-f" :: file :: r -> 
-      make_name := file;
+  | "-f"::file::r -> 
       process_cmd_line ((parse file)@r)
   | ["-f"] -> 
       usage ()
   | "-o" :: file :: r -> 
-      makefile_name := file;
       output_channel := (open_out file);
       (process_cmd_line r)
   | v :: "=" :: def :: r -> 

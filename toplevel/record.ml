@@ -70,16 +70,16 @@ let warning_or_error coe err =
   let st = match err with
     | MissingProj (fi,projs) ->
 	let s,have = if List.length projs > 1 then "s","have" else "","has" in
-        [< 'sTR(string_of_id fi);
-	   'sTR" cannot be defined because the projection"; 'sTR s; 'sPC;
-           prlist_with_sep pr_coma pr_id projs; 'sPC; 'sTR have; 'sTR "n't." >]
+        (**)(  str(string_of_id fi) ++
+	   str" cannot be defined because the projection" ++ str s ++ spc () ++
+           prlist_with_sep pr_coma pr_id projs ++ spc () ++ str have ++ str "n't."  )(**)
     | BadTypedProj (fi,ctx,te) ->
-        [<'sTR (string_of_id fi); 
-          'sTR" cannot be defined for the following reason:";
-	  'fNL; 'sTR "  "; hOV 2 (Himsg.explain_type_error ctx te) >]
+        (**)( str (string_of_id fi) ++ 
+          str" cannot be defined for the following reason:" ++
+	  fnl () ++ str "  " ++ hov 2 (Himsg.explain_type_error ctx te)  )(**)
   in
   if coe then errorlabstrm "structure" st;
-  pPNL (hOV 0 [< 'sTR"Warning: "; st >])
+  ppnl (hov 0 (**)(  str"Warning: " ++ st  )(**))
 
 (* We build projections *)
 let declare_projections indsp coers fields =

@@ -215,7 +215,9 @@ and check_modtypes env mtb1 mtb2 equiv =
 	    add_module (MPbid arg_id2) (module_body arg_t2) env 
 	  in
 	  let body_t1' = 
-	    subst_modtype_mbid arg_id1 (MPbid arg_id2) body_t1
+	    subst_modtype 
+	      (map_mbid arg_id1 (MPbid arg_id2)) 
+	      body_t1
 	  in
 	  check_modtypes env' body_t1' body_t2 equiv
       | MTBident _ , _ -> anomaly "Subtyping: scrape failed"

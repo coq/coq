@@ -53,9 +53,28 @@ let the_objtab = ref (Idmap.empty : objtab)
 module Globtab = Map.Make(struct type t=global_reference 
 				 let compare = compare end)
 
-type globtab = qualid Globtab.t
+type globtab = section_path Globtab.t
 
 let the_globtab = ref (Globtab.empty : globtab)
+
+(* These are entry points to locate names *)
+(* If the name starts with the coq_root name, then it is an absolute name *)
+
+let locate_rev_in_tree tab dir =
+  let rec search (current,modidtab) = function
+    | modid :: path -> search (ModIdmap.find modid modidtab) path
+    | [] -> match current with Some o -> o | _ -> raise Not_found
+  in
+  search tab dir
+
+let locate_in_tree tab dir = locate_rev_in_tree tab (List.rev dir)
+
+let locate_cci qid =
+  let (dir,id) = repr_qualid qid in
+  locate_in_tree (Idmap.find id !the_ccitab) dir
+
+let locate_rev_cci id dir = 
+  locate_rev_in_tree (Idmap.find id !the_ccitab) dir
 
 (* How necessarily_open works: concretely, roots and directory are
    always open but libraries are open only during their interactive
@@ -65,23 +84,71 @@ let the_globtab = ref (Globtab.empty : globtab)
 
 (* We add a binding of [[modid1;...;modidn;id]] to [o] in the name tab *)
 (* We proceed in the reverse way, looking first to [id] *)
-let push_tree tab dir o =
-  let rec push necessarily_open (current,dirmap) = function
+let push_tree tab dir o depth =
+  let rec push depth (current,dirmap) = function
     | modid :: path as dir ->
 	let mc = 
 	  try ModIdmap.find modid dirmap
 	  with Not_found -> (None, ModIdmap.empty)
 	in
-	let this = if necessarily_open then Some o else current in
-	(this, ModIdmap.add modid (push true mc path) dirmap)
+	let this = if depth>0 then current else Some o in
+	(this, ModIdmap.add modid (push (depth-1) mc path) dirmap)
     | [] -> (Some o,dirmap) in
-  push false tab (List.rev dir)
+  push depth tab (List.rev dir)
+
+let calc_depth dir = 
+  (* find deepest module that can be accessed by short name *)
+  let rec find_short_module dir i = 
+    match dir with
+      | [] -> raise Not_found
+      | id::dir ->
+	  try 
+	    let ref = locate_rev_cci id [] in
+	      match ref with
+		  TrueGlobal (ModRef _) ->
+		    if ref = locate_rev_cci id dir then
+		      i
+		    else
+		      raise Not_found
+		| _ -> raise Not_found
+	  with
+	      Not_found ->
+		find_short_module dir (i+1)
+  in
+(*  let rec find_module dir i = 
+    match dir with
+	[] -> raise Not_found
+      | id::dir -> 
+	  try find_module dir (i+1)
+	  with Not_found -> 
+	    match locate_rev_cci id dir with
+		TrueGlobal (ModRef _) -> (i,id)
+	      |  _ -> raise Not_found
+  in
+*)
+  let dir_rev = List.rev dir in
+  try
+    (find_short_module dir_rev 0)+1
+  with 
+      Not_found -> 1
+  
+(*  try 
+    let (i,id) = find_module (List.rev dir) 0 in
+      try
+	match locate_rev_cci id [] with
+	    TrueGlobal (ModRef _) -> i+1
+	  |  _ -> i+2
+      with
+	  Not_found -> i+2
+  with Not_found -> 1
+*)
 
 let push_idtree tab dir id o =
+  let depth = calc_depth dir in
   let modtab =
     try Idmap.find id !tab
     with Not_found -> (None, ModIdmap.empty) in
-  tab := Idmap.add id (push_tree modtab dir o) !tab
+  tab := Idmap.add id (push_tree modtab dir o depth) !tab
 
 let push_long_names_ccipath = push_idtree the_ccitab
 let push_short_name_ccipath = push_idtree the_ccitab
@@ -91,7 +158,7 @@ let push_modidtree tab dir id o =
   let modtab =
     try ModIdmap.find id !tab
     with Not_found -> (None, ModIdmap.empty) in
-  tab := ModIdmap.add id (push_tree modtab dir o) !tab
+  tab := ModIdmap.add id (push_tree modtab dir o max_int) !tab
 
 let push_long_names_secpath = push_modidtree the_sectab
 let push_long_names_libpath = push_modidtree the_libtab
@@ -106,7 +173,7 @@ let push_cci sp ref =
   let dir, s = repr_qualid (qualid_of_sp sp) in
   (* We push partially qualified name (with at least one prefix) *)
   push_long_names_ccipath dir s (TrueGlobal ref);
-  the_globtab := Globtab.add ref (qualid_of_sp sp) !the_globtab
+  the_globtab := Globtab.add ref sp !the_globtab
 
 let push = push_cci
 
@@ -115,8 +182,10 @@ let push_short_name id ref =
   push_short_name_ccipath [] id (TrueGlobal ref);
   match ref with
     | VarRef id -> 
-	the_globtab := Globtab.add ref (make_qualid [] id) !the_globtab
+	the_globtab := Globtab.add ref (make_path [] id CCI) !the_globtab
+    | ModRef mp -> ()
     | _ -> ()
+
 (* This is for Syntactic Definitions *)
 
 let push_syntactic_definition sp =
@@ -140,20 +209,6 @@ let push_section fulldir =
   (* We push all partially qualified name *)
   push_long_names_secpath dir s fulldir;
   push_long_names_secpath [] s fulldir
-
-(* These are entry points to locate names *)
-(* If the name starts with the coq_root name, then it is an absolute name *)
-let locate_in_tree tab dir =
-  let dir = List.rev dir in
-  let rec search (current,modidtab) = function
-    | modid :: path -> search (ModIdmap.find modid modidtab) path
-    | [] -> match current with Some o -> o | _ -> raise Not_found
-  in
-  search tab dir
-
-let locate_cci qid =
-  let (dir,id) = repr_qualid qid in
-  locate_in_tree (Idmap.find id !the_ccitab) dir
 
 (* This should be used when syntactic definitions are allowed *)
 let extended_locate = locate_cci
@@ -192,6 +247,11 @@ let locate_constant qid =
 let locate_mind qid =
   match locate_cci qid with
     | TrueGlobal (IndRef (ln,_)) -> ln
+    | _ -> raise Not_found
+
+let locate_module qid = 
+  match locate_cci qid with
+    | TrueGlobal (ModRef mp) -> mp
     | _ -> raise Not_found
 
 let sp_of_id _ id = match locate_cci (make_qualid [] id) with
@@ -252,10 +312,18 @@ let exists_section dir =
   try let _ = locate_section (qualid_of_dirpath dir) in true
   with Not_found -> false
 
+let exists_module dir = 
+  try let ref = locate_cci (qualid_of_dirpath dir) in
+    match ref with
+      | TrueGlobal (ModRef _) -> true
+      | _ -> false
+  with Not_found -> false
 
-let get_full_qualid ref = Globtab.find ref !the_globtab
+let get_sp ref = Globtab.find ref !the_globtab
 
-let get_ident ref = snd (repr_qualid (get_full_qualid ref))
+let get_full_qualid ref = qualid_of_sp (get_sp ref)
+
+let get_ident ref = basename (get_sp ref)
 
 let get_short_qualid ref = 
   let full_qid = get_full_qualid ref in

@@ -36,8 +36,9 @@ val push_named_assum : identifier * constr -> unit
 val push_named_def : identifier * constr -> unit
 
 val add_constant : label -> constant_entry -> constant_path
-(*val add_discharged_constant : label -> Cooking.recipe -> unit*)
 val add_mind : mutual_inductive_entry -> mutual_inductive_path
+val add_module : label -> module_entry -> module_path
+val add_modtype : label -> module_type_entry -> long_name
 (*val add_constraints : constraints -> unit *)
 
 (*val pop_named_decls : identifier list -> unit*)
@@ -50,10 +51,22 @@ val lookup_mind_specif : inductive -> inductive_instance
 val lookup_module : module_path -> module_body
 val lookup_modtype : long_name -> module_type_body
 
+val begin_module : 
+  label -> (mod_bound_id * module_type_entry) list 
+    -> module_type_entry option -> unit
+val end_module : label -> module_path
+
+val begin_modtype : 
+  label -> (mod_bound_id * module_type_entry) list -> unit
+val end_modtype : label -> long_name
+
+val current_modpath : unit -> module_path
+val current_msid : unit -> mod_str_id
+
 val set_opaque : long_name -> unit
 val set_transparent : long_name -> unit
 
-val export : dir_path -> compiled_module
+val export : dir_path -> mod_str_id * compiled_module
 val import : compiled_module -> Digest.t -> module_path
 
 (*s Some functions of [Environ] instanciated on the global environment. *)

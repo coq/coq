@@ -510,8 +510,8 @@ let rec substlin env name n ol c =
           with
 	      NotEvaluableConst _ ->
 		errorlabstrm "substlin"
-		  [< Libnames.pr_qualid (Nametab.get_full_qualid (ConstRef sp)); 
-		     'sTR " is not a defined constant" >]
+		   (Libnames.pr_qualid (Nametab.get_full_qualid (ConstRef sp)) ++ 
+		     str " is not a defined constant")
         else 
 	  ((n+1), ol, c)
 
@@ -521,7 +521,7 @@ let rec substlin env name n ol c =
 	    | Some c -> (n+1, List.tl ol, c)
 	    | None -> 
 		errorlabstrm "substlin"
-		  [< pr_id id; 'sTR " is not a defined constant" >]
+		   (pr_id id ++ str " is not a defined constant" )
         else 
 	  ((n+1), ol, c)
 
@@ -734,7 +734,7 @@ let reduce_to_mind env sigma t =
 	     let t' = nf_betaiota (one_step_reduce env sigma t) in 
 	     elimrec env t' l
            with UserError _ -> errorlabstrm "tactics__reduce_to_mind"
-               [< 'sTR"Not an inductive product." >])
+                (str"Not an inductive product.") )
  in
  elimrec env t []
 

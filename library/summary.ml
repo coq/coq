@@ -20,8 +20,8 @@ type 'a summary_declaration = {
 let summaries = 
   (Hashtbl.create 17 : (string, Dyn.t summary_declaration) Hashtbl.t)
 
-let declare_summary sumname sdecl =
-  let (infun,outfun) = Dyn.create (sumname^"-SUMMARY") in
+let internal_declare_summary sumname sdecl =
+  let (infun,outfun) = Dyn.create sumname in
   let dyn_freeze () = infun (sdecl.freeze_function())
   and dyn_unfreeze sum = sdecl.unfreeze_function (outfun sum)
   and dyn_init = sdecl.init_function in
@@ -33,8 +33,16 @@ let declare_summary sumname sdecl =
   in
   if Hashtbl.mem summaries sumname then
     anomalylabstrm "Summary.declare_summary"
-      [< 'sTR "Cannot declare a summary twice: " ; 'sTR sumname >];
+      (str "Cannot declare a summary twice: " ++ str sumname) ;
   Hashtbl.add summaries sumname ddecl
+
+let declare_summary sumname decl = 
+  internal_declare_summary (sumname^"-SUMMARY") decl
+
+let envsummary = "Global environment SUMMARY"
+
+let declare_global_environment sdecl = 
+  internal_declare_summary envsummary sdecl
 
 type frozen = Dyn.t Stringmap.t
 
@@ -57,6 +65,15 @@ let unfreeze_lost_summaries fs =
     (fun id decl -> 
        try 
 	 if not decl.survive_section then
+	   decl.unfreeze_function (Stringmap.find id fs)
+       with Not_found -> decl.init_function())
+    summaries
+
+let unfreeze_other_summaries fs = 
+  Hashtbl.iter
+    (fun id decl -> 
+       try 
+	 if id <> envsummary then
 	   decl.unfreeze_function (Stringmap.find id fs)
        with Not_found -> decl.init_function())
     summaries

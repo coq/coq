@@ -106,7 +106,7 @@ let encode_inductive id =
       match kind_of_term (global_reference id) with
         | IsMutInd (indsp,args) -> (indsp,args)
 	| _ -> errorlabstrm "indsp_of_id" 
-	    [< 'sTR ((string_of_id id)^" is not an inductive type") >]
+	     (str ((string_of_id id)^" is not an inductive type")) 
     with Not_found -> 
       error ("Cannot find reference "^(string_of_id id))
   in
@@ -140,9 +140,9 @@ module PrintingCasesMake =
     let encode = encode_inductive
     let check (_,lc) =
       if not (Test.test lc) then 
-	errorlabstrm "check_encode" [< 'sTR Test.error_message >]
+	errorlabstrm "check_encode"  (str Test.error_message)
     let printer (spi,_) = 
-      [< 'sTR (string_of_qualid (Nametab.get_short_qualid (IndRef spi))) >]
+       str (string_of_qualid (Nametab.get_short_qualid (IndRef spi))) 
     let key = Goptions.SecondaryTable ("Printing",Test.field)
     let title = Test.title
     let member_message = Test.member_message

@@ -13,10 +13,8 @@
 (**************************************************************)
 
 Require Export Logic.
-Require Export LogicHints.
 Require LogicSyntax.
 Require Datatypes.
-Require DatatypesHints.
 
 (* Section Subsets. *)
 

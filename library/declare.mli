@@ -66,10 +66,6 @@ val declare_mind : mutual_inductive_entry -> mutual_inductive_path
 val declare_eliminations : mutual_inductive_path -> unit
 
 
-(* experimental for now *)
-val declare_module_components : 
-  dir_path -> module_path -> unit
-
 
 val make_strength : dir_path -> strength
 val make_strength_0 : unit -> strength
@@ -120,5 +116,5 @@ val path_of_constructor_path : constructor_path -> mutual_inductive_path
 *)
 (* Look up function for the default elimination constant *)
 val elimination_suffix : sorts -> string
-val make_elimination_ident : inductive_ident:identifier -> sorts -> identifier
+val make_elimination_ident : identifier -> sorts -> identifier
 val lookup_eliminator : Environ.env -> inductive_path -> sorts -> constr

@@ -341,10 +341,11 @@ let cci_inductive env env_ar finite inds cst =
   in
   let hyps = keep_hyps ids (named_context env) in
   let inds' =
-    if Options.immediate_discharge then
+    List.map (abstract_inductive ntypes hyps) inds
+    (*if Options.immediate_discharge then
       List.map (abstract_inductive ntypes hyps) inds
     else
-      inds in
+      inds *)in
   let one_packet i (params,nparams,id,ar,cnames,issmall,isunit,lc) =
     let recargs = listrec_mconstr env_ar ntypes params nparams i lc in
     let isunit = isunit && ntypes = 1 && (not (is_recursive [0] recargs)) in

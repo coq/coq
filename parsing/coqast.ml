@@ -24,7 +24,7 @@ type t =
   | Num of loc * int
   | Str of loc * string
   | Id of loc * string
-  | Path of loc * Names.long_name
+  | Path of loc * section_path
   | Dynamic of loc * Dyn.t
 
 type the_coq_ast = t
@@ -63,7 +63,8 @@ module Hast = Hashcons.Make(
     type u = 
 	(the_coq_ast -> the_coq_ast) *
 	((loc -> loc) * (string -> string)
-	 * (identifier -> identifier) * (Names.long_name -> Names.long_name))
+	 * (identifier -> identifier) 
+	 * (section_path -> section_path))
     let hash_sub (hast,(hloc,hstr,hid,hsp)) = function
       | Node(l,s,al) -> Node(hloc l, hstr s, List.map hast al)
       | Nmeta(l,s) -> Nmeta(hloc l, hstr s)

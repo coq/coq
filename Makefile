@@ -34,6 +34,21 @@ noargument:
 	@echo "or make archclean"
 
 ###########################################################################
+# Testing commodities
+###########################################################################
+
+# this link is essential for convenient debugging
+
+coqtop:	
+	ln -sf bin/coqtop.byte coqtop
+
+run:	coqtop bin/coqtop.byte
+	ledit -h dev/debug_history -x ./coqtop
+
+dev:	dev/top_printers.cmo
+
+
+###########################################################################
 # Compilation options
 ###########################################################################
 
@@ -94,7 +109,7 @@ LIBRARY=library/libnames.cmo						\
 	library/libobject.cmo library/summary.cmo library/nametab.cmo	\
 	library/lib.cmo library/goptions.cmo				\
 	library/global.cmo library/impargs.cmo library/indrec.cmo	\
-	library/declare.cmo library/library.cmo				\
+	library/declare.cmo library/declaremods.cmo library/library.cmo	\
 	library/states.cmo 
 
 PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
@@ -107,9 +122,11 @@ PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/termast.cmo parsing/astterm.cmo parsing/coqlib.cmo \
+	parsing/astmod.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo \
 	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
 	parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
+	parsing/g_module.cmo \
         parsing/extend.cmo parsing/esyntax.cmo \
 	parsing/printer.cmo parsing/prettyp.cmo parsing/search.cmo \
         parsing/egrammar.cmo \
@@ -334,15 +351,26 @@ SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v syntax/PPTactic.v
 states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
 	$(BESTCOQTOP) -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
 
-INITVO=theories/Init/Datatypes.vo theories/Init/DatatypesHints.vo	\
+# INITVO=theories/Init/Datatypes.vo theories/Init/DatatypesHints.vo	\
+#        theories/Init/DatatypesSyntax.vo					\
+#        theories/Init/Logic.vo						\
+#        theories/Init/LogicSyntax.vo theories/Init/LogicHints.vo		\
+#        theories/Init/Peano.vo						\
+#        theories/Init/Specif.vo						\
+#        theories/Init/SpecifHints.vo theories/Init/SpecifSyntax.vo	\
+#        theories/Init/Wf.vo						\
+#        theories/Init/Logic_Type.vo theories/Init/Logic_TypeHints.vo	\
+#        theories/Init/Logic_TypeSyntax.vo				\
+#        theories/Init/Prelude.vo
+INITVO=theories/Init/Datatypes.vo	\
        theories/Init/DatatypesSyntax.vo					\
        theories/Init/Logic.vo						\
-       theories/Init/LogicSyntax.vo theories/Init/LogicHints.vo		\
+       theories/Init/LogicSyntax.vo		\
        theories/Init/Peano.vo						\
        theories/Init/Specif.vo						\
-       theories/Init/SpecifHints.vo theories/Init/SpecifSyntax.vo	\
+       theories/Init/SpecifSyntax.vo	\
        theories/Init/Wf.vo						\
-       theories/Init/Logic_Type.vo theories/Init/Logic_TypeHints.vo	\
+       theories/Init/Logic_Type.vo	\
        theories/Init/Logic_TypeSyntax.vo				\
        theories/Init/Prelude.vo
 
@@ -727,7 +755,7 @@ clean::
 ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
 	   parsing/g_vernac.ml4 parsing/g_proofs.ml4 parsing/g_cases.ml4 \
 	   parsing/g_constr.ml4 parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
-	   parsing/extend.ml4    
+	   parsing/extend.ml4 parsing/g_module.ml4
 
 # beforedepend:: $(GRAMMARCMO)
 
@@ -755,6 +783,12 @@ ML4FILES += toplevel/mltop.ml4
 clean::
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
 
+ML4FILES += lib/pp.ml4 			\
+#	 contrib/xml/xml.ml4		\
+#	 contrib/xml/xmlcommand.ml4	\
+#	 contrib/interface/line_parser.ml4	\
+	 tools/coq_makefile.ml4		\
+	 tools/coq-tex.ml4
 ###########################################################################
 # Default rules
 ###########################################################################
@@ -853,7 +887,9 @@ depend: beforedepend
 # 2. Then we are able to produce the .ml files using Makefile.dep
 	$(MAKE) -f Makefile.dep $(ML4FILESML)
 # 3. We compute the dependencies inside the .ml files using ocamldep
-	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
+	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml > .depend
+# */*/*.ml omitted for stream reasons...
+
 # 4. We express dependencies of .cmo files w.r.t their grammars
 	for f in $(ML4FILES); do \
 	  printf "%s" `dirname $$f`/`basename $$f .ml4`".cmo: " >> .depend; \

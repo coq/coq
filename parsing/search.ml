@@ -78,11 +78,16 @@ let crible (fn : global_reference -> env -> constr -> unit) ref =
 	     | _ -> ())
       | _ -> ()
   in 
+  let crible_node (sp,node) = match node with
+      Lib.Leaf obj -> crible_rec sp obj
+    | _ -> () 
+  in
   try 
-    Library.iter_all_segments true crible_rec 
+    todo "Modules should also be searched!!!";
+    List.iter crible_node (Lib.contents_after None)
   with Not_found -> 
     errorlabstrm "search"
-      [< pr_global ref; 'sPC; 'sTR "not declared" >]
+       (pr_global ref ++ spc () ++ str "not declared")
 
 (* Fine Search. By Yves Bertot. *)
 
@@ -103,7 +108,7 @@ let xor a b = (a or b) & (not (a & b))
 let plain_display ref a c =
   let pc = prterm_env a c in
   let pr = pr_global ref in
-  mSG [< hOV 2 [< pr; 'sTR":"; 'sPC; pc >]; 'fNL>]
+  msg (hov 2 (pr ++ str":" ++ spc () ++ pc) ++ fnl ())
 
 let filter_by_module (module_list:dir_path list) (accept:bool) 
   (ref:global_reference) (env:env) _ =

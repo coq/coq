@@ -86,7 +86,7 @@ let rec frontier p =
 	      p'
             else 
 	      errorlabstrm "Refiner.frontier"
-                [< 'sTR"frontier was handed back a ill-formed proof." >]))
+                 (str"frontier was handed back a ill-formed proof.") ))
     | Some(r,pfl) ->
     	let gll,vl = List.split(List.map frontier pfl) in
     	(List.flatten gll,
@@ -126,7 +126,7 @@ let tac_tab = Hashtbl.create 17
 let add_tactic s t =
   if Hashtbl.mem tac_tab s then
     errorlabstrm ("Refiner.add_tactic: "^s) 
-      [<'sTR "Cannot redeclare a tactic.">];
+      (str "Cannot redeclare a tactic.");
   Hashtbl.add tac_tab s t
 
 let overwriting_add_tactic s t =
@@ -141,13 +141,13 @@ let lookup_tactic s =
     Hashtbl.find tac_tab s
   with Not_found -> 
     errorlabstrm "Refiner.lookup_tactic"
-      [< 'sTR"The tactic " ; 'sTR s ; 'sTR" is not installed" >]
+       (str"The tactic "  ++ str s  ++ str" is not installed") 
 
 
 (* refiner r is a tactic applying the rule r *)
 
 let bad_subproof () =
-  anomalylabstrm "Refiner.refiner" [< 'sTR"Bad subproof in validation.">]
+  anomalylabstrm "Refiner.refiner" (str"Bad subproof in validation.")
 
 let check_subproof_connection gl spfl =
   if not (list_for_all2eq (fun g pf -> g=pf.goal) gl spfl)
@@ -295,7 +295,7 @@ let goal_goal_list gls = {it=[gls.it];sigma=gls.sigma}
 let tclIDTAC gls = (goal_goal_list gls, idtac_valid)
 
 (* General failure tactic *)
-let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" [< 'sTR s>]
+let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s"  (str s)
 
 (* A special exception for levels for the Fail tactic *)
 exception FailError of int
@@ -313,7 +313,7 @@ let thens_tac tac2l taci (sigr,gs,p) =
   let (gl,gi) =
     try list_chop (List.length tac2l) gs
     with Failure _ -> errorlabstrm "Refiner.combine_tactics"
-        [<'sTR "Wrong number of tactics.">] in
+        (str "Wrong number of tactics.") in
   let tac2gl =
     List.combine gl tac2l @ list_map_i (fun i g -> (g, taci i)) 1 gi in
   let gll,pl =
@@ -326,14 +326,14 @@ let then_tac tac = thens_tac [] (fun _ -> tac)
 
 let non_existent_goal n =
   errorlabstrm ("No such goal: "^(string_of_int n))
-    [< 'sTR"Trying to apply a tactic to a non existent goal" >]
+     (str"Trying to apply a tactic to a non existent goal") 
 
 (* Apply tac on the i-th goal (if i>0). If i<0, then start counting from
    the last goal (i=-1). *)
 let theni_tac i tac ((_,gl,_) as subgoals) =
   let nsg = List.length gl in
   let k = if i < 0 then nsg + i + 1 else i in
-  if nsg < 1 then errorlabstrm "theni_tac" [< 'sTR"No more subgoals.">]
+  if nsg < 1 then errorlabstrm "theni_tac"  (str"No more subgoals.")
   else if k >= 1 & k <= nsg then
     thens_tac [] (fun i -> if i = k then tac else tclIDTAC) subgoals
   else non_existent_goal k 
@@ -404,14 +404,14 @@ the goal unchanged *)
 let tclPROGRESS tac ptree =
   let rslt = tac ptree in
   if progress (fst rslt) ptree then rslt
-  else errorlabstrm "Refiner.PROGRESS" [< 'sTR"Failed to progress.">]
+  else errorlabstrm "Refiner.PROGRESS"  (str"Failed to progress.")
 
 (* weak_PROGRESS tac ptree applies tac to the goal ptree and fails 
    if tac leaves the goal unchanged, possibly modifying sigma *)
 let tclWEAK_PROGRESS tac ptree =
   let rslt = tac ptree in
   if weak_progress (fst rslt) ptree then rslt
-  else errorlabstrm "Refiner.tclWEAK_PROGRESS" [< 'sTR"Failed to progress.">]
+  else errorlabstrm "Refiner.tclWEAK_PROGRESS"  (str"Failed to progress.")
 
 
 (* Same as tclWEAK_PROGRESS but fails also if tactics generates several goals,
@@ -421,7 +421,7 @@ let tclNOTSAMEGOAL (tac : tactic) goal =
   let gls = (fst rslt).it in
   if List.exists (same_goal goal.it) gls
   then errorlabstrm "Refiner.tclNOTSAMEGOAL" 
-      [< 'sTR"Tactic generated a subgoal identical to the original goal.">]
+       (str"Tactic generated a subgoal identical to the original goal.")
   else rslt
 
 
@@ -467,7 +467,7 @@ let tclSOLVE tacl = tclFIRST (List.map tclCOMPLETE tacl)
 let tclDO n t = 
   let rec dorec k = 
     if k < 0 then errorlabstrm "Refiner.tclDO"
-      [<'sTR"Wrong argument : Do needs a positive integer.">];
+      (str"Wrong argument : Do needs a positive integer.");
     if k = 0 then tclIDTAC
     else if k = 1 then t else (tclTHEN t (dorec (k-1)))
   in 
@@ -666,12 +666,12 @@ let extract_open_pftreestate pts =
 let extract_pftreestate pts =
   if pts.tstack <> [] then
     errorlabstrm "extract_pftreestate"
-      [< 'sTR"Cannot extract from a proof-tree in which we have descended;" ;
-         'sPC; 'sTR"Please ascend to the root" >];
+       (str"Cannot extract from a proof-tree in which we have descended ++"  ++
+         spc () ++ str"Please ascend to the root") ;
   let pfterm,subgoals = extract_open_pftreestate pts in
   if subgoals <> [] then
    errorlabstrm "extract_proof"
-   [< 'sTR "Attempt to save an incomplete proof" >];
+    (str "Attempt to save an incomplete proof") ;
   let env = Global.env_of_context pts.tpf.goal.evar_hyps in
   strong whd_betaiotaevar env (ts_it pts.tpfsigma) pfterm
   (***
@@ -682,7 +682,7 @@ let extract_pftreestate pts =
 let rec first_unproven pts =
   let pf = (proof_of_pftreestate pts) in 
   if is_complete_proof pf then
-    errorlabstrm "first_unproven" [< 'sTR"No unproven subgoals" >];
+    errorlabstrm "first_unproven"  (str"No unproven subgoals") ;
   if is_leaf_proof pf then
     pts
   else
@@ -699,7 +699,7 @@ let rec first_unproven pts =
 let rec last_unproven pts =
   let pf = proof_of_pftreestate pts in 
   if is_complete_proof pf then
-    errorlabstrm "last_unproven" [< 'sTR"No unproven subgoals" >];
+    errorlabstrm "last_unproven" (str"No unproven subgoals") ;
   if is_leaf_proof pf then
     pts
   else 
@@ -716,17 +716,17 @@ let rec last_unproven pts =
 let rec nth_unproven n pts =
   let pf = proof_of_pftreestate pts in 
   if is_complete_proof pf then
-    errorlabstrm "nth_unproven" [< 'sTR"No unproven subgoals" >];
+    errorlabstrm "nth_unproven" (str"No unproven subgoals") ;
   if is_leaf_proof pf then
     if n = 1 then 
       pts 
     else
-      errorlabstrm "nth_unproven" [< 'sTR"Not enough unproven subgoals" >]
+      errorlabstrm "nth_unproven" (str"Not enough unproven subgoals") 
   else 
     let children = children_of_proof pf in
     let rec process i k = function
       | [] -> 
-	  errorlabstrm "nth_unproven" [< 'sTR"Not enough unproven subgoals" >]
+	  errorlabstrm "nth_unproven" (str"Not enough unproven subgoals")
       | pf1::rest -> 
 	  let k1 = nb_unsolved_goals pf1 in 
 	  if k1 < k then 
@@ -795,11 +795,11 @@ let pr_tactic (s,l) =
 
 let pr_rule = function
   | Prim r -> pr_prim_rule r
-  | Tactic texp -> hOV 0 (pr_tactic texp)
+  | Tactic texp -> hov 0 (pr_tactic texp)
   | Context ctxt -> pr_ctxt ctxt
-  | Local_constraints lc ->
+  | Local_constraints lc -> 
       (* This is internal tactic and cannot be replayed at user-level *)
-      [< (* 'sTR"Local constraint change" *) >]
+       mt () (* str"Local constraint change" *) 
 
 exception Different
 
@@ -819,67 +819,67 @@ let rec print_proof sigma osign pf =
   let hyps' = thin_sign osign hyps in
   match pf.ref with
     | None -> 
-	hOV 0 [< pr_seq {evar_hyps=hyps'; evar_concl=cl;
-			 evar_info=info; evar_body=body} >]
+	hov 0 (pr_seq {evar_hyps=hyps'; evar_concl=cl;
+			 evar_info=info; evar_body=body}) 
     | Some(r,spfl) ->
-    	hOV 0 [< hOV 0 (pr_seq {evar_hyps=hyps'; evar_concl=cl;
-				evar_info=info; evar_body=body});
-		 'sPC ; 'sTR" BY ";
-		 hOV 0 [< pr_rule r >]; 'fNL ;
-		 'sTR"  ";
-		 hOV 0 (prlist_with_sep pr_fnl (print_proof sigma hyps) spfl)
-              >]
+    	hov 0 ( hov 0 (pr_seq {evar_hyps=hyps'; evar_concl=cl;
+				evar_info=info; evar_body=body}) ++
+		 spc () ++ str" BY " ++
+		 hov 0 (pr_rule r) ++ fnl () ++
+		 str"  " ++
+		 hov 0 (prlist_with_sep pr_fnl (print_proof sigma hyps) spfl)
+              )
 	  
-let pr_change gl = [< 'sTR"Change " ; prterm gl.evar_concl ; 'sTR"." ; 'fNL>]
+let pr_change gl =  str"Change "  ++ prterm gl.evar_concl  ++ str"."  ++ fnl ()
 		     
 let rec print_script nochange sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in
   match pf.ref with
     | None ->
         if nochange then 
-	  [< 'sTR"<Your Tactic Text here>" >] 
+	   str"<Your Tactic Text here>"  
 	else 
 	  pr_change pf.goal
     | Some(r,spfl) ->
-        [< (if nochange then [< >] else (pr_change pf.goal));
-           pr_rule r ; 'sTR"." ; 'fNL ;
+         (if nochange then (mt ()) else (pr_change pf.goal))++
+           pr_rule r ++ str"." ++ fnl () ++
            prlist_with_sep pr_fnl
-             (print_script nochange sigma sign) spfl >]
+             (print_script nochange sigma sign) spfl
 
 let rec print_treescript sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in
   match pf.ref with
-    | None -> [< >]
+    | None -> (mt ())
     | Some(r,spfl) ->
-        [< pr_rule r ; 'sTR"." ; 'fNL ;
+        pr_rule r ++ str"." ++ fnl () ++
            let prsub =
              prlist_with_sep pr_fnl (print_treescript sigma sign) spfl
            in
            if List.length spfl > 1 then 
-	     [< 'sTR"  "; hOV 0 prsub >]
+	      str"  " ++ hov 0 prsub 
            else 
 	     prsub 
-	>]
+	
 
 let rec print_info_script sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in
   match pf.ref with
-    | None -> [< >]
+    | None -> (mt ())
     | Some(r,spfl) ->
-        [< pr_rule r ; 
+        pr_rule r ++
            match spfl with
              | [pf1] ->
                  if pf1.ref = None then 
-		   [<'sTR "."; 'fNL >]
+		   str "." ++ fnl () 
                  else 
-		   [< 'sTR";" ; 'bRK(1,3) ;
-		      print_info_script sigma sign pf1 >]
-             | _ -> [< 'sTR"." ; 'fNL ;
+		    str" ++"  ++ brk(1,3)  ++
+		      print_info_script sigma sign pf1 
+             | _ ->  str"."  ++ fnl ()  ++
                        prlist_with_sep pr_fnl
-                         (print_info_script sigma sign) spfl >] >]
+                         (print_info_script sigma sign) spfl  
 
 let format_print_info_script sigma osign pf = 
-  hOV 0 (print_info_script sigma osign pf)
+  hov 0 (print_info_script sigma osign pf)
     
 let print_subscript sigma sign pf = 
   if is_tactic_proof pf then 
@@ -892,10 +892,10 @@ let tclINFO (tac : tactic) gls =
   begin try 
     let pf = v (List.map leaf (sig_it sgl)) in
     let sign = (sig_it gls).evar_hyps in
-    mSGNL(hOV 0 [< 'sTR" == "; 
+    msgnl(hov 0 (str" == " ++ 
                    print_subscript 
-                     ((compose ts_it sig_sig) gls) sign pf >])
+                     ((compose ts_it sig_sig) gls) sign pf) )
   with e when catchable_exception e -> 
-    mSGNL(hOV 0 [< 'sTR "Info failed to apply validation" >])
+    msgnl(hov 0 (str "Info failed to apply validation") )
   end;
   res

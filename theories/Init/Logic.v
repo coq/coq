@@ -9,7 +9,6 @@
 (* $Id$ *)
 
 Require Export Datatypes.
-Require Export DatatypesHints.
 
 (* [True] is the always true proposition *)
 Inductive True : Prop := I : True. 

@@ -39,7 +39,7 @@ let string_of_univ u =
   (string_of_modpath u.u_mod)^"."^(string_of_int u.u_num)
 
 let pr_uni u =
-  [< pr_modpath u.u_mod ; 'sTR"." ; 'iNT u.u_num >]
+  (pr_modpath u.u_mod) ++ (str ".") ++ (int u.u_num)
 
 let dummy_univ = 
   { u_mod = MPsid (msid_of_string "dummy univ"); 
@@ -117,7 +117,7 @@ let repr g u =
     let a =
       try UniverseMap.find u g
       with Not_found -> anomalylabstrm "Univ.repr"
-	  [< 'sTR"Universe "; pr_uni u; 'sTR" undefined" >] 
+	  (str "Universe " ++ pr_uni u ++ str" undefined")
     in
     match a with 
       | Equiv(_,v) -> repr_rec v
@@ -483,13 +483,13 @@ let num_edges g =
     
 let pr_arc = function 
   | Canonical {univ=u; gt=gt; ge=ge} -> 
-      hOV 2
-        [< pr_uni u; 'sPC;
-           prlist_with_sep pr_spc (fun v -> [< 'sTR">"; pr_uni v >]) gt;
-           prlist_with_sep pr_spc (fun v -> [< 'sTR">="; pr_uni v >]) ge
-        >]
+      hov 2
+        ( pr_uni u ++ spc () ++
+           prlist_with_sep pr_spc (fun v -> str">" ++ pr_uni v ) gt ++
+           prlist_with_sep pr_spc (fun v -> str">=" ++ pr_uni v ) ge )
+        
   | Equiv (u,v) -> 
-      [< pr_uni u ; 'sTR"=" ; pr_uni v >]
+       pr_uni u ++ str"=" ++ pr_uni v 
 
 let pr_universes g =
   let graph = UniverseMap.fold (fun k a l -> (k,a)::l) g [] in

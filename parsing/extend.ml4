@@ -107,7 +107,7 @@ let nterm univ ast =
     try 
       get_entry u n
     with UserError _ -> 
-      user_err_loc(loc ast,"Externd.nterm", [< 'sTR"unknown grammar entry" >])
+      user_err_loc(loc ast,"Externd.nterm", str "unknown grammar entry")
   in
   (nont, type_of_entry e)
 
@@ -163,7 +163,7 @@ let gram_define_entry univ = function
         try 
 	  create_entry univ nt etyp
         with Failure s ->
-          user_err_loc (ntl,"gram_define_entry",[< 'sTR s >])
+          user_err_loc (ntl,"gram_define_entry", str s )
       in 
       (nt, etyp, assoc, rl)
   | ast -> invalid_arg_loc (Ast.loc ast, "gram_define_entry")
@@ -218,8 +218,8 @@ type unparsing_hunk =
 
 let ppcmd_of_box = function
   | PpHB n -> h n
-  | PpHOVB n -> hOV n
-  | PpHVB n -> hV n
+  | PpHOVB n -> hov n
+  | PpHVB n -> hv n
   | PpVB n -> v n
   | PpTB   -> t
 

@@ -67,7 +67,7 @@ let insert v l =
 (* Nov 98 -- Papageno *)
 (* Les Hints sont ré-organisés en plusieurs databases. 
 
-  La table impérative "searchtable", de type "hint_db_table",
+  La table impérative "hinttable", de type "hint_db_table",
    associe une database (hint_db) à chaque nom.
 
   Une hint_db est une table d'association fonctionelle constr -> search_entry
@@ -133,57 +133,30 @@ type frozen_hint_db_table = Hint_db.t Stringmap.t
 
 type hint_db_table = Hint_db.t Stringmap.t ref
 
-let searchtable = (ref Stringmap.empty : hint_db_table)
+let hinttable = (ref Stringmap.empty : hint_db_table)
 
-let searchtable_map name = 
-  Stringmap.find name !searchtable
-let searchtable_add (name,db) = 
-  searchtable := Stringmap.add name db !searchtable
+let hinttable_map name = 
+  Stringmap.find name !hinttable
+let hinttable_add (name,db) = 
+  hinttable := Stringmap.add name db !hinttable
 
 (**************************************************************************)
 (*                       Definition of the summary                        *)
 (**************************************************************************)
 
-let init     () = searchtable := Stringmap.empty
-let freeze   () = !searchtable
-let unfreeze fs = searchtable := fs
+let init     () = hinttable := Stringmap.empty
+let freeze   () = !hinttable
+let unfreeze fs = hinttable := fs
 
-let _ = Summary.declare_summary "search"
+let _ = Summary.declare_summary "HINTS"
 	  { Summary.freeze_function   = freeze;
 	    Summary.unfreeze_function = unfreeze;
 	    Summary.init_function     = init;
 	    Summary.survive_section   = false }
 
- 
 (**************************************************************************)
-(*               declaration of the AUTOHINT library object               *)
-(**************************************************************************)
-
-(* If the database does not exist, it is created *)
-(* TODO: should a warning be printed in this case ?? *)
-let add_hint dbname hintlist = 
-  try 
-    let db = searchtable_map dbname in
-    let db' = Hint_db.add_list hintlist db in
-    searchtable_add (dbname,db')
-  with Not_found -> 
-    let db = Hint_db.add_list hintlist Hint_db.empty in
-    searchtable_add (dbname,db)
-
-let cache_autohint (_,(name,hintlist)) =
-  try add_hint name hintlist with _ -> anomaly "Auto.add_hint"
-
-let export_autohint x = Some x
-
-let (inAutoHint,outAutoHint) =
-  declare_object ("AUTOHINT",
-                  { load_function = (fun _ -> ());
-                    cache_function = cache_autohint;
-		    open_function = cache_autohint;
-                    export_function = export_autohint })
-
-(**************************************************************************)
-(*                     The "Hint" vernacular command                      *)
+(*             Auxiliary functions to prepare AUTOHINT objects 
+ *)
 (**************************************************************************)
 
 let rec nb_hyp c = match kind_of_term c with
@@ -220,8 +193,8 @@ let make_apply_entry env sigma (eapply,verbose) name (c,cty) =
         in 
 	if eapply & (nmiss <> 0) then begin
           if verbose then 
-	    wARN [< 'sTR "the hint: EApply "; prterm c;
-		    'sTR " will only be used by EAuto" >]; 
+	    warn (**)(  str "the hint: EApply " ++ prterm c ++
+		    str " will only be used by EAuto"  )(**); 
           (hd,
            { hname = name;
 	     pri = nb_hyp cty + nmiss;
@@ -246,7 +219,7 @@ let make_resolves env sigma name eap (c,cty) =
       [make_exact_entry; make_apply_entry env sigma eap]
   in 
   if ents = [] then 
-    errorlabstrm "Hint" [< prterm c; 'sPC; 'sTR "cannot be used as a hint" >];
+    errorlabstrm "Hint" (**)(  prterm c ++ spc () ++ str "cannot be used as a hint"  )(**);
   ents
 
 (* used to add an hypothesis to the local hint database *)
@@ -258,25 +231,6 @@ let make_resolve_hyp env sigma (hname,_,htyp) =
     | Failure _ -> []
     | e when Logic.catchable_exception e -> anomaly "make_resolve_hyp"
 
-let add_resolves env sigma clist dbnames =
-  List.iter 
-    (fun dbname ->
-       Lib.add_anonymous_leaf
-	 (inAutoHint
-	    (dbname,
-     	     (List.flatten
-		(List.map
-		   (fun (name,c) -> 
-		      let ty = type_of env sigma c in
-		      let verbose = Options.is_verbose() in
-		      make_resolves env sigma name (true,verbose) (c,ty)) clist
-		))
-	    )))
-    dbnames
-
-let global qid =
-  try Nametab.locate qid
-  with Not_found -> Nametab.error_global_not_found_loc dummy_loc qid
 
 (* REM : in most cases hintname = id *)
 let make_unfold (hintname, ref) =
@@ -286,11 +240,6 @@ let make_unfold (hintname, ref) =
      pat = None;
      code = Unfold_nth ref })
 
-let add_unfolds l dbnames =
-  List.iter 
-    (fun dbname ->
-       Lib.add_anonymous_leaf (inAutoHint (dbname, List.map make_unfold l)))
-    dbnames
 
 let make_extern name pri pat tacast = 
   let hdconstr = try_head_pattern pat in 
@@ -300,23 +249,8 @@ let make_extern name pri pat tacast =
      pat = Some pat;
      code= Extern tacast })
 
-let add_extern name pri (patmetas,pat) tacast dbname =
-  (* We check that all metas that appear in tacast have at least
-     one occurence in the left pattern pat *)
-  let tacmetas = Coqast.collect_metas tacast in 
-  match (list_subtract tacmetas patmetas) with
-    | i::_ ->
-	errorlabstrm "add_extern" 
-	  [< 'sTR "The meta-variable ?"; 'iNT i; 'sTR" is not bound" >]
-    | []  ->
-	Lib.add_anonymous_leaf
-	  (inAutoHint(dbname, [make_extern name pri pat tacast]))
 
-let add_externs name pri pat tacast dbnames = 
-  List.iter (add_extern name pri pat tacast) dbnames
-
-let make_trivial (name,c) =
-  let sigma = Evd.empty and env = Global.env() in
+let make_trivial env sigma (name,c) =
   let t = hnf_constr env sigma (type_of env sigma c) in
   let hd = head_of_constr_reference (List.hd (head_constr t)) in
   let ce = mk_clenv_from () (c,t) in
@@ -325,10 +259,142 @@ let make_trivial (name,c) =
                pat = Some (Pattern.pattern_of_constr (clenv_template_type ce).rebus);
                code=Res_pf_THEN_trivial_fail(c,ce) })
 
-let add_trivials l dbnames =
+
+(**************************************************************************)
+(*               declaration of the AUTOHINT library object               *)
+(**************************************************************************)
+
+let eager o = ref (Lazy.Value o)
+
+(* If the database does not exist, it is created *)
+(* TODO: should a warning be printed in this case ?? *)
+let add_hint dbname hintlist = 
+  try 
+    let db = hinttable_map dbname in
+    let db' = Hint_db.add_list hintlist db in
+    hinttable_add (dbname,db')
+  with Not_found -> 
+    let db = Hint_db.add_list hintlist Hint_db.empty in
+    hinttable_add (dbname,db)
+
+let cache_autohint (_,(name,l_hintlist)) =
+  try add_hint name (Lazy.force l_hintlist) with _ -> anomaly "Auto.add_hint"
+
+let subst_autohint subst ((name,l_hintlist) as obj) = 
+  let recalc_hints hintlist =
+    let env = Global.env() and sigma = Evd.empty in
+    let recalc_hint ((_,data) as hint) =
+      match data.code with
+	| Res_pf (c,_) ->
+	    let c' = Term.subst_modpaths subst c in
+	      if c==c' then hint else
+		make_apply_entry env sigma (false,false) 
+		  data.hname (c', type_of env sigma c')
+	| ERes_pf (c,_) ->
+	    let c' = Term.subst_modpaths subst c in
+	      if c==c' then hint else
+		make_apply_entry env sigma (true,false) 
+		  data.hname (c', type_of env sigma c')
+	| Give_exact c ->
+	    let c' = Term.subst_modpaths subst c in
+	      if c==c' then hint else
+		make_exact_entry data.hname (c',type_of env sigma c')
+	| Res_pf_THEN_trivial_fail (c,_) ->
+	    let c' = Term.subst_modpaths subst c in
+	      if c==c' then hint else
+		make_trivial env sigma (data.hname,c')
+	| Unfold_nth ref -> 
+	    let ref' = subst_global_reference subst ref in
+	      if ref==ref' then hint else
+		make_unfold (data.hname,ref')
+	| Extern _ ->
+	    anomaly "Extern hints cannot be substituted!!!"
+    in
+      list_smartmap recalc_hint hintlist
+  in
+  let hintlist = Lazy.force l_hintlist in
+    try
+      let hintlist' = recalc_hints hintlist in
+	if hintlist'==hintlist then
+	  obj
+	else
+	  (name,eager hintlist')
+    with
+	_ -> (name,lazy (recalc_hints hintlist))
+
+let classify_autohint (_,((name,l_hintlist) as obj)) =
+  match Lazy.force l_hintlist with
+      [] -> Dispose   
+    | (_,{code=Extern _})::_ -> Dispose (* TODO! should be changed *)
+    | _ -> Substitute obj
+
+
+let export_autohint x = Some x
+
+let (inAutoHint,outAutoHint) =
+  declare_object {(default_object "AUTOHINT") with 
+		    load_function = cache_autohint;
+                    cache_function = cache_autohint;
+		    open_function = (fun _ -> ());
+		    subst_function = subst_autohint;
+		    classify_function = classify_autohint;
+                    export_function = export_autohint  }
+
+(**************************************************************************)
+(*                     The "Hint" vernacular command                      *)
+(**************************************************************************)
+
+
+let add_resolves env sigma clist dbnames =
+  List.iter 
+    (fun dbname ->
+       Lib.add_anonymous_leaf
+	 (inAutoHint
+	    (dbname,
+	     let l = 
+	       List.flatten
+		 (List.map
+		    (fun (name,c) -> 
+		       let ty = type_of env sigma c in
+		       let verbose = Options.is_verbose() in
+			 make_resolves env sigma name (true,verbose) (c,ty)) clist
+		 )
+	     in
+	       eager l
+	    )))
+    dbnames
+
+let global qid =
+  try Nametab.locate qid
+  with Not_found -> Nametab.error_global_not_found_loc dummy_loc qid
+
+let add_unfolds l dbnames =
+  List.iter 
+    (fun dbname ->
+       Lib.add_anonymous_leaf 
+         (inAutoHint (dbname, eager (List.map make_unfold l))))
+    dbnames
+
+let add_extern name pri (patmetas,pat) tacast dbname =
+  (* We check that all metas that appear in tacast have at least
+     one occurence in the left pattern pat *)
+  let tacmetas = Coqast.collect_metas tacast in 
+  match (list_subtract tacmetas patmetas) with
+    | i::_ ->
+	errorlabstrm "add_extern" 
+	  (**)(  str "The meta-variable ?" ++ int i ++ str" is not bound"  )(**)
+    | []  ->
+	Lib.add_anonymous_leaf
+	  (inAutoHint(dbname, eager [make_extern name pri pat tacast]))
+
+let add_externs name pri pat tacast dbnames = 
+  List.iter (add_extern name pri pat tacast) dbnames
+
+let add_trivials env sigma l dbnames =
   List.iter
     (fun dbname ->
-       Lib.add_anonymous_leaf (inAutoHint(dbname, List.map make_trivial l)))
+       Lib.add_anonymous_leaf(
+	 inAutoHint(dbname, eager (List.map (make_trivial env sigma) l))))
     dbnames
 
 let _ = 
@@ -363,11 +429,12 @@ let _ =
     "HintImmediate"
     (function 
        | [VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_CONSTR c] ->
-	   let c1 = Astterm.interp_constr Evd.empty (Global.env()) c in
+	   let env = Global.env () and sigma = Evd.empty in
+	   let c1 = Astterm.interp_constr sigma env c in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
 			 | _ -> bad_vernac_args "HintImmediate") l in
-	   fun () -> add_trivials [hintname, c1] dbnames
+	   fun () -> add_trivials env sigma [hintname, c1] dbnames
        | _ -> bad_vernac_args "HintImmediate")
 
 
@@ -462,13 +529,14 @@ let _ =
     "HintsImmediate"
     (function
        | (VARG_VARGLIST l)::lh ->
+	   let env = Global.env () in
+	   let sigma = Evd.empty in
 	   let lhints = 
 	     List.map
 	       (function
 		  | VARG_QUALID qid -> 
 		      let _,n = Libnames.repr_qualid qid in
 		      let ref = Nametab.locate qid in
-		      let env = Global.env () in
 		      let c = Declare.constr_of_reference Evd.empty env ref in
 		      let hyps = Declare.implicit_section_args ref in
 		      let section_args = List.map (fun id -> mkVar id) hyps in
@@ -478,7 +546,7 @@ let _ =
 	     List.map (function 
 			 | VARG_IDENTIFIER i -> string_of_id i
 		      	 | _ -> bad_vernac_args "HintsImmediate") l in
-	   fun () -> add_trivials lhints dbnames
+	   fun () -> add_trivials env sigma lhints dbnames
        | _-> bad_vernac_args "HintsImmediate")
     
 (**************************************************************************)
@@ -486,49 +554,49 @@ let _ =
 (**************************************************************************)
 
 let fmt_autotactic = function
-  | Res_pf (c,clenv) -> [< 'sTR"Apply "; prterm c >]
-  | ERes_pf (c,clenv) -> [< 'sTR"EApply "; prterm c >]
-  | Give_exact c -> [< 'sTR"Exact " ; prterm c >]
+  | Res_pf (c,clenv) -> (**)(  str"Apply " ++ prterm c  )(**)
+  | ERes_pf (c,clenv) -> (**)(  str"EApply " ++ prterm c  )(**)
+  | Give_exact c -> (**)(  str"Exact "  ++ prterm c  )(**)
   | Res_pf_THEN_trivial_fail (c,clenv) -> 
-      [< 'sTR"Apply "; prterm c ; 'sTR" ; Trivial" >]
-  | Unfold_nth c -> [< 'sTR"Unfold " ;  pr_global c >]
-  | Extern coqast -> [< 'sTR "Extern "; gentacpr coqast >]
+      (**)(  str"Apply " ++ prterm c  ++ str"  ++ Trivial"  )(**)
+  | Unfold_nth c -> (**)(  str"Unfold "  ++  pr_global c  )(**)
+  | Extern coqast -> (**)(  str "Extern " ++ gentacpr coqast  )(**)
 
 let fmt_hint v =
-  [< fmt_autotactic v.code; 'sTR"("; 'iNT v.pri; 'sTR")"; 'sPC >]
+  (**)(  fmt_autotactic v.code ++ str"(" ++ int v.pri ++ str")" ++ spc ()  )(**)
 
 let fmt_hint_list hintlist =
-  [< 'sTR "  "; hOV 0 (prlist fmt_hint hintlist); 'fNL >]
+  (**)(  str "  " ++ hov 0 (prlist fmt_hint hintlist) ++ fnl ()  )(**)
 
 let fmt_hints_db (name,db,hintlist) =
-  [< 'sTR "In the database "; 'sTR name; 'sTR ":";
-     if hintlist = [] then [< 'sTR " nothing"; 'fNL >]
-     else [< 'fNL; fmt_hint_list hintlist >] >]
+  str "In the database " ++ str name ++ str ":" ++
+     if hintlist = [] then str " nothing" ++ fnl () 
+     else fnl () ++ fmt_hint_list hintlist
 
 (* Print all hints associated to head c in any database *)
 let fmt_hint_list_for_head c = 
-  let dbs = stringmap_to_list !searchtable in
+  let dbs = stringmap_to_list !hinttable in
   let valid_dbs = 
     map_succeed 
       (fun (name,db) -> (name,db,Hint_db.map_all c db)) 
       dbs 
   in
   if valid_dbs = [] then 
-    [<'sTR "No hint declared for :"; pr_ref_label c >]
+    (**)( str "No hint declared for :" ++ pr_ref_label c  )(**)
   else 
-    hOV 0 
-      [< 'sTR"For "; pr_ref_label c; 'sTR" -> "; 'fNL;
-	 hOV 0 (prlist fmt_hints_db valid_dbs) >]
+    hov 0 
+      (**)(  str"For " ++ pr_ref_label c ++ str" -> " ++ fnl () ++
+	 hov 0 (prlist fmt_hints_db valid_dbs)  )(**)
 
 let fmt_hint_id id = 
   try 
     let c = Declare.global_reference id in
     fmt_hint_list_for_head (head_of_constr_reference c)
   with Not_found -> 
-    [< pr_id id; 'sTR " not declared" >]
+    (**)(  pr_id id ++ str " not declared"  )(**)
 
 (* Print all hints associated to head id in any database *)
-let print_hint_id id =  pPNL(fmt_hint_id id)
+let print_hint_id id =  ppnl(fmt_hint_id id)
 
 let fmt_hint_term cl = 
   try 
@@ -537,7 +605,7 @@ let fmt_hint_term cl =
       | [] -> assert false 
     in
     let hd = head_of_constr_reference hdc in
-    let dbs = stringmap_to_list !searchtable in
+    let dbs = stringmap_to_list !hinttable in
     let valid_dbs = 
       if occur_existential cl then 
 	map_succeed 
@@ -550,14 +618,14 @@ let fmt_hint_term cl =
 	  dbs
     in 
     if valid_dbs = [] then 
-      [<'sTR "No hint applicable for current goal" >]
+      (**)( str "No hint applicable for current goal"  )(**)
     else
-      [< 'sTR "Applicable Hints :"; 'fNL;
-	 hOV 0 (prlist fmt_hints_db valid_dbs) >]
+      (**)(  str "Applicable Hints :" ++ fnl () ++
+	 hov 0 (prlist fmt_hints_db valid_dbs)  )(**)
   with Bound | Match_failure _ | Failure _ -> 
-    [<'sTR "No hint applicable for current goal" >]
+    (**)( str "No hint applicable for current goal"  )(**)
 	  
-let print_hint_term cl = pPNL (fmt_hint_term cl)
+let print_hint_term cl = ppnl (fmt_hint_term cl)
 
 (* print all hints that apply to the concl of the current goal *)
 let print_applicable_hint () = 
@@ -569,29 +637,29 @@ let print_applicable_hint () =
 let print_hint_db db =
   Hint_db.iter 
     (fun head hintlist ->
-       mSG (hOV 0 
-	      [< 'sTR "For "; pr_ref_label head; 'sTR " -> ";
-		 fmt_hint_list hintlist >]))
+       msg (hov 0 
+	      (**)(  str "For " ++ pr_ref_label head ++ str " -> " ++
+		 fmt_hint_list hintlist  )(**)))
     db
 
 let print_hint_db_by_name dbname =
   try 
-    let db = searchtable_map dbname in print_hint_db db
+    let db = hinttable_map dbname in print_hint_db db
   with Not_found -> 
     error (dbname^" : No such Hint database")
   
 (* displays all the hints of all databases *)
-let print_searchtable () =
+let print_hinttable () =
   Stringmap.iter
     (fun name db ->
-       mSG [< 'sTR "In the database "; 'sTR name; 'fNL >];
+       msg (**)(  str "In the database " ++ str name ++ fnl ()  )(**);
        print_hint_db db)
-    !searchtable
+    !hinttable
 
 let _ = 
   vinterp_add "PrintHint"
     (function 
-       | [] -> fun () -> print_searchtable()
+       | [] -> fun () -> print_hinttable()
        | _ -> bad_vernac_args "PrintHint")
 
 let _ = 
@@ -698,7 +766,7 @@ let trivial dbnames gl =
     List.map
       (fun x -> 
 	 try 
-	   searchtable_map x
+	   hinttable_map x
 	 with Not_found -> 
 	   error ("Trivial: "^x^": No such Hint database"))
       ("core"::dbnames) 
@@ -706,9 +774,9 @@ let trivial dbnames gl =
   tclTRY (trivial_fail_db db_list (make_local_hint_db gl)) gl 
     
 let full_trivial gl =
-  let dbnames = stringmap_dom !searchtable in
+  let dbnames = stringmap_dom !hinttable in
   let dbnames = list_subtract dbnames ["v62"] in
-  let db_list = List.map (fun x -> searchtable_map x) dbnames in
+  let db_list = List.map (fun x -> hinttable_map x) dbnames in
   tclTRY (trivial_fail_db db_list (make_local_hint_db gl)) gl
 
 let dyn_trivial = function
@@ -740,7 +808,7 @@ let decomp_unary_term c gls =
   if Hipattern.is_conjunction hd then 
     simplest_case c gls 
   else 
-    errorlabstrm "Auto.decomp_unary_term" [<'sTR "not a unary type" >] 
+    errorlabstrm "Auto.decomp_unary_term" (**)( str "not a unary type"  )(**) 
 
 let decomp_empty_term c gls = 
   let typc = pf_type_of gls c in 
@@ -748,7 +816,7 @@ let decomp_empty_term c gls =
   if Hipattern.is_empty_type hd then 
     simplest_case c gls 
   else 
-    errorlabstrm "Auto.decomp_empty_term" [<'sTR "not an empty type" >] 
+    errorlabstrm "Auto.decomp_empty_term" (**)( str "not an empty type"  )(**) 
 
 
 (* decomp is an natural number giving an indication on decomposition 
@@ -802,7 +870,7 @@ let auto n dbnames gl =
     List.map
       (fun x -> 
 	 try 
-	   searchtable_map x
+	   hinttable_map x
 	 with Not_found -> 
 	   error ("Auto: "^x^": No such Hint database"))
       ("core"::dbnames) 
@@ -813,9 +881,9 @@ let auto n dbnames gl =
 let default_auto = auto !default_search_depth []
 
 let full_auto n gl = 
-  let dbnames = stringmap_dom !searchtable in
+  let dbnames = stringmap_dom !hinttable in
   let dbnames = list_subtract dbnames ["v62"] in
-  let db_list = List.map (fun x -> searchtable_map x) dbnames in
+  let db_list = List.map (fun x -> hinttable_map x) dbnames in
   let hyps = pf_hyps gl in
   tclTRY (search n db_list (make_local_hint_db gl) hyps) gl
   
@@ -852,7 +920,7 @@ let default_search_decomp = ref 1
 
 let destruct_auto des_opt n gl = 
   let hyps = pf_hyps gl in
-  search_gen des_opt n [searchtable_map "core"] 
+  search_gen des_opt n [hinttable_map "core"] 
     (make_local_hint_db gl) hyps gl
     
 let dautomatic des_opt n = tclTRY (destruct_auto des_opt n)
@@ -940,7 +1008,7 @@ let search_superauto n to_add argl g =
       to_add empty_named_context in
   let db0 = list_map_append (make_resolve_hyp (pf_env g) (project g)) sigma in
   let db = Hint_db.add_list db0 (make_local_hint_db g) in
-  super_search n [Stringmap.find "core" !searchtable] db argl g
+  super_search n [Stringmap.find "core" !hinttable] db argl g
 
 let superauto n to_add argl  = 
   tclTRY (tclCOMPLETE (search_superauto n to_add argl))
@@ -952,20 +1020,20 @@ let cvt_autoArg = function
   | "UsingTDB"     -> [UsingTDB]
   | "NoAutoArg"    -> []
   | x -> errorlabstrm "cvt_autoArg"
-        [< 'sTR "Unexpected argument for Auto!"; 'sTR x >]
+        (**)(  str "Unexpected argument for Auto!" ++ str x  )(**)
 
 let cvt_autoArgs =
   list_join_map
     (function 
        | Quoted_string s -> (cvt_autoArg s)
-       | _ -> errorlabstrm "cvt_autoArgs" [< 'sTR "String expected" >])
+       | _ -> errorlabstrm "cvt_autoArgs" (**)(  str "String expected"  )(**))
 
 let interp_to_add gl = function
   | Qualid qid ->
       let _,id = Libnames.repr_qualid qid in
       (next_ident_away id (pf_ids_of_hyps gl), 
        Declare.constr_of_reference Evd.empty (Global.env()) (global qid))
-  | _ -> errorlabstrm "cvt_autoArgs" [< 'sTR "Qualid expected" >]
+  | _ -> errorlabstrm "cvt_autoArgs" (**)(  str "Qualid expected"  )(**)
 
 let dyn_superauto l g = 
   match l with

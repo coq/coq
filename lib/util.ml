@@ -13,14 +13,14 @@ open Pp
 (* Errors *)
 
 exception Anomaly of string * std_ppcmds  (* System errors *)
-let anomaly string = raise (Anomaly(string,[< 'sTR string >]))
+let anomaly string = raise (Anomaly(string, str string))
 let anomalylabstrm string pps = raise (Anomaly(string,pps))
 
 exception UserError of string * std_ppcmds (* User errors *)
-let error string = raise (UserError(string,[< 'sTR string >]))
+let error string = raise (UserError(string, str string))
 let errorlabstrm l pps = raise (UserError(l,pps))
 
-let todo s = prerr_string ("TODO: "^s^"\n")
+let todo s = () (*prerr_string ("TODO: "^s^"\n")*)
 
 (* raising located exceptions *)
 type loc = int * int
@@ -122,6 +122,13 @@ let list_assign l n e =
     | ([], _) -> failwith "list_assign"
   in 
   assrec [] (l,n)
+
+let rec list_smartmap f l = match l with
+    [] -> l
+  | h::tl -> 
+      let h' = f h and tl' = list_smartmap f tl in
+	if h'==h && tl'==tl then l
+	else h'::tl'
 
 let list_map_i f = 
   let rec map_i_rec i = function
@@ -361,6 +368,16 @@ let array_fold_left_i f v a =
   let rec fold i v = if i = n then v else fold (succ i) (f i v a.(i)) in
   fold 0 v
 
+let array_fold_right2 f v1 v2 a =
+  let lv1 = Array.length v1 in
+  let rec fold a n =
+    if n=0 then a
+    else
+      let k = n-1 in
+      fold (f v1.(k) v2.(k) a) k in
+  if Array.length v2 <> lv1 then invalid_arg "array_fold_right2";
+  fold a lv1
+
 let array_fold_left2 f a v1 v2 =
   let lv1 = Array.length v1 in
   let rec fold a n = 
@@ -507,22 +524,26 @@ let map_succeed f =
 
 (* Pretty-printing *)
   
-let pr_spc () = [< 'sPC >];;
-let pr_fnl () = [< 'fNL >];;
-let pr_int n = [< 'iNT n >];;
-let pr_str s = [< 'sTR s >];;
-let pr_coma () = [< 'sTR","; 'sPC >];;
+let pr_spc = spc
+let pr_fnl = fnl
+let pr_int = int
+let pr_str = str
+let pr_coma () = str "," ++ spc ()
 
 let rec prlist elem l = match l with 
-  | []   -> [< >]
-  | h::t -> let e = elem h and r = prlist elem t in [< e; r >]
+  | []   -> mt ()
+  | h::t -> Stream.lapp (fun () -> elem h) (prlist elem t)
 
 let rec prlist_with_sep sep elem l = match l with
-  | []   -> [< >]
+  | []   -> mt ()
   | [h]  -> elem h
   | h::t ->
       let e = elem h and s = sep() and r = prlist_with_sep sep elem t in
-      [< e; s; r >]
+      e ++ s ++ r
+
+let pr_vertical_list pr = function
+  | [] -> str "none" ++ fnl ()
+  | l -> fnl () ++ str "  " ++ hov 0 (prlist_with_sep pr_fnl pr l) ++ fnl ()
       
 let prvecti elem v =
   let n = Array.length v in
@@ -530,9 +551,9 @@ let prvecti elem v =
     if i = 0 then 
       elem 0 v.(0)
     else
-      let r = pr (i-1) and e = elem i v.(i) in [< r; e >]
+      let r = pr (i-1) and e = elem i v.(i) in r ++ e
   in
-  if n=0 then [< >] else pr (n - 1)
+  if n = 0 then mt () else pr (n - 1)
 
 let prvect_with_sep sep elem v =
   let rec pr n =
@@ -540,10 +561,10 @@ let prvect_with_sep sep elem v =
       elem v.(0)
     else 
       let r = pr (n-1) and s = sep() and e = elem v.(n) in 
-      [< r; s; e >]
+      r ++ s ++ e
       in
   let n = Array.length v in
-  if n = 0 then [< >] else pr (n - 1)
+  if n = 0 then mt () else pr (n - 1)
 
 (*s Size of ocaml values. *)
 

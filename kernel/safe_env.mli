@@ -83,11 +83,22 @@ val begin_module :
   label -> (mod_bound_id * module_type_entry) list 
     -> module_type_entry option 
       -> safe_environment -> safe_environment
+
 val end_module :
   label -> safe_environment 
     -> safe_environment * module_path
 
+
+val begin_modtype :
+  label -> (mod_bound_id * module_type_entry) list
+    -> safe_environment -> safe_environment
+
+val end_modtype :
+  label -> safe_environment -> safe_environment * long_name
+
+
 val current_modpath : safe_environment -> module_path
+val current_msid : safe_environment -> mod_str_id
 
 
 (* other functionnality *)
@@ -99,7 +110,7 @@ val set_transparent : safe_environment -> long_name -> unit
 (* exporting and importing modules *)
 type compiled_module
 
-val export : safe_environment -> dir_path -> compiled_module
+val export : safe_environment -> dir_path -> mod_str_id * compiled_module
 val import : compiled_module -> Digest.t -> safe_environment 
   -> safe_environment * module_path
 

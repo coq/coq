@@ -21,7 +21,7 @@ open Declare
 (* [try_add_new_coercion_with_target ref s src tg] declares [ref] as a coercion
    from [src] to [tg] *)
 val try_add_new_coercion_with_target : global_reference -> strength -> 
-  source:cl_typ -> target:cl_typ ->  unit
+  (*source:*)cl_typ -> (*target:*)cl_typ ->  unit
 
 (* [try_add_new_coercion ref s] declares [ref], assumed to be of type
    [(x1:T1)...(xn:Tn)src->tg], as a coercion from [src] to [tg] *)
@@ -36,13 +36,13 @@ val try_add_new_coercion_subclass : cl_typ -> strength -> unit
 (* [try_add_new_coercion_with_source ref s src] declares [ref] as a coercion
    from [src] to [tg] where the target is inferred from the type of [ref] *)
 val try_add_new_coercion_with_source : global_reference -> strength ->
-  source:cl_typ -> unit
+  (*source:*)cl_typ -> unit
 
 (* [try_add_new_identity_coercion id s src tg] enriches the
    environment with a new definition of name [id] declared as an
    identity coercion from [src] to [tg] *)
 val try_add_new_identity_coercion : identifier -> strength ->
-  source:cl_typ -> target:cl_typ -> unit
+  (*source:*)cl_typ -> (*target:*)cl_typ -> unit
 
 (* [try_add_new_class ref] declares [ref] as a new class; usually,
    this is done implicitely by [try_add_new_coercion]'s functions *)

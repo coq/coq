@@ -101,6 +101,15 @@ module Constr :
     val ne_binders_list : Coqast.t list Gram.Entry.e
   end
 
+module Module : 
+  sig
+    val identarg : Coqast.t Gram.Entry.e
+    val qualidarg : Coqast.t list Gram.Entry.e
+    val ne_binders_list : Coqast.t list Gram.Entry.e
+    val module_expr : Coqast.t Gram.Entry.e
+    val module_type : Coqast.t Gram.Entry.e
+  end
+
 module Tactic :
   sig
     val autoargs : Coqast.t list Gram.Entry.e

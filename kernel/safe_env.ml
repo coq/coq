@@ -24,12 +24,17 @@ open Subtyping
 open Mod_typing
 (*s Safe environments. *)
 
+type modvariant = 
+  | NONE 
+  | SIG of (* funsig params *) (mod_bound_id * module_type_body) list 
+  | STRUCT of (* functor params *) (mod_bound_id * module_type_body) list
+      * (* optional result type *) module_type_body option
+
 type module_info = 
     { msid : mod_str_id;
       modpath : module_path;
       label : label;
-      params : (mod_bound_id * module_type_body) list;
-      restype : module_type_body option }
+      variant : modvariant}
 
 let check_label l labset = 
   if Labset.mem l labset then error_existing_label l
@@ -56,8 +61,7 @@ type safe_environment =
 *)
 
 
-(* a small hack to avoid variants and an unused case in all functions *) 
-
+(* a small hack to avoid variants and an unused case in all functions *)
 let rec empty_environment = 
   { old = empty_environment; 
     env = empty_env;
@@ -65,8 +69,7 @@ let rec empty_environment =
       msid = top_msid;
       modpath = top_path;
       label = label_of_string "_";
-      params = [];
-      restype = None};
+      variant = NONE};
     labset = Labset.empty;
     revsign = [];
     imports = [];
@@ -87,8 +90,8 @@ let lookup_modtype ln senv = lookup_modtype ln (env_of_senv senv)
 
 
 
-(* Insertion of variables (named and de Bruijn'ed). They are now typed before
-   being added to the environment. *)
+(* Insertion of variables (named and de Bruijn'ed). They are now typed
+   before being added to the environment. *)
 
 let push_named_def (id,b) senv = 
   let (j,cst) = infer senv.env b in
@@ -183,7 +186,7 @@ let begin_module l params result senv =
   let env,params_body = trans_params senv.env params in
   let check_sig mtb = match scrape_modtype env mtb with
     | MTBsig _ -> ()
-    | MTBfunsig _ -> anomaly "begin_module: result type is a functor"
+    | MTBfunsig _ -> error_result_must_be_signature mtb 
     | _ -> anomaly "begin_module: modtype not scraped"
   in
   let result_body = option_app (translate_modtype env) result in
@@ -192,8 +195,7 @@ let begin_module l params result senv =
   let modinfo = { msid = msid;
 		  modpath = MPsid msid;
 		  label = l;
-		  params = params_body;
-		  restype = result_body }
+		  variant = STRUCT(params_body,result_body) }
   in
   { old = senv;
     env = env;
@@ -208,17 +210,22 @@ let begin_module l params result senv =
 let end_module l senv = 
   let oldsenv = senv.old in
   let modinfo = senv.modinfo in
+  let params, restype = 
+    match modinfo.variant with
+      | NONE | SIG _ -> error_no_module_to_end ()
+      | STRUCT(params,restype) -> (params,restype)
+  in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
   let auto_tb = MTBsig (modinfo.msid, List.rev senv.revsign) in
   let res_tb = 
-    match modinfo.restype with
+    match restype with
       | None -> auto_tb
       | Some res_tb -> (check_subtypes senv.env auto_tb res_tb; res_tb)
   in
   let mtb = 
     List.fold_right 
       (fun (arg_id,arg_b) mtb -> MTBfunsig (arg_id,arg_b,mtb))
-      modinfo.params
+      params
       res_tb
   in
   let mb = module_body mtb in
@@ -241,7 +248,72 @@ let end_module l senv =
     imports = senv.imports;
     loads = senv.loads@oldsenv.loads }, mp
 
+
+let begin_modtype l params senv = 
+  check_label l senv.labset; 
+  let rec trans_params env = function 
+    | [] -> env,[] 
+    | (mbid,mte)::rest -> 
+	let mtb = translate_modtype env mte in
+	let env = 
+	  Modops.add_module (MPbid mbid) (module_body mtb) env 
+	in
+	let env,transrest = trans_params env rest in
+	env, (mbid,mtb)::transrest
+  in
+  let env,params_body = trans_params senv.env params in
+  let msid = msid_of_string (string_of_label l) in
+  let modinfo = { msid = msid;
+		  modpath = MPsid msid;
+		  label = l;
+		  variant = SIG params_body }
+  in
+  { old = senv;
+    env = env;
+    modinfo = modinfo;
+    labset = Labset.empty;
+    revsign = [];
+    imports = senv.imports;
+    loads = [] }
+
+let end_modtype l senv = 
+  let oldsenv = senv.old in
+  let modinfo = senv.modinfo in
+  let params = 
+    match modinfo.variant with
+      | NONE | STRUCT _ -> error_no_modtype_to_end ()
+      | SIG params -> params
+  in
+  if l <> modinfo.label then error_incompatible_labels l modinfo.label;
+  let res_tb = MTBsig (modinfo.msid, List.rev senv.revsign) in
+  let mtb = 
+    List.fold_right 
+      (fun (arg_id,arg_b) mtb -> MTBfunsig (arg_id,arg_b,mtb))
+      params
+      res_tb
+  in
+  let ln = make_ln oldsenv.modinfo.modpath l in
+  let newenv = oldsenv.env in
+  let newenv = 
+    List.fold_left
+      (fun env (mp,mb) -> Modops.add_module mp mb env) 
+      newenv
+      senv.loads
+  in
+  let newenv = 
+    Environ.add_modtype ln mtb newenv
+  in 
+  { old = oldsenv.old;
+    env = newenv;
+    modinfo = oldsenv.modinfo;
+    labset = Labset.add l oldsenv.labset;
+    revsign = (l,SPBmodtype mtb)::oldsenv.revsign;
+    imports = senv.imports;
+    loads = senv.loads@oldsenv.loads }, ln
+  
+
 let current_modpath senv = senv.modinfo.modpath
+let current_msid senv = senv.modinfo.msid
 
 (* Other environment functionnality *)
 
@@ -253,10 +325,10 @@ type compiled_module =
 
 let export senv dp = 
   let modinfo = senv.modinfo in
-  if senv.modinfo.params <> [] || senv.modinfo.restype <> None then
-    (* error_export_simple *) ();
+  (*if senv.modinfo.params <> [] || senv.modinfo.restype <> None then
+    (* error_export_simple *) (); *)
   let mtb = MTBsig (modinfo.msid, List.rev senv.revsign) in
-    (dp,mtb,senv.imports)
+    modinfo.msid, (dp,mtb,senv.imports)
 
 
 let check_imports senv needed =

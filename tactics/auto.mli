@@ -59,7 +59,7 @@ type frozen_hint_db_table = Hint_db.t Stringmap.t
 
 type hint_db_table = Hint_db.t Stringmap.t ref
 
-val searchtable : hint_db_table
+val hinttable : hint_db_table
 
 (* [make_exact_entry hint_name (c, ctyp)]. 
    [hint_name] is the name of then hint;

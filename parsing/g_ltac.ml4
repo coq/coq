@@ -31,14 +31,14 @@ GEXTEND Gram
         (match c with
         | Coqast.Node(_,"COMMAND",[csr]) ->
           <:ast< (LETTOPCLAUSE $id (CONSTR $csr)) >>
-	| _ -> errorlabstrm "Gram.let_clause" [<'sTR "Not a COMMAND">])
+	| _ -> errorlabstrm "Gram.let_clause" (str "Not a COMMAND"))
       | id = identarg; ":"; c = constrarg; ":="; te = tactic_expr ->
         <:ast< (LETCUTCLAUSE $id $c $te) >> 
       |	id = identarg; ":"; c = constrarg ->
         (match c with
         | Coqast.Node(_,"COMMAND",[csr]) ->
           <:ast< (LETTOPCLAUSE $id (CONSTR $csr)) >>
-	| _ -> errorlabstrm "Gram.let_clause" [<'sTR "Not a COMMAND">]) ] ]
+	| _ -> errorlabstrm "Gram.let_clause" (str "Not a COMMAND")) ] ]
   ;
   rec_clause:
     [ [ name = identarg; it = LIST1 input_fun; "->"; body = tactic_atom ->
@@ -51,7 +51,7 @@ GEXTEND Gram
             [Coqast.Node(_,"QUALID",[Coqast.Nvar(_,_) as s])]) ->
           <:ast< (SUBTERM $s $pc) >>
         | _ ->
-          errorlabstrm "Gram.match_pattern" [<'sTR "Not a correct SUBTERM">])
+          errorlabstrm "Gram.match_pattern" (str "Not a correct SUBTERM"))
       | "["; pc = constrarg; "]" -> <:ast< (SUBTERM $pc) >>
       | pc = constrarg -> <:ast< (TERM $pc) >> ] ]
   ;
@@ -117,7 +117,7 @@ GEXTEND Gram
         (match llc with
 	| [Coqast.Node(_,"LETTOPCLAUSE",[id;c])] ->
           <:ast< (TheoremProof "LETTOP" $id $c $tb) >>
-	| _ -> errorlabstrm "Gram.tactic_atom" [<'sTR "Not a LETTOPCLAUSE">])
+	| _ -> errorlabstrm "Gram.tactic_atom" (str "Not a LETTOPCLAUSE"))
       |	IDENT "Match"; IDENT "Context"; IDENT "With"; mrl = match_context_list
         -> <:ast< (MATCHCONTEXT ($LIST $mrl)) >>
       |	IDENT "Match"; com = constrarg; IDENT "With"; mrl = match_list ->

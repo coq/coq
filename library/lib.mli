@@ -22,8 +22,11 @@ open Summary
 
 type node = 
   | Leaf of obj
-  | Module of dir_path
+  | CompUnit of dir_path
+  | OpenedModule of module_ident * Summary.frozen
+  | OpenedModtype of module_ident * Summary.frozen
   | OpenedSection of module_ident * Summary.frozen
+  (* bool is to tell if the section must be opened automatically *)
   | ClosedSection of bool * module_ident * library_segment
   | FrozenState of Summary.frozen
 
@@ -32,10 +35,17 @@ and library_entry = section_path * node
 and library_segment = library_entry list
 
 
+val open_segment : library_segment -> unit
+val load_segment : library_segment -> unit
+val subst_segment : substitution -> library_segment -> library_segment
+
+
+
 (*s Adding operations (which calls the [cache] method, and getting the
   current list of operations (most recent ones coming first). *)
 
 val add_leaf : identifier -> path_kind -> obj -> section_path
+val add_leaves : library_segment -> identifier -> path_kind -> obj -> section_path
 val add_anonymous_leaf : obj -> unit
 val add_frozen_state : unit -> unit
 
@@ -51,17 +61,30 @@ val contents_after : section_path option -> library_segment
 
 val open_section : identifier -> section_path
 val close_section : 
-  export:bool -> identifier -> section_path * library_segment * Summary.frozen
+  bool -> identifier -> section_path * library_segment * Summary.frozen
 val sections_are_opened : unit -> bool
 
 val make_path : identifier -> path_kind -> section_path
 val cwd : unit -> dir_path
 val is_section_p : dir_path -> bool
 
-val start_module : dir_path -> unit
-val end_module : module_ident -> dir_path
-val export_module : dir_path -> library_segment
+(*s Compilation units *)
 
+val start_comp_unit : dir_path -> unit
+val comp_unit_name : module_ident -> dir_path
+val export_comp_unit : dir_path -> library_segment * library_segment
+
+(*s Modules *)
+
+val begin_module : module_ident -> Summary.frozen -> section_path
+val end_module : 
+  module_ident -> section_path * dir_path * Summary.frozen * 
+    library_segment * library_segment * library_segment
+
+val begin_modtype : module_ident -> Summary.frozen -> section_path
+val end_modtype : 
+  module_ident -> section_path * dir_path * Summary.frozen * 
+    library_segment * library_segment
 
 (*s Backtracking (undo). *)
 

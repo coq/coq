@@ -754,8 +754,8 @@ let check_guard_rec_meta env sigma nbfix def deftype =
 		    (match lra  with 
                        | [] -> 
 			   anomalylabstrm "check_guard_rec_meta"
-			     [< 'sTR "a constructor with an empty list";
-				'sTR "of recargs is being applied" >]
+			     (str "a constructor with an empty list" ++
+				str "of recargs is being applied")
                        |  (Mrec i)::lrar -> 
                             let newvlra = lvlra.(i) in
                             (check_rec_call env true n newvlra t) &&

@@ -3,6 +3,8 @@
 
 #use "base_include";;
 
+#install_printer  (* substitution *) prsubst;;
+
 #install_printer  (* ast *)  prast;;
 #install_printer  (* pat *)  prastpat;;
 #install_printer  (* patlist *)  prastpatl;;
@@ -25,3 +27,4 @@
 #install_printer  (* walking_constraints *)  prwc;;
 #install_printer  (* clenv *) prclenv;;
 #install_printer  (* env *) ppenv;;
+

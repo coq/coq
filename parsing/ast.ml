@@ -39,7 +39,7 @@ let slam(idl,b) = Slam(dummy_loc,idl,b)
 let ide s = Id(dummy_loc,s)
 let nvar s = Nvar(dummy_loc,s)
 let num n = Num(dummy_loc,n)
-let str s = Str(dummy_loc,s)
+let string s = Str(dummy_loc,s)
 let path sl = Path(dummy_loc,sl)
 let dynamic d = Dynamic(dummy_loc,d)
 
@@ -104,61 +104,61 @@ type env = (string * v) list
 (* Pretty-printing *)
 let rec print_ast ast =
   match ast with
-    | Num(_,n) -> [< 'iNT n >]
-    | Str(_,s) -> [< 'qS s >]
-    | Path(_,sl) -> [< pr_ln sl >]
-    | Id (_,s) -> [< 'sTR"{" ; 'sTR s ; 'sTR"}" >]
-    | Nvar(_,s) -> [< pr_id s >]
-    | Nmeta(_,s) -> [< 'sTR s >]
+    | Num(_,n) ->  int n 
+    | Str(_,s) ->  qs s 
+    | Path(_,sl) ->  pr_sp sl 
+    | Id (_,s) ->  (str"{"  ++ str s  ++ str"}")
+    | Nvar(_,s) ->  pr_id s 
+    | Nmeta(_,s) ->  str s 
     | Node(_,op,l) ->
-        hOV 3 [< 'sTR"(" ; 'sTR op ; 'sPC ; print_astl l; 'sTR")" >]
-    | Slam(_,None,ast) -> hOV 1 [< 'sTR"[<>]"; print_ast ast >]
+        hov 3  (str"("  ++ str op  ++ spc ()  ++ print_astl l ++ str")" )
+    | Slam(_,None,ast) -> hov 1 ( str"[<>]" ++ print_ast ast )
     | Slam(_,Some x,ast) ->
-        hOV 1 [< 'sTR"["; pr_id x; 'sTR"]"; 'cUT; print_ast ast >]
-    | Smetalam(_,id,ast) -> hOV 1 [< 'sTR id; print_ast ast >]
+        hov 1 ( str"[" ++ pr_id x ++ str"]" ++ cut () ++  print_ast ast )
+    | Smetalam(_,id,ast) -> hov 1  (str id ++ print_ast ast )
     | Dynamic(_,d) ->
-	hOV 0 [< 'sTR"<dynamic: "; 'sTR(Dyn.tag d); 'sTR">" >]
+	hov 0  (str"<dynamic: " ++ str(Dyn.tag d) ++ str">" )
 
 and print_astl astl =
   prlist_with_sep pr_spc print_ast astl
 
 let print_ast_cast = function
-  | Tany -> [< >]
-  | Tvar -> [< 'sTR":var" >]
-  | Tid -> [< 'sTR":id" >]
-  | Tstr -> [< 'sTR":str" >]
-  | Tpath -> [< 'sTR":path" >]
-  | Tnum -> [< 'sTR":num" >]
-  | Tlist -> [< 'sTR":list" >]
+  | Tany -> (mt ())
+  | Tvar ->  str":var" 
+  | Tid ->  str":id" 
+  | Tstr ->  str":str" 
+  | Tpath ->  str":path" 
+  | Tnum ->  str":num" 
+  | Tlist ->  str":list" 
 
 let rec print_astpat = function
-  | Pquote ast -> [< 'sTR"'"; print_ast ast >]
-  | Pmeta(s,tk) -> [< 'sTR s; print_ast_cast tk >]
+  | Pquote ast ->  str"'" ++ print_ast ast 
+  | Pmeta(s,tk) ->  str s ++ print_ast_cast tk 
   | Pmeta_slam(s,b) ->
-      hOV 1 [< 'sTR"["; 'sTR s; 'sTR"]"; 'cUT; print_astpat b >]
+      hov 1 ( str"[" ++ str s ++ str"]" ++ cut () ++ print_astpat b )
   | Pnode(op,al) ->
-      hOV 2 [< 'sTR"(" ; 'sTR op; 'sPC; print_astlpat al; 'sTR")" >]
-  | Pslam(None,b) -> hOV 1 [< 'sTR"[<>]"; 'cUT; print_astpat b >]
+      hov 2 (str"("  ++ str op ++ spc () ++ print_astlpat al ++ str")") 
+  | Pslam(None,b) -> hov 1 ( str"[<>]" ++ cut () ++ print_astpat b )
   | Pslam(Some id,b) ->
-      hOV 1 [< 'sTR"["; pr_id id; 'sTR"]"; 'cUT; print_astpat b >]
+      hov 1 ( str"[" ++ pr_id id ++ str"]" ++ cut () ++ print_astpat b )
 
 and print_astlpat = function
-  | Pnil -> [< >]
-  | Pcons(h,Pnil) -> hOV 1 [< print_astpat h >]
-  | Pcons(h,t) -> hOV 1 [< print_astpat h; 'sPC; print_astlpat t >]
-  | Plmeta(s) -> [< 'sTR"| "; 'sTR s >]
+  | Pnil -> (mt ())
+  | Pcons(h,Pnil) -> hov 1 (print_astpat h) 
+  | Pcons(h,t) -> hov 1 (print_astpat h ++ spc () ++ print_astlpat t)
+  | Plmeta(s) ->  str"| " ++ str s 
 
 
 let print_val = function
   | Vast a -> print_ast a
   | Vastlist al -> 
-      hOV 1 [< 'sTR"["; prlist_with_sep pr_spc print_ast al; 'sTR"]" >]
+      hov 1 ( str"[" ++ prlist_with_sep pr_spc print_ast al ++ str"]" )
 
 
 (* Ast values environments *)
 
 let grammar_type_error (loc,s) =
-  anomaly_loc (loc,s,[< 'sTR"grammar type error: "; 'sTR s >])
+  anomaly_loc (loc,s, str"grammar type error: " ++ str s )
 
 
 (* Coercions enforced by the user *)
@@ -172,7 +172,7 @@ let check_cast loc a k =
     | (Tnum, Num _) -> ()
     | (Tlist, _) -> grammar_type_error (loc,"Ast.cast_val")
     | _ -> user_err_loc (loc,"Ast.cast_val",
-                         [< 'sTR"cast _"; print_ast_cast k; 'sTR"failed" >])
+                          str"cast _" ++ print_ast_cast k ++ str"failed" )
 
 let rec coerce_to_var = function
   | Nvar(_,id) as var -> var
@@ -181,7 +181,7 @@ let rec coerce_to_var = function
   | Node(_,"QUALIDARG",[Nvar(_,id) as var]) -> var
   | ast -> user_err_loc
         (loc ast,"Ast.coerce_to_var",
-         [< 'sTR"This expression should be a simple identifier" >])
+          str"This expression should be a simple identifier" )
 
 let coerce_to_id a = match coerce_to_var a with
   | Nvar (_,id) -> id
@@ -194,7 +194,7 @@ let env_assoc_value loc v env =
   with Not_found -> 
     anomaly_loc
       (loc,"Ast.env_assoc_value",
-       [< 'sTR"metavariable "; 'sTR v; 'sTR" is unbound." >])
+        str"metavariable " ++ str v ++ str" is unbound." )
 
 let env_assoc_list sigma (loc,v) =
   match env_assoc_value loc v sigma with
@@ -252,12 +252,12 @@ let type_of_meta env loc pv =
     List.assoc pv env
   with Not_found ->
     user_err_loc (loc,"Ast.type_of_meta",
-                  [< 'sTR"variable "; 'sTR pv; 'sTR" is unbound" >])
+                   str"variable " ++ str pv ++ str" is unbound" )
 
 let check_ast_meta env loc pv =
   if (type_of_meta env loc pv) <> ETast then
     user_err_loc (loc,"Ast.check_ast_meta",
-                  [< 'sTR"variable "; 'sTR pv; 'sTR" is a List" >])
+                   str"variable " ++ str pv ++ str" is a List" )
 
 let rec val_of_ast env ast =
   match ast with
@@ -277,7 +277,7 @@ let rec val_of_ast env ast =
     | Slam(_,os,b) -> Pslam(os, val_of_ast env b)
     | Node(loc,op,_) when isMeta op ->
         user_err_loc(loc,"Ast.val_of_ast",
-                     [< 'sTR"no metavariable in operator position." >])
+                      str"no metavariable in operator position." )
     | Node(_,op,args) -> Pnode(op, vall_of_astl env args)
     | Dynamic(loc,_) ->
 	invalid_arg_loc(loc,"val_of_ast: dynamic")
@@ -292,8 +292,8 @@ and vall_of_astl env astl =
 	    Pcons(Pmeta(pv,Tlist), vall_of_astl env asttl)
         else 
 	  user_err_loc (loc,"Ast.vall_of_astl",
-                        [< 'sTR"variable "; 'sTR pv;
-                           'sTR" is not a List" >])
+                         str"variable " ++ str pv ++
+                           str" is not a List" )
     | ast::asttl -> 
 	Pcons (val_of_ast env ast, vall_of_astl env asttl)
     | [] -> Pnil
@@ -449,8 +449,8 @@ let bind_patvar env loc v etyp =
     else 
       user_err_loc
 	(loc,"Ast.bind_patvar",
-	 [< 'sTR"variable "; 'sTR v;
-            'sTR" is bound several times with different types" >])
+	  str"variable " ++ str v ++
+            str" is bound several times with different types" )
   with Not_found -> 
     if v="$_" then env else (v,etyp)::env
       
@@ -493,7 +493,7 @@ let rec pat_of_ast env ast =
         (Pslam(os,pb), env')
     | Node(loc,op,_) when isMeta op ->
         user_err_loc(loc,"Ast.pat_of_ast",
-                     [< 'sTR"no metavariable in operator position." >])
+                      str"no metavariable in operator position." )
     | Node(_,op,args) ->
         let (pargs, env') = patl_of_astl env args in
         (Pnode(op,pargs), env')
@@ -521,28 +521,28 @@ let to_pat env ast =
 (* Ast with cases and metavariables *)
 
 let print_sig = function
-  | [] -> [< >]
+  | [] -> (mt ())
   | sigma ->
-      [< 'sTR"with constraints :"; 'bRK(1,1);
+      ( str"with constraints :" ++ brk(1,1) ++
          v 0 (prlist_with_sep pr_spc
-                (fun (x,v) -> [< 'sTR x; 'sTR" = "; hOV 0 (print_val v) >])
-                sigma) >]
+                (fun (x,v) ->  str x ++ str" = " ++ hov 0 (print_val v) )
+                sigma) )
 
 let case_failed loc sigma e pats =
   user_err_loc
     (loc,"Ast.eval_act",
-     [< 'sTR"Grammar case failure. The ast"; 'sPC; print_ast e;
-        'sPC; 'sTR"does not match any of the patterns :";
-        'bRK(1,1); v 0 (prlist_with_sep pr_spc print_astpat pats); 'fNL;
-        print_sig sigma >])
+      str"Grammar case failure. The ast" ++ spc () ++ print_ast e ++
+        spc () ++ str"does not match any of the patterns :" ++
+        brk (1,1) ++ v 0 (prlist_with_sep pr_spc print_astpat pats) ++ fnl () ++
+        print_sig sigma )
 
 let caselist_failed loc sigma el pats =
   user_err_loc
     (loc,"Ast.eval_act",
-     [< 'sTR"Grammar case failure. The ast list"; 'bRK(1,1); print_astl el;
-        'sPC; 'sTR"does not match any of the patterns :";
-        'bRK(1,1); v 0 (prlist_with_sep pr_spc print_astlpat pats); 'fNL;
-        print_sig sigma >])
+      str"Grammar case failure. The ast list" ++ brk(1,1) ++ print_astl el ++
+        spc () ++ str"does not match any of the patterns :" ++
+        brk(1,1) ++ v 0 (prlist_with_sep pr_spc print_astlpat pats) ++ fnl () ++
+        print_sig sigma )
 
 let rec eval_act dloc sigma act =
   match act with
@@ -593,7 +593,7 @@ and case vars etyp ast =
                (apl,aa)
            | _ -> user_err_loc
                  (loca,"Ast.case",
-                  [< 'sTR"case pattern for an ast should be a single ast" >]))
+                   str"case pattern for an ast should be a single ast" ))
     | _ -> invalid_arg_loc (loc ast,"Ast.case")
 	  
 and caselist vars etyp ast =

@@ -24,7 +24,7 @@ exception Quit
 
 let disable_drop e =
   if e <> Drop then e
-  else UserError("Vernac.disable_drop",[< 'sTR"Drop is forbidden." >])
+  else UserError("Vernac.disable_drop",(**)(  str"Drop is forbidden."  )(**))
 
 type vernac_arg = 
   | VARG_VARGLIST of vernac_arg list
@@ -45,7 +45,8 @@ type vernac_arg =
   | VARG_ASTLIST of Coqast.t list
   | VARG_UNIT
   | VARG_DYN of Dyn.t
-
+  | VARG_MODEXPR of Coqast.t
+  | VARG_MODTYPE of Coqast.t
 
 (* Table of vernac entries *)
 let vernac_tab =
@@ -56,7 +57,7 @@ let vinterp_add s f =
     Hashtbl.add vernac_tab s f
   with Failure _ ->
     errorlabstrm "vinterp_add"
-      [< 'sTR"Cannot add the vernac command " ; 'sTR s ; 'sTR" twice" >]
+      (**)(  str"Cannot add the vernac command "  ++ str s  ++ str" twice"  )(**)
 
 let overwriting_vinterp_add s f =
   begin 
@@ -71,7 +72,7 @@ let vinterp_map s =
     Hashtbl.find vernac_tab s
   with Not_found -> 
     errorlabstrm "Vernac Interpreter"
-      [< 'sTR"Cannot find vernac command " ; 'sTR s >]
+      (**)(  str"Cannot find vernac command "  ++ str s  )(**)
 
 let vinterp_init () = Hashtbl.clear vernac_tab
 
@@ -115,9 +116,11 @@ let rec cvt_varg ast =
       let (evc,env)= Command.get_current_context () in
       VARG_TACTIC_ARG (interp_tacarg (evc,env,[],[],None,get_debug ()) targ)
     | Node(_,"VERNACDYN",[Dynamic (_,d)]) -> VARG_DYN d
+    | Node(_,"MODEXPR", [me]) -> VARG_MODEXPR me
+    | Node(_,"MODTYPE", [mty]) -> VARG_MODTYPE mty
     | _ -> anomaly_loc (Ast.loc ast, "Vernacinterp.cvt_varg",
-                        [< 'sTR "Unrecognizable ast node of vernac arg:";
-			  'bRK(1,0); print_ast ast >])
+                        (**)(  str "Unrecognizable ast node of vernac arg:" ++
+			  brk(1,0) ++ print_ast ast  )(**))
 
 (* Interpretation of a vernac command *)
 
@@ -134,7 +137,7 @@ let call (opn,converted_args) =
     | ProtectedLoop -> raise ProtectedLoop
     | e ->
         if !Options.debug then
-	  mSGNL [< 'sTR"Vernac Interpreter " ; 'sTR !loc >];
+	  msgnl (**)(  str"Vernac Interpreter "  ++ str !loc  )(**);
         raise e
 
 let interp = function
@@ -144,14 +147,14 @@ let interp = function
 	  List.map cvt_varg argl
       	with e ->
           if !Options.debug then
-            mSGNL [< 'sTR"Vernac Interpreter " ; 'sTR"Converting arguments" >];
+            msgnl (**)(  str"Vernac Interpreter "  ++ str"Converting arguments"  )(**);
           raise e
       in 
       call (opn,converted_args)
   | cmd -> 
       errorlabstrm "Vernac Interpreter"
-        [< 'sTR"Malformed vernac AST : " ; print_ast cmd >]
+        (**)(  str"Malformed vernac AST : "  ++ print_ast cmd  )(**)
 
 let bad_vernac_args s =
   anomalylabstrm s
-    [< 'sTR"Vernac "; 'sTR s; 'sTR" called with bad arguments" >]
+    (**)(  str"Vernac " ++ str s ++ str" called with bad arguments"  )(**)

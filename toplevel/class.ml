@@ -86,7 +86,7 @@ let rec arity_sort a = match kind_of_term a with
 let try_add_class v (cl,p) streopt check_exist = 
   if check_exist & class_exists cl then
     errorlabstrm "try_add_new_class" 
-      [< 'sTR (string_of_class cl) ; 'sTR " is already a class" >];
+      (**)(  str (string_of_class cl)  ++ str " is already a class"  )(**);
   let stre' = strength_of_cl cl in 
   let stre = match streopt with
     | Some stre -> stre_max (stre,stre')
@@ -105,8 +105,8 @@ let try_add_new_class ref stre =
       arity_sort t 
     with Not_found -> 
       errorlabstrm "try_add_class" 
-        [< 'sTR "Type of "; Printer.pr_global ref;
-           'sTR " does not end with a sort" >] 
+        (**)(  str "Type of " ++ Printer.pr_global ref ++
+           str " does not end with a sort"  )(**) 
   in
   let cl = fst (constructor_at_head v) in
   let _ = try_add_class v (cl,p1) (Some stre) true in () 
@@ -128,32 +128,32 @@ exception CoercionError of coercion_error_kind
 let explain_coercion_error g = function
   | AlreadyExists ->
       errorlabstrm "try_add_coercion" 
-	[< Printer.pr_global g; 'sTR" is already a coercion" >]
+	(**)(  Printer.pr_global g ++ str" is already a coercion"  )(**)
   | NotACoercion ->
       errorlabstrm "try_add_coercion"         
-	[< Printer.pr_global g; 'sTR" does not correspond to a coercion" >]
+	(**)(  Printer.pr_global g ++ str" does not correspond to a coercion"  )(**)
   | NoSource s ->
     errorlabstrm "try_add_coercion" 
-      [< Printer.pr_global g; 'sTR ": "; 'sTR s >]
+      (**)(  Printer.pr_global g ++ str ": " ++ str s  )(**)
   | NotUniform ->
     errorlabstrm "try_add_coercion" 
-      [< Printer.pr_global g;
-         'sTR" does not respect the inheritance uniform condition" >];
+      (**)(  Printer.pr_global g ++
+         str" does not respect the inheritance uniform condition"  )(**);
   | NoTarget ->
       errorlabstrm "try_add_coercion" 
-        [<'sTR"We cannot find the target class" >]
+        (**)( str"We cannot find the target class"  )(**)
   | WrongTarget (clt,cl) ->
       errorlabstrm "try_add_coercion" 
-        [<'sTR"Found target class "; 'sTR(string_of_class cl);
-	  'sTR " while "; 'sTR(string_of_class clt);
-	  'sTR " is expected" >]
+        (**)( str"Found target class " ++ str(string_of_class cl) ++
+	  str " while " ++ str(string_of_class clt) ++
+	  str " is expected"  )(**)
   | NotAClass cl ->
 	errorlabstrm "check_class" 
-          [< 'sTR "Type of "; 'sTR (string_of_class cl);
-             'sTR " does not end with a sort" >] 
+          (**)(  str "Type of " ++ str (string_of_class cl) ++
+             str " does not end with a sort"  )(**) 
   | NotEnoughClassArgs cl ->
       errorlabstrm "fully_applied" 
-	[< 'sTR"Wrong number of parameters for ";'sTR(string_of_class cl) >]
+	(**)(  str"Wrong number of parameters for " ++str(string_of_class cl)  )(**)
 
 let check_fully_applied cl p p1 =
   if p <> p1 then raise (CoercionError (NotEnoughClassArgs cl))
@@ -237,8 +237,8 @@ let class_of_ref = function
   | VarRef sp -> CL_SECVAR sp
   | ConstructRef _ as c -> 
       errorlabstrm "class_of_ref"
-	[< 'sTR "Constructors, such as "; Printer.pr_global c; 
-	   'sTR " cannot be used as class" >]
+	(**)(  str "Constructors, such as " ++ Printer.pr_global c ++ 
+	   str " cannot be used as class"  )(**)
 
 (* 
 lp est la liste (inverse'e) des arguments de la coercion
@@ -299,16 +299,16 @@ let get_strength stre ref cls clt =
   let stre' = stre_max4 stres stret stref streunif in
   if (stre = NeverDischarge) & (stre' <> NeverDischarge)
   then errorlabstrm "try_add_coercion" 
-    [< Printer.pr_global ref;
-       'sTR " must be declared as a local coercion"; 'fNL;
-       'sTR "because it involves local definition" >];
+    (**)(  Printer.pr_global ref ++
+       str " must be declared as a local coercion" ++ fnl () ++
+       str "because it involves local definition"  )(**);
   stre_max (stre,stre')
 
 (* coercion identité *)
 
 let error_not_transparent source =
   errorlabstrm "build_id_coercion"
-    [< 'sTR ((string_of_class source)^" must be a transparent constant") >]
+    (**)(  str ((string_of_class source)^" must be a transparent constant")  )(**)
 
 let build_id_coercion idf_opt source =
   let env = Global.env () in

@@ -25,8 +25,9 @@ val read_module : qualid -> unit
 val read_module_from_file : System.physical_path -> unit
 val import_module : dir_path -> unit
 
-val module_is_loaded : dir_path -> bool
+(*val module_is_loaded : dir_path -> bool
 val module_is_opened : string -> bool
+*)
 
 val loaded_modules : unit -> dir_path list
 val opened_modules : unit -> dir_path list
@@ -52,7 +53,7 @@ val save_module_to : dir_path -> string -> unit
     (which is then the same as [Lib.contents_after None]). 
     [module_full_filename] returns the full filename of a loaded module. *)
 
-val module_segment : dir_path option -> Lib.library_segment
+(*val module_segment : dir_path option -> Lib.library_segment*)
 val module_full_filename : dir_path -> string
 
 (*s [fold_all_segments] and [iter_all_segments] iterate over all
@@ -61,8 +62,9 @@ val module_full_filename : dir_path -> string
     function is applied to all leaves (together with their section
     path). The boolean indicates if we must enter closed sections. *)
 
-val fold_all_segments : bool -> ('a -> section_path -> obj -> 'a) -> 'a -> 'a
+(*val fold_all_segments : bool -> ('a -> section_path -> obj -> 'a) -> 'a -> 'a
 val iter_all_segments : bool -> (section_path -> obj -> unit) -> unit
+*)
 
 (*s Global load path *)
 type logical_path = dir_path
