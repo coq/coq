@@ -224,6 +224,9 @@ let rec pr_evars_int i = function
               str (string_of_existential ev)  ++ str " : " ++ pegl)) ++ 
       fnl () ++ pei
 
+(* Equivalent to pr_subgoals but start from the prooftree and 
+   check for uninstantiated existential variables *)
+
 let pr_subgoals_existential sigma = function 
   | [] -> 
       let exl = Evd.non_instantiated sigma in 
