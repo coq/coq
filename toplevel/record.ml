@@ -91,14 +91,14 @@ let warning_or_error coe st =
   pPNL (hOV 0 [< 'sTR"Warning: "; st >])
 
 (* We build projections *)
-let declare_projections idstruc coers params constr_types =
+let declare_projections idstruc coers params fields =
   let r = global_reference CCI idstruc in
-  let lp = List.length constr_types in
+  let lp = List.length params in
   let rp1 = applist (r,(rel_list 0 lp)) in
   let rp2 = applist (r,(rel_list 1 lp)) in
   let x = Environ.named_hd (Global.env()) r Anonymous in
   let args =  (* Rel 1 refers to "x" *)
-    (List.map (fun (id,_) -> mkVar id) constr_types)@[mkRel 1] in
+    (List.map (fun (id,_) -> mkVar id) params)@[mkRel 1] in
   let (sp_projs,_,_) =
     List.fold_left2
       (fun (sp_projs,ids_not_ok,subst) coe (fi,ti) -> 
@@ -115,7 +115,7 @@ let declare_projections idstruc coers params constr_types =
            (None::sp_projs,fi::ids_not_ok,subst)
          end else 
 	   let p = mkLambda (x, rp2, replace_vars subst ti) in
-	   let branch = mk_LambdaCit constr_types (mkVar fi) in
+	   let branch = mk_LambdaCit fields (mkVar fi) in
 	   let ci = Inductive.make_case_info
 		      (Global.lookup_mind_specif (destMutInd r))
 		      (Some PrintLet) [| RegularPat |] in
@@ -146,7 +146,7 @@ let declare_projections idstruc coers params constr_types =
              in (Some(path_of_const constr_fi)::sp_projs,
 		 ids_not_ok, (fi,constr_fip)::subst)
 	   end)
-      ([],[],[]) coers constr_types
+      ([],[],[]) coers fields
   in sp_projs
 
 (* Fields have names [idfs] and types [tyfs]; [coers] is a boolean list 
