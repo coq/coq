@@ -148,7 +148,7 @@ type 'a conversion_function =
 
 val fconv : conv_pb -> 'a conversion_function
 
-(* fconv has 2 instances:
+(* [fconv] has 2 instances:
    \begin{itemize}
    \item [conv = fconv CONV] : 
      conversion test, and adjust universes constraints

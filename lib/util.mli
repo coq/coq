@@ -5,24 +5,25 @@
 open Pp
 (*i*)
 
-(* Errors *)
+(* Errors. [Anomaly] is used for system errors and [UserError] for the
+   user's ones. *)
 
-exception Anomaly of string * std_ppcmds  (* System errors *)
+exception Anomaly of string * std_ppcmds
 val anomaly : string -> 'a
 val anomalylabstrm : string -> std_ppcmds -> 'a
 
-exception UserError of string * std_ppcmds (* User errors *)
+exception UserError of string * std_ppcmds
 val error : string -> 'a
 val errorlabstrm : string -> std_ppcmds -> 'a
 
-(* Strings *)
+(*s Strings. *)
 
 val explode : string -> string list
 val implode : string list -> string
 
 val parse_section_path : string -> string list * string * string
 
-(* Lists *)
+(*s Lists. *)
 
 val list_intersect : 'a list -> 'a list -> 'a list
 val list_unionq : 'a list -> 'a list -> 'a list
@@ -37,7 +38,7 @@ val list_index : 'a -> 'a list -> int
 val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
 val list_for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
 
-(* Arrays *)
+(*s Arrays. *)
 
 val array_exists : ('a -> bool) -> 'a array -> bool
 val array_for_all : ('a -> bool) -> 'a array -> bool
@@ -58,18 +59,18 @@ val array_map_to_list : ('a -> 'b) -> 'a array ->'b list
 val array_chop : int -> 'a array -> 'a array * 'a array
 val array_map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 
-(* Functions *)
+(*s Functions. *)
 
 val compose : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
 val iterate : ('a -> 'a) -> int -> 'a -> 'a
 
-(* Misc *)
+(*s Misc. *)
 
 type ('a,'b) union = Inl of 'a | Inr of 'b
 
 module Intset : Set.S with type elt = int
 
-(* Pretty-printing *)
+(*s Pretty-printing. *)
 
 val pr_spc : unit -> std_ppcmds
 val pr_fnl : unit -> std_ppcmds

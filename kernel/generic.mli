@@ -6,6 +6,8 @@ open Util
 open Names
 (*i*)
 
+(* A generic notion of terms with binders. *)
+
 exception FreeVar
 exception Occur
 

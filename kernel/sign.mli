@@ -7,6 +7,8 @@ open Generic
 open Term
 (*i*)
 
+(* Signatures (with named and de Bruijn variables). *)
+
 type 'a signature = identifier list * 'a list
 type 'a db_signature = (name * 'a) list
 type ('a,'b) env = ENVIRON of 'a signature * 'b db_signature

@@ -5,6 +5,8 @@
 open Pp
 (*i*)
 
+(* Names. *)
+
 type identifier
 type name = Name of identifier | Anonymous
 

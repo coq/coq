@@ -1,19 +1,9 @@
-(****************************************************************************)
-(*                 The Calculus of Inductive Constructions                  *)
-(*                                                                          *)
-(*                                Projet Coq                                *)
-(*                                                                          *)
-(*                     INRIA        LRI-CNRS        ENS-CNRS                *)
-(*              Rocquencourt         Orsay          Lyon                    *)
-(*                                                                          *)
-(*                                 Coq V6.3                                 *)
-(*                               July 1st 1999                              *)
-(*                                                                          *)
-(****************************************************************************)
-(*                               hashcons.mli                               *)
-(****************************************************************************)
-val stat: unit->unit
 
+(* $Id$ *)
+
+(* Generic hash-consing. *)
+
+val stat : unit->unit
 
 module type Comp =
   sig
@@ -31,7 +21,7 @@ module type S =
     val f : unit -> (u -> t -> t)
   end
 
-module Make(X:Comp): (S with type t = X.t and type u = X.u)
+module Make(X:Comp) : (S with type t = X.t and type u = X.u)
 
 val simple_hcons : (unit -> 'u -> 't -> 't) -> ('u -> 't -> 't)
 val recursive_hcons : (unit -> ('t -> 't) * 'u -> 't -> 't) -> ('u -> 't -> 't)
@@ -42,11 +32,10 @@ val recursive2_hcons :
     (unit -> ('t1 -> 't1) * ('t2 -> 't2) * 'u2 -> 't2 -> 't2) ->
       'u1 -> 'u2 -> ('t1 -> 't1) * ('t2 -> 't2)
 
-
 (* Declaring and reinitializing global hash-consing functions *)
+
 val init : unit -> unit
 val register_hcons : ('u -> 't -> 't) -> ('u -> 't -> 't)
-
 
 module Hstring : (S with type t = string and type u = unit)
 module Hobj : (S with type t = Obj.t and type u = (Obj.t -> Obj.t) * unit)
@@ -55,6 +44,4 @@ val string : string -> string
 val obj : Obj.t -> Obj.t
 
 val magic_hash : 'a -> 'a
-
-(* $Id$ *)
 

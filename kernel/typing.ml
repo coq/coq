@@ -249,6 +249,9 @@ let lookup_mind = lookup_mind
 let lookup_mind_specif = lookup_mind_specif
 let lookup_meta = lookup_meta
 
+(* Insertion of variables (named and de Bruijn'ed). They are now typed before
+   being added to the environment. *)
+
 let push_rel_or_var push (id,c) env =
   let (j,u) = safe_machine env c in
   let env' = set_universes u env in
@@ -258,6 +261,14 @@ let push_rel_or_var push (id,c) env =
 let push_var nvar env = push_rel_or_var push_var nvar env
 
 let push_rel nrel env = push_rel_or_var push_rel nrel env
+
+let push_vars vars env =
+  List.fold_left (fun env nvar -> push_var nvar env) env vars
+
+let push_rels vars env =
+  List.fold_left (fun env nvar -> push_rel nvar env) env vars
+
+(* Insertion of constants and parameters in environment. *)
 
 let add_constant sp ce env =
   let (jb,u) = safe_machine env ce.const_entry_body in
@@ -294,11 +305,7 @@ let add_parameter sp c env =
   in
   Environ.add_constant sp cb env'
 
-let push_vars vars env =
-  List.fold_left (fun env nvar -> push_var nvar env) env vars
-
-let push_rels vars env =
-  List.fold_left (fun env nvar -> push_rel nvar env) env vars
+(* Insertion of inductive types. *)
 
 let check_type_constructs env_params univ nparams lc =
   let check_one env c =
@@ -333,6 +340,7 @@ let add_mind sp mie env =
   env_arities
 
 type judgment = unsafe_judgment
+
 
 (*s Machines with information. *)
 

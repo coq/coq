@@ -1,9 +1,13 @@
 
 (* $Id$ *)
 
+(*i*)
 open Names
 open Term
 open Environ
+(*i*)
+
+(* Instantiation of constants and inductives on their real arguments. *)
 
 val instantiate_constr : 
   identifier list -> constr -> constr list -> constr

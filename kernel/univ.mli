@@ -1,7 +1,11 @@
 
 (* $Id$ *)
 
+(*i*)
 open Names
+(*i*)
+
+(* Universes. *)
 
 type universe = { u_sp : section_path; u_num : int }
 

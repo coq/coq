@@ -1,11 +1,13 @@
 
 (* $Id$ *)
 
+(*i*)
 open Pp
 open Names
 open Term
 open Sign
 open Environ
+(*i*)
 
 (* Type errors. *)
 

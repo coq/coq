@@ -1,8 +1,12 @@
 
 (* $Id$ *)
 
+(*i*)
 open Names
 open Term
+(*i*)
+
+(* Abstractions. *)
 
 type abstraction_body = { 
   abs_kind : path_kind;

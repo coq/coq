@@ -1,6 +1,7 @@
 
 (* $Id$ *)
 
+(*i*)
 open Names
 open Term
 open Constant
@@ -8,6 +9,12 @@ open Inductive
 open Evd
 open Univ
 open Sign
+(*i*)
+
+(* Unsafe environments. We define here a datatype for environments. 
+   Since typing is not yet defined, it is not possible to check the
+   informations added in environments, and that is what we speak here
+   of ``unsafe'' environments. *)
 
 type 'a unsafe_env
 
@@ -49,6 +56,10 @@ val evaluable_const : 'a unsafe_env -> constr -> bool
 val is_existential : constr -> bool
 
 val mind_nparams : 'a unsafe_env -> constr -> int
+
+(*s Unsafe judgments. We introduce here the pre-type of judgments, which is
+  actually only a datatype to store a term with its type and the type of its
+  type. *)
 
 type unsafe_judgment = { 
   uj_val : constr;

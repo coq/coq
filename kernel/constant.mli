@@ -1,9 +1,13 @@
 
 (* $Id$ *)
 
+(*i*)
 open Names
 open Term
 open Sign
+(*i*)
+
+(* Constants. *)
 
 type discharge_recipe
 

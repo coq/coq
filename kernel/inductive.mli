@@ -1,9 +1,11 @@
 
 (* $Id$ *)
 
+(*i*)
 open Names
 open Term
 open Sign
+(*i*)
 
 (* Inductive types (internal representation). *)
 
@@ -74,10 +76,21 @@ type inductive_error =
 
 exception InductiveError of inductive_error
 
+(* [mind_check_names] checks the names of an inductive types declaration
+   i.e. that all the types and constructors names are distinct. 
+   It raises an exception [InductiveError _] if it is not the case. *)
+
 val mind_check_names : mutual_inductive_entry -> unit
 
-val mind_extract_params : int -> constr -> (name * constr) list * constr
+(* [mind_extract_and_check_params] extracts the parameters of an inductive
+   types declaration. It raises an exception [InductiveError _] if there is
+   not enough abstractions in any of the terms of the field 
+   [mind_entry_inds]. *)
+
 val mind_extract_and_check_params : 
   mutual_inductive_entry -> (name * constr) list
+
+val mind_extract_params : int -> constr -> (name * constr) list * constr
+
 
 val mind_check_lc : (name * constr) list -> mutual_inductive_entry -> unit
