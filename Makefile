@@ -247,10 +247,11 @@ BESTCOQTOP=bin/coqtop.$(BEST)$(EXE)
 COQTOP=bin/coqtop$(EXE)
 COQINTERFACE=bin/coq-interface$(EXE) bin/parser$(EXE)
 
-COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
-             $(COQINTERFACE) 
 
-world: $(COQBINARIES) states theories contrib tools
+world:: binaries states theories contrib tools
+
+binaries:: $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
+             $(COQINTERFACE) 
 
 $(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
 	$(COQMKTOP) -opt $(MLINCLUDES) -o $@
@@ -326,14 +327,14 @@ clean::
 # tests
 ###########################################################################
 
-check: $(BESTCOQTOP)
+check:: $(BESTCOQTOP)
 	cd test-suite; ./check -$(BEST)
 
 ###########################################################################
 # theories and states
 ###########################################################################
 
-states: states/barestate.coq states/initial.coq
+states:: states/barestate.coq states/initial.coq
 
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v syntax/PPTactic.v
 
@@ -566,7 +567,7 @@ COQTEX=bin/coq-tex$(EXE)
 COQVO2XML=bin/coq_vo2xml$(EXE)
 RUNCOQVO2XML=coq_vo2xml$(EXE)   # Uses the one in PATH and not the one in bin
 
-tools: $(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQVO2XML) dev/top_printers.cmo
+tools:: $(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQVO2XML) dev/top_printers.cmo
 
 COQDEPCMO=config/coq_config.cmo tools/coqdep_lexer.cmo tools/coqdep.cmo
 
