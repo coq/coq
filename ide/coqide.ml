@@ -321,16 +321,18 @@ let get_last_word_limits it =
   let nw = start#backward_word_start in
   (find_word_start nw,find_word_end nw)
 
+
 let rec complete_backward w (it:GText.iter) = 
   prerr_endline "Complete backward...";
-  match it#backward_search w with 
-    | None -> None
-    | Some (start,stop) -> let ne = find_word_end stop in
-      if ((find_word_start start)#compare start <> 0) ||
-	(ne#compare stop = 0)
-      then complete_backward w start
-      else Some (stop,ne)
-
+	  match it#backward_search w with 
+	    | None -> None
+	    | Some (start,stop) -> 
+		let ne = find_word_end stop in
+		if ((find_word_start start)#compare start <> 0) ||
+		  (ne#compare stop = 0)
+		then complete_backward w start
+		else Some (stop,ne)
+		  
 let rec complete_forward w (it:GText.iter) = 
   prerr_endline "Complete forward...";
   match it#forward_search w with 
@@ -339,6 +341,51 @@ let rec complete_forward w (it:GText.iter) =
       if ((find_word_start start)#compare start <> 0) || 
 	ne#compare stop = 0 then complete_forward w stop
       else Some (stop,ne)
+
+
+(* Reset this to None on page change ! *)
+let (last_completion:(string*int*int*bool) option ref) = ref None
+
+let complete input_buffer w (offset:int) =
+  match !last_completion with 
+    | Some (lw,loffset,lpos,backward)
+	when lw=w && loffset=offset ->
+	begin
+	  let iter = input_buffer#get_iter (`OFFSET lpos) in
+	  if backward then 
+	    match complete_backward w iter with
+	      | None -> 
+		  last_completion := 
+		Some (lw,loffset,
+		      
+		      (input_buffer#get_iter (`OFFSET loffset))#
+		      forward_word_end#offset ,
+		      false); 
+		  None
+	      | Some (start,stop) as result -> 
+		  last_completion := 
+		Some (w,offset,start#backward_char#offset,true);
+		  result
+	  else
+	    match complete_forward w iter with
+	      | None -> 
+		  last_completion := None;
+		  None
+	      | Some (start,stop) as result -> 
+		  last_completion := 
+		Some (w,offset,start#forward_char#offset,false);
+		  result
+	end
+    | _ -> begin
+	match complete_backward w (input_buffer#get_iter (`OFFSET offset)) with
+	  | None -> last_completion := None; None
+	  | Some (start,stop) as result -> 
+	      last_completion := Some (w,offset,start#offset,true);
+	      result
+      end
+	
+	
+  
   
   
 let get_current_word () =
@@ -795,19 +842,22 @@ object(self)
     with _ -> None
 
   method complete_at_offset (offset:int) = 
+    prerr_endline ("Completion at offset : " ^ string_of_int offset);
     let it () = input_buffer#get_iter (`OFFSET offset) in
     let iit = it () in
     if (iit#ends_word || iit#inside_word) then 
       let w = input_buffer#get_text 
-		~start:iit
-		~stop:(find_word_start iit) 
+		~start:(find_word_start iit)
+		~stop:iit
 		()
       in
-      match complete_backward w iit with 
+      prerr_endline ("Completion of prefix : " ^ w);
+      match complete input_buffer w offset with 
 	| None -> () 
 	| Some (start,stop) -> 
 	    let completion = input_buffer#get_text ~start ~stop () in
-	    input_buffer#insert completion;
+	    ignore (input_buffer#delete_selection ());
+	    ignore (input_buffer#insert_interactive completion);
 	    input_buffer#move_mark `INSERT (it());
 	    ()
 	    
@@ -1655,8 +1705,7 @@ let main files =
 		     (do_if_not_computing 
 			(fun b -> 
 			   let v =out_some (get_current_view ()).analyzed_view in 
-			   v#complete_at_offset (v#get_insert#offset);
-			   !flash_info "Complete Unsupported"
+			   v#complete_at_offset (v#get_insert#offset)
 			))
   in
 
