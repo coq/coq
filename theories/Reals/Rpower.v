@@ -326,6 +326,8 @@ Qed.
  
 Definition Rpower := [x : R] [y : R]  ``(exp (y*(ln x)))``.
 
+Infix Local "^R" Rpower (at level 2, left associativity) : R_scope.
+
 (******************************************************************)
 (*                        Properties of  Rpower                   *)
 (******************************************************************)
