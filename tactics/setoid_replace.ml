@@ -1349,12 +1349,17 @@ let setoid_replace c1 c2 ~new_goals gl =
       Relation sa -> sa
     | Leibniz _ -> raise Use_replace
   in
-   let eq = mkApp (relation.rel_aeq, [| c1 ; c2 |]) in
+   let eq_left_to_right = mkApp (relation.rel_aeq, [| c1 ; c2 |]) in
+   let eq_right_to_left = mkApp (relation.rel_aeq, [| c2 ; c1 |]) in
+   let replace dir eq =
     tclTHENS (assert_tac false Anonymous eq)
       [onLastHyp (fun id ->
         tclTHEN
-          (general_s_rewrite true (mkVar id) ~new_goals)
+          (general_s_rewrite dir (mkVar id) ~new_goals)
           (clear [id]));
-       Tacticals.tclIDTAC] gl
+       Tacticals.tclIDTAC]
+   in
+    tclORELSE
+     (replace true eq_left_to_right) (replace false eq_right_to_left) gl
  with
   Use_replace -> (!replace c1 c2) gl
