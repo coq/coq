@@ -68,8 +68,7 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
 LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
 	library/global.cmo library/states.cmo library/library.cmo \
 	library/nametab.cmo library/impargs.cmo library/redinfo.cmo \
-        library/indrec.cmo library/declare.cmo library/discharge.cmo \
-        library/goptions.cmo
+        library/indrec.cmo library/declare.cmo library/goptions.cmo
 
 PRETYPING=pretyping/tacred.cmo pretyping/pretype_errors.cmo \
           pretyping/retyping.cmo pretyping/typing.cmo \
@@ -99,6 +98,7 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
          toplevel/metasyntax.cmo toplevel/command.cmo toplevel/class.cmo \
+         toplevel/discharge.cmo \
          toplevel/vernacentries.cmo toplevel/vernac.cmo toplevel/mltop.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo \
          toplevel/usage.cmo toplevel/coqinit.cmo toplevel/coqtop.cmo

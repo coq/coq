@@ -101,7 +101,7 @@ let declare_parameter id c =
  
 (* Constants. *)
 
-type constant_declaration = constant_entry * strength * bool
+type constant_declaration = constant_entry * strength
 
 let csttab = ref (Spmap.empty : constant_declaration Spmap.t)
 
@@ -110,13 +110,13 @@ let _ = Summary.declare_summary "CONSTANT"
 	    Summary.unfreeze_function = (fun ft -> vartab := ft);
 	    Summary.init_function = (fun () -> vartab := Spmap.empty) }
 
-let cache_constant (sp,((ce,_,_) as cd)) =
+let cache_constant (sp,((ce,_) as cd)) =
   Global.add_constant sp ce;
   Nametab.push (basename sp) sp;
   declare_constant_implicits sp;
   csttab := Spmap.add sp cd !csttab
 
-let load_constant (sp,((ce,_,_) as cd)) =
+let load_constant (sp,((ce,_) as cd)) =
   declare_constant_implicits sp;
   csttab := Spmap.add sp cd !csttab
 
@@ -184,7 +184,7 @@ let is_constant sp =
   try let _ = Global.lookup_constant sp in true with Not_found -> false
 
 let constant_strength sp = 
-  let (_,stre,_) = Spmap.find sp !csttab in stre
+  let (_,stre) = Spmap.find sp !csttab in stre
 
 let is_variable id = 
   let sp = Nametab.sp_of_id CCI id in Spmap.mem sp !vartab
@@ -294,8 +294,7 @@ let declare_eliminations sp i =
   let mindstr = string_of_id (mis_typename mispec) in
   let declare na c =
     declare_constant (id_of_string na)
-      ({ const_entry_body = c; const_entry_type = None },
-       NeverDischarge, false);
+      ({ const_entry_body = c; const_entry_type = None }, NeverDischarge);
     pPNL [< 'sTR na; 'sTR " is defined" >]
   in
   let env = Global.env () in

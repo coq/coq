@@ -34,7 +34,7 @@ val contents_after : section_path option -> library_segment
 (*s Opening and closing a section. *)
 
 val open_section : string -> section_path
-val close_section : string -> unit
+val close_section : string -> section_path * library_segment
 
 val make_path : identifier -> path_kind -> section_path
 val cwd : unit -> string list

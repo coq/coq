@@ -290,7 +290,7 @@ let build_id_coercion idf_opt ids =
                         (string_of_cl (fst (constructor_at_head t)))) 
   in
   let constr_entry = {const_entry_body = constr_f; const_entry_type = None } in
-  declare_constant idf (constr_entry,NeverDischarge,false);
+  declare_constant idf (constr_entry,NeverDischarge);
   idf
 
 let coercion_syntax_entry id n =

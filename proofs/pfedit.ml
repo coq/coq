@@ -175,8 +175,7 @@ let save_named opacity =
   and strength = ts.top_strength in
   let pfterm = extract_pftreestate pfs in 
   declare_constant (id_of_string ident)
-    ({ const_entry_body = pfterm; const_entry_type = Some concl },
-      strength, opacity);
+    ({ const_entry_body = pfterm; const_entry_type = Some concl }, strength);
   del_proof ident;
   message(ident ^ " is defined")
     
@@ -188,13 +187,11 @@ let save_anonymous opacity save_ident n =
   let pfterm = extract_pftreestate pfs in 
   if ident = "Unnamed_thm" then
     declare_constant (id_of_string save_ident)
-      ({ const_entry_body = pfterm; const_entry_type = Some concl },
-       strength, opacity)
+      ({ const_entry_body = pfterm; const_entry_type = Some concl }, strength)
   else begin
     message("Overriding name " ^ ident ^ " and using " ^ save_ident);
     declare_constant (id_of_string save_ident)
-      ({ const_entry_body = pfterm; const_entry_type = Some concl },
-       strength, opacity)
+      ({ const_entry_body = pfterm; const_entry_type = Some concl }, strength)
   end;
   del_proof ident;
   message(save_ident ^ " is defined")

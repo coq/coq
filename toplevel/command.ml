@@ -40,7 +40,7 @@ let constant_entry_of_com com =
 
 let definition_body ident n com = 
   let ce = constant_entry_of_com com in
-  declare_constant ident (ce,n,false)
+  declare_constant ident (ce,n)
 
 let red_constant_entry ce = function
   | None -> ce
@@ -53,7 +53,7 @@ let red_constant_entry ce = function
 let definition_body_red ident n com red_option = 
   let ce = constant_entry_of_com com in
   let ce' = red_constant_entry ce red_option in
-  declare_constant ident (ce',n,false)
+  declare_constant ident (ce',n)
 
 let syntax_definition ident com =
   let c = raw_constr_of_com Evd.empty (Global.context()) com in 
@@ -236,7 +236,7 @@ let build_recursive lnameargsardef =
 	  let ce = { const_entry_body = 
 		       mkFixDlam (Array.of_list nvrec) i varrec recvec;
 		     const_entry_type = None } in
-	  declare_constant fi (ce, n, false);
+	  declare_constant fi (ce, n);
           declare (i+1) lf
       | _ -> () 
     in 
@@ -251,7 +251,7 @@ let build_recursive lnameargsardef =
       (fun subst (f,def) ->
 	 let ce = { const_entry_body = Generic.replace_vars subst def;
 		    const_entry_type = None } in
-	 declare_constant f (ce,n,false);
+	 declare_constant f (ce,n);
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst lnamerec)
@@ -300,7 +300,7 @@ let build_corecursive lnameardef =
 	  let ce = { const_entry_body = 
 		       mkCoFixDlam i (Array.of_list larrec) recvec;
 		     const_entry_type = None } in
-          declare_constant fi (ce,n,false);
+          declare_constant fi (ce,n);
           declare (i+1) lf
       | _        -> () 
     in 
@@ -314,7 +314,7 @@ let build_corecursive lnameardef =
       (fun subst (f,def) ->
 	 let ce = { const_entry_body = Generic.replace_vars subst def;
 		    const_entry_type = None } in
-	 declare_constant f (ce,n,false);
+	 declare_constant f (ce,n);
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst lnamerec)
@@ -338,7 +338,7 @@ let build_scheme lnamedepindsort =
     | fi::lf -> 
 	let ce = 
 	  { const_entry_body = listdecl.(i); const_entry_type = None } in
-	declare_constant fi (ce,n,false);
+	declare_constant fi (ce,n);
         declare (i+1) lf
     | _        -> ()
   in 

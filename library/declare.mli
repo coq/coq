@@ -23,7 +23,7 @@ type strength =
 type variable_declaration = constr * strength * bool
 val declare_variable : identifier -> variable_declaration -> unit
 
-type constant_declaration = constant_entry * strength * bool
+type constant_declaration = constant_entry * strength
 val declare_constant : identifier -> constant_declaration -> unit
 
 val declare_parameter : identifier -> constr -> unit

@@ -132,7 +132,8 @@ let close_section s =
   lib_stk := before;
   add_entry sp (ClosedSection (s,after));
   add_frozen_state ();
-  pop_path_prefix ()
+  pop_path_prefix ();
+  (sp,after)
 
 (* The following function exports the whole library segment, that will be 
    saved as a module. Objects are presented in chronological order, and
