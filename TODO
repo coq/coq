@@ -23,15 +23,19 @@ Grammaires:
 
 Doc:
 
+- Mettre à jour les messages d'erreurs de Discriminate/Simplify_eq/Injection
+- Documenter le nouvel Assert x:=t.
+- Documenter le filtrage sur les types inductifs avec let-ins (dont la
+  compatibility V6)
+
 - Ajouter let dans les règles du CIC
   -> FAIT, mais reste a documenter le let dans les inductifs
   et les champs manifestes dans les Record   
-- une passe sur le chapitre extensions de syntaxe
 - revoir le chapitre sur les tactiques utilisateur 
 - faut-il mieux spécifier la sémantique de Simpl (??)
 - documenter @Definition and co
 
 - Suggestions de la formation
-	Dans le Intros pattern on pourrait interpreter les _ 
-comme des hypotheses sur lesquelles on ferait Clear immediatement
+  Dans le Intros pattern on pourrait interpreter les _ 
+  comme des hypotheses sur lesquelles on ferait Clear immediatement
 -> FAIT, semble-t'il

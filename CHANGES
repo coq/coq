@@ -1,6 +1,12 @@
 Changes from ??? to V7.1
 ========================
 
+Language
+
+- Automatic insertion of patterns for local definitions in the type of
+  the constructors of an inductive types (for compatibility with V6.3
+  let-in style)
+
 Tactics
 
 - New tactic "ClearBody H" to clear the body of definitions in local context
@@ -16,6 +22,8 @@ Bugs
 - Bug with recursive inductive types involving let-in fixed
 - Confusion between implicit args of locals and globals of same base name fixed
 - NatRing works (to check)
+- "Discriminate 1", "Injection 1", "Simplify_eq 1" now working
+
 
 ----------------------------------------------------------------------------
 Changes from V6.3.1 and V7.0 to V7.1
