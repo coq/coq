@@ -8,7 +8,7 @@
 
 (* $Id$ *)
 
-Grammar vernac vernac :=
+Grammar vernac vernac : Ast :=
   omega_sett [ "Set" "Omega" "Time" "." ] -> [(OmegaFlag "+time")]
 | omega_sets [ "Set" "Omega" "System" "." ] -> [(OmegaFlag "+system")]
 | omega_seta [ "Set" "Omega" "Action" "." ] -> [(OmegaFlag "+action")]
@@ -21,8 +21,8 @@ Grammar vernac vernac :=
 | omega_set  [ "Set" "Omega" stringarg($id) "." ] -> [(OmegaFlag $id)].
 
 
-Grammar tactic simple_tactic :=
+Grammar tactic simple_tactic : Ast :=
   omega [ "Omega" ] -> [(Omega)].
 
 Syntax tactic level 0:
-  omega [(Omega)] -> ["Omega"].
+  omega [ << (Omega) >> ] -> ["Omega"].
