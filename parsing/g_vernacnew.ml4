@@ -117,14 +117,8 @@ GEXTEND Gram
           VernacFixpoint (recs,false)
        | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           VernacFixpoint (recs,Options.boxed_definitions())
-     (* | IDENT "Boxed"; "CoFixpoint"; 
-	   corecs = LIST1 corec_definition SEP "with" ->
-          VernacCoFixpoint (corecs,true)
-      | IDENT "Unboxed"; "CoFixpoint"; 
-	   corecs = LIST1 corec_definition SEP "with" ->
-          VernacCoFixpoint (corecs,false) *)
       | "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
-          VernacCoFixpoint (corecs,false (*Options.boxed_definitions()*))
+          VernacCoFixpoint (corecs,false)
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l ] ]
   ;
   gallina_ext:

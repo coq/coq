@@ -147,7 +147,7 @@ Definition subdivision_val (a b:R) (f:StepFun a b) : Rlist :=
   | existT a b => a
   end.
 
-Fixpoint Int_SF (l k:Rlist) {struct l} : R :=
+Boxed Fixpoint Int_SF (l k:Rlist) {struct l} : R :=
   match l with
   | nil => 0
   | cons a l' =>

@@ -776,12 +776,12 @@ let _ =
     { optsync  = true;
       optname  = "use of virtual machine inside the kernel";
       optkey   = (SecondaryTable ("Virtual","Machine"));
-      optread  = (fun () -> !Reduction.use_vm);
-      optwrite = (fun b -> Reduction.use_vm := b) }
+      optread  = (fun () -> Vconv.use_vm ());
+      optwrite = (fun b -> Vconv.set_use_vm b) }
 
 let _ =
   declare_bool_option 
-    { optsync  = true;
+    { optsync  = false;
       optname  = "use of boxed definitions";
       optkey   = (SecondaryTable ("Boxed","Definitions"));
       optread  = Options.boxed_definitions;

@@ -124,9 +124,11 @@ value init_coq_vm(value unit) /* ML */
   if (coq_vm_initialized == 1) {
     fprintf(stderr,"already open \n");fflush(stderr);}
   else {
-
-    /* Allocate the table of global and the stack */
     drawinstr=0;
+#ifdef THREADED_CODE   
+    init_arity();
+#endif /* THREADED_CODE */
+    /* Allocate the table of global and the stack */
     init_coq_stack();
     init_coq_global_data(Coq_global_data_Size);
     init_coq_global_boxed(40);
@@ -138,9 +140,7 @@ value init_coq_vm(value unit) /* ML */
     
     /* Some predefined pointer code */
     accumulate = (code_t) coq_stat_alloc(sizeof(opcode_t));
-    *accumulate = ACCUMULATE;
-    accumulate = 
-      (code_t) coq_tcode_of_code((value)accumulate, Val_int(sizeof(opcode_t))); 
+    *accumulate = VALINSTR(ACCUMULATE);
 
   /* Initialize GC */
     if (coq_prev_scan_roots_hook == NULL)

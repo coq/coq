@@ -12,6 +12,7 @@ open Univ
 open Cbytecodes
 
 
+
 (* Test la structure des piles *)
 
 let compare_zipper z1 z2 =
@@ -40,31 +41,33 @@ let conv_vect fconv vect1 vect2 cu =
     !rcu
   else raise NotConvertible
 
-let rec conv_val infos pb k v1 v2 cu =
-  if v1 == v2 then cu else conv_whd infos pb k (whd_val v1) (whd_val v2) cu 
+let infos = ref (create_clos_infos betaiotazeta Environ.empty_env)
+
+let rec conv_val pb k v1 v2 cu =
+  if v1 == v2 then cu else conv_whd pb k (whd_val v1) (whd_val v2) cu 
     
-and conv_whd infos pb k whd1 whd2 cu =
+and conv_whd pb k whd1 whd2 cu =  
   match whd1, whd2 with
   | Vsort s1, Vsort s2 -> sort_cmp pb s1 s2 cu 
   | Vprod p1, Vprod p2 ->
-      let cu = conv_val infos CONV k (dom p1) (dom p2) cu in
-      conv_fun infos pb k (codom p1) (codom p2) cu
-  | Vfun f1, Vfun f2 -> conv_fun infos CONV k f1 f2 cu
-  | Vfix f1, Vfix f2 -> conv_fix infos k f1 f2 cu
+      let cu = conv_val CONV k (dom p1) (dom p2) cu in
+      conv_fun pb k (codom p1) (codom p2) cu
+  | Vfun f1, Vfun f2 -> conv_fun CONV k f1 f2 cu
+  | Vfix f1, Vfix f2 -> conv_fix k f1 f2 cu
   | Vfix_app fa1, Vfix_app fa2 ->
       let f1 = fix fa1 in
       let args1 = args_of_fix fa1 in
       let f2 = fix fa2 in
       let args2 = args_of_fix fa2 in
-      conv_arguments infos k args1 args2 (conv_fix infos k f1 f2 cu)
+      conv_arguments k args1 args2 (conv_fix k f1 f2 cu)
   | Vcofix cf1, Vcofix cf2 -> 
-      conv_cofix infos k cf1 cf2 cu
+      conv_cofix k cf1 cf2 cu
   | Vcofix_app cfa1, Vcofix_app cfa2 ->	
       let cf1 = cofix cfa1 in
       let args1 = args_of_cofix cfa1 in
       let cf2 = cofix cfa2 in
       let args2 = args_of_cofix cfa2 in
-      conv_arguments infos k args1 args2 (conv_cofix infos k cf1 cf2 cu)
+      conv_arguments k args1 args2 (conv_cofix k cf1 cf2 cu)
   | Vconstr_const i1, Vconstr_const i2 -> 
       if i1 = i2 then cu else raise NotConvertible 
   | Vconstr_block b1, Vconstr_block b2 ->
@@ -72,113 +75,111 @@ and conv_whd infos pb k whd1 whd2 cu =
       if btag b1 = btag b2 && sz = bsize b2 then
 	let rcu = ref cu in
 	for i = 0 to sz - 1 do
-	  rcu := conv_val infos CONV k (bfield b1 i) (bfield b2 i) !rcu
+	  rcu := conv_val CONV k (bfield b1 i) (bfield b2 i) !rcu
 	done;
 	!rcu
       else raise NotConvertible
   | Vatom_stk(a1,stk1), Vatom_stk(a2,stk2) -> 
-      conv_atom infos pb k a1 stk1 a2 stk2 cu
-  | _, Vatom_stk(Aiddef(_,v),stk) -> 
-      conv_whd infos pb k whd1 (whd_stack v stk) cu
-  | Vatom_stk(Aiddef(_,v),stk), _ -> 
-      conv_whd infos pb k (whd_stack v stk) whd2 cu
+      conv_atom pb k a1 stk1 a2 stk2 cu
+  | _, Vatom_stk(Aiddef(_,v) as a2,stk) -> 
+      conv_whd pb k whd1 (force_whd v stk) cu
+  | Vatom_stk(Aiddef(_,v) as a1,stk), _ -> 
+      conv_whd pb k (force_whd v stk) whd2 cu
   | _, _ -> raise NotConvertible
 
-and conv_atom infos pb k a1 stk1 a2 stk2 cu =
+and conv_atom pb k a1 stk1 a2 stk2 cu =
   match a1, a2 with
   | Aind (kn1,i1), Aind(kn2,i2) ->
-      if i1 = i2 && mind_equiv infos kn1 kn2 then
-	conv_stack infos k stk1 stk2 cu
+      if i1 = i2 && mind_equiv !infos kn1 kn2 && compare_stack stk1 stk2 then
+	conv_stack k stk1 stk2 cu
       else raise NotConvertible
   | Aid ik1, Aid ik2 -> 
-      if ik1 = ik2 then conv_stack infos k stk1 stk2 cu 
+      if ik1 = ik2 && compare_stack stk1 stk2 then 
+	conv_stack k stk1 stk2 cu 
       else raise NotConvertible
   | Aiddef(ik1,v1), Aiddef(ik2,v2) ->
       begin
 	try
-	  if ik1 = ik2 then conv_stack infos k stk1 stk2 cu 
+	  if ik1 = ik2 && compare_stack stk1 stk2 then
+	    conv_stack k stk1 stk2 cu 
 	  else raise NotConvertible
 	with NotConvertible ->
 	  if oracle_order ik1 ik2 then             
-            conv_whd infos pb k (whd_stack v1 stk1) (Vatom_stk(a2,stk2)) cu
-          else conv_whd infos pb k (Vatom_stk(a1,stk1)) (whd_stack v2 stk2) cu
+            conv_whd pb k (whd_stack v1 stk1) (Vatom_stk(a2,stk2)) cu
+          else conv_whd pb k (Vatom_stk(a1,stk1)) (whd_stack v2 stk2) cu
       end
   | Aiddef(ik1,v1), _ ->
-      conv_whd infos pb k (whd_stack v1 stk1) (Vatom_stk(a2,stk2)) cu
+      conv_whd pb k (force_whd v1 stk1) (Vatom_stk(a2,stk2)) cu
   | _, Aiddef(ik2,v2) ->
-      conv_whd infos pb k (Vatom_stk(a1,stk1)) (whd_stack v2 stk2) cu
+      conv_whd pb k (Vatom_stk(a1,stk1)) (force_whd v2 stk2) cu
   | Afix_app _, _ | _, Afix_app _ | Aswitch _, _ | _, Aswitch _ -> 
       Util.anomaly "Vconv.conv_atom : Vm.whd_val doesn't work"
   | _, _ -> raise NotConvertible 
+	
+and conv_stack k stk1 stk2 cu =
+  match stk1, stk2 with
+  | [], [] -> cu
+  | Zapp args1 :: stk1, Zapp args2 :: stk2 ->
+      conv_stack k stk1 stk2 (conv_arguments k args1 args2 cu) 
+  | Zfix fa1 :: stk1, Zfix fa2 :: stk2 ->
+      let f1 = fix fa1 in
+      let args1 = args_of_fix fa1 in
+      let f2 = fix fa2 in
+      let args2 = args_of_fix fa2 in
+      conv_stack k stk1 stk2 
+	(conv_arguments k args1 args2 (conv_fix k f1 f2 cu))
+  | Zswitch sw1 :: stk1, Zswitch sw2 :: stk2 ->
+      if eq_tbl sw1 sw2 then
+	let vt1,vt2 = type_of_switch sw1, type_of_switch sw2 in
+	let rcu = ref (conv_val CONV k vt1 vt2 cu) in
+	let b1, b2 = branch_of_switch k sw1, branch_of_switch k sw2 in
+	for i = 0 to Array.length b1 - 1 do
+	  rcu := 
+	    conv_val CONV (k + fst b1.(i)) 
+	      (snd b1.(i)) (snd b2.(i)) !rcu
+	done;
+	conv_stack k stk1 stk2 !rcu
+      else raise NotConvertible
+  | _, _ -> raise NotConvertible
 
-and conv_stack infos k stk1 stk2 cu =
-  if compare_stack stk1 stk2 then
-    let rec conv_rec stk1 stk2 cu =
-      match stk1, stk2 with
-      |	[], [] -> cu
-      |	Zapp args1 :: stk1, Zapp args2 :: stk2 ->
-	  conv_rec stk1 stk2 (conv_arguments infos k args1 args2 cu) 
-      |	Zfix fa1 :: stk1, Zfix fa2 :: stk2 ->
-	  let f1 = fix fa1 in
-	  let args1 = args_of_fix fa1 in
-	  let f2 = fix fa2 in
-	  let args2 = args_of_fix fa2 in
-	  conv_rec stk1 stk2 
-	    (conv_arguments infos k args1 args2 (conv_fix infos k f1 f2 cu))
-      |	Zswitch sw1 :: stk1, Zswitch sw2 :: stk2 ->
-	  if eq_tbl sw1 sw2 then
-	    let vt1,vt2 = type_of_switch sw1, type_of_switch sw2 in
-	    let rcu = ref (conv_val infos CONV k vt1 vt2 cu) in
-	    let b1, b2 = branch_of_switch k sw1, branch_of_switch k sw2 in
-	    for i = 0 to Array.length b1 - 1 do
-	      rcu := 
-		conv_val infos CONV (k + fst b1.(i)) 
-		  (snd b1.(i)) (snd b2.(i)) !rcu
-	    done;
-	    conv_rec stk1 stk2 !rcu
-	  else raise NotConvertible
-      |	_, _ -> raise NotConvertible
-    in conv_rec stk1 stk2 cu
-  else raise NotConvertible
-
-and conv_fun infos pb k f1 f2 cu =
+and conv_fun pb k f1 f2 cu =
   if f1 == f2 then cu
   else
     let arity,b1,b2 = decompose_vfun2 k f1 f2 in
-    conv_val infos pb (k+arity) b1 b2 cu
+    conv_val pb (k+arity) b1 b2 cu
 
-and conv_fix infos k f1 f2 cu =
+and conv_fix k f1 f2 cu =
   if f1 == f2 then cu 
   else
     if check_fix f1 f2 then
       let tf1 = types_of_fix f1 in
       let tf2 = types_of_fix f2 in
-      let cu = conv_vect (conv_val infos CONV k) tf1 tf2 cu in
+      let cu = conv_vect (conv_val CONV k) tf1 tf2 cu in
       let bf1 = bodies_of_fix k f1 in
       let bf2 = bodies_of_fix k f2 in
-      conv_vect (conv_fun infos CONV (k + (fix_ndef f1))) bf1 bf2 cu
+      conv_vect (conv_fun CONV (k + (fix_ndef f1))) bf1 bf2 cu
     else raise NotConvertible
 
-and conv_cofix infos k cf1 cf2 cu =
+and conv_cofix k cf1 cf2 cu =
   if cf1 == cf2 then cu
   else
     if check_cofix cf1 cf2 then
       let tcf1 = types_of_cofix cf1 in
       let tcf2 = types_of_cofix cf2 in
-      let cu = conv_vect (conv_val infos CONV k) tcf1 tcf2 cu in
+      let cu = conv_vect (conv_val CONV k) tcf1 tcf2 cu in
       let bcf1 = bodies_of_cofix k cf1 in
       let bcf2 = bodies_of_cofix k cf2 in
-      conv_vect (conv_val infos CONV (k + (cofix_ndef cf1))) bcf1 bcf2 cu
+      conv_vect (conv_val CONV (k + (cofix_ndef cf1))) bcf1 bcf2 cu
     else raise NotConvertible
 
-and conv_arguments infos k args1 args2 cu =
+and conv_arguments k args1 args2 cu =
   if args1 == args2 then cu
   else
     let n = nargs args1 in
     if n = nargs args2 then
       let rcu = ref cu in
       for i = 0 to n - 1 do
-	rcu := conv_val infos CONV k (arg args1 i) (arg args2 i) !rcu
+	rcu := conv_val CONV k (arg args1 i) (arg args2 i) !rcu
       done;
       !rcu
     else raise NotConvertible
@@ -237,14 +238,21 @@ let vconv pb env t1 t2 =
   let cu =
     try conv_eq pb t1 t2 Constraint.empty
     with NotConvertible ->
-      let infos = create_clos_infos betaiotazeta env in
+      infos := create_clos_infos betaiotazeta env;
       let v1 = val_of_constr env t1 in
       let v2 = val_of_constr env t2 in
-      let cu = conv_val infos pb (nb_rel env) v1 v2 Constraint.empty in
+      let cu = conv_val pb (nb_rel env) v1 v2 Constraint.empty in
       cu
   in cu
-
+    
+let use_vm = ref true
 let _ = Reduction.set_vm_conv_cmp vconv
+let set_use_vm b =
+  use_vm := b;
+  if b then Reduction.set_vm_conv_cmp vconv
+  else Reduction.set_default_vm_conv ()
+      
+let use_vm _ = !use_vm
 
 (*******************************************)
 (* Calcul de la forme normal d'un terme    *)

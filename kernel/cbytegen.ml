@@ -466,10 +466,7 @@ let compile env c =
   let reloc = empty () in
   let init_code = compile_constr reloc c 0 [Kstop] in
   let fv = List.rev (!(reloc.in_env).fv_rev) in
-  if Options.print_bytecodes() then 
-    (draw_instr init_code; draw_instr !fun_code);
   init_code,!fun_code, Array.of_list fv
-
 
 let compile_constant_body env body opaque boxed =
   if opaque then BCconstant
@@ -477,18 +474,19 @@ let compile_constant_body env body opaque boxed =
   | None -> BCconstant
   | Some sb ->
       let body = Declarations.force sb in
-      match kind_of_term body with
-      | Const kn' -> BCallias (get_allias env kn')
-      | Construct _ ->
-	  let res = compile env body in
-	  let to_patch = to_memory res in
-	  BCdefined (false,to_patch)
-
-      | _ -> 
-	  let res = compile env body in
-	  let to_patch = to_memory res in
-	  (*if Options.print_bytecodes() then 
-	    (let init,fun_code,_= res in
-	    draw_instr init; draw_instr fun_code);*)
-	  BCdefined (boxed && Options.boxed_definitions (),to_patch)
+      if boxed then
+	let res = compile env body in
+	let to_patch = to_memory res in
+	BCdefined(true, to_patch)
+      else
+	match kind_of_term body with
+	| Const kn' -> BCallias (get_allias env kn')
+	| Construct _ ->
+	    let res = compile env body in
+	    let to_patch = to_memory res in
+	    BCdefined (false, to_patch)
+	| _ -> 
+	    let res = compile env body in
+	    let to_patch = to_memory res in
+	    BCdefined (false, to_patch)
 

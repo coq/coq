@@ -55,11 +55,11 @@ sp is a local copy of the global variable extern_sp. */
 #  define Next break
 #endif 
 
-/*#define _COQ_DEBUG_*/
+/*#define _COQ_DEBUG_ */
 
 #ifdef _COQ_DEBUG_ 
-#   define print_instr(s) if (drawinstr) printf("%s\n",s)
-#   define print_int(i)   if (drawinstr) printf("%d\n",i)
+#   define print_instr(s) /*if (drawinstr)*/ printf("%s\n",s)
+#   define print_int(i)   /*if (drawinstr)*/ printf("%d\n",i)
 # else 
 #   define print_instr(s) 
 #   define print_int(i) 
@@ -164,7 +164,9 @@ value coq_interprete
 #else 
   opcode_t curr_instr;
 #endif
+    print_instr("Enter Interpreter");
   if (coq_pc == NULL) {           /* Interpreter is initializing */
+    print_instr("Interpreter is initializing");
 #ifdef THREADED_CODE
     coq_instr_table = (char **) coq_jumptable;
     coq_instr_base = coq_Jumptbl_base;

@@ -341,19 +341,19 @@ let conv_leq_vecti env v1 v2 =
     v2
 
 (* option for conversion *)
-let use_vm = ref true
-let vm_fconv = ref (fun _ _ _ _ -> error "VM not installed")
+
+let vm_fconv = ref fconv 
+
+let set_default_vm_conv _ = vm_fconv := fconv
 let set_vm_conv_cmp f = vm_fconv := f
 
-let vm_conv cv_pb env t1 t2 =
-  if eq_constr t1 t2 then 
-    Constraint.empty
-  else if !use_vm then
-    try !vm_fconv cv_pb env t1 t2
-    with Not_found | Invalid_argument _ ->
+let vm_conv cv_pb env t1 t2 = 
+  try 
+    !vm_fconv cv_pb env t1 t2
+  with Not_found | Invalid_argument _ ->
       (* If compilation fails, fall-back to closure conversion *)
       clos_fconv cv_pb env t1 t2
-  else clos_fconv cv_pb env t1 t2
+  
 
 let vm_conv_leq_vecti env v1 v2 =
   array_fold_left2_i 
@@ -366,6 +366,7 @@ let vm_conv_leq_vecti env v1 v2 =
     v1
     v2
 
+let vm_conv_leq = vm_conv CUMUL
 (*
 let convleqkey = Profile.declare_profile "Kernel_reduction.conv_leq";;
 let conv_leq env t1 t2 =

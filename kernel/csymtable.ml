@@ -8,6 +8,9 @@ open Environ
 open Cbytegen
 open Cemitcodes
 
+
+open Format 
+
 external tcode_of_code : emitcodes -> int -> tcode = "coq_tcode_of_code"
 external free_tcode : tcode -> unit = "coq_static_free"
 external eval_tcode : tcode -> values array -> values = "coq_eval_tcode"
@@ -95,6 +98,8 @@ let slot_for_annot key =
     Hashtbl.add annot_tbl key n;
     n
 
+open Format
+
 let rec slot_for_getglobal env kn =
   let ck = lookup_constant_key kn env in
   try constant_key_pos ck
@@ -159,7 +164,9 @@ and eval_to_patch env (buff,pl,fv) =
   eval_tcode tc vm_env
 
 and val_of_constr env c = 
-  let (_,fun_code,_ as ccfv) = compile env c in
+  let (_,fun_code,_ as ccfv) = 
+    try compile env c 
+    with e -> print_string "can not compile \n";print_flush();raise e in
   eval_to_patch env (to_memory ccfv)
  
 let set_transparent_const kn =

@@ -12,5 +12,6 @@ val compile : env -> constr -> bytecodes * bytecodes * fv
 
 val compile_constant_body : 
     env -> constr_substituted option -> bool -> bool -> body_code
-                                  (* opaque *) (* boxed *)
+                                 (* opaque *) (* boxed *)
+
 

@@ -149,7 +149,6 @@ let lookup_named id env =
   Sign.lookup_named id env.env_named_context
     
 
-    
 (* A local const is evaluable if it is defined  *)
 let evaluable_named id env =
   try 
@@ -165,6 +164,7 @@ let push_named d env =
     match body with
     | None -> ref (VKaxiom id)
     | Some c -> ref (VKdef(c,env))
+	  
   in
   { env with  
     env_named_context = Sign.add_named_decl d env.env_named_context;

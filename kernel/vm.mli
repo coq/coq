@@ -104,6 +104,6 @@ val arg : arguments -> int -> values
 
 (* Evaluation *)
 val whd_stack : values -> stack -> whd
-
+val force_whd : values -> stack -> whd
 
 

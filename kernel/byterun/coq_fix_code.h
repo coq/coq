@@ -18,11 +18,13 @@ void * coq_stat_alloc (asize_t sz);
 #ifdef THREADED_CODE
 extern char ** coq_instr_table;
 extern char * coq_instr_base;
-#define Is_instruction(i1,i2) \
-       (*i1 == (opcode_t)(coq_instr_table[i2] - coq_instr_base))
-#else 
-#define Is_instruction(i1,i2) (*i1 == i2)
-#endif
+void init_arity();
+#define VALINSTR(instr) ((opcode_t)(coq_instr_table[instr] - coq_instr_base))
+#else
+#define VALINSTR(instr) instr
+#endif /*  THREADED_CODE */
+
+#define Is_instruction(pc,instr) (*pc == VALINSTR(instr))
 
 value coq_tcode_of_code(value code, value len);
 value coq_makeaccu (value i);

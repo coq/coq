@@ -143,12 +143,15 @@ let re_exec is_ide =
   end
 
 (*s options for the virtual machine *)
-let unb_val = ref (fun _ -> ())
-let unb_def = ref (fun _ -> ())
-let no_vm = ref (fun _ -> ())
+
+let boxed_val = ref true
+let boxed_def = ref true
+let use_vm = ref true
 
 let set_vm_opt () =
-  !unb_val true;!unb_def false;!no_vm false
+  Vm.set_transp_values (not !boxed_val);
+  Options.set_boxed_definitions !boxed_def;
+  Vconv.set_use_vm !use_vm
 
 (*s Parsing of the command line.
     We no longer use [Arg.parse], in order to use share [Usage.print_usage]
@@ -237,11 +240,12 @@ let parse_args is_ide =
     | "-debug" :: rem -> set_debug (); parse rem
 
     | "-unboxed-values" :: rem -> 
-	unb_val := Vm.set_transp_values ; parse rem
-    | "-unboxed-definitions" :: rem ->
-	unb_def := Options.set_boxed_definitions; parse rem
-    | "-no-vm" :: rem -> no_vm := (fun b -> Reduction.use_vm := b);parse rem
-    | "-draw-vm-instr" :: rem -> Vm.set_drawinstr ();parse rem
+	boxed_val := false; parse rem
+    | "-boxed-definitions" :: rem ->
+	boxed_def := true; parse rem
+    | "-no-vm" :: rem -> use_vm := false; parse rem
+    | "-draw-vm-instr" :: rem -> Vm.set_drawinstr ();
+	Options.set_print_bytecodes true; parse rem
     | "-emacs" :: rem -> Options.print_emacs := true; parse rem
 	  
     | "-where" :: _ -> print_endline Coq_config.coqlib; exit 0

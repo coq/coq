@@ -432,6 +432,11 @@ let rec whd_stack v stk =
       if is_accu v then whd_accu (magic v) stk 
       else whd_stack (apply_switch sw v) stkt 
 
+let rec force_whd v stk =
+  match whd_stack v stk with
+  | Vatom_stk(Aiddef(_,v),stk) -> force_whd v stk
+  | res -> res
+
 	  
 
 (* Function *)

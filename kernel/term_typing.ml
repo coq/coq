@@ -29,7 +29,7 @@ let constrain_type env j cst1 = function
   | Some t -> 
       let (tj,cst2) = infer_type env t in
       let cst3 =
-	try conv_leq env j.uj_type tj.utj_val
+	try vm_conv_leq env j.uj_type tj.utj_val
 	with NotConvertible -> error_actual_type env j tj.utj_val in
       let typ = 
         if t = tj.utj_val then t else

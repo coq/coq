@@ -107,7 +107,7 @@ Hint Resolve Rlt_asym Rplus_lt_compat_l Rmult_lt_compat_l: real.
 (**********************************************************)
 
 (**********)
-Fixpoint INR (n:nat) : R :=
+Boxed Fixpoint INR (n:nat) : R :=
   match n with
   | O => 0
   | S O => 1

@@ -63,7 +63,7 @@ Qed.
 (*          Power              *)
 (*******************************)
 (*********)
-Fixpoint pow (r:R) (n:nat) {struct n} : R :=
+Boxed Fixpoint pow (r:R) (n:nat) {struct n} : R :=
   match n with
   | O => 1
   | S n => r * pow r n
@@ -670,7 +670,7 @@ Definition decimal_exp (r:R) (z:Z) : R := (r * 10 ^Z z).
 (** Sum of n first naturals    *)
 (*******************************)
 (*********)
-Fixpoint sum_nat_f_O (f:nat -> nat) (n:nat) {struct n} : nat :=
+Boxed Fixpoint sum_nat_f_O (f:nat -> nat) (n:nat) {struct n} : nat :=
   match n with
   | O => f 0%nat
   | S n' => (sum_nat_f_O f n' + f (S n'))%nat
