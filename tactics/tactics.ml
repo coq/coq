@@ -1024,19 +1024,27 @@ let simplest_elim c = default_elim (c,[])
 
  *)
 
+(* We recompute recargs because we are not sure the elimination lemma
+comes from a canonically generated one *)
 
-let rec is_rec_arg indpath t =
+let rec is_rec_arg env sigma indpath t =
   try
-    let ((ind_sp,_),_) = find_mrectype (Global.env()) Evd.empty t in
+    let ((ind_sp,_),_) = find_mrectype env sigma t in
     Declare.path_of_inductive_path ind_sp = indpath
   with Induc -> 
     false
 
-let induct_discharge indpath statuslists cname destopt avoid (_,t) =
+let rec recargs indpath env sigma t =
+  match kind_of_term (whd_betadeltaiota env sigma t) with
+    | IsProd (na,t,c2) ->
+	(is_rec_arg env sigma indpath t)
+	::(recargs indpath (push_rel_assum (na,t) env) sigma c2)
+    | _ -> []
+
+let induct_discharge indpath statuslists cname destopt avoid ra gl =
   let (lstatus,rstatus) = statuslists in
   let tophyp = ref None in
-  let (l,_) = decompose_prod_assum t in
-  let n = List.length (List.filter (fun (_,_,t') -> is_rec_arg indpath (body_of_type t')) l) in
+  let n = List.fold_left (fun n b -> if b then n+1 else n) 0 ra in
   let recvarname =
     if n=1 then 
       cname
@@ -1044,34 +1052,30 @@ let induct_discharge indpath statuslists cname destopt avoid (_,t) =
       make_ident (string_of_id cname) (Some 1)
   in
   let hyprecname = id_of_string ("Hrec"^(string_of_id recvarname)) in
-  let rec peel_tac c = match kind_of_term c with
-    | IsProd (na,t,c2) when is_rec_arg indpath t ->
-	(match kind_of_term c2 with
-	   | IsProd (nar,tr,c3) ->
+  let rec peel_tac = function
+    | true :: ra' ->
 		 (* For lstatus but _buggy_: if intro_gen renames
 		    hyprecname differently (because it already exists
 		    in goal, then hypothesis associated to None in
 		    lstatus will be moved at a wrong place *)
-	       if !tophyp=None then
-		 tophyp := Some (next_global_ident_away hyprecname avoid);
-               tclTHENLIST
-		 [ intro_gen (IntroBasedOn (recvarname,avoid)) destopt false;
-		   intro_gen (IntroBasedOn (hyprecname,avoid)) None false;
-		   peel_tac c3]
-	   | _ -> anomaly "induct_discharge: rec arg leads to 2 products")
-    | IsCast (c,_) -> peel_tac c
-    | IsProd (na,t,c) ->
+	if !tophyp=None then
+	  tophyp := Some (next_global_ident_away hyprecname avoid);
+        tclTHENLIST
+	  [ intro_gen (IntroBasedOn (recvarname,avoid)) destopt false;
+	    intro_gen (IntroBasedOn (hyprecname,avoid)) None false;
+	    peel_tac ra']
+    | false :: ra' ->
 	tclTHEN (intro_gen (IntroAvoid avoid) destopt false)
-	  (peel_tac c)
-    | _ -> tclIDTAC
+	  (peel_tac ra')
+    | [] -> tclIDTAC
   in
-  let evaluated_peel_tac = peel_tac t in (* because side effect on tophyp *)
+  let evaluated_peel_tac = peel_tac ra in (* because side effect on tophyp *)
   let newlstatus = (* if some Hrec has taken place at the top of hyps *)
     List.map (function (hyp,None) -> (hyp,!tophyp) | x -> x) lstatus
   in 
   tclTHENLIST [ evaluated_peel_tac;
 		intros_rmove rstatus;
-		intros_move newlstatus ]
+		intros_move newlstatus ] gl
 
 (* - le recalcul de indtyp à chaque itération de atomize_one est pour ne pas
      s'embêter à regarder si un letin_tac ne fait pas des
@@ -1270,19 +1274,30 @@ let induction_tac varname typ (elimc,elimt) gl =
   let elimclause = make_clenv_binding wc (mkCast (elimc,elimt),elimt) [] in
   elimination_clause_scheme kONT wc elimclause indclause gl
 
-let get_constructors varname (elimc,elimt) mind mindpath =
-   (* Je suppose que w_type_of=type_of pour les constantes comme elimc *)
-   (* J'espere que je ne me trompe pas *)
-  let (hyps_of_elimt,_) = decompose_prod elimt in
+let compute_elim_signature_and_roughly_check elimt mind =
   let mis = Global.lookup_mind_specif mind in
+  let lra = mis_recarg mis in
   let nconstr = mis_nconstr mis in
-  let nparam = mis_nparams mis in
-  try 
-    List.rev (list_firstn nconstr 
-		(list_lastn (nconstr + nparam + 1) hyps_of_elimt))
-  with Failure _ -> 
-    anomaly "induct_elim: bad elimination predicate"
-
+  let rec check_branch c ra = match kind_of_term c, ra with
+    | IsProd (_,_,c), Declarations.Mrec _ :: ra' ->
+	(match kind_of_term c with
+	   | IsProd (_,_,c) -> true::(check_branch c ra')
+	   | _ ->
+	       error "Not a recursive eliminator: some induction hypothesis is lacking")
+    | IsLetIn (_,_,_,c), ra' -> false::(check_branch c ra)
+    | IsProd (_,_,c), _ :: ra -> false::(check_branch c ra)
+    | _, [] -> []
+    | _ ->
+	error"Not a recursive eliminator: some constructor argument is lacking"
+  in
+  let rec check_elim c n =
+    if n = nconstr then []
+    else match kind_of_term c with
+    | IsProd (_,t,c) -> (check_branch t lra.(n)) :: (check_elim c (n+1))
+    | _ -> error "Not an eliminator: some constructor case is lacking" in
+  let _,elimt2 = decompose_prod_n (mis_nparams mis + 1) elimt in
+  check_elim elimt2 0
+      
 let induction_from_context hyp0 gl =
    (*test suivant sans doute inutile car protégé par le letin_tac avant appel*)
   if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
@@ -1296,7 +1311,7 @@ let induction_from_context hyp0 gl =
   let elimt = pf_type_of gl elimc in
   let (statlists,lhyp0,indhyps,deps) = cook_sign hyp0 indvars env in
   let tmpcl = it_mkNamedProd_or_LetIn (pf_concl gl) deps in
-  let lc = get_constructors hyp0 (elimc,elimt) mind mindpath in
+  let lr = compute_elim_signature_and_roughly_check elimt mind in
   let dephyps = List.rev (List.map (fun (id,_,_) -> id) deps) in
   let args = List.map mkVar dephyps in
   tclTHENLIST
@@ -1306,7 +1321,7 @@ let induction_from_context hyp0 gl =
        	(tclTHEN
 	   (induction_tac hyp0 typ0 (elimc,elimt))
 	   (thin (hyp0::(List.rev indhyps))))
-       	(List.map (induct_discharge mindpath statlists hyp0 lhyp0 dephyps) lc)]
+       	(List.map (induct_discharge mindpath statlists hyp0 lhyp0 dephyps) lr)]
     gl
 
 let induction_with_atomization_of_ind_arg hyp0 =
