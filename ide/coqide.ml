@@ -150,6 +150,7 @@ object('self)
     method activate : unit -> unit
     method active_keypress_handler : GdkEvent.Key.t -> bool
     method backtrack_to : GText.iter -> unit
+    method backtrack_to_no_lock : GText.iter -> unit
     method backtrack_to_insert : unit
     method clear_message : unit
     method deactivate : unit -> unit
@@ -184,10 +185,10 @@ object('self)
 let (input_views:analyzed_views viewable_script Vector.t) = Vector.create ()
 
 
-let signals_to_crash = [] (*Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup; 
+let signals_to_crash = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup; 
 			  Sys.sigill; Sys.sigpipe; Sys.sigquit; 
 			  (* Sys.sigsegv;*)  Sys.sigterm; Sys.sigusr2] 
-			  *)
+			
 let crash_save i =
 (*  ignore (Unix.sigprocmask Unix.SIG_BLOCK signals_to_crash);*)
   Pervasives.prerr_endline "Trying to save all buffers in .crashcoqide files";
@@ -220,8 +221,9 @@ let ignore_break () =
   Sys.set_signal Sys.sigint Sys.Signal_ignore
 
 (* Locking machinery for Coq kernel *)
-
 let coq_computing = Mutex.create ()
+
+(* To prevent Coq from interrupting during undoing...*)
 let coq_may_stop = Mutex.create ()
 
 let full_do_if_not_computing f x = 
@@ -627,7 +629,7 @@ object(self)
   method get_insert = get_insert input_buffer
 
   method recenter_insert = 
-    ignore (input_view#scroll_to_iter ~within_margin:0.10 self#get_insert) 
+   ignore (input_view#scroll_to_iter ~within_margin:0.20 self#get_insert) 
 
   method show_goals = 
     try
@@ -1011,8 +1013,8 @@ object(self)
 
 
   (* backtrack Coq to the phrase preceding iterator [i] *)
-  method backtrack_to i =
-    if Mutex.try_lock coq_may_stop then
+  method backtrack_to_no_lock i =
+      prerr_endline "Backtracking_to iter starts now.";
     (* re-synchronize Coq to the current state of the stack *)
     let rec synchro () =
       if is_empty () then
@@ -1049,6 +1051,7 @@ object(self)
 	  done_smthg, undos
     in
     let done_smthg, undos = pop_commands false (Some 0) in
+    prerr_endline "Popped commands";
     if done_smthg then
       begin 
 	try 
@@ -1068,19 +1071,24 @@ object(self)
 	  self#show_goals;
 	  clear_stdout ();
 	  self#clear_message;
-	  Mutex.unlock coq_may_stop;
-	with _ -> Mutex.unlock coq_may_stop;
+	with _ -> 
 	  !push_info "WARNING: undo failed badly -> Coq might be in an inconsistent state.
 Please restart and report NOW.";
       end
     else prerr_endline "backtrack_to : discarded (...)"
       
+  method backtrack_to i = 
+    if Mutex.try_lock coq_may_stop then 
+      (self#backtrack_to i ; Mutex.unlock coq_may_stop)
+    else prerr_endline "backtrack_to : discarded (lock is busy)"
+
   method backtrack_to_insert = 
     self#backtrack_to self#get_insert
 
-  method undo_last_step = 
-    if Mutex.try_lock coq_may_stop then 
-      try
+
+  method undo_last_step =
+    if Mutex.try_lock coq_may_stop then  
+      ((try
 	let last_command = top () in
 	let start = input_buffer#get_iter_at_mark last_command.start in
 	let update_input () =
@@ -1102,7 +1110,7 @@ Please restart and report NOW.";
 	  | {ast=_,VernacSolve _} -> 
 	      begin 
 		try Pfedit.undo 1; ignore (pop ()); update_input () 
-		with _ -> self#backtrack_to start
+		with _ -> self#backtrack_to_no_lock start
 	      end
 	  | {ast=_,t;reset_info=Reset (id, {contents=true})} ->
 	      ignore (pop ());
@@ -1126,12 +1134,13 @@ Please restart and report NOW.";
 		 end);
 	      update_input ()
 	  | _ -> 
-	      self#backtrack_to start
+	      self#backtrack_to_no_lock start
 	end;
-	Mutex.unlock coq_may_stop;
       with
-	| Size 0 -> Mutex.unlock coq_may_stop; !flash_info "Nothing to Undo"
-    else prerr_endline "Undo was ongoing..."
+	| Size 0 -> !flash_info "Nothing to Undo"
+      );
+    Mutex.unlock coq_may_stop)
+    else prerr_endline "undo_last_step discaded"
 
   method insert_command cp ip = 
     self#clear_message;
@@ -1743,7 +1752,9 @@ let main files =
     else
       activate_input (notebook ())#current_page
   in
+
   let do_or_activate f = do_if_not_computing (do_or_activate f) in
+
   ignore (navigation_factory#add_item "_Break computations" 
 	    ~key:GdkKeysyms._Break 
 	    ~callback:(fun () -> break ()));
