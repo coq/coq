@@ -17,6 +17,7 @@ open Miniml
 open Nametab
 open Table
 open Options
+open Nameops
 
 (*s Exceptions. *)
 
@@ -710,6 +711,16 @@ let expansion_test t =
    (ml_size t < 3) ||
    ((ml_size t < 12) && (is_not_strict t)))
 
+let manual_expand_list = 
+  List.map (fun s -> path_of_string ("Coq.Init."^s))
+    [ "Specif.sigS_rect" ; "Specif.sigS_rec" ; 
+      "Datatypes.prod_rect" ; "Datatypes.prod_rec"; 
+      "Wf.Acc_rec" ; "Wf.well_founded_induction" ]
+
+let manual_expand = function 
+  | ConstRef sp -> List.mem sp manual_expand_list
+  | _ -> false 
+
 (* If the user doesn't say he wants to keep [t], we expand in two cases:
    \begin{itemize}
    \item the user explicitly requests it 
@@ -721,8 +732,9 @@ let expand strict_lang r t =
   (not (to_keep r)) (* The user DOES want to keep it *)
   &&
   ((to_inline r) (* The user DOES want to expand it *) 
-   || 
-   (auto_inline () && strict_lang && expansion_test t)) 
+  || 
+   (auto_inline () && strict_lang && 
+    ((manual_expand r) ||  expansion_test t)))
 
 (*s Optimization *)
 

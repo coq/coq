@@ -17,6 +17,7 @@ open Mlutil
 open Ocaml
 open Nametab
 open Util
+open Declare
 
 (*s Modules considerations *)
 
@@ -34,24 +35,6 @@ let qualid_of_dirpath d =
   let dir,id = split_dirpath d in 
   make_qualid dir id 
 
-(* [long_module r] computes the dirpath of the module of the global 
-   reference [r]. The difficulty comes from the possible section names 
-   at the beginning of the dirpath (due to Remark). *)
-
-let long_module r = 
-  let rec check_module d = 
-    try 
-      locate_loaded_library (qualid_of_dirpath d)
-    with Not_found -> 
-      let d' = 
-	try 
-	  dirpath_prefix d 
-	with _ -> errorlabstrm "long_module_message"
-	(str "Can't find the module of" ++ spc () ++ 
-	   Printer.pr_global r)
-      in check_module d' 
-  in check_module (dirpath (sp_of_r r))
-
 (* From a valid module dirpath [d], we check if [r] belongs to this module. *)
       
 let is_long_module d r = 
@@ -62,8 +45,12 @@ let is_long_module d r =
   if l' < l then false 
   else dir = snd (list_chop (l'-l) dir')
 
+(* NB: [library_part r] computes the dirpath of the module of the global 
+   reference [r]. The difficulty comes from the possible section names 
+   at the beginning of the dirpath (due to Remark). *)
+
 let short_module r = 
-  snd (split_dirpath (long_module r))
+  snd (split_dirpath (library_part r))
 
 let module_option r = 
   let m = short_module r in

@@ -21,6 +21,7 @@ open Mlutil
 open Nametab
 open Vernacinterp
 open Common
+open Declare
 
 (*s Auxiliary functions dealing with modules. *)
 
@@ -46,7 +47,7 @@ let clash_error sn n1 n2 =
 let check_r m sm r = 
   let rm = String.capitalize (string_of_id (short_module r)) in 
   if rm = sm && not (is_long_module m r) 
-  then clash_error sm m (long_module r)
+  then clash_error sm m (library_part r)
 
 let check_decl m sm = function 
   | Dglob (r,_) -> check_r m sm r 
@@ -122,7 +123,7 @@ let rec visit_reference m eenv r =
        and in module extraction *)
     eenv.visited <- Refset.add r' eenv.visited;
     if m then begin 
-      let m_name = long_module r' in 
+      let m_name = library_part r' in 
       if not (Dirset.mem m_name eenv.modules) then begin
 	eenv.modules <- Dirset.add m_name eenv.modules;
 	List.iter (visit_reference m eenv) (extract_module m_name)

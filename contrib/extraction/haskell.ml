@@ -39,7 +39,7 @@ let preamble prm =
   (str "module " ++ str m ++ str " where" ++ fnl () ++ fnl () ++
      str "type Prop = Unit.Unit" ++ fnl () ++
      str "prop = Unit.unit" ++ fnl () ++ fnl () ++
-     str "type Arity = Unit.Unit" ++ fnl () ++
+     str "data Arity = Unit.Unit" ++ fnl () ++
      str "arity = Unit.unit" ++ fnl () ++ fnl ())
 
 let pp_abst = function

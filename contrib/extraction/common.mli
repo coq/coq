@@ -17,8 +17,6 @@ module ToplevelPp : Mlpp
 
 val sp_of_r : global_reference -> section_path
 
-val long_module : global_reference -> dir_path
-
 val is_long_module : dir_path -> global_reference -> bool
 
 val short_module : global_reference -> identifier
