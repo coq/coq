@@ -19,7 +19,7 @@ Then only after proves the main required property.
 
 *)
 
-Require ZArith.
+Require Export ZArith.
 Require Omega.
 Require ZArithRing.
 
