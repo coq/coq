@@ -39,6 +39,9 @@ Hashtbl.add type_table "Coq.Init.Logic.and"
 Hashtbl.add type_table "Coq.Init.Datatypes.prod"
   [|[|"dummy";"pair"|]|];;
 
+Hashtbl.add type_table "Coq.Init.Datatypes.nat"
+  [|[|"";"O"; "S"|]|];;
+
 Hashtbl.add type_table "Coq.Zarith.fast_integer.Z"
 [|[|"";"ZERO";"POS";"NEG"|]|];;
 
