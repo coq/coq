@@ -65,7 +65,7 @@ let exist_to_meta sigma (emap, c) =
     let ty = nf_betaiota (nf_evar emap (existential_type emap evar)) in
     let n = new_meta() in
     metamap := (n, ty) :: !metamap;
-    mkMeta n in
+    mkCast (mkMeta n, ty) in
   let rec replace c =
     match kind_of_term c with
         Evar (k,_ as ev) when not (Evd.in_dom sigma k) -> change_exist ev
