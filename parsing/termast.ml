@@ -27,7 +27,7 @@ let ids_of_ctxt cl =
        | Rel n ->
 	   warning "ids_of_ctxt: rel";
 	   id_of_string ("REL "^(string_of_int n))
-       | _-> anomaly"ids_of_ctxt")
+       | _-> anomaly "ids_of_ctxt")
     (Array.to_list cl)
 
 let ast_of_ident id = nvar (string_of_id id)

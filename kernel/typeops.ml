@@ -382,6 +382,14 @@ let sort_of_product domsort rangsort g =
            (* Product rule (Type_i,Type_i,Type_i) *) 
            | Type u1 -> let (u12,cst) = sup u1 u2 g in Type u12, cst)
 
+let sort_of_product_without_univ domsort rangsort =
+  match rangsort with
+    | Prop _ -> rangsort
+    | Type u2 ->
+        (match domsort with
+           | Prop _ -> rangsort
+           | Type u1 -> Type dummy_univ)
+
 let abs_rel env sigma name var j =
   let rngtyp = whd_betadeltaiota env sigma j.uj_kind in
   let cvar = incast_type var in

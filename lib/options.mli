@@ -12,6 +12,7 @@ val emacs_str : string -> string
 
 val make_silent : bool -> unit
 val is_silent : unit -> bool
+val verbose : unit -> bool
 val silently : ('a -> 'b) -> 'a -> 'b
 
 val set_print_hyps_limit : int -> unit

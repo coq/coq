@@ -11,10 +11,11 @@ let print_emacs = ref false
 
 let emacs_str s = if !print_emacs then s else "" 
 
-(* Silent *)
+(* Silent / Verbose *)
 let silent = ref false
 let make_silent flag = silent := flag; ()
 let is_silent () = !silent
+let verbose () = not !silent
 
 let silently f x =
   let oldsilent = !silent in
