@@ -75,6 +75,10 @@ with add_carry [x,y:positive]:positive :=
           end
   end.
 
+Infix "+" add (at level 4, left associativity) : positive_scope.
+
+Open Scope positive_scope.
+
 (** From positive to natural numbers *)
 Fixpoint positive_to_nat [x:positive]:nat -> nat :=
   [pow2:nat]
@@ -1007,36 +1011,29 @@ Intros; Elim H; Elim H0; Auto with arith.
 Qed.
 
 (** Addition on positive numbers *)
-Fixpoint times1 [x:positive] : (positive -> positive) -> positive -> positive:=
-  [f:positive -> positive][y:positive]
-  <positive> Cases x of
-          (xI x') => (add (f y) (times1 x' [z:positive](xO (f z)) y))
-        | (xO x') => (times1 x' [z:positive](xO (f z)) y)
-        | xH => (f y)
+Fixpoint times [x:positive] : positive -> positive:=
+  [y:positive]
+  Cases x of
+    (xI x') => (add y (xO (times x' y)))
+  | (xO x') => (xO (times x' y))
+  | xH => y
   end.
 
-Local times := [x:positive](times1 x [y:positive]y).
-
-Theorem times1_convert :
-  (x,y:positive)(f:positive -> positive)
-    (convert (times1 x f y)) = (mult (convert x) (convert (f y))).
-Proof.
-Induction x; [
-  Intros x' H y f;  Simpl; Rewrite ZL6; Rewrite convert_add; 
-  Rewrite H; Unfold 3 convert; Simpl; Rewrite ZL6;
-  Rewrite (mult_sym (convert x')); Do 2 Rewrite mult_plus_distr;
-  Rewrite (mult_sym (convert x')); Trivial with arith
-| Intros x' H y f; Simpl; Rewrite H; Unfold 2 3 convert; Simpl;
-  Do 2 Rewrite ZL6; Rewrite (mult_sym (convert x')); 
-  Do 2 Rewrite mult_plus_distr; Rewrite (mult_sym (convert x')); Auto with arith
-| Simpl; Intros;Rewrite <- plus_n_O; Trivial with arith ].
-Qed.
+Infix "*" times (at level 3, left associativity) : positive_scope.
 
 (** Correctness of multiplication on positive *)
 Theorem times_convert :
-  (x,y:positive) (convert (times x y)) = (mult (convert x) (convert y)).
+  (x,y:positive) (convert x*y) = (mult (convert x) (convert y)).
 Proof.
-Intros x y;Unfold times; Rewrite times1_convert; Trivial with arith.
+NewInduction x as [ x' H | x' H | ]; [
+  Intro y; Simpl; Rewrite ZL6; Rewrite convert_add; 
+  Rewrite H; Unfold 3 convert; Simpl; Rewrite ZL6;
+  Rewrite (mult_sym (convert x')); Do 2 Rewrite mult_plus_distr;
+  Rewrite (mult_sym (convert x')); Trivial with arith
+| Intro y; Simpl; Rewrite H; Unfold 2 3 convert; Simpl;
+  Do 2 Rewrite ZL6; Rewrite (mult_sym (convert x')); 
+  Do 2 Rewrite mult_plus_distr; Rewrite (mult_sym (convert x')); Auto with arith
+| Simpl; Intros;Rewrite <- plus_n_O; Trivial with arith ].
 Qed.
 
 (** Multiplication on integers *)
