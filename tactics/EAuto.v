@@ -35,30 +35,30 @@ Grammar tactic simple_tactic: Ast :=
 	-> [(EAuto $n "*")].
 
 Syntax tactic level 0:
-  eauto_with [(EAuto ($LIST $lid))] -> 
+  eauto_with [<<(EAuto ($LIST $lid))>>] -> 
 	[ "EAuto" [1 0] "with " [<hov 0> (LISTSPC ($LIST $lid))] ]
-| eauto [(EAuto)] -> ["EAuto"]
-| eauto_n_with [(EAuto ($NUM $n) ($LIST $lid))] ->
+| eauto [<<(EAuto)>>] -> ["EAuto"]
+| eauto_n_with [<<(EAuto ($NUM $n) ($LIST $lid))>>] ->
 	[ "EAuto " $n [1 0] "with " [<hov 0> (LISTSPC ($LIST $lid))] ]
-| eauto_n [(EAuto ($NUM $n))] -> ["EAuto " $n]
-| eauto_with_star [(EAuto "*")] -> 
+| eauto_n [<<(EAuto ($NUM $n))>>] -> ["EAuto " $n]
+| eauto_with_star [<<(EAuto "*")>>] -> 
 	[ "EAuto with *" ]
-| eauto_n_with_star [(EAuto ($NUM $n) "*")] ->
+| eauto_n_with_star [<<(EAuto ($NUM $n) "*")>>] ->
 	[ "EAuto " $n " with *" ]
-| etrivial [(ETrivial)] -> ["ETrivial"]
+| etrivial [<<(ETrivial)>>] -> ["ETrivial"]
 
-| eexact [(EExact $c)] -> ["EExact " $c]
+| eexact [<<(EExact $c)>>] -> ["EExact " $c]
 
-| eapply [(EApplyWithBindings $c ($LIST $bl))]
+| eapply [<<(EApplyWithBindings $c ($LIST $bl))>>]
       -> ["EApply " $c (WITHBINDING ($LIST $bl))]
 
-| prolog [(Prolog ($NUM $n) ($LIST $l))]
+| prolog [<<(Prolog ($NUM $n) ($LIST $l))>>]
     -> [ [<hov 0> "Prolog" [1 2] "[" [<hov 0> (LISTSPC ($LIST $l)) ] "]"
                   [1 2] $n] ]
 
-| instantiate [(Instantiate ($NUM $n) $c)] -> ["Instantiate " $n [1 2] $c]
+| instantiate [<<(Instantiate ($NUM $n) $c)>>] -> ["Instantiate " $n [1 2] $c]
 
-| normevars [(NormEvars)] -> ["NormEvars"].
+| normevars [<<(NormEvars)>>] -> ["NormEvars"].
 
 
 (* $Id$ *)

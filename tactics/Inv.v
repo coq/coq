@@ -6,24 +6,24 @@ Require Export Equality.
 Declare ML Module "Inv" "Leminv".
 
 Syntax tactic level 0:
-  inversion    [(Inv $ic $id)] -> [ (INVCOM $ic) [1 1] $id]
-| inversion_in [(InvIn $ic $id ($LIST $l))]
+  inversion    [<<(Inv $ic $id)>>] -> [ (INVCOM $ic) [1 1] $id]
+| inversion_in [<<(InvIn $ic $id ($LIST $l))>>]
     -> [ (INVCOM $ic) [1 1] $id (CLAUSE ($LIST $l))]
 
-| dep_inv [(DInv $ic $id)] -> ["Dependent " (INVCOM $ic) [1 1] $id]
-| dep_inv_with [(DInvWith $ic $id $c)]
+| dep_inv [<<(DInv $ic $id)>>] -> ["Dependent " (INVCOM $ic) [1 1] $id]
+| dep_inv_with [<<(DInvWith $ic $id $c)>>]
     -> ["Dependent " (INVCOM $ic) [1 1] $id [1 1] "with " $c]
 
 (* Use rules *)
 
 | inv_using
-    [(UseInversionLemma $id $c)] -> ["Inversion " $id [1 1] "using " $c]
-| inv_using_in [(UseInversionLemmaIn $id $c ($LIST $l))]
+    [<<(UseInversionLemma $id $c)>>] -> ["Inversion " $id [1 1] "using " $c]
+| inv_using_in [<<(UseInversionLemmaIn $id $c ($LIST $l))>>]
     -> ["Inversion " $id [1 1] "using " $c (CLAUSE ($LIST $l))]
 
-| simple_inv       [(INVCOM HalfInversion)] -> [ "Simple Inversion" ]
-| inversion_com    [(INVCOM Inversion)] -> [ "Inversion" ]
-| inversion_clear  [(INVCOM InversionClear)] -> [ "Inversion_clear" ].
+| simple_inv       [<<(INVCOM HalfInversion)>>] -> [ "Simple Inversion" ]
+| inversion_com    [<<(INVCOM Inversion)>>] -> [ "Inversion" ]
+| inversion_clear  [<<(INVCOM InversionClear)>>] -> [ "Inversion_clear" ].
 
 
 Grammar tactic simple_tactic: Ast :=
