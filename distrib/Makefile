@@ -31,6 +31,9 @@ COQDEBPACKAGE=coq_${VERSION}-${RELEASENUM}_i386.deb
 COQDEBCHANGES=coq_${VERSION}-${RELEASENUM}_*.changes
 COQDEBORIG=coq_${VERSION}.orig
 
+COQIDERPMPACKAGE=coqide-${VERSION}-${RELEASENUM}
+COQIDEDEBPACKAGE=coqide_${VERSION}-${RELEASENUM}_i386.deb
+
 ######################
 
 noarguments:
@@ -51,11 +54,14 @@ noarguments:
 	@echo "make deb		 to build a debian package"
 	@echo "make win		 to build a windows package"
 	@echo "make macosx	 to build a MacOS-X package on a disk image"
+	@echo "make ide-rpm      to build a src.rpm and a rpm for coqide on this arch"
+	@echo "make ide-arch-rpm to build a rpm for coqide on this arch from the src.rpm"
 
 ################## Main targets
 
 distrib: tag tar-gz
 rpm: src-rpm arch-rpm
+ide-rpm: ide-src-rpm ide-arch-rpm
 
 #################
 tag:
@@ -89,6 +95,9 @@ tar-gz:
 
 src-rpm: ${COQRPMPACKAGE}.src.rpm
 arch-rpm: ${COQRPMPACKAGE}.${ARCH}.rpm
+
+ide-src-rpm: ${COQIDERPMPACKAGE}.src.rpm
+ide-arch-rpm: ${COQIDERPMPACKAGE}.${ARCH}.rpm
 
 test:
 	cp ${COQPACKAGE}.tar.gz tmp.tar.gz
@@ -137,7 +146,7 @@ arch-image: ${COQPACKAGE}.tar.gz
 	rm -rf ${COQPACKAGE} || true;\
 	gunzip -c $(DISTRIBDIR)/${COQPACKAGE}.tar.gz | tar xf -;\
 	cd ${COQPACKAGE};\
-	./configure -bindir /usr/local/bin -libdir /usr/local/lib/coq -mandir /usr/local/man -emacs emacs -emacslib /usr/local/lib/emacs/site-lisp -opt -reals all;\
+	./configure -bindir /usr/local/bin -libdir /usr/local/lib/coq -mandir /usr/local/man -emacs emacs -emacslib /usr/local/lib/emacs/site-lisp -opt -reals all -coqide no;\
 	make world check;\
 	rm -rf ${ARCHBUILDROOT}/buildroot/* || true;\
 	make -e COQINSTALLPREFIX=${ARCHBUILDROOT}/buildroot/ install)
@@ -150,7 +159,7 @@ win: ${COQPACKAGE}.tar.gz
 	rm -rf ${COQPACKAGE} || true;\
 	gunzip -c $(DISTRIBDIR)/${COQPACKAGE}.tar.gz | tar xf -;\
 	cd ${COQPACKAGE};\
-	./configure -bindir /coq/bin -libdir /coq/lib -mandir /coq/man -emacslib /coq/emacs -reals all;\
+	./configure -bindir /coq/bin -libdir /coq/lib -mandir /coq/man -emacslib /coq/emacs -reals all -coqide no;\
 	make world;\
 	rm -rf ${ARCHBUILDROOT}/buildroot/* || true;\
 	make -e COQINSTALLPREFIX=${ARCHBUILDROOT}/buildroot/ install;\
@@ -202,6 +211,20 @@ ${COQRPMPACKAGE}.src.rpm: ${COQPACKAGE}.tar.gz coq.spec
 	else mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${ARCH}.rpm .;\
 	fi)
 
+${COQIDERPMPACKAGE}.src.rpm: ${COQPACKAGE}.tar.gz coqide.spec
+	${MAKE} rpm-config
+	cp -f petit-coq.gif ${RPMTOPDIR}/SOURCES
+	cp -f ${COQPACKAGE}.tar.gz ${RPMTOPDIR}/SOURCES/${COQIDEPACKAGE}
+	- mkdir ${RPMTOPDIR}/RPMS/${ARCH}
+	- rm ${RPMTOPDIR}/RPMS/${LOCALARCH}
+	- ln -s ${RPMTOPDIR}/RPMS/${ARCH} ${RPMTOPDIR}/RPMS/${LOCALARCH}
+	${RPM} -ba coqide.spec
+	mv ${RPMTOPDIR}/SRPMS/${COQIDERPMPACKAGE}.src.rpm .
+	(if [ -f ${RPMTOPDIR}/RPMS/${ARCH}/${COQIDERPMPACKAGE}.${LOCALARCH}.rpm ];\
+	then mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQIDERPMPACKAGE}.${LOCALARCH}.rpm ${RPMTOPDIR}/RPMS/${ARCH}/${COQIDERPMPACKAGE}.${ARCH}.rpm;\
+	else mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQIDERPMPACKAGE}.${ARCH}.rpm .;\
+	fi)
+
 # Sera déjà fait si le src.rpm vient d'être fait
 ${COQRPMPACKAGE}.${ARCH}.rpm: rpm-config ${COQRPMPACKAGE}.src.rpm
 	- mkdir ${RPMTOPDIR}/RPMS/${ARCH}
@@ -213,6 +236,16 @@ ${COQRPMPACKAGE}.${ARCH}.rpm: rpm-config ${COQRPMPACKAGE}.src.rpm
 	else mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${ARCH}.rpm .;\
 	fi)
 
+${COQIDERPMPACKAGE}.${ARCH}.rpm: rpm-config ${COQIDERPMPACKAGE}.src.rpm
+	- mkdir ${RPMTOPDIR}/RPMS/${ARCH}
+	- rm ${RPMTOPDIR}/RPMS/${LOCALARCH}
+	- ln -s ${RPMTOPDIR}/RPMS/${ARCH} ${RPMTOPDIR}/RPMS/${LOCALARCH}
+	${RPM} --rebuild ${COQIDERPMPACKAGE}.src.rpm
+	(if [ -f ${RPMTOPDIR}/RPMS/${ARCH}/${COQIDERPMPACKAGE}.${LOCALARCH}.rpm ];\
+	then mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQIDERPMPACKAGE}.${LOCALARCH}.rpm ${RPMTOPDIR}/RPMS/${ARCH}/${COQIDERPMPACKAGE}.${ARCH}.rpm;\
+	else mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQIDERPMPACKAGE}.${ARCH}.rpm .;\
+	fi)
+
 RH/coq.list: ${COQPACKAGE}.tar.gz Makefile config.distrib
 	rm -rf RH/${COQPACKAGE} RH/build
 	cd RH ; tar xzf ../${COQPACKAGE}.tar.gz
@@ -220,7 +253,7 @@ RH/coq.list: ${COQPACKAGE}.tar.gz Makefile config.distrib
 	cd RH/${COQPACKAGE} ; make COQINSTALLPREFIX=${DISTRIBDIR}/RH/build install
 	echo "# This file has been generated" > RH/coq.list
 	echo "# Do not edit" >>RH/coq.list
-	cd RH/build ; find . '!' -type d | sed -e 's|^\./|/|g'>> ../coq.list
+	cd RH/build ; find . '!' -type d | sed -e 's|^\./|/|g' -e '/coqide/d' >> ../coq.list
 
 coq.spec: RH/coq.list RH/coq.spec.tpl
 	echo "# This file has been generated from RH/coq.spec.tpl" > coq.spec
