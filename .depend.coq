@@ -44,8 +44,9 @@ theories/Relations/Relation_Definitions.vo: theories/Relations/Relation_Definiti
 theories/Relations/Operators_Properties.vo: theories/Relations/Operators_Properties.v theories/Relations/Relation_Definitions.vo theories/Relations/Relation_Operators.vo
 theories/Relations/Newman.vo: theories/Relations/Newman.v theories/Relations/Rstar.vo
 theories/Reals/TypeSyntax.vo: theories/Reals/TypeSyntax.v
+theories/Reals/SplitAbsolu.vo: theories/Reals/SplitAbsolu.v theories/Reals/Rbasic_fun.vo
 theories/Reals/Rsyntax.vo: theories/Reals/Rsyntax.v theories/Reals/Rdefinitions.vo
-theories/Reals/Rlimit.vo: theories/Reals/Rlimit.v theories/Reals/Rbasic_fun.vo theories/Logic/Classical_Prop.vo
+theories/Reals/Rlimit.vo: theories/Reals/Rlimit.v theories/Reals/Rbasic_fun.vo theories/Logic/Classical_Prop.vo theories/Reals/DiscrR.vo contrib/fourier/Fourier.vo theories/Reals/SplitAbsolu.vo
 theories/Reals/Rfunctions.vo: theories/Reals/Rfunctions.v theories/Reals/Rlimit.vo
 theories/Reals/Reals.vo: theories/Reals/Reals.v theories/Reals/Rdefinitions.vo theories/Reals/TypeSyntax.vo theories/Reals/Raxioms.vo theories/Reals/Rbase.vo theories/Reals/R_Ifp.vo theories/Reals/Rbasic_fun.vo theories/Reals/Rlimit.vo theories/Reals/Rfunctions.vo theories/Reals/Rderiv.vo
 theories/Reals/Rderiv.vo: theories/Reals/Rderiv.v theories/Reals/Rfunctions.vo theories/Logic/Classical_Pred_Type.vo contrib/omega/Omega.vo
@@ -54,6 +55,7 @@ theories/Reals/Rbasic_fun.vo: theories/Reals/Rbasic_fun.v theories/Reals/R_Ifp.v
 theories/Reals/Rbase.vo: theories/Reals/Rbase.v theories/Reals/Raxioms.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo contrib/field/Field.vo
 theories/Reals/Raxioms.vo: theories/Reals/Raxioms.v theories/ZArith/ZArith.vo theories/Reals/Rsyntax.vo theories/Reals/TypeSyntax.vo
 theories/Reals/R_Ifp.vo: theories/Reals/R_Ifp.v theories/Reals/Rbase.vo contrib/omega/Omega.vo
+theories/Reals/DiscrR.vo: theories/Reals/DiscrR.v theories/Reals/Rbase.vo
 theories/Num/SubProps.vo: theories/Num/SubProps.v
 theories/Num/Params.vo: theories/Num/Params.v
 theories/Num/OppProps.vo: theories/Num/OppProps.v
@@ -150,9 +152,23 @@ test-suite/success/evars.vo: test-suite/success/evars.v
 test-suite/success/eqdecide.vo: test-suite/success/eqdecide.v
 test-suite/success/eauto.vo: test-suite/success/eauto.v theories/Lists/PolyList.vo
 test-suite/success/Tauto.vo: test-suite/success/Tauto.v
+test-suite/success/Fourier.vo: test-suite/success/Fourier.v theories/Reals/SplitAbsolu.vo contrib/fourier/Fourier.vo
+test-suite/success/Field.vo: test-suite/success/Field.v theories/Reals/Reals.vo
+test-suite/success/DiscrR.vo: test-suite/success/DiscrR.v theories/Reals/Reals.vo theories/Reals/DiscrR.vo
 test-suite/success/Decompose.vo: test-suite/success/Decompose.v
 test-suite/success/Check.vo: test-suite/success/Check.v
-test-suite/success/Cases.vo: test-suite/success/Cases.v theories/Bool/Bool.vo theories/Arith/Peano_dec.vo theories/Init/Prelude.vo theories/Init/Logic_TypeSyntax.vo theories/Init/Logic_Type.vo theories/Arith/Arith.vo theories/ZArith/ZArith.vo
+test-suite/success/CasesDep.vo: test-suite/success/CasesDep.v theories/Init/Prelude.vo theories/Init/Logic_TypeSyntax.vo theories/Init/Logic_Type.vo
+test-suite/success/Cases.vo: test-suite/success/Cases.v theories/Bool/Bool.vo theories/Arith/Peano_dec.vo theories/Arith/Arith.vo theories/ZArith/ZArith.vo
+test-suite/success/Case9.vo: test-suite/success/Case9.v
+test-suite/success/Case8.vo: test-suite/success/Case8.v
+test-suite/success/Case7.vo: test-suite/success/Case7.v
+test-suite/success/Case6.vo: test-suite/success/Case6.v
+test-suite/success/Case5.vo: test-suite/success/Case5.v
+test-suite/success/Case4.vo: test-suite/success/Case4.v
+test-suite/success/Case3.vo: test-suite/success/Case3.v
+test-suite/success/Case2.vo: test-suite/success/Case2.v
+test-suite/success/Case10.vo: test-suite/success/Case10.v
+test-suite/success/Case1.vo: test-suite/success/Case1.v
 test-suite/success/Apply.vo: test-suite/success/Apply.v
 test-suite/failure/search.vo: test-suite/failure/search.v
 test-suite/failure/redef.vo: test-suite/failure/redef.v
@@ -163,6 +179,20 @@ test-suite/failure/fixpoint1.vo: test-suite/failure/fixpoint1.v
 test-suite/failure/clash_cons.vo: test-suite/failure/clash_cons.v
 test-suite/failure/check.vo: test-suite/failure/check.v
 test-suite/failure/Tauto.vo: test-suite/failure/Tauto.v
+test-suite/failure/Case9.vo: test-suite/failure/Case9.v
+test-suite/failure/Case8.vo: test-suite/failure/Case8.v
+test-suite/failure/Case7.vo: test-suite/failure/Case7.v
+test-suite/failure/Case6.vo: test-suite/failure/Case6.v
+test-suite/failure/Case5.vo: test-suite/failure/Case5.v
+test-suite/failure/Case4.vo: test-suite/failure/Case4.v
+test-suite/failure/Case3.vo: test-suite/failure/Case3.v
+test-suite/failure/Case2.vo: test-suite/failure/Case2.v
+test-suite/failure/Case14.vo: test-suite/failure/Case14.v
+test-suite/failure/Case13.vo: test-suite/failure/Case13.v
+test-suite/failure/Case12.vo: test-suite/failure/Case12.v
+test-suite/failure/Case11.vo: test-suite/failure/Case11.v
+test-suite/failure/Case10.vo: test-suite/failure/Case10.v
+test-suite/failure/Case1.vo: test-suite/failure/Case1.v
 test-suite/bench/lists_100.vo: test-suite/bench/lists_100.v
 test-suite/bench/lists-100.vo: test-suite/bench/lists-100.v
 contrib/xml/Xml.vo: contrib/xml/Xml.v contrib/xml/xml.cmo contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
@@ -180,8 +210,10 @@ contrib/omega/OmegaSyntax.vo: contrib/omega/OmegaSyntax.v
 contrib/omega/Omega.vo: contrib/omega/Omega.v theories/ZArith/ZArith.vo theories/Arith/Minus.vo contrib/omega/omega.cmo contrib/omega/coq_omega.cmo contrib/omega/OmegaSyntax.vo
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v contrib/interface/paths.cmo contrib/interface/name_to_ast.cmo contrib/interface/xlate.cmo contrib/interface/vtp.cmo contrib/interface/translate.cmo contrib/interface/pbp.cmo contrib/interface/dad.cmo contrib/interface/showproof_ct.cmo contrib/interface/showproof.cmo contrib/interface/debug_tac.cmo contrib/interface/history.cmo contrib/interface/centaur.cmo
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v
+contrib/fourier/Fourier_util.vo: contrib/fourier/Fourier_util.v theories/Reals/Rbase.vo
+contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/fourier/Fourier_util.vo
 contrib/field/Field_Theory.vo: contrib/field/Field_Theory.v theories/Arith/Peano_dec.vo contrib/ring/Ring.vo contrib/field/Field_Compl.vo
-contrib/field/Field_Tactic.vo: contrib/field/Field_Tactic.v contrib/ring/Ring.vo
+contrib/field/Field_Tactic.vo: contrib/field/Field_Tactic.v contrib/ring/Ring.vo contrib/field/Field_Compl.vo contrib/field/Field_Theory.vo
 contrib/field/Field_Compl.vo: contrib/field/Field_Compl.v
 contrib/field/Field.vo: contrib/field/Field.v contrib/field/Field_Compl.vo contrib/field/Field_Theory.vo contrib/field/Field_Tactic.vo contrib/field/field.cmo
 contrib/extraction/test_extraction.vo: contrib/extraction/test_extraction.v
@@ -194,7 +226,6 @@ contrib/correctness/ProgramsExtraction.vo: contrib/correctness/ProgramsExtractio
 contrib/correctness/ProgWf.vo: contrib/correctness/ProgWf.v theories/ZArith/ZArith.vo theories/Arith/Wf_nat.vo
 contrib/correctness/ProgInt.vo: contrib/correctness/ProgInt.v theories/ZArith/ZArith.vo theories/ZArith/ZArith_dec.vo
 contrib/correctness/ProgBool.vo: contrib/correctness/ProgBool.v theories/Arith/Compare_dec.vo theories/Arith/Peano_dec.vo theories/ZArith/ZArith.vo theories/Bool/Sumbool.vo
-contrib/correctness/MakeProgramsState.vo: contrib/correctness/MakeProgramsState.v
 contrib/correctness/Exchange.vo: contrib/correctness/Exchange.v contrib/correctness/ProgInt.vo contrib/correctness/Arrays.vo
 contrib/correctness/Correctness.vo: contrib/correctness/Correctness.v tactics/Refine.vo contrib/correctness/Tuples.vo contrib/correctness/ProgInt.vo contrib/correctness/ProgBool.vo contrib/correctness/ProgWf.vo contrib/correctness/Arrays.vo
 contrib/correctness/Arrays_stuff.vo: contrib/correctness/Arrays_stuff.v contrib/correctness/Exchange.vo contrib/correctness/ArrayPermut.vo contrib/correctness/Sorted.vo

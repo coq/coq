@@ -1162,18 +1162,18 @@ toplevel/command.cmo: parsing/ast.cmi parsing/astterm.cmi parsing/coqast.cmi \
     kernel/inductive.cmi library/lib.cmi library/libobject.cmi \
     library/library.cmi proofs/logic.cmi kernel/names.cmi lib/options.cmi \
     proofs/pfedit.cmi lib/pp.cmi parsing/printer.cmi proofs/proof_type.cmi \
-    kernel/reduction.cmi library/states.cmi pretyping/syntax_def.cmi \
-    proofs/tacmach.cmi pretyping/tacred.cmi kernel/term.cmi lib/util.cmi \
-    toplevel/command.cmi 
+    kernel/reduction.cmi kernel/safe_typing.cmi library/states.cmi \
+    pretyping/syntax_def.cmi proofs/tacmach.cmi pretyping/tacred.cmi \
+    kernel/term.cmi lib/util.cmi toplevel/command.cmi 
 toplevel/command.cmx: parsing/ast.cmx parsing/astterm.cmx parsing/coqast.cmx \
     kernel/declarations.cmx library/declare.cmx kernel/environ.cmx \
     kernel/evd.cmx library/global.cmx library/impargs.cmx library/indrec.cmx \
     kernel/inductive.cmx library/lib.cmx library/libobject.cmx \
     library/library.cmx proofs/logic.cmx kernel/names.cmx lib/options.cmx \
     proofs/pfedit.cmx lib/pp.cmx parsing/printer.cmx proofs/proof_type.cmx \
-    kernel/reduction.cmx library/states.cmx pretyping/syntax_def.cmx \
-    proofs/tacmach.cmx pretyping/tacred.cmx kernel/term.cmx lib/util.cmx \
-    toplevel/command.cmi 
+    kernel/reduction.cmx kernel/safe_typing.cmx library/states.cmx \
+    pretyping/syntax_def.cmx proofs/tacmach.cmx pretyping/tacred.cmx \
+    kernel/term.cmx lib/util.cmx toplevel/command.cmi 
 toplevel/coqinit.cmo: config/coq_config.cmi toplevel/mltop.cmi \
     library/nametab.cmi lib/options.cmi lib/pp.cmi lib/system.cmi \
     toplevel/toplevel.cmi toplevel/vernac.cmi toplevel/coqinit.cmi 
@@ -1596,14 +1596,14 @@ contrib/extraction/extraction.cmo: kernel/closure.cmi kernel/declarations.cmi \
     kernel/environ.cmi kernel/evd.cmi library/global.cmi lib/gmap.cmi \
     kernel/inductive.cmi kernel/instantiate.cmi contrib/extraction/miniml.cmi \
     contrib/extraction/mlutil.cmi kernel/names.cmi lib/pp.cmi \
-    kernel/reduction.cmi kernel/term.cmi pretyping/typing.cmi lib/util.cmi \
-    contrib/extraction/extraction.cmi 
+    kernel/reduction.cmi library/summary.cmi kernel/term.cmi \
+    pretyping/typing.cmi lib/util.cmi contrib/extraction/extraction.cmi 
 contrib/extraction/extraction.cmx: kernel/closure.cmx kernel/declarations.cmx \
     kernel/environ.cmx kernel/evd.cmx library/global.cmx lib/gmap.cmx \
     kernel/inductive.cmx kernel/instantiate.cmx contrib/extraction/miniml.cmi \
     contrib/extraction/mlutil.cmx kernel/names.cmx lib/pp.cmx \
-    kernel/reduction.cmx kernel/term.cmx pretyping/typing.cmx lib/util.cmx \
-    contrib/extraction/extraction.cmi 
+    kernel/reduction.cmx library/summary.cmx kernel/term.cmx \
+    pretyping/typing.cmx lib/util.cmx contrib/extraction/extraction.cmi 
 contrib/extraction/mlutil.cmo: kernel/declarations.cmi library/global.cmi \
     library/lib.cmi library/libobject.cmi contrib/extraction/miniml.cmi \
     kernel/names.cmi library/nametab.cmi lib/pp.cmi parsing/printer.cmi \
@@ -1634,6 +1634,16 @@ contrib/field/field.cmx: parsing/astterm.cmx parsing/coqast.cmx \
     proofs/proof_type.cmx contrib/ring/quote.cmx contrib/ring/ring.cmx \
     library/summary.cmx proofs/tacinterp.cmx proofs/tacmach.cmx \
     kernel/term.cmx lib/util.cmx toplevel/vernacinterp.cmx 
+contrib/fourier/fourierR.cmo: parsing/astterm.cmi proofs/clenv.cmi \
+    tactics/equality.cmi kernel/evd.cmi contrib/fourier/fourier.cmo \
+    library/global.cmi kernel/names.cmi parsing/pcoq.cmi \
+    contrib/ring/ring.cmo proofs/tacmach.cmi tactics/tactics.cmi \
+    kernel/term.cmi 
+contrib/fourier/fourierR.cmx: parsing/astterm.cmx proofs/clenv.cmx \
+    tactics/equality.cmx kernel/evd.cmx contrib/fourier/fourier.cmx \
+    library/global.cmx kernel/names.cmx parsing/pcoq.cmx \
+    contrib/ring/ring.cmx proofs/tacmach.cmx tactics/tactics.cmx \
+    kernel/term.cmx 
 contrib/interface/centaur.cmo: contrib/interface/ascent.cmi parsing/ast.cmi \
     parsing/astterm.cmi pretyping/classops.cmi toplevel/command.cmi \
     parsing/coqast.cmi contrib/interface/dad.cmi \

@@ -41,7 +41,7 @@ LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
               -I proofs -I tactics -I pretyping -I parsing -I toplevel  \
               -I contrib/omega -I contrib/ring -I contrib/xml \
 	      -I contrib/extraction -I contrib/correctness \
-              -I contrib/interface
+              -I contrib/interface -I contrib/fourier
 
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
@@ -197,6 +197,7 @@ CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
         contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/field/field.cmo \
 	contrib/xml/xml.cmo \
 	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo \
+	contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo \
 	$(EXTRACTIONCMO) $(CORRECTNESSCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
@@ -406,7 +407,8 @@ WELLFOUNDEDVO=theories/Wellfounded/Disjoint_Union.vo \
 REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Rdefinitions.vo theories/Reals/Rsyntax.vo \
 	theories/Reals/Raxioms.vo      theories/Reals/Rbase.vo \
-	theories/Reals/R_Ifp.vo        theories/Reals/Rbasic_fun.vo \
+	theories/Reals/DiscrR.vo       theories/Reals/R_Ifp.vo \
+	theories/Reals/Rbasic_fun.vo   theories/Reals/SplitAbsolu.vo \
 	theories/Reals/Rfunctions.vo   theories/Reals/Rlimit.vo \
 	theories/Reals/Rderiv.vo       theories/Reals/Reals.vo 
 
@@ -462,6 +464,8 @@ XMLVO = contrib/xml/Xml.vo
 
 INTERFACEV0 = contrib/interface/Centaur.vo contrib/interface/vernacrc
 
+FOURIERVO = contrib/fourier/Fourier_util.vo    contrib/fourier/Fourier.vo
+
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
 	$(COQC) -boot -byte  $(COQINCLUDES) $<
 
@@ -469,7 +473,7 @@ contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/init
 	$(COQC) -boot -byte  $(COQINCLUDES) $<
 
 CONTRIBVO = $(OMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) $(CORRECTNESSVO)\
-            $(INTERFACEV0)
+            $(INTERFACEV0) $(FOURIERVO)
 
 $(CONTRIBVO): states/initial.coq
 
@@ -479,6 +483,8 @@ ring: $(RINGVO)
 xml: $(XMLVO)
 extraction: $(EXTRACTIONCMO) $(EXTRACTIONVO)
 correctness: $(CORRECTNESSCMO) $(CORRECTNESSVO)
+field: $(FIELDVO)
+fourier: $(FOURIERVO)
 
 clean::
 	rm -f contrib/*/*.cm[io] contrib/*/*.vo
