@@ -350,8 +350,7 @@ let print (_,qid as locqid) fn =
 (* show dest                                                  *)
 (*  where dest is either None (for stdout) or (Some filename) *)
 (* pretty prints via Xml.pp the proof in progress on dest     *)
-let show_pftreestate fn pftst =
- let id = Pfedit.get_current_proof_name () in
+let show_pftreestate fn pftst id =
  let str = Names.string_of_id id in
  let pf = Tacmach.proof_of_pftreestate pftst in
  let typ = (Proof_trees.goal_of_proof pf).Evd.evar_concl in
@@ -367,7 +366,8 @@ let show_pftreestate fn pftst =
 
 let show fn =
  let pftst = Pfedit.get_pftreestate () in
-  show_pftreestate fn pftst
+ let id = Pfedit.get_current_proof_name () in
+  show_pftreestate fn pftst id
 ;;
 
 (* FUNCTIONS TO PRINT AN ENTIRE SECTION OF COQ *)
@@ -694,7 +694,7 @@ let _ =
       | Some pftreestate ->
          (* It is a proof. Let's export it starting from the proof-tree *)
          (* I saved in the Pfedit.set_xml_cook_proof callback.          *)
-         show_pftreestate (Some filename) pftreestate ;
+         show_pftreestate (Some filename) pftreestate (Nameops.basename sp) ;
          proof_to_export := None
    ) ;
   Declare.set_xml_declare_inductive
