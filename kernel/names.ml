@@ -37,7 +37,7 @@ let check_ident s =
 let is_ident s = try check_ident s; true with _ -> false
 
 (* Identifiers *)
-
+(*
 module Ident = struct
 
 type t = {
@@ -99,7 +99,7 @@ let hash_sub hstr id = { atom = hstr id.atom; index = id.index }
 let equal id1 id2 = id1.atom == id2.atom && id1.index = id2.index
 
 end (* End of module Ident *)
-(*
+*)
 (* Second implementation *)
 module Ident = struct
 
@@ -188,7 +188,7 @@ let hash_sub hstr id = hstr id
 let equal id1 id2 = id1 == id2
 
 end (* End of module Ident *)
-*)
+
 type identifier = Ident.t
 let repr_ident = Ident.repr_ident
 let make_ident = Ident.make_ident
