@@ -31,7 +31,7 @@ does and {\sl identifier} is bound to the matched value.  A list of
 patterns is also considered as a pattern and is called {\em multiple
 pattern}.
 
-Note also the annotation is mandatory when the sequence of equation is
+Notice also the annotation is mandatory when the sequence of equation is
 empty.
 
 \begin{figure}[t]
@@ -480,6 +480,69 @@ $[\vec{d_1}:\vec{D_1}][x_1:T_1]\ldots [\vec{d_n}:\vec{D_n}][x_n:T_n]Q.$
 The user can also use \texttt{Cases} in combination with the tactic
 \texttt{Refine} (see section \ref{Refine}) to build incomplete proofs
 beginning with a \texttt{Cases} construction.
+
+\asection{Pattern-matching on inductive objects involving local
+definitions}
+
+If local definitions occur in the type of a constructor, then there
+are two ways to match on this constructor. Either the local
+definitions are skipped and matching is done only on the true arguments
+of the constructors, or the bindings for local definitions can also
+be caught in the matching.
+
+Example.
+
+\begin{coq_eval}
+Reset Initial.
+Require Arith.
+\end{coq_eval}
+
+\begin{coq_example*}
+Inductive list : nat -> Set :=
+| nil : (list O)
+| cons : (n:nat)[m:=(mult (2) n)](list m)->(list (S (S m))).
+\end{coq_example*}
+
+In the next example, the local definition is not caught.
+
+\begin{coq_example}
+Fixpoint length [n; l:(list n)] : nat :=
+  Cases l of
+     nil => O
+  | (cons n l0) => (S (length (mult (2) n) l0))
+  end.
+\end{coq_example}
+
+But in this example, it is.
+
+\begin{coq_example}
+Fixpoint length' [n; l:(list n)] : nat :=
+  Cases l of
+     nil => O
+  | (cons _ m l0) => (S (length' m l0))
+  end.
+\end{coq_example}
+
+\Rem for a given matching clause, either none of the local
+definitions or all of them can be caught.
+
+\asection{Pattern-matching and coercions}
+
+If a mismatch occurs between the expected type of a pattern and its
+actual type, a coercion made from constructors is sought. If such a
+coercion can be found, it is automatically inserted around the
+pattern.
+
+Example:
+
+\begin{coq_example}
+Inductive I : Set :=
+  C1 : nat -> I
+| C2 : I -> I.
+Coercion C1 : nat >-> I.
+Check [x]Cases x of (C2 O) => O | _ => O end.
+\end{coq_example}
+
 
 \asection{When does the expansion strategy fail ?}\label{limitations}
 The strategy works very like in ML languages when treating
