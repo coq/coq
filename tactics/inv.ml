@@ -369,16 +369,17 @@ let res_case_then gene thin indbinding id status gl =
     if gene then case_trailer_gene thin neqns else case_trailer thin neqns
   in
   (tclTHENS
-     (cut_intro cut_concl)
-     [onLastHyp
+     (true_cut_anon cut_concl)
+     [case_tac (introCaseAssumsThen case_trailer_tac)
+        (Some elim_predicate) ([],[]) newc;
+      onLastHyp
         (fun id ->
-           (tclTHEN (applyUsing
-                       (applist(mkVar id,
-                                list_tabulate
-                                  (fun _ -> mkMeta(Clenv.new_meta())) neqns)))
-              Auto.default_auto));
-      case_tac (introCaseAssumsThen case_trailer_tac)
-        (Some elim_predicate) ([],[]) newc])
+           (tclTHEN
+              (applyUsing
+                 (applist(mkVar id,
+                          list_tabulate
+                            (fun _ -> mkMeta(Clenv.new_meta())) neqns)))
+              Auto.default_auto))])
   gl
 
 (* Error messages of the inversion tactics *)
@@ -410,10 +411,10 @@ let wrap_inv_error id = function
   | Not_found  ->  errorlabstrm "Inv" (not_found_message [id]) 
   | e -> raise e
 
-let inv gene com status id =
-  let inv_tac = res_case_then gene com [] id status in
+let inv gene thin status id =
+  let inv_tac = res_case_then gene thin [] id status in
   let tac =
-    if com = Some true (* if Inversion_clear, clear the hypothesis *) then 
+    if thin = Some true (* if Inversion_clear, clear the hypothesis *) then 
       tclTHEN inv_tac (tclTRY (clear_clause id))
     else 
       inv_tac
