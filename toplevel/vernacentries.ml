@@ -121,16 +121,13 @@ let locate_file f =
 
 let print_located_qualid qid =
   try
-    let ref = Nametab.locate qid in
-    mSG
-      [< pr_id (Termops.id_of_global (Global.env()) ref); 'fNL >]
+    let sp = Nametab.sp_of_global (Global.env()) (Nametab.locate qid) in
+    mSG [< pr_sp sp; 'fNL >]
   with Not_found -> 
   try
-    mSG
-      [< 'sTR (string_of_path (Syntax_def.locate_syntactic_definition qid));
-	 'fNL >]
+    mSG [< pr_sp (Syntax_def.locate_syntactic_definition qid); 'fNL >]
   with Not_found ->
-    error ((Nametab.string_of_qualid qid) ^ " not a defined object")
+    error ((Nametab.string_of_qualid qid) ^ " is not a defined object")
 
 let print_path_entry (s,l) =
   [< 'sTR s; 'tBRK (0,2); 'sTR (string_of_dirpath l) >]

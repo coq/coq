@@ -232,3 +232,6 @@ let path_of_string s =
     make_path sl s
   with
     | Invalid_argument _ -> invalid_arg "path_of_string"
+
+(* Section paths *)
+let pr_sp sp = [< 'sTR (string_of_path sp) >]

@@ -81,8 +81,6 @@ let string_of_path sp =
   if sl = [] then string_of_id id
   else (string_of_dirpath sl) ^ "." ^ (string_of_id id)
 
-let pr_sp sp = [< 'sTR (string_of_path sp) >]
-
 let sp_ord sp1 sp2 =
   let (p1,id1) = repr_path sp1
   and (p2,id2) = repr_path sp2 in

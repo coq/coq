@@ -71,3 +71,5 @@ val is_dirpath_prefix_of : dir_path -> dir_path -> bool
 
 val restrict_path : int -> section_path -> section_path
 
+(* Section path *)
+val pr_sp : section_path -> Pp.std_ppcmds

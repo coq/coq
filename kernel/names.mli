@@ -47,7 +47,6 @@ val repr_path : section_path -> dir_path * identifier
 
 (* Parsing and printing of section path as ["coq_root.module.id"] *)
 val string_of_path : section_path -> string
-val pr_sp : section_path -> Pp.std_ppcmds
 
 module Spset  : Set.S with type elt = section_path
 module Sppred : Predicate.S with type elt = section_path
