@@ -17,58 +17,76 @@ Definition Isnil : (list A) -> Prop := [l:(list A)](nil A)=l.
 
 Lemma Isnil_nil : (Isnil (nil A)).
 Red; Auto.
-Save.
+Qed.
 Hints Resolve Isnil_nil.
 
 Lemma not_Isnil_cons : (a:A)(l:(list A))~(Isnil (cons a l)).
 Unfold Isnil.
 Intros; Discriminate.
-Save.
+Qed.
 
 Hints Resolve Isnil_nil not_Isnil_cons.
 
 Lemma Isnil_dec : (l:(list A)){(Isnil l)}+{~(Isnil l)}.
+Induction l;Auto.
+(*
 Realizer [l:(list A)]Cases l of
   | nil => true
   | _ => false
   end.
 Program_all.
-Save.
+*)
+Qed.
 
 (***********************)
 (* The Uncons function *)
 (***********************)
 
 Lemma Uncons : (l:(list A)){a : A & { m: (list A) | (cons a m)=l}}+{Isnil l}.
+Induction l.
+Auto.
+Intros a m; Intros; Left; Exists a; Exists m; Reflexivity.
+(*
 Realizer [l:(list A)]<(Exc A*(list A))>Cases l of 
   | nil => Error
   | (cons a m) => (Value (a,m))
   end.
 Program_all.
-Save.
+*)
+Qed.
 
 (********************************)
 (* The head function            *)
 (********************************)
 
 Lemma Hd : (l:(list A)){a : A | (EX m:(list A) |(cons a m)=l)}+{Isnil l}.
+Induction l.
+Auto.
+Intros a m; Intros; Left; Exists a; Exists m; Reflexivity.
+(*
 Realizer [l:(list A)]<(Exc A)>Cases l of 
   | nil => Error
   | (cons a m) => (Value a)
   end.
 Program_all.
-  Exists m; Auto.
-Save.
+Exists m; Reflexivity.
+*)
+Qed.
 
 Lemma Tl : (l:(list A)){m:(list A)| (EX a:A |(cons a m)=l)
                          \/ ((Isnil l) /\ (Isnil m)) }.
+Induction l.
+Exists (nil A); Auto.
+Intros a m; Intros; Exists m; Left; Exists a; Reflexivity.
+(*
 Realizer [l:(list A)]Cases l of 
   | nil => (nil A)
   | (cons a m) => m
   end.
 Program_all.
   Left; Exists a; Auto.
-Save.
+*)
+Qed.
 
 (****************************************)
 (* Length of lists                      *)
@@ -83,16 +101,27 @@ Fixpoint Length_l [l:(list A)] : nat -> nat
 
 (* A tail recursive version *)
 Lemma Length_l_pf : (l:(list A))(n:nat){m:nat|(plus n (length l))=m}.
+Intros l n; Exists (Length_l l n).
+Generalize n.
+Induction l.
+Auto.
+Intro n0. Simpl. Rewrite <- (Hrecl (S n0)).
+Simpl. Auto.
+(*
 Realizer Length_l.
 Program_all.
 Simpl; Auto.
 Elim e; Simpl; Auto.
-Save.
+*)
+Qed.
 
 Lemma Length : (l:(list A)){m:nat|(length l)=m}.
+Intro l. Apply (Length_l_pf l O).
+(*
 Realizer [l:(list A)](Length_l_pf l O).
 Program_all.
-Save.
+*)
+Qed.
 
 (*******************************)
 (* Members of lists            *)
@@ -111,7 +140,7 @@ Elim l; [ Intros; Contradiction
 	  [ Intros; Rewrite H1; Auto
 	  | Auto ]].
 Intros; Elim H; Auto.
-Save.
+Qed.
 
 Inductive AllS [P:A->Prop] : (list A) -> Prop 
    := allS_nil : (AllS P (nil A))
@@ -128,9 +157,17 @@ Fixpoint mem [a:A; l:(list A)] : bool :=
 
 Hints Unfold  In.
 Lemma Mem : (a:A)(l:(list A)){(In a l)}+{(AllS [b:A]~b=a l)}.
+Intros a l.
+Induction l.
+Auto.
+Elim (eqA_dec a a0).
+Auto.
+Simpl. Elim Hrecl; Auto.
+(*
 Realizer mem.
 Program_all.
-Save.
+*)
+Qed.
 
 (**********************************)
 (* Index of elements              *)
@@ -153,16 +190,16 @@ Hints Resolve fst_nth_O fst_nth_S.
 
 Lemma fst_nth_nth : (l:(list A))(n:nat)(a:A)(fst_nth_spec l n a)->(nth_spec l n a).
 Induction 1; Auto.
-Save.
+Qed.
 Hints Immediate fst_nth_nth.
 
 Lemma nth_lt_O : (l:(list A))(n:nat)(a:A)(nth_spec l n a)->(lt O n).
 Induction 1; Auto.
-Save.
+Qed.
 
 Lemma nth_le_length : (l:(list A))(n:nat)(a:A)(nth_spec l n a)->(le n (length l)).
   Induction 1; Simpl; Auto with arith.
-Save.
+Qed.
 
 Fixpoint Nth_func [l:(list A)] : nat -> (Exc A) 
   := [n:nat] Cases  l  n  of 
@@ -173,10 +210,18 @@ Fixpoint Nth_func [l:(list A)] : nat -> (Exc A)
 
 Lemma Nth : (l:(list A))(n:nat)
             {a:A|(nth_spec l n a)}+{(n=O)\/(lt (length l) n)}.
+Intros l n. Induction l; Induction n.
+Auto.
+Auto with arith.
+Auto with arith.
+Elim Hrecl.
+...
+(*
 Realizer Nth_func.
 Program_all.
 Simpl; Elim n; Auto with arith.
 (Elim o; Intro); [Absurd ((S p)=O); Auto with arith | Auto with arith].
+*)
 Save.
 
 Lemma Item : (l:(list A))(n:nat){a:A|(nth_spec l (S n) a)}+{(le (length l) n)}.
