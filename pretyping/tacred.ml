@@ -21,6 +21,7 @@ type constant_evaluation =
   | EliminationFix of
       int * (evaluable_reference * int * (int * constr) list * int)
   | EliminationCases of int
+  | EliminationUnfold of int
   | NotAnElimination
 
 (* We use a cache registered as a global table *)
@@ -128,12 +129,15 @@ let rec descend_consteval sigma env cst =
 		     (* Complexité en n^2, bof, peut mieux faire *)
 		     srec_direct env n labs c
 		   with
-		       Elimconst -> EliminationFix (new_minarg,info)
+		       Elimconst -> EliminationUnfold (new_minarg)
 		 else
-		   EliminationFix (new_minarg,info)
+		   EliminationUnfold (new_minarg)
 	     | EliminationCases minarg ->
 		 let new_minarg = max (minarg+n-nargs) minarg in
-		 EliminationCases new_minarg)
+		 EliminationCases new_minarg
+	     | EliminationUnfold minarg -> 
+		 let new_minarg = max (minarg+n-nargs) minarg in
+		 EliminationUnfold new_minarg)
       | _ -> raise Elimconst
   and srec_direct env n labs c =
     let c',l = whd_betadeltaeta_stack env sigma c in
@@ -302,6 +306,10 @@ let rec red_elim_const env sigma ref largs =
 	(match reduce_fix_use_function f co (destFix d) lrest with
 	   | NotReducible -> raise Redelimination
 	   | Reduced (c,rest) -> (nf_beta env sigma c, rest))
+    | EliminationUnfold (min) when stack_args_size largs >= min ->
+	let c = reference_value sigma env ref in 
+        let c', lrest = whd_betaetalet_state (c,largs) 
+        in let ref' = destEvalRef c' in red_elim_const env sigma ref' lrest 
     | _ -> raise Redelimination
 
 and construct_const env sigma = 
