@@ -3,7 +3,7 @@
 
 open Term
 open Termdn
-open Rawterm
+open Pattern
 
 (* Discrimination nets with bounded depth.
    See the module dn.ml for further explanations.

@@ -18,6 +18,7 @@ open Proof_trees
 open Logic
 open Wcclausenv
 open Pattern
+open Hipattern
 open Tacticals
 open Tactics
 open Tacinterp
@@ -526,12 +527,12 @@ let rec build_discriminator sigma env dirn c sort = function
   | _ -> assert false
 
 let dest_somatch_eq eqn eq_pat =
-  match dest_somatch eqn eq_pat with
+  match matches eqn eq_pat with
     | [t;x;y] -> (t,x,y)
     | _ -> anomaly "dest_somatch_eq: an eq pattern should match 3 terms"
 	  
 let find_eq_data_decompose eqn =
-  if (somatches eqn eq_pattern) then
+  if (matches eqn eq_pattern) then
     (eq, dest_somatch_eq eqn eq_pattern)
   else if (somatches eqn eqT_pattern) then
     (eqT, dest_somatch_eq eqn eqT_pattern)

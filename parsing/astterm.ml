@@ -12,6 +12,7 @@ open Evd
 open Reduction
 open Impargs
 open Rawterm
+open Pattern
 open Typing
 open Pretyping
 open Evarutil
@@ -569,7 +570,7 @@ let rec pat_of_ref metas vars = function
   | RInd (ip,ctxt) -> RInd (ip, ctxt)
   | RConstruct(cp,ctxt) ->RConstruct(cp, ctxt)
   | REVar (n,ctxt) -> REVar (n, ctxt)
-  | RMeta n -> RMeta n
+  | RMeta n -> metas := n::!metas; RMeta n
   | RAbst _ -> error "pattern_of_rawconstr: not implemented"
   | RVar _ -> assert false (* Capturé dans pattern_of_raw *)
 
@@ -587,11 +588,8 @@ and pat_of_raw metas vars = function
 	       pat_of_raw metas (na::vars) c2)
   | RSort (_,s) ->
       PSort s
-  | RHole _ -> error "Place-holders must be numbered in patterns"
-(*
-      let n = new_meta () in
-      metas := n::!metas;
-      PMeta n *)
+  | RHole _ ->
+      PMeta None
   | RCast (_,c,t) ->
       warning "Cast not taken into account in constr pattern";
       pat_of_raw metas vars c

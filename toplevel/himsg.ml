@@ -26,17 +26,17 @@ let explain_unbound_rel k ctx n =
      'sTR"The reference "; 'iNT n; 'sTR" is free" >]
 
 let explain_cant_execute k ctx c =
-  let tc = gentermpr k ctx c in
+  let tc = prterm_env ctx c in
   [< 'sTR"Cannot execute term:"; 'bRK(1,1); tc >]
 
 let explain_not_type k ctx c =
   let pe = pr_ne_env [< 'sTR"In environment" >] k ctx in
-  let pc = gentermpr k ctx c in
+  let pc = prterm_env ctx c in
   [< pe; 'cUT; 'sTR "the term"; 'bRK(1,1); pc; 'sPC;
      'sTR"should be typed by Set, Prop or Type." >];;
 
 let explain_bad_assumption k ctx c =
-  let pc = gentermpr k ctx c in
+  let pc = prterm_env ctx c in
   [< 'sTR "Cannot declare a variable or hypothesis over the term";
      'bRK(1,1); pc; 'sPC; 'sTR "because this term is not a type." >];;
 
@@ -46,8 +46,8 @@ let explain_reference_variables id =
 
 let msg_bad_elimination ctx k = function
   | Some(ki,kp,explanation) ->
-      let pki = gentermpr k ctx ki in
-      let pkp = gentermpr k ctx kp in
+      let pki = prterm_env ctx ki in
+      let pkp = prterm_env ctx kp in
       (hOV 0 
          [< 'fNL; 'sTR "Elimination of an inductive object of sort : ";
             pki; 'bRK(1,0);
@@ -57,11 +57,11 @@ let msg_bad_elimination ctx k = function
       [<>]
 
 let explain_elim_arity k ctx ind aritylst c p pt okinds = 
-  let pi = gentermpr k ctx ind in
-  let ppar = prlist_with_sep pr_coma (gentermpr k ctx) aritylst in
-  let pc = gentermpr k ctx c in
-  let pp = gentermpr k ctx p in
-  let ppt = gentermpr k ctx pt in
+  let pi = prterm_env ctx ind in
+  let ppar = prlist_with_sep pr_coma (prterm_env ctx) aritylst in
+  let pc = prterm_env ctx c in
+  let pp = prterm_env ctx p in
+  let ppt = prterm_env ctx pt in
   [< 'sTR "Incorrect elimination of"; 'bRK(1,1); pc; 'sPC;
      'sTR "in the inductive type"; 'bRK(1,1); pi; 'fNL;
      'sTR "The elimination predicate"; 'bRK(1,1); pp; 'sPC;
@@ -70,23 +70,23 @@ let explain_elim_arity k ctx ind aritylst c p pt okinds =
      msg_bad_elimination ctx k okinds >]
 
 let explain_case_not_inductive k ctx c ct =
-  let pc = gentermpr k ctx c in
-  let pct = gentermpr k ctx ct in
+  let pc = prterm_env ctx c in
+  let pct = prterm_env ctx ct in
   [< 'sTR "In Cases expression"; 'bRK(1,1); pc; 'sPC; 
      'sTR "has type"; 'bRK(1,1); pct; 'sPC; 
      'sTR "which is not an inductive definition" >]
   
 let explain_number_branches k ctx c ct expn =
-  let pc = gentermpr k ctx c in
-  let pct = gentermpr k ctx ct in
+  let pc = prterm_env ctx c in
+  let pct = prterm_env ctx ct in
   [< 'sTR "Cases on term"; 'bRK(1,1); pc; 'sPC ;
      'sTR "of type"; 'bRK(1,1); pct; 'sPC;
      'sTR "expects ";  'iNT expn; 'sTR " branches" >]
 
 let explain_ill_formed_branch k ctx c i actty expty =
-  let pc = gentermpr k ctx c in
-  let pa = gentermpr k ctx actty in
-  let pe = gentermpr k ctx expty in
+  let pc = prterm_env ctx c in
+  let pa = prterm_env ctx actty in
+  let pe = prterm_env ctx expty in
   [< 'sTR "In Cases expression on term"; 'bRK(1,1); pc;
      'sPC; 'sTR "the branch " ; 'iNT (i+1);
      'sTR " has type"; 'bRK(1,1); pa ; 'sPC; 
@@ -94,8 +94,8 @@ let explain_ill_formed_branch k ctx c i actty expty =
 
 let explain_generalization k ctx (name,var) c =
   let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
-  let pv = gentermpr k ctx (body_of_type var) in
-  let pc = gentermpr k (add_rel (name,var) ctx) c in
+  let pv = prterm_env ctx (body_of_type var) in
+  let pc = prterm_env (add_rel (name,var) ctx) c in
   [< 'sTR"Illegal generalization: "; pe; 'fNL;
      'sTR"Cannot generalize"; 'bRK(1,1); pv; 'sPC;
      'sTR"over"; 'bRK(1,1); pc; 'sPC;
@@ -103,9 +103,9 @@ let explain_generalization k ctx (name,var) c =
 
 let explain_actual_type k ctx c ct pt =
   let pe = pr_ne_env [< 'sTR"In environment" >] k ctx in
-  let pc = gentermpr k ctx c in
-  let pct = gentermpr k ctx ct in
-  let pt = gentermpr k ctx pt in
+  let pc = prterm_env ctx c in
+  let pct = prterm_env ctx ct in
+  let pt = prterm_env ctx pt in
   [< pe; 'fNL;
      'sTR"The term"; 'bRK(1,1); pc ; 'sPC ;
      'sTR"does not have type"; 'bRK(1,1); pt; 'fNL;
@@ -113,14 +113,14 @@ let explain_actual_type k ctx c ct pt =
 
 let explain_cant_apply k ctx s rator randl =
   let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
-  let pr = gentermpr k ctx rator.uj_val in
-  let prt = gentermpr k ctx rator.uj_type in
+  let pr = prterm_env ctx rator.uj_val in
+  let prt = prterm_env ctx rator.uj_type in
   let term_string = if List.length randl > 1 then "terms" else "term" in
   let appl = 
     prlist_with_sep pr_fnl
       (fun c ->
-         let pc = gentermpr k ctx c.uj_val in
-         let pct = gentermpr k ctx c.uj_type in
+         let pc = prterm_env ctx c.uj_val in
+         let pct = prterm_env ctx c.uj_type in
          hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl 
   in
   [< 'sTR"Illegal application ("; 'sTR s; 'sTR"): "; pe; 'fNL;
@@ -131,7 +131,7 @@ let explain_cant_apply k ctx s rator randl =
 
 (* (co)fixpoints *)
 let explain_ill_formed_rec_body k ctx str lna i vdefs =
-  let pvd = gentermpr k ctx vdefs.(i) in
+  let pvd = prterm_env ctx vdefs.(i) in
   let s =
     match List.nth lna i with Name id -> string_of_id id | Anonymous -> "_" in
   [< str; 'fNL; 'sTR"The ";
@@ -141,30 +141,30 @@ let explain_ill_formed_rec_body k ctx str lna i vdefs =
      'sTR "is not well-formed" >]
     
 let explain_ill_typed_rec_body k ctx i lna vdefj vargs =
-  let pvd = gentermpr k ctx (vdefj.(i)).uj_val in
-  let pvdt = gentermpr k ctx (vdefj.(i)).uj_type in
-  let pv = gentermpr k ctx (body_of_type vargs.(i)) in
+  let pvd = prterm_env ctx (vdefj.(i)).uj_val in
+  let pvdt = prterm_env ctx (vdefj.(i)).uj_type in
+  let pv = prterm_env ctx (body_of_type vargs.(i)) in
   [< 'sTR"The " ;
      if Array.length vdefj = 1 then [<>] else [<'iNT (i+1); 'sTR "-th">];
      'sTR"recursive definition" ; 'sPC; pvd; 'sPC;
      'sTR "has type"; 'sPC; pvdt;'sPC; 'sTR "it should be"; 'sPC; pv >]
 
 let explain_not_inductive k ctx c =
-  let pc = gentermpr k ctx c in
+  let pc = prterm_env ctx c in
   [< 'sTR"The term"; 'bRK(1,1); pc; 'sPC;
      'sTR "is not an inductive definition" >]
 
 let explain_ml_case k ctx mes c ct br brt =
-  let pc = gentermpr k ctx c in
-  let pct = gentermpr k ctx ct in
+  let pc = prterm_env ctx c in
+  let pct = prterm_env ctx ct in
   let expln =
     match mes with
       | "Inductive" -> [< pct; 'sTR "is not an inductive definition">]
       | "Predicate" -> [< 'sTR "ML case not allowed on a predicate">]
       | "Absurd" -> [< 'sTR "Ill-formed case expression on an empty type" >]
       | "Decomp" ->
-          let plf = gentermpr k ctx br in
-          let pft = gentermpr k ctx brt in
+          let plf = prterm_env ctx br in
+          let pft = prterm_env ctx brt in
           [< 'sTR "The branch "; plf; 'wS 1; 'cUT; 'sTR "has type "; pft;
              'wS 1; 'cUT;
              'sTR "does not correspond to the inductive definition" >]
@@ -177,12 +177,12 @@ let explain_ml_case k ctx mes c ct br brt =
            'sTR "which is an inductive predicate."; 'fNL; expln >]
 
 let explain_cant_find_case_type k ctx c =
-  let pe = gentermpr k ctx c in
+  let pe = prterm_env ctx c in
   hOV 3 [<'sTR "Cannot infer type of whole Case expression on"; 'wS 1; pe >]
 
 (***
 let explain_cant_find_case_type_loc loc k ctx c =
-  let pe = gentermpr k ctx c in
+  let pe = prterm_env ctx c in
   user_err_loc
     (loc,"pretype",
      hOV 3 [<'sTR "Cannot infer type of whole Case expression on"; 
@@ -191,14 +191,14 @@ let explain_cant_find_case_type_loc loc k ctx c =
 
 let explain_occur_check k ctx ev rhs =
   let id = "?" ^ string_of_int ev in
-  let pt = gentermpr k ctx rhs in
+  let pt = prterm_env ctx rhs in
   [< 'sTR"Occur check failed: tried to define "; 'sTR id;
      'sTR" with term"; 'bRK(1,1); pt >]
 
 let explain_not_clean k ctx ev t =
   let c = Rel (Intset.choose (free_rels t)) in
   let id = "?" ^ string_of_int ev in
-  let var = gentermpr k ctx c in
+  let var = prterm_env ctx c in
   [< 'sTR"Tried to define "; 'sTR id;
      'sTR" with a term using variable "; var; 'sPC;
      'sTR"which is not in its scope." >]
@@ -223,15 +223,15 @@ let explain_wrong_numarg_of_constructor k ctx cstr n =
     'sTR " expects " ; 'iNT n ; 'sTR " arguments. ">]
 
 let explain_wrong_predicate_arity k ctx pred nondep_arity dep_arity=
-  let pp = gentermpr k ctx pred in
+  let pp = prterm_env ctx pred in
   [<'sTR "The elimination predicate " ; pp; 'cUT;
     'sTR "should be of arity " ;
     'iNT nondep_arity ; 'sTR " (for non dependent case)  or " ;
     'iNT dep_arity ; 'sTR " (for dependent case).">]
 
 let explain_needs_inversion k ctx x t =
-  let px = gentermpr k ctx x in
-  let pt = gentermpr k ctx t in
+  let px = prterm_env ctx x in
+  let pt = prterm_env ctx t in
   [< 'sTR "Sorry, I need inversion to compile pattern matching of term ";
      px ; 'sTR " of type: "; pt>]
 
@@ -331,22 +331,22 @@ let explain_refiner_error = function
 
 let error_non_strictly_positive k lna c v  =
   let env = assumptions_for_print lna in
-  let pc = gentermpr k env c in
-  let pv = gentermpr k env v in
+  let pc = prterm_env env c in
+  let pv = prterm_env env v in
   [< 'sTR "Non strictly positive occurrence of "; pv; 'sTR " in";
      'bRK(1,1); pc >]
 
 let error_ill_formed_inductive k lna c v =
   let env = assumptions_for_print lna in
-  let pc = gentermpr k env c in
-  let pv = gentermpr k env v in
+  let pc = prterm_env env c in
+  let pv = prterm_env env v in
   [< 'sTR "Not enough arguments applied to the "; pv;
      'sTR " in"; 'bRK(1,1); pc >]
 
 let error_ill_formed_constructor k lna c v =
   let env = assumptions_for_print lna in
-  let pc = gentermpr k env c in
-  let pv = gentermpr k env v in
+  let pc = prterm_env env c in
+  let pv = prterm_env env v in
   [< 'sTR "The conclusion of"; 'bRK(1,1); pc; 'bRK(1,1); 
      'sTR "is not valid;"; 'bRK(1,1); 'sTR "it must be built from "; pv >]
 
@@ -360,9 +360,9 @@ let str_of_nth n =
 
 let error_bad_ind_parameters k lna c n v1 v2  =
   let env = assumptions_for_print lna in
-  let pc = gentermpr_at_top k env c in
-  let pv1 = gentermpr k env v1 in
-  let pv2 = gentermpr k env v2 in
+  let pc = prterm_env_at_top env c in
+  let pv1 = prterm_env env v1 in
+  let pv2 = prterm_env env v2 in
   [< 'sTR ("The "^(str_of_nth n)^" argument of "); pv2; 'bRK(1,1);
      'sTR "must be "; pv1; 'sTR " in"; 'bRK(1,1); pc >]
 

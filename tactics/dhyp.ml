@@ -128,8 +128,8 @@ open Pcoq
 
 (* two patterns - one for the type, and one for the type of the type *)
 type destructor_pattern = {
-  d_typ: Rawterm.constr_pattern; 
-  d_sort: Rawterm.constr_pattern }
+  d_typ: constr_pattern; 
+  d_sort: constr_pattern }
     
 type ('a,'b) location = Hyp of 'a | Concl of 'b
 
@@ -222,11 +222,11 @@ let _ =
 	     add_destructor_hint na
                (match loc with
 		  | Hyp b ->
-		      Hyp(b,{d_typ=pat;d_sort=PMeta(new_meta())},
-			  { d_typ=PMeta(new_meta());
-		       	    d_sort=PMeta(new_meta()) })
+		      Hyp(b,{d_typ=pat;d_sort=PMeta(Some (new_meta()))},
+			  { d_typ=PMeta(Some (new_meta()));
+		       	    d_sort=PMeta(Some (new_meta())) })
 		  | Concl () ->
-		      Concl({d_typ=pat;d_sort=PMeta(new_meta())}))
+		      Concl({d_typ=pat;d_sort=PMeta(Some (new_meta()))}))
                pri code
        | _ -> bad_vernac_args "HintDestruct")
 
@@ -234,13 +234,13 @@ let match_dpat dp cls gls =
   let cltyp = clause_type cls gls in
   match (cls,dp) with
     | (Some id,Hyp(_,hypd,concld)) ->
-        (somatch None hypd.d_typ cltyp)@
-        (somatch None hypd.d_sort (pf_type_of gls cltyp))@
-        (somatch None concld.d_typ (pf_concl gls))@
-        (somatch None concld.d_sort (pf_type_of gls (pf_concl gls)))
+        (matches hypd.d_typ cltyp)@
+        (matches hypd.d_sort (pf_type_of gls cltyp))@
+        (matches concld.d_typ (pf_concl gls))@
+        (matches concld.d_sort (pf_type_of gls (pf_concl gls)))
     | (None,Concl concld) ->
-        (somatch None concld.d_typ (pf_concl gls))@
-        (somatch None concld.d_sort (pf_type_of gls (pf_concl gls)))
+        (matches concld.d_typ (pf_concl gls))@
+        (matches concld.d_sort (pf_type_of gls (pf_concl gls)))
     | _ -> error "ApplyDestructor"
 
 let applyDestructor cls discard dd gls =

@@ -14,6 +14,7 @@ open Impargs
 open Coqast
 open Ast
 open Rawterm
+open Pattern
 
 (* In this file, we translate rawconstr to ast, in order to print constr *)
 
@@ -130,24 +131,24 @@ let ast_of_ref = function
 	    ::(List.map ast_of_ident (* on triche *) []))
   | RInd (ind,ctxt) -> ast_of_inductive_ref (ind,ids_of_ctxt ctxt)
   | RConstruct (cstr,ctxt) -> ast_of_constructor_ref (cstr,ids_of_ctxt ctxt)
-  | RVar id -> nvar (string_of_id id)
+  | RVar id -> ast_of_ident id
   | REVar (ev,ctxt) -> ast_of_existential_ref (ev,ids_of_ctxt ctxt)
   | RMeta n -> ope("META",[num n])
 
 (**********************************************************************)
 (* conversion of patterns                                             *)
 
-let rec ast_of_pattern = function   (* loc is thrown away for printing *)
+let rec ast_of_cases_pattern = function   (* loc is thrown away for printing *)
   | PatVar (loc,Name id) -> nvar (string_of_id id)
   | PatVar (loc,Anonymous) -> nvar "_"
   | PatCstr(loc,cstr,args,Name id) ->
+      let args = List.map ast_of_cases_pattern args in
       ope("PATTAS",
 	  [nvar (string_of_id id);
-	   ope("PATTCONSTRUCT",
-	       (ast_of_constructor_ref cstr)::List.map ast_of_pattern args)])
+	   ope("PATTCONSTRUCT", (ast_of_constructor_ref cstr)::args)])
   | PatCstr(loc,cstr,args,Anonymous) ->
       ope("PATTCONSTRUCT",
-	  (ast_of_constructor_ref cstr)::List.map ast_of_pattern args)
+	  (ast_of_constructor_ref cstr)::List.map ast_of_cases_pattern args)
 	
 let ast_dependent na aty =
   match na with
@@ -177,18 +178,18 @@ let implicit_of_ref = function
   | RVar id -> (try (implicits_of_var CCI id) with _ -> []) (* et FW? *)
   | _ -> []
 
-let rec skip_coercion (f,args as app) =
+let rec skip_coercion dest_ref (f,args as app) =
   if !print_coercions then app
   else
     try
-      match f with
-	| RRef (_,r) ->
+      match dest_ref f with
+	| Some r ->
 	    let n = Classops.coercion_params r in
 	    if n >= List.length args then app
 	    else (* We skip a coercion *)
 	      let _,fargs = list_chop n args in
-	      skip_coercion (List.hd fargs,List.tl fargs)
-	| _ -> app
+	      skip_coercion dest_ref (List.hd fargs,List.tl fargs)
+	| None -> app
     with Not_found -> app
 
 let ast_of_app impl f args =
@@ -216,7 +217,8 @@ let ast_of_app impl f args =
 let rec ast_of_raw = function
   | RRef (_,ref) -> ast_of_ref ref
   | RApp (_,f,args) ->
-      let (f,args) = skip_coercion (f,args) in
+      let (f,args) =
+	skip_coercion (function RRef(_,r) -> Some r | _ -> None) (f,args) in
       let astf = ast_of_raw f in
       let astargs = List.map ast_of_raw args in
       (match f with 
@@ -296,7 +298,7 @@ let rec ast_of_raw = function
   | RCast (_,c,t) -> ope("CAST",[ast_of_raw c;ast_of_raw t])
 	
 and ast_of_eqn (ids,pl,c) =
-  ope("EQN", (ast_of_raw c)::(List.map ast_of_pattern pl))
+  ope("EQN", (ast_of_raw c)::(List.map ast_of_cases_pattern pl))
 
 and ast_of_rawopt = function
   | None -> (str "SYNTH")
@@ -730,7 +732,7 @@ let old_bdize at_top env t =
 (* FIN TO EJECT *)
 (******************************************************************)
        
-let bdize at_top env t =
+let ast_of_constr at_top env t =
   let t' =
     if !print_casts then t
     else Reduction.strong (fun _ _ -> strip_outer_cast)
@@ -740,3 +742,79 @@ let bdize at_top env t =
     ast_of_raw (Detyping.detype avoid env t')
   with Detyping.StillDLAM ->
     old_bdize at_top env t'
+
+let rec ast_of_pattern env = function
+  | PRef ref -> ast_of_ref ref
+  | PRel n ->
+      (try match fst (lookup_rel n env) with
+	 | Name id   -> ast_of_ident id
+	 | Anonymous ->
+	     anomaly "ast_of_pattern: index to an anonymous variable"
+       with Not_found ->
+	 let s = "[REL "^(string_of_int (number_of_rels env - n))^"]"
+	 in nvar s)
+
+  | PApp (f,args) ->
+      let (f,args) = 
+	skip_coercion (function PRef r -> Some r | _ -> None)
+	  (f,Array.to_list args) in
+      let astf = ast_of_pattern env f in
+      let astargs = List.map (ast_of_pattern env) args in
+      (match f with 
+	 | PRef ref -> ast_of_app (implicit_of_ref ref) astf astargs
+	 | _        -> ast_of_app [] astf astargs)
+
+  | PSoApp (n,args) ->
+      ope("SOAPP",(ope ("META",[num n])):: 
+		  (List.map (ast_of_constr false env) args))
+
+  | PBinder (BProd,Anonymous,t,c) ->
+      ope("PROD",[ast_of_pattern env t; slam(None,ast_of_pattern env c)])
+  | PBinder (bk,na,t,c) ->
+      let env' = add_rel (na,()) env in
+      let (n,a) = factorize_binder_pattern
+		    env' 1 bk na (ast_of_pattern env t) c in
+      let tag = match bk with
+	  (* LAMBDA et LAMBDALIST se comportent pareil *)
+	| BLambda -> if n=1 then "LAMBDA" else "LAMBDALIST"
+	  (* PROD et PRODLIST doivent être distingués à cause du cas *)
+	  (* non dépendant, pour isoler l'implication; peut-être un *)
+	  (* constructeur ARROW serait-il plus justifié ? *) 
+	| BProd -> if n=1 then "PROD" else "PRODLIST" 
+      in
+      ope(tag,[ast_of_pattern env t;a])
+
+  | PLet (id,a,t,c) ->
+      let c' = ast_of_pattern (add_rel (Name id,()) env) c in
+      ope("LET",[ast_of_pattern env a; 	slam(Some (string_of_id id),c')])
+		
+
+  | PCase (typopt,tm,bv) ->
+      warning "Old Case syntax";
+      ope("MUTCASE",(ast_of_patopt env typopt)
+	    ::(ast_of_pattern env tm)
+	    ::(Array.to_list (Array.map (ast_of_pattern env) bv)))
+
+  | PSort s ->
+      (match s with
+	 | RProp Null -> ope("PROP",[])
+	 | RProp Pos -> ope("SET",[])
+	 | RType -> ope("TYPE",[]))
+
+  | PMeta (Some n) -> ope("META",[num n])
+  | PMeta None -> ope("ISEVAR",[])
+	
+and ast_of_patopt env = function
+  | None -> (str "SYNTH")
+  | Some p -> ast_of_pattern env p
+
+and factorize_binder_pattern env n oper na aty c =
+  let (p,body) = match c with
+    | PBinder(oper',na',ty',c')
+	when (oper = oper') & (aty = ast_of_pattern env ty')
+	  & not (na' = Anonymous & oper = BProd)
+	  ->
+	factorize_binder_pattern (add_rel (na',()) env) (n+1) oper na' aty c'
+    | _ -> (n,ast_of_pattern env c)
+  in
+  (p,slam(stringopt_of_name na, body))

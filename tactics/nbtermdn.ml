@@ -7,6 +7,7 @@ open Generic
 open Term
 open Libobject
 open Library
+open Pattern
 
 (* Named, bounded-depth, term-discrimination nets.
    Implementation:
@@ -20,12 +21,12 @@ open Library
    Eduardo (5/8/97) *)
 
 type ('na,'a) t = {
-  mutable table : ('na,Rawterm.constr_pattern * 'a) Gmap.t;
-  mutable patterns : (Rawterm.constr_label option,'a Btermdn.t) Gmap.t }
+  mutable table : ('na,constr_pattern * 'a) Gmap.t;
+  mutable patterns : (constr_label option,'a Btermdn.t) Gmap.t }
 
 type ('na,'a) frozen_t = 
-    ('na,Rawterm.constr_pattern * 'a) Gmap.t
-    * (Rawterm.constr_label option,'a Btermdn.t) Gmap.t
+    ('na,constr_pattern * 'a) Gmap.t
+    * (constr_label option,'a Btermdn.t) Gmap.t
 
 let create () =
   { table = Gmap.empty;

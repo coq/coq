@@ -19,7 +19,7 @@ open Proof_trees
 open Logic
 open Clenv
 open Tacticals
-open Pattern
+open Hipattern
 
 exception Bound
 

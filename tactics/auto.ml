@@ -11,6 +11,7 @@ open Inductive
 open Evd
 open Reduction
 open Typing
+open Pattern
 open Tacmach
 open Proof_trees
 open Pfedit
@@ -702,7 +703,7 @@ let possible_resolve db_list local_db cl =
 let decomp_unary_term c gls = 
   let typc = pf_type_of gls c in 
   let hd = List.hd (head_constr typc) in 
-  if Pattern.is_conjunction hd then 
+  if Hipattern.is_conjunction hd then 
     simplest_case c gls 
   else 
     errorlabstrm "Auto.decomp_unary_term" [<'sTR "not a unary type" >] 
@@ -710,7 +711,7 @@ let decomp_unary_term c gls =
 let decomp_empty_term c gls = 
   let typc = pf_type_of gls c in 
   let (hd,_) = decomp_app typc in 
-  if Pattern.is_empty_type hd then 
+  if Hipattern.is_empty_type hd then 
     simplest_case c gls 
   else 
     errorlabstrm "Auto.decomp_empty_term" [<'sTR "not an empty type" >] 
@@ -858,7 +859,7 @@ let compileAutoArg contac = function
 	 tclFIRST 
            (List.map2 
               (fun id typ -> 
-                 if (Pattern.is_conjunction (hd_of_prod typ)) then 
+                 if (Hipattern.is_conjunction (hd_of_prod typ)) then 
 		   (tclTHEN
                       (tclTHEN (simplest_elim (mkVar id)) 
                          (clear_one id))

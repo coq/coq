@@ -47,15 +47,22 @@ let print_typed_value_in_env env (trm,typ) =
      'sTR "     : "; prterm_env (gLOB sign) typ ; 'fNL >]
 
 let print_typed_value x = print_typed_value_in_env (Global.env ()) x
+
+let pkprinters = function
+  | FW -> (fprterm,fprterm_env)
+  | CCI -> (prterm,prterm_env)
+  | _ -> anomaly "pkprinters"
 			  		  
 let print_recipe = function
   | Some { contents = Cooked c } -> prterm c
   | Some { contents = Recipe _ } -> [< 'sTR"<recipe>" >]
   | None -> [< 'sTR"<uncookable>" >]
 
+(*
 let fprint_recipe = function
   | Some c -> fprterm c
   | None -> [< 'sTR"<uncookable>" >]
+*)
 
 let print_typed_recipe (val_0,typ) =
   [< print_recipe val_0; 'fNL; 'sTR "     : "; prtype typ; 'fNL >]
@@ -77,7 +84,7 @@ let print_var name typ =
   [< 'sTR "*** [" ; 'sTR name ; 'sTR " : "; prtype typ; 'sTR "]"; 'fNL >]
 
 let print_env pk = 
-  let pterminenv = if pk = FW then fprterm_env else prterm_env in
+  let pterminenv = (* if pk = FW then fprterm_env else *) prterm_env in
   let pr_binder env (na,c) =
     match na with
       | Name id as name ->
@@ -99,8 +106,7 @@ let assumptions_for_print lna =
     (ENVIRON(nil_sign,nil_dbsign))
 
 let print_constructors_with_sep pk fsep mip = 
-  let pterm,pterminenv =
-    if pk = FW then (fprterm,fprterm_env) else (prterm,prterm_env) in
+  let pterm,pterminenv = pkprinters pk in
   let (lna,lC) = decomp_all_DLAMV_name mip.mind_lc in
   let ass_name = assumptions_for_print lna in
   let lidC = Array.to_list 
@@ -131,8 +137,7 @@ let implicit_args_msg sp mipv =
 
 let print_mutual sp mib = 
   let pk = kind_of_path sp in
-  let pterm,pterminenv =
-    if pk = FW then (fprterm,fprterm_env) else (prterm,prterm_env) in
+  let pterm,pterminenv = pkprinters pk in
   let env = Global.env () in
   let evd = Evd.empty in
   let {mind_packets=mipv; mind_nparams=nparams} = mib in 
@@ -271,7 +276,7 @@ let print_leaf_entry with_values sep (sp,lobj) =
       	   print_id id ; 'sTR sep;  
            if with_values then 
              let c = Syntax_def.search_syntactic_definition id in 
-	     [< prrawterm c >]
+	     [< pr_rawterm c >]
            else [<>]; 'fNL >]
     | (_,"PPSYNTAX") -> 
 	[< 'sTR" Syntax Marker"; 'fNL >]

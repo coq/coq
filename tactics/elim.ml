@@ -9,7 +9,7 @@ open Term
 open Reduction
 open Proof_trees
 open Clenv
-open Pattern
+open Hipattern
 open Tacmach
 open Tacticals
 open Tactics

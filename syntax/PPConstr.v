@@ -45,7 +45,7 @@ Syntax constr
 
 (* Things parsed in command1 *)
   level 1:
-    soap [(XTRA "$SOAPP" $lc1 ($LIST $cl))]
+    soap [(SOAPP $lc1 ($LIST $cl))]
       -> [ [<hov 0> "(" $lc1 ")@[" (NECOMMANDLIST ($LIST $cl)) "]"] ]
   | let_K [(ABST #Core#let.cci $M [<>]$N)]
       -> [ [<hov 0> "[_=" $M "]" [0 1] $N:E ] ]

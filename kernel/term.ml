@@ -547,15 +547,29 @@ let destUntypedCoFix = function
       (i,types,funnames,bodies)
   | _ -> invalid_arg "destCoFix"
 
+(**********************************************************************)
 
-(******************)
-(* Term analysis  *)
-(******************)
+type binder_kind = BProd | BLambda
+
+type fix_kind = RFix of int array * int | RCofix of int
+
+type 'ctxt reference =
+  | RConst of section_path * 'ctxt
+  | RInd of inductive_path * 'ctxt
+  | RConstruct of constructor_path * 'ctxt
+  | RAbst of section_path
+  | RVar of identifier
+  | REVar of int * 'ctxt
+  | RMeta of int
 
 type existential = int * constr array
 type constant = section_path * constr array
 type constructor = constructor_path * constr array
 type inductive = inductive_path * constr array
+
+(******************)
+(* Term analysis  *)
+(******************)
 
 type kindOfTerm = 
   | IsRel          of int

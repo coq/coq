@@ -118,16 +118,13 @@ let clause_type cls gl =
 
 (* Functions concerning matching of clausal environments *)
 
-let matches gls n pat =
+let gl_is_matching gls pat n =
   let (wc,_) = startWalk gls in 
-  somatches_conv (w_env wc) (w_Underlying wc) n pat
+  is_matching_conv (w_env wc) (w_Underlying wc) pat n
 
-let dest_match gls n m =
-  let mvs     = collect_metas m in
+let gl_matches gls pat n =
   let (wc,_)  = startWalk gls in
-  let (mvb,_) = Clenv.unify_0 [] wc m n in 
-  List.map (fun x -> List.assoc x mvb) mvs
-
+  matches_conv (w_env wc) (w_Underlying wc) pat n
 
 (* [OnCL clausefinder clausetac]
  * executes the clausefinder to find the clauses, and then executes the
@@ -191,10 +188,11 @@ si après Intros la conclusion matche le pattern.
 *)
 
 let conclPattern concl pat tacast gl = 
-  let constr_bindings = Pattern.somatch None pat concl in
+  let constr_bindings = Pattern.matches pat concl in
   let ast_bindings = 
     List.map 
-      (fun (i,c) -> (i, Termast.bdize false (assumptions_for_print []) c))
+      (fun (i,c) ->
+	 (i, Termast.ast_of_constr false (assumptions_for_print []) c))
       constr_bindings in 
   let tacast' = Coqast.subst_meta ast_bindings tacast in
   Tacinterp.interp tacast' gl
