@@ -25,8 +25,6 @@ type w_tactic = walking_constraints -> walking_constraints
 
 let local_Constraints lc gs = refiner (Local_constraints lc) gs
 
-let on_wc f wc = ids_mod f wc
-
 let debug = ref true;;
 
 let startWalk gls =
