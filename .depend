@@ -3251,10 +3251,8 @@ tools/coqdoc/main.cmx: config/coq_config.cmx tools/coqdoc/index.cmx \
     tools/coqdoc/output.cmx tools/coqdoc/pretty.cmx 
 tools/coqdoc/output.cmo: tools/coqdoc/index.cmi tools/coqdoc/output.cmi 
 tools/coqdoc/output.cmx: tools/coqdoc/index.cmx tools/coqdoc/output.cmi 
-tools/coqdoc/pretty.cmo: tools/coqdoc/index.cmi tools/coqdoc/output.cmi \
-    tools/coqdoc/pretty.cmi 
-tools/coqdoc/pretty.cmx: tools/coqdoc/index.cmx tools/coqdoc/output.cmx \
-    tools/coqdoc/pretty.cmi 
+tools/coqdoc/pretty.cmo: tools/coqdoc/pretty.cmi 
+tools/coqdoc/pretty.cmx: tools/coqdoc/pretty.cmi 
 tactics/tauto.cmo: parsing/grammar.cma
 tactics/tauto.cmx: parsing/grammar.cma
 tactics/eqdecide.cmo: parsing/grammar.cma
