@@ -88,7 +88,7 @@ PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
 	  pretyping/syntax_def.cmo pretyping/pattern.cmo 
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
-	parsing/astterm.cmo parsing/termast.cmo parsing/stdlib.cmo \
+	parsing/astterm.cmo parsing/termast.cmo parsing/coqlib.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo \
 	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
 	parsing/g_constr.cmo parsing/g_cases.cmo \
@@ -101,7 +101,7 @@ ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
 
 PROOFS=proofs/proof_type.cmo proofs/proof_trees.cmo proofs/logic.cmo \
        proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
-       proofs/clenv.cmo proofs/stock.cmo proofs/pfedit.cmo \
+       proofs/clenv.cmo proofs/pfedit.cmo \
        proofs/tactic_debug.cmo proofs/tacinterp.cmo
 
 TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
