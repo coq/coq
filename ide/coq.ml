@@ -392,3 +392,12 @@ let make_cases s =
 	  tarr
 	  []
     | _ -> raise Not_found
+
+let is_state_preserving = function
+  | VernacPrint _ | VernacPrintOption _ | VernacGlobalCheck _
+  | VernacCheckMayEval _ | VernacSearch _ | VernacLocate _ 
+  | VernacShow _ | VernacMemOption _ | VernacComments _ 
+  | VernacChdir None | VernacNop -> 
+      prerr_endline "state preserving command found"; true
+  | _ -> 
+      false

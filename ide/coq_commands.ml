@@ -194,14 +194,11 @@ let commands = [
 let state_preserving = [
   "Check";
   "Eval";
-  "Extract Constant";
-  "Extract Inductive";
   "Extraction";
-  "Extraction Inline";
-  "Extraction Language";
+  "Extraction Library";
   "Extraction Module";
-  "Extraction NoInline";
   "Inspect";
+  "Locate";
   "Print";
   "Print All";
   "Print Classes";
@@ -225,17 +222,12 @@ let state_preserving = [
   "Pwd";
 
   "Recursive Extraction";
-  "Recursive Extraction Module";
+  "Recursive Extraction Library";
 
   "Search";
   "SearchAbout";
   "SearchPattern";
   "SearchRewrite";
-
-  "Set Printing Coercion";
-  "Set Printing Coercions";
-  "Set Printing Synth";
-  "Set Printing Wildcard";
 
   "Show";
   "Show Conjectures";
@@ -252,9 +244,4 @@ let state_preserving = [
   "Test Printing Wildcard";
     
   "Recursive Extraction"; 
-
-  "Unset Printing Coercion";
-  "Unset Printing Coercions";
-  "Unset Printing Synth";
-  "Unset Printing Wildcard";
 ]

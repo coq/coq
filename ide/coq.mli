@@ -20,6 +20,7 @@ val interp : string -> Util.loc * Vernacexpr.vernac_expr
 val interp_last : Util.loc * Vernacexpr.vernac_expr -> unit
 
 val is_tactic : Vernacexpr.vernac_expr -> bool
+val is_state_preserving : Vernacexpr.vernac_expr -> bool
 
 (* type hyp = (identifier * constr option * constr) * string *)
 

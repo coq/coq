@@ -1236,6 +1236,9 @@ Please restart and report NOW.";
 		   raise e
 		 end);
 	      update_input ()
+	  | { ast = (_, a) } when is_state_preserving a ->
+	      ignore (pop ());
+	      update_input ()
 	  | _ -> 
 	      self#backtrack_to_no_lock start
 	  end;
