@@ -57,7 +57,7 @@ val tclTHEN          : tactic -> tactic -> tactic
 val tclTHENLIST      : tactic list -> tactic
 
 (* [tclTHEN_i tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
-   [(tac2 i)] to the i_th resulting subgoal (starting from 1) *)
+   [(tac2 i)] to the [i]$^{th}$ resulting subgoal (starting from 1) *)
 val tclTHEN_i        : tactic -> (int -> tactic) -> tactic
 
 (* [tclTHENL tac1 tac2 gls] applies the tactic [tac1] to [gls] and [tac2]
