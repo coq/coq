@@ -31,24 +31,29 @@ open Nametab
 
 (**********************************************************************)
 (* Parametrization                                                    *)
-
+open Constrextern
+(*
 (* This governs printing of local context of references *)
 let print_arguments = ref false
 
 (* If true, prints local context of evars, whatever print_arguments *)
 let print_evar_arguments = ref false
+*)
 
 (* This forces printing of cast nodes *)
 let print_casts = ref true
 
+(*
 (* This governs printing of implicit arguments.  When
    [print_implicits] is on then [print_implicits_explicit_args] tells
    how implicit args are printed. If on, implicit args are printed
    prefixed by "!" otherwise the function and not the arguments is
    prefixed by "!" *)
 let print_implicits = ref false
+*)
 let print_implicits_explicit_args = ref false
 
+(*
 (* This forces printing of coercions *)
 let print_coercions = ref false
 
@@ -66,7 +71,7 @@ let with_casts f = with_option print_casts f
 let with_implicits f = with_option print_implicits f
 let with_coercions f = with_option print_coercions f
 let with_universes f = with_option print_universes f
-
+*)
 (**********************************************************************)
 (* conversion of references                                           *)
 

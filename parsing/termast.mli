@@ -39,7 +39,7 @@ val ast_of_inductive    : env -> inductive -> Coqast.t
 val ast_of_ref          : global_reference -> Coqast.t
 val ast_of_qualid       : qualid -> Coqast.t
 
-(* For debugging *)
+(*i Now in constrextern.mli
 val print_implicits : bool ref
 val print_casts : bool ref
 val print_arguments : bool ref
@@ -52,3 +52,4 @@ val with_implicits : ('a -> 'b) -> 'a -> 'b
 val with_arguments : ('a -> 'b) -> 'a -> 'b
 val with_coercions : ('a -> 'b) -> 'a -> 'b
 val with_universes : ('a -> 'b) -> 'a -> 'b
+i*)

@@ -26,7 +26,7 @@ open Termops
 open Clenv
 open Cerrors
 
-let _ = Termast.print_evar_arguments := true
+let _ = Constrextern.print_evar_arguments := true
 
 let pP s = pp (hov 0 s)
 
@@ -35,7 +35,7 @@ let prast c = pp(print_ast c)
 let prastpat c = pp(print_astpat c)
 let prastpatl c = pp(print_astlpat c)
 let ppterm x = pp(prterm x)
-let ppterm_univ x = Termast.with_universes ppterm x
+let ppterm_univ x = Constrextern.with_universes ppterm x
 let pprawterm = (fun x -> pp(pr_rawterm x))
 let pppattern = (fun x -> pp(pr_pattern x))
 let pptype = (fun x -> pp(prtype x))
@@ -63,8 +63,7 @@ let prconst (sp,j) =
 let prvar ((id,a)) =
     pp (str"#" ++ pr_id id ++ str":" ++ prterm a)
 
-let genprj f j =
-  let (c,t) = Termast.with_casts f j in (c ++ str " : " ++ t)
+let genprj f j = let (c,t) = f j in (c ++ str " : " ++ t)
 
 let prj j = pp (genprj prjudge j)
 
