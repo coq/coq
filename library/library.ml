@@ -67,13 +67,18 @@ let add_load_path_entry (phys_path,coq_path) =
   let phys_path = canonical_path_name phys_path in
   match list_filter2 (fun p d -> p = phys_path) !load_path with
   | _,[dir] ->
-      if coq_path <> dir then
+      if coq_path <> dir 
+        (* If this is not the default -I . to coqtop *)
+        && phys_path <> canonical_path_name Filename.current_dir_name
+        && coq_path <>  Nametab.default_root_prefix 
+      then
 	begin
           (* Assume the user is concerned by module naming *)
 	  if dir <> Nametab.default_root_prefix then
-	    Options.if_verbose warning (phys_path^" was previously bound to "
+	    (Options.if_verbose warning (phys_path^" was previously bound to "
 	    ^(string_of_dirpath dir)
 	    ^("\nIt is remapped to "^(string_of_dirpath coq_path)));
+             flush_all ());
 	  remove_path phys_path;
 	  load_path := (phys_path::fst !load_path, coq_path::snd !load_path)
 	end
