@@ -1443,17 +1443,18 @@ equality {\term$_2$}{\tt =}{\term$_1$} as a subgoal. It is equivalent
 to {\tt cut \term$_2$=\term$_1$; intro H{\sl n}; rewrite <- H{\sl n}; 
   clear H{\sl n}}.
 
-%N'existe pas...
-%\begin{Variants}
-%  
-%\item {\tt replace {\term$_1$} with {\term$_2$} in \ident}
-%  This replaces {\term$_1$} with {\term$_2$} in the hypothesis named
-%  \ident, and generates the subgoal {\term$_2$}{\tt =}{\term$_1$}. 
-%  \begin{ErrMsgs}
-%  \item \errindex{No such hypothesis}
-%  \end{ErrMsgs}
-%
-%\end{Variants}
+\begin{Variants}
+  
+\item {\tt replace {\term$_1$} with {\term$_2$} in \ident}\\
+  This replaces {\term$_1$} with {\term$_2$} in the hypothesis named
+  {\ident}, and generates the subgoal {\term$_2$}{\tt =}{\term$_1$}. 
+
+  \begin{ErrMsgs}
+  \item \errindex{No such hypothesis} : {\ident}
+  \item \errindex{Nothing to rewrite in {\ident}}
+  \end{ErrMsgs}
+
+\end{Variants}
 
 \subsection{\tt reflexivity
 \label{reflexivity}
