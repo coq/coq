@@ -48,7 +48,7 @@ This directory contains
         jlogic.ml       ------  interface module of jall.ml
         jterm.ml
         opname.ml       ------  implement the infrastructure for jall.ml
-        jprover.ml      ------  the interface of jall.ml to Coq
+        jprover.ml4     ------  the interface of jall.ml to Coq
         JProver.v       ------  declaration for Coq
         Makefile        ------  the makefile
         go              ------  batch file to load JProver to Coq dynamically
