@@ -501,14 +501,15 @@ Qed.
 Lemma limit_comp:(f,g:R->R)(Df,Dg:R->Prop)(l,l':R)(x0:R)
    (limit1_in f Df l x0)->(limit1_in g Dg l' l)->
    (limit1_in [x:R](g (f x)) (Dgf Df Dg f) l' x0).
-Unfold limit1_in;Unfold limit_in;Simpl;Intros;
- Elim (H0 eps H1);Clear H0;Intros;Elim H0;Clear H0;Intros;
- Elim (H x H0);Clear H;Intros;Elim H;Clear H;Intros;
- Split with x1;Split;Auto;Intros;
- Elim H4;Clear H4;Intros;Unfold Dgf in H4;Elim H4;Clear H4;Intros;
- Generalize (H3 x2 (conj (Df x2) (Rlt (R_dist x2 x0) x1) H4 H5));
- Intro;Exact (H2 (f x2) (conj (Dg (f x2)) (Rlt (R_dist (f x2) l) x)
-            H6 H7)).
+Unfold limit1_in limit_in Dgf;Simpl.
+Intros f g Df Dg l l' x0 Hf Hg eps eps_pos.
+Elim (Hg eps eps_pos).
+Intros alpg lg.
+Elim (Hf alpg).
+2: Tauto.
+Intros alpf lf.
+Exists alpf.
+Intuition.
 Qed.
 
 (*********)
