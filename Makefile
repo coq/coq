@@ -462,7 +462,8 @@ clean::
 ###########################################################################
 
 check:: world
-	cd test-suite; ./check -$(BEST) | tee check.log
+	cd test-suite; \
+	env COQBIN=../bin COQLIB=.. ./check -$(BEST) | tee check.log
 	if grep -F 'Error!' test-suite/check.log ; then false; fi
 
 ###########################################################################
