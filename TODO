@@ -17,6 +17,8 @@ Noyau:
 Vernac:
 
 - Pb noms cachés (utilisation de noms absolus ?) 
+- Print / Print Proof en fait identiques ; Print ne devrait pas afficher
+  les constantes opaques (devrait afficher qqchose comme <opaque>)
 
 Grammaires:
 
