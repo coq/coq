@@ -12,7 +12,7 @@ Require Rbase.
 Require Rbasic_fun.
 Require Even.
 Require Div2.
-V7only [Import R_scope.].
+V7only [Import R_scope.]. Open Scope R_scope.
 
 Lemma minus_neq_O : (n,i:nat) (lt i n) -> ~(minus n i)=O.
 Intros; Red; Intro.

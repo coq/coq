@@ -16,9 +16,9 @@ Require Export Raxioms.
 Require Export ZArithRing.
 Require Omega.
 Require Export Field.
-V7only [Import nat_scope.].
-V7only [Import Z_scope.].
-V7only [Import R_scope.].
+V7only [Import nat_scope.]. Open Scope nat_scope.
+V7only [Import Z_scope.]. Open Scope Z_scope.
+V7only [Import R_scope.]. Open Scope R_scope.
 
 Implicit Variable Type r:R.
 

@@ -13,7 +13,7 @@ Require Rfunctions.
 Require SeqSeries.
 Require Rtrigo.
 Require R_sqrt.
-V7only [Import R_scope.].
+V7only [Import R_scope.]. Open Scope R_scope.
 
 Definition dist_euc [x0,y0,x1,y1:R] : R := ``(sqrt ((Rsqr (x0-x1))+(Rsqr (y0-y1))))``.
 

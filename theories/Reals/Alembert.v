@@ -14,7 +14,7 @@ Require Rseries.
 Require SeqProp.
 Require PartSum.
 Require Max.
-V7only [Import R_scope.].
+V7only [Import R_scope.]. Open Scope R_scope.
 
 (***************************************************)
 (* Various versions of the criterion of D'Alembert *)

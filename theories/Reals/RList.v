@@ -10,7 +10,7 @@
 
 Require Rbase.
 Require Rfunctions.
-V7only [Import R_scope.].
+V7only [Import R_scope.]. Open Scope R_scope.
 
 Inductive Rlist : Type :=
 | nil : Rlist

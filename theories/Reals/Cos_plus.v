@@ -14,8 +14,8 @@ Require SeqSeries.
 Require Rtrigo_def.
 Require Cos_rel.
 Require Max.
-V7only [Import nat_scope.].
-V7only [Import R_scope.].
+V7only [Import nat_scope.]. Open Scope nat_scope.
+V7only [Import R_scope.]. Open Scope R_scope.
 
 Definition Majxy [x,y:R] : nat->R := [n:nat](Rdiv (pow (Rmax R1 (Rmax (Rabsolu x) (Rabsolu y))) (mult (4) (S n))) (INR (fact n))).
 

@@ -17,7 +17,7 @@ Require Rbase.
 Require Rfunctions.
 Require Classical_Prop.
 Require Fourier.
-V7only [Import R_scope.].
+V7only [Import R_scope.]. Open Scope R_scope.
 
 (*******************************)
 (*      Calculus               *)
