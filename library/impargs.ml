@@ -95,22 +95,26 @@ let list_of_implicits = function
 
 let constants_table = ref KNmap.empty
 
-let compute_constant_implicits sp =
+let compute_constant_implicits kn =
   let env = Global.env () in
-  let cb = lookup_constant sp env in
+  let cb = lookup_constant kn env in
   auto_implicits env (body_of_type cb.const_type)
 
-let cache_constant_implicits (_,(sp,imps)) = 
-  constants_table := KNmap.add sp imps !constants_table
+let cache_constant_implicits (_,(kn,imps)) = 
+  constants_table := KNmap.add kn imps !constants_table
+
+let subst_constant_implicits (_,subst,(kn,imps as obj)) = 
+  let kn' = subst_kn subst kn in
+    if kn' == kn then obj else
+      kn',imps
 
 let (in_constant_implicits, _) =
-  let od = {
+  declare_object {(default_object "CONSTANT-IMPLICITS") with
     cache_function = cache_constant_implicits;
-    load_function = cache_constant_implicits;
-    open_function = (fun _ -> ());
+    load_function = (fun _ -> cache_constant_implicits);
+    subst_function = subst_constant_implicits;
+    classify_function = (fun (_,x) -> Substitute x);
     export_function = (fun x -> Some x) }
-  in
-  declare_object ("CONSTANT-IMPLICITS", od)
 
 let declare_constant_implicits kn =
   let imps = compute_constant_implicits kn in
@@ -152,30 +156,40 @@ let constructors_table = ref Constrmap.empty
 let cache_inductive_implicits (_,(indp,imps)) =
   inductives_table := Indmap.add indp imps !inductives_table
 
+let subst_inductive_implicits (_,subst,((kn,i),imps as obj)) = 
+  let kn' = subst_kn subst kn in
+    if kn' == kn then obj else
+      (kn',i),imps
+
 let (in_inductive_implicits, _) =
-  let od = {
+  declare_object {(default_object "INDUCTIVE-IMPLICITS") with 
     cache_function = cache_inductive_implicits;
-    load_function = cache_inductive_implicits;
-    open_function = (fun _ -> ());
-    export_function = (fun x -> Some x) }
-  in
-  declare_object ("INDUCTIVE-IMPLICITS", od)
+    load_function = (fun _ -> cache_inductive_implicits);
+    subst_function = subst_inductive_implicits;
+    classify_function = (fun (_,x) -> Substitute x);
+    export_function = (fun x -> Some x)  }
 
 let cache_constructor_implicits (_,(consp,imps)) =
   constructors_table := Constrmap.add consp imps !constructors_table
 
-let (in_constructor_implicits, _) =
-  let od = {
-    cache_function = cache_constructor_implicits;
-    load_function = cache_constructor_implicits;
-    open_function = (fun _ -> ());
-    export_function = (fun x -> Some x) }
-  in
-  declare_object ("CONSTRUCTOR-IMPLICITS", od)
+let subst_constructor_implicits (_,subst,(((kn,i),j),imps as obj)) = 
+  let kn' = subst_kn subst kn in
+    if kn' == kn then obj else
+      ((kn',i),j),imps
 
-let compute_mib_implicits sp =
+
+let (in_constructor_implicits, _) =
+  declare_object {(default_object "CONSTRUCTOR-IMPLICITS") with 
+    cache_function = cache_constructor_implicits;
+    load_function = (fun _ -> cache_constructor_implicits);
+    subst_function = subst_constructor_implicits;
+    classify_function = (fun (_,x) -> Substitute x);
+    export_function = (fun x -> Some x)  }
+
+
+let compute_mib_implicits kn =
   let env = Global.env () in
-  let mib = lookup_mind sp env in
+  let mib = lookup_mind kn env in
   let ar =
     Array.to_list
       (Array.map  (* No need to lift, arities contain no de Bruijn *)
@@ -189,10 +203,10 @@ let compute_mib_implicits sp =
   in
   Array.map imps_one_inductive mib.mind_packets
 
-let cache_mib_implicits (_,(sp,mibimps)) =
+let cache_mib_implicits (_,(kn,mibimps)) =
   Array.iteri
     (fun i (imps,v) ->
-       let indp = (sp,i) in
+       let indp = (kn,i) in
        inductives_table := Indmap.add indp imps !inductives_table;
        Array.iteri 
 	 (fun j imps ->
@@ -200,18 +214,22 @@ let cache_mib_implicits (_,(sp,mibimps)) =
 	      Constrmap.add (indp,succ j) imps !constructors_table) v)
     mibimps
 
+let subst_mib_implicits (_,subst,(kn,mibimps as obj)) = 
+  let kn' = subst_kn subst kn in
+    if kn' == kn then obj else
+      kn',mibimps
+
 let (in_mib_implicits, _) =
-  let od = {
+  declare_object {(default_object "MIB-IMPLICITS") with 
     cache_function = cache_mib_implicits;
-    load_function = cache_mib_implicits;
-    open_function = (fun _ -> ());
-    export_function = (fun x -> Some x) }
-  in
-  declare_object ("MIB-IMPLICITS", od)
+    load_function = (fun _ -> cache_mib_implicits);
+    subst_function = subst_mib_implicits;
+    classify_function = (fun (_,x) -> Substitute x);
+    export_function = (fun x -> Some x)  }
  
-let declare_mib_implicits sp =
-  let imps = compute_mib_implicits sp in
-  add_anonymous_leaf (in_mib_implicits (sp,imps))
+let declare_mib_implicits kn =
+  let imps = compute_mib_implicits kn in
+  add_anonymous_leaf (in_mib_implicits (kn,imps))
 
 let inductive_implicits indp =
   try Indmap.find indp !inductives_table with Not_found -> No_impl
@@ -238,13 +256,12 @@ let cache_var_implicits (_,(id,imps)) =
   var_table := Idmap.add id imps !var_table
 
 let (in_var_implicits, _) =
-  let od = {
+  declare_object {(default_object "VARIABLE-IMPLICITS") with 
     cache_function = cache_var_implicits;
-    load_function = cache_var_implicits;
-    open_function = (fun _ -> ());
-    export_function = (fun x -> Some x) }
-  in
-  declare_object ("VARIABLE-IMPLICITS", od)
+    load_function = (fun _ -> cache_var_implicits);
+    export_function = (fun x -> Some x)  }
+
+
 
 let declare_var_implicits id =
   let imps = compute_var_implicits id in
@@ -256,16 +273,16 @@ let implicits_of_var id =
 (*s Implicits of a global reference. *)
 
 let declare_implicits = function
-  | VarRef sp -> 
-      declare_var_implicits sp
-  | ConstRef sp -> 
-      declare_constant_implicits sp
-  | IndRef ((sp,i) as indp) -> 
-      let mib_imps = compute_mib_implicits sp in
+  | VarRef id -> 
+      declare_var_implicits id
+  | ConstRef kn -> 
+      declare_constant_implicits kn
+  | IndRef ((kn,i) as indp) -> 
+      let mib_imps = compute_mib_implicits kn in
       let imps = fst mib_imps.(i) in
       add_anonymous_leaf (in_inductive_implicits (indp, imps))
-  | ConstructRef (((sp,i),j) as consp) -> 
-      let mib_imps = compute_mib_implicits sp in
+  | ConstructRef (((kn,i),j) as consp) -> 
+      let mib_imps = compute_mib_implicits kn in
       let imps = (snd mib_imps.(i)).(j-1) in
       add_anonymous_leaf (in_constructor_implicits (consp, imps))
 

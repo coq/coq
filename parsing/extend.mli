@@ -79,7 +79,7 @@ type 'pat unparsing_hunk =
   | UNP_TBRK of int * int
   | UNP_TAB
   | UNP_FNL
-  | UNP_INFIX of Nametab.extended_global_reference * string * string *
+  | UNP_INFIX of Libnames.extended_global_reference * string * string *
       (parenRelation * parenRelation)
 
 (* Checks if the precedence of the parent printer (None means the

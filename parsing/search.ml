@@ -50,7 +50,7 @@ let rec head_const c = match kind_of_term c with
 
 let crible (fn : global_reference -> env -> constr -> unit) ref =
   let env = Global.env () in
-  let imported = Library.opened_modules() in
+  let imported = Library.opened_libraries() in
   let const = constr_of_reference ref in 
   let crible_rec sp lobj =
     match object_tag lobj with
@@ -79,9 +79,9 @@ let crible (fn : global_reference -> env -> constr -> unit) ref =
 	     | _ -> ())
       | _ -> ()
   in 
-  try 
-    Library.iter_all_segments false crible_rec 
-  with Not_found -> 
+(*  try 
+  with Not_found -> *)
+    todo "Library.iter_all_segments false crible_rec";
     errorlabstrm "search"
       (pr_global ref ++ spc () ++ str "not declared")
 

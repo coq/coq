@@ -114,11 +114,10 @@ let (setoid_to_obj, obj_to_setoid)=
   let cache_set (_,(s, th)) = setoid_table_add (s,th)
   and export_set x = Some x 
   in 
-    declare_object ("setoid-theory",
-		    { cache_function = cache_set;
-		      load_function = (fun _ -> ());
-		      open_function = cache_set;
-		      export_function = export_set})
+    declare_object {(default_object "setoid-theory") with
+		      cache_function = cache_set;
+		      open_function = (fun i o -> if i=1 then cache_set o);
+		      export_function = export_set}
 
 (******************************* Table of declared morphisms ********************)
 
@@ -143,11 +142,10 @@ let (morphism_to_obj, obj_to_morphism)=
   let cache_set (_,(m, c)) = morphism_table_add (m, c)
   and export_set x = Some x 
   in 
-    declare_object ("morphism-definition",
-		    { cache_function = cache_set;
-		      load_function = (fun _ -> ());
-		      open_function = cache_set;
-		      export_function = export_set})
+    declare_object {(default_object "morphism-definition") with
+		      cache_function = cache_set;
+		      open_function = (fun i o -> if i=1 then cache_set o);
+		      export_function = export_set}
 
 (************************** Adding a setoid to the database *********************)
 
@@ -243,12 +241,12 @@ let add_setoid a aeq th =
 		      ((DefinitionEntry {const_entry_body = eq_morph; 
 		                       const_entry_type = None;
                                        const_entry_opaque = true}),
-		       Nametab.NeverDischarge) in
+		       Libnames.NeverDischarge) in
 	    let _ = Declare.declare_constant eq_ext_name2
 		      ((DefinitionEntry {const_entry_body = eq_morph2; 
 				       const_entry_type = None;
                                        const_entry_opaque = true}),
-		       Nametab.NeverDischarge) in
+		       Libnames.NeverDischarge) in
 	    let eqmorph = (current_constant eq_ext_name) in
 	    let eqmorph2 = (current_constant eq_ext_name2) in
 	      (Lib.add_anonymous_leaf
@@ -361,7 +359,7 @@ let new_morphism m id hook =
 	let lem = (gen_compat_lemma env m body args_t poss) in
 	let lemast = (ast_of_constr true env lem) in
 	new_edited id m poss;
-	start_proof_com (Some id) (false,Nametab.NeverDischarge) lemast hook;
+	start_proof_com (Some id) (false,Libnames.NeverDischarge) lemast hook;
 	(Options.if_verbose Vernacentries.show_open_subgoals ()))
 
 let rec sub_bool l1 n = function
@@ -456,7 +454,7 @@ let add_morphism lem_name (m,profil) =
 		    ((DefinitionEntry {const_entry_body = lem_2; 
 				     const_entry_type = None;
                                      const_entry_opaque = true}),
-		     Nametab.NeverDischarge) in
+		     Libnames.NeverDischarge) in
 	  let lem2 = (current_constant lem2_name) in
 	    (Lib.add_anonymous_leaf
 	       (morphism_to_obj (m, 

@@ -90,8 +90,8 @@ KERNEL=kernel/names.cmo kernel/univ.cmo \
 LIBRARY=library/libnames.cmo library/nameops.cmo library/libobject.cmo \
 	library/summary.cmo \
         library/nametab.cmo library/global.cmo library/lib.cmo \
-	library/goptions.cmo library/declaremods.cmo library/library.cmo library/states.cmo \
-	library/impargs.cmo library/declare.cmo 
+	library/declaremods.cmo library/library.cmo library/states.cmo \
+	library/impargs.cmo library/declare.cmo library/goptions.cmo 
 
 PRETYPING=pretyping/termops.cmo \
           pretyping/evd.cmo pretyping/instantiate.cmo \
@@ -398,11 +398,12 @@ SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
 states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
 	$(BESTCOQTOP) -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
 
+#       theories/Init/DatatypesHints.vo   theories/Init/PeanoHints.vo \
+#       theories/Init/LogicHints.vo       theories/Init/SpecifHints.vo \
+#       theories/Init/Logic_TypeHints.vo \
+
 INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/DatatypesSyntax.vo   theories/Init/Prelude.vo       \
-       theories/Init/DatatypesHints.vo   theories/Init/PeanoHints.vo \
-       theories/Init/LogicHints.vo       theories/Init/SpecifHints.vo \
-       theories/Init/Logic_TypeHints.vo \
        theories/Init/Logic.vo             theories/Init/Specif.vo        \
        theories/Init/LogicSyntax.vo       theories/Init/SpecifSyntax.vo  \
        theories/Init/Logic_Type.vo        theories/Init/Wf.vo            \
@@ -774,7 +775,7 @@ clean::
 ###########################################################################
 
 tags:
-	find . -name "*.ml*" | sort -r | xargs \
+	find . -name "*.ml[,i,4]" | sort -r | xargs \
 	etags "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/and[ \t]+\([^ \t]+\)/\1/" \
@@ -797,11 +798,13 @@ CAMLP4EXTENSIONS= parsing/tacextend.cmo parsing/vernacextend.cmo
 
 GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
 	   lib/dyn.cmo lib/options.cmo \
-	   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo $(KERNEL) \
+	   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo \
+	   $(KERNEL) \
 	   library/libnames.cmo \
-	   library/summary.cmo library/nameops.cmo library/nametab.cmo \
-	   library/libobject.cmo library/global.cmo library/lib.cmo \
-	   library/goptions.cmo pretyping/rawterm.cmo pretyping/evd.cmo \
+	   library/summary.cmo library/nameops.cmo \
+	   library/nametab.cmo \
+	   library/libobject.cmo library/lib.cmo library/goptions.cmo \
+	   pretyping/rawterm.cmo pretyping/evd.cmo \
 	   parsing/coqast.cmo parsing/genarg.cmo \
 	   proofs/tacexpr.cmo proofs/proof_type.cmo parsing/ast.cmo \
            parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
@@ -979,7 +982,8 @@ depend: beforedepend
 # 5. Finally, we erase the generated .ml files
 	rm -f $(ML4FILESML)
 # 6. Since .depend contains correct dependencies .depend.devel can be deleted
-	> .depend.devel
+# (see dev/Makefile.dir for details about this file)
+	if [ -e makefile ]; then >.depend.devel; else rm -f .depend.devel; fi
 
 ml4clean::
 	rm -f $(ML4FILESML)
@@ -990,4 +994,9 @@ clean::
 include .depend
 include .depend.coq
 
-include .depend.devel
+
+# this sets up developper supporting stuff
+devel:	
+	touch .depend.devel
+	$(MAKE) -f dev/Makefile.devel setup-devel
+	$(MAKE) dev/top_printers.cmo

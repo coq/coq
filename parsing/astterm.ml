@@ -276,7 +276,7 @@ let ast_to_global loc c =
     | ("EVAR", [(Num (_,ev))]) ->
 	REvar (loc, ev), []
     | ("SYNCONST", [sp]) ->
-	Syntax_def.search_syntactic_definition (sp_of_kn (ast_to_sp sp)), []
+	Syntax_def.search_syntactic_definition (ast_to_sp sp), []
     | _ -> anomaly_loc (loc,"ast_to_global",
 			(str "Bad ast for this global a reference"))
 
@@ -633,7 +633,7 @@ let ast_of_syndef loc sp = Node (loc, "SYNCONST", [path_section loc sp])
 
 let ast_of_extended_ref_loc loc = function
   | TrueGlobal ref -> ast_of_ref_loc loc ref
-  | SyntacticDef sp -> ast_of_syndef loc (kn_of_sp sp)
+  | SyntacticDef kn -> ast_of_syndef loc kn
 
 let ast_of_extended_ref = ast_of_extended_ref_loc dummy_loc
 

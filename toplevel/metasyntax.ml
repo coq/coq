@@ -60,12 +60,10 @@ let _ =
 let cache_syntax (_,ppobj) = Esyntax.add_ppobject ppobj
 
 let (inPPSyntax,outPPSyntax) =
-  declare_object
-    ("PPSYNTAX",
-     { load_function = (fun _ -> ());
-       open_function = cache_syntax;
+  declare_object {(default_object "PPSYNTAX") with
+       open_function = (fun i o -> if i=1 then cache_syntax o);
        cache_function = cache_syntax;
-       export_function = (fun x -> Some x) })
+       export_function = (fun x -> Some x) }
 
 (* Syntax extension functions (registered in the environnement) *)
 
@@ -93,12 +91,10 @@ let _ =
 let cache_token (_,s) = Pcoq.lexer.Token.using ("", s)
 
 let (inToken, outToken) =
-  declare_object
-    ("TOKEN",
-     { load_function = (fun _ -> ());
-       open_function = cache_token;
+  declare_object {(default_object "TOKEN") with
+       open_function = (fun i o -> if i=1 then cache_token o);
        cache_function = cache_token;
-       export_function = (fun x -> Some x)})
+       export_function = (fun x -> Some x)}
 
 let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 
@@ -106,12 +102,10 @@ let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 let cache_grammar (_,a) = Egrammar.extend_grammar a
 
 let (inGrammar, outGrammar) =
-  declare_object
-    ("GRAMMAR",
-     { load_function = (fun _ -> ());
-       open_function = cache_grammar;
+  declare_object {(default_object "GRAMMAR") with
+       open_function = (fun i o -> if i=1 then cache_grammar o);
        cache_function = cache_grammar;
-       export_function = (fun x -> Some x)})
+       export_function = (fun x -> Some x)}
 
 let gram_define_entry (u,_ as univ) ((ntl,nt),et,assoc,rl) =
   let etyp = match et with None -> entry_type_from_name u | Some e -> e in
@@ -165,12 +159,10 @@ let cache_infix (_,(gr,se)) =
   Esyntax.add_ppobject {sc_univ="constr";sc_entries=se}
 
 let (inInfix, outInfix) =
-  declare_object
-    ("INFIX",
-     { load_function = (fun _ -> ());
-       open_function = cache_infix;
+  declare_object {(default_object "INFIX") with
+       open_function = (fun i o -> if i=1 then cache_infix o);
        cache_function = cache_infix;
-       export_function = (fun x -> Some x)})
+       export_function = (fun x -> Some x)}
 
 (* Build the syntax and grammar rules *)
 
@@ -264,17 +256,15 @@ let make_infix_symbols assoc n sl =
 
 let cache_infix2 (_,(ref,inf)) =
   let sp = match ref with
-  | Nametab.TrueGlobal r -> Nametab.sp_of_global None r
-  | Nametab.SyntacticDef sp -> sp in
+  | Libnames.TrueGlobal r -> Nametab.sp_of_global None r
+  | Libnames.SyntacticDef kn -> Nametab.sp_of_syntactic_definition kn in
   declare_infix_symbol sp inf
 
 let (inInfix2, outInfix2) =
-  declare_object
-    ("INFIX2",
-     { load_function = (fun _ -> ());
-       open_function = cache_infix2;
+  declare_object {(default_object "INFIX2") with
+       open_function = (fun i o -> if i=1 then cache_infix2 o);
        cache_function = cache_infix2;
-       export_function = (fun x -> Some x)})
+       export_function = (fun x -> Some x)}
 
 let add_infix assoc n inf (loc,qid) =
   let ref = 

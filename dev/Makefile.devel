@@ -1,0 +1,26 @@
+# to be linked to makefile (lowercase - takes precedence over Makefile)
+# in main directory
+
+TOPDIR=.
+BASEDIR=
+
+default:	noargument
+
+# set the devel makefile
+setup-devel:
+	ln -sf dev/Makefile.devel makefile
+
+clean-devel:
+	rm -f makefile .depend.devel
+
+
+coqtop:
+	ln -sf bin/coqtop.byte coqtop
+
+
+include Makefile
+
+include $(TOPDIR)/dev/Makefile.common
+
+# this file is better described in dev/Makefile.dir
+include .depend.devel

@@ -42,6 +42,18 @@ let pptype = (fun x -> pp(prtype x))
 let prid id = pp (pr_id id)
 let prlab l = pp (pr_lab l)
 
+let prmsid msid = pp (str (string_of_msid msid))
+let prmbid mbid = pp (str (string_of_mbid mbid))
+
+let prdir dir = pp (pr_dirpath dir)
+
+let prmp mp = pp(str (string_of_mp mp))
+let prkn kn = pp(pr_kn kn)
+
+let prsp sp = pp(pr_sp sp)
+
+let prqualid qid = pp(pr_qualid qid)
+
 let prconst (sp,j) =
     pp (str"#" ++ pr_kn sp ++ str"=" ++ prterm j.uj_val)
 
@@ -52,12 +64,6 @@ let genprj f j =
   let (c,t) = Termast.with_casts f j in (c ++ str " : " ++ t)
 
 let prj j = pp (genprj prjudge j)
-
-let prkn kn = pp(pr_kn kn)
-
-let prsp sp = pp(pr_sp sp)
-
-let prqualid qid = pp(pr_qualid qid)
 
 let prgoal g = pp(prgl g)
 
@@ -84,6 +90,8 @@ let pp_universes u = pp (str"[" ++ pr_universes u ++ str"]")
 let ppenv e = pp (pr_rel_context e (rel_context e))
 
 let pptac = (fun x -> pp(Pptactic.pr_raw_tactic x))
+
+let pr_obj obj = Format.print_string (Libobject.object_tag obj)
 
 let cnt = ref 0
 
@@ -278,3 +286,4 @@ let _ =
   	      print_pure_constr (Astterm.interp_constr evmap sign c))
        | _ -> bad_vernac_args "PrintPureConstr")
 *)
+

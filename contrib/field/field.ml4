@@ -64,12 +64,10 @@ let export_addfield x = Some x
 
 (* Declaration of the Add Field library object *)
 let (in_addfield,out_addfield)=
-  Libobject.declare_object
-    ("ADD_FIELD",
-     { Libobject.load_function = load_addfield;
-       Libobject.open_function = cache_addfield;
+  Libobject.declare_object {(Libobject.default_object "ADD_FIELD") with
+       Libobject.open_function = (fun i o -> if i=1 then cache_addfield o);
        Libobject.cache_function = cache_addfield;
-       Libobject.export_function = export_addfield })
+       Libobject.export_function = export_addfield }
 
 (* Adds a theory to the table *)
 let add_field a aplus amult aone azero aopp aeq ainv aminus_o adiv_o rth

@@ -61,7 +61,6 @@ let autorewrite tac_main lbas =
        tclTHEN tac (one_base tac_main bas)) tclIDTAC lbas))
 
 (* Functions necessary to the library object declaration *)
-let load_hintrewrite _ = ()
 let cache_hintrewrite (_,(rbase,lrl)) =
   List.iter
     (fun (c,b,t) -> Hashtbl.add !rewtab rbase (c,b,Tacinterp.interp t)) lrl
@@ -69,12 +68,10 @@ let export_hintrewrite x = Some x
 
 (* Declaration of the Hint Rewrite library object *)
 let (in_hintrewrite,out_hintrewrite)=
-  Libobject.declare_object
-    ("HINT_REWRITE",
-     { Libobject.load_function = load_hintrewrite;
-       Libobject.open_function = cache_hintrewrite;
+  Libobject.declare_object {(Libobject.default_object "HINT_REWRITE") with
+       Libobject.open_function = (fun i o -> if i=1 then cache_hintrewrite o);
        Libobject.cache_function = cache_hintrewrite;
-       Libobject.export_function = export_hintrewrite })
+       Libobject.export_function = export_hintrewrite }
 
 (* To add rewriting rules to a base *)
 let add_rew_rules base lrul =

@@ -65,7 +65,7 @@ val get_undo : unit -> int option
 (*s [start_proof s str env t] starts a proof of name [s] and conclusion [t] *)
 
 val start_proof : 
-  identifier -> bool * strength -> named_context -> constr
+  identifier -> bool * Libnames.strength -> named_context -> constr
     -> declaration_hook -> unit
 
 (* [restart_proof ()] restarts the current focused proof from the beginning
@@ -94,7 +94,7 @@ val suspend_proof : unit -> unit
 
 val cook_proof : unit -> 
   identifier *
-  (Entries.definition_entry * (bool * strength) * declaration_hook)
+  (Entries.definition_entry * (bool * Libnames.strength) * declaration_hook)
 
 (*s [get_pftreestate ()] returns the current focused pending proof or
    raises [UserError "no focused proof"] *)

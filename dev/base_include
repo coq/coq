@@ -7,6 +7,10 @@
 
 #install_printer  (* identifier *) prid;;
 #install_printer  (* label *) prlab;;
+#install_printer prmsid;;
+#install_printer prmbid;;
+#install_printer prdir;;
+#install_printer prmp;;
 #install_printer  (* section_path *)  prsp;;
 #install_printer  (* qualid *)  prqualid;;
 #install_printer  (* kernel_name *) prkn;;

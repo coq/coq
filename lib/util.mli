@@ -174,6 +174,7 @@ val in_some : 'a -> 'a option
 val out_some : 'a option -> 'a
 val option_app : ('a -> 'b) -> 'a option -> 'b option
 val option_compare : ('a -> 'b -> bool) -> 'a option -> 'b option -> bool 
+val option_smartmap : ('a -> 'a) -> 'a option -> 'a option
 
 (* In [map_succeed f l] an element [a] is removed if [f a] raises *)
 (* [Failure _] otherwise behaves as [List.map f l] *)

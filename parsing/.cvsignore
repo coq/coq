@@ -1,7 +1,6 @@
 lexer.ml
 *.ppo
 pcoq.ml
-extend.ml
 g_prim.ml
 q_coqast.ml
 g_basevernac.ml

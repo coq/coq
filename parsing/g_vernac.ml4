@@ -345,13 +345,13 @@ GEXTEND Gram
 	   VernacIdentityCoercion (Declare.make_strength_0 (), f, s, t)
       | IDENT "Identity"; IDENT "Coercion"; f = Prim.ident; ":";
          s = class_rawexpr; ">->"; t = class_rawexpr -> 
-	   VernacIdentityCoercion (Nametab.NeverDischarge, f, s, t)
+	   VernacIdentityCoercion (Libnames.NeverDischarge, f, s, t)
       | IDENT "Coercion"; IDENT "Local"; qid = qualid; ":";
 	 s = class_rawexpr; ">->"; t = class_rawexpr -> 
 	  VernacCoercion (Declare.make_strength_0 (), qid, s, t)
       | IDENT "Coercion"; qid = qualid; ":"; s = class_rawexpr; ">->";
          t = class_rawexpr ->
-	  VernacCoercion (Nametab.NeverDischarge, qid, s, t)
+	  VernacCoercion (Libnames.NeverDischarge, qid, s, t)
       | IDENT "Class"; IDENT "Local"; c = qualid ->
 	  Pp.warning "Class is obsolete"; VernacNop
       | IDENT "Class"; c = qualid ->

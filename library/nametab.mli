@@ -15,32 +15,38 @@ open Names
 open Libnames
 (*i*)
 
-(*s This module contains the table for globalization, which associates global
-   names (section paths) to qualified names. *)
+(*s This module contains the tables for globalization, which
+  associates internal object references to qualified names (qualid). *)
+
+(* Most functions in this module fall into one of the following categories:
+   \begin{itemize}
+   \item [push : visibility -> full_user_name -> object_reference -> unit]
+   
+   Registers the [object_reference] to be referred to by the
+   [full_user_name] (and its suffixes according to [visibility])
+
+   \item [exists : full_user_name -> bool] 
+   
+   Is the [full_user_name] already atributed as an absolute user name
+   of some object? 
+
+   \item [locate : qualid -> object_reference]
+
+   Finds the object referred to by [qualid] or raises Not_found 
+   
+   \item [name_of] : object_reference -> user_name
+
+   The [user_name] can be for example the shortest non ambiguous [qualid] or 
+   the [full_user_name] or [identifier]. Such a function can also have a 
+   local context argument. 
+*)
+   
+  
 
 (* Finds the real name of a global (e.g. fetch the constructor names
    from the inductive name and constructor number) *)
 val sp_of_global : Sign.named_context option -> global_reference -> section_path
-
-type extended_global_reference =
-  | TrueGlobal of global_reference
-  | SyntacticDef of section_path
-
-(* moved to libnames 
-(*s A [qualid] is a partially qualified ident; it includes fully
-    qualified names (= absolute names) and all intermediate partial
-    qualifications of absolute names, including single identifiers *))
-type qualid
-
-val make_qualid : dir_path -> identifier -> qualid
-val repr_qualid : qualid -> dir_path * identifier
-val make_short_qualid : identifier -> qualid
- 
-val string_of_qualid : qualid -> string
-val pr_qualid : qualid -> std_ppcmds
-
-val qualid_of_sp : section_path -> qualid
-*)
+val sp_of_syntactic_definition : kernel_name -> section_path
 
 (* Turns an absolute name into a qualified name denoting the same name *)
 val full_name : global_reference -> section_path
@@ -58,20 +64,25 @@ val error_global_not_found_loc : loc -> qualid -> 'a
 val error_global_not_found     : qualid -> 'a
 val error_global_constant_not_found_loc : loc -> qualid -> 'a
 
-(*s Register visibility of absolute paths by qualified names *)
-val push : visibility:int -> section_path -> global_reference -> unit
-val push_syntactic_definition : section_path -> unit
+(*s Register visibility of things *)
 
-(*s Register visibility of absolute paths by short names *)
-val push_short_name_syntactic_definition : section_path -> unit
-val push_short_name_object : section_path -> unit
+(* The visibility can be registered either for all suffixes not
+   shorter then a given int - when the object is loaded inside a module,
+   or for a precise suffix, when the module containing (the module
+   containing ...) the object is open *)
 
-(*s Register visibility of absolute paths by short names *)
-val push_tactic_path : section_path -> unit
-val locate_tactic : qualid -> section_path
+type visibility = Until of int | Exactly of int
 
-(*s Register visibility by all qualifications *)
-val push_section : dir_path -> unit
+(* is the short name visible? tests for 1 *)
+val is_short_visible : visibility -> section_path -> bool
+
+val push : visibility -> section_path -> global_reference -> unit
+val push_syntactic_definition : 
+  visibility -> section_path -> kernel_name -> unit
+val push_modtype : visibility -> section_path -> kernel_name -> unit
+val push_dir : visibility -> dir_path -> global_dir_reference -> unit
+val push_object : visibility -> section_path -> unit
+val push_tactic : visibility -> section_path -> unit
 
 (*s The following functions perform globalization of qualified names *)
 
@@ -93,10 +104,20 @@ val locate_obj : qualid -> section_path
 val locate_constant : qualid -> constant
 val locate_mind : qualid -> mutual_inductive
 val locate_section : qualid -> dir_path
+val locate_modtype : qualid -> kernel_name
+val locate_syntactic_definition : qualid -> kernel_name
+
+val locate_tactic : qualid -> section_path
+val locate_dir : qualid -> global_dir_reference
 
 (* [exists sp] tells if [sp] is already bound to a cci term *)
 val exists_cci : section_path -> bool
-val exists_section : dir_path -> bool
+val exists_modtype : section_path -> bool
+
+(* Those three functions are the same *)
+val exists_dir : dir_path -> bool
+val exists_section : dir_path -> bool (* deprecated *)
+val exists_module : dir_path -> bool (* deprecated *)
 
 (*s Roots of the space of absolute names *)
 
@@ -109,7 +130,6 @@ val absolute_reference : section_path -> global_reference
    one of its section/subsection *)
 val locate_in_absolute_module : dir_path -> identifier -> global_reference
 
-val push_loaded_library : dir_path -> unit
 val locate_loaded_library : qualid -> dir_path
 
 type frozen
@@ -117,7 +137,3 @@ type frozen
 val freeze : unit -> frozen
 val unfreeze : frozen -> unit
 
-type strength = 
-  | NotDeclare
-  | DischargeAt of dir_path * int
-  | NeverDischarge

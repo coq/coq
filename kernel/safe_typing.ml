@@ -31,6 +31,7 @@ type modvariant =
   | SIG of (* funsig params *) (mod_bound_id * module_type_body) list 
   | STRUCT of (* functor params *) (mod_bound_id * module_type_body) list
       * (* optional result type *) module_type_body option
+  | LIBRARY
 
 type module_info = 
     { msid : mod_self_id;
@@ -41,7 +42,7 @@ type module_info =
 let check_label l labset = 
   if Labset.mem l labset then error_existing_label l
 
-type compilation_unit_info = dir_path * Digest.t
+type library_info = dir_path * Digest.t
 
 type safe_environment = 
     { old : safe_environment;
@@ -49,7 +50,7 @@ type safe_environment =
       modinfo : module_info;
       labset : Labset.t;
       revsign : module_signature_body;
-      imports : compilation_unit_info list;
+      imports : library_info list;
       loads : (module_path * module_body) list }
 
 (*
@@ -195,7 +196,7 @@ let add_module l me senv =
 
 (* Interactive modules *)
 
-let begin_module dir l params result senv = 
+let start_module dir l params result senv = 
   check_label l senv.labset; 
   let rec trans_params env = function 
     | [] -> env,[] 
@@ -211,23 +212,24 @@ let begin_module dir l params result senv =
   let check_sig mtb = match scrape_modtype env mtb with
     | MTBsig _ -> ()
     | MTBfunsig _ -> error_result_must_be_signature mtb 
-    | _ -> anomaly "begin_module: modtype not scraped"
+    | _ -> anomaly "start_module: modtype not scraped"
   in
   let result_body = option_app (translate_modtype env) result in
   ignore (option_app check_sig result_body);
   let msid = make_msid dir (string_of_label l) in
+  let mp = MPself msid in
   let modinfo = { msid = msid;
-		  modpath = MPself msid;
+		  modpath = mp;
 		  label = l;
 		  variant = STRUCT(params_body,result_body) }
   in
-  { old = senv;
-    env = env;
-    modinfo = modinfo;
-    labset = Labset.empty;
-    revsign = [];
-    imports = senv.imports;
-    loads = [] }
+  mp, { old = senv;
+	env = env;
+	modinfo = modinfo;
+	labset = Labset.empty;
+	revsign = [];
+	imports = senv.imports;
+	loads = [] }
 
 
 
@@ -236,7 +238,7 @@ let end_module l senv =
   let modinfo = senv.modinfo in
   let params, restype = 
     match modinfo.variant with
-      | NONE | SIG _ -> error_no_module_to_end ()
+      | NONE | LIBRARY | SIG _ -> error_no_module_to_end ()
       | STRUCT(params,restype) -> (params,restype)
   in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
@@ -275,7 +277,7 @@ let end_module l senv =
 
 (* Interactive module types *)
 
-let begin_modtype dir l params senv = 
+let start_modtype dir l params senv = 
   check_label l senv.labset; 
   let rec trans_params env = function 
     | [] -> env,[] 
@@ -289,25 +291,26 @@ let begin_modtype dir l params senv =
   in
   let env,params_body = trans_params senv.env params in
   let msid = make_msid dir (string_of_label l) in
+  let mp = MPself msid in
   let modinfo = { msid = msid;
-		  modpath = MPself msid;
+		  modpath = mp;
 		  label = l;
 		  variant = SIG params_body }
   in
-  { old = senv;
-    env = env;
-    modinfo = modinfo;
-    labset = Labset.empty;
-    revsign = [];
-    imports = senv.imports;
-    loads = [] }
+  mp, { old = senv;
+	env = env;
+	modinfo = modinfo;
+	labset = Labset.empty;
+	revsign = [];
+	imports = senv.imports;
+	loads = [] }
 
 let end_modtype l senv = 
   let oldsenv = senv.old in
   let modinfo = senv.modinfo in
   let params = 
     match modinfo.variant with
-      | NONE | STRUCT _ -> error_no_modtype_to_end ()
+      | LIBRARY | NONE | STRUCT _ -> error_no_modtype_to_end ()
       | SIG params -> params
   in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
@@ -347,13 +350,47 @@ let add_constraints cst senv =
 
 
 
-(* Compiled modules *)
+(* Libraries = Compiled modules *)
 
-type compiled_module = 
-    dir_path * module_type_body * compilation_unit_info list
+type compiled_library = 
+    dir_path * module_type_body * library_info list
+
+
+(* We check that only initial state Require's were performed before 
+   [start_library] was called *)
+
+let start_library dir senv =
+  if not (senv.revsign = [] &&
+	  senv.modinfo.msid = initial_msid &&
+	  senv.modinfo.variant = NONE)
+  then
+    anomaly "Safe_typing.start_library: environment should be empty";
+  let dir_path,l = 
+    match (repr_dirpath dir) with
+	[] -> anomaly "Empty dirpath in Safe_typing.start_library"
+      | hd::tl ->
+	  make_dirpath tl, label_of_id hd
+  in
+  let msid = make_msid dir_path (string_of_label l) in
+  let mp = MPself msid in
+  let modinfo = { msid = msid;
+		  modpath = mp;
+		  label = l;
+		  variant = LIBRARY }
+  in
+  mp, { old = senv;
+	env = senv.env;
+	modinfo = modinfo;
+	labset = Labset.empty;
+	revsign = [];
+	imports = senv.imports;
+	loads = [] }
+
 
 let export senv dp = 
   let modinfo = senv.modinfo in
+  if modinfo.variant <> LIBRARY then
+    anomaly "We are not exporting a library";
   (*if senv.modinfo.params <> [] || senv.modinfo.restype <> None then
     (* error_export_simple *) (); *)
   let mtb = MTBsig (modinfo.msid, List.rev senv.revsign) in
@@ -398,10 +435,10 @@ let import (dp,mtb,depends) digest senv =
   check_imports senv depends;
   let mp = MPfile dp in
   let mb = module_body mtb in
-  { senv with 
-      env = Modops.add_module mp mb senv.env; 
-      imports = (dp,digest)::senv.imports;
-      loads = (mp,mb)::senv.loads }, mp
+  mp, { senv with 
+	  env = Modops.add_module mp mb senv.env; 
+	  imports = (dp,digest)::senv.imports;
+	  loads = (mp,mb)::senv.loads }
 
 
 

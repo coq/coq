@@ -67,18 +67,18 @@ val add_constraints :
 
 
 (*s Interactive module functions *)
-val begin_module : 
+val start_module : 
   dir_path -> label -> (mod_bound_id * module_type_entry) list 
     -> module_type_entry option 
-      -> safe_environment -> safe_environment
+      -> safe_environment -> module_path * safe_environment
 
 val end_module :
   label -> safe_environment -> module_path * safe_environment 
 
 
-val begin_modtype :
+val start_modtype :
   dir_path -> label -> (mod_bound_id * module_type_entry) list
-    -> safe_environment -> safe_environment
+    -> safe_environment -> module_path * safe_environment
 
 val end_modtype :
   label -> safe_environment -> kernel_name * safe_environment
@@ -91,13 +91,16 @@ val current_msid : safe_environment -> mod_self_id
 (* Loading and saving compilation units *)
 
 (* exporting and importing modules *)
-type compiled_module
+type compiled_library
+
+val start_library : dir_path -> safe_environment 
+      -> module_path * safe_environment
 
 val export : safe_environment -> dir_path  
-      -> mod_self_id * compiled_module
+      -> mod_self_id * compiled_library
 
-val import : compiled_module -> Digest.t -> safe_environment 
-      -> safe_environment * module_path
+val import : compiled_library -> Digest.t -> safe_environment 
+      -> module_path * safe_environment
 
 
 (*s Typing judgments *)

@@ -10,7 +10,6 @@
 
 (*i*)
 open Pp
-(*open Identifier*)
 open Names
 (*i*)
 
@@ -21,11 +20,10 @@ type global_reference =
   | IndRef of inductive
   | ConstructRef of constructor
 
-(* subst_global_ref : substitution -> global_reference -> global_reference *)
+val subst_global : substitution -> global_reference -> global_reference
 
 (* dirpaths *)
 val pr_dirpath : dir_path -> Pp.std_ppcmds
-val empty_dirpath : dir_path
 
 val dirpath_of_string : string -> dir_path
 
@@ -62,6 +60,9 @@ module Spmap  : Map.S with type key = section_path
 
 val restrict_path : int -> section_path -> section_path
 
+type extended_global_reference =
+  | TrueGlobal of global_reference
+  | SyntacticDef of kernel_name
 
 (*s Temporary function to brutally form kernel names from section paths *)
 
@@ -86,3 +87,25 @@ val qualid_of_sp : section_path -> qualid
 val qualid_of_dirpath : dir_path -> qualid
 
 val make_short_qualid : identifier -> qualid
+
+(* Both names are passed to objects: a "semantic" kernel_name, which
+   can be substituted and a "syntactic" section_path which can be printed
+*)
+
+type object_name = section_path * kernel_name
+
+type object_prefix = dir_path * (module_path * dir_path)
+
+(* to this type are mapped dir_path's in the nametab *)
+type global_dir_reference = 
+  | DirOpenModule of object_prefix
+  | DirOpenModtype of object_prefix
+  | DirOpenSection of object_prefix
+  | DirModule of object_prefix
+  | DirClosedSection of dir_path
+      (* this won't last long I hope! *)
+
+type strength = 
+  | NotDeclare
+  | DischargeAt of dir_path * int
+  | NeverDischarge

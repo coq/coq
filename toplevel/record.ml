@@ -195,9 +195,9 @@ let declare_projections indsp coers fields =
 	   match name with
 	     | None ->
 		 (nfi-1, None::sp_projs, NoProjection fi::subst)
-	     | Some sp ->
-		 let refi = ConstRef sp in
-		 let constr_fi = mkConst sp in
+	     | Some (sp,kn) ->
+		 let refi = ConstRef kn in
+		 let constr_fi = mkConst kn in
 		 if coe then begin
 		   let cl = Class.class_of_ref (IndRef indsp) in
 		   Class.try_add_new_coercion_with_source 
@@ -205,7 +205,7 @@ let declare_projections indsp coers fields =
 		 end;
 		 let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
 		 let constr_fip = applist (constr_fi,proj_args) in
-		 (nfi-1, name::sp_projs, Projection constr_fip::subst))
+		 (nfi-1, (Some kn)::sp_projs, Projection constr_fip::subst))
       (List.length fields,[],[]) coers (List.rev fields)
   in sp_projs
 

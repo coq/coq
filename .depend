@@ -41,8 +41,8 @@ library/declare.cmi: kernel/cooking.cmi kernel/declarations.cmi \
     library/libobject.cmi library/library.cmi kernel/names.cmi \
     library/nametab.cmi kernel/safe_typing.cmi kernel/sign.cmi \
     kernel/term.cmi kernel/univ.cmi 
-library/declaremods.cmi: kernel/declarations.cmi kernel/entries.cmi \
-    library/libnames.cmi kernel/names.cmi 
+library/declaremods.cmi: kernel/entries.cmi library/libnames.cmi \
+    kernel/names.cmi lib/pp.cmi kernel/safe_typing.cmi 
 library/global.cmi: kernel/declarations.cmi kernel/entries.cmi \
     kernel/environ.cmi kernel/indtypes.cmi library/libnames.cmi \
     kernel/names.cmi kernel/safe_typing.cmi kernel/sign.cmi kernel/term.cmi \
@@ -55,9 +55,8 @@ library/lib.cmi: library/libnames.cmi library/libobject.cmi kernel/names.cmi \
     library/summary.cmi 
 library/libnames.cmi: kernel/names.cmi lib/pp.cmi lib/predicate.cmi 
 library/libobject.cmi: library/libnames.cmi kernel/names.cmi 
-library/library.cmi: library/lib.cmi library/libnames.cmi \
-    library/libobject.cmi kernel/names.cmi lib/pp.cmi lib/system.cmi \
-    lib/util.cmi 
+library/library.cmi: library/libnames.cmi library/libobject.cmi \
+    kernel/names.cmi lib/pp.cmi lib/system.cmi lib/util.cmi 
 library/nameops.cmi: kernel/environ.cmi kernel/names.cmi lib/pp.cmi \
     kernel/term.cmi 
 library/nametab.cmi: library/libnames.cmi kernel/names.cmi lib/pp.cmi \
@@ -71,8 +70,8 @@ parsing/ast.cmi: parsing/coqast.cmi lib/dyn.cmi parsing/genarg.cmi \
     lib/util.cmi 
 parsing/astterm.cmi: parsing/coqast.cmi kernel/environ.cmi pretyping/evd.cmi \
     library/impargs.cmi library/libnames.cmi kernel/names.cmi \
-    library/nametab.cmi pretyping/pattern.cmi pretyping/rawterm.cmi \
-    kernel/sign.cmi kernel/term.cmi lib/util.cmi 
+    pretyping/pattern.cmi pretyping/rawterm.cmi kernel/sign.cmi \
+    kernel/term.cmi lib/util.cmi 
 parsing/coqast.cmi: lib/dyn.cmi library/libnames.cmi kernel/names.cmi 
 parsing/coqlib.cmi: library/libnames.cmi kernel/names.cmi library/nametab.cmi \
     pretyping/pattern.cmi kernel/term.cmi 
@@ -80,7 +79,7 @@ parsing/egrammar.cmi: parsing/ast.cmi parsing/coqast.cmi parsing/extend.cmi \
     parsing/genarg.cmi proofs/tacexpr.cmo toplevel/vernacexpr.cmo 
 parsing/esyntax.cmi: parsing/ast.cmi parsing/coqast.cmi parsing/extend.cmi \
     library/libnames.cmi lib/pp.cmi toplevel/vernacexpr.cmo 
-parsing/extend.cmi: parsing/ast.cmi parsing/coqast.cmi library/nametab.cmi \
+parsing/extend.cmi: parsing/ast.cmi parsing/coqast.cmi library/libnames.cmi \
     lib/pp.cmi 
 parsing/genarg.cmi: kernel/closure.cmi parsing/coqast.cmi pretyping/evd.cmi \
     library/libnames.cmi kernel/names.cmi pretyping/rawterm.cmi \
@@ -177,15 +176,16 @@ proofs/evar_refiner.cmi: parsing/coqast.cmi kernel/environ.cmi \
 proofs/logic.cmi: kernel/environ.cmi pretyping/evd.cmi kernel/names.cmi \
     lib/pp.cmi proofs/proof_type.cmi kernel/sign.cmi kernel/term.cmi 
 proofs/pfedit.cmi: parsing/coqast.cmi kernel/entries.cmi kernel/environ.cmi \
-    pretyping/evd.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
-    proofs/proof_type.cmi kernel/sign.cmi proofs/tacmach.cmi kernel/term.cmi 
+    pretyping/evd.cmi library/libnames.cmi kernel/names.cmi \
+    library/nametab.cmi lib/pp.cmi proofs/proof_type.cmi kernel/sign.cmi \
+    proofs/tacmach.cmi kernel/term.cmi 
 proofs/proof_trees.cmi: kernel/environ.cmi pretyping/evd.cmi kernel/names.cmi \
     lib/pp.cmi proofs/proof_type.cmi kernel/sign.cmi kernel/term.cmi \
     lib/util.cmi 
 proofs/proof_type.cmi: kernel/closure.cmi kernel/environ.cmi \
     pretyping/evd.cmi parsing/genarg.cmi library/libnames.cmi \
-    kernel/names.cmi library/nametab.cmi pretyping/rawterm.cmi \
-    proofs/tacexpr.cmo kernel/term.cmi lib/util.cmi 
+    kernel/names.cmi pretyping/rawterm.cmi proofs/tacexpr.cmo kernel/term.cmi \
+    lib/util.cmi 
 proofs/refiner.cmi: pretyping/evd.cmi lib/pp.cmi proofs/proof_trees.cmi \
     proofs/proof_type.cmi kernel/sign.cmi proofs/tacexpr.cmo kernel/term.cmi 
 proofs/tacmach.cmi: kernel/closure.cmi parsing/coqast.cmi kernel/environ.cmi \
@@ -383,16 +383,16 @@ dev/db_printers.cmo: kernel/names.cmi lib/pp.cmi
 dev/db_printers.cmx: kernel/names.cmx lib/pp.cmx 
 dev/top_printers.cmo: parsing/ast.cmi toplevel/cerrors.cmi proofs/clenv.cmi \
     kernel/environ.cmi pretyping/evd.cmi library/libnames.cmi \
-    library/nameops.cmi kernel/names.cmi lib/pp.cmi parsing/pptactic.cmi \
-    parsing/printer.cmi proofs/proof_trees.cmi proofs/refiner.cmi \
-    kernel/sign.cmi lib/system.cmi proofs/tacmach.cmi kernel/term.cmi \
-    parsing/termast.cmi pretyping/termops.cmi kernel/univ.cmi 
+    library/libobject.cmi library/nameops.cmi kernel/names.cmi lib/pp.cmi \
+    parsing/pptactic.cmi parsing/printer.cmi proofs/proof_trees.cmi \
+    proofs/refiner.cmi kernel/sign.cmi lib/system.cmi proofs/tacmach.cmi \
+    kernel/term.cmi parsing/termast.cmi pretyping/termops.cmi kernel/univ.cmi 
 dev/top_printers.cmx: parsing/ast.cmx toplevel/cerrors.cmx proofs/clenv.cmx \
     kernel/environ.cmx pretyping/evd.cmx library/libnames.cmx \
-    library/nameops.cmx kernel/names.cmx lib/pp.cmx parsing/pptactic.cmx \
-    parsing/printer.cmx proofs/proof_trees.cmx proofs/refiner.cmx \
-    kernel/sign.cmx lib/system.cmx proofs/tacmach.cmx kernel/term.cmx \
-    parsing/termast.cmx pretyping/termops.cmx kernel/univ.cmx 
+    library/libobject.cmx library/nameops.cmx kernel/names.cmx lib/pp.cmx \
+    parsing/pptactic.cmx parsing/printer.cmx proofs/proof_trees.cmx \
+    proofs/refiner.cmx kernel/sign.cmx lib/system.cmx proofs/tacmach.cmx \
+    kernel/term.cmx parsing/termast.cmx pretyping/termops.cmx kernel/univ.cmx 
 kernel/closure.cmo: kernel/environ.cmi kernel/esubst.cmi kernel/names.cmi \
     lib/pp.cmi kernel/term.cmi lib/util.cmi kernel/closure.cmi 
 kernel/closure.cmx: kernel/environ.cmx kernel/esubst.cmx kernel/names.cmx \
@@ -562,15 +562,13 @@ library/declare.cmx: kernel/declarations.cmx kernel/entries.cmx \
     library/summary.cmx kernel/term.cmx kernel/type_errors.cmx \
     kernel/typeops.cmx kernel/univ.cmx lib/util.cmx library/declare.cmi 
 library/declaremods.cmo: kernel/declarations.cmi kernel/entries.cmi \
-    kernel/environ.cmi library/global.cmi library/lib.cmi \
-    library/libnames.cmi library/libobject.cmi kernel/modops.cmi \
-    kernel/names.cmi library/nametab.cmi lib/pp.cmi library/summary.cmi \
-    lib/util.cmi library/declaremods.cmi 
+    library/global.cmi library/lib.cmi library/libnames.cmi \
+    library/libobject.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
+    library/summary.cmi lib/util.cmi library/declaremods.cmi 
 library/declaremods.cmx: kernel/declarations.cmx kernel/entries.cmx \
-    kernel/environ.cmx library/global.cmx library/lib.cmx \
-    library/libnames.cmx library/libobject.cmx kernel/modops.cmx \
-    kernel/names.cmx library/nametab.cmx lib/pp.cmx library/summary.cmx \
-    lib/util.cmx library/declaremods.cmi 
+    library/global.cmx library/lib.cmx library/libnames.cmx \
+    library/libobject.cmx kernel/names.cmx library/nametab.cmx lib/pp.cmx \
+    library/summary.cmx lib/util.cmx library/declaremods.cmi 
 library/global.cmo: kernel/environ.cmi kernel/inductive.cmi \
     library/libnames.cmi kernel/names.cmi kernel/safe_typing.cmi \
     kernel/sign.cmi library/summary.cmi kernel/term.cmi lib/util.cmi \
@@ -595,14 +593,12 @@ library/impargs.cmx: kernel/declarations.cmx kernel/environ.cmx \
     library/libnames.cmx library/libobject.cmx kernel/names.cmx \
     library/nametab.cmx kernel/reduction.cmx library/summary.cmx \
     kernel/term.cmx lib/util.cmx library/impargs.cmi 
-library/lib.cmo: library/global.cmi library/libnames.cmi \
-    library/libobject.cmi library/nameops.cmi kernel/names.cmi \
-    library/nametab.cmi lib/pp.cmi library/summary.cmi lib/util.cmi \
-    library/lib.cmi 
-library/lib.cmx: library/global.cmx library/libnames.cmx \
-    library/libobject.cmx library/nameops.cmx kernel/names.cmx \
-    library/nametab.cmx lib/pp.cmx library/summary.cmx lib/util.cmx \
-    library/lib.cmi 
+library/lib.cmo: library/libnames.cmi library/libobject.cmi \
+    library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
+    library/summary.cmi lib/util.cmi library/lib.cmi 
+library/lib.cmx: library/libnames.cmx library/libobject.cmx \
+    library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/pp.cmx \
+    library/summary.cmx lib/util.cmx library/lib.cmi 
 library/libnames.cmo: kernel/names.cmi lib/pp.cmi lib/predicate.cmi \
     lib/util.cmi library/libnames.cmi 
 library/libnames.cmx: kernel/names.cmx lib/pp.cmx lib/predicate.cmx \
@@ -611,16 +607,16 @@ library/libobject.cmo: lib/dyn.cmi library/libnames.cmi kernel/names.cmi \
     lib/util.cmi library/libobject.cmi 
 library/libobject.cmx: lib/dyn.cmx library/libnames.cmx kernel/names.cmx \
     lib/util.cmx library/libobject.cmi 
-library/library.cmo: library/declaremods.cmi library/global.cmi \
-    library/lib.cmi library/libnames.cmi library/libobject.cmi \
-    library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/options.cmi \
-    lib/pp.cmi kernel/safe_typing.cmi library/summary.cmi lib/system.cmi \
-    lib/util.cmi library/library.cmi 
-library/library.cmx: library/declaremods.cmx library/global.cmx \
-    library/lib.cmx library/libnames.cmx library/libobject.cmx \
-    library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/options.cmx \
-    lib/pp.cmx kernel/safe_typing.cmx library/summary.cmx lib/system.cmx \
-    lib/util.cmx library/library.cmi 
+library/library.cmo: library/declaremods.cmi library/lib.cmi \
+    library/libnames.cmi library/libobject.cmi library/nameops.cmi \
+    kernel/names.cmi library/nametab.cmi lib/options.cmi lib/pp.cmi \
+    kernel/safe_typing.cmi library/summary.cmi lib/system.cmi lib/util.cmi \
+    library/library.cmi 
+library/library.cmx: library/declaremods.cmx library/lib.cmx \
+    library/libnames.cmx library/libobject.cmx library/nameops.cmx \
+    kernel/names.cmx library/nametab.cmx lib/options.cmx lib/pp.cmx \
+    kernel/safe_typing.cmx library/summary.cmx lib/system.cmx lib/util.cmx \
+    library/library.cmi 
 library/nameops.cmo: kernel/declarations.cmi kernel/environ.cmi \
     kernel/names.cmi lib/pp.cmi kernel/term.cmi lib/util.cmi \
     library/nameops.cmi 
@@ -637,10 +633,8 @@ library/states.cmo: library/lib.cmi library/library.cmi library/summary.cmi \
     lib/system.cmi library/states.cmi 
 library/states.cmx: library/lib.cmx library/library.cmx library/summary.cmx \
     lib/system.cmx library/states.cmi 
-library/summary.cmo: lib/dyn.cmi kernel/names.cmi lib/pp.cmi lib/util.cmi \
-    library/summary.cmi 
-library/summary.cmx: lib/dyn.cmx kernel/names.cmx lib/pp.cmx lib/util.cmx \
-    library/summary.cmi 
+library/summary.cmo: lib/dyn.cmi lib/pp.cmi lib/util.cmi library/summary.cmi 
+library/summary.cmx: lib/dyn.cmx lib/pp.cmx lib/util.cmx library/summary.cmi 
 lib/rtree.cmo: lib/pp.cmi lib/util.cmi lib/rtree.cmi 
 lib/rtree.cmx: lib/pp.cmx lib/util.cmx lib/rtree.cmi 
 lib/stamps.cmo: lib/stamps.cmi 
@@ -702,10 +696,10 @@ parsing/esyntax.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/extend.cmx \
     kernel/names.cmx library/nametab.cmx lib/options.cmx lib/pp.cmx \
     lib/util.cmx toplevel/vernacexpr.cmx parsing/esyntax.cmi 
 parsing/extend.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/genarg.cmi \
-    parsing/lexer.cmi library/nametab.cmi lib/pp.cmi lib/util.cmi \
+    parsing/lexer.cmi library/libnames.cmi lib/pp.cmi lib/util.cmi \
     parsing/extend.cmi 
 parsing/extend.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/genarg.cmx \
-    parsing/lexer.cmx library/nametab.cmx lib/pp.cmx lib/util.cmx \
+    parsing/lexer.cmx library/libnames.cmx lib/pp.cmx lib/util.cmx \
     parsing/extend.cmi 
 parsing/g_basevernac.cmo: parsing/ast.cmi parsing/coqast.cmi \
     parsing/extend.cmi library/goptions.cmi parsing/pcoq.cmi lib/pp.cmi \
@@ -769,11 +763,11 @@ parsing/g_tactic.cmx: parsing/ast.cmx parsing/genarg.cmx kernel/names.cmx \
     lib/util.cmx 
 parsing/g_vernac.cmo: parsing/ast.cmi toplevel/class.cmi parsing/coqast.cmi \
     library/declare.cmi parsing/genarg.cmi library/goptions.cmi \
-    library/nametab.cmi lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
+    library/libnames.cmi lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
     toplevel/recordobj.cmi lib/util.cmi toplevel/vernacexpr.cmo 
 parsing/g_vernac.cmx: parsing/ast.cmx toplevel/class.cmx parsing/coqast.cmx \
     library/declare.cmx parsing/genarg.cmx library/goptions.cmx \
-    library/nametab.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
+    library/libnames.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
     toplevel/recordobj.cmx lib/util.cmx toplevel/vernacexpr.cmx 
 parsing/g_zsyntax.cmo: parsing/ast.cmi parsing/astterm.cmi parsing/coqast.cmi \
     parsing/esyntax.cmi parsing/extend.cmi kernel/names.cmi parsing/pcoq.cmi \
@@ -1111,14 +1105,14 @@ pretyping/tacred.cmx: pretyping/cbv.cmx kernel/closure.cmx \
     kernel/names.cmx library/nametab.cmx lib/pp.cmx pretyping/rawterm.cmx \
     pretyping/reductionops.cmx pretyping/retyping.cmx library/summary.cmx \
     kernel/term.cmx pretyping/termops.cmx lib/util.cmx pretyping/tacred.cmi 
-pretyping/termops.cmo: kernel/environ.cmi library/libnames.cmi \
-    library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
-    kernel/sign.cmi kernel/term.cmi kernel/univ.cmi lib/util.cmi \
-    pretyping/termops.cmi 
-pretyping/termops.cmx: kernel/environ.cmx library/libnames.cmx \
-    library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/pp.cmx \
-    kernel/sign.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
-    pretyping/termops.cmi 
+pretyping/termops.cmo: kernel/environ.cmi library/lib.cmi \
+    library/libnames.cmi library/nameops.cmi kernel/names.cmi \
+    library/nametab.cmi lib/pp.cmi kernel/sign.cmi kernel/term.cmi \
+    kernel/univ.cmi lib/util.cmi pretyping/termops.cmi 
+pretyping/termops.cmx: kernel/environ.cmx library/lib.cmx \
+    library/libnames.cmx library/nameops.cmx kernel/names.cmx \
+    library/nametab.cmx lib/pp.cmx kernel/sign.cmx kernel/term.cmx \
+    kernel/univ.cmx lib/util.cmx pretyping/termops.cmi 
 pretyping/typing.cmo: kernel/environ.cmi kernel/inductive.cmi \
     pretyping/instantiate.cmi kernel/names.cmi pretyping/pretype_errors.cmi \
     pretyping/reductionops.cmi kernel/term.cmi kernel/type_errors.cmi \
@@ -1176,14 +1170,14 @@ proofs/logic.cmx: parsing/coqast.cmx library/declare.cmx kernel/environ.cmx \
 proofs/pfedit.cmo: parsing/astterm.cmi kernel/declarations.cmi \
     library/declare.cmi lib/edit.cmi kernel/entries.cmi kernel/environ.cmi \
     proofs/evar_refiner.cmi pretyping/evd.cmi library/lib.cmi \
-    library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
+    library/libnames.cmi library/nameops.cmi kernel/names.cmi lib/pp.cmi \
     proofs/proof_trees.cmi proofs/proof_type.cmi kernel/safe_typing.cmi \
     kernel/sign.cmi proofs/tacmach.cmi kernel/term.cmi pretyping/typing.cmi \
     lib/util.cmi proofs/pfedit.cmi 
 proofs/pfedit.cmx: parsing/astterm.cmx kernel/declarations.cmx \
     library/declare.cmx lib/edit.cmx kernel/entries.cmx kernel/environ.cmx \
     proofs/evar_refiner.cmx pretyping/evd.cmx library/lib.cmx \
-    library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/pp.cmx \
+    library/libnames.cmx library/nameops.cmx kernel/names.cmx lib/pp.cmx \
     proofs/proof_trees.cmx proofs/proof_type.cmx kernel/safe_typing.cmx \
     kernel/sign.cmx proofs/tacmach.cmx kernel/term.cmx pretyping/typing.cmx \
     lib/util.cmx proofs/pfedit.cmi 
@@ -1203,12 +1197,12 @@ proofs/proof_trees.cmx: kernel/closure.cmx pretyping/detyping.cmx \
     proofs/proof_trees.cmi 
 proofs/proof_type.cmo: kernel/closure.cmi kernel/environ.cmi \
     pretyping/evd.cmi parsing/genarg.cmi library/libnames.cmi \
-    kernel/names.cmi library/nametab.cmi pretyping/rawterm.cmi \
-    proofs/tacexpr.cmo kernel/term.cmi lib/util.cmi proofs/proof_type.cmi 
+    kernel/names.cmi pretyping/rawterm.cmi proofs/tacexpr.cmo kernel/term.cmi \
+    lib/util.cmi proofs/proof_type.cmi 
 proofs/proof_type.cmx: kernel/closure.cmx kernel/environ.cmx \
     pretyping/evd.cmx parsing/genarg.cmx library/libnames.cmx \
-    kernel/names.cmx library/nametab.cmx pretyping/rawterm.cmx \
-    proofs/tacexpr.cmx kernel/term.cmx lib/util.cmx proofs/proof_type.cmi 
+    kernel/names.cmx pretyping/rawterm.cmx proofs/tacexpr.cmx kernel/term.cmx \
+    lib/util.cmx proofs/proof_type.cmi 
 proofs/refiner.cmo: kernel/environ.cmi pretyping/evarutil.cmi \
     pretyping/evd.cmi library/global.cmi pretyping/instantiate.cmi \
     proofs/logic.cmi lib/pp.cmi parsing/pptactic.cmi parsing/printer.cmi \
@@ -1465,7 +1459,7 @@ tactics/leminv.cmo: parsing/astterm.cmi proofs/clenv.cmi \
     kernel/declarations.cmi library/declare.cmi kernel/entries.cmi \
     kernel/environ.cmi proofs/evar_refiner.cmi pretyping/evd.cmi \
     library/global.cmi pretyping/inductiveops.cmi tactics/inv.cmi \
-    library/nameops.cmi kernel/names.cmi library/nametab.cmi \
+    library/libnames.cmi library/nameops.cmi kernel/names.cmi \
     proofs/pfedit.cmi lib/pp.cmi parsing/printer.cmi proofs/proof_trees.cmi \
     proofs/proof_type.cmi pretyping/reductionops.cmi kernel/safe_typing.cmi \
     kernel/sign.cmi proofs/tacmach.cmi tactics/tacticals.cmi \
@@ -1475,7 +1469,7 @@ tactics/leminv.cmx: parsing/astterm.cmx proofs/clenv.cmx \
     kernel/declarations.cmx library/declare.cmx kernel/entries.cmx \
     kernel/environ.cmx proofs/evar_refiner.cmx pretyping/evd.cmx \
     library/global.cmx pretyping/inductiveops.cmx tactics/inv.cmx \
-    library/nameops.cmx kernel/names.cmx library/nametab.cmx \
+    library/libnames.cmx library/nameops.cmx kernel/names.cmx \
     proofs/pfedit.cmx lib/pp.cmx parsing/printer.cmx proofs/proof_trees.cmx \
     proofs/proof_type.cmx pretyping/reductionops.cmx kernel/safe_typing.cmx \
     kernel/sign.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
@@ -1872,15 +1866,15 @@ toplevel/vernacinterp.cmx: parsing/ast.cmx parsing/coqast.cmx \
     proofs/tacexpr.cmx tactics/tacinterp.cmx lib/util.cmx \
     toplevel/vernacexpr.cmx toplevel/vernacinterp.cmi 
 toplevel/vernac.cmo: parsing/ast.cmi parsing/coqast.cmi library/lib.cmi \
-    library/libnames.cmi library/library.cmi kernel/names.cmi lib/options.cmi \
-    parsing/pcoq.cmi lib/pp.cmi library/states.cmi lib/system.cmi \
-    pretyping/termops.cmi lib/util.cmi toplevel/vernacentries.cmi \
-    toplevel/vernacexpr.cmo toplevel/vernacinterp.cmi toplevel/vernac.cmi 
+    library/library.cmi kernel/names.cmi lib/options.cmi parsing/pcoq.cmi \
+    lib/pp.cmi library/states.cmi lib/system.cmi lib/util.cmi \
+    toplevel/vernacentries.cmi toplevel/vernacexpr.cmo \
+    toplevel/vernacinterp.cmi toplevel/vernac.cmi 
 toplevel/vernac.cmx: parsing/ast.cmx parsing/coqast.cmx library/lib.cmx \
-    library/libnames.cmx library/library.cmx kernel/names.cmx lib/options.cmx \
-    parsing/pcoq.cmx lib/pp.cmx library/states.cmx lib/system.cmx \
-    pretyping/termops.cmx lib/util.cmx toplevel/vernacentries.cmx \
-    toplevel/vernacexpr.cmx toplevel/vernacinterp.cmx toplevel/vernac.cmi 
+    library/library.cmx kernel/names.cmx lib/options.cmx parsing/pcoq.cmx \
+    lib/pp.cmx library/states.cmx lib/system.cmx lib/util.cmx \
+    toplevel/vernacentries.cmx toplevel/vernacexpr.cmx \
+    toplevel/vernacinterp.cmx toplevel/vernac.cmi 
 contrib/correctness/pcicenv.cmo: library/global.cmi kernel/names.cmi \
     contrib/correctness/past.cmi contrib/correctness/penv.cmi \
     contrib/correctness/pmisc.cmi contrib/correctness/pmonad.cmi \

@@ -292,20 +292,20 @@ let print_constant with_values sep sp =
 
 let print_inductive sp = (print_mutual sp ++ fnl ())
 
-let print_syntactic_def sep sp =
-  let id = basename sp in
-  let c = Syntax_def.search_syntactic_definition sp in 
-  (str" Syntactic Definition " ++ pr_id id ++ str sep ++ pr_rawterm c ++ fnl ())
+let print_syntactic_def sep kn =
+  let _,_,l = repr_kn kn in
+  let c = Syntax_def.search_syntactic_definition kn in 
+  (str" Syntactic Definition " ++ pr_lab l ++ str sep ++ pr_rawterm c ++ fnl ())
 
-let print_leaf_entry with_values sep (sp,lobj) =
+let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
   let tag = object_tag lobj in
-  match (sp,tag) with
+  match (oname,tag) with
     | (_,"VARIABLE") ->
 	print_section_variable (basename sp)
     | (_,("CONSTANT"|"PARAMETER")) ->
-	print_constant with_values sep (locate_constant (qualid_of_sp sp))
+	print_constant with_values sep kn
     | (_,"INDUCTIVE") ->
-	print_inductive (locate_mind (qualid_of_sp sp))
+	print_inductive kn
     | (_,"AUTOHINT") -> 
 (*	(str" Hint Marker" ++ fnl ())*)
 	(mt ())
@@ -313,7 +313,7 @@ let print_leaf_entry with_values sep (sp,lobj) =
 (*	(str" Grammar Marker" ++ fnl ())*)
 	(mt ())
     | (_,"SYNTAXCONSTANT") -> 
-	print_syntactic_def sep sp
+	print_syntactic_def sep kn
     | (_,"PPSYNTAX") -> 
 (*	(str" Syntax Marker" ++ fnl ())*)
 	(mt ())
@@ -341,15 +341,20 @@ let print_leaf_entry with_values sep (sp,lobj) =
 
 let rec print_library_entry with_values ent = 
   let sep = if with_values then " = " else " : " in 
+  let pr_name (sp,_) = pr_id (basename sp) in
   match ent with
-    | (sp,Lib.Leaf lobj) -> 
-	(print_leaf_entry with_values sep (sp,lobj))
-    | (sp,Lib.OpenedSection (dir,_)) -> 
-        (str " >>>>>>> Section " ++ pr_id (basename sp) ++ fnl ())
-    | (sp,Lib.ClosedSection _) -> 
-        (str " >>>>>>> Closed Section " ++ pr_id (basename sp) ++ fnl ())
-    | (_,Lib.Module dir) ->
-	(str " >>>>>>> Module " ++ pr_dirpath dir ++ fnl ())
+    | (oname,Lib.Leaf lobj) -> 
+	(print_leaf_entry with_values sep (oname,lobj))
+    | (oname,Lib.OpenedSection (dir,_)) -> 
+        (str " >>>>>>> Section " ++ pr_name oname ++ fnl ())
+    | (oname,Lib.ClosedSection _) -> 
+        (str " >>>>>>> Closed Section " ++ pr_name oname ++ fnl ())
+    | (_,Lib.CompilingModule (dir,_)) ->
+	(str " >>>>>>> Library " ++ pr_dirpath dir ++ fnl ())
+    | (oname,Lib.OpenedModule _) ->
+	(str " >>>>>>> Module " ++ pr_name oname ++ fnl ())
+    | (oname,Lib.OpenedModtype _) ->
+	(str " >>>>>>> Module Type " ++ pr_name oname ++ fnl ())
     | (_,Lib.FrozenState _) ->
 	(mt ())
 	
@@ -386,9 +391,9 @@ let read_sec_context (loc,qid) =
     with Not_found ->
       user_err_loc (loc,"read_sec_context", str "Unknown section") in
   let rec get_cxt in_cxt = function
-    | ((sp,Lib.OpenedSection ((dir',_),_)) as hd)::rest ->
+    | ((_,Lib.OpenedSection ((dir',_),_)) as hd)::rest ->
         if dir = dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
-    | ((sp,Lib.ClosedSection (_,_,ctxt)) as hd)::rest ->
+    | ((_,Lib.ClosedSection (_,_,ctxt)) as hd)::rest ->
         error "Cannot print the contents of a closed section"
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest 
@@ -415,15 +420,15 @@ let print_eval red_fun env {uj_val=trm;uj_type=typ} =
 let print_name (loc,qid) = 
   try 
     let sp = Nametab.locate_obj qid in
-    let (sp,lobj) = 
-      let (sp,entry) =
-	List.find (fun en -> (fst en) = sp) (Lib.contents_after None)
+    let (oname,lobj) = 
+      let (oname,entry) =
+	List.find (fun en -> (fst (fst en)) = sp) (Lib.contents_after None)
       in
       match entry with
-	| Lib.Leaf obj -> (sp,obj)
+	| Lib.Leaf obj -> (oname,obj)
 	| _ -> raise Not_found
     in
-    print_leaf_entry true " = " (sp,lobj)
+    print_leaf_entry true " = " (oname,lobj)
   with Not_found -> 
   try 
     match Nametab.locate qid with
@@ -439,8 +444,8 @@ let print_name (loc,qid) =
     (print_named_decl (str,c,typ))
   with Not_found ->
   try
-    let sp = Syntax_def.locate_syntactic_definition qid in
-    print_syntactic_def " = " sp
+    let kn = Nametab.locate_syntactic_definition qid in
+    print_syntactic_def " = " kn
   with Not_found ->
     user_err_loc
       (loc,"print_name",pr_qualid qid ++ spc () ++ str "not a defined object")
@@ -469,9 +474,9 @@ let print_local_context () =
   let env = Lib.contents_after None in
   let rec print_var_rec = function 
     | [] -> (mt ())
-    | (sp,Lib.Leaf lobj)::rest ->
+    | (oname,Lib.Leaf lobj)::rest ->
 	if "VARIABLE" = object_tag lobj then
-          let (d,_) = get_variable (basename sp) in 
+          let (d,_) = get_variable (basename (fst oname)) in 
 	  (print_var_rec rest ++
              print_named_decl d)
 	else 
@@ -479,17 +484,17 @@ let print_local_context () =
     | _::rest -> print_var_rec rest
 
   and print_last_const = function
-    | (sp,Lib.Leaf lobj)::rest -> 
+    | (oname,Lib.Leaf lobj)::rest -> 
         (match object_tag lobj with
            | "CONSTANT" | "PARAMETER" -> 
-	       let kn = locate_constant (qualid_of_sp sp) in
+	       let kn = snd oname in
                let {const_body=val_0;const_type=typ} = 
 		 Global.lookup_constant kn in
 		 (print_last_const rest ++
                   print_basename kn ++str" = " ++
                   print_typed_body (val_0,typ))
            | "INDUCTIVE" -> 
-	       let kn = locate_mind (qualid_of_sp sp) in
+	       let kn = snd oname in
                (print_last_const rest ++print_mutual kn ++ fnl ())
            | "VARIABLE" ->  (mt ())
            | _          ->  print_last_const rest)

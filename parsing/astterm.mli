@@ -84,7 +84,7 @@ val globalize_constr : Coqast.t -> Coqast.t
 val globalize_ast    : Coqast.t -> Coqast.t
 val globalize_qualid : qualid Util.located -> Coqast.t
 
-val ast_of_extended_ref_loc : loc -> Nametab.extended_global_reference -> Coqast.t
+val ast_of_extended_ref_loc : loc -> Libnames.extended_global_reference -> Coqast.t
 
 (* This transforms args of a qualid keyword into a qualified ident *)
 (* it does no relocation *)

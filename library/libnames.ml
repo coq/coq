@@ -10,9 +10,7 @@
 
 open Pp
 open Util
-(*open Identifier*)
 open Names
-(*open Nameops*)
 
 type global_reference =
   | VarRef of variable
@@ -20,15 +18,24 @@ type global_reference =
   | IndRef of inductive
   | ConstructRef of constructor
 
-(* subst_global_ref : substitution -> global_reference -> global_reference *)
+let subst_global subst ref = match ref with
+  | VarRef _ -> ref
+  | ConstRef kn ->
+      let kn' = subst_kn subst kn in if kn==kn' then ref else
+          ConstRef kn'
+  | IndRef (kn,i) ->
+      let kn' = subst_kn subst kn in if kn==kn' then ref else
+          IndRef(kn',i)
+  | ConstructRef ((kn,i),j) ->
+      let kn' = subst_kn subst kn in if kn==kn' then ref else
+          ConstructRef ((kn',i),j)
+
 
 (**********************************************)
 
 let pr_dirpath sl = (str (string_of_dirpath sl))
 
-(* Operations on dirpaths *)
-let empty_dirpath = make_dirpath []
-
+(*s Operations on dirpaths *)
 
 (* Pop the last n module idents *)
 let extract_dirpath_prefix n dir =
@@ -135,6 +142,10 @@ let restrict_path n sp =
   let (dir',_) = list_chop n (repr_dirpath dir) in
   make_path (make_dirpath dir') s
 
+type extended_global_reference =
+  | TrueGlobal of global_reference
+  | SyntacticDef of kernel_name
+
 let encode_kn dir id = make_kn (MPfile dir) (make_dirpath []) (label_of_id id)
 
 let decode_kn kn = 
@@ -158,3 +169,29 @@ let make_short_qualid id = make_qualid empty_dirpath id
 let qualid_of_dirpath dir = 
   let (l,a) = split_dirpath dir in
   make_qualid l a
+
+type object_name = section_path * kernel_name
+
+type object_prefix = dir_path * (module_path * dir_path)
+
+(* to this type are mapped dir_path's in the nametab *)
+type global_dir_reference = 
+  | DirOpenModule of object_prefix
+  | DirOpenModtype of object_prefix
+  | DirOpenSection of object_prefix
+  | DirModule of object_prefix
+  | DirClosedSection of dir_path
+      (* this won't last long I hope! *)
+
+(*  | ModRef mp ->
+      let mp' = subst_modpath subst mp in if mp==mp' then ref else
+          ModRef mp'
+  | ModTypeRef kn ->
+      let kn' = subst_kernel_name subst kn in if kn==kn' then ref else
+          ModTypeRef kn'
+*)
+
+type strength = 
+  | NotDeclare
+  | DischargeAt of dir_path * int
+  | NeverDischarge

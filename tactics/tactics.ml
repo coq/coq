@@ -1599,7 +1599,7 @@ let abstract_subproof name tac gls =
   in
   if occur_existential concl then error "Abstract cannot handle existentials";
   let lemme =
-    start_proof na (false,Nametab.NeverDischarge) current_sign concl (fun _ _ -> ());
+    start_proof na (false,NeverDischarge) current_sign concl (fun _ _ -> ());
     let _,(const,(_,strength),_) =
       try
 	by (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)); 
@@ -1611,7 +1611,7 @@ let abstract_subproof name tac gls =
     let cd = Entries.DefinitionEntry const in
     let sp = Declare.declare_constant na (cd,strength) in
     let newenv = Global.env() in
-    Declare.constr_of_reference (ConstRef sp)
+    Declare.constr_of_reference (ConstRef (snd sp))
   in
   exact_no_check 
     (applist (lemme,

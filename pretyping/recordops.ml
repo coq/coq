@@ -46,13 +46,10 @@ let structure_table = (ref [] : (inductive * struc_typ) list ref)
 let cache_structure (_,x) = structure_table := x :: (!structure_table)
 
 let (inStruc,outStruc) =
-  declare_object
-    ("STRUCTURE", {
-       load_function = (fun _ -> ());
-       cache_function = cache_structure;
-       open_function = cache_structure;
-       export_function = (function x -> Some x)
-     })
+  declare_object {(default_object "STRUCTURE") with 
+                    cache_function = cache_structure;
+		    open_function = (fun i o -> if i=1 then cache_structure o);
+                    export_function = (function x -> Some x)  }
 
 let add_new_struc (s,c,n,l) = 
   Lib.add_anonymous_leaf (inStruc (s,{s_CONST=c;s_PARAM=n;s_PROJ=l}))
@@ -87,14 +84,11 @@ let object_table =
 
 let cache_object (_,x) = object_table := x :: (!object_table)
 
-let (inObjDef, outObjDef) =
-  declare_object
-    ("OBJDEF", {
-       load_function = (fun _ -> ());
-       open_function = cache_object;
-       cache_function = cache_object;
-       export_function = (function x -> Some x)
-     })
+let (inObjDef,outObjDef) =
+  declare_object {(default_object "OBJDEF") with 
+		    open_function = (fun i o -> if i=1 then cache_object o);
+                    cache_function = cache_object;
+                    export_function = (function x -> Some x) }
 
 let add_new_objdef (o,c,la,lp,l) =
   try 
@@ -105,14 +99,11 @@ let add_new_objdef (o,c,la,lp,l) =
 
 let cache_objdef1 (_,sp) = ()
 
-let (inObjDef1, outObjDef1) =
-  declare_object
-    ("OBJDEF1", {
-       load_function = (fun _ -> ());
-       open_function = cache_objdef1;
-       cache_function = cache_objdef1;
-       export_function = (function x -> Some x)
-     })
+let (inObjDef1,outObjDef1) =
+  declare_object {(default_object "OBJDEF1") with 
+		    open_function = (fun i o -> if i=1 then cache_objdef1 o);
+                    cache_function = cache_objdef1;
+                    export_function = (function x -> Some x) }
 
 let objdef_info o = List.assoc o !object_table
 

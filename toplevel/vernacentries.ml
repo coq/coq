@@ -164,8 +164,8 @@ let print_loadpath () =
 		 prlist_with_sep pr_fnl print_path_entry l))
 
 let print_modules () =
-  let opened = Library.opened_modules ()
-  and loaded = Library.loaded_modules () in
+  let opened = Library.opened_libraries ()
+  and loaded = Library.loaded_libraries () in
   let loaded_opened = list_intersect loaded opened
   and only_loaded = list_subtract loaded opened in
   str"Loaded and imported modules: " ++ 
@@ -201,7 +201,9 @@ let print_located_qualid (_,qid) =
     msg (pr_sp sp ++ fnl ())
   with Not_found -> 
   try
-    msg (pr_sp (Syntax_def.locate_syntactic_definition qid) ++ fnl ())
+    let kn = Nametab.locate_syntactic_definition qid in
+    let sp = Nametab.sp_of_syntactic_definition kn in
+    msg (pr_sp sp ++ fnl ())
   with Not_found ->
     msg (pr_qualid qid ++ str " is not a defined object")
 
@@ -266,14 +268,14 @@ let vernac_distfix assoc n inf qid =
 
 let interp_assumption = function
   | (AssumptionHypothesis | AssumptionVariable) -> Declare.make_strength_0 ()
-  | (AssumptionAxiom | AssumptionParameter) -> Nametab.NeverDischarge
+  | (AssumptionAxiom | AssumptionParameter) -> Libnames.NeverDischarge
 
 let interp_definition = function
-  | Definition -> (false, Nametab.NeverDischarge)
+  | Definition -> (false, Libnames.NeverDischarge)
   | LocalDefinition -> (true, Declare.make_strength_0 ())
 
 let interp_theorem = function
-  | (Theorem | Lemma | Decl) -> Nametab.NeverDischarge
+  | (Theorem | Lemma | Decl) -> Libnames.NeverDischarge
   | Fact -> Declare.make_strength_1 ()
   | Remark -> Declare.make_strength_0 ()
 
@@ -362,8 +364,8 @@ let is_obsolete_module (_,qid) =
 let vernac_require import _ qidl =
   try
     match import with
-      | None -> List.iter Library.read_module qidl
-      | Some b -> Library.require_module None qidl b
+      | None -> List.iter Library.read_library qidl
+      | Some b -> Library.require_library None qidl b
   with e ->
   (* Compatibility message *)
     let qidl' = List.filter is_obsolete_module qidl in
@@ -376,7 +378,7 @@ let vernac_require import _ qidl =
       raise e
       
 let vernac_import export qidl =
-  List.iter (Library.import_module export) qidl
+  List.iter (Library.import_library export) qidl
 
 let vernac_canonical locqid =
   Recordobj.objdef_declare (Nametab.global locqid)
@@ -426,7 +428,7 @@ let vernac_solve_existential = instantiate_nth_evar_com
 (* Auxiliary file management *)
 
 let vernac_require_from export spec id filename =
-  Library.require_module_from_file spec (Some id) filename export
+  Library.require_library_from_file spec (Some id) filename export
 
 let vernac_add_loadpath isrec pdir ldiropt =
   let alias = match ldiropt with
@@ -686,7 +688,7 @@ let vernac_goal = function
   | None -> ()
   | Some c ->
       if not (refining()) then begin
-        start_proof_com None (false,Nametab.NeverDischarge) c (fun _ _ ->());
+        start_proof_com None (false,Libnames.NeverDischarge) c (fun _ _ ->());
 	print_subgoals ()
       end else 
 	error "repeated Goal not permitted in refining mode"

@@ -522,7 +522,7 @@ let declare_one_elimination ind =
    if List.mem InType kelim then
     let cte =
       declare (mindstr^type_suff) (make_elim (new_sort_in_family InType)) None
-    in let c = mkConst cte and t = constant_type (Global.env ()) cte
+    in let c = mkConst (snd cte) and t = constant_type (Global.env ()) (snd cte)
     in List.iter  
 	 (fun (sort,suff) -> 
             let (t',c') = instanciate_type_indrec_scheme (new_sort_in_family sort) npars c t

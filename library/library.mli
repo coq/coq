@@ -16,59 +16,64 @@ open Libobject
 (*i*)
 
 (*s This module is the heart of the library. It provides low level functions to
-   load, open and save modules. Modules are saved onto the disk with checksums
+   load, open and save libraries. Modules are saved onto the disk with checksums
    (obtained with the [Digest] module), which are checked at loading time to
    prevent inconsistencies between files written at various dates. It also
    provides a high level function [require] which corresponds to the 
    vernacular command [Require]. *)
 
-val read_module : qualid located -> unit
+val read_library : qualid located -> unit
 
-val read_module_from_file : System.physical_path -> unit
+val read_library_from_file : System.physical_path -> unit
 
-val import_module : bool -> qualid located -> unit
+val import_library : bool -> qualid located -> unit
 
-val module_is_loaded : dir_path -> bool
-val module_is_opened : dir_path -> bool
+val library_is_loaded : dir_path -> bool
+val library_is_opened : dir_path -> bool
 
-val loaded_modules : unit -> dir_path list
-val opened_modules : unit -> dir_path list
+val loaded_libraries : unit -> dir_path list
+val opened_libraries : unit -> dir_path list
 
-val fmt_modules_state : unit -> Pp.std_ppcmds
+val fmt_libraries_state : unit -> Pp.std_ppcmds
 
-(*s Require. The command [require_module spec m file export] loads and opens
-  a module [m]. [file] specifies the filename, if not [None]. [spec]
+(*s Require. The command [require_library spec m file export] loads and opens
+  a library [m]. [file] specifies the filename, if not [None]. [spec]
   specifies to look for a specification ([true]) or for an implementation
-  ([false]), if not [None]. And [export] specifies if the module must be 
+  ([false]), if not [None]. And [export] specifies if the library must be 
   exported. *)
 
-val require_module :
+val require_library :
   bool option -> qualid located list -> bool -> unit
 
-val require_module_from_file :
+val require_library_from_file :
   bool option -> identifier option -> string -> bool -> unit
 
-(*s [save_module_to s f] saves the current environment as a module [s]
+(*s [save_library_to s f] saves the current environment as a library [s]
   in the file [f]. *)
 
-val save_module_to : dir_path -> string -> unit
+val start_library : string -> dir_path * string
+val save_library_to : dir_path -> string -> unit
 
-(*s [module_segment m] returns the segment of the loaded module
-    [m]; if not given, the segment of the current module is returned
+(*s [library_segment m] returns the segment of the loaded library
+    [m]; if not given, the segment of the current library is returned
     (which is then the same as [Lib.contents_after None]). 
-    [module_full_filename] returns the full filename of a loaded module. *)
+*)
+(*val library_segment : dir_path option -> Lib.library_segment*)
 
-val module_segment : dir_path option -> Lib.library_segment
-val module_full_filename : dir_path -> string
+(* [library_full_filename] returns the full filename of a loaded library. *)
 
+val library_full_filename : dir_path -> string
+
+(*
 (*s [fold_all_segments] and [iter_all_segments] iterate over all
-    segments, the modules' segments first and then the current
+    segments, the libraries' segments first and then the current
     segment. Modules are presented in an arbitrary order. The given
     function is applied to all leaves (together with their section
     path). The boolean indicates if we must enter closed sections. *)
 
 val fold_all_segments : bool -> ('a -> section_path -> obj -> 'a) -> 'a -> 'a
 val iter_all_segments : bool -> (section_path -> obj -> unit) -> unit
+*)
 
 (*s Global load path *)
 type logical_path = dir_path
@@ -87,12 +92,12 @@ type library_location = LibLoaded | LibInPath
 val locate_qualified_library :
   qualid -> library_location * dir_path * System.physical_path
 
-(*s Displays the memory use of a module. *)
+(*s Displays the memory use of a library. *)
 
 val mem : dir_path -> Pp.std_ppcmds
 
 (* For discharge *)
-type module_reference
+type library_reference
 
-val out_require : Libobject.obj -> module_reference
-val reload_module : module_reference -> unit
+val out_require : Libobject.obj -> library_reference
+val reload_library : library_reference -> unit

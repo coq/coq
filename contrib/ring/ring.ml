@@ -203,11 +203,10 @@ let _ =
 let (theory_to_obj, obj_to_theory) = 
   let cache_th (_,(c, th)) = theories_map_add (c,th)
   and export_th x = Some x in
-  declare_object ("tactic-ring-theory",
-		  { load_function = (fun _ -> ());
-		    open_function = cache_th;
+  declare_object {(default_object "tactic-ring-theory") with
+		    open_function = (fun i o -> if i=1 then cache_th o);
                     cache_function = cache_th;
-		    export_function = export_th })
+		    export_function = export_th }
 
 (* from the set A, guess the associated theory *)
 (* With this simple solution, the theory to use is automatically guessed *)

@@ -175,11 +175,10 @@ let lookup_pattern_path_between (s,t) =
 let cache_class (_,x) = add_new_class x
 
 let (inClass,outClass) =
-  declare_object ("CLASS",
-                  { load_function = cache_class;
-		    open_function = (fun _ -> ());
+  declare_object {(default_object "CLASS") with 
+		    open_function = (fun i o -> if i=1 then cache_class o);
                     cache_function = cache_class;
-                    export_function = (function x -> Some x) })
+		    export_function = (function x -> Some x)  }
 
 let declare_class (cl,stre,p) = 
   Lib.add_anonymous_leaf (inClass ((cl,{ cl_strength = stre; cl_param = p })))
@@ -323,11 +322,10 @@ let cache_coercion (_,((coe,xf),cls,clt)) =
                          * cl_typ * cl_typ *)
 
 let (inCoercion,outCoercion) =
-  declare_object ("COERCION",
-                  { load_function = cache_coercion;
-		    open_function = (fun _ -> ());
+  declare_object {(default_object "COERCION") with 
+		    open_function = (fun i o -> if i=1 then cache_coercion o);
                     cache_function = cache_coercion;
-                    export_function = (function x -> Some x) })
+                    export_function = (function x -> Some x)  }
 
 let declare_coercion coef v stre ~isid ~src:cls ~target:clt ~params:ps =
   Lib.add_anonymous_leaf

@@ -91,17 +91,18 @@ module MakeTable =
 
     let (add_option,remove_option) =
       if A.synchronous then
-        let load_options _ = () in
         let cache_options (_,(f,p)) = match f with
           | GOadd -> t := MySet.add p !t
           | GOrmv -> t := MySet.remove p !t in
+        let load_options i o = if i=1 then cache_options o in
         let export_options fp = Some fp in
         let (inGo,outGo) =
-          Libobject.declare_object (kn,
-              { Libobject.load_function = load_options;
-		Libobject.open_function = cache_options;
+          Libobject.declare_object {(Libobject.default_object kn) with
+                Libobject.load_function = load_options;
+		Libobject.open_function = load_options;
 		Libobject.cache_function = cache_options;
-		Libobject.export_function = export_options}) in
+		Libobject.export_function = export_options} 
+	in
         ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
          (fun c -> Lib.add_anonymous_leaf (inGo (GOrmv, c))))
       else
@@ -229,11 +230,9 @@ let declare_option cast uncast
   check_key key; 
   let write = if sync then 
     let (decl_obj,_) = 
-      declare_object ((nickname key),
-		      {load_function = (fun _ -> ());
-		       open_function = (fun _ -> ());
+      declare_object {(default_object (nickname key)) with
 		       cache_function = (fun (_,v) -> write v);
-		       export_function = (fun x -> None)})
+		       classify_function = (fun _ -> Dispose)}
     in 
     let _ = declare_summary (nickname key) 
 	      {freeze_function = read;

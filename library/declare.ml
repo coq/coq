@@ -93,7 +93,7 @@ let _ = Summary.declare_summary "VARIABLE"
 	    Summary.init_function = (fun () -> vartab := Idmap.empty);
 	    Summary.survive_section = false }
 
-let cache_variable (sp,(id,(p,d,strength))) =
+let cache_variable ((sp,_),(id,(p,d,strength))) =
   (* Constr raisonne sur les noms courts *)
   if Idmap.mem id !vartab then
     errorlabstrm "cache_variable" (pr_id id ++ str " already exists");
@@ -102,17 +102,13 @@ let cache_variable (sp,(id,(p,d,strength))) =
     | SectionLocalDef (c,t) -> Global.push_named_def (id,c,t) in
   let (_,bd,ty) = Global.lookup_named id in
   let vd = (bd,ty,cst) in
-  Nametab.push 0 (restrict_path 0 sp) (VarRef id);
+  Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   vartab := Idmap.add id (p,vd,strength) !vartab
 
 let (in_variable, out_variable) =
-  let od = {
+  declare_object { (default_object "VARIABLE") with
     cache_function = cache_variable;
-    load_function = (fun _ -> ());
-    open_function = (fun _ -> ());
-    export_function = (fun x -> Some x) }
-  in
-  declare_object ("VARIABLE", od)
+    classify_function = (fun _ -> Dispose) }
 
 let declare_variable id obj =
   let sp = add_leaf id (in_variable (id,obj)) in
@@ -131,53 +127,56 @@ let _ = Summary.declare_summary "CONSTANT"
 	    Summary.init_function = (fun () -> csttab := Spmap.empty);
 	    Summary.survive_section = false }
 
-let cache_constant (sp,(cdt,stre,kn)) =
+let cache_constant ((sp,kn),(cdt,stre)) =
   (if Idmap.mem (basename sp) !vartab then
     errorlabstrm "cache_constant" 
       (pr_id (basename sp) ++ str " already exists"));
   (if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
     errorlabstrm "cache_constant" (pr_id id ++ str " already exists"));
-  Global.add_constant kn cdt;
+  let _,dir,_ = repr_kn kn in
+  let kn' = Global.add_constant dir (basename sp) cdt in
+    if kn' <> kn then
+      anomaly "Kernel and Library names do not match";
   (match stre with
     | DischargeAt (dp,n) when not (is_dirpath_prefix_of dp (Lib.cwd ())) ->
         (* Only qualifications including the sections segment from the current
            section to the discharge section is available for Remark & Fact *)
-        Nametab.push (n-Lib.sections_depth()) sp (ConstRef kn)
+        Nametab.push (Nametab.Until (n-Lib.sections_depth()+1)) sp (ConstRef kn)
     | (NeverDischarge| DischargeAt _) -> 
         (* All qualifications of Theorem, Lemma & Definition are visible *)
-        Nametab.push 0 sp (ConstRef kn)
+        Nametab.push (Nametab.Until 1) sp (ConstRef kn)
     | NotDeclare -> assert false);
   csttab := Spmap.add sp stre !csttab
 
 (* At load-time, the segment starting from the module name to the discharge *)
 (* section (if Remark or Fact) is needed to access a construction *)
-let load_constant (sp,(ce,stre,kn)) =
+let load_constant i ((sp,kn),(ce,stre)) =
   (if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
     errorlabstrm "cache_constant" (pr_id id ++ str " already exists"));
   csttab := Spmap.add sp stre !csttab;
-  Nametab.push (depth_of_strength stre + 1) sp (ConstRef kn)
+  Nametab.push (Nametab.Until (depth_of_strength stre + 1 + i)) sp (ConstRef kn)
 
 (* Opening means making the name without its module qualification available *)
-let open_constant (sp,(_,stre,kn)) =
+let open_constant i ((sp,kn),(_,stre)) =
   let n = depth_of_strength stre in
 (*  Nametab.push n (restrict_path n sp) (ConstRef kn) *)
-  Nametab.push n sp (ConstRef kn)
+  Nametab.push (Nametab.Exactly (i+n)) sp (ConstRef kn)
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = ConstantEntry (ParameterEntry mkProp)
 
-let export_constant (ce,stre,kn) = Some (dummy_constant_entry,stre,kn)
+let export_constant (ce,stre) = Some (dummy_constant_entry,stre)
 
 let (in_constant, out_constant) =
-  let od = {
+  declare_object { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
     open_function = open_constant;
+    classify_function = (fun (_,a) -> Substitute a);
+    subst_function = ident_subst_function;
     export_function = export_constant } 
-  in
-  declare_object ("CONSTANT", od)
 
 let hcons_constant_declaration = function
   | (DefinitionEntry ce, stre) ->
@@ -189,13 +188,12 @@ let hcons_constant_declaration = function
 
 let declare_constant id (cd,stre) =
   (* let cd = hcons_constant_declaration cd in *)
-  let kn = Lib.make_kn id in
-  let sp = add_leaf id (in_constant (ConstantEntry cd,stre,kn)) in
-  if is_implicit_args() then declare_constant_implicits kn;
-  kn
+  let oname = add_leaf id (in_constant (ConstantEntry cd,stre)) in
+  if is_implicit_args() then declare_constant_implicits (snd oname);
+  oname
 
-let redeclare_constant id (cd,stre,kn) =
-  let _ = add_leaf id (in_constant (GlobalRecipe cd,stre,kn)) in
+let redeclare_constant id (cd,stre) =
+  let _,kn = add_leaf id (in_constant (GlobalRecipe cd,stre)) in
   if is_implicit_args() then declare_constant_implicits kn
 
 (* Inductives. *)
@@ -229,23 +227,27 @@ let check_exists_inductive (sp,_) =
     let (_,id) = repr_path sp in
     errorlabstrm "cache_inductive" (pr_id id ++ str " already exists")
 
-let cache_inductive (sp,(kn,mie)) =
+let cache_inductive ((sp,kn),mie) =
   let names = inductive_names sp kn mie in
   List.iter check_exists_inductive names;
-  Global.add_mind kn mie;
+  let _,dir,_ = repr_kn kn in
+  let kn' = Global.add_mind dir (basename sp) mie in
+    if kn' <> kn then
+      anomaly "Kernel and Library names do not match";
+
   List.iter 
-    (fun (sp, ref) -> Nametab.push 0 sp ref)
+    (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref)
     names
 
-let load_inductive (sp,(kn,mie)) =
+let load_inductive i ((sp,kn),mie) =
   let names = inductive_names sp kn mie in
   List.iter check_exists_inductive names;
-  List.iter (fun (sp, ref) -> Nametab.push 1 sp ref) names
+  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until i) sp ref) names
 
-let open_inductive (sp,(kn,mie)) =
+let open_inductive i ((sp,kn),mie) =
   let names = inductive_names sp kn mie in
 (*  List.iter (fun (sp, ref) -> Nametab.push 0 (restrict_path 0 sp) ref) names*)
-  List.iter (fun (sp, ref) -> Nametab.push 0 sp ref) names
+  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Exactly i) sp ref) names
 
 let dummy_one_inductive_entry mie = {
   mind_entry_params = [];
@@ -256,30 +258,29 @@ let dummy_one_inductive_entry mie = {
 }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_inductive_entry (kn,m) = kn,{
+let dummy_inductive_entry m = {
   mind_entry_finite = true;
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds }
 
 let export_inductive x = Some (dummy_inductive_entry x)
 
 let (in_inductive, out_inductive) =
-  let od = {
+  declare_object {(default_object "INDUCTIVE") with 
     cache_function = cache_inductive;
     load_function = load_inductive;
     open_function = open_inductive;
+    classify_function = (fun (_,a) -> Substitute a);
+    subst_function = ident_subst_function;
     export_function = export_inductive } 
-  in
-  declare_object ("INDUCTIVE", od)
 
 let declare_mind mie =
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
     | [] -> anomaly "cannot declare an empty list of inductives"
   in
-  let kn = Lib.make_kn id in  
-  let sp = add_leaf id (in_inductive (kn,mie)) in
-  if is_implicit_args() then declare_mib_implicits kn;
-  kn
+  let oname = add_leaf id (in_inductive mie) in
+  if is_implicit_args() then declare_mib_implicits (snd oname);
+  oname
 
 
 (*s Test and access functions. *)

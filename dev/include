@@ -27,3 +27,4 @@
 #install_printer  (* env *) ppenv;;
 
 #install_printer  (* tactic *) pptac;;
+#install_printer  (* object *) pr_obj;;

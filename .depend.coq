@@ -162,18 +162,13 @@ theories/Logic/Classical.vo: theories/Logic/Classical.v theories/Logic/Classical
 theories/Logic/ProofIrrelevance.vo: theories/Logic/ProofIrrelevance.v theories/Logic/Hurkens.vo
 theories/Logic/Hurkens.vo: theories/Logic/Hurkens.v
 theories/Init/Logic_TypeSyntax.vo: theories/Init/Logic_TypeSyntax.v theories/Init/Logic_Type.vo
-theories/Init/Wf.vo: theories/Init/Wf.v theories/Init/Logic.vo theories/Init/LogicHints.vo theories/Init/LogicSyntax.vo
+theories/Init/Wf.vo: theories/Init/Wf.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo
 theories/Init/Logic_Type.vo: theories/Init/Logic_Type.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo
 theories/Init/SpecifSyntax.vo: theories/Init/SpecifSyntax.v theories/Init/LogicSyntax.vo theories/Init/Specif.vo
 theories/Init/LogicSyntax.vo: theories/Init/LogicSyntax.v theories/Init/Logic.vo
-theories/Init/Specif.vo: theories/Init/Specif.v theories/Init/Logic.vo theories/Init/LogicHints.vo theories/Init/LogicSyntax.vo theories/Init/Datatypes.vo theories/Init/DatatypesHints.vo
-theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Datatypes.vo theories/Init/DatatypesHints.vo
-theories/Init/Logic_TypeHints.vo: theories/Init/Logic_TypeHints.v theories/Init/Logic_Type.vo
-theories/Init/SpecifHints.vo: theories/Init/SpecifHints.v theories/Init/Specif.vo
-theories/Init/LogicHints.vo: theories/Init/LogicHints.v theories/Init/Logic.vo
-theories/Init/PeanoHints.vo: theories/Init/PeanoHints.v theories/Init/Peano.vo
-theories/Init/DatatypesHints.vo: theories/Init/DatatypesHints.v theories/Init/Datatypes.vo
-theories/Init/Prelude.vo: theories/Init/Prelude.v theories/Init/Datatypes.vo theories/Init/DatatypesHints.vo theories/Init/DatatypesSyntax.vo theories/Init/Logic.vo theories/Init/LogicHints.vo theories/Init/LogicSyntax.vo theories/Init/Specif.vo theories/Init/SpecifHints.vo theories/Init/SpecifSyntax.vo theories/Init/Peano.vo theories/Init/Wf.vo
+theories/Init/Specif.vo: theories/Init/Specif.v theories/Init/Datatypes.vo theories/Init/Logic.vo theories/Init/LogicSyntax.vo
+theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Datatypes.vo
+theories/Init/Prelude.vo: theories/Init/Prelude.v theories/Init/Datatypes.vo theories/Init/DatatypesSyntax.vo theories/Init/Logic.vo theories/Init/LogicSyntax.vo theories/Init/Specif.vo theories/Init/SpecifSyntax.vo theories/Init/Peano.vo theories/Init/Wf.vo
 theories/Init/DatatypesSyntax.vo: theories/Init/DatatypesSyntax.v theories/Init/Datatypes.vo
-theories/Init/Peano.vo: theories/Init/Peano.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo theories/Init/LogicHints.vo theories/Init/Datatypes.vo theories/Init/DatatypesHints.vo
+theories/Init/Peano.vo: theories/Init/Peano.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo theories/Init/Datatypes.vo
 theories/Init/Datatypes.vo: theories/Init/Datatypes.v

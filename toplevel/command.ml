@@ -71,11 +71,11 @@ let red_constant_entry ce = function
 	  reduction_of_redexp red (Global.env()) Evd.empty body }
 
 let declare_global_definition ident ce n local =
-  let sp = declare_constant ident (DefinitionEntry ce,n) in
+  let (_,kn) = declare_constant ident (DefinitionEntry ce,n) in
   if local then
     msg_warning (pr_id ident ++ str" is declared as a global definition");
   if_verbose message ((string_of_id ident) ^ " is defined");
-  ConstRef sp
+  ConstRef kn
 
 let declare_definition red_option ident (local,n) c typopt = 
   let ce = constant_entry_of_com (c,typopt,false) in
@@ -213,10 +213,10 @@ let interp_mutual lparams lnamearconstrs finite =
 let declare_mutual_with_eliminations mie =
   let lrecnames =
     List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let sp = declare_mind mie in
+  let (_,kn) = declare_mind mie in
   if_verbose ppnl (minductive_message lrecnames);
-  Indrec.declare_eliminations sp;
-  sp
+  Indrec.declare_eliminations kn;
+  kn
 
 let eq_la (id,ast) (id',ast') = id = id' & alpha_eq(ast,ast')
 
@@ -334,8 +334,8 @@ let build_recursive lnameargsardef =
 		  recvec));
         const_entry_type = None;
         const_entry_opaque = false } in
-    let sp = declare_constant fi (DefinitionEntry ce, n) in
-    (ConstRef sp)
+    let (_,kn) = declare_constant fi (DefinitionEntry ce, n) in
+    (ConstRef kn)
   in 
   (* declare the recursive definitions *)
   let lrefrec = Array.mapi declare namerec in
@@ -398,8 +398,8 @@ let build_corecursive lnameardef =
         const_entry_type = None;
         const_entry_opaque = false } 
     in
-    let sp = declare_constant fi (DefinitionEntry ce,n) in
-    (ConstRef sp)
+    let _,kn = declare_constant fi (DefinitionEntry ce,n) in
+    (ConstRef kn)
   in 
   let lrefrec = Array.mapi declare namerec in
   if_verbose ppnl (corecursive_message lrefrec);
@@ -436,8 +436,8 @@ let build_scheme lnamedepindsort =
     let ce = { const_entry_body = decl;
                const_entry_type = None;
                const_entry_opaque = false } in
-    let sp = declare_constant fi (DefinitionEntry ce,n) in
-    ConstRef sp :: lrecref
+    let _,kn = declare_constant fi (DefinitionEntry ce,n) in
+    ConstRef kn :: lrecref
   in 
   let lrecref = List.fold_right2 declare listdecl lrecnames [] in
   if_verbose ppnl (recursive_message (Array.of_list lrecref))
@@ -477,7 +477,8 @@ let save id const strength hook =
 	let _ = declare_variable id (Lib.cwd(), c, strength) in
 	hook strength (VarRef id)
     | NeverDischarge | DischargeAt _ ->
-        let ref = ConstRef (declare_constant id (DefinitionEntry const,strength)) in
+	let _,kn = declare_constant id (DefinitionEntry const,strength) in
+        let ref = ConstRef kn in
 	hook strength ref
     | NotDeclare -> apply_tac_not_declare id pft tpo
   end;

@@ -182,14 +182,14 @@ type discharge_operation =
   | Struc of inductive * (unit -> struc_typ)
   | Objdef of constant
   | Coercion of coercion_entry
-  | Require of module_reference
+  | Require of library_reference
   | Constraints of Univ.constraints
 
 (* Main function to traverse the library segment and compute the various
    discharge operations. *)
 
 let process_object oldenv dir sec_sp
-  (ops,ids_to_discard,(constl,indl,cstrl as work_alist)) (sp,lobj) =
+  (ops,ids_to_discard,(constl,indl,cstrl as work_alist)) ((sp,kn),lobj) =
   let tag = object_tag lobj in 
   match tag with
     | "VARIABLE" ->
@@ -278,7 +278,7 @@ let process_object oldenv dir sec_sp
 	  let mib = Environ.lookup_mind newkn (Global.env ()) in
 	  { s_CONST = info.s_CONST;
 	    s_PARAM = mib.mind_packets.(0).mind_nparams;
-	    s_PROJ = List.map (option_app (fun kn -> Global.get_kn dir (label kn))) info.s_PROJ } in
+	    s_PROJ = List.map (option_app (fun kn -> recalc_kn dir kn)) info.s_PROJ } in
 	((Struc ((newkn,i),strobj))::ops, ids_to_discard, work_alist)
 
     | "OBJDEF1" -> 
@@ -303,7 +303,7 @@ let process_operation = function
         with_implicits imp (declare_variable id) (Lib.cwd(),expmod_a,stre) in
       ()
   | Constant (id,r,stre,kn,imp) ->
-      with_implicits imp (redeclare_constant id) (r,stre,kn);
+      with_implicits imp (redeclare_constant id) (r,stre);
       constant_message id
   | Inductive (mie,imp) ->
       let _ = with_implicits imp declare_mind mie in
@@ -315,7 +315,7 @@ let process_operation = function
   | Objdef newsp ->
       begin try Recordobj.objdef_declare (ConstRef newsp) with _ -> () end
   | Coercion y -> add_new_coercion y
-  | Require y -> reload_module y
+  | Require y -> reload_library y
   | Constraints y -> Global.add_constraints y
 
 let catch_not_found f x =
@@ -326,7 +326,8 @@ let catch_not_found f x =
 
 let close_section _ s = 
   let oldenv = Global.env() in
-  let full_olddir,olddir,decls,fs = close_section false s in
+  let prefix,decls,fs = close_section false s in
+  let full_olddir, (_,olddir) = prefix in
   let newdir = fst (split_dirpath olddir) in
   let (ops,ids,_) = 
     List.fold_left 
@@ -335,5 +336,4 @@ let close_section _ s =
   let ids = last_section_hyps olddir in
   Summary.unfreeze_lost_summaries fs;
   catch_not_found (List.iter process_operation) (List.rev ops);
-  Nametab.push_section full_olddir
-
+  Nametab.push_dir (Until 1) full_olddir (DirClosedSection full_olddir)

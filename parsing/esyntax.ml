@@ -198,13 +198,13 @@ let make_hunks (lp,rp) s e1 e2 =
 let build_syntax (ref,e1,e2,assoc) =
   let sp = match ref with
   | TrueGlobal r -> Nametab.sp_of_global None r
-  | SyntacticDef sp -> sp in
+  | SyntacticDef kn -> Nametab.sp_of_syntactic_definition kn in
   let rec find_symbol = function
     | [] ->
 	let s = match ref with
 	  | TrueGlobal r ->
 	      string_of_qualid (shortest_qualid_of_global None r)
-	  | SyntacticDef sp -> string_of_path sp in
+	  | SyntacticDef _ -> string_of_path sp in
 	UNP_BOX (PpHOVB 0,
 	  [RO "("; RO s; UNP_BRK (1, 1); PH (meta_pattern e1, None, E);
 	   UNP_BRK (1, 1); PH (meta_pattern e2, None, E); RO ")"])

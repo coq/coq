@@ -248,7 +248,7 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
     (DefinitionEntry { const_entry_body = invProof;
                      const_entry_type = None;
                      const_entry_opaque = false }, 
-     Nametab.NeverDischarge)
+     Libnames.NeverDischarge)
   in ()
 
 (* open Pfedit *)

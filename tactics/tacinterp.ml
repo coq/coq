@@ -1703,15 +1703,14 @@ let register_tacdef (sp,td) =
 
 let cache_md (_,defs) =
   (* Needs a rollback if something goes wrong *)
-  List.iter (fun (sp,_) -> Nametab.push_tactic_path sp) defs;
+  List.iter (fun (sp,_) -> Nametab.push_tactic (Until 1) sp) defs;
   List.iter add (List.map register_tacdef defs)
 
 let (inMD,outMD) =
-  declare_object ("TAC-DEFINITION",
-    {cache_function  = cache_md;
-     load_function   = (fun _ -> ());
-     open_function   = cache_md;
-     export_function = (fun x -> Some x)})
+  declare_object {(default_object "TAC-DEFINITION") with
+     cache_function  = cache_md;
+     open_function   = (fun i o -> if i=1 then cache_md o);
+     export_function = (fun x -> Some x)}
 
 (* Adds a definition for tactics in the table *)
 let make_absolute_name (loc,id) =

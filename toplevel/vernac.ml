@@ -157,7 +157,7 @@ let load_vernac verb file =
 
 (* Compile a vernac file (f is assumed without .v suffix) *)
 let compile verbosely f =
-  try
+(*  try
     let s = Filename.basename f in
     let m = Names.id_of_string s in
     let _,longf = find_file_in_path (Library.get_load_path ()) (f^".v") in
@@ -170,5 +170,11 @@ let compile verbosely f =
     let mid = Lib.end_module m in
     assert (mid = ldir);
     Library.save_module_to ldir (longf^"o")
+*)
+  try
+    let ldir,long_f_dot_v = Library.start_library f in
+    if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
+    let _ = load_vernac verbosely long_f_dot_v in
+    Library.save_library_to ldir (long_f_dot_v^"o")
   with e ->
     raise_with_file f e

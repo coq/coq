@@ -28,15 +28,15 @@ let print_sort_family = function
   | InProp -> (str "Prop")
   | InType -> (str "Type")
 
-let current_module = ref empty_dirpath
+(*let current_module = ref empty_dirpath
 
-let set_module m = current_module := m
+let set_module m = current_module := m*)
 
 let new_univ = 
   let univ_gen = ref 0 in
   (fun sp ->
     incr univ_gen; 
-    Univ.make_univ (!current_module,!univ_gen))
+    Univ.make_univ (Lib.module_dp(),!univ_gen))
 
 let new_sort_in_family = function 
   | InProp -> mk_Prop

@@ -265,8 +265,8 @@ let build_id_coercion idf_opt source =
       { const_entry_body = mkCast (val_f, typ_f);
 	const_entry_type = None;
         const_entry_opaque = false } in
-  let sp = declare_constant idf (constr_entry,NeverDischarge) in
-  ConstRef sp
+  let (_,kn) = declare_constant idf (constr_entry,NeverDischarge) in
+  ConstRef kn
 
 (* 
 nom de la fonction coercion
