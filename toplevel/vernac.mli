@@ -39,3 +39,9 @@ val load_vernac : bool -> string -> unit
 (* Compile a vernac file, verbosely or not (f is assumed without .v suffix) *)
 
 val compile : bool -> string -> unit
+
+(* Interpret a vernac AST *)
+
+val vernac_com : 
+  (Vernacexpr.vernac_expr -> unit) ->
+  Util.loc * Vernacexpr.vernac_expr -> unit

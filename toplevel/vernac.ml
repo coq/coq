@@ -103,8 +103,7 @@ let pr_comments = function
   | None -> mt()
   | Some l -> h 0 (List.fold_left (++) (mt ()) (List.rev l))
 
-let rec vernac interpfun input =
-  let (loc,com) = parse_phrase input in
+let rec vernac_com interpfun (loc,com) =
   let rec interp = function
     | VernacLoad (verbosely, fname) ->
         read_vernac_file verbosely (make_suffix fname ".v")
@@ -137,6 +136,9 @@ let rec vernac interpfun input =
     else interp com
   with e -> 
     raise (DuringCommandInterp (loc, e))
+
+and vernac interpfun input =
+  vernac_com interpfun (parse_phrase input)
 
 and read_vernac_file verbosely s =
   let interpfun =

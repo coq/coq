@@ -1,10 +1,22 @@
+open Vernacexpr
+open Coq
+
 let window_width = 1280
 let window_height = 1024
 
+let byte_offset_to_char_offset s byte_offset = 
+  assert (byte_offset < String.length s);
+  let count_delta = ref 0 in
+  for i = 0 to byte_offset do
+    let code = Char.code s.[i] in
+    if code >= 0x80 && code < 0xc0 then incr count_delta
+  done;
+  byte_offset - !count_delta
 
-let monospace_font = ref (Pango.Font.from_string "Courier bold 14")
+let initial_font_name =  "Monospace 14"
+let monospace_font = ref (Pango.Font.from_string initial_font_name)
 let general_font = ref !monospace_font
-let lower_view_general_font = ref (Pango.Font.from_string "Courier bold 14")
+let lower_view_general_font = ref !general_font
 let upper_view_general_font = ref !general_font
 let statusbar_font = ref !general_font
 let proved_lemma_font = ref !monospace_font
@@ -13,6 +25,7 @@ let discharged_lemma_font = ref !monospace_font
 
 let (load_m:GMenu.menu_item option ref) = ref None
 let (save_m:GMenu.menu_item option ref) = ref None
+let (font_m:GMenu.menu_item option ref) = ref None
 let (rehighlight_m:GMenu.menu_item option ref) = ref None
 let (refresh_m:GMenu.menu_item option ref) = ref None
 let last_filename = ref None
@@ -52,19 +65,64 @@ let with_file name ~f =
   let ic = open_in name in
   try f ic; close_in ic with exn -> close_in ic; raise exn
 
+
+
 type info =  {start:GText.mark;
 	      stop:GText.mark;
-	      ast:Vernacexpr.vernac_expr}
+	      ast:Util.loc * Vernacexpr.vernac_expr;
+	      reset_info:Coq.reset_info;
+	     }
+
 exception Size of int
 let (processed_stack:info Stack.t) = Stack.create ()
 let push x = Stack.push x processed_stack
 let pop () = try Stack.pop processed_stack with Stack.Empty -> raise (Size 0)
 let top () = try Stack.top processed_stack with Stack.Empty -> raise (Size 0)
-let top_top () =
-    let first = pop () in
-    let snd = try top () with Size 0 -> push first; raise (Size 1) in
-    push first;
-   snd
+let is_empty () = Stack.is_empty processed_stack
+
+(* push a new Coq phrase *)
+
+let update_on_end_of_proof () =
+  let lookup_lemma = function
+  | { ast = _, ( VernacDefinition (_, _, ProveBody _, _, _)
+	       | VernacStartTheoremProof _) ; reset_info = Reset (_, r) } ->
+      r := true; raise Exit
+  | { ast = _, (VernacAbort _ | VernacAbortAll) } -> raise Exit
+  | _ -> ()
+  in
+  try Stack.iter lookup_lemma processed_stack with Exit -> ()
+
+let update_on_end_of_segment id =
+  let lookup_section = function 
+    | { ast = _, ( VernacBeginSection id'
+		 | VernacDefineModule (id',_,_,None)
+		 | VernacDeclareModule (id',_,_,None)
+		 | VernacDeclareModuleType (id',_,None)); 
+	reset_info = Reset (_, r) } 
+      when id = id' -> raise Exit
+    | { reset_info = Reset (_, r) } -> r := false
+    | _ -> ()
+  in
+  try Stack.iter lookup_section processed_stack with Exit -> ()
+
+let push_phrase start_of_phrase_mark end_of_phrase_mark ast = 
+  let x = {start = start_of_phrase_mark;
+	   stop = end_of_phrase_mark;
+	   ast = ast;
+	   reset_info = Coq.compute_reset_info (snd ast)} in
+  push x;
+  match snd ast with
+    | VernacEndProof (_, None) -> update_on_end_of_proof ()
+    | VernacEndSegment id -> update_on_end_of_segment id
+    | _ -> ()
+
+let repush_phrase x =
+  let x = { x with reset_info = Coq.compute_reset_info (snd x.ast) } in
+  push x;
+  match snd x.ast with
+    | VernacEndProof (_, None) -> update_on_end_of_proof ()
+    | VernacEndSegment id -> update_on_end_of_segment id
+    | _ -> ()
 
 (* For electric handlers *)
 exception Found
@@ -149,12 +207,14 @@ let analyze_all
   let get_insert () = input_buffer#get_iter_at_mark (input_buffer#get_insert) in
   let highlight_slice start stop = 
     let offset = start#get_offset in
-    let s = Glib.Convert.locale_from_utf8 (input_buffer#get_slice ~start ~stop ()) in
+    let s = input_buffer#get_slice ~start ~stop () in
+    let convert_pos = byte_offset_to_char_offset s in
     let lb = Lexing.from_string s in
     try 
       while true do
 	process_pending ();
 	let b,e,o=Highlight.next_order lb in
+	let b,e = convert_pos b,convert_pos e in
 	let start = input_buffer#get_iter_at ~char_offset:(offset + b) () in
 	let stop = input_buffer#get_iter_at ~char_offset:(offset + e) () in
 	input_buffer#apply_tag_by_name ~start ~stop o 
@@ -178,102 +238,71 @@ let analyze_all
     in
     match s with 
       | [] -> proof_buffer#insert (Coq.print_no_goal ())
-      | (hyps,(_,concl))::r -> 
+      | (hyps,concl)::r -> 
 	  let goal_nb = List.length s in
 	  proof_buffer#insert (Printf.sprintf "%d subgoal%s\n" 
 				 goal_nb
 				 (if goal_nb<=1 then "" else "s"));
-	  List.iter 
-	    (fun (((coqident,ident),_,ast),(s,pr_ast)) -> 
-	       let tag = proof_buffer#create_tag ()
-	       in 
-	       ignore
-		 (tag#connect#event
-		    ~callback:
-		    (fun ~origin ev it ->
-		       match GdkEvent.get_type ev with 
-			 | `BUTTON_PRESS -> 
-			     let ev = (GdkEvent.Button.cast ev) in
-			     if (GdkEvent.Button.button ev) = 3 
-			     then begin 
-			       let loc_menu = GMenu.menu () in
-			       let factory = new GMenu.factory loc_menu in
-			       let add_coq_command cp ip = 
-				 ignore (factory#add_item cp 
-					   ~callback:
-					   (fun () -> ignore
-					      (insert_this_phrase_on_success 
-						 true 
-						 false 
-						 (ip^"\n") 
-						 (ip^"\n"))
-					   )
+	  let coq_menu commands = 
+	    let tag = proof_buffer#create_tag ()
+	    in 
+	    ignore
+	      (tag#connect#event ~callback:
+		 (fun ~origin ev it ->
+		    match GdkEvent.get_type ev with 
+		      | `BUTTON_PRESS -> 
+			  let ev = (GdkEvent.Button.cast ev) in
+			  if (GdkEvent.Button.button ev) = 3 
+			  then begin 
+			    let loc_menu = GMenu.menu () in
+			    let factory = new GMenu.factory loc_menu in
+			    let add_coq_command (cp,ip) = 
+			      ignore (factory#add_item cp 
+					~callback:
+					(fun () -> ignore
+					   (insert_this_phrase_on_success 
+					      true
+					      true 
+					      false 
+					      (ip^"\n") 
+					      (ip^"\n"))
 					)
-			       in
-			       add_coq_command 
-				 ("Clear "^ident^".")  
-				 ("Clear "^ident^".");
-			       add_coq_command 
-				 ("Elim "^ident^".")
-				 ("Elim "^ident^".");
-			       add_coq_command 
-				 ("Apply "^ident^".")
-				 ("Apply "^ident^".");
-			       add_coq_command 
-				 ("Generalize "^ident^".")
-				 ("Generalize "^ident^".");
-			       add_coq_command 
-				 ("Assumption.")
-				 ("Assumption.");
-			       add_coq_command	
-				 ("Absurd <"^ident^">")
-				 ("Absurd "^
-				  pr_ast
-				  ^".");
-			       add_coq_command 
-				 ("Discriminate "^ident^".")
-				 ("Discriminate "^ident^".");
-			       add_coq_command 
-				 ("Injection "^ident^".")
-				 ("Injection "^ident^".");
-			       add_coq_command 
-				 ("Rewrite "^ident^".")
-				 ("Rewrite "^ident^".");
-			       add_coq_command 
-				 ("Rewrite <- "^ident^".")
-				 ("Rewrite <- "^ident^".");
-			       add_coq_command 
-				 ("Inversion "^ident^".")
-				 ("Inversion "^ident^".");
-			       add_coq_command 
-				 ("Inversion_clear "^ident^".")
-				 ("Inversion_clear "^ident^".");
-			       loc_menu#popup 
-				 ~button:3
-				 ~time:(GdkEvent.Button.time ev);
-			     end
-			 | `MOTION_NOTIFY -> 
-			     proof_buffer#remove_tag
-			     ~start:proof_buffer#get_start_iter
-			     ~stop:proof_buffer#get_end_iter
-			     last_shown_area;
-			     let s,e = find_tag_limits tag 
-					 (new GText.iter it) 
-			     in
-			     proof_buffer#apply_tag 
-			       ~start:s 
-			       ~stop:e 
-			       last_shown_area;
-			     ()
-			 | _ -> ())
-		 );
+				     )
+			    in
+			    List.iter add_coq_command commands;
+			    loc_menu#popup 
+			      ~button:3
+			      ~time:(GdkEvent.Button.time ev);
+			  end
+		      | `MOTION_NOTIFY -> 
+			  proof_buffer#remove_tag
+			  ~start:proof_buffer#get_start_iter
+			  ~stop:proof_buffer#get_end_iter
+			  last_shown_area;
+			  let s,e = find_tag_limits tag 
+				      (new GText.iter it) 
+			  in
+			  proof_buffer#apply_tag 
+			    ~start:s 
+			    ~stop:e 
+			    last_shown_area;
+			  ()
+		      | _ -> ())
+	      );
+	    tag
+	  in
+	  List.iter
+	    (fun ((_,_,_,(s,_)) as hyp) -> 
+	       let tag = coq_menu (hyp_menu hyp) in
 	       proof_buffer#insert ~tags:[tag] (s^"\n"))
 	    hyps;
 	  proof_buffer#insert ("--------------------------------------(1/"^
 			       (string_of_int goal_nb)^
 			       ")\n") 
-	    ;
-	  proof_buffer#insert concl;
+	  ;
+	  let tag = coq_menu (concl_menu concl) in
+	  let _,_,_,sconcl = concl in
+	  proof_buffer#insert ~tags:[tag] sconcl;
 	  proof_buffer#insert "\n";
 	  let my_mark = proof_buffer#get_mark ~name:"end_of_conclusion" in
 	  proof_buffer#move_mark
@@ -282,7 +311,7 @@ let analyze_all
 	  proof_buffer#insert "\n\n";
 	  let i = ref 1 in
 	  List.iter 
-	    (function (_,(_,concl)) -> 
+	    (function (_,(_,_,_,concl)) -> 
 	       incr i;
 	       proof_buffer#insert ("----------------------------------------("^
 				    (string_of_int !i)^
@@ -294,7 +323,7 @@ let analyze_all
 	    )
 	    r;
 	  ignore (proof_view#scroll_to_mark my_mark)
-  and send_to_coq phrase show_error localize = 
+  and send_to_coq phrase show_output show_error localize = 
     try
       !push_info "Coq is computing";
       (out_some !status)#misc#draw None;
@@ -305,7 +334,8 @@ let analyze_all
       input_view#set_editable true;
       !pop_info ();
       (out_some !status)#misc#draw None;
-      insert_message (read_stdout ());
+      let msg = read_stdout () in 
+      insert_message (if show_output then msg else "");
       r
     with e ->
       input_view#set_editable true;
@@ -319,6 +349,9 @@ let analyze_all
 	   (match loc with 
 	      | None -> ()
 	      | Some (start,stop) -> 
+		  let convert_pos = byte_offset_to_char_offset phrase in
+		  let start = convert_pos start in
+		  let stop = convert_pos stop in
 		  let i = get_start_of_input() in 
 		  let starti = i#copy in
 		  ignore (starti#forward_chars start);
@@ -355,7 +388,7 @@ let analyze_all
       | Some(start,stop) ->
 	  let b = input_buffer in
 	  let phrase = b#get_slice ~start ~stop () in
-	  match send_to_coq phrase true true with
+	  match send_to_coq phrase true true true with
 	    | Some ast ->
 		begin
 		  b#move_mark_by_name ~where:stop "start_of_input";
@@ -366,17 +399,15 @@ let analyze_all
 			       ~within_margin:0.2 (get_insert())));
 		  let start_of_phrase_mark = b#create_mark start in
 		  let end_of_phrase_mark = b#create_mark stop in
-		  push
-		    {start = start_of_phrase_mark;
-		     stop = end_of_phrase_mark;
-		     ast= ast};
+		  push_phrase start_of_phrase_mark end_of_phrase_mark ast;
 		  if display_goals then
 		    (try show_goals () with e -> ());
 		  true;
 		end
 	    | None -> false
-  and insert_this_phrase_on_success show_msg localize coqphrase insertphrase = 
-    match send_to_coq coqphrase show_msg localize with
+  and insert_this_phrase_on_success 
+    show_output show_msg localize coqphrase insertphrase = 
+    match send_to_coq coqphrase show_output show_msg localize with
       | Some ast ->
 	  begin
 	    let stop = get_start_of_input () in
@@ -390,10 +421,7 @@ let analyze_all
 	      input_buffer#place_cursor stop;
 	    let start_of_phrase_mark = input_buffer#create_mark start in
 	    let end_of_phrase_mark = input_buffer#create_mark stop in
-	    push
-	      {start = start_of_phrase_mark;
-	       stop = end_of_phrase_mark;
-	       ast= ast};
+	    push_phrase start_of_phrase_mark end_of_phrase_mark ast;
 	    (try show_goals () with e -> ());
 	    true
 	  end
@@ -429,21 +457,110 @@ let analyze_all
       processed_stack;
     Stack.clear processed_stack;
     clear_message ();
-    send_to_coq "\nReset Initial.\n" true true
+    Coq.reset_initial ()
+  in
+  (* backtrack Coq to the phrase preceding iterator [i] *)
+  let backtrack_to i = 
+    (* re-synchronize Coq to the current state of the stack *)
+    let rec synchro () =
+      if is_empty () then
+	Coq.reset_initial ()
+      else begin
+	let t = pop () in
+	begin match t.reset_info with
+	  | Reset (id, ({contents=true} as v)) -> v:=false; reset_to id
+	  | _ -> synchro ()
+	end;
+	interp_last t.ast;
+	repush_phrase t
+      end
+    in
+    (* pop Coq commands until we reach iterator [i] *)
+    let add_undo = function Some n -> Some (succ n) | None -> None in
+    let rec pop_commands done_smthg undos =
+      if is_empty () then 
+	done_smthg, undos
+      else
+	let t = top () in 
+	if i#compare (input_buffer#get_iter_at_mark t.stop) < 0 then begin
+	  ignore (pop ());
+	  let undos = if is_tactic (snd t.ast) then add_undo undos else None in
+	  pop_commands true undos
+	end else
+	  done_smthg, undos
+    in
+    let done_smthg, undos = pop_commands false (Some 0) in
+    if done_smthg then
+      begin 
+	(match undos with 
+	   | None -> synchro () 
+	   | Some n -> try Pfedit.undo n with _ -> synchro ());
+	let start = if is_empty () then input_buffer#get_start_iter 
+	else input_buffer#get_iter_at_mark (top ()).stop 
+	in
+	input_buffer#remove_tag_by_name 
+	  ~start 
+	  ~stop:(get_start_of_input ()) 
+	  "processed";
+	input_buffer#move_mark_by_name ~where:start "start_of_input";
+	input_buffer#place_cursor start;
+	(try show_goals () with e -> ());
+	clear_stdout ();
+	clear_message ()
+      end
+  in
+  let backtrack_to_insert () = 
+    backtrack_to (get_insert ())
   in
   let undo_last_step () = 
-    try 
-      let come_back_iter = input_buffer#get_iter_at_mark (top_top ()).start in
-      ignore (reset_initial ());
-      (*      message_buffer#insert "(* Replaying to undo *)\n" ();*)
-      process_until_iter_or_error come_back_iter;
-      input_buffer#place_cursor 
-	(input_buffer#get_iter_at_mark 
-	   (input_buffer#get_mark ~name:"start_of_input"));
-      (*      message_buffer#insert "\n(* End of replay *)\n" ();*)
-    with 
+    try
+      let last_command = top () in
+      let start = input_buffer#get_iter_at_mark last_command.start in
+      let update_input () =
+	input_buffer#remove_tag_by_name 
+	  ~start
+	  ~stop:(input_buffer#get_iter_at_mark last_command.stop) 
+	  "processed";
+	input_buffer#move_mark_by_name 
+	  ~where:start
+	  "start_of_input";
+	input_buffer#place_cursor start;
+	(try show_goals () with e -> ());
+	clear_message ()
+      in
+      begin match last_command with 
+	| {ast=_,VernacSolve _} -> 
+	    begin 
+	      try Pfedit.undo 1; ignore (pop ()); update_input () 
+	      with _ -> backtrack_to start
+	    end
+	| {reset_info=Reset (id, {contents=true})} ->
+	    ignore (pop ());
+	    reset_to id;
+	    update_input ()
+	| { ast = _, ( VernacStartTheoremProof _ 
+		     | VernacDefinition (_,_,ProveBody _,_,_)) } ->
+	    ignore (pop ());
+	    Pfedit.delete_current_proof ();
+	    update_input ()
+	| _ -> 
+	    backtrack_to start
+      end
+    with
       | Size 0 -> !flash_info "Nothing to Undo"
-      | Size 1 -> ignore (reset_initial ())
+	  (*    try 
+		let come_back_iter = input_buffer#get_iter_at_mark (top_top ()).start in
+		ignore (reset_initial ());
+	  (*      message_buffer#insert "(* Replaying to undo *)\n" ();*)
+		process_until_iter_or_error come_back_iter;
+		input_buffer#place_cursor 
+		(input_buffer#get_iter_at_mark 
+		(input_buffer#get_mark ~name:"start_of_input"));
+	  (*      message_buffer#insert "\n(* End of replay *)\n" ();*)
+		with 
+		| Size 0 -> !flash_info "Nothing to Undo"
+		| Size 1 -> ignore (reset_initial ())
+	  *)
   in
   let (* TODO *) undo_just_before (i:GText.iter) =
     while (i#get_marks<>[] && (i#backward_char ())) do () done;
@@ -465,11 +582,12 @@ let analyze_all
   in
   let insert_command cp ip = 
     clear_message ();
-    ignore (insert_this_phrase_on_success false false cp ip) in
+    ignore (insert_this_phrase_on_success true false false cp ip) in
   let insert_commands l = 
     clear_message ();
-    ignore (List.exists (fun (cp,ip) -> 
-			   insert_this_phrase_on_success false false cp ip) l)
+    ignore (List.exists 
+	      (fun (cp,ip) -> 
+		 insert_this_phrase_on_success true false false cp ip) l)
   in
   let _ = input_view#event#connect#key_press 
 	    (function k -> 
@@ -481,9 +599,7 @@ let analyze_all
 		     else if GdkKeysyms._Right=k 
 		     then process_until_insert_or_error () 
 		     else if GdkKeysyms._Left=k 
-		     then (
-		       ignore(reset_initial ());
-		       process_until_insert_or_error ())
+		     then backtrack_to_insert ()
 		     else if GdkKeysyms._r=k 
 		     then ignore (reset_initial ())
 		     else if GdkKeysyms._Up=k 
@@ -621,18 +737,21 @@ let main () =
   let configuration_menu = factory#add_submenu "Configuration" in
   let configuration_factory = new GMenu.factory configuration_menu ~accel_group
   in
-(*  let show_discharged_m = configuration_factory#add_check_item 
-			    "Show discharged proof" 
-			    ~key:GdkKeysyms._D
-			    ~callback:(fun b -> () (*show_discharged := b*)) 
-  in*)
   let customize_colors_m =
     configuration_factory#add_item "Customize colors"
       ~callback:(fun () -> !flash_info "Not implemented")
   in
+  let font_selector = 
+    GWindow.font_selection_dialog 
+      ~title:"Select font..."
+      ~modal:true ()
+  in
+  font_selector#selection#set_font_name initial_font_name;
+  font_selector#selection#set_preview_text 
+    "Lemma Truth: (p:Prover) `p < Coq`. Proof. Auto with *. Save."; 
   let customize_fonts_m = 
     configuration_factory#add_item "Customize fonts"
-      ~callback:(fun () -> !flash_info "Not implemented")
+      ~callback:(fun () -> font_selector#present ())
   in
   let hb = GPack.paned `HORIZONTAL  ~border_width:3 ~packing:vbox#add () in
   let _ = hb#set_position (window_width*6/10 ) in
@@ -697,54 +816,76 @@ let main () =
 			   tags;
 			 false)
   in
+  ignore (font_selector#cancel_button#connect#released 
+	    ~callback:font_selector#misc#hide);
+  ignore (font_selector#ok_button#connect#released 
+	    ~callback:(fun () -> 
+			 (match font_selector#selection#font_name with
+			    | None -> ()
+			    | Some n -> 
+				let pango_font = Pango.Font.from_string n in
+				tv1#misc#modify_font pango_font;
+				tv2#misc#modify_font pango_font;
+				tv3#misc#modify_font pango_font;
+			 );
+			 font_selector#misc#hide ()));
+
+  (try 
+     let startup_image = GdkPixbuf.from_file "coq.gif" in
+     tv2#get_buffer#insert_pixbuf ~iter:tv2#get_buffer#get_start_iter 
+       ~pixbuf:startup_image;
+     tv2#get_buffer#insert ~iter:tv2#get_buffer#get_start_iter "\t\t";
+   with _ -> ());
+  tv2#get_buffer#insert "\nCoqIde: an experimental Gtk2 interface for Coq.\n";
+  tv2#get_buffer#insert (try_convert (Coq.version ()));
   b#place_cursor ~where:(b#get_start_iter);
-	    (*  let _ =  refresh_m#connect#activate 
-		~callback:(fun () -> analyze_all tv1 tv2 tv3) 
-		in
-	    *)
-	    w#add_accel_group accel_group;
-    (* Remove default pango menu for textviews *)
-    ignore (tv1#event#connect#button_press ~callback:
-	      (fun ev -> GdkEvent.Button.button ev = 3));
-    ignore (tv2#event#connect#button_press ~callback:
-	      (fun ev -> GdkEvent.Button.button ev = 3));
-    ignore (tv3#event#connect#button_press ~callback:
-	      (fun ev -> GdkEvent.Button.button ev = 3));
-    tv1#misc#grab_focus ();
-    tv2#misc#set_can_focus false;
-    tv3#misc#set_can_focus false;
-    ignore (tv1#get_buffer#create_mark 
-	      ~name:"start_of_input" 
-	      tv1#get_buffer#get_start_iter);
-    ignore (tv2#get_buffer#create_mark 
-	      ~name:"end_of_conclusion" 
-	      tv2#get_buffer#get_start_iter);
-    ignore (tv1#get_buffer#create_tag 
-	      ~name:"to_process" 
-	      ~properties:[`BACKGROUND "light green" ;`EDITABLE false] ());
-    ignore (tv1#get_buffer#create_tag 
-	      ~name:"processed" 
-	      ~properties:[`BACKGROUND "green" ;`EDITABLE false] ());
-    ignore (tv1#get_buffer#create_tag 
-	      ~name:"error" 
-	      ~properties:[`UNDERLINE `DOUBLE ; `FOREGROUND "red"] ());
-    ignore (tv1#get_buffer#create_tag 
-	      ~name:"kwd" 
-	      ~properties:[`FOREGROUND "blue"] ());
-    ignore (tv1#get_buffer#create_tag 
-	      ~name:"decl" 
-	      ~properties:[`FOREGROUND "orange red"] ());
-    ignore (tv1#get_buffer#create_tag 
-	      ~name:"comment" 
-	      ~properties:[`FOREGROUND "brown"] ());
-    ignore (tv1#get_buffer#create_tag 
-	      ~name:"reserved" 
-	      ~properties:[`FOREGROUND "dark red"] ());
-    ignore (tv3#get_buffer#create_tag 
-	      ~name:"error" 
-	      ~properties:[`FOREGROUND "red"] ());
-    w#show ();
-    analyze_all tv1 tv2 tv3
+  (*  let _ =  refresh_m#connect#activate 
+      ~callback:(fun () -> analyze_all tv1 tv2 tv3) 
+      in
+  *)
+  w#add_accel_group accel_group;
+  (* Remove default pango menu for textviews *)
+  ignore (tv1#event#connect#button_press ~callback:
+	    (fun ev -> GdkEvent.Button.button ev = 3));
+  ignore (tv2#event#connect#button_press ~callback:
+	    (fun ev -> GdkEvent.Button.button ev = 3));
+  ignore (tv3#event#connect#button_press ~callback:
+	    (fun ev -> GdkEvent.Button.button ev = 3));
+  tv1#misc#grab_focus ();
+  tv2#misc#set_can_focus false;
+  tv3#misc#set_can_focus false;
+  ignore (tv1#get_buffer#create_mark 
+	    ~name:"start_of_input" 
+	    tv1#get_buffer#get_start_iter);
+  ignore (tv2#get_buffer#create_mark 
+	    ~name:"end_of_conclusion" 
+	    tv2#get_buffer#get_start_iter);
+  ignore (tv1#get_buffer#create_tag 
+	    ~name:"to_process" 
+	    ~properties:[`BACKGROUND "light blue" ;`EDITABLE false] ());
+  ignore (tv1#get_buffer#create_tag 
+	    ~name:"processed" 
+	    ~properties:[`BACKGROUND "light green" ;`EDITABLE false] ());
+  ignore (tv1#get_buffer#create_tag 
+	    ~name:"error" 
+	    ~properties:[`UNDERLINE `DOUBLE ; `FOREGROUND "red"] ());
+  ignore (tv1#get_buffer#create_tag 
+	    ~name:"kwd" 
+	    ~properties:[`FOREGROUND "blue"] ());
+  ignore (tv1#get_buffer#create_tag 
+	    ~name:"decl" 
+	    ~properties:[`FOREGROUND "orange red"] ());
+  ignore (tv1#get_buffer#create_tag 
+	    ~name:"comment" 
+	    ~properties:[`FOREGROUND "brown"] ());
+  ignore (tv1#get_buffer#create_tag 
+	    ~name:"reserved" 
+	    ~properties:[`FOREGROUND "dark red"] ());
+  ignore (tv3#get_buffer#create_tag 
+	    ~name:"error" 
+	    ~properties:[`FOREGROUND "red"] ());
+  w#show ();
+  analyze_all tv1 tv2 tv3
 
 let start () = 
   cant_break ();

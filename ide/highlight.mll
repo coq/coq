@@ -63,7 +63,7 @@ let declaration =
 rule next_order = parse
   | "(*" { comment_start := lexeme_start lexbuf; comment lexbuf }
   | keyword { lexeme_start lexbuf,lexeme_end lexbuf, "kwd" }
-  | declaration space+ ident 
+  | declaration space+ ident (space* ',' space* ident)* 
             { lexeme_start lexbuf, lexeme_end lexbuf, "decl" } 
   | _    { next_order lexbuf}
   | eof  { raise End_of_file }

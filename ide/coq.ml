@@ -9,7 +9,9 @@ open Printer
 open Environ
 open Evarutil
 open Evd
-
+open Hipattern
+open Tacmach
+open Reductionops
 
 let output = ref (Format.formatter_of_out_channel stdout)
 
@@ -23,6 +25,10 @@ let init () =
 
 let i = ref 0
 
+let version () = 
+  Printf.sprintf "The Coq Proof Assistant, version %s (%s)\nCompiled on %s\n"
+    Coq_config.version Coq_config.date Coq_config.compile_date
+
 let interp s = 
   prerr_endline s;
   flush stderr;
@@ -31,11 +37,15 @@ let interp s =
   let po = Pcoq.Gram.parsable (Stream.of_string s) in
   match Pcoq.Gram.Entry.parse Pcoq.main_entry po with
     (* | Some (_, VernacDefinition _) *)
-    | Some (_,ast) -> 
+    | Some last -> 
 	prerr_endline ("Done with "^s);
 	flush stderr;
-	ast
+	last
     | None -> assert false
+
+let is_tactic = function
+  | VernacSolve _ -> true
+  | _ -> false
 
 let msg m = 
   let b =  Buffer.create 103 in
@@ -77,33 +87,44 @@ let print_toplevel_error exc =
 
 let process_exn e = let s,loc=print_toplevel_error e in (msgnl s,loc)
 
+let interp_last last = 
+  prerr_string "*"; flush stderr;
+  try
+    vernac_com (States.with_heavy_rollback Vernacentries.interp) last
+  with e ->
+    let s,_ = process_exn e in prerr_endline s; raise e
+
 (* type hyp = (identifier * constr option * constr) * string*)
-type hyp = ((identifier * string) * constr option * constr) * (string * string)
-type concl = constr * string
+type hyp = env * evar_map *
+           ((identifier * string) * constr option * constr) * 
+           (string * string)
+type concl = env * evar_map * constr * string
 type goal = hyp list * concl
 
-let prepare_hyp env ((i,c,d) as a) =
-  ((i,string_of_id i),c,d), (msg (pr_var_decl env a), 
-			     msg (prterm_env_at_top env d))
+let prepare_hyp sigma env ((i,c,d) as a) =
+  env, sigma,
+  ((i,string_of_id i),c,d), 
+  (msg (pr_var_decl env a), msg (prterm_env_at_top env d))
 
-let prepare_hyps env =
+let prepare_hyps sigma env =
   assert (rel_context env = []);
   let hyps =
     fold_named_context
-      (fun env d acc -> let hyp =  prepare_hyp env d in hyp :: acc)
+      (fun env d acc -> let hyp = prepare_hyp sigma env d in hyp :: acc)
       env ~init:[] 
   in
   List.rev hyps
 
-let prepare_goal g =
+let prepare_goal sigma g =
   let env = evar_env g in
-  (prepare_hyps env,
-   (g.evar_concl, msg (prterm_env_at_top env g.evar_concl)))
+  (prepare_hyps sigma env,
+   (env, sigma, g.evar_concl, msg (prterm_env_at_top env g.evar_concl)))
 
 let get_curent_goals () = 
     let pfts = get_pftreestate () in
     let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in 
-    List.map prepare_goal gls
+    let sigma = Tacmach.evc_of_pftreestate pfts in
+    List.map (prepare_goal sigma) gls
 
 let print_no_goal () =
     let pfts = get_pftreestate () in
@@ -154,3 +175,95 @@ let word_class s =
     SHashtbl.find word_tbl s
   with Not_found -> Normal
 
+type reset_info = NoReset | Reset of Names.identifier * bool ref
+
+let compute_reset_info = function 
+  | VernacDefinition (_, id, DefineBody _, _, _) 
+  | VernacBeginSection id 
+  | VernacDefineModule (id, _, _, _) 
+  | VernacDeclareModule (id, _, _, _)
+  | VernacDeclareModuleType (id, _, _)
+  | VernacAssumption (_, (_,(id,_))::_) ->
+      Reset (id, ref true)
+  | VernacDefinition (_, id, ProveBody _, _, _)
+  | VernacStartTheoremProof (_, id, _, _, _) ->
+      Reset (id, ref false)
+  | _ -> 
+      NoReset
+
+let reset_initial () = 
+  prerr_endline "Reset initial called"; flush stderr;
+  Vernacentries.abort_refine Lib.reset_initial ()
+
+let reset_to id = 
+  prerr_endline ("Reset called with "^(string_of_id id)); flush stderr;
+  Vernacentries.abort_refine Lib.reset_name (Util.dummy_loc,id)
+
+
+let hyp_menu (env, sigma, ((coqident,ident),_,ast),(s,pr_ast)) =
+  [("Clear "^ident),("Clear "^ident^".");
+
+   ("Assumption"),
+   ("Assumption.");
+   
+   ("Apply "^ident),
+   ("Apply "^ident^".");
+   
+   ("Generalize "^ident),
+   ("Generalize "^ident^".");
+   
+   ("Absurd <"^ident^">"),
+   ("Absurd "^
+    pr_ast
+    ^".") ] @
+
+   (if is_equation ast then
+      [ "Discriminate "^ident, "Discriminate "^ident^".";
+	"Injection "^ident, "Injection "^ident^"." ]
+    else
+      []) @
+   
+   (let _,t = splay_prod env sigma ast in
+    if is_equation t then 
+      [ "Rewrite "^ident, "Rewrite "^ident^".";
+	"Rewrite <- "^ident, "Rewrite <- "^ident^"." ]
+    else
+      []) @
+   
+  [("Elim "^ident),
+   ("Elim "^ident^".");
+   
+   ("Inversion "^ident),
+   ("Inversion "^ident^".");
+   
+   ("Inversion_clear "^ident),
+   ("Inversion_clear "^ident^".")] 
+
+let concl_menu (_,_,concl,_) = 
+  let is_eq = is_equation concl in
+  ["Intro", "Intro.";
+   "Intros", "Intros.";
+   "Intuition","Intuition." ] @
+   
+   (if is_eq then 
+      ["Reflexivity", "Reflexivity.";
+       "Discriminate", "Discriminate.";
+       "Symmetry", "Symmetry." ]
+    else 
+      []) @
+
+  ["Omega", "Omega.";
+   "Ring", "Ring.";
+   "Auto with *", "Auto with *.";
+   "EAuto with *", "EAuto with *.";
+   "Tauto", "Tauto.";
+   "Trivial", "Trivial.";
+   "Decide Equality", "Decide Equality.";
+
+   "Simpl", "Simpl.";
+   "Red", "Red.";
+   "Split", "Split.";
+   "Left", "Left.";
+   "Right", "Right.";
+
+  ]
