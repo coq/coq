@@ -7,10 +7,13 @@ open Pcoq
 open Prim
 
 GEXTEND Gram
-  GLOBAL: var ident number string path ast astpat astact entry_type;
+  GLOBAL: var ident metaident number string path ast astpat astact entry_type;
 
   var:
     [ [ s = IDENT -> Nvar(loc,s) ] ]
+  ;
+  metaident:
+    [ [ s = METAIDENT -> Nvar(loc,s) ] ]
   ;
   ident:
     [ [ s = IDENT -> Id(loc,s) ] ]
@@ -21,27 +24,30 @@ GEXTEND Gram
   string:
     [ [ s = STRING -> Str(loc,s) ] ]
   ;
-  path:
-    [ [ (l,pk) = qualid -> Path(loc,l,pk) ] ]
+  astpath:
+    [ [ (l,pk) = astqualid -> Path(loc,l,pk) ] ]
   ;
-  qualid:
+  astqualid:
     [ [ "#"; l = LIST1 IDENT SEP "#"; "."; pk = IDENT -> (l, pk) ] ]
   ;
-
+  astident:
+    [ [ s = IDENT -> s 
+      | s = METAIDENT -> s ] ]
+  ;
   (* ast *)
   ast:
-    [ [ id = IDENT -> Nvar(loc,id)
+    [ [ id = astident -> Nvar(loc,id)
       | s = INT -> Num(loc, int_of_string s)
       | s = STRING -> Str(loc,s)
-      | p = path -> p
+      | p = astpath -> p
       | "{"; s = IDENT; "}" -> Id(loc,s)
-      | "("; nname = IDENT; l = LIST0 ast; ")" -> Node(loc,nname,l)
-      | "["; ido = idoption; "]"; b = ast -> Slam(loc,ido,b)
+      | "("; nname = astident; l = LIST0 ast; ")" -> Node(loc,nname,l)
+      | "["; ido = astidoption; "]"; b = ast -> Slam(loc,ido,b)
       | "'"; a = ast -> Node(loc,"$QUOTE",[a]) ] ]
   ;
-  idoption:
+  astidoption:
     [ [ "<>" -> None
-      | id = IDENT -> Some id ] ]
+      | id = astident -> Some id ] ]
   ;
 
   (* meta-syntax entries *)
