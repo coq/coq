@@ -2195,17 +2195,17 @@ toplevel/toplevel.cmx: toplevel/cerrors.cmx library/lib.cmx \
 toplevel/usage.cmo: config/coq_config.cmi toplevel/usage.cmi 
 toplevel/usage.cmx: config/coq_config.cmx toplevel/usage.cmi 
 toplevel/vernac.cmo: interp/constrextern.cmi interp/constrintern.cmi \
-    parsing/coqast.cmi parsing/lexer.cmi library/lib.cmi library/library.cmi \
-    kernel/names.cmi lib/options.cmi parsing/pcoq.cmi proofs/pfedit.cmi \
-    lib/pp.cmi translate/ppvernacnew.cmi library/states.cmi lib/system.cmi \
-    lib/util.cmi toplevel/vernacentries.cmi toplevel/vernacexpr.cmo \
-    toplevel/vernacinterp.cmi toplevel/vernac.cmi 
+    parsing/coqast.cmi parsing/lexer.cmi library/lib.cmi library/libnames.cmi \
+    library/library.cmi kernel/names.cmi lib/options.cmi parsing/pcoq.cmi \
+    proofs/pfedit.cmi lib/pp.cmi translate/ppvernacnew.cmi library/states.cmi \
+    lib/system.cmi lib/util.cmi toplevel/vernacentries.cmi \
+    toplevel/vernacexpr.cmo toplevel/vernacinterp.cmi toplevel/vernac.cmi 
 toplevel/vernac.cmx: interp/constrextern.cmx interp/constrintern.cmx \
-    parsing/coqast.cmx parsing/lexer.cmx library/lib.cmx library/library.cmx \
-    kernel/names.cmx lib/options.cmx parsing/pcoq.cmx proofs/pfedit.cmx \
-    lib/pp.cmx translate/ppvernacnew.cmx library/states.cmx lib/system.cmx \
-    lib/util.cmx toplevel/vernacentries.cmx toplevel/vernacexpr.cmx \
-    toplevel/vernacinterp.cmx toplevel/vernac.cmi 
+    parsing/coqast.cmx parsing/lexer.cmx library/lib.cmx library/libnames.cmx \
+    library/library.cmx kernel/names.cmx lib/options.cmx parsing/pcoq.cmx \
+    proofs/pfedit.cmx lib/pp.cmx translate/ppvernacnew.cmx library/states.cmx \
+    lib/system.cmx lib/util.cmx toplevel/vernacentries.cmx \
+    toplevel/vernacexpr.cmx toplevel/vernacinterp.cmx toplevel/vernac.cmi 
 toplevel/vernacentries.cmo: tactics/auto.cmi toplevel/class.cmi \
     pretyping/classops.cmi toplevel/command.cmi interp/constrextern.cmi \
     interp/constrintern.cmi library/decl_kinds.cmo library/declaremods.cmi \

@@ -60,6 +60,14 @@ theories/Init/Specif.vo: theories/Init/Specif.v theories/Init/Notations.vo theor
 theories/Init/Logic_Type.vo: theories/Init/Logic_Type.v theories/Init/Notations.vo theories/Init/Logic.vo
 theories/Init/Wf.vo: theories/Init/Wf.v theories/Init/Notations.vo theories/Init/Logic.vo theories/Init/Datatypes.vo
 theories/Init/Prelude.vo: theories/Init/Prelude.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo theories/Init/Specif.vo theories/Init/Peano.vo theories/Init/Wf.vo
+theories/Init/Notations.vo: theories/Init/Notations.v
+theories/Init/Datatypes.vo: theories/Init/Datatypes.v theories/Init/Notations.vo
+theories/Init/Peano.vo: theories/Init/Peano.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo
+theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Notations.vo theories/Init/Datatypes.vo
+theories/Init/Specif.vo: theories/Init/Specif.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo
+theories/Init/Logic_Type.vo: theories/Init/Logic_Type.v theories/Init/Notations.vo theories/Init/Logic.vo
+theories/Init/Wf.vo: theories/Init/Wf.v theories/Init/Notations.vo theories/Init/Logic.vo theories/Init/Datatypes.vo
+theories/Init/Prelude.vo: theories/Init/Prelude.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo theories/Init/Specif.vo theories/Init/Peano.vo theories/Init/Wf.vo
 theories/Logic/Hurkens.vo: theories/Logic/Hurkens.v
 theories/Logic/ProofIrrelevance.vo: theories/Logic/ProofIrrelevance.v theories/Logic/Hurkens.vo
 theories/Logic/Classical.vo: theories/Logic/Classical.v theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Set.vo
@@ -263,5 +271,4 @@ contrib/correctness/Sorted.vo: contrib/correctness/Sorted.v contrib/correctness/
 contrib/correctness/Tuples.vo: contrib/correctness/Tuples.v
 contrib/fourier/Fourier_util.vo: contrib/fourier/Fourier_util.v theories/Reals/Rbase.vo
 contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/field/field.cmo contrib/fourier/Fourier_util.vo contrib/field/Field.vo theories/Reals/DiscrR.vo
-contrib/interface/Centaur.vo: contrib/interface/Centaur.v
 contrib/cc/CC.vo: contrib/cc/CC.v theories/Logic/Eqdep_dec.vo
