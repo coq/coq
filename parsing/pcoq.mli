@@ -132,6 +132,7 @@ module Constr :
     val constr : constr_expr Gram.Entry.e
     val constr_eoi : constr_expr Gram.Entry.e
     val lconstr : constr_expr Gram.Entry.e
+    val binder_constr : constr_expr Gram.Entry.e
     val operconstr : constr_expr Gram.Entry.e
     val ident : identifier Gram.Entry.e
     val global : reference Gram.Entry.e

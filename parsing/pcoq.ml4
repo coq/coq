@@ -343,6 +343,7 @@ module Constr =
     let operconstr = gec_constr "operconstr"
     let constr_eoi = eoi_entry constr
     let lconstr = gec_constr "lconstr"
+    let binder_constr = create_constr_entry uconstr "binder_constr"
     let ident = make_gen_entry uconstr rawwit_ident "ident"
     let global = make_gen_entry uconstr rawwit_ref "global"
     let sort = make_gen_entry uconstr rawwit_sort "sort"

@@ -215,13 +215,21 @@ let print_grammar univ entry =
     let te,_,_ = get_constr_entry false typ in
     Gram.Entry.print te
   else
-    let te = 
-      match entry with
-	| "constr" | "operconstr" -> weaken_entry Pcoq.Constr.operconstr
-	| "pattern" -> weaken_entry Pcoq.Constr.pattern
-	| "tactic" -> weaken_entry Pcoq.Tactic.simple_tactic
-	| _ -> error "Unknown or unprintable grammar entry" in
-    Gram.Entry.print te
+    match entry with
+      | "constr" | "operconstr" | "binder_constr" ->
+	  msgnl (str "Entry constr is");
+	  Gram.Entry.print Pcoq.Constr.constr;
+	  msgnl (str "and lconstr is");
+	  Gram.Entry.print Pcoq.Constr.lconstr;
+	  msgnl (str "where binder_constr is");
+	  Gram.Entry.print Pcoq.Constr.binder_constr;
+	  msgnl (str "and operconstr is");
+	  Gram.Entry.print Pcoq.Constr.operconstr;
+      | "pattern" ->
+	  Gram.Entry.print Pcoq.Constr.pattern
+      | "tactic" -> 
+	  Gram.Entry.print Pcoq.Tactic.simple_tactic
+      | _ -> error "Unknown or unprintable grammar entry"
 
 (* Parse a format (every terminal starting with a letter or a single
    quote (except a single quote alone) must be quoted) *)
