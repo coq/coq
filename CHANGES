@@ -1,7 +1,10 @@
 - Consecutive as in patterns are forbidden
 
-- Names generated in cases are different
+- Names generated in Cases are different
 
 - "command" in grammars is now "constr" as in pretty-printing rules
 
 - Numérotation dans l'ordre des hypothèses créées par Decompose
+- Correction de bugs (quand le type ne commence pas par un inductif)
+
+- Simpl ne déplie plus les appels récursifs d'un Fix réduit
