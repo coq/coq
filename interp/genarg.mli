@@ -17,7 +17,7 @@ open Topconstr
 
 type 'a or_var = ArgArg of 'a | ArgVar of identifier located
 type 'a or_metanum = AN of 'a | MetaNum of int located
-type 'a and_short_name = 'a * identifier option
+type 'a and_short_name = 'a * identifier located option
 
 (* In globalize tactics, we need to keep the initial constr_expr to recompute*)
 (* in the environment by the effective calls to Intro, Inversion, etc *)

@@ -40,7 +40,7 @@ type argument_type =
 
 type 'a or_var = ArgArg of 'a | ArgVar of identifier located
 type 'a or_metanum = AN of 'a | MetaNum of int located
-type 'a and_short_name = 'a * identifier option
+type 'a and_short_name = 'a * identifier located option
 type rawconstr_and_expr = rawconstr * constr_expr option
 
 (* Dynamics but tagged by a type expression *)

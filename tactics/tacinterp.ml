@@ -446,20 +446,28 @@ let intern_induction_arg ist = function
 
 (* Globalizes a reduction expression *)
 let intern_evaluable_or_metanum ist = function
-  | AN qid ->
-      let e = match qid with
-        | Ident (loc,id) when find_ctxvar id ist ->
-            ArgArg (EvalVarRef id, Some id)
-        | Ident (loc,id) as r when find_var id ist -> ArgVar (loc,id)
-        | r -> 
-            let e = match fst(intern_constr_reference !strict_check ist r) with
-            | RRef (_,ConstRef c) -> EvalConstRef c
-            | RRef (_,VarRef c) | RVar (_,c) -> EvalVarRef c
-            | _ -> error_not_evaluable (pr_reference r) in
-            let short_name = match r with
-              | Ident (_,id) when not !strict_check -> Some id
-              | _ -> None in
-            ArgArg (e,short_name) 
+  | AN r ->
+      let e = match r with
+        | Ident (loc,id) as r when find_ltacvar id ist -> ArgVar (loc,id)
+	| Ident (_,id) when
+	    (not !strict_check & find_hyp id ist) or find_ctxvar id ist ->
+	    ArgArg (EvalVarRef id, None)
+	| r ->
+	    let _,qid = qualid_of_reference r in
+	    try
+	      let e = match Nametab.locate qid with
+		| ConstRef c -> EvalConstRef c
+		| VarRef c -> EvalVarRef c
+		| _ -> error_not_evaluable (pr_reference r) in
+              let short_name = match r with
+		| Ident (loc,id) when not !strict_check -> Some (loc,id)
+		| _ -> None in
+              ArgArg (e,short_name)
+	    with Not_found ->
+	      match r with 
+		| Ident (loc,id) when not !strict_check ->
+		    ArgArg (EvalVarRef id, Some (loc,id))
+		| _ -> error_global_not_found_loc loc qid
       in AN e
   | MetaNum (_loc,n) -> MetaNum (loc,intern_metanum ist loc n)
 
@@ -1060,12 +1068,15 @@ let interp_evaluable_or_metanum ist env = function
   | MetaNum (loc,n) ->
       coerce_to_evaluable_ref env (VConstr (List.assoc n ist.lmatch))
   | AN r -> match r with
-      | ArgArg (r,Some id) ->
+      | ArgArg (r,Some (loc,id)) ->
           (* Maybe [id] has been introduced by Intro-like tactics *)
           (try match Environ.lookup_named id env with
             | (_,Some _,_) -> EvalVarRef id
             | _ -> error_not_evaluable (pr_id id)
-          with Not_found -> r)
+          with Not_found ->
+	    match r with
+	      | EvalConstRef _ -> r
+	      | _ -> Pretype_errors.error_var_not_found_loc loc id)
       | ArgArg (r,None) -> r
       | ArgVar (_,id) -> 
           coerce_to_evaluable_ref env (unrec (List.assoc id ist.lfun))
