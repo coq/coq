@@ -6,8 +6,8 @@
 # 
 ##################################
 
-VERSION=8.0bugfix
-DATE="Jul 2004"
+VERSION=8.0pl2
+DATE="Jan 2005"
 
 # a local which command for sh
 which () {
