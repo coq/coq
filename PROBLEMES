@@ -37,12 +37,35 @@ Bordeaux/GROUPS : OK
 Bordeaux/EXCEPTIONS : OK
 
 Dyade/Otway-Rees : OK
-Dyade/BDD : Require Rocq/GRAPHS
+Dyade/BDD : 
+File "./bdd4.v", line 122, characters 10-28
+Error: Tactic generated a subgoal identical to the original goal.
+
 
 Lyon/AUTOMATA : OK
-Lyon/IEEE754 : OK
-Lyon/COINDUCTIVES : OK
 Lyon/CIRCUITS : OK
+Lyon/COINDUCTIVES : 
+File "./Examples.v", line 276, characters 0-764
+Error: Incorrect elimination of H in the inductive type
+ eq
+The elimination predicate
+ [a1:A; _:((hd (Cons s0 H))=(hd (Cons s a0))); a2:A]
+  (EqSt2 A (Cons s0 H) (Cons a2 a0)) has type
+ A->(hd (Cons s0 H))=(hd (Cons s a0))->A->Prop
+It should be one of :
+ (a:A)(hd (Cons a0 s0))=a->Prop, (a:A)(hd (Cons a0 s0))=a->Set,
+ A->Prop, A->Set
+File "./Specified_Streams.v", line 11, characters 0-132
+Error: Illegal application (Type Error): 
+The term SStream of type (A:Set)(nat->A->Prop)->Set
+cannot be applied to the terms
+ A : Set
+ x : (SStream A P)
+The 2nd term has type (SStream A P) which should be coercible to
+ nat->A->Prop
+
+Lyon/IEEE754 : OK
+
 
 Rocq/GRAPHS
 /home/cpaulin/TYPES/V7/bin/coqc  -q  -I . lsort
@@ -59,14 +82,27 @@ Rocq/MUTUAL-EXCLUSION/
 	Incompatibilite interpretation des arguments de Tactic Definition
 
 Rocq/COC
-File "./Conv_Dec.v", line 68, characters 2-459
-Error: Inference of annotation not yet implemented in this case
---> PROBLEME DISPARU 
+Realizer dans Conv_Dec.v, Expr.v, Infer.v, Machine.v MyList.v Names.v
+File "./Int_typ.v", line 209, characters 30-44
+Error: In environment
+int_typ : term->intP->(s:skel)(Can s)
+T  : term
+ip  : intP
+s  : skel
+A  : term
+B  : term
+_  : skel
+_  : skel
+s1  := s : skel
+The term (default_can s1) has type (Can s1)
+ while it is expected to have type (Can (PROD _ s1))
+
 
 Rocq/ARITH/Chinese
 File "./Zdiv.v", line 34, characters 0-944
-Anomaly: Search error. Please report.
-Refine
+Error: Unable to infer a Cases predicate
+Either there is a type incompatiblity or the problem involves dependencies
+
 --> PROBLEME RESOLU MAIS LE MESSAGE D'ERREUR RESTE PAS TRES CLAIR
 
 Rocq/PARADOXES
