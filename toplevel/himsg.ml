@@ -43,7 +43,7 @@ let explain_reference_variables id =
      'sTR "refers to variables which are not in the context" >]
 
 let msg_bad_elimination ctx k = function
-  | Some(ki,kp,explanation) ->
+  | Some(kp,ki,explanation) ->
       let pki = prterm_env ctx ki in
       let pkp = prterm_env ctx kp in
       (hOV 0 

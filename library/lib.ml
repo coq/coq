@@ -84,13 +84,14 @@ let add_anonymous_entry node =
 
 let add_leaf id kind obj =
   let sp = make_path id kind in
-  add_entry sp (Leaf obj);
   cache_object (sp,obj);
+  add_entry sp (Leaf obj);
   sp
 
 let add_anonymous_leaf obj =
-  let sp = add_anonymous_entry (Leaf obj) in
-  cache_object (sp,obj)
+  let sp = make_path (anonymous_id()) OBJ in
+  cache_object (sp,obj);
+  add_entry sp (Leaf obj)
 
 let add_frozen_state () =
   let _ = add_anonymous_entry (FrozenState (freeze_summaries())) in ()

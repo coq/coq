@@ -184,17 +184,20 @@ let listrec_mconstr env ntypes nparams i indlc =
           if k >= n && k<n+ntypes then begin
 	    check_correct_par env nparams ntypes n (k-n+1) largs;
 	    Mrec(n+ntypes-k-1)
-          end else if noccur_between n ntypes x then 
+          end else if List.for_all (noccur_between n ntypes) largs then 
 	    if (n-nparams) <= k & k <= (n-1) 
 	    then Param(n-1-k)
             else Norec
 	  else
 	    raise (IllFormedInd (LocalNonPos n))
       | IsMutInd (ind_sp,a) -> 
-          if (noccur_between n ntypes x) then Norec
+          if array_for_all (noccur_between n ntypes) a
+            && List.for_all (noccur_between n ntypes) largs 
+	  then Norec
           else Imbr(ind_sp,imbr_positive env n (ind_sp,a) largs)
       | err -> 
-	  if noccur_between n ntypes x then Norec
+	  if noccur_between n ntypes x && List.for_all (noccur_between n ntypes) largs 
+	  then Norec
 	  else raise (IllFormedInd (LocalNonPos n))
 
   and imbr_positive env n mi largs =
@@ -210,6 +213,8 @@ let listrec_mconstr env ntypes nparams i indlc =
     (* The abstract imbricated inductive type with parameters substituted *)
     let auxlcvect = abstract_mind_lc env auxntyp auxnpar auxlc in
     let newidx = n + auxntyp in
+(* Extends the environment with a variable corresponding to the inductive def *)
+    let env' = push_rel_assum (Anonymous,mis_user_arity mispeci) env in
     let _ = 
       (* fails if the inductive type occurs non positively *)
       (* when substituted *) 
@@ -217,7 +222,7 @@ let listrec_mconstr env ntypes nparams i indlc =
 	(function c -> 
 	   let c' = hnf_prod_applist env Evd.empty c 
 		      (List.map (lift auxntyp) lpar) in 
-	   check_construct env false newidx c') 
+	   check_construct env' false newidx c') 
 	auxlcvect
     in 
     lrecargs

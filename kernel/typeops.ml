@@ -345,59 +345,86 @@ let rec instantiate_recarg sp lrc ra =
     | Norec          -> Norec
     | Param(k)       -> List.nth lrc k
 
-(* propagate checking for F,incorporating recursive arguments *)
-let check_term env mind_recvec f = 
-  let rec crec env n l (lrec,c) = 
-    match lrec, kind_of_term (strip_outer_cast c) with
-      | (Param(_)::lr, IsLambda (x,a,b)) -> 
-          let l' = map_lift_fst l in
-          crec (push_rel_assum (x,a) env) (n+1) l' (lr,b)
-      | (Norec::lr, IsLambda (x,a,b)) -> 
-          let l' = map_lift_fst l in
-          crec (push_rel_assum (x,a) env) (n+1) l' (lr,b)
-      | (Mrec(i)::lr, IsLambda (x,a,b)) -> 
-          let l' = map_lift_fst l in
-          crec (push_rel_assum (x, a) env) (n+1)
-	    ((1,mind_recvec.(i))::l') (lr,b)
-      | (Imbr((sp,i) as ind_sp,lrc)::lr, IsLambda (x,a,b)) -> 
-          let l' = map_lift_fst l in
-          let sprecargs = 
-	    mis_recargs (lookup_mind_specif (ind_sp,[||]) env) in
-          let lc = 
-	    Array.map (List.map (instantiate_recarg sp lrc)) sprecargs.(i)
-	  in
-          crec (push_rel_assum (x, a) env) (n+1) ((1,lc)::l') (lr,b)
-      | _,_ -> f env n l (strip_outer_cast c)
-  in 
-  crec env
+(* To each inductive definition corresponds an array describing the structure of recursive 
+   arguments for each constructor, we call it the recursive spec of the type 
+   (it has type recargs vect). 
+   For checking the guard, we start from the decreasing argument (Rel n) 
+   with its recursive spec.
+   During checking the guardness condition, we collect patterns variables corresponding 
+   to subterms of n, each of them with its recursive spec.
+   They are organised in a list lst of type (int * recargs) list which is sorted 
+   with respect to the first argument.
 
-let is_inst_var env sigma k c = 
-  match kind_of_term (fst (whd_betadeltaiota_stack env sigma c)) with 
+*)
+
+(*
+f is a function of type  env -> int -> (int * recargs) list -> constr -> 'a 
+c is a branch of an inductive definition corresponding to the spec lrec. 
+mind_recvec is the recursive spec of the inductive definition of the decreasing argument n.
+
+check_term env mind_recvec f n lst (lrec,c) will pass the lambdas of c corresponding 
+to pattern variables and collect possibly new subterms variables and apply f to 
+the body of the branch with the correct env and decreasing arg.
+*)
+
+let check_term env mind_recvec f = 
+  let rec crec env n lst (lrec,c) = 
+    let c' = strip_outer_cast c in 
+    match lrec, kind_of_term c' with 
+	(ra::lr,IsLambda (x,a,b))
+	-> let lst' = map_lift_fst lst and env' = push_rel_assum (x,a) env and n'=n+1 
+        in begin match ra with 
+	    Mrec(i) -> crec env' n' ((1,mind_recvec.(i))::lst') (lr,b)
+          | Imbr((sp,i) as ind_sp,lrc) ->           
+	       let sprecargs = mis_recargs (lookup_mind_specif (ind_sp,[||]) env) in
+               let lc = Array.map (List.map (instantiate_recarg sp lrc)) sprecargs.(i)
+               in crec env' n' ((1,lc)::lst') (lr,b)
+	  | _ -> crec env' n' lst' (lr,b) end
+	| (_,_) -> f env n lst c'
+ in crec env
+
+(* c is supposed to be in beta-delta-iota head normal form *)
+
+let is_inst_var k c = 
+  match kind_of_term (fst (decomp_app c)) with 
     | IsRel n -> n=k
     | _ -> false
 
+(* 
+is_subterm_specif env sigma lcx mind_recvec n lst c 
+n is the principal arg and has recursive spec lcx, lst is the list of subterms of n with 
+spec. 
+is_subterm_specif should test if c is a subterm of n and fails with Not_found if not.
+In case it is, it should send its recursive specification.
+This recursive spec should be the same size as the number of constructors of the type 
+of c. A problem occurs when c is built by contradiction. In that case no spec is given.
+
+*)
 let is_subterm_specif env sigma lcx mind_recvec = 
   let rec crec env n lst c = 
     let f,l = whd_betadeltaiota_stack env sigma c in
     match kind_of_term f with 
-      | IsRel k -> find_sorted_assoc k lst
+      | IsRel k -> Some (find_sorted_assoc k lst)
 
       | IsMutCase ( _,_,c,br) ->
-          if Array.length br = 0 then
-            [||] 
+          if Array.length br = 0 then None
+
           else
-            let lcv = 
+            let def = Array.create (Array.length br) []
+            in let lcv = 
 	      (try 
-		 if is_inst_var env sigma n c then lcx else crec env n lst c 
-               with Not_found -> (Array.create (Array.length br) []))
+		 if is_inst_var n c then lcx 
+		 else match crec env n lst c with Some lr -> lr | None -> def
+               with Not_found -> def)
             in 
 	    assert (Array.length br = Array.length lcv);
             let stl = 
 	      array_map2
                 (fun lc a -> 
                    check_term env mind_recvec crec n lst (lc,a)) lcv br 
-            in 
-	    stl.(0)
+            in let stl0 = stl.(0) in
+	    if array_for_all (fun st -> st=stl0) stl then stl0 
+            else None
 	       
       | IsFix ((recindxs,i),(typarray,funnames,bodies as recdef)) ->
           let nbfix   = List.length funnames in
@@ -405,23 +432,21 @@ let is_subterm_specif env sigma lcx mind_recvec =
           let theBody = bodies.(i)   in
           let sign,strippedBody = decompose_lam_n_assum (decrArg+1) theBody in
           let nbOfAbst = nbfix+decrArg+1 in
+(* when proving that the fixpoint f(x)=e is less than n, it is enough to prove 
+   that e is less than n assuming f is less than n
+   furthermore when f is applied to a term which is strictly less than n, one may 
+   assume that x itself is strictly less than n
+*)
           let newlst = 
-            if List.length l < (decrArg+1) then
-              ((nbOfAbst,lcx) :: (map_lift_fst_n nbOfAbst lst))
-            else 
-              let theDecrArg  = List.nth l decrArg in
-              let recArgsDecrArg = 
-                try (crec env n lst theDecrArg)
-	        with Not_found -> Array.create 0 [] 
-              in 
-	      if (Array.length recArgsDecrArg)=0 then
-		(nbOfAbst,lcx) :: (map_lift_fst_n nbOfAbst lst)
-              else 
-		(1,recArgsDecrArg) ::
-                (nbOfAbst,lcx) ::
-                (map_lift_fst_n nbOfAbst lst)
-          in 
-	  let env' = push_rec_types recdef env in
+            let lst' = (nbOfAbst,lcx) :: (map_lift_fst_n nbOfAbst lst) in
+            if List.length l < (decrArg+1) then lst' 
+            else let theDecrArg  = List.nth l decrArg in
+	      try 
+	      match crec env n lst theDecrArg with 
+		  (Some recArgsDecrArg) -> (1,recArgsDecrArg) :: lst' 
+                | None -> lst' 
+	      with Not_found -> lst'
+	  in let env' = push_rec_types recdef env in
 	  let env'' = push_rels sign env' in
 	  crec env'' (n+nbOfAbst) newlst strippedBody
 	    
@@ -430,16 +455,27 @@ let is_subterm_specif env sigma lcx mind_recvec =
           crec (push_rel_assum (x, a) env) (n+1) lst' b
 
       (*** Experimental change *************************)
-      | IsMeta _ -> [||]
+      | IsMeta _ -> None
       | _ -> raise Not_found
   in 
   crec env
+
+let spec_subterm_strict env sigma lcx mind_recvec n lst c nb = 
+    try match  is_subterm_specif env sigma lcx mind_recvec n lst c 
+        with Some lr -> lr | None -> Array.create nb []
+    with Not_found -> Array.create nb []
+
+let spec_subterm_large env sigma lcx mind_recvec n lst c nb = 
+  if is_inst_var n c then lcx 
+  else spec_subterm_strict env sigma lcx mind_recvec n lst c nb 
+
 
 let is_subterm env sigma lcx mind_recvec n lst c = 
   try 
     let _ = is_subterm_specif env sigma lcx mind_recvec n lst c in true 
   with Not_found -> 
     false
+
 
 exception FixGuardError of guard_error
 
@@ -494,14 +530,8 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 	    else List.for_all (check_rec_call env n lst) l        
 
 	| IsMutCase (ci,p,c_0,lrest) ->
-            let lc = 
-	      (try 
-		 if is_inst_var env sigma n c_0 then 
-		   lcx 
-		 else 
-		   is_subterm_specif env sigma lcx mind_recvec n lst c_0
-	       with Not_found -> 
-		 Array.create (Array.length lrest) []) 
+            let lc = spec_subterm_large env sigma lcx mind_recvec n lst c_0 
+		       (Array.length lrest)
 	    in
             (array_for_all2
 	       (fun c0 a -> 
@@ -526,42 +556,27 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 
 	| IsFix ((recindxs,i),(typarray,funnames,bodies as recdef)) ->
             (List.for_all (check_rec_call env n lst) l) &&
-            let nbfix = List.length funnames in
-            let decrArg = recindxs.(i) in
+            (array_for_all (check_rec_call env n lst) typarray) && 
+	    let nbfix = List.length funnames 
+            in let decrArg = recindxs.(i) 
+            and env' = push_rec_types recdef env 
+            and n' = n+nbfix
+	    and lst' = map_lift_fst_n nbfix lst
+	    in 
             if (List.length l < (decrArg+1)) then
-              (array_for_all (check_rec_call env n lst) typarray)
-	      &&
-	      (array_for_all
-		 (check_rec_call
-		    (push_rec_types recdef env)
-		    (n+nbfix)
-		    (map_lift_fst_n nbfix lst))
-		 bodies)
+	       array_for_all (check_rec_call env' n' lst') bodies
             else 
               let theDecrArg  = List.nth l decrArg in
-              let recArgsDecrArg = 
-                try 
-		  is_subterm_specif env sigma lcx mind_recvec n lst theDecrArg
-	        with Not_found -> 
-		  Array.create 0 [] 
-              in 
-	      if (Array.length recArgsDecrArg)=0 then
-		(array_for_all (check_rec_call env n lst) typarray)
-		&&
-		(array_for_all
-		   (check_rec_call 
-		      (push_rec_types recdef env)
-		      (n+nbfix)
-		      (map_lift_fst_n nbfix lst))
-		   bodies)
-              else 
-                let theBody = bodies.(i)   in
-		let env' = push_rec_types recdef env in
-		(array_for_all
-		   (fun t -> check_rec_call env n lst t) typarray) &&
-		(check_rec_call_fix_body env' (n+nbfix)
-		   (map_lift_fst_n nbfix lst) (decrArg+1) recArgsDecrArg
-		   theBody)
+		begin
+		  try 
+		    match is_subterm_specif env sigma lcx mind_recvec n lst theDecrArg
+		    with Some recArgsDecrArg -> 
+		       let theBody = bodies.(i)   in
+			 check_rec_call_fix_body env' n' lst' (decrArg+1) recArgsDecrArg
+			    theBody
+		      | None -> array_for_all (check_rec_call env' n' lst') bodies
+		  with Not_found -> array_for_all (check_rec_call env' n' lst') bodies
+		end
 
 	| IsCast (a,b) -> 
 	    (check_rec_call env n lst a) &&
