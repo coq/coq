@@ -7,8 +7,8 @@
 \usepackage{amssymb}
 \usepackage{url}
 \usepackage{multicol}
+\usepackage{hevea}
 \usepackage{fullpage}
-%\usepackage{hevea}
 %\usepackage[latin1]{inputenc}
 %\usepackage[english]{babel}
 
@@ -26,6 +26,11 @@
 \def\Krakatoa{\textsc{Krakatoa }}
 \def\Ltac{\textsc{Ltac }}
 \def\CoqIde{\textsc{CoqIde }}
+
+\newcommand{\coqtt}[1]{{\tt #1}}
+\newcommand{\coqimp}{{\mbox{\tt ->}}}
+\newcommand{\coqequiv}{{\mbox{\tt <->}}}
+
 
 % macro pour les tactics
 \def\split{{\tt split }}
@@ -78,6 +83,26 @@
 \def\Defined{{\tt Defined }}
 \def\Qed{{\tt Qed }}
 \def\pattern{{\tt pattern }}
+\def\Type{{\tt Type }}
+\def\Prop{{\tt Prop }}
+\def\Set{{\tt Set }}
+
+
+\newcommand\vfile[2]{\ahref{#1}{\tt {#2}.v}}
+\urldef{\InitWf}{\url}
+  {http://coq.inria.fr/library/Coq.Init.Wf.html}
+\urldef{\LogicBerardi}{\url}
+  {http://coq.inria.fr/library/Coq.Logic.Berardi.html}
+\urldef{\LogicClassical}{\url}
+  {http://coq.inria.fr/library/Coq.Logic.Classical.html}
+\urldef{\LogicClassicalFacts}{\url}
+  {http://coq.inria.fr/library/Coq.Logic.ClassicalFacts.html}
+\urldef{\LogicProofIrrelevance}{\url}
+  {http://coq.inria.fr/library/Coq.Logic.ProofIrrelevance.html}
+\urldef{\LogicEqdep}{\url}
+  {http://coq.inria.fr/library/Coq.Logic.Eqdep.html}
+\urldef{\LogicEqdepDec}{\url}
+  {http://coq.inria.fr/library/Coq.Logic.Eqdep_dec.html}
 
 
 
@@ -147,11 +172,30 @@ of this tacit convention. In French, ``coq'' means rooster, and it
 sounds like the initials of the Calculus of Constructions CoC on which
 it is based.
 
+\Question{Is \Coq a theorem prover?}
+
+\Coq comes with a few decision procedures (on propositional
+calculus, Presburger arithmetic, ring and field simplification,
+resolution, ...) but the main style for proving theorems is
+interactively by using LCF-style tactics.
+
+
 \Question{What are the other theorem provers ?} 
 Many other theorem provers are available for use nowadays. 
 Isabelle, HOL, HOL Light, Lego, Nuprl, PVS are examples of provers that are fairly similar
 to \Coq by the way they interact with the user. Other relatives of
 \Coq are ACL2, Alfa, Elf, Kiv, Mizar, NqThm, $\Omega$mega\ldots
+
+\Question{What's the status of proofs in \Coq}
+
+{\Coq} proofs are build with tactics allowing both forward 
+reasoning (stating
+
+cannot be accepted without a proof expressed in the Calculus of
+Inductive Constructions. The correctness of a proof relies on a
+relatively small proof-checker at the kernel of \Coq (8000 lines of ML
+code). Even \Coq decision procedures are producing proofs which are
+double-checked by the kernel.
 
 
 \Question{Where can I find information about the theory behind \Coq ?}
@@ -175,7 +219,6 @@ annotated programs written in other languages.
 
 Estimation is about 100 regular users.
 
-
 \Question{How old is \Coq ?}
 The first official release of \Coq (v. 4.10) was distributed in 1989.
 
@@ -194,6 +237,27 @@ The first official release of \Coq (v. 4.10) was distributed in 1989.
 \item[Proof General] A emacs mode for \Coq and many other proof assistants.
 \item[Foc] The Foc project aims at building an environment to develop certified computer algebra libraries. 
 \end{description}
+
+\Question{What are the high-level tactics of \Coq}
+
+\begin{itemize}
+\item Decision of quantifier-free Presburger's Arithmetic
+\item Simplification of expressions on rings and fields
+\item Decision of closed systems of equations
+\item Semi-decision of first-order logic
+\item Prolog-style proof search, possibly involving equalities
+\end{itemize}
+
+\Question{What are the main libraries of \Coq}
+
+\begin{itemize}
+\item Basic Peano's arithmetic
+\item Binary integer numbers
+\item Real analysis
+\item Libraries for lists, boolean, maps.
+\item Libraries for relations, sets
+\end{itemize}
+
 
 \Question{What are the academic applications for \Coq ?}
 
@@ -285,9 +349,250 @@ Windows. The sources can be easily adapted to all platforms supporting Objective
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\section{Logic}
 
 
 
+\Question{What is the logic of \Coq?}
+
+\Coq is based on an axiom-free type theory called
+the Calculus of Inductive Constructions (see Coquand \cite{CoHu86}
+and Coquand--Paulin-Mohring \cite{CoPa89}). It includes higher-order
+functions and predicates, inductive and co-inductive datatypes and
+predicates, and a stratified hierarchy of sets.
+
+\Question{Is \Coq's logic intuitionistic or classical?}
+
+\Coq theory is basically intuitionistic
+(i.e. excluded-middle $A\lor\neg A$ is not granted by default) with
+the possibility to reason classically on demand by requiring an
+optional module stating $A\lor\neg A$.
+
+
+\Question{Can I define non-terminating programs in \Coq?}
+
+No, all programs in \Coq are terminating. Especially, loops
+must come with an evidence of their termination.
+
+
+\Question{What is Streicher's axiom $K$}
+\label{Streicher}
+
+Streicher's axiom $K$ \cite{HofStr98} asserts dependent
+elimination of reflexive equality proofs.
+
+\begin{coq_example*}
+Axiom Streicher_K :
+  forall (A:Type) (x:A) (P: x=x -> Prop),
+    P (refl_equal x) -> forall p: x=x, P p.
+\end{coq_example*}
+
+In the general case, axiom $K$ is an independent statement of the
+Calculus of Inductive Constructions.  However, it is true on decidable
+domains (see file \vfile{\LogicEqdepDec}{Eqdep\_dec}). It is also
+trivially a consequence of proof-irrelevance (see
+\ref{proof-irrelevance}) hence of classical logic.
+
+Axiom $K$ is equivalent to {\em Uniqueness of Identity Proofs} \cite{HofStr98}
+which states that
+
+\begin{coq_example*}
+Axiom UIP : forall (A:Set) (x y:A) (p1 p2: x=y), p1 = p2.
+\end{coq_example*}
+
+Axiom $K$ is also equivalent to {\em Uniqueness of Reflexive Identity Proofs} \cite{HofStr98}
+
+\begin{coq_example*}
+Axiom UIP_refl : forall (A:Set) (x:A) (p: x=x), p = refl_equal x.
+\end{coq_example*}
+
+Axiom $K$ is also equivalent to 
+
+\begin{coq_example*}
+Axiom
+  eq_rec_eq :
+    forall (A:Set) (x:A) (P: A->Set) (p:P x) (h: x=x),
+      p = eq_rect x P p x h.
+\end{coq_example*}
+
+It is also equivalent to the injectivity of dependent equality (dependent equality is itself equivalent to equality of dependent pairs).
+
+\begin{coq_example*}
+Inductive eq_dep (U:Set) (P:U -> Set) (p:U) (x:P p) :
+forall q:U, P q -> Prop :=
+    eq_dep_intro : eq_dep U P p x p x.
+Axiom
+  eq_dep_eq :
+    forall (U:Set) (u:U) (P:U -> Set) (p1 p2:P u),
+      eq_dep U P u p1 u p2 -> p1 = p2.
+\end{coq_example*}
+
+\subsection{Impredicativity}
+
+\Question{Why Injection does not work on impredicative {\tt Set}?}
+
+ E.g. in this case (this occurs only in the {\tt Set}-impredicative
+ variant of \Coq:
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{coq_example*}
+Inductive I : Type :=
+  intro : forall k:Set, k -> I.
+Lemma eq_jdef : 
+   forall x y:nat, intro _ x = intro _ y -> x = y.
+Proof.
+   intros x y H; injection H.
+\end{coq_example*}
+
+ Injectivity of constructors is restricted to predicative types. If
+injectivity on large inductive types were not restricted, we would be
+allowed to derive an inconsistency (e.g. following the lines of
+Burali-Forti paradox). The question remains open whether injectivity
+is consistent on some large inductive types not expressive enough to
+encode known paradoxes (such as type I above).
+
+
+\Question{What is a "large inductive definition"?}
+
+ An inductive definition in {\Prop} pr {\Set} is called large
+if its constructors embed sets or propositions. As an example, here is
+a large inductive type:
+
+\begin{coq_example*}
+Inductive sigST (P:Set -> Set) : Type :=
+  existST : forall X:Set, P X -> sigST P.
+\end{coq_example*}
+
+In the {\tt Set} impredicative variant of {\Coq}, large inductive
+definitions in {\tt Set} have restricted elimination schemes to
+prevent inconsistencies. Especially, projecting the set or the
+proposition content of a large inductive definition is forbidden. If
+it were allowed, it would be possible to encode e.g. Burali-Forti
+paradox \cite{Gir70,Coq85}.
+
+\Question{Why is dependent elimination in Prop not
+available by default?}
+
+ 
+This is just because most of the time it is not needed. To derive a
+dependent elimination principle in {\tt Prop}, use the command {\tt Scheme} and
+apply the elimination scheme using the \verb=using= option of
+\verb=elim=, \verb=destruct= or \verb=induction=.
+
+
+\Question{Can I identify two functions that have the same behaviour (extensionality)?}
+
+ Extensionality of functions is an axiom in, say set theory,
+but from a programming point of view, extensionality cannot be {\em a
+priori} accepted since it would identify, say programs as mergesort
+and quicksort.
+
+%\begin{coq_example*}
+%  Axiom extensionality : (A,B:Set)(f,g:(A->B))(x:A)(f x)=(g x)->f=g.
+%\end{coq_example*}
+
+Let {\tt A}, {\tt B} be types. To deal with extensionality on 
+\verb=A->B=, the recommended approach is to define his
+own extensional equality on \verb=A->B=.
+
+\begin{coq_eval}
+Variables A B : Set.
+\end{coq_eval}
+
+\begin{coq_example*}
+Definition ext_eq (f g: A->B) := forall x:A, f x = g x.
+\end{coq_example*}
+
+and to reason on \verb=A->B= as a setoid (see the Chapter on
+Setoids in the Reference Manual).
+
+\Question{Is {\Type} impredicative (that is, letting
+\coqtt{T:=(X:Type)X->X}, can I apply an expression \coqtt{t} of type \coqtt{T} to \coqtt{T} itself)?}
+
+ No, {\Type} is stratified. This is hidden for the
+user, but {\Coq} internally maintains a set of constraints ensuring
+stratification.
+
+  If {\Type} were impredicative then Girard's systems $U-$ and $U$
+could be encoded in {\Coq} and it is known from Girard, Coquand,
+Hurkens and Miquel that systems $U-$ and $U$ are inconsistent [Girard
+1972, Coquand 1991, Hurkens 1993, Miquel 2001]. This encoding can be
+found in file {\tt Logic/Hurkens.v} of {\Coq} standard library.
+
+  For instance, when the user see {\tt forall (X:Type), X->X : Type}, each
+occurrence of \Type is implicitly bound to a different level, say
+$\alpha$ and $\beta$ and the actual statement is {\tt
+forall X:Type($\alpha$), X->X : Type($\beta$)} with the constraint
+$\alpha<\beta$.
+
+  When a statement violates a constraint, the message {\tt Universe
+inconsistency} appears. Example: {\tt fun (x:Type) (y:forall X:Type, X \coqimp X) => z x x}.
+
+
+\Question{I have two proofs of the same proposition. Can I prove they are equal?}
+\label{proof-irrelevance}
+
+ In the base {\Coq} system, the answer is no. However, if
+classical logic is set, the answer is yes for propositions in {\Prop}.
+
+More precisely, the equality of all proofs of a given proposition is called
+{\em proof-irrelevance}. Proof-irrelevance (in {\Prop}) can be assumed
+  without leading to contradiction in {\Coq}.
+
+  That classical logic (what can be assumed in {\Coq} by requiring the file
+  \vfile{\LogicClassical}{Classical}) implies proof-irrelevance is shown in files
+  \vfile{\LogicProofIrrelevance}{ProofIrrelevance} and \vfile{\LogicBerardi}{Berardi}.
+
+  Alternatively, propositional extensionality (i.e.  \coqtt{(A
+  \coqequiv B) \coqimp A=B}, defined in \vfile{\LogicClassicalFacts}{ClassicalFacts}),
+  also implies proof-irrelevance.
+
+%  It is an ongoing work of research to natively include proof
+%  irrelevance in {\Coq}.
+
+\Question{Can I prove that the second components of equal dependent
+pairs are equal?}
+
+ The answer is the same as for proofs of equality
+statements. It is provable if equality on the domain of the first
+component is decidable (look at \verb=inj_right_pair= from file
+\vfile{\LogicEqdepDec}{Eqdep\_dec}), but not provable in the general
+case. However, it is consistent (with the Calculus of Constructions)
+to assume it is true. The file \vfile{\LogicEqdep}{Eqdep} actually
+provides an axiom (equivalent to Streicher's axiom $K$) which entails
+the result (look at \verb=inj_pair2= in \vfile{\LogicEqdep}{Eqdep}).
+
+\Question{I have two proofs of an equality statement. Can I prove they are 
+equal?}
+
+ Yes, if equality is decidable on the domain considered (which
+is the case for {\tt nat}, {\tt bool}, etc): see {\Coq} file
+\verb=Eqdep_dec.v=). No otherwise, unless
+assuming Streicher's axiom $K$ (see \cite{HofStr98}) or a more general
+assumption such as proof-irrelevance (see \ref{proof-irrelevance}) or
+classical logic.
+
+
+All of these statements can be found in file \vfile{\LogicEqdep}{Eqdep}.
+
+\Question{How is equational reasoning working in {\Coq}?}
+
+ \Coq comes with an internal notion of computation called
+{\em conversion} (e.g. $(x+1)+y$ is internally equivalent to
+$(x+y)+1$; similarly applying argument $a$ to a function mapping $x$
+to some expression $t$ converts to the expression $t$ where $x$ is
+replaced by $a$). This notion of conversion (which is decidable
+because {\Coq} programs are terminating) covers a certain part of
+equational reasoning but is limited to sequential evaluation of
+expressions of (not necessarily closed) programs. Besides conversion,
+equations have to be treated by hand or using specialised tactics.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Talkin' with the Rooster}
 
 
@@ -872,12 +1177,10 @@ You can organize your proofs using the section mechanism of \Coq. Have
 a look at the manual for further information.
 
 
-\section{Inductive types}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Inductive and Coinductive types}
 
-
-\Question{How can I define a fixpoint when no argument is structurally smaller ?}
-
-todo
+\subsection{General}
 
 \Question{How can I prove that two constructors are different ?}
 
@@ -887,6 +1190,241 @@ You can use the \discriminate tactic.
 Inductive toto : Set := | C1 : toto | C2 : toto.
 Goal C1 <> C2.
 discriminate.
+Qed.
+\end{coq_example}
+
+\Question{How to eliminate impossible cases of an inductive definition}
+
+Use {\tt inversion}.
+
+
+\Question{How can I prove that 2 terms in an inductive set are equal? Or different?}
+
+ Cf "Decide Equality" and "Discriminate" in the \ahref{\refman}{Reference Manual}.
+
+\Question{Why is the proof of \coqtt{0+n=n} on natural numbers
+trivial but the proof of \coqtt{n+0=n} is not?}
+
+ Since \coqtt{+} (\coqtt{plus}) on natural numbers is defined by analysis on its first argument
+
+\begin{coq_example}
+Print plus.
+\end{coq_example}
+
+\noindent the expression \coqtt{0+n} evaluates to \coqtt{n}. As {\Coq} reasons
+modulo evaluation of expressions, \coqtt{0+n} and \coqtt{n} are
+considered equal and the theorem \coqtt{0+n=n} is an instance of the
+reflexivity of equality. On the other side, \coqtt{n+0} does not
+evaluate to \coqtt{n} and a proof by induction on \coqtt{n} is
+necessary to trigger the evaluation of \coqtt{+}.
+
+
+\subsection{Recursion}
+
+\Question{Why can't I define a non terminating program?}
+
+ Because otherwise the decidability of the type-checking
+algorithm (which involves evaluation of programs) is not ensured.  On
+another side, if non terminating proofs were allowed, we could get a
+proof of {\tt False}:
+
+\begin{coq_example*}
+(* This is fortunately not allowed! *)
+Fixpoint InfiniteProof (n:nat) : False := InfiniteProof n.
+Theorem Paradox : False.
+Proof (InfiniteProof O).
+\end{coq_example*}
+
+
+\Question{Why only structurally well-founded loops are allowed?}
+
+ The structural order on inductive types is a simple and
+powerful notion of termination. The consistency of the Calculus of
+Inductive Constructions relies on it and another consistency proof
+would have to be made for stronger termination arguments (such
+as the termination of the evaluation of CIC programs themselves!).
+
+In spite of this, all non-pathological termination orders can be mapped
+to a structural order. Tools to do this are provided in the file 
+\vfile{\InitWf}{Wf} of the standard library of {\Coq}.
+
+\Question{How to define loops based on non structurally smaller
+recursive calls?}
+
+ The procedure is as follows (we consider the definition of {\tt
+mergesort} as an example).
+
+\begin{itemize}
+
+\item Define the termination order, say {\tt R} on the type {\tt A} of
+the arguments of the loop.
+
+\begin{coq_eval}
+Open Scope R_scope.
+Require Import List.
+\end{coq_eval}
+
+\begin{coq_example*}
+Definition R (a b:list nat) := length a < length b.
+\end{coq_example*}
+
+\item Prove that this order is well-founded (in fact that all elements in {\tt A} are accessible along {\tt R}).
+
+\begin{coq_example*}
+Lemma Rwf : well_founded (A:=R).
+\end{coq_example*}
+
+\item Define the step function (which needs proofs that recursive
+calls are on smaller arguments).
+
+\begin{coq_example*}
+Definition split (l : list nat) 
+   : {l1: list nat | R l1 l} * {l2 : list nat | R l2 l}
+   := (* ... *) .
+Definition concat (l1 l2 : list nat) : list nat := (* ... *) .
+Definition merge_step (l : list nat) (f: forall l':list nat, R l' l -> list nat) :=
+  let (lH1,lH2) := (split l) in
+  let (l1,H1) := lH1 in
+  let (l2,H2) := lH2 in
+  concat (f l1 H1) (f l2 H2).
+\end{coq_example*}
+
+\item Define the recursive function by fixpoint on the step function.
+
+\begin{coq_example*}
+Definition merge := Fix Rwf (fun _ => list nat) merge_step.
+\end{coq_example*}
+
+\end{itemize}
+
+\Question{What is behind these accessibility and well-foundedness proofs?}
+
+ Well-foundedness of some relation {\tt R} on some type {\tt A}
+is defined as the accessibility of all elements of {\tt A} along {\tt R}.
+
+\begin{coq_example}
+Print well_founded.
+Print Acc.
+\end{coq_example}
+
+The structure of the accessibility predicate is a well-founded tree
+branching at each node {\tt x} in {\tt A} along all the nodes {\tt x'}
+less than {\tt x} along {\tt R}. Any sequence of elements of {\tt A}
+decreasing along the order {\tt R} are branches in the accessibility
+tree. Hence any decreasing along {\tt R} is mapped into a structural
+decreasing in the accessibility tree of {\tt R}. This is emphasised in
+the definition of {\tt fix} which recurs not on its argument {\tt x:A}
+but on the accessibility of this argument along {\tt R}.
+
+See file \vfile{\InitWf}{Wf}.
+
+\Question{How to perform double induction?}
+
+ In general a double induction is simply solved by an induction on the
+first hypothesis followed by an inversion over the second
+hypothesis. Here is an example
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{coq_example}
+Inductive even : nat -> Prop :=
+  | even_O : even 0
+  | even_S : forall n:nat, even n -> even (S (S n)).
+
+Inductive odd : nat -> Prop :=
+  | odd_SO : odd 1
+  | odd_S : forall n:nat, odd n -> odd (S (S n)).
+
+Goal forall n:nat, even n -> odd n -> False.
+induction 1.
+  inversion 1.
+  inversion 1. apply IHeven; trivial.
+Qed.
+\end{coq_example}
+
+In case the type of the second induction hypothesis is not
+dependent, {\tt inversion} can just be replaced by {\tt destruct}.
+
+
+
+\Question{How to define a function by double recursion?}
+
+ The same trick applies, you can even use the pattern-matching
+compilation algorithm to do the work for you. Here is an example:
+
+\begin{coq_example}
+Fixpoint minus (n m:nat) {struct n} : nat :=
+  match n, m with
+  | O, _ => 0
+  | S k, O => S k
+  | S k, S l => minus k l
+  end.
+Print  minus.
+\end{coq_example}
+
+In case of dependencies in the type of the induction objects
+$t_1$ and $t_2$, an extra argument stating $t_1=t_2$ must be given to
+the fixpoint definition
+
+\Question{How to perform nested induction?}
+
+ To reason by nested induction, just reason by induction on the
+successive components.
+
+\begin{coq_eval}
+Require Import Arith.
+\end{coq_eval}
+
+\begin{coq_example}
+Infix "<" := lt (at level 50, no associativity).
+Infix "<=" := le (at level 50, no associativity).
+Lemma le_or_lt : forall n n0:nat, n0 < n \/ n <= n0.
+induction n; destruct n0; auto with arith.
+destruct (IHn n0); auto with arith.
+\end{coq_example}
+
+
+\Question{How to define a function by nested recursion?}
+
+ The same trick applies. Here is the example of Ackermann
+function.
+
+\begin{coq_example}
+Fixpoint ack (n:nat) : nat -> nat :=
+  match n with
+  | O => S
+  | S n' =>
+     (fix ack' (m:nat) : nat :=
+        match m with
+        | O => ack n' 1
+        | S m' => ack n' (ack' m')
+        end)
+  end.
+\end{coq_example}
+
+
+\subsection{Coinductive types}
+
+\Question{I have a cofixpoint t:=F(t) and I want to prove t=F(t). What is
+the simplest way?}
+
+ Just case-expand F(t) then complete by a trivial case analysis.
+Here is what it gives on e.g. the type of streams on naturals
+
+\begin{coq_example}
+CoInductive Stream (A:Set) : Set :=
+  Cons : A -> Stream A -> Stream A.
+CoFixpoint nats (n:nat) : Stream nat := Cons n (nats (S n)).
+Lemma Stream_unfold : 
+   forall n:nat, nats n = Cons n (nats (S n)).
+Proof.
+  intro;
+  change (nats n = match nats n with
+                  | Cons x s => Cons x s
+                  end).
+  case (nats n); reflexivity.
 Qed.
 \end{coq_example}
 
@@ -1009,7 +1547,125 @@ You have some examples of tactics written in Ocaml in the ``contrib'' directory 
 
 \Question{How can I define vectors or lists of size n ?}
 
+\Question{How to prove that 2 sets are differents?}
 
+ You need to find a property true on one set and false on the
+other one. As an example we show how to prove that {\tt bool} and {\tt
+nat} are discriminable. As discrimination property we take the
+property to have no more than 2 elements.
+
+\begin{coq_example*}
+Theorem nat_bool_discr : bool <> nat.
+Proof.
+  pose (discr :=
+    fun X:Set =>
+      ~ (forall a b:X, ~ (forall x:X, x <> a -> x <> b -> False))).
+  intro Heq; assert (H: discr bool).
+  intro H; apply (H true false); destruct x; auto.
+  rewrite Heq in H; apply H; clear H.
+  destruct a; destruct b as [|n]; intro H0; eauto.
+  destruct n; [ apply (H0 2); discriminate | eauto ].
+Qed.
+\end{coq_example*}
+
+\Question{How to exploit equalities on sets}
+
+ To extract information from an equality on sets, you need to
+find a predicate of sets satisfied by the elements of the sets. As an
+example, let's consider the following theorem.
+
+\begin{coq_example*}
+Theorem le_le :
+  forall m n:nat,
+    {x : nat | x <= m} = {x : nat | x <= n} -> m = n.
+\end{coq_example*}
+
+A typical property is to have cardinality $n$.
+
+
+\Question{I have a problem of dependent elimination on
+proofs, how to solve it?}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{coq_example*}
+Inductive Def1 : Set := c1 : Def1.
+Inductive DefProp : Def1 -> Set :=
+  c2 : forall d:Def1, DefProp d.
+Inductive Comb : Set :=
+  c3 : forall d:Def1, DefProp d -> Comb.
+Lemma eq_comb :
+  forall (d1 d1':Def1) (d2:DefProp d1) (d2':DefProp d1'),
+    d1 = d1' -> c3 d1 d2 = c3 d1' d2'.
+\end{coq_example*}
+
+ You need to derive the dependent elimination
+scheme for DefProp by hand using {\coqtt Scheme}.
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\begin{coq_example*}
+Scheme DefProp_elim := Induction for DefProp Sort Prop.
+Lemma eq_comb :
+  forall d1 d1':Def1,
+    d1 = d1' ->
+    forall (d2:DefProp d1) (d2':DefProp d1'), c3 d1 d2 = c3 d1' d2'.
+intros.
+destruct H.
+destruct d2 using DefProp_elim.
+destruct d2' using DefProp_elim.
+reflexivity.
+Qed.
+\end{coq_example*}
+
+
+\Question{And what if I want to prove the following?}
+
+\begin{coq_example*}
+Inductive natProp : nat -> Prop :=
+  | p0 : natProp 0
+  | pS : forall n:nat, natProp n -> natProp (S n).
+Inductive package : Set :=
+  pack : forall n:nat, natProp n -> package.
+Lemma eq_pack :
+ forall n n':nat,
+   n = n' ->
+   forall (np:natProp n) (np':natProp n'), pack n np = pack n' np'.
+\end{coq_example*}
+
+
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+\begin{coq_example*}
+Scheme natProp_elim := Induction for natProp Sort Prop.
+Definition pack_S : package -> package.
+destruct 1.
+apply (pack (S n)).
+apply pS; assumption.
+Defined.
+Lemma eq_pack :
+  forall n n':nat,
+    n = n' ->
+    forall (np:natProp n) (np':natProp n'), pack n np = pack n' np'.
+intros n n' Heq np np'.
+generalize dependent n'.
+induction np using natProp_elim.
+induction np' using natProp_elim; intros; auto.
+ discriminate Heq.
+induction np' using natProp_elim; intros; auto.
+ discriminate Heq.
+change (pack_S (pack n np) = pack_S (pack n0 np')).
+apply (f_equal (A:=package)).
+apply IHnp.
+auto.
+Qed.
+\end{coq_example*}
 
 
 
@@ -1224,6 +1880,34 @@ stated some local lemma, this speeds up the typing process.
 \Question{What can I do if I get ``Cannot solve a second-order unification problem'' ?}
 
 You can help coq using the \pattern tactic.
+
+\Question{Why does {\Coq} tell me that \texttt{\{x:A|(P x)\}} is not convertible with \texttt{(sig A P)}?}
+
+ This is because \texttt{\{x:A|P x\}} is a notation for
+\texttt{sig (fun x:A => P x)}. Since {\Coq} does not reason up to
+$\eta$-conversion, this is different from \texttt{sig P}.
+
+
+\Question{I copy-paste a term and {\Coq} says it is not convertible
+  to the original term. Sometimes it even says the copied term is not
+well-typed.}
+
+ This is probably due to invisible implicit information (implicit
+arguments, coercions and Cases annotations) in the printed term, which
+is not re-synthetised from the copied-pasted term in the same way as
+it is in the original term.
+
+  Consider for instance {\tt (@eq Type True True)}. This term is
+printed as {\tt True=True} and re-parsed as {\tt (@eq Prop True
+True)}. The two terms are not convertible (hence they fool tactics
+like {\tt pattern}).
+
+  There is currently no satisfactory answer to the problem.
+ 
+  Due to coercions, one may even face type-checking errors. In some
+rare cases, the criterion to hide coercions is a bit too loosy, which
+may result in a typing error message if the parser is not able to find
+again the missing coercion.
 
 
 
