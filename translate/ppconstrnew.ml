@@ -96,6 +96,7 @@ let surround p = hov 1 (str"(" ++ p ++ str")")
 
 let pr_located pr ((b,e),x) =
   if Options.do_translate() && (b,e)<>dummy_loc then
+    let (b,e) = unloc (b,e) in
     comment b ++ pr x ++ comment e
   else pr x
 
@@ -146,7 +147,8 @@ let pr_name = function
 
 let pr_lident (b,_ as loc,id) =
   if loc <> dummy_loc then
-    pr_located pr_id ((b,b+String.length(string_of_id id)),id)
+    let (b,_) = unloc loc in
+    pr_located pr_id (make_loc (b,b+String.length(string_of_id id)),id)
   else pr_id id
 
 let pr_lname = function
@@ -189,8 +191,8 @@ let pr_eqn pr (loc,pl,rhs) =
       pr_sep_com spc (pr ltop) rhs))
 
 let begin_of_binder = function
-    LocalRawDef(((b,_),_),_) -> b
-  | LocalRawAssum(((b,_),_)::_,_) -> b
+    LocalRawDef((loc,_),_) -> fst (unloc loc)
+  | LocalRawAssum((loc,_)::_,_) -> fst (unloc loc)
   | _ -> assert false
 
 let begin_of_binders = function

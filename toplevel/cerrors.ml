@@ -20,6 +20,7 @@ let print_loc loc =
   if loc = dummy_loc then 
     (str"<unknown>")
   else 
+    let loc = unloc loc in
     (int (fst loc) ++ str"-" ++ int (snd loc))
 
 let guill s = "\""^s^"\""

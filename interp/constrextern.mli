@@ -9,6 +9,7 @@
 (*i $Id$ *)
 
 (*i*)
+open Util
 open Names
 open Term
 open Termops

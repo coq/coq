@@ -72,6 +72,7 @@ let close_input in_chan (_,verb) =
   with _ -> ()
 
 let verbose_phrase verbch loc =
+  let loc = unloc loc in
   match verbch with
     | Some ch ->
 	let len = snd loc - fst loc in
@@ -131,6 +132,7 @@ let pre_printing = function
 
 let post_printing loc (env,t,f,n) = function
   | VernacSolve (i,_,deftac) ->
+      let loc = unloc loc in
       set_formatter_translator();
       let pp = Ppvernacnew.pr_vernac_solve (i,env,t,deftac) ++ sep_end () in
       (if !translate_file then begin
@@ -142,6 +144,7 @@ let post_printing loc (env,t,f,n) = function
   | _ -> ()
 
 let pr_new_syntax loc ocom =
+  let loc = unloc loc in
   if !translate_file then set_formatter_translator();
   let fs = States.freeze () in
   let com = match ocom with
@@ -255,7 +258,7 @@ and read_vernac_file verbosely s =
     close_input in_chan input;    (* we must close the file first *)
     match real_error e with
       | End_of_input ->
-          if do_translate () then pr_new_syntax (max_int,max_int) None
+          if do_translate () then pr_new_syntax (make_loc (max_int,max_int)) None
       | _ -> raise_with_file fname e
 
 (* raw_do_vernac : char Stream.t -> unit
