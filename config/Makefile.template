@@ -91,5 +91,8 @@ MKDIR=mkdir -p
 # Win32 systems: true (actually strip is bogus)
 STRIP=STRIPCOMMAND
 
+# Options for reals (all/basic)
+REALS=REALSOPT
+
 # make or sed are bogus and believe lines not terminating by a return
 # are inexistent

@@ -225,8 +225,8 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
   pretyping/indrec.cmo pretyping/pretyping.cmo \
   parsing/lexer.cmo parsing/coqast.cmo interp/genarg.cmo \
   proofs/tacexpr.cmo toplevel/vernacexpr.cmo \
-  interp/topconstr.cmo \
-  interp/ppextend.cmo interp/symbols.cmo interp/syntax_def.cmo \
+  interp/topconstr.cmo  \
+  interp/symbols.cmo interp/ppextend.cmo interp/syntax_def.cmo \
   interp/constrintern.cmo interp/coqlib.cmo \
   parsing/pcoq.cmo parsing/ast.cmo \
   parsing/extend.cmo pretyping/detyping.cmo \
@@ -554,10 +554,14 @@ WELLFOUNDEDVO=theories/Wellfounded/Disjoint_Union.vo \
 	      theories/Wellfounded/Well_Ordering.vo \
 	      theories/Wellfounded/Lexicographic_Product.vo 
 
-REALSVO=theories/Reals/TypeSyntax.vo \
+REALSBASEVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Rdefinitions.vo theories/Reals/Rsyntax.vo \
 	theories/Reals/Raxioms.vo      theories/Reals/Rbase.vo \
-	theories/Reals/DiscrR.vo       theories/Reals/R_Ifp.vo \
+	theories/Reals/DiscrR.vo       theories/Reals/RealsB.vo \
+
+REALS_basic= 
+
+REALS_all=theories/Reals/R_Ifp.vo \
 	theories/Reals/Rbasic_fun.vo   theories/Reals/R_sqr.vo \
 	theories/Reals/SplitAbsolu.vo  theories/Reals/SplitRmult.vo \
 	theories/Reals/Rfunctions.vo   theories/Reals/Rlimit.vo \
@@ -577,8 +581,13 @@ REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Ranalysis2.vo   theories/Reals/Ranalysis3.vo \
 	theories/Reals/Sqrt_reg.vo     theories/Reals/Ranalysis4.vo \
 	theories/Reals/Ranalysis.vo    theories/Reals/Rgeom.vo \
-	theories/Reals/NewtonInt.vo \
-	theories/Reals/Rpower.vo       theories/Reals/Reals.vo 
+	theories/Reals/NewtonInt.vo    theories/Reals/RiemannInt_SF.vo \
+	theories/Reals/RiemannInt.vo   theories/Reals/Rpower.vo \
+	theories/Reals/Reals.vo 
+
+REALSVO=$(REALSBASEVO) $(REALS_$(REALS))
+
+ALLREALS=$(REALSBASEVO) $(REALS_all)
 
 SETOIDSVO=theories/Setoids/Setoid.vo
 
@@ -599,7 +608,14 @@ sets: $(SETSVO)
 intmap: $(INTMAPVO)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
+# reals
 reals: $(REALSVO)
+allreals: $(ALLREALS)
+install-allreals::
+	for f in $(ALLREALS); do \
+	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
+	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
+        done
 sorting: $(SORTINGVO)
 
 noreal: logic arith bool zarith lists sets intmap relations wellfounded sorting
@@ -1049,7 +1065,7 @@ cleanconfig::
 alldepend: depend dependcoq 
 
 dependcoq:: beforedepend
-	$(COQDEP) -R theories Coq -R contrib Coq $(COQINCLUDES) $(ALLVO:.vo=.v) > .depend.coq
+	$(COQDEP) -R theories Coq -R contrib Coq $(COQINCLUDES) $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
 
 # Build dependencies ignoring failures in building ml files from ml4 files
 # This is useful to rebuild dependencies when they are strongly corrupted:

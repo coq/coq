@@ -36,6 +36,8 @@ libdir_spec=no
 mandir_spec=no
 emacslib_spec=no
 emacs_spec=no
+reals_opt=no
+reals=all
 arch_spec=no
 
 COQTOP=`pwd`
@@ -61,7 +63,9 @@ while : ; do
                     mandir_spec=yes
 		    mandir=$COQTOP/man
                     emacslib_spec=yes
-		    emacslib=$COQTOP/tools/emacs;;
+		    emacslib=$COQTOP/tools/emacs
+		    reals_opt=yes
+		    reals=all;;
     -src|--src) COQTOP=$2
 	        shift;;
     -bindir|--bindir) bindir_spec=yes
@@ -85,6 +89,9 @@ while : ; do
     -opt|--opt) bytecamlc=ocamlc.opt
                 camlp4o=camlp4o  # can't add .opt since dyn load'll be required
                 nativecamlc=ocamlopt.opt;;
+    -reals|--reals) reals_opt=yes
+		    reals=$2
+		    shift;;
     -byte-only|-byteonly|--byteonly|--byte-only) best_compiler=byte;;
     -debug|--debug) coq_debug_flag=-g;;
     -profile|--profile) coq_profile_flag=-p;;
@@ -185,6 +192,18 @@ case $emacslib_spec in
 	    *) true;;
 	esac;;
     yes) EMACSLIB=$emacslib;;
+esac
+
+case $reals_opt in
+    no) echo "Should I compile the complete theory of real analysis [Y/N, default is Y] ?"
+	read reals_ans
+
+	case $reals_ans in
+	    "N"|"n"|"No"|"NO"|"no")
+		    reals=basic;;
+		*) true;;
+	esac;;
+    yes) true;;
 esac
 
 # case $emacs_spec in
@@ -315,6 +334,11 @@ echo "  Objective-Caml/Camlp4 version     : $CAMLVERSION"
 echo "  Objective-Caml/Camlp4 binaries in : $CAMLBIN"
 echo "  Objective-Caml library in         : $CAMLLIB"
 echo "  Camlp4 library in                 : $CAMLP4LIB"
+if test "$reals" = "all"; then
+echo "  Reals theory                      : All"
+else
+echo "  Reals theory                      : Basic"
+fi
 echo ""
 
 echo "  Paths for true installation:"
@@ -357,6 +381,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|BYTECAMLC|$bytecamlc|" \
     -e "s|NATIVECAMLC|$nativecamlc|" \
     -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
+    -e "s|REALSOPT|$reals|" \
       $COQTOP/config/Makefile.template > $COQTOP/config/Makefile
 
 chmod a-w $COQTOP/config/Makefile
