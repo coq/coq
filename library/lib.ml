@@ -40,12 +40,12 @@ let recalc_path_prefix () =
   path_prefix := recalc !lib_stk
 
 let pop_path_prefix () =
-  let rec pop acc = function
+  let rec pop = function
     | [] -> assert false
-    | [_] -> path_prefix := acc
-    | s::l -> pop (s::acc) l
+    | [_] -> []
+    | s::l -> s :: (pop l)
   in
-  pop [] !path_prefix
+  path_prefix := pop !path_prefix
 
 let make_path id k = Names.make_path !path_prefix id k
 
