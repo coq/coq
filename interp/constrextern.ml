@@ -625,11 +625,17 @@ let extern_cases_pattern vars p =
 
 let loc = dummy_loc (* for constr and pattern, locations are lost *)
 
-let extern_constr at_top env t =
+let extern_constr_gen at_top scopt env t =
   let vars = vars_of_env env in
   let avoid = if at_top then ids_of_context env else [] in
-  extern (not at_top) (None,Symbols.current_scopes()) vars
+  extern (not at_top) (scopt,Symbols.current_scopes()) vars
     (Detyping.detype env avoid (names_of_rel_context env) t)
+
+let extern_constr_in_scope at_top scope env t =
+  extern_constr_gen at_top (Some scope) env t
+
+let extern_constr at_top env t =
+  extern_constr_gen at_top None env t
 
 (******************************************************************)
 (* Main translation function from pattern -> constr_expr *)

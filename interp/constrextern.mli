@@ -39,6 +39,7 @@ val extern_pattern : env -> names_context -> constr_pattern -> constr_expr
    level of quantification clashing with the variables in [env] are renamed *)
 
 val extern_constr : bool -> env -> constr -> constr_expr
+val extern_constr_in_scope : bool -> scope_name -> env -> constr -> constr_expr
 val extern_reference : loc -> Idset.t -> global_reference -> reference
 
 (* For debugging *)

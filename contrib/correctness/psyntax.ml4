@@ -81,8 +81,6 @@ module Programs =
     let block_statement = gec "block_statement"
     let relation = gec "relation"
     let variable = gec "variable"
-    let ident = gec "ident"
-    let wf_arg = gec "wf_arg"
     let invariant = gec "invariant"
     let variant = gec "variant"
     let assertion = gec "assertion"
@@ -229,6 +227,7 @@ let mk_prog loc p pre post =
     loc = loc; 
     info = () }
 
+if !Options.v7 then
 GEXTEND Gram
 
   (* Types ******************************************************************)
@@ -308,9 +307,6 @@ GEXTEND Gram
 
   (* Programs ***************************************************************)
   variable:
-    [ [ s = IDENT -> id_of_string s ] ]
-  ;
-  ident:
     [ [ s = IDENT -> id_of_string s ] ]
   ;
   assertion:
@@ -468,13 +464,6 @@ GEXTEND Gram
   ;
 
   (* Other entries (invariants, etc.) ***************************************)
-  wf_arg:
-    [ [ "{"; IDENT "wf"; c = Constr.constr; IDENT "for";
-	w = Constr.constr; "}" ->
-	  Wf (c,w)
-      | "{"; IDENT "wf"; n = INT; "}" ->
-	  RecArg (int_of_string n) ] ]
-  ;
   invariant:
     [ [ IDENT "invariant"; c = predicate -> c ] ]
   ;
@@ -483,10 +472,260 @@ GEXTEND Gram
       | c = Constr.constr -> (c, ast_zwf_zero loc) ] ]
   ;
   END
+else
+GEXTEND Gram
+  GLOBAL: type_v program;
+
+  (* Types ******************************************************************)
+  type_v:
+    [ [ t = type_v0 -> t ] ]
+  ;
+  type_v0:
+    [ [ t = type_v1 -> t ] ]
+  ;
+  type_v1:
+    [ [ t = type_v2 -> t ] ]
+  ;
+  type_v2:
+    [ LEFTA
+      [ v = type_v2; IDENT "ref" -> Ref v
+      | t = type_v3 -> t ] ]
+  ;
+  type_v3:
+    [ [ IDENT "array"; size = Constr.lconstr; "of"; v = type_v0 ->
+          Array (size,v)
+      | "fun"; bl = binders; c = type_c -> make_arrow bl c
+      | c = Constr.constr -> TypePure c	  
+      ] ]
+  ;
+  type_c:
+    [ [ IDENT "returns"; id = IDENT; ":"; v = type_v;
+        e = effects; p = OPT pre_condition; q = OPT post_condition; "end" ->
+        ((id_of_string id, v), e, list_of_some p, q)
+      ] ] 
+  ;
+  effects:
+    [ [ r = OPT reads; w = OPT writes ->
+	let r' = match r with Some l -> l | _ -> [] in
+	let w' = match w with Some l -> l | _ -> [] in
+	List.fold_left (fun e x -> Peffect.add_write x e)
+	  (List.fold_left (fun e x -> Peffect.add_read x e) Peffect.bottom r')
+          w'
+      ] ]
+  ;
+  reads:
+    [ [ IDENT "reads"; l = LIST0 IDENT SEP "," -> List.map id_of_string l ] ]
+  ;
+  writes:
+    [ [ IDENT "writes"; l=LIST0 IDENT SEP "," -> List.map id_of_string l ] ]
+  ;
+  pre_condition:
+    [ [ IDENT "pre"; c = predicate -> pre_of_assert false c ] ]
+  ;
+  post_condition:
+    [ [ IDENT "post"; c = predicate -> c ] ]
+  ;
+
+  (* Binders (for both types and programs) **********************************)
+  binder:
+    [ [ "("; sl = LIST1 IDENT SEP ","; ":"; t = binder_type ; ")" ->
+	  List.map (fun s -> (id_of_string s, t)) sl
+      ] ]
+  ;
+  binder_type:
+    [ [ "Set" -> BindSet
+      | v = type_v -> BindType v
+      ] ]
+  ;
+  binders:
+    [ [ bl = LIST0 binder -> List.flatten bl ] ] 
+  ;
+
+  (* annotations *)
+  predicate:
+    [ [ c = Constr.constr; n = name -> { a_name = n; a_value = c } ] ]
+  ;
+  dpredicate:
+    [ [ c = Constr.lconstr; n = name -> { a_name = n; a_value = c } ] ]
+  ;
+  name:
+    [ [ "as"; s = IDENT -> Name (id_of_string s)
+      | -> Anonymous
+      ] ]
+  ;
+
+  (* Programs ***************************************************************)
+  variable:
+    [ [ s = IDENT -> id_of_string s ] ]
+  ;
+  assertion:
+    [ [ "{"; c = dpredicate; "}" -> c ] ]
+  ;
+  precondition:
+    [ [ "{"; c = dpredicate; "}" -> pre_of_assert false c ] ]
+  ;
+  postcondition:
+    [ [ "{"; c = dpredicate; "}" -> c ] ]
+  ;
+  program:
+    [ [ p = prog1 -> p ] ]
+  ;
+  prog1:
+    [ [ pre = LIST0 precondition; ast = ast1; post = OPT postcondition ->
+	  mk_prog loc ast pre post ] ]
+  ;
+  prog2:
+    [ [ pre = LIST0 precondition; ast = ast2; post = OPT postcondition ->
+	  mk_prog loc ast pre post ] ]
+  ;
+  prog3:
+    [ [ pre = LIST0 precondition; ast = ast3; post = OPT postcondition ->
+	  mk_prog loc ast pre post ] ]
+  ;
+  prog4:
+    [ [ pre = LIST0 precondition; ast = ast4; post = OPT postcondition ->
+	  mk_prog loc ast pre post ] ]
+  ;
+  prog5:
+    [ [ pre = LIST0 precondition; ast = ast5; post = OPT postcondition ->
+	  mk_prog loc ast pre post ] ]
+  ;
+  prog6:
+    [ [ pre = LIST0 precondition; ast = ast6; post = OPT postcondition ->
+	  mk_prog loc ast pre post ] ]
+  ;
+
+  ast1:
+    [ [ x = prog2; IDENT "or"; y = prog1  -> bool_or loc x y
+      | x = prog2; IDENT "and"; y = prog1 -> bool_and loc x y
+      | x = prog2 -> x
+      ] ]
+  ;
+  ast2:
+    [ [ IDENT "not"; x = prog3 -> bool_not loc x
+      | x = prog3 -> x
+      ] ]
+  ;
+  ast3:
+    [ [ x = prog4; rel = relation; y = prog4 -> bin_op rel loc x y
+      | x = prog4 -> x
+      ] ]
+    ;
+  ast4:
+    [ [ x = prog5; "+"; y = prog4 -> bin_op "Zplus" loc x y
+      | x = prog5; "-"; y = prog4 -> bin_op "Zminus" loc x y
+      | x = prog5 -> x
+      ] ]
+    ;
+  ast5:
+    [ [ x = prog6; "*"; y = prog5 -> bin_op "Zmult" loc x y 
+      | x = prog6 -> x
+      ] ]
+    ;
+  ast6:
+    [ [ "-"; x = prog6 -> un_op "Zopp" loc x
+      | x = ast7 -> without_effect loc x
+      ] ]
+    ;
+  ast7:
+    [ [ v = variable -> 
+	  Variable v
+      | n = INT ->
+	  Expression (constr_of_int n)
+      | "!"; v = variable ->
+	  Acc v
+      | "?" ->
+	  isevar
+      | v = variable; ":="; p = program ->
+	  Aff (v,p)
+      | v = variable; "["; e = program; "]" -> TabAcc (true,v,e)
+      | v = variable; "#"; "["; e = program; "]" -> TabAcc (true,v,e)
+      | v = variable; "["; e = program; "]"; ":="; p = program -> 
+	  TabAff (true,v,e,p)
+      | v = variable; "#"; "["; e = program; "]"; ":="; p = program -> 
+	  TabAff (true,v,e,p)
+      | "if"; e1 = program; "then"; e2 = program; "else"; e3 = program ->
+	  If (e1,e2,e3)
+      | "if"; e1 = program; "then"; e2 = program ->
+	  If (e1,e2,without_effect loc (Expression (constant "tt")))
+      | IDENT "while"; b = program; IDENT "do"; 
+	"{"; inv = OPT invariant; IDENT "variant"; wf = variant; "}";
+	bl = block; IDENT "done" ->
+	  While (b, inv, wf, bl)
+      | "for"; i = IDENT; "="; v1 = program; IDENT "to"; v2 = program;
+	IDENT "do"; "{"; inv = invariant; "}"; 
+	bl = block; IDENT "done" -> 
+	  make_ast_for loc i v1 v2 inv bl
+      | "let"; v = variable; "="; IDENT "ref"; p1 = program;
+	"in"; p2 = program ->
+	  LetRef (v, p1, p2)
+      | "let"; v = variable; "="; p1 = program; "in"; p2 = program ->
+	  Let (v, p1, p2)
+      | IDENT "begin"; b = block; "end" ->
+	  Seq b
+      | "fun"; bl = binders; "=>"; p = program ->
+	  Lam (bl,p)
+      | "let"; IDENT "rec"; f = variable; 
+	bl = binders; ":"; v = type_v;
+	"{"; IDENT "variant"; var = variant; "}"; "="; p = program ->
+	  LetRec (f,bl,v,var,p)
+      | "let"; IDENT "rec"; f = variable; 
+	bl = binders; ":"; v = type_v;
+	"{"; IDENT "variant"; var = variant; "}"; "="; p = program;
+ 	"in"; p2 = program ->
+	  Let (f, without_effect loc (LetRec (f,bl,v,var,p)), p2)
+
+      | "@"; s = STRING; p = program ->
+	  Debug (s,p)
+
+      | "("; p = program; args = LIST0 arg; ")" ->
+	  match args with 
+	      [] -> 
+		if p.pre<>[] or p.post<>None then
+		  Pp.warning "Some annotations are lost";
+		p.desc
+            | _  -> 
+		Apply(p,args)
+     ] ]
+  ;
+  arg:
+    [ [ "'"; t = type_v -> Type t
+      | p = program -> Term p
+      ] ]
+  ;
+  block:
+    [ [ s = block_statement; ";"; b = block -> s::b
+      | s = block_statement                 -> [s] ] ]
+  ;
+  block_statement:
+    [ [ IDENT "label"; s = IDENT -> Label s
+      | IDENT "assert"; c = assertion -> Assert c 
+      | p = program -> Statement p ] ]
+  ;
+  relation:
+    [ [ "<"  -> "Z_lt_ge_bool"
+      | "<=" -> "Z_le_gt_bool"
+      | ">"  -> "Z_gt_le_bool"
+      | ">=" -> "Z_ge_lt_bool"
+      | "="  -> "Z_eq_bool"
+      | "<>" -> "Z_noteq_bool" ] ] 
+  ;
+
+  (* Other entries (invariants, etc.) ***************************************)
+  invariant:
+    [ [ IDENT "invariant"; c = predicate -> c ] ]
+  ;
+  variant:
+    [ [ c = Constr.constr; "for"; r = Constr.constr -> (c, r)
+      | c = Constr.constr -> (c, ast_zwf_zero loc) ] ]
+  ;
+  END
 ;;
 
-let wit_prog, _, rawwit_prog = Genarg.create_arg "PROGRAMS-PROG"
-let wit_typev, _, rawwit_typev = Genarg.create_arg "PROGRAMS-TYPEV"
+let wit_program, globwit_program, rawwit_program =
+  Genarg.create_arg "program"
+let wit_type_v, globwit_type_v, rawwit_type_v =
+  Genarg.create_arg "type_v"
 
 open Pp
 open Util
@@ -504,88 +743,305 @@ let is_assumed global ids =
 	     prlist_with_sep (fun () -> (str ", ")) pr_id ids ++
 	     str " are assumed")
 
-open Genarg
-
-let add = vinterp_add
-
-let _ = add "CORRECTNESS"
-     (function
-	 [ s; p; t ] ->
-	   let str = out_gen rawwit_pre_ident s in
-	   let pgm = out_gen rawwit_prog p in
-	   let tac = out_gen (wit_opt rawwit_tactic) t in
-	   fun () ->
-	     Ptactic.correctness str pgm (option_app Tacinterp.interp tac)
-       | _ -> assert false)
-
-let _ = 
-  add "SHOWPROGRAMS"
-    (function
-       | [] -> 
-	   (fun () ->
-	      fold_all 
-		(fun (id,v) _ -> 
-		   msgnl (pr_id id ++ str " : " ++ 
-			    hov 2 (match v with TypeV v -> pp_type_v v
-				     | Set -> (str "Set")) ++
-			    fnl ()))
-		Penv.empty ())
-       | _ -> assert false)
-
-open Extend
-
-let _ = 
-  add "PROGVARIABLE"
-    (function
-       | [ ids; v ] ->
-	   (fun () ->
- 	      let ids = out_gen (wit_list1 rawwit_ident) ids in
-	      List.iter
-		(fun id -> if Penv.is_global id then
-		   Util.errorlabstrm "PROGVARIABLE"
-		     (str"Clash with previous constant " ++ pr_id id))
-		ids;
-              let v = out_gen rawwit_typev v in
-	      Pdb.check_type_v (all_refs ()) v;
-	      let env = empty in
-	      let ren = update empty_ren "" [] in
-	      let v = Ptyping.cic_type_v env ren v in
-	      if not (is_mutable v) then begin
-		let c = 
-		  Entries.ParameterEntry (trad_ml_type_v ren env v),
-		  Decl_kinds.IsAssumption Decl_kinds.Definitional in
-		List.iter 
-		  (fun id -> ignore (Declare.declare_constant id c)) ids;
-		if_verbose (is_assumed false) ids
-	      end;
-	      if not (is_pure v) then begin
-		List.iter (fun id -> ignore (Penv.add_global id v None)) ids;
-		if_verbose (is_assumed true) ids
-	      end)
-       | _ -> assert false)
-
-open Vernac
-open Coqast
 open Pcoq
 
+(* Variables *)
+
+let wit_variables, globwit_variables, rawwit_variables =
+  Genarg.create_arg "variables"
+
+let variables = Gram.Entry.create "Variables"
+
 GEXTEND Gram
-  GLOBAL: Vernac_.command;
+  variables: [ [ l = LIST1 Prim.ident SEP "," -> l ] ];
+END
 
-  Pcoq.Vernac_.command:
-  [ [ IDENT "Global"; "Variable"; l = LIST1 Prim.ident SEP ","; ":"; t = type_v
-      ->
-	let ids = in_gen (wit_list1 rawwit_ident) l in
-	VernacExtend ("PROGVARIABLE", [ids;in_gen rawwit_typev t])
+let pr_variables _prc _prtac l = spc() ++ prlist_with_sep pr_coma pr_id l
 
-    | IDENT "Show"; IDENT "Programs" ->
-	VernacExtend ("SHOWPROGRAMS",[])
+let _ =
+  Pptactic.declare_extra_genarg_pprule true
+    (rawwit_variables, pr_variables)
+    (globwit_variables, pr_variables)
+    (wit_variables, pr_variables)
 
-    | IDENT "Correctness"; s = IDENT; p = Programs.program; 
-      t = OPT [ ";"; tac = Tactic.tactic -> tac ] ->
-	let str = in_gen rawwit_pre_ident s in
-	let d = in_gen rawwit_prog p in
-	let tac = in_gen (wit_opt rawwit_tactic) t in
-	VernacExtend ("CORRECTNESS",[str;d;tac]) ] ];
- END
-;;
+(* then_tac *)
+
+open Genarg
+open Tacinterp
+
+let pr_then_tac _ prt = function
+  | None -> mt ()
+  | Some t -> pr_semicolon () ++ prt t
+
+ARGUMENT EXTEND then_tac
+  TYPED AS tactic_opt 
+  PRINTED BY pr_then_tac
+  INTERPRETED BY interp_genarg
+  GLOBALIZED BY intern_genarg
+| [ ";" tactic(t) ] -> [ Some t ]
+| [ ] -> [ None ]
+END
+
+(* Correctness *)
+
+VERNAC COMMAND EXTEND Correctness
+  [ "Correctness" preident(str) program(pgm) then_tac(tac) ]
+   -> [ Ptactic.correctness str pgm (option_app Tacinterp.interp tac) ]
+END
+
+(* Show Programs *)
+
+let show_programs () =
+  fold_all 
+    (fun (id,v) _ -> 
+      msgnl (pr_id id ++ str " : " ++ 
+      hov 2 (match v with TypeV v -> pp_type_v v
+	| Set -> (str "Set")) ++
+      fnl ()))
+    Penv.empty ()
+
+VERNAC COMMAND EXTEND ShowPrograms
+  [ "Show" "Programs" ] -> [ show_programs () ]
+END
+
+(* Global Variable *)
+
+let global_variable ids v =
+  List.iter
+    (fun id -> if Penv.is_global id then
+      Util.errorlabstrm "PROGVARIABLE"
+	(str"Clash with previous constant " ++ pr_id id))
+    ids;
+  Pdb.check_type_v (all_refs ()) v;
+  let env = empty in
+  let ren = update empty_ren "" [] in
+  let v = Ptyping.cic_type_v env ren v in
+  if not (is_mutable v) then begin
+    let c = 
+      Entries.ParameterEntry (trad_ml_type_v ren env v),
+      Decl_kinds.IsAssumption Decl_kinds.Definitional in
+    List.iter 
+      (fun id -> ignore (Declare.declare_constant id c)) ids;
+    if_verbose (is_assumed false) ids
+  end;
+  if not (is_pure v) then begin
+    List.iter (fun id -> ignore (Penv.add_global id v None)) ids;
+    if_verbose (is_assumed true) ids
+  end
+
+VERNAC COMMAND EXTEND ProgVariable
+  [ "Global" "Variable" variables(ids) ":" type_v(t) ]
+  -> [ global_variable ids t]
+END
+
+(* Type printer *)
+
+let pr_reads = function
+  | [] -> mt ()
+  | l -> spc () ++
+      hov 0 (str "reads" ++ spc () ++ prlist_with_sep pr_coma pr_id l)
+
+let pr_writes = function
+  | [] -> mt ()
+  | l -> spc () ++
+      hov 0 (str "writes" ++ spc () ++ prlist_with_sep pr_coma pr_id l)
+
+let pr_effects x =
+  let (ro,rw) = Peffect.get_repr x in pr_reads ro ++ pr_writes rw
+
+let pr_predicate delimited { a_name = n; a_value = c } =
+  (if delimited then Ppconstrnew.pr_lconstr else Ppconstrnew.pr_constr) c ++
+  (match n with Name id -> spc () ++ str "as " ++ pr_id id | Anonymous -> mt())
+
+let pr_assert b { p_name = x; p_value = v } =
+  pr_predicate b { a_name = x; a_value = v }
+
+let pr_pre_condition_list = function
+  | [] -> mt ()
+  | [pre] -> spc() ++ hov 0 (str "pre" ++ spc () ++ pr_assert false pre)
+  | _ -> assert false
+
+let pr_post_condition_opt = function
+  | None -> mt ()
+  | Some post ->
+      spc() ++ hov 0 (str "post" ++ spc () ++ pr_predicate false post)
+
+let rec pr_type_v_v8 = function
+  | Array (a,v) ->
+      str "array" ++ spc() ++ Ppconstrnew.pr_lconstr a ++ spc() ++ str "of " ++
+      pr_type_v_v8 v
+  | v -> pr_type_v3 v
+
+and pr_type_v3 = function
+  | Ref v -> pr_type_v3 v ++ spc () ++ str "ref"
+  | Arrow (bl,((id,v),e,prel,postl)) ->
+      str "fun" ++ spc() ++ hov 0 (prlist_with_sep cut pr_binder bl) ++
+      spc () ++ str "returns" ++ spc () ++ pr_id id ++ str ":" ++ 
+      pr_type_v_v8 v ++ pr_effects e ++ 
+      pr_pre_condition_list prel ++ pr_post_condition_opt postl ++
+      spc () ++ str "end"
+  | TypePure a -> Ppconstrnew.pr_constr a
+  | v -> str "(" ++ pr_type_v_v8 v ++ str ")"
+
+and pr_binder = function
+  | (id,BindType c) ->
+      str "(" ++ pr_id id ++ str ":" ++ pr_type_v_v8 c ++ str ")"
+  | (id,BindSet) ->
+      str "(" ++ pr_id id ++ str ":" ++ str "Set" ++ str ")"
+  | (id,Untyped) ->
+      str "<<<<< TODO: Untyped binder >>>>"
+
+let _ =
+  Pptactic.declare_extra_genarg_pprule true
+    (rawwit_type_v, fun _ _ -> pr_type_v_v8)
+    (globwit_type_v, fun _ -> raise Not_found)
+    (wit_type_v, fun _ -> raise Not_found)
+
+(* Program printer *)
+
+let pr_precondition pred = str "{" ++ pr_assert true pred ++ str "}" ++ spc ()
+
+let pr_postcondition pred = str "{" ++ pr_predicate true pred ++ str "}"
+
+let pr_invariant = function
+  | None -> mt ()
+  | Some c -> hov 2 (str "invariant" ++ spc ()  ++ pr_predicate false c)
+
+let pr_variant (c1,c2) =
+  Ppconstrnew.pr_constr c1 ++
+  (try Constrextern.check_same_type c2 (ast_zwf_zero dummy_loc); mt ()
+   with _ -> spc() ++ hov 0 (str "for" ++ spc () ++ Ppconstrnew.pr_constr c2))
+
+let rec pr_desc = function
+  | Variable id -> pr_id id
+  | Acc id -> str "!" ++ pr_id id
+  | Aff (id,p) -> pr_id id ++ spc() ++ str ":=" ++ spc() ++ pr_prog p
+  | TabAcc (b,id,p) -> pr_id id ++ str "[" ++ pr_prog p ++ str "]"
+  | TabAff (b,id,p1,p2) ->
+      pr_id id ++ str "[" ++ pr_prog p1 ++ str "]" ++
+      str ":=" ++ pr_prog p2
+  | Seq bll -> 
+      hv 0 (str "begin" ++ spc () ++ pr_block bll ++ spc () ++ str "end")
+  | While (p1,inv,var,bll) ->
+      hv 0 (
+	hov 0 (str "while" ++ spc () ++ pr_prog p1 ++ spc () ++ str "do") ++
+	brk (1,2) ++
+	hv 2 (
+	  str "{ " ++ 
+	  pr_invariant inv ++ spc() ++
+	  hov 0 (str "variant" ++ spc () ++ pr_variant var)
+	  ++ str " }") ++ cut () ++
+	hov 0 (pr_block bll) ++ cut () ++ 
+	str "done")
+  | If (p1,p2,p3) ->
+      hov 1 (str "if " ++ pr_prog p1) ++ spc () ++
+      hov 0 (str "then" ++ spc () ++ pr_prog p2) ++ spc () ++
+      hov 0 (str "else" ++ spc () ++ pr_prog p3)
+  | Lam (bl,p) ->
+      hov 0 
+        (str "fun" ++ spc () ++ hov 0 (prlist_with_sep cut pr_binder bl) ++ 
+	 spc () ++ str "=>") ++
+      pr_prog p
+  | Apply ({desc=Expression e; pre=[]; post=None} as p,args) when isConst e ->
+      begin match
+	string_of_id (snd (repr_path (Nametab.sp_of_global (ConstRef (destConst e))))),
+	args
+      with
+      | "Zmult", [a1;a2] ->
+	  str "(" ++ pr_arg a1 ++ str"*" ++ pr_arg a2 ++ str ")"
+      | "Zplus", [a1;a2] ->
+	  str "(" ++ pr_arg a1 ++ str"+" ++ pr_arg a2 ++ str ")"
+      | "Zminus", [a1;a2] ->
+	  str "(" ++ pr_arg a1 ++ str"-" ++ pr_arg a2 ++ str ")"
+      | "Zopp", [a] ->
+	  str "( -" ++ pr_arg a ++ str ")"
+      | "Z_lt_ge_bool", [a1;a2] ->
+	  str "(" ++ pr_arg a1 ++ str"<" ++ pr_arg a2 ++ str ")"
+      | "Z_le_gt_bool", [a1;a2] ->
+	  str "(" ++ pr_arg a1 ++ str"<=" ++ pr_arg a2 ++ str ")"
+      | "Z_gt_le_bool", [a1;a2] ->
+	  str "(" ++ pr_arg a1 ++ str">" ++ pr_arg a2 ++ str ")"
+      | "Z_ge_lt_bool", [a1;a2] ->
+	  str "(" ++ pr_arg a1 ++ str">=" ++ pr_arg a2 ++ str ")"
+      | "Z_eq_bool", [a1;a2] ->
+	  str "(" ++ pr_arg a1 ++ str"=" ++ pr_arg a2 ++ str ")"
+      | "Z_noteq_bool", [a1;a2] ->
+	  str "(" ++ pr_arg a1 ++ str"<> " ++ pr_arg a2 ++ str ")"
+      | _ -> 
+	  str "(" ++ pr_prog p ++ spc () ++ prlist_with_sep spc pr_arg args ++
+	  str ")"
+      end
+  | Apply (p,args) ->
+      str "(" ++ pr_prog p ++ spc () ++ prlist_with_sep spc pr_arg args ++
+      str ")"
+  | SApp ([Variable v], args) ->
+      begin match string_of_id v, args with
+	| "prog_bool_and", [a1;a2] -> 
+	    str"(" ++ pr_prog a1 ++ spc() ++ str"and " ++ pr_prog a2 ++str")"
+	| "prog_bool_or", [a1;a2] -> 
+	    str"(" ++ pr_prog a1 ++ spc() ++ str"or " ++ pr_prog a2 ++ str")"
+	| "prog_bool_not", [a] ->
+	    str "(not " ++ pr_prog a ++ str ")"
+	| _ -> failwith "Correctness printer: TODO"
+      end
+  | SApp _ -> failwith "Correctness printer: TODO"
+  | LetRef (v,p1,p2) ->
+      hov 2 (
+	str "let " ++ pr_id v ++ str " =" ++ spc () ++ str "ref" ++ spc () ++
+	pr_prog p1 ++ str " in") ++
+      spc () ++ pr_prog p2
+  | Let (id, {desc=LetRec (f,bl,v,var,p); pre=[]; post=None },p2) when f=id ->
+      hov 2 (
+	str "let rec " ++ pr_id f ++ spc () ++
+	hov 0 (prlist_with_sep cut pr_binder bl) ++ spc () ++
+	str ":" ++ pr_type_v_v8 v ++ spc () ++
+	hov 2 (str "{ variant" ++ spc () ++ pr_variant var ++ str " }") ++ 
+	spc() ++ str "=" ++ spc () ++ pr_prog p ++
+ 	str " in") ++
+      spc () ++ pr_prog p2
+  | Let (v,p1,p2) ->
+      hov 2 (
+	str "let " ++ pr_id v ++ str " =" ++ spc () ++ pr_prog p1 ++ str" in")
+      ++ spc () ++ pr_prog p2
+  | LetRec (f,bl,v,var,p) ->
+      str "let rec " ++ pr_id f ++ spc () ++
+      hov 0 (prlist_with_sep cut pr_binder bl) ++ spc () ++
+      str ":" ++ pr_type_v_v8 v ++ spc () ++
+      hov 2 (str "{ variant" ++ spc () ++ pr_variant var ++ str " }") ++
+      spc () ++ str "=" ++ spc () ++ pr_prog p
+  | PPoint _ -> str "TODO: Ppoint" (* Internal use only *)
+  | Expression c ->
+      (* Numeral or "tt": use a printer which doesn't globalize *)
+      Ppconstr.pr_constr
+        (Constrextern.extern_constr_in_scope false "Z_scope" (Global.env()) c)
+  | Debug (s,p) -> str "@" ++ pr_prog p
+
+and pr_block_st = function
+  | Label s -> hov 0 (str "label" ++ spc() ++ str s)
+  | Assert pred -> 
+      hov 0 (str "assert" ++ spc() ++ hov 0 (pr_postcondition pred))
+  | Statement p -> pr_prog p
+
+and pr_block bl = prlist_with_sep pr_semicolon pr_block_st bl
+
+and pr_arg = function
+  | Past.Term p -> pr_prog p
+  | Past.Type t -> str "'" ++ pr_type_v_v8 t
+  | Refarg _ -> str "TODO: Refarg" (* Internal use only *)
+
+and pr_prog0 b { desc = desc; pre = pre; post = post } =
+  hv 0 (
+    prlist pr_precondition pre ++
+    hov 0
+      (if b & post<>None then str"(" ++ pr_desc desc ++ str")"
+       else pr_desc desc)
+    ++ Ppconstrnew.pr_opt pr_postcondition post)
+
+and pr_prog x = pr_prog0 true x
+
+let _ =
+  Pptactic.declare_extra_genarg_pprule true
+    (rawwit_program, fun _ _ a -> spc () ++ pr_prog0 false a)
+    (globwit_program, fun _ -> raise Not_found)
+    (wit_program, fun _ -> raise Not_found)
 
