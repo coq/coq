@@ -1146,7 +1146,7 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
   let a = (remove_vars pprecvars acvars,ac) (* For recursive parts *) in
   let old_pp_rule =
     (* Used only by v7; disable if contains a recursive pattern *)
-    if onlyparse or pprecvars <> [] then None
+    if onlyparse or pprecvars <> [] or not (!Options.v7) then None
     else
       let r = interp_global_rawconstr_with_vars vars c in
       Some (make_old_pp_rule n symbols typs r intnot scope vars) in
