@@ -14,9 +14,7 @@ open Sign
 open Environ
 open Reduction
 open Instantiate
-open Himsg
-
-type information = Logic | Inf of unsafe_judgment
+open Type_errors
 
 let make_judge v tj =
   { uj_val = v;
@@ -82,12 +80,12 @@ let construct_reference id env hyps =
   if hyps_inclusion env hyps hyps' then
     Array.of_list (List.map (fun id -> VAR id) (ids_of_sign hyps))
   else 
-    error_reference_variables id
+    error_reference_variables CCI env id
 
 let check_hyps id env hyps =
   let hyps' = get_globals (context env) in
   if not (hyps_inclusion env hyps hyps') then
-    error_reference_variables id
+    error_reference_variables CCI env id
 
 (* Instantiation of terms on real arguments. *)
 
@@ -194,6 +192,15 @@ let make_arity_nodep env k =
     | _ -> invalid_arg "make_arity_nodep"
   in 
   mrec
+
+let error_elim_expln env kp ki =
+  if is_info_sort env kp && not (is_info_sort env ki) then
+    "non-informative objects may not construct informative ones."
+  else 
+    match (kp,ki) with 
+      | (DOP0(Sort (Type _)), DOP0(Sort (Prop _))) ->
+          "strong elimination on non-small inductive types leads to paradoxes."
+      | _ -> "wrong arity"
 
 exception Arity of (constr * constr * string) option
 
@@ -419,9 +426,9 @@ let apply_rel_list env0 nocheck argjl funj =
 		       let env' = set_universes g env in
 		       apply_rec env' (subst1 hj.uj_val c2) restjl
 		   | NotConvertible -> 
-		       error_cant_apply "Type Error" CCI env funj argjl)
+		       error_cant_apply CCI env "Type Error" funj argjl)
           | _ ->
-              error_cant_apply "Non-functional construction" CCI env funj argjl
+              error_cant_apply CCI env "Non-functional construction" funj argjl
   in 
   apply_rec env0 funj.uj_type argjl
 
@@ -729,7 +736,7 @@ let check_fix env = function
 	  try
 	    let _ = check_subterm_rec_meta env nvect nvect.(i) vdefs.(i) in ()
 	  with UserError (s,str) ->
-	    error_ill_formed_rec_body str CCI env lna i vdefs 
+	    error_ill_formed_rec_body CCI env str lna i vdefs 
 	in
 	for i = 0 to ln-1 do check_type i done 
 
@@ -873,7 +880,7 @@ let check_cofix env f =
 	  (try 
 	     let _ = check_guard_rec_meta env nbfix vdefs.(i) varit.(i) in ()
 	   with UserError (s,str) -> 
-	     error_ill_formed_rec_body str CCI env lna i vdefs) 
+	     error_ill_formed_rec_body CCI env str lna i vdefs) 
 	in
 	for i = 0 to nbfix-1 do check_type i done
     | _ -> assert false

@@ -139,8 +139,6 @@ val contract_subst : int -> 'a freeze -> 'a freeze -> 'a freeze
 (* Calculus of Constructions *)
 type fconstr = sorts oper freeze
 val inject : constr -> fconstr
-(* A pseudo-printer for fconstr *)
-val prfconstr : fconstr -> std_ppcmds
 
 val strip_frterm :
   int -> fconstr -> fconstr array list -> int * fconstr * fconstr array

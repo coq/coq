@@ -7,10 +7,10 @@ open Names
 open Univ
 open Generic
 open Term
-open Himsg
 open Reduction
 open Sign
 open Environ
+open Type_errors
 open Machops
 
 (* Fonctions temporaires pour relier la forme castée de la forme jugement *)
@@ -231,6 +231,8 @@ let unsafe_type_of_type env c =
 
 
 (*s Machines with information. *)
+
+type information = Logic | Inf of unsafe_judgment
 
 (*i
 let implicit_judgment = {body=mkImplicit;typ=implicit_sort}

@@ -9,3 +9,4 @@ type abstraction_body = {
   abs_arity : int array;
   abs_rhs : constr }
 
+val contract_abstraction : abstraction_body -> constr array -> constr

@@ -8,17 +8,14 @@ open Term
 open Environ
 (*i*)
 
-(* Typing judgments. *)
 
-type information = Logic | Inf of unsafe_judgment
+(* Base operations of the typing machine. *)
 
 val make_judge : constr -> typed_type -> unsafe_judgment
 
 val j_val_only : unsafe_judgment -> constr
 
 val typed_type_of_judgment : 'a unsafe_env -> unsafe_judgment -> typed_type
-
-(* Base operations of the typing machine. *)
 
 val relative : 'a unsafe_env -> int -> unsafe_judgment
 

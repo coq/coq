@@ -169,11 +169,8 @@ let subst_term_occ locs c t =
   else 
     let except = List.for_all (fun n -> n<0) locs in
     let (nbocc,t') = substcheck except 1 1 c t in
-    if List.exists (fun o -> o>=nbocc or o<= -nbocc) locs then
-      errorlabstrm "subst_occ" 
-	[< 'sTR "Only "; 'iNT (nbocc-1); 'sTR " occurrences of";
-	   'bRK(1,1); Printer.pr_term c; 'sPC;
-	   'sTR "in"; 'bRK(1,1); Printer.pr_term t>]
+    if List.exists (fun o -> o >= nbocc or o <= -nbocc) locs then
+      failwith "subst_term_occ: too few occurences" 
     else 
       t'
 
@@ -752,9 +749,7 @@ type 'a conversion_function =
 (* Conversion utility functions *)
 
 let convert_of_constraint f u =
-  match f u with
-    | Consistent u' -> Convertible u'
-    | Inconsistent -> NotConvertible
+  try Convertible (f u) with UniverseInconsistency -> NotConvertible
 
 type conversion_test = universes -> conversion_result
 

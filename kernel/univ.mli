@@ -11,6 +11,8 @@ val prop_univ : universe
 val prop_univ_univ : universe
 val prop_univ_univ_univ : universe
 
+val new_univ : section_path -> universe
+
 type universes
 
 val initial_universes : universes
@@ -19,12 +21,10 @@ val super : universe -> universes -> universe * universes
 
 val sup : universe -> universe -> universes -> universe * universes
 
-type constraint_result = 
-  | Consistent of universes
-  | Inconsistent
+exception UniverseInconsistency
 
 type constraint_function = 
-    universe -> universe -> universes -> constraint_result
+    universe -> universe -> universes -> universes
 
 val enforce_gt : constraint_function
 val enforce_geq : constraint_function

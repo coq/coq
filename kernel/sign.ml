@@ -24,7 +24,7 @@ let rev_sign (idl,tyl) = (List.rev idl, List.rev tyl)
 let map_sign_typ f (idl,tyl) = (idl, List.map f tyl)
 let concat_sign (idl1,tyl1) (idl2,tyl2) = (idl1@idl2, tyl1@tyl2)
 let diff_sign (idl1,tyl1) (idl2,tyl2) = 
-  (subtract idl1 idl2, subtract tyl1 tyl2)
+  (list_subtract idl1 idl2, list_subtract tyl1 tyl2)
 let nth_sign (idl,tyl) n = (List.nth idl (n-1), List.nth tyl (n-1))
 let map_sign_graph f (ids,tys) = List.map2 f ids tys
 
@@ -134,7 +134,7 @@ let add_sign_replacing whereid (id,t) sign =
    are distinct. *)
 
 let prepend_sign gamma1 gamma2 =
-  if [] = intersect (ids_of_sign gamma1) (ids_of_sign gamma2) then
+  if [] = list_intersect (ids_of_sign gamma1) (ids_of_sign gamma2) then
     let (ids1,vals1) = gamma1
     and (ids2,vals2) = gamma2 in
     (ids1@ids2, vals1@vals2)

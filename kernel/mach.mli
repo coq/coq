@@ -30,6 +30,8 @@ val unsafe_type_of : 'a unsafe_env -> constr -> constr
 
 (*s Machine with information. *)
 
+type information = Logic | Inf of unsafe_judgment
+
 (*i
 val infexemeta : 
   'a unsafe_env -> constr -> unsafe_judgment * information * universes

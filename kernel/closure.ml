@@ -652,14 +652,6 @@ type fconstr = sorts oper freeze
 
 let inject constr = freeze ESID constr
 
-(* trivial printer: prints the equivalent constr of a freeze,
- * just writing a "*" if it is in normal form
- *)
-let prfconstr v =
-  let pv = Printer.pr_term (term_of_freeze v) in
-  if v.norm then [< 'sTR"*"; pv >] else pv
-
-
 (* Remove head lifts, applications and casts *)
 let rec strip_frterm n v stack =
   match v.term with

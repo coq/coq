@@ -1,13 +1,33 @@
 
 (* $Id$ *)
 
-(*i*)
 open Pp
 open Names
 open Term
 open Sign
 open Environ
-(*i*)
+
+(* Type errors. *)
+
+type type_error =
+  | UnboundRel of int
+  | CantExecute of constr
+  | NotAType of constr
+  | BadAssumption of constr
+  | ReferenceVariables of identifier
+  | ElimArity of constr * constr list * constr * constr * constr
+      * (constr * constr * string) option
+  | CaseNotInductive of constr * constr
+  | NumberBranches of constr * constr * int
+  | IllFormedBranch of constr * int * constr * constr
+  | Generalization of (name * typed_type) * constr
+  | ActualType of unsafe_judgment * unsafe_judgment
+  | CantAply of string * unsafe_judgment * unsafe_judgment list
+  | IllFormedRecBody of std_ppcmds * name list * int * constr array
+  | IllTypedRecBody of int * name list * unsafe_judgment array 
+      * typed_type array
+
+exception TypeError of path_kind * environment * type_error
 
 val error_unbound_rel : path_kind -> 'a unsafe_env -> int -> 'b
 
@@ -17,9 +37,7 @@ val error_not_type : path_kind -> 'a unsafe_env -> constr -> 'b
 
 val error_assumption : path_kind -> 'a unsafe_env -> constr -> 'b
  
-val error_reference_variables : identifier -> 'a
-
-val error_elim_expln : 'a unsafe_env -> constr -> constr -> string
+val error_reference_variables : path_kind -> 'a unsafe_env -> identifier -> 'b
 
 val error_elim_arity : 
   path_kind -> 'a unsafe_env -> constr -> constr list -> constr 
@@ -41,14 +59,13 @@ val error_actual_type :
   path_kind -> 'a unsafe_env -> unsafe_judgment -> unsafe_judgment -> 'b
 
 val error_cant_apply : 
-  string -> path_kind -> 'a unsafe_env -> unsafe_judgment 
+  path_kind -> 'a unsafe_env -> string -> unsafe_judgment 
     -> unsafe_judgment list -> 'b
 
 val error_ill_formed_rec_body :
-  std_ppcmds -> path_kind -> 'a unsafe_env 
+  path_kind -> 'a unsafe_env -> std_ppcmds
     -> name list -> int -> constr array -> 'b
 
 val error_ill_typed_rec_body  :
   path_kind -> 'a unsafe_env -> int -> name list -> unsafe_judgment array 
     -> typed_type array -> 'b
-

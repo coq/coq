@@ -156,13 +156,8 @@ let translucent_abst env = function
 
 let abst_value env = function
   | DOPN(Abst sp, args) ->
-    let ab = lookup_abst sp env in
-    if array_for_all2 (fun c i -> (count_dlam c) = i) args ab.abs_arity then
-      (* Sosub.soexecute (Array.fold_left sAPP ab.abs_rhs args) *)
-      failwith "todo: abstractions"
-    else 
-      failwith "contract_abstraction"
-  | _ -> invalid_arg "contract_abstraction"
+    contract_abstraction (lookup_abst sp env) args
+  | _ -> invalid_arg "abst_value"
 
 let defined_constant env = function
   | DOPN (Const sp, _) ->
