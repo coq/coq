@@ -30,7 +30,7 @@ theories/Sets/Constructive_sets.vo: theories/Sets/Constructive_sets.v theories/S
 theories/Sets/Classical_sets.vo: theories/Sets/Classical_sets.v theories/Sets/Ensembles.vo theories/Sets/Constructive_sets.vo theories/Logic/Classical_Type.vo
 theories/Relations/Rstar.vo: theories/Relations/Rstar.v
 theories/Relations/Relations.vo: theories/Relations/Relations.v theories/Relations/Relation_Definitions.vo theories/Relations/Relation_Operators.vo theories/Relations/Operators_Properties.vo
-theories/Relations/Relation_Operators.vo: theories/Relations/Relation_Operators.v theories/Relations/Relation_Definitions.vo theories/Lists/PolyList.vo
+theories/Relations/Relation_Operators.vo: theories/Relations/Relation_Operators.v theories/Relations/Relation_Definitions.vo theories/Lists/PolyList.vo theories/Lists/PolyListSyntax.vo
 theories/Relations/Relation_Definitions.vo: theories/Relations/Relation_Definitions.v
 theories/Relations/Operators_Properties.vo: theories/Relations/Operators_Properties.v theories/Relations/Relation_Definitions.vo theories/Relations/Relation_Operators.vo
 theories/Relations/Newman.vo: theories/Relations/Newman.v theories/Relations/Rstar.vo
@@ -43,6 +43,7 @@ theories/Reals/Rbasic_fun.vo: theories/Reals/Rbasic_fun.v theories/Reals/R_Ifp.v
 theories/Reals/Rbase.vo: theories/Reals/Rbase.v theories/Reals/Raxioms.vo contrib/ring/ZArithRing.vo theories/Logic/Classical_Prop.vo contrib/omega/Omega.vo
 theories/Reals/Raxioms.vo: theories/Reals/Raxioms.v theories/Zarith/ZArith.vo theories/Reals/TypeSyntax.vo
 theories/Reals/R_Ifp.vo: theories/Reals/R_Ifp.v theories/Reals/Rbase.vo contrib/omega/Omega.vo
+theories/Logic/Extensionality.vo: theories/Logic/Extensionality.v
 theories/Logic/Eqdep_dec.vo: theories/Logic/Eqdep_dec.v
 theories/Logic/Eqdep.vo: theories/Logic/Eqdep.v
 theories/Logic/Classical_Type.vo: theories/Logic/Classical_Type.v theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Type.vo
@@ -52,7 +53,6 @@ theories/Logic/Classical_Pred_Set.vo: theories/Logic/Classical_Pred_Set.v theori
 theories/Logic/Classical.vo: theories/Logic/Classical.v theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Set.vo
 theories/Lists/TheoryList.vo: theories/Lists/TheoryList.v theories/Lists/PolyList.vo theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Minus.vo theories/Bool/DecBool.vo
 theories/Lists/Streams.vo: theories/Lists/Streams.v
-theories/Lists/Program.vo: theories/Lists/Program.v tactics/Refine.vo
 theories/Lists/PolyListSyntax.vo: theories/Lists/PolyListSyntax.v theories/Lists/PolyList.vo
 theories/Lists/PolyList.vo: theories/Lists/PolyList.v theories/Arith/Le.vo
 theories/Lists/ListSet.vo: theories/Lists/ListSet.v theories/Lists/PolyList.vo
@@ -72,7 +72,6 @@ theories/Bool/Zerob.vo: theories/Bool/Zerob.v theories/Arith/Arith.vo theories/B
 theories/Bool/Sumbool.vo: theories/Bool/Sumbool.v
 theories/Bool/IfProp.vo: theories/Bool/IfProp.v theories/Bool/Bool.vo
 theories/Bool/DecBool.vo: theories/Bool/DecBool.v
-theories/Bool/BoolEq.vo: theories/Bool/BoolEq.v theories/Bool/Bool.vo
 theories/Bool/Bool.vo: theories/Bool/Bool.v
 theories/Arith/Wf_nat.vo: theories/Arith/Wf_nat.v theories/Arith/Lt.vo
 theories/Arith/Plus.vo: theories/Arith/Plus.v theories/Arith/Le.vo theories/Arith/Lt.vo
