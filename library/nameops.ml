@@ -21,7 +21,7 @@ let translate_v7_string = function
   | "entier" -> "N"
   | "SUPERIEUR" -> "GREATER"
   | "EGAL" -> "EQUAL"
-  | "INFERIEUR" -> "LESSER"
+  | "INFERIEUR" -> "LESS"
   | "add_un" -> "add_one"
   | "sub_un" -> "sub_one"
   | "convert_add_un" -> "convert_add_one"
