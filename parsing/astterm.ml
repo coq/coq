@@ -114,7 +114,8 @@ let maybe_constructor env s =
   try 
     match Declare.global_reference CCI (id_of_string s) with 
       | DOPN(MutConstruct (spi,j),cl) -> Some ((spi,j),ids_of_ctxt cl)
-      | _ -> None
+      | _ -> warning ("Defined identifier "
+		      ^s^" is here considered as a matching variable"); None
   with Not_found -> 
     None
 
