@@ -40,13 +40,11 @@ val declare_extra_genarg_pprule :
   ('a glob_abstract_argument_type * 'a glob_extra_genarg_printer) ->
   ('b closed_abstract_argument_type * 'b extra_genarg_printer) -> unit
 
-type ('a,'b) gen_gram_prod_builder =
-  ('a,'b) generic_argument list ->
-    string * Egrammar.grammar_tactic_production list
+type grammar_terminals = string option list
 
   (* if the boolean is false then the extension applies only to old syntax *)
-val declare_extra_tactic_pprule : 
-  bool -> string -> ('a,'b) gen_gram_prod_builder -> unit
+val declare_extra_tactic_pprule : bool -> string -> 
+  argument_type list * (string * grammar_terminals) -> unit
 
 val pr_match_pattern : ('a -> std_ppcmds) -> 'a match_pattern -> std_ppcmds
 

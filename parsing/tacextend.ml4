@@ -102,22 +102,31 @@ let mlexpr_of_grammar_production = function
   | TacNonTerm (loc,nt,g,sopt) ->
       <:expr< Egrammar.TacNonTerm $default_loc$ ($g$,$mlexpr_of_argtype loc nt$) $mlexpr_of_option mlexpr_of_string sopt$ >>
 
+let mlexpr_terminals_of_grammar_production = function
+  | TacTerm s -> <:expr< Some $mlexpr_of_string s$ >>
+  | TacNonTerm (loc,nt,g,sopt) -> <:expr< None >>
+
 let mlexpr_of_semi_clause =
   mlexpr_of_pair mlexpr_of_string (mlexpr_of_list mlexpr_of_grammar_production)
 
 let mlexpr_of_clause =
   mlexpr_of_list (fun (a,b,c) -> mlexpr_of_semi_clause (a,b))
 
+let rec make_tags loc = function
+  | [] -> <:expr< [] >>
+  | TacNonTerm(loc',t,_,Some p)::l ->
+      let l = make_tags loc l in
+      let loc = join_loc loc' loc in
+      let t = mlexpr_of_argtype loc' t in
+      <:expr< [ $t$ :: $l$ ] >>
+  | _::l -> make_tags loc l
 
-let add_printing_clause (s,pt,e) l =
-  let p = make_patt pt in
-  let w = Some (make_when (MLast.loc_of_expr e) pt) in
-  (p, w, mlexpr_of_semi_clause (s,pt))::l
+let make_one_printing_rule (s,pt,e) =
+  let loc = MLast.loc_of_expr e in
+  let prods = mlexpr_of_list mlexpr_terminals_of_grammar_production pt in
+  <:expr< ($make_tags loc pt$, ($str:s$, $prods$)) >>
 
-let make_printing_rule l =
-  let default =
-    (<:patt< _ >>,None,<:expr< failwith "Tactic extension: cannot occur" >>) in
-  List.fold_right add_printing_clause l [default]
+let make_printing_rule = mlexpr_of_list make_one_printing_rule
 
 let new_tac_ext (s,cl) =
   (String.lowercase s, List.map 
@@ -129,7 +138,7 @@ let new_tac_ext (s,cl) =
     cl)
 
 let declare_tactic_v7 loc s cl =
-  let pl = make_printing_rule cl in
+  let pp = make_printing_rule cl in
   let gl = mlexpr_of_clause cl in
   let hide_tac (_,p,e) =
     (* reste a definir les fonctions cachees avec des noms frais *)
@@ -147,17 +156,16 @@ let declare_tactic_v7 loc s cl =
     declare
       open Pcoq;
       Egrammar.extend_tactic_grammar $se$ $gl$;
-      let pp = fun [ $list:pl$ ] in
-      Pptactic.declare_extra_tactic_pprule False $se$ pp;
+      List.iter (Pptactic.declare_extra_tactic_pprule False $se$) $pp$;
     end
   >>
 
 let declare_tactic loc s cl =
   let (s',cl') = new_tac_ext (s,cl) in
-  let pl' = make_printing_rule cl' in
+  let pp' = make_printing_rule cl' in
   let gl' = mlexpr_of_clause cl' in
   let se' = mlexpr_of_string s' in
-  let pl = make_printing_rule cl in
+  let pp = make_printing_rule cl in
   let gl = mlexpr_of_clause cl in
   let hide_tac (_,p,e) =
     (* reste a definir les fonctions cachees avec des noms frais *)
@@ -181,10 +189,8 @@ let declare_tactic loc s cl =
       with e -> Pp.pp (Cerrors.explain_exn e);
       if Options.v7.val then Egrammar.extend_tactic_grammar $se'$ $gl$
       else Egrammar.extend_tactic_grammar $se'$ $gl'$;
-      let pp' = fun [ $list:pl'$ ] in
-      Pptactic.declare_extra_tactic_pprule True $se'$ pp';
-      let pp = fun [ $list:pl$ ] in
-      Pptactic.declare_extra_tactic_pprule False $se'$ pp;
+      List.iter (Pptactic.declare_extra_tactic_pprule True $se'$) $pp'$;
+      List.iter (Pptactic.declare_extra_tactic_pprule False $se'$) $pp$;
     end
   >>
 

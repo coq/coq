@@ -28,29 +28,16 @@ let pr_name = Ppconstr.pr_name
 let pr_opt = Ppconstr.pr_opt
 let pr_occurrences = Ppconstr.pr_occurrences
 
+type grammar_terminals = string option list
+
   (* Extensions *)
 let prtac_tab_v7 = Hashtbl.create 17
 let prtac_tab = Hashtbl.create 17
 
-(* We need system F typing strength *)
-type ('a,'b) gen_gram_prod_builder =
-  ('a,'b) generic_argument list ->
-    string * Egrammar.grammar_tactic_production list
-let inst1 (f:('a,'b) gen_gram_prod_builder) =
-  (Obj.magic f : (constr_expr,raw_tactic_expr) gen_gram_prod_builder)
-let inst2 (f:('a,'b) gen_gram_prod_builder) =
-  (Obj.magic f : (rawconstr * constr_expr option,glob_tactic_expr) gen_gram_prod_builder)
-let inst3 (f:('a,'b) gen_gram_prod_builder) =
-  (Obj.magic f : (Term.constr,glob_tactic_expr) gen_gram_prod_builder)
+let declare_extra_tactic_pprule for_v8 s (tags,prods) =
+  Hashtbl.add prtac_tab_v7 (s,tags) prods;
+  if for_v8 then Hashtbl.add prtac_tab (s,tags) prods
 
-let declare_extra_tactic_pprule for_v8 s f =
-  let f = inst1 f in
-  let g = inst2 f in
-  let h = inst3 f in
-  Hashtbl.add prtac_tab_v7 s (f,g,h);
-  if for_v8 then Hashtbl.add prtac_tab s (f,g,h)
-
-let p = prtac_tab
 type 'a raw_extra_genarg_printer =
     (constr_expr -> std_ppcmds) -> (raw_tactic_expr -> std_ppcmds) ->
       'a -> std_ppcmds
@@ -357,20 +344,19 @@ let rec pr_generic prc prlc prtac x =
       with Not_found -> str " [no printer for " ++ str s ++ str "]"
 
 let rec pr_tacarg_using_rule pr_gen = function
-  | Egrammar.TacTerm s :: l, al ->
-      spc () ++ str s ++ pr_tacarg_using_rule pr_gen (l,al)
-  | Egrammar.TacNonTerm _ :: l, a :: al ->
-      pr_gen a ++ pr_tacarg_using_rule  pr_gen (l,al)
+  | Some s :: l, al -> spc () ++ str s ++ pr_tacarg_using_rule pr_gen (l,al)
+  | None :: l, a :: al -> pr_gen a ++ pr_tacarg_using_rule  pr_gen (l,al)
   | [], [] -> mt ()
   | _ -> failwith "Inconsistent arguments of extended tactic"
 
-let pr_extend_gen proj prgen s l =
+let pr_extend_gen prgen s l =
   let tab = 
     if Options.do_translate() or not !Options.v7 then prtac_tab
     else prtac_tab_v7
   in
   try 
-    let (s,pl) = proj (Hashtbl.find tab s) l in
+    let tags = List.map genarg_tag l in
+    let (s,pl) = Hashtbl.find tab (s,tags) in
     str s ++ pr_tacarg_using_rule prgen (pl,l)
   with Not_found ->
     str s ++ prlist prgen l ++ str " (* Generic printer *)"
@@ -666,11 +652,11 @@ and prtac x = pr6 x
 in (prtac,pr0,pr_match_rule false pr_pat pr_tac)
 
 let pr_raw_extend prc prlc prtac = 
-  pr_extend_gen pi1 (pr_raw_generic prc prlc prtac pr_reference)
+  pr_extend_gen (pr_raw_generic prc prlc prtac pr_reference)
 let pr_glob_extend prc prlc prtac =
-  pr_extend_gen pi2 (pr_glob_generic prc prlc prtac)
+  pr_extend_gen (pr_glob_generic prc prlc prtac)
 let pr_extend prc prlc prtac =
-  pr_extend_gen pi3 (pr_generic prc prlc prtac)
+  pr_extend_gen (pr_generic prc prlc prtac)
 
 let pr_and_constr_expr pr (c,_) = pr c
 
