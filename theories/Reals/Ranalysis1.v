@@ -28,16 +28,14 @@ Definition div_real_fct [a:R;f:R->R] : R->R := [x:R] ``a/(f x)``.
 Definition comp [f1,f2:R->R] : R->R := [x:R] ``(f1 (f2 x))``.
 Definition inv_fct [f:R->R] : R->R := [x:R]``/(f x)``.
 
-Infix "+" plus_fct (at level 4, left associativity) : Rfun_scope.
-Notation "- x" := (opp_fct x) (at level 0) : Rfun_scope
-  V8only (at level 40).
-Infix "*" mult_fct (at level 3, left associativity) : Rfun_scope.
-Infix "-" minus_fct (at level 4, left associativity) : Rfun_scope.
-Infix "/" div_fct (at level 3, left associativity) : Rfun_scope.
+V8Infix "+" plus_fct : Rfun_scope.
+V8Notation "- x" := (opp_fct x) : Rfun_scope.
+V8Infix "*" mult_fct : Rfun_scope.
+V8Infix "-" minus_fct : Rfun_scope.
+V8Infix "/" div_fct : Rfun_scope.
 Notation Local "f1 'o' f2" := (comp f1 f2) (at level 2, right associativity)
   : Rfun_scope.
-Notation "/ x" := (inv_fct x) (at level 0): Rfun_scope
-  V8only (at level 30, left associativity).
+V8Notation "/ x" := (inv_fct x) : Rfun_scope.
 
 Delimits Scope Rfun_scope with F.
 
