@@ -20,6 +20,7 @@ Then only after proves the main required property.
 *)
 
 Require Export ZArith_base.
+Require Zbool.
 Require Omega.
 Require ZArithRing.
 Require Zcomplements.
