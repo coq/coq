@@ -362,8 +362,12 @@ let rec intern_library (dir, f) =
 	 pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
          spc() ++ pr_dirpath dir);
     compunit_cache := CompilingModulemap.add dir m !compunit_cache;
-    List.iter (intern_mandatory_library dir) m.library_deps;
-    m
+    try
+      List.iter (intern_mandatory_library dir) m.library_deps;
+      m
+    with e ->
+      compunit_cache := CompilingModulemap.remove dir !compunit_cache; 
+      raise e
 
 and intern_mandatory_library caller (dir,d) =
   let m = intern_absolute_library_from dir in
