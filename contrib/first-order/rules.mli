@@ -47,7 +47,7 @@ val ll_arrow_tac : constr -> constr -> constr -> lseqtac with_backtracking
 
 val forall_tac : seqtac with_backtracking
 
-val left_exists_tac : inductive -> lseqtac
+val left_exists_tac : inductive -> lseqtac with_backtracking
 
 val ll_forall_tac : types -> lseqtac with_backtracking 
 

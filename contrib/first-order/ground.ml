@@ -117,7 +117,8 @@ let ground_tac solver startseq gl=
 			      backtrack2 (* need special backtracking *)
   		      | Lexists ind ->
 			  if !qflag then 
-			    left_exists_tac ind hd.id continue (re_add seq1)
+			    left_exists_tac ind backtrack hd.id
+			      continue (re_add seq1)
 			  else backtrack
 		      | LA (typ,lap)->
 			  let la_tac=

@@ -172,13 +172,15 @@ let forall_tac backtrack continue seq=
      else
        backtrack)
 
-let left_exists_tac ind id continue seq gls=
+let left_exists_tac ind backtrack id continue seq gls=
   let n=(construct_nhyps ind gls).(0) in  
-    tclTHENLIST
-      [simplest_elim (constr_of_reference id);
-       clear_global id;
-       tclDO n intro;
-       (wrap (n-1) false continue seq)] gls
+    tclIFTHENELSE
+      (simplest_elim (constr_of_reference id))
+      (tclTHENLIST [clear_global id;
+                    tclDO n intro;
+                    (wrap (n-1) false continue seq)]) 
+      backtrack 
+      gls
 	
 let ll_forall_tac prod backtrack id continue seq=
   tclORELSE
