@@ -1,25 +1,27 @@
-theories/Arith/arithSyntax.cmo: theories/Arith/arithSyntax.cmi 
-theories/Arith/arithSyntax.cmx: theories/Arith/arithSyntax.cmi 
 theories/Arith/between.cmo: theories/Arith/between.cmi 
 theories/Arith/between.cmx: theories/Arith/between.cmi 
 theories/Arith/bool_nat.cmo: theories/Arith/compare_dec.cmi \
-    theories/Arith/peano_dec.cmi theories/Bool/sumbool.cmi \
+    theories/Init/datatypes.cmi theories/Arith/peano_dec.cmi \
+    theories/Init/specif.cmi theories/Bool/sumbool.cmi \
     theories/Arith/bool_nat.cmi 
 theories/Arith/bool_nat.cmx: theories/Arith/compare_dec.cmx \
-    theories/Arith/peano_dec.cmx theories/Bool/sumbool.cmx \
+    theories/Init/datatypes.cmx theories/Arith/peano_dec.cmx \
+    theories/Init/specif.cmx theories/Bool/sumbool.cmx \
     theories/Arith/bool_nat.cmi 
 theories/Arith/compare.cmo: theories/Arith/compare_dec.cmi \
-    theories/Init/specif.cmi theories/Arith/compare.cmi 
+    theories/Init/datatypes.cmi theories/Init/specif.cmi \
+    theories/Arith/compare.cmi 
 theories/Arith/compare.cmx: theories/Arith/compare_dec.cmx \
-    theories/Init/specif.cmx theories/Arith/compare.cmi 
+    theories/Init/datatypes.cmx theories/Init/specif.cmx \
+    theories/Arith/compare.cmi 
 theories/Arith/compare_dec.cmo: theories/Init/datatypes.cmi \
     theories/Init/specif.cmi theories/Arith/compare_dec.cmi 
 theories/Arith/compare_dec.cmx: theories/Init/datatypes.cmx \
     theories/Init/specif.cmx theories/Arith/compare_dec.cmi 
 theories/Arith/div2.cmo: theories/Init/datatypes.cmi theories/Init/peano.cmi \
-    theories/Arith/div2.cmi 
+    theories/Init/specif.cmi theories/Arith/div2.cmi 
 theories/Arith/div2.cmx: theories/Init/datatypes.cmx theories/Init/peano.cmx \
-    theories/Arith/div2.cmi 
+    theories/Init/specif.cmx theories/Arith/div2.cmi 
 theories/Arith/eqNat.cmo: theories/Init/datatypes.cmi \
     theories/Init/specif.cmi theories/Arith/eqNat.cmi 
 theories/Arith/eqNat.cmx: theories/Init/datatypes.cmx \
@@ -102,6 +104,8 @@ theories/Init/logic_TypeSyntax.cmo: theories/Init/logic_TypeSyntax.cmi
 theories/Init/logic_TypeSyntax.cmx: theories/Init/logic_TypeSyntax.cmi 
 theories/Init/peano.cmo: theories/Init/datatypes.cmi theories/Init/peano.cmi 
 theories/Init/peano.cmx: theories/Init/datatypes.cmx theories/Init/peano.cmi 
+theories/Init/peanoSyntax.cmo: theories/Init/peanoSyntax.cmi 
+theories/Init/peanoSyntax.cmx: theories/Init/peanoSyntax.cmi 
 theories/Init/prelude.cmo: theories/Init/prelude.cmi 
 theories/Init/prelude.cmx: theories/Init/prelude.cmi 
 theories/Init/specif.cmo: theories/Init/datatypes.cmi \
@@ -152,14 +156,16 @@ theories/IntMap/fset.cmx: theories/IntMap/addec.cmx theories/IntMap/addr.cmx \
     theories/Init/specif.cmx theories/IntMap/fset.cmi 
 theories/IntMap/lsort.cmo: theories/IntMap/addec.cmi theories/IntMap/addr.cmi \
     theories/Bool/bool.cmi theories/Init/datatypes.cmi \
-    theories/ZArith/fast_integer.cmi theories/IntMap/mapiter.cmi \
-    theories/Lists/polyList.cmi theories/Init/specif.cmi \
-    theories/Bool/sumbool.cmi theories/IntMap/lsort.cmi 
+    theories/ZArith/fast_integer.cmi theories/IntMap/map.cmi \
+    theories/IntMap/mapiter.cmi theories/Lists/polyList.cmi \
+    theories/Init/specif.cmi theories/Bool/sumbool.cmi \
+    theories/IntMap/lsort.cmi 
 theories/IntMap/lsort.cmx: theories/IntMap/addec.cmx theories/IntMap/addr.cmx \
     theories/Bool/bool.cmx theories/Init/datatypes.cmx \
-    theories/ZArith/fast_integer.cmx theories/IntMap/mapiter.cmx \
-    theories/Lists/polyList.cmx theories/Init/specif.cmx \
-    theories/Bool/sumbool.cmx theories/IntMap/lsort.cmi 
+    theories/ZArith/fast_integer.cmx theories/IntMap/map.cmx \
+    theories/IntMap/mapiter.cmx theories/Lists/polyList.cmx \
+    theories/Init/specif.cmx theories/Bool/sumbool.cmx \
+    theories/IntMap/lsort.cmi 
 theories/IntMap/map.cmo: theories/IntMap/addec.cmi theories/IntMap/addr.cmi \
     theories/Init/datatypes.cmi theories/ZArith/fast_integer.cmi \
     theories/Init/peano.cmi theories/Init/specif.cmi theories/IntMap/map.cmi 
@@ -171,9 +177,9 @@ theories/IntMap/mapaxioms.cmx: theories/IntMap/mapaxioms.cmi
 theories/IntMap/mapc.cmo: theories/IntMap/mapc.cmi 
 theories/IntMap/mapc.cmx: theories/IntMap/mapc.cmi 
 theories/IntMap/mapcanon.cmo: theories/IntMap/map.cmi \
-    theories/IntMap/mapcanon.cmi 
+    theories/Init/specif.cmi theories/IntMap/mapcanon.cmi 
 theories/IntMap/mapcanon.cmx: theories/IntMap/map.cmx \
-    theories/IntMap/mapcanon.cmi 
+    theories/Init/specif.cmx theories/IntMap/mapcanon.cmi 
 theories/IntMap/mapcard.cmo: theories/IntMap/addec.cmi \
     theories/IntMap/addr.cmi theories/Init/datatypes.cmi \
     theories/IntMap/map.cmi theories/Init/peano.cmi \
@@ -186,14 +192,14 @@ theories/IntMap/mapcard.cmx: theories/IntMap/addec.cmx \
     theories/Arith/peano_dec.cmx theories/Arith/plus.cmx \
     theories/Init/specif.cmx theories/Bool/sumbool.cmx \
     theories/IntMap/mapcard.cmi 
-theories/IntMap/mapfold.cmo: theories/Init/datatypes.cmi \
-    theories/IntMap/fset.cmi theories/IntMap/map.cmi \
-    theories/IntMap/mapiter.cmi theories/Init/specif.cmi \
-    theories/IntMap/mapfold.cmi 
-theories/IntMap/mapfold.cmx: theories/Init/datatypes.cmx \
-    theories/IntMap/fset.cmx theories/IntMap/map.cmx \
-    theories/IntMap/mapiter.cmx theories/Init/specif.cmx \
-    theories/IntMap/mapfold.cmi 
+theories/IntMap/mapfold.cmo: theories/IntMap/addr.cmi \
+    theories/Init/datatypes.cmi theories/IntMap/fset.cmi \
+    theories/IntMap/map.cmi theories/IntMap/mapiter.cmi \
+    theories/Init/specif.cmi theories/IntMap/mapfold.cmi 
+theories/IntMap/mapfold.cmx: theories/IntMap/addr.cmx \
+    theories/Init/datatypes.cmx theories/IntMap/fset.cmx \
+    theories/IntMap/map.cmx theories/IntMap/mapiter.cmx \
+    theories/Init/specif.cmx theories/IntMap/mapfold.cmi 
 theories/IntMap/mapiter.cmo: theories/IntMap/addec.cmi \
     theories/IntMap/addr.cmi theories/Init/datatypes.cmi \
     theories/IntMap/map.cmi theories/Lists/polyList.cmi \
@@ -205,12 +211,14 @@ theories/IntMap/mapiter.cmx: theories/IntMap/addec.cmx \
     theories/Init/specif.cmx theories/Bool/sumbool.cmx \
     theories/IntMap/mapiter.cmi 
 theories/IntMap/maplists.cmo: theories/IntMap/addec.cmi \
-    theories/Init/datatypes.cmi theories/IntMap/map.cmi \
+    theories/IntMap/addr.cmi theories/Init/datatypes.cmi \
+    theories/IntMap/fset.cmi theories/IntMap/map.cmi \
     theories/IntMap/mapiter.cmi theories/Lists/polyList.cmi \
     theories/Init/specif.cmi theories/Bool/sumbool.cmi \
     theories/IntMap/maplists.cmi 
 theories/IntMap/maplists.cmx: theories/IntMap/addec.cmx \
-    theories/Init/datatypes.cmx theories/IntMap/map.cmx \
+    theories/IntMap/addr.cmx theories/Init/datatypes.cmx \
+    theories/IntMap/fset.cmx theories/IntMap/map.cmx \
     theories/IntMap/mapiter.cmx theories/Lists/polyList.cmx \
     theories/Init/specif.cmx theories/Bool/sumbool.cmx \
     theories/IntMap/maplists.cmi 
@@ -248,6 +256,8 @@ theories/Logic/berardi.cmo: theories/Logic/berardi.cmi
 theories/Logic/berardi.cmx: theories/Logic/berardi.cmi 
 theories/Logic/classical.cmo: theories/Logic/classical.cmi 
 theories/Logic/classical.cmx: theories/Logic/classical.cmi 
+theories/Logic/classicalFacts.cmo: theories/Logic/classicalFacts.cmi 
+theories/Logic/classicalFacts.cmx: theories/Logic/classicalFacts.cmi 
 theories/Logic/classical_Pred_Set.cmo: theories/Logic/classical_Pred_Set.cmi 
 theories/Logic/classical_Pred_Set.cmx: theories/Logic/classical_Pred_Set.cmi 
 theories/Logic/classical_Pred_Type.cmo: \
@@ -288,8 +298,6 @@ theories/Relations/relations.cmo: theories/Relations/relations.cmi
 theories/Relations/relations.cmx: theories/Relations/relations.cmi 
 theories/Relations/rstar.cmo: theories/Relations/rstar.cmi 
 theories/Relations/rstar.cmx: theories/Relations/rstar.cmi 
-theories/Setoids/setoid.cmo: theories/Setoids/setoid.cmi 
-theories/Setoids/setoid.cmx: theories/Setoids/setoid.cmi 
 theories/Sets/classical_sets.cmo: theories/Sets/classical_sets.cmi 
 theories/Sets/classical_sets.cmx: theories/Sets/classical_sets.cmi 
 theories/Sets/constructive_sets.cmo: theories/Sets/constructive_sets.cmi 
@@ -306,10 +314,10 @@ theories/Sets/image.cmo: theories/Sets/image.cmi
 theories/Sets/image.cmx: theories/Sets/image.cmi 
 theories/Sets/infinite_sets.cmo: theories/Sets/infinite_sets.cmi 
 theories/Sets/infinite_sets.cmx: theories/Sets/infinite_sets.cmi 
-theories/Sets/integers.cmo: theories/Sets/partial_Order.cmi \
-    theories/Sets/integers.cmi 
-theories/Sets/integers.cmx: theories/Sets/partial_Order.cmx \
-    theories/Sets/integers.cmi 
+theories/Sets/integers.cmo: theories/Init/datatypes.cmi \
+    theories/Sets/partial_Order.cmi theories/Sets/integers.cmi 
+theories/Sets/integers.cmx: theories/Init/datatypes.cmx \
+    theories/Sets/partial_Order.cmx theories/Sets/integers.cmi 
 theories/Sets/multiset.cmo: theories/Init/datatypes.cmi \
     theories/Init/peano.cmi theories/Init/specif.cmi \
     theories/Sets/multiset.cmi 
@@ -347,19 +355,21 @@ theories/Sets/uniset.cmo: theories/Init/datatypes.cmi \
 theories/Sets/uniset.cmx: theories/Init/datatypes.cmx \
     theories/Init/specif.cmx theories/Sets/uniset.cmi 
 theories/Sorting/heap.cmo: theories/Init/datatypes.cmi \
-    theories/Init/peano.cmi theories/Lists/polyList.cmi \
-    theories/Sorting/sorting.cmi theories/Init/specif.cmi \
-    theories/Sorting/heap.cmi 
+    theories/Sets/multiset.cmi theories/Init/peano.cmi \
+    theories/Lists/polyList.cmi theories/Sorting/sorting.cmi \
+    theories/Init/specif.cmi theories/Sorting/heap.cmi 
 theories/Sorting/heap.cmx: theories/Init/datatypes.cmx \
-    theories/Init/peano.cmx theories/Lists/polyList.cmx \
-    theories/Sorting/sorting.cmx theories/Init/specif.cmx \
-    theories/Sorting/heap.cmi 
+    theories/Sets/multiset.cmx theories/Init/peano.cmx \
+    theories/Lists/polyList.cmx theories/Sorting/sorting.cmx \
+    theories/Init/specif.cmx theories/Sorting/heap.cmi 
 theories/Sorting/permutation.cmo: theories/Init/datatypes.cmi \
-    theories/Init/peano.cmi theories/Lists/polyList.cmi \
-    theories/Init/specif.cmi theories/Sorting/permutation.cmi 
+    theories/Sets/multiset.cmi theories/Init/peano.cmi \
+    theories/Lists/polyList.cmi theories/Init/specif.cmi \
+    theories/Sorting/permutation.cmi 
 theories/Sorting/permutation.cmx: theories/Init/datatypes.cmx \
-    theories/Init/peano.cmx theories/Lists/polyList.cmx \
-    theories/Init/specif.cmx theories/Sorting/permutation.cmi 
+    theories/Sets/multiset.cmx theories/Init/peano.cmx \
+    theories/Lists/polyList.cmx theories/Init/specif.cmx \
+    theories/Sorting/permutation.cmi 
 theories/Sorting/sorting.cmo: theories/Lists/polyList.cmi \
     theories/Init/specif.cmi theories/Sorting/sorting.cmi 
 theories/Sorting/sorting.cmx: theories/Lists/polyList.cmx \
@@ -402,10 +412,12 @@ theories/ZArith/fast_integer.cmx: theories/Init/datatypes.cmx \
     theories/Init/peano.cmx theories/ZArith/fast_integer.cmi 
 theories/ZArith/wf_Z.cmo: theories/Init/datatypes.cmi \
     theories/ZArith/fast_integer.cmi theories/Init/peano.cmi \
-    theories/ZArith/zarith_aux.cmi theories/ZArith/wf_Z.cmi 
+    theories/Init/specif.cmi theories/ZArith/zarith_aux.cmi \
+    theories/ZArith/wf_Z.cmi 
 theories/ZArith/wf_Z.cmx: theories/Init/datatypes.cmx \
     theories/ZArith/fast_integer.cmx theories/Init/peano.cmx \
-    theories/ZArith/zarith_aux.cmx theories/ZArith/wf_Z.cmi 
+    theories/Init/specif.cmx theories/ZArith/zarith_aux.cmx \
+    theories/ZArith/wf_Z.cmi 
 theories/ZArith/zArith.cmo: theories/ZArith/zArith.cmi 
 theories/ZArith/zArith.cmx: theories/ZArith/zArith.cmi 
 theories/ZArith/zArith_base.cmo: theories/ZArith/zArith_base.cmi 
@@ -422,12 +434,14 @@ theories/ZArith/zarith_aux.cmo: theories/Init/datatypes.cmi \
 theories/ZArith/zarith_aux.cmx: theories/Init/datatypes.cmx \
     theories/ZArith/fast_integer.cmx theories/Init/specif.cmx \
     theories/ZArith/zarith_aux.cmi 
-theories/ZArith/zbool.cmo: theories/Bool/sumbool.cmi \
-    theories/ZArith/zArith_dec.cmi theories/ZArith/zmisc.cmi \
-    theories/ZArith/zbool.cmi 
-theories/ZArith/zbool.cmx: theories/Bool/sumbool.cmx \
-    theories/ZArith/zArith_dec.cmx theories/ZArith/zmisc.cmx \
-    theories/ZArith/zbool.cmi 
+theories/ZArith/zbool.cmo: theories/Init/datatypes.cmi \
+    theories/ZArith/fast_integer.cmi theories/Init/specif.cmi \
+    theories/Bool/sumbool.cmi theories/ZArith/zArith_dec.cmi \
+    theories/ZArith/zmisc.cmi theories/ZArith/zbool.cmi 
+theories/ZArith/zbool.cmx: theories/Init/datatypes.cmx \
+    theories/ZArith/fast_integer.cmx theories/Init/specif.cmx \
+    theories/Bool/sumbool.cmx theories/ZArith/zArith_dec.cmx \
+    theories/ZArith/zmisc.cmx theories/ZArith/zbool.cmi 
 theories/ZArith/zcomplements.cmo: theories/Init/datatypes.cmi \
     theories/ZArith/fast_integer.cmi theories/Init/specif.cmi \
     theories/ZArith/wf_Z.cmi theories/ZArith/zarith_aux.cmi \
@@ -471,12 +485,14 @@ theories/ZArith/zsqrt.cmx: theories/ZArith/fast_integer.cmx \
 theories/ZArith/zwf.cmo: theories/ZArith/zwf.cmi 
 theories/ZArith/zwf.cmx: theories/ZArith/zwf.cmi 
 theories/Arith/bool_nat.cmi: theories/Arith/compare_dec.cmi \
-    theories/Arith/peano_dec.cmi theories/Bool/sumbool.cmi 
+    theories/Init/datatypes.cmi theories/Arith/peano_dec.cmi \
+    theories/Init/specif.cmi theories/Bool/sumbool.cmi 
 theories/Arith/compare.cmi: theories/Arith/compare_dec.cmi \
-    theories/Init/specif.cmi 
+    theories/Init/datatypes.cmi theories/Init/specif.cmi 
 theories/Arith/compare_dec.cmi: theories/Init/datatypes.cmi \
     theories/Init/specif.cmi 
-theories/Arith/div2.cmi: theories/Init/datatypes.cmi theories/Init/peano.cmi 
+theories/Arith/div2.cmi: theories/Init/datatypes.cmi theories/Init/peano.cmi \
+    theories/Init/specif.cmi 
 theories/Arith/eqNat.cmi: theories/Init/datatypes.cmi \
     theories/Init/specif.cmi 
 theories/Arith/euclid.cmi: theories/Arith/compare_dec.cmi \
@@ -519,27 +535,30 @@ theories/IntMap/fset.cmi: theories/IntMap/addec.cmi theories/IntMap/addr.cmi \
     theories/Init/specif.cmi 
 theories/IntMap/lsort.cmi: theories/IntMap/addec.cmi theories/IntMap/addr.cmi \
     theories/Bool/bool.cmi theories/Init/datatypes.cmi \
-    theories/ZArith/fast_integer.cmi theories/IntMap/mapiter.cmi \
-    theories/Lists/polyList.cmi theories/Init/specif.cmi \
-    theories/Bool/sumbool.cmi 
+    theories/ZArith/fast_integer.cmi theories/IntMap/map.cmi \
+    theories/IntMap/mapiter.cmi theories/Lists/polyList.cmi \
+    theories/Init/specif.cmi theories/Bool/sumbool.cmi 
 theories/IntMap/map.cmi: theories/IntMap/addec.cmi theories/IntMap/addr.cmi \
     theories/Init/datatypes.cmi theories/ZArith/fast_integer.cmi \
     theories/Init/peano.cmi theories/Init/specif.cmi 
-theories/IntMap/mapcanon.cmi: theories/IntMap/map.cmi 
+theories/IntMap/mapcanon.cmi: theories/IntMap/map.cmi \
+    theories/Init/specif.cmi 
 theories/IntMap/mapcard.cmi: theories/IntMap/addec.cmi \
     theories/IntMap/addr.cmi theories/Init/datatypes.cmi \
     theories/IntMap/map.cmi theories/Init/peano.cmi \
     theories/Arith/peano_dec.cmi theories/Arith/plus.cmi \
     theories/Init/specif.cmi theories/Bool/sumbool.cmi 
-theories/IntMap/mapfold.cmi: theories/Init/datatypes.cmi \
-    theories/IntMap/fset.cmi theories/IntMap/map.cmi \
-    theories/IntMap/mapiter.cmi theories/Init/specif.cmi 
+theories/IntMap/mapfold.cmi: theories/IntMap/addr.cmi \
+    theories/Init/datatypes.cmi theories/IntMap/fset.cmi \
+    theories/IntMap/map.cmi theories/IntMap/mapiter.cmi \
+    theories/Init/specif.cmi 
 theories/IntMap/mapiter.cmi: theories/IntMap/addec.cmi \
     theories/IntMap/addr.cmi theories/Init/datatypes.cmi \
     theories/IntMap/map.cmi theories/Lists/polyList.cmi \
     theories/Init/specif.cmi theories/Bool/sumbool.cmi 
 theories/IntMap/maplists.cmi: theories/IntMap/addec.cmi \
-    theories/Init/datatypes.cmi theories/IntMap/map.cmi \
+    theories/IntMap/addr.cmi theories/Init/datatypes.cmi \
+    theories/IntMap/fset.cmi theories/IntMap/map.cmi \
     theories/IntMap/mapiter.cmi theories/Lists/polyList.cmi \
     theories/Init/specif.cmi theories/Bool/sumbool.cmi 
 theories/IntMap/mapsubset.cmi: theories/Bool/bool.cmi \
@@ -555,18 +574,20 @@ theories/Lists/theoryList.cmi: theories/Init/datatypes.cmi \
 theories/Relations/relation_Operators.cmi: theories/Lists/polyList.cmi \
     theories/Init/specif.cmi 
 theories/Sets/cpo.cmi: theories/Sets/partial_Order.cmi 
-theories/Sets/integers.cmi: theories/Sets/partial_Order.cmi 
+theories/Sets/integers.cmi: theories/Init/datatypes.cmi \
+    theories/Sets/partial_Order.cmi 
 theories/Sets/multiset.cmi: theories/Init/datatypes.cmi \
     theories/Init/peano.cmi theories/Init/specif.cmi 
 theories/Sets/powerset.cmi: theories/Sets/partial_Order.cmi 
 theories/Sets/uniset.cmi: theories/Init/datatypes.cmi \
     theories/Init/specif.cmi 
 theories/Sorting/heap.cmi: theories/Init/datatypes.cmi \
-    theories/Init/peano.cmi theories/Lists/polyList.cmi \
-    theories/Sorting/sorting.cmi theories/Init/specif.cmi 
-theories/Sorting/permutation.cmi: theories/Init/datatypes.cmi \
-    theories/Init/peano.cmi theories/Lists/polyList.cmi \
+    theories/Sets/multiset.cmi theories/Init/peano.cmi \
+    theories/Lists/polyList.cmi theories/Sorting/sorting.cmi \
     theories/Init/specif.cmi 
+theories/Sorting/permutation.cmi: theories/Init/datatypes.cmi \
+    theories/Sets/multiset.cmi theories/Init/peano.cmi \
+    theories/Lists/polyList.cmi theories/Init/specif.cmi 
 theories/Sorting/sorting.cmi: theories/Lists/polyList.cmi \
     theories/Init/specif.cmi 
 theories/Wellfounded/well_Ordering.cmi: theories/Init/specif.cmi 
@@ -574,13 +595,15 @@ theories/ZArith/fast_integer.cmi: theories/Init/datatypes.cmi \
     theories/Init/peano.cmi 
 theories/ZArith/wf_Z.cmi: theories/Init/datatypes.cmi \
     theories/ZArith/fast_integer.cmi theories/Init/peano.cmi \
-    theories/ZArith/zarith_aux.cmi 
+    theories/Init/specif.cmi theories/ZArith/zarith_aux.cmi 
 theories/ZArith/zArith_dec.cmi: theories/ZArith/fast_integer.cmi \
     theories/Init/specif.cmi theories/Bool/sumbool.cmi 
 theories/ZArith/zarith_aux.cmi: theories/Init/datatypes.cmi \
     theories/ZArith/fast_integer.cmi theories/Init/specif.cmi 
-theories/ZArith/zbool.cmi: theories/Bool/sumbool.cmi \
-    theories/ZArith/zArith_dec.cmi theories/ZArith/zmisc.cmi 
+theories/ZArith/zbool.cmi: theories/Init/datatypes.cmi \
+    theories/ZArith/fast_integer.cmi theories/Init/specif.cmi \
+    theories/Bool/sumbool.cmi theories/ZArith/zArith_dec.cmi \
+    theories/ZArith/zmisc.cmi 
 theories/ZArith/zcomplements.cmi: theories/Init/datatypes.cmi \
     theories/ZArith/fast_integer.cmi theories/Init/specif.cmi \
     theories/ZArith/wf_Z.cmi theories/ZArith/zarith_aux.cmi 
