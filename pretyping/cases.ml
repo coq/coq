@@ -932,7 +932,7 @@ let weaken_predicate q pred =
 	  let copt, p = if dep then Some (mkRel (q+k)), 1 else None, 0 in
           (* PrNotInd is a binding iff copt <> None *)
 	  PrNotInd (copt, weakrec (n-1) (k+p) pred)
-  in weakrec q 0 pred
+  in weakrec q 0 (lift_predicate q pred)
 
 (*****************************************************************************)
 (* pred = [X:=realargs;x:=e]P types the following problem:                   *)
