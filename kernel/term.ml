@@ -1059,9 +1059,8 @@ let mkType u = mkSort (Type u)
 
 let prop = Prop Null
 and spec = Prop Pos
-and types = Type dummy_univ
+and types = Type implicit_univ (* For eliminations *)
 and type_0 = Type prop_univ
-and type_1 = Type prop_univ_univ
 
 (* Constructs the term t1::t2, i.e. the term t1 casted with the type t2 *)
 (* (that means t2 is declared as the type of t1) *)

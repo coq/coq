@@ -154,7 +154,6 @@ val prop : sorts
 val spec : sorts
 val types : sorts 
 val type_0 : sorts
-val type_1 : sorts
 
 (* Construct an implicit (see implicit arguments in the RefMan).
    Used for extraction *)
