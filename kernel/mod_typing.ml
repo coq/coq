@@ -108,7 +108,15 @@ and merge_with env mtb with_decl =
 	      | _ -> error_not_a_module (string_of_label l)
 	    in
 	    let mtb = type_modpath env' mp in
-	 (* here, we should assert that there is no msid in mtb *)
+	 (* here, using assertions in substitutions, 
+	    we check that there is no msid bound in mtb *)
+	    begin
+	      try 
+		let _ = subst_modtype (map_msid msid (MPself msid)) mtb in
+		  ()
+	      with
+		  Assert_failure _ -> error_circular_with_module id
+	    end;
 	    let cst = check_subtypes env' mtb old.msb_modtype in
 	    let equiv = 
  	      match old.msb_equiv with

@@ -500,21 +500,25 @@ let end_module id =
   let dir = fst oldprefix in
   let msid = msid_of_prefix oldprefix in
 
+  let substobjs = try
+    match res_o with
+      | None -> 
+	  empty_subst, mbids, msid, substitute
+      | Some (MTEident ln) ->
+	  abstract_substobjs mbids (KNmap.find ln (!modtypetab))
+      | Some (MTEsig (msid,_)) ->
+	  todo "Anonymous signatures not supported";
+	  empty_subst, mbids, msid, []
+      | Some (MTEwith _ as mty) ->
+	  abstract_substobjs mbids (get_modtype_substobjs mty)
+      | Some (MTEfunsig _) -> 
+	  anomaly "Funsig cannot be here..."
+    with
+	Not_found -> anomaly "Module objects not found..."
+  in
+
   Summary.unfreeze_other_summaries fs;
 
-  let substobjs = match res_o with
-    | None -> 
-	empty_subst, mbids, msid, substitute
-    | Some (MTEident ln) ->
-	abstract_substobjs mbids (KNmap.find ln (!modtypetab))
-    | Some (MTEsig (msid,_)) ->
-	todo "Anonymous signatures not supported";
-	empty_subst, mbids, msid, []
-    | Some (MTEwith _ as mty) ->
-	abstract_substobjs mbids (get_modtype_substobjs mty)
-    | Some (MTEfunsig _) -> 
-	anomaly "Funsig cannot be here..."
-  in
   let substituted = subst_substobjs dir mp substobjs in
   let node = in_module (None,substobjs,substituted) in
   let objects = 

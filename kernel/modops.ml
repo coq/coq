@@ -74,6 +74,9 @@ let error_local_context lo =
 	error ("The local context of the component "^
 	       (string_of_label l)^" is not empty")
 
+let error_circular_with_module l =
+  error ("The construction \"with Module "^(string_of_id l)^":=...\" is about to create\na circular module type. Their resolution is not implemented yet.\nIf you really need that feature, please report.")
+
 let rec scrape_modtype env = function
   | MTBident kn -> scrape_modtype env (lookup_modtype kn env)
   | mtb -> mtb

@@ -92,3 +92,5 @@ val error_not_a_constant : label -> 'a
 val error_with_incorrect : label -> 'a
 
 val error_local_context : label option -> 'a
+
+val error_circular_with_module : identifier -> 'a
