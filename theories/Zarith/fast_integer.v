@@ -14,7 +14,6 @@ Require Plus.
 Require Mult.
 Require Minus.
 
-Section fast_integer.
 Inductive positive : Set :=
   xI : positive -> positive
 | xO : positive -> positive
@@ -1440,5 +1439,3 @@ Intros x y;Case x;Case y; [
 | Unfold Zcompare; Intros q p; Rewrite <- ZC4; Intros H; Exists (true_sub q p);
   Simpl; Rewrite (ZC1 q p H); Trivial with arith].
 Save.
-
-End fast_integer.
