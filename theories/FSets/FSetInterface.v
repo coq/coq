@@ -23,15 +23,8 @@ Variable A,B : Set.
 Variable eqA : A -> A -> Prop. 
 Variable eqB : B -> B -> Prop.
 
-(** Two-argument functions that allow to reorder its arguments. *)
-Definition transpose := [f:A->B->B](x,y:A)(z:B)(eqB (f x (f y z)) (f y (f x z))). 
-
 (** Compatibility of a  boolean function with respect to an equality. *)
 Definition compat_bool := [f:A->bool] (x,y:A)(eqA x y) -> (f x)=(f y).
-
-(** Compatibility of a two-argument function with respect to two equalities. *)
-Definition compat_op := [f:A->B->B](x,x':A)(y,y':B)(eqA x x') -> (eqB y y') -> 
- (eqB (f x y) (f x' y')).
 
 (** Compatibility of a predicate with respect to an equality. *)
 Definition compat_P := [P:A->Prop](x,y:A)(eqA x y) -> (P x) -> (P y).
@@ -41,12 +34,18 @@ Inductive InList [x:A] : (list A) -> Prop :=
   | InList_cons_hd : (y:A)(l:(list A))(eqA x y) -> (InList x (cons y l))
   | InList_cons_tl : (y:A)(l:(list A))(InList x l) -> (InList x (cons y l)).
 
+(** A list without redondancy. *)
+Inductive Unique : (list A) -> Prop := 
+  | Unique_nil : (Unique (nil A)) 
+  | Unique_cons : (x:A)(l:(list A)) ~(InList x l) -> (Unique l) -> (Unique (cons x l)).
+
 End Misc.
 
 Hint InList := Constructors InList.
+Hint InList := Constructors Unique.
 Hint sort := Constructors sort.
 Hint lelistA := Constructors lelistA.
-Hints Unfold transpose compat_bool compat_op compat_P.
+Hints Unfold compat_bool compat_P.
 
 (** * Ordered types *)
 
@@ -265,18 +264,18 @@ Module Type S.
  
   (** Specification of [fold] *)  
   Parameter fold_1: 
-   (A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA))(i:A)(f:elt->A->A)
-   (Empty s) -> (eqA (fold f s i) i).
-   
-  Parameter fold_2: 
-    (A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA))(i:A)(f:elt->A->A)
-    (compat_op E.eq eqA f) -> (transpose eqA f) -> 
-    ~(In x s) -> (Add x s s') -> (eqA (fold f s' i) (f x (fold f s i))).
+   (A:Set)(i:A)(f:elt->A->A)
+   (EX l:(list elt) | 
+       (Unique E.eq l) /\ 
+       ((x:elt)(In x s)<->(InList E.eq x l)) /\ 
+       (fold f s i)=(fold_right f i l)).
 
   (** Specification of [cardinal] *)  
-  Parameter cardinal_1: (Empty s) -> (cardinal s)=O.
-  Parameter cardinal_2:  
-    ~(In x s) -> (Add x s s') -> (cardinal s')=(S (cardinal s)).
+  Parameter cardinal_1: 
+    (EX l:(list elt) | 
+        (Unique E.eq l) /\
+        ((x:elt)(In x s)<->(InList E.eq x l)) /\ 
+        (cardinal s)=(length l)).
 
   Section Filter.
   
@@ -359,7 +358,6 @@ Module Type S.
   union_1 union_2 union_3
   inter_1 inter_2 inter_3 
   diff_1 diff_2 diff_3
-  cardinal_1 cardinal_2
   filter_1 filter_2 filter_3
   for_all_1 for_all_2
   exists_1 exists_2
@@ -428,18 +426,17 @@ Module Type Sdep.
   Parameter subset : (s,s':t) { Subset s s' } + { ~(Subset s s') }.
 
   Parameter fold : 
-   (A:Set)
-   (f:elt->A->A) 
-   { fold:t -> A -> A | (s,s':t)(a:A)
-      (eqA:A->A->Prop)(st:(Setoid_Theory A eqA))
-      ((Empty s) -> (eqA (fold s a) a)) /\
-      ((compat_op E.eq eqA f)->(transpose eqA f) ->
-        (x:elt) (Add x s s') -> ~(In x s) -> (eqA (fold s' a) (f x (fold s a)))) }.  
+   (A:Set)(f:elt->A->A)(s:t)(i:A) 
+   { r : A | (EX l:(list elt) | 
+                  (Unique E.eq l) /\
+                  ((x:elt)(In x s)<->(InList E.eq x l)) /\ 
+                  r = (fold_right f i l)) }.
 
   Parameter cardinal : 
-    {cardinal : t -> nat | (s,s':t)
-       ((Empty s) -> (cardinal s)=O) /\
-       ((x:elt) (Add x s s') -> ~(In x s) -> (cardinal s')=(S (cardinal s)))}.
+    (s:t) { r : nat | (EX l:(list elt) | 
+                              (Unique E.eq l) /\ 
+                              ((x:elt)(In x s)<->(InList E.eq x l)) /\ 
+                              r = (length l)) }.
 
   Parameter filter : (P:elt->Prop)(Pdec:(x:elt){P x}+{~(P x)})(s:t)
      { s':t | (compat_P E.eq P) -> (x:elt)(In x s') <-> ((In x s)/\(P x)) }.
@@ -638,6 +635,17 @@ Module MoreOrderedType [O:OrderedType].
     Subst; Auto.  
   Save.
   Hints Resolve In_InList.
+
+  Lemma Sort_Unique : (l:(list O.t))(Sort l) -> (Unique O.eq l).
+  Proof.
+  Induction l; Auto.
+  Intros x l' H H0.
+  Inversion_clear H0.
+  Constructor; Auto.  
+  Intro.
+  Absurd (O.lt x x); Auto.
+  EApply In_sort; EAuto.
+  Qed.
 
 End MoreOrderedType.
 

@@ -22,6 +22,24 @@ Require Export Sumbool.
 Require Export Zerob. 
 Set Implicit Arguments.
 
+Section Misc.
+Variable A,B : Set.
+Variable eqA : A -> A -> Prop. 
+Variable eqB : B -> B -> Prop.
+
+(** Two-argument functions that allow to reorder its arguments. *)
+Definition transpose := [f:A->B->B](x,y:A)(z:B)(eqB (f x (f y z)) (f y (f x z))). 
+
+(** Compatibility of a two-argument function with respect to two equalities. *)
+Definition compat_op := [f:A->B->B](x,x':A)(y,y':B)(eqA x x') -> (eqB y y') -> 
+ (eqB (f x y) (f x' y')).
+
+(** Compatibility of a function upon natural numbers. *)
+Definition compat_nat := [f:A->nat] (x,x':A)(eqA x x') -> (f x)=(f x').
+
+End Misc.
+Hints Unfold transpose compat_op compat_nat.
+
 (* For proving (Setoid_Theory ? (eq ?)) *)
 Tactic Definition ST :=
   Constructor; Intros;[ Trivial | Symmetry; Trivial | EApply trans_eq; EAuto ].
@@ -31,7 +49,6 @@ Definition gen_st : (A:Set)(Setoid_Theory ? (eq A)).
 Auto.
 Qed.
 
-
 Module Properties [M:S].
   Import M.
   Import Logic. (* for unmasking eq. *)  
@@ -40,6 +57,247 @@ Module Properties [M:S].
   Module ME := MoreOrderedType E.  
 
   Section Old_Spec_Now_Properties. 
+
+  (* Usual syntax for lists. 
+   CAVEAT: the Coq cast "::" will no longer be available. *)
+  Notation "[]" := (nil ?) (at level 1).
+  Notation "a :: l" := (cons a l) (at level 1, l at next level).
+
+   Section Unique_Remove.
+   (** auxiliary results used in the alternate [fold] specification [fold_1] and [fold_2]. *)
+
+   Fixpoint remove_list [x:elt;s:(list elt)] : (list elt) := Cases s of 
+      nil => []
+    | (cons y l) => if (ME.eq_dec x y) then [_]l else [_]y::(remove_list x l)
+   end. 
+
+   Lemma remove_list_correct : 
+    (s:(list elt))(x:elt)(Unique E.eq s) -> 
+    (Unique E.eq (remove_list x s)) /\ 
+    ((y:elt)(InList E.eq y (remove_list x s))<->(InList E.eq y s)/\~(E.eq x y)).
+   Proof.
+   Induction s; Simpl.
+   Split; Auto.
+   Intuition.
+   Inversion H0.
+   Intros; Inversion_clear H0; Case (ME.eq_dec x a); Trivial.  
+   Intuition.
+   Apply H1; EApply ME.In_eq with y; EAuto.
+   Inversion_clear H3; Auto.
+   Elim H4; EAuto. 
+   Elim (H x H2); Intros.
+   Split.
+   Elim (H3 a); Constructor; Intuition.
+   Intro y; Elim (H3 y); Clear H3; Intros.
+   Intuition.  
+   Inversion_clear H4; Auto.
+   Elim (H3 H6); Auto.
+   Inversion_clear H4; Auto.
+   Intuition EAuto.
+   Elim (H3 H7); Ground.
+   Inversion_clear H6; Ground. 
+   Qed. 
+
+   Local ListEq := [l,l'](y:elt)(InList E.eq y l)<->(InList E.eq y l').
+   Local ListAdd := [x,l,l'](y:elt)(InList E.eq y l')<->(E.eq y x)\/(InList E.eq y l).
+
+   Lemma remove_list_equal : 
+    (s,s':(list elt))(x:elt)(Unique E.eq x::s) -> (Unique E.eq s') -> 
+    (ListEq x::s s') -> (ListEq s (remove_list x s')).
+   Proof.  
+   Unfold ListEq; Intros. 
+   Inversion_clear H.
+   Elim (remove_list_correct x H0); Intros.
+   Elim (H4 y); Intros.
+   Elim (H1 y); Intros.
+   Split; Intros.
+   Apply H6; Split; Auto. 
+   Intro.
+   Elim H2; Apply ME.In_eq with y; EAuto.
+   Elim (H5 H9); Intros.
+   Assert H12 := (H8 H10). 
+   Inversion_clear H12; Auto.
+   Elim H11; EAuto. 
+   Qed. 
+
+   Lemma remove_list_add : 
+    (s,s':(list elt))(x,x':elt)(Unique E.eq s) -> (Unique E.eq x'::s') -> 
+    ~(E.eq x x') -> ~(InList E.eq x s) -> 
+    (ListAdd x s x'::s') -> (ListAdd x (remove_list x' s) s').
+   Proof.
+   Unfold ListAdd; Intros.
+   Inversion_clear H0.
+   Elim (remove_list_correct x' H); Intros.
+   Elim (H6 y); Intros.
+   Elim (H3 y); Intros.
+   Split; Intros.
+   Elim H9; Auto; Intros.
+   Elim (ME.eq_dec y x); Auto; Intros.
+   Right; Apply H8; Split; Auto.
+   Intro; Elim H4; Apply ME.In_eq with y; Auto.
+   Inversion_clear H11.
+   Assert (InList E.eq y x'::s'). Auto.
+   Inversion_clear H11; Auto.
+   Elim H1; EAuto.
+   Elim (H7 H12); Intros.
+   Assert (InList E.eq y x'::s'). Auto.
+   Inversion_clear H14; Auto.
+   Elim H13; Auto. 
+   Qed.
+
+   Lemma remove_list_fold_right : 
+    (A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA))
+    (i:A)(f:elt->A->A)(compat_op E.eq eqA f) -> (transpose eqA f) -> 
+    (s:(list elt))(x:elt)(Unique E.eq s) -> (InList E.eq x s) -> 
+    (eqA (fold_right f i s) (f x (fold_right f i (remove_list x s)))).
+   Proof.
+   Induction s; Simpl.  
+   Intros; Inversion H2.
+   Intros.
+   Inversion_clear H2.
+   Case  (ME.eq_dec x a); Simpl; Intros.
+   Apply H; Auto. 
+   Apply Seq_refl; Auto. 
+   Inversion_clear H3. 
+   Elim n; Auto.
+   Apply (Seq_trans ?? st) with (f a (f x (fold_right f i (remove_list x l)))).
+   Apply H; Auto.
+   Apply H0; Auto.
+   Qed.   
+
+   Lemma fold_right_equal : 
+    (A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA))
+    (i:A)(f:elt->A->A)(compat_op E.eq eqA f) -> (transpose eqA f) -> 
+    (s,s':(list elt))(Unique E.eq s) -> (Unique E.eq s') -> (ListEq s s') -> 
+    (eqA (fold_right f i s) (fold_right f i s')).
+   Proof.
+   Induction s.
+   Intro s'; Case s'; Simpl. 
+   Intros; Apply Seq_refl; Auto.
+   Unfold ListEq; Intros.
+   Elim (H3 e); Intros. 
+   Assert X : (InList E.eq e []); Auto; Inversion X.
+   Intros x l Hrec s' U U' E.
+   Simpl.   
+   Apply (Seq_trans ?? st) with (f x (fold_right f i (remove_list x s'))).
+   Apply H; Auto.
+   Apply Hrec; Auto.
+   Inversion U; Auto.
+   Elim (remove_list_correct x U'); Auto.
+   Apply remove_list_equal; Auto.
+   Apply Seq_sym; Auto.
+   Apply remove_list_fold_right with eqA:=eqA; Auto.
+   Unfold ListEq in E; Ground.
+   Qed.
+
+   Lemma fold_right_add : 
+    (A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA))
+    (i:A)(f:elt->A->A)(compat_op E.eq eqA f) -> (transpose eqA f) -> 
+    (s',s:(list elt))(x:elt)(Unique E.eq s) -> (Unique E.eq s') -> ~(InList E.eq x s) -> 
+    (ListAdd x s s') -> 
+    (eqA (fold_right f i s') (f x (fold_right f i s))).
+   Proof.   
+   Induction s'.
+   Unfold ListAdd; Intros.
+   Elim (H4 x); Intros. 
+   Assert X : (InList E.eq x []); Auto; Inversion X.
+   Intros x' l' Hrec s x U U' IN EQ; Simpl.
+   (* if x=x' *)
+   Case (ME.eq_dec x x'); Intros.
+   Apply H; Auto.
+   Apply fold_right_equal with eqA:=eqA; Auto.
+   Inversion_clear U'; Trivial.
+   Unfold ListEq; Unfold ListAdd in EQ.
+   Intros. 
+   Elim (EQ y); Intros.
+   Split; Intros.
+   Elim H1; Auto.
+   Intros; Inversion_clear U'.
+   Elim H5; Apply ME.In_eq with y; EAuto.
+   Assert (InList E.eq y x'::l'); Auto; Inversion_clear H4; Auto.
+   Elim IN; Apply ME.In_eq with y; EAuto.
+   (* else x<>x' *)   
+   Apply (Seq_trans ?? st) with (f x' (f x (fold_right f i (remove_list x' s)))).
+   Apply H; Auto.
+   Apply Hrec; Auto.
+   Elim (remove_list_correct x' U); Auto.
+   Inversion_clear U'; Auto.
+   Elim (remove_list_correct x' U); Intros; Intro.
+   Ground.
+   Apply remove_list_add; Auto.
+   Apply (Seq_trans ?? st) with (f x (f x' (fold_right f i (remove_list x' s)))).
+   Apply H0; Auto.
+   Apply H; Auto.
+   Apply Seq_sym; Auto.
+   Apply remove_list_fold_right with eqA:=eqA; Auto.
+   Elim (EQ x'); Intros. 
+   Elim H1; Auto; Intros; Elim n; Auto.
+   Qed.
+
+  End Unique_Remove.
+
+  (** An alternate (and previous) specification for [fold] was based on the recursive 
+      structure of a set. It is now lemmas [fold_1] and [fold_2]. *)
+
+  Lemma fold_1:
+   (s:t)(A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA))(i:A)(f:elt->A->A)
+   (Empty s) -> (eqA (fold f s i) i).
+  Proof.
+  Intros; Elim (M.fold_1 s i f); Intros l (H1,(H2,H3)).
+  Rewrite H3; Clear H3.
+  Unfold Empty in H; Generalize H H2; Clear H H2; Case l; Simpl; Intros.
+  Apply Seq_refl; Trivial.
+  Elim (H e).
+  Elim (H2 e); Intuition. 
+  Qed.
+
+  Lemma fold_2 : 
+     (s,s':t)(x:elt)(A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA))
+     (i:A)(f:elt->A->A)(compat_op E.eq eqA f) -> (transpose eqA f) -> ~(In x s) -> 
+     (Add x s s') -> (eqA (fold f s' i) (f x (fold f s i))).
+  Proof.
+  Intros; Elim (M.fold_1 s i f); Intros l (Hl,(Hl1,Hl2)).
+  Elim (M.fold_1 s' i f); Intros l' (Hl',(Hl'1,Hl'2)).
+  Rewrite Hl2; Clear Hl2.
+  Rewrite Hl'2; Clear Hl'2.
+  Assert (y:elt)(InList E.eq y l')<->(E.eq y x)\/(InList E.eq y l).
+   Intros; Elim (H2 y); Intros; Split; 
+    Elim (Hl1 y); Intros; Elim (Hl'1 y); Intuition.
+  Assert ~(InList E.eq x l).
+   Intro; Elim H1; Ground.
+  Clear H1 H2 Hl'1 Hl1 H1 s' s.
+  Apply fold_right_add with eqA:=eqA; Auto.
+  Qed.
+
+  (** idem, for [cardinal. *)
+
+  Lemma cardinal_fold : (s:t)(cardinal s)=(fold [_]S s O).
+  Proof.
+  Intros; Elim (M.cardinal_1 s); Intros l (Hl,(Hl1,Hl2)).
+  Elim (M.fold_1 s O [_]S); Intros l' (Hl',(Hl'1,Hl'2)).
+  Rewrite Hl2; Rewrite Hl'2; Clear Hl2 Hl'2.
+  Assert (l:(list elt))(length l)=(fold_right [_]S O l).
+   Induction l0; Simpl; Auto.
+  Rewrite H.
+  Apply fold_right_equal with eqA:=(eq nat); Auto; Ground.
+  Qed.
+
+  Lemma cardinal_1 : (s:t)(Empty s) -> (cardinal s)=O.
+  Proof.
+  Intros; Rewrite cardinal_fold; Apply fold_1; Auto.
+  Qed.
+
+  Lemma cardinal_2 : 
+    (s,s':t)(x:elt)~(In x s) -> (Add  x s s') -> (cardinal s') = (S (cardinal s)).
+  Proof.
+  Intros; Do 2 Rewrite cardinal_fold.
+  Change S with ([_]S x).
+  Apply fold_2 with eqA:=(eq nat); Auto.
+  Qed.
+
+  Hints Resolve cardinal_1 cardinal_2.
+
+  (** Other old specifications written with boolean equalities. *) 
 
   Variable s,s' : t.
   Variable x,y,z : elt.
@@ -320,15 +578,6 @@ Module Properties [M:S].
   Qed.
 
   End Fold.
-
-  Lemma cardinal_fold: (cardinal s)=(fold [_]S s O).
-  Proof. 
-    Pattern s; Apply set_induction; Intros.
-    Rewrite cardinal_1; Auto; Symmetry; Apply fold_1;Auto.
-    Rewrite (!cardinal_2 s0 s'0 x0);Auto.
-    Rewrite H; Symmetry; Change S with ([_]S x0). 
-    Apply fold_2 with eqA:=(eq nat); Auto.
-  Qed.
 
   Section Filter.
   
@@ -1327,10 +1576,6 @@ Section Sum.
 
 Definition sum := [f:elt -> nat; s:t](fold [x](plus (f x)) s 0). 
 
-Definition compat_nat := [A:Set][eqA:A->A->Prop][f:A->nat]
- (x,x':A)(eqA x x') -> (f x)=(f x').
-Hints Unfold compat_nat.
-
 Lemma sum_plus : 
   (f,g:elt ->nat)(compat_nat E.eq f) -> (compat_nat E.eq g) -> 
      (s:t)(sum [x]((f x)+(g x)) s) = (sum f s)+(sum g s).
@@ -1478,6 +1723,5 @@ Apply filter_3; [ Auto | EAuto | Rewrite (filter_2 H0 H3); Auto with bool].
 Qed.
 
 End MoreProperties.
-Hints Unfold compat_nat.
 
 End Properties. 

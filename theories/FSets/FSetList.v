@@ -674,6 +674,30 @@ Module Raw [X : OrderedType].
   Definition choose_2: (s:t)(choose s)=(None ?) -> (Empty s)
      := min_elt_3.
 
+  Lemma fold_1 : 
+    (s:t)(Hs:(Sort s))(A:Set)(i:A)(f:elt->A->A)
+       (EX l:(list elt) | (Unique E.eq l) /\ 
+                               ((x:elt)(In x s)<->(InList E.eq x l)) /\ (fold f s i)=(fold_right f i l)).
+  Proof.
+  Intros; Exists s; Split; Intuition.
+  Apply ME.Sort_Unique; Auto.
+  Induction s; Simpl; Trivial.
+  Rewrite Hrecs; Trivial.
+  Inversion_clear Hs; Trivial.
+  Qed.
+
+  Lemma cardinal_1 : 
+    (s:t)(Hs:(Sort s))(EX l:(list elt) | (Unique E.eq l) /\ 
+                                   ((x:elt)(In x s)<->(InList E.eq x l)) /\ (cardinal s)=(length l)).
+  Proof.
+  Intros; Exists s; Split; Intuition.
+  Apply ME.Sort_Unique; Auto.  
+  Unfold cardinal; Induction s; Simpl; Trivial.
+  Rewrite Hrecs; Trivial.
+  Inversion_clear Hs; Trivial.
+  Qed.
+  
+(*
   Lemma fold_1 : (s:t)(A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA))(i:A)(f:elt->A->A)
      (Empty s) -> (eqA (fold f s i) i).
   Proof.
@@ -828,6 +852,7 @@ Module Raw [X : OrderedType].
   Refine (!fold_2 s s' Hs Hs' x nat (eq ?) ? O [_]S H1 H2 H H0).
   Intuition EAuto; Transitivity y; Auto.
   Qed.
+*)
 
   Lemma filter_Inf : 
     (s:t)(Hs:(Sort s))(x:elt)(f:elt->bool)(Inf x s) -> (Inf x (filter f s)).
@@ -1173,12 +1198,10 @@ Module Make [X:OrderedType] <: S with Module E := X.
  Definition choose_2 := min_elt_3.
  
  Definition fold := [B:Set; f: elt->B->B; s:t](!Raw.fold B f s). 
- Definition fold_1 := [s:t](!Raw.fold_1 s). 
- Definition fold_2 := [s,s':t](Raw.fold_2 (sorted s) (sorted s')).
+ Definition fold_1 := [s:t](Raw.fold_1 (sorted s)). 
  
  Definition cardinal := [s:t](Raw.cardinal s).
- Definition cardinal_1 := [s:t](!Raw.cardinal_1 s). 
- Definition cardinal_2 := [s,s':t](Raw.cardinal_2 (sorted s) (sorted s')).
+ Definition cardinal_1 := [s:t](Raw.cardinal_1 (sorted s)). 
  
  Definition filter := [f: elt->bool; s:t](Build_slist (Raw.filter_sort (sorted s) f)).
  Definition filter_1 := [s:t](!Raw.filter_1 s).
@@ -1216,63 +1239,3 @@ Module Make [X:OrderedType] <: S with Module E := X.
  Defined.
 
 End Make.
-
-(* TODO: functions in Raw should be all tail-recursive; 
-   here is a beginning
-
-  Fixpoint rev_append [s:t] : t -> t := Cases s of
-    nil => [s']s'
-  | (cons x l) => [s'](rev_append l x::s')
-  end.
-
-  Lemma rev_append_correct : (s,s':t)(rev_append s s')=(app (rev s) s').
-  Proof.
-  Induction s; Simpl; Auto.
-  Intros.
-  Rewrite H.
-  Rewrite app_ass.
-  Simpl; Auto.
-  Qed.
-
-  (* a tail_recursive [rev]. *)
-  Definition rev_tl := [s:t](rev_append s []).
-
-  Lemma rev_tl_correct : (s:t)(rev_tl s)=(rev s).
-  Proof.
-  Unfold rev_tl; Intros; Rewrite rev_append_correct; Symmetry;
-    Exact (app_nil_end (rev s)).
-  Qed.
-
-  (* a tail_recursive [union] *)
-  Fixpoint union_tl_aux [acc,s:t] : t -> t := Cases s of
-    nil => [s'](rev_append s' acc)
-  | (cons x l) =>
-       (Fix union_aux { union_aux / 2 : t -> t -> t := [acc,s']Cases s' of
-           nil => (rev_append s acc)
-         | (cons x' l') => Cases (E.compare x x') of
-              (Lt _ ) => (union_tl_aux x::acc l s')
-            | (Eq _ ) => (union_tl_aux x::acc l l')
-            | (Gt _) => (union_aux x'::acc l')
-            end
-         end} acc)
-   end.
-
-  Definition union_tl := [s,s':t](rev_tl (union_tl_aux [] s s')).
-
-  Lemma union_tl_correct :
-    (s,s':t)(union_tl s s')=(union s s').
-  Proof.
-  Assert  (s,s',acc:t)(union_tl_aux acc s s')=(rev_append (union s s') acc).
-   Induction s.
-   Simpl; Auto.
-   Intros x l Hrec; Induction s'; Auto; Intros x' l' Hrec' acc.
-   Simpl; Case (E.compare x x'); Simpl; Intros; Auto.
-   Change (union_tl_aux x'::acc x::l l')=(rev_append (union x::l l') x'::acc); Ground.
-  Unfold union_tl; Intros; Rewrite H; Auto.
-  Change (rev_append (union s s') []) with (rev_tl (union s s')).
-  Do 2 Rewrite rev_tl_correct.
-  Exact (idempot_rev (union s s')).
-  Qed.
-
-*)
-

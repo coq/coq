@@ -1842,96 +1842,59 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
    [A:Set; f:elt->A->A; s:tree] (Lists.Raw.fold f (elements_tree s)).
   Implicits fold_tree' [1].
 
-  Lemma fold_tree_compat : (A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA)) 
-      (s:tree)(f:elt->A->A)(compat_op E.eq eqA f) -> (a,a':A)(eqA a a') ->
-      (eqA (fold_tree f s a) (fold_tree f s a')).
-  Proof. 
-  Induction s; Simpl; Auto.
-  Qed.  
-
-  Lemma fold_tree_equiv_aux : (A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA)) 
-     (s:tree)(f:elt->A->A)(compat_op E.eq eqA f) -> (a:A; acc : (list elt))
-     (eqA (Lists.Raw.fold f (elements_tree_aux acc s) a)
-                 (fold_tree f s (Lists.Raw.fold f acc a))).
+  Lemma fold_tree_equiv_aux : 
+     (A:Set)(s:tree)(f:elt->A->A)(a:A; acc : (list elt))
+     (Lists.Raw.fold f (elements_tree_aux acc s) a)
+     = (fold_tree f s (Lists.Raw.fold f acc a)).
   Proof.
   Induction s.
   Simpl; Intuition.
   Simpl; Intros.
-  EApply (Seq_trans ?? st).
-  Apply H; Auto.
-  Apply (fold_tree_compat A eqA); Simpl; Auto.
+  Rewrite H.
+  Rewrite <- H0.
+  Simpl; Auto.
   Qed.
 
-   Lemma fold_tree_equiv : 
-     (A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA)) 
-     (s:tree)(f:elt->A->A; a:A)(compat_op E.eq eqA f) -> 
-     (eqA (fold_tree f s a) (fold_tree' f s a)).
-   Proof.
-   Unfold fold_tree' elements_tree. 
-   Induction s; Simpl; Auto; Intros.
-   Apply Seq_refl; Auto.
-   Apply Seq_sym; Auto.
-   EApply (Seq_trans ?? st).
-   Apply (fold_tree_equiv_aux ? eqA); Simpl; Auto.
-   Apply (fold_tree_compat ? eqA); Simpl; Auto.
-   Apply Seq_sym; Auto.
-   Qed.
-
-  Lemma fold_1 : (s:t)(A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA)) 
-    (i:A)(f:elt->A->A)(Empty s) -> (eqA (fold_tree f s i) i).
+  Lemma fold_tree_equiv : 
+     (A:Set)(s:tree)(f:elt->A->A; a:A)
+     (fold_tree f s a)=(fold_tree' f s a).
   Proof.
-    Intros (s,Hs,Hrb); Unfold Empty Add In; Simpl; Clear Hs Hrb.
-    Case s; Simpl; Intuition.
-    Elim (H t1); Auto.
-  Save.   
-
-  Lemma fold_2 :  (s,s':t)(x:elt)
-    (A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA))
-    (i:A)(f:elt->A->A)(compat_op E.eq eqA f) -> (transpose eqA f) -> 
-    ~(In x s) -> (Add x s s') -> (eqA (fold_tree f s' i) (f x (fold_tree f s i))).
-  Proof.
-  Intros (s,Hs,Hrb) (s',Hs',Hrb'); Unfold Add In; Simpl; Intros.
-  EApply (Seq_trans ?? st).
-  Apply (fold_tree_equiv ? eqA); Auto.
-  EApply (Seq_trans ?? st) with (f x (fold_tree' f s i)).
-  Unfold fold_tree'. 
-  Generalize (elements_tree_sort s Hs) (elements_tree_sort s' Hs').
-  LetTac l := (elements_tree s).
-  LetTac l' := (elements_tree s').
-  Intros Hl Hl'.
-  Apply (!Lists.Raw.fold_2 l l' Hl Hl' x A eqA) ; Auto.  
-  Unfold Lists.Raw.Add l l'; Split; Intros; Elim (H2 y);  Intuition; Elim H4; Auto.
-  Apply (Seq_sym ?? st).
-  Apply H; Auto.
-  Apply (fold_tree_equiv ? eqA); Auto.
+  Unfold fold_tree' elements_tree. 
+  Induction s; Simpl; Auto; Intros.
+  Rewrite fold_tree_equiv_aux.
+  Rewrite H0.
+  Simpl; Auto.
   Qed.
 
   Definition fold : 
-   (A:Set)
-   (f:elt->A->A) 
-   { fold:t -> A -> A | (s,s':t)(a:A)
-      (eqA:A->A->Prop)(st:(Setoid_Theory A eqA))
-      ((Empty s) -> (eqA (fold s a) a)) /\
-      ((compat_op E.eq eqA f)->(transpose eqA f) ->
-        (x:elt) (Add x s s') -> ~(In x s) -> (eqA (fold s' a) (f x (fold s a)))) }.  
+   (A:Set)(f:elt->A->A)(s:t)(i:A) 
+   { r : A | (EX l:(list elt) | 
+                  (Unique E.eq l) /\
+                  ((x:elt)(In x s)<->(InList E.eq x l)) /\ 
+                  r = (fold_right f i l)) }.
   Proof.
-    Intros A f; Exists [s:t](fold_tree f s); Split; Intros.
-    Apply fold_1; Auto.
-    Apply (fold_2 s s' x A eqA); Auto.
+    Intros A f s i; Exists (fold_tree f s i).
+    Rewrite fold_tree_equiv.
+    Unfold fold_tree'.
+    Elim (Lists.Raw.fold_1 (elements_tree_sort ? (is_bst s)) i f); Intro l.
+    Exists l; Elim H; Clear H; Intros H1 (H2,H3); Split; Auto.
+    Split; Auto.
+    Intros x; Generalize (elements_tree_1 s x) (elements_tree_2 s x).
+    Generalize (H2 x); Unfold In; Ground.
   Defined.
 
   (** * Cardinal *)
 
   Definition cardinal : 
-    {cardinal : t -> nat | (s,s':t)
-       ((Empty s) -> (cardinal s)=O) /\
-       ((x:elt) (Add x s s') -> ~(In x s) -> (cardinal s')=(S (cardinal s)))}.
+     (s:t) { r : nat | (EX l:(list elt) | 
+                              (Unique E.eq l) /\ 
+                              ((x:elt)(In x s)<->(InList E.eq x l)) /\ 
+                              r = (length l)) }.
   Proof.
-    Assert st : (Setoid_Theory ? (eq nat)).
-     Constructor; Auto; Intros; EApply trans_eq; EAuto.
-    Elim (fold nat [_]S); Intro f; Exists [s:t](f s O); Split; Intros.
-    Elim (p s s O ? st); Auto.
-    Elim (p s s' O ? st); Intros; EApply H2; EAuto.
+    Intros; Elim (fold nat [_]S s O); Intro n; Exists n.
+    Assert (l:(list elt))(length l)=(fold_right [_]S O l). 
+     Induction l; Simpl; Auto.
+    Elim p; Intro l; Exists l; Rewrite H; Auto.
   Qed.
 
   (** * Filter *)

@@ -100,27 +100,22 @@ Module DepOfNodep [M:S] <: Sdep with Module E := M.E.
   Save.   
 
   Definition fold :
-   (A:Set)
-   (f:elt->A->A)
-   { fold:t -> A -> A | (s,s':t)(a:A)
-      (eqA:A->A->Prop)(st:(Setoid_Theory A eqA)) 
-      ((Empty s) -> (eqA (fold s a) a)) /\
-      ((compat_op E.eq eqA f)->(transpose eqA f) ->
-         (x:elt) (Add x s s') -> ~(In x s) -> (eqA (fold s' a) (f x (fold s a)))) }.
+   (A:Set)(f:elt->A->A)(s:t)(i:A) 
+   { r : A | (EX l:(list elt) | 
+                  (Unique E.eq l) /\
+                  ((x:elt)(In x s)<->(InList E.eq x l)) /\ 
+                  r = (fold_right f i l)) }.
   Proof.
-    Intros; Exists (!fold A f); Intros.
-    Split; Intros.
-    Apply fold_1; Auto.
-    Apply (!fold_2 s s' x A eqA); Auto.
+    Intros; Exists (!fold A f s i); Exact (fold_1 s i f).
   Save.  
 
   Definition cardinal :
-    {cardinal : t -> nat | (s,s':t)
-       ((Empty s) -> (cardinal s)=O) /\
-       ((x:elt) (Add x s s') -> ~(In x s) -> 
-	          (cardinal s')=(S (cardinal s))) }.
+    (s:t) { r : nat | (EX l:(list elt) | 
+                              (Unique E.eq l) /\ 
+                              ((x:elt)(In x s)<->(InList E.eq x l)) /\ 
+                              r = (length l)) }.
   Proof.
-    Intros; Exists cardinal; EAuto.
+    Intros; Exists (cardinal s); Exact (cardinal_1 s).
   Save.    
 
   Definition fdec := 
@@ -544,37 +539,29 @@ Module NodepOfDep [M:Sdep] <: S with Module E := M.E.
     Intros s s' x; Unfold diff; Case (M.diff s s'); Ground.
   Save.
 
-  Definition cardinal : t -> nat := let (f,_)= M.cardinal in f.
+  Definition cardinal : t -> nat := [s]let (f,_)= (M.cardinal s) in f.
 
-  Lemma cardinal_1 : (s:t)(Empty s) -> (cardinal s)=O.
-  Proof. 
-    Intros; Unfold cardinal; Case M.cardinal; Ground.
-  Qed.
-
-  Lemma cardinal_2 : 
-    (s,s':t)(x:elt)~(In x s) -> (Add x s s') -> 
-	(cardinal s')=(S (cardinal s)).
-  Proof. 
-    Intros; Unfold cardinal; Case M.cardinal; Ground.
+  Lemma cardinal_1 : 
+    (s:t)(EX l:(list elt) | 
+             (Unique E.eq l) /\
+             ((x:elt)(In x s)<->(InList E.eq x l)) /\ 
+             (cardinal s)=(length l)).
+  Proof.
+    Intros; Unfold cardinal; Case (M.cardinal s); Ground.
   Qed.
 
   Definition fold : (B:Set)(elt->B->B)->t->B->B :=  
-       [B,f]let (fold,_)= (M.fold f) in fold.
+       [B,f,i,s]let (fold,_)= (M.fold f i s) in fold.
 
   Lemma fold_1: 
-    (s:t)(A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA))(i:A)(f:elt->A->A)
-   (Empty s) -> (eqA (fold f s i) i).
+   (s:t)(A:Set)(i:A)(f:elt->A->A)
+   (EX l:(list elt) | 
+       (Unique E.eq l) /\ 
+       ((x:elt)(In x s)<->(InList E.eq x l)) /\ 
+       (fold f s i)=(fold_right f i l)).
   Proof.
-    Intros; Unfold fold; Case (M.fold f); Ground.
+    Intros; Unfold fold; Case (M.fold f s i); Ground.
   Save.  
-
-  Lemma fold_2:
-    (s,s':t)(x:elt)(A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory A eqA))
-    (i:A)(f:elt->A->A)(compat_op E.eq eqA f) -> (transpose eqA f) -> 
-    ~(In x s) -> (Add x s s') -> (eqA (fold f s' i) (f x (fold f s i))).
-  Proof. 
-    Intros; Unfold fold; Case (M.fold f); Ground.
-  Save.
 
   Definition f_dec : 
     (f: elt -> bool)(x:elt){ (f x)=true } + { (f x)<>true }.
