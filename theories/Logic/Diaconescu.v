@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(* R. Diaconescu [Diaconescu] showed that the Axiom of Choice in Set Theory
+(** R. Diaconescu [Diaconescu] showed that the Axiom of Choice in Set Theory
    entails Excluded-Middle; S. Lacas and B. Werner [LacasWerner]
    adapted the proof to show that the axiom of choice in equivalence
    classes entails Excluded-Middle in Type Theory.
@@ -27,12 +27,12 @@
 
 Section PredExt_GuardRelChoice_imp_EM.
 
-(* The axiom of extensionality for predicates *)
+(** The axiom of extensionality for predicates *)
 
 Definition PredicateExtensionality :=
   forall P Q:bool -> Prop, (forall b:bool, P b <-> Q b) -> P = Q.
 
-(* From predicate extensionality we get propositional extensionality
+(** From predicate extensionality we get propositional extensionality
    hence proof-irrelevance *)
 
 Require Import ClassicalFacts.
@@ -54,7 +54,7 @@ Proof.
   apply (ext_prop_dep_proof_irrel_cic prop_ext).
 Qed.
 
-(* From proof-irrelevance and relational choice, we get guarded
+(** From proof-irrelevance and relational choice, we get guarded
    relational choice *)
 
 Require Import ChoiceFacts.
@@ -73,8 +73,8 @@ Proof.
    (rel_choice_and_proof_irrel_imp_guarded_rel_choice rel_choice proof_irrel).
 Qed.
 
-(* The form of choice we need: there is a functional relation which chooses
-   an element in any non empty subset of bool *)
+(** The form of choice we need: there is a functional relation which chooses
+    an element in any non empty subset of bool *)
 
 Require Import Bool.
 
@@ -90,8 +90,8 @@ Proof.
   exact (fun _ H => H).
 Qed.
 
-(* The proof of the excluded middle *)
-(* Remark: P could have been in Set or Type *)
+(** The proof of the excluded middle *)
+(** Remark: P could have been in Set or Type *)
 
 Theorem pred_ext_and_rel_choice_imp_EM : forall P:Prop, P \/ ~ P.
 Proof.

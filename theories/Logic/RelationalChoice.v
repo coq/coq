@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(* This file axiomatizes the relational form of the axiom of choice *)
+(** This file axiomatizes the relational form of the axiom of choice *)
 
 Axiom
   relational_choice :
