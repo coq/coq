@@ -25,8 +25,8 @@ type 'a and_short_name = 'a * identifier located option
 type rawconstr_and_expr = rawconstr * constr_expr option
 
 type open_constr = Evd.evar_map * Term.constr
-type open_constr_expr = constr_expr
-type open_rawconstr = rawconstr_and_expr
+type open_constr_expr = unit * constr_expr
+type open_rawconstr = unit * rawconstr_and_expr
 
 type intro_pattern_expr =
   | IntroOrAndPattern of case_intro_pattern_expr
@@ -70,7 +70,7 @@ ConstrArgType                  constr_expr              constr
 ConstrMayEvalArgType           constr_expr may_eval     constr
 QuantHypArgType                quantified_hypothesis    quantified_hypothesis
 TacticArgType                  raw_tactic_expr          tactic
-CastedOpenConstrArgType        constr_expr              open_constr
+OpenConstrArgType              constr_expr              open_constr
 ConstrBindingsArgType      constr_expr with_bindings constr with_bindings
 List0ArgType of argument_type
 List1ArgType of argument_type
@@ -131,6 +131,10 @@ val wit_constr : (constr,constr,'ta) abstract_argument_type
 val rawwit_constr_may_eval : ((constr_expr,reference) may_eval,constr_expr,'ta) abstract_argument_type
 val globwit_constr_may_eval : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var) may_eval,rawconstr_and_expr,'ta) abstract_argument_type
 val wit_constr_may_eval : (constr,constr,'ta) abstract_argument_type
+
+val rawwit_open_constr : (open_constr_expr,constr_expr,'ta) abstract_argument_type
+val globwit_open_constr : (open_rawconstr,rawconstr_and_expr,'ta) abstract_argument_type
+val wit_open_constr : (open_constr,constr,'ta) abstract_argument_type
 
 val rawwit_casted_open_constr : (open_constr_expr,constr_expr,'ta) abstract_argument_type
 val globwit_casted_open_constr : (open_rawconstr,rawconstr_and_expr,'ta) abstract_argument_type
@@ -227,6 +231,7 @@ type argument_type =
   | ConstrMayEvalArgType
   | QuantHypArgType
   | TacticArgType
+  | OpenConstrArgType
   | CastedOpenConstrArgType
   | ConstrWithBindingsArgType
   | BindingsArgType

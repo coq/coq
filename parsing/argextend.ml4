@@ -33,6 +33,7 @@ let rec make_rawwit loc = function
   | QuantHypArgType -> <:expr< Genarg.rawwit_quant_hyp >>
   | TacticArgType -> <:expr< Genarg.rawwit_tactic >>
   | RedExprArgType -> <:expr< Genarg.rawwit_red_expr >>
+  | OpenConstrArgType -> <:expr< Genarg.rawwit_open_constr >>
   | CastedOpenConstrArgType -> <:expr< Genarg.rawwit_casted_open_constr >>
   | ConstrWithBindingsArgType -> <:expr< Genarg.rawwit_constr_with_bindings >>
   | BindingsArgType -> <:expr< Genarg.rawwit_bindings >>
@@ -59,6 +60,7 @@ let rec make_globwit loc = function
   | ConstrMayEvalArgType -> <:expr< Genarg.globwit_constr_may_eval >>
   | TacticArgType -> <:expr< Genarg.globwit_tactic >>
   | RedExprArgType -> <:expr< Genarg.globwit_red_expr >>
+  | OpenConstrArgType -> <:expr< Genarg.globwit_open_constr >>
   | CastedOpenConstrArgType -> <:expr< Genarg.globwit_casted_open_constr >>
   | ConstrWithBindingsArgType -> <:expr< Genarg.globwit_constr_with_bindings >>
   | BindingsArgType -> <:expr< Genarg.globwit_bindings >>
@@ -85,6 +87,7 @@ let rec make_wit loc = function
   | ConstrMayEvalArgType -> <:expr< Genarg.wit_constr_may_eval >>
   | TacticArgType -> <:expr< Genarg.wit_tactic >>
   | RedExprArgType -> <:expr< Genarg.wit_red_expr >>
+  | OpenConstrArgType -> <:expr< Genarg.wit_open_constr >>
   | CastedOpenConstrArgType -> <:expr< Genarg.wit_casted_open_constr >>
   | ConstrWithBindingsArgType -> <:expr< Genarg.wit_constr_with_bindings >>
   | BindingsArgType -> <:expr< Genarg.wit_bindings >>
