@@ -172,6 +172,9 @@ Definition negb := [b:bool]Cases b of
                            | false => true
                            end.
 
+Infix "||" orb  (at level 4, left associativity) : bool_scope.
+Infix "&&" andb (at level 3, left associativity) : bool_scope.
+Notation "!! b" := (negb b) (at level 0, right associativity) : bool_scope.
 
 (**************************)
 (** Lemmas about [negb]   *)
