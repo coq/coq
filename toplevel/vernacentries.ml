@@ -1451,14 +1451,3 @@ let _ =
 	  if subtree_solved () then 
 	    (rev_mutate top_of_tree; print_subgoals()) 
        ))
-
-(*Only for debug*)
-(***
-let _ =
-  add "PrintConstr"
-    (function
-       | [VARG_CONSTR c] -> 
-	   (fun () ->
-	      Term.constr_display (constr_of_com empty_evd (initial_sign()) c))
-       | _ -> bad_vernac_args "PrintConstr")
-***)

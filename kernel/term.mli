@@ -561,5 +561,3 @@ val hcons_constr:
     (typed_type -> typed_type)
 
 val hcons1_constr : constr -> constr
-
-val constr_display: constr -> unit
