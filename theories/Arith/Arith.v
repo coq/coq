@@ -18,19 +18,3 @@ Require Export Between.
 Require Export Minus.
 Require Export Peano_dec.
 Require Export Compare_dec.
-
-Axiom My_special_variable : nat -> nat.
-
-Grammar nat number :=.
-
-Grammar constr constr10 :=
-  natural_nat [ nat:number($c) ] -> [$c].
-
-Grammar constr pattern :=
-  natural_pat [ nat:pat_number($c) ] -> [$c].
-
-Syntax constr
-  level 10:
-  S [ (S $p) ] -> [$p:"nat_printer":9]
-| O [ O ] -> [ "0" ]
-.

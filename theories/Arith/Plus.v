@@ -12,7 +12,8 @@
 
 Require Le.
 Require Lt.
-Require ArithSyntax.
+
+Import nat_scope.
 
 Lemma plus_sym : (n,m:nat)(n+m)=(m+n).
 Proof.

@@ -114,7 +114,7 @@ Syntax constr
   | Zlt_Zlt [ (Zlt $n1 $n2)/\(Zlt $n2 $n3) ] ->
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "< " (ZEXPR $n2)
                                 [1 0] "< " (ZEXPR $n3) "`"]]
-  | ZZero [ ZERO ] -> ["`0`"]
+  | ZZero [ ZERO ] -> [ "`0`" ]
   | ZPos [ (POS $r) ] -> [$r:"positive_printer":9]
   | ZNeg [ (NEG $r) ] -> [$r:"negative_printer":9]
   ;
@@ -215,3 +215,36 @@ Syntax constr
   | ZPos_inside [ << (ZEXPR <<(POS $p)>>) >>] -> [$p:"positive_printer_inside"]
   | ZNeg_inside [ << (ZEXPR <<(NEG $p)>>) >>] -> [$p:"negative_printer_inside"]
 .
+
+(* For parsing/printing based on scopes *)
+Module Z_scope.
+
+Delimiters "'Z:" Z_scope "'".
+Infix NONA 4 "<=" Zle : Z_scope.
+Infix NONA 4 "<"  Zlt : Z_scope.
+Infix NONA 4 ">=" Zge : Z_scope.
+(*Infix NONA 4 ">"  Zgt : Z_scope. (* Conflicts with "<..>Cases ... " *) *)
+Infix NONA 4 "?=" Zcompare : Z_scope.
+Infix 3 "+" Zplus : Z_scope.
+Infix 3 "-" Zminus : Z_scope.
+Infix 2 "*" Zmult : Z_scope.
+Distfix 0 "- _" Zopp : Z_scope.
+Notation NONA 4 "x <= y <= z" (Zle x y)/\(Zle y z) : Z_scope.
+Notation NONA 4 "x <= y <  z" (Zle x y)/\(Zlt y z) : Z_scope.
+Notation NONA 4 "x <  y <  z" (Zlt x y)/\(Zlt y z) : Z_scope.
+Notation NONA 4 "x <  y <= z" (Zlt x y)/\(Zle y z) : Z_scope.
+Notation NONA 4 "x <> y"      ~(eq Z x y)          : Z_scope.
+(* Notation NONA 1 "| x |" (Zabs x) : Z_scope.(* "|" conflicts with THENS *)*)
+Notation NONA 1 "|| x ||" (Zabs x) : Z_scope.
+
+(* Warning: this hides sum and prod and breaks sumor symbolic notation *)
+Open Scope Z_scope.
+
+Syntax constr
+  level 0:
+  | ZZero' [ ZERO ] -> [dummy:"z_printer_ZERO"]
+  | ZPos' [ (POS $r) ] -> [$r:"z_printer_POS":9]
+  | ZNeg' [ (NEG $r) ] -> [$r:"z_printer_NEG":9]
+.
+
+End Z_scope.

@@ -15,4 +15,5 @@ Require Export LogicSyntax.
 Require Export Specif.
 Require Export SpecifSyntax.
 Require Export Peano.
+Require Export PeanoSyntax.
 Require Export Wf.

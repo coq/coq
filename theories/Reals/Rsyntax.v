@@ -61,7 +61,7 @@ with rexpr0 : constr :=
 
 with meta : ast :=
 | rimpl [ "?" ] -> [ (ISEVAR) ]
-| rmeta [ "?" prim:numarg($n) ] -> [ (META $n) ]
+| rmeta [ "?" constr:numarg($n) ] -> [ (META $n) ]
 
 with rapplication : constr :=
   apply [ rapplication($p) rexpr($c1) ] -> [ ($p $c1) ]
@@ -107,8 +107,8 @@ Syntax constr
   | Rlt_Rlt [ (Rlt $n1 $n2)/\(Rlt $n2 $n3) ] ->
       [[<hov 0> "``" (REXPR $n1) [1 0] "< " (REXPR $n2)
                                 [1 0] "< " (REXPR $n3) "``"]]
-  | Rzero [ R0 ] -> ["``0``"]
-  | Rone [ R1 ] -> ["``1``"]
+  | Rzero [ R0 ] -> [ "``0``" ]
+  | Rone [ R1 ] -> [ "``1``" ]
   ;
 
   level 7:
@@ -188,4 +188,39 @@ Syntax constr
   level 0:
     Rzero_inside [<<(REXPR <<R0>>)>>] -> ["0"]
   | Rone_inside [<<(REXPR <<R1>>)>>] -> ["1"]
-  | Rconst_inside [<<(REXPR <<(Rplus R1 $r)>>)>>] -> [$r:"r_printer"].
+  | Rconst_inside [<<(REXPR <<(Rplus R1 $r)>>)>>] -> [$r:"r_printer"]
+.
+
+(* For parsing/printing based on scopes *)
+Module R_scope.
+
+Delimiters "'R:" R_scope "'".
+Infix NONA 4 "<=" Rle : R_scope.
+Infix NONA 4 "<"  Rlt : R_scope.
+Infix NONA 4 ">=" Rge : R_scope.
+(*Infix NONA 4 ">"  Rgt : R_scope. (* Conflicts with "<..>Cases ... " *) *)
+Infix 3 "+" Rplus : R_scope.
+Infix 3 "-" Rminus : R_scope.
+Infix 2 "*" Rmult : R_scope.
+Distfix 0 "- _" Ropp : R_scope.
+Notation NONA 4 "x == y == z" (eqT R x y)/\(eqT R y z) : R_scope.
+Notation NONA 4 "x <= y <= z" (Rle x y)/\(Rle y z) : R_scope.
+Notation NONA 4 "x <= y <  z" (Rle x y)/\(Rlt y z) : R_scope.
+Notation NONA 4 "x <  y <  z" (Rlt x y)/\(Rlt y z) : R_scope.
+Notation NONA 4 "x <  y <= z" (Rlt x y)/\(Rle y z) : R_scope.
+Notation NONA 4 "x <> y"  ~(eqT R x y) : R_scope.
+Infix LEFTA 2 "/" Rdiv : R_scope.
+Distfix 0 "/ _" Rinv : R_scope.
+
+(* Warning: this hides sum and prod and breaks sumor symbolic notation *)
+Open Scope R_scope.
+
+Syntax constr
+  level 0:
+    Rzero' [ R0 ] -> [ _:"r_printer_R0" ]
+  | Rone' [ R1 ] -> [ _:"r_printer_R1" ]
+  | Rconst' [(Rplus R1 $r)] -> [$r:"r_printer_Rplus1"]
+  | Ropp' [(Ropp $n)] -> [ $n:"r_printer_Ropp" ]
+.
+
+End R_scope.
