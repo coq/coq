@@ -217,7 +217,9 @@ let check_identity_case br =
 	  if r<>r' then raise Impossible;
 	  check_list (List.length l) l'
       | _ -> raise Impossible
-  in Array.iter check_one_branch br
+  in 
+  if br=[||] then raise Impossible;
+  Array.iter check_one_branch br
 
 
 let check_constant_case br = 
@@ -457,8 +459,10 @@ let rec optimize prm = function
       []
   | (Dtype _ | Dabbrev _) as d :: l -> 
       d :: (optimize prm l)
-  | Dglob (_, MLprop) :: l ->
-      optimize prm l
+  | Dglob (r, MLprop) as d :: l ->
+      if Refset.mem r prm.to_keep then
+	d :: (optimize prm l) 
+      else optimize prm l
   (*i
   | Dglob(id,(MLexn _ as t)) as d :: l ->
       let l' = List.map (expand (id,t)) l in optimize prm l'
