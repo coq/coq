@@ -56,6 +56,9 @@ val make_path : identifier -> path_kind -> section_path
 val cwd : unit -> dir_path
 val is_section_p : dir_path -> bool
 
+(* This is to declare the interactive toplevel default module name as a root*)
+val init_toplevel_root : unit -> unit
+
 val start_module : dir_path -> unit
 val end_module : module_ident -> dir_path
 val export_module : dir_path -> library_segment

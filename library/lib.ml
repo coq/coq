@@ -36,7 +36,10 @@ and library_segment = library_entry list
 
 let lib_stk = ref ([] : (section_path * node) list)
 
-let default_module = make_dirpath Nametab.default_root_prefix
+let default_module_name = id_of_string "Top"
+let default_module = make_dirpath [default_module_name]
+let init_toplevel_root () = Nametab.push_library_root default_module_name
+
 let module_name = ref None
 let path_prefix = ref (default_module : dir_path)
 

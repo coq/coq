@@ -215,6 +215,7 @@ let start () =
       exit 1
   end;
   if !batch_mode then (flush_all(); Profile.print_profile ();exit 0);
+  if not (!batch_mode) then Lib.init_toplevel_root ();
   Toplevel.loop();
 (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();
