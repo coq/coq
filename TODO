@@ -6,7 +6,10 @@ Environnement:
 
 - Faire fonctionner Search
 - Faire fonctionner Abstract
-- Faire fonctionner Search
+- Faire fonctionner Reset
+- Que les Infix soit chargés lors d'un Require
+- Problème de compatibilité du mode implicite au discharge (avant, dépendait
+  de l'état du mode à la création, maintenant, à la fermeture de la section)
 
 Tactiques
 
