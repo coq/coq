@@ -805,7 +805,7 @@ and flag_of_ast (evc,env,lfun,lmatch,goalopt) lf =
     | Node(_,"Iota",[])::lf -> add_flag (red_add red IOTA) lf
     | Node(loc,("Unf"|"UnfBut"),l)::_ ->
 	user_err_loc(loc,"flag_of_ast",
-                     [<'sTR "Delta must be specified before">])
+                     [<'sTR "Delta must be specified just before">])
 
     | arg::_ -> invalid_arg_loc (Ast.loc arg,"flag_of_ast")
   in
