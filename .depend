@@ -2,8 +2,9 @@ kernel/abstraction.cmi: kernel/names.cmi kernel/term.cmi
 kernel/closure.cmi: kernel/environ.cmi kernel/evd.cmi kernel/generic.cmi \
     kernel/names.cmi lib/pp.cmi kernel/term.cmi 
 kernel/constant.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi 
-kernel/environ.cmi: kernel/constant.cmi kernel/evd.cmi kernel/inductive.cmi \
-    kernel/names.cmi kernel/sign.cmi kernel/term.cmi kernel/univ.cmi 
+kernel/environ.cmi: kernel/abstraction.cmi kernel/constant.cmi kernel/evd.cmi \
+    kernel/inductive.cmi kernel/names.cmi kernel/sign.cmi kernel/term.cmi \
+    kernel/univ.cmi 
 kernel/evd.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi 
 kernel/generic.cmi: kernel/names.cmi lib/util.cmi 
 kernel/indtypes.cmi: kernel/environ.cmi kernel/inductive.cmi kernel/names.cmi \
@@ -140,5 +141,11 @@ library/libobject.cmo: lib/dyn.cmi kernel/names.cmi lib/util.cmi \
     library/libobject.cmi 
 library/libobject.cmx: lib/dyn.cmx kernel/names.cmx lib/util.cmx \
     library/libobject.cmi 
-library/summary.cmo: kernel/names.cmi library/summary.cmi 
-library/summary.cmx: kernel/names.cmx library/summary.cmi 
+library/summary.cmo: lib/dyn.cmi kernel/names.cmi lib/pp.cmi lib/util.cmi \
+    library/summary.cmi 
+library/summary.cmx: lib/dyn.cmx kernel/names.cmx lib/pp.cmx lib/util.cmx \
+    library/summary.cmi 
+parsing/lexer.cmo: lib/util.cmi 
+parsing/lexer.cmx: lib/util.cmx 
+toplevel/minicoq.cmo: kernel/generic.cmi kernel/names.cmi 
+toplevel/minicoq.cmx: kernel/generic.cmx kernel/names.cmx 

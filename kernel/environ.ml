@@ -14,10 +14,16 @@ open Abstraction
 
 (* The type of environments. *)
 
+type import = string * time_stamp
+
+type global = Constant | Inductive | Abstraction
+
 type globals = {
   env_constants : constant_body Spmap.t;
   env_inductives : mutual_inductive_body Spmap.t;
-  env_abstractions : abstraction_body Spmap.t }
+  env_abstractions : abstraction_body Spmap.t;
+  env_locals : (global * section_path) list;
+  env_imports : import list }
 
 type 'a unsafe_env = {
   env_context : context;
@@ -31,7 +37,9 @@ let empty_env = {
   env_globals = {
     env_constants = Spmap.empty;
     env_inductives = Spmap.empty;
-    env_abstractions = Spmap.empty };
+    env_abstractions = Spmap.empty;
+    env_locals = [];
+    env_imports = [] };
   env_sigma = mt_evd;
   env_metamap = [];
   env_universes = initial_universes }
@@ -54,12 +62,29 @@ let set_universes g env =
 
 let add_constant sp cb env =
   let new_constants = Spmap.add sp cb env.env_globals.env_constants in
-  let new_globals = { env.env_globals with env_constants = new_constants } in
+  let new_locals = (Constant,sp)::env.env_globals.env_locals in
+  let new_globals = 
+    { env.env_globals with 
+	env_constants = new_constants; 
+	env_locals = new_locals } in
   { env with env_globals = new_globals }
 
 let add_mind sp mib env =
   let new_inds = Spmap.add sp mib env.env_globals.env_inductives in
-  let new_globals = { env.env_globals with env_inductives = new_inds } in
+  let new_locals = (Inductive,sp)::env.env_globals.env_locals in
+  let new_globals = 
+    { env.env_globals with 
+	env_inductives = new_inds;
+	env_locals = new_locals } in
+  { env with env_globals = new_globals }
+
+let add_abstraction sp ab env =
+  let new_abs = Spmap.add sp ab env.env_globals.env_abstractions in
+  let new_locals = (Abstraction,sp)::env.env_globals.env_locals in
+  let new_globals = 
+    { env.env_globals with 
+	env_abstractions = new_abs;
+	env_locals = new_locals } in
   { env with env_globals = new_globals }
   
 let new_meta = 
@@ -220,7 +245,60 @@ let evaluable_const env k =
   with Not_found -> 
     false
 
-(* Judgments. *)
+(*s Modules (i.e. compiled environments). *)
+
+type compiled_env = {
+  cenv_id : string;
+  cenv_stamp : time_stamp;
+  cenv_needed : import list;
+  cenv_constants : (section_path * constant_body) list;
+  cenv_inductives : (section_path * mutual_inductive_body) list;
+  cenv_abstractions : (section_path * abstraction_body) list }
+
+let exported_objects env =
+  let gl = env.env_globals in
+  let separate (cst,ind,abs) = function
+    | (Constant,sp) -> (sp,Spmap.find sp gl.env_constants)::cst,ind,abs
+    | (Inductive,sp) -> cst,(sp,Spmap.find sp gl.env_inductives)::ind,abs
+    | (Abstraction,sp) -> cst,ind,(sp,Spmap.find sp gl.env_abstractions)::abs
+  in
+  List.fold_left separate ([],[],[]) gl.env_locals
+
+let export env id = 
+  let (cst,ind,abs) = exported_objects env in
+  { cenv_id = id;
+    cenv_stamp = get_time_stamp ();
+    cenv_needed = env.env_globals.env_imports;
+    cenv_constants = cst;
+    cenv_inductives = ind;
+    cenv_abstractions = abs }
+
+let check_imports env needed =
+  let imports = env.env_globals.env_imports in
+  let check (id,stamp) =
+    try
+      let actual_stamp = List.assoc id imports in
+      if compare_time_stamps stamp actual_stamp <> 0 then
+	error ("Inconsistent assumptions over module " ^ id)
+    with Not_found -> 
+      error ("Reference to unknown module " ^ id)
+  in
+  List.iter check needed
+
+let import cenv env =
+  check_imports env cenv.cenv_needed;
+  let add_list t = List.fold_left (fun t (sp,x) -> Spmap.add sp x t) t in
+  let gl = env.env_globals in
+  let new_globals = 
+    { env_constants = add_list gl.env_constants cenv.cenv_constants;
+      env_inductives = add_list gl.env_inductives cenv.cenv_inductives;
+      env_abstractions = add_list gl.env_abstractions cenv.cenv_abstractions;
+      env_locals = gl.env_locals;
+      env_imports = (cenv.cenv_id,cenv.cenv_stamp) :: gl.env_imports }
+  in
+  { env with env_globals = new_globals }
+
+(*s Judgments. *)
 
 type unsafe_judgment = { 
   uj_val : constr;

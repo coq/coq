@@ -20,6 +20,8 @@ INCLUDES=-I config -I lib -I kernel -I library
 
 # Objects files 
 
+CLIBS=unix.cma
+
 CONFIG=config/coq_config.cmo
 
 LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/hashcons.cmo \
@@ -35,13 +37,21 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
 
 LIBRARY=library/libobject.cmo library/summary.cmo
 
-OBJS=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY)
+PARSING=parsing/lexer.cmo
+
+OBJS=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PARSING)
 
 # Targets
 
 world: $(OBJS)
 	#$(OCAMLC) -o coqtop.byte $(OBJS)
-	ocamlmktop -o coqtop $(OBJS)
+	ocamlmktop -o coqtop -custom $(CLIBS) $(OBJS) $(OSDEPLIBS)
+
+MINICOQOBJS=$(CONFIG) $(LIB) $(KERNEL) $(PARSING) toplevel/minicoq.cmo
+
+minicoq: $(OBJS) $(MINICOQOBJS)
+	$(OCAMLC) -o minicoq -custom $(CLIBS) $(OBJS) $(MINICOQOBJS) \
+	  $(OSDEPLIBS)
 
 # Literate programming (with ocamlweb)
 
@@ -69,7 +79,7 @@ tags:
 
 # Default rules
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .mll
 
 .ml.cmo:
 	$(OCAMLC) $(BYTEFLAGS) -c $<
@@ -79,6 +89,9 @@ tags:
 
 .ml.cmx:
 	$(OCAMLOPT) $(OPTFLAGS) -c $<
+
+.mll.ml:
+	ocamllex $<
 
 # Cleaning
 

@@ -6,6 +6,7 @@ open Names
 open Term
 open Constant
 open Inductive
+open Abstraction
 open Evd
 open Univ
 open Sign
@@ -32,6 +33,8 @@ val add_constant :
   section_path -> constant_body -> 'a unsafe_env -> 'a unsafe_env
 val add_mind : 
   section_path -> mutual_inductive_body -> 'a unsafe_env -> 'a unsafe_env
+val add_abstraction : 
+  section_path -> abstraction_body -> 'a unsafe_env -> 'a unsafe_env
 
 val new_meta : unit -> int
 
@@ -56,6 +59,13 @@ val translucent_const : 'a unsafe_env -> constr -> bool
 val evaluable_const : 'a unsafe_env -> constr -> bool
 
 val is_existential : constr -> bool
+
+(*s Modules. *)
+
+type compiled_env
+
+val export : 'a unsafe_env -> string -> compiled_env
+val import : compiled_env -> 'a unsafe_env -> 'a unsafe_env
 
 (*s Unsafe judgments. We introduce here the pre-type of judgments, which is
   actually only a datatype to store a term with its type and the type of its

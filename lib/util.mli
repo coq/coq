@@ -72,6 +72,11 @@ type ('a,'b) union = Inl of 'a | Inr of 'b
 
 module Intset : Set.S with type elt = int
 
+type time_stamp
+
+val get_time_stamp : unit -> time_stamp
+val compare_time_stamps : time_stamp -> time_stamp -> int
+
 (*s Pretty-printing. *)
 
 val pr_spc : unit -> std_ppcmds
