@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*i camlp4deps: "parsing/grammar.cma" i*)
+(*i camlp4deps: "parsing/grammar.cma"  i*)
 
 (* $Id$ *)
 
@@ -19,7 +19,7 @@ open Tactics
 open Tacticals
 open Util
 
-let mytac ninst solver gl=
+let ground_tac ninst solver gl=
   let metagen=newcnt () in
   let rec toptac ninst seq gl=
     match seq.gl with 
@@ -66,13 +66,13 @@ let mytac ninst solver gl=
 	      (left_tac ninst seq1 (hd::ctx)) gl
 	  | Lexists ->left_exists_tac hd.id seq1 (toptac ninst) metagen gl
 	  | LAatom a->
-	      let pat,atoms=
-		match seq1.gl with 
-		    Atomic t->assert false
-		  | Complex (pat,atoms)->pat,atoms in
-	      tclORELSE 
+	      tclORELSE
 	      (ll_atom_tac a hd.id (re_add seq1) (toptac ninst) metagen)
-	      (right_tac ninst seq1 pat atoms (hd::ctx)) gl
+	      (match seq1.gl with 
+		  Atomic t->
+		    (left_tac ninst seq1 (hd::ctx))
+		| Complex (pat,atoms)->
+		    (right_tac ninst seq1 pat atoms (hd::ctx))) gl
 	  | LAfalse->ll_false_tac hd.id seq1 (toptac ninst) metagen gl
 	  | LAand (ind,largs) | LAor(ind,largs) ->
 	      ll_ind_tac ind largs hd.id seq1 (toptac ninst) metagen gl
@@ -89,17 +89,28 @@ let mytac ninst solver gl=
 	      (ll_arrow_tac a b c hd.id (re_add seq1) 
 		   (toptac ninst) metagen)
 	      (left_tac ninst seq1 (hd::ctx)) gl in
+  let startseq=create_with_auto_hints gl metagen in
     wrap (List.length (pf_hyps gl)) true empty_seq (toptac ninst) metagen gl
 
-let default_solver=Tacinterp.interp <:tactic<Auto with *>>
-    
-let default_depth=5
+let default_solver=(Tacinterp.interp <:tactic<Auto with *>>)
+		     
+let gen_ground_tac io taco=
+   let depth=
+     match io with 
+	 Some i->i
+       | None-> !Auto.default_search_depth in
+   let solver= 
+     match taco with 
+	 Some t->snd t
+       | None-> default_solver in
+     ground_tac depth default_solver
 
 TACTIC EXTEND Ground
-   [ "Ground" ] -> [ mytac default_depth default_solver]
-|  [ "Ground" integer(n)] -> [ mytac n default_solver]
-|  [ "Ground" tactic(t)] -> [ mytac default_depth (snd t)]    
-|  [ "Ground" integer(n) tactic(t)] -> [ mytac n (snd t)]
+   [ "Ground" ] -> [ gen_ground_tac None None ]    
+|  [ "Ground" integer(n)] -> [ gen_ground_tac (Some n) None]
+|  [ "Ground" tactic(t)] -> [ gen_ground_tac None (Some t)]    
+|  [ "Ground" integer(n) tactic(t)] -> 
+     [ gen_ground_tac (Some n) (Some t) ]
 END
 
  

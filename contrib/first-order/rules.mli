@@ -11,12 +11,15 @@
 open Term
 open Tacmach
 open Names
+open Libnames
 
 type hptac= Sequent.t -> (Sequent.t -> tactic) -> Formula.counter -> tactic
 
-type lhptac= identifier -> hptac
+type lhptac= global_reference -> hptac
 
 val wrap : int -> bool -> hptac
+
+val clear_global: global_reference -> tactic
 
 val axiom_tac : constr -> Sequent.t -> tactic
 
@@ -44,7 +47,7 @@ val ll_atom_tac : constr -> lhptac
 
 val ll_false_tac : lhptac
 
-val left_false_tac : identifier -> tactic
+val left_false_tac : global_reference -> tactic
 
 val ll_ind_tac : inductive -> constr list -> lhptac
 

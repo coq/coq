@@ -118,7 +118,7 @@ let match_lists i l1 l2=
       
 let find_instances i l seq=
   let match_hyp f accu=
-    CS.union (match_lists i l f.atoms) accu in
+    CS.union (if f.internal then match_lists i l f.atoms else CS.empty) accu in
   let match_atom t nam accu=
     CS.union (match_atom_list i (false,t) l) accu in
   let s1=

@@ -13,6 +13,7 @@ open Util
 open Formula
 open Tacmach
 open Names
+open Libnames
 
 let priority=function (* pure heuristics, <=0 for non reversible *)
       Lfalse             ->1000
@@ -57,10 +58,10 @@ module CM=Map.Make(OrderedConstr)
 module HP=Heap.Functional(OrderedFormula)
 
 type t=
-    {hyps:HP.t;hatoms:identifier CM.t;gl:right_formula}
+    {hyps:HP.t;hatoms:global_reference CM.t;gl:right_formula}
 
-let add_left (nam,t) seq metagen=
-  match build_left_entry nam t metagen with
+let add_left (nam,t) seq internal metagen=
+  match build_left_entry nam t internal metagen with
       Left f->{seq with hyps=HP.add f seq.hyps}
     | Right t->{seq with hatoms=CM.add t nam seq.hatoms}
 
@@ -95,3 +96,24 @@ let empty_seq=
    hatoms=CM.empty;
    gl=Atomic (mkMeta 1)}
 
+open Auto
+
+let create_with_auto_hints gl metagen=
+  let seqref=ref empty_seq in
+  let f p_a_t =
+    match p_a_t.code with
+	Res_pf (c,_) | Give_exact c
+      | Res_pf_THEN_trivial_fail (c,_) ->
+	  (try 
+	     let gr=reference_of_constr c in 
+	     let typ=(pf_type_of gl c) in
+	       seqref:=add_left (gr,typ) !seqref false metagen
+	   with Not_found->())
+      | _-> () in
+  let g _ l=List.iter f l in
+  let h str hdb=Hint_db.iter g hdb in
+    Util.Stringmap.iter h (!searchtable);
+    !seqref
+
+
+	

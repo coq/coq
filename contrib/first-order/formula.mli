@@ -10,6 +10,7 @@
 
 open Term
 open Names
+open Libnames
 
 type ('a,'b) sum = Left of 'a | Right of 'b
 
@@ -27,7 +28,9 @@ type counter = bool -> int
 val newcnt : unit -> counter
 
 val construct_nhyps : inductive -> int array
-      
+
+exception Dependent_Inductive
+
 val ind_hyps : inductive -> constr list -> Sign.rel_context array
 
 val kind_of_formula : constr -> kind_of_formula
@@ -57,12 +60,13 @@ type left_pattern=
   | LAexists of inductive*constr*constr*constr
   | LAarrow of constr*constr*constr
       
-type left_formula={id:identifier;
+type left_formula={id:global_reference;
 		   pat:left_pattern;
-		   atoms:(bool*constr) list}
+		   atoms:(bool*constr) list;
+		   internal:bool}
 
 val build_left_entry : 
-  identifier -> types -> counter -> (left_formula,types) sum
+  global_reference -> types -> bool -> counter -> (left_formula,types) sum
 
 val build_right_entry : types -> counter -> right_formula
 

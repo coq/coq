@@ -16,6 +16,7 @@ open Reductionops
 open Tacmach
 open Util
 open Declarations
+open Libnames
 
 type ('a,'b)sum=Left of 'a|Right of 'b
 
@@ -73,7 +74,7 @@ let rec nb_prod_after n c=
   match kind_of_term c with
     | Prod (_,_,b) ->if n>0 then nb_prod_after (n-1) b else 
 	1+(nb_prod_after 0 b)
-    | _            -> 0
+    | _ -> 0
 
 let nhyps mip = 
   let constr_types = mip.mind_nf_lc in 
@@ -81,21 +82,23 @@ let nhyps mip =
     Array.map nhyps constr_types
 
 let construct_nhyps ind= nhyps (snd (Global.lookup_inductive ind))
-      
+    
+exception Dependent_Inductive
+
 (* builds the array of arrays of constructor hyps for (ind Vargs)*)
 let ind_hyps ind largs= 
   let (mib,mip) = Global.lookup_inductive ind in
-    if Inductiveops.mis_is_recursive (ind,mib,mip) then 
-      failwith "no_recursion" else      
-	let n=mip.mind_nparams in
-	  if n<>(List.length largs) then anomaly "params ?" else
-	    let p=nhyps mip in
-	    let lp=Array.length p in
-	    let types= mip.mind_nf_lc in   
-	    let myhyps i=
-	      let t1=Term.prod_applist types.(i) largs in
-		fst (Sign.decompose_prod_n_assum p.(i) t1) in
-	      Array.init lp myhyps
+  let n = mip.mind_nparams in
+    if n<>(List.length largs) then 
+      raise Dependent_Inductive
+    else
+      let p=nhyps mip in
+      let lp=Array.length p in
+      let types= mip.mind_nf_lc in   
+      let myhyps i=
+	let t1=Term.prod_applist types.(i) largs in
+	  fst (Sign.decompose_prod_n_assum p.(i) t1) in
+	Array.init lp myhyps
 
 let kind_of_formula cciterm =
   match match_with_imp_term cciterm with
@@ -128,12 +131,15 @@ let build_atoms metagen=
 	  (build_rec env (not polarity) a)@
 	  (build_rec env polarity b)
       | And(i,l) | Or(i,l)->
-	  let v = ind_hyps i l in
-	    Array.fold_right
-	      (fun l accu->
-		 List.fold_right 
-		 (fun (_,_,t) accu0->
-		    (build_rec env polarity t)@accu0) l accu) v []
+	  (try
+	    let v = ind_hyps i l in
+	      Array.fold_right
+		(fun l accu->
+		   List.fold_right 
+		   (fun (_,_,t) accu0->
+		      (build_rec env polarity t)@accu0) l accu) v []
+	  with Dependent_Inductive ->
+	    [polarity,(substnl env 0 cciterm)])
       | Forall(_,b)|Exists(_,_,b,_)->
 	  let var=mkMeta (metagen true) in
 	    build_rec (var::env) polarity b 
@@ -166,13 +172,14 @@ type left_pattern=
   | LAexists of inductive*constr*constr*constr
   | LAarrow of constr*constr*constr
       
-type left_formula={id:identifier;
+type left_formula={id:global_reference;
 		   pat:left_pattern;
-		   atoms:(bool*constr) list}
+		   atoms:(bool*constr) list;
+		   internal:bool}
     
 exception Is_atom of constr
 
-let build_left_entry nam typ metagen=
+let build_left_entry nam typ internal metagen=
   try 
     let pattern=
       match kind_of_formula typ with
@@ -192,7 +199,7 @@ let build_left_entry nam typ metagen=
 	       | Exists(i,a,_,p)->LAexists(i,a,p,b)
 	       | Forall(_,_)->LAforall a) in    
     let l=build_atoms metagen false typ in
-      Left {id=nam;pat=pattern;atoms=l}
+      Left {id=nam;pat=pattern;atoms=l;internal=internal}
   with Is_atom a-> Right a
 
 let build_right_entry typ metagen=
