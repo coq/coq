@@ -372,14 +372,6 @@ let break () = Unix.kill pid Sys.sigusr1
 let can_break () = set_break () 
 let cant_break () = unset_break () 
 
-let find_tag_limits (tag :GText.tag) (it:GText.iter) = 
-    (if not (it#begins_tag (Some tag)) 
-     then it#backward_to_tag_toggle (Some tag)
-     else it#copy),
-    (if not (it#ends_tag (Some tag))
-     then it#forward_to_tag_toggle (Some tag)
-     else it#copy)
-
 let activate_input i = 
   (match !active_view with
      | None -> () 
@@ -824,7 +816,13 @@ object(self)
       else begin
 	let t = pop () in
 	begin match t.reset_info with
-	  | Reset (id, ({contents=true} as v)) -> v:=false; reset_to id
+	  | Reset (id, ({contents=true} as v)) -> v:=false; 
+	      (match snd t.ast with 
+		 | VernacBeginSection _ | VernacDefineModule _ 
+		 | VernacDeclareModule _ | VernacDeclareModuleType _
+		 | VernacEndSegment _ 
+		   -> reset_to_mod id
+		 | _ ->  reset_to id)
 	  | _ -> synchro ()
 	end;
 	interp_last t.ast;
@@ -891,9 +889,14 @@ object(self)
 	      try Pfedit.undo 1; ignore (pop ()); update_input () 
 	      with _ -> self#backtrack_to start
 	    end
-	| {reset_info=Reset (id, {contents=true})} ->
+	| {ast=_,t;reset_info=Reset (id, {contents=true})} ->
 	    ignore (pop ());
-	    reset_to id;
+	    (match t with 
+	      | VernacBeginSection _ | VernacDefineModule _ 
+	      | VernacDeclareModule _ | VernacDeclareModuleType _
+	      | VernacEndSegment _ 
+		  -> reset_to_mod id
+	      | _ ->  reset_to id);
 	    update_input ()
 	| { ast = _, ( VernacStartTheoremProof _ 
 		     | VernacDefinition (_,_,ProveBody _,_,_));
@@ -1166,7 +1169,7 @@ let main files =
 	!input_views;
       let b = Buffer.create 1024 in
       with_file f ~f:(input_channel b);
-      let s = try_convert (Buffer.contents b) in
+      let s = do_convert (Buffer.contents b) in
       let view = create_input_tab (Filename.basename f) in
       (match !manual_monospace_font with
 	 | None -> ()
@@ -1192,7 +1195,7 @@ let main files =
       av#view#clear_undo
     with       
       | Vector.Found i -> set_current_view i
-      | e -> !flash_info "Load failed"
+      | e -> !flash_info ("Load failed: "^(Printexc.to_string e))
   in
   let load_m = file_factory#add_item "_Open/Create" ~key:GdkKeysyms._O in
   let load_f () = 	  

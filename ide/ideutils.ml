@@ -52,6 +52,17 @@ let try_convert s =
     "(* Fatal error: wrong encoding in input.
 Please set your locale according to your file encoding.*)"
 
+let do_convert s = 
+  if Glib.Utf8.validate s then s else
+    try 
+      (prerr_endline 
+	 "Coqide warning: input is not UTF-8 encoded. Trying to convert from locale.";
+       Glib.Convert.locale_to_utf8 s)
+    with _ -> 
+      (prerr_endline 
+	 "Coqide warning: input is not even LOCALE encoded. Trying to convert from fr_FR.";
+       Glib.Convert.convert s ~to_codeset:"UTF-8" ~from_codeset:"ISO-8859-1")
+
 let try_export file_name s = 
   try 
     let s = 
@@ -59,7 +70,12 @@ let try_export file_name s =
 	s 
       else
 	(try Glib.Convert.locale_from_utf8 s 
-	 with _ -> prerr_endline "Warning: exporting to utf8";s)
+	 with _ -> 
+	   try 
+	     prerr_endline "Warning: exporting to ISO8859-1";
+	     Glib.Convert.convert s ~to_codeset:"UTF-8" ~from_codeset:"ISO-8859-1"
+	   with _ -> 
+	     prerr_endline "Warning: exporting to utf8";s)
     in
     let oc = open_out file_name in
     output_string oc s;
@@ -156,3 +172,21 @@ let select_file ~title ?(dir = last_dir) ?(filename="") () =
   fs # show ();
   GMain.Main.main ();
   !file
+
+
+let find_tag_start (tag :GText.tag) (it:GText.iter) =
+  let it = it#copy in
+  let tag = Some tag in
+  while not (it#begins_tag tag) && it#nocopy#backward_char do
+    ()
+  done;
+  it
+let find_tag_stop (tag :GText.tag) (it:GText.iter) =
+  let it = it#copy in
+  let tag = Some tag in
+  while not (it#ends_tag tag) && it#nocopy#forward_char do
+    ()
+  done;
+  it
+let find_tag_limits (tag :GText.tag) (it:GText.iter) = 
+ (find_tag_start tag it , find_tag_stop tag it)

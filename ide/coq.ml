@@ -18,10 +18,14 @@ let prerr_endline s = if !debug then prerr_endline s else ()
 
 let output = ref (Format.formatter_of_out_channel stdout)
 
-let msg x = 
-  Format.fprintf !output "%s\n" x;
-  Format.pp_print_flush !output ();;
- 
+let msg m = 
+  let b =  Buffer.create 103 in
+  Pp.msg_with (Format.formatter_of_buffer b) m;
+  Buffer.contents b
+
+let msgnl m = 
+  (msg m)^"\n"
+
 let init () = 
   Options.make_silent true;
   Coqtop.init_ide ()
@@ -53,31 +57,35 @@ let is_in_coq_lib dir =
       Coq_config.theories_dirs
   with _ -> prerr_endline " No(because of a global exn)";false
 
+let is_in_proof_mode () = 
+  try ignore (get_pftreestate ()); true with _ -> false
+
 let interp s = 
-  prerr_endline s;
-  flush stderr;
-  let po = Pcoq.Gram.parsable (Stream.of_string s) in
-  Vernac.raw_do_vernac po;
-  let po = Pcoq.Gram.parsable (Stream.of_string s) in
-  match Pcoq.Gram.Entry.parse Pcoq.main_entry po with
-    (* | Some (_, VernacDefinition _) *)
-    | Some last -> 
-	prerr_endline ("Done with "^s);
-	flush stderr;
-	last
-    | None -> assert false
+  prerr_endline "Starting interp...";
+  let pe = Pcoq.Gram.Entry.parse 
+	     Pcoq.main_entry 
+	     (Pcoq.Gram.parsable (Stream.of_string s)) 
+  in match pe with 
+    | Some (loc,(VernacDefinition _  | VernacStartTheoremProof _ )) 
+      when is_in_proof_mode () 
+	-> 
+	raise (Stdpp.Exc_located (loc, 
+			   Util.UserError
+			     ("CoqIde",
+			      (str "Proof imbrications are forbidden"))
+				 ))
+    | _ -> 
+	Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s));
+	match pe with
+	  | Some last -> 
+	      prerr_endline ("...Done with interp of : "^s);
+	      last
+	  | None -> assert false
 
 let is_tactic = function
   | VernacSolve _ -> true
   | _ -> false
 
-let msg m = 
-  let b =  Buffer.create 103 in
-  Pp.msg_with (Format.formatter_of_buffer b) m;
-  Buffer.contents b
-
-let msgnl m = 
-  (msg m)^"\n"
 
 let rec is_pervasive_exn = function
   | Out_of_memory | Stack_overflow | Sys.Break -> true
@@ -111,7 +119,7 @@ let print_toplevel_error exc =
 	   ++ str (Printexc.to_string  e)),
 	(if is_pervasive_exn exc then None else loc)
 
-let process_exn e = let s,loc=print_toplevel_error e in (msgnl s,loc)
+let process_exn e = let s,loc= print_toplevel_error e in (msgnl s,loc)
 
 let interp_last last = 
   prerr_string "*";
@@ -221,8 +229,11 @@ let reset_initial () =
   Vernacentries.abort_refine Lib.reset_initial ()
 
 let reset_to id = 
-  prerr_endline ("Reset called with "^(string_of_id id)); flush stderr;
+  prerr_endline ("Reset called with "^(string_of_id id));
   Vernacentries.abort_refine Lib.reset_name (Util.dummy_loc,id)
+let reset_to_mod id = 
+  prerr_endline ("Reset called to Mod/Sect with "^(string_of_id id)); 
+  Lib.reset_mod (Util.dummy_loc,id)
 
 
 let hyp_menu (env, sigma, ((coqident,ident),_,ast),(s,pr_ast)) =

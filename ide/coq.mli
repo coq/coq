@@ -33,6 +33,7 @@ type reset_info = NoReset | Reset of Names.identifier * bool ref
 val compute_reset_info : Vernacexpr.vernac_expr -> reset_info
 val reset_initial : unit -> unit
 val reset_to : identifier -> unit
+val reset_to_mod : identifier -> unit
 
 val hyp_menu : hyp -> (string * string) list
 val concl_menu : concl -> (string * string) list
