@@ -57,6 +57,7 @@
 \maketitle
 
 \section{Meta notations used in this document}
+$\xi$
 
 Non-terminals are printed between angle brackets (e.g. $\NT{non-terminal}$) and
 terminal symbols are printed in bold font (e.g. $\ETERM{terminal}$). Lexemes
@@ -491,6 +492,7 @@ Conflicts exists between integers and constrs.
        \TERM{using}~\NT{constr-with-bindings}
 \SEPDEF
 \DEFNT{constr-with-bindings}
+       % dangling ``with'' of ``fix'' can conflict with ``with''
        \NTL{constr}{100}~\OPT{\NT{with-binding-list}}
 \SEPDEF
 \DEFNT{with-binding-list}
@@ -536,7 +538,6 @@ Conflicts exists between integers and constrs.
        \OPT{\NT{int}}~\OPTGR{\TERM{adding}~\TERM{[}~\PLUS{\NT{reference}}
        ~\TERM{]}}~\OPT{\TERM{destructuring}}~\OPTGR{\TERM{using}~\TERM{tdb}}
 \end{rules}
-
 
 \subsection{Ltac}
 
@@ -898,6 +899,7 @@ $$
 \nlsep \TERM{Hint}~\OPT{\NT{reference}}
 \nlsep \TERM{Hint}~\TERM{*}
 \nlsep \TERM{HintDb}~\NT{ident}
+\nlsep \TERM{Scopes}
 \nlsep \TERM{Scope}~\NT{ident}
 \SEPDEF
 \DEFNT{class-rawexpr}
@@ -1036,7 +1038,8 @@ $$
 \begin{rules}
 \DEFNT{syntax}
        \TERM{Open}~\TERM{Scope}~\NT{ident}
-\nlsep \TERM{Delimits}~\TERM{Scope}~\NT{ident}~\KWD{with}~\NT{ident}
+\nlsep \TERM{Delimit}~\TERM{Scope}~\NT{ident}~\KWD{with}~\NT{ident}
+\nlsep \TERM{Bind}~\TERM{Scope}~\NT{ident}~\KWD{with}~\PLUS{\NT{class-rawexpr}}
 \nlsep \TERM{Arguments}~\TERM{Scope}~\NT{reference}
        ~\TERM{[}~\PLUS{\NT{name}}~\TERM{]}
 \nlsep \TERM{Infix}~\OPT{\TERM{Local}} %%% ~\NT{prec}~\OPT{\NT{int}}
