@@ -227,7 +227,7 @@ Syntax tactic
 
   | decomposeand [<<(DecomposeAnd $c)>>] -> [ "Decompose Record " $c ]
   | decomposeor [<<(DecomposeOr $c)>>] -> [ "Decompose Sum " $c ]
-  | decomposethese [<<(DecomposeThese (CLAUSE ($LIST $l)) $c )>>] -> 
+  | decomposethese [<<(DecomposeThese $c ($LIST $l))>>] -> 
               ["Decompose" [1 1] [<hov 0> "[" (LISTSPC ($LIST $l)) "]" ] 
 	                         [1 1] $c]
   | mutualcofixtactic [<<(Cofix $id $cfe ($LIST $fd))>>] 
@@ -388,6 +388,10 @@ Syntax tactic
          -> [ [1 1][<hov 2> "in " (LISTSPC ($LIST $l)) ] ]
   | clause_none [<<(CLAUSE)>>] -> [ ]
 
+
+  (* Hypotheses *)
+  | inhyp [<<(INHYP $x)>>] -> [ $x ]
+  | inhyptype [<<(INHYPTYPE $x)>>] -> [ "(Type of " $x ")" ]
 
   (* Lists with separators *)
   | listspc_cons [<<(LISTSPC $x ($LIST $l))>>] ->
