@@ -54,10 +54,10 @@ let pr_esubst prc l =
 
 let pr_bindings_gen for_ex prlc prc = function
   | ImplicitBindings l ->
-      spc () ++ (if for_ex then mt() else str "with ") ++
+      spc () ++ (if for_ex then mt() else str "with" ++ spc ()) ++
       hv 0 (prlist_with_sep spc prc l)
   | ExplicitBindings l ->
-      spc () ++ (if for_ex then mt() else str "with ") ++
+      spc () ++ (if for_ex then mt() else str "with" ++ spc ()) ++
       hv 0 (pr_esubst prlc l)
   | NoBindings -> mt ()
 
@@ -221,7 +221,7 @@ and pr_atom1 env = function
       (str "intro" ++ pr_opt pr_id ido1 ++ spc () ++ str "after " ++ pr_id id2)
   | TacAssumption as t -> pr_atom0 env t
   | TacExact c -> hov 1 (str "exact" ++ pr_lconstrarg env c)
-  | TacApply cb -> hov 1 (str "apply " ++ pr_with_bindings env cb)
+  | TacApply cb -> hov 1 (str "apply" ++ spc () ++ pr_with_bindings env cb)
   | TacElim (cb,cbo) ->
       hov 1 (str "elim" ++ pr_arg (pr_with_bindings env) cb ++ 
         pr_opt (pr_eliminator env) cbo)
@@ -294,7 +294,7 @@ and pr_atom1 env = function
         hov 0 (str "[" ++ prlist_with_sep spc (pr_ind vars) l
 	  ++ str "]" ++ pr_lconstrarg env c))
   | TacSpecialize (n,c) ->
-      hov 1 (str "specialize " ++ pr_opt int n ++ pr_with_bindings env c)
+      hov 1 (str "specialize" ++ spc () ++ pr_opt int n ++ pr_with_bindings env c)
   | TacLApply c -> 
       hov 1 (str "lapply" ++ pr_lconstrarg env c)
 
@@ -361,7 +361,7 @@ and pr_atom1 env = function
 
   (* Equivalence relations *)
   | (TacReflexivity | TacSymmetry None) as x -> pr_atom0 env x
-  | TacSymmetry (Some id) -> str "symmetry " ++ pr_ident id
+  | TacSymmetry (Some id) -> str "symmetry in " ++ pr_ident id
   | TacTransitivity c -> str "transitivity" ++ pr_lconstrarg env c in
 
 let ltop = (5,E) in
