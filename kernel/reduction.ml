@@ -738,7 +738,9 @@ let convert_or f1 f2 c =
   try f1 c with NotConvertible -> f2 c
 
 let convert_forall2 f v1 v2 c =
-  array_fold_left2 (fun c x y -> f x y c) c v1 v2
+  if Array.length v1 = Array.length v2
+  then array_fold_left2 (fun c x y -> f x y c) c v1 v2
+  else raise NotConvertible
 
 (* Convertibility of sorts *)
 
@@ -1146,20 +1148,48 @@ let find_mcoinductype env sigma c =
         when not (mind_type_finite (lookup_mind sp env) i) -> (destMutInd t,l)
     | _ -> raise Induc
 
+let make_constructor_summary (hyps,lc,nconstr,ntypes) ind params =
+  let ((sp,i),ctxt) = ind in
+  let specif = instantiate_constr (Sign.ids_of_sign hyps) lc (Array.to_list ctxt) in
+  let make_ik i = DOPN (MutInd (sp,i), ctxt) in
+  let types = sAPPVList specif (list_tabulate make_ik ntypes) in
+  let nparams_plus1 = List.length params + 1 in
+  let make_ck j =
+    let (args,ccl) = decompose_prod (prod_applist types.(j) params) in
+    let lAV = destAppL (ensure_appl ccl) in
+    let (_,vargs) = array_chop nparams_plus1 lAV in
+    { cs_cstr = ith_constructor_of_inductive ind (j+1);
+      cs_params = params;
+      cs_nargs = List.length args;
+      cs_args = args;
+      cs_concl_realargs = vargs } in
+  Array.init nconstr make_ck
+
+let make_arity env sigma (hyps,arity) ind params =
+  let ((sp,i),ctxt) = ind in
+  let arity' = instantiate_type (Sign.ids_of_sign hyps) arity (Array.to_list ctxt) in
+  match splay_prod env sigma (prod_applist (body_of_type arity') params) with
+    | (sign, DOP0 (Sort s)) -> (sign,s)
+    | _ -> anomaly "make_arity: the conclusion of this arity is not a sort"
+
 (* raise Induc if not an inductive type *)
 let try_mutind_of env sigma ty =
   let (mind,largs) = find_mrectype env sigma ty in
   let mispec = lookup_mind_specif mind env in 
   let nparams = mis_nparams mispec in
-  let (params,realargs) = list_chop nparams largs in 
-  {fullmind = ty;
-   mind     = mind;
-   nparams  = nparams;
-   nrealargs = List.length realargs;
-   nconstr  = mis_nconstr mispec;
-   params   = params;
-   realargs = realargs;
-   arity    = Instantiate.mis_arity mispec}
+  let (params,realargs) = list_chop nparams largs in
+  let nconstr = mis_nconstr mispec in
+  let hyps = mispec.mis_mib.mind_hyps in
+  { fullmind = ty;
+    mind     = mind;
+    params   = params;
+    realargs = realargs;
+    nparams  = nparams;
+    nrealargs = List.length realargs;
+    nconstr  = nconstr;
+    make_arity   = make_arity env sigma (hyps,mispec.mis_mip.mind_arity);
+    make_constrs = make_constructor_summary
+		  (hyps, mispec.mis_mip.mind_lc, nconstr, mis_ntypes mispec) }
 
 exception IsType
 
