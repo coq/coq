@@ -525,6 +525,18 @@ let check_sym env a_quantifiers_rev a aeq sym =
   errorlabstrm "Add Relation Class"
    (str "Not a valid proof of symmetry")
 
+let check_setoid_theory env a_quantifiers_rev a aeq th =
+ if
+  not
+   (is_conv env Evd.empty (Typing.type_of env Evd.empty th)
+    (Sign.it_mkProd_or_LetIn
+     (mkApp ((Lazy.force coq_Setoid_Theory),
+       [| apply_to_rels a   a_quantifiers_rev ;
+          apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
+ then
+  errorlabstrm "Add Relation Class"
+   (str "Not a valid proof of symmetry")
+
 let int_add_relation a aeq refl sym =
  let env = Global.env () in
  let a_quantifiers_rev = check_a env a in
@@ -912,40 +924,44 @@ let add_setoid id a aeq th =
  let aeq = constr_of aeq in
  let th = constr_of th in
  let env = Global.env () in
-  if is_conv env Evd.empty (Typing.type_of env Evd.empty th)
-    (mkApp ((Lazy.force coq_Setoid_Theory), [| a; aeq |]))
-  then
-   begin
-    let refl = mkApp ((Lazy.force coq_seq_refl), [| a; aeq; th |]) in
-    let sym = mkApp ((Lazy.force coq_seq_sym), [| a; aeq; th |]) in
-    int_add_relation a aeq (Some refl) (Some sym) ;
-    let mor_name = id_of_string (string_of_id id ^ "_morphism") in
-    let _ =
-     Declare.declare_internal_constant mor_name
-      (DefinitionEntry
-        {const_entry_body =
-          mkApp
-           ((Lazy.force coq_equality_morphism_of_setoid_theory),
-            [| a; aeq; th |]) ;
-         const_entry_type = None;
-         const_entry_opaque = false},
-        IsDefinition) in
-    let aeq_rel =
-     None,
-      Relation
-       { rel_a = a ;
-         rel_aeq = aeq ;
-         rel_refl = Some refl ;
-         rel_sym = Some sym ;
-         (*CSCXX: 0 means no quantified setoids (yet???) *)
-         rel_quantifiers_no = 0}
-    in
-     (*CSCXX: [] means no quantified setoids (yet???) *)
-     add_morphism None mor_name
-      (aeq,[],[aeq_rel;aeq_rel],Lazy.force coq_prop_relation)
-   end
-  else
-   errorlabstrm "Add Setoid" (str "Not a valid setoid theory")
+ let a_quantifiers_rev = check_a env a in
+  check_eq env a_quantifiers_rev a aeq  ;
+  check_setoid_theory env a_quantifiers_rev a aeq  th ;
+   let a_instance = apply_to_rels a a_quantifiers_rev in
+   let aeq_instance = apply_to_rels aeq a_quantifiers_rev in
+   let th_instance = apply_to_rels th a_quantifiers_rev in
+   let refl =
+    Sign.it_mkLambda_or_LetIn
+     (mkApp ((Lazy.force coq_seq_refl),
+       [| a_instance; aeq_instance; th_instance |])) a_quantifiers_rev in
+   let sym =
+    Sign.it_mkLambda_or_LetIn
+     (mkApp ((Lazy.force coq_seq_sym),
+       [| a_instance; aeq_instance; th_instance |])) a_quantifiers_rev in
+   let aeq_rel =
+    { rel_a = a ;
+      rel_aeq = aeq ;
+      rel_refl = Some refl ;
+      rel_sym = Some sym ;
+      rel_quantifiers_no = List.length a_quantifiers_rev } in
+   let aeq_rel_class_and_var = None, Relation aeq_rel in
+   Lib.add_anonymous_leaf (relation_to_obj (aeq, aeq_rel)) ;
+   let mor_name = id_of_string (string_of_id id ^ "_morphism") in
+   let _ =
+    Declare.declare_internal_constant mor_name
+     (DefinitionEntry
+       {const_entry_body =
+         Sign.it_mkLambda_or_LetIn
+          (mkApp
+            ((Lazy.force coq_equality_morphism_of_setoid_theory),
+             [| a_instance ; aeq_instance ; th_instance |])) a_quantifiers_rev ;
+        const_entry_type = None;
+        const_entry_opaque = false},
+       IsDefinition) in
+   let a_quantifiers_rev = List.map (fun (n,_,t) -> n,t) a_quantifiers_rev in
+    add_morphism None mor_name
+     (aeq,a_quantifiers_rev,[aeq_rel_class_and_var ; aeq_rel_class_and_var],
+       Lazy.force coq_prop_relation)
 
 
 (****************************** The tactic itself *******************************)
