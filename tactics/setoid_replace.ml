@@ -48,7 +48,7 @@ type 'a relation_class =
  | Leibniz of constr  (* the carrier *)
 
 type 'a morphism =
-    { args : 'a relation_class list;
+    { args : (bool option * 'a relation_class) list;
       output : 'a relation_class;
       lem : constr;
     }
@@ -66,6 +66,9 @@ let subst_mps_in_relation_class subst =
  function
     Relation  t -> Relation  (subst_mps subst t)
   | Leibniz t -> Leibniz (subst_mps subst t) 
+
+let subst_mps_in_argument_class subst (variance,rel) =
+ variance, subst_mps_in_relation_class subst rel
 
 let constr_relation_class_of_relation_relation_class =
  function
@@ -119,9 +122,11 @@ let coq_seq_trans = lazy(constant ["Setoid"] "Seq_trans")
 
 let coq_variance = lazy(constant ["Setoid"] "variance")
 let coq_Covariant = lazy(constant ["Setoid"] "Covariant")
+let coq_Contravariant = lazy(constant ["Setoid"] "Contravariant")
 let coq_Left2Right = lazy(constant ["Setoid"] "Left2Right")
 let coq_MSNone = lazy(constant ["Setoid"] "MSNone")
 let coq_MSCovariant = lazy(constant ["Setoid"] "MSCovariant")
+let coq_MSContravariant = lazy(constant ["Setoid"] "MSContravariant")
 
 let coq_singl = lazy(constant ["Setoid"] "singl")
 let coq_cons = lazy(constant ["Setoid"] "cons")
@@ -195,10 +200,17 @@ let prrelation_class =
        str "[[ Error: setoid on equality " ++ prterm eq ++ str " not found! ]]")
   | Leibniz ty -> prterm ty
 
+let prargument_class (variance,rel) =
+ prrelation_class rel ++
+  match variance with
+     None -> str " -> "
+   | Some true -> str " +-> "
+   | Some false -> str " --> "
+
 let prmorphism k m =
   prterm k ++ str ": " ++
-  prlist_with_sep (fun () -> str " -> ") prrelation_class m.args ++
-  str " -> " ++ prrelation_class m.output
+  prlist prargument_class m.args ++
+  prrelation_class m.output
 
 
 (* A function that gives back the only relation_class on a given carrier *)
@@ -225,7 +237,11 @@ let relation_morphism_of_constr_morphism =
       Relation (try relation_table_find aeq with Not_found -> assert false)
  in
   function mor ->
-   let args' = List.map relation_relation_class_of_constr_relation_class mor.args in
+   let args' =
+    List.map
+     (fun (variance,rel) ->
+       variance, relation_relation_class_of_constr_relation_class rel
+     ) mor.args in
    let output' = relation_relation_class_of_constr_relation_class mor.output in
     {mor with args=args' ; output=output'}
 
@@ -347,7 +363,7 @@ let morphism_table_add (m,c) =
 
 let subst_morph subst morph = 
   let lem' = subst_mps subst morph.lem in
-  let args' = list_smartmap (subst_mps_in_relation_class subst) morph.args in
+  let args' = list_smartmap (subst_mps_in_argument_class subst) morph.args in
   let output' = subst_mps_in_relation_class subst morph.output in
     if lem' == morph.lem
       && args' == morph.args
@@ -529,8 +545,14 @@ let cic_precise_relation_class_of_relation_class =
 let cic_relation_class_of_relation_class =
  cic_relation_class_of_X_relation_class coq_unit coq_tt
 
-let cic_argument_class_of_argument_class =
- cic_relation_class_of_X_relation_class coq_variance coq_Covariant
+let cic_argument_class_of_argument_class (variance,arg) =
+ let coq_variant_value =
+  match variance with
+     None -> coq_Covariant (* dummy value, it won't be used *)
+   | Some true -> coq_Covariant
+   | Some false -> coq_Contravariant
+ in
+  cic_relation_class_of_X_relation_class coq_variance coq_variant_value arg
 
 let gen_compat_lemma_statement output args m =
  let rec mk_signature =
@@ -564,18 +586,32 @@ let new_morphism m signature id hook =
       let args,output =
        match signature with
           None ->
-           List.map default_relation_for_carrier args_ty,
+           List.map (fun ty -> None,default_relation_for_carrier ty) args_ty,
            default_relation_for_carrier output
         | Some (args,output) ->
            let relation_table_find t =
-            try Relation (relation_table_find t)
+            try relation_table_find t
             with Not_found ->
              errorlabstrm "Add Morphism"
               (str "Not a valid signature: " ++ prterm t ++
                str " is not a registered relation")
            in
-            List.map relation_table_find args,
-            relation_table_find output
+           let relation_table_find_v (variance,t) =
+            let relation = relation_table_find t in
+             match relation.rel_sym,variance with
+                Some _, None
+              | None, Some _ -> variance,Relation relation
+              | None,None ->
+                 errorlabstrm "Add Morphism"
+                  (str "You must specify the variance in each argument " ++
+                   str "whose relation is asymmetric.")
+              | Some _, Some _ ->
+                 errorlabstrm "Add Morphism"
+                  (str "You cannot specify the variance of an argument " ++
+                   str "whose relation is asymmetric.")
+           in
+            List.map relation_table_find_v args,
+            Relation (relation_table_find output)
       in
       let argsconstr,outputconstr,lem =
        gen_compat_lemma_statement output args m
@@ -618,7 +654,9 @@ let add_morphism lemma_infos mor_name (m,args,output) =
   end ;
   let mmor = current_constant mor_name in
   let args_constr =
-   List.map constr_relation_class_of_relation_relation_class args in
+   List.map
+    (fun (variance,arg) ->
+      variance, constr_relation_class_of_relation_relation_class arg) args in
   let output_constr = constr_relation_class_of_relation_relation_class output in
    Lib.add_anonymous_leaf
     (morphism_to_obj (m, 
@@ -641,7 +679,9 @@ let new_named_morphism id m sign =
   match sign with
      None -> None
    | Some (args,out) ->
-      Some (List.map constr_of args, constr_of out)
+      Some
+       (List.map (fun (variance,ty) -> variance, constr_of ty) args,
+        constr_of out)
  in
   new_morphism (constr_of m) sign id morphism_hook
 
@@ -679,8 +719,9 @@ let add_setoid a aeq th =
          const_entry_opaque = false},
         IsDefinition) in
     let aeq_rel =
-     Relation
-      {rel_a = a ; rel_aeq = aeq ; rel_refl = Some refl ; rel_sym = Some sym}
+     None,
+      Relation
+       {rel_a = a ; rel_aeq = aeq ; rel_refl = Some refl ; rel_sym = Some sym}
     in
      add_morphism None mor_name
       (aeq,[aeq_rel;aeq_rel],Lazy.force coq_prop_relation)
@@ -838,29 +879,32 @@ let mark_occur t in_c =
 let cic_morphism_context_list_of_list hole_relation =
  let check =
   function
-     Relation {rel_sym=None} ->
-      mkApp ((Lazy.force coq_MSCovariant), [| Lazy.force coq_Left2Right |])
-   | Relation {rel_sym=Some _}
-   | Leibniz _ ->
+     None -> 
       mkApp ((Lazy.force coq_MSNone),
-       [| Lazy.force coq_Left2Right ; Lazy.force coq_Left2Right |]) in
+       [| Lazy.force coq_Left2Right ; Lazy.force coq_Left2Right |])
+   | Some true ->
+      mkApp ((Lazy.force coq_MSCovariant),
+       [| Lazy.force coq_Left2Right |])
+   | Some false ->
+      mkApp ((Lazy.force coq_MSContravariant),
+       [| Lazy.force coq_Left2Right |]) in
  let rec aux =
   function
      [] -> assert false
-   | [(outrel,out),value] ->
+   | [(variance,out),value] ->
       mkApp ((Lazy.force coq_singl), [| Lazy.force coq_Argument_Class ; out |]),
       mkApp ((Lazy.force coq_fcl_singl),
        [| hole_relation; Lazy.force coq_Left2Right ; out ;
           Lazy.force coq_Left2Right ; Lazy.force coq_Left2Right ;
-          check outrel ; value |])
-   | ((outrel,out),value)::tl ->
+          check variance ; value |])
+   | ((variance,out),value)::tl ->
       let outtl, valuetl = aux tl in
        mkApp ((Lazy.force coq_cons),
         [| Lazy.force coq_Argument_Class ; out ; outtl |]),
        mkApp ((Lazy.force coq_fcl_cons),
         [| hole_relation ; Lazy.force coq_Left2Right ; out ; outtl ;
            Lazy.force coq_Left2Right ; Lazy.force coq_Left2Right ;
-           check outrel ; value ; valuetl |])
+           check variance ; value ; valuetl |])
  in aux
 
 let rec cic_type_nelist_of_list =
@@ -890,21 +934,22 @@ let syntactic_but_representation_of_marked_but hole_relation =
               mkApp ((Lazy.force coq_morphism_theory_of_function),
                [| cic_type_nelist_of_list f_args; f_output; f|])
            in
-            mt,List.map (fun x -> Leibniz x) f_args in
+            mt,List.map (fun x -> None,Leibniz x) f_args in
       let cic_relations =
        List.map
-        (fun r ->
+        (fun (variance,r) ->
+          variance,
+          r,
           cic_relation_class_of_relation_class r,
           cic_precise_relation_class_of_relation_class r
         ) relations in
-      let cic_arguments =
-       List.map
-        (fun rel -> rel,cic_argument_class_of_argument_class rel) relations in
       let cic_args_relations,argst =
        cic_morphism_context_list_of_list hole_relation
-        (List.combine cic_arguments
-          (List.map2 (fun (t,precise_t) v -> aux t precise_t v) cic_relations
-           (Array.to_list args)))
+        (List.map2
+         (fun (variance,trel,t,precise_t) v ->
+           (variance,cic_argument_class_of_argument_class (variance,trel)),
+             aux t precise_t v
+         ) cic_relations (Array.to_list args))
       in
        mkApp ((Lazy.force coq_App),
         [|hole_relation ; Lazy.force coq_Left2Right ;
