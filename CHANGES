@@ -1,3 +1,12 @@
+Changes from V7.2 to ????
+=========================
+
+Bugs
+
+- "Intros H" now working like "Intro H" trying first to reduce if not a product
+- Forward dependencies in Cases now taken into account
+
+
 Changes from V7.1 to V7.2
 =========================
 
