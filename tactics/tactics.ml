@@ -238,19 +238,20 @@ let unfold_constr c =
 let next_global_ident_from id avoid = 
   let rec next_rec id =
     let id = next_ident_away_from id avoid in
-    if not (Declare.is_global id) then 
+(*    if not (Declare.is_global id) then *)
       id
-    else  
+(*    else  
       next_rec (lift_ident id)
-  in 
+*)  in 
   next_rec id
 
 let next_global_ident_away id avoid =
   let id  = next_ident_away id avoid in
-  if not (Declare.is_global id) then 
+(*  if not (Declare.is_global id) then *)
     id
-  else  
+(*  else  
     next_global_ident_from (lift_ident id) avoid
+*)
 
 let fresh_id avoid id gl =
   next_global_ident_away id (avoid@(pf_ids_of_hyps gl))
