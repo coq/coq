@@ -95,6 +95,10 @@ let add_anonymous_entry node =
   add_entry sp node;
   sp
 
+let add_absolutely_named_lead sp obj =
+  cache_object (sp,obj);
+  add_entry sp (Leaf obj)
+
 let add_leaf id kind obj =
   let sp = make_path id kind in
   cache_object (sp,obj);

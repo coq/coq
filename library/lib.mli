@@ -34,6 +34,7 @@ and library_segment = library_entry list
   current list of operations (most recent ones coming first). *)
 
 val add_leaf : identifier -> path_kind -> obj -> section_path
+val add_absolutely_named_lead : section_path -> obj -> unit
 val add_anonymous_leaf : obj -> unit
 val add_frozen_state : unit -> unit
 

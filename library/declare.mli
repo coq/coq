@@ -52,6 +52,8 @@ type constant_declaration = constant_declaration_type * strength * opacity
    the full path of the declaration *)
 val declare_constant : identifier -> constant_declaration -> constant_path
 
+val redeclare_constant : constant_path -> constant_declaration -> unit
+
 val declare_parameter : identifier -> constr -> constant_path
 
 (* [declare_mind me] declares a block of inductive types with

@@ -164,7 +164,7 @@ type opacity = bool
 type discharge_operation = 
   | Variable of identifier * section_variable_entry * strength * bool * bool
   | Parameter of identifier * constr * bool
-  | Constant of identifier * recipe * strength * opacity * bool
+  | Constant of section_path * recipe * strength * opacity * bool
   | Inductive of mutual_inductive_entry * bool
   | Class of cl_typ * cl_info_typ
   | Struc of inductive_path * (unit -> struc_typ)
@@ -216,9 +216,10 @@ let process_object oldenv dir sec_sp
 	else
 *)
 	  let cb = Environ.lookup_constant sp oldenv in
-	  let spid = basename sp in
 	  let imp = is_implicit_constant sp in
-	  let newsp = recalc_sp dir sp in
+	  let newsp = match stre with
+	    | DischargeAt d when not (is_dirpath_prefix_of d dir) -> sp
+	    | _ -> recalc_sp dir sp in
 	  let mods = 
 	    let modl = build_abstract_list cb.const_hyps ids_to_discard in
 	    [ (sp, DO_ABSTRACT(newsp,modl)) ]
@@ -226,7 +227,7 @@ let process_object oldenv dir sec_sp
 	  let r = { d_from = cb;
 		    d_modlist = work_alist;
 		    d_abstract = ids_to_discard } in
-	  let op = Constant (spid,r,stre,cb.const_opaque,imp) in
+	  let op = Constant (newsp,r,stre,cb.const_opaque,imp) in
           (op :: ops, ids_to_discard, (mods@constl, indl, cstrl))
   
     | "INDUCTIVE" ->
@@ -287,11 +288,9 @@ let process_operation = function
   | Parameter (spid,typ,imp) ->
       let _ = with_implicits imp (declare_parameter spid) typ in
       constant_message spid
-  | Constant (spid,r,stre,opa,imp) ->
-      let _ =
-	with_implicits imp (declare_constant spid) (ConstantRecipe r,stre,opa)
-      in
-      constant_message spid
+  | Constant (sp,r,stre,opa,imp) ->
+      with_implicits imp (redeclare_constant sp) (ConstantRecipe r,stre,opa);
+      constant_message (basename sp)
   | Inductive (mie,imp) ->
       let _ = with_implicits imp declare_mind mie in
       inductive_message mie.mind_entry_inds

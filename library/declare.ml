@@ -172,7 +172,7 @@ let cache_constant (sp,(cdt,stre,op)) =
   Nametab.push sp (ConstRef sp);
   (match stre with
     (* Remark & Fact outside their scope aren't visible without qualif *)
-    | DischargeAt sp when not (is_dirpath_prefix_of sp (Lib.cwd ())) -> ()
+    | DischargeAt sp' when not (is_dirpath_prefix_of sp' (Lib.cwd ())) -> ()
     (* Theorem, Lemma & Definition are accessible from the base name *)
     | NeverDischarge| DischargeAt _ -> Nametab.push_short_name sp (ConstRef sp)
     | NotDeclare -> assert false);
@@ -218,6 +218,10 @@ let declare_constant id cd =
   let sp = add_leaf id CCI (in_constant cd) in
   if is_implicit_args() then declare_constant_implicits sp;
   sp
+
+let redeclare_constant sp cd =
+  add_absolutely_named_lead sp (in_constant cd);
+  if is_implicit_args() then declare_constant_implicits sp
 
 (* Inductives. *)
 
