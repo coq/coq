@@ -51,7 +51,7 @@ let engage () =
 let set_batch_mode () = batch_mode := true
 
 let toplevel_name = ref (make_dirpath [id_of_string "Top"])
-let set_toplevel_name id = toplevel_name := make_dirpath [id_of_string id]
+let set_toplevel_name dir = toplevel_name := dir
 
 let remove_top_ml () = Mltop.remove ()
 
@@ -168,7 +168,7 @@ let parse_args is_ide =
     | "-R" :: d :: p :: rem ->set_rec_include d (dirpath_of_string p);parse rem
     | "-R" :: ([] | [_]) -> usage ()
 
-    | "-top" :: d :: rem -> set_toplevel_name d; parse rem
+    | "-top" :: d :: rem -> set_toplevel_name (dirpath_of_string d); parse rem
     | "-top" :: [] -> usage ()
 
     | "-q" :: rem -> no_load_rc (); parse rem
