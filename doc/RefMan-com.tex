@@ -88,7 +88,7 @@ you move the \Coq\ binaries and library after installation.
 \index{Options of the command line}
 
 The following command-line options are recognized by the commands {\tt
-  coqc} and {\tt coqtop}:
+  coqc} and {\tt coqtop}, unless stated otherwise:
 
 \begin{description}
 \item[{\tt -byte}]\ 
@@ -110,20 +110,32 @@ The following command-line options are recognized by the commands {\tt
   logical {\dirpath} and adds {\em directory} and its subdirectories
   to the searched directories when looking for a file.
 
+\item[{\tt -top} {\dirpath}]\ 
+
+  This sets the toplevel module name to {\dirpath} instead of {\tt
+  Top}. Not valid for {\tt coqc}.
+
 \item[{\tt -is} {\em file}, {\tt -inputstate} {\em file}]\ 
 
   Cause \Coq~to use the state put in the file {\em file} as its input
   state. The default state is {\em initial.coq}.
   Mainly useful to build the standard input state.
 
+\item[{\tt -outputstate} {\em file}]\ 
+
+  Cause \Coq~to dump its state to file {\em file}.coq just after finishing
+  parsing and evaluating all the arguments from the command line.
+
 \item[{\tt -nois}]\ 
 
   Cause \Coq~to begin with an empty state. Mainly useful to build the
   standard input state.
 
-\item[{\tt -notactics}]\ 
-
-  Forbid the dynamic loading of tactics.
+%Obsolete?
+%
+%\item[{\tt -notactics}]\ 
+%
+%  Forbid the dynamic loading of tactics in the bytecode version of {\Coq}.
 
 \item[{\tt -init-file} {\em file}]\ 
 
@@ -146,9 +158,14 @@ The following command-line options are recognized by the commands {\tt
 
   Load the Caml object file {\em file}.
 
-\item[{\tt -load-vernac-source} {\em file}]\ 
+\item[{\tt -l} {\em file}, {\tt -load-vernac-source} {\em file}]\ 
 
   Load \Coq~file {\em file}{\tt .v}
+
+\item[{\tt -lv} {\em file}, {\tt -load-vernac-source-verbose} {\em file}]\ 
+
+  Load \Coq~file {\em file}{\tt .v} with 
+  a copy of the contents of the file on standard input.
 
 \item[{\tt -load-vernac-object} {\em file}]\ 
 
@@ -169,35 +186,40 @@ The following command-line options are recognized by the commands {\tt
   This option implies options {\tt -batch} and {\tt -silent}. It is
   only available for {\tt coqtop}.
 
-%\item[{\tt -compile-verbose} {\em file}]\ 
+\item[{\tt -compile-verbose} {\em file}]\ 
 
-%  This compiles file {\em file}{\tt .v} into {\em file}{\tt .vo} with
-%  a copy of the contents of the file on standard input.
-%  This option implies options {\tt -batch} and {\tt -silent}. It is
-%  only available for {\tt coqtop}.
+  This compiles file {\em file}{\tt .v} into {\em file}{\tt .vo} with
+  a copy of the contents of the file on standard input.
+  This option implies options {\tt -batch} and {\tt -silent}. It is
+  only available for {\tt coqtop}.
+
+\item[{\tt -verbose}]\ 
+
+  This option is only for {\tt coqc}. It tells to compile the file with
+  a copy of its contents on standard input.
 
 \item[{\tt -batch}]\ 
 
   Batch mode : exit just after arguments parsing. This option is only
   used by {\tt coqc}.
 
-\item[{\tt -debug}]\ 
-
-  Switch on the debug flag.
+%Mostly unused in the code
+%\item[{\tt -debug}]\ 
+%
+%  Switch on the debug flag.
 
 \item[{\tt -xml}]\ 
 
   This option is for use with {\tt coqc}. It tells \Coq\ to export on
   the standard output the content of the compiled file into XML format.
 
+\item[{\tt -quality}]
+
+  Improve the legibility of the proof terms produced by some tactics.
+
 \item[{\tt -emacs}]\ 
 
   Tells \Coq\ it is executed under Emacs.
-
-\item[{\tt -db}]\ 
-
-  Launch \Coq\ under the Objective Caml debugger (provided that \Coq\
-  has been compiled for debugging; see next chapter).
 
 \item[{\tt -impredicative-set}]\ 
 
@@ -206,6 +228,11 @@ The following command-line options are recognized by the commands {\tt
   some standard axioms of classical mathematics such as the functional
   axiom of choice or the principle of description
 
+\item[{\tt -dump-glob} {\em file}]\
+
+  This dumps references for global names in file {\em file}
+  (to be used by coqdoc, see~\ref{coqdoc})
+ 
 \item[{\tt -dont-load-proofs}]\ 
 
   This avoids loading in memory the proofs of opaque theorems
@@ -219,15 +246,9 @@ The following command-line options are recognized by the commands {\tt
 
 \item[{\tt -bindir} {\em directory}]\ 
 
-  Set the directory containing \Coq\ binaries.
+  Set for {\tt coqc} the directory containing \Coq\ binaries.
   It is equivalent to do \texttt{export COQBIN=}{\em directory}
-  before lauching \Coq.
-
-\item[{\tt -libdir} {\em file}]\ 
-
-  Set the directory containing \Coq\ libraries.
-  It is equivalent to do \texttt{export COQLIB=}{\em directory}
-  before lauching \Coq.
+  before lauching {\tt coqc}.
 
 \item[{\tt -where}]\ 
 
@@ -243,7 +264,7 @@ The following command-line options are recognized by the commands {\tt
 
 \end{description}
 
-% {\tt coqtop} owns an additional option:
+% {\tt coqtop} has an additional option:
 
 % \begin{description}
 % \item[{\tt -searchisos}]\ \\
