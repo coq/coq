@@ -772,7 +772,8 @@ and xlate_tactic =
    | TacAtom (_, t) -> xlate_tac t 
    | TacFail (n,"") -> CT_fail (CT_int n)
    | TacFail (n,s) -> xlate_error "TODO: Fail n message"
-   | TacId -> CT_idtac
+   | TacId "" -> CT_idtac
+   | TacId _ -> xlate_error "TODO: Idtac with argument"
    | TacInfo t -> CT_info(xlate_tactic t)
    | TacArg a -> xlate_call_or_tacarg a
 
@@ -1353,7 +1354,7 @@ let xlate_vernac =
       let formula_list = out_gen (wit_list1 (rawwit_constr)) formula_list in
       let base = out_gen rawwit_pre_ident base in
       let t = match t with
-	| [] -> TacId
+	| [] -> TacId ""
 	| [t] -> out_gen rawwit_tactic t
 	| _ -> failwith "" in
       let ct_orient = match orient with

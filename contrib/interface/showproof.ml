@@ -1263,7 +1263,7 @@ let rec natural_ntree ig ntree =
                                   tag_toprove g  ]
 			  ]
 
-      | Proof (TacId,ltree) -> natural_ntree ig (List.hd ltree)
+      | Proof (TacId _,ltree) -> natural_ntree ig (List.hd ltree)
       | Proof (TacAtom (_,tac),ltree) -> 
 	 (let ntext = 
 	  match tac with

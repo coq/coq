@@ -154,7 +154,7 @@ let make_pbp_pattern x =
      [make_var (id_of_string ("Value_for_" ^ (string_of_id x)))]
 
 let rec make_then = function
-  | [] -> TacId
+  | [] -> TacId ""
   | [t] -> t
   | t1::t2::l -> make_then (TacThen (t1,t2)::l)
 
