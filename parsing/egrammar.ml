@@ -16,6 +16,7 @@ open Topconstr
 open Ast
 open Genarg
 open Libnames
+open Nameops
 
 (* State of the grammar extensions *)
 
@@ -174,10 +175,6 @@ let subst_pat_id loc subst id =
 
 let subst_id subst id =
   try coerce_to_id (List.assoc id subst) with Not_found -> id
-
-let name_app f = function
-  | Name id -> Name (f id)
-  | Anonymous -> Anonymous
 
 (*
 let subst_cases_pattern_expr a loc subs =

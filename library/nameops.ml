@@ -146,6 +146,10 @@ let name_cons na l =
   | Anonymous -> l 
   | Name id -> id::l
 
+let name_app f = function
+  | Name id -> Name (f id)
+  | Anonymous -> Anonymous
+
 let next_name_away_with_default default name l = 
   match name with
     | Name str  -> next_ident_away str l
