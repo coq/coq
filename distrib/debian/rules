@@ -21,7 +21,7 @@ build-stamp:
 	dh_testdir
 
 	# Add here commands to compile the package.
-	$(MAKE) world
+	$(MAKE) world || (echo ERROR: trying to build in bytecode && echo "OPT=byte" >> config/Makefile && $(MAKE) world)
 	#/usr/bin/docbook-to-man debian/coq.sgml > coq.1
 
 	touch build-stamp
@@ -69,7 +69,7 @@ binary-arch: build install
 #	dh_undocumented
 	dh_installchangelogs CHANGES
 	dh_link
-	dh_strip
+#	dh_strip
 	dh_compress
 	dh_fixperms
 #	dh_makeshlibs

@@ -1,9 +1,8 @@
 Coq package for Debian
 ----------------------
 
-As an unusual thing, some files (*.out) in this package need to be left
-'unstripped' after compiling. The reason, as explained by the authors, is
-the following:
+Note that all bytecode files in this package need to be left
+'unstripped' after compiling. The reason is the following:
 
   It is possible to strip the .out corresponding to ocaml code compiled in
   native code (and it is done in Coq (coqopt.out) When compiling in
@@ -14,3 +13,17 @@ the following:
   program which is stored in the symbol table zone...  stripping such an
   executable, just remove your byte-code and consequentely cannot run
   properly.
+
+Moreover the bytecode version is installed even on platforms having a
+native version as the dynamic loading of tactics works only with the
+bytecode version.
+
+For interactive use of coqtop, we suggest
+- either the Debian cle package
+- or the Proof-General (x)emacs mode, which unfortunately can not be
+distributed by Debian for copyright reasons. However, a Debian package
+might become available at proof general home page in the future
+(http://zermelo.dcs.ed.ac.uk/~proofgen)
+
+
+
