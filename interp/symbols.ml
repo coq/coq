@@ -373,7 +373,7 @@ let subst_arguments_scope (_,subst,(r,scl)) = (subst_global subst r,scl)
 let (inArgumentsScope,outArgumentsScope) = 
   declare_object {(default_object "ARGUMENTS-SCOPE") with
       cache_function = cache_arguments_scope;
-      load_function = (fun i o -> if i=1 then cache_arguments_scope o);
+      load_function = (fun _ o -> cache_arguments_scope o);
       subst_function = subst_arguments_scope;
       classify_function = (fun (_,o) -> Substitute o);
       export_function = (fun x -> Some x) }
