@@ -107,9 +107,9 @@ let explain_actual_type k ctx c ct pt =
   let pct = prterm_env ctx ct in
   let pt = prterm_env ctx pt in
   [< pe; 'fNL;
-     'sTR"The term"; 'bRK(1,1); pc ; 'sPC ;
-     'sTR"does not have type"; 'bRK(1,1); pt; 'fNL;
-     'sTR"Actually, it has type" ; 'bRK(1,1); pct >]
+     'sTR "The term"; 'bRK(1,1); pc ; 'sPC ;
+     'sTR "has type" ; 'bRK(1,1); pct; 'bRK(1,1); 
+     'sTR "while it is expected to have type"; 'bRK(1,1); pt >]
 
 let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
   let ctx = make_all_name_different ctx in
@@ -147,7 +147,7 @@ let explain_cant_apply_not_functional k ctx rator randl =
 		  hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl
   in
   [< 'sTR"Illegal application (Non-functional construction): "; (* pe; *) 'fNL;
-     'sTR"The term"; 'bRK(1,1); pr; 'sPC;
+     'sTR"The expression"; 'bRK(1,1); pr; 'sPC;
      'sTR"of type"; 'bRK(1,1); prt; 'sPC ;
      'sTR("cannot be applied to the "^term_string); 'fNL; 
      'sTR" "; v 0 appl; 'fNL >]
