@@ -7,39 +7,18 @@ open Constr
 GEXTEND Gram
   GLOBAL : constr1 pattern;
 
-(*
-  pattern_list:
-    [ [  -> []
-      | p = pattern; pl = pattern_list -> p :: pl ] ]
-  ;
-  lsimple_pattern:
-    [ [ c = simple_pattern2 -> c ] ]
-  ;
-*)
   pattern:
     [ [ id = ident -> id
-      | "("; p = lsimple_pattern; ")" -> p ] ]
+      | "("; p = compound_pattern; ")" -> p ] ]
   ;
-(*
-  simple_pattern_list:
-    [ [  -> []
-      | p = simple_pattern; pl = simple_pattern_list ->
-	   p :: pl ] ]
+  compound_pattern:
+    [ [ p = pattern ; lp = ne_pattern_list ->
+	  <:ast< (PATTCONSTRUCT $p ($LIST $lp)) >>
+      | p = pattern; "as"; id = ident ->
+	  <:ast< (PATTAS $id $p)>>
+      | p1 = pattern; ","; p2 = pattern ->
+          <:ast< (PATTCONSTRUCT pair $p1 $p2) >> ] ]
   ;
-*)
-  lsimple_pattern:
-    [ [ id = ident; lp = ne_pattern_list ->
-	  <:ast< (PATTCONSTRUCT $id ($LIST $lp)) >>
-      | p = lsimple_pattern; "as"; id = ident -> <:ast< (PATTAS $id $p)>>
-      | c1 = lsimple_pattern; ","; c2 = lsimple_pattern ->
-          <:ast< (PATTCONSTRUCT pair $c1 $c2) >>
-      | "("; p = lsimple_pattern; ")" -> p ] ]
-  ;
-(*
-  pattern:
-    [ [ p = simple_pattern -> p ] ]
-  ;
-*)
   ne_pattern_list:
     [ [ c1 = pattern; cl = ne_pattern_list -> c1 :: cl
       | c1 = pattern -> [c1] ] ]
