@@ -113,8 +113,9 @@ parsing/printer.cmi: kernel/environ.cmi library/libnames.cmi kernel/names.cmi \
 parsing/printmod.cmi: kernel/names.cmi lib/pp.cmi 
 parsing/search.cmi: kernel/environ.cmi library/libnames.cmi kernel/names.cmi \
     library/nametab.cmi pretyping/pattern.cmi lib/pp.cmi kernel/term.cmi 
-parsing/symbols.cmi: lib/bignat.cmi library/libnames.cmi kernel/names.cmi \
-    library/nametab.cmi pretyping/rawterm.cmi lib/util.cmi 
+parsing/symbols.cmi: lib/bignat.cmi parsing/extend.cmi library/libnames.cmi \
+    kernel/names.cmi library/nametab.cmi lib/pp.cmi pretyping/rawterm.cmi \
+    lib/util.cmi 
 parsing/termast.cmi: parsing/coqast.cmi kernel/environ.cmi \
     library/libnames.cmi kernel/names.cmi library/nametab.cmi \
     pretyping/pattern.cmi pretyping/rawterm.cmi kernel/sign.cmi \
@@ -916,14 +917,16 @@ parsing/search.cmx: parsing/astterm.cmx parsing/coqast.cmx parsing/coqlib.cmx \
     pretyping/pattern.cmx lib/pp.cmx pretyping/pretyping.cmx \
     parsing/printer.cmx pretyping/rawterm.cmx pretyping/retyping.cmx \
     kernel/term.cmx pretyping/typing.cmx lib/util.cmx parsing/search.cmi 
-parsing/symbols.cmo: lib/bignat.cmi parsing/coqast.cmi library/lib.cmi \
-    library/libnames.cmi library/libobject.cmi kernel/names.cmi \
-    library/nametab.cmi lib/options.cmi lib/pp.cmi pretyping/rawterm.cmi \
-    library/summary.cmi lib/util.cmi parsing/symbols.cmi 
-parsing/symbols.cmx: lib/bignat.cmx parsing/coqast.cmx library/lib.cmx \
-    library/libnames.cmx library/libobject.cmx kernel/names.cmx \
-    library/nametab.cmx lib/options.cmx lib/pp.cmx pretyping/rawterm.cmx \
-    library/summary.cmx lib/util.cmx parsing/symbols.cmi 
+parsing/symbols.cmo: lib/bignat.cmi parsing/coqast.cmi parsing/extend.cmi \
+    library/lib.cmi library/libnames.cmi library/libobject.cmi \
+    kernel/names.cmi library/nametab.cmi lib/options.cmi lib/pp.cmi \
+    pretyping/rawterm.cmi library/summary.cmi lib/util.cmi \
+    parsing/symbols.cmi 
+parsing/symbols.cmx: lib/bignat.cmx parsing/coqast.cmx parsing/extend.cmx \
+    library/lib.cmx library/libnames.cmx library/libobject.cmx \
+    kernel/names.cmx library/nametab.cmx lib/options.cmx lib/pp.cmx \
+    pretyping/rawterm.cmx library/summary.cmx lib/util.cmx \
+    parsing/symbols.cmi 
 parsing/tacextend.cmo: parsing/ast.cmi parsing/genarg.cmi parsing/pcoq.cmi \
     lib/pp.cmi lib/pp_control.cmi parsing/q_coqast.cmo parsing/q_util.cmi \
     lib/util.cmi toplevel/vernacexpr.cmo 
