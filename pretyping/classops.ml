@@ -138,9 +138,17 @@ let coe_of_reference = function
   | EvarRef _ -> raise Not_found
   | x -> x
 
-let hide_coercion r =
-  let _,coe_info = coercion_info (coe_of_reference r) in
-  if coe_info.coe_hide then None else Some coe_info.coe_param
+let hide_coercion coe =
+  let _,coe_info = coercion_info coe in
+  if coe_info.coe_hide then Some coe_info.coe_param else None
+
+let set_coercion_visibility b coe =
+  let _,coe_info = coercion_info coe in
+  coe_info.coe_hide <- not b
+
+let is_coercion_visible coe = 
+  let _,coe_info = coercion_info coe in
+  not coe_info.coe_hide
 
 let coercion_params coe_info = coe_info.coe_param
 

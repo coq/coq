@@ -155,11 +155,13 @@ let rec skip_coercion dest_ref (f,args as app) =
     try
       match dest_ref f with
 	| Some r ->
-	    let n = Classops.coercion_params r in
-	    if n >= List.length args then app
-	    else (* We skip a coercion *)
-	      let _,fargs = list_chop n args in
-	      skip_coercion dest_ref (List.hd fargs,List.tl fargs)
+	    (match Classops.hide_coercion r with
+	       | Some n ->
+		   if n >= List.length args then app
+		   else (* We skip a coercion *)
+		     let _,fargs = list_chop n args in
+	       	     skip_coercion dest_ref (List.hd fargs,List.tl fargs)
+	       | None -> app)
 	| None -> app
     with Not_found -> app
 

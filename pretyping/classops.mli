@@ -2,16 +2,14 @@
 (*i $Id$ i*)
 
 (*i*)
-open Pp
 open Names
 open Term
 open Evd
 open Environ
-open Libobject
 open Declare
-open Rawterm
 (*i*)
 
+(*s This is the type of class kinds *)
 type cl_typ = 
   | CL_SORT 
   | CL_FUN 
@@ -19,64 +17,91 @@ type cl_typ =
   | CL_CONST of constant_path
   | CL_IND of inductive_path
 
+(* This is the type of infos for declared classes *)
 type cl_info_typ = {
-  cL_STRE : strength;
-  cL_PARAM : int }
+  cl_strength : strength;
+  cl_param : int }
 
-type cte_typ = 
-  | NAM_Section_Variable of variable_path
-  | NAM_Constant of constant_path
-  | NAM_Inductive of inductive_path
-  | NAM_Constructor of constructor_path
+(* This is the type of coercion kinds *)
+type coe_typ = global_reference
 
-type coe_typ = cte_typ
+(* This is the type of infos for declared coercions *)
+type coe_info_typ 
 
+(* [cl_index] is the type of class keys *)
+type cl_index
 
-type coe_info_typ = {
-  cOE_VALUE : unsafe_judgment;
-  cOE_STRE : strength;
-  cOE_ISID : bool;
-  cOE_PARAM : int }
+(* [coe_index] is the type of coercion keys *)
+type coe_index
 
-type inheritance_path = int list
+(* This is the type of paths from a class to another *)
+type inheritance_path = coe_index list
 
-val inheritance_graph : unit -> ((int * int) * inheritance_path) list
-val classes : unit -> (int * (cl_typ * cl_info_typ)) list
-val coercions : unit -> (int * (coe_typ * coe_info_typ)) list
+val cte_of_constr : constr -> global_reference
+val coe_of_reference : global_reference -> coe_typ
 
-val cte_of_constr : constr -> cte_typ
-val class_info : cl_typ -> (int * cl_info_typ)
+(*s [declare_class] adds a class to the set of declared classes *)
+val declare_class : cl_typ * strength * int -> unit
+
+(*s Access to classes infos *)
+val class_info : cl_typ -> (cl_index * cl_info_typ)
 val class_exists : cl_typ -> bool
-val class_info_from_index : int -> cl_typ * cl_info_typ
-val coercion_exists : coe_typ -> bool
-val coercion_info : coe_typ -> (int * coe_info_typ)
-val coercion_info_from_index : int -> coe_typ * coe_info_typ
+val class_info_from_index : cl_index -> cl_typ * cl_info_typ
 
-(* [coercion_params] raises [Not_found] if not a coercion *)
-val coercion_params : global_reference -> int
-
+(* [constructor_at_head c] returns the head reference of c and its
+   number of arguments *)
 val constructor_at_head : constr -> cl_typ * int
 
 (* raises [Not_found] if not convertible to a class *)
-val class_of : env -> 'c evar_map -> constr -> constr * int
+val class_of : env -> 'c evar_map -> constr -> constr * cl_index
 
 val class_args_of : constr -> constr list
-val inClass : (cl_typ * cl_info_typ) -> obj
-val outClass : obj -> (cl_typ * cl_info_typ)
-val inCoercion : (coe_typ * coe_info_typ) * cl_typ * cl_typ -> obj
-val outCoercion : obj -> (coe_typ * coe_info_typ) * cl_typ * cl_typ
-val lookup_path_between : (int * int) -> inheritance_path
-val lookup_path_to_fun_from : int -> inheritance_path
-val lookup_path_to_sort_from : int -> inheritance_path
-val coe_value : int -> (unsafe_judgment * bool)
-val stre_of_cl : cl_typ -> strength
-val add_new_class : cl_typ * strength * int -> unit
-val add_new_coercion_in_graph : 
-  (coe_typ * coe_info_typ) * cl_typ * cl_typ -> unit
-val add_coercion_in_graph : int * int * int -> unit
 
+val strength_of_cl : cl_typ -> strength
+
+(*s [declare_coercion] adds a coercion in the graph of coercion paths *)
+val declare_coercion : 
+  coe_typ -> value:unsafe_judgment -> strength:strength -> isid:bool ->
+      src:cl_typ -> target:cl_typ -> params:int -> unit
+
+(*s Access to coercions infos *)
+val coercion_exists : coe_typ -> bool
+val coercion_info_from_index : coe_index -> coe_typ * coe_info_typ
+
+val coercion_value : coe_index -> (unsafe_judgment * bool)
+
+(*s This is for printing purpose *)
+
+(* [hide_coercion] returns the number of params to skip if the coercion must
+   be hidden, [None] otherwise; it raises [Not_found] if not a coercion *)
+val hide_coercion : coe_typ -> int option
+
+val set_coercion_visibility : bool -> coe_typ -> unit
+val is_coercion_visible : coe_typ -> bool
+
+(*s Lookup functions for coercion paths *)
+val lookup_path_between : (cl_index * cl_index) -> inheritance_path
+val lookup_path_to_fun_from : cl_index -> inheritance_path
+val lookup_path_to_sort_from : cl_index -> inheritance_path
+
+(*i Pour le discharge *)
+open Libobject
+val inClass : (cl_typ * cl_info_typ) -> Libobject.obj
+val outClass : Libobject.obj -> (cl_typ * cl_info_typ)
+val inCoercion : (coe_typ * coe_info_typ) * cl_typ * cl_typ -> Libobject.obj
+val outCoercion : Libobject.obj -> (coe_typ * coe_info_typ) * cl_typ * cl_typ
+val coercion_strength : coe_info_typ -> strength
+(*i*)
+
+(*i Crade *)
+open Pp
 val install_path_printer : 
-  ((int * int) * inheritance_path -> std_ppcmds) -> unit
+  ((cl_index * cl_index) * inheritance_path -> std_ppcmds) -> unit
+(*i*)
 
 (* This is for printing purpose *)
 val string_of_class : cl_typ -> string
+val get_coercion_value : coe_info_typ -> constr
+val inheritance_graph : unit -> ((cl_index * cl_index) * inheritance_path) list
+val classes : unit -> (int * (cl_typ * cl_info_typ)) list
+val coercions : unit -> (int * (coe_typ * coe_info_typ)) list

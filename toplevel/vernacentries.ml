@@ -472,29 +472,77 @@ let _ =
 		message "Implicit arguments mode is unset")
        | _  -> bad_vernac_args "IMPLICIT_ARGS_OFF")
 
-let _ =          
+let coercion_of_qualid loc qid =
+  let ref = global loc qid in
+  let coe = Classops.coe_of_reference ref in
+  if not (Classops.coercion_exists coe) then
+    errorlabstrm "try_add_coercion" 
+      [< Printer.pr_global ref; 'sTR" is not a coercion" >];
+  coe
+
+let _ =
   add "PRINTING_COERCIONS_ON"
     (function 
        | [] -> (fun () -> Termast.print_coercions := true)
-       | _  -> bad_vernac_args "PRINTING_COERCIONS_ON")
+       | l ->
+	   let ql =
+	     List.map 
+	       (function
+		  | VARG_QUALID qid -> qid
+		  | _ ->  bad_vernac_args "PRINTING_COERCIONS_ON") l in
+	   (fun () ->
+	      List.iter
+		(fun qid ->
+		   Classops.set_coercion_visibility true
+		     (coercion_of_qualid dummy_loc qid))
+		ql))
 
 let _ =
   add "PRINTING_COERCIONS_OFF"
     (function 
        | [] -> (fun () -> Termast.print_coercions := false)
-       | _  -> bad_vernac_args "PRINTING_COERCIONS_OFF")
+       | l -> 
+	   let ql =
+	     List.map 
+	       (function
+		  | VARG_QUALID qid -> qid
+		  | _ ->  bad_vernac_args "PRINTING_COERCIONS_OFF") l in
+	   (fun () ->
+	      List.iter
+		(fun qid ->
+		   Classops.set_coercion_visibility false 
+		     (coercion_of_qualid dummy_loc qid))
+		ql))
 
 let _ =
   add "TEST_PRINTING_COERCIONS"
     (function 
        | [] ->
-	   (fun () ->
-	      if !(Termast.print_coercions) = true then
+           (fun () ->
+              if !(Termast.print_coercions) = true then
 		message "Printing of coercions is set"
-	      else 
+              else 
 		message "Printing of coercions is unset")
-       | _  -> bad_vernac_args "TEST_PRINTING_COERCIONS")
-
+       | l -> 
+	   let ql =
+	     List.map 
+	       (function
+		  | VARG_QUALID qid -> qid
+		  | _  -> bad_vernac_args "TEST_PRINTING_COERCIONS") l in
+	   (fun () ->
+              List.iter
+		(fun qid ->
+		   let coe = coercion_of_qualid dummy_loc qid in
+	           if Classops.is_coercion_visible coe then
+		     message
+		       ("Printing of coercion "^(string_of_qualid qid)^
+			" is set")
+		   else 
+		     message 
+		       ("Printing of coercion "^(string_of_qualid qid)^
+			" is unset"))
+		ql))
+    
 let number_list = 
   List.map (function VARG_NUMBER n -> n | _ -> bad_vernac_args "Number list") 
 
