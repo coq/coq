@@ -160,7 +160,7 @@ Syntax tactic
 
   | cut [(Cut $C)] -> ["Cut " $C]
   | lettac [(LetTac $id $c (LETPATTERNS ($LIST $pl)))] -> 
-	["Let" [1 1] $id ":=" $c [1 1] "in" [1 1] (LETPATTERNS ($LIST $pl))]
+	["LetTac" [1 1] $id ":=" $c [1 1] "in" [1 1] (LETPATTERNS ($LIST $pl))]
 
   | left [(Left $b)] -> ["Left" (WITHBINDING $b)]
   | right [(Right $b)] -> [ "Right" (WITHBINDING $b)]
