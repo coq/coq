@@ -51,7 +51,7 @@ Syntax constr
    deal with the duality CCI/FW) *)
 
   | evar [ ? ] -> ["?"]
-  | meta [ << (META ($NUM $n)) >> ] -> [ "?" $n ]
+  | meta [ << (META $n) >> ] -> [ "?" $n ]
   | implicit [ << (IMPLICIT) >> ] -> ["<Implicit>"]
   | indice [ << (REL ($NUM $n)) >> ] -> ["<Unbound ref: " $n ">"]
   | instantiation [ << (INSTANCE $a ($LIST $l)) >> ] ->
