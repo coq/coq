@@ -78,18 +78,23 @@ let rec general_decompose recognizer c gl =
          (onLastHyp (general_decompose_clause recognizer)));
       (exact c)]) gl
 
+let up_to_delta = ref false
+
 let head_in gls indl t =
   try
-    let ity = fst (find_mrectype (pf_env gls) (project gls) t) in
-    List.mem ity indl
+    let ity,_ =
+      if !up_to_delta
+      then find_mrectype (pf_env gls) (project gls) t
+      else extract_mrectype (pf_env gls) (project gls) t
+    in List.mem ity indl
   with Induc -> false
        
 let inductive_of_ident gls id =
-  try 
-    fst (find_mrectype (pf_env gls) (project gls) (pf_global gls id))
-  with Induc ->
-    errorlabstrm "Decompose" 
-      [< print_id id; 'sTR " is not an inductive type" >]
+  match kind_of_term (pf_global gls id) with
+    | IsMutInd ity -> ity
+    | _ ->
+	errorlabstrm "Decompose"
+	  [< print_id id; 'sTR " is not an inductive type" >]
 
 let decompose_these c l gls =
   let indl = List.map (inductive_of_ident gls) l in 
