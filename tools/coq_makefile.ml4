@@ -21,7 +21,7 @@ type target =
 
 let output_channel = ref stdout
 let makefile_name = ref "Makefile"
-let make_name = ref "Make"
+let make_name = ref ""
 
 let some_file = ref false
 let some_vfile = ref false
@@ -107,10 +107,12 @@ let standard sds =
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) install)\n")
     sds;
   print "\n";
-  printf "%s: %s\n" !makefile_name !make_name;
-  printf "\tmv -f %s %s.bak\n" !makefile_name !makefile_name;
-  printf "\t$(COQBIN)coq_makefile -f %s -o %s\n" !make_name !makefile_name;
-  print "\n";
+  if !make_name <> "" then begin
+    printf "%s: %s\n" !makefile_name !make_name;
+    printf "\tmv -f %s %s.bak\n" !makefile_name !makefile_name;
+    printf "\t$(COQBIN)coq_makefile -f %s -o %s\n" !make_name !makefile_name;
+    print "\n";
+  end;
   print "clean:\n";
   print "\trm -f *.cmo *.cmi *.cmx *.o *.vo *.vi *.g *~\n";
   print "\trm -f all.ps all-gal.ps $(HTMLFILES) $(GHTMLFILES)\n";
