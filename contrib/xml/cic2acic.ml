@@ -124,8 +124,8 @@ let acic_of_cic_context' computeinnertypes seed ids_to_terms constr_to_ids
    let terms_to_types =
     D.double_type_of env evar_map t expectedty
    in
-    let rec aux computeinnertypes father passed_lambdas_or_prods env
-     ?(subst=[]) tt
+    let rec aux computeinnertypes father passed_lambdas_or_prods_or_letins env
+     ?(subst=None,[]) tt
     =
      let fresh_id'' = fresh_id' father tt in
      let aux' = aux computeinnertypes (Some fresh_id'') [] in
@@ -213,7 +213,7 @@ print_endline "PASSATO" ; flush stdout ;
               if innersort = "Prop"  && expected_available then
                add_inner_type fresh_id'' ;
               A.AVar
-               (fresh_id'', subst, path ^ "/" ^ (N.string_of_id id) ^ ".var")
+               (fresh_id'', path ^ "/" ^ (N.string_of_id id) ^ ".var")
           | T.Evar (n,l) ->
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
              if innersort = "Prop"  && expected_available then
@@ -242,7 +242,9 @@ print_endline "PASSATO" ; flush stdout ;
                      | _ -> false
                in
                 (fresh_id'', n, aux' env s)::
-                 (if father_is_prod then passed_lambdas_or_prods else [])
+                 (if father_is_prod then
+                   passed_lambdas_or_prods_or_letins
+                  else [])
               in
                let new_env = E.push_rel (N.Name n', None, s) env in
                 (match Term.kind_of_term t with
@@ -268,7 +270,9 @@ print_endline "PASSATO" ; flush stdout ;
                then add_inner_type fresh_id'' ;
                let new_passed_lambdas =
                 (fresh_id'',n, aux' env s)::
-                 (if father_is_lambda then passed_lambdas_or_prods else []) in
+                 (if father_is_lambda then
+                   passed_lambdas_or_prods_or_letins
+                  else []) in
                let new_env = E.push_rel (N.Name n', None, s) env in
                 (match Term.kind_of_term t with
                     T.Lambda _ ->
@@ -278,11 +282,29 @@ print_endline "PASSATO" ; flush stdout ;
           | T.LetIn (n,s,t,d) ->
              let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-              if innersort = "Prop" then
-               add_inner_type fresh_id'' ;
-              A.ALetIn
-               (fresh_id'', n, aux' env s,
-                aux' (E.push_rel (N.Name n', Some s, t) env) d)
+              let father_is_letin =
+               match father with
+                  None -> false
+                | Some father' ->
+                   match
+                    Term.kind_of_term (Hashtbl.find ids_to_terms father')
+                   with
+                      T.LetIn _ -> true
+                    | _ -> false
+              in
+               if innersort = "Prop" then
+                add_inner_type fresh_id'' ;
+               let new_passed_letins =
+                (fresh_id'',n, aux' env s)::
+                 (if father_is_letin then
+                   passed_lambdas_or_prods_or_letins
+                  else []) in
+               let new_env = E.push_rel (N.Name n', Some s, t) env in
+                (match Term.kind_of_term d with
+                    T.LetIn _ ->
+                     aux computeinnertypes (Some fresh_id'') new_passed_letins
+                      new_env d
+                  | _ -> A.ALetIns (new_passed_letins, aux' new_env d))
           | T.App (h,t) ->
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
              if innersort = "Prop" then
@@ -325,10 +347,16 @@ print_endline "PASSATO" ; flush stdout ;
               in
                get_explicit_subst variables t'
              in
-              let h' = aux' env ~subst h in
+              let residual_args_not_empty = List.length residual_args > 0 in
+              let h' =
+               if residual_args_not_empty then
+                aux' env ~subst:(None,subst) h
+               else
+                aux' env ~subst:(Some fresh_id'',subst) h
+              in
                (* maybe all the arguments were used for the explicit *)
                (* named substitution                                 *)
-               if List.length residual_args > 0 then
+               if residual_args_not_empty then
                 A.AApp (fresh_id'', h'::residual_args)
                else
                 h'
@@ -414,7 +442,10 @@ let acic_object_of_cic_object pvars sigma obj =
   let acic_term_of_cic_term_context' =
    acic_of_cic_context' true seed ids_to_terms constr_to_ids ids_to_father_ids
     ids_to_inner_sorts ids_to_inner_types pvars in
-(*CSC: is this the right env to use? I think so *)
+(*CSC: is this the right env to use? Hhmmm. There is a problem: in    *)
+(*CSC: Global.env () the object we are exporting is already defined,  *)
+(*CSC: either in the environment or in the named context (in the case *)
+(*CSC: of variables. Is this a problem?                               *)
   let env = Global.env () in
   let acic_term_of_cic_term' = acic_term_of_cic_term_context' env sigma in
 (*CSC: the fresh_id is not stored anywhere. This _MUST_ be fixed using *)
@@ -426,13 +457,14 @@ let acic_object_of_cic_object pvars sigma obj =
   in
    let aobj =
     match obj with
-      A.Definition (id,bo,ty,params) ->
-       let abo = acic_term_of_cic_term' bo (Some ty) in
+      A.Constant (id,bo,ty,params) ->
+       let abo =
+        match bo with
+           None -> None
+         | Some bo' -> Some (acic_term_of_cic_term' bo' (Some ty))
+       in
        let aty = acic_term_of_cic_term' ty None in
-        A.ADefinition (fresh_id (),id,abo,aty,params)
-    | A.Axiom (id,ty,params) ->
-       let aty = acic_term_of_cic_term' ty None in
-        A.AAxiom (fresh_id (),id,aty,params)
+        A.AConstant (fresh_id (),id,abo,aty,params)
     | A.Variable (id,bo,ty) ->
        let abo =
         match bo with

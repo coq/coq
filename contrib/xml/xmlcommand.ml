@@ -303,7 +303,7 @@ let mk_current_proof_obj id bo ty evar_map env =
     (* Variables are the identifiers of the variables in scope *)
     let variables = search_variables (Names.repr_dirpath (Lib.cwd ())) in
     let params = filter_params variables hyps in
-     Acic.Definition (id',bo,unshared_ty,params)
+     Acic.Constant (id',Some bo,unshared_ty,params)
    else
     Acic.CurrentProof (id',metasenv,bo,unshared_ty)
 ;;
@@ -313,8 +313,10 @@ let mk_constant_obj id bo ty variables hyps =
  let ty = Term.unshare (Term.body_of_type ty) in
  let params = filter_params variables hyps in
   match bo with
-     None -> Acic.Axiom (Names.string_of_id id,ty,params)
-   | Some c -> Acic.Definition (Names.string_of_id id,Term.unshare c,ty,params)
+     None ->
+      Acic.Constant (Names.string_of_id id,None,ty,params)
+   | Some c ->
+      Acic.Constant (Names.string_of_id id,Some (Term.unshare c),ty,params)
 ;;
 
 let mk_inductive_obj packs variables hyps finite =

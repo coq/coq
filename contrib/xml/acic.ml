@@ -30,11 +30,9 @@ type metasenv = conjecture list
 type params = (string * uri list) list
 
 type obj =
-   Definition of string *                          (* id,           *)
-    constr * constr *                              (*  value, type, *)
+   Constant of string *                            (* id,           *)
+    constr option * constr *                       (*  value, type, *)
     params                                         (*  parameters   *)
- | Axiom of string * constr *                      (* id, type    *)
-    params                                         (*  parameters *)
  | Variable of
     string * constr option * constr                (* name, body, type *)
  | CurrentProof of
@@ -51,13 +49,13 @@ and constructor =
 
 type aconstr =
   | ARel       of id * int * identifier
-  | AVar       of id * explicit_named_substitution * uri
+  | AVar       of id * uri
   | AEvar      of id * int * aconstr list
   | ASort      of id * sorts
   | ACast      of id * aconstr * aconstr
   | AProds     of (id * name * aconstr) list * aconstr
   | ALambdas   of (id * name * aconstr) list * aconstr
-  | ALetIn     of id * name * aconstr * aconstr
+  | ALetIns    of (id * name * aconstr) list * aconstr
   | AApp       of id * aconstr list
   | AConst     of id * explicit_named_substitution * uri
   | AInd       of id * explicit_named_substitution * uri * int
@@ -69,18 +67,16 @@ and ainductivefun =
  identifier * int * aconstr * aconstr
 and acoinductivefun = 
  identifier * aconstr * aconstr
-and explicit_named_substitution = (uri * aconstr) list
+and explicit_named_substitution = id option * (uri * aconstr) list
 
 type acontext = (id * aconstr hypothesis) list
 type aconjecture = id * int * acontext * aconstr
 type ametasenv = aconjecture list
 
 type aobj =
-   ADefinition of id * string *                    (* id,           *)
-    aconstr * aconstr *                            (*  value, type, *)
+   AConstant of id * string *                      (* id,           *)
+    aconstr option * aconstr *                     (*  value, type, *)
     params                                         (*  parameters   *)
- | AAxiom of id * string * aconstr *               (* id, type    *)
-    params                                         (*  parameters *)
  | AVariable of id *
     string * aconstr option * aconstr              (* name, body, type *)
  | ACurrentProof of id *

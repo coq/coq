@@ -30,6 +30,13 @@ exception NotImplemented;;
 let dtdname = "http://localhost:8081/getdtd?url=cic.dtd";;
 let typesdtdname = "http://localhost:8081/getdtd?url=cictypes.dtd";;
 
+let rec find_last_id =
+ function
+    [] -> Util.anomaly "find_last_id: empty list"
+  | [id,_,_] -> id
+  | _::tl -> find_last_id tl
+;;
+
 let print_term ids_to_inner_sorts =
  let rec aux =
   let module A = Acic in
@@ -41,13 +48,9 @@ let print_term ids_to_inner_sorts =
          X.xml_empty "REL"
           ["value",(string_of_int n) ; "binder",(N.string_of_id b) ;
            "id",id ; "sort",sort]
-     | A.AVar (id,subst,uri) ->
+     | A.AVar (id,uri) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
-        let attrs = ["relUri", uri ; "id",id ; "sort",sort] in
-         if subst = [] then
-          X.xml_empty "VAR" attrs
-         else
-          X.xml_nempty "VAR" attrs (aux_subst subst)
+         X.xml_empty "VAR" ["relUri", uri ; "id",id ; "sort",sort]
      | A.AEvar (id,n,l) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
          X.xml_nempty "META" ["no",(string_of_int n) ; "id",id ; "sort",sort]
@@ -64,20 +67,22 @@ let print_term ids_to_inner_sorts =
         in
          X.xml_empty "SORT" ["value",string_of_sort ; "id",id]
      | A.AProds (prods,t) ->
-        X.xml_nempty "PRODS" []
-         [< List.fold_left
-             (fun i (id,binder,s) ->
-               let sort = Hashtbl.find ids_to_inner_sorts id in
-               let attrs =
-                ("id",id)::("sort",sort)::
-                match binder with
-                   Names.Anonymous -> []
-                 | Names.Name b -> ["binder",Names.string_of_id b]
-               in
-                [< X.xml_nempty "prod" attrs (aux s) ; i >]
-             ) [< >] prods ;
-            X.xml_nempty "target" [] (aux t)
-         >]
+        let last_id = find_last_id prods in
+        let sort = Hashtbl.find ids_to_inner_sorts last_id in
+         X.xml_nempty "PROD" ["type",sort]
+          [< List.fold_left
+              (fun i (id,binder,s) ->
+                let sort = Hashtbl.find ids_to_inner_sorts id in
+                let attrs =
+                 ("id",id)::("sort",sort)::
+                 match binder with
+                    Names.Anonymous -> []
+                  | Names.Name b -> ["name",Names.string_of_id b]
+                in
+                 [< X.xml_nempty "binder" attrs (aux s) ; i >]
+              ) [< >] prods ;
+             X.xml_nempty "target" [] (aux t)
+          >]
      | A.ACast (id,v,t) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
          X.xml_nempty "CAST" ["id",id ; "sort",sort]
@@ -85,27 +90,38 @@ let print_term ids_to_inner_sorts =
              X.xml_nempty "type" [] (aux t)
           >]
      | A.ALambdas (lambdas,t) ->
-        X.xml_nempty "LAMBDAS" []
-         [< List.fold_left
-             (fun i (id,binder,s) ->
-               let sort = Hashtbl.find ids_to_inner_sorts id in
-               let attrs =
-                ("id",id)::("sort",sort)::
-                match binder with
-                   Names.Anonymous -> []
-                 | Names.Name b -> ["binder",Names.string_of_id b]
-               in
-                [< X.xml_nempty "lambda" attrs (aux s) ; i >]
-             ) [< >] lambdas ;
-            X.xml_nempty "target" [] (aux t)
-         >]
-     | A.ALetIn (xid,Names.Anonymous,s,t) ->
-       assert false
-     | A.ALetIn (xid,Names.Name id,s,t) ->
-        let sort = Hashtbl.find ids_to_inner_sorts xid in
-         X.xml_nempty "LETIN" ["id",xid ; "sort",sort]
-          [< X.xml_nempty "term" [] (aux s) ;
-             X.xml_nempty "letintarget" ["binder",Names.string_of_id id] (aux t)
+        let last_id = find_last_id lambdas in
+        let sort = Hashtbl.find ids_to_inner_sorts last_id in
+         X.xml_nempty "LAMBDA" ["sort",sort]
+          [< List.fold_left
+              (fun i (id,binder,s) ->
+                let sort = Hashtbl.find ids_to_inner_sorts id in
+                let attrs =
+                 ("id",id)::("sort",sort)::
+                 match binder with
+                    Names.Anonymous -> []
+                  | Names.Name b -> ["name",Names.string_of_id b]
+                in
+                 [< X.xml_nempty "binder" attrs (aux s) ; i >]
+              ) [< >] lambdas ;
+             X.xml_nempty "target" [] (aux t)
+          >]
+     | A.ALetIns (letins,t) ->
+        let last_id = find_last_id letins in
+        let sort = Hashtbl.find ids_to_inner_sorts last_id in
+         X.xml_nempty "LETIN" ["sort",sort]
+          [< List.fold_left
+              (fun i (id,binder,s) ->
+                let sort = Hashtbl.find ids_to_inner_sorts id in
+                let attrs =
+                 ("id",id)::("sort",sort)::
+                 match binder with
+                    Names.Anonymous -> assert false
+                  | Names.Name b -> ["name",Names.string_of_id b]
+                in
+                 [< X.xml_nempty "binder" attrs (aux s) ; i >]
+              ) [< >] letins ;
+             X.xml_nempty "target" [] (aux t)
           >]
      | A.AApp (id,li) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
@@ -115,16 +131,10 @@ let print_term ids_to_inner_sorts =
      | A.AConst (id,subst,uri) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
         let attrs = ["uri", uri ; "id",id ; "sort",sort] in
-         if subst = [] then
-          X.xml_empty "CONST" attrs
-         else
-          X.xml_nempty "CONST" attrs (aux_subst subst)
+         aux_subst (X.xml_empty "CONST" attrs) subst
      | A.AInd (id,subst,uri,i) ->
         let attrs = ["uri", uri ; "noType",(string_of_int i) ; "id",id] in
-         if subst = [] then
-          X.xml_empty "MUTIND" attrs
-         else
-          X.xml_nempty "MUTIND" attrs (aux_subst subst)
+         aux_subst (X.xml_empty "MUTIND" attrs) subst
      | A.AConstruct (id,subst,uri,i,j) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
         let attrs =
@@ -132,10 +142,7 @@ let print_term ids_to_inner_sorts =
           "noType",(string_of_int i) ; "noConstr",(string_of_int j) ;
           "id",id ; "sort",sort]
         in
-         if subst = [] then
-          X.xml_empty "MUTCONSTRUCT" attrs
-         else
-          X.xml_nempty "MUTCONSTRUCT" attrs (aux_subst subst)
+         aux_subst (X.xml_empty "MUTCONSTRUCT" attrs) subst
      | A.ACase (id,uri,typeno,ty,te,patterns) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
          X.xml_nempty "MUTCASE"
@@ -178,12 +185,18 @@ let print_term ids_to_inner_sorts =
                 >]
               ) [<>] funs
           >]
- and aux_subst subst =
-  [< List.fold_left
-      (fun i (uri,arg) ->
-        [< i ; Xml.xml_nempty "arg" ["relUri", uri] (aux arg) >]
-      ) [<>] subst
-  >]
+ and aux_subst target (id,subst) =
+  if subst = [] then
+   target
+  else
+   Xml.xml_nempty "instantiate"
+    (match id with None -> [] | Some id -> ["id",id])
+    [< target ;
+       List.fold_left
+        (fun i (uri,arg) ->
+          [< i ; Xml.xml_nempty "arg" ["relUri", uri] (aux arg) >]
+        ) [<>] subst
+    >]
  in
   aux
 ;;
@@ -235,7 +248,7 @@ let print_object uri ids_to_inner_sorts =
              X.xml_nempty "body" [] (print_term ids_to_inner_sorts bo) >]
         in
         let xml_for_current_proof_type =
-         X.xml_nempty "DefinitionType" ["name",n ; "id", id]
+         X.xml_nempty "ConstantType" ["name",n ; "id", id]
           (print_term ids_to_inner_sorts ty)
         in
         let xmlbo =
@@ -246,37 +259,36 @@ let print_object uri ids_to_inner_sorts =
         let xmlty =
          [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
             X.xml_cdata
-             ("<!DOCTYPE DefinitionType SYSTEM \"" ^ dtdname ^ "\">\n");
+             ("<!DOCTYPE ConstantType SYSTEM \"" ^ dtdname ^ "\">\n");
             xml_for_current_proof_type
          >]
         in
          xmlty, Some xmlbo
-     | A.ADefinition (id,n,bo,ty,params) ->
+     | A.AConstant (id,n,bo,ty,params) ->
         let params' = param_attribute_of_params params in
         let xmlbo =
-         [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
-            X.xml_cdata ("<!DOCTYPE Definition SYSTEM \"" ^ dtdname ^"\">\n");
-             X.xml_nempty "DefinitionBody"
-              ["for",uri ; "params",params' ; "id", id]
-              [< print_term ids_to_inner_sorts bo >]
-         >] in
+         match bo with
+            None -> None
+          | Some bo ->
+             Some
+              [< X.xml_cdata
+                  "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
+                 X.xml_cdata
+                  ("<!DOCTYPE ConstantBody SYSTEM \"" ^ dtdname ^ "\">\n") ;
+                 X.xml_nempty "ConstantBody"
+                  ["for",uri ; "params",params' ; "id", id]
+                  [< print_term ids_to_inner_sorts bo >]
+              >]
+        in
         let xmlty =
          [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
-            X.xml_cdata ("<!DOCTYPE Definition SYSTEM \"" ^ dtdname ^"\">\n");
-             X.xml_nempty "DefinitionType"
+            X.xml_cdata ("<!DOCTYPE ConstantType SYSTEM \""^dtdname ^"\">\n");
+             X.xml_nempty "ConstantType"
               ["name",n ; "params",params' ; "id", id]
               [< print_term ids_to_inner_sorts ty >]
          >]
         in
-         xmlty, Some xmlbo
-     | A.AAxiom (id,n,ty,params) ->
-        let params' = param_attribute_of_params params in
-         [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
-            X.xml_cdata ("<!DOCTYPE Axiom SYSTEM \"" ^ dtdname ^ "\">\n") ;
-            X.xml_nempty "Axiom"
-             ["name",n ; "id",id ; "params",params']
-             (X.xml_nempty "type" [] (print_term ids_to_inner_sorts ty))
-         >], None
+         xmlty, xmlbo
      | A.AVariable (id,n,bo,ty) ->
         [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
            X.xml_cdata ("<!DOCTYPE Variable SYSTEM \"" ^ dtdname ^ "\">\n") ;
@@ -336,10 +348,13 @@ let print_inner_types curi ids_to_inner_sorts ids_to_inner_types =
          (fun id {C2A.annsynthesized = synty ; C2A.annexpected = expty} x ->
            [< x ;
               X.xml_nempty "TYPE" ["of",id]
-               [< print_term ids_to_inner_sorts synty ;
+               [< X.xml_nempty "synthesized" []
+                   (print_term ids_to_inner_sorts synty) ;
                   match expty with
                      None -> [<>]
-                   | Some expty' -> print_term ids_to_inner_sorts expty'
+                   | Some expty' ->
+                      X.xml_nempty "expected" []
+                       (print_term ids_to_inner_sorts expty')
                >]
            >]
          ) ids_to_inner_types [<>]
