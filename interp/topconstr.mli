@@ -50,16 +50,19 @@ val aconstr_of_rawconstr : identifier list -> rawconstr -> aconstr
 exception No_match
 
 type scope_name = string
-type interpretation = (identifier * scope_name list) list * aconstr
+type interpretation = 
+    (identifier * (scope_name option * scope_name list)) list * aconstr
 
-val match_aconstr : rawconstr -> interpretation ->
-      (rawconstr * scope_name list) list
+val match_aconstr : (* scope_name option -> *) rawconstr -> interpretation ->
+      (rawconstr * (scope_name option * scope_name list)) list
 
 (*s Concrete syntax for terms *)
 
 type notation = string
 
 type explicitation = int
+
+type proj_flag = bool (* [true] = is projection *)
 
 type cases_pattern_expr =
   | CPatAlias of loc * cases_pattern_expr * identifier
@@ -76,8 +79,9 @@ type constr_expr =
   | CProdN of loc * (name located list * constr_expr) list * constr_expr
   | CLambdaN of loc * (name located list * constr_expr) list * constr_expr
   | CLetIn of loc * name located * constr_expr * constr_expr
-  | CAppExpl of loc * reference * constr_expr list
-  | CApp of loc * constr_expr * (constr_expr * explicitation option) list
+  | CAppExpl of loc * (proj_flag * reference) * constr_expr list
+  | CApp of loc * (proj_flag * constr_expr) * 
+        (constr_expr * explicitation option) list
   | CCases of loc * constr_expr option * constr_expr list *
       (loc * cases_pattern_expr list * constr_expr) list
   | COrderedCase of loc * case_style * constr_expr option * constr_expr

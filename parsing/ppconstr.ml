@@ -213,6 +213,19 @@ let pr_cases pr po tml eqns =
       prlist_with_sep (fun () -> str "| ") (pr_eqn pr) eqns ++
       str "end"))
 
+let pr_proj pr pr_app a f l =
+  hov 0 (pr (latom,E) a ++ cut() ++ str ".(" ++ pr_app pr f l ++ str ")")
+
+let pr_explapp pr f l =
+  hov 0 (
+    str "!" ++ pr_reference f ++ 
+    prlist (fun a -> brk (1,1) ++ pr (lapp,L) a) l)
+
+let pr_app pr a l =
+  hov 0 (
+    pr (lapp,L) a ++ 
+    prlist (fun a -> brk (1,1) ++ pr_expl_args pr a) l)
+
 let rec pr inherited a =
   let (strm,prec) = match a with
   | CRef r -> pr_reference r, latom
@@ -234,14 +247,15 @@ let rec pr inherited a =
       hv 1 (
 	hv 1 (str "[" ++ pr_let_binder pr (snd x) a ++ bll ++ str "]") ++
 	brk (0,1) ++ b), lletin
-  | CAppExpl (_,f,l) ->
-      hov 0 (
-	str "!" ++ pr_reference f ++
-	prlist (fun a -> brk (1,1) ++ pr (lapp,L) a) l), lapp
-  | CApp (_,a,l) ->
-      hov 0 (
-	pr (lapp,L) a ++ 
-	prlist (fun a -> brk (1,1) ++ pr_expl_args pr a) l), lapp
+  | CAppExpl (_,(true,f),l) ->
+      let a,l = list_sep_last l in
+      pr_proj pr pr_explapp a f l, lapp
+  | CAppExpl (_,(false,f),l) -> pr_explapp pr f l, lapp
+  | CApp (_,(true,a),l) ->
+      let c,l = list_sep_last l in
+      assert (snd c = None);
+      pr_proj pr pr_app (fst c) a l, lapp
+  | CApp (_,(false,a),l) -> pr_app pr a l, lapp
   | CCases (_,po,tml,eqns) ->
       pr_cases pr po tml eqns, lcases
   | COrderedCase (_,IfStyle,po,c,[b1;b2]) ->

@@ -142,11 +142,15 @@ GEXTEND Gram
     | "40L" LEFTA
       [ "-"; c = operconstr -> CNotation(loc,"- _",[c]) ]
     | "10L" LEFTA
-      [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,f,args)
-      | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,f,args) ]
+      [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(false,f),args)
+      | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(false,f),args) ]
     | "9" [ ]
     | "1L" LEFTA
-      [ c=operconstr; "%"; key=IDENT -> CDelimiters (loc,key,c) ]
+      [ c=operconstr; "%"; key=IDENT -> CDelimiters (loc,key,c)
+      |	c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
+	  CApp(loc,(true,CRef f),args@[c,None])
+      | c=operconstr; ".("; "@"; f=global; args=LIST0 NEXT ->
+	  CAppExpl(loc,(false,f),args@[c]) ]
     | "0"
       [ c=atomic_constr -> c
       | c=match_constr -> c

@@ -274,10 +274,11 @@ let subst_constr_expr a loc subs =
       let na = name_app (subst_id subs) na in
       CLetIn (loc,(loc,na),subst b,subst c)
   | CArrow (_,a,b) -> CArrow (loc,subst a,subst b)
-  | CAppExpl (_,Ident (_,id),l) ->
-      CAppExpl (loc,subst_ref loc subs id,List.map subst l) 
+  | CAppExpl (_,(p,Ident (_,id)),l) ->
+      CAppExpl (loc,(p,subst_ref loc subs id),List.map subst l) 
   | CAppExpl (_,r,l) -> CAppExpl (loc,r,List.map subst l) 
-  | CApp (_,a,l) -> CApp (loc,subst a,List.map (fun (a,i) -> (subst a,i)) l)
+  | CApp (_,(p,a),l) ->
+      CApp (loc,(p,subst a),List.map (fun (a,i) -> (subst a,i)) l)
   | CCast (_,a,b) -> CCast (loc,subst a,subst b)
   | CNotation (_,n,l) -> CNotation (loc,n,List.map subst l)
   | CDelimiters (_,s,a) -> CDelimiters (loc,s,subst a)

@@ -422,7 +422,7 @@ GEXTEND Gram
 	   let c = match n with
 	     | Some n ->
 		 let l = list_tabulate (fun _ -> (CHole (loc),None)) n in
-		 CApp (loc,c,l)
+		 CApp (loc,(false,c),l)
 	     | None -> c in
 	   VernacNotation (false,c,Some("'"^id^"'",[]),None,None)
       | IDENT "Implicits"; qid = global; "["; l = LIST0 natural; "]" ->
