@@ -81,10 +81,8 @@ let rec pr_external_S std_pr = function
 (* Prints not p, but the SUCCESSOR of p !!!!! *)
 let nat_printer std_pr p =
   match (int_of_nat p) with
-    | Some i -> str (string_of_int i)
+    | Some i -> str "(" ++ str (string_of_int i) ++ str ")"
     | None -> pr_S (pr_external_S std_pr p)
-
-let nat_printer_0 _ _ = str "0"
 
 let _ = Esyntax.Ppprim.add ("nat_printer", nat_printer)
 
