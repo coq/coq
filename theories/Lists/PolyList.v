@@ -240,7 +240,8 @@ Lemma In_dec : ((x,y:A){x=y}+{~x=y}) ->   (a:A)(l:list){(In a l)}+{~(In a l)}.
 Proof.
   Induction l.
   Right; Apply in_nil.
-  Intros; Elim H0; Simpl; Elim (H a0 a); Auto.
+  Intros; Elim (H a0 a); Simpl; Auto.
+  Elim H0; Simpl; Auto. 
   Right; Unfold not; Intros [Hc1 | Hc2]; Auto.
 Save.
 
