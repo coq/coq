@@ -6,9 +6,9 @@
 # 
 ##################################
 
-VERSION=7.0
+VERSION=7.0beta
 VERSIONSI=1.0
-DATE="November 2000"
+DATE="December 2000"
 
 # a local which command for sh
 which () {
