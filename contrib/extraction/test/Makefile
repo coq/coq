@@ -1,62 +1,96 @@
+# 
+#	General variables
+#
+
 TOPDIR=../../..
 
-INCL= -I theories/Arith \
--I theories/Bool \
--I theories/Init \
--I theories/IntMap \
--I theories/Lists \
--I theories/Logic \
--I theories/Reals \
--I theories/Relations \
--I theories/Sets \
--I theories/Wellfounded \
--I theories/ZArith
+# Files with axioms to be realized: can't be extracted directly
 
+AXIOMSVO:= \
+theories/Arith/Arith.vo \
+theories/Lists/List.vo \
+theories/Reals/% \
+theories/Relations/Rstar.vo \
+theories/Sets/Integers.vo \
+theories/ZArith/Zsyntax.vo
 
-MLNAMES=
-CMONAMES=
+DIRS:= $(shell (cd $(TOPDIR);find theories -type d ! -name CVS))
 
-include .names.ml
-include .names.cmo
+INCL:= $(patsubst %,-I %,$(DIRS))
 
-all: ml2v v2ml allml .depend allcmo
+VO:= $(shell (cd $(TOPDIR);find theories -name \*.vo))
 
-allml: .names.ml $(MLNAMES)
+VO:= $(filter-out $(AXIOMSVO),$(VO))
 
-allcmo: .names.cmo $(CMONAMES)
+ML:= $(shell test -x v2ml && ./v2ml $(VO))
 
-.depend: Makefile
-	rm -f .depend; ocamldep $(INCL) theories/*/*.ml > .depend
+CMO:= $(patsubst %.ml,%.cmo,$(ML))
 
-.names.ml: Makefile v2ml 
-	rm -f .names.ml; \
-	echo "MLNAMES= \\" > .names.ml; \
-	V2ML=`pwd`/v2ml; \
-	(cd $(TOPDIR); find theories  -name \*.v -exec $$V2ML \{\} \;) | \
-	sed -e "s/\.ml/.ml \\\\/" >> .names.ml
+#
+#	General rules 
+#
 
-.names.cmo: .names.ml
-	rm -f .names.cmo; \
-	sed -e "1s/ML/CMO/" -e "s/\.ml/.cmo/" < .names.ml > .names.cmo
+all: $(ML) .depend $(CMO) v2ml
+
+depend: $(ML)
+	rm -f .depend; ocamldep $(INCL) $(ML) > .depend
 
 tree:
-	for f in `cd $(TOPDIR); find theories -type d ! -name CVS`; do \
-		mkdir -p $$f; \
-	done
+	mkdir -p $(DIRS)
+
+%.cmo:%.ml
+	ocamlc $(INCL) -c -i $<
+
+$(ML): ml2v
+	./extract `./ml2v $@`
+
+clean: 
+	rm -f theories/*/*.ml theories/*/*.cm*
+
+#
+#	Extraction of Reals
+#
+
+REALSML:= \
+theories/Reals/typeSyntax.ml \
+theories/Reals/addReals.ml \
+theories/Reals/rdefinitions.ml \
+theories/Reals/raxioms.ml \
+theories/Reals/r_Ifp.ml \
+theories/Reals/rbase.ml \
+theories/Reals/rbasic_fun.ml \
+theories/Reals/rlimit.ml \
+theories/Reals/rderiv.ml
+
+REALSCMO:= $(patsubst %.ml,%.cmo,$(REALSML))
+
+reals: all $(REALSML) $(REALSCMO)
+
+realsml: 
+	./extract_reals
+	cp -f addReals.ml theories/Reals
+
+$(REALSML): realsml
+
+
+#
+#	Utilities
+#
 
 ml2v: ml2v.ml
 	ocamlc -o $@ $<
 
 v2ml: v2ml.ml
 	ocamlc -o $@ $< 
+	$(MAKE)
 
-%.cmo:%.ml
-	ocamlc $(INCL) -c -i $<
+#
+#	The End
+#
 
-%.ml: 
-	./extract `./ml2v $@`
-
-clean: 
-	rm -f theories/*/*.ml theories/*/*.cm*
+.PHONY: all tree clean reals realsml depend
 
 include .depend
+
+
+

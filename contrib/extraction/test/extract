@@ -1,8 +1,10 @@
 #!/bin/sh
-rm -f /tmp/extr.v 
+rm -f /tmp/extr$$.v 
 d=`dirname $1`
 n=`basename $1 .v`
-echo "Cd \"$d\". Extraction Module $n. " > /tmp/extr$$.v;\
-(../../../bin/coqtop.opt -silent -batch -require $n -load-vernac-source /tmp/extr$$.v && rm -f /tmp/extr$$.v) || (rm -f /tmp/extr$$.v; exit 1)
-
+echo "Cd \"$d\". Extraction Module $n. " > /tmp/extr$$.v
+../../../bin/coqtop.opt -silent -batch -require $n -load-vernac-source /tmp/extr$$.v 
+out=$?
+rm -f /tmp/extr$$.v
+exit $out
 
