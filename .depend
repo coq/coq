@@ -1,4 +1,3 @@
-doc/syntax.cmi: parsing/ast.cmi 
 ide/config_parser.cmi: lib/util.cmi 
 ide/coq.cmi: kernel/environ.cmi pretyping/evd.cmi kernel/names.cmi \
     kernel/term.cmi lib/util.cmi toplevel/vernacexpr.cmo 
@@ -461,8 +460,6 @@ dev/top_printers.cmx: parsing/ast.cmx toplevel/cerrors.cmx proofs/clenv.cmx \
     kernel/term.cmx pretyping/termops.cmx kernel/univ.cmx 
 doc/parse.cmo: parsing/ast.cmi 
 doc/parse.cmx: parsing/ast.cmx 
-doc/syntax.cmo: parsing/ast.cmi contrib/interface/parse.cmo doc/syntax.cmi 
-doc/syntax.cmx: parsing/ast.cmx contrib/interface/parse.cmx doc/syntax.cmi 
 ide/blaster_window.cmo: ide/coq.cmi ide/ideutils.cmi 
 ide/blaster_window.cmx: ide/coq.cmx ide/ideutils.cmx 
 ide/command_windows.cmo: ide/coq.cmi ide/coq_commands.cmo ide/ideutils.cmi \
@@ -3132,13 +3129,13 @@ contrib/romega/g_romega.cmx: toplevel/cerrors.cmx parsing/egrammar.cmx \
 contrib/romega/omega2.cmo: kernel/names.cmi lib/util.cmi 
 contrib/romega/omega2.cmx: kernel/names.cmx lib/util.cmx 
 contrib/romega/refl_omega.cmo: contrib/romega/const_omega.cmo \
-    proofs/logic.cmi kernel/names.cmi contrib/romega/omega2.cmo lib/pp.cmi \
-    parsing/printer.cmi proofs/tacmach.cmi tactics/tacticals.cmi \
-    tactics/tactics.cmi kernel/term.cmi lib/util.cmi 
+    proofs/logic.cmi kernel/names.cmi contrib/romega/omega2.cmo \
+    lib/options.cmi lib/pp.cmi parsing/printer.cmi proofs/tacmach.cmi \
+    tactics/tacticals.cmi tactics/tactics.cmi kernel/term.cmi lib/util.cmi 
 contrib/romega/refl_omega.cmx: contrib/romega/const_omega.cmx \
-    proofs/logic.cmx kernel/names.cmx contrib/romega/omega2.cmx lib/pp.cmx \
-    parsing/printer.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
-    tactics/tactics.cmx kernel/term.cmx lib/util.cmx 
+    proofs/logic.cmx kernel/names.cmx contrib/romega/omega2.cmx \
+    lib/options.cmx lib/pp.cmx parsing/printer.cmx proofs/tacmach.cmx \
+    tactics/tacticals.cmx tactics/tactics.cmx kernel/term.cmx lib/util.cmx 
 contrib/xml/acic.cmo: kernel/names.cmi kernel/term.cmi 
 contrib/xml/acic.cmx: kernel/names.cmx kernel/term.cmx 
 contrib/xml/acic2Xml.cmo: contrib/xml/acic.cmo contrib/xml/cic2acic.cmo \
