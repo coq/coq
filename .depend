@@ -2024,17 +2024,19 @@ toplevel/coqinit.cmx: config/coq_config.cmx toplevel/mltop.cmx \
     lib/system.cmx toplevel/toplevel.cmx toplevel/vernac.cmx \
     toplevel/coqinit.cmi 
 toplevel/coqtop.cmo: toplevel/cerrors.cmi config/coq_config.cmi \
-    toplevel/coqinit.cmi library/lib.cmi library/libnames.cmi \
-    library/library.cmi toplevel/mltop.cmi library/nameops.cmi \
-    kernel/names.cmi lib/options.cmi lib/pp.cmi lib/profile.cmi \
-    library/states.cmi lib/system.cmi toplevel/toplevel.cmi \
-    toplevel/usage.cmi lib/util.cmi toplevel/vernac.cmi toplevel/coqtop.cmi 
+    toplevel/coqinit.cmi kernel/environ.cmi library/global.cmi \
+    library/lib.cmi library/libnames.cmi library/library.cmi \
+    toplevel/mltop.cmi library/nameops.cmi kernel/names.cmi lib/options.cmi \
+    lib/pp.cmi lib/profile.cmi library/states.cmi lib/system.cmi \
+    toplevel/toplevel.cmi toplevel/usage.cmi lib/util.cmi toplevel/vernac.cmi \
+    toplevel/coqtop.cmi 
 toplevel/coqtop.cmx: toplevel/cerrors.cmx config/coq_config.cmx \
-    toplevel/coqinit.cmx library/lib.cmx library/libnames.cmx \
-    library/library.cmx toplevel/mltop.cmx library/nameops.cmx \
-    kernel/names.cmx lib/options.cmx lib/pp.cmx lib/profile.cmx \
-    library/states.cmx lib/system.cmx toplevel/toplevel.cmx \
-    toplevel/usage.cmx lib/util.cmx toplevel/vernac.cmx toplevel/coqtop.cmi 
+    toplevel/coqinit.cmx kernel/environ.cmx library/global.cmx \
+    library/lib.cmx library/libnames.cmx library/library.cmx \
+    toplevel/mltop.cmx library/nameops.cmx kernel/names.cmx lib/options.cmx \
+    lib/pp.cmx lib/profile.cmx library/states.cmx lib/system.cmx \
+    toplevel/toplevel.cmx toplevel/usage.cmx lib/util.cmx toplevel/vernac.cmx \
+    toplevel/coqtop.cmi 
 toplevel/discharge.cmo: toplevel/class.cmi pretyping/classops.cmi \
     kernel/cooking.cmi library/decl_kinds.cmo kernel/declarations.cmi \
     library/declare.cmi library/dischargedhypsmap.cmi kernel/entries.cmi \
