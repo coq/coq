@@ -138,7 +138,9 @@ let load_objects decls =
   segment_rec_iter load_object decls
 
 let rec load_module_from s f =
-  if not (module_is_loaded s) then begin
+  try
+    Stringmap.find s !modules_table
+  with Not_found ->
     let (lpe,fname,ch) = raw_intern_module (get_load_path ()) f in
     let md = System.marshal_in ch in
     let digest = System.marshal_in ch in
@@ -159,35 +161,26 @@ let rec load_module_from s f =
     load_objects m.module_declarations;
     let sp = Names.make_path [] (id_of_string s) CCI in
     Nametab.push_module sp m.module_nametab;
-    modules_table := Stringmap.add s m !modules_table
-  end
+    modules_table := Stringmap.add s m !modules_table;
+    m
 
 and load_mandatory_module caller (s,d,_) =
-  let m = find_module s s in
+  let m = load_module_from s s in
   if d <> m.module_digest then
     error ("module "^caller^" makes inconsistent assumptions over module "^s)
 
-and find_module s f =
-  try 
-    Stringmap.find s !modules_table 
-  with Not_found -> 
-    load_module_from s f;
-    Stringmap.find s !modules_table 
-
 let load_module s = function
-  | None -> load_module_from s s
-  | Some f -> load_module_from s f
+  | None -> ignore (load_module_from s s)
+  | Some f -> ignore (load_module_from s f)
 
 
 (*s [require_module] loads and opens a module. This is a synchronized
     operation. *)
 
 let cache_require (_,(name,file,export)) =
-  load_module_from name file;
-  open_module name;
-  if export then 
-    let m = Stringmap.find name !modules_table in
-    m.module_exported <- true
+  let m = load_module_from name file in
+  if export then m.module_exported <- true;
+  open_module name
 
 let (in_require, _) =
   declare_object
