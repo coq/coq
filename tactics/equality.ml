@@ -988,8 +988,8 @@ let try_rewrite tac gls =
 	errorlabstrm "try_rewrite" (str "Not a primitive equality here")
     | e when catchable_exception e -> 
 	errorlabstrm "try_rewrite"
-          (str "Cannot find a well type generalisation of the goal that" ++
-             str " makes progress the proof.")
+          (str "Cannot find a well-typed generalization of the goal that" ++
+             str " makes the proof progress")
 
 let subst l2r eqn cls gls =
   match cls with
