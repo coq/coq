@@ -166,11 +166,11 @@ GEXTEND Gram
       [ c = binder_constr -> c ]
     | "100" RIGHTA
       [ c1 = operconstr; ":"; c2 = binder_constr -> CCast(loc,c1,c2)
-      | c1 = operconstr; ":"; c2 = operconstr LEVEL "200" -> CCast(loc,c1,c2) ]
+      | c1 = operconstr; ":"; c2 = SELF -> CCast(loc,c1,c2) ]
     | "99" RIGHTA [ ]
     | "90" RIGHTA
       [ c1 = operconstr; "->"; c2 = binder_constr -> CArrow(loc,c1,c2)
-      | c1 = operconstr; "->"; c2 = operconstr LEVEL"200" -> CArrow(loc,c1,c2)]
+      | c1 = operconstr; "->"; c2 = SELF -> CArrow(loc,c1,c2)]
     | "10"
       [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(None,f),args)
       | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args) ]
