@@ -67,11 +67,13 @@ Rocq/MUTUAL-EXCLUSION/
 Rocq/COC
 File "./Conv_Dec.v", line 68, characters 2-459
 Error: Inference of annotation not yet implemented in this case
+--> PROBLEME DISPARU 
 
 Rocq/ARITH/Chinese
 File "./Zdiv.v", line 34, characters 0-944
 Anomaly: Search error. Please report.
-Refine 
+Refine
+--> PROBLEME RESOLU MAIS LE MESSAGE D'ERREUR RESTE PAS TRES CLAIR
 
 Rocq/PARADOXES
 File "./BuraliForti.v", line 176, characters 0-26
@@ -89,6 +91,8 @@ Rocq/SCHROEDER
 File "./Functions.v", line 95, characters 0-15
 Error: Bad inductive definition.
 A la fermeture de section
+--> RESOLU Mais pb de "Remark" local à un thm pas pris en compte dans
+l'environnement de la preuve de ce théorème
 
 Rocq/SUBST
 File "./TS.v", line 69, characters 0-6
