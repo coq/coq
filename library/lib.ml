@@ -561,6 +561,7 @@ let reset_initial () =
 	  | (_,[_,FrozenState fs as hd],before) ->
 	      lib_stk := hd::before;
 	      recalc_path_prefix ();
+			set_command_label 0;
 	      unfreeze_summaries fs
 	  | _ -> assert false
 	end
