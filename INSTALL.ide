@@ -26,21 +26,21 @@ REQUIREMENT:
 INSTALLATION
  1) You need to install the OCaml stub library lablgtk2. See 
        		http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html
-	  The official snapshot are not yet ready for CoqIde.
+	  The first official beta snapshot is needed.
 	  Use this one :
-		http://www.lix.polytechnique.fr/~monate/download/lablgtk2.tgz
+http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk2-beta.tar.gz
     If you are in a hurry just run :
     
     cd /tmp && \
-    wget http://www.lix.polytechnique.fr/~monate/download/lablgtk2.tgz && \
-    tar zxvf lablgtk2.tgz && \
-    cd lablgtk2 && \
+    wget http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk2-beta.tar.gz && \
+    tar zxvf lablgtk2-beta.tar.gz && \
+    cd lablgtk2-beta && \
     make configure && \
     make all opt && \
     make install
 
    You must have write access to the OCaml standard library path.
-   If this fails read lablgtk2/README.
+   If this fails read lablgtk2-beta/README.
 
 2) Go into your Coq source directory and then : 
 
@@ -53,3 +53,4 @@ Font configuration is not saved.
 If you want to change the defaults fonts, just copy the
 .coqiderc file located in the ide subdir of the Coq library to
 your home directory and edit it by hand.
+Read ide/FAQ for more informations.

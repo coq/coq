@@ -294,11 +294,15 @@ let configure () =
     string ~f:(fun s -> !current.library_url <- s) "Library URL"  !current.library_url in
 
   let automatic_tactics = 
-    list 
-      ~titles:["Coq Command to try";"Coq Command to insert in script"]
-      "Wizzard tactics to apply"
-      (fun (c,i) -> [c;i])
-      !current.automatic_tactics
+    let box = GPack.hbox () in
+    let w = Editable_cells.create !current.automatic_tactics in
+    box#pack w#coerce;
+    custom
+      ~label:"Wizzard tactics to try in order (WORK IN PROGRESS)"
+      box
+      (fun () -> ())
+      true
+
   in
   let cmds =
     [Section("Commands",
