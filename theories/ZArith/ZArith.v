@@ -8,13 +8,16 @@
 
 (*i $Id$ i*)
 
-Require Export Disjoint_Union.
-Require Export Inclusion.
-Require Export Inverse_Image.
-Require Export Lexicographic_Exponentiation.
-Require Export Lexicographic_Product.
-Require Export Transitive_Closure.
-Require Export Union.
-Require Export Well_Ordering.
+(*s Library for manipulating integers based on binary encoding *)
 
+Require Export fast_integer.
+Require Export zarith_aux.
+Require Export auxiliary.
+Require Export Zsyntax.
+Require Export ZArith_dec.
+Require Export Zmisc.
+Require Export Wf_Z.
 
+Hints Resolve Zle_n Zplus_sym Zplus_assoc Zmult_sym Zmult_assoc
+  Zero_left Zero_right Zmult_one Zplus_inverse_l Zplus_inverse_r 
+  Zmult_plus_distr_l Zmult_plus_distr_r : zarith.
