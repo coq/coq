@@ -409,7 +409,7 @@ let pr_syntax_modifier = function
   | SetAssoc Gramext.NonA -> str"no associativity"
   | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_entry_type typ
   | SetOnlyParsing -> str"only parsing"
-  | SetFormat s -> str"format " ++ qsnew s
+  | SetFormat s -> str"format " ++ pr_located qsnew s
 
 let pr_syntax_modifiers = function
   | [] -> mt()

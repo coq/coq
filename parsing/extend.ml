@@ -91,7 +91,7 @@ type syntax_modifier =
   | SetAssoc of Gramext.g_assoc
   | SetEntryType of string * simple_constr_production_entry
   | SetOnlyParsing
-  | SetFormat of string
+  | SetFormat of string located
 
 type nonterm =
   | NtShort of string

@@ -368,7 +368,7 @@ GEXTEND Gram
       | IDENT "no"; IDENT "associativity" -> SetAssoc Gramext.NonA
       | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ)
       | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
-      | IDENT "format"; s = STRING -> SetFormat s ] ]
+      | IDENT "format"; s = [s = STRING -> (loc,s)] -> SetFormat s ] ]
   ;
   syntax_extension_type:
     [ [ IDENT "ident" -> ETIdent | IDENT "global" -> ETReference

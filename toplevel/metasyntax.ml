@@ -204,6 +204,104 @@ let print_grammar univ entry =
   let te,_,_ = get_constr_entry typ in
   Gram.Entry.print te
 
+(* Parse a format *)
+let parse_format (loc,str) =
+  let l = String.length str in
+  let push_token a = function
+    | cur::l -> (a::cur)::l
+    | [] -> [[a]] in
+  let close_box i b = function
+    | a::(_::_ as l) -> push_token (UnpBox (b,a)) l
+    | _ -> error "Non terminated box in format" in
+  let close_quotation i =
+    if i < String.length str & str.[i] = '\'' & (i+1 = l or str.[i+1] = ' ')
+    then i+1
+    else error "Format annotation must be ended by \"'\" and tokens must be separated by spaces" in
+  let rec spaces n i =
+    if i < String.length str & str.[i] = ' ' then spaces (n+1) (i+1)
+    else n in
+  let rec nonspaces quoted n i =
+    if i < String.length str & str.[i] <> ' ' then
+      if str.[i] = '\'' then
+	if i <= String.length str & str.[i+1] = '\'' then
+	  (String.blit str (i+2) str (i+1) (l-i-2); str.[l-1] <- ' ';
+	  nonspaces quoted (n+1) (i+1))
+	else
+	  if quoted then n
+	  else error
+	    "Space expected between part of the notation and format annotation"
+      else
+	nonspaces quoted (n+1) (i+1)
+    else n in
+  let rec parse_non_format i =
+    let n = nonspaces false 0 i in
+    push_token (UnpTerminal (String.sub str i n)) (loop (i+n+1))
+  and parse_quoted i =
+    let n = spaces 0 i in
+    let i = i+n in
+    if i < String.length str then match str.[i] with
+      (* Parse " // " *)
+      | '/' when i <= String.length str & str.[i+1] = '/' & n = 0 ->
+	  push_token (UnpCut PpFnl) (loop (close_quotation (i+2)))
+      (* Parse " .. / .. " *)
+      | '/' when i <= String.length str ->
+	  let p = spaces 0 (i+1) in
+	  push_token (UnpCut (PpBrk (n,p))) (loop (close_quotation (i+p+1)))
+      | '\'' when n <> 0 ->
+	  push_token (UnpTerminal (String.make n ' '))
+	    (loop (close_quotation i))
+      | c when n <> 0 -> 
+	  error "Unexpected spaces not followed by \"/\" not \"'\" after \"'\" in format"
+      (* Parse tokens not accepting spaces before *)
+      | '[' ->
+	  if i <= String.length str then match str.[i+1] with
+	    (* Parse " [h .. ",  *)
+	    | 'h' when i+1 <= String.length str & str.[i+2] = 'v' ->
+		parse_box (fun n -> PpHVB n) (i+3)
+		(* Parse " [v .. ",  *)
+	    | 'v' ->
+		    parse_box (fun n -> PpVB n) (i+2)
+		(* Parse " [ .. ",  *)
+	    | ' ' | '\'' ->
+		parse_box (fun n -> PpHOVB n) (i+1)
+	    | _ -> error "\"v\", \"hv\", \" \" expected after \"[\" in format"
+	  else error "\"v\", \"hv\" or \" \" expected after \"[\" in format"
+      (* Parse "]"  *)
+      | ']' ->
+	  [] :: loop (close_quotation (i+1))
+      (* Parse a non formatting token *)
+      | c ->
+	  let n = nonspaces true 0 (i+1) in
+	  push_token (UnpTerminal (String.sub str i (n+2)))
+	    (loop (close_quotation (i+n+1)))
+    else
+      if n = 0 then []
+      else error "Ending spaces non part of a format annotation"
+  and parse_box box i =
+    let n = spaces 0 i in
+    close_box i (box n) (loop (close_quotation (i+n)))
+  and loop i =
+    if i < l then match str.[i] with
+      (* Parse a ' *)
+      |	'\'' when i <= String.length str & str.[i+1] = '\'' ->
+	  parse_non_format i
+      (* Parse the beginning of a quoted expression *)
+      |	'\'' -> parse_quoted (i+1)
+      (* Skip spaces *)
+      | ' ' -> loop (i+1)
+      (* Otherwise *)
+      | _ -> parse_non_format i
+    else [[]]
+  in
+  try
+    if str <> "" then match (loop 0) with
+      | [l] -> l
+      | _ -> error "Box closed without being opened in format"
+    else
+      error "Empty format"
+  with e ->
+    Stdpp.raise_with_loc loc e
+
 (* Build the syntax and grammar rules *)
 
 type printing_precedence = int * parenRelation
@@ -364,6 +462,30 @@ let make_hunks etyps symbols from =
 
   in make NoBreak symbols
 
+let hunks_of_format (from,(vars,typs) as vt) symfmt = 
+  let rec aux = function
+  | symbs, (UnpTerminal s' as u) :: fmt
+      when s' = String.make (String.length s') ' ' ->
+      let symbs, l = aux (symbs,fmt) in symbs, u :: l
+  | Terminal s :: symbs, (UnpTerminal s' as u) :: fmt when s = s' ->
+      let symbs, l = aux (symbs,fmt) in symbs, u :: l
+  | NonTerminal s :: symbs, UnpTerminal s' :: fmt when s = id_of_string s' ->
+      let i = list_index s vars in
+      let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
+      let symbs, l = aux (symbs,fmt) in symbs, UnpMetaVar (i,prec) :: l
+  | symbs, UnpBox (a,b) :: fmt -> 
+      let symbs', b' = aux (symbs,b) in
+      let symbs', l = aux (symbs',fmt) in
+      symbs', UnpBox (a,b') :: l
+  | symbs, (UnpCut _ as u) :: fmt ->
+      let symbs, l = aux (symbs,fmt) in symbs, u :: l
+  | symbs, [] -> symbs, []
+  | _, _ -> error "The format does not match the notation"
+  in
+  match aux symfmt with
+  | [], l -> l
+  | _ -> error "The format does not match the notation"
+
 let string_of_prec (n,p) =
   (string_of_int n)^(match p with E -> "E" | L -> "L" | _ -> "")
 
@@ -410,7 +532,10 @@ let make_production etyps symbols =
 
 let strip s =
   let n = String.length s in
-  if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' then String.sub s 1 (n-2) else s
+  if n >= 2 & s.[0] = '\'' & s.[n-1] = '\'' then
+    if n > 2 then String.sub s 1 (n-2) else "'"
+  else
+    s
 
 (* To protect alphabetic tokens from being seen as variables *)
 let quote x =
@@ -483,8 +608,11 @@ let make_syntax_rule n name symbols typs ast ntn sc =
       [UNP_SYMBOLIC(sc,ntn,UNP_BOX (PpHOVB 1,make_hunks_ast symbols typs n))]}]
 
 let make_pp_rule (n,typs,symbols,fmt) =
-  (* TODO: fmt *)
-  [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
+  match fmt with
+    | None -> [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
+    | Some fmt -> 
+	[UnpBox (PpHOVB 0, 
+	 hunks_of_format (n,List.split typs) (symbols,parse_format fmt))]
 
 (**************************************************************************)
 (* Syntax extenstion: common parsing/printing rules and no interpretation *)
@@ -595,7 +723,7 @@ let interp_modifiers =
     | SetFormat s :: l ->
 	if format <> None then error "A format is given more than once"
 	onlyparsing := true;
-	interp assoc level etyps format l
+	interp assoc level etyps (Some s) l
   in interp None None [] None
 
 let merge_modifiers a n l =
