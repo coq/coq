@@ -337,8 +337,11 @@ let listrec_mconstr env ntypes hyps nparams i indlc =
 	  else
 	    raise (IllFormedInd (LocalNonPos n))
       | Ind ind_sp -> 
-          if List.for_all (noccur_between n ntypes) largs 
-	  then Norec
+          (* If the inductive type being defined or a parameter appears as
+             parameter, then we have an imbricated type *)
+          if List.for_all (noccur_between n ntypes) largs &&
+	     List.for_all (noccur_between (n-nhyps) nhyps) largs
+          then Norec
           else Imbr(ind_sp,imbr_positive env n ind_sp largs)
       | err -> 
 	  if noccur_between n ntypes x &&

@@ -399,33 +399,13 @@ let add_recarg renv (x,a,spec) =
   let renv' = push_var_renv renv (x,a) in
   { renv' with lst = (1,(Strict,spec))::renv'.lst }
 
-
-let rec findrec p = function 
-  | (a,ta)::l -> 
-      if a < p then findrec p l else if a = p then ta else raise Not_found
-  | _ -> raise Not_found
-
-(* tells if term [c] is the variable corresponding to the recursive
-   argument of the fixpoint. *)
-(* c is supposed to be in beta-delta-iota head normal form *)
-let subterm_var_large renv c = 
-  match kind_of_term (fst (decompose_app c)) with 
-    | Rel n ->
-        (try
-          match findrec n renv.lst with
-            (Large,s) -> Some s
-          | _ -> None
-        with Not_found -> None)
-    | _ -> None
-
-(* fetch the information associated to a variable *)
-let subterm_var_spec p renv = 
-  try 
-    match findrec p renv.lst with
-      (Strict,s) -> Some s
-    | _ -> None
-  with Not_found -> None
-
+(* Fetch recursive information about a variable *)
+let subterm_var p renv = 
+  let rec findrec = function 
+    | (a,ta)::l -> 
+        if a < p then findrec l else if a = p then Some ta else None
+    | _ -> None in
+  findrec renv.lst
 
 
 (******************************)
@@ -437,7 +417,7 @@ let subterm_var_spec p renv =
    lrec.  mind_recvec is the recursive spec of the inductive
    definition of the decreasing argument n.
 
-   case_branches_specif renv mind_recvec lrec lc will pass the lambdas
+   case_branches_specif renv lrec lc will pass the lambdas
    of c corresponding to pattern variables and collect possibly new
    subterms variables and returns the bodies of the branches with the
    correct envs and decreasing args.
@@ -503,21 +483,18 @@ let subterm_specif renv c ind =
   let rec crec renv c ind = 
     let f,l = decompose_app (whd_betadeltaiota renv.env c) in
     match kind_of_term f with 
-      | Rel k -> subterm_var_spec k renv
+      | Rel k -> subterm_var k renv
 
       | Case (ci,_,c,lbr) ->
           if Array.length lbr = 0
             (* New: if it is built by contadiction, it is OK *)
-          then Some [||]
+          then Some (Strict,[||])
           else
             let def = Array.create (Array.length lbr) [] in
             let lcv =
-              match subterm_var_large renv c with
-                Some s -> s
-              | _ ->
-                  (match crec renv c ci.ci_ind with
-                    Some lr -> lr
-                  | None -> def) in 
+              match crec renv c ci.ci_ind with
+                Some (_,lr) -> lr
+              | None -> def in 
             let lbr' = case_branches_specif renv lcv lbr in
             let stl  =
               Array.map (fun (renv',br') -> crec renv' br' ind) lbr' in
@@ -555,7 +532,7 @@ let subterm_specif renv c ind =
 	        try 
 	          match crec renv theDecrArg decrarg_ind with 
 		    (Some recArgsDecrArg) ->
-                      (1,(Strict,recArgsDecrArg)) :: renv''.lst 
+                      (1,recArgsDecrArg) :: renv''.lst 
                   | None -> renv''.lst
 	        with Not_found -> renv''.lst } in
 	  crec renv'' strippedBody ind
@@ -565,7 +542,7 @@ let subterm_specif renv c ind =
           crec (push_var_renv renv (x,a)) b ind
 
       (* A term with metas is considered OK *)
-      | Meta _ -> Some (lookup_subterms renv.env ind)
+      | Meta _ -> Some (Strict,lookup_subterms renv.env ind)
       (* Other terms are not subterms *)
       | _ -> None
   in 
@@ -575,17 +552,16 @@ let subterm_specif renv c ind =
    object is a recursive subterm then compute the information
    associated to its own subterms. *)
 let spec_subterm_large renv c ind = 
-  match subterm_var_large renv c with
-    Some s -> s
-  | _ ->
-      (let nb = Array.length (lookup_subterms renv.env ind) in
-      match subterm_specif renv c ind 
-      with Some lr -> lr | None -> Array.create nb [])
+  match subterm_specif renv c ind with
+    Some (_,lr) -> lr
+  | None ->
+      let nb = Array.length (lookup_subterms renv.env ind) in
+      Array.create nb []
 
 (* Check term c can be applied to one of the mutual fixpoints. *)
 let check_is_subterm renv c ind = 
   match subterm_specif renv c ind with
-    Some _ -> ()
+    Some (Strict,_) -> ()
   |  _ -> raise (FixGuardError RecursionOnIllegalTerm)
 
 (***********************************************************************)
@@ -703,7 +679,7 @@ let check_one_fix renv recpos def =
   and check_nested_fix_body renv decr recArgsDecrArg body =
     if decr = 0 then
       check_rec_call
-        { renv with lst=(1,(Strict,recArgsDecrArg))::renv.lst } body
+        { renv with lst=(1,recArgsDecrArg)::renv.lst } body
     else
       match kind_of_term body with
 	| Lambda (x,a,b) ->
