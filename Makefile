@@ -1087,13 +1087,13 @@ toplevel/mltop.cmx: toplevel/mltop.optml
 	$(OCAMLOPT) $(OPTFLAGS) -c -impl toplevel/mltop.optml -o $@
 
 toplevel/mltop.byteml: toplevel/mltop.ml4
-	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo pa_ifdef.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
+	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
 
 toplevel/mltop.optml: toplevel/mltop.ml4
-	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo pa_ifdef.cmo -impl toplevel/mltop.ml4 > $@ || rm -f $@
+	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -impl toplevel/mltop.ml4 > $@ || rm -f $@
 
 toplevel/mltop.ml: toplevel/mltop.ml4
-	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo pa_ifdef.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
+	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
 
 ML4FILES += toplevel/mltop.ml4
 
