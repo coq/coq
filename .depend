@@ -206,6 +206,7 @@ toplevel/vernacentries.cmi: parsing/coqast.cmi kernel/environ.cmi \
 toplevel/vernacinterp.cmi: parsing/coqast.cmi lib/dyn.cmi kernel/names.cmi \
     library/nametab.cmi proofs/proof_type.cmi 
 contrib/extraction/close_env.cmi: kernel/names.cmi kernel/term.cmi 
+contrib/extraction/extract_env.cmi: kernel/term.cmi 
 contrib/extraction/extraction.cmi: kernel/environ.cmi \
     contrib/extraction/miniml.cmi kernel/names.cmi kernel/term.cmi 
 contrib/extraction/genpp.cmi: contrib/extraction/extraction.cmi \
@@ -1284,24 +1285,28 @@ contrib/extraction/close_env.cmo: kernel/names.cmi kernel/term.cmi \
     contrib/extraction/close_env.cmi 
 contrib/extraction/close_env.cmx: kernel/names.cmx kernel/term.cmx \
     contrib/extraction/close_env.cmi 
-contrib/extraction/extraction.cmo: parsing/astterm.cmi kernel/closure.cmi \
-    kernel/declarations.cmi kernel/environ.cmi kernel/evd.cmi \
-    library/global.cmi lib/gmap.cmi kernel/inductive.cmi \
-    kernel/instantiate.cmi contrib/extraction/miniml.cmi \
+contrib/extraction/extract_env.cmo: parsing/astterm.cmi kernel/evd.cmi \
+    contrib/extraction/extraction.cmi library/global.cmi \
+    contrib/extraction/miniml.cmi contrib/extraction/ocaml.cmi lib/pp.cmi \
+    parsing/printer.cmi kernel/term.cmi toplevel/vernacinterp.cmi \
+    contrib/extraction/extract_env.cmi 
+contrib/extraction/extract_env.cmx: parsing/astterm.cmx kernel/evd.cmx \
+    contrib/extraction/extraction.cmx library/global.cmx \
+    contrib/extraction/miniml.cmi contrib/extraction/ocaml.cmx lib/pp.cmx \
+    parsing/printer.cmx kernel/term.cmx toplevel/vernacinterp.cmx \
+    contrib/extraction/extract_env.cmi 
+contrib/extraction/extraction.cmo: kernel/closure.cmi kernel/declarations.cmi \
+    kernel/environ.cmi kernel/evd.cmi library/global.cmi lib/gmap.cmi \
+    kernel/inductive.cmi kernel/instantiate.cmi contrib/extraction/miniml.cmi \
     contrib/extraction/mlimport.cmi contrib/extraction/mlutil.cmi \
-    kernel/names.cmi contrib/extraction/ocaml.cmi lib/pp.cmi \
-    parsing/printer.cmi kernel/reduction.cmi kernel/term.cmi \
-    pretyping/typing.cmi lib/util.cmi toplevel/vernacinterp.cmi \
-    contrib/extraction/extraction.cmi 
-contrib/extraction/extraction.cmx: parsing/astterm.cmx kernel/closure.cmx \
-    kernel/declarations.cmx kernel/environ.cmx kernel/evd.cmx \
-    library/global.cmx lib/gmap.cmx kernel/inductive.cmx \
-    kernel/instantiate.cmx contrib/extraction/miniml.cmi \
+    kernel/names.cmi lib/pp.cmi kernel/reduction.cmi kernel/term.cmi \
+    pretyping/typing.cmi lib/util.cmi contrib/extraction/extraction.cmi 
+contrib/extraction/extraction.cmx: kernel/closure.cmx kernel/declarations.cmx \
+    kernel/environ.cmx kernel/evd.cmx library/global.cmx lib/gmap.cmx \
+    kernel/inductive.cmx kernel/instantiate.cmx contrib/extraction/miniml.cmi \
     contrib/extraction/mlimport.cmx contrib/extraction/mlutil.cmx \
-    kernel/names.cmx contrib/extraction/ocaml.cmx lib/pp.cmx \
-    parsing/printer.cmx kernel/reduction.cmx kernel/term.cmx \
-    pretyping/typing.cmx lib/util.cmx toplevel/vernacinterp.cmx \
-    contrib/extraction/extraction.cmi 
+    kernel/names.cmx lib/pp.cmx kernel/reduction.cmx kernel/term.cmx \
+    pretyping/typing.cmx lib/util.cmx contrib/extraction/extraction.cmi 
 contrib/extraction/genpp.cmo: contrib/extraction/close_env.cmi \
     kernel/environ.cmi contrib/extraction/extraction.cmi \
     contrib/extraction/genpp.cmi library/global.cmi \
