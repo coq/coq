@@ -32,7 +32,6 @@ exception Not_an_eq
 
 let fail()=raise Not_an_eq
     
-
 let constant dir s = lazy (Coqlib.gen_constant "CC" dir s)
 
 let eq2eqT_theo = constant ["Logic";"Eqdep_dec"] "eq2eqT"
@@ -48,9 +47,10 @@ let t_make_app=(Array.fold_left (fun s t->Appli (s,t)))
 
 let rec decompose_term t=
   match kind_of_term t with
-    App (f,args)->let targs=Array.map decompose_term args in
-    (t_make_app (Symb f) targs)
-  | _->(Symb t)
+    App (f,args)->
+      let targs=Array.map decompose_term args in
+	(t_make_app (Symb f) targs)
+  | _ ->(Symb t)
 
 (* decompose equality in members and type *)
 	
@@ -59,8 +59,7 @@ let eq_type_of_term term=
       App (f,args)->
 	(try 
 	   let ref = reference_of_constr f in
-	     if (ref=Coqlib.glob_eq || ref=Coqlib.glob_eqT) && 
-	       (Array.length args)=3 
+	     if ref=Coqlib.glob_eq && (Array.length args)=3 
 	     then (args.(0),args.(1),args.(2)) 
 	     else fail()
 	 with
@@ -79,7 +78,7 @@ let rec make_term=function
     Symb s->s
   | Appli (s1,s2)->make_app [(make_term s2)] s1
 and make_app l=function
-    Symb s->mkApp (s,(Array.of_list l))
+    Symb s->applistc s l
   | Appli (s1,s2)->make_app ((make_term s2)::l) s1
 
 (* store all equalities from the context *)
@@ -96,24 +95,19 @@ let make_prb gl=
   let hyps=gl.evar_hyps in
   (read_hyps hyps),(read_eq concl)
 
-(* apply tac, followed (or not) by aplication of theorem theo *)
-
-let st_wrap theo tac= 
-  tclORELSE tac (tclTHEN (apply theo) tac)
-
 (* generate an adhoc tactic following the proof tree  *)
 
 let rec proof_tac uf axioms=function
-    Ax id->(fun gl->(st_wrap (Lazy.force eq2eqT_theo) (exact_check (mkVar id)) gl))
+    Ax id->exact_check (mkVar id)
   | Refl t->reflexivity
-  | Trans (p1,p2)->let t=(make_term (snd (type_proof uf axioms p1))) in
+  | Trans (p1,p2)->let t=(make_term (snd (type_proof axioms p1))) in
       (tclTHENS (transitivity t) 
 	 [(proof_tac uf axioms p1);(proof_tac uf axioms p2)])
   | Sym p->tclTHEN symmetry (proof_tac uf axioms p)
   | Congr (p1,p2)->
       (fun gl->
-	 let (s1,t1)=(type_proof uf axioms p1) and
-	   (s2,t2)=(type_proof uf axioms p2) in
+	 let (s1,t1)=(type_proof axioms p1) and
+	   (s2,t2)=(type_proof axioms p2) in
          let ts1=(make_term s1) and tt1=(make_term t1) 
 	and ts2=(make_term s2) and tt2=(make_term t2) in
       let typ1=pf_type_of gl ts1 and typ2=pf_type_of gl ts2 in
@@ -125,23 +119,27 @@ let rec proof_tac uf axioms=function
 	   [(proof_tac uf axioms p1);(proof_tac uf axioms p2)])		
 	   (tclTHEN
 	      (let p=mkLambda(destProd typ1) in
-	      let acdt=mkApp((Lazy.force congr_dep_theo),[|typ2;p;ts1;tt1;ts2|]) in 
+	      let acdt=mkApp((Lazy.force congr_dep_theo),
+			     [|typ2;p;ts1;tt1;ts2|]) in 
 	      apply acdt) (proof_tac uf axioms p1))
 	gl)
 
 (* wrap everything *)
 	
-let cc_tactic gl_sg=
+let cc_tactic gls=
   Library.check_required_library ["Coq";"cc";"CC"];
-  let gl=gl_sg.it in
-  let prb=try make_prb gl with Not_an_eq ->
-    errorlabstrm  "CC" [< str "Couldn't match goal with an equality" >] in
-  match (cc_proof prb) with
-    None->errorlabstrm  "CC" [< str "CC couldn't solve goal" >] 
-  | Some (p,uf,axioms)->let tac=proof_tac uf axioms p in
-    (tclORELSE (st_wrap (Lazy.force eqT2eq_theo) tac)
-       (fun _->errorlabstrm  "CC" 
-	  [< str "CC doesn't know how to handle dependent equality." >]) gl_sg)
+  let prb=
+    try make_prb gls.it with 
+	Not_an_eq ->
+	  errorlabstrm  "CC" 
+	  [< str "Goal is not an equality" >] in
+    match (cc_proof prb) with
+	None->errorlabstrm  "CC" [< str "CC couldn't solve goal" >] 
+      | Some (p,uf,axioms)->
+	  tclORELSE (proof_tac uf axioms p)
+	  (fun _->errorlabstrm  "CC" 
+	     [< str "CC doesn't know how to handle dependent equality." >]) 
+	  gls
 
 (* Tactic registration *)
       

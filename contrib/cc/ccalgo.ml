@@ -16,104 +16,158 @@ open Term
 
 let init_size=251
   
-type term=Symb of constr|Appli of term*term
+type term=
+    Symb of constr
+  | Appli of term*term
 
+type rule=
+    Congruence
+  | Axiom of identifier
+
+type valid={lhs:int;rhs:int;rule:rule}
+
+let congr_valid i j= {lhs=i;rhs=j;rule=Congruence}
+
+let ax_valid i j id= {lhs=i;rhs=j;rule=Axiom id}
 
 (* Basic Union-Find algo w/o path compression *)
     
 module UF = struct
-  type tag=Congr|Ax of identifier
-      
-  type cl=Rep of int*(int list)|Eqto of int*(int*int*tag)
+
+  type cl=Rep of int*(int list)|Eqto of int*valid
 
   type vertex=Leaf|Node of (int*int) 
 
-  type t=(int ref)*((int,(cl*vertex*term)) Hashtbl.t)
+  type node={clas:cl;vertex:vertex;term:term}    
+
+  type t={mutable size:int;
+	  map:(int,node) Hashtbl.t;
+	  syms:(term,int) Hashtbl.t}
 	
-  let empty ()=(((ref 0),(Hashtbl.create init_size)):t)
-   	   
-  let add_lst i t ((a,m):t)=
-    match Hashtbl.find m i with
-      ((Rep(l,lst)),v,trm)->Hashtbl.replace m i ((Rep((l+1),(t::lst))),v,trm)
-    | _ ->failwith "add_lst: not a representative"
-	  
-  let rec find ((a,m):t) i=
-    let (cl,_,_)=Hashtbl.find m i in
-    match cl with
-      Rep(_,_) -> i
-    | Eqto(j,_) ->find (a,m) j
-	  
-  let list ((a,m):t) i=
-    match Hashtbl.find m i with
-      ((Rep(_,lst)),_,_)-> lst
-    | _ ->failwith "list: not a class"
-	  
-  let size ((a,m):t) i=
-    match Hashtbl.find m i with
-      ((Rep (l,_)),_,_) -> l
-    | _ ->failwith "size: not a class"
-	  
-  let signature ((a,m):t) i=
-    let (_,v,_)=Hashtbl.find m i in
-    match v with
-      Node(j,k)->(find (a,m) j,find (a,m) k)
-    | _ ->failwith "signature: not a node"
+  let empty ():t={size=0;
+		  map=Hashtbl.create init_size;
+		  syms=Hashtbl.create init_size}
 
-  let nodes ((a,m):t)=  (* cherche les noeuds binaires *)
-    Hashtbl.fold (fun i (_,v,_) l->match v with Node (_,_)->i::l|_->l) m [] 
+  let add_lst i t uf=
+    let node=Hashtbl.find uf.map i in
+      match node.clas with
+	  Rep(l,lst)->Hashtbl.replace uf.map i 
+	    {node with clas=Rep(l+1,t::lst)}
+	| _ ->failwith "add_lst: not a representative"
+	    
+  let rec find uf i=
+    match (Hashtbl.find uf.map i).clas with
+	Rep(_,_) -> i
+      | Eqto(j,_) ->find uf j
+	  
+  let list uf i=
+    match (Hashtbl.find uf.map i).clas with
+	Rep(_,lst)-> lst
+      | _ ->failwith "list: not a class"
+	  
+  let size uf i=
+    match (Hashtbl.find uf.map i).clas with
+	Rep (l,_) -> l
+      | _ ->failwith "size: not a class"
 
-  let rec add t (a,m) syms = 
-    try Hashtbl.find syms t with Not_found ->
-	match t with
-	  Symb s -> 
-	    let b= !a in incr a;
-	    Hashtbl.add m b ((Rep (0,[])),Leaf,t);
-	    Hashtbl.add syms t b;
-	    b
-	| Appli (t1,t2) -> 
-	    let i1=add t1 (a,m) syms and i2=add t2 (a,m) syms in
-	    let b= !a in incr a;
-	    add_lst (find (a,m) i1) b (a,m);
-            add_lst (find (a,m) i2) b (a,m);
-	    Hashtbl.add m b ((Rep (0,[])),(Node(i1,i2)),t);
-	    Hashtbl.add syms t b;
+  let term uf i=(Hashtbl.find uf.map i).term
+
+  let subterms uf i=
+    match (Hashtbl.find uf.map i).vertex with
+	Node(j,k) -> (j,k)
+      | _ -> failwith "subterms: not a node"
+
+  let signature uf i=
+    match (Hashtbl.find uf.map i).vertex with
+	Node(j,k)->(find uf j,find uf k)
+      | _ ->failwith "signature: not a node"
+
+  let nodes uf=  (* cherche les noeuds binaires *)
+    Hashtbl.fold 
+      (fun i node l->
+	 match node.vertex with 
+	     Node (_,_)->i::l
+	   | _ ->l) uf.map [] 
+
+  let next uf=
+    let n=uf.size in uf.size<-n+1; n
+	
+  let rec add t uf= 
+    try Hashtbl.find uf.syms t with 
+	Not_found ->
+	  let b=next uf in
+	  let new_node=
+	    match t with
+		Symb s -> 
+		  {clas=Rep (0,[]);
+		   vertex=Leaf;
+		   term=t}
+	      | Appli (t1,t2) -> 
+		  let i1=add t1 uf 
+		  and i2=add t2 uf in
+		    add_lst (find uf i1) b uf;
+		    add_lst (find uf i2) b uf;
+		    {clas=Rep (0,[]);
+		     vertex=Node(i1,i2);
+		     term=t}
+      in
+	    Hashtbl.add uf.map b new_node;
+	    Hashtbl.add uf.syms t b;
 	    b
 	      
-  let union ((a,m):t) i1 i2 t=
-    let (cl1,v1,t1)=(Hashtbl.find m i1) and 
-	(cl2,v2,t2)=(Hashtbl.find m i2) in
-    match cl1,cl1 with
-      ((Rep (l1,lst1)),(Rep (l2,lst2))) -> 
-	Hashtbl.replace m i2 ((Eqto (i1,t)),v2,t2);
-	Hashtbl.replace m i1 ((Rep((l2+l1),(lst2@lst1))),v1,t1)
-    | _ ->failwith "union: not classes"
-	  
-	  
+  let union uf i1 i2 t=
+    let node1=(Hashtbl.find uf.map i1) 
+    and node2=(Hashtbl.find uf.map i2) in
+      match node1.clas,node2.clas with
+	  Rep (l1,lst1),Rep (l2,lst2) -> 
+	    Hashtbl.replace uf.map i2 {node2 with clas=Eqto (i1,t)};
+	    Hashtbl.replace uf.map i1 
+	      {node1 with clas=Rep(l2+l1,lst2@lst1)}
+	| _ ->failwith "union: not classes"	  	  
+	    
+  let rec up_path uf i l=
+    match (Hashtbl.find uf.map i).clas with
+	Eqto(j,t)->up_path uf j (((i,j),t)::l)
+      | Rep(_,_)->l
+
+  let rec min_path=function
+      ([],l2)->([],l2)
+    | (l1,[])->(l1,[])
+    | (((c1,t1)::q1),((c2,t2)::q2)) when c1=c2 -> min_path (q1,q2) 
+    | cpl -> cpl
+	
+  let join_path uf i j=
+    assert (find uf i=find uf j);
+    min_path (up_path uf i [],up_path uf j [])
+      
 end    
     
 (* Signature table *)
 
 module ST=struct
   
-(* l: sign -> term r: term -> sign *)
+  (* l: sign -> term r: term -> sign *)
 	
-  type t = ((int*int,int) Hashtbl.t) * ((int,int*int) Hashtbl.t)
+  type t = {toterm:(int*int,int) Hashtbl.t;
+	    tosign:(int,int*int) Hashtbl.t}
 	
-  let empty ()=((Hashtbl.create init_size),(Hashtbl.create init_size))
+  let empty ()=
+    {toterm=Hashtbl.create init_size;
+     tosign=Hashtbl.create init_size}
       
-  let enter t sign ((l,r) as st:t)=
-    if Hashtbl.mem l sign then 
+  let enter t sign st=
+    if Hashtbl.mem st.toterm sign then 
 	failwith "enter: signature already entered"
     else 
-	Hashtbl.replace l sign t;
-	Hashtbl.replace r t sign
+	Hashtbl.replace st.toterm sign t;
+	Hashtbl.replace st.tosign t sign
 	  
-  let query sign ((l,r):t)=Hashtbl.find l sign
+  let query sign st=Hashtbl.find st.toterm sign
 	  
-  let delete t ((l,r) as st:t)=
-    try let sign=Hashtbl.find r t in
-	Hashtbl.remove l sign;
-	Hashtbl.remove r t
+  let delete t st=
+    try let sign=Hashtbl.find st.tosign t in
+	Hashtbl.remove st.toterm sign;
+	Hashtbl.remove st.tosign t
     with
 	Not_found -> ()
 
@@ -139,17 +193,17 @@ let rec process_rec uf st=function
       let pending=process_rec uf st combine in
       let i=UF.find uf v 
       and j=UF.find uf w in
-      if (i==j)|| ((Hashtbl.hash i)=(Hashtbl.hash j) && (i=j)) then 
+      if i=j then 
 	pending 
       else
 	if (UF.size uf i)<(UF.size uf j) then
 	  let l=UF.list uf i in
-	  UF.union uf j i (v,w,UF.Congr);
+	  UF.union uf j i (congr_valid v w);
 	  ST.delete_list l st;
 	  l@pending
 	else
 	  let l=UF.list uf j in
-	  UF.union uf i j (w,v,UF.Congr);
+	  UF.union uf i j (congr_valid w v);
 	  ST.delete_list l st;
 	  l@pending
 	  
@@ -162,22 +216,15 @@ let rec cc_rec uf st=function
 	
 let cc uf=(cc_rec uf (ST.empty ()) (UF.nodes uf))
 
-let rec make_uf syms=function
+let rec make_uf=function
     []->(UF.empty ())
   | (ax,(v,w))::q->
-      let uf=make_uf syms q in
-      let i1=UF.add v uf syms in
-      let i2=UF.add w uf syms in
-      UF.union uf (UF.find uf i2) (UF.find uf i1) (i1,i2,(UF.Ax ax));
+      let uf=make_uf q in
+      let i1=UF.add v uf in
+      let i2=UF.add w uf in
+      UF.union uf (UF.find uf i2) (UF.find uf i1) (ax_valid i1 i2 ax);
       uf
 	
-let decide_prb (axioms,(v,w))=
-  let syms=Hashtbl.create init_size in
-  let uf=make_uf syms axioms in
-  let i1=UF.add v uf syms in
-  let i2=UF.add w uf syms in
-  cc uf;
-  (UF.find uf i1)=(UF.find uf i2)
 
 
 

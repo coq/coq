@@ -17,16 +17,6 @@ type proof =
   | Sym of proof
   | Congr of proof * proof
 
-val up_path :
-  (int, UF.cl * 'a * 'b) Hashtbl.t ->
-  int ->
-  ((int * int) * (int * int * UF.tag)) list ->
-  ((int * int) * (int * int * UF.tag)) list
-
-val min_path :
-  ('a * 'b) list * ('a * 'c) list ->
-  ('a * 'b) list * ('a * 'c) list
-
 val pcongr : proof * proof -> proof
 val ptrans : proof * proof -> proof
 val psym : proof -> proof
@@ -35,14 +25,9 @@ val pcongr : proof * proof -> proof
 val build_proof : UF.t -> int -> int -> proof
 
 val type_proof :
-  'a ->
-  (Names.identifier * (term * term)) list ->
-  proof -> term * term
+  (Names.identifier * (term * term)) list -> proof -> term * term
 
 val cc_proof :
-  (Names.identifier * (term * term)) list *
-  (term * term) ->
-  (proof * UF.t *
-   (Names.identifier * (term * term)) list)
-  option
+  (Names.identifier * (term * term)) list * (term * term) ->
+  (proof * UF.t * (Names.identifier * (term * term)) list) option
 
