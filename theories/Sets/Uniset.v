@@ -28,7 +28,7 @@ Definition Fullset  := (Charac [a:A]true).
 Definition Singleton := [a:A](Charac [a':A]
               Case (eqA_dec a a') of 
                    [h:(eqA a a')]  true
-                   [h:~(eqA a a')] false end).
+                   [h: ~(eqA a a')] false end).
 
 Definition In : uniset -> A -> Prop :=
      [s:uniset][a:A](charac s a)=true.
