@@ -112,8 +112,10 @@ GEXTEND Gram
 	| [Coqast.Node(_,"LETTOPCLAUSE",[id;c])] ->
           <:ast< (TheoremProof "LETTOP" $id $c $tb) >>
 	| _ -> errorlabstrm "Gram.tactic_atom" (str "Not a LETTOPCLAUSE"))
-      |	IDENT "Match"; IDENT "Context"; IDENT "With"; mrl = match_context_list
-        -> <:ast< (MATCHCONTEXT ($LIST $mrl)) >>
+      |	IDENT "Match"; "Reverse"; IDENT "Context"; IDENT "With";
+        mrl = match_context_list -> <:ast< (MATCHCONTEXT "LR" ($LIST $mrl)) >>
+      |	IDENT "Match"; IDENT "Context"; IDENT "With";
+        mrl = match_context_list -> <:ast< (MATCHCONTEXT "RL" ($LIST $mrl)) >>
       |	IDENT "Match"; com = constrarg; IDENT "With"; mrl = match_list ->
         <:ast< (MATCH $com ($LIST $mrl)) >>
 (*
