@@ -140,14 +140,14 @@ Proof.
   Intros. Discriminate H.
 Qed.
 
-Lemma plus_is_one : 
+Definition plus_is_one : 
       (m,n:nat) (m+n)=(S O) -> {m=O /\ n=(S O)}+{m=(S O) /\ n=O}.
 Proof.
   NewDestruct m; Auto.
   NewDestruct n; Auto.
   Intros. 
   Simpl in H. Discriminate H.
-Qed.
+Defined.
 
 Lemma plus_permute_2_in_4 : (a,b,c,d:nat) ((a+b)+(c+d))=((a+c)+(b+d)).
 Proof.

@@ -242,7 +242,7 @@ Definition Zodd_bool :=
 		| _ => true
                end.
 
-Lemma Zeven_odd_dec : (z:Z) { (Zeven z) }+{ (Zodd z) }.
+Definition Zeven_odd_dec : (z:Z) { (Zeven z) }+{ (Zodd z) }.
 Proof.
   Intro z. Case z;
   [ Left; Compute; Trivial
@@ -254,9 +254,9 @@ Proof.
   Realizer Zeven_bool.
   Repeat Program; Compute; Trivial.
   i*)
-Qed.
+Defined.
 
-Lemma Zeven_dec : (z:Z) { (Zeven z) }+{ ~(Zeven z) }.
+Definition Zeven_dec : (z:Z) { (Zeven z) }+{ ~(Zeven z) }.
 Proof.
   Intro z. Case z;
   [ Left; Compute; Trivial
@@ -268,9 +268,9 @@ Proof.
   Realizer Zeven_bool.
   Repeat Program; Compute; Trivial.
   i*)
-Qed.
+Defined.
 
-Lemma Zodd_dec : (z:Z) { (Zodd z) }+{ ~(Zodd z) }.
+Definition Zodd_dec : (z:Z) { (Zodd z) }+{ ~(Zodd z) }.
 Proof.
   Intro z. Case z;
   [ Right; Compute; Trivial
@@ -282,7 +282,7 @@ Proof.
   Realizer Zodd_bool.
   Repeat Program; Compute; Trivial.
   i*)
-Qed.
+Defined.
 
 Lemma Zeven_not_Zodd : (z:Z)(Zeven z) -> ~(Zodd z).
 Proof.
@@ -486,14 +486,14 @@ Proof.
   Apply Zle_bool_imp_le. Assumption.
 Qed.
 
-Lemma Zle_bool_total : (x,y:Z) {(Zle_bool x y)=true}+{(Zle_bool y x)=true}.
+Definition Zle_bool_total : (x,y:Z) {(Zle_bool x y)=true}+{(Zle_bool y x)=true}.
 Proof.
   Intros. Unfold Zle_bool. Cut (Zcompare x y)=SUPERIEUR<->(Zcompare y x)=INFERIEUR.
   Case (Zcompare x y). Left . Reflexivity.
   Left . Reflexivity.
   Right . Rewrite (proj1 ? ? H (refl_equal ? ?)). Reflexivity.
   Apply Zcompare_ANTISYM.
-Qed.
+Defined.
 
 Lemma Zle_bool_plus_mono : (x,y,z,t:Z) (Zle_bool x y)=true -> (Zle_bool z t)=true ->
                                 (Zle_bool (Zplus x z) (Zplus y t))=true.

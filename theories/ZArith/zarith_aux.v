@@ -60,10 +60,10 @@ NewDestruct x; Auto with arith.
 Compute; Intros; Absurd SUPERIEUR=SUPERIEUR; Trivial with arith.
 Qed.
 
-Lemma Zabs_dec : (x:Z){x=(Zabs x)}+{x=(Zopp (Zabs x))}.
+Definition Zabs_dec : (x:Z){x=(Zabs x)}+{x=(Zopp (Zabs x))}.
 Proof.
 NewDestruct x;Auto with arith.
-Qed.
+Defined.
 
 Lemma Zabs_pos : (x:Z)(Zle ZERO (Zabs x)).
 NewDestruct x;Auto with arith; Compute; Intros H;Inversion H.
