@@ -106,8 +106,8 @@ given between parentheses in a list of modifiers that the
 examples refine.
 
 \begin{coq_example*}
-Notation "A /\ B" (and A B) (at level 80, right associativity).
-Notation "A \/ B" (or A B)  (at level 85, right associativity).
+Notation "A /\ B" := (and A B) (at level 80, right associativity).
+Notation "A \/ B" := (or A B)  (at level 85, right associativity).
 \end{coq_example*}
 
 By default, a notation is considered non associative, but the
@@ -129,7 +129,7 @@ One can also define notations for incomplete terms, with the hole
 expected to be inferred at typing time.
 
 \begin{coq_example*}
-Notation "x = y" := (@eq ? x y) (at level 70, no associativity).
+Notation "x = y" := (@eq _ x y) (at level 70, no associativity).
 \end{coq_example*}
 
 One can define {\em closed} notations whose both sides are symbols. In
@@ -182,6 +182,10 @@ LL1 parser. Hence, some care has to be taken not to hide already
 existing rules by new rules. Some simple left factorisation work has
 to be done. Here is an example.
 
+\begin{coq_eval}
+(********** The next rule for notation _ < _ < _  produces **********)
+(*** Error: Notation _ < _ < _ is already defined at level 70 ... ***)
+\end{coq_eval}
 \begin{coq_example*}
 Notation "x < y"     := (lt x y) (at level 70).
 Notation "x < y < z" := (x < y /\ y < z) (at level 70).
@@ -189,7 +193,7 @@ Notation "x < y < z" := (x < y /\ y < z) (at level 70).
 
 In order to factorise the left part of the rules, the subexpression
 referred by {\tt y} has to be at the same level in both rules. However
-the default behaviour puts {\tt y} at the next level below 70
+the default behavior puts {\tt y} at the next level below 70
 in the first rule (no associativity is the default), and at the level
 200 in the second rule (level 200 is the default for inner expressions).
 To fix this, we need to force the parsing level of {\tt y},
@@ -204,6 +208,13 @@ For the sake of factorisation with {\Coq} predefined rules, simple
 rules have to be observed for notations starting with a symbol:
 e.g. rules starting with ``\{'' or ``('' should be put at level 0. The
 list of {\Coq} predefined notations can be found in chapter \ref{Theories}.
+
+The command to display the current state of the {\Coq} term parser is
+\comindex{Print Grammar constr}
+
+\begin{quote}
+\tt Print Grammar constr.
+\end{quote}
 
 \subsection{Displaying symbolic notations}
 
@@ -322,7 +333,7 @@ and it is equivalent to
 where {\tt x} and {\tt y} are fresh names distinct from {\qualid}. Here is an example.
 
 \begin{coq_example*}
-Infix "/\" and (at level 80, right associativity).
+Infix "/\" := and (at level 80, right associativity).
 \end{coq_example*}
 
 \subsection{Reserving notations}
@@ -353,10 +364,24 @@ this, insert a {\tt where} notation clause after the definition of the
 each of them in case of mutual definitions). The exact syntax is given
 on Figure \ref{notation-syntax}. Here are examples:
 
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is correct but produces an error **********)
+(********** because the symbol /\ is already bound **********)
+(**** Error: The conclusion of A -> B -> A /\ B is not valid *****)
+\end{coq_eval}
+
 \begin{coq_example*}
 Inductive and (A B:Prop) : Prop := conj : A -> B -> A /\ B 
 where "A /\ B" := (and A B).
 \end{coq_example*}
+
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is correct but produces an error **********)
+(********** because the symbol + is already bound **********)
+(**** Error: no recursive definition *****)
+\end{coq_eval}
 
 \begin{coq_example*}
 Fixpoint plus (n m:nat) {struct n} : nat :=
@@ -779,7 +804,6 @@ compatibility Abbreviations are similar to the {\em syntactic
 definitions} available in versions of {\Coq} prior to version 8.0,
 except that abbreviations are used for printing (unless the modifier
 \verb=(only parsing)= is given) while syntactic definitions were not.
-
 
 % $Id$ 
 

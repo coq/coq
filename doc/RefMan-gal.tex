@@ -1,7 +1,7 @@
 \chapter{The \gallina{} specification language
 \label{Gallina}\index{Gallina}}
 
-This chapter describes \gallina, the specification language of Coq.
+This chapter describes \gallina, the specification language of {\Coq}.
 It allows to develop mathematical theories and to prove specifications
 of programs.  The theories are built from axioms, hypotheses,
 parameters, lemmas, theorems and definitions of constants, functions,
@@ -10,7 +10,7 @@ theories is described in section \ref{term}. The language of
 commands, called {\em The Vernacular} is described in section
 \ref{Vernacular}.
 
-In Coq, logical objects are typed to ensure their logical
+In {\Coq}, logical objects are typed to ensure their logical
 correctness. The rules implemented by the typing algorithm are described in
 chapter \ref{Cic}.
 
@@ -342,7 +342,7 @@ of types inside the syntactic class {\term}.
 (definitions, lemmas, theorems, remarks or facts), {\em global
 variables} (parameters or axioms), {\em inductive
 types} or {\em constructors of inductive types}.
-{\em Simple identifiers} (or shortly {\em identifiers}) are a
+{\em Simple identifiers} (or shortly {\ident}) are a
 syntactic subset of qualified identifiers.  Identifiers may also
 denote local {\em variables}, what qualified identifiers do not.
 
@@ -417,7 +417,7 @@ of types inside the syntactic class {\term}.
 \label{abstractions}
 \index{abstractions}}
 
-The expression ``{\tt fun} {\ident} {\tt :} \type {\tt =>} {\term}''
+The expression ``{\tt fun} {\ident} {\tt :} \type {\tt =>}~{\term}''
 denotes the {\em abstraction} of the variable {\ident} of type
 {\type}, over the term {\term}. Put in another way, it is function of
 formal parameter {\ident} of type {\type} returning {\term}.
@@ -444,19 +444,19 @@ variable products.
 
 Non dependent product types have a special notation ``$A$ {\tt ->}
 $B$'' stands for ``{\tt forall \_:}$A${\tt ,}~$B$''. This is to stress
-on the fact that non dependent produt types are usual functional types.
+on the fact that non dependent product types are usual functional types.
 
 \subsection{Applications
 \label{applications}
 \index{applications}}
 
-{\tt (}\term$_0$ \term$_1${\tt)} denotes the application of
+The expression \term$_0$ \term$_1$ denotes the application of
   term \term$_0$ to \term$_1$.
 
-The expression {\tt (}\term$_0$ \term$_1$ ...  \term$_n${\tt)}
+The expression {\tt }\term$_0$ \term$_1$ ...  \term$_n${\tt}
 denotes the application of the term \term$_0$ to the arguments
-\term$_1$ ... then \term$_n$.  It is equivalent to {\tt (} {\ldots}
-{\tt (} {\term$_0$} {\term$_1$} {\tt )} {\ldots} {\term$_n$} {\tt )}:
+\term$_1$ ... then \term$_n$.  It is equivalent to {\tt } {\ldots}
+{\tt (} {\term$_0$} {\term$_1$} {\tt )} {\ldots} {\term$_n$} {\tt }:
 associativity is to the left.
 
 When using implicit arguments mechanism, implicit positions can be
@@ -470,8 +470,7 @@ details.
 \index{Cast}}
 
 The expression ``{\term}~{\tt :}~{\type}'' is a type cast
-expression. It forces checking that {\term} has type {\type}. It is
-identified to {\term}.
+expression. It enforces the type of {\term} to be {\type}.
 
 \subsection{Inferable subterms
 \label{hole}
@@ -518,7 +517,8 @@ The expression {\tt match} {\term$_0$} {\returntype} {\tt with}
 {\pattern$_n$} {\tt =>} {\term$_n$} {\tt end}, denotes a {\em
 pattern-matching} over the term {\term$_0$} (expected to be of an
 inductive type $I$). {\term$_1$}\ldots{\term$_n$} are called branches. In
-a simple pattern \nelist{\ident}{}, the first {\ident} is intended to
+a simple pattern \qualid~\nelist{\ident}{}, the qualified identifier
+{\qualid} is intended to
 be a constructor. There should be a branch for every constructor of
 $I$.
 
@@ -532,8 +532,9 @@ match} depends on the actual {\term$_0$} matched.
 
 There are specific notations for case analysis on types with one or
 two constructors: {\tt if}\ldots{\tt then}\ldots{\tt else}\ldots and
-{\tt let (}\ldots{\tt ) :=}\ldots{\tt in}\ldots. \SeeAlso
-Section~\ref{Mult-match} for details and examples.
+{\tt let (}\ldots{\tt ) :=}\ldots{\tt in}\ldots. 
+
+\SeeAlso Section~\ref{Mult-match} for details and examples.
 
 \subsection{Recursive functions
 \label{fixpoints}
@@ -652,7 +653,7 @@ in the global context. The fact asserted by {\term} is thus assumed as
 a postulate.
 
 \begin{ErrMsgs}
-\item \errindex{Clash with previous constant {\ident}}
+\item \errindex{{\ident} already exists}
 \end{ErrMsgs}
 
 \begin{Variants} 
@@ -691,7 +692,7 @@ parameterized (the variable is {\em discharged}). Using the {\tt
 Variable} command out of any section is equivalent to {\tt Axiom}.
 
 \begin{ErrMsgs}
-\item \errindex{Clash with previous constant {\ident}}
+\item \errindex{{\ident} already exists}
 \end{ErrMsgs}
 
 \begin{Variants}
@@ -745,7 +746,7 @@ This command binds the value {\term} to the name {\ident} in the
 environment, provided that {\term} is well-typed.
 
 \begin{ErrMsgs}
-\item \errindex{Clash with previous constant {\ident}}
+\item \errindex{{\ident} already exists}
 \end{ErrMsgs}
 
 \begin{Variants}
@@ -763,7 +764,7 @@ environment, provided that {\term} is well-typed.
 \end{Variants}
 
 \begin{ErrMsgs}
-\item \errindex{In environment \dots the term: {\term$_2$} does not have type
+\item \errindex{In environment {\dots} the term: {\term$_2$} does not have type
     {\term$_1$}}.\\
     \texttt{Actually, it has type {\term$_3$}}.
 \end{ErrMsgs}
@@ -781,7 +782,7 @@ section and depending on {\ident} are prefixed by the local definition
 {\tt let {\ident} := {\term} in}.
 
 \begin{ErrMsgs}
-\item \errindex{Clash with previous constant {\ident}}
+\item \errindex{{\ident} already exists}
 \end{ErrMsgs}
 
 \begin{Variants}
@@ -1362,7 +1363,7 @@ found in chapter \ref{Proof-handling}.
 This command binds {\type} to the name {\ident} in the
 environment, provided that a proof of {\type} is next given.
 
-After a statement, Coq needs a proof.
+After a statement, {\Coq} needs a proof.
 
 \begin{Variants} 
 \item {\tt Lemma {\ident} : {\type}.}\\ 
@@ -1406,7 +1407,7 @@ environment using the keyword {\tt Qed}.
 
 \ErrMsg
 \begin{enumerate}
-\item \errindex{Clash with previous constant {\ident}}
+\item \errindex{{\ident} already exists}
 \end{enumerate}
 
 \begin{Remarks}
