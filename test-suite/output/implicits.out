@@ -1,0 +1,4 @@
+(compose 3!nat S)
+     : (nat->nat)->nat->nat
+(ex_intro 2!([_:nat]True) 3!(0) I)
+     : (ex ([_:nat]True))
