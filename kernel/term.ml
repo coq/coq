@@ -1176,3 +1176,35 @@ let hcons_constr (hspcci,hdir,hname,hident,hstr) =
   (hcci,htcci)
 
 let (hcons1_constr, hcons1_types) = hcons_constr (hcons_names())
+
+(*s Functions needed for MoWGLI *)
+
+(* [unshare t] gives back a copy of t where all sharing has been removed   *)
+(* Physical equality becomes meaningful on unshared terms. Hashtables that *)
+(* use physical equality can now be used to associate information to evey  *)
+(* node of the lambda-term.                                                *)
+let unshare ?(already_unshared = function _ -> false) t =
+ let rec unshare t =
+  if already_unshared t then t
+  else
+   match t with
+    | Rel n -> Rel n
+    | Meta n -> Meta n
+    | Var id -> Var id 
+    | Sort s -> Sort s
+    | Const c -> Const c
+    | Ind i -> Ind i
+    | Construct c -> Construct c
+    | Cast (c,t) -> Cast (unshare c, unshare t)
+    | Prod (na,t,c) -> Prod (na, unshare t, unshare c)
+    | Lambda (na,t,c) -> Lambda (na, unshare t, unshare c)
+    | LetIn (na,b,t,c) -> LetIn (na, unshare b, unshare t, unshare c)
+    | App (c,al) -> App (unshare c, Array.map unshare al)
+    | Evar (e,al) -> Evar (e, Array.map unshare al)
+    | Case (ci,p,c,bl) -> Case (ci, unshare p, unshare c, Array.map unshare bl)
+    | Fix (ln,(lna,tl,bl)) ->
+       Fix (ln,(lna,Array.map unshare tl,Array.map unshare bl))
+    | CoFix(ln,(lna,tl,bl)) ->
+       CoFix (ln,(lna,Array.map unshare tl,Array.map unshare bl))
+ in
+  unshare t

@@ -239,7 +239,10 @@ RINGCMO=contrib/ring/quote.cmo contrib/ring/g_quote.cmo \
 
 FIELDCMO=contrib/field/field.cmo 
 
-XMLCMO=contrib/xml/xml.cmo \
+XMLCMO=contrib/xml/xml.cmo contrib/xml/acic.cmo \
+       contrib/xml/doubleTypeInference.cmo \
+       contrib/xml/cic2acic.cmo contrib/xml/acic2Xml.cmo \
+       contrib/xml/proof2aproof.cmo contrib/xml/proofTree2Xml.cmo \
        contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo 	
 
 FOURIERCMO=contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo \
@@ -866,7 +869,8 @@ library/nametab.cmx: library/nametab.ml
 
 ML4FILES += lib/pp.ml4 			\
 	 contrib/xml/xml.ml4		\
-	 contrib/xml/xmlcommand.ml4	\
+	 contrib/xml/acic2Xml.ml4	\
+	 contrib/xml/proofTree2Xml.ml4	\
 	 contrib/interface/line_parser.ml4	\
 	 tools/coq_makefile.ml4		\
 	 tools/coq-tex.ml4
