@@ -675,9 +675,13 @@ Fixpoint sum_f_R0 [f:nat->R;N:nat]:R:=
     |(S i) => (Rplus (sum_f_R0 f i) (f (S i)))
   end.
 
+Arguments Scope sum_f_R0 [ _ nat_scope ].
+
 (*********)
 Definition sum_f [s,n:nat;f:nat->R]:R:=      
   (sum_f_R0 [x:nat](f (plus x s)) (minus n s)).
+
+Arguments Scope sum_f [ nat_scope nat_scope _ ].
 
 Lemma GP_finite:
   (x:R) (n:nat) (Rmult (sum_f_R0 [n:nat] (pow x n) n)
