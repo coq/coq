@@ -587,8 +587,7 @@ let abstract_conclusion typ cs =
   let (sign,p) = decompose_prod_n n typ in
   lam_it p sign
 
-let infer_predicate env isevars typs cstrs (IndType (indf,_) as indt) =
-  let IndFamily (mis,_) = indf in
+let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
   (* Il faudra substituer les isevars a un certain moment *)
   if Array.length cstrs = 0 then (* "TODO4-3" *)
     error "Inference of annotation for empty inductive types not implemented"
@@ -600,7 +599,7 @@ let infer_predicate env isevars typs cstrs (IndType (indf,_) as indt) =
     if array_for_all (fun (_,_,typ) -> the_conv_x env isevars typn typ) eqns
     then
       (* Non dependent case -> turn it into a (dummy) dependent one *)
-      let sign = (Anonymous,None,mkAppliedInd indt)::sign in
+      let sign = (Anonymous,None,build_dependent_inductive indf)::sign in
       let pred = it_mkLambda_or_LetIn (lift (List.length sign) typn) sign in
       (true,pred) (* true = dependent -- par défaut *)
     else
@@ -730,12 +729,11 @@ let specialize_predicate_match tomatchs cs = function
 	(* Ne perd-on pas des cas en ne posant pas true à la place de dep ? *)
 	(fun ((na,t),_) p -> PrProd ((dep,na,t),p)) tomatchs pred''
 
-let find_predicate env isevars p typs cstrs current 
-  (IndType (indf,realargs) as indt) =
+let find_predicate env isevars p typs cstrs current (IndType (indf,realargs)) =
   let (dep,pred) =
     match p with
       | Some p -> abstract_predicate env !isevars indf p
-      | None -> infer_predicate env isevars typs cstrs indt in
+      | None -> infer_predicate env isevars typs cstrs indf in
   let typ = whd_beta (applist (pred, realargs)) in
   if dep then
     (pred, whd_beta (applist (typ, [current])), Type Univ.dummy_univ)
