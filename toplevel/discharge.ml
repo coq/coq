@@ -253,7 +253,7 @@ let process_object oldenv olddir full_olddir newdir
           ((Class (y1,y2))::ops, ids_to_discard, work_alist)
 	  
     | "COERCION" -> 
-	let (((_,coeinfo),_,_)as x) = outCoercion lobj in
+	let (_,coeinfo,_,_ as x) = outCoercion lobj in
 	if coercion_strength coeinfo = Local then
 	  (ops,ids_to_discard,work_alist)
         else

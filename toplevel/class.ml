@@ -82,14 +82,14 @@ let explain_coercion_error g = function
   | NoTarget ->
       (str"Cannot find the target class")
   | WrongTarget (clt,cl) ->
-      (str"Found target class " ++ str(string_of_class cl) ++
-	str " while " ++ str(string_of_class clt) ++
+      (str"Found target class " ++ pr_class cl ++
+	str " while " ++ pr_class clt ++
 	str " is expected")
   | NotAClass ref ->
       (str "Type of " ++ Printer.pr_global ref ++
          str " does not end with a sort")
   | NotEnoughClassArgs cl ->
-      (str"Wrong number of parameters for " ++str(string_of_class cl))
+      (str"Wrong number of parameters for " ++ pr_class cl)
 
 (* Verifications pour l'ajout d'une classe *)
 
@@ -123,7 +123,7 @@ let try_add_class cl streopt fail_if_exists =
     declare_class (cl,stre,p)
   else
     if fail_if_exists then errorlabstrm "try_add_new_class" 
-      (str (string_of_class cl) ++ str " is already a class")
+      (pr_class cl ++ str " is already a class")
 
 
 (* Coercions *)
@@ -222,7 +222,7 @@ let get_strength stre ref cls clt =
 
 let error_not_transparent source =
   errorlabstrm "build_id_coercion"
-    (str ((string_of_class source)^" must be a transparent constant"))
+    (pr_class source ++ str " must be a transparent constant")
 
 let build_id_coercion idf_opt source =
   let env = Global.env () in
@@ -441,7 +441,7 @@ let process_cl sec_sp cl =
 	  cl
     | _ -> cl
 
-let process_coercion olddir ids_to_discard ((coe,coeinfo),cls,clt) =
+let process_coercion olddir ids_to_discard (coe,coeinfo,cls,clt) =
   let hyps = context_of_global_reference coe in
   let nargs = count_extra_abstractions hyps ids_to_discard in
   (process_global olddir coe,

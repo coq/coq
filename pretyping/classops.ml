@@ -49,21 +49,37 @@ type coe_info_typ = {
   coe_param : int }
 
 type cl_index = int
-type coe_index = int
+
+type coe_index = coe_info_typ
 
 type inheritance_path = coe_index list
 
-
 (* table des classes, des coercions et graphe d'heritage *)
 
+module Bijint = struct
+  type ('a,'b) t = { v : ('a * 'b) array; s : int; inv : ('a,int) Gmap.t }
+  let empty = { v = [||]; s = 0; inv = Gmap.empty }
+  let mem y b = Gmap.mem y b.inv
+  let map x b = if 0 <= x & x < b.s then b.v.(x) else raise Not_found
+  let revmap y b = let n = Gmap.find y b.inv in (n, snd (b.v.(n)))
+  let add x y b =
+    if mem x b then failwith "Bijint.add";
+    let v =
+      if b.s = Array.length b.v then
+	(let v = Array.make (b.s + 8) (x,y) in Array.blit b.v 0 v 0 b.s; v)
+      else b.v in
+    v.(b.s) <- (x,y); { v = v; s = b.s+1; inv = Gmap.add x b.s b.inv }
+  let dom b = Gmap.dom b.inv
+end
+
 let class_tab =
-  (ref [] : (cl_index * (cl_typ * cl_info_typ)) list ref)
+  ref (Bijint.empty : (cl_typ, cl_info_typ) Bijint.t)
 
 let coercion_tab =
-  (ref [] : (coe_index * (coe_typ * coe_info_typ)) list ref)
+  ref (Gmap.empty : (coe_typ, coe_info_typ) Gmap.t)
 
 let inheritance_graph =
-  (ref [] : ((cl_index * cl_index) * inheritance_path) list ref) 
+  ref (Gmap.empty : (cl_index * cl_index, inheritance_path) Gmap.t)
 
 let freeze () = (!class_tab, !coercion_tab, !inheritance_graph)
 
@@ -74,79 +90,44 @@ let unfreeze (fcl,fco,fig) =
 
 (* ajout de nouveaux "objets" *)
 
-let newNum_class = 
- let num = ref 0 in
- function () -> (num:=!num+1;!num)
+let add_new_class cl s = 
+  class_tab := Bijint.add cl s !class_tab
 
-let newNum_coercion = 
- let num = ref 0 in
- function () -> (num:=!num+1;!num)
+let add_new_coercion coe s = 
+  coercion_tab := Gmap.add coe s !coercion_tab
 
-let add_new_class_num (n,(cl,s)) = 
-  class_tab := (n,(cl,s))::(!class_tab)
-
-let add_new_class (cl,s) = 
-  add_new_class_num (newNum_class(),(cl,s))
-
-let add_new_coercion_num (n,(coe,s)) = 
-  coercion_tab := (n,(coe,s))::(!coercion_tab)
-
-let add_new_coercion (coe,s) = 
-  let n = newNum_coercion() in 
-  add_new_coercion_num (n,(coe,s));n
-
-let add_new_path x =
-  inheritance_graph := x::!inheritance_graph
+let add_new_path x y =
+  inheritance_graph := Gmap.add x y !inheritance_graph
 
 let init () =
-  class_tab:= []; 
-  add_new_class (CL_FUN,  { cl_param = 0; cl_strength = Global });
-  add_new_class (CL_SORT, { cl_param = 0; cl_strength = Global });
-  coercion_tab:= [];
-  inheritance_graph:= []
+  class_tab:= Bijint.empty; 
+  add_new_class CL_FUN  { cl_param = 0; cl_strength = Global };
+  add_new_class CL_SORT { cl_param = 0; cl_strength = Global };
+  coercion_tab:= Gmap.empty;
+  inheritance_graph:= Gmap.empty
 
 let _ = init()
 
-(* fonction de recherche *)
-
-let search_info x l = 
-  let rec aux = function 
-    | [] -> raise Not_found
-    | (n,(x1,r))::l -> if x=x1 then (n,r) else aux l
-  in 
-  aux l
-
 (* class_info : cl_typ -> int * cl_info_typ *)
 
-let class_info cl = search_info cl (!class_tab)
+let class_info cl = Bijint.revmap cl !class_tab
 
-let class_exists cl =
-  try let _ = class_info cl in true
-  with Not_found -> false
+let class_exists cl = Bijint.mem cl !class_tab
 
 (* class_info_from_index : int -> cl_typ * cl_info_typ *)
 
-let class_info_from_index i = List.assoc i !class_tab
+let class_info_from_index i = Bijint.map i !class_tab
 
-(* coercion_info : coe_typ -> int * coe_info_typ *)
+(* coercion_info : coe_typ -> coe_info_typ *)
 
-let coercion_info coe = search_info coe !coercion_tab
+let coercion_info coe = Gmap.find coe !coercion_tab
 
-let coercion_exists coe =
-  try let _ = coercion_info coe in true
-  with Not_found -> false
-
-let coe_of_reference x = x
+let coercion_exists coe = Gmap.mem coe !coercion_tab
 
 let coercion_params coe_info = coe_info.coe_param
 
-(* coercion_info_from_index : int -> coe_typ * coe_info_typ *)
-
-let coercion_info_from_index i = 
-  List.assoc i !coercion_tab
-
 let lookup_path_between (s,t) =
-  List.assoc (s,t) !inheritance_graph
+  Gmap.find (s,t) !inheritance_graph
 
 let lookup_path_to_fun_from s = 
   lookup_path_between (s,fst(class_info CL_FUN))
@@ -155,10 +136,9 @@ let lookup_path_to_sort_from s =
   lookup_path_between (s,fst(class_info CL_SORT))
 
 let lookup_pattern_path_between (s,t) =
-  let l = List.assoc (s,t) !inheritance_graph in
+  let l = Gmap.find (s,t) !inheritance_graph in
   List.map  
-    (fun i ->
-       let coe = snd (coercion_info_from_index i) in
+    (fun coe ->
        let c, _ =
 	 Reductionops.whd_betadeltaiota_stack (Global.env()) Evd.empty 
 	   coe.coe_value.uj_val
@@ -195,7 +175,7 @@ let subst_coe_info subst info =
 (*val inClass : (cl_typ * cl_info_typ) -> Libobject.object = <fun>
  val outClass : Libobject.object -> (cl_typ * cl_info_typ) = <fun> *)
 
-let cache_class (_,x) = add_new_class x
+let cache_class (_,(x,y)) = add_new_class x y
 
 let subst_class (_,subst,(ct,ci as obj)) = 
   let ct' = subst_cl_typ subst ct in
@@ -269,11 +249,11 @@ let string_of_class = function
   | CL_SECVAR sp ->
       string_of_qualid (shortest_qualid_of_global Idset.empty (VarRef sp))
 
+let pr_class x = str (string_of_class x)
+
 (* coercion_value : coe_index -> unsafe_judgment * bool *)
 
-let coercion_value i = 
-  let { coe_value = j; coe_is_identity = b } = snd (coercion_info_from_index i)
-  in (j,b)
+let coercion_value { coe_value = j; coe_is_identity = b } = (j,b)
 
 (* pretty-print functions are now in Pretty *)
 (* rajouter une coercion dans le graphe *)
@@ -299,66 +279,64 @@ let add_coercion_in_graph (ic,source,target) =
   let old_inheritance_graph = !inheritance_graph in
   let ambig_paths =
     (ref [] : ((cl_index * cl_index) * inheritance_path) list ref) in
-  let try_add_new_path (p,i,j) =
+  let try_add_new_path (i,j as ij) p =
     try 
       if i=j then begin
 	if different_class_params i j then begin
-	  let _ = lookup_path_between (i,j) in
-          ambig_paths := ((i,j),p)::!ambig_paths
+	  let _ = lookup_path_between ij in
+          ambig_paths := (ij,p)::!ambig_paths
 	end
       end else begin
         let _ = lookup_path_between (i,j) in
-        ambig_paths := ((i,j),p)::!ambig_paths
+        ambig_paths := (ij,p)::!ambig_paths
       end;
       false
     with Not_found -> begin
-      add_new_path ((i,j),p);
+      add_new_path ij p;
       true
     end
   in
-  let try_add_new_path1 (p,i,j) = 
-    let _ = try_add_new_path (p,i,j) in () 
+  let try_add_new_path1 ij p = 
+    let _ = try_add_new_path ij p in () 
   in
-  if try_add_new_path ([ic],source,target) then begin
-    List.iter 
-      (fun ((s,t),p) ->
+  if try_add_new_path (source,target) [ic] then begin
+    Gmap.iter 
+      (fun (s,t) p ->
          if s<>t then begin
 	   if t = source then begin
-             try_add_new_path1 (p @ [ ic ],s,target);
-             List.iter 
-	       (fun ((u,v),q) ->
+             try_add_new_path1 (s,target) (p@[ic]);
+             Gmap.iter
+	       (fun (u,v) q ->
                   if u<>v & (u = target) & (p <> q) then 
-		    try_add_new_path1 (p @ [ ic ] @ q,s,v))
+		    try_add_new_path1 (s,v) (p@[ic]@q))
                old_inheritance_graph
            end;
-           if s = target then try_add_new_path1 (ic::p,source,t)
+           if s = target then try_add_new_path1 (source,t) (ic::p)
 	 end)
       old_inheritance_graph 
   end;
   if (!ambig_paths <> []) && is_verbose () then 
     ppnl (message_ambig !ambig_paths)
 
-type coercion = (coe_typ * coe_info_typ) * cl_typ * cl_typ
+type coercion = coe_typ * coe_info_typ * cl_typ * cl_typ
 
-let cache_coercion (_,((coe,xf),cls,clt)) =
+let cache_coercion (_,(coe,xf,cls,clt)) =
   let is,_ = class_info cls in
   let it,_ = class_info clt in
-  let jf = add_new_coercion (coe,xf) in
-  add_coercion_in_graph (jf,is,it)
+  add_new_coercion coe xf;
+  add_coercion_in_graph (xf,is,it)
 
-let subst_coercion (_,subst,((coe,xf),cls,clt as obj)) =
+let subst_coercion (_,subst,(coe,xf,cls,clt as obj)) =
   let coe' = subst_coe_typ subst coe in
   let xf' = subst_coe_info subst xf in
   let cls' = subst_cl_typ subst cls in
   let clt' = subst_cl_typ subst clt in
     if coe' == coe && xf' == xf && cls' == cls & clt' == clt then obj else
-      ((coe',xf'),cls',clt')
+      (coe',xf',cls',clt')
       
     
-(* val inCoercion : (coe_typ * coe_info_typ) * cl_typ * cl_typ  ->
-                    -> Libobject.object 
-   val outCoercion : Libobject.object -> (coe_typ * coe_info_typ) 
-                         * cl_typ * cl_typ *)
+(* val inCoercion : coercion -> Libobject.object 
+   val outCoercion : Libobject.object -> coercion *)
 
 let (inCoercion,outCoercion) =
   declare_object {(default_object "COERCION") with 
@@ -371,11 +349,11 @@ let (inCoercion,outCoercion) =
 let declare_coercion coef v stre ~isid ~src:cls ~target:clt ~params:ps =
   Lib.add_anonymous_leaf
     (inCoercion
-       ((coef,
+       (coef,
 	 { coe_value = v;
 	   coe_strength = stre;
 	   coe_is_identity = isid;
-	   coe_param = ps }),
+	   coe_param = ps },
 	cls, clt))
 
 let coercion_strength v = v.coe_strength
@@ -384,17 +362,16 @@ let coercion_identity v = v.coe_is_identity
 (* For printing purpose *)
 let get_coercion_value v = v.coe_value.uj_val
 
-let classes () = !class_tab
-let coercions () = !coercion_tab
-let inheritance_graph () = !inheritance_graph
+let classes () = Bijint.dom !class_tab
+let coercions () = Gmap.rng !coercion_tab
+let inheritance_graph () = Gmap.to_list !inheritance_graph
 
 let coercion_of_qualid qid =
   let ref = Nametab.global qid in
-  let coe = coe_of_reference ref in
-  if not (coercion_exists coe) then
+  if not (coercion_exists ref) then
     errorlabstrm "try_add_coercion" 
       (Nametab.pr_global_env Idset.empty ref ++ str" is not a coercion");
-  coe
+  ref
 
 module CoercionPrinting =
   struct
@@ -414,6 +391,6 @@ module PrintingCoercion  = Goptions.MakeRefTable(CoercionPrinting)
 
 let hide_coercion coe =
   if not (PrintingCoercion.active coe) then
-    let _,coe_info = coercion_info coe in
+    let coe_info = coercion_info coe in
     Some coe_info.coe_param
   else None

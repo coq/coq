@@ -439,43 +439,32 @@ open Classops
 
 let print_coercion_value v = prterm (get_coercion_value v)
 
-let print_index_coercion c = 
-  let _,v = coercion_info_from_index c in
-  print_coercion_value v
-
 let print_class i =
   let cl,_ = class_info_from_index i in
-  (str (string_of_class cl))
+  pr_class cl
   
 let print_path ((i,j),p) = 
   (str"[" ++ 
-     prlist_with_sep (fun () -> (str"; "))
-       (fun c ->  print_index_coercion c) p ++
+     prlist_with_sep pr_semicolon print_coercion_value p ++
      str"] : " ++ print_class i ++ str" >-> " ++
      print_class j)
 
 let _ = Classops.install_path_printer print_path
 
 let print_graph () = 
-  (prlist_with_sep pr_fnl print_path (inheritance_graph()))
+  prlist_with_sep pr_fnl print_path (inheritance_graph())
 
 let print_classes () = 
-  (prlist_with_sep pr_spc
-       (fun (_,(cl,x)) -> 
-          (str (string_of_class cl)
-	       (* ++ str(string_of_strength x.cl_strength) *))) 
-       (classes()))
+  prlist_with_sep pr_spc pr_class (classes())
 
 let print_coercions () = 
-  (prlist_with_sep pr_spc
-       (fun (_,(_,v)) -> (print_coercion_value v)) (coercions()))
+  prlist_with_sep pr_spc print_coercion_value (coercions())
   
 let index_of_class cl =
   try 
     fst (class_info cl)
   with _ -> 
-    errorlabstrm "index_of_class"
-      (str(string_of_class cl) ++ str" is not a defined class")
+    errorlabstrm "index_of_class" (pr_class cl ++ str" is not a defined class")
 
 let print_path_between cls clt = 
   let i = index_of_class cls in
@@ -485,8 +474,7 @@ let print_path_between cls clt =
       lookup_path_between (i,j) 
     with _ -> 
       errorlabstrm "index_cl_of_id"
-        (str"No path between " ++str(string_of_class cls) ++ 
-	   str" and " ++str(string_of_class clt))
+        (str"No path between " ++ pr_class cls ++ str" and " ++ pr_class clt)
   in
   print_path ((i,j),p)
 
