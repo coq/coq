@@ -10,7 +10,7 @@ dev/order_deps: dev/order_deps.ml
 dev/get_files: dev/get_files.ml
 	$(OCAMLC) -o $@ str.cma $<
 
-CIMEHOME=../local/cime-2002-06-30/ocaml_src
+CIMEHOME=$(HOME)/local/cime-2002-06-30/ocaml_src
 
 CIMEDIRS=compat pvm orderings dioph_caml integer_solver words regexp terms \
 	term_orderings standard_matching_and_unification matching unification \
@@ -42,7 +42,7 @@ build-release: copy-cime cime/cimecmo-def
 	echo do make clean; make depend; make world
 
 copy-cime: cime/cime-cmos
-	dev/copy-cime $(CIMEHOME)
+	dev/copy-cime $(CIMEHOME) cime/cime-cmos
 
 cime/cimecmo-def:
 	echo -n CIMECMO= > $@
