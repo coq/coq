@@ -1,13 +1,12 @@
 
-            INSTALLATION PROCEDURES FOR THE COQ V7 SYSTEM
+            INSTALLATION PROCEDURES FOR THE COQ V7.0 SYSTEM
             ---------------------------------------------
-                          (beta version)
 
 WHAT DO YOU NEED ?
 ==================
 
    Coq is designed to work on computers equipped with the Unix operating 
-   system. In order to compile Coq V7 you need:
+   system. In order to compile Coq V7.0 you need:
 
      - Objective Caml version 3.01 or later
        (available at http://caml.inria.fr/)

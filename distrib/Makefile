@@ -70,7 +70,7 @@ tar-gz:
 	@echo done
 	@echo -n Building the tar.gz source package
 	@tar cvf ${COQPACKAGE}.tar ${COQPACKAGE}
-	@gzip --best ${COQPACKAGE}.tar
+	@gzip --best --force ${COQPACKAGE}.tar
 	@echo done
 	@echo Checking release parameters
 	./check-list
