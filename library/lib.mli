@@ -32,6 +32,7 @@ and library_entry = object_name * node
 
 and library_segment = library_entry list
 
+type lib_objects = (identifier * obj) list
 
 (*s These functions iterate (or map) object functions.
 
@@ -60,13 +61,28 @@ val classify_segment :
 val change_kns : module_path -> library_segment -> library_segment
 
 
+
+val open_objects : int -> object_prefix -> lib_objects -> unit
+val load_objects : int -> object_prefix -> lib_objects -> unit
+val subst_objects : 
+  object_prefix -> substitution -> lib_objects -> lib_objects
+val classify_objects : 
+  library_segment -> lib_objects * lib_objects * obj list
+
+val segment_of_objects :
+  object_prefix -> lib_objects -> library_segment
+
 (*s Adding operations (which call the [cache] method, and getting the
   current list of operations (most recent ones coming first). *)
 
 val add_leaf : identifier -> obj -> object_name
-val add_leaves : library_segment -> identifier -> obj -> object_name
 val add_absolutely_named_leaf : object_name -> obj -> unit
 val add_anonymous_leaf : obj -> unit
+
+(* this operation adds all objects with the same name and calls load_object 
+   for each of them *)
+val add_leaves : identifier -> obj list -> object_name
+
 val add_frozen_state : unit -> unit
 val mark_end_of_command : unit -> unit
 

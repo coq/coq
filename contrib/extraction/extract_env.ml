@@ -82,8 +82,7 @@ let check_modules m =
   We just keep constants and inductives. *)
 
 let extract_module m =
-  let seg1,seg2 = Declaremods.module_objects (MPfile m) in
-  let seg = seg1 @ seg2 in 
+  let seg = Declaremods.module_objects (MPfile m) in
   let get_reference = function
     | (_,kn), Leaf o ->
 	(match Libobject.object_tag o with

@@ -1001,8 +1001,7 @@ let printLibrary (loc,qid) dn =
   let (_,dir_path,_) = L.locate_qualified_library qid in
 
   let str = Ln.string_of_qualid qid in 
-  let ls1,ls2 = Dm.module_objects (N.MPfile dir_path) in
-  let ls = ls1@ls2 in
+  let ls = Dm.module_objects (N.MPfile dir_path) in
    print_if_verbose ("LIBRARY_BEGIN " ^ str ^ " " ^
     (L.library_full_filename dir_path) ^ "\n") ;
    print_closed_section str (List.rev ls) dn ;

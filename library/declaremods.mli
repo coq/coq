@@ -44,7 +44,7 @@ val end_modtype : identifier -> unit
 (*s Objects of a module. They come in two lists: the substitutive ones
   and the other *)
 
-val module_objects : module_path -> library_segment * library_segment
+val module_objects : module_path -> library_segment
 
 
 (*s Libraries i.e. modules on disk *)

@@ -32,6 +32,7 @@ and library_entry = object_name * node
 
 and library_segment = library_entry list
 
+type lib_objects =  (identifier * obj) list
 
 let rec iter_leaves f i seg =
   match seg with
@@ -66,6 +67,46 @@ let subst_segment (dirpath,(mp,dir)) subst seg =
     | _ -> anomaly "We should have leaves only here"
   in
     List.map subst_one seg
+
+
+let iter_objects f i prefix =
+  List.iter (fun (id,obj) -> f i (make_oname prefix id, obj))
+
+let load_objects = iter_objects load_object
+let open_objects = iter_objects open_object
+
+let subst_objects prefix subst seg = 
+  let subst_one = fun (id,obj as node) ->
+    let obj' = subst_object (make_oname prefix id, subst, obj) in
+      if obj' == obj then node else
+	(id, obj')
+  in
+    list_smartmap subst_one seg
+
+let classify_objects seg =
+  let rec clean ((substl,keepl,anticipl) as acc) = function
+    | (_,CompilingModule _) :: _ | [] -> acc
+    | ((sp,kn as oname),Leaf o) as node :: stk -> 
+	let id = id_of_label (label kn) in
+	  (match classify_object (oname,o) with 
+	     | Dispose -> clean acc stk
+	     | Keep o' -> 
+		 clean (substl, (id,o')::keepl, anticipl) stk
+	     | Substitute o' -> 
+		 clean ((id,o')::substl, keepl, anticipl) stk
+	     | Anticipate o' ->
+		 clean (substl, keepl, o'::anticipl) stk)
+    | (oname,ClosedSection _ as item) :: stk -> clean acc stk
+    | (_,OpenedSection _) :: _ -> error "there are still opened sections"
+    | (_,OpenedModule _) :: _ -> error "there are still opened modules"
+    | (_,OpenedModtype _) :: _ -> error "there are still opened module types"
+    | (_,FrozenState _) :: stk -> clean acc stk
+  in
+    clean ([],[],[]) (List.rev seg)
+
+
+let segment_of_objects prefix =
+  List.map (fun (id,obj) -> (make_oname prefix id, Leaf obj))
 
 (* We keep trace of operations in the stack [lib_stk]. 
    [path_prefix] is the current path of sections, where sections are stored in 
@@ -105,6 +146,7 @@ let make_kn id =
   let mp,dir = snd !path_prefix in
     Names.make_kn mp dir (label_of_id id)
 
+let make_oname id = make_path id, make_kn id
 
 let sections_depth () =
   List.length (repr_dirpath (snd (snd !path_prefix)))
@@ -143,7 +185,7 @@ let anonymous_id =
 
 let add_anonymous_entry node =
   let id = anonymous_id () in
-  let name = make_path id, make_kn id in
+  let name = make_oname id in
   add_entry name node;
   name
 
@@ -152,26 +194,25 @@ let add_absolutely_named_leaf sp obj =
   add_entry sp (Leaf obj)
 
 let add_leaf id obj =
-  let name = make_path id, make_kn id in
-  cache_object (name,obj);
-  add_entry name (Leaf obj);
-  name
+  let oname = make_oname id in
+  cache_object (oname,obj);
+  add_entry oname (Leaf obj);
+  oname
 
-let add_leaves stack id obj =
-  let name = make_path id, make_kn id in
-  load_segment 1 stack;
-  List.iter (function (_,Leaf obj) -> add_entry name (Leaf obj) 
-	       | _ -> anomaly "Only leaves expected in add_leaves")
-    stack;
-  cache_object (name,obj);
-  add_entry name (Leaf obj);
-  name
+let add_leaves id objs =
+  let oname = make_oname id in
+  let add_obj obj = 
+    add_entry oname (Leaf obj);
+    load_object 1 (oname,obj) 
+  in
+  List.iter add_obj objs;
+  oname
 
 let add_anonymous_leaf obj =
   let id = anonymous_id () in
-  let name = make_path id, make_kn id in
-  cache_object (name,obj);
-  add_entry name (Leaf obj)
+  let oname = make_oname id in
+  cache_object (oname,obj);
+  add_entry oname (Leaf obj)
 
 let add_frozen_state () =
   let _ = add_anonymous_entry (FrozenState (freeze_summaries())) in ()

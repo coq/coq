@@ -96,6 +96,8 @@ type object_name = section_path * kernel_name
 
 type object_prefix = dir_path * (module_path * dir_path)
 
+val make_oname : object_prefix -> identifier -> object_name
+
 (* to this type are mapped dir_path's in the nametab *)
 type global_dir_reference = 
   | DirOpenModule of object_prefix
