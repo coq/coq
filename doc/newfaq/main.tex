@@ -21,24 +21,43 @@
 \def\CoqIde{\textsc{CoqIde }}
 
 % macro pour les tactics
-\def\split{{\tt split}}
-\def\assumption{{\tt assumption}}
-\def\auto{{\tt auto}}
-\def\trivial{{\tt trivial}}
-\def\tauto{{\tt tauto}}
-\def\left{{\tt left}}
-\def\right{{\tt right}}
-\def\decompose{{\tt decompose}}
-\def\intro{{\tt intro}}
-\def\intros{{\tt intros}}
-\def\field{{\tt field}}
-\def\ring{{\tt ring}}
-\def\apply{{\tt apply}}
-\def\exact{{\tt exact}}
-\def\cut{{\tt cut}}
-\def\assert{{\tt assert}}
-\def\solve{{\tt solve}}
-
+\def\split{{\tt split }}
+\def\assumption{{\tt assumption }}
+\def\auto{{\tt auto }}
+\def\trivial{{\tt trivial }}
+\def\tauto{{\tt tauto }}
+\def\left{{\tt left }}
+\def\right{{\tt right }}
+\def\decompose{{\tt decompose }}
+\def\intro{{\tt intro }}
+\def\intros{{\tt intros }}
+\def\field{{\tt field }}
+\def\ring{{\tt ring }}
+\def\apply{{\tt apply }}
+\def\exact{{\tt exact }}
+\def\cut{{\tt cut }}
+\def\assert{{\tt assert }}
+\def\solve{{\tt solve }}
+\def\idtac{{\tt idtac }}
+\def\fail{{\tt fail }}
+\def\exists{{\tt exists }}
+\def\firstorder{{\tt firstorder }}
+\def\congruence{{\tt congruence }}
+\def\gb{{\tt gb }}
+\def\generalize{{\tt generalize }}
+\def\abstractt{{\tt abstract }}
+\def\eapply{{\tt eapply }}
+\def\unfold{{\tt unfold }}
+\def\rewrite{{\tt rewrite }}
+\def\replace{{\tt replace }}
+\def\simpl{{\tt simpl }}
+\def\set{{\tt set }}
+\def\pose{{\tt pose }}
+\def\case{{\tt case }}
+\def\destruct{{\tt destruct }}
+\def\reflexivity{{\tt reflexivity }}
+\def\transitivity{{\tt transitivity }}
+\def\symmetry{{\tt symmetry }}
 
 
 \begin{document}
@@ -252,7 +271,7 @@ Qed.
 
 \Question[conjonctionhyp]{My goal contains a conjunction as an hypothesis, how can I use it ?}
 
-If you want to decompose your hypohtesis into other hypothesis you can use the {\tt decompose} tactic :
+If you want to decompose your hypohtesis into other hypothesis you can use the \decompose tactic :
 
 \begin{coq_example}
 Goal forall A B:Prop, A/\B-> B.
@@ -266,7 +285,7 @@ Qed.
 \Question[disjonction]{My goal is a disjonction, how can I prove it ?}
 
 You can prove the left part or the right part of the disjunction using
-{\tt left} or {\tt right} tactics. If you want to do a classical
+\left or \right tactics. If you want to do a classical
 reasoning step, use {\tt } to prove the right part with the assumption
 that the left part of the disjunction is false.
 
@@ -279,24 +298,34 @@ Qed.
 \end{coq_example}
 
 
-
 \Question[forall]{My goal is an universally quantified statement, how can I prove it ?}
 
 Use some theorem or assumption or introduce the quantified variable in
-the context using the {\tt intro} tactic. If there are several
-variables you can use the {\tt intros} tactic. A good habit is to
+the context using the \intro tactic. If there are several
+variables you can use the \intros tactic. A good habit is to
 provide names for these variables: \Coq will do it anyway, but such
 automatic naming decreases readability and robustness.
 
+
+
+
 \Question[exist]{My goal is an existential, how can I prove it ?}
 
-Use some theorem or assumption or exhibits the witness using {\tt exists} tactic.
+Use some theorem or assumption or exhibits the witness using \exists tactic.
+\begin{coq_example}
+Goal exists x:nat, forall y, x+y=y.
+exists 0.
+intros.
+auto.
+Qed.
+\end{coq_example}
+
 
 \Question[taut]{My goal is a propositional tautology, how can I prove it ?}
 
-Just use the {\tt tauto} tactic.
+Just use the \tauto tactic.
 \begin{coq_example}
-Goal forall A B:Prop, A-> A\/B.
+Goal forall A B:Prop, A-> (A\/B) /\ A.
 intros.
 tauto.
 Qed.
@@ -304,13 +333,11 @@ Qed.
 
 \Question[firstorder]{My goal is a first order formula, how can I prove it ?}
 
-Just use the {\tt firstorder} tactic.
-
-
+Just use the \firstorder tactic.
 
 \Question[cong]{My goal is solvable by a sequence of rewrites, how can I prove it ?}
 
-Just use the {\tt congruence} tactic.
+Just use the \congruence tactic.
 \begin{coq_example}
 Goal forall a b c d e, a=d -> b=e -> c+b=d -> c+e=a.
 intros.
@@ -321,7 +348,7 @@ Qed.
 
 \Question[congnot]{My goal is disequality solvable by a sequence of rewrites, how can I prove it ?}
 
-Just use the {\tt congruence} tactic.
+Just use the \congruence tactic.
 %\begin{coq_example}
 %Goal forall a b c d, a<>d -> b=a -> d=c+b -> b<>c+b.
 %intros.
@@ -332,7 +359,7 @@ Just use the {\tt congruence} tactic.
 
 \Question[ring]{My goal is an equality on some ring (e.g. natural numbers), how can I prove it ?}
 
-Just use the {\tt ring} tactic.
+Just use the \ring tactic.
 
 \begin{coq_example}
 Require Import ZArith.
@@ -346,7 +373,7 @@ Qed.
 
 \Question[field]{My goal is an equality on some field (e.g. reals), how can I prove it ?}
 
-Just use the {\tt field} tactic.
+Just use the \field tactic.
 
 \begin{coq_example}
 Require Import Reals.
@@ -376,11 +403,11 @@ Qed.
 
 \Question[gb]{My goal is an equation solvable using equational hypothesis on some ring (e.g. natural numbers), how can I prove it ?}
 
-Just use the {\tt gb} tactic.
+Just use the \gb tactic.
 
 \Question[apply]{My goal is solvable by  some lemma, how can I prove it ?}
 
-Just use the {\tt apply} tactic.
+Just use the \apply tactic.
 
 \begin{coq_example}
 Lemma mylemma : forall x, x+0 = x.
@@ -391,6 +418,20 @@ Goal 3+0 = 3.
 apply mylemma.
 Qed.
 \end{coq_example}
+
+\Question[reflexivity]{My goal is an equality of two convertible terms, how can I prove it ?}
+
+Just use the \reflexivity tactic.
+
+\Question[symmetry]{My goal is an equality, how can I swap the left and right hand terms ?}
+
+Just use the \symmetry tactic.
+
+\Question[transitivity]{My goal is an equality, how can I prove it by transitivity ?}
+
+Just use the \transitivity tactic.
+
+
 
 \Question[autowith]{My goal is solvable by  some lemma within a set of lemmas and I don't want to remember which one, how can I prove it ?}
 
@@ -410,7 +451,7 @@ Qed.
 
 \Question[assumption2]{My goal is more than one of the hypothesis and I want to chose which one is used, how can I do it ?}
 
-Use the {\tt exact} tactic.
+Use the \exact tactic.
 \begin{coq_example}
 Goal 1=1 -> 1=1 -> 1=1.
 intros.
@@ -422,12 +463,38 @@ Qed.
 
 From a proof point of view it is equivalent but if you want to extract a program from your proof, the two hyphoteses can lead to different programs.
 
+
 \Question[trivial]{My goal is ???, how can I prove it ?}
+
+\Question[rewrite]{I want to replace some term with another in the goal, how can I do it ?}
+
+If one of your hypothesis (say {\tt H}) states that the terms are equals you can use the \rewrite tactic. Otherwise you can use the \replace {\tt with} tactic. 
+
+\Question[rewrite2]{I want to replace some term with another in the hypothesis, how can I do it ?}
+
+You can use the \rewrite {\tt in} tactic.
+
+\Question[unfold]{I want to replace some symbol with its definition, how can I do it ?}
+
+You can use the \unfold tactic.
+
+
+\Question[simpl]{How can I reduce some term ?}
+
+You can use the \simpl tactic.
+
+\Question[pose]{How can I pose some term ?}
+
+You can use the \set or \pose tactics.
+
+\Question[case]{How can I perform can analysis ?}
+
+You can use the \case or \destruct tactics.
 
 
 \Question[namedintros]{Why should I name my intros ?}
 
-When you use the {\tt intro} tactic you don't have to give a name to your hyphothesis. If you do so the names will be generated by \Coq but your scripts won't be modular. If you add some hyphothesis to your theorem (or change their order), you will have to change your proof to adapt to the new names.
+When you use the \intro tactic you don't have to give a name to your hyphothesis. If you do so the names will be generated by \Coq but your scripts won't be modular. If you add some hyphothesis to your theorem (or change their order), you will have to change your proof to adapt to the new names.
 
 
 \Question[assert]{I want to state a fact that I will use later as an hypothesis, how can I do it ?}
@@ -435,23 +502,58 @@ When you use the {\tt intro} tactic you don't have to give a name to your hyphot
 If you want to use forward reasoning (first proving the fact and then using it) You just need to use the \assert tactic. If you want to use backward reasoning (proving your goal using an assumption and then proving the assumption) use the \cut tactic.
 
 
-
-
-
 \Question[proofwith]{I want to automatize the use of some tactic how can I do it ?}
 
-You need to use the {\tt proof with T} command.
+You need to use the {\tt proof with T} command and add \ldots at the end of your sentences.
+
 For instance :
+\begin{coq_example}
+Goal forall A B C : Prop, A -> B/\C -> A/\B/\C.
+Proof with assumption.
+intros.
+split...
+Qed.
+\end{coq_example}
 
 
-\Question[complete]{I want to execute the proofwith tactic only if it solves the goal, how can I do it ?}
+\Question[solve]{I want to execute the proofwith tactic only if it solves the goal, how can I do it ?}
 
 You need to use the \solve tactic.
+For instance :
+\begin{coq_example}
+Require Import ZArith.
+Require Ring.
+Open Local Scope Z_scope.
+Goal forall a b c : Z, c=0 -> c=0.
+Proof with solve [ring].
+intros.
+auto.
+Qed.
+\end{coq_example}
+
+
 
 \Question[subgoalsorder]{How can I change the order of the subgoals ?}
 
 
+
 \Question[hyphotesisorder]{How can I change the order of the hypothesis ?}
+
+You can use the {\tt move ... after} command.
+
+\Question[hyphotesisname]{How can I change the name of an hypothesis ?}
+
+You can use the {\tt rename ... into} command.
+
+\Question[generalize]{How can I do the opposite of the \intro tactic ?}
+
+You can use the \generalize tactic.
+
+
+\Question[applyerror]{What can I do if I get {\tt generated subgoal term' has metavariables in it } ?}
+
+You should use the \eapply tactic.
+
 
 \Question[ifsyntax]{What is the syntax for if ?}
 
@@ -459,9 +561,10 @@ You need to use the \solve tactic.
 
 \Question[patternmatchingsyntax]{What is the syntax for pattern matching ?}
 
+
 \Question[abstract]{What can I do when {\tt Qed.} is slow ?}
 
-Sometime you can use the {\tt abstract} tactic, which makes as if you had stated one intermediated lemmas, this speeds up the typing process.  
+Sometime you can use the \abstractt tactic, which makes as if you had stated one intermediated lemmas, this speeds up the typing process.  
 
 
 %%%%%%%
@@ -477,8 +580,8 @@ high-level ``toolbox'' for tactic creation.
 
 \Question[ltacprint]{Is there any printing command in \Ltac ?}
 
-You can use the {\tt idtac} tactic with a string argument. This string
-will be printed out. The same applies to the {\tt fail} tactic
+You can use the \idtac tactic with a string argument. This string
+will be printed out. The same applies to the \fail tactic
 
 \Question[letltac]{What is the syntax for let in \Ltac ?}
 
@@ -545,7 +648,7 @@ that is still unknown.
 This is a proof generated by some computation which is done using the
 internal reduction of Coq (not using the tactic language of \Coq
 (\Ltac) nor the implementation language for \Coq).  An example of
-tactic using the reflection mechanism is the {\tt ring} tactic. The
+tactic using the reflection mechanism is the \ring tactic. The
 reflection method consist in reflecting a subset of Coq language (for
 example the arithmetical expressions) into an object of the Coq
 language itself (in this case an inductive type denoting arithmetical
