@@ -573,10 +573,10 @@ interp/constrintern.cmx: lib/bignat.cmx kernel/environ.cmx pretyping/evd.cmx \
     interp/syntax_def.cmx kernel/term.cmx pretyping/termops.cmx \
     interp/topconstr.cmx lib/util.cmx interp/constrintern.cmi 
 interp/coqlib.cmo: interp/constrextern.cmi library/libnames.cmi \
-    kernel/names.cmi library/nametab.cmi pretyping/pattern.cmi \
+    kernel/names.cmi library/nametab.cmi pretyping/pattern.cmi lib/pp.cmi \
     kernel/term.cmi lib/util.cmi interp/coqlib.cmi 
 interp/coqlib.cmx: interp/constrextern.cmx library/libnames.cmx \
-    kernel/names.cmx library/nametab.cmx pretyping/pattern.cmx \
+    kernel/names.cmx library/nametab.cmx pretyping/pattern.cmx lib/pp.cmx \
     kernel/term.cmx lib/util.cmx interp/coqlib.cmi 
 interp/genarg.cmo: pretyping/evd.cmi kernel/names.cmi library/nametab.cmi \
     pretyping/rawterm.cmi kernel/term.cmi interp/topconstr.cmi lib/util.cmi \
