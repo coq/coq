@@ -48,7 +48,8 @@ let globalize_ref vars ref =
 
 let globalize_ref_term vars ref =
   match Constrintern.interp_reference (vars,[]) ref with
-  | RRef (loc,a) -> CRef (Constrextern.extern_reference loc Idset.empty a)
+  | RRef (loc,VarRef a) -> CRef (Ident (loc,a))
+  | RRef (loc,a) -> CRef (Qualid (loc,qualid_of_sp (Nametab.sp_of_global a)))
   | RVar (loc,x) -> CRef (Ident (loc,x))
   | c -> Constrextern.extern_rawconstr Idset.empty c 
 
