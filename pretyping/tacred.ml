@@ -575,7 +575,7 @@ let one_step_reduce env sigma c =
 
 let reduce_to_mind env sigma t = 
   let rec elimrec t l = 
-    let c, _ = whd_castapp_stack t [] in
+    let c, _ = whd_stack t in
     match kind_of_term c with
       | IsMutInd (mind,args) -> ((mind,args),t,it_mkProd_or_LetIn t l)
       | IsConst _ | IsMutCase _ ->
