@@ -832,6 +832,72 @@ definitions} available in versions of {\Coq} prior to version 8.0,
 except that abbreviations are used for printing (unless the modifier
 \verb=(only parsing)= is given) while syntactic definitions were not.
 
+\section{Tactic Notations}
+
+Tactic notations allow to customize the syntax of the tactics of the
+tactic language\footnote{Tactic notations are just a simplification of
+the {\tt Grammar tactic simple\_tactic} command that existed in
+versions prior to version 8.0.}. Tactic notations obey the following
+syntax
+
+\begin{tabular}{lcl}
+{\sentence} & ::= & \texttt{Tactic Notation} {\str} \sequence{\proditem}{} \\
+& & \texttt{:= {\tac} .}\\
+{\proditem} & ::= & {\str} $|$ {\tacargtype}{\tt ({\ident})} \\ 
+{\tacargtype} & ::= &
+%{\tt preident} $|$
+{\tt ident} $|$
+{\tt simple\_intropattern} $|$
+{\tt hyp} \\ & $|$ &
+{\tt quantified\_hypothesis} $|$
+{\tt reference} $|$
+{\tt constr} \\ & $|$ &
+{\tt castedopenonstr} $|$
+{\tt integer} \\ & $|$ &
+{\tt int\_or\_var} $|$
+{\tt tactic} $|$
+\end{tabular}
+
+A tactic notation {\tt Tactic Notation {\str} {\sequence{\proditem}{}}
+:= {\tac}} extends the parser and pretty-printer of tactics with a
+new rule made of the juxtaposition of the head name of the tactic
+{\str} and the list of its production items (in the syntax of
+production items, {\str} stands for a terminal symbol and {\tt
+\tacargtype({\ident}) for non terminal entries}. It then evaluates
+into the tactic expression {\tac}.
+
+Each type of tactic argument has a specific semantic regarding how it
+is parsed and how it is interpreted. The semantic is described in the
+following table. The last command gives examples of tactics which
+use the corresponding kind of argument.
+
+\medskip
+\noindent
+\begin{tabular}{l|l|l|l}
+Tactic argument type & parsed as & interpreted as & as in tactic \\
+\hline \\
+{\tt\small ident} & identifier & a user-given name & {\tt intro} \\
+{\tt\small simple\_intropattern} & intro\_pattern & an intro\_pattern & {\tt intros}\\
+{\tt\small hyp} & identifier & an hypothesis defined in context & {\tt clear}\\
+{\tt\small quantified\_hypothesis} & identifier or integer & a named or non dep. hyp. of the goal & {\tt intros until}\\
+{\tt\small reference} & qualified identifier & a global reference of term & {\tt unfold}\\
+{\tt\small constr} & term & a term & {\tt exact} \\
+{\tt\small castedopenconstr} & term & a term with its sign. of exist. var. & {\tt refine}\\
+{\tt\small constr\_with\_bindings} & term with bindings & a term with bindings & {\tt apply}\\
+{\tt\small integer} & integer & an integer &  \\
+{\tt\small int\_or\_var} & identifier or integer & an integer & {\tt do} \\
+{\tt\small tactic} & tactic & a tactic & \\
+\end{tabular}
+
+\Rem In order to be bound in tactic definitions, each syntactic entry
+for argument type must include the case of simple {\ltac} identifier
+as part of what it parses. This is naturally the case for {\tt ident},
+{\tt simple\_intropattern}, {\tt reference}, {\tt constr}, ... but not
+for {\tt integer}. This is the reason for introducing a special entry
+{\tt int\_or\_var} which evaluates to integers only but which
+syntactically includes identifiers in order to be usable in tactic
+definitions.
+
 % $Id$ 
 
 %%% Local Variables: 
