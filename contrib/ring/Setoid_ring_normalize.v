@@ -329,7 +329,7 @@ Definition ics_aux := Fix ics_aux{ics_aux[a:A; s:canonical_sum] : A :=
   | (Cons_monom c l t) => (Aplus a (ics_aux (interp_m c l) t))
   end}.
 
-Definition interp_cs : canonical_sum -> A  := 
+Definition interp_setcs : canonical_sum -> A  := 
   [s]Cases s of 
   | Nil_monom => Azero
   | (Cons_varlist l t) =>
@@ -437,7 +437,7 @@ Proof.
 Save.
 
 Remark ics_aux_ok : (x:A)(s:canonical_sum)
-  (Aequiv (ics_aux x s) (Aplus x (interp_cs s))).
+  (Aequiv (ics_aux x s) (Aplus x (interp_setcs s))).
 Proof.
  Induction s; Simpl; Intros;Trivial.
 Save.
@@ -455,8 +455,8 @@ Hint interp_m_ok_ := Resolve interp_m_ok.
 (* Hints Resolve ivl_aux_ok ics_aux_ok interp_m_ok. *)
 
 Lemma canonical_sum_merge_ok : (x,y:canonical_sum)
-  (Aequiv (interp_cs (canonical_sum_merge x y))
-  (Aplus (interp_cs x) (interp_cs y))).
+  (Aequiv (interp_setcs (canonical_sum_merge x y))
+  (Aplus (interp_setcs x) (interp_setcs y))).
 Proof.
 Induction x; Simpl.
 Trivial.
@@ -481,15 +481,15 @@ Setoid_replace (Amult (Aplus a a0) (interp_vl v0))
 Setoid_replace (Aplus
                  (Aplus (Amult a (interp_vl v0))
                    (Amult a0 (interp_vl v0)))
-                 (Aplus (interp_cs c) (interp_cs c0)))
+                 (Aplus (interp_setcs c) (interp_setcs c0)))
  with (Aplus (Amult a (interp_vl v0))
         (Aplus (Amult a0 (interp_vl v0))
-          (Aplus (interp_cs c) (interp_cs c0)))).
-Setoid_replace (Aplus (Aplus (Amult a (interp_vl v0)) (interp_cs c))
-                 (Aplus (Amult a0 (interp_vl v0)) (interp_cs c0)))
+          (Aplus (interp_setcs c) (interp_setcs c0)))).
+Setoid_replace (Aplus (Aplus (Amult a (interp_vl v0)) (interp_setcs c))
+                 (Aplus (Amult a0 (interp_vl v0)) (interp_setcs c0)))
  with (Aplus (Amult a (interp_vl v0))
-        (Aplus (interp_cs c)
-          (Aplus (Amult a0 (interp_vl v0)) (interp_cs c0)))).
+        (Aplus (interp_setcs c)
+          (Aplus (Amult a0 (interp_vl v0)) (interp_setcs c0)))).
 Auto.
 
 Elim (varlist_lt v v0); Simpl.
@@ -550,14 +550,14 @@ Setoid_replace (Amult (Aplus a Aone) (interp_vl v0))
 Setoid_replace (Aplus
                  (Aplus (Amult a (interp_vl v0))
                    (Amult Aone (interp_vl v0)))
-                 (Aplus (interp_cs c) (interp_cs c0)))
+                 (Aplus (interp_setcs c) (interp_setcs c0)))
  with (Aplus (Amult a (interp_vl v0))
         (Aplus (Amult Aone (interp_vl v0))
-          (Aplus (interp_cs c) (interp_cs c0)))).
-Setoid_replace (Aplus (Aplus (Amult a (interp_vl v0)) (interp_cs c))
-                 (Aplus (interp_vl v0) (interp_cs c0)))
+          (Aplus (interp_setcs c) (interp_setcs c0)))).
+Setoid_replace (Aplus (Aplus (Amult a (interp_vl v0)) (interp_setcs c))
+                 (Aplus (interp_vl v0) (interp_setcs c0)))
  with (Aplus (Amult a (interp_vl v0))
-        (Aplus (interp_cs c) (Aplus (interp_vl v0) (interp_cs c0)))).
+        (Aplus (interp_setcs c) (Aplus (interp_vl v0) (interp_setcs c0)))).
 Setoid_replace (Amult Aone (interp_vl v0)) with (interp_vl v0).
 Auto.
 
@@ -623,15 +623,15 @@ Setoid_replace (Amult (Aplus Aone a) (interp_vl v0))
 Setoid_replace (Aplus
                  (Aplus (Amult Aone (interp_vl v0))
                    (Amult a (interp_vl v0)))
-                 (Aplus (interp_cs c) (interp_cs c0)))
+                 (Aplus (interp_setcs c) (interp_setcs c0)))
  with (Aplus (Amult Aone (interp_vl v0))
         (Aplus (Amult a (interp_vl v0))
-          (Aplus (interp_cs c) (interp_cs c0))));
-Setoid_replace (Aplus (Aplus (interp_vl v0) (interp_cs c))
-                 (Aplus (Amult a (interp_vl v0)) (interp_cs c0)))
+          (Aplus (interp_setcs c) (interp_setcs c0))));
+Setoid_replace (Aplus (Aplus (interp_vl v0) (interp_setcs c))
+                 (Aplus (Amult a (interp_vl v0)) (interp_setcs c0)))
  with (Aplus (interp_vl v0)
-        (Aplus (interp_cs c)
-          (Aplus (Amult a (interp_vl v0)) (interp_cs c0)))).
+        (Aplus (interp_setcs c)
+          (Aplus (Amult a (interp_vl v0)) (interp_setcs c0)))).
 Auto.
 
 Elim (varlist_lt v v0); Simpl; Intros.
@@ -687,14 +687,14 @@ Setoid_replace (Amult (Aplus Aone Aone) (interp_vl v0))
 Setoid_replace (Aplus
                  (Aplus (Amult Aone (interp_vl v0))
                    (Amult Aone (interp_vl v0)))
-                 (Aplus (interp_cs c) (interp_cs c0)))
+                 (Aplus (interp_setcs c) (interp_setcs c0)))
  with (Aplus (Amult Aone (interp_vl v0))
         (Aplus (Amult Aone (interp_vl v0))
-          (Aplus (interp_cs c) (interp_cs c0))));
-Setoid_replace (Aplus (Aplus (interp_vl v0) (interp_cs c))
-                 (Aplus (interp_vl v0) (interp_cs c0)))
+          (Aplus (interp_setcs c) (interp_setcs c0))));
+Setoid_replace (Aplus (Aplus (interp_vl v0) (interp_setcs c))
+                 (Aplus (interp_vl v0) (interp_setcs c0)))
  with (Aplus (interp_vl v0)
-        (Aplus (interp_cs c) (Aplus (interp_vl v0) (interp_cs c0)))).
+        (Aplus (interp_setcs c) (Aplus (interp_vl v0) (interp_setcs c0)))).
 Setoid_replace (Amult Aone (interp_vl v0)) with (interp_vl v0); Auto.
 
 Elim (varlist_lt v v0); Simpl.
@@ -738,8 +738,8 @@ Rewrite (ics_aux_ok (interp_vl v0) c0); Simpl; Auto.
 Save.
 
 Lemma monom_insert_ok: (a:A)(l:varlist)(s:canonical_sum)
- (Aequiv (interp_cs (monom_insert a l s)) 
-   (Aplus (Amult a (interp_vl l)) (interp_cs s))).
+ (Aequiv (interp_setcs (monom_insert a l s)) 
+   (Aplus (Amult a (interp_vl l)) (interp_setcs s))).
 Proof.
 Induction s; Intros.
 Simpl; Rewrite (interp_m_ok a l); Trivial.
@@ -782,8 +782,8 @@ Save.
 
 Lemma varlist_insert_ok :
  (l:varlist)(s:canonical_sum)
- (Aequiv (interp_cs (varlist_insert l s)) 
-   (Aplus (interp_vl l) (interp_cs s))).
+ (Aequiv (interp_setcs (varlist_insert l s)) 
+   (Aplus (interp_vl l) (interp_setcs s))).
 Proof.
 Induction s; Simpl; Intros.
 Trivial.
@@ -820,7 +820,7 @@ Rewrite (ics_aux_ok (interp_vl v) c); Auto.
 Save.
 
 Lemma canonical_sum_scalar_ok : (a:A)(s:canonical_sum)
-  (Aequiv (interp_cs (canonical_sum_scalar a s)) (Amult a (interp_cs s))).
+  (Aequiv (interp_setcs (canonical_sum_scalar a s)) (Amult a (interp_setcs s))).
 Proof.
 Induction s; Simpl; Intros.
 Trivial.
@@ -831,8 +831,8 @@ Rewrite (ics_aux_ok (interp_m a0 v) c).
 Rewrite (interp_m_ok (Amult a a0) v);
 Rewrite (interp_m_ok a0 v).
 Rewrite H.
-Setoid_replace (Amult a (Aplus (Amult a0 (interp_vl v)) (interp_cs c)))
- with (Aplus (Amult a (Amult a0 (interp_vl v))) (Amult a (interp_cs c))).
+Setoid_replace (Amult a (Aplus (Amult a0 (interp_vl v)) (interp_setcs c)))
+ with (Aplus (Amult a (Amult a0 (interp_vl v))) (Amult a (interp_setcs c))).
 Auto.
 
 Rewrite (ics_aux_ok (interp_m a v) (canonical_sum_scalar a c));
@@ -842,7 +842,7 @@ Auto.
 Save.
 
 Lemma canonical_sum_scalar2_ok : (l:varlist; s:canonical_sum)
-  (Aequiv (interp_cs (canonical_sum_scalar2 l s)) (Amult (interp_vl l) (interp_cs s))).
+  (Aequiv (interp_setcs (canonical_sum_scalar2 l s)) (Amult (interp_vl l) (interp_setcs s))).
 Proof.
 Induction s; Simpl; Intros; Auto.
 Rewrite (monom_insert_ok a (varlist_merge l v)
@@ -852,9 +852,9 @@ Rewrite (interp_m_ok a v).
 Rewrite H.
 Rewrite (varlist_merge_ok l v).
 Setoid_replace (Amult (interp_vl l)
-                 (Aplus (Amult a (interp_vl v)) (interp_cs c)))
+                 (Aplus (Amult a (interp_vl v)) (interp_setcs c)))
  with (Aplus (Amult (interp_vl l) (Amult a (interp_vl v)))
-        (Amult (interp_vl l) (interp_cs c))).
+        (Amult (interp_vl l) (interp_setcs c))).
 Auto.
 
 Rewrite (varlist_insert_ok (varlist_merge l v)
@@ -866,7 +866,7 @@ Auto.
 Save.
 
 Lemma canonical_sum_scalar3_ok : (c:A; l:varlist; s:canonical_sum)
-  (Aequiv (interp_cs (canonical_sum_scalar3 c l s)) (Amult c (Amult (interp_vl l) (interp_cs s)))).
+  (Aequiv (interp_setcs (canonical_sum_scalar3 c l s)) (Amult c (Amult (interp_vl l) (interp_setcs s)))).
 Proof.
 Induction s; Simpl; Intros.
 Rewrite (SSR_mult_zero_right S T (interp_vl l)).
@@ -879,14 +879,14 @@ Rewrite (interp_m_ok a v).
 Rewrite H.
 Rewrite (varlist_merge_ok l v).
 Setoid_replace (Amult (interp_vl l)
-                 (Aplus (Amult a (interp_vl v)) (interp_cs c0)))
+                 (Aplus (Amult a (interp_vl v)) (interp_setcs c0)))
  with (Aplus (Amult (interp_vl l) (Amult a (interp_vl v)))
-        (Amult (interp_vl l) (interp_cs c0))).
+        (Amult (interp_vl l) (interp_setcs c0))).
 Setoid_replace (Amult c
                  (Aplus (Amult (interp_vl l) (Amult a (interp_vl v)))
-                   (Amult (interp_vl l) (interp_cs c0))))
+                   (Amult (interp_vl l) (interp_setcs c0))))
  with (Aplus (Amult c (Amult (interp_vl l) (Amult a (interp_vl v))))
-        (Amult c (Amult (interp_vl l) (interp_cs c0)))).
+        (Amult c (Amult (interp_vl l) (interp_setcs c0)))).
 Setoid_replace (Amult (Amult c a) (Amult (interp_vl l) (interp_vl v)))
  with (Amult c (Amult a (Amult (interp_vl l) (interp_vl v)))).
 Auto.
@@ -897,15 +897,15 @@ Rewrite (ics_aux_ok (interp_vl v) c0).
 Rewrite H.
 Rewrite (varlist_merge_ok l v).
 Setoid_replace (Aplus (Amult c (Amult (interp_vl l) (interp_vl v)))
-                 (Amult c (Amult (interp_vl l) (interp_cs c0))))
+                 (Amult c (Amult (interp_vl l) (interp_setcs c0))))
  with (Amult c
         (Aplus (Amult (interp_vl l) (interp_vl v))
-          (Amult (interp_vl l) (interp_cs c0)))).
+          (Amult (interp_vl l) (interp_setcs c0)))).
 Auto.
 Save.
 
 Lemma canonical_sum_prod_ok : (x,y:canonical_sum)
-  (Aequiv (interp_cs (canonical_sum_prod x y)) (Amult (interp_cs x) (interp_cs y))).
+  (Aequiv (interp_setcs (canonical_sum_prod x y)) (Amult (interp_setcs x) (interp_setcs y))).
 Proof.
 Induction x; Simpl; Intros.
 Trivial.
@@ -916,12 +916,12 @@ Rewrite (canonical_sum_scalar3_ok a v y).
 Rewrite (ics_aux_ok (interp_m a v) c).
 Rewrite (interp_m_ok a v).
 Rewrite (H y).
-Setoid_replace (Amult a (Amult (interp_vl v) (interp_cs y)))
- with (Amult (Amult a (interp_vl v)) (interp_cs y)).
-Setoid_replace (Amult (Aplus (Amult a (interp_vl v)) (interp_cs c))
-                 (interp_cs y))
- with (Aplus (Amult (Amult a (interp_vl v)) (interp_cs y))
-        (Amult (interp_cs c) (interp_cs y))).
+Setoid_replace (Amult a (Amult (interp_vl v) (interp_setcs y)))
+ with (Amult (Amult a (interp_vl v)) (interp_setcs y)).
+Setoid_replace (Amult (Aplus (Amult a (interp_vl v)) (interp_setcs c))
+                 (interp_setcs y))
+ with (Aplus (Amult (Amult a (interp_vl v)) (interp_setcs y))
+        (Amult (interp_setcs c) (interp_setcs y))).
 Trivial.
 
 Rewrite (canonical_sum_merge_ok (canonical_sum_scalar2 v y)
@@ -933,7 +933,7 @@ Trivial.
 Save.
 
 Theorem setspolynomial_normalize_ok : (p:setspolynomial)
-  (Aequiv (interp_cs (setspolynomial_normalize p)) (interp_setsp p)).
+  (Aequiv (interp_setcs (setspolynomial_normalize p)) (interp_setsp p)).
 Proof.
 Induction p; Simpl; Intros; Trivial.
 Rewrite (canonical_sum_merge_ok (setspolynomial_normalize s)
@@ -946,7 +946,7 @@ Rewrite H; Rewrite H0; Trivial.
 Save.
 
 Lemma canonical_sum_simplify_ok : (s:canonical_sum)
-  (Aequiv (interp_cs (canonical_sum_simplify s)) (interp_cs s)).
+  (Aequiv (interp_setcs (canonical_sum_simplify s)) (interp_setcs s)).
 Proof.
 Induction s; Simpl; Intros.
 Trivial.
@@ -986,7 +986,7 @@ Auto.
 Save.
 
 Theorem setspolynomial_simplify_ok : (p:setspolynomial)
-  (Aequiv (interp_cs (setspolynomial_simplify p)) (interp_setsp p)).
+  (Aequiv (interp_setcs (setspolynomial_simplify p)) (interp_setsp p)).
 Proof.
 Intro.
 Unfold setspolynomial_simplify.
@@ -1121,7 +1121,7 @@ Elim (canonical_sum_scalar3 (Aopp Aone) Nil_var
 Save.
 
 Theorem setpolynomial_simplify_ok : (p:setpolynomial)
- (Aequiv (interp_cs vm (setpolynomial_simplify p)) (interp_setp p)).
+ (Aequiv (interp_setcs vm (setpolynomial_simplify p)) (interp_setp p)).
 Intro.
 Unfold setpolynomial_simplify.
 Rewrite (setspolynomial_of_ok p).

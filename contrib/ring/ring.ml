@@ -94,7 +94,7 @@ let coq_SetPconst = lazy (ring_constant "SetPconst")
 let coq_SetPopp = lazy (ring_constant "SetPopp")
 let coq_interp_setsp = lazy (ring_constant "interp_setsp")
 let coq_interp_setp = lazy (ring_constant "interp_setp")
-let coq_interp_setcs = lazy (ring_constant "interp_cs")
+let coq_interp_setcs = lazy (ring_constant "interp_setcs")
 let coq_setspolynomial_simplify = 
   lazy (ring_constant "setspolynomial_simplify")
 let coq_setpolynomial_simplify = 
