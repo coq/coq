@@ -846,7 +846,8 @@ let acic_object_of_cic_object pvars sigma obj =
 (*CSC: either in the environment or in the named context (in the case *)
 (*CSC: of variables. Is this a problem?                               *)
   let env = Global.env () in
-  let acic_term_of_cic_term' = acic_term_of_cic_term_context' env [] sigma in
+  let acic_term_of_cic_term' ?fake_dependent_products =
+   acic_term_of_cic_term_context' ?fake_dependent_products env [] sigma in
 (*CSC: the fresh_id is not stored anywhere. This _MUST_ be fixed using *)
 (*CSC: a modified version of the already existent fresh_id function    *)
   let fresh_id () =
@@ -943,7 +944,10 @@ let acic_object_of_cic_object pvars sigma obj =
                   env' idrefs Evd.empty ty None)
              ) cons
            in
-            (id,name,inductive,acic_term_of_cic_term' ty None,acons)
+            let aty =
+             acic_term_of_cic_term' ~fake_dependent_products:true ty None
+            in
+             (id,name,inductive,aty,acons)
          ) (List.rev idrefs) tys
        in
        A.AInductiveDefinition (fresh_id (),atys,params,paramsno)
