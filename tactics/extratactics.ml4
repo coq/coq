@@ -166,7 +166,7 @@ open Setoid_replace
 
 TACTIC EXTEND SetoidReplace
   [ "Setoid_replace" constr(c1) "with" constr(c2) ]
-  -> [ setoid_replace c1 c2 None]
+  -> [ setoid_replace c1 c2 ]
 END
 
 TACTIC EXTEND SetoidRewrite
