@@ -42,20 +42,6 @@ let globpr gt = match gt with
   | Node(_,"MUTCONSTRUCT",[Path(_,sl,s); Num(_,tyi); Num(_,i)]) ->
       let sp = section_path sl s in
       pr_qualified_path sp (Global.id_of_global (ConstructRef ((sp,tyi),i)))
-(*
-  | Node(_,"EVAR", (Num (_,ev))::_) ->
-      if !print_arguments then dfltpr gt
-      else pr_existential (ev,[])
-  | Node(_,"CONST"),(Path(_,sl,s))::_) ->
-      if !print_arguments then dfltpr gt
-      else pr_constant (section_path sl s,[])
-  | Node(_,"MUTIND",(Path(_,sl,s))::(Num(_,tyi))::_) ->
-      if !print_arguments then (dfltpr gt)
-      else pr_inductive ((section_path sl s,tyi),[])
-  | Node(_,"MUTCONSTRUCT",(Path(_,sl,s))::(Num(_,tyi))::(Num(_,i))::_) ->
-      if !print_arguments then (dfltpr gt)
-      else pr_constructor (((section_path sl s,tyi),i),[])
-*)
   | gt -> dfltpr gt
 
 let wrap_exception = function
@@ -146,10 +132,24 @@ let rec gentacpr gt =
 
 and default_tacpr = function
     | Nvar(_,s) -> [< 'sTR s >]
+
+    (* constr's may occur inside tac expressions ! *)
+    | Node(_,"EVAR", [Num (_,ev)]) -> [< 'sTR ("?" ^ (string_of_int ev)) >]
+    | Node(_,"CONST",[Path(_,sl,s)]) ->
+	let sp = section_path sl s in
+	pr_qualified_path sp (basename (section_path sl s))
+    | Node(_,"MUTIND",[Path(_,sl,s); Num(_,tyi)]) ->
+	let sp = section_path sl s in
+	pr_qualified_path sp (Global.id_of_global (IndRef (sp,tyi)))
+    | Node(_,"MUTCONSTRUCT",[Path(_,sl,s); Num(_,tyi); Num(_,i)]) ->
+	let sp = section_path sl s in
+	pr_qualified_path sp (Global.id_of_global (ConstructRef ((sp,tyi),i)))
+
+    (* This should be tactics *)
     | Node(_,s,[]) -> [< 'sTR s >]
     | Node(_,s,ta) ->
 	[< 'sTR s; 'bRK(1,2); hOV 0 (prlist_with_sep pr_spc gentacpr ta) >]
-    | gt -> dfltpr gt
+    | gt -> dfltpr gt 
 
 let pr_var_decl env (id,c,typ) =
   let pbody = match c with
