@@ -26,12 +26,6 @@ val add_tactic             : string -> (tactic_arg list -> tactic) -> unit
 val overwriting_add_tactic : string -> (tactic_arg list -> tactic) -> unit
 val lookup_tactic          : string -> (tactic_arg list) -> tactic
 
-val hide_tactic : 
-  string -> (tactic_arg list -> tactic) -> (tactic_arg list -> tactic)
-
-val overwrite_hidden_tactic : 
-  string -> (tactic_arg list -> tactic) -> (tactic_arg list -> tactic)
-
 val refiner : rule -> tactic
 val context : ctxtty -> tactic
 val vernac_tactic : tactic_expression -> tactic

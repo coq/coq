@@ -328,10 +328,14 @@ let tactic_com_bind_list_list tac args gl =
 (* Functions for hiding the implementation of a tactic. *)
 (********************************************************)
 
+(* hide_tactic s tac pr registers a tactic s under the name s *)
+
 let hide_tactic  s tac  =
   add_tactic s tac;
   (fun args -> vernac_tactic(s,args))
 
+(* overwriting_register_tactic s tac pr registers a tactic s under the
+   name s even if a tactic of the same name is already registered *)
 
 let overwrite_hidden_tactic s tac  =
   overwriting_add_tactic s tac;
