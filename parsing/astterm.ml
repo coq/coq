@@ -330,7 +330,9 @@ let dbize k allow_soapp sigma =
 		  Array.of_list (List.map (dbrec env) cl))
 
     | Node(loc,"ISEVAR",[]) -> RHole (Some loc)
-    | Node(loc,"META",[Num(_,n)]) -> RMeta (loc, n)
+    | Node(loc,"META",[Num(_,n)]) ->
+	if n<0 then error "Metavariable numbers must be positive"
+	else RMeta (loc, n)
 
     | Node(loc,"PROP", []) -> RSort(loc,RProp Null)
     | Node(loc,"SET", [])  -> RSort(loc,RProp Pos)
@@ -343,10 +345,12 @@ let dbize k allow_soapp sigma =
     | Node(loc,"CAST", [c1;c2]) ->	   
 	RCast (loc,dbrec env c1,dbrec env c2)
 
-    | Node(loc,"SOAPP", Num(locn,n)::args) when allow_soapp ->
-	(* Hack special pour l'interprétation des constr_pattern *)
-	if n<0 then error "Metavariable numbers must be positive" else
-	RApp (loc,RMeta (locn,-n),List.map (dbrec env) args)
+    | Node(loc,"SOAPP", args) when allow_soapp ->
+	(match List.map (dbrec env) args with
+           (* Hack special pour l'interprétation des constr_pattern *)
+	   | RMeta (locn,n) :: args -> RApp (loc,RMeta (locn,- n), args)
+	   | RHole _ :: _ -> anomaly "Metavariable for 2nd-order pattern-matching cannot be anonymous"
+	   | _ -> anomaly "Bad arguments for second-order pattern-matching")
 
     | Node(loc,opn,tl) -> 
 	anomaly ("dbize found operator "^opn^" with "^
@@ -587,12 +591,12 @@ and pat_of_raw metas vars = function
       metas := n::!metas; PMeta (Some n)
   | RRef (_,r) ->
       PRef (pat_of_ref metas vars r)
+  (* Hack pour ne pas réécrire une interprétation complète des patterns*)
+  | RApp (_, RMeta (_,n), cl) when n<0 ->
+      PSoApp (- n, List.map (pat_of_raw metas vars) cl)
   | RApp (_,c,cl) -> 
       PApp (pat_of_raw metas vars c,
 	    Array.of_list (List.map (pat_of_raw metas vars) cl))
-  (* Petit hack pour ne pas réécrire une interprétation complète des patterns*)
-  | RApp (_,RMeta (_,n),cl) when n<0 ->
-      PSoApp (-n, List.map (pat_of_raw metas vars) cl)
   | RBinder (_,bk,na,c1,c2) ->
       PBinder (bk, na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
