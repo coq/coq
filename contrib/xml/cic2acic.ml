@@ -396,7 +396,21 @@ print_endline "ENVIRONMENT:" ; flush stdout ;
 Pp.ppnl (Printer.pr_context_of env) ; flush stdout ;
 print_endline "FINE_ENVIRONMENT" ; flush stdout ;
 *)
-         let innersort = get_sort_family_of env evar_map synthesized in
+         let innersort =
+          let synthesized_innersort =
+           get_sort_family_of env evar_map synthesized
+          in
+           match expected with
+              None -> synthesized_innersort
+            | Some ty ->
+              let expected_innersort =
+               get_sort_family_of env evar_map ty
+              in
+               match expected_innersort, synthesized_innersort with
+                  CProp, _
+                | _, CProp -> CProp
+                | _, _ -> expected_innersort
+         in
 (* Debugging only:
 print_endline "PASSATO" ; flush stdout ;
 *)
