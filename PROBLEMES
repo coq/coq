@@ -104,13 +104,7 @@ Anomaly: type_of: variable h1 unbound. Please report.
 --> Pb de "Remark" local à un thm pas pris en compte dans
 l'environnement de la preuve de ce théorème
 
-Rocq/TreeAutomata
-File "./defs.v", line 309, characters 34-47
-Error: Not a recursive eliminator: some induction hypothesis is lacking
---> Bug NewInduction...
-
-File "./lattice_fixpoint.v", line 29, characters 44-57
---> Problème de lookup_eliminator (effet de bord sur le schéma d'élimination)
+Rocq/TreeAutomata: Problème "Intro y.
 
 Rocq/RATIONAL
 --> Des fichiers ML à porter
