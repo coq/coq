@@ -44,10 +44,10 @@ val v_specialize    : tactic_arg list -> tactic
 val v_elim          : tactic_arg list -> tactic
 val v_elimType      : tactic_arg list -> tactic
 val v_induction     : tactic_arg list -> tactic
-(*val v_new_induction : tactic_arg list -> tactic*)
+(*i val v_new_induction : tactic_arg list -> tactic i*)
 val v_case          : tactic_arg list -> tactic
 val v_caseType      : tactic_arg list -> tactic
 val v_destruct      : tactic_arg list -> tactic
-(*val v_new_destruct  : tactic_arg list -> tactic*)
+(*i val v_new_destruct  : tactic_arg list -> tactic i*)
 val v_fix           : tactic_arg list -> tactic
 val v_cofix         : tactic_arg list -> tactic

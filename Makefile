@@ -673,8 +673,8 @@ LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL) $(LPLIBRARY) \
 	  $(LPPRETYPING) $(LPPROOFS) $(LPTACTICS) $(LPTOPLEVEL)
 
 doc/coq.tex: $(LPFILES)
-#	ocamlweb -p "\usepackage{epsfig}" $(LPFILES) -o doc/coq.tex
-	ocamlweb $(LPFILES) -o doc/coq.tex
+	ocamlweb -p "\usepackage{epsfig}" $(LPFILES) -o doc/coq.tex
+#	ocamlweb $(LPFILES) -o doc/coq.tex
 
 clean::
 	rm -f doc/coq.tex
