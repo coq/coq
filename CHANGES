@@ -46,6 +46,10 @@ AstList), ou, si c'est dans une règle Syntax, utiliser la quotation
 
 - Bug affichage Infix corrigé
 
+- Légère restriction de la syntaxe de Cbv Delta
+
+- L'option [-myconst] de Cbv doit immédiatement suivre Delta
+
 Tactiques
 
 - Langage de tactique

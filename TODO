@@ -27,3 +27,14 @@ Grammaires:
 
 - pb avec les extensions constr (cf Zsyntax et Cases x of `0` => ...)
 
+Doc:
+
+- restriction de syntaxe pour Cbv Delta [- toto].
+- documenter tactiques Induction, LetTac
+- Ajouter let dans les règles du CIC
+- changement syntaxe de AddPath
+- une passe sur le chapitre extensions de syntaxe
+- une passe sur le chapitre Cases
+- documenter le langage de tactique et Field
+- clarifier la sémantique de Decompose (i.e. travaille pas sous les ->)
+- faut-il mieux spécifier la sémantique de Simpl (??)
