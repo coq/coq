@@ -257,10 +257,9 @@ GEXTEND Gram
   ;
   case_item:
     [ [ c=operconstr LEVEL "100"; p=pred_pattern -> 
-      match c,p with
-        | CRef (Ident (_,id)), (None,indp) -> (c,(Name id,indp))
-        | _, (None,indp) -> (c,(Anonymous,indp))
-        | _, (Some na,indp) -> (c,(na,indp)) ] ]
+        match p with
+        | (None,indp) -> (c,(Anonymous,indp))
+        | (Some na,indp) -> (c,(na,indp)) ] ]
   ;
   pred_pattern:
     [ [ ona = OPT ["as"; id=name -> snd id];
