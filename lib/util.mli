@@ -32,9 +32,12 @@ val errorlabstrm : string -> std_ppcmds -> 'a
 
 val todo : string -> unit
 
-type loc = int * int
+type loc = Compat.loc
+
 type 'a located = loc * 'a
 
+val unloc : loc -> int * int
+val make_loc : int * int -> loc
 val dummy_loc : loc
 val anomaly_loc : loc * string * std_ppcmds -> 'a
 val user_err_loc : loc * string * std_ppcmds -> 'a

@@ -305,6 +305,8 @@ case $CAMLVERSION in
      exit 1;;
 esac
 
+CAMLTAG=OCAML`echo $CAMLVERSION | sed -e "s/\([1-9]\)\.\([0-9]*\).*/\1\2/g"`
+
 # do we have a native compiler: test of ocamlopt and its version
 
 if [ "$best_compiler" = "opt" ] ; then
@@ -496,6 +498,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|OSDEPENDENTLIBS|$OSDEPLIBS|" \
     -e "s|OSDEPENDENTP4OPTFLAGS|$OSDEPP4OPTFLAGS|" \
     -e "s|CAMLLIBDIRECTORY|$CAMLLIB|" \
+    -e "s|CAMLTAG|$CAMLTAG|" \
     -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
     -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
     -e "s|CAMLP4TOOL|$camlp4o|" \
