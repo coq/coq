@@ -642,7 +642,8 @@ let check_one_fix renv recpos def =
           (try List.for_all (check_rec_call renv) l
            with (FixGuardError _ ) as e ->
              if evaluable_constant renv.env sp then 
-	       check_rec_call renv (whd_betadeltaiota renv.env t)
+	       check_rec_call renv
+                 (applist(constant_value renv.env sp, l))
 	     else raise e)
 
       (* The cases below simply check recursively the condition on the

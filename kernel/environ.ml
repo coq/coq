@@ -207,18 +207,33 @@ let keep_hyps env needed =
 
 
 (* Constants *)
+
+(* Not taking opacity into account *)
 let defined_constant env sp =
   match (lookup_constant sp env).const_body with
       Some _ -> true
     | None -> false
-      
-let opaque_constant env sp = (lookup_constant sp env).const_opaque
+
+(* Taking opacity into account *)
+type const_evaluation_result = NoBody | Opaque
+
+exception NotEvaluableConst of const_evaluation_result
+
+let constant_value env sp =
+  let cb = lookup_constant sp env in
+  if cb.const_opaque then raise (NotEvaluableConst Opaque);
+  match cb.const_body with
+    | Some body -> body
+    | None -> raise (NotEvaluableConst NoBody)
+
+let constant_opt_value env cst =
+  try Some (constant_value env cst)
+  with NotEvaluableConst _ -> None
 
 (* A global const is evaluable if it is defined and not opaque *)
-let evaluable_constant env sp =
-  try defined_constant env sp
-  with Not_found -> 
-    false
+let evaluable_constant env cst =
+  try let _  = constant_value env cst in true
+  with NotEvaluableConst _ -> false
 
 (* A local const is evaluable if it is defined and not opaque *)
 let evaluable_named_decl env id =
@@ -241,21 +256,6 @@ let evaluable_rel_decl env n =
 let constant_type env sp =
   let cb = lookup_constant sp env in
   cb.const_type  
-
-type const_evaluation_result = NoBody | Opaque
-
-exception NotEvaluableConst of const_evaluation_result
-
-let constant_value env sp =
-  let cb = lookup_constant sp env in
-  if cb.const_opaque then raise (NotEvaluableConst Opaque);
-  match cb.const_body with
-    | Some body -> body
-    | None -> raise (NotEvaluableConst NoBody)
-
-let constant_opt_value env cst =
-  try Some (constant_value env cst)
-  with NotEvaluableConst _ -> None
 
 (*s Modules (i.e. compiled environments). *)
 

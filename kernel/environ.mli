@@ -102,7 +102,9 @@ val vars_of_global : env -> constr -> identifier list
 
 val keep_hyps : env -> Idset.t -> section_context
 
+(* A constant is defined when it has a body (theorems do) *)
 val defined_constant : env -> constant -> bool
+(* A constant is evaluable when delta reduction applies (theorems don't) *)
 val evaluable_constant : env -> constant -> bool
 
 val evaluable_named_decl : env -> variable -> bool
