@@ -985,7 +985,8 @@ let eval_ident ist id =
       (* c is then expected not to belong to the proof context *)
       (* would be checkable if env were known from eval_ident *)
       destVar c
-  | _ -> user_err_loc(loc,"eval_ident",str "should be bound to an identifier")
+  | _ -> user_err_loc(loc,"eval_ident", str "An ltac name (" ++ pr_id id ++ 
+         str ") should have been bound to an identifier")
   with Not_found -> id
 
 let eval_integer lfun (loc,id) =
