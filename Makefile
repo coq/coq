@@ -110,8 +110,8 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo \
          toplevel/usage.cmo toplevel/coqinit.cmo toplevel/coqtop.cmo
 
-HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo # tactics/equality.cmo \
-#            tactics/tauto.cmo 
+HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
+            tactics/tauto.cmo tactics/inv.cmo
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo
 

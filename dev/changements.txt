@@ -95,12 +95,16 @@ Changements dans les fonctions :
           pf_constr_of_com      -> pf_interp_constr
 
         Pattern
+	  raw_sopattern_of_compattern -> Astterm.interp_constrpattern
 	  somatch               -> is_matching
           dest_somatch          -> matches
 
         Tacticals
 	  matches               -> gl_is_matching
           dest_match            -> gl_matches
+
+        Divers
+          initial_sign -> var_context
 
 Changements dans les inductifs
 ------------------------------
