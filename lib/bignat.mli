@@ -20,6 +20,7 @@ val of_string : string -> bignat
 val to_string : bignat -> string
 
 val is_nonzero : bignat -> bool
+val zero : bignat
 val one : bignat
 val is_one : bignat -> bool
 val div2_with_rest : bignat -> bignat * bool (* true=odd; false=even *)

@@ -41,6 +41,7 @@ let rec to_string s =
 let is_nonzero a =
   let b = ref false in Array.iter (fun x -> b := x <> 0 || !b) a; !b
 
+let zero = [|0|]
 let one = [|1|]
 
 let is_one a =
