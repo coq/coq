@@ -30,5 +30,6 @@ install_printer Top_printers.prevc
 install_printer Top_printers.prwc
 install_printer Top_printers.prclenv
 
+install_printer Top_printers.pptac
 install_printer Top_printers.pr_obj                                                     
 
