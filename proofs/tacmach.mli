@@ -206,8 +206,8 @@ val w_whd_betadeltaiota : walking_constraints -> constr -> constr
 val w_hnf_constr        : walking_constraints -> constr -> constr
 val w_conv_x            : walking_constraints -> constr -> constr -> bool
 val w_const_value       : walking_constraints -> constant -> constr
-val w_defined_const     : walking_constraints -> constr -> bool
-val w_defined_evar      : walking_constraints -> int -> bool
+val w_defined_const     : walking_constraints -> constant -> bool
+val w_defined_evar      : walking_constraints -> existential_key -> bool
 
 
 (*s Tactic Registration. *)

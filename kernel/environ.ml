@@ -295,13 +295,9 @@ let make_all_name_different env =
     env
 
 (* Constants *)
-let defined_constant env c = match kind_of_term c with
-  | IsConst (sp, _) -> is_defined (lookup_constant sp env)
-  | _ -> invalid_arg "defined_constant"
+let defined_constant env (sp,_) = is_defined (lookup_constant sp env)
 
-let opaque_constant env c = match kind_of_term c with
-  | IsConst (sp, _) -> is_opaque (lookup_constant sp env)
-  | _ -> invalid_arg "opaque_constant"
+let opaque_constant env (sp,_) = is_opaque (lookup_constant sp env)
 
 (* A const is evaluable if it is defined and not opaque *)
 let evaluable_constant env k =

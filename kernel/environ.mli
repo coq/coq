@@ -143,8 +143,8 @@ val it_mkNamedProd_or_LetIn : constr -> var_context -> constr
 val lambda_create : env -> constr * constr -> constr
 val prod_create : env -> constr * constr -> constr
 
-val defined_constant : env -> constr -> bool
-val evaluable_constant : env -> constr -> bool
+val defined_constant : env -> constant -> bool
+val evaluable_constant : env -> constant -> bool
 
 (*s Modules. *)
 
