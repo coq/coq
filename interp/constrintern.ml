@@ -265,14 +265,18 @@ let intern_var (env,_,_) ((vars1,unbndltacvars),vars2,_,_,impls) loc id =
     with _ -> [], [] in
   RRef (loc, VarRef id), imps, args_scopes, []
 
+let find_appl_head_data (_,_,_,_,impls) = function
+  | RRef (_,ref) as x -> x,implicits_of_global ref,find_arguments_scope ref,[]
+  | x -> x,[],[],[]
+
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid loc qid =
   try match Nametab.extended_locate qid with
   | TrueGlobal ref ->
-    if !dump then add_glob loc ref;
-    RRef (loc, ref), implicits_of_global ref, find_arguments_scope ref, []
+      if !dump then add_glob loc ref;
+      RRef (loc, ref)
   | SyntacticDef sp ->
-      (Syntax_def.search_syntactic_definition loc sp),[],[],[]
+      Syntax_def.search_syntactic_definition loc sp
   with Not_found ->
     error_global_not_found_loc loc qid
 
@@ -292,7 +296,7 @@ let intern_inductive r =
 
 let intern_reference env lvar = function
   | Qualid (loc, qid) ->
-      intern_qualid loc qid
+      find_appl_head_data lvar (intern_qualid loc qid)
   | Ident (loc, id) ->
       (* For old ast syntax compatibility *)
       if (string_of_id id).[0] = '$' then RVar (loc,id),[],[],[] else
@@ -303,7 +307,7 @@ let intern_reference env lvar = function
       (* Fin pour traduction *)
       try intern_var env lvar loc id
       with Not_found -> 
-      try intern_qualid loc (make_short_qualid id)
+      try find_appl_head_data lvar (intern_qualid loc (make_short_qualid id))
       with e ->
 	(* Extra allowance for grammars *)
 	if !interning_grammar then begin
@@ -644,10 +648,6 @@ let traverse_binder subst id (ids,tmpsc,scopes as env) =
   let id = try coerce_to_id (fst (List.assoc id subst)) with Not_found -> id in
   id,(Idset.add id ids,tmpsc,scopes)
 
-type ameta_scope =
-  | RefArg of (global_reference * int) list
-  | TypeArg
-
 let rec subst_rawconstr loc interp subst (ids,_,scopes as env) = function
   | AVar id ->
       begin
@@ -663,6 +663,14 @@ let rec subst_rawconstr loc interp subst (ids,_,scopes as env) = function
   | t ->
       rawconstr_of_aconstr_with_binders loc (traverse_binder subst)
       (subst_rawconstr loc interp subst) (ids,None,scopes) t
+
+let intern_notation intern (_,tmp_scope,scopes as env) loc ntn args =
+  let ntn,args = contract_notation ntn args in
+  let scopes = option_cons tmp_scope scopes in
+  let ((ids,c),df) = Symbols.interp_notation loc ntn scopes in
+  if !dump then dump_notation_location (ntn_loc loc args ntn) ntn df;
+  let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
+  subst_rawconstr loc intern subst env c
 
 let set_type_scope (ids,tmp_scope,scopes) =
   (ids,Some Symbols.type_scope,scopes)
@@ -724,12 +732,7 @@ let internalise sigma env allow_soapp lvar c =
         Symbols.interp_numeral loc (Bignat.NEG p) scopes
     | CNotation (_,"( _ )",[a]) -> intern env a
     | CNotation (loc,ntn,args) ->
-        let ntn,args = contract_notation ntn args in
-	let scopes = option_cons tmp_scope scopes in
-	let ((ids,c),df) = Symbols.interp_notation loc ntn scopes in
-        if !dump then dump_notation_location (ntn_loc loc args ntn) ntn df;
-	let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
-	subst_rawconstr loc intern subst env c
+        intern_notation intern env loc ntn args
     | CNumeral (loc, n) ->
 	let scopes = option_cons tmp_scope scopes in
 	Symbols.interp_numeral loc n scopes
@@ -745,11 +748,13 @@ let internalise sigma env allow_soapp lvar c =
           | CApp (_,(Some _,f), args') when isproj=None -> isproj,f,args'@args
           (* Don't compact "(f args') args" to resolve implicits separately *)
           | _ -> isproj,f,args in
-	let (c, impargs, args_scopes, l) =
-	  match f with
-	    | CRef ref -> intern_reference env lvar ref
-	    | _ -> (intern env f, [], [], [])
-        in
+	let (c,impargs,args_scopes,l) =
+          match f with
+            | CRef ref -> intern_reference env lvar ref
+            | CNotation (loc,ntn,[]) ->
+                let c = intern_notation intern env loc ntn [] in
+                find_appl_head_data lvar c
+            | x -> (intern env f,[],[],[]) in
 	let args = intern_impargs c env impargs args_scopes (merge_impargs l args) in
 	check_projection isproj (List.length args) c;
 	(match c with 
