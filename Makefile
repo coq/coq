@@ -147,7 +147,7 @@ INTERFACE=contrib/interface/vtp.cmo \
 	contrib/interface/history.cmo \
 	contrib/interface/name_to_ast.cmo contrib/interface/debug_tac.cmo \
 	contrib/interface/showproof_ct.cmo contrib/interface/showproof.cmo \
-	contrib/interface/centaur.cmo
+	contrib/interface/blast.cmo contrib/interface/centaur.cmo
 
 PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	lib/util.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
