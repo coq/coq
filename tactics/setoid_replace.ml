@@ -870,8 +870,6 @@ let rec cic_type_nelist_of_list =
      mkApp ((Lazy.force coq_cons),
       [| mkType (Termops.new_univ ()); value; cic_type_nelist_of_list tl |])
 
-let meta_map = ref Evd.Metamap.empty;;
-
 let syntactic_but_representation_of_marked_but hole_relation =
  let rec aux out (rel_out,precise_out,is_reflexive) =
   function
@@ -921,9 +919,7 @@ let syntactic_but_representation_of_marked_but hole_relation =
        else
         let c_is_proper =
          let typ = mkApp (rel_out, [| c ; c |]) in
-         let meta = Clenv.new_meta () in
-          meta_map := Evd.meta_declare meta typ !meta_map ;
-          mkCast (mkMeta meta,typ)
+          mkCast (mkMeta (Clenv.new_meta ()),typ)
         in
          mkApp ((Lazy.force coq_ProperElementToKeep),
           [| hole_relation ; Lazy.force coq_Left2Right; precise_out ;
@@ -959,7 +955,6 @@ let apply_coq_setoid_rewrite hole_relation c1 c2 (lft2rgt,h) m =
        prop_relation precise_prop_relation m ; hyp |])
 
 let relation_rewrite c1 c2 (lft2rgt,cl) gl =
- meta_map := Evd.Metamap.empty ;
  let but = pf_concl gl in
  let (hyp,c1,c2) =
    let cl' =
