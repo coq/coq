@@ -8,7 +8,7 @@ Vendor: INRIA & LRI
 URL: http://coq.inria.fr
 Source: ftp://ftp.inria.fr/INRIA/coq/V8.0pl2/coq-8.0pl2.tar.gz
 Icon: petit-coq.gif
-Requires: coq = 8.0pl1
+Requires: coq = 8.0pl2
 BuildRoot: /var/tmp/coqide
 
 %description
