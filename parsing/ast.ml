@@ -338,6 +338,8 @@ let alpha_eq_val = function
   | _ ->  false
 
 let rec occur_var_ast s = function
+  | Node(_,"QUALID",_::_::_) -> false
+  | Node(_,"QUALID",[Nvar(_,s2)]) -> s = s2
   | Node(loc,op,args) -> List.exists (occur_var_ast s) args
   | Nvar(_,s2) -> s = s2
   | Smetalam _ | Nmeta _ -> anomaly "occur_var: metas should not occur here"
