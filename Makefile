@@ -759,10 +759,10 @@ JPROVERVO =
 CCVO = contrib/cc/CC.vo
 
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
-	$(BESTCOQTOP) -boot -byte  $(COQOPTS) -compile $*
+	$(BESTCOQTOP) -v7 -boot -byte  $(COQOPTS) -compile $*
 
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
-	$(BESTCOQTOP) -boot -byte  $(COQOPTS) -compile $*
+	$(BESTCOQTOP) -v7 -boot -byte  $(COQOPTS) -compile $*
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(CORRECTNESSVO) $(FOURIERVO) \
