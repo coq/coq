@@ -51,6 +51,7 @@ val it_named_context_quantifier :
   (named_declaration -> 'a -> 'a) -> init:'a -> named_context -> 'a
 val it_mkNamedProd_or_LetIn   : init:types -> named_context -> types
 val it_mkNamedLambda_or_LetIn : init:constr -> named_context -> constr
+val it_mkNamedProd_wo_LetIn   : init:types -> named_context -> types
 
 (**********************************************************************)
 (* Generic iterators on constr                                        *)

@@ -248,6 +248,8 @@ let it_named_context_quantifier f ~init =
 let it_mkNamedProd_or_LetIn = it_named_context_quantifier mkNamedProd_or_LetIn
 let it_mkNamedLambda_or_LetIn = it_named_context_quantifier mkNamedLambda_or_LetIn
 
+let it_mkNamedProd_wo_LetIn = it_named_context_quantifier mkNamedProd_wo_LetIn
+
 (* *)
 
 (* strips head casts and flattens head applications *)
