@@ -44,15 +44,13 @@ End Orderings.
 Inductive Setoid : Type 
   := Build_Setoid : (S:Type)(R:(Relation S))(Equivalence ? R) -> Setoid.
 
-Definition elem := [A:Setoid]
-                   <Type>Match A with [S:?][R:?][e:?]S end.
+Definition elem := [A:Setoid] let (S,R,e)=A in S.
 
 Grammar command command1 :=
  elem  [ "|" command0($s) "|"] -> [ <<(elem $s)>>].
 
 Definition equal := [A:Setoid]
-   <[s:Setoid](Relation |s|)>Match A with [S:?][R:?][e:?]R end.
-
+   <[s:Setoid](Relation |s|)>let (S,R,e)=A in R.
 
 Grammar command command1 :=
  equal   [ command0($c) "=" "%" "S" command0($c2) ] -> 
@@ -67,13 +65,13 @@ Axiom prf_trans : (A:Setoid)(Transitive |A| (equal A)).
 Section Maps.
 Variables A,B: Setoid.
 
-Definition Map_law := [f:|A|->|B|]
+Definition Map_law := [f:|A| -> |B|]
     (x,y:|A|) x =%S y -> (f x) =%S (f y).
 
 Inductive Map : Type :=
-    Build_Map : (f:|A|->|B|)(p:(Map_law f))Map.
+    Build_Map : (f:|A| -> |B|)(p:(Map_law f))Map.
 
-Definition explicit_ap := [m:Map] <|A|->|B|>Match m with 
+Definition explicit_ap := [m:Map] <|A| -> |B|>Match m with 
          [f:?][p:?]f end.
 
 Axiom pres : (m:Map)(Map_law (explicit_ap m)).
@@ -178,8 +176,8 @@ Variable S:Signature.
 Variable Var : DSetoid.
 
 Mutual Inductive TERM : Type :=
-	  var : |(Set_of Var)|->TERM
-	| oper : (op: |(Set_of (Sigma S))|) (LTERM (ap (Arity S) op)) -> TERM
+	  var : |(Set_of Var)| -> TERM
+	| oper : (op: |(Set_of (Sigma S))| ) (LTERM (ap (Arity S) op)) -> TERM
 with
 	LTERM : posint -> Type :=
 	  nil : (LTERM Z)
