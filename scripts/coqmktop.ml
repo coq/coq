@@ -48,6 +48,7 @@ let gramobjs = ["g_zsyntax.cmo"; "g_natsyntax.cmo"]
 let notopobjs = gramobjs
 
 (* 5. High-level tactics objects *)
+let hightactics = split_cmo Tolink.hightactics
 let cmotacsobjs = [
   "prolog.cmo"; "equality.cmo"; "inv.cmo"; "leminv.cmo"; 
   "point.cmo"; "progmach.cmo"; "program.cmo"; "propre.cmo";
@@ -97,7 +98,7 @@ let module_of_file name =
 let files_to_link userfiles =
   let dyn_objs = if not !opt then dynobjs else [] in
   let command_objs = if !searchisos then coqsearch else [] in
-  let tactic_objs = if !notactics then [] else cmotacsobjs in
+  let tactic_objs = if !notactics then [] else hightactics in
   let toplevel_objs = if !top then topobjs else if !opt then notopobjs else []
   in
   let objs = core_objs @ dyn_objs @ toplevel @ command_objs @ tactic_objs @

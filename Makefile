@@ -96,7 +96,6 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/nbtermdn.cmo tactics/stock.cmo tactics/pattern.cmo \
 	tactics/wcclausenv.cmo tactics/tacticals.cmo tactics/tactics.cmo \
         tactics/tacentries.cmo tactics/hiddentac.cmo tactics/elim.cmo
-#	tactics/dhyp.cmo tactics/auto.cmo
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
          toplevel/metasyntax.cmo toplevel/command.cmo toplevel/class.cmo \
@@ -104,11 +103,13 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo \
          toplevel/usage.cmo toplevel/coqinit.cmo toplevel/coqtop.cmo
 
+HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo
+
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
 CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PRETYPING) $(PARSING) \
-    $(PROOFS) $(TACTICS) $(TOPLEVEL)
+    $(PROOFS) $(TACTICS) $(TOPLEVEL) $(HIGHTACTICS)
 CMX=$(CMO:.cmo=.cmx) $(ARITHSYNTAX:.cmo=.cmx)
 
 ###########################################################################
@@ -123,7 +124,7 @@ coqtop: $(COQMKTOP) $(CMX)
 	$(COQMKTOP) -opt -notactics $(OPTFLAGS) -o coqtop
 
 coqtop.byte: $(COQMKTOP) $(CMO) Makefile
-	$(COQMKTOP) -top -notactics $(BYTEFLAGS) -o coqtop.byte
+	$(COQMKTOP) -top $(BYTEFLAGS) -o coqtop.byte
 
 # coqmktop 
 
@@ -141,6 +142,7 @@ scripts/tolink.ml: Makefile
 	echo "let proofs = \""$(PROOFS)"\"" >> $@
 	echo "let tactics = \""$(TACTICS)"\"" >> $@
 	echo "let toplevel = \""$(TOPLEVEL)"\"" >> $@
+	echo "let hightactics = \""$(HIGHTACTICS)"\"" >> $@
 
 beforedepend:: scripts/tolink.ml
 
