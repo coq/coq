@@ -69,7 +69,7 @@ let coqast_of_prog p =
 
   (* 6. résolution implicites *)
   deb_mess (fnl () ++ str"Resolution implicits (? => Meta(n))..." ++ fnl ());
-  let oc = understand_gen_tcc Evd.empty (Global.env()) [] [] None r in
+  let oc = understand_gen_tcc Evd.empty (Global.env()) [] None r in
   deb_print (Printer.prterm_env (Global.env())) (snd oc);
 
   p,oc,ty,v
