@@ -894,8 +894,10 @@ let internalise sigma env allow_soapp lvar c =
     intern (ids,Some Symbols.type_scope,scopes)
 
   and intern_local_binder ((ids,ts,sc as env),bl) = function
-      LocalRawAssum(nal,ty) ->
-        let ty = intern_type env ty in
+    | LocalRawAssum(nal,ty) ->
+	let (loc,na) = List.hd nal in
+	(* TODO: fail if several names with different implicit types *)
+	let ty = locate_if_isevar loc na (intern_type env ty) in
         List.fold_left
           (fun ((ids,ts,sc),bl) (_,na) ->
             ((name_fold Idset.add na ids,ts,sc), (na,None,ty)::bl))
