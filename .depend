@@ -898,8 +898,8 @@ proofs/tactic_debug.cmo: parsing/ast.cmi lib/pp.cmi parsing/printer.cmi \
     proofs/proof_trees.cmi proofs/tacmach.cmi proofs/tactic_debug.cmi 
 proofs/tactic_debug.cmx: parsing/ast.cmx lib/pp.cmx parsing/printer.cmx \
     proofs/proof_trees.cmx proofs/tacmach.cmx proofs/tactic_debug.cmi 
-scripts/coqc.cmo: config/coq_config.cmi toplevel/usage.cmi 
-scripts/coqc.cmx: config/coq_config.cmx toplevel/usage.cmx 
+scripts/coqc.cmo: config/coq_config.cmi lib/options.cmi toplevel/usage.cmi 
+scripts/coqc.cmx: config/coq_config.cmx lib/options.cmx toplevel/usage.cmx 
 scripts/coqmktop.cmo: config/coq_config.cmi scripts/tolink.cmo 
 scripts/coqmktop.cmx: config/coq_config.cmx scripts/tolink.cmx 
 tactics/auto.cmo: parsing/astterm.cmi tactics/btermdn.cmi proofs/clenv.cmi \

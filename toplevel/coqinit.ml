@@ -70,22 +70,14 @@ let getenv_else s dft = try Sys.getenv s with Not_found -> dft
 
 (* Initializes the LoadPath according to COQLIB and Coq_config *)
 let init_load_path () =
-  if Coq_config.local then begin
-    (* local use (no installation) *)
-    List.iter 
-      (fun s -> coq_add_path (Filename.concat Coq_config.coqtop s))
-      ["states"; "dev"];
-    coq_add_rec_path (Filename.concat Coq_config.coqtop "theories");
-    coq_add_path (Filename.concat Coq_config.coqtop "tactics");
-    coq_add_rec_path (Filename.concat Coq_config.coqtop "contrib")
-  end else begin
-    (* default load path; variable COQLIB overrides the default library *)
-    let coqlib = getenv_else "COQLIB" Coq_config.coqlib in
-    coq_add_path (Filename.concat coqlib "states");
-    coq_add_rec_path (Filename.concat coqlib "theories");
-    coq_add_path (Filename.concat coqlib "tactics");
-    coq_add_rec_path (Filename.concat coqlib "contrib")
-  end;
+  (* developper specific directories to open *)
+  let dev = if Coq_config.local then [ "dev" ] else [] in
+  let dirs = "states" :: dev @ [ "theories"; "tactics"; "contrib" ] in
+  let coqlib =
+    if Coq_config.local || !Options.boot then Coq_config.coqtop
+      (* variable COQLIB overrides the default library *)
+    else getenv_else "COQLIB" Coq_config.coqlib in
+  List.iter (fun s -> coq_add_rec_path (Filename.concat coqlib s)) dirs;
   let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
   add_ml_include camlp4;
   Mltop.add_path "." [Nametab.default_root];

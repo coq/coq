@@ -183,16 +183,16 @@ case $emacslib_spec in
     yes) EMACSLIB=$emacslib;;
 esac
 
-case $emacs_spec in
-    no) echo "Which Emacs command should I use to compile coq.el [$emacs_def] ?"
-        read EMACS
+# case $emacs_spec in
+#     no) echo "Which Emacs command should I use to compile coq.el [$emacs_def] ?"
+#         read EMACS
 	
-	case $EMACS in
-	    "") EMACS=$emacs_def;;
-	    *) true;;
-	esac;;
-    yes) EMACS=$emacs;;
-esac
+# 	case $EMACS in
+# 	    "") EMACS=$emacs_def;;
+# 	    *) true;;
+# 	esac;;
+#     yes) EMACS=$emacs;;
+# esac
 
 # OS dependent libraries
 
@@ -383,58 +383,36 @@ rm -f $COQTOP/config/Makefile
 
 case $ARCH in
     win32)
-	sed -e "s|LOCALINSTALLATION|$local|" \
-	    -e "s|COQTOPDIRECTORY|$COQTOP|" \
-	    -e "s|COQVERSION|$VERSION|" \
-	    -e "s|BINDIRDIRECTORY|`echo $BINDIR |sed -e 's|\\\|/|g'`|" \
-	    -e "s|COQLIBDIRECTORY|`echo $LIBDIR |sed -e 's|\\\|/|g'`|" \
-	    -e "s|MANDIRDIRECTORY|`echo $MANDIR |sed -e 's|\\\|/|g'`|" \
-	    -e "s|EMACSLIBDIRECTORY|`echo $EMACSLIB |sed -e 's|\\\|/|g'`|" \
-	    -e "s|EMACSCOMMAND|$EMACS|" \
-	    -e "s|ARCHITECTURE|$ARCH|" \
-	    -e "s|OSDEPENDANTLIBS|$OSDEPLIBS|" \
-	    -e "s|OSDEPENDANTP4OPTFLAGS|$OSDEPP4OPTFLAGS|" \
-	    -e "s|STRLIBRARY|$WITH_STR|" \
-	    -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
-	    -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
-	    -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
-	    -e "s|CAMLP4TOOL|$camlp4o|" \
-	    -e "s|OSKIND|$OSTYPE|" \
-	    -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
-	    -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
-	    -e "s|BESTCOMPILER|$best_compiler|" \
-	    -e "s|EXECUTEEXTENSION|$EXE|" \
-	    -e "s|BYTECAMLC|$bytecamlc|" \
-	    -e "s|NATIVECAMLC|$nativecamlc|" \
-	    -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
-	    $COQTOP/config/Makefile.template > $COQTOP/config/Makefile;;
-    *)
-	sed -e "s|LOCALINSTALLATION|$local|" \
-	    -e "s|COQTOPDIRECTORY|$COQTOP|" \
-	    -e "s|COQVERSION|$VERSION|" \
-	    -e "s|BINDIRDIRECTORY|$BINDIR|" \
-	    -e "s|COQLIBDIRECTORY|$LIBDIR|" \
-	    -e "s|MANDIRDIRECTORY|$MANDIR|" \
-	    -e "s|EMACSLIBDIRECTORY|$EMACSLIB|" \
-	    -e "s|EMACSCOMMAND|$EMACS|" \
-	    -e "s|ARCHITECTURE|$ARCH|" \
-	    -e "s|OSDEPENDANTLIBS|$OSDEPLIBS|" \
-	    -e "s|OSDEPENDANTP4OPTFLAGS|$OSDEPP4OPTFLAGS|" \
-	    -e "s|STRLIBRARY|$WITH_STR|" \
-	    -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
-	    -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
-	    -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
-	    -e "s|CAMLP4TOOL|$camlp4o|" \
-	    -e "s|OSKIND|$OSTYPE|" \
-	    -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
-	    -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
-	    -e "s|BESTCOMPILER|$best_compiler|" \
-	    -e "s|EXECUTEEXTENSION|$EXE|" \
-	    -e "s|BYTECAMLC|$bytecamlc|" \
-	    -e "s|NATIVECAMLC|$nativecamlc|" \
-	    -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
-	    $COQTOP/config/Makefile.template > $COQTOP/config/Makefile;;
+	BINDIR=`echo $BINDIR |sed -e 's|\\\|/|g'`
+	LIBDIR=`echo $LIBDIR |sed -e 's|\\\|/|g'`
+	MANDIR=`echo $MANDIR |sed -e 's|\\\|/|g'`;;
 esac
+
+sed -e "s|LOCALINSTALLATION|$local|" \
+    -e "s|COQTOPDIRECTORY|$COQTOP|" \
+    -e "s|COQVERSION|$VERSION|" \
+    -e "s|BINDIRDIRECTORY|$BINDIR|" \
+    -e "s|COQLIBDIRECTORY|$LIBDIR|" \
+    -e "s|MANDIRDIRECTORY|$MANDIR|" \
+    -e "s|EMACSLIBDIRECTORY|$EMACSLIB|" \
+    -e "s|EMACSCOMMAND|$EMACS|" \
+    -e "s|ARCHITECTURE|$ARCH|" \
+    -e "s|OSDEPENDANTLIBS|$OSDEPLIBS|" \
+    -e "s|OSDEPENDANTP4OPTFLAGS|$OSDEPP4OPTFLAGS|" \
+    -e "s|STRLIBRARY|$WITH_STR|" \
+    -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
+    -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
+    -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
+    -e "s|CAMLP4TOOL|$camlp4o|" \
+    -e "s|OSKIND|$OSTYPE|" \
+    -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
+    -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
+    -e "s|BESTCOMPILER|$best_compiler|" \
+    -e "s|EXECUTEEXTENSION|$EXE|" \
+    -e "s|BYTECAMLC|$bytecamlc|" \
+    -e "s|NATIVECAMLC|$nativecamlc|" \
+    -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
+      $COQTOP/config/Makefile.template > $COQTOP/config/Makefile
 
 chmod a-w $COQTOP/config/Makefile
 
@@ -466,11 +444,12 @@ let camlp4lib = "$CAMLP4LIB"
 let best = "$best_compiler"
 let arch = "$ARCH"
 let osdeplibs = "$OSDEPLIBS"
-let defined = [ "$OSTYPE" ]
+(* let defined = [ "$OSTYPE" ] *)
 let version = "$VERSION"
 let versionsi = "$VERSIONSI"
 let date = "$DATE"
 let compile_date = "$COMPILEDATE"
+let exec_extension = "$EXE"
 
 END_OF_COQ_CONFIG
 

@@ -10,6 +10,8 @@
 
 open Util
 
+let boot = ref false
+
 let batch_mode = ref false
 
 let debug = ref false

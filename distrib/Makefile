@@ -1,6 +1,6 @@
 # Building the different files of the coq distribution
 
-include config.distrib
+sinclude config.distrib
 LOCALARCH=`uname -m`
 ARCH=`uname -m | sed -e 's/i.86/i386/'`
 SYSTEM=`uname -s`
@@ -41,6 +41,7 @@ noarguments:
 	@echo "make arch-rpm-ftp-install       |repository supposed"
 	@echo "make arch-tar-gz-ftp-install    |to be already"
 	@echo "make contrib-ftp-install	       |prepared"
+	@echo "make deb		 to build a debian package"
 
 ################## Main targets
 
@@ -259,3 +260,8 @@ contrib-ftp-install: prep-ftp-install
 patch-ftp-install: prep-ftp-install
 	cp patch-${VERSION}-$(PREVIOUSVERSION).gz ${FTPDIR}/V${VERSION}/
 	chmod g+w ${FTPDIR}/V${VERSION}/patch-${VERSION}-$(PREVIOUSVERSION).gz
+
+deb:
+	rm -rf ../debian
+	cp -a debian ..
+	cd .. ; dpkg-buildpackage -rfakeroot -uc -us

@@ -23,7 +23,7 @@ val best : string       (* byte/opt *)
 val arch : string       (* architecture *)
 val osdeplibs : string  (* OS dependant link options for ocamlc *)
 
-val defined : string list  (* options for lib/ocamlpp *)
+(* val defined : string list  (* options for lib/ocamlpp *) *)
 
 val version : string    (* version number of Coq *)
 val versionsi : string  (* version number of Coq\_SearchIsos *)
@@ -33,3 +33,4 @@ val compile_date : string (* compile date *)
 val theories_dirs : string list
 val contrib_dirs : string list
 
+val exec_extension : string (* "" under Unix, ".exe" under MS-windows *)

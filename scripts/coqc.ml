@@ -127,6 +127,9 @@ let parse_args () =
 	keep := true ; parse (cfiles,args) rem
     | ("-verbose" | "--verbose") :: rem -> 
 	verbose := true ; parse (cfiles,args) rem
+    | "-boot" :: rem ->
+	bindir:= Filename.concat Coq_config.coqtop "bin";
+	parse (cfiles, "-boot"::args) rem
     | "-bindir" :: d :: rem ->
 	bindir := d ; parse (cfiles,args) rem
     | "-bindir" :: []       ->
@@ -182,7 +185,7 @@ let main () =
     usage ()
   end;
   let coqtopname = 
-    if !image <> "" then !image else Filename.concat !bindir !binary 
+    if !image <> "" then !image else Filename.concat !bindir (!binary ^ Coq_config.exec_extension)
   in
   List.iter (compile coqtopname args) cfiles
     

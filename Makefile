@@ -37,11 +37,11 @@ noargument:
 # Compilation options
 ###########################################################################
 
-LOCALINCLUDES= -I config -I tools -I scripts -I lib -I kernel -I library \
-               -I proofs -I tactics -I pretyping -I parsing -I toplevel  \
-               -I contrib/omega -I contrib/ring -I contrib/xml \
-	       -I contrib/extraction -I contrib/correctness \
-               -I contrib/interface
+LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
+              -I proofs -I tactics -I pretyping -I parsing -I toplevel  \
+              -I contrib/omega -I contrib/ring -I contrib/xml \
+	      -I contrib/extraction -I contrib/correctness \
+              -I contrib/interface
 
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
@@ -55,12 +55,7 @@ OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
 CAMLP4EXTENDFLAGS=-I . pa_extend.cmo q_MLast.cmo
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
-COQINCLUDES=-I states -R theories Coq -R contrib Coq
-#           -I contrib/omega -I contrib/ring -I contrib/xml \
-#	    -I theories/Init -I theories/Logic -I theories/Arith \
-#	    -I theories/Bool -I theories/Zarith -I theories/Lists \
-# 	    -I theories/Sets -I theories/Relations -I theories/Wellfounded \
-# 	    -I theories/Reals
+COQINCLUDES=-R theories Coq -R contrib Coq
 
 ###########################################################################
 # Objects files 
@@ -215,12 +210,12 @@ CMX=$(CMO:.cmo=.cmx)
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
 ###########################################################################
 
-COQMKTOP=bin/coqmktop
-COQC=bin/coqc
-COQTOPBYTE=bin/coqtop.byte
-COQTOPOPT=bin/coqtop.opt
-BESTCOQTOP=bin/coqtop.$(BEST)
-COQINTERFACE=bin/coq-interface bin/parser
+COQMKTOP=bin/coqmktop$(EXE)
+COQC=bin/coqc$(EXE)
+COQTOPBYTE=bin/coqtop.byte$(EXE)
+COQTOPOPT=bin/coqtop.opt$(EXE)
+BESTCOQTOP=bin/coqtop.$(BEST)$(EXE)
+COQINTERFACE=bin/coq-interface$(EXE) bin/parser
 
 COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQINTERFACE) 
 
@@ -307,7 +302,7 @@ states: states/barestate.coq states/initial.coq
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v syntax/PPTactic.v
 
 states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
-	$(BESTCOQTOP) -q -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
+	$(BESTCOQTOP) -boot -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
 
 INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/DatatypesSyntax.vo   theories/Init/Prelude.vo       \
@@ -317,7 +312,7 @@ INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/Logic_TypeSyntax.vo
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
-	$(COQC) -$(BEST) -bindir bin -q -R theories Coq -is states/barestate.coq $<
+	$(COQC) -boot -$(BEST) $(INCLUDES) -R theories Coq -is states/barestate.coq $<
 
 init: $(INITVO)
 
@@ -328,13 +323,13 @@ TACTICSVO=tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo \
 	  tactics/EqDecide.vo $(EXTRACTIONVO)
 
 tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
-	$(COQC) -$(BEST) -bindir bin -q -I tactics -is states/barestate.coq $<
+	$(COQC) -boot -$(BEST) $(INCLUDES) -I tactics -is states/barestate.coq $<
 
 contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
-	$(COQC) -$(BEST) -bindir bin -q -I contrib/extraction -is states/barestate.coq $<
+	$(COQC) -boot -$(BEST) $(COQINCLUDES) -is states/barestate.coq $<
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO) $(BESTCOQTOP)
-	$(BESTCOQTOP) -q -batch -silent -is states/barestate.coq -I tactics -R theories Coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+	$(BESTCOQTOP) -boot -silent -is states/barestate.coq $(COQINCLUDES) $(INCLUDES) -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 clean::
 	rm -f states/*.coq
@@ -467,10 +462,10 @@ XMLVO = contrib/xml/Xml.vo
 INTERFACEV0 = contrib/interface/Centaur.vo
 
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
-	$(COQC) -q -byte -bindir bin $(COQINCLUDES) $<
+	$(COQC) -boot -byte  $(COQINCLUDES) $<
 
-contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE)
-	$(COQC) -q -byte -bindir bin $(COQINCLUDES) $<
+contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
+	$(COQC) -boot -byte  $(COQINCLUDES) $<
 
 CONTRIBVO = $(OMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) $(CORRECTNESSVO)\
             $(INTERFACEV0)
@@ -494,13 +489,12 @@ archclean::
 # tools
 ###########################################################################
 
-COQDEP=bin/coqdep
-COQMAKEFILE=bin/coq_makefile
-GALLINA=bin/gallina
-COQTEX=bin/coq-tex
+COQDEP=bin/coqdep$(EXE)
+COQMAKEFILE=bin/coq_makefile$(EXE)
+GALLINA=bin/gallina$(EXE)
+COQTEX=bin/coq-tex$(EXE)
 
-tools: $(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) \
-       tools/coq.elc dev/top_printers.cmo
+tools: $(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) dev/top_printers.cmo
 
 COQDEPCMO=config/coq_config.cmo tools/coqdep_lexer.cmo tools/coqdep.cmo
 
@@ -536,7 +530,7 @@ MINICOQCMO=$(CONFIG) $(LIB) $(KERNEL) \
 	   parsing/lexer.cmo parsing/g_minicoq.cmo \
 	   toplevel/fhimsg.cmo toplevel/minicoq.cmo
 
-MINICOQ=bin/minicoq
+MINICOQ=bin/minicoq$(EXE)
 
 $(MINICOQ): $(MINICOQCMO)
 	$(OCAMLC) $(INCLUDES) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
@@ -584,7 +578,7 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)/states
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLEMACSLIB)
-	cp tools/coq.el tools/coq.elc $(FULLEMACSLIB)
+	cp tools/coq.el $(FULLEMACSLIB)
 
 MANPAGES=tools/coq-tex.1 tools/coqdep.1 tools/gallina.1
 
@@ -707,7 +701,7 @@ clean::
 	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 .v.vo:
-	$(COQC) -q -$(BEST) -bindir bin $(COQINCLUDES) $<
+	$(COQC) -boot -$(BEST)  $(COQINCLUDES) $<
 
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile
