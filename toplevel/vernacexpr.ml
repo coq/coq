@@ -55,6 +55,7 @@ type printable =
   | PrintHint of reference
   | PrintHintGoal
   | PrintHintDbName of string
+  | PrintRewriteHintDbName of string
   | PrintHintDb
   | PrintSetoids
   | PrintScopes

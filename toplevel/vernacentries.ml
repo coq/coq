@@ -930,6 +930,7 @@ let vernac_print = function
   | PrintHint qid -> Auto.print_hint_ref (Nametab.global qid)
   | PrintHintGoal -> Auto.print_applicable_hint ()
   | PrintHintDbName s -> Auto.print_hint_db_by_name s
+  | PrintRewriteHintDbName s -> Autorewrite.print_rewrite_hintdb s
   | PrintHintDb -> Auto.print_searchtable ()
   | PrintSetoids -> Setoid_replace.print_setoids()
   | PrintScopes ->

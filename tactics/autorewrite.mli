@@ -20,3 +20,5 @@ val add_rew_rules : string -> raw_rew_rule list -> unit
 
 (* The AutoRewrite tactic *)
 val autorewrite : tactic -> string list -> tactic
+
+val print_rewrite_hintdb : string -> unit

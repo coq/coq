@@ -197,6 +197,7 @@ GEXTEND Gram
       | IDENT "Hint"; qid = global -> PrintHint qid
       | IDENT "Hint"; "*" -> PrintHintDb
       | IDENT "HintDb"; s = IDENT -> PrintHintDbName s
+      | IDENT "Rewrite"; IDENT "HintDb"; s = IDENT -> PrintRewriteHintDbName s
       | IDENT "Scopes" -> PrintScopes
       | IDENT "Scope"; s = IDENT -> PrintScope s
       | IDENT "Visibility"; s = OPT IDENT -> PrintVisibility s

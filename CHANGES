@@ -1,6 +1,11 @@
 Changes from V8.0
 =================
 
+Vernacular commands
+
+- Added "Print Rewrite HintDb" to print the content of a DB used by
+  autorewrite (doc TODO)
+
 Gallina
 
 - Added disjunctive patterns in match-with patterns

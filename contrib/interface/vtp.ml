@@ -418,6 +418,9 @@ and fCOMMAND = function
 | CT_print_hintdb(x1) ->
    fID_OR_STAR x1;
    fNODE "print_hintdb" 1
+| CT_print_rewrite_hintdb(x1) ->
+   fID x1;
+   fNODE "print_rewrite_hintdb" 1
 | CT_print_id(x1) ->
    fID x1;
    fNODE "print_id" 1

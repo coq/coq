@@ -41,6 +41,20 @@ let _ =
       Summary.survive_module = false;
       Summary.survive_section   = false }
 
+let print_rewrite_hintdb bas =
+ try
+  let hints = Stringmap.find bas !rewtab in
+   ppnl (str "Database " ++ str bas ++ (Pp.cut ()) ++
+    prlist_with_sep Pp.cut
+     (fun (c,typ,d,t) ->
+       str (if d then "rewrite -> " else "rewrite <- ") ++
+       Printer.prterm c ++ str " of type " ++ Printer.prterm typ ++
+       str " then use tactic " ++ Pptactic.pr_glob_tactic t) hints)
+ with
+  Not_found -> 
+   errorlabstrm "AutoRewrite" 
+     (str ("Rewriting base "^(bas)^" does not exist"))
+
 type raw_rew_rule = constr * bool * raw_tactic_expr
 
 (* Applies all the rules of one base *)

@@ -124,6 +124,7 @@ and ct_COMMAND =
   | CT_print_graph
   | CT_print_hint of ct_ID_OPT
   | CT_print_hintdb of ct_ID_OR_STAR
+  | CT_print_rewrite_hintdb of ct_ID
   | CT_print_id of ct_ID
   | CT_print_implicit of ct_ID
   | CT_print_loadpath

@@ -1022,6 +1022,7 @@ let rec pr_vernac = function
 	| PrintHint qid -> str"Print Hint" ++ spc() ++ pr_reference qid
 	| PrintHintDb -> str"Print Hint *"
 	| PrintHintDbName s -> str"Print HintDb" ++ spc() ++ str s
+	| PrintRewriteHintDbName s -> str"Print Rewrite HintDb" ++ spc() ++ str s
 	| PrintUniverses fopt -> str"Dump Universes" ++ pr_opt str fopt
 	| PrintName qid -> str"Print" ++ spc()  ++ pr_reference qid
 	| PrintLocalContext -> assert false

@@ -1768,6 +1768,8 @@ let rec xlate_vernac =
 	| PrintHintDb -> CT_print_hintdb (CT_coerce_STAR_to_ID_OR_STAR CT_star)
 	| PrintHintDbName id -> 
 	    CT_print_hintdb (CT_coerce_ID_to_ID_OR_STAR (CT_ident id))
+	| PrintRewriteHintDbName id -> 
+	    CT_print_rewrite_hintdb (CT_ident id)
 	| PrintHint id ->
 	    CT_print_hint (CT_coerce_ID_to_ID_OPT (loc_qualid_to_ct_ID id))
 	| PrintHintGoal -> CT_print_hint ctv_ID_OPT_NONE
