@@ -266,7 +266,8 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
      match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
   | RLetIn (_,na1,t1,b1), AProd (na2,t2,b2) ->
      match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
-  | RCases (_,(po1,rtno1),tml1,eqnl1), ACases (po2,rtno2,tml2,eqnl2) ->
+  | RCases (_,(po1,rtno1),tml1,eqnl1), ACases (po2,rtno2,tml2,eqnl2) 
+      when List.length tml1 = List.length tml2 ->
      let sigma = option_fold_left2 (match_ alp metas) sigma po1 po2 in
      (* TODO: match rtno' with their contexts *)
      let sigma = List.fold_left2 
