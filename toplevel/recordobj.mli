@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 val objdef_declare : Libnames.global_reference -> unit
 val add_object_hook : Tacexpr.declaration_hook
