@@ -23,7 +23,7 @@ open Tactics
 open Util
 
 let assoc_last ist =
-  match List.assoc (Pattern.patvar_of_int 1) ist.lfun with
+  match List.assoc (Pattern.patvar_of_int_v7 1) ist.lfun with
     | VConstr c -> c
     | _ -> failwith "Tauto: anomaly"
 

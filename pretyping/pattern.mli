@@ -22,8 +22,11 @@ open Rawterm
 (* Pattern variables *)
 
 type patvar_map = (patvar * constr) list
-val patvar_of_int : int -> patvar
 val pr_patvar : patvar -> std_ppcmds
+
+(* Only for v7 parsing/printing *)
+val patvar_of_int : int -> patvar
+val patvar_of_int_v7 : int -> patvar
 
 (* Patterns *)
 

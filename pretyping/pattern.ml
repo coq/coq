@@ -21,8 +21,13 @@ open Pp
 (* Metavariables *)
 
 type patvar_map = (patvar * constr) list
-let patvar_of_int n = Names.id_of_string ("X" ^ string_of_int n)
+let patvar_of_int n =
+  let p = if !Options.v7 & not (Options.do_translate ()) then "?" else "X"
+  in
+  Names.id_of_string (p ^ string_of_int n)
 let pr_patvar = pr_id
+
+let patvar_of_int_v7 n = Names.id_of_string ("?" ^ string_of_int n)
 
 (* Patterns *)
 
