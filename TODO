@@ -15,7 +15,10 @@ Tactiques:
 
 Noyau:
 
-- Gérer les alias avec un let in dans les cases
+- Gérer les let in dans la condition de garde, exemple:
+  Fixpoint F [n:nat]:nat:= Cases n of O => O | (S n0) => 
+      Cases n0 of O => (S O) | (S n1) => [n2:=(S n1)](S (F n2)) end
+
 
 Vernac:
 
