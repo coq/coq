@@ -2,7 +2,7 @@
 (* $Id$ *)
 
 (* This file implements the basic structure of what Chet called
-   ``discrimination nets''. If my understanding is wright, it serves
+   ``discrimination nets''. If my understanding is right, it serves
    to associate actions (for example, tactics) with a priority to term
    patterns, so that if a hypothesis matches a pattern in the net,
    then the associated tactic is applied. Discrimination nets are used
@@ -23,15 +23,14 @@
 
 (* Definition of the basic structure *)
 
-type ('lbl,'pat) dn_args = 'pat -> ('lbl * 'pat list) option
+type ('lbl,'pat) decompose_fun = 'pat -> ('lbl * 'pat list) option
 
-type ('lbl,'pat,'inf) under_t = (('lbl * int) option,'pat * 'inf) Tlm.t
+type ('lbl,'pat,'inf) t = (('lbl * int) option,'pat * 'inf) Tlm.t
 
-type ('lbl,'pat,'inf) t = {
-  tm   : ('lbl,'pat,'inf) under_t; 
-  args : ('lbl,'pat) dn_args }
+let create () = Tlm.empty
 
-let create dna = { tm = Tlm.empty; args = dna }
+(* [path_of dna pat] returns the list of nodes of the pattern [pat] read in 
+prefix ordering, [dna] is the function returning the main node of a pattern *)
 
 let path_of dna =
   let rec path_of_deferred = function
@@ -52,28 +51,23 @@ let path_of dna =
 let tm_of tm lbl =
   try [Tlm.map tm lbl] with Not_found -> []
 
-let lookup dnm dna' t =
+let lookup tm dna t =
   let rec lookrec t tm =
     (tm_of tm None)@
-    (match dna' t with
+    (match dna t with
        | None -> []
        | Some(lbl,v) ->
 	   List.fold_left 
 	     (fun l c -> List.flatten(List.map (lookrec c) l))
              (tm_of tm (Some(lbl,List.length v))) v)
   in 
-  List.flatten(List.map Tlm.xtract (lookrec t dnm.tm))
+  List.flatten(List.map Tlm.xtract (lookrec t tm))
 
-let upd dnm f = { args = dnm.args; tm = f dnm.args dnm.tm }
+let add tm dna (pat,inf) =
+  let p = path_of dna pat in Tlm.add tm (p,(pat,inf))
+    
+let rmv tm dna (pat,inf) =
+  let p = path_of dna pat in Tlm.rmv tm (p,(pat,inf))
+    
+let app f tm = Tlm.app (fun (_,p) -> f p) tm
 
-let add dnm (pat,inf) =
-  upd dnm
-    (fun dna tm ->
-       let p = path_of dna pat in Tlm.add tm (p,(pat,inf)))
-    
-let rmv dnm (pat,inf) =
-  upd dnm
-    (fun dna tm ->
-       let p = path_of dna pat in Tlm.rmv tm (p,(pat,inf)))
-    
-let app f dnm = Tlm.app (fun (_,p) -> f p) dnm.tm

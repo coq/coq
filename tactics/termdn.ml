@@ -26,6 +26,7 @@ let decomp =
   in 
   decrec []   
 
+
 let constr_pat_discr t =
   if not(occur_meta t) then 
     None
@@ -58,10 +59,11 @@ let constr_val_discr_nil t =
     | None -> None
     | Some (c,_) -> Some(c,[])
 
-let create () = Dn.create constr_pat_discr
+let create = Dn.create 
 
-let add = Dn.add
-let rmv = Dn.rmv
+let add dn = Dn.add dn constr_pat_discr
+
+let rmv dn = Dn.rmv dn constr_pat_discr
 
 let lookup dn t = Dn.lookup dn constr_val_discr t
 

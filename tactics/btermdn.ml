@@ -26,27 +26,18 @@ let bounded_constr_val_discr (t,depth) =
       | None -> None
       | Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
 
-type 'a t = (lbl,constr * int,'a) Dn.under_t
+type 'a t = (lbl,constr * int,'a) Dn.t
 
-let newdn () = Dn.create bounded_constr_pat_discr
+let create = Dn.create
 
-let ex_termdn = newdn()
+let add dn (c,v) = Dn.add dn bounded_constr_pat_discr ((c,!dnet_depth),v)
 
-let inDN tdn = { 
-  Dn.args = ex_termdn.Dn.args;
-  Dn.tm = tdn }
+let rmv dn (c,v) = Dn.rmv dn bounded_constr_pat_discr ((c,!dnet_depth),v)
 
-let outDN dn = dn.Dn.tm
-
-let create () = outDN (newdn())
-
-let add dn (c,v) = outDN (Dn.add (inDN dn) ((c,!dnet_depth),v))
-
-let rmv dn (c,v) = outDN (Dn.rmv (inDN dn) ((c,!dnet_depth),v))
-
-let lookup dn t = 
+let lookup dn t =
   List.map 
     (fun ((c,_),v) -> (c,v)) 
-    (Dn.lookup (inDN dn) bounded_constr_val_discr (t,!dnet_depth))
+    (Dn.lookup dn bounded_constr_val_discr (t,!dnet_depth))
 
-let app f dn = Dn.app (fun ((c,_),v) -> f(c,v)) (inDN dn)
+let app f dn = Dn.app (fun ((c,_),v) -> f(c,v)) dn
+
