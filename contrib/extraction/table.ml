@@ -173,7 +173,9 @@ let sorted_ml_extractions () = let (_,_,l) = !extractions in l
 
 let add_ml_extraction r s = 
   let (map,set,list) = !extractions in
-  let list' = if (is_constant r) then (r,s)::list else list in 
+  let list' = if (is_constant r) then 
+    (r,s)::(List.remove_assoc r list) 
+  else list in 
   extractions := (Refmap.add r s map, Refset.add r set, list')
 
 let is_ml_extraction r = 
