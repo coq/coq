@@ -99,3 +99,5 @@ val make_default_case_info : env -> case_style -> inductive -> case_info
 
 (********************)
 val control_only_guard : env -> types -> unit
+
+val subst_inductive : Mod_subst.substitution -> inductive -> inductive

@@ -1815,7 +1815,7 @@ and interp_atomic ist gl = function
     | HypArgType ->
 	VConstr (mkVar (interp_var ist gl (out_gen globwit_var x)))
     | RefArgType -> 
-        VConstr (constr_of_reference 
+        VConstr (constr_of_global 
           (pf_interp_reference ist gl (out_gen globwit_ref x)))
     | SortArgType ->
 	VConstr (mkSort (Pretyping.interp_sort (out_gen globwit_sort x)))
@@ -1864,8 +1864,6 @@ let subst_quantified_hypothesis _ x = x
 
 let subst_declared_or_quantified_hypothesis _ x = x
 
-let subst_inductive subst (kn,i) = (subst_kn subst kn,i)
-
 let subst_rawconstr subst (c,e) =
   assert (e=None); (* e<>None only for toplevel tactics *)
   (Detyping.subst_raw subst c,None)
@@ -1905,7 +1903,7 @@ let subst_reference subst =
 let subst_global_reference subst = 
  let subst_global ref =
   let ref',t' = subst_global subst ref in
-   if not (eq_constr (constr_of_reference ref') t') then
+   if not (eq_constr (constr_of_global ref') t') then
     ppnl (str "Warning: the reference " ++ pr_global ref ++ str " is not " ++
           str " expanded to \"" ++ prterm t' ++ str "\", but to " ++
           pr_global ref') ;

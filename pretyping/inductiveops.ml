@@ -369,3 +369,5 @@ let control_only_guard env =
     | LetIn (_,c1,c2,c3) -> control_rec c1; control_rec c2; control_rec c3
   in 
   control_rec 
+
+let subst_inductive subst (kn,i) = (Mod_subst.subst_kn subst kn,i)
