@@ -2,7 +2,6 @@
 (* $Id$ *)
 
 open Pcoq
-
 open Command
 
 GEXTEND Gram
@@ -23,7 +22,7 @@ GEXTEND Gram
       | c1 = command -> [c1] ] ]
   ;
   command0:
-    [ [ "?" -> <:ast< (XTRA "ISEVAR") >>
+    [ [ "?" -> <:ast< (ISEVAR) >>
       | "?"; n = Prim.number -> <:ast< (META $n) >>
       | "["; id1 = IDENT; ":"; c = command; c2 = abstraction_tail ->
           <:ast< (LAMBDALIST $c [$id1]$c2) >>
@@ -32,9 +31,9 @@ GEXTEND Gram
           <:ast< (LAMBDALIST $c [$id1]($SLAM $idl $c2)) >>
       | "["; id1 = IDENT; ","; idl = ne_ident_comma_list;
              c = abstraction_tail ->
-          <:ast< (LAMBDALIST (XTRA "ISEVAR") [$id1]($SLAM $idl $c)) >>
+          <:ast< (LAMBDALIST (ISEVAR) [$id1]($SLAM $idl $c)) >>
       | "["; id1 = IDENT; c = abstraction_tail ->
-          <:ast< (LAMBDALIST (XTRA "ISEVAR") [$id1]$c) >>
+          <:ast< (LAMBDALIST (ISEVAR) [$id1]$c) >>
       | "["; id1 = IDENT; "="; c = command; "]"; c2 = command ->
           <:ast< (ABST #Core#let.cci $c [$id1]$c2) >> 
       | "<<"; id1 = IDENT; ">>"; c = command -> <:ast< [$id1]$c >>
@@ -52,10 +51,12 @@ GEXTEND Gram
           let id2 = Ast.coerce_to_var "lc2" lc2 in
             <:ast< (PRODLIST $c [$id1][$id2]($SLAM $idl $body)) >>
       | "("; lc1 = lcommand; ")" -> lc1
+(*
       | "("; lc1 = lcommand; ")"; "@"; "["; cl = ne_command_list; "]" ->
           <:ast< (XTRA"$SOAPP" $lc1 ($LIST $cl)) >>
-      | "Prop" -> <:ast< (PROP {Null}) >>
-      | "Set" -> <:ast< (PROP {Pos}) >>
+*)
+      | "Prop" -> <:ast< (PROP) >>
+      | "Set"  -> <:ast< (SET) >>
       | "Type" -> <:ast< (TYPE) >>
       | IDENT "Fix"; id = ident; "{"; fbinders = fixbinders; "}" ->
           <:ast< (FIX $id ($LIST $fbinders)) >>
@@ -67,35 +68,35 @@ GEXTEND Gram
     [ [ "<"; ":"; IDENT "ast"; ":"; "<"; c = raw_command; ">>" -> c
       | "<"; l1 = lcommand; ">"; IDENT "Match"; c = command; "with";
         cl = ne_command_list; "end" ->
-          <:ast< (XTRA "REC" $l1 $c ($LIST $cl)) >>
+          <:ast< (CASE "REC" $l1 $c ($LIST $cl)) >>
       | "<"; l1 = lcommand; ">"; IDENT "Match"; c = command; "with"; "end"
         ->
-          <:ast< (XTRA "REC" $l1 $c) >>
+          <:ast< (CASE "REC" $l1 $c) >>
       | "<"; l1 = lcommand; ">"; IDENT "Case"; c = command; "of";
         cl = ne_command_list; "end" ->
-          <:ast< (MUTCASE $l1 $c ($LIST $cl)) >>
+          <:ast< (CASE "NOREC" $l1 $c ($LIST $cl)) >>
       | "<"; l1 = lcommand; ">"; IDENT "Case"; c = command; "of"; "end" ->
-          <:ast< (MUTCASE $l1 $c) >>
+          <:ast< (CASE "NOREC" $l1 $c) >>
       | IDENT "Case"; c = command; "of"; cl = ne_command_list; "end" ->
-          <:ast< (XTRA "MLCASE" "NOREC" $c ($LIST $cl)) >>
+          <:ast< (CASE "NOREC" "SYNTH" $c ($LIST $cl)) >>
       | IDENT "Case"; c = command; "of"; "end" ->
-          <:ast< (XTRA "MLCASE" "NOREC" $c) >>
+          <:ast< (CASE "NOREC" "SYNTH" $c) >>
       | IDENT "Match"; c = command; "with"; cl = ne_command_list; "end" ->
-          <:ast< (XTRA "MLCASE" "REC" $c ($LIST $cl)) >>
+          <:ast< (CASE "REC" "SYNTH" $c ($LIST $cl)) >>
       | IDENT "let"; "("; b = ne_ident_comma_list; ")"; "=";
         c = command; "in"; c1 = command ->
-          <:ast< (XTRA "MLCASE" "NOREC" $c (LAMBDALIST (XTRA "ISEVAR")
+          <:ast< (MLCASE "NOREC" $c (LAMBDALIST (ISEVAR)
                    ($SLAM $b $c1))) >>
       | IDENT "let"; id1 = IDENT ; "="; c = command; "in";
         c1 = command -> <:ast< (ABST #Core#let.cci $c [$id1]$c1) >>
       | IDENT "if"; c1 = command; IDENT "then"; c2 = command;
         IDENT "else"; c3 = command ->
-        <:ast< ( XTRA "MLCASE" "NOREC" $c1 $c2 $c3) >>
+        <:ast< ( MLCASE "NOREC" $c1 $c2 $c3) >>
 (* EN ATTENTE DE REMPLACER CE QUI EST DANS Program.v ... *)
       | "<"; l1 = lcommand; ">";
         IDENT "let"; "("; b = ne_ident_comma_list; ")"; "=";
         c = command; "in"; c1 = command ->
-         <:ast< (MUTCASE $l1 $c (LAMBDALIST (XTRA "ISEVAR") ($SLAM $b $c1))) >>
+         <:ast< (MUTCASE $l1 $c (LAMBDALIST (ISEVAR) ($SLAM $b $c1))) >>
       | "<"; l1 = lcommand; ">";
         IDENT "if"; c1 = command; IDENT "then";
         c2 = command; IDENT "else"; c3 = command ->
@@ -132,7 +133,7 @@ GEXTEND Gram
   ;
   command10:
     [ [ "!"; f = IDENT; args = ne_command9_list ->
-          <:ast< (APPLIST (XTRA "!" ($VAR $f)) ($LIST $args)) >>
+          <:ast< (APPLISTEXPL ($VAR $f) ($LIST $args)) >>
       | f = command9; args = ne_command91_list ->
           <:ast< (APPLIST $f ($LIST $args)) >>
       | f = command9 -> f ] ]
@@ -149,9 +150,29 @@ GEXTEND Gram
     [ [ id = binder; ";"; idl = ne_binder_list -> id::idl
       | id = binder -> [id] ] ]
   ;
-  command91:
+  weak_binder:
+    [ [ idl = ne_ident_comma_list; c = type_option ->
+          <:ast< (BINDER $c ($LIST $idl)) >> ] ]
+  ;
+  ne_weak_binder_list:
+    [ [ id = weak_binder; ";"; idl = ne_weak_binder_list -> id::idl
+      | id = weak_binder -> [id] ] ]
+  ;
+  type_option:
+    [ [ ":"; c = command -> c 
+      | -> <:ast< (ISEVAR) >> ] ]
+  ;
+(*  parameters:
+    [ [ "["; bl = ne_binder_semi_list; "]" -> $bl ] ]
+  ;
+  parameters_list:
+    [ [ 
+          <:ast< (BINDERLIST ($LIST $bl)) >>
+      |  -> <:ast< (BINDERLIST) >> ] ]
+  ;
+*)  command91:
     [ [ n = Prim.number; "!"; c1 = command9 ->
-          <:ast< (XTRA "!" $n $c1) >>
+          <:ast< (EXPL $n $c1) >>
       | c1 = command9 -> c1 ] ]
   ;
   ne_command91_list:
@@ -165,7 +186,7 @@ GEXTEND Gram
   fixbinder:
     [ [ id = ident; "/"; recarg = Prim.number; ":"; type_ = command;
         ":="; def = command -> <:ast< (NUMFDECL $id $recarg $type_ $def) >>
-      | id = ident; "["; idl = ne_binder_list; "]"; ":"; type_ = command;
+      | id = ident; "["; idl = ne_weak_binder_list; "]"; ":"; type_ = command;
         ":="; def = command ->
           <:ast< (FDECL $id (BINDERS ($LIST $idl)) $type_ $def) >> ] ]
   ;
@@ -186,7 +207,7 @@ GEXTEND Gram
         ":"; c = command; c2 = abstraction_tail ->
           <:ast< (LAMBDALIST $c ($SLAM $idl $c2)) >>
       | ";"; idl = ne_ident_comma_list; c2 = abstraction_tail ->
-          <:ast< (LAMBDALIST (XTRA "ISEVAR") ($SLAM $idl $c2)) >>
+          <:ast< (LAMBDALIST (ISEVAR) ($SLAM $idl $c2)) >>
       | "]"; c = command -> c ] ]
   ;
   product_tail:
@@ -194,7 +215,9 @@ GEXTEND Gram
         ":"; c = command; c2 = product_tail ->
           <:ast< (PRODLIST $c ($SLAM $idl $c2)) >>
       | ";"; idl = ne_ident_comma_list; c2 = product_tail ->
-          <:ast< (PRODLIST (XTRA "ISEVAR") ($SLAM $idl $c2)) >>
+          <:ast< (PRODLIST (ISEVAR) ($SLAM $idl $c2)) >>
       | ")"; c = command -> c ] ]
   ;
-END
+END;;
+
+(* $Id$ *)

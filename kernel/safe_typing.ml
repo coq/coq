@@ -89,10 +89,10 @@ let rec execute mf env cstr =
 	(make_judge cofix larv.(i), cst)
 	  
     | IsSort (Prop c) -> 
-	(make_judge_of_prop_contents c, cst0)
+	(judge_of_prop_contents c, cst0)
 
     | IsSort (Type u) ->
-	make_judge_of_type u
+	judge_of_type u
 	  
     | IsAppL (f,args) ->
 	let (j,cst1) = execute mf env f in

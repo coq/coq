@@ -40,22 +40,24 @@ val globalize_ast     : Coqast.t -> Coqast.t
 
 val type_of_com : env -> Coqast.t -> typed_type
 
-val constr_of_com_casted : 'c evar_map -> context -> Coqast.t -> constr ->
+val constr_of_com_casted : unit evar_map -> env -> Coqast.t -> constr ->
   constr
 
-val constr_of_com1 : bool -> 'c evar_map -> env -> Coqast.t -> constr
-val constr_of_com : 'c evar_map -> env -> Coqast.t -> constr
-val constr_of_com_sort : 'c evar_map -> env -> Coqast.t -> constr
+val constr_of_com1 : bool -> unit evar_map -> env -> Coqast.t -> constr
+val constr_of_com : unit evar_map -> env -> Coqast.t -> constr
+val constr_of_com_sort : unit evar_map -> env -> Coqast.t -> constr
 
-val fconstr_of_com1 : bool -> 'c evar_map -> env -> Coqast.t -> constr
-val fconstr_of_com : 'c evar_map -> env -> Coqast.t -> constr
-val fconstr_of_com_sort : 'c evar_map -> env -> Coqast.t -> constr
+val fconstr_of_com1 : bool -> unit evar_map -> env -> Coqast.t -> constr
+val fconstr_of_com : unit evar_map -> env -> Coqast.t -> constr
+val fconstr_of_com_sort : unit evar_map -> env -> Coqast.t -> constr
 
 (* Typing with Trad, and re-checking with Mach *)
-
+(*i
 val fconstruct :'c evar_map -> context -> Coqast.t -> unsafe_judgment
 val fconstruct_type : 'c evar_map -> context -> Coqast.t -> typed_type
 
 (* Typing, re-checking with universes constraints *)
 val fconstruct_with_univ :
-  'c evar_map -> context -> Coqast.t -> unsafe_judgment
+  unit evar_map -> context -> Coqast.t -> unsafe_judgment
+
+i*)

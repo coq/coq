@@ -255,6 +255,9 @@ module Command =
     let simple_pattern2 = Gram.Entry.create "Command.simple_pattern2"
     let simple_pattern_list =
 	 Gram.Entry.create "Command.simple_pattern_list"
+    let type_option = gec "type_option"
+    let weak_binder = gec "weak_binder"
+    let ne_weak_binder_list = gec_list "ne_weak_binder"
     let ucommand = snd (get_univ "command")
   end
 
@@ -355,7 +358,7 @@ module Vernac =
     let lvernac = gec_list "lvernac"
     let meta_binding = gec "meta_binding"
     let meta_binding_list = gec_list "meta_binding_list"
-    let ne_binder_semi_list = gec_list "ne_binder_semi_list"
+    let ne_binder_list = gec_list "ne_binder_list"
     let ne_comarg_list = gec_list "ne_comarg_list"
     let ne_identarg_comma_list = gec_list "ne_identarg_comma_list"
     let identarg_list = gec_list "identarg_list"

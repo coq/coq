@@ -328,7 +328,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 	check_cofix env !isevars cofix;
 	make_judge cofix lara.(i))
 
-| RSort (loc,RProp c) -> make_judge_of_prop_contents c
+| RSort (loc,RProp c) -> judge_of_prop_contents c
 
 | RSort (loc,RType) -> 
     { uj_val = dummy_sort; uj_type = dummy_sort; uj_kind = dummy_sort }
@@ -424,7 +424,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
        uj_kind = snd (splay_prod env !isevars evalPt)}
 
 | RCases (loc,prinfo,po,tml,eqns) ->
-    Multcase.compile_multcase
+    Cases.compile_multcase
       ((fun vtyc env -> pretype vtyc env isevars),isevars)
       vtcon env (po,tml,eqns)
 
@@ -473,6 +473,11 @@ let j_apply f env sigma j =
        variables du sigma original. il faudrait que la fonction de typage
        retourne aussi le nouveau sigma...
 *)
+let ise_resolve_casted sigma env typ c =
+  let isevars = ref sigma in
+  let j = unsafe_fmachine (mk_tycon typ) false isevars [] env c in
+  (j_apply (fun _ -> process_evars true) env !isevars j).uj_val
+
 let ise_resolve fail_evar sigma metamap env c =
   let isevars = ref sigma in
   let j = unsafe_fmachine mt_tycon false isevars metamap env c in

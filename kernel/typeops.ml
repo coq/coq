@@ -357,13 +357,13 @@ let judge_of_set =
     uj_type = DOP0(Sort type_0);
     uj_kind = DOP0(Sort type_1) }
 
-let make_judge_of_prop_contents = function
+let judge_of_prop_contents = function
   | Null -> judge_of_prop
   | Pos -> judge_of_set
 
 (* Type of Type(i). *)
 
-let make_judge_of_type u =
+let judge_of_type u =
   let (uu,uuu,c) = super_super u in
   { uj_val = DOP0 (Sort (Type u));
     uj_type = DOP0 (Sort (Type uu));

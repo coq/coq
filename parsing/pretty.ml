@@ -46,7 +46,7 @@ let print_typed_value_in_env env (trm,typ) =
   [< term0 (gLOB sign) trm ; 'fNL ;
      'sTR "     : "; term0 (gLOB sign) typ ; 'fNL >]
 
-let print_typed_value x = print_typed_value_in_env (Global.env()) x
+let print_typed_value x = print_typed_value_in_env (Global.env ()) x
 			  		  
 let print_recipe = function
   | Some c -> prterm c
@@ -500,7 +500,7 @@ let fprint_judge {uj_val=trm;uj_type=typ} =
 
 let unfold_head_fconst = 
   let rec unfrec = function
-    | DOPN(Const _,_) as k -> constant_value (Global.env()) k 
+    | DOPN(Const _,_) as k -> constant_value (Global.env ()) k 
     | DOP2(Lambda,t,DLAM(na,b)) -> DOP2(Lambda,t,DLAM(na,unfrec b))
     | DOPN(AppL,v) -> DOPN(AppL,array_cons (unfrec (array_hd v)) (array_tl v))
     | x -> x
@@ -661,3 +661,75 @@ let inspect depth =
   in 
   let items = List.rev (inspectrec depth [] (Lib.contents_after None)) in
   print_context false items
+
+
+(*************************************************************************)
+(* Pretty-printing functions coming from classops.ml                     *)
+
+open Classops
+
+let string_of_strength = function 
+  | NeverDischarge -> "(global)"
+  | DischargeAt sp -> "(disch@"^(string_of_path sp)
+
+let print_coercion_value v = prterm v.cOE_VALUE.uj_val
+
+let print_index_coercion c = 
+  let _,v = coercion_info_from_index c in
+  print_coercion_value v
+
+let print_class i =
+  let cl,x = class_info_from_index i in
+  [< 'sTR x.cL_STR >]
+  
+let print_path ((i,j),p) = 
+  [< 'sTR"["; 
+     prlist_with_sep (fun () -> [< 'sTR"; " >])
+       (fun c ->  print_index_coercion c) p;
+     'sTR"] : "; print_class i; 'sTR" >-> ";
+     print_class j >]
+
+let print_graph () = 
+  [< prlist_with_sep pr_fnl print_path (!iNHERITANCE_GRAPH) >]
+
+let print_classes () = 
+  [< prlist_with_sep pr_spc
+       (fun (_,(cl,x)) -> 
+          [< 'sTR x.cL_STR  (*; 'sTR(string_of_strength x.cL_STRE) *) >]) 
+       (!cLASSES) >]
+
+let print_coercions () = 
+  [< prlist_with_sep pr_spc
+       (fun (_,(_,v)) -> [< print_coercion_value v >]) (!cOERCIONS) >]
+  
+let cl_of_id id = 
+  match string_of_id id with
+    | "FUNCLASS" -> CL_FUN
+    | "SORTCLASS" -> CL_SORT
+    | _ -> let v = Declare.global_reference CCI id in
+	   let cl,_ = constructor_at_head v in 
+	   cl
+
+let index_cl_of_id id =
+  try 
+    let cl = cl_of_id id in
+    let i,_=class_info cl in 
+    i
+  with _ -> 
+    errorlabstrm "index_cl_of_id"
+      [< 'sTR(string_of_id id); 'sTR" is not a defined class" >]
+
+let print_path_between ids idt = 
+  let i = (index_cl_of_id ids) in
+  let j = (index_cl_of_id idt) in
+  let p = 
+    try 
+      lookup_path_between (i,j) 
+    with _ -> 
+      errorlabstrm "index_cl_of_id"
+        [< 'sTR"No path between ";'sTR(string_of_id ids); 
+	   'sTR" and ";'sTR(string_of_id ids) >]
+  in
+  print_path ((i,j),p)
+
+(*************************************************************************)

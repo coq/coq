@@ -46,7 +46,8 @@ Changements dans les fonctions :
 	  rev_append	 ->  List.rev_append
 
 	Termenv
-	  mind_specif_of_mind  ->  Global.lookup_mind_specif
+	  mind_specif_of_mind  -> Global.lookup_mind_specif
+                ou Environ.lookup_mind_specif si on a un env sous la main
 	  mis_arity      ->  instantiate_arity
 	  mis_lc	 ->  instantiate_lc	
 
@@ -54,8 +55,8 @@ Changements dans les fonctions :
 	  gentermpr	->   gen_pr_term
 
 	Typing, Machops
-	  type_of_type     ->  type_of_sort
-	  fcn_proposition  ->  type_of_type
+	  type_of_type     ->  judge_of_type
+	  fcn_proposition  ->  judge_of_prop_contents
 
 
 Changements dans les grammaires

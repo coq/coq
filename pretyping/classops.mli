@@ -43,7 +43,9 @@ type inheritance_path = int list
 
 val cte_of_constr : constr -> cte_typ
 val class_info : cl_typ -> (int * cl_info_typ)
+val class_info_from_index : int -> cl_typ * cl_info_typ
 val coercion_info : coe_typ -> (int * coe_info_typ)
+val coercion_info_from_index : int -> coe_typ * coe_info_typ
 val constructor_at_head : constr -> cl_typ * int
 val class_of : env -> 'c evar_map -> constr -> constr * int
 val class_args_of : constr -> constr list
@@ -55,10 +57,6 @@ val lookup_path_between : (int * int) -> inheritance_path
 val lookup_path_to_fun_from : int -> inheritance_path
 val lookup_path_to_sort_from : int -> inheritance_path
 val coe_value : int -> (unsafe_judgment * bool)
-val print_graph : unit -> (int * string) Pp.ppcmd_token Stream.t
-val print_classes : unit -> (int * string) Pp.ppcmd_token Stream.t
-val print_coercions : unit -> (int * string) Pp.ppcmd_token Stream.t
-val print_path_between : identifier -> identifier -> (int * string) ppcmd_token Stream.t
 val arity_sort : constr -> int
 val fully_applied : identifier -> int -> int -> unit
 val stre_of_cl : cl_typ -> strength

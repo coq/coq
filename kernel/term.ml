@@ -20,8 +20,8 @@ type 'a oper =
   (* DOPN *)
   | AppL | Const of section_path | Abst of section_path
   | Evar of int
-  | MutInd of section_path * int
-  | MutConstruct of (section_path * int) * int
+  | MutInd of inductive_path
+  | MutConstruct of constructor_path
   | MutCase of case_info
   | Fix of int array * int
   | CoFix of int
@@ -30,7 +30,7 @@ type 'a oper =
       (* an extra slot, for putting in whatever sort of
          operator we need for whatever sort of application *)
 
-and case_info = (section_path * int) option
+and case_info = inductive_path option
 
 (* Sorts. *)
 

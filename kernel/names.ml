@@ -224,6 +224,11 @@ module Spset = Set.Make(SpOrdered)
 
 module Spmap = Map.Make(SpOrdered)
 
+(* Special references for inductive objects *)
+
+type inductive_path = section_path * int
+type constructor_path = inductive_path * int
+
 (* Hash-consing of name objects *)
 module Hident = Hashcons.Make(
   struct 

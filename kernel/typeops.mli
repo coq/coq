@@ -42,9 +42,9 @@ val type_case_branches :
   env -> 'a evar_map -> constr -> constr -> constr -> constr 
     -> constr * constr array * constr 
 
-val make_judge_of_prop_contents : contents -> unsafe_judgment
+val judge_of_prop_contents : contents -> unsafe_judgment
 
-val make_judge_of_type : universe -> unsafe_judgment * constraints
+val judge_of_type : universe -> unsafe_judgment * constraints
 
 val abs_rel : 
   env -> 'a evar_map -> name -> typed_type -> unsafe_judgment 

@@ -70,6 +70,9 @@ val sp_gt : section_path * section_path -> bool
 module Spset : Set.S with type elt = section_path
 module Spmap : Map.S with type key = section_path
 
+type inductive_path = section_path * int
+type constructor_path = inductive_path * int
+
 (* Hash-consing *)
 val hcons_names : unit ->
   (section_path -> section_path) * (section_path -> section_path) *

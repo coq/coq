@@ -4,6 +4,7 @@
 (*i*)
 open Names
 open Term
+open Inductive
 (*i*)
 
 (* Implicit arguments. Here we store the implicit arguments. Notice that we 
@@ -25,10 +26,12 @@ val declare_constant_manual_implicits : section_path -> int list -> unit
 val constant_implicits : section_path -> implicits
 
 val declare_inductive_implicits : section_path -> unit
-val inductive_implicits : section_path * int -> implicits
-val constructor_implicits : (section_path * int) * int -> implicits
+val inductive_implicits : inductive_path -> implicits
+val constructor_implicits : constructor_path -> implicits
 
-val mconstr_implicits : constr -> int list
-val mind_implicits : constr -> int list
+val constructor_implicits_list : constructor_path -> int list
+val inductive_implicits_list : inductive_path -> int list
+val constant_implicits_list : section_path -> int list
+
 val implicits_of_var : Names.path_kind -> identifier -> int list
 

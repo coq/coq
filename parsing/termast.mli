@@ -5,12 +5,15 @@
 open Names
 open Term
 open Sign
+open Rawterm
 (*i*)
-
-(* Translation of terms into syntax trees. Used for pretty-printing. *)
 
 val print_implicits : bool ref
 
+(* Translation of pattern, rawterm and term into syntax trees for printing *)
+
+val ast_of_pattern : pattern -> Coqast.t
+val ast_of_rawconstr : unit assumptions -> rawconstr -> Coqast.t
 val bdize : bool -> unit assumptions -> constr -> Coqast.t
 val bdize_no_casts : bool -> unit assumptions -> constr -> Coqast.t
 
@@ -18,3 +21,7 @@ val bdize_no_casts : bool -> unit assumptions -> constr -> Coqast.t
 val lookup_name_as_renamed :
   unit assumptions -> constr -> identifier -> int option
 val lookup_index_as_renamed : constr -> int -> int option
+
+(*i This is temporary *)
+val ids_of_ctxt : constr array -> identifier list
+(*i*)

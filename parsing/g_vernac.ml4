@@ -72,7 +72,7 @@ GEXTEND Gram
       -> <:ast< (VERNACARGLIST $id $c $indpar $lidcom) >> ] ]
   ;
   onerec:
-    [ [ id = identarg; "["; idl = ne_binder_semi_list; "]"; ":"; c = comarg;
+    [ [ id = identarg; "["; idl = ne_binder_list; "]"; ":"; c = comarg;
         ":="; def = comarg ->
           <:ast< (VERNACARGLIST $id (BINDERLIST ($LIST $idl)) $c $def) >> ] ]
   ;
@@ -123,12 +123,12 @@ GEXTEND Gram
     [ [ IDENT "Induction"; IDENT "for" -> <:ast< "DEP" >>
       | IDENT "Minimality"; IDENT "for" -> <:ast< "NODEP" >> ] ]
   ;
-  ne_binder_semi_list:
-    [ [ id = binder; ";"; idl = ne_binder_semi_list -> id :: idl
+  ne_binder_list:
+    [ [ id = binder; ";"; idl = ne_binder_list -> id :: idl
       | id = binder -> [id] ] ]
   ;
   indpar:
-    [ [ "["; bl = ne_binder_semi_list; "]" ->
+    [ [ "["; bl = ne_binder_list; "]" ->
           <:ast< (BINDERLIST ($LIST $bl)) >>
       |  -> <:ast< (BINDERLIST) >> ] ]
   ;
@@ -253,13 +253,13 @@ GEXTEND Gram
 			(LAMBDALIST $c [$id1]($SLAM $idl $t)))) >>
 
 
-      | hyp = hyp_tok; bl = ne_binder_semi_list; "." ->
+      | hyp = hyp_tok; bl = ne_binder_list; "." ->
           <:ast< (VARIABLE $hyp  (BINDERLIST ($LIST $bl))) >>
-      | hyp = hyps_tok; bl = ne_binder_semi_list; "." ->
+      | hyp = hyps_tok; bl = ne_binder_list; "." ->
           <:ast< (VARIABLE $hyp  (BINDERLIST ($LIST $bl))) >>
-      | hyp = param_tok; bl = ne_binder_semi_list; "." ->
+      | hyp = param_tok; bl = ne_binder_list; "." ->
           <:ast< (PARAMETER $hyp (BINDERLIST ($LIST $bl))) >>
-      | hyp = params_tok; bl = ne_binder_semi_list; "." ->
+      | hyp = params_tok; bl = ne_binder_list; "." ->
           <:ast< (PARAMETER $hyp (BINDERLIST ($LIST $bl))) >>
       | IDENT "Abstraction"; id = identarg; "["; l = ne_numarg_list; "]";
         ":="; c = comarg; "." ->
@@ -285,7 +285,7 @@ GEXTEND Gram
         c = rec_constr; "{"; fs = fields; "}"; "." ->
           <:ast< (RECORD "COERCION" $name $ps (COMMAND $s) $c $fs) >>
 
-      | IDENT "Mutual"; "["; bl = ne_binder_semi_list; "]" ; f = finite_tok;
+      | IDENT "Mutual"; "["; bl = ne_binder_list; "]" ; f = finite_tok;
         indl = block_old_style; "." ->
           <:ast< (OLDMUTUALINDUCTIVE (BINDERLIST ($LIST $bl)) $f
                                      (VERNACARGLIST ($LIST $indl))) >>

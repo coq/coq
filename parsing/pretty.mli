@@ -44,6 +44,14 @@ val print_extraction : unit -> std_ppcmds
 val print_extracted_vars : unit -> std_ppcmds
 i*)
 
+(* Pretty-printing functions for classes and coercions *)
+val print_graph : unit -> std_ppcmds
+val print_classes : unit -> std_ppcmds
+val print_coercions : unit -> std_ppcmds
+val print_path_between : identifier -> identifier -> std_ppcmds
+
+
 val crible : (string -> unit assumptions -> constr -> unit) -> identifier ->
   unit
 val inspect : int -> std_ppcmds
+

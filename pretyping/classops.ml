@@ -227,77 +227,10 @@ let coe_value i =
   let (_,{cOE_VALUE=v;cOE_ISID=b}) = coercion_info_from_index i in
   v,b
 
-(* pretty-print functions *)
-
-open Printer
-
-let string_of_strength = function 
-  | NeverDischarge -> "(global)"
-  | DischargeAt sp -> "(disch@"^(string_of_path sp)
-
-let print_coercion_value v = prterm v.cOE_VALUE.uj_val
-
-let print_index_coercion c = 
-  let _,v = coercion_info_from_index c in
-  print_coercion_value v
-
-let print_class i =
-  let cl,x = class_info_from_index i in
-  [< 'sTR x.cL_STR >]
-  
-let print_path ((i,j),p) = 
-  [< 'sTR"["; 
-     prlist_with_sep (fun () -> [< 'sTR"; " >])
-       (fun c ->  print_index_coercion c) p;
-     'sTR"] : "; print_class i; 'sTR" >-> ";
-     print_class j >]
-
-let print_graph () = 
-  [< prlist_with_sep pr_fnl print_path (!iNHERITANCE_GRAPH) >]
-
-let print_classes () = 
-  [< prlist_with_sep pr_spc
-       (fun (_,(cl,x)) -> 
-          [< 'sTR x.cL_STR  (*; 'sTR(string_of_strength x.cL_STRE) *) >]) 
-       (!cLASSES) >]
-
-let print_coercions () = 
-  [< prlist_with_sep pr_spc
-       (fun (_,(_,v)) -> [< print_coercion_value v >]) (!cOERCIONS) >]
-  
-let cl_of_id id = 
-  match string_of_id id with
-    | "FUNCLASS" -> CL_FUN
-    | "SORTCLASS" -> CL_SORT
-    | _ -> let v = Declare.global_reference CCI id in
-	   let cl,_ = constructor_at_head v in 
-	   cl
-
-let index_cl_of_id id =
-  try 
-    let cl = cl_of_id id in
-    let i,_=class_info cl in 
-    i
-  with _ -> 
-    errorlabstrm "index_cl_of_id"
-      [< 'sTR(string_of_id id); 'sTR" is not a defined class" >]
-
-let print_path_between ids idt = 
-  let i = (index_cl_of_id ids) in
-  let j = (index_cl_of_id idt) in
-  let p = 
-    try 
-      lookup_path_between (i,j) 
-    with _ -> 
-      errorlabstrm "index_cl_of_id"
-        [< 'sTR"No path between ";'sTR(string_of_id ids); 
-	   'sTR" and ";'sTR(string_of_id ids) >]
-  in
-  print_path ((i,j),p)
-
+(* pretty-print functions are now in Pretty *)
 (* rajouter une coercion dans le graphe *)
  
-let message_ambig l =
+let message_ambig l = 
   [< 'sTR"Ambiguous paths : ";
      prlist_with_sep pr_fnl (fun ijp -> print_path ijp) l >]
 

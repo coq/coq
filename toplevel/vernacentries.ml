@@ -1051,7 +1051,7 @@ let _ =
               let rec aux t = function
                 | 0 -> t
                	| n -> aux (ope("APPLIST",
-                               	[t;ope("XTRA", [str "ISEVAR"])])) (n-1)
+                               	[t;ope("ISEVAR",[])])) (n-1)
               in 
 	      syntax_definition id (aux com n);
               if not(is_silent()) then

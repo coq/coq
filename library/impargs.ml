@@ -82,13 +82,14 @@ let constructor_implicits ((sp,i),j) =
   let imps = Spmap.find sp !inductives_table in
   (snd imps.(i)).(pred j)
 
-let mconstr_implicits mc = 
-  let (sp, i, j, _) = destMutConstruct mc in
-  list_of_implicits (constructor_implicits ((sp,i),j))
+let constructor_implicits_list constr_sp = 
+  list_of_implicits (constructor_implicits constr_sp)
 
-let mind_implicits m =
-  let (sp,i,_) = destMutInd m in
-  list_of_implicits (inductive_implicits (sp,i))
+let inductive_implicits_list ind_sp =
+  list_of_implicits (inductive_implicits ind_sp)
+
+let constant_implicits_list sp =
+  list_of_implicits (constant_implicits sp)
 
 let implicits_of_var kind id =
   failwith "TODO: implicits of vars"

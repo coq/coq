@@ -49,16 +49,18 @@ LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
 	library/nametab.cmo library/impargs.cmo library/redinfo.cmo \
         library/indrec.cmo library/declare.cmo
 
-PRETYPING=pretyping/typing.cmo pretyping/classops.cmo pretyping/recordops.cmo \
-          pretyping/evarutil.cmo pretyping/evarconv.cmo \
+PRETYPING=pretyping/retyping.cmo pretyping/typing.cmo \
+	  pretyping/classops.cmo pretyping/recordops.cmo \
+	  pretyping/evarutil.cmo pretyping/evarconv.cmo \
           pretyping/pretype_errors.cmo pretyping/coercion.cmo \
-	  pretyping/multcase.cmo pretyping/pretyping.cmo
+	  pretyping/cases.cmo pretyping/pretyping.cmo
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
-	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_multiple_case.cmo\
-        parsing/printer.cmo parsing/pretty.cmo parsing/astterm.cmo \
-        parsing/egrammar.cmo
+	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_cases.cmo\
+        parsing/printer.cmo parsing/pretty.cmo \
+	parsing/termast.cmo parsing/astterm.cmo \
+	parsing/egrammar.cmo
 
 PROOFS=proofs/tacred.cmo \
        proofs/proof_trees.cmo proofs/logic.cmo \

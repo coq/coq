@@ -73,10 +73,10 @@ let rec execute mf env sigma cstr =
 	make_judge cofix larv.(i)
 	  
     | IsSort (Prop c) -> 
-	make_judge_of_prop_contents c
+	judge_of_prop_contents c
 
     | IsSort (Type u) ->
-	let (j,_) = make_judge_of_type u in j
+	let (j,_) = judge_of_type u in j
 	  
     | IsAppL (f,args) ->
 	let j = execute mf env sigma f in

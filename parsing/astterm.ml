@@ -65,127 +65,9 @@ let check_number_of_pattern loc n l =
   if n<>(List.length l) then
     user_err_loc (loc,"check_number_of_pattern",mssg_number_of_patterns n l)
 
-(* absolutize_eqn replaces pattern variables that are global. This
- * means that we are going to remove the pattern abstractions that
- * correspond to constructors.
- * Warning: Names that are global but do not correspond to
- * constructors are considered non-known_global. E.g. if nat appears
- * in a pattern is considered as a variable name.  known_global should
- * be refined in order to consider known_global names only those that
- * correspond to constructors of inductive types.
- *)
-(*
-let is_constructor =  function
-    DOPN(MutConstruct((sp,tyi),i),cl)-> true | _ ->false
-
-let is_known_constructor k env id =
-  let srch =
-    match k with
-	CCI -> Machops.search_reference
-      | FW -> Machops.search_freference
-      | _ -> anomaly "known_global" in
-    try is_constructor (srch env id) 
-    with (Not_found | UserError _) -> 
-      (try  is_constructor (Environ.search_synconst k id) 
-       with Not_found -> false)
-
-
-let rec abs_eqn k env avoid = function
-    (v::ids, Slam(_,ona,t)) ->
-      let id = id_of_string (Ast.id_of_ast v) in
-      if is_known_constructor k env id
-      then abs_eqn k env avoid (ids, subst1 (VAR id) t)
-      else
-	let id' = if is_underscore id then id else next_ident_away id avoid in
-	let (nids,nt) = abs_eqn k env (id'::avoid) (ids,t) in
-	(id'::nids, DLAM(na,nt))
-  | ([],t) -> ([],t)
-  | _ -> assert false
-
-
-let rec absolutize_eqn absrec k env = function
-    DOP1(XTRA("LAMEQN",ids),lam_eqn) ->
-      let gids = ids_of_sign (get_globals env) in
-      let (nids,neqn) =	abs_eqn k env gids (ids, lam_eqn) in
-      let uplid = filter is_uppercase_var nids in
-      let _ = if uplid <> [] then warning_uppercase uplid in
-      DOP1(XTRA("LAMEQN",nids), absrec neqn)
-  | _ -> anomalylabstrm "absolutize_eqn" (mal_formed_mssg())
-
-*)
 (****************************************************************)
 (* Arguments normally implicit in the "Implicit Arguments mode" *)
 (* but explicitely given                                        *)
-(*
-let dest_explicit_arg = function
-    (DOP1(XTRA ("!", [Num(_,j)]), t)) -> (j,t)
-  | _ -> raise Not_found
-
-let is_explicit_arg = function
-    (DOP1(XTRA ("!", [Num(_,j)]), t)) -> true
-  | _ -> false
-
-let explicitize_appl l args = 
- let rec aux n l args acc =
- match (l,args) with 
-  (i::l',a::args') -> 
-   if i=n 
-   then try let j,a' = dest_explicit_arg a in
-            if j > i
-            then aux (n+1) l' args (mkExistential::acc)
-            else if j = i
-                 then aux (n+1) l' args' (a'::acc)
-                 else error "Bad explicitation number"
-        with Not_found -> aux (n+1) l' args (mkExistential::acc)
-   else if is_explicit_arg a then error "Bad explicitation number"
-   else aux (n+1) l args' (a::acc)
- | ([],_) -> (List.rev acc)@args
- | (_,[]) -> (List.rev acc)
-in aux 1 l args []
-
-
-let absolutize k sigma env constr = 
- let rec absrec env constr = match constr with
-    VAR id -> fst (absolutize_var_with_impl k sigma env id)
-  | Rel _ as t -> t
-  | DOP1(XTRA ("!", [Num _]), _) -> error "Bad explicitation number"
-  | DOPN(AppL,cl) -> (* Detect implicit args occurrences *)
-     let cl1 = Array.to_list cl in
-     let f = List.hd cl1 in
-     let args = List.tl cl1 in
-       begin match f with 
-           VAR id ->
-             let (c, impargs) = absolutize_var_with_impl k sigma env id in
-             let newargs = explicitize_appl impargs args in
-               mkAppList c (List.map (absrec env) newargs)
-         | DOPN((Const _ | MutInd _ | MutConstruct _) as op, _) ->
-	     let id = id_of_global op in
-             let (c, impargs) = search_ref_with_impl k env id in
-             let newargs = explicitize_appl impargs args in
-               mkAppList c (List.map (absrec env) newargs)
-         | (DOP1(XTRA ("!",[]), t)) ->
-             mkAppList (absrec env t) (List.map (absrec env) args)
-         | _ -> mkAppL (Array.map (absrec env) cl)
-       end
-
-  (* Pattern branches have a special absolutization *)
-  | DOP1(XTRA("LAMEQN",_),_) as eqn  -> absolutize_eqn (absrec env) k env eqn
-
-  | DOP0 _ as t -> t
-  | DOP1(oper,c) -> DOP1(oper,absrec env c)
-  | DOP2(oper,c1,c2) -> DOP2(oper,absrec env c1,absrec env c2)
-  | DOPN(oper,cl) -> DOPN(oper,Array.map (absrec env) cl)
-  | DOPL(oper,cl) -> DOPL(oper,List.map (absrec env) cl)
-  | DLAM(na,c)    -> DLAM(na,absrec (add_rel (na,()) env) c)
-  | DLAMV(na,cl)  -> DLAMV(na,Array.map (absrec (add_rel (na,()) env)) cl)
-
- in absrec env constr
-
-
-(* Fonctions exportées *)
-let absolutize_cci sigma env constr = absolutize CCI sigma env constr
-let absolutize_fw  sigma env constr = absolutize FW  sigma env constr
-*)
 
 let dbize_sp = function
   | Path(loc,sl,s) ->
@@ -196,62 +78,6 @@ let dbize_sp = function
                      [< 'sTR"malformed section-path" >]))
   | ast -> anomaly_loc(Ast.loc ast,"Astterm.dbize_sp",
                      [< 'sTR"not a section-path" >])
-(*
-let dbize_op loc opn pl cl =
-    match (opn,pl,cl) with
-        ("META",[Num(_,n)], []) -> DOP0(Meta n)
-      | ("XTRA",(Str(_,s))::tlpl,_) when (multcase_kw s) ->
-          DOPN(XTRA(s,tlpl),Array.of_list cl)
-      | ("XTRA",(Str(_,s))::tlpl,[]) -> DOP0(XTRA(s,tlpl))
-      | ("XTRA",(Str(_,s))::tlpl,[c]) -> DOP1(XTRA(s,tlpl),c)
-      | ("XTRA",(Str(_,s))::tlpl,[c1;c2]) -> DOP2(XTRA(s,tlpl),c1,c2)
-      | ("XTRA",(Str(_,s))::tlpl,_) -> DOPN(XTRA(s,tlpl), Array.of_list cl)
-
-      | ("PROP", [Id(_,s)], []) ->
-          (try RSort(Prop (contents_of_str s))
-           with Invalid_argument s -> anomaly_loc (loc,"Astterm.dbize_op",
-                                                   [< 'sTR s >]))
-      | ("TYPE", [], []) -> RSort(Type(dummy_univ))
-
-      | ("IMPLICIT", [], []) -> DOP0(Implicit)
-      | ("CAST", [], [c1;c2]) -> DOP2(Cast,c1,c2)
-
-      | ("CONST", [sp], _) -> DOPN(Const (dbize_sp sp),Array.of_list cl)
-      | ("ABST", [sp], _) ->
-          (try global_abst (dbize_sp sp) (Array.of_list cl)
-           with
-               Failure _ | Invalid_argument _ ->
-                 anomaly_loc(loc,"Astterm.dbize_op",
-                             [< 'sTR"malformed abstraction" >])
-             | Not_found -> user_err_loc(loc,"Astterm.dbize_op",
-                                         [< 'sTR"Unbound abstraction" >]))
-      | ("MUTIND", [sp;Num(_,tyi)], _) ->
-          DOPN(MutInd (dbize_sp sp, tyi),Array.of_list cl)
-            
-      | ("MUTCASE", [], p::c::l) -> mkMutCase None p c l
-
-      | ("MUTCONSTRUCT", [sp;Num(_,tyi);Num(_,n)], _) ->
-          DOPN(MutConstruct ((dbize_sp sp, tyi),n),Array.of_list cl)
-
-      | ("SQUASH",[],[_]) -> user_err_loc
-            (loc,"Astterm.dbize_op",
-             [< 'sTR "Unrecognizable braces expression." >])
-
-      | (op,_,_) -> anomaly_loc
-            (loc,"Astterm.dbize_op",
-             [< 'sTR "Unrecognizable constr operator: "; 'sTR op >])
-
-
-let split_params =
- let rec sprec acc = function
-     (Id _ as p)::l -> sprec (p::acc) l
-   | (Str _ as p)::l -> sprec (p::acc) l
-   | (Num _ as p)::l -> sprec (p::acc) l
-   | (Path _ as p)::l -> sprec (p::acc) l
-   | l -> (List.rev acc,l)
- in sprec []
-
-*)
 
 let is_underscore id = (id = "_")
 
@@ -526,49 +352,11 @@ let dbize k sigma =
   in 
   dbrec
 
-(*
-let dbize_kind ... =
-  let c =
-    try dbize k sigma env com
-    with e ->
-      wrap_error
- 	(Ast.loc com, "dbize_kind",
-         [< 'sTR"During conversion from explicit-names to" ; 'sPC ;
-           'sTR"debruijn-indices" >], e,
-         [< 'sTR"Perhaps the input is malformed" >]) in
-
-  let c =
-    try absolutize k sigma env c
-    with e -> 
-      wrap_error
- 	(Ast.loc com, "Astterm.dbize_kind",
-         [< 'sTR"During the relocation of global references," >], e,
-         [< 'sTR"Perhaps the input is malformed" >])
-  in c
-
-*)
-
 let dbize_cci sigma env com = dbize CCI sigma env com
 let dbize_fw  sigma env com = dbize FW sigma env com
 
 (* constr_of_com takes an environment of typing assumptions,
- * and translates a command to a constr.
-
-let raw_constr_of_com sigma env com =
-  let c = dbize_cci sigma (unitize_env env) com in
-    try Sosub.soexecute c
-    with Failure _|UserError _ -> error_sosub_execute CCI com
-
-let raw_fconstr_of_com sigma env com =
-  let c = dbize_fw sigma (unitize_env env) com in
-    try Sosub.soexecute c
-    with Failure _|UserError _ -> error_sosub_execute FW com
-
-let raw_constr_of_compattern sigma env com =
-  let c = dbize_cci sigma (unitize_env env) com in
-    try Sosub.try_soexecute c
-    with Failure _|UserError _ -> error_sosub_execute CCI com
- *)
+ * and translates a command to a constr. *)
 
 let raw_constr_of_com sigma env com = dbize_cci sigma (unitize_env env) com
 let raw_fconstr_of_com sigma env com = dbize_fw sigma (unitize_env env) com
@@ -707,16 +495,10 @@ let fconstr_of_com_sort sigma sign com  =
 
 let constr_of_com_casted sigma env com typ = 
   let sign = context env in
-  let c = raw_constr_of_com sigma sign com in
-  let isevars = ref sigma in
-  try
-    let j = unsafe_machine
-	      (mk_tycon (nf_ise1 sigma typ)) false isevars [] env c in
-    (j_apply (process_evars true !isevars) j).uj_val
-  with e -> 
-    Stdpp.raise_with_loc (Ast.loc com) e
+  ise_resolve_casted sigma env typ (raw_constr_of_com sigma sign com)
 
 (* Typing with Trad, and re-checking with Mach *)
+(* Should be done in two passes by library commands ...
 let fconstruct_type sigma sign com =
   let c = constr_of_com1 true sigma sign com in 
   Mach.fexecute_type sigma sign c
@@ -743,3 +525,4 @@ let fconstruct_with_univ sigma sign com =
   let (_,j) = with_universes (Mach.fexecute sigma sign)
 		(univ_sp, Constraintab.current_constraints(), c) in 
   j
+*)

@@ -17,14 +17,14 @@ type 'a oper =
   | Cast | Prod | Lambda
   | AppL | Const of section_path | Abst of section_path
   | Evar of int
-  | MutInd of section_path * int
-  | MutConstruct of (section_path * int) * int
+  | MutInd of inductive_path
+  | MutConstruct of constructor_path
   | MutCase of case_info
   | Fix of int array * int
   | CoFix of int
   | XTRA of string
 
-and case_info = (section_path * int) option
+and case_info = inductive_path option
 
 (*s The sorts of CCI. *)
 
@@ -287,13 +287,13 @@ val args_of_abst : constr -> constr array
 
 (* Destructs a (co)inductive type *)
 val destMutInd : constr -> section_path * int * constr array
-val op_of_mind : constr -> section_path * int
+val op_of_mind : constr -> inductive_path
 val args_of_mind : constr -> constr array
 val ci_of_mind : constr -> case_info
 
 (* Destructs a constructor *)
 val destMutConstruct : constr -> section_path * int * int * constr array
-val op_of_mconstr : constr -> (section_path * int) * int
+val op_of_mconstr : constr -> constructor_path
 val args_of_mconstr : constr -> constr array
 
 (* Destructs a term <p>Case c of lc1 | lc2 .. | lcn end *)
