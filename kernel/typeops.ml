@@ -302,7 +302,7 @@ let is_correct_arity env sigma kelim (c,pj) indf t =
       | IsProd (_,a1,a2), _ -> 
           let k = whd_betadeltaiota env sigma a2 in 
           let ksort = match kind_of_term k with
-	    | IsSort s -> elimination_of_sort s 
+	    | IsSort s -> family_of_sort s 
 	    | _ -> raise (Arity None) in
 	  let ind = build_dependent_inductive indf in
           let univ =
@@ -316,7 +316,7 @@ let is_correct_arity env sigma kelim (c,pj) indf t =
 	  raise (Arity None)
       | k, ki -> 
 	  let ksort = match k with
-	    | IsSort s -> elimination_of_sort s
+	    | IsSort s -> family_of_sort s
             | _ ->  raise (Arity None) in
           if List.exists ((=) ksort) kelim then 
 	    (false, pt'), u
@@ -326,9 +326,9 @@ let is_correct_arity env sigma kelim (c,pj) indf t =
   try srec (pj.uj_type,t) Constraint.empty
   with Arity kinds ->
     let create_sort = function 
-      | ElimOnProp -> prop
-      | ElimOnSet -> spec
-      | ElimOnType -> Type (Univ.new_univ ()) in
+      | InProp -> prop
+      | InSet -> spec
+      | InType -> Type (Univ.new_univ ()) in
     let listarity =
       (List.map (fun s -> make_arity env true indf (create_sort s)) kelim)
       @(List.map (fun s -> make_arity env false indf (create_sort s)) kelim)

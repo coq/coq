@@ -119,7 +119,7 @@ type branch_assumptions = {
   recargs   : identifier list; (* the RECURSIVE constructor arguments *)
   indargs   : identifier list} (* the inductive arguments *)
 
-val elimination_sort_of_goal : goal sigma -> Declarations.elimination_sorts
+val elimination_sort_of_goal : goal sigma -> sorts_family
 (*i val suff              : goal sigma -> constr -> string i*)
 
 val general_elim_then_using :

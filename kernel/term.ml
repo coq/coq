@@ -45,6 +45,18 @@ let print_sort = function
 (*  | Type _ -> [< 'sTR "Type" >] *)
   | Type u -> [< 'sTR "Type("; pr_uni u; 'sTR ")" >]
 
+type sorts_family = InProp | InSet | InType
+
+let new_sort_in_family = function 
+  | InProp -> mk_Prop
+  | InSet -> mk_Set
+  | InType -> Type (Univ.new_univ ())
+
+let family_of_sort = function
+  | Prop Null -> InProp
+  | Prop Pos -> InSet
+  | Type _ -> InType
+
 (********************************************************************)
 (* type of global reference *)
 
@@ -1057,8 +1069,8 @@ let mkProp   = mkSort mk_Prop
 let mkSet    = mkSort mk_Set
 let mkType u = mkSort (Type u)
 
-let prop = Prop Null
-and spec = Prop Pos
+let prop = mk_Prop
+and spec = mk_Set
 and types = Type implicit_univ (* For eliminations *)
 and type_0 = Type prop_univ
 

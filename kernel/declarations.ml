@@ -40,18 +40,6 @@ type local_entry =
 
 (* Inductive entries *)
 
-type elimination_sorts = ElimOnProp | ElimOnSet | ElimOnType
-
-let sort_of_elimination = function 
-  | ElimOnProp -> prop
-  | ElimOnSet -> spec
-  | ElimOnType -> Type (Univ.new_univ ())
-
-let elimination_of_sort = function
-  | Prop Null -> ElimOnProp
-  | Prop Pos -> ElimOnSet
-  | Type _ -> ElimOnType
-
 type recarg = 
   | Param of int 
   | Norec 
@@ -68,7 +56,7 @@ type one_inductive_body = {
   mind_user_arity : types option;
   mind_sort : sorts;
   mind_nrealargs : int;
-  mind_kelim : elimination_sorts list;
+  mind_kelim : sorts_family list;
   mind_listrec : (recarg list) array;
   mind_finite : bool;
   mind_nparams : int;

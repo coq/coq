@@ -27,6 +27,14 @@ val mk_Prop : sorts
 
 val print_sort : sorts -> std_ppcmds
 
+(*s The sorts family of CCI. *)
+
+type sorts_family = InProp | InSet | InType
+
+val family_of_sort : sorts -> sorts_family
+val new_sort_in_family : sorts_family -> sorts
+
+(*s Useful types *)
 
 type existential_key = int
 
@@ -38,7 +46,7 @@ type case_printing =
 (* the integer is the number of real args, needed for reduction *)
 type case_info = int * case_printing
 
-(* Concrete type for making pattern-matching. *)
+(*s Concrete type for making pattern-matching. *)
 module Polymorph :
 sig
 (* [constr array] is an instance matching definitional [named_context] in
@@ -58,7 +66,7 @@ type ('constr, 'types) cofixpoint =
    de Bruijn indices. *)
 end 
 
-(********************************************************************)
+(*s*******************************************************************)
 (* type of global reference *)
 
 type global_reference =
@@ -67,7 +75,7 @@ type global_reference =
   | IndRef of inductive_path
   | ConstructRef of constructor_path
 
-(********************************************************************)
+(*s*******************************************************************)
 (* The type of constructions *)
 
 type constr

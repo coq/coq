@@ -1067,7 +1067,7 @@ let default_elim (c,lbindc)  gl =
            pr_id id; 'sPC;
 	   'sTR "The elimination of the inductive definition :";
            pr_id base; 'sPC; 'sTR "on sort "; 
-           'sPC; print_sort (Declarations.sort_of_elimination s) ;
+           'sPC; print_sort (new_sort_in_family s) ;
 	   'sTR " is probably not allowed" >]
   in  general_elim (c,lbindc) (elimc,[]) gl
 

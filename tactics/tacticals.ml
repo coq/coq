@@ -313,9 +313,9 @@ let elimination_sort_of_goal gl =
   match kind_of_term (hnf_type_of gl (pf_concl gl)) with 
     | IsSort s ->
 	(match s with
-	   | Prop Null -> ElimOnProp
-	   | Prop Pos -> ElimOnSet
-	   | Type _ -> ElimOnType)
+	   | Prop Null -> InProp
+	   | Prop Pos -> InSet
+	   | Type _ -> InType)
     | _        -> anomaly "goal should be a type"
 
 

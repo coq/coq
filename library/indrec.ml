@@ -44,7 +44,7 @@ let mis_make_case_com depopt env sigma mispec kind =
     raise
       (InductiveError
 	 (NotAllowedCaseAnalysis
-	    (dep,(sort_of_elimination kind),mis_inductive mispec)));
+	    (dep,(new_sort_in_family kind),mis_inductive mispec)));
 
   let nbargsprod = mis_nrealargs mispec + 1 in
 
@@ -75,7 +75,7 @@ let mis_make_case_com depopt env sigma mispec kind =
       mkLambda_string "f" t
 	(add_branch (push_rel (Anonymous, None, t) env) (k+1))
   in
-  let typP = make_arity env' dep indf (sort_of_elimination kind) in
+  let typP = make_arity env' dep indf (new_sort_in_family kind) in
   it_mkLambda_or_LetIn_name env 
     (mkLambda_string "P" typP
        (add_branch (push_rel (Anonymous,None,typP) env') 0)) lnamespar
@@ -372,7 +372,7 @@ let mis_make_indrec env sigma listdepkind mispec =
     let rec put_arity env i = function 
       | (mispeci,dep,kinds)::rest -> 
 	  let indf = make_ind_family (mispeci,extended_rel_list i lnamespar) in
-	  let typP = make_arity env dep indf (sort_of_elimination kinds) in
+	  let typP = make_arity env dep indf (new_sort_in_family kinds) in
 	  mkLambda_string "P" typP
 	    (put_arity (push_rel (Anonymous,None,typP) env) (i+1) rest)
       | [] -> 
@@ -438,7 +438,7 @@ let check_arities listdepkind =
        let kelim = mis_kelim mispeci in
        if not (List.exists ((=) kind) kelim) then
 	 raise
-	   (InductiveError (BadInduction (dep, id, sort_of_elimination kind))))
+	   (InductiveError (BadInduction (dep, id, new_sort_in_family kind))))
     listdepkind
 
 let build_mutual_indrec env sigma = function 
@@ -461,8 +461,8 @@ let build_mutual_indrec env sigma = function
   | _ -> anomaly "build_indrec expects a non empty list of inductive types"
 
 let build_indrec env sigma mispec =
-  let kind = elimination_of_sort (mis_sort mispec) in
-  let dep = kind <> ElimOnProp in
+  let kind = family_of_sort (mis_sort mispec) in
+  let dep = kind <> InProp in
   List.hd (mis_make_indrec env sigma [(mispec,dep,kind)] mispec)
 
 (**********************************************************************)

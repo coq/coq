@@ -851,16 +851,20 @@ let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
       let pred = it_mkLambda_or_LetIn (lift (List.length sign) mtyp) sign in
       (true,pred) (* true = dependent -- par défaut *)
     else
+(*
       let s = get_sort_of env (evars_of isevars) typs.(0) in
       let predpred = it_mkLambda_or_LetIn (mkSort s) sign in
       let caseinfo = make_default_case_info mis in
       let brs = array_map2 abstract_conclusion typs cstrs in
       let predbody = mkMutCase (caseinfo, (nf_betaiota predpred), mkRel 1, brs) in
       let pred = it_mkLambda_or_LetIn (lift (List.length sign) mtyp) sign in
+*)
       (* "TODO4-2" *)
       error ("Unable to infer a Cases predicate\n"^
-"Either there is a type incompatiblity or the problem involves dependencies");
+"Either there is a type incompatiblity or the problem involves dependencies")
+(*
       (true,pred)
+*)
 
 (* Propagation of user-provided predicate through compilation steps *)
 

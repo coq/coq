@@ -41,7 +41,7 @@ val mis_ntypes : inductive_instance -> int
 val mis_nconstr : inductive_instance -> int
 val mis_nparams : inductive_instance -> int
 val mis_nrealargs : inductive_instance -> int
-val mis_kelim : inductive_instance -> elimination_sorts list
+val mis_kelim : inductive_instance -> sorts_family list
 val mis_recargs : inductive_instance -> (recarg list) array array
 val mis_recarg : inductive_instance -> (recarg list) array
 val mis_typename : inductive_instance -> identifier

@@ -21,9 +21,9 @@ open Evd
 
 (* These functions build elimination predicate for Case tactic *)
 
-val make_case_dep : env -> 'a evar_map -> inductive -> elimination_sorts -> constr
-val make_case_nodep : env -> 'a evar_map -> inductive -> elimination_sorts -> constr
-val make_case_gen : env -> 'a evar_map -> inductive -> elimination_sorts -> constr
+val make_case_dep : env -> 'a evar_map -> inductive -> sorts_family -> constr
+val make_case_nodep : env -> 'a evar_map -> inductive -> sorts_family -> constr
+val make_case_gen : env -> 'a evar_map -> inductive -> sorts_family -> constr
 
 (* This builds an elimination scheme associated (using the own arity
    of the inductive) *)
@@ -34,7 +34,7 @@ val instanciate_indrec_scheme : sorts -> int -> constr -> constr
 (* This builds complex [Scheme] *)
 
 val build_mutual_indrec : 
-  env -> 'a evar_map -> (inductive * bool * elimination_sorts) list
+  env -> 'a evar_map -> (inductive * bool * sorts_family) list
     -> constr list
 
 (* These are for old Case/Match typing *)
