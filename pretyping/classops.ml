@@ -239,7 +239,7 @@ let stre_of_cl = function
       if is_constant sp then constant_or_parameter_strength sp
       else NeverDischarge
   | CL_Var id -> 
-      variable_strength id
+      variable_strength (make_qualid [] (string_of_id id))
   | _ -> NeverDischarge
 
 (* coe_value : int -> Term.constr * bool *)

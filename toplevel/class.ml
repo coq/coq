@@ -35,7 +35,8 @@ let id_of_varid c = match kind_of_term c with
   | IsVar id -> id
   | _ -> anomaly "class__id_of_varid"
 
-let stre_of_VAR c = variable_strength (destVar c)
+let stre_of_VAR c =
+  variable_strength (make_qualid [] (string_of_id (destVar c)))
 
 (* lf liste des variable dont depend la coercion f
    lc liste des variable dont depend la classe source *)
@@ -54,7 +55,7 @@ let rec stre_unif_cond = function
 
 let stre_of_coe = function
   | NAM_Constant sp -> constant_or_parameter_strength sp
-  | NAM_Var id -> variable_strength id
+  | NAM_Var id -> variable_strength (make_qualid [] (string_of_id id))
   | NAM_Inductive _ | NAM_Constructor _ -> NeverDischarge 
 	
 (* try_add_class : Names.identifier ->
