@@ -22,6 +22,7 @@ Require Export Rtrigo.
 Require Export Rgeom.
 Require Export Rderiv.
 Require Export Rseries.
+Require Export Binome.
 Require Export Rcomplet.
 Require Export Alembert_compl.
 Require Export Rtrigo_fun.
