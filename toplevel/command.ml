@@ -670,6 +670,7 @@ let save id const kind hook =
         let _,kn = declare_constant id (DefinitionEntry const, k) in
 	(Global, ConstRef kn) in
   hook l r;
+  if kind = IsGlobal (Proof Conjecture) then warning "Proved conjecture";
   Pfedit.delete_current_proof ();
   definition_message id
 
@@ -700,8 +701,10 @@ let save_anonymous_with_strength kind opacity save_ident =
 
 let admit () =
   let (id,k,typ,hook) = Pfedit.current_proof_statement () in
+(* Contraire aux besoins d'interactivité...
   if k <> IsGlobal (Proof Conjecture) then
     error "Only statements declared as conjecture can be admitted";
+*)
   let (_,kn) = declare_constant id (ParameterEntry typ, IsConjecture) in
   hook Global (ConstRef kn);
   Pfedit.delete_current_proof ();
