@@ -65,7 +65,7 @@ GLOB=   # is "-dump-glob file" when making the doc
 COQ_XML=	# is "-xml" when building XML library
 COQOPTS=$(COQINCLUDES) $(GLOB) $(COQ_XML)
 
-BOOTCOQTOP=$(BESTCOQTOP) -boot -$(BEST) $(COQOPTS)
+BOOTCOQTOP=$(BESTCOQTOP) -boot $(COQOPTS)
 
 ###########################################################################
 # Objects files 
