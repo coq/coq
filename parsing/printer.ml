@@ -233,6 +233,8 @@ let pr_env_limit n env =
     in 
     [< sign_env; db_env >]
 
-let pr_env_opt env =  match Options.print_hyps_limit () with 
+let pr_env_opt env = match Options.print_hyps_limit () with 
   | None -> hV 0 (pr_env CCI env)
   | Some n -> hV 0 (pr_env_limit n env)
+
+let emacs_str s = if !Options.print_emacs then s else "" 

@@ -62,7 +62,8 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 PROOFS=proofs/tacred.cmo \
        proofs/proof_trees.cmo proofs/logic.cmo \
        proofs/refiner.cmo proofs/evar_refiner.cmo \
-       proofs/macros.cmo proofs/tacinterp.cmo proofs/clenv.cmo
+       proofs/macros.cmo proofs/tacinterp.cmo proofs/clenv.cmo \
+       proofs/pfedit.cmo
 
 TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/nbtermdn.cmo tactics/stock.cmo tactics/pattern.cmo \
@@ -70,7 +71,7 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/tacentries.cmo tactics/hiddentac.cmo tactics/elim.cmo
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
-         toplevel/vernac.cmo toplevel/mltop.cmo \
+         toplevel/vernacentries.cmo toplevel/vernac.cmo toplevel/mltop.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
@@ -84,10 +85,10 @@ CMX=$(CMO:.cmo=.cmx)
 
 world: minicoq coqtop.byte dev/db_printers.cmo
 
-LINK=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PARSING) $(PRETYPING)
-# $(PROOFS) $(TACTICS) $(TOPLEVEL)
+LINK=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PRETYPING)  
+# $(PARSING) $(PROOFS) $(TACTICS) $(TOPLEVEL)
 link: $(LINK)
-	ocamlc -o link $(LINK)
+	ocamlc -custom $(INCLUDES) -o link $(CMA) $(LINK) $(OSDEPLIBS)
 	rm -f link 
 
 kernel: $(KERNEL)

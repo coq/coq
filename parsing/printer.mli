@@ -22,7 +22,12 @@ val fterm0          : 'a assumptions -> constr -> std_ppcmds
 val term0           : 'a assumptions -> constr -> std_ppcmds
 val term0_at_top    : 'a assumptions -> constr -> std_ppcmds
 
+val pr_sign         : var_context -> std_ppcmds
+val pr_env_opt      : context -> std_ppcmds
+
 val print_arguments : bool ref
 val print_casts     : bool ref
 val print_emacs     : bool ref
 val with_implicits  : ('a -> 'b) -> 'a -> 'b
+
+val emacs_str       : string -> string
