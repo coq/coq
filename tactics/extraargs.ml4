@@ -58,7 +58,7 @@ ARGUMENT EXTEND raw
      GLOB_TYPED AS rawconstr_and_expr
      GLOB_PRINTED BY pr_gen
 
- [ constr(c) ] -> [ c ]
+ [ lconstr(c) ] -> [ c ]
 
 END
 
