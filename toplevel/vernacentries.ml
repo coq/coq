@@ -175,10 +175,7 @@ let _ =
   add "ADDPATH"
     (function 
        | [VARG_STRING dir] ->
-	   let alias = Filename.basename dir in
-	   if alias = "" then
-	     error ("Cannot map "^dir^" to a root of Coq library");
-	   (fun () -> add_path dir [alias])
+	   (fun () -> add_path dir [Nametab.default_root])
        | [VARG_STRING dir ; VARG_QUALID alias] ->
            let aliasdir,aliasname = repr_qualid alias in
 	    (fun () -> add_path dir (aliasdir@[aliasname]))
@@ -195,12 +192,7 @@ let _ =
   add "RECADDPATH"
     (function 
        | [VARG_STRING dir] ->
-	   let alias = Filename.basename dir in
-	   if alias = "" then
-	     error ("Cannot map "^dir^" to a root of Coq library");
-	   (fun () ->
-	      add_rec_path dir [alias];
-	      Nametab.push_library_root alias)
+	   (fun () -> add_rec_path dir [Nametab.default_root])
        | [VARG_STRING dir ; VARG_QUALID alias] ->
            let aliasdir,aliasname = repr_qualid alias in
 	    (fun () ->
