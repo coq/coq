@@ -119,11 +119,23 @@ Hint eq_mult : core v62 := Resolve (f_equal2 nat nat nat mult).
 
 V8Infix "*" mult : nat_scope.
 
+Lemma mult_O_r : (n:nat) (mult n O)=O.
+Proof.
+  NewInduction n; Simpl; Auto.
+Qed.
+
 Lemma mult_n_O : (n:nat) O=(mult n O).
 Proof.
   NewInduction n; Simpl; Auto.
 Qed.
 Hints Resolve mult_n_O : core v62.
+
+Lemma mult_S_r : (n,m:nat) (mult n (S m))=(plus (mult n m) n).
+Proof.
+  Intros; NewInduction n as [|p H]; Simpl; Auto.
+  Rewrite H; Rewrite <- plus_n_Sm; Apply (f_equal nat nat S).
+  Pattern 1 3 m; Elim m; Simpl; Auto.
+Qed.
 
 Lemma mult_n_Sm : (n,m:nat) (plus (mult n m) n)=(mult n (S m)).
 Proof.
