@@ -640,3 +640,7 @@ V8Infix "::" cons (at level 60, right associativity) : list_scope.
 Infix RIGHTA 7 "^" app : list_scope V8only RIGHTA 60 "++".
 
 Open Scope list_scope.
+
+Delimits Scope list_scope with list.
+
+Bind Scope list_scope with list.

@@ -648,3 +648,8 @@ Infix "::" := cons (at level 60, right associativity) : list_scope.
 Infix "++" := app (right associativity, at level 60) : list_scope.
 
 Open Scope list_scope.
+
+(** Declare Scope list_scope with key list *)
+Delimit Scope list_scope with list.
+
+Bind Scope list_scope with list.
