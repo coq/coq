@@ -225,7 +225,7 @@ GEXTEND Gram
   ;
   tactic_arg0:
     [ [ "("; a = tactic_expr; ")" -> arg_of_expr a
-      | "()" -> Integer 0
+      | "()" -> TacVoid
       | r = reference -> Reference r
       | n = integer -> Integer n
       | id = METAIDENT -> MetaIdArg (loc,id)

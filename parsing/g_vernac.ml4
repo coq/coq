@@ -327,14 +327,15 @@ GEXTEND Gram
 	IDENT "Section"; id = base_ident -> VernacBeginSection id
       | IDENT "Chapter"; id = base_ident -> VernacBeginSection id ] ]
   ;
-
   module_vardecls:
-    [ [ "("; id = base_ident; idl = ident_comma_list_tail;
-        ":"; mty = Module.module_type; ")"
-        -> (id::idl,mty) ] ]
+    [ [ id = base_ident; idl = ident_comma_list_tail; ":";
+        mty = Module.module_type -> (id::idl,mty) ] ]
+  ;
+  module_binders:
+    [ [ "["; bl = LIST1 module_vardecls SEP ";"; "]" -> bl ] ]
   ;
   module_binders_list:
-    [ [ bl = LIST0 module_vardecls -> bl ] ]
+    [ [ bls = LIST0 module_binders -> List.flatten bls ] ]
   ;
   of_module_type:
     [ [ ":"; mty = Module.module_type -> (mty, true) 

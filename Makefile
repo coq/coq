@@ -207,8 +207,7 @@ INTERFACECMX=$(INTERFACE:.cmo=.cmx)
 ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
 
 PARSERREQUIRES=$(CMO) # Solution de facilité...
-PARSERREQUIRESCMX1=$(PARSERREQUIRES:.cmo=.cmx)
-PARSERREQUIRESCMX=$(PARSERREQUIRESCMX1:.cma=.cmxa)
+PARSERREQUIRESCMX=$(PARSERREQUIRES:.cmo=.cmx)
 
 ML4FILES += contrib/correctness/psyntax.ml4 contrib/omega/g_omega.ml4 \
   contrib/romega/g_romega.ml4 contrib/ring/g_quote.ml4 \
@@ -298,7 +297,7 @@ CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
 CMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) \
-    $(PROOFS) $(TACTICS) $(INTERP) $(PARSING) $(TOPLEVEL) \
+    $(INTERP) $(PARSING) $(PROOFS) $(TACTICS) $(TOPLEVEL) \
     $(HIGHPARSING) $(HIGHTACTICS) $(CONTRIB)
 CMX=$(CMO:.cmo=.cmx)
 
@@ -458,7 +457,7 @@ clean::
 # tests
 ###########################################################################
 
-check:: world
+check:: world $(COQINTERFACE)
 	cd test-suite; \
 	env COQBIN=../bin COQLIB=.. ./check -$(BEST) | tee check.log
 	if grep -F 'Error!' test-suite/check.log ; then false; fi
@@ -1229,13 +1228,14 @@ translation::
 movenew::
 	-mv *.v8 theories/Init/
 	for i in theories/*/*.v8 contrib/*/*.v8; do \
-	  j=new`expr $$i : \\\\\(.*\\\\\)8` ; \
+	  if expr $$i : '.*/\*\.v8' > /dev/null ; then continue ; fi ; \
+	  j=new`dirname $$i`/`basename $$i .v8`.v ; \
 	  mkdir -p `dirname $$j` ; \
 	  mv -u -f $$i $$j ; \
 	done
 
 # 2. Build new syntax images and compile theories
-newworld:: newinit newtheories newcontrib
+newworld:: $(COQTOPNEW) newinit newtheories newcontrib
 
 newinit:: $(INITVO:%.vo=new%.vo)
 newtheories:: $(THEORIESVO:%.vo=new%.vo)
