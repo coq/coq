@@ -43,8 +43,8 @@ let rec db_print_error = function
       db_print_error exc
   | Util.UserError(s,pps) -> 
       hov 1 (str"Error: " ++ pps)
-  | GlobalizationError q ->
-      hov 0 (str "Error: " ++ Libnames.pr_qualid q ++ str " not found") ++ 
+  | Nametab.GlobalizationError q ->
+      hov 0 (str "Error: " ++ Libnames.pr_qualid q ++ str " not found")
   | _ ->
       hov 0 (str "Uncaught exception ")
 

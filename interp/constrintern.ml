@@ -335,7 +335,7 @@ let check_capture loc ty = function
       ()
 
 let locate_if_isevar loc na = function
-  | RHole _ -> RHole (loc, AbstractionType na))
+  | RHole _ -> RHole (loc, AbstractionType na)
   | x -> x
 
 (**********************************************************************)
