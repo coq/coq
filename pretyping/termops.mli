@@ -16,7 +16,7 @@ open Sign
 open Environ
 
 (* Universes *)
-(*val set_module : Names.dir_path -> unit*)
+(*i val set_module : Names.dir_path -> unit i*)
 val new_univ : unit -> Univ.universe
 val new_sort_in_family : sorts_family -> sorts
 

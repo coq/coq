@@ -30,7 +30,7 @@ open Ppextend
 type level = precedence * tolerability list
 type delimiters = string
 type scope
-type scopes (* = scope_name list*)
+type scopes (* = [scope_name list] *)
 
 val type_scope : scope_name
 val declare_scope : scope_name -> unit
@@ -52,7 +52,7 @@ val find_delimiters_scope : loc -> delimiters -> scope_name
 
 (*s Declare and uses back and forth a numeral interpretation *)
 
-(* A numeral interpreter is the pair of an interpreter for _integer_
+(* A numeral interpreter is the pair of an interpreter for **integer**
    numbers in terms and an optional interpreter in pattern, if
    negative numbers are not supported, the interpreter must fail with
    an appropriate error message *)
@@ -69,12 +69,12 @@ type required_module = global_reference * string list
 val declare_numeral_interpreter : scope_name -> required_module ->
   num_interpreter -> num_uninterpreter -> unit
 
-(* Returns the term/cases_pattern bound to a numeral in a given scope context*)
+(* Return the [term]/[cases_pattern] bound to a numeral in a given scope context*)
 val interp_numeral : loc -> bigint -> scope_name list -> rawconstr
 val interp_numeral_as_pattern : loc -> bigint -> name -> scope_name list ->
   cases_pattern
 
-(* Returns the numeral bound to a term/cases_pattern; raises No_match if no *)
+(* Return the numeral bound to a [term]/[cases_pattern]; raise [No_match] if no *)
 (* such numeral *)
 val uninterp_numeral : rawconstr -> scope_name * bigint
 val uninterp_cases_numeral : cases_pattern -> scope_name * bigint
@@ -92,11 +92,11 @@ val declare_notation_interpretation : notation -> scope_name option ->
 
 val declare_uninterpretation : interp_rule -> interpretation -> unit
 
-(* Returns the interpretation bound to a notation *)
+(* Return the interpretation bound to a notation *)
 val interp_notation : loc -> notation -> scope_name list -> 
       interpretation * ((dir_path * string) * scope_name option)
 
-(* Returns the possible notations for a given term *)
+(* Return the possible notations for a given term *)
 val uninterp_notations : rawconstr ->
       (interp_rule * interpretation * int option) list
 val uninterp_cases_pattern_notations : cases_pattern ->

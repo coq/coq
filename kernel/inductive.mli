@@ -62,7 +62,7 @@ val type_case_branches :
    given inductive type. *)
 val check_case_info : env -> inductive -> case_info -> unit
 
-(* Find the ultimate inductive in the mind_equiv chain *)
+(* Find the ultimate inductive in the [mind_equiv] chain *)
 
 val scrape_mind : env -> mutual_inductive -> mutual_inductive
 

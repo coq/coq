@@ -127,7 +127,7 @@ type branch_assumptions = {
   ba        : branch_args;     (* the branch args *)
   assums    : named_context}   (* the list of assumptions introduced *)
 
-(* Useful for "as intro_pattern" modifier *)
+(* Useful for [as intro_pattern] modifier *)
 val compute_induction_names : 
   int -> intro_pattern_expr option -> intro_pattern_expr list array
 

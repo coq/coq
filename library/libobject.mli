@@ -39,7 +39,7 @@ open Libnames
      Keep      - the object is not substitutive, but survives module 
                  closing
      Anticipate - this is for objects which have to be explicitely 
-                 managed by the end_module function (like Require 
+                 managed by the [end_module] function (like Require 
                  and Read markers)
 
      The classification function is also an occasion for a cleanup

@@ -120,9 +120,9 @@ val top_of_tree             : pftreestate -> pftreestate
 val change_constraints_pftreestate :
   evar_map -> pftreestate -> pftreestate
 
-(*
+(*i
 val vernac_tactic : string * tactic_arg list -> tactic
-*)
+i*)
 (*s The most primitive tactics. *)
 
 val refiner                   : rule -> tactic

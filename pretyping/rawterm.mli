@@ -97,11 +97,11 @@ i*)
 
 val map_rawconstr : (rawconstr -> rawconstr) -> rawconstr -> rawconstr
 
-(*
+(*i
 val map_rawconstr_with_binders_loc : loc -> 
   (identifier -> 'a -> identifier * 'a) ->
   ('a -> rawconstr -> rawconstr) -> 'a -> rawconstr -> rawconstr
-*)
+i*)
 
 val occur_rawconstr : identifier -> rawconstr -> bool
 
