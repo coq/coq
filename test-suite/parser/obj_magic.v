@@ -15,6 +15,7 @@ Prolog [A (B c)] 4.
 EApply H with 1:= H2 a:= b.
 Inversion H using (A b).
 Inversion H using (A b) in H1 H2.
+Ring a b.
 
 Hint Rewrite -> [ (A b) ] in v.
 Hint Rewrite <- [ (A b) ] in v using Auto.
