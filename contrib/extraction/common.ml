@@ -197,12 +197,22 @@ let pp_logical_ind r =
 let pp_singleton_ind r = 
   pp_comment (Printer.pr_global r ++ str " : singleton inductive constructor")
 
+let set_globals () = match lang () with 
+  | Ocaml -> 
+      keywords := Ocaml.keywords; 
+      global_ids := Ocaml.keywords
+  | Haskell -> 
+      keywords := Haskell.keywords;
+      global_ids := Haskell.keywords
+  | _ -> ()
+
 (*s Extraction to a file. *)
 
 let extract_to_file f prm decls =
-  let preamble,keyw = match lang () with 
-    | Ocaml -> Ocaml.preamble,Ocaml.keywords
-    | Haskell -> Haskell.preamble,Haskell.keywords
+  set_globals ();
+  let preamble = match lang () with 
+    | Ocaml -> Ocaml.preamble    
+    | Haskell -> Haskell.preamble
     | _ -> assert false 
   in 
   let pp_decl = match lang (),prm.modular with 
@@ -224,8 +234,6 @@ let extract_to_file f prm decls =
   cons_cofix := Refset.empty;
   current_module := prm.mod_name;
   Hashtbl.clear renamings;
-  keywords := keyw;
-  global_ids := keyw; 
   let cout = match f with 
     | None -> stdout
     | Some f -> open_out f in

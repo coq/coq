@@ -246,6 +246,7 @@ let _ =
     (function 
        | [VARG_CONSTR ast] ->
 	   (fun () -> 
+	      set_globals ();
 	      let c = Astterm.interp_constr Evd.empty (Global.env()) ast in
 	      match kind_of_term c with
 		(* If it is a global reference, then output the declaration *)
@@ -286,7 +287,8 @@ let lang_suffix () = match lang () with
 
 let filename f = 
   let s = lang_suffix () in 
-  if Filename.check_suffix f s then Some f,id_of_string (Filename.chop_suffix f s) 
+  if Filename.check_suffix f s then 
+    Some f,id_of_string (Filename.chop_suffix f s) 
   else Some (f^"."^s),id_of_string f
 
 let lang_error () = 
