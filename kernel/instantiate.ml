@@ -8,6 +8,7 @@ open Generic
 open Term
 open Sign
 open Constant
+open Inductive
 open Evd
 open Environ
 
@@ -101,3 +102,8 @@ let const_abst_opt_value env c =
     | DOPN(Abst sp,_) ->
 	if evaluable_abst env c then Some (abst_value env c) else None
     | _ -> invalid_arg "const_abst_opt_value"
+
+let mis_lc env mis =
+  instantiate_constr (ids_of_sign mis.mis_mib.mind_hyps) mis.mis_mip.mind_lc
+    (Array.to_list mis.mis_args)
+

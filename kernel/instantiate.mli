@@ -4,6 +4,7 @@
 (*i*)
 open Names
 open Term
+open Inductive
 open Environ
 (*i*)
 
@@ -21,3 +22,6 @@ val const_or_ex_value : 'a unsafe_env -> constr -> constr
 val const_or_ex_type : 'a unsafe_env -> constr -> constr
 
 val const_abst_opt_value : 'a unsafe_env -> constr -> constr option
+
+val mis_lc : 'a unsafe_env -> mind_specif -> constr
+

@@ -104,6 +104,7 @@ val is_info_arity : 'c unsafe_env -> constr -> bool
 val is_info_sort : 'c unsafe_env -> constr -> bool
 val is_logic_arity : 'c unsafe_env -> constr -> bool
 val is_type_arity : 'c unsafe_env -> constr -> bool
+val is_info_type : 'c unsafe_env -> typed_type -> bool
 val is_info_cast_type : 'c unsafe_env -> constr -> bool
 val contents_of_cast_type : 'c unsafe_env -> constr -> contents
 val poly_args : 'a unsafe_env -> constr -> int list

@@ -1306,7 +1306,13 @@ let is_type_arity env =
       | _ -> false
   in 
   srec 
-    
+
+let is_info_type env t =
+  let s = t.typ in
+  (s = Prop Pos) ||
+  (s <> Prop Null && 
+   try info_arity env t.body with IsType -> true)
+
 let is_info_cast_type env c = 
   match c with  
     | DOP2(Cast,c,t) -> 

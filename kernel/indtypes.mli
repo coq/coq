@@ -2,6 +2,8 @@
 (* $Id$ *)
 
 (*i*)
+open Names
+open Term
 open Inductive
 open Environ
 (*i*)
@@ -10,3 +12,11 @@ open Environ
    inductive types are some arities. *)
 
 val mind_check_arities : 'a unsafe_env -> mutual_inductive_entry -> unit
+
+val sort_of_arity : 'a unsafe_env -> constr -> sorts
+
+val cci_inductive : 
+  'a unsafe_env -> 'a unsafe_env -> path_kind -> int -> bool -> 
+    (identifier * typed_type * identifier list * bool * bool * constr) list ->
+      mutual_inductive_body
+

@@ -59,6 +59,8 @@ type 'a judge = { body : constr; typ : 'a }
 type typed_type = sorts judge
 type typed_term = typed_type judge
 
+let make_typed t s = { body = t; typ = s }
+
 let typed_app f tt = { body = f tt.body; typ = tt.typ }
 
 let body_of_type ty = ty.body

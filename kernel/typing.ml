@@ -16,6 +16,8 @@ open Type_errors
 open Typeops
 open Indtypes
 
+type judgment = unsafe_judgment
+
 (* Fonctions temporaires pour relier la forme castée de la forme jugement *)
 
 let tjudge_of_cast env = function
@@ -232,6 +234,23 @@ let unsafe_type_of env c =
 let unsafe_type_of_type env c = 
   let tt = unsafe_machine_type env c in DOP0 (Sort tt.typ)
 
+(* Typing of several terms. *)
+
+let safe_machine_l env cl =
+  let type_one (env,l) c =
+    let (j,u) = safe_machine env c in
+    (set_universes u env, j::l)
+  in
+  List.fold_left type_one (env,[]) cl
+
+let safe_machine_v env cv =
+  let type_one (env,l) c =
+    let (j,u) = safe_machine env c in
+    (set_universes u env, j::l)
+  in
+  let env',l = Array.fold_left type_one (env,[]) cv in
+  (env', Array.of_list l)
+ 
 
 (*s Safe environments. *)
 
@@ -307,39 +326,97 @@ let add_parameter sp c env =
 
 (* Insertion of inductive types. *)
 
-let check_type_constructs env_params univ nparams lc =
-  let check_one env c =
-    let (_,c) = decompose_prod_n nparams c in
-    let (j,u) = safe_machine env c in
-    match whd_betadeltaiota env j.uj_type with
-      | DOP0 (Sort (Type uc)) -> set_universes (enforce_geq univ uc u) env
-      | _ -> error "Type of Constructor not well-formed"
-  in
-  Array.fold_left check_one env_params lc
+(* [for_all_prods p env c] checks a boolean condition [p] on all types
+   appearing in products in front of [c]. The boolean condition [p] is a 
+   function taking a value of type [typed_type] as argument. *)
 
-let check_prop_constructs env_ar lc =
-  let check_one c = 
-    let (j,_) = safe_machine env_ar c in
-    match whd_betadeltaiota env_ar j.uj_type with
-      | DOP0 (Sort _) -> cast_of_judgment j
-      | _ -> error "The type of a constructor must be a type"
+let rec for_all_prods p env c =
+  match whd_betadeltaiota env c with
+    | DOP2(Prod, DOP2(Cast,t,DOP0 (Sort s)), DLAM(name,c)) -> 
+	(p (make_typed t s)) &&
+	(let ty = { body = t; typ = s } in
+	 let env' = Environ.push_rel (name,ty) env in
+	 for_all_prods p env' c)
+    | DOP2(Prod, b, DLAM(name,c)) -> 
+	let (jb,u) = unsafe_machine env b in
+	let var = assumption_of_judgement env jb in
+	(p var) &&
+	(let env' = Environ.push_rel (name,var) (set_universes u env) in
+	 for_all_prods p env' c)
+    | _ -> true
+
+let is_small_type e c = for_all_prods (fun t -> is_small t.typ) e c
+
+let enforce_type_constructor env univ j =
+  match whd_betadeltaiota env j.uj_type with
+    | DOP0 (Sort (Type uc)) -> 
+	let u = universes env in
+	set_universes (enforce_geq univ uc u) env
+    | _ -> error "Type of Constructor not well-formed"
+
+let type_one_constructor env_ar env_par nparams ar c =
+  let (jc,u) = safe_machine env_ar c in
+  let env = set_universes u env_ar in
+  let env' = match sort_of_arity env_ar ar with
+    | Type u -> enforce_type_constructor env u jc
+    | Prop _ -> env 
   in
-  Array.map check_one lc
+  let (_,c) = decompose_prod_n nparams jc.uj_val in
+  let issmall = is_small_type env_par c in
+  (env', (issmall,jc))
+
+let logic_constr env c =
+  for_all_prods (fun t -> not (is_info_type env t)) env c
+
+let logic_arity env c =
+  for_all_prods 
+    (fun t -> (not (is_info_type env t)) or (is_small_type env t.body)) env c
+
+let is_unit env_par nparams ar spec =
+  match decomp_all_DLAMV_name spec with
+    | (_,[|c|]) ->
+	(let (_,a) = decompose_prod_n nparams ar in logic_arity env_par ar) &&
+	(let (_,c') = decompose_prod_n nparams c in logic_constr env_par c')
+    | _ -> false
+
+let type_one_inductive env_ar env_par nparams (id,ar,cnames,spec) =
+  let (lna,vc) = decomp_all_DLAMV_name spec in
+  let (env',(issmall,jlc)) = 
+    List.fold_left 
+      (fun (env,(small,jl)) c -> 
+	 let (env',(sm,jc)) = type_one_constructor env env_par nparams ar c in
+	 (env', (small && sm,jc::jl)))
+      (env_ar,(true,[])) (Array.to_list vc)
+  in
+  let castlc = List.map cast_of_judgment jlc in
+  let spec' = put_DLAMSV lna (Array.of_list castlc) in
+  let isunit = is_unit env_par nparams ar spec in
+  let (_,tyar) = lookup_var id env' in
+  (env', (id,tyar,cnames,issmall,isunit,spec'))
 
 let add_mind sp mie env =
   mind_check_names mie;
   mind_check_arities env mie;
   let params = mind_extract_and_check_params mie in
+  let nparams = mie.mind_entry_nparams in
   mind_check_lc params mie;
-  let env_arities = 
-    push_rels 
-      (List.map (fun (id,ar,_,_) -> (Name id,ar)) mie.mind_entry_inds) env 
+  let types_sign = 
+    List.map (fun (id,ar,_,_) -> (Name id,ar)) mie.mind_entry_inds
   in
+  let env_arities = push_rels types_sign env in
   let env_params = push_rels params env_arities in
-  (* ICI *)
-  env_arities
-
-type judgment = unsafe_judgment
+  let env_arities',inds =
+    List.fold_left 
+      (fun (env,inds) ind -> 
+	 let (env',ind') = type_one_inductive env env_params nparams ind in
+	 (env',ind'::inds))
+      (env_arities,[]) mie.mind_entry_inds
+  in
+  let kind = kind_of_path sp in
+  let mib = 
+    cci_inductive env env_arities' kind nparams mie.mind_entry_finite inds
+  in
+  add_mind sp mib (set_universes (universes env_arities') env)
 
 
 (*s Machines with information. *)
