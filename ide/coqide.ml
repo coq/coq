@@ -423,11 +423,14 @@ object(self)
 		     ~icon:(let img = GMisc.image () 
 			    in img#set_stock "gtk-dialog-warning" ~size:6;
 			    img#coerce)
-		     "There are unsaved buffers"
+		     "Some unsaved buffers changed on disk"
 		  )
 	    with 1 -> do_revert ()
 	      | 2 -> self#save f
-	      | _ -> current.global_auto_revert <- false 
+	      | _ -> 
+		  prerr_endline "Auto revert set to false";
+		  current.global_auto_revert <- false;
+		  disconnect_revert_timer ()
 	  else do_revert () 
 	end
       | None -> ()
@@ -1103,7 +1106,11 @@ let main files =
       in
       let av = (new analyzed_view index) in 
       (get_input_view index).analyzed_view <- Some av;
-      av#set_filename (Some f);
+      av#set_filename 
+	(Some (if Filename.is_relative f then 
+		 Filename.concat initial_cwd f
+	       else f
+	      ));
       av#update_stats;
       let input_buffer = view#buffer in
       input_buffer#set_text s;
@@ -1498,6 +1505,8 @@ let main files =
   (* Commands Menu *)
   let commands_menu =  factory#add_submenu "Commands" in
   let commands_factory = new GMenu.factory commands_menu ~accel_group in
+
+  (* Command/Compile Menu *)
   let compile_f () =
     let v = get_active_view () in
     let av = out_some v.analyzed_view in
@@ -1514,25 +1523,16 @@ let main files =
 	  end
   in
   let compile_m = commands_factory#add_item "Compile" ~callback:compile_f in
+
+  (* Command/Make Menu *)
   let make_f () =
     save_f ();
-    let pid = 
-      Unix.create_process 
-	current.cmd_make 
-	[||]
-	Unix.stdin 
-	Unix.stdout 
-	Unix.stderr
-    in
-    let c = 
-      match Unix.waitpid [] pid with
-	| (_,Unix.WEXITED i) -> i
-	| (_,Unix.WSIGNALED i) -> 127
-	| _ -> assert false
-    in
+    let c = Sys.command current.cmd_make in
     !flash_info (current.cmd_make ^ if c = 0 then " succeeded" else " failed")
   in
   let make_m = commands_factory#add_item "Make" ~callback:make_f in
+  
+  (* Command/CoqMakefile Menu*)
   let coq_makefile_f () =
     let c = Sys.command current.cmd_coqmakefile in
     !flash_info 
@@ -1719,8 +1719,6 @@ let main files =
 	 view#misc#modify_font f; 
 	 tv2#misc#modify_font f; 
 	 tv3#misc#modify_font f);
-  List.iter load files;
-
   ignore (about_m#connect#activate 
 	    ~callback:(fun () -> tv3#buffer#set_text "by Benjamin Monate"));
   ignore (w#misc#connect#size_allocate 
@@ -1738,7 +1736,9 @@ let main files =
   ignore(nb#connect#switch_page 
 	   ~callback:
 	   (fun i -> List.iter (function f -> f i) !to_do_on_page_switch)
-	)
+	);
+  List.iter load files
+
 
 let start () = 
   cant_break ();
