@@ -1,4 +1,12 @@
-(* Copyright (C) 2000, HELM Team.
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *   The HELM Project         /   The EU MoWGLI Project      *)
+(*         *   University of Bologna                                   *)
+(***********************************************************************)
+
+(* Copyright (C) 2000-2004, HELM Team.
  * 
  * This file is part of HELM, an Hypertextual, Electronic
  * Library of Mathematics, developed at the Computer Science
@@ -20,7 +28,7 @@
  * MA  02111-1307, USA.
  * 
  * For details, see the HELM World-Wide-Web page,
- * http://cs.unibo.it/helm/.
+ * http://helm.unibo.it/.
  *)
 
 (*CSC codice cut & paste da cicPp e xmlcommand *)
