@@ -100,7 +100,7 @@ let gentermpr gt =
 (* [at_top] means ids of env must be avoided in bound variables *)
 let gentermpr_core at_top env t =
   if !Options.v7 then gentermpr (Termast.ast_of_constr at_top env t)
-  else Ppconstrnew.pr_constr (Constrextern.extern_constr at_top env t)
+  else Ppconstrnew.pr_lconstr (Constrextern.extern_constr at_top env t)
 let pr_cases_pattern t =
   if !Options.v7 then gentermpr (Termast.ast_of_cases_pattern t)
   else Ppconstrnew.pr_cases_pattern
