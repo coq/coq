@@ -158,8 +158,6 @@ let pred_case_ml_onebranch loc env sigma isrec indt (i,f,ft) =
 (************************************************************************)
 (* Configuration, errors and warnings *)
 
-let substitute_alias = ref false
-
 open Pp
 
 let mssg_may_need_inversion () =
@@ -185,28 +183,27 @@ let make_anonymous_patvars =
 (* Environment management *)
 let push_rels vars env = List.fold_right push_rel vars env
 
+let push_rel_defs = List.fold_right push_rel_def
+
+let it_mkSpecialLetIn = 
+  List.fold_left
+    (fun c (na,b,t) -> if isRel b then subst1 b c else mkLetIn (na,b,t,c))
+
+
 (**********************************************************************)
 (* Structures used in compiling pattern-matching *)
 type 'a lifted = int * 'a
 
 let insert_lifted a = (0,a);;
 
-(* INVARIANT:
-
-   The pattern variables for [it] are the disjoint union of [user_ids]
-   and the domain of [subst]. Non global Var in the codomain of [subst] are
-   in [private_ids].
-   The non pattern variables of [it] + the global Var in the codomain of
-   [subst] are in [other_ids]
-
+(* The pattern variables for [it] are in [user_ids] and the variables
+   to avoid are in [other_ids]. 
 *)
 
 type rhs =
     { rhs_env    : env;
       other_ids  : identifier list;
-      private_ids: identifier list;
       user_ids   : identifier list;
-      subst      : (identifier * constr) list;
       rhs_lift   : int;
       it         : rawconstr }
 
@@ -238,6 +235,8 @@ type tomatch_status =
 
 type tomatch_stack = tomatch_status list
 
+(* Warning: PrLetIn takes a parallel substitution as argument *)
+   
 type predicate_signature =
   | PrLetIn of (constr list * constr option) * predicate_signature
   | PrProd of (bool * name * tomatch_type) * predicate_signature
@@ -245,66 +244,100 @@ type predicate_signature =
   | PrCcl of constr
 
 (* We keep a constr for aliases and a cases_pattern for error message *)
+type alias_constr =
+  | DepAlias of constr
+  | NonDepAlias of constr
+
+type alias_builder =
+  | AliasLeaf of constr
+  | AliasConstructor of alias_constr * (constructor_path * identifier list)
+
+type history_partial_result =
+  | HistoryArg of (constr * cases_pattern)
+  | HistoryLift of int
+
 type pattern_history =
   | Top
-  | Arg of (constr * cases_pattern) * pattern_history
-  | LiftHistory of int * pattern_history
-  | MakeConstruct of
-      (constr * (constructor_path * identifier list)) * pattern_continuation
+  | MakeAlias of alias_builder * pattern_continuation
 
-and pattern_continuation = 
-  | Continuation of int * pattern_history
-  | Result of (constr list * cases_pattern list)
+and pattern_continuation =
+  | Continuation of int * history_partial_result list * pattern_history
+  | Result of cases_pattern list
 
-let lift_history p = function
-  | Continuation (n, h) -> Continuation (n, LiftHistory (n, h))
-  | Result (l, pl) -> Result (List.map (lift p) l, pl)
+let lift_history k h = 
+  if k = 0 then h else match h with
+    | Continuation (n, HistoryLift p :: l, h) ->
+	Continuation (n, (HistoryLift (k+p) :: l), h)
+    | Continuation (n, l, h) ->
+	Continuation (n, (HistoryLift k :: l), h)
+    | Result _ -> h
 
-let start_history n = Continuation (n, Top)
+let start_history n = Continuation (n, [], Top)
+
+let initial_history = function Continuation (_,[],Top) -> true | _ -> false
 
 let feed_history arg = function
-  | Continuation (n, h) when n>=1 -> Continuation (n-1, Arg (arg, h))
-  | Continuation (n, _) ->
+  | Continuation (n, l, h) when n>=1 ->
+      Continuation (n-1, HistoryArg arg :: l, h)
+  | Continuation (n, _, _) ->
       anomaly ("Bad number of expected remaining patterns: "^(string_of_int n))
-  | Result _ -> anomaly "Exhausted pattern history"
-
-let rec build_clause_pattern k (cargs,pargs as args) = function
-  | Top -> Result args, None
-  | Arg ((u, p), h) -> build_clause_pattern k ((lift k u)::cargs,p::pargs) h
-  | LiftHistory (n, h) -> build_clause_pattern (k+n) args h 
-  | MakeConstruct ((ci, pci), rh) ->
-      let c = applist(lift k ci,cargs) in
-      feed_history (c, PatCstr (dummy_loc,pci,pargs,Anonymous)) rh, Some c
-
-let rec simplify_history = function
-  | Continuation (0, h) ->
-      (match build_clause_pattern 0 ([],[]) h with
-	 | h, None -> [], h
-	 | h, Some c -> let l, h = simplify_history h in (c::l, h))
-  | h -> [], h
+  | Result _ -> 
+      anomaly "Exhausted pattern history"
 
 (* This is for non exhaustive error message *)
-let rec rawpattern_of_partial_history l = function
-  | Continuation (n, h) ->
-      let args = make_anonymous_patvars (n - (List.length l)) in
-      build_rawpattern (l@args) h
-  | Result (_, pl) -> pl
+
+let rec eval_partial_pattern_args pargs = function
+  | HistoryArg (_,p):: h -> eval_partial_pattern_args (p::pargs) h
+  | HistoryLift _ :: h -> eval_partial_pattern_args pargs h 
+  | [] -> pargs
+
+let rec rawpattern_of_partial_history args2 = function
+  | Continuation (n, args1, h) ->
+      let args3 = make_anonymous_patvars (n - (List.length args2)) in
+      build_rawpattern ((eval_partial_pattern_args [] args1)@args2@args3) h
+  | Result pl -> pl
 
 and build_rawpattern args = function
   | Top -> args
-  | Arg ((_, p), h) -> build_rawpattern (p::args) h
-  | LiftHistory (n, h) -> build_rawpattern args h 
-  | MakeConstruct ((_, pci), rh) ->
+  | MakeAlias (AliasLeaf _, rh) ->
+      assert (args = []);
+      rawpattern_of_partial_history [PatVar (dummy_loc, Anonymous)] rh
+  | MakeAlias (AliasConstructor (_, pci), rh) ->
       rawpattern_of_partial_history
 	[PatCstr (dummy_loc, pci, args, Anonymous)] rh
 
 let complete_history = rawpattern_of_partial_history []
 
+(* This is to build glued pattern-matching history and alias bodies *)
+
+let rec eval_partial_args k (cargs,pargs as args) = function
+  | HistoryArg (u,p):: h -> eval_partial_args k ((lift k u)::cargs,p::pargs) h
+  | HistoryLift n :: h -> eval_partial_args (k+n) args h 
+  | [] -> k, args
+
+let rec simplify_lifted_history k = function
+  | Continuation (0, l, Top) -> [], Result (eval_partial_pattern_args [] l)
+  | Continuation (0, l, MakeAlias (f, rh)) ->
+      let (k,(cargs,pargs)) = eval_partial_args 0 ([],[]) l in
+      let c, pat = match f with
+	| AliasConstructor (c,pci) ->
+	    let c = match c with
+	      | DepAlias ci -> applist(lift k ci,cargs)
+	      | NonDepAlias x -> lift k x
+	    in c, PatCstr (dummy_loc,pci,pargs,Anonymous)
+	| AliasLeaf x -> 
+	    assert (l = []);
+	    lift k x, PatVar (dummy_loc, Anonymous) in
+      let l, h = simplify_lifted_history k (feed_history (c,pat) rh) in
+      (c::l, h)
+  | h -> [], lift_history k h
+
+let simplify_history = simplify_lifted_history 0
 (* Builds a continuation expecting [n] arguments and building [ci] applied
    to this [n] arguments *)
 
-let history_continuation n arg cont =
-  Continuation (n, MakeConstruct (arg, cont))
+let push_history_pattern n current cont =
+  Continuation (n, [], MakeAlias (current, cont))
 
 (* A pattern-matching problem has the following form:
 
@@ -358,6 +391,24 @@ let type_of_tomatch_type = function
     IsInd (t,ind) -> t
   | NotInd t -> t
 
+let liftn_tomatch_type n depth = function
+  | IsInd (t,ind) -> IsInd (liftn n depth t,liftn_inductive_type n depth ind)
+  | NotInd t -> NotInd (liftn n depth t)
+
+let lift_tomatch_type n = liftn_tomatch_type n 1
+
+let lift_tomatch n ((current,typ),info) =
+  ((lift n current,lift_tomatch_type n typ),info)
+
+let substnl_tomatch v depth = function
+  | IsInd (t,indt) -> IsInd (substnl v depth t,substnl_ind_type v depth indt)
+  | NotInd t -> NotInd (substnl v depth t)
+
+let subst_tomatch (depth,c) = substnl_tomatch [c] depth
+
+(**********************************************************************)
+(* Utilities on patterns *)
+
 let current_pattern eqn =
   match eqn.patterns with
     | pat::_ -> pat
@@ -373,29 +424,15 @@ let unalias_pat = function
   | PatCstr(a,b,c,name) as p ->
       if name = Anonymous then p else PatCstr (a,b,c,Anonymous)
 
-let remove_current_pattern dep eqn =
+let remove_current_pattern eqn =
   match eqn.patterns with
     | pat::pats ->
-	let name = if dep then alias_of_pat pat else Anonymous in
 	{ eqn with
 	    patterns = pats;
-	    alias_stack = name :: eqn.alias_stack }
+	    alias_stack = alias_of_pat pat :: eqn.alias_stack }
     | [] -> anomaly "Empty list of patterns"
 
-let liftn_tomatch_type n depth = function
-  | IsInd (t,ind) -> IsInd (liftn n depth t,liftn_inductive_type n depth ind)
-  | NotInd t -> NotInd (liftn n depth t)
-
-let lift_tomatch_type n = liftn_tomatch_type n 1
-
-let lift_tomatch n ((current,typ),info) =
-  ((lift n current,lift_tomatch_type n typ),info)
-
-let substnl_tomatch v depth = function
-  | IsInd (t,indt) -> IsInd (substnl v depth t,substnl_ind_type v depth indt)
-  | NotInd t -> NotInd (substnl v depth t)
-
-let subst_tomatch (depth,c) = substnl_tomatch [c] depth
+let prepend_pattern tms eqn = {eqn with patterns = tms@eqn.patterns }
 
 (**********************************************************************)
 (* Dealing with regular and default patterns *)
@@ -455,7 +492,7 @@ let check_number_of_regular_eqns pb eqns =
     | [_] -> ()
     | _::eqn::_ ->
 	let tms = match pb.history with
-	  | Result (_,tms) -> tms 
+	  | Result tms -> tms 
 	  | _ -> assert false in
 	raise_pattern_matching_error
 	  (eqn.eqn_loc, pb.env, RedundantClause tms)
@@ -556,35 +593,15 @@ let rec lift_subst_tomatch n (depth,ci as binder) = function
   | Pushed (lift,tm)::rest ->
       Pushed (n+lift, tm)::(lift_subst_tomatch n binder rest)
 
-let subst_in_subst id t (id2,c) = (id2,replace_vars [(id,t)] c)
+let rec liftn_tomatch_stack n depth = function
+  | [] -> []
+  | ToPush ((na,t),info)::rest ->
+      let t' = liftn_tomatch_type n (depth+1) t in
+      ToPush ((na,t'), info)::(liftn_tomatch_stack n (depth+1) rest)
+  | Pushed (lift,tm)::rest ->
+      Pushed (n+lift, tm)::(liftn_tomatch_stack n depth rest)
 
-let replace_id_in_rhs id t rhs =
-  if List.mem id rhs.private_ids then
-    {rhs with
-	 subst = List.map (subst_in_subst id t) rhs.subst;
-         private_ids = list_except id rhs.private_ids}
-  else if List.mem id rhs.user_ids & not (List.mem_assoc id rhs.subst) then
-  {rhs with subst = (id,t)::List.map (subst_in_subst id t) rhs.subst}
-  else anomaly ("Found a pattern variables neither private nor user supplied: "
-		^(string_of_id id))
-
-let replace_name_in_rhs name c rhs =
-  match name with
-    | Anonymous -> rhs
-    | Name id -> replace_id_in_rhs id c rhs
-
-(* We should here add subst as a let-in sequence in front of rhs; need
-   first to compute the right "current" in named binders style in the
-   call to expand_defaults *)
-let prepare_rhs rhs =
-  if rhs.private_ids <> [] then
-    anomaly "Some private pattern variable has not been substituted";
-(*
-  if List.length rhs.user_ids <> List.length rhs.subst then 
-     anomaly "Some user pattern variable has not been substituted";
-  let subst = List.map (fun id -> (id,List.assoc id rhs.subst)) rhs.user_ids in
-*)
-  rhs.it
+let lift_tomatch_stack n = liftn_tomatch_stack n 1
 
 (* if [current] has type [I(p1...pn u1...um)] and we consider the case
    of constructor [ci] of type [I(p1...pn u'1...u'm)], then the
@@ -650,42 +667,35 @@ let push_rels_eqn sign eqn =
      {eqn.rhs with
 	rhs_env = push_rels sign eqn.rhs.rhs_env} }
 
-let prepend_pattern tms eqn = {eqn with patterns = tms@eqn.patterns }
-
-(*
-let substitute_rhs current pb =
-  if !substitute_alias then { pb with subst = current::pb.subst } else pb
-*)
-
-let pop_pattern eqn = { eqn with patterns = List.tl eqn.patterns }
-
 let build_aliases_context env sigma names allpats pats =
-  (* pats is the list of name to push as an alias *)
+  (* pats is the list of bodies to push as an alias *)
+  (* They all are defined in env and we turn them into a sign *)
   (* cuts in sign need to be done in allpats *)
-  let rec insert sign n newallpats oldallpats = function
+  let rec insert env sign n newallpats oldallpats = function
     | _::pats, Anonymous::names ->
-	insert sign n newallpats (List.map List.tl oldallpats) (pats,names)
+	insert env sign n newallpats (List.map List.tl oldallpats) (pats,names)
     | pat::pats, na::names ->
+	let pat = lift n pat in
 	let t = Retyping.get_type_of env sigma pat in
 	let newallpats =
 	  List.map2 (fun l1 l2 -> List.hd l2::l1) newallpats oldallpats in
 	let oldallpats = List.map List.tl oldallpats in
-	insert ((na,Some pat,t)::sign) (n+1) 
+	let d = (na,pat,t) in
+	insert (push_rel_def d env) (d::sign) (n+1) 
 	    newallpats oldallpats (pats,names)
-    | [], [] -> newallpats, sign
+    | [], [] -> newallpats, sign, env
     | _ -> anomaly "Inconsistent alias and name lists"
-  in insert [] 0 (List.map (fun _ -> []) allpats) allpats (pats, names)
+  in insert env [] 0 (List.map (fun _ -> []) allpats) allpats (pats, names)
 
-let insert_aliases sign eqnnames alias_rest eqn =
-  let thissign = recover_alias_names (fun x -> x) eqnnames sign in
-  let thissign = List.filter (fun (na,c,t) -> na <> Anonymous) thissign in
+let insert_aliases_eqn sign eqnnames alias_rest eqn =
+  let thissign = List.map2 (fun na (_,c,t) -> (na,c,t)) eqnnames sign in
   { eqn with
       alias_stack = alias_rest;
-      rhs = {eqn.rhs with rhs_env = push_rels thissign eqn.rhs.rhs_env } }
+      rhs = {eqn.rhs with rhs_env = push_rel_defs thissign eqn.rhs.rhs_env } }
 
-let push_aliases env sigma aliases eqns =
+let insert_aliases env sigma aliases eqns =
   let n = List.length aliases in
-  if n = 0 then (* optimisation *) [], eqns
+  if n = 0 then (* optimisation *) [], env, eqns
   else
   (* Là, y a une faiblesse, si un alias est utilisé dans un cas par *)
   (* défaut présent mais inutile, ce qui est le cas général, l'alias *)
@@ -697,10 +707,10 @@ let push_aliases env sigma aliases eqns =
   let names2 = 
     List.fold_right (merge_names (fun x -> x)) eqnsnames names1 in
   (* Only needed aliases are kept by build_aliases_context *)
-  let eqnsnames, sign =
+  let eqnsnames, sign, env =
     build_aliases_context env sigma names2 eqnsnames aliases in
-  let eqns = list_map3 (insert_aliases sign) eqnsnames alias_rests eqns in
-  sign, eqns
+  let eqns = list_map3 (insert_aliases_eqn sign) eqnsnames alias_rests eqns in
+  sign, env, eqns
 
 (**********************************************************************)
 (* Functions to deal with elimination predicate *)
@@ -729,8 +739,9 @@ let prepare_unif_pb typ cs =
 
   (* This is the problem: finding P s.t. cs_args |- (P realargs ci) = p' *)
   (Array.map (lift (-n)) cs.cs_concl_realargs, ci, p')
-(*
+
 (* Infering the predicate *)
+(*
 let prepare_unif_pb typ cs =
   let n = cs.cs_nargs in
   let _,p = decompose_prod_n n typ in
@@ -791,8 +802,8 @@ let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
       let predbody = mkMutCase (caseinfo, predpred, mkRel 1, brs) in
       let pred = it_mkLambda_or_LetIn (lift (List.length sign) typn) sign in
       (* "TODO4-2" *)
-      error "Unable to infer a Cases predicate\n\
-Either there is a type incompatiblity or the problem involves dependencies";
+      error ("Unable to infer a Cases predicate\n"^
+"Either there is a type incompatiblity or the problem involves dependencies");
       (true,pred)
 
 (* Propagation of user-provided predicate through compilation steps *)
@@ -806,7 +817,8 @@ let liftn_predicate n k pred =
   | PrLetIn ((args,copt),pred) ->
       let args' = List.map (liftn n k) args in
       let copt' = option_app (liftn n k) copt in
-      PrLetIn ((args',copt'), liftrec (k+1) pred) in
+      let k' = List.length args + (if copt = None then 0 else 1) in
+      PrLetIn ((args',copt'), liftrec (k+k') pred) in
   liftrec k pred
 
 let lift_predicate n = liftn_predicate n 1
@@ -824,7 +836,8 @@ let subst_predicate (args,copt) pred =
     | PrLetIn ((args,copt),pred) ->
 	let args' = List.map (substnl sigma k) args in
 	let copt' = option_app (substnl sigma k) copt in
-	PrLetIn ((args',copt'), substrec (k+1) pred) in
+	let k' = List.length args + (if copt = None then 0 else 1) in
+	PrLetIn ((args',copt'), substrec (k+k') pred) in
   substrec 0 pred
 
 let specialize_predicate_var = function
@@ -873,17 +886,17 @@ let weaken_predicate q pred =
       | (PrLetIn _ | PrCcl _ | PrNotInd _) ->
 	  anomaly "weaken_predicate: only product can be weakened"
       | PrProd ((dep,_,IsInd (_,IndType(indf,realargs))),pred) ->
-	  (* To make it more uniform, we apply realargs but they not occur! *)
+	  (* To make it more uniform, we apply realargs but they dont occur! *)
 	  let copt, p = if dep then Some (mkRel (q+k)), 1 else None, 0 in
-  let realargs = List.map (lift k) realargs in
+	  let realargs = List.map (lift k) realargs in
 	  (* We replace 1 product by |realargs| arguments + possibly copt *)
 	  (* Then we need to add this to the global lift *)
 	  let lift = k+(List.length realargs)+p in
 	  PrLetIn ((realargs, copt), weakrec (n-1) lift pred)
-    | PrProd ((dep,_,NotInd t),pred) ->
-	(* Does copt occur in pred ? Does it need to be remembered ? *)
-	let copt, p = if dep then Some (mkRel (q+k)), 1 else None, 0 in
-	PrNotInd (copt, weakrec (n-1) (k+p) pred)
+      | PrProd ((dep,_,NotInd t),pred) ->
+	  (* Does copt occur in pred ? Does it need to be remembered ? *)
+	  let copt, p = if dep then Some (mkRel (q+k)), 1 else None, 0 in
+	  PrNotInd (copt, weakrec (n-1) (k+p) pred)
   in weakrec q 0 pred
 
 (*****************************************************************************)
@@ -933,19 +946,18 @@ let solve_constraints constr_info indt =
   (* TODO *)
   Constraints []
 
-let group_equations mind cstrs mat =
+let group_equations mind current cstrs mat =
   let brs = Array.create (Array.length cstrs) [] in
   let only_default = ref true in
   let _ =
     List.fold_right (* To be sure it's from bottom to top *)
       (fun eqn () ->
+	 let rest = remove_current_pattern eqn in
 	 match current_pattern eqn with
 	   | PatVar (_,name) -> 
 	       (* This is a default clause that we expand *)
 	       for i=1 to Array.length cstrs do
 		 let args = make_anonymous_patvars cstrs.(i-1).cs_nargs in
-		 let dep = Array.length cstrs.(i-1).cs_concl_realargs <> 0 in
-		 let rest = remove_current_pattern dep eqn in
 		 let rest = {rest with tag = lower_pattern_status rest.tag} in
 		 brs.(i-1) <- (args, rest) :: brs.(i-1)
 	       done
@@ -953,8 +965,6 @@ let group_equations mind cstrs mat =
 	       (* This is a regular clause *)
 	       check_constructor loc (cstr,largs) mind cstrs;
 	       only_default := false;
-	       let dep = Array.length cstrs.(i-1).cs_concl_realargs <> 0 in
-	       let rest = remove_current_pattern dep eqn in
 	       brs.(i-1) <- (largs,rest) :: brs.(i-1)) mat () in
   (brs,!only_default)
 
@@ -968,29 +978,28 @@ let build_leaf pb =
     | None -> empty_tycon
     | Some (PrCcl typ) -> mk_tycon typ
     | Some _ -> anomaly "not all parameters of pred have been consumed" in
-  tag, pb.typing_function tycon rhs.rhs_env (prepare_rhs rhs)
+  tag, pb.typing_function tycon rhs.rhs_env rhs.it
 
 (* Building the sub-problem when all patterns are variables *)
 let shift_problem current pb =
-  let h = feed_history (current, PatVar (dummy_loc, Anonymous)) pb.history in
-  let aliases, history = simplify_history h in
-  let mat = List.map pop_pattern pb.mat in
-  let sign, mat = push_aliases pb.env !(pb.isevars) aliases mat in
-  sign,
   {pb with
      pred = option_app specialize_predicate_var pb.pred;
-     history = history;
-     mat = mat }
+     history = push_history_pattern 0 (AliasLeaf current) pb.history;
+     mat = List.map remove_current_pattern pb.mat }
 
 (* Building the sub-pattern-matching problem for a given branch *)
-let build_branch pb eqns const_info =
+let build_branch current pb eqns const_info =
   (* We remember that we descend through a constructor *)
   let partialci =
-    applist (mkMutConstruct const_info.cs_cstr, 
-	     (List.map (lift const_info.cs_nargs) const_info.cs_params)) in
+    if Array.length const_info.cs_concl_realargs = 0 then
+      NonDepAlias current
+    else
+      let params = const_info.cs_params in
+      DepAlias (applist (mkMutConstruct const_info.cs_cstr, params)) in
   let history = 
-    history_continuation const_info.cs_nargs 
-      (partialci, rawconstructor_of_constructor const_info.cs_cstr)
+    push_history_pattern const_info.cs_nargs
+      (AliasConstructor
+	 (partialci, rawconstructor_of_constructor const_info.cs_cstr))
       pb.history in
 
   (* We find matching clauses *)
@@ -1000,7 +1009,7 @@ let build_branch pb eqns const_info =
   if submat = [] then
     raise_pattern_matching_error
       (dummy_loc, pb.env, NonExhaustive (complete_history history));
-  let typs = List.map2 (fun (_,t) na -> (na,t)) cs_args (List.rev names) in
+  let typs = List.map2 (fun (_,t) na -> (na,t)) cs_args names in
   let _,typs' =
     List.fold_right
       (fun (na,t) (env,typs) ->
@@ -1020,21 +1029,16 @@ let build_branch pb eqns const_info =
        (List.map (lift const_info.cs_nargs) const_info.cs_params)
        @(extended_rel_list 0 const_info.cs_args)) in
 
-  (* A constant constructor may lead to aliases to push *)
-  let aliases, history = simplify_history history in
-  let sign, mat = push_aliases pb.env !(pb.isevars) aliases submat in
-
   (* We replace [(mkRel 1)] by its expansion [ci] *)
   let updated_old_tomatch =
-    lift_subst_tomatch const_info.cs_nargs (1,ci) pb.tomatch in
+    lift_subst_tomatch (const_info.cs_nargs) (1,ci) pb.tomatch in
 
-  sign,
   { pb with
       tomatch = topushs@updated_old_tomatch;
-      mat = mat;
-      history = history;
       pred =
-        option_app (specialize_predicate_match tomatchs const_info) pb.pred }
+        option_app (specialize_predicate_match tomatchs const_info) pb.pred;
+      history = history;
+      mat = submat }
 
 (**********************************************************************
  INVARIANT:
@@ -1063,17 +1067,18 @@ and match_current pb (n,tm) =
   match typ with
     | NotInd typ ->
 	check_all_variables typ pb.mat;
-	compile_with_aliases (shift_problem current pb)
+	compile_aliases (shift_problem current pb)
     | IsInd (_,(IndType(indf,realargs) as indt)) ->
 	let mis,_ = dest_ind_family indf in
+	let mind = mis_inductive mis in
 	let cstrs = get_constructors indf in
-	let eqns,onlydflt = group_equations (mis_inductive mis) cstrs pb.mat in
-	if cstrs <> [||] & onlydflt then
-	  compile_with_aliases (shift_problem current pb)
+	let eqns,onlydflt = group_equations mind current cstrs pb.mat in
+	if (cstrs <> [||] or not (initial_history pb.history)) & onlydflt then
+	  compile_aliases (shift_problem current pb)
 	else
           let constraints = Array.map (solve_constraints indt) cstrs in
-	  let pbs = array_map2 (build_branch pb) eqns cstrs in
-	  let brs = Array.map compile_with_aliases pbs in
+	  let pbs = array_map2 (build_branch current pb) eqns cstrs in
+	  let brs = Array.map compile_aliases pbs in
 	  let brvals = Array.map (fun (_,j) -> j.uj_val) brs in
 	  let brtyps = Array.map (fun (_,j) -> body_of_type j.uj_type) brs in
 	  let tags = Array.map fst brs in
@@ -1109,11 +1114,21 @@ and compile_further pb firstnext rest =
     uj_type = (* Pas d'univers ici: imprédicatif si Prop/Set, dummy si Type *)
       type_app (fun t -> it_mkProd_wo_LetIn t sign) j.uj_type }
 
-and compile_with_aliases (sign,pb) =
+and compile_aliases pb =
+  let aliases, history = simplify_history pb.history in
+  let sign, newenv, mat = insert_aliases pb.env !(pb.isevars) aliases pb.mat in
+  let n = List.length sign in
+  let pb =
+    {pb with
+       env = newenv;
+       tomatch = lift_tomatch_stack n pb.tomatch;
+       pred = option_app (lift_predicate n) pb.pred;
+       history = lift_history n history;
+       mat = mat } in
   let patstat,j = compile pb in
   patstat,
-  { uj_val = it_mkLambda_or_LetIn j.uj_val sign;
-    uj_type = it_mkProd_wo_LetIn j.uj_type sign }
+  { uj_val = it_mkSpecialLetIn j.uj_val sign;
+    uj_type = substl (List.map (fun (_,b,_) -> b) sign) j.uj_type }
 
 (* pour les alias des initiaux, enrichir les env de ce qu'il faut et
 substituer après par les initiaux *)
@@ -1121,28 +1136,78 @@ substituer après par les initiaux *)
 (**************************************************************************)
 (* Preparation of the pattern-matching problem                            *)
 
+(* Qu'est-ce qui faut pas faire pour traiter les alias ... *)
+
+(* On ne veut pas ajouter de primitive à Environ et le problème, c'est
+   donc de faire un renommage en se contraignant à parcourir l'env
+   dans le sens croissant. Ici, subst renomme des variables repérées
+   par leur numéro et seen_ids collecte celles dont on sait que les
+   variables de subst annule le scope *)
+let rename_env subst env =
+  let n = ref (rel_context_length (rel_context env)) in
+  let seen_ids = ref [] in
+  process_rel_context
+    (fun env (na,c,t as d) ->
+       let d =
+	 try
+	   let id = List.assoc !n subst in
+	   seen_ids := id :: !seen_ids;
+	   (Name id,c,t)
+	 with Not_found ->
+	   match na with
+	     | Name id when List.mem id !seen_ids -> (Anonymous,c,t)
+	     | _ -> d in
+       decr n;
+       push_rel d env) env
+
+let is_dependent_indtype = function
+  | NotInd _ -> false
+  | IsInd (_, IndType(_,realargs)) -> List.length realargs <> 0
+
+let prepare_initial_alias_eqn tomatchl eqn =
+  let (subst, pats) = 
+  List.fold_right2
+    (fun pat (tm,tmtyp) (subst, stripped_pats) ->
+       match alias_of_pat pat with
+	 | Anonymous -> (subst, pat::stripped_pats)
+	 | Name idpat as na ->
+	     match kind_of_term tm with
+	       | IsRel n when not (is_dependent_indtype tmtyp) 
+		   -> (n, idpat)::subst, (unalias_pat pat::stripped_pats)
+	       | _ -> (subst, pat::stripped_pats))
+    eqn.patterns tomatchl ([], []) in
+  let env = rename_env subst eqn.rhs.rhs_env in
+  { eqn with patterns = pats; rhs = { eqn.rhs with rhs_env = env } }
+
+let prepare_initial_aliases tomatchl mat =
+  List.map (prepare_initial_alias_eqn tomatchl) mat
+
+(*
 let prepare_initial_alias lpat tomatchl rhs =
   List.fold_right2
     (fun pat tm (stripped_pats, rhs) ->
        match alias_of_pat pat with
 	 | Anonymous -> (pat::stripped_pats, rhs)
 	 | Name _ as na ->
-	     (unalias_pat pat::stripped_pats, RLetIn (dummy_loc, na, tm, rhs)))
+	     match tm with
+	       | RVar _ -> 
+		   (unalias_pat pat::stripped_pats, 
+		    RLetIn (dummy_loc, na, tm, rhs))
+	       | _ -> (pat::stripped_pats, rhs))
     lpat tomatchl ([], rhs)
-
+*)
 (* builds the matrix of equations testing that each eqn has n patterns
  * and linearizing the _ patterns.
  * Syntactic correctness has already been done in astterm *)
 let matx_of_eqns env tomatchl eqns =
   let build_eqn (loc,ids,lpat,rhs) =
-    let initial_lpat,initial_rhs = prepare_initial_alias lpat tomatchl rhs in
-(*    let initial_lpat,initial_rhs = lpat,rhs in*)
+(*    let initial_lpat,initial_rhs = prepare_initial_alias lpat tomatchl rhs in*)
+    let initial_lpat,initial_rhs = lpat,rhs in
+    let initial_rhs = rhs in
     let rhs =
       { rhs_env = env;
 	other_ids = ids@(ids_of_named_context (named_context env));
-	private_ids = [];
 	user_ids = ids;
-	subst = [];
 	rhs_lift = 0;
 	it = initial_rhs } in
     { dependencies = [];
@@ -1336,6 +1401,9 @@ let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
   (* We build the vector of terms to match consistently with the *)
   (* constructors found in patterns *)
   let tomatchs = coerce_to_indtype typing_fun isevars env matx tomatchl in
+
+  (* We deal with initial aliases *)
+  let matx = prepare_initial_aliases tomatchs matx in 
 
   (* We build the elimination predicate if any and check its consistency *)
   (* with the type of arguments to match *)
