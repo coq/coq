@@ -640,6 +640,14 @@ let _ =
    (function () ->
      Buffer.reset theory_buffer;
      theory_output_string "<?xml version=\"1.0\" encoding=\"latin1\"?>\n";
+     theory_output_string ("<!DOCTYPE html [\n" ^
+      "<!ENTITY % xhtml-lat1.ent    SYSTEM \"http://helm.cs.unibo.it/dtd/xhtml-lat1.ent\">\n" ^
+      "<!ENTITY % xhtml-special.ent SYSTEM \"http://helm.cs.unibo.it/dtd/xhtml-special.ent\">\n" ^
+      "<!ENTITY % xhtml-symbol.ent  SYSTEM \"http://helm.cs.unibo.it/dtd/xhtml-symbol.ent\">\n\n" ^
+      "%xhtml-lat1.ent;\n" ^
+      "%xhtml-special.ent;\n" ^
+      "%xhtml-symbol.ent;\n" ^
+      "]>\n\n");
      theory_output_string "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:ht=\"http://www.cs.unibo.it/helm/namespaces/helm-theory\">\n";
      theory_output_string "<head>\n<style> A { text-decoration: none } </style>\n</head>\n")
 ;;
