@@ -34,7 +34,7 @@ Variable Aeq : A -> A -> bool.
 
 Variable S : Setoid_Theory A Aequiv.
 
-Add Setoid A Aequiv S.
+Add Setoid A Aequiv S as Asetoid.
 
 Variable
   plus_morph :

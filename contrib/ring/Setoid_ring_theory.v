@@ -22,7 +22,7 @@ Infix Local "==" := Aequiv (at level 70, no associativity).
 
 Variable S : Setoid_Theory A Aequiv.
 
-Add Setoid A Aequiv S.
+Add Setoid A Aequiv S as Asetoid.
 
 Variable Aplus : A -> A -> A.
 Variable Amult : A -> A -> A.
