@@ -84,7 +84,7 @@ open Inductive
 val find_case_dep_nparams :
   env -> 'a evar_map -> constr * constr -> inductive_family -> constr -> bool
 
-(*
+(*i
 val hyps_inclusion : env -> 'a evar_map -> var_context -> var_context -> bool
-*)
+i*)
 

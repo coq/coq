@@ -13,13 +13,13 @@ open Reduction
 open G_minicoq
 
 module type Printer = sig
-  val pr_term : path_kind -> context -> constr -> std_ppcmds
+  val pr_term : path_kind -> env -> constr -> std_ppcmds
 end
 
 module Make = functor (P : Printer) -> struct
 
-  let print_decl k sign (s,typ) =
-    let ptyp = P.pr_term k (gLOB sign) (body_of_type typ) in 
+  let print_decl k env (s,typ) =
+    let ptyp = P.pr_term k env (body_of_type typ) in 
     [< 'sPC; print_id s; 'sTR" : "; ptyp >]
   
   let print_binding k env = function
@@ -28,34 +28,38 @@ module Make = functor (P : Printer) -> struct
     | Name id,ty -> 
 	[< 'sPC; print_id id ; 'sTR" : "; P.pr_term k env (body_of_type ty) >]
 
+(****
   let sign_it_with f sign e =
-    snd (sign_it 
-	   (fun id t (sign,e) -> (add_sign (id,t) sign, f id t sign e))
-           sign (nil_sign,e))
+    snd (fold_var_context
+	   (fun (id,v,t) (sign,e) -> (add_var (id,v,t) sign, f id t sign e))
+           sign (empty_var_context,e))
 
   let dbenv_it_with f env e =
     snd (dbenv_it 
 	   (fun na t (env,e) -> (add_rel (na,t) env, f na t env e))
            env (gLOB(get_globals env),e))
+****)
       
   let pr_env k env =
     let sign_env =
-      sign_it_with
-	(fun id t sign pps ->
-           let pidt =  print_decl k sign (id,t) in [<  pps ; 'fNL ; pidt >])
-	(get_globals env) [< >] 
+      fold_var_context
+	(fun env (id,_,t) pps ->
+           let pidt =  print_decl k env (id,t) in [<  pps ; 'fNL ; pidt >])
+	env [< >] 
     in
     let db_env =
-      dbenv_it_with 
-	(fun na t env pps ->
+      fold_rel_context
+	(fun env (na,_,t) pps ->
            let pnat = print_binding k env (na,t) in [<  pps ; 'fNL ; pnat >])
 	env [< >]
     in 
     [< sign_env; db_env >]
     
-  let pr_ne_ctx header k = function
-    | ENVIRON (s1,s2) when s1=nil_sign & s2=nil_dbsign -> [< >]
-    | env -> [< header; pr_env k env >]
+  let pr_ne_ctx header k env =
+    if rel_context env = [] && var_context env = [] then
+      [< >]
+    else
+      [< header; pr_env k env >]
 
 
 let explain_unbound_rel k ctx n =
@@ -129,7 +133,7 @@ let explain_ill_formed_branch k ctx c i actty expty =
 let explain_generalization k ctx (name,var) c =
   let pe = pr_ne_ctx [< 'sTR"in environment" >] k ctx in
   let pv = P.pr_term k ctx (body_of_type var) in
-  let pc = P.pr_term k (add_rel (name,var) ctx) c in
+  let pc = P.pr_term k (push_rel (name,None,var) ctx) c in
   [< 'sTR"Illegal generalization: "; pe; 'fNL;
      'sTR"Cannot generalize"; 'bRK(1,1); pv; 'sPC;
      'sTR"over"; 'bRK(1,1); pc; 'sPC;

@@ -49,21 +49,21 @@ val names_of_rel_context : env -> names_context
 (*s Returns also the substitution to be applied to rel's *)
 val push_rels_to_vars : env -> constr list * env
 
-(* Gives identifiers in var_context and rel_context *)
+(* Gives identifiers in [var_context] and [rel_context] *)
 val ids_of_context : env -> identifier list
 val map_context : (constr -> constr) -> env -> env
 
-(*s Recurrence on var_context *)
+(*s Recurrence on [var_context] *)
 val fold_var_context : (env -> var_declaration -> 'a -> 'a) -> env -> 'a -> 'a
 val process_var_context : (env -> var_declaration -> env) -> env -> env
 
 (* [process_var_context_both_sides f env] iters [f] on the var
-   declarations of env taking as argument both the initial segment, the
+   declarations of [env] taking as argument both the initial segment, the
    middle value and the tail segment *)
 val process_var_context_both_sides :
   (env -> var_declaration -> var_context -> env) -> env -> env 
 
-(*s Recurrence on rel_context *)
+(*s Recurrence on [rel_context] *)
 val fold_rel_context : (env -> rel_declaration -> 'a -> 'a) -> env -> 'a -> 'a
 val process_rel_context : (env -> rel_declaration -> env) -> env -> env
 
@@ -81,13 +81,13 @@ val new_meta : unit -> int
 
 (*s Looks up in environment *)
 
-(* Looks up in the context of local vars referred by names (var_context) *)
+(* Looks up in the context of local vars referred by names ([var_context]) *)
 (* raises [Not_found] if the identifier is not found *)
 val lookup_var_type : identifier -> env -> typed_type
 val lookup_var_value : identifier -> env -> constr option
 val lookup_var : identifier -> env -> constr option * typed_type
 
-(* Looks up in the context of local vars referred by indice (rel_context) *)
+(* Looks up in the context of local vars referred by indice ([rel_context]) *)
 (* raises [Not_found] if the index points out of the context *)
 val lookup_rel_type : int -> env -> name * typed_type
 val lookup_rel_value : int -> env -> constr option

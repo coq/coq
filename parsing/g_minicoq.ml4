@@ -7,7 +7,7 @@ open Names
 open Univ
 open Generic
 open Term
-open Sign
+open Environ
 
 let lexer = {
   Token.func = Lexer.func;
@@ -176,5 +176,5 @@ let rec pp bv = function
   | Rel n -> print_rel bv n
   | _ -> [< 'sTR"<???>" >]
 
-let pr_term _ ctx = pp (it_dbenv (fun l n _ -> n::l) [] ctx)
+let pr_term _ ctx = pp (fold_rel_context (fun _ (n,_,_) l -> n::l) ctx [])
 

@@ -10,20 +10,19 @@ open Environ
 open Proof_type
 (*i*)
 
-(* This suppresses check done in prim_refiner for the tactic given in
+(* This suppresses check done in [prim_refiner] for the tactic given in
    argument; works by side-effect *)
 
 val without_check : tactic -> tactic
 
-(* without_check respectively means:\\
-\\
-  Intro: no check that the name does not exist\\
-  Intro_after: no check that the name does not exist and that variables in
+(* [without_check] respectively means:\\
+  [Intro]: no check that the name does not exist\\
+  [Intro_after]: no check that the name does not exist and that variables in
      its type does not escape their scope\\
-  Intro_replacing: no check that the name does not exist and that variables in
-     its type does not escape their scope\\
-
-  Convert_hyp: no check that the name exist and that its type is convertible\\
+  [Intro_replacing]: no check that the name does not exist and that 
+     variables in its type does not escape their scope\\
+  [Convert_hyp]: 
+  no check that the name exist and that its type is convertible\\
 *)
 
 (* The primitive refiner. *)

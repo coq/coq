@@ -23,7 +23,8 @@ let lookup_var id =
   in
   look 1
 
-let args sign = Array.of_list (List.map (fun id -> VAR id) (ids_of_sign sign))
+let args sign = 
+  Array.of_list (List.map (fun id -> VAR id) (ids_of_var_context sign))
 
 let rec globalize bv = function
   | VAR id -> lookup_var id bv
@@ -45,7 +46,7 @@ let check c =
   let c = globalize [] c in
   let (j,u) = safe_machine !env c in
   let ty = j_type j in
-  let pty = pr_term CCI (context !env) ty in
+  let pty = pr_term CCI (env_of_safe_env !env) ty in
   mSGNL (hOV 0 [< 'sTR"  :"; 'sPC; hOV 0 pty; 'fNL >])
 
 let definition id ty c =
@@ -65,7 +66,7 @@ let parameter id t =
 
 let variable id t =
   let t = globalize [] t in
-  env := push_var (id,t) !env;
+  env := push_var_decl (id,t) !env;
   mSGNL (hOV 0 [< 'sTR"variable"; 'sPC; print_id id; 
 		  'sPC; 'sTR"is declared"; 'fNL >])
 

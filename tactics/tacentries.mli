@@ -15,7 +15,7 @@ val v_symmetry      : tactic_arg list -> tactic
 val v_transitivity  : tactic_arg list -> tactic
 val v_intro         : tactic_arg list -> tactic
 val v_introsUntil   : tactic_arg list -> tactic
-(*val v_tclIDTAC      : tactic_arg list -> tactic*)
+(*i val v_tclIDTAC      : tactic_arg list -> tactic i*)
 val v_assumption    : tactic_arg list -> tactic
 val v_exact         : tactic_arg list -> tactic
 val v_reduce        : tactic_arg list -> tactic

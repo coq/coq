@@ -100,7 +100,7 @@ type 'ctxt reference =
 
 (* Concrete type for making pattern-matching. *)
 
-(* [constr array] is an instance matching definitional var_context in
+(* [constr array] is an instance matching definitional [var_context] in
    the same order (i.e. last argument first) *)
 type existential = int * constr array
 type constant = section_path * constr array

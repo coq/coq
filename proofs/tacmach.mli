@@ -34,7 +34,7 @@ val apply_sig_tac :
 val pf_concl              : goal sigma -> constr
 val pf_env                : goal sigma -> env
 val pf_hyps               : goal sigma -> var_context
-(*val pf_untyped_hyps       : goal sigma -> (identifier * constr) list*)
+(*i val pf_untyped_hyps       : goal sigma -> (identifier * constr) list i*)
 val pf_hyps_types         : goal sigma -> (identifier * constr) list
 val pf_nth_hyp_id         : goal sigma -> int -> identifier
 val pf_last_hyp           : goal sigma -> var_declaration

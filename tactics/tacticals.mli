@@ -37,8 +37,10 @@ val tclLAST_HYP      : (constr -> tactic) -> tactic
 val tclTRY_sign      : (constr -> tactic) -> var_context -> tactic
 val tclTRY_HYPS      : (constr -> tactic) -> tactic
 
-(*val dyn_tclIDTAC     : tactic_arg list -> tactic
-val dyn_tclFAIL      : tactic_arg list -> tactic*)
+(*i
+val dyn_tclIDTAC     : tactic_arg list -> tactic
+val dyn_tclFAIL      : tactic_arg list -> tactic
+i*)
 
 (*s Clause tacticals. *)
 
@@ -103,7 +105,7 @@ type branch_assumptions = {
   indargs   : identifier list} (* the inductive arguments *)
 
 val sort_of_goal      : goal sigma -> sorts
-(*val suff              : goal sigma -> constr -> string*)
+(*i val suff              : goal sigma -> constr -> string i*)
 
 val general_elim_then_using :
   constr ->  (inductive -> int -> bool list) -> 

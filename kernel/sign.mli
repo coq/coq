@@ -7,13 +7,15 @@ open Generic
 open Term
 (*i*)
 
-(*s Signatures of _ordered_ named variables, intended to be accessed by name *)
+(*s Signatures of ordered named variables, intended to be accessed by name *)
 
 type var_context = var_declaration list
 
-val add_var : identifier * constr option * typed_type -> var_context -> var_context
+val add_var : 
+  identifier * constr option * typed_type -> var_context -> var_context
 val add_var_decl : identifier * typed_type -> var_context -> var_context
-val add_var_def : identifier * constr * typed_type -> var_context ->var_context
+val add_var_def : 
+  identifier * constr * typed_type -> var_context -> var_context
 val lookup_id : identifier -> var_context -> constr option * typed_type
 val lookup_id_type : identifier -> var_context -> typed_type
 val lookup_id_value : identifier -> var_context -> constr option 

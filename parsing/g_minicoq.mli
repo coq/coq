@@ -3,7 +3,7 @@
 open Pp
 open Names
 open Term
-open Sign
+open Environ
 (*i*)
 
 val term : constr Grammar.Entry.e
@@ -19,4 +19,4 @@ type command =
 
 val command : command Grammar.Entry.e
 
-val pr_term : path_kind -> context -> constr -> std_ppcmds
+val pr_term : path_kind -> env -> constr -> std_ppcmds
