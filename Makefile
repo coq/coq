@@ -393,7 +393,7 @@ clean::
 # tests
 ###########################################################################
 
-check:: world
+check:: world bin/parser
 	cd test-suite; ./check -$(BEST) | tee check.log
 	if grep -F 'Error!' test-suite/check.log ; then false; fi
 
