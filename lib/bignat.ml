@@ -15,6 +15,7 @@ type bignat = int array
 let digits =            8
 let base =      100000000 (* let enough room for multiplication by 2 *)
 let base_div_2 = 50000000
+let base_to_string x = Printf.sprintf "%08d" x
 
 let of_string s =
   let a = Array.create (String.length s / digits + 1) 0 in
@@ -28,7 +29,10 @@ let of_string s =
 let rec to_string s =
   if s = [||] then "0" else
     if s.(0) = 0 then to_string (Array.sub s 1 (Array.length s - 1))
-    else String.concat "" (Array.to_list (Array.map string_of_int s))
+    else 
+      String.concat ""
+        ((string_of_int (s.(0)))
+        ::(List.tl (Array.to_list (Array.map base_to_string s))))
   
 let is_nonzero a =
   let b = ref false in Array.iter (fun x -> b := x <> 0 || !b) a; !b
