@@ -47,7 +47,7 @@ let merge_smap m1 m2 = Smap.fold (fun c cb m -> Smap.add c cb m) m1 m2
     case analysis*)
 let equality_hyp_string = "_eg_"
 
-(* bug de refine: on doit ssavoir sur quelle hypothese on se trouve. valeur par
+(* bug de refine: on doit ssavoir sur quelle hypothese on se trouve. valeur
    initiale au debut de l'appel a la fonction proofPrinc: 1. *)
 let nthhyp = ref 1
  (*debugging*)
@@ -59,7 +59,9 @@ let pr2constr = (fun c1 c2 -> prconstr c1; prstr " <---> "; prconstr c2)
 
 let constr_of c = 
  try Constrintern.interp_constr Evd.empty (Global.env()) c
- with _ -> failwith "constr_of: error when looking for a term.\n"
+ with _ -> 
+  msg (str "constr_of: error when looking for term: "); 
+  raise Not_found
 
 let rec collect_cases l =
  match l with
@@ -121,7 +123,6 @@ let rec eqs_of_beqs_named_aux s i l =
      ::eqs_of_beqs_named_aux s (i-1) l'
 
 
-(* List.map (function a,b,c -> ((id_of_string s), (mkEq a b c))) *)
 let eqs_of_beqs_named s l = eqs_of_beqs_named_aux s (List.length l) l
 
 let rec patternify ltypes c nme =
@@ -138,7 +139,7 @@ let rec apply_levars c lmetav =
      let levars,trm = apply_levars c lmetav' in
      let exkey = mknewexist() in
      ((exkey,typ)::levars),  applistc trm [mkEvar exkey]
-      (* EXPERIMENT le refine est plus long si je met un cast:
+      (* EXPERIMENT le refine est plus long si on met un cast:
          ((exkey,typ)::levars), mkCast ((applistc trm [mkEvar exkey]),typ) *)
 
 
@@ -210,12 +211,12 @@ and build_rel_map_list ltyp ltype_of_b =
   \item [lst_eqs] ([constr list]): liste d'équations engendrées au cours du parcours,
   cette liste grandit à  chaque case, et il faut lifter le tout à chaque binder.
   \item [lst_recs] ([constr list]): listes des appels  récursifs rencontrés jusque
-  là (dans les let in).
+  là.
   \end{itemize}
   
-  le Compteur nthhyp est utilisé pour contourner un bug de refine en beta expansant
-  lesmutual fixpt.  trous. On mets une variable à la place d'un ?, dont le debruijn
-  pointe sur la nieme hypothèse (nthhyp). nthhyp vaut donc initialement 1.
+  le Compteur nthhyp est utilisé pour contourner un comportement bizarre de refine en
+  beta expansant lesmutual fixpt. On mets une variable à la place d'un ?, dont le
+  debruijn pointe sur la nieme hypothèse (nthhyp). nthhyp vaut donc initialement 1.
 
   Cette fonction rends un nuplet de la forme:
 
@@ -236,6 +237,8 @@ and build_rel_map_list ltyp ltype_of_b =
   \item[|typ1;typ2...|] est un tableau contenant les conclusions respectives de chacun
   des prédicats mutuellement récursifs. Permet de finir la construction du principe.
   \end{itemize}
+
+  TODO: mettre tout ça dans un record bien propre.
 
   proofPrinc G=concl absG=absconcl t=mimick X=fonc Gamma1=lst_vars Gamma2=lst_eq
   Gamma3=lst_recs *) 
@@ -452,7 +455,6 @@ let invfun_proof fonc def_fonc gl_abstr pis env sigma =
   proofPrinc ~concl:pis ~absconcl:gl_abstr ~mimick:def_fonc ~env:env
    ~sigma:sigma fonc (0,0) [] [] []
  in
- (*   prconstr princ_proof; *)
  princ_proof,levar,lposeq,evararr,absc
   
 let rec iterintro i = 
@@ -483,16 +485,13 @@ let invfun_basic open_princ_proof_applied listargs_ids gl dorew lposeq =
     (* Refine on the right term (following the sheme of the
        given function) *)
     (fun gl -> 
-     (* 				let _ = prstr "avant refine \n" in *)
 				 refine open_princ_proof_applied  gl)
     (* Clear the hypothesis given as arguments of the tactic
        (because they are generalized) *)
-    (tclTHEN (fun gl -> 
-     (* let _ = prstr "apres refine \n" in *) (simpl_in_concl gl))
-				 (tclTRY (clear listargs_ids))))
+    (tclTHEN (fun gl -> (simpl_in_concl gl)) (tclTRY (clear listargs_ids))))
    (* Now we introduce the created hypothesis, and try rewrite on
       equalities due to case analysis *)
-   (fun gl -> (*let _ = prstr "avant rewrite \n" in*) (tclIDTAC gl)))
+   (fun gl ->  (tclIDTAC gl)))
 		(fun i gl -> 
    if not dorew then tclIDTAC gl
    else
@@ -536,13 +535,7 @@ let rec applistc_iota cstr lcstr env sigma =
 (*s Tactic that makes induction and case analysis following the shape
   of a function (idf) given with arguments (listargs) *)
 let invfun c l dorew gl = 
- (* match l with
-    | fonctac::listargs ->*)
- let listargs'' = l in
-
-(* try List.map constr_of_Constr l with _ -> failwith " constr_of_Constr " in *)
- 
- (* \begin{itemize}
+(* \begin{itemize}
     \item [fonc] = the constant corresponding to the function
     (necessary for equalities of the form [(f x1 x2 ...)=...] where
     [f] is the recursive function).
@@ -550,7 +543,7 @@ let invfun c l dorew gl =
     been expanded. *)
  let fonc, def_fonc' = interp_fonc_tacarg c gl in
  let def_fonc'',listargs' =  
-  applistc_iota def_fonc' listargs'' (pf_env gl) (project gl)  in
+  applistc_iota def_fonc' l (pf_env gl) (project gl)  in
  let def_fonc = expand_letins def_fonc'' in
  (* Generalize the goal. [[x1:T1][x2:T2]... g[arg1 <- x1 ...]]. *)
  let gl_abstr = (add_lambdas (pf_concl gl) gl listargs') in
@@ -574,12 +567,22 @@ let invfun c l dorew gl =
  let listargs_ids = List.map destVar (List.filter isVar listargs') in
  invfun_basic (mkevarmap_aux open_princ_proof_applied) listargs_ids gl dorew lposeq
 
-(*         | _ ->  failwith "invfun_proof _ " *)
+(* function must be a constant, all arguments must be given. *)
+let invfun_verif c l dorew gl =
+ if not (isConst c) then error "given function is not a constant"
+ else 
+   let x,_ = decompose_prod (pf_type_of gl c) in
+   if List.length x = List.length l then 
+     try invfun c l dorew gl
+     with _ -> 
+      error 
+      ( "Tactic went wrong for some reason. If the function you used to define\n"
+      ^ "the induction principle do not deal with dependent typed, please report.")
+   else error "wrong number of arguments for the function"
 
 
-(* new syntax, with or without parenthesis *)
 TACTIC EXTEND FunctionalInduction
-  [ "Functional" "Induction" constr(c)  ne_constr_list(l) ] -> [ invfun c l true ]
+  [ "Functional" "Induction" constr(c)  ne_constr_list(l) ] -> [ invfun_verif c l true ]
 END
 
 
@@ -591,13 +594,11 @@ let buildFunscheme fonc mutflist =
  let gl = mknewmeta() in
  let gl_app = applFull gl ftyp in
  let pis = prod_change_concl ftyp gl_app in
- (*   let gl_abstr = lam_change_concl ftyp gl_app in *)
  (* Here we call the function invfun_proof, that effectively 
     builds the scheme *)
  let princ_proof,levar,_,evararr,absc = 
   invfun_proof mutflist def_fonc [||] pis (Global.env()) Evd.empty in
  let lst_hyps = List.map snd levar in
- (*    let _ = prconstr princ_proof in *)
  let princ_proof_hyps = 
   patternify (List.rev levar) princ_proof (Name (id_of_string "Hyp"))  in
  let rec princ_replace_metas ev abs i t = 
@@ -609,29 +610,26 @@ let buildFunscheme fonc mutflist =
       prod_change_concl (lift 1 abs.(i)) mkProp,
       (substitterm 0 ev.(i) (mkRel (1)) (lift 1 t))))
  in
- (*   let _ = prconstr (princ_replace_metas evararr absc 0 princ_proof_hyps) in *)
  if Array.length evararr = 0 (* Is there a Fixpoint? *)
 	then (* No Fixpoint *)
 		 (mkLambda ((Name (id_of_string ("Q"))), 
 		 prod_change_concl ftyp mkProp,
    (substitterm 0 gl (mkRel 1) princ_proof_hyps)))
 	else
-(*   let _ = prstr "principe:\n" in
-   let _ = prconstr (princ_replace_metas evararr absc 0 princ_proof_hyps) in *)
    princ_replace_metas evararr absc 0 princ_proof_hyps
 
     
 (* Declaration of the functional scheme. *)
 let declareFunScheme f fname mutflist =
+ let scheme = buildFunscheme (constr_of f) 
+  (Array.of_list (List.map constr_of (f::mutflist))) in
  let ce = { 
-  const_entry_body = buildFunscheme (constr_of f)
-                      (Array.of_list (List.map constr_of (f::mutflist)));
+  const_entry_body = scheme;
   const_entry_type = None;
   const_entry_opaque = false } in
  let _= ignore (declare_constant fname (DefinitionEntry ce,IsDefinition)) in
  ()
 
-(* Commands and tactic declarations *)
 
 
 VERNAC COMMAND EXTEND FunctionalScheme
@@ -642,99 +640,13 @@ VERNAC COMMAND EXTEND FunctionalScheme
   -> [ declareFunScheme c na [] ]
 END
 
-
-(*s Command that generates the generic principle. *)
-(* FIXME:
-
-let _ = vinterp_add "FunctionElim"
- (function
-   | VARG_CONSTR f::VARG_IDENTIFIER fname:: l  -> 
-      let mutflist =
-       List.map
-        (function VARG_CONSTR i -> i
-          | _ -> bad_vernac_args "FunctionElim") l in
-      (fun _ -> (declareFunScheme f fname mutflist))
-   | _  -> bad_vernac_args "FunctionElim")
-
-
-
-
-let _ = add_tactic "Invfunproofsimpl" dyn_invfun_proof
-let _ = hide_tactic "Invfunproof" dyn_invfun_proofR
-*)
-
-(* iter a tactic *)
-let rec iter_tac_on_hyps tac l =
- match l with
-  | [] -> tclIDTAC
-  | h::l' -> 
-     tclTHEN (tac h) (iter_tac_on_hyps tac l')
-
-(* iter on all tactics for which filter is true *)
-let rec iter_tac_on_hyps_filter filter tac l =
- match l with
-  | [] -> tclIDTAC
-  | h::l' -> 
-     tclTHEN 
-     (if filter h then tac h 
-     else tclIDTAC)
-     (iter_tac_on_hyps_filter filter tac l')
-
-(* Definition of a filter (see above) that matches the prefix of hypothesis *)
-exception String_diff
-
-let string_match s1 s2 =
- let res = true in
- try 
-  for i = 0 to (String.length s1) - 1  do
-    if String.get s1 i <> String.get s2 i then raise String_diff
-  done;
-  true
- with Invalid_argument _ -> false
-  | String_diff -> false
-
-(* a simple filter: true if an hyp name prefix matches [s] *)
-let hyp_named s namedecl =
- let id,_,_ = namedecl in
- string_match s (string_of_id id)
  
-(* Rewrite Matching *)
-let rew_list id = 
- match id with 
-  | s,None,x -> tclTRY (rewriteLR (mkVar s))
-  | _ -> failwith "something went wrong during automatic rewriting."
-
-let iter_rew_on_matching_name_hyps s gl =
- let hypslist = pf_hyps gl in
- iter_tac_on_hyps_filter (hyp_named s) rew_list hypslist gl
-
-TACTIC EXTEND RewriteMatching
-  [ "Rewrite" "Matching" ident(s) ] 
- ->[iter_rew_on_matching_name_hyps (string_of_id s)]
-END
-(* End Rewrite Matching *)
-
-(* Clear (Try to) all matching hyps *)
-let clear_list id = 
- match id with
-  | (s,None,x) -> tclTRY (clear [s])
-  | _ -> failwith "something went wrong during automatic clear."
-
-let iter_clear_on_matching_name_hyps s gl =
- let hypslist = pf_hyps gl in
- iter_tac_on_hyps_filter (hyp_named s) clear_list hypslist gl
-
-TACTIC EXTEND ClearMatching
-  [ "Clear" "Matching" ident(s) ] 
- ->[iter_clear_on_matching_name_hyps (string_of_id s)]
-END
-(* end of clear matching*)
 
 
 
 (* 
 *** Local Variables: ***
-*** compile-command: "make" ***
+*** compile-command: "make -C ../.. contrib/funind/tacinv.cmo" ***
 *** tab-width: 1 ***
 *** tuareg-default-indent:1 ***
 *** tuareg-begin-indent:1 ***
