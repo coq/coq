@@ -72,6 +72,10 @@ Tactiques
 
 - Intro échoue si le nom d'hypothèse existe au lieu de mettre un avertissement
 
+Outils
+
+- do_Makefile s'appelle maintenant coq_makefile
+
 Utilisation générale
 
 - La plupart des erreurs de typage sont maintenant localisée dans le
