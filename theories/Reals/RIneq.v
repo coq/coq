@@ -400,8 +400,7 @@ Qed.
 
 (***********)
 Definition Rsqr:R->R:=[r:R]``r*r``.
-Notation "x ²" := (Rsqr x) (at level 2,left associativity)
-  V8only (at level 20, left associativity).
+Notation "x ²" := (Rsqr x) (at level 2,left associativity).
 
 (***********)
 Lemma Rsqr_O:(Rsqr ``0``)==``0``.

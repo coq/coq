@@ -14,7 +14,7 @@ Require Export Params.
 
 Parameter eqN:N->N->Prop.  
 
-(*i Infix 6 "=" eqN. i*)
+(*i Infix 6 "=" eqN V8only 50. i*)
 
 Grammar constr constr1 :=
 eq_impl [ constr0($c) "=" constr0($c2) ] -> [ (eqN $c $c2) ].

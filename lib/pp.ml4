@@ -101,15 +101,25 @@ let pifb () = [< 'Ppcmd_print_if_broken >]
 let ws n = [< 'Ppcmd_white_space n >]
 
 (* derived commands *)
+let mt () = [< >]
 let spc () = [< 'Ppcmd_print_break (1,0) >]
 let cut () = [< 'Ppcmd_print_break (0,0) >]
 let align () = [< 'Ppcmd_print_break (0,0) >]
 let int n = str (string_of_int n)
 let real r = str (string_of_float r)
 let bool b = str (string_of_bool b)
-let qstring s = str ("\""^(String.escaped s)^"\"")
+
+let rec escape_string s =
+  let rec escape_at s i =
+    if i<0 then s
+    else if s.[i] == '\\' || s.[i] == '"' then
+      let s' = String.sub s 0 i^"\\"^String.sub s i (String.length s - i) in
+      escape_at s' (i-1)
+    else escape_at s (i-1) in
+  escape_at s (String.length s - 1)
+
+let qstring s = str ("\""^(escape_string s)^"\"")
 let qs = qstring
-let mt () = [< >]
 
 (* boxing commands *)
 let h n s = [< 'Ppcmd_box(Pp_hbox n,s) >]

@@ -147,6 +147,9 @@ let pr_binder pr (nal,t) =
 let pr_binders pr bl =
   hv 0 (prlist_with_sep sep (pr_binder pr) bl)
 
+let pr_arg_binders pr bl =
+  if bl = [] then mt() else (spc() ++ pr_binders pr bl)
+
 let pr_global vars ref = pr_global_env vars ref
 
 let split_lambda = function
@@ -162,6 +165,158 @@ let split_product = function
   | CProdN (loc,(na::nal,t)::bl,c) -> (na,t,CProdN(loc,(nal,t)::bl,c))
   | _ -> anomaly "ill-formed fixpoint body"
 
+let rec extract_lam_binders c =
+  match c with
+      CLambdaN(loc,bl1,c') ->
+        let (bl,bd) = extract_lam_binders c' in
+        (bl1@bl, bd)
+    | _ -> ([],c)
+
+let rec extract_prod_binders c =
+  match c with
+      CProdN(loc,bl1,c') ->
+        let (bl,bd) = extract_prod_binders c' in
+        (bl1@bl, bd)
+    | _ -> ([],c)
+
+let rec check_same_pattern p1 p2 =
+  match p1, p2 with
+    | CPatAlias(_,a1,i1), CPatAlias(_,a2,i2) when i1=i2 ->
+        check_same_pattern a1 a2
+    | CPatCstr(_,c1,a1), CPatCstr(_,c2,a2) when c1=c2 ->
+        List.iter2 check_same_pattern a1 a2
+    | CPatAtom(_,r1), CPatAtom(_,r2) when r1=r2 -> ()
+    | CPatNumeral(_,i1), CPatNumeral(_,i2) when i1=i2 -> ()
+    | CPatDelimiters(_,s1,e1), CPatDelimiters(_,s2,e2) when s1=s2 ->
+        check_same_pattern e1 e2
+    | _ -> failwith "not same pattern"
+
+let check_same_ref r1 r2 =
+  match r1,r2 with
+  | Qualid(_,q1), Qualid(_,q2) when q1=q2 -> ()
+  | Ident(_,i1), Ident(_,i2) when i1=i2 -> ()
+  | _ -> failwith "not same ref"
+
+let rec check_same_type ty1 ty2 =
+  match ty1, ty2 with
+  | CRef r1, CRef r2 -> check_same_ref r1 r2
+  | CFix(_,(_,id1),fl1), CFix(_,(_,id2),fl2) when id1=id2 ->
+      List.iter2 (fun (id1,i1,a1,b1) (id2,i2,a2,b2) ->
+        if id1<>id2 || i1<>i2 then failwith "not same fix";
+        check_same_type a1 a2;
+        check_same_type b1 b2)
+        fl1 fl2
+  | CCoFix(_,(_,id1),fl1), CCoFix(_,(_,id2),fl2) when id1=id2 ->
+      List.iter2 (fun (id1,a1,b1) (id2,a2,b2) ->
+        if id1<>id2 then failwith "not same fix";
+        check_same_type a1 a2;
+        check_same_type b1 b2)
+        fl1 fl2
+  | CArrow(_,a1,b1), CArrow(_,a2,b2) ->
+      check_same_type a1 a2;
+      check_same_type b1 b2
+  | CProdN(_,bl1,a1), CProdN(_,bl2,a2) ->
+      List.iter2 check_same_binder bl1 bl2;
+      check_same_type a1 a2
+  | CLambdaN(_,bl1,a1), CLambdaN(_,bl2,a2) ->
+      List.iter2 check_same_binder bl1 bl2;
+      check_same_type a1 a2
+  | CLetIn(_,(_,na1),a1,b1), CLetIn(_,(_,na2),a2,b2) when na1=na2 ->
+      check_same_type a1 a2;
+      check_same_type b1 b2
+  | CAppExpl(_,r1,al1), CAppExpl(_,r2,al2) when r1=r2 ->
+      List.iter2 check_same_type al1 al2
+  | CApp(_,e1,al1), CApp(_,e2,al2) ->
+      check_same_type e1 e2;
+      List.iter2 (fun (a1,e1) (a2,e2) ->
+                    if e1<>e2 then failwith "not same expl";
+                    check_same_type a1 a2) al1 al2
+  | CCases(_,_,a1,brl1), CCases(_,_,a2,brl2) ->
+      List.iter2 check_same_type a1 a2;
+      List.iter2 (fun (_,pl1,r1) (_,pl2,r2) ->
+        List.iter2 check_same_pattern pl1 pl2;
+        check_same_type r1 r2) brl1 brl2
+  | COrderedCase(_,_,_,a1,bl1), COrderedCase(_,_,_,a2,bl2) ->
+      check_same_type a1 a2;
+      List.iter2 check_same_type bl1 bl2
+  | CHole _, CHole _ -> ()
+  | CMeta(_,i1), CMeta(_,i2) when i1=i2 -> ()
+  | CSort(_,s1), CSort(_,s2) when s1=s2 -> ()
+  | CCast(_,a1,b1), CCast(_,a2,b2) ->
+      check_same_type a1 a2;
+      check_same_type b1 b2
+  | CNotation(_,n1,e1), CNotation(_,n2,e2) when n1=n2 ->
+      List.iter2 check_same_type e1 e2
+  | CNumeral(_,i1), CNumeral(_,i2) when i1=i2 -> ()
+  | CDelimiters(_,s1,e1), CDelimiters(_,s2,e2) when s1=s2 ->
+      check_same_type e1 e2
+  | _ when ty1=ty2 -> ()
+  | _ -> failwith "not same type"
+
+and check_same_binder (nal1,e1) (nal2,e2) =
+  List.iter2 (fun (_,na1) (_,na2) ->
+    if na1<>na2 then failwith "not same name") nal1 nal2;
+  check_same_type e1 e2
+
+let merge_binders (na1,ty1) (na2,ty2) =
+  let na =
+    match snd na1, snd na2 with
+        Anonymous, Name id -> na2
+      | Name id, Anonymous -> na1
+      | Anonymous, Anonymous -> na1
+      | Name id1, Name id2 ->
+          if id1 <> id2 then failwith "not same name" else na1 in
+  let ty =
+    match ty1, ty2 with
+        CHole _, _ -> ty2
+      | _, CHole _ -> ty1
+      | _ ->
+          check_same_type ty1 ty2;
+          ty2 in
+  ([na],ty)
+            
+let rec strip_domain bvar c =
+  match c with
+    | CArrow(loc,a,b) ->
+        (merge_binders bvar ((dummy_loc,Anonymous),a), b)
+    | CProdN(loc,[([na],ty)],c') ->
+        (merge_binders bvar (na,ty), c')
+    | CProdN(loc,([na],ty)::bl,c') ->
+        (merge_binders bvar (na,ty), CProdN(loc,bl,c'))
+    | CProdN(loc,(na::nal,ty)::bl,c') ->
+        (merge_binders bvar (na,ty), CProdN(loc,(nal,ty)::bl,c'))
+    | _ -> failwith "not a product"
+
+(* Note: binder sharing is lost *)
+let rec strip_domains (nal,ty) c =
+  match nal with
+      [] -> assert false
+    | [na] ->
+        let bnd, c' = strip_domain (na,ty) c in
+        ([bnd],None,c')
+    | na::nal ->
+        let bnd, c1 = strip_domain (na,ty) c in
+        (try
+          let bl, rest, c2 = strip_domains (nal,ty) c1 in
+          (bnd::bl, rest, c2)
+        with Failure _ -> ([bnd],Some (nal,ty), c1))
+
+let rec extract_def_binders c ty =
+  match c with
+    | CLambdaN(loc,bvar::lams,b) ->
+        (try
+          let bvar', rest, ty' = strip_domains bvar ty in
+          let c' =
+            match rest, lams with
+                None,[] -> b
+              | None, _ -> CLambdaN(loc,lams,b)
+              | Some bvar,_ -> CLambdaN(loc,bvar::lams,b) in
+          let (bl,c2,ty2) = extract_def_binders c' ty' in
+          (bvar'@bl, c2, ty2)
+        with Failure _ ->
+          ([],c,ty))
+    | _ -> ([],c,ty)
+
 let rec split_fix n typ def =
   if n = 0 then ([],typ,def)
   else
@@ -174,8 +329,10 @@ let pr_recursive_decl pr id b t c =
   pr_id id ++ b ++ pr_opt_type_spc pr t ++ str " :=" ++
   brk(1,2) ++ pr ltop c
 
-let pr_fixdecl pr (id,n,t,c) =
-  let (bl,t,c) = split_fix (n+1) t c in
+let pr_fixdecl pr (id,n,t0,c0) =
+  let (bl,t,c) = extract_def_binders t0 c0 in
+  let (bl,t,c) =
+    if List.length bl <= n then split_fix (n+1) t0 c0 else (bl,t,c) in
   let annot =
     let ids = List.flatten (List.map fst bl) in
     if List.length ids > 1 then 
@@ -193,10 +350,6 @@ let pr_recursive pr_decl id = function
       prlist_with_sep (fun () -> fnl() ++ str "with ") pr_decl dl ++
       fnl() ++ str "for " ++ pr_id id
 
-let rec pr_arrow pr = function
-  | CArrow (_,a,b) -> pr (larrow,L) a ++ str " ->" ++ brk(1,0) ++ pr_arrow pr b
-  | a -> pr (-larrow,E) a
-
 let pr_annotation pr po =
   match po with
       None -> mt()
@@ -211,18 +364,24 @@ let rec pr inherited a =
   | CCoFix (_,id,cofix) ->
       hov 0 (str "cofix " ++ pr_recursive (pr_cofixdecl pr) (snd id) cofix),
       lfix
-  | CArrow _ -> hv 0 (pr_arrow pr a), larrow
-  | CProdN (_,bl,a) ->
-      hv 1 (
-	str "!" ++ pr_binders pr bl ++ str "." ++ spc()  ++ pr ltop a), lprod
-  | CLambdaN (_,bl,a) ->
+  | CArrow (_,a,b) ->
+      hov 0 (pr (larrow,L) a ++ str " ->" ++ brk(1,0) ++ pr (-larrow,E) b),
+      larrow
+  | CProdN _ ->
+      let (bl,a) = extract_prod_binders a in
+      hv 0 (str "!" ++ pr_binders pr bl ++ str "." ++ spc() ++ pr ltop a),
+      lprod
+  | CLambdaN _ ->
+      let (bl,a) = extract_lam_binders a in
       hov 2 (
 	str "fun" ++ spc () ++ pr_binders pr bl ++
         str " =>" ++ spc() ++ pr ltop a),
       llambda
   | CLetIn (_,x,a,b) ->
+      let (bl,a) = extract_lam_binders a in
       hv 0 (
-        hov 2 (str "let " ++ pr_name (snd x) ++ str " :=" ++ spc() ++
+        hov 2 (str "let " ++ pr_located pr_name x ++
+               pr_arg_binders pr bl ++ str " :=" ++ spc() ++
                pr ltop a ++ str " in") ++
         spc () ++ pr ltop b),
       lletin
@@ -284,18 +443,6 @@ let rec pr inherited a =
   in
   if prec_less prec inherited then strm
   else str"(" ++ strm ++ str")"
-
-
-let rec fact_constr c =
-  match c with
-      CLambdaN(loc,bl1,CLambdaN(_,bl2,b)) ->
-        fact_constr (CLambdaN(loc,bl1@bl2,b))
-    | CProdN(loc,bl1,CProdN(_,bl2,b)) ->
-        fact_constr (CProdN(loc,bl1@bl2,b))
-    | _ -> map_constr_expr_with_binders
-        (fun _ -> fact_constr) (fun _ _ -> ()) () c
-let pr l c = pr l (fact_constr c)
-
 
 let transf env c =
   if Options.do_translate() then

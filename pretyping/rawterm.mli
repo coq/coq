@@ -27,6 +27,8 @@ type cases_pattern =
   | PatVar of loc * name
   | PatCstr of loc * constructor * cases_pattern list * name
 
+val pattern_loc : cases_pattern -> loc
+
 type rawsort = RProp of Term.contents | RType of Univ.universe option
 
 type fix_kind = RFix of (int array * int) | RCoFix of int
@@ -83,6 +85,8 @@ type rawconstr =
    - boolean in POldCase means it is recursive
    - option in PHole tell if the "?" was apparent or has been implicitely added
 i*)
+
+val loc : rawconstr -> loc
 
 val map_rawconstr : (rawconstr -> rawconstr) -> rawconstr -> rawconstr
 

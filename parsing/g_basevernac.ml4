@@ -207,9 +207,16 @@ GEXTEND Gram
       | IDENT "outside"; l = LIST1 global -> SearchOutside l
       | -> SearchOutside [] ] ]
   ;
-END;
+END
 
 (* Grammar extensions *)
+
+(* automatic translation of levels *)
+let adapt_level n = n*10
+let map_modl = function
+  | SetItemLevel(ids,n) -> SetItemLevel(ids,adapt_level n)
+  | SetLevel n -> SetLevel(adapt_level n)
+  | m -> m
 	  
 GEXTEND Gram
   GLOBAL: syntax;
@@ -251,25 +258,24 @@ GEXTEND Gram
          p = global;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc];
-         v8 = OPT[IDENT "V8only";
-                  op8=OPT STRING;
-                  n8=OPT natural;
-                  mv8=OPT["("; l = LIST1 syntax_modifier SEP ","; ")" -> l] ->
-                    (op8,n8,mv8) ] ->
+         (op8,nv8,mv8) =
+              [IDENT "V8only";
+               op8=OPT STRING;
+               n8=OPT natural;
+               mv8=OPT["("; l = LIST1 syntax_modifier SEP ","; ")" -> l] ->
+                    (op8,n8,mv8)
+              | -> (None,None,None)] ->
            let (ai,ni,b) = Metasyntax.interp_infix_modifiers a n modl in
-           let v8 =
-             let (op8,nv8,mv8) =
-               match v8 with
-                   Some (op8,nv8,mv8) ->
-                     let op8 = match op8 with Some s -> s | _ -> op in
-                     let nv8 = match nv8 with Some n -> Some n
-                       | _ -> Util.option_app (( * ) 10) n in
-                     let mv8 = match mv8 with Some m -> m | _ -> modl in
-                     (op8,nv8,mv8)
-                 | None ->  (op,Util.option_app(( * ) 10) n, modl) in
-             let (a8,n8,_) =
-               Metasyntax.interp_infix_modifiers a nv8 mv8 in
-             Some(a8,n8,op8) in
+           let op8 = match op8 with Some s -> s | _ -> op in
+           let nv8 = match nv8 with
+               Some n -> Some n
+             | _ -> Util.option_app adapt_level n in
+           let mv8 = match mv8 with
+               Some m -> m
+             | _ -> List.map map_modl modl in
+           let (a8,n8,_) =
+             Metasyntax.interp_infix_modifiers a nv8 mv8 in
+           let v8 = Some(a8,n8,op8) in
            VernacInfix (ai,ni,op,p,b,v8,sc)
      | IDENT "Distfix"; a = entry_prec; n = natural; s = STRING; p = global;
 	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacDistfix (a,n,s,p,sc)
@@ -278,14 +284,17 @@ GEXTEND Gram
      | IDENT "Notation"; s = STRING; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ];
-         v8 = OPT[IDENT "V8only";
-                  s8=OPT STRING;
-                  mv8=["(";mv8=LIST1 syntax_modifier SEP ","; ")" -> mv8
-                      | ->[] ] -> (s8,mv8) ] ->
-           let v8 = Util.option_app (fun (s8,mv8) ->
-             let s8 = match s8 with Some s -> s | _ -> s in
-             (s8,mv8)) v8 in
-           VernacNotation (s,c,modl,v8,sc)
+         (s8,mv8) =
+             [IDENT "V8only";
+              s8=OPT STRING;
+              mv8=OPT["(";mv8=LIST1 syntax_modifier SEP ","; ")" -> mv8] ->
+                (s8,mv8)
+             | -> (None,None)] ->
+               let s8 = match s8 with Some s -> s | _ -> s in
+               let mv8 = match mv8 with
+                   Some mv8 -> mv8
+                 | _ -> List.map map_modl modl in
+               VernacNotation (s,c,modl,Some(s8,mv8),sc)
 
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)

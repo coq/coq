@@ -12,10 +12,8 @@ Require Logic_Type.
 
 (** Symbolic notations for things in [Logic_type.v] *)
 
-Notation "x == y"  := (eqT ? x y)       (at level 5, no associativity)
-  V8only (at level 50, no associativity).
-Notation "x === y" := (identityT ? x y) (at level 5, no associativity)
-  V8only (at level 50, no associativity).
+Notation "x == y"  := (eqT ? x y)       (at level 5, no associativity).
+Notation "x === y" := (identityT ? x y) (at level 5, no associativity).
 
 (* Order is important to give printing priority to fully typed ALL and EX *)
 

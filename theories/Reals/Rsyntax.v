@@ -204,14 +204,10 @@ Delimits Scope R_scope with R.
 (* Warning: this hides sum and prod and breaks sumor symbolic notation *)
 Open Scope R_scope.
 
-Infix "<=" Rle (at level 5, no associativity) : R_scope
-  V8only (at level 50, no associativity).
-Infix "<"  Rlt (at level 5, no associativity) : R_scope
-  V8only (at level 50, no associativity).
-Infix ">=" Rge (at level 5, no associativity) : R_scope
-  V8only (at level 50, no associativity).
-Infix ">" Rgt (at level 5, no associativity) : R_scope
-  V8only (at level 50, no associativity).
+Infix "<=" Rle (at level 5, no associativity) : R_scope.
+Infix "<"  Rlt (at level 5, no associativity) : R_scope.
+Infix ">=" Rge (at level 5, no associativity) : R_scope.
+Infix ">" Rgt (at level 5, no associativity) : R_scope.
 Infix "+" Rplus (at level 4) : R_scope
   V8only (at level 40, left associativity).
 Infix "-" Rminus (at level 4) : R_scope
@@ -237,8 +233,7 @@ Notation  "x  <  y  <  z"  := (Rlt x y)/\(Rlt y z)
 Notation  "x  <  y  <=  z" := (Rlt x y)/\(Rle y z)
   (at level 5, y at level 4) : R_scope
   V8only (at level 50, y at level 49, no associativity).
-Notation "x <> y" := ~(eqT R x y) (at level 5) : R_scope
-  V8only (at level 50).
+Notation "x <> y" := ~(eqT R x y) (at level 5) : R_scope.
 Notation "/ x" := (Rinv x) (at level 0): R_scope
   V8only (at level 30, left associativity).
 

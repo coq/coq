@@ -1020,8 +1020,7 @@ Fixpoint times [x:positive] : positive -> positive:=
   | xH => y
   end.
 
-Infix LEFTA 3 "*" times : positive_scope
-  V8only 30.
+Infix LEFTA 3 "*" times : positive_scope.
 
 (** Correctness of multiplication on positive *)
 Theorem times_convert :
@@ -1066,8 +1065,7 @@ Definition Zmult := [x,y:Z]
              end
     end.
 
-Infix LEFTA 3 "*" Zmult : Z_scope
-  V8only 30.
+Infix LEFTA 3 "*" Zmult : Z_scope.
 
 Open Scope Z_scope.
 

@@ -188,17 +188,38 @@ GEXTEND Gram
   ;
   (* (co)-fixpoints *)
   rec_definition:
-    [ [ id = base_ident; bl = LIST1 binder_nodef; ":"; type_ = lconstr;
-        ":="; def = lconstr ->
-          let ni = List.length (List.flatten (List.map fst bl)) - 1 in
+    [ [ id = base_ident; bl = LIST1 binder_nodef;
+        annot = OPT rec_annotation; type_ = type_cstr; ":="; def = lconstr ->
+          let names = List.map snd (List.flatten (List.map fst bl)) in
+          let ni =
+            match annot with
+                Some id ->
+                  (try list_index (Name id) names - 1
+                  with Not_found ->  Util.user_err_loc
+                      (loc,"Fixpoint",
+                       Pp.str "No argument named " ++ Nameops.pr_id id))
+              | None -> 
+                  if List.length names > 1 then
+                    Util.user_err_loc
+                      (loc,"Fixpoint",
+                       Pp.str "the recursive argument needs to be specified");
+                  0 in
           let loc0 = fst (List.hd (fst (List.hd bl))) in
           let loc1 = join_loc loc0 (constr_loc type_) in
           let loc2 = join_loc loc0 (constr_loc def) in
 	  (id, ni, CProdN (loc1,bl,type_), CLambdaN (loc2,bl,def)) ] ]
   ;
   corec_definition:
-    [ [ id = base_ident; ":"; c = lconstr; ":="; def = lconstr ->
-          (id,c,def) ] ]
+    [ [ id = base_ident; bl = LIST0 binder_nodef; c = type_cstr; ":=";
+        def = lconstr ->
+          (id,CProdN(loc,bl,c),CLambdaN(loc,bl,def)) ] ]
+  ;
+  rec_annotation:
+    [ [ "{"; "struct"; id=IDENT; "}" -> id_of_string id ] ]
+  ;
+  type_cstr:
+    [ [ ":"; c=lconstr -> c 
+      | -> CHole loc ] ]
   ;
   (* Inductive schemes *)
   scheme:

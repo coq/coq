@@ -249,7 +249,7 @@ let rec comment bp = parser
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_comment
   | [< '_ as z; s >] -> 
 	(match z with
-	| '\n' | '\t' -> add_comment (); add_comment_pp (fnl ())
+	| '\n' -> add_comment (); add_comment_pp (fnl ())
 	| _ -> add_string (String.make 1 z)); comment bp s 
 
 (* Parse a special token, using the [token_tree] *)

@@ -20,10 +20,18 @@ open Topconstr
 open Names
 open Util
 
-val prec_less : int -> int * Ppextend.parenRelation -> bool
+val extract_lam_binders :
+  constr_expr -> (name located list * constr_expr) list * constr_expr
+val extract_prod_binders :
+  constr_expr -> (name located list * constr_expr) list * constr_expr
+val extract_def_binders :
+  constr_expr -> constr_expr ->
+  (name located list * constr_expr) list *  constr_expr * constr_expr
+val split_fix :
+  int -> constr_expr -> constr_expr -> 
+  (name located list * constr_expr) list *  constr_expr * constr_expr
 
-val split_fix : int -> constr_expr -> constr_expr ->
-  (name located list * constr_expr) list * constr_expr * constr_expr
+val prec_less : int -> int * Ppextend.parenRelation -> bool
  
 val pr_global : Idset.t -> global_reference -> std_ppcmds
  

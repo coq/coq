@@ -260,8 +260,7 @@ Notation  "x = y = z" := x=y/\y=z
   (at level 5, y at level 4) : Z_scope
   V8only (at level 50, y at level 49).
 
-Notation "x <> y" := ~(eq Z x y) (at level 5, no associativity) : Z_scope
-  V8only (at level 50, no associativity).
+Notation "x <> y" := ~(eq Z x y) (at level 5, no associativity) : Z_scope.
 (* Notation "| x |" (Zabs x) : Z_scope.(* "|" conflicts with THENS *)*)
 
 V7only[

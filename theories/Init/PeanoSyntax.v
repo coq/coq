@@ -25,11 +25,11 @@ Module nat_scope.
 (* Warning: this hides sum and prod and breaks sumor symbolic notation *)
 Open Scope nat_scope.
 
-Infix 4 "+" plus : nat_scope  V8only 40.
-Infix 3 "*" mult : nat_scope  V8only 30.
-Infix NONA 5 "<=" le : nat_scope V8only 50.
-Infix NONA 5 "<" lt : nat_scope V8only 50.
-Infix NONA 5 ">=" ge : nat_scope V8only 50.
-Infix NONA 5 ">" gt : nat_scope V8only 50.
+Infix 4 "+" plus : nat_scope V8only (left associativity).
+Infix 3 "*" mult : nat_scope V8only (left associativity).
+Infix NONA 5 "<=" le : nat_scope.
+Infix NONA 5 "<" lt : nat_scope.
+Infix NONA 5 ">=" ge : nat_scope.
+Infix NONA 5 ">" gt : nat_scope.
 
 End nat_scope.

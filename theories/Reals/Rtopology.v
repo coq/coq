@@ -91,8 +91,7 @@ Qed.
 
 Definition eq_Dom [D1,D2:R->Prop] : Prop := (included D1 D2)/\(included D2 D1).
 
-Infix "=_D" eq_Dom (at level 5, no associativity)
-  V8only (at level 50, no associativity).
+Infix "=_D" eq_Dom (at level 5, no associativity).
 
 Lemma open_set_P1 : (D:R->Prop) (open_set D) <-> D =_D (interior D).
 Intro; Split.

@@ -27,6 +27,10 @@ type cases_pattern =
   | PatVar of loc * name
   | PatCstr of loc * constructor * cases_pattern list * name
 
+let pattern_loc = function
+    PatVar(loc,_) -> loc
+  | PatCstr(loc,_,_,_) -> loc
+
 type rawsort = RProp of Term.contents | RType of Univ.universe option
 
 type fix_kind = RFix of (int array * int) | RCoFix of int
@@ -82,6 +86,23 @@ type rawconstr =
 
    - boolean in POldCase means it is recursive
 i*)
+
+let loc = function
+  | RVar (loc,_) -> loc
+  | RApp (loc,_,_) -> loc
+  | RLambda (loc,_,_,_) -> loc
+  | RProd (loc,_,_,_) -> loc
+  | RLetIn (loc,_,_,_) -> loc
+  | RCases (loc,_,_,_) -> loc
+  | ROrderedCase (loc,_,_,_,_) -> loc
+  | RRec (loc,_,_,_,_) -> loc
+  | RCast (loc,_,_) -> loc
+  | RSort (loc,_) -> loc
+  | RHole (loc,_) -> loc
+  | RRef (loc,_) -> loc
+  | REvar (loc,_) -> loc
+  | RMeta (loc,_) -> loc
+  | RDynamic (loc,_) -> loc
 
 let map_rawconstr f = function
   | RVar (loc,id) -> RVar (loc,id)

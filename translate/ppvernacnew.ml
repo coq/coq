@@ -189,6 +189,10 @@ let rec pr_module_type pr_c = function
       pr_module_type pr_c mty ++ spc() ++ str" with" ++
       pr_with_declaration pr_c decl
 
+let pr_of_module_type prc (mty,b) =
+  str (if b then ":" else "<:") ++
+  pr_module_type prc mty
+
 let pr_module_vardecls pr_c (l,mty) =
   prlist
     (fun id ->
@@ -203,7 +207,10 @@ let pr_module_binders_list l pr_c = pr_module_binders l pr_c
 
 let rec pr_module_expr = function
   | CMEident qid -> pr_located pr_qualid qid
-  | CMEapply (me1,me2) -> pr_module_expr me1 ++ spc() ++ pr_module_expr me2
+  | CMEapply (me1,(CMEident _ as me2)) ->
+      pr_module_expr me1 ++ spc() ++ pr_module_expr me2
+  | CMEapply (me1,me2) ->
+      pr_module_expr me1 ++ spc() ++ str"(" ++ pr_module_expr me2 ++ str")"
 
 let pr_opt_casted_constr pr_c = function
   | CCast (loc,c,t) -> pr_c c ++ str":" ++ pr_c t
@@ -440,17 +447,18 @@ let rec pr_vernac = function
             str" in" ++ spc() in
       let pr_def_body = function
         | DefineBody (bl,red,c,d) ->
-            let (binds,body) = match c with
-              | CLambdaN (_,bl2,a) when d=None ->
-                  (pr_ne_sep spc (pr_vbinders pr_lconstr) bl ++
-                   spc() ++ pr_binders bl2, a)
-              | _ -> (pr_ne_sep spc (pr_vbinders pr_lconstr) bl, c) in
-            let ty =
-              match d with
-                | None -> mt()
-                | Some t -> spc() ++ str":" ++ pr_lconstrarg t in
+            let (bl2,body,ty) = match d with
+              | None ->
+                  let bl2,body = extract_lam_binders c in
+                  (bl2,body,mt())
+              | Some ty ->
+                  let bl2,body,ty = extract_def_binders c ty in
+                  (bl2,body, spc() ++ str":" ++ pr_lconstrarg ty) in
+            let bindings =
+              pr_ne_sep spc (pr_vbinders pr_lconstr) bl ++
+              if bl2 = [] then mt() else (spc() ++ pr_binders bl2) in
             let ppred = Some (pr_reduce red ++ pr_lconstr body) in
-            (binds,ty,ppred)
+            (bindings,ty,ppred)
         | ProveBody (bl,t) ->
             (pr_vbinders pr_lconstr bl, str" :" ++ pr_lconstrarg t, None) in
       let (binds,typ,c) = pr_def_body b in
@@ -475,8 +483,9 @@ let rec pr_vernac = function
         (pr_assumption_token stre ++ spc() ++ pr_ne_params_list pr_lconstr l)
   | VernacInductive (f,l) ->
       let pr_constructor (coe,(id,c)) =
-        pr_id id ++ spc() ++ (if coe then str":>" else str":")
-        ++ pr_lconstrarg c in
+        hov 2 (pr_id id ++ str" " ++
+               (if coe then str":>" else str":") ++
+               pr_lconstrarg c) in
       let pr_constructor_list l = match l with
         | [] -> mt()
         | _ ->
@@ -490,16 +499,28 @@ let rec pr_vernac = function
         prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_oneind l)
   | VernacFixpoint recs ->
       let pr_onerec = function
-        | (id,_,CProdN(_,bl,type_),CLambdaN(_,_,def)) ->
-            pr_id id ++ spc() ++ pr_binders bl ++ spc()
+        | (id,n,type_0,def0) ->
+            let (bl,def,type_) = extract_def_binders def0 type_0 in
+            let ids = List.flatten (List.map fst bl) in
+            let (bl,def,type_) =
+              if List.length ids <= n then split_fix (n+1) def0 type_0
+              else (bl,def,type_) in
+            let ids = List.flatten (List.map fst bl) in
+            let annot =
+              if List.length ids > 1 then 
+                spc() ++ str "{struct " ++
+                pr_name (snd (List.nth ids n)) ++ str"}"
+              else mt() in
+            pr_id id ++ str" " ++ pr_binders bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_lconstr c) type_
-            ++ str" :=" ++ brk(1,1) ++ pr_lconstr def 
-        | _ -> mt() in
+            ++ str" :=" ++ brk(1,1) ++ pr_lconstr def in
       hov 1 (str"Fixpoint" ++ spc() ++
       prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onerec recs)  
   | VernacCoFixpoint corecs ->
       let pr_onecorec (id,c,def) =
-        pr_id id ++ spc() ++ str":" ++ pr_lconstrarg c ++
+        let (bl,def,c) = extract_def_binders def c in
+        pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
+        pr_lconstrarg c ++
         str" :=" ++ brk(1,1) ++ pr_lconstr def in
       hov 1 (str"CoFixpoint" ++ spc() ++
       prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onecorec corecs)  
@@ -549,14 +570,20 @@ let rec pr_vernac = function
   | VernacIdentityCoercion (s,id,c1,c2) -> hov 1 (str"Identity Coercion" ++ (match s with | Decl_kinds.Local -> spc() ++ str"Local" ++ spc() | Decl_kinds.Global -> spc()) ++ pr_id id ++ spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++ spc() ++ str">->" ++ spc() ++ pr_class_rawexpr c2)
 
   (* Modules and Module Types *)
-  | VernacDeclareModule (id,l,m1,m2) -> hov 1 (str"Module" ++ spc() ++ pr_id id ++ spc() ++ pr_module_binders_list l pr_lconstr ++ (match m1 with
-    | None -> mt()
-    | Some n1 -> str" : " ++ str"TODO" (* pr_module_type pr_constr n1 *) ) ++ (match m2 with
-      | None -> mt()
-      | Some n2 -> str" := " ++ pr_module_expr n2))
-  | VernacDeclareModuleType (id,l,m) -> hov 1 (str"Module Type" ++ spc() ++ pr_id id ++ spc() ++ pr_module_binders_list l pr_lconstr ++ (match m with
-    | None -> mt()
-    | Some n -> str" := " ++ pr_module_type pr_lconstr n))
+  | VernacDefineModule (m,bl,ty,bd) ->
+      hov 2 (str"Module " ++ pr_id m ++ spc() ++
+             pr_module_binders_list bl pr_lconstr ++
+             pr_opt (pr_of_module_type pr_lconstr) ty ++
+             pr_opt (fun me -> str ":= " ++ pr_module_expr me) bd)
+  | VernacDeclareModule (id,l,m1,m2) ->
+      hov 2 (str"Declare Module " ++ pr_id id ++ spc() ++
+             pr_module_binders_list l pr_lconstr ++
+             pr_opt (pr_of_module_type pr_lconstr) m1 ++
+             pr_opt (fun me -> str ":= " ++ pr_module_expr me) m2)
+  | VernacDeclareModuleType (id,l,m) ->
+      hov 2 (str"Module Type " ++ pr_id id ++ spc() ++
+             pr_module_binders_list l pr_lconstr ++
+             pr_opt (fun mt -> str ":= " ++ pr_module_type pr_lconstr mt) m)
 
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
@@ -692,13 +719,6 @@ let rec pr_vernac = function
   | VernacV7only _ -> mt()
   | VernacV8only com -> pr_vernac com
   | VernacProof te -> str "Proof with" ++ spc() ++ pr_raw_tactic te 
-  | VernacDefineModule (m,bl,ty,bd) ->
-      hov 2 (str"Module " ++ pr_id m ++
-      pr_module_binders bl pr_lconstr ++
-      (match ty with
-          None -> mt()
-        | Some(t,_) -> pr_module_type pr_lconstr t) ++
-      pr_opt pr_module_expr bd)
 
 and pr_extend s cl =
   let pr_arg a =
