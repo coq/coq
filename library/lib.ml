@@ -564,3 +564,15 @@ let library_part ref =
       else
 	(* Theorem/Lemma outside its outer section of definition *)
 	dir
+
+
+let rec file_of_mp = function
+  | MPfile dir -> Some dir
+  | MPself _ -> Some (library_dp ())
+  | MPbound _ -> None
+  | MPdot (mp,_) -> file_of_mp mp
+
+let file_part = function
+  | VarRef id -> anomaly "TODO";
+  | ConstRef kn | ConstructRef ((kn,_),_) | IndRef (kn,_) -> 
+      file_of_mp (modpath kn)

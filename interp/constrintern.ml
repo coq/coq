@@ -154,8 +154,10 @@ let add_glob loc ref =
   i*)
   let sp = Nametab.sp_of_global ref in
   let id = let _,id = repr_path sp in string_of_id id in
-  let dp = string_of_dirpath (Lib.library_part ref) in
-  dump_string (Printf.sprintf "R%d %s.%s\n" (fst (unloc loc)) dp id)
+  let dir = Lib.file_part ref in
+  if dir <> None then
+    let dp = string_of_dirpath (out_some dir) in
+    dump_string (Printf.sprintf "R%d %s.%s\n" (fst (unloc loc)) dp id)
 
 let loc_of_notation f loc args ntn =
   if args=[] or ntn.[0] <> '_' then fst (unloc loc)
