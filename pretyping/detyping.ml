@@ -18,7 +18,6 @@ open Inductive
 open Inductiveops
 open Environ
 open Sign
-open Declare
 open Rawterm
 open Nameops
 open Termops

@@ -18,7 +18,6 @@ open Declarations
 open Entries
 open Environ
 open Evd
-open Declare
 open Typing
 open Tacmach
 open Proof_trees

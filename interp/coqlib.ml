@@ -12,7 +12,6 @@ open Util
 open Names
 open Term
 open Libnames
-open Declare
 open Pattern
 open Nametab
 
