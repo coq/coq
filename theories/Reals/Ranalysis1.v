@@ -34,7 +34,7 @@ Notation "- x" := (opp_fct x) (at level 0) : Rfun_scope
 Infix "*" mult_fct (at level 3, left associativity) : Rfun_scope.
 Infix "-" minus_fct (at level 4, left associativity) : Rfun_scope.
 Infix "/" div_fct (at level 3, left associativity) : Rfun_scope.
-Notation "f1 'o' f2" := (comp f1 f2) (at level 2, right associativity)
+Notation Local "f1 'o' f2" := (comp f1 f2) (at level 2, right associativity)
   : Rfun_scope.
 Notation "/ x" := (inv_fct x) (at level 0): Rfun_scope
   V8only (at level 30, left associativity).
