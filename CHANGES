@@ -1,22 +1,23 @@
+Métathéorie
+
+- Ajout de définitions locales (Let-In)
+
+Syntaxe des constructions
+
 - Consecutive as in patterns are forbidden
 
-- Names generated in Cases are different
-
-- "command" in grammars is now "constr" as in pretty-printing rules
-
-- Numérotation dans l'ordre des hypothèses créées par Decompose
-- Correction de bugs (quand le type ne commence pas par un inductif)
-
-- Simpl ne déplie plus les appels récursifs d'un Fix mutuel réduit. En
-revanche, si une constante n'est qu'indirectement un Fix, on ne garde
-en général plus son nom (sauf dans les cas "simples"). Rem : c'est une
-source d'incompatibilité.
+- Names generated in Cases are different (source d'incompatibilité)
 
 - Davantage d'inférence automatique de "?".
 
 - Les cas des Cases ne se lisent plus de manière séquentielle, sauf en
   cas de clauses par défaut redondantes auquel cas la première est prise
   avec un avertissement.
+
+Vernac
+
+- "command" in grammars and quotations is now "constr" as in
+  pretty-printing rules
 
 - Ajout de la syntaxe "[" phrase_1 ... phrase_n"]." pour grouper des
 phrases (utile pour Time et pour des grammaires abrégeant plusieurs
@@ -33,8 +34,23 @@ l'ast, il faut typer explicitement la grammaire avec Ast ou List
   DelPath -> Remove Path;
   Print Path -> Print Coercion Paths.
 
-- Ajout d'un Let primitif
+- Bug affichage Infix corrigé
+
+
+Tactiques
+
+- Langage de tactique
 
 - Ajout (officiel) d'une tactique LetTac et d'un Induction "convivial"
 
-- Langage de tactique
+- Decompose :
+  - Numérotation dans l'ordre des hypothèses créées
+  - Correction de bugs (quand le type ne commence pas par un inductif)
+    et refus d'agir sous les ->.
+
+- Simpl ne déplie plus les appels récursifs d'un Fix mutuel réduit. En
+  revanche, si une constante n'est qu'indirectement un Fix, on ne garde
+  en général plus son nom (sauf dans les cas "simples"). Rem : c'est une
+  source d'incompatibilité.
+
+
