@@ -6,6 +6,19 @@ Vernacular commands
 - "Declare ML Module" now allows us to import .cma files. This avoids to use a
    bunch of "Declare ML Module" statements when using several ML files.
 
+Gallina
+
+- New syntax of the form "Inductive bool : Set := true, false : bool." for
+  enumerated types
+
+Grammar extensions
+
+- UTF-8 encoded unicode blocks 0380-03FF (greek letters) and 2100-214F
+  (letter-like, including aleph and double N,Z,Q,R) are supported
+  identifiers; UTF-8 unicode blocs 2200-22FF (mathematical operators),
+  2300-23FF (miscellaneous technical, including sqrt symbol) and
+  2600-26FF (miscellaneous symbols) are supported symbols
+
 Bugs
 
 - Rename bug fixed (#244)
