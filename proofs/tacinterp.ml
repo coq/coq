@@ -67,13 +67,23 @@ let rec constr_list goalopt = function
     | None -> constr_list goalopt tl
     | Some goal ->
       let hyps = pf_hyps goal in
-      (try
+      if mem_named_context id hyps then
+        (id_of_string str,mkVar id)::(constr_list goalopt tl)
+      else
+        (try
+           let csr = Declare.global_reference CCI id in
+           (match kind_of_term csr with
+           | IsVar _ -> constr_list goalopt tl
+  	   | _ -> (id_of_string str,csr)::(constr_list goalopt tl))
+         with
+	 | Not_found -> (constr_list goalopt tl)))
+
+(*      (try
          let csr = Declare.global_reference CCI id in
          (match kind_of_term csr with
          | IsVar idc ->
            if mem_named_context idc hyps then
-             (id_of_string str,Declare.global_reference CCI id)::
-               (constr_list goalopt tl)
+             (id_of_string str,csr)::(constr_list goalopt tl)
            else
              constr_list goalopt tl
 	 | _ ->
@@ -84,7 +94,7 @@ let rec constr_list goalopt = function
         if mem_named_context id (pf_hyps goal) then
           (id_of_string str,mkVar id)::(constr_list goalopt tl)
         else
-          constr_list goalopt tl))
+          constr_list goalopt tl))*)
   | _::tl -> constr_list goalopt tl
   | [] -> []
 
@@ -401,7 +411,7 @@ let get_debug () = !debug
 (* Interprets any expression *)
 let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
 
-(*  mSGNL [<print_ast ast>];*)
+(* mSGNL [<print_ast ast>]; *)
 (* mSGNL [<print_ast (Termast.ast_of_constr false (Pretty.assumptions_for_print []) c)>] *)
 
   let value_interp debug =
