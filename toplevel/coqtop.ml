@@ -201,10 +201,11 @@ let parse_args is_ide =
 
     | "-v8" :: rem -> Options.v7 := false; parse rem
 
-    | s :: _ -> 
-	if is_ide && Filename.check_suffix s ".v" then
-	  ide_args := s :: !ide_args
-	else begin
+    | s :: rem -> 
+	if is_ide && Filename.check_suffix s ".v" then begin
+	  ide_args := s :: !ide_args;
+	  parse rem
+	end else begin
 	  prerr_endline ("Don't know what to do with " ^ s); usage ()
 	end
   in
