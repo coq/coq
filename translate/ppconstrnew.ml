@@ -390,7 +390,9 @@ let rec pr inherited a =
   let (strm,prec) = match a with
   | CRef r -> pr_reference r, latom
   | CFix (_,id,fix) ->
-      hov 0 (str "fix " ++ pr_recursive (pr_fixdecl pr) (snd id) fix),
+      let p = hov 0 (str"fix " ++ pr_recursive (pr_fixdecl pr) (snd id) fix) in
+      (if List.length fix = 1 & prec_less (fst inherited) ltop
+       then str"(" ++ p ++ str")" else p),
       lfix
   | CCoFix (_,id,cofix) ->
       hov 0 (str "cofix " ++ pr_recursive (pr_cofixdecl pr) (snd id) cofix),
