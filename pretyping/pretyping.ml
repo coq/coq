@@ -320,12 +320,10 @@ let rec pretype tycon env isevars lvar lmeta cstr =
 	fst (abs_rel env !isevars name j.utj_val j')
 
     | RBinder(loc,BProd,name,c1,c2)        ->
-	let j = pretype_type empty_tycon env isevars lvar lmeta c1 in
+	let j = pretype_type empty_valcon env isevars lvar lmeta c1 in
 	let var = (name,j.utj_val) in
-	(* Ici, faudrait appeler pretype_type mais gen_rel n'a pas la bonne 
-           interface, tout ca pour preserver le message d'erreur de gen_rel *)
-
-	let j' = pretype empty_tycon (push_rel_assum var env) isevars lvar lmeta c2 in
+	let env' = push_rel_assum var env in
+	let j' = pretype_type empty_valcon env' isevars lvar lmeta c2 in
 	let resj =
 	  try fst (gen_rel env !isevars name j j')
 	  with TypeError _ as e -> Stdpp.raise_with_loc loc e in

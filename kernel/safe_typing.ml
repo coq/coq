@@ -114,7 +114,8 @@ let rec execute mf env cstr =
         let varj = type_judgment env Evd.empty j in
 	let env1 = push_rel_assum (name,varj.utj_val) env in
         let (j',cst2) = execute mf env1 c2 in
-	let (j,cst3) = gen_rel env1 Evd.empty name varj j' in
+        let varj' = type_judgment env Evd.empty j' in
+	let (j,cst3) = gen_rel env1 Evd.empty name varj varj' in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
 	(j, cst)
 

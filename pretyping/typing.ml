@@ -95,7 +95,8 @@ let rec execute mf env sigma cstr =
         let varj = type_judgment env sigma j in
 	let env1 = push_rel_assum (name,varj.utj_val) env in
         let j' = execute mf env1 sigma c2 in
-	let (j,_) = gen_rel env1 sigma name varj j' in
+        let varj' = type_judgment env sigma j' in
+	let (j,_) = gen_rel env1 sigma name varj varj' in
 	j
 
      | IsLetIn (name,c1,c2,c3) ->

@@ -259,28 +259,20 @@ let abs_rel env sigma name var j =
     uj_type = mkProd (name, var, j.uj_type) },
   Constraint.empty
 
-(* [gen_rel env sigma name (typ1,s1) j] implements the rule
+(* [gen_rel env sigma name (typ1,s1) (typ2,s2)] implements the rule
 
-    env |- typ1:s1       env, name:typ |- j.uj_val : j.uj_type
+    env |- typ1:s1       env, name:typ |- typ2 : s2
     -------------------------------------------------------------------------
          s' >= (s1,s2), env |- (name:typ)j.uj_val : s'
 
   where j.uj_type is convertible to a sort s2
 *)
 
-let gen_rel env sigma name {utj_val = t1; utj_type = s1} j =
-  match kind_of_term (whd_betadeltaiota env sigma j.uj_type) with
-    | IsSort s ->
-	let (s',g) = sort_of_product s1 s (universes env) in
-        { uj_val = mkProd (name, t1, j.uj_val);
-          uj_type = mkSort s' },
-	g
-    | _ -> 
-(* 	if is_small (level_of_type j.uj_type) then (* message historique ?? *)
-	  error "Proof objects can only be abstracted" 
-	else
-*)
-	  error_generalization CCI env sigma (name,t1) j
+let gen_rel env sigma name t1 t2 =
+  let (s,g) = sort_of_product t1.utj_type t2.utj_type (universes env) in
+  { uj_val = mkProd (name, t1.utj_val, t2.utj_val);
+    uj_type = mkSort s },
+  g
 
 (* [cast_rel env sigma (typ1,s1) j] implements the rule
 

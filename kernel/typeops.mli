@@ -55,7 +55,7 @@ val abs_rel :
 
 (*s Type of a product. *)
 val gen_rel :
-  env -> 'a evar_map -> name -> unsafe_type_judgment -> unsafe_judgment 
+  env -> 'a evar_map -> name -> unsafe_type_judgment -> unsafe_type_judgment 
     -> unsafe_judgment * constraints
 
 val sort_of_product : sorts -> sorts -> universes -> sorts * constraints
