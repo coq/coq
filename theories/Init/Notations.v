@@ -51,7 +51,15 @@ Reserved Notation "x ^ y" (at level 30, right associativity).
 
 (** Notations for pairs *)
 
-Reserved Notation "x , y" (at level 250, left associativity).
+(* Temporary hack *)
+Reserved Notation "( x , y )" (at level 0).
+Reserved Notation "( x , y , z )" (at level 0).
+Reserved Notation "( x1 , x2 , x3 )" (at level 0).
+Reserved Notation "( x1 , x2 , x3 , x4 )" (at level 0).
+Reserved Notation "( x1 , x2 , x3 , x4 , x5 )" (at level 0).
+Reserved Notation "( x1 , x2 , x3 , x4 , x5 , x6 )" (at level 0).
+Reserved Notation "( x1 , x2 , x3 , x4 , x5 , x6 , x7 )" (at level 0).
+Reserved Notation "( x1 , x2 , x3 , x4 , x5 , x6 , x7 , x8 )" (at level 0).
 
 (** Notations for sum-types *)
 

@@ -33,7 +33,7 @@ Inductive Zdivide [a,b:Z] : Prop :=
 
 Notation "( a | b )" := (Zdivide a b) 
  (at level 0, a,b at level 10) : Z_scope
- V8only "a | b" (at level 260, no associativity).
+ V8only "( a | b )" (at level 0).
 
 (** Results concerning divisibility*)
 
