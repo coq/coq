@@ -29,7 +29,7 @@ let cut_ident skip_quote s =
   (* [n'] is the position of the first non nullary digit *)
   let rec numpart n n' =
     if n = 0 then 
-      failwith
+      error
 	("The string " ^ s ^ " is not an identifier: it contains only digits or _")
     else 
       let c = Char.code (String.get s (n-1)) in
