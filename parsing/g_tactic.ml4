@@ -369,7 +369,7 @@ GEXTEND Gram
             | (false, _) -> <:ast< (CALL $id ($LIST $l)) >>
             | _ -> Util.user_err_loc
                   (loc, "G_tactic.meta_tactic",
-                   [< 'sTR"Cannot apply arguments to a meta-tactic." >])
+                   (str"Cannot apply arguments to a meta-tactic."))
       ] *)]
   ;
   tactic:

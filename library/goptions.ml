@@ -109,10 +109,11 @@ module MakeTable =
          (fun c -> t := MySet.remove c !t))
 
     let print_table table_name printer table =
-      mSG ([< 'sTR table_name ; (hOV 0 
-           (if MySet.is_empty table then [< 'sTR "None" ; 'fNL >]
-            else MySet.fold
-	      (fun a b -> [< printer a; 'sPC; b >]) table [<>])) >])
+      msg (str table_name ++ 
+	   (hov 0 
+	      (if MySet.is_empty table then str "None" ++ fnl ()
+               else MySet.fold
+		 (fun a b -> printer a ++ spc () ++ b) table (mt ()))))
 
     class table_of_A () =
     object
@@ -123,7 +124,7 @@ module MakeTable =
       method remove x = remove_option (A.encode x)
       method mem x = 
         let answer = MySet.mem (A.encode x) !t in
-        mSG [< 'sTR (A.member_message x answer) >]
+        msg (str (A.member_message x answer))
       method print = print_table A.title A.printer !t 
     end
 
@@ -152,7 +153,7 @@ struct
   let table = string_table
   let encode x = x
   let check = A.check
-  let printer s = [< 'sTR s >]
+  let printer s = (str s)
   let key = A.key
   let title = A.title
   let member_message = A.member_message
@@ -298,10 +299,10 @@ let set_string_option_value = set_option_value
 
 let msg_option_value (name,v) =
   match v with
-    | BoolValue true  -> [< 'sTR "true" >]
-    | BoolValue false -> [< 'sTR "false" >]
-    | IntValue n      -> [< 'iNT n >]
-    | StringValue s   -> [< 'sTR s >]
+    | BoolValue true  -> str "true"
+    | BoolValue false -> str "false"
+    | IntValue n      -> int n
+    | StringValue s   -> str s
     | IdentValue r    -> pr_global_env (Global.env()) r
 
 let print_option_value key =
@@ -309,35 +310,41 @@ let print_option_value key =
   let s = read () in 
   match s with
     | BoolValue b -> 
-	mSG [< 'sTR("The "^name^" mode is "^(if b then "on" else "off"));'fNL>]
+	msg (str ("The "^name^" mode is "^(if b then "on" else "off")) ++ 
+	     fnl ())
     | _ ->
-	mSG [< 'sTR ("Current value of "^name^" is "); 
-	       msg_option_value (name,s); 'fNL >]
+	msg (str ("Current value of "^name^" is ") ++
+	     msg_option_value (name,s) ++ fnl ())
 
 
 let print_tables () =
-  mSG
-  [< 'sTR "Synchronous options:"; 'fNL; 
+  msg
+    (str "Synchronous options:" ++ fnl () ++
      OptionMap.fold 
        (fun key (name,(sync,read,write)) p -> 
-	  if sync then [< p; 'sTR ("  "^(nickname key)^": ");
-			  msg_option_value (name,read()); 'fNL >]
-	  else [< p >])
-       !value_tab [<>];
-     'sTR "Asynchronous options:"; 'fNL;
+	  if sync then 
+	    p ++ str ("  "^(nickname key)^": ") ++
+	    msg_option_value (name,read()) ++ fnl ()
+	  else 
+	    p)
+       !value_tab (mt ()) ++
+     str "Asynchronous options:" ++ fnl () ++
      OptionMap.fold 
        (fun key (name,(sync,read,write)) p -> 
-	  if sync then [< p >] 
-	  else [< p; 'sTR ("  "^(nickname key)^": ");
-                  msg_option_value (name,read()); 'fNL >])
-       !value_tab [<>];
-     'sTR "Tables:"; 'fNL;
+	  if sync then 
+	    p
+	  else 
+	    p ++ str ("  "^(nickname key)^": ") ++
+            msg_option_value (name,read()) ++ fnl ())
+       !value_tab (mt ()) ++
+     str "Tables:" ++ fnl () ++
      List.fold_right
-       (fun (nickkey,_) p -> [< p; 'sTR ("  "^nickkey); 'fNL >])
-       !string_table [<>];
+       (fun (nickkey,_) p -> p ++ str ("  "^nickkey) ++ fnl ())
+       !string_table (mt ()) ++
      List.fold_right
-       (fun (nickkey,_) p -> [< p; 'sTR ("  "^nickkey); 'fNL >])
-       !ident_table [<>];
-     'fNL;
- >]
+       (fun (nickkey,_) p -> p ++ str ("  "^nickkey) ++ fnl ())
+       !ident_table (mt ()) ++
+     fnl ()
+    )
+
 

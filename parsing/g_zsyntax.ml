@@ -117,9 +117,9 @@ let inside_printer posneg std_pr p =
   match (int_array_option_of_pos astxI astxO astxH p) with
     | Some n -> 
 	if posneg then 
-	  [< 'sTR (string_of_int_array n) >]
+	  (str (string_of_int_array n))
 	else 
-	  [< 'sTR "(-"; 'sTR (string_of_int_array n); 'sTR ")" >]
+	  (str "(-" ++ str (string_of_int_array n) ++ str ")")
     | None -> 
 	let c = if posneg then myvar0 else myvar1 in
 	std_pr (ope("ZEXPR",[ope("APPLIST",[c; p])]))
@@ -129,12 +129,12 @@ let outside_printer posneg std_pr p =
   match (int_array_option_of_pos astxI astxO astxH p) with
     | Some n -> 
 	if posneg then 
-	  [< 'sTR "`"; 'sTR (string_of_int_array n); 'sTR "`">]
+	  (str "`" ++ str (string_of_int_array n) ++ str "`")
 	else 
-	  [< 'sTR "`-"; 'sTR (string_of_int_array n); 'sTR "`" >]
+	  (str "`-" ++ str (string_of_int_array n) ++ str "`")
       | None -> 
 	  let c = if posneg then myvar0 else myvar1 in
-	  [< 'sTR "("; std_pr (ope("APPLIST",[c; p])); 'sTR ")" >] 
+	  (str "(" ++ std_pr (ope("APPLIST", [c; p])) ++ str ")") 
 
 (* Declare pretty-printers for integers *)
 let _ = Esyntax.Ppprim.add ("positive_printer", (outside_printer true))

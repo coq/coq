@@ -32,7 +32,7 @@ let output_results_nl stream =
     let _ = Sys.signal Sys.sigint
        (Sys.Signal_handle(fun i -> break_happened := true;()))
   in
-  mSGNL stream
+  msgnl stream
 
 let rearm_break () =
   let _ = Sys.signal Sys.sigint (Sys.Signal_handle(fun _ -> raise Sys.Break)) in 
@@ -50,14 +50,14 @@ let global_request_id = ref 013
 
 let acknowledge_command_ref =
    ref(fun request_id command_count opt_exn
-      -> [<'fNL; 'sTR "acknowledge command number ";
-           'iNT request_id; 'fNL; 
-         'sTR "successfully executed "; 'iNT command_count; 'fNL;
-           'sTR "error message"; 'fNL;
+      -> (fnl () ++ str "acknowledge command number " ++
+           int request_id ++ fnl () ++ 
+         str "successfully executed " ++ int command_count ++ fnl () ++
+           str "error message" ++ fnl () ++
          (match opt_exn with
            Some e -> Errors.explain_exn e
-         | None -> [< >]); 'fNL;
-         'sTR "E-n-d---M-e-s-s-a-g-e"; 'fNL>])
+         | None -> (mt ())) ++ fnl () ++
+         str "E-n-d---M-e-s-s-a-g-e" ++ fnl ()))
 
 let set_acknowledge_command f =
   acknowledge_command_ref := f
@@ -168,6 +168,6 @@ let protected_loop input_chan =
 	  explain_and_restart e
       | e -> explain_and_restart e in
     begin
-      mSGNL [<'sTR "Starting Centaur Specialized loop" >];
+      msgnl (str "Starting Centaur Specialized loop");
       looprec input_chan
     end

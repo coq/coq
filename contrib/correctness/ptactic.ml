@@ -37,7 +37,7 @@ let coqast_of_prog p =
   let p = Pdb.db_prog p in
 
   (* 2. typage avec effets *)
-  deb_mess [< 'sTR"Ptyping.states: Typing with effects..."; 'fNL >];
+  deb_mess (str"Ptyping.states: Typing with effects..." ++ fnl ());
   let env = Penv.empty in
   let ren = initial_renaming env in
   let p = Ptyping.states ren env p in
@@ -54,20 +54,20 @@ let coqast_of_prog p =
 
   (* 4b. traduction terme (terme intermédiaire de type cc_term) *)
   deb_mess 
-    [< 'fNL; 'sTR"Mlize.trad: Translation program -> cc_term..."; 'fNL >];
+    (fnl () ++ str"Mlize.trad: Translation program -> cc_term..." ++ fnl ());
   let cc = Pmlize.trans ren p in
   let cc = Pred.red cc in
   deb_mess (Putil.pp_cc_term cc);
 
   (* 5. traduction en constr *)
   deb_mess 
-    [< 'fNL; 'sTR"Pcic.constr_of_prog: Translation cc_term -> rawconstr..."; 
-       'fNL >];
+    (fnl () ++ str"Pcic.constr_of_prog: Translation cc_term -> rawconstr..." ++ 
+       fnl ());
   let r = Pcic.rawconstr_of_prog cc in
   deb_mess (Printer.pr_rawterm r);
 
   (* 6. résolution implicites *)
-  deb_mess [< 'fNL; 'sTR"Resolution implicits (? => Meta(n))..."; 'fNL >];
+  deb_mess (fnl () ++ str"Resolution implicits (? => Meta(n))..." ++ fnl ());
   let oc = understand_gen_tcc Evd.empty (Global.env()) [] [] None r in
   deb_mess (Printer.prterm (snd oc));
 
@@ -227,9 +227,9 @@ let correctness s p opttac =
   start_proof id Declare.NeverDischarge sign cty;
   Penv.new_edited id (v,p);
   if !debug then show_open_subgoals();
-  deb_mess [< 'sTR"Pred.red_cci: Reduction..."; 'fNL >];
+  deb_mess (str"Pred.red_cci: Reduction..." ++ fnl ());
   let oc = reduce_open_constr oc in
-  deb_mess [< 'sTR"AFTER REDUCTION:"; 'fNL >];
+  deb_mess (str"AFTER REDUCTION:" ++ fnl ());
   deb_mess (Printer.prterm (snd oc));
   let tac = (tclTHEN (Refine.refine_tac oc) automatic) in
   let tac = match opttac with 

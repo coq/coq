@@ -235,70 +235,70 @@ open Util
 open Printer
 
 let pp_pre = function
-    [] -> [< >]
+    [] -> (mt ())
   | l  ->
-      hOV 0 [< 'sTR"pre "; 
-	       prlist_with_sep (fun () -> [< 'sPC >]) 
-		 (fun x -> prterm x.p_value) l >]
+      hov 0 (str"pre " ++ 
+	       prlist_with_sep (fun () -> (spc ())) 
+		 (fun x -> prterm x.p_value) l)
 
 let pp_post = function
-    None -> [< >]
-  | Some c -> hOV 0 [< 'sTR"post "; prterm c.a_value >]
+    None -> (mt ())
+  | Some c -> hov 0 (str"post " ++ prterm c.a_value)
 
 let rec pp_type_v = function
-    Ref v -> hOV 0 [< pp_type_v v; 'sPC; 'sTR"ref" >]
-  | Array (cc,v) -> hOV 0 [< 'sTR"array "; prterm cc; 'sTR" of "; pp_type_v v >]
+    Ref v -> hov 0 (pp_type_v v ++ spc () ++ str"ref")
+  | Array (cc,v) -> hov 0 (str"array " ++ prterm cc ++ str" of " ++ pp_type_v v)
   | Arrow (b,c) -> 
-      hOV 0 [< prlist_with_sep (fun () -> [< >]) pp_binder b; 
-	       pp_type_c c >]
+      hov 0 (prlist_with_sep (fun () -> (mt ())) pp_binder b ++ 
+	       pp_type_c c)
   | TypePure c -> prterm c
 
 and pp_type_c ((id,v),e,p,q) =
-  hOV 0 [< 'sTR"returns "; pr_id id; 'sTR":"; pp_type_v v; 'sPC; 
-	   Peffect.pp e; 'sPC; pp_pre p; 'sPC; pp_post q ;
-	   'sPC; 'sTR"end" >]
+  hov 0 (str"returns " ++ pr_id id ++ str":" ++ pp_type_v v ++ spc () ++ 
+	   Peffect.pp e ++ spc () ++ pp_pre p ++ spc () ++ pp_post q ++
+	   spc () ++ str"end")
 
 and pp_binder = function
-    id,BindType v -> [< 'sTR"("; pr_id id; 'sTR":"; pp_type_v v; 'sTR")" >]
-  | id,BindSet -> [< 'sTR"("; pr_id id; 'sTR":Set)" >]
-  | id,Untyped -> [< 'sTR"("; pr_id id; 'sTR")" >]
+    id,BindType v -> (str"(" ++ pr_id id ++ str":" ++ pp_type_v v ++ str")")
+  | id,BindSet -> (str"(" ++ pr_id id ++ str":Set)")
+  | id,Untyped -> (str"(" ++ pr_id id ++ str")")
 
 (* pretty-print of cc-terms (intermediate terms) *)
 
 let rec pp_cc_term = function
     CC_var id -> pr_id id
   | CC_letin (_,_,bl,c,c1) ->
-      hOV 0 [< hOV 2 [< 'sTR"let ";
-		  	prlist_with_sep (fun () -> [< 'sTR"," >])
-			  (fun (id,_) -> pr_id id) bl;
-		  	'sTR" ="; 'sPC;
-		  	pp_cc_term c;
-		  	'sTR " in">];
-	       'fNL;
-	       pp_cc_term c1 >]
+      hov 0 (hov 2 (str"let " ++
+		  	prlist_with_sep (fun () -> (str","))
+			  (fun (id,_) -> pr_id id) bl ++
+		  	str" =" ++ spc () ++
+		  	pp_cc_term c ++
+		  	str " in") ++
+	       fnl () ++
+	       pp_cc_term c1)
   | CC_lam (bl,c) ->
-      hOV 2 [< prlist (fun (id,_) -> [< 'sTR"["; pr_id id; 'sTR"]" >]) bl;
-	       'cUT;
-	       pp_cc_term c >]
+      hov 2 (prlist (fun (id,_) -> (str"[" ++ pr_id id ++ str"]")) bl ++
+	       cut () ++
+	       pp_cc_term c)
   | CC_app (f,args) ->
-      hOV 2 [< 'sTR"("; 
-	       pp_cc_term f; 'sPC;
-	       prlist_with_sep (fun () -> [< 'sPC >]) pp_cc_term args;
-	       'sTR")" >]
+      hov 2 (str"(" ++ 
+	       pp_cc_term f ++ spc () ++
+	       prlist_with_sep (fun () -> (spc ())) pp_cc_term args ++
+	       str")")
   | CC_tuple (_,_,cl) ->
-      hOV 2 [< 'sTR"(";
-	       prlist_with_sep (fun () -> [< 'sTR","; 'cUT >])
-		 pp_cc_term cl;
-	       'sTR")" >]
+      hov 2 (str"(" ++
+	       prlist_with_sep (fun () -> (str"," ++ cut ()))
+		 pp_cc_term cl ++
+	       str")")
   | CC_case (_,b,[e1;e2]) ->
-      hOV 0 [< 'sTR"if "; pp_cc_term b; 'sTR" then"; 'fNL;
-	       'sTR"  "; hOV 0 (pp_cc_term e1); 'fNL;
-	       'sTR"else"; 'fNL;
-	       'sTR"  "; hOV 0 (pp_cc_term e2) >]
+      hov 0 (str"if " ++ pp_cc_term b ++ str" then" ++ fnl () ++
+	       str"  " ++ hov 0 (pp_cc_term e1) ++ fnl () ++
+	       str"else" ++ fnl () ++
+	       str"  " ++ hov 0 (pp_cc_term e2))
   | CC_case _ ->
-      hOV 0 [< 'sTR"<Case: not yet implemented>" >]
+      hov 0 (str"<Case: not yet implemented>")
   | CC_expr c ->
-      hOV 0 (prterm c)
+      hov 0 (prterm c)
   | CC_hole c ->
-      [< 'sTR"(?::"; prterm c; 'sTR")" >]
+      (str"(?::" ++ prterm c ++ str")")
 

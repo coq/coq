@@ -1806,7 +1806,7 @@ let show_proof lang gpath =
     ;;
 
 let show_nproof path =
-  pP (sp_print (sph [spi; show_proof "fr" path]));;
+  pp (sp_print (sph [spi; show_proof "fr" path]));;
 
 vinterp_add "ShowNaturalProof"
 	    (fun _ ->

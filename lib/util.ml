@@ -13,11 +13,11 @@ open Pp
 (* Errors *)
 
 exception Anomaly of string * std_ppcmds  (* System errors *)
-let anomaly string = raise (Anomaly(string,[< 'sTR string >]))
+let anomaly string = raise (Anomaly(string, str string))
 let anomalylabstrm string pps = raise (Anomaly(string,pps))
 
 exception UserError of string * std_ppcmds (* User errors *)
-let error string = raise (UserError(string,[< 'sTR string >]))
+let error string = raise (UserError(string, str string))
 let errorlabstrm l pps = raise (UserError(l,pps))
 
 (* raising located exceptions *)
@@ -498,26 +498,26 @@ let map_succeed f =
 
 (* Pretty-printing *)
   
-let pr_spc () = [< 'sPC >];;
-let pr_fnl () = [< 'fNL >];;
-let pr_int n = [< 'iNT n >];;
-let pr_str s = [< 'sTR s >];;
-let pr_coma () = [< 'sTR","; 'sPC >];;
+let pr_spc = spc
+let pr_fnl = fnl
+let pr_int = int
+let pr_str = str
+let pr_coma () = str "," ++ spc ()
 
 let rec prlist elem l = match l with 
-  | []   -> [< >]
-  | h::t -> let e = elem h and r = prlist elem t in [< e; r >]
+  | []   -> mt ()
+  | h::t -> Stream.lapp (fun () -> elem h) (prlist elem t)
 
 let rec prlist_with_sep sep elem l = match l with
-  | []   -> [< >]
+  | []   -> mt ()
   | [h]  -> elem h
   | h::t ->
       let e = elem h and s = sep() and r = prlist_with_sep sep elem t in
-      [< e; s; r >]
+      e ++ s ++ r
 
 let pr_vertical_list pr = function
-  | [] -> [< 'sTR "none"; 'fNL >]
-  | l -> [< 'fNL; 'sTR "  "; hOV 0 (prlist_with_sep pr_fnl pr l); 'fNL >]
+  | [] -> str "none" ++ fnl ()
+  | l -> fnl () ++ str "  " ++ hov 0 (prlist_with_sep pr_fnl pr l) ++ fnl ()
       
 let prvecti elem v =
   let n = Array.length v in
@@ -525,9 +525,9 @@ let prvecti elem v =
     if i = 0 then 
       elem 0 v.(0)
     else
-      let r = pr (i-1) and e = elem i v.(i) in [< r; e >]
+      let r = pr (i-1) and e = elem i v.(i) in r ++ e
   in
-  if n=0 then [< >] else pr (n - 1)
+  if n = 0 then mt () else pr (n - 1)
 
 let prvect_with_sep sep elem v =
   let rec pr n =
@@ -535,10 +535,10 @@ let prvect_with_sep sep elem v =
       elem v.(0)
     else 
       let r = pr (n-1) and s = sep() and e = elem v.(n) in 
-      [< r; s; e >]
+      r ++ s ++ e
       in
   let n = Array.length v in
-  if n = 0 then [< >] else pr (n - 1)
+  if n = 0 then mt () else pr (n - 1)
 
 (*s Size of ocaml values. *)
 

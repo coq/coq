@@ -43,13 +43,13 @@ let get_all_proof_names () = Edit.dom proof_edits
 
 let msg_proofs use_resume =
   match Edit.dom proof_edits with
-    | [] -> [< 'sPC ; 'sTR"(No proof-editing in progress)." >]
-    | l ->  [< 'sTR"." ; 'fNL ; 'sTR"Proofs currently edited:" ; 'sPC ;
-               (prlist_with_sep pr_spc pr_id (get_all_proof_names ())) ;
-	       'sTR"." ;
-               (if use_resume then [< 'fNL ; 'sTR"Use \"Resume\" first." >]
-              	else [< >])
-            >]
+    | [] -> (spc () ++ str"(No proof-editing in progress).")
+    | l ->  (str"." ++ fnl () ++ str"Proofs currently edited:" ++ spc () ++
+               (prlist_with_sep pr_spc pr_id (get_all_proof_names ())) ++
+	       str"." ++
+               (if use_resume then (fnl () ++ str"Use \"Resume\" first.")
+              	else (mt ()))
+)
 
 let undo_default = 12
 let undo_limit = ref undo_default
@@ -61,7 +61,7 @@ let undo_limit = ref undo_default
 let get_state () =
   match Edit.read proof_edits with
     | None -> errorlabstrm "Pfedit.get_state"
-          [< 'sTR"No focused proof"; msg_proofs true >]
+          (str"No focused proof" ++ msg_proofs true)
     | Some(_,pfs,ts) -> (pfs,ts)
 
 let get_topstate ()    = snd(get_state())
@@ -79,7 +79,7 @@ let set_current_proof s =
     Edit.focus proof_edits s
   with Invalid_argument "Edit.focus" ->
     errorlabstrm "Pfedit.set_proof"
-      [< 'sTR"No such proof" ; (msg_proofs false) >]
+      (str"No such proof" ++ (msg_proofs false))
 
 let resume_proof = set_current_proof
 
@@ -88,12 +88,12 @@ let suspend_proof () =
     Edit.unfocus proof_edits
   with Invalid_argument "Edit.unfocus" ->
     errorlabstrm "Pfedit.suspend_current_proof"
-      [< 'sTR"No active proof" ; (msg_proofs true) >]
+      (str"No active proof" ++ (msg_proofs true))
       
 let resume_last_proof () =
   match (Edit.last_focused proof_edits) with
     | None ->
-        errorlabstrm "resume_last" [< 'sTR"No proof-editing in progress." >]
+        errorlabstrm "resume_last" (str"No proof-editing in progress.")
     | Some p -> 
 	Edit.focus proof_edits p
 	  
@@ -101,7 +101,7 @@ let get_current_proof_name () =
   match Edit.read proof_edits with
     | None ->
         errorlabstrm "Pfedit.get_proof"
-          [< 'sTR"No focused proof" ; msg_proofs true >]
+          (str"No focused proof" ++ msg_proofs true)
     | Some(na,_,_) -> na
 
 let add_proof (na,pfs,ts) =
@@ -112,7 +112,7 @@ let delete_proof na =
     Edit.delete proof_edits na
   with (UserError ("Edit.delete",_)) ->
     errorlabstrm "Pfedit.delete_proof"
-      [< 'sTR"No such proof" ; msg_proofs false >]
+      (str"No such proof" ++ msg_proofs false)
       
 let init_proofs () = Edit.clear proof_edits
 		       
@@ -121,7 +121,7 @@ let mutate f =
     Edit.mutate proof_edits (fun _ pfs -> f pfs)
   with Invalid_argument "Edit.mutate" ->
     errorlabstrm "Pfedit.mutate"
-      [< 'sTR"No focused proof" ; msg_proofs true >]
+      (str"No focused proof" ++ msg_proofs true)
 
 let start (na,ts) =
   let pfs = mk_pftreestate ts.top_goal in 
@@ -131,7 +131,7 @@ let restart_proof () =
   match Edit.read proof_edits with
     | None -> 
 	errorlabstrm "Pfedit.restart"
-          [< 'sTR"No focused proof to restart" ; msg_proofs true >]
+          (str"No focused proof to restart" ++ msg_proofs true)
     | Some(na,_,ts) -> 
 	delete_proof na;
         start (na,ts);
@@ -166,7 +166,7 @@ let undo n =
        subtree - this solution only works properly if undoing one step *)
     if subtree_solved() then  Edit.undo proof_edits 1
   with (Invalid_argument "Edit.undo") ->
-    errorlabstrm "Pfedit.undo" [< 'sTR"No focused proof"; msg_proofs true >]
+    errorlabstrm "Pfedit.undo" (str"No focused proof" ++ msg_proofs true)
 
 (*********************************************************************)
 (*                  Proof cooking                                    *)
@@ -193,8 +193,8 @@ let refining () = [] <> (Edit.dom proof_edits)
 let check_no_pending_proofs () =
   if refining () then 
     errorlabstrm "check_no_pending_proofs"
-      [< 'sTR"Proof editing in progress" ; (msg_proofs false) ;
-         'sTR"Use \"Abort All\" first or complete proof(s)." >]
+      (str"Proof editing in progress" ++ (msg_proofs false) ++
+         str"Use \"Abort All\" first or complete proof(s).")
 
 let delete_current_proof () = delete_proof (get_current_proof_name ())
 

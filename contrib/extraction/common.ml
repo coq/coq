@@ -45,8 +45,8 @@ let long_module r =
 	try 
 	  dirpath_prefix d 
 	with _ -> errorlabstrm "long_module_message"
-	[< 'sTR "Can't find the module of"; 'sPC; 
-	   Printer.pr_global r >]
+	(str "Can't find the module of" ++ spc () ++ 
+	   Printer.pr_global r)
       in check_module d' 
   in check_module (dirpath (sp_of_r r))
 
@@ -210,10 +210,10 @@ let extract_to_file f prm decls =
   in
   let cout = open_out f in
   let ft = Pp_control.with_output_to cout in
-  if decls <> [] then pP_with ft (hV 0 (preamble prm));
+  if decls <> [] then pp_with ft (hv 0 (preamble prm));
   begin 
     try
-      List.iter (fun d -> mSGNL_with ft (pp_decl d)) decls
+      List.iter (fun d -> msgnl_with ft (pp_decl d)) decls
     with e ->
       pp_flush_with ft (); close_out cout; raise e
   end;

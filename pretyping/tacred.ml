@@ -30,9 +30,9 @@ let set_transparent_const sp =
   let cb = Global.lookup_constant sp in
   if cb.const_body <> None & cb.const_opaque then
     errorlabstrm "set_transparent_const"
-      [< 'sTR "Cannot make"; 'sPC; 
-         Nametab.pr_global_env (Global.env()) (Nametab.ConstRef sp);
-         'sPC; 'sTR "transparent because it was declared opaque." >];
+      (str "Cannot make" ++ spc () ++ 
+         Nametab.pr_global_env (Global.env()) (Nametab.ConstRef sp) ++
+         spc () ++ str "transparent because it was declared opaque.");
   Conv_oracle.set_transparent_const sp
 
 let set_opaque_var      = Conv_oracle.set_opaque_var
@@ -601,7 +601,7 @@ let rec substlin env name n ol c =
           with
 	      NotEvaluableConst _ ->
 		errorlabstrm "substlin"
-		  [< pr_sp const; 'sTR " is not a defined constant" >]
+		  (pr_sp const ++ str " is not a defined constant")
         else 
 	  ((n+1), ol, c)
 
@@ -611,7 +611,7 @@ let rec substlin env name n ol c =
 	    | (_,Some c,_) -> (n+1, List.tl ol, c)
 	    | _ -> 
 		errorlabstrm "substlin"
-		  [< pr_id id; 'sTR " is not a defined constant" >]
+		  (pr_id id ++ str " is not a defined constant")
         else 
 	  ((n+1), ol, c)
 
@@ -829,14 +829,14 @@ let reduce_to_ind_gen allow_product env sigma t =
 	    elimrec (push_rel (n,None,t) env) t' ((n,None,ty)::l)
 	  else
 	     errorlabstrm "tactics__reduce_to_mind"
-	       [< 'sTR"Not an inductive definition" >]
+	       (str"Not an inductive definition")
       | _ ->
           (try 
 	     let t' = nf_betaiota (one_step_reduce env sigma t) in 
 	     elimrec env t' l
            with NotStepReducible ->
 	     errorlabstrm "tactics__reduce_to_mind"
-               [< 'sTR"Not an inductive product" >])
+               (str"Not an inductive product"))
   in
   elimrec env t []
 

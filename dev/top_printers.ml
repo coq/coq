@@ -27,59 +27,59 @@ open Errors
 
 let _ = Termast.print_evar_arguments := true
 
-let pP s = pP (hOV 0 s)
+let pP s = pp (hov 0 s)
 
-let prast c = pP(print_ast c)
+let prast c = pp(print_ast c)
 
-let prastpat c = pP(print_astpat c)
-let prastpatl c = pP(print_astlpat c)
-let ppterm = (fun x -> pP(prterm x))
-let pprawterm = (fun x -> pP(pr_rawterm x))
-let pppattern = (fun x -> pP(pr_pattern x))
-let pptype = (fun x -> pP(prtype x))
+let prastpat c = pp(print_astpat c)
+let prastpatl c = pp(print_astlpat c)
+let ppterm = (fun x -> pp(prterm x))
+let pprawterm = (fun x -> pp(pr_rawterm x))
+let pppattern = (fun x -> pp(pr_pattern x))
+let pptype = (fun x -> pp(prtype x))
 
-let prid id = pP [< pr_id id >]
+let prid id = pp (pr_id id)
 
 let prconst (sp,j) =
-    pP [< 'sTR"#"; pr_sp sp; 'sTR"="; prterm j.uj_val >]
+    pp (str"#" ++ pr_sp sp ++ str"=" ++ prterm j.uj_val)
 
 let prvar ((id,a)) =
-    pP [< 'sTR"#" ; pr_id id ; 'sTR":" ; prterm a >]
+    pp (str"#" ++ pr_id id ++ str":" ++ prterm a)
 
 let genprj f j =
-  let (c,t) = Termast.with_casts f j in [< c; 'sTR " : "; t >]
+  let (c,t) = Termast.with_casts f j in (c ++ str " : " ++ t)
 
-let prj j = pP (genprj prjudge j)
+let prj j = pp (genprj prjudge j)
 
-let prsp sp = pP[< pr_sp sp >]
+let prsp sp = pp(pr_sp sp)
 
-let prqualid qid = pP[< Nametab.pr_qualid qid >]
+let prqualid qid = pp(Nametab.pr_qualid qid)
 
-let prgoal g = pP(prgl g)
+let prgoal g = pp(prgl g)
 
-let prsigmagoal g = pP(prgl (sig_it g))
+let prsigmagoal g = pp(prgl (sig_it g))
 
-let prgls gls = pP(pr_gls gls)
+let prgls gls = pp(pr_gls gls)
 
-let prglls glls = pP(pr_glls glls)
+let prglls glls = pp(pr_glls glls)
 
-let pproof p = pP(print_proof Evd.empty empty_named_context p)
+let pproof p = pp(print_proof Evd.empty empty_named_context p)
 
-let prevd evd = pP(pr_decls evd)
+let prevd evd = pp(pr_decls evd)
 
-let prevc evc = pP(pr_evc evc)
+let prevc evc = pp(pr_evc evc)
 
-let prwc wc = pP(pr_evc wc)
+let prwc wc = pp(pr_evc wc)
 
-let prclenv clenv = pP(pr_clenv clenv)
+let prclenv clenv = pp(pr_clenv clenv)
 
-let print_uni u = (pP (pr_uni u))
+let print_uni u = (pp (pr_uni u))
 
-let pp_universes u = pP [< 'sTR"[" ; pr_universes u ; 'sTR"]" >]
+let pp_universes u = pp (str"[" ++ pr_universes u ++ str"]")
 
-let ppenv e = pP (pr_rel_context e (rel_context e))
+let ppenv e = pp (pr_rel_context e (rel_context e))
 
-let pptac = (fun x -> pP(gentacpr x))
+let pptac = (fun x -> pp(gentacpr x))
 
 let cnt = ref 0
 
@@ -132,7 +132,7 @@ let constr_display csr =
     | Prop(Pos) -> "Prop(Pos)"
     | Prop(Null) -> "Prop(Null)"
     | Type u ->
-	incr cnt; pP [< 'sTR "with "; 'iNT !cnt; pr_uni u; 'fNL >];
+	incr cnt; pp (str "with " ++ int !cnt ++ pr_uni u ++ fnl ());
 	"Type("^(string_of_int !cnt)^")"
 
   and name_display = function
@@ -140,7 +140,7 @@ let constr_display csr =
     | Anonymous -> "Anonymous"
 
   in
-    mSG [<'sTR (term_display csr);'fNL>]
+    msg (str (term_display csr) ++fnl ())
 
 open Format;;
 
@@ -237,7 +237,7 @@ let print_pure_constr csr =
     | Prop(Pos) -> print_string "Set"
     | Prop(Null) -> print_string "Prop"
     | Type u -> open_hbox();
-	print_string "Type("; pP (pr_uni u); print_string ")"; close_box()
+	print_string "Type("; pp (pr_uni u); print_string ")"; close_box()
 
   and name_display = function
     | Name id -> print_string (string_of_id id)

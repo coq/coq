@@ -71,7 +71,7 @@ let dest_match_eq gls eqn =
 	  pf_matches gls (Coqlib.build_coq_idT_pattern ()) eqn
         with PatternMatchingFailure ->
 	  errorlabstrm "dest_match_eq" 
-	    [< 'sTR "no primitive equality here" >]))
+	    (str "no primitive equality here")))
     
 (* Environment management *)
 let push_rels vars env =
@@ -95,7 +95,7 @@ let make_inv_predicate env sigma ind id status concl =
       | Dep dflt_concl ->
 	  if not (dependent (mkVar id) concl) then
 	    errorlabstrm "make_inv_predicate"
-              [< 'sTR "Current goal does not depend on "; pr_id id >];
+              (str "Current goal does not depend on " ++ pr_id id);
           (* We abstract the conclusion of goal with respect to
              realargs and c to * be concl in order to rewrite and have
              c also rewritten when the case * will be done *)
@@ -335,10 +335,10 @@ let check_no_metas clenv ccl =
     let metas = List.map (fun n -> Intmap.find n clenv.namenv)
 		  (collect_meta_variables ccl) in
     errorlabstrm "res_case_then" 
-      [< 'sTR ("Cannot find an instantiation for variable"^
-	       (if List.length metas = 1 then " " else "s "));
+      (str ("Cannot find an instantiation for variable"^
+	       (if List.length metas = 1 then " " else "s ")) ++
 	 prlist_with_sep pr_coma pr_id metas
-	 (* ajouter "in "; prterm ccl mais il faut le bon contexte *) >]
+	 (* ajouter "in " ++ prterm ccl mais il faut le bon contexte *))
 
 let res_case_then gene thin indbinding id status gl =
   let env = pf_env gl and sigma = project gl in
@@ -354,7 +354,7 @@ let res_case_then gene thin indbinding id status gl =
     try find_rectype env sigma ccl
     with Induc ->
       errorlabstrm "res_case_then"
-	[< 'sTR ("The type of "^(string_of_id id)^" is not inductive") >] in
+	(str ("The type of "^(string_of_id id)^" is not inductive")) in
   let (elim_predicate,neqns) =
     make_inv_predicate env sigma indt id status (pf_concl gl) in
   let (cut_concl,case_tac) =
@@ -382,22 +382,22 @@ let res_case_then gene thin indbinding id status gl =
 (* Error messages of the inversion tactics *)
 let not_found_message ids =
   if List.length ids = 1 then
-    [<'sTR "the variable"; 'sPC ; 'sTR (string_of_id (List.hd ids)) ; 'sPC;
-      'sTR" was not found in the current environment" >]
+    (str "the variable" ++ spc () ++ str (string_of_id (List.hd ids)) ++ spc () ++
+      str" was not found in the current environment")
   else 
-    [<'sTR "the variables ["; 
-      'sPC ; prlist (fun id -> [<'sTR (string_of_id id) ; 'sPC >]) ids;
-      'sTR" ] were not found in the current environment" >]
+    (str "the variables [" ++ 
+      spc () ++ prlist (fun id -> (str (string_of_id id) ++ spc ())) ids ++
+      str" ] were not found in the current environment")
 
 let dep_prop_prop_message id =
   errorlabstrm "Inv"
-    [< 'sTR "Inversion on "; pr_id id ;
-       'sTR " would needs dependent elimination Prop-Prop" >]
+    (str "Inversion on " ++ pr_id id ++
+       str " would needs dependent elimination Prop-Prop")
  
 let not_inductive_here id =
   errorlabstrm "mind_specif_of_mind"
-    [< 'sTR "Cannot recognize an inductive predicate in "; pr_id id ;
-       'sTR ". If there is one, may be the structure of the arity or of the type of constructors is hidden by constant definitions." >]
+    (str "Cannot recognize an inductive predicate in " ++ pr_id id ++
+       str ". If there is one, may be the structure of the arity or of the type of constructors is hidden by constant definitions.")
 
 (* Noms d'errreurs obsolètes ?? *)
 let wrap_inv_error id = function

@@ -49,23 +49,25 @@ let string_of_univ = function
 	 ((List.map string_of_univ_level gel)@
 	  (List.map (fun u -> "("^(string_of_univ_level u)^")+1") gtl)))^")"
 
-let pr_uni_level u = [< 'sTR (string_of_univ_level u) >]
+let pr_uni_level u = str (string_of_univ_level u)
 
 let pr_uni = function
-  | Variable u -> pr_uni_level u
+  | Variable u -> 
+      pr_uni_level u
   | Max (gel,gtl) ->
-      [< 'sTR "max("; 
-	 prlist_with_sep pr_coma pr_uni_level gel;
-	 if gel <> [] & gtl <> [] then pr_coma () else [< >];
-	 prlist_with_sep pr_coma
-	   (fun x -> [< 'sTR "("; pr_uni_level x; 'sTR")+1" >]) gtl;
-	 'sTR ")" >]
+      str "max(" ++ 
+      prlist_with_sep pr_coma pr_uni_level gel ++
+      if gel <> [] & gtl <> [] then pr_coma () else mt () ++
+      prlist_with_sep pr_coma
+	(fun x -> str "(" ++ pr_uni_level x ++ str ")+1") gtl ++
+      str ")"
 
 (* Returns a fresh universe, juste above u. Does not create new universes
    for Type_0 (the sort of Prop and Set).
    Used to type the sort u. *)
 let super = function
-  | Variable u -> Max ([],[u])
+  | Variable u -> 
+      Max ([],[u])
   | Max _ ->
       anomaly ("Cannot take the successor of a non variable universes:\n"^
        "you are probably typing a type already known to be the type\n"^
@@ -125,7 +127,7 @@ let repr g u =
     let a =
       try UniverseMap.find u g
       with Not_found -> anomalylabstrm "Univ.repr"
-	  [< 'sTR"Universe "; pr_uni_level u; 'sTR" undefined" >] 
+	  (str"Universe " ++ pr_uni_level u ++ str" undefined") 
     in
     match a with 
       | Equiv(_,v) -> repr_rec v
@@ -405,13 +407,12 @@ let num_edges g =
     
 let pr_arc = function 
   | Canonical {univ=u; gt=gt; ge=ge} -> 
-      hOV 2
-        [< pr_uni_level u; 'sPC;
-           prlist_with_sep pr_spc (fun v -> [< 'sTR">"; pr_uni_level v >]) gt;
-           prlist_with_sep pr_spc (fun v -> [< 'sTR">="; pr_uni_level v >]) ge
-        >]
+      hov 2
+        (pr_uni_level u ++ spc () ++
+         prlist_with_sep pr_spc (fun v -> str ">" ++ pr_uni_level v) gt ++
+         prlist_with_sep pr_spc (fun v -> str ">=" ++ pr_uni_level v) ge)
   | Equiv (u,v) -> 
-      [< pr_uni_level u ; 'sTR"=" ; pr_uni_level v >]
+      pr_uni_level u  ++ str "=" ++ pr_uni_level v
 
 let pr_universes g =
   let graph = UniverseMap.fold (fun k a l -> (k,a)::l) g [] in

@@ -111,8 +111,8 @@ let var_at_date r d id =
     find (until d r) id
   with Not_found ->
     raise (UserError ("Renamings.var_at_date",
-	      hOV 0 [< 'sTR"Variable "; pr_id id; 'sTR" is unknown"; 'sPC;
-		       'sTR"at date "; 'sTR d >]))
+	      hov 0 (str"Variable " ++ pr_id id ++ str" is unknown" ++ spc () ++
+		       str"at date " ++ str d)))
 
 let vars_at_date r d ids =
   let r' = until d r in List.map (fun id -> id,find r' id) ids
@@ -125,15 +125,15 @@ open Util
 open Himsg
 
 let pp r = 
-  hOV 2 (prlist_with_sep (fun () -> [< 'fNL >])
+  hov 2 (prlist_with_sep (fun () -> (fnl ()))
 	   (fun (d,l) -> 
-	      [< 'sTR d; 'sTR": "; 
-		 prlist_with_sep (fun () -> [< 'sPC >])
+	      (str d ++ str": " ++ 
+		 prlist_with_sep (fun () -> (spc ()))
 		   (fun (id,id') -> 
-		      [< 'sTR"("; pr_id id; 'sTR","; pr_id id'; 'sTR")" >])
-		   l >])
+		      (str"(" ++ pr_id id ++ str"," ++ pr_id id' ++ str")"))
+		   l))
 	   r.levels)
 
 let ppr e =
-  pP (pp e)
+  Pp.pp (pp e)
 

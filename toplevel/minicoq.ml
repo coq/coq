@@ -50,7 +50,7 @@ let check c =
   let (j,u) = safe_infer !env c in
   let ty = j_type j in
   let pty = pr_term CCI (env_of_safe_env !env) ty in
-  mSGNL (hOV 0 [< 'sTR"  :"; 'sPC; hOV 0 pty; 'fNL >])
+  mSGNL (hov 0 (str"  :" ++ spc () ++ hov 0 pty ++ fnl ()))
 
 let definition id ty c =
   let c = globalize [] c in
@@ -58,20 +58,20 @@ let definition id ty c =
   let ce = { const_entry_body = c; const_entry_type = ty } in
   let sp = make_path [] id CCI in
   env := add_constant sp ce (locals()) !env;
-  mSGNL (hOV 0 [< pr_id id; 'sPC; 'sTR"is defined"; 'fNL >])
+  mSGNL (hov 0 (pr_id id ++ spc () ++ str"is defined" ++ fnl ()))
 
 let parameter id t =
   let t = globalize [] t in
   let sp = make_path [] id CCI in
   env := add_parameter sp t (locals()) !env;
-  mSGNL (hOV 0 [< 'sTR"parameter"; 'sPC; pr_id id; 
-		  'sPC; 'sTR"is declared"; 'fNL >])
+  mSGNL (hov 0 (str"parameter" ++ spc () ++ pr_id id ++ 
+		  spc () ++ str"is declared" ++ fnl ()))
 
 let variable id t =
   let t = globalize [] t in
   env := push_named_assum (id,t) !env;
-  mSGNL (hOV 0 [< 'sTR"variable"; 'sPC; pr_id id; 
-		  'sPC; 'sTR"is declared"; 'fNL >])
+  mSGNL (hov 0 (str"variable" ++ spc () ++ pr_id id ++ 
+		  spc () ++ str"is declared" ++ fnl ()))
 
 let inductive par inds =
   let nparams = List.length par in
@@ -97,7 +97,7 @@ let inductive par inds =
     let mi1 = List.hd inds in
     make_path [] mi1.mind_entry_typename CCI in
   env := add_mind sp mie (locals()) !env;
-  mSGNL (hOV 0 [< 'sTR"inductive type(s) are declared"; 'fNL >])
+  mSGNL (hov 0 (str"inductive type(s) are declared" ++ fnl ()))
 
 
 let execute = function
@@ -122,12 +122,12 @@ module Explain = Fhimsg.Make(struct let pr_term = pr_term end)
 
 let rec explain_exn = function
   | TypeError (k,ctx,te) -> 
-      mSGNL (hOV 0 [< 'sTR "type error:"; 'sPC; 
-		      Explain.explain_type_error k ctx te; 'fNL >])
+      mSGNL (hov 0 (str "type error:" ++ spc () ++ 
+		      Explain.explain_type_error k ctx te ++ fnl ()))
   | Stdpp.Exc_located (_,exn) -> 
       explain_exn exn
   | exn -> 
-      mSGNL (hOV 0 [< 'sTR"error: "; 'sTR (Printexc.to_string exn); 'fNL >])
+      mSGNL (hov 0 (str"error: " ++ str (Printexc.to_string exn) ++ fnl ()))
 
 let top () =
   let cs = Stream.of_channel stdin in

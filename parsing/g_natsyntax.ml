@@ -84,7 +84,7 @@ let replace_S p =
 (* Prints not p, but the SUCCESSOR of p !!!!! *)
 let nat_printer std_pr p =
   match (int_of_nat p) with
-    | Some i -> [< 'sTR (string_of_int i) >]
+    | Some i -> (str (string_of_int i))
     | None -> std_pr (replace_S p)
 
 let _ = Esyntax.Ppprim.add ("nat_printer", nat_printer)

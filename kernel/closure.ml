@@ -32,9 +32,9 @@ let reset () =
   beta := 0; delta := 0; zeta := 0; evar := 0; iota := 0; prune := 0
 
 let stop() =
-  mSGNL [< 'sTR"[Reds: beta=";'iNT !beta; 'sTR" delta="; 'iNT !delta;
-	   'sTR" zeta="; 'iNT !zeta; 'sTR" evar="; 'iNT !evar;
-           'sTR" iota="; 'iNT !iota; 'sTR" prune="; 'iNT !prune; 'sTR"]" >]
+  msgnl (str "[Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
+	 str" zeta=" ++ int !zeta ++ str" evar=" ++ int !evar ++
+         str" iota=" ++ int !iota ++ str" prune=" ++ int !prune ++ str"]")
 
 let incr_cnt red cnt =
   if red then begin
@@ -383,7 +383,7 @@ let defined_rels flags env =
 	 match b with
 	   | None -> (i+1, subs)
 	   | Some body -> (i+1, (i,body) :: subs))
-      env (0,[])
+      env ~init:(0,[])
 (*  else (0,[])*)
 
 let create mk_cl flgs env =

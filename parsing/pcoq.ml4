@@ -73,8 +73,7 @@ module Gram =
       :: !camlp4_state;
       G.extend e pos rls
     let delete_rule e pil =
-      errorlabstrm "Pcoq.delete_rule"
-        [< 'sTR "GDELETE_RULE forbidden." >]
+      errorlabstrm "Pcoq.delete_rule" (str "GDELETE_RULE forbidden.")
   end
 
 
@@ -192,7 +191,7 @@ let get_entry (u, utab) s =
     Hashtbl.find utab s 
   with Not_found -> 
     errorlabstrm "Pcoq.get_entry"
-      [< 'sTR"unknown grammar entry "; 'sTR u; 'sTR":"; 'sTR s >]
+      (str "unknown grammar entry " ++ str u ++ str ":" ++ str s)
       
 let new_entry etyp (u, utab) s =
   let ename = u ^ ":" ^ s in

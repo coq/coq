@@ -37,7 +37,7 @@ open Safe_typing
 let err_msg_tactic_not_found macro_loc macro =
   user_err_loc
     (macro_loc,"macro_expand",
-     [<'sTR "Tactic macro "; 'sTR macro; 'sPC; 'sTR "not found">])
+     (str "Tactic macro " ++ str macro ++ spc () ++ str "not found"))
 
 (* Values for interpretation *)
 type value =
@@ -74,24 +74,24 @@ let tactic_of_value vle g =
 let id_of_Identifier = function
   | Identifier id -> id
   | _ ->
-    anomalylabstrm "id_of_Identifier" [<'sTR "Not an IDENTIFIER tactic_arg">]
+    anomalylabstrm "id_of_Identifier" (str "Not an IDENTIFIER tactic_arg")
 
 (* Gives the constr corresponding to a Constr tactic_arg *)
 let constr_of_Constr = function
   | Constr c -> c
-  | _ -> anomalylabstrm "constr_of_Constr" [<'sTR "Not a Constr tactic_arg">]
+  | _ -> anomalylabstrm "constr_of_Constr" (str "Not a Constr tactic_arg")
 
 (* Gives the constr corresponding to a Constr_context tactic_arg *)
 let constr_of_Constr_context = function
   | Constr_context c -> c
   | _ ->
-    anomalylabstrm "constr_of_Constr_context" [<'sTR
-      "Not a Constr_context tactic_arg">]
+    anomalylabstrm "constr_of_Constr_context" (str
+      "Not a Constr_context tactic_arg")
 
 (* Gives the qualid corresponding to a Qualid tactic_arg *)
 let qualid_of_Qualid = function
   | Qualid id -> id
-  | _ -> anomalylabstrm "qualid_of_Qualid" [<'sTR "Not a Qualid tactic_arg">]
+  | _ -> anomalylabstrm "qualid_of_Qualid" (str "Not a Qualid tactic_arg")
 
 (* Gives identifiers and makes the possible injection constr -> ident *)
 let make_ids ast = function
@@ -100,9 +100,9 @@ let make_ids ast = function
     (try destVar c with
     | Invalid_argument "destVar" ->
       anomalylabstrm "make_ids"
-      [<'sTR "This term cannot be reduced to an identifier"; 'fNL;
-        print_ast ast>])
-  | _ -> anomalylabstrm "make_ids" [< 'sTR "Not an identifier" >]
+      (str "This term cannot be reduced to an identifier" ++ fnl () ++
+        print_ast ast))
+  | _ -> anomalylabstrm "make_ids" (str "Not an identifier")
 
 (* Gives Qualid's and makes the possible injection identifier -> qualid *)
 let make_qid = function
@@ -111,8 +111,8 @@ let make_qid = function
   | VArg (Constr c) ->
     (match (kind_of_term c) with
     | Const cst -> VArg (Qualid (qualid_of_sp cst))
-    | _ -> anomalylabstrm "make_qid" [< 'sTR "Not a Qualid" >])
-  | _ -> anomalylabstrm "make_qid" [< 'sTR "Not a Qualid" >]
+    | _ -> anomalylabstrm "make_qid" (str "Not a Qualid"))
+  | _ -> anomalylabstrm "make_qid" (str "Not a Qualid")
 
 (* Transforms a named_context into a (string * constr) list *)
 let make_hyps = List.map (fun (id,_,typ) -> (string_of_id id,body_of_type typ))
@@ -160,10 +160,10 @@ let tacticOut = function
     if (tag d) = "tactic" then
       tactic_out d
     else
-      anomalylabstrm "tacticOut" [<'sTR "Dynamic tag should be tactic">]
+      anomalylabstrm "tacticOut" (str "Dynamic tag should be tactic")
   | ast ->
     anomalylabstrm "tacticOut"
-      [<'sTR "Not a Dynamic ast: "; print_ast ast>]
+      (str "Not a Dynamic ast: " ++ print_ast ast)
 
 let valueIn t = Dynamic (dummy_loc,value_in t)
 let valueOut = function
@@ -171,10 +171,10 @@ let valueOut = function
     if (tag d) = "value" then
       value_out d
     else
-      anomalylabstrm "valueOut" [<'sTR "Dynamic tag should be value">]
+      anomalylabstrm "valueOut" (str "Dynamic tag should be value")
   | ast ->
     anomalylabstrm "valueOut"
-      [<'sTR "Not a Dynamic ast: "; print_ast ast>]
+      (str "Not a Dynamic ast: " ++ print_ast ast)
 
 let constrIn = constrIn
 let constrOut = constrOut
@@ -192,8 +192,8 @@ let interp_add (ast_typ,interp_fun) =
   with
       Failure _ ->
         errorlabstrm "interp_add"
-          [<'sTR "Cannot add the interpretation function for "; 'sTR ast_typ;
-            'sTR " twice">]
+          (str "Cannot add the interpretation function for " ++ str ast_typ ++
+            str " twice")
 
 (* Adds a possible existing interpretation function *)
 let overwriting_interp_add (ast_typ,interp_fun) =
@@ -249,7 +249,7 @@ let _ =
 (* Unboxes the tactic_arg *)
 let unvarg = function
   | VArg a -> a
-  | _ -> errorlabstrm "unvarg" [<'sTR "Not a tactic argument">]
+  | _ -> errorlabstrm "unvarg" (str "Not a tactic argument")
 
 (* Unboxes VRec *)
 let unrec = function
@@ -259,7 +259,7 @@ let unrec = function
 (* Unboxes REDEXP *)
 let unredexp = function
   | Redexp c -> c
-  | _ ->  errorlabstrm "unredexp" [<'sTR "Not a REDEXP tactic_arg">]
+  | _ ->  errorlabstrm "unredexp" (str "Not a REDEXP tactic_arg")
 
 (* Reads the head of Fun *)
 let read_fun ast =
@@ -268,12 +268,12 @@ let read_fun ast =
     | Nvar(_,s)::tl -> (Some s)::(read_fun_rec tl)
     | [] -> []
     | _ ->
-      anomalylabstrm "Tacinterp.read_fun_rec" [<'sTR "Fun not well formed">]
+      anomalylabstrm "Tacinterp.read_fun_rec" (str "Fun not well formed")
   in
     match ast with
       | Node(_,"FUNVAR",l) -> read_fun_rec l
       | _ ->
-        anomalylabstrm "Tacinterp.read_fun" [<'sTR "Fun not well formed">]
+        anomalylabstrm "Tacinterp.read_fun" (str "Fun not well formed")
 
 (* Reads the clauses of a Rec *)
 let rec read_rec_clauses = function
@@ -282,7 +282,7 @@ let rec read_rec_clauses = function
     (name,it,body)::(read_rec_clauses tl)
   |_ ->
     anomalylabstrm "Tacinterp.read_rec_clauses"
-      [<'sTR "Rec not well formed">]
+      (str "Rec not well formed")
 
 (* Associates variables with values and gives the remaining variables and
    values *)
@@ -322,8 +322,8 @@ let give_context ctxt = function
 let ast_of_command = function
   | Node(_,"COMMAND",[c]) -> c
   | ast ->
-    anomaly_loc (Ast.loc ast, "Tacinterp.ast_of_command",[<'sTR
-      "Not a COMMAND ast node: "; print_ast ast>])
+    anomaly_loc (Ast.loc ast, "Tacinterp.ast_of_command",(str
+      "Not a COMMAND ast node: " ++ print_ast ast))
 
 (* Reads a pattern *)
 let read_pattern evc env lfun = function
@@ -336,8 +336,8 @@ let read_pattern evc env lfun = function
   | Node(_,"TERM",[pc]) ->
     Term (snd (interp_constrpattern_gen evc env lfun (ast_of_command pc)))
   | ast ->
-    anomaly_loc (Ast.loc ast, "Tacinterp.read_pattern",[<'sTR
-      "Not a pattern ast node: "; print_ast ast>])
+    anomaly_loc (Ast.loc ast, "Tacinterp.read_pattern",(str
+      "Not a pattern ast node: " ++ print_ast ast))
 
 (* Reads the hypotheses of a Match Context rule *)
 let rec read_match_context_hyps evc env lfun = function
@@ -348,8 +348,8 @@ let rec read_match_context_hyps evc env lfun = function
     (Hyp (s,read_pattern evc env lfun mp))::(read_match_context_hyps evc env
       lfun tl)
   | ast::tl ->
-    anomaly_loc (Ast.loc ast, "Tacinterp.read_match_context_hyp",[<'sTR
-      "Not a MATCHCONTEXTHYP ast node: "; print_ast ast>])
+    anomaly_loc (Ast.loc ast, "Tacinterp.read_match_context_hyp",(str
+      "Not a MATCHCONTEXTHYP ast node: " ++ print_ast ast))
   | [] -> []
 
 (* Reads the rules of a Match Context *)
@@ -362,8 +362,8 @@ let rec read_match_context_rule evc env lfun = function
         rl))),read_pattern evc env lfun (List.nth rl 1),List.hd
         rl))::(read_match_context_rule evc env lfun tl)
   | ast::tl ->
-    anomaly_loc (Ast.loc ast, "Tacinterp.read_match_context_rule",[<'sTR
-      "Not a MATCHCONTEXTRULE ast node: "; print_ast ast>])
+    anomaly_loc (Ast.loc ast, "Tacinterp.read_match_context_rule",(str
+      "Not a MATCHCONTEXTRULE ast node: " ++ print_ast ast))
   | [] -> []
 
 (* Reads the rules of a Match *)
@@ -374,8 +374,8 @@ let rec read_match_rule evc env lfun = function
     (Pat ([],read_pattern evc env lfun mp,te))::(read_match_rule evc env lfun
       tl)
   | ast::tl ->
-    anomaly_loc (Ast.loc ast, "Tacinterp.read_match_context_rule",[<'sTR
-      "Not a MATCHRULE ast node: "; print_ast ast>])
+    anomaly_loc (Ast.loc ast, "Tacinterp.read_match_context_rule",(str
+      "Not a MATCHRULE ast node: " ++ print_ast ast))
   | [] -> []
 
 (* For Match Context and Match *)
@@ -472,8 +472,8 @@ let get_debug () = !debug
 (* Interprets any expression *)
 let rec val_interp ist ast =
 
-(* mSGNL [<print_ast ast>]; *)
-(* mSGNL [<print_ast (Termast.ast_of_constr false (Pretty.assumptions_for_print []) c)>] *)
+(* mSGNL (print_ast ast); *)
+(* mSGNL (print_ast (Termast.ast_of_constr false (Pretty.assumptions_for_print []) c)) *)
 
   let value_interp ist =
   match ast with
@@ -574,10 +574,10 @@ let rec val_interp ist ast =
         VArg (Constr (Pretyping.constr_out t))
       else
         anomaly_loc (Ast.loc ast, "Tacinterp.val_interp",
-          [<'sTR "Unknown dynamic ast: "; print_ast ast>])
+          (str "Unknown dynamic ast: " ++ print_ast ast))
     | _ ->
         anomaly_loc (Ast.loc ast, "Tacinterp.val_interp",
-          [<'sTR "Unrecognizable ast: "; print_ast ast>]) in
+          (str "Unrecognizable ast: " ++ print_ast ast)) in
   if ist.debug = DebugOn then
     match debug_prompt ist.goalopt ast with
     | Exit -> VTactic tclIDTAC
@@ -601,7 +601,7 @@ and app_interp ist fv largs ast =
         VFun(olfun@newlfun,lvar,body)
     | _ ->
       user_err_loc (Ast.loc ast, "Tacinterp.app_interp",
-                    [<'sTR"Illegal tactic application: "; print_ast ast>])
+                    (str"Illegal tactic application: " ++ print_ast ast))
 
 (* Interprets recursive expressions *)
 and rec_interp ist ast = function
@@ -626,7 +626,7 @@ and rec_interp ist ast = function
     end
   | _ ->
     anomaly_loc (Ast.loc ast, "Tacinterp.rec_interp",
-                 [<'sTR"Rec not well formed: "; print_ast ast>])
+                 (str"Rec not well formed: " ++ print_ast ast))
 
 (* Interprets the clauses of a Let *)
 and let_interp ist ast = function
@@ -635,7 +635,7 @@ and let_interp ist ast = function
       (id,val_interp ist t)::(let_interp ist ast tl)
   | _ ->
       anomaly_loc (Ast.loc ast, "Tacinterp.let_interp",
-                   [<'sTR"Let not well formed: "; print_ast ast>])
+                   (str"Let not well formed: " ++ print_ast ast))
 
 (* Interprets the clauses of a LetCutIn *)
 and letin_interp ist ast = function
@@ -654,7 +654,7 @@ and letin_interp ist ast = function
          (letin_interp ist ast tl)
        with | Not_found ->
          errorlabstrm "Tacinterp.letin_interp"
-         [< 'sTR "Term or tactic expected" >])
+         (str "Term or tactic expected"))
     | _ ->
       (try
          let t = tactic_of_value tac in
@@ -671,10 +671,10 @@ and letin_interp ist ast = function
        with | NotTactic ->
          delete_proof id;
          errorlabstrm "Tacinterp.letin_interp"
-         [< 'sTR "Term or tactic expected" >]))
+         (str "Term or tactic expected")))
   | _ ->
     anomaly_loc (Ast.loc ast, "Tacinterp.letin_interp",
-    [<'sTR "LetIn not well formed: "; print_ast ast>])
+    (str "LetIn not well formed: " ++ print_ast ast))
 
 (* Interprets the clauses of a LetCut *)
 and letcut_interp ist ast = function
@@ -685,8 +685,8 @@ and letcut_interp ist ast = function
     and (ndc,ccl) =
       match ist.goalopt with
       |	None -> 
-        errorlabstrm "Tacinterp.letcut_interp" [< 'sTR
-        "Do not use Let for toplevel definitions, use Lemma, ... instead" >]
+        errorlabstrm "Tacinterp.letcut_interp" (str
+        "Do not use Let for toplevel definitions, use Lemma, ... instead")
       |	Some g -> (pf_hyps g,pf_concl g) in
     (match tac with
     | VArg (Constr csr) ->
@@ -709,7 +709,7 @@ and letcut_interp ist ast = function
          (letcut_interp ist ast tl);exat]
        with | Not_found ->
          errorlabstrm "Tacinterp.letin_interp"
-         [< 'sTR "Term or tactic expected" >])
+         (str "Term or tactic expected"))
     | _ ->
       (try
          let t = tactic_of_value tac in
@@ -730,18 +730,18 @@ and letcut_interp ist ast = function
        with | NotTactic ->
          delete_proof id;
          errorlabstrm "Tacinterp.letcut_interp"
-         [< 'sTR "Term or tactic expected" >]))
+         (str "Term or tactic expected")))
   | _ ->
-    anomaly_loc (Ast.loc ast, "Tacinterp.letcut_interp",[<'sTR
-      "LetCut not well formed: "; print_ast ast>])
+    anomaly_loc (Ast.loc ast, "Tacinterp.letcut_interp",(str
+      "LetCut not well formed: " ++ print_ast ast))
 
 (* Interprets the Match Context expressions *)
 and match_context_interp ist ast lmr =
 (*  let goal =
     (match goalopt with
     | None ->
-      errorlabstrm "Tacinterp.apply_match_context" [< 'sTR
-        "No goal available" >]
+      errorlabstrm "Tacinterp.apply_match_context" (str
+        "No goal available")
     | Some g -> g) in*)
   let rec apply_goal_sub ist goal nocc (id,c)
     csr mt mhyps hyps =
@@ -793,8 +793,8 @@ and match_context_interp ist ast lmr =
          with
         | No_match | _ -> apply_match_context ist goal tl))
     | _ ->
-      errorlabstrm "Tacinterp.apply_match_context" [<'sTR
-        "No matching clauses for Match Context">] in
+      errorlabstrm "Tacinterp.apply_match_context" (str
+        "No matching clauses for Match Context") in
   let app_wo_goal = 
     (fun ist goal ->
        apply_match_context ist goal
@@ -855,8 +855,8 @@ and apply_hyps_context ist mt lgmatch mhyps hyps =
               (hyp_match::newlhyps) lhyps_rest (Some (nocc + 1))))
         end
       |	[] ->
-        anomalylabstrm "apply_hyps_context_rec" [<'sTR
-          "Empty list should not occur" >] in
+        anomalylabstrm "apply_hyps_context_rec" (str
+          "Empty list should not occur") in
   apply_hyps_context_rec ist mt [] lgmatch mhyps hyps hyps None
 
 (* Interprets a VContext value *)
@@ -925,8 +925,8 @@ and match_interp ist ast lmr =
          with | No_match ->
            apply_match ist csr tl))
     | _ ->
-      errorlabstrm "Tacinterp.apply_match" [<'sTR
-        "No matching clauses for Match">] in
+      errorlabstrm "Tacinterp.apply_match" (str
+        "No matching clauses for Match") in
   let csr = constr_of_Constr (unvarg (val_interp ist (List.hd lmr)))
   and ilr = read_match_rule ist.evc ist.env (constr_list ist.goalopt ist.lfun)
     (List.tl lmr) in
@@ -943,19 +943,19 @@ and tac_interp lfun lmatch debug ast g =
               goalopt=Some g; debug=debug } in
   try tactic_of_value (val_interp ist ast) g
   with | NotTactic ->
-    errorlabstrm "Tacinterp.tac_interp" [<'sTR
-      "Must be a command or must give a tactic value">]
+    errorlabstrm "Tacinterp.tac_interp" (str
+      "Must be a command or must give a tactic value")
 
-(*    errorlabstrm "Tacinterp.tac_interp" [<'sTR
-    "Interpretation gives a non-tactic value">] *)
+(*    errorlabstrm "Tacinterp.tac_interp" (str
+    "Interpretation gives a non-tactic value") *)
 
 (*    match (val_interp (evc,env,lfun,lmatch,(Some g),debug) ast) with
       | VTactic tac -> (tac g)
       | VFTactic (largs,f) -> (f largs g) 
       | VRTactic res -> res
       | _ ->
-        errorlabstrm "Tacinterp.tac_interp" [<'sTR
-          "Interpretation gives a non-tactic value">]*)
+        errorlabstrm "Tacinterp.tac_interp" (str
+          "Interpretation gives a non-tactic value")*)
 
 (* Interprets a primitive tactic *)
 and interp_atomic opn args = vernac_tactic(opn,args)
@@ -985,8 +985,8 @@ and bind_interp ist = function
       (val_interp ist
       (Node(loc,"COMMAND",[c])))))
   | x ->
-    errorlabstrm "bind_interp" [<'sTR "Not the expected form in binding";
-      print_ast x>]
+    errorlabstrm "bind_interp" (str "Not the expected form in binding" ++
+      print_ast x)
 
 (* Interprets a COMMAND expression (in case of failure, returns Command) *)
 and com_interp ist com = 
@@ -1002,8 +1002,8 @@ and com_interp ist com =
         subst_meta [-1,ic] ctxt
        with
       | Not_found ->
-        errorlabstrm "com_interp" [<'sTR "Unbound context identifier";
-          print_ast ast>])
+        errorlabstrm "com_interp" (str "Unbound context identifier" ++
+          print_ast ast))
     | c -> interp_constr ist c None in
   begin
     db_constr ist.debug ist.env csr;
@@ -1027,14 +1027,14 @@ and cast_com_interp ist com =
           and ctxt = constr_of_Constr_context
             (unvarg (List.assoc s ist.lfun)) in
           begin
-           wARNING [<'sTR
-              "Cannot pre-constrain the context expression with goal">];
+           warning 
+             "Cannot pre-constrain the context expression with goal";
             subst_meta [-1,ic] ctxt
           end
          with
          | Not_found ->
-           errorlabstrm "cast_com_interp" [<'sTR "Unbound context identifier";
-             print_ast ast>])
+           errorlabstrm "cast_com_interp" (str "Unbound context identifier" ++
+             print_ast ast))
       | c ->
         interp_constr ist c (Some (pf_concl gl)) in
     begin
@@ -1042,7 +1042,7 @@ and cast_com_interp ist com =
       VArg (Constr csr)
     end
   | None ->
-    errorlabstrm "val_interp" [<'sTR "Cannot cast a constr without goal">]
+    errorlabstrm "val_interp" (str "Cannot cast a constr without goal")
 
 (* Interprets a CASTEDOPENCOMMAND expression *)
 and cast_opencom_interp ist com =
@@ -1060,19 +1060,19 @@ and cast_opencom_interp ist com =
         and ctxt =
           constr_of_Constr_context (unvarg (List.assoc s ist.lfun)) in
         begin
-          wARNING [<'sTR
-            "Cannot pre-constrain the context expression with goal">];
+          warning 
+            "Cannot pre-constrain the context expression with goal";
           VArg (Constr (subst_meta [-1,ic] ctxt))
         end
        with
       |	Not_found ->
-        errorlabstrm "cast_opencom_interp" [<'sTR "Unbound context identifier";
-          print_ast ast>])
+        errorlabstrm "cast_opencom_interp" (str "Unbound context identifier" ++
+          print_ast ast))
     | c ->
         VArg
 	  (OpenConstr (interp_openconstr ist c (Some (pf_concl gl)))))
   | None ->
-    errorlabstrm "val_interp" [<'sTR "Cannot cast a constr without goal">]
+    errorlabstrm "val_interp" (str "Cannot cast a constr without goal")
 
 (* Interprets a qualified name. This can be a metavariable to be injected *)
 and qid_interp ist = function
@@ -1080,8 +1080,8 @@ and qid_interp ist = function
   | Node(loc,"QUALIDMETA",[Num(_,n)]) ->
       Nametab.qualid_of_sp (destConst(List.assoc n ist.lmatch))
   | ast -> 
-      anomaly_loc (Ast.loc ast, "Tacinterp.qid_interp",[<'sTR
-        "Unrecognizable qualid ast: "; print_ast ast>])
+      anomaly_loc (Ast.loc ast, "Tacinterp.qid_interp",(str
+        "Unrecognizable qualid ast: " ++ print_ast ast))
 
 and cvt_pattern ist = function
   | Node(_,"PATTERN", Node(loc,"COMMAND",[com])::nums) ->
@@ -1136,7 +1136,7 @@ and flag_of_ast ist lf =
     | Node(_,"Zeta",[])::lf -> add_flag (red_add red fZETA) lf
     | Node(loc,("Unf"|"UnfBut"),l)::_ ->
 	user_err_loc(loc,"flag_of_ast",
-                     [<'sTR "Delta must be specified just before">])
+                     (str "Delta must be specified just before"))
 
     | arg::_ -> invalid_arg_loc (Ast.loc arg,"flag_of_ast")
   in
@@ -1167,8 +1167,8 @@ and cvt_intro_pattern ist = function
     ListPat (List.map (cvt_intro_pattern ist) l)
   | x ->
     errorlabstrm "cvt_intro_pattern"
-      [<'sTR "Not the expected form for an introduction pattern!";'fNL;
-        print_ast x>]
+      (str "Not the expected form for an introduction pattern!" ++fnl () ++
+        print_ast x)
 
 (* Interprets a pattern of Let *)
 and cvt_letpattern ist (o,l) = function
@@ -1199,13 +1199,13 @@ let interp = fun ast -> tac_interp [] [] !debug ast
 let hide_interp =
   let htac = hide_tactic "Interp"
     (function [Tacexp t] -> interp t
-     | _ -> anomalylabstrm "hide_interp" [<'sTR "Not a tactic AST">]) in
+     | _ -> anomalylabstrm "hide_interp" (str "Not a tactic AST")) in
   fun ast -> htac [Tacexp ast]
 
 (* For bad tactic calls *)
 let bad_tactic_args s =
   anomalylabstrm s
-    [<'sTR "Tactic "; 'sTR s; 'sTR " called with bad arguments">]
+    (str "Tactic " ++ str s ++ str " called with bad arguments")
 
 (* Declaration of the TAC-DEFINITION object *)
 let (inMD,outMD) =
@@ -1227,9 +1227,9 @@ let add_tacdef na vbody =
   begin
     if Gmap.mem na !mactab then
       errorlabstrm "Tacinterp.add_tacdef" 
-      [< 'sTR
-         "There is already a Meta Definition or a Tactic Definition named ";
-         pr_id na>];
+	(str "There is already a Meta Definition or a Tactic Definition named "
+	 ++
+         pr_id na);
     let _ = Lib.add_leaf na (inMD (na,vbody)) in
-    Options.if_verbose mSGNL [< pr_id na; 'sTR " is defined" >]
+    Options.if_verbose msgnl (pr_id na ++ str " is defined")
   end

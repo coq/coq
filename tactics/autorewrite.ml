@@ -44,7 +44,7 @@ let one_base tac_main bas =
   let lrul = Hashtbl.find_all !rewtab bas in
   if lrul = [] then
     errorlabstrm "AutoRewrite"
-      [<'sTR ("Rewriting base "^(bas)^" does not exist") >]
+      (str ("Rewriting base "^(bas)^" does not exist"))
   else
     tclREPEAT_MAIN (tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
       tclTHEN tac

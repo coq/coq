@@ -32,8 +32,8 @@ let encode_inductive ref =
     | IndRef indsp -> indsp
     | _ ->
         errorlabstrm "indsp_of_id"
-          [< pr_global_env (Global.env()) ref;
-	     'sTR" is not an inductive type" >] in
+          (pr_global_env (Global.env()) ref ++
+	     str" is not an inductive type") in
   let (mib,mip) = Global.lookup_inductive indsp in
   let constr_lengths = Array.map List.length mip.mind_listrec in
   (indsp,constr_lengths)
@@ -67,7 +67,7 @@ module PrintingCasesMake =
     let encode = encode_inductive
     let check (_,lc) =
       if not (Test.test lc) then 
-	errorlabstrm "check_encode" [< 'sTR Test.error_message >]
+	errorlabstrm "check_encode" (str Test.error_message)
     let printer (ind,_) =
       pr_id (basename (path_of_inductive (Global.env()) ind))
     let key = Goptions.SecondaryTable ("Printing",Test.field)

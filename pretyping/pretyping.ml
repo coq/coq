@@ -207,7 +207,7 @@ let rec pretype tycon env isevars lvar lmeta = function
             Not_found ->
 	      user_err_loc
 		(loc,"pretype",
-		 [< 'sTR "Metavariable "; 'iNT n; 'sTR" is unbound" >])
+		 str "Metavariable " ++ int n ++ str " is unbound")
       in inh_conv_coerce_to_tycon loc env isevars j tycon
 	   
   | RHole loc ->
@@ -220,7 +220,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 		| Some loc -> 
 		    user_err_loc
 		      (loc,"pretype",
-		       [< 'sTR "Cannot infer a term for this placeholder" >])))
+		       (str "Cannot infer a term for this placeholder"))))
 
   | RRec (loc,fixkind,names,lar,vdef) ->
       let larj =
@@ -420,7 +420,7 @@ let rec pretype tycon env isevars lvar lmeta = function
       j
       (*inh_conv_coerce_to_tycon loc env isevars j tycon*)
     else
-      user_err_loc (loc,"pretype",[< 'sTR "Not a constr tagged Dynamic" >])
+      user_err_loc (loc,"pretype",(str "Not a constr tagged Dynamic"))
 
 (* [pretype_type valcon env isevars lvar lmeta c] coerces [c] into a type *)
 and pretype_type valcon env isevars lvar lmeta = function
@@ -471,7 +471,7 @@ let check_evars fail_evar initial_sigma sigma c =
 	  if not (Evd.in_dom initial_sigma ev) then
 	    (if fail_evar then
 	      errorlabstrm "whd_ise"
-		[< 'sTR"There is an unknown subterm I cannot solve" >]
+		(str"There is an unknown subterm I cannot solve")
 	    else (* try to avoid duplication *)
               (if not (List.exists (fun (k',_) -> k=k') !metamap) then
 	        metamap := (k, existential_type sigma k) :: !metamap))
@@ -534,7 +534,7 @@ let understand_type sigma env c =
   let _,c = ise_infer_type_gen true sigma env [] [] c in
   c.utj_val
 
-let understand_gen sigma env lvar lmeta exptyp c =
+let understand_gen sigma env lvar lmeta ~expected_type:exptyp c =
   let _, c = ise_infer_gen true sigma env lvar lmeta exptyp c in
   c.uj_val
 

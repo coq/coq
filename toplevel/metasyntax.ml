@@ -226,10 +226,10 @@ let add_infix assoc n inf pr =
   (* check the precedence *)
   if n<1 or n>10 then
     errorlabstrm "Metasyntax.infix_grammar_entry"
-      [< 'sTR"Precedence must be between 1 and 10." >];
+      (str"Precedence must be between 1 and 10.");
   if (assoc<>None) & (n<6 or n>9) then
     errorlabstrm "Vernacentries.infix_grammar_entry"
-      [< 'sTR"Associativity Precedence must be 6,7,8 or 9." >];
+      (str"Associativity Precedence must be 6,7,8 or 9.");
   (* check the grammar entry *)
   let prefname = inf^"_infix" in
   let gram_rule = gram_infix assoc n (split inf) prefname pr in

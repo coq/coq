@@ -76,26 +76,26 @@ let warning_or_error coe indsp err =
   let st = match err with
     | MissingProj (fi,projs) ->
 	let s,have = if List.length projs > 1 then "s","have" else "","has" in
-        [< 'sTR(string_of_id fi);
-	   'sTR" cannot be defined because the projection"; 'sTR s; 'sPC;
-           prlist_with_sep pr_coma pr_id projs; 'sPC; 'sTR have; 'sTR "n't." >]
+        (str(string_of_id fi) ++
+	   str" cannot be defined because the projection" ++ str s ++ spc () ++
+           prlist_with_sep pr_coma pr_id projs ++ spc () ++ str have ++ str "n't.")
     | BadTypedProj (fi,ctx,te) ->
 	match te with
 	  | ElimArity (_,_,_,_,Some (_,_,NonInformativeToInformative)) ->
-              [<'sTR (string_of_id fi); 
-		'sTR" cannot be defined because it is informative and ";
-		Printer.pr_inductive (Global.env()) indsp;
-		'sTR " is not." >]   
+              (str (string_of_id fi) ++ 
+		str" cannot be defined because it is informative and " ++
+		Printer.pr_inductive (Global.env()) indsp ++
+		str " is not.")   
 	  | ElimArity (_,_,_,_,Some (_,_,StrongEliminationOnNonSmallType)) ->
-	      [<'sTR (string_of_id fi); 
-		'sTR" cannot be defined because it is large and ";
-		Printer.pr_inductive (Global.env()) indsp;
-		'sTR " is not." >]
+	      (str (string_of_id fi) ++ 
+		str" cannot be defined because it is large and " ++
+		Printer.pr_inductive (Global.env()) indsp ++
+		str " is not.")
 	  | _ -> 
-	      [<'sTR " cannot be defined because it is not typable" >]
+	      (str " cannot be defined because it is not typable")
   in
   if coe then errorlabstrm "structure" st;
-  Options.if_verbose pPNL (hOV 0 [< 'sTR"Warning: "; st >])
+  Options.if_verbose ppnl (hov 0 (str"Warning: " ++ st))
 
 (* We build projections *)
 let declare_projections indsp coers fields =

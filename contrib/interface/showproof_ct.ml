@@ -120,31 +120,31 @@ let sphv l =
 
 let rec prlist_with_sep f g l =
     match l with 
-      [] -> hOV 0 [< >]
-     |x::l1 -> hOV 0 [< (g x); (f ()); (prlist_with_sep f g l1)>]
+      [] -> hov 0 (mt ())
+     |x::l1 -> hov 0 ((g x) ++ (f ()) ++ (prlist_with_sep f g l1))
 ;;
    
 let rec sp_print x = 
    match x with
-     CT_coerce_ID_to_TEXT (CT_ident s)
-     -> (match s with
-       "\n" -> [< 'fNL >]
-     | "Retour chariot pour Show proof" -> [< 'fNL >]
-     |_ -> [< 'sTR s >])
-   | CT_text_formula  f -> [< prterm (Hashtbl.find ct_FORMULA_constr f) >]
-  |  CT_text_op [CT_coerce_ID_to_TEXT (CT_ident "to_prove");
-	      CT_text_path (CT_signed_int_list p);
-              CT_coerce_ID_to_TEXT (CT_ident "goal");
-	      g] ->
+     | CT_coerce_ID_to_TEXT (CT_ident s)
+       -> (match s with
+	     | "\n" -> fnl ()
+	     | "Retour chariot pour Show proof" -> fnl ()
+	     |_ -> str s)
+     | CT_text_formula  f -> prterm (Hashtbl.find ct_FORMULA_constr f)
+     | CT_text_op [CT_coerce_ID_to_TEXT (CT_ident "to_prove");
+		   CT_text_path (CT_signed_int_list p);
+		   CT_coerce_ID_to_TEXT (CT_ident "goal");
+		   g] ->
       let p=(List.map (fun y -> match y with
 	                 (CT_coerce_INT_to_SIGNED_INT
 			      (CT_int x)) -> x
 		       | _ -> raise (Failure "sp_print")) p) in
-      h 0 [<  'sTR "<b>"; sp_print g; 'sTR "</b>">]
+      h 0 (str "<b>" ++ sp_print g ++ str "</b>")
  |   CT_text_op [CT_coerce_ID_to_TEXT (CT_ident "uselemma");
               CT_coerce_ID_to_TEXT (CT_ident intro);
 	      l;g] ->
-      h 0 [< 'sTR ("<i>("^intro^" "); sp_print l; 'sTR ")</i>"; sp_print g>]
+      h 0 (str ("<i>("^intro^" ") ++ sp_print l ++ str ")</i>" ++ sp_print g)
  |   CT_text_op [CT_coerce_ID_to_TEXT (CT_ident "hyp");
 	      CT_text_path (CT_signed_int_list p);
 	      CT_coerce_ID_to_TEXT (CT_ident hyp);
@@ -153,7 +153,7 @@ let rec sp_print x =
 	                  (CT_coerce_INT_to_SIGNED_INT
 			      (CT_int x)) -> x
 		       | _ -> raise (Failure "sp_print")) p) in
-            h 0 [< 'sTR hyp>]
+            h 0 (str hyp)
 
   |   CT_text_op [CT_coerce_ID_to_TEXT (CT_ident "hyp_with_type");
 	      CT_text_path (CT_signed_int_list p);
@@ -163,23 +163,23 @@ let rec sp_print x =
                          (CT_coerce_INT_to_SIGNED_INT
 			      (CT_int x)) -> x
 		       | _ -> raise (Failure "sp_print")) p) in
-      h 0 [< sp_print g; 'sPC; 'sTR "<i>("; 'sTR hyp;'sTR ")</i>">]   
+      h 0 (sp_print g ++ spc () ++ str "<i>(" ++ str hyp ++ str ")</i>")   
 
   | CT_text_h l ->
-      h 0 [< prlist_with_sep (fun () -> [< >])
-		(fun y -> sp_print y) l>]
+      h 0 (prlist_with_sep (fun () -> mt ())
+	     (fun y -> sp_print y) l)
   | CT_text_v l ->
-      v 0 [< prlist_with_sep (fun () -> [< >])
-		(fun y -> sp_print y) l>]
+      v 0 (prlist_with_sep (fun () -> mt ())
+		(fun y -> sp_print y) l)
   | CT_text_hv l ->
-      h 0 [< prlist_with_sep (fun () -> [<>])
-		(fun y -> sp_print y) l>]
+      h 0 (prlist_with_sep (fun () -> mt ())
+	     (fun y -> sp_print y) l)
   | CT_text_op [CT_coerce_ID_to_TEXT (CT_ident "shrink");
 	      CT_text_op [CT_coerce_ID_to_TEXT (CT_ident info); t]]  ->
-                   h 0 [< 'sTR ("("^info^": "); sp_print t ;'sTR ")" >]
+                   h 0 (str ("("^info^": ") ++ sp_print t ++ str ")")
   | CT_text_op [CT_coerce_ID_to_TEXT (CT_ident "root_of_text_proof");
               t]->
                     sp_print t 
-  | _ -> [< 'sTR "..." >]
+  | _ -> str "..."
 ;;
   

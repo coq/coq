@@ -1020,7 +1020,7 @@ let rec to_lambda n prod =
     match kind_of_term prod with 
       | Prod (na,ty,bd) -> mkLambda (na,ty,to_lambda (n-1) bd)
       | Cast (c,_) -> to_lambda n c
-      | _   -> errorlabstrm "to_lambda" [<>]                      
+      | _   -> errorlabstrm "to_lambda" (mt ())                      
 
 let rec to_prod n lam =
   if n=0 then 
@@ -1029,7 +1029,7 @@ let rec to_prod n lam =
     match kind_of_term lam with 
       | Lambda (na,ty,bd) -> mkProd (na,ty,to_prod (n-1) bd)
       | Cast (c,_) -> to_prod n c
-      | _   -> errorlabstrm "to_prod" [<>]                      
+      | _   -> errorlabstrm "to_prod" (mt ())                      
 	    
 (* pseudo-reduction rule:
  * [prod_app  s (Prod(_,B)) N --> B[N]
@@ -1040,7 +1040,7 @@ let prod_app t n =
     | Prod (_,_,b) -> subst1 n b
     | _ ->
 	errorlabstrm "prod_app"
-	  [< 'sTR"Needed a product, but didn't find one" ; 'fNL >]
+	  (str"Needed a product, but didn't find one" ++ fnl ())
 
 
 (* prod_appvect T [| a1 ; ... ; an |] -> (T a1 ... an) *)

@@ -56,8 +56,8 @@ let impl_args_to_string = function
 let implicit_args_id_to_ast_list id l ast_list = 
     (match impl_args_to_string l with
            None -> ast_list
-         | Some(s) -> (str("For " ^ (string_of_id id)))::
-                       (str s)::
+         | Some(s) -> (string ("For " ^ (string_of_id id)))::
+                      (string s)::
                        ast_list);;
 
 (* This function construct an ast to enumerate the implicit positions for an
@@ -125,7 +125,7 @@ let mutual_to_ast_list sp mib =
     Array.fold_right
       (fun mi (n,l) -> (n+1, (convert_one_inductive sp n)::l)) mipv (0, []) in
   (ope("MUTUALINDUCTIVE",
-	  [str (if mib.mind_finite then "Inductive" else "CoInductive");
+	  [string (if mib.mind_finite then "Inductive" else "CoInductive");
 	  ope("VERNACARGLIST", ast_list)])::
      (implicit_args_to_ast_list sp mipv));;
 
@@ -135,11 +135,11 @@ let constr_to_ast v =
 let implicits_to_ast_list implicits =
     (match (impl_args_to_string implicits) with
                   None -> []
-                | Some s -> [ope("COMMENT", [str s])]);;
+                | Some s -> [ope("COMMENT", [string s])]);;
 
 let make_variable_ast name typ implicits =
    (ope("VARIABLE",
-    [str "VARIABLE";
+    [string "VARIABLE";
      ope("BINDERLIST",
          [ope("BINDER",
             [(constr_to_ast (body_of_type typ));
@@ -148,7 +148,7 @@ let make_variable_ast name typ implicits =
     
 let make_definition_ast name c typ implicits =
  (ope("DEFINITION",
-      [str "DEFINITION";
+      [string "DEFINITION";
        nvar name;
        ope("COMMAND",
            [ope("CAST",
@@ -193,8 +193,8 @@ let leaf_entry_to_ast_list (sp,lobj) =
   | (_, "INDUCTIVE") -> inductive_to_ast_list sp
   | (_, s) -> 
       errorlabstrm 
-      	"print" [< 'sTR ("printing of unrecognized object " ^
-			 s ^ " has been required") >];;
+      	"print" (str ("printing of unrecognized object " ^
+		      s ^ " has been required"));;
 
 
 
@@ -232,10 +232,11 @@ let name_to_ast (qid:Nametab.qualid) =
 	    try
 	      let sp = Syntax_def.locate_syntactic_definition qid in
 		errorlabstrm "print"
-      		  [< 'sTR "printing of syntax definitions not implemented" >]
+      		  (str "printing of syntax definitions not implemented")
 	    with Not_found ->
 	      errorlabstrm "print"
-		[< Nametab.pr_qualid qid;
-		   'sPC; 'sTR "not a defined object" >] in
-    ope("vernac_list", l);;
+		(Nametab.pr_qualid qid ++
+		 spc () ++ str "not a defined object")
+  in
+  ope("vernac_list", l);;
 

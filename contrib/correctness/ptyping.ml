@@ -529,7 +529,7 @@ let rec states_desc ren env loc = function
 	if s_e.info.kappa = c then
 	  s_e
       	else begin
-	  if !verbose_fix then begin mSGNL (pp_type_c s_e.info.kappa) end ;
+	  if !verbose_fix then begin msgnl (pp_type_c s_e.info.kappa) end ;
 	  state_rec s_e.info.kappa
       	end
       in 

@@ -513,7 +513,7 @@ let replay_history env_hyp =
   in loop env_hyp
 
 let show_goal gl =
-  if !debug then Pp.pPNL (Tacmach.pr_gls gl); Tacticals.tclIDTAC gl
+  if !debug then Pp.ppnl (Tacmach.pr_gls gl); Tacticals.tclIDTAC gl
 
 (* Cette fonction prépare le rejeu puis l'appelle :
    \begin{itemize}
@@ -569,9 +569,9 @@ let prepare_and_play env tac_hyps trace_solution =
     mkApp(Lazy.force coq_interp_sequent, [| env_reified; l_reified_terms |]) in
   let reified_trace_solution = replay_history l_e trace_solution in
   if !debug then begin
-    Pp.pPNL [< Printer.prterm reified>];
-    Pp.pPNL [< Printer.prterm l_reified_tac_norms>];
-    Pp.pPNL [< Printer.prterm reified_trace_solution>];
+    Pp.ppnl (Printer.prterm reified);
+    Pp.ppnl (Printer.prterm l_reified_tac_norms);
+    Pp.ppnl (Printer.prterm reified_trace_solution);
   end;
   Tactics.generalize l_generalized >>
   Tactics.change_in_concl reified >>

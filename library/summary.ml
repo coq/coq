@@ -34,7 +34,7 @@ let declare_summary sumname sdecl =
   in
   if Hashtbl.mem summaries sumname then
     anomalylabstrm "Summary.declare_summary"
-      [< 'sTR "Cannot declare a summary twice: " ; 'sTR sumname >];
+      (str "Cannot declare a summary twice: " ++ str sumname);
   Hashtbl.add summaries sumname ddecl
 
 type frozen = Dyn.t Stringmap.t

@@ -25,7 +25,7 @@ val slam : identifier option * Coqast.t -> Coqast.t
 val nvar : identifier -> Coqast.t
 val ide : string -> Coqast.t
 val num : int -> Coqast.t
-val str : string -> Coqast.t
+val string : string -> Coqast.t
 val path : section_path -> Coqast.t
 val dynamic : Dyn.t -> Coqast.t
 

@@ -215,9 +215,9 @@ let guess_theory a =
     theories_map_find a
   with Not_found -> 
     errorlabstrm "Ring" 
-      [< 'sTR "No Declared Ring Theory for ";
-	 prterm a; 'fNL;
-	 'sTR "Use Add [Semi] Ring to declare it">]
+      (str "No Declared Ring Theory for " ++
+	 prterm a ++ fnl () ++
+	 str "Use Add [Semi] Ring to declare it")
 
 (* Looks up an option *)
 
@@ -229,8 +229,8 @@ let unbox = function
 
 let add_theory want_ring want_abstract want_setoid a aequiv asetth amorph aplus amult aone azero aopp aeq t cset = 
   if theories_map_mem a then errorlabstrm "Add Semi Ring" 
-    [< 'sTR "A (Semi-)(Setoid-)Ring Structure is already declared for ";
-       prterm a >];
+    (str "A (Semi-)(Setoid-)Ring Structure is already declared for " ++
+       prterm a);
   let env = Global.env () in
     if (want_ring & want_setoid &
 	(not (is_conv env Evd.empty (Typing.type_of env Evd.empty t)
@@ -238,24 +238,24 @@ let add_theory want_ring want_abstract want_setoid a aequiv asetth amorph aplus 
 			[| a; (unbox aequiv); aplus; amult; aone; azero; (unbox aopp); aeq|])))) &
 	(not (is_conv env Evd.empty (Typing.type_of env Evd.empty (unbox asetth))
 		(mkLApp (coq_Setoid_Theory, [| a; (unbox aequiv) |]))))) then 
-      errorlabstrm "addring" [< 'sTR "Not a valid Setoid-Ring theory" >];
+      errorlabstrm "addring" (str "Not a valid Setoid-Ring theory");
     if (not want_ring & want_setoid &
 	(not (is_conv env Evd.empty (Typing.type_of env Evd.empty t)
 		(mkLApp (coq_Semi_Setoid_Ring_Theory, 
 			[| a; (unbox aequiv); aplus; amult; aone; azero; aeq|])))) &
 	(not (is_conv env Evd.empty (Typing.type_of env Evd.empty (unbox asetth))
 		(mkLApp (coq_Setoid_Theory, [| a; (unbox aequiv) |]))))) then 
-      errorlabstrm "addring" [< 'sTR "Not a valid Semi-Setoid-Ring theory" >];
+      errorlabstrm "addring" (str "Not a valid Semi-Setoid-Ring theory");
     if (want_ring & not want_setoid &
 	not (is_conv env Evd.empty (Typing.type_of env Evd.empty t)
 	       (mkLApp (coq_Ring_Theory, 
 		       [| a; aplus; amult; aone; azero; (unbox aopp); aeq |])))) then
-      errorlabstrm "addring" [< 'sTR "Not a valid Ring theory" >];
+      errorlabstrm "addring" (str "Not a valid Ring theory");
     if (not want_ring & not want_setoid &
 	not (is_conv  env Evd.empty (Typing.type_of env Evd.empty t) 
 	       (mkLApp (coq_Semi_Ring_Theory, 
 		       [| a; aplus; amult; aone; azero; aeq |])))) then 
-      errorlabstrm "addring" [< 'sTR "Not a valid Semi-Ring theory" >];
+      errorlabstrm "addring" (str "Not a valid Semi-Ring theory");
     Lib.add_anonymous_leaf
       (theory_to_obj 
 	 (a, { th_ring = want_ring;
@@ -931,7 +931,7 @@ let polynom lc gl =
 		 (fun c1 -> not (pf_conv_x gl t (pf_type_of gl c1))) args
 	       then 
 		 errorlabstrm "Ring :"
-		   [< 'sTR" All terms must have the same type" >];
+		   (str" All terms must have the same type");
 	       (tclTHEN (raw_polynom th None args) (guess_eq_tac th)) gl
 	   | _ -> (match match_with_equiv (pf_concl gl) with
 		     | Some (equiv, c1::args) ->
@@ -941,10 +941,10 @@ let polynom lc gl =
 			     (fun c2 -> not (pf_conv_x gl t (pf_type_of gl c2))) args
 			   then 
 			     errorlabstrm "Ring :"
-			       [< 'sTR" All terms must have the same type" >];
+			       (str" All terms must have the same type");
 			   (tclTHEN (raw_polynom th None args) (guess_equiv_tac th)) gl		   
 		     | _ -> errorlabstrm "polynom :" 
-			 [< 'sTR" This goal is not an equality nor a setoid equivalence" >]))
+			 (str" This goal is not an equality nor a setoid equivalence")))
     (* Elsewhere, guess the theory, check that all terms have the same type
        and apply raw_polynom *)
     | c :: lc' -> 
@@ -954,7 +954,7 @@ let polynom lc gl =
 	    (fun c1 -> not (pf_conv_x gl t (pf_type_of gl c1))) lc'
 	  then 
 	    errorlabstrm "Ring :"
-	      [< 'sTR" All terms must have the same type" >];
+	      (str" All terms must have the same type");
 	  (tclTHEN (raw_polynom th None lc) polynom_unfold_tac) gl
 
 let dyn_polynom ltacargs gl =  

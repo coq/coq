@@ -64,7 +64,7 @@ let is_constant r = match r with
 let check_constant r = 
   if (is_constant r) then r 
   else errorlabstrm "extract_constant"
-	[< Printer.pr_global r; 'sPC; 'sTR "is not a constant" >] 
+	(Printer.pr_global r ++ spc () ++ str "is not a constant") 
 
 let string_of_varg = function
   | VARG_IDENTIFIER id -> string_of_id id
@@ -73,7 +73,7 @@ let string_of_varg = function
 
 let no_such_reference q =
   errorlabstrm "reference_of_varg" 
-    [< Nametab.pr_qualid q; 'sTR ": no such reference" >]
+    (Nametab.pr_qualid q ++ str ": no such reference")
 
 let reference_of_varg = function
   | VARG_QUALID q -> 
@@ -135,14 +135,14 @@ let _ =
 let print_inline () = 
   let (i,n)= !inline_table in 
   let i'= Refset.filter is_constant i in 
-  mSG 
-    [< 'sTR "Extraction Inline:"; 'fNL; 
+  msg 
+    (str "Extraction Inline:" ++ fnl () ++ 
        Refset.fold
-	 (fun r p -> [< p; 'sTR "   " ; Printer.pr_global r ; 'fNL >]) i' [<>];
-       'sTR "Extraction NoInline:"; 'fNL; 
+	 (fun r p -> (p ++ str "   " ++ Printer.pr_global r ++ fnl ())) i' (mt ()) ++
+       str "Extraction NoInline:" ++ fnl () ++ 
        Refset.fold
-	 (fun r p -> [< p; 'sTR "   " ; Printer.pr_global r ; 'fNL >]) n [<>]
-    >]
+	 (fun r p -> (p ++ str "   " ++ Printer.pr_global r ++ fnl ())) n (mt ())
+)
 
 let _ = vinterp_add "PrintExtractionInline" (fun _ -> print_inline)
 
@@ -237,7 +237,7 @@ let extract_inductive r (id2,l2) = match r with
 	   add_anonymous_leaf (in_ml_extraction (r,s))) l2
   | _ -> 
       errorlabstrm "extract_inductive"
-	[< Printer.pr_global r; 'sPC; 'sTR "is not an inductive type" >]
+	(Printer.pr_global r ++ spc () ++ str "is not an inductive type")
 
 let _ = 
   vinterp_add "ExtractInductive"

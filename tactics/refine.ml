@@ -68,15 +68,15 @@ and  sg_proofs       = (term_with_holes option) list
 (* pour debugger *)
 
 let rec pp_th (TH(c,mm,sg)) =
-  [< 'sTR"TH=[ "; hOV 0 [< prterm c; 'fNL;
-			      (* pp_mm mm; 'fNL; *)
-			   pp_sg sg >] ; 'sTR "]" >]
+  (str"TH=[ " ++ hov 0 (prterm c ++ fnl () ++
+			      (* pp_mm mm ++ fnl () ++ *)
+			   pp_sg sg) ++ str "]")
 and pp_mm l =
-  hOV 0 (prlist_with_sep (fun _ -> [< 'fNL >]) 
-	   (fun (n,c) -> [< 'iNT n; 'sTR" --> "; prterm c >]) l)
+  hov 0 (prlist_with_sep (fun _ -> (fnl ())) 
+	   (fun (n,c) -> (int n ++ str" --> " ++ prterm c)) l)
 and pp_sg sg =
-  hOV 0 (prlist_with_sep (fun _ -> [< 'fNL >])
-	   (function None -> [< 'sTR"None" >] | Some th -> [< pp_th th >]) sg)
+  hov 0 (prlist_with_sep (fun _ -> (fnl ()))
+	   (function None -> (str"None") | Some th -> (pp_th th)) sg)
      
 (*  compute_metamap : constr -> 'a evar_map -> term_with_holes
  *  réalise le 2. ci-dessus

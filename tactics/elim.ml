@@ -108,7 +108,7 @@ let inductive_of_qualid gls qid =
     | Ind ity -> ity
     | _ ->
 	errorlabstrm "Decompose"
-	  [< Nametab.pr_qualid qid; 'sTR " is not an inductive type" >]
+	  (Nametab.pr_qualid qid ++ str " is not an inductive type")
 
 let decompose_these c l gls =
   let indl = List.map (inductive_of_qualid gls) l in 

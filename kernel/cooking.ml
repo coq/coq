@@ -36,13 +36,13 @@ type recipe = {
 
 let failure () =
   anomalylabstrm "generic__modify_opers"
-    [< 'sTR"An oper which was never supposed to appear has just appeared" ;
-       'sPC ; 'sTR"Either this is in system code, and you need to" ; 'sPC;
-       'sTR"report this error," ; 'sPC ;
-       'sTR"Or you are using a user-written tactic which calls" ; 'sPC ;
-       'sTR"generic__modify_opers, in which case the user-written code" ;
-       'sPC ; 'sTR"is broken - this function is an internal system" ;
-       'sPC ; 'sTR"for internal system use only" >]
+    (str"An oper which was never supposed to appear has just appeared" ++
+     spc () ++ str"Either this is in system code, and you need to" ++ spc () ++
+     str"report this error," ++ spc () ++
+     str"Or you are using a user-written tactic which calls" ++ spc () ++
+     str"generic__modify_opers, in which case the user-written code" ++
+     spc () ++ str"is broken - this function is an internal system" ++
+     spc () ++ str"for internal system use only")
 
 let modify_opers replfun (constl,indl,cstrl) =
   let rec substrec c =
@@ -101,11 +101,11 @@ let expmod_constr modlist c =
   let expfun (sp,cb) = 
     if cb.const_opaque then
       errorlabstrm "expmod_constr"
-	[< 'sTR"Cannot unfold the value of ";
-        'sTR(string_of_path sp); 'sPC;
-        'sTR"You cannot declare local lemmas as being opaque"; 'sPC;
-        'sTR"and then require that theorems which use them"; 'sPC;
-        'sTR"be transparent" >];
+	(str"Cannot unfold the value of " ++
+        str(string_of_path sp) ++ spc () ++
+        str"You cannot declare local lemmas as being opaque" ++ spc () ++
+        str"and then require that theorems which use them" ++ spc () ++
+        str"be transparent");
     match cb.const_body with
       | Some body -> body
       | None -> assert false

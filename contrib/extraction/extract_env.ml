@@ -32,16 +32,16 @@ let module_of_id m =
     locate_loaded_library (make_short_qualid m) 
   with Not_found ->  
     errorlabstrm "module_message"
-      [< 'sTR "Module"; 'sPC;pr_id m; 'sPC; 'sTR "not found." >] 
+      (str "Module" ++ spc () ++ pr_id m ++ spc () ++ str "not found.") 
 
 (*s Module name clash verification. *)
 
 let clash_error sn n1 n2 = 
   errorlabstrm "clash_module_message"
-    [< 'sTR ("There are two Coq modules with ML name " ^ sn ^" :"); 
-       'fNL ; 'sTR ("  "^(string_of_dirpath n1)) ; 
-       'fNL ; 'sTR ("  "^(string_of_dirpath n2)) ; 
-       'fNL ; 'sTR "This is not allowed in ML. Please do some renaming first." >]
+    (str ("There are two Coq modules with ML name " ^ sn ^" :") ++ 
+     fnl () ++ str ("  "^(string_of_dirpath n1)) ++ 
+     fnl () ++ str ("  "^(string_of_dirpath n2)) ++ 
+     fnl () ++ str "This is not allowed in ML. Please do some renaming first.")
     
 let check_r m sm r = 
   let rm = String.capitalize (string_of_id (short_module r)) in 
@@ -205,8 +205,8 @@ let local_optimize refs =
   optimize prm (decl_of_refs refs)
 
 let print_user_extract r = 
-  mSGNL [< 'sTR "User defined extraction:"; 
-	   'sPC; 'sTR (find_ml_extraction r) ; 'fNL>]
+  msgnl (str "User defined extraction:" ++ 
+	   spc () ++ str (find_ml_extraction r) ++ fnl ())
 
 let decl_in_r r0 = function 
   | Dglob (r,_) -> r = r0
@@ -220,7 +220,7 @@ let extract_reference r =
     print_user_extract r 
   else
     let d = list_last (local_optimize [r]) in
-    mSGNL (ToplevelPp.pp_decl 
+    msgnl (ToplevelPp.pp_decl 
 	     (if (decl_in_r r d) || d = Dtype([],true) || d = Dtype([],false) 
 	     then d 
 	     else List.find (decl_in_r r) (local_optimize [r])))
@@ -239,8 +239,8 @@ let _ =
 		(* Otherwise, output the ML type or expression *)
 		| _ ->
 		    match extract_constr (Global.env()) c with
-		      | Emltype (t,_,_) -> mSGNL (ToplevelPp.pp_type t)
-		      | Emlterm a -> mSGNL (ToplevelPp.pp_ast (normalize a)))
+		      | Emltype (t,_,_) -> msgnl (ToplevelPp.pp_type t)
+		      | Emlterm a -> msgnl (ToplevelPp.pp_ast (normalize a)))
        | _ -> assert false)
 
 (*s Recursive extraction in the Coq toplevel. The vernacular command is
@@ -255,7 +255,7 @@ let _ =
        let rl = List.filter (fun x -> not (is_ml_extraction x)) rl in 
        let dl = local_optimize rl in
        List.iter print_user_extract ml_rl ;
-       List.iter (fun d -> mSGNL (ToplevelPp.pp_decl d)) dl)
+       List.iter (fun d -> msgnl (ToplevelPp.pp_decl d)) dl)
 
 (*s Extraction to a file (necessarily recursive). 
     The vernacular command is \verb!Extraction "file"! [qualid1] ... [qualidn].

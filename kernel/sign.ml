@@ -40,8 +40,8 @@ let instance_from_named_context sign =
     | [] -> [] in
   Array.of_list (inst_rec sign)
 
-let fold_named_context = List.fold_right
-let fold_named_context_reverse = List.fold_left
+let fold_named_context f l ~init = List.fold_right f l init
+let fold_named_context_reverse f ~init l = List.fold_left f init l
 
 (*s Signatures of ordered section variables *)
 type section_context = named_context
@@ -66,8 +66,8 @@ let lookup_rel n sign =
 
 let rel_context_length = List.length
 
-let fold_rel_context = List.fold_right
-let fold_rel_context_reverse = List.fold_left
+let fold_rel_context f l ~init:x = List.fold_right f l x
+let fold_rel_context_reverse f ~init:x l = List.fold_left f x l
 
 (* Push named declarations on top of a rel context *)
 (* Bizarre. Should be avoided. *)

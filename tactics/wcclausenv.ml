@@ -63,22 +63,22 @@ let clenv_constrain_with_bindings bl clause =
               | Dep s ->
 		  if List.mem_assoc b t then 
 		    errorlabstrm "clenv_match_args" 
-                      [< 'sTR "The variable "; pr_id s; 
-			 'sTR " occurs more than once in binding" >];
+                      (str "The variable " ++ pr_id s ++ 
+			 str " occurs more than once in binding");
 		  clenv_lookup_name clause s
               | Nodep n ->
 		  let index = if n > 0 then n-1 else nb_indep+n in
                   if List.mem_assoc (Nodep (index+1)) t or 
                     List.mem_assoc (Nodep (index-nb_indep)) t
                   then errorlabstrm "clenv_match_args"
-                    [< 'sTR "The position "; 'iNT n ;
-		       'sTR " occurs more than once in binding" >];
+                    (str "The position " ++ int n ++
+		       str " occurs more than once in binding");
 		  (try 
 		     List.nth ind_mvs index
 		   with Failure _ ->
                      errorlabstrm "clenv_constrain_with_bindings"
-                       [< 'sTR"Clause did not have " ; 'iNT n ; 'sTR"-th" ;
-                          'sTR" unnamed argument" >])
+                       (str"Clause did not have " ++ int n ++ str"-th" ++
+                          str" unnamed argument"))
               | Abs n -> 
                   (try
                      if n > 0 then 
@@ -88,8 +88,8 @@ let clenv_constrain_with_bindings bl clause =
                      else error "clenv_constrain_with_bindings" 
                    with Failure _ ->
                      errorlabstrm "clenv_constrain_with_bindings"
-                       [< 'sTR"Clause did not have " ; 'iNT n ; 'sTR"-th" ;
-                          'sTR" absolute argument" >])
+                       (str"Clause did not have " ++ int n ++ str"-th" ++
+                          str" absolute argument"))
 	  in
 	  let env = Global.env () in
 	  let sigma = Evd.empty in

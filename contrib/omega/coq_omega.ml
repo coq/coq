@@ -86,7 +86,7 @@ let make_clenv_binding_apply wc (c,t) lbind =
     clenv_match_args lbind clause
   else 
     errorlabstrm "make_clenv_bindings"
-      [<'sTR "Cannot mix bindings and free associations">]
+      (str "Cannot mix bindings and free associations")
 
 let resolve_with_bindings_tac  (c,lbind) gl = 
   let (wc,kONT) = startWalk gl in
@@ -107,13 +107,13 @@ let reduce_to_mind gl t =
 	   let t' = pf_nf_betaiota gl (pf_one_step_reduce gl t) in elimrec t' l
          with e when catchable_exception e -> 
 	   errorlabstrm "tactics__reduce_to_mind"
-             [< 'sTR"Not an inductive product" >])
+             (str"Not an inductive product"))
     | (Case _,_) ->
 	(try 
 	   let t' = pf_nf_betaiota gl (pf_one_step_reduce gl t) in elimrec t' l
          with e when catchable_exception e -> 
 	   errorlabstrm "tactics__reduce_to_mind"
-             [< 'sTR"Not an inductive product" >])
+             (str"Not an inductive product"))
     | (Cast (c,_),[]) -> elimrec c l
     | (Prod (n,ty,t'),[]) -> 
 	let ty' = Retyping.get_assumption_of (Global.env()) Evd.empty ty in
@@ -487,7 +487,7 @@ let context operation path (t : constr) =
       | ((P_TYPE :: p), LetIn (n,b,t,c)) ->
 	  (mkLetIn (n,b,loop i p t,c))
       | (p, _) -> 
-	  pPNL [<Printer.prterm t>];
+	  ppnl (Printer.prterm t);
 	  failwith ("abstract_path " ^ string_of_int(List.length p)) 
   in
   loop 1 path t
@@ -508,7 +508,7 @@ let occurence path (t : constr) =
     | ((P_TYPE :: p), Lambda (n,term,c)) -> loop p term
     | ((P_TYPE :: p), LetIn (n,b,term,c)) -> loop p term
     | (p, _) -> 
-	pPNL [<Printer.prterm t>];
+	ppnl (Printer.prterm t);
 	failwith ("occurence " ^ string_of_int(List.length p)) 
   in
   loop path t
@@ -1658,8 +1658,8 @@ let rec decidability gl t =
           | Kapp("Z",[]) ->  mkApp (Lazy.force coq_dec_eq, [| t1;t2 |])
           | Kapp("nat",[]) ->  mkApp (Lazy.force coq_dec_eq_nat, [| t1;t2 |])
           | _ -> errorlabstrm "decidability" 
-		[< 'sTR "Omega: Can't solve a goal with equality on "; 
-		   Printer.prterm typ >]
+		(str "Omega: Can't solve a goal with equality on " ++ 
+		   Printer.prterm typ)
 	end
     | Kapp("Zne",[t1;t2]) -> mkApp (Lazy.force coq_dec_Zne, [| t1;t2 |])
     | Kapp("Zle",[t1;t2]) -> mkApp (Lazy.force coq_dec_Zle, [| t1;t2 |])

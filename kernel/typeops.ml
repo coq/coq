@@ -103,7 +103,7 @@ let rec check_hyps_inclusion env sign =
       if not (eq_constr ty2 ty1) then
         error "types do not match")
     sign
-    ()
+    ~init:()
 
 
 let check_args env c hyps =

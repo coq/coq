@@ -31,34 +31,34 @@ let guill s = "\""^s^"\""
 
 let explain_unbound_rel ctx n =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_context_of [< 'sTR "In environment" >] ctx in
-  [< 'sTR"Unbound reference: "; pe;
-     'sTR"The reference "; 'iNT n; 'sTR" is free" >]
+  let pe = pr_ne_context_of (str "In environment") ctx in
+  str"Unbound reference: " ++ pe ++
+  str"The reference " ++ int n ++ str " is free"
 
 let explain_unbound_var ctx v =
   let var = pr_id v in
-  [< 'sTR"No such section variable or assumption : "; var >]
+  str"No such section variable or assumption : " ++ var
 
 let explain_not_type ctx j =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_context_of [< 'sTR"In environment" >] ctx in
+  let pe = pr_ne_context_of (str"In environment") ctx in
   let pc,pt = prjudge_env ctx j in
-  [< pe; 'sTR "the term"; 'bRK(1,1); pc; 'sPC;
-     'sTR"has type"; 'sPC; pt; 'sPC; 
-     'sTR"which should be Set, Prop or Type." >];;
+  pe ++ str "the term" ++ brk(1,1) ++ pc ++ spc () ++
+  str"has type" ++ spc () ++ pt ++ spc () ++ 
+  str"which should be Set, Prop or Type."
 
 let explain_bad_assumption ctx j =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_context_of [< 'sTR"In environment" >] ctx in
+  let pe = pr_ne_context_of (str"In environment") ctx in
   let pc,pt = prjudge_env ctx j in
-  [< pe; 'sTR "cannot declare a variable or hypothesis over the term";
-     'bRK(1,1); pc; 'sPC; 'sTR"of type"; 'sPC; pt; 'sPC;
-     'sTR "because this term is not a type." >];;
+  pe ++ str "cannot declare a variable or hypothesis over the term" ++
+  brk(1,1) ++ pc ++ spc () ++ str"of type" ++ spc () ++ pt ++ spc () ++
+  str "because this term is not a type."
 
 let explain_reference_variables c =
   let pc = prterm c in
-  [< 'sTR "the constant"; 'sPC; pc; 'sPC; 
-     'sTR "refers to variables which are not in the context" >]
+  str "the constant" ++ spc () ++ pc ++ spc () ++ 
+  str "refers to variables which are not in the context"
 
 let explain_elim_arity ctx ind aritylst c pj okinds = 
   let pi = pr_inductive ctx ind in
@@ -77,68 +77,69 @@ let explain_elim_arity ctx ind aritylst c pj okinds =
           "strong elimination on non-small inductive types leads to paradoxes."
 	| WrongArity ->
 	  "wrong arity" in
-	(hOV 0 
-           [< 'fNL; 'sTR "Elimination of an inductive object of sort : ";
-              pki; 'bRK(1,0);
-              'sTR "is not allowed on a predicate in sort : "; pkp ;'fNL;
-              'sTR "because"; 'sPC; 'sTR explanation >])
+	(hov 0 
+           (fnl () ++ str "Elimination of an inductive object of sort : " ++
+            pki ++ brk(1,0) ++
+            str "is not allowed on a predicate in sort : " ++ pkp  ++fnl () ++
+            str "because" ++ spc () ++ str explanation))
   | None -> 
-      [<>]
+      mt ()
   in
-  [< 'sTR "Incorrect elimination of"; 'bRK(1,1); pc; 'sPC;
-     'sTR "in the inductive type"; 'bRK(1,1); pi; 'fNL;
-     'sTR "The elimination predicate"; 'bRK(1,1); pp; 'sPC;
-     'sTR "has type"; 'bRK(1,1); ppt; 'fNL;
-     'sTR "It should be one of :"; 'bRK(1,1) ; hOV 0 ppar; 'fNL;
-     msg >]
+  str "Incorrect elimination of" ++ brk(1,1) ++ pc ++ spc () ++
+  str "in the inductive type" ++ brk(1,1) ++ pi ++ fnl () ++
+  str "The elimination predicate" ++ brk(1,1) ++ pp ++ spc () ++
+  str "has type" ++ brk(1,1) ++ ppt ++ fnl () ++
+  str "It should be one of :" ++ brk(1,1)  ++ hov 0 ppar ++ fnl () ++
+  msg
 
 let explain_case_not_inductive ctx cj =
   let pc = prterm_env ctx cj.uj_val in
   let pct = prterm_env ctx cj.uj_type in
-  [< 'sTR "In Cases expression, the matched term"; 'bRK(1,1); pc; 'sPC; 
-     'sTR "has type"; 'bRK(1,1); pct; 'sPC; 
-     'sTR "which is not a (co-)inductive type" >]
+  str "In Cases expression, the matched term" ++ brk(1,1) ++ pc ++ spc () ++ 
+  str "has type" ++ brk(1,1) ++ pct ++ spc () ++ 
+  str "which is not a (co-)inductive type"
   
 let explain_number_branches ctx cj expn =
   let pc = prterm_env ctx cj.uj_val in
   let pct = prterm_env ctx cj.uj_type in
-  [< 'sTR "Cases on term"; 'bRK(1,1); pc; 'sPC ;
-     'sTR "of type"; 'bRK(1,1); pct; 'sPC;
-     'sTR "expects ";  'iNT expn; 'sTR " branches" >]
+  str "Cases on term" ++ brk(1,1) ++ pc ++ spc ()  ++
+  str "of type" ++ brk(1,1) ++ pct ++ spc () ++
+  str "expects " ++  int expn ++ str " branches"
 
 let explain_ill_formed_branch ctx c i actty expty =
   let pc = prterm_env ctx c in
   let pa = prterm_env ctx actty in
   let pe = prterm_env ctx expty in
-  [< 'sTR "In Cases expression on term"; 'bRK(1,1); pc;
-     'sPC; 'sTR "the branch " ; 'iNT (i+1);
-     'sTR " has type"; 'bRK(1,1); pa ; 'sPC; 
-     'sTR "which should be"; 'bRK(1,1); pe >]
+  str "In Cases expression on term" ++ brk(1,1) ++ pc ++
+  spc () ++ str "the branch "  ++ int (i+1) ++
+  str " has type" ++ brk(1,1) ++ pa  ++ spc () ++ 
+  str "which should be" ++ brk(1,1) ++ pe
 
 let explain_generalization ctx (name,var) j =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_context_of [< 'sTR "In environment" >] ctx in
+  let pe = pr_ne_context_of (str "In environment") ctx in
   let pv = prtype_env ctx var in
   let (pc,pt) = prjudge_env (push_rel_assum (name,var) ctx) j in
-  [< 'sTR"Illegal generalization: "; pe;
-     'sTR"Cannot generalize"; 'bRK(1,1); pv; 'sPC;
-     'sTR"over"; 'bRK(1,1); pc; 'sTR","; 'sPC; 'sTR"it has type"; 'sPC; pt; 
-     'sPC; 'sTR"which should be Set, Prop or Type." >]
+  str"Illegal generalization: " ++ pe ++
+  str"Cannot generalize" ++ brk(1,1) ++ pv ++ spc () ++
+  str"over" ++ brk(1,1) ++ pc ++ str"," ++ spc () ++ 
+  str"it has type" ++ spc () ++ pt ++ 
+  spc () ++ str"which should be Set, Prop or Type."
 
 let explain_actual_type ctx j pt =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_context_of [< 'sTR "In environment" >] ctx in
+  let pe = pr_ne_context_of (str "In environment") ctx in
   let (pc,pct) = prjudge_env ctx j in
   let pt = prterm_env ctx pt in
-  [< pe;
-     'sTR "The term"; 'bRK(1,1); pc ; 'sPC ;
-     'sTR "has type" ; 'bRK(1,1); pct; 'bRK(1,1); 
-     'sTR "while it is expected to have type"; 'bRK(1,1); pt >]
+  pe ++
+  str "The term" ++ brk(1,1) ++ pc  ++ spc ()  ++
+  str "has type"  ++ brk(1,1) ++ pct ++ brk(1,1) ++ 
+  str "while it is expected to have type" ++ brk(1,1) ++ pt
 
 let explain_cant_apply_bad_type ctx (n,exptyp,actualtyp) rator randl =
   let randl = Array.to_list randl in
   let ctx = make_all_name_different ctx in
-(*  let pe = pr_ne_context_of [< 'sTR"in environment" >] ctx in*)
+(*  let pe = pr_ne_context_of (str"in environment") ctx in*)
   let pr,prt = prjudge_env ctx rator in
   let term_string1,term_string2 =
     if List.length randl > 1 then
@@ -149,20 +150,20 @@ let explain_cant_apply_bad_type ctx (n,exptyp,actualtyp) rator randl =
   let appl = prlist_with_sep pr_fnl 
 	       (fun c ->
 		  let pc,pct = prjudge_env ctx c in
-		  hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl
+		  hov 2 (pc ++ spc () ++ str": "  ++ pct)) randl
   in
-  [< 'sTR"Illegal application (Type Error): "; (* pe; *) 'fNL;
-     'sTR"The term"; 'bRK(1,1); pr; 'sPC;
-     'sTR"of type"; 'bRK(1,1); prt; 'sPC ;
-     'sTR("cannot be applied to the "^term_string1); 'fNL; 
-     'sTR" "; v 0 appl; 'fNL; 'sTR (term_string2^" has type");
-     'bRK(1,1); prterm_env ctx actualtyp; 'sPC;
-     'sTR"which should be coercible to"; 'bRK(1,1); prterm_env ctx exptyp >]
+  str"Illegal application (Type Error): " ++ (* pe ++ *) fnl () ++
+  str"The term" ++ brk(1,1) ++ pr ++ spc () ++
+  str"of type" ++ brk(1,1) ++ prt ++ spc ()  ++
+  str("cannot be applied to the "^term_string1) ++ fnl () ++ 
+  str" " ++ v 0 appl ++ fnl () ++ str (term_string2^" has type") ++
+  brk(1,1) ++ prterm_env ctx actualtyp ++ spc () ++
+  str"which should be coercible to" ++ brk(1,1) ++ prterm_env ctx exptyp
 
 let explain_cant_apply_not_functional ctx rator randl =
   let randl = Array.to_list randl in
   let ctx = make_all_name_different ctx in
-(*  let pe = pr_ne_context_of [< 'sTR"in environment" >] ctx in*)
+(*  let pe = pr_ne_context_of (str"in environment") ctx in*)
   let pr = prterm_env ctx rator.uj_val in
   let prt = prterm_env ctx (body_of_type rator.uj_type) in
   let term_string = if List.length randl > 1 then "terms" else "term" in
@@ -170,131 +171,133 @@ let explain_cant_apply_not_functional ctx rator randl =
 	       (fun c ->
 		  let pc = prterm_env ctx c.uj_val in
 		  let pct = prterm_env ctx (body_of_type c.uj_type) in
-		  hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl
+		  hov 2 (pc ++ spc () ++ str": "  ++ pct)) randl
   in
-  [< 'sTR"Illegal application (Non-functional construction): "; (* pe; *) 'fNL;
-     'sTR"The expression"; 'bRK(1,1); pr; 'sPC;
-     'sTR"of type"; 'bRK(1,1); prt; 'sPC ;
-     'sTR("cannot be applied to the "^term_string); 'fNL; 
-     'sTR" "; v 0 appl >]
+  str"Illegal application (Non-functional construction): " ++ 
+  (* pe ++ *) fnl () ++
+  str"The expression" ++ brk(1,1) ++ pr ++ spc () ++
+  str"of type" ++ brk(1,1) ++ prt ++ spc ()  ++
+  str("cannot be applied to the "^term_string) ++ fnl () ++ 
+  str" " ++ v 0 appl
 
 let explain_unexpected_type ctx actual_type expected_type =
   let ctx = make_all_name_different ctx in
   let pract = prterm_env ctx actual_type in
   let prexp = prterm_env ctx expected_type in
-  [< 'sTR"This type is"; 'sPC; pract; 'sPC; 'sTR "but is expected to be";
-     'sPC; prexp >]
+  str"This type is" ++ spc () ++ pract ++ spc () ++ 
+  str "but is expected to be" ++
+  spc () ++ prexp
 
 let explain_not_product ctx c =
   let ctx = make_all_name_different ctx in
   let pr = prterm_env ctx c in
-  [< 'sTR"The type of this term is a product,"; 'sPC;
-     'sTR"but it is casted with type";
-     'bRK(1,1); pr >]
+  str"The type of this term is a product," ++ spc () ++
+  str"but it is casted with type" ++
+  brk(1,1) ++ pr
 
 (* TODO: use the names *)
 (* (co)fixpoints *)
 let explain_ill_formed_rec_body ctx err names i vdefs =
-  let str = match err with
+  let st = match err with
 
   (* Fixpoint guard errors *)
   | NotEnoughAbstractionInFixBody ->
-      [< 'sTR "Not enough abstractions in the definition" >]
+      str "Not enough abstractions in the definition"
   | RecursionNotOnInductiveType ->
-      [< 'sTR "Recursive definition on a non inductive type" >]
+      str "Recursive definition on a non inductive type"
   | RecursionOnIllegalTerm ->
-      [< 'sTR "Recursive call applied to an illegal term" >]
+      str "Recursive call applied to an illegal term"
   | NotEnoughArgumentsForFixCall ->
-      [< 'sTR "Not enough arguments for the recursive call" >]
+      str "Not enough arguments for the recursive call"
 
   (* CoFixpoint guard errors *)
   (* TODO : récupérer le contexte des termes pour pouvoir les afficher *)
   | CodomainNotInductiveType c ->
-      [< 'sTR "The codomain is"; 'sPC; prterm c; 'sPC;
-	 'sTR "which should be a coinductive type" >]
+      str "The codomain is" ++ spc () ++ prterm c ++ spc () ++
+      str "which should be a coinductive type"
   | NestedRecursiveOccurrences ->
-      [< 'sTR "Nested recursive occurrences" >]
+      str "Nested recursive occurrences"
   | UnguardedRecursiveCall c ->
-      [< 'sTR "Unguarded recursive call" >]
+      str "Unguarded recursive call"
   | RecCallInTypeOfAbstraction c ->
-      [< 'sTR "Not allowed recursive call in the domain of an abstraction" >]
+      str "Not allowed recursive call in the domain of an abstraction"
   | RecCallInNonRecArgOfConstructor c ->
-      [< 'sTR "Not allowed recursive call in a non-recursive argument of constructor" >]
+      str "Not allowed recursive call in a non-recursive argument of constructor"
   | RecCallInTypeOfDef c ->
-      [< 'sTR "Not allowed recursive call in the type of a recursive definition" >]
+      str "Not allowed recursive call in the type of a recursive definition"
   | RecCallInCaseFun c ->
-      [< 'sTR "Not allowed recursive call in a branch of cases" >]
+      str "Not allowed recursive call in a branch of cases"
   | RecCallInCaseArg c -> 
-      [< 'sTR "Not allowed recursive call in the argument of cases" >]
+      str "Not allowed recursive call in the argument of cases"
   | RecCallInCasePred c ->
-      [< 'sTR "Not allowed recursive call in the type of cases in" >]
+      str "Not allowed recursive call in the type of cases in"
   | NotGuardedForm ->
-      [< 'sTR "Definition not in guarded form" >]
+      str "Definition not in guarded form"
   in
   let pvd = prterm_env ctx vdefs.(i) in
-  let s =
-    match names.(i) with Name id -> string_of_id id | Anonymous -> "_" in
-  [< str; 'fNL; 'sTR"The ";
-     if Array.length vdefs = 1 then [<>] else [<'iNT (i+1); 'sTR "-th ">];
-     'sTR"recursive definition"; 'sPC; 'sTR s;
-	 'sPC ; 'sTR":="; 'sPC ; pvd; 'sPC;
-     'sTR "is not well-formed" >]
+  let s = match names.(i) with Name id -> string_of_id id | Anonymous -> "_" in
+  st ++ fnl () ++ str"The " ++
+  (if Array.length vdefs = 1 then mt () else (int (i+1) ++ str "-th ")) ++
+  str"recursive definition" ++ spc () ++ str s ++
+  spc ()  ++ str":=" ++ spc ()  ++ pvd ++ spc () ++
+  str "is not well-formed"
 
 let explain_ill_typed_rec_body ctx i names vdefj vargs =
   let pvd,pvdt = prjudge_env ctx (vdefj.(i)) in
   let pv = prterm_env ctx (body_of_type vargs.(i)) in
-  [< 'sTR"The " ;
-     if Array.length vdefj = 1 then [<>] else [<'iNT (i+1); 'sTR "-th">];
-     'sTR"recursive definition" ; 'sPC; pvd; 'sPC;
-     'sTR "has type"; 'sPC; pvdt;'sPC; 'sTR "it should be"; 'sPC; pv >]
+  str"The "  ++
+  (if Array.length vdefj = 1 then mt () else int (i+1) ++ str "-th") ++
+  str"recursive definition"  ++ spc () ++ pvd ++ spc () ++
+  str "has type" ++ spc () ++ pvdt ++spc () ++ 
+  str "it should be" ++ spc () ++ pv 
 
 let explain_not_inductive ctx c =
   let pc = prterm_env ctx c in
-  [< 'sTR"The term"; 'bRK(1,1); pc; 'sPC;
-     'sTR "is not an inductive definition" >]
+  str"The term" ++ brk(1,1) ++ pc ++ spc () ++
+  str "is not an inductive definition"
 
 let explain_ml_case ctx mes =
   let expln = match mes with
     | MlCaseAbsurd ->
-	[< 'sTR "Unable to infer a predicate for an elimination an empty type">]
+	str "Unable to infer a predicate for an elimination an empty type"
     | MlCaseDependent ->
-        [< 'sTR "Unable to infer a dependent elimination predicate">]
+        str "Unable to infer a dependent elimination predicate"
   in
-  hOV 0 [< 'sTR "Cannot infer ML Case predicate:"; 'fNL; expln >] 
+  hov 0 (str "Cannot infer ML Case predicate:" ++ fnl () ++ expln)
 
 let explain_cant_find_case_type ctx c =
   let pe = prterm_env ctx c in
-  hOV 3 [<'sTR "Cannot infer type of whole Case expression on"; 'wS 1; pe >]
+  hov 3 (str "Cannot infer type of whole Case expression on" ++ ws 1 ++ pe)
 
 let explain_occur_check ctx ev rhs =
   let id = "?" ^ string_of_int ev in
   let pt = prterm_env ctx rhs in
-  [< 'sTR"Occur check failed: tried to define "; 'sTR id;
-     'sTR" with term"; 'bRK(1,1); pt >]
+  str"Occur check failed: tried to define " ++ str id ++
+  str" with term" ++ brk(1,1) ++ pt
 
 let explain_not_clean ctx ev t =
   let c = mkRel (Intset.choose (free_rels t)) in
   let id = "?" ^ string_of_int ev in
   let var = prterm_env ctx c in
-  [< 'sTR"Tried to define "; 'sTR id;
-     'sTR" with a term using variable "; var; 'sPC;
-     'sTR"which is not in its scope." >]
+  str"Tried to define " ++ str id ++
+  str" with a term using variable " ++ var ++ spc () ++
+  str"which is not in its scope."
 
 let explain_var_not_found ctx id = 
-  [< 'sTR "The variable"; 'sPC; 'sTR (string_of_id id);
-     'sPC ; 'sTR "was not found"; 
-     'sPC ; 'sTR "in the current"; 'sPC ; 'sTR "environment" >]
+  str "The variable" ++ spc () ++ str (string_of_id id) ++
+  spc ()  ++ str "was not found" ++ 
+  spc ()  ++ str "in the current" ++ spc ()  ++ str "environment"
 
 let explain_wrong_case_info ctx ind ci =
   let pi = prterm (mkInd ind) in
   if ci.ci_ind = ind then
-    [< 'sTR"Cases expression on an object of inductive"; 'sPC; pi;
-       'sPC; 'sTR"has invalid information" >]
+    str"Cases expression on an object of inductive" ++ spc () ++ pi ++
+    spc () ++ str"has invalid information"
   else
     let pc = prterm (mkInd ci.ci_ind) in
-    [< 'sTR"A term of inductive type"; 'sPC; pi; 'sPC;
-       'sTR"was given to a Cases expression on the inductive type";
-       'sPC; pc >]
+    str"A term of inductive type" ++ spc () ++ pi ++ spc () ++
+    str"was given to a Cases expression on the inductive type" ++
+    spc () ++ pc
        
 
 let explain_type_error ctx = function
@@ -353,52 +356,52 @@ let explain_pretype_error ctx = function
 (* Refiner errors *)
 
 let explain_refiner_bad_type arg ty conclty =
-  [< 'sTR"refiner was given an argument"; 'bRK(1,1); 
-     prterm arg; 'sPC;
-     'sTR"of type"; 'bRK(1,1); prterm ty; 'sPC;
-     'sTR"instead of"; 'bRK(1,1); prterm conclty >]
+  str"refiner was given an argument" ++ brk(1,1) ++ 
+  prterm arg ++ spc () ++
+  str"of type" ++ brk(1,1) ++ prterm ty ++ spc () ++
+  str"instead of" ++ brk(1,1) ++ prterm conclty
 
 let explain_refiner_occur_meta t =
-  [< 'sTR"cannot refine with term"; 'bRK(1,1); prterm t;
-     'sPC; 'sTR"because there are metavariables, and it is";
-     'sPC; 'sTR"neither an application nor a Case" >]
+  str"cannot refine with term" ++ brk(1,1) ++ prterm t ++
+  spc () ++ str"because there are metavariables, and it is" ++
+  spc () ++ str"neither an application nor a Case"
 
 let explain_refiner_occur_meta_goal t =
-  [< 'sTR"generated subgoal"; 'bRK(1,1); prterm t;
-     'sPC; 'sTR"has metavariables in it" >]
+  str"generated subgoal" ++ brk(1,1) ++ prterm t ++
+  spc () ++ str"has metavariables in it"
 
 let explain_refiner_cannot_applt t harg =
-  [< 'sTR"in refiner, a term of type "; 'bRK(1,1);
-     prterm t; 'sPC; 'sTR"could not be applied to"; 'bRK(1,1);
-     prterm harg >]
+  str"in refiner, a term of type " ++ brk(1,1) ++
+  prterm t ++ spc () ++ str"could not be applied to" ++ brk(1,1) ++
+  prterm harg
 
 let explain_refiner_cannot_unify m n =
   let pm = prterm m in 
   let pn = prterm n in
-  [< 'sTR"Impossible to unify"; 'bRK(1,1) ; pm; 'sPC ;
-     'sTR"with"; 'bRK(1,1) ; pn >]
+  str"Impossible to unify" ++ brk(1,1)  ++ pm ++ spc ()  ++
+  str"with" ++ brk(1,1)  ++ pn
 
 let explain_refiner_cannot_generalize ty =
-  [< 'sTR "Cannot find a well-typed generalisation of the goal with type : "; 
-     prterm ty >]
+  str "Cannot find a well-typed generalisation of the goal with type : " ++ 
+  prterm ty
 
 let explain_refiner_not_well_typed c =
-  [< 'sTR"The term " ; prterm c ; 'sTR" is not well-typed" >]
+  str"The term "  ++ prterm c  ++ str" is not well-typed"
 
 let explain_refiner_bad_tactic_args s l =
-  [< 'sTR "Internal tactic "; 'sTR s; 'sTR " cannot be applied to ";
-     Tacmach.pr_tactic (s,l) >]
+  str "Internal tactic " ++ str s ++ str " cannot be applied to " ++
+  Tacmach.pr_tactic (s,l)
 
 let explain_intro_needs_product () =
-  [< 'sTR "Introduction tactics needs products" >]
+  str "Introduction tactics needs products"
 
 let explain_does_not_occur_in c hyp =
-  [< 'sTR "The term"; 'sPC; prterm c; 'sPC; 'sTR "does not occur in";
-     'sPC; pr_id hyp >]
+  str "The term" ++ spc () ++ prterm c ++ spc () ++ str "does not occur in" ++
+  spc () ++ pr_id hyp
 
 let explain_non_linear_proof c =
-  [< 'sTR "cannot refine with term"; 'bRK(1,1); prterm c;
-     'sPC; 'sTR"because a metavariable has several occurrences" >]
+  str "cannot refine with term" ++ brk(1,1) ++ prterm c ++
+  spc () ++ str"because a metavariable has several occurrences"
 
 let explain_refiner_error = function
   | BadType (arg,ty,conclty) -> explain_refiner_bad_type arg ty conclty
@@ -418,20 +421,20 @@ let explain_refiner_error = function
 let error_non_strictly_positive env c v  =
   let pc = prterm_env env c in
   let pv = prterm_env env v in
-  [< 'sTR "Non strictly positive occurrence of "; pv; 'sTR " in";
-     'bRK(1,1); pc >]
+  str "Non strictly positive occurrence of " ++ pv ++ str " in" ++
+  brk(1,1) ++ pc
 
 let error_ill_formed_inductive env c v =
   let pc = prterm_env env c in
   let pv = prterm_env env v in
-  [< 'sTR "Not enough arguments applied to the "; pv;
-     'sTR " in"; 'bRK(1,1); pc >]
+  str "Not enough arguments applied to the " ++ pv ++
+  str " in" ++ brk(1,1) ++ pc
 
 let error_ill_formed_constructor env c v =
   let pc = prterm_env env c in
   let pv = prterm_env env v in
-  [< 'sTR "The conclusion of"; 'bRK(1,1); pc; 'bRK(1,1); 
-     'sTR "is not valid;"; 'bRK(1,1); 'sTR "it must be built from "; pv >]
+  str "The conclusion of" ++ brk(1,1) ++ pc ++ brk(1,1) ++ 
+  str "is not valid ++" ++ brk(1,1) ++ str "it must be built from " ++ pv
 
 let str_of_nth n =
   (string_of_int n)^
@@ -445,38 +448,38 @@ let error_bad_ind_parameters env c n v1 v2  =
   let pc = prterm_env_at_top env c in
   let pv1 = prterm_env env v1 in
   let pv2 = prterm_env env v2 in
-  [< 'sTR ("The "^(str_of_nth n)^" argument of "); pv2; 'bRK(1,1);
-     'sTR "must be "; pv1; 'sTR " in"; 'bRK(1,1); pc >]
+  str ("The "^(str_of_nth n)^" argument of ") ++ pv2 ++ brk(1,1) ++
+  str "must be " ++ pv1 ++ str " in" ++ brk(1,1) ++ pc
 
 let error_same_names_types id =
-  [< 'sTR "The name"; 'sPC; pr_id id; 'sPC; 
-     'sTR "is used twice is the inductive types definition." >]
+  str "The name" ++ spc () ++ pr_id id ++ spc () ++ 
+  str "is used twice is the inductive types definition."
 
 let error_same_names_constructors id cid =
-  [< 'sTR "The constructor name"; 'sPC; pr_id cid; 'sPC; 
-     'sTR "is used twice is the definition of type"; 'sPC;
-     pr_id id >]
+  str "The constructor name" ++ spc () ++ pr_id cid ++ spc () ++ 
+  str "is used twice is the definition of type" ++ spc () ++
+  pr_id id
 
 let error_not_an_arity id =
-  [< 'sTR "The type of"; 'sPC; pr_id id; 'sPC; 'sTR "is not an arity." >]
+  str "The type of" ++ spc () ++ pr_id id ++ spc () ++ str "is not an arity."
 
 let error_bad_entry () =
-  [< 'sTR "Bad inductive definition." >]
+  str "Bad inductive definition."
 
 let error_not_allowed_case_analysis dep kind i =
-  [< 'sTR (if dep then "Dependent" else "Non Dependent");
-     'sTR " case analysis on sort: "; print_sort kind; 'fNL;
-     'sTR "is not allowed for inductive definition: ";
-     pr_inductive (Global.env()) i >]
+  str (if dep then "Dependent" else "Non Dependent") ++
+  str " case analysis on sort: " ++ print_sort kind ++ fnl () ++
+  str "is not allowed for inductive definition: " ++
+  pr_inductive (Global.env()) i
 
 let error_bad_induction dep indid kind =
-  [<'sTR (if dep then "Dependent" else "Non dependent");
-    'sTR " induction for type "; pr_id indid;
-    'sTR " and sort "; print_sort kind; 'sPC;
-    'sTR "is not allowed">]
+  str (if dep then "Dependent" else "Non dependent") ++
+  str " induction for type " ++ pr_id indid ++
+  str " and sort " ++ print_sort kind ++ spc () ++
+  str "is not allowed"
 
 let error_not_mutual_in_scheme () =
- [< 'sTR "Induction schemes is concerned only with mutually inductive types" >]
+ str "Induction schemes is concerned only with mutually inductive types"
 
 let explain_inductive_error = function
   (* These are errors related to inductive constructions *)
@@ -499,59 +502,58 @@ let explain_inductive_error = function
 let explain_bad_pattern ctx cstr ty = 
   let pt = prterm_env ctx ty in
   let pc = pr_constructor ctx cstr in
-  [< 'sTR "Found the constructor "; pc; 'bRK(1,1); 
-     'sTR "while matching a term of type "; pt; 'bRK(1,1); 
-     'sTR "which is not an inductive type" >]
+  str "Found the constructor " ++ pc ++ brk(1,1) ++ 
+  str "while matching a term of type " ++ pt ++ brk(1,1) ++ 
+  str "which is not an inductive type"
 
 let explain_bad_constructor ctx cstr ind =
   let pi = pr_inductive ctx ind in
 (*  let pc = pr_constructor ctx cstr in*)
   let pt = pr_inductive ctx (inductive_of_constructor cstr) in
-  [< 'sTR "Found a constructor of inductive type "; pt; 'bRK(1,1) ;
-     'sTR "while a constructor of " ; pi; 'bRK(1,1) ;
-     'sTR "is expected" >]
+  str "Found a constructor of inductive type " ++ pt ++ brk(1,1)  ++
+  str "while a constructor of "  ++ pi ++ brk(1,1)  ++
+  str "is expected"
 
 let explain_wrong_numarg_of_constructor ctx cstr n =
   let pc = pr_constructor ctx cstr in
-    [<'sTR "The constructor "; pc; 'sTR " expects " ;
-      if n = 0 then [< 'sTR "no argument.">]
-      else if n = 1 then [< 'sTR "1 argument.">]
-      else [< 'iNT n ; 'sTR " arguments.">]
-    >]
+  str "The constructor " ++ pc ++ str " expects "  ++
+  (if n = 0 then str "no argument." else if n = 1 then str "1 argument."
+   else (int n  ++ str " arguments."))
 
 let explain_wrong_predicate_arity ctx pred nondep_arity dep_arity=
   let pp = prterm_env ctx pred in
-  [<'sTR "The elimination predicate "; 'sPC; pp; 'fNL;
-    'sTR "should be of arity" ; 'sPC;
-    prterm_env ctx nondep_arity ; 'sPC; 'sTR "(for non dependent case) or" ;
-    'sPC; prterm_env ctx dep_arity ; 'sPC; 'sTR "(for dependent case).">]
+  str "The elimination predicate " ++ spc () ++ pp ++ fnl () ++
+  str "should be of arity"  ++ spc () ++
+  prterm_env ctx nondep_arity  ++ spc () ++ 
+  str "(for non dependent case) or"  ++
+  spc () ++ prterm_env ctx dep_arity  ++ spc () ++ str "(for dependent case)."
 
 let explain_needs_inversion ctx x t =
   let px = prterm_env ctx x in
   let pt = prterm_env ctx t in
-  [< 'sTR "Sorry, I need inversion to compile pattern matching of term ";
-     px ; 'sTR " of type: "; pt>]
+  str "Sorry, I need inversion to compile pattern matching of term " ++
+  px  ++ str " of type: " ++ pt
 
 let explain_unused_clause env pats =
   let s = if List.length pats > 1 then "s" else "" in
 (* Without localisation
-  [<'sTR ("Unused clause with pattern"^s); 'sPC;
-    hOV 0 (prlist_with_sep pr_spc pr_cases_pattern pats); 'sTR ")" >]
+  (str ("Unused clause with pattern"^s) ++ spc () ++
+    hov 0 (prlist_with_sep pr_spc pr_cases_pattern pats) ++ str ")")
 *)
-  [<'sTR "This clause is redundant" >]
+  str "This clause is redundant"
 
 let explain_non_exhaustive env pats =
   let s = if List.length pats > 1 then "s" else "" in
-  [<'sTR ("Non exhaustive pattern-matching: no clause found for pattern"^s);
-    'sPC; hOV 0 (prlist_with_sep pr_spc pr_cases_pattern pats) >]
+  str ("Non exhaustive pattern-matching: no clause found for pattern"^s) ++
+  spc () ++ hov 0 (prlist_with_sep pr_spc pr_cases_pattern pats)
 
 let explain_cannot_infer_predicate env typs =
   let pr_branch (cstr,typ) =
     let cstr,_ = decompose_app cstr in
-    [< 'sTR "For "; prterm_env env cstr; 'sTR " : "; prterm_env env typ >]
+    str "For " ++ prterm_env env cstr ++ str " : " ++ prterm_env env typ
   in
-  [<'sTR "Unable to unify the types found in the branches:";
-    'sPC; hOV 0 (prlist_with_sep pr_fnl pr_branch (Array.to_list typs)) >]
+  str "Unable to unify the types found in the branches:" ++
+  spc () ++ hov 0 (prlist_with_sep pr_fnl pr_branch (Array.to_list typs))
 
 let explain_pattern_matching_error env = function
   | BadPattern (c,t) -> 

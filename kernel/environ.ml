@@ -82,13 +82,13 @@ let reset_rel_context env =
 let fold_named_context f env ~init =
   snd (Sign.fold_named_context
 	 (fun d (env,e) -> (push_named_decl d env, f env d e))
-         (named_context env) (reset_context env,init))
+         (named_context env) ~init:(reset_context env,init))
 
-let fold_named_context_reverse f a env =
-  Sign.fold_named_context_reverse f a (named_context env) 
+let fold_named_context_reverse f ~init env =
+  Sign.fold_named_context_reverse f ~init:init (named_context env) 
 
 let push_rel d   = rel_context_app (add_rel_decl d)
-let push_rel_context ctxt = fold_rel_context push_rel ctxt
+let push_rel_context ctxt x = fold_rel_context push_rel ctxt ~init:x
 let push_rel_assum (id,ty) = push_rel (id,None,ty)
 
 let push_rec_types (lna,typarray,_) env =
@@ -100,7 +100,7 @@ let push_rec_types (lna,typarray,_) env =
 let fold_rel_context f env ~init =
   snd (fold_rel_context
 	 (fun d (env,e) -> (push_rel d env, f env d e))
-         (rel_context env) (reset_rel_context env,init))
+         (rel_context env) ~init:(reset_rel_context env,init))
 
 let set_universes g env =
   if env.env_universes == g then env else { env with env_universes = g }

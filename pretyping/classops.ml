@@ -257,7 +257,7 @@ let coercion_value i =
 (* pretty-print functions are now in Pretty *)
 (* rajouter une coercion dans le graphe *)
 
-let path_printer = ref (fun _ -> [< 'sTR "<a class path>" >] 
+let path_printer = ref (fun _ -> str "<a class path>"
                         : (int * int) * inheritance_path -> std_ppcmds)
 
 let install_path_printer f = path_printer := f
@@ -265,8 +265,8 @@ let install_path_printer f = path_printer := f
 let print_path x = !path_printer x
 
 let message_ambig l = 
-  [< 'sTR"Ambiguous paths:"; 'sPC;
-     prlist_with_sep pr_fnl (fun ijp -> print_path ijp) l >]
+  (str"Ambiguous paths:" ++ spc () ++
+   prlist_with_sep pr_fnl (fun ijp -> print_path ijp) l)
 
 (* add_coercion_in_graph : coe_index * cl_index * cl_index -> unit 
                          coercion,source,target *)
@@ -315,7 +315,7 @@ let add_coercion_in_graph (ic,source,target) =
       old_inheritance_graph 
   end;
   if (!ambig_paths <> []) && is_verbose () && is_mes_ambig() then 
-    pPNL (message_ambig !ambig_paths)
+    ppnl (message_ambig !ambig_paths)
 
 type coercion = (coe_typ * coe_info_typ) * cl_typ * cl_typ
 
@@ -337,7 +337,7 @@ let (inCoercion,outCoercion) =
                     cache_function = cache_coercion;
                     export_function = (function x -> Some x) })
 
-let declare_coercion coef v stre isid cls clt ps =
+let declare_coercion coef v stre ~isid ~src:cls ~target:clt ~params:ps =
   Lib.add_anonymous_leaf
     (inCoercion
        ((coef,

@@ -87,29 +87,29 @@ exception CoercionError of coercion_error_kind
 
 let explain_coercion_error g = function
   | AlreadyExists ->
-      [< Printer.pr_global g; 'sTR" is already a coercion" >]
+      (Printer.pr_global g ++ str" is already a coercion")
   | NotAFunction ->
-      [< Printer.pr_global g; 'sTR" is not a function" >]
+      (Printer.pr_global g ++ str" is not a function")
   | NoSource ->
-      [< Printer.pr_global g; 'sTR ": cannot find the source class"  >]
+      (Printer.pr_global g ++ str ": cannot find the source class")
   | NoSourceFunClass ->
-      [< Printer.pr_global g; 'sTR ": FUNCLASS cannot be a source class" >]
+      (Printer.pr_global g ++ str ": FUNCLASS cannot be a source class")
   | NoSourceSortClass ->
-      [< Printer.pr_global g; 'sTR ": SORTCLASS cannot be a source class" >]
+      (Printer.pr_global g ++ str ": SORTCLASS cannot be a source class")
   | NotUniform ->
-      [< Printer.pr_global g;
-         'sTR" does not respect the inheritance uniform condition" >];
+      (Printer.pr_global g ++
+         str" does not respect the inheritance uniform condition");
   | NoTarget ->
-      [<'sTR"Cannot find the target class" >]
+      (str"Cannot find the target class")
   | WrongTarget (clt,cl) ->
-      [<'sTR"Found target class "; 'sTR(string_of_class cl);
-	'sTR " while "; 'sTR(string_of_class clt);
-	'sTR " is expected" >]
+      (str"Found target class " ++ str(string_of_class cl) ++
+	str " while " ++ str(string_of_class clt) ++
+	str " is expected")
   | NotAClass ref ->
-      [< 'sTR "Type of "; Printer.pr_global ref;
-         'sTR " does not end with a sort" >]
+      (str "Type of " ++ Printer.pr_global ref ++
+         str " does not end with a sort")
   | NotEnoughClassArgs cl ->
-      [< 'sTR"Wrong number of parameters for ";'sTR(string_of_class cl) >]
+      (str"Wrong number of parameters for " ++str(string_of_class cl))
 
 (* Verifications pour l'ajout d'une classe *)
 
@@ -143,7 +143,7 @@ let try_add_class cl streopt fail_if_exists =
     declare_class (cl,stre,p)
   else
     if fail_if_exists then errorlabstrm "try_add_new_class" 
-      [< 'sTR (string_of_class cl) ; 'sTR " is already a class" >]
+      (str (string_of_class cl) ++ str " is already a class")
 
 
 (* Coercions *)
@@ -178,8 +178,8 @@ let class_of_ref = function
   | VarRef id -> CL_SECVAR id
   | ConstructRef _ as c -> 
       errorlabstrm "class_of_ref"
-	[< 'sTR "Constructors, such as "; Printer.pr_global c; 
-	   'sTR " cannot be used as class" >]
+	(str "Constructors, such as " ++ Printer.pr_global c ++ 
+	   str " cannot be used as class")
 
 (* 
 lp est la liste (inverse'e) des arguments de la coercion
@@ -242,7 +242,7 @@ let get_strength stre ref cls clt =
 
 let error_not_transparent source =
   errorlabstrm "build_id_coercion"
-    [< 'sTR ((string_of_class source)^" must be a transparent constant") >]
+    (str ((string_of_class source)^" must be a transparent constant"))
 
 let build_id_coercion idf_opt source =
   let env = Global.env () in
@@ -342,14 +342,14 @@ let try_add_new_coercion_subclass cl stre =
   let coe_ref = build_id_coercion None cl in
   try_add_new_coercion_core coe_ref stre (Some cl) None true
 
-let try_add_new_coercion_with_target ref stre source target =
+let try_add_new_coercion_with_target ref stre ~source ~target =
   try_add_new_coercion_core ref stre (Some source) (Some target) false
 
-let try_add_new_identity_coercion id stre source target =
+let try_add_new_identity_coercion id stre ~source ~target =
   let ref = build_id_coercion (Some id) source in
   try_add_new_coercion_core ref stre (Some source) (Some target) true
 
-let try_add_new_coercion_with_source ref stre source =
+let try_add_new_coercion_with_source ref stre ~source =
   try_add_new_coercion_core ref stre (Some source) None false
 
 (* try_add_new_class : global_reference -> strength -> unit *)

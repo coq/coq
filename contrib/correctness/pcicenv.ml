@@ -27,7 +27,7 @@ let modify_sign id t s =
   fold_named_context
     (fun ((x,b,ty) as d) sign ->
       if x=id then add_named_decl (x,b,t) sign else add_named_decl d sign)
-    s empty_named_context
+    s ~init:empty_named_context
 
 let add_sign (id,t) s =
   try 

@@ -58,85 +58,85 @@ let show_script () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  mSGNL(Refiner.print_script true evc (Global.named_context()) pf)
+  msgnl(Refiner.print_script true evc (Global.named_context()) pf)
 
 let show_prooftree () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  mSG(Refiner.print_proof evc (Global.named_context()) pf)
+  msg(Refiner.print_proof evc (Global.named_context()) pf)
 
 let show_open_subgoals () =
   let pfts = get_pftreestate () in
-  mSG(pr_subgoals_of_pfts pfts)
+  msg(pr_subgoals_of_pfts pfts)
 
 let show_nth_open_subgoal n =
   let pf = proof_of_pftreestate (get_pftreestate ()) in
-  mSG(pr_subgoal n (fst(frontier pf)))
+  msg(pr_subgoal n (fst(frontier pf)))
 
 let show_open_subgoals_focused () =
   let pfts = get_pftreestate () in
   match focus() with
     | 0 -> 
-	mSG(pr_subgoals_of_pfts pfts)
+	msg(pr_subgoals_of_pfts pfts)
     | n -> 
 	let pf = proof_of_pftreestate pfts in
 	let gls = fst(frontier pf) in 
 	if n > List.length gls then 
-	  (make_focus 0; mSG(pr_subgoals_of_pfts pfts))
+	  (make_focus 0; msg(pr_subgoals_of_pfts pfts))
 	else if List.length gls < 2 then 
-	  mSG(pr_subgoal n gls)
+	  msg(pr_subgoal n gls)
 	else 
-	  mSG (v 0 [< 'iNT(List.length gls); 'sTR" subgoals"; 'cUT; 
-		      pr_subgoal n gls >])
+	  msg (v 0 (int(List.length gls) ++ str" subgoals" ++ cut () ++ 
+		      pr_subgoal n gls))
 
 let show_node () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and cursor = cursor_of_pftreestate pts in
-  mSG [< prlist_with_sep pr_spc pr_int (List.rev cursor); 'fNL ;
-         prgl pf.goal ; 'fNL ;
+  msg (prlist_with_sep pr_spc pr_int (List.rev cursor) ++ fnl () ++
+         prgl pf.goal ++ fnl () ++
          (match pf.ref with
-            | None -> [< 'sTR"BY <rule>" >]
+            | None -> (str"BY <rule>")
             | Some(r,spfl) ->
-		[< 'sTR"BY "; Refiner.pr_rule r; 'fNL; 'sTR"  ";
-		   hOV 0 (prlist_with_sep pr_fnl prgl
-			    (List.map (fun p -> p.goal) spfl)) >]);
-         'fNL >]
+		(str"BY " ++ Refiner.pr_rule r ++ fnl () ++ str"  " ++
+		   hov 0 (prlist_with_sep pr_fnl prgl
+			    (List.map (fun p -> p.goal) spfl)))) ++
+         fnl ())
     
 let show_top_evars () =
   let pfts = get_pftreestate () in 
   let gls = top_goal_of_pftreestate pfts in 
   let sigma = project gls in 
-  mSG (pr_evars_int 1 (Evd.non_instantiated sigma))
+  msg (pr_evars_int 1 (Evd.non_instantiated sigma))
 
 let locate_file f =
   try
     let _,file =
       System.where_in_path (Library.get_load_path()) f in
-    mSG [< 'sTR file; 'fNL >]
+    msg (str file ++ fnl ())
   with Not_found -> 
-    mSG (hOV 0 [< 'sTR"Can't find file"; 'sPC; 'sTR f; 'sPC;
-		  'sTR"on loadpath"; 'fNL >])
+    msg (hov 0 (str"Can't find file" ++ spc () ++ str f ++ spc () ++
+		  str"on loadpath" ++ fnl ()))
 
 let print_located_qualid qid =
   try
     let sp = Nametab.sp_of_global (Global.env()) (Nametab.locate qid) in
-    mSG [< pr_sp sp; 'fNL >]
+    msg (pr_sp sp ++ fnl ())
   with Not_found -> 
   try
-    mSG [< pr_sp (Syntax_def.locate_syntactic_definition qid); 'fNL >]
+    msg (pr_sp (Syntax_def.locate_syntactic_definition qid) ++ fnl ())
   with Not_found ->
     error ((Nametab.string_of_qualid qid) ^ " is not a defined object")
 
 let print_path_entry (s,l) =
-  [< 'sTR s; 'tBRK (0,2); 'sTR (string_of_dirpath l) >]
+  (str s ++ tbrk (0,2) ++ str (string_of_dirpath l))
 
 let print_loadpath () =
   let l = Library.get_full_load_path () in
-  mSGNL (Pp.t [< 'sTR "Physical path:                                 ";
-		 'tAB; 'sTR "Logical Path:"; 'fNL; 
-		 prlist_with_sep pr_fnl print_path_entry l >])
+  msgnl (Pp.t (str "Physical path:                                 " ++
+		 tab () ++ str "Logical Path:" ++ fnl () ++ 
+		 prlist_with_sep pr_fnl print_path_entry l))
 
 let get_current_context_of_args = function
   | [VARG_NUMBER n] -> get_goal_context n
@@ -157,21 +157,21 @@ let _ =
 
 let msg_found_library = function
   | Library.LibLoaded, fulldir, file ->
-      mSG [< pr_dirpath fulldir; 'sTR " has been loaded from file"; 'fNL;
-      'sTR file; 'fNL >]
+      msg (pr_dirpath fulldir ++ str " has been loaded from file" ++ fnl () ++
+      str file ++ fnl ())
   | Library.LibInPath, fulldir, file ->
-      mSG [< pr_dirpath fulldir; 'sTR " is bound to file "; 'sTR file; 'fNL >]
+      msg (pr_dirpath fulldir ++ str " is bound to file " ++ str file ++ fnl ())
 
 let msg_notfound_library qid = function
   | Library.LibUnmappedDir ->
       let dir = fst (Nametab.repr_qualid qid) in
       errorlabstrm "locate_library"
-        [< 'sTR "Cannot find a physical path bound to logical path ";
-           pr_dirpath dir; 'fNL >]
+        (str "Cannot find a physical path bound to logical path " ++
+           pr_dirpath dir ++ fnl ())
   | Library.LibNotFound ->
-      mSG (hOV 0 
-	[< 'sTR"Unable to locate library";
-           'sPC; Nametab.pr_qualid qid; 'fNL >])
+      msg (hov 0 
+	(str"Unable to locate library" ++
+           spc () ++ Nametab.pr_qualid qid ++ fnl ()))
   | e -> assert false
 
 let _ = 
@@ -375,10 +375,10 @@ let _ =
 	      and loaded = Library.loaded_modules () in
               let loaded_opened = list_intersect loaded opened
               and only_loaded = list_subtract loaded opened in
-              mSG [< 'sTR"Loaded and imported modules: "; 
-                     pr_vertical_list pr_dirpath loaded_opened; 'fNL;
-		     'sTR"Loaded and not imported modules: ";
-		     pr_vertical_list pr_dirpath only_loaded >])
+              msg (str"Loaded and imported modules: " ++ 
+                     pr_vertical_list pr_dirpath loaded_opened ++ fnl () ++
+		     str"Loaded and not imported modules: " ++
+		     pr_vertical_list pr_dirpath only_loaded))
        | _ -> bad_vernac_args "PrintModules")
 
 (* Sections *)
@@ -516,7 +516,7 @@ let coercion_of_qualid loc qid =
   let coe = Classops.coe_of_reference ref in
   if not (Classops.coercion_exists coe) then
     errorlabstrm "try_add_coercion" 
-      [< Printer.pr_global ref; 'sTR" is not a coercion" >];
+      (Printer.pr_global ref ++ str" is not a coercion");
   coe
 
 let _ = declare_bool_option 
@@ -675,14 +675,14 @@ let _ =
 	      let cursor = cursor_of_pftreestate pts in
 	      let evc = evc_of_pftreestate pts in
 	      let (pfterm,meta_types) = extract_open_pftreestate pts in
-	      mSGNL [< 'sTR"LOC: " ;
-		       prlist_with_sep pr_spc pr_int (List.rev cursor); 'fNL ;
-		       'sTR"Subgoals" ; 'fNL ;
+	      msgnl (str"LOC: " ++
+		       prlist_with_sep pr_spc pr_int (List.rev cursor) ++ fnl () ++
+		       str"Subgoals" ++ fnl () ++
 		       prlist
 			 (fun (mv,ty) -> 
-			    [< 'iNT mv ; 'sTR" -> " ; prtype ty ; 'fNL >])
-			 meta_types;
-		       'sTR"Proof: " ; prterm (Evarutil.nf_evar evc pfterm) >])
+			    (int mv ++ str" -> " ++ prtype ty ++ fnl ()))
+			 meta_types ++
+		       str"Proof: " ++ prterm (Evarutil.nf_evar evc pfterm)))
        | _ -> bad_vernac_args "ShowProof")
 
 let _ =
@@ -698,11 +698,11 @@ let _ =
 		try 
 		  Inductiveops.control_only_guard (Evarutil.evar_env pf.goal)
 		    pfterm; 
-		  [< 'sTR "The condition holds up to here" >]
+		  (str "The condition holds up to here")
                 with UserError(_,s) -> 
-		  [< 'sTR ("Condition violated : ") ;s >]
+		  (str ("Condition violated : ") ++s)
 	      in 
-	      mSGNL message)
+	      msgnl message)
        | _ -> bad_vernac_args "CheckGuard")
 
 let _ =
@@ -729,7 +729,7 @@ let _ =
            | (n::l) -> aux (Tacmach.traverse n pts) l in 
          let pts = aux pts (l@[-1]) in
          let pf = proof_of_pftreestate pts in 
-	 mSG (Refiner.print_script true evc (Global.named_context()) pf))
+	 msg (Refiner.print_script true evc (Global.named_context()) pf))
 
 let _ =
   add "ExplainProofTree"
@@ -743,26 +743,26 @@ let _ =
            | (n::l) -> aux (Tacmach.traverse n pts) l in 
          let pts = aux pts (l@[-1]) in
          let pf = proof_of_pftreestate pts in 
-	 mSG (Refiner.print_proof evc (Global.named_context()) pf))
+	 msg (Refiner.print_proof evc (Global.named_context()) pf))
 
 let _ =
   add "ShowProofs"
     (function [] ->
        (fun () ->
 	  let l = Pfedit.get_all_proof_names() in 
-	  mSGNL (prlist_with_sep pr_spc pr_id l))
+	  msgnl (prlist_with_sep pr_spc pr_id l))
        | _  -> bad_vernac_args "ShowProofs")
 
 let _ =
   add "PrintAll"
     (function 
-       | [] -> (fun () -> mSG(print_full_context_typ ()))
+       | [] -> (fun () -> msg(print_full_context_typ ()))
        | _  -> bad_vernac_args "PrintAll")
 
 let _ =
   add "PRINT"
     (function 
-       | [] -> (fun () -> mSG(print_local_context()))
+       | [] -> (fun () -> msg(print_local_context()))
        | _  -> bad_vernac_args "PRINT")
 
 (* Pris en compte dans PrintOption *)
@@ -770,19 +770,19 @@ let _ =
 let _ =
   add "PrintId"
     (function 
-       | [VARG_QUALID qid] -> (fun () -> mSG(print_name qid))
+       | [VARG_QUALID qid] -> (fun () -> msg(print_name qid))
        | _ -> bad_vernac_args "PrintId")
 
 let _ =
   add "PrintOpaqueId"
     (function 
-       | [VARG_QUALID qid] -> (fun () -> mSG(print_opaque_name qid))
+       | [VARG_QUALID qid] -> (fun () -> msg(print_opaque_name qid))
        | _ -> bad_vernac_args "PrintOpaqueId")
 
 let _ =
   add "PrintSec"
     (function 
-       | [VARG_QUALID qid] -> (fun () -> mSG(print_sec_context_typ qid))
+       | [VARG_QUALID qid] -> (fun () -> msg(print_sec_context_typ qid))
        | _ -> bad_vernac_args "PrintSec")
 
 let _ = declare_bool_option 
@@ -824,8 +824,8 @@ let _ =
 	   fun () ->
              begin
                if (kind = "LETTOP") && not(refining ()) then
-                 errorlabstrm "Vernacentries.StartProof" [< 'sTR
-                 "Let declarations can only be used in proof editing mode" >];
+                 errorlabstrm "Vernacentries.StartProof" (str
+                 "Let declarations can only be used in proof editing mode");
                start_proof_com (Some s) stre com;
                if_verbose show_open_subgoals ()
              end
@@ -863,15 +863,15 @@ let _ =
 		  ()
               with e ->
             	if (is_unsafe "proof") && not (kind = "LETTOP") then begin
-                  mSGNL [< 'sTR "Warning: checking of theorem "; pr_id id;
-                           'sPC; 'sTR "failed";
-                           'sTR "... converting to Axiom" >];
+                  msgnl (str "Warning: checking of theorem " ++ pr_id id ++
+                           spc () ++ str "failed" ++
+                           str "... converting to Axiom");
                   delete_proof id;
                   let _ = parameter_def_var id com in ()
            	end else 
 		  errorlabstrm "Vernacentries.TheoremProof"
-                    [< 'sTR "checking of theorem "; pr_id id; 'sPC;
-                       'sTR "failed... aborting" >])
+                    (str "checking of theorem " ++ pr_id id ++ spc () ++
+                       str "failed... aborting"))
        | _ -> bad_vernac_args "TheoremProof")
 
 let _ =
@@ -964,7 +964,7 @@ let _ =
        | VARG_TACTIC_ARG (Redexp redexp) :: VARG_CONSTR c :: g ->
            let (evmap,sign) = get_current_context_of_args g in
            let redfun = print_eval (reduction_of_redexp redexp) sign in 
-	   fun () -> mSG (redfun (judgment_of_rawconstr evmap sign c))
+	   fun () -> msg (redfun (judgment_of_rawconstr evmap sign c))
        | _ -> bad_vernac_args "Eval")
 
 let _ =
@@ -977,14 +977,14 @@ let _ =
               let c = interp_constr evmap env c in
               let senv = Global.safe_env() in
               let j = Safe_typing.typing senv c in
-              mSG (print_safe_judgment env j))
+              msg (print_safe_judgment env j))
        | VARG_STRING "CHECK" :: VARG_CONSTR c :: g ->
 	   (fun () ->
 	      let (evmap, env) = get_current_context_of_args g in
               let c = interp_constr evmap env c in
               let (j,cst) = Typeops.infer env c in
               let _ = Environ.add_constraints cst env in
-              mSG (print_judgment env j))
+              msg (print_judgment env j))
        | _ -> bad_vernac_args "Check")
     
 
@@ -1031,7 +1031,7 @@ let _ =
 let _ =
   add "INSPECT"
     (function 
-       | [VARG_NUMBER n] -> (fun () -> mSG(inspect n))
+       | [VARG_NUMBER n] -> (fun () -> msg(inspect n))
        | _ -> bad_vernac_args "INSPECT")
 
 let _ =
@@ -1340,19 +1340,19 @@ let _ =
 let _ =
   add "PrintGRAPH"
     (function 
-       | [] -> (fun () -> pPNL (Prettyp.print_graph()))
+       | [] -> (fun () -> ppnl (Prettyp.print_graph()))
        | _  -> bad_vernac_args "PrintGRAPH")
 
 let _ =
   add "PrintCLASSES"
     (function 
-       | [] -> (fun () -> pPNL (Prettyp.print_classes()))
+       | [] -> (fun () -> ppnl (Prettyp.print_classes()))
        | _  -> bad_vernac_args "PrintCLASSES")
 
 let _ =
   add "PrintCOERCIONS"
     (function 
-       | [] -> (fun () -> pPNL (Prettyp.print_coercions()))
+       | [] -> (fun () -> ppnl (Prettyp.print_coercions()))
        | _  -> bad_vernac_args "PrintCOERCIONS")
 
 let _ =
@@ -1360,7 +1360,7 @@ let _ =
     (function 
        | [VARG_QUALID qids;VARG_QUALID qidt] -> 
 	   (fun () ->
-              pPNL (Prettyp.print_path_between
+              ppnl (Prettyp.print_path_between
                       (cl_of_qualid qids) (cl_of_qualid qidt)))
        | _ -> bad_vernac_args "PrintPATH")
 
@@ -1702,7 +1702,7 @@ let _ =
             if (string_of_id t) = "Tables" then 
 	      print_tables ()
 	    else 
-	      mSG(print_name (Nametab.make_short_qualid t)))
+	      msg(print_name (Nametab.make_short_qualid t)))
      | _ -> bad_vernac_args "TableField")
 
 
@@ -1792,13 +1792,13 @@ let _ = vinterp_add "PrintMLModules"
 
 let _ = vinterp_add "DumpUniverses"
 	  (function
-	     | [] -> (fun () -> pP (Univ.pr_universes (Global.universes ())))
+	     | [] -> (fun () -> pp (Univ.pr_universes (Global.universes ())))
 	     | [VARG_STRING s] ->
 		 (fun () -> let output = open_out s in
 		    try
 		      Univ.dump_universes output (Global.universes ());
 		      close_out output;
-		      mSG [<'sTR ("Universes written to file \""^s^"\"."); 'fNL >] 
+		      msg (str ("Universes written to file \""^s^"\".") ++ fnl ()) 
 		    with
 			e -> close_out output; raise e
 		 )

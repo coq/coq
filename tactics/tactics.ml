@@ -197,13 +197,13 @@ let change_hyp_and_check t env sigma c =
   if is_conv env sigma t c then 
     t
   else 
-    errorlabstrm "convert-check-hyp" [< 'sTR "Not convertible" >]
+    errorlabstrm "convert-check-hyp" (str "Not convertible")
 
 let change_concl_and_check t env sigma c =
   if is_conv_leq env sigma t c then 
     t
   else 
-    errorlabstrm "convert-check-concl" [< 'sTR "Not convertible" >]
+    errorlabstrm "convert-check-concl" (str "Not convertible")
 
 let change_in_concl t = reduct_in_concl (change_concl_and_check t)
 let change_in_hyp t   = reduct_in_hyp (change_hyp_and_check t)
@@ -252,7 +252,7 @@ let dyn_reduce = function
 let unfold_constr = function 
   | ConstRef sp -> unfold_in_concl [[],Closure.EvalConstRef sp]
   | VarRef id -> unfold_in_concl [[],Closure.EvalVarRef id]
-  | _ -> errorlabstrm "unfold_constr" [< 'sTR "Cannot unfold a non-constant.">]
+  | _ -> errorlabstrm "unfold_constr" (str "Cannot unfold a non-constant.")
 
 (*******************************************)
 (*         Introduction tactics            *)
@@ -323,7 +323,7 @@ let rec intro_gen name_flag move_flag force_flag gl =
 	    (intro_gen name_flag move_flag force_flag)) gl)
       with Redelimination ->
         errorlabstrm "Intro" 
-	  [<'sTR "No product even after head-reduction">]
+	  (str "No product even after head-reduction")
     else
       raise e
 
@@ -378,8 +378,8 @@ let rec intros_until s g =
 	  ((tclTHEN (reduce (Red true) []) (intros_until s)) g)
 	with Redelimination ->
           errorlabstrm "Intros" 
-	    [<'sTR ("No hypothesis "^(string_of_id s)^" in current goal");
-	      'sTR " even after head-reduction" >]
+	    (str ("No hypothesis "^(string_of_id s)^" in current goal") ++
+	      str " even after head-reduction")
 
 let rec intros_until_n_gen red n g =
   match pf_lookup_index_as_renamed (pf_concl g) n with
@@ -390,12 +390,12 @@ let rec intros_until_n_gen red n g =
           ((tclTHEN (reduce (Red true) []) (intros_until_n_gen red n)) g)
 	with Redelimination ->
           errorlabstrm "Intros" 
-	    [<'sTR ("No "^(string_of_int n));
-	      'sTR (match n with 1 -> "st" | 2 -> "nd" | _ -> "th");
-	      'sTR " non dependent hypothesis in current goal";
-	      'sTR " even after head-reduction" >]
+	    (str ("No "^(string_of_int n)) ++
+	      str (match n with 1 -> "st" | 2 -> "nd" | _ -> "th") ++
+	      str " non dependent hypothesis in current goal" ++
+	      str " even after head-reduction")
       else
-        errorlabstrm "Intros" [<'sTR "No such hypothesis in current goal" >]
+        errorlabstrm "Intros" (str "No such hypothesis in current goal")
 
 let intros_until_n = intros_until_n_gen true
 let intros_until_n_wored = intros_until_n_gen false
@@ -666,7 +666,7 @@ let generalize_dep c gl =
       d::toquant
     else 
       toquant in
-  let toq_rev = Sign.fold_named_context_reverse seek [] sign in
+  let toq_rev = Sign.fold_named_context_reverse seek ~init:[] sign in
   let qhyps = List.map (fun (id,_,_) -> id) toq_rev in
   let to_quantify =
     List.fold_left
@@ -752,7 +752,7 @@ let letin_abstract id c (occ_ccl,occ_hyps) gl =
       (accu, Some hyp) 
   in
   let (depdecls,marks),_ =
-    fold_named_context_reverse abstract (([],[]),None) env in
+    fold_named_context_reverse abstract ~init:(([],[]),None) env in
   let occ_ccl = if everywhere then Some [] else occ_ccl in
   let ccl = match occ_ccl with
     | None -> pf_concl gl
@@ -1047,7 +1047,7 @@ let elimination_clause_scheme kONT wc elimclause indclause gl =
     (match kind_of_term (last_arg (clenv_template elimclause).rebus) with
        | Meta mv -> mv
        | _  -> errorlabstrm "elimination_clause"
-             [< 'sTR "The type of elimination clause is not well-formed" >]) 
+             (str "The type of elimination clause is not well-formed")) 
   in
   let elimclause' = clenv_fchain indmv elimclause indclause in 
   elim_res_pf kONT elimclause' gl
@@ -1351,7 +1351,7 @@ let cook_sign hyp0 indvars env =
       else
 	Some hyp
   in
-  let _ = fold_named_context seek_deps env None in
+  let _ = fold_named_context seek_deps env ~init:None in
   (* 2nd phase from R to L: get left hyp of [hyp0] and [lhyps] *)
   let compute_lstatus lhyp (hyp,_,_ as d) =
     if hyp = hyp0 then raise (Shunt lhyp);
@@ -1362,7 +1362,7 @@ let cook_sign hyp0 indvars env =
       if List.mem hyp !indhyps then lhyp else (Some hyp) 
   in
   try 
-    let _ = fold_named_context_reverse compute_lstatus None env in
+    let _ = fold_named_context_reverse compute_lstatus ~init:None env in
     anomaly "hyp0 not found"
   with Shunt lhyp0 ->
     let statuslists = (!lstatus,List.rev !rstatus) in
@@ -1447,7 +1447,7 @@ let induction_from_context isrec style hyp0 gl =
   (*test suivant sans doute inutile car refait par le letin_tac*)
   if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
     errorlabstrm "induction" 
-      [< 'sTR "Cannot generalize a global variable" >];
+      (str "Cannot generalize a global variable");
   let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
   let env = pf_env gl in
   let (mind,typ0) = pf_reduce_to_quantified_ind gl tmptyp0 in
@@ -1661,7 +1661,7 @@ let andE id gl =
     (tclTHEN (simplest_elim (mkVar id)) (tclDO 2 intro)) gl
   else 
     errorlabstrm "andE" 
-      [< 'sTR("Tactic andE expects "^(string_of_id id)^" is a conjunction.")>]
+      (str("Tactic andE expects "^(string_of_id id)^" is a conjunction."))
 
 let dAnd cls gl =
   match cls with
@@ -1674,7 +1674,7 @@ let orE id gl =
     (tclTHEN (simplest_elim (mkVar id)) intro) gl
   else 
     errorlabstrm "orE" 
-      [< 'sTR("Tactic orE expects "^(string_of_id id)^" is a disjunction.")>]
+      (str("Tactic orE expects "^(string_of_id id)^" is a disjunction."))
 
 let dorE b cls gl =
   match cls with 
@@ -1689,8 +1689,8 @@ let impE id gl =
        [tclIDTAC;apply_term (mkVar id) [mkMeta (new_meta())]]) gl
   else 
     errorlabstrm "impE"
-      [< 'sTR("Tactic impE expects "^(string_of_id id)^
-	      " is a an implication.")>]
+      (str("Tactic impE expects "^(string_of_id id)^
+	      " is a an implication."))
                         
 let dImp cls gl =
   match cls with
@@ -1748,7 +1748,7 @@ let intros_reflexivity  = (tclTHEN intros reflexivity)
 let dyn_reflexivity = function
   | []  -> intros_reflexivity
   | _ -> errorlabstrm "Tactics.reflexivity" 
-                           [<'sTR "Tactic applied to bad arguments!">]
+                           (str "Tactic applied to bad arguments!")
 
 (* Symmetry tactics *)
 

@@ -157,7 +157,7 @@ let push_long_names_libpath = push_modidtree the_libtab
    possibly limited visibility, i.e. Theorem, Lemma, Definition, Axiom,
    Parameter but also Remark and Fact) *)
 
-let push_cci n sp ref =
+let push_cci ~visibility:n sp ref =
   let dir, s = repr_path sp in
   (* We push partially qualified name (with at least one prefix) *)
   push_long_names_ccipath n dir s (TrueGlobal ref)
@@ -297,7 +297,7 @@ let pr_global_env env ref =
   paresseusement : il faut forcer l'évaluation pour capturer
   l'éventuelle levée d'une exception (le cas échoit dans le debugger) *)
   let s = string_of_qualid (shortest_qualid_of_global env ref) in
-  [< 'sTR s >]
+  (str s)
 
 (********************************************************************)
 

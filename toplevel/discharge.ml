@@ -149,20 +149,20 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
 (* Discharge messages. *)
 
 let constant_message id =
-  Options.if_verbose pPNL [< pr_id id; 'sTR " is discharged." >]
+  Options.if_verbose ppnl (pr_id id ++ str " is discharged.")
 
 let inductive_message inds =
   Options.if_verbose 
-    pPNL
-      (hOV 0 
+    ppnl
+      (hov 0 
 	 (match inds with
 	    | [] -> assert false
 	    | [ind] ->
-		[< pr_id ind.mind_entry_typename; 'sTR " is discharged." >]
+		(pr_id ind.mind_entry_typename ++ str " is discharged.")
 	    | l ->
-		[< prlist_with_sep pr_coma 
-		     (fun ind -> pr_id ind.mind_entry_typename) l;
-		   'sPC; 'sTR "are discharged.">]))
+		(prlist_with_sep pr_coma 
+		     (fun ind -> pr_id ind.mind_entry_typename) l ++
+		   spc () ++ str "are discharged.")))
 
 (* Discharge operations for the various objects of the environment. *)
 

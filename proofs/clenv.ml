@@ -430,8 +430,8 @@ let clenv_assign mv rhs clenv =
 	       (* Streams are lazy, force evaluation of id to catch Not_found*)
 	       let id = Intmap.find mv clenv.namenv in
 	       errorlabstrm "clenv_assign"
-		 [< 'sTR "An incompatible instantiation has already been found for "; 
-		    pr_id id >]
+		 (str "An incompatible instantiation has already been found for " ++ 
+		    pr_id id)
 	     with Not_found ->
 	       anomaly "clenv_assign: non dependent metavar already assigned"
 	   else
@@ -907,7 +907,7 @@ let clenv_lookup_name clenv id =
   match intmap_inv clenv.namenv id with
     | []  -> 
 	errorlabstrm "clenv_lookup_name"
-          [< 'sTR"No such bound variable "; pr_id id >]
+          (str"No such bound variable " ++ pr_id id)
     | [n] -> 
 	n
     |  _  -> 
@@ -926,18 +926,18 @@ let clenv_match_args s clause =
              | Dep s ->
 		 if List.mem_assoc b t then 
 		   errorlabstrm "clenv_match_args" 
-		     [< 'sTR "The variable "; pr_id s; 
-			'sTR " occurs more than once in binding" >]
+		     (str "The variable " ++ pr_id s ++ 
+			str " occurs more than once in binding")
 		 else
 		   clenv_lookup_name clause s
 	     | NoDep n ->
 		 if List.mem_assoc b t then errorlabstrm "clenv_match_args"
-		   [< 'sTR "The position "; 'iNT n ;
-		      'sTR " occurs more than once in binding" >];
+		   (str "The position " ++ int n ++
+		      str " occurs more than once in binding");
 		 (try 
 		    List.nth mvs (n-1)
 		  with Failure "item" -> errorlabstrm "clenv_match_args"
-                      [< 'sTR"No such binder" >])
+                      (str"No such binder"))
 	     | Com -> anomaly "No free term in clenv_match_args")
 	in
 	let k_typ = w_hnf_constr clause.hook (clenv_instance_type clause k)
@@ -1092,7 +1092,7 @@ let make_clenv_binding_apply wc n (c,t) lbind =
     clenv_match_args lbind clause
   else 
     errorlabstrm "make_clenv_bindings"
-      [<'sTR "Cannot mix bindings and free associations">]
+      (str "Cannot mix bindings and free associations")
 
 let make_clenv_binding wc (c,t) lbind = 
   let largs    = collect_com lbind in
@@ -1105,7 +1105,7 @@ let make_clenv_binding wc (c,t) lbind =
     clenv_match_args lbind clause
   else 
     errorlabstrm "make_clenv_bindings"
-      [<'sTR "Cannot mix bindings and free associations">]
+      (str "Cannot mix bindings and free associations")
 
 open Printer
 
@@ -1113,15 +1113,15 @@ let pr_clenv clenv =
   let pr_name mv =
     try 
       let id = Intmap.find mv clenv.namenv in
-      [< 'sTR"[" ; pr_id id ; 'sTR"]" >]
-    with Not_found -> [< >]
+      (str"[" ++ pr_id id ++ str"]")
+    with Not_found -> (mt ())
   in
   let pr_meta_binding = function
     | (mv,Cltyp b) ->
-      	hOV 0 [< 'iNT mv ; pr_name mv ; 'sTR " : " ; prterm b.rebus ; 'fNL >]
+      	hov 0 (int mv ++ pr_name mv ++ str " : " ++ prterm b.rebus ++ fnl ())
     | (mv,Clval(b,_)) ->
-      	hOV 0 [< 'iNT mv ; pr_name mv ; 'sTR " := " ; prterm b.rebus ; 'fNL >]
+      	hov 0 (int mv ++ pr_name mv ++ str " := " ++ prterm b.rebus ++ fnl ())
   in
-  [< 'sTR"TEMPL: " ; prterm clenv.templval.rebus ;
-     'sTR" : " ; prterm clenv.templtyp.rebus ; 'fNL ;
-     (prlist pr_meta_binding (intmap_to_list clenv.env)) >]
+  (str"TEMPL: " ++ prterm clenv.templval.rebus ++
+     str" : " ++ prterm clenv.templtyp.rebus ++ fnl () ++
+     (prlist pr_meta_binding (intmap_to_list clenv.env)))

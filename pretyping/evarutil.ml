@@ -308,8 +308,9 @@ let make_evar_instance_with_rel env =
       (fun env (id,b,_) l -> (* if b=None then *) mkVar id :: l (*else l*))
       env ~init:[] in
   snd (fold_rel_context
-    (fun env (_,b,_) (i,l) -> (i-1, (*if b=None then *) mkRel i :: l (*else l*)))
-    env (n,vars))
+	 (fun env (_,b,_) (i,l) -> 
+	    (i-1, (*if b=None then *) mkRel i :: l (*else l*)))
+	 env ~init:(n,vars))
 
 let make_subst env args =
   snd (fold_named_context
@@ -318,7 +319,7 @@ let make_subst env args =
 	 | (* None *) _ , a::rest -> (rest, (id,a)::l)
 (*	 | Some _, _ -> g*)
 	 | _ -> anomaly "Instance does not match its signature")
-    env (List.rev args,[]))
+    env ~init:(List.rev args,[]))
 
 (* [new_isevar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
@@ -335,7 +336,7 @@ let push_rel_context_to_named_context env =
 	add_named_decl (id,option_app (substl subst) c,
                         type_app (substl subst) t)
 	  sign))
-    (rel_context env) ([],ids_of_named_context sign0,sign0)
+    (rel_context env) ~init:([],ids_of_named_context sign0,sign0)
   in (subst, reset_with_named_context sign env)
 
 let new_isevar isevars env typ =

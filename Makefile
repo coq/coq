@@ -46,8 +46,8 @@ LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
-BYTEFLAGS=-rectypes $(MLINCLUDES) $(CAMLDEBUG)
-OPTFLAGS=-rectypes $(MLINCLUDES) $(CAMLTIMEPROF)
+BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG)
+OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF)
 OCAMLDEP=ocamldep
 DEPFLAGS=$(LOCALINCLUDES)
 
@@ -571,11 +571,11 @@ $(GALLINA): $(GALLINACMO)
 
 beforedepend:: tools/gallina_lexer.ml
 
-$(COQMAKEFILE): tools/coq_makefile.ml
-	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coq_makefile.ml
+$(COQMAKEFILE): tools/coq_makefile.cmo
+	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coq_makefile.cmo
 
-$(COQTEX): tools/coq-tex.ml
-	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma tools/coq-tex.ml
+$(COQTEX): tools/coq-tex.cmo
+	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma tools/coq-tex.cmo
 
 COQVO2XMLCMO=$(CONFIG) toplevel/usage.cmo tools/coq_vo2xml.cmo
 
@@ -760,6 +760,62 @@ ML4FILES += toplevel/mltop.ml4
 
 clean::
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
+
+# files compiled with camlp4 because of streams syntax
+
+lib/pp.cmo: lib/pp.ml
+	$(OCAMLC) -pp camlp4o $(BYTEFLAGS) -c $<
+
+lib/pp.cmx: lib/pp.ml
+	$(OCAMLOPT) -pp camlp4o $(OPTFLAGS) -c $<
+
+kernel/term.cmo: kernel/term.ml
+	$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
+
+kernel/term.cmx: kernel/term.ml
+	$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
+
+library/nametab.cmo: library/nametab.ml
+	$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
+
+library/nametab.cmx: library/nametab.ml
+	$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
+
+contrib/xml/xml.cmo: contrib/xml/xml.ml
+	$(OCAMLC) -pp camlp4o $(BYTEFLAGS) -c $<
+
+contrib/xml/xml.cmx: contrib/xml/xml.ml
+	$(OCAMLOPT) -pp camlp4o $(OPTFLAGS) -c $<
+
+contrib/xml/xmlcommand.cmo: contrib/xml/xmlcommand.ml
+	$(OCAMLC) -pp camlp4o $(BYTEFLAGS) -c $<
+
+contrib/xml/xmlcommand.cmx: contrib/xml/xmlcommand.ml
+	$(OCAMLOPT) -pp camlp4o $(OPTFLAGS) -c $<
+
+contrib/interface/dad.cmo: contrib/interface/dad.ml
+	$(OCAMLC) -pp camlp4o $(BYTEFLAGS) -c $<
+
+contrib/interface/dad.cmx: contrib/interface/dad.ml
+	$(OCAMLOPT) -pp camlp4o $(OPTFLAGS) -c $<
+
+contrib/interface/line_parser.cmo: contrib/interface/line_parser.ml
+	$(OCAMLC) -pp camlp4o $(BYTEFLAGS) -c $<
+
+contrib/interface/line_parser.cmx: contrib/interface/line_parser.ml
+	$(OCAMLOPT) -pp camlp4o $(OPTFLAGS) -c $<
+
+tools/coq_makefile.cmo: tools/coq_makefile.ml
+	$(OCAMLC) -pp camlp4o $(BYTEFLAGS) -c $<
+
+tools/coq_makefile.cmx: tools/coq_makefile.ml
+	$(OCAMLOPT) -pp camlp4o $(OPTFLAGS) -c $<
+
+tools/coq-tex.cmo: tools/coq-tex.ml
+	$(OCAMLC) -pp camlp4o $(BYTEFLAGS) -c $<
+
+tools/coq-tex.cmx: tools/coq-tex.ml
+	$(OCAMLOPT) -pp camlp4o $(OPTFLAGS) -c $<
 
 ###########################################################################
 # Default rules

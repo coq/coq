@@ -55,7 +55,7 @@ let prompt_char ic ibuf count =
     | ll::_ -> ibuf.len == ll
     | [] -> ibuf.len == 0
   in
-  if bol then mSGERR [< 'sTR (ibuf.prompt()) >];
+  if bol then msgerr (str (ibuf.prompt()));
   try
     let c = input_char ic in
     if c == '\n' then ibuf.bols <- (ibuf.len+1) :: ibuf.bols;
@@ -109,31 +109,31 @@ let print_highlight_location ib (bp,ep) =
   let highlight_lines =
     match get_bols_of_loc ib (bp,ep) with
       | ([],(bl,el)) ->  
-	  [< 'sTR"> "; 'sTR(String.sub ib.str bl (el-bl-1)); 'fNL;
-             'sTR"> "; 'sTR(String.make (bp-bl) ' ');
-             'sTR(String.make (ep-bp) '^') >]
+	  (str"> " ++ str(String.sub ib.str bl (el-bl-1)) ++ fnl () ++
+             str"> " ++ str(String.make (bp-bl) ' ') ++
+             str(String.make (ep-bp) '^'))
       | ((b1,e1)::ml,(bn,en)) ->
           let (d1,s1) = dotted_location (b1,bp) in
           let (dn,sn) = dotted_location (ep,en) in
-          let l1 = [< 'sTR"> "; 'sTR d1; 'sTR s1;
-                      'sTR(String.sub ib.str bp (e1-bp)) >] in
+          let l1 = (str"> " ++ str d1 ++ str s1 ++
+                      str(String.sub ib.str bp (e1-bp))) in
           let li =
             prlist (fun (bi,ei) ->
-                      [< 'sTR"> "; 'sTR(String.sub ib.str bi (ei-bi)) >]) ml in
-          let ln = [< 'sTR"> "; 'sTR(String.sub ib.str bn (ep-bn));
-                      'sTR sn; 'sTR dn >] in 
-	  [< l1; li; ln >]
+                      (str"> " ++ str(String.sub ib.str bi (ei-bi)))) ml in
+          let ln = (str"> " ++ str(String.sub ib.str bn (ep-bn)) ++
+                      str sn ++ str dn) in 
+	  (l1 ++ li ++ ln)
   in 
-  [< 'sTR"Toplevel input, characters "; Errors.print_loc (bp,ep); 'fNL;
-     highlight_lines; 'fNL >]
+  (str"Toplevel input, characters " ++ Errors.print_loc (bp,ep) ++ fnl () ++
+     highlight_lines ++ fnl ())
 
 (* Functions to report located errors in a file. *)
 
 let print_location_in_file s fname (bp,ep) =
-  let errstrm = [< 'sTR"Error while reading "; 'sTR s; 'sTR" :"; 'fNL;
-                   'sTR"File "; 'sTR ("\""^fname^"\"") >] in
+  let errstrm = (str"Error while reading " ++ str s ++ str" :" ++ fnl () ++
+                   str"File " ++ str ("\""^fname^"\"")) in
   if (bp,ep) = Ast.dummy_loc then 
-    [< errstrm; 'sTR", unknown location."; 'fNL >]
+    (errstrm ++ str", unknown location." ++ fnl ())
   else
     let ic = open_in fname in
     let rec line_of_pos lin bol cnt =
@@ -146,16 +146,16 @@ let print_location_in_file s fname (bp,ep) =
     try
       let (line, bol) = line_of_pos 1 0 0 in
       close_in ic;
-      [< errstrm; 'sTR", line "; 'iNT line;
-         'sTR", characters "; Errors.print_loc (bp-bol,ep-bol); 'fNL >]
-    with e -> (close_in ic; [< errstrm; 'sTR", invalid location."; 'fNL >])
+      (errstrm ++ str", line " ++ int line ++
+         str", characters " ++ Errors.print_loc (bp-bol,ep-bol) ++ fnl ())
+    with e -> (close_in ic; (errstrm ++ str", invalid location." ++ fnl ()))
 	
 let print_command_location ib dloc =
   match dloc with
     | Some (bp,ep) ->
-        [< 'sTR"Error during interpretation of command:"; 'fNL;
-           'sTR(String.sub ib.str (bp-ib.start) (ep-bp)); 'fNL >]
-    | None -> [<>]
+        (str"Error during interpretation of command:" ++ fnl () ++
+           str(String.sub ib.str (bp-ib.start) (ep-bp)) ++ fnl ())
+    | None -> (mt ())
 
 let valid_loc dloc (b,e) =
   (b,e) <> Ast.dummy_loc
@@ -185,7 +185,7 @@ let top_buffer =
     str = "";
     len = 0;
     bols = [];
-    tokens = Gram.parsable [<>];
+    tokens = Gram.parsable (Stream.of_list []);
     start = 0 }
 
 let set_prompt prompt =
@@ -217,32 +217,32 @@ let print_toplevel_error exc =
           if valid_buffer_loc top_buffer dloc loc then
             (print_highlight_location top_buffer loc, ie)
           else 
-	    ([<>] (* print_command_location top_buffer dloc *), ie)
+	    ((mt ()) (* print_command_location top_buffer dloc *), ie)
       | Error_in_file (s, (fname, loc), ie) ->
           (print_location_in_file s fname loc, ie)
       | _ -> 
-	  ([<>] (* print_command_location top_buffer dloc *), exc)
+	  ((mt ()) (* print_command_location top_buffer dloc *), exc)
   in
   match exc with
     | End_of_input -> 
-	mSGERRNL [<>]; pp_flush(); exit 0
+	msgerrnl (mt ()); pp_flush(); exit 0
     | Vernacinterp.Drop ->  (* Last chance *)
         if Mltop.is_ocaml_top() then raise Vernacinterp.Drop;
-        [< 'sTR"Error: There is no ML toplevel."; 'fNL >]
+        (str"Error: There is no ML toplevel." ++ fnl ())
     | Vernacinterp.ProtectedLoop ->
 	raise Vernacinterp.ProtectedLoop
     | Vernacinterp.Quit -> 
 	raise Vernacinterp.Quit
     | _ -> 
-	[< if is_pervasive_exn exc then [<>] else locstrm;
-           Errors.explain_exn exc >]
+	(if is_pervasive_exn exc then (mt ()) else locstrm ++
+           Errors.explain_exn exc)
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot =
-  let rec dot = parser
-    | [< '("", ".") >] -> ()
-    | [< '("EOI", "") >] -> raise End_of_input
-    | [< '_; s >] -> dot s
+  let rec dot st = match Stream.next st with
+    | ("", ".") -> ()
+    | ("EOI", "") -> raise End_of_input
+    | _ -> dot st
   in 
   Gram.Entry.of_parser "Coqtoplevel.dot" dot
     
@@ -275,13 +275,13 @@ let process_error = function
            Otherwise, exit.
      End_of_input: Ctrl-D was typed in, we will quit *)
 let do_vernac () =
-  mSGERRNL [<>];
+  msgerrnl (mt ());
   resynch_buffer top_buffer;
   begin 
     try 
       raw_do_vernac top_buffer.tokens
     with e -> 
-      mSGNL (print_toplevel_error (process_error e)) 
+      msgnl (print_toplevel_error (process_error e)) 
   end;
   flush_all()
 
@@ -309,10 +309,10 @@ let rec coq_switch b =
     | Vernacinterp.ProtectedLoop -> 
 	Lib.declare_initial_state();
 	coq_switch false
-    | End_of_input -> mSGERRNL [<>]; pp_flush(); exit 0
+    | End_of_input -> msgerrnl (mt ()); pp_flush(); exit 0
     | Vernacinterp.Quit -> exit 0
     | e ->
-	mSGERRNL [< 'sTR"Anomaly: toplevel loop. Please report." >];
+	msgerrnl (str"Anomaly: toplevel loop. Please report.");
 	coq_switch b
 
 let loop () = coq_switch true

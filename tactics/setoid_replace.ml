@@ -156,9 +156,9 @@ let find_theory a =
     setoid_table_find a 
   with Not_found ->
     errorlabstrm "Setoid" 
-      [< 'sTR "No Declared Setoid Theory for ";
-	 prterm a; 'fNL;
-	 'sTR "Use Add Setoid to declare it">]
+      (str "No Declared Setoid Theory for " ++
+	 prterm a ++ fnl () ++
+	 str "Use Add Setoid to declare it")
     
 (* Add a Setoid to the database after a type verification. *)
 
@@ -217,7 +217,7 @@ let gen_eq_lem_name =
 let add_setoid a aeq th =
   if setoid_table_mem a 
   then errorlabstrm "Add Setoid"
-    [< 'sTR "A Setoid Theory is already declared for "; prterm a >]
+    (str "A Setoid Theory is already declared for " ++ prterm a)
   else let env = Global.env () in
     if (is_conv env Evd.empty (Typing.type_of env Evd.empty th)
 	  (mkApp ((Lazy.force coq_Setoid_Theory), [| a; aeq |])))
@@ -230,7 +230,7 @@ let add_setoid a aeq th =
 	  let trans = mkApp ((Lazy.force coq_seq_trans), [|a; aeq; th|]) in
 	  let eq_morph = eq_lem_proof env a aeq sym trans in
 	  let eq_morph2 = eq_lem2_proof env a aeq sym trans in
-	    Options.if_verbose pPNL [< prterm a;'sTR " is registered as a setoid">];
+	    Options.if_verbose ppnl (prterm a ++str " is registered as a setoid");
 	    let eq_ext_name = gen_eq_lem_name () in 
 	    let eq_ext_name2 = gen_eq_lem_name () in 
 	    let _ = Declare.declare_constant eq_ext_name
@@ -251,8 +251,8 @@ let add_setoid a aeq th =
 				     profil = [true; true];
 				     arg_types = [a;a];
 				     lem2 = (Some eqmorph2)})));
-	      Options.if_verbose pPNL [< prterm aeq;'sTR " is registered as a morphism">])
-    else errorlabstrm "Add Setoid" [< 'sTR "Not a valid setoid theory" >]
+	      Options.if_verbose ppnl (prterm aeq ++str " is registered as a morphism"))
+    else errorlabstrm "Add Setoid" (str "Not a valid setoid theory")
 
 (* The vernac command "Add Setoid" *)
 
@@ -302,7 +302,7 @@ let gen_lem_name m = match kind_of_term m with
   | Ind (sp, i) -> add_suffix (basename sp) ((string_of_int i)^"_ext")
   | Construct ((sp,i),j) -> add_suffix
       (basename sp) ((string_of_int i)^(string_of_int i)^"_ext")
-  | _ -> errorlabstrm "New Morphism" [< 'sTR "The term "; prterm m; 'sTR "is not a known name">]
+  | _ -> errorlabstrm "New Morphism" (str "The term " ++ prterm m ++ str "is not a known name")
 
 let gen_lemma_tail m lisset body n =
   let l = (List.length lisset) in
@@ -348,7 +348,7 @@ let gen_compat_lemma env m body larg lisset =
 let new_morphism m id =
   if morphism_table_mem m
   then errorlabstrm "New Morphism"
-    [< 'sTR "The term "; prterm m; 'sTR " is already declared as a morphism">]
+    (str "The term " ++ prterm m ++ str " is already declared as a morphism")
   else 
     let env = Global.env() in
     let typeofm = (Typing.type_of env Evd.empty m) in
@@ -357,10 +357,10 @@ let new_morphism m id =
     let args = (List.rev argsrev) in
       if (args=[])
       then errorlabstrm "New Morphism"
-	[< 'sTR "The term "; prterm m; 'sTR " is not a product">]
+	(str "The term " ++ prterm m ++ str " is not a product")
       else if (check_is_dependent typ (List.length args))
       then  errorlabstrm "New Morphism"
-	[< 'sTR "The term "; prterm m; 'sTR " should not be a dependent product">]
+	(str "The term " ++ prterm m ++ str " should not be a dependent product")
       else (
 	let args_t = (List.map snd args) in
 	let poss = (List.map setoid_table_mem args_t) in
@@ -443,7 +443,7 @@ let gen_lem_iff env m mext larg lisset =
 let add_morphism lem_name (m,profil) =
   if morphism_table_mem m
   then errorlabstrm "New Morphism"
-    [< 'sTR "The term "; prterm m; 'sTR " is already declared as a morpism">]
+    (str "The term " ++ prterm m ++ str " is already declared as a morpism")
   else 
     let env = Global.env() in
     let mext = (current_constant lem_name) in
@@ -478,7 +478,7 @@ let add_morphism lem_name (m,profil) =
 				profil = poss;
 				arg_types = args_t;
 				lem2 = None}))));
-      Options.if_verbose pPNL [< prterm m;'sTR " is registered as a morphism">]   
+      Options.if_verbose ppnl (prterm m ++str " is registered as a morphism")   
     
 let _ = 
   let current_save = vinterp_map "SaveNamed" in
@@ -517,7 +517,7 @@ let _ =
 	      with 
 		  Not_found -> 
 		    errorlabstrm "New Morphism" 
-		      [< 'sTR "The term "; 'sTR(string_of_id s); 'sTR" is not a known name">])
+		      (str "The term " ++ str(string_of_id s) ++ str" is not a known name"))
        | _ -> anomaly "NewMorphism")
 *)
   
@@ -618,7 +618,7 @@ and zapply is_r gl gl_m c1 c2 hyp glll = (match ((kind_of_term gl), gl_m) with
 		  | Some xom -> 
 		      tclTHENS (apply (mkApp (xom, args))) (create_tac_list 0 a al c1 c2 hyp m.arg_types m.profil))
       with Not_found -> errorlabstrm "Setoid_replace" 
-	  [< 'sTR "The term "; prterm c; 'sTR " has not been declared as a morphism">])
+	  (str "The term " ++ prterm c ++ str " has not been declared as a morphism"))
   | ((Prod (_,hh, cc)),(Mimp (hhm, ccm))) ->
       let al = [|hh; cc|] in
       let a = [|hhm; ccm|] in
@@ -644,9 +644,9 @@ and zapply is_r gl gl_m c1 c2 hyp glll = (match ((kind_of_term gl), gl_m) with
   | (_, Toreplace) -> (res_tac gl (pf_type_of glll gl) hyp) (* tclORELSE Auto.full_trivial tclIDTAC *)
   | (_, Tokeep) -> (match hyp with 
 		      | None -> errorlabstrm "Setoid_replace"
-			  [< 'sTR "No replacable occurence of "; prterm c1; 'sTR " found">]
+			  (str "No replacable occurence of " ++ prterm c1 ++ str " found")
 		      | Some _ ->errorlabstrm "Setoid_replace"
-			  [< 'sTR "No rewritable occurence of "; prterm c1; 'sTR " found">])
+			  (str "No rewritable occurence of " ++ prterm c1 ++ str " found"))
   | _ -> anomaly ("Bug in Setoid_replace")) glll
 
 let setoid_replace c1 c2 hyp gl =

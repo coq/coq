@@ -42,18 +42,18 @@ let access = ConstRef sp_access
 let has_array = ref false
 
 let pp_conversions () =
-  [< 'sTR"\
+  (str"\
 let rec int_of_pos = function
     XH -> 1
   | XI p -> 2 * (int_of_pos p) + 1
   | XO p -> 2 * (int_of_pos p)
-;;
+ ++ ++
 
 let int_of_z = function
     ZERO -> 0
   | POS p -> int_of_pos p
   | NEG p -> -(int_of_pos p)
-;;
+ ++ ++
 " >] (* '"' *)
 
 (* collect all section-path in a CIC constant *)
@@ -61,7 +61,7 @@ let int_of_z = function
 let spset_of_cci env c =
   let spl = Fw_env.collect (extraction env c) in
   let sps = List.fold_left (fun e x -> SpSet.add x e) SpSet.empty spl in
-  has_array := !has_array or (SpSet.mem sp_access sps);
+  has_array := !has_array or (SpSet.mem sp_access sps) ++
   SpSet.remove sp_access sps
 
 
@@ -81,10 +81,10 @@ let collect env =
     | Acc x -> add_id env s x
     | Aff (x,e1) -> add_id env (collect_rec env s e1) x
     | TabAcc (_,x,e1) ->
-	has_array := true;
+	has_array := true ++
 	add_id env (collect_rec env s e1) x
     | TabAff (_,x,e1,e2) ->
-	has_array := true;
+	has_array := true ++
 	add_id env (collect_rec env (collect_rec env s e1) e2) x
     | Seq bl ->
 	List.fold_left (fun s st -> match st with
@@ -144,17 +144,17 @@ module Ocaml_ren = Ocaml.OCaml_renaming
 
 let rename_global id =
   let id' = Ocaml_ren.rename_global_term !Fwtoml.globals (Name id) in
-  Fwtoml.add_global_renaming (id,id');
+  Fwtoml.add_global_renaming (id,id') ++
   id'
 
-type rename_struct = { rn_map : identifier IdMap.t;
+type rename_struct = { rn_map : identifier IdMap.t ++
 		       rn_avoid : identifier list }
 
-let rn_empty = { rn_map = IdMap.empty; rn_avoid = [] }
+let rn_empty = { rn_map = IdMap.empty ++ rn_avoid = [] }
 
 let rename_local rn id =
   let id' = Ocaml_ren.rename_term (!Fwtoml.globals@rn.rn_avoid) (Name id) in
-  { rn_map = IdMap.add id id' rn.rn_map; rn_avoid = id' :: rn.rn_avoid },
+  { rn_map = IdMap.add id id' rn.rn_map ++ rn_avoid = id' :: rn.rn_avoid },
   id'
 
 let get_local_name rn id = IdMap.find id rn.rn_map
@@ -177,7 +177,7 @@ let rec rename_binders rn = function
  *)
 
 let putpar par s =
-  if par then [< 'sTR"("; s; 'sTR")" >] else s
+  if par then (str"(" ++ s ++ str")") else s
 
 let is_ref env id =
   try
@@ -188,21 +188,21 @@ let is_ref env id =
 let rec pp_constr env rn = function
   | VAR id ->
       if is_ref env id then 
-	[< 'sTR"!"; pID (get_name env rn id) >] 
+	(str"!" ++ pID (get_name env rn id)) 
       else
 	pID (get_name env rn id)
   | DOPN((Const _|MutInd _|MutConstruct _) as oper, _) ->
       pID (Fwtoml.name_of_oper oper)
   | DOPN(AppL,v) ->
       if Array.length v = 0 then
-	  [< >]
+	  (mt ())
       else begin
 	match v.(0) with
 	    DOPN(Const sp,_) when sp = sp_access ->
-	      [< pp_constr env rn v.(3); 
-		 'sTR".(int_of_z "; pp_constr env rn v.(4); 'sTR")" >]
+	      (pp_constr env rn v.(3) ++ 
+		 str".(int_of_z " ++ pp_constr env rn v.(4) ++ str")")
 	  | _ ->
-	      hOV 2 (putpar true (prvect_with_sep (fun () -> [< 'sPC >])
+	      hov 2 (putpar true (prvect_with_sep (fun () -> (spc ()))
 				    (pp_constr env rn) v))
       end
   | DOP2(Cast,c,_) -> pp_constr env rn c
@@ -219,95 +219,95 @@ let collect_lambda =
   collect []
 
 let pr_binding rn = 
-  prlist_with_sep (fun () -> [< >])
+  prlist_with_sep (fun () -> (mt ()))
     (function 
        | (id,(Untyped | BindType _)) -> 
-	   [< 'sTR" "; pID (get_local_name rn id) >]
-       | (id,BindSet) -> [< >])
+	   (str" " ++ pID (get_local_name rn id))
+       | (id,BindSet) -> (mt ()))
 
 let pp_prog id =
   let rec pp_d env rn par = function
     | Var x -> pID (get_name env rn x)
-    | Acc x -> [< 'sTR"!"; pID (get_name env rn x) >]
-    | Aff (x,e1) -> [< pID (get_name env rn x); 
-		       'sTR" := "; hOV 0 (pp env rn false e1) >]
+    | Acc x -> (str"!" ++ pID (get_name env rn x))
+    | Aff (x,e1) -> (pID (get_name env rn x) ++ 
+		       str" := " ++ hov 0 (pp env rn false e1))
     | TabAcc (_,x,e1) ->
-	[< pID (get_name env rn x); 
-	   'sTR".(int_of_z "; hOV 0 (pp env rn true e1); 'sTR")" >]
+	(pID (get_name env rn x) ++ 
+	   str".(int_of_z " ++ hov 0 (pp env rn true e1) ++ str")")
     | TabAff (_,x,e1,e2) ->
-	[< pID (get_name env rn x);
-	   'sTR".(int_of_z "; hOV 0 (pp env rn true e1); 'sTR")";
-	   'sTR" <-"; 'sPC; hOV 2 (pp env rn false e2) >]
+	(pID (get_name env rn x) ++
+	   str".(int_of_z " ++ hov 0 (pp env rn true e1) ++ str")" ++
+	   str" <-" ++ spc () ++ hov 2 (pp env rn false e2))
     | Seq bl ->
-	[< 'sTR"begin"; 'fNL;
-	   'sTR"  "; hOV 0 [< pp_block env rn bl; >]; 'fNL;
-	   'sTR"end" >]
+	(str"begin" ++ fnl () ++
+	   str"  " ++ hov 0 (pp_block env rn bl ++) ++ fnl () ++
+	   str"end")
     | If (e1,e2,e3) ->
-	putpar par [< 'sTR"if "; (pp env rn false e1);
-		      'sTR" then"; 'fNL;
-		      'sTR"  "; hOV 0 (pp env rn false e2); 'fNL;
-		      'sTR"else"; 'fNL;
-		      'sTR"  "; hOV 0 (pp env rn false e3) >]
+	putpar par (str"if " ++ (pp env rn false e1) ++
+		      str" then" ++ fnl () ++
+		      str"  " ++ hov 0 (pp env rn false e2) ++ fnl () ++
+		      str"else" ++ fnl () ++
+		      str"  " ++ hov 0 (pp env rn false e3))
 	(* optimisations : then begin .... end else begin ... end *)
     | While (b,inv,_,bl) ->
-	[< 'sTR"while "; (pp env rn false b); 'sTR" do"; 'fNL;		    
-	   'sTR"  ";
-	   hOV 0 [< (match inv with
-			 None -> [< >] 
-		       | Some c -> [< 'sTR"(* invariant: "; pTERM c.a_value ; 
-				      'sTR" *)"; 'fNL >]);
-		    pp_block env rn bl; >]; 'fNL;
-	   'sTR"done"; >]
+	(str"while " ++ (pp env rn false b) ++ str" do" ++ fnl () ++		    
+	   str"  " ++
+	   hov 0 ((match inv with
+			 None -> (mt ()) 
+		       | Some c -> (str"(* invariant: " ++ pTERM c.a_value ++ 
+				      str" *)" ++ fnl ())) ++
+		    pp_block env rn bl ++) ++ fnl () ++
+	   str"done" ++)
     | Lam (bl,e) ->
 	let env' = traverse_binders env bl in
 	let rn' = rename_binders rn bl in
 	  putpar par 
-	    (hOV 2 [< 'sTR"fun"; pr_binding rn' bl; 'sTR" ->";
-		      'sPC; pp env' rn' false e >])
-    | SApp ((Var id)::_,  [e1; e2])
+	    (hov 2 (str"fun" ++ pr_binding rn' bl ++ str" ->" ++
+		      spc () ++ pp env' rn' false e))
+    | SApp ((Var id)::_,  [e1 ++ e2])
 	when id = connective_and or id = connective_or ->
 	  let conn = if id = connective_and then "&" else "or" in
 	  putpar par 
-	    (hOV 0 [< pp env rn true e1; 'sPC; 'sTR conn; 'sPC;
-		      pp env rn true e2 >])
+	    (hov 0 (pp env rn true e1 ++ spc () ++ str conn ++ spc () ++
+		      pp env rn true e2))
     | SApp ((Var id)::_, [e]) when id = connective_not ->
 	putpar par 
-	  (hOV 0 [< 'sTR"not"; 'sPC; pp env rn true e >])
+	  (hov 0 (str"not" ++ spc () ++ pp env rn true e))
     | SApp _ ->
 	invalid_arg "Prog_extract.pp_prog (SApp)"
     | App(e1,[]) ->
-	hOV 0 (pp env rn false e1)
+	hov 0 (pp env rn false e1)
     | App (e1,l) ->
 	putpar true
-	  (hOV 2 [< pp env rn true e1;
+	  (hov 2 (pp env rn true e1 ++
 		    prlist (function 
-				Term p -> [< 'sPC; pp env rn true p >]
-			      | Refarg x -> [< 'sPC; pID (get_name env rn x) >]
-			      | Type _ -> [< >]) 
-		      l >])
+				Term p -> (spc () ++ pp env rn true p)
+			      | Refarg x -> (spc () ++ pID (get_name env rn x))
+			      | Type _ -> (mt ())) 
+		      l))
     | LetRef (x,e1,e2) ->
 	let (_,v),_,_,_ = e1.info.kappa in
 	let env' = add (x,Ref v) env in
 	let rn',x' = rename_local rn x in
 	putpar par 
-	  (hOV 0 [< 'sTR"let "; pID x'; 'sTR" = ref "; pp env rn false e1;
-		    'sTR" in"; 'fNL; pp env' rn' false e2 >])
+	  (hov 0 (str"let " ++ pID x' ++ str" = ref " ++ pp env rn false e1 ++
+		    str" in" ++ fnl () ++ pp env' rn' false e2))
     | LetIn (x,e1,e2) ->
 	let (_,v),_,_,_ = e1.info.kappa in
 	let env' = add (x,v) env in
 	let rn',x' = rename_local rn x in
 	putpar par 
-	  (hOV 0 [< 'sTR"let "; pID x'; 'sTR" = "; pp env rn false e1;
-		    'sTR" in"; 'fNL; pp env' rn' false e2 >])
+	  (hov 0 (str"let " ++ pID x' ++ str" = " ++ pp env rn false e1 ++
+		    str" in" ++ fnl () ++ pp env' rn' false e2))
     | LetRec (f,bl,_,_,e) ->
 	let env' = traverse_binders env bl in
 	let rn' = rename_binders rn bl in
 	let env'' = add (f,make_arrow bl e.info.kappa) env' in
 	let rn'',f' = rename_local rn' f in
 	putpar par 
-	  (hOV 0 [< 'sTR"let rec "; pID f'; pr_binding rn' bl; 'sTR" ="; 'fNL;
-		    'sTR"  "; hOV 0 [< pp env'' rn'' false e >]; 'fNL;
-		    'sTR"in "; pID f' >])
+	  (hov 0 (str"let rec " ++ pID f' ++ pr_binding rn' bl ++ str" =" ++ fnl () ++
+		    str"  " ++ hov 0 (pp env'' rn'' false e) ++ fnl () ++
+		    str"in " ++ pID f'))
     | Debug (_,e1) -> pp env rn par e1
     | PPoint (_,d) -> pp_d env rn par d
     | Expression c -> 
@@ -317,21 +317,21 @@ let pp_prog id =
     let bl =
       map_succeed (function Statement p -> p | _ -> failwith "caught") bl
     in
-      prlist_with_sep (fun () -> [< 'sTR";"; 'fNL >])
-      	(fun p -> hOV 0 (pp env rn false p)) bl
+      prlist_with_sep (fun () -> (str";" ++ fnl ()))
+      	(fun p -> hov 0 (pp env rn false p)) bl
 
   and pp env rn par p = 
-    [< pp_d env rn par p.desc >]
+    (pp_d env rn par p.desc)
 
   and pp_mut v c = match v with
     | Ref _ ->
-	[< 'sTR"ref "; pp_constr empty rn_empty (extraction empty c) >]
+	(str"ref " ++ pp_constr empty rn_empty (extraction empty c))
     | Array (n,_) ->
-	[< 'sTR"Array.create "; 'cUT;
+	(str"Array.create " ++ cut () ++
 	   putpar true 
-	     [< 'sTR"int_of_z ";
-		pp_constr empty rn_empty (extraction empty n) >];
-	   'sTR" "; pp_constr empty rn_empty (extraction empty c) >]
+	     (str"int_of_z " ++
+		pp_constr empty rn_empty (extraction empty n)) ++
+	   str" " ++ pp_constr empty rn_empty (extraction empty c))
     | _ -> invalid_arg "pp_mut"
   in
   let v = lookup_global id in
@@ -339,23 +339,23 @@ let pp_prog id =
     if is_mutable v then
       try
 	let c = find_init id in
-	hOV 0 [< 'sTR"let "; pID id'; 'sTR" = "; pp_mut v c >]
+	hov 0 (str"let " ++ pID id' ++ str" = " ++ pp_mut v c)
       with Not_found -> 
 	errorlabstrm "Prog_extract.pp_prog"
-	  [< 'sTR"The variable "; pID id;
-	     'sTR" must be initialized first !" >]
+	  (str"The variable " ++ pID id ++
+	     str" must be initialized first !")
     else
       match find_pgm id with
 	| None -> 
 	    errorlabstrm "Prog_extract.pp_prog"
-	      [< 'sTR"The program "; pID id;
-		 'sTR" must be realized first !" >]
+	      (str"The program " ++ pID id ++
+		 str" must be realized first !")
       	| Some p ->
 	    let bl,p = collect_lambda p in
 	    let rn = rename_binders rn_empty bl in
 	    let env = traverse_binders empty bl in
-	    hOV 0  [< 'sTR"let "; pID id'; pr_binding rn bl; 'sTR" ="; 'fNL; 
-		      'sTR"  "; hOV 2 (pp env rn false p) >]
+	    hov 0  (str"let " ++ pID id' ++ pr_binding rn bl ++ str" =" ++ fnl () ++ 
+		      str"  " ++ hov 2 (pp env rn false p))
 
 (* extraction des programmes impératifs/fonctionnels vers ocaml *)
 
@@ -375,7 +375,7 @@ let import sp = match repr_path sp with
   | _ -> ()
 
 let pp_ocaml file prm =
-  has_array := false;
+  has_array := false ++
   (* on separe objects Coq et programmes *)
   let cic,pgms =
     List.fold_left
@@ -404,7 +404,7 @@ let pp_ocaml file prm =
 	   in
 	   let cic' = 
 	     SpSet.fold 
-	       (fun sp cic -> import sp; IdSet.add (basename sp) cic)
+	       (fun sp cic -> import sp ++ IdSet.add (basename sp) cic)
 	       spl cic
 	   in
 	   (cic',IdSet.union pgms pgms',id::pl)
@@ -414,23 +414,23 @@ let pp_ocaml file prm =
   in
   let cic = IdSet.elements cic in
   (* on pretty-print *)
-  let prm' = { needed = cic; expand = prm.expand; 
-	       expansion = prm.expansion; exact = prm.exact } 
+  let prm' = { needed = cic ++ expand = prm.expand ++ 
+	       expansion = prm.expansion ++ exact = prm.exact } 
   in
-  let strm = [< Ocaml.OCaml_pp_file.pp_recursive prm';
-		'fNL; 'fNL;
-		if !has_array then pp_conversions() else [< >];
-		prlist (fun p -> [< pp_prog p; 'fNL; 'sTR";;"; 'fNL; 'fNL >])
+  let strm = (Ocaml.OCaml_pp_file.pp_recursive prm' ++
+		fnl () ++ fnl () ++
+		if !has_array then pp_conversions() else (mt ()) ++
+		prlist (fun p -> (pp_prog p ++ fnl () ++ str";;" ++ fnl () ++ fnl ()))
 		  pgms
-	     >]
+)
   in
   (* puis on ecrit dans le fichier *)
   let chan = open_trapping_failure open_out file ".ml" in
   let ft = with_output_to chan in
   begin
-    try  pP_with ft strm ; pp_flush_with ft ()
-    with e -> pp_flush_with ft () ; close_out chan; raise e
-  end;
+    try  pP_with ft strm ++ pp_flush_with ft ()
+    with e -> pp_flush_with ft () ++ close_out chan ++ raise e
+  end ++
   close_out chan
     
 
@@ -450,10 +450,10 @@ let initialize id com =
       initialize id c
     else
       errorlabstrm "Prog_extract.initialize"
-	[< 'sTR"Not the expected type for the mutable "; pID id >]
+	(str"Not the expected type for the mutable " ++ pID id)
   with Not_found -> 
     errorlabstrm "Prog_extract.initialize"
-      [< pr_id id; 'sTR" is not a mutable" >]
+      (pr_id id ++ str" is not a mutable")
 
 (* grammaire *)
 
@@ -467,6 +467,6 @@ let _ = vinterp_add "IMPERATIVEEXTRACTION"
 	  
 let _ = vinterp_add "INITIALIZE"
 	  (function 
-	     | [VARG_IDENTIFIER id ; VARG_COMMAND com] ->
+	     | [VARG_IDENTIFIER id ++ VARG_COMMAND com] ->
 		 (fun () -> initialize id com)
 	     | _ -> assert false)

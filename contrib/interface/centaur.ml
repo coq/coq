@@ -54,11 +54,11 @@ set_flags := (function () ->
                   (g_nat_syntax_flag := true; ())
                 else ());;
 
-let guarded_force_eval_stream s = 
+let guarded_force_eval_stream (s : std_ppcmds) = 
   let l = ref [] in
   let f elt = l:= elt :: !l in 
   (try  Stream.iter f s with
-  | _ -> f (sTR "error guarded_force_eval_stream"));
+  | _ -> f (Stream.next (str "error guarded_force_eval_stream")));
   Stream.of_list (List.rev !l);;
 
 
@@ -67,7 +67,7 @@ let rec string_of_path p =
               | i::p -> (string_of_int i)^" "^ (string_of_path p)
 ;;
 let print_path p =
-    output_results_nl [< 'sTR "Path:"; 'sTR  (string_of_path p)>]
+    output_results_nl (str "Path:" ++ str (string_of_path p))
 ;;
 
 let kill_proof_node index =
@@ -83,7 +83,8 @@ let kill_proof_node index =
 (*Message functions, the text of these messages is recognized by the protocols *)
 (*of CtCoq                                                                     *)
 let ctf_header message_name request_id =
- [< 'fNL; 'sTR "message"; 'fNL; 'sTR message_name; 'fNL; 'iNT request_id; 'fNL >];;
+  fnl () ++ str "message" ++ fnl () ++ str message_name ++ fnl () ++ 
+  int request_id ++ fnl ();;
 
 let ctf_acknowledge_command request_id command_count opt_exn =
   let goal_count, goal_index = 
@@ -94,14 +95,14 @@ let ctf_acknowledge_command request_id command_count opt_exn =
         g_count, (min g_count !current_goal_index)
     else
       (0, 0) in
-  [< ctf_header "acknowledge" request_id;
-     'iNT command_count; 'fNL; 
-    'iNT goal_count; 'fNL; 
-    'iNT goal_index; 'fNL; 
-    'sTR !current_proof_name; 'fNL;
-    (match opt_exn with
-      Some e -> Errors.explain_exn e
-    | None -> [< >]); 'fNL; 'sTR "E-n-d---M-e-s-s-a-g-e"; 'fNL >];;
+  (ctf_header "acknowledge" request_id ++
+   int command_count ++ fnl () ++ 
+   int goal_count ++ fnl () ++ 
+   int goal_index ++ fnl () ++ 
+   str !current_proof_name ++ fnl () ++
+   (match opt_exn with
+	Some e -> Errors.explain_exn e
+      | None -> mt ()) ++ fnl () ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ());;
 
 let ctf_undoResults = ctf_header "undo_results";;
 
@@ -116,35 +117,37 @@ let ctf_Location = ctf_header "location";;
 let ctf_StateMessage = ctf_header "state";;
 
 let ctf_PathGoalMessage () =
- [< 'fNL; 'sTR "message"; 'fNL; 'sTR "single_goal"; 'fNL >];;
+  fnl () ++ str "message" ++ fnl () ++ str "single_goal" ++ fnl ();;
 
 let ctf_GoalReqIdMessage = ctf_header "single_goal_state";;
 
 let ctf_NewStateMessage = ctf_header "fresh_state";;
 
-let ctf_SavedMessage () = [< 'fNL; 'sTR "message"; 'fNL; 'sTR "saved"; 'fNL >];;
+let ctf_SavedMessage () = fnl () ++ str "message" ++ fnl () ++ str "saved" ++ fnl ();;
 
 let ctf_KilledMessage req_id ngoals =
- [< ctf_header "killed" req_id; 'iNT ngoals; 'fNL >];;
+ ctf_header "killed" req_id ++ int ngoals ++ fnl ();;
 
 let ctf_AbortedAllMessage () =
- [< 'fNL; 'sTR "message"; 'fNL; 'sTR "aborted_all"; 'fNL >];;
+ fnl () ++ str "message" ++ fnl () ++ str "aborted_all" ++ fnl ();;
 
 let ctf_AbortedMessage request_id na =
- [< 'fNL; 'sTR "message"; 'fNL; 'sTR "aborted_proof"; 'fNL; 'iNT request_id; 'fNL;
- 'sTR na; 'fNL; 'sTR "E-n-d---M-e-s-s-a-g-e"; 'fNL >];;
+  fnl () ++ str "message" ++ fnl () ++ str "aborted_proof" ++ fnl () ++ 
+  int request_id ++ fnl () ++
+  str na ++ fnl () ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ();;
 
 let ctf_UserErrorMessage request_id stream =
- let stream = guarded_force_eval_stream stream in
- [< 'fNL; 'sTR "message"; 'fNL; 'sTR "user_error"; 'fNL; 'iNT request_id; 'fNL;
-  stream; 'fNL; 'sTR "E-n-d---M-e-s-s-a-g-e"; 'fNL >];;
+  let stream = guarded_force_eval_stream stream in
+  fnl () ++ str "message" ++ fnl () ++ str "user_error" ++ fnl () ++ 
+  int request_id ++ fnl () ++
+  stream ++ fnl () ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ();;
 
 let ctf_ResetInitialMessage () =
- [< 'fNL; 'sTR "message"; 'fNL; 'sTR "reset_initial"; 'fNL >];;
+  fnl () ++ str "message" ++ fnl () ++ str "reset_initial" ++ fnl ();;
 
-let ctf_ResetIdentMessage request_id str =
- [< 'fNL; 'sTR "message"; 'fNL; 'sTR "reset_ident"; 'fNL; 'iNT request_id; 'fNL;
- 'sTR str; 'fNL; 'sTR "E-n-d---M-e-s-s-a-g-e"; 'fNL >];;
+let ctf_ResetIdentMessage request_id s =
+  fnl () ++ str "message" ++ fnl () ++ str "reset_ident" ++ fnl () ++ int request_id ++ fnl () ++
+  str s ++ fnl () ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ();;
 
 type vtp_tree =
   | P_rl of ct_RULE_LIST
@@ -175,7 +178,7 @@ let break_happened = ref false;;
 let output_results stream vtp_tree =
     let _ = Sys.signal Sys.sigint
        (Sys.Signal_handle(fun i -> (break_happened := true;()))) in
-    mSG stream;
+    msg stream;
     match vtp_tree with
       Some t -> print_tree t
     | None -> ();;
@@ -184,7 +187,7 @@ let output_results_nl stream =
     let _ = Sys.signal Sys.sigint
        (Sys.Signal_handle(fun i -> break_happened := true;()))
     in
-    mSGNL stream;;
+    msgnl stream;;
 
 
 let rearm_break () =
@@ -216,7 +219,7 @@ let show_nth n =
   try
     let pf = proof_of_pftreestate (get_pftreestate()) in
     if (!text_proof_flag<>"off") then
-(*      errorlabstrm "debug" [< 'sTR "text printing unplugged" >]*)
+(*      errorlabstrm "debug" [< str "text printing unplugged" >]*)
        (if n=0
 	   then output_results (ctf_TextMessage !global_request_id)
                                (Some (P_text (show_proof !text_proof_flag [])))
@@ -255,14 +258,14 @@ let add_search (global_reference:global_reference) assumptions cstr =
                   CT_coerce_ID_to_FORMULA(
                     CT_ident ("Error printing" ^ id_string))) in
     ctv_SEARCH_LIST:= ast::!ctv_SEARCH_LIST
-  with e -> mSGNL [< 'sTR "add_search raised an exception" >]; raise e;;
+  with e -> msgnl (str "add_search raised an exception"); raise e;;
 
 let make_error_stream node_string =
- [< 'sTR "The syntax of "; 'sTR node_string;
- 'sTR " is inconsistent with the vernac interpreter entry" >];;
+  str "The syntax of " ++ str node_string ++
+  str " is inconsistent with the vernac interpreter entry";;
 
 let ctf_EmptyGoalMessage id =
- [< 'fNL; 'sTR "Empty Goal is a no-op.  Fun oh fun."; 'fNL >];;
+  fnl () ++ str "Empty Goal is a no-op.  Fun oh fun." ++ fnl ();;
 
 
 let print_check (ast, judg) =
@@ -271,15 +274,17 @@ let print_check (ast, judg) =
      (try translate_constr (Global.env()) value 
       with UserError(f,str) ->
            raise(UserError(f,
-			   [< Ast.print_ast 
-				(ast_of_constr true (Global.env()) value);
-			      'fNL; str >]))) in
+			   Ast.print_ast 
+			     (ast_of_constr true (Global.env()) value) ++
+			   fnl () ++ str))) 
+ in
  let type_ct_ast =
      (try translate_constr (Global.env()) typ
       with UserError(f,str) ->
-           raise(UserError(f, [< Ast.print_ast (ast_of_constr true (Global.env())
-					       value);
-				 'fNL; str >]))) in
+           raise(UserError(f, Ast.print_ast (ast_of_constr true (Global.env())
+					       value) ++
+				 fnl () ++ str))) 
+ in
  ((ctf_SearchResults !global_request_id),
  (Some  (P_pl
   (CT_premises_list
@@ -318,16 +323,16 @@ let globcv = function
 let pbp_tac_pcoq =
     pbp_tac (function x -> 
       output_results
-  	[< 'fNL; 'sTR "message"; 'fNL; 'sTR "pbp_results"; 'fNL;
-	  'iNT !global_request_id;  'fNL>]
-       (Some (P_t(xlate_tactic x))));;
+  	(fnl () ++ str "message" ++ fnl () ++ str "pbp_results" ++ fnl () ++
+	 int !global_request_id ++  fnl ())
+	(Some (P_t(xlate_tactic x))));;
 
 
 let dad_tac_pcoq =
   dad_tac(function x -> 
     output_results
-    [< 'fNL; 'sTR "message"; 'fNL; 'sTR "pbp_results"; 'fNL;
-       'iNT !global_request_id;  'fNL >]
+    (fnl () ++ str "message" ++ fnl () ++ str "pbp_results" ++ fnl () ++
+       int !global_request_id ++  fnl ())
     (Some (P_t(xlate_tactic x))));;
 
 let search_output_results () =
@@ -346,8 +351,8 @@ let debug_tac2_pcoq = function
 	try
 	  let result = report_error ast the_goal the_ast the_path [] g in
 	  (errorlabstrm "DEBUG TACTIC"
-	    [< 'sTR "no error here "; 'fNL; pr_goal (sig_it g);
-	      'fNL; 'sTR "the tactic is"; 'fNL ; Printer.gentacpr ast >];
+	    (str "no error here " ++ fnl () ++ pr_goal (sig_it g) ++
+	     fnl () ++ str "the tactic is" ++ fnl ()  ++ Printer.gentacpr ast);
 	   result)
 	with
 	  e ->
@@ -481,9 +486,9 @@ let command_changes = [
 	    begin
 	      if kind = "LETTOP" && not(refining ()) then
 		errorlabstrm "StartProof"
-		  [< 'sTR
-                       "Let declarations can only be used in proof editing mode"
-		  >];
+		  (str
+                     "Let declarations can only be used in proof editing mode"
+		  );
 		let str = (string_of_id s) in
 		start_proof_com (Some s) stre c;
 		History.start_proof str;
@@ -563,7 +568,7 @@ let command_changes = [
 	 (function
 	     () ->
 	       errorlabstrm "Begin Silent" 
-		 [< 'sTR "not available in Centaur mode" >])
+		 (str "not available in Centaur mode"))
      | _ -> errorlabstrm "BeginSilent" (make_error_stream "BeginSilent")));
   
   ("EndSilent", 
@@ -572,7 +577,7 @@ let command_changes = [
 	 (function
 	     () ->
 	       errorlabstrm "End Silent"
-		 [< 'sTR "not available in Centaur mode" >])
+		 (str "not available in Centaur mode"))
      | _ -> errorlabstrm "EndSilent" (make_error_stream "EndSilent")));
   
   ("ABORT", 
@@ -633,7 +638,7 @@ let command_changes = [
 	 (function () -> 
 	   let results = xlate_vernac_list (Ctast.ast_to_ct (name_to_ast qid)) in
 	   output_results 
-	     [<'fNL; 'sTR "message"; 'fNL; 'sTR "PRINT_VALUE"; 'fNL >]
+	     (fnl () ++ str "message" ++ fnl () ++ str "PRINT_VALUE" ++ fnl ())
 	     (Some (P_cl results)))
      | _ -> errorlabstrm "PrintId" (make_error_stream "PrintId")));
   
@@ -646,7 +651,7 @@ let command_changes = [
 	   match kind with
 	   | "CHECK" -> print_check
 	   | "PRINTTYPE" ->
-	       errorlabstrm "PrintType" [< 'sTR "Not yet supported in CtCoq" >]
+	       errorlabstrm "PrintType" (str "Not yet supported in CtCoq")
 	   | _ -> errorlabstrm "CHECK" (make_error_stream "CHECK") in
 	 (function () -> 
 	   let a,b = f (c, judgment_of_rawconstr evmap env c) in
@@ -692,8 +697,8 @@ let command_changes = [
 	 (fun () -> 
 	   let results = dad_rule_names() in
 	   output_results
-	     [< 'fNL; 'sTR "message"; 'fNL; 'sTR "dad_rule_names"; 'fNL;
-	       'iNT !global_request_id; 'fNL >]
+	     (fnl () ++ str "message" ++ fnl () ++ str "dad_rule_names" ++ fnl () ++
+	      int !global_request_id ++ fnl ())
 	     (Some (P_ids
 		      (CT_id_list
 			 (List.map (fun s -> CT_ident s) results)))))

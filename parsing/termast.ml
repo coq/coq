@@ -278,7 +278,7 @@ and ast_of_eqn (_,ids,pl,c) =
   ope("EQN", (ast_of_raw c)::(List.map ast_of_cases_pattern pl))
 
 and ast_of_rawopt = function
-  | None -> (str "SYNTH")
+  | None -> (string "SYNTH")
   | Some p -> ast_of_raw p
 
 and factorize_binder n oper na aty c =
@@ -399,7 +399,7 @@ let rec ast_of_pattern env = function
   | PCoFix c -> ast_of_raw (Detyping.detype [] env (mkCoFix c))
 	
 and ast_of_patopt env = function
-  | None -> (str "SYNTH")
+  | None -> (string "SYNTH")
   | Some p -> ast_of_pattern env p
 
 and factorize_binder_pattern env n oper na aty c =

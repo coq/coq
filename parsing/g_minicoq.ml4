@@ -125,11 +125,11 @@ let print_univers = ref false
 let print_casts = ref false
 
 let print_type u =
-  if !print_univers then [< 'sTR "Type"; pr_uni u >]
-  else [< 'sTR "Type" >]
+  if !print_univers then (str "Type" ++ pr_uni u)
+  else (str "Type")
 
 let print_name = function
-  | Anonymous -> [< 'sTR "_" >]
+  | Anonymous -> (str "_")
   | Name id -> pr_id id
 
 let print_rel bv n = print_name (List.nth bv (pred n))
@@ -145,33 +145,33 @@ let rename bv = function
 
 let rec pp bv t =
   match kind_of_term t with
-  | Sort (Prop Pos) -> [< 'sTR "Set" >]
-  | Sort (Prop Null) -> [< 'sTR "Prop" >]
+  | Sort (Prop Pos) -> (str "Set")
+  | Sort (Prop Null) -> (str "Prop")
   | Sort (Type u) -> print_type u
   | Lambda (na, t, c) ->
-      [< 'sTR"["; print_name na; 'sTR":"; pp bv t; 'sTR"]"; pp (na::bv) c >]
+      (str"[" ++ print_name na ++ str":" ++ pp bv t ++ str"]" ++ pp (na::bv) c)
   | Prod (Anonymous, t, c) ->
-      [< pp bv t; 'sTR"->"; pp (Anonymous::bv) c >]
+      (pp bv t ++ str"->" ++ pp (Anonymous::bv) c)
   | Prod (na, t, c) ->
-      [< 'sTR"("; print_name na; 'sTR":"; pp bv t; 'sTR")"; pp (na::bv) c >]
+      (str"(" ++ print_name na ++ str":" ++ pp bv t ++ str")" ++ pp (na::bv) c)
   | Cast (c, t) ->
       if !print_casts then 
-	[< 'sTR"("; pp bv c; 'sTR"::"; pp bv t; 'sTR")" >]
+	(str"(" ++ pp bv c ++ str"::" ++ pp bv t ++ str")")
       else 
 	pp bv c
   | App(h, v) ->
-      [< 'sTR"("; pp bv h; 'sPC;
-         prvect_with_sep (fun () -> [< 'sPC >]) (pp bv) v; 'sTR")" >]
+      (str"(" ++ pp bv h ++ spc () ++
+         prvect_with_sep (fun () -> (spc ())) (pp bv) v ++ str")")
   | Const (sp, _) ->
-      [< 'sTR"Const "; pr_id (basename sp) >]
+      (str"Const " ++ pr_id (basename sp))
   | Ind ((sp,i), _) ->
-      [< 'sTR"Ind "; pr_id (basename sp); 'sTR" "; 'iNT i >]
+      (str"Ind " ++ pr_id (basename sp) ++ str" " ++ int i)
   | Construct (((sp,i),j), _) ->
-      [< 'sTR"Construct "; pr_id (basename sp); 'sTR" "; 'iNT i; 
-	 'sTR" "; 'iNT j >]
+      (str"Construct " ++ pr_id (basename sp) ++ str" " ++ int i ++ 
+	 str" " ++ int j)
   | Var id -> pr_id id
   | Rel n -> print_rel bv n
-  | _ -> [< 'sTR"<???>" >]
+  | _ -> (str"<???>")
 
 let pr_term _ ctx = pp (fold_rel_context (fun _ (n,_,_) l -> n::l) ctx [])
 

@@ -246,9 +246,9 @@ let with_magic_number_check f a =
   try f a
   with System.Bad_magic_number fname ->
     errorlabstrm "load_module_from"
-    [< 'sTR"file "; 'sTR fname; 'sPC; 'sTR"has bad magic number.";
-    'sPC; 'sTR"It is corrupted"; 'sPC;
-    'sTR"or was compiled with another version of Coq." >]
+    (str"file " ++ str fname ++ spc () ++ str"has bad magic number." ++
+    spc () ++ str"It is corrupted" ++ spc () ++
+    str"or was compiled with another version of Coq.")
 
 let rec load_module = function
   | (LibLoaded, dir, _) ->
@@ -264,9 +264,9 @@ let rec load_module = function
       close_in ch;
       if dir <> md.md_name then
 	errorlabstrm "load_module"
-	  [< 'sTR ("The file " ^ f ^ " contains module"); 'sPC;
-	  pr_dirpath md.md_name; 'sPC; 'sTR "and not module"; 'sPC;
-	  pr_dirpath dir >];
+	  (str ("The file " ^ f ^ " contains module") ++ spc () ++
+	  pr_dirpath md.md_name ++ spc () ++ str "and not module" ++ spc () ++
+	  pr_dirpath dir);
       compunit_cache := Stringmap.add f (md, digest) !compunit_cache;
       (md, digest) in
     intern_module digest f md
@@ -301,11 +301,11 @@ and load_absolute_module_from dir =
   | LibUnmappedDir ->
       let prefix, dir = fst (split_dirpath dir), string_of_dirpath dir in
       errorlabstrm "load_module"
-      [< 'sTR ("Cannot load "^dir^":"); 'sPC; 
-      'sTR "no physical path bound to"; 'sPC; pr_dirpath prefix; 'fNL >]
+      (str ("Cannot load "^dir^":") ++ spc () ++ 
+      str "no physical path bound to" ++ spc () ++ pr_dirpath prefix ++ fnl ())
   | LibNotFound ->
       errorlabstrm "load_module"
-      [< 'sTR"Cannot find module "; pr_dirpath dir; 'sTR" in loadpath">]
+      (str"Cannot find module " ++ pr_dirpath dir ++ str" in loadpath")
   | e -> raise e
 
 let locate_qualified_library qid =
@@ -336,19 +336,19 @@ let try_locate_qualified_library qid =
   | LibUnmappedDir ->
       let prefix, id = repr_qualid qid in
       errorlabstrm "load_module"
-      [< 'sTR ("Cannot load "^(string_of_id id)^":"); 'sPC; 
-      'sTR "no physical path bound to"; 'sPC; pr_dirpath prefix; 'fNL >]
+      (str ("Cannot load "^(string_of_id id)^":") ++ spc () ++ 
+      str "no physical path bound to" ++ spc () ++ pr_dirpath prefix ++ fnl ())
   | LibNotFound ->
       errorlabstrm "load_module"
-      [< 'sTR"Cannot find module "; pr_qualid qid; 'sTR" in loadpath">]
+      (str"Cannot find module " ++ pr_qualid qid ++ str" in loadpath")
   | _ -> assert false
 
 let check_module_short_name f dir = function
   | Some id when id <> snd (split_dirpath dir) ->
       errorlabstrm "load_module"
-      [< 'sTR ("The file " ^ f ^ " contains module"); 'sPC;
-      pr_dirpath dir; 'sPC; 'sTR "and not module"; 'sPC;
-      pr_id id >]
+      (str ("The file " ^ f ^ " contains module") ++ spc () ++
+      pr_dirpath dir ++ spc () ++ str "and not module" ++ spc () ++
+      pr_id id)
   | _ -> ()
 
 let locate_by_filename_only id f =
@@ -473,10 +473,10 @@ let iter_all_segments insec f =
 let fmt_modules_state () =
   let opened = opened_modules ()
   and loaded = loaded_modules () in
-  [< 'sTR "Imported (open) Modules: " ;
-     prlist_with_sep pr_spc pr_dirpath opened ; 'fNL ;
-     'sTR "Loaded Modules: ";
-     prlist_with_sep pr_spc pr_dirpath loaded ; 'fNL >]
+  (str "Imported (open) Modules: " ++
+     prlist_with_sep pr_spc pr_dirpath opened ++ fnl () ++
+     str "Loaded Modules: " ++
+     prlist_with_sep pr_spc pr_dirpath loaded ++ fnl ())
 
 (*s Display the memory use of a module. *)
 
@@ -484,6 +484,6 @@ open Printf
 
 let mem s =
   let m = find_module s in
-  h 0 [< 'sTR (sprintf "%dk (cenv = %dk / seg = %dk)"
+  h 0 (str (sprintf "%dk (cenv = %dk / seg = %dk)"
 		 (size_kb m) (size_kb m.module_compiled_env) 
-		 (size_kb m.module_declarations)) >]
+		 (size_kb m.module_declarations)))

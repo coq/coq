@@ -97,7 +97,8 @@ let instantiate_params t args sign =
           | (Some b,_,LetIn(_,_,_,t))    -> (largs, (substl subs b)::subs, t)
 	  | _                            -> fail())
       sign
-      (args,[],t) in
+      ~init:(args,[],t) 
+  in
   if rem_args <> [] then fail();
   type_app (substl subs) ty
 
@@ -190,8 +191,9 @@ let local_rels ctxt =
         match copt with
             None   -> (mkRel n :: rels, n+1)
           | Some _ -> (rels, n+1))
-      ([],1)
-      ctxt in
+      ~init:([],1)
+      ctxt 
+  in
   rels
 
 let build_dependent_constructor cs =

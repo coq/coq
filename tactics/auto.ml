@@ -223,8 +223,8 @@ let make_apply_entry env sigma (eapply,verbose) name (c,cty) =
         in 
 	if eapply & (nmiss <> 0) then begin
           if verbose then 
-	    wARN [< 'sTR "the hint: EApply "; prterm c;
-		    'sTR " will only be used by EAuto" >]; 
+	    warn (str "the hint: EApply " ++ prterm c ++
+		    str " will only be used by EAuto"); 
           (hd,
            { hname = name;
 	     pri = nb_hyp cty + nmiss;
@@ -249,7 +249,7 @@ let make_resolves env sigma name eap (c,cty) =
       [make_exact_entry; make_apply_entry env sigma eap]
   in 
   if ents = [] then 
-    errorlabstrm "Hint" [< prterm c; 'sPC; 'sTR "cannot be used as a hint" >];
+    errorlabstrm "Hint" (prterm c ++ spc () ++ str "cannot be used as a hint");
   ents
 
 (* used to add an hypothesis to the local hint database *)
@@ -306,7 +306,7 @@ let add_extern name pri (patmetas,pat) tacast dbname =
   match (list_subtract tacmetas patmetas) with
     | i::_ ->
 	errorlabstrm "add_extern" 
-	  [< 'sTR "The meta-variable ?"; 'iNT i; 'sTR" is not bound" >]
+	  (str "The meta-variable ?" ++ int i ++ str" is not bound")
     | []  ->
 	Lib.add_anonymous_leaf
 	  (inAutoHint(dbname, [make_extern name pri pat tacast]))
@@ -479,24 +479,24 @@ let _ =
 (**************************************************************************)
 
 let fmt_autotactic = function
-  | Res_pf (c,clenv) -> [< 'sTR"Apply "; prterm c >]
-  | ERes_pf (c,clenv) -> [< 'sTR"EApply "; prterm c >]
-  | Give_exact c -> [< 'sTR"Exact " ; prterm c >]
+  | Res_pf (c,clenv) -> (str"Apply " ++ prterm c)
+  | ERes_pf (c,clenv) -> (str"EApply " ++ prterm c)
+  | Give_exact c -> (str"Exact " ++ prterm c)
   | Res_pf_THEN_trivial_fail (c,clenv) -> 
-      [< 'sTR"Apply "; prterm c ; 'sTR" ; Trivial" >]
-  | Unfold_nth c -> [< 'sTR"Unfold " ;  pr_global c >]
-  | Extern coqast -> [< 'sTR "Extern "; gentacpr coqast >]
+      (str"Apply " ++ prterm c ++ str" ; Trivial")
+  | Unfold_nth c -> (str"Unfold " ++  pr_global c)
+  | Extern coqast -> (str "Extern " ++ gentacpr coqast)
 
 let fmt_hint v =
-  [< fmt_autotactic v.code; 'sTR"("; 'iNT v.pri; 'sTR")"; 'sPC >]
+  (fmt_autotactic v.code ++ str"(" ++ int v.pri ++ str")" ++ spc ())
 
 let fmt_hint_list hintlist =
-  [< 'sTR "  "; hOV 0 (prlist fmt_hint hintlist); 'fNL >]
+  (str "  " ++ hov 0 (prlist fmt_hint hintlist) ++ fnl ())
 
 let fmt_hints_db (name,db,hintlist) =
-  [< 'sTR "In the database "; 'sTR name; 'sTR ":";
-     if hintlist = [] then [< 'sTR " nothing"; 'fNL >]
-     else [< 'fNL; fmt_hint_list hintlist >] >]
+  (str "In the database " ++ str name ++ str ":" ++
+     if hintlist = [] then (str " nothing" ++ fnl ())
+     else (fnl () ++ fmt_hint_list hintlist))
 
 (* Print all hints associated to head c in any database *)
 let fmt_hint_list_for_head c = 
@@ -507,16 +507,16 @@ let fmt_hint_list_for_head c =
       dbs 
   in
   if valid_dbs = [] then 
-    [<'sTR "No hint declared for :"; pr_ref_label c >]
+    (str "No hint declared for :" ++ pr_ref_label c)
   else 
-    hOV 0 
-      [< 'sTR"For "; pr_ref_label c; 'sTR" -> "; 'fNL;
-	 hOV 0 (prlist fmt_hints_db valid_dbs) >]
+    hov 0 
+      (str"For " ++ pr_ref_label c ++ str" -> " ++ fnl () ++
+	 hov 0 (prlist fmt_hints_db valid_dbs))
 
 let fmt_hint_ref ref = fmt_hint_list_for_head (label_of_ref ref)
 
 (* Print all hints associated to head id in any database *)
-let print_hint_qid qid =  pPNL(fmt_hint_ref (Nametab.global dummy_loc qid))
+let print_hint_qid qid =  ppnl(fmt_hint_ref (Nametab.global dummy_loc qid))
 
 let fmt_hint_term cl = 
   try 
@@ -538,14 +538,14 @@ let fmt_hint_term cl =
 	  dbs
     in 
     if valid_dbs = [] then 
-      [<'sTR "No hint applicable for current goal" >]
+      (str "No hint applicable for current goal")
     else
-      [< 'sTR "Applicable Hints :"; 'fNL;
-	 hOV 0 (prlist fmt_hints_db valid_dbs) >]
+      (str "Applicable Hints :" ++ fnl () ++
+	 hov 0 (prlist fmt_hints_db valid_dbs))
   with Bound | Match_failure _ | Failure _ -> 
-    [<'sTR "No hint applicable for current goal" >]
+    (str "No hint applicable for current goal")
 	  
-let print_hint_term cl = pPNL (fmt_hint_term cl)
+let print_hint_term cl = ppnl (fmt_hint_term cl)
 
 (* print all hints that apply to the concl of the current goal *)
 let print_applicable_hint () = 
@@ -557,9 +557,9 @@ let print_applicable_hint () =
 let print_hint_db db =
   Hint_db.iter 
     (fun head hintlist ->
-       mSG (hOV 0 
-	      [< 'sTR "For "; pr_ref_label head; 'sTR " -> ";
-		 fmt_hint_list hintlist >]))
+       msg (hov 0 
+	      (str "For " ++ pr_ref_label head ++ str " -> " ++
+		 fmt_hint_list hintlist)))
     db
 
 let print_hint_db_by_name dbname =
@@ -572,7 +572,7 @@ let print_hint_db_by_name dbname =
 let print_searchtable () =
   Stringmap.iter
     (fun name db ->
-       mSG [< 'sTR "In the database "; 'sTR name; 'fNL >];
+       msg (str "In the database " ++ str name ++ fnl ());
        print_hint_db db)
     !searchtable
 
@@ -728,7 +728,7 @@ let decomp_unary_term c gls =
   if Hipattern.is_conjunction hd then 
     simplest_case c gls 
   else 
-    errorlabstrm "Auto.decomp_unary_term" [<'sTR "not a unary type" >] 
+    errorlabstrm "Auto.decomp_unary_term" (str "not a unary type") 
 
 let decomp_empty_term c gls = 
   let typc = pf_type_of gls c in 
@@ -736,7 +736,7 @@ let decomp_empty_term c gls =
   if Hipattern.is_empty_type hd then 
     simplest_case c gls 
   else 
-    errorlabstrm "Auto.decomp_empty_term" [<'sTR "not an empty type" >] 
+    errorlabstrm "Auto.decomp_empty_term" (str "not an empty type") 
 
 
 (* decomp is an natural number giving an indication on decomposition 
@@ -941,20 +941,20 @@ let cvt_autoArg = function
   | "UsingTDB"     -> [UsingTDB]
   | "NoAutoArg"    -> []
   | x -> errorlabstrm "cvt_autoArg"
-        [< 'sTR "Unexpected argument for Auto!"; 'sTR x >]
+        (str "Unexpected argument for Auto!" ++ str x)
 
 let cvt_autoArgs =
   list_join_map
     (function 
        | Quoted_string s -> (cvt_autoArg s)
-       | _ -> errorlabstrm "cvt_autoArgs" [< 'sTR "String expected" >])
+       | _ -> errorlabstrm "cvt_autoArgs" (str "String expected"))
 
 let interp_to_add gl = function
   | Qualid qid ->
       let _,id = Nametab.repr_qualid qid in
       (next_ident_away id (pf_ids_of_hyps gl), 
        Declare.constr_of_reference (Nametab.global dummy_loc qid))
-  | _ -> errorlabstrm "cvt_autoArgs" [< 'sTR "Qualid expected" >]
+  | _ -> errorlabstrm "cvt_autoArgs" (str "Qualid expected")
 
 let dyn_superauto l g = 
   match l with

@@ -581,15 +581,15 @@ let subst_glob_decl r m = function
   | d -> d
 
 let warning_expansion r = 
-  wARN (hOV 0 [< 'sTR "The constant"; 'sPC;
-		 Printer.pr_global r; 
-(*i    'sTR (" of size "^ (string_of_int (ml_size t))); i*)
-    'sPC; 'sTR "is expanded." >])
+  warn (hov 0 (str "The constant" ++ spc () ++
+		 Printer.pr_global r ++ 
+(*i    str (" of size "^ (string_of_int (ml_size t))) ++ i*)
+    spc () ++ str "is expanded."))
 
 let warning_expansion_must r = 
-  wARN (hOV 0 [< 'sTR "The constant"; 'sPC;
-		 Printer.pr_global r; 
-    'sPC; 'sTR "must be expanded." >])
+  warn (hov 0 (str "The constant" ++ spc () ++
+		 Printer.pr_global r ++ 
+    spc () ++ str "must be expanded."))
 
 let print_ml_decl prm (r,_) = 
   not (to_inline r) || List.mem r prm.to_appear

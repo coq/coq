@@ -33,7 +33,7 @@ let add_syntax_constant sp c =
 let cache_syntax_constant (sp,c) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_syntax_constant"
-      [< pr_id (basename sp); 'sTR " already exists" >];
+      (pr_id (basename sp) ++ str " already exists");
   add_syntax_constant sp c;
   Nametab.push_syntactic_definition sp;
   Nametab.push_short_name_syntactic_definition sp
@@ -41,7 +41,7 @@ let cache_syntax_constant (sp,c) =
 let load_syntax_constant (sp,c) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_syntax_constant"
-      [< pr_id (basename sp); 'sTR " already exists" >];
+      (pr_id (basename sp) ++ str " already exists");
   add_syntax_constant sp c;
   Nametab.push_syntactic_definition sp
 

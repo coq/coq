@@ -56,12 +56,12 @@ let dbize_sp =
       | Invalid_argument _ | Failure _ ->
       anomaly_loc
        (loc, "Translate.dbize_sp (taken from Astterm)",
-       [< 'sTR "malformed section-path" >])
+       [< str "malformed section-path" >])
     end
     | ast ->
      anomaly_loc
       (Ast.loc ast, "Translate.dbize_sp (taken from Astterm)",
-      [< 'sTR "not a section-path" >]);;
+      [< str "not a section-path" >]);;
 *)
 
 (* dead code:
@@ -120,8 +120,9 @@ let translate_sign env =
     fold_named_context
       (fun env (id,v,c) l -> 
 	 (CT_premise(CT_ident(string_of_id id), translate_constr env c))::l)
-      env [] in
-    CT_premises_list l;;
+      env ~init:[] 
+  in
+  CT_premises_list l;;
        
 (* the function rev_and_compact performs two operations:
    1- it reverses the list of integers given as argument

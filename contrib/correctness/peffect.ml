@@ -143,17 +143,17 @@ open Util
 open Himsg
 
 let pp (r,w) =
-  hOV 0 [< if r<>[] then
-	     [< 'sTR"reads ";
-		prlist_with_sep (fun () -> [< 'sTR","; 'sPC >]) pr_id r >]
-	   else [< >];
-	   'sPC;
+  hov 0 (if r<>[] then
+	     (str"reads " ++
+		prlist_with_sep (fun () -> (str"," ++ spc ())) pr_id r)
+	   else (mt ()) ++
+	   spc () ++
 	   if w<>[] then
-	     [< 'sTR"writes ";
-		prlist_with_sep (fun ()-> [< 'sTR","; 'sPC >]) pr_id w >]
-	   else [< >]
-	>]
+	     (str"writes " ++
+		prlist_with_sep (fun ()-> (str"," ++ spc ())) pr_id w)
+	   else (mt ())
+)
 
 let ppr e =
-  pP (pp e)
+  Pp.pp (pp e)
 

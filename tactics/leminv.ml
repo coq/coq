@@ -37,11 +37,11 @@ open Safe_typing
 let not_work_message = "tactic fails to build the inversion lemma, may be because the predicate has arguments that depend on other arguments"
 
 let no_inductive_inconstr env constr =
-  [< 'sTR "Cannot recognize an inductive predicate in "; 
-     prterm_env env constr;
-     'sTR "."; 'sPC; 'sTR "If there is one, may be the structure of the arity";
-     'sPC; 'sTR "or of the type of constructors"; 'sPC;
-     'sTR "is hidden by constant definitions." >]
+  (str "Cannot recognize an inductive predicate in " ++ 
+     prterm_env env constr ++
+     str "." ++ spc () ++ str "If there is one, may be the structure of the arity" ++
+     spc () ++ str "or of the type of constructors" ++ spc () ++
+     str "is hidden by constant definitions.")
 
 (* Inversion stored in lemmas *)
 
@@ -175,9 +175,12 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let revargs,ownsign =
 	fold_named_context
 	  (fun env (id,_,_ as d) (revargs,hyps) ->
-             if List.mem id ivars then ((mkVar id)::revargs,add_named_decl d hyps)
-	     else (revargs,hyps))
-          env ([],[]) in
+             if List.mem id ivars then 
+	       ((mkVar id)::revargs,add_named_decl d hyps)
+	     else 
+	       (revargs,hyps))
+          env ~init:([],[]) 
+      in
       let pty = it_mkNamedProd_or_LetIn (mkSort sort) ownsign in
       let goal = mkArrow i (applist(mkVar p, List.rev revargs)) in
       (pty,goal)
@@ -209,7 +212,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
        (ids_of_named_context (named_context invEnv)));
   (*
     errorlabstrm "lemma_inversion"
-    [< 'sTR"Computed inversion goal was not closed in initial signature" >];
+    (str"Computed inversion goal was not closed in initial signature");
   *)
   let invSign = named_context invEnv in
   let pfs = mk_pftreestate (mk_goal invSign invGoal) in
@@ -261,9 +264,9 @@ let inversion_lemma_from_goal n na id sort dep_option inv_op =
   let thin_ids = thin_ids (hyps,fv) in
   if not(list_subset thin_ids fv) then
     errorlabstrm "lemma_inversion"
-      [< 'sTR"Cannot compute lemma inversion when there are" ; 'sPC ;
-	 'sTR"free variables in the types of an inductive" ; 'sPC ;
-	 'sTR"which are not free in its instance" >]; *)
+      (str"Cannot compute lemma inversion when there are" ++ spc () ++
+	 str"free variables in the types of an inductive" ++ spc () ++
+	 str"which are not free in its instance"); *)
   add_inversion_lemma na env sigma t sort dep_option inv_op
    
 open Vernacinterp
@@ -349,8 +352,8 @@ let lemInv id c gls =
  *)
     |  UserError (a,b) -> 
 	 errorlabstrm "LemInv" 
-	   [< 'sTR "Cannot refine current goal with the lemma "; 
-	      prterm_env (Global.env()) c  >] 
+	   (str "Cannot refine current goal with the lemma " ++ 
+	      prterm_env (Global.env()) c) 
 
 let useInversionLemma =
   let gentac =

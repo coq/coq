@@ -71,7 +71,7 @@ val strength_of_cl : cl_typ -> strength
 
 (*s [declare_coercion] adds a coercion in the graph of coercion paths *)
 val declare_coercion : 
-  coe_typ -> value:unsafe_judgment -> strength:strength -> isid:bool ->
+  coe_typ -> unsafe_judgment -> strength -> isid:bool ->
       src:cl_typ -> target:cl_typ -> params:int -> unit
 
 (*s Access to coercions infos *)

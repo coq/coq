@@ -32,18 +32,18 @@ let print_basename sp = pr_global (ConstRef sp)
 let print_closed_sections = ref false
 
 let print_typed_value_in_env env (trm,typ) =
-  [< prterm_env env trm ; 'fNL ;
-     'sTR "     : "; prtype_env env typ ; 'fNL >]
+  (prterm_env env trm ++ fnl () ++
+     str "     : " ++ prtype_env env typ ++ fnl ())
 
 let print_typed_value x = print_typed_value_in_env (Global.env ()) x
 			  		  
 let print_impl_args = function
-  | []  -> [<>]
-  | [i] -> [< 'sTR"Position ["; 'iNT i; 'sTR"] is implicit" >]
+  | []  -> mt ()
+  | [i] -> str"Position [" ++ int i ++ str"] is implicit"
   | l   -> 
-      [< 'sTR"Positions ["; 
-         prlist_with_sep (fun () -> [< 'sTR";" >]) (fun i -> [< 'iNT i >]) l;
-         'sTR"] are implicit" >]
+      str"Positions [" ++ 
+      prlist_with_sep (fun () -> str " ++") (fun i -> int i) l ++
+      str"] are implicit"
 
 (* To be improved; the type should be used to provide the types in the
    abstractions. This should be done recursively inside prterm, so that
@@ -53,13 +53,13 @@ let print_impl_args = function
 let print_named_def name body typ =
   let pbody = prterm body in
   let ptyp = prtype typ in
-  [< 'sTR "*** ["; 'sTR name ; 'sTR " ";
-     hOV 0 [< 'sTR ":="; 'bRK (1,2); pbody; 'sPC;
-	      'sTR ":"; 'bRK (1,2); ptyp >];
-	   'sTR "]"; 'fNL >]
+  (str "*** [" ++ str name ++ str " " ++
+     hov 0 (str ":=" ++ brk (1,2) ++ pbody ++ spc () ++
+	      str ":" ++ brk (1,2) ++ ptyp) ++
+	   str "]" ++ fnl ())
 
 let print_named_assum name typ =
-  [< 'sTR "*** [" ; 'sTR name ; 'sTR " : "; prtype typ; 'sTR "]"; 'fNL >]
+  (str "*** [" ++ str name ++ str " : " ++ prtype typ ++ str "]" ++ fnl ())
 
 let print_named_decl (id,c,typ) =
   let s = string_of_id id in
@@ -72,35 +72,36 @@ let assumptions_for_print lna =
 
 let implicit_args_id id l = 
   if l = [] then 
-    [<>]
+    (mt ())
   else 
-    [< 'sTR"For "; pr_id id; 'sTR": "; print_impl_args l ; 'fNL >]
+    (str"For " ++ pr_id id ++ str": " ++ print_impl_args l ++ fnl ())
 
 let implicit_args_msg sp mipv = 
-  [< prvecti
+  (prvecti
        (fun i mip -> 
 	  let imps = inductive_implicits_list (sp,i) in
-          [< (implicit_args_id mip.mind_typename imps);
+          ((implicit_args_id mip.mind_typename imps) ++
              prvecti 
 	       (fun j idc ->
 		  let imps = constructor_implicits_list ((sp,i),succ j) in
                   (implicit_args_id idc imps))
                mip.mind_consnames 
-          >])
-       mipv >]
+))
+       mipv)
 
 let print_params env params =
   if List.length params = 0 then 
-    [<>] 
+    (mt ()) 
   else
-    [< 'sTR "["; pr_rel_context env params; 'sTR "]"; 'bRK(1,2) >]
+    (str "[" ++ pr_rel_context env params ++ str "]" ++ brk(1,2))
 
 let print_constructors envpar names types =
   let pc =
-    [< prvect_with_sep (fun () -> [<'bRK(1,0); 'sTR "| " >])
-         (fun (id,c) -> [< pr_id id; 'sTR " : "; prterm_env envpar c >])
-	 (array_map2 (fun n t -> (n,t)) names types) >]
-  in hV 0 [< 'sTR "  "; pc >] 
+    prvect_with_sep (fun () -> brk(1,0) ++ str "| ")
+      (fun (id,c) -> pr_id id ++ str " : " ++ prterm_env envpar c)
+      (array_map2 (fun n t -> (n,t)) names types)
+  in 
+  hv 0 (str "  " ++ pc)
 
 let build_inductive sp tyi =
   let (mib,mip) = Global.lookup_inductive (sp,tyi) in
@@ -116,11 +117,11 @@ let print_one_inductive sp tyi =
   let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp tyi in
   let env = Global.env () in
   let envpar = push_rel_context params env in
-  (hOV 0
-     [< (hOV 0
-	   [< pr_global (IndRef (sp,tyi)) ; 'bRK(1,2); print_params env params;
-	      'sTR ": "; prterm_env envpar arity; 'sTR " :=" >]);
-	'bRK(1,2); print_constructors envpar cstrnames cstrtypes >]) 
+  (hov 0
+     ((hov 0
+	   (pr_global (IndRef (sp,tyi)) ++ brk(1,2) ++ print_params env params ++
+	      str ": " ++ prterm_env envpar arity ++ str " :=")) ++
+	brk(1,2) ++ print_constructors envpar cstrnames cstrtypes)) 
 
 let print_mutual sp =
   let (mib,mip) = Global.lookup_inductive (sp,0) in
@@ -131,13 +132,13 @@ let print_mutual sp =
       if mib.mind_finite then "Inductive " else "CoInductive " in
     let env = Global.env () in
     let envpar = push_rel_context params env in
-    (hOV 0 [< 
-       'sTR sfinite ; 
-      pr_global (IndRef (sp,0)); 'bRK(1,2);
-       print_params env params; 'bRK(1,5);
-       'sTR": "; prterm_env envpar arity; 'sTR" :=";
-       'bRK(0,4); print_constructors envpar cstrnames cstrtypes; 'fNL;
-       implicit_args_msg sp mib.mind_packets  >] )
+    (hov 0 (
+       str sfinite ++ 
+      pr_global (IndRef (sp,0)) ++ brk(1,2) ++
+       print_params env params ++ brk(1,5) ++
+       str": " ++ prterm_env envpar arity ++ str" :=" ++
+       brk(0,4) ++ print_constructors envpar cstrnames cstrtypes ++ fnl () ++
+       implicit_args_msg sp mib.mind_packets) )
   (* Mutual [co]inductive definitions *)
   else
     let _,(mipli,miplc) =
@@ -147,24 +148,24 @@ let print_mutual sp =
         mipv (0,([],[])) 
     in 
     let strind =
-      if mipli = [] then [<>] 
-      else [< 'sTR "Inductive"; 'bRK(1,4);
+      if mipli = [] then (mt ()) 
+      else (str "Inductive" ++ brk(1,4) ++
               (prlist_with_sep
-                 (fun () -> [< 'fNL; 'sTR"  with"; 'bRK(1,4) >])
-                 (print_one_inductive sp) mipli); 'fNL >]
+                 (fun () -> (fnl () ++ str"  with" ++ brk(1,4)))
+                 (print_one_inductive sp) mipli) ++ fnl ())
     and strcoind =
-      if miplc = [] then [<>] 
-      else [< 'sTR "CoInductive"; 'bRK(1,4);
+      if miplc = [] then (mt ()) 
+      else (str "CoInductive" ++ brk(1,4) ++
               (prlist_with_sep
-                 (fun () -> [<'fNL; 'sTR "  with"; 'bRK(1,4) >]) 
-                 (print_one_inductive sp) miplc); 'fNL >] 
+                 (fun () -> (fnl () ++ str "  with" ++ brk(1,4))) 
+                 (print_one_inductive sp) miplc) ++ fnl ()) 
     in
-    (hV 0 [< 'sTR"Mutual " ; 
-             if mib.mind_finite then 
-	       [< strind; strcoind >] 
-             else 
-	       [<strcoind; strind>];
-             implicit_args_msg sp mipv >])
+    (hv 0 (str"Mutual " ++
+           (if mib.mind_finite then 
+	      strind ++ strcoind
+            else 
+	      strcoind ++ strind) ++
+           implicit_args_msg sp mipv))
 
 (*
   let env = Global.env () in
@@ -177,24 +178,24 @@ let print_mutual sp =
   let arities = Array.map (fun mip -> (Name mip.mind_typename, None, mip.mind_nf_arity)) mipv in
   let env_ar = push_rels lpars env in
   let pr_constructor (id,c) =
-    [< pr_id id; 'sTR " : "; prterm_env env_ar c >] in
+    (pr_id id ++ str " : " ++ prterm_env env_ar c) in
   let print_constructors mis =
     let (_,lC) = mis_type_mconstructs mis in
     let lidC =
       array_map2 (fun id c -> (id, snd (decomp_n_prod env evd nparams c)))
 	(mis_consnames mis) lC in
     let plidC =
-      prvect_with_sep (fun () -> [<'bRK(0,0); 'sTR "| " >])
+      prvect_with_sep (fun () -> (brk(0,0) ++ str "| "))
         pr_constructor
 	lidC
     in
-    hV 0 [< 'sTR "  "; plidC >] 
+    hV 0 (str "  " ++ plidC) 
   in
   let params =
     if nparams = 0 then 
-      [<>] 
+      (mt ()) 
     else
-      [< 'sTR "["; pr_rel_context env lpars; 'sTR "]"; 'bRK(1,2) >] in
+      (str "[" ++ pr_rel_context env lpars ++ str "]" ++ brk(1,2)) in
   let print_oneind tyi =
     let mis =
       build_mis
@@ -203,11 +204,11 @@ let print_mutual sp =
 	mib in
     let (_,arity) = decomp_n_prod env evd nparams
 		      (body_of_type (mis_user_arity mis)) in
-      (hOV 0
-         [< (hOV 0
-	       [< pr_global (IndRef (sp,tyi)) ; 'bRK(1,2); params;
-	          'sTR ": "; prterm_env env_ar arity; 'sTR " :=" >]);
-            'bRK(1,2); print_constructors mis >]) 
+      (hov 0
+         ((hov 0
+	       (pr_global (IndRef (sp,tyi)) ++ brk(1,2) ++ params ++
+	          str ": " ++ prterm_env env_ar arity ++ str " :=")) ++
+            brk(1,2) ++ print_constructors mis)) 
   in 
   let mis0 =
     build_mis
@@ -218,14 +219,14 @@ let print_mutual sp =
     let (_,arity) = decomp_n_prod env evd nparams
 		      (body_of_type (mis_user_arity mis0)) in 
     let sfinite = if mis_finite mis0 then "Inductive " else "CoInductive " in
-    (hOV 0 [< 'sTR sfinite ; pr_global (IndRef (sp,0));
+    (hov 0 (str sfinite ++ pr_global (IndRef (sp,0)) ++
               if nparams = 0 then 
-		[<>] 
+		(mt ()) 
               else 
-		[< 'sTR" ["; pr_rel_context env lpars; 'sTR "]">];
-              'bRK(1,5); 'sTR": "; prterm_env env_ar arity; 'sTR" :=";
-              'bRK(0,4); print_constructors mis0; 'fNL;
-              implicit_args_msg sp mipv  >] )
+		(str" [" ++ pr_rel_context env lpars ++ str "]") ++
+              brk(1,5) ++ str": " ++ prterm_env env_ar arity ++ str" :=" ++
+              brk(0,4) ++ print_constructors mis0 ++ fnl () ++
+              implicit_args_msg sp mipv) )
   (* Mutual [co]inductive definitions *)
   else
     let _,(mipli,miplc) =
@@ -235,63 +236,63 @@ let print_mutual sp =
         (0,([],[])) (Array.to_list mipv) 
     in 
     let strind =
-      if mipli = [] then [<>] 
-      else [< 'sTR "Inductive"; 'bRK(1,4);
+      if mipli = [] then (mt ()) 
+      else (str "Inductive" ++ brk(1,4) ++
               (prlist_with_sep
-                 (fun () -> [< 'fNL; 'sTR"  with"; 'bRK(1,4) >])
+                 (fun () -> (fnl () ++ str"  with" ++ brk(1,4)))
                  print_oneind
-                 (List.rev mipli)); 'fNL >]
+                 (List.rev mipli)) ++ fnl ())
     and strcoind =
-      if miplc = [] then [<>] 
-      else [< 'sTR "CoInductive"; 'bRK(1,4);
+      if miplc = [] then (mt ()) 
+      else (str "CoInductive" ++ brk(1,4) ++
               (prlist_with_sep
-                 (fun () -> [<'fNL; 'sTR "  with"; 'bRK(1,4) >]) 
-                 print_oneind (List.rev miplc)); 'fNL >] 
+                 (fun () -> (fnl () ++ str "  with" ++ brk(1,4))) 
+                 print_oneind (List.rev miplc)) ++ fnl ()) 
     in
-    (hV 0 [< 'sTR"Mutual " ; 
+    (hV 0 (str"Mutual " ++ 
              if mis_finite mis0 then 
-	       [< strind; strcoind >] 
+	       (strind ++ strcoind) 
              else 
-	       [<strcoind; strind>];
-             implicit_args_msg sp mipv >])
+	       (strcoind ++ strind) ++
+             implicit_args_msg sp mipv))
 *)
 let print_section_variable sp =
   let (d,_) = get_variable sp in
   let l = implicits_of_var sp in
-  [< print_named_decl d; print_impl_args l; 'fNL >]
+  (print_named_decl d ++ print_impl_args l ++ fnl ())
 
 let print_body = function
   | Some c  -> prterm c
-  | None -> [< 'sTR"<no body>" >]
+  | None -> (str"<no body>")
 
 let print_typed_body (val_0,typ) =
-  [< print_body val_0; 'fNL; 'sTR "     : "; prtype typ; 'fNL >]
+  (print_body val_0 ++ fnl () ++ str "     : " ++ prtype typ ++ fnl ())
 
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = cb.const_body in
   let typ = cb.const_type in
   let impls = constant_implicits_list sp in
-  hOV 0 [< (match val_0 with 
+  hov 0 ((match val_0 with 
 		| None -> 
-		    [< 'sTR"*** [ "; 
-		       print_basename sp;  
-		       'sTR " : "; 'cUT ; prtype typ ; 'sTR" ]"; 'fNL >]
+		    (str"*** [ " ++ 
+		       print_basename sp ++  
+		       str " : " ++ cut () ++ prtype typ ++ str" ]" ++ fnl ())
 		| _ -> 
-		    [< print_basename sp; 
-		       'sTR sep; 'cUT ;
+		    (print_basename sp ++ 
+		       str sep ++ cut () ++
 		       if with_values then 
 			 print_typed_body (val_0,typ) 
 		       else 
-			 [< prtype typ ; 'fNL >] >]); 
-	     print_impl_args impls; 'fNL >]
+			 (prtype typ ++ fnl ()))) ++ 
+	     print_impl_args impls ++ fnl ())
 
-let print_inductive sp = [< print_mutual sp; 'fNL >]
+let print_inductive sp = (print_mutual sp ++ fnl ())
 
 let print_syntactic_def sep sp =
   let id = basename sp in
   let c = Syntax_def.search_syntactic_definition sp in 
-  [< 'sTR" Syntactif Definition "; pr_id id ; 'sTR sep; pr_rawterm c; 'fNL >]
+  (str" Syntactif Definition " ++ pr_id id ++ str sep ++ pr_rawterm c ++ fnl ())
 
 let print_leaf_entry with_values sep (sp,lobj) =
   let tag = object_tag lobj in
@@ -303,56 +304,56 @@ let print_leaf_entry with_values sep (sp,lobj) =
     | (_,"INDUCTIVE") ->
 	print_inductive sp
     | (_,"AUTOHINT") -> 
-(*	[< 'sTR" Hint Marker"; 'fNL >]*)
-	[< >]
+(*	(str" Hint Marker" ++ fnl ())*)
+	(mt ())
     | (_,"GRAMMAR") -> 
-(*	[< 'sTR" Grammar Marker"; 'fNL >]*)
-	[< >]
+(*	(str" Grammar Marker" ++ fnl ())*)
+	(mt ())
     | (_,"SYNTAXCONSTANT") -> 
 	print_syntactic_def sep sp
     | (_,"PPSYNTAX") -> 
-(*	[< 'sTR" Syntax Marker"; 'fNL >]*)
-	[< >]
+(*	(str" Syntax Marker" ++ fnl ())*)
+	(mt ())
     | (_,"TOKEN") -> 
-(*	[< 'sTR" Token Marker"; 'fNL >]*)
-	[< >]
+(*	(str" Token Marker" ++ fnl ())*)
+	(mt ())
     | (_,"CLASS") -> 
-(*	[< 'sTR" Class Marker"; 'fNL >]*)
-	[< >]
+(*	(str" Class Marker" ++ fnl ())*)
+	(mt ())
     | (_,"COERCION") -> 
-(*	[< 'sTR" Coercion Marker"; 'fNL >]*)
-	[< >]
+(*	(str" Coercion Marker" ++ fnl ())*)
+	(mt ())
     | (_,"REQUIRE") -> 
-(*	[< 'sTR" Require Marker"; 'fNL >]*)
-	[< >]
-    | (_,"END-SECTION") -> [< >]
-    | (_,"STRUCTURE") -> [< >]
+(*	(str" Require Marker" ++ fnl ())*)
+	(mt ())
+    | (_,"END-SECTION") -> (mt ())
+    | (_,"STRUCTURE") -> (mt ())
 (* To deal with forgotten cases... *)
-    | (_,s) -> [< >]
+    | (_,s) -> (mt ())
 (*
     | (_,s) -> 
-	[< 'sTR(string_of_path sp); 'sTR" : ";
-           'sTR"Unrecognized object "; 'sTR s; 'fNL >]
+	(str(string_of_path sp) ++ str" : " ++
+           str"Unrecognized object " ++ str s ++ fnl ())
 *)
 
 let rec print_library_entry with_values ent = 
   let sep = if with_values then " = " else " : " in 
   match ent with
     | (sp,Lib.Leaf lobj) -> 
-	[< print_leaf_entry with_values sep (sp,lobj) >]
+	(print_leaf_entry with_values sep (sp,lobj))
     | (sp,Lib.OpenedSection (dir,_)) -> 
-        [< 'sTR " >>>>>>> Section "; pr_id (basename sp); 'fNL >]
+        (str " >>>>>>> Section " ++ pr_id (basename sp) ++ fnl ())
     | (sp,Lib.ClosedSection _) -> 
-        [< 'sTR " >>>>>>> Closed Section "; pr_id (basename sp); 'fNL >]
+        (str " >>>>>>> Closed Section " ++ pr_id (basename sp) ++ fnl ())
     | (_,Lib.Module dir) ->
-	[< 'sTR " >>>>>>> Module "; pr_dirpath dir; 'fNL >]
+	(str " >>>>>>> Module " ++ pr_dirpath dir ++ fnl ())
     | (_,Lib.FrozenState _) ->
-	[< >]
+	(mt ())
 	
 and print_context with_values = 
   let rec prec = function
-    | h::rest -> [< prec rest ; print_library_entry with_values h >]
-    | [] -> [< >]
+    | h::rest -> (prec rest ++ print_library_entry with_values h)
+    | [] -> (mt ())
   in 
   prec
 
@@ -405,7 +406,7 @@ let print_safe_judgment env j =
     
 let print_eval red_fun env {uj_val=trm;uj_type=typ} =
   let ntrm = red_fun env Evd.empty trm in
-  [< 'sTR "     = "; print_judgment env {uj_val = ntrm; uj_type = typ} >]
+  (str "     = " ++ print_judgment env {uj_val = ntrm; uj_type = typ})
 
 let print_name qid = 
   try 
@@ -431,14 +432,14 @@ let print_name qid =
     let dir,str = repr_qualid qid in 
     if (repr_dirpath dir) <> [] then raise Not_found;
     let (_,c,typ) = Global.lookup_named str in 
-    [< print_named_decl (str,c,typ) >]
+    (print_named_decl (str,c,typ))
   with Not_found ->
   try
     let sp = Syntax_def.locate_syntactic_definition qid in
     print_syntactic_def " = " sp
   with Not_found ->
     errorlabstrm "print_name"
-      [< pr_qualid qid; 'sPC; 'sTR "not a defined object" >]
+      (pr_qualid qid ++ spc () ++ str "not a defined object")
 
 let print_opaque_name qid = 
   let sigma = Evd.empty in
@@ -464,17 +465,17 @@ let print_opaque_name qid =
       | _ -> 
 	  assert false
   with Not_found -> 
-    errorlabstrm "print_opaque" [< pr_qualid qid; 'sPC; 'sTR "not declared" >]
+    errorlabstrm "print_opaque" (pr_qualid qid ++ spc () ++ str "not declared")
 
 let print_local_context () =
   let env = Lib.contents_after None in
   let rec print_var_rec = function 
-    | [] -> [< >]
+    | [] -> (mt ())
     | (sp,Lib.Leaf lobj)::rest ->
 	if "VARIABLE" = object_tag lobj then
           let (d,_) = get_variable (basename sp) in 
-	  [< print_var_rec rest;
-             print_named_decl d >]
+	  (print_var_rec rest ++
+             print_named_decl d)
 	else 
 	  print_var_rec rest
     | _::rest -> print_var_rec rest
@@ -485,22 +486,22 @@ let print_local_context () =
            | "CONSTANT" | "PARAMETER" -> 
                let {const_body=val_0;const_type=typ} = 
 		 Global.lookup_constant sp in
-               [< print_last_const rest;
-                  print_basename sp ;'sTR" = ";
-                  print_typed_body (val_0,typ) >]
+               (print_last_const rest ++
+                  print_basename sp ++str" = " ++
+                  print_typed_body (val_0,typ))
            | "INDUCTIVE" -> 
-               [< print_last_const rest;print_mutual sp; 'fNL >]
-           | "VARIABLE" ->  [< >]
+               (print_last_const rest ++print_mutual sp ++ fnl ())
+           | "VARIABLE" ->  (mt ())
            | _          ->  print_last_const rest)
-    | _ -> [< >]
+    | _ -> (mt ())
   in 
-  [< print_var_rec env;  print_last_const env >]
+  (print_var_rec env ++  print_last_const env)
 
 let fprint_var name typ =
-  [< 'sTR ("*** [" ^ name ^ " :"); fprtype typ; 'sTR "]"; 'fNL >]
+  (str ("*** [" ^ name ^ " :") ++ fprtype typ ++ str "]" ++ fnl ())
 
 let fprint_judge {uj_val=trm;uj_type=typ} = 
-  [< fprterm trm; 'sTR" : " ; fprterm (body_of_type typ) >]
+  (fprterm trm ++ str" : " ++ fprterm (body_of_type typ))
 
 let unfold_head_fconst = 
   let rec unfrec k = match kind_of_term k with
@@ -541,37 +542,37 @@ let print_index_coercion c =
 
 let print_class i =
   let cl,_ = class_info_from_index i in
-  [< 'sTR (string_of_class cl) >]
+  (str (string_of_class cl))
   
 let print_path ((i,j),p) = 
-  [< 'sTR"["; 
-     prlist_with_sep (fun () -> [< 'sTR"; " >])
-       (fun c ->  print_index_coercion c) p;
-     'sTR"] : "; print_class i; 'sTR" >-> ";
-     print_class j >]
+  (str"[" ++ 
+     prlist_with_sep (fun () -> (str"; "))
+       (fun c ->  print_index_coercion c) p ++
+     str"] : " ++ print_class i ++ str" >-> " ++
+     print_class j)
 
 let _ = Classops.install_path_printer print_path
 
 let print_graph () = 
-  [< prlist_with_sep pr_fnl print_path (inheritance_graph()) >]
+  (prlist_with_sep pr_fnl print_path (inheritance_graph()))
 
 let print_classes () = 
-  [< prlist_with_sep pr_spc
+  (prlist_with_sep pr_spc
        (fun (_,(cl,x)) -> 
-          [< 'sTR (string_of_class cl)
-	       (*; 'sTR(string_of_strength x.cl_strength) *) >]) 
-       (classes()) >]
+          (str (string_of_class cl)
+	       (* ++ str(string_of_strength x.cl_strength) *))) 
+       (classes()))
 
 let print_coercions () = 
-  [< prlist_with_sep pr_spc
-       (fun (_,(_,v)) -> [< print_coercion_value v >]) (coercions()) >]
+  (prlist_with_sep pr_spc
+       (fun (_,(_,v)) -> (print_coercion_value v)) (coercions()))
   
 let index_of_class cl =
   try 
     fst (class_info cl)
   with _ -> 
     errorlabstrm "index_of_class"
-      [< 'sTR(string_of_class cl); 'sTR" is not a defined class" >]
+      (str(string_of_class cl) ++ str" is not a defined class")
 
 let print_path_between cls clt = 
   let i = index_of_class cls in
@@ -581,8 +582,8 @@ let print_path_between cls clt =
       lookup_path_between (i,j) 
     with _ -> 
       errorlabstrm "index_cl_of_id"
-        [< 'sTR"No path between ";'sTR(string_of_class cls); 
-	   'sTR" and ";'sTR(string_of_class clt) >]
+        (str"No path between " ++str(string_of_class cls) ++ 
+	   str" and " ++str(string_of_class clt))
   in
   print_path ((i,j),p)
 

@@ -244,12 +244,12 @@ let decompose_lam_eta n env c =
 
 let axiom_message sp =
   errorlabstrm "axiom_message"
-    [< 'sTR "You must specify an extraction for axiom"; 'sPC; 
-       pr_sp sp; 'sPC; 'sTR "first" >]
+    (str "You must specify an extraction for axiom" ++ spc () ++ 
+       pr_sp sp ++ spc () ++ str "first")
 
 let section_message () = 
   errorlabstrm "section_message"
-    [< 'sTR "You can't extract within a section. Close it and try again" >]
+    (str "You can't extract within a section. Close it and try again")
 
 (*s Tables to keep the extraction of inductive types and constructors. *)
 
@@ -421,8 +421,8 @@ and extract_type_app env (r,sc,vlc) vl args =
   let args = if diff > 0 then begin
     (* This can (normally) only happen when r is a flexible type. 
        We discard the remaining arguments *)
-    (*i    wARN (hOV 0 [< 'sTR ("Discarding " ^
-		 (string_of_int diff) ^ " type(s) argument(s).") >]); i*)
+    (*i    wARN (hov 0 (str ("Discarding " ^
+		 (string_of_int diff) ^ " type(s) argument(s)."))); i*)
     list_firstn (List.length sc) args
   end else args in
   let nargs = List.length args in

@@ -40,14 +40,14 @@ let load_rcfile() =
       else ()
 	(*
 	Options.if_verbose
-	  mSGNL [< 'sTR ("No .coqrc or .coqrc."^Coq_config.version^
-			 " found. Skipping rcfile loading.") >]
+	  mSGNL (str ("No .coqrc or .coqrc."^Coq_config.version^
+			 " found. Skipping rcfile loading."))
 	*)
     with e ->
-      (mSGNL [< 'sTR"Load of rcfile failed." >];
+      (msgnl (str"Load of rcfile failed.");
        raise e)
   else 
-    Options.if_verbose mSGNL [< 'sTR"Skipping rcfile loading." >]
+    Options.if_verbose msgnl (str"Skipping rcfile loading.")
 
 let add_ml_include s =
   Mltop.add_ml_dir s

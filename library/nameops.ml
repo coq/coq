@@ -17,7 +17,7 @@ open Term
 
 (* Identifiers *)
 
-let pr_id id = [< 'sTR (string_of_id id) >]
+let pr_id id = (str (string_of_id id))
 
 let wildcard = id_of_string "_"
 
@@ -145,7 +145,7 @@ let next_name_away name l =
 
 (**********************************************)
 
-let pr_dirpath sl = [< 'sTR (string_of_dirpath sl) >]
+let pr_dirpath sl = (str (string_of_dirpath sl))
 
 (* Operations on dirpaths *)
 let empty_dirpath = make_dirpath []
@@ -234,4 +234,4 @@ let path_of_string s =
     | Invalid_argument _ -> invalid_arg "path_of_string"
 
 (* Section paths *)
-let pr_sp sp = [< 'sTR (string_of_path sp) >]
+let pr_sp sp = (str (string_of_path sp))

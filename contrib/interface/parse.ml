@@ -2,9 +2,9 @@ open Util;;
 
 open System;;
 
-open Pp;;
-
 open Ctast;;
+
+open Pp;;
 
 open Library;;
 
@@ -43,15 +43,15 @@ let print_parse_results n msg =
   flush stdout;;
 
 let ctf_SyntaxErrorMessage reqid pps =
- [< 'fNL; 'sTR "message"; 'fNL; 'sTR "syntax_error"; 'fNL; 'iNT reqid; 'fNL;
-   pps; 'fNL; 'sTR "E-n-d---M-e-s-s-a-g-e"; 'fNL >];;
+ (fnl () ++ str "message" ++ fnl () ++ str "syntax_error" ++ fnl () ++ int reqid ++ fnl () ++
+   pps ++ fnl () ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ());;
 let ctf_SyntaxWarningMessage reqid pps =
- [< 'fNL; 'sTR "message"; 'fNL; 'sTR "syntax_warning"; 'fNL; 'iNT reqid; 'fNL;
-   pps; 'fNL; 'sTR "E-n-d---M-e-s-s-a-g-e"; 'fNL >];;
+ (fnl () ++ str "message" ++ fnl () ++ str "syntax_warning" ++ fnl () ++ int reqid ++ fnl () ++
+   pps ++ fnl () ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ());;
 
 let ctf_FileErrorMessage reqid pps =
- [< 'fNL; 'sTR "message"; 'fNL; 'sTR "file_error"; 'fNL; 'iNT reqid; 'fNL;
-   pps; 'fNL; 'sTR "E-n-d---M-e-s-s-a-g-e"; 'fNL >];;
+ (fnl () ++ str "message" ++ fnl () ++ str "file_error" ++ fnl () ++ int reqid ++ fnl () ++
+   pps ++ fnl () ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ());;
 
 (*In the code for CoqV6.2, the require_module call is encapsulated in
   a function "without_mes_ambig".  Here I have supposed that this
@@ -60,7 +60,7 @@ let try_require_module import specif name fname =
  try Library.require_module (if specif = "UNSPECIFIED" then None
   else Some (specif = "SPECIFICATION")) (Nametab.make_short_qualid (Names.id_of_string name)) fname (import = "IMPORT")
  with
- | e -> mSGNL [< 'sTR "Reinterning of "; 'sTR name; 'sTR " failed" >];;
+ | e -> msgnl (str "Reinterning of " ++ str name ++ str " failed");;
 
 let execute_when_necessary ast =
  (match ast with
@@ -79,11 +79,12 @@ let execute_when_necessary ast =
   | _ -> ()); ast;;
 
 let parse_to_dot =
-  let rec dot = parser
-      [< '("", ".") >] -> ()
-    | [< '("EOI", "") >] -> raise End_of_file
-    | [< '_; s >] -> dot s
-  in Gram.Entry.of_parser "Coqtoplevel.dot" dot;;
+  let rec dot st = match Stream.next st with
+    | ("", ".") -> ()
+    | ("EOI", "") -> raise End_of_file
+    | _ -> dot st
+  in 
+  Gram.Entry.of_parser "Coqtoplevel.dot" dot;;
 
 let rec discard_to_dot stream =
   try Gram.Entry.parse parse_to_dot (Gram.parsable stream) with
@@ -149,11 +150,11 @@ let parse_command_list reqid stream string_list =
         with
         | (Stdpp.Exc_located(l, Stream.Error txt)) as e -> 
           begin
-             mSGNL (ctf_SyntaxWarningMessage reqid (Errors.explain_exn e));
+             msgnl (ctf_SyntaxWarningMessage reqid (Errors.explain_exn e));
              try
                 discard_to_dot stream;
-                mSGNL [< 'sTR "debug"; 'fNL; 'iNT this_pos; 'fNL; 'iNT 
-                  (Stream.count stream) >];
+                msgnl (str "debug" ++ fnl () ++ int this_pos ++ fnl () ++ int 
+                  (Stream.count stream));
                 Some( Node(l, "PARSING_ERROR",
                         List.map Ctast.str
                         (get_substring_list string_list this_pos
@@ -175,7 +176,7 @@ let parse_command_list reqid stream string_list =
     | None -> [] in
     match parse_whole_stream () with
     | first_one::tail -> (P_cl (CT_command_list(first_one, tail)))
-    | [] -> raise (UserError ("parse_string", [< 'sTR "empty text." >]));;
+    | [] -> raise (UserError ("parse_string", (str "empty text.")));;
 
 (*When parsing a string using a phylum, the string is first transformed
   into a Coq Ast using the regular Coq parser, then it is transformed into
@@ -215,12 +216,12 @@ let parse_string_action reqid phylum char_stream string_list =
  with
  | Stdpp.Exc_located(l,Match_failure(_,_,_)) ->
     flush_until_end_of_stream char_stream;
-    mSGNL (ctf_SyntaxErrorMessage reqid
+    msgnl (ctf_SyntaxErrorMessage reqid
               (Errors.explain_exn 
                  (Stdpp.Exc_located(l,Stream.Error "match failure"))))
  | e ->
     flush_until_end_of_stream char_stream;
-    mSGNL (ctf_SyntaxErrorMessage reqid (Errors.explain_exn e));;
+    msgnl (ctf_SyntaxErrorMessage reqid (Errors.explain_exn e));;
 
 
 let quiet_parse_string_action char_stream =
@@ -247,10 +248,10 @@ let parse_file_action reqid file_name =
                 this_ast
               with
             | Stdpp.Exc_located(l,Stream.Error txt ) -> 
-                 mSGNL (ctf_SyntaxWarningMessage reqid
-                [< 'sTR "Error with file"; 'sPC; 'sTR file_name; 'fNL;
+                 msgnl (ctf_SyntaxWarningMessage reqid
+                (str "Error with file" ++ spc () ++ str file_name ++ fnl () ++
                    Errors.explain_exn 
-                      (Stdpp.Exc_located(l,Stream.Error txt)) >]);
+                      (Stdpp.Exc_located(l,Stream.Error txt))));
                  let rec discard_to_dot () =
                  try Gram.Entry.parse parse_to_dot (Gram.parsable stream)
                  with Stdpp.Exc_located(_,Token.Error _) -> discard_to_dot()
@@ -276,18 +277,18 @@ let parse_file_action reqid file_name =
       | first_one :: tail ->
        print_parse_results reqid
           (P_cl (CT_command_list (first_one, tail)))
-      | [] -> raise (UserError ("parse_file_action", [< 'sTR "empty file." >]))
+      | [] -> raise (UserError ("parse_file_action", (str "empty file.")))
  with
  | Stdpp.Exc_located(l,Match_failure(_,_,_)) ->
- mSGNL
+ msgnl
   (ctf_SyntaxErrorMessage reqid
-  [< 'sTR "Error with file"; 'sPC; 'sTR file_name; 'fNL;
-  Errors.explain_exn (Stdpp.Exc_located(l,Stream.Error "match failure")) >])
+  (str "Error with file" ++ spc () ++ str file_name ++ fnl () ++
+  Errors.explain_exn (Stdpp.Exc_located(l,Stream.Error "match failure"))))
  | e ->
- mSGNL
+ msgnl
   (ctf_SyntaxErrorMessage reqid
-  [< 'sTR "Error with file"; 'sPC; 'sTR file_name; 'fNL;
-  Errors.explain_exn e >]);;
+  (str "Error with file" ++ spc () ++ str file_name ++ fnl () ++
+  Errors.explain_exn e));;
 
 (* This function is taken from Mltop.add_path *)
 
@@ -297,7 +298,7 @@ let add_path dir coq_dirpath =
       Library.add_load_path_entry (dir,coq_dirpath)
     end
   else
-    wARNING [< 'sTR ("Cannot open " ^ dir) >]
+    msg_warning (str ("Cannot open " ^ dir))
 
 let convert_string d =
   try Names.id_of_string d
@@ -315,7 +316,7 @@ let add_rec_path dir coq_dirpath =
       List.iter Library.add_load_path_entry dirs
     end
     else
-      wARNING [< 'sTR ("Cannot open " ^ dir) >];;
+      msg_warning (str ("Cannot open " ^ dir));;
 
 let add_path_action reqid string_arg =
   let directory_name = glob string_arg in
@@ -325,30 +326,30 @@ let add_path_action reqid string_arg =
     end;;
 
 let print_version_action () =
-  mSGNL [< >];
-  mSGNL [< 'sTR "$Id$" >];;
+  msgnl (mt ());
+  msgnl (str "$Id$");;
 
 let load_syntax_action reqid module_name =
- mSG [< 'sTR "loading "; 'sTR module_name; 'sTR "... " >];
+ msg (str "loading " ++ str module_name ++ str "... ");
  try
       (let qid = Nametab.make_short_qualid (Names.id_of_string module_name) in
       read_module qid;
-      mSG [< 'sTR "opening... ">];
+      msg (str "opening... ");
       let fullname = Nametab.locate_loaded_library qid in 
       import_module fullname; 
-      mSGNL [< 'sTR "done"; 'fNL >];
+      msgnl (str "done" ++ fnl ());
       ())
  with
  | UserError (label, pp_stream) ->
  (*This one may be necessary to make sure that the message won't be indented *)
- mSGNL [< >];
- mSGNL
-  [< 'fNL; 'sTR "error while loading syntax module "; 'sTR module_name;
-  'sTR ": "; 'sTR label; 'fNL; pp_stream >]
+ msgnl (mt ());
+ msgnl
+  (fnl () ++ str "error while loading syntax module " ++ str module_name ++
+  str ": " ++ str label ++ fnl () ++ pp_stream)
  | e ->
-  mSGNL [< >];
-  mSGNL
-   [< 'fNL; 'sTR "message"; 'fNL; 'sTR "load_error"; 'fNL; 'iNT reqid; 'fNL >];
+  msgnl (mt ());
+  msgnl
+   (fnl () ++ str "message" ++ fnl () ++ str "load_error" ++ fnl () ++ int reqid ++ fnl ());
   ();;
 
 let coqparser_loop inchan =
@@ -370,12 +371,12 @@ Libobject.relax true;
        if Sys.file_exists coqdir then
 	 coqdir
        else
-	 (mSGNL [< 'sTR "could not find the value of COQDIR" >]; exit 1) in
+	 (msgnl (str "could not find the value of COQDIR"); exit 1) in
      begin
        add_rec_path (Filename.concat coqdir "theories") (Names.make_dirpath [Nameops.coq_root]);
        add_path (Filename.concat coqdir "tactics") (Names.make_dirpath [Nameops.coq_root]);
        add_rec_path (Filename.concat coqdir "contrib") (Names.make_dirpath [Nameops.coq_root]);
-       List.iter (fun a -> mSGNL [< 'sTR a >]) (get_load_path())
+       List.iter (fun a -> msgnl (str a)) (get_load_path())
      end;
 (try 
   (match create_entry (get_univ "nat") "number" ETast with
@@ -387,10 +388,10 @@ Libobject.relax true;
 	    (fun s loc ->
 		 Node((0,0),"XTRA",[Str((0,0),"omega_integer_for_ctcoq");
 				 Num((0,0),int_of_string s)]))]]
-   | _ -> mSGNL [< 'sTR "unpredicted behavior of Grammar.extend" >])
+   | _ -> msgnl (str "unpredicted behavior of Grammar.extend"))
 
  with
-   e -> mSGNL [< 'sTR "could not add a parser for numbers" >]);
+   e -> msgnl (str "could not add a parser for numbers"));
 (let vernacrc =
    try
      Sys.getenv "VERNACRC"
@@ -406,28 +407,28 @@ Libobject.relax true;
    with
      | End_of_file -> ()
      | e ->
-	 (mSGNL (Errors.explain_exn e);
-	  mSGNL [< 'sTR "could not load the VERNACRC file" >]);
+	 (msgnl (Errors.explain_exn e);
+	  msgnl (str "could not load the VERNACRC file"));
 	 try
-	   mSGNL [< 'sTR vernacrc >]
+	   msgnl (str vernacrc)
 	 with
 	     e -> ());
 (try let user_vernacrc =
    try Some(Sys.getenv "USERVERNACRC")
    with
      | Not_found as e ->
-	 mSGNL [< 'sTR "no .vernacrc file" >]; None in
+	 msgnl (str "no .vernacrc file"); None in
    (match user_vernacrc with
       	Some f -> coqparser_loop (open_in f)
       | None -> ())
  with
    | End_of_file -> ()
    | e ->
-       mSGNL (Errors.explain_exn e);
-       mSGNL [< 'sTR "error in your .vernacrc file" >]);
-mSGNL [< 'sTR "Starting Centaur Specialized Parser Loop" >];
+       msgnl (Errors.explain_exn e);
+       msgnl (str "error in your .vernacrc file"));
+msgnl (str "Starting Centaur Specialized Parser Loop");
 try
   coqparser_loop stdin
 with 
   | End_of_file -> ()
-  | e -> mSGNL(Errors.explain_exn e))
+  | e -> msgnl(Errors.explain_exn e))

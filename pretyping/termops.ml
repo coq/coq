@@ -18,10 +18,10 @@ open Nametab
 open Sign
 
 let print_sort = function
-  | Prop Pos -> [< 'sTR "Set" >]
-  | Prop Null -> [< 'sTR "Prop" >]
-(*  | Type _ -> [< 'sTR "Type" >] *)
-  | Type u -> [< 'sTR "Type("; Univ.pr_uni u; 'sTR ")" >]
+  | Prop Pos -> (str "Set")
+  | Prop Null -> (str "Prop")
+(*  | Type _ -> (str "Type") *)
+  | Type u -> (str "Type(" ++ Univ.pr_uni u ++ str ")")
 
 let current_module = ref empty_dirpath
 
@@ -41,10 +41,10 @@ let new_sort_in_family = function
 
 
 (* prod_it b [xn:Tn;..;x1:T1] = (x1:T1)..(xn:Tn)b *)
-let prod_it = List.fold_left (fun c (n,t)  -> mkProd (n, t, c))
+let prod_it ~init = List.fold_left (fun c (n,t)  -> mkProd (n, t, c)) init
 
 (* lam_it b [xn:Tn;..;x1:T1] = [x1:T1]..[xn:Tn]b *)
-let lam_it = List.fold_left (fun c (n,t)  -> mkLambda (n, t, c))
+let lam_it ~init = List.fold_left (fun c (n,t)  -> mkLambda (n, t, c)) init
 
 (* [Rel (n+m);...;Rel(n+1)] *)
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
@@ -104,12 +104,17 @@ let mkProd_wo_LetIn (na,body,t) c =
     | None -> mkProd (na, body_of_type t, c)
     | Some b -> subst1 b c
 
-let it_mkProd_wo_LetIn   = List.fold_left (fun c d -> mkProd_wo_LetIn d c)
-let it_mkProd_or_LetIn   = List.fold_left (fun c d -> mkProd_or_LetIn d c)
+let it_mkProd_wo_LetIn ~init = 
+  List.fold_left (fun c d -> mkProd_wo_LetIn d c) init
 
-let it_mkLambda_or_LetIn = List.fold_left (fun c d -> mkLambda_or_LetIn d c)
+let it_mkProd_or_LetIn ~init = 
+  List.fold_left (fun c d -> mkProd_or_LetIn d c) init
 
-let it_named_context_quantifier f = List.fold_left (fun c d -> f d c)
+let it_mkLambda_or_LetIn ~init =
+  List.fold_left (fun c d -> mkLambda_or_LetIn d c) init
+
+let it_named_context_quantifier f ~init = 
+  List.fold_left (fun c d -> f d c) init
 
 let it_mkNamedProd_or_LetIn = it_named_context_quantifier mkNamedProd_or_LetIn
 let it_mkNamedLambda_or_LetIn = it_named_context_quantifier mkNamedLambda_or_LetIn
@@ -469,7 +474,7 @@ let subst_term_occ locs c t =
   else 
     let (nbocc,t') = subst_term_occ_gen locs 1 c t in
     if List.exists (fun o -> o >= nbocc or o <= -nbocc) locs then
-      errorlabstrm "subst_term_occ" [< 'sTR "Too few occurences" >];
+      errorlabstrm "subst_term_occ" (str "Too few occurences");
     t'
 
 let subst_term_occ_decl locs c (id,bodyopt,typ as d) =
@@ -484,7 +489,7 @@ let subst_term_occ_decl locs c (id,bodyopt,typ as d) =
 	  let (nbocc,body') = subst_term_occ_gen locs 1 c body in
 	  let (nbocc',t') = subst_term_occ_gen locs nbocc c typ in
 	  if List.exists (fun o -> o >= nbocc' or o <= -nbocc') locs then
-	    errorlabstrm "subst_term_occ_decl" [< 'sTR "Too few occurences" >];
+	    errorlabstrm "subst_term_occ_decl" (str "Too few occurences");
 	  (id,Some body',t')
 
 
@@ -709,7 +714,7 @@ let lift_rel_context n sign =
   in
   liftrec (rel_context_length sign) sign
 
-let fold_named_context_both_sides = list_fold_right_and_left
+let fold_named_context_both_sides f l ~init = list_fold_right_and_left f l init
 
 let rec mem_named_context id = function
   | (id',_,_) :: _ when id=id' -> true

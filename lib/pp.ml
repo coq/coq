@@ -48,7 +48,10 @@ type 'a ppdir_token =
   | Ppdir_print_newline
   | Ppdir_print_flush
 
-type std_ppcmds = (int*string) ppcmd_token Stream.t
+type ppcmd = (int*string) ppcmd_token
+
+type std_ppcmds = ppcmd Stream.t
+
 type 'a ppdirs = 'a ppdir_token Stream.t
 
 (* Compute length of an UTF-8 encoded string
@@ -88,41 +91,43 @@ let utf8_length s =
   !cnt
 
 (* formatting commands *)
-let sTR s = Ppcmd_print (utf8_length s,s)
-let sTRas (i,s) = Ppcmd_print (i,s)
-let bRK (a,b) = Ppcmd_print_break (a,b)
-let tBRK (a,b) = Ppcmd_print_tbreak (a,b)
-let tAB = Ppcmd_set_tab
-let fNL = Ppcmd_force_newline
-let pifB = Ppcmd_print_if_broken
-let wS n = Ppcmd_white_space n
+let str s = [< 'Ppcmd_print (utf8_length s,s) >]
+let stras (i,s) = [< 'Ppcmd_print (i,s) >]
+let brk (a,b) = [< 'Ppcmd_print_break (a,b) >]
+let tbrk (a,b) = [< 'Ppcmd_print_tbreak (a,b) >]
+let tab () = [< 'Ppcmd_set_tab >]
+let fnl () = [< 'Ppcmd_force_newline >]
+let pifb () = [< 'Ppcmd_print_if_broken >]
+let ws n = [< 'Ppcmd_white_space n >]
 
 (* derived commands *)
-let sPC = Ppcmd_print_break (1,0)
-let cUT = Ppcmd_print_break (0,0)
-let aLIGN = Ppcmd_print_break (0,0)
-let iNT n = sTR (string_of_int n)
-let rEAL r = sTR (string_of_float r)
-let bOOL b = sTR (string_of_bool b)
-let qSTRING s = sTR ("\""^(String.escaped s)^"\"")
-let qS = qSTRING
+let spc () = [< 'Ppcmd_print_break (1,0) >]
+let cut () = [< 'Ppcmd_print_break (0,0) >]
+let align () = [< 'Ppcmd_print_break (0,0) >]
+let int n = str (string_of_int n)
+let real r = str (string_of_float r)
+let bool b = str (string_of_bool b)
+let qstring s = str ("\""^(String.escaped s)^"\"")
+let qs = qstring
+let mt () = [< >]
 
 (* boxing commands *)
 let h n s = [< 'Ppcmd_box(Pp_hbox n,s) >]
 let v n s = [< 'Ppcmd_box(Pp_vbox n,s) >]
-let hV n s = [< 'Ppcmd_box(Pp_hvbox n,s) >]
-let hOV n s = [< 'Ppcmd_box(Pp_hovbox n,s) >]
+let hv n s = [< 'Ppcmd_box(Pp_hvbox n,s) >]
+let hov n s = [< 'Ppcmd_box(Pp_hovbox n,s) >]
 let t s = [< 'Ppcmd_box(Pp_tbox,s) >]
 
 (* Opening and closing of boxes *)
-let hB n = Ppcmd_open_box(Pp_hbox n)
-let vB n = Ppcmd_open_box(Pp_vbox n)
-let hVB n = Ppcmd_open_box(Pp_hvbox n)
-let hOVB n = Ppcmd_open_box(Pp_hovbox n)
-let tB = Ppcmd_open_box Pp_tbox
-let cLOSE = Ppcmd_close_box
-let tCLOSE = Ppcmd_close_tbox
+let hb n = [< 'Ppcmd_open_box(Pp_hbox n) >]
+let vb n = [< 'Ppcmd_open_box(Pp_vbox n) >]
+let hvb n = [< 'Ppcmd_open_box(Pp_hvbox n) >]
+let hovb n = [< 'Ppcmd_open_box(Pp_hovbox n) >]
+let tb () = [< 'Ppcmd_open_box Pp_tbox >]
+let close () = [< 'Ppcmd_close_box >]
+let tclose () = [< 'Ppcmd_close_tbox >]
 
+let (++) = Stream.iapp
 
 (* pretty printing functions *)
 let pp_dirs ft = 
@@ -167,51 +172,51 @@ let pp_dirs ft =
 let pp_std_dirs = pp_dirs std_ft
 let pp_err_dirs = pp_dirs err_ft
 
-let pPCMDS x = Ppdir_ppcmds x
+let ppcmds x = Ppdir_ppcmds x
 
 (* pretty printing functions WITHOUT FLUSH *)
-let pP_with ft strm =
-  pp_dirs ft [< 'pPCMDS strm >]
+let pp_with ft strm =
+  pp_dirs ft [< 'Ppdir_ppcmds strm >]
 
-let pPNL_with ft strm =
-  pp_dirs ft [< 'pPCMDS [< strm ; 'Ppcmd_force_newline >] >]
+let ppnl_with ft strm =
+  pp_dirs ft [< 'Ppdir_ppcmds [< strm ; 'Ppcmd_force_newline >] >]
 
 let warning_with ft string =
-  pPNL_with ft [< 'sTR"Warning: " ; 'sTR string >]
+  ppnl_with ft [< str "Warning: " ; str string >]
 
-let wARN_with ft pps =
-  pPNL_with ft [< 'sTR"Warning: " ; pps >]
+let warn_with ft pps =
+  ppnl_with ft [< str "Warning: " ; pps >]
 
 let pp_flush_with ft =
   Format.pp_print_flush ft
 
 
 (* pretty printing functions WITH FLUSH *)
-let mSG_with ft strm =
-  pp_dirs ft [< 'pPCMDS strm ; 'Ppdir_print_flush >]
+let msg_with ft strm =
+  pp_dirs ft [< 'Ppdir_ppcmds strm ; 'Ppdir_print_flush >]
 
-let mSGNL_with ft strm =
-  pp_dirs ft [< 'pPCMDS strm ; 'Ppdir_print_newline >]
+let msgnl_with ft strm =
+  pp_dirs ft [< 'Ppdir_ppcmds strm ; 'Ppdir_print_newline >]
 
-let wARNING_with ft strm=
-  pp_dirs ft [<'pPCMDS ([<'sTR "Warning: "; strm>]); 'Ppdir_print_newline>]
+let msg_warning_with ft strm=
+  pp_dirs ft [< 'Ppdir_ppcmds [< str "Warning: "; strm>]; 
+		'Ppdir_print_newline >]
 
 
 (* pretty printing functions WITHOUT FLUSH *)
-let pP        = pP_with std_ft
-let pPNL      = pPNL_with std_ft
-let pPERR     = pP_with err_ft
-let pPERRNL   = pPNL_with err_ft
-let message s = pPNL [< 'sTR s >]
+let pp        = pp_with std_ft
+let ppnl      = ppnl_with std_ft
+let pperr     = pp_with err_ft
+let pperrnl   = ppnl_with err_ft
+let message s = ppnl (str s)
 let warning   = warning_with std_ft
-let wARN      = wARN_with std_ft
+let warn      = warn_with std_ft
 let pp_flush  = Format.pp_print_flush std_ft
 let flush_all() = flush stderr; flush stdout; pp_flush()
 
 (* pretty printing functions WITH FLUSH *)
-let mSG = mSG_with std_ft
-let mSGNL = mSGNL_with std_ft
-let mSGERR = mSG_with err_ft
-let mSGERRNL = mSGNL_with err_ft
-let wARNING = wARNING_with std_ft
-
+let msg = msg_with std_ft
+let msgnl = msgnl_with std_ft
+let msgerr = msg_with err_ft
+let msgerrnl = msgnl_with err_ft
+let msg_warning = msg_warning_with std_ft

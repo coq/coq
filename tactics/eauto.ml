@@ -78,7 +78,7 @@ let prolog_tac l n gl =
  (* let l = List.map (pf_interp_constr gl) lcom in *)
   try (prolog l n gl)
   with UserError ("Refiner.tclFIRST",_) ->
-    errorlabstrm "Prolog.prolog" [< 'sTR "Prolog failed" >]
+    errorlabstrm "Prolog.prolog" (str "Prolog failed")
 
 let vernac_prolog =
   let uncom = function
@@ -218,7 +218,7 @@ module SearchProblem = struct
 	  filter_tactics s.tacres
 	    (List.map 
 	       (fun id -> (e_give_exact_constr (mkVar id),
-			   [< 'sTR "Exact"; 'sPC; pr_id id>]))
+			   (str "Exact" ++ spc () ++ pr_id id)))
 	       (pf_ids_of_hyps g))
 	in
 	List.map (fun (res,pp) -> { depth = s.depth; tacres = res;
@@ -236,7 +236,7 @@ module SearchProblem = struct
 	     { depth = s.depth; tacres = res; 
 	       last_tactic = pp; dblist = s.dblist;
 	       localdb = ldb :: List.tl s.localdb })
-	  (filter_tactics s.tacres [Tactics.intro,[< 'sTR "Intro" >]])
+	  (filter_tactics s.tacres [Tactics.intro,(str "Intro")])
       in
       let rec_tacs = 
 	let l = 
@@ -259,8 +259,8 @@ module SearchProblem = struct
       List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
 
   let pp s = 
-    mSG (hOV 0 [< 'sTR " depth="; 'iNT s.depth; 'sPC; 
-		  s.last_tactic; 'sTR "\n" >])
+    msg (hov 0 (str " depth=" ++ int s.depth ++ spc () ++ 
+		  s.last_tactic ++ str "\n"))
 
 end
 
@@ -269,7 +269,7 @@ module Search = Explore.Make(SearchProblem)
 let make_initial_state n gl dblist localdb =
   { SearchProblem.depth = n;
     SearchProblem.tacres = tclIDTAC gl;
-    SearchProblem.last_tactic = [< >];
+    SearchProblem.last_tactic = (mt ());
     SearchProblem.dblist = dblist;
     SearchProblem.localdb = [localdb] }
 

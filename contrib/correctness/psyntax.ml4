@@ -490,12 +490,12 @@ open Declare
 
 let is_assumed global ids =
   if List.length ids = 1 then
-    mSGNL [< 'sTR (if global then "A global variable " else ""); 
-	     pr_id (List.hd ids); 'sTR " is assumed" >]
+    msgnl (str (if global then "A global variable " else "") ++ 
+	     pr_id (List.hd ids) ++ str " is assumed")
   else
-    mSGNL [< 'sTR (if global then "Some global variables " else "");
-	     prlist_with_sep (fun () -> [< 'sTR ", " >]) pr_id ids;
-	     'sTR " are assumed" >]
+    msgnl (str (if global then "Some global variables " else "") ++
+	     prlist_with_sep (fun () -> (str ", ")) pr_id ids ++
+	     str " are assumed")
 
 let add = vinterp_add
 
@@ -521,10 +521,10 @@ let _ =
 	   (fun () ->
 	      fold_all 
 		(fun (id,v) _ -> 
-		   mSGNL [< pr_id id; 'sTR " : "; 
-			    hOV 2 (match v with TypeV v -> pp_type_v v
-				     | Set -> [< 'sTR "Set" >]);
-			    'fNL >])
+		   msgnl (pr_id id ++ str " : " ++ 
+			    hov 2 (match v with TypeV v -> pp_type_v v
+				     | Set -> (str "Set")) ++
+			    fnl ()))
 		Penv.empty ())
        | _ -> assert false)
 
@@ -539,7 +539,7 @@ let _ =
 	      List.iter
 		(fun id -> if Penv.is_global id then
 		   Util.errorlabstrm "PROGVARIABLE"
-		     [< 'sTR"Clash with previous constant "; pr_id id >])
+		     (str"Clash with previous constant " ++ pr_id id))
 		ids;
 	      let v = out_typev d in
 	      Pdb.check_type_v (all_refs ()) v;
@@ -575,13 +575,13 @@ GEXTEND Gram
 
     | IDENT "Correctness"; s = IDENT; p = Programs.program; "." ->
 	let d = Ast.dynamic (in_prog p) in
-	let str = Ast.str s in
+	let str = Ast.string s in
 	<:ast< (CORRECTNESS $str (VERNACDYN $d)) >>
 
     | IDENT "Correctness"; s = IDENT; p = Programs.program; ";";
       tac = Tactic.tactic; "." ->
 	let d = Ast.dynamic (in_prog p) in
-	let str = Ast.str s in
+	let str = Ast.string s in
 	<:ast< (CORRECTNESS $str (VERNACDYN $d) (TACTIC $tac)) >> ] ];
   Pcoq.Vernac_.command:
   [ [ IDENT "Debug"; IDENT "on"; "." -> <:ast< (PROGDEBUGON) >>

@@ -111,8 +111,8 @@ let rec vernac interpfun input =
 	  let tstart = System.get_time() in
           interp v;
 	  let tend = System.get_time() in
-          mSGNL [< 'sTR"Finished transaction in " ;
-                   System.fmt_time_difference tstart tend >]
+          msgnl (str"Finished transaction in " ++
+                   System.fmt_time_difference tstart tend)
 	    
       | _ -> if not !just_parsing then interpfun com
   in 

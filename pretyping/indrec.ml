@@ -533,7 +533,7 @@ let declare_one_elimination ind =
           const_entry_type = None;
           const_entry_opaque = false }, 
        NeverDischarge) in
-    Options.if_verbose pPNL [< 'sTR na; 'sTR " is defined" >]
+    Options.if_verbose ppnl (str na ++ str " is defined")
   in
   let env = Global.env () in
   let sigma = Evd.empty in
@@ -575,9 +575,9 @@ let lookup_eliminator ind_sp s =
     try construct_reference env id
     with Not_found ->
       errorlabstrm "default_elim"
-	[< 'sTR "Cannot find the elimination combinator :";
-           pr_id id; 'sPC;
-	   'sTR "The elimination of the inductive definition :";
-           pr_id base; 'sPC; 'sTR "on sort "; 
-           'sPC; print_sort (new_sort_in_family s) ;
-	   'sTR " is probably not allowed" >]
+	(str "Cannot find the elimination combinator :" ++
+           pr_id id ++ spc () ++
+	   str "The elimination of the inductive definition :" ++
+           pr_id base ++ spc () ++ str "on sort " ++ 
+           spc () ++ print_sort (new_sort_in_family s) ++
+	   str " is probably not allowed")

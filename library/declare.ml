@@ -84,17 +84,17 @@ let _ = Summary.declare_summary "VARIABLE"
 	    Summary.init_function = (fun () -> vartab := Idmap.empty);
 	    Summary.survive_section = false }
 
-let cache_variable (sp,(id,(p,d,str))) =
+let cache_variable (sp,(id,(p,d,strength))) =
   (* Constr raisonne sur les noms courts *)
   if Idmap.mem id !vartab then
-    errorlabstrm "cache_variable" [< pr_id id; 'sTR " already exists" >];
+    errorlabstrm "cache_variable" (pr_id id ++ str " already exists");
   let cst = match d with (* Fails if not well-typed *)
     | SectionLocalAssum ty -> Global.push_named_assum (id,ty)
     | SectionLocalDef (c,t) -> Global.push_named_def (id,c,t) in
   let (_,bd,ty) = Global.lookup_named id in
   let vd = (bd,ty,cst) in
   Nametab.push 0 (restrict_path 0 sp) (VarRef id);
-  vartab := Idmap.add id (p,vd,str) !vartab
+  vartab := Idmap.add id (p,vd,strength) !vartab
 
 let (in_variable, out_variable) =
   let od = {
@@ -125,7 +125,7 @@ let _ = Summary.declare_summary "CONSTANT"
 let cache_constant (sp,(cdt,stre)) =
   (if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
-    errorlabstrm "cache_constant" [< pr_id id; 'sTR " already exists" >]);
+    errorlabstrm "cache_constant" (pr_id id ++ str " already exists"));
   Global.add_constant sp cdt;
   (match stre with
     | DischargeAt (dp,n) when not (is_dirpath_prefix_of dp (Lib.cwd ())) ->
@@ -143,7 +143,7 @@ let cache_constant (sp,(cdt,stre)) =
 let load_constant (sp,(ce,stre)) =
   (if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
-    errorlabstrm "cache_constant" [< pr_id id; 'sTR " already exists" >]);
+    errorlabstrm "cache_constant" (pr_id id ++ str " already exists"));
   csttab := Spmap.add sp stre !csttab;
   Nametab.push (depth_of_strength stre + 1) sp (ConstRef sp)
 
@@ -206,7 +206,7 @@ let inductive_names sp mie =
 let check_exists_inductive (sp,_) =
   if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
-    errorlabstrm "cache_inductive" [< pr_id id; 'sTR " already exists" >]
+    errorlabstrm "cache_inductive" (pr_id id ++ str " already exists")
 
 let cache_inductive (sp,mie) =
   let names = inductive_names sp mie in

@@ -36,11 +36,11 @@ let preamble prm =
     | None -> "Main" 
     | Some m -> String.capitalize (string_of_id m) 
   in 
-  [< 'sTR "module "; 'sTR m; 'sTR " where"; 'fNL; 'fNL;
-     'sTR "type Prop = ()"; 'fNL;
-     'sTR "prop = ()"; 'fNL; 'fNL;
-     'sTR "type Arity = ()"; 'fNL;
-     'sTR "arity = ()"; 'fNL; 'fNL >]
+  (str "module " ++ str m ++ str " where" ++ fnl () ++ fnl () ++
+     str "type Prop = ()" ++ fnl () ++
+     str "prop = ()" ++ fnl () ++ fnl () ++
+     str "type Arity = ()" ++ fnl () ++
+     str "arity = ()" ++ fnl () ++ fnl ())
 
 (*s The pretty-printing functor. *)
 
@@ -65,23 +65,23 @@ let rec pp_type par t =
 	   | [] -> assert false
 	   | [t] -> pp_rec par t
 	   | t::l -> 
-	       [< open_par par;
-		  pp_rec false t; 'sPC;
-		  prlist_with_sep (fun () -> [< 'sPC >]) (pp_type true) l; 
-		  close_par par >])
+	       (open_par par ++
+		  pp_rec false t ++ spc () ++
+		  prlist_with_sep (fun () -> (spc ())) (pp_type true) l ++ 
+		  close_par par))
     | Tarr (t1,t2) ->
-	[< open_par par; pp_rec true t1; 'sPC; 'sTR "->"; 'sPC; 
-	   pp_rec false t2; close_par par >]
+	(open_par par ++ pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ 
+	   pp_rec false t2 ++ close_par par)
     | Tglob r -> 
 	pp_type_global r
     | Texn s -> 
-	[< string ("() -- " ^ s) ; 'fNL >]
+	(string ("() -- " ^ s) ++ fnl ())
     | Tprop ->
 	string "Prop"
     | Tarity ->
 	string "Arity"
   in 
-  hOV 0 (pp_rec par t)
+  hov 0 (pp_rec par t)
 
 (*s Pretty-printing of expressions. [par] indicates whether
     parentheses are needed or not. [env] is the list of names for the
@@ -96,9 +96,9 @@ let expr_needs_par = function
 let rec pp_expr par env args = 
   let apply st = match args with
     | [] -> st
-    | _  -> hOV 2 [< open_par par; st; 'sPC;
-                     prlist_with_sep (fun () -> [< 'sPC >]) (fun s -> s) args;
-                     close_par par >] 
+    | _  -> hov 2 (open_par par ++ st ++ spc () ++
+                     prlist_with_sep (fun () -> (spc ())) (fun s -> s) args ++
+                     close_par par) 
   in
   function
     | MLrel n -> 
@@ -109,155 +109,155 @@ let rec pp_expr par env args =
     | MLlam _ as a -> 
       	let fl,a' = collect_lams a in
 	let fl,env' = push_vars fl env in
-	let st = [< pp_abst (List.rev fl); pp_expr false env' [] a' >] in
+	let st = (pp_abst (List.rev fl) ++ pp_expr false env' [] a') in
 	if args = [] then
-          [< open_par par; st; close_par par >]
+          (open_par par ++ st ++ close_par par)
         else
-          apply [< 'sTR "("; st; 'sTR ")" >]
+          apply (str "(" ++ st ++ str ")")
     | MLletin (id,a1,a2) ->
 	let id',env' = push_vars [id] env in
 	let par' = par || args <> [] in
 	let par2 = not par' && expr_needs_par a2 in
 	apply 
-	  (hOV 0 [< open_par par';
-		    hOV 2 [< 'sTR "let "; pr_id (List.hd id'); 'sTR " ="; 'sPC;
-			     pp_expr false env [] a1; 'sPC; 'sTR "in" >];
-		    'sPC;
-		    pp_expr par2 env' [] a2;
-		    close_par par' >])
+	  (hov 0 (open_par par' ++
+		    hov 2 (str "let " ++ pr_id (List.hd id') ++ str " =" ++ spc () ++
+			     pp_expr false env [] a1 ++ spc () ++ str "in") ++
+		    spc () ++
+		    pp_expr par2 env' [] a2 ++
+		    close_par par'))
     | MLglob r -> 
 	apply (pp_global r)
     | MLcons (r,[]) ->
 	pp_global r
     | MLcons (r,[a]) ->
-	[< open_par par; pp_global r; 'sPC;
-	   pp_expr true env [] a; close_par par >]
+	(open_par par ++ pp_global r ++ spc () ++
+	   pp_expr true env [] a ++ close_par par)
     | MLcons (r,args') ->
-	[< open_par par; pp_global r; 'sPC;
-	   prlist_with_sep (fun () -> [< 'sPC >]) (pp_expr true env []) args';
-	   close_par par >]
+	(open_par par ++ pp_global r ++ spc () ++
+	   prlist_with_sep (fun () -> (spc ())) (pp_expr true env []) args' ++
+	   close_par par)
     | MLcase (t, pv) ->
       	apply
-      	  [< if args <> [] then [< 'sTR "(" >]  else open_par par;
-      	     v 0 [< 'sTR "case "; pp_expr false env [] t; 'sTR " of";
-		    'fNL; 'sTR "  "; pp_pat env pv >];
-	     if args <> [] then [< 'sTR ")" >] else close_par par >]
+      	  (if args <> [] then (str "(")  else open_par par ++
+      	     v 0 (str "case " ++ pp_expr false env [] t ++ str " of" ++
+		    fnl () ++ str "  " ++ pp_pat env pv) ++
+	     if args <> [] then (str ")") else close_par par)
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' (Some i) (Array.of_list (List.rev ids'),defs) args
-    | MLexn str -> 
-	[< open_par par; 'sTR "error"; 'sPC; 'qS str; close_par par >]
+    | MLexn s -> 
+	(open_par par ++ str "error" ++ spc () ++ qs s ++ close_par par)
     | MLprop ->
 	string "prop"
     | MLarity ->
 	string "arity"
     | MLcast (a,t) ->
-	[< open_par true; pp_expr false env args a; 'sPC; 'sTR "::"; 'sPC; 
-	   pp_type false t; close_par true >]
+	(open_par true ++ pp_expr false env args a ++ spc () ++ str "::" ++ spc () ++ 
+	   pp_type false t ++ close_par true)
     | MLmagic a ->
-	[< open_par true; 'sTR "Obj.magic"; 'sPC; 
-	   pp_expr false env args a; close_par true >]
+	(open_par true ++ str "Obj.magic" ++ spc () ++ 
+	   pp_expr false env args a ++ close_par true)
 
 and pp_pat env pv = 
   let pp_one_pat (name,ids,t) =
     let ids,env' = push_vars (List.rev ids) env in
     let par = expr_needs_par t in
-    hOV 2 [< pp_global name;
+    hov 2 (pp_global name ++
 	     begin match ids with 
-	       | [] -> [< >]
-	       | _  -> [< 'sTR " "; 
+	       | [] -> (mt ())
+	       | _  -> (str " " ++ 
 			  prlist_with_sep 
-			    (fun () -> [< 'sPC >]) pr_id (List.rev ids) >]
-	     end;
-	     'sTR " ->"; 'sPC; pp_expr par env' [] t >]
+			    (fun () -> (spc ())) pr_id (List.rev ids))
+	     end ++
+	     str " ->" ++ spc () ++ pp_expr par env' [] t)
   in 
-  [< prvect_with_sep (fun () -> [< 'fNL; 'sTR "  " >]) pp_one_pat pv >]
+  (prvect_with_sep (fun () -> (fnl () ++ str "  ")) pp_one_pat pv)
 
 (*s names of the functions ([ids]) are already pushed in [env],
     and passed here just for convenience. *)
 
 and pp_fix par env in_p (ids,bl) args =
-  [< open_par par; 
-     v 0 [< 'sTR "let { " ;
+  (open_par par ++ 
+     v 0 (str "let { " ++
 	    prvect_with_sep
-      	      (fun () -> [< 'sTR "; "; 'fNL >])
+      	      (fun () -> (str "; " ++ fnl ()))
 	      (fun (fi,ti) -> pp_function env (pr_id fi) ti)
-	      (array_map2 (fun id b -> (id,b)) ids bl);
-	    'sTR " }";'fNL;
+	      (array_map2 (fun id b -> (id,b)) ids bl) ++
+	    str " }" ++fnl () ++
 	    match in_p with
 	      | Some j -> 
-      		  hOV 2 [< 'sTR "in "; pr_id ids.(j);
+      		  hov 2 (str "in " ++ pr_id ids.(j) ++
 			   if args <> [] then
-			     [< 'sTR " "; 
-				prlist_with_sep (fun () -> [<'sTR " ">])
-				  (fun s -> s) args >]
+			     (str " " ++ 
+				prlist_with_sep (fun () -> (str " "))
+				  (fun s -> s) args)
 			   else
-			     [< >] >]
+			     (mt ()))
 	      | None -> 
-		  [< >] >];
-     close_par par >]
+		  (mt ())) ++
+     close_par par)
 
 and pp_function env f t =
   let bl,t' = collect_lams t in
   let bl,env' = push_vars bl env in
-  [< f; pr_binding (List.rev bl);
-     'sTR " ="; 'fNL; 'sTR "  ";
-     hOV 2 (pp_expr false env' [] t') >]
+  (f ++ pr_binding (List.rev bl) ++
+     str " =" ++ fnl () ++ str "  " ++
+     hov 2 (pp_expr false env' [] t'))
 	
-let pp_ast a = hOV 0 (pp_expr false (empty_env ()) [] a)
+let pp_ast a = hov 0 (pp_expr false (empty_env ()) [] a)
 
 (*s Pretty-printing of inductive types declaration. *)
 
 let pp_one_inductive (pl,name,cl) =
   let pp_constructor (id,l) =
-    [< pp_global id;
+    (pp_global id ++
        match l with
-         | [] -> [< >] 
-	 | _  -> [< 'sTR " " ;
+         | [] -> (mt ()) 
+	 | _  -> (str " " ++
       	       	    prlist_with_sep 
-		      (fun () -> [< 'sTR " " >]) (pp_type true) l >] >]
+		      (fun () -> (str " ")) (pp_type true) l))
   in
-  [< 'sTR (if cl = [] then "type " else "data "); 
-     pp_type_global name; 'sTR " ";
-     prlist_with_sep (fun () -> [< 'sTR " " >]) pr_lower_id pl;
-     if pl = [] then [< >] else [< 'sTR " " >];
-     [< v 0 [< 'sTR "= ";
-	       prlist_with_sep (fun () -> [< 'fNL; 'sTR "  | " >])
-                 pp_constructor cl >] >] >]
+  (str (if cl = [] then "type " else "data ") ++ 
+     pp_type_global name ++ str " " ++
+     prlist_with_sep (fun () -> (str " ")) pr_lower_id pl ++
+     if pl = [] then (mt ()) else (str " ") ++
+     (v 0 (str "= " ++
+	       prlist_with_sep (fun () -> (fnl () ++ str "  | "))
+                 pp_constructor cl)))
 
 let pp_inductive il =
-  [< prlist_with_sep (fun () -> [< 'fNL >]) pp_one_inductive il; 'fNL >]
+  (prlist_with_sep (fun () -> (fnl ())) pp_one_inductive il ++ fnl ())
 
 (*s Pretty-printing of a declaration. *)
 
 let pp_decl = function
   | Dtype ([], _) -> 
-      [< >]
+      (mt ())
   | Dtype (i, _) -> 
-      hOV 0 (pp_inductive i)
+      hov 0 (pp_inductive i)
   | Dabbrev (r, l, t) ->
-      hOV 0 [< 'sTR "type "; pp_type_global r; 'sPC; 
-	       prlist_with_sep (fun () -> [< 'sTR " " >]) pr_lower_id l;
-	       if l <> [] then [< 'sTR " " >] else [< >]; 'sTR "="; 'sPC;
-	       pp_type false t; 'fNL >]
+      hov 0 (str "type " ++ pp_type_global r ++ spc () ++ 
+	       prlist_with_sep (fun () -> (str " ")) pr_lower_id l ++
+	       if l <> [] then (str " ") else (mt ()) ++ str "=" ++ spc () ++
+	       pp_type false t ++ fnl ())
   | Dglob (r, MLfix (i,ids,defs)) ->
       let env = empty_env () in
       let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
-      [< prlist_with_sep (fun () -> [< 'fNL >])
+      (prlist_with_sep (fun () -> (fnl ()))
 	   (fun (fi,ti) -> pp_function env' (pr_id fi) ti)
-	   (List.combine (List.rev ids') (Array.to_list defs));
-	 'fNL;
+	   (List.combine (List.rev ids') (Array.to_list defs)) ++
+	 fnl () ++
 	 let id = rename_global r in
 	 let idi = List.nth (List.rev ids') i in
 	 if id <> idi then
-	   [< 'fNL; pr_id id; 'sTR " = "; pr_id idi; 'fNL >]
+	   (fnl () ++ pr_id id ++ str " = " ++ pr_id idi ++ fnl ())
 	 else
-	   [< >] >]
+	   (mt ()))
   | Dglob (r, a) ->
-      hOV 0 [< pp_function (empty_env ()) (pp_global r) a; 'fNL >]
+      hov 0 (pp_function (empty_env ()) (pp_global r) a ++ fnl ())
   | Dcustom (r,s) -> 
-      hOV 0  [< pp_global r; 'sTR " ="; 
-		'sPC; 'sTR s; 'fNL  >]
+      hov 0  (pp_global r ++ str " =" ++ 
+		spc () ++ str s ++ fnl ())
 
 let pp_type = pp_type false
 

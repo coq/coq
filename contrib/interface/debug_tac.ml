@@ -183,7 +183,7 @@ and checked_thens: report_holder -> Coqast.t -> Coqast.t list -> tactic =
 	  | Recursive_fail tr -> Tree_fail tr
 	  | Fail -> Failed 1
 	  | _ -> errorlabstrm "check_thens"
-                  [< 'sTR "this case should not happen in check_thens">])::
+                  (str "this case should not happen in check_thens"))::
 	  !report_holder);
       result)
 
@@ -297,8 +297,8 @@ let rec reconstruct_success_tac ast =
 	| _ ->
 	    errorlabstrm
 	      "this error case should not happen on an unknown tactic"
-              [< 'sTR "error in reconstruction with "; 'fNL;
-		(gentacpr ast) >]);;
+              (str "error in reconstruction with " ++ fnl () ++
+	       (gentacpr ast)));;
 	  
 
 let rec path_to_first_error = function
@@ -332,15 +332,16 @@ let debug_tac = function
       	let clean_ast = expand_tactic ast in
       	let report_tree =
           try List.hd !report with
-	    Failure "hd" -> (mSGNL [< 'sTR "report is empty" >]; Failed 1) in
+	    Failure "hd" -> (msgnl (str "report is empty"); Failed 1) in
       	let success_tac = 
 	  reconstruct_success_tac clean_ast report_tree in
         let compact_success_tac =
 	  flatten_then success_tac in
-      	mSGNL [< 'fNL; 'sTR "=========    Successful tactic    ============="; 
-                 'fNL;
-	      	gentacpr compact_success_tac; 'fNL;
-	      	'sTR "========= End of successful tactic ============">];
+      	msgnl (fnl () ++
+	       str "=========    Successful tactic    =============" ++
+               fnl () ++
+	       gentacpr compact_success_tac ++ fnl () ++
+	       str "========= End of successful tactic ============");
       	result)
   | _ -> error "wrong arguments for debug_tac";;
 
@@ -427,10 +428,9 @@ let rec report_error
 	    with
 	      e ->
 		if !the_count > 1 then
-		  mSGNL
-		    [< 'sTR "in branch no "; 'iNT !the_count; 
-		      'sTR " after tactic ";
-		      gentacpr a >];
+		  msgnl
+		    (str "in branch no " ++ int !the_count ++
+		     str " after tactic " ++ gentacpr a);
 		raise e)
     | Node(_, "TACTICLIST", a::b::c::tl) ->
 	report_error (ope("TACTICLIST", (ope("TACTICLIST", [a;b]))::c::tl))
@@ -458,16 +458,16 @@ let descr_first_error = function
 	let the_path = ref ([] : int list) in
 	try
 	  let result = report_error ast the_goal the_ast the_path [] g in
-	  mSGNL [< 'sTR "no Error here" >];
+	  msgnl (str "no Error here");
 	  result
 	with
 	  e ->
-	    (mSGNL [< 'sTR "Execution of this tactic raised message " ; 'fNL;
-		     'fNL; Errors.explain_exn e; 'fNL;
-		     'fNL; 'sTR "on goal" ; 'fNL;
-		     pr_goal (sig_it (strip_some !the_goal)); 'fNL;
-		     'sTR "faulty tactic is"; 'fNL; 'fNL;
-		     gentacpr (flatten_then !the_ast); 'fNL >];
+	    (msgnl (str "Execution of this tactic raised message " ++ fnl () ++
+		    fnl () ++ Errors.explain_exn e ++ fnl () ++
+		    fnl () ++ str "on goal"  ++ fnl () ++
+		    pr_goal (sig_it (strip_some !the_goal)) ++ fnl () ++
+		    str "faulty tactic is" ++ fnl () ++ fnl () ++
+		    gentacpr (flatten_then !the_ast) ++ fnl ());
 	     tclIDTAC g))
   | _ -> error "wrong arguments for descr_first_error";;
 

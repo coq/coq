@@ -168,12 +168,12 @@ val pr_int : int -> std_ppcmds
 val pr_str : string -> std_ppcmds
 val pr_coma : unit -> std_ppcmds
 
-val prlist : ('a -> 'b Stream.t) -> 'a list -> 'b Stream.t
-val prvecti : (int -> 'a -> 'b Stream.t) -> 'a array -> 'b Stream.t
+val prlist : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+val prvecti : (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
 val prlist_with_sep :
-   (unit -> 'a Stream.t) -> ('b -> 'a Stream.t) -> 'b list -> 'a Stream.t
+   (unit -> std_ppcmds) -> ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 val prvect_with_sep :
-   (unit -> 'a Stream.t) -> ('b -> 'a Stream.t) -> 'b array -> 'a Stream.t
+   (unit -> std_ppcmds) -> ('b -> std_ppcmds) -> 'b array -> std_ppcmds
 val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 
 (*s Size of an ocaml value (in words, bytes and kilobytes). *)

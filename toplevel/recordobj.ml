@@ -31,8 +31,8 @@ let typ_lams_of t =
 
 let objdef_err ref =
   errorlabstrm "object_declare"
-    [< pr_id (Termops.id_of_global (Global.env()) ref);
-       'sTR" is not a structure object" >]
+    (pr_id (Termops.id_of_global (Global.env()) ref) ++
+       str" is not a structure object")
 
 let objdef_declare ref =
   let sp = match ref with ConstRef sp -> sp | _ -> objdef_err ref in

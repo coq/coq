@@ -34,28 +34,28 @@ let from_list l = List.fold_right Idset.add l Idset.empty
 
 (* when an head ident is not a constructor in pattern *)
 let mssg_hd_is_not_constructor s =
-  [< 'sTR "The symbol "; pr_id s; 'sTR " should be a constructor" >]
+  (str "The symbol " ++ pr_id s ++ str " should be a constructor")
 
 (* checking linearity of a list of ids in patterns *)
 let non_linearl_mssg id =
-  [< 'sTR "The variable " ; 'sTR(string_of_id id);
-     'sTR " is bound several times in pattern" >] 
+  (str "The variable " ++ str(string_of_id id) ++
+     str " is bound several times in pattern") 
 
 let error_capture_loc loc s =
   user_err_loc
     (loc,"ast_to_rawconstr", 
-     [< 'sTR "The variable "; pr_id s; 'sTR " occurs in its type" >])
+     (str "The variable " ++ pr_id s ++ str " occurs in its type"))
 
 let error_expl_impl_loc loc =
   user_err_loc
     (loc,"ast_to_rawconstr", 
-     [< 'sTR "Found an explicitely given implicit argument but was expecting";
-	'fNL; 'sTR "a regular one" >])
+     (str "Found an explicitely given implicit argument but was expecting" ++
+	fnl () ++ str "a regular one"))
 
 let error_metavar_loc loc =
   user_err_loc
     (loc,"ast_to_rawconstr", 
-     [< 'sTR "Metavariable numbers must be positive" >])
+     (str "Metavariable numbers must be positive"))
 
 let rec has_duplicate = function 
   | [] -> None
@@ -70,17 +70,17 @@ let check_linearity lhs ids =
     | None -> ()
 
 let mal_formed_mssg () =
-  [<'sTR "malformed macro of multiple case" >]
+  (str "malformed macro of multiple case")
 
 (* determines if some pattern variable starts with uppercase *)
 let warning_uppercase loc uplid = (* Comment afficher loc ?? *)
   let vars =
     prlist_with_sep 
-      (fun () -> [< 'sTR ", " >]) (* We avoid 'sPC, else it breaks the line *)
-      (fun v -> [< 'sTR (string_of_id v) >]) uplid in
+      (fun () -> (str ", ")) (* We avoid spc (), else it breaks the line *)
+      (fun v -> (str (string_of_id v))) uplid in
   let (s1,s2) = if List.length uplid = 1 then (" ","s ") else ("s "," ") in
-  wARN [<'sTR ("the variable"^s1); vars;
-	 'sTR (" start"^s2^"with an upper case letter in pattern") >]
+  warn (str ("the variable"^s1) ++ vars ++
+	str (" start"^s2^"with an upper case letter in pattern"))
 
 let is_uppercase_var v =
  match (string_of_id v).[0] with
@@ -96,8 +96,8 @@ let check_uppercase loc ids =
 
 (* check that the number of pattern matches the number of matched args *)
 let mssg_number_of_patterns n pl =
-  [< 'sTR"Expecting ";'iNT n ; 'sTR" pattern(s) but found ";
-    'iNT (List.length pl); 'sTR" in " >]
+  str"Expecting " ++ int n  ++ str" pattern(s) but found " ++
+  int (List.length pl) ++ str" in "
 
 let check_number_of_pattern loc n l =
   if n<>(List.length l) then
@@ -115,9 +115,9 @@ let ast_to_sp = function
 	 section_path sp
        with Invalid_argument _ | Failure _ ->
          anomaly_loc(loc,"Astterm.ast_to_sp",
-                     [< 'sTR"ill-formed section-path" >]))
+                     (str"ill-formed section-path")))
   | ast -> anomaly_loc(Ast.loc ast,"Astterm.ast_to_sp",
-                     [< 'sTR"not a section-path" >])
+                     (str"not a section-path"))
 
 let is_underscore id = (id = wildcard)
 
@@ -126,7 +126,7 @@ let name_of_nvar s =
 
 let ident_of_nvar loc s =
   if is_underscore s then
-    user_err_loc (loc,"ident_of_nvar", [< 'sTR "Unexpected wildcard" >])
+    user_err_loc (loc,"ident_of_nvar", (str "Unexpected wildcard"))
   else s
 
 let interp_qualid p =
@@ -190,8 +190,8 @@ let maybe_constructor env = function
 
   | Node(loc,("CONST"|"EVAR"|"MUTIND"|"SYNCONST" as key), l) ->
       user_err_loc (loc,"ast_to_pattern",
-   [< 'sTR "Found a pattern involving global references which are not constructors"
-   >])
+   (str "Found a pattern involving global references which are not constructors"
+))
 
   | _ -> anomaly "ast_to_pattern: badly-formed ast for Cases pattern"
 
@@ -214,7 +214,7 @@ let ast_to_global loc c =
     | ("SYNCONST", [sp]) ->
 	Syntax_def.search_syntactic_definition (ast_to_sp sp), []
     | _ -> anomaly_loc (loc,"ast_to_global",
-			[< 'sTR "Bad ast for this global a reference">])
+			(str "Bad ast for this global a reference"))
 
 (*
 let ref_from_constr c = match kind_of_term c with
@@ -338,12 +338,12 @@ let rec ast_to_cofix = function
       (fi::lf, astA::lA, astT::lt)
   | _ -> anomaly "CFDECL is expected"
 
-let error_fixname_unbound str is_cofix loc name = 
+let error_fixname_unbound s is_cofix loc name = 
   user_err_loc 
     (loc,"ast_to (COFIX)",
-       [< 'sTR "The name"; 'sPC ; pr_id name ; 
-	  'sPC ; 'sTR "is not bound in the corresponding"; 'sPC ;
-	  'sTR ((if is_cofix then "co" else "")^"fixpoint definition") >])
+     str "The name" ++ spc () ++ pr_id name ++ 
+     spc () ++ str "is not bound in the corresponding" ++ spc () ++
+     str ((if is_cofix then "co" else "")^"fixpoint definition"))
 (*
 let rec collapse_env n env = if n=0 then env else
   add_rel_decl (Anonymous,()) (collapse_env (n-1) (snd (uncons_rel_env env)))
@@ -458,7 +458,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 
     | Node(loc,"SQUASH",_) ->
         user_err_loc(loc,"ast_to_rawconstr",
-                     [< 'sTR "Ill-formed specification" >])
+                     (str "Ill-formed specification"))
 
     | Node(loc,opn,tl) -> 
 	anomaly ("ast_to_rawconstr found operator "^opn^" with "^
@@ -664,10 +664,10 @@ let constrOut = function
     if (Dyn.tag d) = "constr" then
       constr_out d
     else
-      anomalylabstrm "constrOut" [<'sTR "Dynamic tag should be constr">]
+      anomalylabstrm "constrOut" (str "Dynamic tag should be constr")
   | ast ->
     anomalylabstrm "constrOut"
-      [<'sTR "Not a Dynamic ast: "; print_ast ast>]
+      (str "Not a Dynamic ast: " ++ print_ast ast)
 
 let interp_constr sigma env c =
   understand sigma env (interp_rawconstr sigma env c)
@@ -688,13 +688,13 @@ let interp_sort = function
   | Node(loc,"PROP", []) -> Prop Null
   | Node(loc,"SET", [])  -> Prop Pos
   | Node(loc,"TYPE", _) -> new_Type_sort ()
-  | a -> user_err_loc (Ast.loc a,"interp_sort", [< 'sTR "Not a sort" >])
+  | a -> user_err_loc (Ast.loc a,"interp_sort", (str "Not a sort"))
 
 let interp_elimination_sort = function
   | Node(loc,"PROP", []) -> InProp
   | Node(loc,"SET", [])  -> InSet
   | Node(loc,"TYPE", _) -> InType
-  | a -> user_err_loc (Ast.loc a,"interp_sort", [< 'sTR "Not a sort" >])
+  | a -> user_err_loc (Ast.loc a,"interp_sort", (str "Not a sort"))
 
 let judgment_of_rawconstr sigma env c =
   understand_judgment sigma env (interp_rawconstr sigma env c)

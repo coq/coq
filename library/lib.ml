@@ -147,7 +147,7 @@ let open_section id =
   let dir = extend_dirpath !path_prefix id in
   let sp = make_path id in
   if Nametab.exists_section dir then
-    errorlabstrm "open_section" [< pr_id id; 'sTR " already exists" >];
+    errorlabstrm "open_section" (pr_id id ++ str " already exists");
   let sum = freeze_summaries() in
   add_entry sp (OpenedSection (dir, sum));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
@@ -176,7 +176,7 @@ let export_segment seg =
 
 (* Restore lib_stk and summaries as before the section opening, and
    add a ClosedSection object. *)
-let close_section export id =
+let close_section ~export id =
   let sp,dir,fs = 
     try match find_entry_p is_opened_section with
       | sp,OpenedSection (dir,fs) -> 

@@ -254,7 +254,7 @@ vinterp_add "AddDadRule"
               let pr = match decompose_path (p1, p2) with pr, _, _ -> pr in
               (add_dad_rule name (Ctast.ast_to_ct pat) p1 p2 (List.length pr) pr (Ctast.ast_to_ct com)))
             | _ -> errorlabstrm "AddDadRule1"
-                    [< 'sTR "AddDadRule2">]);
+                    [< str "AddDadRule2">]);
 add_dad_rule "distributivity-inv"
 (Node(zz,"APPLIST",[Nvar(zz,"mult");Node(zz,"APPLIST",[Nvar(zz,"plus");Node(zz,"META",[Num(zz,4)]);Node(zz,"META",[Num(zz,3)])]);Node(zz,"META",[Num(zz,2)])]))
 [2; 2]
