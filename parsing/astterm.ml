@@ -31,6 +31,22 @@ let non_linearl_mssg id =
   [< 'sTR "The variable " ; 'sTR(string_of_id id);
      'sTR " is bound several times in pattern" >] 
 
+let error_capture_loc loc s =
+  user_err_loc
+    (loc,"ast_to_rawconstr", 
+     [< 'sTR ("The variable "^s^" occurs in its type") >])
+
+let error_expl_impl_loc loc =
+  user_err_loc
+    (loc,"ast_to_rawconstr", 
+     [< 'sTR "Found an explicitely given implicit argument but was expecting";
+	'fNL; 'sTR "a regular one" >])
+
+let error_metavar_loc loc =
+  user_err_loc
+    (loc,"ast_to_rawconstr", 
+     [< 'sTR "Metavariable numbers must be positive" >])
+
 let rec has_duplicate = function 
   | [] -> None
   | x::l -> if List.mem x l then (Some x) else has_duplicate l
@@ -255,10 +271,8 @@ let rec collapse_env n env = if n=0 then env else
   add_rel_decl (Anonymous,()) (collapse_env (n-1) (snd (uncons_rel_env env)))
 *)
 
-let check_capture s ty = function
-  | Slam _ when occur_var_ast s ty ->
-      errorlabstrm "check_capture"
-	[< 'sTR ("The variable "^s^" occurs in its type") >]
+let check_capture loc s ty = function
+  | Slam _ when occur_var_ast s ty -> error_capture_loc loc s
   | _ -> ()
 
 let ast_to_rawconstr sigma env allow_soapp lvar =
@@ -308,13 +322,13 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	iterated_binder BLambda 0 c1 env c2
 
     | Node(loc,"APPLISTEXPL", f::args) ->
-	RApp (loc,dbrec env f,List.map (dbrec env) args)
+	RApp (loc,dbrec env f,ast_to_args env args)
     | Node(loc,"APPLIST", Nvar(locs,s)::args) ->
 	let (c, impargs) = ast_to_ref sigma env locs s lvar
         in
-	  RApp (loc, c, ast_to_args env impargs args)
+	  RApp (loc, c, ast_to_impargs env impargs args)
     | Node(loc,"APPLIST", f::args) ->	   
-	RApp (loc,dbrec env f,List.map (dbrec env) args)
+	RApp (loc,dbrec env f,ast_to_args env args)
 	  
     | Node(loc,"CASES", p:: Node(_,"TOMATCH",tms):: eqns) ->
 	let po = match p with 
@@ -336,8 +350,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 
     | Node(loc,"ISEVAR",[]) -> RHole (Some loc)
     | Node(loc,"META",[Num(_,n)]) ->
-	if n<0 then error "Metavariable numbers must be positive"
-	else RMeta (loc, n)
+	if n<0 then error_metavar_loc loc else RMeta (loc, n)
 
     | Node(loc,"PROP", []) -> RSort(loc,RProp Null)
     | Node(loc,"SET", [])  -> RSort(loc,RProp Pos)
@@ -381,7 +394,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
     | Slam(loc,ona,body) ->
 	let na,env' = match ona with 
 	  | Some s ->
-	      if n>0 then check_capture s ty body;
+	      if n>0 then check_capture loc s ty body;
 	      let id = id_of_string s in Name id, Idset.add id env
 	  | _ -> Anonymous, env
 	in
@@ -389,7 +402,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 		(iterated_binder oper (n+1) ty env' body))
     | body -> dbrec env body
 
-  and ast_to_args env l args =
+  and ast_to_impargs env l args =
     let rec aux n l args = match (l,args) with 
       | (i::l',Node(loc, "EXPL", [Num(_,j);a])::args') ->
 	  if i=n & j>=i then
@@ -409,10 +422,17 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	    (RHole None)::(aux (n+1) l' args)
 	  else 
 	    (dbrec env a)::(aux (n+1) l args')
-      | ([],args) -> List.map (dbrec env) args
+      | ([],args) -> ast_to_args env args
       | (_,[]) -> []
     in 
     aux 1 l args
+
+  and ast_to_args env = function
+    | Node(loc, "EXPL", _)::args' ->
+        (* To deal with errors *)
+	error_expl_impl_loc loc
+    | a::args -> (dbrec env a) :: (ast_to_args env args)
+    | [] -> []
 
   in 
   dbrec env
