@@ -10,7 +10,7 @@ INSTALLATION PROCEDURE FOR THE COQ V7.2 SYSTEM UNDER MACOS X
 
 4) Type the command
 
-   sudo -s tar -xzf -C / coq-7.2-Darwin-MacOS-X.tar.gz
+   sudo tar -C / -xzf coq-7.2-Darwin-MacOS-X.tar.gz
 
 5) Type the command
 
