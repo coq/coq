@@ -140,8 +140,8 @@ Changements dans les fonctions :
 	ex-Trad, maintenant Pretyping
           inh_cast_rel        -> Coercion.inh_conv_coerce_to
           inh_conv_coerce_to  -> Coercion.inh_conv_coerce_to_fail
-	  ise_resolve1        -> ise_resolve, ise_resolve_type
-	  ise_resolve         -> ise_infer, ise_infer_type
+	  ise_resolve1        -> understand, understand_type
+	  ise_resolve         -> understand_judgment, understand_type_judgment
 
 Changements dans les inductifs
 ------------------------------
