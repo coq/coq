@@ -688,7 +688,7 @@ let apply_to_relation subst rel =
 let unify_relation_carrier_with_type env rel t =
  let raise_error () =
   errorlabstrm "New Morphism"
-   (str "One morphism argument has type " ++ prterm t ++
+   (str "One morphism argument or its output has type " ++ prterm t ++
     str " but the signature requires an argument of type (" ++
     prterm rel.rel_a ++ str " ? ... ?)") in
  let args =
@@ -711,7 +711,14 @@ let unify_relation_carrier_with_type env rel t =
 
 let unify_relation_class_carrier_with_type env rel t =
  match rel with
-    Leibniz _ -> rel
+    Leibniz t' ->
+     if is_conv env Evd.empty t t' then
+      rel
+     else
+      errorlabstrm "New Morphism"
+       (str "One morphism argument or its output has type " ++ prterm t ++
+        str " but the signature requires an argument of type " ++
+        prterm t')
   | Relation rel -> Relation (unify_relation_carrier_with_type env rel t)
 
 (* first order matching with a bit of conversion *)
@@ -791,15 +798,9 @@ let new_morphism m signature id hook =
         | Some (args,output') ->
            let find_relation_class t real_t =
             try
-             match find_relation_class t with
-(*CSC: mi sa che anche l'inference del tipo per Leibniz e' bacata...
-       cosa succede se ho un morfismo (incl A) --> (@eq A) --> impl
-       Leibniz dovrebbe essere sempre quantificata, ma nel modo giusto!  ?*)
-                (Leibniz _) as rel -> rel,rel
-              | Relation rel ->
-                 Relation rel,
-                 Relation
-                  (unify_relation_carrier_with_type (Global.env ()) rel real_t)
+             let rel = find_relation_class t in
+              rel,
+               unify_relation_class_carrier_with_type (Global.env ()) rel real_t
             with Not_found ->
              errorlabstrm "Add Morphism"
               (str "Not a valid signature: " ++ prterm t ++
