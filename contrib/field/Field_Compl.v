@@ -8,14 +8,14 @@
 
 (* $Id$ *)
 
-Inductive list [A:Type] : Type :=
-  nil : (list A) | cons : A->(list A)->(list A).
+Inductive listT [A:Type] : Type :=
+  nil : (listT A) | consT : A->(listT A)->(listT A).
 
-Fixpoint app [A:Type][l:(list A)] : (list A) -> (list A) :=
-  [m:(list A)]
+Fixpoint appT [A:Type][l:(listT A)] : (listT A) -> (listT A) :=
+  [m:(listT A)]
   Cases l of
   | nil => m 
-  | (cons a l1) => (cons A a (app A l1 m))
+  | (consT a l1) => (consT A a (appT A l1 m))
   end.
 
 Inductive Sprod [A:Type;B:Set] : Type :=
@@ -23,12 +23,12 @@ Inductive Sprod [A:Type;B:Set] : Type :=
 
 Definition assoc_2nd :=
 Fix assoc_2nd_rec {assoc_2nd_rec/4:
-  (A:Type)(B:Set)((e1,e2:B){e1=e2}+{~e1=e2})->(list (Sprod A B))->B->A->A:=
-    [A:Type;B:Set;eq_dec:(e1,e2:B){e1=e2}+{~e1=e2};lst:(list (Sprod A B));
+  (A:Type)(B:Set)((e1,e2:B){e1=e2}+{~e1=e2})->(listT (Sprod A B))->B->A->A:=
+    [A:Type;B:Set;eq_dec:(e1,e2:B){e1=e2}+{~e1=e2};lst:(listT (Sprod A B));
       key:B;default:A]
   Cases lst of
   | nil => default
-  | (cons (Spair v e) l) =>
+  | (consT (Spair v e) l) =>
     (Cases (eq_dec e key) of
     | (left _) => v
     | (right _) => (assoc_2nd_rec A B eq_dec l key default)
@@ -49,11 +49,11 @@ Definition sndT [A,B:Type;c:(prodT A B)] :=
   end.
 
 Definition mem :=
-Fix mem {mem/4:(A:Set)((e1,e2:A){e1=e2}+{~e1=e2})->(a:A)(list A)->bool :=
-  [A:Set;eq_dec:(e1,e2:A){e1=e2}+{~e1=e2};a:A;l:(list A)]
+Fix mem {mem/4:(A:Set)((e1,e2:A){e1=e2}+{~e1=e2})->(a:A)(listT A)->bool :=
+  [A:Set;eq_dec:(e1,e2:A){e1=e2}+{~e1=e2};a:A;l:(listT A)]
   Cases l of
   | nil => false
-  | (cons a1 l1) =>
+  | (consT a1 l1) =>
     Cases (eq_dec a a1) of
     | (left _) => true
     | (right _) => (mem A eq_dec a l1)
