@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 open Pp
+open Options
 open Names
 open Term
 open Declarations
@@ -240,47 +241,50 @@ let subst_glob_decl r m = function
   | Dglob(r',t') -> Dglob(r', subst_glob_ast r m t')
   | d -> d
 
-(* Utilites functions used for the decision of expansion *)
+(* Utility functions used for the decision of expansion *)
 
 let rec ml_size = function
-    MLapp(t,l)     -> (List.length l) + (ml_size t) + (ml_size_list l)
-  | MLlam(_,t)     -> 1 + (ml_size t)
-  | MLcons(_,l)  -> ml_size_list l
-  | MLcase(t,pv)   -> 1 + (ml_size t) + (array_fold_right_from 0 
-					   (fun (_,_,t) a -> a+(ml_size t)) pv 0)
+  | MLapp(t,l) -> List.length l + ml_size t + ml_size_list l
+  | MLlam(_,t) -> 1 + ml_size t
+  | MLcons(_,l) -> ml_size_list l
+  | MLcase(t,pv) -> 
+      1 + ml_size t + (Array.fold_right (fun (_,_,t) a -> a + ml_size t) pv 0)
   | MLfix(_,_,f) -> ml_size_list f
   | MLletin (_,_,t) -> ml_size t
   | MLcast (t,_) -> ml_size t
   | MLmagic t -> ml_size t
-  | _              -> 0
-and ml_size_list l = List.fold_left (fun a t -> a+(ml_size t)) 0 l
+  | _ -> 0
+
+and ml_size_list l = List.fold_left (fun a t -> a + ml_size t) 0 l
 
 let is_fix = function MLfix _ -> true | _ -> false
 
 let rec is_constr = function
-    MLcons _   -> true
+  | MLcons _   -> true
   | MLlam(_,t) -> is_constr t
   | _          -> false
 
 
 exception Toplevel
 
-let rec lift n l = List.map (fun x->x+n) l
+let lift n l = List.map ((+) n) l
 
-let rec pop n l = List.map 
-		    (fun x -> if (x-n<0) then raise Toplevel else x-n) l 
+let pop n l = List.map (fun x -> if x-n<0 then raise Toplevel else x-n) l 
 
 let rec non_stricts add cand = function 
   | MLlam (id,t) -> 
       let cand = lift 1 cand in
       let cand = if add then 1::cand else cand in
       pop 1 (non_stricts add cand t)
-  | MLrel n ->  List.filter (fun x->(x<>n)) cand  
-  | MLapp (MLrel n, _) -> List.filter (fun x->(x<>n)) cand
+  | MLrel n -> 
+      List.filter (fun x -> x <> n) cand  
+  | MLapp (MLrel n, _) -> 
+      List.filter (fun x -> x <> n) cand
   | MLapp (t,l)-> 
       let cand = non_stricts false cand t in 
       List.fold_left (non_stricts false) cand l 
-  | MLcons (_,l) -> List.fold_left (non_stricts false) cand l
+  | MLcons (_,l) -> 
+      List.fold_left (non_stricts false) cand l
   | MLletin (_,t1,t2) -> 
       let cand = non_stricts false cand t1 in 
       pop 1 (non_stricts add (lift 1 cand) t2)
@@ -291,19 +295,23 @@ let rec non_stricts add cand = function
       pop n cand
   | MLcase (t,v) -> 
       let cand = non_stricts false cand t in 
-      array_fold_left_from 0 
+      Array.fold_left 
 	(fun c (_,i,t)-> 
 	   let n = List.length i in 
 	   let cand = lift n cand in 
 	   let cand = pop n (non_stricts add cand t) in
 	   Sort.merge (<=) cand c)
 	[] v
-  | MLcast (t,_) -> non_stricts add cand t
-  | MLmagic t -> non_stricts add cand t
-  | _ -> cand
+  | MLcast (t,_) -> 
+      non_stricts add cand t
+  | MLmagic t -> 
+      non_stricts add cand t
+  | _ -> 
+      cand
 
 let is_not_strict t = 
-  try let _ = non_stricts true [] t in false
+  try 
+    let _ = non_stricts true [] t in false
   with 
     | Toplevel -> true
 
@@ -320,10 +328,8 @@ let expansion_test t =
   (not (is_fix t))
   &&
   ((is_constr t) 
-  ||
-   ((ml_size t < 10)
-    &&
-    (is_not_strict t)))
+   ||
+   (ml_size t < 10 && is_not_strict t))
 
 (* If the user doesn't say he wants to keep [t], we expand in two cases:
    \begin{itemize}
@@ -333,10 +339,10 @@ let expansion_test t =
    \end{itemize} *)
 
 let expand prm r t = 
-  (not (Refset.mem r prm.to_keep)) (* if user DOES want to keep it *)
+  (not (Refset.mem r prm.to_keep)) (* the user DOES want to keep it *)
   &&
-  (Refset.mem r prm.to_expand (* if user DOES want to expand it *) 
-  || 
+  (Refset.mem r prm.to_expand (* the user DOES want to expand it *) 
+   || 
    (prm.optimization && expansion_test t)) 
 
 let warning_expansion r = 
@@ -359,7 +365,7 @@ let rec optimize prm = function
   | Dglob (r,t) as d :: l ->
       let t' = normalize t in
       if expand prm r t' then begin
-	warning_expansion r;
+	if_verbose warning_expansion r;
 	let l' = List.map (subst_glob_decl r t') l in
 	if prm.modular then 
 	  (Dglob (r,t')) :: (optimize prm l')
