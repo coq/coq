@@ -783,6 +783,7 @@ and extract_constant sp =
 
 and eta_expanse ec typ = match ec with 
   | Emlterm (MLlam _) -> ec
+  | Emlterm (MLfix _) -> ec 
   | Emlterm a -> 
       (match extract_type (Global.env()) typ with 
 	 | Tmltype (Tarr _, _) -> 

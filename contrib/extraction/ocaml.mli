@@ -35,6 +35,8 @@ val uppercase_id : identifier -> identifier
 type env = identifier list * Idset.t
 
 val rename_vars: Idset.t -> identifier list -> env
+val rename_tvars: 
+  Idset.t -> identifier list -> identifier list * identifier Idmap.t
 val push_vars : identifier list -> env -> identifier list * env
 val get_db_name : int -> env -> identifier
 

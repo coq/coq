@@ -93,6 +93,10 @@ let rec rename_vars avoid = function
       let (idl', avoid') = rename_vars (Idset.add id' avoid) idl in
       (id' :: idl', avoid')
 
+let rename_tvars avoid l = 
+  let l',_ = rename_vars avoid l in 
+  l', List.fold_left2 (fun m i i' -> Idmap.add i i' m) Idmap.empty l l'
+
 let push_vars ids (db,avoid) =
   let ids',avoid' = rename_vars avoid ids in
   ids', (ids' @ db, avoid')
@@ -123,19 +127,18 @@ let preamble _ =
 
 module Make = functor(P : Mlpp_param) -> struct
 
-let pp_type_global = P.pp_type_global 
-let pp_global = P.pp_global
-let rename_global = P.rename_global
+let pp_type_global r = P.pp_global r false
+let pp_global r = P.pp_global r false
+let rename_global r = P.rename_global r false 
 
 let empty_env () = [], P.globals()
 
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
 
-let rec pp_type par t =
+let rec pp_type par ren t =
   let rec pp_rec par = function
-    | Tvar id -> 
-	pp_tvar id
+    | Tvar id -> pp_tvar (try Idmap.find id ren with _ -> id)
     | Tapp l ->
 	(match collapse_type_app l with
 	   | [] -> assert false
@@ -146,14 +149,10 @@ let rec pp_type par t =
     | Tarr (t1,t2) ->
 	(open_par par ++ pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ 
 	   pp_rec false t2 ++ close_par par)
-    | Tglob r -> 
-	pp_type_global r
-    | Texn s -> 
-	str ("unit (* " ^ s ^ " *)")
-    | Tprop ->
-	str "prop"
-    | Tarity ->
-	str "arity"
+    | Tglob r -> pp_type_global r
+    | Texn s -> str ("unit (* " ^ s ^ " *)")
+    | Tprop -> str "prop"
+    | Tarity -> str "arity"
   in 
   hov 0 (pp_rec par t)
 
@@ -252,8 +251,10 @@ let rec pp_expr par env args =
     | MLarity ->
 	assert (args=[]); str "arity"
     | MLcast (a,t) ->
+	let tvars = get_tvars t in 
+	let _,ren = rename_tvars keywords tvars in 
 	(open_par true ++ pp_expr false env args a ++ spc () ++ str ":" ++ 
-	 spc () ++ pp_type false t ++ close_par true)
+	 spc () ++ pp_type false ren t ++ close_par true)
     | MLmagic a ->
 	(open_par true ++ str "Obj.magic" ++ spc () ++ 
 	 pp_expr false env args a ++ close_par true)
@@ -327,13 +328,14 @@ let pp_parameters l =
   (pp_tuple pp_tvar l ++ space_if (l<>[]))
 
 let pp_one_ind prefix (pl,name,cl) =
+  let pl,ren = rename_tvars keywords pl in 
   let pp_constructor (id,l) =
     (pp_global id ++
        match l with
          | [] -> (mt ()) 
 	 | _  -> (str " of " ++
       	       	    prlist_with_sep 
-		      (fun () -> (spc () ++ str "* ")) (pp_type true) l))
+		      (fun () -> (spc () ++ str "* ")) (pp_type true ren) l))
   in
   (pp_parameters pl ++ str prefix ++ pp_type_global name ++ str " =" ++ 
      (fnl () ++
@@ -347,6 +349,7 @@ let pp_ind il =
    ++ fnl ())
 
 let pp_coind_preamble (pl,name,_) = 
+  let pl,_ = rename_tvars keywords pl in
   (pp_parameters pl ++ pp_type_global name ++ str " = " ++ 
     pp_parameters pl ++ str "__" ++ pp_type_global name ++ str " Lazy.t")
 
@@ -374,9 +377,10 @@ let pp_decl = function
       end else 
 	hov 0 (pp_ind i)
   | Dabbrev (r, l, t) ->
+      let l,ren = rename_tvars keywords l in 
       hov 0 (str "type" ++ spc () ++ pp_parameters l ++ 
 	       pp_type_global r ++ spc () ++ str "=" ++ spc () ++ 
-	       pp_type false  t ++ fnl ())
+	       pp_type false ren t ++ fnl ())
   | Dglob (r, MLfix (_,[|_|],[|def|])) ->
       let id = rename_global r in
       let env' = [id], P.globals() in
@@ -388,7 +392,7 @@ let pp_decl = function
       hov 0 (str "let " ++ pp_global r ++ 
 	       str " =" ++ spc () ++ str s ++ fnl ())
 
-let pp_type = pp_type false
+let pp_type = pp_type false Idmap.empty
 
 end
 

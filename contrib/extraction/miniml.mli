@@ -70,9 +70,9 @@ type extraction_params =
 module type Mlpp_param = sig
   val toplevel : bool
   val globals : unit -> Idset.t
-  val rename_global : global_reference -> identifier
-  val pp_type_global : global_reference -> std_ppcmds
-  val pp_global : global_reference -> std_ppcmds
+      (* the bool arg is: should we rename in uppercase or not ? *)
+  val rename_global : global_reference -> bool -> identifier
+  val pp_global : global_reference -> bool -> std_ppcmds
 end
 
 module type Mlpp = sig

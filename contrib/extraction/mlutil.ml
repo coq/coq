@@ -28,6 +28,17 @@ exception Impossible
 let anonymous = id_of_string "x"
 let prop_name = id_of_string "_"
 
+(*s Get all type variables from a ML type *)
+
+let get_tvars t = 
+  let rec get_rec s = function 
+  | Tvar i -> Idset.add i s
+  | Tapp l -> List.fold_left get_rec s l 
+  | Tarr (a,b) -> get_rec (get_rec s a) b
+  | a -> s
+  in Idset.elements (get_rec Idset.empty t)
+
+
 (*s In an ML type, update the arguments to all inductive types [(sp,_)] *)  
 
 let rec update_args sp vl = function  

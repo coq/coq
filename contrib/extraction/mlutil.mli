@@ -31,6 +31,8 @@ val anonym_lams : ml_ast -> int -> ml_ast
 (*s Utility functions over ML types. [update_args sp vl t] puts [vl]
    as arguments behind every inductive types [(sp,_)]. *)
 
+val get_tvars : ml_type -> identifier list
+
 val update_args : section_path -> ml_type list -> ml_type -> ml_type
 
 val clear_singletons : unit -> unit

@@ -22,6 +22,8 @@ open Util
 
 let current_module = ref None
 
+let is_construct = function ConstructRef _ -> true | _ -> false 
+
 let sp_of_r r = match r with 
     | ConstRef sp -> sp
     | IndRef (sp,_) -> sp
@@ -91,9 +93,8 @@ let cache r f =
 module ToplevelParams = struct
   let toplevel = true
   let globals () = Idset.empty
-  let rename_global r = Termops.id_of_global (Global.env()) r
-  let pp_type_global = Printer.pr_global
-  let pp_global = Printer.pr_global
+  let rename_global r _ = Termops.id_of_global (Global.env()) r
+  let pp_global r _ = Printer.pr_global r
 end
 
 (*s Renaming issues for a monolithic extraction. *)
@@ -109,25 +110,16 @@ module MonoParams = struct
     global_ids := Idset.add id' !global_ids; 
     id'
 
-  let rename_type_global r =  
+  let rename_global r upper = 
     cache r
       (fun r -> 
 	 let id = Termops.id_of_global (Global.env()) r in
-	 rename_global_id (lowercase_id id))
+	 rename_global_id 
+	   (if upper || (is_construct r) 
+	    then uppercase_id id else lowercase_id id))
       
-  let rename_global r = 
-    cache r
-      (fun r -> 
-	 let id = Termops.id_of_global (Global.env()) r in
-	 match r with
-	   | ConstructRef _ -> rename_global_id (uppercase_id id)
-	   | _ -> rename_global_id (lowercase_id id))
-      
-  let pp_type_global r = 
-    str (check_ml r (string_of_id (rename_type_global r)))
-      
-  let pp_global r = 
-    str (check_ml r (string_of_id (rename_global r)))
+  let pp_global r upper = 
+    str (check_ml r (string_of_id (rename_global r upper)))
       
 end
 
@@ -153,27 +145,17 @@ module ModularParams = struct
       else id'
     in global_ids := Idset.add id' !global_ids; id'
 
-  let rename_type_global r = 
-    cache r 
-      (fun r ->     
-	 let id = Termops.id_of_global (Global.env()) r in 
-	 rename_global_id r id (lowercase_id id) "coq_")
-
-  let rename_global r =
+  let rename_global r upper =
     cache r 
       (fun r -> 
 	 let id = Termops.id_of_global (Global.env()) r in 
-	 match r with
-	   | ConstructRef _ -> rename_global_id r id (uppercase_id id) "Coq_"
-	   | _ -> rename_global_id r id (lowercase_id id) "coq_")
+	 if upper || (is_construct r) then 
+	   rename_global_id r id (uppercase_id id) "Coq_"
+	 else rename_global_id r id (lowercase_id id) "coq_")
 
-  let pp_type_global r = 
-    str 
-      (check_ml r ((module_option r)^(string_of_id (rename_type_global r))))
-
-  let pp_global r = 
+  let pp_global r upper = 
     str
-      (check_ml r ((module_option r)^(string_of_id (rename_global r))))
+      (check_ml r ((module_option r)^(string_of_id (rename_global r upper))))
 
 end
 
@@ -211,7 +193,8 @@ let extract_to_file f prm decls =
   in
   let cout = open_out f in
   let ft = Pp_control.with_output_to cout in
-  if decls <> [] then pp_with ft (hv 0 (preamble prm));
+  if decls <> [] || prm.lang = "haskell" 
+  then pp_with ft (hv 0 (preamble prm));
   begin 
     try
       List.iter (fun d -> msgnl_with ft (pp_decl d)) decls

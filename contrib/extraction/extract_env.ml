@@ -287,9 +287,9 @@ let decl_in_m m = function
   | Dtype ([],_) -> false
   | Dcustom (r,_) ->  is_long_module m r
 
-let file_suffix = function
-  | "ocaml" -> ".ml"
-  | "haskell" -> ".hs"
+let module_file_name m = function
+  | "ocaml" -> (String.uncapitalize (string_of_id m)) ^ ".ml"
+  | "haskell" -> (String.capitalize (string_of_id m)) ^ ".hs"
   | _ -> assert false
 
 let _ = 
@@ -298,8 +298,7 @@ let _ =
        | [VARG_STRING lang; VARG_IDENTIFIER m] ->
 	   (fun () -> 
 	      let dir_m = module_of_id m in 
-	      let f = (String.uncapitalize (string_of_id m))
-		       ^ (file_suffix lang) in
+	      let f = module_file_name m lang in
 	      let prm = {lang=lang;
 			 toplevel=false;
 			 mod_name= Some m;
@@ -333,8 +332,7 @@ let _ =
 	      Dirset.iter 
 		(fun m ->
 		   let short_m = snd (split_dirpath m) in
-		   let f = (String.uncapitalize (string_of_id short_m))
-			   ^ (file_suffix lang) in
+		   let f = module_file_name short_m lang in 
 		   let prm = {lang=lang;
 			      toplevel=false;
 			      mod_name= Some short_m;
