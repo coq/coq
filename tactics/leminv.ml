@@ -10,7 +10,7 @@ open Sign
 open Evd
 open Printer
 open Reduction
-open Constant
+open Declarations
 open Inductive
 open Environ
 open Tacmach
