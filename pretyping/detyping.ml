@@ -111,7 +111,9 @@ let encode_inductive ref =
 
 let constr_nargs indsp =
   let mis = Global.lookup_mind_specif (indsp,[||] (* ?? *)) in
-  Array.map List.length (mis_recarg mis)
+  let nparams = mis_nparams mis in
+  Array.map (fun t -> List.length (fst (decompose_prod_assum t)) - nparams)
+    (mis_nf_lc mis)
 
 let sp_of_spi (refsp,tyi) =
   let mip = Declarations.mind_nth_type_packet (Global.lookup_mind refsp) tyi in
@@ -231,6 +233,8 @@ let computable p k =
        sinon on perd la réciprocité de la synthèse (qui, lui,
        engendrera un prédicat non dépendant) *)
 
+  (nb_lam p = k+1)
+  &&
   let _,ccl = decompose_lam p in 
   noccur_between 1 (k+1) ccl
 
@@ -365,6 +369,10 @@ and detype_eqn avoid env constr_id construct_nargs branch =
     else
       match kind_of_term b with
 	| IsLambda (x,_,b) -> 
+	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b ids in
+            buildrec new_ids (pat::patlist) new_avoid new_env (n-1) b
+
+	| IsLetIn (x,_,_,b) -> 
 	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b ids in
             buildrec new_ids (pat::patlist) new_avoid new_env (n-1) b
 
