@@ -1,3 +1,5 @@
+EXPLIQUER le changement de Fact (JCF ??)
+
 Langage
 
 - Ajout de définitions locales (Let-In) avec la syntaxe [x:=u]t. Cela
@@ -129,6 +131,7 @@ Commandes
 - Nouveau: Debug On/Off positionne/débranche le débogueur de tactiques
   (encore très expérimental).
 
+- Fact se comporte différemment (comment, JCF ??)
 
 Tactiques
 
