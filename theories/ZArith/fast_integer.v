@@ -47,7 +47,9 @@ Fixpoint add [x:positive]:positive -> positive := [y:positive]
   | (xO x') (xI y') => (xI (add x' y'))
   | (xO x') (xO y') => (xO (add x' y'))
   | (xO x') xH      => (xI x')
-  | xH      _       => (add_un y)
+  | xH      (xI y') => (xO (add_un y'))
+  | xH      (xO y') => (xI y')
+  | xH      xH      => (xO xH)
   end
 with add_carry [x:positive]:positive -> positive := [y:positive]
   Cases x y of
@@ -114,12 +116,12 @@ Inductive positive_mask: Set :=
 
 (** Operation x -> 2*x+1 *)
 
-Definition Un_suivi_de := [x:positive_mask]
+Definition Un_suivi_de_mask := [x:positive_mask]
   Cases x of IsNul => (IsPos xH) | IsNeg => IsNeg | (IsPos p) => (IsPos (xI p)) end.
 
 (** Operation x -> 2*x *)
 
-Definition Zero_suivi_de := [x:positive_mask]
+Definition Zero_suivi_de_mask := [x:positive_mask]
   Cases x of IsNul => IsNul | IsNeg => IsNeg | (IsPos p) => (IsPos (xO p)) end.
 
 (** Operation x -> 2*x-2 *)
@@ -135,22 +137,22 @@ Definition double_moins_deux :=
 
 Fixpoint sub_pos[x,y:positive]:positive_mask :=
   Cases x y of
-  | (xI x') (xI y') => (Zero_suivi_de (sub_pos x' y'))
-  | (xI x') (xO y') => (Un_suivi_de (sub_pos x' y'))
+  | (xI x') (xI y') => (Zero_suivi_de_mask (sub_pos x' y'))
+  | (xI x') (xO y') => (Un_suivi_de_mask (sub_pos x' y'))
   | (xI x') xH      => (IsPos (xO x'))
-  | (xO x') (xI y') => (Un_suivi_de (sub_neg x' y'))
-  | (xO x') (xO y') => (Zero_suivi_de (sub_pos x' y'))
+  | (xO x') (xI y') => (Un_suivi_de_mask (sub_neg x' y'))
+  | (xO x') (xO y') => (Zero_suivi_de_mask (sub_pos x' y'))
   | (xO x') xH      => (IsPos (double_moins_un x'))
   | xH      xH      => IsNul
   | xH      _       => IsNeg
   end
 with sub_neg [x,y:positive]:positive_mask :=
   Cases x y of
-    (xI x') (xI y') => (Un_suivi_de (sub_neg x' y'))
-  | (xI x') (xO y') => (Zero_suivi_de (sub_pos x' y'))
+    (xI x') (xI y') => (Un_suivi_de_mask (sub_neg x' y'))
+  | (xI x') (xO y') => (Zero_suivi_de_mask (sub_pos x' y'))
   | (xI x') xH      => (IsPos (double_moins_un x'))
-  | (xO x') (xI y') => (Zero_suivi_de (sub_neg x' y'))
-  | (xO x') (xO y') => (Un_suivi_de (sub_neg x' y'))
+  | (xO x') (xI y') => (Zero_suivi_de_mask (sub_neg x' y'))
+  | (xO x') (xO y') => (Un_suivi_de_mask (sub_neg x' y'))
   | (xO x') xH      => (double_moins_deux x')
   | xH      _       => IsNeg
   end.
@@ -350,7 +352,7 @@ Qed.
 
 Lemma ZL12bis: (q:positive) (add_un q) = (add xH q).
 Proof.
-Reflexivity.
+NewDestruct q; Reflexivity.
 Qed.
 
 (** Specification of [Pplus_carry] *)
@@ -499,6 +501,7 @@ NewInduction p as [p|p|]; NewDestruct q as [q|q|]; Simpl;
       Reflexivity.
     Rewrite ZL12; Reflexivity.
   Rewrite IHp; Reflexivity.
+  NewDestruct q; Simpl; Try Rewrite is_double_moins_un; Reflexivity.
 Qed.
 
 Lemma add_xI_double_moins_un :
@@ -512,10 +515,10 @@ Qed.
 Lemma double_moins_un_add :
   (p,q:positive)(double_moins_un (add p q)) = (add (xO p) (double_moins_un q)).
 Proof.
-NewInduction p as [p|p|]; NewDestruct q as [q|q|]; 
+NewInduction p as [p IHp|p IHp|]; NewDestruct q as [q|q|];
  Simpl; Try Rewrite ZL13; Try Rewrite double_moins_un_add_un_xI;
- Try Rewrite is_double_moins_un; Try Rewrite IHp; 
- Try Rewrite add_xI_double_moins_un; Reflexivity.
+ Try Rewrite IHp; Try Rewrite add_xI_double_moins_un; Try Reflexivity.
+ Rewrite <- is_double_moins_un; Rewrite ZL12bis; Reflexivity. 
 Qed.
 
 (** Misc *)
@@ -530,22 +533,22 @@ Qed.
 
 (* Properties of subtraction *)
 
-Lemma ZS: (p:positive_mask) (Zero_suivi_de p) = IsNul -> p = IsNul.
+Lemma ZS: (p:positive_mask) (Zero_suivi_de_mask p) = IsNul -> p = IsNul.
 Proof.
 NewDestruct p; Simpl; [ Trivial | Discriminate 1 | Discriminate 1 ].
 Qed.
 
-Lemma US: (p:positive_mask) ~(Un_suivi_de p)=IsNul.
+Lemma US: (p:positive_mask) ~(Un_suivi_de_mask p)=IsNul.
 Proof.
 Induction p; Intros; Discriminate.
 Qed.
 
-Lemma USH: (p:positive_mask) (Un_suivi_de p) = (IsPos xH) -> p = IsNul.
+Lemma USH: (p:positive_mask) (Un_suivi_de_mask p) = (IsPos xH) -> p = IsNul.
 Proof.
 NewDestruct p; Simpl; [ Trivial | Discriminate 1 | Discriminate 1 ].
 Qed.
 
-Lemma ZSH: (p:positive_mask) ~(Zero_suivi_de p)= (IsPos xH).
+Lemma ZSH: (p:positive_mask) ~(Zero_suivi_de_mask p)= (IsPos xH).
 Proof.
 Induction p; Intros; Discriminate.
 Qed.
@@ -563,12 +566,14 @@ Theorem ZL10: (x,y:positive)
 Proof.
 NewInduction x as [p|p|]; NewDestruct y as [q|q|]; Simpl; Intro H;
 Try Discriminate H; [
-  Absurd (Zero_suivi_de (sub_pos p q))=(IsPos xH); [ Apply ZSH | Assumption ]
+  Absurd (Zero_suivi_de_mask (sub_pos p q))=(IsPos xH);
+   [ Apply ZSH | Assumption ]
 | Assert Heq : (sub_pos p q)=IsNul;
    [ Apply USH;Assumption | Rewrite Heq; Reflexivity ]
 | Assert Heq : (sub_neg p q)=IsNul;
    [ Apply USH;Assumption | Rewrite Heq; Reflexivity ]
-| Absurd (Zero_suivi_de (sub_pos p q))=(IsPos xH); [ Apply ZSH | Assumption ]
+| Absurd (Zero_suivi_de_mask (sub_pos p q))=(IsPos xH); 
+   [ Apply ZSH | Assumption ]
 | NewDestruct p; Simpl; [ Discriminate H | Discriminate H | Reflexivity ] ].
 Qed.
 
@@ -598,7 +603,8 @@ NewInduction x as [p|p|];NewDestruct y as [q|q|]; Simpl; Intro H;
       Simpl;Rewrite H5;Auto
     | Split; [
         Simpl; Rewrite H7; Trivial
-      | Right;Change (Zero_suivi_de (sub_pos p q))=(IsPos (sub_un (xI z)));
+      | Right;
+        Change (Zero_suivi_de_mask (sub_pos p q))=(IsPos (sub_un (xI z)));
         Rewrite H5; Auto ]]
   | Intros H3; Exists xH; Rewrite H3; Split; [
       Simpl; Rewrite sub_pos_x_x; Auto
@@ -625,7 +631,8 @@ NewInduction x as [p|p|];NewDestruct y as [q|q|]; Simpl; Intro H;
     Rewrite H4;Auto
   | Split; [
       Simpl;Rewrite H6;Reflexivity
-    | Right; Change (Un_suivi_de (sub_neg p q))=(IsPos (double_moins_un z));
+    | Right; 
+      Change (Un_suivi_de_mask (sub_neg p q))=(IsPos (double_moins_un z));
       NewDestruct (ZL11 z) as [H8|H8]; [
         Rewrite H8; Simpl;
         Assert H9:(sub_neg p q)=IsNul;[
@@ -640,9 +647,9 @@ NewInduction x as [p|p|];NewDestruct y as [q|q|]; Simpl; Intro H;
   Exists (double_moins_un p); Split; [
     Reflexivity
   | Clear IHp; Split; [
-      NewInduction p as [|p0 IHp0|]; [
+      NewDestruct p; Simpl; [
         Reflexivity
-      | Simpl; Rewrite IHp0; Reflexivity
+      | Rewrite is_double_moins_un; Reflexivity
       | Reflexivity ]
     | NewDestruct p; [Right|Right|Left]; Reflexivity ]].
 Qed.
@@ -1194,10 +1201,241 @@ Rewrite times_convert; Rewrite true_sub_convert; [
 | Assumption ].
 Qed.
 
+(** Parity properties of multiplication *)
+
+Theorem times_discr_xO_xI : 
+  (x,y,z:positive)(times (xI x) z)<>(times (xO y) z).
+Proof.
+NewInduction z as [|z IHz|]; Try Discriminate.
+Intro H; Apply IHz; Clear IHz.
+Do 2 Rewrite times_x_double in H.
+Injection H; Clear H; Intro H; Exact H.
+Qed.
+
+Theorem times_discr_xO : (x,y:positive)(times (xO x) y)<>y.
+Proof.
+NewInduction y; Try Discriminate.
+Rewrite times_x_double; Injection; Assumption.
+Qed.
+
+(** Simplification properties of multiplication *)
+
+Theorem simpl_times_r : (x,y,z:positive) (times x z)=(times y z) -> x=y.
+Proof.
+NewInduction x as [p IHp|p IHp|]; NewDestruct y as [q|q|]; Intros z H;
+    Reflexivity Orelse Apply (f_equal positive) Orelse Apply False_ind.
+  Simpl in H; Apply IHp with z := (xO z); Simpl; Do 2 Rewrite times_x_double;
+    Apply simpl_add_l with 1 := H.
+  Apply times_discr_xO_xI with 1 := H.
+  Simpl in H; Rewrite add_sym in H; Apply add_no_neutral with 1 := H.
+  Symmetry in H; Apply times_discr_xO_xI with 1 := H.
+  Apply IHp with z := (xO z); Simpl; Do 2 Rewrite times_x_double; Assumption.
+  Apply times_discr_xO with 1:=H.
+  Simpl in H; Symmetry in H; Rewrite add_sym in H; 
+    Apply add_no_neutral with 1 := H.
+  Symmetry in H; Apply times_discr_xO with 1:=H.
+Qed.
+
+Theorem simpl_times_l : (x,y,z:positive) (times z x)=(times z y) -> x=y.
+Proof.
+Intros x y z H; Apply simpl_times_r with z:=z.
+Rewrite times_sym with x:=x; Rewrite times_sym with x:=y; Assumption.
+Qed.
+
+(**********************************************************************)
+(** Peano induction on binary positive positive numbers *)
+
+Fixpoint add_iter [x:positive] : positive -> positive := 
+  [y]Cases x of 
+  | xH => (add_un y)
+  | (xO x) => (add_iter x (add_iter x y))
+  | (xI x) => (add_iter x (add_iter x (add_un y)))
+  end.
+
+Lemma add_iter_add : (p,q:positive)(add_iter p q)=(add p q).
+Proof.
+NewInduction p as [p IHp|p IHp|]; NewDestruct q; Simpl;
+  Reflexivity Orelse Do 2 Rewrite IHp; Rewrite add_assoc; Rewrite add_x_x;
+  Try Reflexivity.
+Rewrite ZL13; Rewrite <- ZL14; Reflexivity.
+Rewrite ZL12; Reflexivity.
+Qed.
+
+Lemma add_iter_xO : (p:positive)(add_iter p p)=(xO p).
+Proof.
+Intro; Rewrite <- add_x_x; Apply add_iter_add.
+Qed.
+
+Lemma add_iter_xI : (p:positive)(add_un (add_iter p p))=(xI p).
+Proof.
+Intro; Rewrite xI_add_un_xO; Rewrite <- add_x_x; 
+  Apply (f_equal positive); Apply add_iter_add.
+Qed.
+
+Lemma iterate_add : (P:(positive->Type))
+  ((n:positive)(P n) ->(P (add_un n)))->(p,n:positive)(P n) ->
+  (P (add_iter p n)).
+Proof.
+Intros P H; NewInduction p; Simpl; Intros.
+Apply IHp; Apply IHp; Apply H; Assumption.
+Apply IHp; Apply IHp; Assumption.
+Apply H; Assumption.
+Defined.
+
+(** Peano induction *)
+
+Theorem Pind : (P:(positive->Prop))
+  (P xH) ->((n:positive)(P n) ->(P (add_un n))) ->(n:positive)(P n).
+Proof.
+Intros P H1 Hsucc; NewInduction n.
+Rewrite <- add_iter_xI; Apply Hsucc; Apply iterate_add; Assumption.
+Rewrite <- add_iter_xO; Apply iterate_add; Assumption.
+Assumption.
+Qed.
+
+(** Peano recursion *)
+
+Definition Prec : (A:Set)A->(positive->A->A)->positive->A :=
+  [A;a;f]Fix Prec { Prec [p:positive] : A :=
+  Cases p of
+  | xH => a
+  | (xO p) => (iterate_add [_]A f p p (Prec p))
+  | (xI p) => (f (add_iter p p) (iterate_add [_]A f p p (Prec p)))
+  end}.
+
+(** Test *)
+
+Eval Compute in 
+ let fact = (Prec positive xH [p;r](times (add_un p) r)) in
+ let seven = (xI (xI xH)) in
+ let five_thousand_forty= (xO(xO(xO(xO(xI(xI(xO(xI(xI(xI(xO(xO xH))))))))))))
+ in ((refl_equal ? ?) :: (fact seven) = five_thousand_forty).
+
 (**********************************************************************)
 (** Binary natural numbers *)
 
 Inductive entier: Set := Nul : entier | Pos : positive -> entier.
+
+(** Operation x -> 2*x+1 *)
+
+Definition Un_suivi_de := [x]
+  Cases x of Nul => (Pos xH) | (Pos p) => (Pos (xI p)) end.
+
+(** Operation x -> 2*x *)
+
+Definition Zero_suivi_de :=
+  [n] Cases n of Nul => Nul | (Pos p) => (Pos (xO p)) end.
+
+(** Successor *)
+
+Definition Nsucc :=
+  [n] Cases n of Nul => (Pos xH) | (Pos p) => (Pos (add_un p)) end.
+
+(** Addition *)
+
+Definition Nplus := [n,m]
+  Cases n m of
+  | Nul     _       => m
+  | _       Nul     => n
+  | (Pos p) (Pos q) => (Pos (add p q))
+  end.
+
+(** Multiplication *)
+
+Definition Nmult := [n,m]
+  Cases n m of
+  | Nul     _       => Nul
+  | _       Nul     => Nul
+  | (Pos p) (Pos q) => (Pos (times p q))
+  end.
+
+(** Properties of addition *)
+
+Theorem Nplus_0_l : (n:entier)(Nplus Nul n)=n.
+Proof.
+Reflexivity.
+Qed.
+
+Theorem Nplus_0_r : (n:entier)(Nplus n Nul)=n.
+Proof.
+NewDestruct n; Reflexivity.
+Qed.
+
+Theorem Nplus_comm : (n,m:entier)(Nplus n m)=(Nplus m n).
+Proof.
+Intros.
+NewDestruct n; NewDestruct m; Simpl; Try Reflexivity.
+Rewrite add_sym; Reflexivity.
+Qed.
+
+Theorem Nplus_assoc_l : 
+  (n,m,p:entier)(Nplus (Nplus n m) p)=(Nplus n (Nplus m p)).
+Proof.
+Intros.
+NewDestruct n; Try Reflexivity.
+NewDestruct m; Try Reflexivity.
+NewDestruct p; Try Reflexivity.
+Simpl; Rewrite add_assoc; Reflexivity.
+Qed.
+
+(** Properties of multiplication *)
+
+Theorem Nmult_1_l : (n:entier)(Nmult (Pos xH) n)=n.
+Proof.
+NewDestruct n; Reflexivity.
+Qed.
+
+Theorem Nmult_1_r : (n:entier)(Nmult n (Pos xH))=n.
+Proof.
+NewDestruct n; Simpl; Try Reflexivity.
+Rewrite times_x_1; Reflexivity.
+Qed.
+
+Theorem Nmult_comm : (n,m:entier)(Nmult n m)=(Nmult m n).
+Proof.
+Intros.
+NewDestruct n; NewDestruct m; Simpl; Try Reflexivity.
+Rewrite times_sym; Reflexivity.
+Qed.
+
+Theorem Nmult_assoc_l : 
+  (n,m,p:entier)(Nmult (Nmult n m) p)=(Nmult n (Nmult m p)).
+Proof.
+Intros.
+NewDestruct n; Try Reflexivity.
+NewDestruct m; Try Reflexivity.
+NewDestruct p; Try Reflexivity.
+Simpl; Rewrite times_assoc; Reflexivity.
+Qed.
+
+Theorem Nmult_Nplus_distr_l :
+  (n,m,p:entier)(Nmult (Nplus n m) p)=(Nplus (Nmult n p) (Nmult m p)).
+Proof.
+Intros.
+NewDestruct n; Try Reflexivity.
+NewDestruct m; NewDestruct p; Try Reflexivity.
+Simpl; Rewrite times_add_distr_l; Reflexivity.
+Qed.
+
+Theorem Nmult_int_r : (n,m,p:entier) (Nmult n p)=(Nmult m p) -> n=m\/p=Nul.
+Proof.
+NewDestruct p; Intro H.
+Right; Reflexivity.
+Left; NewDestruct n; NewDestruct m; Reflexivity Orelse Try Discriminate H.
+Injection H; Clear H; Intro H; Rewrite simpl_times_r with 1:=H; Reflexivity.
+Qed. 
+
+(** Peano induction on binary natural numbers *)
+
+Theorem Nind : (P:(entier ->Prop))
+  (P Nul) ->((n:entier)(P n) ->(P (Nsucc n))) ->(n:entier)(P n).
+Proof.
+NewDestruct n.
+  Assumption.
+  Apply Pind with P := [p](P (Pos p)).
+Exact (H0 Nul H).
+Intro p'; Exact (H0 (Pos p')).
+Qed.
 
 (**********************************************************************)
 (** Binary integer numbers *)
