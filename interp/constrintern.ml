@@ -684,8 +684,14 @@ let coerce_to_id = function
         str"This expression should be a simple identifier")
 
 let traverse_binder subst id (ids,tmpsc,scopes as env) =
-  let id = try coerce_to_id (fst (List.assoc id subst)) with Not_found -> id in
-  id,(Idset.add id ids,tmpsc,scopes)
+  try
+    (* Binders bound in the notation are consider first-order object *)
+    (* and binders not bound in the notation do not capture variables *)
+    (* outside the notation *)
+    let id' = coerce_to_id (fst (List.assoc id subst)) in
+    id', (Idset.add id' ids,tmpsc,scopes)
+  with Not_found ->
+    id, env
 
 let decode_constrlist_value = function
   | CAppExpl (_,_,l) -> l
