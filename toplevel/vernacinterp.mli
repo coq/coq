@@ -1,7 +1,12 @@
 
+(* $Id$ *)
+
+(*i*)
 open Names
-open Pp
 open Proof_trees
+(*i*)
+
+(* Interpretation of vernac phrases. *)
  
 exception Drop
 exception ProtectedLoop
@@ -26,7 +31,6 @@ type vernac_arg =
   | VARG_ASTLIST of Coqast.t list
   | VARG_UNIT
   | VARG_DYN of Dyn.t   (* to put whatever you want *)
-
 
 val vinterp_add : string -> (vernac_arg list -> unit -> unit) -> unit
 val overwriting_vinterp_add : 

@@ -49,6 +49,8 @@ let parse_section_path s =
   let id,k = decoupe_kind n in
   dirs,id,k
 
+module Stringset = Set.Make(struct type t = string let compare = compare end)
+
 module Stringmap = Map.Make(struct type t = string let compare = compare end)
 
 let stringmap_to_list m = Stringmap.fold (fun s y l -> (s,y)::l) m []

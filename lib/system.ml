@@ -27,6 +27,8 @@ let search_in_path path filename =
   in
   search path
 
+let where_in_path = search_in_path
+
 let find_file_in_path name =
   let globname = glob name in
   if not (Filename.is_relative globname) then
@@ -39,8 +41,34 @@ let find_file_in_path name =
 	(hOV 0 [< 'sTR"Can't find file" ; 'sPC ; 'sTR name ; 'sPC ; 
 		  'sTR"on loadpath" >])
 
+let is_in_path lpath filename =
+  try
+    let _ = search_in_path lpath filename in true
+  with
+    Not_found -> false
+
 let make_suffix name suffix =
   if Filename.check_suffix name suffix then name else (name ^ suffix)
+
+(*Gives the list of all the directories under dir*)
+let alldir dir =
+  let ini = Unix.getcwd()
+  and tmp = Filename.temp_file "coq" "rec"
+  and lst = ref [] in
+  Unix.chdir dir;
+  let bse = Unix.getcwd() in
+  let _ = Sys.command ("find "^bse^" -type d >> "^tmp) in
+  let inf = open_in tmp in
+  try
+    while true do
+      lst := !lst @ [input_line inf]
+    done;
+    []
+  with End_of_file ->
+    close_in inf;
+    Sys.remove tmp;
+    Unix.chdir ini;
+    !lst
 
 let open_trapping_failure open_fun name suffix =
   let rname = make_suffix name suffix in

@@ -112,7 +112,7 @@ toplevel/protectedtoplevel.cmi: lib/pp.cmi
 toplevel/toplevel.cmi: parsing/pcoq.cmi lib/pp.cmi 
 toplevel/vernac.cmi: parsing/coqast.cmi parsing/pcoq.cmi 
 toplevel/vernacinterp.cmi: parsing/coqast.cmi lib/dyn.cmi kernel/names.cmi \
-    lib/pp.cmi proofs/proof_trees.cmi 
+    proofs/proof_trees.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
 config/coq_config.cmx: config/coq_config.cmi 
 dev/db_printers.cmo: kernel/names.cmi lib/pp.cmi 
@@ -422,7 +422,7 @@ tactics/auto.cmx: tactics/btermdn.cmx proofs/clenv.cmx library/declare.cmx \
     kernel/reduction.cmx kernel/sign.cmx library/summary.cmx \
     proofs/tacmach.cmx proofs/tacred.cmx tactics/tacticals.cmx \
     tactics/tactics.cmx kernel/term.cmx proofs/typing_ev.cmx lib/util.cmx \
-    toplevel/vernacinterp.cmi tactics/auto.cmi 
+    toplevel/vernacinterp.cmx tactics/auto.cmi 
 tactics/btermdn.cmo: tactics/dn.cmi kernel/term.cmi tactics/termdn.cmi \
     tactics/btermdn.cmi 
 tactics/btermdn.cmx: tactics/dn.cmx kernel/term.cmx tactics/termdn.cmx \
@@ -440,7 +440,7 @@ tactics/dhyp.cmx: parsing/ast.cmx proofs/clenv.cmx kernel/generic.cmx \
     tactics/pattern.cmx lib/pp.cmx proofs/proof_trees.cmx \
     kernel/reduction.cmx library/summary.cmx proofs/tacinterp.cmx \
     proofs/tacmach.cmx tactics/tacticals.cmx tactics/tactics.cmx \
-    kernel/term.cmx lib/util.cmx toplevel/vernacinterp.cmi tactics/dhyp.cmi 
+    kernel/term.cmx lib/util.cmx toplevel/vernacinterp.cmx tactics/dhyp.cmi 
 tactics/dn.cmo: lib/tlm.cmi tactics/dn.cmi 
 tactics/dn.cmx: lib/tlm.cmx tactics/dn.cmi 
 tactics/elim.cmo: proofs/clenv.cmi kernel/generic.cmi tactics/hiddentac.cmi \
@@ -537,13 +537,13 @@ toplevel/mltop.cmo: library/libobject.cmi library/library.cmi lib/pp.cmi \
     library/summary.cmi lib/system.cmi lib/util.cmi toplevel/vernacinterp.cmi \
     toplevel/mltop.cmi 
 toplevel/mltop.cmx: library/libobject.cmx library/library.cmx lib/pp.cmx \
-    library/summary.cmx lib/system.cmx lib/util.cmx toplevel/vernacinterp.cmi \
+    library/summary.cmx lib/system.cmx lib/util.cmx toplevel/vernacinterp.cmx \
     toplevel/mltop.cmi 
 toplevel/protectedtoplevel.cmo: toplevel/errors.cmi parsing/pcoq.cmi \
     lib/pp.cmi toplevel/vernac.cmi toplevel/vernacinterp.cmi \
     toplevel/protectedtoplevel.cmi 
 toplevel/protectedtoplevel.cmx: toplevel/errors.cmx parsing/pcoq.cmi \
-    lib/pp.cmx toplevel/vernac.cmx toplevel/vernacinterp.cmi \
+    lib/pp.cmx toplevel/vernac.cmx toplevel/vernacinterp.cmx \
     toplevel/protectedtoplevel.cmi 
 toplevel/toplevel.cmo: parsing/ast.cmi toplevel/errors.cmi toplevel/mltop.cmi \
     lib/options.cmi parsing/pcoq.cmi proofs/pfedit.cmi lib/pp.cmi \
@@ -552,12 +552,20 @@ toplevel/toplevel.cmo: parsing/ast.cmi toplevel/errors.cmi toplevel/mltop.cmi \
 toplevel/toplevel.cmx: parsing/ast.cmx toplevel/errors.cmx toplevel/mltop.cmx \
     lib/options.cmx parsing/pcoq.cmi proofs/pfedit.cmi lib/pp.cmx \
     toplevel/protectedtoplevel.cmx lib/util.cmx toplevel/vernac.cmx \
-    toplevel/vernacinterp.cmi toplevel/toplevel.cmi 
+    toplevel/vernacinterp.cmx toplevel/toplevel.cmi 
 toplevel/vernac.cmo: parsing/ast.cmi parsing/coqast.cmi library/library.cmi \
     lib/options.cmi parsing/pcoq.cmi proofs/pfedit.cmi lib/pp.cmi \
     library/states.cmi lib/system.cmi lib/util.cmi toplevel/vernacinterp.cmi \
     toplevel/vernac.cmi 
 toplevel/vernac.cmx: parsing/ast.cmx parsing/coqast.cmx library/library.cmx \
     lib/options.cmx parsing/pcoq.cmi proofs/pfedit.cmi lib/pp.cmx \
-    library/states.cmx lib/system.cmx lib/util.cmx toplevel/vernacinterp.cmi \
+    library/states.cmx lib/system.cmx lib/util.cmx toplevel/vernacinterp.cmx \
     toplevel/vernac.cmi 
+toplevel/vernacinterp.cmo: parsing/ast.cmi parsing/coqast.cmi lib/dyn.cmi \
+    toplevel/errors.cmi toplevel/himsg.cmi kernel/names.cmi lib/pp.cmi \
+    proofs/proof_trees.cmi proofs/tacinterp.cmi lib/util.cmi \
+    toplevel/vernacinterp.cmi 
+toplevel/vernacinterp.cmx: parsing/ast.cmx parsing/coqast.cmx lib/dyn.cmx \
+    toplevel/errors.cmx toplevel/himsg.cmx kernel/names.cmx lib/pp.cmx \
+    proofs/proof_trees.cmx proofs/tacinterp.cmx lib/util.cmx \
+    toplevel/vernacinterp.cmi 

@@ -65,7 +65,8 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
 	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_multiple_case.cmo
 
-TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernac.cmo \
+TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
+         toplevel/vernac.cmo toplevel/mltop.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo
 
 CMA=$(CLIBS) $(CAMLP4OBJS)

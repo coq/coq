@@ -11,6 +11,8 @@ open Term
 
 (* Interpretation of tactics. *)
 
+val cvt_arg              : Coqast.t -> tactic_arg
+
 val tacinterp_add        : string * (tactic_arg list -> tactic) -> unit
 val tacinterp_map        : string -> tactic_arg list -> tactic
 val tacinterp_init       : unit -> unit

@@ -26,6 +26,8 @@ val implode : string list -> string
 
 val parse_section_path : string -> string list * string * string
 
+module Stringset : Set.S with type elt = string
+
 module Stringmap : Map.S with type key = string
 
 val stringmap_to_list : 'a Stringmap.t -> (string * 'a) list 

@@ -55,7 +55,7 @@ let load = ref Native
 let set kload = load := kload
 
 (* Resets load *)
-let remove ()= load :=N ative
+let remove ()= load := Native
 
 (* Tests if an Ocaml toplevel runs under Coq *)
 let is_ocaml_top () =
@@ -153,12 +153,12 @@ let init_with_state () =
 
 type ml_module_object = { mnames : string list }
 
-let known_loaded_modules = ref ([] : string list)
+let known_loaded_modules = ref Stringset.empty
 
 let add_known_module mname =
-  known_loaded_modules := add_set mname !known_loaded_modules
+  known_loaded_modules := Stringset.add mname !known_loaded_modules
 
-let module_is_known mname = List.mem mname !known_loaded_modules
+let module_is_known mname = Stringset.mem mname !known_loaded_modules
 
 let load_object mname fname=
   dir_ml_load fname;
@@ -167,14 +167,12 @@ let load_object mname fname=
 
 (* Summary of declared ML Modules *)
 
-let loaded_modules = ref ([] : string list)
-let get_loaded_modules () = !loaded_modules
-let add_loaded_module md =
-  loaded_modules := add_set md !loaded_modules
+let loaded_modules = ref Stringset.empty
+let get_loaded_modules () = Stringset.elements !loaded_modules
+let add_loaded_module md = loaded_modules := Stringset.add md !loaded_modules
 
-let orig_loaded_modules = ref (get_loaded_modules ())
+let orig_loaded_modules = ref !loaded_modules
 let init_ml_modules () = loaded_modules := !orig_loaded_modules
-
 
 let unfreeze_ml_modules x =
   List.iter
@@ -182,7 +180,7 @@ let unfreeze_ml_modules x =
        let mname = mod_of_name name in
        if not (module_is_known mname) then
          if enable_load() then
-           let fname= file_of_name mname in
+           let fname = file_of_name mname in
            load_object mname fname                
          else 
 	   errorlabstrm "Mltop.unfreeze_ml_modules"
@@ -198,7 +196,7 @@ let _ =
 
 (* Same as restore_ml_modules, but verbosely *)
 
-let cache_ml_module_object {mnames=mnames} =
+let cache_ml_module_object (_,{mnames=mnames}) =
   List.iter
     (fun name ->
        let mname = mod_of_name name in
@@ -220,10 +218,11 @@ let (inMLModule,outMLModule) =
   declare_object ("ML-MODULE",
                   { load_function = cache_ml_module_object;
                     cache_function = (fun _ -> ());
+		    open_function = (fun _ -> ());
                     specification_function = specification_ml_module_object })
 
 let declare_ml_modules l =
-  add_anonymous_object (inMLModule {mnames=l})
+  Lib.add_anonymous_leaf (inMLModule {mnames=l})
     
 let print_ml_path () =
   let l = !coq_mlpath_copy in
@@ -232,10 +231,11 @@ let print_ml_path () =
 
 let _ = vinterp_add "DeclareMLModule"
 	  (fun l ->
-	     let sl = List.map 
-			(function (VARG_STRING s) -> s 
-			   | _ -> anomaly "DeclareMLModule : not a string") 
-			l
+	     let sl = 
+	       List.map 
+		 (function 
+		    | (VARG_STRING s) -> s 
+		    | _ -> anomaly "DeclareMLModule : not a string") l
 	     in
     	     fun () -> declare_ml_modules sl)
 	  
