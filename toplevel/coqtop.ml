@@ -77,16 +77,27 @@ let usage () =
   flush stderr ;
   exit 1
 
+let parse_include d =
+  try
+    let pos = String.index d '=' in
+    (String.sub d 0 pos,
+     Names.dirpath_of_string (String.sub d (pos+1) (String.length d - pos -1)))
+  with Not_found ->
+    let alias = Filename.basename d in
+    if not (Names.is_ident alias) then 
+      error ("Cannot find a name to which "^d^" may map in Coq library");
+    (d, [alias])
+
 let warning s = wARNING [< 'sTR s >]
 
 let parse_args () =
   let rec parse = function
     | [] -> ()
 
-    | ("-I"|"-include") :: d :: rem -> push_include d; parse rem
+    | ("-I"|"-include") :: d :: rem -> push_include (parse_include d);parse rem
     | ("-I"|"-include") :: []       -> usage ()
 
-    | "-R" :: d :: rem -> push_rec_include d; parse rem
+    | "-R" :: d :: rem -> push_rec_include (parse_include d); parse rem
     | "-R" :: []       -> usage ()
 
     | "-q" :: rem -> no_load_rc (); parse rem

@@ -44,7 +44,7 @@ OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
 CAMLP4EXTENDFLAGS=-I . pa_extend.cmo q_MLast.cmo
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
-COQINCLUDES=-I states -R theories -R contrib
+COQINCLUDES=-I states -R theories=Coq -R contrib=Coq
 #           -I contrib/omega -I contrib/ring -I contrib/xml \
 #	    -I theories/Init -I theories/Logic -I theories/Arith \
 #	    -I theories/Bool -I theories/Zarith -I theories/Lists \
@@ -224,7 +224,7 @@ INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/Logic_TypeSyntax.vo
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
-	$(COQC) -$(BEST) -bindir bin -q -R theories -is states/barestate.coq $<
+	$(COQC) -$(BEST) -bindir bin -q -R theories=Coq -is states/barestate.coq $<
 
 init: $(INITVO)
 
@@ -235,7 +235,7 @@ tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
 	$(COQC) -$(BEST) -bindir bin -q -I tactics -is states/barestate.coq $<
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO) $(BESTCOQTOP)
-	$(BESTCOQTOP) -q -batch -silent -is states/barestate.coq -I tactics -R theories -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+	$(BESTCOQTOP) -q -batch -silent -is states/barestate.coq -I tactics -R theories=Coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 clean::
 	rm -f states/*~ states/*.coq
