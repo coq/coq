@@ -1791,6 +1791,57 @@ incompatibilities.
 
 \SeeAlso file \texttt{contrib/Rocq/DEMOS/Demo\_tauto.v}
 
+\subsection{{\tt Jp} {\em (Jprover)}}\tacindex{Jp {\em (Jprover)}}
+\label{Jprover}
+
+The tactic \texttt{Jp}, due to Huang Guan-Shieng, is a direct port of
+the {\em Jprover}\cite{SLKN01} semi-decision procedure for first-order
+intuitionistic logic implemented in {\em Nuprl}\cite{Kre02}. It is a
+connection-based procedure restricted to the intuitionnistic case by a
+constraint solver. 
+
+Search is bounded by a multiplicity parameter indicating how many
+copies of a formula may be used in the proof process. 
+For instance, a multiplicity of 1 restricts Jp to the
+intuitionistic first-order logic without contraction (but with weakening).
+
+\begin{coq_eval}
+Variable S:Set.
+Variables P Q:S->Prop.
+Variable f:S->S.
+\end{coq_eval}
+
+\begin{coq_example*}
+Lemma example: (exists x |P x\/Q x)->(exists x |P x)\/(exists x |Q x).
+jp.
+Qed.
+
+Lemma example2: (forall x ,P x->P (f x))->forall x,P x->P (f(f x)).
+jp.
+Qed.
+\end{coq_example*}
+
+\begin{Variants}
+ \item {\tt Jp $n$}\\
+   \tacindex{Jp $n$} 
+   Tries the {\em Jprover} procedure with multiplicities up to $n$,
+   starting from 1.
+ \item {\tt Jp}\\
+   Tries the {\em Jprover} procedure without multiplicity bound, 
+   possibly running forever.
+\end{Variants}
+
+\begin{ErrMsgs}
+ \item \errindex{multiplicity limit reached}\\
+   The procedure tried all multiplicities below the limit and
+   failed. Goal might be solved by increasing the multiplicity limit. 
+ \item \errindex{formula is not provable}\\
+   The procedure determined that goal was not provable in
+   intuitionistic first-order logic, no matter how big the
+   multiplicity is.
+\end{ErrMsgs}
+
+
 % \subsection{\tt Linear}\tacindex{Linear}\label{Linear}
 % The tactic \texttt{Linear}, due to Jean-Christophe Filli{\^a}atre
 % \cite{Fil94}, implements a decision procedure for {\em Direct
