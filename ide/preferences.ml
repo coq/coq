@@ -9,5 +9,4 @@ type pref =
       mutable auto_save_delay : float;
       mutable automatic_tactics : string * string list;
       mutable cmd_print : string
-
     }
