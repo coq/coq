@@ -25,6 +25,8 @@ open Term
 open Termops
 open Clenv
 open Cerrors
+open Constrextern
+open Constrintern
 
 let _ = Constrextern.print_evar_arguments := true
 
@@ -233,7 +235,7 @@ let print_pure_constr csr =
       print_cut();
       open_vbox 0;
       let rec print_fix () =
-        for k = 0 to Array.length tl do
+        for k = 0 to Array.length tl - 1 do
 	  open_vbox 0;
 	  name_display lna.(k); print_string "/"; 
 	  print_int t.(k); print_cut(); print_string ":";
@@ -247,7 +249,7 @@ let print_pure_constr csr =
       print_cut();
       open_vbox 0;
       let rec print_fix () =
-        for k = 0 to Array.length tl do
+        for k = 0 to Array.length tl - 1 do
           open_vbox 1;
 	  name_display lna.(k);  print_cut(); print_string ":";
 	  box_display tl.(k) ; print_cut(); print_string ":=";
