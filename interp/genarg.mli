@@ -28,6 +28,15 @@ type open_constr = Evd.evar_map * Term.constr
 type open_constr_expr = constr_expr
 type open_rawconstr = rawconstr_and_expr
 
+type intro_pattern_expr =
+  | IntroOrAndPattern of case_intro_pattern_expr
+  | IntroWildcard
+  | IntroIdentifier of identifier
+and case_intro_pattern_expr = intro_pattern_expr list list
+
+val pr_intro_pattern : intro_pattern_expr -> Pp.std_ppcmds
+val pr_case_intro_pattern : case_intro_pattern_expr -> Pp.std_ppcmds
+
 (* The route of a generic argument, from parsing to evaluation
 
               parsing        in_raw                           out_raw
@@ -52,8 +61,9 @@ BoolArgType                    bool                     bool
 IntArgType                     int                      int
 IntOrVarArgType                int or_var               int
 StringArgType                  string (parsed w/ "")    string
-IdentArgType                   identifier               identifier         
 PreIdentArgType                string (parsed w/o "")   string
+IdentArgType                   identifier               identifier         
+IntroPatternArgType            intro_pattern_expr       intro_pattern_expr
 RefArgType                     reference                global_reference
 ConstrArgType                  constr_expr              constr
 ConstrMayEvalArgType           constr_expr may_eval     constr
@@ -85,13 +95,17 @@ val rawwit_string : (string,'co,'ta) abstract_argument_type
 val globwit_string : (string,'co,'ta) abstract_argument_type
 val wit_string : (string,'co,'ta) abstract_argument_type
 
-val rawwit_ident : (identifier,'co,'ta) abstract_argument_type
-val globwit_ident : (identifier,'co,'ta) abstract_argument_type
-val wit_ident : (identifier,'co,'ta) abstract_argument_type
-
 val rawwit_pre_ident : (string,'co,'ta) abstract_argument_type
 val globwit_pre_ident : (string,'co,'ta) abstract_argument_type
 val wit_pre_ident : (string,'co,'ta) abstract_argument_type
+
+val rawwit_intro_pattern : (intro_pattern_expr,'co,'ta) abstract_argument_type
+val globwit_intro_pattern : (intro_pattern_expr,'co,'ta) abstract_argument_type
+val wit_intro_pattern : (intro_pattern_expr,'co,'ta) abstract_argument_type
+
+val rawwit_ident : (identifier,'co,'ta) abstract_argument_type
+val globwit_ident : (identifier,'co,'ta) abstract_argument_type
+val wit_ident : (identifier,'co,'ta) abstract_argument_type
 
 val rawwit_ref : (reference,constr_expr,'ta) abstract_argument_type
 val globwit_ref : (global_reference located or_var,rawconstr_and_expr,'ta) abstract_argument_type
@@ -198,6 +212,7 @@ type argument_type =
   | IntOrVarArgType
   | StringArgType
   | PreIdentArgType
+  | IntroPatternArgType
   | IdentArgType
   | RefArgType
   (* Specific types *)

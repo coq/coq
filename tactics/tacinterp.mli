@@ -28,7 +28,7 @@ type value =
   | VFun of (identifier * value) list * identifier option list * glob_tactic_expr
   | VVoid
   | VInteger of int
-  | VIdentifier of identifier
+  | VIntroPattern of intro_pattern_expr
   | VConstr of constr
   | VConstr_context of constr
   | VRec of value ref

@@ -69,10 +69,10 @@ type value =
   | VFun of (identifier*value) list * identifier option list * glob_tactic_expr
   | VVoid
   | VInteger of int
-  | VIdentifier of identifier (* idents which are not bound, as in "Intro H" *)
-                              (* but which may be bound later, as in "tac" in*)
-                              (* "Intro H; tac" *)
-  | VConstr of constr         (* includes idents known bound and references *)
+  | VIntroPattern of intro_pattern_expr (* includes idents which are not *)
+                        (* bound as in "Intro H" but which may be bound *)
+                        (* later, as in "tac" in "Intro H; tac" *)
+  | VConstr of constr   (* includes idents known bound and references *)
   | VConstr_context of constr
   | VRec of value ref
 
@@ -114,7 +114,7 @@ let constr_of_VConstr_context = function
 let pr_value env = function
   | VVoid -> str "()"
   | VInteger n -> int n
-  | VIdentifier id -> pr_id id
+  | VIntroPattern ipat -> pr_intro_pattern ipat
   | VConstr c -> Printer.prterm_env env c
   | VConstr_context c -> Printer.prterm_env env c
   | (VTactic _ | VRTactic _ | VFun _ | VRec _) -> str "<fun>"
@@ -205,7 +205,6 @@ let coerce_to_reference env = function
   | VConstr c ->
       (try reference_of_constr c
       with Not_found -> invalid_arg_loc (loc, "Not a reference"))
-(*  | VIdentifier id -> VarRef id*)
   | v -> errorlabstrm "coerce_to_reference"
       (str "The value" ++ spc () ++ pr_value env v ++ 
        str "cannot be coerced to a reference")
@@ -220,7 +219,6 @@ let coerce_to_evaluable_ref env c =
   let ev = match c with
     | VConstr c when isConst c -> EvalConstRef (destConst c)
     | VConstr c when isVar c -> EvalVarRef (destVar c)
-(*    | VIdentifier id -> EvalVarRef id*)
     | _ -> error_not_evaluable (pr_value env c)
   in
   if not (Tacred.is_evaluable env ev) then
@@ -352,7 +350,7 @@ let find_hyp id sign =
 (* be fresh in which case it is binding later on *)
 let intern_ident l ist id =
   (* We use identifier both for variables and new names; thus nothing to do *)
-  if find_ident id ist then () else l:=(id::fst !l,id::snd !l);
+  if not (find_ident id ist) then l:=(id::fst !l,id::snd !l);
   id
 
 let intern_name l ist = function
@@ -442,7 +440,8 @@ let intern_reference strict ist = function
           ConstrMayEval (ConstrTerm (intern_constr_reference strict ist r))
         with Not_found ->
           (match r with
-            | Ident (loc,id) when not strict -> Identifier id
+            | Ident (loc,id) when not strict -> 
+		IntroPattern (IntroIdentifier id)
             | _ ->
                 let (loc,qid) = qualid_of_reference r in
                 error_global_not_found_loc loc qid)))
@@ -795,7 +794,9 @@ and intern_tactic_fun ist (var,body) =
 and intern_tacarg strict ist = function
   | TacVoid -> TacVoid
   | Reference r -> intern_reference strict ist r
-  | Identifier id -> anomaly "Not used only in raw_tactic_expr"
+  | IntroPattern ipat -> 
+      let lf = ref([],[]) in (*How to know what names the intropattern binds?*)
+      IntroPattern (intern_intro_pattern lf ist ipat)
   | Integer n -> Integer n
   | ConstrMayEval c -> ConstrMayEval (intern_constr_may_eval ist c)
   | MetaIdArg (loc,s) ->
@@ -840,6 +841,11 @@ and intern_genarg ist x =
       in_gen globwit_string (out_gen rawwit_string x)
   | PreIdentArgType ->
       in_gen globwit_pre_ident (out_gen rawwit_pre_ident x)
+  | IntroPatternArgType ->
+      let lf = ref ([],[]) in
+      (* how to know which names are bound by the intropattern *)
+      in_gen globwit_intro_pattern
+        (intern_intro_pattern lf ist (out_gen rawwit_intro_pattern x))
   | IdentArgType ->
       in_gen globwit_ident (snd (intern_hyp ist (dummy_loc,out_gen rawwit_ident x)))
   | RefArgType ->
@@ -962,7 +968,8 @@ let apply_matching pat csr =
 (* Tries to match one hypothesis pattern with a list of hypotheses *)
 let apply_one_mhyp_context ist env gl lmatch (hypname,pat) (lhyps,nocc) =
   let get_id_couple id = function
-    | Name idpat -> [idpat,VIdentifier id]
+(*    | Name idpat -> [idpat,VIdentifier id]*)
+    | Name idpat -> [idpat,VConstr (mkVar id)]
     | Anonymous -> [] in
   let rec apply_one_mhyp_context_rec nocc = function
     | (id,hyp)::tl as hyps ->
@@ -1009,31 +1016,43 @@ let set_debug pos = debug := pos
 let get_debug () = !debug
 
 (* Interprets an identifier which must be fresh *)
-let eval_ident ist id =
+let interp_ident ist id =
   try match List.assoc id ist.lfun with
-  | VIdentifier id -> id
+  | VIntroPattern (IntroIdentifier id) -> id
   | VConstr c as v when isVar c ->
       (* This happends e.g. in definitions like "Tac H = Clear H; Intro H" *)
       (* c is then expected not to belong to the proof context *)
-      (* would be checkable if env were known from eval_ident *)
+      (* would be checkable if env were known from interp_ident *)
       destVar c
-  | _ -> user_err_loc(loc,"eval_ident", str "An ltac name (" ++ pr_id id ++ 
+  | _ -> user_err_loc(loc,"interp_ident", str "An ltac name (" ++ pr_id id ++ 
          str ") should have been bound to an identifier")
   with Not_found -> id
 
-let eval_integer lfun (loc,id) =
+let interp_intro_pattern_var ist id =
+  try match List.assoc id ist.lfun with
+  | VIntroPattern ipat -> ipat
+  | VConstr c as v when isVar c ->
+      (* This happends e.g. in definitions like "Tac H = Clear H; Intro H" *)
+      (* c is then expected not to belong to the proof context *)
+      (* would be checkable if env were known from interp_ident *)
+      IntroIdentifier (destVar c)
+  | _ -> user_err_loc(loc,"interp_ident", str "An ltac name (" ++ pr_id id ++ 
+         str ") should have been bound to an introduction pattern")
+  with Not_found -> IntroIdentifier id
+
+let interp_int lfun (loc,id) =
   try match List.assoc id lfun with
   | VInteger n -> n
-  | _ -> user_err_loc(loc,"eval_integer",str "should be bound to an integer")
-  with Not_found -> user_err_loc (loc,"eval_integer",str "Unbound variable")
+  | _ -> user_err_loc(loc,"interp_int",str "should be bound to an integer")
+  with Not_found -> user_err_loc (loc,"interp_int",str "Unbound variable")
 
 let interp_int_or_var ist = function
-  | ArgVar locid -> eval_integer ist.lfun locid
+  | ArgVar locid -> interp_int ist.lfun locid
   | ArgArg n -> n
 
 let constr_of_value env = function
   | VConstr csr -> csr
-  | VIdentifier id -> constr_of_id env id
+  | VIntroPattern (IntroIdentifier id) -> constr_of_id env id
   | _ -> raise Not_found
 
 let is_variable env id =
@@ -1041,7 +1060,7 @@ let is_variable env id =
 
 let variable_of_value env = function
   | VConstr c as v when isVar c -> destVar c
-  | VIdentifier id' when is_variable env id' -> id'
+  | VIntroPattern (IntroIdentifier id) when is_variable env id -> id
   | _ -> raise Not_found
 
 (* Extract a variable from a value, if any *)
@@ -1069,9 +1088,9 @@ let interp_var ist gl (loc,id) =
 (* Interprets an existing hypothesis (i.e. a declared variable) *)
 let interp_hyp = interp_var
 
-let eval_name ist = function
+let interp_name ist = function
   | Anonymous -> Anonymous
-  | Name id -> Name (eval_ident ist id)
+  | Name id -> Name (interp_ident ist id)
 
 let interp_clause_pattern ist gl (l,occl) =
   let rec check acc = function
@@ -1083,20 +1102,7 @@ let interp_clause_pattern ist gl (l,occl) =
     | [] -> []
   in (l,check [] occl)
 
-let interp_pure_qualid is_applied env (loc,qid) =
-  try VConstr (constr_of_reference (find_reference env qid))
-  with Not_found ->
-    let (dir,id) = repr_qualid qid in
-    if not is_applied & dir = empty_dirpath then VIdentifier id
-    else user_err_loc (loc,"interp_pure_qualid",str "Unknown reference")
-
 (* Interprets a qualified name *)
-let eval_ref ist env = function
-  | Qualid locqid -> interp_pure_qualid false env locqid
-  | Ident (loc,id) ->
-      try unrec (List.assoc id ist.lfun)
-      with Not_found -> interp_pure_qualid false env (loc,make_short_qualid id)
-
 let interp_reference ist env = function
   | ArgArg (_,r) -> r
   | ArgVar (loc,id) -> coerce_to_reference env (unrec (List.assoc id ist.lfun))
@@ -1129,8 +1135,6 @@ let interp_clause ist gl { onhyps=ol; onconcl=b; concl_occs=occs } =
     onconcl=b;
     concl_occs=occs }
 
-let eval_opt_ident ist = option_app (eval_ident ist)
-
 (* Interpretation of constructions *)
 
 (* Extract the constr list from lfun *)
@@ -1139,14 +1143,23 @@ let rec constr_list_aux env = function
       let (l1,l2) = constr_list_aux env tl in
       (try ((id,constr_of_value env v)::l1,l2)
        with Not_found -> 
-	 (l1,(id,match v with VIdentifier id0 -> Some id0 | _ -> None)::l2))
+	 let ido = match v with
+	   | VIntroPattern (IntroIdentifier id0) -> Some id0
+	   | _ -> None in
+	 (l1,(id,ido)::l2))
   | [] -> ([],[])
 
 let constr_list ist env = constr_list_aux env ist.lfun
 
-(* Extract the identifier list from lfun *)
+(*Extract the identifier list from lfun: join all branches (what to do else?)*)
+let rec intropattern_ids = function
+  | IntroIdentifier id -> [id]
+  | IntroOrAndPattern ll -> 
+      List.flatten (List.map intropattern_ids (List.flatten ll))
+  | IntroWildcard -> []
+
 let rec extract_ids = function
-  | (id,VIdentifier id')::tl -> id'::extract_ids tl
+  | (id,VIntroPattern ipat)::tl -> intropattern_ids ipat @ extract_ids tl
   | _::tl -> extract_ids tl
   | [] -> []
 
@@ -1246,7 +1259,7 @@ let interp_constr_may_eval ist gl c =
 let rec interp_intro_pattern ist = function
   | IntroOrAndPattern l -> IntroOrAndPattern (interp_case_intro_pattern ist l)
   | IntroWildcard -> IntroWildcard
-  | IntroIdentifier id -> IntroIdentifier (eval_ident ist id)
+  | IntroIdentifier id -> interp_intro_pattern_var ist id
 
 and interp_case_intro_pattern ist =
   List.map (List.map (interp_intro_pattern ist))
@@ -1258,7 +1271,7 @@ let interp_quantified_hypothesis ist gl = function
   | NamedHyp id ->
       try match List.assoc id ist.lfun with
 	| VInteger n -> AnonHyp n
-	| VIdentifier id -> NamedHyp id
+(*	| VIdentifier id -> NamedHyp id   Why ?*)
 	| v -> NamedHyp (variable_of_value (pf_env gl) v)
       with Not_found -> NamedHyp id
 
@@ -1337,7 +1350,7 @@ and interp_tacarg ist gl = function
   | TacVoid -> VVoid
   | Reference r -> interp_ltac_reference false ist gl r
   | Integer n -> VInteger n
-  | Identifier id -> VIdentifier id
+  | IntroPattern ipat -> VIntroPattern ipat
   | ConstrMayEval c -> VConstr (interp_constr_may_eval ist gl c)
   | MetaIdArg (loc,id) -> assert false
   | TacCall (loc,f,l) ->
@@ -1347,7 +1360,8 @@ and interp_tacarg ist gl = function
       interp_app ist gl fv largs loc
   | TacFreshId idopt -> 
       let s = match idopt with None -> "H" | Some s -> s in
-      VIdentifier (Tactics.fresh_id (extract_ids ist.lfun) (id_of_string s) gl)
+      let id = Tactics.fresh_id (extract_ids ist.lfun) (id_of_string s) gl in
+      VIntroPattern (IntroIdentifier id)
   | Tacexp t -> val_interp ist gl t
   | TacDynamic(_,t) ->
       let tg = (tag t) in
@@ -1553,8 +1567,11 @@ and interp_genarg ist goal x =
       in_gen wit_string (out_gen globwit_string x)
   | PreIdentArgType ->
       in_gen wit_pre_ident (out_gen globwit_pre_ident x)
+  | IntroPatternArgType ->
+      in_gen wit_intro_pattern
+        (interp_intro_pattern ist (out_gen globwit_intro_pattern x))
   | IdentArgType ->
-      in_gen wit_ident (eval_ident ist (out_gen globwit_ident x))
+      in_gen wit_ident (interp_ident ist (out_gen globwit_ident x))
   | RefArgType ->
       in_gen wit_ref (pf_interp_reference ist goal (out_gen globwit_ref x))
   | SortArgType ->
@@ -1640,7 +1657,7 @@ and interp_atomic ist gl = function
   | TacIntrosUntil hyp ->
       h_intros_until (interp_quantified_hypothesis ist gl hyp)
   | TacIntroMove (ido,ido') ->
-      h_intro_move (option_app (eval_ident ist) ido)
+      h_intro_move (option_app (interp_ident ist) ido)
       (option_app (interp_hyp ist gl) ido')
   | TacAssumption -> h_assumption
   | TacExact c -> h_exact (pf_interp_casted_constr ist gl c)
@@ -1651,24 +1668,24 @@ and interp_atomic ist gl = function
   | TacElimType c -> h_elim_type (pf_interp_constr ist gl c)
   | TacCase cb -> h_case (interp_constr_with_bindings ist gl cb)
   | TacCaseType c -> h_case_type (pf_interp_constr ist gl c)
-  | TacFix (idopt,n) -> h_fix (eval_opt_ident ist idopt) n
+  | TacFix (idopt,n) -> h_fix (option_app (interp_ident ist) idopt) n
   | TacMutualFix (id,n,l) ->
-      let f (id,n,c) = (eval_ident ist id,n,pf_interp_constr ist gl c) in
-      h_mutual_fix (eval_ident ist id) n (List.map f l)
-  | TacCofix idopt -> h_cofix (eval_opt_ident ist idopt)
+      let f (id,n,c) = (interp_ident ist id,n,pf_interp_constr ist gl c) in
+      h_mutual_fix (interp_ident ist id) n (List.map f l)
+  | TacCofix idopt -> h_cofix (option_app (interp_ident ist) idopt)
   | TacMutualCofix (id,l) ->
-      let f (id,c) = (eval_ident ist id,pf_interp_constr ist gl c) in
-      h_mutual_cofix (eval_ident ist id) (List.map f l)
+      let f (id,c) = (interp_ident ist id,pf_interp_constr ist gl c) in
+      h_mutual_cofix (interp_ident ist id) (List.map f l)
   | TacCut c -> h_cut (pf_interp_constr ist gl c)
   | TacTrueCut (na,c) ->
-      h_true_cut (eval_name ist na) (pf_interp_constr ist gl c)
+      h_true_cut (interp_name ist na) (pf_interp_constr ist gl c)
   | TacForward (b,na,c) ->
-      h_forward b (eval_name ist na) (pf_interp_constr ist gl c)
+      h_forward b (interp_name ist na) (pf_interp_constr ist gl c)
   | TacGeneralize cl -> h_generalize (List.map (pf_interp_constr ist gl) cl)
   | TacGeneralizeDep c -> h_generalize_dep (pf_interp_constr ist gl c)
   | TacLetTac (na,c,clp) ->
       let clp = interp_clause ist gl clp in
-      h_let_tac (eval_name ist na) (pf_interp_constr ist gl c) clp
+      h_let_tac (interp_name ist na) (pf_interp_constr ist gl c) clp
   | TacInstantiate (n,c,ido) -> h_instantiate n (pf_interp_constr ist gl c)
       (clause_app (interp_hyp_location ist gl) ido)
 
@@ -1713,7 +1730,7 @@ and interp_atomic ist gl = function
   | TacMove (dep,id1,id2) ->
       h_move dep (interp_hyp ist gl id1) (interp_hyp ist gl id2)
   | TacRename (id1,id2) ->
-      h_rename (interp_hyp ist gl id1) (eval_ident ist (snd id2))
+      h_rename (interp_hyp ist gl id1) (interp_ident ist (snd id2))
 
   (* Constructors *)
   | TacLeft bl -> h_left (interp_bindings ist gl bl)
@@ -1761,7 +1778,10 @@ and interp_atomic ist gl = function
     | IntOrVarArgType -> 
 	VInteger (interp_int_or_var ist (out_gen globwit_int_or_var x))
     | PreIdentArgType ->
-        VIdentifier (id_of_string (out_gen globwit_pre_ident x))
+        VIntroPattern
+	  (IntroIdentifier (id_of_string (out_gen globwit_pre_ident x)))
+    | IntroPatternArgType ->
+	VIntroPattern (out_gen globwit_intro_pattern x)
     | IdentArgType -> 
 	VConstr 
 	  (mkVar (interp_hyp ist gl (dummy_loc,out_gen globwit_ident x)))
@@ -2020,7 +2040,7 @@ and subst_tacarg subst = function
   | MetaIdArg (_loc,_) -> assert false
   | TacCall (_loc,f,l) ->
       TacCall (_loc, subst_reference subst f, List.map (subst_tacarg subst) l)
-  | (TacVoid | Identifier _ | Integer _ | TacFreshId _) as x -> x
+  | (TacVoid | IntroPattern _ | Integer _ | TacFreshId _) as x -> x
   | Tacexp t -> Tacexp (subst_tactic subst t)
   | TacDynamic(_,t) as x ->
       (match tag t with
@@ -2046,6 +2066,8 @@ and subst_genarg subst (x:glob_generic_argument) =
   | IntOrVarArgType -> in_gen globwit_int_or_var (out_gen globwit_int_or_var x)
   | StringArgType -> in_gen globwit_string (out_gen globwit_string x)
   | PreIdentArgType -> in_gen globwit_pre_ident (out_gen globwit_pre_ident x)
+  | IntroPatternArgType ->
+      in_gen globwit_intro_pattern (out_gen globwit_intro_pattern x)
   | IdentArgType -> in_gen globwit_ident (out_gen globwit_ident x)
   | RefArgType ->
       in_gen globwit_ref (subst_global_reference subst 

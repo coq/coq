@@ -188,6 +188,7 @@ GEXTEND Gram
       | IDENT "Check"; c = Constr.constr ->
 	  ConstrMayEval (ConstrTypeOf c)
       | IDENT "FreshId"; s = OPT STRING -> TacFreshId s
+      | IDENT "ipattern"; ":"; ipat = simple_intropattern -> IntroPattern ipat
       | r = reference -> Reference r
       | ta = tactic_arg0 -> ta ] ]
   ;
@@ -199,6 +200,7 @@ GEXTEND Gram
       | IDENT "Check"; c = Constr.constr ->
 	  ConstrMayEval (ConstrTypeOf c)
       | IDENT "FreshId"; s = OPT STRING -> TacFreshId s
+      | IDENT "ipattern"; ":"; ipat = simple_intropattern -> IntroPattern ipat
       | r = reference; la = LIST1 tactic_arg0 -> TacCall (loc,r,la)
       | r = reference -> Reference r
       | ta = tactic_arg0 -> ta ] ]

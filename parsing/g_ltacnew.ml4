@@ -115,8 +115,10 @@ GEXTEND Gram
 	  s = [ s = STRING -> s | -> ""] -> TacFail (n,s)
       | st = simple_tactic -> TacAtom (loc,st)
       | a = may_eval_arg -> TacArg(a)
-      | IDENT"constr"; ":"; c = Constr.constr ->
+      | IDENT "constr"; ":"; c = Constr.constr ->
           TacArg(ConstrMayEval(ConstrTerm c))
+      | IDENT "ipattern"; ":"; ipat = simple_intropattern -> 
+	  TacArg(IntroPattern ipat)
       | r = reference; la = LIST1 tactic_arg ->
           TacArg(TacCall (loc,r,la))
       | r = reference -> TacArg (Reference r) ]
@@ -127,6 +129,7 @@ GEXTEND Gram
   (* Tactic arguments *)
   tactic_arg:
     [ [ IDENT "ltac"; ":"; a = tactic_expr LEVEL "0" -> arg_of_expr a
+      | IDENT "ipattern"; ":"; ipat = simple_intropattern -> IntroPattern ipat
       | a = may_eval_arg -> a
       | a = tactic_atom -> a
       | c = Constr.constr -> ConstrMayEval (ConstrTerm c) ] ]

@@ -207,19 +207,6 @@ let pr_with_constr prc = function
   | None -> mt ()
   | Some c -> spc () ++ hov 1 (str "with" ++ spc () ++ prc c)
 
-let rec pr_intro_pattern = function
-  | IntroOrAndPattern pll -> pr_case_intro_pattern pll
-  | IntroWildcard -> str "_"
-  | IntroIdentifier id -> pr_id id
-
-and pr_case_intro_pattern = function
-  | [_::_ as pl] ->
-      str "(" ++ hv 0 (prlist_with_sep pr_coma pr_intro_pattern pl) ++ str ")"
-  | pll ->
-      str "[" ++
-      hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
-      ++ str "]"
-
 let pr_with_names = function
   | [] -> mt ()
   | ids -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_case_intro_pattern ids)
@@ -765,7 +752,7 @@ and pr_tacarg env = function
   | TacDynamic (loc,t) ->
       pr_with_comments loc (str ("<dynamic ["^(Dyn.tag t)^"]>"))
   | MetaIdArg (loc,s) -> pr_with_comments loc (str ("$" ^ s))
-  | Identifier id -> pr_id id
+  | IntroPattern ipat -> str "ipattern:" ++ pr_intro_pattern ipat
   | TacVoid -> str "()"
   | Reference r -> pr_ref r
   | ConstrMayEval c ->

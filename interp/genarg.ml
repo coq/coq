@@ -8,8 +8,10 @@
 
 (* $Id$ *)
 
+open Pp
 open Util
 open Names
+open Nameops
 open Nametab
 open Rawterm
 open Topconstr
@@ -22,6 +24,7 @@ type argument_type =
   | IntOrVarArgType
   | StringArgType
   | PreIdentArgType
+  | IntroPatternArgType
   | IdentArgType
   | RefArgType
   (* Specific types *)
@@ -61,6 +64,25 @@ let create_arg s =
 
 let exists_argtype s = List.mem s !dyntab
 
+type intro_pattern_expr =
+  | IntroOrAndPattern of case_intro_pattern_expr
+  | IntroWildcard
+  | IntroIdentifier of identifier
+and case_intro_pattern_expr = intro_pattern_expr list list
+
+let rec pr_intro_pattern = function
+  | IntroOrAndPattern pll -> pr_case_intro_pattern pll
+  | IntroWildcard -> str "_"
+  | IntroIdentifier id -> pr_id id
+
+and pr_case_intro_pattern = function
+  | [_::_ as pl] ->
+      str "(" ++ hv 0 (prlist_with_sep pr_coma pr_intro_pattern pl) ++ str ")"
+  | pll ->
+      str "[" ++
+      hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
+      ++ str "]"
+
 type open_constr = Evd.evar_map * Term.constr
 type open_constr_expr = constr_expr
 type open_rawconstr = rawconstr_and_expr
@@ -81,13 +103,17 @@ let rawwit_string = StringArgType
 let globwit_string = StringArgType
 let wit_string = StringArgType
 
-let rawwit_ident = IdentArgType
-let globwit_ident = IdentArgType
-let wit_ident = IdentArgType
-
 let rawwit_pre_ident = PreIdentArgType
 let globwit_pre_ident = PreIdentArgType
 let wit_pre_ident = PreIdentArgType
+
+let rawwit_intro_pattern = IntroPatternArgType
+let globwit_intro_pattern = IntroPatternArgType
+let wit_intro_pattern = IntroPatternArgType
+
+let rawwit_ident = IdentArgType
+let globwit_ident = IdentArgType
+let wit_ident = IdentArgType
 
 let rawwit_ref = RefArgType
 let globwit_ref = RefArgType

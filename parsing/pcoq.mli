@@ -162,6 +162,7 @@ module Tactic :
     val int_or_var : int or_var Gram.Entry.e
     val red_expr : raw_red_expr Gram.Entry.e
     val simple_tactic : raw_atomic_tactic_expr Gram.Entry.e
+    val simple_intropattern : Genarg.intro_pattern_expr Gram.Entry.e
     val tactic_arg : raw_tactic_arg Gram.Entry.e
     val tactic : raw_tactic_expr Gram.Entry.e
     val tactic_eoi : raw_tactic_expr Gram.Entry.e

@@ -133,10 +133,10 @@ let mlexpr_of_reference = function
   | Libnames.Ident (loc,id) -> <:expr< Libnames.Ident $dloc$ $mlexpr_of_ident id$ >>
 
 let mlexpr_of_intro_pattern = function
-  | Tacexpr.IntroOrAndPattern _ -> failwith "mlexpr_of_intro_pattern: TODO"
-  | Tacexpr.IntroWildcard -> <:expr< Tacexpr.IntroWildcard >>
-  | Tacexpr.IntroIdentifier id ->
-      <:expr< Tacexpr.IntroIdentifier (mlexpr_of_ident $dloc$ id) >>
+  | Genarg.IntroOrAndPattern _ -> failwith "mlexpr_of_intro_pattern: TODO"
+  | Genarg.IntroWildcard -> <:expr< Genarg.IntroWildcard >>
+  | Genarg.IntroIdentifier id ->
+      <:expr< Genarg.IntroIdentifier (mlexpr_of_ident $dloc$ id) >>
 
 let mlexpr_of_ident_option = mlexpr_of_option (mlexpr_of_ident)
 
@@ -250,6 +250,7 @@ let rec mlexpr_of_argtype loc = function
   | Genarg.IntOrVarArgType -> <:expr< Genarg.IntOrVarArgType >>
   | Genarg.RefArgType -> <:expr< Genarg.RefArgType >>
   | Genarg.PreIdentArgType -> <:expr< Genarg.PreIdentArgType >>
+  | Genarg.IntroPatternArgType -> <:expr< Genarg.IntroPatternArgType >>
   | Genarg.IdentArgType -> <:expr< Genarg.IdentArgType >>
   | Genarg.StringArgType -> <:expr< Genarg.StringArgType >>
   | Genarg.QuantHypArgType -> <:expr< Genarg.QuantHypArgType >>

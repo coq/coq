@@ -140,16 +140,6 @@ let pr_with_constr prc = function
   | None -> mt ()
   | Some c -> spc () ++ hov 1 (str "with" ++ spc () ++ prc c)
 
-let rec pr_intro_pattern = function
-  | IntroOrAndPattern pll -> pr_case_intro_pattern pll
-  | IntroWildcard -> str "_"
-  | IntroIdentifier id -> pr_id id
-
-and pr_case_intro_pattern pll =
-  str "[" ++
-  hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
-  ++ str "]"
-
 let pr_with_names = function
   | [] -> mt ()
   | ids -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_case_intro_pattern ids)
@@ -265,6 +255,8 @@ let rec pr_raw_generic prc prlc prtac prref x =
   | IntOrVarArgType -> pr_arg (pr_or_var pr_int) (out_gen rawwit_int_or_var x)
   | StringArgType -> spc () ++ str "\"" ++ str (out_gen rawwit_string x) ++ str "\""
   | PreIdentArgType -> pr_arg str (out_gen rawwit_pre_ident x)
+  | IntroPatternArgType -> pr_arg pr_intro_pattern 
+      (out_gen rawwit_intro_pattern x)
   | IdentArgType -> pr_arg pr_id (Constrextern.v7_to_v8_id (out_gen rawwit_ident x))
   | RefArgType -> pr_arg prref (out_gen rawwit_ref x)
   | SortArgType -> pr_arg pr_sort (out_gen rawwit_sort x)
@@ -310,6 +302,8 @@ let rec pr_glob_generic prc prlc prtac x =
   | IntOrVarArgType -> pr_arg (pr_or_var pr_int) (out_gen globwit_int_or_var x)
   | StringArgType -> spc () ++ str "\"" ++ str (out_gen globwit_string x) ++ str "\""
   | PreIdentArgType -> pr_arg str (out_gen globwit_pre_ident x)
+  | IntroPatternArgType ->
+      pr_arg pr_intro_pattern (out_gen globwit_intro_pattern x)
   | IdentArgType -> pr_arg pr_id (Constrextern.v7_to_v8_id (out_gen globwit_ident x))
   | RefArgType -> pr_arg (pr_or_var (pr_located pr_global)) (out_gen globwit_ref x)
   | SortArgType -> pr_arg pr_sort (out_gen globwit_sort x)
@@ -356,6 +350,8 @@ let rec pr_generic prc prlc prtac x =
   | IntOrVarArgType -> pr_arg (pr_or_var pr_int) (out_gen wit_int_or_var x)
   | StringArgType -> spc () ++ str "\"" ++ str (out_gen wit_string x) ++ str "\""
   | PreIdentArgType -> pr_arg str (out_gen wit_pre_ident x)
+  | IntroPatternArgType -> 
+      pr_arg pr_intro_pattern (out_gen wit_intro_pattern x)
   | IdentArgType -> pr_arg pr_id (Constrextern.v7_to_v8_id (out_gen wit_ident x))
   | RefArgType -> pr_arg pr_global (out_gen wit_ref x)
   | SortArgType -> pr_arg prc (Term.mkSort (out_gen wit_sort x))
@@ -692,7 +688,7 @@ and pr6 = function
 and pr_tacarg0 = function
   | TacDynamic (_,t) -> str ("<dynamic ["^(Dyn.tag t)^"]>")
   | MetaIdArg (_,s) -> str ("$" ^ s)
-  | Identifier id -> pr_id id
+  | IntroPattern ipat -> pr_intro_pattern ipat
   | TacVoid -> str "()"
   | Reference r -> pr_ref r
   | ConstrMayEval (ConstrTerm c) -> str "'" ++ pr_constr c

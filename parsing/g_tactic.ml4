@@ -64,7 +64,8 @@ let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
 if !Options.v7 then
 GEXTEND Gram
   GLOBAL: simple_tactic constrarg bindings constr_with_bindings 
-  quantified_hypothesis red_expr int_or_var castedopenconstr;
+  quantified_hypothesis red_expr int_or_var castedopenconstr
+  simple_intropattern;
 
   int_or_var:
     [ [ n = integer  -> Genarg.ArgArg n

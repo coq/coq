@@ -379,6 +379,8 @@ module Tactic =
       make_gen_entry utactic rawwit_quant_hyp "quantified_hypothesis"
     let int_or_var = make_gen_entry utactic rawwit_int_or_var "int_or_var"
     let red_expr = make_gen_entry utactic rawwit_red_expr "red_expr"
+    let simple_intropattern = 
+      make_gen_entry utactic rawwit_intro_pattern "simple_intropattern"
 
     (* Main entries for ltac *)
     let tactic_arg = Gram.Entry.create "tactic:tactic_arg"
