@@ -51,11 +51,12 @@ Syntax constr
     sig_var
       [<<(ABSTR_B_NB $c1 $c2)>>] -> [ [<hov 0> "sig " $c1:L [1 1] $c2:L ] ]
   | sig2_var
-      [<<(Sig2_ABSTR_B_NB $c1 $c2)>>] -> [ [<hov 0> "sig2 " $c1:L [1 1] $c2:L ] ]
+      [<<(Sig2_ABSTR_B_NB $c1 $c2 $c3)>>]
+       -> [ [<hov 0> "sig2 " $c1:L [1 1] $c2:L [1 1] $c3:L] ]
   | sigS_var
       [<<(SigS_ABSTR_B_NB $c1 $c2)>>] -> [ [<hov 0> "sigS " $c1:L [1 1] $c2:L ] ]
   | sigS2_var [<<(SigS2_ABSTR_B_NB $c1 $c2 $c3)>>]
-      -> [ [<hov 0> "sigS2 " $c1:L [1 1] $c2:L [1 1] $c3:L] ]
+       -> [ [<hov 0> "sigS2 " $c1:L [1 1] $c2:L [1 1] $c3:L] ]
   ;
 
   level 1:
