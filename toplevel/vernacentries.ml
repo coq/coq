@@ -106,7 +106,7 @@ let show_prooftree () =
   and evc = evc_of_pftreestate pts in
   msg (Refiner.print_proof evc (Global.named_context()) pf)
 
-let print_subgoals () = if_verbose msg (pr_open_subgoals ())
+let print_subgoals () = if_verbose (fun () -> msg (pr_open_subgoals ())) ()
 
   (* Simulate the Intro(s) tactic *)
 
