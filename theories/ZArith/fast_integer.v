@@ -64,7 +64,7 @@ with add_carry [x:positive]:positive -> positive := [y:positive]
   | xH      xH      => (xI xH)
   end.
 
-V7only [Infix LEFTA 4 "+" add : positive_scope.].
+V7only [Notation "x + y" := (add x y) : positive_scope.].
 V8Infix "+" add : positive_scope.
 
 Open Local Scope positive_scope.

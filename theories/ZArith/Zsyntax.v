@@ -232,8 +232,7 @@ Module Z_scope.
 Infix LEFTA 4 "+" Zplus : Z_scope.
 Infix LEFTA 4 "-" Zminus : Z_scope.
 Infix LEFTA 3 "*" Zmult : Z_scope.
-Notation "- x" := (Zopp x) (at level 0) : Z_scope
-  V8only (at level 40).
+Notation "- x" := (Zopp x) : Z_scope V8only.
 Infix NONA 5 "<=" Zle : Z_scope.
 Infix NONA 5 "<"  Zlt : Z_scope.
 Infix NONA 5 ">=" Zge : Z_scope.
