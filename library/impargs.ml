@@ -6,6 +6,7 @@ open Names
 open Term
 open Reduction
 open Declarations
+open Environ
 open Inductive
 
 type implicits =
@@ -30,9 +31,7 @@ let implicitely f x =
     raise e
   end
 
-let auto_implicits ty =
-  let genv = Global.env() in
-  Impl_auto (poly_args genv Evd.empty ty)
+let auto_implicits env ty = Impl_auto (poly_args env Evd.empty ty)
 
 let list_of_implicits = function 
   | Impl_auto l -> l
@@ -44,8 +43,9 @@ let list_of_implicits = function
 let constants_table = ref Spmap.empty
 
 let declare_constant_implicits sp =
-  let cb = Global.lookup_constant sp in
-  let imps = auto_implicits (body_of_type cb.const_type) in
+  let env = Global.env () in
+  let cb = lookup_constant sp env in
+  let imps = auto_implicits env (body_of_type cb.const_type) in
   constants_table := Spmap.add sp imps !constants_table
 
 let declare_constant_manual_implicits sp imps =
@@ -65,10 +65,13 @@ let constant_implicits_list sp =
 let inductives_table = ref Spmap.empty
 
 let declare_inductive_implicits sp =
-  let mib = Global.lookup_mind sp in
+  let env = Global.env () in
+  let mib = lookup_mind sp env in
+  let env_ar = push_rels (mind_arities_context mib) env in
   let imps_one_inductive mip =
-    (auto_implicits (body_of_type (mind_user_arity mip)),
-     Array.map (fun c -> auto_implicits (body_of_type c)) (mind_user_lc mip))
+    (auto_implicits env (body_of_type (mind_user_arity mip)),
+     Array.map (fun c -> auto_implicits env_ar (body_of_type c))
+       (mind_user_lc mip))
   in
   let imps = Array.map imps_one_inductive mib.mind_packets in
   inductives_table := Spmap.add sp imps !inductives_table
@@ -95,9 +98,10 @@ let inductive_implicits_list ind_sp =
 
 let var_table = ref Idmap.empty
 
-let declare_var_implicits id = 
-  let (_,ty) = Global.lookup_var id in
-  let imps = auto_implicits (body_of_type ty) in
+let declare_var_implicits id =
+  let env = Global.env () in
+  let (_,ty) = lookup_var id env in
+  let imps = auto_implicits env (body_of_type ty) in
   var_table := Idmap.add id imps !var_table
 
 let implicits_of_var id =
