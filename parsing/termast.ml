@@ -224,16 +224,25 @@ let rec ast_of_raw = function
       let asteqns = List.map ast_of_eqn eqns in 
       ope(tag,pred::asttomatch::asteqns)
 	
+  | ROrderedCase (_,LetStyle,typopt,tm,[|bv|]) ->
+      let nvar' = function Anonymous -> nvar wildcard | Name id -> nvar id in
+      let rec f l = function
+        | RLambda (_,na,RHole _,c) -> f (nvar' na :: l) c
+        | RLetIn (_,na,RHole _,c) -> f (nvar' na :: l) c
+        | c -> List.rev l, ast_of_raw c in
+      let l,c = f [] bv in
+      let eqn = ope ("EQN", [c;ope ("PATTCONSTRUCT",(nvar wildcard)::l)]) in
+      ope ("FORCELET",[(ast_of_rawopt typopt);(ast_of_raw tm);eqn])
+
   | ROrderedCase (_,st,typopt,tm,bv) ->
       let tag = match st with
 	| IfStyle -> "FORCEIF"
-	| LetStyle -> "FORCELET"
-	| RegularStyle -> "CASES"
-	| MatchStyle -> "MATCH"
+	| RegularStyle -> "CASE"
+	| MatchStyle | LetStyle -> "MATCH"
       in
 
       (* warning "Old Case syntax"; *)
-      ope("CASE",(ast_of_rawopt typopt)
+      ope(tag,(ast_of_rawopt typopt)
 	    ::(ast_of_raw tm)
 	    ::(Array.to_list (Array.map ast_of_raw bv)))
   | RRec (_,fk,idv,tyv,bv) ->

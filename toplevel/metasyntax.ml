@@ -288,7 +288,11 @@ let make_hunks_ast symbols etyps from =
 	  add_break (if protect then 1 else 0)
 	    (RO (if protect then s^" " else s) :: make CanBreak prods)
 	else
-	  RO s :: make CanBreak prods
+          if protect then
+            (if ws = CanBreak then add_break 1 else (fun x -> x))
+	    (RO (s^" ") :: make CanBreak prods)
+          else
+	    RO s :: make CanBreak prods
 
     | Terminal s :: prods ->
 	RO s :: make NoBreak prods
@@ -326,7 +330,11 @@ let make_hunks etyps symbols =
 	  add_break (if protect then 1 else 0)
 	    (UnpTerminal (if protect then s^" " else s) :: make CanBreak prods)
 	else
-	  UnpTerminal s :: make CanBreak prods
+          if protect then
+            (if ws = CanBreak then add_break 1 else (fun x -> x))
+	      (UnpTerminal (s^" ") :: make CanBreak prods)
+          else
+	    UnpTerminal s :: make CanBreak prods
 
     | Terminal s :: prods ->
 	UnpTerminal s :: make NoBreak prods

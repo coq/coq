@@ -81,7 +81,7 @@ Syntax constr
   (* On force les parenthèses autour d'un "if" sous-terme (même si le
      parsing est lui plus tolérant) *)
   level 10:
-    boolean_cases [ << (FORCEIF $pred $tomatch (EQN $c1 $_) (EQN $c2 $_)) >> ]
+    boolean_cases [ << (FORCEIF $pred $tomatch $c1 $c2) >> ]
       -> [ [<hov 0> (ELIMPRED $pred)
               [<hv 0> "if " [<hov 0> $tomatch:L ]
                       [1 0] [<hov 0> "then" [1 1] $c1:L ]
