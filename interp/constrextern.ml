@@ -160,7 +160,7 @@ let translate_v7_string dir = function
   | "double_moins_deux" -> "Pdouble_minus_two"
   | "double_moins_un_add_un" -> "xI_eq_double_minus_one_succ"
   | "add_un_double_moins_un_xO" -> "Psucc_double_minus_one_eq_xO"
-  | "add_un_Zs" -> "Psucc_Zs" (* POS_is_succ_morphism ? *)
+  | "add_un_Zs" -> "Zpos_succ_morphism"
   | "entier" -> "N"
   | "entier_of_Z" -> "Zabs_N"
   | "Z_of_entier" -> "Z_of_N"
@@ -200,6 +200,8 @@ let translate_v7_string dir = function
   | "times_x_1" -> "Pmult_1_r"
   | "times_x_double" -> "Pmult_xO_permute_r"
   | "times_x_double_plus_one" -> "Pmult_xI_permute_r"
+  | "times_discr_xO_xI" -> "Pmult_xI_mult_xO_discr"
+  | "times_discr_xO" -> "Pmult_xO_discr"
   | "true_sub_convert" -> "nat_of_P_minus_morphism"
   | "compare_true_sub_right" -> "Pcompare_minus_r"
   | "compare_true_sub_left" -> "Pcompare_minus_l"
@@ -315,8 +317,10 @@ let translate_v7_string dir = function
   | "Zopp_intro" -> "Zopp_inj"
   | "plus_iter_add" -> "plus_iter_eq_plus"
   | "add_verif" -> "Pmult_nat_plus_morphism"
-  | "ZL2" -> "Pmult_nat_shift_plus_morphism"
+  | "ZL2" -> "Pmult_nat_plus_morphism"
+(* Trop spécifique ?
   | "ZL6" -> "Pmult_nat_plus_shift_morphism"
+*)
   | "ZL15" -> "Pplus_carry_pred_eq_plus"
   | "cvt_carry" -> "nat_of_P_plus_carry_morphism"
   | "iter_convert" -> "iter_nat_of_P"
@@ -578,6 +582,7 @@ let translate_v7_string dir = function
   | "Rplus_Ropp_r" -> "Rplus_opp_r"
   | "Rmult_Rplus_distr_l" -> "Rmult_plus_distr_l"
   | "Rlt_antisym" -> "Rlt_asym"
+  | "Rlt_antirefl" -> "Rlt_irrefl"
   | "Rlt_compatibility" -> "Rplus_lt_compat_l"
   | "Rgt_plus_plus_r" -> "Rplus_gt_compat_l"
   | "Rgt_r_plus_plus" -> "Rplus_gt_reg_l"
