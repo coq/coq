@@ -8,12 +8,12 @@ purpose is to allow the user to navigate forward and backward into a
 \Coq{} vernacular file, executing corresponding commands or undoing
 them respectively. % CREDITS ? Proof general, lablgtk, ...
 
-\coqide{} is run by typing the command \verb|coqide| on the command
+\CoqIDE{} is run by typing the command \verb|coqide| on the command
 line. Without argument, the main screen is displayed with an ``unnamed
 buffer'', and with a file name as argument, another buffer displaying
 the contents of that file. Additionally, coqide accepts the same
 options as coqtop, given in Chapter~\ref{Addoc-coqc}, the ones having
-obviously no meaning for \coqide{} being ignored.
+obviously no meaning for \CoqIDE{} being ignored.
 
 \begin{figure}[t]
 \begin{center}
@@ -26,11 +26,11 @@ obviously no meaning for \coqide{} being ignored.
 \fi
 %END LATEX
 \end{center}
-\caption{\coqide{} main screen}
+\caption{\CoqIDE{} main screen}
 \label{fig:coqide}
 \end{figure}
 
-A sample \coqide{} main screen, while navigating into a file
+A sample \CoqIDE{} main screen, while navigating into a file
 \verb|Fermat.v|, is shown on Figure~\ref{fig:coqide}.  At
 the top is a menu bar, and a tool bar below it. The large window on
 the left is displaying the various \emph{script buffers}. The upper right
@@ -50,7 +50,7 @@ one where Coq commands are currently executed.
 
 Buffers may be edited as in any text editor, and classical basic
 editing commands (Copy/Paste, \ldots) are available in the \emph{Edit}
-menu. \coqide{} offers only basic editing commands, so if you need
+menu. \CoqIDE{} offers only basic editing commands, so if you need
 more complex editing commands, you may launch your favorite text
 editor on the current buffer, using the \emph{Edit/External Editor}
 menu. 
@@ -131,7 +131,7 @@ arguments.
 \fi
 %END LATEX
 \end{center}
-\caption{\coqide{}: the query window}
+\caption{\CoqIDE{}: the query window}
 \label{fig:querywindow}
 \end{figure}
 
@@ -140,10 +140,10 @@ We call \emph{query} any vernacular command that do not change the
 current state, such as \verb|Check|, \verb|SearchAbout|, etc. Those
 commands are of course useless during compilation of a file, hence
 should not be included in scripts. To run such commands without
-writing them in the script, \coqide{} offers another input window
+writing them in the script, \CoqIDE{} offers another input window
 called the \emph{query window}. This window can be displayed on
 demand, either by using the \texttt{Window} menu, or directly using
-shortcuts given in the \texttt{Queries} menu. Indeed, with \coqide{}
+shortcuts given in the \texttt{Queries} menu. Indeed, with \CoqIDE{}
 the simplest way to perform a \texttt{SearchAbout} on some identifier
 is to select it using the mouse, and pressing \verb|F2|. This will
 both make appear the query window and run the \texttt{SearchAbout} in
@@ -176,7 +176,7 @@ The second section is devoted to file management: you may
 configure automatic saving of files, by periodically saving the
 contents into files named \verb|#f#| for each opened file
 \verb|f|. You may also activate the \emph{revert} feature: in case a
-opened file is modified on the disk by a third party, \coqide{} may read
+opened file is modified on the disk by a third party, \CoqIDE{} may read
 it again for you. Note that in the case you edited that same file, you
 will be prompt to choose to either discard your changes or not.
 
@@ -207,7 +207,7 @@ resources syntax
 \url{http://developer.gnome.org/doc/API/2.0/gtk/gtk-Resource-Files.html}.
 Such a default resource file exists in the \Coq{} library, you may
 copy this file into your home directory, and edit it using any text
-editor, \coqide{} itself for example.
+editor, \CoqIDE{} itself for example.
 
   
 % $Id$ 

@@ -340,35 +340,28 @@ where "n + m" := (plus n m).
 \subsection{Displaying informations about notations}
 
 To deactivate the printing of all notations, use the command
-
-\medskip
-{\tt Unset Printing Notation}.
-\medskip
-
+\begin{quote}
+\tt Unset Printing Notation.
+\end{quote}
 To reactivate it, use the command
-
-\medskip
-{\tt Set Printing Notation}.
-\medskip
-
+\begin{quote}
+\tt Set Printing Notation.
+\end{quote}
 The default is to use notations for printing terms wherever possible.
 
-\subsection{Locating notations}
+\subsection{Locating notations
 \comindex{Locate}
-\label{LocateSymbol}
+\label{LocateSymbol}}
 
 To know to which notations a given symbol belongs to, use the command
-
-\bigskip
-{\tt Locate {\symbolentry}}
-\bigskip
-
+\begin{quote}
+\tt Locate {\symbolentry}
+\end{quote}
 where symbol is any (composite) symbol surrounded by quotes. To locate
 a particular notation, use a string where the variables of the
 notation are replaced by ``\_''.
 
 \Example
-
 \begin{coq_example}
 Locate "exists".
 Locate "'exists' _ , _".
@@ -377,17 +370,17 @@ Locate "'exists' _ , _".
 \SeeAlso Section \ref{Locate}.
 
 \begin{figure}
-\begin{tabular}{|lcl|}
-\hline
+\begin{centerframe}
+\begin{tabular}{lcl}
 {\sentence} & ::= &
    \texttt{Notation} \zeroone{\tt Local} {\str} \texttt{:=} {\term} 
-   \zeroone{\modifiers} \zeroone{:{\scope}} \verb=.=\\
+   \zeroone{\modifiers} \zeroone{:{\scope}} .\\
   & $|$ & 
    \texttt{Infix} \zeroone{\tt Local} {\str} \texttt{:=} {\qualid} 
-   \zeroone{\modifiers} \zeroone{:{\scope}} \verb=.=\\
+   \zeroone{\modifiers} \zeroone{:{\scope}} .\\
   & $|$ & 
    \texttt{Reserved Notation} \zeroone{\tt Local} {\str}
-   \zeroone{\modifiers} \verb=.=\\
+   \zeroone{\modifiers} .\\
   & $|$ & {\tt Inductive}
    \nelist{{\inductivebody} \zeroone{\declnotation}}{with}{\tt .}\\
   & $|$ & {\tt CoInductive}
@@ -398,7 +391,7 @@ Locate "'exists' _ , _".
    \nelist{{\cofixpointbody} \zeroone{\declnotation}}{with} {\tt .} \\
 \\
 {\declnotation} & ::= & 
-  \zeroone{{\tt where} {\str} {\tt :=} {\term} \zeroone{:{\scope}}} \verb=.=
+  \zeroone{{\tt where} {\str} {\tt :=} {\term} \zeroone{:{\scope}}} .
 \\
 \\
 {\modifiers}
@@ -412,9 +405,9 @@ Locate "'exists' _ , _".
   & $|$ & {\ident} {\tt global} \\
   & $|$ & {\ident} {\tt bigint} \\
   & $|$ & {\tt only parsing} \\
-  & $|$ & {\tt format} {\str} \\
-\hline
+  & $|$ & {\tt format} {\str} 
 \end{tabular}
+\end{centerframe}
 \caption{Syntax of the variants of {\tt Notation}}
 \label{notation-syntax}
 \end{figure}
@@ -488,18 +481,14 @@ core\_scope}, {\tt type\_scope} and {\tt nat\_scope}.
 The command to add a scope to the interpretation scope stack is
 \comindex{Open Scope}
 \comindex{Close Scope}
-
-\bigskip
+\begin{quote}
 {\tt Open Scope} {\scope}.
-\bigskip
-
+\end{quote}
 It is also possible to remove a scope from the interpretation scope
 stack by using the command
-
-\bigskip
+\begin{quote}
 {\tt Close Scope} {\scope}.
-\bigskip
-
+\end{quote}
 Notice that this command does not only cancel the last {\tt Open Scope
 {\scope}} but all the invocation of it.
 
@@ -508,12 +497,14 @@ sections where they occur. When defined outside of a section, they are
 exported to the modules that import the module where they occur.
 
 \begin{Variants}
-\item
-{\tt Open Local Scope} {\scope}.
-\item
-{\tt Close Local Scope} {\scope}.\\
+
+\item {\tt Open Local Scope} {\scope}.
+
+\item {\tt Close Local Scope} {\scope}.
+
 These variants are not exported to the modules that import the module
 where they occur, even if outside a section.
+
 \end{Variants}
 
 \subsection{Local interpretation rules for notations}
@@ -521,13 +512,13 @@ where they occur, even if outside a section.
 In addition to the global rules of interpretation of notations, some
 ways to change the interpretation of subterms are available.
 
-\subsubsection{Local opening of an interpretation scope} 
+\subsubsection{Local opening of an interpretation scope 
 \label{scopechange}
 \index{\%}
-\comindex{Delimit Scope}
+\comindex{Delimit Scope}}
 
 It is possible to locally extend the interpretation scope stack using
-the syntax {(\term)\%{\nterm{key} (or simply {\term}\%{\nterm{key}}
+the syntax ({\term})\%{\nterm{key}} (or simply {\term}\%{\nterm{key}}
 for atomic terms), where {\nterm{key}} is a special identifier called
 {\em delimiting key} and bound to a given scope.
 
@@ -536,21 +527,18 @@ interpreted in the scope stack extended with the scope bound to
 {\nterm{key}}.
 
 To bind a delimiting key to a scope, use the command
+\begin{quote}
+\texttt{Delimit Scope} {\scope} \texttt{with} {\ident} 
+\end{quote}
 
-\bigskip
-\texttt{Delimit Scope} {\scope} \texttt{with} {\ident} \\
-\bigskip
-
-\subsubsection{Binding arguments of a constant to an interpretation scope}
-\comindex{Arguments Scope}
+\subsubsection{Binding arguments of a constant to an interpretation scope
+\comindex{Arguments Scope}}
 
 It is possible to set in advance that some arguments of a given
 constant have to be interpreted in a given scope. The command is
-
-\bigskip
-{\tt Arguments Scope} {\qualid} {\tt [ \nelist{\optscope}{} ]}\\
-\bigskip
-
+\begin{quote}
+{\tt Arguments Scope} {\qualid} {\tt [ \nelist{\optscope}{} ]}
+\end{quote}
 where the list is a list made either of {\tt \_} or of a scope name.
 Each scope in the list is bound to the corresponding parameter of
 {\qualid} in order.  When interpreting a term, if some of the
@@ -577,13 +565,11 @@ type that would trigger the same scope).
 \comindex{Bind Scope}
 More generally, any {\class} (see chapter \ref{Coercions-full}) can be
 bound to an interpretation scope. The command to do it is
-
-\bigskip
+\begin{quote}
 {\tt Bind Scope} {\scope} \texttt{with} {\class}
-\bigskip
+\end{quote}
 
 \Example
-
 \begin{coq_example}
 Parameter U : Set.
 Bind Scope U_scope with U.
@@ -737,15 +723,12 @@ expressions which are not typed at the time of the definition of the
 abbreviation but at the time it is used. Especially, abbreviation can
 be bound to terms with holes (i.e. with ``\_''). The general syntax
 for abbreviations is
-
-\bigskip
-\texttt{Notation} \zeroone{\tt Local} {\ident} \texttt{:=} {\term} 
- \zeroone{\tt (only parsing)} \verb=.=
-\bigskip
-
+\begin{quote}
+\texttt{Notation} \zeroone{{\tt Local}} {\ident} \texttt{:=} {\term} 
+ \zeroone{{\tt (only parsing)}} \verb=.=
+\end{quote}
 
 \Example
-
 \begin{coq_eval}
 Set Strict Implicit.
 Reset Initial.

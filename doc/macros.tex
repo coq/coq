@@ -4,7 +4,25 @@
 
 % For commentaries (define \com as {} for the release manual)
 %\newcommand{\com}[1]{{\it(* #1 *)}}
-\newcommand{\com}[1]{}
+%\newcommand{\com}[1]{}
+
+%BEGIN LATEX
+\newenvironment{centerframe}%
+{\bgroup
+\dimen0=\textwidth
+\advance\dimen0 by -2\fboxrule
+\advance\dimen0 by -2\fboxsep
+\setbox0=\hbox\bgroup
+\begin{minipage}{\dimen0}%
+\begin{center}}%
+{\end{center}%
+\end{minipage}\egroup
+\centerline{\fbox{\box0}}\egroup
+}
+%END LATEX
+%HEVEA \newenvironment{centerframe}{\begin{center}}{\end{center}}
+
+%HEVEA \newcommand{\vec}[1]{\textbf{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%
 % Formatting commands %
@@ -34,16 +52,12 @@
 \newenvironment{Examples}{\medskip\noindent{\bf Examples:}
 \begin{enumerate}}{\end{enumerate}}
 
-\newcommand{\rr}{\raggedright}
-
-\newcommand{\tinyskip}{\rule{0mm}{4mm}}
-
-\newcommand{\bd}{\noindent\bf}
-\newcommand{\sbd}{\vspace{8pt}\noindent\bf}
-\newcommand{\sdoll}[1]{\begin{small}$ #1~ $\end{small}}
-\newcommand{\sdollnb}[1]{\begin{small}$ #1 $\end{small}}
+%\newcommand{\bd}{\noindent\bf}
+%\newcommand{\sbd}{\vspace{8pt}\noindent\bf}
+%\newcommand{\sdoll}[1]{\begin{small}$ #1~ $\end{small}}
+%\newcommand{\sdollnb}[1]{\begin{small}$ #1 $\end{small}}
 \newcommand{\kw}[1]{\textsf{#1}}
-\newcommand{\spec}[1]{\{\,#1\,\}}
+%\newcommand{\spec}[1]{\{\,#1\,\}}
 
 % Building regular expressions
 \newcommand{\zeroone}[1]{{\sl [}#1{\sl ]}}
@@ -55,8 +69,8 @@
 \newcommand{\sequencewithoutblank}[2]{$[$#1{\tt #2}\ldots{\tt #2}#1$]$}
 
 % Used for RefMan-gal
-\newcommand{\ml}[1]{\hbox{\tt{#1}}}
-\newcommand{\op}{\,|\,}
+%\newcommand{\ml}[1]{\hbox{\tt{#1}}}
+%\newcommand{\op}{\,|\,}
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 % Trademarks and so on %
@@ -65,8 +79,6 @@
 \newcommand{\Coq}{\textsc{Coq}}
 \newcommand{\gallina}{\textsc{Gallina}}
 \newcommand{\Gallina}{\textsc{Gallina}}
-\newcommand{\coqide}{\textsc{CoqIDE}}
-\newcommand{\CoqIde}{\textsc{CoqIDE}}
 \newcommand{\CoqIDE}{\textsc{CoqIDE}}
 \newcommand{\ocaml}{\textsc{Objective Caml}}
 \newcommand{\camlpppp}{\textsc{Camlp4}}
@@ -81,7 +93,7 @@
 % Name of tactics %
 %%%%%%%%%%%%%%%%%%%
 
-\newcommand{\Natural}{\mbox{\tt Natural}}
+%\newcommand{\Natural}{\mbox{\tt Natural}}
 
 %%%%%%%%%%%%%%%%%
 % \rm\sl series %
@@ -160,7 +172,10 @@
 \newcommand{\pat}{\textrm{\textsl{pat}}}
 \newcommand{\pgs}{\textrm{\textsl{pgms}}}
 \newcommand{\pg}{\textrm{\textsl{pgm}}}
+%BEGIN LATEX
 \newcommand{\proof}{\textrm{\textsl{proof}}}
+%END LATEX
+%HEVEA \renewcommand{\proof}{\textrm{\textsl{proof}}}
 \newcommand{\record}{\textrm{\textsl{record}}}
 \newcommand{\rewrule}{\textrm{\textsl{rewriting\_rule}}}
 \newcommand{\sentence}{\textrm{\textsl{sentence}}}
@@ -246,7 +261,7 @@
 \newcommand{\Where}{{\textbf{where rec }}}
 \newcommand{\Function}{{\textbf{function }}}
 \newcommand{\Rec}{{\textbf{rec }}}
-\newcommand{\cn}{\centering}
+%\newcommand{\cn}{\centering}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Math commands and symbols %
@@ -277,31 +292,31 @@
 \newcommand{\sm}{\mbox{ }}
 \newcommand{\mx}{\mbox}
 
-\newcommand{\nq}{\neq}
-\newcommand{\eq}{\equiv}
+%\newcommand{\nq}{\neq}
+%\newcommand{\eq}{\equiv}
 \newcommand{\fa}{\forall}
-\newcommand{\ex}{\exists}
+%\newcommand{\ex}{\exists}
 \newcommand{\impl}{\rightarrow}
-\newcommand{\Or}{\vee}
-\renewcommand{\And}{\wedge}
+%\newcommand{\Or}{\vee}
+%\newcommand{\And}{\wedge}
 \newcommand{\ms}{\models}
 \newcommand{\bw}{\bigwedge}
 \newcommand{\ts}{\times}
 \newcommand{\cc}{\circ}
-\newcommand{\es}{\emptyset}
-\newcommand{\bs}{\backslash}
+%\newcommand{\es}{\emptyset}
+%\newcommand{\bs}{\backslash}
 \newcommand{\vd}{\vdash}
-\newcommand{\lan}{{\langle }}
-\newcommand{\ran}{{\rangle }}
+%\newcommand{\lan}{{\langle }}
+%\newcommand{\ran}{{\rangle }}
 
-\newcommand{\al}{\alpha}
+%\newcommand{\al}{\alpha}
 \newcommand{\bt}{\beta}
-\newcommand{\io}{\iota}
+%\newcommand{\io}{\iota}
 \newcommand{\lb}{\lambda}
-\newcommand{\sg}{\sigma}
-\newcommand{\sa}{\Sigma}
-\newcommand{\om}{\Omega}
-\newcommand{\tu}{\tau}
+%\newcommand{\sg}{\sigma}
+%\newcommand{\sa}{\Sigma}
+%\newcommand{\om}{\Omega}
+%\newcommand{\tu}{\tau}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % Custom maths commands %
@@ -337,10 +352,15 @@
 \newcommand{\CIPV}[1]{\CIP{#1}{I_1.. I_k}{P_1.. P_k}}
 \newcommand{\CIPI}[1]{\CIP{#1}{I}{P}}
 \newcommand{\CIF}[1]{\mbox{$\{#1\}_{f_1.. f_n}$}}
+%BEGIN LATEX
 \newcommand{\NInd}[3]{\mbox{{\sf Ind}$(#1)(\begin{array}[t]{l}#2:=#3
                                               \,)\end{array}$}}
 \newcommand{\Ind}[4]{\mbox{{\sf Ind}$(#1)[#2](\begin{array}[t]{l}#3:=#4
                                                  \,)\end{array}$}}
+%END LATEX
+%HEVEA \newcommand{\NInd}[3]{\mbox{{\sf Ind}$(#1)(#2:=#3\,)$}}
+%HEVEA \newcommand{\Ind}[4]{\mbox{{\sf Ind}$(#1)[#2](#3:=#4\,)$}}
+
 \newcommand{\Indp}[5]{\mbox{{\sf Ind}$_{#5}(#1)[#2](\begin{array}[t]{l}#3:=#4
                                                  \,)\end{array}$}}
 \newcommand{\Def}[4]{\mbox{{\sf Def}$(#1)(#2:=#3:#4)$}}
@@ -358,6 +378,7 @@
 \newcommand{\leconvert}{\leq_{\beta\delta\iota\zeta}}
 \newcommand{\NN}{\mathbb{N}}
 \newcommand{\inference}[1]{$${#1}$$}
+
 \newcommand{\compat}[2]{\mbox{$[#1|#2]$}}
 \newcommand{\tristackrel}[3]{\mathrel{\mathop{#2}\limits_{#3}^{#1}}}
 
@@ -372,25 +393,25 @@
 \newcommand{\struct}[1]{\ensuremath{{\sf Struct}~#1~{\sf End}}}
 
 
-\newbox\tempa
-\newbox\tempb
-\newdimen\tempc
-\newcommand{\mud}[1]{\hfil $\displaystyle{\mathstrut #1}$\hfil}
-\newcommand{\rig}[1]{\hfil $\displaystyle{#1}$}
-\newcommand{\irulehelp}[3]{\setbox\tempa=\hbox{$\displaystyle{\mathstrut #2}$}%
-                        \setbox\tempb=\vbox{\halign{##\cr
-        \mud{#1}\cr
-        \noalign{\vskip\the\lineskip}
-        \noalign{\hrule height 0pt}
-        \rig{\vbox to 0pt{\vss\hbox to 0pt{${\; #3}$\hss}\vss}}\cr
-        \noalign{\hrule}
-        \noalign{\vskip\the\lineskip}
-        \mud{\copy\tempa}\cr}}
-                      \tempc=\wd\tempb
-                      \advance\tempc by \wd\tempa
-                      \divide\tempc by 2 }
-\newcommand{\irule}[3]{{\irulehelp{#1}{#2}{#3}
-                     \hbox to \wd\tempa{\hss \box\tempb \hss}}}
+%\newbox\tempa
+%\newbox\tempb
+%\newdimen\tempc
+%\newcommand{\mud}[1]{\hfil $\displaystyle{\mathstrut #1}$\hfil}
+%\newcommand{\rig}[1]{\hfil $\displaystyle{#1}$}
+% \newcommand{\irulehelp}[3]{\setbox\tempa=\hbox{$\displaystyle{\mathstrut #2}$}%
+%                         \setbox\tempb=\vbox{\halign{##\cr
+%         \mud{#1}\cr
+%         \noalign{\vskip\the\lineskip}
+%         \noalign{\hrule height 0pt}
+%         \rig{\vbox to 0pt{\vss\hbox to 0pt{${\; #3}$\hss}\vss}}\cr
+%         \noalign{\hrule}
+%         \noalign{\vskip\the\lineskip}
+%         \mud{\copy\tempa}\cr}}
+%                       \tempc=\wd\tempb
+%                       \advance\tempc by \wd\tempa
+%                       \divide\tempc by 2 }
+% \newcommand{\irule}[3]{{\irulehelp{#1}{#2}{#3}
+%                      \hbox to \wd\tempa{\hss \box\tempb \hss}}}
 
 \newcommand{\sverb}[1]{{\tt #1}}
 \newcommand{\mover}[2]{{#1\over #2}}
@@ -405,10 +426,12 @@
 
 % placement of figures
 
+%BEGIN LATEX
 \renewcommand{\topfraction}{.99}
 \renewcommand{\bottomfraction}{.99}
 \renewcommand{\textfraction}{.01}
 \renewcommand{\floatpagefraction}{.9}
+%END LATEX
 
 % Macros Bruno pour description de la syntaxe
 

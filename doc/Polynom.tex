@@ -386,8 +386,7 @@ replace it by \verb|(interp v (polynomial_simplify ap))|, using the
 main correctness theorem and we reduce it to a concrete expression
 \texttt{p'}, which is the concrete normal form of
 \texttt{p}. This is summarized in this diagram:
-
-\medskip
+\begin{center}
 \begin{tabular}{rcl}
 \texttt{p} & $\rightarrow_{\beta\delta\iota}$  
    & \texttt{(interp v ap)} \\
@@ -396,8 +395,7 @@ main correctness theorem and we reduce it to a concrete expression
    & $\leftarrow_{\beta\delta\iota}$ 
    & \texttt{(interp v (polynomial\_simplify ap))}
 \end{tabular}
-\medskip
-
+\end{center}
 The user do not see the right part of the diagram. 
 From outside, the tactic behaves like a
 $\beta\delta\iota$ simplification extended with AC rewriting rules.

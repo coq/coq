@@ -31,7 +31,7 @@ COQWEBSTY=/usr/share/texmf/tex/latex/misc/
 HEVEALIB=/usr/local/lib/hevea
 
 LATEX=latex
-BIBTEX=bibtex -min-crossref=10
+BIBTEX=bibtex -min-crossrefs=10
 MAKEINDEX=makeindex
 PDFLATEX=pdflatex
 
@@ -139,8 +139,9 @@ Changes.v.html: Changes.v.tex
 	hevea ./Changes.v.tex
 
 Reference-Manual.html: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
-	hevea -fix ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
+#1.05 ?	hevea -fix ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
 #1.04	hevea ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
+	hevea -fix -nosymb -exec xxdate.exe ./Reference-Manual.tex
 
 faq.v.html: faq.v.tex
 	hevea ./faq.v.tex

@@ -1,5 +1,5 @@
-\chapter{The \gallina{} specification language}
-\label{Gallina}\index{Gallina}
+\chapter{The \gallina{} specification language
+\label{Gallina}\index{Gallina}}
 
 This chapter describes \gallina, the specification language of Coq.
 It allows to develop mathematical theories and to prove specifications
@@ -14,8 +14,8 @@ In Coq, logical objects are typed to ensure their logical
 correctness. The rules implemented by the typing algorithm are described in
 chapter \ref{Cic}.
 
-\subsection*{About the grammars in the manual}
-\label{BNF-syntax}\index{BNF metasyntax}
+\subsection*{About the grammars in the manual
+\label{BNF-syntax}\index{BNF metasyntax}}
 
 Grammars are presented in Backus-Naur form (BNF). Terminal symbols are
 set in {\tt typewriter font}.  In addition, there are special
@@ -40,8 +40,8 @@ At the end, the notation ``\sequence{\entry}{\tt sep}'' stands for a
 possibly empty sequence of expressions parsed by the ``{\entry}'' entry,
 separated by the literal ``{\tt sep}''.
 
-\section{Lexical conventions}
-\label{lexical}\index{Lexical conventions}
+\section{Lexical conventions
+\label{lexical}\index{Lexical conventions}}
 
 \paragraph{Blanks}
 Space, newline and horizontal tabulation are considered as blanks.
@@ -63,11 +63,13 @@ That is, they are recognized by the following lexical class:
 \index{ident@\ident}
 \begin{center}
 \begin{tabular}{rcl} 
-{\firstletter} & ::= & \ml{a..z}\op\ml{A..Z}\op\ml{\_}%\op\ml{unicode-letter}
- \\
-{\subsequentletter} & ::= & \ml{a..z}\op\ml{A..Z}\op\ml{0..9}\op\ml{\_}%\op\ml{\$}
-\op\ml{'} \\
-{\ident} & ::= & {\firstletter} \sequencewithoutblank{\subsequentletter}{}\\
+{\firstletter} & ::= & {\tt a..z} $\mid$ {\tt A..Z} $\mid$ {\tt \_}
+% $\mid$ {\tt unicode-letter}  
+\\
+{\subsequentletter} & ::= & {\tt a..z} $\mid$ {\tt A..Z} $\mid$ {\tt 0..9}
+$\mid$ {\tt \_} % $\mid$ {\tt \$}
+$\mid$ {\tt '} \\
+{\ident} & ::= & {\firstletter} \sequencewithoutblank{\subsequentletter}{}
 \end{tabular}
 \end{center}
 All characters are meaningful. In particular, identifiers are case-sensitive.
@@ -82,9 +84,9 @@ Numerals are sequences of digits. Integers are numerals optionally preceded by a
 \index{integer@{\integer}}
 \begin{center}
 \begin{tabular}{r@{\quad::=\quad}l}
-{\digit} & \ml{0..9} \\
+{\digit} & {\tt 0..9} \\
 {\num} & \nelistwithoutblank{\digit}{} \\
-{\integer} & \zeroone{\ml{-}}{\num} \\
+{\integer} & \zeroone{\tt -}{\num} \\
 \end{tabular}
 \end{center}
 
@@ -202,7 +204,8 @@ rule: when a sequence of non alphanumerical characters can be decomposed
 into several different ways, then the first token is the longest
 possible one (among all tokens defined at this moment), and so on.
 
-\section{Terms}\label{term}\index{Terms}
+\section{Terms \label{term}\index{Terms}}
+
 \subsection{Syntax of terms}
 
 Figures \ref{term-syntax} and \ref{term-syntax-aux} describe the basic
@@ -213,9 +216,8 @@ chapter \ref{Cic}. Extensions of this syntax are given in chapter
 chapter \ref{Addoc-syntax}.
 
 \begin{figure}[htbp]
-\begin{center}
-\fbox{\begin{minipage}{0.95\textwidth}
-\begin{tabular}{lcl@{~~~~~}r}
+\begin{centerframe}
+\begin{tabular}{lcl@{\qquad}r}
 {\term} & ::= &
          {\tt forall} {\binderlist} {\tt ,} {\term}  &(\ref{products})\\
  & $|$ & {\tt fun} {\binderlist} {\tt =>} {\term} &(\ref{abstractions})\\
@@ -261,17 +263,15 @@ chapter \ref{Addoc-syntax}.
 {\binderlet} & ::= & {\binder} & \ref{Binders} \\
  & $|$ & {\tt (} {\name} {\typecstr} {\tt :=} {\term} {\tt )} &\\
 & & &\\
-{\name} & \cn{}::= & {\ident} &\\
+{\name} & ::= & {\ident} &\\
  & $|$ & {\tt \_} &\\
 &&&\\
 {\qualid} & ::= & {\ident} & \\
  & $|$ & {\qualid} {\accessident} &\\
  & & &\\
-{\sort} & ::= & {\tt Prop} ~$|$~ {\tt Set} ~$|$~ {\tt Type} &\\
-\hline
+{\sort} & ::= & {\tt Prop} ~$|$~ {\tt Set} ~$|$~ {\tt Type} &
 \end{tabular}
-\end{minipage}}
-\end{center}
+\end{centerframe}
 \caption{Syntax of terms}
 \label{term-syntax}
 \index{term@{\term}}
@@ -281,8 +281,7 @@ chapter \ref{Addoc-syntax}.
 
 
 \begin{figure}[htb]
-\begin{center}
-\fbox{\begin{minipage}{0.95\textwidth}
+\begin{centerframe}
 \begin{tabular}{lcl}
 {\idparams} & ::= &  {\ident} \sequence{\binderlet}{} {\typecstr} \\
 &&\\
@@ -319,8 +318,7 @@ chapter \ref{Addoc-syntax}.
  & $|$ & {\num}                                 \\
  & $|$ & {\tt (} \nelist{\pattern}{,} {\tt )}     
 \end{tabular}
-\end{minipage}}
-\end{center}
+\end{centerframe}
 \caption{Syntax of terms (continued)}
 \label{term-syntax-aux}
 \end{figure}
@@ -336,9 +334,9 @@ of types inside the syntactic class {\term}.
 \index{type@{\type}}
 
 
-\subsection{Qualified identifiers and simple identifiers}
+\subsection{Qualified identifiers and simple identifiers
 \label{qualid}
-\label{ident}
+\label{ident}}
 
 {\em Qualified identifiers} ({\qualid}) denote {\em global constants}
 (definitions, lemmas, theorems, remarks or facts), {\em global
@@ -348,8 +346,8 @@ types} or {\em constructors of inductive types}.
 syntactic subset of qualified identifiers.  Identifiers may also
 denote local {\em variables}, what qualified identifiers do not.
 
-\subsection{Numerals}
-\label{numerals}
+\subsection{Numerals
+\label{numerals}}
 
 Numerals have no definite semantics in the calculus. They are mere
 notations that can be bound to objects through the notation mechanism
@@ -360,15 +358,15 @@ bound to Peano's representation of natural numbers
 Note: negative integers are not at the same level as {\num}, for this
 would make precedence unnatural.
 
-\subsection{Sorts}\index{Sorts}
+\subsection{Sorts 
+\index{Sorts}
 \index{Type@{\Type}}
 \index{Set@{\Set}}
 \index{Prop@{\Prop}}
 \index{Sorts}
-\label{Gallina-sorts}
+\label{Gallina-sorts}}
 
 There are three sorts \Set, \Prop\ and \Type.
-
 \begin{itemize}
 \item \Prop\ is the universe of {\em logical propositions}.
 The logical propositions themselves are typing the proofs.
@@ -383,12 +381,11 @@ subclass of the syntactic class {\term}.
 \index{specif@{\specif}}
 \item {\Type} is the type of {\Set} and {\Prop}
 \end{itemize}
+More on sorts can be found in section \ref{Sorts}.
 
-\noindent More on sorts can be found in section \ref{Sorts}.
-
-\subsection{Binders}
+\subsection{Binders
 \label{Binders}
-\index{binders}
+\index{binders}}
 
 Various constructions introduce variables which scope is some of its
 sub-expressions. There is a uniform syntax for this. A binder may be
@@ -415,9 +412,9 @@ syntactic class as {\term}. We denote by {\type} the semantic subclass
 of types inside the syntactic class {\term}.
 \index{type@{\type}}
 
-\subsection{Abstractions}
+\subsection{Abstractions
 \label{abstractions}
-\index{abstractions}
+\index{abstractions}}
 
 The expression ``{\tt fun} {\ident} {\tt :} \type {\tt =>} {\term}''
 denotes the {\em abstraction} of the variable {\ident} of type
@@ -425,18 +422,18 @@ denotes the {\em abstraction} of the variable {\ident} of type
 formal parameter {\ident} of type {\type} returning {\term}.
 
 Keyword {\tt fun} is followed by a ``binder list'', so any of the
-binders of section~\ref{Binders} apply. Internally, abstractions are
+binders of Section~\ref{Binders} apply. Internally, abstractions are
 only over one variable. Multiple variable binders are an iteration of
 the single variable abstraction: notation {\tt
 fun}~{\ident$_{1}$}~{\ldots}~{\ident$_{n}$}~{\tt :}~\type~{\tt
 =>}~{\term} stands for {\tt fun}~{\ident$_{1}$}~{\tt :}~\type~{\tt
 =>}~{\ldots}~{\tt fun}~{\ident$_{n}$}~{\tt :}~\type~{\tt =>}~{\term}.
 Variables with a value expand to a local definition (see
-section~\ref{let-in}).
+Section~\ref{let-in}).
 
-\subsection{Products}
+\subsection{Products
 \label{products}
-\index{products}
+\index{products}}
 
 The expression ``{\tt forall}~{\ident}~{\tt :}~\type~{\tt ,}~{\term}''
 denotes the {\em product} of the variable {\ident} of type {\type},
@@ -448,9 +445,9 @@ Non dependent product types have a special notation ``$A$ {\tt ->}
 $B$'' stands for ``{\tt forall \_:}$A${\tt ,}~$B$''. This is to stress
 on the fact that non dependent produt types are usual functional types.
 
-\subsection{Applications}
+\subsection{Applications
 \label{applications}
-\index{applications}
+\index{applications}}
 
 {\tt (}\term$_0$ \term$_1${\tt)} denotes the application of
   term \term$_0$ to \term$_1$.
@@ -464,30 +461,30 @@ associativity is to the left.
 When using implicit arguments mechanism, implicit positions can be
 forced a value with notation {\tt (}\,{\ident}\,{\tt
 :=}\,{\term}\,{\tt )} or {\tt (}\,{\num}\,{\tt
-:=}\,{\term}\,{\tt )}. See section~\ref{Implicits-explicitation} for
+:=}\,{\term}\,{\tt )}. See Section~\ref{Implicits-explicitation} for
 details.
 
-\subsection{Type cast}
+\subsection{Type cast
 \label{typecast}
-\index{Cast}
+\index{Cast}}
 
 The expression ``{\term}~{\tt :}~{\type}'' is a type cast
 expression. It forces checking that {\term} has type {\type}. It is
 identified to {\term}.
 
-\subsection{Inferable subterms}
+\subsection{Inferable subterms
 \label{hole}
-\index{\_}
+\index{\_}}
 
 Since there are redundancies, a term can be type-checked without
 giving it in totality. Subterms that are left to guess by the
 type-checker are replaced by ``\_''.
 
 
-\subsection{Local definitions (let-in)}
+\subsection{Local definitions (let-in)
 \label{let-in}
 \index{Local definitions}
-\index{let-in}
+\index{let-in}}
 
 
 {\tt let}~{\ident}~{\tt :=}~{\term$_1$}~{\tt in}~{\term$_2$} denotes
@@ -500,13 +497,13 @@ let} {\ident} {\binder$_1$} \ldots {\binder$_n$} {\tt :=} {\term$_1$}
 {\binder$_1$} \ldots {\binder$_n$} {\tt in} {\term$_2$}.
 
 
-\subsection{Definition by case analysis}
+\subsection{Definition by case analysis
 \label{caseanalysis}
-\index{match@{\tt match\ldots with\ldots end}}
+\index{match@{\tt match\ldots with\ldots end}}}
 
 
 This paragraph only shows simple variants of case analysis. See
-section~\ref{Mult-match} and chapter~\ref{Mult-match-full} for
+Section~\ref{Mult-match} and Chapter~\ref{Mult-match-full} for
 explanations of the general form.
 
 Objects of inductive types can be destructurated by a case-analysis
@@ -535,18 +532,18 @@ match} depends on the actual {\term$_0$} matched.
 There are specific notations for case analysis on types with one or
 two constructors: {\tt if}\ldots{\tt then}\ldots{\tt else}\ldots and
 {\tt let (}\ldots{\tt ) :=}\ldots{\tt in}\ldots. \SeeAlso
-section~\ref{Mult-match} for details and examples.
+Section~\ref{Mult-match} for details and examples.
 
-\subsection{Recursive functions}
+\subsection{Recursive functions
 \label{fixpoints}
-\index{fix@{fix \ident$_i$\{\dots\}}}
+\index{fix@{fix \ident$_i$\{\dots\}}}}
 
 Expression ``{\tt fix} \ident$_1$ \binder$_1$ {\tt :} {\type$_1$}
 \texttt{:=} \term$_1$ {\tt with} {\ldots} {\tt with} \ident$_n$
 \binder$_n$~{\tt :} {\type$_n$} \texttt{:=} \term$_n$ {\tt for}
 {\ident$_i$}'' denotes the $i$th component of a block of functions
 defined by mutual well-founded recursion. It is the local counterpart
-of the {\tt Fixpoint} command. See section~\ref{Fixpoint} for more
+of the {\tt Fixpoint} command. See Section~\ref{Fixpoint} for more
 details. When $n=1$, the {\tt for}~{\ident$_i$} is omitted.
 
 The expression ``{\tt cofix} \ident$_1$~\binder$_1$ {\tt :}
@@ -554,7 +551,7 @@ The expression ``{\tt cofix} \ident$_1$~\binder$_1$ {\tt :}
 :} {\type$_n$}~{\tt for} {\ident$_i$}'' denotes the $i$th component of
 a block of terms defined by a mutual guarded co-recursion. It is the
 local counterpart of the {\tt CoFixpoint} command. See
-section~\ref{CoFixpoint} for more details. When $n=1$, the {\tt
+Section~\ref{CoFixpoint} for more details. When $n=1$, the {\tt
 for}~{\ident$_i$} is omitted.
 
 The association of a single fixpoint and a local
@@ -564,12 +561,11 @@ definition have a special syntax: ``{\tt let fix}~$f$~{\ldots}~{\tt
   applies for co-fixpoints.
 
 
-\section{The Vernacular}
-\label{Vernacular}
+\section{The Vernacular
+\label{Vernacular}}
 
 \begin{figure}[tbp]
-\begin{center}
-\fbox{\begin{minipage}{0.95\textwidth}
+\begin{centerframe}
 \begin{tabular}{lcl}
 {\sentence} & ::= & {\declaration} \\
             & $|$ & {\definition} \\
@@ -616,16 +612,25 @@ definition have a special syntax: ``{\tt let fix}~$f$~{\ldots}~{\tt
    & $|$ & {\tt Proof} {\tt .} {\dots} {\tt Defined} {\tt .}\\
    & $|$ & {\tt Proof} {\tt .} {\dots} {\tt Admitted} {\tt .}
 \end{tabular}
-\end{minipage}}
-\end{center}
+\end{centerframe}
 \caption{Syntax of sentences}
 \label{sentences-syntax}
 \end{figure}
 
+Figure \ref{sentences-syntax} describes {\em The Vernacular} which is the
+language of commands of \gallina.  A sentence of the vernacular
+language, like in many natural languages, begins with a capital letter
+and ends with a dot.
+
+The different kinds of command are described hereafter. They all suppose
+that the terms occurring in the sentences are well-typed.
+
 %%
 %% Axioms and Parameters
 %%
-\subsection{Declarations}\index{Declarations}\label{Declarations}
+\subsection{Declarations
+\index{Declarations}
+\label{Declarations}}
 
 The declaration mechanism allows the user to specify his own basic
 objects. Declared objects play the role of axioms or parameters in
@@ -635,11 +640,11 @@ correct type in the current context of the declaration and \ident\ was
 not previously defined in the same module. This {\term} is considered
 to be the type, or specification, of the \ident.
 
-\subsubsection{{\tt Axiom {\ident} :{\term} .}}
+\subsubsection{{\tt Axiom {\ident} :{\term} .}
 \comindex{Axiom}
 \comindex{Parameter}\comindex{Parameters}
 \comindex{Conjecture}
-\label{Axiom}
+\label{Axiom}}
 
 This command links {\term} to the name {\ident} as its specification
 in the global context. The fact asserted by {\term} is thus assumed as
@@ -671,14 +676,14 @@ a postulate.
 {\tt Parameters}.
 
 
-\subsubsection{{\tt Variable {\ident} :{\term}}.}
+\subsubsection{{\tt Variable {\ident} :{\term}}.
 \comindex{Variable}
 \comindex{Variables}
 \comindex{Hypothesis}
-\comindex{Hypotheses}
+\comindex{Hypotheses}}
 
 This command links {\term} to the name {\ident} in the context of the
-current section (see~\ref{Section} for a description of the section
+current section (see Section~\ref{Section} for a description of the section
 mechanism). When the current section is closed, name {\ident} will be
 unknown and every object using this variable will be explicitly
 parameterized (the variable is {\em discharged}). Using the {\tt
@@ -702,7 +707,7 @@ Variable} command out of any section is equivalent to {\tt Axiom}.
 \end{Variants}
 
 \noindent {\bf Remark: } It is possible to replace {\tt Variable} by
-{\tt Variables} and \ml{Hypothesis} by {\tt Hypotheses}.
+{\tt Variables} and {\tt Hypothesis} by {\tt Hypotheses}.
 
 It is advised to use the keywords \verb:Axiom: and \verb:Hypothesis:
 for logical postulates (i.e. when the assertion {\term} is of sort
@@ -713,13 +718,16 @@ abstract mathematical entity).
 %%
 %% Definitions
 %%
-\subsection{Definitions}\index{Definitions}\label{Simpl-definitions}
+\subsection{Definitions
+\index{Definitions}
+\label{Simpl-definitions}}
+
 Definitions differ from declarations in allowing to give a name to a
 term whereas declarations were just giving a type to a name. That is
 to say that the name of a defined object can be replaced at any time
 by its definition.  This replacement is called
 $\delta$-conversion\index{delta-reduction@$\delta$-reduction} (see
-section~\ref{delta}).  A defined object is accepted by the system if
+Section~\ref{delta}).  A defined object is accepted by the system if
 and only if the defining term is well-typed in the current context of
 the definition.  Then the type of the name is the type of term. The
 defined name is called a {\em constant}\index{Constant} and one says
@@ -727,11 +735,12 @@ that {\it the constant is added to the
 environment}\index{Environment}.
 
 A formal presentation of constants and environments is given in
-section \ref{Typed-terms}.
+Section~\ref{Typed-terms}.
 
 
-\subsubsection{\tt Definition {\ident} := {\term}.}
-\comindex{Definition}
+\subsubsection{\tt Definition {\ident} := {\term}.
+\comindex{Definition}}
+
 This command binds the value {\term} to the name {\ident} in the
 environment, provided that {\term} is well-typed.
 
@@ -759,9 +768,11 @@ environment, provided that {\term} is well-typed.
     \texttt{Actually, it has type {\term$_3$}}.
 \end{ErrMsgs}
 
-\SeeAlso sections \ref{Opaque}, \ref{Transparent}, \ref{unfold}
+\SeeAlso Sections \ref{Opaque}, \ref{Transparent}, \ref{unfold}
 
-\subsubsection{\tt Local {\ident} := {\term}.}\comindex{Local}
+\subsubsection{\tt Local {\ident} := {\term}.
+\comindex{Local}}
+
 This command binds the value {\term} to the name {\ident} in the
 environment of the current section. The name {\ident} will be unknown
 when the current section will be closed and all occurrences of
@@ -777,15 +788,17 @@ definition is a kind of {\em macro}.
 \item {\tt Local {\ident} : {\term$_1$} := {\term$_2$}.}
 \end{Variants}
 
-\SeeAlso \ref{Section} (section mechanism), \ref{Opaque},
+\SeeAlso Sections \ref{Section} (section mechanism), \ref{Opaque},
 \ref{Transparent} (opaque/transparent constants), \ref{unfold}
 
 %%
 %% Inductive Types
 %%
-\subsection{Inductive definitions}
-\index{Inductive definitions} \label{gal_Inductive_Definitions}
-\comindex{Inductive}\label{Inductive}
+\subsection{Inductive definitions
+\index{Inductive definitions} 
+\label{gal_Inductive_Definitions}
+\comindex{Inductive}
+\label{Inductive}}
 
 We gradually explain simple inductive types, simple
 annotated inductive types, simple parametric inductive types, 
@@ -813,7 +826,7 @@ The name {\ident} is the name of the inductively defined type and
 The names {\ident$_1$}, {\ldots}, {\ident$_n$}
 are the names of its constructors and {\type$_1$}, {\ldots},
 {\type$_n$} their respective types. The types of the constructors have
-to satisfy a {\em positivity condition} (see section \ref{Positivity})
+to satisfy a {\em positivity condition} (see Section~\ref{Positivity})
 for {\ident}.  This condition ensures the soundness of the inductive
 definition.  If this is the case, the constants {\ident},
 {\ident$_1$}, {\ldots}, {\ident$_n$} are added to the environment with
@@ -954,11 +967,12 @@ This is an alternative definition of lists where we specify the
 arguments of the constructors rather than their full type.
 \end{Variants}
 
-\SeeAlso sections \ref{Cic-inductive-definitions} and~\ref{elim}.
+\SeeAlso Sections~\ref{Cic-inductive-definitions} and~\ref{elim}.
 
 
-\subsubsection{Mutually defined inductive types}
-\comindex{Mutual Inductive}\label{Mutual-Inductive}
+\subsubsection{Mutually defined inductive types
+\comindex{Mutual Inductive}
+\label{Mutual-Inductive}}
 
 The definition of a block of mutually inductive types has the form:
 
@@ -1061,11 +1075,11 @@ section is closed, the variables declared in the section and occurring
 free in the declaration are added as parameters to the inductive
 definition. 
 
-\SeeAlso \ref{Section}
+\SeeAlso Section~\ref{Section}
 
-\subsubsection{Co-inductive types}
+\subsubsection{Co-inductive types
 \label{CoInductiveTypes}
-\comindex{CoInductive}
+\comindex{CoInductive}}
 
 The objects of an inductive type are well-founded with respect to the
 constructors of the type. In other words, such objects contain only a
@@ -1084,7 +1098,7 @@ CoInductive Stream : Set :=
 \end{coq_example}
 
 The syntax of this command is the same as the command \texttt{Inductive}
-(cf. section \ref{gal_Inductive_Definitions}). Notice that no
+(cf. Section~\ref{gal_Inductive_Definitions}). Notice that no
 principle of induction is derived from the definition of a
 co-inductive type, since such principles only make sense for inductive
 ones. For co-inductive ones, the only elimination principle is case
@@ -1110,17 +1124,17 @@ CoInductive EqSt : Stream -> Stream -> Prop :=
 In order to prove the extensionally equality of two streams $s_1$ and
 $s_2$ we have to construct and infinite proof of equality, that is,
 an infinite object of type $(\texttt{EqSt}\;s_1\;s_2)$. We will see
-how to introduce infinite objects in section \ref{CoFixpoint}.
+how to introduce infinite objects in Section~\ref{CoFixpoint}.
 
 %%
 %% (Co-)Fixpoints
 %%
 \subsection{Definition of recursive functions}
 
-\subsubsection{\tt Fixpoint
-   {\ident} {\params} {\tt \{struct} \ident$_0$ {\tt \}} : type$_0$ :=
-   \term$_0$}
-\comindex{Fixpoint}\label{Fixpoint}
+\subsubsection{\tt Fixpoint {\ident} {\params} {\tt \{struct}
+  \ident$_0$ {\tt \}} : type$_0$ := \term$_0$ 
+\comindex{Fixpoint}
+\label{Fixpoint}}
 
 This command allows to define inductive objects using a fixed point
 construction. The meaning of this declaration is to define {\it ident}
@@ -1156,7 +1170,7 @@ equals \verb:O: we return \verb:m:, and when \verb:n: equals
 \verb:(S p): we return \verb:(S (add p m)):.
 
 The {\tt match} operator is formally described
-in detail in section \ref{Caseexpr}.  The system recognizes that in
+in detail in Section~\ref{Caseexpr}.  The system recognizes that in
 the inductive call {\tt (add p m)} the first argument actually
 decreases because it is a {\em pattern variable} coming from {\tt match
   n with}.
@@ -1253,16 +1267,17 @@ Fixpoint tree_size (t:tree) : nat :=
   end.
 \end{coq_example*}
 A generic command {\tt Scheme} is useful to build automatically various
-mutual induction principles. It is described in section \ref{Scheme}.
+mutual induction principles. It is described in Section~\ref{Scheme}.
 
-\subsubsection{\tt CoFixpoint {\ident} : \type$_0$ := \term$_0$.}
-\comindex{CoFixpoint}\label{CoFixpoint}
+\subsubsection{\tt CoFixpoint {\ident} : \type$_0$ := \term$_0$.
+\comindex{CoFixpoint}
+\label{CoFixpoint}}
 
 The {\tt CoFixpoint} command introduces a method for constructing an
 infinite object of a coinduc\-tive type. For example, the stream
 containing all natural numbers can be introduced applying the
 following method to the number \texttt{O} (see
-section~\ref{CoInductiveTypes} for the definition of {\tt Stream},
+Section~\ref{CoInductiveTypes} for the definition of {\tt Stream},
 {\tt hd} and {\tt tl}):
 \begin{coq_eval}
 Reset Initial.
@@ -1321,7 +1336,7 @@ Eval compute in (tl (from 0)).
      with\\
         \mbox{}\hspace{0.1cm} $\ldots$  \\
         with {\ident$_m$}   : {\type$_m$} := {\term$_m$}}\\
-As in the \texttt{Fixpoint} command (cf. section~\ref{Fixpoint}), it
+As in the \texttt{Fixpoint} command (cf. Section~\ref{Fixpoint}), it
 is possible to introduce a block of mutually dependent methods.
 \end{Variants}
 
@@ -1334,11 +1349,11 @@ A statement claims a goal of which the proof is then interactively done
 using tactics. More on the proof editing mode, statements and proofs can be
 found in chapter \ref{Proof-handling}.
 
-\subsubsection{\tt Theorem {\ident} : {\type}.}
+\subsubsection{\tt Theorem {\ident} : {\type}.
 \comindex{Theorem}
 \comindex{Lemma}
 \comindex{Remark}
-\comindex{Fact}
+\comindex{Fact}}
 
 This command binds {\type} to the name {\ident} in the
 environment, provided that a proof of {\type} is next given.
@@ -1368,13 +1383,13 @@ definition of expression which computational behaviour will be used by
 further commands. \SeeAlso~\ref{Transparent} and \ref{unfold}. 
 \end{Variants}
 
-\subsubsection{{\tt Proof} {\tt .} \dots {\tt Qed} {\tt .}}
+\subsubsection{{\tt Proof} {\tt .} \dots {\tt Qed} {\tt .}
 \comindex{Proof}
 \comindex{Qed}
 \comindex{Defined}
 \comindex{Save}
 \comindex{Goal}
-\comindex{Admitted}
+\comindex{Admitted}}
 
 A proof starts by the keyword {\tt Proof}.  Then {\Coq} enters the
 proof editing mode until the proof is completed. The proof editing

@@ -27,7 +27,9 @@
 \input{./headers.tex}% extension .tex pour htmlgen
 
 \begin{document}
+%BEGIN LATEX
 \sloppy\hbadness=5000
+%END LATEX
 
 \tophtml{}
 \coverpage{Reference Manual}{The Coq Development Team}
@@ -89,7 +91,7 @@
 \printindex[error]
 
 \listoffigures
-%\listoftables
+\addcontentsline{toc}{chapter}{\listfigurename}
 
 %BEGIN LATEX
 \RefManCutCommand{psselect -q -p-$ENDREFMAN,$BEGINBIBLIO- Reference-Manual.ps Reference-Manual-base.ps}

@@ -3,20 +3,17 @@
 \ttindex{coqc}
 
 There are two \Coq~commands: 
-
-\bigskip
-\begin{tabular}{l@{\quad:\quad}l}
-  -- {\tt coqtop} & The \Coq\ toplevel (interactive mode) ; \\[1em]
-  -- {\tt coqc}   & The \Coq\ compiler (batch compilation).
-\end{tabular}
-\bigskip
-
+\begin{itemize}
+\item {\tt coqtop}: The \Coq\ toplevel (interactive mode) ; 
+\item {\tt coqc} : The \Coq\ compiler (batch compilation).
+\end{itemize}
 The options are (basically) the same for the two commands, and
 roughly described below. You can also look at the \verb!man! pages of
 \verb!coqtop! and \verb!coqc! for more details.
 
 
 \section{Interactive use ({\tt coqtop})}
+
 In the interactive mode, also known as the \Coq~toplevel, the user can
 develop his theories and proofs step by step.  The \Coq~toplevel is
 run by the command {\tt coqtop}. 
@@ -173,7 +170,7 @@ The following command-line options are recognized by the commands {\tt
   only available for {\tt coqtop}.
 
 %\item[{\tt -compile-verbose} {\em file}]\ 
-@
+
 %  This compiles file {\em file}{\tt .v} into {\em file}{\tt .vo} with
 %  a copy of the contents of the file on standard input.
 %  This option implies options {\tt -batch} and {\tt -silent}. It is

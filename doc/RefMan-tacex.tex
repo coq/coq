@@ -809,25 +809,21 @@ is undecidable in general case, don't expect miracles from it!
 
 \SeeAlso the \texttt{ring} tactic (Chapter~\ref{ring})
 
-
 \section{Using the tactical language}
 
-\subsection{About the cardinality of the natural number set}
+\subsection{About the cardinality of the set of natural numbers}
 
 A first example which shows how to use the pattern matching over the proof
 contexts is the proof that natural numbers have more than two elements. The
-proof of such a lemma can be done as shown in table~\ref{cnatltac}.
-
+proof of such a lemma can be done as %shown on Figure~\ref{cnatltac}.
+follows:
+%\begin{figure}
+%\begin{centerframe}
 \begin{coq_eval}
 Reset Initial.
 Require Import Arith.
 Require Import List.
 \end{coq_eval}
-
-\begin{table}[ht]
-\noindent{}\framebox[6.4in][l]
-{\parbox{6.4in}
-{
 \begin{coq_example*}
 Lemma card_nat :
  ~ (exists x : nat, exists y : nat, forall z:nat, x = z \/ y = z).
@@ -840,10 +836,10 @@ elim (Hy 0); elim (Hy 1); elim (Hy 2); intros;
  end.
 Qed.
 \end{coq_example*}
-}}
-\caption{A proof on cardinality of natural numbers}
-\label{cnatltac}
-\end{table}
+%\end{centerframe}
+%\caption{A proof on cardinality of natural numbers}
+%\label{cnatltac}
+%\end{figure}
 
 We can notice that all the (very similar) cases coming from the three
 eliminations (with three distinct natural numbers) are successfully solved by
@@ -852,15 +848,8 @@ of non-linear matching).
 
 \subsection{Permutation on closed lists}
 
-Another more complex example is the problem of permutation on closed lists. The
-aim is to show that a closed list is a permutation of another one.
-
-First, we define the permutation predicate as shown in table~\ref{permutpred}.
-
-\begin{table}[ht]
-\noindent{}\framebox[6.4in][l]
-{\parbox{6.4in}
-{
+\begin{figure}
+\begin{centerframe}
 \begin{coq_example*}
 Section Sort.
 Variable A : Set.
@@ -873,37 +862,18 @@ Inductive permut : list A -> list A -> Prop :=
       forall l0 l1 l2, permut l0 l1 -> permut l1 l2 -> permut l0 l2.
 End Sort.
 \end{coq_example*}
-}}
+\end{centerframe}
 \caption{Definition of the permutation predicate}
 \label{permutpred}
-\end{table}
+\end{figure}
 
-Next, we can write naturally the tactic and the result can be seen in
-table~\ref{permutltac}. We can notice that we use two toplevel definitions {\tt
-PermutProve} and {\tt Permut}. The function to be called is {\tt PermutProve}
-which computes the lengths of the two lists and calls {\tt Permut} with the
-length if the two lists have the same length. {\tt Permut} works as expected.
-If the two lists are equal, it concludes. Otherwise, if the lists have
-identical first elements, it applies {\tt Permut} on the tail of the lists.
-Finally, if the lists have different first elements, it puts the first element
-of one of the lists (here the second one which appears in the {\tt permut}
-predicate) at the end if that is possible, i.e., if the new first element has
-been at this place previously. To verify that all rotations have been done for
-a list, we use the length of the list as an argument for {\tt Permut} and this
-length is decremented for each rotation down to, but not including, 1 because
-for a list of length $n$, we can make exactly $n-1$ rotations to generate at
-most $n$ distinct lists. Here, it must be noticed that we use the natural
-numbers of {\Coq} for the rotation counter. In table~\ref{ltac}, we can see
-that it is possible to use usual natural numbers but they are only used as
-arguments for primitive tactics and they cannot be handled, in particular, we
-cannot make computations with them. So, a natural choice is to use {\Coq} data
-structures so that {\Coq} makes the computations (reductions) by {\tt eval
-compute in} and we can get the terms back by {\tt match}.
- 
-\begin{table}[p]
-\noindent{}\framebox[6.4in][l]
-{\parbox{6.4in}
-{
+A more complex example is the problem of permutation on closed lists.
+The aim is to show that a closed list is a permutation of another one.
+First, we define the permutation predicate as shown on
+Figure~\ref{permutpred}.
+
+\begin{figure}
+\begin{centerframe}
 \begin{coq_example}
 Ltac Permut n :=
   match goal with
@@ -928,58 +898,61 @@ Ltac PermutProve :=
       end
   end.
 \end{coq_example}
-}}
+\end{centerframe}
 \caption{Permutation tactic}
 \label{permutltac}
-\end{table}
+\end{figure}
 
-With {\tt PermutProve}, we can now prove lemmas such those shown in
-table~\ref{permutlem}.
-
-\begin{table}[p]
-\noindent{}\framebox[6.4in][l]
-{\parbox{6.4in}
-{
+Next, we can write naturally the tactic and the result can be seen on
+Figure~\ref{permutltac}. We can notice that we use two toplevel
+definitions {\tt PermutProve} and {\tt Permut}. The function to be
+called is {\tt PermutProve} which computes the lengths of the two
+lists and calls {\tt Permut} with the length if the two lists have the
+same length. {\tt Permut} works as expected.  If the two lists are
+equal, it concludes. Otherwise, if the lists have identical first
+elements, it applies {\tt Permut} on the tail of the lists.  Finally,
+if the lists have different first elements, it puts the first element
+of one of the lists (here the second one which appears in the {\tt
+  permut} predicate) at the end if that is possible, i.e., if the new
+first element has been at this place previously. To verify that all
+rotations have been done for a list, we use the length of the list as
+an argument for {\tt Permut} and this length is decremented for each
+rotation down to, but not including, 1 because for a list of length
+$n$, we can make exactly $n-1$ rotations to generate at most $n$
+distinct lists. Here, it must be noticed that we use the natural
+numbers of {\Coq} for the rotation counter. On Figure~\ref{ltac}, we
+can see that it is possible to use usual natural numbers but they are
+only used as arguments for primitive tactics and they cannot be
+handled, in particular, we cannot make computations with them. So, a
+natural choice is to use {\Coq} data structures so that {\Coq} makes
+the computations (reductions) by {\tt eval compute in} and we can get
+the terms back by {\tt match}.
+ 
+With {\tt PermutProve}, we can now prove lemmas as 
+% shown on Figure~\ref{permutlem}.
+follows:
+%\begin{figure}
+%\begin{centerframe}
 \begin{coq_example*}
 Lemma permut_ex1 :
   permut nat (1 :: 2 :: 3 :: nil) (3 :: 2 :: 1 :: nil).
-Proof.
-PermutProve.
-Qed.
-
+Proof. PermutProve. Qed.
 Lemma permut_ex2 :
   permut nat
     (0 :: 1 :: 2 :: 3 :: 4 :: 5 :: 6 :: 7 :: 8 :: 9 :: nil)
     (0 :: 2 :: 4 :: 6 :: 8 :: 9 :: 7 :: 5 :: 3 :: 1 :: nil).
-Proof.
-PermutProve.
-Qed.
+Proof. PermutProve. Qed.
 \end{coq_example*}
-}}
-\caption{Examples of {\tt PermutProve} use}
-\label{permutlem}
-\end{table}
+%\end{centerframe}
+%\caption{Examples of {\tt PermutProve} use}
+%\label{permutlem}
+%\end{figure}
+
 
 \subsection{Deciding intuitionistic propositional logic}
 
-The pattern matching on goals allows a complete and so a powerful
-backtracking when returning tactic values. An interesting application
-is the problem of deciding intuitionistic propositional
-logic. Considering the contraction-free sequent calculi {\tt LJT*} of
-Roy~Dyckhoff (\cite{Dyc92}), it is quite natural to code such a tactic
-using the tactic language as shown in table~\ref{tautoltac}. The
-tactic {\tt Axioms} tries to conclude using usual axioms. The tactic
-{\tt DSimplif} applies all the reversible rules of Dyckhoff's
-system. Finally, the tactic {\tt TautoProp} (the main tactic to be
-called) simplifies with {\tt DSimplif}, tries to conclude with {\tt
-Axioms} and tries several paths using the backtracking rules (one of
-the four Dyckhoff's rules for the left implication to get rid of the
-contraction and the right or).
-
-\begin{table}[ht]
-\noindent{}\framebox[6.4in][l]
-{\parbox{6.4in}
-{
+\begin{figure}[b]
+\begin{centerframe}
 \begin{coq_example}
 Ltac Axioms :=
   match goal with
@@ -987,6 +960,16 @@ Ltac Axioms :=
   | _:False |- _  => elimtype False; assumption
   | _:?A |- ?A  => auto
   end.
+\end{coq_example}
+\end{centerframe}
+\caption{Deciding intuitionistic propositions (1)}
+\label{tautoltaca}
+\end{figure}
+
+
+\begin{figure}
+\begin{centerframe}
+\begin{coq_example}
 Ltac DSimplif :=
   repeat
    (intros;
@@ -1031,47 +1014,46 @@ Ltac TautoProp :=
      | |- (_ \/ _) => (left; TautoProp) || (right; TautoProp)
      end.
 \end{coq_example}
-}}
-\caption{Deciding intuitionistic propositions}
-\label{tautoltac}
-\end{table}
+\end{centerframe}
+\caption{Deciding intuitionistic propositions (2)}
+\label{tautoltacb}
+\end{figure}
 
-For example, with {\tt TautoProp}, we can prove tautologies like those in
-table~\ref{tautolem}.
+The pattern matching on goals allows a complete and so a powerful
+backtracking when returning tactic values. An interesting application
+is the problem of deciding intuitionistic propositional logic.
+Considering the contraction-free sequent calculi {\tt LJT*} of
+Roy~Dyckhoff (\cite{Dyc92}), it is quite natural to code such a tactic
+using the tactic language as shown on Figures~\ref{tautoltaca}
+and~\ref{tautoltacb}. The tactic {\tt Axioms} tries to conclude using
+usual axioms. The tactic {\tt DSimplif} applies all the reversible
+rules of Dyckhoff's system. Finally, the tactic {\tt TautoProp} (the
+main tactic to be called) simplifies with {\tt DSimplif}, tries to
+conclude with {\tt Axioms} and tries several paths using the
+backtracking rules (one of the four Dyckhoff's rules for the left
+implication to get rid of the contraction and the right or).
 
-\begin{table}[ht]
-\noindent{}\framebox[6.4in][l]
-{\parbox{6.4in}
-{
+For example, with {\tt TautoProp}, we can prove tautologies like
+ those:
+% on Figure~\ref{tautolem}.
+%\begin{figure}[tbp]
+%\begin{centerframe}
 \begin{coq_example*}
 Lemma tauto_ex1 : forall A B:Prop, A /\ B -> A \/ B.
-Proof.
-TautoProp.
-Qed.
-
+Proof. TautoProp. Qed.
 Lemma tauto_ex2 :
    forall A B:Prop, (~ ~ B -> B) -> (A -> B) -> ~ ~ A -> B.
-Proof.
-TautoProp.
-Qed.
+Proof. TautoProp. Qed.
 \end{coq_example*}
-}}
-\caption{Proofs of tautologies with {\tt TautoProp}}
-\label{tautolem}
-\end{table}
+%\end{centerframe}
+%\caption{Proofs of tautologies with {\tt TautoProp}}
+%\label{tautolem}
+%\end{figure}
 
 \subsection{Deciding type isomorphisms}
 
-A more tricky problem is to decide equalities between types and modulo
-isomorphisms. Here, we choose to use the isomorphisms of the simply typed
-$\lb{}$-calculus with Cartesian product and $unit$ type (see, for example,
-\cite{RC95}). The axioms of this $\lb{}$-calculus are given by
-table~\ref{isosax}.
-
-\begin{table}[ht]
-\noindent{}\framebox[6.4in][l]
-{\parbox{6.4in}
-{
+\begin{figure}
+\begin{centerframe}
 \begin{coq_eval}
 Reset Initial.
 \end{coq_eval}
@@ -1092,24 +1074,19 @@ intro Heq; rewrite Heq; apply refl_equal.
 Qed.
 End Iso_axioms.
 \end{coq_example*}
-}}
+\end{centerframe}
 \caption{Type isomorphism axioms}
 \label{isosax}
-\end{table}
+\end{figure}
 
-The tactic to judge equalities modulo this axiomatization can be written as
-shown in tables~\ref{isosltac1} and~\ref{isosltac2}. The algorithm is quite
-simple. Types are reduced using axioms that can be oriented (this done by {\tt
-MainSimplif}). The normal forms are sequences of Cartesian
-products without Cartesian product in the left component. These normal forms
-are then compared modulo permutation of the components (this is done by {\tt
-CompareStruct}). The main tactic to be called and realizing this algorithm is
-{\tt IsoProve}.
+A more tricky problem is to decide equalities between types and modulo
+isomorphisms. Here, we choose to use the isomorphisms of the simply typed
+$\lb{}$-calculus with Cartesian product and $unit$ type (see, for example,
+\cite{RC95}). The axioms of this $\lb{}$-calculus are given on
+Figure~\ref{isosax}.
 
-\begin{table}[ht]
-\noindent{}\framebox[6.4in][l]
-{\parbox{6.4in}
-{
+\begin{figure}[ht]
+\begin{centerframe}
 \begin{coq_example}
 Ltac DSimplif trm :=
   match trm with
@@ -1143,15 +1120,13 @@ Ltac Length trm :=
   end.
 Ltac assoc := repeat rewrite <- Ass.
 \end{coq_example}
-}}
+\end{centerframe}
 \caption{Type isomorphism tactic (1)}
 \label{isosltac1}
-\end{table}
+\end{figure}
 
-\begin{table}[ht]
-\noindent{}\framebox[6.4in][l]
-{\parbox{6.4in}
-{
+\begin{figure}[ht]
+\begin{centerframe}
 \begin{coq_example}
 Ltac DoCompare n :=
   match goal with
@@ -1177,17 +1152,24 @@ Ltac CompareStruct :=
   end.
 Ltac IsoProve := MainSimplif; CompareStruct.
 \end{coq_example}
-}}
+\end{centerframe}
 \caption{Type isomorphism tactic (2)}
 \label{isosltac2}
-\end{table}
+\end{figure}
 
-Table~\ref{isoslem} gives examples of what can be solved by {\tt IsoProve}.
+The tactic to judge equalities modulo this axiomatization can be written as
+shown on Figures~\ref{isosltac1} and~\ref{isosltac2}. The algorithm is quite
+simple. Types are reduced using axioms that can be oriented (this done by {\tt
+MainSimplif}). The normal forms are sequences of Cartesian
+products without Cartesian product in the left component. These normal forms
+are then compared modulo permutation of the components (this is done by {\tt
+CompareStruct}). The main tactic to be called and realizing this algorithm is
+{\tt IsoProve}.
 
-\begin{table}[ht]
-\noindent{}\framebox[6.4in][l]
-{\parbox{6.4in}
-{
+% Figure~\ref{isoslem} gives 
+Here are examples of what can be solved by {\tt IsoProve}.
+%\begin{figure}[ht]
+%\begin{centerframe}
 \begin{coq_example*}
 Lemma isos_ex1 : 
   forall A B:Set, A * unit * B = B * (unit * A).
@@ -1203,10 +1185,10 @@ Proof.
 intros; IsoProve.
 Qed.
 \end{coq_example*}
-}}
-\caption{Type equalities solved by {\tt IsoProve}}
-\label{isoslem}
-\end{table}
+%\end{centerframe}
+%\caption{Type equalities solved by {\tt IsoProve}}
+%\label{isoslem}
+%\end{figure}
 
 %%% Local Variables: 
 %%% mode: latex

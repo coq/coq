@@ -285,9 +285,9 @@ $\Gamma$
 A term $t$ is well typed in an environment $E$ iff there exists a
 context $\Gamma$ and a term $T$ such that the judgment \WTEG{t}{T} can
 be derived from the following rules.
-\begin{itemize}
-\item [W-E] \inference{\WF{[]}{[]}}
-\item [W-S]  % Ce n'est pas vrai : x peut apparaitre plusieurs fois dans Gamma
+\begin{description}
+\item[W-E] \inference{\WF{[]}{[]}}
+\item[W-S]  % Ce n'est pas vrai : x peut apparaitre plusieurs fois dans Gamma
 \inference{\frac{\WTEG{T}{s}~~~~s\in \Sort~~~~x \not\in
       \Gamma           % \cup E
       }
@@ -297,7 +297,7 @@ be derived from the following rules.
      }{\WFE{\Gamma::(x:=t:T)}}}
 \item[Def] \inference{\frac{\WTEG{t}{T}~~~c \notin E\cup \Gamma}
                       {\WF{E;\Def{\Gamma}{c}{t}{T}}{\Gamma}}}
-\item [Ax] \index{Typing rules!Ax}
+\item[Ax] \index{Typing rules!Ax}
 \inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(p)}}~~~~~
 \frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(q)}}}
 \inference{\frac{\WFE{\Gamma}~~~~i<j}{\WTEG{\Type(i)}{\Type(j)}}}
@@ -305,7 +305,7 @@ be derived from the following rules.
  \inference{\frac{ \WFE{\Gamma}~~~~~(x:T)\in\Gamma~~\mbox{or}~~(x:=t:T)\in\Gamma~\mbox{for some $t$}}{\WTEG{x}{T}}}
 \item[Const]  \index{Typing rules!Const}
 \inference{\frac{\WFE{\Gamma}~~~~(c:T) \in E}{\WTEG{c}{T}}}
-\item [Prod]  \index{Typing rules!Prod}
+\item[Prod]  \index{Typing rules!Prod}
 \inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~
     \WTE{\Gamma::(x:T)}{U}{\Prop}}
       { \WTEG{\forall~x:T,U}{\Prop}}} 
@@ -315,18 +315,18 @@ be derived from the following rules.
 \inference{\frac{\WTEG{T}{\Type(i)}~~~~i\leq k~~~
     \WTE{\Gamma::(x:T)}{U}{\Type(j)}~~~j \leq k}
     {\WTEG{\forall~x:T,U}{\Type(k)}}}
-\item [Lam]\index{Typing rules!Lam} 
+\item[Lam]\index{Typing rules!Lam} 
 \inference{\frac{\WTEG{\forall~x:T,U}{s}~~~~ \WTE{\Gamma::(x:T)}{t}{U}}
         {\WTEG{\lb~x:T\mto t}{\forall x:T, U}}}
-\item [App]\index{Typing rules!App}
+\item[App]\index{Typing rules!App}
  \inference{\frac{\WTEG{t}{\forall~x:U,T}~~~~\WTEG{u}{U}}
                  {\WTEG{(t\ u)}{\subst{T}{x}{u}}}}
-\item [Let]\index{Typing rules!Let} 
+\item[Let]\index{Typing rules!Let} 
 \inference{\frac{\WTEG{t}{T}~~~~ \WTE{\Gamma::(x:=t:T)}{u}{U}}
         {\WTEG{\kw{let}~x:=t~\kw{in}~u}{\subst{U}{x}{t}}}}
-\end{itemize}
-
-\noindent {\bf Remark. } We may have $\kw{let}~x:=t~\kw{in}~u$
+\end{description}
+    
+\Rem We may have $\kw{let}~x:=t~\kw{in}~u$
 well-typed without having $((\lb~x:T\mto u)~t)$ well-typed (where
 $T$ is a type of $t$). This is because the value $t$ associated to $x$
 may be used in a conversion rule (see section \ref{conv-rules}).
@@ -416,14 +416,18 @@ convertibility into an order inductively defined by:
 
 The conversion rule is now exactly:
 
-\begin{itemize}\label{Conv}
-\item [Conv]\index{Typing rules!Conv}
+\begin{description}\label{Conv}
+\item[Conv]\index{Typing rules!Conv}
  \inference{
       \frac{\WTEG{U}{s}~~~~\WTEG{t}{T}~~~~\WTEGLECONV{T}{U}}{\WTEG{t}{U}}}
-\end{itemize}
+  \end{description}
 
 
-\paragraph{$\eta$-conversion.}\label{eta}\index{eta-conversion@$\eta$-conversion}\index{eta-reduction@$\eta$-reduction}
+\paragraph{$\eta$-conversion.
+\label{eta}
+\index{eta-conversion@$\eta$-conversion}
+\index{eta-reduction@$\eta$-reduction}}
+
 An other important rule is the $\eta$-conversion. It is to identify
 terms over a dummy abstraction of a variable followed by an
 application of this variable. Let $T$ be a type, $t$ be a term in

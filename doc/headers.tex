@@ -20,21 +20,22 @@
 
 \renewcommand{\chaptermark}[1]{\markboth{{\bf \thechapter~#1}}{}}
 \renewcommand{\sectionmark}[1]{\markright{\thesection~#1}}
+%BEGIN LATEX
 \renewcommand{\contentsname}{%
 \protect\setheaders{Table of contents}Table of contents}
 \renewcommand{\bibname}{\protect\setheaders{Bibliography}%
-%BEGIN LATEX
 \protect\RefManCutCommand{BEGINBIBLIO=\thepage}%
-%ENDLATEX
 \protect\addcontentsline{toc}{chapter}{Bibliography}Bibliography}
+%ENDLATEX
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % For the Addendum table of contents
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \makeatletter
 
-\newcommand{\atableofcontents}{\section*{Contents}\@starttoc{atoc}}
 \newcommand{\aauthor}[1]{{\LARGE \bf #1} \bigskip \bigskip \bigskip}
+%BEGIN LATEX
+\newcommand{\atableofcontents}{\section*{Contents}\@starttoc{atoc}}
 \newcommand{\achapter}[1]{
   \chapter{#1}\addcontentsline{atoc}{chapter}{#1}}
 \newcommand{\asection}[1]{
@@ -43,17 +44,25 @@
   \subsection{#1}\addcontentsline{atoc}{subsection}{#1}}
 \newcommand{\asubsubsection}[1]{
   \subsubsection{#1}\addcontentsline{atoc}{subsubsection}{#1}}
+%END LATEX
+%HEVEA \newcommand{\atableofcontents}{}
+%HEVEA \newcommand{\achapter}[1]{\chapter{#1}}
+%HEVEA \newcommand{\asection}{\section}
+%HEVEA \newcommand{\asubsection}{\subsection}
+%HEVEA \newcommand{\asubsubsection}{\subsubsection}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Reference-Manual.sh is generated to cut the Postscript
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\@starttoc{sh}
+%BEGIN LATEX
 \newwrite\RefManCut@out%
 \immediate\openout\RefManCut@out\jobname.sh
 \newcommand{\RefManCutCommand}[1]{%
 \immediate\write\RefManCut@out{#1}}
 \newcommand{\RefManCutClose}{%
 \immediate\closeout\RefManCut@out}
+%END LATEX
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Commands for indexes

@@ -76,7 +76,7 @@ Notation & Precedence & Associativity \\
 \verb!_ / _!   & 40 & left \\
 \verb!- _!  & 35 & right \\
 \verb!/ _!  & 35 & right \\
-\verb!_ ^ _!   & 30 & left \\
+\verb!_ ^ _!   & 30 & right \\
 \hline
 \end{tabular}
 \end{center}
@@ -84,18 +84,12 @@ Notation & Precedence & Associativity \\
 \label{init-notations}
 \end{figure}
 
-\subsection{Logic} \label{Logic}
-
-The basic library of {\Coq} comes with the definitions of standard
-(intuitionistic) logical connectives (they are defined as inductive
-constructions). They are equipped with an appealing syntax enriching the
-(subclass {\form}) of the syntactic class {\term}. The syntax
-extension is shown on figure \ref{formulas-syntax}.
+\subsection{Logic} 
+\label{Logic}
 
 \begin{figure}
-\begin{center}
-\fbox{\begin{minipage}{0.95\textwidth}
-\begin{tabular}{rclr}
+\begin{centerframe}
+\begin{tabular}{lclr}
 {\form} & ::= & {\tt True} & ({\tt True})\\
   & $|$ & {\tt False} & ({\tt False})\\
   & $|$ & {\tt\char'176} {\form} & ({\tt not})\\
@@ -112,8 +106,7 @@ extension is shown on figure \ref{formulas-syntax}.
   & $|$ & {\term} {\tt =} {\term} & ({\tt eq})\\
   & $|$ & {\term} {\tt =} {\term} {\tt :>} {\specif} & ({\tt eq})
 \end{tabular}
-\end{minipage}}
-\end{center}
+\end{centerframe}
 \caption{Syntax of formulas}
 \label{formulas-syntax}
 \end{figure}
@@ -122,16 +115,20 @@ The basic library of {\Coq} comes with the definitions of standard
 (intuitionistic) logical connectives (they are defined as inductive
 constructions). They are equipped with an appealing syntax enriching the
 (subclass {\form}) of the syntactic class {\term}. The syntax
-extension
-\footnote{This syntax is defined in module {\tt LogicSyntax}}
- is shown on figure \ref{formulas-syntax}.
+extension is shown on figure \ref{formulas-syntax}.
 
-\Rem Implication is not defined but primitive
-(it is a non-dependent product of a proposition over another proposition).
-There is also a primitive universal quantification (it is a
-dependent product over a proposition). The primitive universal
-quantification allows both first-order and higher-order
-quantification. 
+% The basic library of {\Coq} comes with the definitions of standard
+% (intuitionistic) logical connectives (they are defined as inductive
+% constructions). They are equipped with an appealing syntax enriching
+% the (subclass {\form}) of the syntactic class {\term}. The syntax
+% extension \footnote{This syntax is defined in module {\tt
+%     LogicSyntax}} is shown on Figure~\ref{formulas-syntax}.
+ 
+\Rem Implication is not defined but primitive (it is a non-dependent
+product of a proposition over another proposition).  There is also a
+primitive universal quantification (it is a dependent product over a
+proposition). The primitive universal quantification allows both
+first-order and higher-order quantification.
 
 \subsubsection{Propositional Connectives} \label{Connectives}
 \index{Connectives}
@@ -231,7 +228,9 @@ Inductive eq (A:Type) (x:A) : A -> Prop :=
     refl_equal : eq A x x.
 \end{coq_example*}
 
-\subsubsection{Lemmas} \label{PreludeLemmas}
+\subsubsection{Lemmas} 
+\label{PreludeLemmas}
+
 Finally, a few easy lemmas are provided.
 
 \ttindex{absurd}
@@ -300,17 +299,43 @@ Theorem f_equal3 :
 Abort.
 \end{coq_eval}
 
-\subsection{Datatypes} \label{Datatypes}
+\subsection{Datatypes}
+\label{Datatypes}
+\index{Datatypes}
+
+\begin{figure}
+\begin{centerframe}
+\begin{tabular}{rclr}
+{\specif} & ::= & {\specif} {\tt *} {\specif} & ({\tt prod})\\
+  & $|$ & {\specif} {\tt +} {\specif} & ({\tt sum})\\
+  & $|$ & {\specif} {\tt + \{} {\specif} {\tt \}} & ({\tt sumor})\\
+  & $|$ & {\tt \{} {\specif} {\tt \} + \{} {\specif} {\tt \}} &
+  ({\tt sumbool})\\  
+  & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt |} {\form} {\tt \}}
+  & ({\tt sig})\\
+  & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt |} {\form}  {\tt \&}
+  {\form} {\tt \}} & ({\tt sig2})\\
+  & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt \&} {\specif} {\tt
+    \}} & ({\tt sigS})\\
+  & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt \&} {\specif} {\tt
+    \&} {\specif} {\tt \}} & ({\tt sigS2})\\
+  &  & & \\
+{\term} & ::= & {\tt (} {\term} {\tt ,} {\term} {\tt )} & ({\tt pair})
+\end{tabular}
+\end{centerframe}
+\caption{Syntax of datatypes and specifications}
+\label{specif-syntax}
+\end{figure}
+
 
 In the basic library, we find the definition\footnote{They are in {\tt
     Datatypes.v}} of the basic data-types of programming, again
 defined as inductive constructions over the sort \verb:Set:. Some of
 them come with a special syntax shown on Figure~\ref{specif-syntax}.
 
-\subsubsection{Programming} \label{Programming}
+\subsubsection{Programming} 
+\label{Programming}
 \index{Programming}
-\index{Datatypes}
-
 \label{libnats}
 
 \ttindex{unit}
@@ -456,32 +481,6 @@ in the \verb"Set" \verb"A+{B}".
 \begin{coq_example*}
 Inductive sumor (A:Set) (B:Prop) : Set := inleft (_:A) | inright (_:B).
 \end{coq_example*}
-
-\begin{figure}
-\begin{center}
-\fbox{\begin{minipage}{0.95\textwidth}
-\begin{tabular}{rclr}
-{\specif} & ::= & {\specif} {\tt *} {\specif} & ({\tt prod})\\
-  & $|$ & {\specif} {\tt +} {\specif} & ({\tt sum})\\
-  & $|$ & {\specif} {\tt + \{} {\specif} {\tt \}} & ({\tt sumor})\\
-  & $|$ & {\tt \{} {\specif} {\tt \} + \{} {\specif} {\tt \}} &
-  ({\tt sumbool})\\  
-  & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt |} {\form} {\tt \}}
-  & ({\tt sig})\\
-  & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt |} {\form}  {\tt \&}
-  {\form} {\tt \}} & ({\tt sig2})\\
-  & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt \&} {\specif} {\tt
-    \}} & ({\tt sigS})\\
-  & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt \&} {\specif} {\tt
-    \&} {\specif} {\tt \}} & ({\tt sigS2})\\
-  &  & & \\
-{\term} & ::= & {\tt (} {\term} {\tt ,} {\term} {\tt )} & ({\tt pair})
-\end{tabular}
-\end{minipage}}
-\end{center}
-\caption{Syntax of datatypes and specifications}
-\label{specif-syntax}
-\end{figure}
 
 We may define variants of the axiom of choice, like in Martin-Löf's
 Intuitionistic Type Theory.

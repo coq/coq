@@ -1,13 +1,12 @@
-\section{Module system}
+\section{Module system
 \index{Modules}
-\label{section:Modules}
+\label{section:Modules}}
 
 The module system provides a way of packaging related elements
 together, as well as a mean of massive abstraction.
 
 \begin{figure}[t]
-\begin{center}
-\fbox{\begin{minipage}{0.95\textwidth}
+\begin{centerframe}
 \begin{tabular}{rcl}
 {\modtype}  & ::= & {\ident} \\
  & $|$ & {\modtype} \texttt{ with Definition }{\ident} := {\term} \\
@@ -22,13 +21,12 @@ together, as well as a mean of massive abstraction.
 
 {\modexpr} & ::= & \nelist{\qualid}{} 
 \end{tabular}
-\end{minipage}}
-\end{center}
-\caption{Syntax of modules.}
+\end{centerframe}
+\caption{Syntax of modules}
 \end{figure}
 
-\subsection{\tt Module {\ident}}
-\comindex{Module}
+\subsection{\tt Module {\ident}
+\comindex{Module}}
 
 This command is used to start an interactive module named {\ident}.
 
@@ -59,8 +57,8 @@ This command is used to start an interactive module named {\ident}.
 
 \end{Variants}
 
-\subsection{\tt End {\ident}}
-\comindex{End}
+\subsection{\tt End {\ident}
+\comindex{End}}
 
 This command closes the interactive module {\ident}. If the module type
 was given the content of the module is matched against it and an error
@@ -75,8 +73,8 @@ now available through the dot notation.
 \end{ErrMsgs}
 
 
-\subsection{\tt Module {\ident} := {\modexpr}}
-\comindex{Module}
+\subsection{\tt Module {\ident} := {\modexpr}
+\comindex{Module}}
 
 This command defines the module identifier {\ident} to be equal to
 {\modexpr}. 
@@ -108,7 +106,8 @@ This command defines the module identifier {\ident} to be equal to
 
 \end{Variants}
 
-\subsection{\tt Module Type {\ident}}\comindex{Module Type}
+\subsection{\tt Module Type {\ident}
+\comindex{Module Type}}
 
 This command is used to start an interactive module type {\ident}.
 
@@ -120,8 +119,8 @@ This command is used to start an interactive module type {\ident}.
 
 \end{Variants}
 
-\subsection{\tt End {\ident}}
-\comindex{End}
+\subsection{\tt End {\ident}
+\comindex{End}}
 
 This command closes the interactive module type {\ident}.
 
@@ -141,6 +140,7 @@ Defines a module type {\ident} equal to {\modtype}.
 \end{Variants}
 
 \subsection{\tt Declare Module {\ident}}
+
 Starts an interactive module declaration. This command is available
 only in module types. 
 
@@ -329,7 +329,10 @@ Reset Initial.
 
 \end{Remarks}
 
-\subsection{Import {\qualid}}\comindex{Import}\label{Import}
+\subsection{Import {\qualid}
+\comindex{Import}
+\label{Import}}
+
 If {\qualid} denotes a valid basic module (i.e. its module type is a
 signature), makes its components available by their short names.
 
@@ -371,13 +374,13 @@ Reset Mod.
   \item Warning: Trying to mask the absolute name {\qualid} !
 \end{Warnings}
 
-\subsection{\tt Print Module {\ident}}
-\comindex{Print Module}
+\subsection{\tt Print Module {\ident}
+\comindex{Print Module}}
 
 Prints the module type and (optionally) the body of the module {\ident}.
 
-\subsection{\tt Print Module Type {\ident}}
-\comindex{Print Module Type}
+\subsection{\tt Print Module Type {\ident}
+\comindex{Print Module Type}}
 
 Prints the module type corresponding to {\ident}.
 

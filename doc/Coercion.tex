@@ -38,19 +38,18 @@ classes:
   type, i.e. of form $forall~ x:A, B$.
 \end{itemize}
 
-Formally, the syntax of a classes is defined by
-
-\medskip
-\begin{center}
-\begin{tabular}{|lcl|}
-\hline
+Formally, the syntax of a classes is defined on Figure~\ref{fig:classes}.
+\begin{figure}
+\begin{centerframe}
+\begin{tabular}{lcl}
 {\class} & ::= & {\qualid} \\
   & $|$ & {\tt Sortclass} \\
-  & $|$ & {\tt Funclass} \\
-\hline
+  & $|$ & {\tt Funclass} 
 \end{tabular}
-\end{center}
-\medskip
+\end{centerframe}
+\caption{Syntax of classes}
+\label{fig:classes}
+\end{figure}
 
 \asection{Coercions}
 \index{Coercions!Funclass}
