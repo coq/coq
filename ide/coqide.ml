@@ -557,7 +557,7 @@ object(self)
   val mutable last_auto_save_time = 0.
   val mutable detached_views = []
 
-  val mutable auto_complete_on = true
+  val mutable auto_complete_on = false
 
   method private toggle_auto_complete = 
     auto_complete_on <- not auto_complete_on
@@ -1990,7 +1990,7 @@ let main files =
 
   let toggle_auto_complete_i = 
     edit_f#add_check_item "_Auto Completion" 
-      ~active:true
+      ~active:false
       ~key:GdkKeysyms._B
       ~callback:(fun b -> match (get_current_view()).analyzed_view with
 		 | Some av -> av#set_auto_complete b
