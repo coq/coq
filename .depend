@@ -35,7 +35,8 @@ library/global.cmi: kernel/cooking.cmi kernel/declarations.cmi \
     kernel/environ.cmi kernel/inductive.cmi kernel/names.cmi \
     kernel/safe_typing.cmi kernel/sign.cmi kernel/term.cmi kernel/univ.cmi 
 library/goptions.cmi: kernel/names.cmi lib/pp.cmi 
-library/impargs.cmi: kernel/inductive.cmi kernel/names.cmi kernel/term.cmi 
+library/impargs.cmi: kernel/environ.cmi kernel/evd.cmi kernel/inductive.cmi \
+    kernel/names.cmi kernel/term.cmi 
 library/indrec.cmi: kernel/declarations.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/inductive.cmi kernel/names.cmi kernel/term.cmi 
 library/lib.cmi: library/libobject.cmi kernel/names.cmi library/summary.cmi 
@@ -481,10 +482,10 @@ parsing/g_tactic.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi \
     lib/pp.cmi lib/util.cmi toplevel/vernac.cmi 
 parsing/g_tactic.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmx \
     lib/pp.cmx lib/util.cmx toplevel/vernac.cmx 
-parsing/g_vernac.cmo: parsing/coqast.cmi parsing/pcoq.cmi lib/pp.cmi \
-    lib/util.cmi toplevel/vernac.cmi 
-parsing/g_vernac.cmx: parsing/coqast.cmx parsing/pcoq.cmx lib/pp.cmx \
-    lib/util.cmx toplevel/vernac.cmx 
+parsing/g_vernac.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi \
+    lib/pp.cmi lib/util.cmi toplevel/vernac.cmi 
+parsing/g_vernac.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmx \
+    lib/pp.cmx lib/util.cmx toplevel/vernac.cmx 
 parsing/g_zsyntax.cmo: parsing/ast.cmi parsing/astterm.cmi parsing/coqast.cmi \
     parsing/esyntax.cmi kernel/names.cmi parsing/pcoq.cmi lib/pp.cmi \
     lib/util.cmi parsing/g_zsyntax.cmi 
@@ -1041,20 +1042,22 @@ toplevel/class.cmx: pretyping/classops.cmx kernel/declarations.cmx \
     pretyping/typing.cmx lib/util.cmx toplevel/class.cmi 
 toplevel/command.cmo: parsing/ast.cmi parsing/astterm.cmi parsing/coqast.cmi \
     kernel/declarations.cmi library/declare.cmi kernel/environ.cmi \
-    kernel/evd.cmi library/global.cmi library/indrec.cmi kernel/inductive.cmi \
-    library/lib.cmi library/libobject.cmi library/library.cmi \
-    proofs/logic.cmi kernel/names.cmi lib/options.cmi proofs/pfedit.cmi \
-    lib/pp.cmi parsing/printer.cmi proofs/proof_type.cmi kernel/reduction.cmi \
-    library/states.cmi pretyping/syntax_def.cmi proofs/tacmach.cmi \
-    pretyping/tacred.cmi kernel/term.cmi lib/util.cmi toplevel/command.cmi 
+    kernel/evd.cmi library/global.cmi library/impargs.cmi library/indrec.cmi \
+    kernel/inductive.cmi library/lib.cmi library/libobject.cmi \
+    library/library.cmi proofs/logic.cmi kernel/names.cmi lib/options.cmi \
+    proofs/pfedit.cmi lib/pp.cmi parsing/printer.cmi proofs/proof_type.cmi \
+    kernel/reduction.cmi library/states.cmi pretyping/syntax_def.cmi \
+    proofs/tacmach.cmi pretyping/tacred.cmi kernel/term.cmi lib/util.cmi \
+    toplevel/command.cmi 
 toplevel/command.cmx: parsing/ast.cmx parsing/astterm.cmx parsing/coqast.cmx \
     kernel/declarations.cmx library/declare.cmx kernel/environ.cmx \
-    kernel/evd.cmx library/global.cmx library/indrec.cmx kernel/inductive.cmx \
-    library/lib.cmx library/libobject.cmx library/library.cmx \
-    proofs/logic.cmx kernel/names.cmx lib/options.cmx proofs/pfedit.cmx \
-    lib/pp.cmx parsing/printer.cmx proofs/proof_type.cmx kernel/reduction.cmx \
-    library/states.cmx pretyping/syntax_def.cmx proofs/tacmach.cmx \
-    pretyping/tacred.cmx kernel/term.cmx lib/util.cmx toplevel/command.cmi 
+    kernel/evd.cmx library/global.cmx library/impargs.cmx library/indrec.cmx \
+    kernel/inductive.cmx library/lib.cmx library/libobject.cmx \
+    library/library.cmx proofs/logic.cmx kernel/names.cmx lib/options.cmx \
+    proofs/pfedit.cmx lib/pp.cmx parsing/printer.cmx proofs/proof_type.cmx \
+    kernel/reduction.cmx library/states.cmx pretyping/syntax_def.cmx \
+    proofs/tacmach.cmx pretyping/tacred.cmx kernel/term.cmx lib/util.cmx \
+    toplevel/command.cmi 
 toplevel/coqinit.cmo: config/coq_config.cmi library/library.cmi \
     toplevel/mltop.cmi library/nametab.cmi lib/options.cmi lib/pp.cmi \
     lib/system.cmi toplevel/toplevel.cmi toplevel/vernac.cmi \
