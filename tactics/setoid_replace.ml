@@ -896,41 +896,26 @@ let check_eq env a_quantifiers_rev a aeq =
   errorlabstrm "Add Relation Class"
    (prterm aeq ++ str " should have type (" ++ prterm typ ++ str ")")
 
-let check_refl env a_quantifiers_rev a aeq refl =
+let check_property env a_quantifiers_rev a aeq strprop coq_prop t =
  if
   not
-   (is_conv env Evd.empty (Typing.type_of env Evd.empty refl)
+   (is_conv env Evd.empty (Typing.type_of env Evd.empty t)
     (Sign.it_mkProd_or_LetIn
-     (mkApp ((Lazy.force coq_reflexive),
+     (mkApp ((Lazy.force coq_prop),
        [| apply_to_rels a   a_quantifiers_rev ;
           apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
  then
   errorlabstrm "Add Relation Class"
-   (str "Not a valid proof of reflexivity")
+   (str "Not a valid proof of " ++ str strprop ++ str ".")
+
+let check_refl env a_quantifiers_rev a aeq refl =
+ check_property env a_quantifiers_rev a aeq "reflexivity" coq_reflexive refl
 
 let check_sym env a_quantifiers_rev a aeq sym =
- if
-  not
-   (is_conv env Evd.empty (Typing.type_of env Evd.empty sym)
-    (Sign.it_mkProd_or_LetIn
-     (mkApp ((Lazy.force coq_symmetric),
-       [| apply_to_rels a   a_quantifiers_rev ;
-          apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
- then
-  errorlabstrm "Add Relation Class"
-   (str "Not a valid proof of symmetry")
+ check_property env a_quantifiers_rev a aeq "symmetry" coq_symmetric sym
 
 let check_trans env a_quantifiers_rev a aeq trans =
- if
-  not
-   (is_conv env Evd.empty (Typing.type_of env Evd.empty trans)
-    (Sign.it_mkProd_or_LetIn
-     (mkApp ((Lazy.force coq_transitive),
-       [| apply_to_rels a   a_quantifiers_rev ;
-          apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
- then
-  errorlabstrm "Add Relation Class"
-   (str "Not a valid proof of transitivity")
+ check_property env a_quantifiers_rev a aeq "transitivity" coq_transitive trans
 
 let check_setoid_theory env a_quantifiers_rev a aeq th =
  if
@@ -1141,9 +1126,9 @@ let beta_expand c args_rev =
   compose_lam (to_expand args_rev)
    (mkApp (c, Array.of_list (List.rev (aux 1 args_rev))))
 
-exception Use_rewrite
+exception Optimize (* used to fall-back on the tactic for Leibniz equality *)
 
-let relation_class_that_matches_a_constr caller_name raise_opt new_goals hypt =
+let relation_class_that_matches_a_constr caller_name new_goals hypt =
  let (heq, hargs) = decompose_app hypt in
  let rec get_all_but_last_two =
   function
@@ -1160,7 +1145,7 @@ let relation_class_that_matches_a_constr caller_name raise_opt new_goals hypt =
    match rel,new_goals with
       Leibniz _,[] ->
        assert (subst = []);
-       raise_opt () (* let's optimize the proof term size *)
+       raise Optimize (* let's optimize the proof term size *)
     | Leibniz (Some _), _ ->
        assert (subst = []);
        rel
@@ -1629,7 +1614,7 @@ let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
   try
    let input_relation =
     relation_class_that_matches_a_constr "Setoid_rewrite"
-     (fun () -> raise Use_rewrite) new_goals (pf_type_of gl (snd hyp)) in
+     new_goals (pf_type_of gl (snd hyp)) in
    let output_relation,output_direction,marked_but =
     mark_occur gl ~new_goals c1 but input_relation input_direction in
    let cic_output_direction = cic_direction_of_direction output_direction in
@@ -1663,7 +1648,7 @@ let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
     else
      if_output_relation_is_if gl
   with
-   Use_rewrite ->
+   Optimize ->
     !general_rewrite (input_direction = Left2Right) (snd hyp) gl
 
 let analyse_hypothesis gl c =
@@ -1703,8 +1688,6 @@ let general_s_rewrite_in id lft2rgt c ~new_goals gl =
       (general_s_rewrite (not lft2rgt) c ~new_goals)
       (exact_check (mkVar id))] gl
 
-exception Use_replace
-
 (*CSC: still setoid in the name *)
 let setoid_replace relation c1 c2 ~new_goals gl =
  try
@@ -1714,7 +1697,7 @@ let setoid_replace relation c1 c2 ~new_goals gl =
        (try
          match find_relation_class rel with
             Relation sa -> sa
-          | Leibniz _ -> raise Use_replace
+          | Leibniz _ -> raise Optimize
         with
          Not_found ->
           errorlabstrm "Setoid_rewrite"
@@ -1722,7 +1705,7 @@ let setoid_replace relation c1 c2 ~new_goals gl =
     | None ->
        match default_relation_for_carrier (pf_type_of gl c1) with
           Relation sa -> sa
-        | Leibniz _ -> raise Use_replace
+        | Leibniz _ -> raise Optimize
   in
    let eq_left_to_right = mkApp (relation.rel_aeq, [| c1 ; c2 |]) in
    let eq_right_to_left = mkApp (relation.rel_aeq, [| c2 ; c1 |]) in
@@ -1737,7 +1720,7 @@ let setoid_replace relation c1 c2 ~new_goals gl =
     tclORELSE
      (replace true eq_left_to_right) (replace false eq_right_to_left) gl
  with
-  Use_replace -> (!replace c1 c2) gl
+  Optimize -> (!replace c1 c2) gl
 
 let setoid_replace_in id relation c1 c2 ~new_goals gl =
  let hyp = pf_type_of gl (mkVar id) in
@@ -1753,13 +1736,11 @@ let setoid_replace_in id relation c1 c2 ~new_goals gl =
 
 (* [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
-exception Use_reflexivity
-
 let setoid_reflexivity gl =
  try
   let relation_class =
    relation_class_that_matches_a_constr "Setoid_reflexivity"
-    (fun () -> raise Use_reflexivity) [] (pf_concl gl) in
+    [] (pf_concl gl) in
   match relation_class with
      Leibniz _ -> assert false (* since [] is empty *)
    | Relation rel ->
@@ -1769,15 +1750,13 @@ let setoid_reflexivity gl =
            (str "The relation " ++ prrelation rel ++ str " is not reflexive.")
        | Some refl -> apply refl gl
  with
-  Use_reflexivity -> reflexivity gl
-
-exception Use_symmetry
+  Optimize -> reflexivity gl
 
 let setoid_symmetry gl =
  try
   let relation_class =
    relation_class_that_matches_a_constr "Setoid_symmetry"
-    (fun () -> raise Use_symmetry) [] (pf_concl gl) in
+    [] (pf_concl gl) in
   match relation_class with
      Leibniz _ -> assert false (* since [] is empty *)
    | Relation rel ->
@@ -1787,7 +1766,7 @@ let setoid_symmetry gl =
            (str "The relation " ++ prrelation rel ++ str " is not symmetric.")
        | Some sym -> apply sym gl
  with
-  Use_symmetry -> symmetry gl
+  Optimize -> symmetry gl
 
 let setoid_symmetry_in id gl =
  let new_hyp =
@@ -1801,13 +1780,11 @@ let setoid_symmetry_in id gl =
        (tclTHEN (clear [id]) (introduction id));
      tclTHENS setoid_symmetry [ exact_check (mkVar id) ] ] gl
 
-exception Use_transitivity
-
 let setoid_transitivity c gl =
  try
   let relation_class =
    relation_class_that_matches_a_constr "Setoid_transitivity"
-    (fun () -> raise Use_transitivity) [] (pf_concl gl) in
+    [] (pf_concl gl) in
   match relation_class with
      Leibniz _ -> assert false (* since [] is empty *)
    | Relation rel ->
@@ -1829,7 +1806,7 @@ let setoid_transitivity c gl =
             apply_with_bindings
              (trans, Rawterm.ExplicitBindings [ dummy_loc, binder, c ]) gl
  with
-  Use_transitivity -> transitivity c gl
+  Optimize -> transitivity c gl
 ;;
 
 Tactics.register_setoid_reflexivity setoid_reflexivity;;
