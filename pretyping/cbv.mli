@@ -46,6 +46,7 @@ val stack_app : cbv_value list -> cbv_stack -> cbv_stack
 val under_case_stack : cbv_stack -> bool
 val strip_appl : cbv_value -> cbv_stack -> cbv_value * cbv_stack
 
+open RedFlags
 val red_allowed : flags -> cbv_stack -> red_kind -> bool
 val reduce_const_body :
   (cbv_value -> cbv_value) -> cbv_value -> cbv_stack -> cbv_value * cbv_stack

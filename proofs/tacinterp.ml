@@ -10,6 +10,7 @@
 
 open Astterm
 open Closure
+open RedFlags
 open Declarations
 open Dyn
 open Libobject
@@ -1110,7 +1111,7 @@ and cvt_fold (evc,env,lfun,lmatch,goalopt,debug) = function
 and flag_of_ast (evc,env,lfun,lmatch,goalopt,debug) lf =
   let rec add_flag red = function
     | [] -> red
-    | Node(_,"Beta",[])::lf -> add_flag (red_add red BETA) lf
+    | Node(_,"Beta",[])::lf -> add_flag (red_add red fBETA) lf
     | Node(_,"Delta",[])::lf ->
 	(match lf with
 	   | Node(loc,"Unf",l)::lf ->
@@ -1119,8 +1120,8 @@ and flag_of_ast (evc,env,lfun,lmatch,goalopt,debug) lf =
 		   (fun v red -> 
 		      match glob_const_nvar loc env
                         (qid_interp (evc,env,lfun,lmatch,goalopt,debug) v) with
-			| EvalVarRef id -> red_add red (VAR id)
-			| EvalConstRef sp -> red_add red (CONST [sp])) l red
+			| EvalVarRef id -> red_add red (fVAR id)
+			| EvalConstRef sp -> red_add red (fCONST sp)) l red
 	       in add_flag idl lf
 (*
 (id_of_Identifier (unvarg
@@ -1133,18 +1134,12 @@ and flag_of_ast (evc,env,lfun,lmatch,goalopt,debug) lf =
 		   (fun v red -> 
 		      match glob_const_nvar loc env
                         (qid_interp (evc,env,lfun,lmatch,goalopt,debug)v) with
-			| EvalVarRef id -> red_add red (VARBUT id)
-			| EvalConstRef sp -> red_add red (CONSTBUT [sp])) l red
+			| EvalVarRef id -> red_add red (fVARBUT id)
+			| EvalConstRef sp -> red_add red (fCONSTBUT sp)) l red
 	       in add_flag idl lf
 
-(*
-		 List.map
-		   (fun v -> glob_const_nvar loc (id_of_Identifier (unvarg
-                   (val_interp (evc,env,lfun,lmatch,goalopt,debug) v)))) l
-               in add_flag (red_add red (CONSTBUT idl)) lf
-*)
-	   | _ -> add_flag (red_add red DELTA) lf)
-    | Node(_,"Iota",[])::lf -> add_flag (red_add red IOTA) lf
+	   | _ -> add_flag (red_add red fDELTA) lf)
+    | Node(_,"Iota",[])::lf -> add_flag (red_add red fIOTA) lf
     | Node(loc,("Unf"|"UnfBut"),l)::_ ->
 	user_err_loc(loc,"flag_of_ast",
                      [<'sTR "Delta must be specified just before">])

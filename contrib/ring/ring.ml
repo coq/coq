@@ -548,13 +548,15 @@ let constants_to_unfold =
 (*    SectionPathSet.empty *)
 
 (* Unfolds the functions interp and find_btree in the term c of goal gl *)
+open RedFlags
 let polynom_unfold_tac =
-  let flags = (UNIFORM, red_add betaiota_red (CONST constants_to_unfold)) in
+  let flags =
+    (UNIFORM, mkflags(fBETA::fIOTA::fEVAR::(List.map fCONST constants_to_unfold))) in
   reduct_in_concl (cbv_norm_flags flags)
       
 let polynom_unfold_tac_in_term gl =
   let flags = 
-    (UNIFORM, red_add betaiotazeta_red (CONST constants_to_unfold)) 
+    (UNIFORM,mkflags(fBETA::fIOTA::fEVAR::fZETA::(List.map fCONST constants_to_unfold)))
   in
   cbv_norm_flags flags (pf_env gl) (project gl)
 

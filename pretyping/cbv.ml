@@ -136,11 +136,13 @@ let red_allowed flags stack rk =
   else 
     red_top flags rk
 
+open RedFlags
+
 let red_allowed_ref flags stack = function
-  | FarRelBinding _ -> red_allowed flags stack DELTA
-  | VarBinding id -> red_allowed flags stack (VAR id)
-  | EvarBinding _ -> red_allowed flags stack EVAR
-  | ConstBinding (sp,_) -> red_allowed flags stack (CONST [sp])
+  | FarRelBinding _ -> red_allowed flags stack fDELTA
+  | VarBinding id -> red_allowed flags stack (fVAR id)
+  | EvarBinding _ -> red_allowed flags stack fEVAR
+  | ConstBinding (sp,_) -> red_allowed flags stack (fCONST sp)
 
 (* Transfer application lists from a value to the stack
  * useful because fixpoints may be totally applied in several times
@@ -173,7 +175,7 @@ let rec check_app_constr redfun = function
   | (_::l, n) -> check_app_constr redfun (l,(pred n))
 	
 let fixp_reducible redfun flgs ((reci,i),_) stk =
-  if red_allowed flgs stk IOTA then
+  if red_allowed flgs stk fIOTA then
     match stk with               (* !!! for Acc_rec: reci.(i) = -2 *)
       | APP(appl,_) -> reci.(i) >=0 & check_app_constr redfun (appl, reci.(i))
       | _ -> false
@@ -181,7 +183,7 @@ let fixp_reducible redfun flgs ((reci,i),_) stk =
     false
 
 let cofixp_reducible redfun flgs _ stk =
-  if red_allowed flgs stk IOTA then
+  if red_allowed flgs stk fIOTA then
     match stk with
       | (CASE _ | APP(_,CASE _)) -> true
       | _ -> false
@@ -239,9 +241,9 @@ let rec norm_head info env t stack =
   | IsLetIn (x, b, t, c) ->
       (* zeta means letin are contracted; delta without zeta means we *)
       (* allow substitution but leave let's in place *)
-      let zeta = red_allowed (info_flags info) stack ZETA in
+      let zeta = red_allowed (info_flags info) stack fZETA in
       let env' =
-	if zeta or red_allowed (info_flags info) stack DELTA then 
+	if zeta or red_allowed (info_flags info) stack fDELTA then 
 	  subs_cons (cbv_stack_term info TOP env b,env)
 	else
 	  subs_lift env in
@@ -295,7 +297,7 @@ and cbv_stack_term info stack env t =
   match norm_head info env t stack with
     (* a lambda meets an application -> BETA *)
     | (LAM (x,a,b,env), APP (arg::args, stk))
-      when red_allowed (info_flags info) stk BETA ->
+      when red_allowed (info_flags info) stk fBETA ->
         let subs = subs_cons (arg,env) in
           cbv_stack_term info (stack_app args stk) subs b
 
@@ -314,14 +316,14 @@ and cbv_stack_term info stack env t =
     (* constructor in a Case -> IOTA
        (use red_under because we know there is a Case) *)
     | (CONSTR(n,sp,_,_), APP(args,CASE(_,br,(arity,_),env,stk)))
-            when red_under (info_flags info) IOTA ->
+            when red_under (info_flags info) fIOTA ->
 	let ncargs = arity.(n-1) in
 	let real_args = list_lastn ncargs args in
         cbv_stack_term info (stack_app real_args stk) env br.(n-1)
          
     (* constructor of arity 0 in a Case -> IOTA ( "   " )*)
     | (CONSTR(n,_,_,_), CASE(_,br,_,env,stk))
-                  when red_under (info_flags info) IOTA ->
+                  when red_under (info_flags info) fIOTA ->
                     cbv_stack_term info stk env br.(n-1)
 
     (* may be reduced later by application *)  

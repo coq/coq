@@ -101,7 +101,8 @@ let none = Evd.empty
 
 let type_of env c = Typing.type_of env Evd.empty (strip_outer_cast c)
 
-let whd_betaiotalet = clos_norm_flags (UNIFORM, red_add betaiota_red ZETA)
+open RedFlags
+let whd_betaiotalet = clos_norm_flags (UNIFORM, mkflags [fBETA;fIOTA;fZETA])
 
 let is_axiom sp = (Global.lookup_constant sp).const_body = None
 

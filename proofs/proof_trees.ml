@@ -354,8 +354,10 @@ let rec ast_of_cvt_intro_pattern = function
   | ListPat l -> ope ("LISTPATTERN",  (List.map ast_of_cvt_intro_pattern l))
 
 (* Gives the ast list corresponding to a reduction flag *)
+open RedFlags
+
 let last_of_cvt_flags (_,red) =
-  (if (red_set red BETA) then [ope("Beta",[])]
+  (if (red_set red fBETA) then [ope("Beta",[])]
    else [])@
   (let (n_unf,lconst) = red_get_const red in
    let lqid =
@@ -368,7 +370,7 @@ let last_of_cvt_flags (_,red) =
    if lqid = [] then []
    else if n_unf then [ope("Delta",[]);ope("UnfBut",lqid)]
    else [ope("Delta",[]);ope("Unf",lqid)])@
-  (if (red_set red IOTA) then [ope("Iota",[])]
+  (if (red_set red fIOTA) then [ope("Iota",[])]
    else [])
 
 (* Gives the ast corresponding to a reduction expression *)

@@ -32,7 +32,8 @@ type evaluable_global_reference =
   Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of 
   a LetIn expression is Letin reduction *)
 
-type red_kind =
+(*
+type red_kind = 
   | BETA
   | DELTA
   | ZETA
@@ -42,25 +43,50 @@ type red_kind =
   | CONSTBUT of section_path list
   | VAR of identifier
   | VARBUT of identifier
-
+*)
 (* Sets of reduction kinds. *)
-type reds
+module type RedFlagsSig = sig
+  type reds
+  type red_kind
 
-val no_red : reds
+  (* The different kind of reduction *)
+  (* Const/Var means the reference as argument should be unfolded *)
+  (* Constbut/Varbut means all references except the ones as argument
+     of Constbut/Varbut should be unfolded (there may be several such
+     Constbut/Varbut *)
+  val fBETA : red_kind
+  val fEVAR : red_kind
+  val fDELTA : red_kind
+  val fIOTA : red_kind
+  val fZETA : red_kind
+  val fCONST : constant_path -> red_kind
+  val fCONSTBUT : constant_path -> red_kind
+  val fVAR : identifier -> red_kind
+  val fVARBUT : identifier -> red_kind
+
+  (* No reduction at all *)
+  val no_red : reds
+
+  (* Adds a reduction kind to a set *)
+  val red_add : reds -> red_kind -> reds
+
+  (* Build a reduction set from scratch = iter [red_add] on [no_red] *)
+  val mkflags : red_kind list -> reds
+
+  (* Tests if a reduction kind is set *)
+  val red_set : reds -> red_kind -> bool
+
+  (* Gives the constant list *)
+  val red_get_const : reds -> bool * evaluable_global_reference list
+end
+
+module RedFlags : RedFlagsSig
+open RedFlags
+
 val beta_red : reds
 val betaiota_red : reds
 val betadeltaiota_red : reds
 val betaiotazeta_red : reds
-val unfold_red : evaluable_global_reference -> reds
-
-(* Tests if a reduction kind is set *)
-val red_set : reds -> red_kind -> bool
-
-(* Adds a reduction kind to a set *)
-val red_add : reds -> red_kind -> reds
-
-(* Gives the constant list *)
-val red_get_const : reds -> bool * (evaluable_global_reference list)
 
 (*s Reduction function specification. *)
 

@@ -38,6 +38,13 @@ let stop() =
 	   'sTR" zeta="; 'iNT !zeta; 'sTR" evar="; 'iNT !evar;
            'sTR" iota="; 'iNT !iota; 'sTR" prune="; 'iNT !prune; 'sTR"]" >]
 
+let incr_cnt red cnt =
+  if red then begin
+    if !stats then incr cnt;
+    true
+  end else 
+    false
+
 let with_stats c =
   if !stats then begin
     reset();
@@ -51,6 +58,129 @@ type evaluable_global_reference =
   | EvalVarRef of identifier
   | EvalConstRef of section_path
 
+module type RedFlagsSig = sig
+  type reds
+  type red_kind
+  val fBETA : red_kind
+  val fEVAR : red_kind
+  val fDELTA : red_kind
+  val fIOTA : red_kind
+  val fZETA : red_kind
+  val fCONST : constant_path -> red_kind
+  val fCONSTBUT : constant_path -> red_kind
+  val fVAR : identifier -> red_kind
+  val fVARBUT : identifier -> red_kind
+  val no_red : reds
+  val red_add : reds -> red_kind -> reds
+  val mkflags : red_kind list -> reds
+  val red_set : reds -> red_kind -> bool
+  val red_get_const : reds -> bool * evaluable_global_reference list
+end
+
+module RedFlags = (struct
+
+  (* [r_const=(true,cl)] means all constants but those in [cl] *)
+  (* [r_const=(false,cl)] means only those in [cl] *)
+  (* [r_delta=true] just mean [r_const=(true,[])] *)
+
+  type reds = {
+    r_beta : bool;
+    r_delta : bool;
+    r_const : bool * constant_path list * identifier list;
+    r_zeta : bool;
+    r_evar : bool;
+    r_iota : bool }
+
+  type red_kind = BETA | DELTA | EVAR | IOTA | ZETA
+	      | CONST of constant_path | CONSTBUT of constant_path
+	      | VAR of identifier | VARBUT of identifier
+  let fBETA = BETA
+  let fDELTA = DELTA
+  let fEVAR = EVAR 
+  let fIOTA = IOTA
+  let fZETA = ZETA
+  let fCONST sp  = CONST sp
+  let fCONSTBUT sp = CONSTBUT sp
+  let fVAR id = VAR id
+  let fVARBUT id = VARBUT id
+  let no_red = {
+    r_beta = false;
+    r_delta = false;
+    r_const = false,[],[];
+    r_zeta = false;
+    r_evar = false;
+    r_iota = false }
+
+  let red_add red = function
+    | BETA -> { red with r_beta = true }
+    | DELTA ->
+	(match red.r_const with
+	   | _,_::_,[] | _,[],_::_ -> error "Conflict in the reduction flags"
+	   | _ -> { red with r_const = true,[],[]; r_delta = true })
+    | CONST sp ->
+	let (oldallbut,l1,l2) = red.r_const in
+	if oldallbut then error "Conflict in the reduction flags"
+	else { red with r_const = false, list_union [sp] l1, l2 }
+    | CONSTBUT sp ->
+	(match red.r_const with
+	   | (false,_::_,_ | false,_,_::_ | true,[],[]) ->
+	       error "Conflict in the reduction flags"
+	   | (_,l1,l2) -> { red with r_const = true, list_union [sp] l1, l2 })
+    | IOTA -> { red with r_iota = true }
+    | EVAR -> { red with r_evar = true }
+    | ZETA -> { red with r_zeta = true }
+    | VAR id ->
+	let (oldallbut,l1,l2) = red.r_const in
+	if oldallbut then error "Conflict in the reduction flags"
+	else { red with r_const = false, l1, list_union [id] l2 }
+    | VARBUT id ->
+	(match red.r_const with
+	   | (false,_::_,_ | false,_,_::_ | true,[],[]) ->
+	       error "Conflict in the reduction flags"
+	   | (_,l1,l2) -> { red with r_const = true, l1, list_union [id] l2 })
+
+  let mkflags = List.fold_left red_add no_red
+
+  let red_set red = function
+    | BETA -> incr_cnt red.r_beta beta
+    | CONST sp -> 
+	let (b,l,_) = red.r_const in
+	let c = List.mem sp l in
+	incr_cnt ((b & not c) or (c & not b)) delta
+    | VAR id -> (* En attendant d'avoir des sp pour les Var *)
+	let (b,_,l) = red.r_const in
+	let c = List.mem id l in
+	incr_cnt ((b & not c) or (c & not b)) delta
+    | ZETA -> incr_cnt red.r_zeta zeta
+    | EVAR -> incr_cnt red.r_zeta evar
+    | IOTA -> incr_cnt red.r_iota iota
+    | DELTA -> (* Used for Rel/Var defined in context *)
+	incr_cnt red.r_delta delta
+    | (CONSTBUT _ | VARBUT _) -> (* Not for internal use *)
+	failwith "not implemented"
+
+  let red_get_const red =
+    let b,l1,l2 = red.r_const in
+    let l1' = List.map (fun x -> EvalConstRef x) l1 in
+    let l2' = List.map (fun x -> EvalVarRef x) l2 in
+    b, l1' @ l2'
+
+end : RedFlagsSig)
+
+open RedFlags
+
+let betadeltaiota_red = mkflags [fBETA;fDELTA;fZETA;fEVAR;fIOTA]
+let betaiota_red = mkflags [fBETA;fIOTA]
+let beta_red = mkflags [fBETA]
+let betaiotazeta_red = mkflags [fBETA;fIOTA;fZETA]
+let unfold_red sp = 
+  let flag = match sp with
+    | EvalVarRef id -> fVAR id
+    | EvalConstRef sp -> fCONST sp
+  in (* Remove fZETA for finer behaviour ? *)
+  mkflags [fBETA;flag;fIOTA;fZETA]
+
+(************************* Obsolète
 (* [r_const=(true,cl)] means all constants but those in [cl] *)
 (* [r_const=(false,cl)] means only those in [cl] *)
 type reds = {
@@ -149,14 +279,6 @@ let rec red_add red = function
 	    { red with r_const = true, l1, list_union [cl] l2;
 		r_zeta = true; r_evar = true })
 
-
-let incr_cnt red cnt =
-  if red then begin
-    if !stats then incr cnt;
-    true
-  end else 
-    false
-
 let red_delta_set red =
   let b,_,_ = red.r_const in b
 
@@ -186,7 +308,7 @@ let red_get_const red =
   let l1' = List.map (fun x -> EvalConstRef x) l1 in
   let l2' = List.map (fun x -> EvalVarRef x) l2 in
   b, l1' @ l2'
-
+fin obsolète **************)
 (* specification of the reduction function *)
 
 type red_mode = UNIFORM | SIMPL | WITHBACK
@@ -820,30 +942,30 @@ and knht e t stk =
 (* Computes a normal form from the result of knh. *)
 let rec knr info m stk =
   match m.term with
-  | FLambda(_,_,_,f,e) when can_red info stk BETA ->
+  | FLambda(_,_,_,f,e) when can_red info stk fBETA ->
       (match get_arg m stk with
           (Some(depth,arg),s) -> knit info (subs_shift_cons(depth,e,arg)) f s
         | (None,s) -> (m,s))
-  | FFlex(FConst(sp,args)) when can_red info stk (CONST [sp]) ->
+  | FFlex(FConst(sp,args)) when can_red info stk (fCONST sp) ->
       let cst = (sp, Array.map term_of_fconstr args) in
       (match ref_value_cache info (ConstBinding cst) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
-  | FFlex(FEvar ev) when can_red info stk EVAR ->
+  | FFlex(FEvar ev) when can_red info stk fEVAR ->
 (* In the case of evars, if it is not defined, then we do not set the
    flag to Norm, because it may be instantiated later on *)
       (match ref_value_cache info (EvarBinding ev) with
           Some v -> kni info v stk
         | None -> (m,stk))
-  | FFlex(FVar id) when can_red info stk (VAR id) ->
+  | FFlex(FVar id) when can_red info stk (fVAR id) ->
       (match ref_value_cache info (VarBinding id) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
-  | FFlex(FFarRel k) when can_red info stk DELTA ->
+  | FFlex(FFarRel k) when can_red info stk fDELTA ->
       (match ref_value_cache info (FarRelBinding k) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
-  | FConstruct((sp,c),args) when can_red info stk IOTA ->
+  | FConstruct((sp,c),args) when can_red info stk fIOTA ->
       (match strip_update_shift_app m stk with
           (depth, args, Zcase((cn,_),_,br)::s) ->
             let npar = stack_args_size args - cn.(c-1) in
@@ -856,13 +978,13 @@ let rec knr info m stk =
             let efx = contract_fix_vect fx.term in
             kni info efx stk'
         | (_,args,s) -> (m,args@s))
-  | FCoFix _ when can_red info stk IOTA ->
+  | FCoFix _ when can_red info stk fIOTA ->
       (match strip_update_shift_app m stk with
           (_, args, ((Zcase((cn,_),_,br)::_) as stk')) ->
             let efx = contract_fix_vect m.term in
             kni info efx (args@stk')
         | (_,args,s) -> (m,args@s))
-  | FLetIn (_,v,_,_,bd,e) when can_red info stk ZETA ->
+  | FLetIn (_,v,_,_,bd,e) when can_red info stk fZETA ->
       knit info (subs_cons(v,e)) bd stk
   | _ -> (m,stk)
 
