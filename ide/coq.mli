@@ -36,3 +36,6 @@ val reset_to : identifier -> unit
 
 val hyp_menu : hyp -> (string * string) list
 val concl_menu : concl -> (string * string) list
+
+val is_in_coq_lib : string -> bool
+

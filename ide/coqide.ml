@@ -975,7 +975,8 @@ object(self)
 		 | Some f -> Filename.dirname f
 	      )
     in 
-    ignore (Coq.interp (Printf.sprintf "Add LoadPath \"%s\". " dir));
+    if not (is_in_coq_lib dir) then 
+      ignore (Coq.interp (Printf.sprintf "Add LoadPath \"%s\". " dir));
     Sys.chdir dir
       
       

@@ -32,6 +32,26 @@ let version () =
   Printf.sprintf "The Coq Proof Assistant, version %s (%s)\nCompiled on %s\n"
     Coq_config.version Coq_config.date Coq_config.compile_date
 
+let is_in_coq_lib dir = 
+  prerr_endline ("Is it a coq theory ? : "^dir);
+  try
+    let stat = Unix.stat dir in
+    List.exists 
+      (fun s -> 
+	 try
+	   let fdir = Filename.concat 
+			Coq_config.coqlib 
+			(Filename.concat "theories" s) 
+	   in
+	   prerr_endline ("Comparing to : "^fdir);
+	   let fstat = Unix.stat dir in 
+	   fstat.Unix.st_dev = stat.Unix.st_dev &&
+	   fstat.Unix.st_ino = stat.Unix.st_ino 
+	 with _ -> false
+      )
+      Coq_config.theories_dirs
+  with _ -> false
+
 let interp s = 
   prerr_endline s;
   flush stderr;

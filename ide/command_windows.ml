@@ -75,24 +75,9 @@ object(self)
     let result = GText.view ~packing:r_bin#add () in
     result#misc#set_can_focus false;
     result#set_editable false;
-    begin match command,term with 
-      | None,None -> ()
-      | Some c, None -> 
-	  combo#entry#set_text c
-	  
-      | Some c, Some t -> 
-	  combo#entry#set_text c;
-	  entry#set_text t
-
-      | None , Some t -> 
-	  entry#set_text t
-    end;
-    entry#misc#grab_focus ();
-    entry#misc#grab_default ();
-
     let callback () =
       let phrase = combo#entry#text ^ " " ^ entry#text ^" . " in
-      try 
+      try
 	ignore(Coq.interp phrase);
 	result#buffer#set_text (Ideutils.read_stdout ())
       with e ->
@@ -100,6 +85,22 @@ object(self)
 	assert (Glib.Utf8.validate s);
 	result#buffer#set_text s
     in
+
+    begin match command,term with 
+      | None,None -> ()
+      | Some c, None -> 
+	  combo#entry#set_text c;
+	  
+      | Some c, Some t -> 
+	  combo#entry#set_text c;
+	  entry#set_text t
+	 
+      | None , Some t -> 
+	  entry#set_text t
+    end;
+    callback ();
+    entry#misc#grab_focus ();
+    entry#misc#grab_default ();
     ignore (entry#connect#activate ~callback);
     ignore (combo#entry#connect#activate ~callback);
     self#window#present ()
