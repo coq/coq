@@ -38,8 +38,9 @@ let rec and_status = function
   | Complete_proof :: l -> and_status l
   | _ -> Incomplete_proof
 
-(* Normalizing evars in the whole proof tree. Called when the sigma of
-   the proof tree changes. *)
+(* Normalizing evars in a goal. Called by tactic Local_constraints
+   (i.e. when the sigma of the proof tree changes) *)
+
 let norm_goal sigma gl =
   let red_fun = nf_ise1 sigma in
   let ncl = red_fun gl.evar_concl in
@@ -47,18 +48,6 @@ let norm_goal sigma gl =
     evar_hyps = map_named_context red_fun gl.evar_hyps;
     evar_body = gl.evar_body;
     evar_info = gl.evar_info }
-
-let rec norm_evar_pf sigma p =
-  match p.ref with
-      None -> { status = p.status;
-		subproof = p.subproof;
-		goal = norm_goal sigma p.goal;
-		ref=None }
-    | Some(r,pfl) ->
-	{ status = p.status;
-          subproof= p.subproof;
-          goal = p.goal;
-          ref = Some(r, List.map (norm_evar_pf sigma) pfl)}
 
 
 (* [mapshape [ l1 ; ... ; lk ] [ v1 ; ... ; vk ] [ p_1 ; .... ; p_(l1+...+lk) ]]
@@ -151,7 +140,11 @@ let lookup_tactic s =
 (* refiner r is a tactic applying the rule r *)
 
 let bad_subproof () =
-  errorlabstrm "Refiner.refiner" [< 'sTR"Bad subproof in validation.">]
+  anomalylabstrm "Refiner.refiner" [< 'sTR"Bad subproof in validation.">]
+
+let check_subproof_connection gl spfl =
+  if not (list_for_all2eq (fun g pf -> g=pf.goal) gl spfl)
+  then bad_subproof ()
 
 let refiner = function
   | Prim pr as r ->
@@ -159,13 +152,12 @@ let refiner = function
       (fun goal_sigma ->
          let sgl = prim_fun (ts_it goal_sigma.sigma) goal_sigma.it in 
 	 ({it=sgl; sigma = goal_sigma.sigma},
-          (fun pfl ->
-             if not (list_for_all2eq (fun g pf -> g = pf.goal) sgl pfl) then
-	       bad_subproof ();
-             { status = and_status (List.map pf_status pfl);
+          (fun spfl ->
+	     if !Options.debug then check_subproof_connection sgl spfl;
+             { status = and_status (List.map pf_status spfl);
                goal = goal_sigma.it;
                subproof = None;
-               ref = Some(r,pfl) })))
+               ref = Some(r,spfl) })))
       
   | Tactic(s,targs) as r ->
       let tacfun = lookup_tactic s targs in
@@ -174,8 +166,7 @@ let refiner = function
          let hidden_proof = v (List.map leaf sgl_sigma.it) in
          (sgl_sigma,
           fun spfl ->
-            if not (list_for_all2eq (fun g pf -> g=pf.goal) sgl_sigma.it spfl)
-	    then bad_subproof ();
+	    if !Options.debug then check_subproof_connection sgl_sigma.it spfl;
             { status = and_status (List.map pf_status spfl);
               goal = goal_sigma.it;
               subproof = Some hidden_proof;
@@ -186,33 +177,33 @@ let refiner = function
          let gl = goal_sigma.it in
          let sg = mk_goal ctxt gl.evar_hyps gl.evar_concl in
          ({it=[sg];sigma=goal_sigma.sigma},
-          (fun pfl -> 
-	     let pf = List.hd pfl in
-             if pf.goal <> sg then bad_subproof ();
-             { status = pf.status;
+          (fun spfl -> 
+	     if !Options.debug then check_subproof_connection [sg] spfl;
+             { status = (List.hd spfl).status;
                goal = gl;
                subproof = None;
-               ref = Some(r,[pf]) })))
-      
-   (* [Local_constraints lc] makes the local constraints be [lc] *)
+               ref = Some(r,spfl) })))
+
+   (* [Local_constraints lc] makes the local constraints be [lc] and
+      normalizes evars *)
 
   | (Local_constraints lc) as r ->
       (fun goal_sigma ->
-         let gl = goal_sigma.it  in
-         let ctxt = out_some gl.evar_info in 
+         let gl = goal_sigma.it in
+         let ctxt = set_lc lc (out_some gl.evar_info) in 
          let sg = mk_goal ctxt gl.evar_hyps gl.evar_concl in
-	 ({it=[sg];sigma=goal_sigma.sigma},
-          (fun pfl -> 
-	     let pf = List.hd pfl in
-             if pf.goal <> sg then bad_subproof ();
-             { status = pf.status;
+	 let sgl = [norm_goal (ts_it goal_sigma.sigma) sg] in
+	 ({it=sgl;sigma=goal_sigma.sigma},
+          (fun spfl -> 
+	    if !Options.debug then check_subproof_connection sgl spfl;
+             { status = (List.hd spfl).status;
                goal = gl;
                subproof = None;
-               ref = Some(r,[pf]) })))
-
+               ref = Some(r,spfl) })))
 
 let context ctxt = refiner (Context ctxt)
 let vernac_tactic texp = refiner (Tactic texp)
+let norm_evar_tac gl = refiner (Local_constraints (get_lc gl.it)) gl
 
 (* [rc_of_pfsigma : proof sigma -> readable_constraints] *)
 let rc_of_pfsigma sigma = rc_of_gc sigma.sigma sigma.it.goal
@@ -288,16 +279,15 @@ let apply_sig_tac r tac g =
 let idtac_valid = function
     [pf] -> pf
   | _ -> anomaly "Refiner.idtac_valid"
-;;
 
 (* [goal_goal_list : goal sigma -> goal list sigma] *)
-let goal_goal_list gls = {it=[gls.it];sigma=gls.sigma};;
+let goal_goal_list gls = {it=[gls.it];sigma=gls.sigma}
 
 (* the identity tactic *)
-let tclIDTAC gls = (goal_goal_list gls, idtac_valid);;
+let tclIDTAC gls = (goal_goal_list gls, idtac_valid)
 
 (* General failure tactic *)
-let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" [< 'sTR s>];;
+let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" [< 'sTR s>]
 
 (* A special exception for levels for the Fail tactic *)
 exception FailError of int
@@ -308,9 +298,8 @@ let tclFAIL lvl g = raise (FailError lvl)
 let start_tac gls =
   let (sigr,g) = unpackage gls in
   (sigr,[g],idtac_valid)
-;;
 
-let finish_tac (sigr,gl,p) = (repackage sigr gl, p);;
+let finish_tac (sigr,gl,p) = (repackage sigr gl, p)
 
 let thens_tac tac2l taci (sigr,gs,p) =
   let (gl,gi) =
@@ -324,7 +313,7 @@ let thens_tac tac2l taci (sigr,gs,p) =
   (sigr, List.flatten gll,
    compose p (mapshape (List.map List.length gll) pl))
 
-let then_tac tac = thens_tac [] (fun _ -> tac);;
+let then_tac tac = thens_tac [] (fun _ -> tac)
 
 
 let non_existent_goal n =
@@ -347,21 +336,21 @@ let theni_tac i tac ((_,gl,_) as subgoals) =
    the number of resulting subgoals is less than [n] *)
 let tclTHENSi tac1 tac2l taci gls =
   finish_tac (thens_tac tac2l taci (then_tac tac1 (start_tac gls)))
-;;
+
 
 (* [tclTHEN tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
    [tac2] to every resulting subgoals *)
-let tclTHEN tac1 tac2 = tclTHENSi tac1 [] (fun _ -> tac2);;
+let tclTHEN tac1 tac2 = tclTHENSi tac1 [] (fun _ -> tac2)
 
 (* [tclTHEN_i tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
    [(tac2 i)] to the i_th resulting subgoal (starting from 1) *)
-let tclTHEN_i tac1 tac2 = tclTHENSi tac1 [] tac2;;
+let tclTHEN_i tac1 tac2 = tclTHENSi tac1 [] tac2
 
 (* [tclTHENS tac1 [t1 ; ... ; tn] gls] applies the tactic [tac1] to
    [gls] and applies [t1],..., [tn] to the [n] resulting subgoals. Raises
    an error if the number of resulting subgoals is not [n] *)
 let tclTHENS tac1 tac2l =
-  tclTHENSi tac1 tac2l (fun _ -> tclFAIL_s "Wrong number of tactics.");;
+  tclTHENSi tac1 tac2l (fun _ -> tclFAIL_s "Wrong number of tactics.")
 
 (* Same as [tclTHENS] but completes with [tac3] if the number resulting 
    subgoals is strictly less than [n] *)
@@ -374,14 +363,14 @@ let tclTHENSI tac1 tac2l = tclTHENST tac1 tac2l tclIDTAC
    to the last resulting subgoal *)
 let tclTHENL (tac1 : tactic) (tac2 : tactic) (gls : goal sigma) =
   finish_tac (theni_tac (-1) tac2 (then_tac tac1 (start_tac gls)))
-;;
+
 
 (* [tclTHENLIST [t1;..;tn]] applies [t1] then [t2] ... then [tn]. More
    convenient than [tclTHEN] when [n] is large. *)
 let rec tclTHENLIST = function
     [] -> tclIDTAC
   | t1::tacl -> tclTHEN t1 (tclTHENLIST tacl)
-;;
+
 
 
 
@@ -390,17 +379,17 @@ let same_goal gl subgoal =
   (hypotheses subgoal) = (hypotheses gl) &
   eq_constr (conclusion subgoal) (conclusion gl) &
   (subgoal.evar_info = gl.evar_info)
-;;
+
 
 let weak_progress gls ptree =
   (List.length gls.it <> 1) or 
   (not (same_goal (List.hd gls.it) ptree.it))
-;;
+
 
 let progress gls ptree =
   (weak_progress gls ptree) or
   (not (ts_eq ptree.sigma gls.sigma))
-;;
+
 
 (* PROGRESS tac ptree applies tac to the goal ptree and fails if tac leaves
 the goal unchanged *)
@@ -415,7 +404,7 @@ let tclWEAK_PROGRESS tac ptree =
   let rslt = tac ptree in
   if weak_progress (fst rslt) ptree then rslt
   else errorlabstrm "Refiner.tclWEAK_PROGRESS" [< 'sTR"Failed to progress.">]
-;;
+
 
 (* Same as tclWEAK_PROGRESS but fails also if tactics generates several goals,
    one of them being identical to the original goal *)
@@ -426,7 +415,7 @@ let tclNOTSAMEGOAL (tac : tactic) goal =
   then errorlabstrm "Refiner.tclNOTSAMEGOAL" 
       [< 'sTR"Tactic generated a subgoal identical to the original goal.">]
   else rslt
-;;
+
 
 
 (* ORELSE0 t1 t2 tries to apply t1 and if it fails, applies t2 *)
@@ -459,7 +448,7 @@ let rec tclFIRST = function
 
 
 (* Fails if a tactic did not solve the goal *)
-let tclCOMPLETE tac = tclTHEN tac (tclFAIL_s "Proof is not complete.");;
+let tclCOMPLETE tac = tclTHEN tac (tclFAIL_s "Proof is not complete.")
 
 (* Try the first thats solves the current goal *)
 let tclSOLVE tacl = tclFIRST (List.map tclCOMPLETE tacl)
@@ -545,12 +534,11 @@ let tactic_list_tactic tac gls =
 let solve_subgoal tacl pf_sigma =
   let (sigr,pf) = unpackage pf_sigma in
   let gl,p = frontier pf in
-  let (sigr,gll,pl) = tacl (sigr,gl,p) in
-  let pfs = repackage sigr (pl (List.map leaf gll)) in
-  if (ts_it pfs.sigma) == (ts_it pf_sigma.sigma) then pfs
-  else { it = norm_evar_pf (ts_it pfs.sigma) pfs.it; sigma=pfs.sigma}
-
-
+  let r = tacl (sigr,gl,p) in
+  let (sigr,gll,pl) =
+    if (ts_it !sigr) == (ts_it pf_sigma.sigma) then r
+    else then_tac norm_evar_tac r in
+  repackage sigr (pl (List.map leaf gll))
 
 (* The type of proof-trees state and a few utilities 
    A proof-tree state is built from a proof-tree, a set of global
