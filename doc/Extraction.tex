@@ -34,47 +34,41 @@ extraction. They both display extracted term(s) inside \Coq.
 
 \begin{description}
 \item {\tt Extraction \qualid.} ~\par
-  Extracts one term in the \Coq\ toplevel.
+  Extracts one constant or module in the \Coq\ toplevel.
 
 \item {\tt Recursive Extraction  \qualid$_1$ \dots\ \qualid$_n$.} ~\par
-  Recursive extraction of all the globals \qualid$_1$ \dots\
+  Recursive extraction of all the globals (or modules) \qualid$_1$ \dots\
   \qualid$_n$ and all their dependencies in the \Coq\ toplevel.
 \end{description}
 
 %% TODO error messages
 
-
 All the following commands produce real ML files. User can choose to produce
-one monolithic file or one file per \Coq\ module. 
+one monolithic file or one file per \Coq\ library. 
 
 \begin{description}
 \item {\tt Extraction "{\em file}"}  
       \qualid$_1$ \dots\ \qualid$_n$. ~\par
-  Recursive extraction of all the globals \qualid$_1$ \dots\
+  Recursive extraction of all the globals (or modules) \qualid$_1$ \dots\
   \qualid$_n$ and all their dependencies in one monolithic file {\em file}.
   Global and local identifiers are renamed according to the choosen ML
   language to fullfill its syntactic conventions, keeping original
   names as much as possible.
+  
+\item {\tt Extraction Library} \ident. ~\par 
+  Extraction of the whole \Coq\ library {\tt\ident.v} to an ML module
+  {\tt\ident.ml}.  In case of name clash, identifiers are here renamed
+  using prefixes \verb!coq_!  or \verb!Coq_! to ensure a
+  session-independent renaming.
 
-\item  {\tt Extraction Module} \ident. ~\par
-  Extraction of the \Coq\ module \ident\ to an ML module {\tt\ident.ml}.
-  In case of name clash, identifiers are here renamed using prefixes
-  \verb!coq_! 
-  or \verb!Coq_! to ensure a session-independent renaming.
-
-\item {\tt Recursive Extraction Module} \ident. ~\par
-  Extraction of the \Coq\ module \ident\ and all other modules \ident\
-  depends on. 
+\item {\tt Recursive Extraction Library} \ident. ~\par
+  Extraction of the \Coq\ library {\tt\ident.v} and all other modules 
+  {\tt\ident.v} depends on. 
 \end{description}
 
 The list of globals \qualid$_i$ does not need to be
 exhaustive: it is automatically completed into a complete and minimal
-environment. Extraction will fail if it encounters an informative
-axiom not realized (see section \ref{extraction:axioms}). 
-A warning will be issued if it encounters an logical axiom, to remind 
-user that inconsistant logical axioms may lead to incorrect or 
-non-terminating extracted terms. 
-
+environment. 
 
 \asection{Extraction options}
 
@@ -161,7 +155,6 @@ Puts the table recording the custom inlinings back to empty.
 
 \paragraph{Inlining and printing of a constant declaration.}
 
-
 A user can explicitely asks a constant to be extracted by two means: 
 \begin{itemize}
 \item by mentioning it on the extraction command line
@@ -183,25 +176,22 @@ this constant is not declared in the generated file.
   declared in the produced file. 
 \end{itemize}
 
-
 \asubsection{Realizing axioms}\label{extraction:axioms}
 
+Extraction will fail if it encounters an informative
+axiom not realized (see section \ref{extraction:axioms}). 
+A warning will be issued if it encounters an logical axiom, to remind 
+user that inconsistant logical axioms may lead to incorrect or 
+non-terminating extracted terms. 
+
 It is possible to assume some axioms while developing a proof. Since
-these axioms can be any kind of proposition or object type, they may
+these axioms can be any kind of proposition or object or type, they may
 perfectly well have some computational content. But a program must be
 a closed term, and of course the system cannot guess the program which
 realizes an axiom.  Therefore, it is possible to tell the system
-what ML term corresponds to a given axiom. Of course, it is the
-responsability of the user to ensure that the ML terms given to
-realize the axioms do have the expected types.
+what ML term corresponds to a given axiom. 
 
 \comindex{Extract Constant}
-\comindex{Extract Inductive}
-The system actually provides a more general mechanism to specify ML
-terms even for defined constants, inductive types and constructors.
-For instance, the user may want to use the ML native boolean type
-instead of \Coq\ one.
-The syntax is the following:
 \begin{description}
 \item{\tt Extract Constant \qualid\ => \str.} ~\par
   Give an ML extraction for the given constant.
@@ -209,27 +199,69 @@ The syntax is the following:
 \item{\tt Extract Inlined Constant \qualid\ => \str.} ~\par
   Same as the previous one, except that the given ML terms will
   be inlined everywhere instead of being declared via a let.
+\end{description}
+
+Note that the {\tt Extract Inlined Constant} command is sugar
+for an {\tt Extract Constant} followed by a {\tt Extraction Inline}. 
+Hence a {\tt Reset Extraction Inline} will have an effect on the
+realized and inlined xaxiom. 
+
+Of course, it is the responsability of the user to ensure that the ML
+terms given to realize the axioms do have the expected types.  In
+fact, the strings containing realizing code are just copied in the
+extracted files. The extraction recognize whether the realized axiom
+should become a ML type constant or a ML object declaration.
+
+\Example
+\begin{coq_example}
+Axiom X:Set.
+Axiom x:X.
+Extract Constant X => "int".
+Extract Constant x => "0".
+\end{coq_example}   
+
+Notice that in the case of type scheme axiom (i.e. whose type is an
+arity, that is a sequence of product finished by a sort), then some type
+variables has to be given. The syntax is then: 
+
+\begin{description}
+\item{\tt Extract Constant \qualid\ \str$_1$ \ldots \str$_n$ => \str.} ~\par
+\end{description}
+
+The number of type variable given is checked by the system. 
+
+\Example
+\begin{coq_example}
+Axiom Y : Set -> Set -> Set.
+Extract Constant Y "'a" "'b" => " 'a*'b ".
+\end{coq_example}
+
+Realizing an axiom via {\tt Extract Constant} is only useful in the
+case of an informative axiom (of sort Type or Set). A logical axiom
+have no computational content and hence will not appears in extracted
+terms. But a warning is nonetheless issued if extraction encounters a
+logical axiom. This warning reminds user that inconsistant logical
+axioms may lead to incorrect or non-terminating extracted terms.
+
+If an informative axiom has not been realized before an extraction, a
+warning is also issued and the definition of the axiom is filled with
+an exception labelled {\tt AXIOM TO BE REALIZED}. The user must then
+search these exceptions inside the extracted file and replace them by
+real code.
+
+\comindex{Extract Inductive} 
+
+The system also provides a mechanism to specify ML terms for inductive
+types and constructors.  For instance, the user may want to use the ML
+native boolean type instead of \Coq\ one.  The syntax is the following:
+
+\begin{description}
 \item{\tt Extract Inductive \qualid\ => \str\ [ \str\ \dots \str\ ].} ~\par
   Give an ML extraction for the given inductive type. You must specify
   extractions for the type itself (first \str) and all its
   constructors (between square brackets). The ML extraction must be an
   ML recursive datatype.
 \end{description}
-
-\begin{Remarks}
-%\item 
-%  The given ML terms are always inlined; thus, it may be
-%  useful to introduce definitions in a separate ML module and then to
-%  use the corresponding qualified names.
-\item
-  The extraction of a module depending on axioms from another module
-  will not fail. It is the responsability of the ``extractor'' of that
-  other module to realize the given axioms.
-\item 
-  Note that now, the {\tt Extract Inlined Constant} command is sugar
-  for an {\tt Extract Constant} followed by a {\tt Extraction Inline}. 
-  So be careful with {\tt Reset Extraction Inline}. 
-\end{Remarks}
 
 \Example
 Typical examples are the following:
@@ -257,30 +289,36 @@ For example, Here are two kinds of problem that can occur:
     all right but the generated code may be refused by the ML
     type-checker. A very well known example is the {\em distr-pair}
     function:
-$$\mbox{\tt
-Definition dp := [A,B:Set][x:A][y:B][f:(C:Set)C->C](f A x,f B y).
-}$$
+\begin{verbatim}
+Definition dp := 
+ fun (A B:Set)(x:A)(y:B)(f:forall C:Set, C->C) => (f A x, f B y).
+\end{verbatim}
+
 In Ocaml, for instance, the direct extracted term would be:
-$$\mbox{\tt
+
+\begin{verbatim}
 let dp x y f = Pair((f () x),(f () y))
-}$$
-and would have type
-$$\mbox{\tt
+\end{verbatim}
+
+and would have type:
+\begin{verbatim}
 dp : 'a -> 'a -> (unit -> 'a -> 'b) -> ('b,'b) prod
-}$$
+\end{verbatim}
+
 which is not its original type, but a restriction.
 
 We now produce the following correct version:
-$$\mbox{\tt
+\begin{verbatim}
 let dp x y f = Pair ((Obj.magic f () x), (Obj.magic f () y))
-}$$
+\end{verbatim}
 
   \item Some definitions of \Coq\ may have no counterpart in ML. This
     happens when there is a quantification over types inside the type
     of a constructor; for example:
-$$\mbox{\tt
-Inductive anything : Set := dummy : (A:Set)A->anything.
-}$$
+\begin{verbatim}
+Inductive anything : Set := dummy : forall A:Set, A -> anything.
+\end{verbatim}
+
 which corresponds to the definition of an ML dynamic type.
 In Ocaml, we must cast any argument of the constructor dummy.
 
@@ -321,7 +359,9 @@ Inductive nat : Set :=
 
 This module contains a theorem {\tt eucl\_dev}, and its extracted term
 is of type 
- $$\mbox{\tt (b:nat)(gt b O)->(a:nat)(diveucl a b)}$$ 
+\begin{verbatim}
+forall b:nat, b > 0 -> forall a:nat, diveucl a b
+\end{verbatim}
 where {\tt diveucl} is a type for the pair of the quotient and the modulo.
 We can now extract this program to \ocaml:
 
@@ -329,7 +369,7 @@ We can now extract this program to \ocaml:
 Reset Initial.
 \end{coq_eval}
 \begin{coq_example}
-Require Import Euclid.
+Require Euclid.
 Extraction Inline Wf_nat.gt_wf_rec Wf_nat.lt_wf_rec.
 Recursive Extraction  eucl_dev.
 \end{coq_example}
@@ -381,14 +421,14 @@ treesort}, whose type is shown below:
 
 \begin{coq_eval}
 Reset Initial.
-Require Import Relation_Definitions.
-Require Import PolyList.
-Require Import Sorting.
-Require Import Permutation.
+Require Relation_Definitions.
+Require List.
+Require Sorting.
+Require Permutation.
 \end{coq_eval}
 \begin{coq_example}
-Require Import Heap.
-Check   treesort.
+Require Heap.
+Check treesort.
 \end{coq_example}
 
 Let's now extract this function: 
@@ -586,9 +626,11 @@ to work.
  \item Bordeaux/EXCEPTIONS
  \item Bordeaux/SearchTrees
  \item Dyade/BDDS
+ \item Lannion
  \item Lyon/CIRCUITS
  \item Lyon/FIRING-SQUAD
  \item Marseille/CIRCUITS
+ \item Muenchen/Higman
  \item Nancy/FOUnify
  \item Rocq/ARITH/Chinese
  \item Rocq/COC
@@ -598,7 +640,7 @@ to work.
  \item Suresnes/BDD
  \end{itemize}
 
- Rocq/HIGMAN and Lyon/CIRCUITS are a bit particular. They are 
+ Lannion, Rocq/HIGMAN and Lyon/CIRCUITS are a bit particular. They are 
  the only examples of developments where {\tt Obj.magic} are needed.
  This is probably due to an heavy use of impredicativity.
  After compilation those two examples run nonetheless,
