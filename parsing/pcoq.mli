@@ -19,7 +19,7 @@ open Vernacexpr
 
 val lexer : Token.lexer
 
-module Gram : Grammar.S
+module Gram : Grammar.S with type te = Token.t
 
 type grammar_object
 type typed_entry
@@ -30,7 +30,7 @@ val object_of_typed_entry : typed_entry -> grammar_object Gram.Entry.e
 val grammar_extend :
   typed_entry -> Gramext.position option ->
     (string option * Gramext.g_assoc option *
-     (Gramext.g_symbol list * Gramext.g_action) list) list
+     (Token.t Gramext.g_symbol list * Gramext.g_action) list) list
     -> unit
 
 val remove_grammars : int -> unit

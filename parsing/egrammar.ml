@@ -144,7 +144,7 @@ let extend_grammar gram =
 (* Add a grammar rules for tactics *)
 type grammar_tactic_production =
   | TacTerm of string
-  | TacNonTerm of loc * (Gramext.g_symbol * argument_type) * string option
+  | TacNonTerm of loc * (Gram.te Gramext.g_symbol * argument_type) * string option
 
 let make_prod_item = function
   | TacTerm s -> (Gramext.Stoken (Extend.terminal s), None)

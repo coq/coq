@@ -266,7 +266,7 @@ open Vernacexpr
 (*               declaration of the AUTOHINT library object               *)
 (**************************************************************************)
 
-let eager o = ref (Lazy.Value o)
+let eager = Lazy.lazy_from_val
 
 (* If the database does not exist, it is created *)
 (* TODO: should a warning be printed in this case ?? *)

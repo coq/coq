@@ -108,7 +108,7 @@ type ext_kind =
   | ByGrammar of
       typed_entry * Gramext.position option *
       (string option * Gramext.g_assoc option *
-       (Gramext.g_symbol list * Gramext.g_action) list) list
+       (Token.t Gramext.g_symbol list * Gramext.g_action) list) list
   | ByGEXTEND of (unit -> unit) * (unit -> unit)
 
 let camlp4_state = ref []
@@ -117,6 +117,7 @@ let camlp4_state = ref []
    extensions. *)
 module Gram =
   struct
+    type te = Token.t
     type parsable = G.parsable
     let parsable = G.parsable
     let tokens = G.tokens

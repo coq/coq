@@ -31,7 +31,7 @@ val extend_grammar : all_grammar_command -> unit
 (* Add grammar rules for tactics *)
 type grammar_tactic_production =
   | TacTerm of string
-  | TacNonTerm of loc * (Gramext.g_symbol * Genarg.argument_type) * string option
+  | TacNonTerm of loc * (Token.t Gramext.g_symbol * Genarg.argument_type) * string option
 
 val extend_tactic_grammar :
   string -> (string * grammar_tactic_production list) list -> unit
