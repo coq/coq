@@ -275,11 +275,8 @@ Tactiques
 - Langage de tactiques Ltac: nouvelle couche de métalangage pour traiter de
   petites automatisations. C'est essentiellement un petit noyau fonctionnel
   muni d'opérateurs de filtrage élaborés (sur les termes, les contextes de
-  preuves et réalisant du backtracking). Pour connaître les justifications
-  d'un tel language et se procurer une documentation provisoire de Ltac, se
-  référer à l'URL suivante:
-
-      http://logical.inria.fr/~delahaye/
+  preuves et réalisant du backtracking). Pour plus détails, consulter le
+  manuel de référence (chapitre 10).
 
 - Tactique Let renommé en LetTac et utilise le let-in primitif;
   Induction renommé en OldInduction et nouveau Induction plus
@@ -314,6 +311,9 @@ Tactiques
 - Les instantiations redondantes ou incompatibles de Apply ... with ...
   sont maintenant correctement traitées.
 
+- Nouveau: tactique Field pour décider des égalités sur les corps commutatifs.
+  La tactique a été instantiée pour les nombres réels et peut donc être
+  utilisée pour résoudre des égalités sur les réels.
 
 Outils
 
