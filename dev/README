@@ -1,0 +1,21 @@
+This directory contains informations and tools to help developping the
+Coq system
+
+
+TODO
+changements.txt
+header
+lisezmoi.txt			   
+style.txt			   
+
+Debugging and profiling
+=======================
+
+debugging.txt: help for debugging or profiling
+db: to install pretty-printers from ocaml debugger
+base_db: to install raw pretty-printers from ocaml debugger
+ocamldebug-v7: to launch ocaml debugger
+include: to install pretty-printers from ocaml toplevel
+base_include: to install raw pretty-printers from ocaml toplevel
+universes.txt: help to debug universes
+univdot: produces a graph of CIC universes
