@@ -17,29 +17,33 @@
    relational formulation) without known inconsistency with classical logic,
    though definite description conflicts with classical logic *)
 
+Section ChoiceEquivalences.
+
+Variables A B :Type.
+
 Definition RelationalChoice :=
-  forall (A B:Type) (R:A -> B -> Prop),
+  forall (R:A -> B -> Prop),
     (forall x:A,  exists y : B, R x y) ->
      exists R' : A -> B -> Prop,
       (forall x:A,
           exists y : B, R x y /\ R' x y /\ (forall y':B, R' x y' -> y = y')).
 
 Definition FunctionalChoice :=
-  forall (A B:Type) (R:A -> B -> Prop),
+  forall (R:A -> B -> Prop),
     (forall x:A,  exists y : B, R x y) ->
      exists f : A -> B, (forall x:A, R x (f x)).
 
 Definition ParamDefiniteDescription :=
-  forall (A B:Type) (R:A -> B -> Prop),
+  forall (R:A -> B -> Prop),
     (forall x:A,  exists y : B, R x y /\ (forall y':B, R x y' -> y = y')) ->
      exists f : A -> B, (forall x:A, R x (f x)).
 
 Lemma description_rel_choice_imp_funct_choice :
  ParamDefiniteDescription -> RelationalChoice -> FunctionalChoice.
 intros Descr RelCh.
-red in |- *; intros A B R H.
-destruct (RelCh A B R H) as [R' H0].
-destruct (Descr A B R') as [f H1].
+red in |- *; intros R H.
+destruct (RelCh R H) as [R' H0].
+destruct (Descr R') as [f H1].
 intro x.
 elim (H0 x); intros y [H2 [H3 H4]]; exists y; split; [ exact H3 | exact H4 ].
 exists f; intro x.
@@ -50,8 +54,8 @@ Qed.
 
 Lemma funct_choice_imp_rel_choice : FunctionalChoice -> RelationalChoice.
 intros FunCh.
-red in |- *; intros A B R H.
-destruct (FunCh A B R H) as [f H0].
+red in |- *; intros R H.
+destruct (FunCh R H) as [f H0].
 exists (fun x y => y = f x).
 intro x; exists (f x); split;
  [ apply H0
@@ -61,8 +65,8 @@ Qed.
 Lemma funct_choice_imp_description :
  FunctionalChoice -> ParamDefiniteDescription.
 intros FunCh.
-red in |- *; intros A B R H.
-destruct (FunCh A B R) as [f H0].
+red in |- *; intros R H.
+destruct (FunCh R) as [f H0].
 (* 1 *)
 intro x.
 elim (H x); intros y [H0 H1].
@@ -80,12 +84,14 @@ intro H; split;
 intros [H H0]; exact (description_rel_choice_imp_funct_choice H0 H).
 Qed.
 
+End ChoiceEquivalences.
+
 (** We show that the guarded relational formulation of the axiom of Choice
    comes from the non guarded formulation in presence either of the
    independance of premises or proof-irrelevance *)
 
-Definition GuardedRelationalChoice :=
-  forall (A B:Type) (P:A -> Prop) (R:A -> B -> Prop),
+Definition GuardedRelationalChoice (A B:Type) :=
+  forall (P:A -> Prop) (R:A -> B -> Prop),
     (forall x:A, P x ->  exists y : B, R x y) ->
      exists R' : A -> B -> Prop,
       (forall x:A,
@@ -95,7 +101,8 @@ Definition GuardedRelationalChoice :=
 Definition ProofIrrelevance := forall (A:Prop) (a1 a2:A), a1 = a2.
 
 Lemma rel_choice_and_proof_irrel_imp_guarded_rel_choice :
- RelationalChoice -> ProofIrrelevance -> GuardedRelationalChoice.
+  (forall A B, RelationalChoice A B)
+    -> ProofIrrelevance -> (forall A B, GuardedRelationalChoice A B).
 Proof.
 intros rel_choice proof_irrel.
 red in |- *; intros A B P R H.
@@ -123,11 +130,12 @@ Definition IndependenceOfPremises :=
     (Q ->  exists x : _, P x) ->  exists x : _, Q -> P x.
 
 Lemma rel_choice_indep_of_premises_imp_guarded_rel_choice :
- RelationalChoice -> IndependenceOfPremises -> GuardedRelationalChoice.
+ forall A B, RelationalChoice A B -> 
+   IndependenceOfPremises -> GuardedRelationalChoice A B.
 Proof.
-intros RelCh IndPrem.
-red in |- *; intros A B P R H.
-destruct (RelCh A B (fun x y => P x -> R x y)) as [R' H0].
+intros A B RelCh IndPrem.
+red in |- *; intros P R H.
+destruct (RelCh (fun x y => P x -> R x y)) as [R' H0].
   intro x. apply IndPrem.
     apply H.
   exists R'.
@@ -136,4 +144,80 @@ destruct (RelCh A B (fun x y => P x -> R x y)) as [R' H0].
     exists y. split. 
       apply (H1 HPx).
       exact H2.
+Qed.
+
+
+(** Countable codomains, such as [nat], can be equipped with a
+    well-order, which implies the existence of a least element on
+    inhabited decidable subsets. As a consequence, the relational form of
+    the axiom of choice is derivable on [nat] for decidable relations.
+
+    We show instead that definite description and the functional form
+    of the axiom of choice are equivalent on decidable relation with [nat]
+    as codomain 
+*)
+
+Require Import Wf_nat.
+Require Import Compare_dec.
+Require Import Decidable.
+Require Import Arith.
+
+Definition has_unique_least_element (A:Type) (R:A->A->Prop) (P:A->Prop) :=
+  (exists x, (P x /\ forall x', P x' -> R x x')
+      /\ forall x', P x' /\ (forall x'', P x'' -> R x' x'') -> x=x').
+
+Lemma dec_inh_nat_subset_has_unique_least_element :
+  forall P:nat->Prop, (forall n, P n \/ ~ P n) ->
+    (exists n, P n) -> has_unique_least_element nat le P.
+Proof.
+intros P Pdec (n0,HPn0).
+assert
+   (forall n, (exists n', n'<n /\ P n' /\ forall n'', P n'' -> n'<=n'')
+              \/(forall n', P n' -> n<=n')).
+  induction n.
+  right.
+  intros n' Hn'.
+  apply le_O_n.
+  destruct IHn.
+  left; destruct H as (n', (Hlt', HPn')).
+  exists n'; split.
+  apply lt_S; assumption.
+  assumption.
+  destruct (Pdec n).
+  left; exists n; split.
+  apply lt_n_Sn.
+  split; assumption.
+  right.
+  intros n' Hltn'.
+  destruct (le_lt_eq_dec n n') as [Hltn|Heqn].
+  apply H; assumption.
+  assumption.
+  destruct H0.
+  rewrite Heqn; assumption.
+destruct (H n0) as [(n,(Hltn,(Hmin,Huniqn)))|]; [exists n | exists n0];
+  repeat split; 
+  assumption || intros n' (HPn',Hminn'); apply le_antisym; auto.
+Qed.
+
+Definition FunctionalChoice_on (A B:Type) (R:A->B->Prop) :=
+    (forall x:A,  exists y : B, R x y) ->
+     exists f : A -> B, (forall x:A, R x (f x)).
+
+Lemma classical_denumerable_description_imp_fun_choice : 
+  forall A:Type, 
+  ParamDefiniteDescription A nat -> 
+  forall R, (forall x y, decidable (R x y)) -> FunctionalChoice_on A nat R.
+Proof.
+intros A Descr.
+red in |- *; intros R Rdec H.
+set (R':= fun x y => R x y /\ forall y', R x y' -> y <= y').
+destruct (Descr R') as [f Hf].
+  intro x.
+  apply (dec_inh_nat_subset_has_unique_least_element (R x)). 
+    apply Rdec.
+    apply (H x).
+exists f.
+intros x.
+destruct (Hf x) as [Hfx _].
+assumption.
 Qed.
