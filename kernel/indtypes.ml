@@ -204,7 +204,7 @@ let type_inductive env mie =
   if mie.mind_entry_inds = [] then anomaly "empty inductive types declaration";
   (* Check unicity of names *)
   mind_check_names mie;
-  mind_check_arities env mie
+  mind_check_arities env mie;
   (* We first type params and arity of each inductive definition *)
   (* This allows to build the environment of arities and to share *)
   (* the set of constraints *)
