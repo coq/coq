@@ -111,12 +111,13 @@ let filter_by_module module_list accept _ _ c =
     false
 
 let gref_eq = IndRef (make_path ["Coq";"Init";"Logic"] (id_of_string "eq") CCI, 0)
+let gref_eqT = IndRef (make_path ["Coq";"Init";"Logic_Type"] (id_of_string "eqT") CCI, 0)
 
-let mk_rewrite_pattern1 pattern =
-  PApp (PRef gref_eq, [| PMeta None; pattern; PMeta None |])
+let mk_rewrite_pattern1 eq pattern =
+  PApp (PRef eq, [| PMeta None; pattern; PMeta None |])
 
-let mk_rewrite_pattern2 pattern =
-  PApp (PRef gref_eq, [| PMeta None; PMeta None; pattern |])
+let mk_rewrite_pattern2 eq pattern =
+  PApp (PRef eq, [| PMeta None; PMeta None; pattern |])
 
 let pattern_filter pat _ a c =
   try 
@@ -148,10 +149,16 @@ let pattern_search extra_filter display_function pat =
 let search_rewrite extra_filter display_function pattern =
   filtered_search
     (fun s a c ->
-       ((pattern_filter (mk_rewrite_pattern1 pattern) s a c) ||
-        (pattern_filter (mk_rewrite_pattern2 pattern) s a c)) 
+       ((pattern_filter (mk_rewrite_pattern1 gref_eq pattern) s a c) ||
+        (pattern_filter (mk_rewrite_pattern2 gref_eq pattern) s a c)) 
        && extra_filter s a c)
-    display_function gref_eq
+    display_function gref_eq;
+  filtered_search
+    (fun s a c ->
+       ((pattern_filter (mk_rewrite_pattern1 gref_eqT pattern) s a c) ||
+        (pattern_filter (mk_rewrite_pattern2 gref_eqT pattern) s a c)) 
+       && extra_filter s a c)
+    display_function gref_eqT
 
 let text_pattern_search extra_filter =
   pattern_search extra_filter plain_display
