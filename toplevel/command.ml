@@ -155,13 +155,21 @@ let build_mutual lparams lnamearconstrs finite =
 	 (Environ.push_rel_assum (Name id,p) env, (Name id,p)::params))
       (env0,[]) lparams
   in
+  (* Pour permettre à terme les let-in dans les params *)
+  let params' =
+    List.map (fun (na,p) ->
+		let id = match na with
+		  | Name id -> id
+		  | Anonymous -> anomaly "Unnamed inductive variable"
+		in (id, LocalAssum p)) params
+  in
   let (ind_env,arityl) =
     List.fold_left
       (fun (env,arl) (recname,arityc,_) ->
          let arity = interp_type sigma env_params arityc in
 	 let fullarity = prod_it arity params in
 	 let env' = Environ.push_rel_assum (Name recname,fullarity) env in
-	 (env', (fullarity::arl)))
+	 (env', (arity::arl)))
       (env0,[]) lnamearconstrs
   in
   let ind_env_params = Environ.push_rels_assum params ind_env in
@@ -169,17 +177,16 @@ let build_mutual lparams lnamearconstrs finite =
     List.map2
       (fun ar (name,_,lname_constr) ->
 	 let constrnames, bodies = List.split lname_constr in
-         let constrs =
-	   List.map
-	     (fun c -> prod_it (interp_constr sigma ind_env_params c) params)
-	     bodies
-	 in (name, ar, constrnames, constrs))
+         let constrs = List.map (interp_constr sigma ind_env_params) bodies in
+	 { mind_entry_nparams = nparams;
+	   mind_entry_params = params';
+	   mind_entry_typename = name;
+	   mind_entry_arity = ar;
+	   mind_entry_consnames = constrnames;
+	   mind_entry_lc = constrs })
       (List.rev arityl) lnamearconstrs
   in
-  let mie = { 
-    mind_entry_nparams = nparams;
-    mind_entry_finite = finite;
-    mind_entry_inds = mispecvec }
+  let mie = { mind_entry_finite = finite; mind_entry_inds = mispecvec }
   in
   let sp = declare_mind mie in
   if is_verbose() then pPNL(minductive_message lrecnames);

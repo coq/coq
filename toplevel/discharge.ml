@@ -43,21 +43,21 @@ let abstract_inductive ids_to_abs hyps inds =
       list_tabulate (fun k -> applist(mkRel (k+2),[mkRel 1])) ntyp in
     let inds' =
       List.map
-      	(function (tname,arity,cnames,lc) -> 
+      	(function (np,tname,arity,cnames,lc) -> 
 	   let arity' = mkNamedProd id t arity in
 	   let lc' =
 	     List.map (fun b -> mkNamedProd id t (substl new_refs b)) lc
 	   in
-           (tname,arity',cnames,lc'))
+           (np,tname,arity',cnames,lc'))
       	inds
     in 
     (inds',ABSTRACT) in
   let abstract_one_def id c inds =
     List.map
-      (function (tname,arity,cnames,lc) -> 
+      (function (np,tname,arity,cnames,lc) -> 
 	 let arity' = replace_vars [id, c] arity in
 	 let lc' = List.map (replace_vars [id, c]) lc in
-         (tname,arity',cnames,lc'))
+         (np,tname,arity',cnames,lc'))
       inds in
   let abstract_once ((hyps,inds,modl) as sofar) id =
     match hyps with
@@ -73,7 +73,24 @@ let abstract_inductive ids_to_abs hyps inds =
     List.fold_left abstract_once (hyps,inds,[]) ids_to_abs in
   let inds'' =
     List.map 
-      (fun (a,b,c,d) -> (a,body_of_type b,c,List.map body_of_type d))
+      (fun (nparams,a,arity,c,lc) ->
+	 let nparams' = nparams + (List.length revmodl) in
+	 let params, short_arity = decompose_prod_n_assum nparams' arity in
+	 let shortlc =
+	   List.map (fun c -> snd (decompose_prod_n_assum nparams' c))lc in
+	 let params' =
+	   List.map 
+	     (function
+		| (Name id,None,p) -> id, LocalAssum p
+		| (Name id,Some p,_) -> id, LocalDef p
+		| (Anonymous,_,_) -> anomaly"Unnamed inductive local variable")
+	     params in
+	 { mind_entry_nparams = nparams';
+	   mind_entry_params = params';
+	   mind_entry_typename = a;
+	   mind_entry_arity = short_arity;
+	   mind_entry_consnames = c;
+	   mind_entry_lc = shortlc })
       inds' in
   (inds'', List.rev revmodl)
 
@@ -83,11 +100,14 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
   let inds = 
     array_map_to_list
       (fun mip ->
-	 (mip.mind_typename,
-	  expmod_type oldenv modlist (mind_user_arity mip),
+	 let nparams = mip.mind_nparams in
+	 let arity = expmod_type oldenv modlist (mind_user_arity mip) in
+	 let lc = Array.map (expmod_type oldenv modlist) (mind_user_lc mip) in
+	 (nparams,
+	  mip.mind_typename,
+	  arity,
 	  Array.to_list mip.mind_consnames,
-	  Array.to_list
-	    (Array.map (expmod_type oldenv modlist) (mind_user_lc mip))))
+	  Array.to_list lc))
       mib.mind_packets
   in
   let hyps' = map_named_context (expmod_constr oldenv modlist) mib.mind_hyps in
@@ -103,8 +123,7 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
   in
   let indmodifs,cstrmodifs =
     List.split (list_tabulate lmodif_one_mind mib.mind_ntypes) in 
-  ({ mind_entry_nparams = mib.mind_nparams + (List.length modl);
-     mind_entry_finite = finite;
+  ({ mind_entry_finite = finite;
      mind_entry_inds = inds' },
    indmodifs,
    List.flatten cstrmodifs)
@@ -116,13 +135,16 @@ let constant_message id =
 
 let inductive_message inds =
   if Options.is_verbose() then 
-    pPNL (hOV 0 
-	    (match inds with
-	       | [] -> assert false
-	       | [(i,_,_,_)] -> [< pr_id i; 'sTR " is discharged." >]
-	       | l -> [< prlist_with_sep pr_coma 
-			   (fun (id,_,_,_) -> pr_id id) l;
-			 'sPC; 'sTR "are discharged.">]))
+    pPNL
+      (hOV 0 
+	 (match inds with
+	    | [] -> assert false
+	    | [ind] ->
+		[< pr_id ind.mind_entry_typename; 'sTR " is discharged." >]
+	    | l ->
+		[< prlist_with_sep pr_coma 
+		     (fun ind -> pr_id ind.mind_entry_typename) l;
+		   'sPC; 'sTR "are discharged.">]))
 
 (* Discharge operations for the various objects of the environment. *)
 
@@ -213,7 +235,7 @@ let process_object oldenv dir sec_sp
 	let mib = Environ.lookup_mind sp oldenv in
 	let strobj =
 	  { s_CONST = info.s_CONST;
-	    s_PARAM = mib.mind_nparams;
+	    s_PARAM = (mind_nth_type_packet mib 0).mind_nparams;
 	    s_PROJ = List.map (option_app (recalc_sp dir)) info.s_PROJ } in
 	((Struc ((newsp,i),strobj))::ops, ids_to_discard, work_alist)
 
@@ -254,7 +276,8 @@ let process_operation = function
 let push_inductive_names ccitab sp mie =
   let _,ccitab =
     List.fold_left
-      (fun (n,ccitab) (id,_,cnames,_) ->
+      (fun (n,ccitab) ind ->
+	 let id = ind.mind_entry_typename in
 	 let indsp = (sp,n) in
 	 let _,ccitab =
 	   List.fold_left
@@ -263,7 +286,7 @@ let push_inductive_names ccitab sp mie =
 		 Stringmap.add (string_of_id x) (ConstructRef (indsp,p)) 
 		   ccitab))
 	     (1,Stringmap.add (string_of_id id) (IndRef indsp) ccitab)
-	     cnames in
+	     ind.mind_entry_consnames in
 	 (n+1,ccitab))
       (0,ccitab)
       mie.mind_entry_inds

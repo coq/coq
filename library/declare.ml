@@ -172,35 +172,18 @@ let declare_constant id cd =
 let inductive_names sp mie =
   let names, _ = 
     List.fold_left
-      (fun (names, n) (id,_,cnames,_) ->
+      (fun (names, n) ind ->
 	 let indsp = (sp,n) in
 	 let names, _ =
 	   List.fold_left
 	     (fun (names, p) id ->
 		let sp = Names.make_path (dirpath sp) id CCI in
 		((sp, ConstructRef (indsp,p)) :: names, p+1))
-	     (names, 1) cnames in
-	 let sp = Names.make_path (dirpath sp) id CCI in
+	     (names, 1) ind.mind_entry_consnames in
+	 let sp = Names.make_path (dirpath sp) ind.mind_entry_typename CCI in
 	 ((sp, IndRef indsp) :: names, n+1))
       ([], 0) mie.mind_entry_inds
   in names
-
-let push_inductive_names sp mie =
-  let _ = 
-    List.fold_left
-      (fun n (id,_,cnames,_) ->
-	 let indsp = (sp,n) in
-	 let _ =
-	   List.fold_left
-	     (fun p id ->
-		let sp = Names.make_path (dirpath sp) id CCI in
-		Nametab.push sp (ConstructRef (indsp,p)); (p+1))
-	     1 cnames in
-	 let sp = Names.make_path (dirpath sp) id CCI in
-	 Nametab.push sp (IndRef indsp);
-	 n+1)
-      0 mie.mind_entry_inds
-  in ()
 
 let check_exists_inductive (sp,_) =
   if Nametab.exists_cci sp then
@@ -230,7 +213,7 @@ let (in_inductive, out_inductive) =
 
 let declare_mind mie =
   let id = match mie.mind_entry_inds with
-    | (id,_,_,_)::_ -> id
+    | ind::_ -> ind.mind_entry_typename
     | [] -> anomaly "cannot declare an empty list of inductives"
   in
   let sp = add_leaf id CCI (in_inductive mie) in

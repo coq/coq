@@ -25,11 +25,15 @@ val is_defined : constant_body -> bool
 
 val is_opaque : constant_body -> bool
 
-(*s Constant declaration. *)
+(*s Global and local constant declaration. *)
 
 type constant_entry = {
   const_entry_body : constr;
   const_entry_type : constr option }
+
+type local_entry =
+  | LocalDef of constr
+  | LocalAssum of constr
 
 (*s Inductive types (internal representation). *)
 
@@ -56,7 +60,8 @@ type one_inductive_body = {
   mind_nrealargs : int;
   mind_kelim : sorts list;
   mind_listrec : (recarg list) array;
-  mind_finite : bool }
+  mind_finite : bool;
+  mind_nparams : int }
 
 type mutual_inductive_body = {
   mind_kind : path_kind;
@@ -64,8 +69,7 @@ type mutual_inductive_body = {
   mind_hyps : named_context;
   mind_packets : one_inductive_body array;
   mind_constraints : constraints;
-  mind_singl : constr option;
-  mind_nparams : int }
+  mind_singl : constr option }
 
 val mind_type_finite : mutual_inductive_body -> int -> bool
 val mind_user_lc : one_inductive_body -> types array
@@ -76,8 +80,14 @@ val mind_arities_context : mutual_inductive_body -> rel_declaration list
 
 (*s Declaration of inductive types. *)
 
-type mutual_inductive_entry = {
+type one_inductive_entry = {
   mind_entry_nparams : int;
-  mind_entry_finite : bool;
-  mind_entry_inds : (identifier * constr * identifier list * constr list) list}
+  mind_entry_params : (identifier * local_entry) list;
+  mind_entry_typename : identifier;
+  mind_entry_arity : constr;
+  mind_entry_consnames : identifier list;
+  mind_entry_lc : constr list }
 
+type mutual_inductive_entry = {
+  mind_entry_finite : bool;
+  mind_entry_inds : one_inductive_entry list }

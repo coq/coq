@@ -21,9 +21,15 @@ let is_defined cb =
 
 let is_opaque cb = cb.const_opaque
 
+(*s Global and local constant declaration. *)
+
 type constant_entry = {
   const_entry_body : constr;
   const_entry_type : constr option }
+
+type local_entry =
+  | LocalDef of constr
+  | LocalAssum of constr
 
 (* Inductive entries *)
 
@@ -45,7 +51,8 @@ type one_inductive_body = {
   mind_nrealargs : int;
   mind_kelim : sorts list;
   mind_listrec : (recarg list) array;
-  mind_finite : bool }
+  mind_finite : bool;
+  mind_nparams : int }
 
 type mutual_inductive_body = {
   mind_kind : path_kind;
@@ -53,8 +60,7 @@ type mutual_inductive_body = {
   mind_hyps : named_context;
   mind_packets : one_inductive_body array;
   mind_constraints : constraints;
-  mind_singl : constr option;
-  mind_nparams : int }
+  mind_singl : constr option }
 
 let mind_type_finite mib i = mib.mind_packets.(i).mind_finite
 
@@ -68,10 +74,17 @@ let mind_user_arity mip = match mip.mind_user_arity with
 
 (*s Declaration. *)
 
-type mutual_inductive_entry = {
+type one_inductive_entry = {
   mind_entry_nparams : int;
+  mind_entry_params : (identifier * local_entry) list;
+  mind_entry_typename : identifier;
+  mind_entry_arity : constr;
+  mind_entry_consnames : identifier list;
+  mind_entry_lc : constr list }
+
+type mutual_inductive_entry = {
   mind_entry_finite : bool;
-  mind_entry_inds : (identifier * constr * identifier list * constr list) list}
+  mind_entry_inds : one_inductive_entry list }
 
 let mind_nth_type_packet mib n = mib.mind_packets.(n)
 

@@ -269,6 +269,23 @@ let push_rel_assum = push_rel_or_named_assum push_rel_assum
 let push_rels_with_univ vars env =
   List.fold_left (fun env nvar -> push_rel_assum nvar env) env vars
 
+let safe_infer_local_decl env id = function
+  | LocalDef c -> 
+      let (j,cst) = safe_infer env c in
+      (Name id, Some j.uj_val, j.uj_type), cst
+  | LocalAssum c ->
+      let (j,cst) = safe_infer env c in
+      (Name id, None, assumption_of_judgment env Evd.empty j), cst
+
+let safe_infer_local_decls env decls =
+  let rec inferec env = function
+  | (id, d) :: l -> 
+      let env, l, cst1 = inferec env l in
+      let d, cst2 = safe_infer_local_decl env id d in
+      push_rel d env, d :: l, Constraint.union cst1 cst2
+  | [] -> env, [], Constraint.empty in
+  inferec env decls
+
 (* Insertion of constants and parameters in environment. *)
 
 let add_parameter sp t env =
@@ -370,12 +387,9 @@ let is_unit arinfos constrsinfos =
    | [constrinfos] -> is_logic_constr constrinfos && is_logic_arity arinfos
    | _ -> false
 
-let small_unit constrsinfos (env_ar,nparams,ar) =
+let small_unit constrsinfos (env_ar_par,short_arity) =
   let issmall = List.for_all is_small constrsinfos in
-  let arinfos =
-    let (params,a) = mind_extract_params nparams ar in
-    let env_par = push_rels params env_ar in
-    infos_and_sort env_par a in
+  let arinfos = infos_and_sort env_ar_par short_arity in
   let isunit = is_unit arinfos constrsinfos in
   issmall, isunit
 
@@ -386,63 +400,82 @@ let enforce_type_constructor arsort smax cst =
     | Type uc, Type ua -> Constraint.add (ua,Geq,uc) cst
     | _,_ -> cst
 
-let type_one_constructor env_ar nparams arsort c =
-  let infos = 
-    let (params,dc) = mind_extract_params nparams c in
-    let env_par = push_rels params env_ar in
-    infos_and_sort env_par dc 
-  in
-  (* Constructors are typed-checked here *)
-  let (j,cst) = safe_infer_type env_ar c in
+let type_one_constructor env_ar_par params arsort c =
+  let infos = infos_and_sort env_ar_par c in
+
+  (* Each constructor is typed-checked here *)
+  let (j,cst) = safe_infer_type env_ar_par c in
+  let full_cstr_type = it_mkProd_or_LetIn j.utj_val params in
 
   (* If the arity is at some level Type arsort, then the sort of the
      constructor must be below arsort; here we consider constructors with the
      global parameters (which add a priori more constraints on their sort) *)
   let cst2 = enforce_type_constructor arsort j.utj_type cst in
 
-  (infos, j.utj_val, cst2)
+  (infos, full_cstr_type, cst2)
 
-let type_one_inductive i env_ar env_par nparams ninds (id,ar,cnames,vc) =
-  let arsort = sort_of_arity env_ar ar in
+let infer_constructor_packet env_ar params short_arity arsort vc =
+  let env_ar_par = push_rels params env_ar in
   let (constrsinfos,jlc,cst) = 
     List.fold_right
-      (fun c (infosl,jl,cst) -> 
-	 let (infos,jc,cst') = type_one_constructor env_ar nparams arsort c in
-	 (infos::infosl,jc::jl, Constraint.union cst cst'))
+      (fun c (infosl,l,cst) ->
+	 let (infos,ct,cst') =
+	   type_one_constructor env_ar_par params arsort c in
+	 (infos::infosl,ct::l, Constraint.union cst cst'))
       vc
-      ([],[],Constraint.empty)
-  in
+      ([],[],Constraint.empty) in
   let vc' = Array.of_list jlc in
-  let issmall,isunit = small_unit constrsinfos (env_par,nparams,ar) in
-  let (_,tyar) = lookup_rel_type (ninds+1-i) env_ar in
-  ((id,tyar,cnames,issmall,isunit,vc'), cst)
+  let issmall,isunit = small_unit constrsinfos (env_ar_par,short_arity) in
+  (issmall,isunit,vc', cst)
 
 let add_mind sp mie env =
-  mind_check_names mie;
-  mind_check_arities env mie;
-  let params = mind_extract_and_check_params mie in
-  let nparams = mie.mind_entry_nparams in
-  mind_check_lc params mie;
-  let ninds = List.length mie.mind_entry_inds in
-  let types_sign = 
-    List.map (fun (id,ar,_,_) -> (Name id,ar)) mie.mind_entry_inds
-  in
-  (* Arities with params are typed-checked here *)
-  let env_arities = push_rels_with_univ types_sign env in
-  let env_params = push_rels params env_arities in
-  let _,inds,cst =
-    List.fold_right
-      (fun ind (i,inds,cst) -> 
-	 let (ind',cst') = 
-	   type_one_inductive i env_arities env_params nparams ninds ind 
+  mind_check_wellformed env mie;
+
+  (* We first type params and arity of each inductive definition *)
+  (* This allows to build the environment of arities and to share *)
+  (* the set of constraints *)
+  let cst, env_arities, rev_params_arity_list =
+    List.fold_left
+      (fun (cst,env_arities,l) ind ->
+         (* Params are typed-checked here *)
+	 let params = ind.mind_entry_params in
+	 let env_params, params, cst1 = safe_infer_local_decls env params in
+         (* Arities (without params) are typed-checked here *)
+	 let arity, cst2 = safe_infer_type env_params ind.mind_entry_arity in
+	 (* We do not need to generate the universe of full_arity; if
+	    later, after the validation of the inductive definition,
+	    full_arity is used as argument or subject to cast, an
+	    upper universe will be generated *)
+	 let id = ind.mind_entry_typename in
+	 let full_arity = it_mkProd_or_LetIn arity.utj_val params in
+	 Constraint.union cst (Constraint.union cst1 cst2),
+	 push_rel_assum (Name id, full_arity) env_arities,
+         (params, id, full_arity, arity.utj_val)::l)
+      (Constraint.empty,env,[])
+      mie.mind_entry_inds in
+
+  let params_arity_list = List.rev rev_params_arity_list in
+
+  (* Now, we type the constructors (without params) *)
+  let inds,cst =
+    List.fold_right2
+      (fun ind (params,id,full_arity,short_arity) (inds,cst) ->
+	 let arsort = sort_of_arity env full_arity in
+	 let lc = ind.mind_entry_lc in
+	 let (issmall,isunit,lc',cst') =
+	   infer_constructor_packet env_arities params short_arity arsort lc
 	 in
-	 (i-1,ind'::inds, Constraint.union cst cst'))
+	 let nparams = ind.mind_entry_nparams in
+	 let consnames = ind.mind_entry_consnames in
+	 let ind' = (nparams,id,full_arity,consnames,issmall,isunit,lc') in
+	 (ind'::inds, Constraint.union cst cst'))
       mie.mind_entry_inds
-      (ninds,[],Constraint.empty) 
-  in
+      params_arity_list
+      ([],Constraint.empty) in
+
+  (* Finally, we build the inductive packet and push it to env *)
   let kind = kind_of_path sp in
-  let mib = 
-    cci_inductive env env_arities kind nparams mie.mind_entry_finite inds cst
+  let mib = cci_inductive env env_arities kind mie.mind_entry_finite inds cst
   in
   add_mind sp mib (add_constraints cst env)
     

@@ -28,39 +28,27 @@ type inductive_error =
   | BadInduction of bool * identifier * sorts
   | NotMutualInScheme
 
-exception InductiveError of inductive_error
-
-(*s The following functions are utility functions to check and to
-  decompose a declaration. *)
-
-(* [mind_check_names] checks the names of an inductive types declaration
-   i.e. that all the types and constructors names are distinct. 
-   It raises an exception [InductiveError _] if it is not the case. *)
-
-val mind_check_names : mutual_inductive_entry -> unit
-
-(* [mind_extract_and_check_params] extracts the parameters of an inductive
-   types declaration. It raises an exception [InductiveError _] if there is
-   not enough abstractions in any of the terms of the field 
-   [mind_entry_inds]. *)
-
-val mind_extract_and_check_params : 
-  mutual_inductive_entry -> Sign.rel_context
+(* [mind_extract_params] extracts the parameters of an inductive
+   type declaration. *)
 
 val mind_extract_params : int -> constr -> Sign.rel_context * constr
 
-val mind_check_lc : Sign.rel_context -> mutual_inductive_entry -> unit
+exception InductiveError of inductive_error
 
-(* [mind_check_arities] checks that the types declared for all the
-   inductive types are some arities. *)
+(*s The following function does checks on inductive declarations. *)
 
-val mind_check_arities : env -> mutual_inductive_entry -> unit
+(* [mind_check_wellformed env mie] checks that the types declared for
+   all the inductive types are arities. It checks also that
+   constructor and inductive names altogether are distinct. It raises
+   an exception [InductiveError _] if [mie] is not well-formed *)
+
+val mind_check_wellformed : env -> mutual_inductive_entry -> unit
 
 (* [cci_inductive] checks positivity and builds an inductive body *)
 
 val cci_inductive : 
-  env -> env -> path_kind -> int -> bool -> 
-   (identifier * types * identifier list * bool * bool * types array)
+  env -> env -> path_kind -> bool -> 
+   (int * identifier * types * identifier list * bool * bool * types array)
       list ->
       constraints ->
       	mutual_inductive_body

@@ -85,7 +85,9 @@ let print_mutual sp mib =
   let pk = kind_of_path sp in
   let env = Global.env () in
   let evd = Evd.empty in
-  let {mind_packets=mipv; mind_nparams=nparams} = mib in 
+  let {mind_packets=mipv} = mib in 
+  (* On suppose que tous les inductifs ont les même paramètres *)
+  let nparams = mipv.(0).mind_nparams in
   let (lpars,_) = decomp_n_prod env evd nparams
 		    (body_of_type (mind_user_arity mipv.(0))) in
   let arities = Array.map (fun mip -> (Name mip.mind_typename, None, mip.mind_nf_arity)) mipv in

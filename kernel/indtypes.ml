@@ -59,7 +59,9 @@ let check_constructors_names id =
 let mind_check_names mie =
   let rec check indset cstset = function
     | [] -> ()
-    | (id,_,cl,_)::inds -> 
+    | ind::inds -> 
+	let id = ind.mind_entry_typename in
+	let cl = ind.mind_entry_consnames in
 	if Idset.mem id indset then
 	  raise (InductiveError (SameNamesTypes id))
 	else
@@ -74,35 +76,20 @@ let mind_check_names mie =
 
 let mind_extract_params n c =
   let (l,c') = decompose_prod_n_assum n c in (l,c')
-  
-let extract nparams c =
-  try fst (mind_extract_params nparams c)
-  with UserError _ -> raise (InductiveError BadEntry)
-
-let check_params params params' =
-  if not (params = params') then raise (InductiveError BadEntry)
-
-let mind_extract_and_check_params mie =
-  let nparams = mie.mind_entry_nparams in
-  match mie.mind_entry_inds with
-    | [] -> anomaly "empty inductive types declaration"
-    | (_,ar,_,_)::l -> 
-	let params = extract nparams ar in
-	List.iter (fun (_,c,_,_) -> check_params params (extract nparams c)) l;
-	params
-
-let mind_check_lc params mie =
-  let nparams = List.length params in
-  let check_lc (_,_,_,lc) =
-    List.iter (fun c -> check_params params (extract nparams c)) lc in
-  List.iter check_lc mie.mind_entry_inds
 
 let mind_check_arities env mie =
   let check_arity id c =
     if not (is_arity env Evd.empty c) then 
       raise (InductiveError (NotAnArity id))
   in
-  List.iter (fun (id,ar,_,_) -> check_arity id ar) mie.mind_entry_inds
+  List.iter
+    (fun {mind_entry_typename=id; mind_entry_arity=ar} -> check_arity id ar)
+    mie.mind_entry_inds
+
+let mind_check_wellformed env mie =
+  if mie.mind_entry_inds = [] then anomaly "empty inductive types declaration";
+  mind_check_names mie;
+  mind_check_arities env mie
 
 (***********************************************************************)
 
@@ -313,9 +300,9 @@ let is_recursive listind =
   in 
   array_exists one_is_rec
 
-let cci_inductive env env_ar kind nparams finite inds cst =
+let cci_inductive env env_ar kind finite inds cst =
   let ntypes = List.length inds in
-  let one_packet i (id,ar,cnames,issmall,isunit,lc) =
+  let one_packet i (nparams,id,ar,cnames,issmall,isunit,lc) =
     let recargs = listrec_mconstr env_ar ntypes nparams i lc in
     let isunit = isunit && ntypes = 1 && (not (is_recursive [0] recargs)) in
     let (ar_sign,ar_sort) = splay_arity env Evd.empty (body_of_type ar) in
@@ -340,11 +327,12 @@ let cci_inductive env env_ar kind nparams finite inds cst =
       mind_sort = ar_sort;
       mind_kelim = kelim;
       mind_listrec = recargs;
-      mind_finite = finite }
+      mind_finite = finite;
+      mind_nparams = nparams }
   in
   let ids = 
     List.fold_left 
-      (fun acc (_,ar,_,_,_,lc) -> 
+      (fun acc (_,_,ar,_,_,_,lc) -> 
 	 Idset.union (global_vars_set (body_of_type ar))
 	   (Array.fold_left
 	      (fun acc c -> Idset.union (global_vars_set (body_of_type c)) acc)
@@ -358,5 +346,4 @@ let cci_inductive env env_ar kind nparams finite inds cst =
     mind_hyps = keep_hyps ids (named_context env);
     mind_packets = packets;
     mind_constraints = cst;
-    mind_singl = None;
-    mind_nparams = nparams }
+    mind_singl = None }

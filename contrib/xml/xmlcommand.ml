@@ -45,6 +45,28 @@ let ext_of_tag =
   | Variable  -> "var"
 ;;
 
+(* Internally, for Coq V7, params of inductive types are associated
+   not to the whole block of mutual inductive (as it was in V6) but to
+   each member of the block; but externally, params remain shared by
+   all members in the concrete syntax; the following function checks
+   that the parameters of each inductive of a same block are all the
+   same, then returns this number; it fails otherwise *)
+let extract_nparams pack =
+ let module D = Declarations in
+ let module U = Util in
+ let module S = Sign in
+
+  let {D.mind_nparams=nparams0} = pack.(0) in
+  let arity0 = D.mind_user_arity pack.(0) in
+  let params0 = S.decompose_prod_n_assum nparams0 arity0 in
+  for i = 1 to Array.length pack - 1 do
+    let {D.mind_nparams=nparamsi} = pack.(i) in
+    let arityi = D.mind_user_arity pack.(i) in
+    let paramsi = S.decompose_prod_n_assum nparamsi arityi in
+    if params0 <> paramsi then U.error "Cannot convert a block of inductive definitions with parameters specific to each inductive to a block of mutual inductive definitions with parameters global to the whole block"
+  done;
+  nparams0
+
 (* could_have_namesakes sp = true iff o is an object that could be cooked and *)
 (* than that could exists in cooked form with the same name in a super        *)
 (* section of the actual section                                              *)
@@ -598,11 +620,12 @@ let print_mutual_inductive_packet inner_types names env p =
 (*  and   nparams     is the number of "parameters" in the arity of the    *)
 (*                    mutual inductive types                               *)
 (* returns a stream of XML tokens suitable to be pretty printed via Xml.pp *)
-let print_mutual_inductive packs fv hyps nparams env inner_types =
+let print_mutual_inductive packs fv hyps env inner_types =
  let module D = Declarations in
  let module E = Environ in
  let module X = Xml in
  let module N = Names in
+  let nparams = extract_nparams packs in
   let names =
    List.map
     (fun p -> let {D.mind_typename=typename} = p in N.Name(typename))
@@ -698,12 +721,10 @@ let print sp fn =
           | Some c -> print_definition id c typ [] hyps env inner_types
         end
     | T.IndRef (sp,_) ->
-       let {D.mind_packets=packs ; D.mind_nparams=nparams ; D.mind_hyps=hyps} =
-        G.lookup_mind sp
-       in
+       let {D.mind_packets=packs ; D.mind_hyps=hyps} = G.lookup_mind sp in
         let hyps = string_list_of_named_context_list hyps in
          sp,Inductive,
-          print_mutual_inductive packs [] hyps nparams env inner_types
+          print_mutual_inductive packs [] hyps env inner_types
     | T.ConstructRef _
     | T.EvarRef _ ->
        Util.anomaly ("print: this should not happen")
@@ -815,12 +836,11 @@ let print_object lobj id sp dn fv env =
       | "INDUCTIVE" ->
            let
             {D.mind_packets=packs ;
-             D.mind_nparams=nparams ;
              D.mind_hyps = hyps
             } = G.lookup_mind sp
            in
             let hyps = string_list_of_named_context_list hyps in
-             print_mutual_inductive packs fv hyps nparams env inner_types
+             print_mutual_inductive packs fv hyps env inner_types
       | "VARIABLE" ->
           let (_,(varentry,_,_)) = Declare.out_variable lobj in
            begin
