@@ -441,7 +441,8 @@ let subst1_nf_evar sigma v =
         else mkRel (k-1)
     | Evar (ev,args as evar) ->
 	(try substrec depth (Evd.existential_value sigma evar)
-	 with Not_found -> mkEvar (ev, Array.map (substrec depth) args))
+	 with Evd.NotInstantiatedEvar ->
+	   mkEvar (ev, Array.map (substrec depth) args))
     | _ -> map_constr_with_binders succ substrec depth c
   in 
   substrec 0

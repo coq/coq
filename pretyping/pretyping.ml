@@ -349,7 +349,8 @@ let rec pretype tycon env isevars lvar = function
 		  let hj = pretype (mk_tycon c1) env isevars lvar c in
 		  let newresj =
       		    { uj_val = applist (j_val resj, [j_val hj]);
-		      uj_type = subst1 hj.uj_val c2 } in
+		      uj_type = subst1_nf_evar (evars_of !isevars)
+		                hj.uj_val c2 } in
 		  apply_rec env (n+1) newresj rest
 
 	      | _ ->
@@ -363,7 +364,8 @@ let rec pretype tycon env isevars lvar = function
 	let apply_one_arg (floc,tycon,jl) c =
 	let (dom,rng) = split_tycon floc env isevars tycon in
 	let cj = pretype dom env isevars lvar c in
-	let rng_tycon = option_app (subst1 cj.uj_val) rng in
+	let rng_tycon =
+	  option_app (subst1_nf_evar (evars_of !isevars) cj.uj_val) rng in
 	let argloc = loc_of_rawconstr c in
 	(join_loc floc argloc,rng_tycon,(argloc,cj)::jl)  in
 	let _,_,jl =
@@ -398,7 +400,7 @@ let rec pretype tycon env isevars lvar = function
         let tycon = option_app (lift 1) tycon in
       let j' = pretype tycon (push_rel var env) isevars lvar c2 in
       { uj_val = mkLetIn (name, j.uj_val, t, j'.uj_val) ;
-	uj_type = type_app (subst1 j.uj_val) j'.uj_type }
+	uj_type = subst1_nf_evar (evars_of !isevars) j.uj_val j'.uj_type }
 
   | RLetTuple (loc,nal,(na,po),c,d) ->
       let cj = pretype empty_tycon env isevars lvar c in
