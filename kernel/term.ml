@@ -271,7 +271,7 @@ let mkLambda (x,t1,t2) = IsLambda (x,t1,t2)
 let mkLetIn (x,c1,t,c2) = IsLetIn (x,c1,t,c2)
 
 (* If lt = [t1; ...; tn], constructs the application (t1 ... tn) *)
-(* We ensure applicative terms have at most one arguments and the
+(* We ensure applicative terms have at least one argument and the
    function is not itself an applicative term *)
 let mkApp (f, a) = 
   if a=[||] then f else
@@ -304,7 +304,6 @@ let mkFix fix = IsFix fix
 let mkCoFix cofix = IsCoFix cofix
 
 let kind_of_term c = c
-let mk_constr c = c
 
 (*
 end

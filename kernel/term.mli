@@ -133,7 +133,6 @@ type cofixpoint = int * rec_declaration
    term *)
 
 val kind_of_term : constr -> (constr, types) kind_of_term
-val mk_constr : (constr, types) kind_of_term -> constr
 
 (*s Term constructors. *)
 
