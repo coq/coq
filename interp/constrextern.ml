@@ -1478,6 +1478,7 @@ let rec remove_coercions_in_application inctx = function
 
 let rec rename_rawconstr_var id0 id1 = function
     RRef(loc,VarRef id) when id=id0 -> RRef(loc,VarRef id1)
+  | RVar(loc,id) when id=id0 -> RVar(loc,id1)
   | c -> map_rawconstr (rename_rawconstr_var id0 id1) c
 
 let rec share_fix_binders n rbl ty def =
