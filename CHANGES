@@ -74,6 +74,7 @@ Tactic definitions
 
 Tactics
 
+- Simpl and Change now apply to subterms also
 - Double Induction now referring to hypotheses like "Intros until"
 - "Inversion" now applies also on quantified hypotheses (naming as
   for Intros until)
