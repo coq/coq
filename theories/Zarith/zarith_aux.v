@@ -144,7 +144,8 @@ Unfold Zle Zgt ;Intros n p H; (ElimCompare 'n 'p); [
 | Intros H1;Absurd (Zcompare n p)=SUPERIEUR;Assumption ].
 Save.
 
-Lemma Zgt_pred       : (n,p:Z)(Zgt p (Zs n))->(Zgt (Zpred p) n).
+Lemma Zgt_pred       
+	: (n,p:Z)(Zgt p (Zs n))->(Zgt (Zpred p) n).
 
 Unfold Zgt Zs Zpred ;Intros n p H; 
 Rewrite <- [x,y:Z](Zcompare_Zplus_compatible x y (POS xH));
@@ -152,17 +153,32 @@ Rewrite (Zplus_sym p); Rewrite Zplus_assoc; Rewrite [x:Z](Zplus_sym x n);
 Simpl; Assumption.
 Save.
 
-Lemma Zsimpl_gt_plus_l : (n,m,p:Z)(Zgt (Zplus p n) (Zplus p m))->(Zgt n m).
+Lemma Zsimpl_gt_plus_l 
+	: (n,m,p:Z)(Zgt (Zplus p n) (Zplus p m))->(Zgt n m).
 
-Unfold Zgt; Intros n m p H; Rewrite <- (Zcompare_Zplus_compatible n m p); 
-Assumption.
+Unfold Zgt; Intros n m p H; 
+	Rewrite <- (Zcompare_Zplus_compatible n m p); Assumption.
 Save.
 
-Lemma Zgt_reg_l      : (n,m,p:Z)(Zgt n m)->(Zgt (Zplus p n) (Zplus p m)).
+Lemma Zsimpl_gt_plus_r
+	: (n,m,p:Z)(Zgt (Zplus n p) (Zplus m p))->(Zgt n m).
+
+Intros n m p H; Apply Zsimpl_gt_plus_l with p.
+Rewrite (Zplus_sym p n); Rewrite (Zplus_sym p m); Trivial.
+
+Save.
+
+Lemma Zgt_reg_l      
+	: (n,m,p:Z)(Zgt n m)->(Zgt (Zplus p n) (Zplus p m)).
 
 Unfold Zgt; Intros n m p H; Rewrite (Zcompare_Zplus_compatible n m p); 
 Assumption.
 Save.
+
+Lemma Zgt_reg_r : (n,m,p:Z)(Zgt n m)->(Zgt (Zplus n p) (Zplus m p)).
+Intros n m p H; Rewrite (Zplus_sym n p); Rewrite (Zplus_sym m p); Apply Zgt_reg_l; Trivial.
+Save.
+
 Theorem Zcompare_et_un: 
   (x,y:Z) (Zcompare x y)=SUPERIEUR <-> 
     ~(Zcompare x (Zplus y (POS xH)))=INFERIEUR.
@@ -243,7 +259,6 @@ Rewrite Zplus_sym; Auto with arith.
 Save.
 
 Theorem Zeq_add_S : (n,m:Z) (Zs n)=(Zs m) -> n=m.
-
 Intros n m H.
 Change (Zplus (Zplus (NEG xH) (POS xH)) n)=
        (Zplus (Zplus (NEG xH) (POS xH)) m);
@@ -377,6 +392,12 @@ Save.
 Theorem Zle_ge : (m,n:Z) (Zle m n) -> (Zge n m).
 Intros m n; Change ~(Zgt m n)-> ~(Zlt n m);
 Unfold not; Intros H1 H2; Apply H1; Apply Zlt_gt; Assumption.
+Save.
+
+Theorem Zge_trans : (n, m, p : Z) (Zge n m) -> (Zge m p) -> (Zge n p).
+Intros n m p H1 H2.
+Apply Zle_ge.
+Apply Zle_trans with m; Apply Zge_le; Trivial.
 Save.
 
 Theorem Zlt_n_Sn : (n:Z)(Zlt n (Zs n)).
@@ -543,6 +564,12 @@ Intros p n m; Unfold Zle not ;Intros H1 H2;Apply H1;
 Rewrite (Zcompare_Zplus_compatible n m p); Assumption.
 Save.
  
+Lemma Zsimpl_le_plus_r : (p,n,m:Z)(Zle (Zplus n p) (Zplus m p))->(Zle n m).
+
+Intros p n m H; Apply Zsimpl_le_plus_l with p.
+Rewrite (Zplus_sym p n); Rewrite (Zplus_sym p m); Trivial.
+Save.
+
 Lemma Zle_reg_l : (n,m,p:Z)(Zle n m)->(Zle (Zplus p n) (Zplus p m)).
 
 Intros n m p; Unfold Zle not ;Intros H1 H2;Apply H1; 
@@ -567,16 +594,45 @@ Unfold Zs ;Intros n m; Rewrite <- Zplus_assoc; Rewrite (Zplus_sym (POS xH));
 Trivial with arith.
 Save.
 
-Lemma Zsimpl_lt_plus_l : (n,m,p:Z)(Zlt (Zplus p n) (Zplus p m))->(Zlt n m).
+Lemma Zsimpl_lt_plus_l 
+	: (n,m,p:Z)(Zlt (Zplus p n) (Zplus p m))->(Zlt n m).
 
-Unfold Zlt ;Intros n m p; Rewrite Zcompare_Zplus_compatible;Trivial with arith.
+Unfold Zlt ;Intros n m p; 
+	Rewrite Zcompare_Zplus_compatible;Trivial with arith.
 Save.
  
+Lemma Zsimpl_lt_plus_r
+	: (n,m,p:Z)(Zlt (Zplus n p) (Zplus m p))->(Zlt n m).
 
+Intros n m p H; Apply Zsimpl_lt_plus_l with p.
+Rewrite (Zplus_sym p n); Rewrite (Zplus_sym p m); Trivial.
+Save.
+ 
 Lemma Zlt_reg_l : (n,m,p:Z)(Zlt n m)->(Zlt (Zplus p n) (Zplus p m)).
-
 Unfold Zlt ;Intros n m p; Rewrite Zcompare_Zplus_compatible;Trivial with arith.
 Save.
+
+Lemma Zlt_reg_r : (n,m,p:Z)(Zlt n m)->(Zlt (Zplus n p) (Zplus m p)).
+Intros n m p H; Rewrite (Zplus_sym n p); Rewrite (Zplus_sym m p); Apply Zlt_reg_l; Trivial.
+Save.
+
+Lemma Zlt_le_reg :
+ (a,b,c,d:Z) (Zlt a b)->(Zle c d)->(Zlt (Zplus a c) (Zplus b d)).
+Intros a b c d H0 H1.
+Apply Zlt_le_trans with (Zplus b c).
+Apply  Zlt_reg_r; Trivial.
+Apply  Zle_reg_l; Trivial.
+Save.
+
+
+Lemma Zle_lt_reg :
+ (a,b,c,d:Z) (Zle a b)->(Zlt c d)->(Zlt (Zplus a c) (Zplus b d)).
+Intros a b c d H0 H1.
+Apply Zle_lt_trans with (Zplus b c).
+Apply  Zle_reg_r; Trivial.
+Apply  Zlt_reg_l; Trivial.
+Save.
+
 
 Definition Zminus := [m,n:Z](Zplus m (Zopp n)).
 
@@ -672,6 +728,9 @@ Lemma Zmult_Sm_n : (n,m:Z) (Zplus (Zmult n m) m)=(Zmult (Zs n) m).
 Intros n m; Unfold Zs; Rewrite Zmult_plus_distr_l; Rewrite Zmult_1_n;
 Trivial with arith.
 Save.
+
+
+
 
 (* 
   Just for compatibility with previous versions 

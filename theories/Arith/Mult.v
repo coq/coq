@@ -10,6 +10,7 @@
 
 Require Export Plus.
 Require Export Minus.
+Require Export Lt.
 
 (**********************************************************)
 (* Multiplication                                         *)
@@ -22,6 +23,12 @@ Intros; Elim n; Simpl; Intros; Auto with arith.
 Elim plus_assoc_l; Elim H; Auto with arith.
 Qed.
 Hints Resolve mult_plus_distr : arith v62.
+
+Lemma mult_plus_distr_r : (n,m,p:nat) (mult n (plus m p))=(plus (mult n m) (mult n p)).
+Proof.
+  Induction n. Trivial.
+  Intros. Simpl. Rewrite (H m p). Apply sym_eq. Apply plus_permute_2_in_4.
+Qed.
 
 Lemma mult_minus_distr : (n,m,p:nat)((mult (minus n m) p)=(minus (mult n p) (mult m p))).
 Proof.
@@ -65,3 +72,28 @@ Lemma mult_n_1 : (n:nat)(mult n (S O))=n.
 Intro; Elim mult_sym; Auto with arith.
 Save.
 Hints Resolve mult_n_1 : arith v62.
+
+
+Lemma mult_le : (m,n,p:nat) (le n p) -> (le (mult m n) (mult m p)).
+Proof.
+  Induction m. Intros. Simpl. Apply le_n.
+  Intros. Simpl. Apply le_plus_plus. Assumption.
+  Apply H. Assumption.
+Qed.
+Hints Resolve mult_le : arith.
+
+Lemma mult_lt : (m,n,p:nat) (lt n p) -> (lt (mult (S m) n) (mult (S m) p)).
+Proof.
+  Induction m. Intros. Simpl. Rewrite <- plus_n_O. Rewrite <- plus_n_O. Assumption.
+  Intros. Exact (lt_plus_plus ? ? ? ? H0 (H ? ? H0)).
+Qed.
+
+Hints Resolve mult_lt : arith.
+
+Lemma mult_le_conv_1 : (m,n,p:nat) (le (mult (S m) n) (mult (S m) p)) -> (le n p).
+Proof.
+  Intros. Elim (le_or_lt n p). Trivial.
+  Intro H0. Cut (lt (mult (S m) n) (mult (S m) n)). Intro. Elim (lt_n_n ? H1).
+  Apply le_lt_trans with m:=(mult (S m) p). Assumption.
+  Apply mult_lt. Assumption.
+Qed.

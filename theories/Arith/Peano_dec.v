@@ -6,7 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
+Require Decidable.
 (* $Id$ *)
+
 
 Theorem O_or_S : (n:nat)({m:nat|(S m)=n})+{O=n}.
 Proof.
@@ -22,3 +24,8 @@ Intros q H'; Elim (H q); Auto.
 Qed.
 
 Hints Resolve O_or_S eq_nat_dec : arith.
+
+Theorem dec_eq_nat:(x,y:nat)(decidable (x=y)).
+Intros x y; Unfold decidable; Elim (eq_nat_dec x y); Auto with arith.
+Save.
+

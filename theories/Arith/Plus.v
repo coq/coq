@@ -15,7 +15,7 @@
 Require Le.
 Require Lt.
 
-Lemma plus_sym : (n,m:nat)((plus n m)=(plus m n)).
+Lemma plus_sym : (n,m:nat)(plus n m)=(plus m n).
 Proof.
 Intros n m ; Elim n ; Simpl ; Auto with arith.
 Intros y H ; Elim (plus_n_Sm m y) ; Auto with arith.
@@ -118,3 +118,45 @@ Proof.
 Intros; Apply lt_le_trans with m; Auto with arith.
 Qed.
 Hints Immediate lt_plus_trans : arith v62.
+
+Lemma le_lt_plus_plus : (n,m,p,q:nat) (le n m)->(lt p q)->(lt (plus n p) (plus m q)).
+Proof.
+  Unfold lt. Intros. Change (le (plus (S n) p) (plus m q)). Rewrite plus_Snm_nSm.
+  Apply le_plus_plus; Assumption.
+Qed.
+
+Lemma lt_le_plus_plus : (n,m,p,q:nat) (lt n m)->(le p q)->(lt (plus n p) (plus m q)).
+Proof.
+  Unfold lt. Intros. Change (le (plus (S n) p) (plus m q)). Apply le_plus_plus; Assumption.
+Qed.
+
+Lemma lt_plus_plus : (n,m,p,q:nat) (lt n m)->(lt p q)->(lt (plus n p) (plus m q)).
+Proof.
+  Intros. Apply lt_le_plus_plus. Assumption.
+  Apply lt_le_weak. Assumption.
+Qed.
+
+
+Lemma plus_is_O : (m,n:nat) (plus m n)=O -> m=O /\ n=O.
+Proof.
+  Destruct m; Auto.
+  Intros. Discriminate H.
+Qed.
+
+Lemma plus_is_one : (m,n:nat) (plus m n)=(S O) -> {m=O /\ n=(S O)}+{m=(S O) /\ n=O}.
+Proof.
+  Destruct m; Auto.
+  Destruct n; Auto.
+  Intros. 
+  Simpl in H. Discriminate H.
+Qed.
+
+Lemma plus_permute_2_in_4 : (a,b,c,d:nat)
+      (plus (plus a b) (plus c d))=(plus (plus a c) (plus b d)).
+Proof.
+  Intros. 
+  Rewrite <- (plus_assoc_l a b (plus c d)). Rewrite (plus_assoc_l b c d).
+  Rewrite (plus_sym b c). Rewrite <- (plus_assoc_l c b d). Apply plus_assoc_l.
+Qed.
+
+

@@ -94,3 +94,16 @@ Intros n m; Pattern n m; Apply nat_double_ind; Simpl; Auto with arith.
 Intros; Absurd (lt O O); Trivial with arith.
 Qed.
 Hints Immediate lt_O_minus_lt : arith v62.
+
+Theorem pred_of_minus : (x:nat)(pred x)=(minus x (S O)).
+Induction x; Auto with arith.
+Save.
+
+
+Theorem inj_minus_aux: (x,y:nat) ~(le y x) -> (minus x y) = O.
+Intros y x; Pattern y x ; Apply nat_double_ind; [
+  Simpl; Trivial with arith
+| Intros n H; Absurd (le O (S n)); [ Assumption | Apply le_O_n]
+| Simpl; Intros n m H1 H2; Apply H1;
+  Unfold not ; Intros H3; Apply H2; Apply le_n_S; Assumption].
+Save.
