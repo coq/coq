@@ -281,8 +281,7 @@ toplevel: $(TOPLEVEL)
 
 # special binaries for debugging
 
-bin/coq-interface: $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE) \
-                    contrib/interface/Centaur.vo
+bin/coq-interface: $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
 	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@ $(INTERFACE)
 
 bin/parser: contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
@@ -463,13 +462,14 @@ RINGVO = contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
 XMLVO = contrib/xml/Xml.vo
 
 INTERFACEV0 = contrib/interface/Centaur.vo
+
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
 	$(COQC) -q -byte -bindir bin $(COQINCLUDES) $<
 
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE)
 	$(COQC) -q -byte -bindir bin $(COQINCLUDES) $<
 
-CONTRIBVO = $(OMEGAVO) $(RINGVO) $(XMLVO) $(CORRECTNESSVO)
+CONTRIBVO = $(OMEGAVO) $(RINGVO) $(XMLVO) $(CORRECTNESSVO) $(INTERFACEV0)
 
 $(CONTRIBVO): states/initial.coq
 
