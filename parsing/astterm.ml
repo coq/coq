@@ -90,12 +90,14 @@ let ident_of_nvar loc s =
     user_err_loc (loc,"ident_of_nvar", [< 'sTR "Unexpected wildcard" >])
   else (id_of_string s)
 
+(*
 let rctxt_of_ctxt =
   Array.map
     (function
        | VAR id -> RRef (dummy_loc,RVar id)
        | _ ->
      error "Astterm: arbitrary substitution of references not yet implemented")
+*)
 
 let ids_of_ctxt ctxt =
   Array.to_list
@@ -119,7 +121,9 @@ let dbize_ctxt ctxt =
   let l =
     List.map
       (function
-	 | Nvar (loc,s) -> RRef (dummy_loc,RVar (ident_of_nvar loc s))
+	 | Nvar (loc,s) ->
+	     (* RRef (dummy_loc,RVar (ident_of_nvar loc s)) *)
+	     VAR (ident_of_nvar loc s)
 	 | _ -> anomaly "Bad ast for local ctxt of a global reference") ctxt
   in
   Array.of_list l
@@ -139,10 +143,10 @@ let dbize_global loc = function
 		      [< 'sTR "Bad ast for this global a reference">])
 
 let ref_from_constr = function
-  | DOPN (Const sp,ctxt) -> RConst (sp,rctxt_of_ctxt ctxt)
-  | DOPN (Evar ev,ctxt) -> REVar (ev,rctxt_of_ctxt ctxt) 
-  | DOPN (MutConstruct (spi,j),ctxt) -> RConstruct ((spi,j),rctxt_of_ctxt ctxt)
-  | DOPN (MutInd (sp,i),ctxt) -> RInd ((sp,i),rctxt_of_ctxt ctxt)
+  | DOPN (Const sp,ctxt) -> RConst (sp, ctxt)
+  | DOPN (Evar ev,ctxt) -> REVar (ev, ctxt) 
+  | DOPN (MutConstruct (spi,j),ctxt) -> RConstruct ((spi,j), ctxt)
+  | DOPN (MutInd (sp,i),ctxt) -> RInd ((sp,i), ctxt)
   | VAR id -> RVar id  (* utilisé dans trad pour coe_value (tmp) *)
   | _ -> anomaly "Not a reference"
 
@@ -561,10 +565,10 @@ let ctxt_of_ids ids =
   Array.of_list (List.map (function id -> VAR id) ids)
 
 let rec pat_of_ref metas vars = function
-  | RConst (sp,ctxt) -> RConst (sp, Array.map (pat_of_raw metas vars) ctxt)
-  | RInd (ip,ctxt) -> RInd (ip, Array.map (pat_of_raw metas vars) ctxt)
-  | RConstruct(cp,ctxt) ->RConstruct(cp,Array.map (pat_of_raw metas vars) ctxt)
-  | REVar (n,ctxt) -> REVar (n,Array.map (pat_of_raw metas vars) ctxt)
+  | RConst (sp,ctxt) -> RConst (sp, ctxt)
+  | RInd (ip,ctxt) -> RInd (ip, ctxt)
+  | RConstruct(cp,ctxt) ->RConstruct(cp, ctxt)
+  | REVar (n,ctxt) -> REVar (n, ctxt)
   | RMeta n -> RMeta n
   | RAbst _ -> error "pattern_of_rawconstr: not implemented"
   | RVar _ -> assert false (* Capturé dans pattern_of_raw *)

@@ -173,10 +173,10 @@ let find_constructor env sigma c =
     | _ -> error "find_constructor"
 
 type leibniz_eq = {
-  eq   : marked_pattern;
-  ind  : marked_pattern;
+  eq   : marked_term;
+  ind  : marked_term;
   rrec : marked_pattern option;
-  rect : marked_pattern option;
+  rect : marked_term option;
   congr: marked_pattern;
   sym  : marked_pattern }
 
@@ -187,21 +187,24 @@ let eq_pattern = put_pat mmk "(eq ? ? ?)"
 let not_pattern = put_pat mmk "(not ?)"
 let imp_False_pattern = put_pat mmk "? -> False"
 
-let pat_True = put_pat mmk "True"
-let pat_False = put_pat mmk "False"
-let pat_I = put_pat mmk "I"
-
-let eq= { eq  = put_pat mmk "eq";
-          ind = put_pat mmk "eq_ind" ;
+let eq= { eq  = put_squel mmk "eq";
+          ind = put_squel mmk "eq_ind" ;
           rrec = Some (put_pat mmk "eq_rec");
-          rect = Some (put_pat mmk "eq_rect");
+          rect = Some (put_squel mmk "eq_rect");
           congr = put_pat mmk "f_equal"  ;
           sym  = put_pat mmk "sym_eq" }
+
+let build_eq eq = get_squel eq.eq
+let build_ind eq = get_squel eq.ind
+let build_rect eq = 
+  match eq.rect with
+    | None -> assert false
+    | Some sq -> get_squel sq
 	  
 let eqT_pattern = put_pat mmk "(eqT ? ? ?)"
  
-let eqT= { eq  = put_pat mmk "eqT";
-           ind = put_pat mmk "eqT_ind" ;
+let eqT= { eq  = put_squel mmk "eqT";
+           ind = put_squel mmk "eqT_ind" ;
            rrec = None;
            rect = None;
            congr = put_pat mmk "congr_eqT"  ;
@@ -209,16 +212,33 @@ let eqT= { eq  = put_pat mmk "eqT";
 
 let idT_pattern = put_pat mmk "(identityT ? ? ?)"
 
-let idT = { eq  = put_pat mmk "identityT";
-            ind = put_pat mmk "identityT_ind" ;
+let idT = { eq  = put_squel mmk "identityT";
+            ind = put_squel mmk "identityT_ind" ;
             rrec = Some (put_pat mmk "identityT_rec")  ;
-            rect = Some (put_pat mmk "identityT_rect");
+            rect = Some (put_squel mmk "identityT_rect");
             congr = put_pat mmk "congr_idT"  ;
             sym  = put_pat mmk "sym_idT" }
 
+(* List of constructions depending of the initial state *)
+
+(* Initialisation part *)
+let squel_EmptyT = put_squel mmk "EmptyT"
+let squel_True   = put_squel mmk "True"
+let squel_False  = put_squel mmk "False"
+let squel_UnitT  = put_squel mmk "UnitT"
+let squel_IT     = put_squel mmk "IT"
+let squel_I      = put_squel mmk "I"
+
+(* Runtime part *)
+let build_EmptyT () = get_squel squel_EmptyT
+let build_True ()  = get_squel squel_True
+let build_False () = get_squel squel_False
+let build_UnitT () = get_squel squel_UnitT
+let build_IT ()    = get_squel squel_IT
+let build_I ()     = get_squel squel_I
+
+let pat_False  = put_pat mmk "False"
 let pat_EmptyT = put_pat mmk "EmptyT"
-let pat_UnitT = put_pat mmk "UnitT"
-let pat_IT = put_pat mmk "IT"
 let notT_pattern = put_pat mmk "(notT ?)"
 
 let rec hd_of_prod prod =
@@ -253,14 +273,14 @@ let necessary_elimination sort_arity sort =
         [< 'sTR "no primitive equality on proofs" >]
 
 let find_eq_pattern aritysort sort = 
-  let mt =
+(*  let mt =*)
     match necessary_elimination aritysort sort with
       | Set_Type       ->  eq.eq
       | Type_Type      ->  idT.eq
       | Set_SetorProp  ->  eq.eq
       | Type_SetorProp ->  eqT.eq
-  in 
-  get_pat mt
+(*  in 
+  get_pat mt*)
 
 (* [find_positions t1 t2]
 
@@ -468,12 +488,11 @@ let construct_discriminator sigma env dirn c sort =
   let (true_0,false_0,sort_0) = 
     match necessary_elimination arsort (destSort sort) with
       | Type_Type ->
-	  get_pat pat_UnitT, get_pat pat_EmptyT,
+	  build_UnitT (), build_EmptyT (),
 	  (DOP0(Sort (Type(dummy_univ))))
       | _ ->
-	  get_pat pat_True, get_pat pat_False, (DOP0(Sort (Prop Null))) 
+	  build_True (), build_False (), (DOP0(Sort (Prop Null))) 
   in
-  let eq = find_eq_pattern arsort (destSort sort) in
   let p = lam_it sort_0 arsign in
   let bty,_ = type_case_branches env sigma indspec (type_of env sigma p) p c in
   let build_branch i =
@@ -500,8 +519,10 @@ let rec build_discriminator sigma env dirn c sort = function
       let subval = build_discriminator sigma cnum_env dirn newc sort l  in
       (match necessary_elimination arsort (destSort sort) with
          | Type_Type ->
-	     kont subval (get_pat pat_EmptyT,DOP0(Sort(Type(dummy_univ))))
-	 | _ -> kont subval (get_pat pat_False,DOP0(Sort(Prop Null))))
+	     kont subval (build_EmptyT (),DOP0(Sort(Type(dummy_univ))))
+	 | _ -> kont subval (build_False ()
+
+,DOP0(Sort(Prop Null))))
   | _ -> assert false
 
 let dest_somatch_eq eqn eq_pat =
@@ -546,11 +567,10 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
   let sort = pf_type_of gls (pf_concl gls) in 
   match necessary_elimination (destSort(hd_of_prod arity)) (destSort sort) with
     | Type_Type  ->
- 	let rect = match lbeq.rect with Some x -> x | _ -> assert false in
-	let eq_elim     = get_pat rect in
-	let eq_term     = get_pat lbeq.eq in
-	let i           = get_pat pat_IT in
-	let absurd_term = get_pat pat_EmptyT in
+ 	let eq_elim     = build_rect lbeq in
+	let eq_term     = build_eq lbeq in
+	let i           = build_IT () in
+	let absurd_term = build_EmptyT () in
         let h = pf_get_new_id (id_of_string "HH")gls in
         let pred= mkNamedLambda e t 
                     (mkNamedLambda h (applist (eq_term, [t;t1;(Rel 1)])) 
@@ -558,9 +578,11 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
         in (applist(eq_elim, [t;t1;pred;i;t2]), absurd_term)
 	     
     | _ ->
-	let i           = get_pat pat_I in
-	let absurd_term = get_pat pat_False in
-	let eq_elim     = get_pat lbeq.ind in
+	let i           = build_I () in
+	let absurd_term = build_False ()
+
+ in
+	let eq_elim     = build_ind lbeq in
         (applist (eq_elim, [t;t1;mkNamedLambda e t discriminator;i;t2]),
  	 absurd_term)
 
@@ -650,29 +672,41 @@ let h_discrHyp   = hide_ident_tactic  "DiscrHyp"   discrHyp
 
 let bind_ith na i t = lift i (DLAM(na,lift (-(i-1)) t))
 
-let existS_term = put_pat mmk "existS"
+let existS_term = put_squel mmk "existS"
 let existS_pattern = put_pat mmk "(existS ? ? ? ?)"
-let sigS_term = put_pat mmk "sigS"
-let projS1_term = put_pat mmk "projS1"
-let projS2_term = put_pat mmk "projS2"
-let sigS_rec_term = put_pat mmk "sigS_rec"
+let sigS_term = put_squel mmk "sigS"
+let projS1_term = put_squel mmk "projS1"
+let projS2_term = put_squel mmk "projS2"
+let sigS_rec_term = put_squel mmk "sigS_rec"
 
-let existT_term = put_pat mmk "existT"
+let existT_term = put_squel mmk "existT"
 let existT_pattern = put_pat mmk "(existT ? ? ? ?)"
-let sigT_term = put_pat mmk "sigT"
-let projT1_term = put_pat mmk "projT1"
-let projT2_term = put_pat mmk "projT2"
-let sigT_rect_term = put_pat mmk "sigT_rect"
+let sigT_term = put_squel mmk "sigT"
+let projT1_term = put_squel mmk "projT1"
+let projT2_term = put_squel mmk "projT2"
+let sigT_rect_term = put_squel mmk "sigT_rect"
+
+let build_sigma_prop () =
+  (get_squel projS1_term,
+   get_squel projS2_term,
+   get_squel sigS_rec_term,
+   get_squel existS_term,
+   get_squel sigS_term)
+
+let build_sigma_type () =
+  (get_squel projT1_term,
+   get_squel projT2_term,
+   get_squel sigT_rect_term,
+   get_squel existT_term,
+   get_squel sigT_term)
 
 (* returns the sigma type (sigS, sigT) with the respective
     constructor depending on the sort *)
 
 let find_sigma_data s =
   match strip_outer_cast s with  
-    | DOP0(Sort(Prop Pos))     ->                                (* Set *) 
-       	(projS1_term,projS2_term,sigS_rec_term,existS_term, sigS_term)     
-    |  DOP0(Sort(Type(_))) ->                                (* Type *)
-	 (projT1_term, projT2_term, sigT_rect_term, existT_term, sigT_term)  
+    | DOP0(Sort(Prop Pos)) -> build_sigma_prop ()                  (* Set *) 
+    | DOP0(Sort(Type(_))) -> build_sigma_type ()                   (* Type *)
     |   _     -> error "find_sigma_data"
 
 (* [make_tuple env na lind rterm rty]
@@ -698,8 +732,8 @@ let make_tuple sigma env na lind rterm rty =
     let a = type_of env sigma (Rel lind) in
     let p = DOP2(Lambda,a,
                  bind_ith (fst(lookup_rel lind env)) lind rty) in
-    (applist(get_pat exist_term,[a;p;(Rel lind);rterm]),
-     applist(get_pat sig_term,[a;p]))
+    (applist(exist_term,[a;p;(Rel lind);rterm]),
+     applist(sig_term,[a;p]))
   else
     (rterm,rty)
 
@@ -752,7 +786,7 @@ let sig_clausale_forme env sigma sort_of_ty siglen ty =
       let mv = new_meta() in
       let rty = applist(p,[DOP0(Meta mv)]) in
       let (rpat,headinfo,mvenv) = sigrec_clausale_forme (siglen-1) rty in
-      (applist(get_pat exist_term,[a;p;DOP0(Meta mv);rpat]),
+      (applist(exist_term,[a;p;DOP0(Meta mv);rpat]),
        headinfo,
        (mv,a)::mvenv)
   in

@@ -44,15 +44,16 @@ let make_module_marker = Stock.make_module_marker
 
 (* Squeletons *)
 let parse_squeleton s =
-  Astterm.interp_constr Evd.empty (Global.env()) (parse_constr s)
+  let c = Astterm.interp_constr Evd.empty (Global.env()) (parse_constr s) in
+  (collect_metas c, c)
 
-type marked_term = constr Stock.stocked
+type marked_term = (int list * constr) Stock.stocked
 
-let (squeleton_stock : constr Stock.stock) =
+let (squeleton_stock : (int list * constr) Stock.stock) =
   Stock.make_stock { name = "SQUELETON"; proc = parse_squeleton }
 
 let put_squel = Stock.stock squeleton_stock
-let get_squel = Stock.retrieve squeleton_stock
+let get_squel_core = Stock.retrieve squeleton_stock
 
 (* Second part : Given a term with second-order variables in it,
    represented by Meta's, and possibly applied using XTRA[$SOAPP] to
@@ -110,9 +111,11 @@ let memb_metavars m n =
     | (None, _)     -> true
     | (Some mvs, n) -> List.mem n mvs
 
+let eq_context ctxt1 ctxt2 = array_for_all2 eq_constr ctxt1 ctxt2
+
 exception PatternMatchingFailure
 
-let somatch metavars = 
+let somatch_core convert metavars = 
   let rec sorec stk sigma p t =
     let cT = whd_castapp t in
     match p,kind_of_term cT with
@@ -141,16 +144,13 @@ let somatch metavars =
       | PRef (RVar v1), IsVar v2 when v1 = v2 -> sigma
 
       | PRef (RConst (sp1,ctxt1)), IsConst (sp2,ctxt2) 
-	  when sp1 = sp2 && Array.length ctxt1 = Array.length ctxt2 ->
-	  array_fold_left2 (sorec stk) sigma ctxt1 ctxt2
+	  when sp1 = sp2 && eq_context ctxt1 ctxt2 -> sigma
 
       | PRef (RInd (sp1,ctxt1)), IsMutInd (sp2,ctxt2) 
-	  when sp1 = sp2 && Array.length ctxt1 = Array.length ctxt2 ->
-	  array_fold_left2 (sorec stk) sigma ctxt1 ctxt2
+	  when sp1 = sp2 && eq_context ctxt1 ctxt2 -> sigma
 
       | PRef (RConstruct (sp1,ctxt1)), IsMutConstruct (sp2,ctxt2) 
-	  when sp1 = sp2 && Array.length ctxt1 = Array.length ctxt2 ->
-	  array_fold_left2 (sorec stk) sigma ctxt1 ctxt2
+	  when sp1 = sp2 && eq_context ctxt1 ctxt2 -> sigma
 
       | PRel n1, IsRel n2 when n1 = n2 -> sigma
 
@@ -168,6 +168,11 @@ let somatch metavars =
       | PBinder(BLambda,na1,c1,d1), IsLambda(na2,c2,d2) ->
 	  sorec (na2::stk) (sorec stk sigma c1 c2) d1 d2
 
+      | PRef (RConst (sp1,ctxt1)), _ when convert <> None ->
+	  let (env,evars) = out_some convert in
+	  if is_conv env evars (mkConst (sp1,ctxt1)) cT then sigma
+	  else raise PatternMatchingFailure
+
       | _, (IsFix _ | IsMutCase _ | IsCoFix _) ->
 	  error "somatch: not implemented"
 
@@ -175,79 +180,14 @@ let somatch metavars =
 
     in 
     sorec [] []
-(*
-let somatch metavars = 
-  let rec sorec stk sigma p t =
-    let cP = whd_castapp p 
-    and cT = whd_castapp t in
-    match dest_soapp_operator cP with
-      | Some (n,ok_args) ->
-          if not (memb_metavars metavars n) then error "somatch";
-	  let frels = Intset.elements (free_rels cT) in
-	  if list_subset frels ok_args then 
-	    constrain (n,build_dlam ok_args stk cT) sigma
-	  else 
-	    error "somatch"
 
-      | None ->
-	  match (cP,cT) with
-       	    | (DOP0(Meta n),m) ->
-		if not (memb_metavars metavars n) then
-		  match m with
-		    | DOP0(Meta m_0) -> 
-			if n=m_0 then sigma else error "somatch"
-		    | _ -> error "somatch"
-		else
-		  let depth = List.length stk in
-		  let frels = Intset.elements (free_rels m) in
-        	  if List.for_all (fun i -> i > depth) frels then
-		    constrain (n,lift (-depth) m) sigma
-        	  else 
-		    error "somatch"
+let somatch = somatch_core None
 
-  	    | (VAR v1,VAR v2) ->
-		if v1 = v2 then sigma else error "somatch"
-		  
-  	    | (Rel n1,Rel n2) ->
-		if n1 = n2 then sigma else error "somatch"
+let dest_somatch n pat =
+  let mvs,m = get_pat pat in
+  let mvb = somatch (Some (list_uniquize mvs)) m n in
+  List.map (fun b -> List.assoc b mvb) mvs
 
-  	    | (DOP0 op1,DOP0 op2) ->
-		if op1 = op2 then sigma else error "somatch"
-
-  	    | (DOP1(op1,c1), DOP1(op2,c2)) ->
-		if op1 = op2 then sorec stk sigma c1 c2	else error "somatch"
-	       
-  	    | (DOP2(op1,c1,d1), DOP2(op2,c2,d2)) ->
-		if op1 = op2 then
-		  sorec stk (sorec stk sigma c1 c2) d1 d2
-		else 
-		  error "somatch"
-	       
-  	    | (DOPN(op1,cl1), DOPN(op2,cl2)) ->
-		if op1 = op2 & Array.length cl1 = Array.length cl2 then
-		  array_fold_left2 (sorec stk) sigma cl1 cl2
-		else 
-		  error "somatch"
-
-  	    | (DOPL(op1,cl1), DOPL(op2,cl2)) ->
-		if op1 = op2 & List.length cl1 = List.length cl2 then
-		  List.fold_left2 (sorec stk) sigma cl1 cl2
-		else 
-		  error "somatch"
-
-  	    | (DLAM(_,c1), DLAM(na,c2)) -> 
-		sorec (na::stk) sigma c1 c2
-		  
-  	    | (DLAMV(_,cl1), DLAMV(na,cl2)) ->
-		if Array.length cl1 = Array.length cl2 then
-		  array_fold_left2 (sorec (na::stk)) sigma cl1 cl2
-		else 
-		  error "somatch"
-		    
-  	    | _ -> error "somatch"
-    in 
-    sorec [] []
-*)
 let somatches n pat =
   let (_,m) = get_pat pat in 
   try 
@@ -255,19 +195,25 @@ let somatches n pat =
   with e when Logic.catchable_exception e -> 
     false
 
-let dest_somatch n pat =
+let dest_somatch_conv env sigma n pat =
   let mvs,m = get_pat pat in
-  let mvb = somatch (Some (list_uniquize mvs)) m n in
-  List.map (fun b -> List.assoc b mvb) mvs
+  somatch_core (Some (env,sigma)) (Some (list_uniquize mvs)) m n
 
-let newsomatch n pat = let _,m = get_pat pat in somatch None m n
+let somatches_conv env sigma n pat =
+  try
+    let _ = dest_somatch_conv env sigma n pat in true 
+  with e when Logic.catchable_exception e -> 
+    false
 
 let soinstance squel arglist =
-  let c = get_squel squel in
-  let mvs = collect_metas c in
+  let mvs,c = get_squel_core squel in
   let mvb = List.combine mvs arglist in 
   Sosub.soexecute (Reduction.strong (fun _ _ -> Reduction.whd_meta mvb) 
 		     empty_env Evd.empty c)
+
+let get_squel m =
+  let mvs, c = get_squel_core m in
+  if mvs = [] then c else error "Not a closed squeleton, use 'soinstance'"
 
 (* I implemented the following functions which test whether a term t
    is an inductive but non-recursive type, a general conjuction, a
@@ -425,11 +371,11 @@ let rec pattern_of_constr t =
 	PApp (pattern_of_constr f,
 	      Array.of_list (List.map pattern_of_constr args))
     | IsConst (cst_sp,ctxt)         ->
-	PRef (RConst (cst_sp,Array.map pattern_of_constr ctxt))
+	PRef (RConst (cst_sp, ctxt))
     | IsMutInd (ind_sp,ctxt)        ->
-	PRef (RInd (ind_sp,Array.map pattern_of_constr ctxt))
+	PRef (RInd (ind_sp, ctxt))
     | IsMutConstruct (cstr_sp,ctxt) ->
-	PRef (RConstruct (cstr_sp,Array.map pattern_of_constr ctxt))
+	PRef (RConstruct (cstr_sp, ctxt))
     | IsMutCase _ | IsFix _ | IsCoFix _ ->
 	error "pattern_of_constr: destructors currently not supported"
     | IsEvar _ -> error "pattern_of_constr: an existential variable remains"

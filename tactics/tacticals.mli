@@ -53,7 +53,7 @@ val matches      : goal sigma -> constr -> marked_term -> bool
 val dest_match   : goal sigma -> constr -> marked_term -> constr list
 *)
 (* The second argument is the pattern *)
-val matches      : goal sigma -> constr -> constr -> bool
+val matches      : goal sigma -> constr -> marked_pattern -> bool
 val dest_match   : goal sigma -> constr -> constr -> constr list
 
 val allHyps    : goal sigma -> clause list

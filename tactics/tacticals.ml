@@ -118,12 +118,9 @@ let clause_type cls gl =
 
 (* Functions concerning matching of clausal environments *)
 
-let matches gls n m =
+let matches gls n pat =
   let (wc,_) = startWalk gls in 
-  try 
-    let _ = Clenv.unify_0 [] wc m n in true 
-  with e when Logic.catchable_exception e -> 
-    false
+  somatches_conv (w_env wc) (w_Underlying wc) n pat
 
 let dest_match gls n m =
   let mvs     = collect_metas m in

@@ -144,12 +144,15 @@ let transform_rec loc env sigma cl (ct,pt) =
 
 (***********************************************************************)
 
+(*
 let ctxt_of_ids ids =
   Array.map
     (function
        | RRef (_,RVar id) -> VAR id
        | _ -> error "pretyping: arbitrary subst of ref not implemented")
     ids
+*)
+let ctxt_of_ids cl = cl
 
 let mt_evd = Evd.empty
 

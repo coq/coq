@@ -50,6 +50,7 @@ let with_coercions f = with_option print_coercions f
 (**********************************************************************)
 (* conversion of references                                           *)
 
+(*
 let ids_of_rctxt ctxt =
   Array.to_list
     (Array.map
@@ -59,6 +60,7 @@ let ids_of_rctxt ctxt =
        error
        "Termast: arbitrary substitution of references not yet implemented")
      ctxt)
+*)
 
 let ids_of_ctxt ctxt =
   Array.to_list
@@ -122,14 +124,14 @@ let ast_of_inductive_ref ((sp,tyi) as ind_sp,ids) =
 let ast_of_inductive (ev,ctxt) = ast_of_inductive_ref (ev,ids_of_ctxt ctxt)
 
 let ast_of_ref = function
-  | RConst (sp,ctxt) -> ast_of_constant_ref (sp,ids_of_rctxt ctxt)
+  | RConst (sp,ctxt) -> ast_of_constant_ref (sp,ids_of_ctxt ctxt)
   | RAbst (sp) ->
       ope("ABST", (path_section dummy_loc sp)
 	    ::(List.map ast_of_ident (* on triche *) []))
-  | RInd (ind,ctxt) -> ast_of_inductive_ref (ind,ids_of_rctxt ctxt)
-  | RConstruct (cstr,ctxt) -> ast_of_constructor_ref (cstr,ids_of_rctxt ctxt)
+  | RInd (ind,ctxt) -> ast_of_inductive_ref (ind,ids_of_ctxt ctxt)
+  | RConstruct (cstr,ctxt) -> ast_of_constructor_ref (cstr,ids_of_ctxt ctxt)
   | RVar id -> nvar (string_of_id id)
-  | REVar (ev,ctxt) -> ast_of_existential_ref (ev,ids_of_rctxt ctxt)
+  | REVar (ev,ctxt) -> ast_of_existential_ref (ev,ids_of_ctxt ctxt)
   | RMeta n -> ope("META",[num n])
 
 (**********************************************************************)

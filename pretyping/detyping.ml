@@ -315,17 +315,13 @@ let rec detype avoid env t =
     | IsAppL (f,args) ->
 	RApp (dummy_loc,detype avoid env f,List.map (detype avoid env) args)
     | IsConst (sp,cl) ->
-	RRef(dummy_loc,RConst(sp,Array.map (detype avoid env) cl))
+	RRef(dummy_loc,RConst(sp,cl))
     | IsEvar (ev,cl) ->
-	RRef(dummy_loc,REVar(ev,Array.map (detype avoid env) cl))
+	RRef(dummy_loc,REVar(ev,cl))
     | IsAbst (sp,cl) -> 
 	anomaly "bdize: Abst should no longer occur in constr"
-    | IsMutInd (ind_sp,cl) ->
-	let ctxt = Array.map (detype avoid env) cl in
-	RRef (dummy_loc,RInd (ind_sp,ctxt))
-    | IsMutConstruct (cstr_sp,cl) ->
-	let ctxt = Array.map (detype avoid env) cl in
-	RRef (dummy_loc,RConstruct (cstr_sp,ctxt))
+    | IsMutInd (ind_sp,cl) -> RRef (dummy_loc,RInd (ind_sp,cl))
+    | IsMutConstruct (cstr_sp,cl) -> RRef (dummy_loc,RConstruct (cstr_sp,cl))
     | IsMutCase (annot,p,c,bl) ->
 	let synth_type = synthetize_type () in
 	let tomatch = detype avoid env c in

@@ -98,10 +98,37 @@ i*)
 (*i Devrait être une fonction de filtrage externe i*)
 val somatch      : int list option -> Rawterm.constr_pattern -> constr -> (int * constr) list
 
-val somatches    : constr -> marked_pattern -> bool
+
+exception PatternMatchingFailure
+
+(* [dest_somatch c pat] matches [c] against [pat] and returns the resulting
+   assignment of metavariables; it raises [PatternMatchingFailure] if
+   not matchable *)
+
 val dest_somatch : constr -> marked_pattern -> constr list
 
+(* [somatches c pat] just tells if [c] matches against [pat] *)
+
+val somatches    : constr -> marked_pattern -> bool
+
+
+(* [dest_somatch_conv env sigma] matches up to conversion in
+   environment [(env,sgima)] when constants in pattern are concerned;
+   it raises [PatternMatchingFailure] if not matchable *)
+
+val dest_somatch_conv :
+  Environ.env -> 'a evar_map -> constr -> marked_pattern -> (int * constr) list
+
+(* [somatches_conv env sigma c pat] tells if [c] matches against [pat]
+   up to conversion for constants in patterns *)
+
+val somatches_conv :
+  Environ.env -> 'a evar_map -> constr -> marked_pattern -> bool
+
 val soinstance   : marked_term -> constr list -> constr 
+
+(* This works only for squeleton without metavariables *)
+val get_squel    : marked_term -> constr 
 
 val is_imp_term : constr -> bool
 

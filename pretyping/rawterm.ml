@@ -32,8 +32,9 @@ type 'ctxt reference =
   | REVar of int * 'ctxt
   | RMeta of int
 
+(*i Pas beau ce constr dans rawconstr, mais mal compris ce ctxt des ref i*)
 type rawconstr = 
-  | RRef of loc * rawconstr array reference
+  | RRef of loc * Term.constr array reference
   | RApp of loc * rawconstr * rawconstr list
   | RBinder of loc * binder_kind * name * rawconstr * rawconstr
   | RCases of loc * Term.case_style * rawconstr option * rawconstr list * 
@@ -73,7 +74,7 @@ let loc_of_rawconstr = function
   | RCast (loc,_,_) -> loc
 
 type constr_pattern =
-  | PRef of constr_pattern array reference
+  | PRef of Term.constr array reference
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
   | PSoApp of int * int list
