@@ -15,6 +15,7 @@ open Names
 (* Identifiers *)
 
 let translate_v7_string = function 
+  (* ZArith *)
   | "double_moins_un" -> "double_minus_one"
   | "double_moins_deux" -> "double_minus_two"
   | "entier" -> "N"
@@ -34,6 +35,12 @@ let translate_v7_string = function
   | "Un_suivi_de" -> "double_plus_one"
   | "Zero_suivi_de" -> "double"
   | "is_double_moins_un" -> "is_double_minus_one"
+  (* Reals *)
+  | s when String.length s >= 7 & 
+      let s' = String.sub s 0 7 in
+      (s' = "unicite" or s' = "unicity") ->
+      "uniqueness"^(String.sub s 7 (String.length s - 7))
+  (* Default *)
   | x -> x
 
 let id_of_v7_string s =
