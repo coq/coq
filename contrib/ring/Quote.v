@@ -79,7 +79,7 @@ Implicit Arguments Off.
 
 Declare ML Module "quote".
 
-Grammar tactic simple_tactic := 
+Grammar tactic simple_tactic : Ast := 
   quote [ "Quote" identarg($f) ] -> [(Quote $f)]
 | quote_lc [ "Quote" identarg($f) "[" ne_identarg_list($lc) "]"] ->  
-                   [(Quote $f ($LIST $lc))].
+                   [ (Quote $f ($LIST $lc)) ].
