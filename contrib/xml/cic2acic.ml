@@ -261,10 +261,20 @@ let typeur sigma metamap =
   and sort_of env t =
     match Term.kind_of_term t with
     | T.Cast (c,s) when T.isSort s -> family_of_term s
-    | T.Sort (T.Prop c) -> Coq_sort (if c = T.Pos then T.InSet else T.InProp)
+    | T.Sort (T.Prop c) -> Coq_sort T.InType
     | T.Sort (T.Type u) -> Coq_sort T.InType
     | T.Prod (name,t,c2) ->
-       sort_of (Environ.push_rel (name,None,t) env) c2
+       (match sort_of env t,sort_of (Environ.push_rel (name,None,t) env) c2 with
+          | _, (Coq_sort T.InProp as s) -> s
+          | Coq_sort T.InProp, (Coq_sort T.InSet as s)
+          | Coq_sort T.InSet, (Coq_sort T.InSet as s) -> s
+          | Coq_sort T.InType, (Coq_sort T.InSet as s)
+          | CProp, (Coq_sort T.InSet as s) when
+              Environ.engagement env = Some Environ.ImpredicativeSet -> s
+          | Coq_sort T.InType, Coq_sort T.InSet
+          | CProp, Coq_sort T.InSet -> Coq_sort T.InType
+          | _, (Coq_sort T.InType as s) -> s (*Type Univ.dummy_univ*)
+          | _, (CProp as s) -> s)
     | T.App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
     | T.Lambda _ | T.Fix _ | T.Construct _ ->
         Util.anomaly "sort_of: Not a type (1)"
@@ -284,6 +294,7 @@ let typeur sigma metamap =
                                                                                 
   in type_of, sort_of, sort_family_of
 
+  let get_type_of env sigma c = let f,_,_ = typeur sigma [] in f env c
   let get_sort_family_of env sigma c = let _,_,f = typeur sigma [] in f env c
 
  end
@@ -359,14 +370,12 @@ let acic_of_cic_context' computeinnertypes seed ids_to_terms constr_to_ids
       in
        let ainnertypes,innertype,innersort,expected_available =
         let {D.synthesized = synthesized; D.expected = expected} =
-         if computeinnertypes
-          || (match Term.kind_of_term tt with Term.Sort _ -> false | _ -> true)
-         then
+         if computeinnertypes then
 try
           Acic.CicHash.find terms_to_types tt
 with _ ->
 (*CSC: Warning: it really happens, for example in Ring_theory!!! *)
-Pp.ppnl (Pp.(++) (Pp.str "BUG: this subterm was not visited during the double-type-inference: ") (Printer.prterm tt)) ; assert false (* buco nella double-type-inference *) ; {D.synthesized = Reductionops.nf_beta (Retyping.get_type_of env evar_map (Evarutil.refresh_universes tt)) ; D.expected = None}
+Pp.ppnl (Pp.(++) (Pp.str "BUG: this subterm was not visited during the double-type-inference: ") (Printer.prterm tt)) ; assert false
          else
           (* We are already in an inner-type and Coscoy's double *)
           (* type inference algorithm has not been applied.      *)
@@ -374,7 +383,7 @@ Pp.ppnl (Pp.(++) (Pp.str "BUG: this subterm was not visited during the double-ty
           (* type inference on an already inferred type.           *)
           {D.synthesized =
             Reductionops.nf_beta
-             (Retyping.get_type_of env evar_map
+             (CPropRetyping.get_type_of env evar_map
               (Evarutil.refresh_universes tt)) ;
            D.expected = None}
         in
@@ -477,7 +486,7 @@ print_endline "PASSATO" ; flush stdout ;
              (* Not enough arguments provided. We must eta-expand! *)
              let un_args,_ =
               T.decompose_prod_n uninst_vars_length
-               (Retyping.get_type_of env evar_map tt)
+               (CPropRetyping.get_type_of env evar_map tt)
              in
               let eta_expanded =
                let arguments =
@@ -542,7 +551,7 @@ print_endline "PASSATO" ; flush stdout ;
               in
                Hashtbl.add ids_to_inner_sorts fresh_id''
                 (string_of_sort innertype) ;
-               let sourcetype = Retyping.get_type_of env evar_map s in
+               let sourcetype = CPropRetyping.get_type_of env evar_map s in
                 Hashtbl.add ids_to_inner_sorts (source_id_of_id fresh_id'')
                  (string_of_sort sourcetype) ;
                let new_passed_prods =
@@ -577,7 +586,7 @@ print_endline "PASSATO" ; flush stdout ;
                   N.Name (Nameops.next_name_away n (Termops.ids_of_context env))
               in
                Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-               let sourcetype = Retyping.get_type_of env evar_map s in
+               let sourcetype = CPropRetyping.get_type_of env evar_map s in
                 Hashtbl.add ids_to_inner_sorts (source_id_of_id fresh_id'')
                  (string_of_sort sourcetype) ;
                let father_is_lambda =
@@ -625,7 +634,7 @@ print_endline "PASSATO" ; flush stdout ;
                Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
                let sourcesort =
                 get_sort_family_of env evar_map
-                 (Retyping.get_type_of env evar_map s)
+                 (CPropRetyping.get_type_of env evar_map s)
                in
                 Hashtbl.add ids_to_inner_sorts (source_id_of_id fresh_id'')
                  (string_of_sort_family sourcesort) ;
