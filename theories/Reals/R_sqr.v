@@ -168,7 +168,6 @@ Intros; Unfold Rsqr.
 Rewrite Rinv_Rmult; Try Reflexivity Orelse Assumption.
 Qed.
 
-Import R_scope.
 Lemma canonical_Rsqr : (a:nonzeroreal;b,c,x:R) ``a*(Rsqr x)+b*x+c == a* (Rsqr (x+b/(2*a))) + (4*a*c - (Rsqr b))/(4*a)``.
 Intros.
 Rewrite Rsqr_plus.
