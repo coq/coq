@@ -19,6 +19,7 @@ type mutual_inductive_packet = {
   mind_typename : identifier;
   mind_lc : constr;
   mind_arity : typed_type;
+  mind_nrealargs : int;
   mind_kelim : sorts list;
   mind_listrec : (recarg list) array;
   mind_finite : bool }
@@ -44,6 +45,7 @@ type mind_specif = {
 let mis_ntypes mis = mis.mis_mib.mind_ntypes
 let mis_nconstr mis = Array.length (mis.mis_mip.mind_consnames)
 let mis_nparams mis = mis.mis_mib.mind_nparams
+let mis_nrealargs mis = mis.mis_mip.mind_nrealargs
 let mis_kelim mis = mis.mis_mip.mind_kelim
 let mis_recargs mis =
   Array.map (fun mip -> mip.mind_listrec) mis.mis_mib.mind_packets
@@ -69,8 +71,6 @@ type inductive_summary = {
   nparams : int;
   nrealargs : int;
   nconstr : int;
-  make_arity : inductive -> constr list -> (name * constr) list * sorts;
-  make_constrs : inductive -> constr list -> constructor_summary array
 }
 
 let is_recursive listind = 
@@ -87,6 +87,17 @@ let mis_is_recursive mis =
   is_recursive (interval 0 ((mis_ntypes mis)-1)) (mis_recarg mis)
 
 let mind_nth_type_packet mib n = mib.mind_packets.(n)
+
+(* Annotation for cases *)
+let make_case_info mis style pats_source =
+  let constr_lengths = Array.map List.length (mis_recarg mis) in
+  let indsp = (mis.mis_sp,mis.mis_tyi) in
+  let print_info =
+    (indsp,mis_consnames mis,mis.mis_mip.mind_nrealargs,style,pats_source) in
+  (constr_lengths,print_info)
+
+let make_default_case_info mis =
+  make_case_info mis None (Array.init (mis_nconstr mis) (fun _ -> RegularPat))
 
 (*s Declaration. *)
 

@@ -21,6 +21,7 @@ type mutual_inductive_packet = {
   mind_typename : identifier;
   mind_lc : constr;
   mind_arity : typed_type;
+  mind_nrealargs : int;
   mind_kelim : sorts list;
   mind_listrec : (recarg list) array;
   mind_finite : bool }
@@ -52,6 +53,7 @@ type mind_specif = {
 val mis_ntypes : mind_specif -> int
 val mis_nconstr : mind_specif -> int
 val mis_nparams : mind_specif -> int
+val mis_nrealargs : mind_specif -> int
 val mis_kelim : mind_specif -> sorts list
 val mis_recargs : mind_specif -> (recarg list) array array
 val mis_recarg : mind_specif -> (recarg list) array
@@ -62,6 +64,10 @@ val mis_consnames : mind_specif -> identifier array
 
 val mind_nth_type_packet : 
   mutual_inductive_body -> int -> mutual_inductive_packet
+
+val make_case_info : mind_specif -> case_style option -> pattern_source array 
+      -> case_info
+val make_default_case_info : mind_specif -> case_info
 
 (*s This type gathers useful informations about some instance of a constructor
     relatively to some implicit context (the current one)
@@ -87,16 +93,6 @@ type constructor_summary = {
    [Hnf (fullmind)] = [DOPN(AppL,[|MutInd mind;..params..;..realargs..|])] \par
    with [mind]  = [((sp,i),localvars)] for some [sp, i, localvars].
 
-   [make_constrs] is a receipt to build constructor instantiated by
-   local vars and params; it is a closure which does not need to be
-   lifted; it must be applied to [mind] and [params] to get the constructors
-   correctly lifted and instantiated
-
-   [make_arity] is a receipt to build the arity instantiated by local
-   vars and by params; it is a closure which does not need to be
-   lifted. Arity is pre-decomposed into its real parameters and its
-   sort; it must be applied to [mind] and [params] to get the arity
-   correctly lifted and instantiated
  *)
 
 type inductive_summary = {
@@ -107,8 +103,6 @@ type inductive_summary = {
   nparams : int;
   nrealargs : int;
   nconstr : int;
-  make_arity : inductive -> constr list -> (name * constr) list * sorts;
-  make_constrs : inductive -> constr list -> constructor_summary array
 }
 
 (*s Declaration of inductive types. *)
