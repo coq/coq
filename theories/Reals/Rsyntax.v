@@ -230,7 +230,7 @@ Notation "x < y < z" := (Rlt x y)/\(Rlt y z)
 Notation "x < y <= z" := (Rlt x y)/\(Rle y z)
   (at level 5, y at level 4) : R_scope
   V8only (at level 50, y at level 49, no associativity).
-Notation "x <> y" := ~(eqT R x y) (at level 5) : R_scope.
+(*Notation "x <> y" := ~(eqT R x y) (at level 5) : R_scope.*)
 Notation "/ x" := (Rinv x) (at level 0): R_scope
   V8only (at level 30, left associativity).
 
