@@ -799,7 +799,10 @@ let pr_rule = function
   | Context ctxt -> pr_ctxt ctxt
   | Local_constraints lc ->
       (* This is internal tactic and cannot be replayed at user-level *)
-      [< (* 'sTR"Local constraint change" *) >]
+      (* [< 'sTR"Local constraint change" >] *)
+      (* Use Idtac instead *)
+      (* To put nothing does not work, because it still writes a single dot *)
+      [< 'sTR"Idtac" >]
 
 exception Different
 
