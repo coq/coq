@@ -8,7 +8,7 @@
 
 (* $Id$ *)
 
-Ltac ccsolve :=
+Ltac CCsolve :=
   repeat
    match goal with
    | H:?X1 |- ?X2 =>
