@@ -1535,6 +1535,7 @@ let xlate_vernac =
   | VernacLocate(LocateTerm id) -> CT_locate(reference_to_ct_ID id)
   | VernacLocate(LocateLibrary id) -> CT_locate_lib(reference_to_ct_ID id)
   | VernacLocate(LocateFile s) -> CT_locate_file(CT_string s)
+  | VernacLocate(LocateNotation _) -> xlate_error "TODO: Locate Notation"
   | (VernacGlobalCheck _|VernacPrintOption _|
      VernacMemOption (_, _)|VernacRemoveOption (_, _)|VernacAddOption (_, _)|
      VernacSetOption (_, _)|VernacUnsetOption _|
