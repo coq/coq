@@ -396,7 +396,7 @@ let rec pr_atom0 = function
   (* Main tactic printer *)
 and pr_atom1 = function
   | TacExtend (_,s,l) -> pr_extend pr_constr pr_tac s l
-  | TacAlias (s,l,_) -> pr_extend pr_constr pr_tac s (List.map snd l)
+  | TacAlias (_,s,l,_) -> pr_extend pr_constr pr_tac s (List.map snd l)
 
   (* Basic tactics *)
   | TacIntroPattern [] as t -> pr_atom0 t

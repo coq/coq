@@ -428,7 +428,7 @@ let make_vprod_item univ = function
 
 let add_tactic_entries gl =
   let univ = get_univ "tactic" in
-  let make_act s tac loc l = Tacexpr.TacAlias (s,l,tac) in
+  let make_act s tac loc l = Tacexpr.TacAlias (loc,s,l,tac) in
   let f (s,l,tac) =
     make_rule univ (make_act s tac) (make_vprod_item "tactic") l in
   let rules = List.map f gl in

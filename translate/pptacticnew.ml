@@ -202,7 +202,7 @@ let rec pr_atom0 env = function
 and pr_atom1 env = function
   | TacExtend (_,s,l) ->
       pr_extend (pr_constr env) (pr_tac env) s l
-  | TacAlias (s,l,_) ->
+  | TacAlias (_,s,l,_) ->
       pr_extend (pr_constr env) (pr_tac env) s (List.map snd l)
 
   (* Basic tactics *)

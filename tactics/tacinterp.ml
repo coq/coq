@@ -414,9 +414,10 @@ let intern_quantified_hypothesis ist x =
   x
 
 let intern_constr {ltacvars=lfun; metavars=lmatch; gsigma=sigma; genv=env} c =
-  let c' =
-    Constrintern.for_grammar (Constrintern.interp_rawconstr_gen false
-      sigma env [] (Some lmatch) (fst lfun,[])) c
+  let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
+  let c' = 
+    warn (Constrintern.interp_rawconstr_gen false sigma env []
+           (Some lmatch) (fst lfun,[])) c
   in (c',if !strict_check then None else Some c)
 
 (* Globalize bindings *)
@@ -652,11 +653,11 @@ let rec intern_atomic lf ist x =
   | TacExtend (_loc,opn,l) ->
       let _ = lookup_tactic opn in
       TacExtend (loc,opn,List.map (intern_genarg ist) l)
-  | TacAlias (s,l,body) ->
+  | TacAlias (loc,s,l,body) ->
       let (l1,l2) = ist.ltacvars in
       let ist' = { ist with ltacvars = ((List.map fst l)@l1,l2) } in
       TacAlias
-	(s,List.map (fun (id,a) -> (strip_meta id,intern_genarg ist a)) l,
+	(loc,s,List.map (fun (id,a) -> (strip_meta id,intern_genarg ist a)) l,
 	intern_tactic ist' body)
 
 and intern_tactic ist tac = (snd (intern_tactic_seq ist tac) : glob_tactic_expr)
@@ -1720,7 +1721,7 @@ and interp_atomic ist gl = function
   (* For extensions *)
   | TacExtend (loc,opn,l) ->
       fun gl -> vernac_tactic (opn,List.map (interp_genarg ist gl) l) gl
-  | TacAlias (_,l,body) -> fun gl ->
+  | TacAlias (loc,_,l,body) -> fun gl ->
     let f x = match genarg_tag x with
     | IdentArgType -> 
 	let id = out_gen globwit_ident x in
@@ -1737,7 +1738,8 @@ and interp_atomic ist gl = function
     | _ -> failwith "This generic type is not supported in alias"
     in
     let lfun = (List.map (fun (x,c) -> (x,f c)) l)@ist.lfun in
-    tactic_of_value (val_interp { ist with lfun=lfun } gl body) gl
+    let v = locate_tactic_call loc (val_interp { ist with lfun=lfun } gl body)
+    in tactic_of_value v gl
 
 (* Initial call for interpretation *)
 let interp_tac_gen lfun lmatch debug t gl = 
@@ -1932,8 +1934,8 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* For extensions *)
   | TacExtend (_loc,opn,l) ->
       TacExtend (loc,opn,List.map (subst_genarg subst) l)
-  | TacAlias (s,l,body) ->
-      TacAlias (s,List.map (fun (id,a) -> (id,subst_genarg subst a)) l,subst_tactic subst body)
+  | TacAlias (_,s,l,body) ->
+      TacAlias (loc,s,List.map (fun (id,a) -> (id,subst_genarg subst a)) l,subst_tactic subst body)
 
 and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacAtom (_loc,t) -> TacAtom (loc, subst_atomic subst t)

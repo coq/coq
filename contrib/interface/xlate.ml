@@ -1039,7 +1039,7 @@ and xlate_tac =
 		(out_gen (wit_list0 rawwit_constr) arg)))
     | TacExtend (_,id, l) ->
      CT_user_tac (CT_ident id, CT_targ_list (List.map coerce_genarg_to_TARG l))
-    | TacAlias (_, _, _) -> xlate_error "TODO LATER: aliases"
+    | TacAlias _ -> xlate_error "TODO LATER: aliases"
 
 and coerce_genarg_to_TARG x =
  match Genarg.genarg_tag x with
