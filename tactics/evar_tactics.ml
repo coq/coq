@@ -45,7 +45,9 @@ let instantiate n rawc ido gl =
 		  (match decl with 
 		       (_,Some body,_) -> evars_of wc.sigma body
 		     | _ -> error "not a let .. in  hypothesis") in
-    if List.length evl < n then error "not enough uninstantiated evars";
+    if List.length evl < n then
+      error "not enough uninstantiated existential variables";
+    if n <= 0 then error "incorrect existential variable index";
     let ev,_ =  destEvar (List.nth evl (n-1)) in
     let wc' = w_refine ev rawc wc in
       Tacticals.tclIDTAC {gl with sigma = wc'.sigma}
