@@ -328,8 +328,11 @@ let descend_then sigma env head dirn =
   (dirn_nlams,
    dirn_env,
    (fun dirnval (dfltval,resty) ->
-      let arign,_ = get_arity env indf in
-      let p = it_mkLambda_or_LetIn (lift mip.mind_nrealargs resty) arign in
+      let arsign,_ = get_arity env indf in
+      let depind = build_dependent_inductive env indf in
+      let deparsign = (Anonymous,None,depind)::arsign in
+      let p =
+	it_mkLambda_or_LetIn (lift (mip.mind_nrealargs+1) resty) deparsign in
       let build_branch i =
 	let result = if i = dirn then dirnval else dfltval in
 	it_mkLambda_or_LetIn_name env result cstr.(i-1).cs_args in
@@ -372,7 +375,9 @@ let construct_discriminator sigma env dirn c sort =
   let (mib,mip) = lookup_mind_specif env ind in
   let arsign,arsort = get_arity env indf in
   let (true_0,false_0,sort_0) = build_coq_True(),build_coq_False(),Prop Null in
-  let p = it_mkLambda_or_LetIn (mkSort sort_0) arsign in
+  let depind = build_dependent_inductive env indf in
+  let deparsign = (Anonymous,None,depind)::arsign in
+  let p = it_mkLambda_or_LetIn (mkSort sort_0) deparsign in
   let cstrs = get_constructors env indf in
   let build_branch i =
     let endpt = if i = dirn then true_0 else false_0 in
