@@ -301,15 +301,16 @@ let extract_open_proof sigma pf =
             (ids_of_named_context goal.evar_hyps) in
 	let sorted_rels =
 	  Sort.list (fun (n1,_) (n2,_) -> n1 > n2 ) visible_rels in
+        let sorted_env =
+          List.map (fun (n,id) -> (n,Sign.lookup_named id goal.evar_hyps))
+            sorted_rels in
 	let abs_concl =
-          List.fold_right
-            (fun (_,id) concl ->
-	       let (_,c,ty) = Sign.lookup_named id goal.evar_hyps in
-	       mkNamedProd_or_LetIn (id,c,ty) concl)
-            sorted_rels goal.evar_concl	in
+          List.fold_right (fun (_,decl) c -> mkNamedProd_or_LetIn decl c)
+            sorted_env goal.evar_concl	in
+        let inst = List.filter (fun (_,(_,b,_)) -> b = None) sorted_env in
         let meta = next_meta () in
 	open_obligations := (meta,abs_concl):: !open_obligations;
-	applist (mkMeta meta, List.map (fun (n,_) -> mkRel n) sorted_rels) 
+	applist (mkMeta meta, List.map (fun (n,_) -> mkRel n) inst) 
 	  
     | _ -> anomaly "Bug : a case has been forgotten in proof_extractor"
   in
