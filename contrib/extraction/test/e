@@ -1,0 +1,17 @@
+
+(* To trace Extraction, you can use this file via:  *)
+(*               Drop. #use "e";;                   *) 
+(*                                                  *)
+
+#use "include";;
+open Extraction;;
+open Miniml;;
+#trace extract_declaration;;
+go();;
+
+
+
+
+
+
+
