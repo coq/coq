@@ -7,6 +7,8 @@
 (***********************************************************************)
 (*i $Id$ i*)
 
+Require Export BinInt.
+Require Export Zcompare.
 Require Export Zorder.
 Require Export Zmin.
 Require Export Zabs.
@@ -69,7 +71,7 @@ Notation Zle_refl := Zle_refl.
 Notation Zle_trans := Zle_trans.
 Notation Zle_n_Sn := Zle_n_Sn.
 Notation Zle_n_S := Zle_n_S.
-Notation Zs_pred := Zs_pred.
+Notation Zs_pred := Zs_pred. (* BinInt *)
 Notation Zle_pred_n := Zle_pred_n.
 Notation Zle_trans_S := Zle_trans_S.
 Notation Zle_Sn_n := Zle_Sn_n.
@@ -141,7 +143,9 @@ Notation Zmult_1_n := Zmult_1_n.
 Notation Zmult_n_1 := Zmult_n_1.
 Notation Zmult_Sm_n := Zmult_Sm_n.
 Notation Zmult_Zplus_distr := Zmult_plus_distr_r.
+Export BinInt.
 Export Zorder.
 Export Zmin.
 Export Zabs.
+Export Zcompare.
 ].

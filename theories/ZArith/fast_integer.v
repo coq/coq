@@ -16,6 +16,7 @@ Require BinPos.
 Require BinNat.
 Require BinInt.
 Require Zcompare.
+Require Mult.
 
 V7only [
 (* Defs and ppties on positive, entier and Z, previously in fast_integer *)
@@ -80,10 +81,7 @@ Notation simpl_add_carry_r := simpl_add_carry_r.
 Notation simpl_add_l := simpl_add_l.
 Notation simpl_add_carry_l := simpl_add_carry_l.
 Notation add_assoc := add_assoc.
-Notation xO_xI_plus_double_moins_un := xO_xI_plus_double_moins_un.
-Notation double_moins_un_plus_xO_double_moins_un := double_moins_un_plus_xO_double_moins_un.
 Notation add_xI_double_moins_un := add_xI_double_moins_un.
-Notation double_moins_un_add := double_moins_un_add.
 Notation add_x_x := add_x_x.
 Notation ZS := ZS.
 Notation US := US.
@@ -168,7 +166,7 @@ Notation Zplus_simpl := Zplus_simpl.
 Notation Zmult_sym := Zmult_sym.
 Notation Zmult_assoc := Zmult_assoc.
 Notation Zmult_one := Zmult_one.
-Notation lt_mult_left := lt_mult_left.
+Notation lt_mult_left := lt_mult_left. (* Mult*)
 Notation Zero_mult_left := Zero_mult_left.
 Notation Zero_mult_right := Zero_mult_right.
 Notation Zopp_Zmult := Zopp_Zmult.
@@ -189,4 +187,5 @@ Export BinPos.
 Export BinNat.
 Export BinInt.
 Export Zcompare.
+Export Mult.
 ].
