@@ -537,7 +537,7 @@ let push_phrase start_of_phrase_mark end_of_phrase_mark ast =
   in
   push x;
   match snd ast with
-    | VernacEndProof (_, None) -> update_on_end_of_proof ()
+    | VernacEndProof (Proved (_, None)) -> update_on_end_of_proof ()
     | VernacEndSegment id -> update_on_end_of_segment id
     | _ -> ()
 
@@ -545,7 +545,7 @@ let repush_phrase x =
   let x = { x with reset_info = Coq.compute_reset_info (snd x.ast) } in
   push x;
   match snd x.ast with
-    | VernacEndProof (_, None) -> update_on_end_of_proof ()
+    | VernacEndProof (Proved (_, None)) -> update_on_end_of_proof ()
     | VernacEndSegment id -> update_on_end_of_segment id
     | _ -> ()
 
