@@ -1201,10 +1201,10 @@ error message:
 
 \begin{coq_eval}
 Set Printing Depth 50.
-\end{coq_eval}
-\begin{coq_example}
 (********** The following is not correct and should produce **********)
 (*********      Error: Recursive call to wrongplus ...      **********)
+\end{coq_eval}
+\begin{coq_example}
 Fixpoint wrongplus (n m:nat) {struct n} : nat :=
   match m with
   | O => n
@@ -1317,10 +1317,10 @@ function does not satisfy the guard condition:
 
 \begin{coq_eval}
 Set Printing Depth 50.
-\end{coq_eval}
-\begin{coq_example*}
 (********** The following is not correct and should produce **********)
 (***************** Error: Unguarded recursive call *******************)
+\end{coq_eval}
+\begin{coq_example*}
 CoFixpoint filter (p:nat -> bool) (s:Stream) : Stream :=
   if p (hd s) then Seq (hd s) (filter p (tl s)) else filter p (tl s).
 \end{coq_example*}

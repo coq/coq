@@ -1822,7 +1822,7 @@ As a consequence, {\tt eauto} can solve such a goal:
 
 \begin{coq_example}
 Hints Resolve ex_intro.
-Goal forall P:nat -> Prop, P 0 ->  EX n : _ | P n.
+Goal forall P:nat -> Prop, P 0 ->  exists n, P n.
 eauto.
 \end{coq_example}
 \begin{coq_eval}

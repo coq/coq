@@ -651,11 +651,10 @@ parameters are applied in the correct manner in each recursive call.
 In particular, the following definition will not be accepted because 
 there is an occurrence of \List\ which is not applied to the parameter
 variable:
-% (********** The following is not correct and should produce **********)
-% (********* Error: The 1st argument of list' must be A in ... *********)
-% (* Just to adjust the prompt: *) 
 \begin{coq_eval}
 Set Printing Depth 50.
+(********** The following is not correct and should produce **********)
+(********* Error: The 1st argument of list' must be A in ... *********)
 \end{coq_eval}
 \begin{coq_example}
 Inductive list' (A:Set) : Set :=
@@ -813,12 +812,12 @@ The following declaration introduces the second-order existential
 quantifier $\exists X.P(X)$.
 \begin{coq_example*}
 Inductive exProp (P:Prop->Prop) : Prop 
-  := exP_intro : forall X:Prop, (P X) -> (exProp P).
+  := exP_intro : forall X:Prop, P X -> exProp P.
 \end{coq_example*}
 The same definition on \Set{} is not allowed and fails~:
 \begin{coq_example}
 Inductive exSet (P:Set->Prop) : Set 
-  := exS_intro : forall X:Set, (P X) -> (exSet P).
+  := exS_intro : forall X:Set, P X -> exSet P.
 \end{coq_example}
 It is possible to declare the same inductive definition in the
 universe \Type. 
@@ -826,7 +825,7 @@ The \texttt{exType} inductive definition has type  $(\Type_i \ra\Prop)\ra
 \Type_j$ with the constraint $i<j$.
 \begin{coq_example*}
 Inductive exType (P:Type->Prop) : Type
-  := exT_intro : forall X:Type, (P X) -> (exType P).
+  := exT_intro : forall X:Type, P X -> exType P.
 \end{coq_example*}
 %We shall assume for the following definitions that, if necessary, we
 %annotated the type of constructors such that we know if the argument
@@ -1002,13 +1001,17 @@ Assume $A$ and $B$ are two propositions, and the logical disjunction
 $A\vee B$ is defined inductively by~:
 \begin{coq_example*}
 Inductive or (A B:Prop) : Prop :=
-  lintro : A -> (or A B) | rintro : B -> (or A B).
+  lintro : A -> or A B | rintro : B -> or A B.
 \end{coq_example*}
 The following definition which computes a boolean value by case over
 the proof of \texttt{or A B} is not accepted~:
+\begin{coq_eval}
+(***************************************************************)
+(*** This example should fail with ``Incorrect elimination'' ***)
+\end{coq_eval}
 \begin{coq_example}
-Definition choice (A B :Prop) (x:or A B) := 
-   match x with (lintro a) => true | (rintro b) => false end.
+Definition choice (A B: Prop) (x:or A B) := 
+   match x with lintro a => true | rintro b => false end.
 \end{coq_example}
 From the computational point of view, the structure of the proof of
 \texttt{(or A B)} in this term is needed for computing the boolean
@@ -1328,14 +1331,12 @@ Abort.
 \end{coq_example}
 But assuming the definition of a son function from \tree\ to \forest:
 \begin{coq_example}
-Definition sont (t:
-                   tree) : forest := let (f) := t in f.
+Definition sont (t:tree) : forest := let (f) := t in f.
 \end{coq_example}
 The following is not a conversion but can be proved after a case analysis.
 \begin{coq_example}
 Goal forall t:tree, sizet t = S (sizef (sont t)).
-
-(** this one fails **)reflexivity.
+(** this one fails **) reflexivity.
 destruct t.
 reflexivity.
 \end{coq_example}

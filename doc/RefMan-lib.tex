@@ -141,10 +141,10 @@ First, we find propositional calculus connectives:
 
 \begin{coq_eval}
 Set Printing Depth 50.
-\end{coq_eval}
-\begin{coq_example*}
 (********** Next parsing errors for /\ and \/ are harmless ***********)
 (******************* since output is not displayed *******************)
+\end{coq_eval}
+\begin{coq_example*}
 Inductive True : Prop := I.
 Inductive False :  Prop := .
 Definition not (A: Prop) := A -> False.
@@ -161,14 +161,14 @@ Abort All.
 \ttindex{or\_introl}
 \ttindex{or\_intror}
 \ttindex{iff}
-\ttindex{IF}
+\ttindex{IF_then_else}
 \begin{coq_example*}
 End Projections.
 Inductive or (A B:Prop) : Prop :=
   | or_introl (_:A)
   | or_intror (_:B).
 Definition iff (P Q:Prop) := (P -> Q) /\ (Q -> P).
-Definition IF (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
+Definition IF_then_else (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
 \end{coq_example*}
 
 \subsubsection{Quantifiers} \label{Quantifiers}
@@ -188,7 +188,7 @@ Definition all (A:Set) (P:A -> Prop) := forall x:A, P x.
 Inductive ex (A: Set) (P:A -> Prop) : Prop :=
     ex_intro (x:A) (_:P x).
 Inductive ex2 (A:Set) (P Q:A -> Prop) : Prop :=
-    ex_intro2 : (x:A) (_:P x) (_:Q x).
+    ex_intro2 (x:A) (_:P x) (_:Q x).
 \end{coq_example*}
 
 The following abbreviations are allowed:
@@ -389,7 +389,7 @@ provided.
 \begin{coq_example*}
 Inductive sig (A:Set) (P:A -> Prop) : Set := exist (x:A) (_:P x).
 Inductive sig2 (A:Set) (P Q:A -> Prop) : Set := 
-  exist2 : (x:A) (_:P x) (_:Q x).
+  exist2 (x:A) (_:P x) (_:Q x).
 \end{coq_example*}
 
 A ``strong (dependent) sum'' \verb+{x:A & (P x)}+ may be also defined,
@@ -412,10 +412,12 @@ Variable A : Set.
 Variable P : A -> Set.
 Definition projS1 (H:sigS A P) := let (x, h) := H in x.
 Definition projS2 (H:sigS A P) :=
-  let (x, h) return P (projS1 H) := H in h.
+  match H return P (projS1 H) with
+    existS x h => h
+  end.
 End sigSprojections.
 Inductive sigS2 (A: Set) (P Q:A -> Set) : Set :=
-    existS2 : (x:A) (_:P x) (_:Q x).
+    existS2 (x:A) (_:P x) (_:Q x).
 \end{coq_example*}
 
 A related non-dependent construct is the constructive sum
