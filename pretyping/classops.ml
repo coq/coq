@@ -169,7 +169,7 @@ let lookup_path_to_sort_from s =
 
 let (inClass,outClass) =
   declare_object ("CLASS",
-                  { load_function = (fun _ -> ());
+                  { load_function = (function  (_,x) -> add_new_class1 x);
 		    open_function = (fun _ -> ());
                     cache_function = (function  (_,x) -> add_new_class1 x);
                     specification_function = (function x -> x) })
@@ -239,7 +239,8 @@ let rec arity_sort = function
 
 let stre_of_cl = function 
   | CL_SP sp ->
-      if is_constant sp then constant_strength sp else NeverDischarge
+      if is_constant sp then constant_or_parameter_strength sp
+      else NeverDischarge
   | CL_Var id -> 
       variable_strength id
   | _ -> NeverDischarge
@@ -323,7 +324,8 @@ let add_new_coercion_in_graph ((coef,xf),cls,clt) =
 let (inCoercion,outCoercion) =
   declare_object ("COERCION",
                   { load_function = (fun _ -> ());
-		    open_function = (fun _ -> ());
+		    open_function =
+                      (function  (_,x) -> add_new_coercion_in_graph x);
                     cache_function =
                       (function  (_,x) -> add_new_coercion_in_graph x);
                     specification_function = (function x -> x) })

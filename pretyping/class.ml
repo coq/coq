@@ -53,7 +53,7 @@ let rec stre_unif_cond = function
 	stre_max (stre1,stre2)
 
 let stre_of_coe = function
-  | NAM_Constant sp -> constant_strength sp
+  | NAM_Constant sp -> constant_or_parameter_strength sp
   | NAM_Var id -> variable_strength id
   | NAM_Inductive _ | NAM_Constructor _ -> NeverDischarge 
 	
