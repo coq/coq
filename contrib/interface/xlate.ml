@@ -481,9 +481,13 @@ let xlate_hyp_location =
       CT_intype(xlate_ident id, nums_to_int_list nums)
   | AI (_,id), nums, (InHypValueOnly,_) ->
       CT_invalue(xlate_ident id, nums_to_int_list nums)
-  | AI (_,id), _, (InHyp,_) ->
+  | AI (_,id), [], (InHyp,_) ->
       CT_coerce_UNFOLD_to_HYP_LOCATION 
 	(CT_coerce_ID_to_UNFOLD (xlate_ident id))
+  | AI (_,id), a::l, (InHyp,_) ->
+      CT_coerce_UNFOLD_to_HYP_LOCATION 
+	(CT_unfold_occ (xlate_ident id, 
+			CT_int_ne_list(CT_int a, nums_to_int_list_aux l)))
   | MetaId _, _,_ -> 
       xlate_error "MetaId not supported in xlate_hyp_location (should occur only in quotations)"
 
@@ -1970,14 +1974,15 @@ let rec xlate_vernac =
       CT_implicits
 	(reference_to_ct_ID id,
 	 match opt_positions with
-	     None -> CT_id_list[]
+	     None -> CT_coerce_NONE_to_ID_LIST_OPT CT_none
 	   | Some l -> 
-	       CT_id_list
+	       CT_coerce_ID_LIST_to_ID_LIST_OPT
+	       (CT_id_list
 	       (List.map
 		  (function ExplByPos x
 		       -> xlate_error
 			   "explication argument by rank is obsolete"
-		     | ExplByName id -> CT_ident (string_of_id id)) l))
+		     | ExplByName id -> CT_ident (string_of_id id)) l)))
   | VernacReserve((_,a)::l, f) ->
       CT_reserve(CT_id_ne_list(xlate_ident a, 
 			       List.map (fun (_,x) -> xlate_ident x) l),

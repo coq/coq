@@ -251,7 +251,7 @@ and fCOMMAND = function
    fNODE "hints" 3
 | CT_implicits(x1, x2) ->
    fID x1;
-   fID_LIST x2;
+   fID_LIST_OPT x2;
    fNODE "implicits" 2
 | CT_import_id(x1) ->
    fID_NE_LIST x1;
@@ -871,6 +871,9 @@ and fID_LIST_LIST = function
 | CT_id_list_list l ->
    (List.iter fID_LIST l);
    fNODE "id_list_list" (List.length l)
+and fID_LIST_OPT = function
+| CT_coerce_ID_LIST_to_ID_LIST_OPT x -> fID_LIST x
+| CT_coerce_NONE_to_ID_LIST_OPT x -> fNONE x
 and fID_NE_LIST = function
 | CT_id_ne_list(x,l) ->
    fID x;

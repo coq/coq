@@ -78,7 +78,7 @@ and ct_COMMAND =
   | CT_hint_extern of ct_INT * ct_FORMULA * ct_TACTIC_COM * ct_ID_LIST
   | CT_hintrewrite of ct_ORIENTATION * ct_FORMULA_NE_LIST * ct_ID * ct_TACTIC_COM
   | CT_hints of ct_ID * ct_ID_NE_LIST * ct_ID_LIST
-  | CT_implicits of ct_ID * ct_ID_LIST
+  | CT_implicits of ct_ID * ct_ID_LIST_OPT
   | CT_import_id of ct_ID_NE_LIST
   | CT_ind_scheme of ct_SCHEME_SPEC_LIST
   | CT_infix of ct_STRING * ct_ID * ct_MODIFIER_LIST * ct_ID_OPT
@@ -321,6 +321,9 @@ and ct_ID_LIST =
     CT_id_list of ct_ID list
 and ct_ID_LIST_LIST =
     CT_id_list_list of ct_ID_LIST list
+and ct_ID_LIST_OPT =
+    CT_coerce_ID_LIST_to_ID_LIST_OPT of ct_ID_LIST
+  | CT_coerce_NONE_to_ID_LIST_OPT of ct_NONE
 and ct_ID_NE_LIST =
     CT_id_ne_list of ct_ID * ct_ID list
 and ct_ID_NE_LIST_OR_STAR =
