@@ -1311,8 +1311,9 @@ let extern_app loc inctx impl (cf,f) args =
   if args = [] (* maybe caused by a hidden coercion *) then
     extern_global loc impl f
   else
-  if !Options.raw_print or 
-    (!print_implicits & not !print_implicits_explicit_args &
+  if 
+    ((!Options.raw_print or
+      (!print_implicits & not !print_implicits_explicit_args)) &
      List.exists is_status_implicit impl)
   then 
     CAppExpl (loc, (is_projection (List.length args) cf, f), args)
