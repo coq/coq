@@ -111,7 +111,7 @@ let parse_args () =
     | "-t" :: rem -> 
 	keep := true ; parse (cfiles,args) rem
     | "-bindir" :: d :: rem ->
-	bindir := d ; parse (cfiles,d::"-bindir"::args) rem
+	bindir := d ; parse (cfiles,args) rem
     | "-bindir" :: []       ->
 	usage ()
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
