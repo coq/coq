@@ -229,7 +229,7 @@ let constant dir s =
 	     (Nametab.string_of_qualid (Nametab.make_qualid dir id)))
 
 let arith_constant dir = constant ("Arith"::dir)
-let zarith_constant dir = constant ("Zarith"::dir)
+let zarith_constant dir = constant ("ZArith"::dir)
 let logic_constant dir = constant ("Logic"::dir)
 
 (* fast_integer *)
@@ -398,12 +398,12 @@ let make_coq_path dir s =
 		    (Nametab.string_of_qualid (Nametab.make_qualid dir id))^
 		    " is not a constant")
 
-let sp_Zs = lazy (make_coq_path ["Zarith";"zarith_aux"] "Zs")
-let sp_Zminus = lazy (make_coq_path ["Zarith";"zarith_aux"] "Zminus")
-let sp_Zle = lazy (make_coq_path ["Zarith";"zarith_aux"] "Zle")
-let sp_Zgt = lazy (make_coq_path ["Zarith";"zarith_aux"] "Zgt")
-let sp_Zge = lazy (make_coq_path ["Zarith";"zarith_aux"] "Zge")
-let sp_Zlt = lazy (make_coq_path ["Zarith";"zarith_aux"] "Zlt")
+let sp_Zs = lazy (make_coq_path ["ZArith";"zarith_aux"] "Zs")
+let sp_Zminus = lazy (make_coq_path ["ZArith";"zarith_aux"] "Zminus")
+let sp_Zle = lazy (make_coq_path ["ZArith";"zarith_aux"] "Zle")
+let sp_Zgt = lazy (make_coq_path ["ZArith";"zarith_aux"] "Zgt")
+let sp_Zge = lazy (make_coq_path ["ZArith";"zarith_aux"] "Zge")
+let sp_Zlt = lazy (make_coq_path ["ZArith";"zarith_aux"] "Zlt")
 let sp_not = lazy (make_coq_path ["Init";"Logic"] "not")
 
 let mk_var v = mkVar (id_of_string v)

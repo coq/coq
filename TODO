@@ -1,8 +1,8 @@
 Distribution:
 
 - faire une passe sur les options de coqtop et coqc
-- remercier les auteurs des contributions de la lib standard (p.ex. ZArith)
-- changer Zarith/ en ZArith/
+- remercier les auteurs des contributions de la lib standard (p.ex. ZArith) FAIT
+- changer Zarith/ en ZArith/ FAIT CP
 
 Langage:
 

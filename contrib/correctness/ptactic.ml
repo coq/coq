@@ -98,7 +98,7 @@ open Equality
 let nat = IndRef (coq_constant ["Init";"Datatypes"] "nat", 0)
 let lt = ConstRef (coq_constant ["Init";"Peano"] "lt")
 let well_founded = ConstRef (coq_constant ["Init";"Wf"] "well_founded")
-let z = IndRef (coq_constant ["Zarith";"fast_integer"] "Z", 0)
+let z = IndRef (coq_constant ["ZArith";"fast_integer"] "Z", 0)
 let and_ = IndRef (coq_constant ["Init";"Logic"] "and", 0)
 let eq = IndRef (coq_constant ["Init";"Logic"] "eq", 0)
 

@@ -42,7 +42,7 @@ Hashtbl.add type_table "Coq.Init.Datatypes.prod"
 Hashtbl.add type_table "Coq.Init.Datatypes.nat"
   [|[|"";"O"; "S"|]|];;
 
-Hashtbl.add type_table "Coq.Zarith.fast_integer.Z"
+Hashtbl.add type_table "Coq.ZArith.fast_integer.Z"
 [|[|"";"ZERO";"POS";"NEG"|]|];;
 
 Hashtbl.add type_table "Coq.Zarith.fast_integer.positive"
