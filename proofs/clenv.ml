@@ -441,7 +441,7 @@ let clenv_cast_meta clenv =
 	     match Intmap.find mv clenv.env with
                | Cltyp b ->
 		   let b' = clenv_instance clenv b in 
-		   if occur_meta b' then u else mkCast (u, b')
+		   if occur_meta b' then u else mkCast (mkMeta mv, b')
 	       | Clval(_) -> u
 	   with Not_found -> 
 	     u)
