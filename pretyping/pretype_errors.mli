@@ -53,7 +53,7 @@ val error_wrong_numarg_constructor_loc :
   loc -> path_kind -> constructor_path -> int -> 'b
 
 val error_wrong_predicate_arity_loc :
-  loc -> path_kind -> env -> constr -> int -> int -> 'b
+  loc -> env -> constr -> constr -> constr -> 'b
 
 val error_needs_inversion : path_kind -> env -> constr -> constr -> 'a
 

@@ -61,7 +61,7 @@ type type_error =
   | BadPattern of constructor * constr
   | BadConstructor of constructor * inductive
   | WrongNumargConstructor of constructor_path * int
-  | WrongPredicateArity of constr * int * int
+  | WrongPredicateArity of constr * constr * constr
   | NeedsInversion of constr * constr
   (* Relocation error *)
   | QualidNotFound of qualid

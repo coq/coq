@@ -49,8 +49,8 @@ let error_bad_constructor_loc loc k cstr ind =
 let error_wrong_numarg_constructor_loc loc k c n =
   raise_pretype_error (loc, k, Global.env(), WrongNumargConstructor (c,n))
 
-let error_wrong_predicate_arity_loc loc k env c n1 n2 =
-  raise_pretype_error (loc, k, env, WrongPredicateArity (c,n1,n2))
+let error_wrong_predicate_arity_loc loc env c n1 n2 =
+  raise_pretype_error (loc, CCI, env, WrongPredicateArity (c,n1,n2))
 
 let error_needs_inversion k env x t =
   raise (TypeError (k, env, NeedsInversion (x,t)))
