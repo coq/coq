@@ -4,6 +4,7 @@ binding "text" {
 		   "cut-clipboard" ()	
 		}
   bind "<ctrl>x" { }
+  bind "F13" {"insert-at-cursor" ("∀")}
 }
 class "GtkTextView" binding "text"
 
@@ -25,5 +26,3 @@ font_name = "Serif 10"
 class "GtkLabel" style "menu"
 
 gtk-key-theme-name = "Emacs"
-gtk-can-change-accels = 1
-

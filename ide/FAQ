@@ -17,3 +17,26 @@ R2) Insert
 
 Q3) How to enable antialiased fonts?
 R3) Set the GDK_USE_XFT variable to 1.
+
+Q4) How can use Forall and Exists pretty symbols ?
+R4) Thanks to the Notation features in Coq, you just need to paste these
+	lines in your Coq Buffer :
+======================================================================
+Notation "∀ x : t | P" := (x:t)P (at level 1, x,t,P at level 10).
+Notation "~ x : t | P" := (EXT x:t|P) (at level 1, x,t,P at level 10).
+======================================================================
+Then you need an input method for these symbols.
+-First solution : type "<CONTROL>2200" to enter a forall. 2200 is the 
+	hexadecimal code for forall in unicode charts.
+	2203 is for exists. See http://www.unicode.org for more.
+
+-Second solution : rebind "<AltGr>a" to forall. Under X11, you need to 
+	use 
+		xmodmap -e "keycode  24 = a A F13 F13" 
+	and then to add   
+		bind "F13" {"insert-at-cursor" ("∀")}
+	to your "binding "text"" section in .coqiderc. 
+	The strange ("∀") argument is the UTF-8 encoding for
+	0x2200. It is computed by lablgtk2 by 
+		Glib.Utf8.from_unichar 0x2200;;
+	Further symbols can be found on higher Fxx key symbols.

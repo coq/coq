@@ -1832,7 +1832,7 @@ let start () =
   with Not_found -> ());
   ignore (GtkMain.Main.init ());
   GtkData.AccelGroup.set_default_mod_mask 
-    (Some [`CONTROL;`SHIFT;`MOD1;`MOD4]);
+    (Some [`CONTROL;`SHIFT;`MOD1;`MOD3;`MOD4]);
   cb_ := Some (GtkBase.Clipboard.get Gdk.Atom.primary);
   Glib.Message.set_log_handler ~domain:"Gtk" ~levels:[`ERROR;`FLAG_FATAL;
 						      `WARNING;`CRITICAL]
