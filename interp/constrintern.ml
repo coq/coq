@@ -389,8 +389,18 @@ let message_redundant_alias (id1,id2) =
 
 (* Expanding notations *)
 
+let decode_patlist_value = function
+  | CPatCstr (_,_,l) -> l
+  | _ -> anomaly "Ill-formed list argument of notation"
+
+let rec subst_pat_iterator y t = function
+  | PatVar (_,id) as x ->
+      if id = Name y then t else x
+  | PatCstr (loc,id,l,alias) ->
+      PatCstr (loc,id,List.map (subst_pat_iterator y t) l,alias)
+
 let subst_cases_pattern loc aliases intern subst scopes a =
-  let rec aux aliases = function
+  let rec aux aliases subst = function
   | AVar id ->
       begin
 	(* subst remembers the delimiters stack in the interpretation *)
@@ -399,7 +409,8 @@ let subst_cases_pattern loc aliases intern subst scopes a =
 	  let (a,(scopt,subscopes)) = List.assoc id subst in
 	  intern (subscopes@scopes) ([],[]) scopt a
 	with Not_found -> 
-	  anomaly "Unbound pattern notation variable"
+	  if id = ldots_var then [[],[]], PatVar (loc,Name id) else
+	  anomaly ("Unbound pattern notation variable: "^(string_of_id id))
 	  (*
 	  (* Happens for local notation joint with inductive/fixpoint defs *)
 	  if aliases <> ([],[]) then
@@ -412,10 +423,24 @@ let subst_cases_pattern loc aliases intern subst scopes a =
   | AApp (ARef (ConstructRef (ind,_ as c)),args) ->
       let nparams = (snd (Global.lookup_inductive ind)).Declarations.mind_nparams in
       let _,args = list_chop nparams args in
-      let (idsl,pl) = List.split (List.map (aux ([],[])) args) in
+      let (idsl,pl) = List.split (List.map (aux ([],[]) subst) args) in
       aliases::List.flatten idsl, PatCstr (loc,c,pl,alias_of aliases)
+  | AList (x,y,iter,terminator,lassoc) ->
+      (try 
+        (* All elements of the list are in scopes (scopt,subscopes) *)
+	let (a,(scopt,subscopes)) = List.assoc x subst in
+        let idslt,termin = aux ([],[]) subst terminator in
+        let l = decode_patlist_value a in
+        let idsl,v =
+	  List.fold_right (fun a (allidsl,t) -> 
+            let idsl,u = aux ([],[]) ((x,(a,(scopt,subscopes)))::subst) iter in
+            idsl::allidsl, subst_pat_iterator y t u)
+            (if lassoc then List.rev l else l) ([idslt],termin) in
+        aliases::List.flatten idsl, v
+      with Not_found -> 
+          anomaly "Inconsistent substitution of recursive notation")
   | t -> user_err_loc (loc,"",str "Invalid notation for pattern")
-  in aux aliases a
+  in aux aliases subst a
 
 (* Differentiating between constructors and matching variables *)
 type pattern_qualid_kind =
@@ -655,7 +680,7 @@ let rec subst_aconstr_in_rawconstr loc interp subst (ids,_,scopes as env) =
 	  (* Happens for local notation joint with inductive/fixpoint defs *)
 	  RVar (loc,id)
       end
-  | AList (x,y,iter,terminator) ->
+  | AList (x,y,iter,terminator,lassoc) ->
       (try 
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (a,(scopt,subscopes)) = List.assoc x subst in
@@ -668,7 +693,7 @@ let rec subst_aconstr_in_rawconstr loc interp subst (ids,_,scopes as env) =
             (subst_aconstr_in_rawconstr loc interp 
               ((x,(a,(scopt,subscopes)))::subst)
               (ids,None,scopes) iter))
-            l termin
+            (if lassoc then List.rev l else l) termin
       with Not_found -> 
           anomaly "Inconsistent substitution of recursive notation")
   | t ->

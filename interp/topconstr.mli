@@ -27,7 +27,7 @@ type aconstr =
   | ARef of global_reference
   | AVar of identifier
   | AApp of aconstr * aconstr list
-  | AList of identifier * identifier * aconstr * aconstr
+  | AList of identifier * identifier * aconstr * aconstr * bool
   (* Part only in rawconstr *)
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr

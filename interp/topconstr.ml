@@ -23,14 +23,14 @@ open Term
 
 (* For AList: first constr is iterator, second is terminator;
    first id is place of n-th argument in iterator and snd id is recursive
-   place in iterator *)
+   place in iterator; boolean is associativity *)
 
 type aconstr =
   (* Part common to rawconstr and cases_pattern *)
   | ARef of global_reference
   | AVar of identifier
   | AApp of aconstr * aconstr list
-  | AList of identifier * identifier * aconstr * aconstr
+  | AList of identifier * identifier * aconstr * aconstr * bool
   (* Part only in rawconstr *)
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
@@ -110,10 +110,10 @@ let rec subst_aconstr subst raw =
 	if r' == r && rl' == rl then raw else
 	  AApp(r',rl')
 
-  | AList (id1,id2,r1,r2) -> 
+  | AList (id1,id2,r1,r2,b) -> 
       let r1' = subst_aconstr subst r1 and r2' = subst_aconstr subst r2 in
 	if r1' == r1 && r2' == r2 then raw else
-	  AList (id1,id2,r1',r2')
+	  AList (id1,id2,r1',r2',b)
 
   | ALambda (n,r1,r2) -> 
       let r1' = subst_aconstr subst r1 and r2' = subst_aconstr subst r2 in
@@ -223,9 +223,9 @@ let discriminate_patterns nl l1 l2 =
   let diff = ref None in
   let rec aux n c1 c2 = match c1,c2 with
   | RVar (_,v1), RVar (_,v2) when v1<>v2 ->
-      if !diff = None then (diff := Some (v1,v2,(n<nl)); true)
+      if !diff = None then (diff := Some (v1,v2,(n>=nl)); true)
       else 
-        !diff = Some (v1,v2,(n<nl)) or !diff = Some (v2,v1,(n>=nl))
+        !diff = Some (v1,v2,(n>=nl)) or !diff = Some (v2,v1,(n<nl))
         or (error
           "Both ends of the recursive pattern differ in more than one place")
   | _ -> compare_rawconstr (aux (n+1)) c1 c2 in
@@ -292,17 +292,17 @@ allowed in abbreviatable expressions"
         then error "Variables used in the recursive part of a pattern are not allowed to occur outside of the recursive part";
         found := id::!found) [x;y];
       let iter =
-        if order then RApp (loc,f1,ll1@RVar (loc,ldots_var)::lr1)
-        else RApp (loc,f2,ll2@RVar (loc,ldots_var)::lr2) in
-      (if order then x else y), ldots_var, aux iter, aux t
+        if order then RApp (loc,f2,ll2@RVar (loc,ldots_var)::lr2)
+        else RApp (loc,f1,ll1@RVar (loc,ldots_var)::lr1) in
+      (if order then y else x), ldots_var, aux iter, aux t, order
   | _ -> error "One end of the recursive pattern is not an application"
     
   and make_aconstr_list f args =
     let rec find_patterns acc = function
       | RApp(_,RVar (_,a),[c]) :: l when a = ldots_var ->
           (* We've found the recursive part *)
-	  let x,y,iter,terminator = terminator_of_pat f (List.rev acc) l c in
-	  AList (x,y,iter,terminator)
+	  let x,y,iter,term,lassoc = terminator_of_pat f (List.rev acc) l c in
+	  AList (x,y,iter,term,lassoc)
       | a::l -> find_patterns (a::acc) l
       | [] -> error "Ill-formed recursive notation"
     in find_patterns [] args
@@ -355,9 +355,9 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | RPatVar (_,(_,n1)), APatVar n2 when n1=n2 -> sigma
   | RApp (_,f1,l1), AApp (f2,l2) when List.length l1 = List.length l2 ->
       List.fold_left2 (match_ alp metas) (match_ alp metas sigma f1 f2) l1 l2
-  | RApp (_,f1,l1), AList (x,y,(AApp (f2,l2) as iter),termin) 
+  | RApp (_,f1,l1), AList (x,y,(AApp (f2,l2) as iter),termin,lassoc) 
       when List.length l1 = List.length l2 ->
-      match_alist alp metas sigma (f1::l1) (f2::l2) x y iter termin
+      match_alist alp metas sigma (f1::l1) (f2::l2) x y iter termin lassoc
   | RLambda (_,na1,t1,b1), ALambda (na2,t2,b2) ->
      match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
   | RProd (_,na1,t1,b1), AProd (na2,t2,b2) ->
@@ -383,7 +383,7 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | (RDynamic _ | RRec _ | REvar _), _ 
   | _,_ -> raise No_match
 
-and match_alist alp metas sigma l1 l2 x y iter termin =
+and match_alist alp metas sigma l1 l2 x y iter termin lassoc =
   (* match the iterator at least once *)
   let sigma = List.fold_left2 (match_ alp (y::metas)) sigma l1 l2 in
   (* Recover the recursive position *)
@@ -402,7 +402,7 @@ and match_alist alp metas sigma l1 l2 x y iter termin =
     with No_match ->
       List.rev acc, match_ alp metas sigma rest termin in
   let tl,sigma = match_alist_tail alp metas sigma [t1] rest in
-  (x,encode_list_value tl)::sigma
+  (x,encode_list_value (if lassoc then List.rev tl else tl))::sigma
 
 and match_binders alp metas sigma b1 b2 na1 na2 = match (na1,na2) with
   | (Name id1,Name id2) when List.mem id2 metas ->

@@ -175,7 +175,7 @@ let cases_pattern_key = function
 
 let aconstr_key = function
   | AApp (ARef ref,args) -> RefKey ref, Some (List.length args)
-  | AList (_,_,AApp (ARef ref,args),_) -> RefKey ref, Some (List.length args)
+  | AList (_,_,AApp (ARef ref,args),_,_) -> RefKey ref, Some (List.length args)
   | ARef ref -> RefKey ref, Some 0
   | _ -> Oth, None
 
