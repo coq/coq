@@ -39,7 +39,7 @@ Notation "- x" := (Aopp x) (at level 3).
 
 Variable plus_morph : (a,a0,a1,a2:A) a == a0 -> a1 == a2 -> a+a1 == a0+a2.
 Variable mult_morph : (a,a0,a1,a2:A) a == a0 -> a1 == a2 -> a*a1 == a0*a2.
-Variable opp_morph : (a,a0:A) a == a0 -> -a == -a1.
+Variable opp_morph : (a,a0:A) a == a0 -> -a == -a0.
 
 Add Morphism Aplus : Aplus_ext.
 Exact plus_morph.
