@@ -121,6 +121,13 @@ let list_assign l n e =
   in 
   assrec [] (l,n)
 
+let list_map_left f = (* ensures the order in case of side-effects *)
+  let rec map_rec = function
+    | [] -> [] 
+    | x::l -> let v = f x in v :: map_rec l
+  in 
+  map_rec
+
 let list_map_i f = 
   let rec map_i_rec i = function
     | [] -> [] 

@@ -65,6 +65,7 @@ val list_tabulate : (int -> 'a) -> int -> 'a list
 val list_assign : 'a list -> int -> 'a -> 'a list
 val list_distinct : 'a list -> bool
 val list_filter2 : ('a -> 'b -> bool) -> 'a list * 'b list -> 'a list * 'b list
+val list_map_left : ('a -> 'b) -> 'a list -> 'b list
 val list_map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
 val list_map2_i : 
   (int -> 'a -> 'b -> 'c) -> int -> 'a list -> 'b list -> 'c list
