@@ -276,11 +276,11 @@ let whd_state_gen flags env sigma =
 	  (match lookup_rel_value n env with
 	     | Some body -> whrec (lift n body, stack)
 	     | None -> s)
+*)
       | IsVar id when red_delta flags ->
 	  (match lookup_var_value id env with
 	     | Some body -> whrec (body, stack)
 	     | None -> s)
-*)
       | IsEvar ev when red_evar flags ->
 	  (match existential_opt_value sigma ev with
 	     | Some body -> whrec (body, stack)
@@ -971,24 +971,30 @@ let hnf_lam_applist env sigma t nl =
   List.fold_left (hnf_lam_app env sigma) t nl
 
 let splay_prod env sigma = 
-  let rec decrec m c =
+  let rec decrec env m c =
     let t = whd_betadeltaiota env sigma c in
     match kind_of_term t with
-      | IsProd (n,a,c0) -> decrec ((n,a)::m) c0
+      | IsProd (n,a,c0) ->
+	  decrec (push_rel_decl (n,outcast_type a) env)
+	    ((n,a)::m) c0
       | _ -> m,t
   in 
-  decrec []
+  decrec env []
 
 let splay_prod_assum env sigma = 
-  let rec prodec_rec l c =
+  let rec prodec_rec env l c =
     let t = whd_betadeltaiota_nolet env sigma c in
     match kind_of_term c with
-    | IsProd (x,t,c)  -> prodec_rec (Sign.add_rel_decl (x,outcast_type t) l) c
-    | IsLetIn (x,b,t,c) -> prodec_rec (Sign.add_rel_def (x,b,outcast_type t) l) c
-    | IsCast (c,_)    -> prodec_rec l c
+    | IsProd (x,t,c)  ->
+	prodec_rec (push_rel_decl (x,outcast_type t) env)
+	  (Sign.add_rel_decl (x,outcast_type t) l) c
+    | IsLetIn (x,b,t,c) ->
+	prodec_rec (push_rel_def (x,b,outcast_type t) env)
+	  (Sign.add_rel_def (x,b,outcast_type t) l) c
+    | IsCast (c,_)    -> prodec_rec env l c
     | _               -> l,t
   in
-  prodec_rec Sign.empty_rel_context
+  prodec_rec env Sign.empty_rel_context
 
 let splay_arity env sigma c =
   let l, c = splay_prod env sigma c in
@@ -999,58 +1005,15 @@ let splay_arity env sigma c =
 let sort_of_arity env c = snd (splay_arity env Evd.empty c)
   
 let decomp_n_prod env sigma n = 
-  let rec decrec m ln c = if m = 0 then (ln,c) else 
+  let rec decrec env m ln c = if m = 0 then (ln,c) else 
     match kind_of_term (whd_betadeltaiota env sigma c) with
       | IsProd (n,a,c0) ->
 	  let a = make_typed_lazy a (fun _ -> Type dummy_univ) in
-	  decrec (m-1) (Sign.add_rel_decl (n,a) ln) c0
+	  decrec (push_rel_decl (n,a) env)
+	    (m-1) (Sign.add_rel_decl (n,a) ln) c0
       | _                      -> error "decomp_n_prod: Not enough products"
   in 
-  decrec n Sign.empty_rel_context
-
-
-
-(* Check that c is an "elimination constant"
-    [xn:An]..[x1:A1](<P>MutCase (Rel i) of f1..fk end g1 ..gp)
-or  [xn:An]..[x1:A1](Fix(f|t) (Rel i1) ..(Rel ip)) 
-    with i1..ip distinct variables not occuring in t 
-keep relevenant information ([i1,Ai1;..;ip,Aip],n,b)
-with b = true in case of a fixpoint in order to compute 
-an equivalent of Fix(f|t)[xi<-ai] as 
-[yip:Bip]..[yi1:Bi1](F bn..b1) 
-    == [yip:Bip]..[yi1:Bi1](Fix(f|t)[xi<-ai] (Rel 1)..(Rel p))
-with bj=aj if j<>ik and bj=(Rel c) and Bic=Aic[xn..xic-1 <- an..aic-1]
-   *)
-
-let compute_consteval env sigma c = 
-  let rec srec n labs c =
-    let c', l = whd_betadeltaeta_stack env sigma c in
-    match kind_of_term c', l with 
-
-      | IsLambda (_,t,g), [] -> srec (n+1) (t::labs) g
-
-      | IsFix ((nv,i),(tys,_,bds)), l when List.length l <= n ->
-	  let p = Array.length tys in
-          let li = 
-            List.map
-	      (function c -> match kind_of_term c with
-                 | IsRel k
-		     when (array_for_all (noccurn k) tys
-			   & array_for_all (noccurn (k+p)) bds)
-		       -> (k, List.nth labs (k-1)) 
-                 | _ -> raise Elimconst) 
-	      l
-          in 
-	  if (list_distinct (List.map fst li)) then 
-	    (li,n,true) 
-          else 
-	    raise Elimconst
-
-      | IsMutCase (_,_,c,_), _ when isRel c -> ([],n,false)
-
-      | _ -> raise Elimconst
-  in
-  try Some (srec 0 [] c) with Elimconst -> None
+  decrec env n Sign.empty_rel_context
 
 (* One step of approximation *)
 
@@ -1111,39 +1074,34 @@ let whd_programs env sigma x =
 
 exception IsType
 
-let is_arity env sigma = 
-  let rec srec c = 
-    match kind_of_term (whd_betadeltaiota env sigma c) with 
-      | IsSort _ -> true
-      | IsProd (_,_,c') -> srec c' 
-      | IsLambda (_,_,c') -> srec c' 
-      | _ -> false
+let find_conclusion env sigma =
+  let rec decrec env c =
+    let t = whd_betadeltaiota env sigma c in
+    match kind_of_term t with
+      | IsProd (x,t,c0) -> decrec (push_rel_decl (x,outcast_type t) env) c0
+      | IsLambda (x,t,c0) -> decrec (push_rel_decl (x,outcast_type t) env) c0
+      | t -> t
   in 
-  srec 
+  decrec env
+
+let is_arity env sigma c =
+  match find_conclusion env sigma c with
+    | IsSort _ -> true
+    | _ -> false
  
-let info_arity env sigma = 
-  let rec srec c = 
-    match kind_of_term (whd_betadeltaiota env sigma c) with 
-      | IsSort (Prop Null) -> false 
-      | IsSort (Prop Pos) -> true 
-      | IsProd (_,_,c') -> srec c' 
-      | IsLambda (_,_,c') -> srec c' 
-      | _ -> raise IsType
-  in 
-  srec 
+let info_arity env sigma c =
+  match find_conclusion env sigma c with
+    | IsSort (Prop Null) -> false 
+    | IsSort (Prop Pos) -> true 
+    | _ -> raise IsType
     
 let is_info_arity env sigma c =
   try (info_arity env sigma c) with IsType -> true
   
-let is_type_arity env sigma = 
-  let rec srec c = 
-    match kind_of_term (whd_betadeltaiota env sigma c) with 
-      | IsSort (Type _) -> true
-      | IsProd (_,_,c') -> srec c' 
-      | IsLambda (_,_,c') -> srec c' 
-      | _ -> false
-  in 
-  srec 
+let is_type_arity env sigma c = 
+  match find_conclusion env sigma c with
+    | IsSort (Type _) -> true
+    | _ -> false
 
 let is_info_type env sigma t =
   let s = t.utj_type in
@@ -1173,15 +1131,17 @@ let add_free_rels_until bound m acc =
 (* calcule la liste des arguments implicites *)
 
 let poly_args env sigma t =
-  let rec aux n t = match kind_of_term (whd_betadeltaiota env sigma t) with
-    | IsProd (_,a,b) -> add_free_rels_until n a (aux (n+1) b)
-    | IsCast (t',_) -> aux n t'
-    | _ -> Intset.empty
+  let rec aux env n t =
+    match kind_of_term (whd_betadeltaiota env sigma t) with
+      | IsProd (x,a,b) ->
+	  add_free_rels_until n a
+	    (aux (push_rel_decl (x,outcast_type a) env) (n+1) b)
+      | _ -> Intset.empty
   in 
-  match kind_of_term (strip_outer_cast (whd_betadeltaiota env sigma t)) with 
-    | IsProd (_,a,b) -> Intset.elements (aux 1 b)
+  match kind_of_term (whd_betadeltaiota env sigma t) with 
+    | IsProd (x,a,b) ->
+	Intset.elements (aux (push_rel_decl (x,outcast_type a) env) 1 b)
     | _ -> []
-
 
 (* Expanding existential variables (pretyping.ml) *)
 (* 1- whd_ise fails if an existential is undefined *)
