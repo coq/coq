@@ -722,7 +722,7 @@ let rec scrape_mind env kn =
 (***********************************************************************)
 (* Co-fixpoints. *)
 
-exception CoFixGuardError of guard_error
+exception CoFixGuardError of env * guard_error
 
 let anomaly_ill_typed () =
   anomaly "check_one_cofix: too many arguments applied to constructor"
@@ -735,7 +735,7 @@ let rec codomain_is_coind env c =
     | _ -> 
 	(try find_coinductive env b
         with Not_found ->
-	  raise (CoFixGuardError (CodomainNotInductiveType b)))
+	  raise (CoFixGuardError (env, CodomainNotInductiveType b)))
 
 let check_one_cofix env nbfix def deftype = 
   let rec check_rec_call env alreadygrd n vlra  t =
@@ -746,18 +746,15 @@ let check_one_cofix env nbfix def deftype =
       match kind_of_term c with 
 	| Meta _ -> true
 	      
-	| Rel p -> 
-             if n <= p && p < n+nbfix then
-	       (* recursive call *)
-               if alreadygrd then
-		 if List.for_all (noccur_with_meta n nbfix) args then
-		   true
-		 else 
-		   raise (CoFixGuardError NestedRecursiveOccurrences)
-               else 
-		 raise (CoFixGuardError (UnguardedRecursiveCall t))
-             else  
-	       error "check_one_cofix: ???"  (* ??? *)
+	| Rel p when  n <= p && p < n+nbfix ->
+	    (* recursive call *)
+            if alreadygrd then
+	      if List.for_all (noccur_with_meta n nbfix) args then
+		true
+	      else 
+		raise (CoFixGuardError (env,NestedRecursiveOccurrences))
+            else 
+	      raise (CoFixGuardError (env,UnguardedRecursiveCall t))
 		 
 	| Construct (_,i as cstr_kn)  ->
             let lra =vlra.(i-1) in 
@@ -770,7 +767,7 @@ let check_one_cofix env nbfix def deftype =
                     if noccur_with_meta n nbfix t
                     then process_args_of_constr (lr, lrar)
                     else raise (CoFixGuardError
-		                 (RecCallInNonRecArgOfConstructor t))
+		                 (env,RecCallInNonRecArgOfConstructor t))
                   else
                     let spec = dest_subterms rar in
                     check_rec_call env true n spec t &&
@@ -785,7 +782,7 @@ let check_one_cofix env nbfix def deftype =
               check_rec_call (push_rel (x, None, a) env)
 		alreadygrd (n+1)  vlra b
             else 
-	      raise (CoFixGuardError (RecCallInTypeOfAbstraction t))
+	      raise (CoFixGuardError (env,RecCallInTypeOfAbstraction a))
 	      
 	| CoFix (j,(_,varit,vdefs as recdef)) ->
             if (List.for_all (noccur_with_meta n nbfix) args)
@@ -798,9 +795,9 @@ let check_one_cofix env nbfix def deftype =
 		&&
 		(List.for_all (check_rec_call env alreadygrd (n+1) vlra) args) 
               else 
-		raise (CoFixGuardError (RecCallInTypeOfDef c))
+		raise (CoFixGuardError (env,RecCallInTypeOfDef c))
 	    else
-	      raise (CoFixGuardError (UnguardedRecursiveCall c))
+	      raise (CoFixGuardError (env,UnguardedRecursiveCall c))
 
 	| Case (_,p,tm,vrest) ->
             if (noccur_with_meta n nbfix p) then
@@ -808,13 +805,13 @@ let check_one_cofix env nbfix def deftype =
 		if (List.for_all (noccur_with_meta n nbfix) args) then
 		  (array_for_all (check_rec_call env alreadygrd n vlra) vrest)
 		else 
-		  raise (CoFixGuardError (RecCallInCaseFun c))
+		  raise (CoFixGuardError (env,RecCallInCaseFun c))
               else 
-		raise (CoFixGuardError (RecCallInCaseArg c))
+		raise (CoFixGuardError (env,RecCallInCaseArg c))
             else 
-	      raise (CoFixGuardError (RecCallInCasePred c))
+	      raise (CoFixGuardError (env,RecCallInCasePred c))
               
-	| _    -> raise (CoFixGuardError NotGuardedForm) in 
+	| _    -> raise (CoFixGuardError (env,NotGuardedForm t)) in 
   let (mind, _) = codomain_is_coind env deftype in
   let vlra = lookup_subterms env mind in
   check_rec_call env false 1 (dest_subterms vlra) def
@@ -829,6 +826,6 @@ let check_cofix env (bodynum,(names,types,bodies as recdef)) =
     try 
       let _ = check_one_cofix fixenv nbfix bodies.(i) types.(i)
       in ()
-    with CoFixGuardError err -> 
-      error_ill_formed_rec_body fixenv err names i
+    with CoFixGuardError (errenv,err) -> 
+      error_ill_formed_rec_body errenv err names i
   done

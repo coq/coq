@@ -254,28 +254,34 @@ let explain_ill_formed_rec_body ctx err names i =
      str "Recursive call to " ++ called ++ str " had not enough arguments"
 
   (* CoFixpoint guard errors *)
-  (* TODO : récupérer le contexte des termes pour pouvoir les afficher *)
   | CodomainNotInductiveType c ->
-      str "The codomain is" ++ spc () ++ prterm c ++ spc () ++
+      str "the codomain is" ++ spc () ++ prterm_env ctx c ++ spc () ++
       str "which should be a coinductive type"
   | NestedRecursiveOccurrences ->
-      str "Nested recursive occurrences"
+      str "nested recursive occurrences"
   | UnguardedRecursiveCall c ->
-      str "Unguarded recursive call"
+      str "unguarded recursive call in" ++ spc() ++ prterm_env ctx c
   | RecCallInTypeOfAbstraction c ->
-      str "Not allowed recursive call in the domain of an abstraction"
+      str "recursive call forbidden in the domain of an abstraction:" ++
+      spc() ++ prterm_env ctx c
   | RecCallInNonRecArgOfConstructor c ->
-      str "Not allowed recursive call in a non-recursive argument of constructor"
+      str "recursive call on a non-recursive argument of constructor" ++
+      spc() ++ prterm_env ctx c
   | RecCallInTypeOfDef c ->
-      str "Not allowed recursive call in the type of a recursive definition"
+      str "recursive call forbidden in the type of a recursive definition" ++
+      spc() ++ prterm_env ctx c
   | RecCallInCaseFun c ->
-      str "Not allowed recursive call in a branch of cases"
+      str "recursive call in a branch of" ++ spc() ++ prterm_env ctx c
   | RecCallInCaseArg c -> 
-      str "Not allowed recursive call in the argument of cases"
+      str "recursive call in the argument of cases in" ++ spc() ++
+      prterm_env ctx c
   | RecCallInCasePred c ->
-      str "Not allowed recursive call in the type of cases in"
-  | NotGuardedForm ->
-      str "Definition not in guarded form"
+      str "recursive call in the type of cases in" ++  spc() ++
+      prterm_env ctx c
+  | NotGuardedForm c ->
+      str "sub-expression " ++ prterm_env ctx c ++ spc() ++
+      str "not in guarded form" ++ spc()++
+      str"(should be a constructor, abstraction, Cases, CoFix or recursive call)"
   in
   prt_name i ++ str" is ill-formed." ++ fnl() ++
   pr_ne_context_of (str "In environment") ctx ++

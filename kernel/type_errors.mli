@@ -34,7 +34,7 @@ type guard_error =
   | RecCallInCaseFun of constr
   | RecCallInCaseArg of constr
   | RecCallInCasePred of constr
-  | NotGuardedForm
+  | NotGuardedForm of constr
 
 type arity_error =
   | NonInformativeToInformative

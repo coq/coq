@@ -230,8 +230,9 @@ let explain_ill_formed_rec_body k ctx err names i vdefs =
       (str "Not allowed recursive call in the argument of cases")
   | RecCallInCasePred c ->
       (str "Not allowed recursive call in the type of cases in")
-  | NotGuardedForm ->
-      (str "Definition not in guarded form")
+  | NotGuardedForm c ->
+      str "Sub-expression " ++ prterm_env ctx c ++ spc() ++
+      str "not in guarded form (should be a constructor, Cases or CoFix)"
 in
   let pvd = P.pr_term k ctx vdefs.(i) in
   let s =
