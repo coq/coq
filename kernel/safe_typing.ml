@@ -287,41 +287,40 @@ let safe_infer_local_decls env decls =
   inferec env decls
 
 (* Insertion of constants and parameters in environment. *)
+type global_declaration = Def of constr | Assum of constr
 
-let add_parameter sp t env =
-  let (jt,cst) = safe_infer env t in
+let safe_infer_declaration env = function
+  | Def c ->
+      let (j,cst) = safe_infer env c in
+      Some j.uj_val, j.uj_type, cst
+  | Assum t ->
+      let (j,cst) = safe_infer env t in
+      None, assumption_of_judgment env Evd.empty j, cst
+
+let add_global_declaration sp env (body,typ,cst) =
   let env' = add_constraints cst env in
-  let ids = global_vars_set jt.uj_val in
+  let ids = match body with 
+    | None -> global_vars_set typ
+    | Some b -> Idset.union (global_vars_set b) (global_vars_set typ) in
   let cb = {
     const_kind = kind_of_path sp;
-    const_body = None;
-    const_type = assumption_of_judgment env' Evd.empty jt;
+    const_body = body;
+    const_type = typ;
     const_hyps = keep_hyps ids (named_context env);
     const_constraints = cst;
     const_opaque = false } 
   in
   Environ.add_constant sp cb env'
 
+let add_parameter sp t env =
+  add_global_declaration sp env (safe_infer_declaration env (Assum t))
+
 let add_constant_with_value sp body typ env =
   let body' =
     match typ with
       | None -> body
       | Some ty -> mkCast (body, ty) in
-  let (jb,cst) = safe_infer env body' in
-  let env' = add_constraints cst env in
-  let ty = jb.uj_type in
-  let ids = 
-    Idset.union (global_vars_set body) (global_vars_set (body_of_type ty))
-  in
-  let cb = { 
-    const_kind = kind_of_path sp;
-    const_body = Some body;
-    const_type = ty;
-    const_hyps = keep_hyps ids (named_context env);
-    const_constraints = cst;
-    const_opaque = false } 
-  in
-  add_constant sp cb env'
+  add_global_declaration sp env (safe_infer_declaration env (Def body'))
 
 let add_discharged_constant sp r env =
   let (body,typ) = Cooking.cook_constant env r in
