@@ -549,7 +549,7 @@ Section Functions_on_lists.
 (* Some generic functions on lists and basic functions of them *)
 (***************************************************************)
 
-Section Map_def.
+Section Map.
 Variables A,B:Set.
 Variable  f:A->B.
 Fixpoint map [l:(list A)] : (list B) :=
@@ -557,7 +557,7 @@ Fixpoint map [l:(list A)] : (list B) :=
      nil       => (nil B)
   | (cons a t) => (cons (f a) (map t))
   end.
-End Map_def.
+End Map.
 
 Lemma in_map : (A,B:Set)(f:A->B)(l:(list A))(x:A)
   (In x l) -> (In (f x) (map f l)).
