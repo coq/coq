@@ -15,6 +15,7 @@ open Tacmach
 open Term
 open Vernacinterp
 open Clenv
+open Errors
 
 let _ = Termast.print_evar_arguments := true
 
@@ -24,7 +25,7 @@ let prast c = pP(print_ast c)
 
 let prastpat c = pP(print_astpat c)
 let prastpatl c = pP(print_astlpat c)
-let ppterm = (fun x -> pP(prterm x))
+let ppterm = (fun x -> pP(prterm x)
 let pprawterm = (fun x -> pP(pr_rawterm x))
 let pppattern = (fun x -> pP(pr_pattern x))
 let pptype = (fun x -> pP(prtype x))
