@@ -83,7 +83,7 @@ let native_suffix f =
 let rem_ext_regexpr = Str.regexp "\(.*\)\.\(cm..?\|ml\)"
 
 let module_of_file name =
-  let s = Str.replace_first rem_ext_regexpr "\1" (Filename.basename name) in
+  let s = Str.replace_first rem_ext_regexpr "\\1" (Filename.basename name) in
   String.capitalize s
 
 (* Build the list of files to link and the list of modules names *)
