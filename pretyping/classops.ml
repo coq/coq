@@ -1,20 +1,16 @@
+(* $Id$ *)
 
-
-open Std;;
-open Names;;
-open Vectops;;
+open Util;;
 open Pp;;
+open Names;;
 open Vartab;;
 open Libobject;;
 open Constrtypes;;
-open Vectops;;
 open List;;
 open Library;;
 open Term;;
-open More_util;;
 open Generic;;
 open Initial;;
-open Printer;;
 
 
 (* usage qque peu general: utilise aussi dans record *)

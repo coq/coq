@@ -126,11 +126,11 @@ let pretype_ref loc isevars env = function
      pretype vtcon isevars env (abst_value cstr)
    else error "Cannot typecheck an unevaluable abstraction"
 *)
-
-| REVar (sp,ids) ->
+| REVar (sp,ids) -> error " Not able to type terms with dependent subgoals"
+(* Not able to type goal existential yet
     let cstr = mkConst sp (ctxt_of_ids ids) in
     make_judge cstr (type_of_existential env !isevars cstr)
-
+*)
 | RInd ((sp,i),ids) ->
     let cstr = mkMutInd sp i (ctxt_of_ids ids) in
     make_judge cstr (type_of_inductive env !isevars cstr)

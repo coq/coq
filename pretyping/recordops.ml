@@ -1,17 +1,14 @@
+(* $Id$ *)
 
-open Std;;
-open Names;;
-open Machops;;
-open Vectops;;
-open Himsg;;
+open Util;;
 open Pp;;
+open Names;;
+open Typeops;;
 open Vartab;;
 open Libobject;;
-open Vectops;;
 open List;;
 open Library;;
 open Term;;
-open More_util;;
 open Pp_control;;
 open Generic;;
 open Initial;;

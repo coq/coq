@@ -1,30 +1,15 @@
-(****************************************************************************)
-(*                 The Calculus of Inductive Constructions                  *)
-(*                                                                          *)
-(*                                Projet Coq                                *)
-(*                                                                          *)
-(*                     INRIA        LRI-CNRS        ENS-CNRS                *)
-(*              Rocquencourt         Orsay          Lyon                    *)
-(*                                                                          *)
-(*                                 Coq V6.3                                 *)
-(*                               July 1st 1999                              *)
-(*                                                                          *)
-(****************************************************************************)
-(*                               tradevar.ml                                *)
-(****************************************************************************)
+(* $Id$ *)
 
-open Std;;
+open Util;;
 open Pp;;
 open Names;;
 open Impuniv;;
-open Vectops;;
 open Generic;;
 open Term;;
 open Printer;;
 open Termenv;;
 open Evd;;
 open Reduction;;
-open Himsg;;
 
 
 let rec filter_unique = function
