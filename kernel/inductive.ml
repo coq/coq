@@ -39,6 +39,7 @@ let mis_typepath mis =
   make_path (dirpath mis.mis_sp) mis.mis_mip.mind_typename CCI
 let mis_consnames mis = mis.mis_mip.mind_consnames
 let mis_inductive mis = ((mis.mis_sp,mis.mis_tyi),mis.mis_args)
+let mis_finite mis = mis.mis_mip.mind_finite
 
 let mis_typed_nf_lc mis =
   let sign = mis.mis_mib.mind_hyps in

@@ -115,6 +115,9 @@ let implicit_args_msg sp mipv =
           >])
        mipv >]
 
+let instance_of_var_context sign =
+  Array.of_list (List.map mkVar (ids_of_var_context sign))
+
 let print_mutual sp mib = 
   let pk = kind_of_path sp in
   let env = Global.env () in
@@ -124,56 +127,56 @@ let print_mutual sp mib =
 		    (body_of_type (mind_user_arity mipv.(0))) in
   let arities = Array.map (fun mip -> (Name mip.mind_typename, None, mip.mind_nf_arity)) mipv in
   let env_ar = push_rels lpars env in
-  let env_cstr = push_rels lpars (push_rels (Array.to_list arities) env) in
   let pr_constructor (id,c) =
-    let pc = prterm_env env_cstr c in [< print_id id; 'sTR " : "; pc >] 
-  in
-  let print_constructors mip =
-    let lC = mind_user_lc mip in
+    [< print_id id; 'sTR " : "; prterm_env env_ar c >] in
+  let print_constructors mis =
+    let (_,lC) = mis_type_mconstructs mis in
     let lidC =
-      Array.to_list 
-        (array_map2
-	   (fun id c ->
-	      (id,snd (decomp_n_prod env evd nparams (body_of_type c))))
-           mip.mind_consnames lC) in
-    let plidC = prlist_with_sep (fun () -> [<'bRK(1,0); 'sTR "| " >])
-                  pr_constructor lidC in
-    (hV 0 [< 'sTR "  "; plidC >]) 
+      array_map2 (fun id c -> (id, snd (decomp_n_prod env evd nparams c)))
+	(mis_consnames mis) lC in
+    let plidC =
+      prvect_with_sep (fun () -> [<'bRK(1,0); 'sTR "| " >])
+        pr_constructor
+	lidC
+    in
+    hV 0 [< 'sTR "  "; plidC >] 
   in
-  let print_oneind mip = 
+  let params =
+    if nparams = 0 then 
+      [<>] 
+    else
+      [< 'sTR "["; pr_rel_context env lpars; 'sTR "]"; 'bRK(1,2) >] in
+  let print_oneind tyi =
+    let mis = build_mis ((sp,tyi),instance_of_var_context mib.mind_hyps) mib in
     let (_,arity) = decomp_n_prod env evd nparams
-		      (body_of_type (mind_user_arity mip)) in
+		      (body_of_type (mis_user_arity mis)) in
       (hOV 0
          [< (hOV 0
-	       [< print_id mip.mind_typename ; 'bRK(1,2);
-		  if nparams = 0 then 
-		    [<>] 
-		  else
-		    [< 'sTR "["; pr_rel_context env lpars; 'sTR "]"; 'bRK(1,2) >]; 
+	       [< print_id (mis_typename mis) ; 'bRK(1,2); params;
 	          'sTR ": "; prterm_env env_ar arity; 'sTR " :=" >]);
-            'bRK(1,2); print_constructors mip >]) 
+            'bRK(1,2); print_constructors mis >]) 
   in 
-  let mip = mipv.(0) in
+  let mis0 = build_mis ((sp,0),instance_of_var_context mib.mind_hyps) mib in
   (* Case one [co]inductive *)
-  if Array.length mipv = 1 then 
+  if Array.length mipv = 1 then
     let (_,arity) = decomp_n_prod env evd nparams
-		      (body_of_type (mind_user_arity mip)) in 
-    let sfinite = if mip.mind_finite then "Inductive " else "CoInductive " in
-    (hOV 0 [< 'sTR sfinite ; print_id mip.mind_typename ;
+		      (body_of_type (mis_user_arity mis0)) in 
+    let sfinite = if mis_finite mis0 then "Inductive " else "CoInductive " in
+    (hOV 0 [< 'sTR sfinite ; print_id (mis_typename mis0);
               if nparams = 0 then 
 		[<>] 
               else 
 		[< 'sTR" ["; pr_rel_context env lpars; 'sTR "]">];
               'bRK(1,5); 'sTR": "; prterm_env env_ar arity; 'sTR" :=";
-              'bRK(0,4); print_constructors mip; 'fNL;
+              'bRK(0,4); print_constructors mis0; 'fNL;
               implicit_args_msg sp mipv  >] )
   (* Mutual [co]inductive definitions *)
   else
-    let (mipli,miplc) =
+    let _,(mipli,miplc) =
       List.fold_left 
-        (fun (li,lc) mi ->
-           if mi.mind_finite then (mi::li,lc) else (li,mi::lc))
-        ([],[]) (Array.to_list mipv) 
+        (fun (n,(li,lc)) mi ->
+           if mi.mind_finite then (n+1,(n::li,lc)) else (n+1,(li,n::lc)))
+        (0,([],[])) (Array.to_list mipv) 
     in 
     let strind =
       if mipli = [] then [<>] 
@@ -190,7 +193,7 @@ let print_mutual sp mib =
                  print_oneind (List.rev miplc)); 'fNL >] 
     in
     (hV 0 [< 'sTR"Mutual " ; 
-             if mip.mind_finite then 
+             if mis_finite mis0 then 
 	       [< strind; strcoind >] 
              else 
 	       [<strcoind; strind>];

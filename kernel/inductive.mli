@@ -48,6 +48,7 @@ val mis_user_arity : inductive_instance -> typed_type
 val mis_params_ctxt : inductive_instance -> rel_context
 val mis_sort : inductive_instance -> sorts
 val mis_type_mconstruct : int -> inductive_instance -> typed_type
+val mis_finite : inductive_instance -> bool 
 
 (* The ccl of constructor is pre-normalised in the following functions *)
 val mis_nf_lc : inductive_instance -> constr array
