@@ -232,8 +232,12 @@ GEXTEND Gram
      | IDENT "Arguments"; IDENT "Scope"; qid = global;
          "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
 
-     | IDENT "Infix"; a = entry_prec; n = natural; op = STRING; p = global;
-	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacInfix (a,n,op,p,sc)
+     | IDENT "Infix"; a = entry_prec; n = OPT natural; op = STRING; 
+         p = global;
+         modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
+	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
+         let (a,n,b) = Metasyntax.interp_infix_modifiers a n modl in
+         VernacInfix (a,n,op,p,b,sc)
      | IDENT "Distfix"; a = entry_prec; n = natural; s = STRING; p = global;
 	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacDistfix (a,n,s,p,sc)
      | IDENT "Notation"; s = IDENT; ":="; c = constr ->

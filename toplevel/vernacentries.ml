@@ -1014,7 +1014,7 @@ let interp c = match c with
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
   | VernacOpenScope sc -> vernac_open_scope sc
   | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope qid scl
-  | VernacInfix (assoc,n,inf,qid,sc) -> vernac_infix assoc n inf qid sc
+  | VernacInfix (assoc,n,inf,qid,b,sc) -> vernac_infix assoc n inf qid b sc
   | VernacDistfix (assoc,n,inf,qid,sc) -> vernac_distfix assoc n inf qid sc
   | VernacNotation (inf,c,pl,sc) -> vernac_notation inf c pl sc
 

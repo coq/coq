@@ -29,7 +29,7 @@ val add_tactic_grammar :
   (string * (string * grammar_production list) * raw_tactic_expr) list -> unit
 
 val add_infix :
-  grammar_associativity -> precedence -> string -> reference
+  grammar_associativity -> precedence -> string -> reference -> bool
     -> scope_name option -> unit
 val add_distfix :
   grammar_associativity -> precedence -> string -> reference
@@ -43,3 +43,5 @@ val add_syntax_extension : string -> syntax_modifier list -> unit
 
 val print_grammar : string -> string -> unit
 
+val interp_infix_modifiers : Gramext.g_assoc option -> int option -> 
+  syntax_modifier list -> Gramext.g_assoc option * int * bool

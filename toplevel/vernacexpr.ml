@@ -158,7 +158,7 @@ type vernac_expr =
   | VernacDelimiters of scope_name * string
   | VernacArgumentsScope of reference * scope_name option list
   | VernacInfix of
-      grammar_associativity * precedence * string * reference *
+      grammar_associativity * precedence * string * reference * bool *
       scope_name option
   | VernacDistfix of
       grammar_associativity * precedence * string * reference *

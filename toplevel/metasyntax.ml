@@ -441,12 +441,11 @@ let (inSyntaxExtension, outSyntaxExtension) =
        classify_function = (fun (_,o) -> Substitute o);
        export_function = (fun x -> Some x)}
 
-let interp_syntax_modifiers =
+let interp_modifiers a n =
   let onlyparsing = ref false in
   let rec interp assoc level etyps = function
     | [] ->
 	let n = match level with None -> 1 | Some n -> n in
-	let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
 	(assoc,n,etyps,!onlyparsing)
     | SetEntryType (s,typ) :: l ->
 	let id = id_of_string s in
@@ -471,7 +470,21 @@ let interp_syntax_modifiers =
     | SetOnlyParsing :: l ->
 	onlyparsing := true;
 	interp assoc level etyps l
-  in interp None None []
+  in interp a n []
+
+(* Infix defaults to LEFTA (cf doc) *)
+let interp_infix_modifiers a n l =
+  let (assoc,n,t,b) = interp_modifiers a n l in
+  if t <> [] then
+    error "explicit entry level or type unexpected in infix notation";
+  let assoc = match assoc with None -> Some Gramext.LeftA | a -> a in
+  (assoc,n,b)
+
+(* Notation defaults to NONA *)
+let interp_notation_modifiers modl =
+  let (assoc,n,t,b) = interp_modifiers None None modl in
+  let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
+  (assoc,n,t,b)
 
 (* 2nd list of types has priority *)
 let rec merge_entry_types etyps' = function
@@ -503,7 +516,7 @@ let recompute_assoc typs =
     | _ -> Some Gramext.NonA
 
 let add_syntax_extension df modifiers =
-  let (assoc,n,etyps,onlyparse) = interp_syntax_modifiers modifiers in
+  let (assoc,n,etyps,onlyparse) = interp_notation_modifiers modifiers in
   let (typs,symbs) =
     find_symbols
       (n,BorderProd(true,assoc)) (10,InternalProd) (n,BorderProd(false,assoc))
@@ -576,8 +589,7 @@ let make_old_pp_rule n symbols typs r ntn scope vars =
   let rule_name = ntn^"_"^scope^"_notation" in
   make_syntax_rule n rule_name symbols typs ast ntn scope
 
-let add_notation_in_scope df a modifiers sc toks =
-  let (assoc,n,etyps,onlyparse) = interp_syntax_modifiers modifiers in
+let add_notation_in_scope df a (assoc,n,etyps,onlyparse) sc toks =
   let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
   let (typs,symbols) =
     find_symbols
@@ -613,7 +625,7 @@ let add_notation df a modifiers sc =
         let ident = id_of_string (strip x) in
         Syntax_def.declare_syntactic_definition ident (interp_aconstr a)
     | _ ->
-        add_notation_in_scope df a modifiers sc toks
+       add_notation_in_scope df a (interp_notation_modifiers modifiers) sc toks
 
 (* TODO add boxes information in the expression *)
 
@@ -636,12 +648,10 @@ let add_distfix assoc n df r sc =
   let (vars,l) = rename "x" [] 1 (split df) in
   let df = String.concat " " l in
   let a = mkAppC (mkRefC r, vars) in
-  let assoc = match assoc with
-    | None -> [SetAssoc Gramext.LeftA]
-    | Some a -> [SetAssoc a] in
-  add_notation df a (SetLevel n :: assoc) sc
+  let assoc = match assoc with None -> Gramext.LeftA | Some a -> a in
+  add_notation_in_scope df a (Some assoc,n,[],false) sc (split df)
 
-let add_infix assoc n inf pr sc =
+let add_infix assoc n inf pr onlyparse sc =
 (*  let pr = Astterm.globalize_qualid pr in*)
   (* check the precedence *)
   if n<1 or n>10 then
@@ -654,10 +664,8 @@ let add_infix assoc n inf pr sc =
   *)
   let metas = [inject_var "x"; inject_var "y"] in
   let a = mkAppC (mkRefC pr,metas) in
-  let assoc = match assoc with
-    | None -> [SetAssoc Gramext.LeftA]
-    | Some a -> [SetAssoc a] in
-  add_notation ("x "^(quote inf)^" y") a (SetLevel n :: assoc) sc
+  let df = "x "^(quote inf)^" y" in
+  add_notation_in_scope df a (assoc,n,[],onlyparse) sc (split df)
 
 (* Delimiters *)
 let load_delimiters _ (_,(scope,dlm)) =
