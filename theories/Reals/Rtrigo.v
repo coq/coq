@@ -20,10 +20,9 @@ Require Rlimit.
 Require Binome.
 Require Export Rtrigo_def.
 Require Export Rtrigo_alt.
+Require Export Cos_plus.
 
-(* The two remaining axioms *)
-Axiom cos_plus : (x,y:R) ``(cos (x+y))==(cos x)*(cos y)-(sin x)*(sin y)``.
-
+(** sin_PI2 is the only remaining axiom **)
 Axiom sin_PI2 : ``(sin (PI/2))==1``.
 
 (* Here, we have the euclidian division *)
