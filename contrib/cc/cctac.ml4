@@ -208,7 +208,7 @@ let cc_tactic gls=
 		   [|outtype;trivial;pred;identity;concl;injt|]) in
 	  let neweq=
 	    mkApp(constr_of_reference Coqlib.glob_eq,[|intype;tt1;tt2|]) in
-	    tclTHENS (true_cut (Some hid) neweq)
+	    tclTHENS (true_cut (Name hid) neweq)
 	      [proof_tac axioms p;exact_check endt] gls
 
 (* Tactic registration *)

@@ -483,9 +483,9 @@ and pr_atom1 env = function
       hov 1 (str "cofix" ++ spc () ++ pr_id id ++ spc() ++
              str"with " ++ prlist_with_sep spc (pr_cofix_tac env) l)
   | TacCut c -> hov 1 (str "cut" ++ pr_constrarg env c)
-  | TacTrueCut (None,c) -> 
+  | TacTrueCut (Anonymous,c) -> 
       hov 1 (str "assert" ++ pr_constrarg env c)
-  | TacTrueCut (Some id,c) -> 
+  | TacTrueCut (Name id,c) -> 
       hov 1 (str "assert" ++ spc () ++
              hov 1 (str"(" ++ pr_id id ++ str " :" ++
                     pr_lconstrarg env c ++ str")"))
@@ -495,7 +495,7 @@ and pr_atom1 env = function
                     pr_lconstrarg env c ++ str")"))
   | TacForward (true,Anonymous,c) ->
       if Options.do_translate () then
-        (* Pose was buggy and was wrongly substituting in conclusion in v7 *)
+        (* Pose was buggy and was wrongly substituted in conclusion in v7 *)
         hov 1 (str "set" ++ pr_constrarg env c)
       else
         hov 1 (str "pose" ++ pr_constrarg env c)
@@ -514,7 +514,9 @@ and pr_atom1 env = function
   | TacGeneralizeDep c ->
       hov 1 (str "generalize" ++ spc () ++ str "dependent" ++
              pr_constrarg env c)
-  | TacLetTac (id,c,cl) ->
+  | TacLetTac (Anonymous,c,cl) ->
+      hov 1 (str "set" ++ pr_constrarg env c) ++ pr_clauses pr_ident cl
+  | TacLetTac (Name id,c,cl) ->
       hov 1 (str "set" ++ spc () ++
              hov 1 (str"(" ++ pr_id id ++ str " :=" ++
                     pr_lconstrarg env c ++ str")") ++

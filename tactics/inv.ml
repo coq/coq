@@ -467,7 +467,7 @@ let raw_inversion inv_kind indbinding id status names gl =
       case_nodep_then_using 
   in
   (tclTHENS
-     (true_cut None cut_concl)
+     (true_cut Anonymous cut_concl)
      [case_tac names 
        (introCaseAssumsThen (rewrite_equations_tac inv_kind id neqns))
        (Some elim_predicate) ([],[]) newc;

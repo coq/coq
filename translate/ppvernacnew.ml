@@ -824,16 +824,16 @@ let rec pr_vernac = function
   | VernacRecord (b,(oc,name),ps,s,c,fs) ->
       let pr_record_field = function
         | (oc,AssumExpr (id,t)) ->
-            hov 1 (pr_lident id ++
+            hov 1 (pr_lname id ++
             (if oc then str" :>" else str" :") ++ spc() ++
             pr_type t)
         | (oc,DefExpr(id,b,opt)) -> (match opt with
 	    | Some t ->
-                hov 1 (pr_lident id ++
+                hov 1 (pr_lname id ++
                 (if oc then str" :>" else str" :") ++ spc() ++
                 pr_type t ++ str" :=" ++ pr_lconstr b)
 	    | None ->
-                hov 1 (pr_lident id ++ str" :=" ++ spc() ++
+                hov 1 (pr_lname id ++ str" :=" ++ spc() ++
                 pr_lconstr b)) in
       hov 2
         (str (if b then "Record" else "Structure") ++

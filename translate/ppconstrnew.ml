@@ -216,9 +216,9 @@ let pr_let_binder pr x a =
          pr_sep_com (fun () -> brk(0,1)) (pr ltop) a)
 
 let rec extract_prod_binders = function
-  | CLetIn (loc,na,b,c) as x ->
+(*  | CLetIn (loc,na,b,c) as x ->
       let bl,c = extract_prod_binders c in
-      if bl = [] then [], x else LocalRawDef (na,b) :: bl, c
+      if bl = [] then [], x else LocalRawDef (na,b) :: bl, c*)
   | CProdN (loc,[],c) ->
       extract_prod_binders c
   | CProdN (loc,(nal,t)::bl,c) ->
@@ -227,9 +227,9 @@ let rec extract_prod_binders = function
   | c -> [], c
 
 let rec extract_lam_binders = function
-  | CLetIn (loc,na,b,c) as x ->
+(*  | CLetIn (loc,na,b,c) as x ->
       let bl,c = extract_lam_binders c in
-      if bl = [] then [], x else LocalRawDef (na,b) :: bl, c
+      if bl = [] then [], x else LocalRawDef (na,b) :: bl, c*)
   | CLambdaN (loc,[],c) ->
       extract_lam_binders c
   | CLambdaN (loc,(nal,t)::bl,c) ->

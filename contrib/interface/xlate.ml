@@ -1022,8 +1022,8 @@ and xlate_tac =
     | TacInstantiate (a, b, _) -> 
 	xlate_error "TODO: Instantiate ... <clause>"
 
-    | TacLetTac (id, c, cl) ->
-        CT_lettac(xlate_ident id, xlate_formula c, 
+    | TacLetTac (na, c, cl) ->
+        CT_lettac(xlate_id_opt ((0,0),na), xlate_formula c, 
 		  (* TODO LATER: This should be shared with Unfold,
 		     but the structures are different *)
 		  xlate_clause cl)
@@ -1032,8 +1032,8 @@ and xlate_tac =
                CT_pose(xlate_id_opt ((0,0), name), xlate_formula c)
     | TacForward (false, name, c) -> 
                CT_assert(xlate_id_opt ((0,0),name), xlate_formula c)
-    | TacTrueCut (idopt, c) -> 
-                             CT_truecut(xlate_ident_opt idopt, xlate_formula c)
+    | TacTrueCut (na, c) -> 
+        CT_truecut(xlate_id_opt ((0,0),na), xlate_formula c)
     | TacAnyConstructor(Some tac) -> 
 	CT_any_constructor
 	(CT_coerce_TACTIC_COM_to_TACTIC_OPT(xlate_tactic tac))
@@ -1250,12 +1250,12 @@ let build_constructors l =
 
 let build_record_field_list l =
  let build_record_field (coe,d) = match d with
-  | AssumExpr ((_,id),c) ->
-      if coe then CT_constr_coercion (xlate_ident id, xlate_formula c)
+  | AssumExpr (id,c) ->
+      if coe then CT_constr_coercion (xlate_id_opt id, xlate_formula c)
       else
 	CT_coerce_CONSTR_to_RECCONSTR
-	  (CT_constr (xlate_ident id, xlate_formula c))
-  | DefExpr ((_,id),c,topt) ->
+	  (xlate_id_opt id, xlate_formula c)
+  | DefExpr (id,c,topt) ->
       xlate_error "TODO: manifest fields in Record" in
  CT_recconstr_list (List.map build_record_field l);;
 

@@ -291,9 +291,9 @@ GEXTEND Gram
 	  TacMutualCofix (id,fd)
 
       | IDENT "Cut"; c = constr -> TacCut c
-      | IDENT "Assert"; c = constr -> TacTrueCut (None,c)
+      | IDENT "Assert"; c = constr -> TacTrueCut (Names.Anonymous,c)
       | IDENT "Assert"; c = constr; ":"; t = constr ->
-          TacTrueCut (Some (snd(coerce_to_id c)),t)
+          TacTrueCut (Names.Name (snd(coerce_to_id c)),t)
       | IDENT "Assert"; c = constr; ":="; b = constr ->
           TacForward (false,Names.Name (snd (coerce_to_id c)),b)
       | IDENT "Pose"; c = constr; ":="; b = constr ->
@@ -301,8 +301,8 @@ GEXTEND Gram
       | IDENT "Pose"; b = constr -> TacForward (true,Names.Anonymous,b)
       | IDENT "Generalize"; lc = LIST1 constr -> TacGeneralize lc
       | IDENT "Generalize"; IDENT "Dependent"; c = constr -> TacGeneralizeDep c
-      | IDENT "LetTac"; id = base_ident; ":="; c = constr; p = clause_pattern
-        -> TacLetTac (id,c,p)
+      | IDENT "LetTac"; (_,na) = name; ":="; c = constr; p = clause_pattern
+        -> TacLetTac (na,c,p)
       | IDENT "Instantiate"; n = natural; c = constr; cls = clause -> 
 	    TacInstantiate (n,c,cls)
       | IDENT "Specialize"; n = OPT natural; lcb = constr_with_bindings ->

@@ -910,9 +910,12 @@ and fPROOF_SCRIPT = function
    (List.iter fCOMMAND l);
    fNODE "proof_script" (List.length l)
 and fRECCONSTR = function
-| CT_coerce_CONSTR_to_RECCONSTR x -> fCONSTR x
+| CT_coerce_CONSTR_to_RECCONSTR (x1,x2) ->
+   fID_OPT x1;
+   fFORMULA x2;
+   fNODE "CONSTR_to_RECCONSTR" 2
 | CT_constr_coercion(x1, x2) ->
-   fID x1;
+   fID_OPT x1;
    fFORMULA x2;
    fNODE "constr_coercion" 2
 and fRECCONSTR_LIST = function
@@ -1244,7 +1247,7 @@ and fTACTIC_COM = function
    fLET_VALUE x2;
    fNODE "let_ltac" 2
 | CT_lettac(x1, x2, x3) ->
-   fID x1;
+   fID_OPT x1;
    fFORMULA x2;
    fCLAUSE x3;
    fNODE "lettac" 3

@@ -472,9 +472,9 @@ and pr_atom1 = function
           prlist (fun (id,c) -> spc () ++ pr_id id ++ pr_arg pr_constr c)
 	  l))
   | TacCut c -> hov 1 (str "Cut" ++ pr_arg pr_constr c)
-  | TacTrueCut (None,c) -> 
+  | TacTrueCut (Anonymous,c) -> 
       hov 1 (str "Assert" ++ pr_arg pr_constr c)
-  | TacTrueCut (Some id,c) -> 
+  | TacTrueCut (Name id,c) -> 
       hov 1 (str "Assert" ++ spc () ++ pr_id id ++ str ":" ++ pr_constr c)
   | TacForward (false,na,c) ->
       hov 1 (str "Assert" ++ pr_arg pr_name na ++ str ":=" ++ pr_constr c)
@@ -485,11 +485,11 @@ and pr_atom1 = function
   | TacGeneralizeDep c ->
       hov 1 (str "Generalize" ++ spc () ++ str "Dependent" ++ spc () ++
       pr_constr c)
-  | TacLetTac (id,c,cl) ->
+  | TacLetTac (na,c,cl) ->
       let pcl = match cl with
           {onhyps=None;onconcl=true;concl_occs=[]} -> mt()
         | _ -> pr_clauses pr_ident cl in
-      hov 1 (str "LetTac" ++ spc () ++ pr_id id ++ str ":=" ++
+      hov 1 (str "LetTac" ++ spc () ++ pr_name na ++ str ":=" ++
              pr_constr c ++ pcl)
   | TacInstantiate (n,c,cls) ->
       hov 1 (str "Instantiate" ++ pr_arg int n ++ pr_arg pr_constr c ++ 

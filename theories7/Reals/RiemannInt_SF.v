@@ -982,8 +982,8 @@ Qed.
 Lemma StepFun_P39 : (a,b:R;f:(StepFun a b)) (RiemannInt_SF f)==(Ropp (RiemannInt_SF (mkStepFun (StepFun_P6 (pre f))))).
 Intros; Unfold RiemannInt_SF; Case (total_order_Rle a b); Case (total_order_Rle b a); Intros.
 Assert H : (adapted_couple f a b (subdivision f) (subdivision_val f)); [Apply StepFun_P1 | Assert H0 : (adapted_couple (mkStepFun (StepFun_P6 (pre f))) b a (subdivision (mkStepFun (StepFun_P6 (pre f)))) (subdivision_val (mkStepFun (StepFun_P6 (pre f))))); [Apply StepFun_P1 | Assert H1 : a==b; [Apply Rle_antisym; Assumption | Rewrite (StepFun_P8 H H1); Assert H2 : b==a; [Symmetry; Apply H1 | Rewrite (StepFun_P8 H0 H2); Ring]]]].
-Rewrite Ropp_Ropp; EApply StepFun_P17; [Apply StepFun_P1 | Apply StepFun_P2; Assert H := (StepFun_P6 (pre f)); Unfold IsStepFun in H; Elim H; Intros; Unfold is_subdivision; Elim p; Intros; Apply p0].
-Apply eq_Ropp; EApply StepFun_P17; [Apply StepFun_P1 | Apply StepFun_P2; Assert H := (StepFun_P6 (pre f)); Unfold IsStepFun in H; Elim H; Intros; Unfold is_subdivision; Elim p; Intros; Apply p0].
+Rewrite Ropp_Ropp; EApply StepFun_P17; [Apply StepFun_P1 | Apply StepFun_P2; Pose H := (StepFun_P6 (pre f)); Unfold IsStepFun in H; Elim H; Intros; Unfold is_subdivision; Elim p; Intros; Apply p0].
+Apply eq_Ropp; EApply StepFun_P17; [Apply StepFun_P1 | Apply StepFun_P2; Pose H := (StepFun_P6 (pre f)); Unfold IsStepFun in H; Elim H; Intros; Unfold is_subdivision; Elim p; Intros; Apply p0].
 Assert H : ``a<b``; [Auto with real | Assert H0 : ``b<a``; [Auto with real | Elim (Rlt_antirefl ? (Rlt_trans ? ? ? H H0))]].
 Qed.
 

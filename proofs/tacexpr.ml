@@ -129,11 +129,11 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacCofix of identifier option
   | TacMutualCofix of identifier * (identifier * 'constr) list
   | TacCut of 'constr
-  | TacTrueCut of identifier option * 'constr 
+  | TacTrueCut of name * 'constr 
   | TacForward of bool * name * 'constr
   | TacGeneralize of 'constr list
   | TacGeneralizeDep of 'constr
-  | TacLetTac of identifier * 'constr * 'id gclause
+  | TacLetTac of name * 'constr * 'id gclause
   | TacInstantiate of int * 'constr * 'id gclause
 
   (* Derived basic tactics *)

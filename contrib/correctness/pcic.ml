@@ -56,7 +56,7 @@ let tuple_n n =
       (fun i -> 
 	 let id = make_ident ("proj_" ^ string_of_int n ^ "_") (Some i) in
 	 let id' = make_ident "T" (Some i) in
-	 (false, Vernacexpr.AssumExpr ((dummy_loc,id), mkIdentC id')))
+	 (false, Vernacexpr.AssumExpr ((dummy_loc,Name id), mkIdentC id')))
       l1n 
   in
   let cons = make_ident "Build_tuple_" (Some n) in

@@ -266,12 +266,12 @@ GEXTEND Gram
 *)
   (* ... with coercions *)
   record_field:
-    [ [ id = identref -> (false,AssumExpr(id,CHole loc))
-      | id = identref; oc = of_type_with_opt_coercion; t = lconstr ->
+    [ [ id = name -> (false,AssumExpr(id,CHole loc))
+      | id = name; oc = of_type_with_opt_coercion; t = lconstr ->
          (oc,AssumExpr (id,t))
-      | id = identref; oc = of_type_with_opt_coercion;
+      | id = name; oc = of_type_with_opt_coercion;
              t = lconstr; ":="; b = lconstr -> (oc,DefExpr (id,b,Some t))
-      | id = identref; ":="; b = lconstr ->
+      | id = name; ":="; b = lconstr ->
          match b with
              CCast(_,b,t) -> (false,DefExpr(id,b,Some t))
            | _ -> (false,DefExpr(id,b,None)) ] ]

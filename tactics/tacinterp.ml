@@ -608,14 +608,15 @@ let rec intern_atomic lf ist x =
       let f (id,c) = (intern_ident lf ist id,intern_constr ist c) in
       TacMutualCofix (intern_ident lf ist id, List.map f l)
   | TacCut c -> TacCut (intern_constr ist c)
-  | TacTrueCut (ido,c) ->
-      TacTrueCut (option_app (intern_ident lf ist) ido, intern_constr ist c)
-  | TacForward (b,na,c) -> TacForward (b,intern_name lf ist na,intern_constr ist c)
+  | TacTrueCut (na,c) ->
+      TacTrueCut (intern_name lf ist na, intern_constr ist c)
+  | TacForward (b,na,c) ->
+      TacForward (b,intern_name lf ist na,intern_constr ist c)
   | TacGeneralize cl -> TacGeneralize (List.map (intern_constr ist) cl)
   | TacGeneralizeDep c -> TacGeneralizeDep (intern_constr ist c)
-  | TacLetTac (id,c,cls) ->
-      let id = intern_ident lf ist id in
-      TacLetTac (id,intern_constr ist c,
+  | TacLetTac (na,c,cls) ->
+      let na = intern_name lf ist na in
+      TacLetTac (na,intern_constr ist c,
                  (clause_app (intern_hyp_location ist) cls))
   | TacInstantiate (n,c,cls) -> 
       TacInstantiate (n,intern_constr ist c,
@@ -1621,15 +1622,15 @@ and interp_atomic ist gl = function
       let f (id,c) = (eval_ident ist id,pf_interp_constr ist gl c) in
       h_mutual_cofix (eval_ident ist id) (List.map f l)
   | TacCut c -> h_cut (pf_interp_constr ist gl c)
-  | TacTrueCut (ido,c) ->
-      h_true_cut (eval_opt_ident ist ido) (pf_interp_constr ist gl c)
+  | TacTrueCut (na,c) ->
+      h_true_cut (eval_name ist na) (pf_interp_constr ist gl c)
   | TacForward (b,na,c) ->
       h_forward b (eval_name ist na) (pf_interp_constr ist gl c)
   | TacGeneralize cl -> h_generalize (List.map (pf_interp_constr ist gl) cl)
   | TacGeneralizeDep c -> h_generalize_dep (pf_interp_constr ist gl c)
-  | TacLetTac (id,c,clp) ->
+  | TacLetTac (na,c,clp) ->
       let clp = interp_clause ist gl clp in
-      h_let_tac (eval_ident ist id) (pf_interp_constr ist gl c) clp
+      h_let_tac (eval_name ist na) (pf_interp_constr ist gl c) clp
   | TacInstantiate (n,c,ido) -> h_instantiate n (pf_interp_constr ist gl c)
       (clause_app (interp_hyp_location ist gl) ido)
 

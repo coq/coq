@@ -271,12 +271,12 @@ GEXTEND Gram
     [ [ l = LIST1 onecorec SEP "with" -> l ] ]
   ;
   record_field:
-    [ [ id = identref; oc = of_type_with_opt_coercion; t = constr ->
+    [ [ id = name; oc = of_type_with_opt_coercion; t = constr ->
           (oc,AssumExpr (id,t))
-      | id = identref; oc = of_type_with_opt_coercion; t = constr;
+      | id = name; oc = of_type_with_opt_coercion; t = constr;
 	":="; b = constr ->
 	  (oc,DefExpr (id,b,Some t))
-      | id = identref; ":="; b = constr ->
+      | id = name; ":="; b = constr ->
 	  (false,DefExpr (id,b,None)) ] ]
   ;
   fields:

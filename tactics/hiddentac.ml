@@ -40,12 +40,12 @@ let h_mutual_cofix id l =
   abstract_tactic (TacMutualCofix (id,l)) (mutual_cofix id l)
 
 let h_cut c          = abstract_tactic (TacCut c) (cut c)
-let h_true_cut ido c = abstract_tactic (TacTrueCut (ido,c)) (true_cut ido c)
+let h_true_cut na c = abstract_tactic (TacTrueCut (na,c)) (true_cut na c)
 let h_forward b na c = abstract_tactic (TacForward (b,na,c)) (forward b na c)
 let h_generalize cl  = abstract_tactic (TacGeneralize cl) (generalize cl)
 let h_generalize_dep c = abstract_tactic (TacGeneralizeDep c)(generalize_dep c)
-let h_let_tac id c cl =
-  abstract_tactic (TacLetTac (id,c,cl)) (letin_tac true (Names.Name id) c cl)
+let h_let_tac na c cl =
+  abstract_tactic (TacLetTac (na,c,cl)) (letin_tac true na c cl)
 let h_instantiate n c cls = 
   abstract_tactic (TacInstantiate (n,c,cls))
     (Evar_refiner.instantiate n c (simple_clause_of cls))

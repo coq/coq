@@ -1901,12 +1901,12 @@ assert (H : adapted_couple f a b (subdivision f) (subdivision_val f));
           [ symmetry  in |- *; apply H1 | rewrite (StepFun_P8 H0 H2); ring ] ] ] ].
 rewrite Ropp_involutive; eapply StepFun_P17;
  [ apply StepFun_P1
- | apply StepFun_P2; assert (H := StepFun_P6 (pre f)); unfold IsStepFun in H;
+ | apply StepFun_P2; set (H := StepFun_P6 (pre f)); unfold IsStepFun in H;
     elim H; intros; unfold is_subdivision in |- *; 
     elim p; intros; apply p0 ].
 apply Ropp_eq_compat; eapply StepFun_P17;
  [ apply StepFun_P1
- | apply StepFun_P2; assert (H := StepFun_P6 (pre f)); unfold IsStepFun in H;
+ | apply StepFun_P2; set (H := StepFun_P6 (pre f)); unfold IsStepFun in H;
     elim H; intros; unfold is_subdivision in |- *; 
     elim p; intros; apply p0 ].
 assert (H : a < b);

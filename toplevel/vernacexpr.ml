@@ -26,6 +26,7 @@ open Libnames
 open Nametab
 
 type lident = identifier located
+type lname = name located
 type lstring = string
 type lreference = reference
 
@@ -147,8 +148,8 @@ type definition_expr =
       * constr_expr option
 
 type local_decl_expr =
-  | AssumExpr of lident * constr_expr
-  | DefExpr of lident * constr_expr * constr_expr option
+  | AssumExpr of lname * constr_expr
+  | DefExpr of lname * constr_expr * constr_expr option
 
 type module_binder = lident list * module_type_ast
 

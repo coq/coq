@@ -32,17 +32,15 @@ open Topconstr
 
 (********** definition d'un record (structure) **************)
 
-let name_of id = if id = wildcard then Anonymous else Name id
-
 let interp_decl sigma env = function
-  | Vernacexpr.AssumExpr((_,id),t) -> (name_of id,None,interp_type Evd.empty env t)
+  | Vernacexpr.AssumExpr((_,id),t) -> (id,None,interp_type Evd.empty env t)
   | Vernacexpr.DefExpr((_,id),c,t) ->
       let c = match t with
 	| None -> c
 	| Some t -> mkCastC (c,t)
       in
       let j = judgment_of_rawconstr Evd.empty env c in
-      (Name id,Some j.uj_val, j.uj_type)
+      (id,Some j.uj_val, j.uj_type)
 
 let typecheck_params_and_fields ps fs =
   let env0 = Global.env () in
@@ -210,10 +208,11 @@ let declare_projections indsp coers fields =
 let definition_structure ((is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
   let coers,fs = List.split cfs in
   let nparams = local_binders_length ps in
-  let extract_name = function
-      Vernacexpr.AssumExpr((_,id),_) -> id
-    | Vernacexpr.DefExpr ((_,id),_,_) -> id in
-  let allnames =  idstruc::(List.map extract_name fs) in
+  let extract_name acc = function
+      Vernacexpr.AssumExpr((_,Name id),_) -> id::acc
+    | Vernacexpr.DefExpr ((_,Name id),_,_) -> id::acc
+    | _ -> acc in
+  let allnames =  idstruc::(List.fold_left extract_name [] fs) in
   if not (list_distinct allnames) then error "Two objects have the same name";
   (* Now, younger decl in params and fields is on top *)
   let params,fields = typecheck_params_and_fields ps fs in

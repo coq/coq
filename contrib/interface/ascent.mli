@@ -402,8 +402,8 @@ and ct_PREMISE_PATTERN =
 and ct_PROOF_SCRIPT =
     CT_proof_script of ct_COMMAND list
 and ct_RECCONSTR =
-    CT_coerce_CONSTR_to_RECCONSTR of ct_CONSTR
-  | CT_constr_coercion of ct_ID * ct_FORMULA
+    CT_coerce_CONSTR_to_RECCONSTR of ct_ID_OPT * ct_FORMULA
+  | CT_constr_coercion of ct_ID_OPT * ct_FORMULA
 and ct_RECCONSTR_LIST =
     CT_recconstr_list of ct_RECCONSTR list
 and ct_REC_TACTIC_FUN =
@@ -526,7 +526,7 @@ and ct_TACTIC_COM =
   | CT_inversion of ct_INV_TYPE * ct_ID_OR_INT * ct_ID_LIST
   | CT_left of ct_SPEC_LIST
   | CT_let_ltac of ct_LET_CLAUSES * ct_LET_VALUE
-  | CT_lettac of ct_ID * ct_FORMULA * ct_CLAUSE
+  | CT_lettac of ct_ID_OPT * ct_FORMULA * ct_CLAUSE
   | CT_match_context of ct_CONTEXT_RULE * ct_CONTEXT_RULE list
   | CT_match_context_reverse of ct_CONTEXT_RULE * ct_CONTEXT_RULE list
   | CT_match_tac of ct_TACTIC_COM * ct_MATCH_TAC_RULES

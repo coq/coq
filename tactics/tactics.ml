@@ -505,15 +505,15 @@ let cut_and_apply c gl =
 (*     Cut tactics        *)
 (**************************)
 
-let true_cut idopt c gl =
+let true_cut na c gl =
   match kind_of_term (hnf_type_of gl c) with
     | Sort s -> 
 	let id =
-	  match idopt with
-	  | None -> 
+	  match na with
+	  | Anonymous -> 
               let d = match s with Prop _ -> "H" | Type _ -> "X" in
               fresh_id [] (id_of_string d) gl
-	  | Some id -> id
+	  | Name id -> id
 	in
 	internal_cut id c gl
     | _  -> error "Not a proposition or a type"
@@ -759,9 +759,12 @@ let check_hypotheses_occurrences_list env (_,occl) =
 
 let nowhere = {onhyps=Some[]; onconcl=false; concl_occs=[]}
 
-(* Tactic Pose should not perform any replacement (as specified in
-   the doc), but it does in the conclusion! *) 
-let forward b na c = letin_tac b na c onConcl
+(* Tactic Assert (b=false) and Pose (b=true):
+   the behaviour of Pose is corrected by the translator.
+   not that of Assert *)
+let forward b na c =
+  let wh =  if !Options.v7 && b then onConcl else nowhere in
+  letin_tac b na c wh
 
 (********************************************************************)
 (*               Exact tactics                                      *)

@@ -374,19 +374,19 @@ let rec mlexpr_of_atomic_tactic = function
 
   | Tacexpr.TacCut c ->
       <:expr< Tacexpr.TacCut $mlexpr_of_constr c$ >>
-  | Tacexpr.TacTrueCut (ido,c) ->
-      let ido = mlexpr_of_ident_option ido in
-      <:expr< Tacexpr.TacTrueCut $ido$ $mlexpr_of_constr c$ >>
+  | Tacexpr.TacTrueCut (na,c) ->
+      let na = mlexpr_of_name na in
+      <:expr< Tacexpr.TacTrueCut $na$ $mlexpr_of_constr c$ >>
   | Tacexpr.TacForward (b,na,c) ->
       <:expr< Tacexpr.TacForward $mlexpr_of_bool b$ $mlexpr_of_name na$ $mlexpr_of_constr c$ >>
   | Tacexpr.TacGeneralize cl ->
       <:expr< Tacexpr.TacGeneralize $mlexpr_of_list mlexpr_of_constr cl$ >>
   | Tacexpr.TacGeneralizeDep c ->
       <:expr< Tacexpr.TacGeneralizeDep $mlexpr_of_constr c$ >>
-  | Tacexpr.TacLetTac (id,c,cl) ->
-      let id = mlexpr_of_ident id in
+  | Tacexpr.TacLetTac (na,c,cl) ->
+      let na = mlexpr_of_name na in
       let cl = mlexpr_of_clause_pattern cl in
-      <:expr< Tacexpr.TacLetTac $id$ $mlexpr_of_constr c$ $cl$ >>
+      <:expr< Tacexpr.TacLetTac $na$ $mlexpr_of_constr c$ $cl$ >>
 
   (* Derived basic tactics *)
   | Tacexpr.TacSimpleInduction (h,_) ->

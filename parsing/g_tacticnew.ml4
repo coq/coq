@@ -55,7 +55,7 @@ let test_lpar_idnum_coloneq =
 
 (* idem for (x:t) *)
 let lpar_id_colon =
-  Gram.Entry.of_parser "test_lpar_id_colon"
+  Gram.Entry.of_parser "lpar_id_colon"
     (fun strm ->
       match Stream.npeek 1 strm with
         | [("","(")] ->
@@ -333,18 +333,20 @@ GEXTEND Gram
 
       | IDENT "cut"; c = constr -> TacCut c
       | IDENT "assert"; id = lpar_id_colon; t = lconstr; ")" ->
-          TacTrueCut (Some id,t)
+          TacTrueCut (Names.Name id,t)
       | IDENT "assert"; id = lpar_id_coloneq; b = lconstr; ")" ->
           TacForward (false,Names.Name id,b)
-      | IDENT "assert"; c = constr -> TacTrueCut (None,c)
+      | IDENT "assert"; c = constr -> TacTrueCut (Names.Anonymous,c)
       | IDENT "pose"; id = lpar_id_coloneq; b = lconstr; ")" ->
 	  TacForward (true,Names.Name id,b)
       | IDENT "pose"; b = constr -> TacForward (true,Names.Anonymous,b)
       | IDENT "generalize"; lc = LIST1 constr -> TacGeneralize lc
       | IDENT "generalize"; IDENT "dependent"; c = constr ->
           TacGeneralizeDep c
-      | IDENT "set"; "("; id = base_ident; ":="; c = lconstr; ")";
-          p = clause -> TacLetTac (id,c,p)
+      | IDENT "set"; id = lpar_id_coloneq; c = lconstr; ")";
+          p = clause -> TacLetTac (Names.Name id,c,p)
+      | IDENT "set"; c = constr; p = clause ->
+          TacLetTac (Names.Anonymous,c,p)
       | IDENT "instantiate"; "("; n = natural; ":="; c = lconstr; ")";
 	  cls = clause ->
             TacInstantiate (n,c,cls)

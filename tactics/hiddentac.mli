@@ -44,11 +44,11 @@ val h_mutual_cofix    : identifier -> (identifier * constr) list -> tactic
 val h_cofix           : identifier option -> tactic
 
 val h_cut             : constr -> tactic 
-val h_true_cut        : identifier option -> constr -> tactic 
+val h_true_cut        : name -> constr -> tactic 
 val h_generalize      : constr list -> tactic 
 val h_generalize_dep  : constr -> tactic 
 val h_forward         : bool -> name -> constr -> tactic 
-val h_let_tac         : identifier -> constr -> Tacticals.clause -> tactic
+val h_let_tac         : name -> constr -> Tacticals.clause -> tactic
 val h_instantiate     : int -> constr -> Tacticals.clause -> tactic
 
 (* Derived basic tactics *)
