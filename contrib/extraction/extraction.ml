@@ -144,14 +144,6 @@ let sort_of env c = Retyping.get_sort_family_of env none (strip_outer_cast c)
 
 let is_axiom sp = (Global.lookup_constant sp).const_body = None
 
-(* TODO: Could we export the one inside reductionops *)
-
-let rec find_conclusion env c =
-  let t = whd_betadeltaiota env none c in
-  match kind_of_term t with
-    | Prod (x,t,c0) -> find_conclusion (push_rel (x,None,t) env) c0
-    | t -> t
-	  
 (*s [flag_of_type] transforms a type [t] into a [flag]. 
   Really important function. *)
 
