@@ -24,7 +24,7 @@ type pattern_matching_error =
   | WrongNumargConstructor of constructor_path * int
   | WrongPredicateArity of constr * constr * constr
   | NeedsInversion of constr * constr
-  | RedundantClause of cases_pattern list
+  | UnusedClause of cases_pattern list
   | NonExhaustive of cases_pattern list
 
 exception PatternMatchingError of env * pattern_matching_error

@@ -33,7 +33,7 @@ type pattern_matching_error =
   | WrongNumargConstructor of constructor_path * int
   | WrongPredicateArity of constr * constr * constr
   | NeedsInversion of constr * constr
-  | RedundantClause of cases_pattern list
+  | UnusedClause of cases_pattern list
   | NonExhaustive of cases_pattern list
 
 exception PatternMatchingError of env * pattern_matching_error
@@ -220,6 +220,7 @@ type equation =
       rhs          : rhs;
       alias_stack  : name list;
       eqn_loc      : loc;
+      used         : bool ref;
       tag          : pattern_source }
 
 type matrix = equation list
@@ -493,24 +494,19 @@ let check_all_variables typ mat =
 	   error_bad_pattern_loc loc (cstr_sp,ctxt_of_ids ids) typ)
     mat
 
-let check_number_of_regular_eqns pb eqns =
-  match List.filter is_regular eqns with
-    | [] -> (*warning "Found several default clauses, kept the first one"*) ()
-    | [_] -> ()
-    | _::eqn::_ ->
-	let tms = match pb.history with
-	  | Result tms -> tms 
-	  | _ -> assert false in
-	raise_pattern_matching_error
-	  (eqn.eqn_loc, pb.env, RedundantClause tms)
+let check_unused_pattern env eqn =
+  if not !(eqn.used) then 
+    raise_pattern_matching_error
+      (eqn.eqn_loc, env, UnusedClause eqn.patterns)
+
+let set_used_pattern eqn = eqn.used := true
 
 let extract_rhs pb =
   match pb.mat with 
     | [] -> errorlabstrm "build_leaf" (mssg_may_need_inversion())
-    | (eqn::_::_ as eqns) ->
-	check_number_of_regular_eqns pb eqns;
+    | eqn::_ ->
+	set_used_pattern eqn;
 	eqn.tag, eqn.rhs
-    | [eqn] -> eqn.tag, eqn.rhs
 
 (**********************************************************************)
 (* Functions to deal with matrix factorization *)
@@ -1223,6 +1219,7 @@ let matx_of_eqns env tomatchl eqns =
       tag = RegularPat;
       alias_stack = [];
       eqn_loc = loc;
+      used = ref false;
       rhs = rhs }
   in List.map build_eqn eqns
 
@@ -1432,6 +1429,9 @@ let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
       typing_function = typing_fun } in
   
   let _, j = compile pb in
+
+  (* We check for unused patterns *)
+  List.iter (check_unused_pattern env) matx;
   
   match tycon with
     | Some p ->	Coercion.inh_conv_coerce_to loc env isevars j p

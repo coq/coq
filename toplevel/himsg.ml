@@ -502,10 +502,13 @@ let explain_needs_inversion ctx x t =
   [< 'sTR "Sorry, I need inversion to compile pattern matching of term ";
      px ; 'sTR " of type: "; pt>]
 
-let explain_redundant_clauses env pats =
+let explain_unused_clause env pats =
   let s = if List.length pats > 1 then "s" else "" in
-  [<'sTR ("Redundant clause for pattern"^s); 'sPC;
-    hOV 0 (prlist_with_sep pr_spc pr_cases_pattern pats) >]
+(* Without localisation
+  [<'sTR ("Unused clause with pattern"^s); 'sPC;
+    hOV 0 (prlist_with_sep pr_spc pr_cases_pattern pats); 'sTR ")" >]
+*)
+  [<'sTR "This clause is redundant" >]
 
 let explain_non_exhaustive env pats =
   let s = if List.length pats > 1 then "s" else "" in
@@ -523,7 +526,7 @@ let explain_pattern_matching_error env = function
       explain_wrong_predicate_arity env pred n dep
   | NeedsInversion (x,t) ->
       explain_needs_inversion env x t
-  | RedundantClause tms ->
-      explain_redundant_clauses env tms
+  | UnusedClause tms ->
+      explain_unused_clause env tms
   | NonExhaustive tms ->
       explain_non_exhaustive env tms
