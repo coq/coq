@@ -8,7 +8,8 @@ mv /tmp/v8.$$ v8
 cd v8
 rm description
 make clean
-make OPT=-translate || { echo ---- Failed to translate; exit 1; }
+make COQFLAGS='-translate -q $(OPT) $(COQLIBS) $(COQ_XML)' || \
+ { echo ---- Failed to translate; exit 1; }
 echo ------------------ Upgrading v8 files -------------------------
 v8files=`find . -name \*.v8`
 for i in $v8files; do
@@ -18,6 +19,6 @@ for i in $v8files; do
 done
 echo ------------------ Recompiling v8 files -----------------------
 make clean
-make OPT=-v8 || { echo ---- Failed to recompile; exit 1; }
+make || { echo ---- Failed to recompile; exit 1; }
 make clean # to save disk space
 echo ------------------ Translation completed ----------------------

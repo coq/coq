@@ -1,12 +1,13 @@
 echo
 echo ------------------ Producing v8 files -------------------------
 make clean
-make OPT=-translate || { echo ---- Failed to translate; exit 1; }
+make COQFLAGS='-translate -q $(OPT) $(COQLIBS) $(COQ_XML)' || \
+  { echo ---- Failed to translate; exit 1; }
 $COQBIN/../tools/upgrade-v8 || { echo ---- Failed to upgrade files; exit 1; }
 echo
 echo ------------------ Recompiling v8 files -----------------------
 make clean
-make OPT=-v8 || { echo ---- Failed to recompile; exit 1; }
+make || { echo ---- Failed to recompile; exit 1; }
 echo
 echo ------------------ Translation completed ----------------------
 echo Old files are in directory v7
