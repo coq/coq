@@ -68,6 +68,7 @@ let id_of_name = function
 let string_of_name nme = string_of_id (id_of_name nme)
  (*end debugging *)
 
+(* Interpretation of constr's *)
 let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c
 
 let rec collect_cases l =
@@ -163,6 +164,8 @@ let rec npatternify ltypes c =
 (*      let _ = prconstr res in *)
      res
 
+(* fait une application (c m1 m2...mn, où mi est une evar, on rend également
+   la liste des evar munies de leur type) *)
 let rec apply_levars c lmetav =
  match lmetav with
   | [] -> [],c
@@ -373,7 +376,8 @@ let rec proofPrinc mi lst_vars lst_eqs lst_recs:
      let anme = Array.of_list lnme' in
      let aappel_rec = Array.of_list lappel_rec in
      (* llevar are put outside the fix, so one level of rel must be removed *)
-     mkFix((iarr,i),(anme, pisarr,aappel_rec)),(pop1_levar llevar),llposeq,evararr,pisarr,[]
+     mkFix((iarr,i),(anme, pisarr,aappel_rec))
+      , (pop1_levar llevar) , llposeq,evararr,pisarr,[]
 
   (* <pcase> Cases b of arrPt end.*)
   | Case(cinfo, pcase, b, arrPt) -> 
@@ -510,7 +514,8 @@ let rec proofPrinc mi lst_vars lst_eqs lst_recs:
      let nb_eqs = (List.length lst_eqs) in
      let eqrels = List.map fst lst_eqs in
      (* [terms_recs]: appel rec du fixpoint, On concatène les appels recs
-        trouvés dans les let in et les Cases. *)
+        trouvés dans les let in et les Cases avec ceux trouves dans u (ie
+        mi.mimick). *)
      (* TODO: il faudra gérer plusieurs pt fixes imbriqués ? *)
      let terms_recs = lst_recs @ (hdMatchSub_cpl mi.mimick mi.fonc)  in
      
@@ -538,9 +543,6 @@ let rec proofPrinc mi lst_vars lst_eqs lst_recs:
 
 
 let mkevarmap_aux ex = let x,y = ex in	(mkevarmap_from_listex x),y
-
-(* Interpretation of constr's *)
-let constr_of_Constr c = Constrintern.interp_constr Evd.empty (Global.env()) c
 
 
 (* TODO: deal with any term, not only a constant. *)
@@ -619,7 +621,7 @@ let invfun_basic open_princ_proof_applied listargs_ids gl dorew lposeq =
    (tclTHEN
     (* Refine on the right term (following the sheme of the
        given function) *)
-    (fun gl -> refine open_princ_proof_applied  gl)
+    (fun gl -> refine open_princ_proof_applied gl)
     (* Clear the hypothesis given as arguments of the tactic
        (because they are generalized) *)
     (tclTHEN simpl_in_concl (tclTRY (clear listargs_ids))))
@@ -689,20 +691,17 @@ let invfun c l dorew gl =
  let _ = resetmeta() in
  let princ_proof,levar, lposeq,evararr,_,parms = 
   invfun_proof [|fonc|] def_fonc [||] pis (pf_env gl) (project gl) in
-
  (* Generalize the goal. [[x1:T1][x2:T2]... g[arg1 <- x1 ...]]. *)
  let gl_abstr' = add_lambdas (pf_concl gl) gl listargs' in
  (* apply parameters immediately *)
- let gl_abstr = applistc gl_abstr' (List.map (fun (x,y,z) -> x) (List.rev parms)) in
-
+ let gl_abstr = 
+  applistc gl_abstr' (List.map (fun (x,y,z) -> x) (List.rev parms)) in
  (* we apply args of the fix now, the parameters will be applied later *)
  let princ_proof_applied_args = 
   applistc princ_proof (listsuf (List.length parms) listargs') in
-
  (* parameters are still there so patternify must not take them -> lift *)
  let princ_proof_applied_lift = 
   lift (List.length levar) princ_proof_applied_args in
-
  let princ_applied_hyps'' = patternify (List.rev levar)
   princ_proof_applied_lift (Name (id_of_string "Hyp"))  in
  (* if there was a fix, we will not add "Q" as in funscheme, so we make a pop,
@@ -710,14 +709,20 @@ let invfun c l dorew gl =
     and add lift in funscheme. *)
  let princ_applied_hyps' = 
   if Array.length evararr > 0 then popn 1 princ_applied_hyps''
-  else princ_applied_hyps'' in
- 
+  else princ_applied_hyps'' in 
+ (* if there is was fix, we have to replace the meta representing the
+    predicate of the goal by the abstracted goal itself. *)
  let princ_applied_hyps = 
   if Array.length evararr > 0 then (* mutual Fixpoint not treated in the tactic *) 
-     (substit_red 0 (evararr.(0)) gl_abstr princ_applied_hyps')
+    (substit_red 0 (evararr.(0)) gl_abstr princ_applied_hyps')
   else princ_applied_hyps' (* No Fixpoint *) in
  let _ = prNamedConstr "princ_applied_hyps" princ_applied_hyps in
-
+ (* Same thing inside levar *)
+ let newlevar' = 
+  if Array.length evararr > 0 then (* mutual Fixpoint not treated in the tactic *) 
+    List.map (fun (x,y) -> x,substit_red 0 (evararr.(0)) gl_abstr y) levar 
+  else levar
+ in
  (* replace params metavar by real args *)
  let rec replace_parms lparms largs t = 
   match lparms, largs with
@@ -725,8 +730,12 @@ let invfun c l dorew gl =
    | ((p,_,_)::lp), (a::la) -> let t'= substitterm 0 p a t in replace_parms lp la t'
    | _, _ -> error "problem with number of args." in
  let princ_proof_applied = replace_parms parms listargs' princ_applied_hyps in
-
-
+ let _ = prNamedLConstr "levar:" (List.map fst newlevar') in
+ let _ = prNamedLConstr "levar types:" (List.map snd newlevar') in
+ let _ = prNamedConstr "princ_proof_applied" princ_proof_applied in
+ (* replace also in levar *)
+ let newlevar = 
+  List.rev (List.map (fun (x,y) -> x, replace_parms parms listargs' y) newlevar') in
 (*
  (* replace params metavar by abstracted variables *)
   let princ_proof_params = npatternify (List.rev parms) princ_applied_hyps in
@@ -734,12 +743,15 @@ let invfun c l dorew gl =
  let princ_proof_applied = 
   applistc princ_proof_params (listpref (List.length parms) listargs') in
 *)
-
-
-
- let princ_applied_evars = apply_levars princ_proof_applied levar in
+ let princ_applied_evars = apply_levars princ_proof_applied newlevar in
  let open_princ_proof_applied = princ_applied_evars in
+ let _ = prNamedConstr "princ_applied_evars" (snd princ_applied_evars) in
+ let _ = prNamedLConstr "evars" (List.map snd (fst princ_applied_evars)) in
  let listargs_ids = List.map destVar (List.filter isVar listargs') in
+ (* debug: impression du but*)
+ let lgl = Evd.to_list (sig_sig gl) in
+ let _ = prNamedLConstr "\ngl= " (List.map (fun x -> (snd x).evar_concl) lgl) in
+ let _ = prstr "fin gl \n\n" in
  invfun_basic (mkevarmap_aux open_princ_proof_applied) listargs_ids 
   gl dorew lposeq
 
@@ -750,8 +762,7 @@ let invfun_verif c l dorew gl =
    let x,_ = decompose_prod (pf_type_of gl c) in
    if List.length x = List.length l then 
      try invfun c l dorew gl
-     with 
-        UserError (x,y) -> raise (UserError (x,y))
+     with UserError (x,y) -> raise (UserError (x,y))
    else error "wrong number of arguments for the function"
 
 
