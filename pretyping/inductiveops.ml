@@ -247,47 +247,48 @@ let find_coinductive env sigma c =
 
 
 (***********************************************)
-(* find appropriate names for pattern variables. Useful in the
-   Case tactic. *)
+(* find appropriate names for pattern variables. Useful in the Case
+   and Inversion (case_then_using et case_nodep_then_using) tactics. *)
 
-let is_dep_predicate env kelim pred nodep_ar = 
-  let rec srec env pval pt nodep_ar =
-    let pt' = whd_betadeltaiota env Evd.empty pt in
+let is_predicate_explicitly_dep env pred nodep_ar = 
+  let rec srec env pval nodep_ar =
     let pv' = whd_betadeltaiota env Evd.empty pval in
-    match kind_of_term pv', kind_of_term pt', kind_of_term nodep_ar with
-      | Lambda (na,t,b), Prod (_,_,a), Prod (_,_,a') ->
-	  srec (push_rel_assum (na,t) env) b a a'
-      | _,              Prod (na,t,a), Prod (_,_,a') ->
-	  srec (push_rel_assum (na,t) env) (lift 1 pv') a a'
-      | Lambda (_,_,b), Prod (_,_,_), _ -> (*dependent (mkRel 1) b*) true
-      | _, Prod (_,_,_), _ -> true
-      | _ -> false in 
-  srec env pred.uj_val pred.uj_type nodep_ar
+    match kind_of_term pv', kind_of_term nodep_ar with
+      | Lambda (na,t,b), Prod (_,_,a') ->
+	  srec (push_rel_assum (na,t) env) b a'
+      | Lambda (na,_,_), _ ->
 
-let is_dependent_elimination_predicate env pred indf =
-  let (ind,params) = indf in
-  let (_,mip) = Inductive.lookup_mind_specif env ind in
-  let kelim = mip.mind_kelim in
+       (* The following code has impact on the introduction names
+	  given by the tactics "case" and "inversion": when the
+	  elimination is not dependent, "case" uses Anonymous for
+	  inductive types in Prop and names created by mkProd_name for
+	  inductive types in Set/Type while "inversion" uses anonymous
+	  for inductive types both in Prop and Set/Type !!
+
+	  Previously, whether names were created or not relied on
+	  whether the predicate created in Indrec.make_case_com had a
+	  dependent arity or not. To avoid different predicates
+	  printed the same in v8, all predicates built in indrec.ml
+	  got a dependent arity (Aug 2004). The new way to decide
+	  whether names have to be created or not is to use an
+	  Anonymous or Named variable to enforce the expected
+	  dependency status (of course, Anonymous implies non
+	  dependent, but not conversely).
+
+          At the end, this is only to preserve the compatibility: a
+          check whether the predicate is actually dependent or not
+          would indeed be more natural! *)
+
+	  na <> Anonymous
+
+      | _ -> anomaly "Non eta-expanded dep-expanded \"match\" predicate"
+  in
+  srec env pred nodep_ar
+
+let is_elim_predicate_explicitly_dependent env pred indf =
   let arsign,s = get_arity env indf in
   let glob_t = it_mkProd_or_LetIn (mkSort s) arsign in
-  is_dep_predicate env kelim pred glob_t
-
-let is_dep_arity env kelim predty nodep_ar = 
-  let rec srec pt nodep_ar =
-    let pt' = whd_betadeltaiota env Evd.empty pt in
-    match kind_of_term pt', kind_of_term nodep_ar with
-      | Prod (_,a1,a2), Prod (_,a1',a2') -> srec a2 a2'
-      | Prod (_,a1,a2), _ -> true
-      | _ -> false in 
-  srec predty nodep_ar
-
-let is_dependent_elimination env predty indf =
-  let (ind,params) = indf in
-  let (_,mip) = Inductive.lookup_mind_specif env ind in
-  let kelim = mip.mind_kelim in
-  let arsign,s = get_arity env indf in
-  let glob_t = it_mkProd_or_LetIn (mkSort s) arsign in
-  is_dep_arity env kelim predty glob_t
+  is_predicate_explicitly_dep env pred glob_t
 
 let set_names env n brty =
   let (ctxt,cl) = decompose_prod_n_assum n brty in
@@ -309,7 +310,7 @@ let type_case_branches_with_names env indspec pj c =
   let (lbrty,conclty,_) = Inductive.type_case_branches env indspec pj c in
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let params = list_firstn mip.mind_nparams args in
-  if is_dependent_elimination_predicate env pj (ind,params) then
+  if is_elim_predicate_explicitly_dependent env pj.uj_val (ind,params) then
     (set_pattern_names env ind lbrty, conclty)
   else (lbrty, conclty)
 
