@@ -49,8 +49,7 @@ val ise_resolve_type : bool -> 'a evar_map -> (int * constr) list ->
  * if we must coerce to a type *)
 val ise_resolve1 : bool -> 'a evar_map -> env -> rawconstr -> constr
 
-val ise_resolve_casted : 'a evar_map -> env -> 
-  constr -> rawconstr -> constr
+val ise_resolve_casted : 'a evar_map -> env -> constr -> rawconstr -> constr
 
 (* progmach.ml tries to type ill-typed terms: does not perform the conversion
  * test in application.

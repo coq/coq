@@ -44,9 +44,7 @@ let (inStruc,outStruc) =
                     specification_function = (function x -> x) })
 
 let add_new_struc (s,c,n,l) = 
-  let _ = 
-    Lib.add_anonymous_leaf (inStruc (s,{s_CONST=c;s_PARAM=n;s_PROJ=l})) in
-  ()
+  Lib.add_anonymous_leaf (inStruc (s,{s_CONST=c;s_PARAM=n;s_PROJ=l}))
 
 let struc_info s = List.assoc s !sTRUCS
 
@@ -83,9 +81,8 @@ let add_new_objdef (o,c,la,lp,l) =
   try 
     let _ = List.assoc o !oBJDEFS in ()
   with Not_found -> 
-    let _ = Lib.add_anonymous_leaf
-	      (inObjDef (o,{o_DEF=c;o_TABS=la;o_TPARAMS=lp;o_TCOMPS=l})) in
-    ()
+    Lib.add_anonymous_leaf
+      (inObjDef (o,{o_DEF=c;o_TABS=la;o_TPARAMS=lp;o_TCOMPS=l}))
 
 let ((inObjDef1:section_path -> obj),(outObjDef1:obj -> section_path)) =
   declare_object ("OBJDEF1",

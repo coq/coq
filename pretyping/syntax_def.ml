@@ -31,13 +31,12 @@ let (in_syntax_constant, out_syntax_constant) =
     cache_function = cache_syntax_constant;
     load_function = (fun _ -> ());
     open_function = open_syntax_constant;
-    specification_function = (fun x -> x) } in
+    specification_function = (fun x -> x) } 
+  in
   declare_object ("SYNTAXCONSTANT", od)
 
 let declare_syntactic_definition id c =
-  let sp = add_leaf id CCI (in_syntax_constant c) in
-  add_syntax_constant id c;
-  Nametab.push (basename sp) sp
+  let _ = add_leaf id CCI (in_syntax_constant c) in ()
 
 let search_syntactic_definition id = Idmap.find id !syntax_table
 
