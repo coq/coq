@@ -71,7 +71,8 @@ LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
 	      -I contrib/extraction \
               -I contrib/interface -I contrib/fourier \
 	      -I contrib/jprover -I contrib/cc \
-	      -I contrib/funind -I contrib/first-order
+	      -I contrib/funind -I contrib/first-order \
+              -I contrib/field
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
