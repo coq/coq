@@ -1,3 +1,3 @@
 Implicits eq [1].
 
-Check (eq bool).
+Check (eq bool true).
