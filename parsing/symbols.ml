@@ -151,8 +151,8 @@ let find_notation pat_scope pat scopes =
     | Some None -> Some (None,scopes)
     | Some x -> Some (x,pat_scope::scopes)
 
-let exists_notation_in_scope scope ntn =
-  try Stringmap.mem ntn (Stringmap.find scope !scope_map).notations
+let exists_notation_in_scope scope ntn r =
+  try Stringmap.find ntn (Stringmap.find scope !scope_map).notations = r
   with Not_found -> false
 
 let exists_notation nt =

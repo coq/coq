@@ -164,7 +164,7 @@ let load_infix _ (_,(gr,se,ntn,scope,pat)) =
 
 let open_infix i (_,(gr,se,ntn,scope,pat)) =
   if i=1 then begin
-    let b = Symbols.exists_notation_in_scope scope ntn in
+    let b = Symbols.exists_notation_in_scope scope ntn pat in
     (* Declare the printer rule and its interpretation *)
     if not b then Esyntax.add_ppobject {sc_univ="constr";sc_entries=se};
     (* Declare the grammar rule ... *)
@@ -340,19 +340,20 @@ let make_syntax_rule n name symbols ast ntn sc =
 
 let subst_meta_ast subst a =
   let found = ref [] in
+  let loc = dummy_loc in
   let rec subst_rec subst = function
-  | Smetalam (loc,s,body) -> Smetalam (loc,s,subst_rec subst body)
-  | Node(loc,"META",_) -> error "Unexpected metavariable in notation"
+  | Smetalam (_,s,body) -> Smetalam (loc,s,subst_rec subst body)
+  | Node(_,"META",_) -> error "Unexpected metavariable in notation"
   | Node(_,"QUALID",[Nvar(_,id)]) as x ->
       (try let a = List.assoc id subst in found:=id::!found; a
        with Not_found -> x)
-  | Node(loc,op,args) -> Node (loc,op, List.map (subst_rec subst) args)
-  | Slam(loc,None,body) -> Slam(loc,None,subst_rec subst body)
-  | Slam(loc,Some s,body) ->
+  | Node(_,op,args) -> Node (loc,op, List.map (subst_rec subst) args)
+  | Slam(_,None,body) -> Slam(loc,None,subst_rec subst body)
+  | Slam(_,Some s,body) ->
       (* Prévenir que "s" peut forcer une capturer à l'instantiation de la *)
       (* règle de grammaire ?? *)
       Slam(loc,Some s,subst_rec (List.remove_assoc s subst) body)
-  | Nmeta _ | Id _ | Nvar _ | Str _ | Num _ | Path _ as a -> a
+  | Nmeta _ | Id _ | Nvar _ | Str _ | Num _ | Path _ as a -> set_loc loc a
   | Dynamic _ as a -> (* Hum... what to do here *) a
   in
   let a = subst_rec subst a in

@@ -44,7 +44,7 @@ val declare_notation : notation -> rawconstr -> scope_name -> unit
 val interp_notation : notation -> scopes -> rawconstr  list -> rawconstr
 val find_notation : scope_name -> notation -> scopes -> 
   (delimiters option * scopes) option
-val exists_notation_in_scope : scope_name -> notation -> bool
+val exists_notation_in_scope : scope_name -> notation -> rawconstr -> bool
 val exists_notation : notation -> bool
 
 (* Declare and look for scopes associated to arguments of a global ref *)
