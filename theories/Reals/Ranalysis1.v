@@ -469,27 +469,6 @@ Elim H6; Intros; Unfold D_x in H10; Elim H10; Intros; Assumption.
 Elim H6; Intros; Assumption.
 Qed.
 
-Axiom derivable_pt_lim_sin : (x:R) (derivable_pt_lim sin x (cos x)).
-
-Lemma derivable_pt_lim_cos : (x:R) (derivable_pt_lim cos x ``-(sin x)``).
-Intro; Cut (h:R)``(sin (h+PI/2))``==(cos h).
-Intro; Replace ``-(sin x)`` with (Rmult (cos ``x+PI/2``) (Rplus R1 R0)).
-Generalize (derivable_pt_lim_comp (plus_fct id (fct_cte ``PI/2``)) sin); Intros.
-Cut (derivable_pt_lim (plus_fct id (fct_cte ``PI/2``)) x ``1+0``).
-Cut (derivable_pt_lim sin (plus_fct id (fct_cte ``PI/2``) x) ``(cos (x+PI/2))``).
-Intros; Generalize (H0 ? ? ? H2 H1); Replace (comp sin (plus_fct id (fct_cte ``PI/2``))) with [x:R]``(sin (x+PI/2))``; [Idtac | Reflexivity].
-Unfold derivable_pt_lim; Intros.
-Elim (H3 eps H4); Intros.
-Exists x0.
-Intros; Rewrite <- (H ``x+h``); Rewrite <- (H x); Apply H5; Assumption.
-Apply derivable_pt_lim_sin.
-Apply derivable_pt_lim_plus.
-Apply derivable_pt_lim_id.
-Apply derivable_pt_lim_const.
-Rewrite sin_cos; Rewrite <- (Rplus_sym x); Ring.
-Intro; Rewrite cos_sin; Rewrite Rplus_sym; Reflexivity.
-Qed.
-
 Lemma derivable_pt_plus : (f1,f2:R->R;x:R) (derivable_pt f1 x) -> (derivable_pt f2 x) -> (derivable_pt (plus_fct f1 f2) x).
 Unfold derivable_pt; Intros.
 Elim X; Intros.
@@ -553,18 +532,6 @@ Apply Specif.existT with ``x1*x0``.
 Apply derivable_pt_lim_comp; Assumption.
 Qed.
 
-Lemma derivable_pt_sin : (x:R) (derivable_pt sin x).
-Unfold derivable_pt; Intro.
-Apply Specif.existT with (cos x).
-Apply derivable_pt_lim_sin.
-Qed.
-
-Lemma derivable_pt_cos : (x:R) (derivable_pt cos x).
-Unfold derivable_pt; Intro.
-Apply Specif.existT with ``-(sin x)``.
-Apply derivable_pt_lim_cos.
-Qed.
-
 Lemma derivable_plus : (f1,f2:R->R) (derivable f1) -> (derivable f2) -> (derivable (plus_fct f1 f2)).
 Unfold derivable; Intros.
 Apply (derivable_pt_plus ? ? x (X ?) (X0 ?)).
@@ -606,14 +573,6 @@ Qed.
 Lemma derivable_comp : (f1,f2:R->R) (derivable f1) -> (derivable f2) -> (derivable (comp f2 f1)).
 Unfold derivable; Intros.
 Apply (derivable_pt_comp ? ? x (X ?) (X0 ?)).
-Qed.
-
-Lemma derivable_sin : (derivable sin).
-Unfold derivable; Intro; Apply derivable_pt_sin.
-Qed.
-
-Lemma derivable_cos : (derivable cos).
-Unfold derivable; Intro; Apply derivable_pt_cos.
 Qed.
 
 Lemma derive_pt_plus : (f1,f2:R->R;x:R;pr1:(derivable_pt f1 x);pr2:(derivable_pt f2 x)) ``(derive_pt (plus_fct f1 f2) x (derivable_pt_plus ? ? ? pr1 pr2)) == (derive_pt f1 x pr1) + (derive_pt f2 x pr2)``.
@@ -722,14 +681,69 @@ Unfold derive_pt in H0; Rewrite H0 in H4.
 Apply derivable_pt_lim_comp; Assumption.
 Qed.
 
-Lemma derive_pt_sin : (x:R) ``(derive_pt sin x (derivable_pt_sin ?))==(cos x)``.
-Intros; Apply derive_pt_eq_0.
-Apply derivable_pt_lim_sin.
+(* Pow *)
+Definition pow_fct [n:nat] : R->R := [y:R](pow y n).
+
+Lemma derivable_pt_lim_pow_pos : (x:R;n:nat) (lt O n) -> (derivable_pt_lim [y:R](pow y n) x ``(INR n)*(pow x (pred n))``).
+Intros.
+Induction n.
+Elim (lt_n_n ? H).
+Cut n=O\/(lt O n).
+Intro; Elim H0; Intro.
+Rewrite H1; Simpl.
+Replace [y:R]``y*1`` with (mult_fct id (fct_cte R1)).
+Replace ``1*1`` with ``1*(fct_cte R1 x)+(id x)*0``.
+Apply derivable_pt_lim_mult.
+Apply derivable_pt_lim_id.
+Apply derivable_pt_lim_const.
+Unfold fct_cte id; Ring.
+Reflexivity.
+Replace [y:R](pow y (S n)) with [y:R]``y*(pow y n)``.
+Replace (pred (S n)) with n; [Idtac | Reflexivity].
+Replace [y:R]``y*(pow y n)`` with (mult_fct id [y:R](pow y n)).
+Pose f := [y:R](pow y n).
+Replace ``(INR (S n))*(pow x n)`` with (Rplus (Rmult R1 (f x)) (Rmult (id x) (Rmult (INR n) (pow x (pred n))))).
+Apply derivable_pt_lim_mult.
+Apply derivable_pt_lim_id.
+Unfold f; Apply Hrecn; Assumption.
+Unfold f.
+Pattern 1 5 n; Replace n with (S (pred n)).
+Unfold id; Rewrite S_INR; Simpl.
+Ring.
+Symmetry; Apply S_pred with O; Assumption.
+Unfold mult_fct id; Reflexivity.
+Reflexivity.
+Inversion H.
+Left; Reflexivity.
+Right.
+Apply lt_le_trans with (1).
+Apply lt_O_Sn.
+Assumption.
 Qed.
 
-Lemma derive_pt_cos : (x:R) ``(derive_pt cos x (derivable_pt_cos ?))==-(sin x)``.
+Lemma derivable_pt_lim_pow : (x:R; n:nat) (derivable_pt_lim [y:R](pow y n) x ``(INR n)*(pow x (pred n))``).
+Intros.
+Induction n.
+Simpl.
+Rewrite Rmult_Ol.
+Replace [_:R]``1`` with (fct_cte R1); [Apply derivable_pt_lim_const | Reflexivity].
+Apply derivable_pt_lim_pow_pos.
+Apply lt_O_Sn.
+Qed.
+
+Lemma derivable_pt_pow : (n:nat;x:R) (derivable_pt [y:R](pow y n) x).
+Intros; Unfold derivable_pt.
+Apply Specif.existT with ``(INR n)*(pow x (pred n))``.
+Apply derivable_pt_lim_pow.
+Qed.
+
+Lemma derivable_pow : (n:nat) (derivable [y:R](pow y n)).
+Intro; Unfold derivable; Intro; Apply derivable_pt_pow.
+Qed.
+
+Lemma derive_pt_pow : (n:nat;x:R) (derive_pt [y:R](pow y n) x (derivable_pt_pow n x))==``(INR n)*(pow x (pred n))``.
 Intros; Apply derive_pt_eq_0.
-Apply derivable_pt_lim_cos.
+Apply derivable_pt_lim_pow.
 Qed.
 
 Lemma pr_nu : (f:R->R;x:R;pr1,pr2:(derivable_pt f x)) (derive_pt f x pr1)==(derive_pt f x pr2). 
