@@ -3112,10 +3112,12 @@ contrib/ring/ring.cmx: kernel/closure.cmx interp/constrintern.cmx \
     tactics/tacticals.cmx tactics/tactics.cmx kernel/term.cmx \
     pretyping/typing.cmx lib/util.cmx toplevel/vernacexpr.cmx \
     toplevel/vernacinterp.cmx 
-contrib/romega/const_omega.cmo: interp/coqlib.cmi library/libnames.cmi \
-    kernel/names.cmi library/nametab.cmi kernel/term.cmi lib/util.cmi 
-contrib/romega/const_omega.cmx: interp/coqlib.cmx library/libnames.cmx \
-    kernel/names.cmx library/nametab.cmx kernel/term.cmx lib/util.cmx 
+contrib/romega/const_omega.cmo: interp/coqlib.cmi library/global.cmi \
+    library/libnames.cmi kernel/names.cmi library/nametab.cmi lib/options.cmi \
+    kernel/term.cmi lib/util.cmi 
+contrib/romega/const_omega.cmx: interp/coqlib.cmx library/global.cmx \
+    library/libnames.cmx kernel/names.cmx library/nametab.cmx lib/options.cmx \
+    kernel/term.cmx lib/util.cmx 
 contrib/romega/g_romega.cmo: toplevel/cerrors.cmi parsing/egrammar.cmi \
     lib/options.cmi parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi \
     proofs/refiner.cmi contrib/romega/refl_omega.cmo proofs/tacexpr.cmo \
@@ -3124,22 +3126,16 @@ contrib/romega/g_romega.cmx: toplevel/cerrors.cmx parsing/egrammar.cmx \
     lib/options.cmx parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx \
     proofs/refiner.cmx contrib/romega/refl_omega.cmx proofs/tacexpr.cmx \
     tactics/tacinterp.cmx 
-contrib/romega/refl_omega.cmo: parsing/ast.cmi tactics/auto.cmi \
-    proofs/clenv.cmi contrib/romega/const_omega.cmo \
-    contrib/omega/coq_omega.cmo kernel/environ.cmi kernel/inductive.cmi \
-    library/library.cmi proofs/logic.cmi kernel/names.cmi \
-    contrib/omega/omega.cmo lib/pp.cmi parsing/printer.cmi \
-    proofs/proof_type.cmi kernel/reduction.cmi kernel/sign.cmi \
-    proofs/tacmach.cmi tactics/tacticals.cmi tactics/tactics.cmi \
-    kernel/term.cmi lib/util.cmi 
-contrib/romega/refl_omega.cmx: parsing/ast.cmx tactics/auto.cmx \
-    proofs/clenv.cmx contrib/romega/const_omega.cmx \
-    contrib/omega/coq_omega.cmx kernel/environ.cmx kernel/inductive.cmx \
-    library/library.cmx proofs/logic.cmx kernel/names.cmx \
-    contrib/omega/omega.cmx lib/pp.cmx parsing/printer.cmx \
-    proofs/proof_type.cmx kernel/reduction.cmx kernel/sign.cmx \
-    proofs/tacmach.cmx tactics/tacticals.cmx tactics/tactics.cmx \
-    kernel/term.cmx lib/util.cmx 
+contrib/romega/omega2.cmo: kernel/names.cmi lib/util.cmi 
+contrib/romega/omega2.cmx: kernel/names.cmx lib/util.cmx 
+contrib/romega/refl_omega.cmo: contrib/romega/const_omega.cmo \
+    proofs/logic.cmi kernel/names.cmi contrib/romega/omega2.cmo lib/pp.cmi \
+    parsing/printer.cmi proofs/tacmach.cmi tactics/tacticals.cmi \
+    tactics/tactics.cmi kernel/term.cmi lib/util.cmi 
+contrib/romega/refl_omega.cmx: contrib/romega/const_omega.cmx \
+    proofs/logic.cmx kernel/names.cmx contrib/romega/omega2.cmx lib/pp.cmx \
+    parsing/printer.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
+    tactics/tactics.cmx kernel/term.cmx lib/util.cmx 
 contrib/xml/acic.cmo: kernel/names.cmi kernel/term.cmi 
 contrib/xml/acic.cmx: kernel/names.cmx kernel/term.cmx 
 contrib/xml/acic2Xml.cmo: contrib/xml/acic.cmo contrib/xml/cic2acic.cmo \
