@@ -39,3 +39,4 @@ Doc:
 - clarifier la sémantique de Decompose (i.e. travaille pas sous les ->)
 - faut-il mieux spécifier la sémantique de Simpl (??)
 - vérifier si Print Table id est à jour
+- documenter @Definition and co

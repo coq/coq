@@ -1,8 +1,11 @@
 Différences V7.0beta / V7.0
 
 - Ajout de déclarations locales aux Record (record à la Randy).
-
-- Correction de bugs (Identity Coercion; Rel not in scope of ?).
+- Correction de bugs (Identity Coercion; Rel not in scope of ?;
+  implicits in inductive defs).
+- Prise en compte noms longs dans Hints et Coercions
+- Rétablissement des @Definition and co
+- Rétablissement des token extensibles et mélangeant symboles et lettres
 
 ----------------------------------------------------------------------
 English version of changes is available on

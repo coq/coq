@@ -156,6 +156,9 @@ Changements dans les fonctions :
         ex-Tradevar, maintenant Evarutil
           mt_tycon            -> empty_tycon
 
+        Recordops
+          struc_info          -> find_structure
+
 Changements dans les inductifs
 ------------------------------
 Nouveaux types "constructor" et "inductive" dans Term
