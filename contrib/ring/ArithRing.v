@@ -14,6 +14,9 @@ Require Export Ring.
 Require Export Arith.
 Require Eqdep_dec.
 
+V7only [Import nat_scope.].
+Open Local Scope nat_scope.
+
 Fixpoint nateq [n,m:nat] : bool :=
   Cases n m of
   | O O => true
