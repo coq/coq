@@ -252,7 +252,7 @@ let _ =
   if not !Options.v7 then
     (let nocl = {onhyps=Some[];onconcl=true; concl_occs=[]} in
     List.iter
-      (fun (s,t) -> add_primitive_tactic s (TacAtom((0,0),t)))
+      (fun (s,t) -> add_primitive_tactic s (TacAtom(dummy_loc,t)))
       [ "red", TacReduce(Red false,nocl);
         "hnf", TacReduce(Hnf,nocl);
         "simpl", TacReduce(Simpl None,nocl);
