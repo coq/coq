@@ -8,55 +8,81 @@
 
 (*i $Id$ i*)
 
+Require Rbase.
+Require Rseries.
+Require Alembert.
+Require Binome.
+
 Set Implicit Arguments.
 
 Section Sigma.
 
-Require Rbase.
-
 Variable f : nat->R.
 
-Fixpoint sigma_aux [low, high: nat;diff : nat] : R :=
-Cases diff of
-O  => (f low)
-| (S p) => (Rplus (f low) (sigma_aux (S low) high p)) 
-end.
+Definition sigma [low,high:nat] : R := (sum_f_R0 [k:nat](f (plus low k)) (minus high low)).
 
-Parameter sigma : nat->nat->R.
-Hypothesis  def_sigma : (low,high:nat) (le low high) -> (sigma low high)==(sigma_aux low high (minus high low)).
-
-Lemma sigma_aux_inv : (diff,low,high,high2:nat) (sigma_aux low high diff)==(sigma_aux low high2 diff).
-Unfold sigma_aux; Induction diff; [Intros; Reflexivity | Intros; Rewrite (H (S low) high high2); Reflexivity].
+Lemma lt_minus_O_lt : (m,n:nat) (lt m n) -> (lt O (minus n m)).
+Intros n m; Pattern n m; Apply nat_double_ind; [
+  Intros; Rewrite <- minus_n_O; Assumption
+| Intros; Elim (lt_n_O ? H)
+| Intros; Simpl; Apply H; Apply lt_S_n; Assumption].
 Qed.
 
 Theorem sigma_split : (low,high,k:nat) (le low k)->(lt k high)->``(sigma low high)==(sigma low k)+(sigma (S k) high)``.
-Intros.
-Repeat Rewrite def_sigma.
-Cut (d,e,n:nat) ((Rplus (sigma_aux n n d) (sigma_aux (plus n (S d)) (plus n (S d)) e))==(sigma_aux n n (plus d (S e)))).
-Intros; Rewrite (sigma_aux_inv (minus high low) low high low); Rewrite (sigma_aux_inv (minus k low) low k low); Rewrite (sigma_aux_inv (minus high (S k)) (S k) high (S k)); Symmetry.
-Cut (plus low (S (minus k low)))=(S k).
-Cut (plus (minus k low) (S (minus high (S k))))=(minus high low).
-Intros; Rewrite <- H2; Repeat Rewrite <- H3; Apply (H1 (minus k low) (minus high (plus low (S (minus k low))))).
-Apply INR_eq; Repeat Rewrite plus_INR Orelse Rewrite minus_INR Orelse Rewrite S_INR; Try Ring.
+Intros; Induction k.
+Cut low = O.
+Intro; Rewrite H1; Unfold sigma; Rewrite <- minus_n_n; Rewrite <- minus_n_O; Simpl; Replace (minus high (S O)) with (pred high).
+Apply (decomp_sum [k:nat](f k)).
+Assumption.
+Apply pred_of_minus.
+Inversion H; Reflexivity.
+Cut (le low k)\/low=(S k).
+Intro; Elim H1; Intro.
+Replace (sigma low (S k)) with ``(sigma low k)+(f (S k))``.
+Rewrite Rplus_assoc; Replace ``(f (S k))+(sigma (S (S k)) high)`` with (sigma (S k) high).
+Apply Hreck.
+Assumption.
+Apply lt_trans with (S k); [Apply lt_n_Sn | Assumption].
+Unfold sigma; Replace (minus high (S (S k))) with (pred (minus high (S k))).
+Pattern 3 (S k); Replace (S k) with (plus (S k) O); [Idtac | Ring].
+Replace (sum_f_R0 [k0:nat](f (plus (S (S k)) k0)) (pred (minus high (S k)))) with (sum_f_R0 [k0:nat](f (plus (S k) (S k0))) (pred (minus high (S k)))).
+Apply (decomp_sum [i:nat](f (plus (S k) i))).
+Apply lt_minus_O_lt; Assumption.
+Apply sum_eq; Intros; Replace (plus (S k) (S i)) with (plus (S (S k)) i).
+Reflexivity.
+Apply INR_eq; Do 2 Rewrite plus_INR; Do 3 Rewrite S_INR; Ring.
+Replace (minus high (S (S k))) with (minus (minus high (S k)) (S O)).
+Apply pred_of_minus.
+Apply INR_eq; Repeat  Rewrite minus_INR.
+Do 4 Rewrite S_INR; Ring.
 Apply lt_le_S; Assumption.
-Apply lt_le_weak; Apply le_lt_trans with k; Assumption.
+Apply lt_le_weak; Assumption.
+Apply lt_le_S; Apply lt_minus_O_lt; Assumption.
+Unfold sigma; Replace (minus (S k) low) with (S (minus k low)).
+Pattern 1 (S k); Replace (S k) with (plus low (S (minus k low))).
+Symmetry; Apply (tech5 [i:nat](f (plus low i))).
+Apply INR_eq; Rewrite plus_INR; Do 2 Rewrite S_INR; Rewrite minus_INR.
+Ring.
 Assumption.
-Apply INR_eq; Repeat Rewrite plus_INR Orelse Rewrite minus_INR Orelse Rewrite S_INR; Try Ring.
-Assumption.
-Induction d.
-Intros; Cut (plus n (S O))=(S n).
-Cut (plus O (S e))=(S e).
-Intros; Repeat Rewrite H2; Rewrite H1; Rewrite (sigma_aux_inv (S e) n n (S n)); Unfold sigma_aux; Reflexivity.
-Auto.
-Apply INR_eq; Repeat Rewrite plus_INR Orelse Rewrite S_INR; Try Ring.
-Intros; Cut (plus (S n) (S e))=(S (plus n (S e))).
-Intro; Rewrite H2; Unfold sigma_aux; Fold sigma_aux; Cut (plus n0 (S (S n)))=(plus (S n0) (S n)).
-Intro; Repeat Rewrite H3; Rewrite (sigma_aux_inv n (S n0) n0 (S n0)); Rewrite Rplus_assoc; Rewrite (H1 e (S n0)); Rewrite (sigma_aux_inv (plus n (S e)) (S n0) n0 (S n0)); Reflexivity.
-Apply INR_eq; Repeat Rewrite plus_INR Orelse Rewrite S_INR; Try Ring.
-Apply INR_eq; Repeat Rewrite plus_INR Orelse Rewrite S_INR; Try Ring.
-Apply lt_le_S; Assumption.
-Assumption.
-Apply lt_le_weak; Apply le_lt_trans with k; Assumption.
+Apply minus_Sn_m; Assumption.
+Rewrite <- H2; Unfold sigma; Rewrite <- minus_n_n; Simpl; Replace (minus high (S low)) with (pred (minus high low)).
+Replace (sum_f_R0 [k0:nat](f (S (plus low k0))) (pred (minus high low))) with (sum_f_R0 [k0:nat](f (plus low (S k0))) (pred (minus high low))).
+Apply (decomp_sum [k0:nat](f (plus low k0))).
+Apply lt_minus_O_lt.
+Apply le_lt_trans with (S k); [Rewrite H2; Apply le_n | Assumption].
+Apply sum_eq; Intros; Replace (S (plus low i)) with (plus low (S i)).
+Reflexivity.
+Apply INR_eq; Rewrite plus_INR; Do 2 Rewrite S_INR; Rewrite plus_INR; Ring.
+Replace (minus high (S low)) with (minus (minus high low) (S O)).
+Apply pred_of_minus.
+Apply INR_eq; Repeat  Rewrite minus_INR.
+Do 2 Rewrite S_INR; Ring.
+Apply lt_le_S; Rewrite H2; Assumption.
+Rewrite H2; Apply lt_le_weak; Assumption.
+Apply lt_le_S; Apply lt_minus_O_lt; Rewrite H2; Assumption.
+Inversion H; [
+  Right; Reflexivity
+| Left; Assumption].
 Qed.
 
 Theorem sigma_diff : (low,high,k:nat) (le low k) -> (lt k high )->``(sigma low high)-(sigma low k)==(sigma (S k) high)``.
@@ -68,15 +94,29 @@ Intros low high k H1 H2; Rewrite -> (sigma_split H1 H2); Ring.
 Qed.
 
 Theorem sigma_first : (low,high:nat) (lt low high) -> ``(sigma low high)==(f low)+(sigma (S low) high)``.
-Intros low high H1; Generalize (lt_le_S low high H1); Intro H2; Generalize (lt_le_weak low high H1); Intro H3; Replace ``(f low)`` with ``(sigma low low)``; [Apply sigma_split; Trivial | Rewrite def_sigma; [Replace (minus low low) with O; Ring; Apply minus_n_n | Trivial]].
+Intros low high H1; Generalize (lt_le_S low high H1); Intro H2; Generalize (lt_le_weak low high H1); Intro H3; Replace ``(f low)`` with ``(sigma low low)``.
+Apply sigma_split.
+Apply le_n.
+Assumption.
+Unfold sigma; Rewrite <- minus_n_n.
+Simpl.
+Replace (plus low O) with low; [Reflexivity | Ring].
 Qed.
 
 Theorem sigma_last : (low,high:nat) (lt low high) -> ``(sigma low high)==(f high)+(sigma low (pred high))``.
-Intros low high H1; Generalize (lt_le_S low high H1); Intro H2; Generalize (lt_le_weak low high H1); Intro H3; Replace ``(f high)`` with ``(sigma high high)``; [Rewrite Rplus_sym; Pattern 3 high; Rewrite (S_pred high low H1); Apply sigma_split; [Apply gt_S_le; Rewrite <- (S_pred high low H1); Assumption | Pattern 2 high; Rewrite (S_pred high low H1); Apply lt_n_Sn] | Rewrite def_sigma; [ Rewrite <- (minus_n_n high) | Trivial ]; Trivial].
+Intros low high H1; Generalize (lt_le_S low high H1); Intro H2; Generalize (lt_le_weak low high H1); Intro H3; Replace ``(f high)`` with ``(sigma high high)``.
+Rewrite Rplus_sym; Cut high = (S (pred high)).
+Intro; Pattern 3 high; Rewrite H.
+Apply sigma_split.
+Apply le_S_n; Rewrite <- H; Apply lt_le_S; Assumption.
+Apply lt_pred_n_n; Apply le_lt_trans with low; [Apply le_O_n | Assumption].
+Apply S_pred with O; Apply le_lt_trans with low; [Apply le_O_n | Assumption].
+Unfold sigma; Rewrite <- minus_n_n; Simpl; Replace (plus high O) with high; [Reflexivity | Ring].
 Qed.
 
 Theorem sigma_eq_arg : (low:nat) (sigma low low)==(f low).
-Intro low; Rewrite def_sigma; [Rewrite <- (minus_n_n low); Trivial | Trivial].
+Intro; Unfold sigma; Rewrite <- minus_n_n.
+Simpl; Replace (plus low O) with low; [Reflexivity | Ring].
 Qed.
 
 End Sigma.
