@@ -384,6 +384,8 @@ FULLIDELIB=$(FULLCOQLIB)/ide
 IDEFILES=ide/coq.png ide/.coqiderc
 
 ide: $(COQIDEBYTE) $(COQIDE) states
+clean-ide: 
+	rm -f $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT)
 
 $(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) $(COQIDECMX)
 	$(COQMKTOP) -ide -opt $(OPTFLAGS) -o $@

@@ -77,7 +77,7 @@ newtheories/Logic/ClassicalFacts.vo: newtheories/Logic/ClassicalFacts.v
 newtheories/Logic/Berardi.vo: newtheories/Logic/Berardi.v
 newtheories/Logic/Eqdep_dec.vo: newtheories/Logic/Eqdep_dec.v
 newtheories/Logic/Decidable.vo: newtheories/Logic/Decidable.v
-newtheories/Logic/JMeq.vo: newtheories/Logic/JMeq.v
+newtheories/Logic/JMeq.vo: newtheories/Logic/JMeq.v newtheories/Logic/Eqdep.vo
 newtheories/Arith/Arith.vo: newtheories/Arith/Arith.v newtheories/Arith/Le.vo newtheories/Arith/Lt.vo newtheories/Arith/Plus.vo newtheories/Arith/Gt.vo newtheories/Arith/Minus.vo newtheories/Arith/Mult.vo newtheories/Arith/Between.vo newtheories/Arith/Peano_dec.vo newtheories/Arith/Compare_dec.vo
 newtheories/Arith/Gt.vo: newtheories/Arith/Gt.v newtheories/Arith/Le.vo newtheories/Arith/Lt.vo newtheories/Arith/Plus.vo
 newtheories/Arith/Between.vo: newtheories/Arith/Between.v newtheories/Arith/Le.vo newtheories/Arith/Lt.vo
@@ -240,7 +240,7 @@ newtheories/Setoids/Setoid.vo: newtheories/Setoids/Setoid.v
 newtheories/Sorting/Heap.vo: newtheories/Sorting/Heap.v newtheories/Lists/PolyList.vo newtheories/Sets/Multiset.vo newtheories/Sorting/Permutation.vo newtheories/Relations/Relations.vo newtheories/Sorting/Sorting.vo
 newtheories/Sorting/Permutation.vo: newtheories/Sorting/Permutation.v newtheories/Relations/Relations.vo newtheories/Lists/PolyList.vo newtheories/Sets/Multiset.vo
 newtheories/Sorting/Sorting.vo: newtheories/Sorting/Sorting.v newtheories/Lists/PolyList.vo newtheories/Sets/Multiset.vo newtheories/Sorting/Permutation.vo newtheories/Relations/Relations.vo
-newcontrib/omega/Omega.vo: newcontrib/omega/Omega.v newtheories/ZArith/fast_integer.vo newtheories/ZArith/zarith_aux.vo newtheories/ZArith/auxiliary.vo newtheories/ZArith/Zsyntax.vo newtheories/ZArith/ZArith_dec.vo newtheories/ZArith/Zmisc.vo newtheories/ZArith/Wf_Z.vo newtheories/ZArith/Zhints.vo newtheories/Arith/Minus.vo
+newcontrib/omega/Omega.vo: newcontrib/omega/Omega.v newtheories/ZArith/fast_integer.vo newtheories/ZArith/zarith_aux.vo newtheories/ZArith/auxiliary.vo newtheories/ZArith/Zsyntax.vo newtheories/ZArith/ZArith_dec.vo newtheories/ZArith/Zmisc.vo newtheories/ZArith/Wf_Z.vo newtheories/ZArith/Zhints.vo
 newcontrib/romega/ReflOmegaCore.vo: newcontrib/romega/ReflOmegaCore.v newtheories/Arith/Arith.vo newtheories/Lists/PolyList.vo newtheories/Bool/Bool.vo newtheories/ZArith/ZArith_base.vo
 newcontrib/romega/ROmega.vo: newcontrib/romega/ROmega.v newcontrib/omega/Omega.vo newcontrib/romega/ReflOmegaCore.vo
 newcontrib/ring/ArithRing.vo: newcontrib/ring/ArithRing.v newcontrib/ring/Ring.vo newtheories/Arith/Arith.vo newtheories/Logic/Eqdep_dec.vo

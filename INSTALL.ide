@@ -15,7 +15,7 @@ REQUIREMENT:
 	  You may still compile CoqIde with older 2.0.x versions and 
           use all features.
 	  Run 
-		"pkg-config --modversion gtk+-2.0"
+		"pkg-config --modversion gtk+-2.0 gthread-2.0"
 	  to check your version.
 	 All recent distributions have precompiled packages.
 	 Do not forget to install the developement headers packages.
@@ -26,27 +26,32 @@ REQUIREMENT:
 INSTALLATION
  1) You need to install the OCaml stub library lablgtk2. See 
        		http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html
-	  The first official beta snapshot is needed.
+	  No current The latest CVS version is needed.
 	  Use this one :
-http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk2-beta.tar.gz
+	http://www.lri.fr/~monate/download/lablgtk2-coqide.tgz
     If you are in a hurry just run :
     
     cd /tmp && \
-    wget http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk2-beta.tar.gz && \
-    tar zxvf lablgtk2-beta.tar.gz && \
-    cd lablgtk2-beta && \
+    wget http://www.lri.fr/~monate/download/lablgtk2-coqide.tgz && \
+    tar zxvf lablgtk2-coqide.tgz && \
+    cd lablgtk2 && \
     make configure && \
     make all opt && \
     make install
 
    You must have write access to the OCaml standard library path.
-   If this fails read lablgtk2-beta/README.
+   If this fails read lablgtk2/README.
 
 2) Go into your Coq source directory and then : 
 
    make ide
+   
+   In case you are upgrading from an old version you may need to run
+	make clean-ide
 
 3) You may now run bin/coqide.opt or bin/coqide.byte.
+   If your coq install is not local, use 
+	make install-ide
 
 NOTES
 Font configuration is not saved.

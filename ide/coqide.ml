@@ -9,13 +9,13 @@ let cb_ = ref None
 let cb () = out_some !cb_
 let last_cb_content = ref ""
 
-let yes_icon = "gtk-yes"
-let no_icon = "gtk-no"
-let save_icon = "gtk-save"
-let saveas_icon = "gtk-save-as"
-let warning_icon = "gtk-dialog-warning"
-let dialog_size = 6
-let small_size = 1
+let yes_icon = `YES
+let no_icon = `NO
+let save_icon = `SAVE
+let saveas_icon = `SAVE_AS
+let warning_icon = `DIALOG_WARNING
+let dialog_size = `DIALOG
+let small_size = `SMALL_TOOLBAR
 
 let window_width = 800
 let window_height = 600
@@ -227,6 +227,7 @@ let full_do_if_not_computing f x =
 if Mutex.try_lock coq_computing then 
   ignore (Thread.create 
 	    (fun () ->
+	       Glib.Thread.enter ();
 	       prerr_endline "Launching thread";
 	       begin
 		   prerr_endline "Getting lock";
@@ -234,9 +235,11 @@ if Mutex.try_lock coq_computing then
 		   f x;
 		   prerr_endline "Releasing lock";
 		   Mutex.unlock coq_computing;
+		   Glib.Thread.leave ();
 		 with e -> 
 		   prerr_endline "Releasing lock (on error)";
 		   Mutex.unlock coq_computing;
+		   Glib.Thread.leave ();
 		   raise e
 	       end)
 	    ())
@@ -2156,6 +2159,7 @@ let start () =
   (try 
      GtkMain.Rc.add_default_file (Filename.concat (Sys.getenv "HOME") ".coqiderc");
   with Not_found -> ());
+  Glib.Thread.init ();
   ignore (GtkMain.Main.init ());
   GtkData.AccelGroup.set_default_mod_mask 
     (Some [`CONTROL;`SHIFT;`MOD1;`MOD3;`MOD4]);
