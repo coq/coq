@@ -12,6 +12,39 @@
 
 open Pp
 open Past
+open Pmisc
+
+let rec cc_subst subst = function
+  | CC_var id as c -> 
+      (try CC_expr (List.assoc id subst) with Not_found -> c)
+  | CC_letin (b,ty,bl,c1,c2) ->
+      CC_letin (b, real_subst_in_constr subst ty, cc_subst_binders subst bl,
+		cc_subst subst c1, cc_subst (cc_cross_binders subst bl) c2)
+  | CC_lam (bl, c) ->
+      CC_lam (cc_subst_binders subst bl, 
+	      cc_subst (cc_cross_binders subst bl) c)
+  | CC_app (c, cl) ->
+      CC_app (cc_subst subst c, List.map (cc_subst subst) cl)
+  | CC_tuple (b, tl, cl) ->
+      CC_tuple (b, List.map (real_subst_in_constr subst) tl,
+		List.map (cc_subst subst) cl)
+  | CC_case (ty, c, cl) ->
+      CC_case (real_subst_in_constr subst ty, cc_subst subst c,
+	       List.map (cc_subst subst) cl)
+  | CC_expr c ->
+      CC_expr (real_subst_in_constr subst c)
+  | CC_hole ty ->
+      CC_hole (real_subst_in_constr subst ty)
+
+and cc_subst_binders subst = List.map (cc_subst_binder subst)
+
+and cc_subst_binder subst = function
+  | id,CC_typed_binder c -> id,CC_typed_binder (real_subst_in_constr subst c)
+  | b -> b
+
+and cc_cross_binders subst = function
+  | [] -> subst
+  | (id,_) :: bl -> cc_cross_binders (List.remove_assoc id subst) bl
 
 (* here we only perform eta-reductions on programs to eliminate
  * redexes of the kind
@@ -29,6 +62,8 @@ let is_eta_redex bl al =
       Invalid_argument("List.for_all2") -> false
 
 let rec red = function
+  | CC_letin (_, _, [id,_], CC_expr c1, e2) ->
+      red (cc_subst [id,c1] e2)
   | CC_letin (dep, ty, bl, e1, e2) ->
       begin match red e2 with
 	| CC_tuple (false,tl,al) ->
@@ -39,7 +74,6 @@ let rec red = function
 			CC_tuple (false,tl,List.map red al))
 	| e -> CC_letin (dep, ty, bl, red e1, e)
       end
-
   | CC_lam (bl, e) ->
       CC_lam (bl, red e)
   | CC_app (e, al) ->

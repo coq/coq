@@ -19,6 +19,29 @@ Global Variable t : array N of Z.
 
 (**********************************************************************)
 
+Require Exchange.
+Require ArrayPermut.
+
+Correctness swap
+  fun (N:Z)(t:array N of Z)(i,j:Z) ->
+    { `0 <= i < N` /\ `0 <= j < N` }
+    (let v = t[i] in
+     begin
+       t[i] := t[j];
+       t[j] := v
+     end)
+    { (exchange t t@ i j) }.
+Proof.
+Auto with datatypes.
+Save.
+
+Correctness downheap
+  let rec downheap (N:Z)(t:array N of Z) : unit { variant `0` } =
+    (swap N t 0 0) { True }
+.
+
+(**********************************************************************)
+
 Global Variable x : Z ref.
 Debug on.
 Correctness assign0 (x := 0) { `x=0` }.
@@ -37,6 +60,8 @@ Save.
 Global Variable i : Z ref.
 Debug on.
 Correctness if0 { `0 <= i` } (if !i>0 then i:=!i-1 else tt) { `0 <= i` }.
+Omega.
+Save.
 
 (**********************************************************************)
 
@@ -54,11 +79,7 @@ Correctness echange
     assert { #t[i] = #t@B[j] /\ #t[j] = #t@B[i] }
   end.
 Proof.
-Auto.
-Assumption.
-Assumption.
-Elim HH_6; Auto.
-Elim HH_6; Auto.
+Auto with datatypes.
 Save.
 
   
@@ -69,9 +90,9 @@ Save.
  *)
 
 Correctness incrementation
-  while (Z_le_gt_dec !x !y) do
-    { invariant True variant (Zminus (Zs y) x) }
-    x := (Zs !x)
+  while !x < !y do
+    { invariant True variant `(Zs y)-x` }
+    x := !x + 1
   done
   { `y < x` }.
 Proof.

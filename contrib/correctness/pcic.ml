@@ -145,6 +145,12 @@ let rawconstr_of_prog p =
     (*i optimisation : let x = <constr> in e2  =>  e2[x<-constr] 
     | CC_letin (_,_,[id,_],CC_expr c,e2) ->
 	real_subst_in_constr [id,c] (trad e2)
+    | CC_letin (_,_,([_] as b),CC_expr e1,e2) ->
+	let (b',avoid',nenv') = push_vars avoid nenv b in
+      	let c1 = Detyping.detype avoid nenv e1 
+	and c2 = trad avoid' nenv' e2 in
+	let id = Name (fst (List.hd b')) in
+	RLetIn (dummy_loc, id, c1, c2)
     i*)
 
     | CC_letin (_,_,([_] as b),e1,e2) ->

@@ -11,6 +11,7 @@
 (* $Id$ *)
 
 open Pp
+open Options
 open Names
 open Term
 open Pretyping
@@ -234,7 +235,7 @@ let correctness s p opttac =
     | Some t -> tclTHEN tac t
   in
   solve_nth 1 tac;
-  show_open_subgoals()
+  if_verbose show_open_subgoals ()
 
 
 (* On redéfinit la commande "Save" pour enregistrer les nouveaux programmes *)
@@ -258,18 +259,18 @@ let wrap_save_anonymous b id =
   register pf_id (Some id)
 
 let _ = add "SaveNamed"
-    (function [] -> (fun () -> if not(Options.is_silent()) then show_script();
+    (function [] -> (fun () -> if_verbose show_script ();
 		              wrap_save_named true)
     |   _  -> assert false)
 
 let _ = add "DefinedNamed"
-    (function [] -> (fun () -> if not(Options.is_silent()) then show_script();
+    (function [] -> (fun () -> if_verbose show_script ();
 		              wrap_save_named false)
     |   _  -> assert false)
 
 let _ = add "SaveAnonymous"
     (function [VARG_IDENTIFIER id] -> 
-       (fun () -> if not(Options.is_silent()) then show_script();
+       (fun () -> if_verbose show_script ();
 	          wrap_save_anonymous true id)
     |   _  -> assert false)
 
