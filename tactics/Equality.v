@@ -13,14 +13,14 @@ Declare ML Module "equality".
 Grammar tactic simple_tactic: ast :=
   replace [ "Replace" constrarg($c1) "with" constrarg($c2) ] -> [(Replace $c1 $c2)]
 
-| deqhyp   [ "Simplify_eq" identarg($id) ] -> [(DEqHyp $id)]
+| deqhyp   [ "Simplify_eq" ident_or_numarg($id) ] -> [(DEqHyp $id)]
 | deqconcl [ "Simplify_eq" ] -> [(DEqConcl)]
 
-| discr_id [ "Discriminate" identarg($id) ] -> [(DiscrHyp $id)]
+| discr_id [ "Discriminate" ident_or_numarg($id) ] -> [(DiscrHyp $id)]
 | discr    [ "Discriminate" ] -> [(Discr)]
 
 | inj    [ "Injection" ] -> [(Inj)]
-| inj_id [ "Injection" identarg($id) ] -> [(InjHyp $id)]
+| inj_id [ "Injection" ident_or_numarg($id) ] -> [(InjHyp $id)]
 
 | rewriteLR [ "Rewrite" "->" constrarg_binding_list($cl) ] -> [(RewriteLR ($LIST $cl))]
 | rewriteRL [ "Rewrite" "<-" constrarg_binding_list($cl) ] -> [(RewriteRL ($LIST $cl))]

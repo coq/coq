@@ -195,7 +195,7 @@ let rec dependent_hyps id idlist sign =
 
 let generalizeRewriteIntros tac depids id gls = 
   let dids = dependent_hyps id depids (pf_env gls) in
-  (tclTHEN (bring_hyps (List.map in_some dids))
+  (tclTHEN (bring_hyps dids)
      (tclTHEN tac
 	(introsReplacing dids)))
   gls
@@ -222,39 +222,39 @@ let dest_eq gls t =
    If it can discriminate then the goal is proved, if not tries to use it as
    a rewrite rule. It erases the clause which is given as input *)
 
-let projectAndApply thin cls depids gls =
-  let subst_hyp_LR cls = tclTRY(hypSubst (out_some cls)  None) in
-  let subst_hyp_RL cls = tclTRY(revHypSubst (out_some cls) None) in
+let projectAndApply thin id depids gls =
+  let subst_hyp_LR id = tclTRY(hypSubst id None) in
+  let subst_hyp_RL id = tclTRY(revHypSubst id None) in
   let subst_hyp gls = 
-    let orient_rule cls = 
-      let (t,t1,t2) = dest_eq gls (clause_type cls gls) in
+    let orient_rule id = 
+      let (t,t1,t2) = dest_eq gls (pf_get_hyp_typ gls id) in
       match (kind_of_term (strip_outer_cast t1),
 	     kind_of_term (strip_outer_cast t2)) with
-        | IsVar id1, _ -> generalizeRewriteIntros (subst_hyp_LR cls) depids id1
-        | _, IsVar id2 -> generalizeRewriteIntros (subst_hyp_RL cls) depids id2
-        | _ -> subst_hyp_RL cls
+        | IsVar id1, _ -> generalizeRewriteIntros (subst_hyp_LR id) depids id1
+        | _, IsVar id2 -> generalizeRewriteIntros (subst_hyp_RL id) depids id2
+        | _ -> subst_hyp_RL id
     in 
     onLastHyp orient_rule gls 
   in
-  let (t,t1,t2) = dest_eq gls (clause_type cls gls)  in
+  let (t,t1,t2) = dest_eq gls (pf_get_hyp_typ gls id)  in
   match (thin, kind_of_term (strip_outer_cast t1), kind_of_term (strip_outer_cast t2)) with
     | (true, IsVar id1,  _) -> generalizeRewriteIntros
-          (tclTHEN (subst_hyp_LR cls) (clear_clause cls)) depids id1 gls
+          (tclTHEN (subst_hyp_LR id) (clear_clause id)) depids id1 gls
     | (false, IsVar id1,  _) ->
-        generalizeRewriteIntros (subst_hyp_LR cls) depids id1 gls
+        generalizeRewriteIntros (subst_hyp_LR id) depids id1 gls
     | (true, _ , IsVar id2) -> generalizeRewriteIntros
-          (tclTHEN (subst_hyp_RL cls) (clear_clause cls)) depids id2 gls
+          (tclTHEN (subst_hyp_RL id) (clear_clause id)) depids id2 gls
     | (false, _ , IsVar id2) ->
-        generalizeRewriteIntros (subst_hyp_RL cls) depids id2 gls
+        generalizeRewriteIntros (subst_hyp_RL id) depids id2 gls
     | (true, _, _) ->
         let deq_trailer neqns =
           tclDO neqns
             (tclTHEN intro (tclTHEN subst_hyp (onLastHyp clear_clause)))
         in 
-	(tclTHEN (tclTRY (dEqThen deq_trailer cls)) (clear_clause cls)) gls
+	(tclTHEN (tclTRY (dEqThen deq_trailer (Some id))) (clear_one id)) gls
     | (false, _, _) -> 
         let deq_trailer neqns = tclDO neqns (tclTHEN intro subst_hyp) in 
-	(tclTHEN (dEqThen deq_trailer cls) (clear_clause cls)) gls
+	(tclTHEN (dEqThen deq_trailer (Some id)) (clear_one id)) gls
 
 (* Inversion qui n'introduit pas les hypotheses, afin de pouvoir les nommer
    soi-meme (proposition de Valerie). *)
@@ -269,24 +269,23 @@ let case_trailer_gene othin neqns ba gl =
                   (tclDO neqns
                      (tclTHEN intro
                         (onLastHyp
-                           (fun cls ->
-                              tclTRY (projectAndApply thin cls depids)))))
+                           (fun id ->
+                              tclTRY (projectAndApply thin id depids)))))
 		  (tclTHEN
-                     (onCL (compose List.rev (afterHyp (out_some last))) 
-			bring_hyps)
-                     (onCL (afterHyp (out_some last)) clear_clauses))))
+                     (onHyps (compose List.rev (afterHyp last)) bring_hyps)
+                     (onHyps (afterHyp last) clear))))
       | None -> tclIDTAC
   in
   (tclTHEN (tclDO neqns intro)
-     (tclTHEN (bring_hyps (List.map in_some nodepids))
-	(tclTHEN (clear_clauses (List.map in_some nodepids))
-	   (tclTHEN (onCL (compose List.rev (nLastHyps neqns)) bring_hyps)
-	      (tclTHEN (onCL (nLastHyps neqns) clear_clauses)
+     (tclTHEN (bring_hyps nodepids)
+	(tclTHEN (clear_clauses nodepids)
+	   (tclTHEN (onHyps (compose List.rev (nLastHyps neqns)) bring_hyps)
+	      (tclTHEN (onHyps (nLastHyps neqns) clear_clauses)
 		 (tclTHEN rewrite_eqns
 		    (tclMAP (fun id ->
-			       (tclORELSE (clear_clause (Some id))
-				  (tclTHEN (bring_hyps [Some id])
-				     (clear_clause (Some id)))))
+			       (tclORELSE (clear_clause id)
+				  (tclTHEN (bring_hyps [id])
+				     (clear_one id))))
 		       depids)))))))
   gl
 
@@ -300,22 +299,22 @@ let case_trailer othin neqns ba gl =
   let rewrite_eqns =
     match othin with
       | Some thin ->
-          (tclTHEN (onCL (compose List.rev (nLastHyps neqns)) bring_hyps)
-             (tclTHEN (onCL (nLastHyps neqns) clear_clauses)
+          (tclTHEN (onHyps (compose List.rev (nLastHyps neqns)) bring_hyps)
+             (tclTHEN (onHyps (nLastHyps neqns) clear_clauses)
 		(tclTHEN
 		   (tclDO neqns
                       (tclTHEN intro
 			 (onLastHyp
-			    (fun cls -> 
-			       tclTRY (projectAndApply thin cls depids)))))
+			    (fun id -> 
+			       tclTRY (projectAndApply thin id depids)))))
 		   (tclTHEN (tclDO (List.length nodepids) intro)
 		      (tclMAP (fun id -> 
-				 tclTRY (clear_clause (Some id))) depids)))))
+				 tclTRY (clear_clause id)) depids)))))
       | None -> tclIDTAC
   in
   (tclTHEN (tclDO neqns intro)
-     (tclTHEN (bring_hyps (List.map in_some nodepids))
-	(tclTHEN (clear_clauses (List.map in_some nodepids))
+     (tclTHEN (bring_hyps nodepids)
+	(tclTHEN (clear_clauses nodepids)
 	   rewrite_eqns)))
   gl
 
@@ -365,9 +364,9 @@ let res_case_then gene thin indbinding id status gl =
   (tclTHENS
      (cut_intro cut_concl)
      [onLastHyp
-        (fun cls->
+        (fun id ->
            (tclTHEN (applyUsing
-                       (applist(mkVar (out_some cls),
+                       (applist(mkVar id,
                                 list_tabulate
                                   (fun _ -> mkMeta(Clenv.new_meta())) neqns)))
               Auto.default_auto));
@@ -408,7 +407,7 @@ let inv gene com status id =
   let inv_tac = res_case_then gene com [] id status in
   let tac =
     if com = Some true (* if Inversion_clear, clear the hypothesis *) then 
-      tclTHEN inv_tac (tclTRY (clear_clause (Some id)))
+      tclTHEN inv_tac (tclTRY (clear_clause id))
     else 
       inv_tac
   in 
@@ -428,12 +427,14 @@ let (half_inv_tac, inv_tac, inv_clear_tac) =
   let gentac =
     hide_tactic "Inv"
       (function
-	 | [ic; Identifier id] -> inv false (com_of_id ic) NoDep id
+	 | ic :: [id_or_num] ->
+	     tactic_try_intros_until (inv false (com_of_id ic) NoDep) id_or_num
 	 | l -> bad_tactic_args "Inv" l)
   in
   ((fun id -> gentac [hinv_kind; Identifier id]),
    (fun id -> gentac [inv_kind; Identifier id]),
    (fun id -> gentac [invclr_kind; Identifier id]))
+
 
 (* Inversion without intros. No vernac entry yet! *)
 let named_inv =
@@ -450,7 +451,9 @@ let (half_dinv_tac, dinv_tac, dinv_clear_tac) =
   let gentac =
     hide_tactic "DInv"
       (function
-	 | [ic; Identifier id] -> inv false (com_of_id ic) (Dep None) id
+	 | ic :: [id_or_num] ->
+	     tactic_try_intros_until (inv false (com_of_id ic) (Dep None))
+	       id_or_num
 	 | l -> bad_tactic_args "DInv" l)
   in
   ((fun id -> gentac [hinv_kind; Identifier id]),
@@ -462,12 +465,16 @@ let (half_dinv_with, dinv_with, dinv_clear_with) =
   let gentac =
     hide_tactic "DInvWith"
       (function
-	 | [ic; Identifier id; Command com] ->
-             fun gls -> 
-	       inv false (com_of_id ic)
-		 (Dep (Some (pf_interp_constr gls com))) id gls
-	 | [ic; Identifier id; Constr c] ->
-             fun gls -> inv false (com_of_id ic) (Dep (Some c)) id gls
+	 | [ic; id_or_num; Command com] ->
+	     tactic_try_intros_until
+               (fun id gls -> 
+		  inv false (com_of_id ic)
+		    (Dep (Some (pf_interp_constr gls com))) id gls)
+	       id_or_num
+	 | [ic; id_or_num; Constr c] ->
+	     tactic_try_intros_until
+               (fun id gls -> inv false (com_of_id ic) (Dep (Some c)) id gls)
+	       id_or_num
 	 | l -> bad_tactic_args "DInvWith" l)
   in
   ((fun id c -> gentac [hinv_kind; Identifier id; Constr c]),
@@ -490,7 +497,7 @@ let invIn com id ids gls =
       (tclTHEN (tclDO nb_of_new_hyp intro) (introsReplacing ids)) gls
   in
   try 
-    (tclTHEN (bring_hyps (List.map in_some ids))
+    (tclTHEN (bring_hyps ids)
        (tclTHEN (inv false com NoDep id)
           (intros_replace_ids)))
     gls

@@ -209,9 +209,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   *)
   let invSign = named_context invEnv in
   let pfs = mk_pftreestate (mk_goal (mt_ctxt Intset.empty) invSign invGoal) in
-  let pfs =
-    solve_pftreestate (tclTHEN intro 
-			 (onLastHyp (compose inv_op out_some))) pfs in
+  let pfs = solve_pftreestate (tclTHEN intro (onLastHyp inv_op)) pfs in
   let (pfterm,meta_types) = extract_open_pftreestate pfs in
   let global_named_context = Global.named_context () in
   let ownSign =
@@ -352,10 +350,14 @@ let useInversionLemma =
   let gentac =
     hide_tactic "UseInversionLemma"
       (function
-	 | [Identifier id; Command com] ->
-             fun gls -> lemInv id (pf_interp_constr gls com) gls
-	 | [Identifier id; Constr c] ->
-             fun gls -> lemInv id c gls
+	 | [id_or_num; Command com] ->
+	     tactic_try_intros_until
+               (fun id gls -> lemInv id (pf_interp_constr gls com) gls)
+	       id_or_num
+	 | [id_or_num; Constr c] ->
+	     tactic_try_intros_until
+               (fun id gls -> lemInv id c gls)
+	       id_or_num
 	 | l  -> bad_vernac_args "useInversionLemma" l)
   in 
   fun id c -> gentac [Identifier id;Constr c]
@@ -369,8 +371,7 @@ let lemInvIn id c ids gls =
       (tclTHEN (tclDO nb_of_new_hyp intro) (intros_replacing ids)) gls
   in 
 (*  try *)
-    ((tclTHEN (tclTHEN (bring_hyps (List.map in_some ids))
-		 (lemInv id c))
+    ((tclTHEN (tclTHEN (bring_hyps ids) (lemInv id c))
         (intros_replace_ids)) gls)
 (*  with Not_found -> errorlabstrm "LemInvIn" (not_found_message ids)
     |  UserError(a,b) -> errorlabstrm "LemInvIn" b  

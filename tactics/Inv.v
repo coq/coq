@@ -34,16 +34,16 @@ Syntax tactic level 0:
 
 
 Grammar tactic simple_tactic: ast :=
-  inversion    [ inversion_com($ic) identarg($id) ] -> [(Inv $ic $id)]
+  inversion    [ inversion_com($ic) ident_or_numarg($id) ] -> [(Inv $ic $id)]
 | inversion_in [ inversion_com($ic) identarg($id) "in" ne_identarg_list($l) ]
       -> [(InvIn $ic $id ($LIST $l))]
-| dep_inv   [ "Dependent" inversion_com($ic) identarg($id) ]
+| dep_inv   [ "Dependent" inversion_com($ic) ident_or_numarg($id) ]
      -> [(DInv $ic $id)]
 | dep_inv_with
-   [ "Dependent" inversion_com($ic) identarg($id) "with" constrarg($c) ]
+   [ "Dependent" inversion_com($ic) ident_or_numarg($id) "with" constrarg($c) ]
      -> [(DInvWith $ic $id $c) ]
 
-| inv_using [ inversion_com($ic) identarg($id) "using" constrarg($c) ]
+| inv_using [ inversion_com($ic) ident_or_numarg($id) "using" constrarg($c) ]
      -> case [$ic] of
           Inversion -> [(UseInversionLemma $id $c)]
         esac
