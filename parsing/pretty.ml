@@ -338,7 +338,7 @@ let list_filter_vec f vec =
    and the constr term that represent its type. *)
 
 let print_constructors_head 
-  (fn:string -> unit assumptions -> constr -> unit) c mip = 
+  (fn : string -> unit assumptions -> constr -> unit) c mip = 
   let (lna,lC) = decomp_all_DLAMV_name mip.mind_lc in
   let ass_name = assumptions_for_print lna in
   let lidC = array_map2 (fun id c_0 -> (id,c_0)) mip.mind_consnames lC in
@@ -360,7 +360,7 @@ let print_constructors_rel fn mip =
   let flid = list_filter_vec (fun (_,c) -> isRel (head_const c)) lidC in
   List.iter (function (id,c) -> fn (string_of_id id) ass_name c) flid
 
-let crible (fn:string -> unit assumptions -> constr -> unit) name =
+let crible (fn : string -> unit assumptions -> constr -> unit) name =
   let hyps = gLOB (Global.var_context()) in
   let imported = Library.opened_modules() in
   let const = global_reference CCI name in 

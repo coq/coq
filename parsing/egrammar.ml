@@ -10,7 +10,7 @@ open Extend
 
 (* State of the grammar extensions *)
 
-let (grammar_state: grammar_command list ref) = ref []
+let (grammar_state : grammar_command list ref) = ref []
 
 (* Interpretation of the right hand side of grammar rules *)
 

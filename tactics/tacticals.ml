@@ -53,7 +53,7 @@ let tclTHEN_i1 tac1 tac2 = tclTHEN_i tac1 tac2 1
 
 (* apply a tactic to the nth element of the signature  *)
 
-let tclNTH_HYP m (tac:constr->tactic) gl =
+let tclNTH_HYP m (tac : constr->tactic) gl =
   tac (try VAR(fst(nth_sign (pf_untyped_hyps gl) m)) 
        with Failure _ -> error "No such assumption") gl
 
@@ -61,7 +61,7 @@ let tclNTH_HYP m (tac:constr->tactic) gl =
 
 let tclLAST_HYP = tclNTH_HYP 1
 
-let tclTRY_sign (tac:constr->tactic) sign gl =
+let tclTRY_sign (tac : constr->tactic) sign gl =
   let rec arec = function
     | []      -> tclFAIL
     | [s]     -> tac (VAR(s)) (* added in order to get useful error messages *)
@@ -69,7 +69,7 @@ let tclTRY_sign (tac:constr->tactic) sign gl =
   in 
   arec (ids_of_sign sign) gl
 
-let tclTRY_HYPS (tac:constr->tactic) gl = 
+let tclTRY_HYPS (tac : constr->tactic) gl = 
   tclTRY_sign tac (pf_untyped_hyps gl) gl
 
 (* OR-branch *)

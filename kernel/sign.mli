@@ -9,7 +9,7 @@ open Term
 
 (* Signatures of named variables. *)
 
-type 'a signature
+type 'a signature (* = identifier list * 'a list*)
 
 val nil_sign : 'a signature
 val add_sign : (identifier * 'a) -> 'a signature -> 'a signature

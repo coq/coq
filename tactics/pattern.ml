@@ -82,13 +82,13 @@ let dest_soapp_operator = function
       Some (n,list_uniquize [p])
   | _ -> None
 
-let constrain ((n:int),(m:constr)) sigma =
+let constrain ((n : int),(m : constr)) sigma =
   if List.mem_assoc n sigma then
     if eq_constr m (List.assoc n sigma) then sigma else error "somatch"
   else 
     (n,m)::sigma
     
-let build_dlam toabstract stk (m:constr) = 
+let build_dlam toabstract stk (m : constr) = 
   let rec buildrec m p_0 p_1 = match p_0,p_1 with 
     | (_, []) -> m
     | (n, (na::tl)) -> 

@@ -82,7 +82,7 @@ let add_new_objdef (o,c,la,lp,l) =
     Lib.add_anonymous_leaf
       (inObjDef (o,{o_DEF=c;o_TABS=la;o_TPARAMS=lp;o_TCOMPS=l}))
 
-let ((inObjDef1:section_path -> obj),(outObjDef1:obj -> section_path)) =
+let ((inObjDef1 : section_path -> obj),(outObjDef1 : obj -> section_path)) =
   declare_object ("OBJDEF1",
                   { load_function = (fun _ -> ());
 		    open_function = (fun _ -> ());

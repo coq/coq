@@ -191,8 +191,8 @@ let specification_dd x = x
 
 type destructor_data_object = identifier * destructor_data
 
-let ((inDD:destructor_data_object->obj),
-     (outDD:obj->destructor_data_object)) =
+let ((inDD : destructor_data_object->obj),
+     (outDD : obj->destructor_data_object)) =
   declare_object ("DESTRUCT-HYP-CONCL-DATA",
                   { load_function = (fun _ -> ());
                     cache_function = cache_dd;
@@ -306,7 +306,7 @@ let _ =
 		 | [] -> dConcl
 		 | _ -> bad_tactic_args "DConcl"))
 
-let to2Lists (table:t) = Nbtermdn.to2lists table
+let to2Lists (table : t) = Nbtermdn.to2lists table
 
 let rec search n =
   if n=0 then error "Search has reached zero.";

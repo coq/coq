@@ -71,7 +71,7 @@ let rec norm_evar_pf sigma p =
    [ (v1 [p_1 ... p_l1]) ; (v2 [ p_(l1+1) ... p_(l1+l2) ]) ; ... ;
    (vk [ p_(l1+...+l(k-1)+1) ... p_(l1+...lk) ]) ] *)
 
-let rec mapshape nl (fl:(proof_tree list -> proof_tree) list) 
+let rec mapshape nl (fl : (proof_tree list -> proof_tree) list) 
                     (l : proof_tree list) =
   match nl with
     | [] -> []
@@ -398,7 +398,7 @@ let tclTHENSI tac1 tac2l = tclTHENSi tac1 tac2l (fun _ -> tclIDTAC);;
 
 (* tclTHENL tac1 tac2 gls applies the tactic tac1 to gls and tac2
    to the last resulting subgoal *)
-let tclTHENL (tac1:tactic) (tac2:tactic) (gls:goal sigma) =
+let tclTHENL (tac1 : tactic) (tac2 : tactic) (gls : goal sigma) =
   finish_tac (theni_tac (-1) tac2 (then_tac tac1 (start_tac gls)))
 ;;
 
@@ -445,7 +445,7 @@ let tclWEAK_PROGRESS tac ptree =
 
 (* Same as tclWEAK_PROGRESS but fails also if tactics generates several goals,
    one of them being identical to the original goal *)
-let tclNOTSAMEGOAL (tac:tactic) goal =
+let tclNOTSAMEGOAL (tac : tactic) goal =
   let rslt = tac goal in
   let gls = (fst rslt).it in
   if List.exists (same_goal goal.it) gls
@@ -896,7 +896,7 @@ let print_subscript sigma sign pf =
   else 
     format_print_info_script sigma sign pf
 
-let tclINFO (tac:tactic) gls = 
+let tclINFO (tac : tactic) gls = 
   let (sgl,v) as res = tac gls in 
   begin try 
     let pf = v (List.map leaf (sig_it sgl)) in

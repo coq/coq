@@ -74,12 +74,12 @@ let restore_decl sp evd evc =
  *
  * It is an error to cause SP to change state while we are focused on it. *)
 
-let w_Focusing_THEN sp (wt:'a result_w_tactic) (wt':'a -> w_tactic)
-                       (wc:walking_constraints) =
+let w_Focusing_THEN sp (wt : 'a result_w_tactic) (wt' : 'a -> w_tactic)
+                       (wc : walking_constraints) =
   let focus = (ts_it (ids_it wc)).focus
   and env  = (ts_it (ids_it wc)).env
   and evd   = Evd.map (ts_it (ids_it wc)).decls sp in
-  let (wc':walking_constraints) = ids_mod (extract_decl sp) wc in
+  let (wc' : walking_constraints) = ids_mod (extract_decl sp) wc in
   let (wc'',rslt) = wt wc' in 
   if not (ids_eq wc wc'') then error "w_saving_focus";
   if ts_eq (ids_it wc') (ids_it wc'') then 
@@ -94,7 +94,7 @@ let w_Focusing_THEN sp (wt:'a result_w_tactic) (wt':'a -> w_tactic)
                       decls = evc.decls }))
          wc''')
       
-let w_add_sign (id,t) (wc:walking_constraints) =
+let w_add_sign (id,t) (wc : walking_constraints) =
   ids_mk (ts_mod
             (fun evr ->
                { focus = evr.focus;
@@ -118,7 +118,7 @@ let w_hyps    wc    = var_context (get_env (ids_it wc))
 let w_ORELSE wt1 wt2 wc = 
   try wt1 wc with e when catchable_exception e -> wt2 wc
 
-let w_Declare sp c (wc:walking_constraints) =
+let w_Declare sp c (wc : walking_constraints) =
   begin match c with 
     | DOP2(Cast,_,_) -> ()
     | _ -> error "Cannot declare an un-casted evar"

@@ -1112,7 +1112,7 @@ let rec rename_bound_var l = function
 
 (* First utilities for avoiding telescope computation for subst_term *)
 
-let prefix_application k (c:constr) (t:constr) = 
+let prefix_application k (c : constr) (t : constr) = 
   match (whd_castapp c,whd_castapp t) with
     | ((DOPN(AppL,cl1)),DOPN(AppL,cl2)) ->
 	let l1 = Array.length cl1
@@ -1124,7 +1124,7 @@ let prefix_application k (c:constr) (t:constr) =
 	  None
     | (_,_) -> None
 
-let prefix_application_eta k (c:constr) (t:constr) = 
+let prefix_application_eta k (c : constr) (t : constr) = 
   match (whd_castapp c,whd_castapp t) with
     | ((DOPN(AppL,cl1)),DOPN(AppL,cl2)) ->
 	let l1 = Array.length cl1

@@ -727,7 +727,7 @@ let dyn_exact cc gl = match cc with
       refine c gl 
   | l -> bad_tactic_args "exact" l 
 
-let (assumption:tactic) = fun gl ->
+let (assumption : tactic) = fun gl ->
   let concl =  pf_concl gl in 
   let rec arec sign =
     if isnull_sign sign then error "No such assumption";
