@@ -292,7 +292,7 @@ Match trm With
 |[sqrt] ->
  (Match Context With
  |[|-(derivable_pt ? ?)] -> Cut ``0<pt``; [Intro | Try Assumption]
- |[|-(continuity_pt ? ?)] -> Cut ``0<pt``; [Intro | Try Assumption]
+ |[|-(continuity_pt ? ?)] -> Cut ``0<=pt``; [Intro | Try Assumption]
  |[|-(eqT ? (derive_pt ? ? ?) ?)] -> Cut ``0<pt``; [Intro | Try Assumption]
  | _ -> Idtac)
 |[?1] -> Let p = ?1 In
@@ -420,7 +420,7 @@ Match Context With
 |[|-(continuity_pt sinh ?)] -> Apply derivable_continuous_pt; Apply derivable_pt_sinh
 |[|-(continuity_pt cosh ?)] -> Apply derivable_continuous_pt; Apply derivable_pt_cosh
 |[|-(continuity_pt exp ?)] -> Apply derivable_continuous_pt; Apply derivable_pt_exp
-|[|-(derivable_pt sqrt ?1)] -> Apply derivable_continuous_pt; Apply (derivable_pt_sqrt ?1); Assumption Orelse Unfold plus_fct minus_fct opp_fct mult_fct div_fct inv_fct comp id fct_cte
+|[|-(continuity_pt sqrt ?1)] -> Apply continuity_pt_sqrt; Assumption Orelse Unfold plus_fct minus_fct opp_fct mult_fct div_fct inv_fct comp id fct_cte
  (* regles de differentiabilite *)
  (* PLUS *)
 |[|-(continuity_pt (plus_fct ?1 ?2) ?3)] -> Apply (continuity_pt_plus ?1 ?2 ?3); IsCont_pt
