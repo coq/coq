@@ -59,20 +59,9 @@ type 'a oper =
 (* [VAR] is used for named variables and [Rel] for variables as
    de Bruijn indices. *)
 
-type constr =
-  | DOP0 of sorts oper
-  | DOP1 of sorts oper * constr
-  | DOP2 of sorts oper * constr * constr
-  | DOPN of sorts oper * constr array
-  | DLAM of name * constr
-  | DLAMV of name * constr array
-  | CLam of name * typed_type * constr
-  | CPrd of name * typed_type * constr
-  | CLet of name * constr * typed_type * constr
-  | VAR of identifier
-  | Rel of int
+type constr
 
-and typed_type
+type typed_type
 
 type flat_arity = (name * constr) list * sorts
 
@@ -609,33 +598,17 @@ val subst_vars : identifier list -> constr -> constr
 val rel_vect : int -> int -> constr array
 val rel_list : int -> int -> constr list
 
-(*i************************************************************************i*)
-(*i Pour Closure 
-(* Explicit substitutions of type ['a]. [ESID] = identity. 
-  [CONS(t,S)] = $S.t$ i.e. parallel substitution. [SHIFT(n,S)] = 
-  $(\uparrow n~o~S)$ i.e. terms in S are relocated with n vars. 
-  [LIFT(n,S)] = $(\%n~S)$ stands for $((\uparrow n~o~S).n...1)$. *)
-type 'a subs =
-  | ESID
-  | CONS of 'a * 'a subs
-  | SHIFT of int * 'a subs
-  | LIFT of int * 'a subs
-val subs_cons  : 'a * 'a subs -> 'a subs
-val subs_liftn  : int -> 'a subs -> 'a subs
-val subs_lift  : 'a subs -> 'a subs
-val subs_shft  : int * 'a subs -> 'a subs
-val expand_rel : int -> 'a subs -> (int * 'a, int) union
-i*)
-(*s Lifts. [ELSHFT(l,n)] == lift of [n], then apply [lift l].
+(*s Compact representation of implicit lifts. \\
+   [ELSHFT(l,n)] == lift of [n], then apply [lift l].
   [ELLFT(n,l)] == apply [l] to de Bruijn > [n] i.e under n binders. *)
 type lift_spec =
   | ELID
   | ELSHFT of lift_spec * int
   | ELLFT of int * lift_spec
 val el_shft : int -> lift_spec -> lift_spec
+val el_liftn : int -> lift_spec -> lift_spec
 val el_lift : lift_spec -> lift_spec
 val reloc_rel: int -> lift_spec -> int
-(*i*)
 
 (*s Occur check functions. *)                         
 
