@@ -238,7 +238,7 @@ let ast_to_var (env,impls) (vars1,vars2) loc id =
       let _ = lookup_id id vars2 in
       (* Car Fixpoint met les fns définies tmporairement comme vars de sect *)
       try
-	let ref = VarRef (Lib.make_path id CCI) in
+	let ref = VarRef (find_section_variable id) in
 	implicits_of_global ref
       with _ -> []
   in RVar (loc, id), imps
