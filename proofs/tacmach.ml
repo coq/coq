@@ -2,22 +2,21 @@
 (* $Id$ *)
 
 open Util
+open Stamps
 open Names
 open Generic
-open Evd
+open Sign
 open Term
+open Instantiate
+open Environ
 open Reduction
-open Himsg
-open Termenv
-open Termast
-open CoqAst
-open Trad
+open Evd
+open Typing_ev
+open Tacred
 open Proof_trees
-open Printer
-
 open Logic
-open Evar_refiner
 open Refiner
+open Evar_refiner
 
 
 type 'a sigma = 'a Refiner.sigma
@@ -37,59 +36,43 @@ let unpackage = Refiner.unpackage
 let repackage = Refiner.repackage
 let apply_sig_tac = Refiner.apply_sig_tac
 
-let sig_it       = Refiner.sig_it
-let sig_sig      = Refiner.sig_sig
-let project      = (comp ts_it sig_sig)
-let pf_hyps gls  = (sig_it gls).hyps
+let sig_it     = Refiner.sig_it
+let sig_sig    = Refiner.sig_sig
+let project    = compose ts_it sig_sig
+let pf_env gls = (sig_it gls).evar_env
+
+let pf_concl gls = (sig_it gls).evar_concl
 
 let pf_untyped_hyps gls  =
-  let (idl,tyl) = (sig_it gls).hyps in (idl, List.map (fun x -> x.body) tyl)
-
-let pf_concl gls = (sig_it gls).concl
+  let env = pf_env gls in
+  let (idl,tyl) = get_globals (Environ.context env) in 
+  (idl, List.map (fun x -> x.body) tyl)
 
 let pf_nth_hyp gls n = nth_sign (pf_untyped_hyps gls) n
 
 let pf_get_hyp gls id = 
-  try (snd (lookup_sign id (pf_untyped_hyps gls)))
-  with Not_found -> error ("No such hypothesis : " ^ (string_of_id id))
+  try 
+    snd (lookup_sign id (pf_untyped_hyps gls))
+  with Not_found -> 
+    error ("No such hypothesis : " ^ (string_of_id id))
 
 let pf_ctxt gls      = get_ctxt (sig_it gls)
 
 let pf_type_of gls c =
-  Mach.type_of (ts_it (sig_sig gls)) (sig_it gls).hyps c
+  type_of (sig_it gls).evar_env (ts_it (sig_sig gls)) c
 
 let hnf_type_of gls = 
-  (comp (whd_betadeltaiota (project gls)) (pf_type_of gls))
+  compose 
+    (whd_betadeltaiota (sig_it gls).evar_env (project gls)) 
+    (pf_type_of gls)
 
 let pf_check_type gls c1 c2 =
   let casted = mkCast c1 c2 in pf_type_of gls casted
 
-let pf_constr_of_com gls c =
-  let evc = project gls in 
-  constr_of_com evc (sig_it gls).hyps c
-
-let pf_constr_of_com_sort gls c =
-  let evc = project gls in 
-  constr_of_com_sort evc (sig_it gls).hyps c
-
-let pf_global gls id = Machops.global (gLOB (sig_it gls).hyps) id
-let pf_parse_const gls = comp (pf_global gls) id_of_string 
-
-			   
-(* We sould not call Mach in tactics *)
-let pf_fexecute gls =
-  let evc = project gls in 
-  Trad.ise_resolve true evc [] (gLOB (sig_it gls).hyps)
-
-let pf_infexecute gls =
-  let evc = project gls in
-  let sign = (sig_it gls).hyps in 
-  Mach.infexecute evc (sign, Mach.fsign_of_sign evc sign)
-
 let pf_reduction_of_redexp gls re c = 
-  reduction_of_redexp re (project gls) c 
+  reduction_of_redexp re (pf_env gls) (project gls) c 
 
-let pf_reduce redfun gls c       = redfun (project gls) c 
+let pf_reduce redfun gls c       = redfun (pf_env gls) (project gls) c 
 let pf_whd_betadeltaiota         = pf_reduce whd_betadeltaiota
 let pf_whd_betadeltaiota_stack   = pf_reduce whd_betadeltaiota_stack
 let pf_hnf_constr                = pf_reduce hnf_constr
@@ -98,9 +81,9 @@ let pf_nf                        = pf_reduce nf
 let pf_compute                   = pf_reduce compute
 let pf_unfoldn ubinds            = pf_reduce (unfoldn ubinds)
 
-let pf_conv_x                   = pf_reduce conv_x
-let pf_conv_x_leq               = pf_reduce conv_x_leq
-let pf_const_value              = pf_reduce const_value
+let pf_conv_x                   = pf_reduce conv
+let pf_conv_x_leq               = pf_reduce conv_leq
+let pf_const_value              = pf_reduce (fun env _ -> constant_value env)
 let pf_one_step_reduce          = pf_reduce one_step_reduce
 let pf_reduce_to_mind           = pf_reduce reduce_to_mind
 let pf_reduce_to_ind            = pf_reduce reduce_to_ind
@@ -169,18 +152,18 @@ let w_Declare       = w_Declare
 let w_Declare_At    = w_Declare_At
 let w_Define        = w_Define
 let w_Underlying    = w_Underlying
-let w_hyps          = w_hyps
+let w_env           = w_env
 let w_type_of       = w_type_of
 let w_IDTAC         = w_IDTAC
 let w_ORELSE        = w_ORELSE
 let w_add_sign      = w_add_sign
 let ctxt_type_of    = ctxt_type_of
 
-let w_defined_const wc k     = defined_const (w_Underlying wc) k
-let w_const_value wc         = const_value (w_Underlying wc)
-let w_conv_x wc m n          = conv_x (w_Underlying wc) m n
-let w_whd_betadeltaiota wc c = whd_betadeltaiota (w_Underlying wc) c
-let w_hnf_constr wc c         = hnf_constr (w_Underlying wc) c
+let w_defined_const wc k     = defined_constant (w_env wc) k
+let w_const_value wc         = constant_value (w_env wc)
+let w_conv_x wc m n          = conv (w_env wc) (w_Underlying wc) m n
+let w_whd_betadeltaiota wc c = whd_betadeltaiota (w_env wc) (w_Underlying wc) c
+let w_hnf_constr wc c        = hnf_constr (w_env wc) (w_Underlying wc) c
 
 
 (*************************************************)
@@ -205,8 +188,7 @@ let tclFAIL          =  tclFAIL
 let tclDO            =  tclDO
 let tclPROGRESS      =  tclPROGRESS
 let tclWEAK_PROGRESS = tclWEAK_PROGRESS
-let tclNOTSAMEGOAL = tclNOTSAMEGOAL
-let tclINFO          =  tclINFO
+let tclNOTSAMEGOAL   = tclNOTSAMEGOAL
 
 let unTAC            = unTAC
 
@@ -230,37 +212,37 @@ let refine c pf =
 		  hypspecs = []; newids = []; params = [] }) pf
 
 let convert_concl c pf = 
-  refiner (PRIM{name=CONVERT_CONCL;terms=[c];
-                hypspecs=[];newids=[];params=[]}) pf
+  refiner (Prim { name = Convert_concl; terms = [c];
+                  hypspecs = []; newids = []; params = [] }) pf
 
 let convert_hyp id c pf = 
-  refiner (PRIM{name=CONVERT_HYP;hypspecs=[id];
-                terms=[c];newids=[];params=[]}) pf
+  refiner (Prim { name = Convert_hyp; hypspecs = [id];
+                  terms = [c]; newids = []; params = []}) pf
 
 let thin ids gl = 
-  refiner (PRIM{name=THIN;hypspecs=ids;
-                terms=[];newids=[];params=[]}) gl
+  refiner (Prim { name = Thin; hypspecs = ids;
+                  terms = []; newids = []; params = []}) gl
 
 let move_hyp with_dep id1 id2 gl = 
-  refiner (PRIM{name=MOVE with_dep;
-                hypspecs=[id1;id2];terms=[];newids=[];params=[]}) gl
+  refiner (Prim { name = Move with_dep;
+                  hypspecs = [id1;id2]; terms = [];
+		  newids = []; params = []}) gl
 
 let mutual_fix lf ln lar pf = 
-  refiner (PRIM{name=FIX;newids=lf;
-                hypspecs=[];terms=lar;
-                params=List.map num ln}) pf
+  refiner (Prim { name = Fix; newids = lf;
+                  hypspecs = []; terms = lar;
+                  params = List.map Ast.num ln}) pf
 
 let mutual_cofix lf lar pf = 
-  refiner (PRIM{name     = COFIX;
-                newids   = lf;
-                hypspecs = [];
-                terms    = lar; 
-                params   = []}) pf
+  refiner (Prim { name     = Cofix;
+                  newids   = lf; hypspecs = [];
+                  terms    = lar; params   = []}) pf
     
 let rename_bound_var_goal gls =
-  let ({hyps=sign;concl=cl} as gl) = (sig_it gls) in 
-  convert_concl (rename_bound_var (ids_of_sign sign) cl) gls
-
+  let { evar_env = env; evar_concl = cl } as gl = sig_it gls in 
+  let ids = ids_of_sign (get_globals (Environ.context env)) in
+  convert_concl (rename_bound_var ids cl) gls
+    
 
 (***************************************)
 (* The interpreter of defined tactics *)
@@ -268,42 +250,6 @@ let rename_bound_var_goal gls =
 
 let vernac_tactic = vernac_tactic
 let context       = context
-
-
-(************************************************************************)
-(* A generic tactic registration function with a default tactic printer *)
-(************************************************************************)
-
-(* A generic tactic printer *)
-
-let pr_com sigma goal com =
-  prterm (rename_bound_var 
-            (ids_of_sign goal.hyps) 
-            (Trad.constr_of_com sigma goal.hyps com))
-    
-let pr_one_binding sigma goal = function
-  | (Dep id,com)  -> [< print_id id ; 'sTR":=" ; pr_com sigma goal com >]
-  | (NoDep n,com) -> [< 'iNT n ; 'sTR":=" ; pr_com sigma goal com >]
-  | (Com,com)     -> [< pr_com sigma goal com >]
-
-let pr_bindings sigma goal lb =
-  let prf = pr_one_binding sigma goal in 
-  match lb with 
-    | [] -> [< prlist_with_sep pr_spc prf lb >]
-    | _  -> [<'sTR"with";'sPC;prlist_with_sep pr_spc prf lb >]
-
-let rec pr_list f = function
-  | []   -> [<>] 
-  | a::l1 -> [< (f a) ; pr_list f l1>]
-
-let pr_gls gls =
-  hOV 0 [< pr_decls (sig_sig gls) ; 'fNL ; pr_seq (sig_it gls) >]
-
-let pr_glls glls =
-  hOV 0 [< pr_decls (sig_sig glls) ; 'fNL ;
-           prlist_with_sep pr_fnl pr_seq (sig_it glls) >]
-
-let pr_tactic = Refiner.pr_tactic
 
 let add_tactic = Refiner.add_tactic
 
@@ -323,11 +269,6 @@ let overwrite_hidden_tactic s tac  =
   overwriting_add_tactic s tac;
   (fun args -> vernac_tactic(s,args))
 
-(* Some combinators for parsing tactic arguments. 
-   They transform the CoqAst.t arguments of the tactic into 
-   constr arguments *)
-
-type ('a,'b) parse_combinator = ('a -> tactic) -> ('b -> tactic)
 
 let tactic_com = 
   fun tac t x -> tac (pf_constr_of_com x t) x

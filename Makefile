@@ -52,7 +52,7 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_multiple_case.cmo
 
 PROOFS=proofs/typing_ev.cmo proofs/proof_trees.cmo proofs/logic.cmo \
-       proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo
+       proofs/refiner.cmo proofs/evar_refiner.cmo proofs/clenv.cmo
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernac.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo

@@ -20,8 +20,12 @@ type refiner_error =
   | BadType of constr * constr * constr
   | OccurMeta of constr
   | CannotApply of constr * constr
+  | CannotUnify of constr * constr
 
 exception RefinerError of refiner_error
+
+let error_cannot_unify k (m,n) =
+  raise (RefinerError (CannotUnify (m,n)))
 
 let conv_leq_goal env sigma arg ty conclty =
   if not (is_conv_leq env sigma ty conclty) then 
