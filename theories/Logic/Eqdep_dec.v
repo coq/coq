@@ -24,30 +24,6 @@
 
 Set Implicit Arguments.
 
-  (** Bijection between [eq] and [eqT] *)
-  Definition eq2eqT (A:Set) (x y:A) (eqxy:x = y) :
-    x = y :=
-    match eqxy in (_ = y) return x = y with
-    | refl_equal => refl_equal x
-    end.
-
-  Definition eqT2eq (A:Set) (x y:A) (eqTxy:x = y) : 
-    x = y :=
-    match eqTxy in (_ = y) return x = y with
-    | refl_equal => refl_equal x
-    end.
-
-  Lemma eq_eqT_bij : forall (A:Set) (x y:A) (p:x = y), p = eqT2eq (eq2eqT p).
-intros.
-case p; reflexivity.
-Qed.
-
-  Lemma eqT_eq_bij : forall (A:Set) (x y:A) (p:x = y), p = eq2eqT (eqT2eq p).
-intros.
-case p; reflexivity.
-Qed.
-
-
 Section DecidableEqDep.
 
   Variable A : Type.
@@ -55,7 +31,7 @@ Section DecidableEqDep.
   Let comp (x y y':A) (eq1:x = y) (eq2:x = y') : y = y' :=
     eq_ind _ (fun a => a = y') eq2 _ eq1.
 
-  Remark trans_sym_eqT : forall (x y:A) (u:x = y), comp u u = refl_equal y.
+  Remark trans_sym_eq : forall (x y:A) (u:x = y), comp u u = refl_equal y.
 intros.
 case u; trivial.
 Qed.
@@ -89,7 +65,7 @@ Qed.
   Remark nu_left_inv : forall (y:A) (u:x = y), nu_inv (nu u) = u.
 intros.
 case u; unfold nu_inv in |- *.
-apply trans_sym_eqT.
+apply trans_sym_eq.
 Qed.
 
 
