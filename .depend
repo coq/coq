@@ -2138,8 +2138,8 @@ toplevel/metasyntax.cmo: parsing/ast.cmi interp/constrextern.cmi \
     parsing/esyntax.cmi pretyping/evd.cmi parsing/extend.cmi \
     interp/genarg.cmi library/global.cmi parsing/lexer.cmi library/lib.cmi \
     library/libnames.cmi library/libobject.cmi library/library.cmi \
-    kernel/names.cmi lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
-    interp/ppextend.cmi pretyping/rawterm.cmi library/summary.cmi \
+    kernel/names.cmi library/nametab.cmi lib/options.cmi parsing/pcoq.cmi \
+    lib/pp.cmi interp/ppextend.cmi pretyping/rawterm.cmi library/summary.cmi \
     interp/symbols.cmi interp/syntax_def.cmi parsing/termast.cmi \
     interp/topconstr.cmi lib/util.cmi toplevel/vernacexpr.cmo \
     toplevel/metasyntax.cmi 
@@ -2148,8 +2148,8 @@ toplevel/metasyntax.cmx: parsing/ast.cmx interp/constrextern.cmx \
     parsing/esyntax.cmx pretyping/evd.cmx parsing/extend.cmx \
     interp/genarg.cmx library/global.cmx parsing/lexer.cmx library/lib.cmx \
     library/libnames.cmx library/libobject.cmx library/library.cmx \
-    kernel/names.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
-    interp/ppextend.cmx pretyping/rawterm.cmx library/summary.cmx \
+    kernel/names.cmx library/nametab.cmx lib/options.cmx parsing/pcoq.cmx \
+    lib/pp.cmx interp/ppextend.cmx pretyping/rawterm.cmx library/summary.cmx \
     interp/symbols.cmx interp/syntax_def.cmx parsing/termast.cmx \
     interp/topconstr.cmx lib/util.cmx toplevel/vernacexpr.cmx \
     toplevel/metasyntax.cmi 
