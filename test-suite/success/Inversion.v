@@ -83,3 +83,13 @@ Proof.
 NewInduction 1.
 Intros H ; Inversion H.
 Admitted.
+
+(* Used to failed at some time *)
+
+Parameter bar : (p,q:nat) p=q -> Prop.
+Inductive foo : nat -> nat -> Prop := 
+  C : (a,b:nat)(Heq:a = b) (bar a b Heq) -> (foo a b).
+Lemma depinv : (a,b:?) (foo a b) -> True.
+Intros a b H.
+Inversion H.
+Abort.
