@@ -1,5 +1,5 @@
 Changes from V7.1 to V7.2
-========================
+=========================
 
 Language
 
@@ -7,7 +7,6 @@ Language
   the constructors of an inductive types (for compatibility with V6.3
   let-in style)
 - Coercions allowed in Cases patterns
-- Better error messages for ill-typed Cases expressions
 - New declaration "Canonical Structure id = t : I" to help resolution of
   equations of the form (proj ?)=a; if proj(e)=a then a is canonically 
   equipped with the remaining fields in e, i.e. ? is instantantiated by e
@@ -16,25 +15,15 @@ Tactics
 
 - New tactic "ClearBody H" to clear the body of definitions in local context
 - New tactic "Assert H := c" for forward reasoning
-- Slight improvement in naming strategy for NewInduction/NewDestruct (may
-  occasionnally affect compatibility with V7.1 NewInduction/NewDestruct)
+- Slight improvement in naming strategy for NewInduction/NewDestruct
 
 Standard library
-----------------
 
-- In [Relations], the files Rstar.v and Newman.v are now axiom-free. 
-
-- In [Sets], the file Integers.v uses directly the type nat and 
-   not any more an encapsulation Nat. Consequent simplifications. 
-
-- In [Arith], the file Min.v contains now more lemmas, and a dual file 
-   Max.v has been introduced. 
-
-- In [Arith], a tail-recursive plus and mult are now defined. Cf. files 
-   Plus.v and Mult.v	
-
-- A new directory named [Sorting] contains a proof of a heapsort. 
-   (theory forgotten during the port of V6.3 to V7.0) 
+- In [Relations], Rstar.v and Newman.v now axiom-free. 
+- In [Sets], Integers.v now based on nat
+- In [Arith], more lemmas in Min.v, new file Max.v, tail-recursive
+  plus and mult added to Plus.v and Mult.v respectively
+- New directory [Sorting] with a proof of heapsort (dragged from 6.3.1 lib)
 
 Efficiency
 
@@ -42,19 +31,29 @@ Efficiency
 
 Bugs
 
-- Apply "universe anomaly" bug fixed
-- Bug with recursive inductive types involving let-in fixed
 - Confusion between implicit args of locals and globals of same base name fixed
-- NatRing works (to check)
+- Various incompatibilities wrt inference of "?" in V6.3.1 fixed
+- Implicits in infix section variables bug fixed
+- Known coercions bugs fixed
+
+- Apply "universe anomaly" bug fixed
+- NatRing now working
 - "Discriminate 1", "Injection 1", "Simplify_eq 1" now working
 - NewInduction bugs with let-in and recursively dependent hypotheses fixed
 - Syntax [x:=t:T]u now allowed as mentioned in documentation
-- Various incompatibilities wrt inference of "?" in V6.3.1 fixed
+
+- Bug with recursive inductive types involving let-in fixed
 - Known pattern-matching bugs fixed
 - Known Cases elimination predicate bugs fixed
-- Known coercions bugs
 - Improved errors messages for pattern-matching and projections
-- Implicits in infix section variables bug fixed
+- Better error messages for ill-typed Cases expressions
+
+Incompatibilities
+
+- New naming strategy for NewInduction/NewDestruct may affect 7.1 compatibility
+- Extra parentheses may exceptionally be needed in tactic definitions.
+- Coq extensions written in Ocaml need to be updated (see dev/changements.txt
+  for a description of the main changes in the interface files of V7.2)
 
 ----------------------------------------------------------------------------
 Changes from V6.3.1 and V7.0 to V7.1
