@@ -85,7 +85,7 @@ val begin_module :
       -> safe_environment -> safe_environment
 val end_module :
   label -> safe_environment 
-    -> safe_environment * module_path * module_type_body
+    -> safe_environment * module_path
 
 val current_modpath : safe_environment -> module_path
 
@@ -100,8 +100,8 @@ val set_transparent : safe_environment -> long_name -> unit
 type compiled_module
 
 val export : safe_environment -> dir_path -> compiled_module
-val import : compiled_module -> Digest.t -> safe_environment -> 
-  safe_environment * module_path
+val import : compiled_module -> Digest.t -> safe_environment 
+  -> safe_environment * module_path
 
 
 val env_of_safe_env : safe_environment -> env

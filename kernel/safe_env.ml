@@ -239,7 +239,7 @@ let end_module l senv =
     labset = Labset.add l oldsenv.labset;
     revsign = (l,SPBmodule mb)::oldsenv.revsign;
     imports = senv.imports;
-    loads = senv.loads@oldsenv.loads }, mp, mtb
+    loads = senv.loads@oldsenv.loads }, mp
 
 let current_modpath senv = senv.modinfo.modpath
 
