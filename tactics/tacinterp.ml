@@ -43,6 +43,7 @@ open Genarg
 open Decl_kinds
 open Mod_subst
 open Printer
+open Inductiveops
 
 let strip_meta id = (* For Grammar v7 compatibility *)
   let s = string_of_id id in
