@@ -1506,6 +1506,44 @@ When several hypotheses have the form {\tt \ident=t} or {\tt
     for which an equality exists.
 \end{Variants}
 
+\subsection{{\tt stepl {\term}}}
+\tacindex{stepl}
+
+This tactic is for chaining rewriting steps. It assumes a goal of the
+form ``$R$ {\term}$_1$ {\term}$_2$'' where $R$ is a binary relation
+and relies on a database of lemmas of the form {\tt forall} $x$ $y$
+$z$, $R$ $x$ $y$ {\tt ->} $eq$ $x$ $z$ {\tt ->} $R$ $z$ $y$ where $eq$
+is typically a setoid equality. The application of {\tt stepl {\term}}
+then replaces the goal by ``$R$ {\term} {\term}$_2$'' and adds a new
+goal stating ``$eq$ {\term} {\term}$_1$''.
+
+Lemmas are added to the database using the command 
+\comindex{Declare Left Step}
+\begin{quote}
+{\tt Declare Left Step {\qualid}.}
+\end{quote}
+where {\qualid} is the name of the lemma.
+
+The tactic is especially useful for parametric setoids which are not
+accepted as regular setoids for {\tt rewrite} and {\tt setoid\_replace} (see chapter \ref{setoid_replace}).
+
+\tacindex{stepr}
+\comindex{Declare Right Step}
+\begin{Variants}
+\item{\tt stepl {\term} by {\tac}}\\
+This applies {\tt stepl {\term}} then applies {\tac} to the second goal.
+
+\item{\tt stepr {\term}}\\
+     {\tt stepr {\term} by {\tac}}\\
+This behaves as {\tt stepl} but on the right-hand-side of the binary relation.
+Lemmas are expected to be of the form
+``{\tt forall} $x$ $y$
+$z$, $R$ $x$ $y$ {\tt ->} $eq$ $y$ $z$ {\tt ->} $R$ $x$ $z$''
+and are registered using the command
+\begin{quote}
+{\tt Declare Right Step {\qualid}.}
+\end{quote}
+\end{Variants}
 
 \section{Equality and inductive sets}
 
