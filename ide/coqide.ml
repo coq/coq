@@ -1720,6 +1720,11 @@ let main files =
 	    ~width:!current.window_width ~height:!current.window_height 
 	    ~title:"CoqIde" ()
   in
+(*
+  let icon_image = Filename.concat lib_ide "coq.ico" in
+  let icon = GdkPixbuf.from_file icon_image in
+  w#set_icon (Some icon);
+*)
   let vbox = GPack.vbox ~homogeneous:false ~packing:w#add () in
 
 
@@ -2077,7 +2082,7 @@ let main files =
 		 ~title:"CoqIde search/replace" ()
   in
   let find_box = GPack.table
-		   ~columns:3 ~rows:3
+		   ~columns:3 ~rows:5
 		   ~col_spacings:10 ~row_spacings:10 ~border_width:10
 		   ~homogeneous:false ~packing:find_w#add () in
   
@@ -2133,6 +2138,18 @@ let main files =
     GButton.button
       ~label:"Replace and find"
       ~packing: (find_box#attach ~left:2 ~top:2)
+      ()
+  in
+  let find_again_button =
+    GButton.button
+      ~label:"_Find again"
+      ~packing: (find_box#attach ~left:2 ~top:3)
+      ()
+  in
+  let find_again_backward_button =
+    GButton.button
+      ~label:"Find _backward"
+      ~packing: (find_box#attach ~left:2 ~top:4)
       ()
   in
   let last_find () =
@@ -2194,6 +2211,18 @@ let main files =
     find_w#misc#hide();
     v#coerce#misc#grab_focus()
   in
+  let find_again_forward () =
+    search_backward := false;
+    let (v,b,start,_) = last_find () in
+    let start = start#forward_chars 1 in
+    find_from v b start find_entry#text
+  in
+  let find_again_backward () =
+    search_backward := true;
+    let (v,b,start,_) = last_find () in
+    let start = start#backward_chars 1 in
+    find_from v b start find_entry#text
+  in
   let key_find ev =
     let s = GdkEvent.Key.state ev and k = GdkEvent.Key.keyval ev in
     if k = GdkKeysyms._Escape then
@@ -2210,28 +2239,16 @@ let main files =
       end 
     else if List.mem `CONTROL s && k = GdkKeysyms._f then
       begin
-	search_backward := false;
-	let (v,b,start,_) = last_find () in
-	let start = start#forward_chars 1 in
-	find_from v b start find_entry#text;
+	find_again_forward ();
 	true
       end
     else if List.mem `CONTROL s && k = GdkKeysyms._b then
       begin
-	search_backward := true;
-	let (v,b,start,_) = last_find () in
-	let start = start#backward_chars 1 in
-	find_from v b start find_entry#text;
+	find_again_backward ();
 	true
       end
     else false (* to let default callback execute *)
   in
-  let _ = close_find_button#connect#clicked close_find in
-  let _ = replace_button#connect#clicked do_replace in
-  let _ = replace_find_button#connect#clicked do_replace_find in
-  let _ = find_entry#connect#changed do_find in
-  let _ = find_entry#event#connect#key_press ~callback:key_find in
-  let _ = find_w#event#connect#delete (fun _ -> find_w#misc#hide(); true) in
   let find_f ~backward () = 
     search_backward := backward;
     find_w#show ();
@@ -2242,10 +2259,18 @@ let main files =
 		 ~key:GdkKeysyms._F
 		 ~callback:(find_f ~backward:false)
   in
-  let find_back_i = edit_f#add_item "_Find backwards"
+  let find_back_i = edit_f#add_item "Find _backwards"
 		 ~key:GdkKeysyms._B
 		 ~callback:(find_f ~backward:true)
   in
+  let _ = close_find_button#connect#clicked close_find in
+  let _ = replace_button#connect#clicked do_replace in
+  let _ = replace_find_button#connect#clicked do_replace_find in
+  let _ = find_again_button#connect#clicked find_again_forward in
+  let _ = find_again_backward_button#connect#clicked find_again_backward in
+  let _ = find_entry#connect#changed do_find in
+  let _ = find_entry#event#connect#key_press ~callback:key_find in
+  let _ = find_w#event#connect#delete (fun _ -> find_w#misc#hide(); true) in
 (*
   let search_if = edit_f#add_item "Search _forward"
 		    ~key:GdkKeysyms._greater
@@ -2280,7 +2305,7 @@ let main files =
   ignore(edit_f#add_separator ());
   (* external editor *)
   let _ = 
-    edit_f#add_item "External editor" ~key:GdkKeysyms._E ~callback:
+    edit_f#add_item "External editor" ~callback:
       (fun () -> 	 
 	 let av = out_some ((get_current_view()).analyzed_view) in 
 	 match av#filename with
@@ -3296,7 +3321,7 @@ let start () =
   ignore_break ();
   GtkMain.Rc.add_default_file (Filename.concat lib_ide ".coqide-gtk2rc");
   (try 
-     GtkMain.Rc.add_default_file (Filename.concat (Sys.getenv "HOME") ".coqide-gtk2rc");
+     GtkMain.Rc.add_default_file (Filename.concat System.home ".coqide-gtk2rc");
   with Not_found -> ());
   ignore (GtkMain.Main.init ());
   GtkData.AccelGroup.set_default_mod_mask 

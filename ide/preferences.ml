@@ -12,13 +12,9 @@ open Configwin
 open Printf
 open Util
 
-let pref_file = 
-  try (Filename.concat (Sys.getenv "HOME") ".coqiderc")
-  with _ -> ".coqiderc"
+let pref_file = Filename.concat System.home ".coqiderc"
 
-let accel_file = 
-  try (Filename.concat (Sys.getenv "HOME") ".coqide.keys")
-  with _ -> ".coqide.keys"
+let accel_file = Filename.concat System.home ".coqide.keys"
 
 let mod_to_str (m:Gdk.Tags.modifier) = 
   match m with

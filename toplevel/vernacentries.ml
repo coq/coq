@@ -620,13 +620,13 @@ let vernac_add_ml_path isrec s =
 let vernac_declare_ml_module l = Mltop.declare_ml_modules l
 
 let vernac_chdir = function
-  | None -> print_endline (Sys.getcwd())
+  | None -> message (Sys.getcwd())
   | Some s ->
       begin
 	try Sys.chdir (System.glob s)
 	with Sys_error str -> warning ("Cd failed: " ^ str)
       end;
-      if_verbose print_endline (Sys.getcwd())
+      if_verbose message (Sys.getcwd())
 
 
 (********************)

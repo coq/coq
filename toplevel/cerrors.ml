@@ -33,15 +33,15 @@ let report () = (str "." ++ spc () ++ str "Please report.")
 
 let rec explain_exn_default = function
   | Stream.Failure -> 
-      hov 0 (str "Anomaly: Uncaught Stream.Failure.")
+      hov 0 (str "Anomaly: uncaught Stream.Failure.")
   | Stream.Error txt -> 
       hov 0 (str "Syntax error: " ++ str txt)
   | Token.Error txt -> 
       hov 0 (str "Syntax error: " ++ str txt)
   | Sys_error msg -> 
-      hov 0 (str "Error: OS: " ++ str msg)
+      hov 0 (str "Anomaly: uncaught exception Sys_error " ++ str (guill msg) ++ report ())
   | UserError(s,pps) -> 
-      hov 1 (str"Error: " ++ where s ++ pps)
+      hov 1 (str "User error: " ++ where s ++ pps)
   | Out_of_memory -> 
       hov 0 (str "Out of memory")
   | Stack_overflow -> 
@@ -56,13 +56,13 @@ let rec explain_exn_default = function
 	       int pos1 ++ str " to #" ++ int pos2 ++
 	       report ())
   | Not_found -> 
-      hov 0 (str "Anomaly: Search error" ++ report ())
+      hov 0 (str "Anomaly: uncaught exception Not_found" ++ report ())
   | Failure s -> 
-      hov 0 (str "Anomaly: Failure " ++ str (guill s) ++ report ())
+      hov 0 (str "Anomaly: uncaught exception Failure " ++ str (guill s) ++ report ())
   | Invalid_argument s -> 
-      hov 0 (str "Anomaly: Invalid argument " ++ str (guill s) ++ report ())
+      hov 0 (str "Anomaly: uncaught exception Invalid_argument " ++ str (guill s) ++ report ())
   | Sys.Break -> 
-      hov 0 (fnl () ++ str"User Interrupt.")
+      hov 0 (fnl () ++ str "User Interrupt.")
   | Univ.UniverseInconsistency -> 
       hov 0 (str "Error: Universe Inconsistency.")
   | TypeError(ctx,te) -> 

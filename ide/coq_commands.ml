@@ -120,6 +120,7 @@ let commands = [
    "Remove Printing Let";
    "Require";
    "Require Export";
+   "Require Import";
    (* "Reset"; *)
    "Reset Extraction Inline";
    (* "Reset Initial"; *)
