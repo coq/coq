@@ -46,7 +46,7 @@ Lemma eq_dep_dep1 : (p,q:U)(x:(P p))(y:(P q))(eq_dep p x q y)->(eq_dep1 p x q y)
 Proof.
 Induction 1; Intros.
 Apply eq_dep1_intro with (refl_equal U p).
-Elim eq_rec_eq; Trivial.
+Simpl; Trivial.
 Qed.
 
 Lemma eq_dep1_eq : (p:U)(x,y:(P p))(eq_dep1 p x p y)->x=y.
