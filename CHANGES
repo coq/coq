@@ -1,11 +1,24 @@
 Changes from V7.3 to ????
 -------------------------
 
+Library
+
+- Lemmas in Compare_dec.v (le_lt_dec, ...) are now transparent. This
+  may be source of incompatibilities.
+
 Language
 
 - Inductive definitions now accept ">" in constructor types to declare
   the corresponding constructor as a coercion.
 - Idem for assumptions declarations and constants when the type is mentionned.
+- The "Coercion" and "Canonical Structure" keywords now accept the
+  same syntax as "Definition", i.e. "hyps :=c (:t)?" or "hyps :t".
+- Remark and Fact now definitively behaves as Theorem and Lemma; when
+  sections are closed, the full names of Remark and Fact has no longer a
+  section part; Local built by tactics are now Opaque if the proof is
+  ended by Qed.
+- Opaque local statements (such as defined by Local ... Qed, see above) have
+  their body hidden in the local context of proofs
 
 ML tactic and vernacular commands
 
@@ -21,6 +34,8 @@ Tactic definitions
 - static globalisation of identifiers and global references (source of
   incompatibilities, especially, Recursive keyword is required for
   mutually recursive definitions).
+- Fresh names for Assert and Pose now based on collision-avoiding
+  Intro naming strategy (exceptional source of incompatibilities)
 
 Tactics
 
@@ -32,6 +47,16 @@ Tactics
 Miscellaneous
 
 - Printing Coercion now used through the standard keywords Set/Add, Test, Print
+
+Incompatibilities
+
+- "Grammar tactic ... : ast" and "Grammar vernac ... : ast" are no
+  longer supported, use TACTIC EXTEND and VERNAC COMMAND EXTEND on the
+  ML-side instead
+- Transparency of le_lt_dec and co (leads to some simplification in
+  proofs; in some cases, incompatibilites is solved by declaring locally 
+  opaque the relevant constant)
+
 
 Changes from V7.2 to V7.3
 -------------------------
