@@ -380,7 +380,7 @@ $$
 \nlsep \TERM{case}~\NT{constr-with-bindings}
 \nlsep \TERM{casetype}~\tacconstr
 \nlsep \KWD{fix}~\OPT{\NT{ident}}~\NT{int}
-\nlsep \KWD{fix}~\NT{ident}~\NT{int}~\PLUS{\NT{fix-spec}}
+\nlsep \KWD{fix}~\NT{ident}~\NT{int}~\KWD{with}~\PLUS{\NT{fix-spec}}
 \nlsep \KWD{cofix}~\OPT{\NT{ident}}
 \nlsep \KWD{cofix}~\NT{ident}~\PLUS{\NT{fix-spec}}
 %%
@@ -391,7 +391,7 @@ $$
 \nlsep \TERM{pose}~\tacconstr
 \nlsep \TERM{pose}~
   \TERM{(}~\NT{ident}~\KWD{:=}~\taclconstr~\TERM{)}
-\nlsep \TERM{generalize}~\tacconstr~\STARGR{\KWD{,}~\tacconstr}
+\nlsep \TERM{generalize}~\PLUS{\tacconstr}
 \nlsep \TERM{generalize}~\TERM{dependent}~\tacconstr
 \nlsep \TERM{lettac}~
   \TERM{(}~\NT{ident}~\KWD{:=}~\taclconstr~\TERM{)}~\NT{clause-pattern}
@@ -453,7 +453,7 @@ $$
 \nlsep \TERM{cbv}~\PLUS{\NT{red-flag}}
 \nlsep \TERM{lazy}~\PLUS{\NT{red-flag}}
 \nlsep \TERM{unfold}~\NT{unfold-occ}~\STARGR{\KWD{,}~\NT{unfold-occ}}
-\nlsep \TERM{fold}~\tacconstr~\STARGR{\KWD{,}~\tacconstr}
+\nlsep \TERM{fold}~\PLUS{\tacconstr}
 \nlsep \TERM{pattern}~\NT{pattern-occ}~\STARGR{\KWD{,}~\NT{pattern-occ}}
 \SEPDEF
 \DEFNT{conversion}
@@ -473,8 +473,8 @@ Conflicts exists between integers and constrs.
 \SEPDEF
 %% TODO: lconstr not followed by a keyword
 \DEFNT{fix-spec}
-       \KWD{with}~\NT{ident}~\STAR{\NT{binder}}~\OPT{\NT{annot}}
-       ~\KWD{:}~\taclconstr
+       \KWD{(}~\NT{ident}~\STAR{\NT{binder}}~\OPT{\NT{annot}}
+       ~\KWD{:}~\taclconstr~\KWD{)}
 \SEPDEF
 \DEFNT{intro-patterns}
        \STAR{\NT{intro-pattern}}
