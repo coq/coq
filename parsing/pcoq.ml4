@@ -774,7 +774,9 @@ let is_self from e =
 
 let is_binder_level from e =
   match from, e with
-      ETConstr(200,()), ETConstr(NumLevel 200,_) -> not !Options.v7
+      ETConstr(200,()),
+      ETConstr(NumLevel 200,(BorderProd(false,_)|InternalProd)) ->
+        not !Options.v7
     | _ -> false
 
 let rec symbol_of_production assoc from forpat typ =
@@ -799,5 +801,3 @@ let rec symbol_of_production assoc from forpat typ =
       | (eobj,Some None,_) -> Gramext.Snext
       | (eobj,Some (Some (lev,cur)),_) -> 
           Gramext.Snterml (Gram.Entry.obj eobj,constr_prod_level assoc cur lev)
-
-
