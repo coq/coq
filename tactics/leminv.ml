@@ -291,7 +291,7 @@ let lemInv id c gls =
     let (wc,kONT) = startWalk gls in
     let clause = mk_clenv_type_of wc c in
     let clause = clenv_constrain_with_bindings [(-1,mkVar id)] clause in
-    res_pf kONT clause gls
+    elim_res_pf kONT clause true gls
   with 
 (* Ce n'est pas l'endroit pour cela
     | Not_found  ->  
