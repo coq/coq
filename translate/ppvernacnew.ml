@@ -195,7 +195,7 @@ let pr_opt_hintbases l = match l with
   | [] -> mt()
   | _ as z -> str":" ++ spc() ++ prlist_with_sep sep str z
 
-let pr_hints local db h pr_c = 
+let pr_hints local db h pr_c pr_pat = 
   let opth = pr_opt_hintbases db  in
   let pr_aux = function
     | CAppExpl (_,(_,qid),[]) -> pr_reference qid
@@ -215,7 +215,7 @@ let pr_hints local db h pr_c =
         str"Constructors" ++ spc() ++
         prlist_with_sep spc pr_reference c
     | HintsExtern (name,n,c,tac) ->
-        str "Extern" ++ spc() ++ int n ++ spc() ++ pr_c c ++ str" =>" ++
+        str "Extern" ++ spc() ++ int n ++ spc() ++ pr_pat c ++ str" =>" ++
         spc() ++ pr_raw_tactic tac
     | HintsDestruct(name,i,loc,c,tac) ->
         str "Destruct " ++ pr_id name ++ str" :=" ++ spc() ++
@@ -928,7 +928,8 @@ let rec pr_vernac = function
 	  str "Tactic Definition " else*)
 	    (* Rec by default *) str "Ltac ") ++
         prlist_with_sep (fun () -> fnl() ++ str"with ") pr_tac_body l)
-  | VernacHints (local,dbnames,h) -> pr_hints local dbnames h pr_constr
+  | VernacHints (local,dbnames,h) ->
+      pr_hints local dbnames h pr_constr pr_pattern
   | VernacSyntacticDefinition (id,c,None) ->
       hov 2 (str"Syntactic Definition " ++ pr_id id ++ str" :=" ++
              pr_lconstrarg c)
