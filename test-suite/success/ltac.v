@@ -55,3 +55,16 @@ Qed.
 Lemma back3 : (0)=(0)->(1)=(1)->(0)=(1)->(0)=(0).
 Intros; Match Context With [_:(O)=?1;_:(1)=(1)|-? ] -> Exact (refl_equal ? ?1).
 Qed.
+
+(* Check context binding *)
+Tactic Definition sym t := Match t With [C[?1=?2]] -> Inst C[?1=?2].
+
+Lemma sym : ~(0)=(1)->~(1)=(0).
+Intro H.
+Let t = (sym (Check H)) In Assert t.
+Exact H.
+Intro H1.
+Apply H.
+Symmetry.
+Assumption.
+Qed.
