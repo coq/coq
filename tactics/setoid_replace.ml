@@ -303,7 +303,7 @@ let gen_lem_name m = match kind_of_term m with
   | Const sp -> add_suffix (basename sp) "_ext"
   | Ind (sp, i) -> add_suffix (basename sp) ((string_of_int i)^"_ext")
   | Construct ((sp,i),j) -> add_suffix
-      (basename sp) ((string_of_int i)^(string_of_int i)^"_ext")
+      (basename sp) ((string_of_int i)^(string_of_int j)^"_ext")
   | _ -> errorlabstrm "New Morphism" (str "The term " ++ prterm m ++ str "is not a known name")
 
 let gen_lemma_tail m lisset body n =
