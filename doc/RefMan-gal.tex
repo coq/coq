@@ -336,16 +336,15 @@ chapter \ref{Addoc-syntax}.
  & $|$ & {\tt fun} {\binderlist} {\tt =>} {\term} &(\ref{abstractions})\\
  & $|$ & {\tt fix} {\fixpointbodies} &(\ref{fixpoints})\\
  & $|$ & {\tt cofix} {\cofixpointbodies} &(\ref{fixpoints})\\
- & $|$ &
-    {\tt let} {\ident} \sequence{\binderlet}{} {\typecstr} {\tt :=} {\term}
-    {\tt in} {\term} &(\ref{let-in})\\
+ & $|$ & {\tt let} {\idparams} {\tt :=} {\term}
+         {\tt in} {\term} &(\ref{let-in})\\
  & $|$ & {\tt let fix} {\fixpointbody} {\tt in} {\term} &(\ref{fixpoints})\\
  & $|$ & {\tt let cofix} {\cofixpointbody}
          {\tt in} {\term} &(\ref{fixpoints})\\
  & $|$ & {\tt let} {\tt (} \sequence{\name}{,} {\tt) :=} {\term}
-         {\tt in} {\term}  &(\ref{caseanalysis})\\
- & $|$ & {\tt if} {\term} \zeroone{\returntype} {\tt then} {\term}
-         {\tt else} {\term} &(\ref{caseanalysis})\\
+         {\tt in} {\term}  &(\ref{caseanalysis}, \ref{Mult-match})\\
+ & $|$ & {\tt if} {\ifitem} {\tt then} {\term}
+         {\tt else} {\term} &(\ref{caseanalysis}, \ref{Mult-match})\\
  & $|$ & {\term} {\tt :} {\term} &(\ref{typecast})\\
  & $|$ & {\term} {\tt ->} {\term} &(\ref{products})\\
  & $|$ & {\term} \nelist{\termarg}{}&(\ref{applications})\\
@@ -353,13 +352,13 @@ chapter \ref{Addoc-syntax}.
             &(\ref{Implicits-explicitation})\\
  & $|$ & {\term} {\tt \%} {\ident} &(\ref{scopechange})\\
  & $|$ & {\tt match} \nelist{\caseitem}{\tt ,}
-                 \zeroone{\casetype} {\tt with} &\\
+                 \zeroone{\returntype} {\tt with} &\\
     &&   ~~~\zeroone{\zeroone{\tt |} \nelist{\eqn}{|}} {\tt end}
     &(\ref{caseanalysis})\\
  & $|$ & {\qualid} &(\ref{qualid})\\
  & $|$ & {\sort} &(\ref{Gallina-sorts})\\
  & $|$ & {\num} &(\ref{numerals})\\
- & $|$ & {\_} &(\ref{applications})\\
+ & $|$ & {\_} &(\ref{hole})\\
  & & &\\
 {\termarg} & ::= & {\term} &\\
  & $|$ & {\tt (} {\ident} {\tt :=} {\term} {\tt )}
@@ -367,22 +366,22 @@ chapter \ref{Addoc-syntax}.
  & $|$ & {\tt (} {\num} {\tt :=} {\term} {\tt )}
          &(\ref{Implicits-explicitation})\\
 &&&\\
-{\binderlist} & ::= & \nelist{\name}{} {\typecstr} &\\
+{\binderlist} & ::= & \nelist{\name}{} {\typecstr} & \ref{Binders} \\
  & $|$ & {\binder} \nelist{\binderlet}{} &\\
-{\binder} & ::= &   {\name} &\\
+&&&\\
+{\binder} & ::= &   {\name} & \ref{Binders} \\
  & $|$ & {\tt (} \nelist{\name}{} {\tt :} {\term} {\tt )} &\\  
-{\binderlet} & ::= & {\binder} &\\
+&&&\\
+{\binderlet} & ::= & {\binder} & \ref{Binders} \\
  & $|$ & {\tt (} {\name} {\typecstr} {\tt :=} {\term} {\tt )} &\\
 & & &\\
 {\name} & \cn{}::= & {\ident} &\\
  & $|$ & {\tt \_} &\\
 &&&\\
-{\qualid} & ::= & {\ident} &\\
+{\qualid} & ::= & {\ident} & \\
  & $|$ & {\qualid} {\accessident} &\\
  & & &\\
-{\sort} & ::= & {\tt Prop} &\\
- & $|$ & {\tt Set} &\\
- & $|$ & {\tt Type} &\\
+{\sort} & ::= & {\tt Prop} ~$|$~ {\tt Set} ~$|$~ {\tt Type} &\\
 \hline
 \end{tabular}
 \caption{Syntax of terms}
@@ -398,6 +397,8 @@ chapter \ref{Addoc-syntax}.
 \begin{figure}[htb]
 \begin{tabular}{|lcl|}
 \hline
+{\idparams} & ::= &  {\ident} \sequence{\binderlet}{} {\typecstr} \\
+&&\\
 {\fixpointbodies} & ::= &
          {\fixpointbody} \\
  & $|$ & {\fixpointbody} {\tt with} \nelist{\fixpointbody}{{\tt with}}
@@ -410,19 +411,26 @@ chapter \ref{Addoc-syntax}.
 {\fixpointbody} & ::= &
     {\ident} \nelist{\binderlet}{} \zeroone{\annotation} {\typecstr}
     {\tt :=} {\term} \\
-{\cofixpointbody} & ::= &
-    {\ident} \sequence{\binderlet}{} {\typecstr} {\tt :=} {\term} \\
+{\cofixpointbody} & ::= & {\idparams} {\tt :=} {\term} \\
   & &\\
 {\annotation} & ::= & {\tt \{ struct} {\ident} {\tt \}} \\ 
 &&\\
 {\caseitem} & ::= & {\term} \zeroone{{\tt as} \name}
      \zeroone{{\tt in} \term} \\
 &&\\
-{\casetype} & ::= & {\tt return} {\term} \\
+{\ifitem} & ::= & {\term} \zeroone{\zeroone{{\tt as} {\name}} {\returntype}} \\
 &&\\
-{\returntype} & ::= & \zeroone{{\tt as} {\name}} {\casetype} \\
+{\returntype} & ::= & {\tt return} {\term} \\
 &&\\
 {\eqn} & ::= & \nelist{\pattern}{\tt ,} {\tt =>} {\term}\\
+&&\\
+{\pattern} & ::= & {\qualid} \nelist{\pattern}{}  \\
+ & $|$ & {\pattern} {\tt as} {\ident}             \\
+ & $|$ & {\pattern} {\tt \%} {\ident}         \\
+ & $|$ & {\qualid}                              \\
+ & $|$ & {\tt \_}                                  \\
+ & $|$ & {\num}                                 \\
+ & $|$ & {\tt (} \nelist{\pattern}{,} {\tt )}     \\
 \hline
 \end{tabular}
 \caption{Syntax of terms (continued)}
@@ -431,6 +439,15 @@ chapter \ref{Addoc-syntax}.
 \end{center}
 
 %%%%%%%
+
+\subsection{Types}
+
+{\Coq} terms are typed. {\Coq} types are recognized by the same
+syntactic class as {\term}. We denote by {\type} the semantic subclass
+of types inside the syntactic class {\term}.
+\index{type@{\type}}
+
+
 \subsection{Qualified identifiers and simple identifiers}
 \label{qualid}
 \label{ident}
@@ -481,12 +498,29 @@ subclass of the syntactic class {\term}.
 
 \noindent More on sorts can be found in section \ref{Sorts}.
 
-\subsection{Types}
+\subsection{Binders}
+\label{Binders}
+\index{binders}
 
-{\Coq} terms are typed. {\Coq} types are recognized by the same
-syntactic class as {\term}. We denote by {\type} the semantic subclass
-of types inside the syntactic class {\term}.
-\index{type@{\type}}
+Various constructions introduce variables which scope is some of its
+sub-expressions. There is a uniform syntax for this. A binder may be
+an (unqualified) identifier: the name to use to refer to this
+variable. If the variable is not to be used, its name can be {\tt
+\_}. When its type cannot be synthesized by the system, it can be
+specified with notation {\tt (}\,{\ident}\,{\tt :}\,{\type}\,{\tt
+)}. There is a notation for several variables sharing the same type:
+{\tt (}\,{\ident$_1$}\ldots{\ident$_n$}\,{\tt :}\,{\type}\,{\tt )}.
+
+Some constructions allow ``let-binders'', that is either a binder as
+defined above, or a variable with a value. The notation is {\tt
+(}\,{\ident}\,{\tt :=}\,{\term}\,{\tt )}. Only one variable can be
+introduced at the same time. It is also possible to give the type of
+the variable before the symbol {\tt :=}.
+
+The last kind of binders is the ``binder list''. It is either a list
+of let-binders (the first one not being a variable with value), or
+{\ident$_1$}\ldots{\ident$_n$}\,{\tt :}\,{\type} if all variables
+share the same type.
 
 \subsection{Abstractions}
 \label{abstractions}
@@ -494,24 +528,18 @@ of types inside the syntactic class {\term}.
 
 The expression ``{\tt fun} {\ident} {\tt :} \type {\tt =>} {\term}''
 denotes the {\em abstraction} of the variable {\ident} of type
-{\type}, over the term {\term}.
+{\type}, over the term {\term}. Put in another way, it is function of
+formal parameter {\ident} of type {\type} returning {\term}.
 
-One can abstract several variables successively: the notation {\tt
+Keyword {\tt fun} is followed by a ``binder list'', so any of the
+binders of section~\ref{Binders} apply. Internally, abstractions are
+only over one variable. Multiple variable binders are an iteration of
+the single variable abstraction: notation {\tt
 fun}~{\ident$_{1}$}~{\ldots}~{\ident$_{n}$}~{\tt :}~\type~{\tt
 =>}~{\term} stands for {\tt fun}~{\ident$_{1}$}~{\tt :}~\type~{\tt
-=>}~{\ldots}~{\tt fun}~{\ident$_{n}$}~{\tt :}~\type~{\tt =>}~{\term}
-and the notation {\tt fun (}~{\localassums$_{1}$}~{\tt
-)}~{\ldots}~{\tt (}~{\localassums$_{m}$}~{\tt ) =>}~{\term} is a
-shorthand for {\tt fun}~{\localassums$_{1}$}~{\tt =>}~{\ldots}~{\tt
-fun}~{\localassums$_{m}$}~{\tt =>}~{\term}.
-
-\medskip
-\Rem The types of variables (and the {\tt :}) may be omitted in an
-abstraction when they can be synthesized by the system.
-
-\Rem Local definitions may appear inside parentheses. Obviously, this
-is expanded into a let-in.
-
+=>}~{\ldots}~{\tt fun}~{\ident$_{n}$}~{\tt :}~\type~{\tt =>}~{\term}.
+Variables with a value expand to a local definition (see
+section~\ref{let-in}).
 
 \subsection{Products}
 \label{products}
@@ -519,17 +547,9 @@ is expanded into a let-in.
 
 The expression ``{\tt forall}~{\ident}~{\tt :}~\type~{\tt ,}~{\term}''
 denotes the {\em product} of the variable {\ident} of type {\type},
-over the term {\term}.
-
-Similarly, the expression {\tt forall} {\ident$_{1}$} {\ldots}
-{\ident$_{n}$} {\tt :} \type {\tt ,} {\term} is equivalent to {\tt
-forall} {\ident$_{1}$} {\tt :} \type {\tt ,} {\ldots} {\tt forall}
-{\ident$_{n}$} {\tt :} \type {\tt ,} {\term} and the expression {\tt
-forall (} {\typedidents$_{1}$} {\tt )} {\ldots} {\tt (}
-{\typedidents$_{m}$} {\tt ),} {\term} is a equivalent to {\tt
-forall}~{\typedidents$_{1}$} {\tt ,} {\ldots} {\tt forall}
-{\typedidents$_{m}$} {\tt ,} {\term}
-
+over the term {\term}. As for abstractions, {\tt forall} is followed
+by a binder list, and it is represented by an iteration of single
+variable products.
 
 Non dependent product types have a special notation ``$A$ {\tt ->}
 $B$'' stands for ``{\tt forall \_:}$A${\tt ,}~$B$''. This is to stress
@@ -548,64 +568,11 @@ denotes the application of the term \term$_0$ to the arguments
 {\tt (} {\term$_0$} {\term$_1$} {\tt )} {\ldots} {\term$_n$} {\tt )}:
 associativity is to the left.
 
-%% explicit application
-%% \_
-
-
-\subsection{Local definitions (let-in)}
-\label{let-in}
-\index{Local definitions}
-\index{let-in}
-
-
-{\tt let}{\ident}{\tt :=}{\term$_1$}{\tt in}~{\term$_2$} denotes the local
-binding of \term$_1$ to the variable $\ident$ in \term$_2$.
-
-
-\subsection{Definition by case analysis}
-\label{caseanalysis}
-\index{match@{\tt match\ldots with\ldots end}}
-
-In a simple pattern \verb!(! \nelist{\ident}{} \verb!)!, the first {\ident}
-is intended to be a constructor.
-
-The expression {\tt match} {\term$_0$} {\tt with}
-{\pattern$_1$} {\tt =>} {\term$_1$} {\tt $|$} {\ldots} {\tt $|$}
-{\pattern$_n$} {\tt =>} {\term$_n$} {\tt end}, denotes a
-{\em pattern-matching} over the term {\term$_0$} (expected to be of an
-inductive type). 
-
-The ... is the resulting type of the whole {\tt match}
-expression. Most of the time, when this type is the same as the
-types of all the {\term$_i$}, the annotation is not needed\footnote{except
-if no equation is given, to match the term in an empty type, e.g. the
-type \texttt{False}}. The annotation has to be given when the 
-resulting type of the whole {\tt match} depends on the actual {\term$_0$}
-matched.
-
-%% TODO: variants let (,,) and if/then/else
-
-\subsection{Recursive functions}
-\label{fixpoints}
-\index{fix@{fix \ident$_i$\{\dots\}}}
-
-The expression ``{\tt fix} \ident$_1$ \binder$_1$ {\tt :} {\type$_1$}
-\texttt{:=} \term$_1$ {\tt with} {\ldots} {\tt with} \ident$_n$
-\binder$_n$~{\tt :} {\type$_n$} \texttt{:=} \term$_n$ {\tt for}
-{\ident$_i$}'' denotes the $i$th component of a block of functions
-defined by mutual well-founded recursion.
-
-The expression ``{\tt cofix} \ident$_1$~\binder$_1$ {\tt :}
-{\type$_1$} {\tt with} {\ldots} {\tt with} \ident$_n$ \binder$_n$
-{\tt :} {\type$_n$}~{\tt for} {\ident$_i$}'' denotes the $i$th
-component of a block of terms defined by a mutual guarded recursion.
-
-The association of a single fixpoint and a local
-definition have a special syntax: ``{\tt let fix}~$f$~{\ldots}~{\tt
-  :=}~{\ldots}~{\tt in}~{\ldots}'' stands for ``{\tt let}~$f$~{\tt :=
-  fix}~$f$~\ldots~{\tt :=}~{\ldots}~{\tt in}~{\ldots}''. The same
-  applies for co-fixpoints.
-
+When using implicit arguments mechanism, implicit positions can be
+forced a value with notation {\tt (}\,{\ident}\,{\tt
+:=}\,{\term}\,{\tt )} or {\tt (}\,{\num}\,{\tt
+:=}\,{\term}\,{\tt )}. See section~\ref{Implicits-explicitation} for
+details.
 
 \subsection{Type cast}
 \label{typecast}
@@ -615,13 +582,94 @@ The expression ``{\term}~{\tt :}~{\type}'' is a type cast
 expression. It forces checking that {\term} has type {\type}. It is
 identified to {\term}.
 
-%% TODO
+\subsection{Inferable subterms}
+\label{hole}
+\index{\_}
 
-\subsection{Scopes}
-\label{scopechange}
-\index{Scopes}
+Since there are redundancies, a term can be type-checked without
+giving it in totality. Subterms that are left to guess by the
+type-checker are replaced by ``\_''.
 
-%% TODO
+
+\subsection{Local definitions (let-in)}
+\label{let-in}
+\index{Local definitions}
+\index{let-in}
+
+
+{\tt let}~{\ident}~{\tt :=}~{\term$_1$}~{\tt in}~{\term$_2$} denotes
+the local binding of \term$_1$ to the variable $\ident$ in
+\term$_2$. 
+
+There is a syntactic sugar for local definition of functions: {\tt
+let} {\ident} {\binder$_1$} \ldots {\binder$_n$} {\tt :=} {\term$_1$}
+{\tt in} {\term$_2$} stands for {\tt let} {\ident} {\tt := fun}
+{\binder$_1$} \ldots {\binder$_n$} {\tt in} {\term$_2$}.
+
+
+\subsection{Definition by case analysis}
+\label{caseanalysis}
+\index{match@{\tt match\ldots with\ldots end}}
+
+
+This paragraph only shows simple variants of case analysis. See
+section~\ref{Mult-match} and chapter~\ref{Mult-match-full} for
+explanations of the general form.
+
+Objects of inductive types can be destructurated by a case-analysis
+construction, also called pattern-matching in functional languages. In
+its simple form, a case analysis expression is used to analyze the
+structure of an inductive objects (upon which constructor it is
+built).
+
+The expression {\tt match} {\term$_0$} {\returntype} {\tt with}
+{\pattern$_1$} {\tt =>} {\term$_1$} {\tt $|$} {\ldots} {\tt $|$}
+{\pattern$_n$} {\tt =>} {\term$_n$} {\tt end}, denotes a {\em
+pattern-matching} over the term {\term$_0$} (expected to be of an
+inductive type $I$). {\term$_1$}\ldots{\term$_n$} are called branches. In
+a simple pattern \nelist{\ident}{}, the first {\ident} is intended to
+be a constructor. There should be a branch for every constructor of
+$I$.
+
+The {\returntype} is used to compute the resulting type of the whole
+{\tt match} expression and the type of the branches. Most of the time,
+when this type is the same as the types of all the {\term$_i$}, the
+annotation is not needed\footnote{except if no equation is given, to
+match the term in an empty type, e.g. the type \texttt{False}}. This
+annotation has to be given when the resulting type of the whole {\tt
+match} depends on the actual {\term$_0$} matched.
+
+There are specific notations for case analysis on types with one or
+two constructors: {\tt if}\ldots{\tt then}\ldots{\tt else}\ldots and
+{\tt let (}\ldots{\tt ) :=}\ldots{\tt in}\ldots. \SeeAlso
+section~\ref{Mult-match} for details and examples.
+
+\subsection{Recursive functions}
+\label{fixpoints}
+\index{fix@{fix \ident$_i$\{\dots\}}}
+
+Expression ``{\tt fix} \ident$_1$ \binder$_1$ {\tt :} {\type$_1$}
+\texttt{:=} \term$_1$ {\tt with} {\ldots} {\tt with} \ident$_n$
+\binder$_n$~{\tt :} {\type$_n$} \texttt{:=} \term$_n$ {\tt for}
+{\ident$_i$}'' denotes the $i$th component of a block of functions
+defined by mutual well-founded recursion. It is the local counterpart
+of the {\tt Fixpoint} command. See section~\ref{Fixpoint} for more
+details. When $n=1$, the {\tt for}~{\ident$_i$} is omitted.
+
+The expression ``{\tt cofix} \ident$_1$~\binder$_1$ {\tt :}
+{\type$_1$} {\tt with} {\ldots} {\tt with} \ident$_n$ \binder$_n$ {\tt
+:} {\type$_n$}~{\tt for} {\ident$_i$}'' denotes the $i$th component of
+a block of terms defined by a mutual guarded co-recursion. It is the
+local counterpart of the {\tt CoFixpoint} command. See
+section~\ref{CoFixpoint} for more details. When $n=1$, the {\tt
+for}~{\ident$_i$} is omitted.
+
+The association of a single fixpoint and a local
+definition have a special syntax: ``{\tt let fix}~$f$~{\ldots}~{\tt
+  :=}~{\ldots}~{\tt in}~{\ldots}'' stands for ``{\tt let}~$f$~{\tt :=
+  fix}~$f$~\ldots~{\tt :=}~{\ldots}~{\tt in}~{\ldots}''. The same
+  applies for co-fixpoints.
+
 
 \section{The Vernacular}
 \label{Vernacular}
@@ -635,57 +683,49 @@ and ends with a dot.
 \begin{tabular}{|lcl|}
 \hline
 {\sentence} & ::= & {\declaration} \\
-           & $|$ & {\definition} \\
-           & $|$ & {\statement} \\
-           & $|$ & {\inductive} \\
-           & $|$ & {\fixpoint} \\
-           & $|$ & {\statement} ~~ {\proof} \\
-       & & \\
-{\params} & ::= & \nelist{\typedidents}{;} \\
-       & & \\
-{\declaration} & ::= & 
-  {\tt Axiom} {\ident} \verb.:. {\term} \verb:.: \\
- & $|$ &  {\declarationkeyword} {\params}  \verb:.: \\
-       & & \\
-{\declarationkeyword} & ::= & 
-{\tt Parameter} $|$ {\tt Parameters} \\
+            & $|$ & {\definition} \\
+            & $|$ & {\inductive} \\
+            & $|$ & {\fixpoint} \\
+            & $|$ & {\statement} \zeroone{\proof} \\
+&&\\
+%% Declarations
+{\declaration} & ::= & {\declarationkeyword} {\params} {\tt .} \\
+&&\\
+{\declarationkeyword} & ::= & {\tt Axiom} $|$ {\tt Conjecture} \\
+  & $|$  & {\tt Parameter} $|$  {\tt Parameters} \\
   & $|$  & {\tt Variable}  $|$ {\tt Variables}  \\
   & $|$  & {\tt Hypothesis}  $|$ {\tt Hypotheses}\\
-           & & \\
-
+&&\\
+{\params} & ::= & \nelist{\ident}{} {\tt :} {\term} \\
+          & $|$ & \nelist{\binder}{} \\
+&&\\
+%% Definitions
 {\definition} & ::= & 
-  {\tt Definition} {\ident} \zeroone{{\tt :} {\term}} \verb.:=. {\term} \verb:.: \\
- & $|$ &  {\tt Local} {\ident} \zeroone{{\tt :} {\term}} \verb.:=. {\term} \verb:.: \\
-           & & \\
-
+         {\tt Definition} {\idparams} {\tt :=} {\term} {\tt .} \\
+ & $|$ & {\tt Let} {\idparams} {\tt :=} {\term} {\tt .} \\
+&&\\
+%% Inductives
 {\inductive} & ::= & 
- {\tt Inductive} \nelist{\inductivebody}{with} 
-    \verb:.: \\
- & $|$ & 
- {\tt CoInductive} \nelist{\inductivebody}{with}
-    \verb:.: \\
+           {\tt Inductive} \nelist{\inductivebody}{with} {\tt .} \\
+ & $|$ & {\tt CoInductive} \nelist{\inductivebody}{with} {\tt .} \\
            & & \\
 {\inductivebody} & ::= & 
-{\ident} \zeroone{{\tt [} {\params} {\tt ]}} \verb.:. {\term}
-      \verb.:=. 
-      \sequence{\constructor}{|} \\
-           & & \\
-{\constructor} & ::= & {\ident} \verb.:. {\term} \\
-  & &\\
-
-{\fixpoint} & ::= & {\tt Fixpoint} \nelist{\fixpointbody}{with} 
-   \verb:.: \\
-& $|$ &  {\tt CoFixpoint} \nelist{\cofixpointbody}{with} 
-   \verb:.: \\
-  & &\\
-
-{\statement} & ::= & {\tt Theorem} {\ident} {\tt :} {\term} \verb:.: \\
- & $|$ &  {\tt Lemma} {\ident} {\tt :} {\term} \verb:.: \\
- & $|$ &  {\tt Definition} {\ident} {\tt :} {\term} \verb:.: \\
-           & & \\
-
+  {\ident} \sequence{\binderlet}{} {\tt :} {\term} {\tt :=} \\
+   && ~~~\zeroone{\zeroone{\tt |} \nelist{\idparams}{|}} \\
+           & & \\  %% TODO: where ...
+%% Fixpoints
+{\fixpoint} & ::= & {\tt Fixpoint} \nelist{\fixpointbody}{with} {\tt .} \\
+       & $|$ &  {\tt CoFixpoint} \nelist{\cofixpointbody}{with} {\tt .} \\
+&&\\
+%% Lemmas & proofs
+{\statement} & ::= &
+  {\statkwd} {\ident} \sequence{\binderlet}{} {\tt :} {\term} {\tt .} \\
+&&\\
+  {\statkwd} & ::= & {\tt Theorem} $|$ {\tt Lemma} $|$ {\tt Definition} \\
+&&\\
 {\proof} & ::= & {\tt Proof} {\tt .} {\dots} {\tt Qed} {\tt .}\\
    & $|$ & {\tt Proof} {\tt .} {\dots} {\tt Defined} {\tt .}\\
+   & $|$ & {\tt Proof} {\tt .} {\dots} {\tt Admitted} {\tt .}\\
 \hline
 \end{tabular}
 \caption{Syntax of sentences}
@@ -693,66 +733,87 @@ and ends with a dot.
 The different kinds of command are described hereafter. They all suppose
 that the terms occurring in the sentences are well-typed.
 
+%%
+%% Axioms and Parameters
+%%
 \subsection{Declarations}\index{Declarations}\label{Declarations}
+
 The declaration mechanism allows the user to specify his own basic
 objects. Declared objects play the role of axioms or parameters in
 mathematics. A declared object is an {\ident} associated to a \term. A
-declaration is accepted by {\Coq} if and only if this {\term} is a correct type 
-in the current context of the declaration and \ident\ was
-not previously defined in the same module. This {\term}
-is considered to be the type, or specification, of the \ident.
+declaration is accepted by {\Coq} if and only if this {\term} is a
+correct type in the current context of the declaration and \ident\ was
+not previously defined in the same module. This {\term} is considered
+to be the type, or specification, of the \ident.
 
-\subsubsection{{\tt Axiom {\ident} : {\term}}.}
+\subsubsection{{\tt Axiom {\ident} :{\term} .}}
 \comindex{Axiom}
+\comindex{Parameter}\comindex{Parameters}
+\comindex{Conjecture}
 \label{Axiom}
-This command links {\term} to the name {\ident} as its specification in the
-global context. The fact asserted by {\term} is thus assumed
-as a postulate.
+
+This command links {\term} to the name {\ident} as its specification
+in the global context. The fact asserted by {\term} is thus assumed as
+a postulate.
 
 \begin{ErrMsgs}
 \item \errindex{Clash with previous constant {\ident}}
 \end{ErrMsgs}
 
 \begin{Variants} 
-\item {\tt Parameter {\ident} : {\term}.}
-  \comindex{Parameter}\\
+\item {\tt Parameter {\ident} :{\term}.} \\
   Is equivalent to {\tt Axiom {\ident} : {\term}}
-\item {\tt Parameter \nelist{\nelistwithoutblank{\ident}{,} : {\term}}{;} {\tt .}} \\
-%        Is equivalent to {\tt Axiom {\lident} : {\term}}  
-  Links the {\term}'s to the names comprising the lists \nelist{\nelist{\ident}{,} : {\term}}{;}.
-\item {\tt Conjecture {\ident} : {\term}.}
-  \comindex{Conjecture}\\
+
+\item {\tt Parameter {\ident$_1$}\ldots{\ident$_n$} {\tt :}{\term}.}\\
+  Adds $n$ parameters with specification {\term}
+
+\item
+ {\tt Parameter\,%
+(\,{\ident$_{1,1}$}\ldots{\ident$_{1,k_1}$}\,{\tt :}\,{\term$_1$} {\tt )}\,%
+\ldots\,{\tt (}\,{\ident$_{n,1}$}\ldots{\ident$_{n,k_n}$}\,{\tt :}\,%
+{\term$_n$} {\tt )}.}\\ 
+  Adds $n$ blocks of parameters with different specifications.
+
+\item {\tt Conjecture {\ident} :{\term}.}\\
   Is equivalent to {\tt Axiom {\ident} : {\term}}.
 \end{Variants}
 
 \noindent {\bf Remark: } It is possible to replace {\tt Parameter} by
-{\tt Parameters} when more than one parameter are given.
+{\tt Parameters}.
 
-\subsubsection{{\tt Variable {\ident} : {\term}}.}\comindex{Variable}
+
+\subsubsection{{\tt Variable {\ident} :{\term}}.}
+\comindex{Variable}
 \comindex{Variables}
+\comindex{Hypothesis}
+\comindex{Hypotheses}
+
 This command links {\term} to the name {\ident} in the context of the
-current section (see \ref{Section} for a description of the section
-mechanism). The name {\ident} will be unknown when the current
-section will be closed. One says that the variable is {\em
-  discharged}. Using the {\tt Variable} command out of any section is
-equivalent to {\tt Axiom}.
+current section (see~\ref{Section} for a description of the section
+mechanism). When the current section is closed, name {\ident} will be
+unknown and every object using this variable will be explicitly
+parameterized (the variable is {\em discharged}). Using the {\tt
+Variable} command out of any section is equivalent to {\tt Axiom}.
 
 \begin{ErrMsgs}
 \item \errindex{Clash with previous constant {\ident}}
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Variable \nelist{\nelist{\ident}{,}:{\term}}{;} {\tt .}}\\
-  Links {\term} to the
-  names comprising the list \nelist{\nelist{\ident}{,}:{\term}}{;}
-\item {\tt Hypothesis \nelist{\nelist{\ident}{,} $\;$:$\;$ {\term}}{;} {\tt
- .}} \comindex{Hypothesis}\\  % Ligne trop longue
+\item {\tt Variable {\ident$_1$}\ldots{\ident$_n$} {\tt :}{\term}.}\\
+  Links {\term} to names {\ident$_1$}\ldots{\ident$_n$}.
+\item
+ {\tt Variable\,%
+(\,{\ident$_{1,1}$}\ldots{\ident$_{1,k_1}$}\,{\tt :}\,{\term$_1$} {\tt )}\,%
+\ldots\,{\tt (}\,{\ident$_{n,1}$}\ldots{\ident$_{n,k_n}$}\,{\tt :}\,%
+{\term$_n$} {\tt )}.}\\ 
+  Adds $n$ blocks of variables with different specifications.
+\item {\tt Hypothesis {\ident} {\tt :}{\term}.} \\
   \texttt{Hypothesis} is a synonymous of \texttt{Variable}
 \end{Variants}
 
 \noindent {\bf Remark: } It is possible to replace {\tt Variable} by
-{\tt Variables} and \ml{Hypothesis} by {\tt Hypotheses}
- when more than one variable or one hypothesis are given.
+{\tt Variables} and \ml{Hypothesis} by {\tt Hypotheses}.
 
 It is advised to use the keywords \verb:Axiom: and \verb:Hypothesis:
 for logical postulates (i.e. when the assertion {\term} is of sort
@@ -760,17 +821,21 @@ for logical postulates (i.e. when the assertion {\term} is of sort
 \verb:Variable: in other cases (corresponding to the declaration of an
 abstract mathematical entity).
 
+%%
+%% Definitions
+%%
 \subsection{Definitions}\index{Definitions}\label{Simpl-definitions}
-Definitions differ from declarations since they allow to give a name
-to a term whereas declarations were just giving a type to a name. That
-is to say that the name of a defined object can be replaced at any
-time by its definition.  This replacement is called
-$\delta$-conversion\index{delta-reduction@$\delta$-reduction} (see section
-\ref{delta}).  A defined object is accepted by the system if and only if the
-defining term is well-typed in the current context of the definition.
-Then the type of the name is the type of term. The defined name is
-called a {\em constant}\index{Constant} and one says that {\it the
-  constant is added to the environment}\index{Environment}.
+Definitions differ from declarations in allowing to give a name to a
+term whereas declarations were just giving a type to a name. That is
+to say that the name of a defined object can be replaced at any time
+by its definition.  This replacement is called
+$\delta$-conversion\index{delta-reduction@$\delta$-reduction} (see
+section~\ref{delta}).  A defined object is accepted by the system if
+and only if the defining term is well-typed in the current context of
+the definition.  Then the type of the name is the type of term. The
+defined name is called a {\em constant}\index{Constant} and one says
+that {\it the constant is added to the
+environment}\index{Environment}.
 
 A formal presentation of constants and environments is given in
 section \ref{Typed-terms}.
@@ -786,10 +851,17 @@ environment, provided that {\term} is well-typed.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Definition {\ident} : {\term$_1$} := {\term$_2$}.} It
-  checks that the type of {\term$_2$} is definitionally equal to
+\item {\tt Definition {\ident} {\tt :}{\term$_1$} := {\term$_2$}.}\\
+  It checks that the type of {\term$_2$} is definitionally equal to
   {\term$_1$}, and registers {\ident} as being of type {\term$_1$},
   and bound to value {\term$_2$}.
+\item {\tt Definition {\ident} {\binder$_1$}\ldots{\binder$_n$}
+       {\tt :}\term$_1$ {\tt :=} {\term$_2$}.}\\
+  This is equivalent to \\
+   {\tt Definition\,{\ident}\,{\tt :\,forall}\,%
+       {\binder$_1$}\ldots{\binder$_n$}{\tt ,}\,\term$_1$\,{\tt :=}}\,%
+       {\tt fun}\,{\binder$_1$}\ldots{\binder$_n$}\,{\tt =>}\,{\term$_2$}\,%
+       {\tt .}
 \end{Variants}
 
 \begin{ErrMsgs}
@@ -819,22 +891,9 @@ definition is a kind of {\em macro}.
 \SeeAlso \ref{Section} (section mechanism), \ref{Opaque},
 \ref{Transparent} (opaque/transparent constants), \ref{unfold}
 
-% Let comme forme de Definition n'existe plus
-%
-%\subsubsection{\tt Let {\ident} := {\term}.} 
-%\comindex{Let}
-
-%This command makes definition that are stronger than \texttt{Local},
-%and weaker than \texttt{Definition}. The name {\ident} will be known in the
-%current section and after having closed the current section, but will
-%be unknown after closing the section above the current section.
-
-%\begin{Variants}
-%\item {\tt Local {\ident} : {\term$_1$} := {\term$_2$}.}
-%\end{Variants}
-
-%\SeeAlso \ref{Section}
-
+%%
+%% Inductive Types
+%%
 \subsection{Inductive definitions}
 \index{Inductive definitions} \label{gal_Inductive_Definitions}
 \comindex{Inductive}\label{Inductive}
@@ -899,15 +958,29 @@ Check nat_ind.
 This is the well known structural induction principle over natural
 numbers, i.e. the second-order form of Peano's induction principle.
 It allows to prove some universal property of natural numbers ({\tt
-(n:nat)(P n)}) by induction on {\tt n}. Recall that {\tt (n:nat)(P n)}
-is \gallina's syntax for the universal quantification $\forall
-n:nat\cdot P(n).$\\ The types of {\tt nat\_rec} and {\tt nat\_rect}
-are similar, except that they pertain to {\tt (P:nat->Set)} and {\tt
-(P:nat->Type)} respectively . They correspond to primitive induction
-principles (allowing dependent types) respectively over sorts
-\verb:Set: and \verb:Type:. The constant {\ident}{\tt \_ind} is always
-provided, whereas {\ident}{\tt \_rec} and {\ident}{\tt \_rect} can be
-impossible to derive (for example, when {\ident} is a proposition).
+forall n:nat, P n}) by induction on {\tt n}.
+
+The types of {\tt nat\_rec} and {\tt nat\_rect} are similar, except
+that they pertain to {\tt (P:nat->Set)} and {\tt (P:nat->Type)}
+respectively . They correspond to primitive induction principles
+(allowing dependent types) respectively over sorts \verb:Set: and
+\verb:Type:. The constant {\ident}{\tt \_ind} is always provided,
+whereas {\ident}{\tt \_rec} and {\ident}{\tt \_rect} can be impossible
+to derive (for example, when {\ident} is a proposition).
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{Variants}
+\item 
+\begin{coq_example*}
+Inductive nat : Set := O | S (_:nat).
+\end{coq_example*}
+In the case where inductive types have no annotations (next section
+gives an example of such annotations), the positivity condition
+implies that a constructor can be defined by only giving the type of
+its arguments.
+\end{Variants}
 
 \subsubsection{Simple annotated inductive types}
 
@@ -947,44 +1020,55 @@ induction principle we got for {\tt nat}.
 \item \errindex{Type of Constructor not well-formed}
 \end{ErrMsgs}
 
-\begin{Variants}
-\item {\tt Inductive {\ident} [ {\params} ] : {\term} :=
-    {\ident$_1$}:{\term$_1$} | {\ldots} | {\ident$_n$}:\term$_n$.}\\ Allows
-  to define parameterized inductive types.\\
-  For instance, one can define
-  parameterized lists as:
+
+\subsubsection{Parameterized inductive types}
+
+Inductive types may be parameterized. Parameters differ from inductive
+type annotations in the fact that recursive invokations of inductive
+types must always be done with the same values of parameters as its
+specification.
+
+The general scheme is:
+\begin{center}
+{\tt Inductive} {\ident} {\binder$_1$}\ldots{\binder$_k$} : {\term} :=
+    {\ident$_1$}: {\term$_1$} | {\ldots} | {\ident$_n$}: \term$_n$
+{\tt .}
+\end{center}
+
+A typical example is the definition of polymorphic lists:
 \begin{coq_example*}
 Inductive list (X:Set) : Set :=
   | Nil : list X
   | Cons : X -> list X -> list X.
 \end{coq_example*}
-Notice that, in the type of {\tt Nil} and {\tt Cons}, we write {\tt
+
+Note that in the type of {\tt Nil} and {\tt Cons}, we write {\tt
   (list X)} and not just {\tt list}.\\ The constants {\tt Nil} and
 {\tt Cons} will have respectively types:
 
 \begin{coq_example}
 Check Nil.
-\end{coq_example}
-and
-
-\begin{coq_example}
 Check Cons.
 \end{coq_example}
 
 Types of destructors will be also quantified with {\tt (X:Set)}.
-\item  {\tt Inductive {\sort} {\ident} :=
-{\ident$_1$}:{\term$_1$} | {\ldots} | {\ident$_n$}:\term$_n$.}\\ 
-with {\sort} being one of {\tt Prop, Type, Set} is
-equivalent to \\ {\tt Inductive {\ident} : {\sort} :=
-  {\ident$_1$}:{\term$_1$} | {\ldots} | {\ident$_n$}:\term$_n$.}
-\item {\tt Inductive {\sort} {\ident} [ {\params} ]:=
-{\ident$_1$}:{\term$_1$} | {\ldots} | {\ident$_n$}:\term$_n$.}\\ 
-      Same as before but with parameters.
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{Variants}
+\item
+\begin{coq_example*}
+Inductive list (X:Set) : Set := Nil | Cons (_:X) (_:list X).
+\end{coq_example*}
+This is an alternative definition of lists where we specify the
+arguments of the constructors rather than their full type.
 \end{Variants}
 
-\SeeAlso sections \ref{Cic-inductive-definitions}, \ref{elim}
+\SeeAlso sections \ref{Cic-inductive-definitions} and~\ref{elim}.
 
-\subsubsection{Mutually inductive types}
+
+\subsubsection{Mutually defined inductive types}
 \comindex{Mutual Inductive}\label{Mutual-Inductive}
 
 The definition of a block of mutually inductive types has the form:
@@ -1025,13 +1109,13 @@ inductive types The extended syntax is:
 
 \medskip
 {\tt 
-Inductive {{\ident$_1$} [{\rm\sl params} ] : {\type$_1$} :=  \\
+Inductive {{\ident$_1$} {\params} : {\type$_1$} :=  \\
 \mbox{}\hspace{0.4cm}  {\ident$_1^1$} : {\type$_1^1$} \\
 \mbox{}\hspace{0.1cm}| ..  \\
 \mbox{}\hspace{0.1cm}| {\ident$_{n_1}^1$} : {\type$_{n_1}^1$}  \\
 with\\
 \mbox{}\hspace{0.1cm} .. \\
-with {\ident$_m$} [{\rm\sl params} ] : {\type$_m$} := \\
+with {\ident$_m$} {\params} : {\type$_m$} := \\
 \mbox{}\hspace{0.4cm}{\ident$_1^m$} : {\type$_1^m$} \\
 \mbox{}\hspace{0.1cm}| .. \\
 \mbox{}\hspace{0.1cm}| {\ident$_{n_m}^m$} : {\type$_{n_m}^m$}.
@@ -1091,6 +1175,7 @@ definition.
 \SeeAlso \ref{Section}
 
 \subsubsection{Co-inductive types}
+\label{CoInductiveTypes}
 \comindex{CoInductive}
 
 The objects of an inductive type are well-founded with respect to the
@@ -1118,12 +1203,8 @@ analysis. For example, the usual destructors on streams
 \texttt{hd:Stream->nat} and \texttt{tl:Str->Str} can be defined as
 follows:
 \begin{coq_example}
-Definition hd (x:Stream) := match x with
-                            | Seq a s => a
-                            end.
-Definition tl (x:Stream) := match x with
-                            | Seq a s => s
-                            end.
+Definition hd (x:Stream) := let (a,s) := x in a.
+Definition tl (x:Stream) := let (a,s) := x in s.
 \end{coq_example}
 
 Definition of co-inductive predicates and blocks of mutually
@@ -1142,26 +1223,33 @@ $s_2$ we have to construct and infinite proof of equality, that is,
 an infinite object of type $(\texttt{EqSt}\;s_1\;s_2)$. We will see
 how to introduce infinite objects in section \ref{CoFixpoint}.
 
+%%
+%% (Co-)Fixpoints
+%%
 \subsection{Definition of recursive functions}
 
-\subsubsection{\tt Fixpoint {\ident} [ \ident$_1$ : \type$_1$ ] :
-\type$_0$ := \term$_0$}
+\subsubsection{\tt Fixpoint
+   {\ident} {\params} {\tt \{struct} \ident$_0$ {\tt \}} : type$_0$ :=
+   \term$_0$}
 \comindex{Fixpoint}\label{Fixpoint}
 
 This command allows to define inductive objects using a fixed point
-construction. The meaning of this declaration is to define {\it
-ident} a recursive function with one argument \ident$_1$ of type
-\term$_1$ such that ({\it ident}~\ident$_1$) has type \type$_0$ and is
+construction. The meaning of this declaration is to define {\it ident}
+a recursive function with arguments specified by
+{\binder$_1$}\ldots{\binder$_n$} such that {\it ident} applied to
+arguments corresponding to these binders has type \type$_0$, and is
 equivalent to the expression \term$_0$. The type of the {\ident} is
-consequently {(\ident$_1$ : \type$_1$)\type$_0$} and the value is
-equivalent to [\ident$_1$ : \type$_1$]\term$_0$.  The argument
-{\ident$_1$} (of type {\type$_1$}) is called the {\em recursive
-variable} of {\ident}.  Its type should be an inductive definition.
+consequently {\tt forall {\params} {\tt,} \type$_0$}
+and the value is equivalent to {\tt fun {\params} {\tt =>} \term$_0$}.
 
 To be accepted, a {\tt Fixpoint} definition has to satisfy some
-syntactical constraints on this recursive variable. They are needed to
-ensure that the {\tt Fixpoint} definition always terminates. For
-instance, one can define the addition function as :
+syntactical constraints on a special argument called the decreasing
+argument. They are needed to ensure that the {\tt Fixpoint} definition
+always terminates. The point of the {\tt \{struct \ident {\tt \}}}
+annotation is to let the user tell the system which argument decreases
+along the recursive calls. This annotation may be left implicit for
+fixpoints with one argument. For instance, one can define the addition
+function as :
 
 \begin{coq_example}
 Fixpoint add (n m:nat) {struct n} : nat :=
@@ -1183,21 +1271,6 @@ in detail in section \ref{Caseexpr}.  The system recognizes that in
 the inductive call {\tt (add p m)} the first argument actually
 decreases because it is a {\em pattern variable} coming from {\tt match
   n with}.
-
-\begin{Variants}
-\item {\tt Fixpoint {\ident} [ {\params} ] : \type$_0$ :=
-\term$_0$.}\\
-        It declares a list of identifiers with their type
-        usable in the type \type$_0$ and the definition body \term$_0$
-        and the last identifier in {\params} is the recursion variable.
-\item {\tt Fixpoint {\ident$_1$} [ {\params$_1$} ] :
-        {\type$_1$} := {\term$_1$}\\
-        with {\ldots} \\
-        with {\ident$_m$}  [ {\params$_m$} ] : {\type$_m$} := 
-        {\type$_m$}}\\
-        Allows to define simultaneously {\ident$_1$}, {\ldots},
-        {\ident$_m$}.
-\end{Variants}
 
 \Example The following definition is not correct and generates an
 error message:
@@ -1253,12 +1326,20 @@ Fixpoint mod2 (n:nat) : nat :=
 \end{coq_example*}
 In order to keep the strong normalisation property, the fixed point
 reduction will only be performed when the argument in position of the
-recursive variable (whose type should be in an inductive definition)
+decreasing argument (which type should be in an inductive definition)
 starts with a constructor.
 
 The {\tt Fixpoint} construction enjoys also the {\tt with} extension
 to define functions over mutually defined inductive types or more
 generally any mutually recursive definitions.
+
+\begin{Variants}
+\item {\tt Fixpoint {\ident$_1$} {\params$_1$} :{\type$_1$} := {\term$_1$}\\
+        with {\ldots} \\
+        with {\ident$_m$} {\params$_m$} :{\type$_m$} :=  {\type$_m$}}\\
+        Allows to define simultaneously {\ident$_1$}, {\ldots},
+        {\ident$_m$}.
+\end{Variants}
 
 \Example 
 The size of trees and forests can be defined the following way: 
@@ -1285,15 +1366,17 @@ Fixpoint tree_size (t:tree) : nat :=
 A generic command {\tt Scheme} is useful to build automatically various
 mutual induction principles. It is described in section \ref{Scheme}.
 
-\subsubsection{\tt CoFixpoint {\ident} :
-\type$_0$ := \term$_0$.}\comindex{CoFixpoint}\label{CoFixpoint}
+\subsubsection{\tt CoFixpoint {\ident} : \type$_0$ := \term$_0$.}
+\comindex{CoFixpoint}\label{CoFixpoint}
 
 The {\tt CoFixpoint} command introduces a method for constructing an
 infinite object of a coinduc\-tive type. For example, the stream
 containing all natural numbers can be introduced applying the
-following method to the number \texttt{O}:
-
-\begin{coq_example*}
+following method to the number \texttt{O} (see
+section~\ref{CoInductiveTypes} for the definition of {\tt Stream},
+{\tt hd} and {\tt tl}):
+\begin{coq_eval}
+Reset Initial.
 CoInductive Stream : Set :=
     Seq : nat -> Stream -> Stream.
 Definition hd (x:Stream) := match x with
@@ -1302,7 +1385,7 @@ Definition hd (x:Stream) := match x with
 Definition tl (x:Stream) := match x with
                             | Seq a s => s
                             end.
-\end{coq_example*}
+\end{coq_eval}
 \begin{coq_example}
 CoFixpoint from (n:nat) : Stream := Seq n (from (S n)).
 \end{coq_example}
@@ -1323,20 +1406,17 @@ Set Printing Depth 50.
 (********** The following is not correct and should produce **********)
 (***************** Error: Unguarded recursive call *******************)
 \end{coq_eval}
-\begin{coq_example*}
+\begin{coq_example}
 CoFixpoint filter (p:nat -> bool) (s:Stream) : Stream :=
   if p (hd s) then Seq (hd s) (filter p (tl s)) else filter p (tl s).
-\end{coq_example*}
-
-\noindent Notice that the definition contains an unguarded recursive
-call of \texttt{filter} on the \texttt{else} branch of the test.
+\end{coq_example}
 
 The elimination of co-recursive definition is done lazily, i.e. the
 definition is expanded only when it occurs at the head of an
-application which is the argument of a case expression.  Isolate, it
-is considered as a canonical expression which is completely
-evaluated. We can test this using the command \texttt{Eval},
-which computes the normal forms of a term:
+application which is the argument of a case analysis expression.  In
+any other context, it is considered as a canonical expression which is
+completely evaluated. We can test this using the command
+\texttt{Eval}, which computes the normal forms of a term:
 
 \begin{coq_example}
 Eval compute in (from 0).
@@ -1344,15 +1424,21 @@ Eval compute in (hd (from 0)).
 Eval compute in (tl (from 0)).
 \end{coq_example}
 
-As in the \texttt{Fixpoint} command (cf. section~\ref{Fixpoint}), it
-is possible to introduce a block of mutually dependent methods. The
-general syntax for this case is:
-
-{\tt CoFixpoint {\ident$_1$}  :{\type$_1$} := {\term$_1$}\\
+\begin{Variants}
+\item{\tt CoFixpoint {\ident$_1$} {\params} :{\type$_1$} :=
+  {\term$_1$}}\\ As for most constructions, arguments of co-fixpoints
+  expressions can be introduced before the {\tt :=} sign.
+\item{\tt CoFixpoint {\ident$_1$} :{\type$_1$} := {\term$_1$}\\
      with\\
         \mbox{}\hspace{0.1cm} $\ldots$  \\
-        with {\ident$_m$}   : {\type$_m$} := {\term$_m$}}
+        with {\ident$_m$}   : {\type$_m$} := {\term$_m$}}\\
+As in the \texttt{Fixpoint} command (cf. section~\ref{Fixpoint}), it
+is possible to introduce a block of mutually dependent methods.
+\end{Variants}
 
+%%
+%% Theorems & Lemmas
+%%
 \subsection{Statement and proofs}
 
 A statement claims a goal of which the proof is then interactively done
@@ -1361,16 +1447,19 @@ found in chapter \ref{Proof-handling}.
 
 \subsubsection{\tt Theorem {\ident} : {\type}.}
 \comindex{Theorem}
+\comindex{Lemma}
+\comindex{Remark}
+\comindex{Fact}
+
 This command binds {\type} to the name {\ident} in the
 environment, provided that a proof of {\type} is next given.
 
 After a statement, Coq needs a proof.
 
 \begin{Variants} 
-
-\item {\tt Lemma {\ident} : {\type}.}\comindex{Lemma}\\ 
+\item {\tt Lemma {\ident} : {\type}.}\\ 
 It is a synonymous of \texttt{Theorem}
-\item {\tt Remark {\ident} : {\type}.}\comindex{Remark}\\ 
+\item {\tt Remark {\ident} : {\type}.}\\ 
 It is a synonymous of \texttt{Theorem}
 % Same as {\tt Theorem} except
 % that if this statement is in one or more levels of sections then the
@@ -1379,17 +1468,24 @@ It is a synonymous of \texttt{Theorem}
 % closed.
 % %All proofs of  persistent objects (such as theorems) referring to {\ident}
 % %within the section will be replaced by the proof of  {\ident}.
- \item {\tt Fact {\ident} : {\type}.}\comindex{Fact}\\ 
+ \item {\tt Fact {\ident} : {\type}.}\\ 
 It is a synonymous of \texttt{Theorem}
 % Same as {\tt Remark} except
 % that the innermost section name is dropped from the full name.
 \item {\tt Definition {\ident} : {\type}.} \\
 Allow to define a term of type {\type} using the proof editing mode. It
-behaves as {\tt Theorem} except the defined term will be transparent (see
-\ref{Transparent}, \ref{unfold}). 
+behaves as {\tt Theorem} but is intended for the interactive
+definition of expression which computational behaviour will be used by
+further commands. \SeeAlso~\ref{Transparent} and \ref{unfold}. 
 \end{Variants}
 
 \subsubsection{{\tt Proof} {\tt .} \dots {\tt Qed} {\tt .}}
+\comindex{Proof}
+\comindex{Qed}
+\comindex{Defined}
+\comindex{Save}
+\comindex{Goal}
+\comindex{Admitted}
 
 A proof starts by the keyword {\tt Proof}.  Then {\Coq} enters the
 proof editing mode until the proof is completed. The proof editing
@@ -1421,7 +1517,6 @@ To be able to unfold a proof, you should end the proof by {\tt Defined}
 
 \begin{Variants}
 \item {\tt Proof} {\tt .} \dots {\tt Defined} {\tt .}\\
-  \comindex{Proof}
   Same as {\tt Proof} {\tt .} \dots {\tt Qed} {\tt .} but the proof is
   then declared transparent (see \ref{Transparent}), which means it
   can be unfolded in conversion tactics (see \ref{Conversion-tactics}).
@@ -1431,12 +1526,10 @@ To be able to unfold a proof, you should end the proof by {\tt Defined}
   Same as {\tt Lemma} \ident {\tt :} \type \dots {\tt Save.}
   This is intended to be used in the interactive mode. Conversely to named
   lemmas, anonymous goals cannot be nested.
+\item {\tt Proof.} \dots {\tt Admitted.}\\
+  Turns the current conjecture into an axiom and exits editing of
+  current proof.
 \end{Variants}
-\comindex{Proof}
-\comindex{Qed}
-\comindex{Defined}
-\comindex{Save}
-\comindex{Goal}
 
 % Local Variables: 
 % mode: LaTeX

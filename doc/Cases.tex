@@ -8,12 +8,13 @@
 This section describes the full form of pattern-matching in {\Coq} terms.
 
 \asection{Patterns}\label{implementation} The full syntax of {\tt
-match} is presented in figure \ref{cases-grammar}.  Identifiers in
-patterns are either constructor names or variables. Any identifier
-that is not the constructor of an inductive or coinductive type is
-considered to be a variable. A variable name cannot occur more than
-once in a given pattern. It is recommended to start variable names by
-a lowercase letter.
+match} is presented in figures~\ref{term-syntax}
+and~\ref{term-syntax-aux}.  Identifiers in patterns are either
+constructor names or variables. Any identifier that is not the
+constructor of an inductive or coinductive type is considered to be a
+variable. A variable name cannot occur more than once in a given
+pattern. It is recommended to start variable names by a lowercase
+letter.
 
 If a pattern has the form $(c~\vec{x})$ where $c$ is a constructor
 symbol and $\vec{x}$ is a linear vector of variables, it is called
@@ -31,54 +32,6 @@ does and {\sl identifier} is bound to the matched value.  A list of
 patterns separated with commas 
 is also considered as a pattern and is called {\em multiple
 pattern}.
-
-Notice also that the annotation is mandatory when the sequence of equation is
-empty.
-
-\begin{figure}[t]
-\begin{rules}
-\DEFNT{match-expr}
-       \KWD{match}~\NT{case-items}~\OPT{\NT{case-type}}~\KWD{with}
-  ~\OPT{\TERMbar}~\OPT{\NT{branches}}~\KWD{end}        &&\RNAME{match}
-\SEPDEF
-\DEFNT{case-items}
-       \NT{case-item} ~\KWD{,} ~\NT{case-items}
-\nlsep \NT{case-item}
-\SEPDEF
-\DEFNT{case-item}
-       \NTL{constr}{100}~\OPTGR{\KWD{as}~\NT{name}}
-       ~\OPTGR{\KWD{in}~\NTL{constr}{100}}
-\SEPDEF
-\DEFNT{case-type}
-       \KWD{return}~\NTL{constr}{100}
-\SEPDEF
-\DEFNT{return-type}
-       \OPTGR{\KWD{as}~\NT{name}}~\NT{case-type}
-\SEPDEF
-\DEFNT{branches}
-       \NT{eqn}~\TERMbar~\NT{branches}
-\nlsep \NT{eqn}
-\SEPDEF
-\DEFNT{eqn}
-       \NT{pattern} ~\STARGR{\KWD{,}~\NT{pattern}}
-       ~\KWD{$\Rightarrow$}~\NT{constr}
-\SEPDEF
-\DEFNT{pattern}
-       \NT{reference}~\PLUS{\NT{pattern}}  & & \RNAME{constructor}
-\nlsep \NT{pattern}~\KWD{as}~\NT{ident}    & & \RNAME{alias}
-\nlsep \NT{pattern}~\KWD{\%}~\NT{ident}    & & \RNAME{scope-change}
-\nlsep \NT{reference}                      & & \RNAME{pattern-var}
-\nlsep \KWD{\_}                            & & \RNAME{hole}
-\nlsep \NT{int}                            &
-\nlsep \KWD{(}~\NT{tuple-pattern}~\KWD{)}
-\SEPDEF
-\DEFNT{tuple-pattern}
-       \NT{pattern}
-\nlsep \NT{tuple-pattern}~\KWD{,}~\NT{pattern} && \RNAME{pair}
-\end{rules}
-\caption{Extended match syntax}
-\label{cases-grammar}
-\end{figure}
 
 Since extended {\tt match} expressions are compiled into the primitive
 ones, the expressiveness of the theory remains the same. Once the

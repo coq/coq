@@ -53,23 +53,30 @@ with other precedence, which may be confusing.
 \hline
 Notation & Precedence & Associativity \\
 \hline
-\verb!<->! & 95 & no \\
-\verb!\/!  & 85 & right \\
-\verb!/\!  & 80 & right \\
-\verb!~!   & 75 & right \\
-\verb!=!   & 70 & no \\
-\verb!<>!  & 70 & no \\
-\verb!<!   & 70 & no \\
-\verb!>!   & 70 & no \\
-\verb!<=!  & 70 & no \\
-\verb!>=!  & 70 & no \\
-\verb!+!   & 50 & left \\
-\verb!-!   & 50 & left \\
-\verb!*!   & 40 & left \\
-\verb!/!   & 40 & left \\
-\verb!u-!  & 35 & right \\
-\verb!u/!  & 35 & right \\
-\verb!^!   & 30 & left \\
+\verb!_ <-> _! & 95 & no \\
+\verb!_ \/ _!  & 85 & right \\
+\verb!_ /\ _!  & 80 & right \\
+\verb!~ _!   & 75 & right \\
+\verb!_ = _!   & 70 & no \\
+\verb!_ = _ = _!   & 70 & no \\
+\verb!_ = _ :> _!   & 70 & no \\
+\verb!_ <> _!  & 70 & no \\
+\verb!_ <> _ :> _!  & 70 & no \\
+\verb!_ < _!   & 70 & no \\
+\verb!_ > _!   & 70 & no \\
+\verb!_ <= _!  & 70 & no \\
+\verb!_ >= _!  & 70 & no \\
+\verb!_ < _ < _! & 70 & no \\
+\verb!_ < _ <= _! & 70 & no \\
+\verb!_ <= _ < _! & 70 & no \\
+\verb!_ <= _ <= _! & 70 & no \\
+\verb!_ + _!   & 50 & left \\
+\verb!_ - _!   & 50 & left \\
+\verb!_ * _!   & 40 & left \\
+\verb!_ / _!   & 40 & left \\
+\verb!- _!  & 35 & right \\
+\verb!/ _!  & 35 & right \\
+\verb!_ ^ _!   & 30 & left \\
 \hline
 \end{tabular}
 \end{center}
@@ -83,9 +90,7 @@ The basic library of {\Coq} comes with the definitions of standard
 (intuitionistic) logical connectives (they are defined as inductive
 constructions). They are equipped with an appealing syntax enriching the
 (subclass {\form}) of the syntactic class {\term}. The syntax
-extension
-\footnote{This syntax is defined in module {\tt LogicSyntax}}
- is shown on figure \ref{formulas-syntax}.
+extension is shown on figure \ref{formulas-syntax}.
 
 \begin{figure}
 \label{formulas-syntax}
@@ -99,15 +104,14 @@ extension
   & $|$ & {\form} {\tt $\backslash$/} {\form} & ({\tt or})\\
   & $|$ & {\form} {\tt ->} {\form} & (\em{primitive implication})\\
   & $|$ & {\form} {\tt <->} {\form} & ({\tt iff})\\
-  & $|$ & {\tt (} {\ident} {\tt :} {\type} {\tt )}
+  & $|$ & {\tt forall} {\ident} {\tt :} {\type} {\tt ,}
   {\form} & (\em{primitive for all})\\
-  & $|$ & {\tt ( ALL} {\ident} \zeroone{{\tt :} {\specif}} {\tt |}
-  {\form} {\tt )} & ({\tt all})\\
-  & $|$ & {\tt ( EX} {\ident} \zeroone{{\tt :} {\specif}} {\tt
-  |} {\form} {\tt )}  & ({\tt ex})\\
-  & $|$ & {\tt ( EX} {\ident} \zeroone{{\tt :} {\specif}} {\tt
-  |} {\form}  {\tt \&} {\form} {\tt )} & ({\tt ex2})\\
+  & $|$ & {\tt exists} {\ident} \zeroone{{\tt :} {\specif}} {\tt
+  ,} {\form}  & ({\tt ex})\\
+  & $|$ & {\tt exists2} {\ident} \zeroone{{\tt :} {\specif}} {\tt
+  ,} {\form}  {\tt \&} {\form} & ({\tt ex2})\\
   & $|$ & {\term} {\tt =} {\term} & ({\tt eq})\\
+  & $|$ & {\term} {\tt =} {\term} {\tt :>} {\specif} & ({\tt eq})\\
 \hline
 \end{tabular}
 \end{center}
@@ -119,10 +123,7 @@ extension
 There is also a primitive universal quantification (it is a
 dependent product over a proposition). The primitive universal
 quantification allows both first-order and higher-order
-quantification. There is true reason to
-have the notation {\tt ( ALL} {\ident} \zeroone{{\tt :} {\specif}} {\tt
-|} {\form} {\tt )} propositions), except to have a notation dual of
-the notation for first-order existential quantification.
+quantification. 
 \caption{Syntax of formulas}
 \end{figure}
 
@@ -161,7 +162,7 @@ Abort All.
 \ttindex{or\_introl}
 \ttindex{or\_intror}
 \ttindex{iff}
-\ttindex{IF_then_else}
+\ttindex{IF\_then\_else}
 \begin{coq_example*}
 End Projections.
 Inductive or (A B:Prop) : Prop :=
@@ -319,16 +320,23 @@ again defined as inductive constructions over the sort
 \ttindex{option}
 \ttindex{Some}
 \ttindex{None}
+\ttindex{identity}
+\ttindex{refl\_identity}
 
 \begin{coq_example*}
 Inductive unit : Set := tt.
 Inductive bool : Set := true | false.
 Inductive nat : Set := O | S (n:nat).
 Inductive option (A:Set) : Set := Some (_:A) | None.
+Inductive identity (A:Type) (a:A) : A -> Type :=
+    refl_identity : identity A a a.
 \end{coq_example*}
 
 Note that zero is the letter \verb:O:, and {\sl not} the numeral
 \verb:0:.
+
+{\tt identity} is logically equivalent to equality but it lives in
+sort {\tt Set}. Computationaly, it behaves like {\tt unit}.
 
 We then define the disjoint sum of \verb:A+B: of two sets \verb:A: and
 \verb:B:, and their product \verb:A*B:.
@@ -763,43 +771,23 @@ End Well_founded.
 \subsection{Accessing the {\Type} level}
 
 The basic library includes the definitions\footnote{This is in module
-{\tt Logic\_Type.v}} of logical quantifiers axiomatized at the
-\verb:Type: level. 
+{\tt Logic\_Type.v}} of the counterparts of some datatypes and logical
+quantifiers at the \verb:Type: level: negation, pair, and properties
+of {\tt identity}.
 
-\ttindex{all}
-\ttindex{inst}
-\ttindex{gen}
-\ttindex{EmptyT}
-\ttindex{UnitT}
 \ttindex{notT}
-
-\begin{coq_example*}
-Definition all (A:Type) (P:A->Prop) : Prop := forall x:A, P x.
-\end{coq_example*}
+\ttindex{prodT}
+\ttindex{pairT}
 \begin{coq_eval}
 Reset Initial.
 \end{coq_eval}
 \begin{coq_example*}
-Section universal_quantification.
-Variable A :  Type.
-Variable P : A -> Prop.
-Theorem inst : forall x:A, (all (fun (x:A) => P x)) -> P x.
-Theorem gen : forall B:Prop, (forall y:A, B -> P y) -> B -> all P.
+Definition notT (A:Type) := A -> False.
+Inductive prodT (A B:Type) : Type := pairT (_:A) (_:B).
 \end{coq_example*}
-\begin{coq_eval}
-Abort All.
-\end{coq_eval}
-\begin{coq_example*}
-End universal_quantification.
-\end{coq_example*}
+
 
 At the end, it defines datatypes at the {\Type} level.
-
-\begin{coq_example*}
-Definition notT (A:Type) := A -> False.
-Inductive identity (A:Type) (a:A) : A -> Type :=
-    refl_identity : identity A a a.
-\end{coq_example*}
 
 \section{The standard library}
 
@@ -845,55 +833,49 @@ through the \Coq\ homepage
 \index{Arithmetical notations}
 
 On figure \ref{zarith-syntax} is described the syntax of expressions
-for integer arithmetics. It is provided by requiring the module {\tt ZArith}.
+for integer arithmetics. It is provided by requiring and opening the
+module {\tt ZArith} and opening scope {\tt Z\_scope}.
 
 \ttindex{+}
 \ttindex{*}
 \ttindex{-}
+\ttindex{/}
+\ttindex{<=}
+\ttindex{>=}
+\ttindex{<}
+\ttindex{>}
+\ttindex{?=}
+\ttindex{mod}
 
-The {\tt +} and {\tt -} binary operators bind less than the {\tt *} operator
-which binds less than the {\tt |}~...~{\tt |} and {\tt -} unary
-operators which bind less than the others constructions.
-All the binary operators are left associative. The {\tt [}~...~{\tt ]}
-allows to escape the {\zarith} grammar.
+Figure~\ref{zarith-syntax} shows the notations provided by {\tt
+Z\_scope}. It specifies how notations are interpreted and, when not
+already reserved, the precedence and associativity.
 
-%% Should describe Z_scope instead
 \begin{figure}
 \begin{center}
-\begin{tabular}{|lcl|}
+\begin{tabular}{l|l|l|l}
+Notation & Interpretation & Precedence & Associativity\\
 \hline
-{\form} & ::= & {\tt `} {\zarithformula} {\tt `}\\
-  & & \\
-{\term} & ::= & {\tt `} {\zarith} {\tt `}\\
-  & & \\
-{\zarithformula} & ::= & {\zarith} {\tt =} {\zarith} \\
-   & $|$ & {\zarith} {\tt <=} {\zarith} \\
-   & $|$ & {\zarith} {\tt <} {\zarith} \\
-   & $|$ & {\zarith} {\tt >=} {\zarith} \\
-   & $|$ & {\zarith} {\tt >} {\zarith}  \\
-   & $|$ & {\zarith} {\tt =} {\zarith} {\tt =} {\zarith} \\
-   & $|$ & {\zarith} {\tt <=} {\zarith} {\tt <=} {\zarith} \\
-   & $|$ & {\zarith} {\tt <=} {\zarith} {\tt <} {\zarith} \\
-   & $|$ & {\zarith} {\tt <} {\zarith} {\tt <=} {\zarith} \\
-   & $|$ & {\zarith} {\tt <} {\zarith} {\tt <} {\zarith} \\
-   & $|$ & {\zarith} {\tt <>} {\zarith} \\
-   & $|$ & {\zarith} {\tt ?} {\tt =} {\zarith} \\
-  & & \\
-{\zarith}  & ::= & {\zarith} {\tt +} {\zarith} \\
-   & $|$ & {\zarith} {\tt -} {\zarith} \\
-   & $|$ & {\zarith} {\tt *} {\zarith} \\
-   & $|$ & {\tt |} {\zarith} {\tt |} \\
-   & $|$ & {\tt -} {\zarith} \\
-   & $|$ & {\ident} \\
-   & $|$ & {\tt [} {\term} {\tt ]} \\
-   & $|$ & {\tt (} \nelist{\zarith}{} {\tt )} \\
-   & $|$ & {\tt (} \nelist{\zarith}{,} {\tt )} \\
-   & $|$ & {\integer} \\
-\hline
+\verb!_ < _! & {\tt Zlt} \\
+\verb!x <= y! & {\tt Zle} \\
+\verb!_ > _! & {\tt Zgt} \\
+\verb!x >= y! & {\tt Zge} \\
+\verb!x < y < z! & {\tt x < y \verb!/\! y < z} \\
+\verb!x < y <= z! & {\tt x < y \verb!/\! y <= z} \\
+\verb!x <= y < z! & {\tt x <= y \verb!/\! y < z} \\
+\verb!x <= y <= z! & {\tt x <= y \verb!/\! y <= z} \\
+\verb!_ ?= _! & {\tt Zcompare} & 70 & no\\
+\verb!_ + _! & {\tt Zplus} \\
+\verb!_ - _! & {\tt Zminus} \\
+\verb!_ * _! & {\tt Zmult} \\
+\verb!_ / _! & {\tt Zdix} \\
+\verb!_ mod _! & {\tt Zmod} & 40 & no \\
+\verb!- _!  & {\tt Zopp} \\
+\verb!_ ^ _! & {\tt Zpower} \\
 \end{tabular}
 \end{center}
 \label{zarith-syntax}
-\caption{Syntax of expressions in integer arithmetics}
+\caption{Definition of the scope for integer arithmetics ({\tt Z\_scope})}
 \end{figure}
 
 \subsection{Peano's arithmetic (\texttt{nat})}
@@ -910,9 +892,34 @@ defined here. This is provided by requiring the module {\tt Arith}.
 \subsubsection{Notations for real numbers}
 \index{Notations for real numbers}
 
-This is provided by requiring the module {\tt Reals}. This notation is
-very similar to the notation for integer arithmetics where Inverse
-(/x) and division (x/y) have been added.
+This is provided by requiring and opening the module {\tt Reals} and
+opening scope {\tt R\_scope}. This set of notations is very similar to
+the notation for integer arithmetics. The inverse function was added.
+\begin{figure}
+\begin{center}
+\begin{tabular}{l|l|l|l}
+Notation & Interpretation & Precedence & Associativity\\
+\hline
+\verb!_ < _! & {\tt Rlt} \\
+\verb!x <= y! & {\tt Rle} \\
+\verb!_ > _! & {\tt Rgt} \\
+\verb!x >= y! & {\tt Rge} \\
+\verb!x < y < z! & {\tt x < y \verb!/\! y < z} \\
+\verb!x < y <= z! & {\tt x < y \verb!/\! y <= z} \\
+\verb!x <= y < z! & {\tt x <= y \verb!/\! y < z} \\
+\verb!x <= y <= z! & {\tt x <= y \verb!/\! y <= z} \\
+\verb!_ + _! & {\tt Rplus} \\
+\verb!_ - _! & {\tt Rminus} \\
+\verb!_ * _! & {\tt Rmult} \\
+\verb!_ / _! & {\tt Rdix} \\
+\verb!- _!  & {\tt Ropp} \\
+\verb!/ _!  & {\tt Rinv} \\
+\verb!_ ^ _! & {\tt pow} \\
+\end{tabular}
+\end{center}
+\label{reals-syntax}
+\caption{Definition of the scope for real arithmetics ({\tt R\_scope})}
+\end{figure}
 
 \begin{coq_eval}
 Reset Initial.
@@ -987,10 +994,50 @@ Reset Initial.
 
 \subsection{List library}
 \index{Notations for lists}
+\ttindex{length}
+\ttindex{head}
+\ttindex{tail}
+\ttindex{app}
+\ttindex{rev}
+\ttindex{nth}
+\ttindex{map}
+\ttindex{flat\_map}
+\ttindex{fold\_left}
+\ttindex{fold\_right}
 
 Some elementary operations on polymorphic lists are defined here. They
 can be accessed by requiring module {\tt List}.
 
+It defines the following notions:
+\begin{center}
+\begin{tabular}{l|l}
+{\tt length} & length \\
+{\tt head} & first element (with default) \\
+{\tt tail} & all but first element \\
+{\tt app} & concatenation \\
+{\tt rev} & reverse \\
+{\tt nth} & accessing $n$-th element (with default) \\
+{\tt map} & applying a function \\
+{\tt flat\_map} & applying a function returning lists \\
+{\tt fold\_left} & iterator (from head to tail) \\
+{\tt fold\_right} & iterator (from tail to head) \\
+\end{tabular}
+\end{center}
+
+Table show notations available when opening scope {\tt list\_scope}.
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{l|l|l|l}
+Notation & Interpretation & Precedence & Associativity\\
+\hline
+\verb!_ ++ _! & {\tt app} & 60 & right \\
+\verb!_ :: _! & {\tt cons} & 60 & right \\
+\end{tabular}
+\end{center}
+\label{list-syntax}
+\caption{Definition of the scope for lists ({\tt list\_scope})}
+\end{figure}
 
 
 \section{Users' contributions}

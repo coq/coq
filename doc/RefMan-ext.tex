@@ -232,53 +232,14 @@ into a sequence of {\tt match} on simple patterns. Especially, a
 construction defined using the extended {\tt match} is printed under
 its expanded form.
 
-The syntax of the extended {\tt match} is presented in figure 
-\ref{ecases-grammar}.
-Remark that the annotation is mandatory when the set of equations is
-empty.
-
-\begin{figure}[t]
-\begin{tabular}{|rcl|}
-\hline
-%{\pattern}  & ::= & {\ident} \\
-% & $|$ & \_ \\
-% & $|$ & {\ident} \nelist{\pattern}{} \\
-% & $|$ & {\pattern} \texttt{as} {\ident} \\
-% & $|$ & {\pattern} \texttt{\%} {\ident} \\
-% & $|$ & \texttt{(} {\pattern} \texttt{)} \\
-% &&\\
-%
-{\eqn} & ++= &  \nelist{pattern}{,} \texttt{=>} {\term} \\
- && \\
-
-{\term} & ++= &  
-\texttt{match} \nelist{\caseitem}{,} \zeroone{{\tt return} {\type}}
-\texttt{with}\\
-&& \sequence{\eqn}{$|$}\\
-&&  \texttt{end} \\
-\hline
-\end{tabular}
-\caption{extended {\tt match} syntax.}
-\label{ecases-grammar}
-\end{figure}
-
 \SeeAlso chapter \ref{Mult-match-full}.
 
 \subsection{Pattern-matching on boolean values: the {\tt if} expression}
 \index{if@{\tt if ... then ... else}}
 
 For inductive types with exactly two constructors, it is possible to
-use a {\tt if ... then ... else} notation. This extends the syntax of
-terms as follows:
-
-\medskip
-\begin{tabular}{rcl}
-{\returntype} & ::= & \zeroone{{\tt as} {\ident}} {\tt return} {\type}\\
-{\term} & ++= & {\tt if} {\term} \zeroone{\returntype} {\tt then} {\term} {\tt else} {\term}\\
-\end{tabular}
-\medskip
-
-For instance, the definition
+use a {\tt if ... then ... else} notation. For instance, the
+definition
 
 \begin{coq_example}
 Definition not (b:bool) :=
@@ -301,18 +262,18 @@ Definition not (b:bool) := if b then false else true.
 \index{let in@{\tt let ... in}}
 \label{Letin}
 
-Terms in an inductive type having only one constructor, say {\tt foo}, have
+
+
+Closed terms (that is not relying on any axiom or variable) in an
+inductive type having only one constructor, say {\tt foo}, have
 necessarily the form \texttt{(foo ...)}. In this case, the {\tt match}
-construction can be replaced by a {\tt let ... in ...} construction.
-This extends the syntax of terms as follows:
-
-\medskip
-\begin{tabular}{rcl}
-{\term} & ++= & {\tt let (} \nelist{\ident}{,} {\tt )} \zeroone{\returntype} {\tt :=}  {\term} {\tt in} {\term} \\
-\end{tabular}
-\medskip
-
-For instance, the definition
+construction can be written with a syntax close to the {\tt let ... in
+...}  construction. Expression {\tt let
+(}~{\ident$_1$},\ldots,{\ident$_n$}~{\tt ) :=}~{\term$_0$}~{\tt
+in}~{\term$_1$} performs case analysis on {\term$_0$} which must be in
+an inductive type with one constructor with $n$ arguments. Variables
+{\ident$_1$}\ldots{\ident$_n$} are bound to the $n$ arguments of the
+constructor in expression {\term$_1$}. For instance, the definition
 
 \begin{coq_example}
 Definition fst (A B:Set) (H:A * B) := match H with
@@ -328,6 +289,9 @@ Reset fst.
 \begin{coq_example}
 Definition fst (A B:Set) (p:A * B) := let (x, _) := p in x.
 \end{coq_example}
+Note however that reduction is slightly different from regular {\tt
+let ... in ...} construction since it can occur only if {\term$_0$}
+can be put in constructor form. Otherwise, reduction is blocked.
 
 The pretty-printing of a definition by matching on a
 irrefutable pattern can either be done using {\tt match} or the {\tt

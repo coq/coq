@@ -9,12 +9,12 @@ illustrate their behavior.
 \label{refine-example}
 
 This tactic applies to any goal. It behaves like {\tt exact} with a
-big difference : the user can leave some holes (denoted by \texttt{?} or 
-{\tt (?::}{\it type}{\tt )}) in the term. 
+big difference : the user can leave some holes (denoted by \texttt{\_} or 
+{\tt (\_:}{\it type}{\tt )}) in the term. 
 {\tt refine} will generate as many
 subgoals as they are holes in the term. The type of holes must be
 either synthesized by the system or declared by an
-explicit cast like \verb|(?::nat->Prop)|. This low-level
+explicit cast like \verb|(\_:nat->Prop)|. This low-level
 tactic can be useful to advanced users.
 
 %\firstexample
@@ -145,7 +145,7 @@ apply (Rtrans n m p).
 Undo.
 \end{coq_eval}
 
-More elegantly, {\tt apply Rtrans with y:=m} allows to only mention
+More elegantly, {\tt apply Rtrans with (y:=m)} allows to only mention
 the unknown {\tt m}:
 
 \begin{coq_example}
@@ -185,8 +185,7 @@ of finding {\tt m}. Then one can apply the hypotheses {\tt Rnm} and {\tt
 Rmp}. This instantiates the existential variable and completes the proof.
 
 \begin{coq_example}
-
-  eapply Rtrans.
+eapply Rtrans.
 apply Rnm.
 apply Rmp.
 \end{coq_example}
@@ -218,8 +217,7 @@ with forest : Set :=
   | leaf : B -> forest
   | cons : tree -> forest -> forest.
 
-Scheme tree_forest_rec := Induction for tree
-  Sort Set
+Scheme tree_forest_rec := Induction for tree Sort Set
   with forest_tree_rec := Induction for forest Sort Set.
 \end{coq_example*}
 
@@ -316,7 +314,7 @@ We can now prove the following lemma using this principle:
 
 
 \begin{coq_example*}
-Lemma div2_le' : forall n:nat, (div2 n <= n).
+Lemma div2_le' : forall n:nat, div2 n <= n.
 intro n.
  pattern n.
 \end{coq_example*}
@@ -339,7 +337,7 @@ building the principle:
 
 \begin{coq_example*}
 Reset div2_ind.
-Lemma div2_le : forall n:nat, (div2 n <= n).
+Lemma div2_le : forall n:nat, div2 n <= n.
 intro n.
 \end{coq_example*}
 
