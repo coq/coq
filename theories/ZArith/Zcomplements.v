@@ -306,7 +306,7 @@ Unfold Zlength; Intros; Rewrite H; Auto.
 Qed.
 Implicits Zlength_correct [1].
 
-Lemma Zlength_nil : (A:Set)(Zlength (nil A))=0.
+Lemma Zlength_nil : (A:Set)(Zlength 1!A (nil A))=0.
 Proof.
 Auto.
 Qed.
