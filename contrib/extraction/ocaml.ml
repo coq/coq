@@ -143,9 +143,9 @@ let rec pp_type par t =
 	(match collapse_type_app l with
 	   | [] -> assert false
 	   | [t] -> pp_rec par t
-	   | t::l -> [< open_par par; pp_tuple (pp_rec false) l; 
+	   | t::l -> [< pp_tuple (pp_rec false) l; 
 			sec_space_if (l <>[]); 
-			pp_rec false t; close_par par >])
+			pp_rec false t >])
     | Tarr (t1,t2) ->
 	[< open_par par; pp_rec true t1; 'sPC; 'sTR "->"; 'sPC; 
 	   pp_rec false t2; close_par par >]

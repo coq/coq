@@ -1,7 +1,7 @@
 
  2. Inductifs singletons
 
- 3. Axiomes
+ 3. Axiomes : vérifier les flexibles sortant d'une constante
 
  4. Cofix : seulement en Haskell
 

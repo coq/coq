@@ -93,13 +93,9 @@ type extraction_result =
 
 let whd_betaiotalet = clos_norm_flags (UNIFORM, red_add betaiota_red ZETA)
 
-type lamprod = Lam | Prod
+let is_axiom sp = (Global.lookup_constant sp).const_body = None
 
-(* FIXME: to be moved somewhere else *)
-let array_foldi f a =
-  let n = Array.length a in
-  let rec fold i v = if i = n then v else fold (succ i) (f i a.(i) v) in
-  fold 0
+type lamprod = Lam | Prod
 
 let flexible_name = id_of_string "flex"
 
@@ -255,6 +251,11 @@ let axiom_message sp =
     [< 'sTR "You must specify an extraction for axiom"; 'sPC; 
        pr_sp sp; 'sPC; 'sTR "first" >]
 
+let unrealizable_axiom sp =
+  errorlabstrm "axiom_message"
+    [< 'sTR "Axiom"; 'sPC; pr_sp sp; 'sPC; 
+       'sTR "does not correspond to an ML type" >]
+
 
 (*s Tables to keep the extraction of inductive types and constructors. *)
 
@@ -336,18 +337,15 @@ let rec extract_type env c =
 	    | IsConst (sp,a) ->
 		let cty = constant_type env Evd.empty (sp,a) in 
 		if is_arity env Evd.empty cty then
-		  (match extract_constant sp with
-		     | Emltype (mlt, sc, flc) ->
-			 assert (mlt<>Miniml.Tprop);
-			 extract_type_app env fl (ConstRef sp,sc,flc) args
-		     | Emlterm _ -> 
-			 assert false 
-			 (* [cty] is of type an arity. *))
-		else 
+		  let sc = signature_of_arity env cty in
+		  extract_type_app env fl (ConstRef sp,sc,[]) args
+		else begin
 		  (* We can't keep as ML type abbreviation a CIC constant 
 		     which type is not an arity: we reduce this constant. *)
+		  if is_axiom sp then unrealizable_axiom sp;
 		  let cvalue = constant_value env (sp,a) in
 		  extract_rec env fl (applist (cvalue, args)) []
+		end
 	    | IsMutInd (spi,_) ->
 		(match extract_inductive spi with 
 		   |Iml (si,fli) -> 
@@ -409,12 +407,12 @@ let rec extract_type env c =
 	       | Tarity -> (Miniml.Tarity :: args, fl) 
   	         (* we pass a dummy type [arity] as argument *)
 	       | Tprop -> (Miniml.Tprop :: args, fl)
-	       | Tmltype (mla,_,fl') -> (mla :: args, fl'))
+	       | Tmltype (mla,_,fl') -> (mla :: args, fl' @ fl))
 	(List.combine sign_args args) 
 	([],fl)
     in
-    let flc = List.map (fun i -> Tvar i) flc in
-    Tmltype (Tapp ((Tglob r) :: mlargs @ flc), sign_rest, fl')
+    let fl_args = List.map (fun i -> Tvar i) flc in
+    Tmltype (Tapp ((Tglob r) :: mlargs @ fl_args), sign_rest, flc @ fl')
       
   in
   extract_rec env [] c []
@@ -437,7 +435,7 @@ and extract_term_with_type env ctx c t =
     Rmlterm (extract_term_info_with_type env ctx c t)
 
 (* Variants with a stronger precondition: [c] is informative. 
-   We directly return a [mlast], not a [term_extraction_result] *)
+   We directly return a [ml_ast], not a [term_extraction_result] *)
 
 and extract_term_info env ctx c = 
   let t = Typing.type_of env Evd.empty c in
@@ -646,19 +644,19 @@ and extract_mib sp =
       mib.mind_packets;
     (* second pass: we extract constructors arities and we accumulate
        flexible variables. *)
-    let fl = 
-      array_foldi
-	(fun i ib fl ->
+    let all_flex () = 
+      array_fold_left_i
+	(fun i fl ib ->
 	   let ip = (sp,i) in
 	   let mis = build_mis (ip,[||]) mib in
-	   if mis_sort mis = Prop Null then
-	     (for j = 0 to mis_nconstr mis do
-		add_constructor_extraction (ip,succ j) Cprop
-	      done;
-	      fl)
-	   else
-	     array_foldi
-	       (fun j _ fl -> 
+	   if mis_sort mis = Prop Null then begin
+	     for j = 0 to mis_nconstr mis do
+	       add_constructor_extraction (ip,succ j) Cprop
+	     done;
+	     fl
+	   end else
+	     array_fold_left_i
+	       (fun j fl _ -> 
 		  let t = mis_constructor_type (succ j) mis in
 		  let nparams = mis_nparams mis in 
 		  let (binders, t) = decompose_prod_n nparams t in
@@ -672,15 +670,19 @@ and extract_mib sp =
 			let cp = (ip,succ j) in
 			add_constructor_extraction cp (Cml (l,s,nparams'));
 			f @ fl)
-	       ib.mind_nf_lc fl)
-	mib.mind_packets []
+	       fl ib.mind_nf_lc)
+	[] mib.mind_packets
     in
+    let fl = all_flex () in
     (* third pass: we update the inductive flexible variables. *)
     for i = 0 to mib.mind_ntypes - 1 do
       match lookup_inductive_extraction (sp,i) with 
 	| Iprop -> ()
 	| Iml (s,_) -> add_inductive_extraction (sp,i) (Iml (s,fl))
-    done
+    done;
+    (* fourth pass: we re-compute the constructors extraction with
+       the now correct flexibles *)
+    ignore (all_flex ())
   end
     
 and extract_inductive_declaration sp =
@@ -693,8 +695,8 @@ and extract_inductive_declaration sp =
       | Cml (t,_,_) -> (ConstructRef cp, t)
   in
   let l = 
-    array_foldi
-      (fun i packet acc -> 
+    array_fold_left_i
+      (fun i acc packet -> 
 	 let ip = (sp,i) in
 	 match lookup_inductive_extraction ip with
 	   | Iprop -> acc
@@ -704,7 +706,7 @@ and extract_inductive_declaration sp =
 		Array.to_list 
 		  (Array.mapi (one_constructor ip) packet.mind_consnames))
 	       :: acc )
-	 mib.mind_packets [] 
+	 [] mib.mind_packets 
   in
   Dtype l
 

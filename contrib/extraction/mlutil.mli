@@ -43,6 +43,7 @@ val uncurrify_decl : ml_decl -> ml_decl
 
 module Refset : Set.S with type elt = global_reference
 
+val is_ml_extraction : global_reference -> bool
 val find_ml_extraction : global_reference -> string
 
 val ml_extractions : unit -> Refset.t
