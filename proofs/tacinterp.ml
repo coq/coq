@@ -761,6 +761,9 @@ and letcut_interp ist ast = function
 
 (* Interprets the Match Context expressions *)
 and match_context_interp ist ast lmr g =
+  let lr,lmr = match lmr with 
+    | Str(_,dir)::lmr ->  (dir="LR",lmr)
+    | _ -> anomaly "Ill-formed Match Context" in
 (*  let goal =
     (match goalopt with
     | None ->
@@ -795,8 +798,9 @@ and match_context_interp ist ast lmr g =
        with No_match | _ ->
          apply_match_context ist goal tl)
     | (Pat (mhyps,mgoal,mt))::tl ->
-      let hyps = make_hyps (pf_hyps goal)
-      and concl = pf_concl goal in
+      let hyps = make_hyps (pf_hyps goal) in
+      let hyps = if lr then List.rev hyps else hyps in
+      let concl = pf_concl goal in
       (match mgoal with
       |	Term mg ->
         (try
