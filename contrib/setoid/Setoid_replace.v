@@ -68,6 +68,9 @@ New Morphism not.
 Tauto.
 Save.
 
-Lemma fleche_ext : (a,b,c,d : Prop) (a<->c) -> (b <-> d) -> (a -> b) -> (c -> d).
+Definition fleche [A,B:Prop] := A -> B.
+
+New Morphism fleche.
 Tauto.
 Save.
+

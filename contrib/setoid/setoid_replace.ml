@@ -68,7 +68,7 @@ let coq_seq_refl = lazy(constant ["Setoid_replace"] "Seq_refl")
 let coq_seq_sym = lazy(constant ["Setoid_replace"] "Seq_sym")
 let coq_seq_trans = lazy(constant ["Setoid_replace"] "Seq_trans")
 
-(* let coq_fleche_ext = lazy(constant ["Setoid_replace"] "fleche_ext") *)
+let coq_fleche = lazy(constant ["Setoid_replace"] "fleche")
 
 (* Coq constants *)
 
@@ -523,11 +523,13 @@ type constr_with_marks =
   | MApp of constr_with_marks array 
   | Toreplace
   | Tokeep
+  | Mimp of constr_with_marks * constr_with_marks
 
 let is_to_replace = function
   | Tokeep -> false
   | Toreplace -> true
   | MApp _ -> true
+  | Mimp _ -> true
 
 let get_mark a = 
   Array.fold_left (||) false (Array.map is_to_replace a)
@@ -538,6 +540,15 @@ let rec mark_occur t in_c =
       | IsApp (c,al) -> 
 	  let a = Array.map (mark_occur t) al
 	  in if (get_mark a) then (MApp a) else Tokeep
+      | IsProd (_, c1, c2) -> 
+	  if (dependent (mkRel 1) c2)
+	  then Tokeep
+	  else 
+	    let c1m = mark_occur t c1 in
+	    let c2m = mark_occur t c2 in
+	      if ((is_to_replace c1m)||(is_to_replace c2m))
+	      then (Mimp (c1m, c2m))
+	      else Tokeep
       | _ -> Tokeep
 
 let create_args ca ma bl c1 c2 = 
@@ -593,6 +604,30 @@ and zapply is_r gl gl_m c1 c2 hyp glll = (match ((kind_of_term gl), gl_m) with
 		      tclTHENS (apply (mkApp (xom, args))) (create_tac_list 0 a al c1 c2 hyp m.arg_types m.profil))
       with Not_found -> errorlabstrm "Setoid_replace" 
 	  [< 'sTR "The term "; prterm c; 'sTR " has not been declared as a morphism">])
+  | ((IsProd (_,hh, cc)),(Mimp (hhm, ccm))) ->
+      let al = [|hh; cc|] in
+      let a = [|hhm; ccm|] in
+      let fleche_constr = (Lazy.force coq_fleche) in
+      let fleche_cp = (match (kind_of_term fleche_constr) with
+			 | (IsConst (cp,_)) -> cp 
+			 | _ -> assert false) in
+      let new_concl = (mkApp (fleche_constr, al)) in
+	if is_r 
+	then
+	  let m = morphism_table_find fleche_constr in
+	  let args = Array.of_list (create_args al a m.profil c1 c2) in  
+	    tclTHEN (change_in_concl new_concl)
+	      (tclTHENS (apply (mkApp (m.lem, args)))
+		 ((create_tac_list 0 a al c1 c2 hyp m.arg_types m.profil)@[unfold_constr (ConstRef fleche_cp)]))
+(*		 ((create_tac_list 0 a al c1 c2 hyp m.arg_types m.profil)@[tclIDTAC])) *)
+	else (zapply is_r new_concl (MApp a) c1 c2 hyp)
+(*      let args = Array.of_list (create_args [|hh; cc|] [|hhm; ccm|] [true;true] c1 c2) in
+	if is_r
+	then tclTHENS (apply (mkApp ((Lazy.force coq_fleche_ext), args)))
+	  ((create_tac_list 0 [|hhm; ccm|] [|hh; cc|] c1 c2 hyp [mkProp; mkProp] [true;true])@[tclIDTAC])
+	else tclTHENS (apply (mkApp ((Lazy.force coq_fleche_ext2), args)))
+	  ((create_tac_list 0 [|hhm; ccm|] [|hh; cc|] c1 c2 hyp [mkProp; mkProp] [true;true])@[tclIDTAC])
+*)
   | (_, Toreplace) -> (res_tac gl (pf_type_of glll gl) hyp) (* tclORELSE Auto.full_trivial tclIDTAC *)
   | (_, Tokeep) -> error "Don't know what to do with this goal"
   | _ -> anomaly ("Bug in Setoid_replace")) glll
