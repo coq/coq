@@ -83,15 +83,7 @@ let type_of_constant = Instantiate.constant_type
 
 (* Inductive types. *)
 
-(* Q: A faire disparaitre ??
-let instantiate_arity mis =
-  let ids = ids_of_sign mis.mis_mib.mind_hyps in
-  let args = Array.to_list mis.mis_args in 
-  let arity = mis.mis_mip.mind_arity in
-  { body = instantiate_constr ids arity.body args;
-    typ = arity.typ }
-*)
-let instantiate_arity = mis_typed_arity
+let instantiate_arity = mis_user_arity
 
 let type_of_inductive env sigma i =
   (* TODO: check args *)

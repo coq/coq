@@ -40,20 +40,26 @@ let mis_typepath mis =
 let mis_consnames mis = mis.mis_mip.mind_consnames
 let mis_inductive mis = ((mis.mis_sp,mis.mis_tyi),mis.mis_args)
 
-let mis_typed_lc mis =
+let mis_typed_nf_lc mis =
   let sign = mis.mis_mib.mind_hyps in
   let args = Array.to_list mis.mis_args in
   Array.map (fun t -> Instantiate.instantiate_type sign t args)
     mis.mis_mip.mind_nf_lc
 
-let mis_lc mis = Array.map body_of_type (mis_typed_lc mis)
+let mis_nf_lc mis = Array.map body_of_type (mis_typed_nf_lc mis)
+
+let mis_user_lc mis = 
+  let sign = mis.mis_mib.mind_hyps in
+  let args = Array.to_list mis.mis_args in
+  Array.map (fun t -> Instantiate.instantiate_type sign t args)
+    (mind_user_lc mis.mis_mip)
 
 (* gives the vector of constructors and of 
    types of constructors of an inductive definition 
    correctly instanciated *)
 
 let mis_type_mconstructs mispec =
-  let specif = mis_lc mispec
+  let specif = Array.map body_of_type (mis_user_lc mispec)
   and ntypes = mis_ntypes mispec
   and nconstr = mis_nconstr mispec in
   let make_Ik k = mkMutInd ((mispec.mis_sp,ntypes-k-1),mispec.mis_args) 
@@ -64,7 +70,7 @@ let mis_type_mconstructs mispec =
    Array.map (substl (list_tabulate make_Ik ntypes)) specif)
 
 let mis_type_nf_mconstruct i mispec =
-  let specif = mis_lc mispec
+  let specif = mis_nf_lc mispec
   and ntypes = mis_ntypes mispec
   and nconstr = mis_nconstr mispec in
   let make_Ik k = mkMutInd ((mispec.mis_sp,ntypes-k-1),mispec.mis_args) in 
@@ -72,28 +78,27 @@ let mis_type_nf_mconstruct i mispec =
   substl (list_tabulate make_Ik ntypes) specif.(i-1)
 
 let mis_type_mconstruct i mispec = 
-  let specif = mis_typed_lc mispec
+  let specif = mis_user_lc mispec
   and ntypes = mis_ntypes mispec
   and nconstr = mis_nconstr mispec in
   let make_Ik k = mkMutInd ((mispec.mis_sp,ntypes-k-1),mispec.mis_args) in 
   if i > nconstr then error "Not enough constructors in the type";
   typed_app (substl (list_tabulate make_Ik ntypes)) specif.(i-1)
 
-let mis_typed_arity mis =
+let mis_user_arity mis =
+  let hyps = mis.mis_mib.mind_hyps 
+  and largs = Array.to_list mis.mis_args in
+  Instantiate.instantiate_type hyps (mind_user_arity mis.mis_mip) largs
+
+let mis_nf_arity mis =
   let hyps = mis.mis_mib.mind_hyps 
   and largs = Array.to_list mis.mis_args in
   Instantiate.instantiate_type hyps mis.mis_mip.mind_nf_arity largs
 
-(*
-let mis_arity mispec = incast_type (mis_typed_arity mispec)
-*)
-
-let mis_arity mis = body_of_type (mis_typed_arity mis)
-
 let mis_params_ctxt mispec =
   let paramsign,_ =
     decompose_prod_n_assum mispec.mis_mib.mind_nparams
-      (body_of_type (mis_typed_arity mispec))
+      (body_of_type (mis_nf_arity mispec))
   in paramsign
 
 let mis_sort mispec = mispec.mis_mip.mind_sort
@@ -250,7 +255,7 @@ let get_constructors (IndFamily (mispec,params) as indf) =
   Array.init (mis_nconstr mispec) (fun j -> get_constructor indf (j+1))
 
 let get_arity (IndFamily (mispec,params)) =
-  let arity = mis_arity mispec in
+  let arity = body_of_type (mis_nf_arity mispec) in
   destArity (prod_applist arity params)
 
 (* Functions to build standard types related to inductive *)

@@ -895,7 +895,9 @@ let rec find_row_ind = function
 exception NotCoercible
 
 let inh_coerce_to_ind isevars env ty tyi =
-  let (ntys,_) = splay_prod env !isevars (mis_arity (Global.lookup_mind_specif tyi)) in
+  let (ntys,_) =
+    splay_prod env !isevars
+      (body_of_type (mis_nf_arity (Global.lookup_mind_specif tyi))) in
   let (_,evarl) =
     List.fold_right
       (fun (na,ty) (env,evl) ->

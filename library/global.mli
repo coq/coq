@@ -56,6 +56,6 @@ val id_of_global : global_reference -> identifier
 val mind_is_recursive : inductive -> bool
 val mind_nconstr : inductive -> int
 val mind_nparams : inductive -> int
-val mind_arity : inductive -> constr
-val mind_lc : inductive -> constr array
+val mind_nf_arity : inductive -> constr
+val mind_nf_lc : inductive -> constr array
 

@@ -566,7 +566,7 @@ let gen_absurdity id gl =
 let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
   let env = pf_env gls in
   let (indt,_) = find_mrectype env (project gls) t in 
-  let arity = Global.mind_arity indt in
+  let arity = Global.mind_nf_arity indt in
   let sort = pf_type_of gls (pf_concl gls) in
   match necessary_elimination (snd (destArity arity)) (destSort sort) with
     | Type_Type  ->
@@ -611,7 +611,7 @@ let discr id gls =
 	 let discriminator =
 	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
 	 let (indt,_) = find_mrectype env sigma t in 
-	 let arity = Global.mind_arity indt in
+	 let arity = Global.mind_nf_arity indt in
 	 let (pf, absurd_term) =
 	   discrimination_pf e (t,t1,t2) discriminator lbeq gls 
 	 in

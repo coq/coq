@@ -120,7 +120,8 @@ let print_mutual sp mib =
   let env = Global.env () in
   let evd = Evd.empty in
   let {mind_packets=mipv; mind_nparams=nparams} = mib in 
-  let (lpars,_) = decomp_n_prod env evd nparams (mind_user_arity mipv.(0)) in
+  let (lpars,_) = decomp_n_prod env evd nparams
+		    (body_of_type (mind_user_arity mipv.(0))) in
   let arities = Array.map (fun mip -> (Name mip.mind_typename, None, mip.mind_nf_arity)) mipv in
   let env_ar = push_rels lpars env in
   let env_cstr = push_rels lpars (push_rels (Array.to_list arities) env) in
@@ -131,14 +132,17 @@ let print_mutual sp mib =
     let lC = mind_user_lc mip in
     let lidC =
       Array.to_list 
-        (array_map2 (fun id c -> (id,snd (decomp_n_prod env evd nparams c)))
+        (array_map2
+	   (fun id c ->
+	      (id,snd (decomp_n_prod env evd nparams (body_of_type c))))
            mip.mind_consnames lC) in
     let plidC = prlist_with_sep (fun () -> [<'bRK(1,0); 'sTR "| " >])
                   pr_constructor lidC in
     (hV 0 [< 'sTR "  "; plidC >]) 
   in
   let print_oneind mip = 
-    let (_,arity) = decomp_n_prod env evd nparams (mind_user_arity mip) in
+    let (_,arity) = decomp_n_prod env evd nparams
+		      (body_of_type (mind_user_arity mip)) in
       (hOV 0
          [< (hOV 0
 	       [< print_id mip.mind_typename ; 'bRK(1,2);
@@ -152,7 +156,8 @@ let print_mutual sp mib =
   let mip = mipv.(0) in
   (* Case one [co]inductive *)
   if Array.length mipv = 1 then 
-    let (_,arity) = decomp_n_prod env evd nparams (mind_user_arity mip) in 
+    let (_,arity) = decomp_n_prod env evd nparams
+		      (body_of_type (mind_user_arity mip)) in 
     let sfinite = if mip.mind_finite then "Inductive " else "CoInductive " in
     (hOV 0 [< 'sTR sfinite ; print_id mip.mind_typename ;
               if nparams = 0 then 
@@ -324,7 +329,7 @@ let list_filter_vec f vec =
 
 let print_constructors fn env_ar mip = 
   let _ =
-    array_map2 (fun id c -> fn (string_of_id id) env_ar c)
+    array_map2 (fun id c -> fn (string_of_id id) env_ar (body_of_type c))
     mip.mind_consnames (mind_user_lc mip)
   in ()
 
@@ -347,7 +352,11 @@ let crible (fn : string -> env -> constr -> unit) name =
                crible_rec rest
 	   | (sp,"INDUCTIVE") -> 
                let mib = Global.lookup_mind sp in 
-	       let arities = array_map_to_list (fun mip -> (Name mip.mind_typename, None, mip.mind_nf_arity)) mib.mind_packets in
+	       let arities =
+		 array_map_to_list 
+		   (fun mip ->
+		      (Name mip.mind_typename, None, mip.mind_nf_arity))
+		   mib.mind_packets in
 	       let env_ar = push_rels arities env in
                (match kind_of_term const with 
 		  | IsMutInd ((sp',tyi),_) -> 

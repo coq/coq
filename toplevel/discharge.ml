@@ -230,17 +230,10 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
     array_map_to_list
       (fun mip ->
 	 (mip.mind_typename,
-	  make_typed_lazy 
-	    (expmod_constr oldenv modlist (mind_user_arity mip))
-	    (fun _ -> level_of_type mip.mind_nf_arity),
+	  expmod_type oldenv modlist (mind_user_arity mip),
 	  Array.to_list mip.mind_consnames,
 	  Array.to_list
-	    (array_map2
-	       (fun us nfc ->
-		  make_typed_lazy 
-		    (expmod_constr oldenv modlist us)
-		    (fun _ -> level_of_type nfc))
-	       (mind_user_lc mip) mip.mind_nf_lc)))
+	    (Array.map (expmod_type oldenv modlist) (mind_user_lc mip))))
       mib.mind_packets
   in
   let (inds',modl) = abstract_inductive ids_to_discard mib.mind_hyps inds in

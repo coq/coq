@@ -50,8 +50,8 @@ type one_inductive_body = {
   mind_nf_lc : typed_type array;
   mind_nf_arity : typed_type;
   (* lc and arity as given by user if not in nf; useful e.g. for Ensemble.v *)
-  mind_user_lc : constr array option;
-  mind_user_arity : constr option;
+  mind_user_lc : typed_type array option;
+  mind_user_arity : typed_type option;
   mind_sort : sorts;
   mind_nrealargs : int;
   mind_kelim : sorts list;
@@ -70,11 +70,11 @@ type mutual_inductive_body = {
 let mind_type_finite mib i = mib.mind_packets.(i).mind_finite
 
 let mind_user_lc mip = match mip.mind_user_lc with
-  | None -> Array.map body_of_type mip.mind_nf_lc
+  | None -> mip.mind_nf_lc
   | Some lc -> lc
 
 let mind_user_arity mip = match mip.mind_user_arity with
-  | None -> body_of_type mip.mind_nf_arity
+  | None -> mip.mind_nf_arity
   | Some a -> a
 
 (*s Declaration. *)

@@ -206,7 +206,7 @@ let listrec_mconstr env ntypes nparams i indlc =
     let (lpar,auxlargs) = list_chop auxnpar largs in 
     if not (List.for_all (noccur_between n ntypes) auxlargs) then
       raise (IllFormedInd (LocalNonPos n));
-    let auxlc = mis_lc mispeci 
+    let auxlc = mis_nf_lc mispeci 
     and auxntyp = mis_ntypes mispeci in 
     if auxntyp <> 1 then raise (IllFormedInd (LocalNonPos n));
     let lrecargs = List.map (check_weak_pos n) lpar in
@@ -313,28 +313,28 @@ let cci_inductive env env_ar kind nparams finite inds cst =
     let recargs = listrec_mconstr env_ar ntypes nparams i lc in
     let isunit = isunit && ntypes = 1 && (not (is_recursive [0] recargs)) in
     let (ar_sign,ar_sort) = splay_arity env Evd.empty (body_of_type ar) in
+    
     let nf_ar,user_ar =
       if isArity (body_of_type ar) then ar,None
-      else 
+      else
 	(make_typed_lazy (prod_it (mkSort ar_sort) ar_sign)
 	   (fun _ -> level_of_type ar)),
-	Some (body_of_type ar) in
+	Some ar in
     let kelim = allowed_sorts issmall isunit ar_sort in
     let lc_bodies = Array.map body_of_type lc in
+
     let splayed_lc = Array.map (splay_prod_assum env Evd.empty) lc_bodies in
-    let nf_lc = Array.map
-		  (fun (d,b) -> it_mkProd_or_LetIn b d) splayed_lc in
-    let nf_typed_lc,user_lc =
-      if nf_lc = lc_bodies then lc,None
-      else
-	(array_map2
-	   (fun nfc c -> make_typed_lazy nfc (fun _ -> level_of_type c))
-	   nf_lc lc),
-        Some lc_bodies in
+    let nf_lc =
+      array_map2
+	(fun (d,b) c ->
+	   make_typed_lazy 
+	     (it_mkProd_or_LetIn b d) (fun _ -> level_of_type c))
+	splayed_lc lc in
+    let nf_lc,user_lc = if nf_lc = lc then lc,None else nf_lc, Some lc in
     { mind_consnames = Array.of_list cnames;
       mind_typename = id;
       mind_user_lc = user_lc;
-      mind_nf_lc = nf_typed_lc;
+      mind_nf_lc = nf_lc;
       mind_user_arity  = user_ar;
       mind_nf_arity = nf_ar;
       mind_nrealargs = List.length ar_sign - nparams;

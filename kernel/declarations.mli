@@ -55,8 +55,8 @@ type one_inductive_body = {
   mind_typename : identifier;
   mind_nf_lc : typed_type array; (* constrs and arity with pre-expanded ccl *)
   mind_nf_arity : typed_type;
-  mind_user_lc : constr array option;
-  mind_user_arity : constr option;
+  mind_user_lc : typed_type array option;
+  mind_user_arity : typed_type option;
   mind_sort : sorts;
   mind_nrealargs : int;
   mind_kelim : sorts list;
@@ -73,8 +73,8 @@ type mutual_inductive_body = {
   mind_nparams : int }
 
 val mind_type_finite : mutual_inductive_body -> int -> bool
-val mind_user_lc : one_inductive_body -> constr array
-val mind_user_arity : one_inductive_body -> constr
+val mind_user_lc : one_inductive_body -> typed_type array
+val mind_user_arity : one_inductive_body -> typed_type
 val mind_nth_type_packet : mutual_inductive_body -> int -> one_inductive_body
 
 (*s Declaration of inductive types. *)

@@ -403,8 +403,10 @@ let pr_reln u r =
     | Terminal -> [< >]
   in 
   prec r
-    
+
 let pr_universes g =
   let graph = UniverseMap.fold (fun k a l -> (k,a)::l) g [] in
   prlist_with_sep pr_fnl (function (_,Arc(u,r)) -> pr_reln u r) graph
     
+
+
