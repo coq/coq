@@ -26,7 +26,10 @@ let xml_export = ref false
 
 let dont_load_proofs = ref false
 
-let v7 = ref true
+let v7 = 
+  let f = Filename.basename Sys.argv.(0) in
+  ref (not (f = "coqtopnew.byte" or f = "coqtopnew.opt" or f = "coqtopnew"))
+
 let v7_only = ref false
 
 (* Translate *)
