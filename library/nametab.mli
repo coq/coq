@@ -49,9 +49,6 @@ val push : visibility:int -> section_path -> global_reference -> unit
 val push_syntactic_definition : section_path -> unit
 
 (*s Register visibility of absolute paths by short names *)
-(*
-val push_short_name : section_path -> global_reference -> unit
-*)
 val push_short_name_syntactic_definition : section_path -> unit
 val push_short_name_object : section_path -> unit
 
