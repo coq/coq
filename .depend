@@ -612,13 +612,15 @@ parsing/search.cmo: parsing/astterm.cmi parsing/coqast.cmi \
     kernel/declarations.cmi library/declare.cmi kernel/environ.cmi \
     kernel/evd.cmi library/global.cmi library/libobject.cmi \
     library/library.cmi kernel/names.cmi pretyping/pattern.cmi lib/pp.cmi \
-    parsing/pretty.cmi parsing/printer.cmi kernel/term.cmi \
+    parsing/pretty.cmi pretyping/pretyping.cmi parsing/printer.cmi \
+    pretyping/rawterm.cmi pretyping/retyping.cmi kernel/term.cmi \
     pretyping/typing.cmi lib/util.cmi parsing/search.cmi 
 parsing/search.cmx: parsing/astterm.cmx parsing/coqast.cmx \
     kernel/declarations.cmx library/declare.cmx kernel/environ.cmx \
     kernel/evd.cmx library/global.cmx library/libobject.cmx \
     library/library.cmx kernel/names.cmx pretyping/pattern.cmx lib/pp.cmx \
-    parsing/pretty.cmx parsing/printer.cmx kernel/term.cmx \
+    parsing/pretty.cmx pretyping/pretyping.cmx parsing/printer.cmx \
+    pretyping/rawterm.cmx pretyping/retyping.cmx kernel/term.cmx \
     pretyping/typing.cmx lib/util.cmx parsing/search.cmi 
 parsing/termast.cmo: parsing/ast.cmi pretyping/classops.cmi \
     parsing/coqast.cmi library/declare.cmi pretyping/detyping.cmi \
@@ -1292,13 +1294,11 @@ toplevel/toplevel.cmx: parsing/ast.cmx toplevel/errors.cmx library/lib.cmx \
     toplevel/vernac.cmx toplevel/vernacinterp.cmx toplevel/toplevel.cmi 
 toplevel/usage.cmo: config/coq_config.cmi toplevel/usage.cmi 
 toplevel/usage.cmx: config/coq_config.cmx toplevel/usage.cmi 
-toplevel/vernac.cmo: parsing/ast.cmi parsing/coqast.cmi \
-    toplevel/discharge.cmi library/library.cmi lib/options.cmi \
-    parsing/pcoq.cmi proofs/pfedit.cmi lib/pp.cmi library/states.cmi \
+toplevel/vernac.cmo: parsing/ast.cmi parsing/coqast.cmi library/library.cmi \
+    lib/options.cmi parsing/pcoq.cmi lib/pp.cmi library/states.cmi \
     lib/system.cmi lib/util.cmi toplevel/vernacinterp.cmi toplevel/vernac.cmi 
-toplevel/vernac.cmx: parsing/ast.cmx parsing/coqast.cmx \
-    toplevel/discharge.cmx library/library.cmx lib/options.cmx \
-    parsing/pcoq.cmx proofs/pfedit.cmx lib/pp.cmx library/states.cmx \
+toplevel/vernac.cmx: parsing/ast.cmx parsing/coqast.cmx library/library.cmx \
+    lib/options.cmx parsing/pcoq.cmx lib/pp.cmx library/states.cmx \
     lib/system.cmx lib/util.cmx toplevel/vernacinterp.cmx toplevel/vernac.cmi 
 toplevel/vernacentries.cmo: parsing/ast.cmi parsing/astterm.cmi \
     toplevel/class.cmi pretyping/classops.cmi toplevel/command.cmi \

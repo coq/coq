@@ -12,6 +12,7 @@ open Pp
 open Util
 open Names
 open Term
+open Rawterm
 open Declarations
 open Libobject
 open Declare
@@ -29,10 +30,13 @@ open Printer
    of the object, the assumptions that will make it possible to print its type,
    and the constr term that represent its type. *)
 
-let print_constructors indsp fn env_ar mip =
+let print_constructors indsp fn env mip =
   let lc = mind_user_lc mip in
   for i=1 to Array.length lc do
-      fn (ConstructRef (indsp,i)) env_ar (lc.(i-1))
+      fn (ConstructRef (indsp,i)) env
+	(Retyping.get_type_of env Evd.empty
+	   (Pretyping.understand Evd.empty env
+	      (RRef(dummy_loc, ConstructRef(indsp,i)))))
   done
 
 let rec head_const c = match kind_of_term c with
@@ -64,11 +68,10 @@ let crible (fn : global_reference -> env -> constr -> unit) ref =
 	      (fun mip ->
 		 (Name mip.mind_typename, None, mip.mind_nf_arity))
 	      mib.mind_packets in
-	  let env_ar = push_rels arities env in
           (match kind_of_term const with 
 	     | IsMutInd ((sp',tyi) as indsp,_) -> 
 		 if sp=sp' then
-		   print_constructors indsp fn env_ar
+		   print_constructors indsp fn env
 		     (mind_nth_type_packet mib tyi)
 	     | _ -> ())
       | _ -> ()
