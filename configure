@@ -33,7 +33,6 @@ mandir_spec=no
 emacslib_spec=no
 emacs_spec=no
 arch_spec=no
-caml_warnings=""
 
 COQTOP=`pwd`
 
@@ -84,7 +83,6 @@ while : ; do
     -byte-tools|-bytetools|--bytetools|--byte-tools) byte_opt_tools=byte;;
     -debug|--debug) coq_debug_flag=-g;;
     -profile|--profile) coq_profile_flag=-p;;
-    -nowarnings) caml_warnings="-w a";;
      *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
@@ -385,8 +383,8 @@ case $ARCH in
 	    -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
 	    -e "s|COQTOOLSFLAG|$byte_opt_tools|" \
 	    -e "s|EXECUTEEXTENSION|$EXE|" \
-	    -e "s|BYTECAMLC|$bytecamlc $caml_warnings|" \
-	    -e "s|NATIVECAMLC|$nativecamlc $caml_warnings|" \
+	    -e "s|BYTECAMLC|$bytecamlc|" \
+	    -e "s|NATIVECAMLC|$nativecamlc|" \
 	    -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
 	    $COQTOP/config/Makefile.template > $COQTOP/config/Makefile;;
     *)
@@ -409,8 +407,8 @@ case $ARCH in
 	    -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
 	    -e "s|COQTOOLSFLAG|$byte_opt_tools|" \
 	    -e "s|EXECUTEEXTENSION|$EXE|" \
-	    -e "s|BYTECAMLC|$bytecamlc $caml_warnings|" \
-	    -e "s|NATIVECAMLC|$nativecamlc $caml_warnings|" \
+	    -e "s|BYTECAMLC|$bytecamlc|" \
+	    -e "s|NATIVECAMLC|$nativecamlc|" \
 	    -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
 	    $COQTOP/config/Makefile.template > $COQTOP/config/Makefile;;
 esac
