@@ -185,18 +185,20 @@ let is_section_p sp = list_prefix_of (wd_of_sp sp) !path_prefix
 
 (* State and initialization. *)
 
-type frozen = library_segment
+type frozen = string option * library_segment
 
-let freeze () = !lib_stk
+let freeze () = (!module_name, !lib_stk)
 
 (* module_name is not set ? *)
-let unfreeze stk =
+let unfreeze (mn,stk) =
+  module_name := mn;
   lib_stk := stk;
   recalc_path_prefix ()
 
 let init () =
   lib_stk := [];
   add_frozen_state ();
+  module_name := None;
   path_prefix := [];
   init_summaries()
 
