@@ -153,6 +153,11 @@ Bugs
 - Type-checking inefficiency of nested destructuring let-in fixed (#216)
 - Improved handling of let-in during holes resolution phase (#239)
 
+Efficiency
+
+- Implementation of a memory sharing strategy reducing memory
+  requirements by an average ratio of 3.
+
 Changes from V7.3 to V7.3.1
 ===========================
 
