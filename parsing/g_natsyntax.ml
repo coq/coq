@@ -14,7 +14,7 @@ open Ast
 exception Non_closed_number
 
 let get_nat_sign loc =
-  let ast_of_id id = Astterm.globalize_command (Nvar(loc,id)) in
+  let ast_of_id id = Astterm.globalize_constr (Nvar(loc,id)) in
   (ast_of_id "O", ast_of_id "S", ast_of_id "My_special_variable")
   
 (* For example, (nat_of_string "3") is <<(S (S (S O)))>> *)
