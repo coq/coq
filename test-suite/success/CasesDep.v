@@ -24,7 +24,8 @@ Fixpoint foldrn [n:nat; bs:(listn B n)] : C :=
 End Folding.
 
 (* -------------------------------------------------------------------- *)
-(*   Example to test patterns matching on dependent families            *)     (* This exemple extracted from the developement done by Nacira Chabane  *)
+(*   Example to test patterns matching on dependent families            *)
+(* This exemple extracted from the developement done by Nacira Chabane  *)
 (* (equipe Paris 6)                                                     *)
 (* -------------------------------------------------------------------- *)
 
