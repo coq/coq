@@ -14,7 +14,7 @@ open Libobject
    vernacular command [Require]. *)
 
 val load_module : string -> string option -> unit
-val open_module : string -> unit
+val import_module : string -> unit
 
 val module_is_loaded : string -> bool
 val module_is_opened : string -> bool

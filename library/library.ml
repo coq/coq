@@ -128,15 +128,16 @@ let segment_iter f =
 let open_objects decls =
   segment_iter open_object decls
 
-let rec open_module s =
+let rec open_module force s =
   let m = find_module s in
-  if not m.module_opened then begin
-    List.iter (fun (m,_,exp) -> if exp then open_module m) m.module_deps;
+  if force or not m.module_opened then begin
+    List.iter (fun (m,_,exp) -> if exp then open_module force m) m.module_deps;
     open_objects m.module_declarations;
     Nametab.open_module_contents (make_qualid [] s); 
     m.module_opened <- true
   end
 
+let import_module = open_module true
 
 (*s [load_module s] loads the module [s] from the disk, and [find_module s]
    returns the module of name [s], loading it if necessary. 
@@ -190,7 +191,7 @@ let load_module s = function
 let cache_require (_,(name,file,export)) =
   let m = load_module_from name file in
   if export then m.module_exported <- true;
-  open_module name
+  open_module false name
 
 let (in_require, _) =
   declare_object

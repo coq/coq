@@ -329,7 +329,7 @@ let _ =
     (function 
        | [VARG_IDENTIFIER id] ->
 	   fun () -> 
-	     without_mes_ambig Library.open_module (string_of_id id)
+	     without_mes_ambig Library.import_module (string_of_id id)
        | _ -> bad_vernac_args "ImportModule")
 
 let _ =

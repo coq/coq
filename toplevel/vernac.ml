@@ -125,7 +125,7 @@ and raw_load_vernac_file verbosely s =
   let _ = read_vernac_file verbosely s in ()
 
 and raw_compile_module verbosely only_spec mname file =
-  Library.open_module mname;
+  Library.import_module mname; (* ??? *)
   let lfname = read_vernac_file verbosely file in
   let base = Filename.chop_suffix lfname ".v" in
   Pfedit.check_no_pending_proofs ();
