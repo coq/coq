@@ -1,3 +1,17 @@
+coq (7.3.1-1) unstable; urgency=low
+
+  * New bugfix upstream version.
+  * Proof General is now Recommended since he has been freed (closes:
+    Bug#162894).
+
+ -- Judicael Courant <Judicael.Courant@lri.fr>  Mon,  7 Oct 2002 12:34:03 +0200
+
+coq (7.3-1) unstable; urgency=low
+
+  * New upstream version.
+ 
+ -- Judicael Courant <Judicael.Courant@lri.fr>  Wed, 22 May 2002 14:48:21 +0200
+
 coq (7.2-9) unstable; urgency=low
   * ocamlc.opt completely broken on powerpc. Added a special case in
     "rules" for using only bytecode.
