@@ -48,6 +48,41 @@ let evar_apprec env isevars stack c =
       | _ -> (t, list_of_stack stack)
   in aux (c, append_stack (Array.of_list stack) empty_stack)
 
+(* [check_conv_record (t1,l1) (t2,l2)] tries to decompose the problem
+   (t1 l1) = (t2 l2) into a problem
+
+     l1 = params1@c1::extra_args1
+     l2 = us2@extra_args2
+     (t1 params1 c1) = (proji params (c xs))
+     (t2 us2) = (cstr us)
+     extra_args1 = extra_args2
+
+   by finding a record R and an object c := [xs:bs](Build_R a1..am v1..vn)
+   with vi = (cstr us), for which we know that the i-th projection proji
+   satisfies
+
+      (proji params c) = (cstr us)
+
+   Rem: such objects, usable for conversion, are defined in the objdef
+   table; practically, it amounts to "canonically" equip t2 into a
+   object c in structure R (since, if c1 were not an evar, the
+   projection would have been reduced) *)
+
+let check_conv_record (t1,l1) (t2,l2) =
+  try
+    let proji = Declare.reference_of_constr t1 in
+    let cstr = Declare.reference_of_constr t2 in
+    let { o_DEF = c; o_TABS = bs; o_TPARAMS = params; o_TCOMPS = us } = 
+      objdef_info (proji, cstr) in
+    let params1, c1, extra_args1 =
+      match list_chop (List.length params) l1 with 
+	| params1, c1::extra_args1 -> params1, c1, extra_args1
+	| _ -> assert false in
+    let us2,extra_args2 = list_chop (List.length us) l2 in
+    c,bs,(params,params1),(us,us2),(extra_args1,extra_args2),c1
+  with _ -> 
+    raise Not_found
+
 (* Precondition: one of the terms of the pb is an uninstanciated evar,
  * possibly applied to arguments. *)
 
@@ -283,43 +318,26 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	| (IsRel _ | IsVar _ | IsConst _ | IsEvar _), _ -> assert false
 	| _, (IsRel _ | IsVar _ | IsConst _ | IsEvar _) -> assert false
 
-
-and conv_record env isevars (c,bs,(xs,xs1),(us,us1),(ts,ts1),t) = 
+and conv_record env isevars (c,bs,(params,params1),(us,us2),(ts,ts1),c1) = 
   let ks =
     List.fold_left
-      (fun ks b ->
-	 (new_isevar isevars env (substl ks b) CCI)::ks)
+      (fun ks b -> (new_isevar isevars env (substl ks b) CCI) :: ks)
       [] bs
   in
   if (list_for_all2eq 
 	(fun u1 u -> evar_conv_x env isevars CONV u1 (substl ks u))
-	us1 us)
+	us2 us)
     &
     (list_for_all2eq 
        (fun x1 x -> evar_conv_x env isevars CONV x1 (substl ks x))
-       xs1 xs)
+       params1 params)
     & (list_for_all2eq (evar_conv_x env isevars CONV) ts ts1)
-    & (evar_conv_x env isevars CONV t 
-	 (if ks=[] then c else applist (c,(List.rev ks))))
+    & (evar_conv_x env isevars CONV c1 (applist (c,(List.rev ks))))
   then
     (*TR*) (if !compter then (nbstruc:=!nbstruc+1;
                               nbimplstruc:=!nbimplstruc+(List.length ks);true)
             else true)
   else false
-
-and check_conv_record (t1,l1) (t2,l2) = 
-  try
-    let {o_DEF=c;o_TABS=bs;o_TPARAMS=xs;o_TCOMPS=us} = 
-      objdef_info (Declare.reference_of_constr t1, Declare.reference_of_constr t2) in
-    let xs1,t,ts = 
-      match list_chop (List.length xs) l1 with 
-	| xs1,t::ts -> xs1,t,ts
-	| _ -> assert false 
-    in
-    let us1,ts1 = list_chop (List.length us) l2 in
-    c,bs,(xs,xs1),(us,us1),(ts,ts1),t
-  with _ -> 
-    raise Not_found
 
 let the_conv_x     env isevars t1 t2 = evar_conv_x env isevars CONV  t1 t2
 let the_conv_x_leq env isevars t1 t2 = evar_conv_x env isevars CUMUL t1 t2

@@ -51,5 +51,3 @@ val inStruc : inductive * struc_typ -> obj
 val outStruc : obj -> inductive * struc_typ
 val inObjDef1 : section_path -> obj
 val outObjDef1 : obj -> section_path
-
-val add_new_objdef1 : ((global_reference * global_reference) * obj_typ) -> unit
