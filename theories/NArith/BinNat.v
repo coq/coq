@@ -15,6 +15,17 @@ Require BinPos.
 
 Inductive entier: Set := Nul : entier | Pos : positive -> entier.
 
+(** Declare binding key for scope positive_scope *)
+
+Delimits Scope N_scope with N.
+
+(** Automatically open scope N_scope for the constructors of N *)
+
+Bind Scope N_scope with entier.
+Arguments Scope Pos [ N_scope ].
+
+Open Local Scope N_scope.
+
 (** Operation x -> 2*x+1 *)
 
 Definition Un_suivi_de := [x]
@@ -39,6 +50,8 @@ Definition Nplus := [n,m]
   | (Pos p) (Pos q) => (Pos (add p q))
   end.
 
+V8Infix "+" Nplus : N_scope.
+
 (** Multiplication *)
 
 Definition Nmult := [n,m]
@@ -47,6 +60,8 @@ Definition Nmult := [n,m]
   | _       Nul     => Nul
   | (Pos p) (Pos q) => (Pos (times p q))
   end.
+
+V8Infix "*" Nmult : N_scope.
 
 (** Order *)
 
@@ -57,6 +72,8 @@ Definition Ncompare := [n,m]
   | (Pos n') Nul      => SUPERIEUR
   | (Pos n') (Pos m') => (compare n' m' EGAL)
   end.
+
+V8Infix "?=" Ncompare (at level 70, no associativity) : N_scope.
 
 (** Peano induction on binary natural numbers *)
 
