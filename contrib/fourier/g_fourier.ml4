@@ -6,20 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* Certification of Imperative Programs / Jean-Christophe Filliâtre *)
+(*i camlp4deps: "parsing/grammar.cma" i*)
 
 (* $Id$ *)
 
-(* Correctness is base on the tactic Refine (developped on purpose) *)
+open FourierR
 
-Require Export Tuples.
-
-Require Export ProgInt.
-Require Export ProgBool.
-Require Export ProgWf.
-
-Require Export Arrays.
-
-(*
-Token "'".
-*)
+TACTIC EXTEND Fourier
+  [ "FourierZ" (* constr_list(l) *) ] -> [ fourier (* l *) ]
+END

@@ -2,6 +2,7 @@ Require Export Setoid_ring_theory.
 Require Export Quote.
 Require Export Setoid_ring_normalize.
 
+(*
 Declare ML Module "ring".
 
 Grammar tactic simple_tactic : ast :=
@@ -25,3 +26,4 @@ Grammar vernac vernac : ast :=
   -> [(AddSemiSetoidRing $a $aequiv $asetth $aplus $amult $aone $azero $aeq $pm $mm $t
       	   ($LIST $l))]
 .
+*)

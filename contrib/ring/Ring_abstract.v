@@ -459,7 +459,7 @@ Save.
 
 Hint rew_isacs_aux : core := Extern 10 (eqT A ? ?) Rewrite isacs_aux_ok.
 
-Tactic Definition Solve1 := 
+Tactic Definition Solve1 v v0 H H0 := 
   Simpl; Elim (varlist_lt v v0); Simpl; Rewrite isacs_aux_ok;
     [Rewrite H; Simpl; Auto
     |Simpl in H0; Rewrite H0; Auto ].
@@ -475,7 +475,7 @@ Lemma signed_sum_merge_ok : (x,y:signed_sum)
 
   Auto.
 
-  Solve1.
+  Solve1 v v0 H H0.
 
   Simpl; Generalize (varlist_eq_prop v v0).
   Elim (varlist_eq v v0); Simpl.
@@ -491,7 +491,7 @@ Lemma signed_sum_merge_ok : (x,y:signed_sum)
   Rewrite (Th_plus_zero_left T).
   Reflexivity.
 
-  Solve1.
+  Solve1 v v0 H H0.
 
   Induction y; Intros.
 
@@ -509,13 +509,13 @@ Lemma signed_sum_merge_ok : (x,y:signed_sum)
   Rewrite (Th_plus_zero_left T).
   Reflexivity.
 
-  Solve1.
+  Solve1 v v0 H H0.
 
-  Solve1.
+  Solve1 v v0 H H0.
 
 Save.
 
-Tactic Definition Solve2 :=
+Tactic Definition Solve2 l v H :=
  	Elim (varlist_lt l v); Simpl; Rewrite isacs_aux_ok;
   	[ Auto
   	| Rewrite H; Auto ].
@@ -529,7 +529,7 @@ Proof.
   Trivial.
 
   Simpl; Intros.
-  Solve2.
+  Solve2 l v H.
 
   Simpl; Intros.
   Generalize (varlist_eq_prop l v).
@@ -542,7 +542,7 @@ Proof.
   Rewrite (Th_plus_zero_left T).
   Reflexivity.
 
-  Solve2.
+  Solve2 l v H.
 
 Save.
 
@@ -567,9 +567,9 @@ Proof.
   Auto.
 
   Simpl; Intros.
-  Solve2.
+  Solve2 l v H.
 
-  Simpl; Intros; Solve2.
+  Simpl; Intros; Solve2 l v H.
 
 Save.
 

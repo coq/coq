@@ -6,20 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* Certification of Imperative Programs / Jean-Christophe Filliâtre *)
+(*i camlp4deps: "parsing/grammar.cma" i*)
 
 (* $Id$ *)
 
-(* Correctness is base on the tactic Refine (developped on purpose) *)
+open Quote
 
-Require Export Tuples.
-
-Require Export ProgInt.
-Require Export ProgBool.
-Require Export ProgWf.
-
-Require Export Arrays.
-
-(*
-Token "'".
-*)
+TACTIC EXTEND Quote
+  [ "Quote" ident(f) ] -> [ quote f [] ]
+| [ "Quote" ident(f) "[" ne_ident_list(lc) "]"] -> [ quote f lc ]
+END

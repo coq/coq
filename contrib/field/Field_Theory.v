@@ -41,7 +41,7 @@ Inductive ExprA : Set :=
 
 Lemma eqExprA_O:(e1,e2:ExprA){e1=e2}+{~e1=e2}.
 Proof.
-  Double Induction 1 2;Try Intros;
+  Double Induction e1 e2;Try Intros;
    Try (Left;Reflexivity) Orelse Try (Right;Discriminate).
   Elim (H1 e0);Intro y;Elim (H2 e);Intro y0;
     Try (Left; Rewrite y; Rewrite y0;Auto)

@@ -34,7 +34,7 @@ Hints Resolve nateq_prop eq2eqT : arithring.
 
 Definition NatTheory : (Semi_Ring_Theory plus mult (1) (0) nateq).
   Split; Intros; Auto with arith arithring.
-  Apply eq2eqT; Apply simpl_plus_l with n.
+  Apply eq2eqT; Apply simpl_plus_l with n:=n.
   Apply eqT2eq; Trivial.
 Defined.
 
