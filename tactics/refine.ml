@@ -168,12 +168,13 @@ let rec compute_metamap env c = match kind_of_term c with
 
   | IsMutCase (ci,p,c,v) ->
       (* bof... *)
+      let nbr = Array.length v in
       let v = Array.append [|p;c|] v in
       let a = Array.map (compute_metamap env) v in
       begin
 	try
 	  let v',mm,sgp = replace_in_array env a in
-	  let v'' = Array.sub v' 2 (Array.length v) in
+	  let v'' = Array.sub v' 2 nbr in
 	  TH (mkMutCase (ci,v'.(0),v'.(1),v''),mm,sgp)
 	with NoMeta ->
 	  TH (c,[],[])
