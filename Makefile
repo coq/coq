@@ -1212,8 +1212,8 @@ parsing/lexer.cmo: parsing/lexer.ml4
 .ml4.cmo:
 	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
-.v.vo:
-	$(BOOTCOQTOP) -compile $*
+#.v.vo:
+#	$(BOOTCOQTOP) -compile $*
 
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile
