@@ -113,29 +113,6 @@ let _ = declare_summary "Extraction tables"
 	    init_function = (fun () -> ());
 	    survive_section = true }
 
-(*S Warning and Error messages. *)
-
-let axiom_scheme_error_message kn = 
-  errorlabstrm "axiom_scheme_message" 
-    (str "Extraction cannot accept the type scheme axiom " ++ spc () ++
-     pr_kn kn ++ spc () ++ str ".") 
-
-let axiom_error_message kn =
-  errorlabstrm "axiom_message"
-    (str "You must specify an extraction for axiom" ++ spc () ++ 
-     pr_kn kn ++ spc () ++ str "first.")
-
-let axiom_warning_message kn = 
-  Options.if_verbose warn 
-    (str "This extraction depends on logical axiom" ++ spc () ++ 
-     pr_kn kn ++ str "." ++ spc() ++ 
-     str "Having false logical axiom in the environment when extracting" ++ 
-     spc () ++ str "may lead to incorrect or non-terminating ML terms.")
-    
-let section_message () = 
-  errorlabstrm "section_message"
-    (str "You can't extract within a section. Close it and try again.")
-
 (*S Generation of flags and signatures. *)
 
 let none = Evd.empty
@@ -234,7 +211,7 @@ let parse_ind_args si args relmax =
 
 let rec extract_type env db j c args = 
   match kind_of_term (whd_betaiotazeta c) with
-    | Var _ -> section_message ()
+    | Var _ -> error_section ()
     | App (d, args') ->
 	(* We just accumulate the arguments. *)
 	extract_type env db j d (Array.to_list args' @ args)
@@ -275,8 +252,8 @@ let rec extract_type env db j c args =
 	(* There are two kinds of informative axioms here, *)
 	(* - the types that should be realized via [Extract Constant] *)
 	(* - the type schemes that are not realizable (yet). *) 
-	if args = [] then axiom_error_message kn
-	else axiom_scheme_error_message kn 
+	if args = [] then error_axiom kn
+	else error_axiom_scheme kn 
     | Const kn ->
 	let body = constant_value env kn in 
 	let mlt1 = extract_type env db j (applist (body, args)) [] in 
@@ -528,7 +505,7 @@ let rec extract_term env mle mlt c args =
  	extract_app env mle mlt (extract_fix env mle i recd) args
     | Cast (c, _) -> extract_term env mle mlt c args
     | Ind _ | Prod _ | Sort _ | Meta _ | Evar _ -> assert false 
-    | Var _ -> section_message ()
+    | Var _ -> error_section ()
 
 (*s [extract_maybe_term] is [extract_term] for usual terms, else [MLdummy] *) 
 
@@ -734,15 +711,11 @@ let extract_constant kn r =
     | None -> (* A logical axiom is risky, an informative one is fatal. *) 
         (match flag_of_type env typ with
 	   | (Info,TypeScheme) -> 
-	       if isSort typ then axiom_error_message kn 
-	       else axiom_scheme_error_message kn
-           | (Info,Default) -> axiom_error_message kn 
-           | (Logic,TypeScheme) ->
-	       axiom_warning_message kn; 
-	       Dtype (r, [], Tdummy)
-	   | (Logic,Default) -> 
-	       axiom_warning_message kn; 
-	       Dterm (r, MLdummy, Tdummy))
+	       if isSort typ then error_axiom kn 
+	       else error_axiom_scheme kn
+           | (Info,Default) -> error_axiom kn 
+           | (Logic,TypeScheme) -> warning_axiom kn; Dtype (r, [], Tdummy)
+	   | (Logic,Default) -> warning_axiom kn; Dterm (r, MLdummy, Tdummy))
     | Some l_body ->
 	(match flag_of_type env typ with
 	   | (Logic, Default) -> Dterm (r, MLdummy, Tdummy)

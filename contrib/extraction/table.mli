@@ -8,9 +8,18 @@
 
 (*i $Id$ i*)
 
-open Vernacinterp
 open Names
 open Libnames
+
+(*s Warning and Error messages. *)
+
+val error_section : unit -> 'a
+
+val error_axiom_scheme : kernel_name -> 'a
+
+val error_axiom : kernel_name -> 'a
+
+val warning_axiom : kernel_name -> unit
 
 (*s AutoInline parameter *) 
 
@@ -49,11 +58,7 @@ val ml_type_extractions : unit -> (global_reference * string) list
 
 val ml_term_extractions : unit -> (global_reference * string) list
 
-
-
 (*s Extraction commands. *)
-
-open Util
 
 val extraction_language : lang -> unit
 

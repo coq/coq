@@ -9,18 +9,39 @@
 (*i $Id$ i*)
 
 open Summary
-open Lib
 open Libobject
 open Goptions
-open Vernacinterp
-open Extend
+open Lib
 open Names
+open Libnames
+open Term
+open Declarations
 open Util
 open Pp
-open Term 
-open Declarations
-open Libnames
 open Reduction
+
+(*s Warning and Error messages. *)
+
+let error_axiom_scheme kn = 
+  errorlabstrm "axiom_scheme_message" 
+    (str "Extraction cannot accept the type scheme axiom " ++ spc () ++
+     pr_kn kn ++ spc () ++ str ".") 
+
+let error_axiom kn =
+  errorlabstrm "axiom_message"
+    (str "You must specify an extraction for axiom" ++ spc () ++ 
+     pr_kn kn ++ spc () ++ str "first.")
+
+let warning_axiom kn = 
+  Options.if_verbose warn 
+    (str "This extraction depends on logical axiom" ++ spc () ++ 
+     pr_kn kn ++ str "." ++ spc() ++ 
+     str "Having false logical axiom in the environment when extracting" ++ 
+     spc () ++ str "may lead to incorrect or non-terminating ML terms.")
+    
+let error_section () = 
+  errorlabstrm "section_message"
+    (str "You can't do that within a section. Close it and try again.")
 
 (*s AutoInline parameter *)
 
@@ -125,8 +146,9 @@ let _ = declare_summary "Extraction Inline"
 
 (*s Grammar entries. *)
 
-let extraction_inline b vl =
-  let refs = List.map (fun x -> check_constant (Nametab.global x)) vl in 
+let extraction_inline b l =
+  if sections_are_opened () then error_section (); 
+  let refs = List.map (fun x -> check_constant (Nametab.global x)) l in 
   add_anonymous_leaf (inline_extraction (b,refs))
 
 (*s Printing part *)
@@ -212,25 +234,27 @@ let _ = declare_summary "ML extractions"
 
 (*s Grammar entries. *)
 
-let extract_constant_inline inline qid s =
-  let r,k = check_term_or_type (Nametab.global qid) in
-  add_anonymous_leaf (inline_extraction (inline,[r]));
-  add_anonymous_leaf (in_ml_extraction (r,k,s))
+let extract_constant_inline inline r s =
+  if sections_are_opened () then error_section (); 
+  let g,k = check_term_or_type (Nametab.global r) in
+  add_anonymous_leaf (inline_extraction (inline,[g]));
+  add_anonymous_leaf (in_ml_extraction (g,k,s))
 
-let extract_inductive qid (id2,l2) =
-  let r = Nametab.global qid in match r with
-  | IndRef ((sp,i) as ip) ->
-      let mib = Global.lookup_mind sp in
+let extract_inductive r (s,l) =
+  if sections_are_opened () then error_section (); 
+  let g = Nametab.global r in match g with
+  | IndRef ((kn,i) as ip) ->
+      let mib = Global.lookup_mind kn in
       let n = Array.length mib.mind_packets.(i).mind_consnames in
-      if n <> List.length l2 then
+      if n <> List.length l then
 	error "Not the right number of constructors.";
-      add_anonymous_leaf (inline_extraction (true,[r]));
-      add_anonymous_leaf (in_ml_extraction (r,Ind,id2));
+      add_anonymous_leaf (inline_extraction (true,[g]));
+      add_anonymous_leaf (in_ml_extraction (g,Ind,s));
       list_iter_i
 	(fun j s -> 
-	   let r = ConstructRef (ip,succ j) in 
-	   add_anonymous_leaf (inline_extraction (true,[r]));
-	   add_anonymous_leaf (in_ml_extraction (r,Construct,s))) l2
+	   let g = ConstructRef (ip,succ j) in 
+	   add_anonymous_leaf (inline_extraction (true,[g]));
+	   add_anonymous_leaf (in_ml_extraction (g,Construct,s))) l
   | _ -> 
       errorlabstrm "extract_inductive"
-	(Printer.pr_global r ++ spc () ++ str "is not an inductive type.")
+	(Printer.pr_global g ++ spc () ++ str "is not an inductive type.")
