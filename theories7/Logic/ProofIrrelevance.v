@@ -1,14 +1,10 @@
-(****************************************************************************)
-(*                 The Calculus of Inductive Constructions                  *)
-(*                                                                          *)
-(*                            Projet LogiCal                                *)
-(*                                                                          *)
-(*                     INRIA                        LRI-CNRS                *)
-(*              Rocquencourt                        Orsay                   *)
-(*                                                                          *)
-(*                              May 29th 2002                               *)
-(*                                                                          *)
-(****************************************************************************)
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
 (** This is a proof in the pure Calculus of Construction that
     classical logic in Prop + dependent elimination of disjunction entails
