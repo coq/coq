@@ -478,7 +478,7 @@ let pp_decl mp =
 	    (str "let " ++ 
 	     if is_custom r then 
 	       e ++ str " = " ++ str (find_custom r)
-	     else if is_projection r then e ++ str " x = x." ++ e ++ fnl () 
+	     else if is_projection r then e ++ str " x = x." ++ e
 	     else pp_function (empty_env ()) e a)
     | Dfix (rv,defs,typs) ->
 	pp_Dfix true 0 (rv,defs,typs)
