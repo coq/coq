@@ -32,12 +32,6 @@ let explode s =
 
 let implode sl = String.concat "" sl
 
-let check_is_ident s =
-  let len = String.length s in
-  if len = 0 then invalid_arg "parse_loadpath: is not a valid name";
-  (* TODO... *)
-  ()
-
 let parse_loadpath s =
   let len = String.length s in
   let rec decoupe_dirs n =
@@ -46,7 +40,6 @@ let parse_loadpath s =
       if pos = n then
 	invalid_arg "parse_loadpath: find an empty dir in loadpath";
       let dir = String.sub s n (pos-n) in
-      check_is_ident dir;
       dir :: (decoupe_dirs (succ pos))
     with
       | Not_found -> [String.sub s n (len-n)]
