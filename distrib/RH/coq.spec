@@ -1,12 +1,12 @@
 Name: coq
-Version: 8.0
+Version: 8.0pl1
 Release: 1
 Summary: The Coq Proof Assistant
 Copyright: freely redistributable
 Group: Applications/Math
 Vendor: INRIA & LRI
 URL: http://coq.inria.fr
-Source: ftp://ftp.inria.fr/INRIA/coq/V8.0/coq-8.0.tar.gz
+Source: ftp://ftp.inria.fr/INRIA/coq/V8.0pl1/coq-8.0pl1.tar.gz
 Icon: petit-coq.gif
 BuildRoot: /var/tmp/coq
 
@@ -41,17 +41,16 @@ make clean
 rm -rf %{buildroot}
 make -e COQINSTALLPREFIX=%{buildroot} install-coq
 
+# compress man pages but don't strip at packaging time (rpm 3.0 to rpm 4.2)
+%define __spec_install_post /usr/lib/rpm/brp-compress
+
+# Don't strip at unpackaging time for rpm 4.3.x ??
+%define __os_install_post       %{nil}
+
 %files
+%defattr(-,root,root)
 %{_bindir}/*
-%{_libdir}/coq/theories
-%{_libdir}/coq/contrib
-%{_libdir}/coq/states
-%{_libdir}/coq/theories7
-%{_libdir}/coq/contrib7
-%{_libdir}/coq/states7
+%{_libdir}/coq
 %{_mandir}/man1/*
 %{_datadir}/emacs/site-lisp/*
 %{_datadir}/texmf/tex/latex/misc/*
-
-%defattr(-,root,root)
-
