@@ -196,7 +196,7 @@ let rec extern_args extern scopes env args subscopes =
 	  | scopt::subscopes -> option_cons scopt scopes, subscopes in
 	extern argscopes env a :: extern_args extern scopes env args subscopes
 
-let rec extern scopes vars r =
+let rec extern inctx scopes vars r =
   try 
     if !print_no_symbol then raise No_match;
     extern_numeral (Rawterm.loc r) scopes (Symbols.uninterp_numeral r)
@@ -216,48 +216,52 @@ let rec extern scopes vars r =
 
   | RApp (loc,f,args) ->
       let (f,args) =
-	skip_coercion (function RRef(_,r) -> Some r | _ -> None) (f,args) in
+	if inctx then
+	  skip_coercion (function RRef(_,r) -> Some r | _ -> None) (f,args)
+	else 
+	  (f,args) in
       (match f with
 	 | REvar (loc,ev) -> extern_evar loc ev (* we drop args *)
 	 | RRef (loc,ref) ->
 	     let subscopes = Symbols.find_arguments_scope ref in
-	     let args = extern_args extern scopes vars args subscopes in
+	     let args = extern_args (extern true) scopes vars args subscopes in
 	     extern_app loc (implicits_of_global ref)
                (extern_reference loc vars ref)
 	       args
 	 | _       -> 
-	     explicitize loc [] (extern scopes vars f)
-               (List.map (extern scopes vars) args))
+	     explicitize loc [] (extern inctx scopes vars f)
+               (List.map (extern true scopes vars) args))
 
   | RProd (loc,Anonymous,t,c) ->
       (* Anonymous product are never factorized *)
-      CArrow (loc,extern scopes vars t, extern scopes vars c)
+      CArrow (loc,extern true scopes vars t, extern true scopes vars c)
 
   | RLetIn (loc,na,t,c) ->
-      CLetIn (loc,(loc,na),extern scopes vars t,
-              extern scopes (add_vname vars na) c)
+      CLetIn (loc,(loc,na),extern false scopes vars t,
+              extern inctx scopes (add_vname vars na) c)
 
   | RProd (loc,na,t,c) ->
-      let t = extern scopes vars (anonymize_if_reserved na t) in
+      let t = extern true scopes vars (anonymize_if_reserved na t) in
       let (idl,c) = factorize_prod scopes (add_vname vars na) t c in
       CProdN (loc,[(dummy_loc,na)::idl,t],c)
 
   | RLambda (loc,na,t,c) ->
-      let t = extern scopes vars (anonymize_if_reserved na t) in
-      let (idl,c) = factorize_lambda scopes (add_vname vars na) t c in
+      let t = extern true scopes vars (anonymize_if_reserved na t) in
+      let (idl,c) = factorize_lambda inctx scopes (add_vname vars na) t c in
       CLambdaN (loc,[(dummy_loc,na)::idl,t],c)
 
   | RCases (loc,typopt,tml,eqns) ->
-      let pred = option_app (extern scopes vars) typopt in
-      let tml = List.map (extern scopes vars) tml in
-      let eqns = List.map (extern_eqn scopes vars) eqns in 
+      let pred = option_app (extern true scopes vars) typopt in
+      let tml = List.map (extern false scopes vars) tml in
+      let eqns = List.map (extern_eqn (typopt<>None) scopes vars) eqns in 
       CCases (loc,pred,tml,eqns)
 	
   | ROrderedCase (loc,cs,typopt,tm,bv) ->
-      let bv = Array.to_list (Array.map (extern scopes vars) bv) in
+      let bv = Array.to_list (Array.map (extern (typopt<>None) scopes vars) bv)
+      in
       COrderedCase
-	(loc,cs,option_app (extern scopes vars) typopt,
-         extern scopes vars tm,bv)
+	(loc,cs,option_app (extern true scopes vars) typopt,
+         extern false scopes vars tm,bv)
 
   | RRec (loc,fk,idv,tyv,bv) ->
       let vars' = Array.fold_right Idset.add idv vars in
@@ -265,15 +269,15 @@ let rec extern scopes vars r =
 	 | RFix (nv,n) ->
 	     let listdecl = 
 	       Array.mapi (fun i fi ->
-		 (fi,nv.(i),extern scopes vars tyv.(i),
-                  extern scopes vars' bv.(i))) idv
+		 (fi,nv.(i),extern false scopes vars tyv.(i),
+                  extern false scopes vars' bv.(i))) idv
 	     in 
 	     CFix (loc,(loc,idv.(n)),Array.to_list listdecl)
 	 | RCoFix n -> 
 	     let listdecl =
                Array.mapi (fun i fi ->
-		 (fi,extern scopes vars tyv.(i),
-                  extern scopes vars' bv.(i))) idv
+		 (fi,extern false scopes vars tyv.(i),
+                  extern false scopes vars' bv.(i))) idv
 	     in
 	     CCoFix (loc,(loc,idv.(n)),Array.to_list listdecl))
 
@@ -286,29 +290,31 @@ let rec extern scopes vars r =
 
   | RHole (loc,e) -> CHole loc
 
-  | RCast (loc,c,t) -> CCast (loc,extern scopes vars c,extern scopes vars t)
+  | RCast (loc,c,t) ->
+      CCast (loc,extern false scopes vars c,extern false scopes vars t)
 
   | RDynamic (loc,d) -> CDynamic (loc,d)
 	
 and factorize_prod scopes vars aty = function
   | RProd (loc,(Name id as na),ty,c)
-      when aty = extern scopes vars (anonymize_if_reserved na ty)
+      when aty = extern true scopes vars (anonymize_if_reserved na ty)
 	& not (occur_var_constr_expr id aty) (* avoid na in ty escapes scope *)
 	-> let (nal,c) = factorize_prod scopes (Idset.add id vars) aty c in
            ((loc,Name id)::nal,c)
-  | c -> ([],extern scopes vars c)
+  | c -> ([],extern true scopes vars c)
 
-and factorize_lambda scopes vars aty = function
+and factorize_lambda inctx scopes vars aty = function
   | RLambda (loc,na,ty,c)
-      when aty = extern scopes vars (anonymize_if_reserved na ty)
+      when aty = extern inctx scopes vars (anonymize_if_reserved na ty)
 	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)
-	-> let (nal,c) = factorize_lambda scopes (add_vname vars na) aty c in
+	-> let (nal,c) =
+	     factorize_lambda inctx scopes (add_vname vars na) aty c in
            ((loc,na)::nal,c)
-  | c -> ([],extern scopes vars c)
+  | c -> ([],extern inctx scopes vars c)
 
-and extern_eqn scopes vars (loc,ids,pl,c) =
+and extern_eqn inctx scopes vars (loc,ids,pl,c) =
   (loc,List.map (extern_cases_pattern_in_scope scopes vars) pl,
-   extern scopes vars c)
+   extern inctx scopes vars c)
 
 and extern_numeral loc scopes (sc,n) =
   match Symbols.availability_of_numeral sc scopes with
@@ -339,18 +345,20 @@ and extern_symbol scopes vars t = function
 	      | Some (scopt,key) ->
 	          let scopes = option_cons scopt scopes in
 	          let l =
-		    List.map (fun (c,scl) -> extern (scl@scopes) vars c)
+		    List.map (fun (c,scl) ->
+		      extern (* assuming no overloading: *) true
+		        (scl@scopes) vars c)
                       subst in
 	          insert_delimiters (CNotation (loc,ntn,l)) key)
           | SynDefRule kn ->
               CRef (Qualid (loc, shortest_qualid_of_syndef kn)) in
  	if args = [] then e 
-	else explicitize loc [] e (List.map (extern scopes vars) args)
+	else explicitize loc [] e (List.map (extern true scopes vars) args)
       with
 	  No_match -> extern_symbol scopes vars t rules
 
 let extern_rawconstr vars c = 
-  extern (Symbols.current_scopes()) vars c
+  extern false (Symbols.current_scopes()) vars c
 
 let extern_cases_pattern vars p = 
   extern_cases_pattern_in_scope (Symbols.current_scopes()) vars p
@@ -363,7 +371,7 @@ let loc = dummy_loc (* for constr and pattern, locations are lost *)
 let extern_constr at_top env t =
   let vars = vars_of_env env in
   let avoid = if at_top then ids_of_context env else [] in
-  extern (Symbols.current_scopes()) vars
+  extern (not at_top) (Symbols.current_scopes()) vars
     (Detyping.detype env avoid (names_of_rel_context env) t)
 
 (******************************************************************)
@@ -435,11 +443,11 @@ let rec extern_pattern tenv vars env = function
 	 extern_pattern tenv vars env tm,bv)
 
   | PFix f ->
-      extern (Symbols.current_scopes()) vars
+      extern true (Symbols.current_scopes()) vars
         (Detyping.detype tenv [] env (mkFix f))
 
   | PCoFix c ->
-      extern (Symbols.current_scopes()) vars
+      extern true (Symbols.current_scopes()) vars
         (Detyping.detype tenv [] env (mkCoFix c))
 
   | PSort s ->
