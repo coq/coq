@@ -1675,7 +1675,7 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
       (* We extract the signature of the arity *)
       let arsign = extract_arity_signature env tomatchs sign in
       let env = push_rels arsign env in
-      let predccl = (typing_fun empty_tycon env rtntyp).uj_val in
+      let predccl = (typing_fun (mk_tycon (new_Type ())) env rtntyp).uj_val in
       Some
         (build_initial_predicate env (evars_of isevars) true predccl tomatchs)
 
