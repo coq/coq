@@ -26,8 +26,16 @@ let pr_global k oper =
   [< 'sTR (string_of_id id) >]
 *)
 
+let is_visible sp id =
+  match Nametab.sp_of_id CCI id with
+    | VarRef sp' -> sp' = sp
+    | ConstRef sp' -> sp' = sp
+    | IndRef (sp',_) -> dirpath sp' = dirpath sp
+    | ConstructRef ((sp',_),_) -> dirpath sp' = dirpath sp
+    | EvarRef _ -> anomaly "is_visible: should not occur"
+  
 let pr_qualified_path sp id =
-  if Nametab.sp_of_id (kind_of_path sp) id = sp then [<'sTR(string_of_id id)>]
+  if is_visible sp id then [<'sTR(string_of_id id)>]
   else [<'sTR(string_of_path (make_path (dirpath sp) id (kind_of_path sp)))>]
 
 let global_const_name sp =
@@ -117,12 +125,16 @@ let pr_inductive env ind = gentermpr (ast_of_inductive env ind)
 let pr_constructor env cstr =
   gentermpr (ast_of_constructor env cstr)
 
+let pr_global_reference env ref =
+  gentermpr (ast_of_ref (ast_of_constr false env) ref)
+
 open Pattern
 let pr_ref_label = function (* On triche sur le contexte *)
   | ConstNode sp -> pr_constant (Global.env()) (sp,[||])
   | IndNode sp -> pr_inductive (Global.env()) (sp,[||])
   | CstrNode sp -> pr_constructor (Global.env()) (sp,[||])
   | VarNode id -> print_id id
+  | SectionVarNode sp -> print_id (basename sp)
 
 let pr_cases_pattern t = gentermpr (Termast.ast_of_cases_pattern t)
 let pr_rawterm t = gentermpr (Termast.ast_of_rawconstr t)

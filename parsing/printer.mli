@@ -30,6 +30,7 @@ val pr_constant     : env -> constant -> std_ppcmds
 val pr_existential  : env -> existential -> std_ppcmds
 val pr_constructor  : env -> constructor -> std_ppcmds
 val pr_inductive    : env -> inductive -> std_ppcmds
+val pr_global_reference : env -> global_reference -> std_ppcmds
 val pr_ref_label    : constr_label -> std_ppcmds
 val pr_pattern      : constr_pattern -> std_ppcmds
 val pr_pattern_env  : names_context -> constr_pattern -> std_ppcmds
@@ -51,6 +52,9 @@ val fprterm         : constr -> std_ppcmds
 val fprtype_env     : env -> types -> std_ppcmds
 val fprtype         : types -> std_ppcmds
 
+val is_visible      : section_path -> identifier -> bool
+
 (* For compatibility *)
 val fterm0          : env -> constr -> std_ppcmds
 (*i*)
+
