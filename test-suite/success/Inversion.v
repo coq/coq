@@ -1,3 +1,5 @@
+Axiom magic:False.
+
 (* Submitted by Dachuan Yu (bug #220) *)
 Fixpoint T[n:nat] : Type := 
  Cases n of 
@@ -48,3 +50,15 @@ Lemma super_def : (I :Set)(e1, e2: (extension I))
 Proof.                 
  Induction 1.
  Inversion 1; Auto.
+ Elim magic
+Qed.
+
+(* Example from Norbert Schirmer on Coq-Club, Sep 2000 *)
+
+Definition Q[n,m:nat;prf:(le n m)]:=True.
+Goal (n,m:nat;H:(le (S n) m))(Q (S n) m H)==True.
+Intros.
+Dependent Inversion_clear H.
+Elim magic.
+Elim magic.
+Qed.
