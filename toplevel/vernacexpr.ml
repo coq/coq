@@ -244,6 +244,7 @@ type vernac_expr =
   | VernacResetName of lident
   | VernacResetInitial
   | VernacBack of int
+  | VernacBackTo of int
 
   (* Commands *)
   | VernacDeclareTacticDefinition of

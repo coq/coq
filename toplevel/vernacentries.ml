@@ -642,6 +642,7 @@ let vernac_reset_initial () = abort_refine Lib.reset_initial ()
 
 let vernac_back n = Lib.back n
 
+let vernac_backto n = Lib.reset_label n
 
 (************)
 (* Commands *)
@@ -1222,6 +1223,7 @@ let interp c = match c with
   | VernacResetName id -> vernac_reset_name id
   | VernacResetInitial -> vernac_reset_initial ()
   | VernacBack n -> vernac_back n
+  | VernacBackTo n -> vernac_backto n
 
   (* Commands *)
   | VernacDeclareTacticDefinition (x,l) -> vernac_declare_tactic_definition x l

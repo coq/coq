@@ -504,6 +504,7 @@ let rec pr_vernac = function
   | VernacResetName id -> str"Reset" ++ spc() ++ pr_lident id
   | VernacResetInitial -> str"Reset Initial"
   | VernacBack i -> if i=1 then str"Back" else str"Back" ++ pr_intarg i
+  | VernacBackTo i -> str"BackTo" ++ pr_intarg i
 
   (* State management *)
   | VernacWriteState s -> str"Write State" ++ spc () ++ qsnew s
