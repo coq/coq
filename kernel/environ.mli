@@ -94,13 +94,16 @@ val lookup_rel_value : int -> env -> constr option
 
 (* Looks up in the context of global constant names *)
 (* raises [Not_found] if the required path is not found *)
-val lookup_constant : section_path -> env -> constant_body
+val lookup_constant : constant_path -> env -> constant_body
 
 (* Looks up in the context of global inductive names *)
 (* raises [Not_found] if the required path is not found *)
 val lookup_mind : section_path -> env -> mutual_inductive_body
 
 (*s Miscellanous *)
+
+val sp_of_global : env -> global_reference -> section_path
+
 val id_of_global : env -> global_reference -> identifier
 
 val make_all_name_different : env -> env
@@ -146,8 +149,8 @@ val evaluable_constant : env -> constant -> bool
 
 (*s Opaque / Transparent switching *)
 
-val set_opaque : env -> section_path -> unit
-val set_transparent : env -> section_path -> unit
+val set_opaque : env -> constant_path -> unit
+val set_transparent : env -> constant_path -> unit
 
 (*s Modules. *)
 

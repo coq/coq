@@ -202,20 +202,24 @@ let lookup_mind sp env =
 let lowercase_first_char id = String.lowercase (first_char id)
 
 (* id_of_global gives the name of the given sort oper *)
-let id_of_global env = function
-  | ConstRef sp -> 
-      basename sp
+let sp_of_global env = function
+  | VarRef sp -> sp
+  | ConstRef sp -> sp
   | IndRef (sp,tyi) -> 
       (* Does not work with extracted inductive types when the first 
 	 inductive is logic : if tyi=0 then basename sp else *)
       let mib = lookup_mind sp env in
       let mip = mind_nth_type_packet mib tyi in
-      mip.mind_typename
+      make_path (dirpath sp) mip.mind_typename CCI
   | ConstructRef ((sp,tyi),i) ->
       let mib = lookup_mind sp env in
       let mip = mind_nth_type_packet mib tyi in
       assert (i <= Array.length mip.mind_consnames && i > 0);
-      mip.mind_consnames.(i-1)
+      make_path (dirpath sp) mip.mind_consnames.(i-1) CCI
+  | EvarRef n -> 
+      make_path [] (id_of_string ("?"^(string_of_int n))) CCI
+
+let id_of_global env ref = basename (sp_of_global env ref)
 
 let hdchar env c = 
   let rec hdrec k c =
