@@ -224,10 +224,8 @@ let rec exp_rel lams k subs =
     | (_, LIFT (n,l)) -> exp_rel (n+lams) (k-n) l
     | (_, SHIFT (n,s)) -> exp_rel (n+lams) k s
     | (_, ESID n) when k<=n -> Inr(lams+k,None)
-    | (_, ESID n) -> Inr(lams+k,None)
-(* TO DEBUG
     | (_, ESID n) -> Inr(lams+k,Some (k-n))
-*)
+
 let expand_rel k subs = exp_rel 0 k subs
 
 (* Flags of reduction and cache of constants: 'a is a type that may be
@@ -239,6 +237,9 @@ let expand_rel k subs = exp_rel 0 k subs
  *  * i_repr is the function to get the representation from the current
  *         state of the cache and the body of the constant. The result
  *         is stored in the table.
+ *  * i_rels = (4,[(1,c);(3,d)]) means there are 4 free rel variables
+ *    and only those with index 1 and 3 have bodies which are c and d resp.
+ *  * i_vars is the list of _defined_ named variables.
  *
  * ref_value_cache searchs in the tab, otherwise uses i_repr to
  * compute the result and store it in the table. If the constant can't
@@ -256,7 +257,7 @@ type table_key =
 
 type ('a, 'b) infos = {
   i_flags : flags;
-  i_repr : ('a, 'b) infos -> int -> constr -> 'a;
+  i_repr : ('a, 'b) infos -> constr -> 'a;
   i_env : env;
   i_evc : 'b evar_map;
   i_rels : int * (int * constr) list;
@@ -268,14 +269,15 @@ let ref_value_cache info ref =
     Some (Hashtbl.find info.i_tab ref)
   with Not_found ->
   try
-    let n, body =
+    let body =
       match ref with
-	| FarRelBinding n -> let (s,l) = info.i_rels in (n, List.assoc (s-n) l)
-	| VarBinding id -> 0, List.assoc id info.i_vars
-	| EvarBinding evc -> 0, existential_value info.i_evc evc
-	| ConstBinding cst -> 0, constant_value info.i_env cst
+	| FarRelBinding n ->
+	    let (s,l) = info.i_rels in lift n (List.assoc (s-n) l)
+	| VarBinding id -> List.assoc id info.i_vars
+	| EvarBinding evc -> existential_value info.i_evc evc
+	| ConstBinding cst -> constant_value info.i_env cst
     in
-    let v = info.i_repr info n body in
+    let v = info.i_repr info body in
     Hashtbl.add info.i_tab ref v;
     Some v
   with
@@ -285,7 +287,7 @@ let ref_value_cache info ref =
       -> None
 
 let make_constr_ref n = function
-  | FarRelBinding _ -> mkRel n
+  | FarRelBinding p -> mkRel (n+p)
   | VarBinding id -> mkVar id
   | EvarBinding evc -> mkEvar evc
   | ConstBinding cst -> mkConst cst
@@ -518,7 +520,7 @@ let rec norm_head info env t stack =
                 | Inr (n,None) ->
 		    (VAL(0, mkRel n), stack)
                 | Inr (n,Some p) ->
-		    norm_head_ref n info env stack (FarRelBinding p))
+		    norm_head_ref (n-p) info env stack (FarRelBinding p))
 
   | IsVar id -> norm_head_ref 0 info env stack (VarBinding id)
 
@@ -672,7 +674,7 @@ type 'a cbv_infos = (cbv_value, 'a) infos
 (* constant bodies are normalized at the first expansion *)
 let create_cbv_infos flgs env sigma =
   { i_flags = flgs;
-    i_repr = (fun old_info n c -> cbv_stack_term old_info TOP (ESID (-n)) c);
+    i_repr = (fun old_info c -> cbv_stack_term old_info TOP (ESID (0)) c);
     i_env = env;
     i_evc = sigma;
     i_rels = defined_rels flgs env;
@@ -732,7 +734,9 @@ and frreference =
   | FConst of section_path
   | FEvar of existential_key
   | FVar of identifier
-  | FFarRel of int * int
+  | FFarRel of int (* index in the rel_context part of _initial_ environment *)
+
+let reloc_flex r el = r
 
 (*
 let typed_map f t = f (body_of_type t), level_of_type t
@@ -804,7 +808,8 @@ let rec traverse_term env t =
 		  | Inl (lams,v) -> (lift_frterm lams v)
 		  | Inr (k,None) -> { norm = true; term = FRel k }
 		  | Inr (k,Some p) ->
-		      { norm = false; term = FFlex (FFarRel (k,p), [||]) })
+		      lift_frterm (k-p) 
+		      { norm = false; term = FFlex (FFarRel p, [||]) })
     | IsVar x -> { norm = false; term = FFlex (FVar x, [||]) }
     | IsMeta _ | IsSort _ | IsXtra _ ->  { norm = true; term = FAtom t }
     | IsCast (a,b) ->
@@ -864,7 +869,7 @@ let rec lift_term_of_freeze lfts v =
   match v.term with
     | FRel i -> mkRel (reloc_rel i lfts)
     | FFlex (FVar x, v) -> assert (v=[||]); mkVar x
-    | FFlex (FFarRel (i,p), v) -> assert (v=[||]); mkRel (reloc_rel i lfts)
+    | FFlex (FFarRel p, v) -> assert (v=[||]); mkRel (reloc_rel p lfts)
     | FAtom c -> c
     | FCast (a,b) ->
         mkCast (lift_term_of_freeze lfts a, lift_term_of_freeze lfts b)
@@ -919,7 +924,7 @@ let applist_of_freeze appl = Array.to_list (Array.map term_of_freeze appl)
 let rec fstrong unfreeze_fun lfts v =
   match (unfreeze_fun v).term with
     | FRel i -> mkRel (reloc_rel i lfts)
-    | FFlex (FFarRel (i,p), v) -> assert (v=[||]); mkRel (reloc_rel i lfts)
+    | FFlex (FFarRel p, v) -> assert (v=[||]); mkRel (reloc_rel p lfts)
     | FFlex (FVar x, v) -> assert (v=[||]); mkVar x
     | FAtom c -> c
     | FCast (a,b) ->
@@ -1091,12 +1096,12 @@ and whnf_frterm info ft =
 		  lift_frterm 0 udef
 	      | None -> { norm = true; term = t }
 	  else ft
-      | FFlex (FFarRel (n,k),_) as t ->
+      | FFlex (FFarRel k,_) as t ->
 	  if red_under info.i_flags DELTA then
 	    match ref_value_cache info (FarRelBinding k) with
 	      | Some def ->
 		  let udef = unfreeze info def in
-		  lift_frterm n udef
+		  lift_frterm 0 udef
 	      | None -> { norm = true; term = t }
 	  else ft
 
@@ -1120,7 +1125,7 @@ and whnf_frterm info ft =
       | FLetIn (na,b,fd,fc,d,subs) ->
           let c = unfreeze info b in
 	  if red_under info.i_flags LETIN then
-	    contract_subst 0 d subs c
+	    whnf_frterm info (contract_subst 0 d subs c)
 	  else
 	    { norm = false;
 	      term = FLetIn (na,c,fd,fc,d,subs) }
@@ -1164,7 +1169,8 @@ and whnf_term info env t =
 	       { norm = true; term = FRel n }
 	   | Inr (n,Some k) ->
 	       whnf_frterm info
-		 { norm = false; term = FFlex (FFarRel (n,k), [||]) })
+		 (lift_frterm (n-k) 
+		    { norm = false; term = FFlex (FFarRel k, [||]) }))
 
     | IsVar x ->
 	whnf_frterm info { norm = false; term = FFlex (FVar x, [||]) }
@@ -1234,8 +1240,8 @@ let search_frozen_value info f vars = match f with
       ref_value_cache info (EvarBinding (op,Array.map (norm_val info) vars))
   | FVar id ->
       ref_value_cache info (VarBinding id)
-  | FFarRel (n,p) ->
-      ref_value_cache info (FarRelBinding (n+p))
+  | FFarRel p ->
+      ref_value_cache info (FarRelBinding p)
 
 
 (* cache of constants: the body is computed only when needed. *)
@@ -1244,7 +1250,7 @@ type 'a clos_infos = (fconstr, 'a) infos
 
 let create_clos_infos flgs env sigma =
   { i_flags = flgs;
-    i_repr = (fun old_info n c -> freeze (ESID (-n)) c);
+    i_repr = (fun old_info c -> freeze (ESID (0)) c);
     i_env = env;
     i_evc = sigma;
     i_rels = defined_rels flgs env;

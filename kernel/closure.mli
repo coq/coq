@@ -156,7 +156,7 @@ and frreference =
   | FConst of section_path
   | FEvar of existential_key
   | FVar of identifier
-  | FFarRel of int * int
+  | FFarRel of int
 
 val frterm_of : freeze -> frterm
 val is_val : freeze -> bool

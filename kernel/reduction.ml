@@ -165,6 +165,7 @@ let betadeltaeta = [BETA;DELTA;EVAR;ETA]
 let betadeltaiota = [BETA;DELTA;EVAR;IOTA]
 let betadeltaiotaeta = [BETA;DELTA;EVAR;IOTA;ETA]
 let betaiotaevar = [BETA;IOTA;EVAR]
+let betaeta = [BETA;ETA]
 *)
 
 (* Compact Implementation *)
@@ -193,6 +194,7 @@ let betadeltaiota = fbeta lor fdelta lor fletin lor fevar lor fiota
 let betadeltaiota_nolet = fbeta lor fdelta lor fevar lor fiota
 let betadeltaiotaeta = fbeta lor fdelta lor fletin lor fevar lor fiota lor feta
 let betaiotaevar = fbeta lor fiota lor fevar
+let betaetalet = fbeta lor feta lor fletin
 
 (* Beta Reduction tools *)
 
@@ -380,13 +382,19 @@ let whd_beta_state = local_whd_state_gen beta
 let whd_beta_stack x = appterm_of_stack (whd_beta_state (x, empty_stack))
 let whd_beta x = app_stack (whd_beta_state (x,empty_stack))
 
+(* Nouveau ! *)
+let whd_betaetalet_state = local_whd_state_gen betaetalet
+let whd_betaetalet_stack x =
+  appterm_of_stack (whd_betaetalet_state (x, empty_stack))
+let whd_betaetalet x = app_stack (whd_betaetalet_state (x,empty_stack))
+
 (* 2. Delta Reduction Functions *)
 
 (*
 let whd_delta_state env sigma = 
   let rec whrec (x, l as s) =
     match kind_of_term x with
-      | IsConst const when evaluable_constant env x ->
+      | IsConst const when evaluable_constant env const ->
 	  whrec (constant_value env const, l)
       | IsEvar (ev,args) when Evd.is_defined sigma ev ->
           whrec (existential_value sigma (ev,args), l)
@@ -409,7 +417,7 @@ let whd_betadelta_state env sigma =
   let rec whrec (x, l as s) =
     match kind_of_term x with
       | IsConst const ->
-          if evaluable_constant env x then 
+          if evaluable_constant env const then 
 	    whrec (constant_value env const, l)
           else 
 	    s
@@ -467,7 +475,7 @@ let whd_betaevar env sigma c =
 let whd_betadeltaeta_state env sigma = 
   let rec whrec (x, l as s) =
     match kind_of_term x with
-      | IsConst const when evaluable_constant env x ->
+      | IsConst const when evaluable_constant env const ->
 	  whrec (constant_value env const, l)
       | IsEvar (ev,args) when Evd.is_defined sigma ev ->
 	  whrec (existential_value sigma (ev,args), l)
@@ -585,7 +593,7 @@ let whd_betaiotaevar env sigma x =
 let whd_betadeltaiota_state env sigma =
   let rec whrec (x, stack as s) =
     match kind_of_term x with
-      | IsConst const when evaluable_constant env x ->
+      | IsConst const when evaluable_constant env const ->
 	  whrec (constant_value env const, stack)
       | IsEvar (ev,args) when Evd.is_defined sigma ev ->
 	  whrec (existential_value sigma (ev,args), stack)
@@ -623,7 +631,7 @@ let whd_betadeltaiota env sigma x =
 let whd_betadeltaiotaeta_state env sigma = 
   let rec whrec (x, stack as s) =
     match kind_of_term x with
-      | IsConst const when evaluable_constant env x ->
+      | IsConst const when evaluable_constant env const ->
 	  whrec (constant_value env const, stack)
       | IsEvar (ev,args) when Evd.is_defined sigma ev -> 
 	  whrec (existential_value sigma (ev,args), stack)
