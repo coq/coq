@@ -175,7 +175,8 @@ END
 
 VERNAC COMMAND EXTEND AddSetoid
   [ "Add" "Setoid" constr(a) constr(aeq) constr(t) ] -> [ add_setoid a aeq t ]
-| [ "Add" "Morphism" constr(m) ":" ident(s) ] -> [ new_named_morphism s m ]
+| [ "Add" "Morphism" constr(m) ":" ident(s) ] ->
+   [ new_named_morphism s m None ]
 END
 
 VERNAC COMMAND EXTEND AddRelation1
