@@ -1689,15 +1689,17 @@ let abstract_subproof name tac gls =
   let env = Global.env() in
   let current_sign = Global.named_context()
   and global_sign = pf_hyps gls in
-  let sign = List.fold_right
-               (fun (id,_,_ as d) s -> 
-		  if mem_named_context id current_sign then s else add_named_decl d s) 
-               global_sign empty_named_context
+  let sign = 
+    List.fold_right
+      (fun (id,_,_ as d) s -> 
+	 if mem_named_context id current_sign then s else add_named_decl d s) 
+      global_sign empty_named_context
   in
-  let na = next_global_ident_away name
-             (ids_of_named_context global_sign) in
-  let concl = List.fold_left (fun t d -> mkNamedProd_or_LetIn d t)
-                (pf_concl gls) sign in
+  let na = next_global_ident_away name (ids_of_named_context global_sign) in
+  let concl = 
+    List.fold_left (fun t d -> mkNamedProd_or_LetIn d t) (pf_concl gls) sign 
+  in
+  if occur_existential concl then error "Cannot abstract with existentials";
   let lemme =
     start_proof na Declare.NeverDischarge current_sign concl;
     let _,(const,strength) =
@@ -1712,8 +1714,9 @@ let abstract_subproof name tac gls =
     let newenv = Global.env() in
     Declare.constr_of_reference Evd.empty newenv (ConstRef sp)
   in
-  exact_no_check (applist (lemme,
-		  List.map mkVar (List.rev (ids_of_named_context sign))))
+  exact_no_check 
+    (applist (lemme,
+	      List.map mkVar (List.rev (ids_of_named_context sign))))
     gls
 
 let tclABSTRACT name_op tac gls = 
