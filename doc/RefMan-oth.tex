@@ -13,8 +13,20 @@ defined object referred by {\qualid}.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Print Proof {\qualid}.}\comindex{Print Proof}\\
-This is a synonym to {\tt Print {\qualid}} when {\qualid} denotes a global constant.
+\item {\tt Print Term {\qualid}.}
+\comindex{Print Term}\\ 
+This is a synonym to {\tt Print {\qualid}} when {\qualid} denotes a
+global constant. 
+
+\item {\tt About {\qualid}.}
+\comindex{About}\\ 
+
+This displays various informations about the object denoted by {\qualid}:
+its kind (module, constant, assumption, inductive,
+constructor, abbreviation, ...), long name, type, implicit
+arguments and argument scopes.
+
+%\item {\tt Print Proof {\qualid}.}\comindex{Print Proof}\\
 %In case \qualid\ denotes an opaque theorem defined in a section,
 %it is stored on a special unprintable form and displayed as 
 %{\tt <recipe>}. {\tt Print Proof} forces the printable form of \qualid\
@@ -151,70 +163,124 @@ environment}\\
     There is no constant in the environment named \qualid.
 \end{ErrMsgs}
 
+\begin{Variants}
+\item
+{\tt Search {\qualid} inside {\module$_1$}...{\module$_n$}.}
+
+This restricts the search to constructions defined in modules {\module$_1$}...{\module$_n$}.
+
+\item {\tt Search {\qualid} outside {\module$_1$}...{\module$_n$}.}
+
+This restricts the search to constructions not defined in modules
+{\module$_1$}...{\module$_n$}.
+
+\begin{ErrMsgs}
+\item \errindex{Module/section \module{} not found}
+No module \module{} has been required (see section~\ref{Require}).
+\end{ErrMsgs}
+
+\end{Variants}
+
 \subsection{\tt SearchAbout {\qualid}.}\comindex{SearchAbout}
-This command displays the name and type of all theorems of the current
-context whose statement contains \qualid.  This command is useful to
-remind the user of the name of library lemmas.
+This command displays the name and type of all objects (theorems,
+axioms, etc) of the current context whose statement contains \qualid.
+This command is useful to remind the user of the name of library
+lemmas.
+
 \begin{ErrMsgs}
 \item \errindex{The reference \qualid\ was not found in the current
 environment}\\
     There is no constant in the environment named \qualid.
 \end{ErrMsgs}
 
+\begin{Variants}
+\item {\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{}
+].} where {\textrm{\textsl{qualid-or-string}}} is a list of
+{\qualid} or {\str}.\\
+
+This extension of {\tt SearchAbout} searches for all objects whose
+statement mentions all of {\qualid} of the list and whose name
+contains all {\str} of the list.
+
+\Example
+
+\begin{coq_example}
+Require Import ZArith.
+SearchAbout [ Zmult Zplus "distr" ].
+\end{coq_example}
+
+\item
+{\tt SearchAbout {\term} outside {\module$_1$}...{\module$_n$}.}\\
+{\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{} ] outside {\module$_1$}...{\module$_n$}.}
+
+This restricts the search to constructions defined in modules
+{\module$_1$}...{\module$_n$}.
+
+\item {\tt SearchAbout {\term} outside {\module$_1$}...{\module$_n$}.}\\
+{\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{} ] outside {\module$_1$}...{\module$_n$}.}
+
+This restricts the search to constructions not defined in modules
+{\module$_1$}...{\module$_n$}.
+
+\end{Variants}
+
 \subsection{\tt SearchPattern {\term}.}\comindex{SearchPattern}
 
 This command displays the name and type of all theorems of the current
 context whose statement's conclusion matches the expression {\term}
-where holes in the latter are denoted by ``{\texttt ?}''.
+where holes in the latter are denoted by ``{\texttt \_}''.
 
 \begin{coq_example}
 Require Import Arith.
-SearchPattern ((_ + _)%N = _).
+SearchPattern (_ + _ = _ + _).
 \end{coq_example}
 
-Patterns need not be linear: you can express that the same
-expression must occur in two places by using indexed `{\texttt ?}''.
+Patterns need not be linear: you can express that the same expression
+must occur in two places by using pattern variables `{\texttt
+?{\ident}}''.
 
 \begin{coq_example}
 Require Import Arith.
-SearchPattern ((?X1 + _)%N = ?X1).
+SearchPattern (?X1 + _ = _ + ?X1).
 \end{coq_example}
+
+\begin{Variants}
+\item {\tt SearchPattern {\term} inside
+{\module$_1$}...{\module$_n$}.}\comindex{SearchPattern ... inside
+...}
+
+This restricts the search to constructions defined in modules {\module$_1$}...{\module$_n$}.
+
+\item {\tt SearchPattern {\term} outside {\module$_1$}...{\module$_n$}.}\comindex{SearchPattern ... outside ...}
+
+This restricts the search to constructions not defined in modules
+{\module$_1$}...{\module$_n$}.
+
+\end{Variants}
 
 \subsection{\tt SearchRewrite {\term}.}\comindex{SearchRewrite}
 
 This command displays the name and type of all theorems of the current
 context whose statement's conclusion is an equality of which one side matches
-the expression {\term =}. Holes in {\term} are denoted by ``{\texttt ?}''.
+the expression {\term =}. Holes in {\term} are denoted by ``{\texttt \_}''.
 
 \begin{coq_example}
 Require Import Arith.
-SearchRewrite (_ + _)%N.
+SearchRewrite (_ + _ + _).
 \end{coq_example}
 
 \begin{Variants}
-\item
-{\tt Search {\qualid} inside
-{\module$_1$}...{\module$_n$}.}\comindex{Search ... inside ...}\\
-{\tt SearchPattern {\term} inside
-{\module$_1$}...{\module$_n$}.}\comindex{SearchPattern ... inside
-...}\\
-{\tt SearchRewrite {\term} inside
-{\module$_1$}...{\module$_n$}.}\comindex{SearchRewrite ... inside ...}
+\item {\tt SearchRewrite {\term} inside
+{\module$_1$}...{\module$_n$}.}
 
 This restricts the search to constructions defined in modules {\module$_1$}...{\module$_n$}.
 
-\item {\tt Search {\qualid} outside {\module$_1$}...{\module$_n$}.}\comindex{Search ... outside ...}\\
-{\tt SearchPattern {\term} outside {\module$_1$}...{\module$_n$}.}\comindex{SearchPattern ... outside ...}\\
-{\tt SearchRewrite {\term} outside {\module$_1$}...{\module$_n$}.}\comindex{SearchRewrite ... outside ...}
+\item {\tt SearchRewrite {\term} outside {\module$_1$}...{\module$_n$}.}
 
-  This restricts the search to constructions not defined in modules
+This restricts the search to constructions not defined in modules
 {\module$_1$}...{\module$_n$}.
 
 \end{Variants}
-\begin{ErrMsgs}
-\item \errindex{Module/section \module{} not found}
-No module \module{} has been required (see section~\ref{Require}).
-\end{ErrMsgs}
 
 % \subsection{\tt SearchIsos {\term}.}\comindex{SearchIsos}
 % \label{searchisos}
@@ -246,6 +312,7 @@ No module \module{} has been required (see section~\ref{Require}).
 % \cite{Del97}.
 
 \subsection{\tt Locate {\qualid}.}\comindex{Locate}
+\label{Locate}
 This command displays the full name of the qualified identifier {\qualid}
 and consequently the \Coq\ module in which it is defined.
 
@@ -262,6 +329,8 @@ Locate Init.Datatypes.O.
 Locate Coq.Init.Datatypes.O.
 Locate I.Dont.Exist.
 \end{coq_example}
+
+\SeeAlso Section \ref{LocateSymbol}
 
 \section{Loading files}
 
@@ -361,6 +430,13 @@ waste of time.
 % \SeeAlso sections \ref{Opaque}, \ref{loadpath}, chapter
 % \ref{Addoc-coqc}
 
+\subsection{\tt Import {\qualid}.}\comindex{Import}
+\label{Import}
+
+TODO + variant Export
+
+
+
 \subsection{\tt Read Module {\qualid}.}\comindex{Read Module}
 This looks for a physical file \texttt{file.vo} mapped to logical name
 {\qualid} in the current {\Coq} loadpath, then loads its contents but
@@ -378,6 +454,8 @@ qualified names denoting the same module).
 This command looks in the loadpath for a file containing module
 {\dirpath}, then loads and opens (imports) its contents.
 More precisely, if {\dirpath} splits into a library dirpath {\dirpath'} and a module name {\textsl{ident}}, then the file {\ident}{\tt .vo} is searched in a physical path mapped to the logical path {\dirpath'}.
+
+TODO: effect on the name table.
 
 % The implementation file ({\ident}{\tt .vo}) is searched first,
 % then the specification file ({\ident}{\tt .vi}) in case of failure.
@@ -597,103 +675,6 @@ use in a further session. This file can be given as the {\tt
  Equivalent to {\tt Write State "}{\ident}{\tt .coq"}.
  The state is saved in the current directory (see \pageref{Pwd}).
 \end{Variants}
-
-\section{Syntax facilities}
-
-We present quickly in this section some syntactic facilities.
-We will only sketch them here and refer the
-interested reader to chapter \ref{Addoc-syntax} for more details and
-examples.
-
-\subsection{\tt Set Implicit Arguments.}
-\comindex{Set Implicit Arguments}
-\comindex{Unset Implicit Arguments}
-
-This command sets the implicit argument mode on. Under this mode, the
-arguments of declared constructions (constants, inductive types,
-variables, ...) which can automatically be deduced from the others
-arguments (typically type arguments in polymorphic functions) are
-skipped. They are not printed and the user must not give them.  To
-show what are the implicit arguments associated to a declaration
-{\qualid}, use \texttt{Print \qualid}. You can change the implicit
-arguments of a specific declaration by using the command
-\texttt{Implicits} (see section \ref{Implicits}).  You can explicitly
-give an argument which otherwise should be implicit by using the
-symbol \verb=!= (see section \ref{Implicits-explicitation}).
-
-To set the implicit argument mode off, use {\tt Unset Implicit Arguments.}
-
-% \begin{Variants}
-% \item {\tt Implicit Arguments On.}\comindex{Implicit Arguments On}\\
-% This is a deprecated equivalent to {\tt Set Implicit Arguments.} 
-% \item {\tt Implicit Arguments Off.}\comindex{Implicit Arguments Off}\\
-% This is a deprecated equivalent to {\tt Unset Implicit Arguments.} 
-% \end{Variants}
-
-\SeeAlso section \ref{Auto-implicit}
-
-\subsection{\tt Implicits {\qualid} [} \num$_1$ \ldots \num$_n$ {\tt ]}
-\comindex{Implicits}
-\label{Implicits}
-
-This sets the implicit arguments of reference {\qualid} to be the
-arguments at positions {\num$_1$ \ldots \num$_n$}. As a particular
-case, if the list of numbers is empty then no implicit argument is
-associated to {\qualid}.
-
-\subsection{\tt Syntactic Definition {\ident} := \term.}
-\comindex{Syntactic Definition}
-\ttindex{?}
-This command defines {\ident} as an
-abbreviation with implicit arguments. Implicit arguments are denoted
-in {\term} by {\tt ?} and they will have to be synthesized by the
-system.
-
-\Rem Since it may contain don't care variables {\tt ?}, the argument
-{\term} cannot be typechecked at
-definition time. But each of its subsequent usages will be.
-
-\SeeAlso section \ref{Syntactic-Definition}
-
-
-\subsection{\tt Syntax {\ident} {\rm\sl syntax-rules}.}
-\comindex{Syntax}\index{Pretty printing}
-This command addresses the extensible
-pretty-printing mechanism of \Coq. It allows {\ident$_2$} to be 
-pretty-printed as specified in {\rm\sl syntax-rules}. Many examples
-of the {\tt Syntax} command usage may be found in the {\tt
-  PreludeSyntax} file (see directory {\tt \$COQLIB/theories/INIT}).
-
-\SeeAlso chapter \ref{Addoc-syntax}
-
-\subsection{\tt Grammar \ident$_1$ \ident$_2$ := {\rm\sl
-    grammar-rule}.}
-\comindex{Grammar}\index{Extensive grammars}
-This command allows to give explicitly new grammar rules for parsing
-the user's own notation.  It may be used instead of the {\tt Syntactic
-Definition} pragma.  It can also be used by an advanced \Coq's user
-who programs his own tactics.
-
-\SeeAlso chapters \ref{Addoc-syntax}
-
-\subsection{\tt{Infix} {\num} {\str} {\qualid}.}\comindex{Infix}
-
-This command declares the prefix operator denoted by {\qualid} as infix, with the
-syntax {\term} {\str} {\term}. {\num} is the precedence associated to
-the operator; it must lie between 1 and 10.  The infix operator \str\
-associates to the left. {\str} must be a legal token. Both grammar
-and pretty-print rules are automatically generated for {\str}.
-
-\begin{Variants}
-\item \texttt{Infix {\rm\sl assoc} {\num} {\str} {\qualid}.} \\
-  Declares the full names denoted by {\qualid} as an infix operator with an alternate
-  associativity. {\rm\sl assoc} may be one of {\tt LEFTA}, {\tt
-  RIGHTA} and {\tt NONA}. The default is {\tt LEFTA}. When an
-  associativity is given, the precedence level must lie between 6 and
-  9. 
-\end{Variants}
-
-% Distfix not documented.
 
 \section{Miscellaneous}
 
