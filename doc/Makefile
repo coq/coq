@@ -1,23 +1,29 @@
+# Makefile for the Coq documentation
+
+# You need the environment varibles COQTOP and COQBIN to be correctly set
+# (some files are preprocessed using Coq and some part of the documentation
+# is automatically built from the theories sources)
+
 # To compile documentation, you need the following tools:
 # Dvi: latex (latex2e), bibtex, makeindex, dviselect (package RPM dviutils)
 # Ps: dvips, psutils (ftp://ftp.dcs.ed.ac.uk/pub/ajcd/psutils.tar.gz)
 # Pdf: pdflatex
 # Html:
 #   - hevea: http://para.inria.fr/~maranget/hevea/
-#   - htmlSplit: http://coq.inria.fr/~delahaye/
+#   - htmlSplit: http://coq.inria.fr/~delahaye
 # Rapports INRIA: dviselect, rrkit (par Michel Mauny)
 
-DOCCOQTOP=@COQTOPBYTE@
-DOCCOQC=@COQC@ -byte
-COQLIB=@COQLIB@
-COQTEX=@COQTEX@ -image $(DOCCOQTOP) -v -sl -small
+DOCCOQTOP=$(COQBIN)/coqtop.byte
+DOCCOQC=$(COQBIN)/coqc
+COQTEX=$(COQBIN)/coq-tex -image $(DOCCOQTOP) -v -sl -small
+COQWEBSTY=$(HOME)/tex/inputs
 
 LATEX=latex
 BIBTEX=bibtex
 MAKEINDEX=makeindex
 PDFLATEX=pdflatex
 
-TEXINPUTS=/usr/local/lib/rrkit/RRINPUTSDIR:.:
+TEXINPUTS=/usr/local/lib/rrkit/RRINPUTSDIR:$(COQWEBSTY):.:
 
 INPUTS=./macros.tex ./title.tex ./headers.tex ./Reference-Manual.tex
 
@@ -27,11 +33,11 @@ LIBFILES=library/Logic.tex library/Datatypes.tex library/Peano.tex \
 REFMANCOQTEXFILES=\
   RefMan-gal.v.tex RefMan-ext.v.tex RefMan-tac.v.tex \
   RefMan-cic.v.tex RefMan-lib.v.tex RefMan-tacex.v.tex \
-  RefMan-syn.v.tex RefMan-tus.v.tex RefMan-oth.v.tex
+  RefMan-syn.v.tex RefMan-ltac.v.tex RefMan-oth.v.tex
 
 COQTEXFILES= Cases.v.tex Coercion.v.tex Extraction.v.tex Program.v.tex\
   Omega.v.tex Natural.v.tex Changes.v.tex Tutorial.v.tex Polynom.v.tex \
-  Programs.v.tex
+  Correctness.v.tex
 
 REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
   RefMan-pro.tex RefMan-com.tex RefMan-uti.tex RefMan-add.tex \
@@ -58,7 +64,11 @@ FTPHTMLDOCS=doc-html.tar.gz
 # Principal targets 
 ########################
 
-all: all-dvi all-pdf
+all: check-env all-dvi all-pdf
+
+check-env:
+	if test "$(COQBIN)" = ""; then echo "COQBIN undefined"; exit 1; fi
+	if test "$(COQTOP)" = ""; then echo "COQTOP undefined"; exit 1; fi
 
 coq-part: $(REFMANCOQTEXFILES) $(COQTEXFILES) demos-programs library/libdoc.tex
 
@@ -184,13 +194,45 @@ cleanall: clean clean-html
 # Dependencies
 ##########################
 
-Library.dvi: $(INPUTS) library/libdoc.tex Library.tex
-	echo "======Library.dvi: A FAIRE========"
-Library.pdf: $(INPUTS) library/libdoc.tex Library.tex
-	echo "======Library.pdf: A FAIRE========"
+Library.dvi: $(INPUTS) library.coqweb.tex Library.tex
+	$(LATEX) Library
+	$(LATEX) Library
 
-library/libdoc.tex: 
-#	(cd ../theories ; make doc)
+Library.pdf: $(INPUTS) library.coqweb.tex Library.tex
+	$(PDFLATEX) Library
+	$(PDFLATEX) Library
+
+Library.html: $(INPUTS) library.coqweb.tex Library.tex
+	hevea ./coq-html.sty $(COQWEBSTY)/coqweb.sty ./Library.tex
+
+LIBDIRS= Logic Bool Arith Zarith Reals Lists Sets Relations \
+         Wellfounded IntMap
+
+library.coqweb.tex: library.files
+	WHERE=`pwd` ; \
+	cd $(COQTOP)/theories; \
+	coqweb --noweb -o $$WHERE/$@ --no-preamble `cat $$WHERE/library.files`
+
+GALLINA=$(COQBIN)/gallina
+
+# ls -tr trie les fichiers dans l'ordre inverse de leur date de création
+# En supposant que make fait son boulot, ca fait un tri topologique du
+# graphe des dépendances
+library.files::
+	rm -f library.files; touch library.files
+	ABSOLUTE=`pwd`/library.files ; \
+	for rep in $(LIBDIRS) ; do \
+	  (cd $(COQTOP)/theories/$$rep ; \
+	   echo $$rep/intro.tex >> $$ABSOLUTE ; \
+	   VOFILES=`ls -tr *.vo` ; \
+	   for file in $$VOFILES ; do \
+		VF=`basename $$file \.vo` ; \
+		if test \( ! -e $$VF.g \) -o \( $$VF.v -nt $$VF.g \); then \
+	          $(GALLINA) $$VF.v; fi ; \
+		echo $$rep/$$VF.g >> $$ABSOLUTE ; \
+           done \
+	  ) ; \
+	done
 
 demos-programs:
 #	(cd ../theories/DEMOS/PROGRAMS ; make all)
