@@ -15,13 +15,14 @@ Require SeqProp.
 Require Max.
 
 (****************************************************)
-(*              R est complet :                     *)
-(*    Toute suite de Cauchy de (R,| |) converge     *)
+(*              R is complete :                     *)
+(*        Each sequence which satisfies             *)
+(*       the Cauchy's criterion converges           *)
 (*                                                  *)
-(*  Preuve a l'aide des suites adjacentes Vn et Wn  *)
+(*    Proof with adjacent sequences (Vn and Wn)     *)
 (****************************************************)
 
-Theorem R_complet : (Un:nat->R) (Cauchy_crit Un) -> (sigTT R [l:R](Un_cv Un l)).
+Theorem R_complete : (Un:nat->R) (Cauchy_crit Un) -> (sigTT R [l:R](Un_cv Un l)).
 Intros.
 Pose Vn := (suite_minorant Un (cauchy_min Un H)).
 Pose Wn := (suite_majorant Un (cauchy_maj Un H)).

@@ -42,7 +42,7 @@ Apply H1.
 Qed.
 
 Lemma RiemannInt_P2 : (f:R->R;a,b:R;un:nat->posreal;vn,wn:nat->(StepFun a b)) (Un_cv un R0) -> ``a<=b`` -> ((n:nat)((t:R)``(Rmin a b)<=t<=(Rmax a b)``->``(Rabsolu ((f t)-(vn n t)))<=(wn n t)``)/\``(Rabsolu (RiemannInt_SF (wn n)))<(un n)``) -> (sigTT ? [l:R](Un_cv [N:nat](RiemannInt_SF (vn N)) l)).
-Intros; Apply R_complet; Unfold Un_cv in H; Unfold Cauchy_crit; Intros; Assert H3 : ``0<eps/2``.
+Intros; Apply R_complete; Unfold Un_cv in H; Unfold Cauchy_crit; Intros; Assert H3 : ``0<eps/2``.
 Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup0].
 Elim (H ? H3); Intros N0 H4; Exists N0; Intros; Unfold R_dist; Unfold R_dist in H4; Elim (H1 n); Elim (H1 m); Intros; Replace ``(RiemannInt_SF (vn n))-(RiemannInt_SF (vn m))`` with ``(RiemannInt_SF (vn n))+(-1)*(RiemannInt_SF (vn m))``; [Idtac | Ring]; Rewrite <- StepFun_P30; Apply Rle_lt_trans with (RiemannInt_SF (mkStepFun (StepFun_P32 (mkStepFun (StepFun_P28 ``-1`` (vn n) (vn m)))))).
 Apply StepFun_P34; Assumption.

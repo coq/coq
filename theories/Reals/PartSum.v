@@ -11,7 +11,7 @@
 Require Rbase.
 Require Rfunctions.
 Require Rseries.
-Require Rcomplet.
+Require Rcomplete.
 Require Max.
 
 Lemma tech1 : (An:nat->R;N:nat) ((n:nat)``(le n N)``->``0<(An n)``) -> ``0 < (sum_f_R0 An N)``.
@@ -362,7 +362,7 @@ Qed.
 
 Lemma cv_cauchy_2 : (An:nat->R) (Cauchy_crit_series An) -> (sigTT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
 Intros.
-Apply R_complet.
+Apply R_complete.
 Unfold Cauchy_crit_series in H.
 Exact H.
 Qed.

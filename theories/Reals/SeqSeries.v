@@ -12,7 +12,7 @@ Require Rbase.
 Require Rfunctions.
 Require Export Rseries.
 Require Export SeqProp.
-Require Export Rcomplet.
+Require Export Rcomplete.
 Require Export PartSum.
 Require Export AltSeries.
 Require Export Binomial.
