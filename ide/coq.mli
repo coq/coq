@@ -5,7 +5,7 @@ open Evd
 
 val version : unit -> string
 
-val init : unit -> unit 
+val init : unit -> string list 
 val interp : string -> Util.loc * Vernacexpr.vernac_expr
 val interp_last : Util.loc * Vernacexpr.vernac_expr -> unit
 

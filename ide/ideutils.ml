@@ -24,7 +24,7 @@ let process_pending () =
     ignore (Glib.Main.iteration false)
   done
 
-let debug = ref false
+let debug = ref true
 
 let prerr_endline s =
   if !debug then (prerr_endline s;flush stderr) else ()

@@ -85,15 +85,18 @@ let reset_tab_label i = set_tab_label i (get_tab_label i)
 let to_do_on_page_switch = ref []
   
 module Vector = struct 
-  type 'a t = 'a array ref
+  type 'a t = ('a option) array ref
   let create () = ref [||]
-  let get t = Array.get !t
-  let set t = Array.set !t
-  let append t e = t := Array.append !t [|e|]; (Array.length !t)-1
-  let iter f t =  Array.iter f !t
+  let get t i = out_some (Array.get !t i)
+  let set t i v = Array.set !t i (Some v)
+  let remove t i = Array.set !t i None
+  let append t e = t := Array.append !t [|Some e|]; (Array.length !t)-1
+  let iter f t =  Array.iter (function | None -> () | Some x -> f x) !t
   let exists f t =
     let l = Array.length !t in
-    let rec test i = i < l && (f !t.(i) || test (i+1)) in 
+    let rec test i = 
+      i < l && (!t.(i) = None || f (out_some !t.(i)) || test (i+1)) 
+    in 
     test 0
 end
 
@@ -186,7 +189,7 @@ let crash_save i =
 let _ = 
   let signals_to_catch = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup; 
 			  Sys.sigill; Sys.sigint; Sys.sigpipe; Sys.sigquit; 
-			  Sys.sigsegv; Sys.sigterm; Sys.sigusr2] 
+			  (*Sys.sigsegv;*) Sys.sigterm; Sys.sigusr2] 
   in List.iter 
        (fun i -> Sys.set_signal i (Sys.Signal_handle crash_save)) 
        signals_to_catch
@@ -208,18 +211,20 @@ let set_active_view i =
   set_current_tab_label ("<span background=\"light green\">"^txt^"</span>");
   active_view := Some i
 
-(* let kill_input_view i = 
-  if (Array.length !input_views) <= 1 then input_views := [||]
-  else
-    let r = Array.create (Array.length !input_views) !input_views.(0) in
-    Array.iteri (fun j tv -> 
-		   if j < i then r.(j) <- !input_views.(j) 
-		   else if j > i then r.(j-1) <- !input_views.(j))
-      !input_views;
-    input_views := r
-*)
+let set_current_view i = (notebook ())#goto_page i
 
+let kill_input_view i = 
+  let v = Vector.get input_views i in
+  v.view#destroy ();
+  v.analyzed_view <- None;
+  Vector.remove input_views i
+
+let get_current_view_page () = (notebook ())#current_page
 let get_current_view () = Vector.get input_views (notebook ())#current_page
+let remove_current_view_page () = 
+  let c =  (notebook ())#current_page in
+  kill_input_view c;
+  ((notebook ())#get_nth_page c)#misc#hide ()
 
 let status = ref None
 let push_info = ref (function s -> failwith "not ready")
@@ -456,27 +461,29 @@ object(self)
     ignore (input_view#scroll_to_iter ~within_margin:0.10 self#get_insert) 
 
   method show_goals = 
-    proof_view#buffer#set_text "";
-    let s = Coq.get_current_goals () in
-    let last_shown_area = proof_buffer#create_tag [`BACKGROUND "light blue"]
-    in
-    match s with 
-      | [] -> proof_buffer#insert (Coq.print_no_goal ())
-      | (hyps,concl)::r -> 
-	  let goal_nb = List.length s in
-	  proof_buffer#insert (Printf.sprintf "%d subgoal%s\n" 
-				 goal_nb
-				 (if goal_nb<=1 then "" else "s"));
-	  let coq_menu commands = 
-	    let tag = proof_buffer#create_tag []
-	    in 
-	    ignore
+    try
+      proof_view#buffer#set_text "";
+      let s = Coq.get_current_goals () in
+      let last_shown_area = proof_buffer#create_tag [`BACKGROUND "light blue"]
+      in
+      match s with 
+	| [] -> proof_buffer#insert (Coq.print_no_goal ())
+	| (hyps,concl)::r -> 
+	    let goal_nb = List.length s in
+	    proof_buffer#insert (Printf.sprintf "%d subgoal%s\n" 
+				   goal_nb
+				   (if goal_nb<=1 then "" else "s"));
+	    let coq_menu commands = 
+	      let tag = proof_buffer#create_tag []
+	      in 
+	      ignore
 	      (tag#connect#event ~callback:
 		 (fun ~origin ev it ->
+		    
 		    match GdkEvent.get_type ev with 
 		      | `BUTTON_PRESS -> 
 			  let ev = (GdkEvent.Button.cast ev) in
-			  if (GdkEvent.Button.button ev) = 3 
+			  if (GdkEvent.Button.button ev) = 3
 			  then begin 
 			    let loc_menu = GMenu.menu () in
 			    let factory = new GMenu.factory loc_menu in
@@ -503,17 +510,20 @@ object(self)
 			  ~start:proof_buffer#start_iter
 			  ~stop:proof_buffer#end_iter
 			  last_shown_area;
+			  prerr_endline "Before find_tag_limits";
 			  let s,e = find_tag_limits tag 
 				      (new GText.iter it) 
 			  in
+			  prerr_endline "Apres find_tag_limits";
 			  proof_buffer#apply_tag 
 			    ~start:s 
 			    ~stop:e 
 			    last_shown_area;
+			  prerr_endline "Applied tag";
 			  ()
 		      | _ -> ())
 	      );
-	    tag
+	      tag
 	  in
 	  List.iter
 	    (fun ((_,_,_,(s,_)) as hyp) -> 
@@ -546,7 +556,8 @@ object(self)
 	    )
 	    r;
 	  ignore (proof_view#scroll_to_mark my_mark) 
-	    
+      with e -> prerr_endline (Printexc.to_string e)
+
   method send_to_coq phrase show_output show_error localize =
     try 
       prerr_endline "Send_to_coq starting now";
@@ -654,9 +665,7 @@ object(self)
 		    let start_of_phrase_mark = `MARK (b#create_mark start) in
 		    let end_of_phrase_mark = `MARK (b#create_mark stop) in
 		    push_phrase start_of_phrase_mark end_of_phrase_mark ast;
-		    if display_goals then
-		      (try self#show_goals with e -> 
-			 prerr_endline (Printexc.to_string e);());
+		    if display_goals then self#show_goals;
 		    true
 		  end
 	      | None -> false
@@ -684,7 +693,7 @@ object(self)
 	    let start_of_phrase_mark = `MARK (input_buffer#create_mark start) in
 	    let end_of_phrase_mark = `MARK (input_buffer#create_mark stop) in
 	    push_phrase start_of_phrase_mark end_of_phrase_mark ast;
-	    (try self#show_goals with e -> ());
+	    self#show_goals;
 	    (try (match Coq.get_current_goals () with 
 		    | [] ->  
 			(match self#send_to_coq "Save.\n" true true true with
@@ -723,7 +732,7 @@ object(self)
     while ((stop#compare self#get_start_of_input>=0) 
 	   && self#process_next_phrase false false)
     do () done;
-    (try self#show_goals with _ -> ());
+    self#show_goals;
     input_buffer#remove_tag_by_name ~start ~stop "to_process" ;
     input_view#set_editable true;
     !pop_info()
@@ -796,7 +805,7 @@ object(self)
 	  ~stop:self#get_start_of_input
 	  "processed";
 	input_buffer#move_mark ~where:start (`NAME "start_of_input");
-	(try self#show_goals with e -> ());
+	self#show_goals;
 	clear_stdout ();
 	self#clear_message
       end
@@ -818,7 +827,7 @@ object(self)
 	  (`NAME "start_of_input");
 	input_buffer#place_cursor start;
 	self#recenter_insert;
-	(try self#show_goals with e -> ());
+	self#show_goals;
 	self#clear_message
       in
       begin match last_command with 
@@ -954,9 +963,20 @@ object(self)
 			      `INSERT)));
     ignore (input_buffer#connect#insert_text
 	      ~callback:(fun it s ->
+			   if (it#compare self#get_start_of_input)<0
+			   then GtkSignal.stop_emit ();
 			   if String.length s > 1 then 
 			     input_buffer#place_cursor it));
-
+    ignore (input_buffer#connect#after#apply_tag
+	      ~callback:(fun tag ~start ~stop ->
+			   if (start#compare self#get_start_of_input)>=0
+			   then 
+			     input_buffer#remove_tag_by_name 
+			       ~start
+			       ~stop
+			       "processed"
+			)
+	   );
     ignore 
       (input_buffer#connect#modified_changed
 	 ~callback:
@@ -984,10 +1004,6 @@ object(self)
 			     ~start:self#get_start_of_input
 			     ~stop
 			     "error";
-			   (* input_buffer#remove_tag_by_name 
-			     ~start:self#get_start_of_input
-			     ~stop
-			     "processed";*)
 			   Highlight.highlight_slice
 			     input_buffer self#get_start_of_input stop
 			)
@@ -1055,7 +1071,7 @@ let create_input_tab filename =
 	    [`BACKGROUND "light green" ;`EDITABLE false]);
   tv1
   
-let main () = 
+let main files = 
   let w = GWindow.window 
 	    ~allow_grow:true ~allow_shrink:true 
 	    ~width:window_width ~height:window_height 
@@ -1072,34 +1088,36 @@ let main () =
   let file_factory = new GMenu.factory file_menu ~accel_group in
 
   (* File/Load Menu *)
+  let load f =
+    try
+      let b = Buffer.create 1024 in
+      with_file f ~f:(input_channel b);
+      let s = try_convert (Buffer.contents b) in
+      let view = create_input_tab (Filename.basename f) in
+      (match !manual_monospace_font with
+	 | None -> ()
+	 | Some n -> view#misc#modify_font n);
+      let index = add_input_view {view = view;
+				  analyzed_view = None;
+				 }
+      in
+      let av = (new analyzed_view index) in 
+      (get_input_view index).analyzed_view <- Some av;
+      av#set_filename (Some f);
+      av#update_stats;
+      let input_buffer = view#buffer in
+      input_buffer#set_text s;
+      input_buffer#place_cursor input_buffer#start_iter;
+      set_current_view index;
+      Highlight.highlight_all input_buffer;
+      input_buffer#set_modified false
+    with e -> !flash_info "Load failed"
+  in
   let load_m = file_factory#add_item "_Open/Create" ~key:GdkKeysyms._O in
   let load_f () = 	  
     match GToolbox.select_file ~title:"_Load file" () with 
       | None -> ()
-      | (Some f) as fn -> 
-	  try
-	    let b = Buffer.create 1024 in
-	    with_file f ~f:(input_channel b);
-	    let s = try_convert (Buffer.contents b) in
-	    let view = create_input_tab (Filename.basename f) in
-	    (match !manual_monospace_font with
-	       | None -> ()
-	       | Some n -> view#misc#modify_font n);
-	    let index = add_input_view {view = view;
-					analyzed_view = None;
-				       }
-	    in
-	    let av = (new analyzed_view index) in 
-	    (get_input_view index).analyzed_view <- Some av;
-	    av#set_filename fn;
-	    av#update_stats;
-	    activate_input index;
-	    let input_buffer = view#buffer in
-	    input_buffer#set_text s;
-	    input_buffer#place_cursor input_buffer#start_iter;
-	    Highlight.highlight_all input_buffer;
-	    input_buffer#set_modified false
-	  with e -> !flash_info "Load failed"
+      | (Some f) as fn -> load f
   in
   ignore (load_m#connect#activate (do_if_not_computing load_f));
 
@@ -1121,7 +1139,7 @@ let main () =
 	 | Some f -> 
 	     (out_some current.analyzed_view)#save f;
 	     !flash_info "Saved"
-	     
+	       
       )
     with e -> !flash_info "Save failed"
   in   
@@ -1138,8 +1156,8 @@ let main () =
 		 | None -> ()
 		 | Some f -> 
 		     (out_some current.analyzed_view)#save f;
-		      set_current_tab_label (Filename.basename f);
-		      !flash_info "Saved"
+		     set_current_tab_label (Filename.basename f);
+		     !flash_info "Saved"
 	       end
 	   | Some f -> 
 	       begin match GToolbox.select_file 
@@ -1193,11 +1211,21 @@ let main () =
 		      then av#revert
 		  | Some _, None -> av#revert
 		  | _ -> ()
-	      with _ -> av#revert)
+		with _ -> av#revert)
 	 | _ -> ()
       )  input_views
   in
   ignore (revert_m#connect#activate revert_f);
+
+  (* File/Close Menu *)
+  let close_m = file_factory#add_item "_Close Buffer" in
+  let close_f () = 
+    let v = out_some !active_view in
+    let act = get_current_view_page () in
+    if v = act then !flash_info "Cannot close an active view"
+    else remove_current_view_page ()
+  in
+  ignore (close_m#connect#activate close_f);
 
   (* File/Print Menu *)
   let print_f () =
@@ -1487,7 +1515,21 @@ let main () =
   in
   let compile_m = commands_factory#add_item "Compile" ~callback:compile_f in
   let make_f () =
-    let c = Sys.command current.cmd_make in
+    save_f ();
+    let pid = 
+      Unix.create_process 
+	current.cmd_make 
+	[||]
+	Unix.stdin 
+	Unix.stdout 
+	Unix.stderr
+    in
+    let c = 
+      match Unix.waitpid [] pid with
+	| (_,Unix.WEXITED i) -> i
+	| (_,Unix.WSIGNALED i) -> 127
+	| _ -> assert false
+    in
     !flash_info (current.cmd_make ^ if c = 0 then " succeeded" else " failed")
   in
   let make_m = commands_factory#add_item "Make" ~callback:make_f in
@@ -1671,10 +1713,14 @@ let main () =
   (get_input_view index).analyzed_view <- Some (new analyzed_view index);
   activate_input index;
   set_tab_image index yes_icon;
-
   (match !manual_monospace_font with 
      | None -> ()
-     | Some f -> view#misc#modify_font f; tv2#misc#modify_font f; tv3#misc#modify_font f);
+     | Some f -> 
+	 view#misc#modify_font f; 
+	 tv2#misc#modify_font f; 
+	 tv3#misc#modify_font f);
+  List.iter load files;
+
   ignore (about_m#connect#activate 
 	    ~callback:(fun () -> tv3#buffer#set_text "by Benjamin Monate"));
   ignore (w#misc#connect#size_allocate 
@@ -1696,7 +1742,7 @@ let main () =
 
 let start () = 
   cant_break ();
-  Coq.init ();
+  let files = Coq.init () in
   GtkMain.Rc.add_default_file (Filename.concat lib_ide ".coqiderc");
   (try 
      GtkMain.Rc.add_default_file (Filename.concat (Sys.getenv "HOME") ".coqiderc");
@@ -1708,7 +1754,7 @@ let start () =
     (fun ~level msg ->
          failwith ("Coqide internal error: " ^ msg)
     );
-  main ();
+  main files;
   Sys.catch_break true;
   while true do 
     try 
