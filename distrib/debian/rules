@@ -21,7 +21,7 @@ build-stamp:
 	dh_testdir
 
 	# Add here commands to compile the package.
-	$(MAKE) -j world
+	$(MAKE) world
 	#/usr/bin/docbook-to-man debian/coq.sgml > coq.1
 
 	touch build-stamp
