@@ -24,3 +24,12 @@ let silently f x =
   with e -> begin
     silent := oldsilent; raise e
   end
+
+(* The number of printed hypothesis in a goal *)
+
+let print_hyps_limit = ref (None : int option)
+let set_print_hyps_limit n = print_hyps_limit := Some n
+let unset_print_hyps_limit () = print_hyps_limit := None
+let print_hyps_limit () = !print_hyps_limit
+
+

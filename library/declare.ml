@@ -161,14 +161,14 @@ let mind_oper_of_id sp id mib =
 
 let global_operator sp id =
   try
-    let _ = Global.lookup_constant sp in Const sp
+    let cb = Global.lookup_constant sp in Const sp, cb.const_hyps
   with Not_found -> 
     let mib = Global.lookup_mind sp in
-    mind_oper_of_id sp id mib
+    mind_oper_of_id sp id mib, mib.mind_hyps
 
 let global_reference kind id =
   let sp = Nametab.sp_of_id kind id in
-  let oper = global_operator sp id in
+  let (oper,_) = global_operator sp id in
   let hyps = get_globals (Global.context ()) in
   let ids = ids_of_sign hyps in
   DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids))

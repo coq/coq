@@ -4,6 +4,7 @@
 (*i*)
 open Names
 open Term
+open Sign
 open Constant
 open Inductive
 (*i*)
@@ -36,6 +37,7 @@ val declare_eliminations : section_path -> unit
   then constructs the corresponding term, associated to the current 
   environment of variables. *)
 
+val global_operator : section_path -> identifier -> sorts oper * var_context
 val global_reference : path_kind -> identifier -> constr
 
 val is_global : identifier -> bool

@@ -130,6 +130,8 @@ let lowercase_first_char id = String.lowercase (first_char id)
 let id_of_global env = function
   | Const sp -> 
       basename sp
+  | Evar ev ->
+      id_of_existential ev
   | MutInd (sp,tyi) -> 
       (* Does not work with extracted inductive types when the first 
 	 inductive is logic : if tyi=0 then basename sp else *)

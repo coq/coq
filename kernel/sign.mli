@@ -85,3 +85,5 @@ type 'b assumptions = (typed_type,'b) env
 type context = (typed_type,typed_type) env
 type var_context = typed_type signature
 
+val unitize_env : 'a assumptions -> unit assumptions
+

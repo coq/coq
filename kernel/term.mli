@@ -239,6 +239,8 @@ val isprop : constr -> bool
 val is_Type : constr -> bool
 val iskind : constr -> bool
 
+val is_existential_oper : sorts oper -> bool
+
 val isType : sorts -> bool
 val is_small : sorts -> bool (* true for \textsf{Prop} and \textsf{Set} *)
 

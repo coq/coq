@@ -49,3 +49,5 @@ val is_evar : 'a evar_map -> evar -> bool
 val is_defined : 'a evar_map -> evar -> bool
 
 val evar_hyps : 'a evar_info -> typed_type signature
+
+val id_of_existential : evar -> identifier

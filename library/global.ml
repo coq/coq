@@ -45,6 +45,10 @@ let lookup_mind_specif c = lookup_mind_specif c !global_env
 let export s = export !global_env s
 let import cenv = global_env := import cenv !global_env
 
+(* Some instanciations of functions from [Environ]. *)
+
+let id_of_global = id_of_global !global_env
+
 (* Re-exported functions of [Inductive], composed with [lookup_mind_specif]. *)
 
 open Inductive

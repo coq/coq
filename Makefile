@@ -175,6 +175,12 @@ parsing/g_%.cmo: parsing/g_%.ml4 parsing/grammar.cma
 parsing/g_%.cmx: parsing/g_%.ml4 parsing/grammar.cma
 	$(OCAMLOPT) $(OPTFLAGS) -c -pp "$(CAMLP4GRAMMAR) -impl" -impl $<
 
+parsing/extend.cmo: parsing/extend.ml4 parsing/grammar.cma
+	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4GRAMMAR) -impl" -impl $<
+
+parsing/extend.cmx: parsing/extend.ml4 parsing/grammar.cma
+	$(OCAMLOPT) $(OPTFLAGS) -c -pp "$(CAMLP4GRAMMAR) -impl" -impl $<
+
 beforedepend:: $(GRAMMARCMO)
 
 # Default rules

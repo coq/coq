@@ -220,6 +220,7 @@ let map_var_env f (ENVIRON((dom,rang),r)) =
 	     (fun na x (doml,rangl) -> (na::doml,(f x)::rangl))
       	     dom rang ([],[]),r)
 
+let unitize_env env = map_rel_env (fun _ -> ()) env
 
 type ('b,'a) search_result =
   | GLOBNAME of identifier  * 'b

@@ -294,6 +294,10 @@ let is_small = function
 
 let iskind c = isprop c or is_Type c
 
+let is_existential_oper = function
+  | Evar _ -> true
+  | _ -> false
+
 let same_kind c1 c2 = (isprop c1 & isprop c2) or (is_Type c1 & is_Type c2)
 
 let rec contents_of_kind = function

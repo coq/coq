@@ -38,6 +38,10 @@ val lookup_mind_specif : constr -> mind_specif
 val export : string -> compiled_env
 val import : compiled_env -> unit
 
+(*s Some functions of [Environ] instanciated on the global environment. *)
+
+val id_of_global : sorts oper -> identifier
+
 (*s Re-exported functions of [Inductive], composed with 
     [lookup_mind_specif]. *)
 

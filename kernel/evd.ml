@@ -66,3 +66,7 @@ let is_defined sigma ev =
   not (info.evar_body = Evar_empty)
 
 let evar_hyps ev = get_globals (context ev.evar_env)
+
+let id_of_existential ev =
+  id_of_string ("?" ^ string_of_int ev)
+
