@@ -139,6 +139,8 @@ let rec vernac_com interpfun (loc,com) =
          | VernacV7only _ ->
              Options.v7_only := true;
              if !translate_file then msg (pr_comments !comments)
+	 | VernacNop ->
+             if !translate_file then msg (pr_comments !comments)
          | _ ->
 	     let fs = States.freeze () in
              if !translate_file then

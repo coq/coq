@@ -31,10 +31,16 @@ open Tacinterp
 (* Copie de Nameops *)
 let pr_id id = pr_id (Constrextern.v7_to_v8_id id)
 
-(* Copie artisanale de Libnames *)
-let pr_reference = function
-  | Qualid (_,qid) -> pr_qualid qid
-  | Ident (_,id) -> pr_id (Constrextern.v7_to_v8_id id)
+let pr_module = Libnames.pr_reference
+
+let pr_reference r =
+  try match Nametab.extended_locate (snd (qualid_of_reference r)) with
+    | TrueGlobal ref ->
+	pr_reference (Constrextern.extern_reference dummy_loc Idset.empty ref)
+    | SyntacticDef sp ->
+	pr_reference r
+  with Not_found ->
+    error_global_not_found (snd (qualid_of_reference r))
 
 let quote str = "\""^str^"\""
 
@@ -113,9 +119,9 @@ let pr_comment pr_c = function
   | CommentInt n -> int n
 
 let pr_in_out_modules = function
-  | SearchInside l -> str"inside" ++ spc() ++ prlist_with_sep sep pr_reference l
+  | SearchInside l -> str"inside" ++ spc() ++ prlist_with_sep sep pr_module l
   | SearchOutside [] -> str"outside"
-  | SearchOutside l -> str"outside" ++ spc() ++ prlist_with_sep sep pr_reference l
+  | SearchOutside l -> str"outside" ++ spc() ++ prlist_with_sep sep pr_module l
 
 let pr_search a b pr_c = match a with
   | SearchHead qid -> str"Search" ++ spc() ++ pr_reference qid ++ spc() ++ pr_in_out_modules b
@@ -568,7 +574,7 @@ let rec pr_vernac = function
       hov 1 (pr_thm_token ki ++ spc() ++ pr_id id ++ spc() ++
       (match bl with
         | [] -> mt()
-        | _ -> pr_vbinders pr_lconstr bl ++ spc()) ++ str":" ++ spc() ++ pr_lconstr c)
+        | _ -> pr_vbinders pr_lconstr bl ++ spc()) ++ str":" ++ spc() ++ pr_lconstr c ++ sep_end () ++ str "Proof")
   | VernacEndProof (opac,o) -> (match o with
     | None -> if opac then str"Qed" else str"Defined"
     | Some (id,th) -> (match th with
@@ -746,13 +752,23 @@ let rec pr_vernac = function
       |	Some flag ->
           (if flag then str"Specification" else str"Implementation") ++
           spc ()) ++
-      prlist_with_sep sep pr_reference l)
+      prlist_with_sep sep pr_module l)
   | VernacImport (f,l) ->
       (if f then str"Export" else str"Import") ++ spc() ++
-      prlist_with_sep sep pr_reference l
+      prlist_with_sep sep pr_module l
   | VernacCanonical q -> str"Canonical Structure" ++ spc() ++ pr_reference q
-  | VernacCoercion (s,id,c1,c2) -> hov 1 (str"Coercion" ++ (match s with | Decl_kinds.Local -> spc() ++ str"Local" ++ spc() | Decl_kinds.Global -> spc()) ++ pr_reference id ++ spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++ spc() ++ str">->" ++ spc() ++ pr_class_rawexpr c2)
-  | VernacIdentityCoercion (s,id,c1,c2) -> hov 1 (str"Identity Coercion" ++ (match s with | Decl_kinds.Local -> spc() ++ str"Local" ++ spc() | Decl_kinds.Global -> spc()) ++ pr_id id ++ spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++ spc() ++ str">->" ++ spc() ++ pr_class_rawexpr c2)
+  | VernacCoercion (s,id,c1,c2) ->
+      hov 1 (
+	str"Coercion" ++ (match s with | Decl_kinds.Local -> spc() ++
+	  str"Local" ++ spc() | Decl_kinds.Global -> spc()) ++
+	pr_reference id ++ spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++
+	spc() ++ str">->" ++ spc() ++ pr_class_rawexpr c2)
+  | VernacIdentityCoercion (s,id,c1,c2) ->
+      hov 1 (
+	str"Identity Coercion" ++ (match s with | Decl_kinds.Local -> spc() ++
+	  str"Local" ++ spc() | Decl_kinds.Global -> spc()) ++ pr_id id ++ 
+	spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++ spc() ++ str">->" ++
+	spc() ++ pr_class_rawexpr c2)
 
   (* Modules and Module Types *)
   | VernacDefineModule (m,bl,ty,bd) ->
@@ -898,13 +914,13 @@ let rec pr_vernac = function
       let pr_locate =function
 	| LocateTerm qid ->  pr_reference qid
 	| LocateFile f -> str"File" ++ spc() ++ qs f
-	| LocateLibrary qid -> str"Library" ++ spc () ++ pr_reference qid
+	| LocateLibrary qid -> str"Library" ++ spc () ++ pr_module qid
 	| LocateNotation s -> str ("\""^s^"\"")
       in str"Locate" ++ spc() ++ pr_locate loc
   | VernacComments l ->
       hov 2
         (str"Comments" ++ spc() ++ prlist_with_sep sep (pr_comment pr_constr) l)
-  | VernacNop -> str"Proof"
+  | VernacNop -> mt()
   
   (* Toplevel control *)
   | VernacToplevelControl exn -> pr_topcmd exn
