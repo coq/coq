@@ -47,6 +47,10 @@ let pr_module r =
     | _ -> r in
   Libnames.pr_reference r
 
+let pr_import_module =
+  (* We assume List is never imported with "Import" ... *)
+  Libnames.pr_reference
+
 let pr_reference r =
   let loc = loc_of_reference r in
   try match Nametab.extended_locate (snd (qualid_of_reference r)) with
@@ -317,10 +321,17 @@ let pr_type_option pr_c = function
   | CHole loc -> mt()
   | _ as c -> str":" ++ pr_c c
 
-let pr_decl_notation =
-  pr_opt (fun (ntn,scopt) -> 
-    str "as " ++ qsnew ntn ++
-    pr_opt (fun sc -> str " :" ++ str sc) scopt)
+let without_translation f x =
+  let old = Options.do_translate () in
+  let oldv7 = !Options.v7 in
+  Options.make_translate false;
+  try let r = f x in Options.make_translate old; Options.v7:=oldv7; r
+  with e -> Options.make_translate old; Options.v7:=oldv7; raise e
+
+let pr_decl_notation prc =
+  pr_opt (fun (ntn,c,scopt) ->
+    str "where " ++ qsnew ntn ++ str " := " ++ without_translation prc c ++
+    pr_opt (fun sc -> str ": " ++ str sc) scopt)
 
 let rec abstract_rawconstr c = function
   | [] -> c
@@ -470,6 +481,11 @@ let pr_syntax_rule (nm,s,u) = str nm ++ spc() ++ str"[" ++ pr_astpat s ++ str"]"
 let pr_syntax_entry (p,rl) =
   str"level" ++ spc() ++ int p ++ str" :" ++ fnl() ++
   prlist_with_sep (fun _ -> fnl() ++ str"| ") pr_syntax_rule rl
+
+let pr_vernac_solve (i,env,tac,deftac) =
+  (if i = 1 then mt() else int i ++ str ": ") ++
+  Pptacticnew.pr_glob_tactic env tac
+  ++ (if deftac & Pfedit.get_end_tac() <> None then str ".." else mt ())
 
 (**************************************)
 (* Pretty printer for vernac commands *)
@@ -700,18 +716,12 @@ let rec pr_vernac = function
       in
       let lparnames = List.map (fun (na,_,_) -> na) params in
       let notations = 
-        List.map2 (fun (recname,ntnopt,_,_,_) ar ->
-          option_app (fun df ->
-            let larnames =
-	      List.rev_append lparnames 
-	        (List.rev (List.map fst (fst (Term.decompose_prod ar)))) in
-	    (recname,larnames,df)) ntnopt)
-          l arityl in
+	List.fold_right (fun (_,ntnopt,_,_,_) l ->option_cons ntnopt l) l [] in
       let ind_env_params = Environ.push_rel_context params ind_env in
 
       let lparnames = List.map (fun (na,_,_) -> na) params in
-      let impl_ntns = List.map
-	(fun (recname,ntnopt,_,arityc,_) ->
+      let impl = List.map
+	(fun (recname,_,_,arityc,_) ->
 	  let arity = Constrintern.interp_type sigma env_params arityc in
 	  let fullarity =
             Termops.prod_it arity (List.map (fun (id,_,ty) -> (id,ty)) params)
@@ -724,16 +734,9 @@ let rec pr_vernac = function
 	    if Impargs.is_implicit_args_out()
 	    then Impargs.compute_implicits true env_params fullarity
 	    else [] in
-	  let notation =
-	    option_app (fun df ->
-	      (List.rev_append lparnames 
-		(List.rev (List.map fst (fst (Term.decompose_prod arity)))),
-	      df))
-	      ntnopt in
-	  (recname,impl_in,impl_out,notation)) l in
-      let impls_in = List.map (fun (id,a,_,_) -> (id,a)) impl_ntns in
-      let impls_out = List.map (fun (id,_,a,_) -> (id,a)) impl_ntns in
-      let notations = List.map (fun (id,_,_,n) -> (id,n)) impl_ntns in
+	  (recname,impl_in,impl_out)) l in
+      let impls_in = List.map (fun (id,a,_) -> (id,a)) impl in
+      let impls_out = List.map (fun (id,_,a) -> (id,a)) impl in
       Constrintern.set_temporary_implicits_in impls_in;
       Constrextern.set_temporary_implicits_out impls_out;
       (* Fin calcul implicites *)
@@ -752,13 +755,12 @@ let rec pr_vernac = function
           str key ++ spc() ++
           pr_id id ++ pr_and_type_binders_arg indpar ++ spc() ++ str":" ++ 
 	  spc() ++ pr_type s ++ 
-	  pr_decl_notation ntn ++ str" :=") ++ pr_constructor_list lc in
+	  str" :=") ++ pr_constructor_list lc ++ fnl () ++ fnl () ++
+	pr_decl_notation pr_constr ntn in
 
       (* Copie simplifiée de command.ml pour déclarer les notations locales *)
-      List.iter (fun (recname,no) ->
-	option_iter (fun (larnames,(df,scope)) ->
-	Metasyntax.add_notation_interpretation df
-	(AVar recname,larnames) scope) no) notations;
+      List.iter (fun (df,c,scope) ->
+ 	Metasyntax.add_notation_interpretation df [] c scope) notations;
 
       hov 1 (pr_oneind (if f then "Inductive" else "CoInductive") (List.hd l))
       ++ 
@@ -771,8 +773,10 @@ let rec pr_vernac = function
       (* les notations, et le contexte d'evaluation *)
       let sigma = Evd.empty
       and env0 = Global.env() in
-      let impl_ntns = List.map
-        (fun ((recname,_,arityc,_),ntnopt) -> 
+      let notations = 
+	List.fold_right (fun (_,ntnopt) l -> option_cons ntnopt l) recs [] in
+      let impl = List.map
+        (fun ((recname,_,arityc,_),_) -> 
           let arity = Constrintern.interp_type sigma env0 arityc in
 	  let impl_in =
 	    if Impargs.is_implicit_args()
@@ -782,22 +786,15 @@ let rec pr_vernac = function
 	    if Impargs.is_implicit_args_out()
 	    then Impargs.compute_implicits true env0 arity
 	    else [] in
-	  let notations = 
-	    option_app (fun ntn ->
-              let larnames = List.map fst (fst (Term.decompose_prod arity)) in
-	      (List.rev larnames,ntn)) ntnopt in
-	  (recname,impl_in,impl_out,notations)) recs in
-      let impls_in = List.map (fun (id,a,_,_) -> (id,a)) impl_ntns in
-      let impls_out = List.map (fun (id,_,a,_) -> (id,a)) impl_ntns in
-      let notations = List.map (fun (id,_,_,n) -> (id,n)) impl_ntns in
+	  (recname,impl_in,impl_out)) recs in
+      let impls_in = List.map (fun (id,a,_) -> (id,a)) impl in
+      let impls_out = List.map (fun (id,_,a) -> (id,a)) impl in
       Constrintern.set_temporary_implicits_in impls_in;
       Constrextern.set_temporary_implicits_out impls_out;
 
       (* Copie simplifiée de command.ml pour déclarer les notations locales *)
-      List.iter (fun (recname,no) ->
-	option_iter (fun (larnames,(df,scope)) ->
-	Metasyntax.add_notation_interpretation df
-	(AVar recname,larnames) scope) no) notations;
+      List.iter (fun (df,c,scope) ->
+	Metasyntax.add_notation_interpretation df [] c None) notations;
 
       let rec_sign = 
         List.fold_left 
@@ -827,7 +824,8 @@ let rec pr_vernac = function
 		true (abstract_rawconstr (CCast (dummy_loc,def,type_)) bl) in
             pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_type c) type_
-            ++ pr_decl_notation ntn ++ str" :=" ++ brk(1,1) ++ ppc
+            ++ str" :=" ++ brk(1,1) ++ ppc ++ fnl () ++ fnl () ++
+	    pr_decl_notation pr_constr ntn
       in
       hov 1 (str"Fixpoint" ++ spc() ++
         prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onerec recs)
@@ -881,7 +879,7 @@ let rec pr_vernac = function
       prlist_with_sep sep pr_module l)
   | VernacImport (f,l) ->
       (if f then str"Export" else str"Import") ++ spc() ++
-      prlist_with_sep sep pr_module l
+      prlist_with_sep sep pr_import_module l
   | VernacCanonical q -> str"Canonical Structure" ++ spc() ++ pr_reference q
   | VernacCoercion (s,id,c1,c2) ->
       hov 1 (
@@ -914,10 +912,12 @@ let rec pr_vernac = function
 
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
-      (if i = 1 then mt() else int i ++ str ": ") ++
-(*      str "By " ++*)
-      Options.with_option Options.translate_syntax (pr_raw_tactic_goal i) tac
-      ++ (if deftac & Pfedit.get_end_tac() <> None then str ".." else mt ())
+      (* Normally shunted by vernac.ml *)
+      let (_,env) = Pfedit.get_goal_context i in
+      let tac = 
+	Options.with_option Options.translate_syntax 
+	  (Tacinterp.glob_tactic_env [] env) tac in
+      pr_vernac_solve (i,env,tac,deftac)
 
   | VernacSolveExistential (i,c) ->
       str"Existential " ++ int i ++ pr_lconstrarg c
@@ -1119,6 +1119,10 @@ let pr_vernac = function
 	 "SpecifSyntax"; "PeanoSyntax"; "TypeSyntax"; "PolyListSyntax"] ->
       warning ("Forgetting obsolete module "^(string_of_id r));
       mt()
+  | VernacImport (false,[Libnames.Ident (_,a)]) when
+      (* Pour ceux qui ont utilisé la couche "Import *_scope" de compat *)
+      let a = Names.string_of_id a in
+      a = "nat_scope" or a = "Z_scope" or a = "R_scope" -> mt()
   | VernacSyntax _  | VernacGrammar _ as x -> pr_vernac x
   | x -> pr_vernac x ++ sep_end ()
 
