@@ -294,7 +294,7 @@ let print_inductive sp = (print_mutual sp ++ fnl ())
 let print_syntactic_def sep sp =
   let id = basename sp in
   let c = Syntax_def.search_syntactic_definition sp in 
-  (str" Syntactif Definition " ++ pr_id id ++ str sep ++ pr_rawterm c ++ fnl ())
+  (str" Syntactic Definition " ++ pr_id id ++ str sep ++ pr_rawterm c ++ fnl ())
 
 let print_leaf_entry with_values sep (sp,lobj) =
   let tag = object_tag lobj in
