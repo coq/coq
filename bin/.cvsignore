@@ -11,3 +11,4 @@ coq-extraction
 coq-interface
 parser
 coq_vo2xml
+coq-interface.opt
