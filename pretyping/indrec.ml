@@ -149,13 +149,13 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
 		      (nhyps-1) (i::li))
              | Some(dep',p) -> 
 		 let nP = lift (i+1+decP) p in
-		 let t_0 = process_pos env dep' nP (lift 1 t) in 
+                 let env' = push_rel (n,None,t) env in
+                 let t_0 = process_pos env' dep' nP (lift 1 t) in 
 		 make_prod_dep (dep or dep') env
                    (n,t,
 		    mkArrow t_0
 		      (process_constr
-			 (push_rel (n,None,t)
-			    (push_rel (Anonymous,None,t_0) env))
+			(push_rel (Anonymous,None,t_0) env')
 			 (i+2) (lift 1 c_0) rest (nhyps-1) (i::li))))
       | LetIn (n,b,t,c_0) ->
 	  mkLetIn (n,b,t,
@@ -215,9 +215,10 @@ let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs =
 		    (cprest,rest))
            | Some(_,f_0) -> 
 	       let nF = lift (i+1+decF) f_0 in
-	       let arg = process_pos env nF (lift 1 (body_of_type t)) in 
+               let env' = push_rel d env in
+               let arg = process_pos env' nF (lift 1 t) in 
                lambda_name env
-		 (n,t,process_constr (push_rel d env) (i+1)
+		 (n,t,process_constr env' (i+1)
 		    (whd_beta (applist (lift 1 f, [(mkRel 1); arg])))
 		    (cprest,rest)))
     | (n,Some c,t as d)::cprest, rest ->
