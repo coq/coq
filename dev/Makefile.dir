@@ -107,6 +107,13 @@ pretty:	depend.ps
 	echo Generated interface file $@ ; \
 	mv -f $$cmo.tmp $$cmo)
 
+%.annot:	FORCE
+	@(cmo=`basename $@ .annot`.cmo ; \
+	mv -f $$cmo $$cmo.tmp ; \
+	$(MAKE) -s -C $(TOPDIR) $(BASEDIR)/$$cmo CAMLDEBUG=-dtypes ; \
+	echo Generated annotation file $@ ; \
+	mv -f $$cmo.tmp $$cmo)
+
 FORCE:
 
 clean::
@@ -114,11 +121,10 @@ clean::
 
 # this is not perfect but mostly WORKS! It just calls the main makefile
 
-%.cmi:	*.mli
+%.cmi:	FORCE
 	$(MAKE) -C $(TOPDIR) $(BASEDIR)/$@
 
-SOURCES=$(wildcard *.mli) $(wildcard *.ml) $(wildcard *.ml4)
-%.cmo:	$(SOURCES)
+%.cmo:	FORCE
 	$(MAKE) -C $(TOPDIR) $(BASEDIR)/$@
 
 coqtop:	
