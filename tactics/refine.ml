@@ -337,9 +337,19 @@ let rec tcc_aux subst (TH (c,mm,sgp) as th) gl =
 
 (* Et finalement la tactique refine elle-même : *)
 
+let coerce_to_goal (sigma,c) gl =
+  let env = pf_env gl in
+  let evars = Evd.create_evar_defs sigma in
+  let j = Retyping.get_judgment_of env sigma c in
+  let ccl = pf_concl gl in
+  let (evars,j) = Coercion.inh_conv_coerce_to dummy_loc env evars j ccl in
+  let sigma = Evd.evars_of evars in
+  (sigma,Reductionops.nf_evar sigma j.Environ.uj_val)
+
 let refine oc gl =
   let sigma = project gl in
   let env = pf_env gl in
+  let oc = coerce_to_goal oc gl in
   let (_gmm,c) = Evarutil.exist_to_meta sigma oc in
   (* Relies on Cast's put on Meta's by exist_to_meta, because it is otherwise 
      complicated to update gmm when passing through a binder *)
