@@ -256,6 +256,10 @@ let interp_mutual lparams lnamearconstrs finite =
   let env_params, params =
     List.fold_left
       (fun (env, params) d -> match d with
+	| LocalRawAssum ([_,na],(CHole _ as t)) ->
+	    let t = interp_binder sigma env na t in
+	    let d = (na,None,t) in
+	    (push_rel d env, d::params)
 	| LocalRawAssum (nal,t) ->
 	    let t = interp_type sigma env t in
 	    let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
@@ -394,11 +398,6 @@ let build_mutual lind finite =
     option_iter (fun (_,names,(df,scope)) ->
       Metasyntax.add_notation_interpretation df
         (ARef (IndRef (kn,i)),names) scope)) notations;
-  list_iter_i (fun i (_,_,_,_,lc) ->
-    Symbols.declare_ref_arguments_scope (IndRef (kn,i));
-    for j=1 to List.length lc do
-      Symbols.declare_ref_arguments_scope (ConstructRef ((kn,i),j));
-    done) lind;
   List.iter
     (fun id -> 
       Class.try_add_new_coercion (locate (make_short_qualid id)) Global) coes
