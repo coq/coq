@@ -68,7 +68,8 @@ val reduce_to_quantified_ref :
 
 type red_expr = (constr, evaluable_global_reference) red_expr_gen
 
-val contextually : constr occurrences -> reduction_function->reduction_function
+val contextually : bool -> constr occurrences -> reduction_function
+  -> reduction_function
 val reduction_of_redexp : red_expr -> reduction_function
 
 val declare_red_expr : string -> reduction_function -> unit

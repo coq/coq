@@ -606,7 +606,7 @@ let is_head c t =
     | App (f,_) -> f = c
     | _ -> false
 
-let contextually (locs,c) f env sigma t =
+let contextually byheadalso (locs,c) f env sigma t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref 1 in
   let check = ref true in
@@ -617,7 +617,7 @@ let contextually (locs,c) f env sigma t =
    let rec traverse (env,c as envc) t =
     if locs <> [] & (not except) & (!pos > maxocc) then t
     else
-    if eq_constr c t or is_head c t then
+    if eq_constr c t or (byheadalso & is_head c t) then
       let r =
 	if except then 
 	  if List.mem (- !pos) locs then t else f env sigma t
@@ -843,7 +843,7 @@ let declare_red_expr s f =
 let reduction_of_redexp = function
   | Red internal -> if internal then internal_red_product else red_product
   | Hnf -> hnf_constr
-  | Simpl (Some lp) -> contextually lp nf
+  | Simpl (Some lp) -> contextually true lp nf
   | Simpl None -> nf
   | Cbv f -> cbv_norm_flags (make_flag f)
   | Lazy f -> clos_norm_flags (make_flag f)

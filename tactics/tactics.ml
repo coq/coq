@@ -181,7 +181,7 @@ let change_and_check cv_pb t env sigma c =
 (* Use cumulutavity only if changing the conclusion not a subterm *)
 let change_on_subterm cv_pb t = function
   | None -> change_and_check cv_pb t
-  | Some occl -> contextually occl (change_and_check CONV t) 
+  | Some occl -> contextually false occl (change_and_check CONV t) 
 
 let change_in_concl occl t = reduct_in_concl (change_on_subterm CUMUL t occl) 
 let change_in_hyp occl t   = reduct_in_hyp (change_on_subterm CONV t occl)
