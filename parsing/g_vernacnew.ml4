@@ -367,7 +367,7 @@ GEXTEND Gram
       ] ]
   ;
   with_declaration:
-    [ [ IDENT "Definition"; id = base_ident; ":="; c = Constr.constr ->
+    [ [ "Definition"; id = base_ident; ":="; c = Constr.constr ->
           CWith_Definition (id,c)
       | IDENT "Module"; id = base_ident; ":="; qid = qualid ->
 	  CWith_Module (id,qid)

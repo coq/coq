@@ -213,7 +213,7 @@ GEXTEND Gram
   ;
   hypident:
     [ [ id = id_or_meta -> InHyp id
-      | "("; "type"; "of"; id = id_or_meta; ")" -> InHypType id ] ]
+      | "("; IDENT "type"; "of"; id = id_or_meta; ")" -> InHypType id ] ]
   ;
   clause:
     [ [ "in"; idl = LIST1 hypident -> idl
