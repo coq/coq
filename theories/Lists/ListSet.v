@@ -8,12 +8,10 @@
 
 (*i $Id$ i*)
 
-(** A Library for finite sets, implemented as lists 
-    A Library with similar interface will soon be available under
-    the name TreeSet in the theories/Trees directory *)
+(** A Library for finite sets, implemented as lists *)
 
-(** PolyList is loaded, but not exported.
-    This allow to "hide" the definitions, functions and theorems of PolyList
+(** List is loaded, but not exported.
+    This allow to "hide" the definitions, functions and theorems of List
     and to see only the ones of ListSet *)
 
 Require Import List.

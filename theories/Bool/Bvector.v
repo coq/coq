@@ -17,7 +17,7 @@ Require Import Arith.
 Open Local Scope nat_scope.
 
 (*  
-On s'inspire de PolyList pour fabriquer les vecteurs de bits.
+On s'inspire de List.v pour fabriquer les vecteurs de bits.
 La dimension du vecteur est un paramètre trop important pour
 se contenter de la fonction "length".
 La première idée est de faire un record avec la liste et la longueur.
@@ -26,42 +26,9 @@ de nombreux lemmes pour gerer les longueurs.
 La seconde idée est de faire un type dépendant dans lequel la
 longueur est un paramètre de construction. Cela complique un
 peu les inductions structurelles, la solution qui a ma préférence
-est alors d'utiliser un terme de preuve comme définition.
-
-(En effet une définition comme :
-Fixpoint Vunaire [n:nat; v:(vector n)]: (vector n) :=
-Cases v of
-	| Vnil => Vnil
-	| (Vcons a p v') => (Vcons (f a) p (Vunaire p v'))
-end.
-provoque ce message d'erreur :
-Coq < Error: Inference of annotation not yet implemented in this case).
-
-
-	Inductive list [A : Set]  : Set :=
-		nil : (list A) | cons : A->(list A)->(list A).
-	head = [A:Set; l:(list A)] Cases l of
-			| nil => Error
- 			| (cons x _) => (Value x)
- 			end
-     		: (A:Set)(list A)->(option A).
-	tail = [A:Set; l:(list A)]Cases l of
-                   			| nil => (nil A)
-                   			| (cons _ m) => m
-                   			end
-     		: (A:Set)(list A)->(list A).
-	length = [A:Set] Fix length {length [l:(list A)] : nat :=
-      		Cases l of
-       			| nil => O
-      			| (cons _ m) => (S (length m))
-      		end}
-     		: (A:Set)(list A)->nat.
-	map = [A,B:Set; f:(A->B)] Fix map {map [l:(list A)] : (list B) :=
-		Cases l of
-			| nil => (nil B)
-			| (cons a t) => (cons (f a) (map t))
-		end}
-		: (A,B:Set)(A->B)->(list A)->(list B)
+est alors d'utiliser un terme de preuve comme définition, car le
+mécanisme d'inférence du type du filtrage n'est pas aussi puissant que
+celui implanté par les tactiques d'élimination.
 *)
 
 Section VECTORS.
@@ -141,13 +108,6 @@ Proof.
 	exact (Vcons a (S (S n)) (f H0)).
 Defined.
 
-(*
-Lemma S_minus_S : (n,p:nat) (gt n (S p)) -> (S (minus n (S p)))=(minus n p).
-Proof.
-  Intros.
-Save.
-*)
-
 Lemma Vtrunc : forall n p:nat, n > p -> vector n -> vector (n - p).
 Proof.
 	induction p as [| p f]; intros H v.
@@ -203,7 +163,7 @@ Implicit Arguments Vcons [A n].
 
 Section BOOLEAN_VECTORS.
 
-(* 
+(*
 Un vecteur de bits est un vecteur sur l'ensemble des booléens de longueur fixe. 
 ATTENTION : le stockage s'effectue poids FAIBLE en tête.
 On en extrait le bit  de poids faible (head) et la fin du vecteur (tail).
