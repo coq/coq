@@ -12,6 +12,50 @@ open Pp
 open Util
 open Unix
 
+(* Expanding shell variables and home-directories *)
+
+let safe_getenv_def var def =
+  try 
+    print_string var;
+    Sys.getenv var
+  with Not_found ->
+    warning ("Environment variable "^var^" not found: using '"^def^"' .");
+    flush Pervasives.stdout;
+    def
+
+let home = (safe_getenv_def "HOME" ".")
+
+let safe_getenv n = safe_getenv_def n ("$"^n)
+
+let rec expand_atom s i =
+  let l = String.length s in
+  if i<l && (is_digit s.[i] or is_letter s.[i] or s.[i] = '_')
+  then expand_atom s (i+1)
+  else i
+
+let rec expand_macros b s i =
+  let l = String.length s in
+  if i=l then s else
+    match s.[i] with
+      | '$' -> 
+	  let n = expand_atom s (i+1) in
+	  let v = safe_getenv (String.sub s (i+1) (n-i-1)) in
+	  let s = (String.sub s 0 i)^v^(String.sub s n (l-n)) in
+	  expand_macros false s (i + String.length v)
+      | '/' ->
+	  expand_macros true s (i+1)
+      | '~' ->
+	  let n = expand_atom s (i+1) in
+	  let v =
+	    if n=i+1 then home
+	    else (getpwnam (String.sub s (i+1) (n-i-1))).pw_dir
+	  in
+	  let s = v^(String.sub s n (l-n)) in
+	  expand_macros false s (String.length v)
+      | c -> expand_macros false s (i+1)
+
+let glob s = expand_macros true s 0
+
 (* Files and load path. *)
 
 type physical_path = string
@@ -51,19 +95,6 @@ let all_subdirs ~unix_path:root =
    end ;
   List.rev !l
 
-let safe_getenv_def var def =
-  try 
-    Sys.getenv var
-  with Not_found ->
-    warning ("Environnement variable "^var^" not found: using '"^def^"' .");
-    flush Pervasives.stdout;
-    def
-
-let home = (safe_getenv_def "HOME" ".")
-
-(* TODO: rétablir glob (expansion ~user et $VAR) si on le juge nécessaire *)
-let glob s = s
-
 let search_in_path path filename =
   let rec search = function
     | lpe :: rem ->
@@ -102,7 +133,7 @@ let file_readable_p na =
   try access (glob na) [R_OK];true with Unix_error (_, _, _) -> false
 
 let open_trapping_failure open_fun name suffix =
-  let rname = make_suffix name suffix in
+  let rname = glob (make_suffix name suffix) in
   try open_fun rname with _ -> error ("Can't open " ^ rname)
 
 let try_remove f =
