@@ -190,7 +190,10 @@ let escape len c = store len c
 
 let rec string bp len = parser
   | [< ''"' >] -> len
-  | [< ''\\'; 'c; s >] -> string bp (escape len c) s
+(* Uncomment to allow '"' in strings
+  | [< ''\\'; c = (parser [< ' ('"' | '\\' as c) >] -> c | [< >] -> '\\'); s >]
+     -> string bp (escape len c) s
+*)
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
   | [< 'c; s >] -> string bp (store len c) s 
 

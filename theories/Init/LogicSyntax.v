@@ -17,8 +17,8 @@ Notation "< P , Q > { p , q }" := (conj P Q p q) (at level 1).
 Notation "~ x" := (not x) (at level 5, right associativity).
 Notation "x = y" := (eq ? x y) (at level 5, no associativity).
 
-Infix RIGHTA 6 "/\\" and.
-Infix RIGHTA 7 "\\/" or.
+Infix RIGHTA 6 "/\" and.
+Infix RIGHTA 7 "\/" or.
 Infix RIGHTA 8 "<->" iff.
 
 Notation "'IF' c1 'then' c2 'else' c3" := (IF c1 c2 c3)
