@@ -189,6 +189,7 @@ type frozen = library_segment
 
 let freeze () = !lib_stk
 
+(* module_name is not set ? *)
 let unfreeze stk =
   lib_stk := stk;
   recalc_path_prefix ()

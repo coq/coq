@@ -43,6 +43,29 @@ let rec and_status = function
   | Complete_proof :: l -> and_status l
   | _ -> Incomplete_proof
 
+(* Normalizing evars in the whole proof tree. Called when the sigma of
+   the proof tree changes. *)
+let norm_goal sigma gl =
+  let red_fun = nf_ise1 sigma in
+  let ncl = red_fun gl.evar_concl in
+  { evar_concl = ncl;
+    evar_env = change_hyps (map_sign_typ (typed_app red_fun)) gl.evar_env;
+    evar_body = gl.evar_body;
+    evar_info = gl.evar_info }
+
+let rec norm_evar_pf sigma p =
+  match p.ref with
+      None -> { status = p.status;
+		subproof = p.subproof;
+		goal = norm_goal sigma p.goal;
+		ref=None }
+    | Some(r,pfl) ->
+	{ status = p.status;
+          subproof= p.subproof;
+          goal = p.goal;
+          ref = Some(r, List.map (norm_evar_pf sigma) pfl)}
+
+
 (* mapshape [ l1 ; ... ; lk ] [ v1 ; ... ; vk ] [ p_1 ; .... ; p_(l1+...+lk) ]
    gives
    [ (v1 [p_1 ... p_l1]) ; (v2 [ p_(l1+1) ... p_(l1+l2) ]) ; ... ;
@@ -273,21 +296,6 @@ let extract_proof sign pf =
     | _ -> errorlabstrm "extract_proof"
 	  [< 'sTR "Attempt to save an incomplete proof" >]
 
-(* whd_evar goes through existential variables when they are defined *)
-
-let rec whd_evar env sigma k = 
-  let (ev,_) = destEvar k in
-  if Evd.is_defined sigma ev then 
-    whd_evar env sigma (existential_value sigma k)
-  else 
-    k
-
-(* expanses every existential constant and compute the normal form
-   through beta iota reduction *)
-
-let rec expand_evars env sigma c = 
-  nf_betaiota env sigma (strong whd_evar env sigma c)
-
 
 (*********************)
 (*   Tacticals       *)
@@ -308,236 +316,179 @@ let apply_sig_tac r tac g =
   r := glsigma.sigma;
   (glsigma.it,v)
 
+let idtac_valid = function
+    [pf] -> pf
+  | _ -> anomaly "Refiner.idtac_valid"
+;;
+
+(* goal_goal_list : goal sigma -> goal list sigma *)
+let goal_goal_list gls = {it=[gls.it];sigma=gls.sigma};;
+
 (* the identity tactic *)
+let tclIDTAC gls = (goal_goal_list gls, idtac_valid);;
 
-let tclIDTAC gls = 
-  { it = [gls.it]; sigma = gls.sigma },
-  (function 
-     | [pf] -> pf 
-     | _ -> anomalylabstrm "Refiner.tclIDTAC"
-	   [< 'sTR "tclIDTAC validation is applicable only to"; 'sPC;
-	      'sTR "a one-proof list" >])
+(* General failure tactic *)
+let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" [< 'sTR s>];;
+let tclFAIL = tclFAIL_s "Failtac always fails.";;
+let start_tac gls =
+  let (sigr,g) = unpackage gls in
+  (sigr,[g],idtac_valid)
+;;
 
-let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" [< 'sTR s>]
-let (tclFAIL : tactic) = 
-  fun _ -> errorlabstrm "Refiner.tclFAIL" [< 'sTR"Failtac always fails.">]
+let finish_tac (sigr,gl,p) = (repackage sigr gl, p);;
 
-(* solve_subgoal n tac pf_sigma applies the tactic tac at the nth subgoal of
-   pf_sigma *)
+let thens_tac tac2l taci (sigr,gs,p) =
+  let (gl,gi) =
+    try list_chop (List.length tac2l) gs
+    with Failure _ -> errorlabstrm "Refiner.combine_tactics"
+        [<'sTR "Wrong number of tactics.">] in
+  let tac2gl =
+    List.combine gl tac2l @ list_map_i (fun i g -> (g, taci i)) 0 gi in
+  let gll,pl =
+    List.split(List.map (fun (g,tac2) -> apply_sig_tac sigr tac2 g) tac2gl) in
+  (sigr, List.flatten gll,
+   compose p (mapshape (List.map List.length gll) pl))
+;;
+
+let then_tac tac = thens_tac [] (fun _ -> tac);;
+
 
 let non_existent_goal n =
   errorlabstrm ("No such goal: "^(string_of_int n))
     [< 'sTR"Trying to apply a tactic to a non existent goal" >]
+;;
 
-let solve_subgoal n tac pf_sigma =
-  let (sigr,pf) = unpackage pf_sigma in
-  let gl,p = frontier pf in
-  if gl = [] then errorlabstrm "solve_subgoal" [< 'sTR"No more subgoals.">];
-  if List.length gl < n then non_existent_goal n;
-  let tac2 i = if i = n then tac else tclIDTAC in
-  let gll,pl = 
-    List.split (list_map_i (fun n -> apply_sig_tac sigr (tac2 n)) 1 gl)
-  in 
-  repackage sigr (compose p (mapshape (List.map List.length gll) pl) 
-                    (List.map leaf (List.flatten gll)))
+(* Apply tac on the i-th goal (if i>0). If i<0, then start counting from
+   the last goal (i=-1). *)
+let theni_tac i tac ((_,gl,_) as subgoals) =
+  let nsg = List.length gl in
+  let k = if i < 0 then nsg + i else (i-1) in
+  if nsg < 1 then errorlabstrm "theni_tac" [< 'sTR"No more subgoals.">]
+  else if k >= 0 & k < nsg then
+    thens_tac [] (fun i -> if i = k then tac else tclIDTAC) subgoals
+  else non_existent_goal (k+1) 
+;;
+
+
+(* tclTHENSi tac1 [t1 ; ... ; tn] taci gls applies the tactic tac1 to gls and
+   applies t1,..., tn to the n first resulting subgoals, and (taci i) to the
+   (i+n+1)-th goal. Raises an error if the number of resulting subgoals
+   is less than n *)
+let tclTHENSi tac1 tac2l taci gls =
+  finish_tac (thens_tac tac2l taci (then_tac tac1 (start_tac gls)))
+;;
 
 (* tclTHEN tac1 tac2 gls applies the tactic tac1 to gls and applies tac2 to
    every resulting subgoals *)
+let tclTHEN tac1 tac2 = tclTHENSi tac1 [] (fun _ -> tac2);;
 
-let tclTHEN (tac1:tactic) (tac2:tactic) (gls:goal sigma) =
-  let (sigr,g) = unpackage gls in
-  let gl,p = apply_sig_tac sigr tac1 g in
-  let gll,pl = List.split(List.map (apply_sig_tac sigr tac2) gl) in
-  (repackage sigr (List.flatten gll), 
-   compose p (mapshape(List.map List.length gll)pl))
+(* tclTHEN_i tac1 tac2 n gls applies the tactic tac1 to gls and applies
+   tac2 (i+n-1) to the i_th resulting subgoal *)
+let tclTHEN_i tac1 tac2 n = tclTHENSi tac1 [] (fun i -> tac2 (i+n));;
+
+(* tclTHENS tac1 [t1 ; ... ; tn] gls applies the tactic tac1 to gls and applies
+   t1,..., tn to the n resulting subgoals. Raises an error if the number of
+   resulting subgoals is not n *)
+let tclTHENS tac1 tac2l =
+  tclTHENSi tac1 tac2l (fun _ -> tclFAIL_s "Wrong number of tactics.");;
+
+(* Same as tclTHENS but completes with Idtac if the number resulting subgoals
+  is strictly less than n *)
+let tclTHENSI tac1 tac2l = tclTHENSi tac1 tac2l (fun _ -> tclIDTAC);;
+
+
+(* tclTHENL tac1 tac2 gls applies the tactic tac1 to gls and tac2
+   to the last resulting subgoal *)
+let tclTHENL (tac1:tactic) (tac2:tactic) (gls:goal sigma) =
+  finish_tac (theni_tac (-1) tac2 (then_tac tac1 (start_tac gls)))
+;;
 
 (* tclTHENLIST [t1;..;tn] applies t1;..tn. More convenient than tclTHEN
    when n is large. *)
 let rec tclTHENLIST = function
-  | [] -> tclIDTAC
+    [] -> tclIDTAC
   | t1::tacl -> tclTHEN t1 (tclTHENLIST tacl)
+;;
 
-(* tclTHEN_i tac1 tac2 n gls applies the tactic tac1 to gls and applies
-   tac2 (i+n-1) to the i_th resulting subgoal *)
 
-let tclTHEN_i (tac1:tactic) (tac2:(int -> tactic)) n (gls:goal sigma) =
-  let (sigr,g) = unpackage gls in
-  let gl,p = apply_sig_tac sigr tac1 g in
-  let gll,pl = 
-    List.split (list_map_i (fun k -> apply_sig_tac sigr (tac2 k)) n gl) 
-  in
-  (repackage sigr (List.flatten gll), 
-   compose p (mapshape(List.map List.length gll)pl))
 
-(* tclTHENS tac1 [t1 ; ... ; tn] gls applies the tactic tac1 to gls
-   and applies t1,..., tn to the n resulting subgoals. Raises an error if
-   the number of resulting subgoals is not n *)
+(* various progress criterions *)
+let same_goal gl subgoal = 
+  (hypotheses subgoal) = (hypotheses gl) &
+  eq_constr (conclusion subgoal) (conclusion gl) &
+  (subgoal.evar_info = gl.evar_info)
+;;
 
-let tclTHENS (tac1:tactic) (tac2l:tactic list) (gls:goal sigma) =
-  let (sigr,g) = unpackage gls in
-  let gl,p = apply_sig_tac sigr tac1 g  in
-  let tac2gl = 
-    try List.combine tac2l gl
-    with Invalid_argument _ -> errorlabstrm "Refiner.tclTHENS"
-        [<'sTR "Wrong number of tactics.">]
-  in
-  let gll,pl = 
-    List.split (List.map (fun (tac2,g) -> apply_sig_tac sigr tac2 g) tac2gl)
-  in
-  (repackage sigr (List.flatten gll), 
-   compose p (mapshape(List.map List.length gll)pl))
+let weak_progress gls ptree =
+  (List.length gls.it <> 1) or 
+  (not (same_goal (List.hd gls.it) ptree.it))
+;;
 
-(* tclTHENL tac1 tac2 gls applies the tactic tac1 to gls and tac2
-   to the last resulting subgoal *)
-
-let tclTHENL (tac1:tactic) (tac2:tactic) (gls:goal sigma) =
-  let (sigr,g) = unpackage gls in
-  let gl,p = apply_sig_tac sigr tac1 g in 
-  if List.length gl = 0 then
-    errorlabstrm "Refiner.tclTHENL" [< 'sTR"No resulting subgoal.">];
-  let g,rest = list_sep_last gl in
-  let tac2l = (List.map (fun _ -> tclIDTAC) rest)@[tac2] in
-  let tac2gl = 
-    try List.combine tac2l gl
-    with Invalid_argument _ -> errorlabstrm "Refiner.tclTHENL"
-        [<'sTR "Wrong number of tactics.">]
-  in
-  let gll,pl = 
-    List.split (List.map (fun (tac2,g) -> apply_sig_tac sigr tac2 g) tac2gl)
-  in
-  (repackage sigr (List.flatten gll), 
-   compose p (mapshape(List.map List.length gll)pl))
-
-(* Completes by Idtac if there is not tactic enough for tac1;[t1|...|tn] *)
-
-let idtac_completion lac gl=
-  let nl = ref lac
-  and lthlac = List.length lac
-  and lthgl = List.length gl in
-  if lthlac > lthgl then failwith "idtac_completion";
-  for i = 0 to lthgl-lthlac-1 do
-    nl := !nl @ [tclIDTAC]
-  done;
-  !nl
-
-(* Same as tclTHENS but completes with Idtac if the number resulting
-  subgoals is strictly less than n *)
-
-let tclTHENSI (tac1:tactic) (tac2l:tactic list) (gls:goal sigma) =
-  let (sigr,g) = unpackage gls in
-  let gl,p = apply_sig_tac sigr tac1 g  in
-  let ntac2l=
-    try (idtac_completion tac2l gl)
-    with
-	Failure "idtac_completion" ->
-          errorlabstrm "Refiner.tclTHENSI" 
-	    [<'sTR "Too many tactics for the generated subgoals.">]
-  in
-  let tac2gl = List.combine ntac2l gl in
-  let gll,pl = 
-    List.split (List.map (fun (tac2,g) -> apply_sig_tac sigr tac2 g) tac2gl)
-  in
-  (repackage sigr (List.flatten gll), 
-   compose p (mapshape(List.map List.length gll)pl))
+let progress gls ptree =
+  (weak_progress gls ptree) or
+  (not (ts_eq ptree.sigma gls.sigma))
+;;
 
 (* PROGRESS tac ptree applies tac to the goal ptree and fails if tac leaves
-   the goal unchanged *)
-
-let tclPROGRESS (tac:tactic) (ptree : goal sigma) =
-  let rslt = tac ptree in 
-  if (List.length (fst rslt).it) = 1 then begin
-    let subgoal = List.hd (fst rslt).it in 
-    if (hypotheses subgoal) = (hypotheses ptree.it) &&
-       (conclusion subgoal) = (conclusion ptree.it) &&
-       (subgoal.evar_info = ptree.it.evar_info) &&
-       ts_eq ptree.sigma (fst rslt).sigma then
-         errorlabstrm "Refiner.PROGRESS" [< 'sTR"Failed to progress.">];
-    rslt
-  end else 
-    rslt
+the goal unchanged *)
+let tclPROGRESS tac ptree =
+  let rslt = tac ptree in
+  if progress (fst rslt) ptree then rslt
+  else errorlabstrm "Refiner.PROGRESS" [< 'sTR"Failed to progress.">]
 
 (* weak_PROGRESS tac ptree applies tac to the goal ptree and fails 
    if tac leaves the goal unchanged, possibly modifying sigma *)
-
-let tclWEAK_PROGRESS (tac:tactic) (ptree : goal sigma) =
-  let rslt = tac ptree in 
-  if (List.length (fst rslt).it) = 1 then begin
-    let subgoal = List.hd (fst rslt).it in 
-    if (hypotheses subgoal) = (hypotheses ptree.it) &&
-       eq_constr (conclusion subgoal) (conclusion ptree.it) &&
-       (subgoal.evar_info = ptree.it.evar_info) then
-         errorlabstrm "Refiner.tclWEAK_PROGRESS" 
-	   [< 'sTR"Failed to progress.">];
-    rslt
-  end else 
-    rslt
+let tclWEAK_PROGRESS tac ptree =
+  let rslt = tac ptree in
+  if weak_progress (fst rslt) ptree then rslt
+  else errorlabstrm "Refiner.tclWEAK_PROGRESS" [< 'sTR"Failed to progress.">]
+;;
 
 (* Same as tclWEAK_PROGRESS but fails also if tactics generates several goals,
    one of them being identical to the original goal *)
+let tclNOTSAMEGOAL (tac:tactic) goal =
+  let rslt = tac goal in
+  let gls = (fst rslt).it in
+  if List.exists (same_goal goal.it) gls
+  then errorlabstrm "Refiner.tclNOTSAMEGOAL" 
+      [< 'sTR"Tactic generated a subgoal identical to the original goal.">]
+  else rslt
+;;
 
-let tclNOTSAMEGOAL (tac:tactic) (ptree : goal sigma) =
-  let rslt = tac ptree in 
-  let gls = (fst rslt).it in 
-  let same_goal subgoal = 
-    (hypotheses subgoal) = (hypotheses ptree.it) &
-    eq_constr (conclusion subgoal) (conclusion ptree.it) &
-    (subgoal.evar_info = ptree.it.evar_info)
-  in 
-  if List.exists same_goal gls then 
-    errorlabstrm "Refiner.tclNOTSAMEGOAL" 
-      [< 'sTR"Tactic generated a subgoal identical to the original goal.">];
-  rslt
 
-(* ORELSE0 f1 f2 tries to apply f1 and if it fails, applies f2 *)
-let tclORELSE0 f1 f2 g =
+(* ORELSE0 t1 t2 tries to apply t1 and if it fails, applies t2 *)
+let tclORELSE0 t1 t2 g =
   try 
-    f1 g
+    t1 g
   with UserError _ | TypeError _ | RefinerError _
      | Stdpp.Exc_located(_,(UserError _ | TypeError _ | RefinerError _)) -> 
-    f2 g
+    t2 g
 
-(* ORELSE f1 f2 tries to apply f1 and if it fails or does not progress, 
-   then applies f2 *)
-
-let tclORELSE (f1:tactic) (f2:tactic) (g:goal sigma) =
-  try 
-    (tclPROGRESS f1) g
-  with UserError _ | TypeError _ | RefinerError _
-     | Stdpp.Exc_located(_,(UserError _ | TypeError _ | RefinerError _)) ->
-    f2 g 
+(* ORELSE t1 t2 tries to apply t1 and if it fails or does not progress, 
+   then applies t2 *)
+let tclORELSE t1 t2 = tclORELSE0 (tclPROGRESS t1) t2
 
 (* TRY f tries to apply f, and if it fails, leave the goal unchanged *)
+let tclTRY f = (tclORELSE0 f tclIDTAC)
 
-let tclTRY (f:tactic) = (tclORELSE f tclIDTAC)
+let tclTHENTRY f g = (tclTHEN f (tclTRY g))
 
-let tclTHENTRY (f:tactic) (g:tactic) = (tclTHEN f (tclTRY g))
-
-let tclCOMPLETE (tac:tactic) goal =
-  let achievement = tac goal in 
-  if (fst achievement).it <> [] then
-    errorlabstrm "Refiner.COMPLETE" [< 'sTR "Proof is not complete" >];
-  achievement
-
-(* Beware: call by need of CAML, g is needed *)
-
-let rec tclREPEAT = fun t g ->
-  (tclORELSE (tclTHEN t (tclREPEAT t)) tclIDTAC) g
-
-(*Try the first tactic that does not fail in a list of tactics*)
+(* Try the first tactic that does not fail in a list of tactics *)
 
 let rec tclFIRST = function
   | [] -> tclFAIL_s "No applicable tactic."
   |  t::rest -> tclORELSE0 t (tclFIRST rest)
 
-(*Try the first thats solves the current goal*)
 
+
+(* Fails if a tactic did not solve the goal *)
+let tclCOMPLETE tac = tclTHEN tac (tclFAIL_s "Proof is not complete.");;
+
+(* Try the first thats solves the current goal *)
 let tclSOLVE tacl = tclFIRST (List.map tclCOMPLETE tacl)
-  
-let tclTRY t = (tclORELSE t tclIDTAC)
-		 
-let tclAT_LEAST_ONCE t = (tclTHEN t (tclREPEAT t))
+
 			   
-(* Iteration tactical *)
+(* Iteration tacticals *)
 
 let tclDO n t = 
   let rec dorec k = 
@@ -548,12 +499,23 @@ let tclDO n t =
   in 
   dorec n 
 
+(* Beware: call by need of CAML, g is needed *)
+let rec tclREPEAT t g =
+  (tclORELSE (tclTHEN t (tclREPEAT t)) tclIDTAC) g
+
+let tclAT_LEAST_ONCE t = (tclTHEN t (tclREPEAT t))
+
 
 (*s Tactics handling a list of goals. *)
 
 type validation_list = proof_tree list -> proof_tree list
 
 type tactic_list = (goal list sigma) -> (goal list sigma) * validation_list
+
+(* Functions working on goal list for correct backtracking in Prolog *)
+
+let tclFIRSTLIST = tclFIRST
+let tclIDTAC_list gls = (gls, fun x -> x)
 
 (* first_goal : goal list sigma -> goal sigma *)
 
@@ -571,33 +533,38 @@ let goal_goal_list gls =
 
 let apply_tac_list tac glls = 
   let (sigr,lg) = unpackage glls in
-  match lg with 
-    | g1::rest ->
-	let (gl,p) = apply_sig_tac sigr tac g1 in
-	let n = List.length gl in 
-        repackage sigr (gl@rest), 
-        (function pfl -> let (pfg,pfrest) = list_chop n pfl in (p pfg)::pfrest)
-    | _ -> error "apply_tac_list"
+  match lg with
+  | (g1::rest) ->
+      let (gl,p) = apply_sig_tac sigr tac g1 in
+      let n = List.length gl in 
+      (repackage sigr (gl@rest), 
+       fun pfl -> let (pfg,pfrest) = list_chop n pfl in (p pfg)::pfrest)
+  | _ -> error "apply_tac_list"
 	  
 let then_tactic_list tacl1 tacl2 glls = 
-  let (sigr,gl) = unpackage glls in
-  let gll1,pl1 = apply_sig_tac sigr tacl1 gl in
-  let gll2,pl2 = apply_sig_tac sigr tacl2 gll1 in
-  (repackage sigr gll2, compose pl1 pl2)
+  let (glls1,pl1) = tacl1 glls in
+  let (glls2,pl2) = tacl2 glls1 in
+  (glls2, compose pl1 pl2)
 
 (* Transform a tactic_list into a tactic *)
 
 let tactic_list_tactic tac gls = 
-  let glit = gls.it 
-  and glsig = gls.sigma in 
-  let (glres,vl) = tac {it=[glit];sigma=glsig} in 
-  (glres, 
-   fun pfl -> match (vl pfl) with [p] -> p | _ -> error "tactic_list_tactic")
+    let (glres,vl) = tac (goal_goal_list gls) in
+    (glres, compose idtac_valid vl)
 
-(* Functions working on goal list for correct backtracking in Prolog *)
 
-let tclFIRSTLIST = tclFIRST
-let tclIDTAC_list gls = (gls, fun x -> x)
+
+
+(* solve_subgoal n tac pf_sigma applies the tactic tac at the nth subgoal of
+   pf_sigma *)
+let solve_subgoal tacl pf_sigma =
+  let (sigr,pf) = unpackage pf_sigma in
+  let gl,p = frontier pf in
+  let (sigr,gll,pl) = tacl (sigr,gl,p) in
+  let pfs = repackage sigr (pl (List.map leaf gll)) in
+  if (ts_it pfs.sigma) == (ts_it pf_sigma.sigma) then pfs
+  else { it = norm_evar_pf (ts_it pfs.sigma) pfs.it; sigma=pfs.sigma}
+
 
 
 (* The type of proof-trees state and a few utilities 
@@ -684,7 +651,8 @@ let change_constraints_pftreestate newgc pts =
 (* solve the nth subgoal with tactic tac *)
 let solve_nth_pftreestate n tac pts =
   let pf = pts.tpf in
-  let rslts = solve_subgoal n tac {it = pts.tpf;sigma = pts.tpfsigma} in
+  let rslts =
+    solve_subgoal (theni_tac n tac) {it = pts.tpf;sigma = pts.tpfsigma} in
   { tpf      = rslts.it;
     tpfsigma = rslts.sigma;
     tstack   = pts.tstack }
