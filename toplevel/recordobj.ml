@@ -75,6 +75,6 @@ let objdef_declare ref =
         List.iter 
 	  (fun (spi,(ci,l_ui)) -> 
 	     add_new_objdef 
-	       ((NAM_Constant spi,cte_of_constr ci),v,lt,params,l_ui)) comp
+	       ((ConstRef spi,cte_of_constr ci),v,lt,params,l_ui)) comp
     | _ -> objdef_err ref
                  

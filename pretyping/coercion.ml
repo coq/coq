@@ -49,7 +49,7 @@ let apply_coercion env p hj typ_cl =
   try 
     fst (List.fold_left
            (fun (ja,typ_cl) i -> 
-              let fv,b = coe_value i in
+              let fv,b = coercion_value i in
               let argl = (class_args_of typ_cl)@[ja.uj_val] in
               let jres = apply_coercion_args env argl fv in
               (if b then 
