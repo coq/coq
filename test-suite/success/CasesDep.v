@@ -391,3 +391,15 @@ end.
 (* ------------------------------------------------------------------ *)
 
 End Sig.
+
+(* Exemple soumis par Bruno *)
+
+Definition bProp [b:bool] : Prop :=
+  if b then True else False.
+
+Definition f0 [F:False;ty:bool]: (bProp ty) :=
+  <[_:bool][ty:bool](bProp ty)>Cases ty ty of
+    true true => I
+  | _ false => F
+  | _ true => I
+  end.
