@@ -981,7 +981,7 @@ and xlate_tac =
      let c = xlate_formula c and bindl = xlate_bindings bindl in
      if b then CT_condrewrite_lr (xlate_tactic t, c, bindl, ctv_ID_OPT_NONE)
      else CT_condrewrite_rl (xlate_tactic t, c, bindl, ctv_ID_OPT_NONE)
-    | TacExtend (_,"conditionalrewritein", [t; b; cbindl; id]) ->
+    | TacExtend (_,"conditionalrewrite", [t; b; cbindl; id]) ->
      let t = out_gen rawwit_tactic t in
      let b = out_gen Extraargs.rawwit_orient b in
      let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
@@ -989,18 +989,21 @@ and xlate_tac =
      let id = ctf_ID_OPT_SOME (xlate_ident (out_gen rawwit_ident id)) in
      if b then CT_condrewrite_lr (xlate_tactic t, c, bindl, id)
      else CT_condrewrite_rl (xlate_tactic t, c, bindl, id)
-    | TacExtend (_,"dependentrewrite", [b; id_or_constr]) ->
+    | TacExtend (_,"dependentrewrite", [b; c]) ->
       let b = out_gen Extraargs.rawwit_orient b in
-      (match genarg_tag id_or_constr with
-	| IdentArgType -> (*Dependent Rewrite/SubstHypInConcl*)
-	    let id = xlate_ident (out_gen rawwit_ident id_or_constr) in
+      let c = xlate_formula (out_gen rawwit_constr c) in
+      (match c with
+	| CT_coerce_ID_to_FORMULA (CT_ident _ as id) -> 
 	    if b then CT_deprewrite_lr id else CT_deprewrite_rl id
-	| ConstrArgType -> (*CutRewrite/SubstConcl*)
-	    let c = xlate_formula (out_gen rawwit_constr id_or_constr) in
-	    if b then CT_cutrewrite_lr (c, ctv_ID_OPT_NONE)
-	    else CT_cutrewrite_rl (c, ctv_ID_OPT_NONE)
-	| _ -> xlate_error "")
-    | TacExtend (_,"dependentrewrite", [b; c; id]) -> (*CutRewrite in/SubstHyp*)
+	| _ -> xlate_error "dependent rewrite on term: not supported")
+    | TacExtend (_,"dependentrewrite", [b; c; id]) ->
+	xlate_error "dependent rewrite on terms in hypothesis: not supported"
+    | TacExtend (_,"cutrewrite", [b; c]) ->
+      let b = out_gen Extraargs.rawwit_orient b in
+      let c = xlate_formula (out_gen rawwit_constr c) in
+      if b then CT_cutrewrite_lr (c, ctv_ID_OPT_NONE)
+      else CT_cutrewrite_lr (c, ctv_ID_OPT_NONE)
+    | TacExtend (_,"cutrewrite", [b; c; id]) ->
       let b = out_gen Extraargs.rawwit_orient b in
       let c = xlate_formula (out_gen rawwit_constr c) in
       let id = xlate_ident (out_gen rawwit_ident id) in
