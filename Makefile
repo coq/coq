@@ -445,7 +445,7 @@ COQIDECMO=ide/utils/okey.cmo ide/utils/uoptions.cmo \
 	  ide/utils/configwin_keys.cmo ide/utils/configwin_types.cmo \
 	  ide/utils/configwin_messages.cmo ide/utils/configwin_ihm.cmo \
 	  ide/utils/configwin.cmo ide/config_lexer.cmo ide/preferences.cmo \
-	  ide/ideutils.cmo ide/find_phrase.cmo \
+	  ide/ideutils.cmo ide/undo.cmo ide/find_phrase.cmo \
           ide/highlight.cmo ide/coq.cmo ide/coq_commands.cmo \
 	  ide/coq_tactics.cmo ide/coqide.cmo
 

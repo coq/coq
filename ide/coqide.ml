@@ -106,7 +106,7 @@ module Vector = struct
 end
 
 type 'a viewable_script =
-    {view : GText.view;
+    {view : Undo.undoable_view;
      mutable analyzed_view : 'a option;
     }
 
@@ -116,7 +116,7 @@ object('self)
     val current_all : 'self viewable_script
     val mutable deact_id : GtkSignal.id option
     val input_buffer : GText.buffer
-    val input_view : GText.view
+    val input_view : Undo.undoable_view
     val last_array : string array
     val mutable last_index : bool
     val message_buffer : GText.buffer
@@ -1033,7 +1033,7 @@ let create_input_tab filename =
 	      ~hpolicy:`AUTOMATIC
 	      ~packing:fr1#add () 
   in
-  let tv1 = GText.view ~buffer:b ~packing:(sw1#add) () in
+  let tv1 = Undo.undoable_view ~buffer:b ~packing:(sw1#add) () in
   tv1#misc#set_name "ScriptWindow";
   let _ = tv1#set_editable true in
   let _ = tv1#set_wrap_mode `NONE in
@@ -1345,6 +1345,10 @@ let main files =
   (* Edit Menu *)
   let edit_menu = factory#add_submenu "_Edit" in
   let edit_f = new GMenu.factory edit_menu ~accel_group in
+  ignore(edit_f#add_item "_Undo" ~key:GdkKeysyms._z ~callback:
+	   (fun () -> 
+	      ignore (get_current_view()).view#undo));
+  ignore(edit_f#add_separator ());
   ignore(edit_f#add_item "Copy" ~key:GdkKeysyms._C ~callback:
 	   (fun () -> GtkSignal.emit_unit
 	      (get_current_view()).view#as_view 
