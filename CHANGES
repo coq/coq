@@ -87,6 +87,16 @@ Miscellaneous
 
 - Printing Coercion now used through the standard keywords Set/Add, Test, Print
 - "Print Term id" is an alias for "Print id"
+- New switch "Unset/Set Printing Symbols" to control printing of
+  symbolic notations
+- Two new variants of implicit arguments are available
+   - "Unset/Set Contextual Implicits" tells to consider implicit also the
+     arguments inferable from the context (e.g. for nil or refl_eq)
+   - "Unset/Set Strict Implicits" tells to consider implicit only the
+     arguments that are inferable in any case (i.e. arguments that occurs
+     as argument of rigid constants in the type of the remaining arguments;
+     e.g. the witness of an existential is not strict since it can vanish when
+     applied to a predicate which does not use its argument)
 
 Incompatibilities
 
