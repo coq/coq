@@ -156,21 +156,29 @@ let add_to_pvars x =
 (* FUNCTIONS TO PRINT A SINGLE OBJECT OF COQ *)
 
 let print_object uri obj sigma proof_tree_infos filename typesfilename prooftreefilename =
- let (annobj,_,constr_to_ids,_,ids_to_inner_sorts,ids_to_inner_types,_,_) =
-  Cic2acic.acic_object_of_cic_object !pvars sigma obj in
- let xml = Acic2Xml.print_object uri ids_to_inner_sorts annobj in
- let xmltypes =
-  Acic2Xml.print_inner_types uri ids_to_inner_sorts ids_to_inner_types in
- Xml.pp xml filename ;
- Xml.pp xmltypes typesfilename ;
- match proof_tree_infos with
-    None -> ()
-  | Some (proof_tree,proof_tree_to_constr) ->
-     let xmlprooftree =
-      ProofTree2Xml.print_proof_tree
-       uri proof_tree proof_tree_to_constr constr_to_ids
-     in
-      Xml.pp xmlprooftree prooftreefilename
+ (* function to pretty print and compress an XML file *)
+(*CSC: Unix.system "gzip ..." is an orrible non-portable solution. *)
+ let pp xml filename =
+  Xml.pp xml filename ;
+  match filename with
+     None -> ()
+   | Some fn -> ignore (Unix.system ("gzip " ^ fn ^ ".xml"))
+ in
+  let (annobj,_,constr_to_ids,_,ids_to_inner_sorts,ids_to_inner_types,_,_) =
+   Cic2acic.acic_object_of_cic_object !pvars sigma obj in
+  let xml = Acic2Xml.print_object uri ids_to_inner_sorts annobj in
+  let xmltypes =
+   Acic2Xml.print_inner_types uri ids_to_inner_sorts ids_to_inner_types in
+  pp xml filename ;
+  pp xmltypes typesfilename ;
+  match proof_tree_infos with
+     None -> ()
+   | Some (proof_tree,proof_tree_to_constr) ->
+      let xmlprooftree =
+       ProofTree2Xml.print_proof_tree
+        uri proof_tree proof_tree_to_constr constr_to_ids
+      in
+       pp xmlprooftree prooftreefilename
 ;;
 
 let string_list_of_named_context_list =
@@ -279,7 +287,14 @@ let print (_,qid as locqid) fn =
  let module T = Term in
  let module X = Xml in
   let (_,id) = Nt.repr_qualid qid in
-  let glob_ref = Nametab.global locqid in
+  let glob_ref =
+(*CSC: ask Hugo why Nametab.global does not work with variables and *)
+(*CSC: we have to do this hugly try ... with                        *)
+   try
+    Nt.global locqid
+   with
+    _ -> let (_,id) = Nt.repr_qualid qid in Nt.VarRef id
+  in
   (* Variables are the identifiers of the variables in scope *)
   let variables =
    (* The computation is very inefficient, but we can't do anything *)
@@ -642,11 +657,30 @@ let _ =
    Sys.getenv "XML_LIBRARY_ROOT"
   with Not_found -> "/home/projects/helm/EXPORT/examples7.3/objects"
  in
+ let proof_to_export = ref None in (* holds the proof-tree to export *)
   Pfedit.set_xml_cook_proof
-   (function pftreestate ->
-     let id = Pfedit.get_current_proof_name () in
-     let sp = Lib.make_path id in
+   (function pftreestate -> proof_to_export := Some pftreestate) ;
+  Declare.set_xml_declare_variable
+   (function sp ->
+     let filename = filename_of_path xml_library_root sp Variable in
+     let dummy_location = -1,-1 in
+      print (dummy_location,Nametab.qualid_of_sp sp) (Some filename)) ;
+  Declare.set_xml_declare_constant
+   (function sp ->
      let filename = filename_of_path xml_library_root sp Constant in
-      show_pftreestate (Some filename) pftreestate
-   )
+     match !proof_to_export with
+        None ->
+         let dummy_location = -1,-1 in
+          print (dummy_location,Nametab.qualid_of_sp sp) (Some filename)
+      | Some pftreestate ->
+         (* It is a proof. Let's export it starting from the proof-tree *)
+         (* I saved in the Pfedit.set_xml_cook_proof callback.          *)
+         show_pftreestate (Some filename) pftreestate ;
+         proof_to_export := None
+   ) ;
+  Declare.set_xml_declare_inductive
+   (function sp ->
+     let filename = filename_of_path xml_library_root sp Inductive in
+     let dummy_location = -1,-1 in
+      print (dummy_location,Nametab.qualid_of_sp sp) (Some filename)) ;
 ;;
