@@ -158,7 +158,7 @@ Definition bound:=[E:R->Prop](ExT [m:R](is_upper_bound E m)).
 
 (**********)
 Definition is_lub:=[E:R->Prop][m:R]
-    (is_upper_bound E m)/\(b:R)(is_upper_bound E b)->(Rlt m b).
+    (is_upper_bound E m)/\(b:R)(is_upper_bound E b)->(Rle m b).
 
 (**********)
 Axiom complet:(E:R->Prop)(bound E)->
