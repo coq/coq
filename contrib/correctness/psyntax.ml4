@@ -482,10 +482,7 @@ GEXTEND Gram
 
 let wit_prog, rawwit_prog = Genarg.create_arg "PROGRAMS-PROG"
 let wit_typev, rawwit_typev = Genarg.create_arg "PROGRAMS-TYPEV"
-(*
-let (in_prog,out_prog) = Dyn.create "PROGRAMS-PROG"
-let (in_typev,out_typev) = Dyn.create "PROGRAMS-TYPEV"
-*)
+
 open Pp
 open Util
 open Himsg
@@ -564,26 +561,26 @@ let _ =
 
 open Vernac
 open Coqast
+open Pcoq
 
 GEXTEND Gram
-  GLOBAL:  Pcoq.Vernac_.command;
+  GLOBAL: Vernac_.command;
 
   Pcoq.Vernac_.command:
-  [ [ (s,l) = aux -> VernacExtend (s,l) ] ];
-  aux:
-  [ [ IDENT "Global"; "Variable"; l = LIST1 Pcoq.Prim.ident SEP ","; ":"; t = type_v ->
-	("PROGVARIABLE",
-	  [in_gen (wit_list1 rawwit_ident) l;in_gen rawwit_typev t])
+  [ [ IDENT "Global"; "Variable"; l = LIST1 Prim.ident SEP ","; ":"; t = type_v
+      ->
+	let ids = in_gen (wit_list1 rawwit_ident) l in
+	VernacExtend ("PROGVARIABLE", [ids;in_gen rawwit_typev t])
 
     | IDENT "Show"; IDENT "Programs" ->
-	("SHOWPROGRAMS",[])
+	VernacExtend ("SHOWPROGRAMS",[])
 
     | IDENT "Correctness"; s = IDENT; p = Programs.program; 
       t = OPT [ ";"; tac = Tactic.tactic -> tac ] ->
 	let str = in_gen rawwit_pre_ident s in
 	let d = in_gen rawwit_prog p in
 	let tac = in_gen (wit_opt rawwit_tactic) t in
-	("CORRECTNESS",[str;d;tac]) ] ];
+	VernacExtend ("CORRECTNESS",[str;d;tac]) ] ];
  END
 ;;
 
