@@ -265,7 +265,7 @@ let default_id gl =
 	   | IsSort (Type _) -> (id_of_name_with_default "X" name)
 	   | _                   -> anomaly "Wrong sort")
     | IsLetIn (name,b,_,_) -> id_of_name_using_hdchar (pf_env gl) b name
-    | _ -> error "Introduction needs a product"
+    | _ -> raise (RefinerError IntroNeedsProduct)
 
 (* Non primitive introduction tactics are treated by central_intro
    There is possibly renaming, with possibly names to avoid and 
