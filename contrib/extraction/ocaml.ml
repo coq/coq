@@ -227,7 +227,10 @@ and pp_pat env pv =
 	     end;
 	     'sTR " ->"; 'sPC; pp_expr par env' [] t >]
   in 
-  [< prvect_with_sep (fun () -> [< 'fNL; 'sTR "| " >]) pp_one_pat pv >]
+  if pv = [||] then
+    [< 'sTR "_ -> assert false (* empty inductive *)" >]
+  else
+    [< prvect_with_sep (fun () -> [< 'fNL; 'sTR "| " >]) pp_one_pat pv >]
 
 (*s names of the functions ([ids]) are already pushed in [env],
     and passed here just for convenience. *)
@@ -292,13 +295,17 @@ let pp_one_inductive (pl,name,cl) =
       	       	    prlist_with_sep 
 		      (fun () -> [< 'sPC ; 'sTR "* " >]) pp_type l >] >] 
   in
-  [< pp_parameters pl; P.pp_global name; 'sTR " ="; 'fNL;
-     v 0 [< 'sTR "    ";
-	    prlist_with_sep (fun () -> [< 'fNL; 'sTR "  | " >])
-                            (fun c -> hOV 2 (pp_constructor c)) cl >] >]
+    [< pp_parameters pl; P.pp_global name; 'sTR " ="; 
+       if cl = [] then
+	 [< 'sTR " unit (* empty inductive *)" >]
+       else
+	 [< 'fNL;
+	    v 0 [< 'sTR "    ";
+		   prlist_with_sep (fun () -> [< 'fNL; 'sTR "  | " >])
+                     (fun c -> hOV 2 (pp_constructor c)) cl >] >] >]
 
 let pp_inductive il =
-  [< 'sTR "type " ;
+  [< 'sTR "type ";
      prlist_with_sep 
        (fun () -> [< 'fNL; 'sTR "and " >])
        (fun i -> pp_one_inductive i)
