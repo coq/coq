@@ -1611,14 +1611,45 @@ let main files =
   
   (* Commands Menu *)
   let commands_menu =  factory#add_submenu "_Commands" in
-  let commands_factory = new GMenu.factory commands_menu ~accel_group in
+  let commands_factory = new GMenu.factory commands_menu ~accel_group
+			   ~accel_modi:[]
+  in
   
   (* Command/Show commands *)
   let commands_show_m = commands_factory#add_item 
-			  "_Show commands" 
+			  "_Show Window"
+			  ~key:GdkKeysyms._F12
 			  ~callback:(Command_windows.command_window ())
 			  #window#present
   in  
+  let _ = 
+    commands_factory#add_item "_SearchAbout " ~key:GdkKeysyms._F2
+      ~callback:(fun () -> let term = get_current_word () in
+		 (Command_windows.command_window ())#new_command
+		 ~command:"SearchAbout"
+		   ~term 
+		   ())
+  in
+  let _ = 
+    commands_factory#add_item "_Check " ~key:GdkKeysyms._F3
+      ~callback:(fun () -> let term = get_current_word () in
+		 (Command_windows.command_window ())#new_command
+		 ~command:"Check"
+		   ~term 
+		   ())
+  in
+  let _ = 
+    commands_factory#add_item "_Print " ~key:GdkKeysyms._F4
+      ~callback:(fun () -> let term = get_current_word () in
+		 (Command_windows.command_window ())#new_command
+		 ~command:"Print"
+		   ~term 
+		   ())
+  in
+
+  (* Externals *)
+  let externals_menu =  factory#add_submenu "_Externals" in
+  let externals_factory = new GMenu.factory externals_menu ~accel_group in
   
   (* Command/Compile Menu *)
   let compile_f () =
@@ -1636,7 +1667,7 @@ let main files =
 	    av#process_until_end_or_error
 	  end
   in
-  let compile_m = commands_factory#add_item "_Compile" ~callback:compile_f in
+  let compile_m = externals_factory#add_item "_Compile" ~callback:compile_f in
 
   (* Command/Make Menu *)
   let make_f () =
@@ -1644,7 +1675,7 @@ let main files =
     let c = Sys.command !current.cmd_make in
     !flash_info (!current.cmd_make ^ if c = 0 then " succeeded" else " failed")
   in
-  let make_m = commands_factory#add_item "_Make" ~callback:make_f in
+  let make_m = externals_factory#add_item "_Make" ~callback:make_f in
   
   (* Command/CoqMakefile Menu*)
   let coq_makefile_f () =
@@ -1652,7 +1683,7 @@ let main files =
     !flash_info 
       (!current.cmd_coqmakefile ^ if c = 0 then " succeeded" else " failed")
   in
-  let _ = commands_factory#add_item "_Make Makefile" ~callback:coq_makefile_f 
+  let _ = externals_factory#add_item "_Make Makefile" ~callback:coq_makefile_f 
   in
 
   (* Configuration Menu *)
@@ -1723,14 +1754,6 @@ let main files =
       ~callback:(fun () -> 
   let av = out_some ((get_current_view ()).analyzed_view) in 
 		 av#help_for_keyword ())
-  in
-  let _ = 
-    help_factory#add_item "_SearchAbout " ~key:GdkKeysyms._F2
-      ~callback:(fun () -> let term = get_current_word () in
-		(Command_windows.command_window ())#new_command
-		 ~command:"SearchAbout"
-		  ~term 
-		  ())
   in
   let _ = help_factory#add_separator () in
   let about_m = help_factory#add_item "_About" in

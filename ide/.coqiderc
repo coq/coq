@@ -5,6 +5,7 @@ binding "text" {
 		}
   bind "<ctrl>x" { }
   bind "F13" {"insert-at-cursor" ("∀")}
+  bind "F14" {"insert-at-cursor" ("∃")}
 }
 class "GtkTextView" binding "text"
 
