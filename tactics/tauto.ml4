@@ -60,9 +60,9 @@ let axioms ist =
   and t_is_empty = tacticIn is_empty in
   <:tactic<
     Match Context With
-    |[ |- ?1] -> $t_is_unit;Constructor
-    |[ _:?1 |- ?] -> $t_is_empty
-    |[ _:?1 |- ?1] -> Assumption>>
+    |[|- ?1] -> $t_is_unit;Constructor
+    |[_:?1 |- ?] -> $t_is_empty
+    |[_:?1 |- ?1] -> Assumption>>
 
 let simplif ist =
   let t_is_unit = tacticIn is_unit

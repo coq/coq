@@ -24,6 +24,9 @@ type debug_info =
 (* Prints the state and waits *)
 val debug_prompt : goal sigma option -> Coqast.t -> debug_info
 
+(* Prints a constr *)
+val db_constr : debug_info -> Environ.env -> constr -> unit
+
 (* Prints a matched hypothesis *)
 val db_matched_hyp : debug_info -> Environ.env -> string * constr -> unit
 

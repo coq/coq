@@ -578,14 +578,11 @@ GEXTEND Gram
       tac = Tactic.tactic; "." ->
 	let d = Ast.dynamic (in_prog p) in
 	let str = Ast.str s in
-	<:ast< (CORRECTNESS $str (VERNACDYN $d) (TACTIC $tac)) >>
-
-    | IDENT "Debug"; IDENT "on"; "." -> <:ast< (PROGDEBUGON) >>
+	<:ast< (CORRECTNESS $str (VERNACDYN $d) (TACTIC $tac)) >> ] ];
+  Pcoq.Vernac_.command:
+  [ [ IDENT "Debug"; IDENT "on"; "." -> <:ast< (PROGDEBUGON) >>
 	
-    | IDENT "Debug"; IDENT "off"; "." -> <:ast< (PROGDEBUGOFF) >>
-	    
-  ] ]
-  ;
+    | IDENT "Debug"; IDENT "off"; "." -> <:ast< (PROGDEBUGOFF) >> ] ];
  END
 ;;
 

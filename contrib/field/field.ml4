@@ -71,8 +71,8 @@ let add_field a aplus amult aone azero aopp aeq ainv aminus_o adiv_o rth
   ainv_l =
   begin
     (try
-       Ring.add_theory true true false a None None None aplus amult aone azero (Some aopp) aeq rth
-         Quote.ConstrSet.empty
+      Ring.add_theory true true false a None None None aplus amult aone azero
+        (Some aopp) aeq rth Quote.ConstrSet.empty
      with | UserError("Add Semi Ring",_) -> ());
     let th = mkApp ((constant ["Field_Theory"] "Build_Field_Theory"),
       [|a;aplus;amult;aone;azero;aopp;aeq;ainv;aminus_o;adiv_o;rth;ainv_l|]) in
@@ -112,12 +112,20 @@ let field g =
   let ist = { evc=evc; env=env; lfun=[]; lmatch=[];
               goalopt=Some g; debug=get_debug () } in
   let typ = constr_of_Constr (interp_tacarg ist
-  <:tactic<
+    <:tactic<
       Match Context With
-      | [|-(eq ?1 ? ?)] -> ?1
-      |	[|-(eqT ?1 ? ?)] -> ?1>>) in
+      | [|- (eq ?1 ? ?)] -> ?1
+      | [|- (eqT ?1 ? ?)] -> ?1>>) in
   let th = VArg (Constr (lookup typ)) in
-  (tac_interp [(id_of_string "FT",th)] [] (get_debug ()) <:tactic<Field_Gen FT>>) g
+  (tac_interp [(id_of_string "FT",th)] [] (get_debug ())
+    <:tactic<
+      Match Context With
+      | [|- (eq ?1 ?2 ?3)] ->
+        Let t = (eqT ?1 ?2 ?3) In
+        Cut t;[Intro;
+          (Match Context With
+          | [id:t |- ?] -> Rewrite id;Reflexivity)|Field_Gen FT]
+      | [|- (eqT ? ? ?)] -> Field_Gen FT>>) g
 
 (* Declaration of Field *)
 let _ = hide_tactic "Field" (function _ -> field)

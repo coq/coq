@@ -418,6 +418,9 @@ Syntax tactic
                   [ $x ","[1 0] (LISTCOMA ($LIST $l)) ]
   | listcoma_one  [<<(LISTCOMA $x)>>] -> [ $x ]
   | listcoma_nil  [<<(LISTCOMA )>>] -> [ ]
+
+  (* Only when debugging *)
+  | prim_tactic [<<(PRIMTACTIC $tac)>>] -> [ $tac ]
   ;
 
   level 8:

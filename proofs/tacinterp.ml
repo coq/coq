@@ -476,12 +476,12 @@ let rec val_interp ist ast =
 (* mSGNL [<print_ast ast>]; *)
 (* mSGNL [<print_ast (Termast.ast_of_constr false (Pretty.assumptions_for_print []) c)>] *)
 
-  let value_interp debug =
+  let value_interp ist =
   match ast with
     | Node(_,"APP",l) ->
         let fv = val_interp ist (List.hd l)
         and largs = List.map (val_interp ist) (List.tl l) in
-      app_interp ist fv largs ast
+        app_interp ist fv largs ast
     | Node(_,"FUN",l) -> VFun (ist.lfun,read_fun (List.hd l),List.nth l 1)
     | Node(_,"REC",l) -> rec_interp ist ast l
     | Node(_,"LET",[Node(_,"LETDECL",l);u]) ->
@@ -508,10 +508,10 @@ let rec val_interp ist ast =
     | Node(_,"FIRST",l) -> VTactic (tclFIRST (List.map (tactic_interp ist) l))
     | Node(_,"TCLSOLVE",l) ->
         VTactic (tclSOLVE (List.map (tactic_interp ist) l))
-    | Node(loc0,"APPTACTIC",[Node(loc1,s,l)]) ->
+(*    | Node(loc0,"APPTACTIC",[Node(loc1,s,l)]) ->
         val_interp ist
-          (Node(loc0,"APP",[Node(loc1,"PRIM-TACTIC",[Node(loc1,s,[])])]@l))
-    | Node(_,"PRIM-TACTIC",[Node(loc,opn,[])]) ->
+          (Node(loc0,"APP",[Node(loc1,"PRIM-TACTIC",[Node(loc1,s,[])])]@l))*)
+    | Node(_,"PRIMTACTIC",[Node(loc,opn,[])]) ->
         VFTactic ([],(interp_atomic opn))
     | Node(_,"VOID",[]) -> VVoid
     | Nvar(_,s) ->
@@ -553,7 +553,18 @@ let rec val_interp ist ast =
           ((look_for_interp s) ist ast)
         with
            Not_found ->
-             val_interp ist (Node(dummy_loc,"APPTACTIC",[ast])))
+             if l = [] then
+               VFTactic ([],(interp_atomic s))
+             else
+               let fv = val_interp ist
+                          (Node(loc,"PRIMTACTIC",[Node(loc,s,[])]))
+               and largs = List.map (val_interp ist) l in
+               app_interp ist fv largs ast)
+
+       (*     val_interp ist (Node(dummy_loc,"APP",[Node(loc,"PRIMTACTIC",
+                            [Node(loc,s,[])])]@l)))*)
+ 
+(*             val_interp ist (Node(dummy_loc,"APPTACTIC",[ast])))*)
     | Dynamic(_,t) ->
       let tg = (tag t) in
       if tg = "tactic" then
@@ -571,9 +582,9 @@ let rec val_interp ist ast =
   if ist.debug = DebugOn then
     match debug_prompt ist.goalopt ast with
     | Exit -> VTactic tclIDTAC
-    | v -> value_interp v
+    | v -> value_interp {ist with debug=v}
   else
-    value_interp debug
+    value_interp ist
 
 (* Interprets an application node *)
 and app_interp ist fv largs ast =
@@ -979,47 +990,58 @@ and bind_interp ist = function
       print_ast x>]
 
 (* Interprets a COMMAND expression (in case of failure, returns Command) *)
-and com_interp ist = function
-  | Node(_,"EVAL",[c;rtc]) ->
-    let redexp = unredexp (unvarg (val_interp ist rtc)) in
-    VArg (Constr ((reduction_of_redexp redexp) ist.env ist.evc
-		    (interp_constr ist c None)))
-  | Node(_,"CONTEXT",[Nvar (_,s);c]) as ast ->
-    (try
-      let ic = interp_constr ist c None
-      and ctxt = constr_of_Constr_context (unvarg (List.assoc s ist.lfun)) in
-      VArg (Constr (subst_meta [-1,ic] ctxt))
-     with
-    | Not_found ->
-      errorlabstrm "com_interp" [<'sTR "Unbound context identifier";
-        print_ast ast>])
-  | c -> VArg (Constr (interp_constr ist c None))
+and com_interp ist com = 
+  let csr =
+    match com with
+    | Node(_,"EVAL",[c;rtc]) ->
+      let redexp = unredexp (unvarg (val_interp ist rtc)) in
+      (reduction_of_redexp redexp) ist.env ist.evc (interp_constr ist c None)
+    | Node(_,"CONTEXT",[Nvar (_,s);c]) as ast ->
+      (try
+        let ic = interp_constr ist c None
+        and ctxt = constr_of_Constr_context (unvarg (List.assoc s ist.lfun)) in
+        subst_meta [-1,ic] ctxt
+       with
+      | Not_found ->
+        errorlabstrm "com_interp" [<'sTR "Unbound context identifier";
+          print_ast ast>])
+    | c -> interp_constr ist c None in
+  begin
+    db_constr ist.debug ist.env csr;
+    VArg (Constr csr)
+  end
 
 (* Interprets a CASTEDCOMMAND expression *)
 and cast_com_interp ist com =
   match ist.goalopt with
   | Some gl ->
-    (match com with
-    | Node(_,"EVAL",[c;rtc]) ->
-      let redexp = unredexp (unvarg (val_interp
-        ist rtc)) in
-      VArg (Constr ((reduction_of_redexp redexp) ist.env ist.evc
-        (interp_constr ist c (Some (pf_concl gl)))))
-    | Node(_,"CONTEXT",[Nvar (_,s);c]) as ast ->
-      (try
-        let ic = interp_constr ist c None
-        and ctxt = constr_of_Constr_context (unvarg (List.assoc s ist.lfun)) in
-        begin
-          wARNING [<'sTR
-            "Cannot pre-constrain the context expression with goal">];
-          VArg (Constr (subst_meta [-1,ic] ctxt))
-        end
-       with
-      |	Not_found ->
-        errorlabstrm "cast_com_interp" [<'sTR "Unbound context identifier";
-          print_ast ast>])
-    | c ->
-        VArg (Constr (interp_constr ist c (Some (pf_concl gl)))))
+    let csr =
+      match com with
+      | Node(_,"EVAL",[c;rtc]) ->
+        let redexp = unredexp (unvarg (val_interp
+          ist rtc)) in
+        (reduction_of_redexp redexp) ist.env ist.evc
+          (interp_constr ist c (Some (pf_concl gl)))
+      | Node(_,"CONTEXT",[Nvar (_,s);c]) as ast ->
+        (try
+          let ic = interp_constr ist c None
+          and ctxt = constr_of_Constr_context
+            (unvarg (List.assoc s ist.lfun)) in
+          begin
+           wARNING [<'sTR
+              "Cannot pre-constrain the context expression with goal">];
+            subst_meta [-1,ic] ctxt
+          end
+         with
+         | Not_found ->
+           errorlabstrm "cast_com_interp" [<'sTR "Unbound context identifier";
+             print_ast ast>])
+      | c ->
+        interp_constr ist c (Some (pf_concl gl)) in
+    begin
+      db_constr ist.debug ist.env csr;
+      VArg (Constr csr)
+    end
   | None ->
     errorlabstrm "val_interp" [<'sTR "Cannot cast a constr without goal">]
 

@@ -455,7 +455,7 @@ GEXTEND Gram
           <:ast< (ResetSection $id) >>
       
 (* Tactic Debugger *)
-      |	IDENT "Debug"; IDENT "On" -> <:ast< (DebugOn) >>
+      | IDENT "Debug"; IDENT "On" -> <:ast< (DebugOn) >>
       |	IDENT "Debug"; IDENT "Off" -> <:ast< (DebugOff) >>
 
  ] ];
