@@ -167,7 +167,8 @@ let variables l =
   print "CAMLP4LIB=`camlp4 -where`\n";
 (*  print "MAKE=make \"COQBIN=$(COQBIN)\" \"OPT=$(OPT)\"\n"; *)
   print "COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
-  -I $(COQTOP)/library -I $(COQTOP)/parsing -I $(COQTOP)/pretyping \\
+  -I $(COQTOP)/library -I $(COQTOP)/parsing \\
+  -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
   -I $(COQTOP)/proofs -I $(COQTOP)/syntax -I $(COQTOP)/tactics \\
   -I $(COQTOP)/toplevel -I $(COQTOP)/contrib/correctness \\
   -I $(COQTOP)/contrib/extraction -I $(COQTOP)/contrib/field \\
@@ -191,7 +192,7 @@ let variables l =
   print "CAMLOPTLINK=ocamlopt\n";
   print "COQDEP=$(COQBIN)coqdep -c\n";
   print "COQVO2XML=coq_vo2xml\n";
-  print "GRAMMARS=grammar.cma";
+  print "GRAMMARS=grammar.cma\n";
   print "CAMLP4EXTEND=pa_extend.cmo pa_ifdef.cmo q_MLast.cmo\n";
   print "PP=-pp \"camlp4o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n";
   var_aux l;
