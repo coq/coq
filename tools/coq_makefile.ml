@@ -279,7 +279,7 @@ let all_target l =
     print "gallinahtml: $(GHTMLFILES)\n\n";
     print "all.ps: $(VFILES)\n";
     print "\t$(COQWEB) -ps -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
-    print "all.g.ps: $(GFILES)\n";
+    print "all-gal.ps: $(GFILES)\n";
     print "\t$(COQWEB) -ps -o $@ `$(COQDEP) -sort -suffix .g $(VFILES)`\n\n";
     print "xml:: .xml_time_stamp\n";
     print ".xml_time_stamp: "; print_list "\\\n  " (vofiles l);
