@@ -151,7 +151,7 @@ theories/Arith/Compare.vo: theories/Arith/Compare.v theories/Arith/Arith.vo theo
 theories/Arith/Le.vo: theories/Arith/Le.v
 theories/Arith/Between.vo: theories/Arith/Between.v theories/Arith/Le.vo theories/Arith/Lt.vo
 theories/Arith/Gt.vo: theories/Arith/Gt.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo
-theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Gt.vo theories/Arith/Minus.vo theories/Arith/Mult.vo theories/Arith/Between.vo
+theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Gt.vo theories/Arith/Minus.vo theories/Arith/Mult.vo theories/Arith/Between.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo
 theories/Logic/JMeq.vo: theories/Logic/JMeq.v
 theories/Logic/Decidable.vo: theories/Logic/Decidable.v
 theories/Logic/Eqdep_dec.vo: theories/Logic/Eqdep_dec.v
