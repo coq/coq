@@ -222,7 +222,7 @@ COQTOPOPT=bin/coqtop.opt
 BESTCOQTOP=bin/coqtop.$(BEST)
 COQINTERFACE=bin/coq-interface bin/parser
 
-COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) 
+COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQINTERFACE) 
 
 world: $(COQBINARIES) states theories contrib tools
 
@@ -281,7 +281,8 @@ toplevel: $(TOPLEVEL)
 
 # special binaries for debugging
 
-bin/coq-interface: $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
+bin/coq-interface: $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE) \
+                    contrib/interface/Centaur.vo
 	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@ $(INTERFACE)
 
 bin/parser: contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
