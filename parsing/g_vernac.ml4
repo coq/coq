@@ -21,7 +21,10 @@ GEXTEND Gram
       | g = gallina_ext; "." -> g
       | c = command; "." -> c 
       | c = syntax; "." -> c
-      | "["; l = vernac_list_tail -> <:ast< (VernacList ($LIST $l)) >> ] ]
+      | "["; l = vernac_list_tail -> <:ast< (VernacList ($LIST $l)) >>
+
+      (* This is for "Grammar vernac" rules *)
+      | id = Prim.metaident -> id ] ]
   ;
   vernac: FIRST
     [ [ IDENT "Time"; v = vernac  -> <:ast< (Time $v)>> ] ]
@@ -44,9 +47,9 @@ GEXTEND Gram
   GLOBAL: gallina gallina_ext;
 
   theorem_body_line:
-    [ [ n = numarg; ":"; tac = tacarg ->
+    [ [ n = numarg; ":"; tac = tacarg; "." ->
           <:ast< (VERNACCALL {SOLVE} $n (TACTIC $tac)) >>
-      | tac = tacarg -> <:ast< (VERNACCALL {SOLVE} 1 (TACTIC $tac)) >>
+      | tac = tacarg; "." -> <:ast< (VERNACCALL {SOLVE} 1 (TACTIC $tac)) >>
       ] ]
   ;
   theorem_body_line_list:
