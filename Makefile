@@ -473,7 +473,8 @@ ide/utils/%.cmx: ide/%.ml
 clean::
 	rm -f ide/extract_index.ml ide/find_phrase.ml ide/highlight.ml
 	rm -f ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
-	rm -f ide/utf8_convert.ml 
+	rm -f ide/utf8_convert.ml
+	rm -f ide/utf8.vo $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi)
 	rm -f $(COQIDEBYTE) $(COQIDEOPT)
 
 # coqc
