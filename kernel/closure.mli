@@ -4,7 +4,6 @@
 (*i*)
 open Pp
 open Names
-(* open Generic *)
 open Term
 open Evd
 open Environ

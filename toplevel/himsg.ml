@@ -5,7 +5,6 @@ open Pp
 open Util
 open Options
 open Names
-(* open Generic *)
 open Term
 open Inductive
 open Indtypes

@@ -11,7 +11,7 @@ open Sign
 
 (*s Unsafe environments. We define here a datatype for environments. 
    Since typing is not yet defined, it is not possible to check the
-   informations added in environments, and that is what we speak here
+   informations added in environments, and that is why we speak here
    of ``unsafe'' environments. *)
 
 type context

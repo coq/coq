@@ -5,7 +5,6 @@
 open Util
 open Pp
 open Names
-(* open Generic *)
 (*i*)
 
 (*s The sorts of CCI. *)

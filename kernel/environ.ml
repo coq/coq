@@ -6,7 +6,6 @@ open Util
 open Names
 open Sign
 open Univ
-(* open Generic *)
 open Term
 open Declarations
 

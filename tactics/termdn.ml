@@ -2,7 +2,6 @@
 (* $Id$ *)
 
 open Util
-(* open Generic *)
 open Names
 open Term
 open Pattern

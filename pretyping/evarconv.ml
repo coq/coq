@@ -3,7 +3,6 @@
 
 open Util
 open Names
-(* open Generic *)
 open Term
 open Reduction
 open Instantiate

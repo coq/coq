@@ -6,7 +6,6 @@ open Util
 open Stamps
 open Names
 open Sign
-(* open Generic *)
 open Term
 open Inductive
 open Reduction

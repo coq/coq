@@ -3,7 +3,6 @@
 
 open Names
 open Util
-(* open Generic *)
 open Term
 
 (* Signatures *)

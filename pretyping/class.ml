@@ -4,7 +4,6 @@
 open Util
 open Pp
 open Names
-(* open Generic *)
 open Term
 open Inductive
 open Declarations

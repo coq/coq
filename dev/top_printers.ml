@@ -9,7 +9,6 @@ open Sign
 open Univ
 open Proof_trees
 open Environ
-(* open Generic *)
 open Printer
 open Refiner
 open Tacmach

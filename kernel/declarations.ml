@@ -3,7 +3,6 @@
 
 open Names
 open Univ
-(* open Generic *)
 open Term
 open Sign
 

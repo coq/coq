@@ -152,7 +152,7 @@ world: $(COQBINARIES) states theories contrib tools
 
 coqtop.opt: $(COQMKTOP) $(CMX) $(USERTACCMX)
 	$(COQMKTOP) -opt $(OPTFLAGS) -o coqtop.opt
-	$(STRIP) ./coqtop.opt
+#	$(STRIP) ./coqtop.opt
 
 coqtop.byte: $(COQMKTOP) $(CMO) $(USERTACCMO)
 	$(COQMKTOP) -top $(BYTEFLAGS) -o coqtop.byte

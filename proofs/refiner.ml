@@ -4,7 +4,6 @@
 open Pp
 open Util
 open Stamps
-(* open Generic *)
 open Term
 open Sign
 open Evd

@@ -9,11 +9,6 @@ open Typeops
 open Libobject
 open Library
 open Classops
-(*
-open Pp_control
-(* open Generic *)
-open Initial
-*)
 
 let nbimpl = ref 0
 let nbpathc = ref 0

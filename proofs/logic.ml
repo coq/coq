@@ -5,7 +5,6 @@ open Pp
 open Util
 open Names
 open Evd
-(* open Generic *)
 open Term
 open Sign
 open Environ

@@ -5,7 +5,6 @@ open Pp
 open Util
 open Names
 open Univ
-(* open Generic *)
 open Term
 open Environ
 

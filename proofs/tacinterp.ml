@@ -4,7 +4,6 @@
 open Astterm
 open Closure
 open Dyn
-(* open Generic *)
 open Libobject
 open Pattern
 open Pp

@@ -4,7 +4,6 @@
 open Pp
 open Util
 open Options
-(* open Generic *)
 open Term
 open Declarations
 open Inductive

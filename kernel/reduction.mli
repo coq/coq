@@ -3,7 +3,6 @@
 
 (*i*)
 open Names
-(* open Generic *)
 open Term
 open Univ
 open Evd
