@@ -15,34 +15,35 @@ Require Specif.
 
 (* To accept {x:A|P}*B without parentheses *)
 Grammar constr constr6 :=
-  sig [ "{" lconstr($lc) ":" constr($c1) "|" lconstr($c2) "}" "*" constr6($c) ]
+  sigprod [ "{" lconstr($lc) ":" lconstr($c1) "|" lconstr($c2) "}"
+            "*" constr6($c) ]
        -> [ (prod (sig $c1 [$lc : $c1]$c2) $c) ]
 
-| sig2 [ "{" lconstr($lc) ":" lconstr($c1)
+| sig2prod [ "{" lconstr($lc) ":" lconstr($c1)
            "|" lconstr($c2) "&" lconstr($c3) "}" "*" constr6($c) ]
        -> [ (prod (sig2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3) $c) ]
 
-| sigS [ "{" lconstr($lc) ":" lconstr($c1) "&" lconstr($c2) "}"
+| sigSprod [ "{" lconstr($lc) ":" lconstr($c1) "&" lconstr($c2) "}"
          "*" constr6($c)]
        -> [ (prod (sigS $c1 [$lc : $c1]$c2) $c) ]
 
-| sigS2 [ "{" lconstr($lc) ":" lconstr($c1)
+| sigS2prod [ "{" lconstr($lc) ":" lconstr($c1)
              "&" lconstr($c2) "&" lconstr($c3) "}" "*" constr6($c) ]
        -> [ (prod (sigS2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3) $c) ].
 
 (* To factor with {A}+{B} *)
 Grammar constr constr6 :=
-  sig [ "{" lconstr($lc) ":" constr($c1) "|" lconstr($c2) "}" ]
+  sig [ "{" lconstr($lc) ":" lconstr($c1) "|" lconstr($c2) "}" ]
        -> [ (sig $c1 [$lc : $c1]$c2) ]
 
-| sig2 [ "{" lconstr($lc) ":" constr($c1)
+| sig2 [ "{" lconstr($lc) ":" lconstr($c1)
            "|" lconstr($c2) "&" lconstr($c3) "}" ]
        -> [ (sig2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3) ]
 
-| sigS [ "{" lconstr($lc) ":" constr($c1) "&" lconstr($c2) "}" ]
+| sigS [ "{" lconstr($lc) ":" lconstr($c1) "&" lconstr($c2) "}" ]
        -> [ (sigS $c1 [$lc : $c1]$c2) ]
 
-| sigS2 [ "{" lconstr($lc) ":" constr($c1)
+| sigS2 [ "{" lconstr($lc) ":" lconstr($c1)
              "&" lconstr($c2) "&" lconstr($c3) "}" ]
        -> [ (sigS2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3) ].
 
