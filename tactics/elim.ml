@@ -7,6 +7,7 @@ open Names
 open Generic
 open Term
 open Reduction
+open Inductive
 open Proof_type
 open Clenv
 open Hipattern
