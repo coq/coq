@@ -656,13 +656,11 @@ INTERFACE=\
   contrib/interface/history.cmo \
   contrib/interface/name_to_ast.cmo contrib/interface/debug_tac.cmo \
   contrib/interface/showproof_ct.cmo contrib/interface/showproof.cmo \
-  contrib/interface/blast.cmo contrib/interface/centaur.cmo \
-#  contrib/interface/explication.cmo
+  contrib/interface/blast.cmo contrib/interface/centaur.cmo
 
 INTERFACECMX=$(INTERFACE:.cmo=.cmx)
 
-ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4 \
-  contrib/interface/explication.ml4
+ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
 
 PARSERREQUIRES=$(CMO) # Solution de facilité...
 PARSERREQUIRESCMX=$(CMX)
