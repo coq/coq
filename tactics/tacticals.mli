@@ -101,7 +101,8 @@ type branch_assumptions = {
 
 val sort_of_goal      : goal sigma -> sorts
 val suff              : goal sigma -> constr -> string
-val lookup_eliminator : context -> section_path -> string -> constr
+val lookup_eliminator : 
+  typed_type signature -> section_path -> string -> constr
 
 val general_elim_then_using :
   constr ->  (constr -> int -> bool list) -> 

@@ -413,7 +413,7 @@ let make_elim_branch_assumptions ba gl =
       | (_, _) -> error "make_elim_branch_assumptions"
   in 
   makerec ([],[],[],[],[]) ba.branchsign
-    (try firstn ba.nassums (ids_of_sign (pf_untyped_hyps gl))
+    (try list_firstn ba.nassums (ids_of_sign (pf_untyped_hyps gl))
      with Failure _ -> anomaly "make_elim_branch_assumptions")
 
 let elim_on_ba tac ba gl = tac (make_elim_branch_assumptions ba gl) gl
@@ -441,7 +441,7 @@ let make_case_branch_assumptions ba gl =
       | (_, _) -> error "make_case_branch_assumptions"
   in 
   makerec ([],[],[],[]) ba.branchsign
-    (try firstn ba.nassums (ids_of_sign (pf_untyped_hyps gl))
+    (try list_firstn ba.nassums (ids_of_sign (pf_untyped_hyps gl))
      with Failure _ -> anomaly "make_case_branch_assumptions")
 
 let case_on_ba tac ba gl = tac (make_case_branch_assumptions ba gl) gl
