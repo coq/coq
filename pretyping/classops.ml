@@ -52,9 +52,15 @@ type inheritance_path = int list
 
 let cLASSES = (ref [] : (int * (cl_typ * cl_info_typ)) list ref)
 
+let classes () = !cLASSES
+
 let cOERCIONS = (ref [] : (int * (coe_typ * coe_info_typ)) list ref)
 
+let coercions () = !cOERCIONS
+
 let iNHERITANCE_GRAPH = (ref [] : ((int * int) * inheritance_path) list ref) 
+
+let inheritance_graph () = !iNHERITANCE_GRAPH
 
 let freeze () = (!cLASSES,!cOERCIONS, !iNHERITANCE_GRAPH)
 
@@ -229,9 +235,16 @@ let coe_value i =
 
 (* pretty-print functions are now in Pretty *)
 (* rajouter une coercion dans le graphe *)
+
+let path_printer = ref (fun _ -> [< 'sTR "<a class path>" >] 
+                        : (int * int) * inheritance_path -> std_ppcmds)
+
+let install_path_printer f = path_printer := f
  
+let print_path x = !path_printer x
+
 let message_ambig l = 
-  [< 'sTR"Ambiguous paths : ";
+  [< 'sTR"Ambiguous paths:"; 'sPC;
      prlist_with_sep pr_fnl (fun ijp -> print_path ijp) l >]
 
 (* add_coercion_in_graph : int * int * int -> unit 
@@ -276,8 +289,8 @@ let add_coercion_in_graph (ic,source,target) =
 	 end)
       old_iNHERITANCE_GRAPH 
   end;
-  if ((!ambig_paths) <> []) & is_mes_ambig() then 
-    pPNL (message_ambig (!ambig_paths))
+  if (!ambig_paths <> []) & is_mes_ambig() then 
+    pPNL (message_ambig !ambig_paths)
 
 let add_new_coercion_in_graph ((coef,xf),cls,clt) =
   let is,_ = class_info cls in

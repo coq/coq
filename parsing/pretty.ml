@@ -689,18 +689,20 @@ let print_path ((i,j),p) =
      'sTR"] : "; print_class i; 'sTR" >-> ";
      print_class j >]
 
+let _ = Classops.install_path_printer print_path
+
 let print_graph () = 
-  [< prlist_with_sep pr_fnl print_path (!iNHERITANCE_GRAPH) >]
+  [< prlist_with_sep pr_fnl print_path (inheritance_graph()) >]
 
 let print_classes () = 
   [< prlist_with_sep pr_spc
        (fun (_,(cl,x)) -> 
           [< 'sTR x.cL_STR  (*; 'sTR(string_of_strength x.cL_STRE) *) >]) 
-       (!cLASSES) >]
+       (classes()) >]
 
 let print_coercions () = 
   [< prlist_with_sep pr_spc
-       (fun (_,(_,v)) -> [< print_coercion_value v >]) (!cOERCIONS) >]
+       (fun (_,(_,v)) -> [< print_coercion_value v >]) (coercions()) >]
   
 let cl_of_id id = 
   match string_of_id id with

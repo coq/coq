@@ -37,9 +37,11 @@ type coe_info_typ = {
   cOE_ISID : bool;
   cOE_PARAM : int }
 
-
 type inheritance_path = int list
 
+val inheritance_graph : unit -> ((int * int) * inheritance_path) list
+val classes : unit -> (int * (cl_typ * cl_info_typ)) list
+val coercions : unit -> (int * (coe_typ * coe_info_typ)) list
 
 val cte_of_constr : constr -> cte_typ
 val class_info : cl_typ -> (int * cl_info_typ)
@@ -61,5 +63,9 @@ val arity_sort : constr -> int
 val fully_applied : identifier -> int -> int -> unit
 val stre_of_cl : cl_typ -> strength
 val add_new_class : (cl_typ * string * strength * int) -> unit
-val add_new_coercion_in_graph : (coe_typ * coe_info_typ) * cl_typ * cl_typ -> unit
+val add_new_coercion_in_graph : 
+  (coe_typ * coe_info_typ) * cl_typ * cl_typ -> unit
 val add_coercion_in_graph : int * int * int -> unit
+
+val install_path_printer : 
+  ((int * int) * inheritance_path -> std_ppcmds) -> unit
