@@ -31,6 +31,8 @@ open Tacinterp
 (* Copie de Nameops *)
 let pr_id id = pr_id (Constrextern.v7_to_v8_id id)
 
+let pr_ltac_id id = pr_id (id_of_ltac_v7_id id)
+
 let pr_module = Libnames.pr_reference
 
 let pr_reference r =
@@ -564,7 +566,7 @@ let rec pr_vernac = function
     | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
   | VernacNotation (local,c,sl,mv8,opt) ->
       let (s,l) = match mv8 with
-          None -> out_some sl
+          None -> fst (out_some sl), []
         | Some ml -> ml in
       let ps =
 	let n = String.length s in
@@ -939,7 +941,7 @@ pr_vbinders bl ++ spc())
           match body with
 	    | Tacexpr.TacFun (idl,b) -> idl,b
             | _ -> [], body in
-        pr_located pr_id id ++ 
+        pr_located pr_ltac_id id ++ 
 	prlist (function None -> str " _" | Some id -> spc () ++ pr_id id) idl
 	++ str" :=" ++ brk(1,1) ++
 	let idl = List.map out_some (List.filter (fun x -> not (x=None)) idl)in

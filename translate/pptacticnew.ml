@@ -23,11 +23,101 @@ open Genarg
 open Libnames
 open Pptactic
 
+let translate_v7_ltac = function
+  | "DiscrR" -> "discrR"
+  | "Sup0" -> "prove_sup0"
+  | "SupOmega" -> "omega_sup"
+  | "Sup" -> "prove_sup"
+  | "RCompute" -> "Rcompute"
+  | "IntroHypG" -> "intro_hyp_glob"
+  | "IntroHypL" -> "intro_hyp_pt"
+  | "IsDiff_pt" -> "is_diff_pt"
+  | "IsDiff_glob" -> "is_diff_glob"
+  | "IsCont_pt" -> "is_cont_pt"
+  | "IsCont_glob" -> "is_cont_glob"
+  | "RewTerm" -> "rew_term"
+  | "ConsProof" -> "deriv_proof"
+  | "SimplifyDerive" -> "simplify_derive"
+  | "Reg" -> "reg" (* ??? *)
+  | "SplitAbs" -> "split_case_Rabs"
+  | "SplitAbsolu" -> "split_Rabs"
+  | "SplitRmult" -> "split_Rmult"
+  | "CaseEqk" -> "case_eq"
+  | "SqRing" -> "ring_Rsqr"
+  | "TailSimpl" -> "tail_simpl"
+  | "CoInduction" -> "coinduction"
+  | "ElimCompare" -> "elim_compare"
+  | "CCsolve" -> "CCsolve"  (* ?? *)
+  | "ArrayAccess" -> "array_access"
+  | "MemAssoc" -> "mem_assoc"
+  | "SeekVarAux" -> "seek_var_aux"
+  | "SeekVar" -> "seek_var"
+  | "NumberAux" -> "number_aux"
+  | "Number" -> "number"
+  | "BuildVarList" -> "build_varlist"
+  | "Assoc" -> "assoc"
+  | "Remove" -> "remove"
+  | "Union" -> "union"
+  | "RawGiveMult" -> "raw_give_mult"
+  | "GiveMult" -> "give_mult"
+  | "ApplyAssoc" -> "apply_assoc"
+  | "ApplyDistrib" -> "apply_distrib"
+  | "GrepMult" -> "grep_mult"
+  | "WeakReduce" -> "weak_reduce"
+  | "Multiply" -> "multiply"
+  | "ApplyMultiply" -> "apply_multiply"
+  | "ApplyInverse" -> "apply_inverse"
+  | "StrongFail" -> "strong_fail"
+  | "InverseTestAux" -> "inverse_test_aux"
+  | "InverseTest" -> "inverse_test"
+  | "ApplySimplif" -> "apply_simplif"
+  | "Unfolds" -> "unfolds"
+  | "Reduce" -> "reduce"
+  | "Field_Gen_Aux" -> "field_gen_aux"
+  | "Field_Gen" -> "field_gen"
+  | "EvalWeakReduce" -> "eval_weak_reduce"
+  | "Field_Term" -> "field_term"
+  | "Fourier" -> "fourier" (* ou Fourier ?? *)
+  | "FourierEq" -> "fourier_eq"
+  | "S_to_plus" -> "rewrite_S_to_plus_term"
+  | "S_to_plus_eq" -> "rewrite_S_to_plus"
+  | "NatRing" -> "ring_nat"
+  | "Solve1" -> "solve1"
+  | "Solve2" -> "solve2"
+  | "Elim_eq_term" -> "elim_eq_term"
+  | "Elim_eq_Z" -> "elim_eq_Z"
+  | "Elim_eq_pos" -> "elim_eq_pos"
+  | "Elim_Zcompare" -> "elim_Zcompare"
+  | "ProveStable" -> "prove_stable"
+  | "interp_A" -> "interp_A"
+  | "InitExp" -> "init_exp"
+  | "SimplInv" -> "simpl_inv"
+  | "Map" -> "map_tactic"
+  | "BuildMonomAux" -> "build_monom_aux"
+  | "BuildMonom" -> "build_monom"
+  | "SimplMonomAux" -> "simpl_monom_aux"
+  | "SimplMonom" -> "simpl_monom"
+  | "SimplAllMonoms" -> "simpl_all_monomials"
+  | "AssocDistrib" -> "assoc_distrib"
+  | x -> x
+
+let id_of_ltac_v7_id id = 
+  id_of_string (translate_v7_ltac (string_of_id id))
+
+let pr_ltac_or_var pr = function
+  | ArgArg x -> pr x
+  | ArgVar (_,id) -> pr_id (id_of_ltac_v7_id id)
+
 let pr_id id = pr_id (Constrextern.v7_to_v8_id id)
 
 let pr_arg pr x = spc () ++ pr x
 
-let pr_ltac_constant sp = pr_qualid (Nametab.shortest_qualid_of_tactic sp)
+let pr_ltac_constant sp =
+  (* Source de bug: le nom le plus court n'est pas forcement correct 
+     apres renommage *)
+  let qid = Nametab.shortest_qualid_of_tactic sp in
+  let dir,id = repr_qualid qid in
+  pr_qualid (make_qualid dir (id_of_ltac_v7_id id))
 
 let pr_evaluable_reference_env env = function 
   | EvalVarRef id -> pr_id (Constrextern.v7_to_v8_id id)
@@ -536,7 +626,7 @@ let rec glob_printers =
      (fun c -> Ppconstrnew.pr_pattern_env_no_translate (Global.env()) c),
      (fun env -> pr_or_var (pr_and_short_name (pr_evaluable_reference_env env))),
      (fun vars -> pr_or_var (pr_inductive vars)),
-     pr_or_var (pr_located pr_ltac_constant),
+     pr_ltac_or_var (pr_located pr_ltac_constant),
      pr_located pr_id,
      Pptactic.pr_glob_extend)
 

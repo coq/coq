@@ -146,7 +146,7 @@ VERNAC COMMAND EXTEND Field
            (constr_of_opt a adiv_o) (constr_of rth) (constr_of ainv_l) ]
 END
 
-(* Guesses the type and calls Field_Gen with the right theory *)
+(* Guesses the type and calls field_gen with the right theory *)
 let field g =
   Library.check_required_library ["Coq";"field";"Field"];
   let ist = { lfun=[]; debug=get_debug () } in
@@ -156,7 +156,7 @@ let field g =
       | _ -> error "The statement is not built from Leibniz' equality" in
   let th = VConstr (lookup (pf_env g) typ) in
   (interp_tac_gen [(id_of_string "FT",th)] (get_debug ())
-    <:tactic< match context with [|- (@eq _ _ _) ] => Field_Gen FT end >>) g
+    <:tactic< match context with [|- (@eq _ _ _) ] => field_gen FT end >>) g
 
 (* Verifies that all the terms have the same type and gives the right theory *)
 let guess_theory env evc = function

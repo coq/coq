@@ -266,6 +266,7 @@ Recursive Tactic Definition Field_Gen_Aux FT :=
 
 Tactic Definition Field_Gen FT :=
   Unfolds FT;((InverseTest FT);Ring) Orelse (Field_Gen_Aux FT).
+V7only [Tactic Definition field_gen := Field_Gen.].
 
 (*****************************)
 (*    Term Simplification    *)
