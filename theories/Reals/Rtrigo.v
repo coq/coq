@@ -21,6 +21,11 @@ Require Binome.
 Require Export Rtrigo_def.
 Require Export Rtrigo_alt.
 
+(* The two remaining axioms *)
+Axiom cos_plus : (x,y:R) ``(cos (x+y))==(cos x)*(cos y)-(sin x)*(sin y)``.
+
+Axiom sin_PI2 : ``(sin (PI/2))==1``.
+
 (* Here, we have the euclidian division *)
 (* This lemma is used in the proof of sin_eq_0 : (sin x)=0<->x=kPI *)
 Lemma euclidian_division : (x,y:R) ``y<>0`` -> (EXT k:Z | (EXT r : R | ``x==(IZR k)*y+r``/\``0<=r<(Rabsolu y)``)).
@@ -74,9 +79,73 @@ Lemma PI_neq0 : ~``PI==0``.
 Red; Intro; Assert H0 := PI_RGT_0; Rewrite H in H0; Elim (Rlt_antirefl ? H0).
 Qed.
 
+(**********) 
+Lemma cos_minus : (x,y:R) ``(cos (x-y))==(cos x)*(cos y)+(sin x)*(sin y)``.
+Intros; Unfold Rminus; Rewrite cos_plus.
+Rewrite <- cos_paire; Rewrite sin_impaire; Ring.
+Qed.
+
 (**********)
 Lemma sin2_cos2 : (x:R) ``(Rsqr (sin x)) + (Rsqr (cos x))==1``.
 Intro; Unfold Rsqr; Rewrite Rplus_sym; Rewrite <- (cos_minus x x); Unfold Rminus; Rewrite Rplus_Ropp_r; Apply cos_0.
+Qed.
+
+Lemma cos2 : (x:R) ``(Rsqr (cos x))==1-(Rsqr (sin x))``.
+Intro x; Generalize (sin2_cos2 x); Intro H1; Rewrite <- H1; Unfold Rminus; Rewrite <- (Rplus_sym (Rsqr (cos x))); Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r; Symmetry; Apply Rplus_Or.
+Qed.
+
+(**********)
+Lemma cos_PI2 : ``(cos (PI/2))==0``.
+Apply Rsqr_eq_0; Rewrite cos2; Rewrite sin_PI2; Rewrite Rsqr_1; Unfold Rminus; Apply Rplus_Ropp_r.
+Qed.
+
+(**********)
+Lemma cos_PI : ``(cos PI)==-1``.
+Replace ``PI`` with ``PI/2+PI/2``.
+Rewrite cos_plus.
+Rewrite sin_PI2; Rewrite cos_PI2.
+Ring.
+Symmetry; Apply double_var.
+Qed.
+
+Lemma sin_PI : ``(sin PI)==0``.
+Assert H := (sin2_cos2 PI).
+Rewrite cos_PI in H.
+Rewrite <- Rsqr_neg in H.
+Rewrite Rsqr_1 in H.
+Cut (Rsqr (sin PI))==R0.
+Intro; Apply (Rsqr_eq_0 ? H0).
+Apply r_Rplus_plus with R1.
+Rewrite Rplus_Or; Rewrite Rplus_sym; Exact H.
+Qed.
+
+(**********)
+Lemma neg_cos : (x:R) ``(cos (x+PI))==-(cos x)``.
+Intro x; Rewrite -> cos_plus; Rewrite -> sin_PI; Rewrite -> cos_PI; Ring.
+Qed.
+
+(**********)
+Lemma sin_cos : (x:R) ``(sin x)==-(cos (PI/2+x))``.
+Intro x; Rewrite -> cos_plus; Rewrite -> sin_PI2; Rewrite -> cos_PI2; Ring.
+Qed.
+
+(**********)
+Lemma sin_plus : (x,y:R) ``(sin (x+y))==(sin x)*(cos y)+(cos x)*(sin y)``.
+Intros.
+Rewrite (sin_cos ``x+y``).
+Replace ``PI/2+(x+y)`` with ``(PI/2+x)+y``; [Rewrite cos_plus | Ring].
+Rewrite (sin_cos ``PI/2+x``).
+Replace ``PI/2+(PI/2+x)`` with ``x+PI``.
+Rewrite neg_cos.
+Replace (cos ``PI/2+x``) with ``-(sin x)``.
+Ring.
+Rewrite sin_cos; Rewrite Ropp_Ropp; Reflexivity.
+Pattern 1 PI; Rewrite (double_var PI); Ring.
+Qed.
+
+Lemma sin_minus : (x,y:R) ``(sin (x-y))==(sin x)*(cos y)-(cos x)*(sin y)``.
+Intros; Unfold Rminus; Rewrite sin_plus.
+Rewrite <- cos_paire; Rewrite sin_impaire; Ring.
 Qed.
 
 (**********)
@@ -104,10 +173,6 @@ Qed.
 (*******************************************************)
 (* Some properties of cos, sin and tan                 *)
 (*******************************************************)
-
-Lemma cos2 : (x:R) ``(Rsqr (cos x))==1-(Rsqr (sin x))``.
-Intro x; Generalize (sin2_cos2 x); Intro H1; Rewrite <- H1; Unfold Rminus; Rewrite <- (Rplus_sym (Rsqr (cos x))); Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r; Symmetry; Apply Rplus_Or.
-Qed.
 
 Lemma sin2 : (x:R) ``(Rsqr (sin x))==1-(Rsqr (cos x))``.
 Intro x; Generalize (cos2 x); Intro H1; Rewrite -> H1.
@@ -163,25 +228,6 @@ Assumption.
 Rewrite tan_neg; Unfold Rminus; Rewrite <- Ropp_mul1; Rewrite Ropp_mul2; Assumption.
 Qed.
 
-Lemma cos_PI2 : ``(cos (PI/2))==0``.
-Apply Rsqr_eq_0; Rewrite cos2; Rewrite sin_PI2; Rewrite Rsqr_1; Unfold Rminus; Apply Rplus_Ropp_r.
-Qed.
-
-Lemma sin_PI : ``(sin PI)==0``.
-Replace ``PI`` with ``2*(PI/2)``.
-Rewrite -> sin_2a; Rewrite -> sin_PI2; Rewrite -> cos_PI2; Ring.
-Unfold Rdiv.
-Repeat Rewrite <- Rmult_assoc; Apply Rinv_r_simpl_m.
-Apply aze.
-Qed.
-
-Lemma cos_PI : ``(cos PI)==(-1)``.
-Replace ``PI`` with ``2*(PI/2)``.
-Rewrite -> cos_2a; Rewrite -> sin_PI2; Rewrite -> cos_PI2.
-Ring.
-Unfold Rdiv; Rewrite <- Rmult_assoc; Apply Rinv_r_simpl_m; Apply aze.
-Qed.
-
 Lemma tan_PI : ``(tan PI)==0``.
 Unfold tan; Rewrite -> sin_PI; Rewrite -> cos_PI.
 Unfold Rdiv; Apply Rmult_Ol. 
@@ -211,10 +257,6 @@ Qed.
 
 Lemma tan_2PI : ``(tan (2*PI))==0``.
 Unfold tan; Rewrite sin_2PI; Unfold Rdiv; Apply Rmult_Ol.
-Qed.
-
-Lemma neg_cos : (x:R) ``(cos (x+PI))==-(cos x)``.
-Intro x; Rewrite -> cos_plus; Rewrite -> sin_PI; Rewrite -> cos_PI; Ring.
 Qed.
 
 Lemma neg_sin : (x:R) ``(sin (x+PI))==-(sin x)``.
@@ -247,10 +289,6 @@ Qed.
 
 Lemma cos_sin : (x:R) ``(cos x)==(sin (PI/2+x))``.
 Intro x; Rewrite -> sin_plus; Rewrite -> sin_PI2; Rewrite -> cos_PI2; Ring.
-Qed.
-
-Lemma sin_cos : (x:R) ``(sin x)==-(cos (PI/2+x))``.
-Intro x; Rewrite -> cos_plus; Rewrite -> sin_PI2; Rewrite -> cos_PI2; Ring.
 Qed.
 
 Lemma PI2_RGT_0 : ``0<PI/2``.
