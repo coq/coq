@@ -89,11 +89,7 @@ let check_fix_reversibility cst labs args ((lv,i),(tys,_,bds)) =
   else 
     raise Elimconst
 
-(* [compute_consteval_direct] expand all constant in a whole, but
-   [compute_consteval] only one by one, until finding the one which is
-   reversible (in case of a unary Fix) or the last one before the Fix
-   if the latter is mutually defined *)
-
+(**
 let compute_consteval_direct sigma env cst c =
   let rec srec env n labs c =
     let c',l = whd_betadeltaeta_stack env sigma c in
@@ -104,8 +100,13 @@ let compute_consteval_direct sigma env cst c =
       | IsMutCase (_,_,d,_) when isRel d -> EliminationCases n
       | _ -> NotAnElimination
   in srec env 0 [] c
+**)
+(* [srec_direct] expand all constant in a whole, but
+   [srec] only one by one, until finding the one which is
+   reversible (in case of a unary Fix) or the last one before the Fix
+   if the latter is mutually defined *)
 
-let rec compute_consteval sigma env cst c = 
+let rec descend_consteval sigma env cst =
   let rec srec env n labs c =
     let c',l = whd_betaetalet_stack c in
     let nargs = List.length l in
@@ -125,7 +126,7 @@ let rec compute_consteval sigma env cst c =
 		   try
 		     (* We try to name the Fix by cst *)
 		     (* Complexité en n^2, bof, peut mieux faire *)
-		     compute_consteval_direct sigma env cst c
+		     srec_direct env n labs c
 		   with
 		       Elimconst -> EliminationFix (new_minarg,info)
 		 else
@@ -134,14 +135,21 @@ let rec compute_consteval sigma env cst c =
 		 let new_minarg = max (minarg+n-nargs) minarg in
 		 EliminationCases new_minarg)
       | _ -> raise Elimconst
-  in
-  try srec env 0 [] c
-  with Elimconst -> NotAnElimination
+  and srec_direct env n labs c =
+    let c',l = whd_betadeltaeta_stack env sigma c in
+    match kind_of_term c' with
+      | IsLambda (id,t,g) when l=[] ->
+	  srec_direct (push_rel_assum (id,t) env) (n+1) (t::labs) g
+      | IsFix fix -> check_fix_reversibility cst labs l fix
+      | IsMutCase (_,_,d,_) when isRel d -> EliminationCases n
+      | _ -> NotAnElimination
 
-and descend_consteval sigma env cst =
+  in
   match reference_opt_value sigma env cst with
     | None -> NotAnElimination
-    | Some c -> compute_consteval sigma env cst c
+    | Some c -> 
+	try srec env 0 [] c
+	with Elimconst -> NotAnElimination
 
 let reference_eval sigma env = function
   | EvalConst cst as ref -> 
@@ -301,10 +309,11 @@ and construct_const env sigma =
     match kind_of_term x with
       | IsCast (c,_) -> hnfstack (c, stack)
       | IsApp (f,cl) -> hnfstack (f, append_stack cl stack)
-      | IsLambda (_,_,c) ->
+      | IsLambda (id,t,c) ->
           (match decomp_stack stack with 
              | None -> assert false
-             | Some (c',rest) -> stacklam hnfstack [c'] c rest)
+             | Some (c',rest) -> 
+		   stacklam hnfstack [c'] c rest)
       | IsMutCase (ci,p,c,lf) ->
           hnfstack 
 	    (special_red_case env (construct_const env sigma) (ci,p,c,lf), stack)
@@ -328,7 +337,7 @@ and construct_const env sigma =
 		    raise Redelimination))
       | _ -> raise Redelimination
   in 
-  hnfstack
+  hnfstack 
 
 (***********************************************************************)
 (*            Special Purpose Reduction Strategies                     *)
@@ -360,8 +369,9 @@ let hnf_constr env sigma c =
       | IsLambda (n,t,c) ->
           (match decomp_stack largs with
              | None      -> app_stack s
-             | Some (a,rest) -> stacklam redrec [a] c rest)
-      | IsLetIn (n,b,_,c) -> stacklam redrec [b] c largs
+             | Some (a,rest) -> 
+		 stacklam redrec [a] c rest)
+      | IsLetIn (n,b,t,c) -> stacklam redrec [b] c largs
       | IsApp (f,cl)   -> redrec (f, append_stack cl largs)
       | IsCast (c,_) -> redrec (c, largs)
       | IsMutCase (ci,p,c,lf) ->
@@ -400,8 +410,9 @@ let whd_nf env sigma c =
       | IsLambda (name,c1,c2)    ->
           (match decomp_stack stack with
              | None -> (c,empty_stack)
-             | Some (a1,rest) -> stacklam nf_app [a1] c2 rest)
-      | IsLetIn (n,b,_,c) -> stacklam nf_app [b] c stack
+             | Some (a1,rest) -> 
+		 stacklam nf_app [a1] c2 rest)
+      | IsLetIn (n,b,t,c) -> stacklam nf_app [b] c stack
       | IsApp (f,cl) -> nf_app (f, append_stack cl stack)
       | IsCast (c,_) -> nf_app (c, stack)
       | IsMutCase (ci,p,d,lf) ->
