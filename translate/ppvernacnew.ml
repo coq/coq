@@ -28,6 +28,8 @@ open Topconstr
 
 open Tacinterp
 
+let quote str = "\""^str^"\""
+
 (* Warning: [pr_raw_tactic] globalises and fails if globalisation fails *)
 let pr_raw_tactic_env l env t = 
   Pptacticnew.pr_raw_tactic env t
@@ -572,7 +574,6 @@ let rec pr_vernac = function
       let impls_out = List.map (fun (id,_,a) -> (id,a)) impls in
       Constrintern.set_temporary_implicits_in impls_in;
       Constrextern.set_temporary_implicits_out impls_out;
-
       (* Fin calcul implicites *)
 
       let pr_constructor (coe,(id,c)) =
@@ -587,14 +588,31 @@ let rec pr_vernac = function
       let pr_oneind key (id,ntn,indpar,s,lc) =
 	hov 0 (
           str key ++ spc() ++
-          pr_opt (fun (ntn,scopt) -> 
-            str ntn ++ pr_opt (fun sc -> str " :" ++ str sc) scopt ++ spc ())
-          ntn ++
           pr_id id ++ spc() ++ pr_sbinders indpar ++ str":" ++ spc() ++
-          pr_lconstr s ++ str" :=") ++ pr_constructor_list lc in
+          pr_lconstr s ++ 
+          pr_opt (fun (ntn,scopt) -> 
+	    str "as " ++ str (quote ntn) ++ 
+            pr_opt (fun sc -> str " :" ++ str sc) scopt)
+          ntn ++ str" :=") ++ pr_constructor_list lc in
+
+      (* Copie simplifiée de command.ml pour déclarer les notations locales *)
+      let lparnames = List.map (fun (na,_,_) -> na) params in
+      let notations = 
+	List.map (fun (recname,ntnopt,_,arityc,_) ->
+          let arity = Constrintern.interp_type sigma env_params arityc in
+	  option_app (fun df ->
+            let larnames =
+	      List.rev_append lparnames 
+		(List.map fst (fst (Term.decompose_prod arity))) in
+	    (recname,larnames,df)) ntnopt) l in
+      List.iter (option_iter (fun (recname,larnames,(df,scope)) ->
+	Metasyntax.add_notation_interpretation df
+	(AVar recname,larnames) scope)) notations;
+
       hov 1 (pr_oneind (if f then "Inductive" else "CoInductive") (List.hd l))
       ++ 
       (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
+
 
   | VernacFixpoint recs ->
 
