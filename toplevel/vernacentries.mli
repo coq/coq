@@ -31,3 +31,8 @@ val global : Coqast.loc -> qualid -> global_reference;;
 (* this function is used to analyse the extra arguments in search commands.
    It is used in pcoq. *)
 val inside_outside : vernac_arg list -> dir_path list * bool;;
+
+(* This function makes sure that the function given is argument is preceded
+   by a command aborting all proofs if necessary.
+   It is used in pcoq. *)
+val abort_refine : ('a -> unit) -> 'a -> unit;;
