@@ -774,10 +774,10 @@ and intern_tactic_seq ist = function
       let (l1,l2) = ist.ltacvars in
       let ist' = { ist with ltacvars = ((extract_let_names l)@l1,l2) } in
       ist.ltacvars, TacLetIn (l,intern_tactic ist' u)
-  | TacMatchContext (lr,lmr) ->
-      ist.ltacvars, TacMatchContext(lr, intern_match_rule ist lmr)
-  | TacMatch (c,lmr) ->
-      ist.ltacvars, TacMatch (intern_tactic ist c,intern_match_rule ist lmr)
+  | TacMatchContext (lz,lr,lmr) ->
+      ist.ltacvars, TacMatchContext(lz,lr, intern_match_rule ist lmr)
+  | TacMatch (lz,c,lmr) ->
+      ist.ltacvars, TacMatch (lz,intern_tactic ist c,intern_match_rule ist lmr)
   | TacId _ as x -> ist.ltacvars, x
   | TacFail (n,x) -> ist.ltacvars, TacFail (intern_int_or_var ist n,x)
   | TacProgress tac -> ist.ltacvars, TacProgress (intern_tactic ist tac)
@@ -959,13 +959,9 @@ let rec read_match_rule evc env lfun = function
 exception Not_coherent_metas
 exception Eval_fail of string
 
-let is_failure = function
-  | FailError _ | Stdpp.Exc_located (_,FailError _) -> true
-  | _ -> false
-
 let is_match_catchable = function
   | PatternMatchingFailure | Eval_fail _ -> true
-  | e -> is_failure e or Logic.catchable_exception e
+  | e -> Logic.catchable_exception e
 
 (* Verifies if the matched list is coherent with respect to lcm *)
 let rec verify_metas_coherence gl lcm = function
@@ -1324,8 +1320,8 @@ let rec val_interp ist gl (tac:glob_tactic_expr) =
   | TacLetIn (l,u) ->
       let addlfun = interp_letin ist gl l in
       val_interp { ist with lfun=addlfun@ist.lfun } gl u
-  | TacMatchContext (lr,lmr) -> interp_match_context ist gl lr lmr 
-  | TacMatch (c,lmr) -> interp_match ist gl c lmr
+  | TacMatchContext (lz,lr,lmr) -> interp_match_context ist gl lz lr lmr 
+  | TacMatch (lz,c,lmr) -> interp_match ist gl lz c lmr
   | TacArg a -> interp_tacarg ist gl a
   (* Delayed evaluation *)
   | t -> VTactic (dummy_loc,eval_tactic ist t)
@@ -1338,11 +1334,8 @@ let rec val_interp ist gl (tac:glob_tactic_expr) =
 
 and eval_tactic ist = function
   | TacAtom (loc,t) -> fun gl -> catch_error loc (interp_atomic ist gl t) gl
-  | TacFun (it,body) -> assert false
-  | TacLetRecIn (lrc,u) -> assert false
-  | TacLetIn (l,u) -> assert false
-  | TacMatchContext _ -> assert false
-  | TacMatch (c,lmr) -> assert false
+  | TacFun _ | TacLetRecIn _ | TacLetIn _ -> assert false
+  | TacMatchContext _ | TacMatch _ -> assert false
   | TacId s -> tclIDTAC_MESSAGE s
   | TacFail (n,s) -> tclFAIL (interp_int_or_var ist n) s
   | TacProgress tac -> tclPROGRESS (interp_tactic ist tac)
@@ -1424,10 +1417,10 @@ and tactic_of_value vle g =
   | _ -> raise NotTactic
 
 (* Evaluation with FailError catching *)
-and eval_with_fail ist tac goal =
+and eval_with_fail ist is_lazy goal tac =
   try
     (match val_interp ist goal tac with
-    | VTactic (loc,tac) -> VRTactic (catch_error loc tac goal)
+    | VTactic (loc,tac) when not is_lazy -> VRTactic (catch_error loc tac goal)
     | a -> a)
   with
     | Stdpp.Exc_located (_,FailError (0,s)) | FailError (0,s) ->
@@ -1480,14 +1473,12 @@ and interp_letin ist gl = function
     in (id,VConstr (mkCast (csr,typ)))::(interp_letin ist gl tl)
 
 (* Interprets the Match Context expressions *)
-and interp_match_context ist g lr lmr =
+and interp_match_context ist g lz lr lmr =
   let rec apply_goal_sub ist env goal nocc (id,c) csr mt mhyps hyps =
     let (lgoal,ctxt) = match_subterm nocc c csr in
     let lctxt = give_context ctxt id in
-    try apply_hyps_context ist env goal mt lctxt lgoal mhyps hyps
-    with
-    | e when is_failure e -> raise e
-    | e when is_match_catchable e ->
+    try apply_hyps_context ist env lz goal mt lctxt lgoal mhyps hyps
+    with e when is_match_catchable e ->
       apply_goal_sub ist env goal (nocc + 1) (id,c) csr mt mhyps hyps in
   let rec apply_match_context ist env goal nrs lex lpt = 
     begin
@@ -1496,11 +1487,9 @@ and interp_match_context ist g lr lmr =
     | (All t)::tl ->
       begin
         db_mc_pattern_success ist.debug;
-        try eval_with_fail ist t goal
-        with
-        | e when is_failure e -> raise e
-        | e when is_match_catchable e ->
-            apply_match_context ist env goal (nrs+1) (List.tl lex) tl
+        try eval_with_fail ist lz goal t
+        with e when is_match_catchable e ->
+          apply_match_context ist env goal (nrs+1) (List.tl lex) tl
       end
     | (Pat (mhyps,mgoal,mt))::tl ->
       let hyps = make_hyps (pf_hyps goal) in
@@ -1512,19 +1501,16 @@ and interp_match_context ist g lr lmr =
         (try
            let lgoal = matches mg concl in
            db_matched_concl ist.debug (pf_env goal) concl;
-           apply_hyps_context ist env goal mt [] lgoal mhyps hyps
-        with 
-        | e when is_failure e -> raise e
-        | e when is_match_catchable e ->
-            (match e with
-              | PatternMatchingFailure -> db_matching_failure ist.debug
-              | Eval_fail s -> db_eval_failure ist.debug s
-              | _ -> db_logic_failure ist.debug e);
-            apply_match_context ist env goal (nrs+1) (List.tl lex) tl)
+           apply_hyps_context ist env lz goal mt [] lgoal mhyps hyps
+        with e when is_match_catchable e ->
+          (match e with
+            | PatternMatchingFailure -> db_matching_failure ist.debug
+            | Eval_fail s -> db_eval_failure ist.debug s
+            | _ -> db_logic_failure ist.debug e);
+          apply_match_context ist env goal (nrs+1) (List.tl lex) tl)
       |	Subterm (id,mg) ->
         (try apply_goal_sub ist env goal 0 (id,mg) concl mt mhyps hyps
         with
-        | e when is_failure e -> raise e
         | PatternMatchingFailure ->
            apply_match_context ist env goal (nrs+1) (List.tl lex) tl))
     | _ ->
@@ -1540,7 +1526,7 @@ and interp_match_context ist g lr lmr =
     (read_match_rule (project g) env (fst (constr_list ist env)) lmr)
 
 (* Tries to match the hypotheses in a Match Context *)
-and apply_hyps_context ist env goal mt lctxt lgmatch mhyps hyps =
+and apply_hyps_context ist env lz goal mt lctxt lgmatch mhyps hyps =
   let rec apply_hyps_context_rec lfun lmatch lhyps_rest current = function
     | Hyp ((_,hypname),mhyp)::tl as mhyps ->
         let (lids,lm,hyp_match,next) =
@@ -1551,15 +1537,13 @@ and apply_hyps_context ist env goal mt lctxt lgmatch mhyps hyps =
             let nextlhyps = list_except hyp_match lhyps_rest in
             apply_hyps_context_rec (lfun@lids) (lmatch@lm) nextlhyps
 	      (nextlhyps,0) tl
-          with
-          | e when is_failure e -> raise e
-	  | e when is_match_catchable e -> 
+          with e when is_match_catchable e -> 
 	      apply_hyps_context_rec lfun lmatch lhyps_rest next mhyps
         end
     | [] ->
 	let lmatch = List.map (fun (id,c) -> (id,VConstr c)) lmatch in
         db_mc_pattern_success ist.debug;
-        eval_with_fail {ist with lfun=lmatch@lfun@ist.lfun} mt goal
+        eval_with_fail {ist with lfun=lmatch@lfun@ist.lfun} lz goal mt
   in
   apply_hyps_context_rec lctxt lgmatch hyps (hyps,0) mhyps
 
@@ -1616,25 +1600,24 @@ and interp_genarg ist goal x =
   | ExtraArgType s -> lookup_interp_genarg s ist goal x
 
 (* Interprets the Match expressions *)
-and interp_match ist g constr lmr =
+and interp_match ist g lz constr lmr =
   let rec apply_match_subterm ist nocc (id,c) csr mt =
     let (lm,ctxt) = match_subterm nocc c csr in
     let lctxt = give_context ctxt id in
     let lm = List.map (fun (id,c) -> (id,VConstr c)) lm in
-    try val_interp {ist with lfun=lm@lctxt@ist.lfun} g mt
+    try eval_with_fail {ist with lfun=lm@lctxt@ist.lfun} lz g mt
     with e when is_match_catchable e ->
       apply_match_subterm ist (nocc + 1) (id,c) csr mt
   in
   let rec apply_match ist csr = function
     | (All t)::_ ->
-        (try val_interp ist g t
+        (try eval_with_fail ist lz g t
          with e when is_match_catchable e -> apply_match ist csr [])
     | (Pat ([],Term c,mt))::tl ->
         (try
 	  let lm = matches c csr in
 	  let lm = List.map (fun (id,c) -> (id,VConstr c)) lm in
-          val_interp
-            { ist with lfun=lm@ist.lfun } g mt
+          eval_with_fail { ist with lfun=lm@ist.lfun } lz g mt
          with e when is_match_catchable e -> apply_match ist csr tl)
     | (Pat ([],Subterm (id,c),mt))::tl ->
         (try apply_match_subterm ist 0 (id,c) csr mt
@@ -2029,10 +2012,10 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacLetIn (l,u) ->
       let l = List.map (fun (n,c,b) -> (n,option_app (subst_tactic subst) c,subst_tacarg subst b)) l in
       TacLetIn (l,subst_tactic subst u)
-  | TacMatchContext (lr,lmr) ->
-      TacMatchContext(lr, subst_match_rule subst lmr)
-  | TacMatch (c,lmr) ->
-      TacMatch (subst_tactic subst c,subst_match_rule subst lmr)
+  | TacMatchContext (lz,lr,lmr) ->
+      TacMatchContext(lz,lr, subst_match_rule subst lmr)
+  | TacMatch (lz,c,lmr) ->
+      TacMatch (lz,subst_tactic subst c,subst_match_rule subst lmr)
   | TacId _ | TacFail _ as x -> x
   | TacProgress tac -> TacProgress (subst_tactic subst tac:glob_tactic_expr)
   | TacAbstract (tac,s) -> TacAbstract (subst_tactic subst tac,s)

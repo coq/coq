@@ -22,12 +22,12 @@ Ltac compute_POS :=
   match goal with
   |  |- context [(Zpos (xI ?X1))] =>
       match constr:X1 with
-      | context [1%positive] => fail
+      | context [1%positive] => fail 1
       | _ => rewrite (BinInt.Zpos_xI X1)
       end
   |  |- context [(Zpos (xO ?X1))] =>
       match constr:X1 with
-      | context [1%positive] => fail
+      | context [1%positive] => fail 1
       | _ => rewrite (BinInt.Zpos_xO X1)
       end
   end.

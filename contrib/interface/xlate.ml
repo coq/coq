@@ -794,7 +794,8 @@ and xlate_tactic =
 		   xlate_tactic t)
    | TacProgress t -> CT_progress(xlate_tactic t)
    | TacOrelse(t1,t2) -> CT_orelse(xlate_tactic t1, xlate_tactic t2)
-   | TacMatch (exp, rules) ->
+   | TacMatch (true,_,_) -> failwith "TODO: lazy match"
+   | TacMatch (false, exp, rules) ->
         CT_match_tac(xlate_tactic exp,
                      match List.map 
                        (function 
@@ -810,11 +811,11 @@ and xlate_tactic =
                          | [] -> assert false
                          | fst::others ->
                              CT_match_tac_rules(fst, others))
-   | TacMatchContext (_,[]) -> failwith ""
-   | TacMatchContext (false,rule1::rules) ->
+   | TacMatchContext (_,_,[]) | TacMatchContext (true,_,_) -> failwith ""
+   | TacMatchContext (false,false,rule1::rules) ->
          CT_match_context(xlate_context_rule rule1,
                           List.map xlate_context_rule rules)
-   | TacMatchContext (true,rule1::rules) ->
+   | TacMatchContext (false,true,rule1::rules) ->
          CT_match_context_reverse(xlate_context_rule rule1,
                           List.map xlate_context_rule rules)
    | TacLetIn (l, t) ->

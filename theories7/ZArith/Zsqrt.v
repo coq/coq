@@ -23,11 +23,11 @@ Tactic Definition compute_POS :=
   Match Context With
   | [|- [(POS (xI ?1))]] ->
     (Match ?1 With
-     | [[xH]] -> Fail
+     | [[xH]] -> Fail 1
      | _ -> Rewrite (POS_xI ?1))
   | [|- [(POS (xO ?1))]] ->
     (Match ?1 With
-     | [[xH]] -> Fail
+     | [[xH]] -> Fail 1
      | _ -> Rewrite (POS_xO ?1)).
 
 Inductive sqrt_data [n : Z] : Set :=

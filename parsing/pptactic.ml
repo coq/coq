@@ -186,6 +186,8 @@ let pr_induction_kind = function
   | FullInversion -> str "Inversion"
   | FullInversionClear -> str "Inversion_clear"
 
+let pr_lazy lz = if lz then str "lazy " else mt ()
+
 let pr_match_pattern pr_pat = function
   | Term a -> pr_pat a
   | Subterm (None,a) -> str "[" ++ pr_pat a ++ str "]"
@@ -676,15 +678,15 @@ and pr6 = function
   | TacLetIn (llc,u) ->
       v 0
        (hv 0 (pr_let_clauses pr_tacarg0 llc ++ spc () ++ str "In") ++ fnl () ++ prtac u)
-  | TacMatch (t,lrul) ->
-      hov 0 (str "Match" ++ spc () ++ pr6 t ++ spc()
+  | TacMatch (lz,t,lrul) ->
+      hov 0 (pr_lazy lz ++ str "Match" ++ spc () ++ pr6 t ++ spc()
         ++ str "With"
         ++ prlist
 	  (fun r -> fnl () ++ str "|" ++ spc () ++
             pr_match_rule true pr_pat prtac r)
 	lrul)
-  | TacMatchContext (lr,lrul) ->
-      hov 0 (
+  | TacMatchContext (lz,lr,lrul) ->
+      hov 0 (pr_lazy lz ++ 
 	str (if lr then "Match Reverse Context With" else "Match Context With")
 	++ prlist
 	  (fun r -> fnl () ++ str "|" ++ spc () ++

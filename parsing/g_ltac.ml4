@@ -125,11 +125,11 @@ GEXTEND Gram
           u = tactic_expr -> TacLetIn (make_letin_clause loc llc,u)
 
       | IDENT "Match"; IDENT "Context"; IDENT "With"; mrl = match_context_list
-        -> TacMatchContext (false,mrl)
+        -> TacMatchContext (false,false,mrl)
       | IDENT "Match"; IDENT "Reverse"; IDENT "Context"; IDENT "With"; mrl = match_context_list
-        -> TacMatchContext (true,mrl)
+        -> TacMatchContext (false,true,mrl)
       |	IDENT "Match"; c = constrarg; IDENT "With"; mrl = match_list ->
-        TacMatch (TacArg(ConstrMayEval c),mrl)
+        TacMatch (false,TacArg(ConstrMayEval c),mrl)
 (*To do: put Abstract in Refiner*)
       | IDENT "Abstract"; tc = tactic_expr -> TacAbstract (tc,None)
       | IDENT "Abstract"; tc = tactic_expr; "using";  s = base_ident ->

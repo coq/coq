@@ -72,13 +72,13 @@ GEXTEND Gram
           body = tactic_expr -> TacLetRecIn (rcl,body)
       | "let"; llc = LIST1 let_clause SEP "with"; "in";
           u = tactic_expr -> TacLetIn (make_letin_clause loc llc,u)
-      | "match"; IDENT "goal"; "with"; mrl = match_context_list; "end" ->
-          TacMatchContext (false,mrl)
-      | "match"; IDENT "reverse"; IDENT "goal"; "with";
+      | b = match_key; IDENT "goal"; "with"; mrl = match_context_list; "end" ->
+          TacMatchContext (b,false,mrl)
+      | b = match_key; IDENT "reverse"; IDENT "goal"; "with";
         mrl = match_context_list; "end" ->
-          TacMatchContext (true,mrl)
-      |	"match"; c = tactic_expr; "with"; mrl = match_list; "end" ->
-          TacMatch (c,mrl)
+          TacMatchContext (b,true,mrl)
+      |	b = match_key; c = tactic_expr; "with"; mrl = match_list; "end" ->
+          TacMatch (b,c,mrl)
       | IDENT "first" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
 	  TacFirst l
       | IDENT "solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
@@ -121,6 +121,9 @@ GEXTEND Gram
     [ [ id = METAIDENT -> MetaIdArg (loc,id)
       | r = reference -> Reference r
       | "()" -> TacVoid ] ]
+  ;
+  match_key:
+    [ [ b = [ IDENT "lazy" -> true | -> false ]; "match" -> b ] ]
   ;
   input_fun:
     [ [ "_" -> None 

@@ -279,6 +279,8 @@ let pr_induction_kind = function
   | FullInversion -> str "inversion"
   | FullInversionClear -> str "inversion_clear"
 
+let pr_lazy lz = if lz then str "lazy " else mt ()
+
 let pr_match_pattern pr_pat = function
   | Term a -> pr_pat a
   | Subterm (None,a) -> str "context [" ++ pr_pat a ++ str "]"
@@ -704,16 +706,16 @@ let rec pr_tac env inherited tac =
        ++ str " in") ++
        fnl () ++ pr_tac env (llet,E) u),
       llet
-  | TacMatch (t,lrul) ->
-      hov 0 (str "match " ++ pr_tac env ltop t ++ str " with"
+  | TacMatch (lz,t,lrul) ->
+      hov 0 (pr_lazy lz ++ str "match " ++ pr_tac env ltop t ++ str " with"
         ++ prlist
 	  (fun r -> fnl () ++ str "| " ++
             pr_match_rule true (pr_tac env ltop) pr_pat r)
 	lrul
         ++ fnl() ++ str "end"),
       lmatch
-  | TacMatchContext (lr,lrul) ->
-      hov 0 (
+  | TacMatchContext (lz,lr,lrul) ->
+      hov 0 (pr_lazy lz ++ 
 	str (if lr then "match reverse goal with" else "match goal with")
 	++ prlist
 	  (fun r -> fnl () ++ str "| " ++

@@ -507,12 +507,14 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
 	  (mlexpr_of_option mlexpr_of_tactic)
 	  mlexpr_of_tactic_arg in
       <:expr< Tacexpr.TacLetIn $mlexpr_of_list f l$ $mlexpr_of_tactic t$ >>
-  | Tacexpr.TacMatch (t,l) ->
+  | Tacexpr.TacMatch (lz,t,l) ->
       <:expr< Tacexpr.TacMatch
+        $mlexpr_of_bool lz$
         $mlexpr_of_tactic t$
         $mlexpr_of_list (mlexpr_of_match_rule mlexpr_of_tactic) l$>>
-  | Tacexpr.TacMatchContext (lr,l) ->
+  | Tacexpr.TacMatchContext (lz,lr,l) ->
       <:expr< Tacexpr.TacMatchContext 
+        $mlexpr_of_bool lz$
         $mlexpr_of_bool lr$
         $mlexpr_of_list (mlexpr_of_match_rule mlexpr_of_tactic) l$>>
 (*
