@@ -79,7 +79,7 @@ let modtab_objects =
 (*let modtab_keep = 
   ref (MPmap.empty : (object_prefix * lib_objects) MPmap.t)*)
 
-(* currently begun interactive module (if any) - its arguments (if it
+(* currently started interactive module (if any) - its arguments (if it
    is a functor) and declared output type *)
 let openmod_info = 
   ref (([],None) : mod_bound_id list * module_type_entry option) 
@@ -628,7 +628,9 @@ let rec get_module_substobjs = function
 	(match mbids with
 	   | mbid::mbids ->
 	       (add_mbid mbid mp subst, mbids, msid, objs)
-	   | [] -> anomaly "Too few arguments in functor")
+	   | [] -> match mexpr with
+	       | MEident _ | MEstruct _ -> error "Application of a non-functor"
+	       | _ -> error "Application of a functor with too few arguments")
   | MEapply (_,mexpr) ->
       Modops.error_application_to_not_path mexpr
 
