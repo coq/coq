@@ -259,12 +259,13 @@ type tomatch_status =
 
 type tomatch_stack = tomatch_status list
 
-(* Warning: PrLetIn takes a parallel bindings as argument *)
-   
+(* Warning: PrLetIn (n,dep) takes a parallel bindings of length n+1 if
+   dep or n if not dep, and declares as many binders *)
+
 type predicate_signature =
-  | PrLetIn of (constr list * constr option) * predicate_signature
-  | PrProd of rel_declaration * predicate_signature
-  | PrNotInd of constr option * predicate_signature
+  | PrLetIn of (int * bool) * predicate_signature
+  | PrProd of predicate_signature
+  | PrNotInd of bool * predicate_signature
   | PrCcl of constr
 
 (* We keep a constr for aliases and a cases_pattern for error message *)
@@ -346,7 +347,7 @@ let push_history_pattern n current cont =
 
   Terms to match: there are 3 kinds of instructions
 
-  - "pushed" terms to match are typed in [env]; these are usually just
+  - "Pushed" terms to match are typed in [env]; these are usually just
     Rel(n) except for the initial terms given by user and typed in [env]
   - "Abstract" instructions means an abstraction has to be inserted in the
     current branch to build (this means a pattern has been detected dependent
@@ -963,16 +964,14 @@ let infer_predicate loc env isevars typs cstrs indf =
 
 let rec map_predicate f k = function
   | PrCcl ccl -> PrCcl (f k ccl)
-  | PrNotInd (copt,pred) ->
-      let p = if copt = None then 0 else 1 in
-      PrNotInd (option_app (f k) copt, map_predicate f (k+p) pred)
-  | PrProd (d,pred) ->
-      PrProd (map_rel_declaration (f k) d, map_predicate f (k+1) pred)
-  | PrLetIn ((args,copt),pred) ->
-      let args' = List.map (f k) args in
-      let copt' = option_app (f k) copt in
-      let k' = List.length args + (if copt = None then 0 else 1) in
-      PrLetIn ((args',copt'), map_predicate f (k+k') pred)
+  | PrNotInd (dep,pred) ->
+      let p = if dep then 1 else 0 in
+      PrNotInd (dep, map_predicate f (k+p) pred)
+  | PrProd pred ->
+      PrProd (map_predicate f (k+1) pred)
+  | PrLetIn ((nargs,dep as tm),pred) ->
+      let k' = nargs + (if dep then 1 else 0) in
+      PrLetIn (tm, map_predicate f (k+k') pred)
 
 let liftn_predicate n = map_predicate (liftn n)
 
@@ -989,16 +988,23 @@ let subst_predicate (args,copt) pred =
     | Some c -> c::(List.rev args) in
   substnl_predicate sigma 0 pred
 
-let specialize_predicate_var = function
+let specialize_predicate_var (cur,typ) = function
   | PrProd _ | PrCcl _ ->
      anomaly "specialize_predicate_var: a pattern-variable must be pushed"
-  | PrNotInd (copt,pred) -> subst_predicate ([],copt) pred
-  | PrLetIn (tm,pred) -> subst_predicate tm pred
+  | PrNotInd (dep,pred) ->
+      (match typ with
+        | NotInd _ -> subst_predicate ([],if dep then Some cur else None) pred
+        | _ -> anomaly "specialize_predicate_var")
+  | PrLetIn ((_,dep),pred) ->
+      (match typ with
+        | IsInd (_,IndType (_,realargs)) ->
+            subst_predicate (realargs,if dep then Some cur else None) pred
+        | _ -> anomaly "specialize_predicate_var")
 
 let ungeneralize_predicate = function
   | PrNotInd _ | PrLetIn _ | PrCcl _ ->
       anomaly "ungeneralize_predicate: expects a product"
-  | PrProd (d,pred) -> pred
+  | PrProd pred -> pred
 
 (*****************************************************************************)
 (* We have pred = [X:=realargs;x:=c]P typed in Gamma1, x:I(realargs), Gamma2 *)
@@ -1009,42 +1015,51 @@ let ungeneralize_predicate = function
 (* We first need to lift t(x) s.t. it is typed in Gamma, X:=rargs, x'        *)
 (* then we have to replace x by x' in t(x) and y by y' in P                  *)
 (*****************************************************************************)
-let generalize_predicate nx ny d = function
-  | PrLetIn ((args,copt as tm),pred) ->
-      if copt = None then anomaly "Undetected dependency";
-      let p = List.length args + 1 in
+let generalize_predicate c ny d = function
+  | PrLetIn ((nargs,dep as tm),pred) ->
+      if not dep then anomaly "Undetected dependency";
+      let p = nargs + 1 in
       let pred = lift_predicate 1 pred in
       let pred = regeneralize_index_predicate (ny+p+1) pred in
-      let d = map_rel_declaration (lift p) d in
-      let d = match kind_of_term nx with
-	| Rel n -> map_rel_declaration (regeneralize_index (n+p) 0) d
-	| _ -> (* initial case *) d in
-      PrLetIn (tm, PrProd (d,pred))
+      PrLetIn (tm, PrProd pred)
   | PrProd _ | PrCcl _ | PrNotInd _ ->
      anomaly "generalize_predicate: expects a non trivial pattern"
 
-let rec extract_predicate = function
-  | PrProd (d,pred) -> mkProd_or_LetIn d (extract_predicate pred)
-  | PrNotInd (Some c,pred) -> substl [c] (extract_predicate pred)
-  | PrNotInd (None,pred) -> extract_predicate pred
-  | PrLetIn ((args,Some c),pred) -> substl (c::(List.rev args)) (extract_predicate pred)
-  | PrLetIn ((args,None),pred) -> substl (List.rev args) (extract_predicate pred)
-  | PrCcl ccl -> ccl
+let rec extract_predicate l = function
+  | pred, Alias _::tms -> extract_predicate l (pred,tms)
+  | PrProd pred, Abstract d'::tms ->
+      substl l (mkProd_or_LetIn d' (extract_predicate [] (pred,tms)))
+  | PrNotInd (true,pred), Pushed ((cur,NotInd _),_)::tms ->
+      extract_predicate (cur::l) (pred,tms)
+  | PrNotInd (false,pred), Pushed ((cur,NotInd _),_)::tms ->
+      extract_predicate l (pred,tms)
+  | PrLetIn ((_,true),pred), Pushed ((cur,IsInd (_,(IndType(_,realargs)))),_)::tms ->
+      extract_predicate (cur::(List.rev realargs)@l) (pred,tms)
+  | PrLetIn ((_,false),pred), Pushed ((cur,IsInd (_,(IndType(_,realargs)))),_)::tms ->
+      extract_predicate (List.rev realargs @ l) (pred,tms)
+  | PrCcl ccl, [] ->
+      substl l ccl
+  | _ -> anomaly"extract_predicate: predicate inconsistent with terms to match"
 
-let abstract_predicate env sigma indf = function
+let abstract_predicate env sigma indf cur tms = function
   | (PrProd _ | PrCcl _ | PrNotInd _) ->
       anomaly "abstract_predicate: must be some LetIn"
-  | PrLetIn ((_,copt),pred) ->
-      let pred = extract_predicate pred in
+  | PrLetIn ((nrealargs,dep),pred) ->
+      let n = nrealargs + 1 in
+      let tms = lift_tomatch_stack n tms in
+      let tms =
+        match kind_of_term cur with
+          | Rel i -> regeneralize_index_tomatch (i+n) tms
+          | _ -> (* Initial case *) tms in
       (* Even if not intrinsically dep, we move the predicate into a dep one *)
-      let dep = copt <> None in
-      let pred = if dep then pred else lift 1 pred in
+      let pred = if dep then pred else lift_predicate 1 pred in
+      let pred = extract_predicate [] (pred,tms) in
       let sign = make_arity_signature env true indf in
       (true, it_mkLambda_or_LetIn_name env pred sign)
 
 let rec known_dependent = function
   | None -> false
-  | Some (PrLetIn ((_,copt),_)) -> copt <> None
+  | Some (PrLetIn ((_,dep),_)) -> dep
   | Some (PrNotInd (_,p)) -> known_dependent (Some p)
   | Some (PrCcl _) -> false
   | Some (PrProd _) ->
@@ -1059,7 +1074,7 @@ let expand_arg n alreadydep (na,t) deps (k,pred) =
   (* copt can occur in pred even if the original problem *)
   (* is not dependent *)
   let dep = deps <> [] || alreadydep in
-  let copt, p = if dep then Some (mkRel n), 1 else None, 0 in
+  let p = if dep then 1 else 0 in
   let pred = if dep then pred else lift_predicate (-1) pred in
   match t with
     | IsInd (_,IndType(_,realargs)) ->
@@ -1068,10 +1083,9 @@ let expand_arg n alreadydep (na,t) deps (k,pred) =
 	let nletargs = List.length realargs in
 	let pred = liftn_predicate nletargs (p+1) pred in 
 	(* [realargs] for [xk] are in context gamma, x1..xk-1 *)
-	let realargs = List.map (liftn n k) realargs in
-	(k-1, PrLetIn ((realargs, copt), pred))
+	(k-1, PrLetIn ((nletargs, dep), pred))
     | NotInd _ ->
-	(k-1, PrNotInd (copt, pred))
+	(k-1, PrNotInd (dep, pred))
 
 
 (*****************************************************************************)
@@ -1092,29 +1106,27 @@ let expand_arg n alreadydep (na,t) deps (k,pred) =
 let specialize_predicate tomatchs deps cs = function
   | (PrProd _ | PrCcl _ | PrNotInd _) ->
       anomaly "specialize_predicate: a matched pattern must be pushed"
-  | PrLetIn ((args,copt),pred) ->
+  | PrLetIn ((nargs,isdep),pred) ->
       (* Assume some gamma st: gamma, (X,x:=realargs,copt) |- pred *)
-      let isdep = copt <> None in
-      let k = List.length args + (if isdep then 1 else 0) in
+      let k = nargs + (if isdep then 1 else 0) in
       (* We adjust pred st: gamma, x1..xn, (X,x:=realargs,copt) |- pred' *)
       let n = cs.cs_nargs in
       let pred' = liftn_predicate n (k+1) pred in
       let argsi = Array.to_list cs.cs_concl_realargs in
-      let copti = option_app (fun _ -> build_dependent_constructor cs) copt in
+      let copti = if isdep then Some (build_dependent_constructor cs) else None in
       (* The substituends argsi, copti are all defined in gamma, x1...xn *)
-      (* We *need _parallel_ bindings to get gamma, x1...xn |- pred'' *)
+      (* We need _parallel_ bindings to get gamma, x1...xn |- pred'' *)
       let pred'' = subst_predicate (argsi, copti) pred' in
       (* We adjust pred st: gamma, x1..xn, x1..xn |- pred'' *)
       let pred''' = liftn_predicate n (n+1) pred'' in
       (* We finally get gamma,x1..xn |- [X1,x1:=R1,x1]..[Xn,xn:=Rn,xn]pred'''*)
       snd (List.fold_right2 (expand_arg n isdep) tomatchs deps (n,pred'''))
 
-
 let find_predicate loc env isevars p typs cstrs current
-  (IndType (indf,realargs)) =
+  (IndType (indf,realargs)) tms =
   let (dep,pred) =
     match p with
-      | Some p -> abstract_predicate env (evars_of isevars) indf p
+      | Some p -> abstract_predicate env (evars_of isevars) indf current tms p
       | None -> infer_predicate loc env isevars typs cstrs indf in
   let typ = whd_beta (applist (pred, realargs)) in
   if dep then
@@ -1198,7 +1210,7 @@ let build_leaf pb =
 let shift_problem (current,t) pb =
   {pb with
      tomatch = Alias (current,current,NonDepAlias,type_of_tomatch t)::pb.tomatch;
-     pred = option_app specialize_predicate_var pb.pred;
+     pred = option_app (specialize_predicate_var (current,t)) pb.pred;
      history = push_history_pattern 0 AliasLeaf pb.history;
      mat = List.map remove_current_pattern pb.mat }
 
@@ -1278,10 +1290,10 @@ let build_branch current deps pb eqns const_info =
  INVARIANT:
 
   pb = { env, subst, tomatch, mat, ...}
-  tomatch = list of Pushed (c:T) or ToPush (na:T) or Initial (c:T)
+  tomatch = list of Pushed (c:T) or Abstract (na:T) or Alias (c:T)
 
   "Pushed" terms and types are relative to env
-  "ToPush" types are relative to env enriched by the previous terms to match
+  "Abstract" types are relative to env enriched by the previous terms to match
 
   Concretely, each term "c" or type "T" comes with a delayed lift
   index, but it works as if the lifting were effective.
@@ -1326,7 +1338,7 @@ and match_current pb ((current,typ as ct),deps) =
 	  let brtyps = Array.map (fun (_,_,t) -> t) brs in
 	  let (pred,typ,s) =
 	    find_predicate pb.caseloc pb.env pb.isevars 
-	      pb.pred brtyps cstrs current indt in
+	      pb.pred brtyps cstrs current indt pb.tomatch in
 	  let ci = make_case_info pb.env mind RegularStyle tags in
 	  let case = mkCase (ci,nf_betaiota pred,current,brvals) in
 	  let inst = List.map mkRel deps in
@@ -1589,29 +1601,27 @@ let build_initial_predicate isdep pred tomatchl =
   let nar = List.fold_left (fun n (_,t) ->
     let p = match t with IsInd (_,IndType(_,a)) -> List.length a | _ -> 0 in
     if isdep then n+p+1 else n+p) 0 tomatchl in
-  let cook n = function
-    | c,IsInd (_,IndType(ind_data,realargs)) ->
-	Some (List.map (lift n) realargs), Some (lift n c)
-    | c,NotInd _ -> None, Some (lift n c) in
+  let cook = function
+    | c,IsInd (_,IndType(_,realargs)) -> Some (List.length realargs)
+    | c,NotInd _ -> None in
   let rec buildrec n pred = function
     | [] -> PrCcl pred
     | tm::ltm ->
-	match cook n tm with
-	  | None, cur ->
-              let cur, pred, p =
+	match cook tm with
+	  | None ->
+              let pred, p =
                 if isdep then 
-                  if dependent (mkRel (nar-n)) pred then cur, pred, 1
-                  else None, liftn (-1) (nar-n) pred, 0
-                else None, pred, 0 in
-	      PrNotInd (cur, buildrec (n+p) pred ltm)
-	  | Some realargs, cur ->
-	      let nrealargs = List.length realargs in
-              let cur, pred, p =
+                  if dependent (mkRel (nar-n)) pred then pred, 1
+                  else liftn (-1) (nar-n) pred, 0
+                else pred, 0 in
+	      PrNotInd (p=1, buildrec (n+p) pred ltm)
+	  | Some nrealargs ->
+              let pred, p =
                 if isdep then 
-                  if dependent (mkRel (nar-n)) pred then cur, pred, 1
-                  else None, liftn (-1) (nar-n) pred, 0
-                else None, pred, 0 in
-	      PrLetIn ((realargs,cur), buildrec (n+nrealargs+p) pred ltm)
+                  if dependent (mkRel (nar-n)) pred then pred, 1
+                  else liftn (-1) (nar-n) pred, 0
+                else pred, 0 in
+	      PrLetIn ((nrealargs,p=1), buildrec (n+nrealargs+p) pred ltm)
   in buildrec 0 pred tomatchl
 
 let extract_arity_signature env0 tomatchl tmsign =
