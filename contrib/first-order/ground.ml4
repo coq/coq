@@ -57,13 +57,13 @@ let ground_tac solver startseq gl=
 		  begin
 		    match rpat with
 			Rand->
-			  and_tac continue seq1
+			  and_tac continue (re_add seq1)
 		      | Rforall->
-			  forall_tac continue seq1
+			  forall_tac continue (re_add seq1)
 		      | Rarrow->
-			  arrow_tac continue seq1
+			  arrow_tac continue (re_add seq1)
 		      | Revaluable egr->
-			  evaluable_tac egr continue seq1
+			  evaluable_tac egr continue (re_add seq1)
 		      | Ror->
 			  tclORELSE
 			  (or_tac continue (re_add seq1))
@@ -71,13 +71,13 @@ let ground_tac solver startseq gl=
 		      | Rfalse->backtrack 
 		      | Rexists(i,dom,triv)->
 			  let (lfp,seq2)=collect_quantified seq in
+			  let backtrack2=toptac (lfp@ctx) seq2 in
 			    tclORELSE
 			      (if seq.depth<=0 || not !qflag then 
 				 tclFAIL 0 "max depth" 
 			       else 
-				 quantified_tac lfp continue (re_add seq))
-			      (toptac (lfp@ctx) seq2)
-			      (* need special backtracking *)
+				 quantified_tac lfp continue (re_add seq1))
+			      backtrack2 (* need special backtracking *)
 		  end
 	      | Left lpat->
 		  begin
@@ -90,13 +90,13 @@ let ground_tac solver startseq gl=
 			  left_or_tac ind hd.id continue (re_add seq1)
 		      | Lforall (_,_,_)->
 			  let (lfp,seq2)=collect_quantified seq in
+			  let backtrack2=toptac (lfp@ctx) seq2 in
 			    tclORELSE
 			      (if seq.depth<=0 || not !qflag then 
 				 tclFAIL 0 "max depth" 
 			       else 
 				 quantified_tac lfp continue (re_add seq))
-			      (toptac (lfp@ctx) seq2)
-			      (* need special backtracking *)
+			      backtrack2 (* need special backtracking *)
 		      | Lexists ind ->
 			  if !qflag then
 			    left_exists_tac ind hd.id continue (re_add seq1)
@@ -111,16 +111,16 @@ let ground_tac solver startseq gl=
 				LLatom -> backtrack 
 			      | LLand (ind,largs) | LLor(ind,largs) 
 			      | LLfalse (ind,largs)->
-				  ll_ind_tac ind largs hd.id continue 
-				  (re_add seq1) 
+				  (ll_ind_tac ind largs hd.id continue 
+				     (re_add seq1)) 
 			      | LLforall p ->	      
-				  tclORELSE
-				  (if seq.depth<=0 || not !qflag then 
-				     tclFAIL 0 "max depth" 
-				   else 
-				     ll_forall_tac p hd.id continue 
-				       (re_add seq1))
-				  backtrack
+				  if seq.depth<=0 || not !qflag then 
+				    backtrack 
+				  else
+				    tclORELSE
+				      (ll_forall_tac p hd.id continue 
+					 (re_add seq1))
+				      backtrack
 			      | LLexists (ind,l) ->
 				  if !qflag then
 				    ll_ind_tac ind l hd.id continue 
