@@ -17,6 +17,10 @@ open Ast
 open Extend
 open Topconstr
 open Libnames
+open Bignat
+
+(**********************************************************************)
+(* Parsing via Grammar *)
 
 let get_z_sign loc =
   let mkid id =
@@ -28,8 +32,6 @@ let get_z_sign loc =
    (mkid (id_of_string "ZERO"), 
     mkid (id_of_string "POS"),
     mkid (id_of_string "NEG")))
-
-open Bignat
 
 let pos_of_bignat xI xO xH x =
   let rec pos_of x =
@@ -50,7 +52,29 @@ let z_of_string pos_or_neg s dloc =
       mkAppC (aNEG, [pos_of_bignat xI xO xH v])
   else 
     aZERO
-      
+
+(* Declare the primitive parser with Grammar and without the scope mechanism *)
+open Pcoq
+
+let number = create_constr_entry (get_univ "znatural") "number" 
+
+let negnumber = create_constr_entry (get_univ "znatural") "negnumber"
+ 
+let _ =
+  Gram.extend number None
+    [None, None,
+     [[Gramext.Stoken ("INT", "")],
+      Gramext.action (z_of_string true)]]
+    
+let _ =
+  Gram.extend negnumber None
+    [None, None,
+     [[Gramext.Stoken ("INT", "")],
+      Gramext.action (z_of_string false)]]
+
+(**********************************************************************)
+(* Old ast printing *)
+
 exception Non_closed_number
 
 let get_z_sign_ast loc =
@@ -114,27 +138,8 @@ let _ = Esyntax.Ppprim.add ("negative_printer", (outside_printer false))
 let _ = Esyntax.Ppprim.add ("positive_printer_inside", (inside_printer true))
 let _ = Esyntax.Ppprim.add ("negative_printer_inside", (inside_printer false))
 
-(* Declare the primitive parser with Grammar and without the scope mechanism *)
-open Pcoq
-
-let number = create_constr_entry (get_univ "znatural") "number" 
-
-let negnumber = create_constr_entry (get_univ "znatural") "negnumber"
- 
-let _ =
-  Gram.extend number None
-    [None, None,
-     [[Gramext.Stoken ("INT", "")],
-      Gramext.action (z_of_string true)]]
-    
-let _ =
-  Gram.extend negnumber None
-    [None, None,
-     [[Gramext.Stoken ("INT", "")],
-      Gramext.action (z_of_string false)]]
-
 (**********************************************************************)
-(* Parsing via scopes                                                 *)
+(* Parsing positive via scopes                                        *)
 (**********************************************************************)
 
 open Libnames
@@ -144,12 +149,6 @@ let fast_integer_module = make_dir ["Coq";"ZArith";"fast_integer"]
 
 (* TODO: temporary hack *)
 let make_path dir id = Libnames.encode_kn dir id
-
-let z_path = make_path fast_integer_module (id_of_string "Z")
-let glob_z = IndRef (z_path,0)
-let glob_ZERO = ConstructRef ((z_path,0),1)
-let glob_POS = ConstructRef ((z_path,0),2)
-let glob_NEG = ConstructRef ((z_path,0),3)
 
 let positive_path = make_path fast_integer_module (id_of_string "positive")
 let glob_xI = ConstructRef ((positive_path,0),1)
@@ -168,35 +167,92 @@ let pos_of_bignat dloc x =
   in 
   pos_of x
 
-let z_of_string2 dloc pos_or_neg n = 
+let interp_positive dloc = function
+  | POS n -> pos_of_bignat dloc n
+  | NEG n ->
+      user_err_loc (dloc, "interp_positive",
+        str "No negative number in type \"positive\"!")
+
+(**********************************************************************)
+(* Printing positive via scopes                                       *)
+(**********************************************************************)
+
+let rec bignat_of_pos = function
+  | RApp (_, RRef (_,b),[a]) when b = glob_xO -> mult_2(bignat_of_pos a)
+  | RApp (_, RRef (_,b),[a]) when b = glob_xI -> add_1(mult_2(bignat_of_pos a))
+  | RRef (_, a) when a = glob_xH -> Bignat.one
+  | _ -> raise Non_closed_number
+
+let uninterp_positive p =
+  try 
+    Some (POS (bignat_of_pos p))
+  with Non_closed_number -> 
+    None
+
+(***********************************************************************)
+(* Declaring interpreters and uninterpreters for positive *)
+(***********************************************************************)
+
+let _ = Symbols.declare_numeral_interpreter "positive_scope"
+  ["Coq";"ZArith";"Zsyntax"]
+  (interp_positive,None)
+  ([RRef (dummy_loc, glob_xI); 
+    RRef (dummy_loc, glob_xO); 
+    RRef (dummy_loc, glob_xH)],
+   uninterp_positive,
+   None)
+
+(**********************************************************************)
+(* Parsing Z via scopes                                               *)
+(**********************************************************************)
+
+let z_path = make_path fast_integer_module (id_of_string "Z")
+let glob_z = IndRef (z_path,0)
+let glob_ZERO = ConstructRef ((z_path,0),1)
+let glob_POS = ConstructRef ((z_path,0),2)
+let glob_NEG = ConstructRef ((z_path,0),3)
+
+let z_of_posint dloc pos_or_neg n = 
   if is_nonzero n then
     let sgn = if pos_or_neg then glob_POS else glob_NEG in
     RApp(dloc, RRef (dloc,sgn), [pos_of_bignat dloc n])
   else 
     RRef (dloc, glob_ZERO)
 
-let check_required_module loc d =
-  let d' = List.map id_of_string d in
-  let dir = make_dirpath (List.rev d') in
-  if not (Library.library_is_loaded dir) then
-    user_err_loc (loc,"z_of_int",
-    str ("Cannot interpret numbers in Z without requiring first module "
-    ^(list_last d)))
-
 let z_of_int dloc z =
-  check_required_module dloc ["Coq";"ZArith";"Zsyntax"];
   match z with
-  | POS n -> z_of_string2 dloc true n 
-  | NEG n -> z_of_string2 dloc false n 
+  | POS n -> z_of_posint dloc true n 
+  | NEG n -> z_of_posint dloc false n 
 
-let _ = Symbols.declare_numeral_interpreter "Z_scope" (z_of_int,None)
+(**********************************************************************)
+(* Printing Z via scopes                                              *)
+(**********************************************************************)
+
+let bigint_of_z = function
+  | RApp (_, RRef (_,b),[a]) when b = glob_POS -> POS (bignat_of_pos a)
+  | RApp (_, RRef (_,b),[a]) when b = glob_NEG -> NEG (bignat_of_pos a)
+  | RRef (_, a) when a = glob_ZERO -> POS (Bignat.zero)
+  | _ -> raise Non_closed_number
+
+let uninterp_z p =
+  try
+    Some (bigint_of_z p)
+  with Non_closed_number -> None
 
 (***********************************************************************)
-(* Printer for positive *)
+(* Declaring interpreters and uninterpreters for Z *)
 
-
+let _ = Symbols.declare_numeral_interpreter "Z_scope"
+  ["Coq";"ZArith";"Zsyntax"]
+  (z_of_int,None)
+  ([RRef (dummy_loc, glob_ZERO); 
+    RRef (dummy_loc, glob_POS); 
+    RRef (dummy_loc, glob_NEG)],
+  uninterp_z,
+  None)
+   
 (***********************************************************************)
-(* Printers *)
+(* Old ast Printers *)
 
 exception Non_closed_number
 

@@ -16,6 +16,10 @@ open Extend
 open Topconstr
 open Libnames
 
+(**********************************************************************)
+(* Parsing with Grammar                                               *)
+(**********************************************************************)
+
 let get_r_sign loc =
   let mkid id =
     mkRefC (Qualid (loc,Libnames.make_short_qualid id))
@@ -34,7 +38,6 @@ let get_r_sign_ast loc =
     mkid (id_of_string "Rplus"), 
     mkid (id_of_string "NRplus")))
 
-(* Parsing via Grammar *)
 let r_of_int n dloc =
   let (a0,a1,plus,_) = get_r_sign dloc in
   let rec mk_r n =
@@ -58,7 +61,9 @@ let _ =
      [[Gramext.Stoken ("INT", "")],
       Gramext.action r_of_string]]
 
-(** pp **)
+(**********************************************************************)
+(* Old ast printing                                                   *)
+(**********************************************************************)
 
 exception Non_closed_number
 
@@ -97,7 +102,7 @@ let _ = Esyntax.Ppprim.add ("r_printer", r_printer)
 let _ = Esyntax.Ppprim.add ("r_printer_outside", r_printer_outside)
 
 (**********************************************************************)
-(* Parsing via scopes                                                 *)
+(* Parsing Z via scopes                                               *)
 (**********************************************************************)
 
 open Libnames
@@ -135,24 +140,42 @@ let r_of_posint dloc n =
   else
     RRef (dloc, glob_R0)
 
-let check_required_module loc d =
-  let d' = List.map id_of_string d in
-  let dir = make_dirpath (List.rev d') in
-  if not (Library.library_is_loaded dir) then
-    user_err_loc (loc,"z_of_int",
-    str ("Cannot interpret numbers in Z without requiring first module "
-    ^(list_last d)))
-
 let r_of_int dloc z =
-  check_required_module dloc ["Coq";"Reals";"Rsyntax"];
   match z with
   | NEG n -> RApp (dloc, RRef(dloc,glob_Ropp), [r_of_posint dloc n]) 
   | POS n -> r_of_posint dloc n 
 
-let _ = Symbols.declare_numeral_interpreter "R_scope" (r_of_int,None)
+(**********************************************************************)
+(* Printing R via scopes                                              *)
+(**********************************************************************)
+
+let rec bignat_of_r = function
+  | RApp (_,RRef (_,p), [RRef (_,o); a]) when p = glob_Rplus & o = glob_R1
+      -> add_1 (bignat_of_r a)
+  | RRef (_,a) when a = glob_R1 -> Bignat.one
+  | RRef (_,a) when a = glob_R0 -> Bignat.zero
+  | _ -> raise Non_closed_number
+
+let bigint_of_r = function
+  | RApp (_,RRef (_,o), [a]) when o = glob_Ropp -> NEG (bignat_of_r a)
+  | a -> POS (bignat_of_r a)
+
+let uninterp_r p =
+  try
+    Some (bigint_of_r p)
+  with Non_closed_number ->
+    None
+
+let _ = Symbols.declare_numeral_interpreter "R_scope"
+  ["Coq";"Reals";"Rsyntax"]
+  (r_of_int,None)
+  ([RRef(dummy_loc,glob_Ropp);RRef(dummy_loc,glob_R0);
+    RRef(dummy_loc,glob_Rplus);RRef(dummy_loc,glob_R1)],
+    uninterp_r,
+    None)
 
 (***********************************************************************)
-(* Printers *)
+(* Old ast printers via scope *)
 
 exception Non_closed_number
 
