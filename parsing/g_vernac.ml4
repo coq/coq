@@ -371,10 +371,10 @@ GEXTEND Gram
           <:ast< (IMPLICIT_ARGS_ON) >>
       | IDENT "Implicit"; IDENT "Arguments"; IDENT "Off" ->
           <:ast< (IMPLICIT_ARGS_OFF) >>
-      | IDENT "Implicits"; id = identarg; "["; l = numarg_list; "]" ->
-          <:ast< (IMPLICITS "" $id ($LIST $l)) >>
-      | IDENT "Implicits"; id = identarg ->
-          <:ast< (IMPLICITS "Auto" $id) >> 
+      | IDENT "Implicits"; qid = qualidarg; "["; l = numarg_list; "]" ->
+          <:ast< (IMPLICITS "" $qid ($LIST $l)) >>
+      | IDENT "Implicits"; qid = qualidarg ->
+          <:ast< (IMPLICITS "Auto" $qid) >> 
   ] ]
   ;
 END

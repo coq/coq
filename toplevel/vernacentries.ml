@@ -106,9 +106,12 @@ let show_top_evars () =
   mSG (pr_evars_int 1 (Evd.non_instantiated sigma))
 
 (* Locate commands *)
-let global loc qid =
+let locate_qualid loc qid =
   try Nametab.locate qid
   with Not_found -> Pretype_errors.error_global_not_found_loc loc qid
+
+ (* Pour pcoq *)
+let global = locate_qualid
 
 let locate_file f =
   try
@@ -118,7 +121,7 @@ let locate_file f =
     mSG (hOV 0 [< 'sTR"Can't find file"; 'sPC; 'sTR f; 'sPC;
 		  'sTR"on loadpath"; 'fNL >])
 
-let locate_qualid qid =
+let print_located_qualid qid =
   try
     let ref = Nametab.locate qid in
     mSG
@@ -167,7 +170,7 @@ let _ =
 let _ = 
   add "Locate"
     (function 
-       | [VARG_QUALID qid] -> (fun () -> locate_qualid qid)
+       | [VARG_QUALID qid] -> (fun () -> print_located_qualid qid)
        | _  -> bad_vernac_args "Locate")
 
 (* For compatibility *)
@@ -471,7 +474,7 @@ let _ =
        | _  -> bad_vernac_args "IMPLICIT_ARGS_OFF")
 
 let coercion_of_qualid loc qid =
-  let ref = global loc qid in
+  let ref = locate_qualid loc qid in
   let coe = Classops.coe_of_reference ref in
   if not (Classops.coercion_exists coe) then
     errorlabstrm "try_add_coercion" 
@@ -547,13 +550,14 @@ let number_list =
 let _ =
   add "IMPLICITS"
     (function 
-       | (VARG_STRING "") :: (VARG_IDENTIFIER id) :: l -> 
-	   (fun () -> 
+       | (VARG_STRING "") :: (VARG_QUALID qid) :: l -> 
+	   (fun () ->
 	      let imps = number_list l in
-	      Impargs.declare_manual_implicits (Nametab.sp_of_id CCI id) imps)
-       | [VARG_STRING "Auto"; VARG_IDENTIFIER id] -> 
+	      Impargs.declare_manual_implicits
+		(locate_qualid dummy_loc qid) imps)
+       | [VARG_STRING "Auto"; VARG_QUALID qid] -> 
 	   (fun () -> 
-	      Impargs.declare_implicits (Nametab.sp_of_id CCI id))
+	      Impargs.declare_implicits (locate_qualid dummy_loc qid))
        | _  -> bad_vernac_args "IMPLICITS")
 
 let _ =
@@ -1068,7 +1072,7 @@ let _ =
     (function 
        | (VARG_QUALID qid) :: l ->
 	   (fun () ->
-	      let ref = global dummy_loc qid in
+	      let ref = locate_qualid dummy_loc qid in
 	      Search.search_by_head ref (inside_outside l))
        | _ -> bad_vernac_args "SEARCH")
 
@@ -1357,7 +1361,7 @@ let _ =
 	       NeverDischarge 
 	   in
 	   fun () -> 
-	     let ref = global dummy_loc qid in
+	     let ref = locate_qualid dummy_loc qid in
 	     Class.try_add_new_class ref stre;
              if not (is_silent()) then
                message ((string_of_qualid qid) ^ " is now a class")
@@ -1367,7 +1371,7 @@ let cl_of_qualid qid =
   match repr_qualid qid with
     | [], "FUNCLASS" -> Classops.CL_FUN
     | [], "SORTCLASS" -> Classops.CL_SORT
-    | _ -> Class.class_of_ref (global dummy_loc qid)	
+    | _ -> Class.class_of_ref (locate_qualid dummy_loc qid)	
 
 let _ =
   add "COERCION"
@@ -1390,7 +1394,7 @@ let _ =
 		   Class.try_add_new_identity_coercion id stre source target
 	       | _ -> bad_vernac_args "COERCION"
 	     else
-	       let ref = global dummy_loc qid in
+	       let ref = locate_qualid dummy_loc qid in
 	       Class.try_add_new_coercion_with_target ref stre source target;
              if not (is_silent()) then
 	       message ((string_of_qualid qid) ^ " is now a coercion")
