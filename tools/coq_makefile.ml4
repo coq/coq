@@ -114,6 +114,10 @@ let standard sds =
     printf "\tmv -f %s %s.bak\n" !makefile_name !makefile_name;
     printf "\t$(COQBIN)coq_makefile -f %s -o %s\n" !make_name !makefile_name;
     print "\n";
+    List.iter
+      (fun x -> print "\t(cd "; print x; print " ; $(MAKE) Makefile)\n")
+      sds;
+    print "\n";
   end;
   print "clean:\n";
   print "\trm -f *.cmo *.cmi *.cmx *.o *.vo *.vi *.g *~\n";
@@ -126,6 +130,11 @@ let standard sds =
   print "\trm -f *.cmx *.o\n";
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) archclean)\n")
+    sds;
+  print "\n";
+  print "html:\n";
+  List.iter
+    (fun x -> print "\t(cd "; print x; print " ; $(MAKE) html)\n")
     sds;
   print "\n"
 
@@ -250,7 +259,7 @@ let subdirs l =
   print ".PHONY: ";
   print_list " "
     ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install" 
-     :: "depend" :: "xml" :: sds);
+     :: "depend" :: "xml" :: "html" :: sds);
   print "\n\n";
   sds
 
