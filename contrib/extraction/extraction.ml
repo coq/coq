@@ -245,9 +245,11 @@ let kill_all_prop_lams_eta e s =
   kill_some_lams (List.rev_map ((=) default) s) p
 
 let kill_prop_lams_eta e s =
-  let ids,e = kill_all_prop_lams_eta e s in 
-  if ids = [] then MLlam (dummy_name, ml_lift 1 e)
-  else named_lams ids e
+  if s = [] then e 
+  else 
+    let ids,e = kill_all_prop_lams_eta e s in 
+    if ids = [] then MLlam (dummy_name, ml_lift 1 e)
+    else named_lams ids e
 
 (*s Auxiliary function for [abstract_constant] and [abstract_constructor]. *)
 
