@@ -13,8 +13,11 @@
 (*********************************************************)
 
 Require Export ZArith_base.
+V7only [
 Require Export Rsyntax.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+Import R_scope.
+].
+Open Local Scope R_scope.
 
 V7only [
 (*********************************************************)

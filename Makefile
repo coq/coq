@@ -649,7 +649,7 @@ WELLFOUNDEDVO=\
  theories/Wellfounded/Lexicographic_Product.vo 
 
 REALSBASEVO=\
- theories/Reals/Rdefinitions.vo theories/Reals/Rsyntax.vo \
+ theories/Reals/Rdefinitions.vo \
  theories/Reals/Raxioms.vo      theories/Reals/RIneq.vo \
  theories/Reals/DiscrR.vo       theories/Reals/Rbase.vo \
 
@@ -792,7 +792,8 @@ NEWCONTRIBVO=$(CONTRIBVO)
 OBSOLETETHEORIESVO=\
  theories7/Lists/PolyList.vo theories7/Lists/PolyListSyntax.vo \
  theories7/ZArith/Zsyntax.vo \
- theories7/ZArith/zarith_aux.vo	theories7/ZArith/fast_integer.vo
+ theories7/ZArith/zarith_aux.vo	theories7/ZArith/fast_integer.vo \
+ theories7/Reals/Rsyntax.vo
 
 OLDINITVO=$(INITVO:theories%.vo=theories7%.vo)
 OLDTHEORIESVO=$(THEORIESVO:theories%.vo=theories7%.vo) $(OBSOLETETHEORIESVO)

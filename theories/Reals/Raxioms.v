@@ -13,8 +13,8 @@
 (*********************************************************)
 
 Require Export ZArith_base.
-Require Export Rsyntax. Open Local Scope R_scope.
-
+Require Export Rdefinitions.
+Open Local Scope R_scope.
 
 (*********************************************************)
 (*               Field axioms                            *)
