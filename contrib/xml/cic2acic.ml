@@ -16,22 +16,25 @@ let remove_sections_from_dirpath dir =
 let remove_module_dirpath_from_dirpath dir =
  let module No = Nameops in
   let current_module_dir = Lib.module_sp () in
-   if No.is_dirpath_prefix_of current_module_dir dir then
-    let ids = Names.repr_dirpath dir in
-    let rec remove_firsts n l =
-     match n,l with
-        (0,l) -> l
-      | (n,he::tl) -> remove_firsts (n-1) tl
-      | _ -> assert false
-    in
-     let ids' =
-      List.rev
-       (remove_firsts
-         (List.length (Names.repr_dirpath current_module_dir))
-         (List.rev ids))
+   let path =
+    if No.is_dirpath_prefix_of current_module_dir dir then
+     let ids = Names.repr_dirpath dir in
+     let rec remove_firsts n l =
+      match n,l with
+         (0,l) -> l
+       | (n,he::tl) -> remove_firsts (n-1) tl
+       | _ -> assert false
      in
-      Names.make_dirpath ids'
-   else dir
+      let ids' =
+       List.rev
+        (remove_firsts
+          (List.length (Names.repr_dirpath current_module_dir))
+          (List.rev ids))
+      in
+       ids'
+    else Names.repr_dirpath dir
+   in
+    String.concat "/" (List.map Names.string_of_id (List.rev path))
 ;;
 
 
@@ -66,10 +69,7 @@ let get_relative_uri_of_var v pvars =
        None -> search_in_open_sections (N.repr_dirpath (Lib.cwd ()))
      | Some path -> path
    in
-    let path' =
-     N.repr_dirpath (remove_module_dirpath_from_dirpath (N.make_dirpath path))
-    in
-     String.concat "/" (List.map N.string_of_id (List.rev path'))
+    remove_module_dirpath_from_dirpath (N.make_dirpath path)
 ;;
 
 type tag =
@@ -93,6 +93,7 @@ let uri_of_path sp tag =
   let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir1)) in
    "cic:/" ^ (String.concat "/" dir) ^ "." ^ (ext_of_tag tag)
 ;;
+
 
 (* Main Functions *)
 
@@ -122,7 +123,7 @@ let acic_of_cic_context' seed ids_to_terms constr_to_ids ids_to_father_ids
    let terms_to_types =
     D.double_type_of env evar_map t expectedty
    in
-    let rec aux computeinnertypes father env tt =
+    let rec aux computeinnertypes father env ?(subst=[]) tt =
      let fresh_id'' = fresh_id' father tt in
      let aux' = aux computeinnertypes (Some fresh_id'') in
       let string_of_sort_family =
@@ -208,7 +209,8 @@ print_endline "PASSATO" ; flush stdout ;
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
               if innersort = "Prop"  && expected_available then
                add_inner_type fresh_id'' ;
-              A.AVar (fresh_id'', path ^ "/" ^ (N.string_of_id id) ^ ".var")
+              A.AVar
+               (fresh_id'', subst, path ^ "/" ^ (N.string_of_id id) ^ ".var")
           | T.Evar (n,l) ->
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
              if innersort = "Prop"  && expected_available then
@@ -261,21 +263,59 @@ print_endline "PASSATO" ; flush stdout ;
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
              if innersort = "Prop" then
               add_inner_type fresh_id'' ;
-             let h' = aux' env h in
              let t' = Array.fold_right (fun x i -> (aux' env x)::i) t [] in
-              A.AApp (fresh_id'', h'::t')
+(*CSC: stuff for explicit named substitution *)
+             let subst,residual_args =
+              let variables =
+               match T.kind_of_term h with
+                  T.Const sp
+                | T.Ind (sp,_)
+                | T.Construct ((sp,_),_) ->
+                   Dischargedhypsmap.get_discharged_hyps sp
+                | T.Var id ->
+                   Dischargedhypsmap.get_discharged_hyps
+                    (Declare.find_section_variable id)
+                | _ -> [] (* no explicit substitution needed *)
+              in
+              (* returns a couple whose first element is  *)
+              (* an explicit named substitution of "type" *)
+              (* (variable * argument) list and whose     *)
+              (* second element is the list of residual   *)
+              (* arguments                                *) 
+              let rec get_explicit_subst variables arguments =
+               match variables,arguments with
+                  [],_
+                | _,[] -> [],arguments
+                | he1::tl1,he2::tl2 ->
+                   let subst,extra_args = get_explicit_subst tl1 tl2 in
+                   let (he1_sp, he1_id) = Names.repr_path he1 in
+                   let he1' =
+                    remove_module_dirpath_from_dirpath he1_sp ^ "/" ^
+                     (Names.string_of_id he1_id) ^ ".var"
+                   in
+                    (he1',he2)::subst, extra_args
+              in
+               get_explicit_subst variables t'
+             in
+              let h' = aux' env ~subst h in
+               (* maybe all the arguments were used for the explicit *)
+               (* named substitution                                 *)
+               if List.length residual_args > 0 then
+                A.AApp (fresh_id'', h'::residual_args)
+               else
+                h'
           | T.Const sp ->
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
              if innersort = "Prop"  && expected_available then
               add_inner_type fresh_id'' ;
-             A.AConst (fresh_id'', (uri_of_path sp Constant))
+             A.AConst (fresh_id'', subst, (uri_of_path sp Constant))
           | T.Ind (sp,i) ->
-             A.AInd (fresh_id'', (uri_of_path sp Inductive), i)
+             A.AInd (fresh_id'', subst, (uri_of_path sp Inductive), i)
           | T.Construct ((sp,i),j) ->
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
              if innersort = "Prop"  && expected_available then
               add_inner_type fresh_id'' ;
-             A.AConstruct (fresh_id'', (uri_of_path sp Inductive), i, j)
+             A.AConstruct (fresh_id'', subst, (uri_of_path sp Inductive), i, j)
           | T.Case ({T.ci_ind=(sp,i)},ty,term,a) ->
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
              if innersort = "Prop" then

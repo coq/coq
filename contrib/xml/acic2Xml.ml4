@@ -41,11 +41,13 @@ let print_term ids_to_inner_sorts =
          X.xml_empty "REL"
           ["value",(string_of_int n) ; "binder",(N.string_of_id b) ;
            "id",id ; "sort",sort]
-     | A.AVar (id,uri) ->
+     | A.AVar (id,subst,uri) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
-         X.xml_empty "VAR"
-          ["relUri", uri ;
-           "id",id ; "sort",sort]
+        let attrs = ["relUri", uri ; "id",id ; "sort",sort] in
+         if subst = [] then
+          X.xml_empty "VAR" attrs
+         else
+          X.xml_nempty "VAR" attrs (aux_subst subst)
      | A.AEvar (id,n,l) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
          X.xml_nempty "META" ["no",(string_of_int n) ; "id",id ; "sort",sort]
@@ -104,21 +106,30 @@ let print_term ids_to_inner_sorts =
          X.xml_nempty "APPLY" ["id",id ; "sort",sort]
           [< (List.fold_left (fun i x -> [< i ; (aux x) >]) [<>] li)
           >]
-     | A.AConst (id,uri) ->
+     | A.AConst (id,subst,uri) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
-         X.xml_empty "CONST"
-          ["uri", uri ; "id",id ; "sort",sort]
-     | A.AInd (id,uri,i) ->
-        X.xml_empty "MUTIND"
+        let attrs = ["uri", uri ; "id",id ; "sort",sort] in
+         if subst = [] then
+          X.xml_empty "CONST" attrs
+         else
+          X.xml_nempty "CONST" attrs (aux_subst subst)
+     | A.AInd (id,subst,uri,i) ->
+        let attrs = ["uri", uri ; "noType",(string_of_int i) ; "id",id] in
+         if subst = [] then
+          X.xml_empty "MUTIND" attrs
+         else
+          X.xml_nempty "MUTIND" attrs (aux_subst subst)
+     | A.AConstruct (id,subst,uri,i,j) ->
+        let sort = Hashtbl.find ids_to_inner_sorts id in
+        let attrs =
          ["uri", uri ;
-          "noType",(string_of_int i) ;
-          "id",id]
-     | A.AConstruct (id,uri,i,j) ->
-        let sort = Hashtbl.find ids_to_inner_sorts id in
-         X.xml_empty "MUTCONSTRUCT"
-          ["uri", uri ;
-           "noType",(string_of_int i) ; "noConstr",(string_of_int j) ;
-           "id",id ; "sort",sort]
+          "noType",(string_of_int i) ; "noConstr",(string_of_int j) ;
+          "id",id ; "sort",sort]
+        in
+         if subst = [] then
+          X.xml_empty "MUTCONSTRUCT" attrs
+         else
+          X.xml_nempty "MUTCONSTRUCT" attrs (aux_subst subst)
      | A.ACase (id,uri,typeno,ty,te,patterns) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
          X.xml_nempty "MUTCASE"
@@ -161,6 +172,12 @@ let print_term ids_to_inner_sorts =
                 >]
               ) [<>] funs
           >]
+ and aux_subst subst =
+  [< List.fold_left
+      (fun i (uri,arg) ->
+        [< i ; Xml.xml_nempty "arg" ["uri", uri] (aux arg) >]
+      ) [<>] subst
+  >]
  in
   aux
 ;;

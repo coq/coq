@@ -88,7 +88,7 @@ KERNEL=kernel/names.cmo kernel/univ.cmo \
 LIBRARY=library/nameops.cmo library/libobject.cmo library/summary.cmo \
         library/nametab.cmo library/lib.cmo library/global.cmo \
 	library/goptions.cmo library/library.cmo library/states.cmo \
-	library/impargs.cmo library/declare.cmo 
+	library/impargs.cmo library/dischargedhypsmap.cmo library/declare.cmo 
 
 PRETYPING=pretyping/termops.cmo \
           pretyping/evd.cmo pretyping/instantiate.cmo \
@@ -186,7 +186,7 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	library/nameops.cmo library/libobject.cmo library/summary.cmo \
 	library/nametab.cmo library/lib.cmo library/global.cmo \
 	library/library.cmo lib/options.cmo library/impargs.cmo \
-        library/goptions.cmo \
+	library/dischargedhypsmap.cmo library/goptions.cmo \
 	pretyping/evd.cmo pretyping/instantiate.cmo \
         pretyping/termops.cmo \
         pretyping/reductionops.cmo pretyping/retyping.cmo library/declare.cmo \

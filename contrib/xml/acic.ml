@@ -48,7 +48,7 @@ and constructor =
 
 type aconstr =
   | ARel       of id * int * identifier
-  | AVar       of id * uri
+  | AVar       of id * explicit_named_substitution * uri
   | AEvar      of id * int * aconstr list
   | ASort      of id * sorts
   | ACast      of id * aconstr * aconstr
@@ -56,9 +56,9 @@ type aconstr =
   | ALambda    of id * name * aconstr * aconstr
   | ALetIn     of id * name * aconstr * aconstr
   | AApp       of id * aconstr list
-  | AConst     of id * uri
-  | AInd       of id * uri * int
-  | AConstruct of id * uri * int * int
+  | AConst     of id * explicit_named_substitution * uri
+  | AInd       of id * explicit_named_substitution * uri * int
+  | AConstruct of id * explicit_named_substitution * uri * int * int
   | ACase      of id * uri * int * aconstr * aconstr * aconstr list
   | AFix       of id * int * ainductivefun list
   | ACoFix     of id * int * acoinductivefun list
@@ -66,6 +66,7 @@ and ainductivefun =
  identifier * int * aconstr * aconstr
 and acoinductivefun = 
  identifier * aconstr * aconstr
+and explicit_named_substitution = (uri * aconstr) list
 
 type acontext = (id * aconstr hypothesis) list
 type aconjecture = id * int * acontext * aconstr

@@ -37,7 +37,9 @@ type variable_declaration = dir_path * section_variable_entry * strength
 val declare_variable : variable -> variable_declaration -> section_path
 
 (* Declaration from Discharge *)
-val redeclare_variable : variable -> variable_declaration -> section_path
+val redeclare_variable :
+ variable -> variable_declaration -> Dischargedhypsmap.discharged_hyps
+ -> section_path
 
 type constant_declaration = global_declaration * strength
 
@@ -46,7 +48,9 @@ type constant_declaration = global_declaration * strength
    the full path of the declaration *)
 val declare_constant : identifier -> constant_declaration -> constant
 
-val redeclare_constant : constant -> Cooking.recipe * strength -> unit
+val redeclare_constant :
+ constant -> Cooking.recipe * strength -> Dischargedhypsmap.discharged_hyps
+  -> unit
 
 (*
 val declare_parameter : identifier -> constr -> constant
@@ -58,7 +62,8 @@ val declare_parameter : identifier -> constr -> constant
 val declare_mind : mutual_inductive_entry -> mutual_inductive
 
 (* Declaration from Discharge *)
-val redeclare_inductive : mutual_inductive_entry -> mutual_inductive
+val redeclare_inductive :
+ mutual_inductive_entry -> Dischargedhypsmap.discharged_hyps -> mutual_inductive
 
 val out_inductive : Libobject.obj -> mutual_inductive_entry 
 

@@ -39,17 +39,20 @@ let rec find_var id = function
   | [] -> false
   | (x,b,_)::l -> if x = id then b=None else find_var id l
 
-let build_abstract_list hyps ids_to_discard =
-  let l =
-    List.fold_left
-      (fun vars id -> if find_var id hyps then mkVar id::vars else vars)
-      [] ids_to_discard in
-  Array.of_list l
+let build_abstract_list sec_sp hyps ids_to_discard =
+  let l1,l2 =
+   List.split
+    (List.fold_left
+      (fun vars id ->
+        if find_var id hyps then (mkVar id, Names.make_path sec_sp id)::vars
+        else vars)
+      [] ids_to_discard) in
+  Array.of_list l1, l2
 
 (* Discharge of inductives is done here (while discharge of constants 
    is done by the kernel for efficiency). *)
 
-let abstract_inductive ids_to_abs hyps inds =
+let abstract_inductive sec_sp ids_to_abs hyps inds =
   let abstract_one_assum id t inds =
     let ntyp = List.length inds in 
     let new_refs =
@@ -76,7 +79,7 @@ let abstract_inductive ids_to_abs hyps inds =
     match hyps with
       | (hyp,None,t as d)::rest when id = hyp ->
 	  let inds' = abstract_one_assum hyp t inds in 
-	  (rest, inds', mkVar id::vars)
+	  (rest, inds', (mkVar id, Names.make_path sec_sp id)::vars)
       | (hyp,Some b,t as d)::rest when id = hyp ->
 	  let inds' = abstract_one_def hyp b inds in 
 	  (rest, inds', vars)
@@ -103,9 +106,10 @@ let abstract_inductive ids_to_abs hyps inds =
 	   mind_entry_consnames = c;
 	   mind_entry_lc = shortlc })
       inds' in
-  (inds'', Array.of_list vars)
+  let l1,l2 = List.split vars in
+   (inds'', Array.of_list l1, l2)
 
-let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
+let process_inductive sec_sp osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
   assert (Array.length mib.mind_packets > 0);
   let finite = mib.mind_finite in
   let inds = 
@@ -129,7 +133,8 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
           (x, option_app (expmod_constr modlist) b,expmod_constr modlist t)
           sgn)
       mib.mind_hyps ~init:empty_named_context in
-  let (inds',abs_vars) = abstract_inductive ids_to_discard hyps' inds in
+  let (inds',abs_vars,discharged_hyps ) =
+   abstract_inductive sec_sp ids_to_discard hyps' inds in
   let lmodif_one_mind i = 
     let nbc = Array.length mib.mind_packets.(i).mind_consnames in 
     (((osecsp,i), DO_ABSTRACT ((nsecsp,i),abs_vars)),
@@ -144,7 +149,8 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
   ({ mind_entry_finite = finite;
      mind_entry_inds = inds' },
    indmodifs,
-   List.flatten cstrmodifs)
+   List.flatten cstrmodifs,
+   discharged_hyps)
 
 (* Discharge messages. *)
 
@@ -169,9 +175,13 @@ let inductive_message inds =
 type opacity = bool
 
 type discharge_operation = 
-  | Variable of identifier * section_variable_entry * strength * bool
-  | Constant of section_path * recipe * strength * bool
-  | Inductive of mutual_inductive_entry * bool
+  | Variable of
+     identifier * section_variable_entry * strength * bool *
+      Dischargedhypsmap.discharged_hyps
+  | Constant of
+     section_path * recipe * strength * bool * Dischargedhypsmap.discharged_hyps
+  | Inductive of
+     mutual_inductive_entry * bool * Dischargedhypsmap.discharged_hyps
   | Class of cl_typ * cl_info_typ
   | Struc of inductive * (unit -> struc_typ)
   | Objdef of constant
@@ -227,23 +237,29 @@ let process_object oldenv dir sec_sp
 	let newsp = match stre with
 	  | DischargeAt (d,_) when not (is_dirpath_prefix_of d dir) -> sp
 	  | _ -> recalc_sp dir sp in
-        let mods = 
-	  let abs_vars = build_abstract_list cb.const_hyps ids_to_discard in
-	  [ (sp, DO_ABSTRACT(newsp,abs_vars)) ]
-	in
+	let abs_vars,discharged_hyps0 =
+         build_abstract_list sec_sp cb.const_hyps ids_to_discard in
+        (* let's add the new discharged hypothesis to those already discharged*)
+        let discharged_hyps =
+         discharged_hyps0 @ Dischargedhypsmap.get_discharged_hyps sp in
+	let mods = [ (sp, DO_ABSTRACT(newsp,abs_vars)) ] in
 	let r = { d_from = cb;
 	          d_modlist = work_alist;
 	          d_abstract = ids_to_discard } in
-	let op = Constant (newsp,r,stre,imp) in
+	let op = Constant (newsp,r,stre,imp,discharged_hyps) in
         (op :: ops, ids_to_discard, (mods@constl, indl, cstrl))
   
     | "INDUCTIVE" ->
 	let mib = Environ.lookup_mind sp oldenv in
 	let newsp = recalc_sp dir sp in
 	let imp = is_implicit_args() (* CHANGE *) in
-	let (mie,indmods,cstrmods) = 
-	  process_inductive sp newsp oldenv (ids_to_discard,work_alist) mib in
-	((Inductive(mie,imp)) :: ops, ids_to_discard,
+	let (mie,indmods,cstrmods,discharged_hyps0) = 
+	  process_inductive sec_sp sp newsp oldenv (ids_to_discard,work_alist)
+            mib in
+        (* let's add the new discharged hypothesis to those already discharged*)
+        let discharged_hyps =
+         discharged_hyps0 @ Dischargedhypsmap.get_discharged_hyps sp in
+	((Inductive(mie,imp,discharged_hyps)) :: ops, ids_to_discard,
 	 (constl,indmods@indl,cstrmods@cstrl))
 
     | "CLASS" -> 
@@ -288,16 +304,18 @@ let process_item oldenv dir sec_sp acc = function
   | (_,_) -> acc
 
 let process_operation = function
-  | Variable (id,expmod_a,stre,imp) ->
+  | Variable (id,expmod_a,stre,imp,discharged_hyps) ->
       (* Warning:parentheses needed to get a side-effect from with_implicits *)
       let _ =
-        with_implicits imp (redeclare_variable id) (Lib.cwd(),expmod_a,stre) in
-      ()
-  | Constant (sp,r,stre,imp) ->
-      with_implicits imp (redeclare_constant sp) (r,stre);
+        with_implicits imp (redeclare_variable id) (Lib.cwd(),expmod_a,stre)
+         discharged_hyps
+      in
+       ()
+  | Constant (sp,r,stre,imp,discharged_hyps) ->
+      with_implicits imp (redeclare_constant sp) (r,stre) discharged_hyps;
       constant_message (basename sp)
-  | Inductive (mie,imp) ->
-      let _ = with_implicits imp redeclare_inductive mie in
+  | Inductive (mie,imp,discharged_hyps) ->
+      let _ = with_implicits imp redeclare_inductive mie discharged_hyps in
       inductive_message mie.mind_entry_inds
   | Class (y1,y2) ->
       Lib.add_anonymous_leaf (inClass (y1,y2))

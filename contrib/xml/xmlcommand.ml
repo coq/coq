@@ -190,7 +190,17 @@ let print_object uri obj sigma proof_tree_infos filename typesfilename prooftree
   Xml.pp xml filename ;
   match filename with
      None -> ()
-   | Some fn -> ignore (Unix.system ("gzip " ^ fn ^ ".xml"))
+   | Some fn ->
+      let fn' =
+       let rec escape s n =
+        try
+         let p = String.index_from s n '\'' in
+          String.sub s n (p - n) ^ "\\'" ^ escape s (p+1)
+        with Not_found -> String.sub s n (String.length s - n)
+       in
+        escape fn 0
+      in
+       ignore (Unix.system ("gzip " ^ fn' ^ ".xml"))
  in
   let (annobj,_,constr_to_ids,_,ids_to_inner_sorts,ids_to_inner_types,_,_) =
    Cic2acic.acic_object_of_cic_object !pvars sigma obj in

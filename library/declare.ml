@@ -130,10 +130,14 @@ let declare_variable_common id obj =
 let declare_variable id obj =
   let sp = declare_variable_common id obj in
   !xml_declare_variable sp;
+  Dischargedhypsmap.set_discharged_hyps sp [] ;
   sp
 
 (* when coming from discharge: no xml output *)
-let redeclare_variable = declare_variable_common
+let redeclare_variable id obj discharged_hyps =
+  let sp = declare_variable_common id obj in
+  Dischargedhypsmap.set_discharged_hyps sp discharged_hyps ;
+   sp
 
 (* Globals: constants and parameters *)
 
@@ -206,13 +210,15 @@ let declare_constant id cd =
   (* let cd = hcons_constant_declaration cd in *)
   let sp = add_leaf id (in_constant cd) in
   if is_implicit_args() then declare_constant_implicits sp;
+  Dischargedhypsmap.set_discharged_hyps sp [] ;
   !xml_declare_constant sp;
   sp
 
 (* when coming from discharge *)
-let redeclare_constant sp (cd,stre) =
+let redeclare_constant sp (cd,stre) discharged_hyps =
   add_absolutely_named_leaf sp (in_constant (GlobalRecipe cd,stre));
-  if is_implicit_args() then declare_constant_implicits sp
+  if is_implicit_args() then declare_constant_implicits sp ;
+  Dischargedhypsmap.set_discharged_hyps sp discharged_hyps
 
 (* Inductives. *)
 
@@ -294,11 +300,15 @@ let declare_inductive_common mie =
 (* for initial declaration *)
 let declare_mind mie =
   let sp = declare_inductive_common mie in
+  Dischargedhypsmap.set_discharged_hyps sp [] ;
   !xml_declare_inductive sp;
   sp
 
 (* when coming from discharge: no xml output *)
-let redeclare_inductive = declare_inductive_common
+let redeclare_inductive mie discharged_hyps =
+ let sp = declare_inductive_common mie in
+ Dischargedhypsmap.set_discharged_hyps sp discharged_hyps ;
+ sp
 
 (*s Test and access functions. *)
 
