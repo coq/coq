@@ -913,15 +913,15 @@ parsing/coqast.cmo: lib/dyn.cmi lib/hashcons.cmi library/libnames.cmi \
 parsing/coqast.cmx: lib/dyn.cmx lib/hashcons.cmx library/libnames.cmx \
     kernel/names.cmx lib/util.cmx parsing/coqast.cmi 
 parsing/egrammar.cmo: parsing/ast.cmi lib/bignat.cmi parsing/extend.cmi \
-    interp/genarg.cmi parsing/lexer.cmi library/libnames.cmi kernel/names.cmi \
-    lib/options.cmi parsing/pcoq.cmi lib/pp.cmi library/summary.cmi \
-    proofs/tacexpr.cmo interp/topconstr.cmi lib/util.cmi \
-    toplevel/vernacexpr.cmo parsing/egrammar.cmi 
+    interp/genarg.cmi parsing/lexer.cmi library/libnames.cmi \
+    library/nameops.cmi kernel/names.cmi lib/options.cmi parsing/pcoq.cmi \
+    lib/pp.cmi library/summary.cmi proofs/tacexpr.cmo interp/topconstr.cmi \
+    lib/util.cmi toplevel/vernacexpr.cmo parsing/egrammar.cmi 
 parsing/egrammar.cmx: parsing/ast.cmx lib/bignat.cmx parsing/extend.cmx \
-    interp/genarg.cmx parsing/lexer.cmx library/libnames.cmx kernel/names.cmx \
-    lib/options.cmx parsing/pcoq.cmx lib/pp.cmx library/summary.cmx \
-    proofs/tacexpr.cmx interp/topconstr.cmx lib/util.cmx \
-    toplevel/vernacexpr.cmx parsing/egrammar.cmi 
+    interp/genarg.cmx parsing/lexer.cmx library/libnames.cmx \
+    library/nameops.cmx kernel/names.cmx lib/options.cmx parsing/pcoq.cmx \
+    lib/pp.cmx library/summary.cmx proofs/tacexpr.cmx interp/topconstr.cmx \
+    lib/util.cmx toplevel/vernacexpr.cmx parsing/egrammar.cmi 
 parsing/esyntax.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/extend.cmi \
     lib/gmap.cmi lib/gmapl.cmi library/libnames.cmi kernel/names.cmi \
     library/nametab.cmi lib/options.cmi lib/pp.cmi interp/ppextend.cmi \
